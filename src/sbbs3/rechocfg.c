@@ -216,11 +216,13 @@ void read_echo_cfg()
 		tp=strchr(tmp,SP);
 		if(tp)
 			*tp=0;                              /* Chop off at space */
+#if 0
 		strupr(tmp);                            /* Convert code to uppercase */
+#endif
 		while(*p>SP) p++;                       /* Skip code */
 		while(*p && *p<=SP) p++;                /* Skip white space */
 
-		if(!strcmp(tmp,"PACKER")) {             /* Archive Definition */
+		if(!stricmp(tmp,"PACKER")) {             /* Archive Definition */
 			if((cfg.arcdef=(arcdef_t *)REALLOC(cfg.arcdef
 				,sizeof(arcdef_t)*(cfg.arcdefs+1)))==NULL) {
 				printf("\nError allocating %u bytes of memory for arcdef #%u.\n"
@@ -256,14 +258,14 @@ void read_echo_cfg()
 			++cfg.arcdefs;
 			continue; }
 
-		if(!strcmp(tmp,"REGNUM"))
+		if(!stricmp(tmp,"REGNUM"))
 			continue;
 
-		if(!strcmp(tmp,"NOTIFY")) {
+		if(!stricmp(tmp,"NOTIFY")) {
 			cfg.notify=atoi(cleanstr(p));
 			continue; }
 
-		if(!strcmp(tmp,"LOG")) {
+		if(!stricmp(tmp,"LOG")) {
 			cleanstr(p);
 			if(!stricmp(p,"ALL"))
 				cfg.log=0xffffffffUL;
@@ -275,83 +277,83 @@ void read_echo_cfg()
 				cfg.log=strtol(cleanstr(p),0,16);
 			continue; }
 
-		if(!strcmp(tmp,"NOSWAP")) {
+		if(!stricmp(tmp,"NOSWAP")) {
 	#ifdef __MSDOS__
 			node_swap=0;
 	#endif
 			continue; }
 
-		if(!strcmp(tmp,"SECURE_ECHOMAIL")) {
+		if(!stricmp(tmp,"SECURE_ECHOMAIL")) {
 			misc|=SECURE;
 			continue; }
 
-		if(!strcmp(tmp,"CHECKMEM")) {
+		if(!stricmp(tmp,"CHECKMEM")) {
 			misc|=CHECKMEM;
 			continue; }
 
-		if(!strcmp(tmp,"STORE_SEENBY")) {
+		if(!stricmp(tmp,"STORE_SEENBY")) {
 			misc|=STORE_SEENBY;
 			continue; }
 
-		if(!strcmp(tmp,"STORE_PATH")) {
+		if(!stricmp(tmp,"STORE_PATH")) {
 			misc|=STORE_PATH;
 			continue; }
 
-		if(!strcmp(tmp,"STORE_KLUDGE")) {
+		if(!stricmp(tmp,"STORE_KLUDGE")) {
 			misc|=STORE_KLUDGE;
 			continue; }
 
-		if(!strcmp(tmp,"FUZZY_ZONE")) {
+		if(!stricmp(tmp,"FUZZY_ZONE")) {
 			misc|=FUZZY_ZONE;
 			continue; }
 
-		if(!strcmp(tmp,"FAST_OPEN")) {
+		if(!stricmp(tmp,"FAST_OPEN")) {
 			continue; }
 
-		if(!strcmp(tmp,"FLO_MAILER")) {
+		if(!stricmp(tmp,"FLO_MAILER")) {
 			misc|=FLO_MAILER;
 			continue; }
 
-		if(!strcmp(tmp,"ELIST_ONLY")) {
+		if(!stricmp(tmp,"ELIST_ONLY")) {
 			misc|=ELIST_ONLY;
 			continue; }
 
-		if(!strcmp(tmp,"KILL_EMPTY")) {
+		if(!stricmp(tmp,"KILL_EMPTY")) {
 			misc|=KILL_EMPTY_MAIL;
 			continue; }
 
-		if(!strcmp(tmp,"AREAFILE")) {
+		if(!stricmp(tmp,"AREAFILE")) {
 			sprintf(cfg.areafile,"%-.80s",cleanstr(p));
 			continue; }
 
-		if(!strcmp(tmp,"LOGFILE")) {
+		if(!stricmp(tmp,"LOGFILE")) {
 			sprintf(cfg.logfile,"%-.80s",cleanstr(p));
 			continue; }
 
-		if(!strcmp(tmp,"INBOUND")) {            /* Inbound directory */
+		if(!stricmp(tmp,"INBOUND")) {            /* Inbound directory */
 			sprintf(cfg.inbound,"%-.80s",cleanstr(p));
 			backslash(cfg.inbound);
 		continue; }
 
-		if(!strcmp(tmp,"SECURE_INBOUND")) {     /* Secure Inbound directory */
+		if(!stricmp(tmp,"SECURE_INBOUND")) {     /* Secure Inbound directory */
 			sprintf(cfg.secure,"%-.80s",cleanstr(p));
 			backslash(cfg.secure);
 			continue; }
 
-		if(!strcmp(tmp,"OUTBOUND")) {           /* Outbound directory */
+		if(!stricmp(tmp,"OUTBOUND")) {           /* Outbound directory */
 			sprintf(cfg.outbound,"%-.80s",cleanstr(p));
 			backslash(cfg.outbound);
 			continue; }
 
-		if(!strcmp(tmp,"ARCSIZE")) {            /* Maximum bundle size */
+		if(!stricmp(tmp,"ARCSIZE")) {            /* Maximum bundle size */
 			cfg.maxbdlsize=atol(p);
 			continue; }
 
-		if(!strcmp(tmp,"PKTSIZE")) {            /* Maximum packet size */
+		if(!stricmp(tmp,"PKTSIZE")) {            /* Maximum packet size */
 			cfg.maxpktsize=atol(p);
 			continue; }
 
-		if(!strcmp(tmp,"USEPACKER")) {          /* Which packer to use */
+		if(!stricmp(tmp,"USEPACKER")) {          /* Which packer to use */
 			if(!*p)
 				continue;
 			strcpy(str,p);
@@ -385,7 +387,7 @@ void read_echo_cfg()
 					cfg.nodecfg[j].faddr=addr; }
 				cfg.nodecfg[j].arctype=i; } }
 
-		if(!strcmp(tmp,"PKTPWD")) {         /* Packet Password */
+		if(!stricmp(tmp,"PKTPWD")) {         /* Packet Password */
 			if(!*p)
 				continue;
 			addr=atofaddr(p);
@@ -403,7 +405,7 @@ void read_echo_cfg()
 				cfg.nodecfg[j].faddr=addr; }
 			sprintf(cfg.nodecfg[j].pktpwd,"%.8s",p); }
 
-		if(!strcmp(tmp,"PKTTYPE")) {            /* Packet Type to Use */
+		if(!stricmp(tmp,"PKTTYPE")) {            /* Packet Type to Use */
 			if(!*p)
 				continue;
 			strcpy(str,p);
@@ -434,7 +436,7 @@ void read_echo_cfg()
 				else if(!strcmp(str,"2"))
 					cfg.nodecfg[j].pkt_type=PKT_TWO; } }
 
-		if(!strcmp(tmp,"SEND_NOTIFY")) {    /* Nodes to send notify lists to */
+		if(!stricmp(tmp,"SEND_NOTIFY")) {    /* Nodes to send notify lists to */
 			while(*p) {
 				while(*p && *p<=SP) p++;
 				if(!*p)
@@ -453,17 +455,17 @@ void read_echo_cfg()
 					cfg.nodecfg[j].faddr=addr; }
 				cfg.nodecfg[j].attr|=SEND_NOTIFY; } }
 
-		if(!strcmp(tmp,"PASSIVE")
-			|| !strcmp(tmp,"HOLD")
-			|| !strcmp(tmp,"CRASH")
-			|| !strcmp(tmp,"DIRECT")) {         /* Set node attributes */
-			if(!strcmp(tmp,"PASSIVE"))
+		if(!stricmp(tmp,"PASSIVE")
+			|| !stricmp(tmp,"HOLD")
+			|| !stricmp(tmp,"CRASH")
+			|| !stricmp(tmp,"DIRECT")) {         /* Set node attributes */
+			if(!stricmp(tmp,"PASSIVE"))
 				attr=ATTR_PASSIVE;
-			else if(!strcmp(tmp,"CRASH"))
+			else if(!stricmp(tmp,"CRASH"))
 				attr=ATTR_CRASH;
-			else if(!strcmp(tmp,"HOLD"))
+			else if(!stricmp(tmp,"HOLD"))
 				attr=ATTR_HOLD;
-			else if(!strcmp(tmp,"DIRECT"))
+			else if(!stricmp(tmp,"DIRECT"))
 				attr=ATTR_DIRECT;
 			while(*p) {
 				while(*p && *p<=SP) p++;
@@ -483,7 +485,7 @@ void read_echo_cfg()
 					cfg.nodecfg[j].faddr=addr; }
 				cfg.nodecfg[j].attr|=attr; } }
 
-		if(!strcmp(tmp,"ROUTE_TO")) {
+		if(!stricmp(tmp,"ROUTE_TO")) {
 			while(*p && *p<=SP) p++;
 			if(*p) {
 				route_addr=atofaddr(p);
@@ -506,7 +508,7 @@ void read_echo_cfg()
 					cfg.nodecfg[j].faddr=addr; }
 				cfg.nodecfg[j].route=route_addr; } }
 
-		if(!strcmp(tmp,"AREAFIX")) {            /* Areafix stuff here */
+		if(!stricmp(tmp,"AREAFIX")) {            /* Areafix stuff here */
 			if(!*p)
 				continue;
 			addr=atofaddr(p);
@@ -551,7 +553,7 @@ void read_echo_cfg()
 					sprintf(cfg.nodecfg[i].flag[j].flag,"%.4s",tp); }
 				while(*p && *p<=SP) p++; } }
 
-		if(!strcmp(tmp,"ECHOLIST")) {           /* Echolists go here */
+		if(!stricmp(tmp,"ECHOLIST")) {           /* Echolists go here */
 			if((cfg.listcfg=(echolist_t *)REALLOC(cfg.listcfg
 				,sizeof(echolist_t)*(cfg.listcfgs+1)))==NULL) {
 				printf("\nError allocating memory for echolist cfg #%u.\n"
