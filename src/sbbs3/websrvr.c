@@ -77,7 +77,7 @@ static DWORD	served=0;
 static web_startup_t* startup=NULL;
 
 typedef struct  {
-	char	*val	;
+	char	*val;
 	void	*next;
 } linked_list;
 
@@ -100,9 +100,11 @@ typedef struct  {
 
 	linked_list*	cgi_env;
 	linked_list*	cgi_heads;
+	linked_list*	headers;
+	char		status[MAX_REQUEST_LINE+1];
 	char *		post_data;
 	size_t		post_len;
-	BOOL		was_cgi;
+	BOOL		was_dynamic;
 
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE*	fp;
@@ -386,7 +388,7 @@ static BOOL is_cgi(http_session_t *session)
 	   
 	/* ToDo: This is actually quite nasty and should be replaced by		*
 	 * ToDo: SOMETHING.  Perhaps a cgi extensions ini variable or 		*
-	 * ToDo: something?  Especially since Windows can't di this anyways	*/
+	 * ToDo: something?  Especially since Windows can't do this anyways	*/
 	 	 
 	if(!access(session->req.physical_path,X_OK))
 		return(TRUE);
@@ -588,6 +590,14 @@ static int close_socket(SOCKET sock)
 
 static void close_request(http_session_t * session)
 {
+	linked_list *p;
+	
+	while(session->req.headers != NULL)  {
+		FREE_AND_NULL(session->req.headers->val);
+		p=session->req.headers->next;
+		FREE_AND_NULL(session->req.headers);
+		session->req.headers=p;
+	}
 	if(!session->req.keep_alive || !socket_check(session->socket,NULL)) {
 		close_socket(session->socket);
 		session->socket=INVALID_SOCKET;
@@ -647,7 +657,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 
 	SAFECOPY(status_line,status);
 	ret=stat(session->req.physical_path,&stats);
-	if(!ret && (stats.st_mtime < session->req.if_modified_since) && !session->req.was_cgi) {
+	if(!ret && (stats.st_mtime < session->req.if_modified_since) && !session->req.was_dynamic) {
 		SAFECOPY(status_line,"304 Not Modified");
 		ret=-1;
 		send_file=FALSE;
@@ -679,7 +689,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	sockprintf(session->socket,"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
 	
 	/* Entity Headers */
-	if(session->req.was_cgi)
+	if(session->req.was_dynamic)
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST");
 	else
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
@@ -687,9 +697,11 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	if(session->req.send_location) {
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
 	}
-	if(!ret && !session->req.was_cgi) {
+	if(!ret && session->req.keep_alive) {
 		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
+	}
 
+	if(!ret && !session->req.was_dynamic)  {
 		send_file=sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE)
 			,session->req.mime_type);
 
@@ -699,11 +711,8 @@ static BOOL send_headers(http_session_t *session, const char *status)
 			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	} 
-	else  {
-		session->req.keep_alive=FALSE;
-	}
 
-//	if(session->req.was_cgi)  {
+	if(session->req.was_dynamic)  {
 		/* CGI-generated headers */
 		/* Set up environment */
 		p=session->req.cgi_heads;
@@ -711,7 +720,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 			sockprintf(session->socket,"%s",p->val);
 			p=p->next;
 		}
-//	}
+	}
 
 	/* Will fail if socket becomes invalid - I think */
 	send_file=(sendsocket(session->socket,newline,2)>0);
@@ -1012,6 +1021,8 @@ static BOOL parse_headers(http_session_t * session)
 			i=strlen(req_line);
 			sockreadline(session,req_line+i,sizeof(req_line)-i);
 		}
+		if(strchr(req_line,':')!=NULL)
+			session->req.headers=add_list(session->req.headers,req_line);
 		strtok(req_line,":");
 		if((value=strtok(NULL,""))!=NULL) {
 			i=get_header_type(req_line);
@@ -1527,7 +1538,7 @@ static BOOL exec_cgi(http_session_t *session)
 					}
 					else  {
 						if(got_valid_headers)  {
-							session->req.was_cgi=TRUE;
+							session->req.was_dynamic=TRUE;
 							if(cgi_status[0]==0)
 								SAFECOPY(cgi_status,"200 OK");
 							send_headers(session,cgi_status);
@@ -1601,12 +1612,50 @@ static BOOL exec_cgi(http_session_t *session)
 /* JavaScript stuff */
 /********************/
 
+JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx, JSObject* parent, http_session_t *session)
+{
+	JSObject*	reply;
+	JSObject*	headers;
+	jsval		val;
+	JSString*	js_str;
+	
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(cx,parent,"http_reply",&val) && val!=JSVAL_VOID)  {
+		reply = JSVAL_TO_OBJECT(val);
+		JS_ClearScope(cx,reply);
+	}
+	else
+		reply = JS_DefineObject(cx, parent, "http_reply", NULL
+									, NULL, JSPROP_ENUMERATE);
+
+	if((js_str=JS_NewStringCopyZ(cx, "200 OK"))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, reply, "status", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE);
+		
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(cx,reply,"header",&val) && val!=JSVAL_VOID)  {
+		headers = JSVAL_TO_OBJECT(val);
+		JS_ClearScope(cx,headers);
+	}
+	else
+		headers = JS_DefineObject(cx, reply, "header", NULL
+									, NULL, JSPROP_ENUMERATE);
+
+	if((js_str=JS_NewStringCopyZ(cx, "text/html"))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, headers, "Content-Type", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE);
+
+	return(reply);
+}
+
 JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, http_session_t *session)
 {
 	JSObject*	request;
 	JSObject*	query;
-/*	JSObject*	cookies;
-	JSObject*	headers; */
+/*	JSObject*	cookie; */
+	JSObject*	headers;
 	JSString*	js_str;
 	jsval		val;
 	char		query_str[MAX_REQUEST_LINE];
@@ -1614,6 +1663,7 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 	char		*value;
 	char		*p;
 	char		*post;
+	linked_list *l;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)  {
@@ -1668,7 +1718,6 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 	JS_DefineProperty(cx, request, "remote_host", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,request,"query",&val) && val!=JSVAL_VOID)  {
 		query = JSVAL_TO_OBJECT(val);
@@ -1725,6 +1774,33 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 		}
 	}
 	
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(cx,request,"header",&val) && val!=JSVAL_VOID)  {
+		headers = JSVAL_TO_OBJECT(val);
+		JS_ClearScope(cx,headers);
+	}
+	else
+		headers = JS_DefineObject(cx, request, "header", NULL
+									, NULL, JSPROP_ENUMERATE);
+
+	l=session->req.headers;
+	p=l->val;
+	while(l!=NULL)  {
+		key=strtok(l->val,":");
+		p=NULL;
+		if(key != NULL)  {
+			value=strtok(NULL,"");
+			if(value != NULL)  {
+				for(;*value==' ';value++);
+				if((js_str=JS_NewStringCopyZ(cx, value))==NULL)
+					return(FALSE);
+				JS_DefineProperty(cx, headers, key, STRING_TO_JSVAL(js_str)
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			}
+		}
+		l=l->next;
+	}
+
 	return(request);
 }
 
@@ -1945,6 +2021,13 @@ BOOL js_setup(http_session_t* session)
 		return(FALSE);
 	}
 
+	lprintf("     JavaScript: Initializing HttpReply object");
+	if(js_CreateHttpReplyObject(session->js_cx, session->js_glob, session)==NULL) {
+		lprintf("%04d !ERROR initializing JavaScript HttpReply object",session->socket);
+		send_error(session,"500 Error initializing JavaScript HttpReply object");
+		return(FALSE);
+	}
+
 	JS_SetContextPrivate(session->js_cx, session);
 
 	return(TRUE);
@@ -1973,7 +2056,13 @@ static void respond(http_session_t * session)
 	BOOL		send_file=TRUE;
 	JSScript*	js_script;
 	jsval		rval;
-
+	JSObject*	reply;
+	JSObject*	headers;
+	JSIdArray*	heads;
+	jsval		val;
+	JSString*	js_str;
+	char		str[MAX_REQUEST_LINE+1];
+	int			i;
 
 	if(is_cgi(session))  {
 		if(!exec_cgi(session))  {
@@ -2017,6 +2106,23 @@ static void respond(http_session_t * session)
 
 		} while(0);
 
+		/* Read http_reply object */
+		JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val);
+		reply = JSVAL_TO_OBJECT(val);
+		JS_GetProperty(session->js_cx,reply,"status",&val);
+		SAFECOPY(session->req.status,JS_GetStringBytes(JSVAL_TO_STRING(val)));
+		JS_GetProperty(session->js_cx,reply,"header",&val);
+		headers = JSVAL_TO_OBJECT(val);
+		heads=JS_Enumerate(session->js_cx,headers);
+		for(i=0;i<heads->length;i++)  {
+			JS_IdToValue(session->js_cx,heads->vector[i],&val);
+			js_str=JSVAL_TO_STRING(val);
+			JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
+			snprintf(str,MAX_REQUEST_LINE+1,"%s: %s",JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
+			session->req.cgi_heads=add_list(session->req.cgi_heads,str);
+		}
+		JS_DestroyIdArray(session->js_cx, heads);
+
 		/* Free up temporary resources here */
 
 		if(js_script!=NULL) 
@@ -2025,13 +2131,12 @@ static void respond(http_session_t * session)
 			fclose(session->req.fp);
 
 		SAFECOPY(session->req.physical_path, path);
+		session->req.was_dynamic=TRUE;
 	}
 
 	if(session->http_ver > HTTP_0_9)  {
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
-		session->req.cgi_heads=add_list(session->req.cgi_heads,"Expires: 0");
-		session->req.cgi_heads=add_list(session->req.cgi_heads,"Pragma: no-cache");
-		send_file=send_headers(session,"200 OK");
+		send_file=send_headers(session,session->req.status);
 	}
 	if(send_file)  {
 		lprintf("%04d Sending file",session->socket);
@@ -2503,4 +2608,3 @@ void DLLCALL web_server(void* arg)
 
 	} while(recycle_server);
 }
-
