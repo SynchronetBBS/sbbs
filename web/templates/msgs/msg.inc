@@ -15,10 +15,11 @@
     <td width="1%" class="msgheader" nowrap="nowrap">Date:</td>
     <td nowrap="nowrap">%%JS:system.timestr(@@hdr:when_written_time@@)%%</td>
 </tr>
-<tr><td colspan="4"><hr /></td></tr>
 <tr>
     <td colspan="4">
+    <hr />
             <pre class="leftalign">@@body@@</pre>
+    <hr />
     </td>
 </tr>
 </table>
@@ -31,12 +32,13 @@
 </tr>
 @@JS:if(template.replyto!=undefined) '<tr class="msg"><td colspan="4"><b>In Reply To: </b><a href="msg.ssjs?msg_sub='+sub+'&amp;message='+template.replyto.number+'">'+template.replyto.subject+'</a> ('+template.replyto.from+')</td></tr>'; else '';@@
 @@JS:if(template.replies.length>0) '<tr class="msg"><td colspan="4"><b>Replies: </b><<REPEAT replies>><a href="msg.ssjs?msg_sub=^^sub:code^^&amp;message=^^replies:number^^">%%replies:subject%%</a> (%%replies:from%%)<<END REPEAT replies>></td></tr>'; else '';@@
-</table>
-
 @@JS:if(template.attachments==undefined) '<!--'; else '';@@
-<b>Attachments:</b><br />
+<tr class="msg"><td colspan="4"><b>Attachments:</b><br />
 <<REPEAT attachments>>
 <a href="attachments.ssjs/^^sub:code^^/^^hdr:number^^/^^attachments:name^^">%%attachments:name%%</a><br />
 <<END REPEAT attachments>>
+</td>
+</tr>
 @@JS:if(template.attachments==undefined) '-->'; else '';@@
-<p class="msgcenter"> </p>
+</table>
+
