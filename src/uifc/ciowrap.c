@@ -94,194 +94,213 @@ int cio_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 		for(x=sx-1;x<=ex-1;x++)
 		{
 			attr=mvinch(y, x);
-			if(attr&A_ALTCHARSET && !(mode&UIFC_IBM)){
-				ext_char=A_ALTCHARSET|(attr&255);
-				/* likely ones */
-				if (ext_char == ACS_CKBOARD)
-				{
-					thischar=176;
+			if(attr&A_REVERSE) {
+				thischar=attr&255-'A'+1;
+			}
+			else if(attr&A_ALTCHARSET) {
+				if(!(mode&UIFC_IBM)){
+					ext_char=A_ALTCHARSET|(attr&255);
+					/* likely ones */
+					if (ext_char == ACS_CKBOARD)
+					{
+						thischar=176;
+					}
+					else if (ext_char == ACS_BOARD)
+					{
+						thischar=177;
+					}
+					else if (ext_char == ACS_BSSB)
+					{
+						thischar=218;
+					}
+					else if (ext_char == ACS_SSBB)
+					{
+						thischar=192;
+					}
+					else if (ext_char == ACS_BBSS)
+					{
+						thischar=191;
+					}
+					else if (ext_char == ACS_SBBS)
+					{
+						thischar=217;
+					}
+					else if (ext_char == ACS_SBSS)
+					{
+						thischar=180;
+					}
+					else if (ext_char == ACS_SSSB)
+					{
+						thischar=195;
+					}
+					else if (ext_char == ACS_SSBS)
+					{
+						thischar=193;
+					}
+					else if (ext_char == ACS_BSSS)
+					{
+						thischar=194;
+					}
+					else if (ext_char == ACS_BSBS)
+					{
+						thischar=196;
+					}
+					else if (ext_char == ACS_SBSB)
+					{
+						thischar=179;
+					}
+					else if (ext_char == ACS_SSSS)
+					{
+						thischar=197;
+					}
+					else if (ext_char == ACS_BLOCK)
+					{
+						thischar=219;
+					}
+					else if (ext_char == ACS_UARROW)
+					{
+						thischar=30;
+					}
+					else if (ext_char == ACS_DARROW)
+					{
+						thischar=31;
+					}
+
+					/* unlikely (Not in ncurses) */
+					else if (ext_char == ACS_SBSD)
+					{
+						thischar=181;
+					}
+					else if (ext_char == ACS_DBDS)
+					{
+						thischar=182;
+					}
+					else if (ext_char == ACS_BBDS)
+					{
+						thischar=183;
+					}
+					else if (ext_char == ACS_BBSD)
+					{
+						thischar=184;
+					}
+					else if (ext_char == ACS_DBDD)
+					{
+						thischar=185;
+					}
+					else if (ext_char == ACS_DBDB)
+					{
+						thischar=186;
+					}
+					else if (ext_char == ACS_BBDD)
+					{
+						thischar=187;
+					}
+					else if (ext_char == ACS_DBBD)
+					{
+						thischar=188;
+					}
+					else if (ext_char == ACS_DBBS)
+					{
+						thischar=189;
+					}
+					else if (ext_char == ACS_SBBD)
+					{
+						thischar=190;
+					}
+					else if (ext_char == ACS_SDSB)
+					{
+						thischar=198;
+					}
+					else if (ext_char == ACS_DSDB)
+					{
+						thischar=199;
+					}
+					else if (ext_char == ACS_DDBB)
+					{
+						thischar=200;
+					}
+					else if (ext_char == ACS_BDDB)
+					{
+						thischar=201;
+					}
+					else if (ext_char == ACS_DDBD)
+					{
+						thischar=202;
+					}
+					else if (ext_char == ACS_BDDD)
+					{
+						thischar=203;
+					}
+					else if (ext_char == ACS_DDDB)
+					{
+						thischar=204;
+					}
+					else if (ext_char == ACS_BDBD)
+					{
+						thischar=205;
+					}
+					else if (ext_char == ACS_DDDD)
+					{
+						thischar=206;
+					}
+					else if (ext_char == ACS_SDBD)
+					{
+						thischar=207;
+					}
+					else if (ext_char == ACS_DSBS)
+					{
+						thischar=208;
+					}
+					else if (ext_char == ACS_BDSD)
+					{
+						thischar=209;
+					}
+					else if (ext_char == ACS_BSDS)
+					{
+						thischar=210;
+					}
+					else if (ext_char == ACS_DSBB)
+					{
+						thischar=211;
+					}
+					else if (ext_char == ACS_SDBB)
+					{
+						thischar=212;
+					}
+					else if (ext_char == ACS_BDSB)
+					{
+						thischar=213;
+					}
+					else if (ext_char == ACS_BSDB)
+					{
+						thischar=214;
+					}
+					else if (ext_char == ACS_DSDS)
+					{
+						thischar=215;
+					}
+					else if (ext_char == ACS_SDSD)
+					{
+						thischar=216;
+					}
+					else
+					{
+						thischar=attr&255;
+					}
 				}
-				else if (ext_char == ACS_BOARD)
-				{
-					thischar=177;
-				}
-				else if (ext_char == ACS_BSSB)
-				{
-					thischar=218;
-				}
-				else if (ext_char == ACS_SSBB)
-				{
-					thischar=192;
-				}
-				else if (ext_char == ACS_BBSS)
-				{
-					thischar=191;
-				}
-				else if (ext_char == ACS_SBBS)
-				{
-					thischar=217;
-				}
-				else if (ext_char == ACS_SBSS)
-				{
-					thischar=180;
-				}
-				else if (ext_char == ACS_SSSB)
-				{
-					thischar=195;
-				}
-				else if (ext_char == ACS_SSBS)
-				{
-					thischar=193;
-				}
-				else if (ext_char == ACS_BSSS)
-				{
-					thischar=194;
-				}
-				else if (ext_char == ACS_BSBS)
-				{
-					thischar=196;
-				}
-				else if (ext_char == ACS_SBSB)
-				{
-					thischar=179;
-				}
-				else if (ext_char == ACS_SSSS)
-				{
-					thischar=197;
-				}
-				else if (ext_char == ACS_BLOCK)
-				{
-					thischar=219;
-				}
-				else if (ext_char == ACS_UARROW)
-				{
-					thischar=30;
-				}
-				else if (ext_char == ACS_DARROW)
-				{
-					thischar=31;
-				}
-				
-				/* unlikely (Not in ncurses) */
-				else if (ext_char == ACS_SBSD)
-				{
-					thischar=181;
-				}
-				else if (ext_char == ACS_DBDS)
-				{
-					thischar=182;
-				}
-				else if (ext_char == ACS_BBDS)
-				{
-					thischar=183;
-				}
-				else if (ext_char == ACS_BBSD)
-				{
-					thischar=184;
-				}
-				else if (ext_char == ACS_DBDD)
-				{
-					thischar=185;
-				}
-				else if (ext_char == ACS_DBDB)
-				{
-					thischar=186;
-				}
-				else if (ext_char == ACS_BBDD)
-				{
-					thischar=187;
-				}
-				else if (ext_char == ACS_DBBD)
-				{
-					thischar=188;
-				}
-				else if (ext_char == ACS_DBBS)
-				{
-					thischar=189;
-				}
-				else if (ext_char == ACS_SBBD)
-				{
-					thischar=190;
-				}
-				else if (ext_char == ACS_SDSB)
-				{
-					thischar=198;
-				}
-				else if (ext_char == ACS_DSDB)
-				{
-					thischar=199;
-				}
-				else if (ext_char == ACS_DDBB)
-				{
-					thischar=200;
-				}
-				else if (ext_char == ACS_BDDB)
-				{
-					thischar=201;
-				}
-				else if (ext_char == ACS_DDBD)
-				{
-					thischar=202;
-				}
-				else if (ext_char == ACS_BDDD)
-				{
-					thischar=203;
-				}
-				else if (ext_char == ACS_DDDB)
-				{
-					thischar=204;
-				}
-				else if (ext_char == ACS_BDBD)
-				{
-					thischar=205;
-				}
-				else if (ext_char == ACS_DDDD)
-				{
-					thischar=206;
-				}
-				else if (ext_char == ACS_SDBD)
-				{
-					thischar=207;
-				}
-				else if (ext_char == ACS_DSBS)
-				{
-					thischar=208;
-				}
-				else if (ext_char == ACS_BDSD)
-				{
-					thischar=209;
-				}
-				else if (ext_char == ACS_BSDS)
-				{
-					thischar=210;
-				}
-				else if (ext_char == ACS_DSBB)
-				{
-					thischar=211;
-				}
-				else if (ext_char == ACS_SDBB)
-				{
-					thischar=212;
-				}
-				else if (ext_char == ACS_BDSB)
-				{
-					thischar=213;
-				}
-				else if (ext_char == ACS_BSDB)
-				{
-					thischar=214;
-				}
-				else if (ext_char == ACS_DSDS)
-				{
-					thischar=215;
-				}
-				else if (ext_char == ACS_SDSD)
-				{
-					thischar=216;
-				}
-				else
-				{
-					thischar=attr&255;
+				else {
+					if (ext_char == ACS_UARROW)
+					{
+						thischar=30;
+					}
+					else if (ext_char == ACS_DARROW)
+					{
+						thischar=31;
+					}
+					else
+					{
+						thischar=attr&255;
+					}
 				}
 			}
 			else
@@ -553,6 +572,11 @@ void _putch(unsigned char ch, BOOL refresh_now)
 
 	if(ch == ' ')
 		addch(A_BOLD|' ');
+	else if (cha<' ') {
+ 		attron(A_REVERSE);
+		addch(cha+'A'-1);
+		attroff(A_REVERSE);
+	}
 	else
 		addch(cha);
 
