@@ -72,24 +72,28 @@
 
 	#include <fcntl.h>
 
-	#define O_TEXT		0		/* all files in binary mode on Unix */
-	#define O_BINARY	0		/* all files in binary mode on Unix */
-	#undef	O_DENYNONE
-	#define O_DENYNONE  (1<<31)	/* req'd for Baja/nopen compatibility */
+	#ifdef __QNX__
+		#include <share.h>			/* SH_DENY */
+		#define L_SET	SEEK_SET
+	#else
+		#define O_TEXT		0		/* all files in binary mode on Unix */
+		#define O_BINARY	0		/* all files in binary mode on Unix */
+		#undef	O_DENYNONE
+		#define O_DENYNONE  (1<<31)	/* req'd for Baja/nopen compatibility */
 
-	#define SH_DENYNO	2          // no locks
-#ifdef F_SANEWRLCKNO
-	#define SH_DENYRW	F_SANEWRLCKNO	   // exclusive lock
-#else
-	#define SH_DENYRW	F_WRLCK	   // exclusive lock
-#endif
+		#define SH_DENYNO	2          // no locks
+		#ifdef F_SANEWRLCKNO
+			#define SH_DENYRW	F_SANEWRLCKNO	   // exclusive lock
+		#else
+			#define SH_DENYRW	F_WRLCK	   // exclusive lock
+		#endif
 
-#ifdef F_SANERDLCKNO
-	#define SH_DENYWR   F_SANERDLCKNO    // shareable lock
-#else
-	#define SH_DENYWR   F_RDLCK    // shareable lock
-#endif
-	
+		#ifdef F_SANERDLCKNO
+			#define SH_DENYWR   F_SANERDLCKNO    // shareable lock
+		#else
+			#define SH_DENYWR   F_RDLCK    // shareable lock
+		#endif
+	#endif
 	#define chsize(fd,size)		ftruncate(fd,size)
 	#define tell(fd)			lseek(fd,0,SEEK_CUR)
 
@@ -111,13 +115,15 @@
 extern "C" {
 #endif
 
-#if !defined(__BORLANDC__)
+#if !defined(__BORLANDC__) && !defined(__QNX__)
 	DLLEXPORT int	DLLCALL	lock(int fd, long pos, int len);
 	DLLEXPORT int	DLLCALL unlock(int fd, long pos, int len);
 #endif
 
 #if !defined(__BORLANDC__) && defined(__unix__)
+#if !defined(__QNX__)
 	DLLEXPORT int	DLLCALL sopen(char *fn, int access, int share);
+#endif
 	DLLEXPORT long	DLLCALL filelength(int fd);
 #endif
 

@@ -53,11 +53,21 @@ else
  ifeq ($(os),openbsd)	# OpenBSD
   CFLAGS	+= -D_THREAD_SAFE
   LFLAGS	:=	-pthread
- else					# Linux / Other UNIX
-  ifdef bcc
-   LFLAGS	:=	libpthread.a
+ else
+  ifeq ($(os),netbsd)	# NetBSD
+  CFLAGS	+= -D_THREAD_SAFE -D__unix__ -D_NEED_SEM -I/usr/pkg/include
+  LFLAGS	:=	-lpth -lpthread -L/usr/pkg/lib
   else
-   LFLAGS	:=	-lpthread
+   ifeq ($(os),qnx)	# QNX
+    CFLAGS	+= -D_THREAD_SAFE
+    LFLAGS	:= 
+   else			# Linux / Other UNIX
+    ifdef bcc
+     LFLAGS	:=	libpthread.a
+    else
+     LFLAGS	:=	-lpthread
+    endif
+   endif
   endif
  endif
 endif
@@ -76,6 +86,10 @@ endif
 
 include objects.mk		# defines $(OBJS)
 include targets.mk		# defines all and clean targets
+
+ifeq ($(os),netbsd)
+ OBJS	+= $(ODIR)$(SLASH)sem.$(OFILE)
+endif
 
 # Implicit C Compile Rule
 $(ODIR)/%.o : %.c

@@ -82,7 +82,11 @@ long DLLCALL filelength(int fd)
 }
 
 /* Sets a lock on a portion of a file */
+#ifdef __QNX__
+int DLLCALL lock(int fd, long pos, long len)
+#else
 int DLLCALL lock(int fd, long pos, int len)
+#endif
 {
 #if defined(F_SANERDLCKNO) || !defined(BSD)
  	struct flock alock;
@@ -101,7 +105,7 @@ int DLLCALL lock(int fd, long pos, int len)
 #endif
 	alock.l_whence = L_SET;		/* SEEK_SET */
 	alock.l_start = pos;
-	alock.l_len = len;
+	alock.l_len = (int)len;
 
 	if(fcntl(fd, F_SETLK, &alock)==-1)
 		return(-1);
@@ -117,7 +121,11 @@ int DLLCALL lock(int fd, long pos, int len)
 }
 
 /* Removes a lock from a file record */
+#ifdef __QNX__
+int DLLCALL unlock(int fd, long pos, long len)
+#else
 int DLLCALL unlock(int fd, long pos, int len)
+#endif
 {
 
 #if defined(F_SANEUNLCK) || !defined(BSD)
@@ -129,7 +137,7 @@ int DLLCALL unlock(int fd, long pos, int len)
 #endif
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
-	alock.l_len = len;
+	alock.l_len = (int)len;
 	if(fcntl(fd, F_SETLK, &alock)==-1)
 		return(-1);
 #endif
@@ -143,6 +151,7 @@ int DLLCALL unlock(int fd, long pos, int len)
 	return(0);
 }
 
+#ifndef __QNX__
 /* Opens a file in specified sharing (file-locking) mode */
 int DLLCALL sopen(char *fn, int access, int share)
 {
@@ -189,6 +198,7 @@ int DLLCALL sopen(char *fn, int access, int share)
 
 	return fd;
 }
+#endif
 
 #elif defined _MSC_VER || defined __MINGW32__
 
