@@ -1,4 +1,4 @@
-<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp=^^group:name^^">%%group:description%%</a> :
+<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a>@@JS:template.sub.code!='mail'? ' : <a class="navigation" href="index.ssjs">Groups</a> :':''@@ <a class="navigation" href="subs.ssjs?msg_grp=^^group:name^^">%%group:description%%</a> :
 <a class="navigation" href="msgs.ssjs?msg_sub=^^sub:code^^">%%sub:description%%</a><br /></p>
 
 <table class="msg" border="0" width="95%">
@@ -35,7 +35,7 @@
 <table class="msg" width="95%">
 <tr>
     <td class="msgnavleft">@@prevlink@@</td>
-    <td class="msgnavmid"><a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a></td>
+    <td class="msgnavmid">@@JS:template.can_post?'<a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a>':'Reply'@@</td>
     @@JS:template.can_delete?'<td class="msgnavmid"><a href="management.ssjs?Action=Delete+Message%28s%29&amp;msg_sub='+template.sub.code+'&amp;number='+template.hdr.number+'">Delete</a></td>':'<td class="msgnavmid">Delete</td>'@@
     <td class="msgnavright">@@nextlink@@</td>
 </tr>

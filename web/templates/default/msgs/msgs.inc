@@ -1,10 +1,13 @@
 <p class="navigation">
-    <a class="navigation" href="/index.ssjs">Home</a> : 
-    <a class="navigation" href="index.ssjs">Groups</a> : @@JS:if(template.group.name!="E-Mail") '<a class="navigation" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a> :'; else '';@@
-    <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">%%sub:description%%</a> -&#062;
-    <a class="navigation" href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New Message</a><br />
+    <a class="navigation" href="/index.ssjs">Home</a>@@JS:template.sub.code!='mail'? ' : <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a> : ':' : '@@
+    <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">%%sub:description%%</a>
+    <br />
 	@@JS:template.show_choice==undefined ? '' : '<span class="navigation">(@@show_choice@@)</span>'@@
 	</p>
+<div align="center">
+@@JS:template.can_post?'<form name="PostMsg" action="post.ssjs?msg_sub=^^sub:code^^&amp;post=new" method="post"><input type="submit" value="'+template.post_button+'" /></form>':''@@
+</div>
+
 <form name="DeleteMsg" action="management.ssjs" method="post">
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
@@ -48,7 +51,7 @@
     <<END REPEAT messages>>
     </table>
     <br />
-    @@JS:template.can_delete?'<div align="center"><input type="button" onclick="SetAllCheckBoxes(\'DeleteMsg\', \'number\', true);" value="Select All">&nbsp;<input type="button" onclick="SetAllCheckBoxes(\'DeleteMsg\', \'number\', false);" value="Deselect All">&nbsp;	<input class="msg" type="submit" name="Action" value="Delete Message(s)" /></div>':''@@
+    @@JS:template.can_delete?'<div align="center"><input type="button" onclick="SetAllCheckBoxes(\'DeleteMsg\', \'number\', true);" value="Select All" />&nbsp;&nbsp;<input type="button" onclick="SetAllCheckBoxes(\'DeleteMsg\', \'number\', false);" value="Deselect All" />&nbsp;&nbsp;<input class="msg" type="submit" name="Action" value="Delete Message(s)" /></div>':''@@
 </form>
 		
 <script type="text/javascript">
