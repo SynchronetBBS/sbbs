@@ -956,9 +956,10 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	private_t*	p;
 	jsval		val;
 
-	/* Return existing user object if it's already been created */
-	if(JS_GetProperty(cx,parent,name,&val) && val!=JSVAL_VOID)
-		userobj = JSVAL_TO_OBJECT(val);
+	if(name==NULL)
+	    userobj = JS_NewObject(cx, &js_user_class, NULL, parent);
+	else if(JS_GetProperty(cx,parent,name,&val) && val!=JSVAL_VOID)
+		userobj = JSVAL_TO_OBJECT(val);	/* Return existing user object */
 	else
 		userobj = JS_DefineObject(cx, parent, name, &js_user_class
 								, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
