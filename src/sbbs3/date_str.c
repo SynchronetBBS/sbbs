@@ -335,7 +335,13 @@ char* DLLCALL zonestr(short zone)
 		case WEL:   return("WEL");
 		}
 
-	zone=smb_tzutc(zone);
+	if(!OTHER_ZONE(zone)) {
+		if(zone&(WESTERN_ZONE|US_ZONE))	/* West of UTC? */
+			zone=-(zone&0xfff);
+		else
+			zone&=0xfff;
+	}
+
 	if(zone>0)
 		plus="+";
 	else
