@@ -52,7 +52,8 @@ static const char*	strLogMask="LogMask";
 void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 {
     char host_name[128];
-    
+    char path[MAX_PATH+1];
+
     if(pHostName==NULL) {
 #if defined(_WINSOCKAPI_)
         WSADATA WSAData;
@@ -64,13 +65,15 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 #endif
         pHostName=host_name;
     }
-	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,pHostName);
+	SAFECOPY(path,ctrl_dir);
+	backslash(path);
+	sprintf(ini_file,"%s.ini",path,pHostName);
 #if defined(__unix__) && defined(PREFIX)
 	if(!fexistcase(ini_file))
 		sprintf(ini_file,PREFIX"/etc/sbbs.ini");
 #endif
 	if(!fexistcase(ini_file))
-		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
+		sprintf(ini_file,"%ssbbs.ini",path);
 }
 
 static void read_ini_globals(FILE* fp, global_startup_t* global)
