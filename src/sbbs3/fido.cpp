@@ -236,7 +236,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 			if(mv(str,subj,1))
 				return(false); 
 		} else { /* Remote */
-			menu("ulprot");
+			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(x=0;x<cfg.total_prots;x++)

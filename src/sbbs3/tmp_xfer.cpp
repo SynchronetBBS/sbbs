@@ -150,7 +150,7 @@ void sbbs_t::temp_xfer()
 					bputs(text[CantDownloadFromDir]);
 					break; }
 				addfiledat(&cfg,&f);
-				menu("dlprot");
+				xfer_prot_menu(XFER_DOWNLOAD);
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
 				strcpy(tmp2,"Q");

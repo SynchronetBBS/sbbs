@@ -199,7 +199,7 @@ enum {
 	,StatsFeedbacksToday
 	,ChUserPrompt
 	,ChUserPwPrompt
-	,NBytesFreeMemory
+	,Unused156
 	,ErrorLogHdr
 	,DeleteErrorLogQ
 	,NoErrorLogExists
@@ -228,7 +228,7 @@ enum {
 	,LibLstFmt
 	,InvalidNetMailAddr
 	,TransferPolicyHdr
-	,Unused185
+	,TransferProtLstFmt
 	,TpUpload
 	,TpDownload
 	,NoUserDir

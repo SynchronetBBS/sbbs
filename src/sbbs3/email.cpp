@@ -125,7 +125,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 			strcat(str,title);
 			mv(str,str2,1); }
 		else { /* Remote */
-			menu("ulprot");
+			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(x=0;x<cfg.total_prots;x++)

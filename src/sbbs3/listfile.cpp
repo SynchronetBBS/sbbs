@@ -1220,7 +1220,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					found=-1;
 					break; }
 				continue; }
-			menu("dlprot");
+			xfer_prot_menu(XFER_DOWNLOAD);
 			openfile(&f);
 			SYNC;
 			mnemonics(text[ProtocolBatchQuitOrNext]);

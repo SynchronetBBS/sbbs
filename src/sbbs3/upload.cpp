@@ -457,7 +457,7 @@ bool sbbs_t::upload(uint dirnum)
 		if(!uploadfile(&f))
 			return(false); 
 	} else {
-		menu("ulprot");
+		xfer_prot_menu(XFER_UPLOAD);
 		SYNC;
 		strcpy(keys,"Q");
 		if(dirnum==cfg.user_dir || !cfg.max_batup)  /* no batch user to user xfers */

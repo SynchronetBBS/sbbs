@@ -254,7 +254,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 											,fd.name,ultoac(length,tmp)); } } }
 
 							else {	/* Remote User */
-								menu("dlprot");
+								xfer_prot_menu(XFER_DOWNLOAD);
 								mnemonics(text[ProtocolOrQuit]);
 								strcpy(str3,"Q");
 								for(i=0;i<cfg.total_prots;i++)

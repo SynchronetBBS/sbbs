@@ -563,7 +563,7 @@ void sbbs_t::qwk_sec()
 				last_ns_time=ns_time;
 				continue; }
 			bprintf(text[UploadingREP],cfg.sys_id);
-			menu("biprot");
+			xfer_prot_menu(XFER_BIDIR);
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)
@@ -663,7 +663,7 @@ void sbbs_t::qwk_sec()
 			/***************/
 			/* Send Packet */
 			/***************/
-			menu("dlprot");
+			xfer_prot_menu(XFER_DOWNLOAD);
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)
@@ -738,7 +738,7 @@ void sbbs_t::qwk_sec()
 			/******************/
 			/* Receive Packet */
 			/******************/
-			menu("ulprot");
+			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)

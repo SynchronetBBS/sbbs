@@ -117,7 +117,7 @@ void sbbs_t::batchmenu()
 					bputs(text[NotEnoughTimeToDl]);
 					break; 
 				}
-				menu("biprot");
+				xfer_prot_menu(XFER_BIDIR);
 				if(!create_batchdn_lst())
 					break;
 				if(!create_batchup_lst())
@@ -278,7 +278,7 @@ void sbbs_t::batchmenu()
 					bputs(text[UploadQueueIsEmpty]);
 					break; 
 				}
-				menu("batuprot");
+				xfer_prot_menu(XFER_BATCH_UPLOAD);
 				if(!create_batchup_lst())
 					break;
 				if(!create_bimodem_pth())
@@ -370,7 +370,7 @@ BOOL sbbs_t::start_batch_download()
 		bputs(text[NotEnoughTimeToDl]);
 		return(FALSE); 
 	}
-	menu("batdprot");
+	xfer_prot_menu(XFER_BATCH_DOWNLOAD);
 	if(!create_batchdn_lst())
 		return(FALSE);
 	if(!create_bimodem_pth())

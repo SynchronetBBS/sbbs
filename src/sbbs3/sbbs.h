@@ -369,6 +369,8 @@ public:
 	void	sys_info(void);
 	void	user_info(void);
 	void	xfer_policy(void);
+
+	void	xfer_prot_menu(enum XFER_TYPE);
 	void	node_stats(uint node_num);
 	void	sys_stats(void);
 	void	logonlist(void);
@@ -502,7 +504,7 @@ public:
 	/* prntfile.cpp */
 	void	printfile(char *str, long mode);
 	void	printtail(char *str, int lines, long mode);
-	void	menu(char *code);
+	void	menu(const char *code);
 
 	int		uselect(int add, uint n, char *title, char *item, uchar *ar);
 	uint	uselect_total, uselect_num[500];

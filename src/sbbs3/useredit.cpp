@@ -998,7 +998,7 @@ void sbbs_t::maindflts(user_t* user)
 					remove(str);
 				break;
 			case 'Z':
-				menu("dlprot");
+				xfer_prot_menu(XFER_DOWNLOAD);
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
 				strcpy(str,"Q");

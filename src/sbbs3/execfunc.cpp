@@ -361,7 +361,7 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_FILE_SEND:
 
 			csi->logic=LOGIC_FALSE;
-			menu("dlprot");
+			xfer_prot_menu(XFER_DOWNLOAD);
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(i=0;i<cfg.total_prots;i++)
@@ -388,7 +388,7 @@ int sbbs_t::exec_function(csi_t *csi)
 
 		case CS_FILE_RECEIVE:
 			csi->logic=LOGIC_FALSE;
-			menu("ulprot");
+			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(i=0;i<cfg.total_prots;i++)

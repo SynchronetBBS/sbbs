@@ -780,7 +780,15 @@ enum {							/* Values for 'mode' in listfileinfo        */
 	,FI_USERXFER  				/* User Xfer Download                       */
 	,FI_CLOSE 	  				/* Close any open records					*/
 	};							
-								
+
+enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
+	 XFER_UPLOAD
+	,XFER_DOWNLOAD
+	,XFER_BATCH_UPLOAD
+	,XFER_BATCH_DOWNLOAD
+	,XFER_BIDIR
+};
+	
 #define L_LOGON     1			/* Logon List maintenance                   */
 #define LOL_SIZE    81			/* Length of each logon list entry          */
 								

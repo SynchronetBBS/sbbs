@@ -188,7 +188,7 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 /* Called from every function that has an available menu.                   */
 /* The code definitions are as follows:                                     */
 /****************************************************************************/
-void sbbs_t::menu(char *code)
+void sbbs_t::menu(const char *code)
 {
     char str[MAX_PATH+1],path[MAX_PATH+1];
 
