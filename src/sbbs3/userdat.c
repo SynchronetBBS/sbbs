@@ -42,8 +42,6 @@
 char* crlf="\r\n";
 char* nulstr="";
 
-#define REPLACE_CHARS(str,ch1,ch2)	for(c=0;str[c];c++)	if(str[c]==ch1) str[c]=ch2;
-
 #define VALID_CFG(cfg)	(cfg!=NULL && cfg->size==sizeof(scfg_t))
 
 /****************************************************************************/
@@ -53,11 +51,12 @@ char* nulstr="";
 /****************************************************************************/
 uint DLLCALL matchuser(scfg_t* cfg, char *name, BOOL sysop_alias)
 {
-	int file,c;
-	char dat[LEN_ALIAS+2];
-	char str[256];
-	ulong l,length;
-	FILE *stream;
+	int		file,c;
+	char*	p;
+	char	dat[LEN_ALIAS+2];
+	char	str[256];
+	ulong	l,length;
+	FILE*	stream;
 
 	if(!VALID_CFG(cfg) || name==NULL)
 		return(0);
@@ -81,32 +80,32 @@ uint DLLCALL matchuser(scfg_t* cfg, char *name, BOOL sysop_alias)
 			break;
 		/* convert dots to spaces */
 		strcpy(str,dat);
-		REPLACE_CHARS(str,'.',' ');
+		REPLACE_CHARS(str,'.',' ',p);
 		if(!stricmp(str,name)) 
 			break;
 		/* convert spaces to dots */
 		strcpy(str,dat);
-		REPLACE_CHARS(str,' ','.');
+		REPLACE_CHARS(str,' ','.',p);
 		if(!stricmp(str,name)) 
 			break;
 		/* convert dots to underscores */
 		strcpy(str,dat);
-		REPLACE_CHARS(str,'.','_');
+		REPLACE_CHARS(str,'.','_',p);
 		if(!stricmp(str,name)) 
 			break;
 		/* convert underscores to dots */
 		strcpy(str,dat);
-		REPLACE_CHARS(str,'_','.');
+		REPLACE_CHARS(str,'_','.',p);
 		if(!stricmp(str,name)) 
 			break;
 		/* convert spaces to underscores */
 		strcpy(str,dat);
-		REPLACE_CHARS(str,' ','_');
+		REPLACE_CHARS(str,' ','_',p);
 		if(!stricmp(str,name)) 
 			break;
 		/* convert underscores to spaces */
 		strcpy(str,dat);
-		REPLACE_CHARS(str,'_',' ');
+		REPLACE_CHARS(str,'_',' ',p);
 		if(!stricmp(str,name)) 
 			break;
 	}
@@ -1974,11 +1973,11 @@ char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 		if(!fgets(line,sizeof(line),fp))
 			break;
 		np=line;
-		while(*np && *np<=' ') np++;
+		SKIP_WHITESPACE(np);
 		if(*np==';')
 			continue;
 		tp=np;
-		while(*tp && *tp>' ') tp++;
+		FIND_WHITESPACE(tp);
 		if(*tp) *tp=0;
 		if(*np=='*') {
 			np++;
@@ -1989,7 +1988,7 @@ char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 			if(strnicmp(np,name+(namelen-cmplen),cmplen))
 				continue;
 			np=tp+1;
-			while(*np && *np<=' ') np++;
+			SKIP_WHITESPACE(np);
 			truncsp(np);
 			if(*np=='*') 
 				sprintf(buf,"%.*s%s",(int)(namelen-cmplen),name,np+1);
@@ -2000,7 +1999,7 @@ char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 		}
 		if(!stricmp(np,name)) {
 			np=tp+1;
-			while(*np && *np<=' ') np++;
+			SKIP_WHITESPACE(np);
 			truncsp(np);
 			strcpy(buf,np);
 			p=buf;
