@@ -94,12 +94,28 @@ char* SMBCALL strlwr(char* str)
 /****************************************************************************/
 long SMBCALL flength(char *filename)
 {
+#ifdef __BORLANDC__	/* stat() doesn't work right */
+
+	long	handle;
+	struct _finddata_t f;
+
+	if((handle=_findfirst(filename,&f))==-1)
+		return(-1);
+
+ 	_findclose(handle);
+
+	return(f.size);
+
+#else 
+
 	STAT st;
 
 	if(stat(filename, &st)!=0)
 		return(-1L);
 
 	return(st.st_size);
+
+#endif
 }
 
 /****************************************************************************/
