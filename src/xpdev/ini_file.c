@@ -266,15 +266,16 @@ BOOL iniRemoveValue(str_list_t* list, const char* section, const char* key)
 {
 	char	val[INI_MAX_VALUE_LEN];
 	size_t	i;
+	char*	p;
 	char*	vp=NULL;
 
 	i=get_value(*list, section, key, val);
 
-    key_name((*list)[i], &vp);
+    p=key_name((*list)[i], &vp);
 	if(vp==NULL)
 		return(FALSE);
 
-	*vp=0;	/* Terminate string at beginning of value */
+	strcat(p,"=");
 	return(TRUE);
 }
 
