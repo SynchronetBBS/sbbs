@@ -5,6 +5,7 @@
 <TR>
 	<TD>
 		<A HREF="msgs.ssjs?msg_grp=^^group:number^^&msg_sub=^^subs:code^^">%%subs:name%%</A>
+		<A HREF="subinfo.ssjs?msg_grp=^^group:number^^&msg_sub=^^subs:code^^">[?]</A>
 	</TD>
 	<TD>
 		%%subs:description%%

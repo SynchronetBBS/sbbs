@@ -1,5 +1,6 @@
 <center>
-<P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <A HREF="index.ssjs">Groups</A> : <A HREF="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</A> : <B>%%sub:description%%</B></P>
+<P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <A HREF="index.ssjs">Groups</A> : <A HREF="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</A> : <B>%%sub:description%%</B>
+<A HREF="subinfo.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^">[?]</A></P>
 <a href="post.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^&post=new">Post New</a>
 <TABLE cellpadding=5 bordercolor="#000000" bordercolorlight="#000000" bordercolordark="#FFFFFF" CELLSPACING=0 BORDER=1 WIDTH="100%">
 <TR bgcolor=white><TH><font color=black>A</font></TH><TH><font color=black>Subject</font></TH><TH><font color=black>From</font></TH><TH><font color=black>To</font></TH><TH><font color=black>Date</font></TH></TR>
