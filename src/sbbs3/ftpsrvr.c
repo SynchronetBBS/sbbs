@@ -69,7 +69,11 @@
 /* Constants */
 
 #define FTP_SERVER				"Synchronet FTP Server"
+#ifdef  JAVASCRIPT
 #define FTP_VERSION				"1.10"
+#else
+#define FTP_VERSION				"1.05"
+#endif
 
 #define ILLEGAL_FILENAME_CHARS	"\\/|<>+[]:=\";,%"
 
@@ -1396,7 +1400,8 @@ static void receive_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
-		lprintf("%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,xfer.filename,errno);
+		lprintf("%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
+		sockprintf(xfer.ctrl_sock,"450 ERROR %d opening %s.",errno,xfer.filename);
 		close_socket(xfer.data_sock,__LINE__);
 		return;
 	}
@@ -1894,10 +1899,11 @@ char* vpath(int lib, int dir, char* str)
 	if(lib<0)
 		return(str);
 	strcat(str,scfg.lib[lib]->sname);
+	strcat(str,"/");
 	if(dir<0)
 		return(str);
-	strcat(str,"/");
 	strcat(str,scfg.dir[dir]->code);
+	strcat(str,"/");
 	return(str);
 }
 
@@ -3212,6 +3218,9 @@ static void ctrl_thread(void* arg)
 				delfile=TRUE;
 				fprintf(fp,"%-*s File/Folder Descriptions\r\n"
 					,INDEX_FNAME_LEN,startup->index_file_name);
+				if(startup->options&FTP_OPT_HTML_INDEX_FILE)
+					fprintf(fp,"%-*s File/Folder Descriptions (HTML)\r\n"
+						,INDEX_FNAME_LEN,startup->html_index_file);
 				if(lib<0) {
 
 					/* File Aliases */
@@ -3399,8 +3408,8 @@ static void ctrl_thread(void* arg)
 				filedat=getfileixb(&scfg,&f);
 				if(!filedat && !(startup->options&FTP_OPT_DIR_FILES)) {
 					sockprintf(sock,"550 File not found: %s",p);
-					lprintf("%04d !%s file not in database (%s) for %.4s command"
-						,sock,user.alias,fname,cmd);
+					lprintf("%04d !%s file (%s%s) not in database for %.4s command"
+						,sock,user.alias,vpath(lib,dir,str),p,cmd);
 					filepos=0;
 					continue;
 				}
@@ -3473,8 +3482,8 @@ static void ctrl_thread(void* arg)
 			}
 			else {
 				sockprintf(sock,"550 File not found: %s",p);
-				lprintf("%04d !%s file not found (%s) for %.4s command"
-					,sock,user.alias,p,cmd);
+				lprintf("%04d !%s file (%s%s) not found for %.4s command"
+					,sock,user.alias,vpath(lib,dir,str),p,cmd);
 			}
 			filepos=0;
 			socket_debug[sock]&=~SOCKET_DEBUG_DOWNLOAD;
@@ -3597,9 +3606,11 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,"553 File already exists.");
 					continue;
 				}
-				lprintf("%04d %s uploading: %s to /%s/%s in %s mode"
-					,sock,user.alias,fname
-					,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code
+				lprintf("%04d %s uploading: %s to %s (%s) in %s mode"
+					,sock,user.alias
+					,p						/* filename */
+					,vpath(lib,dir,str)		/* virtual path */
+					,scfg.dir[dir]->path	/* actual path */
 					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 			}
 			sockprintf(sock,"150 Opening BINARY mode data connection for file transfer.");
@@ -3900,7 +3911,9 @@ void DLLCALL ftp_server(void* arg)
 	if(startup->html_index_script[0]==0)	strcpy(startup->html_index_script,"ftp-html.js");
 
 	/*temporary*/
+#ifdef JAVASCRIPT
 	startup->options|=FTP_OPT_HTML_INDEX_FILE;
+#endif
 
 	thread_up();
 
