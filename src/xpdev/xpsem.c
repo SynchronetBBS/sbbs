@@ -32,11 +32,13 @@
  */
 
 #include <errno.h>
-#include "sem.h"
+#include "xpsem.h"
 #include <pthread.h>
+#include <sys/time.h>
+#include <stdlib.h>
 
 int
-sem_init(sem_t *sem, int pshared, unsigned int value)
+xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
 {
 	int	retval;
 
@@ -60,7 +62,7 @@ sem_init(sem_t *sem, int pshared, unsigned int value)
 		goto RETURN;
 	}
 
-	*sem = (sem_t)malloc(sizeof(struct sem));
+	*sem = (xp_sem_t)malloc(sizeof(struct xp_sem));
 	if (*sem == NULL) {
 		errno = ENOSPC;
 		retval = -1;
@@ -95,7 +97,7 @@ sem_init(sem_t *sem, int pshared, unsigned int value)
 }
 
 int
-sem_destroy(sem_t *sem)
+xp_sem_destroy(xp_sem_t *sem)
 {
 	int	retval;
 	
@@ -122,29 +124,29 @@ sem_destroy(sem_t *sem)
 	return retval;
 }
 
-sem_t *
-sem_open(const char *name, int oflag, ...)
+xp_sem_t *
+xp_sem_open(const char *name, int oflag, ...)
 {
 	errno = ENOSYS;
 	return SEM_FAILED;
 }
 
 int
-sem_close(sem_t *sem)
+xp_sem_close(xp_sem_t *sem)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 int
-sem_unlink(const char *name)
+xp_sem_unlink(const char *name)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 int
-sem_wait(sem_t *sem)
+xp_sem_wait(xp_sem_t *sem)
 {
 	int	retval;
 
@@ -171,7 +173,7 @@ sem_wait(sem_t *sem)
 }
 
 int
-sem_trywait(sem_t *sem)
+xp_sem_trywait(xp_sem_t *sem)
 {
 	int	retval;
 
@@ -194,7 +196,7 @@ sem_trywait(sem_t *sem)
 }
 
 int
-sem_post(sem_t *sem)
+xp_sem_post(xp_sem_t *sem)
 {
 	int	retval;
 
@@ -221,7 +223,7 @@ sem_post(sem_t *sem)
 }
 
 int
-sem_getvalue(sem_t *sem, int *sval)
+xp_sem_getvalue(xp_sem_t *sem, int *sval)
 {
 	int	retval;
 
@@ -233,5 +235,34 @@ sem_getvalue(sem_t *sem, int *sval)
 
 	retval = 0;
   RETURN:
+	return retval;
+}
+
+int
+xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
+{
+	int	retval=0;
+
+	pthread_testcancel();
+	
+	_SEM_CHECK_VALIDITY(sem);
+
+	pthread_mutex_lock(&(*sem)->lock);
+
+	while ((*sem)->count == 0) {
+		(*sem)->nwaiters++;
+		retval=retval=pthread_cond_timedwait(&(*sem)->gtzero, &(*sem)->lock, abs_timeout);
+		(*sem)->nwaiters--;
+		if(retval)
+			break;
+	}
+	if(!retval)
+		(*sem)->count--;
+
+	pthread_mutex_unlock(&(*sem)->lock);
+
+  RETURN:
+
+	pthread_testcancel();
 	return retval;
 }

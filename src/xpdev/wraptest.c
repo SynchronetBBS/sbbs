@@ -19,6 +19,7 @@
 
 static void getkey(void);
 static void sem_test_thread(void* arg);
+static void sem_test_thread_block(void* arg);
 static void sleep_test_thread(void* arg);
 static void sopen_test_thread(void* arg);
 static void sopen_child_thread(void* arg);
@@ -250,6 +251,35 @@ int main()
 	}
 	sem_destroy(&thread_data.parent_sem);
 	sem_destroy(&thread_data.child_sem);
+
+	printf("\nSemaphore blocking test\n");
+	getkey();
+	sem_init(&thread_data.parent_sem
+		,0 /* shared between processes */
+		,0 /* initial count */
+		);
+	sem_init(&thread_data.child_sem
+		,0	/* shared between processes */
+		,0	/* initial count */
+		);
+	if(_beginthread(
+		  sem_test_thread_block	/* entry point */
+		 ,0					/* stack size (0=auto) */
+		 ,&thread_data		/* data */
+		 )==(unsigned long)-1)
+		printf("_beginthread failed\n");
+	else {
+		sem_wait(&thread_data.child_sem);	/* wait for thread to begin */
+		for(i=0;i<10;i++) {
+			printf("<parent>");
+			SLEEP(1000);
+			sem_post(&thread_data.parent_sem);
+			sem_wait(&thread_data.child_sem);
+		}
+		sem_wait(&thread_data.child_sem);	/* wait for thread to end */
+	}
+	sem_destroy(&thread_data.parent_sem);
+	sem_destroy(&thread_data.child_sem);
 	return 0;
 }
 
@@ -288,6 +318,30 @@ static void sem_test_thread(void* arg)
 	}
 
 	printf("sem_test_thread exit\n");
+	sem_post(&data->child_sem);		/* signal parent: we're done */
+}
+
+static void sem_test_thread_block(void* arg)
+{
+	ulong i;
+	thread_data_t* data = (thread_data_t*)arg;
+
+	printf("sem_test_thread_block entry\n");
+	sem_post(&data->child_sem);		/* signal parent: we've started */
+
+	for(i=0;i<10;i++) {
+		if(sem_trywait_block(&data->parent_sem,500))  {
+			printf(" sem_trywait_block() timed out");
+			sem_wait(&data->parent_sem);
+		}
+		else  {
+			printf(" FAILURE: Didn't block");
+		}
+		printf(" <child>\n");
+		sem_post(&data->child_sem);
+	}
+
+	printf("sem_test_thread_block exit\n");
 	sem_post(&data->child_sem);		/* signal parent: we're done */
 }
 

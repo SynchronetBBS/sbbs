@@ -1,5 +1,5 @@
-#ifndef _SEMAPHORE_H_
-#define _SEMAPHORE_H_
+#ifndef _XPSEM_H_
+#define _XPSEM_H_
 
 /*
  * $Id$
@@ -41,31 +41,33 @@
  * $FreeBSD: src/sys/posix4/semaphore.h,v 1.6 2000/01/20 07:55:42 jasone Exp $
  */
 
-#include <machine/limits.h>
+#include <limits.h>
 
 #include <sys/types.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 /* Opaque type definition. */
-struct sem;
-typedef struct sem *sem_t;
+struct xp_sem;
+typedef struct xp_sem *xp_sem_t;
 
-#define SEM_FAILED	((sem_t *)0)
+#define SEM_FAILED	((xp_sem_t *)0)
 #define SEM_VALUE_MAX	UINT_MAX
 
 #ifndef KERNEL
 #include <sys/cdefs.h>
 
 __BEGIN_DECLS
-int	 sem_init __P((sem_t *, int, unsigned int));
-int	 sem_destroy __P((sem_t *));
-sem_t	*sem_open __P((const char *, int, ...));
-int	 sem_close __P((sem_t *));
-int	 sem_unlink __P((const char *));
-int	 sem_wait __P((sem_t *));
-int	 sem_trywait __P((sem_t *));
-int	 sem_post __P((sem_t *));
-int	 sem_getvalue __P((sem_t *, int *));
+int	 xp_sem_init __P((xp_sem_t *, int, unsigned int));
+int	 xp_sem_destroy __P((xp_sem_t *));
+xp_sem_t	*sem_open __P((const char *, int, ...));
+int	 xp_sem_close __P((xp_sem_t *));
+int	 xp_sem_unlink __P((const char *));
+int	 xp_sem_wait __P((xp_sem_t *));
+int	 xp_sem_trywait __P((xp_sem_t *));
+int	 xp_sem_post __P((xp_sem_t *));
+int	 xp_sem_getvalue __P((xp_sem_t *, int *));
+int  xp_sem_timedwait __P((xp_sem_t *sem, const struct timespec *abs_timeout));
 __END_DECLS
 #endif /* KERNEL */
 
@@ -80,7 +82,7 @@ __END_DECLS
  * inlined here.  Obviously these go away when this module is part of libc.
 */
 
-struct sem {
+struct xp_sem {
 #define SEM_MAGIC       ((u_int32_t) 0x09fa4012)
         u_int32_t       magic;
         pthread_mutex_t lock;
@@ -117,4 +119,4 @@ struct pthread_rwlock {
 	};
 /* End thread_private.h kluge */
 
-#endif /* _SEMAPHORE_H_ */
+#endif /* _XPSEM_H_ */

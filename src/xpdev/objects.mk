@@ -11,4 +11,5 @@ OBJS = \
 	$(ODIR)$(SLASH)conwrap.$(OFILE) \
 	$(ODIR)$(SLASH)dirwrap.$(OFILE) \
 	$(ODIR)$(SLASH)filewrap.$(OFILE) \
-	$(ODIR)$(SLASH)threadwrap.$(OFILE)
+	$(ODIR)$(SLASH)threadwrap.$(OFILE) \
+	$(ODIR)$(SLASH)semwrap.$(OFILE)

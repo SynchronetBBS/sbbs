@@ -48,18 +48,25 @@ DELETE	=	rm -fv
 
 CFLAGS	+= -D_THREAD_SAFE
 ifeq ($(os),freebsd)	# FreeBSD
+ CFLAGS		+= -DUSE_XP_SEMAPHORES
  LFLAGS	:=	-pthread
+ XP_SEM :=	1
 else
  ifeq ($(os),openbsd)	# OpenBSD
+  CFLAGS	+= -DUSE_XP_SEMAPHORES
   LFLAGS	:=	-pthread
+  XP_SEM :=	1
  else
   ifeq ($(os),netbsd)	# NetBSD
-  CFLAGS	+= -D__unix__ -D_NEED_SEM -I/usr/pkg/include
-  LFLAGS	:=	-lpth -lpthread -L/usr/pkg/lib
+   CFLAGS	+= -D__unix__ -DUSE_XP_SEMAPHORES -I/usr/pkg/include
+   LFLAGS	:=	-lpth -lpthread -L/usr/pkg/lib
+   XP_SEM :=	1
   else
    ifeq ($(os),qnx)	# QNX
     LFLAGS	:= 
    else			# Linux / Other UNIX
+    XP_SEM :=	1
+    CFLAGS	+= -DUSE_XP_SEMAPHORES
     ifdef bcc
      LFLAGS	:=	libpthread.a
     else
@@ -85,8 +92,8 @@ endif
 include objects.mk		# defines $(OBJS)
 include targets.mk		# defines all and clean targets
 
-ifeq ($(os),netbsd)
- OBJS	+= $(ODIR)$(SLASH)sem.$(OFILE)
+ifdef XP_SEM
+ OBJS	+= $(ODIR)$(SLASH)xpsem.$(OFILE)
 endif
 
 # Implicit C Compile Rule
