@@ -172,7 +172,7 @@ static BOOL winsock_startup(void)
 
 #endif
 
-static ulong active_clients()
+static ulong active_clients(void)
 {
 	ulong i;
 	ulong total_clients=0;

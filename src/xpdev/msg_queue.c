@@ -144,6 +144,9 @@ long msgQueueReadLevel(msg_queue_t* q)
 	return listCountNodes(msgQueueReadList(q));
 }
 
+#if defined(__BORLANDC__)
+	#pragma argsused
+#endif
 static BOOL list_wait(link_list_t* list, long timeout)
 {
 #if defined(LINK_LIST_THREADSAFE)
