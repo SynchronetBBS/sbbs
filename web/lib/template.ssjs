@@ -101,7 +101,7 @@ function error(message)  {
 }
 
 function horrible_error(message) {
-	write("<HTML><HEAD><TITLE>ERROR</TITLE></HEAD><BODY><p>"+message+"</p></BODY></HTML>");
+	write("<html><head><title>ERROR</error></head><body><p>"+message+"</p></body></html>");
 }
 
 function regex_escape(str)
