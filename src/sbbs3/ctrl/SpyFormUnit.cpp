@@ -61,6 +61,11 @@ __fastcall TSpyForm::TSpyForm(TComponent* Owner)
     ActiveControl=Terminal;
 }
 //---------------------------------------------------------------------------
+TSpyForm::~TSpyForm()
+{
+	delete Terminal;
+}
+//---------------------------------------------------------------------------
 int __fastcall TSpyForm::strip_telnet(uchar *buf, int len)
 {
     int i;

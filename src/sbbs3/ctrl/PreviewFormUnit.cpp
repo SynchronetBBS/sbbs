@@ -23,6 +23,11 @@ __fastcall TPreviewForm::TPreviewForm(TComponent* Owner)
     Terminal->AutoWrap=true;
     ActiveControl=Terminal;
 }
+//---------------------------------------------------------------------------
+__fastcall TPreviewForm::~TPreviewForm()
+{
+	delete Terminal;
+}
 
 #define ANSI_ESC "\x1b["
 

@@ -80,6 +80,7 @@ public:		// User declarations
     RingBuf**   inbuf;
     RingBuf**   outbuf;
     __fastcall TSpyForm(TComponent* Owner);
+    __fastcall ~TSpyForm();
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TSpyForm *SpyForms[];
