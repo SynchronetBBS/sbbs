@@ -116,6 +116,11 @@ bool sbbs_t::unpack_rep(char* repfile)
 	bputs(text[QWKUnpacking]);
 
 	for(l=QWK_BLOCK_LEN;l<size;l+=i*QWK_BLOCK_LEN) {
+		if(terminated) {
+			bprintf("!Terminated");
+			break;
+		}
+
 		lncntr=0;					/* defeat pause */
 		if(fseek(rep,l,SEEK_SET)!=0) {
 			sprintf(str,"%s.msg", cfg.sys_id);
