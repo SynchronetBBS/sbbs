@@ -84,7 +84,7 @@
 	  Tagline/Origin:
 	</td>
     <td>
-	  %%tagline%%
+	  @@tagline@@
 	</td>
   </tr>
 </table>
