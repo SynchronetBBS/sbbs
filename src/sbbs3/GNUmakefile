@@ -223,7 +223,7 @@ FTP_OBJS	= $(LIBODIR)/ftpsrvr.o
 MAIL_OBJS	= $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o \
  		  $(LIBODIR)/mime.o $(LIBODIR)/base64.o
 WEB_OBJS	= $(LIBODIR)/websrvr.o $(LIBODIR)/sockwrap.o $(LIBODIR)/base64.o
-SERVICE_OBJS	= $(LIBODIR)/services.o
+SERVICE_OBJS	= $(LIBODIR)/services.o $(LIBODIR)/ini_file.o
 
 MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 			$(MAIL_OBJS) $(SERVICE_OBJS)

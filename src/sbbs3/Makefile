@@ -121,7 +121,7 @@ $(WEBSRVR): wesrvr.c $(XPDEV)sockwrap.c base64.c
 		-DWEBSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # Services DLL Link Rule
-$(SERVICES): services.c $(SBBSLIB)
+$(SERVICES): services.c $(SBBSLIB) $(LIBODIR)\ini_file.obj
     @echo Creating $@
 	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DSERVICES_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)

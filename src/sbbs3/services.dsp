@@ -90,6 +90,10 @@ LINK32=link.exe
 # Name "services - Win32 Debug"
 # Begin Source File
 
+SOURCE=..\xpdev\ini_file.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\services.c
 # End Source File
 # End Target
