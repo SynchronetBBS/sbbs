@@ -93,6 +93,9 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
     AutoLogonCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_AUTO_LOGON;
     HostnameCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_HOST_LOOKUP);
+    IdentityCheckBox->Checked
+        =MainForm->bbs_startup.options&BBS_OPT_GET_IDENT;
+
     RLoginEnabledCheckBox->Checked
         =MainForm->bbs_startup.options&BBS_OPT_ALLOW_RLOGIN;
     RLogin2ndNameCheckBox->Checked
@@ -194,6 +197,11 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->bbs_startup.options|=BBS_OPT_NO_HOST_LOOKUP;
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_NO_HOST_LOOKUP;
+	if(IdentityCheckBox->Checked==true)
+    	MainForm->bbs_startup.options|=BBS_OPT_GET_IDENT;
+    else
+	    MainForm->bbs_startup.options&=~BBS_OPT_GET_IDENT;
+
 	if(RLoginEnabledCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
     else

@@ -1,6 +1,6 @@
 object TelnetCfgDlg: TTelnetCfgDlg
-  Left = 699
-  Top = 411
+  Left = 572
+  Top = 382
   BorderStyle = bsDialog
   Caption = 'Telnet Server Configuration'
   ClientHeight = 288
@@ -68,7 +68,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object XtrnMinCheckBox: TCheckBox
         Left = 182
-        Top = 76
+        Top = 44
         Width = 144
         Height = 25
         Hint = 'External programs run in a minimized window'
@@ -88,11 +88,11 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 1
       end
       object HostnameCheckBox: TCheckBox
-        Left = 182
-        Top = 44
+        Left = 6
+        Top = 108
         Width = 144
         Height = 24
-        Hint = 'Automatically lookup client'#39's hostnames via DNS'
+        Hint = 'Automatically lookup client'#39's hostname via DNS'
         Caption = 'Hostname Lookup'
         ParentShowHint = False
         ShowHint = True
@@ -100,7 +100,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object QWKEventsCheckBox: TCheckBox
         Left = 182
-        Top = 108
+        Top = 76
         Width = 144
         Height = 25
         Hint = 'Handle QWK Message Packet Events in This Instance'
@@ -111,7 +111,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object JavaScriptCheckBox: TCheckBox
         Left = 182
-        Top = 140
+        Top = 108
         Width = 144
         Height = 25
         Hint = 'Enable JavaScript Support'
@@ -131,6 +131,17 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 7
+      end
+      object IdentityCheckBox: TCheckBox
+        Left = 6
+        Top = 140
+        Width = 144
+        Height = 24
+        Hint = 'Automatically lookup client'#39's identity via IDENT protocol'
+        Caption = 'Identity Lookup'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 8
       end
     end
     object TelnetTabSheet: TTabSheet
