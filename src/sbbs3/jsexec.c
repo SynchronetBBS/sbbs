@@ -489,6 +489,7 @@ static const char* js_ext(const char* fname)
 long js_exec(const char *fname, char** args)
 {
 	int			argc=0;
+	uint		line_no;
 	char		path[MAX_PATH+1];
 	char		line[1024];
 	char*		js_buf=NULL;
@@ -540,33 +541,32 @@ long js_exec(const char *fname, char** args)
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
-	if(fname==NULL)	{ /* Use stdin for script source */
-		fprintf(statfp,"Reading script from stdin\n");
-		js_buflen=0;
-		while(!feof(stdin)) {
-			if(!fgets(line,sizeof(line),stdin))
-				break;
-
-			if((js_buf=realloc(js_buf,js_buflen+strlen(line)))==NULL) {
-				fprintf(errfp,"!Error allocating %u bytes of memory\n"
-					,js_buflen+strlen(line));
-				return(-1);
-			}
-			strcpy(js_buf+js_buflen,line);
-			js_buflen+=strlen(line);
-		}
-		if((js_script=JS_CompileScript(js_cx, js_scope, js_buf, js_buflen, NULL, 1))==NULL) {
-			fprintf(errfp,"!Error compiling script from stdin\n");
+	if(fname==NULL)	 /* Use stdin for script source */
+		SAFECOPY(path,"stdin");
+	fprintf(statfp,"Reading script from %s\n",path);
+	line_no=0;
+	js_buflen=0;
+	while(!feof(stdin)) {
+		if(!fgets(line,sizeof(line),stdin))
+			break;
+		line_no++;
+#ifdef __unix__	/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
+		if(line_no==1 && strncmp(line,"#!",2))
+			continue;
+#endif
+		if((js_buf=realloc(js_buf,js_buflen+strlen(line)))==NULL) {
+			fprintf(errfp,"!Error allocating %u bytes of memory\n"
+				,js_buflen+strlen(line));
 			return(-1);
 		}
-	} else {
-		if((js_script=JS_CompileFile(js_cx, js_scope, path))==NULL) {
-			fprintf(errfp,"!Error compiling %s\n",path);
-			return(-1);
-		}
+		strcpy(js_buf+js_buflen,line);
+		js_buflen+=strlen(line);
+	}
+	if((js_script=JS_CompileScript(js_cx, js_scope, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
+		fprintf(errfp,"!Error compiling script from stdin\n");
+		return(-1);
 	}
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
-
 
 	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 
