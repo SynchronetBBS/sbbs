@@ -958,12 +958,14 @@ void input_thread(void *arg)
 #ifdef __unix__
 	// SPY socket setup.
 	
-	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))<0)  {
+	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)
 		lprintf("Node %d unable to create spy socket (%d)",sbbs->cfg.node_num,errno);
-		spy_sock=INVALID_SOCKET;
-	}
-	else
+	else {
 		lprintf("Node %d spy using socket %d",sbbs->cfg.node_num,spy_sock);
+		if(startup!=NULL && startup->socket_open!=NULL) 
+			startup->socket_open(TRUE);
+	}
+
 	spy_name.sun_family=AF_LOCAL;
 	if((unsigned int)snprintf(spy_path,sizeof(spy_name.sun_path),
 			"%slocalspy.sock",sbbs->cfg.node_dir)>=sizeof(spy_name.sun_path))
@@ -973,12 +975,14 @@ void input_thread(void *arg)
 		if(fexist(spy_path))
 			unlink(spy_path);
 	}
-	spy_len=SUN_LEN(&spy_name);
-	if(bind(spy_sock, (struct sockaddr *) &spy_name, spy_len))
-		lprintf("Node %d unable to bind spy socket %s (%d)",sbbs->cfg.node_num,spy_name.sun_path,errno);
-	listen(spy_sock,1);
-	fcntl(spy_sock,F_SETFL,fcntl(spy_sock,F_GETFL)|O_NONBLOCK);
-	spy_len=sizeof(spy_name);
+	if(spy_sock!=INVALID_SOCKET) {
+		spy_len=SUN_LEN(&spy_name);
+		if(bind(spy_sock, (struct sockaddr *) &spy_name, spy_len))
+			lprintf("Node %d unable to bind spy socket %s (%d)",sbbs->cfg.node_num,spy_name.sun_path,errno);
+		listen(spy_sock,1);
+		fcntl(spy_sock,F_SETFL,fcntl(spy_sock,F_GETFL)|O_NONBLOCK);
+		spy_len=sizeof(spy_name);
+	}
 #endif
 
 	sock=sbbs->client_socket;
@@ -989,10 +993,10 @@ void input_thread(void *arg)
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 
 #ifdef __unix__
-		if(spy_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)  {
+		if(spy_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET && spy_sock!=INVALID_SOCKET)  {
 			sock=sbbs->client_socket;
-			spy_socket[sbbs->cfg.node_num-1]=accept(spy_sock, (struct sockaddr *) &spy_name, &spy_len);
-			if(spy_socket[sbbs->cfg.node_num-1]>0)  {
+			spy_socket[sbbs->cfg.node_num-1]=accept_socket(spy_sock, (struct sockaddr *) &spy_name, &spy_len);
+			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)  {
 				sbbs->spymsg("Connected");
 				spy_insock=spy_socket[sbbs->cfg.node_num-1];
 			}
