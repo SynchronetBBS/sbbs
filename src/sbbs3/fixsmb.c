@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 		if(msg.hdr.attr&MSG_DELETE)
 			text=NULL;
 		else
-			text=smb_getmsgtxt(&smb,&msg,0);
+			text=smb_getmsgtxt(&smb,&msg,GETMSGTXT_BODY_ONLY);
 		i=smb_hashmsg(&smb,&msg,text);
 		if(i!=SMB_SUCCESS && i!=SMB_DUPE_MSG)
 			printf("!ERROR %d hashing message\n", i);

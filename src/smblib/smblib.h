@@ -82,6 +82,7 @@
 
 #define GETMSGTXT_TAILS 	(1<<0)		/* Get message tail(s)				*/
 #define GETMSGTXT_NO_BODY	(1<<1)		/* Do not retrieve message body		*/
+#define GETMSGTXT_BODY_ONLY	0
 #define GETMSGTXT_TAIL_ONLY (GETMSGTXT_TAILS|GETMSGTXT_NO_BODY)
 
 #define SMB_IS_OPEN(smb)	((smb)->shd_fp!=NULL)
