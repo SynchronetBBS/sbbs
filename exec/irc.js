@@ -1175,22 +1175,22 @@ function Screen_update_input_line()  {
 	var line_start=0;
 	var line_len=this.input_buffer.length;
 
-	if(line_len-this.input_pos < 49)  {
+	if(line_len-this.input_pos < 39)  {
 		line_start=line_len-78;
 	}
-	else if (this.input_pos < 49)  {
+	else if (this.input_pos < 39)  {
 		line_start=0;
 	}
 	else  {
-		line_start=this.input_pos-49;
+		line_start=this.input_pos-39;
 	}
 	if(line_start<0)  {
 		line_start=0;
 	}
 	line_pos=this.input_pos-line_start;
-	line_str=this.input_buffer.slice(line_start,78);
+	line_str=this.input_buffer.substr(line_start,78);
 	if(line_start>0)  {
-		line_str='+'+line_str.slice(1);
+		line_str='+'+line_str.substr(1);
 	}
 	if(line_start+78 < line_len)  {
 		line_str=line_str.slice(0,77)+'+';
