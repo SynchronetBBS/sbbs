@@ -66,6 +66,7 @@
  *              Mar 21, 1996  6.10  BP   Added od_control_get().
  *              Sep 01, 1996  6.10  BP   Update output area on od_set_per...().
  *              Oct 19, 2001  6.20  RS   od_get_key now ignores linefeeds.
+ *              Mar 14, 2002  6.22  RS   Fixed od_get_key(bWait=FALSE)
  */
 
 #define BUILDING_OPENDOORS
@@ -423,19 +424,19 @@ ODAPIDEF char ODCALL od_get_key(BOOL bWait)
    /* Call the OpenDoors kernel. */
    CALL_KERNEL_IF_NEEDED();
 
-   /* If we aren't supposed to wait for input, then check whether any   */
-   /* input is waiting in the input queue, and if not return right away */
-   /* without any data.                                                 */
-   if(!bWait)
-   {
-      if(!ODInQueueWaiting(hODInputQueue))
-      {
-         OD_API_EXIT();
-         return(0);
-      }
-   }
-
 	do {
+
+	   /* If we aren't supposed to wait for input, then check whether any   */
+	   /* input is waiting in the input queue, and if not return right away */
+	   /* without any data.                                                 */
+	   if(!bWait)
+	   {
+		  if(!ODInQueueWaiting(hODInputQueue))
+		  {
+			 OD_API_EXIT();
+			 return(0);
+		  }
+	   }
 
 		/* Obtain the next character from the input queue. If we get to this */
 		/* point and there is no data waiting in the input queue, then the   */
