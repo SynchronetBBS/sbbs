@@ -646,7 +646,7 @@ int sbbs_t::searchup(char *search,int usernum)
 	flen=filelength(file);
 	lseek(file,(long)((long)usernum*U_LEN),0);
 
-	while(i*U_LEN<=flen) {
+	while((i*U_LEN)<=(ulong)flen) {
 		count=0;
 		while(count<LOOP_NODEDAB
 			&& lock(file,(long)((long)(i-1)*U_LEN),U_LEN)==-1) {
