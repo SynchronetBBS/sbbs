@@ -65,7 +65,8 @@ void sort_index(smb_t* smb)
 			break;
 		}
 
-	qsort(idx,l,sizeof(idxrec_t),compare_index);
+	qsort(idx,l,sizeof(idxrec_t)
+		,(int(*)(const void*, const void*))compare_index);
 
 	rewind(smb->sid_fp);
 	chsize(fileno(smb->sid_fp),0L);			/* Truncate the index */
