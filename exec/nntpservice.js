@@ -370,8 +370,9 @@ while(client.socket.is_connected) {
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.id);
 				writeln("Date: " + hdr.date);
-				writeln("References: " + hdr.reply_id);
 				writeln("Newsgroups: " + selected.newsgroup);
+				if(hdr.reply_id!=undefined)
+					writeln("References: " + hdr.reply_id);
 				/* FidoNet header */
 				if(msg.ftn_pid!=undefined)
 					writeln("X-FTN-PID: " + msg.ftn_pid);

@@ -278,8 +278,9 @@ for(i in area) {
 		writeln("Subject: " + hdr.subject);
 		writeln("Message-ID: " + hdr.id);
 		writeln("Date: " + hdr.date);
-		writeln("References: " + hdr.reply_id);
 		writeln("Newsgroups: " + newsgroup);
+		if(hdr.reply_id!=undefined)
+			writeln("References: " + hdr.reply_id);
 
 		/* FidoNet header */
 		if(msg.ftn_pid!=undefined)
