@@ -116,7 +116,7 @@ static  wsa_error;
 #define closesocket		close
 #define ioctlsocket		ioctl
 #define ERROR_VALUE		errno
-#define sendsocket		write		// FreeBSD send() is broken
+#define sendsocket		write		/* FreeBSD send() is broken */
 
 #endif	/* __unix__ */
 
