@@ -286,7 +286,11 @@ command line examples for a few file types.
 							sizeof(fview_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fview_t));
 							continue; }
-						*cfg.fview[i]=*cfg.fview[i+1]; }
+						if(i>=cfg.total_fviews)
+							j=i-1;
+						else
+							j=i+1;
+						*cfg.fview[i]=*cfg.fview[j]; }
 					cfg.total_fviews++;
 					uifc.changes=1;
 					continue; }
@@ -401,7 +405,11 @@ listed.
 							sizeof(ftest_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ftest_t));
 							continue; }
-						*cfg.ftest[i]=*cfg.ftest[i+1]; }
+						if(i>=cfg.total_ftests)
+							j=i-1;
+						else
+							j=i+1;
+						*cfg.ftest[i]=*cfg.ftest[j]; }
 					cfg.total_ftests++;
 					uifc.changes=1;
 					continue; }
@@ -522,7 +530,11 @@ for each file type and command line listed.
 							sizeof(dlevent_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dlevent_t));
 							continue; }
-						*cfg.dlevent[i]=*cfg.dlevent[i+1]; }
+						if(i>=cfg.total_dlevents)
+							j=i-1;
+						else
+							j=i+1;
+						*cfg.dlevent[i]=*cfg.dlevent[j]; }
 					cfg.total_dlevents++;
 					uifc.changes=1;
 					continue; }
@@ -635,7 +647,11 @@ extract the file(s).
                             sizeof(fextr_t)))==NULL) {
                             errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fextr_t));
                             continue; }
-                        *cfg.fextr[i]=*cfg.fextr[i+1]; }
+						if(i>=cfg.total_fextrs)
+							j=i-1;
+						else
+							j=i+1;
+                        *cfg.fextr[i]=*cfg.fextr[j]; }
                     cfg.total_fextrs++;
                     uifc.changes=1;
                     continue; }
@@ -739,7 +755,11 @@ files from the transfer section, and more.
 							sizeof(fcomp_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fcomp_t));
 							continue; }
-						*cfg.fcomp[i]=*cfg.fcomp[i+1]; }
+						if(i>=cfg.total_fcomps)
+							j=i-1;
+						else
+							j=i+1;
+						*cfg.fcomp[i]=*cfg.fcomp[j]; }
 					cfg.total_fcomps++;
 					uifc.changes=1;
 					continue; }
@@ -861,7 +881,11 @@ directory accordingly.
 							sizeof(prot_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(prot_t));
 							continue; }
-						*cfg.prot[i]=*cfg.prot[i+1]; }
+						if(i>=cfg.total_prots)
+							j=i-1;
+						else
+							j=i+1;
+						*cfg.prot[i]=*cfg.prot[j]; }
 					cfg.total_prots++;
 					uifc.changes=1;
 					continue; }
