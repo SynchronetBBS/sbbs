@@ -514,27 +514,32 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	if((idxobj=JS_NewObject(cx,NULL,NULL,obj))==NULL)
 		return(JS_TRUE);
 
-	JS_DefineProperty(cx, idxobj, "number", INT_TO_JSVAL(msg.idx.number)
+	JS_NewNumberValue(cx, msg.idx.number	,&val);
+	JS_DefineProperty(cx, idxobj, "number"	,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, idxobj, "to" ,INT_TO_JSVAL(msg.idx.to)
+	JS_NewNumberValue(cx, msg.idx.to		,&val);
+	JS_DefineProperty(cx, idxobj, "to"		,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, idxobj, "from" ,INT_TO_JSVAL(msg.idx.from)
+	JS_NewNumberValue(cx, msg.idx.from		,&val);
+	JS_DefineProperty(cx, idxobj, "from"	,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, idxobj, "subject" ,INT_TO_JSVAL(msg.idx.subj)
+	JS_NewNumberValue(cx, msg.idx.subj		,&val);
+	JS_DefineProperty(cx, idxobj, "subject"	,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, idxobj, "attr" ,INT_TO_JSVAL(msg.idx.attr)
+	JS_NewNumberValue(cx, msg.idx.attr		,&val);
+	JS_DefineProperty(cx, idxobj, "attr"	,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_NewNumberValue(cx,msg.idx.offset,&val);
-	JS_DefineProperty(cx, idxobj, "offset", val
+	JS_NewNumberValue(cx, msg.idx.offset	,&val);
+	JS_DefineProperty(cx, idxobj, "offset"	,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_NewNumberValue(cx,msg.idx.time,&val);
-	JS_DefineProperty(cx, idxobj, "time", val
+	JS_NewNumberValue(cx, msg.idx.time		,&val);
+	JS_DefineProperty(cx, idxobj, "time"	,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	*rval = OBJECT_TO_JSVAL(idxobj);
