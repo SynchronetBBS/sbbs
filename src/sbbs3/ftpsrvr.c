@@ -3167,7 +3167,7 @@ static void ctrl_thread(void* arg)
 			if(startup->options&FTP_OPT_INDEX_FILE && startup->index_file_name[0]
 				&& (!stricmp(p,startup->index_file_name) || *p==0 || *p=='*')) {
 				if(detail)
-					fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+					fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 						,NAME_LEN
 						,scfg.sys_id
 						,lib<0 ? scfg.sys_id : dir<0 
@@ -3182,7 +3182,7 @@ static void ctrl_thread(void* arg)
 			if(startup->options&FTP_OPT_HTML_INDEX_FILE && startup->html_index_file[0]
 				&& (!stricmp(p,startup->html_index_file) || *p==0 || *p=='*')) {
 				if(detail)
-					fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+					fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 						,NAME_LEN
 						,scfg.sys_id
 						,lib<0 ? scfg.sys_id : dir<0 
@@ -3212,7 +3212,7 @@ static void ctrl_thread(void* arg)
 							memset(&tm,0,sizeof(tm));
 						else
 							tm=*tm_p;
-						fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s.qwk\r\n"
+						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s.qwk\r\n"
 							,NAME_LEN
 							,scfg.sys_id
 							,scfg.sys_id
@@ -3272,7 +3272,7 @@ static void ctrl_thread(void* arg)
 						if(detail) {
 
 							if(alias_dir==TRUE) {
-								fprintf(fp,"drwxr-xr-x   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+								fprintf(fp,"drwxrwxrwx   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 									,NAME_LEN
 									,scfg.sys_id
 									,scfg.lib[scfg.dir[dir]->lib]->sname
@@ -3287,7 +3287,7 @@ static void ctrl_thread(void* arg)
 									memset(&tm,0,sizeof(tm));
 								else
 									tm=*tm_p;
-								fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+								fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 									,NAME_LEN
 									,scfg.sys_id
 									,scfg.sys_id
@@ -3308,7 +3308,7 @@ static void ctrl_thread(void* arg)
 					if(!chk_ar(&scfg,scfg.lib[i]->ar,&user))
 						continue;
 					if(detail)
-						fprintf(fp,"drwxr-xr-x   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+						fprintf(fp,"dr-xr-xr-x   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 							,NAME_LEN
 							,scfg.sys_id
 							,scfg.sys_id
@@ -3327,7 +3327,7 @@ static void ctrl_thread(void* arg)
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user))
 						continue;
 					if(detail)
-						fprintf(fp,"drwxr-xr-x   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+						fprintf(fp,"drwxrwxrwx   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 							,NAME_LEN
 							,scfg.sys_id
 							,scfg.lib[lib]->sname
@@ -3373,7 +3373,7 @@ static void ctrl_thread(void* arg)
 								dotname(f.uler,str);
 						} else
 							SAFECOPY(str,scfg.sys_id);
-						fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d "
+						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d "
 							,NAME_LEN
 							,str
 							,scfg.dir[dir]->code
