@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-int sbbs_t::execmsg(csi_t *csi)
+int sbbs_t::exec_msg(csi_t *csi)
 {
 	char	str[256],ch;
 	ulong	i,j;
