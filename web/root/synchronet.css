@@ -1,2 +1,5 @@
-pre {  font-family: 'courier new', monospace; font-size: 12px; }
-.preleft {  font-family: 'courier new', monospace; font-size: 12px; text-align: left; }
+pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; }
+pre { background-color: black; color: #aaaaaa; font-family: monospace; }
+body { background-color: teal; color: white; }
+body.object { margin: 0%; background-color: black; color: #aaaaaa; }
+
