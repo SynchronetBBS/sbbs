@@ -580,7 +580,6 @@ object ConfigWizard: TConfigWizard
     Top = 14
     Width = 360
     Height = 267
-    PageIndex = 6
     TabOrder = 3
     OnPageChanged = WizNotebookPageChanged
     object TPage
@@ -1139,10 +1138,13 @@ object ConfigWizard: TConfigWizard
         Lines.Strings = (
           'You have completed the initial configuration '
           'of the basic parameters required to run Synchronet - '
-          'the only intelligent choice in BBS software'
+          'the ultimate choice in BBS software'
           'for the Internet Age.'
           ''
-          'Thanks for choosing Synchronet!')
+          'Thanks for choosing Synchronet!'
+          ''
+          'Rob Swindell'
+          '(digital man)')
         ReadOnly = True
         TabOrder = 0
       end
@@ -1156,6 +1158,5 @@ object ConfigWizard: TConfigWizard
     Min = 0
     Max = 100
     TabOrder = 4
-    Visible = False
   end
 end
