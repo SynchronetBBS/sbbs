@@ -377,7 +377,6 @@ int sem_getvalue(sem_t* psem, int* val)
 ulong DLLCALL getfreediskspace(char* path)
 {
 #ifdef _WIN32
-	HINSTANCE		hK32;
 	char			root[16];
 	DWORD			TotalNumberOfClusters;
 	DWORD			NumberOfFreeClusters;
@@ -386,9 +385,6 @@ ulong DLLCALL getfreediskspace(char* path)
 	ULARGE_INTEGER	avail;
 	ULARGE_INTEGER	size;
 	GetDiskFreeSpaceEx_t GetDiskFreeSpaceEx;
-
-	if ((hK32 = LoadLibrary("KERNEL32")) == NULL)
-		return(0);
 
 	GetDiskFreeSpaceEx 
 		= (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");

@@ -171,11 +171,6 @@ typedef HANDLE (WINAPI *OPENVXDHANDLE)(HANDLE);
 
 OPENVXDHANDLE GetAddressOfOpenVxDHandle(void)
 {
-	HINSTANCE hK32;
-
-	if ((hK32 = LoadLibrary("KERNEL32")) == NULL)
-		return NULL;
-
 	return((OPENVXDHANDLE)GetProcAddress(hK32, "OpenVxDHandle"));
 }
 

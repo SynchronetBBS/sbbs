@@ -57,7 +57,8 @@ uint riobp;
 
 // Globals
 #ifdef _WIN32
-HANDLE	exec_mutex;
+	HANDLE		exec_mutex=NULL;
+	HINSTANCE	hK32=NULL;
 
 	GetLongPathName_t Win98GetLongPathName=NULL;
 
@@ -2942,7 +2943,16 @@ static void cleanup(int code)
 	free_text(text);
 
 #ifdef _WIN32
-	CloseHandle(exec_mutex);
+	if(exec_mutex!=NULL) {
+		CloseHandle(exec_mutex);
+		exec_mutex=NULL;
+	}
+
+	if(hK32!=NULL) {
+		FreeLibrary(hK32);
+		hK32=NULL;
+	}
+
 #if 0 && defined(_DEBUG) && defined(_MSC_VER)
 	_CrtMemDumpAllObjectsSince(&mem_chkpoint);
 
@@ -2984,9 +2994,6 @@ void DLLCALL bbs_thread(void* arg)
 	sbbs_t*			events;
 	client_t		client;
 	startup=(bbs_startup_t*)arg;
-#ifdef _WIN32
-	HINSTANCE		hK32;
-#endif
 
     if(startup==NULL) {
     	sbbs_beep(100,500);
