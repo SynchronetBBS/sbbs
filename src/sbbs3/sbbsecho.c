@@ -1247,7 +1247,7 @@ void command(char *instr,faddr_t addr)
 			,cfg.arcdef[i].name,0);
 		cfg.nodecfg[node].arctype=i;
 		sprintf(str,"Compression type changed to %s.",cfg.arcdef[i].name);
-		create_netmail(NULL,"Compression Type Change",str,addr,0);
+		create_netmail(NULL,"Compression Type Change",str,addr,FALSE);
 		return; 
 	}
 
@@ -1263,13 +1263,13 @@ void command(char *instr,faddr_t addr)
 		if(!stricmp(temp,cfg.nodecfg[node].password)) {
 			sprintf(str,"Your password was already set to %s."
 				,cfg.nodecfg[node].password);
-			create_netmail(NULL,"Password Change Request",str,addr,0);
+			create_netmail(NULL,"Password Change Request",str,addr,FALSE);
 			return; }
 		alter_config(addr,cfg.nodecfg[node].password,temp,1);
 		sprintf(str,"Your password has been changed from %s to %.25s."
 			,cfg.nodecfg[node].password,temp);
 		sprintf(cfg.nodecfg[node].password,"%.25s",temp);
-		create_netmail(NULL,"Password Change Request",str,addr,0);
+		create_netmail(NULL,"Password Change Request",str,addr,FALSE);
 		return; 
 	}
 
