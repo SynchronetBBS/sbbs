@@ -465,14 +465,14 @@ int edit_shell(scfg_t *cfg, user_t *user)
 		opt[i]=cfg->shell[i]->name;
 	}
 	opt[i]="";
-	j=user->shell-1;
-	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Shell",opt)) {
+	j=user->shell;
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Command Shell",opt)) {
 		case -1:
 			break;
 		default:
-			if(user->shell != j+1) {
-				user->shell=j+1;
-				putuserrec(cfg,user->number,U_SHELL,8,cfg->shell[j+1]->code);
+			if(user->shell != j) {
+				user->shell=j;
+				putuserrec(cfg,user->number,U_SHELL,8,cfg->shell[j]->code);
 			}
 			break;
 	}
@@ -1424,6 +1424,7 @@ int edit_security(scfg_t *cfg, user_t *user)
  *     Note
  *     Comment
  *     Gender
+ *     Birthdate
  *     Connection
  *     Handle
  *     Password
@@ -1455,6 +1456,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Note        %s",user->note);
 		sprintf(opt[i++],"Comment     %s",user->comment);
 		sprintf(opt[i++],"Gender      %c",user->sex);
+		sprintf(opt[i++],"D.O.B.      %s",user->birth);
 		sprintf(opt[i++],"Connection  %s",user->modem);
 		sprintf(opt[i++],"Handle      %s",user->alias);
 		sprintf(opt[i++],"Password    %s",user->pass);
@@ -1520,20 +1522,28 @@ int edit_personal(scfg_t *cfg, user_t *user)
 				}
 				break;
 			case 7:
+			        /* D.O.B */
+				getuserdat(cfg,user);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B.",user->birth,LEN_BIRTH,K_EDIT);
+				if(uifc.changes)
+					putuserrec(cfg,user->number,U_BIRTH,LEN_BIRTH,user->birth);
+				break;
+
+			case 8:
 				/* Connection */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Connection",user->modem,LEN_MODEM,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_MODEM,LEN_MODEM,user->modem);
 				break;
-			case 8:
+			case 9:
 				/* Handle */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Handle",user->alias,LEN_ALIAS,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_ALIAS,LEN_ALIAS,user->alias);
 				break;
-			case 9:
+			case 10:
 				/* Password */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Password",user->pass,LEN_PASS,K_EDIT);
@@ -1543,21 +1553,21 @@ int edit_personal(scfg_t *cfg, user_t *user)
 					putuserrec(cfg,user->number,U_PWMOD,8,ultoa(user->pwmod,str,16));
 				}
 				break;
-			case 10:
+			case 11:
 				/* Location */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Location",user->location,LEN_LOCATION,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_LOCATION,LEN_LOCATION,user->location);
 				break;
-			case 11:
+			case 12:
 				/* Address */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Address",user->address,LEN_ADDRESS,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_ADDRESS,LEN_ADDRESS,user->address);
 				break;
-			case 12:
+			case 13:
 				/* Postal/Zip */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Postal/Zip Code",user->zipcode,LEN_ZIPCODE,K_EDIT);
@@ -1727,7 +1737,7 @@ int main(int argc, char** argv)  {
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-    printf("\nSynchronet User Editor %s-%s  Copyright 2003 "
+    printf("\nSynchronet User Editor %s-%s  Copyright 2004 "
         "Rob Swindell\n",revision,PLATFORM_DESC);
 
 	p=getenv("SBBSCTRL");
