@@ -14,6 +14,7 @@ var port=6667;
 var nick="nick";
 var msg;
 var join=false;
+var exclude=new Array();
 
 for(i=0;i<argc;i++) {
 	switch(argv[i]) {
@@ -38,6 +39,9 @@ for(i=0;i<argc;i++) {
 				alert("-m specified with blank message... aborting");
 				exit();
 			}
+			break;
+		case "-x":
+			exclude.push(RegExp(argv[++i],"gi"));
 			break;
 	}
 }
@@ -96,6 +100,11 @@ function send(msg)
 		log("Not sending blank message");
 		return;
 	}
+	for(i in exclude)
+		if(msg.search(exclude[i])>=0) {
+			log("Excluding: " + msg);
+			return;
+		}
 	log("Sending: " + msg);
 	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
 		alert("send failure");
