@@ -1177,7 +1177,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,VERSION_NOTICE,REVISION
 			,useron.number
 			,useron.name
-			,useron.alias
+			,name
 			,useron.level
 			,timeleft/60
 			,useron.misc&ANSI ? 1 : 0
@@ -1205,7 +1205,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
     FILE *	stream;
 
 	sprintf(startup,"%s/",cfg.xtrn[xtrnnum]->path);
-	if(cfg.xtrn[xtrnnum]->type==XTRN_RBBS) {
+	if(cfg.xtrn[xtrnnum]->type==XTRN_RBBS || cfg.xtrn]xtrnnum]->type==XTRN_RBBS1) {
 		sprintf(path,"%sEXITINFO.BBS"
 			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
 		if((file=nopen(path,O_RDONLY))!=-1) {
@@ -1510,6 +1510,12 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		case XTRN_SR:
 			strcat(path,"DOORFILE.SR");
 			break;
+		case XTRN_TRIBBS:
+			strcat(path,"TRIBBS.SYS");
+			break;
+		case XTRN_DOOR32:
+			strcat(path,"DOOR32.SYS");
+			break;
 		default:
 			strcat(path,"XTRN.DAT");
 			break; 
@@ -1555,6 +1561,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		mode|=EX_WWIV;
 	if(cfg.xtrn[xtrnnum]->misc&SWAP)
 		mode|=EX_SWAP;
+	if(cfg.xtrn[xtrnnum]->misc&XTRN_NATIVE)
+		mode|=EX_NATIVE;
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) {	 /* Delete MODUSER.DAT */
 		sprintf(str,"%sMODUSER.DAT",dropdir);       /* if for some weird  */
 		remove(str); 								/* reason it's there  */
