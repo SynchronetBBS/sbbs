@@ -45,6 +45,7 @@ extern "C" {
 #endif
 
 typedef struct {
+	char			name[128];			/* for named-queues */
 	link_list_t		in;
 	link_list_t		out;
 	DWORD			owner_thread_id;	/* reads from in, writes to out */
