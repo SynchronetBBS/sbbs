@@ -85,10 +85,10 @@ DLLEXPORT char*	DLLCALL username(scfg_t* cfg, int usernumber, char * str);
 DLLEXPORT char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name);
 DLLEXPORT int	DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* file);
 DLLEXPORT int	DLLCALL putnodedat(scfg_t* cfg, uint number, node_t *node, int file);
+DLLEXPORT char* DLLCALL nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen);
 DLLEXPORT void	DLLCALL printnodedat(scfg_t* cfg, uint number, node_t* node);
 DLLEXPORT void	DLLCALL packchatpass(char *pass, node_t* node);
 DLLEXPORT char* DLLCALL unpackchatpass(char *pass, node_t* node);
-
 DLLEXPORT char* DLLCALL getsmsg(scfg_t* cfg, int usernumber);
 DLLEXPORT int	DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
 DLLEXPORT char* DLLCALL getnmsg(scfg_t* cfg, int node_num);

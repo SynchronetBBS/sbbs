@@ -796,205 +796,230 @@ char* DLLCALL unpackchatpass(char *pass, node_t* node)
 	return(pass);
 }
 
+char* DLLCALL nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
+{
+	char	str[256];
+	char*	mer;
+	int		hour;
+
+	if(node==NULL) {
+		strncpy(buf,"(null)",buflen);
+		return(buf);
+	}
+
+    switch(node->status) {
+        case NODE_WFC:
+            strcpy(str,"Waiting for call");
+            break;
+        case NODE_OFFLINE:
+            strcpy(str,"Offline");
+            break;
+        case NODE_NETTING:
+            strcpy(str,"Networking");
+            break;
+        case NODE_LOGON:
+            strcpy(str,"At logon prompt");
+            break;
+        case NODE_EVENT_WAITING:
+            strcpy(str,"Waiting for all nodes to become inactive");
+            break;
+        case NODE_EVENT_LIMBO:
+            sprintf(str,"Waiting for node %d to finish external event"
+                ,node->aux);
+            break;
+        case NODE_EVENT_RUNNING:
+            strcpy(str,"Running external event");
+            break;
+        case NODE_NEWUSER:
+            strcpy(str,"New user applying for access ");
+            if(!node->connection)
+                strcat(str,"Locally");
+            else if(node->connection==0xffff) {
+                strcat(str,"via telnet");
+            } else
+                sprintf(str+strlen(str),"at %ubps",node->connection);
+            break;
+        case NODE_QUIET:
+        case NODE_INUSE:
+            username(cfg,node->useron,str);
+            strcat(str," ");
+            switch(node->action) {
+                case NODE_MAIN:
+                    strcat(str,"at main menu");
+                    break;
+                case NODE_RMSG:
+                    strcat(str,"reading messages");
+                    break;
+                case NODE_RMAL:
+                    strcat(str,"reading mail");
+                    break;
+                case NODE_RSML:
+                    strcat(str,"reading sent mail");
+                    break;
+                case NODE_RTXT:
+                    strcat(str,"reading text files");
+                    break;
+                case NODE_PMSG:
+                    strcat(str,"posting message");
+                    break;
+                case NODE_SMAL:
+                    strcat(str,"sending mail");
+                    break;
+                case NODE_AMSG:
+                    strcat(str,"posting auto-message");
+                    break;
+                case NODE_XTRN:
+                    if(!node->aux)
+                        strcat(str,"at external program menu");
+                    else if(node->aux<=cfg->total_xtrns)
+                        sprintf(str+strlen(str),"running %s"
+ 	                       ,cfg->xtrn[node->aux-1]->name);
+                    else
+                        sprintf(str+strlen(str),"running external program #%d"
+                            ,node->aux);
+                    break;
+                case NODE_DFLT:
+                    strcat(str,"changing defaults");
+                    break;
+                case NODE_XFER:
+                    strcat(str,"at transfer menu");
+                    break;
+                case NODE_RFSD:
+                    sprintf(str+strlen(str),"retrieving from device #%d",node->aux);
+                    break;
+                case NODE_DLNG:
+                    strcat(str,"downloading");
+                    break;
+                case NODE_ULNG:
+                    strcat(str,"uploading");
+                    break;
+                case NODE_BXFR:
+                    strcat(str,"transferring bidirectional");
+                    break;
+                case NODE_LFIL:
+                    strcat(str,"listing files");
+                    break;
+                case NODE_LOGN:
+                    strcat(str,"logging on");
+                    break;
+                case NODE_LCHT:
+                    strcat(str,"in local chat with sysop");
+                    break;
+                case NODE_MCHT:
+                    if(node->aux) {
+                        sprintf(str+strlen(str),"in multinode chat channel %d"
+                            ,node->aux&0xff);
+                        if(node->aux&0x1f00) { /* password */
+                            strcat(str,"* ");
+                            unpackchatpass(str+strlen(str),node);
+                        }
+                    }
+                    else
+                        strcat(str,"in multinode global chat channel");
+                    break;
+                case NODE_PAGE:
+                    sprintf(str+strlen(str)
+						,"paging node %u for private chat",node->aux);
+                    break;
+                case NODE_PCHT:
+                    if(!node->aux)
+                        strcat(str,"in local chat with sysop");
+                    else
+                        sprintf(str+strlen(str)
+							,"in private chat with node %u"
+                            ,node->aux);
+                    break;
+                case NODE_GCHT:
+                    strcat(str,"chatting with The Guru");
+                    break;
+                case NODE_CHAT:
+                    strcat(str,"in chat section");
+                    break;
+                case NODE_TQWK:
+                    strcat(str,"transferring QWK packet");
+                    break;
+                case NODE_SYSP:
+                    strcat(str,"performing sysop activities");
+                    break;
+                default:
+                    itoa(node->action,str+strlen(str),10);
+                    break;  
+			}
+            if(!node->connection)
+                strcat(str," locally");
+            if(node->connection==0xffff) {
+                strcat(str," via telnet");
+            } else
+                sprintf(str+strlen(str)," at %ubps",node->connection);
+            if(node->action==NODE_DLNG) {
+                if((node->aux/60)>=12) {
+                    if(node->aux/60==12)
+                        hour=12;
+                    else
+                        hour=(node->aux/60)-12;
+                    mer="pm";
+                } else {
+                    if((node->aux/60)==0)    /* 12 midnite */
+                        hour=12;
+                    else hour=node->aux/60;
+                    mer="am";
+                }
+                sprintf(str+strlen(str), " ETA %02d:%02d %s"
+                    ,hour,node->aux-((node->aux/60)*60),mer);
+            }
+            break; 
+	}
+    if(node->misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
+        strcat(str," (");
+        if(node->misc&NODE_AOFF)
+            strcat(str,"A");
+        if(node->misc&NODE_LOCK)
+            strcat(str,"L");
+        if(node->misc&(NODE_MSGW|NODE_NMSG))
+            strcat(str,"M");
+        if(node->misc&NODE_POFF)
+            strcat(str,"P");
+        strcat(str,")"); 
+	}
+    if(((node->misc
+        &(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
+        || node->status==NODE_QUIET)) {
+        strcat(str," [");
+        if(node->misc&NODE_ANON)
+            strcat(str,"A");
+        if(node->misc&NODE_INTR)
+            strcat(str,"I");
+        if(node->misc&NODE_RRUN)
+            strcat(str,"R");
+        if(node->misc&NODE_UDAT)
+            strcat(str,"U");
+        if(node->status==NODE_QUIET)
+            strcat(str,"Q");
+        if(node->misc&NODE_EVENT)
+            strcat(str,"E");
+        if(node->misc&NODE_DOWN)
+            strcat(str,"D");
+        if(node->misc&NODE_LCHAT)
+            strcat(str,"C");
+        strcat(str,"]"); 
+	}
+    if(node->errors)
+        sprintf(str+strlen(str)
+			," %d error%c",node->errors, node->errors>1 ? 's' : '\0' );
+
+	strncpy(buf,str,buflen);
+
+	return(buf);
+}
+
 /****************************************************************************/
 /* Displays the information for node number 'number' contained in 'node'    */
 /****************************************************************************/
 void DLLCALL printnodedat(scfg_t* cfg, uint number, node_t* node)
 {
-	char	mer[3];
-	char	tmp[128];
-    int		hour;
+	char	status[128];
 
-	printf("Node %2d: ",number);
-	if(node==NULL) {
-		printf("(null)");
-		return;
-	}
-	switch(node->status) {
-		case NODE_WFC:
-			printf("Waiting for call");
-			break;
-		case NODE_OFFLINE:
-			printf("Offline");
-			break;
-		case NODE_NETTING:
-			printf("Networking");
-			break;
-		case NODE_LOGON:
-			printf("At logon prompt");
-			break;
-		case NODE_EVENT_WAITING:
-			printf("Waiting for all nodes to become inactive");
-			break;
-		case NODE_EVENT_LIMBO:
-			printf("Waiting for node %d to finish external event",node->aux);
-			break;
-		case NODE_EVENT_RUNNING:
-			printf("Running external event");
-			break;
-		case NODE_NEWUSER:
-			printf("New user");
-			printf(" applying for access ");
-			if(!node->connection)
-				printf("locally");
-			else if(node->connection==0xffff)
-				printf("via telnet");
-			else
-				printf("at %ubps",node->connection);
-			break;
-		case NODE_QUIET:
-		case NODE_INUSE:
-			printf("%s ",username(cfg, node->useron, tmp));
-			switch(node->action) {
-				case NODE_MAIN:
-					printf("at main menu");
-					break;
-				case NODE_RMSG:
-					printf("reading messages");
-					break;
-				case NODE_RMAL:
-					printf("reading mail");
-					break;
-				case NODE_RSML:
-					printf("reading sent mail");
-					break;
-				case NODE_RTXT:
-					printf("reading text files");
-					break;
-				case NODE_PMSG:
-					printf("posting message");
-					break;
-				case NODE_SMAL:
-					printf("sending mail");
-					break;
-				case NODE_AMSG:
-					printf("posting auto-message");
-					break;
-				case NODE_XTRN:
-					if(!node->aux)
-						printf("at external program menu");
-					else
-						printf("running external program #%d",node->aux);
-					break;
-				case NODE_DFLT:
-					printf("changing defaults");
-					break;
-				case NODE_XFER:
-					printf("at transfer menu");
-					break;
-				case NODE_RFSD:
-					printf("retrieving from device #%d",node->aux);
-					break;
-				case NODE_DLNG:
-					printf("downloading");
-					break;
-				case NODE_ULNG:
-					printf("uploading");
-					break;
-				case NODE_BXFR:
-					printf("transferring bidirectional");
-					break;
-				case NODE_LFIL:
-					printf("listing files");
-					break;
-				case NODE_LOGN:
-					printf("logging on");
-					break;
-				case NODE_LCHT:
-					printf("in local chat with sysop");
-					break;
-				case NODE_MCHT:
-					if(node->aux) {
-						printf("in multinode chat channel %d",node->aux&0xff);
-						if(node->aux&0x1f00) { /* password */
-							putchar('*');
-							printf(" %s",unpackchatpass(tmp,node)); 
-						}
-					} else
-						printf("in multinode global chat channel");
-					break;
-				case NODE_PAGE:
-					printf("paging node %u for private chat",node->aux);
-					break;
-				case NODE_PCHT:
-					printf("in private chat with node %u",node->aux);
-					break;
-				case NODE_GCHT:
-					printf("chatting with The Guru");
-					break;
-				case NODE_CHAT:
-					printf("in chat section");
-					break;
-				case NODE_TQWK:
-					printf("transferring QWK packet");
-					break;
-				case NODE_SYSP:
-					printf("performing sysop activities");
-					break;
-				default:
-					printf(ultoa(node->action,tmp,10));
-					break;  }
-			if(!node->connection)
-				printf(" locally");
-			else if(node->connection==0xffff)
-				printf(" via telnet");
-			else
-				printf(" at %ubps",node->connection);
-			if(node->action==NODE_DLNG) {
-				if((node->aux/60)>=12) {
-					if(node->aux/60==12)
-						hour=12;
-					else
-						hour=(node->aux/60)-12;
-					strcpy(mer,"pm"); 
-				} else {
-					if((node->aux/60)==0)    /* 12 midnite */
-						hour=12;
-					else hour=node->aux/60;
-					strcpy(mer,"am"); 
-				}
-				printf(" ETA %02d:%02d %s"
-					,hour,node->aux-((node->aux/60)*60),mer); 
-			}
-			break; 
-}
-	if(node->misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
-		printf(" (");
-		if(node->misc&NODE_AOFF)
-			putchar('A');
-		if(node->misc&NODE_LOCK)
-			putchar('L');
-		if(node->misc&(NODE_MSGW|NODE_NMSG))
-			putchar('M');
-		if(node->misc&NODE_POFF)
-			putchar('P');
-		putchar(')'); 
-	}
-	if(((node->misc
-		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
-		|| node->status==NODE_QUIET)) {
-		printf(" [");
-		if(node->misc&NODE_ANON)
-			putchar('A');
-		if(node->misc&NODE_INTR)
-			putchar('I');
-		if(node->misc&NODE_RRUN)
-			putchar('R');
-		if(node->misc&NODE_UDAT)
-			putchar('U');
-		if(node->status==NODE_QUIET)
-			putchar('Q');
-		if(node->misc&NODE_EVENT)
-			putchar('E');
-		if(node->misc&NODE_DOWN)
-			putchar('D');
-		if(node->misc&NODE_LCHAT)
-			putchar('C');
-		putchar(']'); 
-	}
-	if(node->errors)
-		printf(" %d error%c",node->errors, node->errors>1 ? 's' : '\0' );
-	printf("\n");
+	printf("Node %2d: %s\n",number,nodestatus(cfg,node,status,sizeof(status)));
 }
 
 /****************************************************************************/
