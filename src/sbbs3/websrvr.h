@@ -80,7 +80,7 @@ typedef struct {
     char    ctrl_dir[128];
     char	root_dir[128];			/* HTML root directory */
     char	error_dir[128];			/* relative to root_dir */
-    char	cgi_temp_dir[128];
+    char	temp_dir[128];
     char**	index_file_name;		/* Index filenames */
 	char	logfile_base[128];		/* Logfile base name (date is appended) */
 	char	answer_sound[128];

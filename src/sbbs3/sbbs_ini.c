@@ -148,9 +148,9 @@ void sbbs_read_ini(
 	,services_startup_t*	services
 	)
 {
+	const char* p;
 	const char*	section;
 	const char* default_term_ansi;
-	const char*	default_cgi_temp;
 	const char*	default_dosemu_path;
 	char		value[INI_MAX_VALUE_LEN];
 	global_startup_t global_buf;
@@ -171,6 +171,7 @@ void sbbs_read_ini(
 	if(global->temp_dir[0]) {
 		if(bbs!=NULL)		SAFECOPY(bbs->temp_dir,global->temp_dir);
 		if(ftp!=NULL)		SAFECOPY(ftp->temp_dir,global->temp_dir);
+		if(web!=NULL)		SAFECOPY(web->temp_dir,global->temp_dir);
 	}
 													
 	/***********************************************************************/
@@ -301,6 +302,13 @@ void sbbs_read_ini(
 			,iniReadString(fp,section,"HangupSound",nulstr,value));
 		SAFECOPY(ftp->hack_sound
 			,iniReadString(fp,section,"HackAttemptSound",nulstr,value));
+
+		if(ftp->temp_dir[0])
+			p=ftp->temp_dir;
+		else
+			p=_PATH_TMP;
+		SAFECOPY(ftp->temp_dir
+			,iniReadString(fp,section,strTempDirectory,p,value));
 
 		ftp->log_mask
 			=iniReadBitField(fp,section,strLogMask,log_mask_bits,global->log_mask);
@@ -492,10 +500,12 @@ void sbbs_read_ini(
 		web->max_cgi_inactivity
 			=iniReadShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
 
-
-		default_cgi_temp = _PATH_TMP;
-		SAFECOPY(web->cgi_temp_dir
-			,iniReadString(fp,section,"CGITempDirectory",default_cgi_temp,value));
+		if(web->temp_dir[0])
+			p=web->temp_dir;
+		else
+			p=_PATH_TMP;
+		SAFECOPY(web->temp_dir
+			,iniReadString(fp,section,strTempDirectory,p,value));
 
 		web->log_mask
 			=iniReadBitField(fp,section,strLogMask,log_mask_bits,global->log_mask);
@@ -1043,7 +1053,7 @@ BOOL sbbs_write_ini(
 		if(!iniSetShortInt(lp,section,"MaxCgiInactivity",web->max_cgi_inactivity,&style))
 			break;
 
-		if(!iniSetString(lp,section,"CGITempDirectory",web->cgi_temp_dir,&style))
+		if(!iniSetString(lp,section,"TempDirectory",web->temp_dir,&style))
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,web_options,web->options,&style))
