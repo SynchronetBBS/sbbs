@@ -70,15 +70,15 @@ that I need to "lay down the law". So here we go:
 
 The following actions are not allowed:
 
-	1. Excessive personal attacks
-	2. Excessive use of profanity
-	3. Excessive off-topic messages
-	4. Excessive advertisements
-	5. Excessive use of capital letters
-	6. Excessive use of non-English text
+        1. Excessive personal attacks
+        2. Excessive use of profanity
+        3. Excessive off-topic messages
+        4. Excessive advertisements
+        5. Excessive use of capital letters
+        6. Excessive use of non-English text
         7. Encoded, encrypted, or otherwise indecipherable messages
-	8. Fraudulent messages
-	9. Impersonating someone you are not
+        8. Fraudulent messages
+        9. Impersonating someone you are not
 
 How do you know if an action constitutes "excessive" behavior or not? Compare
 your actions to those of other long-time DOVE-Net sysops and users. If your
@@ -164,9 +164,8 @@ you'll need to connect using a scripted Telnet or FTP client (details follow).
 Using a Scripted Telnet Client for QWKnet Transfers
 ---------------------------------------------------
 Any Telnet client that supports scripting should work. I've included a script
-for ZOC (Telnet client for Windows and OS/2) written by PistolGrip
-(sysop@wasteland.darktech.org). This script and instructions on how to use it
-are included in ZOCQWK11.ZIP.
+for ZOC (Telnet client for Windows and OS/2) written by PistolGrip. This
+script and instructions on how to use it are included in ZOCQWK11.ZIP.
 
 
 Using a Scripted FTP Client for QWKnet Transfers
@@ -200,6 +199,49 @@ This is the preferred method of QWKnet packet transfers.
    to "*QNET-FTP VERT dove.synchro.net YOURPASS" but replace YOURPASS with the
    password you used when creating your QWKnet account on Vertrauen. The rest
    of the command line must be exactly as shown above.
+
+
+Example Configuration (in SCFG->Networks->QWK->Hubs->VERT):
+-----------------------------------------------------------
+Hub System ID              VERT
+
+Win32:
+Pack Command Line          %!pkzip %f %s
+Unpack Command Line        %!pkunzip -o %f %g %s
+
+Unix:
+Pack Command Lineb         zip -j -D %f %s
+Unpack Command Line        unzip -o -j %f %s -d %g
+
+Call-out Command Line      *qnet-ftp VERT dove.synchro.net YOURPASS
+Call-out Node              1
+Call-out Days              All
+Call-out Frequency         4 times a day
+
+Networked Sub-boards...
+
+2001  DOVE-Net        General
+2002  DOVE-Net        Advertisements
+2003  DOVE-Net        Entertainment
+2004  DOVE-Net        Debate
+2005  DOVE-Net        Hardware/Software Help
+2006  DOVE-Net        Programming
+2009  DOVE-Net        Unix Discussion
+2015  DOVE-Net        HAM Radio
+2016  DOVE-Net        Internet Discussion
+2017  DOVE-Net        Pro-Audio Discussion
+2018  DOVE-Net        Firearms Discussion
+2019  DOVE-Net        Sports Discussion
+2020  DOVE-Net        Religious Discussion/Debate/Evangelism
+2021  DOVE-Net        Hobby Corner (RC/modeling/etc)
+2030  DOVE-Net        Synchronet Announcements
+2007  DOVE-Net        Synchronet Discussion
+2008  DOVE-Net        Synchronet Sysops Only
+2011  DOVE-Net        Synchronet Programming (Baja)
+2012  DOVE-Net        Synchronet Programming (JavaScript)
+2014  DOVE-Net        Synchronet Programming (C/C++ and CVS)
+2013  DOVE-Net        Synchronet Data
+2010  DOVE-Net        DOVE-Net Sysops Only
 
 
 Terminology (as used in this document)
@@ -289,8 +331,8 @@ Note: Include extraneous control files (CONTROL.DAT, DOOR.ID, NETFLAGS.DAT)
 
 DOVE-Net QWK Conference Numbers on Vertrauen
 ============================================
-Conf  Name					Access Requirements
-----  --------------------------------------	-------------------
+Conf  Name                                      Access Requirements
+----  --------------------------------------    -------------------
 2001  General
 2002  Advertisements
 2003  Entertainment
@@ -307,12 +349,12 @@ Conf  Name					Access Requirements
 2021 *Hobby Corner (RC/modeling/etc)
 2030 *Synchronet Announcements
 2007  Synchronet Discussion
-2008  Synchronet Sysops Only			LEVEL 90 OR REST Q
+2008  Synchronet Sysops Only                    LEVEL 90 OR REST Q
 2011  Synchronet Programming (Baja)
 2012 *Synchronet Programming (JavaScript)
 2014  Synchronet Programming (C/C++ and CVS)
-2013  Synchronet Data				LEVEL 90 OR REST Q
-2010  DOVE-Net Sysops Only			LEVEL 90 OR REST Q
+2013  Synchronet Data                           LEVEL 90 OR REST Q
+2010  DOVE-Net Sysops Only                      LEVEL 90 OR REST Q
 
 * - Added in April, 2004
 
@@ -358,7 +400,7 @@ Synchronet Data        <=> SYNCDATA echo on the FidoNet Zone 1 Backbone
 
 Contact Information
 -------------------
-Vertrauen:      telnet/ftp/nntp/gopher/finger: vert.synchro.net
-Co-founder:     rob [at] synchro.net
+Vertrauen:      telnet/http/ftp/nntp/gopher/finger: vert.synchro.net
+Co-founder:     rob [at] synchro [dot] net
 
 /* End of DOVE-NET.TXT */
