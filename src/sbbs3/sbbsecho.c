@@ -3254,7 +3254,8 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 			memset(&outpkt[i],0,sizeof(outpkt_t)); }
 		totalpkts=openpkts=0;
 		attach_bundles();
-		attachment(0,faddr,ATTACHMENT_NETMAIL);
+		if(!(misc&FLO_MAILER))
+			attachment(0,faddr,ATTACHMENT_NETMAIL);
 		return; }
 
 	if(fbuf==NULL) {
@@ -3491,6 +3492,10 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		if(hdr.attr&FIDO_LOCAL && !(misc&LOCAL_NETMAIL)) {
 			printf("Created locally");
 			return(4); 
+		}
+		if(hdr.attr&FIDO_INTRANS) {
+			printf("In-transit");
+			return(5);
 		}
 	}
 
