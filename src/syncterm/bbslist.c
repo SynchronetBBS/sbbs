@@ -278,7 +278,7 @@ struct bbslist *show_bbslist(int mode, char *path)
 						"~ CTRL-E ~ Switch listing to Edit mode\n"
 						"~ CTRL-D ~ Switch listing to Dial mode\n"
 						"Select a bbs to edit/dial an entry.";
-		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)|WIN_SAV|WIN_MID|WIN_INS|WIN_DEL|WIN_EXTKEYS,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Select BBS":"Edit BBS",(char **)list);
+		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)|WIN_SAV|WIN_MID|WIN_INS|WIN_DEL|WIN_EXTKEYS|WIN_INSACT,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Select BBS":"Edit BBS",(char **)list);
 		if(val==listcount)
 			val=listcount|MSK_INS;
 		if(val<0) {
@@ -368,12 +368,12 @@ struct bbslist *show_bbslist(int mode, char *path)
 							list[listcount-1]->password[0]=0;
 							list[listcount-1]->reversed=0;
 						}
+						add_bbs(listpath,list[listcount-1]);
 						sort_list(list);
 						for(j=0;list[j]->name[0];j++) {
 							if(list[j]->id==listcount-1)
 								opt=j;
 						}
-						add_bbs(listpath,list[listcount-1]);
 					}
 					break;
 				case MSK_DEL:
