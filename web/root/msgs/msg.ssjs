@@ -1,11 +1,11 @@
 load("html_inc/msgslib.ssjs");
 load("html_inc/mime_decode.ssjs");
 
-template.can_delete=can_delete(m)
-
 if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
+
+template.can_delete=can_delete(m);
 
 if(sub=='mail') {
 	template.group=new Object;
