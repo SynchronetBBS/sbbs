@@ -273,7 +273,7 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 	char	tmp[13];
 
 	strcpy(tmp,"QUOTES.TXT");
-	if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+	if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
 		strlwr(tmp);
 	sprintf(str,"%s%s",cfg.node_dir,tmp);
 	remove(str);

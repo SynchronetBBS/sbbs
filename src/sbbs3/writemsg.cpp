@@ -121,7 +121,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 
 		else if(yesno(text[QuoteMessageQ])) {
 			strcpy(tmp,"QUOTES.TXT");
-			if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+			if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
 				strlwr(tmp);
 			sprintf(str,"%s%s",cfg.node_dir,tmp);
 			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
@@ -211,7 +211,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			close(file); } }
 	else {
 		strcpy(tmp,"QUOTES.TXT");
-		if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",cfg.node_dir,tmp);
 		remove(str); }
@@ -462,7 +462,7 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 		close(file); }
 	else {
 		strcpy(tmp,"EDITOR.INF");
-		if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",cfg.node_dir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
