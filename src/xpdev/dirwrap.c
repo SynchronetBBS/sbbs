@@ -407,7 +407,7 @@ BOOL DLLCALL fexistcase(char *path)
 		strncat(globme,tmp,MAX_PATH*4);
 	}
 	if(strcspn(path,"?*")!=strlen(path))  {
-		strncpy(path,globme,MAX_PATH);
+		sprintf(path,"%.*s",MAX_PATH,globme);
 		return(fexist(path));
 	}
 
@@ -428,7 +428,7 @@ BOOL DLLCALL fexistcase(char *path)
 				break;
 		}
 		if(i<glb.gl_pathc)  {
-			strncpy(path,glb.gl_pathv[i],MAX_PATH);
+			sprintf(path,"%.*s",MAX_PATH,glb.gl_pathv[i]);
 			globfree(&glb);
 			return TRUE;
 		}
