@@ -36,16 +36,16 @@
  ****************************************************************************/
 
 
-// Pre-define RINGBUF_USE_STD_RTL to use standard C runtime library symbols
-// for malloc, free, and memcpy
+/* Pre-define RINGBUF_USE_STD_RTL to use standard C runtime library symbols
+   for malloc, free, and memcpy
+ */
 
 #ifndef _RINGBUF_H_
 #define _RINGBUF_H_
 
-/* #ifdef RINGBUF_MUTEX */
-/* Needed for YIELD() definition also are ringbuffers ever used in non-threaded bits? */
-#include "threadwrap.h"
-/* #endif */
+#ifdef RINGBUF_MUTEX
+#include "threadwrap.h"	/* pthread_mutex_t */
+#endif
 
 #ifndef DWORD
 #define DWORD unsigned long
@@ -73,7 +73,7 @@
 
 typedef struct {
 
-	BYTE* 	pStart;			/* buffer must be accessable at interrupt time */
+	BYTE* 	pStart;
 	BYTE* 	pHead;			/* next space available for data */
 	BYTE* 	pTail;			/* next byte to be consumed */
 	BYTE* 	pEnd; 			/* end of the buffer, used for wrap around */
