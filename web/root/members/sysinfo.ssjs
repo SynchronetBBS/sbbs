@@ -18,7 +18,7 @@ else {
 	if(f.open("rb",true))
 		template.logon=f.read();
 }
-template.logon.replace(/\r?\n/g,"\r\n");
+template.logon=template.logon.replace(/\r?\n/g,"\r\n");
 template.logon=html_encode(template.logon,true,false,true,true);
 
 template.fidoaddrs=new Array;
