@@ -125,6 +125,7 @@ for(n=0;n<system.node_list.length;n++) {
 				,user.gender
 				));
 		t=time()-user.logontime;
+        if(t<0) t=0;
 		write(format(
 			"<td align=center>%u:%02u:%02u"
 			,Math.floor(t/(60*60))
