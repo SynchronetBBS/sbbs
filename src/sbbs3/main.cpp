@@ -997,6 +997,12 @@ void event_thread(void* arg)
 		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
 			lprintf("!JavaScript Initialization FAILURE");
 	}
+
+	if(sbbs->js_cx!=NULL) {
+		/* User class */
+		if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &scfg)==NULL) 
+			lprintf("Node %d !JavaScript ERROR creating user class",sbbs->cfg.node_num);
+	}
 #endif
 
 	while(!sbbs->terminated && telnet_socket!=INVALID_SOCKET) {
