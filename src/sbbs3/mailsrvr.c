@@ -579,6 +579,8 @@ static void pop3_thread(void* arg)
 	sprintf(str,"POP3: %s", host_ip);
 	status(str);
 
+	mail=NULL;
+
 	do {
 		memset(&smb,0,sizeof(smb));
 		memset(&msg,0,sizeof(msg));
