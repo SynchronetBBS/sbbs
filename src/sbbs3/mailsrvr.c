@@ -761,7 +761,7 @@ static void pop3_thread(void* arg)
 			break;
 
 		p=buf+5;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		if(apop) {
 			if((response=strrchr(p,' '))!=NULL)
 				*(response++)=0;
@@ -776,7 +776,7 @@ static void pop3_thread(void* arg)
 				break;
 			}
 			p=buf+5;
-			while(*p && *p<=' ') p++;
+			SKIP_WHITESPACE(p);
 			SAFECOPY(password,p);
 		}
 		user.number=matchuser(&scfg,username,FALSE /*sysop_alias*/);
@@ -943,7 +943,7 @@ static void pop3_thread(void* arg)
 			}
 			if(!strnicmp(buf, "LIST",4) || !strnicmp(buf,"UIDL",4)) {
 				p=buf+4;
-				while(*p && *p<=' ') p++;
+				SKIP_WHITESPACE(p);
 				if(isdigit(*p)) {
 					msgnum=atol(p);
 					if(msgnum<1 || msgnum>msgs) {
@@ -1037,12 +1037,12 @@ static void pop3_thread(void* arg)
 
 				lines=-1;
 				p=buf+4;
-				while(*p && *p<=' ') p++;
+				SKIP_WHITESPACE(p);
 				msgnum=atol(p);
 
 				if(!strnicmp(buf,"TOP ",4)) {
-					while(*p && isdigit(*p)) p++;
-					while(*p && *p<=' ') p++;
+					SKIP_DIGIT(p);
+					SKIP_WHITESPACE(p);
 					lines=atol(p);
 				}
 				if(msgnum<1 || msgnum>msgs) {
@@ -1121,7 +1121,7 @@ static void pop3_thread(void* arg)
 			}
 			if(!strnicmp(buf, "DELE ",5)) {
 				p=buf+5;
-				while(*p && *p<=' ') p++;
+				SKIP_WHITESPACE(p);
 				msgnum=atol(p);
 
 				if(msgnum<1 || msgnum>msgs) {
@@ -1262,7 +1262,7 @@ static ulong dns_blacklisted(SOCKET sock, IN_ADDR addr, char* host_name, char* l
 		truncsp(str);
 
 		p=str;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		if(*p==';' || *p==0) /* comment or blank line */
 			continue;
 
@@ -1270,7 +1270,7 @@ static ulong dns_blacklisted(SOCKET sock, IN_ADDR addr, char* host_name, char* l
 
 		/* terminate */
 		tp = p;
-		while(*tp && *tp>' ') tp++;
+		FIND_WHITESPACE(tp);
 		*tp=0;	
 
 		found = rblchk(sock, addr.s_addr, p);
@@ -1289,7 +1289,7 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	char	addr[64];
 	char	tmp[128];
 
-	while(*p && *p<=' ') p++;
+	SKIP_WHITESPACE(p);
 	if(*p=='<') p++;		/* Skip '<' */
 	SAFECOPY(addr,p);
 	truncstr(addr,">( ");
@@ -1320,7 +1320,8 @@ static void signal_smtp_sem(void)
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
-static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath, char* cmd)
+static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
+						,char* host, char* ip, uint usernum, char* cmd)
 {
 	char	str[256];
     int		i,j,len;
@@ -1333,6 +1334,12 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
             switch(toupper(instr[i])) {
 				case 'E':
 					strcat(cmd,errpath);
+					break;
+				case 'H':
+					strcat(cmd,host);
+					break;
+				case 'I':
+					strcat(cmd,ip);
 					break;
                 case 'G':   /* Temp directory */
                     strcat(cmd,scfg.temp_dir);
@@ -1358,6 +1365,7 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
                     break;
                 case 'V':   /* Synchronet Version */
                     sprintf(str,"%s%c",VERSION,REVISION);
+					strcat(cmd,str);
                     break;
                 case 'Z':
                     strcat(cmd,scfg.text_dir);
@@ -1375,6 +1383,10 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
 					SAFECOPY(str,PLATFORM_DESC);
 #endif
 					strlwr(str);
+					strcat(cmd,str);
+					break;
+				case 'U':	/* User number */
+					sprintf(str,"%u",usernum);
 					strcat(cmd,str);
 					break;
                 default:    /* unknown specification */
@@ -1405,13 +1417,13 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 
 	if(!strnicmp(buf, "TO:",3)) {
 		p=buf+3;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		truncsp(p);
 		return smb_hfield(msg, *type=RFC822TO, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "REPLY-TO:",9)) {
 		p=buf+9;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		truncsp(p);
 		smb_hfield(msg, *type=RFC822REPLYTO, (ushort)strlen(p), p);
 		if(*p=='<')  {
@@ -1424,13 +1436,13 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 	}
 	if(!strnicmp(buf, "FROM:", 5)) {
 		p=buf+5;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		truncsp(p);
 		return smb_hfield(msg, *type=RFC822FROM, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "ORGANIZATION:",13)) {
 		p=buf+13;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		return smb_hfield(msg, *type=SENDERORG, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "DATE:",5)) {
@@ -1441,12 +1453,12 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 	}
 	if(!strnicmp(buf, "MESSAGE-ID:",11)) {
 		p=buf+11;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		return smb_hfield(msg, *type=RFC822MSGID, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "IN-REPLY-TO:",12)) {
 		p=buf+12;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		return smb_hfield(msg, *type=RFC822REPLYID, (ushort)strlen(p), p);
 	}
 	/* Fall-through */
@@ -1472,9 +1484,8 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result,
 		if(p==NULL)
 			break;
 		p+=4;
-		while(*p && isspace(*p))
-			p++;
-		if(!*p)
+		SKIP_WHITESPACE(p);
+		if(*p==0)
 			break;
 		p2=host_name;
 		for(;*p && !isspace(*p) && p2<host_name+126;p++)  {
@@ -1855,11 +1866,12 @@ static void smtp_thread(void* arg)
 							break;
 						truncsp(tmp);
 						p=tmp;
-						while(*p && *p<=' ') p++;
+						SKIP_WHITESPACE(p);
 						if(*p==';' || *p==0)	/* comment or blank line */
 							continue;
 						lprintf("%04d SMTP executing external process: %s", socket, p);
-						system(mailcmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname, str));
+						system(mailcmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname
+											,host_name, host_ip, relay_user.number, str));
 						if(flength(proc_err_fname)>0)
 							break;
 						if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname))
@@ -1924,7 +1936,7 @@ static void smtp_thread(void* arg)
 
 					if(!strnicmp(buf, "SUBJECT:",8)) {
 						p=buf+8;
-						while(*p && *p<=' ') p++;
+						SKIP_WHITESPACE(p);
 						if(relay_user.number==0	&& dnsbl_result.s_addr && startup->dnsbl_tag[0]
 							&& !(startup->options&MAIL_OPT_DNSBL_IGNORE)) {
 							sprintf(str,"%.*s: %.*s"
@@ -1966,7 +1978,7 @@ static void smtp_thread(void* arg)
 						tp++;
 					else
 						tp=p;
-					while(*tp && *tp<=' ') tp++;
+					SKIP_WHITESPACE(tp);
 					SAFECOPY(sender_addr,tp);
 					truncstr(sender_addr,">( ");
 
@@ -2147,12 +2159,13 @@ static void smtp_thread(void* arg)
 
 					smb_hfield(&newmsg, RECIPIENT, (ushort)strlen(rcpt_name), rcpt_name);
 
+					newmsg.idx.to=usernum;
 					if(nettype==NET_NONE) {	/* Local destination */
-						newmsg.idx.to=usernum;
 						sprintf(str,"%u",usernum);
 						smb_hfield(&newmsg, RECIPIENTEXT, (ushort)strlen(str), str);
 					} else {
-						newmsg.idx.to=0;
+						if(nettype!=NET_QWK)
+							newmsg.idx.to=0;
 						smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
 						smb_hfield(&newmsg, RECIPIENTNETADDR
 							,(ushort)strlen(rcpt_addr), rcpt_addr);
@@ -2229,7 +2242,7 @@ static void smtp_thread(void* arg)
 		lprintf("%04d SMTP RX: %s", socket, buf);
 		if(!strnicmp(buf,"HELO",4)) {
 			p=buf+4;
-			while(*p && *p<=' ') p++;
+			SKIP_WHITESPACE(p);
 			SAFECOPY(hello_name,p);
 			sockprintf(socket,"250 %s",startup->host_name);
 			esmtp=FALSE;
@@ -2241,7 +2254,7 @@ static void smtp_thread(void* arg)
 		}
 		if(!strnicmp(buf,"EHLO",4)) {
 			p=buf+4;
-			while(*p && *p<=' ') p++;
+			SKIP_WHITESPACE(p);
 			SAFECOPY(hello_name,p);
 			sockprintf(socket,"250-%s",startup->host_name);
 			sockprintf(socket,"250 AUTH PLAIN LOGIN CRAM-MD5");
@@ -2464,7 +2477,7 @@ static void smtp_thread(void* arg)
 			p=buf+10;
 			if(!chk_email_addr(socket,p,host_name,host_ip,NULL,NULL))
 				break;
-			while(*p && *p<=' ') p++;
+			SKIP_WHITESPACE(p);
 			SAFECOPY(reverse_path,p);
 
 			/* Update client display */
@@ -2499,7 +2512,7 @@ static void smtp_thread(void* arg)
 #if 0	/* No one uses this command */
 		if(!strnicmp(buf,"VRFY",4)) {
 			p=buf+4;
-			while(*p && *p<=' ') p++;
+			SKIP_WHITESPACE(p);
 			if(*p==0) {
 				sockprintf(socket,"550 No user specified.");
 				continue;
@@ -2521,7 +2534,7 @@ static void smtp_thread(void* arg)
 			}
 
 			p=buf+8;
-			while(*p && *p<=' ') p++;
+			SKIP_WHITESPACE(p);
 			SAFECOPY(str,p);
 			p=strrchr(str,'<');
 			if(p==NULL)
@@ -2669,13 +2682,13 @@ static void smtp_thread(void* arg)
 			tp=strchr(p,'!');	/* Routed QWKnet mail in <qwkid!user@host> format */
 			if(tp!=NULL) {
 				*(tp++)=0;
-				while(*tp && *tp=='"') tp++;	/* Skip '"' */
+				SKIP_CHAR(tp,'"');				/* Skip '"' */
 				truncstr(tp,"\"");				/* Strip '"' */
 				SAFECOPY(rcpt_addr,tp);
 				routed=TRUE;
 			}
 
-			while(*p && !isalnum(*p)) p++;	/* Skip '<' or '"' */
+			FIND_ALPHANUMERIC(p);				/* Skip '<' or '"' */
 			truncstr(p,"\"");	
 
 			p=alias(&scfg,p,name_alias_buf);
@@ -2824,8 +2837,13 @@ static void smtp_thread(void* arg)
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_INTERNET);
 				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),user.netmail);
 				sockprintf(socket,"251 User not local; will forward to %s", user.netmail);
-			} else /* Local (no-forward) */
+			} else { /* Local (no-forward) */
+				if(routed) { /* QWKnet */
+					fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_QWK);
+					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),user.alias);
+				}						
 				sockprintf(socket,ok_rsp);
+			}
 			state=SMTP_STATE_RCPT_TO;
 			continue;
 		}
