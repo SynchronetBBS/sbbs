@@ -180,6 +180,8 @@ ftpGetSize(ftp_FILE *fp, char *name)
 	FTP_t ftp = fcookie(fp);
 	off_t size;
 
+	if(ftp==NULL)
+		return (off_t)-1;
     ftpPassive(fp,TRUE);
 	sprintf(p, "SIZE %s\r\n", name);
 	if (ftp->is_verbose)
@@ -189,7 +191,6 @@ ftpGetSize(ftp_FILE *fp, char *name)
 	i = get_a_number(ftp, &cp);
 	if (check_code(ftp, i, 213))
 		return (off_t)-1;
-
 	errno = 0;				/* to check for ERANGE */
 	size = (off_t)strtoq(cp, &ep, 10);
 	if (*ep != '\0' || errno == ERANGE)
@@ -254,7 +255,8 @@ ftpPassive(ftp_FILE *fp, int st)
 {
     FTP_t ftp = fcookie(fp);
 
-    ftp->is_passive = !!st;	/* normalize "st" to zero or one */
+	if(ftp!=NULL)
+		ftp->is_passive = !!st;	/* normalize "st" to zero or one */
     return SUCCESS;
 }
 
@@ -769,10 +771,12 @@ ftp_file_op(FTP_t ftp, char *operation, char *file, ftp_FILE **fp, char *mode, o
 	close(s);
 	*fp = ftpdopen(fd, mode);
     }
-    if (*fp)
-	return SUCCESS;
+    if (*fp) {
+		(*fp)->_cookie=ftp;
+		return SUCCESS;
+	}
     else
-	return FAILURE;
+		return FAILURE;
 }
 
 struct ftperr ftpErrList[] = {  
