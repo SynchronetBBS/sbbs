@@ -77,18 +77,19 @@ static void read_ini_globals(FILE* fp, global_startup_t* global)
 {
 	const char* section = "Global";
 	char		value[INI_MAX_VALUE_LEN];
+	char*		p;
 
-	if(*iniReadString(fp,section,"CtrlDirectory",nulstr,value)) {
+	if(*(p=iniReadString(fp,section,"CtrlDirectory",nulstr,value))) {
 	    SAFECOPY(global->ctrl_dir,value);
 		backslash(global->ctrl_dir);
     }
 
-	if(*iniReadString(fp,section,"TempDirectory",nulstr,value)) {
+	if(*(p=iniReadString(fp,section,"TempDirectory",nulstr,value))) {
 	    SAFECOPY(global->temp_dir,value);
 		backslash(global->temp_dir);
     }
 
-	if(*iniReadString(fp,section,strHostName,nulstr,value))
+	if(*(p=iniReadString(fp,section,strHostName,nulstr,value)))
         SAFECOPY(global->host_name,value);
 
 	global->sem_chk_freq=iniReadShortInt(fp,section,strSemFileCheckFrequency,0);
