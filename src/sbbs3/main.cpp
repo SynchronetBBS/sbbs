@@ -1214,7 +1214,7 @@ void output_thread(void* arg)
 
 		/* Check socket for writability (using select) */
 		tv.tv_sec=0;
-		tv.tv_usec=0;
+		tv.tv_usec=1000;
 
 		FD_ZERO(&socket_set);
 		FD_SET(sbbs->client_socket,&socket_set);
@@ -1226,11 +1226,9 @@ void output_thread(void* arg)
 			if(sbbs->cfg.node_num)	/* Only break if node output (not server) */
 				break;
 			RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
-			YIELD();
 			continue;
 		}
 		if(i<1) {
-			YIELD();
 			continue;
 		}
 
@@ -3857,10 +3855,8 @@ void DLLCALL bbs_thread(void* arg)
 		tv.tv_usec=0;
 
 		if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
-			if(i==0) {
-				YIELD();
+			if(i==0)
 				continue;
-			}
 			if(ERROR_VALUE==EINTR)
 				lprintf("Telnet Server listening interrupted");
 			else if(ERROR_VALUE == ENOTSOCK)
