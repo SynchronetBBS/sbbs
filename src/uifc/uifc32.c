@@ -1143,7 +1143,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	if(mode&WIN_T2B)
 		top=(api->scrn_len/2)-(height/2)-2;
 	if(mode&WIN_L2R)
-		left=36-(width/2);
+		left=(s_right-s_left+1)/2-(width/2)+(s_left);
 	if(mode&WIN_SAV)
 		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
