@@ -38,12 +38,14 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
+extern const char* beta_version;
+
 /****************************************************************************/
 /* Returns 0 if invalid @ code. Returns length of @ code if valid.          */
 /****************************************************************************/
 int sbbs_t::atcodes(char *instr)
 {
-	char	str[64],str2[64],*p,*tp,*sp;
+	char	str[128],str2[128],*p,*tp,*sp;
     int     i,len;
 	long	l;
     stats_t stats;
@@ -67,6 +69,43 @@ int sbbs_t::atcodes(char *instr)
 
 	else if(!strcmp(sp,"REV"))
 		bprintf("%c",REVISION);
+
+	else if(!strcmp(sp,"FULL_VER")) {
+		sprintf(str2,"%s%c%s",VERSION,REVISION,beta_version);
+		truncsp(str2);
+#if defined(_DEBUG)
+		strcat(str2," Debug");
+#endif
+		bputs(str2);
+	}
+
+	else if(!strcmp(sp,"VER_NOTICE")) 
+		bputs(VERSION_NOTICE);
+
+	else if(!strcmp(sp,"OS_VER"))
+		bputs(os_version(str2));
+
+#ifdef JAVASCRIPT
+	else if(!strcmp(sp,"JS_VER"))
+		bputs((char *)JS_GetImplementationVersion());
+#endif
+
+	else if(!strcmp(sp,"PLATFORM"))
+		bputs(PLATFORM_DESC);
+
+	else if(!strcmp(sp,"COPYRIGHT"))
+		bputs(COPYRIGHT_NOTICE);
+
+	else if(!strcmp(sp,"COMPILER")) {
+		COMPILER_DESC(str2);
+		bputs(str2);
+	}
+
+	else if(!strcmp(sp,"SOCKET_LIB")) 
+		bputs(socklib_version(str2));
+
+	else if(!strcmp(sp,"MSG_LIB")) 
+		bprintf("SMBLIB %s",smb_lib_ver());
 
 	else if(!strcmp(sp,"BBS") || !strcmp(sp,"BOARDNAME"))
 		bputs(cfg.sys_name);
