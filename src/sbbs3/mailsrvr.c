@@ -350,47 +350,6 @@ static void truncsp(char *str)
 }
 
 
-static char* alias(SOCKET socket, char* name, char* alias)
-{
-	int		file;
-	char*	p=name;
-	char*	np;
-	char*	tp;
-	char	fname[MAX_PATH+1];
-	FILE*	fp;
-
-	sprintf(fname,"%salias.cfg",scfg.ctrl_dir);
-	if((file=sopen(fname,O_RDONLY|O_BINARY,SH_DENYNO))==-1)
-		return(name);
-
-	if((fp=fdopen(file,"rb"))==NULL) {
-		close(file);
-		return(name);
-	}
-
-	while(!feof(fp)) {
-		if(!fgets(alias,80,fp))
-			break;
-		np=alias;
-		while(*np && *np<=' ') np++;
-		if(*np==';')
-			continue;
-		tp=np;
-		while(*tp && *tp>' ') tp++;
-		if(*tp) *tp=0;
-		if(!stricmp(np,name)) {
-			np=tp+1;
-			while(*np && *np<=' ') np++;
-			p=np;
-			truncsp(p);
-			lprintf("%04d SMTP ALIAS: %s",socket,p);
-			break;
-		}
-	}
-	fclose(fp);
-	return(p);
-}
-
 static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 {
 	int rd;
@@ -1921,7 +1880,9 @@ static void smtp_thread(void* arg)
 			rcpt_name[0]=0;
 			sprintf(rcpt_addr,"%.*s",sizeof(rcpt_addr)-1,p);
 
-			p=alias(socket,p,alias_buf);
+			p=alias(&scfg,p,alias_buf);
+			if(p==alias_buf) 
+				lprintf("%04d SMTP ALIAS: %s",socket,p);
 
 			tp=strrchr(p,'@');
 			if(cmd==SMTP_CMD_MAIL && tp!=NULL) {
@@ -1963,7 +1924,9 @@ static void smtp_thread(void* arg)
 			tp=strrchr(p,'"');	
 			if(tp!=NULL) *tp=0;	/* truncate at '"' */
 
-			p=alias(socket,p,name_alias_buf);
+			p=alias(&scfg,p,name_alias_buf);
+			if(p==alias_buf) 
+				lprintf("%04d SMTP ALIAS: %s",socket,p);
 		
 			if(!strnicmp(p,"sub:",4)) {		/* Post on a sub-board */
 				p+=4;
@@ -1982,10 +1945,7 @@ static void smtp_thread(void* arg)
 			}
 
 			usernum=0;	/* unknown user at this point */
-			if(!stricmp(p,"SYSOP") || !stricmp(p,scfg.sys_id) 
-				|| !stricmp(p,"POSTMASTER") || !stricmp(p,scfg.sys_op))
-				usernum=1;	/* RX by sysop alias */
-			else if(startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER 
+			if(startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER 
 				&& isdigit(*p)) {
 				usernum=atoi(p);			/* RX by user number */
 				/* verify usernum */
