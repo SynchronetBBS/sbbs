@@ -534,12 +534,18 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 
 	sbbs->js_loop++;
 
-	/* Termination and infinite loop detection */
-	if(sbbs->terminated || sbbs->js_loop>JAVASCRIPT_BRANCH_LIMIT) {
+	/* Terminated? */
+	if(sbbs->terminated) {
+		JS_ReportError(cx,"Terminated");
 		sbbs->js_loop=0;
 		return(JS_FALSE);
 	}
-	
+	/* Infinite loop? */
+	if(sbbs->js_loop>JAVASCRIPT_BRANCH_LIMIT) {
+		JS_ReportError(cx,"Infinite loop (%lu branches) detected",sbbs->js_loop);
+		sbbs->js_loop=0;
+		return(JS_FALSE);
+	}
 	/* Give up timeslices every once in a while */
 	if(!(sbbs->js_loop%JAVASCRIPT_YIELD_FREQUENCY))
 		mswait(1);
@@ -629,6 +635,8 @@ long sbbs_t::js_execfile(char *cmd)
 		errormsg(WHERE,ERR_EXEC,path,0);
 		return(-1);
 	}
+
+	js_loop=0;	// Reset loop counter
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
