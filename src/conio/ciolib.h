@@ -51,16 +51,6 @@ enum {
 
 #endif
 
-#ifndef BOOL
-#define BOOL    int
-#ifndef TRUE
-#define TRUE    1
-#endif
-#ifndef FALSE
-#define FALSE   0
-#endif
-#endif
-
 enum {
 	 BLACK
 	,BLUE

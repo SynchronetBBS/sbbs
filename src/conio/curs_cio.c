@@ -37,6 +37,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "gen_defs.h"	/* xpdev, for BOOL/TRUE/FALSE */
+
 #include "ciolib.h"
 #include "curs_cio.h"
 #include "keys.h"
