@@ -1,10 +1,10 @@
 "nhcÚÄÄÄÄÄÄnÄÄÄÄÄÄhkÄÄÄÄÄÄÄncÄÄÄÄÄúúúú\r\n"\	001 MsgSubj
-	"h³ bSubjnb: hc%s\r\n"
+	"h³ bSubjnb: hc%.70s\r\n"
 "³ bAttrnb: hc%s%s%s%s%s%s%s%s%s%s\r\n"            002 MsgAttr
-"³ bTo  nb: hc%s"                                  003 MsgTo
+"³ bTo  nb: hc%.70s"                               003 MsgTo
 " #%s"                                                  004 MsgToExt
 " (%s)"                                                 005 MsgToNet
-"\r\nw³ bFromnb: hc%s"                            006 MsgFrom
+"\r\nw³ bFromnb: hc%.70s"                         006 MsgFrom
 " #%s"                                                  007 MsgFromExt
 " (%s)"                                                 008 MsgFromNet
 "\r\nw³ bDatenb: hc%.24s %s\r\n"\                 009 MsgDate
