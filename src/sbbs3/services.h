@@ -63,6 +63,7 @@ typedef struct {
 	int 	(*lputs)(void*, int, char*);		/* Log - put string */
 	void	(*status)(void*, char*);
     void	(*started)(void*);
+	void	(*recycle)(void*);
     void	(*terminated)(void*, int code);
     void	(*clients)(void*, int active);
     void	(*thread_up)(void*, BOOL up, BOOL setuid);

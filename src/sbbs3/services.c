@@ -2161,6 +2161,8 @@ void DLLCALL services_thread(void* arg)
 		if(!terminated) {
 			lprintf(LOG_INFO,"Recycling server...");
 			mswait(2000);
+			if(startup->recycle!=NULL)
+				startup->recycle(startup->cbdata);
 		}
 
 	} while(!terminated);

@@ -3183,6 +3183,8 @@ void DLLCALL web_server(void* arg)
 		if(!terminate_server) {
 			lprintf(LOG_INFO,"Recycling server...");
 			mswait(2000);
+			if(startup->recycle!=NULL)
+				startup->recycle(startup->cbdata);
 		}
 
 	} while(!terminate_server);
