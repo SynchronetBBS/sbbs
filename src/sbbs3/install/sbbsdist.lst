@@ -31,6 +31,6 @@ s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official Synchronet Server (2
 T 3.10l Source tarball
 f sbbs310-src.tgz
 f lib-%s.tgz
-s ftp://ftp.synchro.net					Official FTP server (T1)
+s ftp://ftp.synchro.net/				Official FTP server (T1)
 s ftp://vert.synchro.net/Synchronet/	Vertrauen FTP server (256kbps)
 s ftp://freebsd.synchro.net/Synchronet/	Deuce's FTP server (128kbps)
