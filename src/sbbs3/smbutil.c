@@ -1427,7 +1427,7 @@ int main(int argc, char **argv)
 						to="All";
 						from="Sysop";
 						from_number="1";
-						subj="Anouncement";
+						subj="Announcement";
 						break;
 					case 'Z':
 						tzone=str2tzone(argv[x]+j+1);
