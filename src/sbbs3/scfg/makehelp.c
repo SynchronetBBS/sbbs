@@ -29,7 +29,8 @@ int main(void)
 				,"scfgxtrn.c"
 				,NULL };
 	char str[256],tmp[256];
-	int i,j,k,line,ixb;
+	int i,j,k,ixb;
+	unsigned short line;
 	long l;
 	FILE *stream,*out;
 
@@ -52,6 +53,7 @@ int main(void)
 				break;
 			line++;
 			if(strstr(str,"SETHELP(WHERE);")) {
+				printf("%s:%u\n",files[i],line);
 				l=ftell(out);
 				write(ixb,files[i],12);
 				write(ixb,&line,2);
