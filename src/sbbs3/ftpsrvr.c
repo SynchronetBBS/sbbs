@@ -422,7 +422,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 	int		i,rd=0;
 	
 	while(rd<len-1) {
-		i= recv(socket, &ch, 1, 0);
+		i=recv(socket, &ch, 1, 0);
 		if(server_socket==INVALID_SOCKET) {
 			sockprintf(socket,"421 Server downed, aborting.");
 			lprintf("%04d Server downed, aborting.",socket);
@@ -1779,7 +1779,9 @@ static void ctrl_thread(void* arg)
 				globfree(&g);
 				fclose(fp);
 				filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,0L
-					,&transfer_inprogress,&transfer_aborted,TRUE,TRUE
+					,&transfer_inprogress,&transfer_aborted
+					,startup->options&FTP_OPT_KEEP_TEMP_FILES ? FALSE : TRUE
+					,TRUE
 					,&lastactive,&user,-1,FALSE,FALSE,FALSE,NULL);
 				continue;
 			} /* Local LIST/NLST */
@@ -2249,7 +2251,9 @@ static void ctrl_thread(void* arg)
 
 			fclose(fp);
 			filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,0L
-				,&transfer_inprogress,&transfer_aborted,TRUE,TRUE
+				,&transfer_inprogress,&transfer_aborted
+				,startup->options&FTP_OPT_KEEP_TEMP_FILES ? FALSE : TRUE
+				,TRUE
 				,&lastactive,&user,dir,FALSE,FALSE,FALSE,NULL);
 			continue;
 		}
@@ -2384,7 +2388,10 @@ static void ctrl_thread(void* arg)
 				success=TRUE;
 				credits=FALSE;
 				tmpfile=TRUE;
-				delfile=TRUE;
+				if(startup->options&FTP_OPT_KEEP_TEMP_FILES)
+					delfile=FALSE;
+				else
+					delfile=TRUE;
 				fprintf(fp,"%-*s File/Folder Descriptions\r\n"
 					,INDEX_FNAME_LEN,startup->index_file_name);
 				if(lib<0) {

@@ -92,6 +92,7 @@ typedef struct {
 #define FTP_OPT_ALLOW_QWK			(1<<4)
 #define FTP_OPT_NO_LOCAL_FSYS		(1<<5)
 #define FTP_OPT_DIR_FILES			(1<<6)	/* Allow access to files in dir but not in database */
+#define FTP_OPT_KEEP_TEMP_FILES		(1<<7)	/* Don't delete temp files (for debugging) */
 #define FTP_OPT_NO_HOST_LOOKUP		(1<<11)
 #define FTP_OPT_LOCAL_TIMEZONE		(1<<30)	/* Don't force UCT/GMT */
 #define FTP_OPT_MUTE				(1<<31)
