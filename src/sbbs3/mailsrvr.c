@@ -2332,17 +2332,17 @@ void DLLCALL mail_server(void* arg)
 
 	srand(time(NULL));
 
-#ifndef __MINGW32__
-	if(PUTENV("TZ=UCT0"))
-		lprintf("!putenv() FAILED");
-	tzset();
+	if(!(startup->options&MAIL_OPT_LOCAL_TIMEZONE)) {
+		if(PUTENV("TZ=UCT0"))
+			lprintf("!putenv() FAILED");
+		tzset();
 
-	if((t=checktime())!=0) {   /* Check binary time */
-		lprintf("!TIME PROBLEM (%ld)",t);
-		cleanup(1);
-		return;
-    }
-#endif
+		if((t=checktime())!=0) {   /* Check binary time */
+			lprintf("!TIME PROBLEM (%ld)",t);
+			cleanup(1);
+			return;
+		}
+	}
 
 	if(!winsock_startup()) {
 		cleanup(1);
