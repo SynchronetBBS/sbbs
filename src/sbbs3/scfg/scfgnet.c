@@ -994,8 +994,8 @@ outgoing network packets and must be accurate.
 This is the command line to use to create (compress) REP packets for
 this QWK network hub.
 */
-			uifc.input(WIN_MID|WIN_SAV,0,0,"Packet Creation"
-				,cfg.qhub[num]->pack,50,K_EDIT);
+			uifc.input(WIN_MID|WIN_SAV,0,0,""
+				,cfg.qhub[num]->pack,sizeof(cfg.qhub[num]->pack)-1,K_EDIT);
 			break;
 		case 2:
 			SETHELP(WHERE);
@@ -1005,8 +1005,8 @@ this QWK network hub.
 This is the command line to use to extract (decompress) QWK packets from
 this QWK network hub.
 */
-			uifc.input(WIN_MID|WIN_SAV,0,0,"Packet Extraction"
-				,cfg.qhub[num]->unpack,50,K_EDIT);
+			uifc.input(WIN_MID|WIN_SAV,0,0,""
+				,cfg.qhub[num]->unpack,sizeof(cfg.qhub[num]->unpack)-1,K_EDIT);
 			break;
 		case 3:
 			SETHELP(WHERE);
@@ -1016,8 +1016,8 @@ this QWK network hub.
 This is the command line to use to initiate a call-out to this QWK
 network hub.
 */
-			uifc.input(WIN_MID|WIN_SAV,0,0,"Call-out Command"
-				,cfg.qhub[num]->call,50,K_EDIT);
+			uifc.input(WIN_MID|WIN_SAV,0,0,""
+				,cfg.qhub[num]->call,sizeof(cfg.qhub[num]->call)-1,K_EDIT);
 			break;
 		case 4:
 			sprintf(str,"%u",cfg.qhub[num]->node);
