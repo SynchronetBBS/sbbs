@@ -1,0 +1,851 @@
+/* services.c */
+
+/* Synchronet Services Server */
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
+
+/* Platform-specific headers */
+#ifdef _WIN32
+
+	#include <io.h>			/* open/close */
+	#include <share.h>		/* share open flags */
+	#include <process.h>	/* _beginthread */
+	#include <windows.h>	/* required for mmsystem.h */
+	#include <mmsystem.h>	/* SND_ASYNC */
+
+#elif defined(__unix__)
+
+	#include <signal.h>		/* signal/SIGPIPE */
+
+#endif
+
+
+/* ANSI C Library headers */
+#include <stdio.h>
+#include <stdlib.h>			/* ltoa in GNU C lib */
+#include <stdarg.h>			/* va_list */
+#include <string.h>			/* strrchr */
+#include <ctype.h>			/* isdigit */
+#include <fcntl.h>			/* Open flags */
+#include <errno.h>			/* errno */
+
+/* Synchronet-specific headers */
+#define JAVASCRIPT	/* required to include JS API headers */
+#include "sbbs.h"
+#include "services.h"
+#include "ident.h"	/* identify() */
+
+/* Constants */
+#define SERVICES_VERSION		"1.00"
+
+#define MAX_SERVICES			128
+#define TIMEOUT_THREAD_WAIT		30		/* Seconds */
+
+#define STATUS_WFC	"Listening"
+
+static services_startup_t* startup=NULL;
+static scfg_t	scfg;
+static int		active_clients=0;
+static DWORD	sockets=0;
+static BOOL		terminated=FALSE;
+static JSRuntime* js_runtime=NULL;
+static time_t	uptime;
+
+typedef struct {
+	/* These are sysop-configurable */
+	WORD	port;
+	char	protocol[34];
+	char	cmd[128];
+	DWORD	max_clients;
+	DWORD	options;
+	/* These are run-time state and stat vars */
+	DWORD	clients;
+	SOCKET	socket;
+} service_t;
+
+typedef struct {
+	SOCKET			socket;
+	SOCKADDR_IN		addr;
+	service_t*		service;
+} service_client_t;
+
+static service_t	*service; //[MAX_SERVICES];
+static DWORD		services=0;
+
+static int lprintf(char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+    if(startup==NULL || startup->lputs==NULL)
+        return(0);
+
+	va_start(argptr,fmt);
+    vsprintf(sbuf,fmt,argptr);
+    va_end(argptr);
+    return(startup->lputs(sbuf));
+}
+
+#ifdef _WINSOCKAPI_
+
+static WSADATA WSAData;
+static BOOL WSAInitialized=FALSE;
+
+static BOOL winsock_startup(void)
+{
+	int		status;             /* Status Code */
+
+    if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
+		lprintf("%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		WSAInitialized=TRUE;
+		return (TRUE);
+	}
+
+    lprintf("!WinSock startup ERROR %d", status);
+	return (FALSE);
+}
+
+#else /* No WINSOCK */
+
+#define winsock_startup()	(TRUE)
+
+#endif
+
+static void update_clients(void)
+{
+	if(startup!=NULL && startup->clients!=NULL)
+		startup->clients(active_clients);
+}
+
+static void client_on(SOCKET sock, client_t* client)
+{
+	if(startup!=NULL && startup->client_on!=NULL)
+		startup->client_on(TRUE,sock,client);
+}
+
+static void client_off(SOCKET sock)
+{
+	if(startup!=NULL && startup->client_on!=NULL)
+		startup->client_on(FALSE,sock,NULL);
+}
+
+static void thread_up(void)
+{
+	if(startup!=NULL && startup->thread_up!=NULL)
+		startup->thread_up(TRUE);
+}
+
+static void thread_down(void)
+{
+	if(startup!=NULL && startup->thread_up!=NULL)
+		startup->thread_up(FALSE);
+}
+
+static SOCKET open_socket(int type)
+{
+	SOCKET sock;
+
+	sock=socket(AF_INET, type, IPPROTO_IP);
+	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
+		startup->socket_open(TRUE);
+	if(sock!=INVALID_SOCKET) {
+		sockets++;
+#if 0 /*def _DEBUG */
+		lprintf("%04d Socket opened (%d sockets in use)",sock,sockets);
+#endif
+	}
+	return(sock);
+}
+
+static int close_socket(SOCKET sock)
+{
+	int		result;
+
+	shutdown(sock,SHUT_RDWR);	/* required on Unix */
+	result=closesocket(sock);
+	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
+		startup->socket_open(FALSE);
+	sockets--;
+	if(result!=0) {
+		if(ERROR_VALUE!=ENOTSOCK)
+			lprintf("%04d !ERROR %d closing socket",sock, ERROR_VALUE);
+	}
+#if 0 /*def _DEBUG */
+	else 
+		lprintf("%04d Socket closed (%d sockets in use)",sock,sockets);
+#endif
+
+	return(result);
+}
+
+static void status(char* str)
+{
+	if(startup!=NULL && startup->status!=NULL)
+	    startup->status(str);
+}
+
+static time_t checktime(void)
+{
+	struct tm tm;
+
+    memset(&tm,0,sizeof(tm));
+    tm.tm_year=94;
+    tm.tm_mday=1;
+    return(mktime(&tm)-0x2D24BD00L);
+}
+
+/************************************************/
+/* Truncates white-space chars off end of 'str' */
+/************************************************/
+static void truncsp(char *str)
+{
+	uint c;
+
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=' ') c--;
+	str[c]=0;
+}
+
+static u_long resolve_ip(char *addr)
+{
+	HOSTENT*	host;
+	char*		p;
+
+	for(p=addr;*p;p++)
+		if(*p!='.' && !isdigit(*p))
+			break;
+	if(!(*p))
+		return(inet_addr(addr));
+
+	if ((host=gethostbyname(addr))==NULL) {
+		lprintf("0000 !ERROR resolving host name: %s",addr);
+		return(0);
+	}
+	return(*((ulong*)host->h_addr_list[0]));
+}
+
+static void
+js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
+{
+	char	line[64];
+	char	file[MAX_PATH+1];
+	char*	warning;
+
+	if(report==NULL) {
+		lprintf("!JavaScript: %s", message);
+		return;
+    }
+
+	if(report->filename)
+		sprintf(file," %s",report->filename);
+	else
+		file[0]=0;
+
+	if(report->lineno)
+		sprintf(line," line %d",report->lineno);
+	else
+		line[0]=0;
+
+	if(JSREPORT_IS_WARNING(report->flags)) {
+		if(JSREPORT_IS_STRICT(report->flags))
+			warning="strict warning";
+		else
+			warning="warning";
+	} else
+		warning="";
+
+	lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+}
+
+static JSContext* 
+js_initcx(SOCKET sock, client_t* client, JSObject** glob)
+{
+	JSContext*	js_cx;
+	JSObject*	js_glob;
+	BOOL		success=FALSE;
+
+	lprintf("%04d JavaScript: Initializing context",sock);
+
+    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+		return(NULL);
+
+	lprintf("%04d JavaScript: Context created",sock);
+
+	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+
+    JS_SetErrorReporter(js_cx, js_ErrorReporter);
+
+	do {
+
+		lprintf("%04d JavaScript: Initializing Global object",sock);
+		if((js_glob=js_CreateGlobalObject(js_cx, &scfg))==NULL) 
+			break;
+
+		/* Client Object */
+		if(js_CreateClientObject(js_cx, js_glob, "client", client, sock)==NULL)
+			break;
+
+		/* User Class */
+		if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
+			break;
+
+		/* Socket Class */
+		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
+			break;
+
+		/* File Class */
+		if(js_CreateFileClass(js_cx, js_glob)==NULL)
+			break;
+
+
+#if 0
+		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
+			break;
+#endif
+		lprintf("%04d JavaScript: Initializing System object",sock);
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime)==NULL) 
+			break;
+
+		if(glob!=NULL)
+			*glob=js_glob;
+
+		success=TRUE;
+
+	} while(0);
+
+	JS_EndRequest(js_cx);		/* Required for multi-thread support */
+
+	if(!success) {
+		JS_DestroyContext(js_cx);
+		return(NULL);
+	}
+
+	return(js_cx);
+}
+
+
+static void js_service_thread(void* arg)
+{
+	char					spath[MAX_PATH];
+	char*					p;
+	char*					host_name;
+	HOSTENT*				host;
+	SOCKET					socket;
+	client_t				client;
+	service_t*				service;
+	service_client_t		service_client=*(service_client_t*)arg;
+	/* JavaScript-specific */
+	JSObject*				js_glob;
+	JSScript*				js_script;
+	JSContext*				js_cx;
+	jsval					rval;
+
+	free(arg);
+
+	socket=service_client.socket;
+	service=service_client.service;
+
+	lprintf("%04d %s service thread started", socket, service->protocol);
+
+
+	thread_up();
+
+	/* Host name lookup and filtering */
+	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
+		|| startup->options&BBS_OPT_NO_HOST_LOOKUP)
+		host=NULL;
+	else
+		host=gethostbyaddr((char *)&service_client.addr.sin_addr
+			,sizeof(service_client.addr.sin_addr),AF_INET);
+
+	if(host!=NULL && host->h_name!=NULL)
+		host_name=host->h_name;
+	else
+		host_name="<no name>";
+
+	lprintf("%04d %s client name: %s", socket, service->protocol, host_name);
+
+	if(trashcan(&scfg,host_name,"host")) {
+		lprintf("%04d !%s CLIENT BLOCKED in host.can: %s"
+			,socket, service->protocol, host_name);
+		close_socket(socket);
+		thread_down();
+		return;
+	}
+
+
+#if 0	/* Need to export from SBBS.DLL */
+	identity=NULL;
+	if(service->options&BBS_OPT_GET_IDENT 
+		&& startup->options&BBS_OPT_GET_IDENT) {
+		identify(&service_client.addr, service->port, str, sizeof(str)-1);
+		identity=strrchr(str,':');
+		if(identity!=NULL) {
+			identity++;	/* skip colon */
+			while(*identity && *identity<=SP) /* point to user name */
+				identity++;
+			lprintf("%04d Identity: %s",socket, identity);
+		}
+	}
+#endif
+
+	client.size=sizeof(client);
+	client.time=time(NULL);
+	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,inet_ntoa(service_client.addr.sin_addr));
+	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
+	client.port=ntohs(service_client.addr.sin_port);
+	client.protocol=service->protocol;
+	client.user="<unknown>";
+
+	if(((js_cx=js_initcx(socket,&client,&js_glob))==NULL)) {
+		lprintf("%04d !%s ERROR initializing JavaScript context"
+			,socket,service->protocol);
+		close_socket(socket);
+		thread_down();
+		return;
+	}
+
+	active_clients++;
+	update_clients();
+
+	/* Initialize client display */
+	client_on(socket,&client);
+
+	/* RUN SCRIPT */
+	sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
+	p=spath;
+	while(*p && *p>' ') p++;
+	*p=0;	/* truncate arguments */
+
+	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+	js_script=JS_CompileFile(js_cx, js_glob, spath);
+	JS_EndRequest(js_cx);
+
+	if(js_script==NULL) 
+		lprintf("%04d !JavaScript FAILED to compile script (%s)",socket,spath);
+	else  {
+		if(JS_ExecuteScript(js_cx, js_glob, js_script, &rval)!=TRUE) 
+			lprintf("%04d !JavaScript FAILED to execute script (%s)",socket,spath);
+
+		JS_DestroyScript(js_cx, js_script);
+	}
+
+
+	lprintf("%04d %s service thread terminated", socket, service->protocol);
+	if(service->clients)
+		service->clients--;
+
+	close_socket(socket);
+	active_clients--;
+	update_clients();
+	client_off(socket);
+
+	thread_down();
+
+}
+
+void DLLCALL services_terminate(void)
+{
+	terminated=TRUE;
+}
+
+#define NEXT_FIELD(p)	while(*p && *p>' ') p++; while(*p && *p<=' ') p++;
+
+static BOOL read_services_cfg(void)
+{
+	char*	p;
+	char*	tp;
+	char	path[MAX_PATH+1];
+	char	line[1024];
+	FILE*	fp;
+
+	sprintf(path,"%sservices.cfg",scfg.ctrl_dir);
+	if((fp=fopen(path,"r"))==NULL) {
+		lprintf("!ERROR %d opening %s",errno,path);
+		return(FALSE);
+	}
+
+	for(services=0;!feof(fp) && services<MAX_SERVICES;) {
+		if(!fgets(line,sizeof(line)-1,fp))
+			break;
+		p=line;
+		while(*p && *p<=' ') p++;
+		if(*p==0 || *p==';')	/* ignore blank lines or comments */
+			continue;
+		
+		if((service=(service_t*)realloc(service,sizeof(service_t)*(services+1)))==NULL) {
+			lprintf("!MALLOC FAILURE");
+			return(FALSE);
+		}
+		memset(&service[services],0,sizeof(service_t));
+		service[services].socket=INVALID_SOCKET;
+
+		tp=p; 
+		while(*tp && *tp>' ') tp++; 
+		*tp=0;
+		sprintf(service[services].protocol,"%.*s",sizeof(service[0].protocol),p);
+		p=tp+1;
+		NEXT_FIELD(p);
+		service[services].port=atoi(p);
+		NEXT_FIELD(p);
+		service[services].max_clients=strtol(p,NULL,10);
+		NEXT_FIELD(p);
+		service[services].options=strtol(p,NULL,16);
+		NEXT_FIELD(p);
+
+		sprintf(service[services].cmd,"%.*s",sizeof(service[0].cmd),p);
+		truncsp(service[services].cmd);
+
+		services++;
+	}
+	fclose(fp);
+
+	return(TRUE);
+}
+
+static void cleanup(int code)
+{
+	free_cfg(&scfg);
+
+	update_clients();
+
+#ifdef _WINSOCKAPI_	
+	if(WSAInitialized && WSACleanup()!=0) 
+		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
+#endif
+
+#ifdef JAVASCRIPT
+	if(js_runtime!=NULL) {
+		lprintf("0000 JavaScript: Destroying runtime");
+		JS_DestroyRuntime(js_runtime);
+		js_runtime=NULL;
+	}
+#endif
+
+    lprintf("#### Services thread terminated");
+	status("Down");
+	if(startup!=NULL && startup->terminated!=NULL)
+		startup->terminated(code);
+	thread_down();
+}
+
+const char* DLLCALL services_ver(void)
+{
+	static char ver[256];
+	char compiler[32];
+
+	COMPILER_DESC(compiler);
+
+	sprintf(ver,"Synchronet Services Server v%s%s  "
+		"Compiled %s %s with %s"
+		,SERVICES_VERSION
+#ifdef _DEBUG
+		," Debug"
+#else
+		,""
+#endif
+		,__DATE__, __TIME__, compiler
+		);
+
+	return(ver);
+}
+
+void DLLCALL services_thread(void* arg)
+{
+	char			host_ip[32];
+	char			compiler[32];
+	SOCKADDR_IN		addr;
+	SOCKADDR_IN		client_addr;
+	int				client_addr_len;
+	SOCKET			socket;
+	SOCKET			client_socket;
+	int				i;
+	int				result;
+	ulong			total_clients;
+	time_t			t;
+	fd_set			socket_set;
+	SOCKET			high_socket;
+	struct timeval	tv;
+	service_client_t* client;
+
+	startup=(services_startup_t*)arg;
+
+    if(startup==NULL) {
+    	sbbs_beep(100,500);
+    	fprintf(stderr, "No startup structure passed!\n");
+    	return;
+    }
+
+	if(startup->size!=sizeof(services_startup_t)) {	/* verify size */
+		sbbs_beep(100,500);
+		sbbs_beep(300,500);
+		sbbs_beep(100,500);
+		fprintf(stderr, "Invalid startup structure!\n");
+		return;
+	}
+
+	/* Setup intelligent defaults */
+
+	thread_up();
+
+	uptime=time(NULL);
+
+	status("Initializing");
+
+    memset(&scfg, 0, sizeof(scfg));
+
+#ifdef __unix__		/* Ignore "Broken Pipe" signal */
+	signal(SIGPIPE,SIG_IGN);
+#endif
+
+	lprintf("Synchronet Services Server Version %s%s"
+		,SERVICES_VERSION
+#ifdef _DEBUG
+		," Debug"
+#else
+		,""
+#endif
+		);
+
+	COMPILER_DESC(compiler);
+
+	lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+
+	srand(time(NULL));
+
+	if(!(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
+		if(PUTENV("TZ=UCT0"))
+			lprintf("!putenv() FAILED");
+		tzset();
+
+		if((t=checktime())!=0) {   /* Check binary time */
+			lprintf("!TIME PROBLEM (%ld)",t);
+			cleanup(1);
+			return;
+		}
+	}
+
+	if(!winsock_startup()) {
+		cleanup(1);
+		return;
+	}
+
+	t=time(NULL);
+	lprintf("Initializing on %.24s with options: %lx"
+		,ctime(&t),startup->options);
+
+	/* Initial configuration and load from CNF files */
+    sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
+    	,startup->ctrl_dir);
+    lprintf("Loading configuration files from %s", scfg.ctrl_dir);
+	scfg.size=sizeof(scfg);
+	if(!load_cfg(&scfg, NULL, TRUE)) {
+		lprintf("!Failed to load configuration files");
+		cleanup(1);
+		return;
+	}
+
+	lprintf("JavaScript: Creating runtime: %lu bytes"
+		,JAVASCRIPT_RUNTIME_MEMORY);
+
+	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
+		lprintf("!JS_NewRuntime failed");
+		cleanup(1);
+		return;
+	}
+	lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
+
+	active_clients=0;
+	update_clients();
+
+	if(!read_services_cfg()) {
+		lprintf("!Failure reading configuration file");
+		cleanup(1);
+		return;
+	}
+
+	/* Open and Bind Listening Sockets */
+	for(i=0;i<(int)services;i++) {
+
+		if((socket = open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+			lprintf("!ERROR %d opening socket", ERROR_VALUE);
+			cleanup(1);
+			return;
+		}
+		memset(&addr, 0, sizeof(addr));
+
+		addr.sin_addr.s_addr = htonl(startup->interface_addr);
+		addr.sin_family = AF_INET;
+		addr.sin_port   = htons(service[i].port);
+
+		if(bind(socket, (struct sockaddr *) &addr, sizeof(addr))!=0) {
+			lprintf("%04d !ERROR %d binding socket to port %u"
+				,socket, ERROR_VALUE, service[i].port);
+			lprintf("%04d !Another application or service may be using this port"
+				,socket);
+			close_socket(socket);
+			continue;
+		}
+
+	    lprintf("%04d %s socket bound to port %u"
+			,socket, service[i].protocol, service[i].port);
+
+		if(listen(socket,10)!=0) {
+			lprintf("%04d !ERROR %d listening on %s socket"
+				,socket, ERROR_VALUE, service[i].protocol);
+			close_socket(socket);
+			continue;
+		}
+		service[i].socket=socket;
+	}
+				
+	/* Main Server Loop */
+	while(!terminated) {
+
+		/* Setup select() parms */
+		FD_ZERO(&socket_set);	
+		high_socket=0;
+		for(i=0;i<(int)services;i++) {
+			FD_SET(service[i].socket,&socket_set);
+			if(service[i].socket>high_socket)
+				high_socket=service[i].socket;
+		}
+		tv.tv_sec=2;
+		tv.tv_usec=0;
+		if((result=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {
+			if(result==0) {
+				mswait(1);
+				continue;
+			}
+
+			if(ERROR_VALUE==EINTR)
+				lprintf("0000 Services listening interrupted");
+			else if(ERROR_VALUE == ENOTSOCK)
+            	lprintf("0000 Services sockets closed");
+			else
+				lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
+			break;
+		}
+
+		/* Determine who services this socket */
+		for(i=0;i<(int)services;i++) {
+			if(!FD_ISSET(service[i].socket,&socket_set))
+				continue;
+
+			client_addr_len = sizeof(client_addr);
+			if((client_socket=accept(service[i].socket,
+				(struct sockaddr *)&client_addr,&client_addr_len))==INVALID_SOCKET) {
+				if(ERROR_VALUE == ENOTSOCK)
+            		lprintf("%04d %s socket closed while listening"
+						,service[i].socket, service[i].protocol);
+				else
+					lprintf("%04d %s !ERROR %d accept failed", 
+						service[i].socket, service[i].protocol, ERROR_VALUE);
+				break;
+			}
+			strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
+
+			lprintf("%04d %s connection accepted from: %s port %u"
+				,client_socket
+				,service[i].protocol, host_ip, ntohs(client_addr.sin_port));
+
+			if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
+				lprintf("%04d !%s MAXMIMUM CLIENTS (%u) reached, access denied"
+					,client_socket, service[i].protocol, service[i].max_clients);
+				mswait(3000);
+				close_socket(client_socket);
+				continue;
+			}
+
+			if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)
+				&& !(service[i].options&BBS_OPT_MUTE))
+				PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+
+			if(trashcan(&scfg,host_ip,"ip")) {
+				lprintf("%04d !%s CLIENT BLOCKED in ip.can: %s"
+					,client_socket, service[i].protocol, host_ip);
+				mswait(3000);
+				close_socket(client_socket);
+				continue;
+			}
+
+			if((client=malloc(sizeof(service_client_t)))==NULL) {
+				lprintf("%04d !%s ERROR allocating %u bytes of memory for service_client"
+					,client_socket, service[i].protocol, sizeof(service_client_t));
+				mswait(3000);
+				close_socket(client_socket);
+				continue;
+			}
+
+			if(startup->socket_open!=NULL)
+				startup->socket_open(TRUE);	/* Callback */
+
+			client->socket=client_socket;
+			client->addr=client_addr;
+			client->service=&service[i];
+			client->service->clients++;		/* this should be mutually exclusive */
+
+			_beginthread(js_service_thread, 0, client);
+		}
+	}
+
+	/* Wait for Service Threads to terminate */
+	total_clients=0;
+	for(i=0;i<(int)services;i++) 
+		total_clients+=service[i].clients;
+	if(total_clients) {
+		lprintf("000 Waiting for %d clients to disconnect",total_clients);
+		while(1) {
+			for(i=0;i<(int)services;i++) 
+				total_clients+=service[i].clients;
+			if(!total_clients)
+				break;
+			mswait(500);
+		}
+	}
+
+	/* Close Service Sockets */
+	for(i=0;i<(int)services;i++) {
+		if(service[i].socket!=INVALID_SOCKET)
+			close_socket(service[i].socket);
+		service[i].socket=INVALID_SOCKET;
+	}
+
+	/* Free Service Data */
+	services=0;
+	free(service);
+	service=NULL;
+
+	cleanup(0);
+}
