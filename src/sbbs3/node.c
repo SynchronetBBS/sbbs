@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <errno.h>
 
 /* Synchronet-specific */
 #include "sbbsdefs.h"

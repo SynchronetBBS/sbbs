@@ -49,6 +49,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <errno.h>
 
 /* Synchronet-specific */
 #include "cmdshell.h"
