@@ -83,10 +83,6 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 #define STATUS_WFC	"Listening"
 
-static const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
-static const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
-            ,"Jul","Aug","Sep","Oct","Nov","Dec"};
-
 static mail_startup_t* startup=NULL;
 static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;

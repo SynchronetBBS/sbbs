@@ -485,7 +485,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 {
-	char str[256],c,fname[13],HUGE16 *ixbbuf;
+	char str[256],fname[13],HUGE16 *ixbbuf;
     int i,file;
     long length,l;
 

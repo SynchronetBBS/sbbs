@@ -52,9 +52,9 @@ char* nulstr="";
 /****************************************************************************/
 uint DLLCALL matchuser(scfg_t* cfg, char *name, BOOL sysop_alias)
 {
-	int file;
+	int file,c;
 	char dat[LEN_ALIAS+2];
-	char str[256],c;
+	char str[256];
 	ulong l,length;
 	FILE *stream;
 
@@ -486,9 +486,9 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 /****************************************************************************/
 char* DLLCALL username(scfg_t* cfg, int usernumber,char *strin)
 {
-    char str[256];
-    char c;
-    int file;
+    char	str[256];
+    int		c;
+    int		file;
 
 	if(usernumber<1) {
 		strin[0]=0;
@@ -1153,8 +1153,8 @@ BOOL DLLCALL chk_ar(scfg_t* cfg, uchar *ar, user_t* user)
 /****************************************************************************/
 int DLLCALL getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 {
-	char c,path[256];
-	int i,file;
+	char	path[256];
+	int		i,c,file;
 
 	if(!usernumber)
 		return(-1);
@@ -1263,9 +1263,9 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char 
 /****************************************************************************/
 ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj)
 {
-	char str[256],c,path[256];
+	char str[256],path[256];
 	char tmp[32];
-	int i,file;
+	int i,c,file;
 	long val;
 	node_t node;
 

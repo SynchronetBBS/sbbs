@@ -1052,9 +1052,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				continue;
 			}
 
-			if(rd>avail)
+			if(rd>(int)avail)
 				rd=avail;
-			if(rd>sizeof(buf))
+			if(rd>(int)sizeof(buf))
 				rd=sizeof(buf);
 
 			if((rd=read(out_pipe[0],buf,rd))<1) {
@@ -1120,7 +1120,7 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
     else
         cmd=outstr;
     len=strlen(instr);
-    for(i=j=0;i<len && j<sizeof(cmdstr_output);i++) {
+    for(i=j=0;i<len && j<(int)sizeof(cmdstr_output);i++) {
         if(instr[i]=='%') {
             i++;
             cmd[j]=0;
@@ -1208,7 +1208,7 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,cfg.shell[useron.shell]->code);
                     break;
                 case '&':   /* Address of msr */
-                    sprintf(str,"%lu",&fakeriobp);
+                    sprintf(str,"%lu",(DWORD)&fakeriobp);
                     strcat(cmd,str);
                     break;
                 case 'Y':

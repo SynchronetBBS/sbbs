@@ -175,7 +175,7 @@ char* DLLCALL prep_file_desc(char *str)
 char *ultoac(ulong l, char *string)
 {
 	char str[256];
-	char i,j,k;
+	int i,j,k;
 
 	ultoa(l,str,10);
 	i=strlen(str)-1;
