@@ -339,7 +339,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       # gdb /sbbs/exec/sbbs
 
    B. Run Synchronet:
-      (gdb) run
+      (gdb) run -nd
 
    C. After segfault, display back-trace:
       (gdb) bt
