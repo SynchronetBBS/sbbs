@@ -34,62 +34,26 @@
  ****************************************************************************/
 
 //---------------------------------------------------------------------------
-#include <vcl.h>
-#pragma hdrstop
-USERES("sbbsctrl.res");
-USEFORM("MainFormUnit.cpp", MainForm);
-USEFORM("CtrlPathDialogUnit.cpp", CtrlPathDialog);
-USEFORM("TelnetCfgDlgUnit.cpp", TelnetCfgDlg);
-USELIB("sbbs.lib");
-USELIB("mailsrvr.lib");
-USELIB("ftpsrvr.lib");
-USEFORM("MailCfgDlgUnit.cpp", MailCfgDlg);
-USEFORM("FtpCfgDlgUnit.cpp", FtpCfgDlg);
-USEFORM("TextFileEditUnit.cpp", TextFileEditForm);
-USEFORM("TelnetFormUnit.cpp", TelnetForm);
-USEFORM("FtpFormUnit.cpp", FtpForm);
-USEFORM("MailFormUnit.cpp", MailForm);
-USEFORM("NodeFormUnit.cpp", NodeForm);
-USEFORM("StatsFormUnit.cpp", StatsForm);
-USEFORM("AboutBoxFormUnit.cpp", AboutBoxForm);
-USEFORM("StatsLogFormUnit.cpp", StatsLogForm);
-USEFORM("CodeInputFormUnit.cpp", CodeInputForm);
-USEFORM("ClientFormUnit.cpp", ClientForm);
-USEFORM("SpyFormUnit.cpp", SpyForm);
-USEUNIT("..\ringbuf.c");
-USEUNIT("emulvt.pas");
-USEFORM("UserListFormUnit.cpp", UserListForm);
-USEFORM("UserMsgFormUnit.cpp", UserMsgForm);
-USEFORM("PropertiesDlgUnit.cpp", PropertiesDlg);
-USEFORM("EventsFormUnit.cpp", EventsForm);
+
+#ifndef EventsFormUnitH
+#define EventsFormUnitH
 //---------------------------------------------------------------------------
-#include "MainFormUnit.h"
-#include "SpyFormUnit.h"
-#include "CtrlPathDialogUnit.h"
-TSpyForm *SpyForms[MAX_NODES];
+#include <Classes.hpp>
+#include <Controls.hpp>
+#include <StdCtrls.hpp>
+#include <Forms.hpp>
 //---------------------------------------------------------------------------
-WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+class TEventsForm : public TForm
 {
-    memset(SpyForms,0,sizeof(SpyForms));
-    try
-    {
-        Application->Initialize();
-        Application->Title = "Synchronet Control Panel";
-		Application->CreateForm(__classid(TMainForm), &MainForm);
-         Application->CreateForm(__classid(TTelnetForm), &TelnetForm);
-         Application->CreateForm(__classid(TFtpForm), &FtpForm);
-         Application->CreateForm(__classid(TMailForm), &MailForm);
-         Application->CreateForm(__classid(TNodeForm), &NodeForm);
-         Application->CreateForm(__classid(TStatsForm), &StatsForm);
-         Application->CreateForm(__classid(TClientForm), &ClientForm);
-         Application->CreateForm(__classid(TUserListForm), &UserListForm);
-         Application->CreateForm(__classid(TEventsForm), &EventsForm);
-         Application->Run();
-    }
-    catch (Exception &exception)
-    {
-             Application->ShowException(&exception);
-    }
-    return 0;
-}
+__published:	// IDE-managed Components
+    TMemo *Log;
+    void __fastcall FormShow(TObject *Sender);
+    void __fastcall FormHide(TObject *Sender);
+private:	// User declarations
+public:		// User declarations
+    __fastcall TEventsForm(TComponent* Owner);
+};
 //---------------------------------------------------------------------------
+extern PACKAGE TEventsForm *EventsForm;
+//---------------------------------------------------------------------------
+#endif
