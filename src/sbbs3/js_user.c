@@ -312,7 +312,8 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			sprintf(tmp,"%c",user.prot);
 			s=tmp;
 			break;
-		default:
+		default:	
+			/* This must not set vp in order for child objects to work (stats and security) */
 			return(JS_TRUE);
 	}
 	if(s!=NULL) 
@@ -670,10 +671,26 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 {
 	user_t		user;
 	private_t*	p;
+	JSObject*	statsobj;
+	JSObject*	securityobj;
 
 	user.number=(ushort)(JSVAL_TO_INT(argv[0]));
 	if(getuserdat(scfg,&user)!=0)
 		return(JS_FALSE);
+
+	/* user.stats */
+	if((statsobj=JS_DefineObject(cx, obj, "stats"
+		,&js_user_stats_class, NULL, 0))==NULL) 
+		return(JS_FALSE);
+
+	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
+
+	/* user.security */
+	if((securityobj=JS_DefineObject(cx, obj, "security"
+		,&js_user_security_class, NULL, 0))==NULL) 
+		return(JS_FALSE);
+
+	JS_DefineProperties(cx, securityobj, js_user_security_properties);
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
 		return(JS_FALSE);
@@ -682,6 +699,8 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	p->usernumber = user.number;
 
 	JS_SetPrivate(cx, obj, p);
+	JS_SetPrivate(cx, statsobj, p);
+	JS_SetPrivate(cx, securityobj, p);
 
 	return(JS_TRUE);
 }
