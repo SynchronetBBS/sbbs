@@ -1,0 +1,184 @@
+--------------------------------------------
+Space Dynasty Elite,                 Version
+by Darryl Perry                         1.1
+--------------------------------------------
+
+Space Dynasty Elite is an linux implementation of a WWIV BBS online game
+called Space Dynasty.  Space Dynast was a variation of two online games 
+written for Atari ST BBS systems, Space Empire by Jon Radoff and 
+Galactic Empire by Andromeda Software.  It is a multi-player game, the 
+object of which is to rule more planets than any other player.  You can 
+gain planets in two ways, (1) buying planets or (2) attacking other players 
+and taking their planets.
+There is no "conclusion" to the game as such; the game continues until the
+sysop decides to reset the game.
+
+There are three types of planets you can choose to maintain:
+  food planets - needed to grow food for your people or to sell to other
+                 players
+  army planets - for training troops to guard your dynasty/attack others
+  ore planets  - mining for ore which brings you most of your money
+Ore planets are recommended for new players particularly.
+
+
+Starting the Game
+-----------------
+Each player has four turns each day in which to rule their empire.  There
+are several daily phases, which will be described later.  Each turn proceeds
+as follows:
+
+
+(A) Maintenance
+    You are notified of how much food was grown on your food planets,
+soldiers trained on army planets, and money gained from ore mining and
+taxes.
+    You will then be prompted for the money needed for paying your army,
+maintaining your planets, crime prevention, and feeding your army and
+your people.  You need not pay all of it every turn, but there are
+penalties for giving too little:
+    - If you do not pay and feed your army they will not fight.  This is
+      not a problem unless you are planning an attack.
+    - If you pay your army less than half their salary they will revolt and
+      cause a Civil War in your dynasty, causing you to lose part of your
+      empire.  The same thing will happen if you don't feed your people or
+      pay for planetary maintenance.
+    - If you don't pay for crime prevention, costly acts of vandalism may
+      occur.
+
+The Food Market
+    As well as your own food supply, there is a Galactic Common Market that
+all players can buy food from or sell food to.  If the market is running
+low on food, prices will be high, and if the market is overstocked, prices
+will be low.  Here is your chance to make some money on the side, by buying
+food when it is cheap and selling it at a higher price when it is needed.
+Remember to keep enough to feed your own people/troops...
+
+
+(B) Covert Operations
+    This phase occurs only if you have covert agents available.  It allows
+you the ability to attack someone covertly, without their knowledge...if
+you can get away with it.  Covert Agents are used offensively and
+defensively.  The more agents you have compared to the number of agents
+your enemy has determines your chances of success; if you both have the
+the same number, the odds are about 50-50.
+
+When you hire covert agents, you can use them to do one of four things:
+
+Covert Operations Menu
+----------------------------
+<1> Spy Mission........7,500
+<2> Assassination.....10,000
+<3> Sabotage..........12,500
+<4> Insurgency.......100,000
+<5> Plant a bomb...1,000,000
+<0> Done
+----------------------------
+
+(1) A spy mission lets you see what defenses your enemy has, as well as his
+insurgency level (see #4).
+(2) Allows you to try to assassinate one of your enemy's generals.
+(3) Allows you to try to sabotage one of your enemy's carriers.
+(4) Insurgency is a measurement of the amount of internal rebellion your
+enemy's government has to put up with.  For 100,000 credits, you can
+try to fund this rebellion and encourage his overthrow.
+    Your enemy must pay for putting down this rebellion, with the amount
+dependent on the size of his empire.  The larger the empire, the more money
+it takes.  Also, any level of insurgency will cause the loss of a number of
+his offenses each turn.  The higher the insurgency, the more costly for him
+in terms of money as well as soldiers and fighters.
+(5) You may bomb an embassy or foodstores.  If successful, bombing an embassy
+may kill as many as 300 enemy agents.  Bombing foodstores, if successful,
+may destroy as many as 375,000 megatons of food.
+
+If you are successful with your covert operation, your enemy will never
+know who did it.  If not, your agent is executed, and the player receives
+a message about your attempt.
+
+
+(C) New Purchases
+    After maintaining what you already have, you are given the following
+menu to buy new supplies.
+
+Item                        Cost        Owned
+---------------------------------------------
+<1> Soldier troops.........1,000..........100
+<2> Fighter................1,500............0
+<3> Defense Stations.......2,000............0
+<4> Generals..............11,000............2
+<5> Command ship..........60,000...........0%
+<6> Colonize planet.......22,000............2
+<7> Carriers..............15,000............1
+<8> Covert Agents..........5,000............0
+<9> Reconfigure planet...100,000..........N/A
+<0> Done
+---------------------------------------------
+Your credits amount to 938,360.
+Your choice? 
+
+Experiment with purchases, but note the following:
+    - You need 1 General for every 50 Troops.  If you buy/train a lot of
+troops but have no Generals to lead them, all of them won't be able to go
+into battle.
+    - Defense Stations are the defensive equivalent of Fighters: If you
+are attacking someone with a lot of defense stations, buy a lot of
+fighters.  If you are expecting large fighter squadron attacks, buy a lot
+of defense stations.
+    - Carriers are needed to transport fighters for battle, 100 fighters
+per carrier.  Carriers also allow you to send troops/money/food to the
+other players.
+    - A Command Ship will help your defensive capabilites.
+
+
+(D) Battle
+    Your chance to attack other players.  You are prompted for who you want
+to attack and how many troops/fighters you want to send.
+
+
+(E) Trade
+    If you have any carriers you are allowed to use them to send food,
+troops, or credits to anyone you feel like being nice to.
+
+
+Score
+-----
+You receive 75 points per turn played, plus 20 points per planet owned.
+25 points are deducted each time you attack, 50 points if the attack fails.
+
+
+Daily Phases
+------------
+Several things happen at the beginning of your first turn and at the end
+of your last turn each day.  You can ignore these until you get the hang
+of the game, but here is an explanation when you are ready.
+
+News - a list of all that has happened to you since you last played.
+
+Subspace Radio Messages - short notes from other dynasties. These are
+    received at the beginning of your turn, and you are allowed to send
+    them at the end of your turn.
+
+Daily Diplomatic Phase - a display of your relations with other dynasties.
+There are four types of relations between two empires:
+(1) Neutrality     - The default state. No support between the two players,
+                     nor any declaration of hostilites.
+(2) Minor Alliance - When you are under attack, 10% of your allies' troops
+                     and defense stations automatically come to your aid.
+(3) Major Alliance - When you are under attack, 20% of your allies' troops
+                     and defense stations automatically come to your aid.
+(4) Enemy          - Either you have openly attacked this player or he has
+                     openly attacked you.
+
+--------------------------------------------------------------------------
+That's all I can think of, practice is really the best way to learn the
+game.  I am currently working on adding new features so you will be
+seeing updates.  The game is written in Turbo Pascal 5.5, and was largely
+developed using PC Ditto, an IBM emulation program for the Atari ST.
+Space Dynasty Elite 1.00 is released into the public domain, if you have 
+any questions about it drop me a note.  My email is dperry.geo@yahoo.com,
+or you may log on to my BBS at telnet://cyberia.darktech.org and drop me
+a line.
+
+Space Empire is copyrighted 1987 by Jon Radoff.
+Galactic Empire is copyrighted 1987 by Andromeda Software.
+Space Dynasty is copyrighted 1989 by Hollie Satterfield.
+Space Dynasty Elite is copyrighted 1999-2003 by Darryl Perry

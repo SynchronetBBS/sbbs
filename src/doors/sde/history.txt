@@ -1,0 +1,40 @@
+05/25/04
+ o Switch to current OpenDoors library.  - Deuce
+ o fixed major issue with buffer overruns in commafmt()  - Deuce
+ o change meaning of ~SM mci code to mean \r\n instead of \n  - Deuce
+ o port od_input_str() from *nix rewrite as sde_input_str to allow  - Deuce
+   the implied non-display of terminating \r\n  - Deuce
+ o removed all stdio usages  - Deuce
+
+07/10/03
+ o changed way alliances are kept.
+ o fixed major issue with config file data and user accounts getting 
+   screwed up.  The laston datafield was too small.  Made it bigger, and
+   it fixed the problem.
+
+07/09/03
+ o fixed bug that did not allow for anything other than planets to be 
+   bought in the Common Market.
+ o fixed some text formatting
+ o fixed problem with selling food.
+
+07/08/03
+ o fixed formatting in the Common Market menu.
+ o fixed bug in input routine.  It wasn't accepting the last character.
+ o fixed problem where if you chose to buy X amount of planets, and only
+   purchased Y amount of AAA type of planet, it wouldn't go back to the
+   planet purchase routine.  Now it does.
+ o Removed the need for a dropfile.  Added prompts for username and password.
+
+07/07/03
+ o fixed bug that would not allow for purchase of any soldier planets.
+ o added new start menu so that you had a choice about entering the
+   game or not.
+ o fixed comma formatting in the Feed Population and Feed Army functions.
+ o fixed formatting in the Food Common Market routine.
+
+Known Bugs
+ o User accounts get mesed up.
+
+Things to do
+

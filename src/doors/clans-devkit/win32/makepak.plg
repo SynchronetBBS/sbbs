@@ -1,0 +1,32 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: makepak - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\TEMP\RSP152.tmp" with contents
+[
+/nologo /MD /W3 /GX- /Ox /Ot /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"..\Release/makepak.pch" /YX /Fo"..\Release/" /Fd"..\Release/" /FD /c 
+"C:\src\clans-devkit\makepak.c"
+]
+Creating command line "cl.exe @C:\TEMP\RSP152.tmp" 
+Creating temporary file "C:\TEMP\RSP153.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib  kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /incremental:no /pdb:"..\Release/makepak.pdb" /machine:I386 /out:"..\Release/makepak.exe" 
+"\src\clans-devkit\Release\makepak.obj"
+]
+Creating command line "link.exe @C:\TEMP\RSP153.tmp"
+<h3>Output Window</h3>
+Compiling...
+makepak.c
+Linking...
+
+
+
+<h3>Results</h3>
+makepak.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

@@ -12,7 +12,12 @@
 #include <dos.h>
 #endif
 #include <math.h>
+#if defined(__WATCOMC__)
+#define date    dosdate_t
+#define getdate(x)      _dos_getdate(x)
+#else
 #include <dirent.h>
+#endif
 
 #ifdef __TURBOC__
 #include <dir.h>
@@ -143,7 +148,7 @@ void    change_info(void);
 void    dump(void);
 INT16     strzcmp(char str1[], char str2[]);
 void    del(char *file);
-//void	checknodes(void);
+//void  checknodes(void);
 
 void WaitForEnter(void);
 INT16 ReadOrAddCurrentUser(void);
@@ -211,24 +216,24 @@ INT16 fnext(struct ffblk *ffblk);
 INT16 strwcmp(char *format,char *string);*/
 
 /*typedef struct {
-	INT16             first_enemy[LEVELS],
-			last_enemy[LEVELS];
-	} enemy_idx;*/
+        INT16             first_enemy[LEVELS],
+                        last_enemy[LEVELS];
+        } enemy_idx;*/
 
 
 /*typedef struct {
-	char    sender[25];
-	char    senderI[36];
-	sex_type sender_sex;
-	char    node_s[NODE_ADDRESS_CHARS + 1];
-	char    node_r[NODE_ADDRESS_CHARS + 1];
-	char    recver[25];
-	char    recverI[36];
-	INT16     quote_length;
-	INT16     length;
-	INT16     flirt;
-	desease ill;
-	INT16     inf;
-	INT16     deleted;
-	} ibbs_mail_idx_type;*/
+        char    sender[25];
+        char    senderI[36];
+        sex_type sender_sex;
+        char    node_s[NODE_ADDRESS_CHARS + 1];
+        char    node_r[NODE_ADDRESS_CHARS + 1];
+        char    recver[25];
+        char    recverI[36];
+        INT16     quote_length;
+        INT16     length;
+        INT16     flirt;
+        desease ill;
+        INT16     inf;
+        INT16     deleted;
+        } ibbs_mail_idx_type;*/
 

@@ -1,0 +1,80 @@
+**************************************************
+**** Space Dynasty Elite, Sysop Documentation ****
+**************************************************
+
+Program Information:
+ BBS Door  - Space Dynasty Elite (SDE)
+ Author    - 1999-2004 by Darryl Perry, All Rights Reserved
+
+What is it Space Dynasty Elite:
+	Space Dynasty Elite is a linux implementation of a WWIV BBS online game
+	called Space Dynasty.  Space Dynast was a variation of two online games
+	written for Atari ST BBS systems, Space Empire by Jon Radoff and
+	Galactic Empire by Andromeda Software.  It is a multi-player game, the
+	object of which is to rule more planets than any other player.  You can
+	gain planets in two ways, (1) buying planets or (2) attacking other players
+	and taking their planets.
+	There is no "conclusion" to the game as such; the game continues until the
+	sysop decides to reset the game.
+
+Supported Platforms:
+	Space Dynasty Elite has been tested on Redhat 7x-9x, and Mandrake 9.2 
+	systems.  It has been tested with the linux version of Mystic BBS 1.07.3, 
+	but is expected to work with other linux BBS packages.
+
+	There are no plans at this time to create a Windows or DOS version of SDE 
+	at this time, because there is already a DOS version of Space Dynasty.  If
+	you want the DOS version, you can call my BBS at cyberia.darktech.org and
+	download the file dynas306.zip.
+
+Disclaimer:
+
+	The Space Dynasty Elite Door is distributed without warranty.
+	In no case shall I be held responsible for any damages or losses
+	resulting from you running this software. By running this program
+	you have agreed to take responsibility for any problems that may result.
+	If you do not agree to this, don't run the program.
+
+Installation:
+	Installation is simple.  Copy the dynasty executable into your desired
+	directory.  It requires no other files, but it will create data files
+	on the fly.
+
+	dynasty requires a single parameter.  This parameter is the full path
+	and filename of your dropfile.
+
+	dynasty can read the following drop file formats:
+
+	door.sys
+	chain.txt
+
+	For a chain.txt dropfile the command line would look like this:
+	# dynasty chain.txt
+	or
+	# dynasty /home/bbs/<node>/chain.txt
+
+Editors:
+	In the startup menu, there is an option that is not visible to any player 
+	with a security level of less than 200.  It is the 'god menu'  This is where
+	all the game editing is done.  I suggest that you run the game and set that
+	up first.
+
+Bug Reports:
+	Space Dynasty Elite is a work in progress, and is as-such, unfinished.
+	That being the case, bugs are sure to crop up.  I am interested in 
+	finding out and squashing as many bugs as possible.  I also want to hear
+	about any suggestions that will make game play more fun.
+
+	If you have any questions, comments, or bug reports, please feel free
+	to drop me a note.
+
+	BBS: Cyberia BBS, telnet://cyberia.darktech.org, email the Sysop
+	Email: cyberiabbs@yahoo.com
+
+	Sorry, I don't do IRC, or ICQ.
+
+To Do:
+	These are changes that I am intending to make to Space Dynasty Elite:
+
+	- Add a messaging system
+	- Interbbs play
