@@ -434,7 +434,7 @@ long * sbbs_t::getintvar(csi_t *bin, long name)
 			return(&bin->socket_error);
 
 		case 0xA0023A2E:
-			return((long *)&cfg.startup->options);
+			return((long *)&startup->options);
 
 		case 0x16E2585F:
 			sysvar_l[sysvar_li]=client_socket;
@@ -1245,7 +1245,7 @@ int sbbs_t::exec(csi_t *csi)
 			case CS_TWO_MORE_BYTES:
 				switch(*(csi->ip++)) {
 					case CS_USER_EVENT:
-						user_event(*(csi->ip++));
+						user_event((user_event_t)*(csi->ip++));
 						return(0);
 					}
 				errormsg(WHERE,ERR_CHK,"shell instruction",*(csi->ip-1));

@@ -1334,7 +1334,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 /****************************************************************************/
 /* This function handles configured external program execution. 			*/
 /****************************************************************************/
-void sbbs_t::exec_xtrn(uint xtrnnum)
+bool sbbs_t::exec_xtrn(uint xtrnnum)
 {
 	char str[256],path[256],dropdir[128],name[32],c,mode;
     int file;
@@ -1343,18 +1343,20 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
     node_t node;
 	time_t start,end;
 
-
 	if(!chk_ar(cfg.xtrn[xtrnnum]->run_ar,&useron)
 		|| !chk_ar(cfg.xtrnsec[cfg.xtrn[xtrnnum]->sec]->ar,&useron)) {
 		bputs(text[CantRunThatProgram]);
-		return; }
+		return(false); 
+	}
 
 	if(cfg.xtrn[xtrnnum]->cost && !(useron.exempt&FLAG('X'))) {    /* costs */
 		if(cfg.xtrn[xtrnnum]->cost>useron.cdt+useron.freecdt) {
 			bputs(text[NotEnoughCredits]);
 			pause();
-			return; }
-		subtract_cdt(&cfg,&useron,cfg.xtrn[xtrnnum]->cost); }
+			return(false); 
+		}
+		subtract_cdt(&cfg,&useron,cfg.xtrn[xtrnnum]->cost); 
+	}
 
 	if(!(cfg.xtrn[xtrnnum]->misc&MULTIUSER)) {
 		for(i=1;i<=cfg.sys_nodes;i++) {
@@ -1374,7 +1376,8 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
 				pause();
 				break; } }
 		if(i<=cfg.sys_nodes)
-			return; }
+			return(false); 
+	}
 
 	sprintf(str,"%s/",cfg.xtrn[xtrnnum]->path);
 	strcpy(path,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? str : cfg.node_dir);
@@ -1425,7 +1428,7 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
 		tleft=(cfg.xtrn[xtrnnum]->maxtime*60);
 	xtrndat(name,dropdir,cfg.xtrn[xtrnnum]->type,tleft,cfg.xtrn[xtrnnum]->misc);
 	if(!online)
-		return;
+		return(false);
 	sprintf(str,"Ran external: %s",cfg.xtrn[xtrnnum]->name);
 	logline("X-",str);
 	if(cfg.xtrn[xtrnnum]->cmd[0]!='*' && logfile_fp!=NULL) {
@@ -1481,7 +1484,8 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
 			sprintf(str,"%shungup.log",cfg.data_dir);
 			if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
-				return; }
+				return(false); 
+			}
 			getnodedat(cfg.node_num,&thisnode,0);
 			now=time(NULL);
 			sprintf(str,hungupstr,useron.alias,cfg.xtrn[thisnode.aux-1]->name
@@ -1495,13 +1499,14 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
 	thisnode.aux=0;
 	putnodedat(cfg.node_num,&thisnode);
 
+	return(true);
 }
 
 /****************************************************************************/
 /* This function will execute an external program if it is configured to    */
 /* run during the event specified.                                          */
 /****************************************************************************/
-void sbbs_t::user_event(char event)
+bool sbbs_t::user_event(user_event_t event)
 {
     uint i;
 
@@ -1511,7 +1516,10 @@ void sbbs_t::user_event(char event)
 		if(!chk_ar(cfg.xtrn[i]->ar,&useron)
 			|| !chk_ar(cfg.xtrnsec[cfg.xtrn[i]->sec]->ar,&useron))
 			continue;
-		exec_xtrn(i); }
+		return(exec_xtrn(i)); 
+	}
+
+	return(false);
 }
 
 
