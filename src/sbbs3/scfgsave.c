@@ -1096,10 +1096,7 @@ void DLLCALL refresh_cfg(scfg_t* cfg)
     node_t	node;
     
     for(i=0;i<cfg->sys_nodes;i++) {
-		file=-1;
-		memset(&node,0,sizeof(node));
-       	getnodedat(cfg,i+1,&node,&file);
-		if(file==-1)
+       	if(getnodedat(cfg,i+1,&node,&file)!=0)
 			continue;
         node.misc|=NODE_RRUN;
         if(putnodedat(cfg,i+1,&node,file))
