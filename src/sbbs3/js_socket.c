@@ -169,6 +169,7 @@ void DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv)
 static JSBool
 js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	ulong		ip=0;
 	SOCKADDR_IN	addr;
 	private_t*	p;
 	ushort		port=0;
@@ -184,8 +185,9 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		port = js_port(cx,argv[0],p->type);
 	addr.sin_port = htons(port);
-	if(argc>1)
-		addr.sin_addr.s_addr = inet_addr(JS_GetStringBytes(JS_ValueToString(cx,argv[1])));
+	if(argc>1 
+		&& (ip=inet_addr(JS_GetStringBytes(JS_ValueToString(cx,argv[1]))))!=INADDR_NONE)
+		addr.sin_addr.s_addr = ip;
 
 	if(bind(p->sock, (struct sockaddr *) &addr, sizeof(addr))!=0) {
 		p->last_error=ERROR_VALUE;
