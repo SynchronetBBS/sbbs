@@ -1021,8 +1021,6 @@ static void send_error(http_session_t * session, const char* message)
 					if(session->req.ld!=NULL)
 						session->req.ld->size=snt;
 				}
-				else
-					sent_ssjs=FALSE;
 			}
 		}
 	}
@@ -1777,10 +1775,19 @@ static BOOL get_req(http_session_t * session, char *request_line)
 	char	req_line[MAX_REQUEST_LINE+1];
 	char *	p;
 	int		is_redir=0;
+	int		len;
 
 	req_line[0]=0;
 	if(request_line == NULL) {
-		if(sockreadline(session,req_line,sizeof(req_line)-1)<0)
+		/* Eat leaing blank lines... as apache does...
+		 * "This is a legacy issue. The CERN webserver required POST data to have an extra
+		 * CRLF following it. Thus many clients send an extra CRLF that is not included in the
+		 * Content-Length of the request. Apache works around this problem by eating any empty
+		 * lines which appear before a request."
+		 * http://httpd.apache.org/docs/misc/known_client_problems.html
+		 */
+		while((len=sockreadline(session,req_line,sizeof(req_line)-1))==0);
+		if(len<0)
 			req_line[0]=0;
 		if(req_line[0])
 			lprintf(LOG_DEBUG,"%04d Request: %s",session->socket,req_line);
@@ -2452,8 +2459,10 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     for(i=0; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
-		if(session->req.sent_headers)
-			sendsocket(session->socket, JS_GetStringBytes(str), JS_GetStringLength(str));
+		if(session->req.sent_headers) {
+			if(session->req.method!=HTTP_HEAD)
+				sendsocket(session->socket, JS_GetStringBytes(str), JS_GetStringLength(str));
+		}
 		else
 			fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
 	}
@@ -2477,8 +2486,10 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	js_write(cx, obj, argc, argv, rval);
 
 	/* Should this do the whole \r\n thing for Win32 *shudder* */
-	if(session->req.sent_headers)
-		sendsocket(session->socket, "\n", 1);
+	if(session->req.sent_headers) {
+		if(session->req.method!=HTTP_HEAD)
+			sendsocket(session->socket, "\n", 1);
+	}
 	else
 		fprintf(session->req.fp,"\n");
 
