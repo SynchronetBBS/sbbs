@@ -36,7 +36,7 @@ function mime_decode(hdr, body)
 		for(bit in msgbits) {
 			var pieces=msgbits[bit].split(/\r?\n\r?\n/,2);
 			if(pieces[0].search(/content-type: text\/html/i)!=-1) {
-				Message.body="</PRE>"+decode_body(TE,pieces[0],pieces[1])+"<PRE>";
+				Message.body=decode_body(TE,pieces[0],pieces[1]);
 				Message.type="html";
 				return(Message);
 			}
@@ -54,7 +54,7 @@ function mime_decode(hdr, body)
 
 	if(CT.search(/text\/html/i)!=-1) {
 		Message.type="html";
-		Message.body="</PRE>"+decode_body(TE,undef,body)+"<PRE>";
+		Message.body=decode_body(TE,undef,body);
 		return(Message);
 	}
 
