@@ -53,7 +53,6 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	struct	tm tm;
 
 	memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
-	memcpy(msg.hdr.id,"SHD\x1a",4);
 	msg.hdr.version=smb_ver();
 
 	blocks=atol(hdrblk+116);

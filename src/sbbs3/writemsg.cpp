@@ -1219,8 +1219,6 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 		smb_close_da(&smb); }
 
 	msg->hdr.offset=offset;
-
-	memcpy(msg->hdr.id,"SHD\x1a",4);
 	msg->hdr.version=smb_ver();
 
 	smb_unlocksmbhdr(&smb);

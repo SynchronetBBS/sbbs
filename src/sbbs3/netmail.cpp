@@ -215,7 +215,6 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	fclose(instream);
 
 	memset(&msg,0,sizeof(smbmsg_t));
-	memcpy(msg.hdr.id,"SHD\x1a",4);
 	msg.hdr.version=smb_ver();
 	if(mode&WM_FILE)
 		msg.hdr.auxattr|=MSG_FILEATTACH;
@@ -412,7 +411,6 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 	fclose(instream);
 
 	memset(&msg,0,sizeof(smbmsg_t));
-	memcpy(msg.hdr.id,"SHD\x1a",4);
 	msg.hdr.version=smb_ver();
 	if(mode&WM_FILE)
 		msg.hdr.auxattr|=MSG_FILEATTACH;

@@ -217,7 +217,6 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	fflush(smb.sdt_fp);
 
 	memset(&msg,0,sizeof(smbmsg_t));
-	memcpy(msg.hdr.id,"SHD\x1a",4);
 	msg.hdr.version=smb_ver();
 	msg.hdr.when_written.time=time(NULL);
 	msg.hdr.when_written.zone=tzone;

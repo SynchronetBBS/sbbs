@@ -487,7 +487,6 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			l++; }
 
 		memset(&msg,0,sizeof(smbmsg_t));
-		memcpy(msg.hdr.id,"SHD\x1a",4);
 		msg.hdr.version=smb_ver();
 		msg.hdr.when_imported.time=time(NULL);
 		msg.hdr.when_imported.zone=cfg.sys_timezone;

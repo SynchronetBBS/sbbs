@@ -201,7 +201,6 @@ int sbbs_t::bulkmailhdr(uint usernum, smbmsg_t *msg, ushort msgattr, ulong offse
     node_t	node;
 
 	memset(msg,0,sizeof(smbmsg_t));
-	memcpy(msg->hdr.id,"SHD\x1a",4);
 	msg->hdr.version=smb_ver();
 	msg->hdr.attr=msg->idx.attr=msgattr;
 	msg->hdr.when_written.time=msg->hdr.when_imported.time=time(NULL);

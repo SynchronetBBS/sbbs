@@ -2193,7 +2193,6 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	smb_t	*smbfile;
 
 memset(&msg,0,sizeof(smbmsg_t));
-memcpy(msg.hdr.id,"SHD\x1a",4);
 msg.hdr.version=smb_ver();
 if(fmsghdr.attr&FIDO_PRIVATE)
 	msg.idx.attr|=MSG_PRIVATE;

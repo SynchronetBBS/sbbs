@@ -232,7 +232,6 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	crc=~crc;
 
 	memset(&msg,0,sizeof(smbmsg_t));
-	memcpy(msg.hdr.id,"SHD\x1a",4);
 	msg.hdr.version=smb_ver();
 	msg.hdr.attr=msg.idx.attr=msgattr;
 	if(mode&WM_FILE)

@@ -1842,7 +1842,6 @@ static void smtp_thread(void* arg)
 
 			smb_freemsgmem(&msg);
 			memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
-			memcpy(msg.hdr.id,"SHD\x1a",4);
 			msg.hdr.version=smb_ver();
 			msg.hdr.when_imported.time=time(NULL);
 			msg.hdr.when_imported.zone=scfg.sys_timezone;
