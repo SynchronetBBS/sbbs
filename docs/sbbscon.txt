@@ -242,4 +242,12 @@ esac
 exit 0
 --- CUT --- END OF FILE --- CUT ---
 
+A note on SysOp paging:
+For most systems, the BBS must run as root to page the SysOp.  FreeBSD supports
+an alternative method which requires a custom kernel with the option:
+
+pseudo-device speaker
+
+/dev/speaker should be read/writeable by the user the BBS runs as.
+
 /* End of sbbscon.txt */
