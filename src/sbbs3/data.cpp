@@ -113,6 +113,8 @@ long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 	char str[256];
 	long l;
 
+	if(dirnum>=cfg->total_dirs)	/* out of range */
+		return(0);
 	sprintf(str,"%s%s.ixb",cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
 	l=flength(str);
 	if(l>0L)
