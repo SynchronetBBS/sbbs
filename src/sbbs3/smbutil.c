@@ -346,9 +346,9 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 
 	i=smb_addmsghdr(&smb,&msg,smb.status.attr&SMB_HYPERALLOC);
 
-	if(i) {
+	if(i!=SMB_SUCCESS) {
 		fprintf(stderr,"\n\7!smb_addmsghdr returned %d: %s\n",i,smb.last_error);
-		smb_freemsgdat(&smb,offset,length,1);
+		smb_freemsg_dfields(&smb,&msg,1);
 		exit(1); 
 	}
 	smb_freemsgmem(&msg);
