@@ -192,6 +192,7 @@ DLLEXPORT BOOL		DLLCALL	isdir(const char *filename);
 DLLEXPORT char*		DLLCALL getfname(const char* path);
 DLLEXPORT int		DLLCALL getfattr(const char* filename);
 DLLEXPORT ulong		DLLCALL getfreediskspace(const char* path);
+DLLEXPORT ulong		DLLCALL delfiles(char *inpath, char *spec);
 
 #if defined(__unix__)
 DLLEXPORT void DLLCALL _splitpath(const char *path, char *drive, char *dir, 

@@ -544,6 +544,34 @@ int DLLCALL getfattr(const char* filename)
 }
 
 /****************************************************************************/
+/* Deletes all files in dir 'path' that match file spec 'spec'              */
+/****************************************************************************/
+ulong DLLCALL delfiles(char *inpath, char *spec)
+{
+	char	path[MAX_PATH+1];
+	char	lastch;
+    uint	i,files=0;
+	glob_t	g;
+
+	lastch=*lastchar(inpath);
+	if(lastch!='/' && lastch!='\\')
+		sprintf(path,"%s%c",inpath,BACKSLASH);
+	else
+		strcpy(path,inpath);
+	strcat(path,spec);
+	glob(path,0,NULL,&g);
+	for(i=0;i<g.gl_pathc;i++) {
+		if(isdir(g.gl_pathv[i]))
+			continue;
+		CHMOD(g.gl_pathv[i],S_IWRITE);	// Incase it's been marked RDONLY
+		if(remove(g.gl_pathv[i])==0)
+			files++;
+	}
+	globfree(&g);
+	return(files);
+}
+
+/****************************************************************************/
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
 /****************************************************************************/
 #if defined(_WIN32)
