@@ -33,6 +33,8 @@ var note_start=0;
 var note_on;
 var note;
 var last_delta=0;
+var tempo=500;		/* msec/quarter-note (120 bbp) */
+var ticks_per_qnote=500;
 
 function readVar(file)
 {
@@ -49,6 +51,11 @@ function readVar(file)
 	} while(!file.eof && !js.terminated && b&0x80);
 
 	return val;
+}
+
+function ticks_per_msec()
+{
+	return(tempo/ticks_per_qnote);
 }
 
 for(i=0;i<argc;i++) {
@@ -73,7 +80,7 @@ if(!filename) {
 if(!file_exists(filename))
 	filename=system.exec_dir + filename;
 
-file = new File(filename);
+file = new File(filename, true /* shareable */);
 
 if(!file.open("rb")) {
 	alert("error " + file.error + " opening " + filename);
@@ -104,7 +111,8 @@ while(!file.eof && !js.terminated) {
 			fmat = file.readBin(2);
 			ntrks = file.readBin(2);
 			division = file.readBin(2);
-
+			if(!(division&0x8000))
+				ticks_per_qnote=division;
 			if(debug) {
 				writeln("\tformat: " + fmat);
 				writeln("\tntrks:  " + ntrks);
@@ -172,13 +180,14 @@ while(!file.eof && !js.terminated) {
 							track_tempo |= file.readBin(1)<<8;
 							track_tempo |= file.readBin(1);
 							writeln("Tempo: " + track_tempo);
+							temp = track_tempo/1000;	/* Convert from usec to msec */
 							break;
 						case EVENT_TYPE_TIME_SIGNATURE:
 							nn=file.readBin(1);
 							dd=file.readBin(1);
 							cc=file.readBin(1);
 							bb=file.readBin(1);
-							writeln("Time Singature: " + format("%u/%u",nn,Math.pow(2,dd)));
+							writeln("Time Sigature: " + format("%u/%u",nn,Math.pow(2,dd)));
 							break;
 						default:
 							while(file.position < end_of_event) {
@@ -194,29 +203,36 @@ while(!file.eof && !js.terminated) {
 					switch(status&0xf0) {
 						case EVENT_TYPE_NOTE_ON:
 							note_start=delta;
-							note_on=note=file.readBin(1);
+							note=file.readBin(1);
 							velocity=file.readBin(1);
-							writeln("\t\tnote on:  " + note + " velocity: " + velocity);
+							if(note_on)
+								break;
+							writeln("\t\tnote on:  " + note);
 							if(delta)
-								sleep(delta);
+								sleep(delta*ticks_per_msec());
+							note_on=note;
 							break;
 						case EVENT_TYPE_NOTE_OFF:
 							note=file.readBin(1);
 							velocity=file.readBin(1);
-							writeln("\t\tnote off: " + note + " velocity: " + velocity);
+							writeln("\t\tnote off: " + note);
 							if(note!=note_on)
-								alert("NOTE OFF/ON MISMATCH");
+								break;
 
 							if(delta) {
 								freq=523.50/32.0; /* Low 'C' */
 								freq*=Math.pow(2,note/12);
 								writeln("\t\tPlaying " + Math.floor(freq) + " for " + delta);
-								beep(freq,delta);
+								beep(freq,delta*ticks_per_msec());
 							}
+							note_on=0;
 							break;
 					}
-				} else if(status&0x80)
+				} 
+				/*
+				else if(status&0x80)
 					writeln("Ignoring message for channel: " + format("%02X",status&0x0f));
+				*/
 
 			} while(!file.eof && !js.terminated && file.position < end_of_track);
 
