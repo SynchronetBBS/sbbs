@@ -72,6 +72,7 @@
 #include "sbbs.h"           // unixtodstr()
 #include "sbbs_ini.h"		// sbbs_read_ini()
 #include "userdat.h"		// lastuser()
+#include "ntsvcs.h"			// NTSVC_NAME_*
 
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -297,7 +298,7 @@ static void bbs_start(void)
     Application->ProcessMessages();
 }
 
-static int event_log(char *str)
+static int event_lputs(char *str)
 {
 	static HANDLE mutex;
 
@@ -315,7 +316,7 @@ static int event_log(char *str)
     return(Line.Length());
 }
 
-static int service_log(void* p, char *str)
+static int service_lputs(void* p, char *str)
 {
 	static HANDLE mutex;
 
@@ -651,7 +652,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_startup.thread_up=thread_up;
     bbs_startup.client_on=client_on;
     bbs_startup.socket_open=socket_open;
-    bbs_startup.event_log=event_log;
+    bbs_startup.event_log=event_lputs;
 
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
@@ -699,7 +700,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
     services_startup.interface_addr=INADDR_ANY;
-    services_startup.lputs=service_log;
+    services_startup.lputs=service_lputs;
     services_startup.status=services_status;
     services_startup.clients=services_clients;
     services_startup.started=services_started;
@@ -707,6 +708,12 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     services_startup.thread_up=thread_up;
     services_startup.client_on=client_on;
     services_startup.socket_open=socket_open;
+
+    bbs_log=INVALID_HANDLE_VALUE;
+    event_log=INVALID_HANDLE_VALUE;
+    ftp_log=INVALID_HANDLE_VALUE;
+    mail_log=INVALID_HANDLE_VALUE;
+    services_log=INVALID_HANDLE_VALUE;
 
     /* Default local "Spy Terminal" settings */
     SpyTerminalFont=new TFont;
@@ -3145,6 +3152,66 @@ void __fastcall TMainForm::BBSEditFileClick(TObject *Sender)
         delete TextFileEditForm;
     }
     delete dlg;
+}
+//---------------------------------------------------------------------------
+bool GetServerLogLine(HANDLE& log, const char* name, char* line, size_t len)
+{
+	char fname[256];
+
+	if(log==INVALID_HANDLE_VALUE) {
+		sprintf(fname,"\\\\.\\mailslot\\%s.log",name);
+        log = CreateMailslot(
+            fname,					// pointer to string for mailslot name
+            0,						// maximum message size
+            0,						// milliseconds before read time-out
+            NULL);                  // pointer to security structure
+        if(log==INVALID_HANDLE_VALUE)
+        	return(false);
+    }
+    DWORD msgs=0;
+    if(!GetMailslotInfo(
+        log,   // mailslot handle
+        NULL,  // address of maximum message size
+        NULL,  // address of size of next message
+        &msgs, // address of number of messages
+        NULL   // address of read time-out
+        ) || !msgs)
+        return(false);
+
+    DWORD rd=0;
+    if(!ReadFile(
+        log,				// handle of file to read
+        line,		        // pointer to buffer that receives data
+        len-1,				// number of bytes to read
+        &rd,				// pointer to number of bytes read
+        NULL				// pointer to structure for data
+        ) || !rd)
+		return(false);
+
+    line[rd]=0;	/* 0-terminate */
+
+	return(true);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::LogTimerTick(TObject *Sender)
+{
+	char line[1024];
+
+	while(GetServerLogLine(bbs_log,NTSVC_NAME_BBS,line,sizeof(line)))
+    	bbs_lputs(NULL,line);
+
+	while(GetServerLogLine(event_log,NTSVC_NAME_EVENT,line,sizeof(line)))
+    	event_lputs(line);
+
+	while(GetServerLogLine(ftp_log,NTSVC_NAME_FTP,line,sizeof(line)))
+    	ftp_lputs(NULL,line);
+
+	while(GetServerLogLine(mail_log,NTSVC_NAME_MAIL,line,sizeof(line)))
+    	mail_lputs(NULL,line);
+
+	while(GetServerLogLine(services_log,NTSVC_NAME_SERVICES,line,sizeof(line)))
+    	service_lputs(NULL,line);
 }
 //---------------------------------------------------------------------------
 

@@ -273,6 +273,7 @@ __published:	// IDE-managed Components
 	TMenuItem *N10;
 	TMenuItem *SpamBaitList;
 	TMenuItem *SpamBlockList;
+	TTimer *LogTimer;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -312,6 +313,7 @@ __published:	// IDE-managed Components
 	void __fastcall TextMenuItemEditClick(TObject *Sender);
 	void __fastcall CtrlMenuItemEditClick(TObject *Sender);
     void __fastcall UpTimerTick(TObject *Sender);
+    void __fastcall LogTimerTick(TObject *Sender);
     void __fastcall BBSViewErrorLogMenuItemClick(TObject *Sender);
     void __fastcall ChatToggleExecute(TObject *Sender);
     void __fastcall ViewClientsExecute(TObject *Sender);
@@ -377,6 +379,11 @@ public:		// User declarations
     web_startup_t	web_startup;
     mail_startup_t 	mail_startup;
     services_startup_t  services_startup;
+    HANDLE			bbs_log;
+    HANDLE			event_log;
+    HANDLE			ftp_log;
+    HANDLE			mail_log;
+    HANDLE			services_log;
     int             NodeDisplayInterval;
     int             ClientDisplayInterval;
     WORD			SemFileCheckFrequency;

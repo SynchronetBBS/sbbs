@@ -10,7 +10,7 @@ object MainForm: TMainForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Icon.Data = {
@@ -46,11 +46,11 @@ object MainForm: TMainForm
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object HorizontalSplitter: TSplitter
     Left = 0
-    Top = 195
+    Top = 164
     Width = 632
     Height = 1
     Cursor = crVSplit
@@ -61,9 +61,9 @@ object MainForm: TMainForm
   end
   object Logo: TImage
     Left = 0
-    Top = 196
+    Top = 165
     Width = 632
-    Height = 131
+    Height = 162
     Align = alClient
     Center = True
     IncrementalDisplay = True
@@ -1957,7 +1957,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 30
     Width = 632
-    Height = 165
+    Height = 134
     Align = alTop
     BevelOuter = bvNone
     Constraints.MinHeight = 100
@@ -1965,18 +1965,18 @@ object MainForm: TMainForm
     TabOrder = 1
     Visible = False
     object TopVerticalSplitter: TSplitter
-      Left = 289
+      Left = 235
       Top = 0
-      Width = 3
-      Height = 165
+      Width = 2
+      Height = 134
       Cursor = crHSplit
       MinSize = 1
     end
     object UpperLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 289
-      Height = 165
+      Width = 235
+      Height = 134
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -1984,10 +1984,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object UpperRightPageControl: TPageControl
-      Left = 292
+      Left = 237
       Top = 0
-      Width = 340
-      Height = 165
+      Width = 395
+      Height = 134
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -1997,26 +1997,26 @@ object MainForm: TMainForm
   end
   object BottomPanel: TPanel
     Left = 0
-    Top = 196
+    Top = 165
     Width = 632
-    Height = 131
+    Height = 162
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     Visible = False
     object BottomVerticalSplitter: TSplitter
-      Left = 289
+      Left = 235
       Top = 0
-      Width = 3
-      Height = 131
+      Width = 2
+      Height = 162
       Cursor = crHSplit
       MinSize = 1
     end
     object LowerLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 289
-      Height = 131
+      Width = 235
+      Height = 162
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -2024,10 +2024,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object LowerRightPageControl: TPageControl
-      Left = 292
+      Left = 237
       Top = 0
-      Width = 340
-      Height = 131
+      Width = 395
+      Height = 162
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -5295,5 +5295,11 @@ object MainForm: TMainForm
   end
   object SaveDialog: TSaveDialog
     Left = 600
+  end
+  object LogTimer: TTimer
+    Interval = 250
+    OnTimer = LogTimerTick
+    Left = 536
+    Top = 40
   end
 end
