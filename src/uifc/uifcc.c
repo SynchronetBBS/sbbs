@@ -201,7 +201,7 @@ int uifcinic(uifcapi_t* uifcapi)
     if(width*height*2>MAX_BFLN) {
 		uifcbail();
         fprintf(stderr,"\7UIFC: Screen size (%u x %u) must be smaller than %u\n"
-            ,api->scrn_len,width,height,(uchar)(MAX_BFLN/2));
+            ,width,height,(uchar)(MAX_BFLN/2));
         return(-2);
     }
     api->scrn_len--; /* account for status line */
@@ -326,11 +326,11 @@ static void scroll_text(int x1, int y1, int x2, int y2, int down)
 {
 	uchar buf[MAX_BFLN];
 
-gettext(x1,y1,x2,y2,buf);
-if(down)
-	puttext(x1,y1+1,x2,y2,buf);
-else
-	puttext(x1,y1,x2,y2-1,buf+(((x2-x1)+1)*2));
+	gettext(x1,y1,x2,y2,buf);
+	if(down)
+		puttext(x1,y1+1,x2,y2,buf);
+	else
+		puttext(x1,y1,x2,y2-1,buf+(((x2-x1)+1)*2));
 }
 
 /****************************************************************************/
@@ -342,10 +342,11 @@ static void timedisplay()
 	static time_t savetime;
 	time_t now;
 
-now=time(NULL);
-if(difftime(now,savetime)>=60) {
-	uprintf(55,1,bclr|(cclr<<4),utimestr(&now));
-	savetime=now; }
+	now=time(NULL);
+	if(difftime(now,savetime)>=60) {
+		uprintf(55,1,bclr|(cclr<<4),utimestr(&now));
+		savetime=now; 
+	}
 }
 
 /****************************************************************************/
@@ -357,7 +358,8 @@ static void truncsp(char *str)
 
 	c=strlen(str);
 	while(c && (uchar)str[c-1]<=SP) c--;
-	str[c]=0;
+	if(str[c]!=0)	/* don't write to string constants */
+		str[c]=0;
 }
 
 /****************************************************************************/
@@ -371,611 +373,272 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
 
-#ifndef __FLAT__
-/* ToDo Mouse stuff */
-#endif
-
-if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1)
-	putch(7);
-i=0;
-if(mode&WIN_INS) bline|=BL_INS;
-if(mode&WIN_DEL) bline|=BL_DEL;
-if(mode&WIN_GET) bline|=BL_GET;
-if(mode&WIN_PUT) bline|=BL_PUT;
-bottomline(bline);
-while(opts<max_opts && opts<MAX_OPTS)
-	if(option[opts][0]==0)
-		break;
-	else opts++;
-if(mode&WIN_XTR && opts<max_opts && opts<MAX_OPTS)
-	option[opts++][0]=0;
-height=opts+4;
-if(top+height>api->scrn_len-3)
-	height=(api->scrn_len-3)-top;
-if(!width || width<strlen(title)+6) {
-	width=strlen(title)+6;
-	for(i=0;i<opts;i++) {
-		truncsp(option[i]);
-		if((j=strlen(option[i])+5)>width)
-			width=j; } }
-if(width>(SCRN_RIGHT+1)-SCRN_LEFT)
-	width=(SCRN_RIGHT+1)-SCRN_LEFT;
-if(mode&WIN_L2R)
-	left=36-(width/2);
-else if(mode&WIN_RHT)
-	left=SCRN_RIGHT-(width+4+left);
-if(mode&WIN_T2B)
-	top=(api->scrn_len/2)-(height/2)-2;
-else if(mode&WIN_BOT)
-	top=api->scrn_len-height-3-top;
-if(mode&WIN_SAV && api->savdepth==api->savnum) {
-	if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
-		cprintf("UIFC line %d: error allocating %u bytes."
-            ,__LINE__,(width+3)*(height+2)*2);
-		return(-1); }
-	gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,sav[api->savnum].buf);
-	sav[api->savnum].left=SCRN_LEFT+left;
-	sav[api->savnum].top=SCRN_TOP+top;
-	sav[api->savnum].right=SCRN_LEFT+left+width+1;
-	sav[api->savnum].bot=SCRN_TOP+top+height;
-	api->savdepth++; }
-else if(mode&WIN_SAV
-	&& (sav[api->savnum].left!=SCRN_LEFT+left
-	|| sav[api->savnum].top!=SCRN_TOP+top
-	|| sav[api->savnum].right!=SCRN_LEFT+left+width+1
-	|| sav[api->savnum].bot!=SCRN_TOP+top+height)) { /* dimensions have changed */
-	puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
-		,sav[api->savnum].buf);	/* put original window back */
-	FREE(sav[api->savnum].buf);
-	if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
-		cprintf("UIFC line %d: error allocating %u bytes."
-            ,__LINE__,(width+3)*(height+2)*2);
-		return(-1); }
-	gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,sav[api->savnum].buf);	  /* save again */
-	sav[api->savnum].left=SCRN_LEFT+left;
-	sav[api->savnum].top=SCRN_TOP+top;
-	sav[api->savnum].right=SCRN_LEFT+left+width+1;
-	sav[api->savnum].bot=SCRN_TOP+top+height; }
-
-
-#ifndef __FLAT__
-if(show_free_mem) {
-/* ToDo Show free memory */
-//	uprintf(58,1,bclr|(cclr<<4),"%10u bytes free",coreleft());
-	}
-#endif
-
-
-if(mode&WIN_ORG) { /* Clear around menu */
-	if(top)
-		puttext(SCRN_LEFT,SCRN_TOP,SCRN_RIGHT+2,SCRN_TOP+top-1,blk_scrn);
-	if(SCRN_TOP+height+top<=api->scrn_len)
-		puttext(SCRN_LEFT,SCRN_TOP+height+top,SCRN_RIGHT+2,api->scrn_len,blk_scrn);
-	if(left)
-		puttext(SCRN_LEFT,SCRN_TOP+top,SCRN_LEFT+left-1,SCRN_TOP+height+top
-			,blk_scrn);
-	if(SCRN_LEFT+left+width<=SCRN_RIGHT)
-		puttext(SCRN_LEFT+left+width,SCRN_TOP+top,SCRN_RIGHT+2
-			,SCRN_TOP+height+top,blk_scrn); }
-ptr=win;
-*(ptr++)='É';
-*(ptr++)=hclr|(bclr<<4);
-
-if(api->mode&UIFC_MOUSE) {
+	#ifndef __FLAT__
 	/* ToDo Mouse stuff */
-	i=0;
-}
-else
-	i=0;
-for(;i<width-2;i++) {
-	*(ptr++)='Í';
-	*(ptr++)=hclr|(bclr<<4); }
-*(ptr++)='»';
-*(ptr++)=hclr|(bclr<<4);
-*(ptr++)='º';
-*(ptr++)=hclr|(bclr<<4);
-a=strlen(title);
-b=(width-a-1)/2;
-for(i=0;i<b;i++) {
-	*(ptr++)=' ';
-	*(ptr++)=hclr|(bclr<<4); }
-for(i=0;i<a;i++) {
-	*(ptr++)=title[i];
-	*(ptr++)=hclr|(bclr<<4); }
-for(i=0;i<width-(a+b)-2;i++) {
-	*(ptr++)=' ';
-	*(ptr++)=hclr|(bclr<<4); }
-*(ptr++)='º';
-*(ptr++)=hclr|(bclr<<4);
-*(ptr++)='Ì';
-*(ptr++)=hclr|(bclr<<4);
-for(i=0;i<width-2;i++) {
-	*(ptr++)='Í';
-	*(ptr++)=hclr|(bclr<<4); }
-*(ptr++)='¹';
-*(ptr++)=hclr|(bclr<<4);
+	#endif
 
-if((*cur)>=opts)
-	(*cur)=opts-1;			/* returned after scrolled */
+	if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1)
+		putch(7);
+	i=0;
+	if(mode&WIN_INS) bline|=BL_INS;
+	if(mode&WIN_DEL) bline|=BL_DEL;
+	if(mode&WIN_GET) bline|=BL_GET;
+	if(mode&WIN_PUT) bline|=BL_PUT;
+	bottomline(bline);
+	while(opts<max_opts && opts<MAX_OPTS)
+		if(option[opts][0]==0)
+			break;
+		else opts++;
+	if(mode&WIN_XTR && opts<max_opts && opts<MAX_OPTS)
+		option[opts++][0]=0;
+	height=opts+4;
+	if(top+height>api->scrn_len-3)
+		height=(api->scrn_len-3)-top;
+	if(!width || width<strlen(title)+6) {
+		width=strlen(title)+6;
+		for(i=0;i<opts;i++) {
+			truncsp(option[i]);
+			if((j=strlen(option[i])+5)>width)
+				width=j; } }
+	if(width>(SCRN_RIGHT+1)-SCRN_LEFT)
+		width=(SCRN_RIGHT+1)-SCRN_LEFT;
+	if(mode&WIN_L2R)
+		left=36-(width/2);
+	else if(mode&WIN_RHT)
+		left=SCRN_RIGHT-(width+4+left);
+	if(mode&WIN_T2B)
+		top=(api->scrn_len/2)-(height/2)-2;
+	else if(mode&WIN_BOT)
+		top=api->scrn_len-height-3-top;
+	if(mode&WIN_SAV && api->savdepth==api->savnum) {
+		if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+			cprintf("UIFC line %d: error allocating %u bytes."
+				,__LINE__,(width+3)*(height+2)*2);
+			return(-1); }
+		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height,sav[api->savnum].buf);
+		sav[api->savnum].left=SCRN_LEFT+left;
+		sav[api->savnum].top=SCRN_TOP+top;
+		sav[api->savnum].right=SCRN_LEFT+left+width+1;
+		sav[api->savnum].bot=SCRN_TOP+top+height;
+		api->savdepth++; }
+	else if(mode&WIN_SAV
+		&& (sav[api->savnum].left!=SCRN_LEFT+left
+		|| sav[api->savnum].top!=SCRN_TOP+top
+		|| sav[api->savnum].right!=SCRN_LEFT+left+width+1
+		|| sav[api->savnum].bot!=SCRN_TOP+top+height)) { /* dimensions have changed */
+		puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
+			,sav[api->savnum].buf);	/* put original window back */
+		FREE(sav[api->savnum].buf);
+		if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+			cprintf("UIFC line %d: error allocating %u bytes."
+				,__LINE__,(width+3)*(height+2)*2);
+			return(-1); }
+		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height,sav[api->savnum].buf);	  /* save again */
+		sav[api->savnum].left=SCRN_LEFT+left;
+		sav[api->savnum].top=SCRN_TOP+top;
+		sav[api->savnum].right=SCRN_LEFT+left+width+1;
+		sav[api->savnum].bot=SCRN_TOP+top+height; }
 
-if(!bar) {
-	if((*cur)>height-5)
-		(*cur)=height-5;
-	i=0; }
-else {
-	if((*bar)>=opts)
-		(*bar)=opts-1;
-	if((*bar)>height-5)
-		(*bar)=height-5;
-	if((*cur)==opts-1)
-        (*bar)=height-5;
-	if((*bar)<0)
-        (*bar)=0;
-	if((*cur)<(*bar))
-		(*cur)=(*bar);
-	i=(*cur)-(*bar);
-//
-	if(i+(height-5)>=opts) {
-		i=opts-(height-4);
-		(*cur)=i+(*bar);
+
+	#ifndef __FLAT__
+	if(show_free_mem) {
+	/* ToDo Show free memory */
+	//	uprintf(58,1,bclr|(cclr<<4),"%10u bytes free",coreleft());
 		}
-	}
-if((*cur)<0)
-    (*cur)=0;
+	#endif
 
-j=0;
-if(i<0) i=0;
-longopt=0;
-while(j<height-4 && i<opts) {
-	*(ptr++)='º';
-	*(ptr++)=hclr|(bclr<<4);
-	*(ptr++)=' ';
-	*(ptr++)=hclr|(bclr<<4);
-	*(ptr++)='³';
-	*(ptr++)=lclr|(bclr<<4);
-	if(i==(*cur))
-		a=bclr|(LIGHTGRAY<<4);
-	else
-		a=lclr|(bclr<<4);
-	b=strlen(option[i]);
-	if(b>longopt)
-		longopt=b;
-	if(b+4>width)
-		b=width-4;
-	for(c=0;c<b;c++) {
-		*(ptr++)=option[i][c];
-		*(ptr++)=a; }
-	while(c<width-4) {
-		*(ptr++)=' ';
-		*(ptr++)=a;
-		c++; }
-	*(ptr++)='º';
-	*(ptr++)=hclr|(bclr<<4);
-	i++;
-	j++; }
-*(ptr++)='È';
-*(ptr++)=hclr|(bclr<<4);
-for(i=0;i<width-2;i++) {
-	*(ptr++)='Í';
-	*(ptr++)=hclr|(bclr<<4); }
-*(ptr++)='¼';
-*(ptr++)=hclr|(bclr<<4);
-puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
-	,SCRN_TOP+top+height-1,win);
-if(bar)
-	y=top+3+(*bar);
-else
-	y=top+3+(*cur);
-if(opts+4>height && ((!bar && (*cur)!=opts-1)
-	|| (bar && ((*cur)-(*bar))+(height-4)<opts))) {
-	gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-	textattr(lclr|(bclr<<4));
-	putch(31);	   /* put down arrow */
-	textattr(hclr|(bclr<<4)); }
 
-if(bar && (*bar)!=(*cur)) {
-	gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
-	textattr(lclr|(bclr<<4));
-	putch(30);	   /* put the up arrow */
-	textattr(hclr|(bclr<<4)); }
+	if(mode&WIN_ORG) { /* Clear around menu */
+		if(top)
+			puttext(SCRN_LEFT,SCRN_TOP,SCRN_RIGHT+2,SCRN_TOP+top-1,blk_scrn);
+		if(SCRN_TOP+height+top<=api->scrn_len)
+			puttext(SCRN_LEFT,SCRN_TOP+height+top,SCRN_RIGHT+2,api->scrn_len,blk_scrn);
+		if(left)
+			puttext(SCRN_LEFT,SCRN_TOP+top,SCRN_LEFT+left-1,SCRN_TOP+height+top
+				,blk_scrn);
+		if(SCRN_LEFT+left+width<=SCRN_RIGHT)
+			puttext(SCRN_LEFT+left+width,SCRN_TOP+top,SCRN_RIGHT+2
+				,SCRN_TOP+height+top,blk_scrn); }
+	ptr=win;
+	*(ptr++)='É';
+	*(ptr++)=hclr|(bclr<<4);
 
-if(bclr==BLUE) {
-	gettext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height-1,shade);
-	for(i=1;i<height*4;i+=2)
-		shade[i]=DARKGRAY;
-	puttext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height-1,shade);
-	gettext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,shade);
-	for(i=1;i<width*2;i+=2)
-		shade[i]=DARKGRAY;
-	puttext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,shade); }
-showmouse();
-while(1) {
-#if 0					/* debug */
-	gotoxy(30,1);
-	cprintf("y=%2d h=%2d c=%2d b=%2d s=%2d o=%2d"
-		,y,height,*cur,bar ? *bar :0xff,api->savdepth,opts);
-#endif
-	if(!show_free_mem)
-		timedisplay();
-#ifndef __FLAT__
 	if(api->mode&UIFC_MOUSE) {
-	/* ToDo Serious mouse stuff here */
+		/* ToDo Mouse stuff */
+		i=0;
 	}
-#endif
+	else
+		i=0;
+	for(;i<width-2;i++) {
+		*(ptr++)='Í';
+		*(ptr++)=hclr|(bclr<<4); }
+	*(ptr++)='»';
+	*(ptr++)=hclr|(bclr<<4);
+	*(ptr++)='º';
+	*(ptr++)=hclr|(bclr<<4);
+	a=strlen(title);
+	b=(width-a-1)/2;
+	for(i=0;i<b;i++) {
+		*(ptr++)=' ';
+		*(ptr++)=hclr|(bclr<<4); }
+	for(i=0;i<a;i++) {
+		*(ptr++)=title[i];
+		*(ptr++)=hclr|(bclr<<4); }
+	for(i=0;i<width-(a+b)-2;i++) {
+		*(ptr++)=' ';
+		*(ptr++)=hclr|(bclr<<4); }
+	*(ptr++)='º';
+	*(ptr++)=hclr|(bclr<<4);
+	*(ptr++)='Ì';
+	*(ptr++)=hclr|(bclr<<4);
+	for(i=0;i<width-2;i++) {
+		*(ptr++)='Í';
+		*(ptr++)=hclr|(bclr<<4); }
+	*(ptr++)='¹';
+	*(ptr++)=hclr|(bclr<<4);
 
-	if(inkey(1)) {
-		i=inkey(0);
-		if(i>255) {
-			s=0;
-			switch(i) {
-				/* ToDo extended keys */
-				case KEY_HOME:	/* home */
-					if(!opts)
-						break;
-					if(opts+4>height) {
-						hidemouse();
-						gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
-						textattr(lclr|(bclr<<4));
-						putch(' ');    /* Delete the up arrow */
-						gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-						putch(31);	   /* put the down arrow */
-						uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-							,bclr|(LIGHTGRAY<<4)
-							,"%-*.*s",width-4,width-4,option[0]);
-						for(i=1;i<height-4;i++)    /* re-display options */
-							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
-								,lclr|(bclr<<4)
-								,"%-*.*s",width-4,width-4,option[i]);
-						(*cur)=0;
-						if(bar)
-							(*bar)=0;
-						y=top+3;
-						showmouse();
-						break; }
-					hidemouse();
-					gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					for(i=1;i<width*2;i+=2)
-						line[i]=lclr|(bclr<<4);
-					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					(*cur)=0;
-					if(bar)
-						(*bar)=0;
-					y=top+3;
-					gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					for(i=1;i<width*2;i+=2)
-						line[i]=bclr|(LIGHTGRAY<<4);
-					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					showmouse();
-					break;
-				case KEY_UP:	/* up arrow */
-					if(!opts)
-						break;
-					if(!(*cur) && opts+4>height) {
-						hidemouse();
-						gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3); /* like end */
-						textattr(lclr|(bclr<<4));
-						putch(30);	   /* put the up arrow */
-						gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-						putch(' ');    /* delete the down arrow */
-						for(i=(opts+4)-height,j=0;i<opts;i++,j++)
-							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-								,i==opts-1 ? bclr|(LIGHTGRAY<<4)
-									: lclr|(bclr<<4)
-								,"%-*.*s",width-4,width-4,option[i]);
-						(*cur)=opts-1;
-						if(bar)
-							(*bar)=height-5;
-						y=top+height-2;
-						showmouse();
-                        break; }
-					hidemouse();
-					gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					for(i=1;i<width*2;i+=2)
-						line[i]=lclr|(bclr<<4);
-					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					showmouse();
-					if(!(*cur)) {
-						y=top+height-2;
-						(*cur)=opts-1;
-						if(bar)
-							(*bar)=height-5; }
-					else {
-						(*cur)--;
-						y--;
-						if(bar && *bar)
-							(*bar)--; }
-					if(y<top+3) {	/* scroll */
-						hidemouse();
-						if(!(*cur)) {
-							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
-							textattr(lclr|(bclr<<4));
-							putch(' '); }  /* delete the up arrow */
-						if((*cur)+height-4==opts-1) {
-							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-							textattr(lclr|(bclr<<4));
-							putch(31); }   /* put the dn arrow */
-						y++;
-						scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
-							,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,1);
-						uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-							,bclr|(LIGHTGRAY<<4)
-							,"%-*.*s",width-4,width-4,option[*cur]);
-						showmouse(); }
-					else {
-						hidemouse();
-						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-						for(i=1;i<width*2;i+=2)
-							line[i]=bclr|(LIGHTGRAY<<4);
-						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-						showmouse(); }
-					break;
-#if 0
-				case KEY_PPAGE;	/* PgUp */
-				case KEY_NPAGE;	/* PgDn */
-					if(!opts || (*cur)==(opts-1))
-						break;
-					(*cur)+=(height-4);
-					if((*cur)>(opts-1))
-						(*cur)=(opts-1);
+	if((*cur)>=opts)
+		(*cur)=opts-1;			/* returned after scrolled */
 
-					hidemouse();
-					gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					for(i=1;i<width*2;i+=2)
-						line[i]=lclr|(bclr<<4);
-					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+	if(!bar) {
+		if((*cur)>height-5)
+			(*cur)=height-5;
+		i=0; }
+	else {
+		if((*bar)>=opts)
+			(*bar)=opts-1;
+		if((*bar)>height-5)
+			(*bar)=height-5;
+		if((*cur)==opts-1)
+			(*bar)=height-5;
+		if((*bar)<0)
+			(*bar)=0;
+		if((*cur)<(*bar))
+			(*cur)=(*bar);
+		i=(*cur)-(*bar);
+	//
+		if(i+(height-5)>=opts) {
+			i=opts-(height-4);
+			(*cur)=i+(*bar);
+			}
+		}
+	if((*cur)<0)
+		(*cur)=0;
 
-					for(i=(opts+4)-height,j=0;i<opts;i++,j++)
-						uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-							,i==(*cur) bclr|(LIGHTGRAY<<4) : lclr|(bclr<<4)
-							,"%-*.*s",width-4,width-4,option[i]);
-					y=top+height-2;
-					if(bar)
-						(*bar)=height-5;
-					gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					for(i=1;i<148;i+=2)
-						line[i]=bclr|(LIGHTGRAY<<4);
-					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					showmouse();
-                    break;
-#endif
-				case KEY_END:	/* end */
-					if(!opts)
-						break;
-					if(opts+4>height) {	/* Scroll mode */
-						hidemouse();
-						gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
-						textattr(lclr|(bclr<<4));
-						putch(30);	   /* put the up arrow */
-						gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-						putch(' ');    /* delete the down arrow */
-						for(i=(opts+4)-height,j=0;i<opts;i++,j++)
-							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-								,i==opts-1 ? bclr|(LIGHTGRAY<<4)
-									: lclr|(bclr<<4)
-								,"%-*.*s",width-4,width-4,option[i]);
-						(*cur)=opts-1;
-						y=top+height-2;
-						if(bar)
-							(*bar)=height-5;
-						showmouse();
-						break; }
-					hidemouse();
-					gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					for(i=1;i<width*2;i+=2)
-						line[i]=lclr|(bclr<<4);
-					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					(*cur)=opts-1;
-					y=top+height-2;
-					if(bar)
-						(*bar)=height-5;
-					gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					for(i=1;i<148;i+=2)
-						line[i]=bclr|(LIGHTGRAY<<4);
-					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					showmouse();
-					break;
-				case KEY_DOWN:	/* dn arrow */
-					if(!opts)
-						break;
-					if((*cur)==opts-1 && opts+4>height) { /* like home */
-						hidemouse();
-						gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
-						textattr(lclr|(bclr<<4));
-						putch(' ');    /* Delete the up arrow */
-						gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-						putch(31);	   /* put the down arrow */
-						uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-							,bclr|(LIGHTGRAY<<4)
-							,"%-*.*s",width-4,width-4,option[0]);
-						for(i=1;i<height-4;i++)    /* re-display options */
-							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
-								,lclr|(bclr<<4)
-								,"%-*.*s",width-4,width-4,option[i]);
-						(*cur)=0;
-						y=top+3;
-						if(bar)
-							(*bar)=0;
-						showmouse();
-                        break; }
-					hidemouse();
-					gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					for(i=1;i<width*2;i+=2)
-						line[i]=lclr|(bclr<<4);
-					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-					showmouse();
-					if((*cur)==opts-1) {
-						(*cur)=0;
-						y=top+3;
-						if(bar) {
-							/* gotoxy(1,1); cprintf("bar=%08lX ",bar); */
-							(*bar)=0; } }
-					else {
-						(*cur)++;
-						y++;
-						if(bar && (*bar)<height-5) {
-							/* gotoxy(1,1); cprintf("bar=%08lX ",bar); */
-							(*bar)++; } }
-					if(y==top+height-1) {	/* scroll */
-						hidemouse();
-						if(*cur==opts-1) {
-							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-							textattr(lclr|(bclr<<4));
-							putch(' '); }  /* delete the down arrow */
-						if((*cur)+4==height) {
-							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
-							textattr(lclr|(bclr<<4));
-							putch(30); }   /* put the up arrow */
-						y--;
-						/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
-						scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
-							,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,0);
-						/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
-						uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+height-2
-							,bclr|(LIGHTGRAY<<4)
-							,"%-*.*s",width-4,width-4,option[*cur]);
-						showmouse(); }
-					else {
-						hidemouse();
-						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-							,SCRN_LEFT+left+width-2,SCRN_TOP+y
-							,line);
-						for(i=1;i<width*2;i+=2)
-							line[i]=bclr|(LIGHTGRAY<<4);
-						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-							,SCRN_LEFT+left+width-2,SCRN_TOP+y
-							,line);
-						showmouse(); }
-					break;
-				case KEY_F(1):	/* F1 */
-					help();
-					break;
-				case KEY_F(5):	/* F5 */
-					if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1))
-						return((*cur)|MSK_GET);
-					break;
-				case KEY_F(6):	/* F6 */
-					if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1))
-						return((*cur)|MSK_PUT);
-					break;
-				case KEY_IC:	/* insert */
-					if(mode&WIN_INS) {
-						if(mode&WIN_INSACT) {
-							hidemouse();
-							gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-								+left+width-1,SCRN_TOP+top+height-1,win);
-							for(i=1;i<(width*height*2);i+=2)
-								win[i]=lclr|(cclr<<4);
-							if(opts) {
-								j=(((y-top)*width)*2)+7+((width-4)*2);
-								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-									win[i]=hclr|(cclr<<4); }
-							puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-								+left+width-1,SCRN_TOP+top+height-1,win);
-							showmouse(); }
+	j=0;
+	if(i<0) i=0;
+	longopt=0;
+	while(j<height-4 && i<opts) {
+		*(ptr++)='º';
+		*(ptr++)=hclr|(bclr<<4);
+		*(ptr++)=' ';
+		*(ptr++)=hclr|(bclr<<4);
+		*(ptr++)='³';
+		*(ptr++)=lclr|(bclr<<4);
+		if(i==(*cur))
+			a=bclr|(LIGHTGRAY<<4);
+		else
+			a=lclr|(bclr<<4);
+		b=strlen(option[i]);
+		if(b>longopt)
+			longopt=b;
+		if(b+4>width)
+			b=width-4;
+		for(c=0;c<b;c++) {
+			*(ptr++)=option[i][c];
+			*(ptr++)=a; }
+		while(c<width-4) {
+			*(ptr++)=' ';
+			*(ptr++)=a;
+			c++; }
+		*(ptr++)='º';
+		*(ptr++)=hclr|(bclr<<4);
+		i++;
+		j++; }
+	*(ptr++)='È';
+	*(ptr++)=hclr|(bclr<<4);
+	for(i=0;i<width-2;i++) {
+		*(ptr++)='Í';
+		*(ptr++)=hclr|(bclr<<4); }
+	*(ptr++)='¼';
+	*(ptr++)=hclr|(bclr<<4);
+	puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
+		,SCRN_TOP+top+height-1,win);
+	if(bar)
+		y=top+3+(*bar);
+	else
+		y=top+3+(*cur);
+	if(opts+4>height && ((!bar && (*cur)!=opts-1)
+		|| (bar && ((*cur)-(*bar))+(height-4)<opts))) {
+		gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+		textattr(lclr|(bclr<<4));
+		putch(31);	   /* put down arrow */
+		textattr(hclr|(bclr<<4)); }
+
+	if(bar && (*bar)!=(*cur)) {
+		gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
+		textattr(lclr|(bclr<<4));
+		putch(30);	   /* put the up arrow */
+		textattr(hclr|(bclr<<4)); }
+
+	if(bclr==BLUE) {
+		gettext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height-1,shade);
+		for(i=1;i<height*4;i+=2)
+			shade[i]=DARKGRAY;
+		puttext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height-1,shade);
+		gettext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height,shade);
+		for(i=1;i<width*2;i+=2)
+			shade[i]=DARKGRAY;
+		puttext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height,shade); }
+	showmouse();
+	while(1) {
+	#if 0					/* debug */
+		gotoxy(30,1);
+		cprintf("y=%2d h=%2d c=%2d b=%2d s=%2d o=%2d"
+			,y,height,*cur,bar ? *bar :0xff,api->savdepth,opts);
+	#endif
+		if(!show_free_mem)
+			timedisplay();
+	#ifndef __FLAT__
+		if(api->mode&UIFC_MOUSE) {
+		/* ToDo Serious mouse stuff here */
+		}
+	#endif
+
+		if(inkey(1)) {
+			i=inkey(0);
+			if(i>255) {
+				s=0;
+				switch(i) {
+					/* ToDo extended keys */
+					case KEY_HOME:	/* home */
 						if(!opts)
-							return(MSK_INS);
-						return((*cur)|MSK_INS); }
-					break;
-				case KEY_DC:	/* delete */
-					if(mode&WIN_XTR && (*cur)==opts-1)	/* can't delete */
-						break;							/* extra line */
-					if(mode&WIN_DEL) {
-						if(mode&WIN_DELACT) {
+							break;
+						if(opts+4>height) {
 							hidemouse();
-							gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-								+left+width-1,SCRN_TOP+top+height-1,win);
-							for(i=1;i<(width*height*2);i+=2)
-								win[i]=lclr|(cclr<<4);
-							j=(((y-top)*width)*2)+7+((width-4)*2);
-							for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-								win[i]=hclr|(cclr<<4);
-							puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-								+left+width-1,SCRN_TOP+top+height-1,win);
-							showmouse(); }
-						return((*cur)|MSK_DEL); }
-					break;	} }
-		else {
-			i&=0xff;
-			if(isalnum(i) && opts && option[0][0]) {
-				search[s]=i;
-				search[s+1]=0;
-				for(j=(*cur)+1,a=b=0;a<2;j++) {   /* a = search count */
-					if(j==opts) {					/* j = option count */
-						j=-1;						/* b = letter count */
-						continue; }
-					if(j==(*cur)) {
-						b++;
-						continue; }
-					if(b>=longopt) {
-                        b=0;
-                        a++; }
-					if(a==1 && !s)
-                        break;
-					if(strlen(option[j])>b
-						&& ((!a && s && !strncasecmp(option[j]+b,search,s+1))
-						|| ((a || !s) && toupper(option[j][b])==toupper(i)))) {
-						if(a) s=0;
-						else s++;
-						if(y+(j-(*cur))+2>height+top) {
-							(*cur)=j;
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 							textattr(lclr|(bclr<<4));
-							putch(30);	   /* put the up arrow */
-							if((*cur)==opts-1) {
-								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-								putch(' '); }  /* delete the down arrow */
-							for(i=((*cur)+5)-height,j=0;i<(*cur)+1;i++,j++)
-								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-									,i==(*cur) ? bclr|(LIGHTGRAY<<4)
-										: lclr|(bclr<<4)
-									,"%-*.*s",width-4,width-4,option[i]);
-							y=top+height-2;
-							if(bar)
-								(*bar)=height-5;
-							break; }
-						if(y-((*cur)-j)<top+3) {
-							(*cur)=j;
-							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
-							textattr(lclr|(bclr<<4));
-							if(!(*cur))
-								putch(' ');    /* Delete the up arrow */
+							putch(' ');    /* Delete the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(31);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
 								,bclr|(LIGHTGRAY<<4)
-								,"%-*.*s",width-4,width-4,option[(*cur)]);
-							for(i=1;i<height-4;i++) 	/* re-display options */
+								,"%-*.*s",width-4,width-4,option[0]);
+							for(i=1;i<height-4;i++)    /* re-display options */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
 									,lclr|(bclr<<4)
-									,"%-*.*s",width-4,width-4
-									,option[(*cur)+i]);
-							y=top+3;
+									,"%-*.*s",width-4,width-4,option[i]);
+							(*cur)=0;
 							if(bar)
 								(*bar)=0;
+							y=top+3;
+							showmouse();
 							break; }
 						hidemouse();
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
@@ -984,76 +647,415 @@ while(1) {
 							line[i]=lclr|(bclr<<4);
 						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-						if((*cur)>j)
-							y-=(*cur)-j;
-						else
-							y+=j-(*cur);
-						if(bar) {
-							if((*cur)>j)
-								(*bar)-=(*cur)-j;
-							else
-								(*bar)+=j-(*cur); }
-						(*cur)=j;
-                        gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+						(*cur)=0;
+						if(bar)
+							(*bar)=0;
+						y=top+3;
+						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						for(i=1;i<width*2;i+=2)
 							line[i]=bclr|(LIGHTGRAY<<4);
 						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						showmouse();
-						break; } }
-				if(a==2)
-					s=0; }
-			else
-				switch(i) {
-					case CR:
-						if(!opts || (mode&WIN_XTR && (*cur)==opts-1))
+						break;
+					case KEY_UP:	/* up arrow */
+						if(!opts)
 							break;
-						if(mode&WIN_ACT) {
+						if(!(*cur) && opts+4>height) {
 							hidemouse();
-							gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-								+left+width-1,SCRN_TOP+top+height-1,win);
-							for(i=1;i<(width*height*2);i+=2)
-								win[i]=lclr|(cclr<<4);
-							j=(((y-top)*width)*2)+7+((width-4)*2);
-							for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-                                win[i]=hclr|(cclr<<4);
+							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3); /* like end */
+							textattr(lclr|(bclr<<4));
+							putch(30);	   /* put the up arrow */
+							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+							putch(' ');    /* delete the down arrow */
+							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
+								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
+									,i==opts-1 ? bclr|(LIGHTGRAY<<4)
+										: lclr|(bclr<<4)
+									,"%-*.*s",width-4,width-4,option[i]);
+							(*cur)=opts-1;
+							if(bar)
+								(*bar)=height-5;
+							y=top+height-2;
+							showmouse();
+							break; }
+						hidemouse();
+						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						for(i=1;i<width*2;i+=2)
+							line[i]=lclr|(bclr<<4);
+						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						showmouse();
+						if(!(*cur)) {
+							y=top+height-2;
+							(*cur)=opts-1;
+							if(bar)
+								(*bar)=height-5; }
+						else {
+							(*cur)--;
+							y--;
+							if(bar && *bar)
+								(*bar)--; }
+						if(y<top+3) {	/* scroll */
+							hidemouse();
+							if(!(*cur)) {
+								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
+								textattr(lclr|(bclr<<4));
+								putch(' '); }  /* delete the up arrow */
+							if((*cur)+height-4==opts-1) {
+								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+								textattr(lclr|(bclr<<4));
+								putch(31); }   /* put the dn arrow */
+							y++;
+							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
+								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,1);
+							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
+								,bclr|(LIGHTGRAY<<4)
+								,"%-*.*s",width-4,width-4,option[*cur]);
+							showmouse(); }
+						else {
+							hidemouse();
+							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+							for(i=1;i<width*2;i+=2)
+								line[i]=bclr|(LIGHTGRAY<<4);
+							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+							showmouse(); }
+						break;
+#if 0
+					case KEY_PPAGE;	/* PgUp */
+					case KEY_NPAGE;	/* PgDn */
+						if(!opts || (*cur)==(opts-1))
+							break;
+						(*cur)+=(height-4);
+						if((*cur)>(opts-1))
+							(*cur)=(opts-1);
 
-							puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-								+left+width-1,SCRN_TOP+top+height-1,win);
-							showmouse(); }
-						else if(mode&WIN_SAV) {
+						hidemouse();
+						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						for(i=1;i<width*2;i+=2)
+							line[i]=lclr|(bclr<<4);
+						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+
+						for(i=(opts+4)-height,j=0;i<opts;i++,j++)
+							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
+								,i==(*cur) bclr|(LIGHTGRAY<<4) : lclr|(bclr<<4)
+								,"%-*.*s",width-4,width-4,option[i]);
+						y=top+height-2;
+						if(bar)
+							(*bar)=height-5;
+						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						for(i=1;i<148;i+=2)
+							line[i]=bclr|(LIGHTGRAY<<4);
+						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						showmouse();
+						break;
+#endif
+					case KEY_END:	/* end */
+						if(!opts)
+							break;
+						if(opts+4>height) {	/* Scroll mode */
 							hidemouse();
-							puttext(sav[api->savnum].left,sav[api->savnum].top
-								,sav[api->savnum].right,sav[api->savnum].bot
-								,sav[api->savnum].buf);
+							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
+							textattr(lclr|(bclr<<4));
+							putch(30);	   /* put the up arrow */
+							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+							putch(' ');    /* delete the down arrow */
+							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
+								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
+									,i==opts-1 ? bclr|(LIGHTGRAY<<4)
+										: lclr|(bclr<<4)
+									,"%-*.*s",width-4,width-4,option[i]);
+							(*cur)=opts-1;
+							y=top+height-2;
+							if(bar)
+								(*bar)=height-5;
 							showmouse();
-							FREE(sav[api->savnum].buf);
-							api->savdepth--; }
-						return(*cur);
-					case ESC:
-						if((mode&WIN_ESC || (mode&WIN_CHE && api->changes))
-							&& !(mode&WIN_SAV)) {
+							break; }
+						hidemouse();
+						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						for(i=1;i<width*2;i+=2)
+							line[i]=lclr|(bclr<<4);
+						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						(*cur)=opts-1;
+						y=top+height-2;
+						if(bar)
+							(*bar)=height-5;
+						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						for(i=1;i<148;i+=2)
+							line[i]=bclr|(LIGHTGRAY<<4);
+						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						showmouse();
+						break;
+					case KEY_DOWN:	/* dn arrow */
+						if(!opts)
+							break;
+						if((*cur)==opts-1 && opts+4>height) { /* like home */
 							hidemouse();
-							gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-								+left+width-1,SCRN_TOP+top+height-1,win);
-							for(i=1;i<(width*height*2);i+=2)
-								win[i]=lclr|(cclr<<4);
-							puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-								+left+width-1,SCRN_TOP+top+height-1,win);
-							showmouse(); }
-						else if(mode&WIN_SAV) {
-							hidemouse();
-							puttext(sav[api->savnum].left,sav[api->savnum].top
-								,sav[api->savnum].right,sav[api->savnum].bot
-								,sav[api->savnum].buf);
+							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
+							textattr(lclr|(bclr<<4));
+							putch(' ');    /* Delete the up arrow */
+							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+							putch(31);	   /* put the down arrow */
+							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
+								,bclr|(LIGHTGRAY<<4)
+								,"%-*.*s",width-4,width-4,option[0]);
+							for(i=1;i<height-4;i++)    /* re-display options */
+								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
+									,lclr|(bclr<<4)
+									,"%-*.*s",width-4,width-4,option[i]);
+							(*cur)=0;
+							y=top+3;
+							if(bar)
+								(*bar)=0;
 							showmouse();
-							FREE(sav[api->savnum].buf);
-							api->savdepth--; }
-						return(-1); } } }
-	else
-		mswait(1);
-	}
+							break; }
+						hidemouse();
+						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						for(i=1;i<width*2;i+=2)
+							line[i]=lclr|(bclr<<4);
+						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+						showmouse();
+						if((*cur)==opts-1) {
+							(*cur)=0;
+							y=top+3;
+							if(bar) {
+								/* gotoxy(1,1); cprintf("bar=%08lX ",bar); */
+								(*bar)=0; } }
+						else {
+							(*cur)++;
+							y++;
+							if(bar && (*bar)<height-5) {
+								/* gotoxy(1,1); cprintf("bar=%08lX ",bar); */
+								(*bar)++; } }
+						if(y==top+height-1) {	/* scroll */
+							hidemouse();
+							if(*cur==opts-1) {
+								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+								textattr(lclr|(bclr<<4));
+								putch(' '); }  /* delete the down arrow */
+							if((*cur)+4==height) {
+								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
+								textattr(lclr|(bclr<<4));
+								putch(30); }   /* put the up arrow */
+							y--;
+							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
+							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
+								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,0);
+							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
+							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+height-2
+								,bclr|(LIGHTGRAY<<4)
+								,"%-*.*s",width-4,width-4,option[*cur]);
+							showmouse(); }
+						else {
+							hidemouse();
+							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+								,SCRN_LEFT+left+width-2,SCRN_TOP+y
+								,line);
+							for(i=1;i<width*2;i+=2)
+								line[i]=bclr|(LIGHTGRAY<<4);
+							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+								,SCRN_LEFT+left+width-2,SCRN_TOP+y
+								,line);
+							showmouse(); }
+						break;
+					case KEY_F(1):	/* F1 */
+						help();
+						break;
+					case KEY_F(5):	/* F5 */
+						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1))
+							return((*cur)|MSK_GET);
+						break;
+					case KEY_F(6):	/* F6 */
+						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1))
+							return((*cur)|MSK_PUT);
+						break;
+					case KEY_IC:	/* insert */
+						if(mode&WIN_INS) {
+							if(mode&WIN_INSACT) {
+								hidemouse();
+								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
+									+left+width-1,SCRN_TOP+top+height-1,win);
+								for(i=1;i<(width*height*2);i+=2)
+									win[i]=lclr|(cclr<<4);
+								if(opts) {
+									j=(((y-top)*width)*2)+7+((width-4)*2);
+									for(i=(((y-top)*width)*2)+7;i<j;i+=2)
+										win[i]=hclr|(cclr<<4); }
+								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
+									+left+width-1,SCRN_TOP+top+height-1,win);
+								showmouse(); }
+							if(!opts)
+								return(MSK_INS);
+							return((*cur)|MSK_INS); }
+						break;
+					case KEY_DC:	/* delete */
+						if(mode&WIN_XTR && (*cur)==opts-1)	/* can't delete */
+							break;							/* extra line */
+						if(mode&WIN_DEL) {
+							if(mode&WIN_DELACT) {
+								hidemouse();
+								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
+									+left+width-1,SCRN_TOP+top+height-1,win);
+								for(i=1;i<(width*height*2);i+=2)
+									win[i]=lclr|(cclr<<4);
+								j=(((y-top)*width)*2)+7+((width-4)*2);
+								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
+									win[i]=hclr|(cclr<<4);
+								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
+									+left+width-1,SCRN_TOP+top+height-1,win);
+								showmouse(); }
+							return((*cur)|MSK_DEL); }
+						break;	} }
+			else {
+				i&=0xff;
+				if(isalnum(i) && opts && option[0][0]) {
+					search[s]=i;
+					search[s+1]=0;
+					for(j=(*cur)+1,a=b=0;a<2;j++) {   /* a = search count */
+						if(j==opts) {					/* j = option count */
+							j=-1;						/* b = letter count */
+							continue; }
+						if(j==(*cur)) {
+							b++;
+							continue; }
+						if(b>=longopt) {
+							b=0;
+							a++; }
+						if(a==1 && !s)
+							break;
+						if(strlen(option[j])>b
+							&& ((!a && s && !strncasecmp(option[j]+b,search,s+1))
+							|| ((a || !s) && toupper(option[j][b])==toupper(i)))) {
+							if(a) s=0;
+							else s++;
+							if(y+(j-(*cur))+2>height+top) {
+								(*cur)=j;
+								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
+								textattr(lclr|(bclr<<4));
+								putch(30);	   /* put the up arrow */
+								if((*cur)==opts-1) {
+									gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+									putch(' '); }  /* delete the down arrow */
+								for(i=((*cur)+5)-height,j=0;i<(*cur)+1;i++,j++)
+									uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
+										,i==(*cur) ? bclr|(LIGHTGRAY<<4)
+											: lclr|(bclr<<4)
+										,"%-*.*s",width-4,width-4,option[i]);
+								y=top+height-2;
+								if(bar)
+									(*bar)=height-5;
+								break; }
+							if(y-((*cur)-j)<top+3) {
+								(*cur)=j;
+								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
+								textattr(lclr|(bclr<<4));
+								if(!(*cur))
+									putch(' ');    /* Delete the up arrow */
+								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+								putch(31);	   /* put the down arrow */
+								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
+									,bclr|(LIGHTGRAY<<4)
+									,"%-*.*s",width-4,width-4,option[(*cur)]);
+								for(i=1;i<height-4;i++) 	/* re-display options */
+									uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
+										,lclr|(bclr<<4)
+										,"%-*.*s",width-4,width-4
+										,option[(*cur)+i]);
+								y=top+3;
+								if(bar)
+									(*bar)=0;
+								break; }
+							hidemouse();
+							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+							for(i=1;i<width*2;i+=2)
+								line[i]=lclr|(bclr<<4);
+							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+							if((*cur)>j)
+								y-=(*cur)-j;
+							else
+								y+=j-(*cur);
+							if(bar) {
+								if((*cur)>j)
+									(*bar)-=(*cur)-j;
+								else
+									(*bar)+=j-(*cur); }
+							(*cur)=j;
+							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
+								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+							for(i=1;i<width*2;i+=2)
+								line[i]=bclr|(LIGHTGRAY<<4);
+							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
+								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
+							showmouse();
+							break; } }
+					if(a==2)
+						s=0; }
+				else
+					switch(i) {
+						case CR:
+							if(!opts || (mode&WIN_XTR && (*cur)==opts-1))
+								break;
+							if(mode&WIN_ACT) {
+								hidemouse();
+								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
+									+left+width-1,SCRN_TOP+top+height-1,win);
+								for(i=1;i<(width*height*2);i+=2)
+									win[i]=lclr|(cclr<<4);
+								j=(((y-top)*width)*2)+7+((width-4)*2);
+								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
+									win[i]=hclr|(cclr<<4);
+
+								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
+									+left+width-1,SCRN_TOP+top+height-1,win);
+								showmouse(); }
+							else if(mode&WIN_SAV) {
+								hidemouse();
+								puttext(sav[api->savnum].left,sav[api->savnum].top
+									,sav[api->savnum].right,sav[api->savnum].bot
+									,sav[api->savnum].buf);
+								showmouse();
+								FREE(sav[api->savnum].buf);
+								api->savdepth--; }
+							return(*cur);
+						case ESC:
+							if((mode&WIN_ESC || (mode&WIN_CHE && api->changes))
+								&& !(mode&WIN_SAV)) {
+								hidemouse();
+								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
+									+left+width-1,SCRN_TOP+top+height-1,win);
+								for(i=1;i<(width*height*2);i+=2)
+									win[i]=lclr|(cclr<<4);
+								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
+									+left+width-1,SCRN_TOP+top+height-1,win);
+								showmouse(); }
+							else if(mode&WIN_SAV) {
+								hidemouse();
+								puttext(sav[api->savnum].left,sav[api->savnum].top
+									,sav[api->savnum].right,sav[api->savnum].bot
+									,sav[api->savnum].buf);
+								showmouse();
+								FREE(sav[api->savnum].buf);
+								api->savdepth--; }
+							return(-1); } } }
+		else
+			mswait(1);
+		}
 }
 
 
@@ -1067,85 +1069,85 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		,shade[160],width,height=3;
 	int i,plen,slen;
 
-hidemouse();
-plen=strlen(prompt);
-if(!plen)
-	slen=4;
-else
-	slen=6;
-width=plen+slen+max;
-if(mode&WIN_T2B)
-	top=(api->scrn_len/2)-(height/2)-2;
-if(mode&WIN_L2R)
-	left=36-(width/2);
-if(mode&WIN_SAV)
-	gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,save_buf);
-i=0;
-in_win[i++]='É';
-in_win[i++]=hclr|(bclr<<4);
-for(c=1;c<width-1;c++) {
-	in_win[i++]='Í';
-	in_win[i++]=hclr|(bclr<<4); }
-in_win[i++]='»';
-in_win[i++]=hclr|(bclr<<4);
-in_win[i++]='º';
-in_win[i++]=hclr|(bclr<<4);
+	hidemouse();
+	plen=strlen(prompt);
+	if(!plen)
+		slen=4;
+	else
+		slen=6;
+	width=plen+slen+max;
+	if(mode&WIN_T2B)
+		top=(api->scrn_len/2)-(height/2)-2;
+	if(mode&WIN_L2R)
+		left=36-(width/2);
+	if(mode&WIN_SAV)
+		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height,save_buf);
+	i=0;
+	in_win[i++]='É';
+	in_win[i++]=hclr|(bclr<<4);
+	for(c=1;c<width-1;c++) {
+		in_win[i++]='Í';
+		in_win[i++]=hclr|(bclr<<4); }
+	in_win[i++]='»';
+	in_win[i++]=hclr|(bclr<<4);
+	in_win[i++]='º';
+	in_win[i++]=hclr|(bclr<<4);
 
-if(plen) {
-	in_win[i++]=SP;
-	in_win[i++]=lclr|(bclr<<4); }
+	if(plen) {
+		in_win[i++]=SP;
+		in_win[i++]=lclr|(bclr<<4); }
 
-for(c=0;prompt[c];c++) {
-	in_win[i++]=prompt[c];
-	in_win[i++]=lclr|(bclr<<4); }
+	for(c=0;prompt[c];c++) {
+		in_win[i++]=prompt[c];
+		in_win[i++]=lclr|(bclr<<4); }
 
-if(plen) {
-	in_win[i++]=':';
-	in_win[i++]=lclr|(bclr<<4);
-	c++; }
+	if(plen) {
+		in_win[i++]=':';
+		in_win[i++]=lclr|(bclr<<4);
+		c++; }
 
-for(c=0;c<max+2;c++) {
-	in_win[i++]=SP;
-	in_win[i++]=lclr|(bclr<<4); }
+	for(c=0;c<max+2;c++) {
+		in_win[i++]=SP;
+		in_win[i++]=lclr|(bclr<<4); }
 
-in_win[i++]='º';
-in_win[i++]=hclr|(bclr<<4);
-in_win[i++]='È';
-in_win[i++]=hclr|(bclr<<4);
-for(c=1;c<width-1;c++) {
-	in_win[i++]='Í';
-	in_win[i++]=hclr|(bclr<<4); }
-in_win[i++]='¼';
-in_win[i++]=hclr|(bclr<<4);
-puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
-	,SCRN_TOP+top+height-1,in_win);
+	in_win[i++]='º';
+	in_win[i++]=hclr|(bclr<<4);
+	in_win[i++]='È';
+	in_win[i++]=hclr|(bclr<<4);
+	for(c=1;c<width-1;c++) {
+		in_win[i++]='Í';
+		in_win[i++]=hclr|(bclr<<4); }
+	in_win[i++]='¼';
+	in_win[i++]=hclr|(bclr<<4);
+	puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
+		,SCRN_TOP+top+height-1,in_win);
 
-if(bclr==BLUE) {
-	gettext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+(height-1),shade);
-	for(c=1;c<12;c+=2)
-		shade[c]=DARKGRAY;
-	puttext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+(height-1),shade);
-	gettext(SCRN_LEFT+left+2,SCRN_TOP+top+3,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,shade);
-	for(c=1;c<width*2;c+=2)
-		shade[c]=DARKGRAY;
-	puttext(SCRN_LEFT+left+2,SCRN_TOP+top+3,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,shade); }
+	if(bclr==BLUE) {
+		gettext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+(height-1),shade);
+		for(c=1;c<12;c+=2)
+			shade[c]=DARKGRAY;
+		puttext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+(height-1),shade);
+		gettext(SCRN_LEFT+left+2,SCRN_TOP+top+3,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height,shade);
+		for(c=1;c<width*2;c+=2)
+			shade[c]=DARKGRAY;
+		puttext(SCRN_LEFT+left+2,SCRN_TOP+top+3,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height,shade); }
 
-textattr(lclr|(bclr<<4));
-if(!plen)
-	gotoxy(SCRN_LEFT+left+2,SCRN_TOP+top+1);
-else
-	gotoxy(SCRN_LEFT+left+plen+4,SCRN_TOP+top+1);
-i=ugetstr(str,max,kmode);
-if(mode&WIN_SAV)
-	puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,save_buf);
-showmouse();
-return(i);
+	textattr(lclr|(bclr<<4));
+	if(!plen)
+		gotoxy(SCRN_LEFT+left+2,SCRN_TOP+top+1);
+	else
+		gotoxy(SCRN_LEFT+left+plen+4,SCRN_TOP+top+1);
+	i=ugetstr(str,max,kmode);
+	if(mode&WIN_SAV)
+		puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
+			,SCRN_TOP+top+height,save_buf);
+	showmouse();
+	return(i);
 }
 
 /****************************************************************************/
@@ -1156,13 +1158,13 @@ void umsg(char *str)
 	int i=0;
 	char *ok[2]={"OK",""};
 
-if(api->mode&UIFC_INMSG)	/* non-cursive */
-	return;
-api->mode|=UIFC_INMSG;
-if(api->savdepth) api->savnum++;
-ulist(WIN_SAV|WIN_MID,0,0,0,&i,0,str,ok);
-if(api->savdepth) api->savnum--;
-api->mode&=~UIFC_INMSG;
+	if(api->mode&UIFC_INMSG)	/* non-cursive */
+		return;
+	api->mode|=UIFC_INMSG;
+	if(api->savdepth) api->savnum++;
+	ulist(WIN_SAV|WIN_MID,0,0,0,&i,0,str,ok);
+	if(api->savdepth) api->savnum--;
+	api->mode&=~UIFC_INMSG;
 }
 
 /****************************************************************************/
@@ -1179,192 +1181,192 @@ static int ugetstr(char *outstr, int max, long mode)
 	union  REGS r;
 #endif
 
-curs_set(1);
-y=wherey();
-if(mode&K_EDIT) {
-/***
-	truncsp(outstr);
-***/
-	outstr[max]=0;
-	textattr(bclr|(LIGHTGRAY<<4));
-	cputs(outstr);
-	textattr(lclr|(bclr<<4));
-	strcpy(str,outstr);
-	i=j=strlen(str);
-	while(inkey(1)==0) {
-#ifndef __FLAT__
-		if(api->mode&UIFC_MOUSE) {
-		/* ToDo More mouse stuff */
-		}
-#endif
-		mswait(1);
-	}
-	f=inkey(0);
-	gotoxy(wherex()-i,y);
-	if(f != KEY_DC && f != KEY_BACKSPACE)
-	{
+	curs_set(1);
+	y=wherey();
+	if(mode&K_EDIT) {
+	/***
+		truncsp(outstr);
+	***/
+		outstr[max]=0;
+		textattr(bclr|(LIGHTGRAY<<4));
 		cputs(outstr);
-		if(isprint(f))
+		textattr(lclr|(bclr<<4));
+		strcpy(str,outstr);
+		i=j=strlen(str);
+		while(inkey(1)==0) {
+#ifndef __FLAT__
+			if(api->mode&UIFC_MOUSE) {
+			/* ToDo More mouse stuff */
+			}
+#endif
+			mswait(1);
+		}
+		f=inkey(0);
+		gotoxy(wherex()-i,y);
+		if(f != KEY_DC && f != KEY_BACKSPACE)
 		{
-			putch(f);
-			i++;
-			j++;
+			cputs(outstr);
+			if(isprint(f))
+			{
+				putch(f);
+				i++;
+				j++;
+			}
+		}
+		else
+		{
+			cprintf("%*s",i,"");
+			gotoxy(wherex()-i,y);
+			i=j=0;
 		}
 	}
 	else
-	{
-		cprintf("%*s",i,"");
-		gotoxy(wherex()-i,y);
 		i=j=0;
-	}
-}
-else
-	i=j=0;
 
-ch=0;
-while(ch!=CR)
-{
-	if(i>j) j=i;
+	ch=0;
+	while(ch!=CR)
+	{
+		if(i>j) j=i;
 #ifndef __FLAT__
-	if(api->mode&UIFC_MOUSE)
-	{
-		/* ToDo More Mouse Stuff */
-	}
-#endif
-	if(inkey(1))
-	{
-		ch=inkey(0);
-		switch(ch)
+		if(api->mode&UIFC_MOUSE)
 		{
-			case KEY_F(1):	/* F1 Help */
-				help();
-				continue;
-			case KEY_LEFT:	/* left arrow */
-				if(i)
-				{
-					gotoxy(wherex()-1,y);
-					i--;
-				}
-				continue;
-			case KEY_RIGHT:	/* right arrow */
-				if(i<j)
-				{
-					gotoxy(wherex()+1,y);
-					i++;
-				}
-				continue;
-			case KEY_HOME:	/* home */
-				if(i)
-				{
-					gotoxy(wherex()-i,y);
-					i=0;
-				}
-				continue;
-			case KEY_END:	/* end */
-				if(i<j)
-				{
-					gotoxy(wherex()+(j-i),y);
-					i=j;
-				}
-				continue;
-			case KEY_IC:	/* insert */
-				ins=!ins;
-				if(ins)
-				{
-					curs_set(2);
-					refresh();
-				}
-				else
-				{
-					curs_set(1);
-					refresh();
-				}
-				continue;
-			case BS:
-			case KEY_BACKSPACE:
-				if(i)
-				{
-					if(i==j)
+			/* ToDo More Mouse Stuff */
+		}
+#endif
+		if(inkey(1))
+		{
+			ch=inkey(0);
+			switch(ch)
+			{
+				case KEY_F(1):	/* F1 Help */
+					help();
+					continue;
+				case KEY_LEFT:	/* left arrow */
+					if(i)
 					{
-						cputs("\b \b");
-						j--;
+						gotoxy(wherex()-1,y);
 						i--;
 					}
-					else {
-						gettext(wherex(),y,wherex()+(j-i),y,buf);
-						puttext(wherex()-1,y,wherex()+(j-i)-1,y,buf);
+					continue;
+				case KEY_RIGHT:	/* right arrow */
+					if(i<j)
+					{
+						gotoxy(wherex()+1,y);
+						i++;
+					}
+					continue;
+				case KEY_HOME:	/* home */
+					if(i)
+					{
+						gotoxy(wherex()-i,y);
+						i=0;
+					}
+					continue;
+				case KEY_END:	/* end */
+					if(i<j)
+					{
+						gotoxy(wherex()+(j-i),y);
+						i=j;
+					}
+					continue;
+				case KEY_IC:	/* insert */
+					ins=!ins;
+					if(ins)
+					{
+						curs_set(2);
+						refresh();
+					}
+					else
+					{
+						curs_set(1);
+						refresh();
+					}
+					continue;
+				case BS:
+				case KEY_BACKSPACE:
+					if(i)
+					{
+						if(i==j)
+						{
+							cputs("\b \b");
+							j--;
+							i--;
+						}
+						else {
+							gettext(wherex(),y,wherex()+(j-i),y,buf);
+							puttext(wherex()-1,y,wherex()+(j-i)-1,y,buf);
+							gotoxy(wherex()+(j-i),y);
+							putch(SP);
+							gotoxy(wherex()-((j-i)+2),y);
+							i--;
+							j--;
+							for(k=i;k<j;k++)
+								str[k]=str[k+1]; 
+						}
+						continue; 
+					}
+				case KEY_DC:	/* delete */
+					if(i<j)
+					{
+						gettext(wherex()+1,y,wherex()+(j-i),y,buf);
+						puttext(wherex(),y,wherex()+(j-i)-1,y,buf);
 						gotoxy(wherex()+(j-i),y);
 						putch(SP);
-						gotoxy(wherex()-((j-i)+2),y);
-						i--;
-						j--;
+						gotoxy(wherex()-((j-i)+1),y);
 						for(k=i;k<j;k++)
-							str[k]=str[k+1]; 
+							str[k]=str[k+1];
+						j--;
 					}
-					continue; 
-				}
-			case KEY_DC:	/* delete */
-				if(i<j)
-				{
-					gettext(wherex()+1,y,wherex()+(j-i),y,buf);
-					puttext(wherex(),y,wherex()+(j-i)-1,y,buf);
-					gotoxy(wherex()+(j-i),y);
-					putch(SP);
-					gotoxy(wherex()-((j-i)+1),y);
-					for(k=i;k<j;k++)
-						str[k]=str[k+1];
-					j--;
-				}
-				continue;
-			case 03:
-			case ESC:
-				{
-					curs_set(0);
-					refresh();
-					return(-1);
-				}
-			case CR:
-				break;
-			case 24:   /* ctrl-x  */
-				if(j)
-				{
-					gotoxy(wherex()-i,y);
-					cprintf("%*s",j,"");
-					gotoxy(wherex()-j,y);
-					i=j=0;
-				}
-				continue;
-			case 25:   /* ctrl-y */
-				if(i<j)
-				{
-					cprintf("%*s",(j-i),"");
-					gotoxy(wherex()-(j-i),y);
-					j=i;
-				}
-				continue;
-		}
-		if(mode&K_NUMBER && !isdigit(ch))
-			continue;
-		if(mode&K_ALPHA && !isalpha(ch))
-			continue;
-		if((ch>=SP || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max))
-		{
-			if(mode&K_UPPER)
-				ch=toupper(ch);
-			if(ins)
-			{
-				gettext(wherex(),y,wherex()+(j-i),y,buf);
-				puttext(wherex()+1,y,wherex()+(j-i)+1,y,buf);
-				for(k=++j;k>i;k--)
-					str[k]=str[k-1];
+					continue;
+				case 03:
+				case ESC:
+					{
+						curs_set(0);
+						refresh();
+						return(-1);
+					}
+				case CR:
+					break;
+				case 24:   /* ctrl-x  */
+					if(j)
+					{
+						gotoxy(wherex()-i,y);
+						cprintf("%*s",j,"");
+						gotoxy(wherex()-j,y);
+						i=j=0;
+					}
+					continue;
+				case 25:   /* ctrl-y */
+					if(i<j)
+					{
+						cprintf("%*s",(j-i),"");
+						gotoxy(wherex()-(j-i),y);
+						j=i;
+					}
+					continue;
 			}
-			putch(ch);
-			str[i++]=ch; 
-		} 
+			if(mode&K_NUMBER && !isdigit(ch))
+				continue;
+			if(mode&K_ALPHA && !isalpha(ch))
+				continue;
+			if((ch>=SP || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max))
+			{
+				if(mode&K_UPPER)
+					ch=toupper(ch);
+				if(ins)
+				{
+					gettext(wherex(),y,wherex()+(j-i),y,buf);
+					puttext(wherex()+1,y,wherex()+(j-i)+1,y,buf);
+					for(k=++j;k>i;k--)
+						str[k]=str[k-1];
+				}
+				putch(ch);
+				str[i++]=ch; 
+			} 
+		}
+		else
+			mswait(1);
 	}
-	else
-		mswait(1);
-}
 
 
 	str[j]=0;
@@ -1411,37 +1413,38 @@ static int uprintf(int x, int y, unsigned char attr, char *fmat, ...)
 void bottomline(int line)
 {
 	int i=4;
-uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F1 ");
-i+=3;
-uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Help  ");
-i+=6;
-if(line&BL_GET) {
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F5 ");
+
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F1 ");
 	i+=3;
-	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Copy Item  ");
-	i+=11; }
-if(line&BL_PUT) {
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F6 ");
-	i+=3;
-	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Paste  ");
-    i+=7; }
-if(line&BL_INS) {
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"INS ");
+	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Help  ");
+	i+=6;
+	if(line&BL_GET) {
+		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F5 ");
+		i+=3;
+		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Copy Item  ");
+		i+=11; }
+	if(line&BL_PUT) {
+		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F6 ");
+		i+=3;
+		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Paste  ");
+		i+=7; }
+	if(line&BL_INS) {
+		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"INS ");
+		i+=4;
+		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Add Item  ");
+		i+=10; }
+	if(line&BL_DEL) {
+		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"DEL ");
+		i+=4;
+		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
+		i+=13; }
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC ");
 	i+=4;
-	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Add Item  ");
-	i+=10; }
-if(line&BL_DEL) {
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"DEL ");
-    i+=4;
-	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
-	i+=13; }
-uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC ");
-i+=4;
-uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Exit");
-i+=4;
-gotoxy(i,api->scrn_len+1);
-textattr(BLACK|(cclr<<4));
-clrtoeol();
+	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Exit");
+	i+=4;
+	gotoxy(i,api->scrn_len+1);
+	textattr(BLACK|(cclr<<4));
+	clrtoeol();
 }
 
 
@@ -1455,78 +1458,78 @@ char *utimestr(time_t *intime)
 	char wday[4],mon[4],mer[3],hour;
 	struct tm *gm;
 
-gm=localtime(intime);
-switch(gm->tm_wday) {
-	case 0:
-		strcpy(wday,"Sun");
-		break;
-	case 1:
-		strcpy(wday,"Mon");
-		break;
-	case 2:
-		strcpy(wday,"Tue");
-		break;
-	case 3:
-		strcpy(wday,"Wed");
-		break;
-	case 4:
-		strcpy(wday,"Thu");
-		break;
-	case 5:
-		strcpy(wday,"Fri");
-		break;
-	case 6:
-		strcpy(wday,"Sat");
-		break; }
-switch(gm->tm_mon) {
-	case 0:
-		strcpy(mon,"Jan");
-		break;
-	case 1:
-		strcpy(mon,"Feb");
-		break;
-	case 2:
-		strcpy(mon,"Mar");
-		break;
-	case 3:
-		strcpy(mon,"Apr");
-		break;
-	case 4:
-		strcpy(mon,"May");
-		break;
-	case 5:
-		strcpy(mon,"Jun");
-		break;
-	case 6:
-		strcpy(mon,"Jul");
-		break;
-	case 7:
-		strcpy(mon,"Aug");
-		break;
-	case 8:
-		strcpy(mon,"Sep");
-		break;
-	case 9:
-		strcpy(mon,"Oct");
-		break;
-	case 10:
-		strcpy(mon,"Nov");
-		break;
-	case 11:
-		strcpy(mon,"Dec");
-		break; }
-if(gm->tm_hour>12) {
-	strcpy(mer,"pm");
-	hour=gm->tm_hour-12; }
-else {
-	if(!gm->tm_hour)
-		hour=12;
-	else
-		hour=gm->tm_hour;
-	strcpy(mer,"am"); }
-sprintf(str,"%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
-	,hour,gm->tm_min,mer);
-return(str);
+	gm=localtime(intime);
+	switch(gm->tm_wday) {
+		case 0:
+			strcpy(wday,"Sun");
+			break;
+		case 1:
+			strcpy(wday,"Mon");
+			break;
+		case 2:
+			strcpy(wday,"Tue");
+			break;
+		case 3:
+			strcpy(wday,"Wed");
+			break;
+		case 4:
+			strcpy(wday,"Thu");
+			break;
+		case 5:
+			strcpy(wday,"Fri");
+			break;
+		case 6:
+			strcpy(wday,"Sat");
+			break; }
+	switch(gm->tm_mon) {
+		case 0:
+			strcpy(mon,"Jan");
+			break;
+		case 1:
+			strcpy(mon,"Feb");
+			break;
+		case 2:
+			strcpy(mon,"Mar");
+			break;
+		case 3:
+			strcpy(mon,"Apr");
+			break;
+		case 4:
+			strcpy(mon,"May");
+			break;
+		case 5:
+			strcpy(mon,"Jun");
+			break;
+		case 6:
+			strcpy(mon,"Jul");
+			break;
+		case 7:
+			strcpy(mon,"Aug");
+			break;
+		case 8:
+			strcpy(mon,"Sep");
+			break;
+		case 9:
+			strcpy(mon,"Oct");
+			break;
+		case 10:
+			strcpy(mon,"Nov");
+			break;
+		case 11:
+			strcpy(mon,"Dec");
+			break; }
+	if(gm->tm_hour>12) {
+		strcpy(mer,"pm");
+		hour=gm->tm_hour-12; }
+	else {
+		if(!gm->tm_hour)
+			hour=12;
+		else
+			hour=gm->tm_hour;
+		strcpy(mer,"am"); }
+	sprintf(str,"%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
+		,hour,gm->tm_min,mer);
+	return(str);
 }
 
 /****************************************************************************/
