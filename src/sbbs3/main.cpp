@@ -204,43 +204,6 @@ int close_socket(SOCKET sock)
 	return(result);
 }
 
-/* Return true if connected, optionally sets *rd_p to true if read data available */
-BOOL socket_check(SOCKET sock, BOOL* rd_p)
-{
-	char	ch;
-	int		i,rd;
-	fd_set	socket_set;
-	struct	timeval tv;
-
-	if(rd_p!=NULL)
-		*rd_p=FALSE;
-
-	if(sock==INVALID_SOCKET)
-		return(FALSE);
-
-	FD_ZERO(&socket_set);
-	FD_SET(sock,&socket_set);
-
-	tv.tv_sec=0;
-	tv.tv_usec=0;
-
-	i=select(sock+1,&socket_set,NULL,NULL,&tv);
-	if(i==SOCKET_ERROR)
-		return(FALSE);
-
-	if(i==0) 
-		return(TRUE);
-
-	rd=recv(sock,&ch,1,MSG_PEEK);
-	if(rd==1 
-		|| (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
-		if(rd_p!=NULL)
-			*rd_p=TRUE;
-		return(TRUE);
-	}
-
-	return(FALSE);
-}
 
 u_long resolve_ip(char *addr)
 {
@@ -453,8 +416,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
 	char	line[64];
 	char	file[MAX_PATH+1];
-	char*	warning;
 	sbbs_t*	sbbs;
+	const char*	warning;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return;
@@ -2208,7 +2171,7 @@ int sbbs_t::nopen(char *str, int access)
     return(file);
 }
 
-void sbbs_t::spymsg(char*msg)
+void sbbs_t::spymsg(char* msg)
 {
 	char str[512];
 	struct in_addr addr;

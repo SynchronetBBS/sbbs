@@ -897,7 +897,6 @@ BOOL 	md(char *path);
 	int 	lprintf(char *fmt, ...);	/* telnet log */
 	SOCKET	open_socket(int type);
 	int		close_socket(SOCKET);
-	BOOL	socket_check(SOCKET sock, BOOL *rd);
 	u_long	resolve_ip(char *addr);
 
 	char *	readtext(long *line, FILE *stream);
