@@ -739,7 +739,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					&& sub_op(subnum)))
 					&& smb.curmsg<smb.msgs-1)
 					smb.curmsg++;
-				if(smb.curmsg>=smb.msgs-1)
+				if(smb.curmsg>=smb.msgs)
 					done=1;
 				break;
 			case 'E':   /* edit last post */
