@@ -15,6 +15,7 @@ if((hp = dest.indexOf('@'))==-1) {
 host = dest.slice(hp+1);
 sock = new Socket();
 //sock.debug = true;
+sock.bind(0,server.interface_ip_address);
 if(!sock.connect(host,"finger")) 
 	alert("Connection to " + host + " failed with error " + sock.last_error);
 else {

@@ -56,6 +56,13 @@ sock=new Socket();
 history=new History();
 screen=new Screen();
 
+if(!sock.bind(0,server.interface_ip_address)) {
+	log(format("!IRC ERROR %d binding socket to %s"
+		,sock.last_error,server.interface_ip_address));
+	alert("socket error");
+	clean_exit();
+}
+
 // Connect
 if(!sock.connect(irc_server,irc_port)) {
 	log(format("!IRC connection to %s FAILED with error %d"
