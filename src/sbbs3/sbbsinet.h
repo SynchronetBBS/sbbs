@@ -53,6 +53,9 @@
 #elif defined __unix__	/* Unix-variant */
 
 #include <netdb.h>		/* gethostbyname */
+#ifdef __FreeBSD__
+#include <sys/types.h>  /* For u_int32_t on FreeBSD */
+#endif
 #include <netinet/in.h>	/* IPPROTO_IP */
 #include <sys/socket.h>	/* socket/bind/etc. */
 #include <sys/ioctl.h>	/* FIONBIO */
