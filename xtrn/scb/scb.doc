@@ -1,0 +1,329 @@
+	   Synchronet Callback v1.32   Copyright 1995 Digital Dynamics
+	   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      Callback Verification Program for Synchronet Multinode BBS Software
+
+
+Installation:
+============
+
+ 1. Create a directory called "SCB" off of your Synchronet XTRN directory.
+
+	Example:
+
+		MD C:\SBBS\XTRN\SCB
+
+ 2. Copy all SCB files into this new directory.
+
+	Example:
+
+		COPY *.* C:\SBBS\XTRN\SCB
+
+	Note, SCB files include:
+
+		SCB.DOC 	This file
+		ORDER.TXT	Purchase order form
+		SCB.EXE 	Callback verifier external program
+		SCBCFG.EXE	Sysop configuration program for SCB
+		ALLOWED.DAT	List of allowable number prefixes
+		LDPREFIX.DAT	List of same-area prefixes that are long dist
+		SCB.MSG 	The opening screen for SCB
+		REFUSED.MSG	Verification refused
+		INSTRUCT.MSG	Instructions
+		NO_ONE.MSG	Long distance starting with 1 not allowed
+		NO_ZERO.MSG	Long distance starting with 0 not allowed
+		NO_LD.MSG	Long distance in same area code not allowed
+		LD_TIME.MSG	Not within long distance callback time range
+		TOOSHORT.MSG	Phone number less than minimum number of digits
+		TOOLONG.MSG	Phone number more than maximum number of digits
+		PHONECAN.MSG	Phone number found in trash can file
+		VERIFIED.MSG	Displayed to users after verification
+
+ 3. Run SCFG from your NODE1 directory.
+
+ 4. Go to the External Programs->Online Programs menu.
+
+ 5. Hit the <INSERT> key and enter "Synchronet Callback".
+
+ 6. Hit <ENTER> to edit the configuration for this new program.
+
+ 7. Set the "Start-up Directory" to "..\XTRN\SCB".
+
+ 8. Set "Multiuser" to "Yes".
+
+ 9. Set "Modify Uesr Data" to "Yes".
+
+10. Set "BBS Drop File Type" to "Synchronet XTRN.DAT"
+
+11. If you wish to have SCB run automatically for new users or as a logon
+    event for unvalidated users, set the "Execute on Event" option to the
+    appropriate event type. Use "Access Requirements" if you wish SCB to be
+    only available to unvalidated users (i.e. "LEVEL NOT 20").
+
+Example SCFG screen:
+
+	ษ[þ][?]ออออออออออออออออออออออออออออออออออออออออออออออออออออป
+	บ		     Synchronet Callback		   บ
+	ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+	บ ณName 		      Synchronet Callback	   บ
+	บ ณInternal Code	      SCB			   บ
+	บ ณStart-up Directory	      ..\XTRN\SCB		   บ
+	บ ณCommand Line 	      scb			   บ
+	บ ณClean-up Command Line				   บ
+	บ ณCost in Credits	      0 			   บ
+	บ ณAccess Requirements	      LEVEL NOT 20		   บ
+	บ ณExecution Requirements				   บ
+	บ ณMultiple Concurrent Users  Yes			   บ
+	บ ณIntercept I/O Interrupts   No			   บ
+	บ ณSwap BBS out of Memory     No			   บ
+	บ ณModify User Data	      Yes			   บ
+	บ ณExecute on Event	      Logon			   บ
+	บ ณBBS Drop File Type	      Synchronet      XTRN.DAT	   บ
+	บ ณPlace Drop File In	      Node Directory		   บ
+	ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+
+Configuration:
+=============
+
+ 1. Go into your SCB directory and run SCBCFG.
+
+	Example:
+
+		CD \SBBS\XTRN\SCB
+		SCBCFG
+
+    You will see a menu similar to the following:
+
+	ษ[þ][?]ออออออออออออออออออออออออออออออออออออออออออออออออออออป
+	บ	      Synchronet Callback Configuration 	   บ
+	ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+	บ ณToggle Options...					   บ
+	บ ณValidation Values... 				   บ
+	บ ณAllowed Prefix List...				   บ
+	บ ณLong Distance Prefix List... 			   บ
+	บ ณLong Distance Calling Times...			   บ
+	บ ณPhone Number Trash Can   \SBBS\TEXT\PHONE.CAN	   บ
+	บ ณValidated Phone List     \SBBS\TEXT\PHONE.CAN	   บ
+	บ ณCallback Attempts	    4				   บ
+	บ ณMinimum Phone Length     7				   บ
+	บ ณMaximum Phone Length     11				   บ
+	บ ณBBS Area Code	    714 			   บ
+	บ ณSend Message to Sysop    User #1			   บ
+	บ ณRegistration Number	    UNREGISTERED		   บ
+	ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+ 2. If your Synchronet text directory is in a directory or drive other
+    than "\SBBS\TEXT", change the Phone Can and Validated Phone List options
+    to reflect the correct location of your PHONE.CAN file.
+
+    If you want to allow duplicate validated phone numbers, change the
+    Validated Phone List to another path and/or filename. If left blank,
+    the validated phone numbers will not be written to a file at all
+    (other than the SCB.LOG and possibly the user data).
+
+    The phone number list(s) use the same syntax for trashcan files as
+    Synchronet BBS. Appending a '~' to a line specifies that the string
+    cannot be located anywhere within the phone number. Appending a '^'
+    indicates that the phone number cannot begin with the string.
+
+    The stock PHONE.CAN for Synchronet BBS contains the following:
+
+	0-^
+	1-^
+	000-~
+	111-~
+	123-^
+	222-^
+	333-^
+	444-^
+	555-~
+	666-^
+	777-^
+	888-^
+	999-^
+	900-^
+	411-~
+	911-~
+	976-~
+	411^
+	911^
+
+    Since SCB does not allow non-numeric characters in phone numbers, all
+    entries with the dash (-) character above are ignored.
+
+ 3. SCB uses the dial string specified in the modem configuration in SCFG
+    for each node for dialing the remote user's modem. The default dial
+    string is "ATDT".
+
+ 4. Use the "Toggle Options" sub-menu to configure your preferences.
+
+	ษ[þ][?]อออออออออออออออออออออออออออออออออออออออออออออออป
+	บ		     Toggle Options		      บ
+	ฬอออออออออออออออออออออออออออออออออออออออออออออออออออออน
+	บ ณValidate if Unable to Verify 	   No	      บ
+	บ ณPut Result in User Note		   Yes	      บ
+	บ ณLong Distance if not an Allowed Prefix  No	      บ
+	บ ณAllow Long Distance (Starting with 0)   No	      บ
+	บ ณAllow Long Distance (Starting with 1)   Yes	      บ
+	บ ณAllow Long Distance (Same Area Code)    Yes	      บ
+	บ ณU.S. Style Phone Format (AAA-PPP-SSSS)  Yes	      บ
+	บ ณStay Connected After Callback	   No	      บ
+	ศอออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+    If the "Validate if Unable to Verify" option is set to "Yes", users will
+    always be validated. Even if their number was not verified.
+
+    If the "Put Result in User Note" option is set to "Yes", the result of
+    the verification attempt will be placed in the user's note field
+    (in the Synchronet BBS user database).
+
+    If the "Long Distance if not an Allowed Prefix" option is set to "Yes",
+    then all numbers will be considered long distance unless the prefix
+    is specifically listed in the "Allowed Prefix List" off of the main
+    menu. If this option is set to "Yes", the "Long Distance Prefix List"
+    is not used.
+
+    If the "Allow Long Distance (starting with 0)" option is set to "Yes",
+    then numbers starting with '0' will be allowed. This option does not
+    effect numbers included in the "Allowed Prefix List".
+
+    If the "Allow Long Distance (starting with 1)" option is set to "Yes",
+    then numbers starting with '1' will be allowed. This option does not
+    effect numbers included in the "Allowed Prefix List".
+
+    If the "Allow Long Distance (same area code)" option is set to "Yes",
+    then numbers that begin with a prefix located in the "Long Distance
+    Prefix List" will not be allowed. This option does not effect numbers
+    included in the "Allowed Prefix List".
+
+    If the "U.S. Style Phone Format" option is set to "Yes", then SCB will
+    assume that phone numbers are in the AAA-PPP-SSSS format, and will
+    automatically strip the BBS area code from the prefix if the user
+    entered a number in the same area code as the BBS and included the
+    area code (both AAA and 1AAA will be stripped).
+
+    The "Stay Connected After Callback" option can be set to "Yes", "No",
+    or "Local Only". SCB will not disconnect after calling the user back
+    if this option is set to "Yes". If set to "Local Only", SCB will only
+    remain connected if the number verfied does not begin with a '1' or '0'.
+
+ 5. Use the "Validation Values" sub-menu to configure how you want validated
+    users' accounts to be modified.
+
+	ษ[þ][?]ออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+	บ			Validation Values		       บ
+	ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+	บ ณSecurity Level		   23			       บ
+	บ ณFlag Set 1			   CDLN 		       บ
+	บ ณFlag Set 2						       บ
+	บ ณFlag Set 3						       บ
+	บ ณFlag Set 4			   -V			       บ
+	บ ณExemptions						       บ
+	บ ณRestrictions 		   -CX			       บ
+	บ ณDays to Extend Expiration	   0			       บ
+	บ ณCredits to Add					       บ
+	บ ณMinutes to Add					       บ
+	ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+    Note: The DEMO version will only set new security level and add credits.
+	  The other validation options are only available in the registered
+	  version.
+
+ 6. Use the "Allowed Prefix List" sub-menu to set which prefixes will NOT be
+    affected by long distance restrictions (such as long distance
+    calling times, and numbers starting with 0 or 1). This option is useful
+    for specifying local numbers in other area codes. For example, in the
+    714 area code, 529 prefix, the following non-714 prefixes are local (*):
+
+	1310690 1310691 1310694 1310697 1310902 1310905 1310943 1310947
+	1818330 1818333 1818336 1818369 1818810 1818854 1818855 1818912
+	1818913 1818937 1818961 1818964 1818965 1818968 1909396 1909468
+	1909594 1909595 1909598 1909860 1909861 1909869
+
+	* Multiple entries per line to conserve documentation space
+
+    If the "Long Distance if not an Allowed Prefix" toggle option is set to
+    "Yes", then any number that is NOT included in this list will be
+    considered long distance.
+
+ 7. Use the "Long Distance Prefix List" sub-menu to set which SAME-AREA
+    prefixes will be considered long distance. If the "Long Distance if not
+    an Allowed Prefix" toggle option is set to "Yes", then this list is not
+    used. For example, in the 714 area code, 529 prefix, the following
+    714 prefixes are long distance (*):
+
+	241 258 259 265 285 418 432 433 434 435 436 437 438 479 480
+	505 513 531 540 541 542 543 544 545 546 547 549 550 554 556
+	557 558 560 564 565 566 567 568 569 571 573 641 647 648 662
+	664 665 667 668 669 691 708 730 731 751 754 755 775 832 834
+	835 836 838 839 850 953 954 957 966 967 972 973 977 979
+
+	* Multiple entries per line to conserve documentation space
+
+ 8. Use the "Long Distance Calling Times" sub-menu to set the times on each day
+    when SCB is allowed to place long distance calls. All times are entered
+    in 24-hour format and ranges crossing midnight (e.g. 18:00 to 09:00) are
+    valid. Numbers included in the "Allowed Prefix List" will not be limited
+    to these calling times.
+
+ 9. If you are a registered owner of SCB, be sure to enter your registration
+    number on the main menu.
+
+10. Hit ESC from the main SCB configuration menu and select "Yes" to save
+    the configuration file.
+
+
+Notes:
+=====
+
+All SCB activity is logged to the file SCB.LOG in the SCB directory in
+the format:
+
+	Node 7	     : Mon Sep 27 16:44:31 1993
+	User Name    : Digital Man
+	Voice Number : 714-529-6328
+	Modem Number : 5295313
+	Result	     : Verified
+
+Results 	Description
+------- 	-----------
+Hung up 	User hung up before or during validation process
+Refused 	User refused validation
+Long Dist	User is a long distance call and long distance is disallowed
+Invalid #	User entered a number that is in the trashcan file, less than
+		    minimum length, or begins with a disallowed number (0 or 1)
+No Init 	Modem could not be initialized
+No Connect	Modem could not connect to user's modem (possibly wrong #)
+Verified	User was called, modem connected, and password verified
+Bad Pass	User was called, modem connected, and incorrect password
+
+
+Customizations:
+==============
+
+The following files can be modified (optionally using Ctrl-A codes for color):
+
+SCB.MSG 	The opening screen for SCB
+REFUSED.MSG	Verification refused
+INSTRUCT.MSG	Instructions
+NO_ONE.MSG	Long distance numbers starting with 1 not allowed
+NO_ZERO.MSG	Long distance numbers starting with 0 not allowed
+LD_TIME.MSG	Not within allowed long distance callback time range
+TOOSHORT.MSG	Phone number is less than configured minimum number of digits
+PHONECAN.MSG	Phone number found in trashcan file
+VERIFIED.MSG	Displayed to users after verification
+
+
+Registration:
+============
+
+If you wish to order a registered copy of SCB at the same time as Synchronet,
+use the Synchronet ORDER.TXT file (in the SBBS\DOCS directory).
+
+If registering SCB after already purchasing a copy of Synchronet, call
+Digital Dynamics voice at 714-529-6328, Support BBS at 714-529-9525 (and use
+Domain Shopper), or complete the ORDER.TXT file in the SCB directory and mail
+or fax it to Digital Dynamics.
+
+/* End of SCB.DOC */

@@ -1,0 +1,21 @@
+What's new in SCB v1.20
+=======================
+
+ o	Supports new communications routines, supporting UART, FOSSIL,
+	BIOS (PC BIOS), EBIOS (PS/2 BIOS), and DigiBoard support.
+
+If installing over existing SCB install, just update SCB*.EXE and SCB.DOC.
+
+
+What's new in SCB v1.12
+=======================
+
+ o	Updated and more comprehensive documentation.
+ o	New "Long Distance if not an Allowed Prefix" toggle option.
+ o	If the user's expiration date is already set to the future, it will be
+	extended by the number of days in SCBCFG. Previously, expiration dates
+	would always be set to the current date plus the number of days set in
+	SCBCFG.
+
+If installing over existing SCB install, just update SCB*.EXE and SCB.DOC.
+

@@ -1,0 +1,241 @@
+Upgrading from Synchronet Match Maker 
+-------------------------------------
+
+If you are a registered owner of SMM and upgrading from v1.10 or earlier,
+you'll need to optain your registration number from Digital Dynamics by calling
+voice at 714-529-6328. You will need to have your Synchronet registration
+number and control code on hand when you call.
+
+The most important change (in upgrading to v2.0) is to change "Intercept
+I/O Interrupts" in SCFG from "Yes" to "No". Example:
+
+	ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+	บ		   Synchronet Match Maker		   บ
+	ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+	บ ณName 		      Synchronet Match Maker	   บ
+	บ ณInternal Code	      SMM			   บ
+	บ ณStart-up Directory	      ..\XTRN\SMM		   บ
+	บ ณCommand Line 	      smm			   บ
+	บ ณClean-up Command Line				   บ
+	บ ณMultiple Concurrent Users  Yes			   บ
+	บ ณIntercept I/O Interrupts   No  <-- Important 	   บ
+	บ ณSwap BBS out of Memory     Yes			   บ
+	บ ณModify User Data	      Yes			   บ
+	บ ณExecute on Event	      No			   บ
+	บ ณBBS Drop File Type	      Synchronet      XTRN.DAT	   บ
+	บ ณPlace Drop File In	      Node Directory		   บ
+        ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+The only files you need to update when converting from v2.01/2.02 to v2.10 are:
+
+SMM.DOC 	Sysop Documentation (v2.10)
+SMM.EXE 	Match Maker Program (v2.10)
+SMMCFG.EXE	Match Maker Configuration Program (v2.10)
+SMMUTIL.EXE	Repair/Maintenance Program (v2.01)
+
+The only files you need to update when converting from v2.00 to v2.10 are:
+
+SMM.DOC 	Sysop Documentation (v2.10)
+SMMCFG.EXE	Match Maker Configuration Program (v2.10)
+SMMUTIL.EXE	Repair/Maintenance Program (v2.01)
+SMB2SMM.EXE	Import Program (v2.01)
+SMM2SMB.EXE	Export Program (v2.01)
+ADDPHOTO.EXE	Import Photographs locally (v1.01)
+DELPHOTO.EXE	Delete Photographs locally (v1.00)
+LSTPHOTO.EXE	List Profiles with Photographs (v1.00)
+
+The only files you need to update when converting from v1.x to v2.0 are:
+
+*.EXE		Executables
+*.DOC		Documentation
+LIST_HDR.ASC	Condensed Listing Header
+
+If upgrading from v1.00 or v1.10, you will also need to update the following
+files:
+
+SMM_MAIN.ASC	Main Menu
+SMM_HELP.ASC	Help Screen (if upgrading from v1.00)
+PURITY.ASC	Purity Explanation (if upgrading from v1.00)
+
+New in version 2.10
+~~~~~~~~~~~~~~~~~~~
+o Minor segregation (protection) now supported. This option separates all users
+  into Adults and Minors (configurable separation age), disallowing adults to
+  see minors' profiles or send them telegrams (and vice versa)
+o Minimum Age to access the wall now configurable in SMMCFG
+o XSDK v2.42 feature: Ctrl-T now displays current time, time used, and time
+  left (similar to SBBS)
+o XSDK v2.42 feature: User is now warned on each of their last 5 minutes left
+
+New in version 2.02a
+~~~~~~~~~~~~~~~~~~~~
+o Fixed bug in SMM.EXE when using DOOR.SYS (non-Synchronet BBSs)
+
+New in version 2.02
+~~~~~~~~~~~~~~~~~~~
+o Low priority input now correctly supported (for giving up multitasker time
+  slices even while accepting string input from the user) - this was an
+  indirect bug fix in XSDK v2.41 most notably effecting OS/2 systems
+o "Searching..." text now displayed before possibly long searches to indicate
+  to the user the system is not crashed
+o Sysop text searches now search user real names, system names and user numbers
+  in addition to the normal user-viewable text fields
+
+New in version 2.01
+~~~~~~~~~~~~~~~~~~~
+o New DELPHOTO.EXE utility to delete photos from the database
+o New LSTPHOTO.EXE utility to create a list of all profiles with attached
+  photos
+o SMB2SMM/SMM2SMB updated to detect and not import/export corrupted profiles
+o ADDPHOTO 1.01 now copies (instead of renames/moves) photo image files
+o SMB2SMM no longer deletes existing photo if CRC error detected on new photo
+o Wall security level (configured in SMMCFG) now correctly keeps users below
+  that level from writing on the wall
+o FOSSIL channel number automatically determined by subtracting 1 from the
+  COM port number (e.g. COM 1 is FOSSIL/Digi channel 0)
+  /I command line switch may be used to set non-standard channel
+o New SMM, SMMCFG, and SMMUTIL fix 25 character BBS name limit
+o SMMUTIL (v2.00) now removes old photos (tallys photos and networked profiles)
+
+New in version 2.00
+~~~~~~~~~~~~~~~~~~~
+o Optionally reads from and writes to DOOR.SYS drop file
+  (for compatibility with other [non-Synchronet] BBS programs)
+o MSG, UTI, and possibly JAM message base import/export utilities will be
+  available soon (for match maker networking with non-SMB compatible BBSs)
+o Optional command line switches for com port configuration and time-slice APIs
+  (for non-standard COM ports with other BBS programs)
+o Photographs (in any size or format) can be added to the database locally
+  (with Zmodem download and local viewing)
+o Photographs are automatically imported from the SYNCDATA echo with SMB2SMM
+  (other match maker networks will need to use their own distribution methods)
+o System name separately configurable in SMMCFG (to work around duplicate BBS
+  names in a match maker network)
+o Metric measurements (centimeters and kilograms) can be enabled in SMMCFG
+o Sysop level defined in SMMCFG (no longer hard-coded at level 90)
+o Low priority input supported (based on SCFG Node toggle option if Synchronet,
+  automatically enabled with other BBS programs)
+o Trailing spaces from user names are automatically removed
+
+New in version 1.31
+~~~~~~~~~~~~~~~~~~~
+o Ability to specify a user to search for on the command line
+  displays extended profile on the user and then exits (just "SMM user name")
+o Messages can now be sent from Digital Dynamics to you (sysops, users, or
+  both) inside SMM (not telegrams, but similar) to inform sysops and users of
+  Match Maker progressions/news. All messages have pre-determined expiration
+  dates and will automatically disappear when the date is reached. Sysop-only
+  messages can be deleted immediately after they are read if the sysop wishes.
+  Special ONE-time messages are displayed to users only once, while others
+  may be displayed each time they enter SMM. (SMB2SMM v1.30 required)
+o New SMMUTIL (v1.15) fixes 4095 user limitation.
+
+New in version 1.30
+~~~~~~~~~~~~~~~~~~~
+o Ability to send telegrams directly from condensed user listings
+o Wall new-scans now correctly scan by date/time imported instead of the
+  date/time written (must use SMB2SMM 1.22, SMM2SMB 1.12, and SMMUTIL 1.14)
+o Condensed Wall listings now clear the screen between each screen-full
+  (faster screen draws) with a prompt allowing the user to read a profile,
+  send a telegram, move backwards through the wall writings, or quit at the
+  bottom of each screen-full (more intuitive and convenient)
+o Extended Wall listings now display wall writing in magenta if the author
+  is female, green if the author is male (instant gender recognition)
+  wall writings who can't be found in the database
+o Extended Wall listings allow sending telegrams directly (without reading
+  profile first) and moving backwards through the wall writings
+o Extended Wall listings stay on current wall writing after reading profile
+  or sending telegram
+o XSDK v2.33 fixes problem with flashing screen loops when a user hangs up
+  with keys in the modem buffer
+o XSDK v2.33 fixes problem with sending double carriage returns at the end
+  of each line (making captures difficult)
+o Fixed problem with selecting races above E
+o If the sysop hits '!' from the main menu, all systems connected to the
+  database are listed
+o When reading a user's questionnaire, (P)revious and (Q)uit commands are now
+  available on the pause prompt
+o Updated sysop documentation
+
+New in version 1.22
+~~~~~~~~~~~~~~~~~~~
+o New option for those seeking "any-sex non-romantic friendly matches" allows
+  matches with both romantic/intimate mates and non-romantic mates (friends)
+o When displaying long user information, preference ranges (age, weight, etc)
+  and specifics (hair color, marital status, etc) are high intensity (bright
+  colors) if the preferencees are considered requirements by the user
+o The Wall was revamped to allow new-scans for new writings since a specific
+  date only and optional display of extended user information allowing reading
+  of questionnaires and sending of telegrams
+o Wall writings will now disallow any text in SMM.CAN (same as user aliases
+  profiles, etc.)
+
+New in version 1.21
+~~~~~~~~~~~~~~~~~~~
+o Credits can be charged or given for reading questionnaires
+o New WALL inside Match Maker for public discussion
+o Credits can be charged or given for writing on the wall
+o Minimum level can be specified to allow writing on the wall
+o SMM2SMB v1.11 now creates unique profile messages that won't be deleted by
+  duplicate message checking
+o SMM2SMB v1.11 and SMB2SMM v1.21 read/write wall writings from message base
+o SMMUTIL v1.11 now allows command line specification of maximum wall writing
+  age before auto-deletion
+o Telegrams and Profile Personal Text no longer word wrap on last line (bugfix)
+o Telegrams now ask to Save (Y/n) when completed to allow last minute abort
+
+New in version 1.20
+~~~~~~~~~~~~~~~~~~~
+o DEMO and registered versions use the same executable files, unlocked with
+  registration number obtained from Digital Dynamics (entered in SMMCFG)
+o Minimum level can be specified to allow the sending of telegrams
+o Minimum level can be specified to allow the reading of questionnaires
+o Sysops deleting their own profile, will not have to exit and re-enter
+  before SMM will report their profile does not exist
+o Match Maker telegrams are stored in SMM and users are notified via BBS
+  telegram of newly received SMM telegrams
+o Users can read awaiting telegrams and send telegrams from the SMM main menu
+o New customizable main menu (SMM_MAIN.ASC)
+o (W)rite Profile command changed to (U)pdate Profile, although 'W' can still
+  be used
+o When sending telegrams, the destination user's detail is displayed to prevent
+  users from sending telegrams to a wrong user (with the same name)
+o Automatically corrects user sex when not set to (M)ale or (F)emale
+o Questionnaire answers are aligned so they can be visually compared easily
+o SMMUTIL v1.10 generates statistics, run "SMMUTIL > stats.txt" to create file
+  for display on your BBS
+
+New in version 1.10
+~~~~~~~~~~~~~~~~~~~
+o New configuration program (SMMCFG) instead of editing SMM.CFG with an
+  ASCII editor.
+o Optional trash can file for keeping users from using profanity in profiles
+  and users names.
+o SMB2SMM will not import profiles if the user age is less than you have
+  specified in SMMCFG for minimum user age.
+o SMB2SMM will not import profiles that contains words found in your TRASH.CAN
+  file (if it exists).
+o When listing profiles in SMM, you can go backwards to previous screens and
+  read profiles directly from the listing. The (R)ead profile key automatically
+  puts the user with the highest percentage on the current screen in the
+  user name field.
+o User's can enter "Non-disclosed" for their yearly income, by hitting ENTER
+  when asked.
+o User's can specify if they REQUIRE their matches to fall within certain
+  ranges or REQUIRE specific features.
+o Profile screens were condensed to get all information on one page whenever
+  possible.
+o SMMUTIL will scan for duplicate profiles or if specified, delete profiles
+  that haven't been updated in a certain number of days. SMMUTIL also
+  automatically condenses the data file, removing any deleted profiles and
+  rebuilds the index file.
+o Users can be charged credits or given credits for adding profiles and
+  sending telegrams. If a user adds a profile and then deletes it, the credit
+  charges are reversed.
+o Auto-update feature will automatically re-hatch a users entry into the
+  Global Database after a certain number of days, if the user is active in
+  the match maker but hasn't made any profile changes.
+o Sysop can be notified automatically of added profiles and sent telegrams
+  from the match maker
+
+/* End of UPGRADE.DOC */

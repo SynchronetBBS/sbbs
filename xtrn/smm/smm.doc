@@ -1,0 +1,594 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Synchronet Match Maker  Version 2.10  Copyright 1996 Digital Dynamics
+     -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+	       "Perhaps the most comprehensive Match Maker ever."
+
+
+Synchronet Installation (if you are using Synchronet BBS Software)
+==================================================================
+
+Synchronet Match Maker (SMM) comes pre-installed in Synchronet BBS v2.1 and
+later. If match maker has been pre-installed in your system, see the file
+UPGRADE.DOC for details on installing a newer version over an older version
+(upgrading).
+
+Create the following sub-directory off of your main Synchronet directory
+(e.g. C:\SBBS):
+
+XTRN\SMM	(The XTRN directory should already exist)
+
+(example: C:\SBBS\XTRN\SMM)
+
+Copy the files included in the archive or on the floppy disk into this
+directory. The DEMO and registered versions of this program are identical.
+The registration number must be obtained from Digital Dynamics and entered
+into the Match Maker configuration program (SMMCFG) to convert the DEMO into
+a registered copy.
+
+Licenses for registered use of Synchronet Match Maker are sold separately from
+Synchronet BBS Software. Once a registration number has been issued, no refunds
+or returns of Synchronet Match Maker will be accepted.
+
+Run SCFG (Synchronet Configuration Program) and add the Match Maker to one
+of your External Program Sections and configure as follows:
+
+	ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+	บ		   Synchronet Match Maker		   บ
+	ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+	บ ณName 		      Synchronet Match Maker	   บ
+	บ ณInternal Code	      SMM			   บ
+	บ ณStart-up Directory	      ..\XTRN\SMM		   บ
+	บ ณCommand Line 	      smm			   บ
+	บ ณClean-up Command Line				   บ
+	บ ณMultiple Concurrent Users  Yes			   บ
+	บ ณIntercept I/O Interrupts   No  <-- Important 	   บ
+	บ ณSwap BBS out of Memory     Yes			   บ
+	บ ณModify User Data	      Yes			   บ
+	บ ณExecute on Event	      No			   บ
+	บ ณBBS Drop File Type	      Synchronet      XTRN.DAT	   บ
+	บ ณPlace Drop File In	      Node Directory		   บ
+	ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+If you wish to have old profile entries and wall writings automatically deleted
+from your match maker, you will need to run the SMMUTIL program periodically to
+remove profiles that haven't been updated in a certain number of days
+(specified on the SMMUTIL command line). To set up a timed event in SCFG->
+External Programs->Timed Events for SMMUTIL:
+
+    ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+    บ			      SMMUTIL Timed Event			 บ
+    ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+    บ ณInternal Code		       SMMUTIL				 บ
+    บ ณStart-up Directory	       ..\XTRN\SMM			 บ
+    บ ณCommand Line		       smmutil 90 7 > SMMSTATS.TXT	 บ
+    บ ณExecution Node		       1				 บ
+    บ ณExecution Days		       Sun Mon Tue Wed Thu Fri Sat	 บ
+    บ ณExecution Time		       00:00				 บ
+    บ ณRequires Exclusive Execution    Yes				 บ
+    บ ณForce Users Off-line For Event  No				 บ
+    ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+This would have SMMUTIL remove all profiles that haven't been updated in the
+past 90 days and all wall writings older than 7 days.
+
+It will also create the file SMMSTATS.TXT in your XTRN\SMM directory with
+detailed statistics on the demographics of the current SMM profile database.
+You may want to make this file available for download or as a viewable bulletin
+on your BBS.
+
+If you are currently on DOVE-Net or FidoNet and you carry the "Synchronet Data"
+(SYNCDATA) message area and wish to link your match maker database with other
+BBSs through this message area, set up the following two Timed Events in SCFG:
+
+    ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+    บ			      SMB2SMM Timed Event			 บ
+    ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+    บ ณInternal Code		       SMB2SMM				 บ
+    บ ณStart-up Directory	       ..\XTRN\SMM			 บ
+    บ ณCommand Line		       smb2smm %jsubs\syncdata smm.dab	 บ
+    บ ณExecution Node		       1				 บ
+    บ ณExecution Days		       Sun Mon Tue Wed Thu Fri Sat	 บ
+    บ ณExecution Time		       00:00				 บ
+    บ ณRequires Exclusive Execution    No				 บ
+    บ ณForce Users Off-line For Event  No				 บ
+    ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+    ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+    บ			      SMM2SMB Timed Event			 บ
+    ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+    บ ณInternal Code		       SMM2SMB				 บ
+    บ ณStart-up Directory	       ..\XTRN\SMM			 บ
+    บ ณCommand Line		       smm2smb smm.dab %jsubs\syncdata	 บ
+    บ ณExecution Node		       1				 บ
+    บ ณExecution Days		       Sun Mon Tue Wed Thu Fri Sat	 บ
+    บ ณExecution Time		       00:00				 บ
+    บ ณRequires Exclusive Execution    No				 บ
+    บ ณForce Users Off-line For Event  No				 บ
+    ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Change "syncdata" in the above examples to the internal code you have used
+for the "Synchronet Data" echo. Also, if you are not running v2.1+ of
+Synchronet, you must specify the full path to the DATA directory instead of
+using the %j. If your "Synchronet Data" echo is stored on a different
+drive or in a different directory than SBBS, then you must specify that drive
+and path on the above command lines.
+
+To get your match maker database active immediately, you may want to reset
+your message pointers for the "Synchronet Data" echo on your hub BBS. If
+using QWKnet, you would accomplish this by posting the message in the
+"Synchronet Data" echo on your BBS to "SBBS" with a title of "RESET". The
+message body does not matter.
+
+Swapping
+--------
+If you get memory allocation errors during the execution of any of the above
+event command lines, add that program name to your Global Swap List in SCFG.
+
+DOOR.SYS BBS Installation (if you are using BBS software OTHER than Synchronet)
+===============================================================================
+
+Your BBS software must be able to create the industry standard DOOR.SYS drop
+file (35 lines or more). If you wish to charge credits for specific match maker
+functions (adding profile, sending telegrams, etc) your BBS software must be
+able to READ BACK in the modified DOOR.SYS drop file (e.g. GAP BBS software).
+Credits are read from line 31 of the DOOR.SYS file (in K) and credits used
+while in SMM are written to line 30 of the DOOR.SYS (in K) and total credits
+after adjustment (in K) are written back to line 31 of the DOOR.SYS. Since the
+DOOR.SYS format only supports one set of flags (line 23), flag set 1 will be
+the only valid flag set to use for the security options in SMMCFG (i.e. flag
+sets 2-4 will not be used).
+
+Create a directory for Synchronet Match Maker (SMM) and copy all the files
+into it (example: C:\BBS\DOORS\SMM).
+
+Copy the files included in the archive or on the floppy disk into this
+directory. The DEMO and registered versions of this program are identical.
+The registration number must be obtained from Digital Dynamics and entered
+into the Match Maker configuration program (SMMCFG) to convert the DEMO into
+a registered copy.
+
+Once a registration number has been issued, no refunds or returns of Synchronet
+Match Maker will be accepted.
+
+If you are running a multinode BBS, you will need to have the DOOR.SYS created
+in a separate directory for each node (i.e. NOT the directory where SMM has
+been installed). This will prevent drop file collisions if two users enter SMM
+at the same time. The complete path to the DOOR.SYS must be specified on the
+command line, so each node must have a different path specified. Example:
+
+Node 1 Command Line:	SMM C:\BBS\NODE1\DOOR.SYS
+Node 2 Command Line:	SMM C:\BBS\NODE2\DOOR.SYS
+
+SHARE must be loaded in your CONFIG.SYS or AUTOEXEC.BAT for SMM to function
+(in single node or multinode environments).
+
+If non-standard IRQs or I/O addresses are used, they must be specified on the
+SMM command line using the Command Line Options. IRQs 2-15 are fully supported.
+Shared IRQs are not supported in UART mode.
+
+16550 FIFO buffered UARTs are detected and enabled.
+
+DTE rates up to 115200 baud are supported (higher with proprietary hardware).
+
+Command Line Options:
+====================
+
+Command line options override the values (if present) in the DOOR.SYS file.
+No command line options are required when used with Synchronet BBS software.
+
+	/P#	Set the COM port (0=local only) (normally not necessary)
+
+		Example: /P1 to specify COM1
+			 /P0 to specify no COM port (local use)
+
+	/C#	Set the COM port type or I/O (D:DigiBoard, F:FOSSIL, E:EBIOS)
+
+		Example: /CF to specify FOSSIL
+			 /C3e8 to specify I/O address 3e8 (hexadecimal)
+
+	/I#	Set the COM port IRQ or channel (only required if non-standard)
+
+		Example: /I5 to specify IRQ 5
+			 /I0 to specify FOSSIL/Digi Channel 0
+
+	/R#	Set the COM port DTE rate (normally not necessary)
+
+		Example: /R57600 to specify a DTE rate of 57600 baud
+
+	/T#	Set time-slice APIs supported (default: DESQview if detected)
+
+		Example: /T1 to use INT28 time-slice API
+			 /T2 to use Win/OS2 time-slice API
+			 /T4 to disable DESQview detection and time-slice API
+
+If a user name is specified on the command line, that user's profile will be
+automatically looked up and displayed.
+
+	Example (Synchronet): SMM JOHN DOE
+
+	Example (non-Synchronet): SMM C:\BBS\NODE1\DOOR.SYS JOHN DOE
+
+The current directory MUST be the directory where SMM has been installed
+(e.g. C:\BBS\DOORS\SMM) when SMM is executed. Some non-Synchronet BBS packages
+may require a batch file to change drive and/or directory before running SMM
+and may require the same batch file re-load the BBS software. Example:
+
+	@ECHO OFF
+	CD \BBS\DOORS\SMM
+	SMM \BBS\NODE1\DOOR.SYS
+	REM The following may not be necessary with some BBS packages
+	CD \BBS\NODE1
+	BBS
+
+Configuration
+=============
+
+SMMCFG
+------
+SMMCFG.EXE is used to modify your SMM.CFG (Configuration) file. Hitting the F1
+key will display a help page on the currently selected menu or option.
+
+	ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+	บ	    Synchronet Match Maker Configuration	   บ
+	ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+	บ ณSystem Name				    MY BBS	   บ
+	บ ณWall Security...					   บ
+	บ ณProfile Database Security... 			   บ
+	บ ณCredit Cost for Adding Profile	    0k		   บ
+	บ ณCredit Cost for Sending Telegram	    0k		   บ
+	บ ณCredit Cost for Writing on the Wall	    0k		   บ
+	บ ณCredit Cost for Reading Questionnaire    0k		   บ
+	บ ณMinimum Level to Send Telegrams	    0		   บ
+	บ ณMinimum Level to Read Questionnaires     0		   บ
+	บ ณSysop Level				    90		   บ
+	บ ณMinor Segregation (Protection) Age	    Disabled	   บ
+	บ ณAuto-Update Profiles 		    30		   บ
+	บ ณNotify User of Activity		    1		   บ
+	บ ณUse Metric System			    No		   บ
+	บ ณZmodem Send Command			    %!dsz portx %u,บ
+	บ ณLocal Photo Viewer			    dvpeg %f	   บ
+	บ ณRegistration Number			    UNREGISTERED   บ
+	ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+System Name
+-----------
+The most important option in this program is your System Name (BBS Name). If
+you are running Synchronet BBS Software, this option does not have to be set
+here (it is automatically passed to SMM in the XTRN.DAT drop file from
+Synchronet). If it is set, it will override the name specified in SCFG->System
+->BBS Name.
+
+If you have registered SMM for non-Synchronet BBS Software, this option must be
+set to the exact BBS name you registered SMM for (not case sensitive).
+
+Once you have setup SMM and your BBS users have entered their profiles, it is
+important that you DO NOT change your BBS name, or you will lose those
+profiles (and likely upset your users). If you are networking your match maker
+database with other BBSs, it is important that you do not have the same System
+Name as another BBS in the network. Only the first 25 characters of the BBS
+name are used and every BBS in an SMM network must have a unique BBS name. Your
+System Name (configured in SMMCFG) does not have to match your actual BBS name
+(as configured in your BBS software). This allows you to change your System
+Name for match maker networks where your real BBS name is already in use.
+
+Profile Database Security
+-------------------------
+	ษอออออออออออออออออออออออออออออออออออออออออออออออป
+	บ	    Profile Database Security		บ
+	ฬอออออออออออออออออออออออออออออออออออออออออออออออน
+	บ ณMinimum User Age to Add Profile	     15 บ
+	บ ณMinimum User Age to Take Purity Test      18 บ
+	บ ณMinimum Security Level to Add Profile     30 บ
+	บ ณRequired Flags (Set 1) to Add Profile	บ
+	บ ณRequired Flags (Set 2) to Add Profile	บ
+	บ ณRequired Flags (Set 3) to Add Profile	บ
+	บ ณRequired Flags (Set 4) to Add Profile	บ
+	ศอออออออออออออออออออออออออออออออออออออออออออออออผ
+
+The Profile Database Security sub-menu allows you to define who can add
+profiles by security level, age, and flags as well as the minimum age for
+the purity test. Flag sets 2-4 are used only with Synchronet BBS software.
+
+Minimum Levels
+--------------
+From the SMMCFG main menu you can change the minimum levels required to
+send telegrams, write on the wall, read questionnaires, and perform sysop
+functions.
+
+Minor Segregation (Protection) Age
+----------------------------------
+This option separates all users into Minors (those users below the specified
+age) and Adults (those users at or above the specified age). When this option
+is used, adults cannot see minors' profiles or send them telegrams (and vice
+versa). This feature does not keep adult users on other non-segregated
+networked BBSs from sending telegrams to minors on your BBS (or minors on other
+BBSs from sending telegrams to adults on your BBS) - this can lead to confusion
+among users receiving telegrams from users that don't appear to be in the
+database (due to segregation on your system). This option is disabled by
+default.
+
+Auto-Update Profiles
+--------------------
+This option allows you to change the number of days between automatic
+profile updates across a match maker network. Normally a user's profile will
+not be sent out across the network unless the user makes a change to their
+profile. This option allows you to have their profile automatically sent
+every so many days as long as the user is active in the match maker (enters
+the match maker and uses it). This is useful for keeping profile databases
+up-to-date across the network as new systems come online. Setting this option
+to 0 disables this feature. The default value (30) should be fine for most
+configurations.
+
+Notify User of Activity
+-----------------------
+This is the number of the user who will be notified of match maker activity
+(profiles added, telegrams sent, wall writings, etc). Normally this option will
+be set to 1 (for user #1, the sysop). Setting this option to 0 disables this
+feature.
+
+Use Metric System
+-----------------
+If you want all heights and weights to be displayed in centimeters and
+kilograms instead of inches and pounds, set this option to "Yes". Since all
+measurements are internally stored in inches and pounds, those (English)
+measurements are the most accurate. Some measurements may change slightly
+when converting from metric to English and back.
+
+Zmodem Send Command
+-------------------
+This is the command line to execute to send a file via Zmodem to the remote
+user. The default command line (%!dsz portx %u,%i sz %f) should work for most
+system configurations (assuming DSZ is in your Synchronet EXEC directory or
+DOS search path and using UART serial ports on all nodes). The percent codes
+in the command line are called "Command Line Specifiers" and are explained
+later in this document.
+
+Local Photo Viewer
+------------------
+This is the command line to execute to view photos when running SMM locally.
+The percent codes in the command line are called "Command Line Specifiers" and
+are explained later in this document.
+
+Command Line Specifiers
+-----------------------
+%A	User name
+%B	Baud (DTE) Rate
+%C	Connect (DCE) Rate
+%F	File path
+%G	Temp directory (blank if non-SBBS)
+%I	UART IRQ Line
+%J	DATA directory (blank if non-SBBS)
+%K	CTRL directory (blank if non-SBBS)
+%N	Node Directory (blank if non-SBBS)
+%O	Sysop's name
+%P	COM Port
+%Q	System QWK ID (blank if non-SBBS)
+%R	Users Screen Rows
+%S	File Spec
+%T	Time left in seconds
+%U	UART I/O Address (in hex)
+%W	Time-slice API type
+%Z	TEXT Directory (blank if non-SBBS)
+%!	EXEC Directory (blank if non-SBBS)
+%#	Node number
+%*	Node number (zero padded to three digits)
+%$	Credits
+%%	%% for percent sign
+%1	User number
+%2	User number (zero padded to two digits)
+%3	User number (zero padded to three digits)
+%4	etc..
+
+SMM.CAN
+-------
+
+The trash can file (SMM.CAN) can be used to specify a list of words or word
+combinations (one word or word combination per line) that will not be allowed
+in user information and wall entries.
+
+QUE.LST
+-------
+
+The questionnaire list file (QUE.LST) can be edited with any ASCII text editor.
+The following is the stock QUE.LST containing the four stock questionnaires.
+
+BASIC
+Basic Personality
+0
+APPEAR
+Appearance
+0
+MATERIAL
+Material
+0
+ADULT
+Adult Sexuality
+18
+
+For each questionnaire, a code (up to eight valid DOS filename chars),
+a description (up to 25 chars), and minimum age are specified. A maximum
+of five questionnaires can be configured. If you are linked to the Synchronet
+Data echo, it is suggested you leave the four stock questionnaires intact
+(unmodified). If you change any of these questionnaires, you MUST change the
+code to something other than "BASIC, APPEAR, MATERIAL, or ADULT" as these codes
+are reserved specifically for the stock questionnaires. If you are not linked
+to the Synchronet Data echo, you can modify and remove any questionnaires you
+wish and use whatever code you wish except "PURITY" and "MB-TYPE" as these
+questionnaire names are specifically reserved by the Match Maker.
+
+The questionnaires are stored in files with the code for the name and .QUE
+as the file extension (e.g. BASIC.QUE, APPEAR.QUE, MATERIAL.QUE, etc).
+
+*.QUE Format
+------------
+
+A: First line is total number of questions (max: 20).
+   All lines following are question and answers groups.
+
+B: Each group starts with the actual question (max: 79 characters).
+
+C: The next line in the group consists of the total number of answers
+   (max: 16).
+
+D: The next line consists of the maximum number of answers this user can select
+   for this question.
+
+E: A single line for each answer (total answers from line C).
+
+F: Repeat lines B-E for each question (total questions from line A).
+
+Special Questionnaire Files
+---------------------------
+
+Two questionnaire files (MB-TYPE.QUE and PURITY.QUE) are unique in that they
+don't follow the above format at all and should need no modification.
+
+The MB-TYPE.QUE is used for the Myers-Briggs personality test and is a pretty
+standard questionnaire. The files MB-*.ASC are descriptions of the various
+personality types. The file MB-INTRO.ASC is displayed before the test and
+MB-TYPE.ASC is displayed when seeking descriptions of the various types.
+
+The PURITY.QUE is used for the purity test and the format is simply one
+"Have you ever" question per line. The default PURITY.QUE is a 100 question
+test of an adult nature. An optional 500 question purity test is also included
+as PURITY.500. To use this test in place of the 100 question version, copy
+PURITY.500 to PURITY.QUE. The 100 question version is also included as
+PURITY.100 as a back-up, in case you want to return to the 100 question
+version. The PURITY*.ASC files are displayed before and during the testing
+procedure.
+
+Sysop Commands
+==============
+
+From the Match Maker main menu, the sysop (any user with sysop security level)
+can use the (D)elete command to remove any profile from the database. Profiles
+can be undeleted with the '*' command (available only to sysops).
+
+When viewing profiles, sysops are shown the user name, number, and system
+name at the top of the profile. Normal users are not shown this information
+to maintain the anonymity of the users in the database.
+
+Hitting '!' will display a list of all networked BBSs that have contributed to
+the current profile database. If you see your BBS name in the list, either
+someone else is using the same BBS name as you (which is bad), or something has
+gone wrong in your network and you should contact Digital Dynamics to remedy
+the situation immediately. If someone else is using the exact same BBS name
+(not considering upper/lower case differences), one of you must change your BBS
+name by at least one character or you will definitely have problems with your
+users' Match Maker profiles and telegrams.
+
+Hitting '\' will rebuild the database index. If your database is corrupted,
+you should down all your nodes and use SMMUTIL instead of this command. If
+your SMM.IXB file disappears or becomes out-of-sync with your SMM.DAB file
+(which is unlikely to occur), you can use this command to quickly recreate
+it.
+
+Photographs
+===========
+
+You may use the included ADDPHOTO.EXE utility to import photographs into your
+local match maker database. The current directory must be the directory where
+SMM is installed when ADDPHOTO is run. The usage is:
+
+ADDPHOTO filename.ext user_number system_name
+
+where filename.ext is the path, filename, and extension of the photograph file
+to import (preferably, but not necessarily, a JPEG file with a .JPG extension).
+User_number is the user's number and system_name is the name of the system the
+user created their profile on.
+
+ADDPHOTO will create a directory called PHOTO off of the directory where SMM
+is installed (e.g. C:\SBBS\XTRN\SMM\PHOTO or C:\BBS\DOORS\SMM\PHOTO) and move
+the photograph file into this directory (changing the name, but leaving the
+extension (e.g. JPG, GIF, TIF, etc) intact.
+
+Example:
+
+		ADDPHOTO JAMIEFAR.JPG 1 M.A.S.H BBS
+
+The DELPHOTO.EXE utility is used to remove photographs from your local match
+maker database. The usage is:
+
+DELPHOTO user_number system_name
+
+Example:
+		DELPHOTO 1 M.A.S.H BBS
+
+The LSTPHOTO.EXE utility may be used to create a list of all users with photos
+in your local match maker database.
+
+Example:
+		LSTPHOTO > PHOTO.LST
+
+PHOTO.ZIP
+---------
+You can optionally, zip (using PKZIP) all the files in the PHOTO directory
+into a file called PHOTO.ZIP (in the SMM directory) and delete them from the
+PHOTO directory (to save disk space). When the photo is viewed or downloaded
+from SMM, it will be automatically extracted from the PHOTO.ZIP into the PHOTO
+directory (PKUNZIP.EXE must be in your DOS search path or your Synchronet
+EXEC directory). The ADDPHOTO utility will not automatically add new images to
+the PHOTO.ZIP (if you wish to use that storage method). Also, the files will
+not be automatically deleted from the PHOTO directory after download/viewing
+in SMM. This is so that popular image files will not have to be extracted each
+time. You may wish to periodically re-zip and delete the PHOTO directory
+(perhaps with an event) to preserve disk space.
+
+SYNCDATA Echo
+-------------
+If your match maker is linked (via DOVE-Net or FidoNet) to the SYNCDATA echo,
+you do not need a scanner or the ADDPHOTO utility to get your users' photos
+into the database. Simply have your users send their photos along with your
+full and correct BBS name, their user number, and a xerox-copy of a current
+formal photo-ID (to verify identity only, IDs will not be scanned and all
+ID information will remain completely confidential) to Digital Dynamics.
+
+The photos must have a 2 inch square drawn around the area to be scanned. The
+photos will be scanned and distributed in JPEG format (with monthly
+redistribution) on the SYNCDATA echo by Digital Dynamics. This service is
+available to all users of SMM free of charge (this free offer _may_ expire
+on Feb 14th, 1996).
+
+Digital Dynamics reserves the right to refuse to scan and distribute any
+photos for any reason. Nudity or vulgarities will not be allowed.
+
+Photos and IDs included with a self-addressed _stamped_ enveloped will be
+returned.
+
+DEMO Version
+============
+
+The unregistered "DEMO" version of Synchronet Match Maker will not allow
+users to send Telegrams to other users in the database (through the
+message network), write on the Match Maker wall, or read other users'
+questionnaires.
+
+To register your copy of Synchronet Match Maker, complete the ORDER.TXT form
+included in this archive/directory and send it to Digital Dynamics, or call
+714-529-6328 (voice) or 714-529-9525 (BBS) to order with a credit card for
+faster processing.
+
+/* End of SMM.DOC */
