@@ -37,6 +37,7 @@ void doterm(void)
 			case -1:
 				free(scrollback);
 				cterm_end();
+				rlogin_close();
 				uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 				return;
 			case 0:
@@ -101,6 +102,7 @@ void doterm(void)
 				case 17:	/* CTRL-Q */
 					cterm_end();
 					free(scrollback);
+					rlogin_close();
 					return;
 				case 19:	/* CTRL-S */
 					i=wherex();
@@ -109,6 +111,7 @@ void doterm(void)
 						case -1:
 							cterm_end();
 							free(scrollback);
+							rlogin_close();
 							return;
 					}
 					gotoxy(i,j);
