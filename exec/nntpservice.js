@@ -12,7 +12,7 @@
 
 load("sbbsdefs.js");
 
-const VERSION = "1.00 Alpha";
+const VERSION = "1.00 Beta";
 
 var debug = false;
 var no_anonymous = false;
@@ -427,6 +427,9 @@ while(client.socket.is_connected) {
 
 			if(system.trashcan("subject",hdr.subject)) {
 				log(format("!BLOCKED subject: %s",hdr.subject));
+				var reason = format("Blocked subject from %s (%s): %s"
+					,user.alias,hdr.from,hdr.subject);
+				system.spamlog("NNTP",reason,client.host_name,client.ip_address,hdr.to);
 				writeln("441 posting failed");
 				break;
 			}

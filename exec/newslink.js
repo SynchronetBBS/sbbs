@@ -12,7 +12,7 @@
 // area		subboard (internal code) newsgroup
 // ...
 
-const VERSION="1.00 Alpha"
+const VERSION="1.00 Beta"
 
 printf("Synchronet NewsLink session started (v%s)", VERSION);
 
@@ -394,13 +394,14 @@ for(i in area) {
 				case "references":
 					hdr.reply_id=data;
 					break;
-				/* TODO: Parse date field */
 			}
 		}
 		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)	// avoid dupe loop
 			continue;
 		if(system.trashcan("subject",hdr.subject)) {
 			printf("!BLOCKED subject: %s",hdr.subject);
+			var reason = format("Blocked subject (%s)",hdr.subject);
+			system.spamlog("NNTP",reason,hdr.from,server,hdr.to);
 			continue;
 		}
 
