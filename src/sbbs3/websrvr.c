@@ -2088,6 +2088,50 @@ static void get_cgi_handler(char* cmdline, size_t maxlen)
 	fclose(fp);
 }
 
+static str_list_t get_cgi_env(http_session_t *session)
+{
+	char		path[MAX_PATH+1];
+	char		value[INI_MAX_VALUE_LEN+1];
+	char*		deflt;
+	char		defltbuf[INI_MAX_VALUE_LEN+1];
+	char		append[INI_MAX_VALUE_LEN+1];
+	char		prepend[INI_MAX_VALUE_LEN+1];
+	char		env_str[(INI_MAX_VALUE_LEN*4)+2];
+	FILE*		fp;
+	size_t		i;
+	str_list_t	env_list;
+	str_list_t	add_list;
+
+	if((env_list=strListInit())==NULL)
+		return(NULL);
+
+	strListAppendList(&env_list, session->req.cgi_env);
+
+	if((fp=iniOpenFile(iniFileName(path,sizeof(path),scfg.ctrl_dir,"cgi_env.ini")))==NULL)
+		return(env_list);
+
+	if((add_list=iniReadSectionList(fp,NULL))!=NULL) {
+
+		for(i=0; add_list[i]!=NULL; i++) {
+			if((deflt=getenv(add_list[i]))==NULL)
+				deflt=iniReadString(fp,add_list[i],"default",NULL,defltbuf);
+			if(iniReadString(fp,add_list[i],"value",deflt,value)==NULL)
+				continue;
+			iniReadString(fp,add_list[i],"append","",append);
+			iniReadString(fp,add_list[i],"prepend","",prepend);
+			safe_snprintf(env_str,sizeof(env_str),"%s=%s%s%s"
+				,add_list[i], prepend, value, append);
+			strListPush(&env_list,env_str);
+		}
+		strListFree(&add_list);
+	}
+
+	fclose(fp);
+
+	return(env_list);
+}
+
+
 static BOOL exec_cgi(http_session_t *session)
 {
 #ifdef __unix__
@@ -2367,6 +2411,7 @@ static BOOL exec_cgi(http_session_t *session)
     PROCESS_INFORMATION process_info;
 	SECURITY_ATTRIBUTES sa;
     STARTUPINFO startup_info={0};
+	str_list_t	env_list;
 
     startup_info.cb=sizeof(startup_info);
 	startup_info.dwFlags|=STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
@@ -2418,7 +2463,9 @@ static BOOL exec_cgi(http_session_t *session)
 	CloseHandle(rdoutpipe);
 	CloseHandle(wrinpipe);
 
-	env_block = strListCreateBlock(session->req.cgi_env);
+	env_list=get_cgi_env(session);
+	env_block = strListCreateBlock(env_list);
+	strListFree(&env_list);
 
     success=CreateProcess(
 		NULL,			// pointer to name of executable module
