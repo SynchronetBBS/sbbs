@@ -166,14 +166,18 @@ void sbbs_t::outchar(char ch)
 	if(ch==FF && lncntr>1 && !tos) {
 		lncntr=0;
 		CRLF;
-		pause();
-		while(lncntr && online && !(sys_status&SS_ABORT))
-			pause(); }
+		if(!(sys_status&SS_PAUSEOFF)) {
+			pause();
+			while(lncntr && online && !(sys_status&SS_ABORT))
+				pause(); 
+		}
+	}
+#if 0
 	if(sys_status&SS_CAP	/* Writes to Capture File */
 		&& (sys_status&SS_ANSCAP || (ch!=ESC /* && !lclaes() */)))
 		fwrite(&ch,1,1,capfile);
-
-	#if 0 
+#endif
+#if 0 
 	if(console&CON_L_ECHO) {
 		if(console&CON_L_ECHOX && (uchar)ch>SP)
 			putch(password_char);
@@ -182,7 +186,7 @@ void sbbs_t::outchar(char ch)
 				sbbs_beep(2000,110);
 				nosound(); }
 		else putch(ch); }
-	#endif
+#endif
 
 	if(online==ON_REMOTE && console&CON_R_ECHO) {
 		if(console&CON_R_ECHOX && (uchar)ch>SP) {
