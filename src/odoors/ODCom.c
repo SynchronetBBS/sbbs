@@ -2987,8 +2987,9 @@ keep_going:
 		fd_set  fdset;
 		struct  timeval tv;
 		int             retval=-1;
+		int	loopcount=0;
 
-		while(retval==-1) {
+		while(retval==-1 && loopcount < 10) {
 			FD_ZERO(&fdset);
 			FD_SET(STDOUT_FILENO,&fdset);
 
@@ -2997,6 +2998,11 @@ keep_going:
 
 			retval=select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv);
 			if(retval!=1) {
+				if(retval==0)  {
+					retval=-1;
+					loopcount++;
+					continue;
+				}
 				if(retval==-1 && errno==EINTR)
 					continue;
 				return(kODRCGeneralFailure);
@@ -3472,6 +3478,7 @@ try_again:
 			fd_set  fdset;
 			struct  timeval tv;
 			int     retval;
+			int	loopcount=0;
 
 			while(pos<nSize) {
 				FD_ZERO(&fdset);
@@ -3482,6 +3489,11 @@ try_again:
 
 				retval=select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv);
 				if(retval!=1) {
+					if(retval==0) {
+						if(++loopcount>10)
+							return(kODRCGeneralFailure);
+						continue;
+					}
 					if(retval==-1 && errno==EINTR)
 						continue;
 					return(kODRCGeneralFailure);
