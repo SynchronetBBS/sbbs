@@ -550,6 +550,7 @@ public:
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
+	void	batch_create_list(void);
 	void	batch_add_list(char *list);
 	bool	create_batchup_lst(void);
 	bool	create_batchdn_lst(void);
