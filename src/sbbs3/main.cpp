@@ -52,7 +52,7 @@ uint riobp;
 #define TELNET_SERVER "Synchronet Telnet Server"
 #define STATUS_WFC	"Listening"
 
-#define TIMEOUT_THREAD_WAIT		15		// Seconds (was 30)
+#define TIMEOUT_THREAD_WAIT		60		// Seconds (was 15)
 #define IO_THREAD_BUF_SIZE	   	10000   // Bytes
 
 // Globals

@@ -82,7 +82,7 @@
 #define LOCAL_FSYS_DIR			"local:"
 #define BBS_FSYS_DIR			"bbs:"
 
-#define TIMEOUT_THREAD_WAIT		15		/* Seconds */
+#define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 
 #define TIMEOUT_SOCKET_LISTEN	30		/* Seconds */
 

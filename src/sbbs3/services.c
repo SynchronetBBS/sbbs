@@ -72,7 +72,7 @@
 #define SERVICES_VERSION		"1.00"
 
 #define MAX_SERVICES			128
-#define TIMEOUT_THREAD_WAIT		30		/* Seconds */
+#define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
