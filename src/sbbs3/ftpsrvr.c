@@ -92,7 +92,7 @@
 
 #define	NAME_LEN				15		/* User name length for listings */
 
-static ftp_startup_t* startup=NULL;
+static ftp_startup_t*	startup=NULL;
 static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
 static DWORD	active_clients=0;
@@ -1349,6 +1349,7 @@ static void send_thread(void* arg)
 	struct timeval tv;
 
 	xfer=*(xfer_t*)arg;
+	free(arg);
 
 	length=flength(xfer.filename);
 
@@ -1563,6 +1564,7 @@ static void receive_thread(void* arg)
 	struct timeval tv;
 
 	xfer=*(xfer_t*)arg;
+	free(arg);
 
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
 		lprintf("%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
@@ -1804,7 +1806,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	int			addr_len;
 	SOCKADDR_IN	server_addr;
 	BOOL		reuseaddr;
-	static xfer_t xfer;
+	xfer_t*		xfer;
 	struct timeval	tv;
 	fd_set			socket_set;
 
@@ -1926,27 +1928,33 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
 	}
 
-
-	/* Get Mutex here? */
-	memset(&xfer,0,sizeof(xfer));
-	xfer.ctrl_sock=ctrl_sock;
-	xfer.data_sock=data_sock;
-	xfer.inprogress=inprogress;
-	xfer.aborted=aborted;
-	xfer.delfile=delfile;
-	xfer.tmpfile=tmpfile;
-	xfer.append=append;
-	xfer.filepos=filepos;
-	xfer.credits=credits;
-	xfer.lastactive=lastactive;
-	xfer.user=user;
-	xfer.dir=dir;
-	xfer.desc=desc;
-	sprintf(xfer.filename,"%.*s",(int)sizeof(xfer.filename)-1,filename);
+	if((xfer=malloc(sizeof(xfer_t)))==NULL) {
+		lprintf("%04d !MALLOC FAILURE LINE %d",ctrl_sock,__LINE__);
+		sockprintf(ctrl_sock,"425 MALLOC FAILURE");
+		if(tmpfile)
+			remove(filename);
+		*inprogress=FALSE;
+		return;
+	}
+	memset(xfer,0,sizeof(xfer_t));
+	xfer->ctrl_sock=ctrl_sock;
+	xfer->data_sock=data_sock;
+	xfer->inprogress=inprogress;
+	xfer->aborted=aborted;
+	xfer->delfile=delfile;
+	xfer->tmpfile=tmpfile;
+	xfer->append=append;
+	xfer->filepos=filepos;
+	xfer->credits=credits;
+	xfer->lastactive=lastactive;
+	xfer->user=user;
+	xfer->dir=dir;
+	xfer->desc=desc;
+	sprintf(xfer->filename,"%.*s",(int)sizeof(xfer->filename)-1,filename);
 	if(receiving)
-		_beginthread(receive_thread,0,(void*)&xfer);
+		_beginthread(receive_thread,0,(void*)xfer);
 	else
-		_beginthread(send_thread,0,(void*)&xfer);
+		_beginthread(send_thread,0,(void*)xfer);
 }
 
 /* convert "user name" to "user.name" or "mr. user" to "mr._user" */
