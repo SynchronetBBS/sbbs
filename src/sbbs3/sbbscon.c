@@ -227,6 +227,8 @@ int main(int argc, char** argv)
 	ftp_startup.lputs=ftp_lputs;
     ftp_startup.started=ftp_started;
     ftp_startup.terminated=ftp_terminated;
+	ftp_startup.options=FTP_OPT_INDEX_FILE|FTP_OPT_ALLOW_QWK;
+    strcpy(ftp_startup.index_file_name,"00index");
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Mail Server startup structure */
