@@ -21,7 +21,6 @@ OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
             $(LIBODIR)$(SLASH)scfglib1.$(OFILE)\
             $(LIBODIR)$(SLASH)smblib.$(OFILE)\
             $(LIBODIR)$(SLASH)scfglib2.$(OFILE)\
-            $(LIBODIR)$(SLASH)ars.$(OFILE)\
             $(LIBODIR)$(SLASH)load_cfg.$(OFILE)\
             $(LIBODIR)$(SLASH)nopen.$(OFILE)\
             $(LIBODIR)$(SLASH)crc16.$(OFILE)\
