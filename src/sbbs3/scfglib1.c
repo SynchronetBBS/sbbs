@@ -58,6 +58,7 @@ void prep_path(char* base, char* path)
 	for(p=str;*p;p++)
 		if(*p=='\\') 
 			*p='/';
+	strlwr(str);	/* temporary hack */
 #endif
 
 	backslashcolon(str);
