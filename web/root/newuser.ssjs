@@ -2,6 +2,8 @@
  * New user sign-up form for Synchronet
  */
 
+/* $Id $ */
+
 load("sbbsdefs.js");
 
 var fields=new Array("alias","name","handle","netmail","address","location","zipcode","phone","birthdate","gender");

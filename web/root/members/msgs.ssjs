@@ -1,3 +1,4 @@
+/* $Id $ */
 // Configuration
 var max_subs=10;
 var max_groups=10;
