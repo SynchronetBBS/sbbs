@@ -1440,7 +1440,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 				/* Gender */
 				sprintf(onech,"%c",user->sex);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Gender",onech,1,K_UPPER|K_ALPHA|K_EDIT);
-				if(onech[0]!=user->sex && (onech[0]=='M' || onech[0]=='F')) {
+				if(onech[0]!=user->sex) {
 					modified=1;
 					user->sex=onech[0];
 				}
