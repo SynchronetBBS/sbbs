@@ -46,6 +46,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>		/* isdigit */
 
 /* Synchronet-specific */
 #include "sbbsdefs.h"

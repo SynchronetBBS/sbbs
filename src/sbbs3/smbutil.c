@@ -52,9 +52,10 @@
 
 /* ANSI */
 #include <stdio.h>
-#include <time.h>	/* time */
-#include <errno.h>	/* errno */
-#include <string.h>	/* strrchr */
+#include <time.h>		/* time */
+#include <errno.h>		/* errno */
+#include <string.h>		/* strrchr */
+#include <ctype.h>		/* toupper */
 
 #include "genwrap.h"	/* stricmp */
 #include "dirwrap.h"	/* fexist */

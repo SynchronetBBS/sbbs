@@ -131,7 +131,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 			bprintf(text[StartWithN],1L);
 			if((long)(curmsg=getnum(msgs))>0)
 				curmsg--;
-			else if(curmsg==-1) {
+			else if((long)curmsg==-1) {
 				FREE(mail);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
@@ -577,10 +577,10 @@ void sbbs_t::readmail(uint usernumber, int which)
 				break;
 			case '[':   /* Search To User backward */
 				strcpy(str,msg.to);
-				for(i=curmsg-1;(ulong)i>-1;i--)
+				for(i=curmsg-1;i>-1;i--)
 					if(mail[i].to==msg.idx.to)
 						break;
-				if((ulong)i>-1)
+				if(i>-1)
 					curmsg=i;
 				else
 					domsg=0;

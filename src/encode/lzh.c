@@ -588,7 +588,7 @@ short int lzh_decode_position(uchar *inbuf, long *incnt, long inlen)
 	while (j--) {
 		i = (i << 1) + lzh_getbit(inbuf,incnt,inlen);
 	}
-	return c | i & 0x3f;
+	return c | (i & 0x3f);
 }
 
 /* Compression */

@@ -40,6 +40,7 @@
 #include <stdlib.h>		/* exit */
 #include <string.h>		/* strrchr */
 #include <time.h>		/* ctime */
+#include <ctype.h>		/* toupper */
 
 /* SMB-specific */
 #include "smblib.h"
