@@ -144,6 +144,10 @@ int main(int argc, char **argv)
 		bbs->user[0]=0;
 		bbs->password[0]=0;
 		p1=url+9;
+		/* Remove trailing / (Win32 adds one 'cause it hates me) */
+		p2=strchr(p1,'/');
+		if(p2!=NULL);
+			*p2=0;
 		p3=strchr(p1,'@');
 		if(p3!=NULL) {
 			*p3=0;
