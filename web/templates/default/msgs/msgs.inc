@@ -3,7 +3,7 @@
     <a class="navigation" href="index.ssjs">Groups</a> : @@JS:if(template.group.name!="E-Mail") '<a class="navigation" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a> :'; else '';@@
     <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">%%sub:description%%</a> -&#062;
     <a class="navigation" href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New Message</a><br /><span class="navigation">(@@show_choice@@)</p></span>
-<form action="management.ssjs" method="post">
+<form name="myForm" action="management.ssjs" method="post">
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
 <tr class="msglist">
@@ -14,10 +14,11 @@
     <th class="msglist">To</th>
     <th class="msglist">Date</th>
 </tr>
+
     <!-- %%JS:template.color=0%% -->
     <<REPEAT messages>>
     <tr class=@@JS:((template.color++)%2==0)?'"msglist1"':'"msglist2"';@@>
-    @@JS:template.can_delete?'<td><input name="number" value="^^messages:number^^" type="checkbox"></td>':''@@
+    @@JS:template.can_delete?'<td><label for="number"><input name="number" value="^^messages:number^^" type="checkbox"></td>':''@@
 	   <td>
     		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach_black.gif" />'; else '&nbsp;';@@
 	   </td>
@@ -37,8 +38,32 @@
     <<END REPEAT messages>>
     </table>
     <br />
-    <div align="center"><input class="msg" type="submit" name="Action" value="Delete Message(s)" /></div>
+    <div align="center">
+	<input type="button" onclick="SetAllCheckBoxes('myForm', 'number', true);" value="Select All">
+	<input type="button" onclick="SetAllCheckBoxes('myForm', 'number', false);" value="Deselect All">
+	<input class="msg" type="submit" name="Action" value="Delete Message(s)" /></div>
 </form>
+		
+<script type="text/javascript">
+<!--
+	function SetAllCheckBoxes(FormName, FieldName, CheckValue)
+{
+	if(!document.forms[FormName])
+	return;
+	var objCheckBoxes = document.forms[FormName].elements[FieldName];
+	if(!objCheckBoxes)
+	return;
+	var countCheckBoxes = objCheckBoxes.length;
+	if(!countCheckBoxes)
+	objCheckBoxes.checked = CheckValue;
+	else
+		// set the check value for all check boxes
+				for(var i = 0; i < countCheckBoxes; i++)
+	objCheckBoxes[i].checked = CheckValue;
+}
+// -->
+</script>
+
 <div align="center">@@pagelinks@@</div>
 <br />
 
