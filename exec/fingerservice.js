@@ -143,13 +143,13 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 
 		case "sockopts":
 			for(i in sockopts)
-				writeln(format("%s = %d"
+				writeln(format("%-10s = %d"
 					,sockopts[i],client.socket.getoption(sockopts[i])));
 			break;
 
 		case "stats":	/* Statistics */
 			for(i in system.stats)
-				writeln(i + " = " + system.stats[i]);
+				writeln(format("%-25s = ", i) + system.stats[i]);
 
 			total	= time()-system.uptime;
 			days	= Math.floor(total/(24*60*60));
