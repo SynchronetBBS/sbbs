@@ -1680,14 +1680,14 @@ int sbbs_t::exec(csi_t *csi)
 			csi->cmd=getkey(0);
 			return(0);
 		case CS_INKEY:
-			csi->cmd=toupper(inkey(K_GETSTR));
+			csi->cmd=toupper(inkey(K_NONE,1));
 			if(csi->cmd)
 				csi->logic=LOGIC_TRUE;
 			else
 				csi->logic=LOGIC_FALSE;
 			return(0);
 		case CS_INCHAR:
-			csi->cmd=inkey(K_GETSTR);
+			csi->cmd=inkey(K_NONE,1);
 			if(csi->cmd)
 				csi->logic=LOGIC_TRUE;
 			else
