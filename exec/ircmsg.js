@@ -39,6 +39,7 @@ if (!my_server) {
         log("!Couldn't connect to " + server);
         exit();
 }
+my_server.poll(5);
 while(my_server.data_waiting && (response=my_server.recvline()))
 	log(response);
 
