@@ -935,6 +935,8 @@ js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg, user_t* user
 		return(JS_FALSE);
 	if(js_CreateMsgAreaObject(cx,parent,cfg,user,subscan)==NULL) 
 		return(JS_FALSE);
+	if(js_CreateXtrnAreaObject(cx,parent,cfg,user)==NULL)
+		return(JS_FALSE);
 
 	return(JS_TRUE);
 }
