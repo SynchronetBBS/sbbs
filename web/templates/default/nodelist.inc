@@ -24,7 +24,7 @@
 <<REPEAT node_list>>
             <tr>
                 <td class="main_nodelist" width="1%">@@node_list:node@@</td>  
-                <td class="main_nodelist"><a href="mailto:">@@node_list:email@@</a>@@node_list:email@@</td>
+                <td class="main_nodelist"><a href="mailto:@@node_list:email@@">@@node_list:user@@</a></td>
                 <td class="main_nodelist">@@node_list:action@@</td>
                 <td class="main_nodelist" width="25%">@@node_list:location@@</td>
                 <td class="main_nodelist" width="1%">@@node_list:gender@@</td>    
