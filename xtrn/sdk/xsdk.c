@@ -709,22 +709,24 @@ void checkline(void)
 	fd_set	socket_set;
 	struct timeval timeout;
 
-	FD_ZERO(&socket_set);
-	FD_SET(client_socket,&socket_set);
-	timeout.tv_sec=0;
-	timeout.tv_usec=100;
+	if(client_socket!=INVALID_SOCKET) {
+		FD_ZERO(&socket_set);
+		FD_SET(client_socket,&socket_set);
+		timeout.tv_sec=0;
+		timeout.tv_usec=100;
 
-	if((i=select(client_socket+1,&socket_set,NULL,NULL,&timeout))>0) {
-		if((i=recv(client_socket,&ch,1,MSG_PEEK))!=1) {
-			sprintf(str,"!XSDK Error %d (%d) checking state of socket %d\n"
-				,i,ERROR_VALUE,client_socket);
-#ifdef _WIN32
-			OutputDebugString(str);
-#else
-			fprintf(stderr,"%s",str);
-			fflush(stderr);
-#endif
-			exit(0);
+		if((i=select(client_socket+1,&socket_set,NULL,NULL,&timeout))>0) {
+			if((i=recv(client_socket,&ch,1,MSG_PEEK))!=1) {
+				sprintf(str,"!XSDK Error %d (%d) checking state of socket %d\n"
+					,i,ERROR_VALUE,client_socket);
+	#ifdef _WIN32
+				OutputDebugString(str);
+	#else
+				fprintf(stderr,"%s",str);
+				fflush(stderr);
+	#endif
+				exit(0);
+			}
 		}
 	}
 #endif
