@@ -157,6 +157,17 @@ static int which(char* prompt, int max)
 }
 
 /****************************************************************************/
+/* Truncates white-space chars off end of 'str'								*/
+/****************************************************************************/
+static void truncsp(char *str)
+{
+	uint c;
+
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=SP) c--;
+	str[c]=0;
+}
+/****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
 int ulist(int mode, char left, int top, char width, int *cur, int *bar
