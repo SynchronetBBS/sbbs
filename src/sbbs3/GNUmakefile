@@ -418,8 +418,6 @@ depend:
 	@$(DELETE) $(EXEODIR)/.depend
 	$(MAKE) BUILD_DEPENDS=1
 
-# Auto-dependency files (should go in output dir, but gcc v2.9.5 puts in cwd)
--include ./*.d
 -include $(LIBODIR)/.depend
 -include $(EXEODIR)/.depend
 -include $(LIBODIR)/*.d
