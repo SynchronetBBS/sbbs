@@ -522,17 +522,59 @@ char * sbbs_t::copystrvar(csi_t *csi, char *p, char *str)
 	return(p);
 }
 
+#ifdef JAVASCRIPT
+long sbbs_t::js_execfile(char *fname)
+{
+	char		path[MAX_PATH+1];
+	JSScript*	js_script;
+	jsval		rval;
+	
+	/* Add extension if not specified */
+	if(!strchr(fname,BACKSLASH))
+		sprintf(path,"%s%s",cfg.exec_dir,fname);
+	else
+		sprintf(path,"%.*s",sizeof(path)-4,fname);
+	if(!strchr(path,'.'))
+		strcat(path,".js");
+
+	if(!fexist(path)) {
+		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
+		return(-1); 
+	}
+
+	if((js_script=JS_CompileFile(js_cx, js_glob, path))==NULL) {
+		errormsg(WHERE,ERR_EXEC,path,0);
+		return(-1);
+	}
+
+	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+
+	JS_DestroyScript(js_cx, js_script);
+
+	return(JSVAL_TO_INT(rval));
+}
+#endif
+
 
 long sbbs_t::exec_bin(char *mod, csi_t *csi)
 {
-    char    str[128];
+    char    str[MAX_PATH+1];
 	int 	file;
     csi_t   bin;
+
+#ifdef JAVASCRIPT
+	sprintf(str,"%s%s.js",cfg.exec_dir,mod);
+	if(fexist(str)) 
+		return(js_execfile(str));
+#endif
 
 	memcpy(&bin,csi,sizeof(csi_t));
 	clearvars(&bin);
 
-	sprintf(str,"%s%s.bin",cfg.exec_dir,mod);
+	if(!strchr(mod,'.'))
+		sprintf(str,"%s%s.bin",cfg.exec_dir,mod);
+	else
+		sprintf(str,"%s%s",cfg.exec_dir,mod);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(-1); }
