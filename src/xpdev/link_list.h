@@ -86,10 +86,12 @@ BOOL			listFree(link_list_t*);
 long			listFreeNodes(link_list_t*);
 BOOL			listFreeNodeData(list_node_t* node);
 
+#if defined(LINK_LIST_THREADSAFE)
 BOOL			listSemPost(const link_list_t*);
 BOOL			listSemWait(const link_list_t*);
 BOOL			listSemTryWait(const link_list_t*);
 BOOL			listSemTryWaitBlock(const link_list_t*, unsigned long timeout);
+#endif
 
 /* Lock/unlock mutex-protected linked lists (no-op for unprotected lists) */
 void			listLock(const link_list_t*);
