@@ -47,12 +47,9 @@ void sbbs_t::newuser()
 {
 	char	c,str[512];
 	char 	tmp[512];
-	int 	file;
-	uint	i,j;
-	long	misc;
+	uint	i;
 	long	kmode;
 	bool	usa;
-	FILE	*stream;
 
 	if(cur_rate<cfg.node_minbps) {
 		bprintf(text[MinimumModemSpeed],cfg.node_minbps);
@@ -389,50 +386,14 @@ void sbbs_t::newuser()
 			hangup(); }
 		if(!online) return; }
 
-	i=1;
 	bputs(text[CheckingSlots]);
-	sprintf(str,"%suser/name.dat",cfg.data_dir);
-	if(fexist(str)) {
-		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
-			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-			hangup();
-			return; }
-		j=filelength(file)/(LEN_ALIAS+2);	   /* total users */
-		while(i<=j) {
-			fread(str,LEN_ALIAS+2,1,stream);
-			for(c=0;c<LEN_ALIAS;c++)
-				if(str[c]==ETX) break;
-			str[c]=0;
-			if(!c) {	 /* should be a deleted user */
-				getuserrec(&cfg,i,U_MISC,8,str);
-				misc=ahtoul(str);
-				if(misc&DELETED) {	 /* deleted bit set too */
-					getuserrec(&cfg,i,U_LASTON,8,str);
-					now=ahtoul(str);				/* delete long enough ? */
-					if((time(NULL)-now)/86400>=cfg.sys_deldays) break; } }
-			i++; }
-		fclose(stream); }
 
-	j=lastuser(&cfg);		/* Check against data file */
-
-	if(i>j+1) {				/* Corrupted name.dat? */
-		errormsg(WHERE,ERR_CHK,"name.dat",i);
-		i=j+1;
-	} else if(i<=j) {			/* Overwriting existing user */
-		getuserrec(&cfg,i,U_MISC,8,str);
-		misc=ahtoul(str);
-		if(!(misc&DELETED)) /* Not deleted? Set usernumber to end+1 */
-			i=j+1; 
-	}
-
-	useron.number=i;
-	if((i=putuserdat(&cfg,&useron))!=0) {
+	if((i=newuserdat(&cfg,&useron))!=0) {
 		sprintf(str,"user record #%u",useron.number);
 		errormsg(WHERE,ERR_CREATE,str,i);
 		hangup();
 		return; 
 	}
-	putusername(&cfg,useron.number,useron.alias);
 	sprintf(str,"Created user record #%u: %s",useron.number,useron.alias);
 	logline(nulstr,str);
 	if(cfg.new_sif[0]) {
@@ -464,24 +425,12 @@ void sbbs_t::newuser()
 				putuserrec(&cfg,useron.number,U_MISC,8
 					,ultoa(useron.misc|DELETED,tmp,16));
 				putusername(&cfg,useron.number,nulstr);
-				return; } } }
-
-	sprintf(str,"%sfile/%04u.in",cfg.data_dir,useron.number);  /* delete any files */
-	delfiles(str,ALLFILES);                                    /* waiting for user */
-	rmdir(str);
-	sprintf(tmp,"%04u.*",useron.number);
-	sprintf(str,"%sfile",cfg.data_dir);
-	delfiles(str,tmp);
+				return; 
+			} 
+		} 
+	}
 
 	answertime=starttime=time(NULL);	  /* set answertime to now */
-	sprintf(str,"%suser/ptrs/%04u.ixb",cfg.data_dir,useron.number); /* msg ptrs */
-	remove(str);
-	sprintf(str,"%smsgs/%04u.msg",cfg.data_dir,useron.number); /* delete short msg */
-	remove(str);
-	sprintf(str,"%suser/%04u.msg",cfg.data_dir,useron.number); /* delete ex-comment */
-	remove(str);
-	sprintf(str,"%suser/%04u.sig",cfg.data_dir,useron.number); /* delete signature */
-	remove(str);
 
 #ifdef JAVASCRIPT
 	js_create_user_objects();
