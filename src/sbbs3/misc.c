@@ -304,7 +304,7 @@ char* DLLCALL zonestr(short zone)
     static char str[32];
 
 	switch((ushort)zone) {
-		case 0:     return("UT");
+		case 0:     return("UTC");
 		case AST:   return("AST");
 		case EST:   return("EST");
 		case CST:   return("CST");
