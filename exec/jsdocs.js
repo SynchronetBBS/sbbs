@@ -1,7 +1,9 @@
 // jsdocs.js
 
-// This script will (eventually be used to) generate HTML documentation of the
-// Synchronet JavaScript object model
+// This script generates HTML documentation of the Synchronet JavaScript object model
+// Requires a Debug build of the Synchronet executable(s)
+
+// $Id: jsdocs.js
 
 const table_tag = "<table border=1 width=100%>";
 
@@ -9,7 +11,8 @@ const li_tag =	"<li onclick = 'this.className = (this.className == \"showList\")
 				"\tonselectstart = 'event.returnValue = false;'" +
 				">";
 
-
+total_methods=0;
+total_properties=0;
 table_depth=0;
 object_depth=0;
 
@@ -84,6 +87,7 @@ function document_methods(name,obj)
 		if(obj._method_list[method].alias != undefined)
 			writeln(obj._method_list[method].alias)
 		**/
+		total_methods++;
 	}
 }
 
@@ -155,6 +159,7 @@ function document_properties(name, obj)
 		writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
 		if(obj._property_desc_list!=undefined)
 			writeln("<td>" + obj._property_desc_list[p++] + "</td>");
+		total_properties++;
 	}
 }
 
@@ -233,5 +238,8 @@ document_object("Socket"	,new Socket(), "class");
 f.writeln("</ol>");
 
 f.write(body);
+
+f.writeln("<p><small>");
+f.writeln("Totals: " + total_properties + " properties, " + total_methods + " methods");
 
 f.close();
