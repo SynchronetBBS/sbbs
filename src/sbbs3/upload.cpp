@@ -64,9 +64,9 @@ bool sbbs_t::uploadfile(file_t *f)
 		? cfg.altpath[f->altpath-1]
 		: cfg.dir[f->dir]->path,unpadfname(f->name,fname));
 	sprintf(tmp,"%s%s",cfg.temp_dir,fname);
-	if(!fexist(path) && fexist(tmp))
+	if(!fexistcase(path) && fexistcase(tmp))
 		mv(tmp,path,0);
-	if(!fexist(path)) {
+	if(!fexistcase(path)) {
 		bprintf(text[FileNotReceived],f->name);
 		sprintf(str,"%s attempted to upload %s to %s %s (Not received)"
 			,useron.alias
@@ -291,7 +291,7 @@ bool sbbs_t::upload(uint dirnum)
 	action=NODE_ULNG;
 	padfname(fname,f.name);
 	sprintf(str,"%s%s",path,fname);
-	if(fexist(str)) {   /* File is on disk */
+	if(fexistcase(str)) {   /* File is on disk */
 		if(!dir_op(dirnum) && online!=ON_LOCAL) {		 /* local users or sysops */
 			bprintf(text[FileAlreadyThere],fname);
 			return(false); }
@@ -416,7 +416,7 @@ bool sbbs_t::upload(uint dirnum)
 		if(mv(src,str,1))
 			return(false);
 		CRLF; }
-	if(fexist(str)) {   /* File is on disk */
+	if(fexistcase(str)) {   /* File is on disk */
 		if(!uploadfile(&f))
 			return(false); }
 	else {
