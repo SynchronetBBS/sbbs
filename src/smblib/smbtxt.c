@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -46,15 +46,23 @@
 /* SMB-specific */
 #include "smblib.h"
 
-char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
+char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 {
-	char	HUGE16* buf=NULL;
-	char	HUGE16* lzhbuf;
-	char	HUGE16* p;
+	char*	buf;
+	char*	lzhbuf;
+	char*	p;
 	ushort	xlat;
 	uint 	i;
 	int		lzh;	/* BOOL */
 	long	l=0,lzhlen,length;
+
+	if((buf=malloc(sizeof(char)))==NULL) {
+		sprintf(smb->last_error
+			,"malloc failure of %u bytes for buffer"
+			,sizeof(char));
+		return(NULL);
+	}
+	*buf=0;
 
 	for(i=0;i<msg->hdr.total_dfields;i++) {
 		if(msg->dfield[i].length<=sizeof(xlat))
@@ -87,7 +95,7 @@ char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 			length-=sizeof(xlat);
 			if(length<1)
 				continue;
-			if((lzhbuf=(char HUGE16*)LMALLOC(length))==NULL) {
+			if((lzhbuf=(char*)LMALLOC(length))==NULL) {
 				sprintf(smb->last_error
 					,"malloc failure of %ld bytes for LZH buffer"
 					,length);
@@ -95,7 +103,7 @@ char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 			}
 			smb_fread(lzhbuf,length,smb->sdt_fp);
 			lzhlen=*(long*)lzhbuf;
-			if((p=(char HUGE16*)REALLOC(buf,l+lzhlen+3L))==NULL) {
+			if((p=(char*)REALLOC(buf,l+lzhlen+3L))==NULL) {
 				sprintf(smb->last_error
 					,"realloc failure of %ld bytes for text buffer"
 					,l+lzhlen+3L);
@@ -108,7 +116,7 @@ char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 			l+=lzhlen; 
 		}
 		else {
-			if((p=(char HUGE16*)REALLOC(buf,l+length+3L))==NULL) {
+			if((p=(char*)REALLOC(buf,l+length+3L))==NULL) {
 				sprintf(smb->last_error
 					,"realloc failure of %ld bytes for text buffer"
 					,l+length+3L);
@@ -130,13 +138,10 @@ char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 		*(buf+l)=0; 
 	}
 
-	if(buf==NULL) 
-		sprintf(smb->last_error,"no data fields");
-
 	return(buf);
 }
 
-void SMBCALL smb_freemsgtxt(char HUGE16* buf)
+void SMBCALL smb_freemsgtxt(char* buf)
 {
 	if(buf!=NULL)
 		FREE(buf);
