@@ -1,0 +1,8 @@
+USEUNIT("Sbl.c");
+USEUNIT("..\SDK\Xsdkvars.c");
+USEUNIT("..\SDK\Xsdk.c");
+USELIB("D:\Borland\CBuilder5\Lib\ws2_32.lib");
+//---------------------------------------------------------------------------
+This file is used by the project manager only and should be treated like the project file
+
+main
