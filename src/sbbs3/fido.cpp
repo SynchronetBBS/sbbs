@@ -74,7 +74,7 @@ bool sbbs_t::lookup_netuser(char *into)
 	if((stream=fnopen(&i,str,O_RDONLY))==NULL)
 		return(false);
 	while(!feof(stream)) {
-		if(!fgets(str,250,stream))
+		if(!fgets(str,sizeof(str),stream))
 			break;
 		str[25]=0;
 		truncsp(str);
@@ -155,7 +155,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 
 	memset(&hdr,0,sizeof(hdr));   /* Initialize header to null */
 	strcpy(hdr.from,cfg.netmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
-	sprintf(hdr.to,"%.35s",to);
+	SAFECOPY(hdr.to,to);
 
 	/* Look-up in nodelist? */
 
@@ -291,7 +291,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 		if(*p==SP) p++;
 		hdr.attr|=FIDO_FILE; }
 
-	sprintf(hdr.subj,"%.71s",p);
+	SAFECOPY(hdr.subj,p);
 
 	sprintf(str,"%sNETMAIL.MSG", cfg.node_dir);
 	if((file=nopen(str,O_RDONLY))==-1) {
@@ -383,7 +383,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 		if(p) {
 			addr=atofaddr(&cfg,p+1);
 			*p=0;
-			sprintf(hdr.to,"%.35s",str); }
+			SAFECOPY(hdr.to,str); }
 		else {
 			atofaddr(&cfg,str);
 			strcpy(hdr.to,"Sysop"); }
@@ -740,9 +740,9 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		strcat(str,tmp); }
 	else
 		strcpy(str,cfg.netmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
-	sprintf(hdr.from,"%.35s",str);
+	SAFECOPY(hdr.from,str);
 
-	sprintf(hdr.to,"%.35s",to);
+	SAFECOPY(hdr.to,to);
 
 	/* Look-up in nodelist? */
 
@@ -820,7 +820,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		if(*p==SP) p++;
 		hdr.attr|=FIDO_FILE; }
 
-	sprintf(hdr.subj,"%.71s",p);
+	SAFECOPY(hdr.subj,p);
 
 	for(i=1;i;i++) {
 		sprintf(str,"%s%u.msg", cfg.netmail_dir,i);

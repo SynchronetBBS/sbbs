@@ -583,7 +583,7 @@ void read_echo_cfg()
 					*p=0;
 					++p;
 					while(*p && *p<=SP) p++;
-					sprintf(cfg.listcfg[cfg.listcfgs-1].password,"%.71s",tp); } }
+					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].password,tp); } }
 			else
 				cfg.listcfg[cfg.listcfgs-1].misc|=NOFWD;
 			if(!*p)
