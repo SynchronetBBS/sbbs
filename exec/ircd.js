@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2004 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
 load("sbbsdefs.js");
@@ -761,7 +761,7 @@ while (!server.terminated) {
 			Selectable_Sockets_Map[this_sock].work();
 	}
 
-
+	// Only rebuild our selectable sockets if required.
 	if (rebuild_socksel_array) {
 		Selectable_Sockets = new Array;
 		Selectable_Sockets_Map = new Array;
@@ -1410,7 +1410,7 @@ function IRCClient_global(target,type_str,send_str) {
 			Client.originatorout(global_str,this);
 	}
 	global_str = ":" + this.nick + " " + global_str;
-	if(this.parent)
+	if(this.local)
 		Servers[this.parent.toLowerCase()].bcast_to_servers_raw(global_str);
 	else if (this.flags&OLINE_CAN_GGNOTICE)
 		server_bcast_to_servers(global_str);
@@ -1430,8 +1430,9 @@ function IRCClient_globops(str) {
 }
 
 function IRCClient_do_msg(target,type_str,send_str) {
-	if ((target[0] == "$") && (this.mode&USERMODE_OPER) &&
-	    (this.flags&OLINE_CAN_LGNOTICE))
+	if ( (target[0] == "$") && (this.mode&USERMODE_OPER) &&
+	     ( (this.flags&OLINE_CAN_LGNOTICE) || !this.local)
+	   )
 		return this.global(target,type_str,send_str);
 
 	var send_to_list = -1;
@@ -1447,8 +1448,9 @@ function IRCClient_do_msg(target,type_str,send_str) {
 		var chan = Channels[target.toUpperCase()];
 		if (!chan) {
 			// check to see if it's a #*hostmask* oper message
-			if ((target[0] == "#") && (this.mode&USERMODE_OPER) &&
-			    (this.flags&OLINE_CAN_LGNOTICE)) {
+			if ( (target[0] == "#") && (this.mode&USERMODE_OPER) &&
+			     ( (this.flags&OLINE_CAN_LGNOTICE) || !this.local )
+			   ) {
 				return this.global(target,type_str,send_str);
 			} else {
 				this.numeric401(target);
@@ -1544,7 +1546,7 @@ function IRCClient_do_info() {
 		" (" + this.uprefix + "@" + this.hostname + ") [" +
 		this.servername + "]");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.1b ]*=-=-=-=-=-=-=-=-=--");
-	this.numeric(371, ":    IRCd Copyright 2003 by Randolph E. Sommerfeld <cyan@rrx.ca>");
+	this.numeric(371, ":  IRCd Copyright 2003-2004 by Randolph E. Sommerfeld <cyan@rrx.ca>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":DigitalMan (Rob Swindell): Resident coder god, various hacking all");
