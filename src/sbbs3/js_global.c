@@ -270,6 +270,26 @@ js_ascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_ascii_str(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	ascii_str(p);
+
+	js_str = JS_NewStringCopyZ(cx, p);
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -282,6 +302,25 @@ js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 
 	strip_ctrl(p);
+
+	js_str = JS_NewStringCopyZ(cx, p);
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_strip_exascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	strip_exascii(p);
 
 	js_str = JS_NewStringCopyZ(cx, p);
 	*rval = STRING_TO_JSVAL(js_str);
@@ -570,7 +609,9 @@ static JSFunctionSpec js_global_functions[] = {
 	{"crc32",			js_crc32,			1},		/* calculate 32-bit CRC of string */
 	{"chksum",			js_chksum,			1},		/* calculate 32-bit chksum of string */
 	{"ascii",			js_ascii,			1},		/* convert str to ascii-val or vice-versa */
+	{"ascii_str",		js_ascii_str,		1},		/* convert ex-ascii in str to plain ascii */
 	{"strip_ctrl",		js_strip_ctrl,		1},		/* strip ctrl chars from string */
+	{"strip_exascii",	js_strip_exascii,	1},		/* strip ex-ascii chars from string */
 	{"file_exists",		js_fexist,			1},		/* verify file existence */
 	{"file_remove",		js_remove,			1},		/* delete a file */
 	{"file_isdir",		js_isdir,			1},		/* check if directory */
