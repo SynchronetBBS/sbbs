@@ -1569,6 +1569,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 	if(request_line == NULL) {
 		if(sockreadline(session,req_line,sizeof(req_line)-1)<0)
 			req_line[0]=0;
+		lprintf(LOG_DEBUG,"%04d Request: %s",session->socket,request_line);
 	}
 	else {
 		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",session->socket,request_line);
