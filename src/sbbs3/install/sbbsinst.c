@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if(uname(&params.name))  {
+	if(uname(&params.name)<0)  {
 		SAFECOPY(params.name.machine,"Unknown");
 		SAFECOPY(params.name.sysname,params.name.machine);
 	}
