@@ -723,6 +723,7 @@ static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* spath)
 
 static void js_service_thread(void* arg)
 {
+	int						i;
 	char*					host_name;
 	HOSTENT*				host;
 	SOCKET					socket;
@@ -765,8 +766,14 @@ static void js_service_thread(void* arg)
 		host_name="<no name>";
 
 	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
-		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP))
-		lprintf("%04d %s client name: %s", socket, service->protocol, host_name);
+		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
+		lprintf("%04d %s Hostname: %s"
+			,socket, service->protocol, host_name);
+		for(i=0;host!=NULL && host->h_aliases!=NULL 
+			&& host->h_aliases[i]!=NULL;i++)
+			lprintf("%04d %s HostAlias: %s"
+				,socket, service->protocol, host->h_aliases[i]);
+	}
 
 	if(trashcan(&scfg,host_name,"host")) {
 		lprintf("%04d !%s CLIENT BLOCKED in host.can: %s"
@@ -1012,6 +1019,7 @@ static void native_static_service_thread(void* arg)
 
 static void native_service_thread(void* arg)
 {
+	int						i;
 	char					cmd[MAX_PATH];
 	char					fullcmd[MAX_PATH*2];
 	char*					host_name;
@@ -1045,8 +1053,14 @@ static void native_service_thread(void* arg)
 		host_name="<no name>";
 
 	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
-		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP))
-		lprintf("%04d %s client name: %s", socket, service->protocol, host_name);
+		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
+		lprintf("%04d %s Hostname: %s"
+			,socket, service->protocol, host_name);
+		for(i=0;host!=NULL && host->h_aliases!=NULL 
+			&& host->h_aliases[i]!=NULL;i++)
+			lprintf("%04d %s HostAlias: %s"
+				,socket, service->protocol, host->h_aliases[i]);
+	}
 
 	if(trashcan(&scfg,host_name,"host")) {
 		lprintf("%04d !%s CLIENT BLOCKED in host.can: %s"

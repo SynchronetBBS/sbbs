@@ -1899,6 +1899,7 @@ static void respond(http_session_t * session)
 
 void http_session_thread(void* arg)
 {
+	int				i;
 	char*			host_name;
 	HOSTENT*		host;
 	SOCKET			socket;
@@ -1926,6 +1927,9 @@ void http_session_thread(void* arg)
 	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))  {
 		lprintf("%04d Hostname: %s", session.socket, host_name);
 		SAFECOPY(session.host_name,host_name);
+		for(i=0;host!=NULL && host->h_aliases!=NULL 
+			&& host->h_aliases[i]!=NULL;i++)
+			lprintf("%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 	}
 
 	/* host_ip wasn't defined in http_session_thread */

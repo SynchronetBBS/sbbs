@@ -3871,8 +3871,11 @@ void DLLCALL bbs_thread(void* arg)
 		else
 			host_name="<no name>";
 
-		if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))
+		if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
 			lprintf("%04d Hostname: %s", client_socket, host_name);
+			for(i=0;h!=NULL && h->h_aliases!=NULL && h->h_aliases[i]!=NULL;i++)
+				lprintf("%04d HostAlias: %s", client_socket, h->h_aliases[i]);
+		}
 
 		if(sbbs->trashcan(host_name,"host")) {
 			close_socket(client_socket);

@@ -680,8 +680,11 @@ static void pop3_thread(void* arg)
 		strcpy(host_name,"<no name>");
 
 	if(startup->options&MAIL_OPT_DEBUG_POP3
-		&& !(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
-		lprintf("%04d POP3 client name: %s", socket, host_name);
+		&& !(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
+		lprintf("%04d POP3 Hostname: %s", socket, host_name);
+		for(i=0;host!=NULL && host->h_aliases!=NULL && host->h_aliases[i]!=NULL;i++)
+			lprintf("%04d POP3 HostAlias: %s", socket, host->h_aliases[i]);
+	}
 
 	if(trashcan(&scfg,host_ip,"ip")) {
 		lprintf("%04d !POP3 BLOCKED CLIENT IP ADDRESS: %s"
@@ -1512,8 +1515,11 @@ static void smtp_thread(void* arg)
 	else
 		strcpy(host_name,"<no name>");
 
-	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
-		lprintf("%04d SMTP hostname: %s", socket, host_name);
+	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
+		lprintf("%04d SMTP Hostname: %s", socket, host_name);
+		for(i=0;host!=NULL && host->h_aliases!=NULL && host->h_aliases[i]!=NULL;i++)
+			lprintf("%04d SMTP HostAlias: %s", socket, host->h_aliases[i]);
+	}
 
 	SAFECOPY(hello_name,host_name);
 
