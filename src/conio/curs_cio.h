@@ -1,7 +1,7 @@
 /* $Id$ */
 
 #ifdef __unix__
-#include "conlib.h"
+#include "ciolib.h"
 #undef getch
 #undef ungetch
 #include "curs_fix.h"
