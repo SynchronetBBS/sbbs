@@ -102,6 +102,10 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
 			lprintf(txt.readit,fname);
 	}
 
+    /* Override com-port settings */
+    cfg->com_base=0xf;	/* All nodes use FOSSIL */
+    cfg->com_port=1;	/* All nodes use "COM1" */
+
 	return(TRUE);
 }
 
