@@ -12,7 +12,7 @@ int rlogin_recv(char *buffer, size_t buflen)
 	if(!socket_check(rlogin_socket, NULL, NULL, 0))
 		return(-1);
 	r=recv(rlogin_socket,buffer,buflen,0);
-	if(r==-1 && (errno==EAGAIN || errno==EINTR))
+	if(r==-1 && (errno==EAGAIN || errno==EINTR || errno==0))	/* WTF? */
 		r=0;
 	return(r);
 }
@@ -103,7 +103,8 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
 	tv.tv_usec=100000;
 #endif
 
-	setsockopt(rlogin_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+/*	setsockopt(rlogin_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)); */
+	fcntl(rlogin_socket, F_SETFL, fcntl(rlogin_socket, F_GETFL)|O_NONBLOCK);
 
 	rlogin_send("",1,1000);
 	rlogin_send(passwd,strlen(passwd)+1,1000);
