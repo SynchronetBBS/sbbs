@@ -2393,10 +2393,15 @@ object MainForm: TMainForm
           Hint = 'ALIAS.CFG'
           OnClick = CtrlMenuItemEditClick
         end
-        object AllowedRelayList1: TMenuItem
+        object DomainList: TMenuItem
+          Caption = 'Domain List'
+          Hint = 'DOMAINS.CFG'
+          OnClick = CtrlMenuItemEditClick
+        end
+        object AllowedRelayList: TMenuItem
           Caption = 'Allowed Relay List'
-          Hint = 'RELAY.CAN'
-          OnClick = TextMenuItemEditClick
+          Hint = 'RELAY.CFG'
+          OnClick = CtrlMenuItemEditClick
         end
       end
     end
