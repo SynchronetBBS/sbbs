@@ -48,8 +48,6 @@ static int  pslen;
 							fwrite(nulbuf,1,pslen > sizeof(var) \
 								? 0 : sizeof(var)-pslen,stream); }
 
-#define upop(x)
-
 /****************************************************************************/
 /****************************************************************************/
 BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
@@ -240,7 +238,6 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	upop("Writing MAIN.CNF...");
 	sprintf(str,"%smain.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
@@ -393,7 +390,6 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	upop("Writing MSGS.CNF...");
 	sprintf(str,"%smsgs.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
@@ -446,7 +442,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		put_str(cfg->sub[i]->sname,stream);
 		put_str(cfg->sub[i]->qwkname,stream);
 		put_str(cfg->sub[i]->code,stream);
-#if 0
+#if 1
 		if(cfg->sub[i]->data_dir[0]) {
 			backslash(cfg->sub[i]->data_dir);
 			md(cfg->sub[i]->data_dir);
@@ -666,7 +662,6 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	upop("Writing FILE.CNF...");
 	sprintf(str,"%sfile.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
@@ -801,7 +796,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				put_str(cfg->dir[i]->lname,stream);
 				put_str(cfg->dir[i]->sname,stream);
 				put_str(cfg->dir[i]->code,stream);
-#if 0
+#if 1
 				if(cfg->dir[i]->data_dir[0]) {
 					backslash(cfg->dir[i]->data_dir);
 					md(cfg->dir[i]->data_dir);
@@ -814,7 +809,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				put_str(cfg->dir[i]->op_arstr,stream);
 				backslash(cfg->dir[i]->path);
 				put_str(cfg->dir[i]->path,stream);
-#if 0
+#if 1
 				if(cfg->dir[i]->misc&DIR_FCHK) 
 					md(cfg->dir[i]->path); 
 #endif
@@ -843,7 +838,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 
 	put_int(cfg->total_txtsecs,stream);
 	for(i=0;i<cfg->total_txtsecs;i++) {
-#if 0
+#if 1
 		sprintf(str,"%stext/%s",cfg->data_dir,cfg->txtsec[i]->code);
 		md(str);
 #endif
@@ -873,7 +868,6 @@ BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	upop("Writing CHAT.CNF...");
 	sprintf(str,"%schat.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
@@ -949,7 +943,6 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	upop("Writing XTRN.CNF...");
 	sprintf(str,"%sxtrn.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
