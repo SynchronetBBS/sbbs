@@ -41,11 +41,7 @@ all: $(ODIR) $(ODIR)/wraptest.exe
 
 # Implicit C Compile Rule
 {.}.c.$(OFILE):
-	$(CC) $(CFLAGS) -WD -WM -n$(ODIR) -c $<
-
-# Implicit C++ Compile Rule
-{.}.cpp.$(OFILE):
-	@$(CC) $(CFLAGS) -WD -WM -n$(ODIR) -c  $<
+	@$(CC) $(CFLAGS) -WD -WM -n$(ODIR) -c $<
 
 # Create output directories if they don't exist
 $(ODIR):
@@ -54,5 +50,3 @@ $(ODIR):
 # Executable Build Rule
 $(ODIR)/wraptest.exe: $(ODIR)\wraptest.obj $(OBJS)
 	@$(CC) $(CFLAGS) -WM -n$(ODIR) $**
-
-#!include depends.mak	# defines dependencies
