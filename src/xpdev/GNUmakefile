@@ -1,7 +1,7 @@
 SRC_ROOT	?=	..
 include $(SRC_ROOT)/build/Common.gmake
 
-ifdef XPSEM
+ifdef XP_SEM
 	MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpsem.o$(OFILE)
 endif
 
