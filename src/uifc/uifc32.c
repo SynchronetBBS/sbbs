@@ -1329,7 +1329,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						}
 						break;
 					case KEY_F(1):	/* F1 */
-						help();
+						api->showhelp();
 						break;
 					case KEY_F(5):	/* F5 */
 						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1))
@@ -1803,7 +1803,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 			switch(ch)
 			{
 				case KEY_F(1):	/* F1 Help */
-					help();
+					api->showhelp();
 					continue;
 				case KEY_LEFT:	/* left arrow */
 					if(i)
