@@ -986,7 +986,7 @@ void event_thread(void* arg)
 
 	sbbs->event_thread_running = true;
 
-	srand(clock());		/* Seed random number generator */
+	srand(time(NULL));	/* Seed random number generator */
 	sbbs_random(10);	/* Throw away first number */
 
 	thread_up();
@@ -2629,7 +2629,7 @@ void node_thread(void* arg)
 	lprintf("Node %d thread started",sbbs->cfg.node_num);
 #endif
 
-	srand(clock());		/* Seed random number generator */
+	srand(time(NULL));	/* Seed random number generator */
 	sbbs_random(10);	/* Throw away first number */
 
 #ifdef JAVASCRIPT
