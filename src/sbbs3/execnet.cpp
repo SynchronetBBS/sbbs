@@ -38,12 +38,15 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
+#define SOCK_READLINE_TIMEOUT	5	/* seconds */
+
 int sbbs_t::exec_net(csi_t* csi)
 {
-	char	str[512],rsp[512],buf[1025],*p,**pp,**pp1,**pp2;
+	char	str[512],rsp[512],buf[1025],ch,*p,**pp,**pp1,**pp2;
 	ushort	w;
 	uint 	i;
 	long	*lp,*lp1,*lp2;
+	time_t	start;
 
 	switch(*(csi->ip++)) {	/* sub-op-code stored as next byte */
 		case CS_SOCKET_OPEN:
@@ -198,6 +201,56 @@ int sbbs_t::exec_net(csi_t* csi)
 			} else
 				csi->socket_error=ERROR_VALUE;
 			return(0);
+		case CS_SOCKET_READLINE:
+			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			csi->ip+=4;
+			pp=getstrvar(csi,*(long *)csi->ip);			/* buffer */
+			csi->ip+=4;
+			w=*(ushort *)csi->ip;						/* length */
+			csi->ip+=2;					
+
+			csi->logic=LOGIC_FALSE;
+			csi->socket_error=0;
+
+			if(!lp || !pp)
+				return(0);
+
+			if(w<1 || w>sizeof(buf)-1)
+				w=sizeof(buf)-1;
+
+			start=time(NULL);
+			for(i=0;i<w;i++) {
+
+				if(!online)
+					return(1);
+
+				if(!socket_check(*lp))
+					return(0);
+
+				if(time(NULL)-start>SOCK_READLINE_TIMEOUT) {
+					lprintf("!socket_readline: timeout (%d) exceeded"
+						,SOCK_READLINE_TIMEOUT);
+					return(0);
+				}
+
+				if(recv(*lp, &ch, 1, 0)!=1) {
+					csi->socket_error=ERROR_VALUE;
+					return(0);
+				}
+
+				if(ch=='\n' && i>=1) 
+					break;
+
+				buf[i]=ch;
+			}
+			buf[i-1]=0;
+			if(csi->etx) {
+				p=strchr(buf,csi->etx);
+				if(p) *p=0; 
+			}
+			*pp=copystrvar(csi,*pp,buf); 
+			csi->logic=LOGIC_TRUE;
+			return(0);
 		case CS_SOCKET_WRITE:	
 			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
 			csi->ip+=4;
@@ -216,6 +269,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				csi->socket_error=ERROR_VALUE;
 			return(0);
 
+		/* FTP Functions */
 		case CS_FTP_LOGIN:
 			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
 			csi->ip+=4;
@@ -385,8 +439,6 @@ int sbbs_t::exec_net(csi_t* csi)
 	}
 }
 
-#define SOCK_READLINE_TIMEOUT	5	/* seconds */
-
 /* FTP Command/Response function */
 bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
 {
@@ -421,8 +473,12 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
 				if(!online)
 					return(FALSE);
 
+				if(!socket_check(sock))
+					return(FALSE);
+
 				if(time(NULL)-start>SOCK_READLINE_TIMEOUT) {
-					lprintf("!ftp_cmd: SOCK_READLINE_TIMEOUT exceeded");
+					lprintf("!ftp_cmd: SOCK_READLINE_TIMEOUT (%d) exceeded"
+						,SOCK_READLINE_TIMEOUT);
 					return(FALSE);
 				}
 

@@ -759,6 +759,7 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 							csi->ip+=4;				/* intvar */
 							continue;
 						case CS_SOCKET_READ:
+						case CS_SOCKET_READLINE:
 						case CS_SOCKET_PEEK:
 							csi->ip+=4;				/* socket */
 							csi->ip+=4;				/* buffer */
