@@ -118,7 +118,7 @@ sbj:	$(SBBSDIR)/xtrn
 	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
 
 sbl:	$(SBBSDIR)/xtrn
-	$(MAKE) -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3 XPDEV=$(SBBSDIR)/src/xpdev
+	$(MAKE) -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 
 node_dirs:	$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
 
