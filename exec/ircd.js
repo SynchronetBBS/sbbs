@@ -1009,7 +1009,7 @@ while (!server.terminated) {
              ClientObject.local )
 		{
 			ClientObject.check_timeout();
-			if(socket_select==undefined)
+			if(this.socket_select==undefined)
 			{
 				ClientObject.work();
 			}
@@ -1017,7 +1017,7 @@ while (!server.terminated) {
              poll_client_map.push(thisClient);
 		}
     }
-	if(socket_select!=undefined)
+	if(this.socket_select!=undefined)
 	{
 		readme=socket_select(poll_clients, 1 /* seconds */);
 		for(thisPolled in readme)
