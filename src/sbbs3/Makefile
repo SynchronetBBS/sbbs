@@ -47,7 +47,7 @@ CFLAGS	=	$(CFLAGS) $(JS_CFLAGS)
 LDFLAGS	=	$(LDFLAGS) $(JS_LDFLAGS)
 
 !include sbbsdefs.mk
-CFLAGS	=	$(CFLAGS) $(SBBSDEFS)
+MT_CFLAGS	=	$(MT_CFLAGS) $(SBBSDEFS)
 
 CON_LIBS	= $(UL_PRE)sbbs$(UL_SUF) $(UL_PRE)ftpsrvr$(UL_SUF) $(UL_PRE)websrvr$(UL_SUF) $(UL_PRE)mailsrvr$(UL_SUF) $(UL_PRE)services$(UL_SUF)
 

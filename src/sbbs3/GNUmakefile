@@ -79,7 +79,7 @@ CFLAGS	+=	$(JS_CFLAGS)
 LDFLAGS	+=	$(JS_LDFLAGS)
 
 include sbbsdefs.mk
-CFLAGS	+=	$(SBBSDEFS)
+MT_CFLAGS	+=	$(SBBSDEFS)
 
 # Set up LD_RUN_PATH for run-time locating of the .so files
 PWD	:=	$(shell pwd)

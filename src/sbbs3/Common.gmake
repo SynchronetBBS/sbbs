@@ -40,4 +40,4 @@ vpath %.cpp $(SBBS_SRC)
 
 SBBSDEFS	:=
 -include sbbsdefs.mk		# defines $(SBBSDEFS)
-CFLAGS	+=	$(SBBSDEFS)
+MT_CFLAGS	+=	$(SBBSDEFS)
