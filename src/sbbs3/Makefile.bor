@@ -6,6 +6,8 @@
 # @format.tab-size 4													#
 #																		#
 # usage: make -f makefile.bor											#
+#																		#
+# Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
 
 # $Id$
@@ -77,12 +79,17 @@ $(FTPSRVR): ftpsrvr.c $(SBBSLIB)
     @echo Compiling $** ...
 	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $**
 
-# Synchronet Control Panel Build Rule
-$(SBBSCTRL): sbbsctrl.c $(SBBSLIB)
+# Synchronet Console Build Rule
+$(SBBSCON): sbbscon.c $(SBBSLIB)
 	$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # Baja Utility
 $(BAJA): baja.c ars.c
+	@echo Compiling $** ...
+	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+# Node Utility
+$(NODE): node.c 
 	@echo Compiling $** ...
 	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
