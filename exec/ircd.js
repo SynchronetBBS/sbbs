@@ -806,20 +806,18 @@ function read_config_file() {
 }
 
 function create_new_socket(port) {
+	var newsock = new Socket();
 	log("Creating new socket object on port " + port);
-	var newsock = { socket: new Socket(), terminated: false };
-	if(!newsock.socket.bind(port)) {
-		log("!Error " + newsock.socket.error + " binding socket to TCP port " + port);
+	if(!newsock.bind(port)) {
+		log("!Error " + newsock.error + " binding socket to TCP port " + port);
 		return 0;
 	}
-	log(format("%04u ",newsock.socket.descriptor)
+	log(format("%04u ",newsock.descriptor)
 		+ "IRC server socket bound to TCP port " + port);
-	if(!newsock.socket.listen(5 /* backlog */)) {
-		log("!Error " + newsock.socket.error + " setting up socket for listening");
+	if(!newsock.listen(5 /* backlog */)) {
+		log("!Error " + newsock.error + " setting up socket for listening");
 		return 0;
 	}
-	newsock.socket.nonblocking = true;	// REQUIRED!
-	newsock.socket.debug = false;	// Will spam your log if true :)
 	return newsock;
 }
 
@@ -867,19 +865,26 @@ if(this.server==undefined) {	// Running from JSexec?
 	else if (mline_port)
 		default_port = mline_port;
 
-	server = create_new_socket(default_port)
-	if (!server)
+	server = { socket: false, terminated: false };
+	server.socket = create_new_socket(default_port)
+	if (!server.socket)
 		exit();
 }
+
+server.socket.nonblocking = true;	// REQUIRED!
+server.socket.debug = false;		// Will spam your log if true :)
 
 // Now open additional listening sockets as defined on the P:Line in ircd.conf
 open_plines = new Array();
 // Make our 'server' object the first open P:Line
-open_plines[0] = server;
+open_plines[0] = server.socket;
 for (pl in PLines) {
 	var new_pl_sock = create_new_socket(PLines[pl]);
-	if (new_pl_sock)
+	if (new_pl_sock) {
+		new_pl_sock.nonblocking = true;
+		new_pl_sock.debug = false;
 		open_plines.push(new_pl_sock);
+	}
 }
 
 if(this.branch!=undefined)
@@ -895,8 +900,8 @@ while (!server.terminated) {
 
 	// Setup a new socket if a connection is accepted.
 	for (pl in open_plines) {
-		if (open_plines[pl].socket.poll()) {
-			var client_sock=open_plines[pl].socket.accept();
+		if (open_plines[pl].poll()) {
+			var client_sock=open_plines[pl].accept();
 			if(client_sock) {
 				if (iszlined(client_sock.remote_ip_address)) {
 					client_sock.send(":" + servername + " 465 * :You've been Z:Lined from this server.\r\n");
@@ -2958,7 +2963,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.server_notice("Invalid RESTART password.");
 				break;
 			}
-			rs_str = "Aieeeee!!!  Restarting server...";
+			var rs_str = "Aieeeee!!!  Restarting server...";
 			oper_notice("Notice",rs_str);
 			log("!WARNING " + rs_str + " per " + this.ircnuh);
 			terminate_everything(rs_str);
