@@ -137,6 +137,7 @@ public:
 	SOCKET	client_socket_dup;
 	DWORD	client_addr;
 	char	client_name[128];
+	char	client_ident[128];
 	DWORD	local_addr;
 
 	scfg_t	cfg;
@@ -195,7 +196,6 @@ public:
 
 	int 	nodefile;		/* File handle for node.dab */
 	int		node_ext;		/* File handle for node.exb */
-	char 	cap_fname[41];	/* Capture filename - default is CAPTURE.TXT */
 	FILE 	*capfile;		/* File string to use for capture file */
 	int 	inputfile;		/* File handle to use for input */
 
@@ -526,8 +526,6 @@ public:
 
 	/* misc.cpp */
 	int		nopen(char *str, int access);
-	void	errormsg(int line, char *file, char action, char *object
-				,ulong access, char *extinfo=NULL);
 	int		mv(char *src, char *dest, char copy); /* fast file move/copy function */
 	bool	chksyspass(void);
 	bool	chk_ar(uchar * str, user_t * user); /* checks access requirements */
@@ -605,20 +603,19 @@ public:
 	char	xtrn_access(uint xnum);			/* Does useron have access to xtrn? */
 	void	moduserdat(uint xtrnnum);
 
-	/* logio.cpp */
+	/* logfile.cpp */
 	void	logentry(char *code,char *entry);
 	void	log(char *str);				/* Writes 'str' to node log */
 	void	logch(char ch, bool comma);	/* Writes 'ch' to node log */
 	void	logline(char *code,char *str); /* Writes 'str' on it's own line in log */
 	void	logofflist(void);              /* List of users logon activity */
+	bool	syslog(char* code, char *entry);
 	void	errorlog(char *text);			/* Logs errors to ERROR.LOG and NODE.LOG */
 	bool	errorlog_inside;
 	bool	errormsg_inside;
-
-	#if DEBUG
-	void	dlog(int line, char *file, char *text);	/* Debug log file */
-	#endif
-
+	void	errormsg(int line, char *file, char action, char *object
+				,ulong access, char *extinfo=NULL);
+	
 	/* qwk.cpp */
 	bool	qwklogon;
 	time_t	qwkmail_time;
@@ -779,6 +776,8 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time_t, char *str);
 	/* seconds to HH:MM:SS */
 	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);		
+	/* struct tm to HH:MMa/p */
+	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
 
 	/* logfile.cpp */
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, 
