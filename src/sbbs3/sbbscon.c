@@ -747,16 +747,22 @@ void _sighandler_quit(int sig)
 
 void _sighandler_rerun(int sig)
 {
-	int		i;
-	node_t	node;
 
 	lputs("     Got HUP (rerun) signal");
 	
+#if 0	/* old way, we don't want to recycle all nodes, necessarily */
 	for(i=1;i<=scfg.sys_nodes;i++) {
 		getnodedat(&scfg,i,&node,NULL /* file */);
 		node.misc|=NODE_RRUN;
 		printnodedat(&scfg,i,&node);
 	}
+#else	/* instead, recycle all our servers */
+	bbs_startup.recycle_now=TRUE;
+	ftp_startup.recycle_now=TRUE;
+	web_startup.recycle_now=TRUE;
+	mail_startup.recycle_now=TRUE;
+	services_startup.recycle_now=TRUE;
+#endif
 }
 
 #ifdef NEEDS_DAEMON
