@@ -163,7 +163,7 @@ while(client.socket.is_connected) {
 			for (var i=1; i<=system.stats.total_users; i++) {
 				oUser.number = i;
 				if (oUser.ip_address == client.ip_address)
-					if (!(oUser.exemptions&UFLAG_Q)) //don't count qnet users
+					if (!(oUser.security.restrictions&UFLAG_Q)) //don't count qnet users
 						if (oUser.stats.laston_date > iLastOn) { //more recent than last match
 							iLastOn = oUser.stats.laston_date;
 							sUser = oUser.alias;
@@ -437,6 +437,8 @@ while(client.socket.is_connected) {
 				else
 					writeln("Newsgroups: " + selected.newsgroup);
 
+				if(hdr.replyto!=undefined)
+					writeln("Reply-To: " + hdr.replyto);
 				if(hdr.reply_id!=undefined)
 					writeln("References: " + hdr.reply_id);
 				/* FidoNet header */
