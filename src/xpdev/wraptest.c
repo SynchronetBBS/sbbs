@@ -20,6 +20,7 @@
 static void getkey(void);
 static void sem_test_thread(void* arg);
 static void sleep_test_thread(void* arg);
+static void sopen_test_thread(void* arg);
 static void lock_test_thread(void* arg);
 
 typedef struct {
@@ -42,7 +43,7 @@ int main()
 	DIR*	dir;
 	DIRENT*	dirent;
 	thread_data_t thread_data;
-	int	fd1;
+	int	fd;
 
 	/* Show platform details */
 	DESCRIBE_COMPILER(compiler);
@@ -51,11 +52,30 @@ int main()
 	printf("%-15s: %s\n","Compiler"	,compiler);
 	printf("%-15s: %d\n","Random Number",xp_random(1000));
 
+	/* Exclusive sopen test */
+	printf("\nsopen() test\n");
+	if((fd=sopen(LOCK_FNAME,O_RDWR|O_CREAT,SH_DENYRW))==-1) {
+		perror(LOCK_FNAME);
+		return(errno);
+	}
+	if(_beginthread(
+		  sopen_test_thread	/* entry point */
+		 ,0  				/* stack size (0=auto) */
+		 ,NULL				/* data */
+		 )==(unsigned long)-1)
+		printf("_beginthread failed\n");
+	else
+		SLEEP(1000);
+	close(fd);
+
 	/* sopen()/lock test */
-	printf("\nsopen()/lock() test\n");
-	fd1=sopen(LOCK_FNAME,O_RDWR|O_CREAT,SH_DENYNO);
-	write(fd1,"lock testing\n",LOCK_LEN);
-	if(lock(fd1,LOCK_OFFSET,LOCK_LEN))
+	printf("\nlock() test\n");
+	if((fd=sopen(LOCK_FNAME,O_RDWR|O_CREAT,SH_DENYNO))==-1) {
+		perror(LOCK_FNAME);
+		return(errno);
+	}
+	write(fd,"lock testing\n",LOCK_LEN);
+	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
 		printf("!FAIL lock() non-functional (or file already locked)\n");
 	else
 		printf("lock() succeeds\n");
@@ -67,11 +87,11 @@ int main()
 		printf("_beginthread failed\n");
 	else
 		SLEEP(1000);
-	if(lock(fd1,LOCK_OFFSET,LOCK_LEN))
+	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
 		printf("Locks in first thread survive open()/close() in other thread\n");
 	else
 		printf("!FAIL lock() in first thread lost by open()/close() in other thread\n");
-	close(fd1);
+	close(fd);
 
 	/* getch test */
 	printf("\ngetch() test (ESC to continue)\n");
@@ -230,16 +250,33 @@ static void lock_test_thread(void* arg)
 
 	fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYNO);
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)
-		printf("!FAIL Lock not effective between threads\n");
+		printf("!FAILURE: Lock not effective between threads\n");
 	else
 		printf("Locks effective between threads\n");
-#if 1
 	close(fd);
 	fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYNO);
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
 		printf("Locks survive file open()/close() in other thread\n");
 	else
-		printf("!FAIL Locks do not survive file open()/close() in other thread\n");
+		printf("!FAILURE: Locks do not survive file open()/close() in other thread\n");
 	close(fd);
-#endif
+}
+
+static void sopen_test_thread(void* arg)
+{
+	int fd;
+
+	if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYNO))!=-1)
+		printf("!FAILURE: allowed to reopen with SH_DENYNO\n");
+	else if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYRD))!=-1)
+		printf("!FAILURE: allowed to reopen with SH_DENYRD\n");
+	else if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYWR))!=-1)
+		printf("!FAILURE: allowed to reopen with SH_DENYWR\n");
+	else if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYNO))!=-1)
+		printf("!FAILURE: allowed to reopen with SH_DENYNO\n");
+	else
+		printf("SUCCESS: reopen disallowed\n");
+
+	if(fd!=-1)
+		close(fd);
 }
