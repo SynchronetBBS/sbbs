@@ -140,13 +140,16 @@ int x_cprintf(char *fmat, ...)
 	return(ret);
 }
 
-void x_cputs(unsigned char *str)
+int x_cputs(unsigned char *str)
 {
-        int             pos;
+	int             pos;
+	int				ret=0;
 
 	for(pos=0;str[pos];pos++) {
+		ret=str[pos];
 		putch(str[pos]);
 	}
+	return(ret);
 }
 
 void x_gotoxy(int x, int y)

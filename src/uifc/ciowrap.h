@@ -74,7 +74,7 @@ typedef struct {
 	int		(*wherey)		(void);
 	void	(*putch)		(unsigned char);
 	int		(*c_printf)		(char *fmat, ...);
-	void	(*cputs)		(unsigned char *);
+	int		(*cputs)		(unsigned char *);
 	void	(*gotoxy)		(int,int);
 	void	(*clrscr)		(void);
 	void	(*gettextinfo)	(struct text_info *);

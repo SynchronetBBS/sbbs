@@ -15,7 +15,7 @@ int x_wherey(void);
 int x_wherex(void);
 void x_putch(unsigned char ch);
 int x_cprintf(char *fmat, ...);
-void x_cputs(unsigned char *str);
+int x_cputs(unsigned char *str);
 void x_gotoxy(int x, int y);
 void x_clrscr(void);
 void x_initciowrap(long inmode);

@@ -17,7 +17,7 @@ int curs_wherex(void);
 void _putch(unsigned char ch, BOOL refresh_now);
 void curs_putch(unsigned char ch);
 int curs_cprintf(char *fmat, ...);
-void curs_cputs(unsigned char *str);
+int curs_cputs(unsigned char *str);
 void curs_gotoxy(int x, int y);
 void curs_clrscr(void);
 void curs_initciowrap(long inmode);

@@ -595,14 +595,17 @@ int curs_cprintf(char *fmat, ...)
     return(ret);
 }
 
-void curs_cputs(unsigned char *str)
+int curs_cputs(unsigned char *str)
 {
 	int		pos;
+	int		ret=0;
 
 	for(pos=0;str[pos];pos++)
 	{
+		ret=str[pos];
 		putch(str[pos]);
 	}
+	return(ret);
 }
 
 void curs_gotoxy(int x, int y)
