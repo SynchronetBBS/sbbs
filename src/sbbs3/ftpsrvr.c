@@ -3867,7 +3867,7 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
-		if(!strnicmp(cmd, "STOR ", 5)) {
+		if(!strnicmp(cmd, "STOR ", 5) || !strnicmp(cmd, "APPE ", 5)) {
 
 			if(user.rest&FLAG('U')) {
 				sockprintf(sock,"553 Insufficient access.");
@@ -3957,7 +3957,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				sprintf(fname,"%s%s",scfg.dir[dir]->path,p);
-				if(fexist(fname)  
+				if((strnicmp(cmd,"STOR",4)==0 && fexist(fname))
 					|| (startup->options&FTP_OPT_INDEX_FILE 
 						&& !stricmp(p,startup->index_file_name))
 					|| (startup->options&FTP_OPT_HTML_INDEX_FILE 
@@ -3967,6 +3967,31 @@ static void ctrl_thread(void* arg)
 						,sock,user.alias,fname);
 					sockprintf(sock,"553 File already exists.");
 					continue;
+				}
+				if(strnicmp(cmd,"APPE",4)==0) {	/* RESUME */
+#ifdef _WIN32
+					GetShortPathName(fname, str, sizeof(str));
+#else
+					SAFECOPY(str,fname);
+#endif
+					padfname(getfname(str),f.name);
+					strupr(f.name);
+					f.dir=dir;
+					f.cdt=0;
+					f.size=-1;
+					if(!getfileixb(&scfg,&f) || !getfiledat(&scfg,&f)) {
+						lprintf("%04d !%s file (%s) not in database for %.4s command"
+							,sock,user.alias,fname,cmd);
+						sockprintf(sock,"550 File not found: %s",p);
+						continue;
+					}
+					/* Verify user is original uploader */
+					if(stricmp(f.uler,user.alias)) {
+						lprintf("%04d !%s cannot resume upload of %s, uploaded by %s"
+							,sock,user.alias,fname,f.uler);
+						sockprintf(sock,"553 Insufficient access (can't resume upload from different user).");
+						continue;
+					}
 				}
 				lprintf("%04d %s uploading: %s to %s (%s) in %s mode"
 					,sock,user.alias
@@ -3983,7 +4008,7 @@ static void ctrl_thread(void* arg)
 				,dir
 				,TRUE	/* uploading */
 				,TRUE	/* credits */
-				,FALSE	/* append */
+				,strnicmp(cmd,"APPE",4)==0 ? TRUE : FALSE	/* append */
 				,desc
 				);
 			filepos=0;
