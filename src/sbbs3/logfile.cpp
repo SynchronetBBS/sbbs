@@ -214,7 +214,7 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 					  ,ulong access, char *extinfo)
 {
 	char*	src;
-    char	str[512];
+    char	str[2048];
 	char 	tmp[512];
     char*	actstr;
 
@@ -313,7 +313,7 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 		strcat(str,tmp);
 	}
 	if(errno) {
-		sprintf(tmp,"\r\n     errno: %d",errno);
+		sprintf(tmp,"\r\n     errno: %d (%s)",errno,strerror(errno));
 		strcat(str,tmp); 
 		errno=0;
 	}
