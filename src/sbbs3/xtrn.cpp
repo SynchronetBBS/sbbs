@@ -284,21 +284,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
 
-	attr(cfg.color[clr_external]);        /* setup default attributes */
+	attr(cfg.color[clr_external]);		/* setup default attributes */
 
-    SAFECOPY(str,cmdline);		/* Set str to program name only */
-    p=strchr(str,SP);
-    if(p) *p=0;
-    SAFECOPY(fname,str);
-
-    p=strrchr(fname,'/');
-    if(!p) p=strrchr(fname,'\\');
-    if(!p) p=strchr(fname,':');
-    if(!p) p=fname;
-    else   p++;
+    SAFECOPY(str,cmdline);				/* Set str to program name only */
+	truncstr(str," ");
+    SAFECOPY(fname,getfname(str));
 
     for(i=0;i<cfg.total_natvpgms;i++)
-        if(!stricmp(p,cfg.natvpgm[i]->name))
+        if(!stricmp(fname,cfg.natvpgm[i]->name))
             break;
     if(i<cfg.total_natvpgms || mode&EX_NATIVE)
         native=true;
@@ -1065,6 +1058,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
+	char	fullpath[MAX_PATH+1];
 	char	fullcmdline[MAX_PATH+1];
 	char*	argv[MAX_ARGS];
 	char*	p;
@@ -1085,29 +1079,26 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	fd_set ibits;
 	struct timeval timeout;
 
+	if(online==ON_LOCAL)
+		eprintf("Executing external: %s",cmdline);
+
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
 
-	attr(cfg.color[clr_external]);        /* setup default attributes */
+	attr(cfg.color[clr_external]);  /* setup default attributes */
 
-    SAFECOPY(str,cmdline);		/* Set str to program name only */
-    p=strchr(str,SP);
-    if(p) *p=0;
-    SAFECOPY(fname,str);
-
-    p=strrchr(fname,'/');
-    if(!p) p=strrchr(fname,'\\');
-    if(!p) p=strchr(fname,':');
-    if(!p) p=fname;
-    else   p++;
+    SAFECOPY(str,cmdline);			/* Set fname to program name only */
+	truncstr(str," ");
+    SAFECOPY(fname,getfname(str));
 
     for(i=0;i<cfg.total_natvpgms;i++)
-        if(!stricmp(p,cfg.natvpgm[i]->name))
+        if(!stricmp(fname,cfg.natvpgm[i]->name))
             break;
     if(i<cfg.total_natvpgms || mode&EX_NATIVE)
         native=true;
 
-	if(startup_dir!=NULL && cmdline[0]!='/' && cmdline[0]!='.')
+	sprintf(fullpath,"%s%s",startup_dir,fname);
+	if(startup_dir!=NULL && cmdline[0]!='/' && cmdline[0]!='.' && fexist(fullpath))
 		sprintf(fullcmdline,"%s%s",startup_dir,cmdline);
 	else
 		SAFECOPY(fullcmdline,cmdline);
