@@ -40,6 +40,7 @@ int main(int argc, char **argv)
 {
 	struct bbslist *bbs;
 	struct	text_info txtinfo;
+	char	str[MAX_PATH];
 	char	drive[MAX_PATH];
 	char	path[MAX_PATH];
 	char	fname[MAX_PATH];
@@ -110,10 +111,13 @@ int main(int argc, char **argv)
 					textmode(C80X60);
 					break;
 			}
+			sprintf(str,"SyncTERM - %s",bbs->name);
+			settitle(str);
 			if(drawwin())
 				return(1);
 			doterm();
 			textmode(txtinfo.currmode);
+			settitle("SyncTERM");
 		}
 	}
 	uifcbail();
