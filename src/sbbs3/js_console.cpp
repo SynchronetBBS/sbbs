@@ -49,6 +49,7 @@ enum {
 	,CON_PROP_TOS
 	,CON_PROP_ROWS
 	,CON_PROP_AUTOTERM
+	,CON_PROP_TERMINAL
 	,CON_PROP_WORDWRAP
 	,CON_PROP_QUESTION
 	,CON_PROP_TIMEOUT			/* User inactivity timeout reference */
@@ -90,6 +91,11 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_AUTOTERM:
 			val=sbbs->autoterm;
 			break;
+		case CON_PROP_TERMINAL:
+			if((js_str=JS_NewStringCopyZ(cx, sbbs->terminal))==NULL)
+				return(JS_FALSE);
+			*vp = STRING_TO_JSVAL(js_str);
+			return(JS_TRUE);
 		case CON_PROP_TIMEOUT:
 			val=sbbs->timeout;
 			break;
@@ -98,7 +104,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case CON_PROP_ABORTED:
 			val=BOOLEAN_TO_JSVAL(sbbs->sys_status&SS_ABORT ? true:false);
-			return(JS_TRUE);
+			break;
 		case CON_PROP_ABORTABLE:
 			val=sbbs->rio_abortable;
 			break;
@@ -166,6 +172,11 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_AUTOTERM:
 			sbbs->autoterm=val;
 			break;
+		case CON_PROP_TERMINAL:
+			if((str=JS_ValueToString(cx, *vp))==NULL)
+				break;
+			SAFECOPY(sbbs->terminal,JS_GetStringBytes(str));
+			break;
 		case CON_PROP_TIMEOUT:
 			sbbs->timeout=val;
 			break;
@@ -211,6 +222,7 @@ static struct JSPropertySpec js_console_properties[] = {
 	{	"top_of_screen"		,CON_PROP_TOS				,CON_PROP_FLAGS	,NULL,NULL},
 	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,NULL,NULL},
 	{	"autoterm"			,CON_PROP_AUTOTERM			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"terminal"			,CON_PROP_TERMINAL			,CON_PROP_FLAGS ,NULL,NULL},
 	{	"timeout"			,CON_PROP_TIMEOUT			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"aborted"			,CON_PROP_ABORTED			,CON_PROP_FLAGS	,NULL,NULL},
@@ -231,12 +243,13 @@ static char* con_prop_desc[] = {
 	,"number of terminal rows"
 	,"bitfield of automatically detected terminal settings "
 		"(see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"terminal type description (e.g. 'ANSI')"
 	,"user inactivity timeout reference"
 	,"low timeleft warning flag"
 	,"input/output has been aborted"
 	,"output can be aborted with Ctrl-C"
-	,"current telnet mode (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
-	,"word-wrap buffer (used by getstr)"
+	,"current telnet mode bitfield (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"word-wrap buffer (used by getstr)	- <small>READ ONLY</small>"
 	,"current yes/no question (set by yesno and noyes)"
 	,"control key pass-through bitmask, set bits represent control key combinations "
 		"<i>not</i> handled by <tt>inkey()</tt> method"
