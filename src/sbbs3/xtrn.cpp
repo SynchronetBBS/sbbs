@@ -976,6 +976,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	}
 	
 	if(pid==0) {	/* child process */
+
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
@@ -1009,6 +1010,13 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			dup2(out_pipe[1],2);	/* stderr */
 			close(out_pipe[1]);		/* close excess file descriptor */
 		}	
+
+		if(mode&EX_BG)	/* background execution, detach child */
+		{
+			if(fork())
+				exit(0);
+			lprintf("Detaching external process pgid=%d",setsid());
+        }
 
 		execvp(argv[0],argv);
 		sprintf(str,"!ERROR %d executing %s",errno,argv[0]);
@@ -1095,8 +1103,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		close(out_pipe[0]);
 	}
 
-	if(!(mode&EX_BG))	/* !background execution, wait for child to terminate */
-		waitpid(pid, &i, 0);
+	waitpid(pid, &i, 0); /* Wait for child to terminate */
 
 	pthread_mutex_unlock(&input_thread_mutex);
 
