@@ -133,106 +133,109 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 
 		length=bodylen+taillen;
 
-		if(length&0x80000000) {
-			sprintf(smb->last_error,"message length: 0x%lX",length);
-			retval=SMB_ERR_DAT_LEN;
-			break;
-		}
+		if(length) {
 
-		/* Allocate Data Blocks */
-		if(smb->status.attr&SMB_HYPERALLOC) {
-			offset=smb_hallocdat(smb);
-			storage=SMB_HYPERALLOC; 
-		} else {
-			if((retval=smb_open_da(smb))!=SMB_SUCCESS)
+			if(length&0x80000000) {
+				sprintf(smb->last_error,"message length: 0x%lX",length);
+				retval=SMB_ERR_DAT_LEN;
 				break;
-			if(storage==SMB_FASTALLOC)
-				offset=smb_fallocdat(smb,length,1);
-			else { /* SMB_SELFPACK */
-				offset=smb_allocdat(smb,length,1);
-				storage=SMB_SELFPACK; 
 			}
-			smb_close_da(smb); 
-		}
 
-		if(offset<0) {
-			retval=offset;
-			break;
-		}
-		msg->hdr.offset=offset;
+			/* Allocate Data Blocks */
+			if(smb->status.attr&SMB_HYPERALLOC) {
+				offset=smb_hallocdat(smb);
+				storage=SMB_HYPERALLOC; 
+			} else {
+				if((retval=smb_open_da(smb))!=SMB_SUCCESS)
+					break;
+				if(storage==SMB_FASTALLOC)
+					offset=smb_fallocdat(smb,length,1);
+				else { /* SMB_SELFPACK */
+					offset=smb_allocdat(smb,length,1);
+					storage=SMB_SELFPACK; 
+				}
+				smb_close_da(smb); 
+			}
 
-		smb_fseek(smb->sdt_fp,offset,SEEK_SET);
-
-		if(bodylen) {
-			if((retval=smb_dfield(msg,TEXT_BODY,bodylen))!=SMB_SUCCESS)
+			if(offset<0) {
+				retval=offset;
 				break;
+			}
+			msg->hdr.offset=offset;
 
-			if(xlat!=XLAT_NONE) {	/* e.g. XLAT_LZH */
+			smb_fseek(smb->sdt_fp,offset,SEEK_SET);
+
+			if(bodylen) {
+				if((retval=smb_dfield(msg,TEXT_BODY,bodylen))!=SMB_SUCCESS)
+					break;
+
+				if(xlat!=XLAT_NONE) {	/* e.g. XLAT_LZH */
+					if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
+						safe_snprintf(smb->last_error,sizeof(smb->last_error)
+							,"%d (%s) writing body xlat string"
+							,get_errno(),STRERROR(get_errno()));
+						retval=SMB_ERR_WRITE;
+						break;
+					}
+					bodylen-=sizeof(xlat);
+				}
+				xlat=XLAT_NONE;	/* xlat string terminator */
 				if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
 					safe_snprintf(smb->last_error,sizeof(smb->last_error)
-						,"%d (%s) writing body xlat string"
+						,"%d (%s) writing body xlat terminator"
 						,get_errno(),STRERROR(get_errno()));
 					retval=SMB_ERR_WRITE;
 					break;
 				}
 				bodylen-=sizeof(xlat);
+
+				if(smb_fwrite(smb,body,bodylen,smb->sdt_fp)!=bodylen) {
+					safe_snprintf(smb->last_error,sizeof(smb->last_error)
+						,"%d (%s) writing body (%ld bytes)"
+						,get_errno(),STRERROR(get_errno())
+						,bodylen);
+					retval=SMB_ERR_WRITE;
+					break;
+				}
 			}
-			xlat=XLAT_NONE;	/* xlat string terminator */
-			if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
+
+			if(taillen) {
+				if((retval=smb_dfield(msg,TEXT_TAIL,taillen))!=SMB_SUCCESS)
+					break;
+
+				xlat=XLAT_NONE;	/* xlat string terminator */
+				if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
+					safe_snprintf(smb->last_error,sizeof(smb->last_error)
+						,"%d (%s) writing tail xlat terminator"
+						,get_errno(),STRERROR(get_errno()));
+					retval=SMB_ERR_WRITE;
+					break;
+				}
+
+				if(smb_fwrite(smb,tail,taillen-sizeof(xlat),smb->sdt_fp)!=taillen-sizeof(xlat)) {
+					safe_snprintf(smb->last_error,sizeof(smb->last_error)
+						,"%d (%s) writing tail (%ld bytes)"
+						,get_errno(),STRERROR(get_errno())
+						,taillen-sizeof(xlat));
+					retval=SMB_ERR_WRITE;
+					break;
+				}
+			}
+
+			for(l=length;l%SDT_BLOCK_LEN;l++) {
+				if(smb_fputc(0,smb->sdt_fp)!=0)
+					break;
+			}
+			if(l%SDT_BLOCK_LEN) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
-					,"%d (%s) writing body xlat terminator"
+					,"%d (%s) writing data padding"
 					,get_errno(),STRERROR(get_errno()));
 				retval=SMB_ERR_WRITE;
 				break;
 			}
-			bodylen-=sizeof(xlat);
 
-			if(smb_fwrite(smb,body,bodylen,smb->sdt_fp)!=bodylen) {
-				safe_snprintf(smb->last_error,sizeof(smb->last_error)
-					,"%d (%s) writing body (%ld bytes)"
-					,get_errno(),STRERROR(get_errno())
-					,bodylen);
-				retval=SMB_ERR_WRITE;
-				break;
-			}
+			fflush(smb->sdt_fp);
 		}
-
-		if(taillen) {
-			if((retval=smb_dfield(msg,TEXT_TAIL,taillen))!=SMB_SUCCESS)
-				break;
-
-			xlat=XLAT_NONE;	/* xlat string terminator */
-			if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
-				safe_snprintf(smb->last_error,sizeof(smb->last_error)
-					,"%d (%s) writing tail xlat terminator"
-					,get_errno(),STRERROR(get_errno()));
-				retval=SMB_ERR_WRITE;
-				break;
-			}
-
-			if(smb_fwrite(smb,tail,taillen-sizeof(xlat),smb->sdt_fp)!=taillen-sizeof(xlat)) {
-				safe_snprintf(smb->last_error,sizeof(smb->last_error)
-					,"%d (%s) writing tail (%ld bytes)"
-					,get_errno(),STRERROR(get_errno())
-					,taillen-sizeof(xlat));
-				retval=SMB_ERR_WRITE;
-				break;
-			}
-		}
-
-		for(l=length;l%SDT_BLOCK_LEN;l++) {
-			if(smb_fputc(0,smb->sdt_fp)!=0)
-				break;
-		}
-		if(l%SDT_BLOCK_LEN) {
-			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) writing data padding"
-				,get_errno(),STRERROR(get_errno()));
-			retval=SMB_ERR_WRITE;
-			break;
-		}
-
-		fflush(smb->sdt_fp);
 
 		if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
 			break;
@@ -294,7 +297,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		if(smb_addhashes(smb,hashes,/* skip_marked? */FALSE)==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
 
-		retval=smb_addmsghdr(smb,msg,storage); // calls smb_unlocksmbhdr() 
+		retval=smb_addmsghdr(smb,msg,storage); /* calls smb_unlocksmbhdr() */
 
 	} while(0);
 	/* finally */
