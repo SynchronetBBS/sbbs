@@ -46,7 +46,7 @@ typedef struct {
 	WORD	max_inactivity;
 	WORD	max_delivery_attempts;
 	WORD	rescan_frequency;	/* In seconds */
-	WORD	reserved_word3;
+	WORD	relay_port;
 	WORD	reserved_word2;
 	WORD	reserved_word1;
     DWORD   interface_addr;

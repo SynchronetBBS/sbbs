@@ -2099,9 +2099,13 @@ static void sendmail_thread(void* arg)
 				memset(&server_addr,0,sizeof(server_addr));
 				server_addr.sin_addr.s_addr = ip_addr;
 				server_addr.sin_family = AF_INET;
-				server_addr.sin_port   = htons(IPPORT_SMTP);
+				if(startup->options&MAIL_OPT_RELAY_TX)
+					server_addr.sin_port = htons(startup->relay_port);
+				else
+					server_addr.sin_port = htons(IPPORT_SMTP);
 				
-				lprintf("SendMail: connecting to %s [%s]"
+				lprintf("SendMail: connecting to port %u on %s [%s]"
+					,ntohs(server_addr.sin_port)
 					,server,inet_ntoa(server_addr.sin_addr));
 				if((i=connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)))!=0) {
 					lprintf("!SendMail: ERROR %d (%d) connecting to SMTP server: %s"
@@ -2301,6 +2305,9 @@ void mail_server(void* arg)
 		return;
 	}
 
+	if(startup->relay_port==0)
+		startup->relay_port=IPPORT_SMTP;
+
 	thread_up();
 
 	status("Initializing");
@@ -2438,13 +2445,13 @@ void mail_server(void* arg)
     	,sizeof (server_addr));
 
 	if (result != 0) {
-		lprintf("!ERROR %d (%d) binding SMTP socket to port %d"
+		lprintf("!ERROR %d (%d) binding SMTP socket to port %u"
 			,result, ERROR_VALUE, startup->smtp_port);
 		cleanup(1);
 		return;
 	}
 
-    lprintf("SMTP socket bound to port %d",startup->smtp_port);
+    lprintf("SMTP socket bound to port %u",startup->smtp_port);
 
     result = listen (server_socket, 1);
 
