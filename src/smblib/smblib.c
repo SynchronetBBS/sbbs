@@ -756,6 +756,38 @@ static void set_convenience_ptr(smbmsg_t* msg, ushort hfield_type, void* hfield_
 	}
 }
 
+static void clear_convenience_ptrs(smbmsg_t* msg)
+{
+	msg->from=NULL;
+	msg->from_ext=NULL;
+	msg->from_org=NULL;
+	memset(&msg->from_net,0,sizeof(net_t));
+
+	msg->replyto=NULL;
+	msg->replyto_ext=NULL;
+	memset(&msg->replyto_net,0,sizeof(net_t));
+
+	msg->to=NULL;
+	msg->to_ext=NULL;
+	memset(&msg->to_net,0,sizeof(net_t));
+
+	msg->subj=NULL;
+	msg->summary=NULL;
+	msg->id=NULL;
+	msg->reply_id=NULL;
+	msg->reverse_path=NULL;
+	msg->path=NULL;
+	msg->newsgroups=NULL;
+
+	msg->ftn_msgid=NULL;
+	msg->ftn_reply=NULL;
+	msg->ftn_area=NULL;
+	msg->ftn_pid=NULL;
+	msg->ftn_tid=NULL;
+	msg->ftn_flags=NULL;
+}
+
+
 /****************************************************************************/
 /* Read header information into 'msg' structure                             */
 /* msg->idx.offset must be set before calling this function 				*/
@@ -895,6 +927,7 @@ void SMBCALL smb_freemsghdrmem(smbmsg_t* msg)
 		FREE(msg->hfield_dat);
 		msg->hfield_dat=NULL;
 	}
+	clear_convenience_ptrs(msg);	/* don't leave pointers to freed memory */
 }
 
 /****************************************************************************/
