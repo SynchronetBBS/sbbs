@@ -55,8 +55,9 @@ USEFORM("AboutBoxFormUnit.cpp", AboutBoxForm);
 USEFORM("StatsLogFormUnit.cpp", StatsLogForm);
 USEFORM("CodeInputFormUnit.cpp", CodeInputForm);
 USEFORM("ClientFormUnit.cpp", ClientForm);
-USEFORM("SpyFormUnit.cpp",SpyForm);
+USEFORM("SpyFormUnit.cpp", SpyForm);
 USEUNIT("..\ringbuf.c");
+USEUNIT("emulvt.pas");
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
