@@ -81,7 +81,7 @@ char attach[128];
 /************************/
 
 char *usage=
-"usage: smbutil [/opts] cmd <filespec.shd>\n"
+"usage: smbutil [-opts] cmd <filespec.shd>\n"
 "\n"
 "cmd:\n"
 "       l[n] = list msgs starting at number n\n"
@@ -1336,7 +1336,11 @@ smb.file[0]=0;
 printf("\nSMBUTIL Version %s (%s) SMBLIB %s - Synchronet Message Base "\
 	"Utility\n\n"
 	,SMBUTIL_VER
-#if defined(__OS2__)
+#if defined(__linux__)
+	,"Linux"
+#elif defined(__unix__)
+	,"Unix"
+#elif defined(__OS2__)
 	,"OS/2"
 #elif defined(_WIN32)
 	,"Win32"
@@ -1350,7 +1354,11 @@ printf("\nSMBUTIL Version %s (%s) SMBLIB %s - Synchronet Message Base "\
 	,smb_lib_ver()
     );
 for(x=1;x<argc;x++) {
-	if(argv[x][0]=='/') {
+	if(
+#ifndef __unix__
+		argv[x][0]=='/' ||		/* for backwards compatibilty */
+#endif
+		argv[x][0]=='-') {
 		for(j=1;argv[x][j];j++)
 			switch(toupper(argv[x][j])) {
 				case 'A':
@@ -1392,7 +1400,9 @@ for(x=1;x<argc;x++) {
 		else {
 			sprintf(smb.file,"%.64s",argv[x]);
 			p=strrchr(smb.file,'.');
-			s=strrchr(smb.file,'\\');
+			s=strrchr(smb.file,'/');
+			if(s==NULL)
+				s=strrchr(smb.file,'\\');
 			if(p>s) *p=0;
 			smb.retry_time=30;
 			printf("Opening %s\r\n",smb.file);
