@@ -248,6 +248,35 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 		smb_hfield(msg, RECIPIENTNETADDR, (ushort)strlen(cp), cp);
 	}
 
+	if(JS_GetProperty(cx, hdr, "replyto", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, REPLYTO, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "replyto_ext", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, REPLYTOEXT, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "replyto_net_type", &val) && val!=JSVAL_VOID) {
+		nettype=(ushort)JSVAL_TO_INT(val);
+		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
+	}
+
+	if(JS_GetProperty(cx, hdr, "replyto_net_addr", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, REPLYTONETADDR, (ushort)strlen(cp), cp);
+	}
+
 	/* RFC822 headers */
 	if(JS_GetProperty(cx, hdr, "id", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)
