@@ -46,7 +46,7 @@
 int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 {
 	char	str[MAX_PATH+1];
-	int		count;
+	int		rd,count;
 
 	if(node==NULL || number<1)
 		return(-1);
@@ -69,12 +69,13 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		if(count)
 			mswait(100);
-		if(lockit
-			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))!=0) {
+		if(lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))!=0)
 			continue; 
-		}
 		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
+		rd=read(nodefile,node,sizeof(node_t));
+		if(!lockit || rd!=sizeof(node_t))
+			unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
+		if(rd==sizeof(node_t))
 			break;
 	}
 	if(!lockit && cfg.node_misc&NM_CLOSENODEDAB) {
@@ -241,7 +242,7 @@ int sbbs_t::getnmsg()
 int sbbs_t::getnodeext(uint number, char *ext)
 {
     char	str[MAX_PATH+1];
-    int		count;
+    int		rd,count;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
@@ -259,13 +260,14 @@ int sbbs_t::getnodeext(uint number, char *ext)
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		if(count)
 			mswait(100);
-		if(lock(node_ext,(long)number*128L,128)==-1) 
+		if(lock(node_ext,(long)number*128L,128)!=0) 
 			continue; 
 		lseek(node_ext,(long)number*128L,SEEK_SET);
-		if(read(node_ext,ext,128)==128)
+		rd=read(node_ext,ext,128);
+		unlock(node_ext,(long)number*128L,128);
+		if(rd==128)
 			break;
 	}
-	unlock(node_ext,(long)number*128L,128);
 	close(node_ext);
 	node_ext=-1;
 
