@@ -201,6 +201,9 @@ static int close_socket(SOCKET sock)
 {
 	int		result;
 
+	if(sock==INVALID_SOCKET)
+		return(-1);
+
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
 	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
