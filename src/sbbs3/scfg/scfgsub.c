@@ -812,14 +812,6 @@ compatible mail programs you use support the LZH translation.
 					sprintf(opt[n++],"%-27.27s%s","FidoNet Address"
                         ,faddrtoa(cfg.sub[i]->faddr));
 					sprintf(opt[n++],"EchoMail Origin Line");
-#if 0
-					if(!cfg.sub[i]->echopath[0])
-						sprintf(str,"%s%s\\",cfg.echomail_dir,cfg.sub[i]->code);
-					else
-						strcpy(str,cfg.sub[i]->echopath);
-					sprintf(opt[n++],"%-27.27s%.40s","EchoMail Directory"
-						,str);
-#endif
 					if(!cfg.sub[i]->echomail_sem[0])
 						strcpy(str,cfg.echomail_sem);
 					else
@@ -1068,24 +1060,6 @@ If this option is blank, the default origin line is used.
 							uinput(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->origline
 								,50,K_EDIT);
                             break;
-#if 0
-						case 10:
-							SETHELP(WHERE);
-/*
-Sub-board EchoMail Storage Directory:
-
-This is the storage directory where FidoNet style (FTS-0001 stored
-message format) messages are imported from and exported to for this
-sub-board. If this option is blank, then the EchoMail Base Directory is
-used with the internal code of this sub-board as the sub-directory where
-the FidoNet messages are stored.
-*/
-
-							uinput(WIN_MID|WIN_SAV,0,0
-								,"EchoMail Directory"
-								,cfg.sub[i]->echopath,50,K_EDIT);
-							break;
-#endif
 						case 10:
 SETHELP(WHERE);
 /*
