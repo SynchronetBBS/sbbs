@@ -162,5 +162,11 @@ ex_diag: ex_diag.c ${LIBDIR}libODoors${SHLIB}
 ex_hello: ex_hello.c ${LIBDIR}libODoors${SHLIB}
 	$(CC) $(CFLAGS) ex_hello.c -o ex_hello -lODoors
 
+ex_music: ex_music.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_music.c -o ex_music -lODoors
+
+ex_ski: ex_ski.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_ski.c -o ex_ski -lODoors
+
 #
 #------------------------------------------------------------------------------
