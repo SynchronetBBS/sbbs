@@ -244,7 +244,8 @@ int main(int argc, char **argv)
 			fclose(stream);
 			continue; 
 		}
-		play(argv[i],argv[i++]);
+		play(argv[i],argv[i+1]);
+		i++;
 	}
 
 	return(0);
