@@ -989,5 +989,13 @@ typedef struct {						/* FidoNet msg header */
 
 } fmsghdr_t;
 
+typedef struct {						/* Sub-board scan information */
+	ushort	cfg;						/* User's configuration */
+	ulong	ptr;						/* New-message pointer */
+	ulong	last;						/* Last read message number */
+	ushort	sav_cfg;					/* Saved configuration */
+	ulong	sav_ptr;					/* Saved New-message pointer */
+	ulong	sav_last;					/* Saved Last read message number */
+} subscan_t;
 
 #endif /* Don't add anything after this #endif statement */
