@@ -1,3 +1,5 @@
+#include <sys/stat.h>
+
 #include <gen_defs.h>
 #include <stdlib.h>
 #include <ciolib.h>
@@ -130,6 +132,10 @@ int main(int argc, char **argv)
 	strcat(drive,path);
 	FULLPATH(path,drive,sizeof(path));
 	atexit(uifcbail);
+
+#ifdef __unix__
+	umask(077);
+#endif
 
 	/* User BBS list path */
 	home=getenv("HOME");
