@@ -462,7 +462,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			return(0);
 		case CS_MAIL_SEND_BULK:
 			if(csi->str[0])
-				p=arstr(0,csi->str, &cfg);
+				p=arstr(NULL,csi->str, &cfg);
 			else
 				p=(uchar *)nulstr;
 			bulkmail(p);

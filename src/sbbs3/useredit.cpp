@@ -572,7 +572,7 @@ void sbbs_t::useredit(int usernumber)
 					stype=SEARCH_ARS;
 				if(ar && ar[0])
 					FREE(ar);
-				ar=arstr(0,artxt,&cfg);
+				ar=arstr(NULL,artxt,&cfg);
 				break;
 			case '{':
 				if(stype==SEARCH_TXT)

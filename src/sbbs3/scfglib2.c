@@ -96,7 +96,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->fextr[i]->ext,instream);
 		get_str(cfg->fextr[i]->cmd,instream);
 		get_str(cfg->fextr[i]->arstr,instream);
-		cfg->fextr[i]->ar=arstr(0,cfg->fextr[i]->arstr,cfg);
+		cfg->fextr[i]->ar=arstr(NULL,cfg->fextr[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -124,7 +124,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->fcomp[i]->ext,instream);
 		get_str(cfg->fcomp[i]->cmd,instream);
 		get_str(cfg->fcomp[i]->arstr,instream);
-		cfg->fcomp[i]->ar=arstr(0,cfg->fcomp[i]->arstr,cfg);
+		cfg->fcomp[i]->ar=arstr(NULL,cfg->fcomp[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -151,7 +151,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->fview[i]->ext,instream);
 		get_str(cfg->fview[i]->cmd,instream);
 		get_str(cfg->fview[i]->arstr,instream);
-		cfg->fview[i]->ar=arstr(0,cfg->fview[i]->arstr,cfg);
+		cfg->fview[i]->ar=arstr(NULL,cfg->fview[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -179,7 +179,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->ftest[i]->cmd,instream);
 		get_str(cfg->ftest[i]->workstr,instream);
 		get_str(cfg->ftest[i]->arstr,instream);
-		cfg->ftest[i]->ar=arstr(0,cfg->ftest[i]->arstr,cfg);
+		cfg->ftest[i]->ar=arstr(NULL,cfg->ftest[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -208,7 +208,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->dlevent[i]->cmd,instream);
 		get_str(cfg->dlevent[i]->workstr,instream);
 		get_str(cfg->dlevent[i]->arstr,instream);
-		cfg->dlevent[i]->ar=arstr(0,cfg->dlevent[i]->arstr,cfg);
+		cfg->dlevent[i]->ar=arstr(NULL,cfg->dlevent[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -244,7 +244,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->prot[i]->bicmd,instream);
 		get_int(cfg->prot[i]->misc,instream);
 		get_str(cfg->prot[i]->arstr,instream);
-		cfg->prot[i]->ar=arstr(0,cfg->prot[i]->arstr,cfg);
+		cfg->prot[i]->ar=arstr(NULL,cfg->prot[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -301,7 +301,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->lib[i]->sname,instream);
 
 		get_str(cfg->lib[i]->arstr,instream);
-		cfg->lib[i]->ar=arstr(0,cfg->lib[i]->arstr,cfg);
+		cfg->lib[i]->ar=arstr(NULL,cfg->lib[i]->arstr,cfg);
 
 		for(j=0;j<48;j++)
 			get_int(n,instream);
@@ -361,10 +361,10 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->dir[i]->dl_arstr,instream);
 		get_str(cfg->dir[i]->op_arstr,instream);
 
-		cfg->dir[i]->ar=arstr(0,cfg->dir[i]->arstr,cfg);
-		cfg->dir[i]->ul_ar=arstr(0,cfg->dir[i]->ul_arstr,cfg);
-		cfg->dir[i]->dl_ar=arstr(0,cfg->dir[i]->dl_arstr,cfg);
-		cfg->dir[i]->op_ar=arstr(0,cfg->dir[i]->op_arstr,cfg);
+		cfg->dir[i]->ar=arstr(NULL,cfg->dir[i]->arstr,cfg);
+		cfg->dir[i]->ul_ar=arstr(NULL,cfg->dir[i]->ul_arstr,cfg);
+		cfg->dir[i]->dl_ar=arstr(NULL,cfg->dir[i]->dl_arstr,cfg);
+		cfg->dir[i]->op_ar=arstr(NULL,cfg->dir[i]->op_arstr,cfg);
 
 		get_str(cfg->dir[i]->path,instream);
 
@@ -378,7 +378,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_int(cfg->dir[i]->seqdev,instream);
 		get_int(cfg->dir[i]->sort,instream);
 		get_str(cfg->dir[i]->ex_arstr,instream);
-		cfg->dir[i]->ex_ar=arstr(0,cfg->dir[i]->ex_arstr,cfg);
+		cfg->dir[i]->ex_ar=arstr(NULL,cfg->dir[i]->ex_arstr,cfg);
 
 		get_int(cfg->dir[i]->maxage,instream);
 		get_int(cfg->dir[i]->up_pct,instream);
@@ -411,7 +411,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->txtsec[i]->name,instream);
 		get_str(cfg->txtsec[i]->code,instream);
 		get_str(cfg->txtsec[i]->arstr,instream);
-		cfg->txtsec[i]->ar=arstr(0,cfg->txtsec[i]->arstr,cfg);
+		cfg->txtsec[i]->ar=arstr(NULL,cfg->txtsec[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -488,7 +488,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 		get_int(cfg->xedit[i]->misc,instream);
 		get_str(cfg->xedit[i]->arstr,instream);
-		cfg->xedit[i]->ar=arstr(0,cfg->xedit[i]->arstr,cfg);
+		cfg->xedit[i]->ar=arstr(NULL,cfg->xedit[i]->arstr,cfg);
 
 		get_int(cfg->xedit[i]->type,instream);
 		get_int(c,instream);
@@ -520,7 +520,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->xtrnsec[i]->name,instream);
 		get_str(cfg->xtrnsec[i]->code,instream);
 		get_str(cfg->xtrnsec[i]->arstr,instream);
-		cfg->xtrnsec[i]->ar=arstr(0,cfg->xtrnsec[i]->arstr,cfg);
+		cfg->xtrnsec[i]->ar=arstr(NULL,cfg->xtrnsec[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -551,8 +551,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->xtrn[i]->code,instream);
 		get_str(cfg->xtrn[i]->arstr,instream);
 		get_str(cfg->xtrn[i]->run_arstr,instream);
-		cfg->xtrn[i]->ar=arstr(0,cfg->xtrn[i]->arstr,cfg);
-		cfg->xtrn[i]->run_ar=arstr(0,cfg->xtrn[i]->run_arstr,cfg);
+		cfg->xtrn[i]->ar=arstr(NULL,cfg->xtrn[i]->arstr,cfg);
+		cfg->xtrn[i]->run_ar=arstr(NULL,cfg->xtrn[i]->run_arstr,cfg);
 
 		get_int(cfg->xtrn[i]->type,instream);
 		get_int(cfg->xtrn[i]->misc,instream);
@@ -672,7 +672,7 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->guru[i]->code,instream);
 
 		get_str(cfg->guru[i]->arstr,instream);
-		cfg->guru[i]->ar=arstr(0,cfg->guru[i]->arstr,cfg);
+		cfg->guru[i]->ar=arstr(NULL,cfg->guru[i]->arstr,cfg);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -754,7 +754,7 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->chan[i]->code,instream);
 
 		get_str(cfg->chan[i]->arstr,instream);
-		cfg->chan[i]->ar=arstr(0,cfg->chan[i]->arstr,cfg);
+		cfg->chan[i]->ar=arstr(NULL,cfg->chan[i]->arstr,cfg);
 
 		get_int(cfg->chan[i]->cost,instream);
 		get_int(cfg->chan[i]->guru,instream);
@@ -785,7 +785,7 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->page[i]->cmd,instream);
 
 		get_str(cfg->page[i]->arstr,instream);
-		cfg->page[i]->ar=arstr(0,cfg->page[i]->arstr,cfg);
+		cfg->page[i]->ar=arstr(NULL,cfg->page[i]->arstr,cfg);
 
 		get_int(cfg->page[i]->misc,instream);
 		for(j=0;j<8;j++)

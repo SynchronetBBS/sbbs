@@ -94,7 +94,7 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_int(cfg->node_valuser,instream);
 	get_int(cfg->node_minbps,instream);
 	get_str(cfg->node_arstr,instream);
-	cfg->node_ar=arstr(0, cfg->node_arstr, cfg);
+	cfg->node_ar=arstr(NULL, cfg->node_arstr, cfg);
 
 	get_int(cfg->node_dollars_per_call,instream);
 	get_str(cfg->node_editor,instream);
@@ -255,7 +255,7 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_int(cfg->sys_def_stat,instream); 	/* default status line */
 
 	get_str(cfg->sys_chat_arstr,instream);
-	cfg->sys_chat_ar=arstr(0,cfg->sys_chat_arstr,cfg);
+	cfg->sys_chat_ar=arstr(NULL,cfg->sys_chat_arstr,cfg);
 
 	get_int(cfg->cdt_min_value,instream);
 	get_int(cfg->max_minutes,instream);
@@ -388,7 +388,7 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->shell[i]->name,instream);
 		get_str(cfg->shell[i]->code,instream);
 		get_str(cfg->shell[i]->arstr,instream);
-		cfg->shell[i]->ar=arstr(0,cfg->shell[i]->arstr,cfg);
+		cfg->shell[i]->ar=arstr(NULL,cfg->shell[i]->arstr,cfg);
 		get_int(cfg->shell[i]->misc,instream);
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -428,7 +428,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_int(cfg->mail_maxcrcs,instream);
 	get_int(cfg->mail_maxage,instream);
 	get_str(cfg->preqwk_arstr,instream);
-	cfg->preqwk_ar=arstr(0,cfg->preqwk_arstr,cfg);
+	cfg->preqwk_ar=arstr(NULL,cfg->preqwk_arstr,cfg);
 
 	get_int(cfg->smb_retry_time,instream);	 /* odd byte */
 	if(!cfg->smb_retry_time)
@@ -462,7 +462,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->grp[i]->sname,instream);
 
 		get_str(cfg->grp[i]->arstr,instream);
-		cfg->grp[i]->ar=arstr(0,cfg->grp[i]->arstr,cfg);
+		cfg->grp[i]->ar=arstr(NULL,cfg->grp[i]->arstr,cfg);
 
 		for(j=0;j<48;j++)
 			get_int(n,instream);
@@ -499,10 +499,10 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_str(cfg->sub[i]->post_arstr,instream);
 		get_str(cfg->sub[i]->op_arstr,instream);
 
-		cfg->sub[i]->ar=arstr(0,cfg->sub[i]->arstr,cfg);
-		cfg->sub[i]->read_ar=arstr(0,cfg->sub[i]->read_arstr,cfg);
-		cfg->sub[i]->post_ar=arstr(0,cfg->sub[i]->post_arstr,cfg);
-		cfg->sub[i]->op_ar=arstr(0,cfg->sub[i]->op_arstr,cfg);
+		cfg->sub[i]->ar=arstr(NULL,cfg->sub[i]->arstr,cfg);
+		cfg->sub[i]->read_ar=arstr(NULL,cfg->sub[i]->read_arstr,cfg);
+		cfg->sub[i]->post_ar=arstr(NULL,cfg->sub[i]->post_arstr,cfg);
+		cfg->sub[i]->op_ar=arstr(NULL,cfg->sub[i]->op_arstr,cfg);
 
 		get_int(cfg->sub[i]->misc,instream);
 
@@ -529,7 +529,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 #endif
 
 		get_str(cfg->sub[i]->mod_arstr,instream);
-		cfg->sub[i]->mod_ar=arstr(0,cfg->sub[i]->mod_arstr,cfg);
+		cfg->sub[i]->mod_ar=arstr(NULL,cfg->sub[i]->mod_arstr,cfg);
 
 		get_int(cfg->sub[i]->qwkconf,instream);
 		get_int(c,instream);
