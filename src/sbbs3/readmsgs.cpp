@@ -944,7 +944,7 @@ int sbbs_t::searchsub(uint subnum, char *search)
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
 		return(0); }
-	total=getposts(subnum);
+	total=getposts(&cfg,subnum);
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {
@@ -1074,7 +1074,7 @@ int sbbs_t::searchsub_toyou(uint subnum)
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
 		return(0); }
-	total=getposts(subnum);
+	total=getposts(&cfg,subnum);
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {

@@ -85,7 +85,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 						else outchar(SP);
 						sprintf(str,text[SubLstFmt],i+1
 							,cfg.sub[usrsub[j][i]]->lname,nulstr
-							,getposts(usrsub[j][i]));
+							,getposts(&cfg,usrsub[j][i]));
 						if(i<9) outchar(SP);
 						if(i<99) outchar(SP);
 						bputs(str); } }
@@ -220,7 +220,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 				else outchar(SP);
 				sprintf(str,text[SubLstFmt],i+1
 					,cfg.sub[usrsub[curgrp][i]]->lname,nulstr
-					,getposts(usrsub[curgrp][i]));
+					,getposts(&cfg,usrsub[curgrp][i]));
 				if(i<9) outchar(SP);
 				if(i<99) outchar(SP);
 				bputs(str); }

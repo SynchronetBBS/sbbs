@@ -309,12 +309,12 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 /****************************************************************************/
 /* Returns total number of posts in a sub-board 							*/
 /****************************************************************************/
-ulong sbbs_t::getposts(uint subnum)
+ulong getposts(scfg_t* cfg, uint subnum)
 {
 	char str[128];
 	ulong l;
 
-	sprintf(str,"%s%s.sid",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
+	sprintf(str,"%s%s.sid",cfg->sub[subnum]->data_dir,cfg->sub[subnum]->code);
 	l=flength(str);
 	if((long)l==-1)
 		return(0);

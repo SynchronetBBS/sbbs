@@ -120,7 +120,7 @@ int sbbs_t::atcodes(char *instr)
 	else if(!strcmp(sp,"TMSG")) {
 		l=0;
 		for(i=0;i<cfg.total_subs;i++)
-			l+=getposts(i); 		/* l=total posts */
+			l+=getposts(&cfg,i); 		/* l=total posts */
 		bprintf("%lu",l); }
 
 	else if(!strcmp(sp,"TUSER"))
@@ -129,7 +129,7 @@ int sbbs_t::atcodes(char *instr)
 	else if(!strcmp(sp,"TFILE")) {
 		l=0;
 		for(i=0;i<cfg.total_dirs;i++)
-			l+=getfiles(i);
+			l+=getfiles(&cfg,i);
 		bprintf("%lu",l); }
 
 	else if(!strcmp(sp,"TCALLS") || !strcmp(sp,"NUMCALLS")) {

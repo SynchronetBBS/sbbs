@@ -87,7 +87,7 @@ int sbbs_t::exec_file(csi_t *csi)
 						else outchar(SP);
 						sprintf(str,text[DirLstFmt],i+1
 							,cfg.dir[usrdir[j][i]]->lname,nulstr
-							,getfiles(usrdir[j][i]));
+							,getfiles(&cfg,usrdir[j][i]));
 						if(i<9) outchar(SP);
 						if(i<99) outchar(SP);
 						bputs(str); } }
@@ -211,7 +211,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				else outchar(SP);
 				sprintf(str,text[DirLstFmt],i+1
 					,cfg.dir[usrdir[curlib][i]]->lname,nulstr
-					,getfiles(usrdir[curlib][i]));
+					,getfiles(&cfg,usrdir[curlib][i]));
 				if(i<9) outchar(SP);
 				if(i<99) outchar(SP);
 				bputs(str); }
@@ -420,7 +420,7 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_LIST:	  /* List files in current dir */
 			if(!usrlibs) return(0);
 			csi->logic=LOGIC_FALSE;
-			if(!getfiles(usrdir[curlib][curdir[curlib]])) {
+			if(!getfiles(&cfg,usrdir[curlib][curdir[curlib]])) {
 				bputs(text[EmptyDir]);
 				return(0); }
 			padfname(csi->str,str);
