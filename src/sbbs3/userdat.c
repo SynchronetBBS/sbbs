@@ -58,9 +58,8 @@ uint DLLCALL matchuser(scfg_t* cfg, char *name)
 	ulong l,length;
 	FILE *stream;
 
-	if(!stricmp(name,"SYSOP") || !stricmp(name,cfg->sys_id) 
-		|| !stricmp(name,"POSTMASTER") || !stricmp(name,cfg->sys_op)) 
-		return(1); /* pseudonyms for user #1 */
+	if(!stricmp(name,"SYSOP") || !stricmp(name,"POSTMASTER") || !stricmp(name,cfg->sys_id))
+		return(1);
 
 	sprintf(str,"%suser/name.dat",cfg->data_dir);
 	if((file=nopen(str,O_RDONLY))==-1)
