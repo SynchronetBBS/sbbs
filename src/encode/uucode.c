@@ -42,15 +42,13 @@
 
 int uudecode(unsigned char *target, size_t tlen, const unsigned char *source, size_t slen)
 {
+	int		i;
 	char	ch;
 	size_t	rd=0;
 	size_t	wr=0;
 	size_t	block;
 	size_t	len;
-
-/* 01000001 01000001  01000001 */
-
-/* 010000 010100 000101 000001 */
+	unsigned char cell[4];
 
 	if(slen==0)
 		slen=strlen(source);
@@ -63,37 +61,91 @@ int uudecode(unsigned char *target, size_t tlen, const unsigned char *source, si
 			break;
 		block=0;
 		while(block<len && wr<tlen && rd<slen) {
-			target[wr]=((source[rd++]-' ')&0x3f)<<2;		// lower 6 (s1) to upper 6 (d1)
-			target[wr++]|=((source[rd]-' ')&0x30)>>4;		// upper 2 (s2) to lower 2 (d1)
-			target[wr]=((source[rd++]-' ')&0x0f)<<4;		// lower 4 (s2) to upper 4 (d2)
-			target[wr++]|=((source[rd]-' ')&0x3c)>>2;		// upper 4 (s3) to lower 4 (d2)
-			target[wr]=((source[rd++]-' ')&0x03)<<6;		// lower 2 (s3) to upper 2 (d3) 
-			target[wr++]|=(source[rd++]-' ')&0x3f;			// lower 6 (s4) to lower 6 (d3)
+			/* Remove space bias */
+			for(i=0;i<sizeof(cell);i++) {
+				cell[i]=source[rd++];
+				if(cell[i]>=' ') cell[i]-=' ';
+			}
+			/* Convert block of 4 6-bit chars into 3 8-bit chars */
+			target[wr]=(cell[0]&0x3f)<<2;		/* lower 6 (s1) to upper 6 (d1) */
+			target[wr++]|=(cell[1]&0x30)>>4;	/* upper 2 (s2) to lower 2 (d1) */
+			target[wr]=(cell[1]&0x0f)<<4;		/* lower 4 (s2) to upper 4 (d2) */
+			target[wr++]|=(cell[2]&0x3c)>>2;	/* upper 4 (s3) to lower 4 (d2) */
+			target[wr]=(cell[2]&0x03)<<6;		/* lower 2 (s3) to upper 2 (d3) */
+			target[wr++]|=cell[3]&0x3f;			/* lower 6 (s4) to lower 6 (d3) */
 			block+=3;
 		}
-		if(block!=len) {
-			fprintf(stderr,"block (%d) != len (%d)\n",block,len);
-			fprintf(stderr,"rd=%d slen=%d wr=%d tlen=%d\n"
-				,rd,slen,wr,tlen);
-			break;
-		}
+		if(block!=len)
+			return(-1);
+		while(rd<slen && source[rd]>' ')
+			rd++;	/* find whitespace (line termination) */
 		while(rd<slen && source[rd]!=0 && source[rd]<=' ') 
-			rd++;	// skip whitespace separating blocks/lines
+			rd++;	/* skip whitespace separating blocks/lines */
 	}
 
 	return(wr);
 }
 
+#define BIAS(b) if((b)==0) (b)='`'; else (b)+=' ';
+
+int uuencode(unsigned char *target, size_t tlen, const unsigned char *source, size_t slen)
+{
+	size_t	rd=0;
+	size_t	wr=0;
+	size_t	block;
+	size_t	len;
+
+	if(slen==0)
+		slen=strlen(source);
+
+	if(tlen<3)
+		return(-1);
+	tlen-=3;	/* reserve room for terminator */
+	while(rd<=slen && wr<tlen) {
+		len=45;
+		if(rd+len>slen)
+			len=slen-rd;
+		BIAS(len);
+		target[wr++]=len;
+
+		block=0;
+		while(block<len && wr<tlen && rd<slen) {
+			target[wr]=source[rd]>>2;			/* upper 6 (s1) to lower 6 (d1) */
+			BIAS(target[wr]); wr++;
+			target[wr]=(source[rd++]&0x03)<<4;	/* lower 2 (s1) to upper 2 (d2) */
+			target[wr]|=source[rd]>>4;			/* upper 4 (s2) to lower 4 (d2) */
+			BIAS(target[wr]); wr++;
+			target[wr]=(source[rd++]&0x0f)<<2;	/* lower 4 (s2) to upper 4 (d3) */
+			target[wr]|=source[rd]>>6;			/* upper 2 (s3) to lower 2 (d3) */
+			BIAS(target[wr]); wr++;
+			target[wr]=source[rd++]&0x3f;		/* lower 6 (s3) to lower 6 (d4) */
+			BIAS(target[wr]); wr++;
+			block+=3;
+		}
+		if(wr<tlen) {
+			target[wr++]='\r';
+			target[wr++]='\n';
+		}
+		if(rd>=slen)
+			break;
+	}
+
+	if(wr<tlen)
+		target[wr++]=0;
+	return(wr);
+}
+
 #ifdef UUDECODE_TEST
 
-static char* truncsp(char *str)
+static char* truncstr(char* str, const char* set)
 {
-	size_t c;
+	char* p;
 
-	c=strlen(str);
-	while(c && (unsigned char)str[c-1]<=' ') c--;
-	str[c]=0;
-	return(str);
+	p=strpbrk(str,set);
+	if(p!=NULL)
+		*p=0;
+
+	return(p);
 }
 
 int main(int argc, char**argv)
@@ -104,6 +156,7 @@ int main(int argc, char**argv)
 	FILE*	in;
 	FILE*	out=NULL;
 	int		len;
+	int		line;
 
 	if(argc<2) {
 		fprintf(stderr,"usage: uudecode infile\n");
@@ -116,10 +169,10 @@ int main(int argc, char**argv)
 	}
 
 	while(!feof(in)) {
+		memset(str,0,sizeof(str));
 		if(fgets(str,sizeof(str),in)==NULL)
 			break;
-		truncsp(str);
-//		printf("%s\n",str);
+		truncstr(str,"\r\n");
 		if(strncmp(str,"begin ",6)==0) {
 			p=str+7;
 			while(*p && isdigit(*p)) p++;	/* skip mode */
@@ -129,6 +182,7 @@ int main(int argc, char**argv)
 				return 1;
 			}
 			fprintf(stderr,"Creating %s\n",p);
+			line=1;
 			continue;
 		}
 		if(strcmp(str,"end")==0) {
@@ -144,8 +198,43 @@ int main(int argc, char**argv)
 		if(len<1)
 			break;
 		fwrite(buf,len,1,out);
+		line++;
 	}
 
 	return 0;
 }
+#elif defined(UUENCODE_TEST)
+
+int main(int argc, char**argv)
+{
+	char	str[1024];
+	char	buf[256];
+	FILE*	in;
+	int		len;
+
+	if(argc<2) {
+		fprintf(stderr,"usage: uuencode infile\n");
+		return 1;
+	}
+
+	if((in=fopen(argv[1],"rb"))==NULL) {
+		perror(argv[1]);
+		return 1;
+	}
+
+	while(!feof(in)) {
+		len=fread(buf,1,45,in);
+		if(len<0)
+			break;
+		len=uuencode(str,sizeof(str),buf,len);
+		if(len<1)
+			break;
+		printf("%.*s",len,str);
+	}
+
+	return 0;
+}
+
 #endif
+
+
