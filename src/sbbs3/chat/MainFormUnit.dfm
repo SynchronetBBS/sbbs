@@ -7,7 +7,7 @@ object MainForm: TMainForm
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
@@ -15,11 +15,11 @@ object MainForm: TMainForm
   OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object Splitter1: TSplitter
     Left = 0
-    Top = 105
+    Top = 85
     Width = 409
     Height = 2
     Cursor = crVSplit
@@ -27,9 +27,9 @@ object MainForm: TMainForm
   end
   object Local: TMemo
     Left = 0
-    Top = 107
+    Top = 87
     Width = 409
-    Height = 112
+    Height = 137
     Align = alClient
     ReadOnly = True
     ScrollBars = ssVertical
@@ -40,7 +40,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 0
     Width = 409
-    Height = 105
+    Height = 85
     TabStop = False
     Align = alTop
     HideSelection = False
