@@ -882,14 +882,18 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 							memcpy(&cfg.area[i].uplink[k],&cfg.area[i].uplink[k+1]
 								,sizeof(faddr_t));
 						--cfg.area[i].uplinks;
-						if((cfg.area[i].uplink=(faddr_t *)
-							REALLOC(cfg.area[i].uplink,sizeof(faddr_t)
-							*(cfg.area[i].uplinks)))==NULL) {
-							printf("ERROR allocating memory for area #%u "
-								"uplinks.\n",i+1);
-							logprintf("ERROR line %d allocating memory for area "
-								"#%u uplinks.\n",__LINE__,i+1);
-							bail(1); }
+						if(cfg.area[i].uplinks==0) {
+							FREE_AND_NULL(cfg.area[i].uplink);
+						} else
+							if((cfg.area[i].uplink=(faddr_t *)
+								REALLOC(cfg.area[i].uplink,sizeof(faddr_t)
+								*(cfg.area[i].uplinks)))==NULL) {
+								printf("ERROR allocating memory for area #%u "
+									"uplinks.\n",i+1);
+								logprintf("ERROR line %d allocating memory for area "
+									"#%u uplinks.\n",__LINE__,i+1);
+								bail(1); 
+							}
 
 						fprintf(afileout,"%-16s%-23s ",field1,field2);
 						for(j=0;j<cfg.area[i].uplinks;j++) {
@@ -902,7 +906,9 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 							fprintf(afileout,"%s",field3);
 						fprintf(afileout,"\r\n");
 						fprintf(nmfile,"%s removed.\r\n",field2);
-						break; } }
+						break; 
+					} 
+				}
 				if(i==cfg.areas)			/* Something screwy going on */
 					fprintf(afileout,"%s",fields);
 				continue; } }				/* Area match so continue on */
