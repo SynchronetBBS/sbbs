@@ -500,6 +500,8 @@ bool sbbs_t::js_init()
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(false);
 
+	js_loop = 0;	/* loop counter */
+
 	bool success=false;
 
 	do {
