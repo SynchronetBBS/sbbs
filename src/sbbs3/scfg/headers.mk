@@ -1,4 +1,4 @@
-# headers.mak
+# headers.mk
 
 # Make 'include file' for building Synchronet SCFG 
 # Used with GNU and Borland compilers

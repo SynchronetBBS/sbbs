@@ -1,4 +1,4 @@
-# targets.mak
+# targets.mk
 
 # Make 'include file' defining targets for Synchronet SCFG project
 

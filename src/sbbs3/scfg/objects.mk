@@ -1,4 +1,4 @@
-# objects.mak
+# objects.mk
 
 # Make 'include file' listing object files for Synchronet SCFG
 

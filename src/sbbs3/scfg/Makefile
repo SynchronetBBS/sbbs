@@ -23,7 +23,6 @@ DELETE	=	echo y | del
 
 .path.c = .;..;..\..\uifc;..\..\xpdev
 
-
 # Optional compile flags (disable banner, warnings and such)
 CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-pro
 

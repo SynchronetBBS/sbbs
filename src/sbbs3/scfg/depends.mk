@@ -1,4 +1,4 @@
-# depends.mak
+# depends.mk
 
 # Make 'include file' defining dependencies for Synchronet SCFG
 
