@@ -849,6 +849,11 @@ int main(int argc, char **argv, char** environ)
 					if(*p==0) p=argv[++argn];
 					SAFECOPY(scfg.ctrl_dir,p);
 					break;
+#if defined(__unix__)
+				case 'd':
+					daemonize=TRUE;
+					break;
+#endif
 				default:
 					fprintf(errfp,"\n!Unsupported option: %s\n",argv[argn]);
 				case '?':
