@@ -1541,7 +1541,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
 
 		msg->hdr.number=smb->status.last_msg+1;
 
-		hashes=smb_msghashes(smb,msg,body);
+		hashes=smb_msghashes(smb,msg,smb->status.max_crcs ? body : NULL);
 
 		if(dupechk && smb_findhash(smb, hashes, &found, /* update? */FALSE)==SMB_SUCCESS) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
