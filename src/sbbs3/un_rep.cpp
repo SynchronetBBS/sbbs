@@ -346,9 +346,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 				truncsp(str);
 
 				if(findstr(str,fname)) {
-					sprintf(str,"Filtering post from twit (%s) on %s %s"
+					sprintf(tmp,"Filtering post from twit (%s) on %s %s"
 						,str,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
-					logline("P!",str);
+					logline("P!",tmp);
 					continue; 
 				}
 			}
