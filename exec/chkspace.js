@@ -4,9 +4,13 @@
 
 // Example: "?chkspace 100"
 
+minspace = file_area.min_diskspace*2;
 freespace = system.freediskspace;
 
-if(freespace==-1 || freespace > Number(argv[0])*1024*1024)
+if(argc)
+	minspace=Number(argv[0]);
+
+if(freespace==-1 || freespace > minspace*1024*1024)
 	exit();	// everything's fine
 
 log("!Low disk space: " + freespace + " bytes");
