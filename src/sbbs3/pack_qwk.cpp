@@ -410,7 +410,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					(*msgcnt)++;
 					submsgs++;
 					if(cfg.max_qwkmsgs
-						/* && !(useron.rest&FLAG('Q')) */ && (*msgcnt)>=cfg.max_qwkmsgs) {
+						&& !(useron.exempt&FLAG('O')) && (*msgcnt)>=cfg.max_qwkmsgs) {
 						bputs(text[QWKmsgLimitReached]);
 						break; 
 					} 
