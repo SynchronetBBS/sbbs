@@ -90,6 +90,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 smb_t smb;
 ulong mode=0L;
 ushort tzone=0;
+FILE* err_fp=stderr;
 
 /************************/
 /* Program usage/syntax */
@@ -112,10 +113,11 @@ char *usage=
 "       m    = maintain msg base - delete old msgs and msgs over max\n"
 "       p[k] = pack msg base (k specifies minimum packable Kbytes)\n"
 "opts:\n"
-"       c    = create message base if it doesn't exist\n"
+"       c[m] = create message base if it doesn't exist (m=max msgs)\n"
 "       a    = always pack msg base (disable compression analysis)\n"
 "       i    = ignore dupes (do not store CRCs or search for duplicate hashes)\n"
 "       d    = use default values (no prompt) for to, from, and subject\n"
+"       o    = print errors on stdout (instead of err_fp)\n"
 "       t<s> = set 'to' user name for imported message\n"
 "       n<s> = set 'to' netmail address for imported message\n"
 "       u<s> = set 'to' user number for imported message\n"
@@ -167,7 +169,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		if(i<1)
 			break;
 		if((msgtxt=(char*)realloc(msgtxt,msgtxtlen+i+1))==NULL) {
-			fprintf(stderr,"\n\7realloc(%ld) failure\n",msgtxtlen+i+1);
+			fprintf(err_fp,"\n\7realloc(%ld) failure\n",msgtxtlen+i+1);
 			exit(1);
 		}
 		strcpy(msgtxt+msgtxtlen,buf);
@@ -176,7 +178,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 
 	if(msgtxt!=NULL) {
 		if((newtxt=(char*)malloc((msgtxtlen*2)+1))==NULL) {
-			fprintf(stderr,"\n\7malloc(%ld) failure\n",(msgtxtlen*2)+1);
+			fprintf(err_fp,"\n\7malloc(%ld) failure\n",(msgtxtlen*2)+1);
 			exit(1);
 		}
 
@@ -199,7 +201,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	truncsp(str);
 
 	if((i=smb_hfield_str(&msg,RECIPIENT,str))!=SMB_SUCCESS) {
-		fprintf(stderr,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
+		fprintf(err_fp,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
 			,RECIPIENT,i,smb.last_error);
 		exit(1); 
 	}
@@ -213,7 +215,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 			SAFECOPY(str,to_number);
 		truncsp(str);
 		if((i=smb_hfield_str(&msg,RECIPIENTEXT,str))!=SMB_SUCCESS) {
-			fprintf(stderr,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
+			fprintf(err_fp,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
 				,RECIPIENTEXT,i,smb.last_error);
 			exit(1); 
 		}
@@ -237,12 +239,12 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 			else
 				net=NET_QWK;
 			if((i=smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(net),&net))!=SMB_SUCCESS) {
-				fprintf(stderr,"\n\7!smb_hfield(0x%02X) returned %d: %s\n"
+				fprintf(err_fp,"\n\7!smb_hfield(0x%02X) returned %d: %s\n"
 					,RECIPIENTNETTYPE,i,smb.last_error);
 				exit(1); 
 			}
 			if((i=smb_hfield_str(&msg,RECIPIENTNETADDR,str))!=SMB_SUCCESS) {
-				fprintf(stderr,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
+				fprintf(err_fp,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
 					,RECIPIENTNETADDR,i,smb.last_error);
 				exit(1); 
 			} 
@@ -256,7 +258,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		SAFECOPY(str,from);
 	truncsp(str);
 	if((i=smb_hfield_str(&msg,SENDER,str))!=SMB_SUCCESS) {
-		fprintf(stderr,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
+		fprintf(err_fp,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
 			,SENDER,i,smb.last_error);
 		exit(1); 
 	}
@@ -268,7 +270,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 			SAFECOPY(str,from_number);
 		truncsp(str);
 		if((i=smb_hfield_str(&msg,SENDEREXT,str))!=SMB_SUCCESS) {
-			fprintf(stderr,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
+			fprintf(err_fp,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
 				,SENDEREXT,i,smb.last_error);
 			exit(1); 
 		}
@@ -278,7 +280,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		msg.idx.from=crc16(str,0); 
 	}
 	if((i=smb_hfield(&msg, SENDERAGENT, sizeof(agent), &agent))!=SMB_SUCCESS) {
-		fprintf(stderr,"\n\7!smb_hfield(0x%02X) returned %d: %s\n"
+		fprintf(err_fp,"\n\7!smb_hfield(0x%02X) returned %d: %s\n"
 			,SENDERAGENT,i,smb.last_error);
 		exit(1);
 	}
@@ -290,7 +292,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		SAFECOPY(str,subject);
 	truncsp(str);
 	if((i=smb_hfield_str(&msg,SUBJECT,str))!=SMB_SUCCESS) {
-		fprintf(stderr,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
+		fprintf(err_fp,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
 			,SUBJECT,i,smb.last_error);
 		exit(1); 
 	}
@@ -304,14 +306,14 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		,compiler
 		);
 	if((i=smb_hfield_str(&msg,FIDOPID,str))!=SMB_SUCCESS) {
-		fprintf(stderr,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
+		fprintf(err_fp,"\n\7!smb_hfield_str(0x%02X) returned %d: %s\n"
 			,FIDOPID,i,smb.last_error);
 		exit(1); 
 	}
 
 	if((i=smb_addmsg(&smb,&msg,smb.status.attr&SMB_HYPERALLOC
 		,INT_TO_BOOL(mode&NOCRC),XLAT_NONE,msgtxt,NULL))!=SMB_SUCCESS) {
-		fprintf(stderr,"\n\7!smb_addmsg returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_addmsg returned %d: %s\n",i,smb.last_error);
 		exit(1); 
 	}
 	smb_freemsgmem(&msg);
@@ -328,13 +330,13 @@ void showstatus(void)
 
 	i=smb_locksmbhdr(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	i=smb_getstatus(&smb);
 	smb_unlocksmbhdr(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	printf("last_msg        =%lu\n"
@@ -364,13 +366,13 @@ void config(void)
 
 	i=smb_locksmbhdr(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	i=smb_getstatus(&smb);
 	smb_unlocksmbhdr(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	printf("Header offset =%-5lu  New value (CR=No Change): "
@@ -390,12 +392,12 @@ void config(void)
 	gets(attr);
 	i=smb_locksmbhdr(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	i=smb_getstatus(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
 		smb_unlocksmbhdr(&smb);
 		return; 
 	}
@@ -412,7 +414,7 @@ void config(void)
 	i=smb_putstatus(&smb);
 	smb_unlocksmbhdr(&smb);
 	if(i)
-		fprintf(stderr,"\n\7!smb_putstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_putstatus returned %d: %s\n",i,smb.last_error);
 }
 
 /****************************************************************************/
@@ -432,13 +434,13 @@ void listmsgs(ulong start, ulong count)
 			break;
 		i=smb_lockmsghdr(&smb,&msg);
 		if(i) {
-			fprintf(stderr,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
 			break; 
 		}
 		i=smb_getmsghdr(&smb,&msg);
 		smb_unlockmsghdr(&smb,&msg);
 		if(i) {
-			fprintf(stderr,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
 			break; 
 		}
 		printf("%4lu %-25.25s %-25.25s %.20s\n"
@@ -524,13 +526,13 @@ void viewmsgs(ulong start, ulong count)
 			break;
 		i=smb_lockmsghdr(&smb,&msg);
 		if(i) {
-			fprintf(stderr,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
 			break; 
 		}
 		i=smb_getmsghdr(&smb,&msg);
 		smb_unlockmsghdr(&smb,&msg);
 		if(i) {
-			fprintf(stderr,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
 			break; 
 		}
 
@@ -552,7 +554,7 @@ void dump_hashes(void)
 	hash_t	hash;
 
 	if((retval=smb_open_hash(&smb))!=SMB_SUCCESS) {
-		fprintf(stderr,"\n\7!smb_open_hash returned %d: %s\n", retval, smb.last_error);
+		fprintf(err_fp,"\n\7!smb_open_hash returned %d: %s\n", retval, smb.last_error);
 		return;
 	}
 
@@ -591,13 +593,13 @@ void maint(void)
 	now=time(NULL);
 	i=smb_locksmbhdr(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	i=smb_getstatus(&smb);
 	if(i) {
 		smb_unlocksmbhdr(&smb);
-		fprintf(stderr,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	if(!smb.status.total_msgs) {
@@ -609,7 +611,7 @@ void maint(void)
 	if((idx=(idxrec_t *)LMALLOC(sizeof(idxrec_t)*smb.status.total_msgs))
 		==NULL) {
 		smb_unlocksmbhdr(&smb);
-		fprintf(stderr,"\n\7!Error allocating %lu bytes of memory\n"
+		fprintf(err_fp,"\n\7!Error allocating %lu bytes of memory\n"
 			,sizeof(idxrec_t)*smb.status.total_msgs);
 		return; 
 	}
@@ -685,13 +687,13 @@ void maint(void)
 			i=smb_open_da(&smb);
 			if(i) {
 				smb_unlocksmbhdr(&smb);
-				fprintf(stderr,"\n\7!smb_open_da returned %d: %s\n",i,smb.last_error);
+				fprintf(err_fp,"\n\7!smb_open_da returned %d: %s\n",i,smb.last_error);
 				exit(1); 
 			}
 			i=smb_open_ha(&smb);
 			if(i) {
 				smb_unlocksmbhdr(&smb);
-				fprintf(stderr,"\n\7!smb_open_ha returned %d: %s\n",i,smb.last_error);
+				fprintf(err_fp,"\n\7!smb_open_ha returned %d: %s\n",i,smb.last_error);
 				exit(1); 
 			} 
 		}
@@ -702,30 +704,30 @@ void maint(void)
 				msg.idx=idx[m];
 				msg.hdr.number=msg.idx.number;
 				if((i=smb_getmsgidx(&smb,&msg))!=0) {
-					fprintf(stderr,"\n\7!smb_getmsgidx returned %d: %s\n",i,smb.last_error);
+					fprintf(err_fp,"\n\7!smb_getmsgidx returned %d: %s\n",i,smb.last_error);
 					continue; 
 				}
 				i=smb_lockmsghdr(&smb,&msg);
 				if(i) {
-					fprintf(stderr,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
+					fprintf(err_fp,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
 					break; 
 				}
 				if((i=smb_getmsghdr(&smb,&msg))!=0) {
 					smb_unlockmsghdr(&smb,&msg);
-					fprintf(stderr,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
+					fprintf(err_fp,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
 					break; 
 				}
 				msg.hdr.attr|=MSG_DELETE;			/* mark header as deleted */
 				if((i=smb_putmsg(&smb,&msg))!=0) {
 					smb_freemsgmem(&msg);
 					smb_unlockmsghdr(&smb,&msg);
-					fprintf(stderr,"\n\7!smb_putmsg returned %d: %s\n",i,smb.last_error);
+					fprintf(err_fp,"\n\7!smb_putmsg returned %d: %s\n",i,smb.last_error);
 					break; 
 				}
 				smb_unlockmsghdr(&smb,&msg);
 				if((i=smb_freemsg(&smb,&msg))!=0) {
 					smb_freemsgmem(&msg);
-					fprintf(stderr,"\n\7!smb_freemsg returned %d: %s\n",i,smb.last_error);
+					fprintf(err_fp,"\n\7!smb_freemsg returned %d: %s\n",i,smb.last_error);
 					break; 
 				}
 				smb_freemsgmem(&msg); 
@@ -779,13 +781,13 @@ void packmsgs(ulong packable)
 	printf("Packing %s\n",smb.file);
 	i=smb_locksmbhdr(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	i=smb_getstatus(&smb);
 	if(i) {
 		smb_unlocksmbhdr(&smb);
-		fprintf(stderr,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 
@@ -793,14 +795,14 @@ void packmsgs(ulong packable)
 		i=smb_open_ha(&smb);
 		if(i) {
 			smb_unlocksmbhdr(&smb);
-			fprintf(stderr,"\n\7!smb_open_ha returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_open_ha returned %d: %s\n",i,smb.last_error);
 			return; 
 		}
 		i=smb_open_da(&smb);
 		if(i) {
 			smb_unlocksmbhdr(&smb);
 			smb_close_ha(&smb);
-			fprintf(stderr,"\n\7!smb_open_da returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_open_da returned %d: %s\n",i,smb.last_error);
 			return; 
 		} 
 	}
@@ -941,7 +943,7 @@ void packmsgs(ulong packable)
 			smb_close_ha(&smb);
 			smb_close_da(&smb); 
 		}
-		fprintf(stderr,"\n\7!Error opening temp files\n");
+		fprintf(err_fp,"\n\7!Error opening temp files\n");
 		return; 
 	}
 	setvbuf(tmp_sdt,NULL,_IOFBF,2*1024);
@@ -956,7 +958,7 @@ void packmsgs(ulong packable)
 		fclose(tmp_sdt);
 		fclose(tmp_shd);
 		fclose(tmp_sid);
-		fprintf(stderr,"\n\7!Error allocating memory\n");
+		fprintf(err_fp,"\n\7!Error allocating memory\n");
 		return; 
 	}
 	fseek(smb.shd_fp,0L,SEEK_SET);
@@ -979,13 +981,13 @@ void packmsgs(ulong packable)
 		}
 		i=smb_lockmsghdr(&smb,&msg);
 		if(i) {
-			fprintf(stderr,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
 			continue; 
 		}
 		i=smb_getmsghdr(&smb,&msg);
 		smb_unlockmsghdr(&smb,&msg);
 		if(i) {
-			fprintf(stderr,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
 			continue; 
 		}
 		if(msg.hdr.attr&MSG_DELETE) {
@@ -1014,7 +1016,7 @@ void packmsgs(ulong packable)
 
 			m=smb_getmsgdatlen(&msg);
 			if(m>16L*1024L*1024L) {
-				fprintf(stderr,"\n\7!Invalid data length (%lu)\n",m);
+				fprintf(err_fp,"\n\7!Invalid data length (%lu)\n",m);
 				continue; 
 			}
 
@@ -1105,12 +1107,12 @@ void packmsgs(ulong packable)
 	sprintf(fname,"%s.shd",smb.file);
 	if(remove(fname)!=0) {
 		error=TRUE;
-		fprintf(stderr,"\n\7!Error %d removing %s\n",errno,fname);
+		fprintf(err_fp,"\n\7!Error %d removing %s\n",errno,fname);
 	}
 	sprintf(tmpfname,"%s.sh$",smb.file);
 	if(!error && rename(tmpfname,fname)!=0) {
 		error=TRUE;
-		fprintf(stderr,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
+		fprintf(err_fp,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
 	}
 
 
@@ -1120,13 +1122,13 @@ void packmsgs(ulong packable)
 	sprintf(fname,"%s.sdt",smb.file);
 	if(!error && remove(fname)!=0) {
 		error=TRUE;
-		fprintf(stderr,"\n\7!Error %d removing %s\n",errno,fname);
+		fprintf(err_fp,"\n\7!Error %d removing %s\n",errno,fname);
 	}
 
 	sprintf(tmpfname,"%s.sd$",smb.file);
 	if(!error && rename(tmpfname,fname)!=0) {
 		error=TRUE;
-		fprintf(stderr,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
+		fprintf(err_fp,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
 	}
 
 	/* Change *.si$ into *.sid */
@@ -1135,27 +1137,27 @@ void packmsgs(ulong packable)
 	sprintf(fname,"%s.sid",smb.file);
 	if(!error && remove(fname)!=0) {
 		error=TRUE;
-		fprintf(stderr,"\n\7!Error %d removing %s\n",errno,fname);
+		fprintf(err_fp,"\n\7!Error %d removing %s\n",errno,fname);
 	}
 
 	sprintf(tmpfname,"%s.si$",smb.file);
 	if(!error && rename(tmpfname,fname)!=0) {
 		error=TRUE;
-		fprintf(stderr,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
+		fprintf(err_fp,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
 	}
 
 	if((i=smb_unlock(&smb))!=0)
-		fprintf(stderr,"\n\7!ERROR %d (%s) unlocking %s\n",i,smb.last_error,smb.file);
+		fprintf(err_fp,"\n\7!ERROR %d (%s) unlocking %s\n",i,smb.last_error,smb.file);
 
 	if((i=smb_open(&smb))!=0) {
-		fprintf(stderr,"\n\7!Error %d (%s) reopening %s\n",i,smb.last_error,smb.file);
+		fprintf(err_fp,"\n\7!Error %d (%s) reopening %s\n",i,smb.last_error,smb.file);
 		return; 
 	}
 	if((i=smb_locksmbhdr(&smb))!=0)
-		fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 	smb.status.total_msgs=total;
 	if((i=smb_putstatus(&smb))!=0)
-		fprintf(stderr,"\n\7!smb_putstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_putstatus returned %d: %s\n",i,smb.last_error);
 	smb_unlocksmbhdr(&smb);
 	printf("\nDone.\n\n");
 }
@@ -1168,26 +1170,26 @@ void delmsgs(void)
 
 	i=smb_locksmbhdr(&smb);
 	if(i) {
-		fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	i=smb_getstatus(&smb);
 	if(i) {
 		smb_unlocksmbhdr(&smb);
-		fprintf(stderr,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_getstatus returned %d: %s\n",i,smb.last_error);
 		return; 
 	}
 	if(!(smb.status.attr&SMB_HYPERALLOC)) {
 		i=smb_open_da(&smb);
 		if(i) {
 			smb_unlocksmbhdr(&smb);
-			fprintf(stderr,"\n\7!smb_open_da returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_open_da returned %d: %s\n",i,smb.last_error);
 			exit(1); 
 		}
 		i=smb_open_ha(&smb);
 		if(i) {
 			smb_unlocksmbhdr(&smb);
-			fprintf(stderr,"\n\7!smb_open_ha returned %d: %s\n",i,smb.last_error);
+			fprintf(err_fp,"\n\7!smb_open_ha returned %d: %s\n",i,smb.last_error);
 			exit(1); 
 		} 
 		/* Reset both allocation tables */
@@ -1204,7 +1206,7 @@ void delmsgs(void)
 	/* re-write status header */
 	smb.status.total_msgs=0;
 	if((i=smb_putstatus(&smb))!=0)
-		fprintf(stderr,"\n\7!smb_putstatus returned %d: %s\n",i,smb.last_error);
+		fprintf(err_fp,"\n\7!smb_putstatus returned %d: %s\n",i,smb.last_error);
 	smb_unlocksmbhdr(&smb);
 	printf("\nDone.\n\n");
 }
@@ -1229,12 +1231,12 @@ void readmsgs(ulong start)
 				break;
 			i=smb_lockmsghdr(&smb,&msg);
 			if(i) {
-				fprintf(stderr,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
+				fprintf(err_fp,"\n\7!smb_lockmsghdr returned %d: %s\n",i,smb.last_error);
 				break; 
 			}
 			i=smb_getmsghdr(&smb,&msg);
 			if(i) {
-				fprintf(stderr,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
+				fprintf(err_fp,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
 				break; 
 			}
 
@@ -1259,7 +1261,7 @@ void readmsgs(ulong start)
 
 			i=smb_unlockmsghdr(&smb,&msg);
 			if(i) {
-				fprintf(stderr,"\n\7!smb_unlockmsghdr returned %d: %s\n",i,smb.last_error);
+				fprintf(err_fp,"\n\7!smb_unlockmsghdr returned %d: %s\n",i,smb.last_error);
 				break; 
 			}
 			smb_freemsgmem(&msg); 
@@ -1367,7 +1369,7 @@ int main(int argc, char **argv)
 	char*	subj=NULL;
 	FILE*	fp;
 	int		i,j,x,y;
-	long	count=-1;
+	long	count=0;
 	BOOL	create=FALSE;
 	time_t	now;
 	struct	tm* tm;
@@ -1379,7 +1381,7 @@ int main(int argc, char **argv)
 	DESCRIBE_COMPILER(compiler);
 
 	smb.file[0]=0;
-	fprintf(stderr,"\nSMBUTIL v%s-%s (rev %s) SMBLIB %s - Synchronet Message Base "\
+	fprintf(err_fp,"\nSMBUTIL v%s-%s (rev %s) SMBLIB %s - Synchronet Message Base "\
 		"Utility\n\n"
 		,SMBUTIL_VER
 		,PLATFORM_DESC
@@ -1452,6 +1454,9 @@ int main(int argc, char **argv)
 						subj=argv[x]+j+1;
 						j=strlen(argv[x])-1;
 						break;
+					case 'O':
+						err_fp=stdout;
+						break;
 					default:
 						printf("\nUnknown opt '%c'\n",argv[x][j]);
 					case '?':
@@ -1470,13 +1475,13 @@ int main(int argc, char **argv)
 
 				sprintf(path,"%s.shd",smb.file);
 				if(!fexistcase(path) && !create) {
-					fprintf(stderr,"\n%s doesn't exist (use -c to create)\n",path);
+					fprintf(err_fp,"\n%s doesn't exist (use -c to create)\n",path);
 					exit(1);
 				}
 				smb.retry_time=30;
-				fprintf(stderr,"Opening %s\r\n",smb.file);
+				fprintf(err_fp,"Opening %s\r\n",smb.file);
 				if((i=smb_open(&smb))!=0) {
-					fprintf(stderr,"\n\7!Error %d (%s) opening %s message base\n"
+					fprintf(err_fp,"\n\7!Error %d (%s) opening %s message base\n"
 						,i,smb.last_error,smb.file);
 					exit(1); 
 				}
@@ -1486,7 +1491,7 @@ int main(int argc, char **argv)
 						smb_close(&smb);
 						continue; 
 					}
-					memset(&smb.status,0,sizeof(smb.status));
+					smb.status.max_msgs=count;
 					if((i=smb_create(&smb))!=0) {
 						smb_close(&smb);
 						printf("!Error %d (%s) creating %s\n",i,smb.last_error,smb.file);
@@ -1500,7 +1505,7 @@ int main(int argc, char **argv)
 						case 'N':
 							if(cmd[1]!=0) {
 								if((fp=fopen(cmd+1,"r"))==NULL) {
-									fprintf(stderr,"\n\7!Error %d opening %s\n"
+									fprintf(err_fp,"\n\7!Error %d opening %s\n"
 										,errno,cmd+1);
 									exit(1);
 								}
@@ -1508,7 +1513,7 @@ int main(int argc, char **argv)
 								fp=stdin;
 							i=smb_locksmbhdr(&smb);
 							if(i) {
-								fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
+								fprintf(err_fp,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 								return(1); 
 							}
 							postmsg((char)toupper(cmd[y]),to,to_number,to_address,from,from_number,subj,fp);
@@ -1528,7 +1533,7 @@ int main(int argc, char **argv)
 						case 'P':
 						case 'D':
 							if((i=smb_lock(&smb))!=0) {
-								fprintf(stderr,"\n\7!smb_lock returned %d: %s\n",i,smb.last_error);
+								fprintf(err_fp,"\n\7!smb_lock returned %d: %s\n",i,smb.last_error);
 								return(i);
 							}
 							switch(toupper(cmd[y])) {
