@@ -22,7 +22,7 @@ function count_attachments(hdr, body)
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
 		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
 		bound[1]=regex_escape(bound[1]);
-		re=new RegExp ("--\Q"+bound[1]+"\E-{0,2}","");
+		re=new RegExp ("--"+bound[1]+"-{0,2}","");
 		msgbits=body.split(re);
 		/* Search for attachments/inlined */
 		for(bit in msgbits) {
