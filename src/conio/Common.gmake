@@ -3,6 +3,7 @@
 # XCURSES			= Use XCurses
 # NEED_CIOLIB		= Set flage suitable for using with ciolib
 # NO_X				= Don't use X version of ciolib
+# NEED_CTERM		= Use CTerm
 
 # You really should set this first.
 CONIO_SRC	?=	$(XPDEV)../conio/
@@ -41,6 +42,8 @@ endif
 CIOLIB_CFLAGS	+=	$(CURSES_CFLAGS)
 CIOLIB_LDFLAGS	+=	$(CURSES_LDFLAGS)
 
+CTERM_OBJS		+=	$(LIBODIR)/cterm.o
+
 ifdef NEED_CIOLIB
  CFLAGS +=	$(CIOLIB_CFLAGS)
  LDFLAGS	+=	$(CIOLIB_LDFLAGS)
@@ -51,10 +54,14 @@ ifdef UIFC_NEED_CIOLIB
  UIFC_LDFLAGS	+=	$(CIOLIB_LDFLAGS)
  UIFC_OBJS		+=	$(CIOLIB_OBJS)
 endif
-
 ifdef NEED_CURSES
  CFLAGS	+=	$(CURSES_CFLAGS)
  LDFLAGS	+=	$(CURSES_LDFLAGS)
+endif
+ifdef NEED_CTERM
+ CFLAGS	+=	$(CTERM_CFLAGS)
+ LDFLAGS	+=	$(CTERM_LDFLAGS)
+ OBJS	+=	$(CTERM_OBJS)
 endif
 
 vpath %.c $(CONIO_SRC)
