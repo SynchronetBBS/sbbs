@@ -84,6 +84,8 @@ enum {
 
 	,BBS_PROP_ALTUL
 
+	,BBS_PROP_ERRORLEVEL		/* READ ONLY */
+
 	/* READ ONLY */
 	,BBS_PROP_SMB_GROUP		
 	,BBS_PROP_SMB_GROUP_DESC
@@ -177,6 +179,8 @@ enum {
 	,"client name"
 
 	,"current alternate upload path number"
+
+	,"error level returned from last executed external program"
 
 	/* READ ONLY */
 	,"message group name of message being read"
@@ -353,6 +357,10 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 		case BBS_PROP_ALTUL:
 			val=sbbs->altul;
+			break;
+
+		case BBS_PROP_ERRORLEVEL:
+			val=sbbs->errorlevel;
 			break;
 
 		/* Currently Open Message Base (sbbs.smb) */
@@ -799,6 +807,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"rlogin_name"		,BBS_PROP_RLOGIN_NAME	,JSPROP_ENUMERATE	,310},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,310},
 	{	"alt_ul_dir"		,BBS_PROP_ALTUL			,JSPROP_ENUMERATE	,310},
+	{	"errorlevel"		,BBS_PROP_ERRORLEVEL	,PROP_READONLY		,312},
 
 	{	"smb_group"			,BBS_PROP_SMB_GROUP			,PROP_READONLY	,310},
 	{	"smb_group_desc"	,BBS_PROP_SMB_GROUP_DESC	,PROP_READONLY	,310},
