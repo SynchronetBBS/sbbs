@@ -28,7 +28,7 @@ for(i=0;i<argc;i++)
 			break;
 	}
 
-if(this.server!=undefined) {
+if(this.server && this.client) {
 
 	// Write a string to the client socket
 	function write(str)
@@ -200,10 +200,12 @@ writeln("<p><font color=silver><font size=-2>");
 writeln(format("Auto-refresh in %d seconds",refresh_rate));
 write(format("<br>Dynamically generated in %lu milliseconds "
 	  ,new Date().valueOf()-start.valueOf()));
-write("by <a href=http://www.synchro.net>" + system.version_notice + "</a>");
+write("by ");
+if(this.server)
+	write(server.version + " and ");
+write(system.version_notice.link("http://www.synchro.net"));
 writeln("<br>" + system.timestr());
 
 writeln("</body>");
 writeln("</html>");
-sleep(1000);
 /* End of nodelist-html.js */
