@@ -122,6 +122,13 @@ extern const uchar* nular;
 										   (Including terminator )*/
 #define MAX_REDIR_LOOPS			20		/* Max. times to follow internal redirects for a single request */
 #define MAX_POST_LEN			1048576	/* Max size of body for POSTS */
+#define MAX_CLEANUPS			2		/* Max number of cleanup files
+										 * Currently one for SSJS output and
+										 * one for post data */
+enum {
+	 CLEANUP_SSJS_TMP_FILE
+	,CLEANUP_POST_DATA
+};
 
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
@@ -192,7 +199,7 @@ typedef struct  {
 
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE*	fp;
-	char		*cleanup_file;
+	char		*cleanup_file[MAX_CLEANUPS];
 	BOOL	sent_headers;
 	BOOL	prev_write;
 } http_request_t;
@@ -732,6 +739,7 @@ static int close_socket(SOCKET sock)
 static void close_request(http_session_t * session)
 {
 	time_t		now;
+	int			i;
 
 	if(session->req.ld!=NULL) {
 		now=time(NULL);
@@ -761,10 +769,12 @@ static void close_request(http_session_t * session)
 	if(session->req.fp!=NULL)
 		fclose(session->req.fp);
 
-	if(session->req.cleanup_file!=NULL) {
-		if(!(startup->options&WEB_OPT_DEBUG_SSJS))
-			remove(session->req.cleanup_file);
-		free(session->req.cleanup_file);
+	for(i=0;i<MAX_CLEANUPS;i++) {
+		if(session->req.cleanup_file[i]!=NULL) {
+			if(!(startup->options&WEB_OPT_DEBUG_SSJS))
+				remove(session->req.cleanup_file[i]);
+			free(session->req.cleanup_file[i]);
+		}
 	}
 
 	memset(&session->req,0,sizeof(session->req));
@@ -2767,7 +2777,7 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
 		return(FALSE);
 	}
-	session->req.cleanup_file=strdup(path);
+	session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]=strdup(path);
 
 	js_add_request_prop(session,"real_path",session->req.physical_path);
 	js_add_request_prop(session,"virtual_path",session->req.virtual_path);
