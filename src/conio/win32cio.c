@@ -361,7 +361,7 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 
 void win32_textattr(int newattr)
 {
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),DOStoWinAttr(newattr));
+	/* SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),DOStoWinAttr(newattr)); */
 	currattr=newattr;
 }
 
@@ -401,18 +401,12 @@ void win32_setcursortype(int type)
 
 int win32_wherex(void)
 {
-	CONSOLE_SCREEN_BUFFER_INFO bi;
-
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&bi);
-	return bi.dwCursorPosition.X+1;
+	return(xpos);
 }
 
 int win32_wherey(void)
 {
-	CONSOLE_SCREEN_BUFFER_INFO bi;
-
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&bi);
-	return bi.dwCursorPosition.Y+1;
+	return(ypos);
 }
 
 int win32_putch(int ch)
@@ -426,22 +420,21 @@ int win32_putch(int ch)
 	buf[0]=ch;
 	buf[1]=currattr;
 
-
 	gettextinfo(&ti);
 	switch(ch) {
 		case '\r':
-			gotoxy(1,ypos);
+			win32_gotoxy(1,ypos);
 			break;
 		case '\n':
 			if(ypos==ti.winbottom-ti.wintop+1)
 				wscroll();
 			else
-				gotoxy(xpos,ypos+1);
+				win32_gotoxy(xpos,ypos+1);
 			break;
 		case '\b':
 			if(ti.curx>ti.winleft) {
 				buf[0]=' ';
-				gotoxy(xpos-1,ypos);
+				win32_gotoxy(xpos-1,ypos);
 				puttext(xpos,ypos,xpos,ypos,buf);
 			}
 			break;
@@ -452,17 +445,17 @@ int win32_putch(int ch)
 			if(ypos==ti.winbottom-ti.wintop+1
 					&& xpos==ti.winright-ti.winleft+1) {
 				puttext(xpos,ypos,xpos,ypos,buf);
-				gotoxy(1,ypos);
+				win32_gotoxy(1,ypos);
 				wscroll();
 			}
 			else {
 				if(xpos==ti.winright-ti.winleft+1) {
 					puttext(xpos,ypos,xpos,ypos,buf);
-					gotoxy(1,ypos+1);
+					win32_gotoxy(1,ypos+1);
 				}
 				else {
 					puttext(xpos,ypos,xpos,ypos,buf);
-					gotoxy(xpos+1,ypos);
+					win32_gotoxy(xpos+1,ypos);
 				}
 			}
 			break;
