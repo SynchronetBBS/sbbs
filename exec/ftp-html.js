@@ -195,7 +195,10 @@ if(file.length) {
 		/* size */
 		write("<TD valign=top align=right>" + dat_font + "<font color=black>");
 		if(curdir.misc!=undefined && !(curdir.misc&DIR_FREE)) {
-			write(kbytes(file[i].credits)); 
+			if(!file[i].credits)
+				write("<font color=white><b>FREE");
+			else
+				write(kbytes(file[i].credits)); 
 			total_bytes+=file[i].credits;
 		} else {
 			write(kbytes(file[i].size)); 
