@@ -73,6 +73,7 @@
 
 #ifdef USE_XPDEV
 #include "semwrap.h"
+#include "filewrap.h"
 #endif
 
 #define GLOBAL extern	/* turns XSDKVARS.C into a header file */
