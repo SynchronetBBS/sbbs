@@ -415,7 +415,7 @@ void findo(void)
 	od_disp_str("The Vile Enemy Dropped Something!\r\n");
 	od_disp_str("Do you want to get it? ");
 	if(od_get_answer("YN")=='Y') {
-		od_disp_str("Y\r\n");
+		od_disp_str("Yes\r\n");
 		okea=round(xp_random(99)+1);
 		if ((okea < 10) && (player[b].weapon>=25)) {
 			player[b].weapon=player[b].weapon+1;
@@ -429,7 +429,7 @@ void findo(void)
 			od_disp_str("It's gone!!!!\r\n");
 	}
 	else {
-		od_disp_str("N\r\n");
+		od_disp_str("No\r\n");
 		od_disp_str("I wonder what it was?!?\r\n");
 	}
 }
@@ -669,13 +669,13 @@ void incre(void)
 {
 	od_disp_str("Increase which stat? ");
 	switch(od_get_answer("123456Q")) {
-		case '1':od_disp_str("1\r\n"); player[b].strength++; break;
-		case '2':od_disp_str("2\r\n"); player[b].intelligence++; break;
-		case '3':od_disp_str("3\r\n"); player[b].dexterity++; break;
-		case '4':od_disp_str("4\r\n"); player[b].luck++; break;
-		case '5':od_disp_str("5\r\n"); player[b].constitution++; break;
-		case '6':od_disp_str("6\r\n"); player[b].charisma++; break;
-		case 'Q':od_disp_str("Q\r\n"); partone=FALSE; break;
+		case '1':od_disp_str("Strength\r\n"); player[b].strength++; break;
+		case '2':od_disp_str("Intelligence\r\n"); player[b].intelligence++; break;
+		case '3':od_disp_str("Dexterity\r\n"); player[b].dexterity++; break;
+		case '4':od_disp_str("Luck\r\n"); player[b].luck++; break;
+		case '5':od_disp_str("Constitution\r\n"); player[b].constitution++; break;
+		case '6':od_disp_str("Charisma\r\n"); player[b].charisma++; break;
+		case 'Q':od_disp_str("Quit\r\n"); partone=FALSE; break;
 	}
 }
 
@@ -683,12 +683,12 @@ void decre(void)
 {
 	od_disp_str("Decrease which stat? \r\n");
 	switch(od_get_answer("123456")) {
-		case '1':od_disp_str("1\r\n"); player[b].strength-=2; break;
-		case '2':od_disp_str("2\r\n"); player[b].intelligence-=2; break;
-		case '3':od_disp_str("3\r\n"); player[b].dexterity-=2; break;
-		case '4':od_disp_str("4\r\n"); player[b].luck-=2; break;
-		case '5':od_disp_str("5\r\n"); player[b].constitution-=2; break;
-		case '6':od_disp_str("6\r\n"); player[b].charisma-=2; break;
+		case '1':od_disp_str("Strength\r\n"); player[b].strength-=2; break;
+		case '2':od_disp_str("Intelligence\r\n"); player[b].intelligence-=2; break;
+		case '3':od_disp_str("Dexterity\r\n"); player[b].dexterity-=2; break;
+		case '4':od_disp_str("Luck\r\n"); player[b].luck-=2; break;
+		case '5':od_disp_str("Constitution\r\n"); player[b].constitution-=2; break;
+		case '6':od_disp_str("Charisma\r\n"); player[b].charisma-=2; break;
 	}
 }
 
@@ -739,7 +739,7 @@ void ministat(void)
 	if(yaya) {
 		od_disp_str("Is this correct? ");
 		if(od_get_answer("YN")=='Y') {
-			od_disp_str("Y\r\n");
+			od_disp_str("Yes\r\n");
 			player[b].strength=temp1a;
 			player[b].intelligence=temp1b;
 			player[b].dexterity=temp1d;
@@ -749,7 +749,7 @@ void ministat(void)
 			bothover=FALSE;
 		}
 		else {
-			od_disp_str("N\r\n");
+			od_disp_str("No\r\n");
 			bothover=FALSE;
 		}
 	}
@@ -1009,8 +1009,8 @@ void battle(void)
 			od_set_color(L_BLUE,D_BLACK);
 			od_printf("Combat (%1.0f hps): (B,F,S): ",playerrem);
 			option=od_get_answer("BFS?");
-			od_printf("%c\r\n",option);
 			if(option=='?') {
+				od_disp_str("Help\r\n");
 				nl();
 				nl();
 				od_disp_str("(B)attle your opponent.\r\n");
@@ -1020,9 +1020,10 @@ void battle(void)
 			}
 		}
 		switch(option) {
-			case 'B':attackmodes(); break;
-			case 'S':statshow(); break;
+			case 'B':od_disp_str("Battle\r\n");attackmodes(); break;
+			case 'S':od_disp_str("Stats\r\n");statshow(); break;
 			case 'F':
+				od_disp_str("Flee\r\n");
 				if((xp_random(4)+1)+player[b].dexterity>opp.dexterity) {
 					nl();
 					od_set_color(D_GREEN,D_BLACK);
@@ -1070,14 +1071,14 @@ void vic(void)
 		od_disp_str("Enter your new Battle Cry.\r\n");
 		od_disp_str("> ");
 		od_input_str(ugh3, 60, ' ', '~');
-		od_disp_str("Is this correct? \r\n");
+		od_disp_str("Is this correct? ");
 		if(od_get_answer("YN")=='Y') {
 			ahuh=TRUE;
-			od_disp_str("Y\r\n");
+			od_disp_str("Yes\r\n");
 		}
 		else {
 			ahuh=FALSE;
-			od_disp_str("N\r\n");
+			od_disp_str("No\r\n");
 		}
 	}
 	ahuh=TRUE;
@@ -1195,14 +1196,14 @@ void weaponshop(void)
 		opty=od_get_answer("BSQP");
 		switch(opty) {
 			case 'Q':
-				od_disp_str("Q\r\n");
+				od_disp_str("Quit\r\n");
 				return;
 			case 'B':
-				od_disp_str("B\r\n");
+				od_disp_str("Browse\r\n");
 				weaponlist();
 				break;
 			case 'P':
-				od_disp_str("P\r\n");
+				od_disp_str("Purchase\r\n");
 				nl();
 				nl();
 				od_disp_str("Enter weapon/armour # you wish buy: ");
@@ -1218,10 +1219,10 @@ void weaponshop(void)
 					opty=od_get_answer("WA");
 					switch(opty) {
 						case 'W':
-							od_disp_str("W\r\n");
+							od_disp_str("Weapon\r\n");
 							od_disp_str("Are you sure you want buy it? ");
 							if(od_get_answer("YN")=='Y') {
-								od_disp_str("Y\r\n");
+								od_disp_str("Yes\r\n");
 								player[b].gold-=cost[round(buy)];
 								player[b].weapon=buy;
 								nl();
@@ -1231,13 +1232,13 @@ void weaponshop(void)
 								player[b].power=find2();
 							}
 							else
-								od_disp_str("N\r\n");
+								od_disp_str("No\r\n");
 							break;
 						case 'A':
-							od_disp_str("A\r\n");
+							od_disp_str("Armour\r\n");
 							od_disp_str("Are you sure you want buy it? ");
 							if(od_get_answer("YN")=='Y') {
-								od_disp_str("Y\r\n");
+								od_disp_str("Yes\r\n");
 								player[b].gold-=cost[round(buy)];
 								player[b].vehicle=buy;
 								nl();
@@ -1245,22 +1246,22 @@ void weaponshop(void)
 								od_printf("You've bought a %s\r\n",sname[round(buy)]);
 							}
 							else
-								od_disp_str("N\r\n");
+								od_disp_str("No\r\n");
 							break;
 					}
 				}
 				break;
 			case 'S':
-				od_disp_str("S\r\n");
+				od_disp_str("Sell\r\n");
 				nl();
 				od_disp_str("(W)eapon,(A)rmour,(Q)uit : ");
 				opty=od_get_answer("AWQ");
 				switch(opty) {
 					case 'Q':
-						od_disp_str("Q\r\n");
+						od_disp_str("Quit\r\n");
 						return;
 					case 'W':
-						od_disp_str("W\r\n");
+						od_disp_str("Weapon\r\n");
 						y=(round(player[b].weapon));
 						x=player[b].charisma;
 						x=x*cost[y];
@@ -1269,29 +1270,29 @@ void weaponshop(void)
 						od_printf("I will purchase it for %1.0f, okay? ",x);
 						opty=od_get_answer("YN");
 						if(opty=='Y') {
-							od_disp_str("Y\r\n");
+							od_disp_str("Yes\r\n");
 							od_set_color(D_GREEN,D_BLACK);
 							od_disp_str("Is it Dwarven Made?\r\n");
 							player[b].weapon=1;
 							player[b].gold=player[b].gold+x;
 						}
 						else
-							od_disp_str("N\r\n");
+							od_disp_str("No\r\n");
 						break;
 					case 'A':
-						od_disp_str("A\r\n");
+						od_disp_str("Armour\r\n");
 						x=((1/20)*(player[b].charisma)*(cost[round(player[b].vehicle)]));
 						nl();
 						od_printf("I will purchase it for %1.0f, okay? ",x);
 						opty=od_get_answer("YN");
 						if(opty=='Y') {
-							od_disp_str("Y\r\n");
+							od_disp_str("Yes\r\n");
 							od_disp_str("Fine Craftsmanship!\r\n");
 							player[b].vehicle=1;
 							player[b].gold=player[b].gold+x;
 						}
 						else
-							od_disp_str("N\r\n");
+							od_disp_str("No\r\n");
 						break;
 				}
 		}
@@ -1444,7 +1445,7 @@ void bulletin(void)
 	nl();
 	od_disp_str("Do you wish to enter a News Bulletin? ");
 	if(od_get_answer("YN")=='Y') {
-		od_disp_str("Y\r\n");
+		od_disp_str("Yes\r\n");
 		nl();
 		while(!endfil) {
 			countr++;
@@ -1460,7 +1461,7 @@ void bulletin(void)
 		nl();
 		od_disp_str("Is the bulletin correct? ");
 		if(od_get_answer("YN")=='Y') {
-			od_disp_str("Y\r\n");
+			od_disp_str("Yes\r\n");
 			od_disp_str("Saving Bulletin...\r\n");
 			messfile=fopen("text/bullet.lan","ab");
 			fputs(blt[1],messfile);
@@ -1474,10 +1475,10 @@ void bulletin(void)
 			fclose(messfile);
 		}
 		else
-			od_disp_str("N\r\n");
+			od_disp_str("No\r\n");
 	}
 	else
-		od_disp_str("N\r\n");
+		od_disp_str("No\r\n");
 }
 
 void training(void)
@@ -1499,7 +1500,7 @@ void training(void)
 		tttgld=10000;
 		od_disp_str("Do you wish to upgrade a stat? ");
 		if(od_get_answer("YN")=='Y') {
-			od_disp_str("Y\r\n");
+			od_disp_str("Yes\r\n");
 			if(player[b].gold<(tttgld*100))
 				od_disp_str("Sorry, but you do not have enough Steel!\r\n");
 			else {
@@ -1512,11 +1513,18 @@ void training(void)
 				od_disp_str("Which stat do you wish to increase? ");
 				od_set_color(D_GREY,D_BLACK);
 				temptrain[0]=od_get_answer("123456");
-				od_printf("%c\r\n",temptrain[0]);
+				switch(temptrain[0]) {
+					case 1: od_disp_str("Strength\r\n"); break;
+					case 2: od_disp_str("Intelligence\r\n"); break;
+					case 3: od_disp_str("Dexterity\r\n"); break;
+					case 4: od_disp_str("Luck\r\n"); break;
+					case 5: od_disp_str("Constitution\r\n"); break;
+					case 6: od_disp_str("Charisma\r\n"); break;
+				}
 				realtrain=temptrain[0]-'0';
 				od_disp_str("Are you sure? ");
 				if(od_get_answer("YN")=='Y') {
-					od_disp_str("Y\r\n");
+					od_disp_str("Yes\r\n");
 					player[b].gold-=tttgld*100;
 					switch(realtrain) {
 						case 1:
@@ -1540,7 +1548,7 @@ void training(void)
 					}
 				}
 				else
-					od_disp_str("N\r\n");
+					od_disp_str("No\r\n");
 			}
 		}
 		else
@@ -1713,9 +1721,9 @@ int main(int argc, char **argv)
 		opty=od_get_answer("QVP12345CHWLADGFRSTX+-?EZ*#");
 		temp[0]=opty;
 		temp[1]=0;
-		od_printf("%c\r\n",temp[0]);
 		switch(opty) {
 			case 'Q':
+				od_disp_str("Quit\r\n");
 				od_disp_str("LEAVE KRYNN? Are you sure? ");
 				if(od_get_answer("YN")=='Y') {
 					od_disp_str("Y\r\n");
@@ -1724,23 +1732,24 @@ int main(int argc, char **argv)
 				else
 					od_disp_str("N\r\n");
 				break;
-			case '1':afight(1); break;
-			case '2':afight(2); break;
-			case '3':afight(3); break;
-			case '4':afight(4); break;
-			case '5':afight(5); break;
-			case 'C':chstats(); break;
-			case 'H':heal(); break;
-			case 'W':weaponshop(); break;
-			case 'L':levelupdate(); break;
-			case 'A':doggie(); break;
-			case 'D':docs(); break;
-			case 'G':gamble(); break;
-			case 'F':listplayers(); break;
-			case 'R':playerlist(); break;
-			case 'S':statshow(); break;
-			case 'T':training(); break;
+			case '1':od_disp_str("1\r\n");afight(1); break;
+			case '2':od_disp_str("2\r\n");afight(2); break;
+			case '3':od_disp_str("3\r\n");afight(3); break;
+			case '4':od_disp_str("4\r\n");afight(4); break;
+			case '5':od_disp_str("5\r\n");afight(5); break;
+			case 'C':od_disp_str("Change Stats\r\n");chstats(); break;
+			case 'H':od_disp_str("Heal\r\n");heal(); break;
+			case 'W':od_disp_str("Weapon Shop\r\n");weaponshop(); break;
+			case 'L':od_disp_str("Level Update\r\n");levelupdate(); break;
+			case 'A':od_disp_str("Battle Another User\r\n");doggie(); break;
+			case 'D':od_disp_str("Docs\r\n");docs(); break;
+			case 'G':od_disp_str("Gamble\r\n");gamble(); break;
+			case 'F':od_disp_str("Battles Today\r\n");listplayers(); break;
+			case 'R':od_disp_str("Rank Players\r\n");playerlist(); break;
+			case 'S':od_disp_str("Status\r\n");statshow(); break;
+			case 'T':od_disp_str("Training Grounds\r\n");training(); break;
 			case 'X':
+				od_disp_str("Re-Roll\r\n");
 				od_disp_str("Please note that this will completely purge\r\n");
                         od_disp_str("your current hero of all atributes!\r\n");
 				nl();
@@ -1753,18 +1762,20 @@ int main(int argc, char **argv)
 				else
 					od_disp_str("N\r\n");
 				break;
-			case '+':depobank(); break;
-			case 'P':od_send_file("text/plug"); break;
-			case '-':withdrawbank(); break;
-			case '?':menuit(); break;
-			case 'E':bulletin(); break;
-			case 'Z':spy(); break;
+			case '+':od_disp_str("Deposit\r\n");depobank(); break;
+			case 'P':od_disp_str("Plug\r\n");od_send_file("text/plug"); break;
+			case '-':od_disp_str("Withdraw\r\n");withdrawbank(); break;
+			case '?':od_disp_str("Help\r\n");menuit(); break;
+			case 'E':od_disp_str("Edit Announcement\r\n");bulletin(); break;
+			case 'Z':od_disp_str("Spy\r\n");spy(); break;
 			case 'V':
+				od_disp_str("Version\r\n");
 				od_set_color(L_BLUE,D_BLACK);
 				od_disp_str("This Is Dragonlance version 3.0\r\n");
 				pausescr();
 				break;
 			case '*':
+				od_disp_str("Change Name\r\n");
 				nl();
 				od_set_color(L_CYAN,D_BLACK);
 				od_disp_str("Your family crest has been stolen, they\r\n");
@@ -1774,14 +1785,15 @@ int main(int argc, char **argv)
 				nl();
 				od_disp_str("Are you sure? ");
 				if(od_get_answer("YN")=='Y') {
-					od_disp_str("Y\r\n");
+					od_disp_str("Yes\r\n");
 					if(strlen(ugh))
 						SAFECOPY(player[b].pseudo,ugh);
 				}
 				else
-					od_disp_str("N\r\n");
+					od_disp_str("No\r\n");
 				break;
 			case '#':
+				od_disp_str("Change Battle Cry\r\n");
 				vic(); 
 				SAFECOPY(player[b].gaspd,ugh3);
 				break;
