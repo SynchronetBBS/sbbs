@@ -54,7 +54,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent)
 	smb.retry_time=cfg->smb_retry_time;
 	sprintf(str,"%s.sid",smb.file);
 	l=flength(str);
-	if(l<sizeof(idxrec_t))
+	if(l<(long)sizeof(idxrec_t))
 		return(0);
 	if(!usernumber) 
 		return(l/sizeof(idxrec_t)); 	/* Total system e-mail */

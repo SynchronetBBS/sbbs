@@ -59,6 +59,7 @@
 
 #include "genwrap.h"	/* stricmp */
 #include "dirwrap.h"	/* fexist */
+#include "conwrap.h"	/* getch */
 #include "filewrap.h"
 #include "smblib.h"
 #include "crc32.h"
