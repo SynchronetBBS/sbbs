@@ -2218,21 +2218,24 @@ malloc_error:
 
 #ifndef ODPLAT_WIN32
 #ifdef ODPLAT_NIX
-   od_control.od_com_method=COM_STDIO;
-   od_control.baud=300;
-   gethostname(od_control.system_name,sizeof(od_control.system_name));
-   od_control.system_name[sizeof(od_control.system_name)-1]=0;
-   if (isatty(fileno(stdin)))  {
-     tcgetattr(fileno(stdin),&term);
-	  od_control.baud=cfgetispeed(&term);
-     if(!od_control.baud)
-	    od_control.baud=cfgetispeed(&term);
-     if(!od_control.baud)
-		 od_control.baud=300;
+   if(bPromptForUserName)
+   {
+      od_control.od_com_method=COM_STDIO;
+      od_control.baud=300;
+      gethostname(od_control.system_name,sizeof(od_control.system_name));
+      od_control.system_name[sizeof(od_control.system_name)-1]=0;
+      if (isatty(fileno(stdin)))  {
+        tcgetattr(fileno(stdin),&term);
+   	  od_control.baud=cfgetispeed(&term);
+        if(!od_control.baud)
+   	    od_control.baud=cfgetispeed(&term);
+        if(!od_control.baud)
+   		 od_control.baud=300;
+      }
+      uinfo=getpwuid(getuid());
+      ODStringCopy(od_control.user_handle, uinfo->pw_name,sizeof(od_control.user_handle));
+      ODStringCopy(od_control.user_name, uinfo->pw_gecos,sizeof(od_control.user_name));
    }
-   uinfo=getpwuid(getuid());
-   ODStringCopy(od_control.user_handle, uinfo->pw_name,sizeof(od_control.user_handle));
-   ODStringCopy(od_control.user_name, uinfo->pw_gecos,sizeof(od_control.user_name));
 #else
    if(bPromptForUserName)
    {

@@ -1127,6 +1127,8 @@ tODResult ODDirRead(tODDirHandle hDir, tODDirEntry *pDirEntry)
 	  	 pDirEntry->wAttributes |= DIR_ATTRIB_RDONLY;
 	  if(!st.st_mode & S_IRUSR)
 	  	 pDirEntry->wAttributes |= DIR_ATTRIB_SYSTEM;
+	  pDirEntry->LastWriteTime=st.st_mtime;
+	  pDirEntry->dwFileSize=st.st_size;
 	  pDirInfo->pos++;
 	  if(pDirInfo->pos==pDirInfo->g.gl_pathc)
 	     pDirInfo->bEOF=TRUE;
