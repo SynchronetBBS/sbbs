@@ -431,7 +431,7 @@ char* DLLCALL prep_dir(char* base, char* path)
 	if(!path[0])
 		return(path);
 	if(path[0]!='\\' && path[0]!='/' && path[1]!=':')           /* Relative to NODE directory */
-		sprintf(str,"%s%s",base,path);
+		sprintf(str,"%s/%s",base,path);
 	else
 		strcpy(str,path);
 
