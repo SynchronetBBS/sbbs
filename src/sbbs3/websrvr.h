@@ -90,6 +90,7 @@ typedef struct {
 } web_startup_t;
 
 #define WEB_OPT_DEBUG_TX			(1<<0)	/* Log all transmitted responses	*/
+#define WEB_OPT_VIRTUAL_HOSTS		(1<<1)	/* Use virutal host html subdirs	*/
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

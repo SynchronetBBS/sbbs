@@ -910,9 +910,13 @@ static BOOL check_request(http_session_t * session)
 	FILE*	file;
 	
 	lprintf("Validating request: %s",session->req.request);
-	if(session->host[0])
-		sprintf(path,"%s%s%s",root_dir,session->host,session->req.request);
-	else
+	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
+		session->host[0]=0;
+	if(session->host[0]) {
+		sprintf(path,"%s%s",root_dir,session->host);
+		if(isdir(path))
+			sprintf(path,"%s%s%s",root_dir,session->host,session->req.request);
+	} else
 		sprintf(path,"%s%s",root_dir,session->req.request);
 	
 	if(FULLPATH(session->req.request,path,sizeof(session->req.request))==NULL) {

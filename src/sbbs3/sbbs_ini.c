@@ -47,6 +47,7 @@ static ini_bitdesc_t ftp_options[] = {
 static ini_bitdesc_t web_options[] = {
 
 	{ WEB_OPT_DEBUG_TX				,"DEBUG_TX"				},
+	{ WEB_OPT_VIRTUAL_HOSTS			,"VIRTUAL_HOSTS"		},
 
 	/* shared bits */
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
