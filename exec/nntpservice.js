@@ -288,8 +288,16 @@ while(client.socket.is_connected && !quit) {
 				writeln("411 no group specified");
 				break;
 			}
+		case "LISTGROUP":
 			found=false;
-			if(include_mail && user.security.level==99 && cmd[1].toLowerCase()=="mail") {
+			if(cmd[1]==undefined) {
+				if(msgbase==null) {
+					writeln("412 no newsgroup selected");
+					break;
+				}
+				found=true;
+			}
+			else if(include_mail && user.security.level==99 && cmd[1].toLowerCase()=="mail") {
 				msgbase=new MsgBase("mail");
 				if(msgbase.open()==true) {
 					selected = { newsgroup: "mail" };
@@ -308,17 +316,31 @@ while(client.socket.is_connected && !quit) {
 							break;
 						}
 			}
-			if(found)
+			if(!found) {
+				writeln("411 no such newsgroup");
+				log("!no such group");
+				bogus_cmd_counter++;
+				break;
+			}
+
+			if(cmd[0].toUpperCase()=="GROUP")
 				writeln(format("211 %u %u %u %s group selected"
 					,msgbase.total_msgs	// articles in group
 					,msgbase.first_msg
 					,msgbase.last_msg
 					,selected.newsgroup
 					));
-			else {
-				writeln("411 no such newsgroup");
-				log("!no such group");
-				bogus_cmd_counter++;
+			else {	// LISTGROUP
+				writeln("211 list of article numbers follow");
+				for(i=0;i<msgbase.total_msgs;i++) {
+					idx=msgbase.get_msg_index(/* by_offset */true,i);
+					if(idx==null)
+						continue;
+					if(idx.attr&MSG_DELETE)	/* marked for deletion */
+						continue;
+					writeln(idx.number);
+				}
+				writeln(".");
 			}
 			break;
 
