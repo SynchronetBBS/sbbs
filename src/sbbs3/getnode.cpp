@@ -116,7 +116,7 @@ void sbbs_t::nodesync()
 	}
 
 	if(thisnode.status==NODE_WFC) {
-		logline("!!","Fixing node status (from WFC to INUSE)");
+		errorlog("Node status fixup");
 		getnodedat(cfg.node_num,&thisnode,1);
 		thisnode.status=NODE_INUSE;
 		putnodedat(cfg.node_num,&thisnode); 
