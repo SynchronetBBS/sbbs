@@ -1832,6 +1832,8 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob)
 
 BOOL js_setup(http_session_t* session)
 {
+	JSObject*	argv;
+
 	if(session->js_runtime == NULL) {
 		lprintf("%04d JavaScript: Creating runtime: %lu bytes"
 			,session->socket,startup->js_max_bytes);
@@ -1864,6 +1866,13 @@ BOOL js_setup(http_session_t* session)
 		if(js_CreateFileAreaObject(session->js_cx, session->js_glob, &scfg, &session->user
 			,NULL)==NULL) 
 			lprintf("%04d !JavaScript ERROR creating file area object",session->socket);
+
+		argv=JS_NewArrayObject(session->js_cx, 0, NULL);
+
+		JS_DefineProperty(session->js_cx, session->js_glob, "argv", OBJECT_TO_JSVAL(argv)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		JS_DefineProperty(session->js_cx, session->js_glob, "argc", INT_TO_JSVAL(0)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	}
 
 	JS_SetContextPrivate(session->js_cx, session);
