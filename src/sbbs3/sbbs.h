@@ -127,6 +127,8 @@ public:
 	int 	outcom(uchar ch); 	   // send character
 	int 	incom(void);		   // receive character
 
+	void	spymsg(char *msg);		// send message to active spies
+
 	void	putcom(char *str, int len=0);  // Send string
 	void	hangup(void);		   // Hangup modem
 
