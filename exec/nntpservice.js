@@ -611,6 +611,10 @@ while(client.socket.is_connected) {
 						    if(msg_area.grp_list[g].sub_list[s].settings&SUB_NAME
 							    && !(user.security.restrictions&(UFLAG_G|UFLAG_Q)))
 							    hdr.from=user.name;	// Use real names
+							if(msg_area.grp_list[g].sub_list[s].is_moderated)
+								hdr.attr|=MSG_MODERATED;
+							else
+								hdr.attr&=~MSG_MODERATED;
 
 						    msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 							if(msgbase.open!=undefined && msgbase.open()==false)
