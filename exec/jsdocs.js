@@ -1,46 +1,119 @@
 // jsdocs.js
 
-// This script will (eventually be used to) generated HTML documentation of the
+// This script will (eventually be used to) generate HTML documentation of the
 // Synchronet JavaScript object model
+
+const table_tag = "<table border=1 width=100%>";
+
+table_depth=0;
+
+function table_open(name)
+{
+	f.writeln(table_tag);
+	table_depth++;
+}
+
+function table_close()
+{
+	if(table_depth) {
+		f.writeln("</table>");
+		table_depth--;
+	}
+}
 
 function document_methods(name,obj)
 {
 	if(obj._method_list == undefined)
 		return;
 
+	table_close();
+	f.writeln("<br>");
+	table_open(name);
+
+	f.writeln("<caption align=left><b>" + name.italics() + " methods" + "</b></caption>");
+	f.writeln("<tr bgcolor=gray>");
+	f.writeln("<th align=left width=100>");
+	f.writeln("Name".fontcolor("white"));
+	f.writeln("<th align=left width=100>");
+	f.writeln("Returns".fontcolor("white"));
+	f.writeln("<th align=left width=200>");
+	f.writeln("Usage".fontcolor("white"));
+	f.writeln("<th align=left>");
+	f.writeln("Description".fontcolor("white"));
+
 	for(method in obj._method_list) {
-		printf("%-8s %s.%s(%s)\r\n"
+		f.write("<tr>");
+
+		f.printf("<td>%s<td>%s<td><tt>%s.%s(%s)\r\n"
+			,obj._method_list[method].name.bold()
 			,obj._method_list[method].type
 			,name
 			,obj._method_list[method].name
 			,obj._method_list[method].args
 			);
-		if(obj._method_list[method].desc != undefined)
-			print(obj._method_list[method].desc);
-		if(obj._method_list[method].alias_list != undefined)
-			print(obj._method_list[method].alias_list)
-			//for(a in obj._method_list[method].alias_list)
-				;
+		f.writeln("<td>" + obj._method_list[method].desc);
+		/**
+		f.write("<td>");
+		if(obj._method_list[method].alias != undefined)
+			f.writeln(obj._method_list[method].alias)
+		**/
 	}
 }
 
-function document_object(name,obj)
+function document_object(name, obj)
 {
 	var prop_name;
 
+	if(table_depth)
+		table_close();
+	f.writeln("<h2>"+name+" object</h2>");
+	table_open(name);
+	f.writeln("<caption align=left><b>" + name.italics() + " properties" + "</b></caption>");
+	f.writeln("<tr bgcolor=gray>");
+	f.writeln("<th align=left width=100>");
+	f.writeln("Name".fontcolor("white"));
+	f.writeln("<th align=left width=100>");
+	f.writeln("Type".fontcolor("white"));
+	f.writeln("<th align=left>");
+	f.writeln("Description".fontcolor("white"));
+
+	p=0;
 	for(prop in obj) {
 		prop_name=name + "." + prop;
-		printf("%-8s %s\r\n",typeof(obj[prop]),prop_name);
+
 		if(typeof(obj[prop])=="object") {
 			if(obj[prop].length != undefined)	// array ?
 				document_object(prop_name + "[]",obj[prop][0]);
 			else
 				document_object(prop_name,obj[prop]);
-		}
+			continue;
+		} 
+		f.write("<tr>");
+		f.writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
+		if(obj._property_desc_list!=undefined)
+			f.writeln("<td>" + obj._property_desc_list[p++] + "</td>");
 	}
 
 	document_methods(name,obj);
+	table_close();
 }
+
+// open HTML output file
+f=new File("jsdocs.html");
+if(!f.open("w")) {
+	print("!Can't open output file");
+	exit();
+}
+
+f.writeln("<html>");
+f.writeln("<head>");
+f.writeln("<title>Synchronet JavaScript Object Model Reference</title>");
+f.writeln("</head>");
+
+f.writeln("<body>");
+f.writeln("<font face=arial,helvetica>");
+
+f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
 
 document_object("client"	,client);
 document_object("system"	,system);
@@ -51,3 +124,5 @@ document_object("console"	,console);
 document_object("msg_area"	,msg_area);
 document_object("file_area"	,file_area);
 document_object("File"		,new File("bogusfile"));
+
+f.close();
