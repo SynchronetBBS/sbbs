@@ -1044,6 +1044,9 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 	int 	i;
 	static stats_t stats;
 
+	if(!StatsForm->Visible)
+		return;
+
     getstats(&cfg,0,&stats);
 
 	StatsForm->TotalLogons->Caption=AnsiString(stats.logons);
