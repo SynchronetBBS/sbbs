@@ -2559,9 +2559,10 @@ void http_session_thread(void* arg)
 				session.req.ld=malloc(sizeof(struct log_data));
 			else
 				session.req.ld=NULL;
-			if(session.req.ld==NULL)
+			if(session.req.ld==NULL) {
 				if(startup->logfile_base[0])
 					lprintf(LOG_ERR,"Cannot allocate memory for log data!");
+			}
 			else {
 				memset(session.req.ld,0,sizeof(struct log_data));
 				session.req.ld->hostname=strdup(session.host_name);
@@ -2700,10 +2701,8 @@ void http_logging_thread(void* arg)
 		SAFECOPY(newfilename,base);
 		strftime(strchr(newfilename,0),15,"%G-%m-%d.log",&ld->completed);
 		if(strcmp(newfilename,filename)) {
-			if(logfile!=NULL) {
+			if(logfile!=NULL)
 				fclose(logfile);
-				logfile=NULL;
-			}
 			SAFECOPY(filename,newfilename);
 			logfile=fopen(filename,"ab");
 			lprintf(LOG_INFO,"http logfile is now: %s",filename);
