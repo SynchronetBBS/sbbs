@@ -1564,6 +1564,19 @@ int main(int argc, char** argv)
 	
 		else {
 			char str[256];
+			struct passwd *pwent;
+
+			pwent=getpwnam(new_uid_name);
+			if(pwent != NULL) {
+				sprintf(str,"USER=%s",pwent->pw_name);
+				putenv(str);
+				sprintf(str,"HOME=%s",pwent->pw_dir);
+				putenv(str);
+			}
+			if(new_gid_name[0]) {
+				sprintf(str,"GROUP=%s",new_gid_name);
+				putenv(str);
+			}
 			sprintf(str,"Successfully changed user_id to %s", new_uid_name);
 			bbs_lputs(NULL,LOG_INFO,str);
 
