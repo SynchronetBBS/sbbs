@@ -235,8 +235,8 @@ int main(int argc, char** argv)
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
 	_beginthread(bbs_thread,0,&bbs_startup);
-	_beginthread(ftp_thread,0,&ftp_startup);
-//	_beginthread(mail_thread,0,&mail_startup);
+	_beginthread(ftp_server,0,&ftp_startup);
+//	_beginthread(mail_server,0,&mail_startup);
 
 	while(1) {
 		if(kbhit())
