@@ -124,6 +124,8 @@ __published:
 	TButton *DNSBLExemptionsButton;
 	TCheckBox *DebugRXCheckBox;
 	TCheckBox *BLDebugCheckBox;
+	TLabel *MaxMsgSizeLabel;
+	TEdit *MaxMsgSizeEdit;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);

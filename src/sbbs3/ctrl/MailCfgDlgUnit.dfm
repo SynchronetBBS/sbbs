@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = DNSBLTabSheet
-    TabIndex = 5
+    ActivePage = SMTPTabSheet
+    TabIndex = 1
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -207,7 +207,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object DefaultUserLabel: TLabel
         Left = 9
-        Top = 76
+        Top = 108
         Width = 104
         Height = 24
         AutoSize = False
@@ -221,6 +221,14 @@ object MailCfgDlg: TMailCfgDlg
         AutoSize = False
         Caption = 'Max Recipients'
       end
+      object MaxMsgSizeLabel: TLabel
+        Left = 9
+        Top = 76
+        Width = 104
+        Height = 24
+        AutoSize = False
+        Caption = 'Max Msg Size'
+      end
       object SMTPPortEdit: TEdit
         Left = 113
         Top = 12
@@ -233,7 +241,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object UserNumberCheckBox: TCheckBox
         Left = 9
-        Top = 108
+        Top = 140
         Width = 288
         Height = 24
         Hint = 
@@ -257,7 +265,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object DefaultUserEdit: TEdit
         Left = 113
-        Top = 76
+        Top = 108
         Width = 185
         Height = 24
         Hint = 
@@ -269,7 +277,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object AllowRelayCheckBox: TCheckBox
         Left = 9
-        Top = 140
+        Top = 172
         Width = 288
         Height = 24
         Hint = 'Allow mail to be relayed for authenticated users'
@@ -287,6 +295,16 @@ object MailCfgDlg: TMailCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
+      end
+      object MaxMsgSizeEdit: TEdit
+        Left = 113
+        Top = 76
+        Width = 80
+        Height = 24
+        Hint = 'Maximum received message size (in bytes)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 6
       end
     end
     object POP3TabSheet: TTabSheet

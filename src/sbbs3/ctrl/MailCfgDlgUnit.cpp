@@ -89,6 +89,7 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     MaxClientsEdit->Text=AnsiString(MainForm->mail_startup.max_clients);
     MaxInactivityEdit->Text=AnsiString(MainForm->mail_startup.max_inactivity);
 	MaxRecipientsEdit->Text=AnsiString(MainForm->mail_startup.max_recipients);
+	MaxMsgSizeEdit->Text=AnsiString(MainForm->mail_startup.max_msg_size);
     LinesPerYieldEdit->Text=AnsiString(MainForm->mail_startup.lines_per_yield);
 
     AutoStartCheckBox->Checked=MainForm->MailAutoStart;
@@ -180,6 +181,8 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->mail_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
     MainForm->mail_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(120);
     MainForm->mail_startup.max_recipients=MaxRecipientsEdit->Text.ToIntDef(100);
+    MainForm->mail_startup.max_msg_size
+    	=MaxMsgSizeEdit->Text.ToIntDef(MainForm->mail_startup.max_msg_size);
     MainForm->mail_startup.max_delivery_attempts
         =DeliveryAttemptsEdit->Text.ToIntDef(10);
     MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(300);
