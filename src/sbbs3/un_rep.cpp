@@ -335,17 +335,17 @@ bool sbbs_t::unpack_rep(char* repfile)
 					memcpy((char *)block+21,str,25); } }	/* change from sysop */
 															/* to user name */
 
-	#if 0	/* TWIT FILTER */
+			/* TWIT FILTER */
+			sprintf(fname,"%stwitlist.cfg",cfg.ctrl_dir);
 			sprintf(str,"%25.25s",block+46);  /* From user */
 			truncsp(str);
 
-			if(!stricmp(str,"Lee Matherne")
-				|| !stricmp(str,"Big Joe")
-				) {
-				bprintf(text[Posted],cfg.grp[cfg.sub[n]->grp]->sname
-					,cfg.sub[n]->lname);
-				continue; }
-	#endif
+			if(findstr(str,fname)) {
+				sprintf(str,"Filtering post from twit (%s) on %s %s"
+					,str,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
+				logline("P!",str);
+				continue; 
+			}
 
 			if(n!=lastsub) {
 				if(lastsub!=INVALID_SUB)
