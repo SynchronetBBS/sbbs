@@ -688,13 +688,6 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
         Application->Terminate();
     }
 
-	if(putenv("TZ=UCT0")) {
-    	Application->MessageBox("Error settings timezone"
-        	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
-        Application->Terminate();
-    }
-	tzset();
-
     // Read Registry keys
 	TRegistry* Registry=new TRegistry;
     if(!Registry->OpenKey(REG_KEY,true)) {
@@ -1577,6 +1570,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
         return;
+    }
+
+    if(!(cfg.sys_misc&SM_LOCAL_TZ)) {
+    	if(putenv("TZ=UTC0")) {
+        	Application->MessageBox("Error settings timezone"
+            	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+            Application->Terminate();
+        }
+    	tzset();
     }
 
     if(FirstRun) {
