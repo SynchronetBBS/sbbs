@@ -775,7 +775,7 @@ extern "C" {
 	/* str_util.c */
 	DLLEXPORT void		DLLCALL truncsp(char *str);		/* Truncates white spaces off end of str */
 	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
-	DLLEXPORT BOOL		DLLCALL findstr(scfg_t* cfg, char *insearch, char *fname);
+	DLLEXPORT BOOL		DLLCALL findstr(char *insearch, char *fname);
 	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
 	DLLEXPORT char *	DLLCALL strip_exascii(char *str);
 	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);

@@ -111,7 +111,7 @@ char* DLLCALL prep_file_desc(char *str)
 /****************************************************************************/
 /* Pattern matching string search of 'insearchof' in 'fname'.				*/
 /****************************************************************************/
-BOOL DLLCALL findstr(scfg_t* cfg, char* insearchof, char* fname)
+BOOL DLLCALL findstr(char* insearchof, char* fname)
 {
 	char*	p;
 	char	str[128];
@@ -188,7 +188,7 @@ BOOL DLLCALL trashcan(scfg_t* cfg, char* insearchof, char* name)
 	char fname[MAX_PATH+1];
 
 	sprintf(fname,"%s%s.can",cfg->text_dir,name);
-	return(findstr(cfg,insearchof,fname));
+	return(findstr(insearchof,fname));
 }
 
 /****************************************************************************/
