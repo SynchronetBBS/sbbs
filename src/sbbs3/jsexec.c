@@ -59,7 +59,6 @@ FILE*		statfp;
 char		revision[16];
 BOOL		pause_on_exit=FALSE;
 BOOL		pause_on_error=FALSE;
-BOOL		loop=FALSE;
 BOOL		terminated=FALSE;
 BOOL		terminate_immediately=FALSE;
 
@@ -405,17 +404,8 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	if(branch.gc_interval && (branch.counter%branch.gc_interval)==0)
 		JS_MaybeGC(cx), branch.gc_attempts++;
 
-	if(terminated) {
-	
-		if(terminate_immediately)
-			return(JS_FALSE);
-
-		if(JS_GetProperty(js_cx, js_glob, "server", &val) && val!=JSVAL_VOID)
-			obj=JSVAL_TO_OBJECT(val);
-
-		val=JSVAL_TRUE;
-		JS_SetProperty(js_cx, obj, "terminated", &val);
-	}
+	if(terminated && terminate_immediately)
+		return(JS_FALSE);
 
     return(JS_TRUE);
 }
@@ -649,6 +639,7 @@ int main(int argc, char **argv, char** environ)
 	char*	p;
 	int		argn;
 	long	result;
+	BOOL	loop=FALSE;
 
 	confp=stdout;
 	errfp=stderr;
