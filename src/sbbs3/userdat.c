@@ -1417,6 +1417,10 @@ char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name)
 {
 	int i;
 
+	if(strchr(name,'@')!=NULL) { /* Avoid double-@ */
+		strcpy(addr,name);
+		return(addr);
+	}
 	if(strchr(name,'.') && strchr(name,' '))
 		sprintf(addr,"\"%s\"@",name);
 	else {
