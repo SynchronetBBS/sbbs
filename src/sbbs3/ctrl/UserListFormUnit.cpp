@@ -30,7 +30,8 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
 
     last=lastuser(&MainForm->cfg);
     ListView->AllocBy=last;
-    
+
+    ListView->Items->BeginUpdate();
     for(i=0;i<last;i++) {
         user.number=i+1;
         if(getuserdat(&MainForm->cfg,&user)!=0)
@@ -43,7 +44,10 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
         Item->SubItems->Add(user.name);
         Item->SubItems->Add(user.level);
         Item->SubItems->Add((int)getage(&MainForm->cfg,user.birth));
-        sprintf(str,"%c",user.sex);
+        if(user.sex<=' ' || user.sex&0x80)  /* garbage? */
+            str[0]=0;
+        else
+            sprintf(str,"%c",user.sex);
         Item->SubItems->Add(str);
         Item->SubItems->Add(user.location);
         Item->SubItems->Add(user.modem);
@@ -55,7 +59,8 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
         Item->SubItems->Add(unixtodstr(&MainForm->cfg,user.firston,str));
         Item->SubItems->Add(unixtodstr(&MainForm->cfg,user.laston,str));
     }
-
+    ListView->Items->EndUpdate();
+    
     Screen->Cursor=crDefault;
 }
 //---------------------------------------------------------------------------
