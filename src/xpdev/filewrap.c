@@ -200,7 +200,7 @@ int DLLCALL sopen(const char *fn, int access, int share, ...)
 }
 #endif /* !QNX */
 
-#elif defined _MSC_VER || defined __MINGW32__
+#elif defined(_MSC_VER) || defined(__MINGW32__) || defined(__DMC__)
 
 #include <io.h>				/* tell */
 #include <stdio.h>			/* SEEK_SET */
