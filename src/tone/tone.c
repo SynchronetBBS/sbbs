@@ -68,11 +68,13 @@ void play(char *freq, char *dur)
 	if(dur==NULL)
 		dur="0";
 
+	if(freq==NULL)
+		freq="0";
+
 	d=atoi(dur);
 	if(isdigit(*freq))
 		f=atoi(freq);
-  
-	else
+  	else
 		switch(toupper(*freq)) {
 			case 'O':               /* default octave */
 				if(isdigit(*dur))
