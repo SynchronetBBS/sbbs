@@ -548,18 +548,56 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 
 		case BBS_PROP_CURGRP:
+			if(p!=NULL) {	/* set by name */
+				uint i;
+				for(i=0;i<sbbs->usrgrps;i++)
+					if(!stricmp(sbbs->cfg.grp[sbbs->usrgrp[i]]->sname,p))
+						break;
+				if(i<sbbs->usrgrps)
+					sbbs->curgrp=i;
+				break;
+			}
 			if((uint)val<sbbs->cfg.total_grps && (uint)val<sbbs->usrgrps)
 				sbbs->curgrp=val;
 			break;
 		case BBS_PROP_CURSUB:
+			if(p!=NULL) {	/* set by code */
+				for(uint i=0;i<sbbs->usrgrps;i++)
+					for(uint j=0;j<sbbs->usrsubs[i];j++)
+						if(!stricmp(sbbs->cfg.sub[sbbs->usrsub[i][j]]->code,p)) {
+							sbbs->curgrp=i;
+							sbbs->cursub[i]=j;
+							break; 
+						}
+				break;
+			}
 			if(sbbs->curgrp<sbbs->cfg.total_grps && (uint)val<sbbs->usrsubs[sbbs->curgrp])
 				sbbs->cursub[sbbs->curgrp]=val;
 			break;
 		case BBS_PROP_CURLIB:
+			if(p!=NULL) {	/* set by name */
+				uint i;
+				for(i=0;i<sbbs->usrlibs;i++)
+					if(!stricmp(sbbs->cfg.lib[sbbs->usrlib[i]]->sname,p))
+						break;
+				if(i<sbbs->usrlibs)
+					sbbs->curlib=i;
+				break;
+			}
 			if((uint)val<sbbs->cfg.total_libs && (uint)val<sbbs->usrlibs)
 				sbbs->curlib=val;
 			break;
 		case BBS_PROP_CURDIR:
+			if(p!=NULL) {	/* set by code */
+				for(uint i=0;i<sbbs->usrlibs;i++)
+					for(uint j=0;j<sbbs->usrdirs[i];j++)
+						if(!stricmp(sbbs->cfg.dir[sbbs->usrdir[i][j]]->code,p)) {
+							sbbs->curlib=i;
+							sbbs->curdir[i]=j;
+							break; 
+						}
+				break;
+			}
 			if(sbbs->curlib<sbbs->cfg.total_libs && (uint)val<sbbs->usrdirs[sbbs->curlib])
 				sbbs->curdir[sbbs->curlib]=val;
 			break;
@@ -1206,6 +1244,20 @@ js_text_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	sbbs->text_sec();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_qwk_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->qwk_sec();
 
 	*rval = JSVAL_VOID;
 	return(JS_TRUE);
@@ -2011,6 +2063,87 @@ js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 }
 
 static JSBool
+js_postmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		mode=0;
+	uint		subnum;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(JSVAL_IS_STRING(argv[0])) {
+		char* p=JS_GetStringBytes(JS_ValueToString(cx,argv[0]));
+		for(subnum=0;subnum<sbbs->cfg.total_subs;subnum++)
+			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
+				break;
+	} else
+		subnum=JSVAL_TO_INT(argv[0]);
+
+	if(subnum>=sbbs->cfg.total_subs) {	// invalid sub-board
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if(argc>1 && JSVAL_IS_INT(argv[1]))
+		mode=JSVAL_TO_INT(argv[1]);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->postmsg(subnum,NULL,mode));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_msgscan_cfg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		mode=SUB_CFG_NSCAN;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc && JSVAL_IS_INT(argv[0]))
+		mode=JSVAL_TO_INT(argv[0]);
+
+	sbbs->new_scan_cfg(mode);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_msgscan_ptrs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->new_scan_ptr_cfg();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_msgscan_reinit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	for(uint i=0;i<sbbs->cfg.total_subs;i++) {
+		sbbs->subscan[i].ptr=sbbs->subscan[i].sav_ptr;
+		sbbs->subscan[i].last=sbbs->subscan[i].sav_last; 
+	}
+	sbbs->bputs(sbbs->text[MsgPtrsInitialized]);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
 js_scansubs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	long		mode=SCAN_NEW;
@@ -2063,6 +2196,41 @@ js_scandirs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		find="";
+	long		mode=0;
+	uint		subnum;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(JSVAL_IS_STRING(argv[0])) {
+		char* p=JS_GetStringBytes(JS_ValueToString(cx,argv[0]));
+		for(subnum=0;subnum<sbbs->cfg.total_subs;subnum++)
+			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
+				break;
+	} else
+		subnum=JSVAL_TO_INT(argv[0]);
+
+	if(subnum>=sbbs->cfg.total_subs) {	// invalid sub-board
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	for(uintN i=1;i<argc;i++) {
+		if(JSVAL_IS_INT(argv[i]))
+			mode=JSVAL_TO_INT(argv[i]);
+		else if(JSVAL_IS_STRING(argv[i]))
+			find=JS_GetStringBytes(JS_ValueToString(cx,argv[i]));
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->scanposts(subnum,mode,find)==0);
+	return(JS_TRUE);
+}
+
+static JSBool
 js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	time_t		t;
@@ -2100,6 +2268,7 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"nodesync",		js_nodesync,		0},		// synchronize node with system
 	{"auto_msg",		js_automsg,			0},		// edit/create auto-message
 	{"time_bank",		js_time_bank,		0},		// time bank
+	{"qwk_sec",			js_qwk_sec,			0},		// QWK section
 	{"text_sec",		js_text_sec,		0},		// text section
 	{"xtrn_sec",		js_xtrn_sec,		0},		// external programs section
 	{"xfer_policy",		js_xfer_policy,		0},		// display file transfer policy
@@ -2127,8 +2296,13 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"resort_dir",		js_resort_dir,		1},		// re-sort file directory
 	{"listfiles",		js_listfiles,		1},		// listfiles(dirnum,filespec,mode)
 	{"listfileinfo",	js_listfileinfo,	1},		// listfileinfo(dirnum,filespec,mode)
+	{"postmsg",			js_postmsg,			1},		// postmsg(subnum/code, mode)
+	{"msgscan_cfg",		js_msgscan_cfg,		0},		// 
+	{"msgscan_ptrs",	js_msgscan_ptrs,	0},		// 
+	{"msgscan_reinit",	js_msgscan_reinit,	0},		// re-init new-scan ptrs
 	{"scan_subs",		js_scansubs,		0},		// scansubs(mode,all)
 	{"scan_dirs",		js_scandirs,		0},		// scandirs(mode,all)
+	{"scan_posts",		js_scanposts,		1},		// scanposts(subnum/code, mode, findstr)
 	/* menuing */
 	{"menu",			js_menu,			1},		// show menu
 	{"log_key",			js_logkey,			1},		// log key to node.log (comma optional)
