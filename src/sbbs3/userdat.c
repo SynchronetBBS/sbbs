@@ -1718,7 +1718,7 @@ char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 			while(*np && *np<=' ') np++;
 			truncsp(np);
 			if(*np=='*') 
-				sprintf(buf,"%.*s%s",namelen-cmplen,name,np+1);
+				sprintf(buf,"%.*s%s",(int)(namelen-cmplen),name,np+1);
 			else
 				strcpy(buf,np);
 			p=buf;

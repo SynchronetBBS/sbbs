@@ -564,7 +564,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			mv(str,tmp2,1); }
 		sprintf(str,"%sQWK/BLT-*",cfg.text_dir);
 		glob(str,0,NULL,&g);
-		for(i=0;i<g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
+		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
 			padfname(fname,str);
 			if(isdigit(str[4]) && isdigit(str[9])) {

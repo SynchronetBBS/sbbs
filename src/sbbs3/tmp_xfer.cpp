@@ -218,7 +218,7 @@ void sbbs_t::temp_xfer()
 				CRLF;
 				sprintf(tmp2,"%s%s",cfg.temp_dir,str);
 				glob(tmp2,0,NULL,&g);
-				for(i=0;i<g.gl_pathc && !msgabort();i++) {
+				for(i=0;i<(uint)g.gl_pathc && !msgabort();i++) {
 					if(isdir(g.gl_pathv[i]))
 						continue;
 					t=fdate(g.gl_pathv[i]);
