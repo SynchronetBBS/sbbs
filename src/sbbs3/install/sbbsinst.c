@@ -681,6 +681,7 @@ get_distlist(void)
 		dist[r]->type=LOCAL_FILE;
 		dist[r]->servers=server;
 		dist[r]->files=file;
+		strcpy(dist[r]->make_opts,"NOCVS=1");
 		r++;
 		strcpy(file[f++],DEFAULT_DISTFILE);
 		strcpy(file[f++],str);
