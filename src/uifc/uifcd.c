@@ -49,10 +49,10 @@ static void help();
 /* API routines */
 static void uifcbail(void);
 static int uscrn(char *str);
-static int ulist(int mode, char left, int top, char width, int *dflt, int *bar
+static int ulist(int mode, int left, int top, int width, int *dflt, int *bar
 					,char *title, char **option);
-static int uinput(int imode, char left, char top, char *prompt, char *str
-					,char len ,int kmode);
+static int uinput(int imode, int left, int top, char *prompt, char *str
+					,int len ,int kmode);
 static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
