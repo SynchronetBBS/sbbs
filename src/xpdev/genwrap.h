@@ -160,7 +160,14 @@ extern "C" {
 
 #elif defined(__unix__)
 
+		/* usleep() apparently doesn't work right (100% CPU utilization) */
+#if 0	/* with multiple clients/threads on *BSD */
 	#define SLEEP(x)		usleep(x*1000)
+#else
+	#define SLEEP(x)		({	int y=x; struct timeval tv; \
+								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
+								select(0,NULL,NULL,NULL,&tv); })
+#endif
 	#define BEEP(freq,dur)	unix_beep(freq,dur)
 	DLLEXPORT void	DLLCALL	unix_beep(int freq, int dur);
 
