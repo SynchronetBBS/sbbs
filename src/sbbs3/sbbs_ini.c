@@ -181,12 +181,12 @@ void sbbs_read_ini(
 	}
 													
 	/***********************************************************************/
+	section = "BBS";
+
+	if(run_bbs!=NULL)
+		*run_bbs=iniReadBool(fp,section,"AutoStart",TRUE);
+
 	if(bbs!=NULL) {
-
-		section = "BBS";
-
-		if(run_bbs!=NULL)
-			*run_bbs=iniReadBool(fp,section,"AutoStart",TRUE);
 
 		bbs->telnet_interface
 			=iniReadIpAddress(fp,section,"TelnetInterface",global->interface_addr);
@@ -269,12 +269,12 @@ void sbbs_read_ini(
 	}
 
 	/***********************************************************************/
+	section = "FTP";
+
+	if(run_ftp!=NULL)
+		*run_ftp=iniReadBool(fp,section,"AutoStart",TRUE);
+
 	if(ftp!=NULL) {
-
-		section = "FTP";
-
-		if(run_ftp!=NULL)
-			*run_ftp=iniReadBool(fp,section,"AutoStart",TRUE);
 
 		ftp->interface_addr
 			=iniReadIpAddress(fp,section,strInterface,global->interface_addr);
@@ -326,12 +326,12 @@ void sbbs_read_ini(
 	}
 
 	/***********************************************************************/
+	section = "Mail";
+
+	if(run_mail!=NULL)
+		*run_mail=iniReadBool(fp,section,"AutoStart",TRUE);
+
 	if(mail!=NULL) {
-
-		section = "Mail";
-
-		if(run_mail!=NULL)
-			*run_mail=iniReadBool(fp,section,"AutoStart",TRUE);
 
 		mail->interface_addr
 			=iniReadIpAddress(fp,section,strInterface,global->interface_addr);
@@ -406,12 +406,12 @@ void sbbs_read_ini(
 	}
 
 	/***********************************************************************/
+	section = "Services";
+
+	if(run_services!=NULL)
+		*run_services=iniReadBool(fp,section,"AutoStart",TRUE);
+
 	if(services!=NULL) {
-
-		section = "Services";
-
-		if(run_services!=NULL)
-			*run_services=iniReadBool(fp,section,"AutoStart",TRUE);
 
 		services->interface_addr
 			=iniReadIpAddress(fp,section,strInterface,global->interface_addr);
@@ -453,12 +453,12 @@ void sbbs_read_ini(
 	}
 
 	/***********************************************************************/
+	section = "Web";
+
+	if(run_web!=NULL)
+		*run_web=iniReadBool(fp,section,"AutoStart",FALSE);
+
 	if(web!=NULL) {
-
-		section = "Web";
-
-		if(run_web!=NULL)
-			*run_web=iniReadBool(fp,section,"AutoStart",FALSE);
 
 		web->interface_addr
 			=iniReadIpAddress(fp,section,strInterface,global->interface_addr);
