@@ -1195,7 +1195,6 @@ static int pipereadline(int pipe, char *buf, size_t length)
 			return(-1);
 
 		ret=read(pipe, &ch, 1);
-
 		if(ret==1)  {
 			start=time(NULL);
 
@@ -1962,12 +1961,10 @@ static BOOL exec_cgi(http_session_t *session)
 		if(post_offset < session->req.post_len)
 			FD_SET(in_pipe[1],&write_set);
 
-		if(!done_reading && (select(high_fd+1,&read_set,&write_set,NULL,&tv)>0))  {
+		if(select(high_fd+1,&read_set,&write_set,NULL,&tv)>0)  {
 			if(FD_ISSET(session->socket,&read_set))  {
 				if(recv(session->socket,&ch,1,MSG_PEEK) < 1) /* Is there no data waiting? */
-				{
 					done_reading=TRUE;
-				}
 			}
 			if(FD_ISSET(in_pipe[1],&write_set))  {
 				if(post_offset < session->req.post_len)  {
@@ -1975,9 +1972,7 @@ static BOOL exec_cgi(http_session_t *session)
 						session->req.post_data+post_offset,
 						session->req.post_len-post_offset);
 					post_offset += i;
-					if(i<0)
-						done_reading=TRUE;
-					else if(post_offset>=session->req.post_len)
+					if(post_offset>=session->req.post_len || done_reading)
 						close(in_pipe[1]);
 					else if(i!=post_offset)
 						start=time(NULL);
@@ -2006,7 +2001,7 @@ static BOOL exec_cgi(http_session_t *session)
 						done_reading=TRUE;
 						got_valid_headers=FALSE;
 					}
-					else if(i>0)
+					else
 						start=time(NULL);
 
 					if(!done_parsing_headers && *buf)  {
@@ -2058,33 +2053,31 @@ static BOOL exec_cgi(http_session_t *session)
 				buf[i]=0;
 				if(i>0)
 					start=time(NULL);
-				if(i<0)
-					done_reading=TRUE;
 			}
 		}
 		else  {
 			if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
-				/* timeout */
 				lprintf(LOG_ERR,"%04d CGI Script %s Timed out",session->socket,cmdline);
-				if(!done_wait)  {
-					kill(child,SIGTERM);
-					mswait(1000);
-					done_wait = (waitpid(child,&status,WNOHANG)==child);
-					if(!done_wait)  {
-						kill(child,SIGKILL);
-						done_wait = (waitpid(child,&status,0)==child);
-					}
-				}
+				done_reading=TRUE;
+				start=0;
 			}
 		}
-
-		if(!done_wait)
-			done_wait = (waitpid(child,&status,WNOHANG)==child);
-		if(done_wait)
-			done_reading=TRUE;
 	}
+
+	/* Drain STDERR */	
+	tv.tv_sec=1;
+	tv.tv_usec=0;
+	FD_ZERO(&read_set);
+	FD_SET(err_pipe[0],&read_set);
+	if(select(high_fd+1,&read_set,&write_set,NULL,&tv)>0)
+	if(FD_ISSET(err_pipe[0],&read_set)) {
+		while(pipereadline(err_pipe[0],buf,sizeof(buf))!=-1)
+			lprintf(LOG_ERR,"%s",buf);
+	}
+
 	if(!done_wait)  {
-		lprintf(LOG_NOTICE,"%04d CGI Script %s still alive on client exit",session->socket,cmdline);
+		if(start)
+			lprintf(LOG_NOTICE,"%04d CGI Script %s still alive on client exit",session->socket,cmdline);
 		kill(child,SIGTERM);
 		mswait(1000);
 		done_wait = (waitpid(child,&status,WNOHANG)==child);
@@ -2097,8 +2090,19 @@ static BOOL exec_cgi(http_session_t *session)
 	close(in_pipe[1]);		/* close write-end of pipe */
 	close(out_pipe[0]);		/* close read-end of pipe */
 	close(err_pipe[0]);		/* close read-end of pipe */
-	if(!done_parsing_headers || !got_valid_headers)
+	if(!got_valid_headers) {
+		lprintf(LOG_ERR,"%04d CGI Script %s did not generate valid headers",session->socket,cmdline);
 		return(FALSE);
+	}
+
+	if(!done_parsing_headers) {
+		lprintf(LOG_ERR,"%04d CGI Script %s did not send data header termination",session->socket,cmdline);
+		return(FALSE);
+	}
+
+	if(!done_parsing_headers || !got_valid_headers) {
+		return(FALSE);
+	}
 	return(TRUE);
 #else
 	/* Win32 exec_cgi() */
