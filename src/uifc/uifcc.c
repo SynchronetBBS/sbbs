@@ -6,14 +6,14 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
- * This program is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU General Public License				*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
- * See the GNU General Public License for more details: gpl.txt or			*
- * http://www.fsf.org/copyleft/gpl.html										*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
  * Anonymous FTP access to the most recent released source is available at	*
  * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
@@ -49,7 +49,7 @@
 
 void mswait(int msec)
 {
-DosSleep(msec ? msec : 1);
+	DosSleep(msec ? msec : 1);
 }
 
 #elif defined(_WIN32)
@@ -433,7 +433,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		for(i=0;i<opts;i++) {
 			truncsp(option[i]);
 			if((j=strlen(option[i])+5)>width)
-				width=j; } }
+				width=j; 
+		} 
+	}
 	if(width>(SCRN_RIGHT+1)-SCRN_LEFT)
 		width=(SCRN_RIGHT+1)-SCRN_LEFT;
 	if(mode&WIN_L2R)
@@ -460,14 +462,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
-				return(-1); }
+				return(-1); 
+			}
 			gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 				,SCRN_TOP+top+height,sav[api->savnum].buf);
 			sav[api->savnum].left=SCRN_LEFT+left;
 			sav[api->savnum].top=SCRN_TOP+top;
 			sav[api->savnum].right=SCRN_LEFT+left+width+1;
 			sav[api->savnum].bot=SCRN_TOP+top+height;
-			api->savdepth++; }
+			api->savdepth++; 
+		}
 		else if(mode&WIN_SAV
 			&& (sav[api->savnum].left!=SCRN_LEFT+left
 			|| sav[api->savnum].top!=SCRN_TOP+top
@@ -479,13 +483,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
-				return(-1); }
+				return(-1); 
+			}
 			gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 				,SCRN_TOP+top+height,sav[api->savnum].buf);	  /* save again */
 			sav[api->savnum].left=SCRN_LEFT+left;
 			sav[api->savnum].top=SCRN_TOP+top;
 			sav[api->savnum].right=SCRN_LEFT+left+width+1;
-			sav[api->savnum].bot=SCRN_TOP+top+height; } }
+			sav[api->savnum].bot=SCRN_TOP+top+height; 
+		} 
+	}
 
 
 	#ifndef __FLAT__
@@ -507,7 +514,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					,blk_scrn);
 			if(SCRN_LEFT+left+width<=SCRN_RIGHT)
 				puttext(SCRN_LEFT+left+width,SCRN_TOP+top,SCRN_RIGHT+2
-					,SCRN_TOP+height+top,blk_scrn); }
+					,SCRN_TOP+height+top,blk_scrn); 
+		}
 		ptr=win;
 		*(ptr++)='É';
 		*(ptr++)=hclr|(bclr<<4);
@@ -520,7 +528,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			i=0;
 		for(;i<width-2;i++) {
 			*(ptr++)='Í';
-			*(ptr++)=hclr|(bclr<<4); }
+			*(ptr++)=hclr|(bclr<<4); 
+		}
 		*(ptr++)='»';
 		*(ptr++)=hclr|(bclr<<4);
 		*(ptr++)='º';
@@ -529,20 +538,24 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		b=(width-a-1)/2;
 		for(i=0;i<b;i++) {
 			*(ptr++)=' ';
-			*(ptr++)=hclr|(bclr<<4); }
+			*(ptr++)=hclr|(bclr<<4); 
+		}
 		for(i=0;i<a;i++) {
 			*(ptr++)=title[i];
-			*(ptr++)=hclr|(bclr<<4); }
+			*(ptr++)=hclr|(bclr<<4); 
+		}
 		for(i=0;i<width-(a+b)-2;i++) {
 			*(ptr++)=' ';
-			*(ptr++)=hclr|(bclr<<4); }
+			*(ptr++)=hclr|(bclr<<4); 
+		}
 		*(ptr++)='º';
 		*(ptr++)=hclr|(bclr<<4);
 		*(ptr++)='Ì';
 		*(ptr++)=hclr|(bclr<<4);
 		for(i=0;i<width-2;i++) {
 			*(ptr++)='Í';
-			*(ptr++)=hclr|(bclr<<4); }
+			*(ptr++)=hclr|(bclr<<4); 
+		}
 		*(ptr++)='¹';
 		*(ptr++)=hclr|(bclr<<4);
 
@@ -552,7 +565,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(!bar) {
 			if((*cur)>height-5)
 				(*cur)=height-5;
-			i=0; }
+			i=0; 
+		}
 		else {
 			if((*bar)>=opts)
 				(*bar)=opts-1;
@@ -595,20 +609,24 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					b=width-4;
 				for(c=0;c<b;c++) {
 					*(ptr++)=option[i][c];
-					*(ptr++)=a; }
+					*(ptr++)=a; 
+				}
 				while(c<width-4) {
 					*(ptr++)=' ';
 					*(ptr++)=a;
-					c++; }
+					c++; 
+				}
 				*(ptr++)='º';
 				*(ptr++)=hclr|(bclr<<4);
 				i++;
-				j++; }
+				j++; 
+			}
 			*(ptr++)='È';
 			*(ptr++)=hclr|(bclr<<4);
 			for(i=0;i<width-2;i++) {
 				*(ptr++)='Í';
-				*(ptr++)=hclr|(bclr<<4); }
+				*(ptr++)=hclr|(bclr<<4); 
+			}
 			*(ptr++)='¼';
 			*(ptr++)=hclr|(bclr<<4);
 			puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
@@ -622,13 +640,15 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 				textattr(lclr|(bclr<<4));
 				putch(31);	   /* put down arrow */
-				textattr(hclr|(bclr<<4)); }
+				textattr(hclr|(bclr<<4)); 
+			}
 
 			if(bar && (*bar)!=(*cur)) {
 				gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 				textattr(lclr|(bclr<<4));
 				putch(30);	   /* put the up arrow */
-				textattr(hclr|(bclr<<4)); }
+				textattr(hclr|(bclr<<4)); 
+			}
 
 			if(bclr==BLUE) {
 				gettext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
@@ -642,7 +662,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				for(i=1;i<width*2;i+=2)
 					shade[i]=DARKGRAY;
 				puttext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
-					,SCRN_TOP+top+height,shade); }
+					,SCRN_TOP+top+height,shade); 
+			}
 		showmouse();
 	}
 	else {	/* Is a redraw */
@@ -663,15 +684,18 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				b=width-4;
 			for(c=0;c<b;c++) {
 				*(ptr++)=option[i][c];
-				*(ptr++)=a; }
+				*(ptr++)=a; 
+			}
 			while(c<width-4) {
 				*(ptr++)=' ';
 				*(ptr++)=a;
-				c++; }
+				c++; 
+			}
 			i++;
 			j++; 
 			puttext(SCRN_LEFT+left+3,SCRN_TOP+top+j,SCRN_LEFT+left+width-2
-				,SCRN_TOP+top+j,win); }
+				,SCRN_TOP+top+j,win); 
+		}
 		if(bar)
 			y=top+3+(*bar);
 		else
@@ -725,7 +749,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								(*bar)=0;
 							y=top+3;
 							showmouse();
-							break; }
+							break; 
+						}
 						hidemouse();
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
@@ -765,7 +790,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								(*bar)=height-5;
 							y=top+height-2;
 							showmouse();
-							break; }
+							break; 
+						}
 						hidemouse();
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
@@ -778,29 +804,34 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y=top+height-2;
 							(*cur)=opts-1;
 							if(bar)
-								(*bar)=height-5; }
+								(*bar)=height-5; 
+						}
 						else {
 							(*cur)--;
 							y--;
 							if(bar && *bar)
-								(*bar)--; }
+								(*bar)--; 
+						}
 						if(y<top+3) {	/* scroll */
 							hidemouse();
 							if(!(*cur)) {
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 								textattr(lclr|(bclr<<4));
-								putch(' '); }  /* delete the up arrow */
+								putch(' '); /* delete the up arrow */
+							}  
 							if((*cur)+height-4==opts-1) {
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 								textattr(lclr|(bclr<<4));
-								putch(31); }   /* put the dn arrow */
+								putch(31);	/* put the dn arrow */
+							}
 							y++;
 							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
 								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,1);
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
 								,hfclr|(hbclr<<4)
 								,"%-*.*s",width-4,width-4,option[*cur]);
-							showmouse(); }
+							showmouse(); 
+						}
 						else {
 							hidemouse();
 							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
@@ -809,7 +840,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								line[i]=hfclr|(hbclr<<4);
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-							showmouse(); }
+							showmouse(); 
+						}
 						break;
 #if 0
 					case KEY_PPAGE;	/* PgUp */
@@ -864,7 +896,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(bar)
 								(*bar)=height-5;
 							showmouse();
-							break; }
+							break; 
+						}
 						hidemouse();
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
@@ -906,7 +939,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(bar)
 								(*bar)=0;
 							showmouse();
-							break; }
+							break; 
+						}
 						hidemouse();
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
@@ -920,23 +954,29 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							y=top+3;
 							if(bar) {
 								/* gotoxy(1,1); cprintf("bar=%08lX ",bar); */
-								(*bar)=0; } }
+								(*bar)=0; 
+							} 
+						}
 						else {
 							(*cur)++;
 							y++;
 							if(bar && (*bar)<height-5) {
 								/* gotoxy(1,1); cprintf("bar=%08lX ",bar); */
-								(*bar)++; } }
+								(*bar)++; 
+							} 
+						}
 						if(y==top+height-1) {	/* scroll */
 							hidemouse();
 							if(*cur==opts-1) {
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 								textattr(lclr|(bclr<<4));
-								putch(' '); }  /* delete the down arrow */
+								putch(' ');	/* delete the down arrow */
+							}
 							if((*cur)+4==height) {
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 								textattr(lclr|(bclr<<4));
-								putch(30); }   /* put the up arrow */
+								putch(30);	/* put the up arrow */
+							}
 							y--;
 							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
 							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
@@ -945,7 +985,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+height-2
 								,hfclr|(hbclr<<4)
 								,"%-*.*s",width-4,width-4,option[*cur]);
-							showmouse(); }
+							showmouse(); 
+						}
 						else {
 							hidemouse();
 							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
@@ -956,18 +997,21 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y
 								,line);
-							showmouse(); }
+							showmouse(); 
+						}
 						break;
 					case KEY_F(1):	/* F1 */
 						help();
 						break;
 					case KEY_F(5):	/* F5 */
 						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1)) {
-							return((*cur)|MSK_GET); }
+							return((*cur)|MSK_GET); 
+						}
 						break;
 					case KEY_F(6):	/* F6 */
 						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1)) {
-							return((*cur)|MSK_PUT); }
+							return((*cur)|MSK_PUT); 
+						}
 						break;
 					case KEY_IC:	/* insert */
 						if(mode&WIN_INS) {
@@ -980,13 +1024,17 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								if(opts) {
 									j=(((y-top)*width)*2)+7+((width-4)*2);
 									for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-										win[i]=hclr|(cclr<<4); }
+										win[i]=hclr|(cclr<<4); 
+								}
 								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
 									+left+width-1,SCRN_TOP+top+height-1,win);
-								showmouse(); }
+								showmouse(); 
+							}
 							if(!opts) {
-								return(MSK_INS); }
-							return((*cur)|MSK_INS); }
+								return(MSK_INS); 
+							}
+							return((*cur)|MSK_INS); 
+						}
 						break;
 					case KEY_DC:	/* delete */
 						if(mode&WIN_XTR && (*cur)==opts-1)	/* can't delete */
@@ -1003,9 +1051,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 									win[i]=hclr|(cclr<<4);
 								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
 									+left+width-1,SCRN_TOP+top+height-1,win);
-								showmouse(); }
-							return((*cur)|MSK_DEL); }
-						break;	} }
+								showmouse(); 
+							}
+							return((*cur)|MSK_DEL); 
+						}
+						break;
+				} 
+			}
 			else {
 				i&=0xff;
 				if(isalnum(i) && opts && option[0][0]) {
@@ -1014,13 +1066,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					for(j=(*cur)+1,a=b=0;a<2;j++) {   /* a = search count */
 						if(j==opts) {					/* j = option count */
 							j=-1;						/* b = letter count */
-							continue; }
+							continue; 
+						}
 						if(j==(*cur)) {
 							b++;
-							continue; }
+							continue; 
+						}
 						if(b>=longopt) {
 							b=0;
-							a++; }
+							a++; 
+						}
 						if(a==1 && !s)
 							break;
 						if(strlen(option[j])>b
@@ -1035,7 +1090,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								putch(30);	   /* put the up arrow */
 								if((*cur)==opts-1) {
 									gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-									putch(' '); }  /* delete the down arrow */
+									putch(' ');	/* delete the down arrow */
+								}
 								for(i=((*cur)+5)-height,j=0;i<(*cur)+1;i++,j++)
 									uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
 										,i==(*cur) ? hfclr|(hbclr<<4)
@@ -1044,7 +1100,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								y=top+height-2;
 								if(bar)
 									(*bar)=height-5;
-								break; }
+								break; 
+							}
 							if(y-((*cur)-j)<top+3) {
 								(*cur)=j;
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
@@ -1064,7 +1121,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								y=top+3;
 								if(bar)
 									(*bar)=0;
-								break; }
+								break; 
+							}
 							hidemouse();
 							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
@@ -1080,7 +1138,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								if((*cur)>j)
 									(*bar)-=(*cur)-j;
 								else
-									(*bar)+=j-(*cur); }
+									(*bar)+=j-(*cur); 
+							}
 							(*cur)=j;
 							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
@@ -1089,9 +1148,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 							showmouse();
-							break; } }
+							break; 
+						} 
+					}
 					if(a==2)
-						s=0; }
+						s=0; 
+				}
 				else
 					switch(i) {
 						case CR:
@@ -1109,7 +1171,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
 									+left+width-1,SCRN_TOP+top+height-1,win);
-								showmouse(); }
+								showmouse(); 
+							}
 							else if(mode&WIN_SAV) {
 								hidemouse();
 								puttext(sav[api->savnum].left,sav[api->savnum].top
@@ -1117,7 +1180,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 									,sav[api->savnum].buf);
 								showmouse();
 								FREE(sav[api->savnum].buf);
-								api->savdepth--; }
+								api->savdepth--; 
+							}
 							return(*cur);
 						case 3:
 						case ESC:
@@ -1130,7 +1194,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 									win[i]=lclr|(cclr<<4);
 								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
 									+left+width-1,SCRN_TOP+top+height-1,win);
-								showmouse(); }
+								showmouse(); 
+							}
 							else if(mode&WIN_SAV) {
 								hidemouse();
 								puttext(sav[api->savnum].left,sav[api->savnum].top
@@ -1138,8 +1203,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 									,sav[api->savnum].buf);
 								showmouse();
 								FREE(sav[api->savnum].buf);
-								api->savdepth--; }
-							return(-1); } } }
+								api->savdepth--; 
+							}
+							return(-1);
+				} 
+			} 
+		}
 		else
 			mswait(1);
 		if(mode&WIN_DYN) {
@@ -1147,7 +1216,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			save_menu_bar=*bar;
 			return(-2-i);
 		}
-		}
+	}
 }
 
 
@@ -1181,7 +1250,8 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	in_win[i++]=hclr|(bclr<<4);
 	for(c=1;c<width-1;c++) {
 		in_win[i++]='Í';
-		in_win[i++]=hclr|(bclr<<4); }
+		in_win[i++]=hclr|(bclr<<4); 
+	}
 	in_win[i++]='»';
 	in_win[i++]=hclr|(bclr<<4);
 	in_win[i++]='º';
@@ -1189,20 +1259,24 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 
 	if(plen) {
 		in_win[i++]=SP;
-		in_win[i++]=lclr|(bclr<<4); }
+		in_win[i++]=lclr|(bclr<<4); 
+	}
 
 	for(c=0;prompt[c];c++) {
 		in_win[i++]=prompt[c];
-		in_win[i++]=lclr|(bclr<<4); }
+		in_win[i++]=lclr|(bclr<<4); 
+	}
 
 	if(plen) {
 		in_win[i++]=':';
 		in_win[i++]=lclr|(bclr<<4);
-		c++; }
+		c++; 
+	}
 
 	for(c=0;c<max+2;c++) {
 		in_win[i++]=SP;
-		in_win[i++]=lclr|(bclr<<4); }
+		in_win[i++]=lclr|(bclr<<4); 
+	}
 
 	in_win[i++]='º';
 	in_win[i++]=hclr|(bclr<<4);
@@ -1210,7 +1284,8 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	in_win[i++]=hclr|(bclr<<4);
 	for(c=1;c<width-1;c++) {
 		in_win[i++]='Í';
-		in_win[i++]=hclr|(bclr<<4); }
+		in_win[i++]=hclr|(bclr<<4); 
+	}
 	in_win[i++]='¼';
 	in_win[i++]=hclr|(bclr<<4);
 	puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
@@ -1228,7 +1303,8 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		for(c=1;c<width*2;c+=2)
 			shade[c]=DARKGRAY;
 		puttext(SCRN_LEFT+left+2,SCRN_TOP+top+3,SCRN_LEFT+left+width+1
-			,SCRN_TOP+top+height,shade); }
+			,SCRN_TOP+top+height,shade); 
+	}
 
 	textattr(lclr|(bclr<<4));
 	if(!plen)
@@ -1494,7 +1570,8 @@ static int uprintf(int x, int y, unsigned char attr, char *fmat, ...)
     va_end(argptr);
     for(i=j=0;str[i];i++) {
         buf[j++]=str[i];
-        buf[j++]=attr; }
+        buf[j++]=attr; 
+	}
     puttext(x,y,x+(i-1),y,buf);
     return(i);
 }
@@ -1515,22 +1592,26 @@ void bottomline(int line)
 		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F5 ");
 		i+=3;
 		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Copy Item  ");
-		i+=11; }
+		i+=11; 
+	}
 	if(line&BL_PUT) {
 		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F6 ");
 		i+=3;
 		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Paste  ");
-		i+=7; }
+		i+=7; 
+	}
 	if(line&BL_INS) {
 		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"INS ");
 		i+=4;
 		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Add Item  ");
-		i+=10; }
+		i+=10; 
+	}
 	if(line&BL_DEL) {
 		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"DEL ");
 		i+=4;
 		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
-		i+=13; }
+		i+=13; 
+	}
 	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC ");	/* Backspace is no good no way to abort editing */
 	i+=4;
 	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Exit");
@@ -1573,7 +1654,8 @@ char *utimestr(time_t *intime)
 			break;
 		case 6:
 			strcpy(wday,"Sat");
-			break; }
+			break; 
+	}
 	switch(gm->tm_mon) {
 		case 0:
 			strcpy(mon,"Jan");
@@ -1610,16 +1692,19 @@ char *utimestr(time_t *intime)
 			break;
 		case 11:
 			strcpy(mon,"Dec");
-			break; }
+			break; 
+	}
 	if(gm->tm_hour>12) {
 		strcpy(mer,"pm");
-		hour=gm->tm_hour-12; }
+		hour=gm->tm_hour-12; 
+	}
 	else {
 		if(!gm->tm_hour)
 			hour=12;
 		else
 			hour=gm->tm_hour;
-		strcpy(mer,"am"); }
+		strcpy(mer,"am"); 
+	}
 	sprintf(str,"%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
 		,hour,gm->tm_min,mer);
 	return(str);
@@ -1639,7 +1724,8 @@ void upop(char *str)
 	if(!str) {
 		puttext(28,12,53,14,sav);
 		showmouse();
-		return; }
+		return; 
+	}
 	gettext(28,12,53,14,sav);
 	memset(buf,SP,25*3*2);
 	for(i=1;i<26*3*2;i+=2)
@@ -1654,7 +1740,8 @@ void upop(char *str)
 	i+=(((23-k)/2)*2);
 	for(j=0;j<k;j++,i+=2) {
 		buf[i]=str[j];
-		buf[i+1]|=BLINK; }
+		buf[i+1]|=BLINK; 
+	}
 	i=((25*2)+1)*2;
         buf[i]='³'; i+=2;
         buf[i]='À'; i+=2;
@@ -1727,13 +1814,15 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,api->scrn_width*25*2);
 		curs_set(1);
-		return; }
+		return; 
+	}
 	if((buf=(char *)MALLOC(width*height*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,width*21*2);
 		FREE(savscrn);
 		curs_set(1);
-		return; }
+		return; 
+	}
 	hidemouse();
 	gettext(1,1,api->scrn_width,api->scrn_len,savscrn);
 
@@ -1762,7 +1851,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		for(k=0;k<(height-2);k++) { 		/* the sides of the box */
 	        buf[j]='³'; j+=2;
 			j+=((width-2)*2);
-        	buf[j]='³'; j+=2; }
+        	buf[j]='³'; j+=2; 
+		}
 	    buf[j]='À'; j+=2;
 		if(!(mode&WIN_DYN) && (width>31)) {
 			for(k=j;k<j+(((width-4)/2-13)*2);k+=2)
@@ -1822,7 +1912,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		FREE(savscrn);
 		FREE(buf);
 		curs_set(1);
-		return; }
+		return; 
+	}
 	memset(textbuf,SP,(width-2-pad-pad)*lines*2);
 	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
@@ -1830,17 +1921,22 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	for(j=0;j<len;j++,i+=2) {
 		if(hbuf[j]==LF) {
 			i+=2;
-			while(i%((width-2-pad-pad)*2)) i++; i-=2; }
+			while(i%((width-2-pad-pad)*2)) i++; i-=2; 
+		}
 		else if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
 			inverse=!inverse;
-			i-=2; }
+			i-=2; 
+		}
 		else if(mode&WIN_HLP && (hbuf[j]==1 || hbuf[j]=='`')) {		 /* Ctrl-a toggles high intensity */
 			high=!high;
-			i-=2; }
+			i-=2; 
+		}
 		else if(hbuf[j]!=CR) {
 			textbuf[i]=hbuf[j];
 			textbuf[i+1]=inverse ? (bclr|(cclr<<4))
-				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); } }
+				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); 
+		} 
+	}
 	showmouse();
 	i=0;
 	p=textbuf;
@@ -1951,9 +2047,11 @@ void help()
 				fread(&line,2,1,fp);
 				if(stricmp(str,p) || line!=helpline) {
 					fseek(fp,4,SEEK_CUR);
-					continue; }
+					continue; 
+				}
 				fread(&l,4,1,fp);
-				break; }
+				break; 
+			}
 			fclose(fp);
 			if(l==-1L)
 				sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\r\n"
@@ -1965,7 +2063,11 @@ void help()
 				else {
 					fseek(fp,l,SEEK_SET);
 					fread(hbuf,HELPBUF_SIZE,1,fp);
-					fclose(fp); } } } }
+					fclose(fp); 
+				} 
+			} 
+		} 
+	}
 	else
 		strcpy(hbuf,api->helpbuf);
 
