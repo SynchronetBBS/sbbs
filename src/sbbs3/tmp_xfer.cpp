@@ -220,8 +220,10 @@ void sbbs_t::temp_xfer()
 				for(i=0;i<g.gl_pathc && !msgabort();i++) {
 					if(isdir(g.gl_pathv[i]))
 						continue;
-					bprintf("%s %15s\r\n",padfname(getfname(g.gl_pathv[i]),str)
-						,ultoac(flength(g.gl_pathv[i]),tmp));
+					t=fdate(g.gl_pathv[i]);
+					bprintf("%-15s %15s %s\r\n",getfname(g.gl_pathv[i])
+						,ultoac(flength(g.gl_pathv[i]),tmp)
+						,timestr(&t));
 					files++;
 					bytes+=flength(g.gl_pathv[i]);
 				}
@@ -240,10 +242,9 @@ void sbbs_t::temp_xfer()
 				sys_status&=~SS_ABORT;
 				break;
 			case 'R':   /* Remove files from dir */
-				if(!getfilespec(str))
+				if(!getfilespec(str) || !checkfname(str))
 					break;
-				// padfname(str,tmp);  Removed 04/14/96
-				bprintf(text[NFilesRemoved],delfiles(cfg.temp_dir,tmp));
+				bprintf(text[NFilesRemoved],delfiles(cfg.temp_dir,str));
 				break;
 			case 'V':   /* view files in dir */
 				bputs(text[FileSpec]);
