@@ -100,17 +100,8 @@ enum {
 #define DNS_MX			15			// Mail Exchange Query Type
 #define DNS_IN			1			// Internet Query Class
 
-#ifdef DNSTEST
-
-#define open_socket(type)	socket(AF_INET, type, IPPROTO_IP)
-#define close_socket(sock)	closesocket(sock)
-
-#else 
-
-int open_socket(int type);
-int close_socket(SOCKET sock);
-
-#endif
+int mail_open_socket(int type);
+int mail_close_socket(SOCKET sock);
 
 int dns_name(char* name, char* srcbuf, char* p)
 {
@@ -166,9 +157,9 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 	mx2[0]=0;
 
 	if(use_tcp) 
-		sock = open_socket(SOCK_STREAM);
+		sock = mail_open_socket(SOCK_STREAM);
 	else
-		sock = open_socket(SOCK_DGRAM);
+		sock = mail_open_socket(SOCK_DGRAM);
 
 	if (sock == INVALID_SOCKET)
 		return(ERROR_VALUE);
@@ -180,7 +171,7 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
     result = bind (sock, (struct sockaddr *) &addr,sizeof (addr));
 
 	if (result != 0) {
-		close_socket(sock);
+		mail_close_socket(sock);
 		return(ERROR_VALUE);
 	}
 
@@ -190,7 +181,7 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 	addr.sin_port   = htons(53);
 	
 	if((result=connect(sock, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
-		close_socket(sock);
+		mail_close_socket(sock);
 		return(ERROR_VALUE);
 	}
 
@@ -271,7 +262,7 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 
 	if(!mx[0])
 		strcpy(mx,name);
-	close_socket(sock);
+	mail_close_socket(sock);
 	return(0);
 }
 

@@ -157,7 +157,7 @@ static void thread_down(void)
 		startup->thread_up(FALSE);
 }
 
-SOCKET open_socket(int type)
+SOCKET mail_open_socket(int type)
 {
 	SOCKET sock;
 
@@ -173,7 +173,7 @@ SOCKET open_socket(int type)
 	return(sock);
 }
 
-int close_socket(SOCKET sock)
+int mail_close_socket(SOCKET sock)
 {
 	int		result;
 
@@ -548,7 +548,7 @@ static void pop3_thread(void* arg)
 		lprintf("%04d !POP3 client blocked in ip.can: %s"
 			,socket, host_ip);
 		sockprintf(socket,"-ERR Access denied.");
-		close_socket(socket);
+		mail_close_socket(socket);
 		thread_down();
 		return;
 	}
@@ -557,7 +557,7 @@ static void pop3_thread(void* arg)
 		lprintf("%04d !POP3 client blocked in host.can: %s"
 			,socket, host_name);
 		sockprintf(socket,"-ERR Access denied.");
-		close_socket(socket);
+		mail_close_socket(socket);
 		thread_down();
 		return;
 	}
@@ -966,7 +966,7 @@ static void pop3_thread(void* arg)
 	status(STATUS_WFC);
 
 	/* Free up resources here */
-	close_socket(socket);
+	mail_close_socket(socket);
 
 	if(mail!=NULL)
 		freemail(mail);
@@ -1101,7 +1101,7 @@ static void smtp_thread(void* arg)
 		lprintf("%04d !SMTP server blocked in ip.can: %s"
 			,socket, host_ip);
 		sockprintf(socket,"550 Access denied.");
-		close_socket(socket);
+		mail_close_socket(socket);
 		thread_down();
 		return;
 	}
@@ -1110,7 +1110,7 @@ static void smtp_thread(void* arg)
 		lprintf("%04d !SMTP server blocked in host.can: %s"
 			,socket, host_name);
 		sockprintf(socket,"550 Access denied.");
-		close_socket(socket);
+		mail_close_socket(socket);
 		thread_down();
 		return;
 	}
@@ -1125,7 +1125,7 @@ static void smtp_thread(void* arg)
 		sockprintf(socket
 			,"571 Mail from %s refused, see http://www.mail-abuse.org/rbl"
 			,host_ip);
-		close_socket(socket);
+		mail_close_socket(socket);
 		thread_down();
 		return;
 	}
@@ -1138,7 +1138,7 @@ static void smtp_thread(void* arg)
 		sockprintf(socket
 			,"571 Mail from %s refused, see http://www.mail-abuse.org/dul"
 			,host_ip);
-		close_socket(socket);
+		mail_close_socket(socket);
 		thread_down();
 		return;
 	}
@@ -1151,7 +1151,7 @@ static void smtp_thread(void* arg)
 		sockprintf(socket
 			,"571 Mail from %s refused, see http://www.mail-abuse.org/rss"
 			,host_ip);					
-		close_socket(socket);
+		mail_close_socket(socket);
 		thread_down();
 		return;
 	}
@@ -1162,7 +1162,7 @@ static void smtp_thread(void* arg)
 		lprintf("%04d !SMTP ERROR %d creating recipient list: %s"
 			,socket, errno, rcptlst_fname);
 		sockprintf(socket,"421 System error");
-		close_socket(socket);
+		mail_close_socket(socket);
 		thread_down();
 		return;
 	}
@@ -1780,7 +1780,7 @@ static void smtp_thread(void* arg)
 	}
 
 	/* Free up resources here */
-	close_socket(socket);
+	mail_close_socket(socket);
 
 	smb_freemsgmem(&msg);
 
@@ -1931,7 +1931,7 @@ static void sendmail_thread(void* arg)
 		smb_close(&smb);
 
 		if(sock!=INVALID_SOCKET) {
-			close_socket(sock);
+			mail_close_socket(sock);
 			sock=INVALID_SOCKET;
 		}
 
@@ -1968,7 +1968,7 @@ static void sendmail_thread(void* arg)
 			}
 
 			if(sock!=INVALID_SOCKET) {
-				close_socket(sock);
+				mail_close_socket(sock);
 				sock=INVALID_SOCKET;
 			}
 
@@ -2052,7 +2052,7 @@ static void sendmail_thread(void* arg)
 
 
 			lprintf("SendMail: opening socket");
-			if((sock=open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+			if((sock=mail_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
 				lprintf("!SendMail: ERROR %d opening socket", ERROR_VALUE);
 				continue;
 			}
@@ -2177,13 +2177,13 @@ static void sendmail_thread(void* arg)
 			/* QUIT */
 			sockprintf(sock,"QUIT");
 			sockgetrsp(sock,"221", buf, sizeof(buf));
-			close_socket(sock);
+			mail_close_socket(sock);
 			sock=INVALID_SOCKET;
 		}				
 		status(STATUS_WFC);
 	}
 	if(sock!=INVALID_SOCKET)
-		close_socket(sock);
+		mail_close_socket(sock);
 
 	smb_freemsgtxt(msgtxt);
 	smb_freemsgmem(&msg);
@@ -2200,7 +2200,7 @@ void DLLCALL mail_terminate(void)
 {
 	if(server_socket!=INVALID_SOCKET) {
     	lprintf("MAIL Terminate: closing socket %d",server_socket);
-		close_socket(server_socket);
+		mail_close_socket(server_socket);
 	    server_socket=INVALID_SOCKET;
     }
 }
@@ -2208,12 +2208,12 @@ void DLLCALL mail_terminate(void)
 static void cleanup(int code)
 {
 	if(server_socket!=INVALID_SOCKET) {
-		close_socket(server_socket);
+		mail_close_socket(server_socket);
 		server_socket=INVALID_SOCKET;
 	}
 
 	if(pop3_socket!=INVALID_SOCKET) {
-		close_socket(pop3_socket);
+		mail_close_socket(pop3_socket);
 		pop3_socket=INVALID_SOCKET;
 	}
 
@@ -2360,7 +2360,7 @@ void DLLCALL mail_server(void* arg)
 
     /* open a socket and wait for a client */
 
-    server_socket = open_socket(SOCK_STREAM);
+    server_socket = mail_open_socket(SOCK_STREAM);
 
 	if (server_socket == INVALID_SOCKET) {
 		lprintf("!ERROR %d opening socket", ERROR_VALUE);
@@ -2443,7 +2443,7 @@ void DLLCALL mail_server(void* arg)
 
 		/* open a socket and wait for a client */
 
-		pop3_socket = open_socket(SOCK_STREAM);
+		pop3_socket = mail_open_socket(SOCK_STREAM);
 
 		if (pop3_socket == INVALID_SOCKET) {
 			lprintf("!ERROR %d opening POP3 socket", ERROR_VALUE);
@@ -2542,7 +2542,7 @@ void DLLCALL mail_server(void* arg)
 				lprintf("!MAXMIMUM CLIENTS (%u) reached, access denied",startup->max_clients);
 				sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
 				mswait(3000);
-				close_socket(client_socket);
+				mail_close_socket(client_socket);
 				continue;
 			}
 
@@ -2551,14 +2551,14 @@ void DLLCALL mail_server(void* arg)
 			if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
 				lprintf("!ERROR %d (%d) disabling blocking on socket %d"
 					,i, ERROR_VALUE, client_socket);
-				close_socket(client_socket);
+				mail_close_socket(client_socket);
 				continue;
 			}
 
 			if((smtp=malloc(sizeof(smtp_t)))==NULL) {
 				lprintf("!ERROR allocating %u bytes of memory for smtp_t"
 					,sizeof(smtp_t));
-				close_socket(client_socket);
+				mail_close_socket(client_socket);
 				continue;
 			}
 
@@ -2589,7 +2589,7 @@ void DLLCALL mail_server(void* arg)
 				lprintf("!MAXMIMUM CLIENTS (%u) reached, access denied",startup->max_clients);
 				sockprintf(client_socket,"-ERR Maximum active clients reached, please try again later.");
 				mswait(3000);
-				close_socket(client_socket);
+				mail_close_socket(client_socket);
 				continue;
 			}
 
@@ -2601,7 +2601,7 @@ void DLLCALL mail_server(void* arg)
 					,i, ERROR_VALUE, client_socket);
 				sockprintf(client_socket,"-ERR System error, please try again later.");
 				mswait(3000);
-				close_socket(client_socket);
+				mail_close_socket(client_socket);
 				continue;
 			}
 
@@ -2610,7 +2610,7 @@ void DLLCALL mail_server(void* arg)
 					,sizeof(pop3_t));
 				sockprintf(client_socket,"-ERR System error, please try again later.");
 				mswait(3000);
-				close_socket(client_socket);
+				mail_close_socket(client_socket);
 				continue;
 			}
 
