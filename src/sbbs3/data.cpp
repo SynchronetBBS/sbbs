@@ -251,6 +251,8 @@ void sbbs_t::gettimeleft(void)
 	if(!timeleft && !SYSOP && !(sys_status&SS_LCHAT)) {
 		logline(nulstr,"Ran out of time");
 		SAVELINE;
+		if(sys_status&SS_EVENT)
+			bputs(text[ReducedTime]);
 		bputs(text[TimesUp]);
 		if(!(sys_status&(SS_EVENT|SS_USERON)) && useron.cdt>=100L*1024L
 			&& !(cfg.sys_misc&SM_NOCDTCVT)) {
