@@ -86,7 +86,9 @@ static char  hclr,lclr,bclr,cclr,lbclr;
 static int   cursor;
 static char* helpfile=0;
 static uint  helpline=0;
-static char  blk_scrn[MAX_BFLN];
+static size_t blk_scrn_len;
+static char* blk_scrn;
+static uchar* tmp_buffer;
 static win_t sav[MAX_BUFS];
 static uifcapi_t* api;
 
@@ -218,7 +220,7 @@ int uifcini32(uifcapi_t* uifcapi)
 #ifdef _WIN32
     /* unsupported mode? */
     if(txtinfo.screenheight<MIN_LINES
-        || txtinfo.screenheight>MAX_LINES
+/*        || txtinfo.screenheight>MAX_LINES */
         || txtinfo.screenwidth<80) {
         textmode(C80);  /* set mode to 80x25*/
         gettextinfo(&txtinfo);
@@ -226,9 +228,9 @@ int uifcini32(uifcapi_t* uifcapi)
 #endif
 
     api->scrn_len=txtinfo.screenheight;
-    if(api->scrn_len<MIN_LINES || api->scrn_len>MAX_LINES) {
-        cprintf("\7UIFC: Screen length (%u) must be between %d and %d lines\r\n"
-            ,api->scrn_len,MIN_LINES,MAX_LINES);
+    if(api->scrn_len<MIN_LINES) {
+        cprintf("\7UIFC: Screen length (%u) must be %d lines or greater\r\n"
+            ,api->scrn_len,MIN_LINES);
         return(-2);
     }
     api->scrn_len--; /* account for status line */
@@ -261,7 +263,18 @@ int uifcini32(uifcapi_t* uifcapi)
 		lbclr=BLUE|(LIGHTGRAY<<4);	/* lightbar color */
     }
 
-    for(i=0;i<MAX_BFLN;i+=2) {
+	blk_scrn_len=api->scrn_width*api->scrn_len*2;
+	if((blk_scrn=(char *)MALLOC(blk_scrn_len))==NULL)  {
+				cprintf("UIFC line %d: error allocating %u bytes."
+					,__LINE__,blk_scrn_len);
+				return(-1);
+	}
+	if((tmp_buffer=(uchar *)MALLOC(blk_scrn_len))==NULL)  {
+				cprintf("UIFC line %d: error allocating %u bytes."
+					,__LINE__,blk_scrn_len);
+				return(-1);
+	}
+    for(i=0;i<blk_scrn_len;i+=2) {
         blk_scrn[i]='°';
         blk_scrn[i+1]=cclr|(bclr<<4);
     }
@@ -284,6 +297,8 @@ void uifcbail(void)
 	refresh();
 	endwin();
 #endif
+	FREE(blk_scrn);
+	FREE(tmp_buffer);
 }
 
 /****************************************************************************/
@@ -309,13 +324,11 @@ int uscrn(char *str)
 /****************************************************************************/
 static void scroll_text(int x1, int y1, int x2, int y2, int down)
 {
-	uchar buf[MAX_BFLN];
-
-	gettext(x1,y1,x2,y2,buf);
+	gettext(x1,y1,x2,y2,tmp_buffer);
 	if(down)
-		puttext(x1,y1+1,x2,y2,buf);
+		puttext(x1,y1+1,x2,y2,tmp_buffer);
 	else
-		puttext(x1,y1,x2,y2-1,buf+(((x2-x1)+1)*2));
+		puttext(x1,y1,x2,y2-1,tmp_buffer+(((x2-x1)+1)*2));
 }
 
 /****************************************************************************/
@@ -353,7 +366,7 @@ static void truncsp(char *str)
 int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *title, char **option)
 {
-	uchar line[256],shade[256],win[MAX_BFLN],*ptr,a,b,c,longopt
+	uchar line[256],shade[256],*ptr,a,b,c,longopt
 		,search[MAX_OPLN],bline=0;
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
@@ -471,7 +484,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				puttext(s_left+left+width,s_top+top,/* s_right+2 */api->scrn_width
 					,s_top+height+top,blk_scrn);
 		}
-		ptr=win;
+		ptr=tmp_buffer;
 		*(ptr++)='É';
 		*(ptr++)=hclr|(bclr<<4);
 
@@ -579,7 +592,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			*(ptr++)='¼';
 			*(ptr)=hclr|(bclr<<4);	/* Not incremented to shut ot BCC */
 			puttext(s_left+left,s_top+top,s_left+left+width-1
-				,s_top+top+height-1,win);
+				,s_top+top+height-1,tmp_buffer);
 			if(bar)
 				y=top+3+(*bar);
 			else
@@ -620,7 +633,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 		longopt=0;
 		while(j<height-2 && i<opts) {
-			ptr=win;
+			ptr=tmp_buffer;
 			if(i==(*cur))
 				a=lbclr;
 			else
@@ -642,7 +655,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			i++;
 			j++; 
 			puttext(s_left+left+3,s_top+top+j,s_left+left+width-2
-				,s_top+top+j,win); 
+				,s_top+top+j,tmp_buffer); 
 		}
 		if(bar)
 			y=top+3+(*bar);
@@ -921,29 +934,27 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						help();
 						break;
 					case KEY_F(5):	/* F5 */
-						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1)) {
+						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1))
 							return((*cur)|MSK_GET);
-						}
 						break;
 					case KEY_F(6):	/* F6 */
-						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1)) {
+						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1))
 							return((*cur)|MSK_PUT);
-						}
 						break;
 					case KEY_IC:	/* insert */
 						if(mode&WIN_INS) {
 							if(mode&WIN_INSACT) {
 								gettext(s_left+left,s_top+top,s_left
-									+left+width-1,s_top+top+height-1,win);
+									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
-									win[i]=lclr|(cclr<<4);
+									tmp_buffer[i]=lclr|(cclr<<4);
 								if(opts) {
 									j=(((y-top)*width)*2)+7+((width-4)*2);
 									for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-										win[i]=hclr|(cclr<<4); 
+										tmp_buffer[i]=hclr|(cclr<<4); 
 								}
 								puttext(s_left+left,s_top+top,s_left
-									+left+width-1,s_top+top+height-1,win);
+									+left+width-1,s_top+top+height-1,tmp_buffer);
 							}
 							if(!opts) {
 								return(MSK_INS); 
@@ -957,14 +968,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(mode&WIN_DEL) {
 							if(mode&WIN_DELACT) {
 								gettext(s_left+left,s_top+top,s_left
-									+left+width-1,s_top+top+height-1,win);
+									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
-									win[i]=lclr|(cclr<<4);
+									tmp_buffer[i]=lclr|(cclr<<4);
 								j=(((y-top)*width)*2)+7+((width-4)*2);
 								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-									win[i]=hclr|(cclr<<4);
+									tmp_buffer[i]=hclr|(cclr<<4);
 								puttext(s_left+left,s_top+top,s_left
-									+left+width-1,s_top+top+height-1,win);
+									+left+width-1,s_top+top+height-1,tmp_buffer);
 							}
 							return((*cur)|MSK_DEL); 
 						}
@@ -1072,15 +1083,15 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								break;
 							if(mode&WIN_ACT) {
 								gettext(s_left+left,s_top+top,s_left
-									+left+width-1,s_top+top+height-1,win);
+									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
-									win[i]=lclr|(cclr<<4);
+									tmp_buffer[i]=lclr|(cclr<<4);
 								j=(((y-top)*width)*2)+7+((width-4)*2);
 								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-									win[i]=hclr|(cclr<<4);
+									tmp_buffer[i]=hclr|(cclr<<4);
 
 								puttext(s_left+left,s_top+top,s_left
-									+left+width-1,s_top+top+height-1,win);
+									+left+width-1,s_top+top+height-1,tmp_buffer);
 							}
 							else if(mode&WIN_SAV) {
 								puttext(sav[api->savnum].left,sav[api->savnum].top
@@ -1095,11 +1106,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if((mode&WIN_ESC || (mode&WIN_CHE && api->changes))
 								&& !(mode&WIN_SAV)) {
 								gettext(s_left+left,s_top+top,s_left
-									+left+width-1,s_top+top+height-1,win);
+									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
-									win[i]=lclr|(cclr<<4);
+									tmp_buffer[i]=lclr|(cclr<<4);
 								puttext(s_left+left,s_top+top,s_left
-									+left+width-1,s_top+top+height-1,win);
+									+left+width-1,s_top+top+height-1,tmp_buffer);
 							}
 							else if(mode&WIN_SAV) {
 								puttext(sav[api->savnum].left,sav[api->savnum].top
@@ -1143,7 +1154,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2-2;
 	if(mode&WIN_L2R)
-		left=(s_right-s_left-width+1)/2;
+		left=(SCRN_RIGHT-SCRN_LEFT-width+1)/2;
 	if(mode&WIN_SAV)
 		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
@@ -1697,7 +1708,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(width>api->scrn_width)
 		width=api->scrn_width;
 	if(mode&WIN_L2R)
-		left=(s_right-s_left-width+1)/2;
+		left=(SCRN_RIGHT-SCRN_LEFT-width+1)/2;
 	else if(mode&WIN_RHT)
 		left=api->scrn_width-(width+4+left);
 	if(mode&WIN_T2B)
