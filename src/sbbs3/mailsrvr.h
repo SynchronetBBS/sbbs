@@ -35,6 +35,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#ifndef _MAILSRVR_H_
+#define _MAILSRVR_H_
+
 #include "client.h"				/* client_t */
 
 typedef struct {
@@ -137,3 +140,5 @@ DLLEXPORT char*	DLLCALL mail_ver(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* Don't add anything after this line */

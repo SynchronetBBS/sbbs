@@ -35,6 +35,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#ifndef _FTPSRVR_H_
+#define _FTPSRVR_H_
+
 #include "client.h"				/* client_t */
 
 typedef struct {
@@ -133,3 +136,5 @@ DLLEXPORT char*	DLLCALL ftp_ver(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* Don't add anything after this line */
