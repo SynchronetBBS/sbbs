@@ -332,12 +332,11 @@ static void thread_down(void)
 static void grow_enviro(http_session_t *session)  {
 	char **new_cgi_env;
 
-	new_cgi_env=session->req.cgi_env;
 	new_cgi_env=realloc(session->req.cgi_env,
 		sizeof(void*)*(CGI_ENVIRON_BLOCK_SIZE+session->req.cgi_env_max_size));
 	if(new_cgi_env != NULL)  {
 		session->req.cgi_env=new_cgi_env;
-		memset(session->req.cgi_env+sizeof(void*)*session->req.cgi_env_max_size,0,
+		memset(session->req.cgi_env+session->req.cgi_env_max_size,0,
 			sizeof(void*)*(CGI_ENVIRON_BLOCK_SIZE));
 		session->req.cgi_env_max_size+=CGI_ENVIRON_BLOCK_SIZE;
 	} else  {
@@ -404,7 +403,7 @@ static void grow_heads(http_session_t *session)  {
 		sizeof(void*)*(CGI_HEADS_BLOCK_SIZE+session->req.cgi_heads_max_size));
 	if(new_cgi_heads != NULL)  {
 		session->req.cgi_heads=new_cgi_heads;
-		memset(session->req.cgi_heads+sizeof(void*)*session->req.cgi_heads_max_size,0,
+		memset(session->req.cgi_heads+session->req.cgi_heads_max_size,0,
 			sizeof(void*)*(CGI_HEADS_BLOCK_SIZE));
 		session->req.cgi_heads_max_size+=CGI_HEADS_BLOCK_SIZE;
 	} else  {
