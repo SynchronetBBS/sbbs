@@ -94,7 +94,9 @@
 
 #elif defined(_WIN32)	
 
-	/* POIX semaphores */
+	#include <process.h>	/* _beginthread() */
+
+	/* POSIX semaphores */
 	typedef HANDLE sem_t;
 	#define sem_init(psem,ps,v)			ResetEvent(*(psem))
 	#define sem_wait(psem)				WaitForSingleObject(*(psem),INFINITE)

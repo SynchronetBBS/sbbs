@@ -62,9 +62,9 @@
 #include <sys/types.h>
 
 #define GLOBAL extern	/* turns XSDKVAR.C into a header file */
-#include "xsdkvars.c"
 #include "xsdkinet.h"
 #include "xsdkwrap.h"
+#include "xsdkvars.c"
 
 #ifdef __cplusplus
 	extern "C" {

@@ -207,11 +207,6 @@
 
 \****************************************************************************/
 
-#ifdef _WIN32
-#include <windows.h>	// Sleep()
-#include <process.h>	// _beginthread()
-#endif
-
 #include "xsdk.h"
 
 #ifdef _WINSOCKAPI_
