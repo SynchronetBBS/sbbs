@@ -76,7 +76,8 @@ $(EXEODIR):
 	@if not exist $(EXEODIR) mkdir $(EXEODIR)
 
 # Monolithic Synchronet executable Build Rule
-$(SBBSMONO): sbbscon.c $(OBJS) $(LIBODIR)\ver.$(OFILE) $(LIBODIR)\ftpsrvr.$(OFILE) \
+$(SBBSMONO): sbbscon.c sbbs_ini.c $(XPDEV)ini_file.c $(OBJS) \
+	$(LIBODIR)\ver.$(OFILE) $(LIBODIR)\ftpsrvr.$(OFILE) \
 	$(LIBODIR)\mailsrvr.$(OFILE) $(LIBODIR)\mxlookup.$(OFILE) $(LIBODIR)\mime.$(OFILE) \
 	$(LIBODIR)\services.$(OFILE)
 	@$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $** $(LIBS)
@@ -90,17 +91,20 @@ $(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
 # Mail Server DLL Link Rule
 $(MAILSRVR): mailsrvr.c mxlookup.c mime.c crc32.c $(SBBSLIB)
     @echo Creating $@
-	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DMAILSRVR_EXPORTS -DSMBDLL $** $(LIBS)
+	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
+		-DMAILSRVR_EXPORTS -DSMB_IMPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # FTP Server DLL Link Rule
-$(FTPSRVR): ftpsrvr.c $(SBBSLIB)
+$(FTPSRVR): ftpsrvr.c nopen.c $(SBBSLIB)
     @echo Creating $@
-	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $** $(LIBS)
+	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
+		-DFTPSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # Services DLL Link Rule
 $(SERVICES): services.c $(SBBSLIB)
     @echo Creating $@
-	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DSERVICES_EXPORTS $** $(LIBS)
+	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
+		-DSERVICES_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # Synchronet Console Build Rule
 $(SBBSCON): sbbscon.c $(SBBSLIB)
