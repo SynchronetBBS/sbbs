@@ -2,7 +2,7 @@
 // $id$
 
 var start=new Date();
-var time_stamp=start.valueOf().toString(36);
+var time_stamp=start.valueOf().toString(36);	// Used to defeat caching browsers
 
 load("sbbsdefs.js");	// Synchronet constants
 
@@ -36,7 +36,8 @@ function secstr(sec)
 	return(format("%02u:%02u",sec/60,sec%60));
 }
 
-var title=system.name + " BBS - FTP Server";
+var title = system.name + " BBS - FTP Server";
+var font_face = "<font face=Arial,Helvetica,sans-serif>";
 
 writeln('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">');
 writeln("<html>");
@@ -53,17 +54,38 @@ writeln("</title>");
 writeln("<meta name='GENERATOR' content='" + system.version + "'>");
 // The following line is necessary for IBM extended-ASCII in descriptions 
 writeln("<meta http-equiv='Content-Type' content='text/html; charset=IBM437'>");
-// The following lines try to tell the browser NOT to cache the page
-writeln("<meta http-equiv='Expires' content='0'>");
-writeln("<meta http-equiv='Cache-Control' content='no-cache'>");
-writeln("<meta http-equiv='Cache-Control' content='max-age=0'>");
-writeln('<META HTTP-EQUIV="Pragma" CONTENT="no-cache">');
-
 
 writeln("</head>");
 writeln("<body bgcolor=teal text=white link=yellow vlink=lime alink=white>");
-writeln("<font face=Arial,Helvetica,sans-serif>");
-writeln("<h1><font color=lime>" + title.italics() + "</font></h1>");
+writeln(font_face);
+
+/* Go To Select Box */
+writeln("<table width=100%>");
+writeln("<td>");
+writeln("<h1>" + font_face + "<font color=lime>" + title.italics() + "</font></h1>");
+writeln("<td align=right>");
+writeln("<form>");	// Netscape requires this to be in a form <sigh>
+writeln(format(
+	"<select " +
+	"onChange='if(selectedIndex>0) location=options[selectedIndex].value + \"%s\";'>"
+	,"?$" + time_stamp));
+writeln("<option>Go To...</option>");
+writeln(format("<option value=/%s>Root</option>",html_index_file));
+for(l in file_area.lib_list) {
+	writeln(format("<optgroup label=%s>",file_area.lib_list[l].name));
+	writeln(format("<option value=%s> [%s]"
+		,file_area.lib_list[l].link
+		,file_area.lib_list[l].name));
+	for(d in file_area.lib_list[l].dir_list) {
+		writeln(format("<option value=%s>&nbsp&nbsp&nbsp&nbsp %s"
+			,file_area.lib_list[l].dir_list[d].link
+			,file_area.lib_list[l].dir_list[d].name));
+	}
+	writeln("</optgroup>");
+}
+writeln("</select>");
+writeln("</form>");
+writeln("</table>");
 
 var prevdir;
 
@@ -73,13 +95,16 @@ var dat_font="<font color=white>";
 if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 	/* Logout button */
 	writeln("<table align=right>");
+	writeln("<form>");
 	writeln("<input type=button value=Logout onclick='location=\"ftp://" 
 		+ format("%s/%s?$%s",system.inetaddr,html_index_file,time_stamp)
 		+ "\";'>");
+	writeln("</form>");
 	writeln("</table>");
 
 	/* User Info */
 	writeln("<table nowrap align=left>");
+	writeln(font_face);
 	writeln("<tr><th align=right>"+hdr_font+"User:<th align=left>"+dat_font+user.alias);
 	writeln("<tr><th align=right>"+hdr_font+"Address:<th align=left width=150>"+dat_font+user.ip_address);
 	write("<tr><th align=right>"+hdr_font+"Credits:<th align=left>"+dat_font);
@@ -97,6 +122,7 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 	/* User Stats */
 
 	writeln("<table nowrap>");
+	writeln(font_face);
 	writeln("<tr><th align=right>"+hdr_font+"Logons:<th align=left>"+dat_font+user.stats.total_logons);
 	writeln("<tr><th align=right>"+hdr_font+"Last on:<th align=left>"+date(user.stats.laston_date));
  	writeln("<tr><th align=right>"+hdr_font+"Uploaded:<th align=left>"+dat_font);
@@ -114,11 +140,12 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 	writeln("</table>");
 
 	writeln("<form name='login'>");
-	writeln("<table rules=none cellpadding=3>");
+	writeln("<table border=1 frame=box rules=none cellpadding=3>");
+	writeln(font_face);
 	writeln("<tr><th valign=top align=left>"+hdr_font+"Name");
 	writeln("<td colspan=2><input type=text name='username' size=25 maxlength=25>");
 	writeln("<tr><th valign=top align=left>"+hdr_font+"Password");
-	writeln("<td><input type=password name='password' size=8 maxlength=8>");
+	writeln("<td><input type=password name='password' size=10 maxlength=25>");
 	writeln("<td align=right><input type=button name='LoginButton' value='Login' onClick='login_event();'>");
 
 	/* Client-Side Script */
@@ -137,11 +164,6 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 
 	writeln("</table>");
 	writeln("</form>");
-}
-
-if(0) {
-writeln("<form name=goto>");
-writeln("<select name=dir>");
 }
 
 /* Virtual Path */
@@ -166,14 +188,15 @@ writeln("</h3>");
 
 /* Table Attributes */
 var hdr_background="white";
-var hdr_font="<font size=-2><font color=black>";
-var dat_font="<font size=-1>";
+var hdr_font="<font size=-1 color=black>";
+var dat_font="";
 var cell_spacing=""; //"cellspacing=2 cellpadding=2";
 
 /* Directory Listing */
 if(dir_list.length) {
 
 	writeln("<table " + cell_spacing + " width=33%>");
+	writeln(font_face);
 
 	/* header */
 	writeln("<thead>");
@@ -208,11 +231,13 @@ if(file_list.length) {
 	/* Sort the list? */
 	switch(ftp_sort) {
 		case "uploader":
-/**
 			file_list.sort(function(a,b) 
-				{ return(a.uploader-b.uploader); }
+				{ 	if(a.uploader>b.uploader)
+						return(1);
+					if(a.uploader<b.uploader)
+						return(-1);
+					return(0); }
 				);
-**/
 			break;
 		case "size":
 			file_list.sort(function(a,b) 
@@ -249,7 +274,8 @@ if(file_list.length) {
 		show_ext_desc=user.settings&USER_EXTDESC;
 
 	writeln("<table " + cell_spacing + " width=100%>");
-
+	writeln(font_face);
+	
 	/* header */
 	writeln("<thead>");
 	writeln("<tr bgcolor=" + hdr_background + ">");
@@ -354,7 +380,9 @@ if(file_list.length) {
 			if (file_list[i].settings&FILE_ANON)
 				uploader="Anonymous";
 			else if (uploader == "-> ADDFILES <-")
-				uploader="Sysop";
+				uploader="Sysop".link("mailto:sysop@"+system.inetaddr);
+			else if (!(user.security.restrictions&UFLAG_G))	/* ! Guest/Anonymous */
+				uploader=uploader.link("mailto:" + uploader + "@" + system.inetaddr);
 			writeln("<td nowrap>" + dat_font + uploader);
 
 			/* download count */
@@ -387,10 +415,10 @@ if(!file_list.length && !dir_list.length)
 	writeln("<br><b>No Files.</b><br>");
 
 /* Footer */
-write("<br><font size='-2'>Problems? Ask ");
+write("<br><font size='-1' color=silver>Problems? Ask ");
 write(format("<a href=mailto:sysop@%s>%s</a>.",system.inetaddr,system.operator));
 
-write("<br><font size='-2'>Dynamically generated ");
+write("<br><font size='-1'>Dynamically generated ");
 write(format("in %lu milliseconds ", new Date().valueOf()-start.valueOf()));
 write("by <a href=http://www.synchro.net>" + system.version + "</a>");
 writeln("<br>" + Date() + "</font>");
