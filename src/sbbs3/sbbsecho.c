@@ -64,7 +64,6 @@
 #include "sbbsdefs.h"
 #include "smblib.h"
 #include "scfglib.h"
-#include "post.h"
 #include "lzh.h"
 #include "sbbsecho.h"
 
