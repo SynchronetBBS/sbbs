@@ -3433,7 +3433,7 @@ void DLLCALL bbs_thread(void* arg)
             	lputs("BBS socket closed");
 				break;
 			}
-			lprintf("!ERROR %d: ACCEPT FAILED", ERROR_VALUE);
+			lprintf("!ERROR %d accepting connection", ERROR_VALUE);
 			continue;
 		}
 		char host_ip[32];
