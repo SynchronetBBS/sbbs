@@ -472,6 +472,7 @@ int edit_cmd(scfg_t *cfg, user_t *user)
 			case 1:
 				/* Expoert Mode */
 				user->misc ^= EXPERT;
+				modified=1;
 				break;
 		}
 	}
