@@ -4,6 +4,7 @@ include $(SRC_ROOT)/build/Common.gmake
 ifdef XP_SEM
 	MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpsem$(OFILE)
 endif
+MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpevent$(OFILE)
 
 MT_CFLAGS += -DLINK_LIST_THREADSAFE
 
