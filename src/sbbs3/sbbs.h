@@ -338,7 +338,7 @@ public:
 
     /* ansi_term.cpp */
 	char *	ansi(int atr);			/* Returns ansi escape sequence for atr */
-    void	ansi_getxy(int* x, int* y);
+    bool	ansi_getxy(int* x, int* y);
 	void	ansi_getlines(void);
 
 			/* Command Shell Methods */

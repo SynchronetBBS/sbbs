@@ -107,7 +107,7 @@ void sbbs_t::ansi_getlines()
 	}
 }
 
-void sbbs_t::ansi_getxy(int* x, int* y)
+bool sbbs_t::ansi_getxy(int* x, int* y)
 {
 	int 	rsp=0, ch;
 
@@ -129,8 +129,10 @@ void sbbs_t::ansi_getxy(int* x, int* y)
 				start=time(NULL);
 			}
             else if(isdigit(ch) && rsp==2) {
-               	(*y)*=10;
-                (*y)+=(ch&0xf);
+				if(y!=NULL) {
+               		(*y)*=10;
+					(*y)+=(ch&0xf);
+				}
 				start=time(NULL);
             }
             else if(ch==';' && rsp>=2) {
@@ -138,8 +140,10 @@ void sbbs_t::ansi_getxy(int* x, int* y)
 				start=time(NULL);
 			}
             else if(isdigit(ch) && rsp==3) {
-            	(*x)*=10;
-                (*x)+=(ch&0xf);
+				if(x!=NULL) {
+            		(*x)*=10;
+					(*x)+=(ch&0xf);
+				}
 				start=time(NULL);
             }
             else if(ch=='R' && rsp)
@@ -149,7 +153,9 @@ void sbbs_t::ansi_getxy(int* x, int* y)
         }
     	if(time(NULL)-start>TIMEOUT_ANSI_GETXY) {
         	lprintf("Node %d !TIMEOUT in ansi_getxy", cfg.node_num);
-            break;
+            return(false);
         }
     }
+
+	return(true);
 }
