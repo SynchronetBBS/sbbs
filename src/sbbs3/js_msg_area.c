@@ -265,7 +265,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 
 			if(user!=NULL &&
 				(user->level>=SYSOP_LEVEL ||
-					cfg->sub[d]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[d]->op_ar,user)))
+					(cfg->sub[d]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[d]->op_ar,user))))
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
 			else
 				val=BOOLEAN_TO_JSVAL(JS_FALSE);
