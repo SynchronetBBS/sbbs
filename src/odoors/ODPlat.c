@@ -578,9 +578,7 @@ void ODTimerStart(tODTimer *pTimer, tODMilliSec Duration)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
-   gettimeofday(&tv,NULL);
-   pTimer->Start.tv_sec=tv.tv_sec;
-   pTimer->Start.tv_usec=tv.tv_usec;
+   gettimeofday(&(pTimer->Start),NULL);
    pTimer->Duration = Duration;
 #endif
 }
@@ -618,10 +616,8 @@ BOOL ODTimerElapsed(tODTimer *pTimer)
    /* Don't bother checking for RunKernelTimer */
    if (pTimer==&RunKernelTimer)
       return;
-   tv.tv_sec=0;
-   tv.tv_usec=1000;
    end.tv_sec=pTimer->Start.tv_sec+(pTimer->Duration / 1000);
-   end.tv_usec=(pTimer->Start.tv_usec+(pTimer->Duration*1000))%1000000;
+   end.tv_usec=((pTimer->Start.tv_usec)+((pTimer->Duration)*1000))%1000000;
    gettimeofday(&tv,NULL);
    return(end.tv_sec >= tv.tv_sec && end.tv_usec >= tv.tv_usec);
 #endif
