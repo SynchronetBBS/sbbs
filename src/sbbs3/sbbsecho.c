@@ -4203,7 +4203,8 @@ int main(int argc, char **argv)
 
 	printf("Reading %s",cfg.areafile);
 	if((stream=fnopen(&file,cfg.areafile,O_RDONLY))==NULL) {
-		printf("Unable to open %s for read.\n",cfg.areafile);
+		printf("\nError opening %s for read: %s\n"
+			,cfg.areafile,strerror(errno));
 		bail(1); }
 	cfg.areas=0;		/* Total number of areas in AREAS.BBS */
 	cfg.area=NULL;
