@@ -46,6 +46,8 @@
 #include <vcl\Registry.hpp>	/* TRegistry */
 #pragma hdrstop
 
+#include "gen_defs.h"       /* BS and DEL */
+
 #define PCHAT_LEN 1000		/* Size of Private chat file */
 #define REG_KEY "\\Software\\Swindell\\Synchronet Chat\\"
 
@@ -223,7 +225,7 @@ void __fastcall TMainForm::InputTimerTick(TObject *Sender)
         /* Got char, display it */
         if(ch=='\r')
             Remote->Lines->Add("");
-        else if(ch=='\b')    // backspace
+        else if(ch==BS || ch==DEL)    // backspace
             Remote->Lines->Text
                 =Remote->Lines->Text.SetLength(Remote->Lines->Text.Length()-1);
         else {
