@@ -236,7 +236,8 @@ void sbbs_t::useredit(int usernumber)
 					if(c=='?') {
 						menu("exempt");
 						continue; }
-					if(!(useron.exempt&FLAG(c)) && console&CON_R_INPUT)
+					if(user.level>useron.level 
+						&& !(useron.exempt&FLAG(c)) && console&CON_R_INPUT)
 						continue;
 					user.exempt^=FLAG(c);
 					putuserrec(&cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,tmp,16)); }
@@ -269,7 +270,7 @@ void sbbs_t::useredit(int usernumber)
 					if(isdigit(c)) {
 						i=c&0xf;
 						continue; }
-					if(console & CON_R_INPUT)
+					if(user.level>useron.level && console&CON_R_INPUT)
 						switch(i) {
 							case 1:
 								if(!(useron.flags1&FLAG(c)))
@@ -407,8 +408,7 @@ void sbbs_t::useredit(int usernumber)
 			case 'Q':
 				CLS;
 				sys_status&=~SS_INUEDIT;
-				if(ar)
-					FREE(ar);
+				FREE_AR(ar);	/* assertion here */
 				return;
 			case 'R':
 				bputs(text[EnterYourRealName]);
@@ -570,8 +570,7 @@ void sbbs_t::useredit(int usernumber)
 				bputs(text[SearchStringPrompt]);
 				if(getstr(artxt,40,K_UPPER|K_LINE))
 					stype=SEARCH_ARS;
-				if(ar && ar[0])
-					FREE(ar);
+				FREE_AR(ar);
 				ar=arstr(NULL,artxt,&cfg);
 				break;
 			case '{':
@@ -616,8 +615,11 @@ void sbbs_t::useredit(int usernumber)
 				if(user.number==1)
 					user.number=lastuser(&cfg);
 				else user.number--;
-				break; } }
+				break; 
+		} /* switch */
+	} /* while */
 	sys_status&=~SS_INUEDIT;
+	FREE_AR(ar);
 }
 
 /****************************************************************************/
