@@ -264,6 +264,34 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 }
 
+static JSBool
+js_sys_status_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*vp = INT_TO_JSVAL(sbbs->sys_status);
+
+	return(JS_TRUE);
+
+}
+
+static JSBool
+js_sys_status_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	JS_ValueToInt32(cx, *vp, &sbbs->sys_status);
+
+	return(JS_TRUE);
+
+}
+
 bool sbbs_t::js_initcx()
 {
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
@@ -292,8 +320,16 @@ bool sbbs_t::js_initcx()
 		if((sysobj=js_CreateSystemObject(&cfg, js_cx, js_glob))==NULL)
 			break;
 
-		char	ver[256];
+		/* add sys_status */
+		if(!JS_DefineProperty(js_cx, sysobj, "status", INT_TO_JSVAL(sbbs->sys_status)
+			,js_sys_status_get
+			,js_sys_status_set
+			,JSPROP_ENUMERATE))
+			break;
+
+#if 0	/* Server Object */
 		jsval	val;
+		char	ver[256];
 		sprintf(ver,"%s v%s",TELNET_SERVER,VERSION);
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
 		if(!JS_SetProperty(js_cx, sysobj, "version", &val))
@@ -302,6 +338,7 @@ bool sbbs_t::js_initcx()
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, bbs_ver()));
 		if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
 			break;
+#endif
 
 		/* Console Object */
 		if(js_CreateConsoleObject(js_cx, js_glob)==NULL)
