@@ -54,6 +54,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	bool	header_cont=false;
 	ulong	crc,block,blocks;
 	smbmsg_t	msg;
+	smbmsg_t	remsg;
 	struct	tm tm;
 
 	memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
@@ -428,6 +429,26 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		FREE(body);
 		FREE(tail);
 		return(false); 
+	}
+
+	if(msg.reply_id!=NULL 
+		&& get_msg_by_id(&cfg, &smb, msg.reply_id, &remsg)==TRUE) {
+		msg.hdr.thread_orig=remsg.hdr.number;	/* needed for thread linkage */
+		smb_freemsgmem(&remsg);
+	}
+	if(msg.hdr.thread_orig
+		&& smb_getstatus(&smb)==SMB_SUCCESS) {
+		memset(&remsg,0,sizeof(remsg));
+		remsg.hdr.number=msg.hdr.thread_orig;
+		if(smb_getmsgidx(&smb,&remsg)==SMB_SUCCESS
+			&& smb_lockmsghdr(&smb,&remsg)==SMB_SUCCESS) {
+
+			if(smb_getmsghdr(&smb,&remsg)==SMB_SUCCESS)
+				smb_updatethread(&smb,&remsg,smb.status.last_msg+1);
+
+			smb_unlockmsghdr(&smb,&remsg);
+			smb_freemsgmem(&remsg);
+		}
 	}
 
 	if(smb.status.attr&SMB_HYPERALLOC) {
