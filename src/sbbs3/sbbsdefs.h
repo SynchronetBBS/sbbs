@@ -388,7 +388,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 																			
 									/* Bits in xtrn_t.misc					*/
 #define MULTIUSER		(1<<0) 		/* allow multi simultaneous users		*/
-#define ANSI			(1<<1) 		/* user must have ANSI, same as ^^^		*/
+#define XTRN_ANSI		(1<<1) 		/* user must have ANSI, same as ^^^		*/
 #define IO_INTS 		(1<<2) 		/* Intercept I/O interrupts 			*/
 #define MODUSERDAT		(1<<3) 		/* Program can modify user data 		*/
 #define WWIVCOLOR		(1<<4) 		/* Program uses WWIV color codes		*/
