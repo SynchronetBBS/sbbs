@@ -3686,6 +3686,7 @@ void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
 	if(queryServiceStatus==NULL || queryServiceConfig==NULL
     	|| (bbs_svc==NULL
         && ftp_svc==NULL
+		&& web_svc==NULL
         && mail_svc==NULL
         && services_svc==NULL)) {
     	ServiceStatusTimer->Enabled=false;
