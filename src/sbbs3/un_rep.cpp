@@ -213,15 +213,15 @@ bool sbbs_t::unpack_rep(char* repfile)
 				useron.fbacks++;
 				logon_fbacks++;
 				putuserrec(&cfg,useron.number,U_FBACKS,5
-					,itoa(useron.fbacks,tmp,10)); }
+					,ultoa(useron.fbacks,tmp,10)); }
 			else {
 				useron.emails++;
 				logon_emails++;
 				putuserrec(&cfg,useron.number,U_EMAILS,5
-					,itoa(useron.emails,tmp,10)); }
+					,ultoa(useron.emails,tmp,10)); }
 			useron.etoday++;
 			putuserrec(&cfg,useron.number,U_ETODAY,5
-				,itoa(useron.etoday,tmp,10));
+				,ultoa(useron.etoday,tmp,10));
 			bprintf(text[Emailed],username(&cfg,j,tmp),j);
 			sprintf(str,"E-mailed %s #%d",username(&cfg,j,tmp),j);
 			logline("E+",str);
@@ -388,8 +388,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			useron.ptoday++;
 			useron.posts++;
 			logon_posts++;
-			putuserrec(&cfg,useron.number,U_POSTS,5,itoa(useron.posts,str,10));
-			putuserrec(&cfg,useron.number,U_PTODAY,5,itoa(useron.ptoday,str,10));
+			putuserrec(&cfg,useron.number,U_POSTS,5,ultoa(useron.posts,str,10));
+			putuserrec(&cfg,useron.number,U_PTODAY,5,ultoa(useron.ptoday,str,10));
 			bprintf(text[Posted],cfg.grp[cfg.sub[n]->grp]->sname
 				,cfg.sub[n]->lname);
 			sprintf(str,"Posted on %s/%s",cfg.grp[cfg.sub[n]->grp]->sname

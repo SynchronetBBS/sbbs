@@ -513,7 +513,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 	tm=*tp;
 
 	bputs(text[NScanYear]);
-	itoa(tm.tm_year+1900,str,10);
+	ultoa(tm.tm_year+1900,str,10);
 	if(!getstr(str,4,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
 		return(false); }
@@ -524,7 +524,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 	tm.tm_year-=1900;	/* tm_year is years since 1900 */
 
 	bputs(text[NScanMonth]);
-	itoa(tm.tm_mon+1,str,10);
+	ultoa(tm.tm_mon+1,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
 		return(false); }
@@ -535,7 +535,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 	tm.tm_mon--;		/* tm_mon is zero-based */
 
 	bputs(text[NScanDay]);
-	itoa(tm.tm_mday,str,10);
+	ultoa(tm.tm_mday,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
 		return(false); }
@@ -556,7 +556,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 		else {
 			hour=tm.tm_hour;
 			pm=0; } }
-	itoa(hour,str,10);
+	ultoa(hour,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
 		return(false); }
@@ -566,7 +566,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 		return(false); }
 
 	bputs(text[NScanMinute]);
-	itoa(tm.tm_min,str,10);
+	ultoa(tm.tm_min,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
 		return(false); }

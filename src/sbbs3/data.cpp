@@ -299,7 +299,7 @@ void sbbs_t::gettimeleft(void)
 				useron.exempt&=~cfg.expired_exempt;
 				useron.rest|=cfg.expired_rest;
 				useron.expire=0; }
-			putuserrec(&cfg,useron.number,U_LEVEL,2,itoa(useron.level,str,10));
+			putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,str,10));
 			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,str,16));
 			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,str,16));
 			putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,str,16));

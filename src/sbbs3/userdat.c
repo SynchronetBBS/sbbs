@@ -306,28 +306,28 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_PWMOD,8,ultoa(user->pwmod,str,16));
 	putrec(userdat,U_PWMOD+8,2,crlf);
 
-	putrec(userdat,U_LOGONS,5,itoa(user->logons,str,10));
-	putrec(userdat,U_LTODAY,5,itoa(user->ltoday,str,10));
-	putrec(userdat,U_TIMEON,5,itoa(user->timeon,str,10));
-	putrec(userdat,U_TEXTRA,5,itoa(user->textra,str,10));
-	putrec(userdat,U_TTODAY,5,itoa(user->ttoday,str,10));
-	putrec(userdat,U_TLAST,5,itoa(user->tlast,str,10));
-	putrec(userdat,U_POSTS,5,itoa(user->posts,str,10));
-	putrec(userdat,U_EMAILS,5,itoa(user->emails,str,10));
-	putrec(userdat,U_FBACKS,5,itoa(user->fbacks,str,10));
-	putrec(userdat,U_ETODAY,5,itoa(user->etoday,str,10));
-	putrec(userdat,U_PTODAY,5,itoa(user->ptoday,str,10));
+	putrec(userdat,U_LOGONS,5,ultoa(user->logons,str,10));
+	putrec(userdat,U_LTODAY,5,ultoa(user->ltoday,str,10));
+	putrec(userdat,U_TIMEON,5,ultoa(user->timeon,str,10));
+	putrec(userdat,U_TEXTRA,5,ultoa(user->textra,str,10));
+	putrec(userdat,U_TTODAY,5,ultoa(user->ttoday,str,10));
+	putrec(userdat,U_TLAST,5,ultoa(user->tlast,str,10));
+	putrec(userdat,U_POSTS,5,ultoa(user->posts,str,10));
+	putrec(userdat,U_EMAILS,5,ultoa(user->emails,str,10));
+	putrec(userdat,U_FBACKS,5,ultoa(user->fbacks,str,10));
+	putrec(userdat,U_ETODAY,5,ultoa(user->etoday,str,10));
+	putrec(userdat,U_PTODAY,5,ultoa(user->ptoday,str,10));
 	putrec(userdat,U_PTODAY+5,2,crlf);
 
 	putrec(userdat,U_ULB,10,ultoa(user->ulb,str,10));
-	putrec(userdat,U_ULS,5,itoa(user->uls,str,10));
+	putrec(userdat,U_ULS,5,ultoa(user->uls,str,10));
 	putrec(userdat,U_DLB,10,ultoa(user->dlb,str,10));
-	putrec(userdat,U_DLS,5,itoa(user->dls,str,10));
+	putrec(userdat,U_DLS,5,ultoa(user->dls,str,10));
 	putrec(userdat,U_CDT,10,ultoa(user->cdt,str,10));
 	putrec(userdat,U_MIN,10,ultoa(user->min,str,10));
 	putrec(userdat,U_MIN+10,2,crlf);
 
-	putrec(userdat,U_LEVEL,2,itoa(user->level,str,10));
+	putrec(userdat,U_LEVEL,2,ultoa(user->level,str,10));
 	putrec(userdat,U_FLAGS1,8,ultoa(user->flags1,str,16));
 	putrec(userdat,U_TL,2,nulstr);	/* unused */
 	putrec(userdat,U_FLAGS2,8,ultoa(user->flags2,str,16));
@@ -335,16 +335,16 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_REST,8,ultoa(user->rest,str,16));
 	putrec(userdat,U_REST+8,2,crlf);
 
-	putrec(userdat,U_ROWS,2,itoa(user->rows,str,10));
+	putrec(userdat,U_ROWS,2,ultoa(user->rows,str,10));
 	userdat[U_SEX]=user->sex;
 	userdat[U_PROT]=user->prot;
 	putrec(userdat,U_MISC,8,ultoa(user->misc,str,16));
-	putrec(userdat,U_LEECH,2,itoa(user->leech,str,16));
+	putrec(userdat,U_LEECH,2,ultoa(user->leech,str,16));
 
 	putrec(userdat,U_CURSUB,8,user->cursub);
 	putrec(userdat,U_CURDIR,8,user->curdir);
 
-	// putrec(userdat,U_CMDSET,2,itoa(user->cmdset,str,16)); /* Unused */
+	// putrec(userdat,U_CMDSET,2,ultoa(user->cmdset,str,16)); /* Unused */
 	putrec(userdat,U_CMDSET+2,2,crlf);
 
 	putrec(userdat,U_XFER_CMD+LEN_XFER_CMD,2,crlf);

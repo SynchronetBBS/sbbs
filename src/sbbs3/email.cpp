@@ -286,13 +286,13 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	if(usernumber==1) {
 		useron.fbacks++;
 		logon_fbacks++;
-		putuserrec(&cfg,useron.number,U_FBACKS,5,itoa(useron.fbacks,tmp,10)); }
+		putuserrec(&cfg,useron.number,U_FBACKS,5,ultoa(useron.fbacks,tmp,10)); }
 	else {
 		useron.emails++;
 		logon_emails++;
-		putuserrec(&cfg,useron.number,U_EMAILS,5,itoa(useron.emails,tmp,10)); }
+		putuserrec(&cfg,useron.number,U_EMAILS,5,ultoa(useron.emails,tmp,10)); }
 	useron.etoday++;
-	putuserrec(&cfg,useron.number,U_ETODAY,5,itoa(useron.etoday,tmp,10));
+	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 	bprintf(text[Emailed],username(&cfg,usernumber,tmp),usernumber);
 	sprintf(str,"E-mailed %s #%d",username(&cfg,usernumber,tmp),usernumber);
 	logline("E+",str);

@@ -904,13 +904,13 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 	if(usernumber==1) {
 		useron.fbacks++;
 		logon_fbacks++;
-		putuserrec(&cfg,useron.number,U_FBACKS,5,itoa(useron.fbacks,tmp,10)); }
+		putuserrec(&cfg,useron.number,U_FBACKS,5,ultoa(useron.fbacks,tmp,10)); }
 	else {
 		useron.emails++;
 		logon_emails++;
-		putuserrec(&cfg,useron.number,U_EMAILS,5,itoa(useron.emails,tmp,10)); }
+		putuserrec(&cfg,useron.number,U_EMAILS,5,ultoa(useron.emails,tmp,10)); }
 	useron.etoday++;
-	putuserrec(&cfg,useron.number,U_ETODAY,5,itoa(useron.etoday,tmp,10));
+	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
 	for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
 		getnodedat(i,&node,0);

@@ -1507,7 +1507,7 @@ static void ctrl_thread(void* arg)
 
 			/* Adjust User Total Logons/Logons Today */
 			adjustuserrec(&scfg,user.number,U_LOGONS,5,1);
-			putuserrec(&scfg,user.number,U_LTODAY,5,itoa(user.ltoday+1,str,10));
+			putuserrec(&scfg,user.number,U_LTODAY,5,ultoa(user.ltoday+1,str,10));
 			continue;
 		}
 
@@ -2846,7 +2846,7 @@ static void ctrl_thread(void* arg)
 	if(user.number) {
 		user.tlast=(ushort)(time(NULL)-logintime);
 		putuserrec(&scfg,user.number,U_LASTON,8,ultoa(time(NULL),str,16));
-		putuserrec(&scfg,user.number,U_TLAST,5,itoa(user.tlast,str,10));
+		putuserrec(&scfg,user.number,U_TLAST,5,ultoa(user.tlast,str,10));
 		adjustuserrec(&scfg,user.number,U_TIMEON,5,user.tlast);
 	}
 

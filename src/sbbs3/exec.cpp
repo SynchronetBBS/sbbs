@@ -1203,7 +1203,7 @@ int sbbs_t::exec(csi_t *csi)
 				return(0);
 			case CS_SET_USER_LEVEL:
 				useron.level=*(csi->ip++);
-				putuserrec(&cfg,useron.number,U_LEVEL,2,itoa(useron.level,tmp,10));
+				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10));
 				return(0);
 			case CS_SET_USER_STRING:
 				csi->logic=LOGIC_FALSE;

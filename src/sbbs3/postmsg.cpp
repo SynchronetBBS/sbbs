@@ -328,8 +328,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	useron.ptoday++;
 	useron.posts++;
 	logon_posts++;
-	putuserrec(&cfg,useron.number,U_POSTS,5,itoa(useron.posts,str,10));
-	putuserrec(&cfg,useron.number,U_PTODAY,5,itoa(useron.ptoday,str,10));
+	putuserrec(&cfg,useron.number,U_POSTS,5,ultoa(useron.posts,str,10));
+	putuserrec(&cfg,useron.number,U_PTODAY,5,ultoa(useron.ptoday,str,10));
 	bprintf(text[Posted],cfg.grp[cfg.sub[subnum]->grp]->sname
 		,cfg.sub[subnum]->lname);
 	sprintf(str,"Posted on %s %s",cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);

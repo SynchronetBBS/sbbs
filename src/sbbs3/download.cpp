@@ -221,7 +221,7 @@ void sbbs_t::autohangup()
 	for(c=9,a=0;c>-1 && online && !a;c--) {
 		checkline();
 		attr(LIGHTGRAY|HIGH);
-		bputs(itoa(c,tmp,10));
+		bputs(ultoa(c,tmp,10));
 		attr(GREEN);
 		outchar(']');
 		while((k=inkey(0))!=0 && online) {

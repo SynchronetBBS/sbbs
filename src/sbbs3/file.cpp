@@ -141,7 +141,7 @@ void sbbs_t::openfile(file_t* f)
 		errormsg(WHERE,ERR_READ,str1,3);
 		return; }
 	str2[3]=0;
-	itoa(atoi(str2)+1,str3,10);
+	ultoa(atoi(str2)+1,str3,10);
 	putrec(str2,0,3,str3);
 	lseek(file,f->datoffset+F_OPENCOUNT,SEEK_SET);
 	if(write(file,str2,3)!=3) {
@@ -189,7 +189,7 @@ void sbbs_t::closefile(file_t* f)
 	str2[3]=0;
 	ch=atoi(str2);
 	if(ch) ch--;
-	itoa(ch,str3,10);
+	ultoa(ch,str3,10);
 	putrec(str2,0,3,str3);
 	lseek(file,f->datoffset+F_OPENCOUNT,SEEK_SET);
 	if(write(file,str2,3)!=3) {

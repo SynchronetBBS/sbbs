@@ -61,7 +61,7 @@ void sbbs_t::putusername(int number, char *name)
 		return; }
 	if(length<(((long)number-1)*(LEN_ALIAS+2))) {
 		sprintf(str,"%*s",LEN_ALIAS,nulstr);
-		strset(str,ETX);
+		memset(str,ETX,LEN_ALIAS);
 		strcat(str,crlf);
 		lseek(file,0L,SEEK_END);
 		while(filelength(file)<((long)number*(LEN_ALIAS+2)))

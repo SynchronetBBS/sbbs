@@ -178,10 +178,10 @@ void sbbs_t::logout()
 
 	putuserrec(&cfg,useron.number,U_NS_TIME,8,ultoa(last_ns_time,str,16));
 	putuserrec(&cfg,useron.number,U_LASTON,8,ultoa(useron.laston,str,16));
-	putuserrec(&cfg,useron.number,U_TIMEON,5,itoa(useron.timeon,str,10));
-	putuserrec(&cfg,useron.number,U_TTODAY,5,itoa(useron.ttoday,str,10));
-	putuserrec(&cfg,useron.number,U_TEXTRA,5,itoa(useron.textra,str,10));
-	putuserrec(&cfg,useron.number,U_TLAST,5,itoa(useron.tlast,str,10));
+	putuserrec(&cfg,useron.number,U_TIMEON,5,ultoa(useron.timeon,str,10));
+	putuserrec(&cfg,useron.number,U_TTODAY,5,ultoa(useron.ttoday,str,10));
+	putuserrec(&cfg,useron.number,U_TEXTRA,5,ultoa(useron.textra,str,10));
+	putuserrec(&cfg,useron.number,U_TLAST,5,ultoa(useron.tlast,str,10));
 
 	getusrsubs();
 	getusrdirs();

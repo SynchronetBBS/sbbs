@@ -1149,7 +1149,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			read(file,&i,2);			/* SecLvl */
 			if(i<90) {
 				useron.level=i;
-				putuserrec(&cfg,useron.number,U_LEVEL,2,itoa(useron.level,tmp,10)); }
+				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); }
 			close(file);
 			remove(path); }
 		return; }
@@ -1164,7 +1164,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				mod=atoi(str);
 				if(mod<90) {
 					useron.level=(char)mod;
-					putuserrec(&cfg,useron.number,U_LEVEL,2,itoa(useron.level,tmp,10)); } }
+					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); } }
 
 			for(;i<23;i++)
 				if(!fgets(str,128,stream))
@@ -1221,11 +1221,11 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				read(file,&i,2);
 				if(i<90) {
 					useron.level=i;
-					putuserrec(&cfg,useron.number,U_LEVEL,2,itoa(useron.level,tmp,10)); }
+					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); }
 				lseek(file,75,SEEK_CUR);	/* read in expiration date */
 				read(file,&i,2);			/* convert from julian to unix */
 				useron.expire=juliantounix(i);
-				putuserrec(&cfg,useron.number,U_EXPIRE,8,ltoa(useron.expire,tmp,16)); }
+				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa(useron.expire,tmp,16)); }
 			close(file); }
 		return; }
 
@@ -1251,7 +1251,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			mod=atoi(str);
 			if(isdigit(str[0]) && mod<90) {
 				useron.level=(uchar)mod;
-				putuserrec(&cfg,useron.number,U_LEVEL,2,itoa(useron.level,tmp,10)); } }
+				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); } }
 		fgets(str,81,stream);		 /* was transfer level, now ignored */
 		if(fgets(str,81,stream)) {		/* flags #1 */
 			if(strchr(str,'-'))         /* remove flags */

@@ -71,7 +71,7 @@ void sbbs_t::chatsection()
 			case 'S':
 				useron.chat^=CHAT_SPLITP;
 				putuserrec(&cfg,useron.number,U_CHAT,8
-					,ltoa(useron.chat,str,16));
+					,ultoa(useron.chat,str,16));
 				bprintf("\r\nPrivate split-screen chat is now: %s\r\n"
 					,useron.chat&CHAT_SPLITP ? text[ON]:text[OFF]);
 				break;
@@ -79,7 +79,7 @@ void sbbs_t::chatsection()
 				CRLF;
 				useron.chat^=CHAT_NOACT;
 				putuserrec(&cfg,useron.number,U_CHAT,8
-					,ltoa(useron.chat,str,16));
+					,ultoa(useron.chat,str,16));
 				getnodedat(cfg.node_num,&thisnode,1);
 				thisnode.misc^=NODE_AOFF;
 				printnodedat(cfg.node_num,&thisnode);
@@ -90,7 +90,7 @@ void sbbs_t::chatsection()
 				CRLF;
 				useron.chat^=CHAT_NOPAGE;
 				putuserrec(&cfg,useron.number,U_CHAT,8
-					,ltoa(useron.chat,str,16));
+					,ultoa(useron.chat,str,16));
 				getnodedat(cfg.node_num,&thisnode,1);
 				thisnode.misc^=NODE_POFF;
 				printnodedat(cfg.node_num,&thisnode);
@@ -312,7 +312,7 @@ void sbbs_t::chatsection()
 										,useron.chat&CHAT_ACTION
 										? text[ON]:text[OFF]);
 									putuserrec(&cfg,useron.number,U_CHAT,8
-										,ltoa(useron.chat,str,16));
+										,ultoa(useron.chat,str,16));
 									break;
 								case 'C':   /* List of action commands */
 									CRLF;
@@ -334,7 +334,7 @@ void sbbs_t::chatsection()
 										,useron.chat&CHAT_ECHO
 										? text[ON]:text[OFF]);
 									putuserrec(&cfg,useron.number,U_CHAT,8
-										,ltoa(useron.chat,str,16));
+										,ultoa(useron.chat,str,16));
 									break;
 								case 'L':	/* list nodes */
 									CRLF;
@@ -1410,7 +1410,7 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 							break;
 						case 'L':
                     		if(sys_status&SS_USERON)
-								strcat(theanswer,itoa(useron.level,tmp,10));
+								strcat(theanswer,ultoa(useron.level,tmp,10));
 							else
 								strcat(theanswer,"0");
 							break;
@@ -1476,7 +1476,7 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 							break;
 						case '#':
                     		if(sys_status&SS_USERON)
-								strcat(theanswer,itoa(getage(&cfg,useron.birth)
+								strcat(theanswer,ultoa(getage(&cfg,useron.birth)
 									,tmp,10));
 							else
 								strcat(theanswer,"0");

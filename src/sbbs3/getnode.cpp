@@ -468,7 +468,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 					bputs("performing sysop activities");
 					break;
 				default:
-					bputs(itoa(node->action,tmp,10));
+					bputs(ultoa(node->action,tmp,10));
 					break;  }
 			if(!node->connection)
 				bputs(" locally");

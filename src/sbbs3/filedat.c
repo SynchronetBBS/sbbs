@@ -125,9 +125,9 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 	putrec(buf,F_DESC+LEN_FDESC,2,crlf);
 	putrec(buf,F_ULER,LEN_ALIAS+5,f->uler);
 	putrec(buf,F_ULER+LEN_ALIAS+5,2,crlf);
-	putrec(buf,F_TIMESDLED,5,itoa(f->timesdled,tmp,10));
+	putrec(buf,F_TIMESDLED,5,ultoa(f->timesdled,tmp,10));
 	putrec(buf,F_TIMESDLED+5,2,crlf);
-	putrec(buf,F_OPENCOUNT,3,itoa(f->opencount,tmp,10));
+	putrec(buf,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
 	putrec(buf,F_OPENCOUNT+3,2,crlf);
 	buf[F_MISC]=f->misc+SP;
 	putrec(buf,F_ALTPATH,2,hexplus(f->altpath,tmp));
@@ -218,7 +218,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	putrec(fdat,F_ULER+LEN_ALIAS+5,2,crlf);
 	putrec(fdat,F_TIMESDLED,5,ultoa(f->timesdled,tmp,10));
 	putrec(fdat,F_TIMESDLED+5,2,crlf);
-	putrec(fdat,F_OPENCOUNT,3,itoa(f->opencount,tmp,10));
+	putrec(fdat,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
 	putrec(fdat,F_OPENCOUNT+3,2,crlf);
 	fdat[F_MISC]=f->misc+SP;
 	putrec(fdat,F_ALTPATH,2,hexplus(f->altpath,tmp));

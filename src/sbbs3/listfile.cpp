@@ -256,7 +256,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 				if(tofile) {
 					write(tofile,crlf,2);
 					sprintf(hdr,"%*s",c,nulstr);
-					strset(hdr,'Ä');
+					memset(hdr,'Ä',c);
 					strcat(hdr,crlf);
 					write(tofile,hdr,strlen(hdr)); }
 				else {
@@ -991,17 +991,17 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					bputs(text[EditCreditValue]);
 					getstr(str,7,K_NUMBER|K_EDIT|K_AUTODEL);
 					f.cdt=atol(str);
-					itoa(f.timesdled,str,10);
+					ultoa(f.timesdled,str,10);
 					bputs(text[EditTimesDownloaded]);
 					getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL);
 					f.timesdled=atoi(str);
 					if(f.opencount) {
-						itoa(f.opencount,str,10);
+						ultoa(f.opencount,str,10);
 						bputs(text[EditOpenCount]);
 						getstr(str,3,K_NUMBER|K_EDIT|K_AUTODEL);
 						f.opencount=atoi(str); }
 					if(cfg.altpaths || f.altpath) {
-						itoa(f.altpath,str,10);
+						ultoa(f.altpath,str,10);
 						bputs(text[EditAltPath]);
 						getstr(str,3,K_NUMBER|K_EDIT|K_AUTODEL);
 						f.altpath=atoi(str);

@@ -183,8 +183,8 @@ void sbbs_t::bulkmail(uchar *ar)
 		errormsg(WHERE,ERR_WRITE,smb.file,x);
 		return; }
 
-	putuserrec(&cfg,useron.number,U_EMAILS,5,itoa(useron.emails,tmp,10));
-	putuserrec(&cfg,useron.number,U_ETODAY,5,itoa(useron.etoday,tmp,10));
+	putuserrec(&cfg,useron.number,U_EMAILS,5,ultoa(useron.emails,tmp,10));
+	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 }
 
 
