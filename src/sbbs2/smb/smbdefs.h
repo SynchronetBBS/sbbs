@@ -11,10 +11,6 @@
 /* Macros */
 /**********/
 
-#define SMB_VERSION 		0x0121		/* SMB format version */
-										/* High byte major, low byte minor */
-#define SMBLIB_VERSION		"2.01"      /* SMB library version */
-
 										/* Control characters */
 #define TAB 				0x09		/* Horizontal tabulation	^I */
 #define LF					0x0a		/* Line feed				^J */
@@ -261,6 +257,7 @@
 #define MSG_KILLREAD		(1<<6)
 #define MSG_MODERATED		(1<<7)
 #define MSG_VALIDATED		(1<<8)
+#define MSG_REPLIED			(1<<9)		// User replied to this message
 
 										/* Auxillary header attributes */
 #define MSG_FILEREQUEST 	(1<<0)		// File request
@@ -334,6 +331,11 @@ enum {
 /************/
 /* Typedefs */
 /************/
+
+#ifdef _WIN32	/* necessary for compatibility with SBBS v2 */
+#pragma pack(push)
+#pragma pack(1)
+#endif
 
 typedef struct {			// Time with time-zone
 
@@ -430,7 +432,7 @@ typedef struct {				// Message
 
 	idxrec_t	idx;			// Index
 	msghdr_t	hdr;			// Header record (fixed portion)
-	uchar		*to,			// To name
+	char		*to,			// To name
 				*to_ext,		// To extension
 				*from,			// From name
 				*from_ext,		// From extension
@@ -461,11 +463,14 @@ typedef struct {			// Message base
     FILE    *sid_fp;        // File pointer for index (.sid) file
     FILE    *sda_fp;        // File pointer for data allocation (.sda) file
     FILE    *sha_fp;        // File pointer for header allocation (.sha) file
-	long	retry_time; 	// Maximum number of seconds to retry opens/locks
+	ulong	retry_time; 	// Maximum number of seconds to retry opens/locks
 	smbstatus_t status; 	// Status header record
 	char	shd_buf[SHD_BLOCK_LEN]; 	// File I/O buffer for header file
 
     } smb_t;
 
+#ifdef _WIN32
+#pragma pack(pop)		/* original packing */
+#endif
 
 #endif /* Don't add anything after this #endif statement */

@@ -3,16 +3,59 @@
 /* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
 
 #include "smblib.h"
-#include "lzh.h"
+
+/* Use smb_ver() and smb_lib_ver() to obtain these values */
+#define SMBLIB_VERSION		"2.10"      /* SMB library version */
+#define SMB_VERSION 		0x0121		/* SMB format version */
+										/* High byte major, low byte minor */
+
+#ifdef _MSC_VER	  /* Microsoft C */
+#define sopen(f,o,s,p)	   _sopen(f,o,s,p)
+#define close(f)		   _close(f)
+#define SH_DENYNO		   _SH_DENYNO
+#define SH_DENYRW		   _SH_DENYRW
+
+#include <sys/locking.h>
+
+int lock(int file, long offset, int size) 
+{
+	int	i;
+	long	pos;
+   
+	pos=tell(file);
+	if(offset!=pos)
+		lseek(file, offset, SEEK_SET);
+	i=locking(file,LK_NBLCK,size);
+	if(offset!=pos)
+		lseek(file, pos, SEEK_SET);
+	return(i);
+}
+
+int unlock(int file, long offset, int size)
+{
+	int	i;
+	long	pos;
+   
+	pos=tell(file);
+	if(offset!=pos)
+		lseek(file, offset, SEEK_SET);
+	i=locking(file,LK_UNLCK,size);
+	if(offset!=pos)
+		lseek(file, pos, SEEK_SET);
+	return(i);
+}
+
+#endif /* _MSC_VER */
+
 
 int SMBCALL smb_ver(void)
 {
-return(SMB_VERSION);
+	return(SMB_VERSION);
 }
 
 char * SMBCALL smb_lib_ver(void)
 {
-return(SMBLIB_VERSION);
+	return(SMBLIB_VERSION);
 }
 
 /****************************************************************************/
@@ -591,15 +634,24 @@ void SMBCALL smb_freemsgmem(smbmsg_t *msg)
 {
 	ushort	i;
 
-if(msg->dfield)
-	FREE(msg->dfield);
-for(i=0;i<msg->total_hfields;i++)
-	if(msg->hfield_dat[i])
-		FREE(msg->hfield_dat[i]);
-if(msg->hfield)
-	FREE(msg->hfield);
-if(msg->hfield_dat)
-	FREE(msg->hfield_dat);
+	if(msg->dfield) {
+		FREE(msg->dfield);
+		msg->dfield=NULL;
+	}
+	for(i=0;i<msg->total_hfields;i++)
+		if(msg->hfield_dat[i]) {
+			FREE(msg->hfield_dat[i]);
+			msg->hfield_dat[i]=NULL;
+		}
+	msg->total_hfields=0;
+	if(msg->hfield) {
+		FREE(msg->hfield);
+		msg->hfield=NULL;
+	}
+	if(msg->hfield_dat) {
+		FREE(msg->hfield_dat);
+		msg->hfield_dat=NULL;
+	}
 }
 
 /****************************************************************************/
@@ -981,10 +1033,17 @@ return(offset);
 int SMBCALL smb_freemsgdat(smb_t *smb, ulong offset, ulong length
 			, ushort headers)
 {
+	int		da_opened=0;
 	ushort	i;
 	ulong	l,blocks;
 
 blocks=smb_datblocks(length);
+
+if(smb->sda_fp==NULL) {
+	if((i=smb_open_da(smb))!=0)
+		return(i);
+	da_opened=1;
+}
 
 clearerr(smb->sda_fp);
 for(l=0;l<blocks;l++) {
@@ -1001,6 +1060,8 @@ for(l=0;l<blocks;l++) {
 	if(!fwrite(&i,2,1,smb->sda_fp))
 		return(4); }
 fflush(smb->sda_fp);
+if(da_opened)
+	smb_close_da(smb);
 return(0);
 }
 
@@ -1131,7 +1192,7 @@ return(offset);
 /************************************************************************/
 long SMBCALL smb_hallochdr(smb_t *smb)
 {
-	long l;
+	ulong l;
 
 fflush(smb->shd_fp);
 fseek(smb->shd_fp,0L,SEEK_END);
@@ -1219,33 +1280,33 @@ void SMBCALL smb_clearerr(FILE *fp)
 clearerr(fp);
 }
 
-long SMBCALL smb_fread(char HUGE16 *buf, long bytes, FILE *fp)
+long SMBCALL smb_fread(void HUGE16 *buf, long bytes, FILE *fp)
 {
 #ifdef __FLAT__
 	return(fread(buf,1,bytes,fp));
 #else
 	long count;
 
-for(count=bytes;count>0x7fff;count-=0x7fff,buf+=0x7fff)
+for(count=bytes;count>0x7fff;count-=0x7fff,(char*)buf+=0x7fff)
 	if(fread((char *)buf,1,0x7fff,fp)!=0x7fff)
 		return(bytes-count);
-if(fread((char *)buf,1,(int)count,fp)!=count)
+if(fread((char *)buf,1,(size_t)count,fp)!=(size_t)count)
 	return(bytes-count);
 return(bytes);
 #endif
 }
 
-long SMBCALL smb_fwrite(char HUGE16 *buf, long bytes, FILE *fp)
+long SMBCALL smb_fwrite(void HUGE16 *buf, long bytes, FILE *fp)
 {
 #ifdef __FLAT__
 	return(fwrite(buf,1,bytes,fp));
 #else
 	long count;
 
-for(count=bytes;count>0x7fff;count-=0x7fff,buf+=0x7fff)
+for(count=bytes;count>0x7fff;count-=0x7fff,(char*)buf+=0x7fff)
 	if(fwrite((char *)buf,1,0x7fff,fp)!=0x7fff)
 		return(bytes-count);
-if(fwrite((char *)buf,1,(int)count,fp)!=count)
+if(fwrite((char *)buf,1,(size_t)count,fp)!=(size_t)count)
 	return(bytes-count);
 return(bytes);
 #endif
@@ -1257,8 +1318,8 @@ char HUGE16 * SMBCALL smb_getmsgtxt(smb_t *smb, smbmsg_t *msg, ulong mode)
 {
 	char	HUGE16 *buf=NULL,HUGE16 *lzhbuf,HUGE16 *p;
 	ushort	xlat;
-	int 	i,j,lzh;
-	long	l=0,lzo,lzhlen,length;
+	int 	i,lzh;
+	long	l=0,lzhlen,length;
 
 for(i=0;i<msg->hdr.total_dfields;i++) {
 	if(!(msg->dfield[i].type==TEXT_BODY
