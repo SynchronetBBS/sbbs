@@ -19,6 +19,6 @@ for(n=0;n<system.node_list.length;n++) {
         else
             action=format(NodeAction[system.node_list[n].action]
                 ,system.node_list[n].aux);
-        template.node_list.push({ name: u.alias, email: u.email, action: action});
+        template.node_list.push({ name: u.alias, email: u.email.replace(/@/g,"&#64;"), action: action});
     }
 }
