@@ -55,6 +55,7 @@ enum {
 
 	,SYS_PROP_LASTUSERON
 	,SYS_PROP_FREEDISKSPACE
+	,SYS_PROP_FREEDISKSPACEK
 
 	,SYS_PROP_NODES
 	,SYS_PROP_LASTNODE
@@ -156,7 +157,11 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			p=lastuseron;
 			break;
 		case SYS_PROP_FREEDISKSPACE:
-			val = getfreediskspace(cfg->temp_dir,0);
+		case SYS_PROP_FREEDISKSPACEK:
+			if(tiny==SYS_PROP_FREEDISKSPACE)
+				val = getfreediskspace(cfg->temp_dir,0);
+			else
+				val = getfreediskspace(cfg->temp_dir,1024);
 			if(INT_FITS_IN_JSVAL(val) && !(val&0x80000000))
 				*vp = INT_TO_JSVAL(val);
 			else
@@ -311,6 +316,7 @@ static struct JSPropertySpec js_system_properties[] = {
 
 	{	"lastuseron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"freediskspacek",			SYS_PROP_FREEDISKSPACEK	,SYSOBJ_FLAGS,	NULL,	NULL },
 
 	{	"nodes",					SYS_PROP_NODES,		SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"lastnode",					SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		NULL,	NULL },
