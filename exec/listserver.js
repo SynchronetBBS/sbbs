@@ -36,6 +36,12 @@ for(var l in list_array) {
 		list_array[l].description = msg_area.sub[list_array[l].sub].description;
 }
 
+mailbase = new MsgBase("mail");
+if(mailbase.open()==false) {
+	log(LOG_ERR,"!ERROR " + mailbase.error + " opening mail database");
+	exit();
+}
+
 /* Inbound message from SMTP Server? */
 if(this.recipient_list_filename!=undefined) {	
 
@@ -89,35 +95,21 @@ if(this.recipient_list_filename!=undefined) {
 		if(subj_cmd)
 			body.unshift(header.subject);	/* Process the subject as a command */
 
-		body=process_control_msg(body);
+		var response = process_control_msg(body);
 		
-		header.to=header.from;
-		header.form=listserver_address;
+		header.subject		= response.subject;
+		header.to			= sender_name;
+		header.to_net_addr	= sender_address;
+		header.from			= listserver_address;
+		header.from_agent	= AGENT_PROCESS;
 
 		/* Write response to message */
-		if(!msgtxt_file.open("w")) {
-			error_file.writeln(log(LOG_ERR,format("!ERROR %s opening message text: %s"
-				,msgtxt_file.error, message_text_filename)));
-			exit();
-		}
-		for(h in header)
-			msgtxt_file.writeln(h+": "+header[h]);
-		msgtxt_file.writeln();
-		msgtxt_file.writeAll(body);
-		msgtxt_file.close();
+		if(!mailbase.save_msg(header, response.body.join('\r\n'))) {
+			log(LOG_ERR,format("%s !ERROR %s saving response message to mail msgbase"
+				,list.name, msgbase.error));
+		} 
 
-		/* Re-write the recipient list */
-		if(!rcptlst_file.open("w")) {
-			error_file.writeln(log(LOG_ERR,format("!ERROR %s opening recipient list: %s"
-				,rcptlst_file.error, recipient_list_filename)));
-			exit();
-		}
-		rcptlst_file.writeln("[0]");
-		rcptlst_file.writeln("Recipient="+header.to);
-		rcptlst_file.writeln("RecipientAgent="+AGENT_PROCESS);
-		rcptlst_file.writeln("RecipientNetType="+NET_INTERNET);
-		rcptlst_file.writeln("RecipientNetAddr="+header.to);
-		rcptlst_file.close();
+		file_remove(recipient_list_filename);
 
 		exit();
 	}
@@ -142,12 +134,6 @@ if(this.recipient_list_filename!=undefined) {
 		}
 	}
 
-	exit();
-}
-
-mailbase = new MsgBase("mail");
-if(mailbase.open()==false) {
-	log(LOG_ERR,"!ERROR " + mailbase.error + " opening mail database");
 	exit();
 }
 
@@ -296,9 +282,9 @@ mailbase.close();
 /* Handle Mailing List Control Messages (e.g. subscribe/unsubscribe) here */
 function process_control_msg(cmd_list)
 {
-	var response = new Array();
+	var response = { body: new Array(), subject: "" };
 	
-	response.push("Synchronet ListServer " +REVISION+ " Reponse:");
+	response.body.push("Synchronet ListServer " +REVISION+ " Reponse:");
 
 	for(var c in cmd_list) {
 		var cmd=cmd_list[c];
@@ -307,21 +293,21 @@ function process_control_msg(cmd_list)
 		var token=cmd.split(/\s+/);
 		switch(token[0].toLowerCase()) {
 			case "lists":
-				response.push("List of lists:");
+				response.body.push("List of lists:");
 				for(var l in list_array)
-					response.push("\t"+list_array[l].name+"\t"+list_array[l].description);
+					response.body.push("\t"+list_array[l].name+"\t"+list_array[l].description);
 				break;
 			case "end":
 				return(response);
 			default:
-				response.push("!Bad command: " + cmd);
+				response.body.push("!Bad command: " + cmd);
 			case "help":
-				response.push("Available commands:");
-				response.push("\tlists");
-				response.push("\tsubscribe");
-				response.push("\tunsubscribe");
-				response.push("\thelp");
-				response.push("\tend");
+				response.body.push("Available commands:");
+				response.body.push("\tlists");
+				response.body.push("\tsubscribe");
+				response.body.push("\tunsubscribe");
+				response.body.push("\thelp");
+				response.body.push("\tend");
 				break;
 		}
 	}
