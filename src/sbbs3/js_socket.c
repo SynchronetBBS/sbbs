@@ -55,7 +55,7 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
-	if(p==NULL || (!p->debug && !error))
+	if(p==NULL || (!p->debug /*&& !error */))
 		return;
 
     va_start(argptr,fmt);
