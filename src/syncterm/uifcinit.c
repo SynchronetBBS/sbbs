@@ -33,7 +33,7 @@ int	init_uifc(void) {
 void uifcbail(void)
 {
 	if(uifc_initialized) {
-		uifc.bail;
+		uifc.bail();
 	}
 	uifc_initialized=0;
 }
