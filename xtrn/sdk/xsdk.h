@@ -46,8 +46,10 @@
 	#include <io.h>
 	#include <dos.h>
 	#include <share.h>
-	#include <windows.h>
 	#include <conio.h>
+#endif
+#ifdef _WIN32
+	#include <windows.h>
 #endif
 #include <time.h>
 #include <ctype.h>
