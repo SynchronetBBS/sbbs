@@ -348,7 +348,7 @@ static void truncsp(char *str)
 }
 
 
-static char* alias(char* name, char* alias)
+static char* alias(SOCKET socket, char* name, char* alias)
 {
 	int		file;
 	char*	p=name;
@@ -381,7 +381,7 @@ static char* alias(char* name, char* alias)
 			while(*np && *np<=' ') np++;
 			p=np;
 			truncsp(p);
-			lprintf("0000 Alias: %s",p);
+			lprintf("%04d SMTP ALIAS: %s",socket,p);
 			break;
 		}
 	}
@@ -1061,6 +1061,7 @@ static void smtp_thread(void* arg)
 	char		buf[1024],*p,*tp;
 	char		hdrfield[512];
 	char		alias_buf[128];
+	char		name_alias_buf[128];
 	char		reverse_path[128];
 	char		date[64];
 	char		month[16];
@@ -1102,15 +1103,21 @@ static void smtp_thread(void* arg)
 	enum {
 			 SMTP_STATE_INITIAL
 			,SMTP_STATE_HELO
-			,SMTP_STATE_MAIL
-			,SMTP_STATE_SEND
-			,SMTP_STATE_SOML
-			,SMTP_STATE_SAML
-			,SMTP_STATE_RCPT
+			,SMTP_STATE_MAIL_FROM
+			,SMTP_STATE_RCPT_TO
 			,SMTP_STATE_DATA_HEADER
 			,SMTP_STATE_DATA_BODY
 
 	} state = SMTP_STATE_INITIAL;
+
+	enum {
+			 SMTP_CMD_NONE
+			,SMTP_CMD_MAIL
+			,SMTP_CMD_SEND
+			,SMTP_CMD_SOML
+			,SMTP_CMD_SAML
+
+	} cmd = SMTP_CMD_NONE;
 
 	thread_up();
 
@@ -1269,6 +1276,7 @@ static void smtp_thread(void* arg)
 			if(!strcmp(buf,".")) {
 
 				state=SMTP_STATE_HELO;	/* RESET state machine here in case of error */
+				cmd=SMTP_CMD_NONE;
 
 				if(msgtxt==NULL) {
 					lprintf("%04d !SMTP NO MESSAGE TEXT FILE POINTER?", socket);
@@ -1682,6 +1690,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
 			esmtp=FALSE;
 			state=SMTP_STATE_HELO;
+			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
 			continue;
 		}
@@ -1692,6 +1701,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
+			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
 			continue;
 		}
@@ -1721,6 +1731,7 @@ static void smtp_thread(void* arg)
 			rewind(rcptlst);
 			chsize(fileno(rcptlst),0);
 			state=SMTP_STATE_HELO;
+			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
 			continue;
 		}
@@ -1735,7 +1746,8 @@ static void smtp_thread(void* arg)
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_MAIL;
+			state=SMTP_STATE_MAIL_FROM;
+			cmd=SMTP_CMD_MAIL;
 			continue;
 		}
 
@@ -1745,7 +1757,8 @@ static void smtp_thread(void* arg)
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_SEND;
+			state=SMTP_STATE_MAIL_FROM;
+			cmd=SMTP_CMD_SEND;
 			continue;
 		}
 		/* Send OR Mail a Message to a local user */
@@ -1754,7 +1767,8 @@ static void smtp_thread(void* arg)
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_SOML;
+			state=SMTP_STATE_MAIL_FROM;
+			cmd=SMTP_CMD_SOML;
 			continue;
 		}
 		/* Send AND Mail a Message to a local user */
@@ -1763,7 +1777,8 @@ static void smtp_thread(void* arg)
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_SAML;
+			state=SMTP_STATE_MAIL_FROM;
+			cmd=SMTP_CMD_SAML;
 			continue;
 		}
 
@@ -1781,7 +1796,7 @@ static void smtp_thread(void* arg)
 
 		if(!strnicmp(buf,"RCPT TO:",8)) {
 
-			if(state<SMTP_STATE_MAIL) {
+			if(state<SMTP_STATE_MAIL_FROM) {
 				lprintf("%04d !SMTP MISSING 'MAIL' command",socket);
 				sockprintf(socket, SMTP_BADSEQ);
 				continue;
@@ -1792,16 +1807,21 @@ static void smtp_thread(void* arg)
 				spy=fopen(str,"a");
 			}
 
-			sprintf(str,"%.*s",(int)sizeof(str)-1,buf+8);
-			p=str;
+			p=buf+8;
 			while(*p && *p<=' ') p++;
+			sprintf(str,"%.*s",(int)sizeof(str)-1,p);
+			p=str;
 
 			if(*p=='<') p++;				/* Skip '<' */
 			tp=strchr(str,'>');				/* Truncate '>' */
 			if(tp!=NULL) *tp=0;
 
-			tp=strrchr(str,'@');
-			if(state==SMTP_STATE_MAIL && tp!=NULL) {
+			sprintf(rcpt_addr,"%.*s",sizeof(rcpt_addr)-1,p);
+
+			p=alias(socket,p,alias_buf);
+
+			tp=strrchr(p,'@');
+			if(cmd==SMTP_CMD_MAIL && tp!=NULL) {
 				
 				/* RELAY */
 				sprintf(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
@@ -1822,21 +1842,22 @@ static void smtp_thread(void* arg)
 						,socket, tp+1);
 
 					fprintf(rcptlst,"0\n%.*s\n%.*s\n"
-						,(int)sizeof(rcpt_name)-1,p
+						,(int)sizeof(rcpt_name)-1,rcpt_addr
 						,(int)sizeof(rcpt_addr)-1,p);
 					
 					sockprintf(socket,SMTP_OK);
-					state=SMTP_STATE_RCPT;
+					state=SMTP_STATE_RCPT_TO;
 					continue;
 				}
 			}
-			*tp=0;	/* truncate at '@' */
+			if(tp!=NULL)
+				*tp=0;	/* truncate at '@' */
 
 			while(*p && !isalnum(*p)) p++;	/* Skip '<' or '"' */
 			tp=strrchr(p,'"');	
 			if(tp!=NULL) *tp=0;	/* truncate at '"' */
 
-			p=alias(p,alias_buf);
+			p=alias(socket,p,name_alias_buf);
 
 											/* RX by sysop alias */
 			if(!stricmp(p,"SYSOP") || !stricmp(p,scfg.sys_id) 
@@ -1888,7 +1909,7 @@ static void smtp_thread(void* arg)
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
 			}
-			if(state==SMTP_STATE_SEND) { /* Check if user online */
+			if(cmd==SMTP_CMD_SEND) { /* Check if user online */
 				for(i=0;i<scfg.sys_nodes;i++) {
 					getnodedat(&scfg, i+1, &node, 0);
 					if(node.status==NODE_INUSE && node.useron==user.number
@@ -1902,7 +1923,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 			}
-			if(state==SMTP_STATE_MAIL) {
+			if(cmd==SMTP_CMD_MAIL) {
 #if 0	/* implement later */
 				if(useron.etoday>=cfg.level_emailperday[useron.level]
 					&& !(useron.rest&FLAG('Q'))) {
@@ -1913,7 +1934,8 @@ static void smtp_thread(void* arg)
 			} else
 				telegram=TRUE;
 
-			fprintf(rcptlst,"%u\n%.*s\n",user.number,(int)sizeof(rcpt_name)-1,p);
+			fprintf(rcptlst,"%u\n%.*s\n"
+				,user.number,(int)sizeof(rcpt_name)-1,rcpt_addr);
 
 			/* Forward to Internet */
 			tp=strrchr(user.netmail,'@');
@@ -1930,11 +1952,11 @@ static void smtp_thread(void* arg)
 				fprintf(rcptlst,"#%u\n",usernum);
 				sockprintf(socket,SMTP_OK);
 			}
-			state=SMTP_STATE_RCPT;
+			state=SMTP_STATE_RCPT_TO;
 			continue;
 		}
 		if(!strnicmp(buf,"DATA",4)) {
-			if(state<SMTP_STATE_RCPT) {
+			if(state<SMTP_STATE_RCPT_TO) {
 				lprintf("%04d !SMTP MISSING 'RCPT TO' command", socket);
 				sockprintf(socket, SMTP_BADSEQ);
 				continue;
