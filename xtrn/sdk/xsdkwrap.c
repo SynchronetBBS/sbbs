@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -62,6 +62,7 @@
 #endif
 
 /* ANSI */
+#include <stdarg.h>		/* va_list */
 #include <sys/types.h>	/* _dev_t */
 #include <sys/stat.h>	/* struct stat */
 
@@ -354,11 +355,7 @@ long filelength(int fd)
 }
 
 /* Sets a lock on a portion of a file */
-#ifdef __QNX__
 int lock(int fd, long pos, long len)
-#else	/* Not QNX */
-int lock(int fd, long pos, int len)
-#endif
 {
 	#if defined(F_SANERDLCKNO) || !defined(BSD)
  		struct flock alock;
@@ -393,11 +390,7 @@ int lock(int fd, long pos, int len)
 }
 
 /* Removes a lock from a file record */
-#ifdef __QNX__
 int unlock(int fd, long pos, long len)
-#else
-int unlock(int fd, long pos, int len)
-#endif
 {
 
 #if defined(F_SANEUNLCK) || !defined(BSD)
@@ -424,16 +417,10 @@ int unlock(int fd, long pos, int len)
 }
 
 /* Opens a file in specified sharing (file-locking) mode */
-#ifdef __QNX__
-int qnx_sopen(char *fn, int access, int share)
+#if !defined(__QNX__)
+int sopen(const char *fn, int access, int share, ...)
 {
-#undef sopen		/* Stupid macro trick */
-	return(sopen(fn, access, share, S_IREAD|S_IWRITE));
-#define sopen(x,y,z)	qnx_sopen(x,y,z)
-}
-#else
-int sopen(char *fn, int access, int share)
-{
+	int pmode=S_IREAD;
 	int fd;
 #ifndef F_SANEWRLCKNO
 	int	flock_op=LOCK_NB;	/* non-blocking */
@@ -441,8 +428,15 @@ int sopen(char *fn, int access, int share)
 #if defined(F_SANEWRLCKNO) || !defined(BSD)
 	struct flock alock;
 #endif
+    va_list ap;
 
-	if ((fd = open(fn, access, S_IREAD|S_IWRITE)) < 0)
+    if(access&O_CREAT) {
+        va_start(ap,share);
+        pmode = va_arg(ap,unsigned int);
+        va_end(ap);
+    }
+
+	if ((fd = open(fn, access, pmode)) < 0)
 		return -1;
 
 	if (share == SH_DENYNO) /* no lock needed */

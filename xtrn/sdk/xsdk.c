@@ -1648,7 +1648,7 @@ int nopen(char *str, int access)
 	if(access&SH_DENYNO) share=SH_DENYNO;
 	else if(access==O_RDONLY) share=SH_DENYWR;
 	else share=SH_DENYRW;
-	while(((file=sopen(str,O_BINARY|access,share))==-1)
+	while(((file=sopen(str,O_BINARY|access,share,S_IREAD|S_IWRITE))==-1)
 		&& errno==EACCES && count++<LOOP_NOPEN)
 		if(count>10)
 			mswait(50);
@@ -1967,7 +1967,7 @@ void initdata(void)
 	timeleft_warn=0;				/* Running out of time warning */
 
 	sprintf(str,"%s%s",ctrl_dir,"node.dab");
-	if((nodefile=sopen(str,O_BINARY|O_RDWR,SH_DENYNO))==-1) {
+	if((nodefile=sopen(str,O_BINARY|O_RDWR,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		printf("\r\n\7Error opening %s\r\n",str);
 		exit(1); 
 	}

@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 	SAFECOPY(smb.file,argv[1]);
 
 	SAFECOPY(str,argv[2]);
-	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYNO))==-1) {
+	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		printf("error opening %s\n",str);
 		return(1); }
 	if((stream=fdopen(file,"r+b"))==NULL) {

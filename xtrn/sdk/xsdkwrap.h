@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -121,9 +121,6 @@
 	#include <fcntl.h>			/* O_BINARY */
 	#include <windows.h>		/* OF_SHARE_ */
 
-	#define sopen(f,o,s)		_sopen(f,o,s,S_IREAD|S_IWRITE)
-	#define close(f)			_close(f)
-							
 	#ifndef SH_DENYNO
 	#define SH_DENYNO			OF_SHARE_DENY_NONE
 	#define SH_DENYWR			OF_SHARE_DENY_WRITE
@@ -170,7 +167,7 @@
 	#define sem_post(psem)				SetEvent(*(psem))
 	#define sem_destroy(psem)			CloseHandle(*(psem))
 
-	/* POIX mutexes */
+	/* POSIX mutexes */
 	typedef HANDLE pthread_mutex_t;
 	#define pthread_mutex_init(pmtx,v)	*(pmtx)=CreateMutex(NULL,FALSE,NULL)
 	#define pthread_mutex_lock(pmtx)	WaitForSingleObject(*(pmtx),INFINITE)
@@ -206,12 +203,10 @@
 
 #ifdef __QNX__
 	#include <share.h>
-	int		qnx_sopen(char *fn, int access, int share);
-	#define sopen(x,y,z)	qnx_sopen(x,y,z)
 	#define L_SET			SEEK_SET
-#else
-	int		sopen(char *fn, int access, int share);
 #endif
+
+	int		sopen(const char *fn, int access, int share, ...);
 	long	filelength(int fd);
 	char*	strupr(char* str);
 	char*	strlwr(char* str);
@@ -246,9 +241,9 @@
 extern "C" {
 #endif
 
-#if !defined(__BORLANDC__) && !defined(__QNX__)
-	int	lock(int fd, long pos, int len);
-	int	unlock(int fd, long pos, int len);
+#if !defined(__BORLANDC__)
+	int	lock(int fd, long pos, long len);
+	int	unlock(int fd, long pos, long len);
 #endif
 
 #if !defined(_MSC_VER) && !defined(__BORLANDC__)

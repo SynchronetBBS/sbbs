@@ -828,7 +828,7 @@ int main(int argc, char **argv)
 	if(maint)
 		user_misc=(ANSI|COLOR);
 
-	if((file=sopen(database,O_RDWR|O_BINARY|O_CREAT,SH_DENYNO))==-1) {
+	if((file=sopen(database,O_RDWR|O_BINARY|O_CREAT,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		bprintf("\r\n\7Error opening/creating %s\r\n",database);
 		exit(1); }
 	if((stream=fdopen(file,"w+b"))==NULL) {
