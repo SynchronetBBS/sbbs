@@ -16,6 +16,8 @@ const VERSION = "1.00 Beta";
 
 var debug = false;
 var no_anonymous = false;
+var msgs_read = 0;
+var msgs_posted = 0;
 
 // Parse arguments
 for(i=0;i<argc;i++)
@@ -54,7 +56,7 @@ while(client.socket.is_connected) {
 
 	if(cmdline==null) {
 		log("!TIMEOUT waiting for request");
-		exit();
+		break;
 	}
 
 	if(cmdline=="") 	/* ignore blank commands */
@@ -92,8 +94,8 @@ while(client.socket.is_connected) {
 			continue;
 		case "QUIT":
 			writeln("205 closing connection - goodbye!");
-			exit();
-			break;
+			client.socket.close();
+			continue;
 	}
 
 	if(!logged_in) {
@@ -240,6 +242,11 @@ while(client.socket.is_connected) {
 		case "ARTICLE":
 		case "HEAD":
 		case "BODY":
+		case "STAT":
+			if(msgbase==null) {
+				writeln("412 no news group selected");
+				break;
+			}
 			if(cmd[1]!='') {
 				if(cmd[1].indexOf('<')>=0)		/* message-id */
 					current_article=Number(cmd[1].slice(1,-1));
@@ -290,7 +297,12 @@ while(client.socket.is_connected) {
 				case "BODY":
 					writeln(format("222 %s article retrieved - body follows",hdr.id));
 					break;
+				case "STAT":
+					writeln(format("223 %s article retrieved",hdr.id));
+					break;
 			}
+			if(cmd[0].toUpperCase()=="STAT")
+				break;
 
 			if(cmd[0].toUpperCase()!="BODY") {
 				if(hdr.from_net_type)
@@ -314,8 +326,10 @@ while(client.socket.is_connected) {
 			}
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
 				writeln("");
-			if(body!=null) 
+			if(body!=null) {
 				write(body);
+				msgs_read++;
+			}
 			writeln(".");
 			break;
 
@@ -455,6 +469,7 @@ while(client.socket.is_connected) {
 							    log(format("%s posted a message on %s",user.alias,newsgroups[n]));
 							    writeln("240 article posted ok");
 							    posted=true;
+								msgs_posted++;
 						    } else 
 							    log(format("!ERROR saving mesage: %s",msgbase.last_error));
 					    }
@@ -470,5 +485,12 @@ while(client.socket.is_connected) {
 			break;
 	}
 }
+
+// Log statistics 
+
+if(msgs_read)
+	log(format("%u messages read",msgs_read));
+if(msgs_posted)
+	log(format("%u messages posted",msgs_posted));
 
 /* End of nntpservice.js */
