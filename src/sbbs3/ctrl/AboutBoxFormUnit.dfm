@@ -3,7 +3,7 @@ object AboutBoxForm: TAboutBoxForm
   Top = 407
   BorderStyle = bsDialog
   Caption = 'About Synchronet BBS Software'
-  ClientHeight = 368
+  ClientHeight = 374
   ClientWidth = 592
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -16,14 +16,14 @@ object AboutBoxForm: TAboutBoxForm
   OnShow = FormShow
   DesignSize = (
     592
-    368)
+    374)
   PixelsPerInch = 120
   TextHeight = 16
   object Bevel: TBevel
     Left = 9
     Top = 9
     Width = 573
-    Height = 306
+    Height = 312
     Anchors = [akLeft, akTop, akRight, akBottom]
   end
   object Logo: TImage
@@ -2622,7 +2622,7 @@ object AboutBoxForm: TAboutBoxForm
   end
   object OKButton: TButton
     Left = 256
-    Top = 328
+    Top = 334
     Width = 75
     Height = 27
     Anchors = [akLeft, akBottom]
@@ -2632,7 +2632,7 @@ object AboutBoxForm: TAboutBoxForm
   end
   object CopyrightLabel: TStaticText
     Left = 16
-    Top = 292
+    Top = 298
     Width = 225
     Height = 20
     Cursor = crHandPoint
@@ -2640,7 +2640,7 @@ object AboutBoxForm: TAboutBoxForm
     Alignment = taRightJustify
     Anchors = [akLeft, akBottom]
     AutoSize = False
-    Caption = 'Copyright 2003 -'
+    Caption = 'Copyright 2004 -'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -15
@@ -2656,7 +2656,7 @@ object AboutBoxForm: TAboutBoxForm
     Left = 16
     Top = 136
     Width = 557
-    Height = 149
+    Height = 155
     Anchors = [akLeft, akTop, akRight, akBottom]
     Color = clWhite
     ReadOnly = True
@@ -2665,7 +2665,7 @@ object AboutBoxForm: TAboutBoxForm
   end
   object NameLabel: TStaticText
     Left = 242
-    Top = 292
+    Top = 298
     Width = 105
     Height = 20
     Cursor = crHandPoint
@@ -2687,7 +2687,7 @@ object AboutBoxForm: TAboutBoxForm
   end
   object WebSiteLabel: TStaticText
     Left = 346
-    Top = 292
+    Top = 298
     Width = 230
     Height = 20
     Cursor = crHandPoint
