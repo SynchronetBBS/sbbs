@@ -51,7 +51,7 @@ typedef struct
 	} value;
 } queued_value_t;
 
-static link_list_t named_queues;
+link_list_t named_queues;
 
 static const char* getprivate_failure = "line %d %s JS_GetPrivate failed";
 

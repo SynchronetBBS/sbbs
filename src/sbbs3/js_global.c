@@ -2342,6 +2342,32 @@ js_resolve_host(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 }
 
+extern link_list_t named_queues;	/* js_queue.c */
+
+static JSBool
+js_list_named_queues(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	JSObject*	array;
+    jsint       len=0;
+	jsval		val;
+	list_node_t* node;
+	msg_queue_t* q;
+
+    if((array = JS_NewArrayObject(cx, 0, NULL))==NULL)
+		return(JS_FALSE);
+
+	for(node=listFirstNode(&named_queues);node!=NULL;node=listNextNode(node)) {
+		if((q=listNodeData(node))==NULL)
+			continue;
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,q->name));
+        if(!JS_SetElement(cx, array, len++, &val))
+			break;
+	}
+
+    *rval = OBJECT_TO_JSVAL(array);
+
+    return(JS_TRUE);
+}
 	
 static JSClass js_global_class = {
      "Global"				/* name			*/
@@ -2601,6 +2627,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"(e.g. <tt>NET_INTERNET</tt> for Internet e-mail or <tt>NET_NONE</tt> for local e-mail)")
 	,312
 	},
+	{"list_named_queues",js_list_named_queues,0,JSTYPE_ARRAY,	JSDOCSTR("")
+	,JSDOCSTR("returns an array of <i>named queues<i> (created with the <i>Queue</i> constructor)")
+	,312
+	},
 
 	{0}
 };
@@ -2676,6 +2706,9 @@ static jsConstIntSpec js_global_const_ints[] = {
 	{"LOG_INFO"			,LOG_INFO		},
 	{"LOG_DEBUG"		,LOG_DEBUG		},
 
+	/* Other useful constants */
+	{"INVALID_SOCKET"	,INVALID_SOCKET	},
+
 	/* Terminator (Governor Arnold) */
 	{0}
 };
@@ -2730,7 +2763,6 @@ JSObject* DLLCALL js_CreateGlobalObjects(JSContext* js_cx
 	if((js_glob=js_CreateGlobalObject(js_cx, cfg, methods))==NULL)
 		return(NULL);
 
-#if 1
 	/* System Object */
 	if(js_CreateSystemObject(js_cx, js_glob, cfg, uptime, host_name, socklib_desc)==NULL)
 		return(NULL);
@@ -2768,7 +2800,6 @@ JSObject* DLLCALL js_CreateGlobalObjects(JSContext* js_cx
 	/* Area Objects */
 	if(!js_CreateUserObjects(js_cx, js_glob, cfg, NULL, NULL, NULL)) 
 		return(NULL);
-#endif
 
 	return(js_glob);
 }
