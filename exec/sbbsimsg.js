@@ -89,11 +89,13 @@ function list_users(show)
 		}
 
 		sock = new Socket();
-		if(sys[i].ip!=undefined) {
-			if(!sock.connect(sys[i].ip,79))
+		is_connected = false;
+		if(sys[i].ip != undefined) {
+			is_connected = sock.connect(sys[i].ip,79);
+			if(!is_connected)
 				sys[i].ip = undefined;	// IP no good, remove from cache
 		}
-		if(!sock.is_connected && !sock.connect(sys[i].addr,79)) {
+		if(!is_connected && !sock.connect(sys[i].addr,79)) {
 			log(format("!Finger connection to %s FAILED with error %d"
 				,sys[i].addr,sock.last_error));
 			alert("system not available");
