@@ -79,6 +79,7 @@ int main(int argc, char **argv)
 	int 	i,j,main_dflt=0,chat_dflt=0;
 	char 	str[129];
  	char	exepath[MAX_PATH+1];
+	BOOL	gui_mode=TRUE;
 	BOOL    door_mode=FALSE;
 
     printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright 2002 "
@@ -102,8 +103,6 @@ int main(int argc, char **argv)
             switch(toupper(argv[i][1])) {
 		        case 'M':   /* Show free mem */
                 case 'N':   /* No EMS */
-                case 'T':   /* Windows/OS2 time slice API */
-        			/* do nothing */
                     continue;
                 case 'C':
         			uifc.mode|=UIFC_COLOR;
@@ -132,11 +131,14 @@ int main(int argc, char **argv)
                 case 'E':
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
+				case 'T':
+					gui_mode=FALSE;
+					break;
 				case 'I':
 					uifc.mode|=UIFC_IBM;
 					break;
                 case 'V':
-#if !defined(__unix__)
+#if !defined(__unix__) && !defined(_MSC_VER)
                     textmode(atoi(argv[i]+2));
 #endif
                     break;
@@ -148,16 +150,20 @@ int main(int argc, char **argv)
                         "-u  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
                         "-d  =  run in standard input/output/door mode\r\n"
+#ifdef USE_FLTK
+						"-t  =  use text/terminal user interface (disable GUI)\r\n"
+#endif
                         "-c  =  force color mode\r\n"
 #ifdef USE_CURSES
                         "-e# =  set escape delay to #msec\r\n"
 						"-i  =  force IBM charset\r\n"
 #endif
-#if !defined(__unix__)
-                        "-v# =  set video mode to #\r\n"
+#if !defined(__unix__) && !defined(_MSC_VER)
+                        "-v# =  set video mode to # (default=auto)\r\n"
 #endif
-                        "-l# =  set screen lines to #\r\n"
-                        "-b# =  set automatic back-up level (default=3 max=10)\r\n"
+                        "-l# =  set screen lines to # (default=auto-detect)\r\n"
+                        "-b# =  set automatic back-up level (default=%d)\r\n"
+						,backup_level
                         );
         			exit(0);
            }
@@ -176,6 +182,15 @@ if(chdir(cfg.ctrl_dir)!=0) {
 }
 
 uifc.size=sizeof(uifc);
+#if defined(USE_FLTK)
+if(!door_mode && gui_mode==TRUE
+#if defined(__unix__)
+	&& (getenv("DISPLAY")!=NULL)
+#endif
+	)
+    i=uifcinifltk(&uifc);  /* dialog */
+else
+#endif
 #if defined(USE_DIALOG)
 if(!door_mode)
     i=uifcinid(&uifc);  /* dialog */
@@ -184,7 +199,7 @@ else
 if(!door_mode)
     i=uifcinic(&uifc);  /* curses */
 else
-#elif !defined(__unix__)
+#elif !defined(__unix__) && !defined(_MSC_VER)
 if(!door_mode)
     i=uifcini(&uifc);   /* conio */
 else
