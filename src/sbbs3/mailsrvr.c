@@ -477,9 +477,10 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	if(!s)
 		return(0);
 
-	if(!sockprintf(socket,"Organization: %s"
-		,msg->from_org==NULL ? scfg.sys_name : msg->from_org))
-		return(0);
+	if(msg->from_org!=NULL || msg->from_net.type==NET_NONE)
+		if(!sockprintf(socket,"Organization: %s"
+			,msg->from_org==NULL ? scfg.sys_name : msg->from_org))
+			return(0);
 
 	if(!sockprintf(socket,"Subject: %s",msg->subj))
 		return(0);
@@ -2466,6 +2467,8 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		lprintf("0000 !BOUNCE ERROR %d (%s) adding message header"
 			,i,smb->last_error);
 	else {
+		lprintf("0000 !Delivery failure notification (message #%ld) created for %s"
+			,newmsg.hdr.number, newmsg.from);
 		if((i=smb_incmsg(smb,&newmsg))!=0)
 			lprintf("0000 !BOUNCE ERROR %d (%s) incrementing data allocation units"
 				,i,smb->last_error);
