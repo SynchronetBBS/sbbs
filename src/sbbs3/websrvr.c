@@ -1909,18 +1909,23 @@ static BOOL exec_cgi(http_session_t *session)
 		lprintf(LOG_ERR,"%04d !FAILED! execl()",session->socket);
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
+
+	if(child==-1)  {
+		lprintf(LOG_ERR,"%04d !FAILED! fork() errno=%d",session->socket,errno);
+		close(in_pipe[1]);		/* close write-end of pipe */
+		close(out_pipe[0]);		/* close read-end of pipe */
+		close(err_pipe[0]);		/* close read-end of pipe */
+	}
+
 	close(in_pipe[0]);		/* close excess file descriptor */
 	close(out_pipe[1]);		/* close excess file descriptor */
 	close(err_pipe[1]);		/* close excess file descriptor */
 
+	if(child==-1)
+		return(FALSE);
+
 	start=time(NULL);
 
-	if(child==0)  {
-		close(in_pipe[1]);		/* close write-end of pipe */
-		close(out_pipe[0]);		/* close read-end of pipe */
-		close(err_pipe[0]);		/* close read-end of pipe */
-		return(FALSE);
-	}
 
 	post_offset+=write(in_pipe[1],
 		session->req.post_data+post_offset,
