@@ -662,9 +662,12 @@ char* DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path)
 	char	fname[MAX_PATH+1];
 
 	unpadfname(f->name,fname);
-	sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg->altpaths 
-		? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
-		,fname);
+	if(f->dir>=cfg->total_dirs)
+		sprintf(path,"%s%s",cfg->temp_dir);
+	else
+		sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg->altpaths 
+			? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
+			,fname);
 
 	return(path);
 }
