@@ -86,6 +86,7 @@
  *      This would allow people to run apache and Synchronet as the same site.
  */
 
+/* Headers for CGI stuff */
 #if defined(__unix__)
 	#include <sys/wait.h>		/* waitpid() */
 	#include <sys/types.h>
@@ -116,8 +117,9 @@ extern const uchar* nular;
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define MAX_MIME_TYPES			128
-#define MAX_REQUEST_LINE		1024
-#define MAX_HEADERS_SIZE		16384	/* Maximum total size of all headers */
+#define MAX_REQUEST_LINE		1024	/* NOT including terminator */
+#define MAX_HEADERS_SIZE		16384	/* Maximum total size of all headers 
+										   (Including terminator )*/
 
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
@@ -310,30 +312,10 @@ enum  {
 static char	*days[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 static char	*months[]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 
-static DWORD monthdays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
-
 static void respond(http_session_t * session);
 static BOOL js_setup(http_session_t* session);
 static char *find_last_slash(char *str);
 
-#if 0
-static time_t time_gm( struct tm* ti )  {
-	time_t t;
-
-	t=(ti->tm_year-70)*365;
-	t+=(ti->tm_year-69)/4;
-	t+=monthdays[ti->tm_mon];
-	if(ti->tm_mon >= 2 
-		&& ti->tm_year+1900%400 ? (ti->tm_year+1900%100 ? (ti->tm_year+1900%4 ? 0:1):0):1)
-		++t;
-	t += ti->tm_mday - 1;
-	t = t * 24 + ti->tm_hour;
-	t = t * 60 + ti->tm_min;
-	t = t * 60 + ti->tm_sec;
-
-	return t;
-}
-#else
 static time_t
 sub_mkgmt(struct tm *tm)
 {
@@ -435,7 +417,6 @@ time_gm(struct tm *tm)
 
         return (t < 0 ? (time_t) -1 : t);
 }
-#endif
 
 static int lprintf(int level, char *fmt, ...)
 {
@@ -518,6 +499,10 @@ static void thread_down(void)
 		startup->thread_up(startup->cbdata,FALSE, FALSE);
 }
 
+/********************************************************/
+/* Adds an item to a linked list 						*/
+/* ToDo: Replace this with link_list stuff from xpdev 	*/
+/********************************************************/
 static linked_list *add_list(linked_list *list,const char *value)  {
 	linked_list*	entry;
 
@@ -537,6 +522,9 @@ static linked_list *add_list(linked_list *list,const char *value)  {
 	return(entry);
 }
 
+/*********************************************************************/
+/* Adds an environment variable to the sessions  cgi_env linked list */
+/*********************************************************************/
 static void add_env(http_session_t *session, const char *name,const char *value)  {
 	char	newname[129];
 	char	fullname[387];
@@ -558,6 +546,9 @@ static void add_env(http_session_t *session, const char *name,const char *value)
 	session->req.cgi_env=add_list(session->req.cgi_env,fullname);
 }
 
+/***************************************/
+/* Initializes default CGI envirnoment */
+/***************************************/
 static void init_enviro(http_session_t *session)  {
 	char	str[128];
 
@@ -571,7 +562,7 @@ static void init_enviro(http_session_t *session)  {
 }
 
 /*
- * Sets string str to socket sock... returns number of bytes written, or 0 on an error
+ * Sends string str to socket sock... returns number of bytes written, or 0 on an error
  * (Should it be -1 on an error?)
  * Can not close the socket since it can not set it to INVALID_SOCKET
  * ToDo - Decide error behaviour, should a SOCKET * be passed around rather than a socket?
@@ -609,6 +600,10 @@ static int sockprint(SOCKET sock, const char *str)
 	return(len);
 }
 
+/**********************************************************/
+/* Converts a month name/abbr to the 0-based month number */
+/* ToDo: This probobly exists somewhere else already	  */
+/**********************************************************/
 static int getmonth(char *mon)
 {
 	int	i;
@@ -619,6 +614,9 @@ static int getmonth(char *mon)
 	return 0;
 }
 
+/*******************************************************************/
+/* Converts a date string in any of the common formats to a time_t */
+/*******************************************************************/
 static time_t decode_date(char *date)
 {
 	struct	tm	ti;
@@ -632,11 +630,6 @@ static time_t decode_date(char *date)
 	ti.tm_mon=0;		/* month of year (0 - 11) */
 	ti.tm_year=0;		/* year - 1900 */
 	ti.tm_isdst=0;		/* is summer time in effect? */
-
-#if 0	/* non-standard */
-	ti.tm_zone="UTC";	/* abbreviation of timezone name */
-	ti.tm_gmtoff=0;		/* offset from UTC in seconds */
-#endif
 
 	token=strtok(date,",");
 	if(token==NULL)
@@ -746,6 +739,14 @@ static int close_socket(SOCKET sock)
 	return(result);
 }
 
+/**************************************************/
+/* End of a single request...					  */
+/* This is called at the end of EVERY request	  */
+/*  Log the request       						  */
+/*  Free request-specific data ie: dynamic stuff  */
+/*  Close socket unless it's being kept alive     */
+/*   If the socket is closed, the session is done */
+/**************************************************/
 static void close_request(http_session_t * session)
 {
 	linked_list	*p;
@@ -792,6 +793,7 @@ static int get_header_type(char *header)
 	return(-1);
 }
 
+/* Opposite of get_header_type() */
 static char *get_header(int id) 
 {
 	int i;
@@ -833,6 +835,10 @@ static void safecat(char *dst, const char *append, size_t maxlen) {
 	}
 }
 
+/*************************************************/
+/* Sends headers for the reply.					 */
+/* HTTP/0.9 doesn't use headers, so just returns */
+/*************************************************/
 static BOOL send_headers(http_session_t *session, const char *status)
 {
 	int		ret;
@@ -845,13 +851,11 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	char	*headers;
 	char	header[MAX_REQUEST_LINE+1];
 
+	if(session->http_ver <= HTTP_0_9)
+		return(TRUE);
+
 	status_line=status;
 	ret=stat(session->req.physical_path,&stats);
-	/*
-	 * ToDo this always resends dynamic content... although this makes complete sense to me,
-	 * I can't help but feel that this may not be required for GET requests.
-	 * Look into this and revisit this section - ToDo
-	 */
 	if(!ret && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
 		status_line="304 Not Modified";
 		ret=-1;
@@ -973,6 +977,10 @@ static int sock_sendfile(SOCKET socket,char *path)
 	return(ret);
 }
 
+/********************************************************/
+/* Sends a specified error message, closes the request, */
+/* and marks the session to be closed 					*/
+/********************************************************/
 static void send_error(http_session_t * session, const char* message)
 {
 	char	error_code[4];
@@ -986,10 +994,8 @@ static void send_error(http_session_t * session, const char* message)
 	sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
 	if(session->req.ld!=NULL)
 		session->req.ld->status=atoi(message);
-	if(session->http_ver > HTTP_0_9)  {
-		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
-		send_headers(session,message);
-	}
+	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
+	send_headers(session,message);
 	if(!stat(session->req.physical_path,&sb)) {
 		int	snt=0;
 		snt=sock_sendfile(session->socket,session->req.physical_path);
@@ -1135,38 +1141,6 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	char	ch;
 	DWORD	i;
 	BOOL	rd;
-#if 0
-	time_t	start;
-
-	start=time(NULL);
-	for(i=0;TRUE;) {
-		if(!socket_check(session->socket,&rd,NULL,1000)) {
-			session->req.keep_alive=FALSE;
-			close_request(session);
-			session->socket=INVALID_SOCKET;
-			return(-1);
-		}
-
-		if(!rd) {
-			if(time(NULL)-start>startup->max_inactivity) {
-				session->req.keep_alive=FALSE;
-				close_request(session);
-				session->socket=INVALID_SOCKET;
-				return(-1);        /* time-out */
-			}
-			continue;       /* no data */
-		}
-
-		if(recv(session->socket, &ch, 1, 0)!=1)
-			break;
-
-		if(ch=='\n')
-			break;
-
-		if(i<length)
-			buf[i++]=ch;
-	}
-#else
 	for(i=0;TRUE;) {
 		if(!socket_check(session->socket,&rd,NULL,60000) || !rd || recv(session->socket, &ch, 1, 0)!=1)  {
 			session->req.keep_alive=FALSE;
@@ -1181,7 +1155,6 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 		if(i<length)
 			buf[i++]=ch;
 	}
-#endif
 
 	/* Terminate at length if longer */
 	if(i>length)
@@ -2333,32 +2306,8 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
 			break;
 
-#if 0
-		char		ver[256];
-		JSObject*	server;
-		JSString*	js_str;
-		jsval		val;
-
-		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL,NULL
-			,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
-			break;
-
-		sprintf(ver,"%s %s",server_name,revision);
-		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
-			break;
-		val = STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(js_cx, server, "version", &val))
-			break;
-
-		if((js_str=JS_NewStringCopyZ(js_cx, web_ver()))==NULL)
-			break;
-		val = STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
-			break;
-#else
 		if(js_CreateServerObject(js_cx,js_glob,&js_server_props)==NULL)
 			break;
-#endif
 
 		if(glob!=NULL)
 			*glob=js_glob;
@@ -2409,12 +2358,6 @@ static BOOL js_setup(http_session_t* session)
 
 		if(js_CreateMsgBaseClass(session->js_cx, session->js_glob, &scfg)==NULL)
 			lprintf(LOG_ERR,"%04d !JavaScript ERROR creating MsgBase class",session->socket);
-
-#if 0
-		if(js_CreateClientObject(session->js_cx, session->js_glob, "client", &client
-			,session->socket)==NULL) 
-			lprintf(LOG_ERR,"%04d !JavaScript ERROR creating client object",session->socket);
-#endif
 
 		argv=JS_NewArrayObject(session->js_cx, 0, NULL);
 
@@ -2565,10 +2508,8 @@ static void respond(http_session_t * session)
 
 	if(session->req.ld!=NULL)
 		session->req.ld->status=atoi(session->req.status);
-	if(session->http_ver > HTTP_0_9)  {
-		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
-		send_file=send_headers(session,session->req.status);
-	}
+	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
+	send_file=send_headers(session,session->req.status);
 	if(session->req.method==HTTP_HEAD)
 		send_file=FALSE;
 	if(send_file)  {
@@ -3179,13 +3120,6 @@ void DLLCALL web_server(void* arg)
 			_beginthread(http_session_thread, 0, session);
 			served++;
 		}
-
-#if 0	/* this is handled in cleanup() */
-		/* Close all open sockets  */
-		lprintf(LOG_DEBUG,"Closing Server Socket %d", server_socket);
-		close_socket(server_socket);
-		server_socket=INVALID_SOCKET;
-#endif
 
 		/* Wait for connection threads to terminate */
 		if(http_threads_running) {
