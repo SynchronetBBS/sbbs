@@ -587,23 +587,26 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static jsMethodSpec js_global_functions[] = {
-	{"log",				js_log,				1,	JSTYPE_VOID,	JSDOCSTR("string text [,text]")
-	,JSDOCSTR("add a string to the server and/or system log")
+	{"log",				js_log,				1,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
+	,JSDOCSTR("add a line of text to the server and/or system log, "
+		"<i>values</i> are typically string constants or variables")
 	},
-    {"print",           js_print,           0,	JSTYPE_VOID,	JSDOCSTR("string text [,test]")
-	,JSDOCSTR("print a string, auto-CRLF")
+    {"print",           js_print,           0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
+	,JSDOCSTR("print a line of text to the console or event log with automatic line termination (CRLF), "
+		"<i>values</i> are typically string constants or variables")
 	},
     {"printf",          js_printf,          1,	JSTYPE_VOID,	JSDOCSTR("string format [,value][,value]")
-	,JSDOCSTR("print a formatted string (ala C)")
+	,JSDOCSTR("print a formatted string - <small>CAUTION: for experienced C programmers ONLY</small>")
 	},	
-	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("string text")
+	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("value")
 	,JSDOCSTR("print an alert message (ala client-side JS)")
 	},
-	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("prompt for a user string (ala clent-side JS)")
+	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[value]")
+	,JSDOCSTR("displays a prompt (<i>value</i>) and returns a string of user input (ala clent-side JS)")
 	},
-	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text")
-	,JSDOCSTR("confirm a question (ala client-side JS)")
+	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
+	,JSDOCSTR("displays a Yes/No prompt and returns <i>true</i> or <i>false</i> "
+		"based on users confirmation (ala client-side JS)")
 	},
     {0}
 };
@@ -686,10 +689,7 @@ bool sbbs_t::js_init()
 		JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
 
 		/* Global Object */
-		if((js_glob=js_CreateGlobalObject(js_cx, &cfg))==NULL)
-			break;
-
-		if(!js_DefineMethods(js_cx, js_glob, js_global_functions, TRUE))
+		if((js_glob=js_CreateGlobalObject(js_cx, &cfg, js_global_functions))==NULL)
 			break;
 
 #ifdef _DEBUG

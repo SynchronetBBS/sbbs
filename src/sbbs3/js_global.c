@@ -1268,7 +1268,7 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("return random integer between 0 and max-1")
 	},		
 	{"time",			js_time,			0,	JSTYPE_NUMBER,	""
-	,JSDOCSTR("return current time in Unix (time_t) format")
+	,JSDOCSTR("return current time in Unix (time_t) format (number of seconds since Jan-01-1970)")
 	},		
 	{"beep",			js_beep,			0,	JSTYPE_VOID,	JSDOCSTR("[number freq, duration]")
 	,JSDOCSTR("produce a tone on the local speaker at specified frequency for specified duration (in milliseconds)")
@@ -1318,57 +1318,60 @@ static jsMethodSpec js_global_functions[] = {
 	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
 	,JSDOCSTR("get file length (in bytes)")
 	},		
-	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("string pattern [,number flags]")
-	,JSDOCSTR("get directory listing (pattern, flags)")
+	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("string pattern [,flags]")
+	,JSDOCSTR("returns an array of directory entries, "
+		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
+		"<i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)")
 	},		
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string directory")
-	,JSDOCSTR("make directory")
+	,JSDOCSTR("make a directory")
 	},		
 	{"rmdir",			js_rmdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string directory")
-	,JSDOCSTR("remove directory")
+	,JSDOCSTR("remove a directory")
 	},		
 	{"strftime",		js_strftime,		1,	JSTYPE_STRING,	JSDOCSTR("string format [,number time]")
-	,JSDOCSTR("return a formatted time string")
+	,JSDOCSTR("return a formatted time string (ala C strftime)")
 	},		
 	{"format",			js_format,			1,	JSTYPE_STRING,	JSDOCSTR("string format [,args]")
-	,JSDOCSTR("return a formatted string (ala sprintf)")
+	,JSDOCSTR("return a formatted string (ala sprintf) - "
+		"<small>CAUTION: for experienced C programmers ONLY</small>")
 	},
 	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool ex_ascii] [,bool white_space]")
-	,JSDOCSTR("return an HTML-encoded text buffer (using standard HTML character entities), "
-	"escaping IBM extended-ASCII and white-space characters by default")
+	,JSDOCSTR("return an HTML-encoded text string (using standard HTML character entities), "
+		"escaping IBM extended-ASCII and white-space characters by default")
 	},
 	{"html_decode",		js_html_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("return a decoded HTML-encoded text buffer")
+	,JSDOCSTR("return a decoded HTML-encoded text string")
 	},
 	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length]")
 	,JSDOCSTR("returns a word-wrapped version of the text string argument, <i>line_length</i> defaults to <i>79</i>")
 	},
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length] [,prefix]")
 	,JSDOCSTR("returns a quoted version of the message text string argumnet, <i>line_length</i> defaults to <i>79</i>, "
-	"<i>prefix</i> defaults to <tt>\" > \"</tt>")
+		"<i>prefix</i> defaults to <tt>\" > \"</tt>")
 	},
 	{"base64_encode",	js_b64_encode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns base64-encoded version of text string or <i>null</i> on error")
 	},
 	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("returns base64-decoded string or <i>null</i> on error")
+	,JSDOCSTR("returns base64-decoded text string or <i>null</i> on error")
 	},
 	{"md5",				js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
-	,JSDOCSTR("calculate and return MD5 digest of string in base64 (default) or hexadecimal encoding")
+	,JSDOCSTR("calculate and return MD5 digest of string encoded in base64 (default) or hexadecimal")
 	},
 	{"crc16",			js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate and return 16-bit CRC of string")
+	,JSDOCSTR("calculate and return 16-bit CRC of text string")
 	},		
 	{"crc32",			js_crc32,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate and return 32-bit CRC of string")
+	,JSDOCSTR("calculate and return 32-bit CRC of text string")
 	},		
 	{"chksum",			js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate and return 32-bit checksum of string")
+	,JSDOCSTR("calculate and return 32-bit checksum of text string")
 	},
 	{0}
 };
 
-JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg)
+JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsMethodSpec* methods)
 {
 	JSObject*	glob;
 
@@ -1376,6 +1379,9 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg)
 		return(NULL);
 
 	if (!JS_InitStandardClasses(cx, glob))
+		return(NULL);
+
+	if(methods!=NULL && !js_DefineMethods(cx, glob, methods, TRUE)) 
 		return(NULL);
 
 	if (!js_DefineMethods(cx, glob, js_global_functions, TRUE)) 
