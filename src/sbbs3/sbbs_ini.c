@@ -38,7 +38,6 @@
 #include "dirwrap.h"	/* backslash */
 #include "sbbs_ini.h"
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
-#include "ini_opts.h"	/* bbs_options, ftp_options, etc. */
 
 static const char*	nulstr="";
 static const char*	strOptions="Options";
