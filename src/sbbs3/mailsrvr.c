@@ -2684,18 +2684,6 @@ void DLLCALL mail_server(void* arg)
 
 		srand(time(NULL));
 
-		if(!(startup->options&MAIL_OPT_LOCAL_TIMEZONE)) {
-			if(PUTENV("TZ=UTC0"))
-				lprintf("!putenv() FAILED");
-			tzset();
-
-			if((t=checktime())!=0) {   /* Check binary time */
-				lprintf("!TIME PROBLEM (%ld)",t);
-				cleanup(1);
-				return;
-			}
-		}
-
 		if(!winsock_startup()) {
 			cleanup(1);
 			return;
@@ -2715,6 +2703,18 @@ void DLLCALL mail_server(void* arg)
 			lprintf("!Failed to load configuration files");
 			cleanup(1);
 			return;
+		}
+
+		if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&MAIL_OPT_LOCAL_TIMEZONE)) {
+			if(PUTENV("TZ=UTC0"))
+				lprintf("!putenv() FAILED");
+			tzset();
+
+			if((t=checktime())!=0) {   /* Check binary time */
+				lprintf("!TIME PROBLEM (%ld)",t);
+				cleanup(1);
+				return;
+			}
 		}
 
 		if(startup->max_clients==0) {
