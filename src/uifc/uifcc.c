@@ -2291,12 +2291,14 @@ static void _putch(unsigned char ch, BOOL refresh_now)
 	{
 		switch(ch)
 		{
+#if 0 	/* Not usind 30/31 anymore */
 			case 30:
 				cha=ACS_UARROW;
 				break;
 			case 31:
 				cha=ACS_DARROW;
 				break;
+#endif
 			case 176:
 				cha=ACS_CKBOARD;
 				break;
