@@ -149,7 +149,7 @@ writeln('\t\t</image>');
 
 function encode(str, wspace)
 {
-	return(html_encode(strip_ctrl(str)
+	return(html_encode(strip_ctrl(str.replace(/\s+/g," "))
 		,true	/* ex-ASCII */
 		,wspace	/* white-space */
 		,false	/* ANSI */
