@@ -660,7 +660,7 @@ int main(int argc, char** argv)
 	char	str[MAX_PATH+1];
 	char	ini_file[MAX_PATH+1];
 	BOOL	quit=FALSE;
-	FILE*	fp;
+	FILE*	fp=NULL;
 #ifdef __unix__
 	FILE *pidfile;
 	struct passwd* pw_entry;
@@ -679,13 +679,6 @@ int main(int argc, char** argv)
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
-    bbs_startup.first_node=1;
-    bbs_startup.last_node=4;
-    bbs_startup.telnet_interface=INADDR_ANY;
-
-#ifdef USE_RLOGIN
-	bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
-#endif
 
 	bbs_startup.lputs=bbs_lputs;
 	bbs_startup.event_log=event_lputs;
@@ -712,7 +705,6 @@ int main(int argc, char** argv)
 	ftp_startup.thread_up=thread_up;
     ftp_startup.socket_open=socket_open;
     ftp_startup.client_on=client_on;
-	ftp_startup.options=FTP_OPT_INDEX_FILE|FTP_OPT_ALLOW_QWK;
 #ifdef __unix__
 	ftp_startup.seteuid=do_seteuid;
 #endif
@@ -728,9 +720,6 @@ int main(int argc, char** argv)
 	mail_startup.thread_up=thread_up;
     mail_startup.socket_open=socket_open;
     mail_startup.client_on=client_on;
-	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
-	SAFECOPY(mail_startup.dnsbl_tag,"SPAM");
-	SAFECOPY(mail_startup.dnsbl_hdr,"X-DNSBL");
 #ifdef __unix__
 	mail_startup.seteuid=do_seteuid;
 #endif
@@ -775,7 +764,7 @@ int main(int argc, char** argv)
 #endif
     strcpy(services_startup.ctrl_dir,ctrl_dir);
 
-	/* Process arguments */
+	/* Pre-INI command-line switches */
 	for(i=1;i<argc;i++) {
 		arg=argv[i];
 		while(*arg=='-')
@@ -784,18 +773,47 @@ int main(int argc, char** argv)
 			strcpy(ini_file,arg);
 			continue;
 		}
+		if(!stricmp(arg,"ni")) {
+			ini_file[0]=0;
+			break;
+		}
+	}
+
+	/* Read .ini file here */
+	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
+		sprintf(str,"Reading %s",ini_file);
+		bbs_lputs(str);
+	}
+
+	/* We call this function to set defaults, even if there's no .ini file */
+	sbbs_read_ini(fp, 
+		&run_bbs,		&bbs_startup,
+		&run_ftp,		&ftp_startup, 
+		&run_mail,		&mail_startup, 
+		&run_services,	&services_startup);
+
+	/* read any sbbscon-specific ini keys here */
+
+	if(fp!=NULL)
+		fclose(fp);
+
+	/* Post-INI command-line switches */
+	for(i=1;i<argc;i++) {
+		arg=argv[i];
+		while(*arg=='-')
+			arg++;
 		if(!stricmp(arg,"defaults")) {
 			printf("Default settings:\n");
 			printf("\n");
-			printf("Telnet server port:\t%u\n",IPPORT_TELNET);
+			printf("Telnet server port:\t%u\n",bbs_startup.telnet_port);
 			printf("Telnet first node:\t%u\n",bbs_startup.first_node);
 			printf("Telnet last node:\t%u\n",bbs_startup.last_node);
 			printf("Telnet server options:\t0x%08lX\n",bbs_startup.options);
-			printf("FTP server port:\t%u\n",IPPORT_FTP);
+			printf("FTP server port:\t%u\n",ftp_startup.port);
 			printf("FTP server options:\t0x%08lX\n",ftp_startup.options);
-			printf("Mail SMTP server port:\t%u\n",IPPORT_SMTP);
-			printf("Mail SMTP relay port:\t%u\n",IPPORT_SMTP);
-			printf("Mail POP3 server port:\t%u\n",IPPORT_POP3);
+			printf("Mail SMTP server port:\t%u\n",mail_startup.smtp_port);
+			printf("Mail SMTP relay port:\t%u\n",mail_startup.relay_port);
+			printf("Mail POP3 server port:\t%u\n",mail_startup.pop3_port);
 			printf("Mail server options:\t0x%08lX\n",mail_startup.options);
 			printf("Services options:\t0x%08lX\n",services_startup.options);
 			return(0);
@@ -1077,9 +1095,6 @@ int main(int argc, char** argv)
 						mail_startup.options	|=BBS_OPT_NO_JAVASCRIPT;
 						services_startup.options|=BBS_OPT_NO_JAVASCRIPT;
 						break;
-					case 'I':	/* ini file */
-						ini_file[0]=0;
-						break;
 					default:
 						printf(usage,argv[0]);
 						return(0);
@@ -1103,19 +1118,6 @@ int main(int argc, char** argv)
 				printf(usage,argv[0]);
 				return(0);
 		}
-	}
-
-	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
-		sprintf(str,"Reading %s",ini_file);
-		bbs_lputs(str);
-		sbbs_read_ini(fp, 
-			&run_bbs,		&bbs_startup,
-			&run_ftp,		&ftp_startup, 
-			&run_mail,		&mail_startup, 
-			&run_services,	&services_startup);
-
-		/* read any sbbscon-specific ini keys here */
-		fclose(fp);
 	}
 
 #ifdef __unix__
