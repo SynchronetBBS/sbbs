@@ -1397,7 +1397,7 @@ static void send_thread(void* arg)
 			break;
 		}
 		total+=wr;
-		*xfer.lastactive=time(NULL);	/* exception here */
+		*xfer.lastactive=time(NULL);
 		mswait(1);
 	}
 
@@ -4016,7 +4016,8 @@ static void ctrl_thread(void* arg)
 
 	if(transfer_inprogress==TRUE) {
 		lprintf("%04d Waiting for transfer to complete...",sock);
-		while(data_sock!=INVALID_SOCKET && transfer_inprogress==TRUE) {
+		while(/* data_sock!=INVALID_SOCKET && removed SEP-16-2001 */
+			transfer_inprogress==TRUE) {
 			mswait(500);
 			if(gettimeleft(&scfg,&user,logintime)<1) {
 				lprintf("%04d Out of time, disconnecting",sock);
