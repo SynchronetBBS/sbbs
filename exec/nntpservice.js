@@ -18,6 +18,11 @@ load("sbbsdefs.js");
 
 const REVISION = "$Revision$".split(' ')[1];
 
+var tearline = format("--- Synchronet %s%s-%s NNTP Service %s\r\n"
+					  ,system.version,system.revision,system.platform,REVISION);
+var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
+					  ,system.name,system.location,system.inetaddr);
+
 var debug = false;
 var no_anonymous = false;
 var auto_login = false;
@@ -369,6 +374,10 @@ while(client.socket.is_connected) {
 				body=msgbase.get_msg_body(false,current_article
 					,true /* remove ctrl-a codes */
 					,true /* rfc822 formatted text */);
+
+			// force taglines for QNET Users on local messages
+			if(user.security.restrictions&UFLAG_Q && !hdr.from_net_type)
+				body += "\r\n" + tearline + tagline;
 
 /* Eliminate dupe loops
 			if(user.security.restrictions&UFLAG_Q && hdr!=null)
