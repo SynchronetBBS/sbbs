@@ -91,6 +91,8 @@ called MAIN, and the options available for timed events.</pre>
 	event.</pre>
 <h2><a name="GlobalSwapList">[12.3] - Global Swap List</a>
 
+ <b><i><font color="#FF0000">(v2 for DOS Only)</font></i></b>
+
 </h2>
 <pre><img border="0" src="images/scfg_xtrn_swaplist.gif" width="572" height="331">
 
@@ -102,19 +104,19 @@ an extension for the programs unless an extension is specified on the command
 line to be executed. If a file extension is specified (EXE, COM, or BAT)
 the extension must be specified on the command line for the program to be found
 in the swap list.</pre>
-<h2><a name="Win32/OS2ProgramList">[12.4] - Win32 / OS/2 Program List</a>
+<h2><a name="Win32/OS2ProgramList">[12.4] - Native (32-bit) Program List</a>
 
 </h2>
 <pre><img border="0" src="images/scfg_xtrn_winos2list.gif" width="572" height="331"><u>
 </u>
-When running a node with Synchronet for OS/2 (SBBS4OS2), all external programs
+When running a node with Synchronet for OS/2 or Win32, all external programs
 (doors, editors, file viewers, etc) will be assumed DOS programs and executed
 inside a virtual DOS machine (VDM) automatically unless the program's name is
 included in this list. Only CMD.EXE (OS/2 command interpreter) should be
 included with an extension (e.g. .EXE) unless you actually configure your
 external program command lines in SCFG with extensions (note ZIP and UNZIP do
-not have specified extensions). All native OS/2 programs that you wish to
-execute from the BBS must be added to this list.</pre>
+not have specified extensions). All native Win32 and OS/2 programs that you 
+wish to execute from the BBS must be added to this list.</pre>
 <h2><a name="ExternalEditors">[12.5] - External Editors</a>
 
 </h2>
@@ -187,7 +189,7 @@ drop files) listed below.</pre>
 </h3>
 <pre>Software		Write File(s)			Read File(s)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-DOOR32                  DOOR32.SYS                      DOOR32.SYS  <b>(<font color="#FF0000">v3.0+ Only Feature</font>)</b>
+DOOR32 <b><font color="#FF0000">(v3+ Only)</font></b>       DOOR32.SYS 
 GAP			DOOR.SYS			DOOR.SYS
 WWIV			CHAIN.TXT
 PCBoard 14.x		PCBOARD.SYS and USERS.SYS	USERS.SYS
@@ -384,7 +386,7 @@ dropfiles in your SBBS\NODE# directories and configure the game to
 look there for the file.  This ensures smooth Multinode usage if your
 door supports multiple users at the same time.</pre>
 <h3><a name="LORD">[12.11.1] - Legend
-of the Red Dragon (L.O.R.D.)</a>
+of the Red Dragon (LORD)</a>
 
 </h3>
 <pre>From the LORDCFG program your configuration should look something like this:</pre>
@@ -394,7 +396,7 @@ To Drop File' to the node directory of the node you are configuring.  The
 reason we set the 'Locked Port Speed' to 'Port Not Locked' is because you
 should be locking the speed of your FOSSIL when you load it, once that's done,
 it can't be altered.</pre>
-<pre>*** Be Sure to edit START.BAT and check for proper paths and filenames!</pre>
+<pre>*** Be Sure to edit <b>START.BAT</b> and check for proper paths and filenames!</pre>
 <pre>Now go into your SCFG program and create a new external program.  It should
 look like this when it's all setup:</pre>
 <pre><img border="0" src="images/scfg_xtrn_lord.gif" width="572" height="331"></pre>
@@ -416,7 +418,7 @@ DORINFO1.DEF</pre>
 </table>
 <pre>The important things are line 3 and line 4.  Line 3 MUST be the path to your
 Usurper directory (with a trailing backslash) and line 4 must be the type
-of dropfile (I used DORINFO1.DEF like the Usurper documentation recommends).
+of drop file (I used DORINFO1.DEF like the Usurper documentation recommends).
 
     Now you'll need to go into your SCFG program and add an external program.
 Set it up to look something like this:</pre>
@@ -442,33 +444,42 @@ in BRE's directory and all is well.</pre>
 <pre>** Note: BRE is not Multiplayer and can only be used on one node at a time.
          However, we can leave Allow Multiple Users ON in SCFG as BRE will
          inform the player the game is in use by itself.</pre>
-<h2><a name="InternalGateways">[12.12] - Internal Gateways</a></h2>
+<h2><a name="InternalGateways">[12.12] - Internet Gateways</a></h2>
 <pre>This allows users on your system to be connected to other TCP/Telnet services
 on the Internet through your BBS. Typically, these services would be other
 telnetable BBSs and MUDs, although really, you can gate to any single-port
 TCP service (i.e. POP3, but not FTP).</pre>
-<pre>TELNET_GATE &lt;&quot;str&quot; || str_var&gt; [mode]</pre>
+<pre><b>TELNET_GATE &lt;&quot;str&quot; || str_var&gt; [mode]</b></pre>
 <pre>The str or str_var argument is the destination address in the format:</pre>
-<pre>	&lt;addr&gt;[:port]</pre>
-<pre>If port is not specified, the default is 23 (telnet).</pre>
+<pre>	<b>&lt;addr&gt;[:port]</b></pre>
+<pre>If port is not specified, the default is 23 (telnet), or 513 (when the 
+<b>TG_RLOGIN</b> mode is used).</pre>
 <pre>Examples:</pre>
-<pre>	&quot;vert.synchro.net&quot;
-	&quot;24.0.193.46&quot;
-	&quot;retromud.org:3000&quot;</pre>
-<pre>The valid mode bits are:</pre>
-<pre>	Force Echo	.1	# not currently working as desired
-	Force CR/LF	.2	# expand sole CRs to CR/LF pairs</pre>
-<pre>This function can be called from any module or shell, but will most likely be
+<pre>	&quot;<i>vert.synchro.net</i>&quot;
+	&quot;<i>24.0.193.46</i>&quot;
+	&quot;<i>retromud.org:3000</i>&quot;</pre>
+<pre>The valid mode bits (multiple may be <b>|</b>'d together) are:</pre>
+<pre>	<b>TG_ECHO</b>         Turn on telnet echo
+	<b>TG_CRLF</b>         Expand sole CR to CRLF
+	<b>TG_LINEMODE</b>     Send entire lines only
+	<b>TG_NODESYNC</b>     Call Nodesync, get msgs, etc.
+	<b>TG_CTRLKEYS</b>     Interpret ^P ^U ^T, etc locally
+	<b>TG_PASSTHRU</b>     Pass-through telnet commands/responses
+	<b>TG_RLOGIN</b>       Use BSD <i>RLogin</i> protocol
+
+This function can be called from any module or shell, but will most likely be
 used from the external programs menu (even though the telnet gate isn't
-technically an external program). Two modules are included, TELGATE.BIN and
-MUDGATE.BIN, to achieve this (copy them into your EXEC directory). Use them as
-follows:</pre>
+technically an external program). The following modules are included (in your
+<b>EXEC</b> directory): <b>TELGATE.BIN</b>, <b>MUDGATE.BIN</b>, <b>UNIXGATE.BIN</b>, and <b>RLOGIN.BIN</b>.
+Use them as follows:</pre>
 <pre>	To set-up an external gateway to another BBS:</pre>
-<pre>	Command line: &quot;*telgate vert.sync3.net&quot;</pre>
+<pre>	Command line: &quot;<b>*telgate vert.synchro.net</b>&quot;</pre>
 <pre>	To set-up an external gateway to a MUD:</pre>
-<pre>	Command line: &quot;*mudgate batmud.bat.org&quot;</pre>
-<pre>While using the telgate gateway (and not currently in telnet &quot;Binary&quot; mode),
-users can press ctrl-] for a menu of telgate commands including: Disconnect,
+<pre>	Command line: &quot;<b>*mudgate batmud.bat.org</b>&quot;</pre>
+<pre>	To set-up an external gateway to a Trade Wars Game Server (TWGS):</pre>
+<pre>	Command line: &quot;<b>*rlogin twgs.someserver.com&quot;</b></pre>
+<pre>While using the telnet gateway (and not currently in telnet &quot;Binary&quot; mode),
+users can press ctrl-] for a menu of telnet gate commands including: Disconnect,
 Toggle Echo, List Users, and Private Message.</pre>
 <h2><a name="TroubleshootingExternalPrograms">[12.13] - Troubleshooting
 External Programs</a></h2>
