@@ -320,7 +320,7 @@ void sbbs_read_ini(
 	SAFECOPY(web->index_file_name
 		,iniReadString(fp,section,"IndexFileName","index.html"));
 	SAFECOPY(web->js_ext
-		,iniReadString(fp,section,"JavaScriptExtension",".ssjs"));
+		,iniReadString(fp,section,"JavaScriptExtension",".js"));
 
 #ifdef __unix__
 	default_cgi_temp = "/tmp";
