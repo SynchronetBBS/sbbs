@@ -332,6 +332,10 @@ bool sbbs_t::js_initcx()
 		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
 			break;
 
+		/* File Class */
+		if(js_CreateFileClass(js_cx, js_glob)==NULL)
+			break;
+
 		/* Server Object */
 		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
 			,NULL,0))==NULL)

@@ -3528,6 +3528,9 @@ static void ctrl_thread(void* arg)
 					if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
 						lprintf("%04d !JavaScript ERROR creating user class",sock);
 
+					if(js_CreateFileClass(js_cx, js_glob)==NULL) 
+						lprintf("%04d !JavaScript ERROR creating file class",sock);
+
 					if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number)==NULL) 
 						lprintf("%04d !JavaScript ERROR creating user object",sock);
 
