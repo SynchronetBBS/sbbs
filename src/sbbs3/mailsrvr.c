@@ -1621,7 +1621,7 @@ static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
 	if((p=strchr(buf,':'))==NULL)
 		return smb_hfield_str(msg, *type=RFC822HEADER, buf);
 
-	len=p-buf;
+	len=(ulong)p-(ulong)buf;
 	if(len>sizeof(field)-1)
 		len=sizeof(field)-1;
 	sprintf(field,"%.*s",len,buf);
