@@ -1859,9 +1859,11 @@ static BOOL exec_cgi(http_session_t *session)
 					if(i>0)  {
 						int snt=0;
 						start=time(NULL);
-						snt=write(session->socket,buf,i);
-						if(snt>0)
-							session->req.ld->size+=snt;
+						if(session->req.method!=HTTP_HEAD) {
+							snt=write(session->socket,buf,i);
+							if(snt>0)
+								session->req.ld->size+=snt;
+						}
 					}
 					else
 						done_reading=TRUE;
