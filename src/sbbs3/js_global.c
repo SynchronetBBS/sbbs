@@ -162,14 +162,17 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	memset(arglist,0,sizeof(arglist));	/* Initialize arglist to NULLs */
 
     for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
-		if(JSVAL_IS_STRING(argv[i]))
-			arglist[i-1]=JS_GetStringBytes(JSVAL_TO_STRING(argv[i]));	/* exception here July-29-2002 */
-		else if(JSVAL_IS_DOUBLE(argv[i]))
+		if(JSVAL_IS_DOUBLE(argv[i]))
 			arglist[i-1]=(char*)(unsigned long)*JSVAL_TO_DOUBLE(argv[i]);
-		else if(JSVAL_IS_INT(argv[i]) || JSVAL_IS_BOOLEAN(argv[i]))
+		else if(JSVAL_IS_INT(argv[i]))
 			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
-		else
-			arglist[i-1]=NULL;
+		else {
+			if((str=JS_ValueToString(cx, argv[i]))==NULL) {
+				JS_ReportError(cx,"JS_ValueToString failed");
+			    return(JS_FALSE);
+			}
+			arglist[i-1]=JS_GetStringBytes(str);
+		}
 	}
 	
 	if((p=JS_vsmprintf(fmt,(char*)arglist))==NULL)
