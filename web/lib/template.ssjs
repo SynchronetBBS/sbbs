@@ -43,6 +43,7 @@ function write_template(filename)  {
 			return(ret);
 		});
 	file=parse_regular_bit(file, "", template);
+	file=file.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
 	write(file);
 }
 
@@ -84,10 +85,14 @@ function parse_regular_bit(bit, objname, obj) {
 function escape_match(start, exp, end)  {
 	if(exp==undefined)
 		exp='';
+	exp=exp.toString();
 	if(start=="%")
 		exp=html_encode(exp,false,false,false,false);
 	if(start=="^")
 		exp=encodeURIComponent(exp);
+	exp=exp.replace(/\@/g,'<!-- Magical Synchronet @-code -->');
+	exp=exp.replace(/\^/g,'<!-- Magical Synchronet ^-code -->');
+	exp=exp.replace(/\%/g,'<!-- Magical Synchronet %-code -->');
 	return(exp);
 }
 
