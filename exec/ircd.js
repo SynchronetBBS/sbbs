@@ -967,7 +967,7 @@ js.branch_limit=0; // we're not an infinite loop.
 ///// Main Loop /////
 while (!server.terminated) {
 
-	mswait(1); // don't peg the CPU
+//	mswait(1); // don't peg the CPU
 
 	if(server.terminated)
 		break;
@@ -993,12 +993,23 @@ while (!server.terminated) {
 	}
 
 	// Poll all sockets for commands, then pass to the appropriate func.
-	for(thisClient in Clients) {
-		ClientObject=Clients[thisClient];
-		if ( (ClientObject != undefined) &&
-		     ClientObject.socket && ClientObject.conntype &&
-		     ClientObject.local )
-			ClientObject.work();
+    poll_clients=new Array;
+    poll_client_map=new Array;
+    for(thisClient in Clients) {
+        ClientObject=Clients[thisClient];
+        if ( (ClientObject != undefined) &&
+             ClientObject.socket && ClientObject.conntype &&
+             ClientObject.local )
+		{
+			ClientObject.check_timeout();
+             poll_clients.push(ClientObject.socket.descriptor);
+             poll_client_map.push(thisClient);
+		}
+    }
+	readme=sockselect(poll_clients,1000000);
+	for(thisPolled in readme)
+	{
+		Clients[poll_client_map[thisPolled]].work();
 	}
 
 	// Scan C:Lines for servers to connect to automatically.
@@ -1137,6 +1148,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.created=time();
 	this.parent=0;
 	this.work=IRCClient_work;
+	this.check_timeout=IRCClient_check_timeout;
 	this.server_nick_info=IRCClient_server_nick_info;
 	this.server_chan_info=IRCClient_server_chan_info;
 	this.server_info=IRCClient_server_info;
@@ -5096,6 +5108,18 @@ function IRCClient_server_commands(origin, command, cmdline) {
 	}
 }
 
+function IRCClient_check_timeout() {
+	if (this.nick) {
+		if ( (this.pinged) && ((time() - this.pinged) > YLines[this.ircclass].pingfreq) ) {
+			this.pinged = false;
+			this.quit("Ping Timeout");
+		} else if (!this.pinged && ((time() - this.idletime) > YLines[this.ircclass].pingfreq)) {
+			this.pinged = time();
+			this.rawout("PING :" + servername);
+		}
+	}
+}
+
 function IRCClient_work() {
 	var command;
 	var cmdline;
@@ -5154,15 +5178,6 @@ function IRCClient_work() {
 			this.server_commands(origin,command,cmdline);
 		} else {
 			oper_notice("Notice","Client has bogus conntype!");
-		}
-	}
-	if (this.nick) {
-		if ( (this.pinged) && ((time() - this.pinged) > YLines[this.ircclass].pingfreq) ) {
-			this.pinged = false;
-			this.quit("Ping Timeout");
-		} else if (!this.pinged && ((time() - this.idletime) > YLines[this.ircclass].pingfreq)) {
-			this.pinged = time();
-			this.rawout("PING :" + servername);
 		}
 	}
 }
