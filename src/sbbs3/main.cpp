@@ -51,7 +51,7 @@ uint riobp;
 
 #define STATUS_WFC	"Listening"
 
-#define TIMEOUT_THREAD_WAIT		30		// Seconds
+#define TIMEOUT_THREAD_WAIT		15		// Seconds (was 30)
 #define IO_THREAD_BUF_SIZE	   	10000   // Bytes
 
 // Globals
@@ -137,29 +137,6 @@ static void thread_down()
 		startup->thread_up(FALSE);
 }
 
-SOCKET open_socket(int type)
-{
-	SOCKET sock;
-
-	sock=socket(AF_INET, type, IPPROTO_IP);
-	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(TRUE);
-	return(sock);
-}
-
-int close_socket(SOCKET sock)
-{
-	int		result;
-
-	shutdown(sock,SHUT_RDWR);	/* required on Unix */
-	result=closesocket(sock);
-	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(FALSE);
-	if(result!=0)
-		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
-	return(result);
-}
-
 int lputs(char* str)
 {
 	if(startup==NULL || startup->lputs==NULL)
@@ -182,6 +159,46 @@ int lprintf(char *fmt, ...)
 
 } /* extern "C" */
 
+SOCKET open_socket(int type)
+{
+	SOCKET sock;
+
+	sock=socket(AF_INET, type, IPPROTO_IP);
+	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
+		startup->socket_open(TRUE);
+	return(sock);
+}
+
+int close_socket(SOCKET sock)
+{
+	int		result;
+
+	if(sock==INVALID_SOCKET)
+		return(0);
+
+	shutdown(sock,SHUT_RDWR);	/* required on Unix */
+	result=closesocket(sock);
+	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
+		startup->socket_open(FALSE);
+	if(result!=0)
+		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
+	return(result);
+}
+
+u_long resolve_ip(char *addr)
+{
+	HOSTENT*	host;
+	char*		p;
+
+	for(p=addr;*p;p++)
+		if(*p!='.' && !isdigit(*p))
+			break;
+	if(!(*p))
+		return(inet_addr(addr));
+	if ((host=gethostbyname(addr))==NULL) 
+		return(0);
+	return(*((ulong*)host->h_addr_list[0]));
+}
 
 BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
   									BYTE* outbuf, int& outlen)
@@ -283,6 +300,7 @@ void input_thread(void *arg)
     BYTE		*wrbuf;
     int			i,rd,wr,avail;
 	ulong		total_recv=0;
+	ulong		total_pkts=0;
 	fd_set		socket_set;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct timeval	tv;
@@ -371,6 +389,7 @@ void input_thread(void *arg)
 		}
 
 		total_recv+=rd;
+		total_pkts++;
 
         // telbuf and wr are modified to reflect telnet escaped data
 		wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
@@ -391,8 +410,8 @@ void input_thread(void *arg)
 
 	pthread_mutex_destroy(&sbbs->input_thread_mutex);
 
-	lprintf("Node %d input thread terminated (total bytes received: %lu)"
-		,sbbs->cfg.node_num, total_recv);
+	lprintf("Node %d input thread terminated (received %lu bytes in %lu packets)"
+		,sbbs->cfg.node_num, total_recv, total_pkts);
 
 	thread_down();
 }
@@ -404,6 +423,7 @@ void output_thread(void* arg)
 	int			i;
     ulong		avail;
 	ulong		total_sent=0;
+	ulong		total_pkts=0;
     ulong		bufbot=0;
     ulong		buftop=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
@@ -468,13 +488,15 @@ void output_thread(void* arg)
 
 		bufbot+=i;
 		total_sent+=i;
+		total_pkts++;
     }
 
 	sbbs->spymsg("Disconnected");
 
     sbbs->output_thread_running = false;
 
-	lprintf("%s output thread terminated (total bytes sent: %lu)", node, total_sent);
+	lprintf("%s output thread terminated (sent %lu byts in %lu packets)"
+		,node, total_sent, total_pkts);
 
 	thread_down();
 }
