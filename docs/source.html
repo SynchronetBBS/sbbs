@@ -36,9 +36,8 @@
 			<li>lib/fltk/win32 (for Win32 only)
 			<li>lib/mozilla/js/<i><b>os</b></i>.release (or .debug)
 				<br>example: lib/mozilla/js/linux.release
-			<li>lib/mozilla/nspr/<i><b>os</b></i>.release (or .debug)
-				<br>example: lib/mozilla/js/win32.debug
-		</tt>
+			<li>lib/mozilla/nspr/<i><b>os</b></i>.release
+				<br>example: lib/mozilla/js/win32.release</tt>
 		</ul>
 		<li>Required modules (for running Synchronet):
 		<ul><tt>
@@ -53,15 +52,27 @@
 			<li>docs
 		</tt>
 		</ul>
+	<li>Example labels:
+	<ul><tt>
+		<li>sbbs300c
+		<li>sbbs310k
+	</tt>
+	</ul>
 	<li>CVS command-line example:
 	<ul>
 	    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login</tt>
 			<BR>(just hit return, no password is necessary) 
-	    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src/sbbs3</tt>
+	    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co 
+	    	src/sbbs3</tt>
 	</ul>
-    <LI>Web-based CVS access at <a href="http://cvs.synchro.net/cgi-bin/cvsweb.cgi">cvs.synchro.net/cgi-bin/cvsweb.cgi</a> 
-    </UL>
+	</UL>
 	<p>
+    <LI>Web-based CVS access, particularly useful for browsing the repository and visually comparing revisions of files ("diff'ing")
+    <br>
+    <a href="http://cvs.synchro.net/cgi-bin/cvsweb.cgi">http://cvs.synchro.net/cgi-bin/cvsweb.cgi</a>
+ 
+	<p>
+    &nbsp;
   	<li>Step-by-step instructions on how to download, build, and run the current
     	source code on Unix (Linux, FreeBSD, and OpenBSD), 
 		see<br><a href="ftp://vert.synchro.net/Synchronet/sbbsunix.txt">ftp://vert.synchro.net/Synchronet/sbbsunix.txt</a></li>
@@ -71,29 +82,33 @@
 </UL>
 <hr>
 <H2>Building on Windows</H2>
-Unlike on Unix, a combination of compilers are utilized to build <i>Synchronet for Win32</i>.
-If you have Borland's free command-line C++ compiler (v5.5) installed, 
-you can build almost everything except the GUI front-end (the <i>Synchronet Control Panel</i>),
-which requires <i>Borland C++ Builder v6</i> and the FOSSIL drivers, which require <i>Microsoft Visual C++</i>.
+Unlike on Unix, a combination of compilers may be utilized to build <i>Synchronet for Win32</i>.
+If you have Borland's <a href="http://www.borland.com/bcppbuilder/freecompiler/"> free command-line C++ compiler</a>
+ (v5.5) installed, 
+you can build almost everything except the GUI portions (e.g. <i>Synchronet Control Panel</i>),
+which require <i>Borland C++ Builder</i>, and the FOSSIL drivers, which require <i>Microsoft Visual C++</i>.
 <p>
 I use <i>Microsoft Visual C++ 6</i> for most of the non-GUI portions of Synchronet
 because it has a better debugger and more solid IDE (in my opinion).
 However, Borland provides a much better GUI framework (VCL) with <i>C++ Builder</i> and 
 a handy console I/O library (conio) not present in Microsoft's C run-time library.
 <p>
-Even though I use <i>Microsoft Visual C++</i> to build most of the command-line utilities
+Even though I use <i>Microsoft Visual C++</i> to build most of the Synchronet command-line utilities
 and all the DLLs, you may use <i>Borland C++</i> or <i>C++ Builder</i> instead, if you prefer.
 But note: if you rebuild any of the DLLs, you must also re-link <tt>sbbsctrl.exe</tt> with the
-Borland import libraries for those DLLs (see <tt>src/sbbs3/ctrl/makelibs.bat</tt>). 
+Borland import libraries for those DLLs (see <tt>src/sbbs3/ctrl/makelibs.bat</tt>
+for details). 
 
 <p>
-In general, the <tt>.dsp</tt> and <tt>.dsw</tt> files are used by Microsoft Visual C++,
+As for the build files: the <tt>.dsp</tt> and <tt>.dsw</tt> files are used by <i> Microsoft Visual
+C++</i>,
 the <tt>Makefiles</tt> are used by <i>Borland C++ 5.5</i> (or <i>C++ Builder</i>),
-and the <tt>.bpr</tt> files are used by C++ Builder.
+and the <tt>.bpr</tt> files are used by <i> C++ Builder</i>.
 <p>
-<table summary="Summary" border="1">
+<table border="1">
 <tr><th>Project<th>Build File<th>Compiler
-<tr valign=top><td rowspan=2>sbbs.exe, *.dll, and most utilities (*.exe)
+<tr valign=top><td rowspan=2>sbbs.exe, ftpsrvr.dll, mailsrvr.dll, services.dll,
+    and most utilities (e.g. addfiles.exe, baja.exe, etc.)
 	<td>src/sbbs3/sbbs3.dsw<br>src/sbbs3/*.dsp<td>msvc6
 <tr valign=top><td>src/sbbs3/Makefile<td>bcc32
 <tr valign=top><td>scfg.exe<td>src/sbbs3/scfg/Makefile<td>bcc32
@@ -102,8 +117,20 @@ and the <tt>.bpr</tt> files are used by C++ Builder.
 <tr valign=top><td>chat.exe<td>src/sbbs3/chat/chat.bpr<td>bcb6
 <tr valign=top><td>useredit.exe<td>src/sbbs3/useredit/useredit.dpr<td>delphi6
 <tr valign=top><td>dosxtrn.exe<td>src/sbbs3/dosxtrn/make.bat<td>msvc15
-<tr valign=top><td>sbbsexec.vxd<td>src/sbbs3/execvxd/makefile<td>msvc6 and vtoolsd
+<tr valign=top><td>sbbsexec.dll<td>src/sbbs3/sbbsexec.dsp<td>msvc6
+<tr valign=top><td>sbbsexec.vxd<td>src/sbbs3/execvxd/makefile<td>msvc6 and VtoolsD
 </table> 
+<p>
+Compiler legend:<br>
+<table border=1>
+<tr><th>Abbreviation<th>Full Product Name
+<tr><td>bcb6<td><a href="http://www.borland.com/bcppbuilder/">Borland C++ Builder 6</a>
+<tr><td>bcc32<td><a href="http://www.borland.com/bcppbuilder/freecompiler/">
+	Borland C++ Compiler 5.5</a> or Borland C++ Builder
+<tr><td>delphi6<td><a href="http://www.borland.com/delphi/">Borland Delphi 6</a>
+<tr><td>msvc6<td><a href="http://msdn.microsoft.com/visualc/">Microsoft Visual C++ 6</a>
+<tr><td>msvc15<td>Microsoft Visual C++ 1.5 (16-bit)
+</table>
 <p>
 <hr>
 <H2>History (as of October 2000)</H2>
@@ -220,367 +247,6 @@ protect them from inclusion in proprietary projects. I put the XSDK and SMBLIB
 modules under the <A href="http://www.fsf.org/copyleft/lesser.html">GNU Lesser 
 General Public License</A>, which allows them to be linked with proprietary 
 projects.</p>
-<hr>
-<H2>The CVS Repository (cvs.synchro.net:/cvsroot/sbbs)</H2>
-<TABLE width="884">
-  <COLGROUP align=left>
-  <COLGROUP align=left>
-  <COLGROUP align=left>
-  <TBODY>
-  <TR>
-    <TH width="103">
-      <p align="left">Key 
-    <TH width="312">
-      <p align="left">Tool 
-    <TH width="449">
-      <p align="left">Supported Target Platforms 
-  <TR>
-    <TD width="103"><a href="http://www.gnu.org/software/gcc/gcc.html">GCC</a>
-    <TD width="312">GNU Compiler Collection
-    <TD width="449">GNU and Unix-variants (e.g. Linux) 
-  <TR>
-    <TD width="103">GCCWIN
-    <TD width="312">GCC (<a href="http://sources.redhat.com/cygwin/">Cygwin</a>/<a href="http://www.mingw.org/">MinGW</a>)
-      for
-    <TD width="449">Win32 
-  <TR>
-    <TD width="103">MSVC16
-    <TD width="312">Microsoft Visual C++ v1.52c
-    <TD width="449">DOS and Win16 
-  <TR>
-    <TD width="103"><a href="http://msdn.microsoft.com/visualc/">MSVC32</a>
-    <TD width="312">Microsoft Visual C++ v4+
-    <TD width="449">Win32 
-  <TR>
-    <TD width="103">MASM
-    <TD width="312">Microsoft Macro Assembler v5.10
-    <TD width="449">DOS 
-  <TR>
-    <TD width="103"><a href="http://community.borland.com/museum">BCCDOS</a>
-    <TD width="312">Any Borland C/C++ Compiler for
-    <TD width="449">DOS 
-  <TR>
-    <TD width="103">BCCWIN
-    <TD width="312">Any Borland C/C++ Compiler for
-    <TD width="449">Win32 
-  <TR>
-    <TD width="103">BCC31
-    <TD width="312">Borland C++ v3.1
-    <TD width="449">DOS 
-  <TR>
-    <TD width="103">BCC45
-    <TD width="312">Borland C++ v4.5
-    <TD width="449">DOS, DPMI, Win16, and Win32 
-  <TR>
-    <TD width="103">BCCOS2
-    <TD width="312">Borland C++ for OS/2 v2.0
-    <TD width="449">OS/2 
-  <TR>
-    <TD width="103"><a href="http://www.borland.com/bcppbuilder/">BCB5</a>
-    <TD width="312">Borland C++ Builder 5
-    <TD width="449">Win32 
-  <TR>
-    <TD width="103"><a href="http://www.borland.com/bcppbuilder/freecompiler/">BCC55</a>
-    <TD width="312">Borland C++ Builder Compiler 5.5
-    <TD width="449">Win32 
-  <TR>
-    <TD width="103"><a href="http://www.openwatcom.org/">WATCOM</a>
-    <TD width="312">Watcom C++ v10.0a
-    <TD width="449">DOS, DPMI, Win16, Win32, and OS/2 
-  <TR>
-    <TD width="103"><a href="http://www.borland.com/delphi/">DELPHI</a>
-    <TD width="312">Borland Delphi 5
-    <TD width="449">Win32 </TR></TBODY></TABLE><BR>
-<TABLE width="100%"><!--
-<COLGROUP ALIGN=LEFT><COLGROUP ALIGN=LEFT><COLGROUP ALIGN=LEFT><COLGROUP ALIGN=LEFT><COLGROUP 
-ALIGN=LEFT><COLGROUP ALIGN=CENTER>
--->
-  <TBODY>
-  <TR bgColor=#000000>
-    <TH>
-      <p align="left"><FONT face=Arial color=#ffffff size=-1>Directory/File </FONT>
-    <TH>
-      <p align="left"><FONT face=Arial color=#ffffff size=-1>Description </FONT>
-    <TH>
-      <p align="left"><FONT face=Arial color=#ffffff size=-1>Supported Tools </FONT>
-  <TR>
-    <TD>CVSROOT/
-    <TD>Administrative files
-    <TD>Do not edit 
-  <TR>
-    <TD>src/
-    <TD>C/C++ source code
-    <TD>Various C/C++ Compilers 
-  <TR>
-    <TD>src/mswait/
-    <TD>Millisecond wait/time-slice API for DOS
-    <TD>MASM 
-  <TR>
-    <TD>src/sbbs2/
-    <TD>Synchronet Version 2 C source code
-    <TD>BCCDOS or BCCOS2 
-  <TR>
-    <TD>src/sbbs2/addfiles/
-    <TD>Utility to add files to BBS file database 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/allusers/
-    <TD>Perform actions on all users 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/ans2msg/
-    <TD>Convert ANSI file to Ctrl-A format 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/autonode/
-    <TD>Local login to first available node 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/baja/
-    <TD>Shell/module compiler (BAJA.EXE) 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/dcdwatch/
-    <TD>Monitor carrier detect for WWIV doors 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/delfiles/
-    <TD>Delete files from BBS file database 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/dstsedit/
-    <TD>Edit daily statistics 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/dupefind/
-    <TD>Find duplicate files in BBS file database 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/echo/
-    <TD>SBBSecho FidoNet Packet Tosser
-    <TD>WATCOM 
-  <TR>
-    <TD>src/sbbs2/execdos/
-    <TD>Synchronet for OS/2's EXECDOS.EXE 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/execsbbs/
-    <TD>Used to re-run SBBS.EXE (for DOS/OS2) 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/filelist/
-    <TD>Create list of files from BBS file database 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/install/
-    <TD>DOS/OS2 Installer 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/mlabels/
-    <TD>Generate mailing labels from user database 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/msg2ans/
-    <TD>Convert Ctrl-A files to ANSI format 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/node/
-    <TD>Display/Control Nodes from command-line 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/qwknodes/
-    <TD>QWK Network utility 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/rio/
-    <TD>OS/2 and Win32 Remote I/O library 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/scb/
-    <TD>Synchronet Callback 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/scfg/
-    <TD>Configuration Program
-    <TD>BCC45 
-  <TR>
-    <TD>src/sbbs2/slog/
-    <TD>Statistics log viewer 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/smb/
-    <TD>Synchronet Message Base library and header files 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/chksmb/
-    <TD>Utility to check Synchronet message bases for errors 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/fixsmb/
-    <TD>Utility to rebuild Synchronet message base indices 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/smbutil/
-    <TD>Message base maintenance utility 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/smbactiv/
-    <TD>Message base activity monitor 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/smm/
-    <TD>Synchronet Match Maker 
-    <TD> 
-  <TR>
-    <TD>src/sbbs2/uti/
-    <TD>Synchronet UTI driver (for PostLink/RelayNet/RIME) 
-    <TD> 
-  <TR>
-    <TD>src/spawno/
-    <TD>Ralf Brown's EMS/XMS/disk swapping replacement for spawn...() 
-    <TD> 
-  <TR>
-    <TD>src/stp/
-    <TD>Synchronet Transfer Protocols (X/Y/Zmodem) [incomplete] 
-    <TD> 
-  <TR>
-    <TD>src/tone/
-    <TD>Tone generator (used for external sysop chat pager) 
-    <TD> 
-  <TR>
-    <TD>src/uifc/
-    <TD>User Interface Library (text-mode)
-    <TD>BCC45 or BCCOS2 
-  <TR>
-    <TD>src/sbbs3/
-    <TD>Synchronet Version 3 C/C++ source code and&nbsp; project/make files
-    <TD>MSVC32, BCC55, or GNUWIN 
-  <TR>
-    <TD>src/sbbs3/sbbs3.dsw
-    <TD>Microsoft Visual Studio 6 Workspace File
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/sbbs.dsp
-    <TD>Microsoft Visual Studio 6 Project File for SBBS.DLL
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/mailsrvr.dsp
-    <TD>Microsoft Visual Studio 6 Project File for MAILSRVR.DLL
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/ftpsrvr.dsp
-    <TD>Microsoft Visual Studio 6 Project File for FTPSRVR.DLL
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/baja.dsp
-    <TD>Microsoft Visual Studio 6 Project File for BAJA.EXE
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/chksmb.dsp
-    <TD>Microsoft Visual Studio 6 Project File for CHKSMB.EXE
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/fixsmb.dsp
-    <TD>Microsoft Visual Studio 6 Project File for FIXSMB.EXE
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/smbutil.dsp
-    <TD>Microsoft Visual Studio 6 Project File for SMBUTIL.EXE
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/sbbsexec.dsp
-    <TD>Microsoft Visual Studio 6 Project File for SBBSEXEC.DLL
-    <TD>MSVC32 
-  <TR>
-    <TD>src/sbbs3/Makefile.bor
-    <TD>Borland make file for SBBS.DLL, FTPSRVR.DLL, and MAILSRVR.DLL
-    <TD>BCC55 
-  <TR>
-    <TD>src/sbbs3/Makefile.gnu
-    <TD>GNU make file for SBBS.DLL, FTPSRVR.DLL, and MAILSRVR.DLL
-    <TD>GNUWIN 
-  <TR>
-    <TD>src/sbbs3/ctrl/
-    <TD>Control Panel (Win32 GUI)
-    <TD>BCB5 
-  <TR>
-    <TD>src/sbbs3/chat/
-    <TD>Local Chat Module (Win32 GUI)
-    <TD>BCB5 
-  <TR>
-    <TD>src/sbbs3/useredit/
-    <TD>Local User Editor (Win32 GUI)
-    <TD>DELPHI 
-  <TR>
-    <TD>src/sbbs3/dosxtrn/
-    <TD>External DOS Program Launcher (Win32)
-    <TD>MSVC16 
-  <TR>
-    <TD>src/sbbs3/execvxd/
-    <TD>FOSSIL/DOSIO driver for Win9x
-    <TD>MSVC32 and VtoolsD 
-  <TR>
-    <TD>exec/
-    <TD>Ultimate destination for executables 
-  <TR>
-    <TD>exec/*.src;*.inc
-    <TD>Loadable Modules and Command Shells
-    <TD>ASCII Editor and Baja 
-  <TR>
-    <TD>xtrn/
-    <TD>External Programs (Doors) 
-  <TR>
-    <TD>xtrn/sdk/
-    <TD>External Program Software Development Kit (XSDK)
-    <TD>Various 
-  <TR>
-    <TD>xtrn/sbj/
-    <TD>Synchronet Blackjack
-    <TD>BCCDOS, BCCWIN, or MSVC32 
-  <TR>
-    <TD>xtrn/sbl/
-    <TD>Synchronet BBS List
-    <TD>BCCDOS, BCCWIN, or MSVC32 
-  <TR>
-    <TD>xtrn/smm/
-    <TD>Synchronet Match Maker
-    <TD>BCC31 
-  <TR>
-    <TD>text/
-    <TD>Run-time read-only text files
-    <TD>ASCII editor 
-  <TR>
-    <TD>text/menu/
-    <TD>Menu Files
-    <TD>ASCII or ANSI editor 
-  <TR>
-    <TD>text/menu/major/ 
-    <TD> 
-  <TR>
-    <TD>text/menu/pcboard/ 
-    <TD> 
-  <TR>
-    <TD>text/menu/renegade/ 
-    <TD> 
-  <TR>
-    <TD>text/menu/sdos/ 
-    <TD> 
-  <TR>
-    <TD>text/menu/simple/ 
-    <TD> 
-  <TR>
-    <TD>text/menu/wildcat/ 
-    <TD> 
-  <TR>
-    <TD>docs/
-    <TD>Documentation 
-  <TR>
-    <TD>ctrl/
-    <TD>Run-time configuration files
-    <TD>SCFG 
-  <TR>
-    <TD>node1/
-    <TD> </TR></TBODY></TABLE>
 <hr>
 <h2>Modifications</h2>
 <p>Presumably, you are reading this file because you want access to the source
