@@ -74,6 +74,7 @@
 #ifdef USE_XPDEV
 #include "semwrap.h"
 #include "filewrap.h"
+#define	BACKSLAH	PATH_DELIM
 #endif
 
 #define GLOBAL extern	/* turns XSDKVARS.C into a header file */
