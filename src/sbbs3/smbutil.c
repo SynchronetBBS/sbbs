@@ -55,8 +55,8 @@
 #include <errno.h>	/* errno */
 #include <string.h>	/* strrchr */
 
-#include "smblib.h"
 #include "smbwrap.h"
+#include "smblib.h"
 #include "crc32.h"
 
 #ifdef __WATCOMC__

@@ -39,8 +39,8 @@
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */
 
-#include "smblib.h"
 #include "smbwrap.h"
+#include "smblib.h"
 
 char *usage="usage: fixsmb [/opts] <smb_file>\n"
 			"\n"

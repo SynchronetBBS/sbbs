@@ -40,8 +40,8 @@
 #include <time.h>		/* ctime */
 
 /* SMB-specific */
-#include "smblib.h"
 #include "smbwrap.h"
+#include "smblib.h"
 #include "conwrap.h"	/* getch */
 
 /****************************************************************************/
