@@ -74,6 +74,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)scansubs.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfglib1.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfglib2.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgsave.$(OFILE)\
 			$(LIBODIR)$(SLASH)smblib.$(OFILE)\
 			$(LIBODIR)$(SLASH)smbtxt.$(OFILE)\
 			$(LIBODIR)$(SLASH)smbwrap.$(OFILE)\
