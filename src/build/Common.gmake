@@ -133,6 +133,8 @@ ifdef BUILD_DEPENDS
  CXX			:=	$(SRC_ROOT)/build/mkdep -a
  LD				:=	echo
  COMPILE_MSG	:=  Depending
+ AR				:=	echo
+ RANLIB			:=	echo
 else
  ifdef DONT_CLOBBER_CC
   CC			?=	gcc
@@ -143,6 +145,8 @@ else
  CXX			?=	g++
  LD				?=	ld
  COMPILE_MSG	:= Compiling
+ AR				?=	ar
+ RANLIB			?=	ranlib
 endif
 
 ifdef DEBUG
