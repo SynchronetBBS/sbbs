@@ -3644,7 +3644,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 			for(m=exp=0;m<posts;m++) {
 				printf("\r%8s %5lu of %-5lu  "
 					,scfg.sub[i]->code,m+1,posts);
-				msg.idx.offset=post[m].offset;
+				msg.idx=post[m];
 				if((k=smb_lockmsghdr(&smb[cur_smb],&msg))!=0) {
 					printf("ERROR %d locking %s msghdr\n",k,smb[cur_smb].file);
 					logprintf("ERROR %d line %d locking %s msghdr\n"
