@@ -4322,7 +4322,8 @@ for(l=_dos_findfirst(path,0,&ff);!l && !kbhit();l=_dos_findnext(&ff)) {
 		pack_bundle(packet,pkt_faddr); }
 	else {
 		fclose(fidomsg);
-		printf("Possibly still in use\n"); } }
+		printf("Possibly still in use (%u minutes old)\n"
+			,(time(NULL)-ddtol(ff.wr_time,ff.wr_date))/60); } }
 #ifdef __WATCOMC__
 _dos_findclose(&ff);
 #endif
