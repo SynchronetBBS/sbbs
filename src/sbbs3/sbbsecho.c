@@ -3994,6 +3994,21 @@ void export_echomail(char *sub_code,faddr_t addr)
 		printf("(%.1f/sec)\n",(float)exported/export_time); }
 
 }
+
+char* freadstr(FILE* fp, char* str, size_t maxlen)
+{
+	int		ch;
+	size_t	len=0;
+
+	while((ch=fgetc(fp))!=EOF && len<maxlen) {
+		str[len++]=ch;
+		if(ch==0)
+			break;
+	}
+
+	return(str);
+}
+
 /***********************************/
 /* Synchronet/FidoNet Message util */
 /***********************************/
@@ -4008,7 +4023,8 @@ int main(int argc, char **argv)
 			,password[16];
 	uchar	HUGE16 *fmsgbuf=NULL;
 	ushort	attr;
-	int 	i,j,k,file,fmsg, grp, grunged;
+	int 	i,j,k,file,fmsg, grp;
+	BOOL	grunged;
 	uint	subnum[MAX_OPEN_SMBS]={INVALID_SUB};
 	ulong	echomail=0,l,m/* f, */,areatag;
 	time_t	now;
@@ -4019,6 +4035,7 @@ int main(int argc, char **argv)
 	glob_t	g;
 	size_t	offset;
 	fmsghdr_t hdr;
+	fpkdmsg_t pkdmsg;
 	faddr_t addr,pkt_faddr;
 	FILE	*stream;
 	pkthdr_t pkthdr;
@@ -4516,6 +4533,11 @@ int main(int argc, char **argv)
 					FREE(fmsgbuf);
 					fmsgbuf=0; 
 				}
+
+				grunged=FALSE;
+
+#if 0	/* Old way */
+
 				if(!fread(&ch,1,1,fidomsg)) 		 /* Message type (0200h) */
 					break;
 				if(ch!=02)
@@ -4530,8 +4552,6 @@ int main(int argc, char **argv)
 				fread(&hdr.destnet,2,1,fidomsg);
 				fread(&hdr.attr,2,1,fidomsg);
 				fread(&hdr.cost,2,1,fidomsg);
-
-				grunged=0;
 
 				for(i=0;i<sizeof(hdr.time);i++) 		/* Read in the Date/Time */
 					if(!fread(hdr.time+i,1,1,fidomsg) || !hdr.time[i])
@@ -4553,6 +4573,32 @@ int main(int argc, char **argv)
 						break;
 				if(i==sizeof(hdr.subj)) grunged=1;
 
+#else	/* New way */
+
+				/* Read fixed-length header fields */
+				if(fread(&pkdmsg,sizeof(BYTE),sizeof(pkdmsg),fidomsg)!=sizeof(pkdmsg))
+					grunged=TRUE;
+				
+				if(pkdmsg.type==2) { /* Recognized type, copy fields */
+					hdr.orignode = pkdmsg.orignode;
+					hdr.destnode = pkdmsg.destnode;
+					hdr.orignet = pkdmsg.orignet;
+					hdr.destnet = pkdmsg.destnet;
+					hdr.attr = pkdmsg.attr;
+					hdr.cost = pkdmsg.cost;
+					SAFECOPY(hdr.time,pkdmsg.time);
+				} else
+					grunged=TRUE;
+
+				/* Read variable-length header fields */
+				if(!grunged) {
+					freadstr(fidomsg,hdr.to,sizeof(hdr.to));
+					freadstr(fidomsg,hdr.from,sizeof(hdr.from));
+					freadstr(fidomsg,hdr.subj,sizeof(hdr.subj));
+				}
+#endif
+
+
 				str[0]=0;
 				for(i=0;!grunged && i<sizeof(str);i++)	/* Read in the 'AREA' Field */
 					if(!fread(str+i,1,1,fidomsg) || str[i]==CR)
@@ -4562,7 +4608,7 @@ int main(int argc, char **argv)
 				else
 					grunged=1;
 
-				if(!str[0] || grunged) {
+				if(grunged) {
 					start_tick=0;
 					if(cfg.log&LOG_GRUNGED)
 						logprintf("Grunged message");
@@ -4577,7 +4623,7 @@ int main(int argc, char **argv)
 				truncsp(str);
 				strupr(str);
 				p=strstr(str,"AREA:");
-				if(!p) {					/* Netmail */
+				if(p==NULL) {					/* Netmail */
 					printf("AREA tag not found, calling import_netmail\n");
 					start_tick=0;
 					if(import_netmail("",hdr,fidomsg))
