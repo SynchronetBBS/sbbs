@@ -1,6 +1,6 @@
 object FtpCfgDlg: TFtpCfgDlg
-  Left = 600
-  Top = 428
+  Left = 779
+  Top = 375
   BorderStyle = bsDialog
   Caption = 'FTP Server Configuration'
   ClientHeight = 301
@@ -411,6 +411,7 @@ object FtpCfgDlg: TFtpCfgDlg
   end
   object OpenDialog: TOpenDialog
     Filter = 'Wave Files|*.wav'
+    Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing, ofDontAddToRecent]
     Top = 240
   end
 end

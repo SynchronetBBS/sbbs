@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = RelayTabSheet
-    TabIndex = 4
+    ActivePage = SoundTabSheet
+    TabIndex = 5
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -821,6 +821,7 @@ object MailCfgDlg: TMailCfgDlg
   end
   object OpenDialog: TOpenDialog
     Filter = 'Wave Files|*.wav'
+    Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing, ofDontAddToRecent]
     Left = 8
     Top = 480
   end
