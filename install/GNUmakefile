@@ -140,11 +140,11 @@ else
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/sbbsecho $(SBBSDIR)/exec/sbbsecho
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/echocfg $(SBBSDIR)/exec/echocfg
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/filelist $(SBBSDIR)/exec/filelist
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).$(SUFFIX)/scfg $(SBBSDIR)/exec/scfg
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).$(SUFFIX)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).$(SUFFIX)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).$(SUFFIX)/umonitor $(SBBSDIR)/exec/umonitor
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/uedit/$(CCPRE).$(machine).$(SUFFIX)/uedit $(SBBSDIR)/exec/uedit
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(SUFFIX)/scfg $(SBBSDIR)/exec/scfg
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(SUFFIX)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(SUFFIX)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).exe.$(SUFFIX)/umonitor $(SBBSDIR)/exec/umonitor
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/uedit/$(CCPRE).$(machine).exe.$(SUFFIX)/uedit $(SBBSDIR)/exec/uedit
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(SUFFIX)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(SUFFIX)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(SUFFIX)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
