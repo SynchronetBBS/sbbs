@@ -130,10 +130,14 @@ int main(int argc, char **argv)
 			uifcmsg("Unable to allocate memory","The system was unable to allocate memory.");
 			return(1);
 		}
-		if(!strnicmp("rlogin://",url,9))
+		if(!strnicmp("rlogin://",url,9)) {
 			bbs->conn_type=CONN_TYPE_RLOGIN;
-		else if(!strnicmp("telnet://",url,9))
+			bbs->port=513;
+		}
+		else if(!strnicmp("telnet://",url,9)) {
 			bbs->conn_type=CONN_TYPE_TELNET;
+			bbs->port=23;
+		}
 		else
 			goto USAGE;
 		bbs->user[0]=0;
@@ -226,15 +230,15 @@ int main(int argc, char **argv)
 			doterm();
 			textmode(txtinfo.currmode);
 			settitle("SyncTERM");
-			if(url[0]) {
-				/* Started from the command-line with a URL */
-				free(bbs);
-				bbs=NULL;
-				break;
-			}
-			else
-				bbs=NULL;
 		}
+		if(url[0]) {
+			/* Started from the command-line with a URL */
+			free(bbs);
+			bbs=NULL;
+			break;
+		}
+		else
+			bbs=NULL;
 	}
 	uifcbail();
 #ifdef _WINSOCKAPI_
