@@ -21,6 +21,9 @@ Answers to Frequently Asked Questions
 
 Q. What flavors of Unix (and Unix-like operating systems) are supported?
 A. Currently, Linux-x86, FreeBSD-x86, OpenBSD-x86, and Solaris-x86.
+   There are currently issues linking the Mozilla libraries (libjs.a and
+   libnspr4.lib) on RedHat Linux 9 and Mandrake Linux 9. We are working
+   on resolving this issue.
 
 Q. What distributions of Linux are supported?
 A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake, 
@@ -121,6 +124,13 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
 
 2. Build Synchronet:
+
+   Prerequisite: curses
+      You must have either the curses or ncurses headers and library files
+      installed on your system, or you must remove the USE_CURSES definition
+      from the various GNUmakefiles in the src/sbbs3 tree. If you have the 
+      files /usr/include/curses.h and /usr/lib/libcurses.a then you're ready
+      to continue.
 
    A. Change to this directory:
       cd /sbbs/src/sbbs3
