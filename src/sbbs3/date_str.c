@@ -289,6 +289,7 @@ when_t DLLCALL rfc822date(char* date)
 /****************************************************************************/
 char* DLLCALL zonestr(short zone)
 {
+	char*		plus;
     static char str[32];
 
 	switch((ushort)zone) {
@@ -336,7 +337,11 @@ char* DLLCALL zonestr(short zone)
 		case WEL:   return("WEL");
 		}
 
-	sprintf(str,"%02d:%02u",zone/60,zone<0 ? (-zone)%60 : zone%60);
+	if(zone>0)
+		plus="+";
+	else
+		plus="";
+	sprintf(str,"UTC%s%d:%02u", plus, zone/60, zone<0 ? (-zone)%60 : zone%60);
 	return(str);
 }
 
