@@ -446,10 +446,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		FILE* fp;
 		sprintf(fname,"%sDOOR32.SYS",cfg.node_dir);
 		fp=fopen(fname,"wb");
-		fprintf(fp,"2\r\n%d\r\n38400\r\nSynchronet %s%c\r\n%d\r\n%s\r\n%s\r\n%d\r\n%d\r\n"
+		fprintf(fp,"2\r\n%d\r\n38400\r\n%s%c\r\n%d\r\n%s\r\n%s\r\n%d\r\n%d\r\n"
 			"%d\r\n%d\r\n"
 			,client_socket_dup
-			,VERSION,REVISION
+			,VERSION_NOTICE,REVISION
 			,useron.number
 			,useron.name
 			,useron.alias
