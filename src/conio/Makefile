@@ -18,6 +18,7 @@ SRC_ROOT = ..
 !include ..\build\Common.bmake	# defines clean and output directory rules
 
 CFLAGS = $(CFLAGS) $(XPDEV-MT_CFLAGS) $(MT_CFLAGS) -I$(CIOLIB_SRC)
+OBJS = $(OBJS) $(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
 
 # SBBS DLL Link Rule
 $(CIOLIB-MT): $(OBJS)
