@@ -77,8 +77,6 @@ __published:
     TEdit *PortEdit;
     TLabel *InterfaceLabel;
     TEdit *NetworkInterfaceEdit;
-    TCheckBox *AutoIndexCheckBox;
-    TEdit *IndexFileNameEdit;
     TCheckBox *AllowQWKCheckBox;
     TCheckBox *LocalFileSysCheckBox;
     TCheckBox *HostnameCheckBox;
@@ -86,11 +84,22 @@ __published:
     TButton *CancelBtn;
     TButton *ApplyBtn;
     TCheckBox *DirFilesCheckBox;
+    TTabSheet *IndexTabSheet;
+    TCheckBox *AutoIndexCheckBox;
+    TEdit *IndexFileNameEdit;
+    TCheckBox *HtmlIndexCheckBox;
+    TEdit *HtmlFileNameEdit;
+    TLabel *HtmlJavaScriptLabel;
+    TEdit *HtmlJavaScriptEdit;
+    TLabel *QwkTimeoutLabel;
+    TEdit *QwkTimeoutEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);
 	void __fastcall HangupSoundButtonClick(TObject *Sender);
 	void __fastcall AutoIndexCheckBoxClick(TObject *Sender);
+    void __fastcall HtmlJavaScriptButtonClick(TObject *Sender);
+    void __fastcall HtmlIndexCheckBoxClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TFtpCfgDlg(TComponent* AOwner);

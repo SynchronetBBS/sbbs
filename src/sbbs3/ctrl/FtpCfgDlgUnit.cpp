@@ -68,11 +68,14 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     }
     MaxClientsEdit->Text=AnsiString((int)MainForm->ftp_startup.max_clients);
     MaxInactivityEdit->Text=AnsiString((int)MainForm->ftp_startup.max_inactivity);
+    QwkTimeoutEdit->Text=AnsiString((int)MainForm->ftp_startup.qwk_timeout);
 	PortEdit->Text=AnsiString((int)MainForm->ftp_startup.port);
     AutoStartCheckBox->Checked=MainForm->FtpAutoStart;
     LogFileCheckBox->Checked=MainForm->FtpLogFile;
 
     IndexFileNameEdit->Text=AnsiString(MainForm->ftp_startup.index_file_name);
+    HtmlFileNameEdit->Text=AnsiString(MainForm->ftp_startup.html_index_file);
+    HtmlJavaScriptEdit->Text=AnsiString(MainForm->ftp_startup.html_index_script);
     AnswerSoundEdit->Text=AnsiString(MainForm->ftp_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->ftp_startup.hangup_sound);
     CmdLogCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_RX;
@@ -87,6 +90,10 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
         =!(MainForm->ftp_startup.options&FTP_OPT_NO_HOST_LOOKUP);
 	AutoIndexCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_INDEX_FILE;
 	AutoIndexCheckBoxClick(Sender);
+	HtmlIndexCheckBox->Checked
+        =MainForm->ftp_startup.options&FTP_OPT_HTML_INDEX_FILE;
+	HtmlIndexCheckBoxClick(Sender);
+
     PageControl->ActivePage=GeneralTabSheet;
 }
 //---------------------------------------------------------------------------
@@ -116,6 +123,7 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->ftp_startup.interface_addr=0;
     MainForm->ftp_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
     MainForm->ftp_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(300);
+    MainForm->ftp_startup.qwk_timeout=QwkTimeoutEdit->Text.ToIntDef(600);
     MainForm->ftp_startup.port=PortEdit->Text.ToIntDef(23);
     MainForm->FtpAutoStart=AutoStartCheckBox->Checked;
     MainForm->FtpLogFile=LogFileCheckBox->Checked;
@@ -123,6 +131,13 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     sprintf(MainForm->ftp_startup.index_file_name,"%.*s"
 	    ,sizeof(MainForm->ftp_startup.index_file_name)-1
         ,IndexFileNameEdit->Text.c_str());
+    sprintf(MainForm->ftp_startup.html_index_file,"%.*s"
+	    ,sizeof(MainForm->ftp_startup.html_index_file)-1
+        ,HtmlFileNameEdit->Text.c_str());
+    sprintf(MainForm->ftp_startup.html_index_script,"%.*s"
+	    ,sizeof(MainForm->ftp_startup.html_index_script)-1
+        ,HtmlJavaScriptEdit->Text.c_str());
+
     sprintf(MainForm->ftp_startup.answer_sound,"%.*s"
 	    ,sizeof(MainForm->ftp_startup.answer_sound)-1
         ,AnswerSoundEdit->Text.c_str());
@@ -161,6 +176,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->ftp_startup.options|=FTP_OPT_INDEX_FILE;
     else
 	    MainForm->ftp_startup.options&=~FTP_OPT_INDEX_FILE;
+	if(HtmlIndexCheckBox->Checked==true)
+    	MainForm->ftp_startup.options|=FTP_OPT_HTML_INDEX_FILE;
+    else
+	    MainForm->ftp_startup.options&=~FTP_OPT_HTML_INDEX_FILE;
 
     MainForm->SaveSettings(Sender);
 }
@@ -192,4 +211,21 @@ void __fastcall TFtpCfgDlg::AutoIndexCheckBoxClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+
+void __fastcall TFtpCfgDlg::HtmlJavaScriptButtonClick(TObject *Sender)
+{
+	OpenDialog->FileName=HtmlJavaScriptEdit->Text;
+	if(OpenDialog->Execute()==true) {
+    	HtmlJavaScriptEdit->Text=OpenDialog->FileName;
+	}
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFtpCfgDlg::HtmlIndexCheckBoxClick(TObject *Sender)
+{
+    HtmlFileNameEdit->Enabled=HtmlIndexCheckBox->Checked;
+    HtmlJavaScriptEdit->Enabled=HtmlIndexCheckBox->Checked;
+    HtmlJavaScriptLabel->Enabled=HtmlIndexCheckBox->Checked;
+}
+//---------------------------------------------------------------------------
 
