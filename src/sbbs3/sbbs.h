@@ -1024,6 +1024,11 @@ BOOL 	md(char *path);
 	/* file.cpp */
 	BOOL	filematch(char *filename, char *filespec);
 
+	/* sbbscon.c */
+	#if defined(__unix__) && defined(NEEDS_DAEMON)
+	int daemon(int nochdir, int noclose);
+	#endif
+
 #endif /* SBBS */
 
 extern const char* wday[];	/* abbreviated weekday names */

@@ -12,4 +12,5 @@ OBJS	=	$(LIBODIR)$(SLASH)sbbsinst.$(OFILE)\
 			$(LIBODIR)$(SLASH)genwrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)dirwrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)filewrap.$(OFILE)\
-			$(LIBODIR)$(SLASH)httpio.$(OFILE)
+			$(LIBODIR)$(SLASH)httpio.$(OFILE)\
+			$(LIBODIR)$(SLASH)uifcx.$(OFILE)

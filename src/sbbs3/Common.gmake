@@ -15,13 +15,13 @@ else
  JS_CFLAGS += -I$(XPDEV)../../include/mozilla/js
 endif
 ifndef JSLIBDIR
- JSLIBDIR := $(XPDEV)../../lib/mozilla/js/$(os).$(BUILD)
+ JSLIBDIR := $(XPDEV)../../lib/mozilla/js/$(machine).$(BUILD)
 endif
 ifndef JSLIB
  JSLIB	:=	js
 endif
 ifndef NSPRDIR
- NSPRDIR := $(XPDEV)../../lib/mozilla/nspr/$(os).$(BUILD)
+ NSPRDIR := $(XPDEV)../../lib/mozilla/nspr/$(machine).$(BUILD)
 endif
 JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
 #The following is needed for nspr support on Linux

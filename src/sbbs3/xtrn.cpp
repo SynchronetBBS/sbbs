@@ -68,45 +68,100 @@
 
 	#include <termios.h>
 
-#if defined(__QNX__)
-	/*
-	 * Control Character Defaults
-	 */
+/*
+ * Control Character Defaults
+ */
+#ifndef CTRL
 	#define CTRL(x)	(x&037)
+#endif
+#ifndef CEOF
 	#define	CEOF		CTRL('d')
+#endif
+#ifndef CEOL
 	#define	CEOL		0xff		/* XXX avoid _POSIX_VDISABLE */
+#endif
+#ifndef CERASE
 	#define	CERASE		0177
+#endif
+#ifndef CERASE2
 	#define	CERASE2		CTRL('h')
+#endif
+#ifndef CINTR
 	#define	CINTR		CTRL('c')
+#endif
+#ifndef CSTATUS
 	#define	CSTATUS		CTRL('t')
+#endif
+#ifndef CKILL
 	#define	CKILL		CTRL('u')
+#endif
+#ifndef CMIN
 	#define	CMIN		1
+#endif
+#ifndef CQUIT
 	#define	CQUIT		034		/* FS, ^\ */
+#endif
+#ifndef CSUSP
 	#define	CSUSP		CTRL('z')
+#endif
+#ifndef CTIME
 	#define	CTIME		0
+#endif
+#ifndef CDSUSP
 	#define	CDSUSP		CTRL('y')
+#endif
+#ifndef CSTART
 	#define	CSTART		CTRL('q')
+#endif
+#ifndef CSTOP
 	#define	CSTOP		CTRL('s')
+#endif
+#ifndef CLNEXT
 	#define	CLNEXT		CTRL('v')
+#endif
+#ifndef CDISCARD
 	#define	CDISCARD 	CTRL('o')
+#endif
+#ifndef CWERASE
 	#define	CWERASE 	CTRL('w')
+#endif
+#ifndef CREPRINT
 	#define	CREPRINT 	CTRL('r')
+#endif
+#ifndef CEOT
 	#define	CEOT		CEOF
-	/* compat */
+#endif
+/* compat */
+#ifndef CBRK
 	#define	CBRK		CEOL
+#endif
+#ifndef CRPRNT
 	#define CRPRNT		CREPRINT
+#endif
+#ifndef CFLUSH
 	#define	CFLUSH		CDISCARD
 #endif
 
-#if defined(__solaris__) || defined(__QNX__)
+#ifndef TTYDEF_IFLAG
 	#define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
+#endif
+#ifndef TTYDEF_OFLAG
 	#define TTYDEF_OFLAG    (OPOST | ONLCR)
+#endif
+#ifndef TTYDEF_LFLAG
 	#define TTYDEF_LFLAG    (ECHO | ICANON | ISIG | IEXTEN | ECHOE|ECHOKE|ECHOCTL)
+#endif
+#ifndef TTYDEF_CFLAG
 	#define TTYDEF_CFLAG    (CREAD | CS8 | HUPCL)
+#endif
+#if defined(__QNX__) || defined(__solaris__)
 	static cc_t     ttydefchars[NCCS] = {
         CEOF,   CEOL,   CEOL,   CERASE, CWERASE, CKILL, CREPRINT,
         CERASE2, CINTR, CQUIT,  CSUSP,  CDSUSP, CSTART, CSTOP,  CLNEXT,
-        CDISCARD, CMIN, CTIME,  CSTATUS, _POSIX_VDISABLE
+        CDISCARD, CMIN, CTIME,  CSTATUS
+#ifndef __solaris__
+	, _POSIX_VDISABLE
+#endif
 	};
 #endif
 
@@ -1003,6 +1058,35 @@ BYTE* lf_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 }
 
 #define MAX_ARGS 1000
+
+#ifdef NEEDS_SETENV
+static int setenv(const char *name, const char *value, int overwrite)
+{
+	char *envstr;
+	char *oldenv;
+	if(overwrite || getenv(name)==NULL) {
+		envstr=(char *)malloc(strlen(name)+strlen(value)+2);
+		if(envstr==NULL) {
+			errno=ENOMEM;
+			return(-1);
+		}
+		putenv(envstr);
+	}
+	return(0);
+}
+#endif
+
+#ifdef NEEDS_CFMAKERAW
+void
+cfmakeraw(struct termios *t)
+{
+	t->c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+	t->c_oflag &= ~OPOST;
+	t->c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+	t->c_cflag &= ~(CSIZE|PARENB);
+	t->c_cflag |= CS8;
+}
+#endif
 
 #ifdef NEEDS_FORKPTY
 static int login_tty(int fd)

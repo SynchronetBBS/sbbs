@@ -43,7 +43,10 @@ CFLAGS  +=  -I$(XPDEV)
 CFLAGS	+=  $(UIFC_CFLAGS)
 
 ifndef bcc
- LDFLAGS	+=	-lm -lutil
+ LDFLAGS	+=	-lm
+ ifneq ($(os),sunos)
+  LDFLAGS	+=	-lutil
+ endif
 endif
 
 ifeq ($(os),sunos)    # Solaris
@@ -80,6 +83,7 @@ $(SBBSLIB) : $(SBBS)
 	$(QUIET)touch -- '$(SBBSLIB)'
 
 ifneq ($(os),darwin)
+ifneq ($(os),sunos)
 SBBSLDFLAGS	:=	$(LDFLAGS) -rpath-link ./$(LIBODIR) -rpath ./ 
 #LDFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
 LDFLAGS		+=	-Xlinker -rpath
@@ -91,6 +95,7 @@ LDFLAGS		+=	-Xlinker -rpath-link
 LDFLAGS		+=	-Xlinker $(JSLIBDIR)
 LDFLAGS		+=	-Xlinker -rpath-link
 LDFLAGS		+=	-Xlinker $(NSPRDIR)
+endif
 endif
 endif
 

@@ -17,15 +17,21 @@
 #USE_CURSES	=	1	# Curses version of UIFC
 #USE_FLTK	=	1	# Windowed version of UIFC
 USE_UIFC32	:=	1	# New 32-bit version of UIFC
-UIFC	=	../../uifc/
+UIFC_SRC	=	../../uifc/
 XPDEV	=	../../xpdev/
 
 NEED_UIFC	:=	1
 include $(XPDEV)/Common.gmake
-include $(UIFC)/Common.gmake
+include $(UIFC_SRC)/Common.gmake
+
+CFLAGS	+=	-I../
 
 ifdef STATIC
  LDFLAGS	+=	-static
+endif
+
+ifeq ($(os),sunos)
+ LDFLAGS	+=	-lsocket -lnsl
 endif
 
 $(SBBSINST): $(OBJS)
