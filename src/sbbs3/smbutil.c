@@ -105,7 +105,7 @@ char *usage=
 "       i[f] = import msg from text file f (or use stdin)\n"
 "       e[f] = import e-mail from text file f (or use stdin)\n"
 "       n[f] = import netmail from text file f (or use stdin)\n"
-"       h    = dump hash table\n"
+"       h    = dump hash file\n"
 "       s    = display msg base status\n"
 "       c    = change msg base status\n"
 "       d    = delete all msgs\n"
@@ -592,6 +592,7 @@ void viewmsgs(ulong start, ulong count)
 /****************************************************************************/
 void dump_hashes(void)
 {
+	char	tmp[128];
 	int		retval;
 	hash_t	hash;
 
@@ -603,10 +604,17 @@ void dump_hashes(void)
 	while(!smb_feof(smb.hash_fp)) {
 		if(smb_fread(&smb,&hash,sizeof(hash),smb.hash_fp)!=sizeof(hash))
 			break;
-		printf("%-25s: %lu\n", "number",	hash.number);
-		printf("%-25s: %lx\n", "flags",		hash.flags);
-		printf("%-25s: %s\n",  "source",	smb_hfieldtype(hash.source));
-		printf("%-25s: %s\n",  "time",		my_timestr(&hash.time));
+		printf("\n");
+		printf("%-10s: %lu\n",		"Number",	hash.number);
+		printf("%-10s: %s\n",		"Source",	smb_hfieldtype(hash.source));
+		printf("%-10s: %s\n",		"Time",		my_timestr(&hash.time));
+		printf("%-10s: %x\n",		"Flags",	hash.flags);
+		if(hash.flags&SMB_HASH_CRC16)
+			printf("%-10s: %04x\n",	"CRC-16",	hash.crc16);
+		if(hash.flags&SMB_HASH_CRC32)
+			printf("%-10s: %08lx\n","CRC-32",	hash.crc32);
+		if(hash.flags&SMB_HASH_MD5)
+			printf("%-10s: %s\n",	"MD5",		MD5_hex(tmp,hash.md5));
 	}
 }
 
