@@ -67,7 +67,8 @@ bool sbbs_t::answer()
 	online=ON_REMOTE;
 
 	rlogin_name[0]=0;
-	if(!useron.number && sys_status&SS_RLOGIN) {
+	if(sys_status&SS_RLOGIN) {
+		mswait(100);	/* Give input_thread time to start */
 		if(incom()==0) {
 			for(i=0;i<LEN_ALIAS;i++) {
 				in=incom();
@@ -83,7 +84,6 @@ bool sbbs_t::answer()
 				str2[i]=in;
 			}
 			str2[i]=0;
-			outcom(0);	/* acknowledge receipt per RFC 1282 */
 			lprintf("Node %d RLogin: '%s' / '%s'",cfg.node_num,str,str2);
 			strcpy(rlogin_name
 				,cfg.startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
@@ -164,12 +164,15 @@ bool sbbs_t::answer()
         }
         lputs(str2);
 	}
-	/* Disable Telnet Terminal Echo */
-	sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_ECHO);
-	putcom(str,3);
-	/* Will supress Go Ahead */
-	sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_SUP_GA);
-	putcom(str,3);
+
+	if(!(sys_status&SS_RLOGIN)) {
+		/* Disable Telnet Terminal Echo */
+		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_ECHO);
+		putcom(str,3);
+		/* Will supress Go Ahead */
+		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_SUP_GA);
+		putcom(str,3);
+	}
 
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
