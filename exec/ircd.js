@@ -145,6 +145,8 @@ function dec_to_ip(ip) {
 }
 
 function searchbynick(nick) {
+	if (!nick)
+		return 0;
 	for(thisClient in Clients) {
 		Client=Clients[thisClient];
 		if ((nick.toUpperCase() == Client.nick.toUpperCase()) &&
@@ -165,13 +167,24 @@ function searchbychannel(chan) {
 }
 
 function searchbyserver(server_name) {
+	if (!server_name)
+		return 0;
+	if (match_irc_mask(servername,server_name))
+		return -1; // the server passed to us is our own.
 	for(thisServer in Clients) {
 		Server=Clients[thisServer];
-		if ((server_name.toUpperCase() == Server.nick.toUpperCase()) &&
-		    (Server.conntype == TYPE_SERVER) )
+		if ( (Server.conntype == TYPE_SERVER) &&
+		     match_irc_mask(Server.nick,server_name) )
 			return Server;
 	}
-	return 0;
+	// if we've had no success so far, try nicknames and glean a server
+	// from there.
+	for(thisNick in Clients) {
+		Nick=Clients[thisNick];
+		if (!Nick.server && match_irc_mask(Nick.nick,server_name))
+			return searchbyserver(Nick.servername);
+	}
+	return 0; // looks like we failed after all that hard work :(
 }
 
 // IRC is funky.  A "string" in IRC is anything after a :, and anything before
@@ -204,6 +217,7 @@ function parse_username(str) {
 
 function server_wallops(str) {
 	wallopers(":" + servername + " WALLOPS :" + str);
+	server_bcast_to_servers(":" + servername + " WALLOPS :" + str);
 }
 
 function create_ban_mask(str,kline) {
@@ -268,7 +282,7 @@ function match_irc_mask(mtchstr,mask) {
 	mask=mask.replace(/[?]/g,".");
 	mask=mask.replace(/[*]/g,".*?");
 	final_mask=final_mask + mask + "$";
-	return mtchstr.match(final_mask);
+	return mtchstr.toUpperCase().match(final_mask.toUpperCase());
 }
 
 function isklined(kl_str) {
@@ -334,6 +348,33 @@ function wallopers(str) {
 		if ((oper.mode&USERMODE_OPER) && !oper.parent)
 			oper.rawout(str);
 	}
+}
+
+function push_nickbuf(oldnick,newnick) {
+	NickHistory[nick_pointer] = new NickBuf(oldnick,newnick);
+	nick_pointer++;
+	if(nick_pointer == nick_buffer)
+		nick_pointer = 0;
+}
+
+function search_nickbuf(bufnick) {
+	for (nb=nick_pointer;nb>=0;nb--) {
+		if (NickHistory[nb] && (bufnick.toUpperCase() == NickHistory[nb].oldnick.toUpperCase())) {
+			if (!searchbynick(NickHistory[nb].newnick))
+				return search_nickbuf(NickHistory[nb].newnick);
+			else
+				return NickHistory[nb].newnick;
+		}
+	}
+	for (nb=nick_buffer;nb>=nick_pointer;nb--) {
+		if (NickHistory[nb] && (bufnick.toUpperCase() == NickHistory[nb].oldnick.toUpperCase())) {
+			if (!searchbynick(NickHistory[nb].newnick))
+				return search_nickbuf(NickHistory[nb].newnick);
+			else
+				return NickHistory[nb].newnick;
+		}
+	}
+	return 0;
 }
 
 function IRCClient_tweaktmpmode(tmp_bit) {
@@ -479,75 +520,75 @@ function read_config_file() {
 	}
 	conf = new File(fname);
 	if (conf.open("r")) {
-		log("Reading " + fname);
+		log("Reading Config: " + fname);
 		while (!conf.eof) {
 			conf_line = conf.readln();
-			if (conf_line == null)
-				break;
-			arg = conf_line.split(":");
-			for(argument in arg) {
-				arg[argument]=arg[argument].replace(
-					/SYSTEM_HOST_NAME/g,system.host_name);
-				arg[argument]=arg[argument].replace(
-					/SYSTEM_NAME/g,system.name);
-				arg[argument]=arg[argument].replace(
-					/SYSTEM_QWKID/g,system.qwk_id.toLowerCase());
-				arg[argument]=arg[argument].replace(
-					/VERSION_NOTICE/g,system.version_notice);
-			}
-			switch (conf_line[0].toUpperCase()) {
-				case "A":
-					if (!arg[3])
+			if ((conf_line != null) && conf_line.match("[:]")) {
+				arg = conf_line.split(":");
+				for(argument in arg) {
+					arg[argument]=arg[argument].replace(
+						/SYSTEM_HOST_NAME/g,system.host_name);
+					arg[argument]=arg[argument].replace(
+						/SYSTEM_NAME/g,system.name);
+					arg[argument]=arg[argument].replace(
+						/SYSTEM_QWKID/g,system.qwk_id.toLowerCase());
+					arg[argument]=arg[argument].replace(
+						/VERSION_NOTICE/g,system.version_notice);
+				}
+				switch (conf_line[0].toUpperCase()) {
+					case "A":
+						if (!arg[3])
+							break;
+						Admin1 = arg[1];
+						Admin2 = arg[2];
+						Admin3 = arg[3];
 						break;
-					Admin1 = arg[1];
-					Admin2 = arg[2];
-					Admin3 = arg[3];
-					break;
-				case "C":
-					if (!arg[5])
+					case "C":
+						if (!arg[5])
+							break;
+						CLines.push(new CLine(arg[1],arg[2],arg[3],arg[4],arg[5]));
 						break;
-					CLines.push(new CLine(arg[1],arg[2],arg[3],arg[4],arg[5]));
-					break;
-				case "K":
-					if (!arg[2])
+					case "K":
+						if (!arg[2])
+							break;
+						kline_mask = create_ban_mask(arg[1],true);
+						if (!kline_mask) {
+							log("!WARNING Invalid K:Line (" + arg[1] + ")");
+							break;
+						}
+						KLines.push(new KLine(kline_mask,arg[2],"K"));
 						break;
-					kline_mask = create_ban_mask(arg[1],true);
-					if (!kline_mask) {
-						log("!WARNING Invalid K:Line (" + arg[1] + ")");
+					case "M":
+						if (!arg[3])
+							break;
+						servername = arg[1];
+						serverdesc = arg[3];
 						break;
-					}
-					KLines.push(new KLine(kline_mask,arg[2],"K"));
-					break;
-				case "M":
-					if (!arg[3])
+					case "N":
+						if (!arg[5])
+							break;
+						NLines.push(new NLine(arg[1],arg[2],arg[3],arg[4],arg[5]));
 						break;
-					servername = arg[1];
-					serverdesc = arg[3];
-					break;
-				case "N":
-					if (!arg[5])
+					case "O":
+						if (!arg[5])
+							break;
+						OLines.push(new OLine(arg[1],arg[2],arg[3],arg[4],arg[5]));
 						break;
-					NLines.push(new NLine(arg[1],arg[2],arg[3],arg[4],arg[5]));
-					break;
-				case "O":
-					if (!arg[5])
+					case "Q":
+						if (!arg[3])
+							break;
+						QLines.push(new QLine(arg[3],arg[2]));
 						break;
-					OLines.push(new OLine(arg[1],arg[2],arg[3],arg[4],arg[5]));
-					break;
-				case "Q":
-					if (!arg[3])
+					case "U":
+						if (!arg[1])
+							break;
+						ULines.push(arg[1]);
 						break;
-					QLines.push(new QLine(arg[3],arg[2]));
-					break;
-				case "U":
-					if (!arg[1])
+					case "#":
+					case ";":
+					default:
 						break;
-					ULines.push(arg[1]);
-					break;
-				case "#":
-				case ";":
-				default:
-					break;
+				}
 			}
 		}
 		conf.close();
@@ -575,6 +616,7 @@ hcc_counter = 0;
 server_uptime = time();
 
 WhoWasHistory = new Array;
+NickHistory = new Array;
 whowas_buffer = 10000;
 whowas_pointer = 0;
 nick_buffer = 10000;
@@ -589,7 +631,6 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 	}
 }
 
-log("Reading config file...");
 read_config_file();
 log("Synchronet IRC Daemon (" + version + ") started.");
 
@@ -672,6 +713,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.server_notice=IRCClient_server_notice;
 	this.setusermode=IRCClient_setusermode;
 	this.numeric=IRCClient_numeric;
+	this.numeric351=IRCClient_numeric351;
 	this.numeric353=IRCClient_numeric353;
 	this.numeric401=IRCClient_numeric401;
 	this.numeric402=IRCClient_numeric402;
@@ -720,7 +762,6 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 		log(format("%04u",this.socket.descriptor)
 			+ " Accepted new connection: " + this.socket.remote_ip_address
 			+ " port " + this.socket.remote_port);
-		log("Accepted new connection: " + this.socket.remote_ip_address + " port " + this.socket.remote_port);
 		this.nick = "*";
 		this.realname = "";
 		this.away = "";
@@ -943,6 +984,10 @@ function IRCClient_numeric(num, str) {
 }
 
 //////////////////// Numeric Functions ////////////////////
+function IRCClient_numeric351() {
+	this.numeric(351, version + " " + servername + " :Synchronet IRC Daemon by Randy Sommerfeld <sysop@rrx.ca>");
+}
+
 function IRCClient_numeric353(chan, str) {
 	// = public @ secret * everything else
 	if (Channels[chan].mode&CHANMODE_SECRET)
@@ -1244,6 +1289,26 @@ function IRCClient_do_whois(wi) {
 }
 
 function IRCClient_do_msg(target,type_str,send_str) {
+	if ((target[0] == "$") && (this.mode&USERMODE_OPER)) {
+		var global_mask = target.slice(1);
+		var global_str = type_str + " " + target + " :" + send_str;
+		for(globClient in Clients) {
+			var Client = Clients[globClient];
+			if ((Client.conntype == TYPE_USER) &&
+			    match_irc_mask(Client.servername,global_mask) &&
+			    Client.local)
+				Client.originatorout(global_str,this);
+		}
+		global_str = ":" + this.nick + " " + global_str;
+		if(this.parent) {
+			var globServer = Clients[this.parent];
+			globServer.bcast_to_servers_raw(global_str);
+		} else {
+			server_bcast_to_servers(global_str);
+		}
+		return 1;
+	}
+
 	send_to_list = -1;
 	if (target[0] == "@" && ( (target[1] == "#") || target[1] == "&") ) {
 		send_to_list = CHANLIST_OP;
@@ -1252,6 +1317,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 		send_to_list = CHANLIST_VOICE;
 		target = target.slice(1);
 	}
+		
 	if ((target[0] == "#") || (target[0] == "&")) {
 		chan = searchbychannel(target);
 		if (!chan) {
@@ -1799,20 +1865,20 @@ function IRCClient_setusermode(modestr) {
 function IRCClient_affect_mode_list(tmp_add,list_bit) {
 	for (tmp_index in chan_tmplist[list_bit]) {
 		tmp_nick = searchbynick(chan_tmplist[list_bit][tmp_index]);
-		tmp_nickid = tmp_nick.id;
-		if (tmp_nickid) {
-			if (tmp_add && (!chan.ismode(tmp_nickid,list_bit))) {
+		if (!tmp_nick)
+			tmp_nick = searchbynick(search_nickbuf(chan_tmplist[list_bit][tmp_index]));
+		if (tmp_nick) { // FIXME: check for user existing on channel?
+			if (tmp_add && (!chan.ismode(tmp_nick.id,list_bit))) {
 				addmodes += const_modechar[list_bit];
 				addmodeargs += " " + tmp_nick.nick;
-				chan.add_modelist(tmp_nickid,list_bit);
-			} else if (chan.ismode(tmp_nickid,list_bit-1)) {
+				chan.add_modelist(tmp_nick.id,list_bit);
+			} else if (chan.ismode(tmp_nick.id,list_bit-1)) {
 				delmodes += const_modechar[list_bit];
 				delmodeargs += " " + tmp_nick.nick;
-				chan.del_modelist(tmp_nickid,list_bit-1);
+				chan.del_modelist(tmp_nick.id,list_bit-1);
 			}
 		} else {
 			this.numeric401(chan_tmplist[list_bit][tmp_index]);
-			this.numeric441(cm_cmd[1]);
 		}
 	}
 }
@@ -1821,6 +1887,8 @@ function IRCClient_affect_mode_list(tmp_add,list_bit) {
 
 // Unregistered users are ConnType 1
 function IRCClient_unregistered_commands(command, cmdline) {
+	if (command.match(/^[0-9]+/))
+		return 0; // we ignore all numerics from unregistered clients.
 	cmd=cmdline.split(' ');
 	switch(command) {
 		case "CAPAB":
@@ -1884,6 +1952,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 			this.server = true;
 			this.conntype = TYPE_SERVER;
 			this.linkparent = servername;
+			this.parent = this.id;
 			break;
 		case "USER":
 			if (this.server) {
@@ -1895,7 +1964,8 @@ function IRCClient_unregistered_commands(command, cmdline) {
 				break;
 			}
 			this.realname = ircstring(cmdline).slice(0,50);
-			this.uprefix = "~" + parse_username(cmd[1]);
+			var unreg_username = parse_username(cmd[1]);
+			this.uprefix = "~" + unreg_username;
 			break;
 		case "QUIT":
 			this.quit(ircstring(cmdline),true);
@@ -1908,6 +1978,17 @@ function IRCClient_unregistered_commands(command, cmdline) {
 		this.numeric(465, ":You've been K:Lined from this server.");
 		this.quit("You've been K:Lined from this server.");
 		return 0;
+	}
+	if (this.password && (unreg_username || (this.nick != "*"))) {
+		if (unreg_username)
+			var usernum = system.matchuser(unreg_username);
+		if (!usernum && (this.nick != "*"))
+			var usernum = system.matchuser(this.nick);
+		if (usernum) {
+			bbsuser = new User(usernum);
+			if (this.password.toUpperCase() == bbsuser.security.password)
+				this.uprefix = parse_username(bbsuser.handle).toLowerCase().slice(0,10);
+		}
 	}
 	if ( (count_local_nicks() + count_servers(false)) > hcc_total)
 		hcc_total = count_local_nicks() + count_servers(false);
@@ -1952,6 +2033,8 @@ function IRCClient_unregistered_commands(command, cmdline) {
 
 // Registered users are ConnType 2
 function IRCClient_registered_commands(command, cmdline) {
+	if (command.match(/^[0-9]+/))
+		return 0; // ignore numerics from clients.
 	cmd=cmdline.split(' ');
 	switch(command) {
 		case "ADMIN":
@@ -2137,8 +2220,11 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			nickid = searchbynick(cmd[2]);
 			if (!nickid) {
-				this.numeric401(cmd[2]);
-				break;
+				nickid = searchbynick(search_nickbuf(cmd[2]));
+				if (!nickid) {
+					this.numeric401(cmd[2]);
+					break;
+				}
 			}
 			if (!nickid.onchannel(chanid.nam.toUpperCase())) {
 				this.numeric("441", nickid.nick + " " + chanid.nam + " :They aren't on that channel!");
@@ -2174,6 +2260,8 @@ function IRCClient_registered_commands(command, cmdline) {
 			kills = cmd[1].split(",");
 			for(kill in kills) {
 				target = searchbynick(kills[kill]);
+				if (!target)
+					target = searchbynick(search_nickbuf(kills[kill]));
 				if (target) {
 					server_wallops("/KILL: " + this.nick + " -> " + target.nick + " (" + reason + ")");
 					server_bcast_to_servers(":" + this.nick + " KILL " + target.nick + " :" + reason);
@@ -2349,7 +2437,9 @@ function IRCClient_registered_commands(command, cmdline) {
 				str="NICK " + the_nick;
 				this.bcast_to_uchans_unique(str);
 				this.originatorout(str,this);
-				this.bcast_to_servers(str + " :" + time());
+				this.created = time();
+				this.bcast_to_servers(str + " :" + this.created);
+				push_nickbuf(this.nick,the_nick);
 				this.nick = the_nick;
 			}
 			break;
@@ -2455,7 +2545,9 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric481();
 				break;
 			}
-			this.server_notice("DIE isn't implemented yet.  Sorry.");
+			log("!ERROR! Shutting down the ircd as per " + this.ircnuh);
+			server_wallops("!ERROR! Shutting down the ircd as per " + this.ircnuh);
+			terminated = true;
 			break;
 		case "REHASH":
 			if (!(this.mode&USERMODE_OPER)) {
@@ -2490,6 +2582,10 @@ function IRCClient_registered_commands(command, cmdline) {
 			reason = ircstring(cmdline);
 			if (!reason)
 				reason = this.nick;
+			if (sq_server == -1) {
+				this.quit(reason);
+				break;
+			}
 			server_wallops("SQUIT for " + cmd[1] + " issued by " + this.ircnuh);
 			sq_server.quit(ircstring(cmdline));
 			break;
@@ -2675,7 +2771,20 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric("302", ":");
 			break;
 		case "VERSION":
-			this.numeric("351", version + " " + servername + " :Synchronet IRC Daemon by Randy Sommerfeld <sysop@rrx.ca>");
+			if (cmd[1]) {
+				if (cmd[1][0] == ":")
+					cmd[1] = cmd[1].slice(1);
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[1]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " VERSION :" + dest_server.nick);
+					break;
+				}
+			}
+			this.numeric351();
 			break;
 		case "GLOBOPS":
 		case "WALLOPS":
@@ -2685,6 +2794,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				break;
 			}
 			wallopers(":" + this.ircnuh + " WALLOPS :" + ircstring(cmdline));
+			server_bcast_to_servers(":" + this.nick + " WALLOPS :" + ircstring(cmdline));
 			break;
 		case "WHO":
 			if (!cmd[1]) {
@@ -2780,7 +2890,19 @@ function IRCClient_server_commands(origin, command, cmdline) {
 		ThisOrigin = searchbyserver(origin);
 	if (!ThisOrigin)
 		ThisOrigin = this;
+
 	cmd=cmdline.split(' ');
+
+	if (command.match(/^[0-9]+/)) { // passing on a numeric to the client
+		if (!cmd[1])
+			return 0; // uh...?
+		var destination = searchbynick(cmd[1]);
+		if (!destination)
+			return 0;
+		destination.rawout(":" + ThisOrigin.nick + " " + cmdline);
+		return 1;
+	}
+
 	switch(command) {
 		case "GNOTICE":
 		case "GLOBOPS":
@@ -2808,6 +2930,8 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (!chanid)
 				break;
 			nickid = searchbynick(cmd[2]);
+			if (!nickid)
+				nickid = searchbynick(search_nickbuf(cmd[2]));
 			if (!nickid)
 				break;
 			if (!nickid.onchannel(chanid.nam.toUpperCase()))
@@ -2934,6 +3058,8 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			kills = cmd[1].split(",");
 			for(kill in kills) {
 				target = searchbynick(kills[kill]);
+				if (!target)
+					target = searchbynick(search_nickbuf(kills[kill]));
 				if (target) {
 					this.bcast_to_servers_raw(":" + ThisOrigin.nick + " KILL " + target.nick + " :" + reason);
 					target.quit("KILLED by " + ThisOrigin.nick + " (" + reason + ")",false);
@@ -2959,12 +3085,12 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (!cmd[8] && (cmd[2][0] != ":"))
 				break;
 			collide = searchbynick(cmd[1]);
-			if ((collide) && (parseInt(collide.connecttime) <
+			if ((collide) && (parseInt(collide.created) <
 			    parseInt(cmd[3]) ) ) {
 				// FIXME: At the moment, we rely on the remote
 				// end to do the right thing.
 				break;
-			} else if ((collide) && (parseInt(collide.connecttime) >
+			} else if ((collide) && (parseInt(collide.created) >
 			    parseInt(cmd[3]) ) ) {
 				// Nuke our side of things, allow this newly
 				// introduced nick to overrule.
@@ -2976,6 +3102,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				ThisOrigin.created = cmd[2];
 				ThisOrigin.bcast_to_uchans_unique("NICK " + cmd[1]);
 				this.bcast_to_servers_raw(":" + origin + " NICK " + cmd[1] + " :" + cmd[2]);
+				push_nickbuf(ThisOrigin.nick,cmd[1]);
 				ThisOrigin.nick = cmd[1];
 			} else if (cmd[10]) {
 				new_id = get_next_clientid();
@@ -2991,7 +3118,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				NewNick.conntype = TYPE_USER_REMOTE;
 				NewNick.away = "";
 				NewNick.mode = USERMODE_NONE;
-				NewNick.connecttime = time(); // BROKEN XXX FIXME
+				NewNick.connecttime = 0;
 				NewNick.idletime = 0;
 				NewNick.talkidle = 0;
 				NewNick.parent = this.id;
@@ -3058,6 +3185,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				this.hops = 1;
 				this.realname = ircstring(cmdline);
 				this.linkparent = servername;
+				this.parent = this.id;
 				newsrv = this;
 			} else if (parseInt(cmd[2]) > 1) {
 				new_id = get_next_clientid();
@@ -3082,10 +3210,27 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (!chan)
 				break;
 			chan.topic = ircstring(cmdline);
-			chan.topictime = cmd[2];
-			chan.topicchangedby = cmd[1];
+			chan.topictime = cmd[3];
+			chan.topicchangedby = cmd[2];
 			str = "TOPIC " + chan.nam + " :" + chan.topic;
-			this.bcast_to_channel(chan.nam,str,false);
+			ThisOrigin.bcast_to_channel(chan.nam,str,false);
+			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " TOPIC " + chan.nam + " " + ThisOrigin.nick + " " + chan.topictime + " :" + chan.topic);
+			break;
+		case "VERSION":
+			if (!cmd[1])
+				break;
+			if (cmd[1][0] == ":")
+				cmd[1] = cmd[1].slice(1);
+			if (match_irc_mask(servername, cmd[1])) {
+				// it's for us, return the message
+				ThisOrigin.numeric351();
+			} else {
+				// psst, pass it on
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break; // someone messed up.
+				dest_server.rawout(":" + ThisOrigin.nick + " VERSION :" + dest_server.nick);
+			}
 			break;
 		case "AKILL":
 			if (!cmd[6])
@@ -3146,9 +3291,6 @@ function IRCClient_work() {
 			command = cmd[0].toUpperCase();
 			origin = this.nick;
 		}
-
-		if (!this.server && (command.match(/^[0-9]+/)))
-			return 0; // possible numeric from user, ignore per RFC
 
 		this.idletime = time();
 		if (this.conntype == TYPE_UNREGISTERED) {
@@ -3377,3 +3519,7 @@ function WhoWas(nick,uprefix,host,realname,server,serverdesc) {
 	this.serverdesc = serverdesc;
 }
 
+function NickBuf(oldnick,newnick) {
+	this.oldnick = oldnick;
+	this.newnick = newnick;
+}
