@@ -19,7 +19,8 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 
 hdr = { to: 'sysop', to_ext: '1', from: 'chkspace', subject: 'Low disk space notification' }
 
-if(!msgbase.save_msg(hdr, "Only " + freespace + " bytes of free disk space!"))
+if(!msgbase.save_msg(hdr, "WARNING: Only " + freespace + " bytes of free disk space on " 
+	+ system.timestr()))
 	log("!Error " + msgbase.last_error + "saving mail message");
 
 log("E-mailed low disk space notification to sysop");
