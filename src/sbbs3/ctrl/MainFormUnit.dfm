@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 431
-  Top = 338
+  Left = 604
+  Top = 371
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -2321,6 +2321,11 @@ object MainForm: TMainForm
           Hint = 'BADPHONE.MSG'
           OnClick = TextMenuItemEditClick
         end
+      end
+      object BBSPreviewMenuItem: TMenuItem
+        Caption = 'Preview...'
+        ImageIndex = 45
+        OnClick = BBSPreviewMenuItemClick
       end
     end
     object UserMenuItem: TMenuItem
@@ -5198,7 +5203,7 @@ object MainForm: TMainForm
     Hint = 'Synchronet Control Panel'
     PopupMenu = TrayPopupMenu
     Hide = True
-    RestoreOn = imDoubleClick
+    RestoreOn = imLeftDoubleClick
     PopupMenuOn = imRightClickUp
     Icons = ImageList
     IconIndex = 4

@@ -67,6 +67,7 @@
 #include "UserListFormUnit.h"
 #include "PropertiesDlgUnit.h"
 #include "ConfigWizardUnit.h"
+#include "PreviewFormUnit.h"
 
 #include "sbbs.h"           // unixtodstr()
 #include "sbbs_ini.h"		// sbbs_read_ini()
@@ -2530,10 +2531,9 @@ void __fastcall TMainForm::TextMenuItemEditClick(TObject *Sender)
     TextFileEditForm->Caption=((TMenuItem*)Sender)->Caption;
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
-
 }
-//---------------------------------------------------------------------------
 
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::CtrlMenuItemEditClick(TObject *Sender)
 {
 	char filename[MAX_PATH+1];
@@ -2678,8 +2678,22 @@ void __fastcall TMainForm::FileOpenMenuItemClick(TObject *Sender)
     delete dlg;
 }
 //---------------------------------------------------------------------------
+void __fastcall TMainForm::BBSPreviewMenuItemClick(TObject *Sender)
+{
+    TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
 
-
+    dlg->Filter = "ANSI/Ctrl-A files (*.asc; *.msg; *.ans)|*.ASC;*.MSG;*.ANS"
+                "|All files|*.*";
+    dlg->InitialDir=cfg.text_dir;
+    if(dlg->Execute()==true) {
+        Application->CreateForm(__classid(TPreviewForm), &PreviewForm);
+        PreviewForm->Filename=AnsiString(dlg->FileName);
+        PreviewForm->ShowModal();
+        delete PreviewForm;
+    }
+    delete dlg;
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::BBSLoginMenuItemClick(TObject *Sender)
 {
     if(!strnicmp(LoginCommand.c_str(),"start ",6)) /* Doesn't work on NT */

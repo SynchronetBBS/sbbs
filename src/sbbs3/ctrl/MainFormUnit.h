@@ -264,6 +264,7 @@ __published:	// IDE-managed Components
 	TOpenDialog *OpenDialog;
 	TSaveDialog *SaveDialog;
 	TMenuItem *BBSEditNewUserEmail;
+	TMenuItem *BBSPreviewMenuItem;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -334,6 +335,7 @@ __published:	// IDE-managed Components
 	void __fastcall FtpRecycleExecute(TObject *Sender);
 	void __fastcall ServicesRecycleExecute(TObject *Sender);
 	void __fastcall TelnetRecycleExecute(TObject *Sender);
+	void __fastcall BBSPreviewMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
