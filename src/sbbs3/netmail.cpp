@@ -130,7 +130,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 					&& chk_ar(cfg.prot[x]->ar,&useron))
 					break;
 			if(x<cfg.total_prots)	/* This should be always */
-				protocol(x,cmdstr(cfg.prot[x]->ulcmd,str2,nulstr,NULL),true); 
+				protocol(cfg.prot[x],XFER_UPLOAD,str2,nulstr,true); 
 		}
 		sprintf(tmp,"%s%s",cfg.temp_dir,title);
 		if(!fexistcase(str2) && fexistcase(tmp))

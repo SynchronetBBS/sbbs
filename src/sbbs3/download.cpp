@@ -172,13 +172,32 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 	}
 }
 
+char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
+{
+	switch(type) {
+		case XFER_UPLOAD:
+			return(prot->ulcmd);
+		case XFER_DOWNLOAD:
+			return(prot->dlcmd);
+		case XFER_BATCH_UPLOAD:
+			return(prot->batulcmd);
+		case XFER_BATCH_DOWNLOAD:
+			return(prot->batdlcmd);
+		case XFER_BIDIR:
+			return(prot->bicmd);
+	}
+
+	return("invalid transfer type");
+}
 
 /****************************************************************************/
 /* Handles start and stop routines for transfer protocols                   */
 /****************************************************************************/
-int sbbs_t::protocol(uint prot, char *cmdline, bool cd)
+int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
+					 ,char *fpath, char *fspec, bool cd)
 {
 	char	protlog[256],*p;
+	char*	cmdline;
 	char	msg[256];
     int		i;
 	long	ex_mode;
@@ -201,6 +220,7 @@ int sbbs_t::protocol(uint prot, char *cmdline, bool cd)
 		p=cfg.temp_dir;
 	else
 		p=NULL;
+	cmdline=cmdstr(protcmdline(prot,type),fpath,fspec,NULL);
 	sprintf(msg,"Transferring %s",cmdline);
 	spymsg(msg);
 	sys_status|=SS_FILEXFER;	/* disable spy during file xfer */
@@ -211,7 +231,7 @@ int sbbs_t::protocol(uint prot, char *cmdline, bool cd)
 	}
 	send_telnet_cmd(TELNET_WILL,TELNET_BINARY);
 	ex_mode=0;
-	if(cfg.prot[prot]->misc&PROT_NATIVE)
+	if(prot->misc&PROT_NATIVE)
 		ex_mode|=EX_NATIVE;
 #ifdef __unix__		/* file xfer progs must use stdio on Unix */
 	ex_mode|=(EX_INR|EX_OUTR|EX_BIN);

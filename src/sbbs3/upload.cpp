@@ -499,7 +499,7 @@ bool sbbs_t::upload(uint dirnum)
 					break;
 			if(i<cfg.total_prots) {
 				start=time(NULL);
-				protocol(i,cmdstr(cfg.prot[i]->ulcmd,str,nulstr,NULL),true);
+				protocol(cfg.prot[i],XFER_UPLOAD,str,nulstr,true);
 				end=time(NULL);
 				if(!(cfg.dir[dirnum]->misc&DIR_ULTIME)) /* Don't deduct upload time */
 					starttime+=end-start;

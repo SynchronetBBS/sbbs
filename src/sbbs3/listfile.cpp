@@ -1291,7 +1291,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
 						putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
 						start=time(NULL);
-						error=protocol(i,cmdstr(cfg.prot[i]->dlcmd,path,nulstr,NULL),false);
+						error=protocol(cfg.prot[i],XFER_DOWNLOAD,path,nulstr,false);
 						end=time(NULL);
 						if(cfg.dir[f.dir]->misc&DIR_TFREE)
 							starttime+=end-start;
