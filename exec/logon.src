@@ -90,6 +90,13 @@ compare_ars LOCAL
 if_true
 	goto logon_event
 	end_if
+
+sprintf str "logon%ld" _useron.level
+chkfile "%zmenu/%s.*"
+if_true
+        menu "%s"
+        end_if
+
 set i 0
 :logon_screens
 	add i 1
