@@ -95,6 +95,74 @@ char* DLLCALL lastchar(const char* str)
 }
 
 /****************************************************************************/
+/* Return character value of C-escaped (\) character						*/
+/****************************************************************************/
+char DLLCALL unescape_char(char ch)
+{
+	switch(ch) {
+		case '\\':	return('\\');
+		case '\'':	return('\'');
+		case '"':	return('"');
+		case '?':	return('?');
+		case 'a':	return('\a');
+		case 'b':	return('\b');
+		case 'f':	return('\f');
+		case 'n':	return('\n');
+		case 'r':	return('\r');
+		case 't':	return('\t');
+		case 'v':	return('\v');
+	}
+	return(ch);
+}
+
+/****************************************************************************/
+/* Return character value of C-escaped (\) character sequence				*/
+/* (supports \Xhh and \0ooo escape sequences)								*/
+/* This code currently has problems with sequences like: "\x01blue"			*/
+/****************************************************************************/
+char DLLCALL unescape_char_ptr(const char* str, char** endptr)
+{
+	char	ch;
+
+	if(toupper(*str)=='X')
+		ch=(char)strtol(++str,endptr,16);
+	else if(isdigit(*str))
+		ch=(char)strtol(++str,endptr,8);
+	else {
+		ch=unescape_char(*(str++));
+		if(endptr!=NULL)
+			*endptr=(char*)str;
+	}
+
+	return(ch);
+}
+
+/****************************************************************************/
+/* Unescape a C string, in place											*/
+/****************************************************************************/
+char* DLLCALL unescape_cstr(char* str)
+{
+	char	ch;
+	char*	buf;
+	char*	src;
+	char*	dst;
+
+	if(str==NULL || (buf=strdup(str))==NULL)
+		return(NULL);
+
+	src=buf;
+	dst=str;
+	while((ch=*(src++))!=0) {
+		if(ch=='\\')	/* escape */
+			ch=unescape_char_ptr(src,&src);
+		*(dst++)=ch;
+	}
+	*dst=0;
+	free(buf);
+	return(str);
+}
+
+/****************************************************************************/
 /* Convert ASCIIZ string to upper case										*/
 /****************************************************************************/
 #if defined(__unix__)

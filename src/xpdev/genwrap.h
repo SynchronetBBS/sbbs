@@ -274,6 +274,11 @@ DLLEXPORT char*		DLLCALL os_version(char *str);
 DLLEXPORT char*		DLLCALL	lastchar(const char* str);
 DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...);
 
+/* C string/char escape-sequence processing */
+DLLEXPORT char*		DLLCALL unescape_cstr(char* str);
+DLLEXPORT char		DLLCALL unescape_char_ptr(const char* str, char** endptr);
+DLLEXPORT char		DLLCALL unescape_char(char ch);
+
 #if !defined(__unix__)
 	#define		msclock()			clock()
 	#define		MSCLOCKS_PER_SEC	CLOCKS_PER_SEC
