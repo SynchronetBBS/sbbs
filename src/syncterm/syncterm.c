@@ -56,6 +56,11 @@ int main(int argc, char **argv)
 			if(drawwin())
 				return(1);
 			doterm();
+			rlogin_close();
 		}
 	}
+#ifdef _WINSOCKAPI_
+	if(WSAInitialized && WSACleanup()!=0) 
+		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
+#endif
 }
