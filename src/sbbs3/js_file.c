@@ -1308,11 +1308,14 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	char		str[128];
-	BYTE*		buf;
-	long		l;
-	long		len;
+	size_t		i;
+	size_t		rd;
 	long		offset;
-	ulong		sum;
+	ulong		sum=0;
+	ushort		c16=0;
+	ulong		c32=~0;
+	MD5			md5_ctx;
+	BYTE		block[4096];
 	BYTE		digest[MD5_DIGEST_SIZE];
     jsint       tiny;
 	JSString*	js_str=NULL;
@@ -1420,40 +1423,62 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				break;
 			offset=ftell(p->fp);			/* save current file position */
 			fseek(p->fp,0,SEEK_SET);
-			len=filelength(fileno(p->fp));
-			if(len<1)
-				break;
-			if((buf=malloc(len*2))==NULL)
-				break;
-			len=fread(buf,sizeof(BYTE),len,p->fp);
-			if(len>0) 
+
+			/* Initialization */
+			switch(tiny) {
+				case FILE_PROP_MD5_HEX:
+				case FILE_PROP_MD5_B64:
+					MD5_open(&md5_ctx);
+					break;
+			}
+
+			/* calculate */
+			while(!feof(p->fp)) {
+				if((rd=fread(block,1,sizeof(block),p->fp))<1)
+					break;
 				switch(tiny) {
 					case FILE_PROP_CHKSUM:
-						for(sum=l=0;l<len;l++)
-							sum+=buf[l];
-						JS_NewNumberValue(cx,sum,vp);
+						for(i=0;i<rd;i++)
+							sum+=block[i];
 						break;
 					case FILE_PROP_CRC16:
-						if(!JS_NewNumberValue(cx,crc16(buf,len),vp))
-							*vp=JSVAL_ZERO;
+						for(i=0;i<rd;i++)
+							c16=ucrc16(block[i],c16);
 						break;
 					case FILE_PROP_CRC32:
-						sum=crc32(buf,len);
-						if(!JS_NewNumberValue(cx,sum,vp))
-							*vp=JSVAL_ZERO;
+						for(i=0;i<rd;i++)
+							c32=ucrc32(block[i],c32);
 						break;
 					case FILE_PROP_MD5_HEX:
-						MD5_calc(digest,buf,len);
-						MD5_hex(str,digest);
-						js_str=JS_NewStringCopyZ(cx, str);
-						break;
 					case FILE_PROP_MD5_B64:
-						MD5_calc(digest,buf,len);
-						b64_encode(str,sizeof(str)-1,digest,sizeof(digest));
-						js_str=JS_NewStringCopyZ(cx, str);
+						MD5_digest(&md5_ctx,block,rd);
 						break;
-				}
-			free(buf);
+					}
+			}
+
+			/* finalize */
+			switch(tiny) {
+				case FILE_PROP_CHKSUM:
+					JS_NewNumberValue(cx,sum,vp);
+					break;
+				case FILE_PROP_CRC16:
+					if(!JS_NewNumberValue(cx,c16,vp))
+						*vp=JSVAL_ZERO;
+					break;
+				case FILE_PROP_CRC32:
+					if(!JS_NewNumberValue(cx,~c32,vp))
+						*vp=JSVAL_ZERO;
+					break;
+				case FILE_PROP_MD5_HEX:
+				case FILE_PROP_MD5_B64:
+					MD5_close(&md5_ctx,digest);
+					if(tiny==FILE_PROP_MD5_HEX)
+						MD5_hex(str,digest);
+					else 
+						b64_encode(str,sizeof(str)-1,digest,sizeof(digest));
+					js_str=JS_NewStringCopyZ(cx, str);
+					break;
+			}
 			fseek(p->fp,offset,SEEK_SET);	/* restore saved file position */
 			if(js_str!=NULL)
 				*vp = STRING_TO_JSVAL(js_str);
