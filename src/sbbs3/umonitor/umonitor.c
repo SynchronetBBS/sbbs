@@ -140,14 +140,14 @@ char* itoa(int val, char* str, int radix)
 /******************************************************************************************/
 /* Returns the information for node number 'number' contained in 'node' into string 'str' */
 /******************************************************************************************/
-char *nodedat(char *str, int number, node_t node)
+char *nodedat(char *str, int number, node_t *node)
 {
     char hour,mer[3];
 	char buf[1024];
 	user_t	user;
 
 	sprintf(str,"Node %2d: ",number);
-	switch(node.status) {
+	switch(node->status) {
 		case NODE_WFC:
 			strcat(str,"Waiting for call");
 			break;
@@ -164,7 +164,7 @@ char *nodedat(char *str, int number, node_t node)
 			strcat(str,"Waiting for all nodes to become inactive");
 			break;
 		case NODE_EVENT_LIMBO:
-			sprintf(buf,"Waiting for node %d to finish external event",node.aux);
+			sprintf(buf,"Waiting for node %d to finish external event",node->aux);
 			strcat(str,buf);
 			break;
 		case NODE_EVENT_RUNNING:
@@ -173,17 +173,17 @@ char *nodedat(char *str, int number, node_t node)
 		case NODE_NEWUSER:
 			strcat(str,"New user");
 			strcat(str," applying for access ");
-			if(!node.connection)
+			if(!node->connection)
 				strcat(str,"locally");
-			else if(node.connection==0xffff)
+			else if(node->connection==0xffff)
 				strcat(str,"via telnet");
 			else {
-				sprintf(buf,"at %ubps",node.connection);
+				sprintf(buf,"at %ubps",node->connection);
 				strcat(str,buf); }
 			break;
 		case NODE_QUIET:
 		case NODE_INUSE:
-			user.number=node.useron;
+			user.number=node->useron;
 			getuserdat(&cfg,&user);
 			if(user.alias[0])
 				sprintf(buf,"%s",user.alias);
@@ -191,7 +191,7 @@ char *nodedat(char *str, int number, node_t node)
 				sprintf(buf,"%s",user.name);
 			strcat(str,buf);
 			strcat(str," ");
-			switch(node.action) {
+			switch(node->action) {
 				case NODE_MAIN:
 					strcat(str,"at main menu");
 					break;
@@ -217,10 +217,10 @@ char *nodedat(char *str, int number, node_t node)
 					strcat(str,"posting auto-message");
 					break;
 				case NODE_XTRN:
-					if(!node.aux)
+					if(!node->aux)
 						strcat(str,"at external program menu");
 					else
-						sprintf(buf,"running external program \"%s\"",cfg.xtrn[node.aux-1]->name);
+						sprintf(buf,"running external program \"%s\"",cfg.xtrn[node->aux-1]->name);
 					strcat(str,buf);
 					break;
 				case NODE_DFLT:
@@ -230,7 +230,7 @@ char *nodedat(char *str, int number, node_t node)
 					strcat(str,"at transfer menu");
 					break;
 				case NODE_RFSD:
-					sprintf(buf,"retrieving from device #%d",node.aux);
+					sprintf(buf,"retrieving from device #%d",node->aux);
 					strcat(str,buf);
 					break;
 				case NODE_DLNG:
@@ -252,22 +252,22 @@ char *nodedat(char *str, int number, node_t node)
 					strcat(str,"in local chat with sysop");
 					break;
 				case NODE_MCHT:
-					if(node.aux) {
-						sprintf(buf,"in multinode chat channel %d",node.aux&0xff);
+					if(node->aux) {
+						sprintf(buf,"in multinode chat channel %d",node->aux&0xff);
 						strcat(str,buf);
-						if(node.aux&0x1f00) { /* password */
+						if(node->aux&0x1f00) { /* password */
 							strcat(str,"*");
-							sprintf(buf," %s",unpackchatpass(tmp,&node));
+							sprintf(buf," %s",unpackchatpass(tmp,node));
 							strcat(str,buf); } }
 					else
 						strcat(str,"in multinode global chat channel");
 					break;
 				case NODE_PAGE:
-					sprintf(buf,"paging node %u for private chat",node.aux);
+					sprintf(buf,"paging node %u for private chat",node->aux);
 					strcat(str,buf);
 					break;
 				case NODE_PCHT:
-					sprintf(buf,"in private chat with node %u",node.aux);
+					sprintf(buf,"in private chat with node %u",node->aux);
 					strcat(str,buf);
 					break;
 				case NODE_GCHT:
@@ -283,66 +283,66 @@ char *nodedat(char *str, int number, node_t node)
 					strcat(str,"performing sysop activities");
 					break;
 				default:
-					sprintf(buf,itoa(node.action,tmp,10));
+					sprintf(buf,itoa(node->action,tmp,10));
 					strcat(str,buf);
 					break;  }
-			if(!node.connection)
+			if(!node->connection)
 				strcat(str," locally");
-			else if(node.connection==0xffff)
+			else if(node->connection==0xffff)
 				strcat(str," via telnet");
 			else {
-				sprintf(buf," at %ubps",node.connection);
+				sprintf(buf," at %ubps",node->connection);
 				strcat(str,buf); }
-			if(node.action==NODE_DLNG) {
-				if((node.aux/60)>=12) {
-					if(node.aux/60==12)
+			if(node->action==NODE_DLNG) {
+				if((node->aux/60)>=12) {
+					if(node->aux/60==12)
 						hour=12;
 					else
-						hour=(node.aux/60)-12;
+						hour=(node->aux/60)-12;
 					strcpy(mer,"pm"); }
 				else {
-					if((node.aux/60)==0)    /* 12 midnite */
+					if((node->aux/60)==0)    /* 12 midnite */
 						hour=12;
-					else hour=node.aux/60;
+					else hour=node->aux/60;
 					strcpy(mer,"am"); }
 				sprintf(buf," ETA %02d:%02d %s"
-					,hour,node.aux-((node.aux/60)*60),mer); 
+					,hour,node->aux-((node->aux/60)*60),mer); 
 				strcat(str,buf); }
 			break; }
-	if(node.misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
+	if(node->misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
 		strcat(str," (");
-		if(node.misc&NODE_AOFF)
+		if(node->misc&NODE_AOFF)
 			strcat(str,"A");
-		if(node.misc&NODE_LOCK)
+		if(node->misc&NODE_LOCK)
 			strcat(str,"L");
-		if(node.misc&(NODE_MSGW|NODE_NMSG))
+		if(node->misc&(NODE_MSGW|NODE_NMSG))
 			strcat(str,"M");
-		if(node.misc&NODE_POFF)
+		if(node->misc&NODE_POFF)
 			strcat(str,"P");
 		strcat(str,")"); }
-	if(((node.misc
+	if(((node->misc
 		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
-		|| node.status==NODE_QUIET)) {
+		|| node->status==NODE_QUIET)) {
 		strcat(str," [");
-		if(node.misc&NODE_ANON)
+		if(node->misc&NODE_ANON)
 			strcat(str,"A");
-		if(node.misc&NODE_INTR)
+		if(node->misc&NODE_INTR)
 			strcat(str,"I");
-		if(node.misc&NODE_RRUN)
+		if(node->misc&NODE_RRUN)
 			strcat(str,"R");
-		if(node.misc&NODE_UDAT)
+		if(node->misc&NODE_UDAT)
 			strcat(str,"U");
-		if(node.status==NODE_QUIET)
+		if(node->status==NODE_QUIET)
 			strcat(str,"Q");
-		if(node.misc&NODE_EVENT)
+		if(node->misc&NODE_EVENT)
 			strcat(str,"E");
-		if(node.misc&NODE_DOWN)
+		if(node->misc&NODE_DOWN)
 			strcat(str,"D");
-		if(node.misc&NODE_LCHAT)
+		if(node->misc&NODE_LCHAT)
 			strcat(str,"C");
 		strcat(str,"]"); }
-	if(node.errors) {
-		sprintf(buf," %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
+	if(node->errors) {
+		sprintf(buf," %d error%c",node->errors, node->errors>1 ? 's' : '\0' );
 		strcat(str,buf); }
 	return(str);
 }
@@ -623,7 +623,7 @@ int main(int argc, char** argv)  {
 			if((j=getnodedat(&cfg,i,&node,NULL)))
 				sprintf(mopt[i-1],"Error reading node data (%d)!",j);
 			else
-				nodedat(mopt[i-1],i,node);
+				nodedat(mopt[i-1],i,&node);
 		}
 		mopt[i-1][0]=0;
 
@@ -678,9 +678,14 @@ int main(int argc, char** argv)  {
 		}
 		if(j<cfg.sys_nodes && j>=0) {
 			i=0;
+			getnodedat(&cfg,j+1,&node,&nodefile)
 			strcpy(opt[i++],"Spy on node");
 			strcpy(opt[i++],"Node toggles");
 			strcpy(opt[i++],"Clear Errors");
+			if(NODE_INUSE && node.useron)
+				strcpy(opt[i++],"Send message to user");
+				strcpy(opt[i++],"Char with user");
+			}
 			opt[i][0]=0;
 			i=0;
 			uifc.helpbuf=	"`Node Options:`\n"
@@ -735,6 +740,16 @@ int main(int argc, char** argv)  {
 					}
 					node.errors=0;
 					putnodedat(&cfg,j+1,&node,nodefile);
+					break;
+
+				case 3:	/* Send message */
+					uifc.input(WIN_MID,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
+					sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s",str2);
+					if(getnodedat(&cfg,j+1,&node,NULL))
+						break;
+					if(node.useron==0)
+						break;
+					putsmsg(&cfg, node.useron, str);
 					break;
 
 				case -1:
