@@ -1861,7 +1861,7 @@ static void smtp_thread(void* arg)
 
 	if(trashcan(&scfg,host_name,"smtpspy") 
 		|| trashcan(&scfg,host_ip,"smtpspy")) {
-		sprintf(str,"%sSMTPSPY.TXT", scfg.data_dir);
+		sprintf(str,"%ssmtpspy.txt", scfg.logs_dir);
 		spy=fopen(str,"a");
 	}
 
@@ -2682,7 +2682,7 @@ static void smtp_thread(void* arg)
 			}
 
 			if(spy==NULL && trashcan(&scfg,reverse_path,"smtpspy")) {
-				sprintf(str,"%sSMTPSPY.TXT", scfg.data_dir);
+				sprintf(str,"%ssmtpspy.txt", scfg.logs_dir);
 				spy=fopen(str,"a");
 			}
 
