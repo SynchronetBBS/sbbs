@@ -396,7 +396,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tleft								/* Time left in seconds */
 			,cfg.node_dir						/* Gfiles dir (log dir) */
 			,cfg.data_dir						/* Data dir */
-			,"NODE.LOG"                         /* Name of log file */
+			,"node.log"                         /* Name of log file */
 			,dte_rate							/* DTE rate */
 			,cfg.com_port						/* COM port number */
 			,cfg.sys_name						/* System name */
@@ -1459,7 +1459,7 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
 			,mode&~EX_INR, cfg.xtrn[xtrnnum]->path); }
 	/* Re-open the logfile */
 	if(logfile_fp==NULL) {
-		sprintf(str,"%sNODE.LOG",cfg.node_dir);
+		sprintf(str,"%snode.log",cfg.node_dir);
 		if((logfile_fp=fopen(str,"a+b"))==NULL)
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 	}
@@ -1474,7 +1474,7 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
 	if(online==ON_REMOTE) {
 		checkline();
 		if(!online) {
-			sprintf(str,"%sHUNGUP.LOG",cfg.data_dir);
+			sprintf(str,"%shungup.log",cfg.data_dir);
 			if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 				return; }

@@ -479,7 +479,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			tm=gmtime(&now);
 			if(tm==NULL)
 				return(0);
-			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOG", cfg.data_dir
+			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log", cfg.data_dir
 				,tm->tm_mon+1,tm->tm_mday,TM_YEAR(tm->tm_year));
 			printfile(str,0);
 			return(0);
@@ -490,7 +490,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			tm=gmtime(&now);
 			if(tm==NULL)
 				return(0);
-			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOG",cfg.data_dir
+			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir
 				,tm->tm_mon+1,tm->tm_mday,TM_YEAR(tm->tm_year));
 			printfile(str,0);
 			return(0);
@@ -571,7 +571,7 @@ int sbbs_t::exec_function(csi_t *csi)
 	#endif
 			return(0);
 		case CS_ERROR_LOG:
-			sprintf(str,"%sERROR.LOG", cfg.data_dir);
+			sprintf(str,"%serror.log", cfg.data_dir);
 			if(fexist(str)) {
 				bputs(text[ErrorLogHdr]);
 				printfile(str,0);
@@ -611,7 +611,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				editfile(str);
 			return(0);
 		case CS_GURU_LOG:
-			sprintf(str,"%sGURU.LOG", cfg.data_dir);
+			sprintf(str,"%sguru.log", cfg.data_dir);
 			if(fexist(str)) {
 				printfile(str,0);
 				CRLF;
