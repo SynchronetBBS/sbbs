@@ -20,7 +20,6 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <share.h>
-#include <malloc.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +28,10 @@
 
 #ifdef __WATCOMC__
 	#include <mem.h>
+#endif
+
+#ifndef __FreeBSD__
+	#include <malloc.h>
 #endif
 
 #include "sbbs.h"			/* load_cfg() */

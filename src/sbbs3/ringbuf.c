@@ -52,11 +52,13 @@
 	#ifndef VTOOLSD
 
 	/* FreeBSD uses <stdlib.h> instead of <malloc.h> */
-	#ifndef __FreeBSD__
-	#include <malloc.h>		/* malloc prototype */
+	#ifdef __FreeBSD__
+		#include <stdlib.h>
+	#else
+		#include <malloc.h>		/* malloc prototype */
 	#endif
-    #include <string.h>		/* memcpy prototype */
-    #endif
+	#include <string.h>			/* memcpy prototype */
+    #endif	/* !VTOOLSD */
 
 	#define os_malloc	malloc
 	#define rb_malloc	malloc
