@@ -108,6 +108,27 @@ int sbbs_random(int n)
 #endif
 
 /****************************************************************************/
+/* There may be a native GNU C Library function to this...					*/
+/****************************************************************************/
+#ifdef __GNUC__
+char* ultoa(ulong val, char* str, int radix)
+{
+	switch(radix) {
+		case 10:
+			sprintf(str,"%lu",val);
+			break;
+		case 16:
+			sprintf(str,"%lx",val);
+			break;
+		default:
+			sprintf(str,"bad radix: %d",radix);
+			break;
+	}
+	return(str);
+}
+#endif
+
+/****************************************************************************/
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
 /****************************************************************************/
 #ifdef _WIN32

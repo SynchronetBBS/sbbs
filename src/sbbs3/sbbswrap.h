@@ -89,20 +89,17 @@ extern "C" {
 /* Compiler-specific */
 /*********************/
 
-#if defined(__GNUC__)	/* GNU CC */
-
-#warning "ultoa needs to be defined or replaced"
-#define ultoa	ltoa
-
-#endif	/* __GNUC__ */
+#ifdef __GNUC__	/* GNU CC */
+	DLLEXPORT char* ultoa(ulong, char*, int radix);
+#endif
 
 #ifdef __BORLANDC__
 	#define sbbs_random(x)		random(x)
-#else
+#else 
 	DLLEXPORT int	sbbs_random(int n);
 #endif
 
-#if (__BORLANDC__ > 0x0410)
+#if __BORLANDC__ > 0x0410
 	#define _chmod(p,f,a)		_rtl_chmod(p,f,a) 	/* _chmod obsolete in 4.x */
 #endif
 
