@@ -80,7 +80,7 @@ for(i=0;i<bbs.total_sysops;i++) {
 		if(bbs.total_sysops>2)
 			fprintf(out,", ");
 		else
-			fputc(SP,out);
+			fputc(' ',out);
 		if(!(i%4))
 			fprintf(out,"\r\n          ");
 		if(i+1==bbs.total_sysops)
@@ -101,7 +101,7 @@ for(i=0;i<bbs.total_networks;i++) {
 		if(bbs.total_networks>2)
 			fprintf(out,", ");
 		else
-			fputc(SP,out);
+			fputc(' ',out);
 		if(!(i%3))
 			fprintf(out,"\r\n          ");
 		if(i+1==bbs.total_networks)
@@ -114,7 +114,7 @@ for(i=0;i<bbs.total_terminals;i++) {
 		if(bbs.total_terminals>2)
 			fprintf(out,", ");
 		else
-			fputc(SP,out);
+			fputc(' ',out);
 		if(i+1==bbs.total_terminals)
 			fprintf(out,"and "); }
 	fprintf(out,"%s",bbs.terminal[i]); }

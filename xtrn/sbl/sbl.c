@@ -411,7 +411,7 @@ for(i=0;i<bbs.total_sysops && i<MAX_SYSOPS;i++) {
 		if(bbs.total_sysops>2)
 			bputs(", ");
 		else
-			outchar(SP);
+			outchar(' ');
 		if(!(i%4))
             bputs("\r\n          ");
 		if(i+1==bbs.total_sysops)
@@ -435,7 +435,7 @@ for(i=0;i<bbs.total_networks && i<MAX_NETS;i++) {
 		if(bbs.total_networks>2)
 			bputs(", ");
 		else
-			outchar(SP);
+			outchar(' ');
 		if(!(i%3))
             bputs("\r\n          ");
 		if(i+1==bbs.total_networks)
@@ -448,7 +448,7 @@ for(i=0;i<bbs.total_terminals && i<MAX_TERMS;i++) {
 		if(bbs.total_terminals>2)
 			bputs(", ");
 		else
-			outchar(SP);
+			outchar(' ');
 		if(i+1==bbs.total_terminals)
             bputs("and "); }
 	bprintf("\1h%s\1n\1g",bbs.terminal[i]); }

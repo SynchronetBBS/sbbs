@@ -187,7 +187,7 @@ static void truncsp(char *str)
     str[strcspn(str,"\r")]=0;
 	c=strlen(str);
 	memset(str+c,0,org-c);	/* clear the remainder of the buffer */
-	while(c && (uchar)str[c-1]<=SP) c--;
+	while(c && (uchar)str[c-1]<=' ') c--;
 	str[c]=0;
 }
 
@@ -329,42 +329,42 @@ int main(int argc, char **argv)
 		sysop=number=network=terminal=desc=0;
 		l=0;
 		while(buf[l]) {
-			while(buf[l] && buf[l]<=SP) 		/* Find first text on line */
+			while(buf[l] && buf[l]<=' ') 		/* Find first text on line */
 				l++;
 			if(!strnicmp(buf+l,"NAME:",5)) {
 				l+=5;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.name,buf+l);
 				truncsp(bbs.name); 
 			}
 			if(!strnicmp(buf+l,"BIRTH:",6)) {
 				l+=6;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.birth=dstrtounix(buf+l); }
 			if(!strnicmp(buf+l,"SOFTWARE:",9)) {
 				l+=9;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.software,buf+l);
 				truncsp(bbs.software); }
 			if(!strnicmp(buf+l,"WEB-SITE:",9)) {
 				l+=9;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.web_url,buf+l);
 				truncsp(bbs.web_url); }
 			if(!strnicmp(buf+l,"E-MAIL:",7)) {
 				l+=7;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.sysop_email,buf+l);
 				truncsp(bbs.sysop_email); }
 
 			if(!strnicmp(buf+l,"SYSOP:",6)) {
 				l+=6;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.sysop[sysop],buf+l);
 				truncsp(bbs.sysop[sysop]);
@@ -372,7 +372,7 @@ int main(int argc, char **argv)
 					sysop++; }
 			if(!strnicmp(buf+l,"NUMBER:",7) || !strnicmp(buf+l,"TELNET:",7)) {
 				l+=7;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.number[number].telnet.addr,buf+l);
 				truncsp(bbs.number[number].telnet.addr);
@@ -385,7 +385,7 @@ int main(int argc, char **argv)
 			}
 			if(!strnicmp(buf+l,"MODEM:",6)) {
 				l+=6;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				i=number;
 				if(i) i--;
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 				truncsp(bbs.number[i].modem.desc); }
 			if(!strnicmp(buf+l,"LOCATION:",9)) {
 				l+=9;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				i=number;
 				if(i) i--;
@@ -401,28 +401,28 @@ int main(int argc, char **argv)
 				truncsp(bbs.number[i].modem.location); }
 			if(!strnicmp(buf+l,"MINRATE:",8)) {
 				l+=8;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				i=number;
 				if(i) i--;
 				bbs.number[i].modem.min_rate=atoi(buf+l); }
 			if(!strnicmp(buf+l,"MAXRATE:",8)) {
 				l+=8;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				i=number;
 				if(i) i--;
 				bbs.number[i].modem.max_rate=atoi(buf+l); }
 			if(!strnicmp(buf+l,"PORT:",5)) {
 				l+=5;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				i=number;
 				if(i) i--;
 				bbs.number[i].telnet.port=atoi(buf+l); }
 			if(!strnicmp(buf+l,"NETWORK:",8)) {
 				l+=8;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.network[network],buf+l);
 				truncsp(bbs.network[network]);
@@ -430,7 +430,7 @@ int main(int argc, char **argv)
 					network++; }
 			if(!strnicmp(buf+l,"ADDRESS:",8)) {
 				l+=8;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				i=network;
 				if(i) i--;
@@ -438,7 +438,7 @@ int main(int argc, char **argv)
 				truncsp(bbs.address[i]); }
 			if(!strnicmp(buf+l,"TERMINAL:",9)) {
 				l+=9;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.terminal[terminal],buf+l);
 				truncsp(bbs.terminal[terminal]);
@@ -446,7 +446,7 @@ int main(int argc, char **argv)
 					terminal++; }
 			if(!strnicmp(buf+l,"DESC:",5)) {
 				l+=5;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.desc[desc],buf+l);
 				truncsp(bbs.desc[desc]);
@@ -455,45 +455,45 @@ int main(int argc, char **argv)
 
 			if(!strnicmp(buf+l,"MEGS:",5)) {
 				l+=5;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.megs=atol(buf+l); }
 			if(!strnicmp(buf+l,"MSGS:",5)) {
 				l+=5;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.msgs=atol(buf+l); }
 			if(!strnicmp(buf+l,"FILES:",6)) {
 				l+=6;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.files=atol(buf+l); }
 			if(!strnicmp(buf+l,"NODES:",6)) {
 				l+=6;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.nodes=atoi(buf+l); }
 			if(!strnicmp(buf+l,"USERS:",6)) {
 				l+=6;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.users=atoi(buf+l); }
 			if(!strnicmp(buf+l,"SUBS:",5)) {
 				l+=5;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.subs=atoi(buf+l); }
 			if(!strnicmp(buf+l,"DIRS:",5)) {
 				l+=5;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.dirs=atoi(buf+l); }
 			if(!strnicmp(buf+l,"XTRNS:",6)) {
 				l+=6;
-				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				bbs.xtrns=atoi(buf+l); }
-			while(buf[l] && buf[l]>=SP) {	 /* Go to end of line */
+			while(buf[l] && buf[l]>=' ') {	 /* Go to end of line */
 				putchar(buf[l]);
 				l++; 
 			}

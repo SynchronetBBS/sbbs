@@ -61,7 +61,7 @@ void truncsp(uchar *str)
 	uint c;
 
 	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
+	while(c && (uchar)str[c-1]<=' ') c--;
 	str[c]=0;
 }
 
@@ -148,7 +148,7 @@ for(i=0;i<bbs.total_sysops && i<MAX_SYSOPS;i++) {
 		if(bbs.total_sysops>2)
 			fprintf(out,", ");
 		else
-			fputc(SP,out);
+			fputc(' ',out);
 		if(!(i%4))
 			fprintf(out,"\r\n          ");
 		if(i+1==bbs.total_sysops)
@@ -169,7 +169,7 @@ for(i=0;i<bbs.total_networks && i<MAX_NETS;i++) {
 		if(bbs.total_networks>2)
 			fprintf(out,", ");
 		else
-			fputc(SP,out);
+			fputc(' ',out);
 		if(!(i%3))
 			fprintf(out,"\r\n          ");
 		if(i+1==bbs.total_networks)
@@ -182,7 +182,7 @@ for(i=0;i<bbs.total_terminals && i<MAX_TERMS;i++) {
 		if(bbs.total_terminals>2)
 			fprintf(out,", ");
 		else
-			fputc(SP,out);
+			fputc(' ',out);
 		if(i+1==bbs.total_terminals)
 			fprintf(out,"and "); }
 	fprintf(out,"%s",bbs.terminal[i]); }
@@ -874,7 +874,7 @@ int main(int argc, char **argv)
 			if(bbs.total_sysops>2)
 				fprintf(html,", ");
 			else
-				fputc(SP,html);
+				fputc(' ',html);
 			if(i+1==bbs.total_sysops)
 				fprintf(html,"and "); 
 			fprintf(html,"%s",bbs.sysop[i]); 
@@ -900,7 +900,7 @@ int main(int argc, char **argv)
 					if(bbs.total_networks>2)
 						fprintf(html,", ");
 					else
-						fputc(SP,html);
+						fputc(' ',html);
 					if(!(i%2))
 						fprintf(html,"<BR>");
 					if(i+1==bbs.total_networks)
@@ -917,7 +917,7 @@ int main(int argc, char **argv)
 					if(bbs.total_terminals>2)
 						fprintf(html,", ");
 					else
-						fputc(SP,html);
+						fputc(' ',html);
 					if(i+1==bbs.total_terminals)
 						fprintf(html,"and "); }
 				fprintf(html,"%s",bbs.terminal[i]); }
