@@ -379,9 +379,12 @@ int write_flofile(char *attachment, faddr_t dest)
 	else ch='f';
 	if(dest.zone==scfg.faddr[0].zone)		/* Default zone, use default outbound */
 		strcpy(outbound,cfg.outbound);
-	else								/* Inter-zone outbound is OUTBOUND.XXX */
-		sprintf(outbound,"%.*s.%03x/"
+	else {								/* Inter-zone outbound is OUTBOUND.XXX */
+		sprintf(outbound,"%.*s.%03x"
 			,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
+		MKDIR(outbound);
+		backslash(outbound);
+	}
 	if(dest.point) {					/* Point destination is OUTBOUND\*.PNT */
 		sprintf(str,"%04x%04x.pnt"
 			,dest.net,dest.node);
@@ -1676,9 +1679,12 @@ void pack_bundle(char *infile,faddr_t dest)
 			dest=cfg.nodecfg[node].route;
 		if(dest.zone==scfg.faddr[0].zone)	/* Default zone, use default outbound */
 			strcpy(outbound,cfg.outbound);
-		else							/* Inter-zone outbound is OUTBOUND.XXX */
-			sprintf(outbound,"%.*s.%03x/"
+		else {							/* Inter-zone outbound is OUTBOUND.XXX */
+			sprintf(outbound,"%.*s.%03x"
 				,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
+			MKDIR(outbound);
+			backslash(outbound);
+		}
 		if(dest.point) {				/* Point destination is OUTBOUND\*.PNT */
 			sprintf(str,"%04x%04x.pnt"
 				,dest.net,dest.node);
@@ -4863,9 +4869,12 @@ int main(int argc, char **argv)
 				else ch='o';
 				if(addr.zone==scfg.faddr[0].zone) /* Default zone, use default outbound */
 					strcpy(outbound,cfg.outbound);
-				else						 /* Inter-zone outbound is OUTBOUND.XXX */
-					sprintf(outbound,"%.*s.%03x/"
+				else {						 /* Inter-zone outbound is OUTBOUND.XXX */
+					sprintf(outbound,"%.*s.%03x"
 						,(int)strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
+					MKDIR(outbound);
+					backslash(outbound);
+				}
 				if(addr.point) {			/* Point destination is OUTBOUND.PNT */
 					sprintf(str,"%04x%04x.pnt"
 						,addr.net,addr.node);
