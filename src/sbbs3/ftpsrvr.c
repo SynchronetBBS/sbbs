@@ -93,6 +93,7 @@ static time_t	uptime=0;
 static DWORD	served=0;
 static BOOL		recycle_server=FALSE;
 static char		revision[16];
+static char 	*text[TOTAL_TEXT];
 #ifdef _DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
 
@@ -1334,9 +1335,12 @@ static void send_thread(void* arg)
 	char		buf[8192];
 	char		fname[MAX_PATH+1];
 	char		str[128];
+	char		tmp[128];
 	int			i;
 	int			rd;
 	int			wr;
+	long		mod;
+	ulong		l;
 	ulong		total=0;
 	ulong		last_total=0;
 	ulong		dur;
@@ -1349,6 +1353,7 @@ static void send_thread(void* arg)
 	time_t		now;
 	time_t		start;
 	time_t		last_report;
+	user_t		uploader;
 	fd_set		socket_set;
 	struct timeval tv;
 
@@ -1504,11 +1509,38 @@ static void send_thread(void* arg)
 			if(getfileixb(&scfg,&f)==TRUE && getfiledat(&scfg,&f)==TRUE) {
 				f.timesdled++;
 				putfiledat(&scfg,&f);
-			lprintf("%04d %s downloaded: %s (%lu times total)"
-				,xfer.ctrl_sock
-				,xfer.user->alias
-				,xfer.filename
-				,f.timesdled);
+				lprintf("%04d %s downloaded: %s (%lu times total)"
+					,xfer.ctrl_sock
+					,xfer.user->alias
+					,xfer.filename
+					,f.timesdled);
+				/**************************/
+				/* Update Uploader's Info */
+				/**************************/
+				uploader.number=matchuser(&scfg,f.uler,TRUE /*sysop_alias*/);
+				if(uploader.number
+					&& uploader.number!=xfer.user->number 
+					&& getuserdat(&scfg,&uploader)==0
+					&& uploader.firston<f.dateuled) {
+					l=f.cdt;
+					if(!(scfg.dir[f.dir]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
+						l=0;
+					if(scfg.dir[f.dir]->misc&DIR_CDTMIN && cps) { /* Give min instead of cdt */
+						mod=((ulong)(l*(scfg.dir[f.dir]->dn_pct/100.0))/cps)/60;
+						adjustuserrec(&scfg,uploader.number,U_MIN,10,mod);
+						sprintf(tmp,"%lu minute",mod);
+					} else {
+						mod=(ulong)(l*(scfg.dir[f.dir]->dn_pct/100.0));
+						adjustuserrec(&scfg,uploader.number,U_CDT,10,mod);
+						ultoac(mod,tmp);
+					}
+					/* Inform uploader of downloaded file */
+					sprintf(str,text[DownloadUserMsg]
+						,xfer.filename
+						,xfer.filepos ? "Partially FTP-" : "FTP-"
+						,xfer.user->alias,tmp); 
+					putsmsg(&scfg,uploader.number,str); 
+				}
 			}
 			/* Need to update datedled in index */
 		}	
@@ -4473,7 +4505,7 @@ void DLLCALL ftp_server(void* arg)
 		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-		if(!load_cfg(&scfg, NULL, TRUE, error)) {
+		if(!load_cfg(&scfg, text, TRUE, error)) {
 			lprintf("!ERROR %s",error);
 			lprintf("!Failed to load configuration files");
 			cleanup(1,__LINE__);

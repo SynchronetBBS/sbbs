@@ -789,6 +789,8 @@ extern "C" {
 	DLLEXPORT ushort	DLLCALL subject_crc(char *subj);
 	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg);
 	DLLEXPORT char *	DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg);
+	DLLEXPORT char *	DLLCALL ultoac(ulong l,char *str);
+
 
 	/* date_str.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);
@@ -920,7 +922,6 @@ int		bstrlen(char *str);
 void	backslashcolon(char *str);
 void	backslash(char *str);
 ulong	ahtoul(char *str);	/* Converts ASCII hex to ulong */
-char *	ultoac(ulong l,char *str);
 char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 uint	hptoi(char *str);
 int		pstrcmp(char **str1, char **str2);  /* Compares pointers to pointers */
