@@ -21,12 +21,13 @@ EXEODIR	=	bcc.win32	# Executable output directory
 XPDEV	=   	..\..\xpdev
 UIFC	=	..\..\uifc
 CIOLIB	=	..\..\conio
+SMBLIB	=	..\..\smblib
 LIB	=	..\..\..\lib
 INCLUDE	=	..\..\..\include
-CFLAGS	=	-DSCFG -M -I..;$(UIFC);$(XPDEV);$(CIOLIB)
+CFLAGS	=	-DSCFG -M -I..;$(UIFC);$(XPDEV);$(CIOLIB);$(SMBLIB)
 DELETE	=	-@echo y | del 
 
-.path.c = .;..;$(UIFC);$(XPDEV);$(CIOLIB)
+.path.c = .;..;$(UIFC);$(XPDEV);$(CIOLIB);$(SMBLIB)
 .path.cpp = $(UIFC)
 
 # Enable auto-dependency checking
