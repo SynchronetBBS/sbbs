@@ -1419,15 +1419,10 @@ void DLLCALL services_terminate(void)
 {
 	DWORD i;
 
+   	lprintf(LOG_INFO,"0000 Services terminate");
 	terminated=TRUE;
-	for(i=0;i<services;i++) {
-		if(service[i].socket==INVALID_SOCKET)
-			continue;
-		if(service[i].options&SERVICE_OPT_STATIC)
-			continue;
-		close_socket(service[i].socket);
-		service[i].socket=INVALID_SOCKET;
-	}
+	for(i=0;i<services;i++)
+		service[i].terminated=TRUE;
 }
 
 #define NEXT_FIELD(p)	FIND_WHITESPACE(p); SKIP_WHITESPACE(p)
@@ -1577,7 +1572,8 @@ static void cleanup(int code)
 #endif
 
 	thread_down();
-    lprintf(LOG_DEBUG,"#### Services thread terminated (%lu clients served)",served);
+	if(terminated || code)
+		lprintf(LOG_DEBUG,"#### Services thread terminated (%lu clients served)",served);
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
@@ -1656,7 +1652,7 @@ void DLLCALL services_thread(void* arg)
 #endif
 
 	/* Setup intelligent defaults */
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
