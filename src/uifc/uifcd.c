@@ -350,7 +350,8 @@ void umsg(char *str)
 void upop(char *str)
 {
 	// Pop-down doesn't do much... the mext item should over-write this.
-    dialog_gauge((char*)NULL,str,8,20,7,40,0);
+	if(str!=NULL)
+    	dialog_gauge((char*)NULL,str,8,20,7,40,0);
 }
 
 /****************************************************************************/
