@@ -561,7 +561,7 @@ function search_nickbuf(bufnick) {
 	return 0;
 }
 
-function IRCClient_tweaktmpmode(tmp_bit) {
+function IRCClient_tweaktmpmode(tmp_bit,chan) {
 	if ((!chan.ismode(this.id,CHANLIST_OP)) && (!this.server) && (!this.parent)) {
 		this.numeric482(chan.nam);
 		return 0;
@@ -575,7 +575,7 @@ function IRCClient_tweaktmpmode(tmp_bit) {
 	}
 }
 
-function IRCClient_tweaktmpmodelist(tmp_cl,tmp_ncl) {
+function IRCClient_tweaktmpmodelist(tmp_cl,tmp_ncl,chan) {
 	if ((!chan.ismode(this.id,CHANLIST_OP)) &&
 	    (!this.server) && (!this.parent)) {
 		this.numeric482(chan.nam);
@@ -848,7 +848,6 @@ Channels = new Array;
 hcc_total = 0;
 hcc_users = 0;
 hcc_counter = 0;
-time_offset = 0;
 server_uptime = time();
 
 WhoWasHistory = new Array;
@@ -1900,61 +1899,61 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 					addbits|=CHANMODE_BAN; // list bans
 					break;
 				}
-				this.tweaktmpmodelist(CHANLIST_BAN,CHANLIST_UNBAN);
+				this.tweaktmpmodelist(CHANLIST_BAN,CHANLIST_UNBAN,chan);
 				mode_args_counter++;
 				break;
 			case "i":
-				this.tweaktmpmode(CHANMODE_INVITE);
+				this.tweaktmpmode(CHANMODE_INVITE,chan);
 				break;
 			case "k":
 				if(cm_args.length > mode_args_counter) {
-					this.tweaktmpmode(CHANMODE_KEY);
+					this.tweaktmpmode(CHANMODE_KEY,chan);
 					state_arg[CHANMODE_KEY]=cm_args[mode_args_counter];
 					mode_args_counter++;
 				}
 				break;
 			case "l":
 				if (add && (cm_args.length > mode_args_counter)) {
-					this.tweaktmpmode(CHANMODE_LIMIT);
+					this.tweaktmpmode(CHANMODE_LIMIT,chan);
 					regexp = "^[0-9]{1,4}$";
 					if(cm_args[mode_args_counter].match(regexp))
 						state_arg[CHANMODE_LIMIT]=cm_args[mode_args_counter];
 					mode_args_counter++;
 				} else if (!add) {
-					this.tweaktmpmode(CHANMODE_LIMIT);
+					this.tweaktmpmode(CHANMODE_LIMIT,chan);
 					if (cm_args.length > mode_args_counter)
 						mode_args_counter++;
 				}
 				break;
 			case "m":
-				this.tweaktmpmode(CHANMODE_MODERATED);
+				this.tweaktmpmode(CHANMODE_MODERATED,chan);
 				break;
 			case "n":
-				this.tweaktmpmode(CHANMODE_NOOUTSIDE);
+				this.tweaktmpmode(CHANMODE_NOOUTSIDE,chan);
 				break;
 			case "o":
 				if (cm_args.length <= mode_args_counter)
 					break;
-				this.tweaktmpmodelist(CHANLIST_OP,CHANLIST_DEOP);
+				this.tweaktmpmodelist(CHANLIST_OP,CHANLIST_DEOP,chan);
 				mode_args_counter++;
 				break;
 			case "p":
 				if( (add && !(chan.mode&CHANMODE_SECRET) ||
 				     (delbits&CHANMODE_SECRET) ) || (!add) )
-					this.tweaktmpmode(CHANMODE_PRIVATE);
+					this.tweaktmpmode(CHANMODE_PRIVATE,chan);
 				break;
 			case "s":
 				if( (add && !(chan.mode&CHANMODE_PRIVATE) ||
 				     (delbits&CHANMODE_PRIVATE) ) || (!add) )
-					this.tweaktmpmode(CHANMODE_SECRET);
+					this.tweaktmpmode(CHANMODE_SECRET,chan);
 				break;
 			case "t":
-				this.tweaktmpmode(CHANMODE_TOPIC);
+				this.tweaktmpmode(CHANMODE_TOPIC,chan);
 				break;
 			case "v":
 				if (cm_args.length <= mode_args_counter)
 					break;
-				this.tweaktmpmodelist(CHANLIST_VOICE,CHANLIST_DEVOICE);
+				this.tweaktmpmodelist(CHANLIST_VOICE,CHANLIST_DEVOICE,chan);
 				mode_args_counter++;
 				break;
 			default:
@@ -3396,9 +3395,10 @@ function IRCClient_registered_commands(command, cmdline) {
 
 // Server connections are ConnType 5
 function IRCClient_server_commands(origin, command, cmdline) {
-	var ThisOrigin = searchbyserver(origin);
-	if (!ThisOrigin)
-		ThisOrigin = searchbynick(origin);
+	if (ThisOrigin.match(/[.]/))
+		var ThisOrigin = searchbyserver(origin);
+	else
+		var ThisOrigin = searchbynick(origin);
 	if (!ThisOrigin) { // FIXME: SQUIT if it looks like a server prefix.
 		oper_notice("Notice","Server " + this.nick + " trying to pass message for non-existent origin " + origin);
 		this.rawout("KILL " + origin + " :" + servername + " (" + origin + "(?) <- " + this.nick + ")");
