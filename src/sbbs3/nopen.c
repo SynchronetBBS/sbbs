@@ -43,7 +43,7 @@
 /* number of times if the attempted file is already open or denying access  */
 /* for some other reason.	All files are opened in BINARY mode.			*/
 /****************************************************************************/
-int DLLCALL nopen(char *str, int access)
+int nopen(char *str, int access)
 {
 	int file,share,count=0;
 
@@ -64,7 +64,7 @@ int DLLCALL nopen(char *str, int access)
 /* This function performs an nopen, but returns a file stream with a buffer */
 /* allocated.																*/
 /****************************************************************************/
-FILE* DLLCALL fnopen(int *fd, char *str, int access)
+FILE* fnopen(int *fd, char *str, int access)
 {
 	char	mode[128];
 	int		file;
