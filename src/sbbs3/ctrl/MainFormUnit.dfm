@@ -2364,7 +2364,7 @@ object MainForm: TMainForm
         Caption = 'View'
         ImageIndex = 47
         object MailViewSpamLog: TMenuItem
-          Caption = 'SPAM Log'
+          Caption = 'Spam Log'
           Hint = 'SPAM.LOG'
           OnClick = DataMenuItemClick
         end
