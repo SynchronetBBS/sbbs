@@ -144,7 +144,7 @@ public:
 	TLine* __fastcall GetLines(int I);
 	void __fastcall WriteChar(char Ch);
 	void __fastcall WriteStr(AnsiString Str);
-	AnsiString __fastcall ReadStr();
+	AnsiString __fastcall ReadStr(void);
 	void __fastcall GotoXY(int X, int Y);
 	void __fastcall WriteLiteralChar(char Ch);
 	void __fastcall ProcessEscape(char EscCmd);
@@ -281,7 +281,7 @@ public:
 	void __fastcall WriteChar(char Ch);
 	void __fastcall WriteStr(AnsiString Str);
 	void __fastcall WriteBuffer(void * Buffer, int Len);
-	AnsiString __fastcall ReadStr();
+	AnsiString __fastcall ReadStr(void);
 	void __fastcall CopyHostScreen(void);
 	void __fastcall Clear(void);
 	void __fastcall UpdateScreen(void);
