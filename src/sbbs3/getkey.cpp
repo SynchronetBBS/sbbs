@@ -60,131 +60,152 @@ char sbbs_t::getkey(long mode)
 	timeout=time(NULL);
 	if(mode&K_SPIN)
 		outchar(' ');
+
 	do {
-		checkline();    /* check to make sure remote user is still online */
 		if(sys_status&SS_ABORT) {
 			if(mode&K_SPIN) /* back space once if on spinning cursor */
 				bputs("\b \b");
 			return(0); 
 		}
 
-		if(mode&K_SPIN)
-			switch(spin) {
-				case 0:
-					switch(c++) {
-						case 0:
-							outchar(BS);
-							outchar('³');
-							break;
-						case 1:
-							outchar(BS);
-							outchar('/');
-							break;
-						case 2:
-							outchar(BS);
-							outchar('Ä');
-							break;
-						case 3:
-							outchar(BS);
-							outchar('\\');
-							c=0;
-							break;
-					}
-					break;
-				case 1:
-					switch(c++) {
-						case 0:
-							outchar(BS);
-							outchar('°');
-							break;
-						case 1:
-							outchar(BS);
-							outchar('±');
-							break;
-						case 2:
-							outchar(BS);
-							outchar('²');
-							break;
-						case 3:
-							outchar(BS);
-							outchar('Û');
-							break;
-						case 4:
-							outchar(BS);
-							outchar('²');
-							break;
-						case 5:
-							outchar(BS);
-							outchar('±');
-							c=0;
-							break;
-					}
-					break;
-				case 2:
-					switch(c++) {
-						case 0:
-							outchar(BS);
-							outchar('-');
-							break;
-						case 1:
-							outchar(BS);
-							outchar('=');
-							break;
-						case 2:
-							outchar(BS);
-							outchar('ð');
-							break;
-						case 3:
-							outchar(BS);
-							outchar('=');
-							c=0;
-							break;
-					}
-					break;
-				case 3:
-					switch(c++) {
-						case 0:
-							outchar(BS);
-							outchar('Ú');
-							break;
-						case 1:
-							outchar(BS);
-							outchar('À');
-							break;
-						case 2:
-							outchar(BS);
-							outchar('Ù');
-							break;
-						case 3:
-							outchar(BS);
-							outchar('¿');
-							c=0;
-							break;
-					}
-					break;
-				case 4:
-					switch(c++) {
-						case 0:
-							outchar(BS);
-							outchar('Ü');
-							break;
-						case 1:
-							outchar(BS);
-							outchar('Þ');
-							break;
-						case 2:
-							outchar(BS);
-							outchar('ß');
-							break;
-						case 3:
-							outchar(BS);
-							outchar('Ý');
-							c=0;
-							break;
-					}
-					break; 
+		if(mode&K_SPIN) {
+			if(useron.misc&NO_EXASCII) {
+				switch(c++) {
+					case 0:
+						outchar(BS);
+						outchar('|');
+						break;
+					case 1:
+						outchar(BS);
+						outchar('/');
+						break;
+					case 2:
+						outchar(BS);
+						outchar('-');
+						break;
+					case 3:
+						outchar(BS);
+						outchar('\\');
+						break;
+				}
+			} else {
+				switch(spin) {
+					case 0:
+						switch(c++) {
+							case 0:
+								outchar(BS);
+								outchar('³');
+								break;
+							case 1:
+								outchar(BS);
+								outchar('/');
+								break;
+							case 2:
+								outchar(BS);
+								outchar('Ä');
+								break;
+							case 3:
+								outchar(BS);
+								outchar('\\');
+								c=0;
+								break;
+						}
+						break;
+					case 1:
+						switch(c++) {
+							case 0:
+								outchar(BS);
+								outchar('°');
+								break;
+							case 1:
+								outchar(BS);
+								outchar('±');
+								break;
+							case 2:
+								outchar(BS);
+								outchar('²');
+								break;
+							case 3:
+								outchar(BS);
+								outchar('Û');
+								break;
+							case 4:
+								outchar(BS);
+								outchar('²');
+								break;
+							case 5:
+								outchar(BS);
+								outchar('±');
+								c=0;
+								break;
+						}
+						break;
+					case 2:
+						switch(c++) {
+							case 0:
+								outchar(BS);
+								outchar('-');
+								break;
+							case 1:
+								outchar(BS);
+								outchar('=');
+								break;
+							case 2:
+								outchar(BS);
+								outchar('ð');
+								break;
+							case 3:
+								outchar(BS);
+								outchar('=');
+								c=0;
+								break;
+						}
+						break;
+					case 3:
+						switch(c++) {
+							case 0:
+								outchar(BS);
+								outchar('Ú');
+								break;
+							case 1:
+								outchar(BS);
+								outchar('À');
+								break;
+							case 2:
+								outchar(BS);
+								outchar('Ù');
+								break;
+							case 3:
+								outchar(BS);
+								outchar('¿');
+								c=0;
+								break;
+						}
+						break;
+					case 4:
+						switch(c++) {
+							case 0:
+								outchar(BS);
+								outchar('Ü');
+								break;
+							case 1:
+								outchar(BS);
+								outchar('Þ');
+								break;
+							case 2:
+								outchar(BS);
+								outchar('ß');
+								break;
+							case 3:
+								outchar(BS);
+								outchar('Ý');
+								c=0;
+								break;
+						}
+						break; 
+				}
 			}
-
+		}
 		ch=inkey(mode,mode&K_SPIN ? 250:1000);
 		if(sys_status&SS_ABORT)
 			return(0);
@@ -495,7 +516,7 @@ void sbbs_t::pause()
 		rioctl(IOFI);
 	bputs(text[Pause]);
 	j=bstrlen(text[Pause]);
-	if(sys_status&SS_USERON && !(useron.misc&NO_EXASCII) && !(useron.misc&WIP)
+	if(sys_status&SS_USERON && !(useron.misc&WIP)
 		&& !(cfg.node_misc&NM_NOPAUSESPIN))
 		l|=K_SPIN;
 	ch=getkey(l);
