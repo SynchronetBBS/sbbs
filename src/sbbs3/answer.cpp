@@ -43,6 +43,7 @@ bool sbbs_t::answer()
 	char	str[MAX_PATH+1],str2[MAX_PATH+1],c;
 	char 	tmp[MAX_PATH+1];
 	char 	tmp2[MAX_PATH+1];
+	char	buf[64];
 	int		i,l,in;
 	struct tm tm;
 	struct in_addr addr;
@@ -105,6 +106,12 @@ bool sbbs_t::answer()
 		send_telnet_cmd(TELNET_WILL,TELNET_ECHO);
 		/* Will suppress Go Ahead */
 		send_telnet_cmd(TELNET_WILL,TELNET_SUP_GA);
+		/* Retrieve terminal type from telnet client --RS */
+		send_telnet_cmd(TELNET_DO,TELNET_TERM_TYPE);
+		sprintf(buf,"%c%c%c%c%c%c",
+			TELNET_IAC,TELNET_SB,TELNET_TERM_TYPE,TELNET_TERM_SEND,
+			TELNET_IAC,TELNET_SE);
+		putcom(buf,6);
 	}
 
 	/* Detect terminal type */
