@@ -617,21 +617,36 @@ static BOOL check_ars(http_session_t * session)
 	user_t	user;
 	BOOL	authorized;
 
-	if(session->req.auth[0]==0)
+	if(session->req.auth[0]==0) {
+		lprintf("%04d !No authentication information",session->socket);
 		return(FALSE);
+	}
 
 	username=strtok(session->req.auth,":");
 	password=strtok(NULL,":");
 	/* Require a password */
 	if(password==NULL)
-		return(FALSE);
+		password="";
 	user.number=matchuser(&scfg, username, FALSE);
+	if(user.number==0) {
+		if(scfg.sys_misc&SM_ECHO_PW)
+			lprintf("%04d !UNKNOWN USER: %s, Password: %s"
+				,session->socket,username,password);
+		else
+			lprintf("%04d !UNKNOWN USER: %s"
+				,session->socket,username);
+		return(FALSE);
+	}
 	lprintf("%04d User number: %d",session->socket,user.number);
 	getuserdat(&scfg, &user);
-	if(strnicmp(user.pass,password,LEN_PASS)) {
+	if(user.pass[0] && strnicmp(user.pass,password,LEN_PASS)) {
 		/* Should go to the hack log? */
-		lprintf("%04d Incorrect password for: %s Password: %s Should be: "
-			,session->socket,username,password,user.pass);
+		if(scfg.sys_misc&SM_ECHO_PW)
+			lprintf("%04d !PASSWORD FAILURE for user %s: '%s' expected '%s'"
+				,session->socket,username,password,user.pass);
+		else
+			lprintf("%04d !PASSWORD FAILURE for user %s"
+				,session->socket,username);
 		return(FALSE);
 	}
 	ar = arstr(NULL,session->req.ars,&scfg);
@@ -643,8 +658,8 @@ static BOOL check_ars(http_session_t * session)
 		return(TRUE);
 
 	/* Should go to the hack log? */
-	lprintf("%04d Failed ARS Auth: %s Password: %s ARS: %s"
-		,session->socket,username,password,session->req.ars);
+	lprintf("%04d !AUTHORIZATION FAILURE for user %s, ARS: %s"
+		,session->socket,username,session->req.ars);
 
 	return(FALSE);
 }
@@ -1269,7 +1284,7 @@ void DLLCALL web_server(void* arg)
 		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-		if(!load_cfg(&scfg, NULL, FALSE, logstr)) {
+		if(!load_cfg(&scfg, NULL, TRUE, logstr)) {
 			lprintf("!ERROR %s",logstr);
 			lprintf("!FAILED to load configuration files");
 			cleanup(1);
