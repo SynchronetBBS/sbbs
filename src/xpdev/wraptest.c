@@ -9,13 +9,30 @@
 #include "sockwrap.h"
 #include "threadwrap.h"
 
-static void getkey(void)
+static void getkey(void);
+
+
+typedef struct {
+	sem_t parent_sem;
+	sem_t child_sem;
+} thread_data_t;
+
+static void thread_test(void* arg)
 {
-	printf("Hit any key...");
-	fflush(stdout);
-	while(getch()==0);
-	printf("\r%20s\r","");
-	fflush(stdout);
+	ulong i;
+	thread_data_t* data = (thread_data_t*)arg;
+
+	printf("thread_test entry\n");
+	sem_post(&data->child_sem);
+
+	for(i=0;i<10;i++) {
+		sem_wait(&data->parent_sem);
+		printf(" <child>\n");
+		sem_post(&data->child_sem);
+	}
+
+	printf("thread_test exit\n");
+	sem_post(&data->child_sem);
 }
 
 int main()
@@ -29,6 +46,7 @@ int main()
 	glob_t	g;
 	DIR*	dir;
 	DIRENT*	dirent;
+	thread_data_t thread_data;
 
 	/* Show platform details */
 	DESCRIBE_COMPILER(compiler);
@@ -49,11 +67,13 @@ int main()
 		BEEP(i,15);
 	for(;i<1000;i+=5)
 		BEEP(i,15);
-#endif
+
 	/* SLEEP test */
 	printf("\nSLEEP() test\n");
 	getkey();
 	t=time(NULL);
+	printf("sleeping... ");
+	fflush(stdout);
 	SLEEP(5000);
 	printf("slept %d seconds\n",time(NULL)-t);
 
@@ -84,6 +104,45 @@ int main()
 	}
 	if(dir!=NULL)
 		closedir(dir);
+#endif
+
+	/* Thread (and inter-process communication) test */
+	printf("\nThread test\n");
+	getkey();
+	sem_init(&thread_data.parent_sem
+		,0 /* shared between processes */
+		,0 /* initial count */
+		);
+	sem_init(&thread_data.child_sem
+		,0	/* shared between processes */
+		,0	/* initial count */
+		);
+	if(_beginthread(
+		  thread_test	/* entry point */
+		 ,0				/* stack size (0=auto) */
+		 ,&thread_data	/* data */
+		 )==-1)
+		printf("_beginthread failed\n");
+	else {
+		sem_wait(&thread_data.child_sem);	/* wait for thread to begin */
+		for(i=0;i<10;i++) {
+			printf("<parent>");
+			sem_post(&thread_data.parent_sem);
+			sem_wait(&thread_data.child_sem);
+		}
+		sem_wait(&thread_data.child_sem);	/* wait for thread to end */
+	}
+	sem_destroy(&thread_data.parent_sem);
+	sem_destroy(&thread_data.child_sem);
 
 	return 0;
+}
+
+static void getkey(void)
+{
+	printf("Hit any key...");
+	fflush(stdout);
+	getch();
+	printf("\r%20s\r","");
+	fflush(stdout);
 }
