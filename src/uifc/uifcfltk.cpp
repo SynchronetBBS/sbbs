@@ -423,7 +423,6 @@ int UIFC_Button::handle(int event)  {
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
-		printf("key=%X\n",key);
 	}
 	return Fl_Button::handle(event);
 }
