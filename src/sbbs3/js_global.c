@@ -469,15 +469,19 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			l=0;
 			col=1;
 		}
-		else if(inbuf[i]=='\t')
-			col+=8;
-		else if(inbuf[i]>=' ')
+		else if(inbuf[i]=='\t') {
+			if((col%8)==0)
+				col++;
+			while(col%8)
+				col++;
+		} else if(inbuf[i]>=' ')
 			col++;
 		linebuf[l]=inbuf[i++];
-		if(col<len && l<len) {
+		if(col<=len && l<=len) {
 			l++;
 			continue;
 		}
+		/* wrap line here */
 		k=l;
 		while(k && linebuf[k]>' ') k--;
 		if(k==0)	/* continuous printing chars, no word wrap possible */
