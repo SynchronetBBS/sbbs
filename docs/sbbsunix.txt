@@ -387,7 +387,7 @@ Default Configuration (SCFG) Screen-shots
 
 [Testable File Type]
 1: File Extension        zip
-2: Command Line          unzip -t %f
+2: Command Line          unzip -tqq %f
 3: Working String        Testing ZIP Integrity...
 4: Access Requirements   UNIX
 
