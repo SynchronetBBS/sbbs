@@ -2458,7 +2458,8 @@ static void smtp_thread(void* arg)
 			}
 
 			/* Check for SPAM bait recipient */
-			if(trashcan(&scfg,rcpt_addr,"spambait")) {
+			sprintf(str,"%sspambait.cfg",scfg.ctrl_dir);
+			if(findstr(str,rcpt_addr)) {
 				sprintf(str,"SPAM BAIT (%s) taken", rcpt_addr);
 				lprintf("%04d !SMTP %s by: %s"
 					,socket, str, reverse_path);
