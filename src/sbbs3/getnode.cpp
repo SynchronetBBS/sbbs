@@ -322,6 +322,18 @@ int sbbs_t::whos_online(bool listself)
 	return(j);
 }
 
+void sbbs_t::nodelist(void)
+{
+	node_t	node;
+
+	CRLF;
+	bputs(text[NodeLstHdr]);
+	for(int i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
+		getnodedat(i,&node,0);
+		printnodedat(i,&node); 
+	}
+}
+
 /****************************************************************************/
 /* Displays the information for node number 'number' contained in 'node'    */
 /****************************************************************************/
