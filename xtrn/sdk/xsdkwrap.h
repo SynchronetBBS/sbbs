@@ -70,6 +70,12 @@
 
 #endif
 
+#if defined(__unix__)
+	#define BACKSLASH	'/'
+#else /* MS-DOS based OS */
+	#define BACKSLASH	'\\'
+#endif
+
 /* Target Platform Description */
 #if defined(_WIN32)
 	#define PLATFORM_DESC	"Win32"
