@@ -260,8 +260,10 @@ char* iniSetString(str_list_t* list, const char* section, const char* key, const
 		style->value_separator="=";
 	sprintf(str, "%s%-*s%s%s", style->key_prefix, style->key_len, key, style->value_separator, value);
 	i=find_value_index(*list, section, key, curval);
-	if((*list)[i]==NULL)
+	if((*list)[i]==NULL || *(*list)[i]==INI_OPEN_SECTION_CHAR) {
+        while(i && *(*list)[i-1]==0) i--;   /* Insert before blank lines, not after */
 		return strListInsert(list, str, i);
+    }
 
 	if(strcmp(curval,value)==0)
 		return((*list)[i]);	/* no change */
