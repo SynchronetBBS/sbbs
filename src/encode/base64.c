@@ -161,3 +161,18 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 	}
 	return(outp-target);
 }
+
+#ifdef BASE64_TEST
+int main(int argc, char**argv)
+{
+	int i;
+	char buf[512];
+
+	for(i=1;i<argc;i++) {
+		b64_decode(buf,sizeof(buf),argv[i],0);
+		printf("%s\n",buf);
+	}
+
+	return 0;
+}
+#endif
