@@ -5,4 +5,4 @@ setlocal
 set HOME=c:\
 set CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs
 cvs co src-sbbs3
-cvs co lib-win32 
+cvs co lib-win32%1
