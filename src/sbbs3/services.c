@@ -662,9 +662,9 @@ static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* spath)
 		}
 	}
 	JS_DefineProperty(js_cx, js_obj, "argv", OBJECT_TO_JSVAL(argv)
-		,NULL,NULL,JSPROP_READONLY);
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	JS_DefineProperty(js_cx, js_obj, "argc", INT_TO_JSVAL(argc)
-		,NULL,NULL,JSPROP_READONLY);
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 }
 
 static void js_service_thread(void* arg)

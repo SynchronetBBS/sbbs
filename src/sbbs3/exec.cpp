@@ -627,9 +627,9 @@ long sbbs_t::js_execfile(char *cmd)
 			}
 		}
 		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
-			,NULL,NULL,JSPROP_READONLY);
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 		JS_DefineProperty(js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
-			,NULL,NULL,JSPROP_READONLY);
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 		js_script=JS_CompileFile(js_cx, js_scope, path);
 	}
