@@ -1645,6 +1645,9 @@ function IRCClient_numeric352(user,show_ips_only,chan) {
 	var disp;
 	var disphost;
 
+	if (!user)
+		return 0;
+
 	if (!chan)
 		disp = "*";
 	else
