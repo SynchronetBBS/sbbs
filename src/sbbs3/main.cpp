@@ -3777,6 +3777,9 @@ void DLLCALL bbs_thread(void* arg)
 			break;
 		}
 
+		if(telnet_socket==INVALID_SOCKET)	/* terminated */
+			break;
+
 		client_addr_len = sizeof(client_addr);
 
 		bool rlogin = false;

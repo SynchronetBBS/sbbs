@@ -2263,6 +2263,9 @@ void DLLCALL web_server(void* arg)
 				break;
 			}
 
+			if(server_socket==INVALID_SOCKET)	/* terminated */
+				break;
+
 			client_addr_len = sizeof(client_addr);
 
 			if(server_socket!=INVALID_SOCKET
