@@ -1,4 +1,4 @@
-/* endian.h */
+/* xpendian.h */
 
 /* Macros to convert integer "endianness" */
 
@@ -35,8 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _ENDIAN_H
-#define _ENDIAN_H
+#ifndef _XPENDIAN_H
+#define _XPENDIAN_H
 
 /************************/
 /* byte-swapping macros */
