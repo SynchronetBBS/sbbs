@@ -1025,6 +1025,9 @@ void input_thread(void *arg)
 			if(i==0 && sock==sbbs->client_socket)
 				continue;
 
+			if(sbbs->client_socket==INVALID_SOCKET)
+				break;
+
 			if(sock==sbbs->client_socket)  {
 	        	if(ERROR_VALUE == ENOTSOCK)
     	            lprintf("Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
