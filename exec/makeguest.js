@@ -21,6 +21,7 @@ load("sbbsdefs.js");	// needed for UFLAG_* definitions
 
 // Create the account
 guest=system.new_user("Guest");
+guest.handle="Guest";
 guest.gender='?';
 guest.comment="This is the auto-generated Guest/Anonymous user account.";
 
