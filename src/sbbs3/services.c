@@ -155,16 +155,16 @@ static void update_clients(void)
 		startup->clients(active_clients);
 }
 
-static void client_on(SOCKET sock, client_t* client)
+static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(TRUE,sock,client);
+		startup->client_on(TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(FALSE,sock,NULL);
+		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
 static void thread_up(void)
@@ -375,7 +375,7 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			,client->socket,client->service->protocol);
 
 	client->client->user=user.alias;
-	client_on(client->socket,client->client);
+	client_on(client->socket,client->client,TRUE /* update */);
 
 	memcpy(&client->user,&user,sizeof(user));
 
@@ -650,7 +650,7 @@ static void js_service_thread(void* arg)
 	update_clients();
 
 	/* Initialize client display */
-	client_on(socket,&client);
+	client_on(socket,&client,FALSE /* update */);
 
 	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
@@ -835,7 +835,7 @@ static void native_service_thread(void* arg)
 	update_clients();
 
 	/* Initialize client display */
-	client_on(socket,&client);
+	client_on(socket,&client,FALSE /* update */);
 
 	/* RUN SCRIPT */
 	if(!strchr(service->cmd,BACKSLASH))

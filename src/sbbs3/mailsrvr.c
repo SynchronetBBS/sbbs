@@ -154,16 +154,16 @@ static void update_clients(void)
 		startup->clients(active_clients+active_sendmail);
 }
 
-static void client_on(SOCKET sock, client_t* client)
+static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(TRUE,sock,client);
+		startup->client_on(TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(FALSE,sock,NULL);
+		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
 static void thread_up(void)
@@ -622,7 +622,7 @@ static void pop3_thread(void* arg)
 	client.port=ntohs(pop3.client_addr.sin_port);
 	client.protocol="POP3";
 	client.user="<unknown>";
-	client_on(socket,&client);
+	client_on(socket,&client,FALSE /* update */);
 
 	sprintf(str,"POP3: %s", host_ip);
 	status(str);
@@ -697,7 +697,7 @@ static void pop3_thread(void* arg)
 
 		/* Update client display */
 		client.user=user.alias;
-		client_on(socket,&client);
+		client_on(socket,&client,TRUE /* update */);
 
 		if(startup->options&MAIL_OPT_DEBUG_POP3)		
 			lprintf("%04d POP3 %s logged in", socket, user.alias);
@@ -1321,7 +1321,7 @@ static void smtp_thread(void* arg)
 	client.port=ntohs(smtp.client_addr.sin_port);
 	client.protocol="SMTP";
 	client.user="<unknown>";
-	client_on(socket,&client);
+	client_on(socket,&client,FALSE /* update */);
 
 	sprintf(str,"SMTP: %s",host_ip);
 	status(str);
@@ -1879,7 +1879,7 @@ static void smtp_thread(void* arg)
 
 			/* Update client display */
 			client.user=reverse_path;
-			client_on(socket,&client);
+			client_on(socket,&client,TRUE /* update */);
 
 			sockprintf(socket,SMTP_OK);
 			state=SMTP_STATE_MAIL_FROM;

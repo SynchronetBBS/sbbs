@@ -198,16 +198,16 @@ static void update_clients(void)
 		startup->clients(active_clients);
 }
 
-static void client_on(SOCKET sock, client_t* client)
+static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(TRUE,sock,client);
+		startup->client_on(TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(FALSE,sock,NULL);
+		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
 static void thread_up(void)
@@ -2341,7 +2341,7 @@ static void ctrl_thread(void* arg)
 	client.port=ntohs(ftp.client_addr.sin_port);
 	client.protocol="FTP";
 	client.user="<unknown>";
-	client_on(sock,&client);
+	client_on(sock,&client,FALSE /* update */);
 
 	sockprintf(sock,"220-%s (%s)",scfg.sys_name, scfg.sys_inetaddr);
 	sockprintf(sock," Synchronet FTP Server for %s v%s Ready"
@@ -2549,7 +2549,7 @@ static void ctrl_thread(void* arg)
 				sprintf(str,"%s <%.32s>",user.alias,password);
 				client.user=str;
 			}
-			client_on(sock,&client);
+			client_on(sock,&client,TRUE /* update */);
 
 
 			lprintf("%04d %s logged in",sock,user.alias);
