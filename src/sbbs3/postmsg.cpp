@@ -465,9 +465,13 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	}
 	length=strlen(msgbuf);
 
+	/* Remove white-space from end of message text */
+	while(length && (uchar)msgbuf[length-1]<=' ')
+		length--;
+
 	/* Calculate CRC-32 of message text (before encoding, if any) */
 	if(smb->status.max_crcs) {
-		for(l=0;msgbuf[l];l++)
+		for(l=0;l<length;l++)
 			crc=ucrc32(msgbuf[l],crc); 
 		crc=~crc;
 	}
