@@ -1,0 +1,14 @@
+var FROM_NICK_CURCHAN=	"\x01N\x01B<\x01N\x01W%s\x01N\x01B>\x01N\x01W";
+var FROM_NICK_OUTSIDE=	"\x01N\x01B<\x01N\x01W%s\x01N\x01B>\x01N\x01W";
+var JOIN_FORMAT=	"\x01N\x01C%s (%s) has joined %s";
+var KICK_FORMAT=	"\x01N\x01R-\x01H\x01R- %s has been kicked from %s (%s)";
+var MODE_FORMAT=	"%s has set MODE on %s: %s";
+var MSG_FORMAT=		"%s\x01N\x01C-\x01H\x01C>\x01N\x01W";
+var NICK_FORMAT=	"%s has changed nick to %s";
+var NOTICE_FORMAT=	"\x01N\x01R$\x01N\x01W%s\x01N\x01R$\x01N\x01W %s";
+var PART_FORMAT=	"%s (%s) has left %s";
+var QUIT_FORMAT=	"%s has quit %s (%s)";
+var SQUIT_FROM_NICK=	"%s has disconnected the server %s (%s)";
+var SQUIT_FROM_SERVER=	"The server %s has disconnected %s (%s)";
+var TOPIC_FORMAT=	"%s has changed the topic of %s to '%s'";
+var TOPIC_FORMAT=	"\x01N\x01C*#* \x01H%s\x01N\x01C has changed the topic of %s to\x01H\x01K: \x01N%s";
