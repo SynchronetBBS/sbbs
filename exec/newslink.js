@@ -345,8 +345,7 @@ for(i in area) {
 			console.line_counter = 0;
 		hdr = msgbase.get_msg_header(
 			/* retrieve by offset? */	false,
-			/* message number */		ptr,
-			/* regenerate msg-id? */	false
+			/* message number */		ptr
 			);
 		if(hdr == null)
 			continue;

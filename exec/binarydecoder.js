@@ -96,8 +96,7 @@ for(i in sub) {
 
 		hdr = msgbase.get_msg_header(
 			/* retrieve by offset? */	false,
-			/* message number */		ptr,
-			/* regenerate msg-id? */	false
+			/* message number */		ptr
 			);
 		if(hdr == null)
 			continue;
@@ -367,8 +366,9 @@ for(i in sub) {
 			}
 			parts_file.writeln("[" + obj.name + "]");
 			for(prop in obj)
-				parts_file.printf("%-20s=%s\n"
-					,prop.toString(), obj[prop].toString());
+				if(obj[prop]!=undefined)
+					parts_file.printf("%-20s=%s\n"
+						,prop.toString(), obj[prop].toString());
 			parts_file.writeln("; end of file: " + obj.name );
 			parts_file.writeln();
 		}
