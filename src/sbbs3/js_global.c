@@ -98,7 +98,7 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if (!str)
 			    return JS_FALSE;
 			arglist[i-1]=JS_GetStringBytes(str);
-		} else if(JSVAL_IS_INT(argv[i]))
+		} else if(JSVAL_IS_INT(argv[i]) || JSVAL_IS_BOOLEAN(argv[i]))
 			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
 		else
 			arglist[i-1]=NULL;
@@ -128,6 +128,21 @@ js_mswait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_random(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	*rval = INT_TO_JSVAL(sbbs_random(JSVAL_TO_INT(argv[0])));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_time(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	*rval = INT_TO_JSVAL(time(NULL));
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int freq=500;
@@ -149,6 +164,108 @@ js_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_FALSE);
 }
 
+static JSBool
+js_crc16(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((str=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	*rval = INT_TO_JSVAL(crc16(str));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_crc32(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((str=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	*rval = INT_TO_JSVAL(crc32(str,strlen(str)));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_chksum(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	ulong		sum=0;
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	while(*p) sum+=*(p++);
+
+	*rval = INT_TO_JSVAL(sum);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_ascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	char		str[2];
+	JSString*	js_str;
+
+	if(JSVAL_IS_STRING(argv[0])) {	/* string to ascii-int */
+		if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+			return(JS_FALSE);
+
+		if((p=JS_GetStringBytes(js_str))==NULL) 
+			return(JS_FALSE);
+
+		*rval = INT_TO_JSVAL(*p);
+		return(JS_TRUE);
+	}
+
+	/* ascii-int to str */
+	str[0]=(uchar)JSVAL_TO_INT(argv[0]);
+	str[1]=0;
+
+	js_str = JS_NewStringCopyZ(cx, str);
+
+	*rval = STRING_TO_JSVAL(js_str);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	ulong		sum=0;
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	strip_ctrl(p);
+
+	js_str = JS_NewStringCopyZ(cx, p);
+
+	*rval = STRING_TO_JSVAL(js_str);
+
+	return(JS_TRUE);
+}
+
 static JSClass js_global_class ={
         "Global",
 		JSCLASS_HAS_PRIVATE, /* needed for scfg_t ptr */
@@ -162,7 +279,14 @@ static JSFunctionSpec js_global_functions[] = {
 	{"format",			js_format,			1},		/* return a formatted string (ala printf) */
 	{"mswait",			js_mswait,			0},		/* millisecond wait/sleep routine */
 	{"sleep",			js_mswait,			0},		/* millisecond wait/sleep routine */
+	{"random",			js_random,			1},		/* return random int between 0 and n */
+	{"time",			js_time,			0},		/* return time in Unix format */
 	{"beep",			js_beep,			0},		/* local beep (freq, dur) */
+	{"crc16",			js_crc16,			1},		/* calculate 16-bit CRC of string */
+	{"crc32",			js_crc32,			1},		/* calculate 32-bit CRC of string */
+	{"chksum",			js_chksum,			1},		/* calculate 32-bit chksum of string */
+	{"ascii",			js_ascii,			1},		/* convert str to ascii-val or vice-versa */
+	{"strip_ctrl",		js_strip_ctrl,		1},		/* strip ctrl chars from string */
 	{0}
 };
 
