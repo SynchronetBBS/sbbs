@@ -764,10 +764,12 @@ int main(int argc, char **argv)
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
 					remove(tmp);
 					system(cmdstr(scfg.fextr[i]->cmd,str,"FILE_ID.DIZ",NULL));
-					if(!fexist(tmp)) {
+					if(!fexistcase(tmp)) {
 						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
 						remove(tmp);
-						system(cmdstr(scfg.fextr[i]->cmd,str,"DESC.SDI",NULL)); }
+						system(cmdstr(scfg.fextr[i]->cmd,str,"DESC.SDI",NULL)); 
+						fexistcase(tmp);
+					}
 					if((file=nopen(tmp,O_RDONLY))!=-1) {
 						memset(ext,0,513);
 						read(file,ext,512);
