@@ -91,11 +91,12 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     AutoStartCheckBox->Checked=MainForm->MailAutoStart;
     LogFileCheckBox->Checked=MainForm->MailLogFile;
     HostnameCheckBox->Checked
-        =!(MainForm->ftp_startup.options&FTP_OPT_NO_HOST_LOOKUP);
+        =!(MainForm->mail_startup.options&MAIL_OPT_NO_HOST_LOOKUP);
 
-    SMTPServerEdit->Text=AnsiString(MainForm->mail_startup.relay_server);
+    RelayServerEdit->Text=AnsiString(MainForm->mail_startup.relay_server);
     SMTPPortEdit->Text=AnsiString(MainForm->mail_startup.smtp_port);
     POP3PortEdit->Text=AnsiString(MainForm->mail_startup.pop3_port);
+    RelayPortEdit->Text=AnsiString(MainForm->mail_startup.relay_port);
     DNSServerEdit->Text=AnsiString(MainForm->mail_startup.dns_server);
     InboundSoundEdit->Text=AnsiString(MainForm->mail_startup.inbound_sound);
     OutboundSoundEdit->Text=AnsiString(MainForm->mail_startup.outbound_sound);
@@ -124,9 +125,7 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     TcpDnsCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_USE_TCP_DNS;
 
-    SMTPServerEdit->Enabled=RelayRadioButton->Checked;
-    DNSServerEdit->Enabled=!RelayRadioButton->Checked;
-    TcpDnsCheckBox->Enabled=!RelayRadioButton->Checked;
+    DNSRadioButtonClick(Sender);
 	POP3EnabledCheckBoxClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
 }
@@ -158,6 +157,7 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
 
 	MainForm->mail_startup.smtp_port=SMTPPortEdit->Text.ToIntDef(25);
     MainForm->mail_startup.pop3_port=POP3PortEdit->Text.ToIntDef(110);
+    MainForm->mail_startup.relay_port=RelayPortEdit->Text.ToIntDef(25);
     MainForm->mail_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
     MainForm->mail_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(120);
     MainForm->mail_startup.max_delivery_attempts
@@ -169,7 +169,7 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         ,DNSServerEdit->Text.c_str());
     sprintf(MainForm->mail_startup.relay_server,"%.*s"
 	    ,sizeof(MainForm->mail_startup.relay_server)-1
-        ,SMTPServerEdit->Text.c_str());
+        ,RelayServerEdit->Text.c_str());
     sprintf(MainForm->mail_startup.inbound_sound,"%.*s"
 	    ,sizeof(MainForm->mail_startup.inbound_sound)-1
         ,InboundSoundEdit->Text.c_str());
@@ -245,7 +245,9 @@ void __fastcall TMailCfgDlg::POP3SoundButtonClick(TObject *Sender)
 
 void __fastcall TMailCfgDlg::DNSRadioButtonClick(TObject *Sender)
 {
-    SMTPServerEdit->Enabled=RelayRadioButton->Checked;
+    RelayServerEdit->Enabled=RelayRadioButton->Checked;
+    RelayPortEdit->Enabled=RelayRadioButton->Checked;
+    RelayPortLabel->Enabled=RelayRadioButton->Checked;
     DNSServerEdit->Enabled=!RelayRadioButton->Checked;
     TcpDnsCheckBox->Enabled=!RelayRadioButton->Checked;
 }
