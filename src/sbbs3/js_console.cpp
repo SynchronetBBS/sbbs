@@ -153,7 +153,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
     tiny = JSVAL_TO_INT(id);
 
-	if(JSVAL_IS_INT(*vp) || JSVAL_IS_BOOLEAN(*vp))
+	if(JSVAL_IS_NUMBER(*vp) || JSVAL_IS_BOOLEAN(*vp))
 		JS_ValueToInt32(cx, *vp, &val);
 
 	switch(tiny) {
@@ -743,7 +743,7 @@ js_printfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if (!str)
 		return(JS_FALSE);
 
-	if(argc>1 && JSVAL_IS_INT(argv[1]))
+	if(argc>1 && JSVAL_IS_NUMBER(argv[1]))
 		JS_ValueToInt32(cx,argv[1],(int32*)&mode);
 
 	sbbs->printfile(JS_GetStringBytes(str),mode);

@@ -1521,7 +1521,7 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	if(getnodedat(cfg, node_num, &node, &file)) 
 		return(JS_TRUE);
 
-	if(JSVAL_IS_INT(*vp))
+	if(JSVAL_IS_NUMBER(*vp))
 		JS_ValueToInt32(cx, *vp, &val);
 
 	tiny = JSVAL_TO_INT(id);
