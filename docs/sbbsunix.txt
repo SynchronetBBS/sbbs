@@ -61,10 +61,15 @@ A. Yes. As long as all the nodes can access the same live data files (via LAN)
 
 Q. Does Synchronet for Unix support external DOS programs/doors?
 A. Currently, only the FreeBSD build has doscmd support "built-in" (and this
-   "support" requires Deuce's version of doscmd with FOSSIL emulation). Other
-   platforms can use DOSEMU or whatever is available for running DOS programs.
+   "support" requires Deuce's version of doscmd with FOSSIL emulation):
+   http://nix.synchro.net/doscmd.gz
+
+   Other platforms can use DOSEMU or whatever is available for running DOS
+   programs.
+
    There's a patch for "building-in" DOSEMU support with Synchronet for Linux:
    http://forge.icequake.net/syncmods/index.html
+
    and a FAQ for using DOSEMU with Synchronet for Linux (without a patch):
    http://www.exeonline.com/bbs/howto-doors.txt
 
