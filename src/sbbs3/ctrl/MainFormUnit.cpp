@@ -1192,6 +1192,9 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 	char 	str[128];
 	int 	i;
 	static stats_t stats;
+	static users;
+	static newusers;
+	static counter;
 
 	if(!StatsForm->Visible)
 		return;
@@ -1206,8 +1209,11 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 	StatsForm->EMailToday->Caption=AnsiString(stats.etoday);
 	StatsForm->TotalFeedback->Caption=AnsiString(getmail(&cfg,1,0));
 	StatsForm->FeedbackToday->Caption=AnsiString(stats.ftoday);
-    StatsForm->TotalUsers->Caption=AnsiString(total_users(&cfg));
-    StatsForm->NewUsersToday->Caption=AnsiString(stats.nusers);
+	/* Don't scan a large user database more often than necessary */
+	if(!counter || users<100 || (counter%(users/100))==0 || stats.nusers!=newusers)
+		users=total_users(&cfg);
+    StatsForm->TotalUsers->Caption=AnsiString(users);
+    StatsForm->NewUsersToday->Caption=AnsiString(newusers=stats.nusers);
     StatsForm->PostsToday->Caption=AnsiString(stats.ptoday);
     StatsForm->UploadedFiles->Caption=AnsiString(stats.uls);
 	if(stats.ulb>=1024*1024)
@@ -1225,6 +1231,8 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
     else
     	sprintf(str,"%lu",stats.dlb);
     StatsForm->DownloadedBytes->Caption=AnsiString(str);
+
+	counter++;
 }
 //---------------------------------------------------------------------------
 
@@ -3338,6 +3346,7 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 
 	while(GetServerLogLine(services_log,NTSVC_NAME_SERVICES,line,sizeof(line)))
     	service_lputs(NULL,LOG_INFO,line);
+
 }
 
 //---------------------------------------------------------------------------
@@ -3459,6 +3468,7 @@ void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
         ,ServicesRecycle
         ,NULL
         );
+
 }
 //---------------------------------------------------------------------------
 
