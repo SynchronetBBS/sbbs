@@ -39,7 +39,10 @@
 	#include <sys/wait.h>		/* waitpid() */
 #endif
 
+#ifndef JAVASCRIPT
 #define JAVASCRIPT
+#endif
+
 #include "sbbs.h"
 #include "sockwrap.h"		/* sendfilesocket() */
 #include "threadwrap.h"		/* _beginthread() */
