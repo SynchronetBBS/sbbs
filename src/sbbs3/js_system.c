@@ -783,6 +783,58 @@ js_hacklog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			node;
+	JSString*	js_msg;
+	char*		msg;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if((node=JSVAL_TO_INT(argv[0]))<1)
+		node=1;
+
+	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
+		return(JS_FALSE);
+
+	if((msg=JS_GetStringBytes(js_msg))==NULL) 
+		return(JS_FALSE);
+
+	putnmsg(cfg,node,msg);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			usernumber;
+	JSString*	js_msg;
+	char*		msg;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if((usernumber=JSVAL_TO_INT(argv[0]))<1)
+		usernumber=1;
+
+	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
+		return(JS_FALSE);
+
+	if((msg=JS_GetStringBytes(js_msg))==NULL) 
+		return(JS_FALSE);
+
+	putsmsg(cfg,usernumber,msg);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
 
 static JSFunctionSpec js_system_functions[] = {
 	{"alias",			js_alias,			1},		// return user name for alias
@@ -795,6 +847,8 @@ static JSFunctionSpec js_system_functions[] = {
 	{"secondstr",		js_secondstr,		1},		// convert a time_t into a hh:mm:ss string
 	{"spamlog",			js_spamlog,			6},		// spamlog(prot,action,reason,host,ip,to)
 	{"hacklog",			js_hacklog,			5},		// hacklog(prot,user,text,host,ip,port)
+	{"put_node_message",js_put_node_message,2},		// putnmsg(nodenum,str)
+	{"put_telegram",	js_put_telegram,	2},		// putsmsg(usernum,str)
 	{0}
 };
 
