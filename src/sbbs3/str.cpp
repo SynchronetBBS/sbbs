@@ -51,9 +51,11 @@ void sbbs_t::userlist(long mode)
 	if(lastuser(&cfg)<=(sizeof(line)/sizeof(line[0])))
 		sort=yesno(text[SortAlphaQ]);
 	if(sort) {
-		bputs(text[CheckingSlots]); }
+		bputs(text[CheckingSlots]); 
+	}
 	else {
-		CRLF; }
+		CRLF; 
+	}
 	j=0;
 	k=lastuser(&cfg);
 	for(i=1;i<=k && !msgabort();i++) {
@@ -72,7 +74,8 @@ void sbbs_t::userlist(long mode)
 			if(!chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->ar,&user)
 				|| (cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar[0]
 				&& !chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar,&user)))
-				continue; }
+				continue; 
+		}
 		else if(mode==UL_DIR) {
 			if(user.rest&FLAG('T'))
 				continue;
@@ -81,32 +84,39 @@ void sbbs_t::userlist(long mode)
 			if(!chk_ar(cfg.lib[usrlib[curlib]]->ar,&user))
 				continue;
 			if(!chk_ar(cfg.dir[usrdir[curlib][curdir[curlib]]]->ar,&user))
-				continue; }
+				continue; 
+		}
 		if(sort) {
 			if((line[j]=(char *)MALLOC(128))==0) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,83);
 				for(i=0;i<j;i++)
 					FREE(line[i]);
-				return; }
+				return; 
+			}
 			sprintf(name,"%s #%d",user.alias,i);
 			sprintf(line[j],text[UserListFmt],name
 				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
 				,unixtodstr(&cfg,user.laston,tmp)
-				,user.modem); }
+				,user.modem); 
+		}
 		else {
 			sprintf(name,"%s #%u",user.alias,i);
 			bprintf(text[UserListFmt],name
 				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
 				,unixtodstr(&cfg,user.laston,tmp)
-				,user.modem); }
-		j++; }
+				,user.modem); 
+		}
+		j++; 
+	}
 	if(i<=k) {	/* aborted */
 		if(sort)
 			for(i=0;i<j;i++)
 				FREE(line[i]);
-		return; }
+		return; 
+	}
 	if(!sort) {
-		CRLF; }
+		CRLF; 
+	}
 	bprintf(text[NTotalUsers],users);
 	if(mode==UL_SUB)
 		bprintf(text[NUsersOnCurSub],j);
@@ -137,18 +147,21 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		answers[0]=0;
-		return; }
+		return; 
+	}
 	length=filelength(file);
 	if((buf=(char *)MALLOC(length))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		answers[0]=0;
-		return; }
+		return; 
+	}
 	if(lread(file,buf,length)!=length) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,length);
 		answers[0]=0;
-		return; }
+		return; 
+	}
 	close(file);
 	while(l<length && online) {
 		mode=min=max=t=cr=0;
@@ -157,11 +170,13 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 		for(m=l;m<length;m++)
 			if(buf[m]==ETX || !buf[m]) {
 				buf[m]=0;
-				break; }
+				break; 
+			}
 		if(l>=length) break;
 		if(online==ON_REMOTE) {
 			rioctl(IOCM|ABORT);
-			rioctl(IOCS|ABORT); }
+			rioctl(IOCS|ABORT); 
+		}
 		putmsg(buf+l,P_SAVEATR);
 		m++;
 		if(toupper(buf[m])!='C' && toupper(buf[m])!='S')
@@ -171,91 +186,117 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 			rioctl(IOSM|ABORT);
 		if(a>=len) {
 			errormsg(WHERE,ERR_LEN,fname,len);
-			break; }
+			break; 
+		}
 		if((buf[m]&0xdf)=='C') {
     		if((buf[m+1]&0xdf)=='U') {		/* Uppercase only */
 				mode|=K_UPPER;
-				m++; }
+				m++; 
+			}
 			else if((buf[m+1]&0xdf)=='N') {	/* Numbers only */
 				mode|=K_NUMBER;
-				m++; }
+				m++; 
+			}
 			if((buf[m+1]&0xdf)=='L') {		/* Draw line */
         		if(useron.misc&COLOR)
 					attr(cfg.color[clr_inputline]);
 				else
 					attr(BLACK|BG_LIGHTGRAY);
 				bputs(" \b");
-				m++; }
+				m++; 
+			}
 			if((buf[m+1]&0xdf)=='R') {		/* Add CRLF */
 				cr=1;
-				m++; }
+				m++; 
+			}
 			if(buf[m+1]=='"') {
 				m+=2;
 				for(l=m;l<length;l++)
 					if(buf[l]=='"') {
 						buf[l]=0;
-						break; }
-				answers[a++]=(char)getkeys((char *)buf+m,0); }
+						break; 
+					}
+				answers[a++]=(char)getkeys((char *)buf+m,0); 
+			}
 			else {
 				answers[a]=getkey(mode);
 				outchar(answers[a++]);
 				attr(LIGHTGRAY);
-				CRLF; }
+				CRLF; 
+			}
 			if(cr) {
 				answers[a++]=CR;
-				answers[a++]=LF; } }
+				answers[a++]=LF; 
+			} 
+		}
 		else if((buf[m]&0xdf)=='S') {		/* String */
 			if((buf[m+1]&0xdf)=='U') {		/* Uppercase only */
 				mode|=K_UPPER;
-				m++; }
+				m++; 
+			}
 			else if((buf[m+1]&0xdf)=='F') { /* Force Upper/Lowr case */
 				mode|=K_UPRLWR;
-				m++; }
+				m++; 
+			}
 			else if((buf[m+1]&0xdf)=='N') {	/* Numbers only */
 				mode|=K_NUMBER;
-				m++; }
+				m++; 
+			}
 			if((buf[m+1]&0xdf)=='L') {		/* Draw line */
 				mode|=K_LINE;
-				m++; }
+				m++; 
+			}
 			if((buf[m+1]&0xdf)=='R') {		/* Add CRLF */
 				cr=1;
-				m++; }
+				m++; 
+			}
 			if(isdigit(buf[m+1])) {
 				max=buf[++m]&0xf;
 				if(isdigit(buf[m+1]))
-					max=max*10+(buf[++m]&0xf); }
+					max=max*10+(buf[++m]&0xf); 
+			}
 			if(buf[m+1]=='.' && isdigit(buf[m+2])) {
 				m++;
 				min=buf[++m]&0xf;
 				if(isdigit(buf[m+1]))
-					min=min*10+(buf[++m]&0xf); }
+					min=min*10+(buf[++m]&0xf); 
+			}
 			if(buf[m+1]=='"') {
 				m++;
 				mode&=~K_NUMBER;
 				while(buf[++m]!='"' && t<80)
 					tmplt[t++]=buf[m];
 				tmplt[t]=0;
-				max=strlen(tmplt); }
+				max=strlen(tmplt); 
+			}
 			if(t) {
 				if(gettmplt(str,tmplt,mode)<min) {
 					l=top;
-					continue; } }
+					continue; 
+				} 
+			}
 			else {
 				if(!max)
 					continue;
 				if(getstr(str,max,mode)<min) {
 					l=top;
-					continue; } }
+					continue; 
+				} 
+			}
 			if(!cr) {
 				for(cr=0;str[cr];cr++)
 					answers[a+cr]=str[cr];
 				while(cr<max)
 					answers[a+cr++]=ETX;
-				a+=max; }
+				a+=max; 
+			}
 			else {
 				putrec(answers,a,max,str);
 				putrec(answers,a+max,2,crlf);
-				a+=max+2; } } }
+				a+=max+2; 
+			} 
+		} 
+	}
 	answers[a]=0;
 	FREE((char *)buf);
 }
@@ -273,18 +314,21 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		answers[0]=0;
-		return; }
+		return; 
+	}
 	length=filelength(file);
 	if((buf=(char *)MALLOC(length))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		answers[0]=0;
-		return; }
+		return; 
+	}
 	if(lread(file,buf,length)!=length) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,length);
 		answers[0]=0;
-		return; }
+		return; 
+	}
 	close(file);
 	while(l<length && online) {
 		min=max=cr=0;
@@ -292,11 +336,13 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 		for(m=l;m<length;m++)
 			if(buf[m]==ETX || !buf[m]) {
 				buf[m]=0;
-				break; }
+				break; 
+			}
 		if(l>=length) break;
 		if(online==ON_REMOTE) {
 			rioctl(IOCM|ABORT);
-			rioctl(IOCS|ABORT); }
+			rioctl(IOCS|ABORT); 
+		}
 		putmsg(buf+l,P_SAVEATR);
 		m++;
 		if(toupper(buf[m])!='C' && toupper(buf[m])!='S')
@@ -307,7 +353,8 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 		if(a>=len) {
 			bprintf("\r\nSOF: %s defined more data than buffer size "
 				"(%lu bytes)\r\n",fname,len);
-			break; }
+			break; 
+		}
 		if((buf[m]&0xdf)=='C') {
 			if((buf[m+1]&0xdf)=='U')  		/* Uppercase only */
 				m++;
@@ -319,15 +366,18 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 				else
 					attr(BLACK|BG_LIGHTGRAY);
 				bputs(" \b");
-				m++; }
+				m++; 
+			}
 			if((buf[m+1]&0xdf)=='R') {		/* Add CRLF */
 				cr=1;
-				m++; }
+				m++; 
+			}
 			outchar(answers[a++]);
 			attr(LIGHTGRAY);
 			CRLF;
 			if(cr)
-				a+=2; }
+				a+=2; 
+		}
 		else if((buf[m]&0xdf)=='S') {		/* String */
 			if((buf[m+1]&0xdf)=='U')
 				m++;
@@ -340,24 +390,29 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 					attr(cfg.color[clr_inputline]);
 				else
 					attr(BLACK|BG_LIGHTGRAY);
-				m++; }
+				m++; 
+			}
 			if((buf[m+1]&0xdf)=='R') {
 				cr=1;
-				m++; }
+				m++; 
+			}
 			if(isdigit(buf[m+1])) {
 				max=buf[++m]&0xf;
 				if(isdigit(buf[m+1]))
-					max=max*10+(buf[++m]&0xf); }
+					max=max*10+(buf[++m]&0xf); 
+			}
 			if(buf[m+1]=='.' && isdigit(buf[m+2])) {
 				m++;
 				min=buf[++m]&0xf;
 				if(isdigit(buf[m+1]))
-					min=min*10+(buf[++m]&0xf); }
+					min=min*10+(buf[++m]&0xf); 
+			}
 			if(buf[m+1]=='"') {
 				max=0;
 				m++;
 				while(buf[++m]!='"' && max<80)
-					max++; }
+					max++; 
+			}
 			if(!max)
 				continue;
 			getrec(answers,a,max,str);
@@ -367,7 +422,9 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 			if(!cr)
 				a+=max;
 			else
-				a+=max+2; } }
+				a+=max+2; 
+		} 
+	}
 	FREE((char *)buf);
 }
 
@@ -381,13 +438,15 @@ void sbbs_t::create_sif_dat(char *siffile, char *datfile)
 
 	if((buf=(char *)MALLOC(SIF_MAXBUF))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,siffile,SIF_MAXBUF);
-		return; }
+		return; 
+	}
 	memset(buf,SIF_MAXBUF,0);	 /* initialize to null */
 	sif(siffile,buf,SIF_MAXBUF);
 	if((file=nopen(datfile,O_WRONLY|O_TRUNC|O_CREAT))==-1) {
 		FREE(buf);
 		errormsg(WHERE,ERR_OPEN,datfile,O_WRONLY|O_TRUNC|O_CREAT);
-		return; }
+		return; 
+	}
 	write(file,buf,strlen(buf));
 	close(file);
 	FREE(buf);
@@ -404,15 +463,18 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 
 	if((file=nopen(datfile,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,datfile,O_RDONLY);
-		return; }
+		return; 
+	}
 	length=filelength(file);
 	if(!length) {
 		close(file);
-		return; }
+		return; 
+	}
 	if((buf=(char *)MALLOC(length))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,datfile,length);
-		return; }
+		return; 
+	}
 	read(file,buf,length);
 	close(file);
 	sof(siffile,buf,length);
@@ -438,19 +500,23 @@ uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
 			if(useron.misc&COLOR)
 				attr(cfg.color[clr_inputline]);
 			else
-				attr(BLACK|BG_LIGHTGRAY); }
+				attr(BLACK|BG_LIGHTGRAY); 
+		}
 		while(c<t) {
 			if(tmplt[c]=='N' || tmplt[c]=='A' || tmplt[c]=='!')
 				outchar(SP);
 			else
 				outchar(tmplt[c]);
-			c++; }
-		bprintf("\x1b[%dD",t); }
+			c++; 
+		}
+		cursor_left(t); 
+	}
 	c=0;
 	if(mode&K_EDIT) {
 		strcpy(str,strout);
 		bputs(str);
-		c=strlen(str); }
+		c=strlen(str); 
+	}
 	while((ch=getkey(mode))!=CR && online && !(sys_status&SS_ABORT)) {
 		if(ch==BS || ch==DEL) {
 			if(!c)
@@ -458,12 +524,10 @@ uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
 			for(ch=1,c--;c;c--,ch++)
 				if(tmplt[c]=='N' || tmplt[c]=='A' || tmplt[c]=='!')
 					break;
-			if(useron.misc&ANSI)
-				bprintf("\x1b[%dD",ch);
-			else while(ch--)
-				outchar(BS);
+			cursor_left(ch);
 			bputs(" \b");
-			continue; }
+			continue; 
+		}
 		if(ch==CTRL_X) {
 			for(;c;c--) {
 				outchar(BS);
@@ -480,7 +544,10 @@ uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
 			str[c++]=ch;
 			while(c<t && tmplt[c]!='N' && tmplt[c]!='A' && tmplt[c]!='!'){
 				str[c]=tmplt[c];
-				outchar(tmplt[c++]); } } }
+				outchar(tmplt[c++]); 
+			} 
+		} 
+	}
 	str[c]=0;
 	attr(LIGHTGRAY);
 	CRLF;
@@ -512,77 +579,95 @@ bool sbbs_t::inputnstime(time_t *dt)
 	ultoa(tm.tm_year+1900,str,10);
 	if(!getstr(str,4,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 	tm.tm_year=atoi(str);
 	if(tm.tm_year<1970) {		/* unix time is seconds since 1/1/1970 */
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 	tm.tm_year-=1900;	/* tm_year is years since 1900 */
 
 	bputs(text[NScanMonth]);
 	ultoa(tm.tm_mon+1,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 	tm.tm_mon=atoi(str);
 	if(tm.tm_mon<1 || tm.tm_mon>12) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 	tm.tm_mon--;		/* tm_mon is zero-based */
 
 	bputs(text[NScanDay]);
 	ultoa(tm.tm_mday,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 	tm.tm_mday=atoi(str);
 	if(tm.tm_mday<1 || tm.tm_mday>31) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 	bputs(text[NScanHour]);
 	if(cfg.sys_misc&SM_MILITARY)
 		hour=tm.tm_hour;
 	else {
 		if(tm.tm_hour==0) {	/* 12 midnite */
 			pm=false;
-			hour=12; }
+			hour=12; 
+		}
 		else if(tm.tm_hour>12) {
 			hour=tm.tm_hour-12;
-			pm=true; }
+			pm=true; 
+		}
 		else {
 			hour=tm.tm_hour;
-			pm=false; } }
+			pm=false; 
+		} 
+	}
 	ultoa(hour,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 	tm.tm_hour=atoi(str);
 	if(tm.tm_hour>24) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 
 	bputs(text[NScanMinute]);
 	ultoa(tm.tm_min,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 
 	tm.tm_min=atoi(str);
 	if(tm.tm_min>59) {
 		CRLF;
-		return(false); }
+		return(false); 
+	}
 	tm.tm_sec=0;
 	if(!(cfg.sys_misc&SM_MILITARY) && tm.tm_hour && tm.tm_hour<13) {
 		if(pm && yesno(text[NScanPmQ])) {
 				if(tm.tm_hour<12)
-					tm.tm_hour+=12; }
+					tm.tm_hour+=12; 
+		}
 		else if(!pm && !yesno(text[NScanAmQ])) {
 				if(tm.tm_hour<12)
-					tm.tm_hour+=12; }
+					tm.tm_hour+=12; 
+		}
 		else if(tm.tm_hour==12)
-			tm.tm_hour=0; }
+			tm.tm_hour=0; 
+	}
 	else {
-		CRLF; }
+		CRLF; 
+	}
 	*dt=mktime(&tm);
 	return(true);
 }
@@ -597,29 +682,34 @@ bool sbbs_t::chkpass(char *pass, user_t* user, bool unique)
 
 	if(strlen(pass)<4) {
 		bputs(text[PasswordTooShort]);
-		return(0); }
+		return(0); 
+	}
 	if(!strcmp(pass,user->pass)) {
 		bputs(text[PasswordNotChanged]);
-		return(0); }
+		return(0); 
+	}
 	d=strlen(pass);
 	for(c=1;c<d;c++)
 		if(pass[c]!=pass[c-1])
 			break;
 	if(c==d) {
 		bputs(text[PasswordInvalid]);
-		return(0); }
+		return(0); 
+	}
 	for(c=0;c<3;c++)	/* check for 1234 and ABCD */
 		if(pass[c]!=pass[c+1]+1)
 			break;
 	if(c==3) {
 		bputs(text[PasswordObvious]);
-		return(0); }
+		return(0); 
+	}
 	for(c=0;c<3;c++)	/* check for 4321 and ZYXW */
 		if(pass[c]!=pass[c+1]-1)
 			break;
 	if(c==3) {
 		bputs(text[PasswordObvious]);
-		return(0); }
+		return(0); 
+	}
 	strcpy(name,user->name);
 	strupr(name);
 	strcpy(alias,user->alias);
@@ -628,7 +718,8 @@ bool sbbs_t::chkpass(char *pass, user_t* user, bool unique)
 	p=strchr(first,SP);
 	if(p) {
 		*p=0;
-		strcpy(last,p+1); }
+		strcpy(last,p+1); 
+	}
 	else
 		last[0]=0;
 	strcpy(handle,user->handle);
@@ -662,7 +753,8 @@ bool sbbs_t::chkpass(char *pass, user_t* user, bool unique)
 		)
 		{
 		bputs(text[PasswordObvious]);
-		return(0); }
+		return(0); 
+	}
 	return(1);
 }
 
