@@ -33,7 +33,7 @@
 #ifndef QWORD
  #ifdef _MSC_VER
   #define QWORD	unsigned _int64
- #e
+ #else
   #define	QWORD	unsigned long long int
  #endif
 #endif
