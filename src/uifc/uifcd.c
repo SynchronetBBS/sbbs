@@ -304,7 +304,7 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 	sprintf(str,"%.*s",sizeof(str)-1,outstr);
     dialog_inputbox(app_title, prompt, 9, max+4, outstr);
 	if(strcmp(str,outstr))
-		api.changes=TRUE;
+		api->changes=TRUE;
     return strlen(outstr);
 }
 
