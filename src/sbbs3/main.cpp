@@ -3949,6 +3949,8 @@ void DLLCALL bbs_thread(void* arg)
 			for(i=first_node;i<=last_node;i++)  {
 				if(uspy_socket[i-1]!=INVALID_SOCKET
 				&& FD_ISSET(uspy_socket[i-1],&socket_set)) {
+					if(node_socket[i-1]==INVALID_SOCKET)
+						read(uspy_socket[i-1],str,sizeof(str));
 					if(!socket_check(uspy_socket[i-1],NULL,NULL,0)) {
 						lprintf("Spy socket for node %d disconnected",i);
 						close_socket(uspy_socket[i-1]);
