@@ -131,7 +131,7 @@ extern "C" {
 
 #elif defined(_WIN32)	
 
-	/* POIX semaphores */
+	/* POSIX semaphores */
 	typedef HANDLE sem_t;
 	#define sem_init(psem,ps,v)			ResetEvent(*(psem))
 	#define sem_wait(psem)				WaitForSingleObject(*(psem),INFINITE)
@@ -139,7 +139,7 @@ extern "C" {
 	#define sem_destroy(psem)			CloseHandle(*(psem))
 	int		sem_getvalue(sem_t*, int* val);
 
-	/* POIX mutexes */
+	/* POSIX mutexes */
 	typedef HANDLE pthread_mutex_t;
 	#define PTHREAD_MUTEX_INITIALIZER	CreateMutex(NULL,FALSE,NULL)
 	#define pthread_mutex_init(pmtx,v)	*(pmtx)=CreateMutex(NULL,FALSE,NULL)
