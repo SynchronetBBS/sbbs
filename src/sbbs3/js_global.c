@@ -96,12 +96,12 @@ typedef struct {
 static void background_thread(void* arg)
 {
 	background_data_t* bg = (background_data_t*)arg;
-
 	jsval result=JSVAL_VOID;
 
 	msgQueueAttach(bg->msg_queue);
 	JS_SetContextThread(bg->cx);
-	JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result);
+	if(JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result) && result!=JSVAL_VOID)
+		js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
 	JS_DestroyScript(bg->cx, bg->script);
 	JS_DestroyContext(bg->cx);
 	JS_DestroyRuntime(bg->runtime);
