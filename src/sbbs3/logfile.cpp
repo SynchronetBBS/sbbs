@@ -39,7 +39,7 @@
 
 extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, char* host, SOCKADDR_IN* addr)
 {
-	char	hdr[512];
+	char	hdr[1024];
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
 	int		file;
@@ -71,8 +71,8 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 								,char* reason, char* host, char* ip_addr
 								,char* to, char* from)
 {
-	char	hdr[512];
-	char	to_user[128];
+	char	hdr[1024];
+	char	to_user[256];
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
 	int		file;
@@ -86,12 +86,12 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	if(to==NULL)
 		to_user[0]=0;
 	else
-		sprintf(to_user,"to: %s",to);
+		sprintf(to_user,"to: %.128s",to);
 
 	if(from==NULL)
 		from=host;
 		
-	sprintf(hdr,"SUSPECTED %s SPAM %s on %.24s\r\nHost: %s [%s]\r\nFrom: %s %s\r\nReason: "
+	sprintf(hdr,"SUSPECTED %s SPAM %s on %.24s\r\nHost: %s [%s]\r\nFrom: %.128s %s\r\nReason: "
 		,prot
 		,action
 		,timestr(cfg,&now,tstr)
