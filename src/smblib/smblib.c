@@ -2339,33 +2339,33 @@ char* SMBCALL smb_dfieldtype(ushort type)
 	return(str);
 }
 
-int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* msg, ulong newmsgnum)
+int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 {
 	int			retval=SMB_ERR_NOT_FOUND;
 	ulong		nextmsgnum;
 	smbmsg_t	nextmsg;
 
-	if(!msg->hdr.thread_first) {	/* New msg is first reply */
-		msg->hdr.thread_first=newmsgnum;
-		if((retval=smb_lockmsghdr(smb,msg))!=SMB_SUCCESS)
+	if(!remsg->hdr.thread_first) {	/* New msg is first reply */
+		remsg->hdr.thread_first=newmsgnum;
+		if((retval=smb_lockmsghdr(smb,remsg))!=SMB_SUCCESS)
 			return(retval);
-		retval=smb_putmsghdr(smb,msg);
-		smb_unlockmsghdr(smb,msg);
+		retval=smb_putmsghdr(smb,remsg);
+		smb_unlockmsghdr(smb,remsg);
 		return(retval);
 	}
 	
 	/* Search for last reply and extend chain */
 	memset(&nextmsg,0,sizeof(nextmsg));
-	nextmsgnum=msg->hdr.thread_first;	/* start with first reply */
+	nextmsgnum=remsg->hdr.thread_first;	/* start with first reply */
 	while(1) {
 		nextmsg.idx.offset=0;
 		nextmsg.hdr.number=nextmsgnum;
 		if(smb_getmsgidx(smb, &nextmsg)!=SMB_SUCCESS) /* invalid thread origin */
 			break;
-		if(smb_lockmsghdr(smb,msg)!=SMB_SUCCESS)
+		if(smb_lockmsghdr(smb,&nextmsg)!=SMB_SUCCESS)
 			break;
-		if(smb_getmsghdr(smb, msg)!=SMB_SUCCESS) {
-			smb_unlockmsghdr(smb,msg); 
+		if(smb_getmsghdr(smb, &nextmsg)!=SMB_SUCCESS) {
+			smb_unlockmsghdr(smb,&nextmsg); 
 			break;
 		}
 		if(nextmsg.hdr.thread_next && nextmsg.hdr.thread_next!=nextmsgnum) {
