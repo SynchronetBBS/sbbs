@@ -439,8 +439,10 @@ static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_nod
 
 	MUTEX_UNLOCK(list);
 
+#if defined(LINK_LIST_THREADSAFE)
 	if(list->sem!=NULL)
 		listSemPost(list);
+#endif
 
 	return(node);
 }
