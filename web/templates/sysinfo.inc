@@ -1,4 +1,4 @@
-<center>
+<div align="center">
 <table>
   <tr>
 	<td>
@@ -94,13 +94,13 @@ Version %%JS:system.full_version%%</p>
 <p>%%JS:system.os_version%%</P>
 <table>
 <tr><td>
-<pre><font face="courier new">@@sysinfo@@</font></pre>
+<pre class="preleft">@@sysinfo@@</pre>
 </td></tr>
 <tr><td>
 &nbsp;
 </td></tr>
 <tr><td>
-<pre><font face="courier new">@@logon@@</font></pre>
+<pre class="preleft">@@logon@@</pre>
 </td></tr>
 </table>
-</center>
+</div>
