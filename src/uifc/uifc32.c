@@ -96,7 +96,7 @@ static int   uprintf(int x, int y, unsigned char attr, char *fmt,...);
 static void  bottomline(int line);
 static char  *utimestr(time_t *intime);
 static void  help();
-static int   ugetstr(int left, int top, char *outstr, int max, long mode);
+static int   ugetstr(int left, int top, char *outstr, int max, long mode, int *lastkey);
 static void  timedisplay(void);
 
 /* API routines */
@@ -362,11 +362,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int s_top=SCRN_TOP;
 	int	s_left=SCRN_LEFT;
 	int	s_right=SCRN_RIGHT;
+	int	s_bottom=api->scrn_len-3;
 
 	if(mode&WIN_FAT) {
 		s_top=1;
 		s_left=0;
-		s_right=api->scrn_width-3;
+		s_right=api->scrn_width-3;  /* Leave space for the shadow */
+		s_bottom=api->scrn_len-1;   /* Leave one for the shadow */
 	}
 	if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1)
 		putch(7);
@@ -383,8 +385,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_XTR && opts<max_opts && opts<MAX_OPTS)
 		option[opts++][0]=0;
 	height=opts+4;
-	if(top+height>api->scrn_len-3)
-		height=(api->scrn_len-3)-top;
+	if(top+height>s_bottom)
+		height=(s_bottom)-top;
 	if(!width || width<strlen(title)+6) {
 		width=strlen(title)+6;
 		for(i=0;i<opts;i++) {
@@ -409,7 +411,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2-2;
 	else if(mode&WIN_BOT)
-		top=api->scrn_len-height-3-top;
+		top=s_bottom-height-top;
 
 	/* Dynamic Menus */
 	if(mode&WIN_DYN
@@ -1210,9 +1212,9 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 
 	textattr(lclr|(bclr<<4));
 	if(!plen)
-		i=ugetstr(SCRN_LEFT+left+2,SCRN_TOP+top+1,str,max,kmode);
+		i=ugetstr(SCRN_LEFT+left+2,SCRN_TOP+top+1,str,max,kmode,NULL);
 	else
-		i=ugetstr(SCRN_LEFT+left+plen+4,SCRN_TOP+top+1,str,max,kmode);
+		i=ugetstr(SCRN_LEFT+left+plen+4,SCRN_TOP+top+1,str,max,kmode,NULL);
 	if(mode&WIN_SAV)
 		puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
@@ -1239,9 +1241,8 @@ void umsg(char *str)
 /****************************************************************************/
 /* Gets a string of characters from the user. Turns cursor on. Allows 	    */
 /* Different modes - K_* macros. ESC aborts input.                          */
-/* Cursor should be at END of where string prompt will be placed.           */
 /****************************************************************************/
-int ugetstr(int left, int top, char *outstr, int max, long mode)
+int ugetstr(int left, int top, char *outstr, int max, long mode, int *lastkey)
 {
 	uchar   str[256],ins=0,buf[256],y;
 	int		ch;
@@ -1268,7 +1269,10 @@ int ugetstr(int left, int top, char *outstr, int max, long mode)
 #endif
 		f=inkey(0);
 		gotoxy(wherex()-i,y);
-		if(f == CR || (f >= 0xff && f != KEY_DC) || (f == '%' && mode&K_SCANNING))
+		if(f == CR 
+				|| (f >= 0xff && f != KEY_DC) 
+				|| (f == '\t' && mode&K_TABEXIT) 
+				|| (f == '%' && mode&K_SCANNING))
 		{
 			cputs(outstr);
 		}
@@ -1292,6 +1296,8 @@ int ugetstr(int left, int top, char *outstr, int max, long mode)
 				ch=f;
 			else
 				ch=inkey(0);
+			if(lastkey != NULL)
+				*lastkey=ch;
 			f=0;
 			switch(ch)
 			{
@@ -1378,6 +1384,10 @@ int ugetstr(int left, int top, char *outstr, int max, long mode)
 						return(-1);
 					}
 				case CR:
+					break;
+				case '\t':	/* '%' indicates that a UPC is coming next */
+					if(mode&K_TABEXIT)
+						ch=CR;
 					break;
 				case '%':	/* '%' indicates that a UPC is coming next */
 					if(mode&K_SCANNING)
