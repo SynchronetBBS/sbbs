@@ -410,9 +410,9 @@ void uifcbail(void)
 	textattr(LIGHTGRAY);
 	uifc_mouse_disable();
 	clrscr();
-	FREE(blk_scrn);
-	FREE(tmp_buffer);
-	FREE(tmp_buffer2);
+	FREE_AND_NULL(blk_scrn);
+	FREE_AND_NULL(tmp_buffer);
+	FREE_AND_NULL(tmp_buffer2);
 }
 
 /****************************************************************************/
