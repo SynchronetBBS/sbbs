@@ -538,11 +538,12 @@ typedef struct
 	ushort	netmail_misc;		/* Miscellaneous bits regarding netmail */
 	ulong	inetmail_misc;		/* Miscellaneous bits regarding inetmail */
 	ulong	inetmail_cost;		/* Cost in credits to send Internet mail */
-	char	inetmail_sem[LEN_DIR+1];	/* Internet Mail semaphore file */
-	char 	echomail_dir[LEN_DIR+1];   /* Directory to store echomail in */
-	char 	fidofile_dir[LEN_DIR+1];   /* Directory where inbound files go */
-	char 	netmail_sem[LEN_DIR+1];    /* FidoNet NetMail semaphore */
-	char 	echomail_sem[LEN_DIR+1];   /* FidoNet EchoMail semaphore  */
+	char	smtpmail_sem[LEN_DIR+1];	/* Inbound Internet Mail semaphore file */
+	char	inetmail_sem[LEN_DIR+1];	/* Outbound Internet Mail semaphore file */
+	char 	echomail_dir[LEN_DIR+1];	/* Directory to store echomail in */
+	char 	fidofile_dir[LEN_DIR+1];	/* Directory where inbound files go */
+	char 	netmail_sem[LEN_DIR+1];		/* FidoNet NetMail semaphore */
+	char 	echomail_sem[LEN_DIR+1];	/* FidoNet EchoMail semaphore  */
 	char 	origline[51];		/* Default EchoMail origin line */
 	char 	qnet_tagline[128];	/* Default QWK Network tagline */
 	long 	uq; 					/* User Questions */
