@@ -918,7 +918,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					break; }
 			if(p>=usrxfrbuf+usrxfrlen) /* file wasn't found */
 				continue; }
-		if((mode==FI_REMOVE) && (!dir_op(dirnum) && strcmpi(f.uler
+		if((mode==FI_REMOVE) && (!dir_op(dirnum) && stricmp(f.uler
 			,useron.alias) && !(useron.exempt&FLAG('R'))))
 			continue;
 		found++;
@@ -1053,7 +1053,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 								addfiledat(&cfg,&f);
 								if(f.misc&FM_EXTDESC)
 									putextdesc(f.dir,f.datoffset,ext); } } }
-					if(dir_op(dirnum) || strcmpi(f.uler,useron.alias)) {
+					if(dir_op(dirnum) || stricmp(f.uler,useron.alias)) {
 						if(noyes(text[RemoveCreditsQ]))
 	/* Fall through */      break; }
 				case 'C':   /* remove credits only */
