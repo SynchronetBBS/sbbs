@@ -420,12 +420,12 @@ void curs_textattr(int attr)
 		attrs |= A_BLINK;
 	}
 	colour = COLOR_PAIR( ((attr&7)|((attr>>1)&56))+1 );
-	#ifdef NCURSES_VERSION_MAJOR
+#ifdef NCURSES_VERSION_MAJOR
 	attrset(attrs);
 	color_set(colour,NULL);
-	#else
+#else
 	attrset(attrs|colour);
-	#endif
+#endif
 	/* bkgdset(colour); */
 	bkgdset(colour);
 }
@@ -687,14 +687,14 @@ int curs_initciolib(long inmode)
 		}
 	}
 	mode = inmode;
-	#ifdef NCURSES_VERSION_MAJOR
+#ifdef NCURSES_VERSION_MAJOR
 		if(mousemask(BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION,NULL)==BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION) {
 			mouseinterval(0);
 			cio_api.mouse=1;
 		}
 		else
 			mousemask(0,NULL);
-	#endif
+#endif
 	return(1);
 }
 
@@ -705,8 +705,8 @@ void curs_gettextinfo(struct text_info *info)
 		info->currmode=COLOR_MODE;
 	else
 		info->currmode=MONO;
-	info->curx=wherex();
-	info->cury=wherey();
+	info->curx=curs_wherex();
+	info->cury=curs_wherey();
 	info->attribute=lastattr;
 }
 
@@ -728,8 +728,9 @@ void curs_setcursortype(int type) {
 	refresh();
 }
 
-int curs_putch(int c)
+int curs_putch(int ch)
 {
+#if 0
 	struct text_info ti;
 	int		ret;
 	int		i;
@@ -797,12 +798,80 @@ int curs_putch(int c)
 			}
 			break;
 	}
+#else
+	struct text_info ti;
+	unsigned char buf[2];
+	int i;
+
+	buf[0]=ch;
+	buf[1]=lastattr;
+
+	switch(ch) {
+		case '\r':
+			gotoxy(1,wherey());
+			break;
+		case '\n':
+			gettextinfo(&ti);
+			if(ti.cury==ti.winbottom-ti.wintop+1)
+				wscroll();
+			else
+				gotoxy(ti.curx,ti.cury+1);
+			break;
+		case '\b':
+			gettextinfo(&ti);
+			if(ti.curx>1) {
+				buf[0]=' ';
+				gotoxy(ti.curx-1,ti.cury);
+				puttext(ti.winleft+ti.curx-2, ti.wintop+ti.cury-1,ti.winleft+ti.curx-2, ti.wintop+ti.cury-1,buf);
+			}
+			break;
+		case 7:		/* Bell */
+			beep();
+			break;
+		case '\t':
+			for(i=0;i<10;i++) {
+				if(curs_tabs[i]>wherex()) {
+					while(wherex()<curs_tabs[i]) {
+						putch(' ');
+					}
+					break;
+				}
+			}
+			if(i==10) {
+				putch('\r');
+				putch('\n');
+			}
+			break;
+		default:
+			gettextinfo(&ti);
+			if(ti.cury==ti.winbottom-ti.wintop+1
+					&& ti.curx==ti.winright-ti.winleft+1) {
+				puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
+				wscroll();
+				gotoxy(1,ti.cury);
+			}
+			else {
+				if(ti.curx==ti.winright-ti.winleft+1) {
+					puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
+					gotoxy(1,ti.cury+1);
+				}
+				else {
+					puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
+					gotoxy(ti.curx+1,ti.cury);
+				}
+			}
+			break;
+	}
+	return(ch);
+#endif
 }
 
 int curs_getch(void)
 {
 	int ch;
+#ifdef NCURSES_VERSION_MAJOR
 	MEVENT mevnt;
+#endif
 
 	if(curs_nextgetch) {
 		ch=curs_nextgetch;
@@ -981,6 +1050,7 @@ int curs_getch(void)
 						ch=0;
 						break;
 
+#ifdef NCURSES_VERSION_MAJOR
 					case KEY_MOUSE:			/* Mouse stuff */
 						if(getmouse(&mevnt)==OK) {
 							int evnt=0;
@@ -1010,6 +1080,7 @@ int curs_getch(void)
 							ciomouse_gotevent(evnt, mevnt.x+1, mevnt.y+1);
 						}
 						break;
+#endif
 
 					default:
 						curs_nextgetch=0xff;

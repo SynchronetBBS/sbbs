@@ -213,8 +213,8 @@ void x_gettextinfo(struct text_info *info)
 	info->currmode=CurrMode;
 	info->screenheight=DpyRows+1;
 	info->screenwidth=DpyCols;
-	info->curx=wherex();
-	info->cury=wherey();
+	info->curx=x_wherex();
+	info->cury=x_wherey();
 	info->attribute=x_curr_attr>>8;
 }
 
