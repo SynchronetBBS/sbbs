@@ -41,11 +41,13 @@
 #include <fcntl.h>
 #include <alloc.h>
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#if !defined(__unix__)
+    #include <conio.h>
+#endif
 
 /* OS Specific */
 #if defined(__FLAT__)
