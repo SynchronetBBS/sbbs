@@ -502,7 +502,8 @@ int main(int argc, char **argv)
 		bbs.total_networks=network;
 		bbs.total_terminals=terminal;
 		bbs.total_numbers=number;
-		fwrite(&bbs,sizeof(bbs_t),1,stream);
+		if(fwrite(&bbs,1,sizeof(bbs_t),stream)!=sizeof(bbs_t))
+			fprintf(stderr,"!WRITE ERROR %d\n",errno);
 		FREE(buf);
 		smb_freemsgmem(&msg);
 		}
