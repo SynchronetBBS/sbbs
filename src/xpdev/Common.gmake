@@ -42,10 +42,16 @@ BUILDPATH	?=	$(BUILD)
 ifndef os
  os		=	$(shell uname)
 endif
-os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
+os      :=	$(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 
+machine		:=	$(shell if uname -m | egrep -v "(i[3456]|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
+ifeq ($(machine),)
 LIBODIR :=	$(CCPRE).$(os).lib.$(BUILDPATH)
 EXEODIR :=	$(CCPRE).$(os).exe.$(BUILDPATH)
+else
+LIBODIR :=	$(CCPRE).$(os).$(machine).lib.$(BUILDPATH)
+EXEODIR :=	$(CCPRE).$(os).$(machine).exe.$(BUILDPATH)
+endif
 LDFLAGS	+=	-L$(LIBODIR)
 
 ifeq ($(os),netbsd)
@@ -77,7 +83,7 @@ LIBPREFIX =	lib
 
 # OS Specific Flags
 ifeq ($(os),sunos)    # Solaris
- CFLAGS	+= -D__solaris__ -DNEEDS_DAEMON -DNEEDS_FORKPTY
+ CFLAGS	+= -D__solaris__ -DNEEDS_DAEMON -DNEEDS_FORKPTY -DNEEDS_SETENV -DNEEDS_CFMAKERAW
 endif
 ifeq ($(os),netbsd)	# NetBSD
  CFLAGS	+=	-D__unix__ -I/usr/pkg/include -I/usr/pkg/pthreads/include -DNEEDS_FORKPTY
@@ -151,6 +157,16 @@ CFLAGS	+=	-I$(XPDEV)
 ifdef XP_SEM
  PTHREAD_OBJS	+= $(LIBODIR)$(SLASH)xpsem.$(OFILE)
 endif
+
+# Implicit C Compile Rule
+$(LIBODIR)/%.o : %.c $(BUILD_DEPENDS)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $<
+
+# Implicit C++ Compile Rule
+$(LIBODIR)/%.o : %.cpp $(BUILD_DEPENDS)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) $(CFLAGS) -o $@ -c $<
 
 ifdef NEED_THREADS
  CFLAGS += $(PTHREAD_CFLAGS)

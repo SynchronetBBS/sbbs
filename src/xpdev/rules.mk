@@ -1,13 +1,3 @@
-# Implicit C Compile Rule
-$(LIBODIR)/%.o : %.c $(BUILD_DEPENDS)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $<
-
-# Implicit C++ Compile Rule
-$(LIBODIR)/%.o : %.cpp $(BUILD_DEPENDS)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) $(CFLAGS) -o $@ -c $<
-
 $(LIBODIR):
 	@echo Creating $(LIBODIR)
 	$(QUIET)mkdir $(LIBODIR)
