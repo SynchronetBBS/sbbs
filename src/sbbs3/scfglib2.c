@@ -901,7 +901,7 @@ uchar attrstr(char *str)
 
 	atr=LIGHTGRAY;
 	while(str[l]) {
-		switch(str[l]) {
+		switch(toupper(str[l])) {
 			case 'H': 	/* High intensity */
 				atr|=HIGH;
 				break;
