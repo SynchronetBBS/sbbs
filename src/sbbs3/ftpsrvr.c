@@ -1779,7 +1779,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 					,char* desc)
 {
 	int			result;
-	int			addr_len;
+	socklen_t	addr_len;
 	SOCKADDR_IN	server_addr;
 	BOOL		reuseaddr;
 	xfer_t*		xfer;
@@ -2178,7 +2178,7 @@ static void ctrl_thread(void* arg)
 	char		html_index_ext[MAX_PATH+1];
 	WORD		port;
 	ulong		ip_addr;
-	int			addr_len;
+	socklen_t	addr_len;
 	DWORD		h1,h2,h3,h4;
 	u_short		p1,p2;	/* For PORT command */
 	int			i;
@@ -4276,7 +4276,7 @@ void DLLCALL ftp_server(void* arg)
 	char			compiler[32];
 	SOCKADDR_IN		server_addr;
 	SOCKADDR_IN		client_addr;
-	int				client_addr_len;
+	socklen_t		client_addr_len;
 	SOCKET			client_socket;
 	int				i;
 	int				result;

@@ -444,7 +444,7 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 {
 	int			lvl;
 	int			opt;
-	int			len;
+	socklen_t	len;
 	int			val;
 	private_t*	p;
 

@@ -966,7 +966,7 @@ void DLLCALL services_thread(void* arg)
 	char			cmd[128];
 	SOCKADDR_IN		addr;
 	SOCKADDR_IN		client_addr;
-	int				client_addr_len;
+	socklen_t		client_addr_len;
 	SOCKET			socket;
 	SOCKET			client_socket;
 	int				i;

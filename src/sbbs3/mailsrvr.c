@@ -1146,7 +1146,7 @@ static void smtp_thread(void* arg)
 	char*		msgbuf;
 	char		dest_host[128];
 	ushort		dest_port;
-	int			addr_len;
+	socklen_t	addr_len;
 	ushort		xlat;
 	ushort		nettype;
 	uint		usernum;
@@ -2690,7 +2690,7 @@ void DLLCALL mail_server(void* arg)
 	char			compiler[32];
 	SOCKADDR_IN		server_addr;
 	SOCKADDR_IN		client_addr;
-	int				client_addr_len;
+	socklen_t		client_addr_len;
 	SOCKET			client_socket;
 	int				i;
 	int				result;
