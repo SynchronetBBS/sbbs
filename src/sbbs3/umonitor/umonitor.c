@@ -76,6 +76,8 @@ enum {
 	,MODE_AUX
 	,MODE_EXTAUX
 	};
+	
+#define CTRL(x) (x&037)
 
 /********************/
 /* Global Variables */
@@ -399,7 +401,7 @@ void node_toggles(int nodenum)  {
 				break;
 
 			case 5:	/* Down */
-				if(node.status == NODE_INUSE || node.status==NODE_LOGON)
+				if(node.status != NODE_WFC && node.status != NODE_OFFLINE)
 					node.misc ^= NODE_DOWN;
 				else {
 					if(node.status!=NODE_OFFLINE)
@@ -473,13 +475,36 @@ int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
 	return(0);
 }
 
+int sendmessage(int nodenum,node_t *node)  {
+	char str[80],str2[80];
+
+	uifc.input(WIN_MID,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
+	sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s",str2);
+	if(getnodedat(&cfg,nodenum,node,NULL))
+		return(-1);
+	if(node->useron==0)
+		return(-1);
+	putsmsg(&cfg, node->useron, str);
+	return(0);
+}
+
+int clearerrors(int nodenum, node_t *node) {
+	if(getnodedat(&cfg,nodenum,node,&nodefile)) {
+		uifc.msg("getnodedat() failed! (Nothing done)");
+		return(-1);
+	}
+	node->errors=0;
+	putnodedat(&cfg,nodenum,node,nodefile);
+	return(0);
+}
+
 int main(int argc, char** argv)  {
 	char**	opt;
 	char**	mopt;
 	int		main_dflt=0;
 	int		main_bar=0;
 	char revision[16];
-	char str[256],str2[256],ctrl_dir[41],*p;
+	char str[256],ctrl_dir[41],*p;
 	char title[256];
 	int i,j;
 	node_t node;
@@ -677,8 +702,14 @@ int main(int argc, char** argv)  {
 
 		uifc.helpbuf=	"`Synchronet Monitor:`\n"
 						"\nCTRL-E displays the error log"
-						"\nCTRL-S spys on the currently selected node"
-						"\nToDo: Add more help.";
+						"\nF12 spys on the currently selected node"
+						"\nF11 send message to the currently selected node"
+						"\nDEL Clear errors on currently selected node"
+						"\nCTRL-L Lock node toggle"
+						"\nCTRL-R Rerun node"
+						"\nCTRL-D Down node toggle"
+						"\nCTRL-I Interrupt node"
+						"\nToDo: Add more help. (Explain what you're looking at)";
 						
 		j=uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT|WIN_DYN,0,0,70,&main_dflt,&main_bar
 			,title,mopt);
@@ -708,11 +739,73 @@ int main(int argc, char** argv)  {
 			continue;
 		}
 		
-		if(j==-21) {	/* CTRL-S */
-			dospy(main_dflt+1,&bbs_startup);
+		if(j==-2-KEY_DC) {	/* Clear errors */
+			clearerrors(main_dflt+1,&node);
+			continue;
+		}
+
+		if(j==-2-KEY_F(10)) {	/* Chat */
+			uifc.msg("Option not implemented");
+			continue;
+		}
+
+		if(j==-2-KEY_F(11)) {	/* Send message */
+			sendmessage(main_dflt+1,&node);
+			continue;
 		}
 		
+		if(j==-2-KEY_F(12)) {	/* Spy */
+			dospy(main_dflt+1,&bbs_startup);
+			continue;
+		}
+		
+		if(j==-2-CTRL('l')) {	/* Lock node */
+			if(getnodedat(&cfg,main_dflt+1,&node,&nodefile)) {
+				uifc.msg("Error reading node data!");
+				continue;
+			}
+			node.misc^=NODE_LOCK;
+			putnodedat(&cfg,main_dflt+1,&node,nodefile);
+			continue;
+		}
+		
+		if(j==-2-CTRL('r')) {	/* Rerun node */
+			if(getnodedat(&cfg,main_dflt+1,&node,&nodefile)) {
+				uifc.msg("Error reading node data!");
+				continue;
+			}
+			node.misc^=NODE_RRUN;
+			putnodedat(&cfg,main_dflt+1,&node,nodefile);
+			continue;
+		}
 
+		if(j==-2-CTRL('d')) {	/* Down node */
+			if(getnodedat(&cfg,main_dflt+1,&node,&nodefile)) {
+				uifc.msg("Error reading node data!");
+				continue;
+			}
+			if(node.status != NODE_WFC && node.status != NODE_OFFLINE)
+				node.misc ^= NODE_DOWN;
+			else {
+				if(node.status!=NODE_OFFLINE)
+					node.status=NODE_OFFLINE;
+				else
+					node.status=NODE_WFC;
+			}
+			putnodedat(&cfg,main_dflt+1,&node,nodefile);
+			continue;
+		}
+
+		if(j==-2-CTRL('i')) {	/* Interrupt node */
+			if(getnodedat(&cfg,main_dflt+1,&node,&nodefile)) {
+				uifc.msg("Error reading node data!");
+				continue;
+			}
+			node.misc^=NODE_INTR;
+			putnodedat(&cfg,main_dflt+1,&node,nodefile);
+			continue;
+		}
+		
 		if(j <= -2)
 			continue;
 
@@ -754,22 +847,11 @@ int main(int argc, char** argv)  {
 					break;
 
 				case 2:
-					if(getnodedat(&cfg,j+1,&node,&nodefile)) {
-						uifc.msg("getnodedat() failed! (Nothing done)");
-						break;
-					}
-					node.errors=0;
-					putnodedat(&cfg,j+1,&node,nodefile);
+					clearerrors(j+1,&node);
 					break;
 
 				case 3:	/* Send message */
-					uifc.input(WIN_MID,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
-					sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s",str2);
-					if(getnodedat(&cfg,j+1,&node,NULL))
-						break;
-					if(node.useron==0)
-						break;
-					putsmsg(&cfg, node.useron, str);
+					sendmessage(j+1,&node);
 					break;
 
 				case -1:
