@@ -799,6 +799,12 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			case RFC822REPLYID:
 				msg->reply_id=msg->hfield_dat[i];
 				break;
+			case FIDOMSGID:
+				msg->ftn_id=msg->hfield_dat[i];
+				break;
+			case FIDOREPLYID:
+				msg->ftn_reply_id=msg->hfield_dat[i];
+				break;
 		}
 		l+=msg->hfield[i].length; 
 	}
