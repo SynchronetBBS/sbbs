@@ -130,6 +130,7 @@ var server;
 var port=119;
 var username;
 var password;
+var interface_ip_address=server.interface_ip_address;
 area = new Array();
 
 /******************************/
@@ -159,6 +160,9 @@ while(!cfg_file.eof) {
 			break;
 		case "port":
 			port=parseInt(str[1]);
+			break;
+		case "interface":
+			interface_ip_address=str[1];
 			break;
 		case "user":
 			username=str[1];
@@ -192,7 +196,6 @@ while(!cfg_file.eof) {
 		case "max_newsgroups_per_article":
 			max_newsgroups_per_article=parseInt(str[1]);
 			break;
-
 		default:
 			print("!UNRECOGNIZED configuration keyword: " + str[0]);
 			break;
@@ -215,7 +218,7 @@ if(server==undefined || !server.length) {
 printf("Connecting to %s port %d ...\r\n",server,port);
 socket = new Socket();
 //socket.debug=true;
-socket.bind(0,server.interface_ip_address);
+socket.bind(0,interface_ip_address);
 if(!socket.connect(server,port)) {
 	printf("!Error %d connecting to %s port %d\r\n"
 		,socket.last_error,server,port);
