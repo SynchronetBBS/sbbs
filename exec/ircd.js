@@ -1012,7 +1012,7 @@ while (!server.terminated) {
     }
 	if(socket_select!=undefined)
 	{
-		readme=socket_select(poll_clients,1000000);
+		readme=socket_select(poll_clients, 1 /* seconds */);
 		for(thisPolled in readme)
 		{
 			Clients[poll_client_map[readme[thisPolled]]].work();
