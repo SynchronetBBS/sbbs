@@ -287,7 +287,8 @@ for(i in area) {
 	/*************************/
 	if(debug)
 		print("exporting local messages");
-	for(;socket.is_connected && ptr<=msgbase.last_msg;ptr++) {
+	last_msg=msgbase.last_msg;
+	for(;socket.is_connected && ptr<=last_msg;ptr++) {
 		console.line_counter = 0;
 		hdr = msgbase.get_msg_header(
 			/* retrieve by offset? */	false,
