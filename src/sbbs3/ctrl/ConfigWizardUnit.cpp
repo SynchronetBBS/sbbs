@@ -255,6 +255,8 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     ProgressBar->Max=WizNotebook->Pages->Count-1;
     IllegalCharsLabel->Caption="Illegal characters: '"
         ILLEGAL_QWKID_CHARS "'";
+
+	NextButton->Enabled=true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
