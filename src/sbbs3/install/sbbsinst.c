@@ -59,7 +59,6 @@
 #define	MAX_DIST_FILES		10
 #define MAX_SERVERS			100
 #define MAX_FILELEN			32
-#define MAKE_CMDLINE		"gmake install -f install/GNUmakefile"
 #define MAKE_ERROR			"make failure.\n"
 
 /*******************/
@@ -110,6 +109,14 @@ char tmp[256];
 char error[256];
 char cflags[MAX_PATH+1];
 char cvsroot[MAX_PATH+1];
+char make_cmdline[128]=
+#if defined(__linux__)
+	"make"
+#else
+	"gmake"
+#endif
+	" install -f install/GNUmakefile";
+
 int  backup_level=5;
 BOOL keep_makefile=FALSE;
 
@@ -256,8 +263,8 @@ int main(int argc, char **argv)
 	if((mopt=(char **)MALLOC(sizeof(char *)*14))==NULL)
 		allocfail(sizeof(char *)*14);
 	for(i=0;i<14;i++)
-		if((mopt[i]=(char *)MALLOC(64))==NULL)
-			allocfail(64);
+		if((mopt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
 
 	sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 	if(uifc.scrn(str)) {
@@ -275,6 +282,7 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s%s","Compiler Flags",params.cflags);
 		sprintf(mopt[i++],"%-27.27s%s","Debug Build",params.debug?"Yes":"No");
 		sprintf(mopt[i++],"%-27.27s%s","Symlink Binaries",params.symlink?"Yes":"No");
+		sprintf(mopt[i++],"%-27.27s%s","Make Command-line",make_cmdline);
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
@@ -360,6 +368,11 @@ int main(int argc, char **argv)
 				i=0;
 				break;
 			case 7:
+				uifc.helpbuf=	"`Make Command-line`\n"
+								"\n";
+				uifc.input(WIN_MID,0,0,"Make Command-line",params.install_path,60,K_EDIT);
+				break;
+			case 8:
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
 				bail(0);
 				break;
@@ -434,7 +447,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				printf("Could not checkout install makefile.\n");
 				exit(EXIT_FAILURE);
 			}
-			if(system(MAKE_CMDLINE))  {
+			if(system(make_cmdline))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -474,7 +487,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				}
 				unlink(dist->files[i]);
 			}
-			if(system(MAKE_CMDLINE))  {
+			if(system(make_cmdline))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -488,7 +501,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 					exit(EXIT_FAILURE);
 				}
 			}
-			if(system(MAKE_CMDLINE))  {
+			if(system(make_cmdline))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
