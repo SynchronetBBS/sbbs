@@ -570,7 +570,6 @@ void compile(char *src)
 			ar=arstr(&i,arg,NULL);
 			fprintf(out,"%c%c",CS_COMPARE_ARS,(uchar)i);
 			fwrite(ar,i,1,out);
-			FREE(ar);
 			continue; }
 
 		if(!stricmp(p,"CHKSYSPASS")) {
