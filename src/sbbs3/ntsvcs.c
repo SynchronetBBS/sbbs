@@ -42,6 +42,7 @@
 #include "websrvr.h"	/* web_startup_t, web_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
+#include "ntsvcs.h"		/* NT service names */
 
 /* Windows-specific headers */
 #include <winsvc.h>
@@ -75,14 +76,15 @@ typedef struct {
 	void*					startup;
 	void					(*thread)(void* arg);
 	void					(WINAPI *ctrl_handler)(DWORD);
-	HANDLE					log_pipe;
+	HANDLE					log_handle;
 	BOOL					autostart;
+	BOOL					debug;
 	SERVICE_STATUS			status;
 	SERVICE_STATUS_HANDLE	status_handle;
 } sbbs_ntsvc_t;
 
 sbbs_ntsvc_t bbs ={	
-	"SynchronetBBS",
+	NTSVC_NAME_BBS,
 	"Synchronet Telnet/RLogin Server",
 	"Provides support for Telnet and RLogin clients and executes timed events. " \
 		"This service provides the critical functions of your Synchronet BBS.",
@@ -92,8 +94,19 @@ sbbs_ntsvc_t bbs ={
 	INVALID_HANDLE_VALUE
 };
 
+/* This is not (currently) a separate service, use this for logging only */
+sbbs_ntsvc_t event ={	
+	NTSVC_NAME_EVENT,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	INVALID_HANDLE_VALUE
+};
+
 sbbs_ntsvc_t ftp = {
-	"SynchronetFTP",
+	NTSVC_NAME_FTP,
 	"Synchronet FTP Server",
 	"Provides support for FTP clients (including web browsers) for file transfers.",
 	&ftp_startup,
@@ -104,7 +117,7 @@ sbbs_ntsvc_t ftp = {
 
 #if !defined(NO_WEB_SERVER)
 sbbs_ntsvc_t web = {
-	"SynchronetWeb",
+	NTSVC_NAME_WEB,
 	"Synchronet Web Server",
 	"Provides support for Web (HTML/HTTP) clients (browsers).",
 	&web_startup,
@@ -115,7 +128,7 @@ sbbs_ntsvc_t web = {
 #endif
 
 sbbs_ntsvc_t mail = {
-	"SynchronetMail",
+	NTSVC_NAME_MAIL,
 	"Synchronet SMTP/POP3 Mail Server",
 	"Sends and receives Internet e-mail (using SMTP) and allows users to remotely " \
 		"access their e-mail using an Internet mail client (using POP3).",
@@ -127,7 +140,7 @@ sbbs_ntsvc_t mail = {
 
 #if !defined(NO_SERVICES)
 sbbs_ntsvc_t services = {
-	"SynchronetServices",
+	NTSVC_NAME_SERVICES,
 	"Synchronet Services",
 	"Plugin servers (usually in JavaScript) for any TCP/UDP protocol. " \
 		"Stock services include Finger, Gopher, NNTP, and IRC. Edit your ctrl/services.ini " \
@@ -252,47 +265,38 @@ static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
 }
 #endif
 
-/****************************************************************************/
-/* Event thread local/log print routine										*/
-/****************************************************************************/
-static int event_lputs(char *str)
-{
-	char line[1024];
-
-	snprintf(line,sizeof(line),"SynchronetEvent: %s",str);
-	OutputDebugString(line);
-    return(0);
-}
-
-/************************************/
-/* Shared Service Callback Routines */
-/************************************/
+/**************************************/
+/* Common Service Log Ouptut Function */
+/**************************************/
 static int svc_lputs(void* p, char* str)
 {
-	char	line[1024];
-	char	pipe_name[256];
+	char	debug[1024];
+	char	fname[256];
 	DWORD	len;
 	DWORD	wr;
 	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
 
-	len = snprintf(line,sizeof(line),"%s: %s",svc==NULL ? "Synchronet" : svc->name, str);
-	OutputDebugString(line);
-	if(svc!=NULL && svc->log_pipe == INVALID_HANDLE_VALUE) {
-#ifdef USE_NAMED_PIPES
-		sprintf(pipe_name,"\\\\.\\pipe\\%s",svc->name);
-		svc->log_pipe = CreateNamedPipe(
-			pipe_name,					// pointer to pipe name
-			PIPE_ACCESS_OUTBOUND,       // pipe open mode
-			PIPE_TYPE_MESSAGE,			// pipe-specific modes
-			1,							// maximum number of instances
-			1024,						// output buffer size, in bytes
-			0,							// input buffer size, in bytes
-			1000,						// time-out time, in milliseconds
-			NULL);						// pointer to security attributes
-#else
-		sprintf(pipe_name,"\\\\.\\mailslot\\%s",svc->name);
-		svc->log_pipe = CreateFile(
-			pipe_name,				// pointer to name of the file
+	if(svc==NULL || svc->debug) {
+		snprintf(debug,sizeof(debug),"%s: %s",svc==NULL ? "Synchronet" : svc->name, str);
+		OutputDebugString(debug);
+	}
+	if(svc==NULL)
+		return(0);
+
+	len = strlen(str);
+
+	/* Invalid log handle? */
+	if(svc->log_handle != INVALID_HANDLE_VALUE
+		&& !GetMailslotInfo(svc->log_handle, NULL, NULL, NULL, NULL)) {
+		/* Close and try to re-open */
+		CloseHandle(svc->log_handle);
+		svc->log_handle=INVALID_HANDLE_VALUE;
+	}
+
+	if(svc->log_handle == INVALID_HANDLE_VALUE) {
+		sprintf(fname,"\\\\.\\mailslot\\%s.log",svc->name);
+		svc->log_handle = CreateFile(
+			fname,					// pointer to name of the file
 			GENERIC_WRITE,			// access (read-write) mode
 			FILE_SHARE_READ,		// share mode
 			NULL,					// pointer to security attributes
@@ -300,20 +304,33 @@ static int svc_lputs(void* p, char* str)
 			FILE_ATTRIBUTE_NORMAL,  // file attributes
 			NULL					// handle to file with attributes to copy
 			);
-#endif
 	}
-	if(svc!=NULL && svc->log_pipe != INVALID_HANDLE_VALUE) {
-		if(!WriteFile(svc->log_pipe,line,len,&wr,NULL) || wr!=len) {
-			sprintf(line,"!ERROR %d writing %u bytes to %s pipe (wr=%d)"
+	if(svc->log_handle != INVALID_HANDLE_VALUE) {
+		if(!WriteFile(svc->log_handle,str,len,&wr,NULL) || wr!=len) {
+			/* This most likely indicates the server closed the mailslot */
+			sprintf(debug,"!ERROR %d writing %u bytes to %s pipe (wr=%d)"
 				,GetLastError(),len,svc->name,wr);
-			OutputDebugString(line);
-		} else {
-			sprintf(line,"Wrote %u bytes to %s pipe",wr,svc->name);
-			OutputDebugString(line);
+			OutputDebugString(debug);
+			/* So close the handle and attempt re-open next time */
+			CloseHandle(svc->log_handle);
+			svc->log_handle=INVALID_HANDLE_VALUE;
 		}
 	}
     return(0);
 }
+
+/****************************************************************************/
+/* Event thread local/log print routine										*/
+/****************************************************************************/
+static int event_lputs(char *str)
+{
+	svc_lputs(&event,str);
+    return(0);
+}
+
+/************************************/
+/* Shared Service Callback Routines */
+/************************************/
 
 static void svc_started(void* p)
 {
@@ -342,6 +359,17 @@ static void svc_terminated(void* p, int code)
 /* Common ServiceMain for all services */
 static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 {
+	DWORD	i;
+	char*	arg;
+
+	for(i=0;i<argc;i++) {
+		arg=argv[i];
+		if(*arg=='-' || *arg=='/')
+			arg++;
+		if(!stricmp(arg,"debug"))
+			svc->debug=TRUE;
+	}
+
 	svc_lputs(svc,"Starting service");
 
     if((svc->status_handle = RegisterServiceCtrlHandler(svc->name, svc->ctrl_handler))==0) {
@@ -362,9 +390,9 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 	svc->status.dwCurrentState=SERVICE_STOPPED;
 	SetServiceStatus(svc->status_handle, &svc->status);
 
-	if(svc->log_pipe!=INVALID_HANDLE_VALUE) {
-		CloseHandle(svc->log_pipe);
-		svc->log_pipe=INVALID_HANDLE_VALUE;
+	if(svc->log_handle!=INVALID_HANDLE_VALUE) {
+		CloseHandle(svc->log_handle);
+		svc->log_handle=INVALID_HANDLE_VALUE;
 	}
 }
 
@@ -373,6 +401,12 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 static void WINAPI bbs_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
 	svc_start(&bbs, dwArgc, lpszArgv);
+
+	/* Events are (currently) part of the BBS service */
+	if(event.log_handle!=INVALID_HANDLE_VALUE) {
+		CloseHandle(event.log_handle);
+		event.log_handle=INVALID_HANDLE_VALUE;
+	}
 }
 
 static void WINAPI ftp_start(DWORD dwArgc, LPTSTR *lpszArgv)
