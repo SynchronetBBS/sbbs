@@ -445,13 +445,14 @@ function oper_notice(ntype,nmessage) {
 }
 	
 function create_ban_mask(str,kline) {
-	tmp_banstr = new Array;
+	var tmp_banstr = new Array;
 	tmp_banstr[0] = "";
 	tmp_banstr[1] = "";
 	tmp_banstr[2] = "";
-	bchar_counter = 0;
-	part_counter = 0; // BAN: 0!1@2 KLINE: 0@1
-	regexp="[A-Za-z\{\}\`\^\_\|\\]\\[\\\\0-9\-.*?\~]";
+	var bchar_counter = 0;
+	var part_counter = 0; // BAN: 0!1@2 KLINE: 0@1
+	var regexp="[A-Za-z\{\}\`\^\_\|\\]\\[\\\\0-9\-.*?\~]";
+	var finalstr;
 	for (bchar in str) {
 		if (str[bchar].match(regexp)) {
 			tmp_banstr[part_counter] += str[bchar];
@@ -2333,12 +2334,12 @@ function IRCClient_do_complex_who(cmd) {
 	var who = new Who();
 	var tmp;
 	var eow = "*";
-	var add;
+	var add = true;	// assume the user is doing + by default
 	var arg = 1;
 	var whomask = "";
 	var chan;
 
-	if (cmd[2].toLowerCase() == "o") { // Compatibility with RFC1459.
+	if (cmd[2] && cmd[2].toLowerCase() == "o") { // RFC1459 Compatibility.
 		tmp = cmd[1];
 		cmd[1] = cmd[2];
 		cmd[2] = tmp;
@@ -2657,8 +2658,11 @@ function IRCClient_match_who_mask(mask) {
 }
 
 function IRCClient_do_who_usage() {
-	this.numeric(334,":/WHO [+|-][acghimnosuCM] <args>");
+	this.numeric(334,":/WHO [+|-][acghimnosuCM] <args> <mask>");
 	this.numeric(334,":The modes as above work exactly like channel modes.");
+	this.numeric(334,":<mask> may be '*' or in nick!user@host notation.");
+	this.numeric(334,":i.e. '/WHO +a *.ca' would match all away users from *.ca");
+	this.numeric(334,":No args/mask matches to everything by default.");
 	this.numeric(334,":a       : User is away.");
 	this.numeric(334,":c <chan>: User is on <channel>, no wildcards.");
 	this.numeric(334,":g <rnam>: Check against realname field, wildcards allowed.");
@@ -4261,7 +4265,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.do_who_usage();
 				break;
 			}
-			if (cmd[2]) {
+			if (cmd[2] || (cmd[1][0] == "-")||(cmd[1][0] == "+")) {
 				this.do_complex_who(cmd);
 			} else {
 				this.do_basic_who(cmd[1]);
@@ -4593,6 +4597,9 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (cmd[2][0] != "#")
 				break;
 
+			var chan_members;
+			var cm_array;
+
 			if (cmd[3]) {
 				var mode_args = "";
 				var tmp_modeargs = 0;
@@ -4609,10 +4616,35 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				if ((cmd[4] == "") && cmd[5])
 					tmp_modeargs++;
 
-				var chan_members = ircstring(cmdline,4+tmp_modeargs).split(' ');
+				chan_members = ircstring(cmdline,4+tmp_modeargs).split(' ');
 
 				if (chan_members == "") {
-					oper_notice("Notice","Server " + this.nick + " trying to SJOIN empty channel " + cmd[2]);
+					oper_notice("Notice","Server " + this.nick + " trying to SJOIN empty channel " + cmd[2] + " before processing.");
+					break;
+				}
+
+				cm_array = new Array();
+
+				for (cm in chan_members) {
+					var isop = false;
+					var isvoice = false;
+					if (chan_members[cm][0] == "@") {
+						isop = true;
+						chan_members[cm] = chan_members[cm].slice(1);
+					}
+					if (chan_members[cm][0] == "+") {
+						isvoice = true;
+						chan_members[cm] = chan_members[cm].slice(1);
+					}
+					var tmp_nick = searchbynick(chan_members
+[cm]);
+					if (!tmp_nick)
+						continue;
+					cm_array.push(new SJOIN_Nick(tmp_nick,isop,isvoice));
+				}
+
+				if (cm_array == "") {
+					oper_notice("Notice","Server " + this.nick + " trying to SJOIN empty channel " + cmd[2] + " post processing.");
 					break;
 				}
 			}
@@ -4648,22 +4680,13 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				var push_sync_modes = "+";
 				var push_sync_args = "";
 				var new_chan_members = "";
-				for (member in chan_members) {
+				for (member in cm_array) {
 					if (new_chan_members)
 						new_chan_members += " ";
-					var is_op = false;
-					var is_voice = false;
-					if (chan_members[member][0] == "@") {
-						is_op = true;
-						chan_members[member] = chan_members[member].slice(1);
-					}
-					if (chan_members[member][0] == "+") {
-						is_voice = true;
-						chan_members[member] = chan_members[member].slice(1);
-					}
-					var member_obj = searchbynick(chan_members[member]);
-					if (!member_obj)
-						continue;
+
+					var member_obj = cm_array[member].nick;
+					var is_voice = cm_array[member].isvoice;
+					var is_op = cm_array[member].isop;
 
 					if (member_obj.onchannel(chan.nam.toUpperCase()))
 						continue;
@@ -4785,7 +4808,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			}
 			break;
 		case "MODE":
-			if (!cmd[1])
+			if (!cmd[2])
 				break;
 			// nasty kludge since we don't support per-mode TS yet.
 			if (cmd[2].match(/^[0-9]+$/) && 
@@ -4805,6 +4828,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				ThisOrigin.set_chanmode(chan,modeline,false);
 			} else { // assume it's for a user
 				ThisOrigin.setusermode(cmd[2]);
+				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " MODE " + ThisOrigin.nick + " " + cmd[2]);
 			}
 			break;
 		case "MOTD":
@@ -5482,3 +5506,11 @@ function NickBuf(oldnick,newnick) {
 	this.oldnick = oldnick;
 	this.newnick = newnick;
 }
+
+// used for tracking true SJOIN nicks.
+function SJOIN_Nick(nick,isop,isvoice) {
+	this.nick = nick;
+	this.isop = isop;
+	this.isvoice = isvoice;
+}
+
