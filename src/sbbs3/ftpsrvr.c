@@ -2318,6 +2318,7 @@ static void ctrl_thread(void* arg)
 				if(fexist(str)) {
 					lprintf("%04d !TIMEOUT waiting for QWK packet creation",sock);
 					sockprintf(sock,"451 Time-out waiting for packet creation.");
+					remove(str);
 					filepos=0;
 					continue;
 				}
