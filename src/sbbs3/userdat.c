@@ -942,7 +942,7 @@ char* DLLCALL nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
                     strcat(str,"performing sysop activities");
                     break;
                 default:
-                    itoa(node->action,str+strlen(str),10);
+                    sprintf(str+strlen(str),"%d",node->action);
                     break;  
 			}
             if(!node->connection)
