@@ -186,6 +186,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 			smb_unlockmsghdr(&smb,&msg);
 			msgcnt++;
 			submsgs++; 
+			if(!(l%50))
+				mswait(1); /* yield */
 		}
 		eprintf(remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
 		LFREE(post);
