@@ -1416,19 +1416,19 @@ static void smtp_thread(void* arg)
 						lprintf("%04d SMTP IGNORED MAIL from blacklisted server"
 							,socket);
 						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-						spamlog(&scfg, "SMTP", "IGNORED", str, host_name, host_ip, NULL);
+						spamlog(&scfg, "SMTP", "IGNORED", str, host_name, host_ip, rcpt_addr);
 						/* pretend we received it */
 						sockprintf(socket,SMTP_OK);
 						continue;
 					}
-					/* flag message as spam */
+					/* flag message as spam (should this be X-DNSBL?) */
 					sprintf(str,"X-RBL: %s is listed on %s as %s"
 						,host_ip, dnsbl, inet_ntoa(dnsbl_result));
 					smb_hfield(&msg,RFC822HEADER,strlen(str),str);
 					lprintf("%04d SMTP FLAGGED MAIL from blacklisted server"
 						,socket);
 					sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-					spamlog(&scfg, "SMTP", "FLAGGED", str, host_name, host_ip, NULL);
+					spamlog(&scfg, "SMTP", "FLAGGED", str, host_name, host_ip, rcpt_addr);
 				}
 
 				if(telegram==TRUE) {		/* Telegram */
@@ -1737,8 +1737,8 @@ static void smtp_thread(void* arg)
 				}
 				if(dnsbl_result.s_addr && startup->dnsbl_flag[0]) {
 					sprintf(str,"%.*s: %.*s"
-						,sizeof(str)/2, startup->dnsbl_flag
-						,sizeof(str)/2, p);
+						,(int)sizeof(str)/2, startup->dnsbl_flag
+						,(int)sizeof(str)/2, p);
 					p=str;
 				}
 				smb_hfield(&msg, SUBJECT, (ushort)strlen(p), p);
@@ -2838,7 +2838,7 @@ void DLLCALL mail_server(void* arg)
 		signal(SIGPIPE,SIG_IGN);
 #endif
 
-		lprintf("Synchronet Mail Server %s%s"
+		lprintf("Synchronet Mail Server Revision %s%s"
 			,revision
 #ifdef _DEBUG
 			," Debug"
