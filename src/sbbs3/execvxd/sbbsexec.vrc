@@ -1,0 +1,9 @@
+CompanyName	=	"Company Name" 
+FileDescription =	"VxD File Description"
+FileVersion	=	"Version 1.00" 
+InternalName	=	"DEVNAME"
+LegalCopyright	= 	"Copyright \251 1995, Company Name. "
+OriginalFilename = 	"device.vxd"
+ProductName	=	"Product Name"
+ProductVersion	= 	"Version 1.00"
+Translation	=	0x409, 0x4E4
