@@ -79,25 +79,30 @@
 #define SBBS_LOG_NAME	"synchronet"
 
 /* Global variables */
-BOOL				run_bbs=TRUE;
+BOOL				run_bbs=FALSE;
 BOOL				bbs_running=FALSE;
 BOOL				bbs_stopped=FALSE;
+BOOL				has_bbs=FALSE;
 bbs_startup_t		bbs_startup;
-BOOL				run_ftp=TRUE;
+BOOL				run_ftp=FALSE;
 BOOL				ftp_running=FALSE;
 BOOL				ftp_stopped=FALSE;
+BOOL				has_ftp=FALSE;
 ftp_startup_t		ftp_startup;
-BOOL				run_mail=TRUE;
+BOOL				run_mail=FALSE;
 BOOL				mail_running=FALSE;
 BOOL				mail_stopped=FALSE;
+BOOL				has_mail=FALSE;
 mail_startup_t		mail_startup;
-BOOL				run_services=TRUE;
+BOOL				run_services=FALSE;
 BOOL				services_running=FALSE;
 BOOL				services_stopped=FALSE;
+BOOL				has_services=FALSE;
 services_startup_t	services_startup;
-BOOL				run_web=TRUE;
+BOOL				run_web=FALSE;
 BOOL				web_running=FALSE;
 BOOL				web_stopped=FALSE;
+BOOL				has_web=FALSE;
 web_startup_t		web_startup;
 uint				thread_count=1;
 uint				socket_count=0;
@@ -121,50 +126,6 @@ static const char* prompt;
 
 static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
 							"\n"
-#ifndef NO_TELNET_SERVER
-							"Telnet server settings:\n\n"
-							"\ttf<node>   set first Telnet node number\n"
-							"\ttl<node>   set last Telnet node number\n"
-							"\ttp<port>   set Telnet server port\n"
-							"\trp<port>   set RLogin server port (and enable RLogin server)\n"
-							"\tr2         use second RLogin name in BSD RLogin\n"
-							"\tto<value>  set Telnet server options value (advanced)\n"
-							"\tta         enable auto-logon via IP address\n"
-							"\ttd         enable Telnet command debug output\n"
-							"\ttc         emabble sysop availability for chat\n"
-							"\ttq         disable QWK events\n"
-							"\tt-         disable Telnet/RLogin server\n"
-							"\n"
-#endif
-#ifndef NO_FTP_SERVER
-							"FTP server settings:\n"
-							"\n"
-							"\tfp<port>   set FTP server port\n"
-							"\tfo<value>  set FTP server options value (advanced)\n"
-							"\tf-         disable FTP server\n"
-							"\n"
-#endif
-#ifndef NO_MAIL_SERVER
-							"Mail server settings:\n"
-							"\n"
-							"\tms<port>   set SMTP server port\n"
-							"\tmp<port>   set POP3 server port\n"
-							"\tmr<addr>   set SMTP relay server (and enable SMTP relay)\n"
-							"\tmd<addr>   set DNS server address for MX-record lookups\n"
-							"\tmo<value>  set Mail server options value (advanced)\n"
-							"\tma         allow SMTP relays from authenticated users\n"
-							"\tm-         disable Mail server (entirely)\n"
-							"\tmp-        disable POP3 server\n"
-							"\tms-        disable SendMail thread\n"
-							"\n"
-#endif
-#ifndef NO_SERVICES
-							"Services settings:\n"
-							"\n"
-							"\tso<value>  set Services option value (advanced)\n"
-							"\ts-         disable Services (no services module)\n"
-							"\n"
-#endif
 							"Global settings:\n"
 							"\n"
 							"\thn[host]   set hostname for this instance\n"
@@ -187,6 +148,47 @@ static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
 #endif
 							"\tlt         use local timezone (do not force UTC/GMT)\n"
 							"\tdefaults   show default settings and options\n"
+							"\n"
+							;
+static const char* telnet_usage  = "Telnet server settings:\n\n"
+							"\ttf<node>   set first Telnet node number\n"
+							"\ttl<node>   set last Telnet node number\n"
+							"\ttp<port>   set Telnet server port\n"
+							"\trp<port>   set RLogin server port (and enable RLogin server)\n"
+							"\tr2         use second RLogin name in BSD RLogin\n"
+							"\tto<value>  set Telnet server options value (advanced)\n"
+							"\tta         enable auto-logon via IP address\n"
+							"\ttd         enable Telnet command debug output\n"
+							"\ttc         emabble sysop availability for chat\n"
+							"\ttq         disable QWK events\n"
+							"\tt-         disable Telnet/RLogin server\n"
+							"\n"
+							;
+static const char* ftp_usage  = "FTP server settings:\n"
+							"\n"
+							"\tfp<port>   set FTP server port\n"
+							"\tfo<value>  set FTP server options value (advanced)\n"
+							"\tf-         disable FTP server\n"
+							"\n"
+							;
+static const char* mail_usage  = "Mail server settings:\n"
+							"\n"
+							"\tms<port>   set SMTP server port\n"
+							"\tmp<port>   set POP3 server port\n"
+							"\tmr<addr>   set SMTP relay server (and enable SMTP relay)\n"
+							"\tmd<addr>   set DNS server address for MX-record lookups\n"
+							"\tmo<value>  set Mail server options value (advanced)\n"
+							"\tma         allow SMTP relays from authenticated users\n"
+							"\tm-         disable Mail server (entirely)\n"
+							"\tmp-        disable POP3 server\n"
+							"\tms-        disable SendMail thread\n"
+							"\n"
+							;
+static const char* services_usage  = "Services settings:\n"
+							"\n"
+							"\tso<value>  set Services option value (advanced)\n"
+							"\ts-         disable Services (no services module)\n"
+							"\n"
 							;
 
 static int lputs(char *str)
@@ -725,18 +727,12 @@ static void terminate(void)
 {
 	ulong count=0;
 
-#ifndef NO_TELNET_SERVER
 	bbs_terminate();
-#endif
-#ifndef NO_FTP_SERVER
 	ftp_terminate();
-#endif
 #ifndef NO_WEB_SERVER
 	web_terminate();
 #endif
-#ifndef NO_MAIL_SERVER
 	mail_terminate();
-#endif
 #ifndef NO_SERVICES
 	services_terminate();
 #endif
@@ -885,6 +881,33 @@ static void handle_sigs(void)  {
 #endif	/* __unix__ */
 
 /****************************************************************************/
+/* Displays appropriate usage info											*/
+/****************************************************************************/
+void show_usage(char *cmd)
+{
+	printf(usage,cmd);
+	if(has_bbs)
+		printf(telnet_usage);
+	if(has_ftp)
+		printf(ftp_usage);
+	if(has_mail)
+		printf(mail_usage);
+	if(has_services)
+		printf(services_usage);
+}
+
+int command_is(char *cmdline, char *cmd)
+{
+	char *p;
+
+	while((p=strcasestr(cmdline,cmd))!=NULL) {
+		if(*(p+strlen(cmd))==0 || !stricmp(".EXE",p+strlen(cmd)))
+			return 1;
+	}
+	return(0);
+}
+
+/****************************************************************************/
 /* Main Entry Point															*/
 /****************************************************************************/
 int main(int argc, char** argv)
@@ -910,6 +933,32 @@ int main(int argc, char** argv)
 	struct group*  gr_entry;
 	sigset_t			sigs;
 #endif
+
+	if(command_is(argv[0],"sbbs_ftp"))
+		run_ftp=has_ftp=TRUE;
+	else if (command_is(argv[0],"sbbs_mail"))
+		run_mail=has_mail=TRUE;
+	else if (command_is(argv[0],"sbbs_bbs"))
+		run_bbs=has_bbs=TRUE;
+#ifndef NO_SERVICES
+	else if (command_is(argv[0],"sbbs_srvc"))
+		run_services=has_services=TRUE;
+#endif
+#ifndef NO_WEB_SERVER
+	else if (command_is(argv[0],"sbbs_web"))
+		run_web=has_web=TRUE;
+#endif
+	else {
+		run_bbs=has_bbs=TRUE;
+		run_ftp=has_ftp=TRUE;
+		run_mail=has_mail=TRUE;
+#ifndef NO_SERVICES
+		run_services=has_services=TRUE;
+#endif
+#ifndef NO_WEB_SERVER
+		run_web=has_web=TRUE;
+#endif
+	}
 
 #ifdef __QNX__
 	setlocale( LC_ALL, "C-TRADITIONAL" );
@@ -1147,7 +1196,7 @@ int main(int argc, char** argv)
 						bbs_startup.last_node=atoi(arg);
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1161,7 +1210,7 @@ int main(int argc, char** argv)
 						bbs_startup.options|=BBS_OPT_USE_2ND_RLOGIN;
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1177,7 +1226,7 @@ int main(int argc, char** argv)
 						ftp_startup.options=strtoul(arg,NULL,0);
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1199,7 +1248,7 @@ int main(int argc, char** argv)
 								mail_startup.options|=MAIL_OPT_NO_SENDMAIL;
 								break;
 							default:
-								printf(usage,argv[0]);
+								show_usage(argv[0]);
 								return(0);
 						}
 						break;
@@ -1213,7 +1262,7 @@ int main(int argc, char** argv)
 								mail_startup.options&=~MAIL_OPT_ALLOW_POP3;
 								break;
 							default:
-								printf(usage,argv[0]);
+								show_usage(argv[0]);
 								return(0);
 						}
 						break;
@@ -1233,7 +1282,7 @@ int main(int argc, char** argv)
 						mail_startup.options|=MAIL_OPT_ALLOW_RELAY;
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1246,7 +1295,7 @@ int main(int argc, char** argv)
 						services_startup.options=strtoul(arg,NULL,0);
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1259,7 +1308,7 @@ int main(int argc, char** argv)
 						services_startup.options|=BBS_OPT_GET_IDENT;
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1280,7 +1329,7 @@ int main(int argc, char** argv)
 						printf("Setting hostname: %s\n",bbs_startup.host_name);
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1303,7 +1352,7 @@ int main(int argc, char** argv)
 #endif			
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1347,7 +1396,7 @@ int main(int argc, char** argv)
 #endif
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
@@ -1360,13 +1409,13 @@ int main(int argc, char** argv)
 						services_startup.options|=BBS_OPT_LOCAL_TIMEZONE;
 						break;
 					default:
-						printf(usage,argv[0]);
+						show_usage(argv[0]);
 						return(0);
 				}
 				break;
 
 			default:
-				printf(usage,argv[0]);
+				show_usage(argv[0]);
 				return(0);
 		}
 	}
@@ -1465,24 +1514,12 @@ int main(int argc, char** argv)
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
 #endif
 
-#ifdef NO_TELNET_SERVER
-	run_bbs=FALSE;
-#else
 	if(run_bbs)
 		_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
-#endif
-#ifdef NO_FTP_SERVER
-	run_ftp=FALSE;
-#else
 	if(run_ftp)
 		_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
-#endif
-#ifdef NO_MAIL_SERVER
-	run_mail=FALSE;
-#else
 	if(run_mail)
 		_beginthread((void(*)(void*))mail_server,0,&mail_startup);
-#endif
 #ifdef NO_SERVICES
 	run_services=FALSE;
 #else

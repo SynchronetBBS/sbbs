@@ -514,67 +514,26 @@ $(MSG2ANS): $(LIBODIR)/msg2ans.o
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $^
 
-# Single servers
-FTPCON_OBJS	= $(LIBODIR)/sbbsftp.o $(LIBODIR)/conwrap.o \
-		  $(LIBODIR)/sbbs_ini.o
-WEBCON_OBJS	= $(LIBODIR)/sbbsweb.o $(LIBODIR)/conwrap.o \
-		  $(LIBODIR)/sbbs_ini.o
-MAILCON_OBJS	= $(LIBODIR)/sbbsmail.o $(LIBODIR)/conwrap.o \
-		  $(LIBODIR)/sbbs_ini.o
-SRVCCON_OBJS	= $(LIBODIR)/sbbssrvc.o $(LIBODIR)/conwrap.o \
-		  $(LIBODIR)/sbbs_ini.o
-BBSCON_OBJS	= $(LIBODIR)/sbbs_bbs.o $(LIBODIR)/conwrap.o \
-		  $(LIBODIR)/sbbs_ini.o
+# "Single servers"
+$(SBBSWEB): $(SBBSCON)
+	@echo Copying $@ for no good reason
+	$(QUIET)cp $(SBBSCON) $@
 
-$(LIBODIR)/sbbsweb.o : sbbscon.c
-   ifndef bcc
-	@echo $(COMPILE_MSG) $<
-   endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES
+$(SBBSFTP): $(SBBSCON)
+	@echo Copying $@ for no good reason
+	$(QUIET)cp $(SBBSCON) $@
 
-$(LIBODIR)/sbbsftp.o : sbbscon.c
-   ifndef bcc
-	@echo $(COMPILE_MSG) $<
-   endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_TELNET_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+$(SBBSMAIL): $(SBBSCON)
+	@echo Copying $@ for no good reason
+	$(QUIET)cp $(SBBSCON) $@
 
-$(LIBODIR)/sbbsmail.o : sbbscon.c
-   ifndef bcc
-	@echo $(COMPILE_MSG) $<
-   endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+$(SBBSSRVC): $(SBBSCON)
+	@echo Copying $@ for no good reason
+	$(QUIET)cp $(SBBSCON) $@
 
-$(LIBODIR)/sbbssrvc.o : sbbscon.c
-   ifndef bcc
-	@echo $(COMPILE_MSG) $<
-   endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_WEB_SERVER
-
-$(LIBODIR)/sbbs_bbs.o : sbbscon.c
-   ifndef bcc
-	@echo $(COMPILE_MSG) $<
-   endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
-
-$(SBBSWEB): $(WEBCON_OBJS) $(SBBSLIB) $(WEBSRVR)
-	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -lwebsrvr -o $@ $(WEBCON_OBJS) $(SBBSLIB)
-
-$(SBBSFTP): $(FTPCON_OBJS) $(SBBSLIB) $(FTPSRVR)
-	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -lftpsrvr -o $@ $(FTPCON_OBJS) $(SBBSLIB)
-
-$(SBBSMAIL): $(MAILCON_OBJS) $(SBBSLIB) $(MAILSRVR)
-	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -lmailsrvr -o $@ $(MAILCON_OBJS) $(SBBSLIB)
-
-$(SBBSSRVC): $(SRVCCON_OBJS) $(SBBSLIB) $(SERVICES)
-	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -lservices -o $@ $(SRVCCON_OBJS) $(SBBSLIB)
-
-$(SBBS_BBS): $(BBSCON_OBJS) $(SBBSLIB)
-	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -o $@ $(BBSCON_OBJS) $(SBBSLIB)
+$(SBBS_BBS): $(SBBSCON)
+	@echo Copying $@ for no good reason
+	$(QUIET)cp $(SBBSCON) $@
 
 
 depend:
