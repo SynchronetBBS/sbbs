@@ -135,7 +135,7 @@ CloseEvent(xpevent_t event)
 }
 
 DWORD
-WaitEvent(xpevent_t event, DWORD ms)
+WaitForEvent(xpevent_t event, DWORD ms)
 {
 	DWORD	retval=WAIT_FAILED;
 	struct timespec abstime;

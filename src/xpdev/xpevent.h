@@ -52,7 +52,7 @@ xpevent_t	CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, void *na
 BOOL		SetEvent(xpevent_t event);
 BOOL		ResetEvent(xpevent_t event);
 BOOL		CloseEvent(xpevent_t event);
-DWORD		WaitEvent(xpevent_t event, DWORD ms);
+DWORD		WaitForEvent(xpevent_t event, DWORD ms);
 #if defined(__cplusplus)
 }
 #endif
