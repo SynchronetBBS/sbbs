@@ -360,7 +360,7 @@ int getdir(char* p, user_t* user)
 	int		dir;
 	int		lib;
 
-	sprintf(path,"%.*s",(int)sizeof(path)-1,p);
+	SAFECOPY(path,p);
 	p=path;
 
 	if(*p=='/') 
@@ -667,7 +667,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 		if(!strchr(startup->html_index_script,BACKSLASH))
 			sprintf(spath,"%s%s",scfg.exec_dir,startup->html_index_script);
 		else
-			sprintf(spath,"%.*s",sizeof(spath)-4,startup->html_index_script);
+			sprintf(spath,"%.*s",(int)sizeof(spath)-4,startup->html_index_script);
 		if(!strchr(spath,'.'))
 			strcat(spath,".js");
 
@@ -1713,7 +1713,7 @@ static void receive_thread(void* arg)
 
 			/* Desciption specified with DESC command? */
 			if(xfer.desc!=NULL && *xfer.desc!=0)	
-				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,xfer.desc);
+				SAFECOPY(f.desc,xfer.desc);
 
 			/* FILE_ID.DIZ support */
 			p=strrchr(f.name,'.');
@@ -1745,7 +1745,7 @@ static void receive_thread(void* arg)
 							for(i=0;desc[i];i++)	/* find approprate first char */
 								if(isalnum(desc[i]))
 									break;
-							sprintf(f.desc,"%.*s",LEN_FDESC,desc+i); 
+							SAFECOPY(f.desc,desc+i); 
 						}
 						close(file);
 						remove(tmp);
@@ -1755,7 +1755,7 @@ static void receive_thread(void* arg)
 			} /* FILE_ID.DIZ support */
 
 			if(f.desc[0]==0) 	/* no description given, use (long) filename */
-				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,getfname(xfer.filename));
+				SAFECOPY(f.desc,getfname(xfer.filename));
 
 			strcpy(f.uler,xfer.user->alias);
 			if(!addfiledat(&scfg,&f))
@@ -1954,7 +1954,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	xfer->user=user;
 	xfer->dir=dir;
 	xfer->desc=desc;
-	sprintf(xfer->filename,"%.*s",(int)sizeof(xfer->filename)-1,filename);
+	SAFECOPY(xfer->filename,filename);
 	if(receiving)
 		_beginthread(receive_thread,0,(void*)xfer);
 	else
@@ -1988,7 +1988,7 @@ void parsepath(char** pp, user_t* user, int* curlib, int* curdir)
 	int		dir=*curdir;
 	int		lib=*curlib;
 
-	sprintf(path,"%.*s",(int)sizeof(path)-1,*pp);
+	SAFECOPY(path,*pp);
 	p=path;
 
 	if(*p=='/') {
@@ -2078,7 +2078,7 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, int* curdir)
 	if((fp=fopen(aliasfile,"r"))==NULL) 
 		return(result);
 
-	sprintf(alias,"%.*s",(int)sizeof(alias)-1,fullalias);
+	SAFECOPY(alias,fullalias);
 	p=strrchr(alias+1,'/');
 	if(p) {
 		*p=0;
@@ -2139,7 +2139,7 @@ char* root_dir(char* path)
 	char*	p;
 	static char	root[MAX_PATH+1];
 
-	sprintf(root,"%.*s",(int)sizeof(root)-1,path);
+	SAFECOPY(root,path);
 
 	if(!strncmp(root,"\\\\",2)) {	/* network path */
 		p=strchr(root+2,'\\');
@@ -2352,8 +2352,8 @@ static void ctrl_thread(void* arg)
 	/* Initialize client display */
 	client.size=sizeof(client);
 	client.time=time(NULL);
-	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,host_ip);
-	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
+	SAFECOPY(client.addr,host_ip);
+	SAFECOPY(client.host,host_name);
 	client.port=ntohs(ftp.client_addr.sin_port);
 	client.protocol="FTP";
 	client.user="<unknown>";
@@ -2467,7 +2467,7 @@ static void ctrl_thread(void* arg)
 			p=cmd+5;
 			while(*p && *p<=' ') p++;
 			truncsp(p);
-			sprintf(user.alias,"%.*s",(int)sizeof(user.alias)-1,p);
+			SAFECOPY(user.alias,p);
 			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
 			if(!user.number && !stricmp(user.alias,"anonymous"))	
 				user.number=matchuser(&scfg,"guest",FALSE);
@@ -2482,7 +2482,7 @@ static void ctrl_thread(void* arg)
 			p=cmd+5;
 			while(*p && *p<=' ') p++;
 
-			sprintf(password,"%.*s",(int)sizeof(password)-1,p);
+			SAFECOPY(password,p);
 			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
 			if(!user.number) {
 				lprintf("%04d !UNKNOWN USER: %s",sock,user.alias);
@@ -2842,7 +2842,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				local_fsys=TRUE;
-				sprintf(local_dir,"%.*s",(int)sizeof(local_dir)-1,p);
+				SAFECOPY(local_dir,p);
 			}
 			sockprintf(sock,"250 %s file system mounted."
 				,local_fsys ? "Local" : "BBS");
@@ -3886,7 +3886,7 @@ static void ctrl_thread(void* arg)
 			if(*p==0) 
 				sockprintf(sock,"501 No file description given.");
 			else {
-				sprintf(desc,"%.*s",(int)sizeof(desc)-1,p);
+				SAFECOPY(desc,p);
 				sockprintf(sock,"200 File description set. Ready to STOR file.");
 			}
 			continue;
@@ -4046,7 +4046,7 @@ static void ctrl_thread(void* arg)
 						,sock, user.alias, p);
 					continue;
 				}
-				sprintf(local_dir,"%.*s",(int)sizeof(local_dir)-1,p);
+				SAFECOPY(local_dir,p);
 				local_fsys=TRUE;
 				sockprintf(sock,"250 CWD command successful (local file system mounted).");
 				lprintf("%04d %s mounted local file system", sock, user.alias);
@@ -4391,8 +4391,7 @@ void DLLCALL ftp_server(void* arg)
 
 #endif
 		/* Initial configuration and load from CNF files */
-		sprintf(scfg.ctrl_dir, "%.*s",(int)sizeof(scfg.ctrl_dir)-1
-    		,startup->ctrl_dir);
+		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);
 		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		if(!load_cfg(&scfg, NULL, TRUE, error)) {
@@ -4403,7 +4402,7 @@ void DLLCALL ftp_server(void* arg)
 		}
 
 		if(startup->host_name[0]==0)
-			sprintf(startup->host_name,"%.*s",sizeof(startup->host_name),scfg.sys_inetaddr);
+			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
 		if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&FTP_OPT_LOCAL_TIMEZONE)) { 
 			if(putenv("TZ=UTC0"))

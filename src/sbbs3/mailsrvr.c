@@ -610,7 +610,7 @@ static void pop3_thread(void* arg)
 			,sizeof(pop3.client_addr.sin_addr),AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
-		sprintf(host_name,"%.*s",(int)sizeof(host_name)-1,host->h_name);
+		SAFECOPY(host_name,host->h_name);
 	else
 		strcpy(host_name,"<no name>");
 
@@ -642,8 +642,8 @@ static void pop3_thread(void* arg)
 	/* Initialize client display */
 	client.size=sizeof(client);
 	client.time=time(NULL);
-	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,host_ip);
-	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
+	SAFECOPY(client.addr,host_ip);
+	SAFECOPY(client.host,host_name);
 	client.port=ntohs(pop3.client_addr.sin_port);
 	client.protocol="POP3";
 	client.user="<unknown>";
@@ -677,7 +677,7 @@ static void pop3_thread(void* arg)
 		}
 		p=buf+5;
 		while(*p && *p<=' ') p++;
-		sprintf(username,"%.*s",(int)sizeof(username)-1,p);
+		SAFECOPY(username,p);
 		sockprintf(socket,"+OK");
 		if(!sockgetrsp(socket,"PASS ",buf,sizeof(buf))) {
 			sockprintf(socket,"-ERR PASS command expected");
@@ -685,7 +685,7 @@ static void pop3_thread(void* arg)
 		}
 		p=buf+5;
 		while(*p && *p<=' ') p++;
-		sprintf(password,"%.*s",(int)sizeof(password)-1,p);
+		SAFECOPY(password,p);
 		user.number=matchuser(&scfg,username,FALSE /*sysop_alias*/);
 		if(!user.number) {
 			if(scfg.sys_misc&SM_ECHO_PW)
@@ -1106,7 +1106,7 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 
 	while(*p && *p<=' ') p++;
 	if(*p=='<') p++;		/* Skip '<' */
-	sprintf(addr,"%.*s",sizeof(addr)-1,p);
+	SAFECOPY(addr,p);
 	tp=strchr(addr,'>');
 	if(tp!=NULL) *tp=0;
 
@@ -1244,7 +1244,7 @@ static void smtp_thread(void* arg)
 			,sizeof(smtp.client_addr.sin_addr),AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
-		sprintf(host_name,"%.*s",(int)sizeof(host_name)-1,host->h_name);
+		SAFECOPY(host_name,host->h_name);
 	else
 		strcpy(host_name,"<no name>");
 
@@ -1341,8 +1341,8 @@ static void smtp_thread(void* arg)
 	/* Initialize client display */
 	client.size=sizeof(client);
 	client.time=time(NULL);
-	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,host_ip);
-	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
+	SAFECOPY(client.addr,host_ip);
+	SAFECOPY(client.host,host_name);
 	client.port=ntohs(smtp.client_addr.sin_port);
 	client.protocol="SMTP";
 	client.user="<unknown>";
@@ -1697,7 +1697,7 @@ static void smtp_thread(void* arg)
 					p++;
 					tp=strrchr(p,'>');
 					if(tp) *tp=0;
-					sprintf(rcpt_name,"%.*s",sizeof(rcpt_name)-1,p);
+					SAFECOPY(rcpt_name,p);
 				}
 				smb_hfield(&msg, RFC822TO, (ushort)strlen(p), p);
 				continue;
@@ -1723,11 +1723,11 @@ static void smtp_thread(void* arg)
 					p++;
 					tp=strchr(p,'>');
 					if(tp) *tp=0;
-					sprintf(sender_addr,"%.*s",(int)sizeof(sender_addr)-1,p);
+					SAFECOPY(sender_addr,p);
 				} else {
 					p=buf+5;
 					while(*p && *p<=' ') p++;
-					sprintf(sender_addr,"%.*s",(int)sizeof(sender_addr)-1,p);
+					SAFECOPY(sender_addr,p);
 				}
 			
 				p=buf+5;
@@ -1742,7 +1742,7 @@ static void smtp_thread(void* arg)
 					tp=strchr(p,'<');
 				if(tp) *tp=0;
 				truncsp(p);
-				sprintf(sender,"%.*s",(int)sizeof(sender)-1,p);
+				SAFECOPY(sender,p);
 				continue;
 			}
 			if(!strnicmp(buf, "DATE:",5)) {
@@ -1770,7 +1770,7 @@ static void smtp_thread(void* arg)
 		if(!strnicmp(buf,"HELO",4)) {
 			p=buf+4;
 			while(*p && *p<=' ') p++;
-			sprintf(hello_name,"%.*s",(int)sizeof(hello_name)-1,p);
+			SAFECOPY(hello_name,p);
 			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
 			esmtp=FALSE;
 			state=SMTP_STATE_HELO;
@@ -1782,7 +1782,7 @@ static void smtp_thread(void* arg)
 		if(!strnicmp(buf,"EHLO",4)) {
 			p=buf+4;
 			while(*p && *p<=' ') p++;
-			sprintf(hello_name,"%.*s",(int)sizeof(hello_name)-1,p);
+			SAFECOPY(hello_name,p);
 			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
@@ -1838,7 +1838,7 @@ static void smtp_thread(void* arg)
 			if(!chk_email_addr(socket,p,host_name,host_ip,NULL))
 				break;
 			while(*p && *p<=' ') p++;
-			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
+			SAFECOPY(reverse_path,p);
 
 			/* Update client display */
 			client.user=reverse_path;
@@ -1898,7 +1898,7 @@ static void smtp_thread(void* arg)
 
 			p=buf+8;
 			while(*p && *p<=' ') p++;
-			sprintf(str,"%.*s",(int)sizeof(str)-1,p);
+			SAFECOPY(str,p);
 			p=str;
 
 			if(*p=='<') p++;				/* Skip '<' */
@@ -1906,7 +1906,7 @@ static void smtp_thread(void* arg)
 			if(tp!=NULL) *tp=0;
 
 			rcpt_name[0]=0;
-			sprintf(rcpt_addr,"%.*s",sizeof(rcpt_addr)-1,p);
+			SAFECOPY(rcpt_addr,p);
 
 			/* Check recipient counter */
 			if(rcpt_count>=MAX_RECIPIENTS) {
@@ -1940,7 +1940,7 @@ static void smtp_thread(void* arg)
 				
 				/* RELAY */
 				dest_port=server_addr.sin_port;
-				sprintf(dest_host,"%.*s",sizeof(dest_host),tp+1);
+				SAFECOPY(dest_host,tp+1);
 				cp=strrchr(dest_host,':');
 				if(cp!=NULL) {
 					*cp=0;
@@ -2022,7 +2022,7 @@ static void smtp_thread(void* arg)
 				if(!usernum) { /* RX by "real name", "real.name", or "sysop.alias" */
 					
 					/* convert "user.name" to "user name" */
-					sprintf(rcpt_name,"%.*s",sizeof(rcpt_name)-1,p);
+					SAFECOPY(rcpt_name,p);
 					for(tp=rcpt_name;*tp;tp++)	
 						if(*tp=='.') *tp=' ';
 
@@ -2761,8 +2761,7 @@ void DLLCALL mail_server(void* arg)
 			,ctime(&t),startup->options);
 
 		/* Initial configuration and load from CNF files */
-		sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
-    		,startup->ctrl_dir);
+		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
 		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		if(!load_cfg(&scfg, NULL, TRUE, error)) {
@@ -2773,7 +2772,7 @@ void DLLCALL mail_server(void* arg)
 		}
 
 		if(startup->host_name[0]==0)
-			sprintf(startup->host_name,"%.*s",sizeof(startup->host_name),scfg.sys_inetaddr);
+			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
 		if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&MAIL_OPT_LOCAL_TIMEZONE)) {
 			if(putenv("TZ=UTC0"))
