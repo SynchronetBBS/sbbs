@@ -75,7 +75,7 @@ extern "C" {
 
 #else
 
-	#warning "Need semaphore wrappers."
+	#error "Need semaphore wrappers."
 
 #endif
 
