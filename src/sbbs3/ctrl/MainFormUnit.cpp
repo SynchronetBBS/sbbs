@@ -602,7 +602,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     char* p;
     if((p=getenv("SBBSCTRL"))!=NULL)
         CtrlDirectory=p;
-    char ch=*lastchar(CtrlDirectory);
+    char ch=*lastchar(CtrlDirectory.c_str());
     if(ch!='\\' && ch!='/')
         CtrlDirectory+="\\";
 
