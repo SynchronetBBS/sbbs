@@ -149,7 +149,7 @@ SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj \
 	 $(LIBODIR)\crc16.obj
 
 # FIXSMB Utility
-$(FIXSMB): fixsmb.c $(SMBLIB) $(LIBODIR)\str_util.obj
+$(FIXSMB): fixsmb.c $(SMBLIB) $(LIBODIR)\str_util.obj $(LIBODIR)\dirwrap.obj
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
 

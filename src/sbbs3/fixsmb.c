@@ -42,6 +42,8 @@
 
 #include "sbbs.h"
 
+smb_t smb;
+
 int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
 {
 	return(idx1->number - idx2->number);
@@ -83,23 +85,29 @@ void sort_index(smb_t* smb)
 	printf("\n");
 }
 
+void unlock_mail(void)
+{
+	int i;
+	if((i=smb_unlock(&smb))!=0)
+		printf("smb_unlock returned %d: %s\n",i,smb.last_error);
+}
 
 char *usage="usage: fixsmb [-renumber] <smb_file>\n";
 
 int main(int argc, char **argv)
 {
-	char		str[512],c;
+	char*		p;
+	char		str[MAX_PATH+1],c;
 	char		revision[16];
 	int 		i,w;
 	ulong		l,length,size,n;
 	BOOL		renumber=FALSE;
-	smb_t		smb;
 	smbmsg_t	msg;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-	printf("\nFIXSMB v2.00-%s (rev %s) - Rebuild Synchronet Message Base Index\n\n"
-		,PLATFORM_DESC,revision);
+	printf("\nFIXSMB v2.01-%s (rev %s) SMBLIB %s - Rebuild Synchronet Message Base\n\n"
+		,PLATFORM_DESC,revision,smb_lib_ver());
 
 	memset(&smb,0,sizeof(smb));
 
@@ -111,6 +119,9 @@ int main(int argc, char **argv)
 			SAFECOPY(smb.file,argv[i]);
 	}
 
+	if((p=getfext(smb.file))!=NULL && stricmp(p,".shd")==0)
+		*p=0;	/* Chop off .shd extension, if supplied on command-line */
+
 	if(!smb.file[0]) {
 		printf(usage);
 		exit(1); 
@@ -120,6 +131,13 @@ int main(int argc, char **argv)
 		printf("smb_open returned %d: %s\n",i,smb.last_error);
 		exit(1); 
 	}
+
+	if((i=smb_lock(&smb))!=0) {
+		printf("smb_lock returned %d: %s\n",i,smb.last_error);
+		exit(1);
+	}
+
+	atexit(unlock_mail);
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
