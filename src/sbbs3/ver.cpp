@@ -73,6 +73,13 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
+#ifdef JAVASCRIPT
+
+	center((char *)JS_GetImplementationVersion());
+	CRLF;
+
+#endif
+
 #if defined(_WINSOCKAPI_)
 
 	center(WSAData.szDescription);
