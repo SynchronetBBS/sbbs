@@ -147,7 +147,7 @@ CCPRE	=	bcc
 LD		=	ilink32
 OUTPUT	=	-o
 LOUTPUT	=	$(OUTPUT)
-CFLAGS	=	-n$(LIBODIR) -WM -q 
+CFLAGS	=	-WM -q 
 LDFLAGS	=	$(CFLAGS)
 CFLAGS  =	$(CFLAGS) -M -WD -WM -X-
 !ifdef DEBUG
@@ -193,16 +193,16 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # Implicit C Compile Rule
 {.}.c${OBJODIR}$(OFILE):
-	@$(CC) $(CFLAGS) $(CCFLAGS) -c $< $(OUTPUT)$@
+	@$(CC) $(CFLAGS) $(CCFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
 
 # Implicit C++ Compile Rule
 {.}.cpp{OBJODIR}$(OFILE):
-	@$(CC) $(CFLAGS) $(CXXFLAGS) -c $< $(OUTPUT)$@
+	@$(CC) $(CFLAGS) $(CXXFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
 
 # Implicit MT C Compile Rule
 {.}.c{MTOBJODIR}$(OFILE):
-	@$(CC) $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -c $< $(OUTPUT)$@
+	@$(CC) $(CFLAGS) $(CCFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
 
 # Implicit MT C++ Compile Rule
 {.}.cpp{MTOBJODIR}$(OFILE):
-	@$(CC) $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -c $< $(OUTPUT)$@
+	@$(CC) $(CFLAGS) $(CXXFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
