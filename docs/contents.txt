@@ -1,0 +1,36 @@
+		  Synchronet Version 2.2 Documentation Directory
+                                Table of Contents
+
+The following files should be located in the DOCS directory off of your main
+BBS directory (example: C:\SBBS\DOCS).
+
+CONTENTS TXT	This file
+SBBS	 LST	List of public access Synchronet BBSs sorted by phone number
+ORDER	 TXT	Purchase order form for Synchronet v2.2
+VERSIONS HST    History of Synchronet package versions and release dates
+VERSIONS TXT	Versions of utilities included with this Synchronet package
+USER	 DOC	Synchronet User Manual (exported to ASCII)
+SYSOP	 DOC	Synchronet Sysop Manual
+BAJA	 DOC	Baja compiler/langauge documentation
+BAJA_200 NEW	Changes made in Baja version 2 (and incompatibility reference)
+FILES	 REF	Reference for all Synchronet data/config files
+SBBSECHO DOC	FidoNet EchoMail import/export (toss/scan) documentation
+MAILER	 BAT	Batch file for using Synchronet with FrontDoor/InterMail
+EXEBBS	 BAT	Batch file for using Synchronet with FrontDoor/InterMail
+QEMM	 DOC	Tips on keeping QEMM from using memory it shouldn't (crashing)
+SVDMANSI DOC	Documentation for OS/2 ANSI replacement
+USERCOM  DOC	Documentation for USER.COM log search utility
+TEXT210A DIF	TEXT.DAT changes from v2.00  to v2.1x
+TEXT220A DIF	TEXT.DAT changes from v2.1x  to v2.20a
+TEXT220B DIF	TEXT.DAT changes from v2.20a to v2.20b
+V200A    NEW    New features introduced in v2.00a   
+V210A    NEW    New features introduced in v2.10a
+V211A    NEW    New features introduced in v2.11a
+V220A	 NEW	New features introduced in v2.20a
+SBBS	 HST	Development history of Synchronet version 2
+
+Third Party:
+
+SYNCEDIT DOC 	Documentation for SyncEdit external editor
+REGISTER FRM 	Registration (order) form for SyncEdit
+CVT2SBBS TXT    Information on how to convert previous BBS user data to SBBS

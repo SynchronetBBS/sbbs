@@ -1,0 +1,44 @@
+Domain Entertainment User Data Conversion Utilities for Synchronet BBS Software
+===============================================================================
+
+If you are considering switching from another BBS package to Synchronet, and
+already have an active user database, you may want to considering purchasing
+one of our user data conversion utilities. Domain Entertainment currently 
+has conversion programs for:
+
+GAP             v6.xx
+PCBoard		v14.x
+Searchlight	v2.xx
+SpitFire        v2.xx
+SpitFire        v3.xx
+Wildcat         v2.xx
+Wildcat         v3.xx
+WWIV 		v4.22
+Telegard	v2.7x
+Virtual BBS	v6.xx
+QuickBBS	v2.76
+RemoteAccess	v1.xx
+RemoteAccess	v2.xx
+SuperBBS	v1.xx
+UltraBBS	v2.xx
+Maximus		v2.xx
+RBBS		v17.x
+RoboBoard	v1.xx
+TriBBS		v3.xx
+TriBBS		v5.xx
+TurBoard	v2.xx
+Renegade	v1.xx
+
+at the low price of $19.95. Contact Digital Dynamics for ordering one of our
+conversion programs along with your copy of Synchronet!
+
+Note: These conversion programs are developed by Domain Entertainment, not
+      Digital Dynamics (makers of Synchronet). Digital Dynamics does resale
+      the converters (and other Domain Products) for your convenience when
+      ordering Synchronet.
+
+- Look for more formats to be supported in the future.
+
+Allen (King Drafus)
+Domain Entertainment
+BBS: 714-521-9439 9600+
