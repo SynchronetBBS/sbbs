@@ -166,257 +166,272 @@ void sbbs_read_ini(
 	ctrl_dir=iniGetString(fp,section,"CtrlDirectory",nulstr);
 	if(*ctrl_dir) {
 		backslash(ctrl_dir);
-		SAFECOPY(bbs->ctrl_dir,ctrl_dir);
-		SAFECOPY(ftp->ctrl_dir,ctrl_dir);
-		SAFECOPY(mail->ctrl_dir,ctrl_dir);
-		SAFECOPY(services->ctrl_dir,ctrl_dir);
+		if(bbs!=NULL)		SAFECOPY(bbs->ctrl_dir,ctrl_dir);
+		if(ftp!=NULL)		SAFECOPY(ftp->ctrl_dir,ctrl_dir);
+		if(mail!=NULL)		SAFECOPY(mail->ctrl_dir,ctrl_dir);
+		if(services!=NULL)	SAFECOPY(services->ctrl_dir,ctrl_dir);
 	}
 	temp_dir=iniGetString(fp,section,"TempDirectory",nulstr);
 	if(*temp_dir) {
 		backslash(temp_dir);
-		SAFECOPY(bbs->temp_dir,temp_dir);
-		SAFECOPY(ftp->temp_dir,temp_dir);
+		if(bbs!=NULL)		SAFECOPY(bbs->temp_dir,temp_dir);
+		if(ftp!=NULL)		SAFECOPY(ftp->temp_dir,temp_dir);
 	}
 
 	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr));
 	js_max_bytes=iniGetInteger(fp,section,"JavaScriptMaxBytes",0);
 																		
 	/***********************************************************************/
-	section = "BBS";
+	if(bbs!=NULL) {
 
-	*run_bbs
-		=iniGetBool(fp,section,"AutoStart",TRUE);
+		section = "BBS";
 
-	bbs->telnet_interface
-		=iniGetIpAddress(fp,section,"TelnetInterface",INADDR_ANY);
-	bbs->telnet_port
-		=iniGetShortInt(fp,section,"TelnetPort",IPPORT_TELNET);
+		*run_bbs
+			=iniGetBool(fp,section,"AutoStart",TRUE);
 
-	bbs->rlogin_interface
-		=iniGetIpAddress(fp,section,"RLoginInterface",INADDR_ANY);
-	bbs->rlogin_port
-		=iniGetShortInt(fp,section,"RLoginPort",513);
+		bbs->telnet_interface
+			=iniGetIpAddress(fp,section,"TelnetInterface",INADDR_ANY);
+		bbs->telnet_port
+			=iniGetShortInt(fp,section,"TelnetPort",IPPORT_TELNET);
 
-	bbs->first_node
-		=iniGetShortInt(fp,section,"FirstNode",1);
-	bbs->last_node
-		=iniGetShortInt(fp,section,"LastNode",4);
+		bbs->rlogin_interface
+			=iniGetIpAddress(fp,section,"RLoginInterface",INADDR_ANY);
+		bbs->rlogin_port
+			=iniGetShortInt(fp,section,"RLoginPort",513);
 
-	bbs->outbuf_highwater_mark
-		=iniGetShortInt(fp,section,"OutbufHighwaterMark",1024);
-	bbs->outbuf_drain_timeout
-		=iniGetShortInt(fp,section,"OutbufDrainTimeout",10);
+		bbs->first_node
+			=iniGetShortInt(fp,section,"FirstNode",1);
+		bbs->last_node
+			=iniGetShortInt(fp,section,"LastNode",4);
 
-	bbs->xtrn_polls_before_yield
-		=iniGetInteger(fp,section,"ExternalYield",10);
-	bbs->js_max_bytes
-		=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+		bbs->outbuf_highwater_mark
+			=iniGetShortInt(fp,section,"OutbufHighwaterMark",1024);
+		bbs->outbuf_drain_timeout
+			=iniGetShortInt(fp,section,"OutbufDrainTimeout",10);
 
-	SAFECOPY(bbs->host_name
-		,iniGetString(fp,section,"HostName",host_name));
+		bbs->xtrn_polls_before_yield
+			=iniGetInteger(fp,section,"ExternalYield",10);
+		bbs->js_max_bytes
+			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
-	/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
-#if defined(__FreeBSD__)
-	default_term_ansi="cons25";
-#else
-	default_term_ansi="pc3";
-#endif
+		SAFECOPY(bbs->host_name
+			,iniGetString(fp,section,"HostName",host_name));
 
-	SAFECOPY(bbs->xtrn_term_ansi
-		,iniGetString(fp,section,"ExternalTermANSI",default_term_ansi));
-	SAFECOPY(bbs->xtrn_term_dumb
-		,iniGetString(fp,section,"ExternalTermDumb","dumb"));
+		/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
+	#if defined(__FreeBSD__)
+		default_term_ansi="cons25";
+	#else
+		default_term_ansi="pc3";
+	#endif
 
-#if defined(__FreeBSD__)
-	default_dosemu_path="/usr/bin/doscmd";
-#else
-	default_dosemu_path="/usr/bin/dosemu.bin";
-#endif
+		SAFECOPY(bbs->xtrn_term_ansi
+			,iniGetString(fp,section,"ExternalTermANSI",default_term_ansi));
+		SAFECOPY(bbs->xtrn_term_dumb
+			,iniGetString(fp,section,"ExternalTermDumb","dumb"));
 
-	SAFECOPY(bbs->dosemu_path
-		,iniGetString(fp,section,"DOSemuPath",default_dosemu_path));
+	#if defined(__FreeBSD__)
+		default_dosemu_path="/usr/bin/doscmd";
+	#else
+		default_dosemu_path="/usr/bin/dosemu.bin";
+	#endif
 
-	SAFECOPY(bbs->answer_sound
-		,iniGetString(fp,section,"AnswerSound",nulstr));
-	SAFECOPY(bbs->hangup_sound
-		,iniGetString(fp,section,"HangupSound",nulstr));
+		SAFECOPY(bbs->dosemu_path
+			,iniGetString(fp,section,"DOSemuPath",default_dosemu_path));
 
-	bbs->options
-		=iniGetBitField(fp,section,"Options",bbs_options
-			,BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE);
+		SAFECOPY(bbs->answer_sound
+			,iniGetString(fp,section,"AnswerSound",nulstr));
+		SAFECOPY(bbs->hangup_sound
+			,iniGetString(fp,section,"HangupSound",nulstr));
 
-	/***********************************************************************/
-	section = "FTP";
-
-	*run_ftp
-		=iniGetBool(fp,section,"AutoStart",TRUE);
-
-	ftp->interface_addr
-		=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
-	ftp->port
-		=iniGetShortInt(fp,section,"Port",ftp->port);
-	ftp->max_clients
-		=iniGetShortInt(fp,section,"MaxClients",10);
-	ftp->max_inactivity
-		=iniGetShortInt(fp,section,"MaxInactivity",300);	/* seconds */
-	ftp->qwk_timeout
-		=iniGetShortInt(fp,section,"QwkTimeout",600);		/* seconds */
-	ftp->js_max_bytes
-		=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
-
-	SAFECOPY(ftp->host_name
-		,iniGetString(fp,section,"HostName",host_name));
-
-	SAFECOPY(ftp->index_file_name
-		,iniGetString(fp,section,"IndexFileName","00index"));
-	SAFECOPY(ftp->html_index_file
-		,iniGetString(fp,section,"HtmlIndexFile","00index.html"));
-	SAFECOPY(ftp->html_index_script
-		,iniGetString(fp,section,"HtmlIndexScript","ftp-html.js"));
-
-	SAFECOPY(ftp->answer_sound
-		,iniGetString(fp,section,"AnswerSound",nulstr));
-	SAFECOPY(ftp->hangup_sound
-		,iniGetString(fp,section,"HangupSound",nulstr));
-	SAFECOPY(ftp->hack_sound
-		,iniGetString(fp,section,"HackAttemptSound",nulstr));
-
-	ftp->options
-		=iniGetBitField(fp,section,"Options",ftp_options
-			,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
+		bbs->options
+			=iniGetBitField(fp,section,"Options",bbs_options
+				,BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE);
+	}
 
 	/***********************************************************************/
-	section = "Mail";
+	if(ftp!=NULL) {
 
-	*run_mail
-		=iniGetBool(fp,section,"AutoStart",TRUE);
+		section = "FTP";
 
-	mail->interface_addr
-		=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
-	mail->smtp_port
-		=iniGetShortInt(fp,section,"SMTPPort",IPPORT_SMTP);
-	mail->pop3_port
-		=iniGetShortInt(fp,section,"POP3Port",IPPORT_POP3);
-	mail->relay_port
-		=iniGetShortInt(fp,section,"RelayPort",IPPORT_SMTP);
-	mail->max_clients
-		=iniGetShortInt(fp,section,"MaxClients",10);
-	mail->max_inactivity
-		=iniGetShortInt(fp,section,"MaxInactivity",120);		/* seconds */
-	mail->max_delivery_attempts
-		=iniGetShortInt(fp,section,"MaxDeliveryAttempts",50);
-	mail->rescan_frequency
-		=iniGetShortInt(fp,section,"RescanFrequency",3600);	/* 60 minutes */
-	mail->lines_per_yield
-		=iniGetShortInt(fp,section,"LinesPerYield",10);
-	mail->max_recipients
-		=iniGetShortInt(fp,section,"MaxRecipients",100);
-	mail->max_msg_size
-		=iniGetInteger(fp,section,"MaxMsgSize",10*1024*1024);	/* 10MB */
+		*run_ftp
+			=iniGetBool(fp,section,"AutoStart",TRUE);
 
-	SAFECOPY(mail->host_name
-		,iniGetString(fp,section,"HostName",host_name));
+		ftp->interface_addr
+			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
+		ftp->port
+			=iniGetShortInt(fp,section,"Port",ftp->port);
+		ftp->max_clients
+			=iniGetShortInt(fp,section,"MaxClients",10);
+		ftp->max_inactivity
+			=iniGetShortInt(fp,section,"MaxInactivity",300);	/* seconds */
+		ftp->qwk_timeout
+			=iniGetShortInt(fp,section,"QwkTimeout",600);		/* seconds */
+		ftp->js_max_bytes
+			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
-	SAFECOPY(mail->relay_server
-		,iniGetString(fp,section,"RelayServer",mail->relay_server));
-	SAFECOPY(mail->dns_server
-		,iniGetString(fp,section,"DNSServer",mail->dns_server));
+		SAFECOPY(ftp->host_name
+			,iniGetString(fp,section,"HostName",host_name));
 
-	SAFECOPY(mail->default_user
-		,iniGetString(fp,section,"DefaultUser",nulstr));
+		SAFECOPY(ftp->index_file_name
+			,iniGetString(fp,section,"IndexFileName","00index"));
+		SAFECOPY(ftp->html_index_file
+			,iniGetString(fp,section,"HtmlIndexFile","00index.html"));
+		SAFECOPY(ftp->html_index_script
+			,iniGetString(fp,section,"HtmlIndexScript","ftp-html.js"));
 
-	SAFECOPY(mail->dnsbl_hdr
-		,iniGetString(fp,section,"DNSBlacklistHeader","X-DNSBL"));
-	SAFECOPY(mail->dnsbl_tag
-		,iniGetString(fp,section,"DNSBlacklistSubject","SPAM"));
+		SAFECOPY(ftp->answer_sound
+			,iniGetString(fp,section,"AnswerSound",nulstr));
+		SAFECOPY(ftp->hangup_sound
+			,iniGetString(fp,section,"HangupSound",nulstr));
+		SAFECOPY(ftp->hack_sound
+			,iniGetString(fp,section,"HackAttemptSound",nulstr));
 
-	SAFECOPY(mail->pop3_sound
-		,iniGetString(fp,section,"POP3Sound",nulstr));
-	SAFECOPY(mail->inbound_sound
-		,iniGetString(fp,section,"InboundSound",nulstr));
-	SAFECOPY(mail->outbound_sound
-		,iniGetString(fp,section,"OutboundSound",nulstr));
-
-	SAFECOPY(mail->proc_cfg_file
-		,iniGetString(fp,section,"ProcessConfigFile","mailproc.cfg"));
-
-	mail->options
-		=iniGetBitField(fp,section,"Options",mail_options
-			,MAIL_OPT_ALLOW_POP3);
+		ftp->options
+			=iniGetBitField(fp,section,"Options",ftp_options
+				,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
+	}
 
 	/***********************************************************************/
-	section = "Services";
+	if(mail!=NULL) {
 
-	*run_services
-		=iniGetBool(fp,section,"AutoStart",TRUE);
+		section = "Mail";
 
-	services->interface_addr
-		=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
+		*run_mail
+			=iniGetBool(fp,section,"AutoStart",TRUE);
 
-	services->js_max_bytes
-		=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+		mail->interface_addr
+			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
+		mail->smtp_port
+			=iniGetShortInt(fp,section,"SMTPPort",IPPORT_SMTP);
+		mail->pop3_port
+			=iniGetShortInt(fp,section,"POP3Port",IPPORT_POP3);
+		mail->relay_port
+			=iniGetShortInt(fp,section,"RelayPort",IPPORT_SMTP);
+		mail->max_clients
+			=iniGetShortInt(fp,section,"MaxClients",10);
+		mail->max_inactivity
+			=iniGetShortInt(fp,section,"MaxInactivity",120);		/* seconds */
+		mail->max_delivery_attempts
+			=iniGetShortInt(fp,section,"MaxDeliveryAttempts",50);
+		mail->rescan_frequency
+			=iniGetShortInt(fp,section,"RescanFrequency",3600);	/* 60 minutes */
+		mail->lines_per_yield
+			=iniGetShortInt(fp,section,"LinesPerYield",10);
+		mail->max_recipients
+			=iniGetShortInt(fp,section,"MaxRecipients",100);
+		mail->max_msg_size
+			=iniGetInteger(fp,section,"MaxMsgSize",10*1024*1024);	/* 10MB */
 
-	SAFECOPY(services->host_name
-		,iniGetString(fp,section,"HostName",host_name));
+		SAFECOPY(mail->host_name
+			,iniGetString(fp,section,"HostName",host_name));
 
-	SAFECOPY(services->cfg_file
-		,iniGetString(fp,section,"ConfigFile","services.cfg"));
+		SAFECOPY(mail->relay_server
+			,iniGetString(fp,section,"RelayServer",mail->relay_server));
+		SAFECOPY(mail->dns_server
+			,iniGetString(fp,section,"DNSServer",mail->dns_server));
 
-	SAFECOPY(services->answer_sound
-		,iniGetString(fp,section,"AnswerSound",nulstr));
-	SAFECOPY(services->hangup_sound
-		,iniGetString(fp,section,"HangupSound",nulstr));
+		SAFECOPY(mail->default_user
+			,iniGetString(fp,section,"DefaultUser",nulstr));
 
-	services->options
-		=iniGetBitField(fp,section,"Options",service_options
-			,BBS_OPT_NO_HOST_LOOKUP);
+		SAFECOPY(mail->dnsbl_hdr
+			,iniGetString(fp,section,"DNSBlacklistHeader","X-DNSBL"));
+		SAFECOPY(mail->dnsbl_tag
+			,iniGetString(fp,section,"DNSBlacklistSubject","SPAM"));
+
+		SAFECOPY(mail->pop3_sound
+			,iniGetString(fp,section,"POP3Sound",nulstr));
+		SAFECOPY(mail->inbound_sound
+			,iniGetString(fp,section,"InboundSound",nulstr));
+		SAFECOPY(mail->outbound_sound
+			,iniGetString(fp,section,"OutboundSound",nulstr));
+
+		SAFECOPY(mail->proc_cfg_file
+			,iniGetString(fp,section,"ProcessConfigFile","mailproc.cfg"));
+
+		mail->options
+			=iniGetBitField(fp,section,"Options",mail_options
+				,MAIL_OPT_ALLOW_POP3);
+	}
 
 	/***********************************************************************/
-	section = "Web";
+	if(services!=NULL) {
 
-	*run_web
-		=iniGetBool(fp,section,"AutoStart",FALSE);
+		section = "Services";
 
-	web->interface_addr
-		=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
-	web->port
-		=iniGetShortInt(fp,section,"Port",IPPORT_HTTP);
-	web->js_max_bytes
-		=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+		*run_services
+			=iniGetBool(fp,section,"AutoStart",TRUE);
 
-	SAFECOPY(web->host_name
-		,iniGetString(fp,section,"HostName",host_name));
+		services->interface_addr
+			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
 
-	SAFECOPY(web->root_dir
-		,iniGetString(fp,section,"RootDirectory","../html"));
-	SAFECOPY(web->error_dir
-		,iniGetString(fp,section,"ErrorDirectory","../html/error"));
+		services->js_max_bytes
+			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
-	iniFreeStringList(web->index_file_name);
-	web->index_file_name
-		=iniGetStringList(fp,section,"IndexFileNames", "," ,"index.html,index.ssjs");
-	iniFreeStringList(web->cgi_ext);
-	web->cgi_ext
-		=iniGetStringList(fp,section,"CGIExtensions", "," ,".cgi");
-	SAFECOPY(web->ssjs_ext
-		,iniGetString(fp,section,"JavaScriptExtension",".ssjs"));
+		SAFECOPY(services->host_name
+			,iniGetString(fp,section,"HostName",host_name));
 
-	web->max_inactivity
-		=iniGetShortInt(fp,section,"MaxInactivity",120);		/* seconds */
-	web->max_cgi_inactivity
-		=iniGetShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
+		SAFECOPY(services->cfg_file
+			,iniGetString(fp,section,"ConfigFile","services.cfg"));
+
+		SAFECOPY(services->answer_sound
+			,iniGetString(fp,section,"AnswerSound",nulstr));
+		SAFECOPY(services->hangup_sound
+			,iniGetString(fp,section,"HangupSound",nulstr));
+
+		services->options
+			=iniGetBitField(fp,section,"Options",service_options
+				,BBS_OPT_NO_HOST_LOOKUP);
+	}
+
+	/***********************************************************************/
+	if(web!=NULL) {
+
+		section = "Web";
+
+		*run_web
+			=iniGetBool(fp,section,"AutoStart",FALSE);
+
+		web->interface_addr
+			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
+		web->port
+			=iniGetShortInt(fp,section,"Port",IPPORT_HTTP);
+		web->js_max_bytes
+			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+
+		SAFECOPY(web->host_name
+			,iniGetString(fp,section,"HostName",host_name));
+
+		SAFECOPY(web->root_dir
+			,iniGetString(fp,section,"RootDirectory","../html"));
+		SAFECOPY(web->error_dir
+			,iniGetString(fp,section,"ErrorDirectory","../html/error"));
+
+		iniFreeStringList(web->index_file_name);
+		web->index_file_name
+			=iniGetStringList(fp,section,"IndexFileNames", "," ,"index.html,index.ssjs");
+		iniFreeStringList(web->cgi_ext);
+		web->cgi_ext
+			=iniGetStringList(fp,section,"CGIExtensions", "," ,".cgi");
+		SAFECOPY(web->ssjs_ext
+			,iniGetString(fp,section,"JavaScriptExtension",".ssjs"));
+
+		web->max_inactivity
+			=iniGetShortInt(fp,section,"MaxInactivity",120);		/* seconds */
+		web->max_cgi_inactivity
+			=iniGetShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
 
 
-#ifdef __unix__
-	default_cgi_temp = "/tmp";
-#else
-	if((default_cgi_temp = getenv("TEMP")) == NULL)
-		default_cgi_temp = nulstr;
-#endif
-	SAFECOPY(web->cgi_temp_dir
-		,iniGetString(fp,section,"CGITempDirectory",default_cgi_temp));
+	#ifdef __unix__
+		default_cgi_temp = "/tmp";
+	#else
+		if((default_cgi_temp = getenv("TEMP")) == NULL)
+			default_cgi_temp = nulstr;
+	#endif
+		SAFECOPY(web->cgi_temp_dir
+			,iniGetString(fp,section,"CGITempDirectory",default_cgi_temp));
 
-	web->options
-		=iniGetBitField(fp,section,"Options",web_options
-			,BBS_OPT_NO_HOST_LOOKUP);
+		web->options
+			=iniGetBitField(fp,section,"Options",web_options
+				,BBS_OPT_NO_HOST_LOOKUP);
+	}
 }
