@@ -86,6 +86,8 @@ ulong				served=0;
 int					prompt_len=0;
 
 #ifdef __unix__
+char*				new_uid_name=NULL;
+char*				new_gid_name=NULL;
 uid_t				new_uid;
 uid_t				old_uid;
 gid_t				new_gid;
@@ -202,6 +204,9 @@ static BOOL do_seteuid(BOOL to_new)
 	BOOL	result=FALSE;
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
+
+	if(new_uid_name==NULL)	/* not set? */
+		return(TRUE);		/* do nothing */
 
 	if(!mutex_initialized) {
 		pthread_mutex_init(&mutex,NULL);
@@ -606,8 +611,6 @@ int main(int argc, char** argv)
 	char*	ctrl_dir;
 	BOOL	quit=FALSE;
 #ifdef __unix__
-	char*	new_uid_name=NULL;
-	char*	new_gid_name=NULL;
 	FILE *pidfile;
 	struct passwd* pw_entry;
 	struct group*  gr_entry;
@@ -1014,7 +1017,7 @@ int main(int argc, char** argv)
 	if(getuid())  /*  are we running as a normal user?  */
 		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
 	
-	else if(!new_uid_name)   /*  check the user arg, if we have uid 0 */
+	else if(new_uid_name==NULL)   /*  check the user arg, if we have uid 0 */
 		bbs_lputs("Warning: No user account specified, running as root.");
 	
 	else 
