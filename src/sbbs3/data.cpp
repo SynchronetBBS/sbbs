@@ -172,7 +172,8 @@ void sbbs_t::gettimeleft(void)
 
 	now=time(NULL);
 
-	localtime_r(&now,&tm);
+	if(localtime_r(&now,&tm)==NULL)
+		memset(&tm,0,sizeof(tm));
 	if(useron.exempt&FLAG('T')) {   /* Time online exemption */
 		timeleft=cfg.level_timepercall[useron.level]*60;
 		if(timeleft<10)             /* never get below 10 for exempt users */
@@ -200,8 +201,8 @@ void sbbs_t::gettimeleft(void)
 			|| !(cfg.event[i]->days&(1<<tm.tm_wday)))
 			continue;
 
-		localtime_r(&cfg.event[i]->last,&last_tm);
-		localtime_r(&now,&tm);
+		if(localtime_r(&cfg.event[i]->last,&last_tm)==NULL)
+			memset(&last_tm,0,sizeof(last_tm));
 		tm.tm_hour=cfg.event[i]->time/60;   /* hasn't run yet today */
 		tm.tm_min=cfg.event[i]->time-(tm.tm_hour*60);
 		tm.tm_sec=0;
