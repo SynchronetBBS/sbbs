@@ -118,7 +118,8 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 
     int cnt;
     int cnt2;
-    int freecnt;
+	int options;
+	int freecnt;
     int i;
 	int	scrollpos;
 	int height=14;	/* default menu height */
@@ -131,10 +132,11 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
     for(cnt=0;cnt<MAX_OPTS;cnt++)
 		if(option[cnt][0]==0)
 	   		break;
-    freecnt=cnt+4;
+	options=cnt;
+	freecnt=cnt+4;
 
     // Allocate and fill **it
-    it=(char **)MALLOC(sizeof(char *)*2*(cnt+4));
+    it=(char **)MALLOC(sizeof(char *)*2*(freecnt));
 	if(it==NULL)
 		return(-1);
 
@@ -192,10 +194,10 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	if(height>cnt)
 		height=cnt; /* no reason to display overly "tall" menus */
 
-    do {
+    while(1) {
         i=*cur;
         if(i<0) i=0;
-		if(strcmp(option[0],"Yes")==0 && strcmp(option[1],"No")==0 && cnt==2)  {
+		if(cnt==2 && strcmp(option[0],"Yes")==0 && strcmp(option[1],"No")==0)  {
 		    if(i==0)
 				ret=dialog_yesno((char*)NULL,title,5,width);
 	    	else
@@ -205,15 +207,6 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
  *	    	if(ret) ret=1; else ret=0;
  */
 		}
-#if 0	/* this never happens */
-		else if(strcmp(option[0],"No")==0 && strcmp(option[1],"Yes")==0 && cnt==2)  {
-	    	if(i==1)
-				ret=dialog_yesno((char*)NULL,title,5,width);
-	    	else
-				ret=dialog_noyes((char*)NULL,title,5,width);
-	    	if(ret) ret=0; else ret=1;
-		}
-#endif
 		else  {
 			/* make sure we're wide enough to display the application title */
 			if(width<app_title_len+4)
@@ -223,81 +216,87 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 			if(i>height)
 				scrollpos=i-height;
             ret=dialog_menu(app_title, title, height+8, width, height, cnt, it, str, &i, &scrollpos);
-            if(ret==1)  {
-				ret = -1;
-				*cur = -1;
-			}
-            if(ret==0)  {
-				if(str[0]=='A') ret=-2;
-				else if(str[0]=='D') ret=-3;
-				else if(str[0]=='C') ret=-4;
-				else if(str[0]=='P') ret=-5;
-				else  {
-					*cur=atoi(str)-1;
-					ret=*cur;
-				}
-            }
 		}
-        if(ret==-2)  {
-            dialog_clear_norefresh();
-			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Insert Where?", height+8, width, height, freecnt-4, it, str, 0, 0);
-				if(ret==0)  {
-					*cur=atoi(str)-1;
-					ret=*cur|MSK_INS;
+        if(ret==1)  {	/* Cancel */
+			ret = -1;
+			*cur = -1;
+			break;
+		}
+		if(ret==-1)		/* ESC */
+			break;
+		if(ret==-2)	{	/* Help */
+			help();
+			continue;
+		}
+        if(ret!=0)		/* ??? */
+			continue;
+		switch(str[0]) {
+			case 'A':	/* Add */
+				dialog_clear_norefresh();
+				if(options>0)  {
+	        		ret=dialog_menu(title, "Insert Where?", height+8, width, height, options, it, str, 0, 0);
+					if(ret==0)  {
+						*cur=atoi(str)-1;
+						ret=*cur|MSK_INS;
+					}
+	       		}
+				else {
+					*cur=0;
+					ret=MSK_INS;
 				}
-	       	}
-			else {
-				*cur=0;
-				ret=MSK_INS;
-			}
-	    }
-        if(ret==-3)  {
-            dialog_clear_norefresh();
-			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Delete Which?", height+8, width, height, freecnt-4, it, str, 0, 0);
-				if(ret==0)  {
-					*cur=atoi(str)-1;
-					ret=*cur|MSK_DEL;
+				break;
+			case 'D':	/* Delete */
+				dialog_clear_norefresh();
+				if(options>0)  {
+	        		ret=dialog_menu(title, "Delete Which?", height+8, width, height, options, it, str, 0, 0);
+					if(ret==0)  {
+						*cur=atoi(str)-1;
+						ret=*cur|MSK_DEL;
+					}
+	       		}
+				else {
+					*cur=0;
+					ret=MSK_DEL;
 				}
-	       	}
-			else {
-				*cur=0;
-				ret=MSK_DEL;
-			}
-        }
-        if(ret==-4)  {
-            dialog_clear_norefresh();
-			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Copy Which?", height+8, width, height, freecnt-4, it, str, 0, 0);
-				if(ret==0)  {
-					*cur=atoi(str)-1;
-					ret=*cur|MSK_GET;
+				break;
+			case 'C':	/* Copy */
+				dialog_clear_norefresh();
+				if(options>0)  {
+	        		ret=dialog_menu(title, "Copy Which?", height+8, width, height, options, it, str, 0, 0);
+					if(ret==0)  {
+						*cur=atoi(str)-1;
+						ret=*cur|MSK_GET;
+					}
+	       		}
+				else {
+					*cur=0;
+					ret=MSK_GET;
 				}
-	       	}
-			else {
-				*cur=0;
-				ret=MSK_GET;
-			}
-        }
-        if(ret==-5)  {
-            dialog_clear_norefresh();
-			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Paste Where?", height+8, width, height, freecnt-4, it, str, 0, 0);
-				if(ret==0)  {
-					*cur=atoi(str)-1;
-					ret=*cur|MSK_PUT;
+				break;
+			case 'P':	/* Paste */
+		       dialog_clear_norefresh();
+				if(options>0)  {
+	        		ret=dialog_menu(title, "Paste Where?", height+8, width, height, options, it, str, 0, 0);
+					if(ret==0)  {
+						*cur=atoi(str)-1;
+						ret=*cur|MSK_PUT;
+					}
+	       		}
+				else {
+					*cur=0;
+					ret=MSK_PUT;
 				}
-	       	}
-			else {
-				*cur=0;
-				ret=MSK_PUT;
-			}
-        }
-    } while(ret<-1 && ret>-8);
+				break;
+			default:
+				*cur=atoi(str)-1;
+				ret=*cur;
+				break;
+		}
+		break;
+    } 
 
     // free() the strings!
-    for(i=0;i<(freecnt)*2;i++)
+    for(i=0;i<freecnt*2;i++)
 		free(it[i]);
     free(it);
     
@@ -395,9 +394,5 @@ void help()
     else
         strcpy(hbuf,api->helpbuf);
 
-    puts(hbuf);
-    if(strlen(hbuf)>200) {
-        printf("Hit enter");
-        getc(stdin);
-    }
+	dialog_mesgbox((char*)NULL, hbuf, 24, 80);
 }
