@@ -44,6 +44,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	uchar	buf[512];
 	int		i;
 	int		rd;
+	uint	attempts;
 	ulong	l;
 	bool	gotline;
 	ushort	port;
@@ -193,7 +194,15 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 					sem_post(&output_sem);
 				}
 			}
-			if((i=sendsocket(remote_socket,(char*)buf,rd))<0) {
+			for(attempts=0;attempts<60 && online; attempts++) /* added retry loop here, Jan-20-2003 */
+			{
+				if((i=sendsocket(remote_socket,(char*)buf,rd))>=0)
+					break;
+				if(ERROR_VALUE!=EWOULDBLOCK)
+					break;
+				mswait(500);
+			} 
+			if(i<0) {
 				lprintf("!TELGATE ERROR %d sending on socket %d",ERROR_VALUE,remote_socket);
 				break;
 			}
