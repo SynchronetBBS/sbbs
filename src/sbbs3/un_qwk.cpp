@@ -55,7 +55,9 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	long	l,size,misc;
 	ulong	t;
 	ulong	msgs=0;
+	ulong	tmsgs=0;
 	time_t	start;
+	time_t	startsub;
 	DIR*	dir;
 	DIRENT*	dirent;
 	FILE*	qwk;
@@ -91,6 +93,10 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	eprintf(LOG_INFO,"Importing QWK Network Packet: %s",packet);
 
 	for(l=QWK_BLOCK_LEN;l<size;l+=blocks*QWK_BLOCK_LEN) {
+		if(terminated) {
+			eprintf(LOG_NOTICE,"!Terminated");
+			break;
+		}
 		fseek(qwk,l,SEEK_SET);
 		fread(block,QWK_BLOCK_LEN,1,qwk);
 		if(block[0]<' ' || block[0]&0x80) {
@@ -181,7 +187,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				truncsp(tmp);
 				sprintf(str,text[UserSentYouMail],tmp);
 				putsmsg(&cfg,j,str);
-				msgs++;
+				tmsgs++;
 			}
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
@@ -218,6 +224,15 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		}
 
 		if(j!=lastsub) {
+
+			if(msgs) {
+				t=time(NULL)-startsub;
+				if(t<1)
+					t=1;
+				eprintf(LOG_INFO,"Imported %lu msgs in %lu seconds (%lu msgs/sec)", msgs,t,msgs/t);
+			}
+			msgs=0;
+			startsub=time(NULL);
 
 			eprintf(LOG_INFO,"Importing messages from %s into %s %s"
 				,cfg.qhub[hubnum]->id, cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname);
@@ -268,6 +283,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			,cfg.qhub[hubnum]->id,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
 */
 		msgs++;
+		tmsgs++;
 	}
 
 	update_qwkroute(NULL);		/* Write ROUTE.DAT */
@@ -307,12 +323,12 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		closedir(dir);
 
 	t=time(NULL)-start;
-	if(msgs) {
+	if(tmsgs) {
 		if(t<1)
 			t=1;
 		eprintf(LOG_INFO,"Finished Importing QWK Network Packet from %s: "
 			"(%lu msgs) in %lu seconds (%lu msgs/sec)"
-			,cfg.qhub[hubnum]->id, msgs, t, msgs/t);
+			,cfg.qhub[hubnum]->id, tmsgs, t, tmsgs/t);
 	}
 	delfiles(cfg.temp_dir,ALLFILES);
 	return(true);
