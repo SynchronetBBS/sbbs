@@ -1,6 +1,7 @@
 #include "term.h"
 #include "ciowrap.h"
 #include "uifcinit.h"
+#include "genwrap.h"
 
 struct terminal term;
 
@@ -504,9 +505,8 @@ void doterm(void)
 						case 7:			/* Beep */
 							#ifdef __unix__
 								beep();
-							#endif
-							#ifdef _WIN32
-								
+							#else
+								BEEP(2000,200);
 							#endif
 							break;
 						case 12:		/* ^L - Clear screen */
