@@ -54,6 +54,7 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 	int 	orgcon=console,i;
 	ulong	l=0,sys_status_sav=sys_status;
 
+	attr_sp=0;	/* clear any saved attributes */
 	tmpatr=curatr;	/* was lclatr(-1) */
 	if(!(mode&P_SAVEATR))
 		attr(LIGHTGRAY);
@@ -250,6 +251,7 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 	if(mode&P_HTML)
 		putcom("\x02");
 
+	attr_sp=0;	/* clear any saved attributes */
 	/* Restore original settings of Forced Pause On/Off */
 	sys_status&=~(SS_PAUSEOFF|SS_PAUSEON);
 	sys_status|=(sys_status_sav&(SS_PAUSEOFF|SS_PAUSEON));

@@ -244,6 +244,8 @@ public:
 	time_t 	timeout;		/* User inactivity timeout reference */
 	ulong 	timeleft_warn;	/* low timeleft warning flag */
 	uchar 	curatr; 		/* Current Text Attributes Always */
+	uchar	attr_stack[64];	/* Saved attributes (stack) */
+	int 	attr_sp;		/* Attribute stack pointer */
 	long 	lncntr; 		/* Line Counter - for PAUSE */
 	long 	tos;			/* Top of Screen */
 	long 	rows;			/* Current number of Rows for User */

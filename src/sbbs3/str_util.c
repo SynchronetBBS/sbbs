@@ -442,7 +442,8 @@ BOOL DLLCALL validattr(char a)
 {
 
 	switch(toupper(a)) {
-		case '-':   /* clear        */
+		case '+':	/* push attr	*/
+		case '-':   /* pop attr		*/
 		case '_':   /* clear        */
 		case 'B':   /* blue     fg  */
 		case 'C':   /* cyan     fg  */

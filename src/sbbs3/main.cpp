@@ -2077,6 +2077,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	telnet_last_rxch=0;
 	sys_status=lncntr=tos=criterrs=keybufbot=keybuftop=lbuflen=slcnt=0L;
 	curatr=LIGHTGRAY;
+	attr_sp=0;	/* attribute stack pointer */
 	errorlevel=0;
 	logcol=1;
 	logfile_fp=NULL;
