@@ -49,6 +49,7 @@
 int	mswtyp=0;
 uint riobp;
 
+#define TELNET_SERVER "Synchronet Telnet Server"
 #define STATUS_WFC	"Listening"
 
 #define TIMEOUT_THREAD_WAIT		15		// Seconds (was 30)
@@ -60,23 +61,24 @@ HANDLE	exec_mutex;
 #endif
 
 static uint node_threads_running=0;
-
+		
+char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 RingBuf* node_inbuf[MAX_NODES];
-SOCKET spy_socket[MAX_NODES];
-SOCKET node_socket[MAX_NODES];
-static SOCKET telnet_socket=INVALID_SOCKET;
-static SOCKET rlogin_socket=INVALID_SOCKET;
-static pthread_mutex_t event_mutex;
-static sbbs_t*	sbbs=NULL;
-static scfg_t	scfg;
-static bool		scfg_reloaded=true;
-static char *	text[TOTAL_TEXT];
+SOCKET	spy_socket[MAX_NODES];
+SOCKET	node_socket[MAX_NODES];
+static	SOCKET telnet_socket=INVALID_SOCKET;
+static	SOCKET rlogin_socket=INVALID_SOCKET;
+static	pthread_mutex_t event_mutex;
+static	sbbs_t*	sbbs=NULL;
+static	scfg_t	scfg;
+static	bool		scfg_reloaded=true;
+static	char *	text[TOTAL_TEXT];
 
 #ifdef JAVASCRIPT
 JSRuntime* js_runtime=NULL;
 
 static JSBool
-Print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
     JSString *	str;
@@ -96,7 +98,142 @@ Print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-Load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		tmp[1024];
+    uintN		i;
+	JSString *	fmt;
+    JSString *	str;
+	sbbs_t*		sbbs;
+	va_list		arglist[64];
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return JS_FALSE;
+
+	fmt = JS_ValueToString(cx, argv[0]);
+	if (!fmt)
+		return JS_FALSE;
+
+    for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
+		if(JSVAL_IS_STRING(argv[i])) {
+			str = JS_ValueToString(cx, argv[i]);
+			if (!str)
+			    return JS_FALSE;
+			arglist[i-1]=JS_GetStringBytes(str);
+		} else
+			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
+	}
+	
+	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
+	sbbs->bputs(tmp);
+
+    return JS_TRUE;
+}
+
+static JSBool
+js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		tmp[1024];
+    uintN		i;
+	JSString *	fmt;
+    JSString *	str;
+	va_list		arglist[64];
+
+	fmt = JS_ValueToString(cx, argv[0]);
+	if (!fmt)
+		return JS_FALSE;
+
+    for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
+		if(JSVAL_IS_STRING(argv[i])) {
+			str = JS_ValueToString(cx, argv[i]);
+			if (!str)
+			    return JS_FALSE;
+			arglist[i-1]=JS_GetStringBytes(str);
+		} else
+			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
+	}
+	
+	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
+
+	str = JS_NewStringCopyZ(cx, tmp);
+	*rval = STRING_TO_JSVAL(str);
+
+    return JS_TRUE;
+}
+
+static JSBool
+js_alert(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    JSString *	str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return JS_FALSE;
+
+	str = JS_ValueToString(cx, argv[0]);
+	if (!str)
+	    return JS_FALSE;
+	sbbs->attr(sbbs->cfg.color[clr_err]);
+	sbbs->bputs(JS_GetStringBytes(str));
+	sbbs->attr(LIGHTGRAY);
+	sbbs->bputs(crlf);
+    return JS_TRUE;
+}
+
+static JSBool
+js_confirm(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    JSString *	str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return JS_FALSE;
+
+	str = JS_ValueToString(cx, argv[0]);
+	if (!str)
+	    return JS_FALSE;
+	*rval = BOOLEAN_TO_JSVAL(sbbs->yesno(JS_GetStringBytes(str)));
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		instr[81];
+    JSString *	prompt;
+    JSString *	str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return JS_FALSE;
+
+	prompt = JS_ValueToString(cx, argv[0]);
+	if (!prompt)
+	    return JS_FALSE;
+
+	str = JS_ValueToString(cx, argv[1]);
+	if (!str)
+	    return JS_FALSE;
+
+	sbbs->bprintf("\1n\1y\1h%s\1w: ",JS_GetStringBytes(prompt));
+
+	sprintf(instr,"%.*s",sizeof(instr)-1,JS_GetStringBytes(str));
+	if(!sbbs->getstr(instr,sizeof(instr)-1,K_EDIT)) {
+		*rval = STRING_TO_JSVAL(NULL);
+		return(JS_TRUE);
+	}
+
+	str = JS_NewStringCopyZ(cx, instr);
+	if (!str)
+	    return JS_FALSE;
+	*rval = STRING_TO_JSVAL(str);
+
+    return JS_TRUE;
+}
+
+static JSBool
+js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		path[MAX_PATH+1];
     uintN		i;
@@ -136,17 +273,54 @@ Load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 
 static JSClass js_global_class ={
-        "global",0, 
+        "Global",0, 
         JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
         JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
     }; 
 
 static JSFunctionSpec js_global_functions[] = {
-    {"print",           Print,          0},			/* Print a string, auto-crlf */
-    {"load",            Load,           1},			/* Load and execute a javascript file */
+    {"print",           js_print,           0},		/* Print a string, auto-crlf */
+    {"printf",          js_printf,          1},		/* Print a formatted string */
+    {"format",          js_format,          1},		/* Return a formatted string */
+    {"load",            js_load,            1},		/* Load and execute a javascript file */
+	{"alert",			js_alert,			1},		/* alert (ala client-side) */
+	{"prompt",			js_prompt,			2},		/* prompt (ala clent-side) */ 
+	{"confirm",			js_confirm,			1},		/* confirm (ala client side) */
     {0}
 };
 
+static void
+js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
+{
+	char	line[64];
+	char	file[MAX_PATH+1];
+	char*	warning;
+	
+	if(report==NULL) {
+		lprintf("!JavaScript: %s", message);
+		return;
+    }
+
+	if(report->filename)
+		sprintf(file," %s",report->filename);
+	else
+		file[0]=0;
+
+	if(report->lineno)
+		sprintf(line," line %d",report->lineno);
+	else
+		line[0]=0;
+
+	if(JSREPORT_IS_WARNING(report->flags)) {
+		if(JSREPORT_IS_STRICT(report->flags))
+			warning="strict warning";
+		else
+			warning="warning";
+	} else
+		warning=nulstr;
+
+	lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+}
 
 #endif
 
@@ -233,6 +407,19 @@ int lprintf(char *fmt, ...)
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
     return(startup->lputs(sbuf));
+}
+
+int eprintf(char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+    if(startup==NULL || startup->event_log==NULL)
+        return(0);
+    va_start(argptr,fmt);
+    vsprintf(sbuf,fmt,argptr);
+    va_end(argptr);
+    return(startup->event_log(sbuf));
 }
 
 } /* extern "C" */
@@ -644,7 +831,7 @@ void event_thread(void* arg)
 	glob_t		g;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 
-	lprintf("BBS Events thread started");
+	eprintf("BBS Events thread started");
 
 	sbbs->event_thread_running = true;
 
@@ -730,7 +917,7 @@ void event_thread(void* arg)
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && flength(g.gl_pathv[i])>0) {
 					sbbs->online=ON_LOCAL;
-					lprintf("Un-packing QWK Reply packet from %s",sbbs->useron.alias);
+					eprintf("Un-packing QWK Reply packet from %s",sbbs->useron.alias);
 					sbbs->getusrsubs();
 					sbbs->unpack_rep(g.gl_pathv[i]);
 					sbbs->batch_create_list();	/* FREQs? */
@@ -750,7 +937,7 @@ void event_thread(void* arg)
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
-					lprintf("Packing QWK Message Packet for %s",sbbs->useron.alias);
+					eprintf("Packing QWK Message Packet for %s",sbbs->useron.alias);
 					sbbs->online=ON_LOCAL;
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->getmsgptrs();
@@ -764,12 +951,12 @@ void event_thread(void* arg)
 					sprintf(str,"%sfile%c%04u.qwk"
 						,sbbs->cfg.data_dir,BACKSLASH,sbbs->useron.number);
 					if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
-						lprintf("Packing completed");
+						eprintf("Packing completed");
 						sbbs->qwk_success(l,0,1);
 						sbbs->putmsgptrs(); 
 						remove(bat_list);
 					} else
-						lprintf("No packet created (no new messages)");
+						eprintf("No packet created (no new messages)");
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->online=0;
 				}
@@ -782,11 +969,11 @@ void event_thread(void* arg)
 			if(sbbs->cfg.preqwk_ar[0] 
 				&& (fexist(semfile) || (now-lastprepack)/60>(60*24))) {
 				j=lastuser(&sbbs->cfg);
-				lprintf("Pre-packing QWK Message packets...");
+				eprintf("Pre-packing QWK Message packets...");
 				for(i=1;i<=j;i++) {
 
 					sprintf(str,"%5u of %-5u",i,j);
-					status(str);
+					//status(str);
 					sbbs->useron.number=i;
 					getuserdat(&sbbs->cfg,&sbbs->useron);
 
@@ -801,7 +988,7 @@ void event_thread(void* arg)
 						}
 						if(k<=sbbs->cfg.sys_nodes)	/* Don't pre-pack with user online */
 							continue;
-						lprintf("Pre-packing QWK for %s",sbbs->useron.alias);
+						eprintf("Pre-packing QWK for %s",sbbs->useron.alias);
 						sbbs->online=ON_LOCAL;
 						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->getmsgptrs();
@@ -827,7 +1014,7 @@ void event_thread(void* arg)
 				close(file);
 
 				remove(semfile);
-				status(STATUS_WFC);
+				//status(STATUS_WFC);
 			}
 		}
 
@@ -843,12 +1030,13 @@ void event_thread(void* arg)
 					sbbs->cfg.node_num=i;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[i-1]);
 
-					status("Running node daily event");
+					eprintf("Running node %u daily event",i);
+					// status("Running node daily event");
 					sbbs->logentry("!:","Run node daily event");
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.node_daily,nulstr,nulstr,NULL)
 						,EX_OFFLINE);
-					status(STATUS_WFC);
+					// status(STATUS_WFC);
 				}
 				sbbs->getnodedat(i,&node,1);
 				node.misc&=~NODE_EVENT;
@@ -951,7 +1139,7 @@ void event_thread(void* arg)
 				if(sbbs->cfg.qhub[i]->call[0]) {
 					sbbs->cfg.node_num=sbbs->cfg.qhub[i]->node;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-					status("QWK Networking");
+					// status("QWK Networking");
 #if 0
 					sbbs->getnodedat(sbbs->cfg.qhub[i]->node,&node,1);
 					node.status=NODE_NETTING;
@@ -960,7 +1148,7 @@ void event_thread(void* arg)
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call,nulstr,nulstr,NULL)
 						,EX_OFFLINE);
-					status(STATUS_WFC);
+					// status(STATUS_WFC);
 				}
 			} 
 		}
@@ -993,7 +1181,7 @@ void event_thread(void* arg)
 				if(sbbs->cfg.phub[i]->call[0]) {
 					sbbs->cfg.node_num=sbbs->cfg.event[i]->node;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-					status("PostLink Networking");
+					// status("PostLink Networking");
 #if 0
 					sbbs->getnodedat(sbbs->cfg.phub[i]->node,&node,1);
 					node.status=NODE_NETTING;
@@ -1002,7 +1190,7 @@ void event_thread(void* arg)
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.phub[i]->call,nulstr,nulstr,NULL)
 							,EX_OFFLINE);
-					status(STATUS_WFC);
+					// status(STATUS_WFC);
 				} 
 			}
 		}
@@ -1023,7 +1211,7 @@ void event_thread(void* arg)
 						|| sbbs->cfg.event[i]->node>startup->last_node) {
 						sprintf(str,"Waiting for node %d to run timed event."
 							,sbbs->cfg.event[i]->node);
-						status(str);
+						// status(str);
 						lastnodechk=0;	 /* really last event time check */
 						while(!sbbs->terminated) {
 							mswait(1000);
@@ -1058,7 +1246,7 @@ void event_thread(void* arg)
 						remove(str);
 						sbbs->cfg.event[i]->last=now;
 					} else {	// Exclusive event to run on a node under our control
-						status("Waiting for all nodes to become inactive before "
+						eprintf("Waiting for all nodes to become inactive before "
 							"running timed event.");
 						lastnodechk=0;
 						while(!sbbs->terminated) {
@@ -1100,7 +1288,7 @@ void event_thread(void* arg)
 								break;
 							sprintf(str,"Waiting for node %d (status=%d)"
 								,j,node.status);
-							status(str);
+							// status(str);
 						} 
 					} 
 				}
@@ -1129,7 +1317,7 @@ void event_thread(void* arg)
 						node.status=NODE_EVENT_RUNNING;
 						sbbs->putnodedat(sbbs->cfg.event[i]->node,&node);
 					}
-					lprintf("Running event: %s",sbbs->cfg.event[i]->code);
+					eprintf("Running event: %s",sbbs->cfg.event[i]->code);
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.event[i]->cmd,nulstr,nulstr,NULL)
 						,EX_OFFLINE
@@ -1152,7 +1340,7 @@ void event_thread(void* arg)
 						}
 					}
 				} 
-				status(STATUS_WFC);
+				// status(STATUS_WFC);
 			} 
 		}
 		pthread_mutex_unlock(&event_mutex);
@@ -1161,7 +1349,7 @@ void event_thread(void* arg)
 	}
     sbbs->event_thread_running = false;
 
-	lprintf("BBS Event thread terminated");
+	eprintf("BBS Event thread terminated");
 
 	thread_down();
 
@@ -1226,7 +1414,6 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	errorlevel=0;
 	logcol=1;
 	next_event=0;
-	lastuseron[0]=0;
 	logfile_fp=NULL;
 	nodefile=-1;
 	node_ext=-1;
@@ -1435,6 +1622,8 @@ bool sbbs_t::init()
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(false);
 
+    JS_SetErrorReporter(js_cx, js_ErrorReporter);
+
 	JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
 
 //    JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -1448,6 +1637,21 @@ bool sbbs_t::init()
     if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
 		return(false);
 
+	JSObject* sysobj;
+	
+	if((sysobj=CreateSystemObject(&cfg, js_cx, js_glob))==NULL)
+		return(false);
+
+	char	ver[256];
+	jsval	val;
+	sprintf(ver,"%s v%s",TELNET_SERVER,VERSION);
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+	if(!JS_SetProperty(js_cx, sysobj, "version", &val))
+		return(FALSE);
+
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, bbs_ver()));
+	if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
+		return(FALSE);
 
 #endif
 
@@ -2573,7 +2777,8 @@ char* DLLCALL bbs_ver(void)
 
 	COMPILER_DESC(compiler);
 
-	sprintf(ver,"Synchronet BBS/Telnet Server v%s%c%s  SMBLIB v%s  Compiled %s %s with %s"
+	sprintf(ver,"%s v%s%c%s  SMBLIB v%s  Compiled %s %s with %s"
+		,TELNET_SERVER
 		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
@@ -2683,11 +2888,13 @@ void DLLCALL bbs_thread(void* arg)
     memset(&scfg, 0, sizeof(scfg));
 
 	node_threads_running=0;
+	lastuseron[0]=0;
 
 	char compiler[32];
 	COMPILER_DESC(compiler);
 
-	lprintf("Synchronet BBS/Telnet Server Version %s Revision %c%s"
+	lprintf("%s Version %s Revision %c%s"
+		,TELNET_SERVER
 		,VERSION,REVISION
 #ifdef _DEBUG
 		," Debug"
@@ -3075,8 +3282,8 @@ void DLLCALL bbs_thread(void* arg)
 
 		strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
 
-		lprintf("%s connection accepted from: %s"
-			, rlogin ? "RLogin" : "Telnet", host_ip);
+		lprintf("%s connection accepted from: %s port %u"
+			, rlogin ? "RLogin" : "Telnet", host_ip, ntohs(client_addr.sin_port));
 
    		sbbs->client_socket=client_socket;	// require for output to the user
         sbbs->online=ON_REMOTE;
