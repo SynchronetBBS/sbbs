@@ -2247,6 +2247,19 @@ static void smtp_thread(void* arg)
 				/* Do external JavaScript processing here? */
 
 				if(subnum!=INVALID_SUB) {	/* Message Base */
+					if(relay_user.number==0)
+						memset(&relay_user,0,sizeof(relay_user));
+
+					if(!chk_ar(&scfg,scfg.grp[scfg.sub[subnum]->grp]->ar, &relay_user)
+						|| !chk_ar(&scfg,scfg.sub[subnum]->ar, &relay_user)
+						|| !chk_ar(&scfg,scfg.sub[subnum]->post_ar, &relay_user)) {
+						lprintf(LOG_WARNING,"%04d !SMTP %s has insufficient access to post on %s"
+							,socket, sender_addr, scfg.sub[subnum]->sname);
+						sockprintf(socket,"550 Insufficient access");
+						subnum=INVALID_SUB;
+						continue;
+					}
+
 					if(rcpt_name[0]==0)
 						strcpy(rcpt_name,"All");
 					smb_hfield_str(&msg, RECIPIENT, rcpt_name);
