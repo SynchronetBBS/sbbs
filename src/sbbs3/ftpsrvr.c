@@ -2448,7 +2448,8 @@ static void ctrl_thread(void* arg)
 				filepos=atol(p);
 			else
 				filepos=0;
-			sockprintf(sock,"200 File marker set to %ld",filepos);
+			sockprintf(sock,"350 Restarting at %ld. Send STORE or RETRIEVE to initiate transfer."
+				,filepos);
 			continue;
 		}
 
