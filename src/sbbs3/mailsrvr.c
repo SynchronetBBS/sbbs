@@ -2684,11 +2684,12 @@ static void sendmail_thread(void* arg)
 					,ntohs(server_addr.sin_port)
 					,server,inet_ntoa(server_addr.sin_addr));
 				if((i=connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)))!=0) {
-					lprintf("%04d !SEND ERROR %d (%d) connecting to SMTP server: %s"
+					i=ERROR_VALUE;
+					lprintf("%04d !SEND ERROR %d connecting to SMTP server: %s"
 						,sock
-						,i,ERROR_VALUE, server);
+						,i, server);
 					sprintf(err,"Error %d connecting to SMTP server: %s"
-						,(int)ERROR_VALUE,server);
+						,i, server);
 					continue;
 				}
 				success=TRUE;
