@@ -209,7 +209,7 @@ int SMBCALL sopen(char *fn, int access, int share)
 	int fd;
 	struct flock alock;
 
-	if ((fd = open(fn, access)) < 0)
+	if ((fd = open(fn, access, S_IREAD|S_IWRITE)) < 0)
 		return -1;
 
 	if (share == SH_DENYNO)
