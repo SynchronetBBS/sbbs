@@ -24,7 +24,7 @@
 #endif
 #include "genwrap.h"
 
-#define S_RATE	11025
+#define S_RATE	22050
 
 static BOOL sound_device_open_failed=FALSE;
 
@@ -32,9 +32,10 @@ enum {
 	 WAVE_SHAPE_SINE
 	,WAVE_SHAPE_SAWTOOTH
 	,WAVE_SHAPE_SQUARE
+	,WAVE_SHAPE_SINE_SAW
 };
 
-#define SHAPE	WAVE_SHAPE_SAWTOOTH
+#define SHAPE	WAVE_SHAPE_SINE_SAW
 #define WAVE_PI	3.14159265358979323846
 #define WAVE_TPI 6.28318530717958647692
 
@@ -67,6 +68,8 @@ void makewave(double freq, unsigned char *wave, int samples)
 			case WAVE_SHAPE_SQUARE:
 				wave[i]=(pos<WAVE_PI)?255:0;
 				break;
+			case WAVE_SHAPE_SINE_SAW:
+				wave[i]=(((sin (pos))*127+128)+((WAVE_TPI-pos)*40.5))/2;
 		}
 	}
 	
