@@ -9,7 +9,7 @@
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
 <tr class="msglist">
      @@JS:template.can_delete?'<th class="msglist">X</th>':''@@
-    <th class="msglist">A</th>
+    <th class="msglist"><img src="/graphics/attach.gif" alt="Attachment?" width="10" height="13" border="0" /></th>
     <th class="msglist">Subject</th>
     <th class="msglist">From</th>
     <th class="msglist">To</th>
