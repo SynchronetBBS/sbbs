@@ -47,7 +47,6 @@ void xprogs_cfg()
 {
 	static int xprogs_dflt;
 	int 	i;
-	char	str[81];
 
 while(1) {
 	i=0;
@@ -100,7 +99,6 @@ online external programs (doors).
 void fevents_cfg()
 {
 	static int event_dflt;
-	char str[81],*p;
 	int i;
 
 while(1) {
@@ -1632,7 +1630,7 @@ int natvpgm_cfg()
 {
 	static int dflt,bar;
 	char str[81];
-	int j,k;
+	int j;
 	uint i;
 
 while(1) {
@@ -1892,7 +1890,7 @@ abreviation of the name.
 void hotkey_cfg(void)
 {
 	static int dflt,dfltopt,bar;
-	char str[81],done=0,*p;
+	char str[81],done=0;
 	int j,k;
 	uint i;
 	static hotkey_t savhotkey;

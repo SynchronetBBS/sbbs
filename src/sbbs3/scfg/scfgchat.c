@@ -45,7 +45,7 @@ void page_cfg()
 
 while(1) {
 	for(i=0;i<cfg.total_pages && i<MAX_OPTS;i++)
-		sprintf(opt[i],"%-40.40s %.-20s",cfg.page[i]->cmd,cfg.page[i]->arstr);
+		sprintf(opt[i],"%-40.40s %-.20s",cfg.page[i]->cmd,cfg.page[i]->arstr);
 	opt[i][0]=0;
 	uifc.savnum=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
@@ -448,7 +448,7 @@ void chatact_cfg(uint setnum)
 {
 	static int chatact_dflt,chatact_bar;
 	char str[128],cmd[128],out[128];
-	int j,k;
+	int j;
 	uint i,n,chatnum[MAX_OPTS+1];
 	static chatact_t savchatact;
 

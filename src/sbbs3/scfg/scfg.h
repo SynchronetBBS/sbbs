@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "conwrap.h"
 #include "uifc.h"
 #include "sbbs.h"
 
@@ -74,29 +75,37 @@ extern int	backup_level;
 
 void bail(int code);
 void errormsg(int line, char *source,  char action, char *object, ulong access);
+int	 delfiles(char *inpath, char *spec);
+void clearptrs(int subnum);
 int  save_changes(int mode);
-void rerun_nodes();
-void node_menu();
-void node_cfg();
+void rerun_nodes(void);
+void node_menu(void);
+void node_cfg(void);
 void results(int i);
-void sys_cfg();
-void net_cfg();
-void msgs_cfg();
+void sys_cfg(void);
+void net_cfg(void);
+void msgs_cfg(void);
+void msg_opts(void);
 void sub_cfg(uint grpnum);
-void xfer_cfg();
-void libs_cfg();
+void xfer_cfg(void);
+void xfer_opts(void);
+void libs_cfg(void);
 void dir_cfg(uint libnum);
-void xprogs_cfg();
-void fevents_cfg();
-void tevents_cfg();
-void xtrn_cfg();
-void swap_cfg();
-void xtrnsec_cfg();
-void page_cfg();
-void xedit_cfg();
-void txt_cfg();
-void shell_cfg();
-void init_mdms();
+void xprogs_cfg(void);
+void fevents_cfg(void);
+void tevents_cfg(void);
+void xtrn_cfg(uint section);
+void swap_cfg(void);
+void xtrnsec_cfg(void);
+int  natvpgm_cfg(void);
+void page_cfg(void);
+void xedit_cfg(void);
+void txt_cfg(void);
+void shell_cfg(void);
+void init_mdms(void);
+void guru_cfg(void);
+void actsets_cfg(void);
+void chan_cfg(void);
 void mdm_cfg(int mdmnum);
 int export_mdm(char *fname);
 char code_ok(char *str);

@@ -38,8 +38,8 @@
 void sys_cfg(void)
 {
 	static int sys_dflt,adv_dflt,tog_dflt,new_dflt;
-	char str[81],str2[81],done=0,*dupehelp;
-	int i,j,k,dflt,bar,savchanges;
+	char str[81],done=0;
+	int i,j,k,dflt,bar;
 
 while(1) {
 	i=0;

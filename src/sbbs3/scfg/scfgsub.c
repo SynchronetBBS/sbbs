@@ -248,7 +248,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 			,cfg.sub[i]->op_arstr);
 		sprintf(opt[n++],"%-27.27s%.40s","Moderated Posting User"
 			,cfg.sub[i]->mod_arstr);
-		sprintf(opt[n++],"%-27.27s%u","Maximum Messages"
+		sprintf(opt[n++],"%-27.27s%lu","Maximum Messages"
             ,cfg.sub[i]->maxmsgs);
 		if(cfg.sub[i]->maxage)
             sprintf(str,"Enabled (%u days old)",cfg.sub[i]->maxage);
@@ -370,7 +370,7 @@ sub-board's name and group name.
 				getar(str,cfg.sub[i]->mod_arstr);
                 break;
 			case 10:
-				sprintf(str,"%u",cfg.sub[i]->maxmsgs);
+				sprintf(str,"%lu",cfg.sub[i]->maxmsgs);
                 SETHELP(WHERE);
 /*
 Maximum Number of Messages:
@@ -400,7 +400,7 @@ the sub-board.
                 cfg.sub[i]->misc|=SUB_HDRMOD;
 				break;
 			case 12:
-				sprintf(str,"%u",cfg.sub[i]->maxcrcs);
+				sprintf(str,"%lu",cfg.sub[i]->maxcrcs);
 				SETHELP(WHERE);
 /*
 Maximum Number of CRCs:
