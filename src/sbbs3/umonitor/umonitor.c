@@ -123,6 +123,8 @@ int spyon(char *sockname)  {
 	fd_set	rd;
 	BOOL	b;
 	int		retval=0;
+	char	ANSIbuf[32];
+	int		parsing=0;
 
 	/* ToDo Test for it actually being a socket! */
 	/* Well, it will fail to connect won't it?   */
@@ -170,7 +172,45 @@ int spyon(char *sockname)  {
 						retval=SPY_CLOSED;
 						break;
 					default:
-						write(spy_sock,&key,1);
+						if(parsing || key==27) { 	/* Escape */
+							switch (key) {
+								case 27:
+									if(parsing) {
+										ANSIbuf[parsing++]=key;
+										write(spy_sock,ANSIbuf,parsing);
+										parsing=0;
+									}
+									else
+										ANSIbuf[parsing++]=key;
+									break;
+								case '[':
+									if(parsing==1) {
+										ANSIbuf[parsing++]=key;
+										write(spy_sock,ANSIbuf,parsing);
+										parsing=0;
+									}
+									else
+										ANSIbuf[parsing++]=key;
+									break;
+								case '?':
+								case ';':
+								case '0'-'9':
+									ANSIbuf[parsing++]=key;
+									break;
+								case 'R':			/* Cursor report... eat it. */
+								case 'c':			/* VT-100 thing... eat it. */
+								case 'n':			/* VT-100 thing... eat it. */
+									parsing=0;
+									break;
+								default:
+									ANSIbuf[parsing++]=key;
+									write(spy_sock,ANSIbuf,parsing);
+									parsing=0;
+									break;
+							}
+						}
+						else
+							write(spy_sock,&key,1);
 				}
 			}
 			else if(i<0) {
