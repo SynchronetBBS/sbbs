@@ -39,6 +39,9 @@
 
 /* Converts ASCII ARS string into binary ARS buffer */
 
+#ifdef __BORLANDC__	/* Eliminate warning when buildling Baja */
+#pragma argsused
+#endif
 uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 {
 	static uchar nular[2]={0};
