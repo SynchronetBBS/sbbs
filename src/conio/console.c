@@ -106,6 +106,8 @@
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
 
+#define CONSOLE_CLIPBOARD	XA_PRIMARY
+
 #include <genwrap.h>
 
 #include "console.h"
@@ -566,11 +568,29 @@ video_event(XEvent *ev)
 
 				req=&(ev->xselectionclear);
 				pthread_mutex_lock(&copybuf_mutex);
-				if(req->selection==XA_PRIMARY && copybuf!=NULL) {
+				if(req->selection==CONSOLE_CLIPBOARD && copybuf!=NULL) {
 					free(copybuf);
 					copybuf=NULL;
 				}
 				pthread_mutex_unlock(&copybuf_mutex);
+		}
+		case SelectionNotify: {
+				int format;
+				unsigned long len, bytes_left, dummy;
+				Atom type;
+
+				x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
+				if(bytes_left > 0 && format==8)
+					x11.XGetWindowProperty(dpy, win, ev->xselection.property,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&pastebuf);
+				else
+					pastebuf=NULL;
+
+				/* Set paste buffer */
+				sem_post(&pastebuf_set);
+				sem_wait(&pastebuf_request);
+				x11.XFree(pastebuf);
+				pastebuf=NULL;
+				break;
 		}
 		case SelectionRequest: {
 				XSelectionRequestEvent *req;
@@ -1011,37 +1031,37 @@ video_async_event(void *crap)
 					x11.XStoreName(dpy, win, window_title);
 				if(!sem_trywait(&copybuf_set)) {
 					/* Copybuf has been set and isn't NULL */
-					x11.XSetSelectionOwner(dpy, XA_PRIMARY, win, CurrentTime);
+					x11.XSetSelectionOwner(dpy, CONSOLE_CLIPBOARD, win, CurrentTime);
 				}
 				if(!sem_trywait(&pastebuf_request)) {
 					Window sowner=None;
-					int format;
-					unsigned long len, bytes_left, dummy;
-					Atom type;
 
-					sowner=x11.XGetSelectionOwner(dpy, XA_PRIMARY);
-					if(sowner != None) {
-						if(sowner==win) {
-							/* Get your own primary selection */
+					sowner=x11.XGetSelectionOwner(dpy, CONSOLE_CLIPBOARD);
+					if(sowner==win) {
+						/* Get your own primary selection */
+						if(copybuf==NULL)
+							pastebuf=NULL;
+						else
 							pastebuf=(unsigned char *)malloc(strlen(copybuf)+1);
-							if(pastebuf!=NULL)
-								strcpy(pastebuf,copybuf);
-						}
-						else {
-							x11.XConvertSelection(dpy, XA_PRIMARY, XA_STRING, None, sowner, CurrentTime);
-							x11.XFlush(dpy);
-							x11.XGetWindowProperty(dpy, sowner, XA_STRING, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
-							if(bytes_left > 0)
-								x11.XGetWindowProperty(dpy,sowner,XA_STRING,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&pastebuf);
-						}
+						if(pastebuf!=NULL)
+							strcpy(pastebuf,copybuf);
+						/* Set paste buffer */
+						sem_post(&pastebuf_set);
+						sem_wait(&pastebuf_request);
+						if(pastebuf!=NULL)
+							free(pastebuf);
+						pastebuf=NULL;
 					}
-					/* Set paste buffer */
-					sem_post(&pastebuf_set);
-					sem_wait(&pastebuf_request);
-					if(sowner==win)
-						free(pastebuf);
-					else
-						x11.XFree(pastebuf);
+					else if(sowner!=None) {
+						x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, XA_STRING, None, win, CurrentTime);
+						x11.XFlush(dpy);
+					}
+					else {
+						/* Set paste buffer */
+						pastebuf=NULL;
+						sem_post(&pastebuf_set);
+						sem_wait(&pastebuf_request);
+					}
 				}
 				break;
 			default:
@@ -1259,6 +1279,9 @@ console_init()
     int i;
 	void *dl;
 
+	if(dpy!=NULL)
+		return(0);
+
 	if((dl=dlopen("libX11.so",RTLD_LAZY))==NULL)
 		return(-1);
 	if((x11.XChangeGC=dlsym(dl,"XChangeGC"))==NULL) {
@@ -1365,9 +1388,6 @@ console_init()
 		dlclose(dl);
 		return(-1);
 	}
-
-	if(dpy!=NULL)
-		return(0);
 
 	sem_init(&console_mode_changed,0,0);
 	sem_init(&copybuf_set,0,0);
