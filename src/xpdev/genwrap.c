@@ -50,6 +50,9 @@
 		#include <sys/kbio.h>
 	#elif defined(__linux__)
 		#include <sys/kd.h>	
+	#elif defined(__solaris__)
+		#include <sys/kbio.h>
+		#include <sys/kbd.h>
 	#endif
 #endif	/* __unix__ */
 
@@ -125,9 +128,17 @@ void DLLCALL unix_beep(int freq, int dur)
   		console_fd = open("/dev/console", O_NOCTTY);
 	
 	if(console_fd != -1) {
+#if defined(__solaris__)
+		ioctl(console_fd, KIOCCMD, KBD_CMD_BELL);
+#else
 		ioctl(console_fd, KIOCSOUND, (int) (1193180 / freq));
+#endif /* solaris */
 		SLEEP(dur);
+#if defined(__solaris__)
+		ioctl(console_fd, KIOCCMD, KBD_CMD_NOBELL);	/* turn off tone */
+#else
 		ioctl(console_fd, KIOCSOUND, 0);	/* turn off tone */
+#endif /* solaris */
 	}
 #endif
 }
@@ -217,7 +228,7 @@ char* DLLCALL os_version(char *str)
 
 	struct utsname unixver;
 
-	if(uname(&unixver)!=0)
+	if(uname(&unixver)<0)
 		sprintf(str,"Unix (uname errno: %d)",errno);
 	else
 		sprintf(str,"%s %s %s"

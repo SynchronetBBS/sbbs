@@ -101,6 +101,10 @@ extern "C" {
 	#define PLATFORM_DESC	"OpenBSD"
 #elif defined(BSD)
 	#define PLATFORM_DESC	"BSD"
+#elif defined(__solaris__)
+	#define PLATFORM_DESC	"Solaris"
+#elif defined(__sun__)
+	#define PLATFORM_DESC	"SunOS"
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else
