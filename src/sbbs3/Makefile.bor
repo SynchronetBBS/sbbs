@@ -16,10 +16,13 @@ CC		=	bcc32
 LD		=	ilink32
 SLASH	=	\\
 OFILE	=	obj
+LIBFILE	=	.dll
+EXEFILE	=	.exe
 LIBODIR	=	bcc.win32.dll	# Library output directory
 EXEODIR =	bcc.win32.exe	# Executable output directory
 CFLAGS	=	-M
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
+DELETE	=	echo y | del 
 
 # Optional compile flags (disable banner, warnings and such)
 CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch
@@ -35,21 +38,12 @@ LIBODIR	=	$(LIBODIR).release
 EXEODIR	=	$(EXEODIR).release
 !endif
 
-SBBS	=	$(LIBODIR)\sbbs.dll 
-FTPSRVR	=	$(LIBODIR)\ftpsrvr.dll
-MAILSRVR=	$(LIBODIR)\mailsrvr.dll
-BAJA	=	$(EXEODIR)\baja.exe
-FIXSMB	=	$(EXEODIR)\fixsmb.exe
-CHKSMB	=	$(EXEODIR)\chksmb.exe
-SMBUTIL	=	$(EXEODIR)\smbutil.exe
-
-ALL: $(LIBODIR) $(EXEODIR) \
-	$(SBBS) $(FTPSRVR) $(MAILSRVR) \
-	$(FIXSMB) $(CHKSMB) $(SMBUTIL) $(BAJA)
-
+!include targets.mak	# defines all targets
 !include objects.mak	# defines $(OBJS)
 !include headers.mak	# defines $(HEADERS)
 !include sbbsdefs.mak	# defines $(SBBSDEFS)
+
+SBBSLIB	=	$(LIBODIR)\sbbs.lib
 
 # Implicit C Compile Rule for SBBS.DLL
 {.}.c.$(OFILE):
@@ -68,20 +62,20 @@ $(EXEODIR):
 	mkdir $(EXEODIR)
 
 # SBBS DLL Link Rule
-$(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
+$(SBBS) $(SBBSLIB): $(OBJS) $(LIBODIR)\ver.$(OFILE)
     @echo Linking $< ...
 	$(LD) $(LFLAGS) c0d32.obj $(OBJS) $(LIBODIR)\ver.$(OFILE), $*, $*, \
 		import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
-$(MAILSRVR): mailsrvr.c mxlookup.c
+$(MAILSRVR): mailsrvr.c mxlookup.c $(SBBSLIB)
     @echo Compiling $** ...
-	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DMAILSRVR_EXPORTS $** $(LIBODIR)\sbbs.lib
+	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DMAILSRVR_EXPORTS -DSMBDLL $**
 
 # FTP Server DLL Link Rule
-$(FTPSRVR): ftpsrvr.c
+$(FTPSRVR): ftpsrvr.c $(SBBSLIB)
     @echo Compiling $** ...
-	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $** $(LIBODIR)\sbbs.lib
+	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $**
 
 # Baja Utility
 $(BAJA): baja.c ars.c

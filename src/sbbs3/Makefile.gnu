@@ -20,22 +20,26 @@ OFILE	=	o
 ifeq ($(os),win32)	# Windows
 
 LD		=	dllwrap
-LFILE	=	dll
+LIBFILE	=	.dll
+EXEFILE	=	.exe
 LIBODIR	:=	gcc.win32.dll
 EXEODIR	:=	gcc.win32.exe
 LIBDIR	:=	/gcc/i386-mingw32/lib
 CFLAGS	:=	-mno-cygwin
 LFLAGS  :=	--target=i386-mingw32 -mno-cygwin
+DELETE	=	echo y | del 
 
 else	# Linux
 
 LD		=	ld
-LFILE	=	a
+LIBFILE	=	.a
+EXEFILE	=	
 LIBODIR	:=	gcc.linux.lib
 EXEODIR	:=	gcc.linux.exe
 LIBDIR	:=	/usr/lib
 CFLAGS	:=	
 LFLAGS  :=	
+DELETE	=	rm -f -v
 
 endif
 
@@ -49,19 +53,12 @@ LIBODIR	:=	$(LIBODIR).release
 EXEODIR	:=	$(EXEODIR).release
 endif
 
-SBBS	=	$(LIBODIR)/sbbs.$(LFILE)
-
-FTPSRVR	=	$(LIBODIR)/ftpsrvr.$(LFILE)
-
-MAILSRVR=	$(LIBODIR)/mailsrvr.$(LFILE)
-
-SBBSLIB	=	$(LIBODIR)/sbbs.a
-
-ALL: $(LIBODIR) $(SBBS) $(FTPSRVR) $(MAILSRVR)
-
+include targets.mak		# defines all targets
 include objects.mak		# defines $(OBJS)
 include headers.mak		# defines $(HEADERS)
 include sbbsdefs.mak	# defines $(SBBSDEFS)
+
+SBBSLIB	=	$(LIBODIR)/sbbs.a
 	
 LIBS	=	$(LIBDIR)/libwsock32.a $(LIBDIR)/libwinmm.a
 
@@ -73,13 +70,17 @@ $(LIBODIR)/%.o : %.c
 $(LIBODIR)/%.o : %.cpp
 	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
 
-# Create output directory
+# Create output directories
 $(LIBODIR):
 	mkdir $(LIBODIR)
 
+$(EXEODIR):
+	mkdir $(EXEODIR)
+
+
 # SBBS Link Rule
-$(SBBS): $(OBJS) $(LIBODIR)/ver.o
-	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(SBBSLIB)
+$(SBBS) $(SBBSLIB): $(OBJS) $(LIBODIR)/ver.o
+	$(LD) $(LFLAGS) -o $(SBBS) $^ $(LIBS) --output-lib $(SBBSLIB)
 
 # FTP Server Link Rule
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
@@ -98,5 +99,22 @@ $(LIBODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h
 
 $(LIBODIR)/mxlookup.o: mxlookup.c
 	$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@		
+
+# Baja Utility
+$(BAJA): baja.c ars.c
+	$(CC) $(CFLAGS) -o $@ $^
+
+# FIXSMB Utility
+$(FIXSMB): fixsmb.c smblib.c smbwrap.c
+	$(CC) $(CFLAGS) -o $@ $^
+
+# CHKSMB Utility
+$(CHKSMB): chksmb.c smblib.c smbwrap.c
+	$(CC) $(CFLAGS) -o $@ $^
+
+# SMB Utility
+$(SMBUTIL): smbutil.c smblib.c smbwrap.c smbtxt.c lzh.c
+	$(CC) $(CFLAGS) -o $@ $^
+
 
 include depends.mak
