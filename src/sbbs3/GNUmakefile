@@ -61,7 +61,7 @@ LFLAGS	:=	-lm -pthread
 else			# Linux / Other UNIX
 # Math and pthread libraries needed
 ifdef bcc
-LFLAGS	:=	libm.a libpthread.a
+LFLAGS	:=	libpthread.so
 else
 LFLAGS	:=	-lm -lpthread
 endif
