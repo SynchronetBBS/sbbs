@@ -451,6 +451,8 @@ JSContext* js_initcx(SOCKET sock, JSObject** glob)
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
 
+	lprintf("%04d JavaScript: Context created",sock);
+
 	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);

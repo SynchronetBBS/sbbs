@@ -1435,6 +1435,10 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 	size_t		f;
 	glob_t		g;
 
+	if(bundlename==NULL) {
+		logprintf("ERROR line %d NULL bundlename",__LINE__);
+		return(1);
+	}
 	sprintf(fname,"%sBUNDLES.SBE",cfg.outbound);
 	if((stream=fnopen(&file,fname,O_RDWR|O_CREAT))==NULL) {
 		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
