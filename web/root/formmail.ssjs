@@ -5,6 +5,16 @@
 load("sbbsdefs.js");
 
 var log_results = true;
+var referers = [];
+var recipients = [ "sysop" ];
+
+var cfg_file = new File(file_cfgname(system.ctrl_dir, "formmail.ini"));
+if(cfg_file.open("r")) {
+	log_results = cfg_file.iniGetValue(null,"LogResults",log_results);
+	referers = cfg_file.iniGetValue(null,"Referers",referers);
+	recipients = cfg_file.iniGetValue(null,"Recipients",recipients);
+	cfg_file.close();
+}
 
 // List of supported 'config' form fields (not included in body text by default)
 var config_fields = {
@@ -77,9 +87,16 @@ if(http_request.query.required) {
 		results(LOG_ERR,"Missing the following form fields: " + missing.join(", "), true);
 }
 
+// Test for allowed 'referer' here
+if(referers.length && !find(http_request.header.referer,referers))
+	results(LOG_ERR,"Invalid referer value: " + http_request.header.referer);
+
 // Send HTTP/HTML results here
 function results(level, text, missing)
 {
+	if(level<=LOG_WARNING)
+		text = "!ERROR: ".bold() + text;
+
 	var plain_text = text.replace(/<[^>]*>/g,"");	// strip HTML tags
 
 	log(level,"FormMail: " + plain_text);
@@ -113,8 +130,6 @@ function results(level, text, missing)
 	writeln("<body" + body_attributes() + ">");
 
 	writeln("<center>");
-	if(level<=LOG_WARNING)
-		writeln("!ERROR: ".bold());
 	writeln(text);
 	writeln("<p>");
 	writeln(return_link_title.link(return_link_url));
@@ -137,14 +152,16 @@ function body_attributes()
 	return result;
 }
 
-// Search an array for a specific value
+// Search an array for a specific value or regexp match
 function find(val, list)
 {
 	var n;
 
-	for(n in list)
-		if(list[n]==val)
+	for(n in list) {
+		if(list[n].toLowerCase()==val.toLowerCase() 
+			|| val.search(new RegExp(list[n] +'$', 'i'))==0)
 			return(true);
+	}
 	return(false);
 }
 
@@ -201,6 +218,9 @@ if(http_request.query.recipient)
 
 var rcpt_list = [];
 for(i in recipient) {
+
+	if(recipients.length && !find(recipient[i],recipients))
+		results(LOG_ERR,"invalid recipient: " + recipient[i]);
 
 	var rcpt  = { to: strip_ctrl(recipient[i]) };
 
