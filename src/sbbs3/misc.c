@@ -386,7 +386,7 @@ char *faddrtoa(faddr_t* addr, char* str)
 	return(str);
 }
 
-char* net_addr(net_t* net)
+char* DLLCALL net_addr(net_t* net)
 {
 	static char faddr[64];
 	if(net->type==NET_FIDO)
