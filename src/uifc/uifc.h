@@ -191,7 +191,7 @@ extern char scrn_len,lclr,hclr,bclr,cclr,blk_scrn[MAX_BFLN],savdepth
 extern win_t sav[MAX_BUFS];
 extern uint cursor,helpline;
 
-void uifcini(void);
+int uifcini(void);
 int uscrn(char *str);
 int ulist(int mode, char left, int top, char width, int *dflt, int *bar
 	,char *title, char **option);
@@ -204,7 +204,7 @@ int  getstr(char *str, int maxlen, long mode);
 void timedisplay();
 void puttextinfo(struct text_info txt);
 int  lprintf(char *fmt,...);
-char *timestr(time_t *intime);
+char *utimestr(time_t *intime);
 void help(void);
 void truncsp(char *str);
 void uifcbail(void);

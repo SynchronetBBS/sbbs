@@ -1,6 +1,6 @@
-#line 1 "UIFC.C"
+/* uifc.c */
 
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* Developed 1990-2002 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
 
 #include "UIFC.h"
 #include <share.h>
@@ -15,6 +15,9 @@ void mswait(int msec)
 DosSleep(msec ? msec : 1);
 }
 
+#elif defined(_WIN32)
+	#include <windows.h>
+	#define mswait(x) Sleep(x)
 #elif defined(__FLAT__)
     #define mswait(x) delay(x)
 #endif
@@ -64,7 +67,7 @@ return(bioskey(0));
 
 uint mousecursor=0x28;
 
-void uifcini()
+int uifcini()
 {
 	int 	i;
 	struct	text_info txtinfo;
@@ -72,69 +75,70 @@ void uifcini()
 	union	REGS r;
 #endif
 
-putenv("TZ=UCT0");  /* Fix for Watcom C++ EDT default */
+    putenv("TZ=UTC0");  /* Fix for Watcom C++ EDT default */
 
-gettextinfo(&txtinfo);
+    clrscr();
+    gettextinfo(&txtinfo);
 
-scrn_len=txtinfo.screenheight;
-scrn_len--;
-clrscr();
-if(scrn_len>50) {
-	cputs("\7UIFC: Can't operate in video modes beyond 80x50\r\n");
-	exit(1); }
+    scrn_len=txtinfo.screenheight;
+    if(scrn_len>50) {
+        cputs("\7UIFC: Can't operate in video modes beyond 80x50\r\n");
+        exit(1); }
+    scrn_len--;
 
-if(txtinfo.screenwidth<80) {
-	cputs("\7UIFC: Can't operate in video modes less than 80x25\r\n");
-	exit(1); }
+    if(txtinfo.screenwidth<80) {
+        cputs("\7UIFC: Can't operate in video modes less than 80x25\r\n");
+        exit(1); }
 
 #ifndef __FLAT__
 
-r.w.ax=0x0000;				/* reset mouse and get driver status */
-INT_86(0x33,&r,&r);
+    r.w.ax=0x0000;				/* reset mouse and get driver status */
+    INT_86(0x33,&r,&r);
 
-if(r.w.ax==0xffff) {		/* mouse driver installed */
-	uifc_status|=UIFC_MOUSE;
-
-
-	r.w.ax=0x0020;			/* enable mouse driver */
-	INT_86(0x33,&r,&r);
-
-	r.w.ax=0x000a;			/* set text pointer type */
-	r.w.bx=0x0000;			/* software cursor */
-	r.w.cx=0x77ff;
-	r.w.dx=mousecursor<<8;
-	INT_86(0x33,&r,&r);
-
-	r.w.ax=0x0013;			/* set double speed threshold */
-	r.w.dx=32;				/* double speed threshold */
-	INT_86(0x33,&r,&r);
-
-	r.w.ax=0x0001;			/* show mouse pointer */
-	INT_86(0x33,&r,&r); }
-
-#endif
+    if(r.w.ax==0xffff) {		/* mouse driver installed */
+        uifc_status|=UIFC_MOUSE;
 
 
-if(!(uifc_status&UIFC_COLOR)
-	&& (uifc_status&UIFC_MONO
-		|| txtinfo.currmode==MONO || txtinfo.currmode==BW80)) {
-    bclr=BLACK;
-    hclr=WHITE;
-    lclr=LIGHTGRAY;
-    cclr=LIGHTGRAY; }
-else {
-	textmode(C80);
-    bclr=BLUE;
-    hclr=YELLOW;
-    lclr=WHITE;
-    cclr=CYAN; }
-for(i=0;i<8000;i+=2) {
-    blk_scrn[i]='°';
-    blk_scrn[i+1]=cclr|(bclr<<4); }
+        r.w.ax=0x0020;			/* enable mouse driver */
+        INT_86(0x33,&r,&r);
 
-cursor=_NOCURSOR;
-_setcursortype(cursor);
+        r.w.ax=0x000a;			/* set text pointer type */
+        r.w.bx=0x0000;			/* software cursor */
+        r.w.cx=0x77ff;
+        r.w.dx=mousecursor<<8;
+        INT_86(0x33,&r,&r);
 
+        r.w.ax=0x0013;			/* set double speed threshold */
+        r.w.dx=32;				/* double speed threshold */
+        INT_86(0x33,&r,&r);
+
+        r.w.ax=0x0001;			/* show mouse pointer */
+        INT_86(0x33,&r,&r); }
+
+    #endif
+
+
+    if(!(uifc_status&UIFC_COLOR)
+        && (uifc_status&UIFC_MONO
+            || txtinfo.currmode==MONO || txtinfo.currmode==BW80)) {
+        bclr=BLACK;
+        hclr=WHITE;
+        lclr=LIGHTGRAY;
+        cclr=LIGHTGRAY; }
+    else {
+        textmode(C80);
+        bclr=BLUE;
+        hclr=YELLOW;
+        lclr=WHITE;
+        cclr=CYAN; }
+    for(i=0;i<8000;i+=2) {
+        blk_scrn[i]='°';
+        blk_scrn[i+1]=cclr|(bclr<<4); }
+
+    cursor=_NOCURSOR;
+    _setcursortype(cursor);
+
+    return(scrn_len);
 }
 
 void hidemouse(void)
@@ -171,17 +175,16 @@ clrscr();
 
 int uscrn(char *str)
 {
-
-textattr(bclr|(cclr<<4));
-gotoxy(1,1);
-clreol();
-gotoxy(3,1);
-cputs(str);
-if(!puttext(1,2,80,scrn_len,blk_scrn))
-	return(-1);
-gotoxy(1,scrn_len+1);
-clreol();
-return(0);
+    textattr(bclr|(cclr<<4));
+    gotoxy(1,1);
+    clreol();
+    gotoxy(3,1);
+    cputs(str);
+    if(!puttext(1,2,80,scrn_len,blk_scrn))
+        return(-1);
+    gotoxy(1,scrn_len+1);
+    clreol();
+    return(0);
 }
 
 void scroll_text(int x1, int y1, int x2, int y2, int down)
@@ -193,6 +196,21 @@ if(down)
 	puttext(x1,y1+1,x2,y2,buf);
 else
 	puttext(x1,y1,x2,y2-1,buf+(((x2-x1)+1)*2));
+}
+
+/****************************************************************************/
+/* Updates time in upper left corner of screen with current time in ASCII/  */
+/* Unix format																*/
+/****************************************************************************/
+void timedisplay()
+{
+	static time_t savetime;
+	time_t now;
+
+now=time(NULL);
+if(difftime(now,savetime)>=60) {
+	uprintf(55,1,bclr|(cclr<<4),utimestr(&now));
+	savetime=now; }
 }
 
 /**************************************************************************/
@@ -290,7 +308,7 @@ else if(mode&WIN_SAV
 	sav[savnum].bot=SCRN_TOP+top+height; }
 
 
-#ifndef __OS2__
+#ifndef __FLAT__
 if(show_free_mem) {
 	#if defined(__LARGE__) || defined(__HUGE__) || defined(__COMPACT__)
 	uprintf(58,1,bclr|(cclr<<4),"%10ld bytes free",farcoreleft());
@@ -689,7 +707,7 @@ hitesc:
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						showmouse(); }
 					break;
-/*
+#if 0
 				case 0x49;	/* PgUp */
 				case 0x51;	/* PgDn */
 					if(!opts || (*cur)==(opts-1))
@@ -721,7 +739,7 @@ hitesc:
 						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 					showmouse();
                     break;
-*/
+#endif
 				case 79:	/* end */
 					if(!opts)
 						break;
@@ -1023,7 +1041,7 @@ hitesc:
 							savdepth--; }
 						return(-1); } } }
 	else
-		mswait(0);
+		mswait(1);
 	}
 }
 
@@ -1137,21 +1155,6 @@ uifc_status&=~UIFC_INMSG;
 }
 
 /****************************************************************************/
-/* Updates time in upper left corner of screen with current time in ASCII/  */
-/* Unix format																*/
-/****************************************************************************/
-void timedisplay()
-{
-	static time_t savetime;
-	time_t now;
-
-now=time(NULL);
-if(difftime(now,savetime)>=60) {
-	uprintf(55,1,bclr|(cclr<<4),timestr(&now));
-	savetime=now; }
-}
-
-/****************************************************************************/
 /* Gets a string of characters from the user. Turns cursor on. Allows 	    */
 /* Different modes - K_* macros. ESC aborts input.                          */
 /* Cursor should be at END of where string prompt will be placed.           */
@@ -1195,7 +1198,7 @@ if(mode&K_EDIT) {
 				_setcursortype(cursor);
 				return(-1); } }
 #endif
-		mswait(0);
+		mswait(1);
 		}
 	f=inkey(0);
 	gotoxy(wherex()-i,y);
@@ -1330,7 +1333,7 @@ while(1) {
 			putch(ch);
 			str[i++]=ch; } }
 	else
-		mswait(0);
+		mswait(1);
 	}
 str[j]=0;
 if(mode&K_EDIT) {
@@ -1430,7 +1433,7 @@ clreol();
 /* Generates a 24 character ASCII string that represents the time_t pointer  */
 /* Used as a replacement for ctime()                                         */
 /*****************************************************************************/
-char *timestr(time_t *intime)
+char *utimestr(time_t *intime)
 {
 	static char str[25];
 	char wday[4],mon[4],mer[3],hour;
@@ -1509,7 +1512,7 @@ sprintf(str,"%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
 	,hour,gm->tm_min,mer);
 return(str);
 }
-
+#if 0
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str' and terminates at first tab */
 /****************************************************************************/
@@ -1524,7 +1527,7 @@ c=strlen(str);
 while(c && (uchar)str[c-1]<=SP) c--;
 str[c]=0;
 }
-
+#endif
 void upop(char *str)
 {
 	static char sav[26*3*2];
@@ -1570,6 +1573,7 @@ void help()
 {
 	char *savscrn,*buf,inverse=0,high=0
 		,hbuf[HELPBUF_SIZE],str[256];
+    char *p;
 	uint i,j,k,len;
 	long l;
 	FILE *fp;
@@ -1650,12 +1654,20 @@ if(!helpbuf) {
 		sprintf(hbuf," ERROR  Cannot open help index:\r\n          %s"
 			,helpixbfile);
     else {
+        p=strrchr(helpfile,'/');
+        if(p==NULL)
+            p=strrchr(helpfile,'\\');
+        if(p==NULL)
+            p=helpfile;
+        else
+            p++;
 		l=-1L;
 		while(!feof(fp)) {
-			fread(str,12,1,fp);
+			if(!fread(str,12,1,fp))
+                break;
 			str[12]=0;
 			fread(&k,2,1,fp);
-			if(stricmp(str,helpfile) || k!=helpline) {
+			if(stricmp(str,p) || k!=helpline) {
 				fseek(fp,4,SEEK_CUR);
 				continue; }
 			fread(&l,4,1,fp);
@@ -1663,7 +1675,7 @@ if(!helpbuf) {
 		fclose(fp);
 		if(l==-1L)
 			sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\r\n"
-				"         %s",helpfile,helpline,helpixbfile);
+				"         %s",p,helpline,helpixbfile);
 		else {
 			if((fp=_fsopen(helpdatfile,"rb",SH_DENYWR))==NULL)
 				sprintf(hbuf," ERROR  Cannot open help file:\r\n          %s"
@@ -1711,7 +1723,7 @@ while(1) {
 		if(r.w.bx)			/* Left button release same as CR */
 			break; }
 #endif
-	mswait(0);
+	mswait(1);
 	}
 
 hidemouse();
@@ -1723,14 +1735,3 @@ _setcursortype(cursor);
 }
 #endif
 
-#if defined(__WIN32__) && !defined(__DPMI32__)
-
-int delay(int ms)
-{
-	clock_t start;
-
-start=clock();
-while(clock()-start<ms)
-	;
-}
-#endif
