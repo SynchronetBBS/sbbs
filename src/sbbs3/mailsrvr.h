@@ -39,6 +39,7 @@
 #define _MAILSRVR_H_
 
 #include "client.h"				/* client_t */
+#include "sbbsinet.h"           /* SOCKET */
 
 typedef struct {
 
@@ -140,5 +141,7 @@ DLLEXPORT const	char*	DLLCALL mail_ver(void);
 #ifdef __cplusplus
 }
 #endif
+
+int sockprintf(SOCKET sock, char *fmt, ...);
 
 #endif /* Don't add anything after this line */
