@@ -191,7 +191,6 @@ SOCKET open_socket(int type)
 SOCKET accept_socket(SOCKET s, SOCKADDR* addr, socklen_t* addrlen)
 {
 	SOCKET	sock;
-	char	error[256];
 
 	sock=accept(s,addr,addrlen);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
