@@ -48,7 +48,10 @@ void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	char	str[MAX_PATH];
 	int		count;
 
-	if(!number || number>cfg.sys_nodes) {
+	if(!number)
+		return;
+
+	if(number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
 		return; 
 	}
