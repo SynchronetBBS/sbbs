@@ -577,6 +577,43 @@ js_trashcan(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_findstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	char*		fname;
+	JSString*	js_str;
+	JSString*	js_fname;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if((js_fname=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((fname=JS_GetStringBytes(js_fname))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((str=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(findstr(cfg,str,fname));	// user args are reversed
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_zonestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	JSString*	js_str;
@@ -624,6 +661,7 @@ static JSFunctionSpec js_system_functions[] = {
 	{"alias",			js_alias,			1},		// return user name for alias
 	{"matchuser",		js_matchuser,		1},		// exact user name matching
 	{"trashcan",		js_trashcan,		2},		// search file for pseudo-regexp
+	{"findstr",			js_findstr,			2},		// search file for pseudo-regexp
 	{"zonestr",			js_zonestr,			0},		// convert zone int to string
 	{"timestr",			js_timestr,			0},		// convert a time_t into a string
 	{0}
