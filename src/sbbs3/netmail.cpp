@@ -43,7 +43,7 @@
 bool sbbs_t::inetmail(char *into, char *subj, long mode)
 {
 	char	str[256],str2[256],msgpath[256],title[256],name[256],ch
-			,buf[SDT_BLOCK_LEN],*p,addr[256],*uname_p;
+			,buf[SDT_BLOCK_LEN],*p,addr[256];
 	char 	tmp[512];
 	char	your_addr[128];
 	ushort	xlat=XLAT_NONE,net=NET_INTERNET;
@@ -83,17 +83,8 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 		truncsp(name); }
 
 	/* Get this user's internet mailing address */
-	uname_p=cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name;
-	if(strchr(uname_p,'.'))
-		sprintf(your_addr,"\"%s\"@",uname_p);
-	else {
-		sprintf(your_addr,"%s@",uname_p);
-		for(i=0;your_addr[i];i++)
-			if(your_addr[i]==' ' || your_addr[i]&0x80)
-				your_addr[i]='.';
-		strlwr(your_addr);
-	}
-	strcat(your_addr,cfg.sys_inetaddr);
+	usermailaddr(&cfg,your_addr
+		,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
 
 	bprintf(text[InternetMailing],addr,your_addr);
 	action=NODE_SMAL;
