@@ -59,8 +59,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>	/* must come after sys/types.h */
 
 /* SMB-specific headers */
 #include "smblib.h"
@@ -425,7 +425,7 @@ int SMBCALL smb_getstatus(smb_t* smb)
 	setvbuf(smb->shd_fp,smb->shd_buf,_IOFBF,SHD_BLOCK_LEN);
 	if(i==sizeof(smbstatus_t))
 		return(0);
-	sprintf(smb->last_error,"read %d instead of %d",i,sizeof(smbstatus_t));
+	sprintf(smb->last_error,"read %d instead of %d",i,(int)sizeof(smbstatus_t));
 	return(1);
 }
 
@@ -446,7 +446,7 @@ int SMBCALL smb_putstatus(smb_t* smb)
 	fflush(smb->shd_fp);
 	if(i==sizeof(smbstatus_t))
 		return(0);
-	sprintf(smb->last_error,"wrote %d instead of %d",i,sizeof(smbstatus_t));
+	sprintf(smb->last_error,"wrote %d instead of %d",i,(int)sizeof(smbstatus_t));
 	return(1);
 }
 
@@ -684,7 +684,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		=(dfield_t *)MALLOC(sizeof(dfield_t)*msg->hdr.total_dfields))==NULL) {
 		smb_freemsgmem(msg);
 		sprintf(smb->last_error,"malloc failure of %d bytes for %d data fields"
-			,sizeof(dfield_t)*msg->hdr.total_dfields, msg->hdr.total_dfields);
+			,(int)sizeof(dfield_t)*msg->hdr.total_dfields, msg->hdr.total_dfields);
 		return(-3); 
 	}
 	i=0;
@@ -709,7 +709,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			smb_freemsgmem(msg);
 			sprintf(smb->last_error
 				,"realloc failure of %d bytes for header field data"
-				,sizeof(void*)*(i+1));
+				,(int)sizeof(void*)*(i+1));
 			return(-3); 
 		}
 		msg->hfield_dat=vpp;
@@ -717,7 +717,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			smb_freemsgmem(msg);
 			sprintf(smb->last_error
 				,"realloc failure of %d bytes for header fields"
-				,sizeof(hfield_t)*(i+1));
+				,(int)sizeof(hfield_t)*(i+1));
 			return(-3); 
 		}
 		msg->hfield=vp;
@@ -746,7 +746,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		switch(msg->hfield[i].type) {	/* convenience variables */
 			case SENDER:
 				if(!msg->from) {
-					msg->from=msg->hfield_dat[i];
+					msg->from=(char*)msg->hfield_dat[i];
 					break; 
 				}
 			case FORWARDED: 	/* fall through */
@@ -758,7 +758,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 				break;
 			case SENDEREXT:
 				if(!msg->forwarded)
-					msg->from_ext=msg->hfield_dat[i];
+					msg->from_ext=(char*)msg->hfield_dat[i];
 				break;
 			case SENDERNETTYPE:
 				if(!msg->forwarded)
@@ -766,13 +766,13 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 				break;
 			case SENDERNETADDR:
 				if(!msg->forwarded)
-					msg->from_net.addr=msg->hfield_dat[i];
+					msg->from_net.addr=(char*)msg->hfield_dat[i];
 				break;
 			case REPLYTO:
-				msg->replyto=msg->hfield_dat[i];
+				msg->replyto=(char*)msg->hfield_dat[i];
 				break;
 			case REPLYTOEXT:
-				msg->replyto_ext=msg->hfield_dat[i];
+				msg->replyto_ext=(char*)msg->hfield_dat[i];
 				break;
 			case REPLYTOAGENT:
 				msg->replyto_agent=*(ushort *)msg->hfield_dat[i];
@@ -781,13 +781,13 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 				msg->replyto_net.type=*(ushort *)msg->hfield_dat[i];
 				break;
 			case REPLYTONETADDR:
-				msg->replyto_net.addr=msg->hfield_dat[i];
+				msg->replyto_net.addr=(char*)msg->hfield_dat[i];
 				break;
 			case RECIPIENT:
-				msg->to=msg->hfield_dat[i];
+				msg->to=(char*)msg->hfield_dat[i];
 				break;
 			case RECIPIENTEXT:
-				msg->to_ext=msg->hfield_dat[i];
+				msg->to_ext=(char*)msg->hfield_dat[i];
 				break;
 			case RECIPIENTAGENT:
 				msg->to_agent=*(ushort *)msg->hfield_dat[i];
@@ -796,40 +796,40 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 				msg->to_net.type=*(ushort *)msg->hfield_dat[i];
 				break;
 			case RECIPIENTNETADDR:
-				msg->to_net.addr=msg->hfield_dat[i];
+				msg->to_net.addr=(char*)msg->hfield_dat[i];
 				break;
 			case SUBJECT:
-				msg->subj=msg->hfield_dat[i];
+				msg->subj=(char*)msg->hfield_dat[i];
 				break;
 			case RFC822MSGID:
-				msg->id=msg->hfield_dat[i];
+				msg->id=(char*)msg->hfield_dat[i];
 				break;
 			case RFC822REPLYID:
-				msg->reply_id=msg->hfield_dat[i];
+				msg->reply_id=(char*)msg->hfield_dat[i];
 				break;
 			case SMTPREVERSEPATH:
-				msg->reverse_path=msg->hfield_dat[i];
+				msg->reverse_path=(char*)msg->hfield_dat[i];
 				break;
 			case USENETPATH:
-				msg->path=msg->hfield_dat[i];
+				msg->path=(char*)msg->hfield_dat[i];
 				break;
 			case USENETNEWSGROUPS:
-				msg->newsgroups=msg->hfield_dat[i];
+				msg->newsgroups=(char*)msg->hfield_dat[i];
 				break;
 			case FIDOMSGID:
-				msg->ftn_msgid=msg->hfield_dat[i];
+				msg->ftn_msgid=(char*)msg->hfield_dat[i];
 				break;
 			case FIDOREPLYID:
-				msg->ftn_reply=msg->hfield_dat[i];
+				msg->ftn_reply=(char*)msg->hfield_dat[i];
 				break;
 			case FIDOAREA:
-				msg->ftn_area=msg->hfield_dat[i];
+				msg->ftn_area=(char*)msg->hfield_dat[i];
 				break;
 			case FIDOPID:
-				msg->ftn_pid=msg->hfield_dat[i];
+				msg->ftn_pid=(char*)msg->hfield_dat[i];
 				break;
 			case FIDOFLAGS:
-				msg->ftn_flags=msg->hfield_dat[i];
+				msg->ftn_flags=(char*)msg->hfield_dat[i];
 				break;
 			
 		}
@@ -886,21 +886,21 @@ int SMBCALL smb_copymsgmem(smbmsg_t* msg, smbmsg_t* srcmsg)
 	memcpy(msg,srcmsg,sizeof(smbmsg_t));
 
 	/* data field types/lengths */
-	if((msg->dfield=MALLOC(msg->hdr.total_dfields*sizeof(dfield_t)))==NULL)
+	if((msg->dfield=(dfield_t *)MALLOC(msg->hdr.total_dfields*sizeof(dfield_t)))==NULL)
 		return(1);
 	memcpy(msg->dfield,srcmsg->dfield,msg->hdr.total_dfields*sizeof(dfield_t));
 
 	/* header field types/lengths */
-	if((msg->hfield=MALLOC(msg->total_hfields*sizeof(hfield_t)))==NULL)
+	if((msg->hfield=(hfield_t *)MALLOC(msg->total_hfields*sizeof(hfield_t)))==NULL)
 		return(2);
 	memcpy(msg->hfield,srcmsg->hfield,msg->total_hfields*sizeof(hfield_t));
 
 	/* header field data */
-	if((msg->hfield_dat=MALLOC(msg->total_hfields*sizeof(void*)))==NULL)
+	if((msg->hfield_dat=(void**)MALLOC(msg->total_hfields*sizeof(void*)))==NULL)
 		return(3);
 
 	for(i=0;i<msg->total_hfields;i++) {
-		if((msg->hfield_dat[i]=(char*)MALLOC(msg->hfield[i].length))==NULL)
+		if((msg->hfield_dat[i]=(void*)MALLOC(msg->hfield[i].length))==NULL)
 			return(4);
 		memcpy(msg->hfield_dat[i],srcmsg->hfield_dat[i],msg->hfield[i].length);
 	}
@@ -926,14 +926,15 @@ int SMBCALL smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 {
-	void* vp,**vpp;
+	void**		vpp;
+	hfield_t*	hp;
 	int i;
 
 	i=msg->total_hfields;
-	if((vp=(hfield_t *)REALLOC(msg->hfield,sizeof(hfield_t)*(i+1)))==NULL) 
+	if((hp=(hfield_t *)REALLOC(msg->hfield,sizeof(hfield_t)*(i+1)))==NULL) 
 		return(1);
 
-	msg->hfield=vp;
+	msg->hfield=hp;
 	if((vpp=(void* *)REALLOC(msg->hfield_dat,sizeof(void* )*(i+1)))==NULL) 
 		return(2);
 	
@@ -975,14 +976,14 @@ void* SMBCALL smb_get_hfield(smbmsg_t* msg, ushort type, hfield_t* hfield)
 /****************************************************************************/
 int SMBCALL smb_dfield(smbmsg_t* msg, ushort type, ulong length)
 {
-	void* vp;
+	dfield_t* dp;
 	int i,j;
 
 	i=msg->hdr.total_dfields;
-	if((vp=(dfield_t *)REALLOC(msg->dfield,sizeof(dfield_t)*(i+1)))==NULL) 
+	if((dp=(dfield_t *)REALLOC(msg->dfield,sizeof(dfield_t)*(i+1)))==NULL) 
 		return(1);
 	
-	msg->dfield=vp;
+	msg->dfield=dp;
 	msg->hdr.total_dfields++;
 	msg->dfield[i].type=type;
 	msg->dfield[i].length=length;
