@@ -11,11 +11,11 @@
 
 int sock port i
 str addr user pass src dest fname
-str pasv_mode hash_mode ascii_mode
+str pasv_mode hash_mode ascii_mode debug_mode
 
 set _ftp_mode FTP_ECHO_RSP|FTP_HASH|FTP_PASV
 
-print "\r\n\1h\1ySynchronet \1wFTP Client v1.00 \1y- Copyright 2001 Rob Swindell\1n\r\n\r\n"
+print "\r\n\1h\1ySynchronet \1wFTP Client v1.10 \1y- Copyright 2002 Rob Swindell\1n\r\n\r\n"
 
 compare str ""
 if_false
@@ -34,6 +34,11 @@ if_equal
 	continue
 	end_if
 
+compare_word "help"	# pseudonym for ?
+if_true
+	set str "?"
+	end_if
+
 compare_word "?"
 if_true
 	compare_all_bits _ftp_mode FTP_HASH
@@ -41,6 +46,13 @@ if_true
 		set hash_mode ON
 	else
 		set hash_mode OFF
+		end_if
+
+	compare_all_bits _ftp_mode FTP_ECHO_CMD
+	if_true
+		set debug_mode ON
+	else
+		set debug_mode OFF
 		end_if
 
 	compare_all_bits _ftp_mode FTP_PASV
@@ -63,9 +75,10 @@ if_true
 	print  "\1h\1ydir    \1w: \1cprint a directory listing\r\n"
 	print  "\1h\1ypwd    \1w: \1cprint working directory\r\n"
 	print  "\1h\1ycd     \1w: \1cchange working directory\r\n"
-	printf "\1h\1yhash   \1w: \1ctoggle hash printing during transfer (currently %s\1c)\r\n" hash_mode
 	printf "\1h\1ypasv   \1w: \1ctoggle passive mode transfers (currently %s\1c)\r\n" pasv_mode
 	printf "\1h\1yascii  \1w: \1ctoggle ASCII (CR/LF) mode transfers (currently %s\1c)\r\n" ascii_mode
+	printf "\1h\1yhash   \1w: \1ctoggle hash printing during transfer (currently %s\1c)\r\n" hash_mode
+	printf "\1h\1ydebug  \1w: \1ctoggle command debugging (currently %s\1c)\r\n" debug_mode
 	print  "\1h\1yget    \1w: \1cretrieve (download) file\r\n"
 	print  "\1h\1yput    \1w: \1csend (upload) file\r\n"
 	print  "\1h\1ydelete \1w: \1cdelete (erase) file\r\n"
@@ -103,6 +116,20 @@ if_true
 	xor _ftp_mode FTP_HASH
 	compare_all_bits _ftp_mode FTP_HASH
 	print "\1h\1cHash mark printing: "
+	if_true
+		print ON
+	else
+		print OFF
+		end_if
+	crlf
+	continue
+	end_if
+
+compare_str "debug"
+if_true
+	xor _ftp_mode FTP_ECHO_CMD
+	compare_all_bits _ftp_mode FTP_ECHO_CMD
+	print "\1h\1cCommand/response debugging: "
 	if_true
 		print ON
 	else
