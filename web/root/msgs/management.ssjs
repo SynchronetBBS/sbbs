@@ -17,7 +17,7 @@ if(http_request.query.Action=="Delete Message(s)") {
 	for(num in http_request.query.number) {
 		var mnum=parseInt(http_request.query.number[num]);
 
-		if(sub==mail && ((idx=get_msg_index(false,mnum))==null || idx.to!=user.number)) {
+		if(sub=='mail' && ((idx=get_msg_index(false,mnum))==null || idx.to!=user.number)) {
 			errors++;
 			errorlist.push("Cannot delete message "+mnum);
 			continue;
