@@ -1833,6 +1833,8 @@ void DLLCALL services_thread(void* arg)
 					initialized=t;
 					break;
 				}
+				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
+					startup->recycle_now=TRUE;
 				if(!total_clients && startup->recycle_now==TRUE) {
 					lprintf("0000 Recycle semaphore signaled");
 					startup->recycle_now=FALSE;
