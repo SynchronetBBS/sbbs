@@ -41,14 +41,15 @@
 /* Global Variables */
 /********************/
 
-scfg_t	cfg;
-int  no_dirchk=0,forcesave=0;
-extern int all_msghdr;
-extern int no_msghdr;
+scfg_t	cfg;    /* Synchronet Configuration */
+uifcapi_t uifc; /* User Interface (UIFC) Library API */
+
+BOOL  no_dirchk=FALSE,forcesave=FALSE;
+extern BOOL all_msghdr;
+extern BOOL no_msghdr;
 char **opt;
 char tmp[256];
 int  backup_level=5;
-uifcapi_t uifc;
 
 read_cfg_text_t txt={
 	"\7\r\nError opening %s for read.\r\n",
@@ -96,9 +97,10 @@ int main(int argc, char **argv)
     BOOL    door_mode=FALSE;
 	FILE	*instream;
 
-printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
-	"Rob Swindell\r\n",PLATFORM_DESC,VERSION);
+    printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
+        "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
 
+    memset(&uifc,0,sizeof(uifc));
     p=getenv("SBBSCTRL");
     if(p!=NULL)
         sprintf(cfg.ctrl_dir,"%.*s",sizeof(cfg.ctrl_dir)-1,p);
@@ -138,39 +140,14 @@ printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
                 case 'F':
                 	forcesave=!forcesave;
                     break;
+                case 'L':
+                    uifc.scrn_len=atoi(argv[i]+2);
+                    break;
 #if !defined(__unix__)
                 case 'V':
                     textmode(atoi(argv[i]+2));
                     break;
-                case 'L':
-                    switch(atoi(argv[i]+2)) {
-                        case 14:
-                            textmode(C80X14);
-                            break;
-                        case 21:
-                            textmode(C80X21);
-                            break;
-                        case 25:
-                            textmode(C80);
-                            break;
-                        case 28:
-                            textmode(C80X28);
-                            break;
-                        case 43:
-                            textmode(C80X43);
-                            break;
-                        case 50:
-                            textmode(C80X50);
-                            break;
-                        case 60:
-                            textmode(C80X60);
-                            break;
-                        default:
-                            textmode(C4350);
-                            break;
-                    }
-                    break;
-#endif                    
+#endif
                 default:
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
@@ -182,8 +159,8 @@ printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
                         "-d  =  run in standard input/output/door mode\r\n"
                         "-c  =  force color mode\r\n"
                         "-v# =  set video mode to #\r\n"
-                        "-l# =  set screen lines to #\r\n"
 #endif
+                        "-l# =  set screen lines to #\r\n"
                         "-b# =  set automatic back-up level (default=3 max=10)\r\n"
                         );
         			exit(0);
@@ -458,7 +435,7 @@ these uifc.changes, select Yes. If you are positive you DO NOT want to save
 these uifc.changes, select No. If you are not sure and want to review the
 configuration before deciding, hit  ESC .
 */
-i=uifc.list(mode|WIN_ACT,0,0,0,&i,0,"Save uifc.changes",opt);
+i=uifc.list(mode|WIN_ACT,0,0,0,&i,0,"Save Changes",opt);
 if(mode&WIN_SAV && uifc.savdepth)
 	uifc.savnum--;
 if(i!=-1)
@@ -839,24 +816,25 @@ indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 /****************************************************************************/
 int delfiles(char *inpath, char *spec)
 {
-    char str[256],path[128],done,c;
-    int files=0;
-    struct ffblk ff;
+	char	path[MAX_PATH+1];
+    uint	i,files=0;
+	glob_t	g;
 
-strcpy(path,inpath);
-c=strlen(path);
-if(path[c-1]!='\\' && path[c-1]!='/' && path[c-1]!=':')
-    strcat(path,"/");
-sprintf(str,"%s%s",path,spec);
-done=findfirst(str,&ff,0);
-while(!done) {
-    sprintf(str,"%s%s",path,ff.ff_name);
-    if(remove(str))
-        errormsg(WHERE,ERR_REMOVE,str,0);
-    else
-        files++;
-    done=findnext(&ff); }
-return(files);
+	strcpy(path,inpath);
+	backslash(path);
+	strcat(path,spec);
+	glob(path,0,NULL,&g);
+	for(i=0;i<g.gl_pathc;i++) {
+		if(isdir(g.gl_pathv[i]))
+			continue;
+		CHMOD(g.gl_pathv[i],S_IWRITE);	// Incase it's been marked RDONLY
+		if(remove(g.gl_pathv[i]))
+			errormsg(WHERE,ERR_REMOVE,g.gl_pathv[i],0);
+		else
+			files++;
+	}
+	globfree(&g);
+	return(files);
 }
 
 int whichlogic()
@@ -1890,30 +1868,5 @@ void errormsg(int line, char *source,  char action, char *object, ulong access)
     puttext(1,1,80,uifc.scrn_len,scrn_buf);
 #endif    
 }
-
-/****************************************************************************/
-/* Return ASCII string representation of ulong								*/
-/* There may be a native GNU C Library function to this...					*/
-/****************************************************************************/
-#if !defined _MSC_VER && !defined __BORLANDC__
-char* DLLCALL ultoa(ulong val, char* str, int radix)
-{
-	switch(radix) {
-		case 8:
-			sprintf(str,"%lo",val);
-			break;
-		case 10:
-			sprintf(str,"%lu",val);
-			break;
-		case 16:
-			sprintf(str,"%lx",val);
-			break;
-		default:
-			sprintf(str,"bad radix: %d",radix);
-			break;
-	}
-	return(str);
-}
-#endif
 
 /* End of SCFG.C */
