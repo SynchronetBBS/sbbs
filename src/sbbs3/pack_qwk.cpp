@@ -588,7 +588,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*******************/
 	sprintf(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
 	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL)
-		,ex|EX_SH);	/* Needs sh for wildcard expansion */
+		,ex|EX_WILDCARD);
 	if(!fexist(packet)) {
 		bputs(text[QWKCompressionFailed]);
 		if(i)

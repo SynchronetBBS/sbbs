@@ -123,7 +123,7 @@ void sbbs_t::temp_xfer()
 				logline(nulstr,tmp2);
 				sprintf(tmp2,"%s%s",cfg.temp_dir,str);
 				sprintf(str,"%s%s",cfg.temp_dir,f.name);
-				external(cmdstr(temp_cmd(),str,tmp2,NULL),EX_SH|EX_OUTL|EX_OUTR);
+				external(cmdstr(temp_cmd(),str,tmp2,NULL),EX_WILDCARD|EX_OUTL|EX_OUTR);
 				break;
 			case 'D':   /* download from temp dir */
 				sprintf(str,"%s%s",cfg.temp_dir,f.name);
