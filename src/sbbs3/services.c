@@ -1172,6 +1172,7 @@ static service_t* read_services_cfg(char* services_cfg, DWORD* services)
 		return(NULL);
 	}
 
+	lprintf("Reading %s",services_cfg);
 	for((*services)=0;!feof(fp) && (*services)<MAX_SERVICES;) {
 		if(!fgets(line,sizeof(line),fp))
 			break;
