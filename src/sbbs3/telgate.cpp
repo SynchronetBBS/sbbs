@@ -200,6 +200,11 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 			if(ERROR_VALUE==EWOULDBLOCK) {
 				if(mode&TG_NODESYNC) {
 					SYNC;
+				} else {
+					// Check if the node has been interrupted
+					getnodedat(cfg.node_num,&thisnode,0);
+					if(thisnode.misc&NODE_INTR)
+						break;
 				}
 				mswait(1);
 				continue;
