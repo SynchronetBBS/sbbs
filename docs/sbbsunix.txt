@@ -122,6 +122,12 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       (no password - just hit enter)
       cvs co run-sbbs3
 
+   *> Recommended Shortcut for Linux systems:
+   *> Download the last verified buildable source archive (for Linux)
+   *> from ftp://vert.synchro.net/Synchronet/sbbs_src.tgz
+   *> extract (with "tar -xzvf <filename>") in the Synchronet BBS Directory,
+   *> and skip ahead to G.
+
    D. Get the required source code modules from the CVS repository:
       cvs co src-sbbs3
 
