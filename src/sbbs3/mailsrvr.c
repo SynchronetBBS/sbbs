@@ -463,7 +463,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 		s=sockprintf(socket,"From: %s",p);	/* use original RFC822 header field */
 	else {
 		if(msg->from_net.type==NET_INTERNET && msg->from_net.addr!=NULL)
-			SAFECOPY(fromaddr,msg->from_net.addr);
+			SAFECOPY(fromaddr,(char*)msg->from_net.addr);
 		else if(msg->from_net.type==NET_QWK && msg->from_net.addr!=NULL)
 			sprintf(fromaddr,"\"%s@%s\"@%s"
 				,msg->from,(char*)msg->from_net.addr,scfg.sys_inetaddr);
