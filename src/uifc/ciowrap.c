@@ -29,6 +29,7 @@ void initciowrap(int mode)
 		cio_api.setcursortype=x_setcursortype;
 		cio_api.clreol=x_clreol;
 		cio_api.getch=x_getch;
+		cio_api.getche=x_getche;
 		cio_api.beep=x_beep;
 		return;
 	}
@@ -54,5 +55,6 @@ void initciowrap(int mode)
 	cio_api.setcursortype=curs_setcursortype;
 	cio_api.clreol=curs_clreol;
 	cio_api.getch=curs_getch;
+	cio_api.getche=curs_getche;
 	cio_api.beep=beep;
 }

@@ -25,6 +25,7 @@ void x_textbackground(int colour);
 void x_textcolor(int colour);
 void x_clreol(void);
 int x_getch(void);
+int x_getche(void);
 int x_beep(void);
 #ifdef __cplusplus
 }

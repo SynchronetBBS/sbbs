@@ -82,6 +82,7 @@ typedef struct {
 	void	(*textbackground)	(int);
 	void	(*textcolor)	(int);
 	int		(*getch)		(void);
+	int		(*getche)		(void);
 	int		(*beep)			(void);
 } cioapi_t;
 
@@ -106,7 +107,8 @@ extern cioapi_t cio_api;
 #define textbackground(a)	cio_api.textbackground(a)
 #define textcolor(a)		cio_api.textcolor(a)
 #undef getch
-#define getch()			cio_api.getch()
+#define getch()				cio_api.getch()
+#define getche()			cio_api.getche()
 #define beep()				cio_api.beep()
 
 #endif

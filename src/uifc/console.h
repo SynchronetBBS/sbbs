@@ -202,6 +202,8 @@ extern BYTE DpyRows;
 
 extern int FH;
 
+extern int x_nextchar;
+
 extern BYTE VGA_CRTC[CRTC_Size];
 
 int init_window();

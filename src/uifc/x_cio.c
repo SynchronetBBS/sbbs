@@ -215,6 +215,18 @@ int x_getch(void)
 	return(tty_read(TTYF_BLOCK));
 }
 
+int x_getche(void)
+{
+	int ch;
+
+	if(x_nextchar)
+		return(x_getch());
+	ch=x_getch();
+	if(ch)
+		x_putch(ch);
+	return(ch);
+}
+
 int x_beep(void)
 {
 	tty_beep();

@@ -1409,30 +1409,30 @@ KbdEmpty()
 	return(K_NEXT == K_FREE);
 }
 
-static int nextchar = 0;
+int x_nextchar = 0;
 
 int
 tty_read(int flag)
 {
-    int r;
+	int r;
 
-    if ((r = nextchar) != 0) {
-	nextchar = 0;
-	return(r & 0xff);
-    }
-
-    if (KbdEmpty()) {
-	if (flag & TTYF_BLOCK) {
-	    while (KbdEmpty())
-		tty_pause();
-	} else {
-	    return(-1);
+	if ((r = x_nextchar) != 0) {
+		x_nextchar = 0;
+		return(r & 0xff);
 	}
+
+	if (KbdEmpty()) {
+		if (flag & TTYF_BLOCK) {
+			while (KbdEmpty())
+			tty_pause();
+		} else {
+			return(-1);
+		}
     }
 
     r = KbdRead();
     if ((r & 0xff) == 0)
-	nextchar = r >> 8;
+		x_nextchar = r >> 8;
     r &= 0xff;
     return(r & 0xff);
 }
@@ -1442,8 +1442,8 @@ tty_peek(int flag)
 {
 	int c;
 
-    	if (c == nextchar)
-	    return(nextchar & 0xff);
+    	if (c == x_nextchar)
+	    return(x_nextchar & 0xff);
 
 	if (KbdEmpty()) {
 		if (flag & TTYF_POLL) {
@@ -1463,7 +1463,7 @@ tty_peek(int flag)
 int
 tty_kbhit(void)
 {
-	if(nextchar || !KbdEmpty())
+	if(x_nextchar || !KbdEmpty())
 		return(1);
 	return(0);
 }

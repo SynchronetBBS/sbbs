@@ -895,3 +895,15 @@ int curs_getch(void)
 	}
 	return(ch);
 }
+
+int curs_getche(void)
+{
+	int ch;
+
+	if(curs_nextgetch)
+		return(curs_getch());
+	ch=curs_getch();
+	if(ch)
+		curs_putch(ch);
+	return(ch);
+}
