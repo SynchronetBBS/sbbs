@@ -243,7 +243,7 @@ char* DLLCALL os_version(char *str)
 /* The native Win32 versions of these functions are already thread-safe.	*/
 /****************************************************************************/
 
-struct tm* DLLCALL gmtime_r(time_t* t, struct tm* tm)
+struct tm* DLLCALL gmtime_r(const time_t* t, struct tm* tm)
 {
 	struct tm* tmp = gmtime(t);
 
@@ -254,7 +254,7 @@ struct tm* DLLCALL gmtime_r(time_t* t, struct tm* tm)
 	return(tm);
 }
 
-struct tm* DLLCALL localtime_r(time_t* t, struct tm* tm)
+struct tm* DLLCALL localtime_r(const time_t* t, struct tm* tm)
 {
 	struct tm* tmp = localtime(t);
 
