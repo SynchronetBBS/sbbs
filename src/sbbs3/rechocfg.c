@@ -7,11 +7,9 @@
 #ifdef _WIN32
 	#include <windows.h>
 #endif
-#include <dos.h>
 #include <time.h>
 #include <errno.h>
 #include <stdio.h>
-#include <conio.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <share.h>
@@ -20,10 +18,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <process.h>
-#include <sys\stat.h>
+#include <sys/stat.h>
 
-#include "crc32.h"
-#include "sbbsdefs.h"
+#include "sbbs.h"
 #include "sbbsecho.h"
 #include "filewrap.h"	/* O_DENYNONE */
 
