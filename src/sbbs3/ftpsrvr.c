@@ -2388,6 +2388,12 @@ static void ctrl_thread(void* arg)
 
 			sprintf(sys_pass,"%s:%s",user.pass,scfg.sys_pass);
 			if(!user.pass[0]) {	/* Guest/Anonymous */
+				if(trashcan(&scfg,password,"email")) {
+					lprintf("%04d Blocked e-mail address: %s",sock,password);
+					sockprintf(sock,"530 Password not accepted.");
+					user.number=0;
+					continue;
+				}
 				lprintf("%04d Guest: %s",sock,password);
 				putuserrec(&scfg,user.number,U_NETMAIL,LEN_NETMAIL,password);
 			}
@@ -3593,6 +3599,10 @@ static void ctrl_thread(void* arg)
 					lprintf("%04d !%s illegal filename attempt: %s"
 						,sock,user.alias,p);
 					hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
+#ifdef _WIN32
+					if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
+						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 				} else {
 					if(fexist(fname)) {
 						success=TRUE;
@@ -3746,6 +3756,10 @@ static void ctrl_thread(void* arg)
 						,sock,user.alias,p);
 					sockprintf(sock,"553 Illegal filename attempt");
 					hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
+#ifdef _WIN32
+					if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
+						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 					continue;
 				}
 				sprintf(fname,"%s%s",scfg.dir[dir]->path,p);
@@ -3909,9 +3923,13 @@ static void ctrl_thread(void* arg)
 
 		if(!strnicmp(cmd, "MKD", 3) || 
 			!strnicmp(cmd,"XMKD",4) || 
-			!strnicmp(cmd,"SITE EXEC",9)) 
+			!strnicmp(cmd,"SITE EXEC",9)) {
 			hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
-		
+#ifdef _WIN32
+					if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
+						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+		}		
 		sockprintf(sock,"500 Syntax error: '%s'",cmd);
 		lprintf("%04d !FTP: UNSUPPORTED COMMAND: '%s'",sock,cmd);
 	} /* while(1) */

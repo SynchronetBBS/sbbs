@@ -85,7 +85,7 @@ typedef struct {
     char	reserved_path3[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
-    char	reserved_path2[128];
+    char	hack_sound[128];
     char	reserved_path1[128];
 
 } ftp_startup_t;
