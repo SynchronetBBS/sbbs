@@ -87,12 +87,13 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
 		sprintf(top,text[RegardingByToOn],title,touser,remsg->to
 			,timestr((time_t *)&remsg->hdr.when_written.time)
-			,zonestr(remsg->hdr.when_written.zone)); }
-	else {
+			,zonestr(remsg->hdr.when_written.zone)); 
+	} else {
 		title[0]=0;
 		touser[0]=0;
 		top[0]=0;
-		msgattr=0; }
+		msgattr=0; 
+	}
 
 	/* Security checks */
 	if(!chk_ar(cfg.sub[subnum]->post_ar,&useron)) {
@@ -145,13 +146,18 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			if(cfg.sub[subnum]->misc&SUB_NAME) {
 				if(!userdatdupe(useron.number,U_NAME,LEN_NAME,touser,0)) {
 					bputs(text[UnknownUser]);
-					return(false); } }
+					return(false); 
+				} 
+			}
 			else {
 				if((i=finduser(touser))==0)
 					return(false);
-				username(&cfg,i,touser); } }
+				username(&cfg,i,touser); 
+			} 
+		}
 		if(sys_status&SS_ABORT)
-			return(false); }
+			return(false); 
+	}
 
 	if(!touser[0])
 		strcpy(touser,"All");       // Default to ALL
@@ -161,7 +167,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	if(msgattr&MSG_PRIVATE && !stricmp(touser,"ALL")) {
 		bputs(text[NoToUser]);
-		return(false); }
+		return(false); 
+	}
 	if(msgattr&MSG_PRIVATE)
 		wm_mode|=WM_PRIVATE;
 
@@ -186,15 +193,18 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		bputs(text[UsingRealName]);
 
 	sprintf(str,"%sINPUT.MSG",cfg.node_dir);
-	if(!writemsg(str,top,title,wm_mode,subnum,touser)) {
+	if(!writemsg(str,top,title,wm_mode,subnum,touser)
+		|| (long)(length=flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
 		bputs(text[Aborted]);
-		return(false); }
+		return(false); 
+	}
 
 	bputs(text[WritingIndx]);
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
-		return(false); }
+		return(false); 
+	}
 
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
@@ -202,7 +212,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(false); }
+		return(false); 
+	}
 
 	if(filelength(fileno(smb.shd_fp))<1) {	 /* Create it if it doesn't exist */
 		smb.status.max_crcs=cfg.sub[subnum]->maxcrcs;
@@ -213,44 +224,54 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
 			errormsg(WHERE,ERR_CREATE,smb.file,i,smb.last_error);
-			return(false); } }
+			return(false); 
+		} 
+	}
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-		return(false); }
+		return(false); 
+	}
 
 	if((i=smb_getstatus(&smb))!=0) {
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
-		return(false); }
+		return(false); 
+	}
 
-	length=flength(str)+2;	 /* +2 for translation string */
+	length+=sizeof(xlat);	 /* +2 for translation string */
 
 	if(length&0xfff00000UL) {
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_LEN,str,length);
-		return(false); }
+		return(false); 
+	}
 
 	if(smb.status.attr&SMB_HYPERALLOC) {
 		offset=smb_hallocdat(&smb);
-		storage=SMB_HYPERALLOC; }
+		storage=SMB_HYPERALLOC; 
+	}
 	else {
 		if((i=smb_open_da(&smb))!=0) {
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-			return(false); }
+			return(false); 
+		}
 		if(cfg.sub[subnum]->misc&SUB_FAST) {
 			offset=smb_fallocdat(&smb,length,1);
-			storage=SMB_FASTALLOC; }
+			storage=SMB_FASTALLOC; 
+		}
 		else {
 			offset=smb_allocdat(&smb,length,1);
-			storage=SMB_SELFPACK; }
-		smb_close_da(&smb); }
+			storage=SMB_SELFPACK; 
+		}
+		smb_close_da(&smb); 
+	}
 
 	if((file=open(str,O_RDONLY|O_BINARY))==-1
 		|| (instream=fdopen(file,"rb"))==NULL) {
@@ -258,7 +279,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_BINARY);
-		return(false); }
+		return(false); 
+	}
 
 	setvbuf(instream,NULL,_IOFBF,2*1024);
 	fseek(smb.sdt_fp,offset,SEEK_SET);
@@ -274,9 +296,11 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			buf[j-1]=buf[j-2]=0;	/* Convert to NULL */
 		if(cfg.sub[subnum]->maxcrcs) {
 			for(i=0;i<j;i++)
-				crc=ucrc32(buf[i],crc); }
+				crc=ucrc32(buf[i],crc); 
+		}
 		fwrite(buf,j,1,smb.sdt_fp);
-		x=SDT_BLOCK_LEN; }
+		x=SDT_BLOCK_LEN; 
+	}
 	fflush(smb.sdt_fp);
 	fclose(instream);
 	crc=~crc;
@@ -318,7 +342,9 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 				i=smb_putmsghdr(&smb,remsg);
 				smb_unlockmsghdr(&smb,remsg);
 				if(i)
-					errormsg(WHERE,ERR_WRITE,smb.file,i); } }
+					errormsg(WHERE,ERR_WRITE,smb.file,i); 
+			} 
+		}
 		else {
 			l=remsg->hdr.thread_first;
 			while(1) {
@@ -329,13 +355,17 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 					l=tmpmsg.hdr.thread_next;
 					smb_unlockmsghdr(&smb,&tmpmsg);
 					smb_freemsgmem(&tmpmsg);
-					continue; }
+					continue; 
+				}
 				tmpmsg.hdr.thread_next=smb.status.last_msg+1;
 				if((i=smb_putmsghdr(&smb,&tmpmsg))!=0)
 					errormsg(WHERE,ERR_WRITE,smb.file,i);
 				smb_unlockmsghdr(&smb,&tmpmsg);
 				smb_freemsgmem(&tmpmsg);
-				break; } } }
+				break; 
+			} 
+		} 
+	}
 
 
 	if(cfg.sub[subnum]->maxcrcs) {
@@ -377,7 +407,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	if(i) {
 		smb_freemsgdat(&smb,offset,length,1);
 		errormsg(WHERE,ERR_WRITE,smb.file,i);
-		return(false); }
+		return(false); 
+	}
 
 	useron.ptoday++;
 	useron.posts++;
