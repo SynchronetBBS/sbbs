@@ -73,6 +73,27 @@ enum {
 char tmp[256];
 int nodefile;
 
+#if !defined _MSC_VER && !defined __BORLANDC__
+char* itoa(int val, char* str, int radix)
+{
+	switch(radix) {
+		case 8:
+			sprintf(str,"%o",val);
+			break;
+		case 10:
+			sprintf(str,"%u",val);
+			break;
+		case 16:
+			sprintf(str,"%x",val);
+			break;
+		default:
+			sprintf(str,"bad radix: %d",radix);
+			break;
+	}
+	return(str);
+}
+#endif
+
 /****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
 /* from NODE.DAB															*/
