@@ -99,8 +99,10 @@ object ServicesCfgDlg: TServicesCfgDlg
         Top = 80
         Width = 97
         Height = 25
-        Hint = 'Edit services configuration file'
+        Hint = 'Edit LEGACY services configuration file'
         Caption = 'services.cfg'
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 3
         OnClick = ServicesCfgButtonClick
       end
@@ -109,8 +111,10 @@ object ServicesCfgDlg: TServicesCfgDlg
         Top = 120
         Width = 97
         Height = 25
-        Hint = 'Edit services configuration file'
+        Hint = 'Edit NEW services configuration file'
         Caption = 'services.ini'
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 4
         OnClick = ServicesCfgButtonClick
       end
