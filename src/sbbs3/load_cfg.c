@@ -52,6 +52,10 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 	int		i;
 	long	line=0L;
 	FILE 	*instream;
+#ifdef _WIN32
+	TIME_ZONE_INFORMATION tz;
+   	DWORD tzRet;
+#endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
 		sprintf(error,"cfg->size (%ld) != sizeof(scfg_t) (%d)"
@@ -121,6 +125,18 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 
 	if(prep)
 		prep_cfg(cfg);
+
+	/* Auto-toggle daylight savings time in US time-zones */
+	if(cfg->sys_misc&SM_AUTO_DST
+		&& !OTHER_ZONE(cfg->sys_timezone) && cfg->sys_timezone&US_ZONE) {
+#ifdef _WIN32
+   		tzRet=GetTimeZoneInformation(&tz);
+		if(tzRet==TIME_ZONE_ID_STANDARD)
+			cfg->sys_timezone&=~DAYLIGHT;
+		else if(tzRet==TIME_ZONE_ID_DAYLIGHT)
+			cfg->sys_timezone|=DAYLIGHT;
+#endif
+	}
 
 	return(TRUE);
 }
