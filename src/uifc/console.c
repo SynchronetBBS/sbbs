@@ -948,6 +948,8 @@ video_event(XEvent *ev)
 void
 video_async_event(int sig)
 {
+    sigset_t sigset;
+
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGIO);
     sigaddset(&sigset, SIGALRM);
