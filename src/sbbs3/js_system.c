@@ -488,6 +488,7 @@ static char* sys_prop_desc[] = {
 	,"operating system version information"
 	,"time/date system was brought online (in time_t format)"
 
+	,"array of FidoNet Technology Network (FTN) addresses associated with this system"
 	,NULL
 };
 #endif
@@ -1601,6 +1602,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	JSObject*	statsobj;
 	JSObject*	nodeobj;
 	JSObject*	node_list;
+	JSObject*	fido_addr_list;
 	JSString*	js_str;
 
 	sysobj = JS_DefineObject(cx, parent, "system", &js_system_class, NULL
@@ -1777,6 +1779,18 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 		if(!JS_SetElement(cx, node_list, i, &val))
 			return(NULL);
 	}	
+
+	if((fido_addr_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+		return(NULL);
+
+	if(!JS_DefineProperty(cx, sysobj, "fido_addr_list", OBJECT_TO_JSVAL(fido_addr_list)
+		, NULL, NULL, JSPROP_ENUMERATE))
+		return(NULL);
+
+	for(i=0;i<cfg->total_faddrs;i++) {
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,smb_faddrtoa(&cfg->faddr[i],str)));
+		JS_SetElement(cx, fido_addr_list, i, &val);
+	}
 
 	return(sysobj);
 }
