@@ -299,7 +299,7 @@ ODAPIDEF BOOL ODCALL od_send_file(char *pszFileName)
 
       /* Get filename of remote file. */
       strcpy(szODWorkString, pszFileName);
-      strcat(szODWorkString, ".RIP");
+      strcat(szODWorkString, ".rip");
       strupr(szODWorkString);
    }
    else
@@ -316,7 +316,7 @@ ODAPIDEF BOOL ODCALL od_send_file(char *pszFileName)
       strcpy(szODWorkString, pszFileName);
       strupr(szODWorkString);
 
-      if(strstr(szODWorkString, ".RIP"))
+      if(strstr(szODWorkString, ".rip"))
       {
          /* No page pausing during .RIP display. */
          bPausing = FALSE;
@@ -638,7 +638,7 @@ ODAPIDEF BOOL ODCALL od_send_file_section(char *pszFileName, char *pszSectionNam
 
       /* Get filename of remote file. */
       strcpy(szODWorkString, pszFileName);
-      strcat(szODWorkString, ".RIP");
+      strcat(szODWorkString, ".rip");
       strupr(szODWorkString);
    }
    else
@@ -655,7 +655,7 @@ ODAPIDEF BOOL ODCALL od_send_file_section(char *pszFileName, char *pszSectionNam
       strcpy(szODWorkString, pszFileName);
       strupr(szODWorkString);
 
-      if(strstr(szODWorkString, ".RIP"))
+      if(strstr(szODWorkString, ".rip"))
       {
          /* No page pausing during .RIP display. */
          bPausing = FALSE;
@@ -957,21 +957,21 @@ static FILE *ODEmulateFindCompatFile(char *pszBaseName, INT *pnLevel)
       {
          case LEVEL_RIP:
             if(!od_control.user_rip) continue;
-            strcat(szODWorkString, ".RIP");
+            strcat(szODWorkString, ".rip");
             break;
 
          case LEVEL_AVATAR:
             if(!od_control.user_avatar) continue;
-            strcat(szODWorkString, ".AVT");
+            strcat(szODWorkString, ".avt");
             break;
 
          case LEVEL_ANSI:
             if(!od_control.user_ansi) continue;
-            strcat(szODWorkString, ".ANS");
+            strcat(szODWorkString, ".ans");
             break;
 
          case LEVEL_ASCII:
-            strcat(szODWorkString, ".ASC");
+            strcat(szODWorkString, ".asc");
             break;
       }
 
