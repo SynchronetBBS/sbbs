@@ -802,6 +802,8 @@ int main(int argc, char** argv)
 		arg=argv[i];
 		while(*arg=='-')
 			arg++;
+		if(strchr(arg,BACKSLASH))	/* ini_file name */
+			continue;
 		if(!stricmp(arg,"defaults")) {
 			printf("Default settings:\n");
 			printf("\n");
