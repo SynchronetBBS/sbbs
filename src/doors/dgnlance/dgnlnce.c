@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 #include "OpenDoor.h"
@@ -191,8 +192,6 @@ void textbackground(int c)
 
 void pausescr(void)
 {
-	char	c;
-
 	od_set_color(L_CYAN,D_BLACK);
 	od_disp_str("[Pause]");
 	od_set_color(D_GREY,D_BLACK);
@@ -328,13 +327,6 @@ void checkday(void)
 
 void	playerlist(void)
 {
-	INT16		q;
-	INT16		v;
-	INT16		spc;
-	char		ts[256];
-	char		tch[6];
-	char		line[81];
-
 	checkday();
 	od_clr_scr();
 	nl();
@@ -367,7 +359,7 @@ void leave(void)
 		fprintf(outfile,"%d\n",player[a].status);
 		if(player[a].status==1)
 			fprintf(outfile,"%s\n",player[a].killer);
-		fprintf(outfile,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+		fprintf(outfile,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %d %ld %ld %ld %d\n",
 				round(player[a].strength),round(player[a].intelligence),
 				round(player[a].luck),round(player[a].dexterity),round(player[a].constitution),
 				round(player[a].charisma),round(player[a].experience),
@@ -381,7 +373,6 @@ void leave(void)
 
 void heal(void)
 {
-	char	tempts[51];
 	healall=FALSE;
 	od_clr_scr();
 	od_set_color(D_MAGENTA,D_BLACK);
@@ -449,7 +440,6 @@ void recorda(void)
 void readla(void)
 {
 	INT16	o;
-	char	tmpstr[100];
 
 	infile=fopen("data/record.lan","rb");
 	fgets(temp,sizeof(temp),infile);
@@ -517,7 +507,7 @@ void mutantvictory(void)
 
 void levelupdate(void)
 {
-	INT16 x,a;
+	INT16 x;
 
 	if(player[b].experience>required[round(player[b].r+1)]) {
 		player[b].r++;
@@ -591,8 +581,6 @@ void amode(void)
 
 void bmode(void)
 {
-	INT16	bt;
-
 	if((opp.shield>0) && live) {
 		roll=opponentattack();
 		if(roll<1.5) {
@@ -645,8 +633,6 @@ void bmode(void)
 
 void statshow(void)
 {
-	char	word[21];
-
 	od_clr_scr();
 
 	od_set_color(D_MAGENTA,D_BLACK);
@@ -833,7 +819,7 @@ void attackmodes(void)
 
 double readnumb(void)
 {
-	unsigned char	buf[101];
+	char	buf[101];
 	int	pos=0;
 	int	rd;
 	double ret;
@@ -910,12 +896,8 @@ void fight(char *filename)
 
 void doggie(void)
 {
-	char	tmpgg[11];
 	char	tmphh[3];
-	char	tch[6];
-	INT16	spc,a;
-	BOOL	gono;
-	char	line[81];
+	INT16	a;
 
 	if(dog<=3) {
 		nl();
@@ -995,8 +977,7 @@ void doggie(void)
 
 void battle(void)
 {
-	double 	loss,playerrem;
-	char		tempxx[51];
+	double 	playerrem;
 
 	nl();
 	live=TRUE;
@@ -1126,8 +1107,6 @@ void create(BOOL isnew)
 
 void weaponlist(void)
 {
-	char	line[81];
-
 	nl();
 	nl();
 	a=1;
@@ -1184,7 +1163,6 @@ void readlist(void)
 
 void weaponshop(void)
 {
-	char	tmpvv[3];
 	od_clr_scr();
 	od_set_color(L_YELLOW,D_BLACK);
 	od_disp_str("Weapon & Armour Shop\r\n");
@@ -1316,13 +1294,6 @@ void listplayers(void)
 void spy(void)
 {
 	char	aa[31];
-	char	bb[31];
-	char	cc[31];
-	char	dd[31];
-	char	ee[31];
-	char	ff[31];
-	char	gg[31];
-	char	hh[31];
 	INT16	a;
 	od_clr_scr();
 	od_disp_str("Spying on another user eh.. well you may spy, but to keep\r\n");
