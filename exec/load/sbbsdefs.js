@@ -527,6 +527,7 @@ var   TG_NODESYNC	=(1<<3)		/* Call Nodesync, get msgs, etc.			*/
 var   TG_CTRLKEYS	=(1<<4)		/* Interpret ^P ^U ^T, etc locally			*/
 var   TG_PASSTHRU	=(1<<5)		/* Pass-through telnet commands/responses	*/
 var   TG_RLOGIN		=(1<<6)		/* Use BSD RLogin protocol					*/
+var   TG_NOCHKTIME	=(1<<7)		/* Don't check time left online					*/
 					    		/********************************************/
 
 					    		/********************************************/

@@ -191,6 +191,7 @@
 !define TG_CTRLKEYS	.4	# Interpret ^P ^U ^T, etc locally
 !define TG_PASSTHRU	.5	# Pass-through telnet commands/responses
 !define TG_RLOGIN	.6	# Use BSD RLogin protocol
+!define TG_NOCHKTIME	.7	# Don't check time left online
 
 				# Bits for _FTP_MODE
 !define FTP_ECHO_CMD	.0	# Echo commands to user (debug)
