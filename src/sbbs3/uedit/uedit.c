@@ -250,38 +250,47 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 			case 0:
 				/* Auto-detect */
 				user->misc ^= AUTOTERM;
+				modified=1;
 				break;
 			case 1:
 				/* EX-ASCII */
 				user->misc ^= NO_EXASCII;
+				modified=1;
 				break;
 			case 2:
 				/* ANSI */
 				user->misc ^= ANSI;
+				modified=1;
 				break;
 			case 3:
 				/* Colour */
 				user->misc ^= COLOR;
+				modified=1;
 				break;
 			case 4:
 				/* RIP */
 				user->misc ^= RIP;
+				modified=1;
 				break;
 			case 5:
 				/* WIP */
 				user->misc ^= WIP;
+				modified=1;
 				break;
 			case 6:
 				/* Pause */
 				user->misc ^= UPAUSE;
+				modified=1;
 				break;
 			case 7:
 				/* Hot Keys */
 				user->misc ^= COLDKEYS;
+				modified=1;
 				break;
 			case 8:
 				/* Spinning Cursor */
 				user->misc ^= SPIN;
+				modified=1;
 				break;
 			case 9:
 				/* Rows */
@@ -332,22 +341,27 @@ int edit_logon(scfg_t *cfg, user_t *user)
 			case 0:
 				/* Ask New MSG Scan */
 				user->misc ^= ASK_NSCAN;
+				modified=1;
 				break;
 			case 1:
 				/* Ask YOUR MSG scan */
 				user->misc ^= ASK_SSCAN;
+				modified=1;
 				break;
 			case 2:
 				/* Remember Curr Sub */
 				user->misc ^= CURSUB;
+				modified=1;
 				break;
 			case 3:
 				/* Quiet Mode */
 				user->misc ^= QUIET;
+				modified=1;
 				break;
 			case 4:
 				/* Auto-Login by IP */
 				user->misc ^= AUTOLOGON;
+				modified=1;
 				break;
 		}
 	}
@@ -389,22 +403,27 @@ int edit_chat(scfg_t *cfg, user_t *user)
 			case 0:
 				/* Chat Echo */
 				user->chat ^= CHAT_ECHO;
+				modified=1;
 				break;
 			case 1:
 				/* Chat Actions */
 				user->chat ^= CHAT_ACTION;
+				modified=1;
 				break;
 			case 2:
 				/* Availabe for Chat */
 				user->chat ^= CHAT_NOPAGE;
+				modified=1;
 				break;
 			case 3:
 				/* Activity Alerts */
 				user->chat ^= CHAT_NOACT;
+				modified=1;
 				break;
 			case 4:
 				/* Split-Screen Priv Chat */
 				user->chat ^= CHAT_SPLITP;
+				modified=1;
 				break;
 		}
 	}
@@ -539,14 +558,17 @@ int edit_msgopts(scfg_t *cfg, user_t *user)
 			case 0:
 				/* FWD Email */
 				user->misc ^= NETMAIL;
+				modified=1;
 				break;
 			case 1:
 				/* Clear Between MSGS */
 				user->misc ^=CLRSCRN;
+				modified=1;
 				break;
 			case 2:
 				/* External Editor */
 				edit_xedit(cfg,user);
+				modified=1;
 				break;
 		}
 	}
@@ -633,58 +655,72 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 			case 0:
 				/* New Files List */
 				user->qwk ^= QWK_FILES;
+				modified=1;
 				break;
 			case 1:
 				/* Unread Email */
 				user->qwk ^= QWK_EMAIL;
+				modified=1;
 				break;
 			case 2:
 				/* ALL Email */
 				user->qwk ^= QWK_ALLMAIL;
+				modified=1;
 				break;
 			case 3:
 				/* Del Email after Download */
 				user->qwk ^= QWK_DELMAIL;
+				modified=1;
 				break;
 			case 4:
 				/* Include From Self */
 				user->qwk ^= QWK_BYSELF;
+				modified=1;
 				break;
 			case 5:
 				/* Expand CTRL-A */
 				user->qwk ^= QWK_EXPCTLA;
+				modified=1;
 				break;
 			case 6:
 				/* Strip CTRL-A */
 				user->qwk ^= QWK_RETCTLA;
+				modified=1;
 				break;
 			case 7:
 				/* Include Attach */
 				user->qwk ^= QWK_ATTACH;
+				modified=1;
 				break;
 			case 8:
 				/* Include Indexes */
 				user->qwk ^= QWK_NOINDEX;
+				modified=1;
 				break;
 			case 9:
 				/* Include TZ */
 				user->qwk ^= QWK_TZ;
+				modified=1;
 				break;
 			case 10:
 				/* Include VIA */
 				user->qwk ^= QWK_VIA;
+				modified=1;
 				break;
 			case 11:
 				/* Extra CTRL Files */
 				user->qwk ^= QWK_NOCTRL;
+				modified=1;
 				break;
 			case 12:
 				/* Extended QWKE */
 				user->qwk ^= QWK_EXT;
+				modified=1;
 				break;
 			case 13:
 				/* Include MSGID */
 				user->qwk ^= QWK_MSGID;
+				modified=1;
 				break;
 			case 14:
 				/* Temp/QWK Type */
@@ -773,26 +809,32 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 			case 0:
 				/* Auto-New Scan */
 				user->misc ^= ANFSCAN;
+				modified=1;
 				break;
 			case 1:
 				/* Extended Descs */
 				user->misc ^= EXTDESC;
+				modified=1;
 				break;
 			case 2:
 				/* Batch Flagging */
 				user->misc ^= BATCHFLAG;
+				modified=1;
 				break;
 			case 3:
 				/* Atuo-Hangup */
 				user->misc ^= AUTOHANG;
+				modified=1;
 				break;
 			case 4:
 				/* Default Download Protocol */
 				edit_proto(cfg,user);
+				modified=1;
 				break;
 			case 5:
 				/* Temp/QWK File Type */
 				edit_tmpqwktype(cfg,user);
+				modified=1;
 				break;
 		}
 	}
