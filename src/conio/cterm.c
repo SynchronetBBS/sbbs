@@ -186,8 +186,10 @@ void play_music(void)
 	int		notenum;
 
 	p=cterm.musicbuf;
-	if((*p=='B' || *p=='F') && *(p+1)==' ')
-		p++;
+	if(cterm.music==1) {
+		if(*p=='B' || *p=='b' || *p=='F' || *p=='f')
+			p++;
+	}
 	for(;*p;p++) {
 		notenum=0;
 		switch(toupper(*p)) {
@@ -572,8 +574,11 @@ void do_ansi(char *retbuf, int retsize)
 					free(p2);
 					break;
 				case 'M':
-				case 'N':
 					cterm.music=1;
+					break;
+				case 'N':
+					/* BananANSI style... does NOT start with MF or MB */
+					cterm.music=2;
 					break;
 				case 'P':	/* Delete char */
 					i=atoi(cterm.escbuf+1);
