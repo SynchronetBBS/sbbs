@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2001 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1470,7 +1470,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,"mail");
 	} else {
 		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++) {
-			if(!stricmp(scfg->sub[p->smb.subnum]->code,base))
+			if(!stricmp(scfg->sub[p->smb.subnum]->code,base))	/* null ptr dereference here Apr-16-2003 */
 				break;
 		}
 		if(p->smb.subnum<scfg->total_subs) {
