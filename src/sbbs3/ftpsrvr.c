@@ -4233,8 +4233,11 @@ static void ctrl_thread(void* arg)
 		,sock, active_clients, thread_count);
 }
 
-static void cleanup(int code)
+static void cleanup(int code, int line)
 {
+#ifdef _DEBUG
+	lprintf("0000 cleanup called from line %d",line);
+#endif
 	free_cfg(&scfg);
 
 	if(server_socket!=INVALID_SOCKET)
@@ -4364,7 +4367,7 @@ void DLLCALL ftp_server(void* arg)
 		sbbs_random(10);	/* Throw away first number */
 
 		if(!winsock_startup()) {
-			cleanup(1);
+			cleanup(1,__LINE__);
 			return;
 		}
 
@@ -4375,7 +4378,7 @@ void DLLCALL ftp_server(void* arg)
 #ifdef _WIN32
 		if((socket_mutex=CreateMutex(NULL,FALSE,NULL))==NULL) {
     		lprintf("!ERROR %d creating socket_mutex", GetLastError());
-			cleanup(1);
+			cleanup(1,__LINE__);
 			return;
 		}
 #endif
@@ -4388,7 +4391,7 @@ void DLLCALL ftp_server(void* arg)
 		if(!load_cfg(&scfg, NULL, TRUE, error)) {
 			lprintf("!ERROR %s",error);
 			lprintf("!Failed to load configuration files");
-			cleanup(1);
+			cleanup(1,__LINE__);
 			return;
 		}
 
@@ -4399,7 +4402,7 @@ void DLLCALL ftp_server(void* arg)
 
 			if((t=checktime())!=0) {   /* Check binary time */
 				lprintf("!TIME PROBLEM (%ld)",t);
-				cleanup(1);
+				cleanup(1,__LINE__);
 				return;
 			}
 		}
@@ -4436,7 +4439,7 @@ void DLLCALL ftp_server(void* arg)
 
 		if((server_socket=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
 			lprintf("!ERROR %d opening socket", ERROR_VALUE);
-			cleanup(1);
+			cleanup(1,__LINE__);
 			return;
 		}
 
@@ -4450,7 +4453,7 @@ void DLLCALL ftp_server(void* arg)
     		,(char *)&linger, sizeof(linger)))!=0) {
 			lprintf ("%04d !ERROR %d (%d) setting socket options."
 				,server_socket, result, ERROR_VALUE);
-			cleanup(1);
+			cleanup(1,__LINE__);
 			return;
 		}
 #endif
@@ -4469,14 +4472,14 @@ void DLLCALL ftp_server(void* arg)
 			lprintf("%04d !ERROR %d (%d) binding socket to port %u"
 				,server_socket, result, ERROR_VALUE,startup->port);
 			lprintf("%04d %s", server_socket, BIND_FAILURE_HELP);
-			cleanup(1);
+			cleanup(1,__LINE__);
 			return;
 		}
 
 		if((result=listen(server_socket, 1))!= 0) {
 			lprintf("%04d !ERROR %d (%d) listening on socket"
 				,server_socket, result, ERROR_VALUE);
-			cleanup(1);
+			cleanup(1,__LINE__);
 			return;
 		}
 
@@ -4588,7 +4591,7 @@ void DLLCALL ftp_server(void* arg)
 			lprintf("000 Done waiting");
 		}
 
-		cleanup(0);
+		cleanup(0,__LINE__);
 
 		if(recycle_server) 
 			lprintf("Recycling server...");
