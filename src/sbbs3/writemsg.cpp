@@ -1044,19 +1044,20 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 	smb_hfield(msg,FORWARDED,sizeof(time_t),&now);
 
 
-	if((i=smb_open_da(&smb))!=0) {
+	if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		return; 
 	}
-	if((i=smb_incmsg_dfields(&smb,msg,1))!=0) {
+	if((i=smb_incmsg_dfields(&smb,msg,1))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_WRITE,smb.file,i);
 		return; 
 	}
 	smb_close_da(&smb);
 
 
-	if((i=smb_addmsghdr(&smb,msg,SMB_SELFPACK))!=0) {
+	if((i=smb_addmsghdr(&smb,msg,SMB_SELFPACK))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_WRITE,smb.file,i);
+		smb_freemsg_dfields(&smb,msg,1);
 		return; 
 	}
 
@@ -1194,22 +1195,22 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 
 	length+=2;	 /* +2 for translation string */
 
-	if((i=smb_locksmbhdr(&smb))!=0) {
+	if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_LOCK,smb.file,i);
 		return; 
 	}
 
-	if((i=smb_getstatus(&smb))!=0) {
+	if((i=smb_getstatus(&smb))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_READ,smb.file,i);
 		return; 
 	}
 
 	if(!(smb.status.attr&SMB_HYPERALLOC)) {
-		if((i=smb_open_da(&smb))!=0) {
+		if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 			return; 
 		}
-		if((i=smb_freemsg_dfields(&smb,msg,1))!=0)
+		if((i=smb_freemsg_dfields(&smb,msg,1))!=SMB_SUCCESS)
 			errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); 
 	}
 
@@ -1263,7 +1264,7 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 
 	smb_unlocksmbhdr(&smb);
 	msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
-	if((i=smb_putmsghdr(&smb,msg))!=0)
+	if((i=smb_putmsghdr(&smb,msg))!=SMB_SUCCESS)
 		errormsg(WHERE,ERR_WRITE,smb.file,i);
 }
 
@@ -1302,7 +1303,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	sprintf(newsmb.file,"%s%s",cfg.sub[newsub]->data_dir,cfg.sub[newsub]->code);
 	newsmb.retry_time=cfg.smb_retry_time;
 	newsmb.subnum=newsub;
-	if((i=smb_open(&newsmb))!=0) {
+	if((i=smb_open(&newsmb))!=SMB_SUCCESS) {
 		free(buf);
 		errormsg(WHERE,ERR_OPEN,newsmb.file,i,newsmb.last_error);
 		return(false); 
@@ -1313,7 +1314,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 		newsmb.status.max_msgs=cfg.sub[newsub]->maxmsgs;
 		newsmb.status.max_age=cfg.sub[newsub]->maxage;
 		newsmb.status.attr=cfg.sub[newsub]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
-		if((i=smb_create(&newsmb))!=0) {
+		if((i=smb_create(&newsmb))!=SMB_SUCCESS) {
 			free(buf);
 			smb_close(&newsmb);
 			errormsg(WHERE,ERR_CREATE,newsmb.file,i,newsmb.last_error);
@@ -1321,14 +1322,14 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 		} 
 	}
 
-	if((i=smb_locksmbhdr(&newsmb))!=0) {
+	if((i=smb_locksmbhdr(&newsmb))!=SMB_SUCCESS) {
 		free(buf);
 		smb_close(&newsmb);
 		errormsg(WHERE,ERR_LOCK,newsmb.file,i,newsmb.last_error);
 		return(false); 
 	}
 
-	if((i=smb_getstatus(&newsmb))!=0) {
+	if((i=smb_getstatus(&newsmb))!=SMB_SUCCESS) {
 		free(buf);
 		smb_close(&newsmb);
 		errormsg(WHERE,ERR_READ,newsmb.file,i,newsmb.last_error);
@@ -1340,7 +1341,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 		storage=SMB_HYPERALLOC; 
 	}
 	else {
-		if((i=smb_open_da(&newsmb))!=0) {
+		if((i=smb_open_da(&newsmb))!=SMB_SUCCESS) {
 			free(buf);
 			smb_close(&newsmb);
 			errormsg(WHERE,ERR_OPEN,newsmb.file,i,newsmb.last_error);
@@ -1369,8 +1370,8 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	smb_close(&newsmb);
 
 	if(i) {
-		smb_freemsgdat(&newsmb,offset,length,1);
 		errormsg(WHERE,ERR_WRITE,newsmb.file,i,newsmb.last_error);
+		smb_freemsg_dfields(&newsmb,&newmsg,1);
 		return(false); 
 	}
 
