@@ -25,7 +25,7 @@ else {
 }
 
 template.idx=msgbase.get_msg_index(false,m);
-if(sub=='mail' && tempalte.idx.to!=user.number)
+if(sub=='mail' && template.idx.to!=user.number)
 	error("You can only read e-mail messages addressed to yourself!");
 template.hdr=msgbase.get_msg_header(false,m);
 template.body=msgbase.get_msg_body(false,m,true,true);
