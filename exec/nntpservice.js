@@ -294,10 +294,12 @@ while(client.socket.is_connected) {
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from,hdr.from,hdr.from_net_addr));
 				else if(hdr.from.indexOf(' ')>0)
-					writeln(format("From: \"%s\"@%s"
+					writeln(format("From: \"%s\" <\"%s\"@%s>"
+						,hdr.from
 						,hdr.from,system.inetaddr));
 				else
-					writeln(format("From: %s@%s"
+					writeln(format("From: \"%s\" <%s@%s>"
+						,hdr.from
 						,hdr.from,system.inetaddr));
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.id);
