@@ -56,9 +56,9 @@
 	" (w%ub of w%ub): n"
 "n\r\nYou can't reply to an anonymous message.\r\n"    050 CantReplyToAnonMsg
 "  hbRenb: hc%sn\r\n\r\n"                        051 Regarding
-"  hbRenb: hc%s\r\n  "\				052 RegardingByOn
-	"bBynb: hc%s bon c%sn\r\n\r\n"    	053 RegardingByToOn
-"  hbRenb: hc%s\r\n  "\  
+"  hbRenb: hc%s\r\n  "\				   052 RegardingByOn
+	"bBynb: hc%s bon c%sn\r\n\r\n"    	
+"  hbRenb: hc%s\r\n  "\  				   053 RegardingByToOn	
 	"bBynb: hc%s bto c%s bon "\       
 	"c%sn\r\n\r\n"
 "Delete %s's mail"                                      054 DeleteMailQ
