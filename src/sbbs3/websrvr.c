@@ -961,7 +961,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 
 	start=time(NULL);
 	for(i=0;TRUE;) {
-		if(!socket_check(session->socket,&rd,1000)) {
+		if(!socket_check(session->socket,&rd,NULL,1000)) {
 			session->req.keep_alive=FALSE;
 			close_request(session);
 			session->socket=INVALID_SOCKET;
@@ -1065,7 +1065,7 @@ int recvbufsocket(int sock, char *buf, long count)
 	}
 
 	/* ToDo Timeout here too? */
-	while(rd<count && socket_check(sock,NULL,100))  {
+	while(rd<count && socket_check(sock,NULL,NULL,100))  {
 		i=recv(sock,buf,count-rd,0);
 		if(i<=0)  {
 			*buf=0;
