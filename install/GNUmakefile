@@ -78,7 +78,7 @@ externals:	sbj sbl
 
 
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-    $(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX)
+    $(SBBSDIR)/include $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
 scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev
@@ -174,9 +174,9 @@ ifndef NOCVS
 	$(CVS_CO) -r $(CVSTAG)  src/xpdev
 endif
 
-$(SBBSDIR)/src/mozilla: cvslogin
+$(SBBSDIR)/include: cvslogin
 ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG)  src/mozilla
+	$(CVS_CO) -r $(CVSTAG)  include
 endif
 
 $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX): cvslogin
