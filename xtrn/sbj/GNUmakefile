@@ -31,7 +31,7 @@ else
  ifeq ($(os),openbsd)	# OpenBSD
   LIBS	+=	-pthread
  else					# Linux / Generic UNIX
-  LIBS	+=	$(LIBDIR)/libpthread.a
+  LIBS	+=	-lpthread
  endif	#! OpenBSD
 endif	#! FreeBSD
 
