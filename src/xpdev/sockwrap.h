@@ -111,6 +111,8 @@ static  wsa_error;
 
 #endif	/* __unix__ */
 
+int sendfilesocket(int sock, int file, long *offset, long count);
+
 #ifndef SHUT_RDWR
 #define SHUT_RDWR		2	/* for shutdown() */
 #endif
