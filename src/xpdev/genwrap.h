@@ -83,9 +83,18 @@ extern "C" {
 
 	#define DESCRIBE_COMPILER(str) sprintf(str,"MSC %u", _MSC_VER);
 
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && defined(__VERSION__)
 
-	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %u.%02u" \
+	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %s", __VERSION__);
+
+#elif defined(__GNUC__) && defined(__GNUC_PATCHLEVEL__)
+
+	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %u.%u.%u" \
+		,__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__);
+
+#elif defined(__GNUC__) && defined(__GNUC_MINOR__)
+
+	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %u.%u" \
 		,__GNUC__,__GNUC_MINOR__);
 
 #elif defined(__WATCOMC__)
