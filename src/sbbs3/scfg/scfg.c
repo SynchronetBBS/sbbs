@@ -84,7 +84,6 @@ int main(int argc, char **argv)
 	int 	i,j,main_dflt=0,chat_dflt=0;
 	char 	str[MAX_PATH+1];
  	char	exepath[MAX_PATH+1];
-	BOOL	gui_mode=FALSE;
 	BOOL    door_mode=FALSE;
 
     printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright 2004 "
@@ -142,12 +141,6 @@ int main(int argc, char **argv)
                 case 'E':
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
-				case 'G':
-					gui_mode=TRUE;
-					break;
-				case 'T':
-					gui_mode=FALSE;
-					break;
 				case 'I':
 					uifc.mode|=UIFC_IBM;
 					break;
@@ -165,10 +158,6 @@ int main(int argc, char **argv)
                         "-u  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
                         "-d  =  run in standard input/output/door mode\r\n"
-#ifdef USE_FLTK
-						"-g  =  use graphical user interface\r\n"
-						"-t  =  use text/terminal user interface (disable GUI)\r\n"
-#endif
                         "-c  =  force color mode\r\n"
 						"-m  =  force monochrome mode\r\n"
 #ifdef USE_UIFC32
@@ -930,7 +919,7 @@ indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 				break; } } }
 }
 
-int whichlogic()
+int whichlogic(void)
 {
 	int i;
 
@@ -962,7 +951,7 @@ if(uifc.savdepth && uifc.savnum)
 return(i);
 }
 
-int whichcond()
+int whichcond(void)
 {
 	int i;
 
@@ -1862,6 +1851,9 @@ int code_ok(char *str)
 	return(1);
 }
 
+#ifdef __BORLANDC__
+	#pragma argsused
+#endif
 int lprintf(int level, char *fmt, ...)
 {
 	va_list argptr;
