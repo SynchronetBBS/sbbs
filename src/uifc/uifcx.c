@@ -37,6 +37,13 @@
 
 #include "uifc.h"
 
+#include <sys/types.h>
+
+#ifdef __unix__
+/*	#include <sys/time.h> why? */
+	#include <unistd.h>
+#endif
+
 static char *helpfile=0;
 static uint helpline=0;
 static uifcapi_t* api;
@@ -99,6 +106,34 @@ int uscrn(char *str)
     return(0);
 }
 
+static int getstr(char* str, int maxlen)
+{
+	char 	ch;
+    int		len=0;
+	int		istty;
+
+	istty=isatty(fileno(stdin));
+    while(1) {
+		fread(&ch,1,1,stdin);
+		if(!istty)  {
+			printf("%c",ch);
+			fflush(stdout);
+		}
+        if(ch=='\r' || ch=='\n')	/* enter */
+        	break;
+        if(ch=='\b') {				/* backspace */
+        	if(len) len--;
+            continue;
+    	}
+        if(len<maxlen)
+			str[len++]=ch;
+	}
+    str[len]=0;	/* we need The Terminator */
+    
+	return(len);
+}
+	
+
 /****************************************************************************/
 /* Local utility function.													*/
 /****************************************************************************/
@@ -110,7 +145,7 @@ static int which(char* prompt, int max)
     while(1) {
         printf("%s which (1-%d): ",prompt,max);
         str[0]=0;
-        fgets(str,sizeof(str)-1,stdin);
+		getstr(str,sizeof(str)-1);
         i=atoi(str);
         if(i>0 && i<=max)
             return(i-1);
@@ -160,7 +195,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
                 if(!(lines%api->scrn_len)) {
                     printf("More? ");
                     str[0]=0;
-                    fgets(str,sizeof(str)-1,stdin);
+                    getstr(str,sizeof(str)-1);
                     if(toupper(*str)=='N')
                         break;
                 }
@@ -177,7 +212,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
             printf("\nWhich (Help%s or Quit): ",str);
         }
         str[0]=0;
-        fgets(str,sizeof(str)-1,stdin);
+        getstr(str,sizeof(str)-1);
         
         truncsp(str);
         i=atoi(str);
@@ -252,7 +287,8 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
     
     while(1) {
         printf("%s (maxlen=%u): ",prompt,max);
-        fgets(str,max,stdin);
+
+        getstr(str,max);
         truncsp(str);
         if(strcmp(str,"?"))
             break;
@@ -260,6 +296,8 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
     }
 	if(strcmp(outstr,str))
 		api->changes=1;
+    if(kmode&K_UPPER)	/* convert to uppercase? */
+    	strupr(str);
     strcpy(outstr,str);    
     return(strlen(outstr));
 }
@@ -349,7 +387,7 @@ void help()
     puts(hbuf);
     if(strlen(hbuf)>200) {
         printf("Hit enter");
-        fgets(str,sizeof(str)-1,stdin);
+        getstr(str,sizeof(str)-1);
     }
 }
 
