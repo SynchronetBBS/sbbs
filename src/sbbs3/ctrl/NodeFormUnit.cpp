@@ -465,15 +465,15 @@ void __fastcall TNodeForm::ChatButtonClick(TObject *Sender)
 void __fastcall TNodeForm::SpyButtonClick(TObject *Sender)
 {
     int i;
-    TSpyForm* SpyForm;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-            Application->CreateForm(__classid(TSpyForm), &SpyForm);
-            SpyForm->spybuf=&MainForm->bbs_startup.spybuf[i];
-            SpyForm->Caption="Spying on Node "+AnsiString(i+1);            
-            SpyForm->ShowModal();
-            delete SpyForm;
+            if(SpyForms[i]==NULL) {
+                Application->CreateForm(__classid(TSpyForm), &SpyForms[i]);
+                SpyForms[i]->spybuf=&MainForm->bbs_startup.spybuf[i];
+                SpyForms[i]->Caption="Spying on Node "+AnsiString(i+1);
+            }
+            SpyForms[i]->Show();
         }
 }
 //---------------------------------------------------------------------------

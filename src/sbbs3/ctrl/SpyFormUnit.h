@@ -24,6 +24,6 @@ public:		// User declarations
     __fastcall TSpyForm(TComponent* Owner);
 };
 //---------------------------------------------------------------------------
-extern PACKAGE TSpyForm *SpyForm;
+extern PACKAGE TSpyForm *SpyForms[];
 //---------------------------------------------------------------------------
 #endif
