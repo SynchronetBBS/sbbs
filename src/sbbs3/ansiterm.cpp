@@ -103,11 +103,10 @@ void sbbs_t::ansi_getlines()
 		&& online==ON_REMOTE) {                 /* Remote */
 		SYNC;
 		putcom("\x1b[s\x1b[99B\x1b[6n\x1b[u");
-		while(online && !rioctl(RXBC) /* && !lkbrd(1) */)
-			checkline();
+		while(online && !rioctl(RXBC))
+			mswait(1);
 		inkey(0); }
 }
-
 
 void sbbs_t::ansi_getxy(int* x, int* y)
 {
