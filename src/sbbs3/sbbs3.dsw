@@ -207,7 +207,7 @@ Package=<4>
     Project_Dep_Name xpdev_mt
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name smblib_mt
+    Project_Dep_Name smblib
     End Project Dependency
 }}}
 
@@ -304,18 +304,6 @@ Package=<4>
 ###############################################################################
 
 Project: "smblib"=..\smblib\smblib.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
-Project: "smblib_mt"=..\smblib\smblib_mt.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
