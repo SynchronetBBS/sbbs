@@ -722,8 +722,10 @@ int main(int argc, char **argv)
 						return(1); } }
 		else if(argv[j][0]=='+') {      /* filelist - FILES.BBS */
 			listgiven=1;
-			if(isdigit(argv[j+1][0])) { /* skip x characters before description */
-				if(isdigit(argv[j+2][0])) { /* skip x characters before size */
+			if(argc > j+1
+				&& isdigit(argv[j+1][0])) { /* skip x characters before description */
+				if(argc > j+2
+					&& isdigit(argv[j+2][0])) { /* skip x characters before size */
 					addlist(argv[j]+1,f,atoi(argv[j+1]),atoi(argv[j+2]));
 					j+=2; }
 				else {
