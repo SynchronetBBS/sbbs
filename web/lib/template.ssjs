@@ -27,7 +27,13 @@ load("html_inc/html_themes.ssjs");
 template.Theme_CSS_File=Themes[CurrTheme].css;
 
 function write_template(filename)  {
-	var inc=new File(system.text_dir+"html_templates"+'/'+Themes[CurrTheme].dir+'/'+filename);
+	var fname=system.text_dir+"html_templates"+'/'+Themes[CurrTheme].dir+'/'+filename;
+	if(!file_exists(fname)) {
+		fname=system.text_dir+"html_templates"+'/'+Themes[DefaultTheme].dir+'/'+filename;
+		if(!file_exists(fname))
+			fname=system.text_dir+"html_templates"+'/'+Themes["Default"].dir+'/'+filename;
+	}
+	var inc=new File(fname);
 	if(!inc.open("r",true,1024)) {
 		horrible_error("Cannot open template file "+system.text_dir+"html_templates"+'/'+Themes[CurrTheme].dir+'/'+filename+"!");
 	}
