@@ -1,4 +1,4 @@
-load("html_inc/msgslib.ssjs");
+load("../web/lib/msgslib.ssjs");
 
 if(sub=='mail') {
 	template.sub=new Object;

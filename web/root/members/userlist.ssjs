@@ -5,7 +5,7 @@
 // $Id$
 
 load("sbbsdefs.js");
-load("html_inc/template.ssjs");
+load("../web/lib/template.ssjs");
 
 if(system.lastuser==undefined)	/* v3.10 */
 	lastuser=system.stats.total_users;

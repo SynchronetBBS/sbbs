@@ -1,4 +1,4 @@
-load("html_inc/template.ssjs");
+load("../web/lib/template.ssjs");
 
 template.title="User Statistics for " +user.alias; 
 

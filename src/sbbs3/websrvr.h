@@ -142,7 +142,7 @@ static ini_bitdesc_t web_options[] = {
 };
 #endif
 
-#define WEB_DEFAULT_ROOT_DIR		"../html"
+#define WEB_DEFAULT_ROOT_DIR		"../web/html"
 #define WEB_DEFAULT_ERROR_DIR		"error"
 #define WEB_DEFAULT_CGI_DIR			"cgi-bin"
 

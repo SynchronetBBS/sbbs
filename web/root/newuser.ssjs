@@ -9,7 +9,7 @@ var required_str="*";
 var	optional_str="";
 
 load("sbbsdefs.js");
-load("html_inc/template.ssjs");
+load("../web/lib/template.ssjs");
 
 template.required=required_str;
 template.date_format="MM/DD/YY";

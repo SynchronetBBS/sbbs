@@ -13,7 +13,7 @@
  * var   SUB_NOUSERSIG     =(1<<30)        * Suppress user signatures
  */
 
-load("html_inc/msgslib.ssjs");
+load("../web/lib/msgslib.ssjs");
 
 template.anonnote='';
 template.privnote='';

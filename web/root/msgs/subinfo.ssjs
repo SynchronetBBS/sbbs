@@ -1,5 +1,5 @@
 load("sbbsdefs.js");
-load("html_inc/msgslib.ssjs");
+load("../web/lib/msgslib.ssjs");
 
 template.title="Detailed Info on Sub"
 

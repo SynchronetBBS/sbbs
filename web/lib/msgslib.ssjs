@@ -1,6 +1,6 @@
 load("sbbsdefs.js");
-load("html_inc/template.ssjs");
-load("html_inc/msgsconfig.ssjs");
+load("../web/lib/template.ssjs");
+load("../web/lib/msgsconfig.ssjs");
 
 /* Flags for clean_msg_headers() */
 var CLEAN_MSG_REPLY	=	(1<<0);

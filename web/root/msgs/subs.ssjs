@@ -1,4 +1,4 @@
-load("html_inc/msgslib.ssjs");
+load("../web/lib/msgslib.ssjs");
 
 var ShowAll=(http_request.query.show_all_subs != undefined
 		&& http_request.query.show_all_subs == 'Yes');

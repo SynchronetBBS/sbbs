@@ -1,4 +1,4 @@
-load("html_inc/template.ssjs");
+load("../web/lib/template.ssjs");
 
 template.title="Welcome to the Members Area on " +system.name;
 template.user_alias=(user.alias);

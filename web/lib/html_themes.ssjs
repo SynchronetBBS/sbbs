@@ -2,7 +2,7 @@
 
 Themes=new Object;
 
-load(system.text_dir+'html_templates/html_themes.ssjs');
+load('../web/templates/html_themes.ssjs');
 var CurrTheme=DefaultTheme;
 
 /* Read in current users selected theme if it exists */

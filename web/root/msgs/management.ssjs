@@ -1,5 +1,5 @@
-load("html_inc/template.ssjs");
-load("html_inc/msgslib.ssjs");
+load("../web/lib/template.ssjs");
+load("../web/lib/msgslib.ssjs");
 
 template.title="No action taken";
 template.detail="No action taken";

@@ -13,7 +13,7 @@ ctheme=ctheme.replace(/"/g,dq+pl+sq+dq+sq+pl+dq);	/* "+'"'+" */
 themefile.writeln('CurrTheme="'+ctheme+'";');
 themefile.close();
 
-load('html_inc/template.ssjs');
+load('../web/lib/template.ssjs');
 template.theme=Themes[CurrTheme];
 
 write_template("header.inc");

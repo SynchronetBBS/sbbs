@@ -1,4 +1,4 @@
-load("html_inc/template.ssjs");
+load("../web/lib/template.ssjs");
 
 template.theme_list='<select name="theme">';
 for(tname in Themes) {

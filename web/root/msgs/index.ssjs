@@ -1,4 +1,4 @@
-load("html_inc/msgslib.ssjs");
+load("../web/lib/msgslib.ssjs");
 
 template.title="Message Groups on " +system.name;
 write_template("header.inc");
