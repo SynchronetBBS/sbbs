@@ -1,33 +1,35 @@
-/*
- * Copyright (c) 1992, 1993, 1996
- *      Berkeley Software Design, Inc.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *      This product includes software developed by Berkeley Software
- *      Design, Inc.
- *
- * THIS SOFTWARE IS PROVIDED BY Berkeley Software Design, Inc. ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL Berkeley Software Design, Inc. BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- */
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
 
 
 #ifndef _CONSOLE_H_
