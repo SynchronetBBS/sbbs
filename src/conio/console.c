@@ -118,8 +118,8 @@
 #include "mouse.h"
 #include "vgafont.h"
 
-#define CONSOLE_MAX_ROWS	256
-#define CONSOLE_MAX_COLS	256
+#define CONSOLE_MAX_ROWS	61
+#define CONSOLE_MAX_COLS	81
 
 /* Console definition variables */
 int console_new_mode=NO_NEW_MODE;
@@ -136,6 +136,8 @@ sem_t	x11_title;
 int InitCS;
 int InitCE;
 int FW, FH;
+int FS=1;
+#define MAX_SCALE	2
 WORD DpyCols;
 BYTE DpyRows;
 BYTE *palette;
@@ -148,7 +150,8 @@ BYTE CursCol=0;
 typedef struct TextLine {
     WORD	*data;
     u_char	max_length;	/* Not used, but here for future use */
-    u_char	changed:1;
+    u_char	changed;
+	u_char	*exposed;
 } TextLine;
 TextLine *lines = NULL;
 
@@ -372,6 +375,7 @@ struct {
 };
 
 #define	HWM	16
+void resize_window(void);
 
 void tty_pause()
 {
@@ -436,22 +440,17 @@ video_update_text()
 	setgc(attr);
 
 	for (r = 0; r < (DpyRows+1); ++r) {
-	    int cc = 0;
-
 	    if (!lines[r].changed) {
-			if ((r == or || r == CursRow) && (or != CursRow || oc !=CursCol))
-				lines[r].changed=1;
-			else {
-			    for (c = 0; c < DpyCols; ++c) {
-					if (lines[r].data[c] != vmem[r * DpyCols + c]) {
-					    lines[r].changed = 1;
-					    break;
-					}
-					if (lines[r].data[c] & 0x8000 && show != os) {
-					    lines[r].changed = 1;
-					    break;
-					}
-			    }
+			for (c = 0; c < DpyCols; ++c) {
+				if ((lines[r].data[c] != vmem[r * DpyCols + c]) 
+						|| (lines[r].data[c] & 0x8000 && show != os)
+						|| (lines[r].exposed[c])
+						|| (((r == or && c==oc) || (r == CursRow && c==CursCol)) && (or != CursRow || oc !=CursCol))) {
+					setgc(vmem[r * DpyCols + c]  & 0xff00);
+					x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
+					lines[r].changed = 2;
+					lines[r].exposed[c]=0;
+				}
 			}
 	    }
 
@@ -459,14 +458,18 @@ video_update_text()
 			continue;
 
 		reset_poll();
-		lines[r].changed = 0;
 		memcpy(lines[r].data,
 			&vmem[r * DpyCols], sizeof(WORD) * DpyCols);
 
-		for (c = 0; c < DpyCols; ++c) {
-			setgc(vmem[r * DpyCols + c]  & 0xff00);
-			x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
+		if(lines[r].changed==1) {
+			for (c = 0; c < DpyCols; ++c) {
+				setgc(vmem[r * DpyCols + c]  & 0xff00);
+				x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
+			}
 		}
+		lines[r].changed = 0;
+		memset(lines[r].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
+		x11.XFlush(dpy);
 	}
 
 	if (CursStart <= CursEnd && CursEnd <= FH &&
@@ -484,8 +487,8 @@ video_update_text()
 	    x11.XChangeGC(dpy, cgc, GCForeground | GCFunction, &v);
 	    x11.XFillRectangle(dpy, win, cgc,
 			   2 +CursCol * FW,
-			   2 + CursRow * FH + CursStart,
-			   FW, CursEnd + 1 - CursStart);
+			   2 + CursRow * FH + CursStart * FS,
+			   FW, (CursEnd + 1)*FS - (CursStart*FS));
 	}
 
 	or =CursRow;
@@ -536,6 +539,12 @@ get_lines()
 				fprintf(stderr, "Could not allocate data structure for text lines\n");
 				exit(1);
 			}
+			lines[i].exposed = (u_char *)malloc(CONSOLE_MAX_COLS * sizeof(u_char));
+			if (lines[i].exposed == NULL) {
+				fprintf(stderr, "Could not allocate data structure for text lines\n");
+				exit(1);
+			}
+			memset(lines[i].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
 			lines[i].changed = 1;
 		}
 	}
@@ -563,10 +572,72 @@ void tty_beep(void)
 	sem_post(&x11_beep);
 }
 
+void expose_chars(int x, int y, int width, int height)
+{
+	int sx,sy,ex,ey;
+	int r,c;
+
+	sx=x;
+	sx-=2;
+	if(sx<0)
+		sx=0;
+	sy=y;
+	sy-=2;
+	if(sy<0)
+		sy=0;
+	ex=sx+width+FW-1;
+	ey=sy+height+FH-1;
+	sx/=FW;
+	ex/=FW;
+	if(ex>=DpyCols)
+		ex=DpyCols-1;
+	sy/=FH;
+	ey/=FH;
+	if(ey>DpyRows)
+		ex=DpyRows;
+
+	for(r=sy;r<=ey;r++) {
+		for(c=sx;c<=ex;c++) {
+			lines[r].exposed[c]=1;
+		}
+	}
+}
+
 static int
 video_event(XEvent *ev)
 {
 	switch (ev->type) {
+		case ConfigureNotify: {
+				int newFSH=1;
+				int newFSW=1;
+				int	oldFS;
+				int r;
+
+				oldFS=FS;
+				if((ev->xconfigure.width == FW * DpyCols + 4)
+						&& (ev->xconfigure.height == FH * (DpyRows+1) + 4))
+					break;
+						
+				FW=FW/FS;
+				FH=FH/FS;
+				newFSH=(ev->xconfigure.width+(FW*DpyCols)/2)/(FW*DpyCols);
+				newFSW=(ev->xconfigure.height+(FH*(DpyRows+1))/2)/(FH*(DpyRows+1));
+				if(newFSW<1)
+					newFSW=1;
+				if(newFSW>MAX_SCALE)
+					newFSW=MAX_SCALE;
+				if(newFSH<1)
+					newFSH=1;
+				if(newFSH>MAX_SCALE)
+					newFSH=MAX_SCALE;
+				if(newFSH<newFSW)
+					FS=newFSH;
+				else
+					FS=newFSW;
+				load_font(NULL,FW,FH,FS);
+				resize_window();
+				break;
+		}
 		case SelectionClear: {
 				XSelectionClearEvent *req;
 
@@ -690,11 +761,13 @@ video_event(XEvent *ev)
 	    	}
         case NoExpose:
                 break;
-        case GraphicsExpose:
+        case GraphicsExpose: {
+			expose_chars(ev->xgraphicsexpose.x,ev->xgraphicsexpose.y
+					,ev->xgraphicsexpose.width,ev->xgraphicsexpose.height);
+			break;
+	    }
         case Expose: {
-			int r;
-			for (r = 0; r < (DpyRows+1); ++r)
-		    	lines[r].changed = 1;
+			expose_chars(ev->xexpose.x,ev->xexpose.y,ev->xexpose.width,ev->xexpose.height);
 			break;
 	    }
 	case KeyRelease: {
@@ -1088,6 +1161,7 @@ void
 resize_window()
 {
     XSizeHints *sh;
+	int r;
 
     sh = x11.XAllocSizeHints();
     if (sh == NULL) {
@@ -1098,8 +1172,10 @@ resize_window()
 	sh->base_width = FW * DpyCols + 4;
 	sh->base_height = FH * (DpyRows+1) + 4;
 
-    sh->min_width = sh->max_width = sh->base_width;
-    sh->min_height = sh->max_height = sh->base_height;
+    sh->min_width = (FW/FS) * DpyCols + 4;
+	sh->max_width = (FW/FS) * MAX_SCALE * DpyCols + 4;
+    sh->min_height = (FH/FS) * (DpyRows+1) +4;
+	sh->max_height = (FH/FS) * MAX_SCALE * (DpyRows+1) +4;
     sh->flags = USSize | PMinSize | PMaxSize | PSize;
 
     x11.XSetWMNormalHints(dpy, win, sh);
@@ -1112,12 +1188,83 @@ resize_window()
     return;
 }
 
+/* Scales a bitmap up to 2x it's current size */
+char *
+scale_bitmap(char *bitmap, int width, int height, int *multiplier)
+{
+	char 	*ret;
+	char	*outbyte;
+	int		pos;
+	int		bmpsize;
+
+	if(*multiplier>MAX_SCALE)
+		*multiplier=MAX_SCALE;
+	if(*multiplier < 1)
+		*multiplier=1;
+	bmpsize=width*height;
+	ret=(char *)malloc(bmpsize*(*multiplier)*(*multiplier));
+	if(ret==NULL)
+		return(NULL);
+	outbyte=ret;
+	for(pos=0;pos<bmpsize;pos++) {
+		switch(*multiplier) {
+			case 1:
+				*(outbyte++)=bitmap[pos];
+				break;
+			case 2:
+				*outbyte=
+						 ((bitmap[pos]&0x08)<<4)
+						|((bitmap[pos]&0x08)<<3)
+						|((bitmap[pos]&0x04)<<3)
+						|((bitmap[pos]&0x04)<<2)
+						|((bitmap[pos]&0x02)<<2)
+						|((bitmap[pos]&0x02)<<1)
+						|((bitmap[pos]&0x01)<<1)
+						|((bitmap[pos]&0x01));
+				outbyte++;
+				*outbyte=
+						 ((bitmap[pos]&0x80))
+						|((bitmap[pos]&0x80)>>1)
+						|((bitmap[pos]&0x40)>>1)
+						|((bitmap[pos]&0x40)>>2)
+						|((bitmap[pos]&0x20)>>2)
+						|((bitmap[pos]&0x20)>>3)
+						|((bitmap[pos]&0x10)>>3)
+						|((bitmap[pos]&0x10)>>4);
+				outbyte++;
+				*outbyte=
+						 ((bitmap[pos]&0x08)<<4)
+						|((bitmap[pos]&0x08)<<3)
+						|((bitmap[pos]&0x04)<<3)
+						|((bitmap[pos]&0x04)<<2)
+						|((bitmap[pos]&0x02)<<2)
+						|((bitmap[pos]&0x02)<<1)
+						|((bitmap[pos]&0x01)<<1)
+						|((bitmap[pos]&0x01));
+				outbyte++;
+				*outbyte=
+						 ((bitmap[pos]&0x80))
+						|((bitmap[pos]&0x80)>>1)
+						|((bitmap[pos]&0x40)>>1)
+						|((bitmap[pos]&0x40)>>2)
+						|((bitmap[pos]&0x20)>>2)
+						|((bitmap[pos]&0x20)>>3)
+						|((bitmap[pos]&0x10)>>3)
+						|((bitmap[pos]&0x10)>>4);
+				outbyte++;
+				break;
+		}
+	}
+	return(ret);
+}
+
 /* No longer uses X fonts - pass NULL to use VGA 8x16 font */
 int
-load_font(char *filename, int width, int height)
+load_font(char *filename, int width, int height, int scale)
 {
     XGCValues gcv;
 	char *font;
+	char *scaledfont;
 
 	/* I don't actually do this yet! */
 	if(filename != NULL) {
@@ -1148,7 +1295,15 @@ load_font(char *filename, int width, int height)
 
 	if(pfnt!=0)
 		x11.XFreePixmap(dpy,pfnt);
-	pfnt=x11.XCreateBitmapFromData(dpy, win, font, FW, FH*256);
+	scaledfont=scale_bitmap(font, FW, FH*256, &FS);
+	if(scaledfont==NULL)
+		pfnt=x11.XCreateBitmapFromData(dpy, win, font, FW, FH*256);
+	else {
+		FW*=scale;
+		FH*=scale;
+		pfnt=x11.XCreateBitmapFromData(dpy, win, scaledfont, FW, FH*256);
+		free(scaledfont);
+	}
 
     return(0);
 }
@@ -1211,7 +1366,7 @@ init_mode(int mode)
     update_pixels();
 
     /* Update font. */
-    if(load_font(NULL,vmode.charwidth,vmode.charheight)) {
+    if(load_font(NULL,vmode.charwidth,vmode.charheight,FS)) {
 		sem_post(&console_mode_changed);
 		return(-1);
 	}
@@ -1259,7 +1414,7 @@ init_window()
 
     x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
 		     ExposureMask | ButtonPressMask
-		     | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask );
+		     | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
 
 	SAFECOPY(window_title,"SyncConsole");
     x11.XStoreName(dpy, win, window_title);
