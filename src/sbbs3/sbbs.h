@@ -59,9 +59,14 @@
 	#endif
 
 	typedef DWORD(WINAPI * GetLongPathName_t)(LPCTSTR,LPTSTR,DWORD); 
-
-	extern HINSTANCE hK32;
-	extern GetLongPathName_t Win98GetLongPathName;
+#if defined(__cplusplus)
+	extern "C" {
+#endif
+		extern HINSTANCE hK32;
+		extern GetLongPathName_t Win98GetLongPathName;
+#if defined(__cplusplus)
+	}
+#endif
 
 #elif defined(__unix__)		/* Unix-variant */
 
