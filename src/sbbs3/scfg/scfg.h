@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <limits.h>	/* USHRT_MAX */
 
+#include "gen_defs.h"
 #include "uifc.h"
 #include "sbbs.h"
 
