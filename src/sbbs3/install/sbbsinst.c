@@ -123,6 +123,8 @@ char tmp[256];
 char error[256];
 char cflags[MAX_PATH+1];
 char cvsroot[MAX_PATH+1];
+char distlist_rev[128]="unspecified";
+char revision[16];
 
 int  backup_level=5;
 BOOL keep_makefile=FALSE;
@@ -188,8 +190,10 @@ int main(int argc, char **argv)
 		SAFECOPY(params.sbbsgroup,p);
 	params.useX=TRUE;
 
-    printf("\r\nSynchronet Installation Utility (%s)  v%s  Copyright 2003 "
-        "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
+	sscanf("$Revision$" + 11, "%s", revision);
+
+    printf("\r\nSynchronet Installation %s-%s  Copyright 2003 "
+        "Rob Swindell\r\n",revision,PLATFORM_DESC);
 
     memset(&uifc,0,sizeof(uifc));
 
@@ -286,7 +290,7 @@ int main(int argc, char **argv)
 		if((mopt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
+	sprintf(str,"Synchronet Installation %s-%s",revision,PLATFORM_DESC);
 	if(uifc.scrn(str)) {
 		printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
 		bail(1);
@@ -294,6 +298,7 @@ int main(int argc, char **argv)
 
 	while(1) {
 		i=0;
+		sprintf(mopt[i++],"%-27.27s%s","List Revision",distlist_rev);
 		sprintf(mopt[i++],"%-27.27s%s","Distribution",distlist[dist]->version);
 		sprintf(mopt[i++],"%-27.27s%s","Server"
 			,(distlist[dist]->type==LOCAL_FILE?"Local Files":distlist[dist]->servers[server]->desc));
@@ -314,26 +319,26 @@ int main(int argc, char **argv)
 						"\nToDo: Add help.";
 		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT|WIN_ORG,0,0,70,&main_dflt,0
 			,"Synchronet Installation",mopt)) {
-			case 0:
+			case 1:
 				i=choose_dist((char **)distlist);
 				if(i>=0)  {
 					server=0;
 					dist=i;
 				}
 				break;
-			case 1:
+			case 2:
 				if(distlist[dist]->type != LOCAL_FILE)  {
 					i=choose_server((char **)distlist[dist]->servers);
 					if(i>=0)
 						server=i;
 				}
 				break;
-			case 2:
+			case 3:
 				uifc.helpbuf=	"`System Type`\n"
 								"\nToDo: Add help.";
 				uifc.input(WIN_MID,0,0,"System Type",params.sys_desc,40,K_EDIT);
 				break;
-			case 3:
+			case 4:
 				uifc.helpbuf=	"`Install Path`\n"
 								"\n"
 								"\nPath to install the Synchronet BBS system into."
@@ -344,7 +349,7 @@ int main(int argc, char **argv)
 								"\n	/home/bbs/sbbs";
 				uifc.input(WIN_MID,0,0,"",params.install_path,50,K_EDIT);
 				break;
-			case 4:
+			case 5:
 				strcpy(opt[0],"Borland");
 				strcpy(opt[1],"GNU");
 				opt[2][0]=0;
@@ -359,12 +364,12 @@ int main(int argc, char **argv)
 					params.usebcc=FALSE;
 				i=0;
 				break;
-			case 5:
+			case 6:
 				uifc.helpbuf=	"`Compiler Flags`\n"
 								"\nToDo: Add help.";
 				uifc.input(WIN_MID,0,0,"Additional Compiler Flags",params.cflags,40,K_EDIT);
 				break;
-			case 6:
+			case 7:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -379,7 +384,7 @@ int main(int argc, char **argv)
 					params.debug=FALSE;
 				i=0;
 				break;
-			case 7:
+			case 8:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -396,22 +401,22 @@ int main(int argc, char **argv)
 					params.symlink=FALSE;
 				i=0;
 				break;
-			case 8:
+			case 9:
 				uifc.helpbuf=	"`Make Command-line`\n"
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.make_cmdline,65,K_EDIT);
 				break;
-			case 9:
+			case 10:
 				uifc.helpbuf=	"`File Owner`\n"
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.sbbsuser,8,K_EDIT);
 				break;
-			case 10:
+			case 11:
 				uifc.helpbuf=	"`File Group`\n"
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.sbbsgroup,32,K_EDIT);
 				break;
-			case 11:
+			case 12:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -426,7 +431,7 @@ int main(int argc, char **argv)
 					params.useX=FALSE;
 				i=0;
 				break;
-			case 12:
+			case 13:
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
 				bail(0);
 				break;
@@ -713,6 +718,9 @@ get_distlist(void)
 		}
 
 		switch(in_line[0])  {
+			case 'R':	/* revision */
+				SAFECOPY(distlist_rev,in_line+2);
+				break;
 			case 'C':
 				if(file!=NULL)
 					file[f]="";
