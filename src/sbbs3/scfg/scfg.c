@@ -223,7 +223,7 @@ else
 sprintf(uifc.helpdatfile,"%s/scfghelp.dat",str);
 sprintf(uifc.helpixbfile,"%s/scfghelp.ixb",str);
 
-sprintf(str,"Synchronet Configuration for %s v%s",PLATFORM_DESC,VERSION);
+sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 if(uifc.scrn(str)) {
 	printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
 	bail(1);
