@@ -70,6 +70,10 @@ FILE* DLLCALL fnopen(int *fd, char *str, int access)
 	int		file;
 	FILE *	stream;
 
+	if(access&O_CREAT && access&O_WRONLY) {	/* not compatible with fdopen */
+		access&=~O_WRONLY;
+		access|=O_RDWR;
+	}
     if((file=nopen(str,access))==-1)
         return(NULL);
 
