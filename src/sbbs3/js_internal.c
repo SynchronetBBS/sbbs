@@ -214,9 +214,13 @@ js_eval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*			buf;
     JSScript*		script;
 	js_branch_t*	branch;
+	JSErrorReporter	reporter;
 
 	if((branch=(js_branch_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
+
+	/* Get the error reporter for the original context */
+	JS_SetErrorReporter(cx,(reporter=JS_SetErrorReporter(cx,NULL)));
 
 	*rval=JSVAL_VOID;
 
@@ -227,6 +231,7 @@ js_eval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	JS_SetContextPrivate(cx,branch);
+	JS_SetErrorReporter(cx,reporter);
 
 	if((obj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 		return(JS_FALSE);
@@ -245,6 +250,8 @@ js_eval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 #endif
+
+	branch->counter=0;	// Reset loop counter
 
 	JS_SetBranchCallback(cx, js_BranchCallback);
 
