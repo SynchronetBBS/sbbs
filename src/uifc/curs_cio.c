@@ -564,9 +564,6 @@ void _putch(unsigned char ch, BOOL refresh_now)
  		attron(A_REVERSE);
 		addch(cha+'A'-1);
 		attroff(A_REVERSE);
-		refresh();
-		printf("\b%c",cha);
-		refresh();
 	}
 	else
 		addch(cha);
