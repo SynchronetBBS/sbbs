@@ -1,4 +1,4 @@
-# Makefile.gnu
+# GNUmakefile
 
 #########################################################################
 # Makefile for Synchronet BBS 											#
@@ -45,16 +45,16 @@ LFLAGS	:=	-lm -lpthread
 
 ifdef DEBUG
 CFLAGS	+=	-g -O0 -D_DEBUG 
-LIBODIR	+=	.debug
-EXEODIR	+=	.debug
+LIBODIR	:=	$(LIBODIR).debug
+EXEODIR	:=	$(EXEODIR).debug
 ifeq ($(os),freebsd)	# FreeBSD
 LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_DBG.OBJ/libjs.a
 else			# Linux
 LIBS	+=	../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
 endif
 else # RELEASE
-LIBODIR	+=	.release
-EXEODIR	+=	.release
+LIBODIR	:=	$(LIBODIR).release
+EXEODIR	:=	$(EXEODIR).release
 ifeq ($(os),freebsd)	# FreeBSD
 LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_OPT.OBJ/libjs.a
 else
@@ -95,24 +95,24 @@ SERVICE_OBJS= $(LIBODIR)/services.o
 MONO_OBJS	= $(CON_OJBS) $(FTP_OBJS) $(MAIL_OBJS) $(SERVICE_OBJS)
 
 # Monolithic Synchronet executable Build Rule
-$(SBBSMONO): $(EXEODIR) $(LIBODIR) $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o 
+$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o 
 	@echo Linking $@
 	@$(CC) $(LFLAGS) $^ -o $@
 
 # Synchronet BBS library Link Rule
-$(SBBS): $(LIBODIR) $(OBJS) $(LIBS) $(LIBODIR)/ver.o
+$(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o
 	$(LD) $(LFLAGS) -S -o $(SBBS) $^ $(LIBS) -o $@
 
 # FTP Server Link Rule
-$(FTPSRVR): $(LIBODIR) $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
+$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@ 
 
 # Mail Server Link Rule
-$(MAILSRVR): $(LIBODIR) $(MAIL_OBJS) $(SBBSLIB)
+$(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@
 
 # Synchronet Console Build Rule
-$(SBBSCON): $(EXEODIR) $(CON_OBJS) $(SBBSLIB)
+$(SBBSCON): $(CON_OBJS) $(SBBSLIB)
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Specifc Compile Rules
