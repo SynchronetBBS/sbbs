@@ -170,7 +170,7 @@ function Unregistered_Commands() {
 				this.numeric461("SERVER");
 				break;
 			}
-			if (Servers[cmd[1].toUpperCase()]) {
+			if (Servers[cmd[1].toLowerCase()]) {
 				this.quit("Server already exists.");
 				return 0;
 			}
