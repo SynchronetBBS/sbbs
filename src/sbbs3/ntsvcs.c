@@ -643,7 +643,8 @@ static void set_service_start_type(SC_HANDLE hSCManager, char* name
 {
     SC_HANDLE		hService;
 
-	printf("Disabling service: %-40s ... ", disp_name);
+	printf("%s service: %-40s ... "
+		,start_type==SERVICE_DISABLED ? "Disabling" : "Enabling", disp_name);
 
     hService = OpenService(hSCManager, name, SERVICE_ALL_ACCESS);
 
@@ -665,7 +666,9 @@ static void set_service_start_type(SC_HANDLE hSCManager, char* name
 		NULL,					// pointer to password for service account
 		NULL					// pointer to display name
 		))
-		printf("\n!ERROR %d disabling service: %s\n",GetLastError(),name);
+		printf("\n!ERROR %d changing service config for: %s\n",GetLastError(),name);
+	else
+		printf("Successful\n");
 
     CloseServiceHandle(hService);
 }
