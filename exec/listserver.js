@@ -101,6 +101,7 @@ if(this.recipient_list_filename!=undefined) {
 	}
 	var msgtxt = msgtxt_file.readAll()
 	msgtxt_file.close();
+	file_remove(message_text_filename);
 
 	load("mailproc_util.js");	// import parse_msg_header() and get_msg_body()
 
