@@ -473,7 +473,7 @@ static u_long resolve_ip(char *addr)
 		return(inet_addr(addr));
 
 	if ((host=gethostbyname(addr))==NULL) {
-		lprintf("0000 !ERROR resolving host name: %s",addr);
+		lprintf("0000 !ERROR resolving hostname: %s",addr);
 		return(0);
 	}
 	return(*((ulong*)host->h_addr_list[0]));
@@ -1156,7 +1156,7 @@ static void smtp_thread(void* arg)
 		strcpy(host_name,"<no name>");
 
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
-		lprintf("%04d SMTP host name: %s", socket, host_name);
+		lprintf("%04d SMTP hostname: %s", socket, host_name);
 
 	strcpy(hello_name,host_name);
 
@@ -1988,6 +1988,16 @@ static void smtp_thread(void* arg)
 						usernum=userdatdupe(&scfg, 0, U_NAME, LEN_NAME, rcpt_name, FALSE);
 				}
 			}
+			if(!usernum && startup->default_user[0]) {
+				usernum=matchuser(&scfg,startup->default_user);
+				if(usernum)
+					lprintf("%04d SMTP Forwarding mail for UNKNOWN USER to default user: %s"
+						,socket,startup->default_user);
+				else
+					lprintf("%04d !SMTP UNKNOWN DEFAULT USER: %s"
+						,socket,startup->default_user);
+			}
+
 			if(!usernum) {
 				lprintf("%04d !SMTP UNKNOWN USER:%s", socket, buf+8);
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
@@ -2411,10 +2421,10 @@ static void sendmail_thread(void* arg)
 					server=mx2;	/* Give second mx record a try */
 				}
 				
-				lprintf("%04d SEND resolving SMTP host name: %s", sock, server);
+				lprintf("%04d SEND resolving SMTP hostname: %s", sock, server);
 				ip_addr=resolve_ip(server);
 				if(!ip_addr)  {
-					sprintf(err,"Failed to resolve SMTP host name: %s",server);
+					sprintf(err,"Failed to resolve SMTP hostname: %s",server);
 					continue;
 				}
 
