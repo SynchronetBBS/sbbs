@@ -329,7 +329,8 @@ int sbbs_t::exec_function(csi_t *csi)
 				csi->logic=LOGIC_FALSE;
 				return(0);
 			}
-			bprintf("Spying on Node %d, Ctrl-C to Abort...\r\n\r\n",i);
+			bprintf("*** Synchronet Remote Spy on Node %d: Ctrl-C to Abort ***"
+				"\r\n\r\n",i);
 			spy_socket[i-1]=client_socket;
 			ansi_len=0;
 			while(online 
