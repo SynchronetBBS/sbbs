@@ -1,13 +1,10 @@
-// Basic FormMail module
+// Basic FormMail script, emulates Matt's FormMail.pl Script
 
 // $Id$
 
-// Requires query values: to, from, and subject
-// Message body text is contained in the post data
-
 load("sbbsdefs.js");
 
-var redir = http_request.query.redir;
+var redir = http_request.query.redirect;
 if(!redir)
 	redir = http_request.header.referer;
 
@@ -31,24 +28,25 @@ function results(level, text)
 	exit();
 }
 
-if(http_request.query.to==undefined
-    || http_request.query.from==undefined
-    || http_request.query.subject==undefined)
-	results(LOG_ERR,"mising query field");
-
-if(http_request.post_data==undefined)
-	results(LOG_ERR,"mising post data");
-
 var msgbase=new MsgBase("mail");
 if(!msgbase.open())
 	results(LOG_ERR,format("%s opening mail base", msgbase.error));
 
-var hdr = { from: http_request.query.from,
-			to: http_request.query.to,
-			subject: http_request.query.subject };
+var hdr = { from: 'formmail',
+			to: 'sysop',
+			subject: 'WWW Form Submission' };
 
-if(http_request.query.email)	// Use form-specified email address
-	hdr.from=http_request.query.email;
+// Use form-specified recipient
+if(http_request.query.recipient)	hdr.to				=http_request.query.recipient;
+
+// Use form-specified message subject
+if(http_request.query.subject)		hdr.subject			=http_request.query.subject;
+
+// Use form-specified email address
+if(http_request.query.email)		hdr.from_net_addr	=http_request.query.email;
+
+// Use form-specified real name
+if(http_request.query.realname)		hdr.from			=http_request.query.realname;
 
 hdr.to_net_type=netaddr_type(hdr.to);
 if(hdr.to_net_type!=NET_NONE)
@@ -60,7 +58,12 @@ else {
 	hdr.to_ext=usrnum;
 }
 
-if(!msgbase.save_msg(hdr,client,http_request.post_data))
+var i;
+var body="Form fields follow:\r\n\r\n";
+for(i in http_request.query)
+	body += format("%-10s = %s\r\n", i, http_request.query[i]);
+	
+if(!msgbase.save_msg(hdr,client,body))
 	results(LOG_ERR,format("%s saving message", msgbase.error));
 
 results(LOG_INFO,"E-mail sent to " + String(hdr.to).italics().bold() + " successfully.");
