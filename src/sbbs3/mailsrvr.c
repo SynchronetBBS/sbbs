@@ -2798,7 +2798,8 @@ static void sendmail_thread(void* arg)
 
 		smb_freemsgmem(&msg);
 
-		mswait(3000);
+		if(last_scan)
+			mswait(3000);
 
 		sprintf(smb.file,"%smail",scfg.data_dir);
 		smb.retry_time=scfg.smb_retry_time;
