@@ -224,9 +224,11 @@ var   QWK_EXPCTLA	=(1<<6) 	/* Expand ctrl-a codes to ascii 			*/
 var   QWK_RETCTLA	=(1<<7) 	/* Retain ctrl-a codes						*/
 var   QWK_ATTACH	=(1<<8) 	/* Include file attachments 				*/
 var   QWK_NOINDEX	=(1<<9) 	/* Do not create index files in QWK			*/
-var   QWK_TZ		=(1<<10)	/* Include "@TZ" time zone in msgs			*/
-var   QWK_VIA 		=(1<<11)	/* Include "@VIA" seen-bys in msgs			*/
+var   QWK_TZ		=(1<<10)	/* Include @TZ (time zone) in msgs			*/
+var   QWK_VIA 		=(1<<11)	/* Include @VIA (path) in msgs				*/
 var   QWK_NOCTRL	=(1<<12)	/* No extraneous control files				*/
+var   QWK_EXT		=(1<<13)	/* QWK Extended (QWKE) format				*/
+var   QWK_MSGID		=(1<<14)	/* Include @MSGID and @REPLY in msgs		*/
 					    		/********************************************/
 
 					    		/********************************************/
@@ -415,7 +417,29 @@ var   DIR_CDTMIN	=(1<<15)	/* Give uploader minutes instead of cdt		*/
 var   DIR_SINCEDL	=(1<<16)	/* Purge based on days since last dl		*/
 var   DIR_MOVENEW	=(1<<17)	/* Files marked as new when moved			*/
 					    		/********************************************/
-				
+
+					    		/********************************************/
+								/* Bits in xtrn[x] and xedit[x].settings	*/
+					    		/********************************************/
+var XTRN_MULTIUSER	=(1<<0) 	/* allow multi simultaneous users			*/
+var XTRN_ANSI		=(1<<1) 	/* user must have ANSI, same as ^^^			*/
+var XTRN_IO_INTS 	=(1<<2) 	/* Intercept I/O interrupts 				*/
+var XTRN_MODUSERDAT	=(1<<3) 	/* Program can modify user data 			*/
+var XTRN_WWIVCOLOR	=(1<<4) 	/* Program uses WWIV color codes			*/
+var XTRN_EVENTONLY	=(1<<5) 	/* Program executes as event only			*/
+var XTRN_STARTUPDIR	=(1<<6) 	/* Create drop file in start-up dir			*/
+var XTRN_REALNAME	=(1<<7) 	/* Use real name in drop file				*/
+var XTRN_SWAP		=(1<<8) 	/* Swap for this door						*/
+var XTRN_FREETIME	=(1<<9) 	/* Free time while in this door 			*/
+var XTRN_QUICKBBS	=(1<<10)	/* QuickBBS style editor					*/
+var XTRN_EXPANDLF	=(1<<11)	/* Expand LF to CRLF editor 				*/
+var XTRN_QUOTEALL	=(1<<12)	/* Automatically quote all of msg			*/
+var XTRN_QUOTENONE	=(1<<13)	/* Automatically quote none of msg			*/
+var XTRN_NATIVE		=(1<<14)	/* Native application (EX_NATIVE)			*/
+var XTRN_STRIPKLUDGE=(1<<15)	/* Strip FTN Kludge lines from msg			*/
+var XTRN_CHKTIME	=(1<<16)	/* Check time online (EX_CHKTIME)			*/
+					    		/********************************************/
+
     							/********************************************/
 				                /* Bit values for file.settings				*/
 							    /********************************************/
@@ -434,9 +458,10 @@ var   EX_WWIV 		=(1<<4)		/* Expand WWIV color codes to ANSI sequence */
 var   EX_SWAP 		=(1<<5)		/* Swap out for this external				*/
 var   EX_POPEN		=(1<<7)		/* Leave COM port open						*/
 var   EX_OFFLINE	=(1<<8)		/* Run this program offline					*/
-var   EX_NATIVE		=(1<<9)		/* Native 32-bit application				*/
 var   EX_BG			=(1<<10)	/* Back-ground/detached process				*/
 var   EX_BIN		=(1<<11)	/* Binary mode (no Unix LF to CR/LF)		*/
+var   EX_NATIVE		=(1<<14)	/* Native 32-bit application (XTRN_NATIVE)	*/
+var   EX_CHKTIME	=(1<<16)	/* Check time left (XTRN_CHKTIME)			*/
 					    		/********************************************/
 
 					    		/********************************************/
@@ -463,9 +488,41 @@ var   TG_RLOGIN		=(1<<6)		/* Use BSD RLogin protocol					*/
 					    		/********************************************/
 								/* Bits in console.telnet_mode				*/
 					    		/********************************************/
-var   TELNET_MODE_BIN_RX=(1<<0) /* Binary receive (no CR to CRLF xlat)		*/
-var   TELNET_MODE_ECHO	=(1<<1)	/* Echo remotely							*/
-var   TELNET_MODE_GATE	=(1<<2)	/* Pass-through telnet commands/responses	*/
+var TELNET_MODE_BIN_RX	=(1<<0) /* Binary receive (no CR to CRLF xlat)		*/
+var TELNET_MODE_ECHO	=(1<<1)	/* Echo remotely							*/
+var TELNET_MODE_GATE	=(1<<2)	/* Pass-through telnet commands/responses	*/
+					    		/********************************************/
+
+					    		/********************************************/
+								/* Bits in mode of bbs.scan_posts()			*/
+					    		/********************************************/
+var	SCAN_CONST		=(1<<0)		/* Continuous message scanning				*/
+var	SCAN_NEW		=(1<<1)		/* New scanning								*/
+var	SCAN_BACK		=(1<<2)		/* Scan the last message if no new			*/
+var	SCAN_TOYOU		=(1<<3)		/* Scan for messages to you 				*/
+var	SCAN_FIND		=(1<<4)		/* Scan for text in messages				*/
+var	SCAN_UNREAD		=(1<<5)		/* Find un-read messages to you 			*/
+					    		/********************************************/
+
+					    		/********************************************/
+								/* Values of mode for bbs.list_users()		*/
+					    		/********************************************/
+var UL_ALL			=0			/* List all active users in user database	*/
+var UL_SUB			=1    		/* List all users with access to cursub     */
+var UL_DIR			=2			/* List all users with access to curdir 	*/
+					    		/********************************************/
+
+					    		/********************************************/
+								/* Values of mode in bbs.list_file_info()	*/
+					    		/********************************************/
+var FI_INFO         =0   		/* Just list file information               */
+var FI_REMOVE       =1    		/* Remove/Move/Edit file information        */
+var FI_DOWNLOAD     =2    		/* Download files                           */
+var FI_OLD          =3    		/* Search/Remove files not downloaded since */
+var FI_OLDUL	 	=4			/* Search/Remove files uploaded before      */
+var FI_OFFLINE   	=5			/* Search/Remove files not online			*/
+var FI_USERXFER  	=6			/* User Xfer Download                       */
+var FI_CLOSE 	  	=7			/* Close any open records					*/
 					    		/********************************************/
 
 								/* Message attributes */
