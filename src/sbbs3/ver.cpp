@@ -106,13 +106,19 @@ void sbbs_t::ver()
 			,winver.dwMajorVersion, winver.dwMinorVersion
 			,winver.dwBuildNumber,winver.szCSDVersion);
 
-#elif defined(__linux__)
-
-	sprintf(str,"Linux");
-
 #elif defined(__unix__)
 
-	sprintf(str,"Unix");
+	struct utsname unixver;
+
+	if(uname(&unixver)!=0)
+		sprintf(str,"Unix (uname errno: %d)",errno);
+	else
+		sprintf(str,"%s %s %s %s"
+			,unixver.sysname	/* e.g. "Linux" */
+			,unixver.release	/* e.g. "2.2.14-5.0" */
+			,unixver.version	/* e.g. "#1 Tue Mar 7 20:53:41 EST 2000" */
+			,unixver.machine	/* e.g. "i586" */
+			);
 
 #else	/* DOS && __BORLANDC__*/
 
