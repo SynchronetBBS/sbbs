@@ -277,6 +277,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	now=time(NULL);
 	tm_p=gmtime(&now);
 
+	if((retval=WaitForSingleObject(exec_mutex,5000))!=WAIT_OBJECT_0) {
+		errormsg(WHERE, ERR_TIMEOUT, "exec_mutex", retval);
+		return(GetLastError());
+	}
+
  	if(native) { // Native (32-bit) external
 
 		// Current environment passed to child process
@@ -297,6 +302,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     	sprintf(str,"%sDOSXTRN.ENV", cfg.node_dir);
         FILE* fp=fopen(str,"w");
         if(fp==NULL) {
+			XTRN_CLEANUP;
         	errormsg(WHERE, ERR_CREATE, str, 0);
             return(errno);
         }
@@ -315,11 +321,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         fclose(fp);
 
         sprintf(fullcmdline, "%sDOSXTRN.EXE %s", cfg.exec_dir, str);
-
-		if((retval=WaitForSingleObject(exec_mutex,5000))!=WAIT_OBJECT_0) {
-			errormsg(WHERE, ERR_TIMEOUT, "exec_mutex", retval);
-			return(GetLastError());
-		}
 
 		OpenVxDHandle=GetAddressOfOpenVxDHandle();
 
@@ -471,6 +472,17 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         return(GetLastError());
     }
 
+#if 0
+	char dbgstr[256];
+	sprintf(dbgstr,"Node %d created: hProcess %X hThread %X processID %X threadID %X\n"
+		,cfg.node_num
+		,process_info.hProcess 
+		,process_info.hThread 
+		,process_info.dwProcessId 
+		,process_info.dwThreadId); 
+	OutputDebugString(dbgstr);
+#endif
+
 	if(!native) {
 
 		if(!(mode&EX_OFFLINE) && !nt) {
@@ -499,8 +511,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				return(GetLastError());
 			}
 		}
-        ReleaseMutex(exec_mutex);
 	}
+    ReleaseMutex(exec_mutex);
 
 	/* Disable Ctrl-C checking */
 	bool rio_abortable_save=rio_abortable;
