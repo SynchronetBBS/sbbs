@@ -920,7 +920,6 @@ extern "C" {
 /* str_util.c */
 int		bstrlen(char *str);
 void	backslashcolon(char *str);
-void	backslash(char *str);
 ulong	ahtoul(char *str);	/* Converts ASCII hex to ulong */
 char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 uint	hptoi(char *str);
