@@ -102,8 +102,9 @@
 /***********************/
 /* Synchronet-specific */
 /***********************/
-#ifdef SBBS	/* Only SBBS is multi-threaded */
+#ifdef SBBS	
 	#include "threadwrap.h"	/* must be before dirwrap.h for OpenBSD FULLPATH */
+	#include "text.h"
 #endif
 #include "genwrap.h"
 #include "dirwrap.h"
@@ -115,7 +116,6 @@
 #include "scfglib.h"
 #include "userdat.h"
 #include "riodefs.h"
-#include "text.h"
 #include "cmdshell.h"
 #include "ringbuf.h"    /* RingBuf definition */
 #include "client.h"		/* client_t definition */
