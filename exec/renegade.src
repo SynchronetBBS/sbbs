@@ -450,6 +450,14 @@ cmdkey ?
 		end_if
 	end_cmd
 
+# Sysop Menu
+compare_ars SYSOP or exempt Q or I or N
+if_true
+	cmdkey *
+		call sysop
+		end_cmd
+	end_if
+
 # Commands
 
 cmdkey E
