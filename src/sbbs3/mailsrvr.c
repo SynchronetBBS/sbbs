@@ -1186,7 +1186,8 @@ static void pop3_thread(void* arg)
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
-	active_clients--,update_clients();
+	if(active_clients)
+		active_clients--, update_clients();
 	client_off(socket);
 
 	thread_down();
@@ -1620,7 +1621,7 @@ static void smtp_thread(void* arg)
 		return;
 	}
 
-	active_clients++,update_clients();
+	active_clients++, update_clients();
 
 	/*  SPAM Filters (mail-abuse.org) */
 	dnsbl_result.s_addr = dns_blacklisted(socket,smtp.client_addr.sin_addr,host_name,dnsbl);
@@ -1637,7 +1638,8 @@ static void smtp_thread(void* arg)
 			lprintf("%04d !SMTP REFUSED SESSION from blacklisted server"
 				,socket);
 			thread_down();
-			active_clients--,update_clients();
+			if(active_clients)
+				active_clients--, update_clients();
 			return;
 		}
 	}
@@ -1654,7 +1656,8 @@ static void smtp_thread(void* arg)
 		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
 		thread_down();
-		active_clients--,update_clients();
+		if(active_clients)
+			active_clients--, update_clients();
 		return;
 	}
 
@@ -2767,7 +2770,8 @@ static void smtp_thread(void* arg)
 
 	status(STATUS_WFC);
 
-	active_clients--,update_clients();
+	if(active_clients)
+		active_clients--, update_clients();
 	client_off(socket);
 
 	thread_down();
@@ -2948,7 +2952,7 @@ static void sendmail_thread(void* arg)
 		}
 
 		if(active_sendmail!=0)
-			active_sendmail=0,update_clients();
+			active_sendmail=0, update_clients();
 
 		smb_close(&smb);
 
@@ -2990,7 +2994,7 @@ static void sendmail_thread(void* arg)
 		for(offset=0;offset<total_msgs;offset++) {
 
 			if(active_sendmail!=0)
-				active_sendmail=0,update_clients();
+				active_sendmail=0, update_clients();
 
 			if(server_socket==INVALID_SOCKET)	/* server stopped */
 				break;
@@ -3032,7 +3036,7 @@ static void sendmail_thread(void* arg)
 			if(msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) 
 				continue;
 
-			active_sendmail=1,update_clients();
+			active_sendmail=1, update_clients();
 
 			lprintf("0000 SEND Message #%lu from %s to %s"
 				,msg.hdr.number, msg.from, msg.to_net.addr);
@@ -3239,7 +3243,7 @@ static void sendmail_thread(void* arg)
 	smb_close(&smb);
 
 	if(active_sendmail!=0)
-		active_sendmail=0,update_clients();
+		active_sendmail=0, update_clients();
 
 	thread_down();
 	lprintf("0000 SendMail thread terminated (%u threads remain)", thread_count);
@@ -3436,8 +3440,7 @@ void DLLCALL mail_server(void* arg)
 
 		lprintf("Maximum inactivity: %u seconds",startup->max_inactivity);
 
-		active_clients=0;
-		update_clients();
+		active_clients=0,update_clients();
 
 		/* open a socket and wait for a client */
 
@@ -3719,7 +3722,7 @@ void DLLCALL mail_server(void* arg)
 			start=time(NULL);
 			while(active_clients) {
 				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf("!TIMEOUT waiting for %u active clients ",active_clients);
+					lprintf("!TIMEOUT waiting for %d active clients ",active_clients);
 					break;
 				}
 				mswait(100);
