@@ -420,16 +420,26 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 {
 	char	ch;
 	int		i,rd=0;
+	fd_set	socket_set;
+	struct timeval	tv;
 	
 	while(rd<len-1) {
-		i=recv(socket, &ch, 1, 0);
+
+		tv.tv_sec=1;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(socket,&socket_set);
+
+		i=select(socket+1,&socket_set,NULL,NULL,&tv);
+
 		if(server_socket==INVALID_SOCKET) {
 			sockprintf(socket,"421 Server downed, aborting.");
 			lprintf("%04d Server downed, aborting.",socket);
 			return(0);
 		}
 		if(i<1) {
-			if(ERROR_VALUE==EWOULDBLOCK) {
+			if(i==0) {
 				if((time(NULL)-(*lastactive))>startup->max_inactivity) {
 					lprintf("%04d Disconnecting due to to inactivity.",socket);
 					sockprintf(socket,"421 Disconnecting due to inactivity (%u seconds)."
@@ -439,6 +449,17 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 				mswait(1);
 				continue;
 			}
+			recverror(socket,i);
+			return(i);
+		}
+		i=recv(socket, &ch, 1, 0);
+		if(i<1) {
+#if 0
+			if(ERROR_VALUE==EWOULDBLOCK) {
+				mswait(1);
+				continue;
+			}
+#endif
 			recverror(socket,i);
 			return(i);
 		}
