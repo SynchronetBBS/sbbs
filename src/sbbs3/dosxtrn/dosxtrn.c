@@ -62,6 +62,7 @@ short	vdd=0;
 BYTE	node_num=0;
 int		mode=0;
 DWORD	nodata=0;
+DWORD	polls_before_yield=10;
 
 void (interrupt *oldint14)();
 void (interrupt *oldint16)();
@@ -212,8 +213,6 @@ WORD PortStatus()
 	return(status);
 }
 
-#define POLLS_BEFORE_YIELD	10
-
 void interrupt winNTint14(
 	unsigned _es, unsigned _ds,
 	unsigned _di, unsigned _si,
@@ -270,7 +269,7 @@ void interrupt winNTint14(
 			break;
 		case 0x03:	/* request status */
 			_ax=PortStatus();
-			if(_ax==0x6088 && ++nodata>=POLLS_BEFORE_YIELD)
+			if(_ax==0x6088 && ++nodata>=polls_before_yield)
 				vdd_op(VDD_YIELD);
 			break;
 		case 0x04:	/* initialize */
@@ -328,7 +327,7 @@ void interrupt winNTint14(
 			info.outbuf_free=info.outbuf_size-vdd_status.outbuf_full;
 
 			if(vdd_status.inbuf_full==vdd_status.outbuf_full==0 
-				&& ++nodata>=POLLS_BEFORE_YIELD)
+				&& ++nodata>=polls_before_yield)
 				vdd_op(VDD_YIELD);			
 
 			p = _MK_FP(_es,_di);
@@ -365,7 +364,7 @@ void interrupt winNTint16(
 				nodata=0;
 				return;
 			} 
-			if(++nodata>=POLLS_BEFORE_YIELD)
+			if(++nodata>=polls_before_yield)
 				vdd_op(VDD_YIELD);
 			break;
     	case 0x01:	// Get keyboard status
@@ -378,7 +377,7 @@ void interrupt winNTint16(
 				nodata=0;
 				return;
 			}
-			if(++nodata>=POLLS_BEFORE_YIELD)
+			if(++nodata>=polls_before_yield)
 				vdd_op(VDD_YIELD);
 	        break;
 	}
@@ -440,6 +439,8 @@ int main(int argc, char **argv)
 		node_num=atoi(argv[3]);
 	if(argc>4)
 		mode=atoi(argv[4]);
+	if(argc>5)
+		polls_before_yield=atol(argv[5]);
 
 	if((fp=fopen(argv[1],"r"))==NULL) {
 		fprintf(stderr,"!Error opening %s\n",argv[1]);
