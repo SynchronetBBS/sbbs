@@ -197,7 +197,7 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 	@$(CC) $(CFLAGS) $(CCFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
 
 # Implicit C++ Compile Rule
-{.}.cpp{$(OBJODIRi)}$(OFILE):
+{.}.cpp{$(OBJODIR)}$(OFILE):
 	@$(CC) $(CFLAGS) $(CXXFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
 
 # Implicit MT C Compile Rule
