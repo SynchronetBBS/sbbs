@@ -71,8 +71,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/* Create SYSID.MSG, write header and leave open */
 	/*************************************************/
 	sprintf(str,"%s%s.msg",cfg.temp_dir,cfg.qhub[hubnum]->id);
-	if((rep=fnopen(&file,str,O_CREAT|O_WRONLY))==NULL) {
-		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY);
+	if((rep=fnopen(&file,str,O_CREAT|O_WRONLY|O_TRUNC))==NULL) {
+		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_TRUNC);
 		return(false); }
 	if(filelength(file)<1) { 							/* New REP packet */
 		sprintf(str,"%-128s",cfg.qhub[hubnum]->id);     /* So write header */
