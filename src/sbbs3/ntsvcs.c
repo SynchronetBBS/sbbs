@@ -268,7 +268,6 @@ static WORD event_type(int level)
 		case LOG_WARNING:
 			return(EVENTLOG_WARNING_TYPE);
 		case LOG_NOTICE:
-			return(EVENTLOG_SUCCESS);
 		case LOG_INFO:
 		case LOG_DEBUG:
 			return(EVENTLOG_INFORMATION_TYPE);
