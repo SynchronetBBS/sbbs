@@ -76,8 +76,9 @@ char* DLLCALL semfile_list_check(time_t* t, link_list_t* filelist)
 void DLLCALL semfile_list_init(link_list_t* filelist, const char* parent, 
 							   const char* action, const char* service)
 {
-	char path[MAX_PATH+1];
-	char hostname[128];
+	char	path[MAX_PATH+1];
+	char	hostname[128];
+	char*	p;
 
 	listInit(filelist,0);
 	SAFEPRINTF2(path,"%s%s",parent,action);
@@ -89,6 +90,13 @@ void DLLCALL semfile_list_init(link_list_t* filelist, const char* parent,
 		listPushNodeString(filelist,path);
 		SAFEPRINTF4(path,"%s%s.%s.%s",parent,action,hostname,service);
 		listPushNodeString(filelist,path);
+		if((p=strchr(hostname,'.'))!=NULL) {
+			*p=0;
+			SAFEPRINTF3(path,"%s%s.%s",parent,action,hostname);
+			listPushNodeString(filelist,path);
+			SAFEPRINTF4(path,"%s%s.%s.%s",parent,action,hostname,service);
+			listPushNodeString(filelist,path);
+		}
 	}
 }
 
