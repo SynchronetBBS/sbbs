@@ -163,22 +163,10 @@ for(i=0;i<14;i++)
 	if((mopt[i]=(char *)MALLOC(64))==NULL)
 		allocfail(64);
 
-strcpy(uifc.helpdatfile,"insthelp.dat");
-strcpy(uifc.helpixbfile,"insthelp.ixb");
-
 sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 if(uifc.scrn(str)) {
 	printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
 	bail(1);
-}
-
-if(!fexist(uifc.helpdatfile)) {
-    sprintf(errormsg,"Help file (%s) missing!",uifc.helpdatfile);
-    uifc.msg(errormsg);
-}
-if(!fexist(uifc.helpixbfile)) {
-    sprintf(errormsg,"Help file (%s) missing!",uifc.helpixbfile);
-    uifc.msg(errormsg);
 }
 
 while(1) {
