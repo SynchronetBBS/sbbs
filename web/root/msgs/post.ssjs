@@ -41,7 +41,7 @@ if(sub!='mail') {
 		error("You don't have sufficient rights to post in this sub");
 	}
 }
-template.title="Post a message";
+template.title="Post a message in " + template.sub.description;
 write_template("header.inc");
 write_template("msgs/post.inc");
 write_template("footer.inc");
