@@ -102,7 +102,8 @@ function list_users(show)
 			sys[i].failed = true;
 			continue;
 		}
-		sys[i].ip = sock.ip_address;	// cache the IP address for faster resolution
+		// cache the IP address for faster resolution
+		sys[i].ip = sock.remote_ip_address;	
 
 		sock.send("\r\n");	// Get list of active users
 		var response=new Array();
