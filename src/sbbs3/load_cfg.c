@@ -299,8 +299,10 @@ char *readtext(long *line,FILE *stream)
 	if(!p) {
 		if(line) {
 			lprintf("No quotation marks in line %d of text.dat",*line);
-			return(NULL); }
-		return(NULL); }
+			return(NULL); 
+		}
+		return(NULL); 
+	}
 	if(*(p+1)=='\\')	/* merge multiple lines */
 		while(strlen(buf)<2000) {
 			if(!fgets(str,255,stream))
@@ -314,7 +316,8 @@ char *readtext(long *line,FILE *stream)
 			p=strrchr(p,'"');
 			if(p && *(p+1)=='\\')
 				continue;
-			break; }
+			break; 
+		}
 	*(p)=0;
 	k=strlen(buf);
 	for(i=1,j=0;i<k;j++) {
@@ -325,7 +328,8 @@ char *readtext(long *line,FILE *stream)
 				if(isdigit(buf[++i]))	/* skip up to 3 digits */
 					if(isdigit(buf[++i]))
 						i++;
-				continue; }
+				continue; 
+			}
 			switch(buf[i++]) {
 				case '\\':
 					str[j]='\\';
@@ -338,7 +342,8 @@ char *readtext(long *line,FILE *stream)
 					tmp[1]=0;
 					if(isxdigit(buf[i])) {  /* if another hex digit, skip too */
 						tmp[1]=buf[i++];
-						tmp[2]=0; }
+						tmp[2]=0; 
+					}
 					str[j]=(char)ahtoul(tmp);
 					break;
 				case '\'':
@@ -370,13 +375,17 @@ char *readtext(long *line,FILE *stream)
 					break;
 				default:
 					str[j]=buf[i];
-					break; }
-			continue; }
-		str[j]=buf[i++]; }
+					break; 
+			}
+			continue; 
+		}
+		str[j]=buf[i++]; 
+	}
 	str[j]=0;
-	if((p=(char *)MALLOC(j+1))==NULL) {
+	if((p=(char *)calloc(1,j+2))==NULL) { /* +1 for terminator, +1 for YNQX line */
 		lprintf("Error allocating %u bytes of memory from text.dat",j);
-		return(NULL); }
+		return(NULL); 
+	}
 	strcpy(p,str);
 	return(p);
 }
