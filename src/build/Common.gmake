@@ -246,7 +246,7 @@ else
   XP_SEM    :=    1
  else
   ifeq ($(os),netbsd)    # NetBSD
-   CFLAGS    +=	-D__unix__ -DUSE_XP_SEMAPHORES
+   CFLAGS    +=	-D__unix__
    MT_CFLAGS	+=	-DUSE_XP_SEMAPHORES
    MT_LDFLAGS    +=    -L/usr/pkg/lib -L/usr/pkg/pthreads/lib -lpthread
    XP_SEM    :=    1
