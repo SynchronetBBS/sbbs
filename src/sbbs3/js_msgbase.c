@@ -1373,13 +1373,13 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				if(!JSVAL_IS_OBJECT(val))
 					break;
 
-				if(smb_copymsgmem(&(p->smb), &rcpt_msg, &msg)!=0)
+				if(smb_copymsgmem(&(p->smb), &rcpt_msg, &msg)!=SMB_SUCCESS)
 					break;
 
 				if(!parse_recipient_object(cx, p, JSVAL_TO_OBJECT(val), &rcpt_msg))
 					break;
 
-				if(smb_addmsghdr(&(p->smb), &rcpt_msg, SMB_SELFPACK)!=0)
+				if(smb_addmsghdr(&(p->smb), &rcpt_msg, SMB_SELFPACK)!=SMB_SUCCESS)
 					break;
 
 				smb_freemsgmem(&rcpt_msg);

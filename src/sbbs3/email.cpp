@@ -286,10 +286,11 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	smb_stack(&smb,SMB_STACK_POP);
 
 	smb_freemsgmem(&msg);
-	if(i) {
+	if(i!=SMB_SUCCESS) {
 		smb_freemsgdat(&smb,offset,length,1);
 		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
-		return(false); }
+		return(false); 
+	}
 
 	if(usernumber==1) {
 		useron.fbacks++;

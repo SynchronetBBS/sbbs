@@ -697,9 +697,10 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		smb_stack(&smb,SMB_STACK_POP);
 
 		smb_freemsgmem(&msg);
-		if(i) {
+		if(i!=SMB_SUCCESS) {
+			errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); 
 			smb_freemsgdat(&smb,offset,length,1);
-			errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); }
+		}
 		else {		/* Successful */
 			if(inet) {
 				if(cfg.inetmail_sem[0]) 	 /* update semaphore file */

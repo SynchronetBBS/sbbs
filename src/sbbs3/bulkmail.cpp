@@ -130,7 +130,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 			if(user.misc&(DELETED|INACTIVE))
 				continue;
 			if(chk_ar(ar,&user)) {
-				if((x=bulkmailhdr(&smb, &msg, i))!=0) {
+				if((x=bulkmailhdr(&smb, &msg, i))!=SMB_SUCCESS) {
 					errormsg(WHERE,ERR_WRITE,smb.file,x);
 					break;
 				}
@@ -143,7 +143,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 			if(!getstr(str,LEN_ALIAS,K_UPRLWR))
 				break;
 			if((i=finduser(str))!=0) {
-				if((x=bulkmailhdr(&smb, &msg, i))!=0) {
+				if((x=bulkmailhdr(&smb, &msg, i))!=SMB_SUCCESS) {
 					errormsg(WHERE,ERR_WRITE,smb.file,x);
 					break;
 				}
@@ -151,7 +151,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 			}
 		}
 
-	if((i=smb_open_da(&smb))==0) {
+	if((i=smb_open_da(&smb))==SMB_SUCCESS) {
 		if(!msgs)
 			smb_freemsg_dfields(&smb,&msg,SMB_ALL_REFS);
 		else if(msgs>1)
@@ -162,7 +162,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 	smb_close(&smb);
 	smb_freemsgmem(&msg);
 
-	if(i) {
+	if(i!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		return(false);
 	}
@@ -187,7 +187,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	if(getuserdat(&cfg, &user)!=0)
 		return(0);
 
-	if((i=smb_copymsgmem(NULL,&newmsg,msg))!=0)
+	if((i=smb_copymsgmem(NULL,&newmsg,msg))!=SMB_SUCCESS)
 		return(i);
 
 	SAFECOPY(str,user.alias);
@@ -206,7 +206,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 
 	j=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK);
 	smb_freemsgmem(&newmsg);
-	if(j)
+	if(j!=SMB_SUCCESS)
 		return(j);
 
 	lncntr=0;
