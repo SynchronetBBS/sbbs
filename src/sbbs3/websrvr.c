@@ -80,6 +80,10 @@
  *			delays)
  * 4) Type three with a callback that sends the header and current body, then
  *		converts write() to send directly to remote.
+ *
+ * Add in support to pass connections through to a different webserver...
+ *      probobly in access.ars... with like a simplified mod_rewrite.
+ *      This would allow people to run apache and Synchronet as the same site.
  */
 
 #if defined(__unix__)
