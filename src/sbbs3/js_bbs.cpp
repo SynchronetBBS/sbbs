@@ -840,6 +840,7 @@ js_telnet_gate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	return(JS_TRUE);
 }
 
+static JSBool
 js_pagesysop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -851,6 +852,7 @@ js_pagesysop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
 js_pageguru(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -862,6 +864,7 @@ js_pageguru(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
 js_multinode_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -879,6 +882,7 @@ js_multinode_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	return(JS_TRUE);
 }
 
+static JSBool
 js_private_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -892,6 +896,7 @@ js_private_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 	return(JS_TRUE);
 }
 
+static JSBool
 js_private_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -905,6 +910,7 @@ js_private_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	return(JS_TRUE);
 }
 
+static JSBool
 js_get_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -918,6 +924,7 @@ js_get_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	return(JS_TRUE);
 }
 
+static JSBool
 js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -943,6 +950,7 @@ js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	return(JS_TRUE);
 }
 
+static JSBool
 js_get_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -961,6 +969,7 @@ js_get_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	return(JS_TRUE);
 }
 
+static JSBool
 js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
