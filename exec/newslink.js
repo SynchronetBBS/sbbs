@@ -16,6 +16,9 @@ const VERSION="1.00 Alpha"
 
 printf("Synchronet NewsLink session started (v%s)", VERSION);
 
+var tearline = format("--- Synchronet NewsLink v%s\r\n",VERSION);
+var tagline	=  format(" *  %s telnet://%s\r\n",system.name,system.inetaddr);
+
 var cfg_fname = system.ctrl_dir + "newslink.cfg";
 
 load("sbbsdefs.js");
@@ -225,12 +228,15 @@ for(i in area) {
 				,true	/* remove ctrl-a codes */);
 		if(tail != null) {
 			body += tail;
-			body += format("--- Synchronet NewsLink v%s\r\n",VERSION);
-			body += format(" *  %s telnet://%s\r\n"
-				,system.name,system.inetaddr);
+			body += tearline;
+			body += tagline;
 		}
 
-		writeln("POST");
+		if(1) 
+			writeln(format("IHAVE %s",hdr.id));
+		else
+			writeln("POST");
+
 		rsp = readln();
 		if(rsp==null || rsp[0]!='3') {
 			printf("!POST failure: %s",rsp);
@@ -377,6 +383,8 @@ for(i in area) {
 			continue;
 		hdr.from_net_type=NET_INTERNET;
 //		hdr.from_net_addr=hdr.from;
+		body += tearline;
+		body += tagline;
 		if(msgbase.save_msg(hdr,body)) {
 			printf("Message %lu imported into %s",ptr,sub);
 			imported++;
