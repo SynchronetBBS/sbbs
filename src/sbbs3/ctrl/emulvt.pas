@@ -4,15 +4,16 @@ Program:      EMULVT.PAS
 Description:  Delphi component which does Ansi terminal emulation
               Not every escape sequence is implemented, but a large subset.
 Author:       François PIETTE
-EMail:        http://users.swing.be/francois.piette  francois.piette@swing.be
-              http://www.rtfm.be/fpiette             francois.piette@rtfm.be
-              francois.piette@pophost.eunet.be
 Creation:     May, 1996
-Version:      2.16
-Support:      Use the mailing list twsocket@rtfm.be See website for details.
-Legal issues: Copyright (C) 1997-2000 by François PIETTE
+Version:      2.19
+EMail:        http://www.overbyte.be       francois.piette@overbyte.be
+              http://www.rtfm.be/fpiette   francois.piette@rtfm.be
+              francois.piette@pophost.eunet.be
+Support:      Use the mailing list twsocket@elists.org
+              Follow "support" link at http://www.overbyte.be for subscription.
+Legal issues: Copyright (C) 1997-2001 by François PIETTE
               Rue de Grady 24, 4053 Embourg, Belgium. Fax: +32-4-365.74.56
-              <francois.piette@pophost.eunet.be>
+              <francois.piette@overbyte.be><francois.piette@pophost.eunet.be>
 
               This software is provided 'as-is', without any express or
               implied warranty.  In no event will the author be held liable
@@ -64,9 +65,18 @@ Aug 09, 2000  V2.16 Wilfried Mestdagh" <wilfried_sonal@compuserve.com> and
                     Steve Endicott <s_endicott@compuserve.com> corrected a
                     bug related to scroll back buffer. See WM + SE 09/08/00
                     tags in code.
+Jul 28, 2001  V2.17 Made FCharPos and FLinePos member variables instead of
+                    global to avoid conflict when sevaral components are used
+                    simultaneously. Suggested by Jeroen Cranendonk
+                    <j.p.cranendonk@student.utwente.nl>
+Jan 03, 2002  V2.19 Don't adjust scroll bar if not visible
+                    Make properties with TopMargin, LeftMargin, RightMargin,
+                    BottomMargin.
+Jan 10, 2002  V2.19 Fixed SetLineHeight to fill FLinePos up to last item.
+
 
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
-unit Emulvt;
+unit EmulVT;
 
 {$B-}           { Enable partial boolean evaluation   }
 {$T-}           { Untyped pointers                    }
@@ -92,14 +102,10 @@ uses
   Forms, Dialogs, StdCtrls, ClipBrd;
 
 const
-  EmulVTVersion      = 216;
-  CopyRight : String = ' TEmulVT (c) 1996-2000 F. Piette V2.16 ';
+  EmulVTVersion      = 219;
+  CopyRight : String = ' TEmulVT (c) 1996-2002 F. Piette V2.19 ';
   MAX_ROW            = 50; 
-  MAX_COL            = 132;
-  TopMargin          = 4;
-  LeftMargin         = 6;
-  RightMargin        = 6;
-  BottomMargin       = 4;
+  MAX_COL            = 160;
   NumPaletteEntries  = 16;
 
 type
@@ -255,7 +261,8 @@ type
   { No property is published. See TEmulVT class                       }
   TCustomEmulVT = class(TCustomControl)
   private
-    FScreen          : TScreen;
+    FCharPos         : array [0..MAX_COL + 1] of integer;
+    FLinePos         : array [0..MAX_ROW + 1] of integer;
     FFileHandle      : TextFile;
     FCursorVisible   : Boolean;
     FCaretShown      : Boolean;
@@ -282,8 +289,13 @@ type
     FFlagCirconflexe : Boolean;
     FFlagTrema       : Boolean;
     FSelectRect      : TRect;
+    FTopMargin       : Integer;
+    FLeftMargin      : Integer;
+    FRightMargin     : Integer;
+    FBottomMargin    : Integer;
     FPal             : HPalette;
     FPaletteEntries  : array[0..NumPaletteEntries - 1] of TPaletteEntry;
+    FMarginColor     : Integer;
     procedure   WMPaint(var Message: TWMPaint); message WM_PAINT;
     procedure   WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
     procedure   WMKillFocus(var Message: TWMKillFocus); message WM_KILLFOCUS;
@@ -316,7 +328,13 @@ type
     function    GetBackRows : Integer;
     function    GetBackColor : TBackColors;
     function    GetOptions : TScreenOptions;
+    procedure SetMarginColor(const Value: Integer);
+    procedure SetLeftMargin(const Value: Integer);
+    procedure SetBottomMargin(const Value: Integer);
+    procedure SetRightMargin(const Value: Integer);
+    procedure SetTopMargin(const Value: Integer);
   protected
+    FScreen          : TScreen;
     procedure   AppMessageHandler(var Msg: TMsg; var Handled: Boolean);
     procedure   DoKeyBuffer(Buffer : PChar; Len : Integer); virtual;
     procedure   PaintGraphicChar(DC   : HDC;
@@ -344,15 +362,20 @@ type
     procedure   SetCharWidth(newValue : Integer);
     procedure   SetCharZoom(newValue : Single);
     procedure   KeyPress(var Key: Char); override;
-    property    LineZoom  : Single        read FLineZoom    write SetLineZoom;
-    property    CharWidth : Integer       read FCharWidth   write SetCharWidth;
-    property    CharZoom  : Single        read FCharZoom    write SetCharZoom;
-    property    GraphicDraw : Boolean     read FGraphicDraw write FGraphicDraw;
-    property    TopLine     : Integer     read FTopLine     write SetTopLine;
+    property    LineZoom  : Single        read FLineZoom     write SetLineZoom;
+    property    CharWidth : Integer       read FCharWidth    write SetCharWidth;
+    property    CharZoom  : Single        read FCharZoom     write SetCharZoom;
+    property    GraphicDraw : Boolean     read FGraphicDraw  write FGraphicDraw;
+    property    TopLine     : Integer     read FTopLine      write SetTopLine;
     property    VScrollBar  : TScrollBar  read FVScrollBar;
+    property    TopMargin       : Integer read FTopMargin    write SetTopMargin;
+    property    LeftMargin      : Integer read FLeftMargin   write SetLeftMargin;
+    property    RightMargin     : Integer read FRightMargin  write SetRightMargin;
+    property    BottomMargin    : Integer read FBottomMargin write SetBottomMargin;
+    property    MarginColor     : Integer read FMarginColor  write SetMarginColor;
   private
     procedure   PaintOneLine(DC: HDC; Y, Y1 : Integer; const Line : TLine;
-                             nColFrom : Integer; nColTo : Integer);
+                             nColFrom : Integer; nColTo : Integer; Blank : Boolean);
     procedure   SetupFont;
     property Text : String read ReadStr write WriteStr;
     property OnMouseMove;
@@ -420,6 +443,11 @@ type
     property TabStop;
     property TabOrder;
     property FKeys;
+    property TopMargin;
+    property LeftMargin;
+    property RightMargin;
+    property BottomMargin;
+    property MarginColor;
   end;
 
 const
@@ -767,9 +795,6 @@ function  AddFKey(var FKeys : TFuncKeysTable;
 implementation
 {$DEFINE Debug}      { Add or remove minus sign before dollar sign to }
                      { generate code for debug message output         }
-var
-    FCharPos : array [0..MAX_COL + 1] of integer;
-    FLinePos : array [0..MAX_ROW + 1] of integer;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure Register;
@@ -1163,7 +1188,7 @@ begin
             Lines[Row - FRowCount] := Temp;
         end;
 
-        { Now, copy the host screen lines to the ons we made available. }
+        { Now, copy the host screen lines to the ones we made available. }
         For Row := 0 To FRowCount - 1 Do begin
             Move (Lines[Row].Txt, Lines[Row - FRowCount].Txt, FColCount);
             Move (Lines[Row].Att, Lines[Row - FRowCount].Att, FColCount);
@@ -1496,11 +1521,11 @@ end;
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TScreen.Eop;
 var
-    Row : Integer;
+    NRow : Integer;
 begin
     Eol;
-    for Row := FRow + 1 to FRowCount - 1 do
-        Lines[Row].Clear(FAttribute);
+    for NRow := FRow + 1 to FRowCount - 1 do
+        Lines[NRow].Clear(FAttribute);
     if FRow = 0 then
         FAllInvalid := TRUE
     else begin
@@ -2268,11 +2293,11 @@ end;
 procedure TCustomEmulVT.SetCaret;
 begin
 {$IFDEF CHAR_ZOOM}
-    SetCaretPos(FCharPos[FScreen.FCol] + LeftMargin + 2,
-                FLinePos[FScreen.FRow - FTopLine] + TopMargin + 3);
+    SetCaretPos(FCharPos[FScreen.FCol] + FLeftMargin + 2,
+                FLinePos[FScreen.FRow - FTopLine] + FTopMargin + 3);
 {$ELSE}
-    SetCaretPos(FScreen.FCol * FCharWidth + LeftMargin,
-                (FScreen.FRow - FTopLine) * FLineHeight + TopMargin);
+    SetCaretPos(FScreen.FCol * FCharWidth + FLeftMargin,
+                (FScreen.FRow - FTopLine) * FLineHeight + FTopMargin);
 {$ENDIF}
 end;
 
@@ -2284,11 +2309,13 @@ procedure TCustomEmulVT.AdjustScrollBar;
 var
     VisibleLines    : Integer;
 begin
+    if not FVScrollBar.Visible then
+        Exit;
     FVScrollBar.Min := FScreen.FBackEndRow;
 {$IFDEF CHAR_ZOOM}
-    VisibleLines := Trunc((Height - TopMargin - BottomMargin) / (LineHeight * FLineZoom));
+    VisibleLines := Trunc((Height - FTopMargin - FBottomMargin) / (LineHeight * FLineZoom));
 {$ELSE}
-    VisibleLines := (Height - TopMargin - BottomMargin) Div LineHeight;
+    VisibleLines := (Height - FTopMargin - FBottomMargin) Div LineHeight;
 {$ENDIF}
     if VisibleLines > FScreen.FRowCount then
         VisibleLines := FScreen.FRowCount;
@@ -2409,6 +2436,11 @@ begin
     plgpl^.palNumEntries := High(plgpl^.palPalEntry) + 1;
     plgpl^.palVersion    := $300;
 
+    FTopMargin          := 4;
+    FLeftMargin         := 6;
+    FRightMargin        := 6;
+    FBottomMargin       := 4;
+
     FPaletteEntries[0].peRed    := 0;                { Black }
     FPaletteEntries[0].peGreen  := 0;
     FPaletteEntries[0].peBlue   := 0;
@@ -2436,7 +2468,7 @@ begin
     FPaletteEntries[8].peRed    := 84;               { Grey }
     FPaletteEntries[8].peGreen  := 84;
     FPaletteEntries[8].peBlue   := 84;
-    FPaletteEntries[9].peRed    := 84;               { Red Highlight }
+    FPaletteEntries[9].peRed    := 255;              { Red Highlight }
     FPaletteEntries[9].peGreen  := 84;
     FPaletteEntries[9].peBlue   := 212;
     FPaletteEntries[10].peRed   := 84;               { Green Highlight }
@@ -2685,6 +2717,7 @@ end;
 procedure TCustomEmulVT.SetBackColor(Value : TBackColors);
 begin
     FScreen.FBackColor := Value;
+    Invalidate;
 end;
 
 
@@ -2696,9 +2729,50 @@ end;
 
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomEmulVT.SetMarginColor(const Value: Integer);
+begin
+    FMarginColor := Value;
+    Invalidate;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomEmulVT.SetLeftMargin(const Value: Integer);
+begin
+    FLeftMargin := Value;
+    Invalidate;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomEmulVT.SetBottomMargin(const Value: Integer);
+begin
+    FBottomMargin := Value;
+    Invalidate;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomEmulVT.SetRightMargin(const Value: Integer);
+begin
+    FRightMargin := Value;
+    Invalidate;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomEmulVT.SetTopMargin(const Value: Integer);
+begin
+    FTopMargin := Value;
+    Invalidate;
+end;
+
+
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomEmulVT.SetOptions(Value : TScreenOptions);
 begin
     FScreen.FOptions := Value;
+    Invalidate;
 end;
 
 
@@ -2725,6 +2799,7 @@ begin
     SetCharWidth(Metrics.tmMaxCharWidth);
     SetLineHeight(Metrics.tmHeight);
     FInternalLeading := Metrics.tmInternalLeading;
+    Invalidate;
 end;
 
 
@@ -2753,7 +2828,7 @@ var
     nRow : Integer;
 begin
     FLineHeight := Value;
-    for nRow := 0 to MAX_ROW do
+    for nRow := 0 to High(FLinePos) do  { Jan 10, 2002 }
         FLinePos[nRow] := Trunc(FLineHeight * nRow * FLineZoom);
 end;
 
@@ -3076,10 +3151,10 @@ procedure TCustomEmulVT.MouseToCell(X, Y: Integer; var ACol, ARow: Longint);
 begin
 {$IFDEF CHAR_ZOOM}
     aRow := FScreen.FRowCount - 1;
-    while (Y - TopMargin) <= FLinePos[aRow] do
+    while (Y - FTopMargin) <= FLinePos[aRow] do
         Dec(aRow);
 {$ELSE}
-    aRow := (Y - TopMargin) div FLineHeight;
+    aRow := (Y - FTopMargin) div FLineHeight;
 {$ENDIF}
     if aRow < 0 then
         aRow := 0
@@ -3088,10 +3163,10 @@ begin
 
 {$IFDEF CHAR_ZOOM}
     aCol := FScreen.FColCount - 1;
-    while (X - LeftMargin) <= FCharPos[aCol] do
+    while (X - FLeftMargin) <= FCharPos[aCol] do
         Dec(aCol);
 {$ELSE}
-    aCol := (X - LeftMargin) div FCharWidth;
+    aCol := (X - FLeftMargin) div FCharWidth;
 {$ENDIF}
     if aCol < 0 then
         aCol := 0
@@ -3143,16 +3218,16 @@ begin
                     rc.Right  := 0;
                 end
                 else begin
-                    rc.Top    := TopMargin  + FLinePos[Top - FTopLine] + FInternalLeading;
-                    rc.Bottom := TopMargin  + FLinePos[Bottom + 1 - FTopLine] + FInternalLeading;
-                    rc.Left   := LeftMargin + FCharPos[Left];
-                    rc.Right  := LeftMargin + FCharPos[Right + 1];
+                    rc.Top    := FTopMargin  + FLinePos[Top - FTopLine] + FInternalLeading;
+                    rc.Bottom := FTopMargin  + FLinePos[Bottom + 1 - FTopLine] + FInternalLeading;
+                    rc.Left   := FLeftMargin + FCharPos[Left];
+                    rc.Right  := FLeftMargin + FCharPos[Right + 1];
                 end;
 {$ELSE}
-                rc.Top    := TopMargin  + FLineHeight * (Top - FTopLine) + FInternalLeading;
-                rc.Bottom := TopMargin  + FLineHeight * (Bottom + 1 - FTopLine) + FInternalLeading;
-                rc.Left   := LeftMargin + FCharWidth * Left;
-                rc.Right  := LeftMargin + FCharWidth * (Right + 1);
+                rc.Top    := FTopMargin  + FLineHeight * (Top - FTopLine) + FInternalLeading;
+                rc.Bottom := FTopMargin  + FLineHeight * (Bottom + 1 - FTopLine) + FInternalLeading;
+                rc.Left   := FLeftMargin + FCharWidth * Left;
+                rc.Right  := FLeftMargin + FCharWidth * (Right + 1);
 {$ENDIF}
             end;
             InvalidateRect(Handle, @rc, FALSE);
@@ -3162,14 +3237,14 @@ begin
     { Invalidate the region where the caret is. I should'nt do that, but }
     { if I do'nt, the caret remains where it is ! Bug ?                  }
 {$IFDEF CHAR_ZOOM}
-    rc.Top    := FLinePos[FScreen.FRow - FTopLine] + TopMargin;
-    rc.Bottom := FLinePos[FScreen.FRow - FTopLine + 1] + TopMargin;
-    rc.Left   := LeftMargin + FCharPos[FScreen.FCol];
-    rc.Right  := LeftMargin + FCharPos[FScreen.FCol + 1];
+    rc.Top    := FLinePos[FScreen.FRow - FTopLine] + FTopMargin;
+    rc.Bottom := FLinePos[FScreen.FRow - FTopLine + 1] + FTopMargin;
+    rc.Left   := FLeftMargin + FCharPos[FScreen.FCol];
+    rc.Right  := FLeftMargin + FCharPos[FScreen.FCol + 1];
 {$ELSE}
-    rc.Top    := TopMargin  + FLineHeight * (FScreen.FRow - FTopLine);
+    rc.Top    := FTopMargin  + FLineHeight * (FScreen.FRow - FTopLine);
     rc.Bottom := rc.Top + FLineHeight;
-    rc.Left   := LeftMargin + FCharWidth * FScreen.FCol;
+    rc.Left   := FLeftMargin + FCharWidth * FScreen.FCol;
     rc.Right  := rc.Left + FCharWidth;
 {$ENDIF}
     InvalidateRect(Handle, @rc, FALSE);
@@ -3191,9 +3266,9 @@ var
 begin
     nRow := PixelToRow(Y);
 {$IFDEF CHAR_ZOOM}
-    Result := TopMargin + FLinePos[nRow];
+    Result := FTopMargin + FLinePos[nRow];
 {$ELSE}
-    Result := TopMargin + nRow * FLineHeight;
+    Result := FTopMargin + nRow * FLineHeight;
 {$ENDIF}
 end;
 
@@ -3205,9 +3280,9 @@ var
 begin
     nCol := PixelToCol(X);
 {$IFDEF CHAR_ZOOM}
-    Result := LeftMargin + FCharPos[nCol];
+    Result := FLeftMargin + FCharPos[nCol];
 {$ELSE}
-    Result := LeftMargin + nCol * FCharWidth;
+    Result := FLeftMargin + nCol * FCharWidth;
 {$ENDIF}
 end;
 
@@ -3219,10 +3294,10 @@ var
 begin
 {$IFDEF CHAR_ZOOM}
     nRow := FScreen.FRowCount - 1;
-    while (nRow > 0) and ((Y - TopMargin) < FLinePos[nRow]) do
+    while (nRow > 0) and ((Y - FTopMargin) < FLinePos[nRow]) do
         Dec(nRow);
 {$ELSE}
-    nRow := (Y - TopMargin) div FLineHeight;
+    nRow := (Y - FTopMargin) div FLineHeight;
 {$ENDIF}
     if nRow < 0 then
         nRow := 0;
@@ -3237,10 +3312,10 @@ var
 begin
 {$IFDEF CHAR_ZOOM}
     nCol := FScreen.FColCount - 1;
-    while (X - LeftMargin) < FCharPos[nCol] do
+    while (X - FLeftMargin) < FCharPos[nCol] do
         Dec(nCol);
 {$ELSE}
-    nCol := (X - LeftMargin) div FCharWidth;
+    nCol := (X - FLeftMargin) div FCharWidth;
 {$ENDIF}
     if nCol < 0 then
         nCol := 0;
@@ -3627,14 +3702,17 @@ procedure TCustomEmulVT.PaintOneLine(
     Y, Y1      : Integer;
     const Line : TLine;
     nColFrom   : Integer;
-    nColTo     : Integer);
+    nColTo     : Integer;
+    Blank      : Boolean);
 var
-    rc       : TRect;
-    nCnt     : Integer;
-    nAtt     : Byte;
-    X        : Integer;
-    nChr     : Integer;
-    Ch       : Char;
+    rc        : TRect;
+    nCnt      : Integer;
+    nAtt      : Byte;
+    X         : Integer;
+    nChr      : Integer;
+    Ch        : Char;
+const
+    BlankLine : array [0..MAX_COL] of char = '';
 begin
     nAtt := Line.Att[nColFrom];
 
@@ -3670,23 +3748,26 @@ begin
 {$IFDEF SINGLE_CHAR_PAINT}
     while nChr < nCnt do begin
 {$IFDEF CHAR_ZOOM}
-        X         := LeftMargin + FCharPos[nColFrom + nChr];
+        X         := FLeftMargin + FCharPos[nColFrom + nChr];
         rc.Top    := Y  + FInternalLeading;
         rc.Bottom := Y1 + FInternalLeading;
         rc.Left   := X;
-        rc.Right  := LeftMargin + FCharPos[nColFrom + nChr + 1];
+        rc.Right  := FLeftMargin + FCharPos[nColFrom + nChr + 1];
 {$ELSE}
-        X         := LeftMargin + (nColFrom + nChr) * FCharWidth;
+        X         := FLeftMargin + (nColFrom + nChr) * FCharWidth;
         rc.Top    := Y  + FInternalLeading;
         rc.Bottom := Y1 + FInternalLeading;
         rc.Left   := X;
         rc.Right  := rc.Left + FCharWidth;
 {$ENDIF}
         if (nColFrom + nChr) = 0 then
-           rc.Left := rc.Left - LeftMargin;
+           rc.Left := rc.Left - FLeftMargin;
         if (nColFrom + nChr) >= FScreen.FColCount then
-           rc.Right := rc.Right + RightMargin;
-        Ch := Line.Txt[nColFrom + nChr];
+           rc.Right := rc.Right + FRightMargin;
+        if Blank then
+           Ch := ' '
+        else
+           Ch := Line.Txt[nColFrom + nChr];
         if FGraphicDraw and
            (FScreen.FXlatOutputTable = @ibm_iso8859_1_G0) and
            (Ch >= #$B0) and (Ch <= #$DF) and
@@ -3722,10 +3803,16 @@ begin
        rc.Left := rc.Left - LeftMargin;
     if nColTo >= FScreen.FColCount then
        rc.Right := rc.Right + RightMargin;
-    ExtTextOut(DC,
-               X, Y,
-               ETO_OPAQUE or ETO_CLIPPED, @rc,
-               @Line.Txt[nColFrom], nCnt, nil);
+    if Blank then
+        ExtTextOut(DC,
+                   X, Y,
+                   ETO_OPAQUE or ETO_CLIPPED, @rc,
+                   @BlankLine[0], nCnt, nil)
+    else
+        ExtTextOut(DC,
+                   X, Y,
+                   ETO_OPAQUE or ETO_CLIPPED, @rc,
+                   @Line.Txt[nColFrom], nCnt, nil);
 {$ENDIF}
 end;
 
@@ -3747,6 +3834,7 @@ var
     nColFrom  : Integer;
     Line      : TLine;
     BackBrush : HBrush;
+    BackIndex : Integer;
 begin
     { This may be a bit of overkill but we have to keep the scrollbar tracking
       with the number of lines visible on the screen.  The calling program can
@@ -3768,7 +3856,11 @@ begin
         if not FMonoChrome then begin
             SelectPalette(DC, FPal, FALSE);
             RealizePalette(DC);
-            with FPaletteEntries[FScreen.FAttribute div $0F] do
+            if FMarginColor = -1 then
+                BackIndex := FScreen.FAttribute div $0F
+            else
+                BackIndex := FMarginColor mod NumPaletteEntries;
+            with FPaletteEntries[BackIndex] do
                 BackBrush := CreateSolidBrush(PALETTERGB(peRed, peGreen, peBlue));
             OldBrush := SelectObject(DC, BackBrush);
         end;
@@ -3783,18 +3875,18 @@ begin
             nRow := 0;
 
 {$IFDEF CHAR_ZOOM}
-        Y  := TopMargin + FLinePos[nRow];
-        Y1 := TopMargin + FLinePos[nRow + 1];
+        Y  := FTopMargin + FLinePos[nRow];
+        Y1 := FTopMargin + FLinePos[nRow + 1];
 {$ELSE}
-        Y  := TopMargin + nRow * FLineHeight;
+        Y  := FTopMargin + nRow * FLineHeight;
         Y1 := Y + FLineHeight;
 {$ENDIF}
 
-        if rcPaint.Top <= TopMargin then begin
+        if rcPaint.Top <= FTopMargin then begin
             OldPen := SelectObject(DC, GetStockObject(NULL_PEN));
             WinProcs.Rectangle(DC, rcPaint.left, rcPaint.Top,
                                rcPaint.Right + 1,
-                               TopMargin + FInternalLeading + 1);
+                               FTopMargin + FInternalLeading + 1);
             SelectObject(DC, OldPen);
         end;
 
@@ -3811,7 +3903,7 @@ begin
         while nRow < FScreen.FRowCount do begin
             rc.Top    := Y;
             rc.Bottom := Y + FLineHeight;
-            if rc.Bottom > (DrawRct.Bottom - BottomMargin) then begin
+            if rc.Bottom > (DrawRct.Bottom - FBottomMargin) then begin
                 OldPen := SelectObject(DC, GetStockObject(NULL_PEN));
                 WinProcs.Rectangle(DC, rc.Left - 2, rc.Top, rc.Right + 1,
                                    DrawRct.Bottom - 1);
@@ -3827,14 +3919,14 @@ begin
                       (Line.Att[nCol] = Line.Att[nColFrom]) do
                     Inc(nCol);
 
-                PaintOneLine(DC, Y, Y1, Line, nColFrom, nCol);
+                PaintOneLine(DC, Y, Y1, Line, nColFrom, nCol, FALSE);
                 nColFrom := nCol;
             end;
 
             nRow := nRow + 1;
 {$IFDEF CHAR_ZOOM}
-            Y    := TopMargin + FLinePos[nRow - FTopLine];
-            Y1   := TopMargin + FLinePos[nRow + 1 - FTopLine];
+            Y    := FTopMargin + FLinePos[nRow - FTopLine];
+            Y1   := FTopMargin + FLinePos[nRow + 1 - FTopLine];
 {$ELSE}
             Y    := Y + FLineHeight;
             Y1   := Y + FLineHeight;
@@ -3845,25 +3937,39 @@ begin
 
         { Fill region between last text line and bottom of the window }
         OldPen := SelectObject(DC, GetStockObject(NULL_PEN));
-        if (FScreen.FRowCount - FTopLine) <= MAX_ROW then { WM + SE 09/08/00 }
-           WinProcs.Rectangle(DC, rc.Left - 2,
-                              TopMargin + FLinePos[FScreen.FRowCount - FTopLine] + 1,
-                              rc.Right + 1, DrawRct.Bottom + 1);
+        if (FScreen.FRowCount - FTopLine) <= MAX_ROW then begin { WM + SE 09/08/00 }
+            WinProcs.Rectangle(DC, rc.Left - 2,
+                               FTopMargin + FLinePos[FScreen.FRowCount - FTopLine]{ + 1},
+                               rc.Right + 3, DrawRct.Bottom + 1);
+{
+            Line     := FScreen.Lines[FScreen.FRowCount - 1];
+            nCol     := 0;
+            nColFrom := 0;
+            while nCol < FScreen.FColCount do begin
+                while (nCol < FScreen.FColCount) and
+                      (Line.Att[nCol] = Line.Att[nColFrom]) do
+                    Inc(nCol);
+
+                PaintOneLine(DC, Y, Y1, Line, nColFrom, nCol, TRUE);
+                nColFrom := nCol;
+            end;
+}
+        end;
         SelectObject(DC, OldPen);
 
 {$IFDEF CHAR_ZOOM}
-        if (LeftMargin + FCharPos[FScreen.FColCount]) < rc.Right then begin
+        if (FLeftMargin + FCharPos[FScreen.FColCount]) < rc.Right then begin
             OldPen := SelectObject(DC, GetStockObject(NULL_PEN));
-            WinProcs.Rectangle(DC, LeftMargin + FCharPos[FScreen.FColCount],
-                               TopMargin,   { 09/03/99 }
+            WinProcs.Rectangle(DC, FLeftMargin + FCharPos[FScreen.FColCount],
+                               FTopMargin,   { 09/03/99 }
                                rcPaint.Right + 1, DrawRct.Bottom + 1);
             SelectObject(DC, OldPen);
         end;
 {$ELSE}
-        if (LeftMargin + FScreen.FColCount * FCharWidth) < rc.Right then begin
+        if (FLeftMargin + FScreen.FColCount * FCharWidth) < rc.Right then begin
             OldPen := SelectObject(DC, GetStockObject(NULL_PEN));
-            WinProcs.Rectangle(DC, LeftMargin + FScreen.FColCount * FCharWidth,
-                               TopMargin, rc.Right + 1, DrawRct.Bottom - 1);
+            WinProcs.Rectangle(DC, FLeftMargin + FScreen.FColCount * FCharWidth,
+                               FTopMargin, rc.Right + 1, DrawRct.Bottom - 1);
             SelectObject(DC, OldPen);
         end;
 {$ENDIF}
