@@ -338,7 +338,7 @@ ciolib-mt:
 	$(MAKE) -C $(CIOLIB_SRC) mtlib
 
 uifc:
-	$(MAKE) -C $(UIFCLIB_SRC) lib
+	$(MAKE) -C $(UIFC_SRC) lib
 
 uifc-mt:
-	$(MAKE) -C $(UIFCLIB_SRC) mtlib
+	$(MAKE) -C $(UIFC_SRC) mtlib
