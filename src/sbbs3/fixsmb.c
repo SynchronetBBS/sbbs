@@ -180,14 +180,17 @@ int main(int argc, char **argv)
 			printf("\n(%06lX) smb_lockmsghdr returned %d: %s\n",l,i,smb.last_error);
 			continue; 
 		}
-		if((i=smb_getmsghdr(&smb,&msg))!=0) {
-			smb_unlockmsghdr(&smb,&msg);
+		i=smb_getmsghdr(&smb,&msg);
+		smb_unlockmsghdr(&smb,&msg);
+		if(i!=0) {
 			printf("\n(%06lX) smb_getmsghdr returned %d: %s\n",l,i,smb.last_error);
 			continue; 
 		}
-		smb_unlockmsghdr(&smb,&msg);
+		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
 		printf("#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
-		if(!(msg.hdr.attr&MSG_DELETE)) {   /* Don't index deleted messages */
+		if(msg.hdr.attr&MSG_DELETE)
+			printf("Not indexing deleted message\n");
+		else {   
 			msg.offset=n;
 			if(renumber)
 				msg.hdr.number=n+1;
@@ -218,11 +221,6 @@ int main(int argc, char **argv)
 			}
 			n++; 
 		}
-		else
-			printf("Not indexing deleted message\n");
-		size=smb_getmsghdrlen(&msg);
-		while(size%SHD_BLOCK_LEN)
-			size++;
 
 		if(!(smb.status.attr&SMB_HYPERALLOC)) {
 			/**************************/
@@ -251,7 +249,7 @@ int main(int argc, char **argv)
 		smb.status.last_msg=n;
 	else
 		sort_index(&smb);
-	printf("Saving message base status.\n");
+	printf("Saving message base status (%u total messages).\n",n);
 	if((i=smb_putstatus(&smb))!=0)
 		printf("\nsmb_putstatus returned %d: %s\n",i,smb.last_error);
 	smb_unlocksmbhdr(&smb);
