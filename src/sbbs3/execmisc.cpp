@@ -314,7 +314,7 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 
 					if(pp1) { /* ASCII */
 						if(!pp2) {
-							ltoa(*lp2,tmp,10);
+							ultoa(*lp2,tmp,10);
 							csi->logic=stricmp(*pp1,tmp); }
 						else
 							csi->logic=stricmp(*pp1,*pp2);
@@ -356,7 +356,7 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 
 					if(pp1) {	/* ASCII */
 						if(!pp2)
-							ltoa(*lp2,tmp,10);
+							ultoa(*lp2,tmp,10);
 						else
 							strcpy(tmp,*pp2);
 						*pp1=copystrvar(csi,*pp1,tmp);
@@ -388,10 +388,10 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 						if(!pp2) {
 							if(!strnicmp(*pp2,"0x",2)) {
 								l=strtol((*pp1)+2,0,16);
-								ltoa(*lp2,tmp,16); }
+								ultoa(*lp2,tmp,16); }
 							else {
 								l=atol(*pp1);
-								ltoa(*lp2,tmp,10); }
+								ultoa(*lp2,tmp,10); }
 							*pp1=copystrvar(csi,*pp1,tmp);
 							*lp2=l; }
 						else {
@@ -404,10 +404,10 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 					if(!lp2) {
 						if(!strnicmp(*pp2,"0x",2)) {
 							l=strtol((*pp2)+2,0,16);
-							ltoa(*lp1,tmp,16); }
+							ultoa(*lp1,tmp,16); }
 						else {
 							l=atol(*pp2);
-							ltoa(*lp1,tmp,10); }
+							ultoa(*lp1,tmp,10); }
 						*pp2=copystrvar(csi,*pp2,tmp);
 						*lp1=l; }
 					else {
@@ -813,7 +813,7 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 						if(l<=0)
 							str[0]=0;
 						else
-							ltoa(l,str,10);
+							ultoa(l,str,10);
 						*pp=copystrvar(csi,*pp,str);
 						csi->logic=LOGIC_TRUE;
 						return(0); }
@@ -1185,14 +1185,10 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 							return(0);
 						l=*lp2; 
 					}
-#ifdef __unix__
-#warning "Need lock equivalent"
-#else
 					if(lp1 && *lp1) {
 						fflush((FILE *)*lp1);
 						csi->logic=!lock(fileno((FILE *)*lp1),ftell((FILE*)*lp1),l); 
 					}
-#endif
 					return(0);
 				case FIO_UNLOCK:
 				case FIO_UNLOCK_VAR:
@@ -1209,14 +1205,10 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 							return(0);
 						l=*lp2; 
 					}
-#ifdef __unix__
-#warning "Need unlock equivalent"
-#else
 					if(lp1 && *lp1) {
 						fflush((FILE *)*lp1);
 						csi->logic=!unlock(fileno((FILE *)*lp1),ftell((FILE*)*lp1),l); 
 					}
-#endif
 					return(0);
 				case FIO_SET_LENGTH:
 				case FIO_SET_LENGTH_VAR:
