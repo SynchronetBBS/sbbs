@@ -38,14 +38,14 @@ function document_methods(name,obj)
 	if(obj._method_list == undefined)
 		return;
 
-	//f.writeln(" [<a href=#" + name +"_methods>methods</a>]");
+	f.writeln("<li><a href=#" + name +"_methods>methods</a>");
 
 	table_close();
 	table_open(name);
 
 	
-	writeln("<caption align=left><b><tt>" + name);
-	writeln("<a name=" + name + "_methods></tt> methods</a>"); 
+	writeln("<caption align=left><b><tt>" + name + "</tt>");
+	writeln("<a name=" + name + "_methods> methods</a>"); 
 	writeln("</b></caption>");
 	writeln("<tr bgcolor=gray>");
 	writeln("<th align=left width=100>");
@@ -80,13 +80,16 @@ function document_methods(name,obj)
 	}
 }
 
-function object_header(name, obj)
+function object_header(name, obj, type)
 {
-	f.writeln("<li><a href=#" + name +">" + name + "</a>");
+	if(type==undefined)
+		type="object";
+
+	f.writeln("<li><a href=#" + name +">" + name + " " + type + "</a>");
 
 	if(table_depth)
 		table_close();
-	writeln("<h2><a name=" + name + ">" + name + " object</a>");
+	writeln("<h2><a name=" + name + ">" + name + " " + type + "</a>");
 	if(obj._description!=undefined)
 		writeln("<br><font size=-1>"+obj._description+"</font>");
 	writeln("</h2>");
@@ -97,12 +100,16 @@ function object_header(name, obj)
 function properties_header(name, obj)
 {
 
+	f.writeln("<li><a href=#" + name +"_properties>properties</a>");
+
 	table_close();
 	if(obj._method_list != undefined)
 		writeln("<br>");
 
 	table_open(name);
-	writeln("<caption align=left><b><tt>" + name + "</tt> properties" + "</b></caption>");
+	writeln("<caption align=left><b><tt>" + name + "</tt>");
+	writeln("<a name=" + name + "_properties> properties</a>"); 
+	writeln("</b></caption>");
 	writeln("<tr bgcolor=gray>");
 	writeln("<th align=left width=100>");
 	writeln("Name".fontcolor("white"));
@@ -122,9 +129,9 @@ function document_properties(name, obj)
 	for(prop in obj) {
 		prop_name=name + "." + prop;
 
-		if(typeof(obj[prop])=="object") {
+		if(typeof(obj[prop])=="object" && prop!="socket") {
 			if(obj[prop].length != undefined)	// array ?
-				document_object(prop_name + "[]",obj[prop][0]);
+				document_object(prop_name /*+ "[]"*/,obj[prop][0], "array");
 			else
 				document_object(prop_name,obj[prop]);
 			continue;
@@ -140,12 +147,12 @@ function document_properties(name, obj)
 	}
 }
 
-function document_object(name, obj)
+function document_object(name, obj, type)
 {
 	
-	object_header(name,obj);
-	document_methods(name,obj);
+	object_header(name,obj,type);
 	f.writeln("<ul type=disc>");
+	document_methods(name,obj);
 	document_properties(name,obj);
 	f.writeln("</ul>");
 	table_close();
@@ -164,7 +171,7 @@ f.writeln("<title>Synchronet JavaScript Object Model Reference</title>");
 f.writeln("</head>");
 
 f.writeln("<body>");
-f.writeln("<font face=arial,helvetica size=-1>");
+f.writeln("<font face=arial,helvetica>");
 
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
 f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
@@ -173,12 +180,14 @@ f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
 f.writeln("<ul>");
 
 object_header("global"		,_global);
+f.writeln("<ul type=disc>");
 document_methods("global"	,_global);
 properties_header("global"	,_global);
 writeln("<tr><td>" + "argc".bold() + "<td>number<td>number of arguments passed to the script</td>");
 writeln("<tr><td>" + "argv".bold() + "<td>array<td>array of argument strings (argv.length == argc)</td>");
 writeln("<tr><td>" + "errno".bold() + "<td>number<td>last system error number</td>");
 writeln("<tr><td>" + "errno_str".bold() + "<td>string<td>description of last system error</td>");
+f.writeln("</ul>");
 
 document_object("system"	,system);
 document_object("server"	,server);
@@ -189,8 +198,9 @@ document_object("console"	,console);
 document_object("msg_area"	,msg_area);
 document_object("file_area"	,file_area);
 document_object("xtrn_area"	,xtrn_area);
-document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code));
-document_object("File"		,new File("bogusfile"));
+document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
+document_object("File"		,new File("bogusfile"), "class");
+document_object("Socket"	,new Socket(), "class");
 
 f.writeln("</ul>");
 
