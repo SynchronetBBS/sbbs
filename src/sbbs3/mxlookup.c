@@ -53,14 +53,15 @@
 	#pragma pack(push,1)	/* Packet structures must be packed */
 #endif
 
+/* Per RFC 1035 */
 typedef struct _PACK {
-	WORD	length;			/* This field included when using TCP only */
+	WORD	length;		/* This field included when using TCP only */
 	WORD	id;
 	WORD	bitfields;
-	WORD	qdcount;
-	WORD	ancount;
-	WORD	nscount;
-	WORD	arcount;
+	WORD	qdcount;	/* number of entries in the question section */
+	WORD	ancount;	/* number of resource records in the answer section */
+	WORD	nscount;	/* number of name server resource records in the authority records section */
+	WORD	arcount;	/* number of resource records in the additional records section */
 } dns_msghdr_t;
 
 typedef struct _PACK {
@@ -95,9 +96,28 @@ enum {
 	,DNS_RCODE_REFUSE	// Refused
 };
 
-#define DNS_A			1			// Host address Query Type
-#define DNS_MX			15			// Mail Exchange Query Type
+/* DNS Resource Record Types (from RFC 1035) - subset of query types */
+enum {
+	 DNS_A=1			// 1 a host address
+	,DNS_NS             // 2 an authoritative name server
+	,DNS_MD             // 3 a mail destination (Obsolete - use MX)
+	,DNS_MF             // 4 a mail forwarder (Obsolete - use MX)
+	,DNS_CNAME          // 5 the canonical name for an alias
+	,DNS_SOA            // 6 marks the start of a zone of authority
+	,DNS_MB             // 7 a mailbox domain name (EXPERIMENTAL)
+	,DNS_MG             // 8 a mail group member (EXPERIMENTAL)
+	,DNS_MR             // 9 a mail rename domain name (EXPERIMENTAL)
+	,DNS_NULL           // 10 a null RR (EXPERIMENTAL)
+	,DNS_WKS            // 11 a well known service description
+	,DNS_PTR            // 12 a domain name pointer
+	,DNS_HINFO          // 13 host information
+	,DNS_MINFO          // 14 mailbox or mail list information
+	,DNS_MX             // 15 mail exchange
+	,DNS_TXT            // 16 text strings
+};
+
 #define DNS_IN			1			// Internet Query Class
+#define DNS_ALL			255			// Query all records
 
 #ifdef MX_LOOKUP_TEST
 	#define mail_open_socket(type)	socket(AF_INET, type, IPPROTO_IP)
@@ -107,42 +127,59 @@ enum {
 	int mail_close_socket(SOCKET sock);
 #endif
 
-int dns_name(char* name, char* srcbuf, char* p)
+size_t dns_name(BYTE* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, BYTE* p)
 {
-	char*	np=name;
-	int		len=0;
-	int		plen;
+	size_t	len=0;
+	size_t	plen;
 	WORD	offset;
 
-	while(p && *p) {
-		if(np!=name) 
-			*(np++)='.';		// insert between.names
+	while(p && *p && (*namelen)<maxlen) {
+		if(len) 
+			name[(*namelen)++]='.';		// insert between.names
 		if(((*p)&0xC0)==0xC0) {	// Compresssed name
 			(*p)&=~0xC0;
 			offset=ntohs(*(WORD*)p);
 			(*p)|=0xC0;
-			dns_name(np, srcbuf,srcbuf+offset);
-			len+=2;
-			return(len); //continue;
+			dns_name(name, namelen, maxlen, srcbuf, srcbuf+offset);
+			return(len+2);
 		}
 		plen=(*p);
-		memcpy(np,p+1,plen);	// don't copy length byte
-		np+=plen;
+		if((*namelen)+plen>maxlen)
+			break;
+		memcpy(name+(*namelen),p+1,plen);	// don't copy length byte
+		(*namelen)+=plen;
 		plen++;		// Increment past length byte
 		p+=plen;
 		len+=plen;
 	}
-	*np=0;
+	name[(*namelen)++]=0;
 	return(len+1);
 }
+
+#if defined(MX_LOOKUP_TEST)
+void dump(BYTE* buf, int len)
+{
+	int i;
+
+	printf("%d bytes:\n",len);
+	for(i=0;i<len;i++) {
+		printf("%02X ",buf[i]);
+		if(!((i+1)%16))
+			printf("\n");
+		else if(!((i+1)%8))
+			printf(" - ");
+	}
+	printf("\n");
+}
+#endif
 
 int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout)
 {
-	char*			p;
-	char*			tp;
+	BYTE*			p;
+	BYTE*			tp;
 	char			hostname[128];
-	BYTE			namelen;
+	size_t			namelen;
 	WORD			pref;
 	WORD			highpref=0xffff;
 	int				i;
@@ -168,16 +205,16 @@ int dns_getmx(char* name, char* mx, char* mx2
 	else
 		sock = mail_open_socket(SOCK_DGRAM);
 
-	if (sock == INVALID_SOCKET)
+	if(sock == INVALID_SOCKET)
 		return(ERROR_VALUE);
 	
 	addr.sin_addr.s_addr = htonl(intf);
     addr.sin_family = AF_INET;
-    addr.sin_port   = htons (0);
+    addr.sin_port   = 0;
 
-    result = bind (sock, (struct sockaddr *) &addr,sizeof (addr));
+    result = bind(sock,(struct sockaddr *)&addr, sizeof(addr));
 
-	if (result != 0) {
+	if(result != 0) {
 		mail_close_socket(sock);
 		return(ERROR_VALUE);
 	}
@@ -209,10 +246,10 @@ int dns_getmx(char* name, char* mx, char* mx2
 			p++;
 		tp=strchr(p,'.');
 		if(tp)
-			namelen=(BYTE)(tp-p);
+			namelen=tp-p;
 		else
-			namelen=(BYTE)strlen(p);
-		*(msg+len)=namelen;
+			namelen=strlen(p);
+		*(msg+len)=(BYTE)namelen;
 		len++;
 		memcpy(msg+len,p,namelen);
 		len+=namelen;
@@ -247,6 +284,10 @@ int dns_getmx(char* name, char* mx, char* mx2
 	}
 
 	/* send query */
+#if defined(MX_LOOKUP_TEST)
+	printf("Sending ");
+	dump(msg+offset,len);
+#endif
 	i=send(sock,msg+offset,len,0);
 	if(i!=len) {
 		if(i==SOCKET_ERROR)
@@ -277,7 +318,20 @@ int dns_getmx(char* name, char* mx, char* mx2
 	rd=recv(sock,msg,sizeof(msg),0);
 	if(rd>0) {
 
-		memcpy(&msghdr,msg+offset,sizeof(msghdr)-offset);
+		memcpy(((BYTE*)(&msghdr))+offset,msg,sizeof(msghdr)-offset);
+
+#if defined(MX_LOOKUP_TEST)
+		printf("Received ");
+		dump(msg,rd);
+
+		printf("%-10s %lx\n","id",ntohs(msghdr.id));
+		printf("%-10s %lx\n","bitfields",ntohs(msghdr.bitfields));
+		printf("%-10s %lx\n","qdcount",ntohs(msghdr.qdcount));
+		printf("%-10s %lx\n","ancount",ntohs(msghdr.ancount));
+		printf("%-10s %lx\n","nscount",ntohs(msghdr.nscount));
+		printf("%-10s %lx\n","arcount",ntohs(msghdr.arcount));
+
+#endif
 
 		if(!use_tcp)
 			offset=0;
@@ -288,16 +342,26 @@ int dns_getmx(char* name, char* mx, char* mx2
 		p=msg+len;	/* Skip the header and question portion */
 
 		for(i=0;i<answers;i++) {
-			p+=dns_name(hostname, msg+offset, p);
+			namelen=0;
+			p+=dns_name(hostname, &namelen, sizeof(hostname)-1, msg+offset, p);
 
 			rr=(dns_rr_t*)p;
 			p+=sizeof(dns_rr_t);
+#if defined(MX_LOOKUP_TEST)
+			printf("answer #%d\n",i+1);
+			printf("hostname='%s'\n",hostname);
+			printf("type=%x ",ntohs(rr->type));
+			printf("class=%x ",ntohs(rr->class));
+			printf("ttl=%lu ",ntohl(rr->ttl));
+			printf("length=%d\n",ntohs(rr->length));
+#endif
 
 			len=ntohs(rr->length);
 			if(ntohs(rr->type)==DNS_MX)  {
 				pref=ntohs(*(WORD*)p);
 				p+=2;
-				p+=dns_name(hostname, msg+offset, p);
+				namelen=0;
+				p+=dns_name(hostname, &namelen, sizeof(hostname)-1, msg+offset, p);
 				if(pref<=highpref) {
 					highpref=pref;
 					if(mx[0])
@@ -311,8 +375,12 @@ int dns_getmx(char* name, char* mx, char* mx2
 		}
 	}
 
-	if(!mx[0])
+	if(!mx[0]) {
+#if defined(MX_LOOKUP_TEST)
+		printf("No MX record found, using default name.\n");
+#endif
 		strcpy(mx,name);
+	}
 	mail_close_socket(sock);
 	return(0);
 }
@@ -323,6 +391,10 @@ void main(int argc, char **argv)
 	char		mx[128],mx2[128];
 	int			result;
 	WSADATA		WSAData;
+
+	printf("sizeof(dns_msghdr_t)=%d\n",sizeof(dns_msghdr_t));
+	printf("sizeof(dns_query_t)=%d\n",sizeof(dns_query_t));
+	printf("sizeof(dns_rr_t)=%d\n",sizeof(dns_rr_t));
 
 	if(argc<3) {
 		printf("usage: mxlookup hostname dns\n");
@@ -343,6 +415,7 @@ void main(int argc, char **argv)
 	}
 
 	WSACleanup();
+	gets(mx);
 }
 #endif
 
