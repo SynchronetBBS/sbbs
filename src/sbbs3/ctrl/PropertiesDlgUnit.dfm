@@ -43,9 +43,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 9
     Width = 312
     Height = 272
-    ActivePage = CustomizeTabSheet
+    ActivePage = AdvancedTabSheet
     Anchors = [akLeft, akTop, akBottom]
-    TabIndex = 1
+    TabIndex = 2
     TabOrder = 2
     object SettingsTabSheet: TTabSheet
       Caption = 'Settings'
@@ -373,6 +373,17 @@ object PropertiesDlg: TPropertiesDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
+      end
+      object FileAssociationsCheckBox: TCheckBox
+        Left = 9
+        Top = 177
+        Width = 280
+        Height = 25
+        Hint = 'Use Windows file associations when viewing or editing files'
+        Caption = 'Use File Associations'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 5
       end
     end
     object JavaScriptTabSheet: TTabSheet

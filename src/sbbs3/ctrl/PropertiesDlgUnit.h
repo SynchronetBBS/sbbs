@@ -68,6 +68,7 @@ __published:
 	TEdit *JS_GcIntervalEdit;
 	TLabel *Label14;
 	TEdit *JS_YieldIntervalEdit;
+    TCheckBox *FileAssociationsCheckBox;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);

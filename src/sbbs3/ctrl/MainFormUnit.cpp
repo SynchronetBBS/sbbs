@@ -2974,6 +2974,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->SemFreqUpDown->Position=global.sem_chk_freq;
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
     PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
+    PropertiesDlg->FileAssociationsCheckBox->Checked=UseFileAssociations;
     PropertiesDlg->PasswordEdit->Text=Password;
     PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(global.js.max_bytes);
     PropertiesDlg->JS_ContextStackEdit->Text=IntToStr(global.js.cx_stack);
@@ -2997,6 +2998,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         global.sem_chk_freq=PropertiesDlg->SemFreqUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
         UndockableForms=PropertiesDlg->UndockableCheckBox->Checked;
+        UseFileAssociations=PropertiesDlg->FileAssociationsCheckBox->Checked;
         global.js.max_bytes
         	=PropertiesDlg->JS_MaxBytesEdit->Text.ToIntDef(JAVASCRIPT_MAX_BYTES);
         global.js.cx_stack
