@@ -91,6 +91,7 @@ static uint  helpline=0;
 static size_t blk_scrn_len;
 static char* blk_scrn;
 static uchar* tmp_buffer;
+static uchar* tmp_buffer2;
 static win_t sav[MAX_BUFS];
 static uifcapi_t* api;
 
@@ -276,6 +277,11 @@ int uifcini32(uifcapi_t* uifcapi)
 					,__LINE__,blk_scrn_len);
 				return(-1);
 	}
+	if((tmp_buffer2=(uchar *)MALLOC(blk_scrn_len))==NULL)  {
+				cprintf("UIFC line %d: error allocating %u bytes."
+					,__LINE__,blk_scrn_len);
+				return(-1);
+	}
     for(i=0;i<blk_scrn_len;i+=2) {
         blk_scrn[i]='°';
         blk_scrn[i+1]=cclr|(bclr<<4);
@@ -301,6 +307,7 @@ void uifcbail(void)
 #endif
 	FREE(blk_scrn);
 	FREE(tmp_buffer);
+	FREE(tmp_buffer2);
 }
 
 /****************************************************************************/
@@ -326,11 +333,11 @@ int uscrn(char *str)
 /****************************************************************************/
 static void scroll_text(int x1, int y1, int x2, int y2, int down)
 {
-	gettext(x1,y1,x2,y2,tmp_buffer);
+	gettext(x1,y1,x2,y2,tmp_buffer2);
 	if(down)
-		puttext(x1,y1+1,x2,y2,tmp_buffer);
+		puttext(x1,y1+1,x2,y2,tmp_buffer2);
 	else
-		puttext(x1,y1,x2,y2-1,tmp_buffer+(((x2-x1)+1)*2));
+		puttext(x1,y1,x2,y2-1,tmp_buffer2+(((x2-x1)+1)*2));
 }
 
 /****************************************************************************/
@@ -425,6 +432,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		top=(api->scrn_len-height+1)/2-2;
 	else if(mode&WIN_BOT)
 		top=s_bottom-height-top;
+	if(left<1)
+		left=1;
+	if(top<0)
+		top=0;
 
 	/* Dynamic Menus */
 	if(mode&WIN_DYN
@@ -1157,6 +1168,10 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		top=(api->scrn_len-height+1)/2-2;
 	if(mode&WIN_L2R)
 		left=(SCRN_RIGHT-SCRN_LEFT-width+1)/2;
+	if(left<1)
+		left=1;
+	if(top<0)
+		top=0;
 	if(mode&WIN_SAV)
 		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
@@ -1692,8 +1707,7 @@ void sethelp(int line, char* file)
 /****************************************************************************/
 void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf, int *curp, int *barp)
 {
-	char *savscrn,inverse=0,high=0;
-	char *buf;
+	char inverse=0,high=0;
 	char *textbuf;
     char *p;
 	int i,j,k,len;
@@ -1710,13 +1724,17 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(width>api->scrn_width)
 		width=api->scrn_width;
 	if(mode&WIN_L2R)
-		left=(SCRN_RIGHT-SCRN_LEFT-width+1)/2;
+		left=(api->scrn_width-width+2)/2;
 	else if(mode&WIN_RHT)
 		left=SCRN_RIGHT-(width+4+left);
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2;
 	else if(mode&WIN_BOT)
 		top=api->scrn_len-height-3-top;
+	if(left<1)
+		left=1;
+	if(top<0)
+		top=0;
 
 	if(mode&WIN_PACK)
 		pad=0;
@@ -1731,83 +1749,70 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			&& save_menu_bar==*barp)
 		is_redraw=1;
 
-	if((savscrn=(char *)MALLOC(api->scrn_width*api->scrn_len*2))==NULL) {
-		cprintf("UIFC line %d: error allocating %u bytes\r\n"
-			,__LINE__,api->scrn_width*25*2);
-		_setcursortype(cursor);
-		return; 
-	}
-	if((buf=(char *)MALLOC(width*height*2))==NULL) {
-		cprintf("UIFC line %d: error allocating %u bytes\r\n"
-			,__LINE__,width*21*2);
-		FREE(savscrn);
-		_setcursortype(cursor);
-		return;
-	}
-	gettext(1,1,api->scrn_width,api->scrn_len,savscrn);
+	gettext(1,1,api->scrn_width,api->scrn_len,tmp_buffer);
 
 	if(!is_redraw) {
-		memset(buf,SP,width*height*2);
+		memset(tmp_buffer2,SP,width*height*2);
 		for(i=1;i<width*height*2;i+=2)
-			buf[i]=(hclr|(bclr<<4));
-	    buf[0]='Ú';
+			tmp_buffer2[i]=(hclr|(bclr<<4));
+	    tmp_buffer2[0]='Ú';
 		j=strlen(title);
 		if(j>width-6)
 			*(title+width-6)=0;
 		for(i=2;i<((width-6)/2-(j/2))*2;i+=2)
-   		      buf[i]='Ä';
-	    buf[i]='´'; i+=4;
+   		      tmp_buffer2[i]='Ä';
+	    tmp_buffer2[i]='´'; i+=4;
 		for(p=title;*p;p++) {
-			buf[i]=*p;
+			tmp_buffer2[i]=*p;
 			i+=2;
 		}
 		i+=2;
-   		buf[i]='Ã'; i+=2;
+   		tmp_buffer2[i]='Ã'; i+=2;
 		for(j=i;j<((width-1)*2);j+=2)
-   		    buf[j]='Ä';
+   		    tmp_buffer2[j]='Ä';
 		i=j;
-    	buf[i]='¿'; i+=2;
+    	tmp_buffer2[i]='¿'; i+=2;
 		j=i;	/* leave i alone */
 		for(k=0;k<(height-2);k++) { 		/* the sides of the box */
-	        buf[j]='³'; j+=2;
+	        tmp_buffer2[j]='³'; j+=2;
 			j+=((width-2)*2);
-        	buf[j]='³'; j+=2; 
+        	tmp_buffer2[j]='³'; j+=2; 
 		}
-	    buf[j]='À'; j+=2;
+	    tmp_buffer2[j]='À'; j+=2;
 		if(!(mode&WIN_DYN) && (width>31)) {
 			for(k=j;k<j+(((width-4)/2-13)*2);k+=2)
-				buf[k]='Ä';
-			buf[k]='´'; k+=4;
-			buf[k]='H'; k+=2;
-			buf[k]='i'; k+=2;
-			buf[k]='t'; k+=4;
-			buf[k]='a'; k+=2;
-			buf[k]='n'; k+=2;
-			buf[k]='y'; k+=4;
-			buf[k]='k'; k+=2;
-			buf[k]='e'; k+=2;
-			buf[k]='y'; k+=4;
-			buf[k]='t'; k+=2;
-			buf[k]='o'; k+=4;
-			buf[k]='c'; k+=2;
-			buf[k]='o'; k+=2;
-			buf[k]='n'; k+=2;
-			buf[k]='t'; k+=2;
-			buf[k]='i'; k+=2;
-			buf[k]='n'; k+=2;
-			buf[k]='u'; k+=2;
-			buf[k]='e'; k+=4;
-	    	buf[k]='Ã'; k+=2;
+				tmp_buffer2[k]='Ä';
+			tmp_buffer2[k]='´'; k+=4;
+			tmp_buffer2[k]='H'; k+=2;
+			tmp_buffer2[k]='i'; k+=2;
+			tmp_buffer2[k]='t'; k+=4;
+			tmp_buffer2[k]='a'; k+=2;
+			tmp_buffer2[k]='n'; k+=2;
+			tmp_buffer2[k]='y'; k+=4;
+			tmp_buffer2[k]='k'; k+=2;
+			tmp_buffer2[k]='e'; k+=2;
+			tmp_buffer2[k]='y'; k+=4;
+			tmp_buffer2[k]='t'; k+=2;
+			tmp_buffer2[k]='o'; k+=4;
+			tmp_buffer2[k]='c'; k+=2;
+			tmp_buffer2[k]='o'; k+=2;
+			tmp_buffer2[k]='n'; k+=2;
+			tmp_buffer2[k]='t'; k+=2;
+			tmp_buffer2[k]='i'; k+=2;
+			tmp_buffer2[k]='n'; k+=2;
+			tmp_buffer2[k]='u'; k+=2;
+			tmp_buffer2[k]='e'; k+=4;
+	    	tmp_buffer2[k]='Ã'; k+=2;
 			for(j=k;j<k+(((width-4)/2-12)*2);j+=2)
-		        buf[j]='Ä';
+		        tmp_buffer2[j]='Ä';
 		}	
 		else {
 			for(k=j;k<j+((width-2)*2);k+=2)
-				buf[k]='Ä';
+				tmp_buffer2[k]='Ä';
 			j=k;
 		}
-	    buf[j]='Ù';
-		puttext(left,top+1,left+width-1,top+height,buf);
+	    tmp_buffer2[j]='Ù';
+		puttext(left,top+1,left+width-1,top+height,tmp_buffer2);
 	}
 	len=strlen(hbuf);
 
@@ -1825,17 +1830,15 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(lines < height-2-pad-pad)
 		lines=height-2-pad-pad;
 
-	if((buf=(char *)textbuf=MALLOC((width-2-pad-pad)*lines*2))==NULL) {
+	if((textbuf=(char *)MALLOC((width-2-pad-pad)*lines*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(width-2-pad-pad)*lines*2);
-		FREE(savscrn);
-		FREE(buf);
 		_setcursortype(cursor);
 		return; 
 	}
 	memset(textbuf,SP,(width-2-pad-pad)*lines*2);
 	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
-		buf[i]=(hclr|(bclr<<4));
+		tmp_buffer2[i]=(hclr|(bclr<<4));
 	i=0;
 	for(j=0;j<len;j++,i+=2) {
 		if(hbuf[j]==LF) {
@@ -1911,12 +1914,11 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			mswait(1);
 		}
 
-		puttext(1,1,api->scrn_width,api->scrn_len,savscrn);
+		puttext(1,1,api->scrn_width,api->scrn_len,tmp_buffer);
 	}
 	if(is_redraw)			/* Force redraw of menu also. */
 		reset_dynamic();
-	FREE(savscrn);
-	FREE(buf);
+	FREE(textbuf);
 	_setcursortype(cursor);
 }
 
