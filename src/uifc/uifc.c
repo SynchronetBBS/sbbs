@@ -109,7 +109,6 @@ int uifcini()
 
     clrscr();
     gettextinfo(&txtinfo);
-    txtinfo.screenheight;
     /* unsupported mode? */
     if(txtinfo.screenheight<MIN_LINES
         || txtinfo.screenheight>MAX_LINES
@@ -1452,8 +1451,8 @@ if(line&BL_GET) {
 if(line&BL_PUT) {
 	uprintf(i,scrn_len+1,bclr|(cclr<<4),"F6 ");
 	i+=3;
-	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Paste Item  ");
-    i+=12; }
+	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Paste  ");
+    i+=7; }
 if(line&BL_INS) {
 	uprintf(i,scrn_len+1,bclr|(cclr<<4),"INS ");
 	i+=4;
