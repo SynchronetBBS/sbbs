@@ -134,6 +134,7 @@ static SOCKET	server_socket=INVALID_SOCKET;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
+static char		temp_dir[MAX_PATH+1];
 static char		cgi_dir[MAX_PATH+1];
 static time_t	uptime=0;
 static DWORD	served=0;
@@ -1574,7 +1575,7 @@ static int is_dynamic_req(http_session_t* session)
 			return(IS_STATIC);
 		}
 
-		sprintf(path,"%s/SBBS_SSJS.%d.html",startup->temp_dir,session->socket);
+		sprintf(path,"%sSBBS_SSJS.%d.html",temp_dir,session->socket);
 		if((session->req.fp=fopen(path,"wb"))==NULL) {
 			lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
 			send_error(session,error_500);
@@ -2653,7 +2654,7 @@ static void respond(http_session_t * session)
 			return;
 		}
 		sprintf(session->req.physical_path
-			,"%s/SBBS_SSJS.%d.html",startup->temp_dir,session->socket);
+			,"%sSBBS_SSJS.%d.html",temp_dir,session->socket);
 	}
 
 	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
@@ -2662,7 +2663,8 @@ static void respond(http_session_t * session)
 		send_file=FALSE;
 	if(send_file)  {
 		int snt=0;
-		lprintf(LOG_INFO,"%04d Sending file: %s",session->socket, session->req.physical_path);
+		lprintf(LOG_INFO,"%04d Sending file: %s (%u bytes)"
+			,session->socket, session->req.physical_path, flength(session->req.physical_path));
 		snt=sock_sendfile(session->socket,session->req.physical_path);
 		if(session->req.ld!=NULL) {
 			if(snt<0)
@@ -2670,7 +2672,8 @@ static void respond(http_session_t * session)
 			session->req.ld->size=snt;
 		}
 		if(snt>0)
-			lprintf(LOG_INFO,"%04d Sent file: %s",session->socket, session->req.physical_path);
+			lprintf(LOG_INFO,"%04d Sent file: %s (%d bytes)"
+				,session->socket, session->req.physical_path, snt);
 	}
 	close_request(session);
 }
@@ -3042,19 +3045,6 @@ void DLLCALL web_server(void* arg)
 	js_server_props.options=&startup->options;
 	js_server_props.interface_addr=&startup->interface_addr;
 
-	/* Copy html directories */
-	SAFECOPY(root_dir,startup->root_dir);
-	SAFECOPY(error_dir,startup->error_dir);
-	SAFECOPY(cgi_dir,startup->cgi_dir);
-
-	/* Change to absolute path */
-	prep_dir(startup->ctrl_dir, root_dir, sizeof(root_dir));
-	prep_dir(root_dir, error_dir, sizeof(error_dir));
-	prep_dir(root_dir, cgi_dir, sizeof(cgi_dir));
-
-	/* Trim off trailing slash/backslash */
-	if(IS_PATH_DELIM(*(p=lastchar(root_dir))))	*p=0;
-
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
@@ -3066,6 +3056,23 @@ void DLLCALL web_server(void* arg)
 		thread_up(FALSE /* setuid */);
 
 		status("Initializing");
+
+		/* Copy html directories */
+		SAFECOPY(root_dir,startup->root_dir);
+		SAFECOPY(error_dir,startup->error_dir);
+		SAFECOPY(temp_dir,startup->temp_dir);
+		SAFECOPY(cgi_dir,startup->cgi_dir);
+
+		/* Change to absolute path */
+		prep_dir(startup->ctrl_dir, root_dir, sizeof(root_dir));
+		prep_dir(startup->ctrl_dir, temp_dir, sizeof(temp_dir));
+		prep_dir(root_dir, error_dir, sizeof(error_dir));
+		prep_dir(root_dir, cgi_dir, sizeof(cgi_dir));
+
+		/* Trim off trailing slash/backslash */
+		if(IS_PATH_DELIM(*(p=lastchar(root_dir))))	*p=0;
+
+		backslash(temp_dir);	/* Add trailing slash/backslash if missing */
 
 		memset(&scfg, 0, sizeof(scfg));
 
@@ -3094,9 +3101,9 @@ void DLLCALL web_server(void* arg)
 
 		lprintf(LOG_DEBUG,"Root HTML directory: %s", root_dir);
 		lprintf(LOG_DEBUG,"Error HTML directory: %s", error_dir);
-		lprintf(LOG_DEBUG,"Temporary file directory: %s", startup->temp_dir);
-		if(!isdir(startup->temp_dir)) {
-			lprintf(LOG_ERR,"!Invalid temp directory: %s", startup->temp_dir);
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", temp_dir);
+		if(!isdir(temp_dir)) {
+			lprintf(LOG_ERR,"!Invalid temp directory: %s", temp_dir);
 			cleanup(1);
 			return;
 		}
