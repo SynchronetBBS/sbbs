@@ -134,6 +134,7 @@ typedef struct {
 extern cioapi_t cio_api;
 extern int _wscroll;
 extern int directvideo;
+extern int dont_move_cursor;
 
 #define _conio_kbhit()		kbhit()
 

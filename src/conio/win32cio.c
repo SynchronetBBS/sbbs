@@ -308,7 +308,8 @@ void win32_gotoxy(int x, int y)
 	ypos=y;
 	cp.X=x-1;
 	cp.Y=y-1;
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),cp);
+	if(!dont_move_cursor)
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),cp);
 }
 
 void win32_highvideo(void)
