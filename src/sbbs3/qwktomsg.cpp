@@ -105,7 +105,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 	hdrblk[116]=0;	// don't include number of blocks in "re: msg number"
 	if(!(useron.rest&FLAG('Q')) && !fromhub)
-		msg.hdr.thread_orig=atol((char *)hdrblk+108);
+		msg.hdr.thread_back=atol((char *)hdrblk+108);
 
 	if((uint)subnum==INVALID_SUB) { 		/* E-mail */
 		msg.idx.to=touser;
@@ -433,18 +433,30 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 	if(msg.reply_id!=NULL 
 		&& get_msg_by_id(&cfg, &smb, msg.reply_id, &remsg)==TRUE) {
-		msg.hdr.thread_orig=remsg.hdr.number;	/* needed for thread linkage */
+		msg.hdr.thread_back=remsg.hdr.number;	/* needed for threading backward */
 		smb_freemsgmem(&remsg);
 	}
-	if(msg.hdr.thread_orig
+	if(msg.hdr.thread_back
 		&& smb_getstatus(&smb)==SMB_SUCCESS) {
+
 		memset(&remsg,0,sizeof(remsg));
-		remsg.hdr.number=msg.hdr.thread_orig;
+		remsg.hdr.number=msg.hdr.thread_back;
+
 		if(smb_getmsgidx(&smb,&remsg)==SMB_SUCCESS
 			&& smb_lockmsghdr(&smb,&remsg)==SMB_SUCCESS) {
 
-			if(smb_getmsghdr(&smb,&remsg)==SMB_SUCCESS)
+			if(smb_getmsghdr(&smb,&remsg)==SMB_SUCCESS) {
+
+				/* Add RFC-822 Reply-ID (generate if necessary) */
+				if(msg.reply_id==NULL)
+					smb_hfield_str(&msg,RFC822REPLYID,get_msgid(&cfg,smb.subnum,&remsg));
+
+				/* Add FidoNet Reply if original message has FidoNet MSGID */
+				if(msg.ftn_reply==NULL && remsg.ftn_msgid!=NULL)
+					smb_hfield_str(&msg,FIDOREPLYID,remsg.ftn_msgid);
+
 				smb_updatethread(&smb,&remsg,smb.status.last_msg+1);
+			}
 
 			smb_unlockmsghdr(&smb,&remsg);
 			smb_freemsgmem(&remsg);

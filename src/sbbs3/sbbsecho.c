@@ -2645,7 +2645,12 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 		if(smb_getstatus(smbfile)==SMB_SUCCESS
 			&& get_msg_by_ftn_id(smbfile, msg.ftn_reply, &remsg)==TRUE) {
-			msg.hdr.thread_orig=remsg.hdr.number;	/* needed for thread linkage */
+
+			msg.hdr.thread_back=remsg.hdr.number;	/* needed for threading backward */
+
+			/* Add RFC-822 Reply-ID (generate if necessary) */
+			smb_hfield_str(&msg,RFC822REPLYID,get_msgid(&scfg,smbfile->subnum,&remsg));
+
 			smb_updatethread(smbfile,&remsg,smbfile->status.last_msg+1);
 			smb_unlockmsghdr(smbfile,&remsg);
 			smb_freemsgmem(&remsg);
@@ -3876,9 +3881,9 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 				if(msg.ftn_reply!=NULL)			/* use original REPLYID */
 					f+=sprintf(fmsgbuf+f,"\1REPLY: %.256s\r", msg.ftn_reply);
-				else if(msg.hdr.thread_orig) {	/* generate REPLYID */
+				else if(msg.hdr.thread_back) {	/* generate REPLYID */
 					memset(&orig_msg,0,sizeof(orig_msg));
-					orig_msg.hdr.number=msg.hdr.thread_orig;
+					orig_msg.hdr.number=msg.hdr.thread_back;
 					if(smb_getmsgidx(smb, &orig_msg))
 						f+=sprintf(fmsgbuf+f,"\1REPLY: <%s>\r",smb->last_error);
 					else {
