@@ -396,7 +396,7 @@ bool sbbs_t::logon()
 		exec_bin(cfg.logon_mod,&main_csi);
 
 	if(thisnode.status!=NODE_QUIET && (!REALSYSOP || cfg.sys_misc&SM_SYSSTAT)) {
-		sprintf(str,"%sLOGON.LST",cfg.data_dir);
+		sprintf(str,"%slogon.lst",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT|O_APPEND);
 			return(false); }
@@ -534,7 +534,7 @@ ulong sbbs_t::logonstats()
 		logentry("!=",str);
 
 		sys_status|=SS_DAILY;       /* New Day !!! */
-		sprintf(str,"%sLOGON.LST",cfg.data_dir);    /* Truncate logon list */
+		sprintf(str,"%slogon.lst",cfg.data_dir);    /* Truncate logon list */
 		if((dsts=nopen(str,O_TRUNC|O_CREAT|O_WRONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_TRUNC|O_CREAT|O_WRONLY);
 			return(0L); }

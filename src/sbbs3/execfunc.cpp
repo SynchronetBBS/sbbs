@@ -272,7 +272,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			userlist(UL_ALL);
 			return(0);
 		case CS_USERLIST_LOGONS:
-			sprintf(str,"%sLOGON.LST", cfg.data_dir);
+			sprintf(str,"%slogon.lst", cfg.data_dir);
 			if(flength(str)<1) {
 				bputs("\r\n\r\n");
 				bputs(text[NoOneHasLoggedOnToday]); }
