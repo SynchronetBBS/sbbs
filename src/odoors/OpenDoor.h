@@ -188,7 +188,7 @@ typedef char               CHAR;         /* Native character representation. */
 
 typedef signed char        INT8;                          /* Signed, 8 bits. */
 typedef signed short int   INT16;                        /* Signed, 16 bits. */
-#ifndef _WIN32	/* avoid type redefinition from basetsd.h */
+#ifndef ODPLAT_WIN32	/* avoid type redefinition from basetsd.h */
 typedef signed long int    INT32;                        /* Signed, 32 bits. */
 #endif
 
