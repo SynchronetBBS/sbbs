@@ -361,6 +361,9 @@ public:
 	bool	ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool dir=false);
 	SOCKET	ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN*);
 
+	bool	select_shell(void);
+	bool	select_editor(void);
+
 	void	sys_info(void);
 	void	user_info(void);
 	void	xfer_policy(void);

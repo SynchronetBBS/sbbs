@@ -2437,6 +2437,30 @@ js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_select_shell(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->select_shell());
+	return(JS_TRUE);
+}
+
+static JSBool
+js_select_editor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->select_editor());
+	return(JS_TRUE);
+}
+
 static jsMethodSpec js_bbs_functions[] = {
 	{"atcode",			js_atcode,			1,	JSTYPE_STRING,	JSDOCSTR("string code")
 	,JSDOCSTR("return @-code value")
@@ -2676,6 +2700,12 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("number time")
 	,JSDOCSTR("get newscan time, returns new newscan time value (time_t)")
 	},		
+	{"select_shell",	js_select_shell,	0,	JSTYPE_BOOLEAN,	""
+	,JSDOCSTR("allows user to select a new command shell")
+	},
+	{"select_editor",	js_select_editor,	0,	JSTYPE_BOOLEAN,	""
+	,JSDOCSTR("allows user to select a new external message editor")
+	},
 	{0}
 };
 
