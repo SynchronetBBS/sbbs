@@ -461,19 +461,34 @@ void insline(void)
 int cprintf(char *fmat, ...)
 {
     va_list argptr;
-	char	str[4097];
 	int		pos;
 	int		ret;
+#ifdef _WIN32			/* Can't figure out a way to allocate a "big enough" buffer for Win32. */
+	char	str[16384];
+#else
+	char	*str;
+#endif
 
 	if(!initialized)
 		initciowrap(3);
     va_start(argptr,fmat);
-    ret=vsprintf(str,fmat,argptr);
+#ifdef WIN32
+	ret=vnsprintf(str,sizeof(str)-1,fmat,argptr);
+#else
+    ret=vsnprintf(NULL,0,fmat,argptr);
+	str=(char *)malloc(ret+1);
+	if(str==NULL)
+		return(EOF);
+	ret=vsprintf(str,fmat,argptr);
+#endif
     va_end(argptr);
 	if(ret>=0)
 		cputs(str);
 	else
 		ret=EOF;
+#ifndef WIN32
+	free(str);
+#endif
     return(ret);
 }
 
