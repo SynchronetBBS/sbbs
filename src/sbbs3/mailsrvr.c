@@ -1463,6 +1463,7 @@ static void smtp_thread(void* arg)
 	char		relay_list[MAX_PATH+1];
 	char		domain_list[MAX_PATH+1];
 	char		spam_bait[MAX_PATH+1];
+	char		spam_block[MAX_PATH+1];
 	char		host_name[128];
 	char		host_ip[64];
 	char		dnsbl[256];
@@ -1598,7 +1599,10 @@ static void smtp_thread(void* arg)
 
 	SAFECOPY(hello_name,host_name);
 
-	if(trashcan(&scfg,host_ip,"ip")) {
+	sprintf(spam_bait,"%sspambait.cfg",scfg.ctrl_dir);
+	sprintf(spam_block,"%sspamblock.cfg",scfg.ctrl_dir);
+
+	if(trashcan(&scfg,host_ip,"ip") || findstr(host_ip,spam_block)) {
 		lprintf("%04d !SMTP BLOCKED SERVER IP ADDRESS: %s"
 			,socket, host_ip);
 		sockprintf(socket,"550 Access denied.");
@@ -1607,7 +1611,7 @@ static void smtp_thread(void* arg)
 		return;
 	}
 
-	if(trashcan(&scfg,host_name,"host")) {
+	if(trashcan(&scfg,host_name,"host") || findstr(host_name,spam_block)) {
 		lprintf("%04d !SMTP BLOCKED SERVER HOSTNAME: %s"
 			,socket, host_name);
 		sockprintf(socket,"550 Access denied.");
@@ -2459,7 +2463,6 @@ static void smtp_thread(void* arg)
 			}
 
 			/* Check for SPAM bait recipient */
-			sprintf(spam_bait,"%sspambait.cfg",scfg.ctrl_dir);
 			if(findstr(rcpt_addr,spam_bait)) {
 				sprintf(str,"SPAM BAIT (%s) taken", rcpt_addr);
 				lprintf("%04d !SMTP %s by: %s"
@@ -2467,7 +2470,7 @@ static void smtp_thread(void* arg)
 				strcpy(tmp,"REFUSED");
 				if(dnsbl_result.s_addr==0)	{ /* Don't double-filter */
 					lprintf("%04d !FILTERING IP ADDRESS: %s", socket, host_ip);
-					filter_ip(&scfg, "SMTP", str, host_name, host_ip, reverse_path);
+					filter_ip(&scfg, "SMTP", str, host_name, host_ip, reverse_path, spam_block);
 					strcat(tmp," and FILTERED");
 				}
 				spamlog(&scfg, "SMTP", tmp, "Attempted recipient in SPAM BAIT list"
