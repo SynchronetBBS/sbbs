@@ -912,7 +912,7 @@ function Channels_part(cname,message)  {
 			this.length -= 1;
 		}
 	}
-	if(this.index>=(length-1))  {
+	if(this.index>=(this.length-1))  {
 		this.index=0;
 	}
 }
