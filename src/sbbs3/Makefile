@@ -31,6 +31,7 @@ DELETE	=	echo y | del
 
 # Optional compile flags (disable banner, warnings and such)
 CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par
+CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS
 
 # Debug or release build?
 !ifdef DEBUG
@@ -82,7 +83,7 @@ $(SBBSMONO): sbbscon.c sbbs_ini.c $(XPDEV)ini_file.c $(OBJS) \
 	$(LIBODIR)\websrvr.$(OFILE) \
 	$(LIBODIR)\mailsrvr.$(OFILE) $(LIBODIR)\mxlookup.$(OFILE) $(LIBODIR)\mime.$(OFILE) \
 	$(LIBODIR)\services.$(OFILE)
-	@$(CC) $(CFLAGS) -DWRAPPER_EXPORTS -WM -e$(SBBSMONO) $** $(LIBS)
+	@$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $** $(LIBS)
 
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
@@ -153,7 +154,6 @@ $(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
 	$(LIBODIR)\date_str.obj \
 	userdat.c \
 	dat_rec.c \
-	genwrap.c \
 	dirwrap.c \
 	$(LIBODIR)\load_cfg.obj \
 	$(LIBODIR)\scfglib1.obj \
