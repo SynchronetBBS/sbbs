@@ -4799,7 +4799,22 @@ object MainForm: TMainForm
     end
     object BBSConfigureTrayMenuItem: TMenuItem
       Caption = 'Configure'
-      OnClick = BBSConfigureMenuItemClick
+      object ConfigureBBSTrayMenuItem: TMenuItem
+        Caption = 'BBS'
+        OnClick = BBSConfigureMenuItemClick
+      end
+      object ConfigureTelnetTrayMenuItem: TMenuItem
+        Caption = 'Telnet Server'
+        OnClick = TelnetConfigureExecute
+      end
+      object ConfigureFtpTrayMenuItem: TMenuItem
+        Caption = 'FTP Server'
+        OnClick = FtpConfigureExecute
+      end
+      object ConfigureMailTrayMenuItem: TMenuItem
+        Caption = 'Mail Server'
+        OnClick = MailConfigureExecute
+      end
     end
     object UserEditTrayMenuItem: TMenuItem
       Action = UserEdit

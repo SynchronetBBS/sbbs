@@ -223,6 +223,10 @@ __published:	// IDE-managed Components
     TMenuItem *BBSEditEmailFilterMenuItem;
     TMenuItem *BBSEditBadEmailMessageMenuItem;
     TMenuItem *ViewHackAttemptLogMenuItem;
+    TMenuItem *ConfigureBBSTrayMenuItem;
+    TMenuItem *ConfigureTelnetTrayMenuItem;
+    TMenuItem *ConfigureFtpTrayMenuItem;
+    TMenuItem *ConfigureMailTrayMenuItem;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
