@@ -733,7 +733,6 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	char		str[128];
     jsint       tiny;
 	ulong		cnt;
 	BOOL		rd;
@@ -793,10 +792,8 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(getsockname(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
 				p->last_error=ERROR_VALUE;
 				*vp = JSVAL_VOID;
-			} else {
-				sprintf(str,"%u",ntohs(addr.sin_port));
-				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str));
-			}
+			} else
+				*vp = INT_TO_JSVAL(ntohs(addr.sin_port));
 			break;
 		case SOCK_PROP_REMOTE_IP:
 			addr_len = sizeof(addr);
@@ -811,10 +808,8 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(getpeername(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
 				p->last_error=ERROR_VALUE;
 				*vp = JSVAL_VOID;
-			} else {
-				sprintf(str,"%u",ntohs(addr.sin_port));
-				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str));
-			}
+			} else
+				*vp = INT_TO_JSVAL(ntohs(addr.sin_port));
 			break;
 
 	}
