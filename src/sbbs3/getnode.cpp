@@ -43,17 +43,17 @@
 /* from NODE.DAB															*/
 /* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
 /****************************************************************************/
-void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
+int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 {
 	char	str[MAX_PATH+1];
 	int		count;
 
 	if(!number)
-		return;
+		return(-1);
 
 	if(number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return; 
+		return(-1); 
 	}
 
 	if(nodefile==-1) {
@@ -61,7 +61,7 @@ void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
 			memset(node,0,sizeof(node_t));
-			return; 
+			return(errno); 
 		}
 	}
 
@@ -86,8 +86,12 @@ void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 		sprintf(str,"NODE.DAB COLLISION - Count: %d",count);
 		logline("!!",str); 
 	}
-	else if(count==LOOP_NODEDAB) 
+	else if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,ERR_READ,"node.dab",number+1);
+		return(-2);
+	}
+
+	return(0);
 }
 
 /****************************************************************************/
@@ -108,7 +112,8 @@ void sbbs_t::nodesync()
 	if(thisnode.action!=action) {
 		getnodedat(cfg.node_num,&thisnode,1);
 		thisnode.action=action;
-		putnodedat(cfg.node_num,&thisnode); }
+		putnodedat(cfg.node_num,&thisnode); 
+	}
 
 	criterrs=thisnode.errors;
 
@@ -126,11 +131,13 @@ void sbbs_t::nodesync()
 			getuserdat(&cfg, &useron);
 			getnodedat(cfg.node_num,&thisnode,1);
 			thisnode.misc&=~NODE_UDAT;
-			putnodedat(cfg.node_num,&thisnode); }
+			putnodedat(cfg.node_num,&thisnode); 
+		}
 		if(thisnode.misc&NODE_MSGW)
 			getsmsg(useron.number); 	/* getsmsg clears MSGW flag */
 		if(thisnode.misc&NODE_NMSG)
-			getnmsg(); }				/* getnmsg clears NMSG flag */
+			getnmsg();					/* getnmsg clears NMSG flag */
+	}
 
 	if(cfg.sync_mod[0])
 		exec_bin(cfg.sync_mod,&main_csi);
@@ -140,7 +147,8 @@ void sbbs_t::nodesync()
 		logline(nulstr,"Interrupted");
 		hangup();
 		nodesync_inside=0;
-		return; }
+		return; 
+	}
 
 	if(thisnode.misc&NODE_LCHAT) { // pulled into local chat with sysop
 		SAVELINE;
@@ -151,14 +159,16 @@ void sbbs_t::nodesync()
 	if(sys_status&SS_USERON && memcmp(&nodesync_user,&useron,sizeof(user_t))) {
 		getusrdirs();
 		getusrsubs();
-		memcpy(&nodesync_user,&useron,sizeof(nodesync_user)); }
+		memcpy(&nodesync_user,&useron,sizeof(nodesync_user)); 
+	}
 
 	if(sys_status&SS_USERON && online && (timeleft/60)<(5-timeleft_warn)
 		&& !SYSOP) {
 		timeleft_warn=5-(timeleft/60);
 		attr(LIGHTGRAY);
 		bprintf(text[OnlyXminutesLeft]
-			,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr); }
+			,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr); 
+	}
 
 	attr(atr);	/* replace original attributes */
 	nodesync_inside=0;
@@ -167,7 +177,7 @@ void sbbs_t::nodesync()
 /****************************************************************************/
 /* Prints short messages waiting for this node, if any...                   */
 /****************************************************************************/
-void sbbs_t::getnmsg()
+int sbbs_t::getnmsg()
 {
 	char	str[MAX_PATH+1], HUGE16 *buf;
 	int		file;
@@ -179,55 +189,61 @@ void sbbs_t::getnmsg()
 
 	sprintf(str,"%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
 	if(flength(str)<1L)
-		return;
+		return(0);
 	if((file=nopen(str,O_RDWR))==-1) {
 		/**
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR);
 		**/
-		return; 
+		return(errno); 
 	}
 	length=filelength(file);
 	if(!length) {
 		close(file);
-		return; }
+		return(0); 
+	}
 	if((buf=(char *)LMALLOC(length+1))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1);
-		return; }
+		return(-1); 
+	}
 	if(lread(file,buf,length)!=length) {
 		close(file);
 		FREE(buf);
 		errormsg(WHERE,ERR_READ,str,length);
-		return; }
+		return(errno); 
+	}
 	chsize(file,0L);
 	close(file);
 	buf[length]=0;
 
 	if(thisnode.action==NODE_MAIN || thisnode.action==NODE_XFER
 		|| sys_status&SS_IN_CTRLP) {
-		CRLF; }
+		CRLF; 
+	}
 	putmsg(buf,P_NOATCODES);
 	LFREE(buf);
+
+	return(0);
 }
 
 /****************************************************************************/
 /* 'ext' must be at least 128 bytes!                                        */
 /****************************************************************************/
-void sbbs_t::getnodeext(uint number, char *ext)
+int sbbs_t::getnodeext(uint number, char *ext)
 {
     char	str[MAX_PATH+1];
     int		count;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return; 
+		return(-1); 
 	}
 
 	sprintf(str,"%snode.exb",cfg.ctrl_dir);
 	if((node_ext=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
 		memset(ext,0,128);
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_DENYNONE);
-		return; 
+		return(errno); 
 	}
 
 	number--;   /* make zero based */
@@ -248,8 +264,12 @@ void sbbs_t::getnodeext(uint number, char *ext)
 		sprintf(str,"NODE.EXB COLLISION - Count: %d",count);
 		logline("!!",str); 
 	}
-	else if(count==LOOP_NODEDAB) 
+	else if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,ERR_READ,"node.exb",number+1);
+		return(-2);
+	}
+
+	return(0);
 }
 
 
@@ -257,7 +277,7 @@ void sbbs_t::getnodeext(uint number, char *ext)
 /* Prints short messages waiting for 'usernumber', if any...                */
 /* then deletes them.                                                       */
 /****************************************************************************/
-void sbbs_t::getsmsg(int usernumber)
+int sbbs_t::getsmsg(int usernumber)
 {
 	char	str[MAX_PATH+1], HUGE16 *buf;
     int		file;
@@ -265,33 +285,40 @@ void sbbs_t::getsmsg(int usernumber)
 
 	sprintf(str,"%smsgs/%4.4u.msg",cfg.data_dir,usernumber);
 	if(flength(str)<1L)
-		return;
+		return(0);
 	if((file=nopen(str,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return; }
+		return(errno); 
+	}
 	length=filelength(file);
 	if((buf=(char *)LMALLOC(length+1))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1);
-		return; }
+		return(-1); 
+	}
 	if(lread(file,buf,length)!=length) {
 		close(file);
 		FREE(buf);
 		errormsg(WHERE,ERR_READ,str,length);
-		return; }
+		return(errno); 
+	}
 	chsize(file,0L);
 	close(file);
 	buf[length]=0;
 	getnodedat(cfg.node_num,&thisnode,0);
 	if(thisnode.action==NODE_MAIN || thisnode.action==NODE_XFER
 		|| sys_status&SS_IN_CTRLP) {
-		CRLF; }
+		CRLF; 
+	}
 	if(thisnode.misc&NODE_MSGW) {
 		getnodedat(cfg.node_num,&thisnode,1);
 		thisnode.misc&=~NODE_MSGW;
-		putnodedat(cfg.node_num,&thisnode); }
+		putnodedat(cfg.node_num,&thisnode); 
+	}
 	putmsg(buf,P_NOATCODES);
 	LFREE(buf);
+
+	return(0);
 }
 
 /****************************************************************************/
@@ -311,12 +338,15 @@ int sbbs_t::whos_online(bool listself)
 		if(i==cfg.node_num) {
 			if(listself)
 				printnodedat(i,&node);
-			continue; }
+			continue; 
+		}
 		if(node.status==NODE_INUSE || (SYSOP && node.status==NODE_QUIET)) {
 			printnodedat(i,&node);
 			if(!lastnodemsg)
 				lastnodemsg=i;
-			j++; } }
+			j++; 
+		} 
+	}
 	if(!j)
 		bputs(text[NoOtherActiveNodes]);
 	return(j);
@@ -383,12 +413,14 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 		case NODE_QUIET:
 			if(!SYSOP) {
 				bputs("Waiting for call");
-				break; }
+				break; 
+			}
 		case NODE_INUSE:
 			if(node->misc&NODE_EXT) {
 				getnodeext(number,tmp);
 				bputs(tmp);
-				break; }
+				break; 
+			}
 			attr(cfg.color[clr_nodeuser]);
 			if(node->misc&NODE_ANON && !SYSOP)
 				bputs("UNKNOWN USER");
@@ -430,7 +462,8 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 						if(SYSOP || chk_ar(cfg.xtrn[i]->ar,&useron))
 							bputs(cfg.xtrn[node->aux-1]->name);
 						else
-							bputs("external program"); }
+							bputs("external program"); 
+					}
 					break;
 				case NODE_DFLT:
 					bputs("changing defaults");
@@ -465,7 +498,9 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 						if(node->aux&0x1f00) { /* password */
 							outchar('*');
 							if(SYSOP)
-								bprintf(" %s",unpackchatpass(tmp,node)); } }
+								bprintf(" %s",unpackchatpass(tmp,node)); 
+						} 
+					}
 					else
 						bputs("in multinode global chat channel");
 					break;
@@ -505,18 +540,21 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			if(node->action==NODE_DLNG) {
 				if(cfg.sys_misc&SM_MILITARY) {
 					hour=node->aux/60;
-					mer[0]=0; }
+					mer[0]=0; 
+				}
 				else if((node->aux/60)>=12) {
 					if(node->aux/60==12)
 						hour=12;
 					else
 						hour=(node->aux/60)-12;
-					strcpy(mer,"pm"); }
+					strcpy(mer,"pm"); 
+				}
 				else {
 					if((node->aux/60)==0)    /* 12 midnite */
 						hour=12;
 					else hour=node->aux/60;
-					strcpy(mer,"am"); }
+					strcpy(mer,"am"); 
+				}
 				bprintf(" ETA %02d:%02d %s"
 					,hour,node->aux%60,mer); 
 			}

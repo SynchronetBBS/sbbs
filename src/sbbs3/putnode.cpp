@@ -42,7 +42,7 @@
 /* getnodedat(num,&node,1); must have been called before calling this func  */
 /*          NOTE: ------^   the indicates the node record has been locked   */
 /****************************************************************************/
-void sbbs_t::putnodedat(uint number, node_t* node)
+int sbbs_t::putnodedat(uint number, node_t* node)
 {
 	char	str[256],firston[25];
 	int		wr=0;
@@ -50,11 +50,11 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 	int		attempts;
 
 	if(!number)
-		return;
+		return(-1);
 
 	if(number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return; 
+		return(-1); 
 	}
 	if(number==cfg.node_num) {
 		if((node->status==NODE_INUSE || node->status==NODE_QUIET)
@@ -73,15 +73,17 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 				,node->aux&0xff
 				,node->connection
 				);
-			putnodeext(number,str); }
+			putnodeext(number,str); 
+		}
 		else
-			node->misc&=~NODE_EXT; }
+			node->misc&=~NODE_EXT; 
+	}
 
 	if(nodefile==-1) {
 		sprintf(str,"%snode.dab",cfg.ctrl_dir);
 		if((nodefile=nopen(str,O_CREAT|O_RDWR|O_DENYNONE))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_RDWR|O_DENYNONE);
-			return; 
+			return(errno); 
 		}
 	}
 
@@ -104,13 +106,16 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 	if(wr!=sizeof(node_t)) {
 		errno=wrerr;
 		errormsg(WHERE,ERR_WRITE,"nodefile",number+1);
+		return(errno);
 	}
+
+	return(0);
 }
 
 /****************************************************************************/
 /* Creates a short message for node 'num' than contains 'strin'             */
 /****************************************************************************/
-void sbbs_t::putnmsg(int num, char *strin)
+int sbbs_t::putnmsg(int num, char *strin)
 {
     char str[256];
     int file,i;
@@ -119,36 +124,42 @@ void sbbs_t::putnmsg(int num, char *strin)
 	sprintf(str,"%smsgs/n%3.3u.msg",cfg.data_dir,num);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT);
-		return; }
+		return(errno); 
+	}
 	lseek(file,0L,SEEK_END);	// Instead of opening with O_APPEND
 	i=strlen(strin);
 	if(write(file,strin,i)!=i) {
 		close(file);
 		errormsg(WHERE,ERR_WRITE,str,i);
-		return; }
+		return(errno); 
+	}
 	close(file);
 	getnodedat(num,&node,0);
 	if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 		&& !(node.misc&NODE_NMSG)) {
 		getnodedat(num,&node,1);
 		node.misc|=NODE_NMSG;
-		putnodedat(num,&node); }
+		putnodedat(num,&node); 
+	}
+
+	return(0);
 }
 
-void sbbs_t::putnodeext(uint number, char *ext)
+int sbbs_t::putnodeext(uint number, char *ext)
 {
     char	str[MAX_PATH+1];
     int		count;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return; }
+		return(-1); 
+	}
 	number--;   /* make zero based */
 
 	sprintf(str,"%snode.exb",cfg.ctrl_dir);
 	if((node_ext=nopen(str,O_CREAT|O_RDWR|O_DENYNONE))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_RDWR|O_DENYNONE);
-		return; 
+		return(errno); 
 	}
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		if(count)
@@ -169,8 +180,8 @@ void sbbs_t::putnodeext(uint number, char *ext)
 	}
 	if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,ERR_WRITE,"NODE.EXB",number+1);
-		return; 
+		return(-2); 
 	}
+
+	return(0);
 }
-
-
