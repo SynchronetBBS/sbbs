@@ -187,11 +187,11 @@ static void client_off(SOCKET sock)
 	}
 }
 
-static void thread_up(void)
+static void thread_up(BOOL setuid)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(TRUE);
+		startup->thread_up(TRUE,setuid);
 }
 
 static void thread_down(void)
@@ -205,7 +205,7 @@ static void thread_down(void)
 			return;
 		}
 #endif
-		startup->thread_up(FALSE);
+		startup->thread_up(FALSE,FALSE);
 	}
 }
 
@@ -589,7 +589,7 @@ static void pop3_thread(void* arg)
 	mail_t*		mail;
 	pop3_t		pop3=*(pop3_t*)arg;
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 	free(arg);
 
@@ -1262,7 +1262,7 @@ static void smtp_thread(void* arg)
 
 	} cmd = SMTP_CMD_NONE;
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 	free(arg);
 
@@ -2392,7 +2392,7 @@ static void sendmail_thread(void* arg)
 
 	sendmail_running=TRUE;
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 	lprintf("0000 SendMail thread started");
 
@@ -2828,7 +2828,7 @@ void DLLCALL mail_server(void* arg)
 	recycle_server=TRUE;
 	do {
 
-		thread_up();
+		thread_up(FALSE /* setuid */);
 
 		status("Initializing");
 

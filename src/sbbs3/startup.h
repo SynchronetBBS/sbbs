@@ -72,10 +72,10 @@ typedef struct {
     void	(*started)(void);
     void	(*terminated)(int code);
     void	(*clients)(int active);
-    void	(*thread_up)(BOOL up);
+    void	(*thread_up)(BOOL up, BOOL setuid);
 	void	(*socket_open)(BOOL open);
     void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
-    BOOL	(*seteuid)(BOOL user);	// Set Unix uid for thread
+    BOOL	(*seteuid)(BOOL user);	// Set Unix uid for thread (bind)
     void	(*reserved_fptr3)(void);
     void	(*reserved_fptr2)(void);
     void	(*reserved_fptr1)(void);
