@@ -1597,7 +1597,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     delete Registry;
 
     if(!FileExists(CtrlDirectory+"MAIN.CNF")) {
-    	Sleep(3000);	// Let 'em see the logo for a bit
 		Application->CreateForm(__classid(TCtrlPathDialog), &CtrlPathDialog);
     	if(CtrlPathDialog->ShowModal()!=mrOk) {
         	Application->Terminate();
