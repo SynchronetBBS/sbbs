@@ -153,7 +153,7 @@ static ini_bitdesc_t log_mask_bits[] = {
 	{ -1							,NULL					}
 };
 
-#define DEFAULT_LOG_MASK		0x3f	/* LOG_EMERG|LOG_ALERT|LOG_CRIT|LOG_ERR|LOG_WARNING|LOG_NOTICE */
+#define DEFAULT_LOG_MASK		0x1f	/* EMERG|ALERT|CRIT|ERR|WARNING */
 
 void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* host_name)
 {
