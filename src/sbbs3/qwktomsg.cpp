@@ -240,7 +240,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				continue;
 			if(qwkbuf[k]!=1 && lastch!=1)
 				col++;
-			if(lastch==1 && !validattr(qwkbuf[k])) {
+			if(lastch==CTRL_A && !validattr(qwkbuf[k])) {
 				if(taillen) taillen--;
 				else		bodylen--;
 				lastch=0;

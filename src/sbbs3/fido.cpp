@@ -321,7 +321,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 
 		l=0L;
 		while(l<length) {
-			if(buf[l]==1)	/* Ctrl-A, so skip it and the next char */
+			if(buf[l]==CTRL_A)	/* Ctrl-A, so skip it and the next char */
 				l++;
 			else if(buf[l]!=LF) {
 				if((uchar)buf[l]==0x8d)   /* r0dent i converted to normal i */
@@ -836,7 +836,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		l++; }
 
 	while(l<n*128L) {
-		if(qwkbuf[l]==1)   /* Ctrl-A, so skip it and the next char */
+		if(qwkbuf[l]==CTRL_A)   /* Ctrl-A, so skip it and the next char */
 			l++;
 		else if(qwkbuf[l]!=LF) {
 			if((uchar)qwkbuf[l]==0xe3) /* QWK cr/lf char converted to hard CR */

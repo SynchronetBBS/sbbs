@@ -82,7 +82,7 @@ int sbbs_t::stripattr(char *strin)
 
 	e=strlen(strin);
 	for(a=c=d=0;c<e && d<sizeof(str)-1;c++) {
-		if(strin[c]==1) {
+		if(strin[c]==CTRL_A) {
 			a++;
 			if(!validattr(strin[c+1])) {
 				c++;

@@ -264,7 +264,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			if(sys_status&SS_ABORT) {  /* Ctrl-C */
 				LFREE(buf);
 				return(false); }
-			if((c==ESC || c==1) && useron.rest&FLAG('A')) /* ANSI restriction */
+			if((c==ESC || c==CTRL_A) && useron.rest&FLAG('A')) /* ANSI restriction */
 				continue;
 			if(c==BEL && useron.rest&FLAG('B'))   /* Beep restriction */
 				continue;

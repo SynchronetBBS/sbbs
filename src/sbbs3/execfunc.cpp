@@ -371,7 +371,7 @@ int sbbs_t::exec_function(csi_t *csi)
 					}
 					continue;
 				}
-				if(ch==16) {	/* Ctrl-P Private node-node comm */
+				if(ch==CTRL_P) {		/* Private node-node comm */
 					lncntr=0;						/* defeat pause */
 					spy_socket[i-1]=INVALID_SOCKET;	/* disable spy output */
 					nodesync(); 					/* read waiting messages */
@@ -379,7 +379,7 @@ int sbbs_t::exec_function(csi_t *csi)
 					spy_socket[i-1]=client_socket;	/* enable spy output */
 					continue; 
 				}
-				if(ch==21) {	/* Ctrl-U Users online */
+				if(ch==CTRL_U) {		/* Users online */
 					lncntr=0;			/* defeat pause */
 					whos_online(true); 	/* list users */
 					continue;

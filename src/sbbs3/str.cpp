@@ -51,7 +51,7 @@ char* DLLCALL remove_ctrl_a(char *instr, char *outstr)
 
 	j=strlen(instr);
 	for(k=i=0;i<j;i++) {
-		if(instr[i]==1)
+		if(instr[i]==CTRL_A)
 			i++;
 		else str[k++]=instr[i]; }
 	str[k]=0;
@@ -490,7 +490,7 @@ uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
 				outchar(BS);
 			bputs(" \b");
 			continue; }
-		if(ch==24) {	/* Ctrl-X */
+		if(ch==CTRL_X) {
 			for(;c;c--) {
 				outchar(BS);
 				if(tmplt[c-1]=='N' || tmplt[c-1]=='A' || tmplt[c-1]=='!')

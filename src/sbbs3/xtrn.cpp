@@ -53,7 +53,7 @@ BYTE* wwiv_expand(BYTE* buf, ulong buflen, BYTE* outbuf, ulong& newlen
 	ulong 	i,j,k;
 
     for(i=j=0;i<buflen;i++) {
-        if(buf[i]==3) {	/* ctrl-c, WWIV color escape char */
+        if(buf[i]==CTRL_C) {	/* WWIV color escape char */
             ctrl_c=true;
             continue;
         }
