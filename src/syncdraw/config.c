@@ -16,7 +16,7 @@ loadconfig(void)
 	FILE           *fp;
 	int             ver, i;
 	char            fname[255];
-	sprintf(fname, "%s%s", getenv("HOME"), CONFIGFILE);
+	sprintf(fname, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), CONFIGFILE);
 	fp = fopen(fname, "rb");
 	if (fp != NULL) {
 		fread(&ver, 4, 1, fp);
@@ -42,7 +42,7 @@ saveconfig(void)
 	FILE           *fp;
 	int             ver = 2, i;
 	char            fname[255];
-	sprintf(fname, "%s%s", getenv("HOME"), CONFIGFILE);
+	sprintf(fname, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), CONFIGFILE);
 	fp = fopen(fname, "wb");
 	if (fp != NULL) {
 		fwrite(&ver, 4, 1, fp);

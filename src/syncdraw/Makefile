@@ -4,7 +4,7 @@ SRC_ROOT        = ..
 CFLAGS  =       $(CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 LDFLAGS =       $(LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
 
-$(MDRAW): mdraw.res $(OBJS)
+$(MDRAW): $(OBJS)
         @echo Linking $@
         ${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -e$@ $(OBJS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
@@ -15,6 +15,3 @@ $(FONTUTIL): $(FU-OBJS)
 $(BUILDFONT): $(BF-OBJS)
         @echo Linking $@
         ${QUIET}$(CC) $(LDFLAGS) -e$@ $(BF-OBJS) $(XPDEV_LIBS)
-
-mdraw.res: mdraw.ico mdraw.rc
-	brc32 -32 -r mdraw.rc
