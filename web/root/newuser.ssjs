@@ -339,7 +339,8 @@ function genpass() {
 	var pw='';
 
 	for(i=0;i<8;i++) {
-		pw+=pwchars.substr(random(pwchars.length),1);
+		pw+=pwchars.substr(parseInt(Math.random() * pwchars.length),1);
+
 	}
 	return(pw);
 }
