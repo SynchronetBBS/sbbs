@@ -7,5 +7,8 @@
             <link rel="stylesheet" href="/synchronet.css" type="text/css" />
     </head>
 <body>
+<p class="title">@@JS:system.name@@</p>
+
+
 
 
