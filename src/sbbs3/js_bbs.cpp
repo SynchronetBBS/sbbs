@@ -1005,12 +1005,15 @@ js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_atcode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	char		str[128];
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	char* p = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+
+	p=sbbs->atcode(p,str);
 
 	if(p==NULL)
 		*rval = JSVAL_NULL;
