@@ -1383,19 +1383,21 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 			answers=0;
 			while(*ptr && answers<100 && ptr<gurubuf+len) {
 				i=0;
-				while(*ptr && *ptr!=CR && i<512 && ptr<gurubuf+len) {
+				while(*ptr && *ptr!=CR && *ptr!=LF && i<512 && ptr<gurubuf+len) {
 					answer[answers][i]=*ptr;
 					ptr++;
 					i++;
-					if(*ptr=='\\' && *(ptr+1)==CR) {	/* multi-line answer */
-						ptr+=3;	/* skip \CRLF */
+					/* multi-line answer */
+					if(*ptr=='\\' && (*(ptr+1)==CR || *(ptr+1)==LF)) {
+						ptr++;	/* skip \ */
+						while(*ptr && *ptr<SP) ptr++;	/* skip [CR]LF */
 						answer[answers][i++]=CR;
 						answer[answers][i++]=LF; } }
 				answer[answers][i]=0;
 				if(!strlen(answer[answers]) || answer[answers][0]=='(') {
 					ptr-=strlen(answer[answers]);
 					break; }
-				ptr+=2;	/* skip CRLF */
+				while(*ptr && *ptr<SP) ptr++;	/* skip [CR]LF */
 				answers++; }
 			if(answers==100)
 				while(*ptr && *ptr!='(' && ptr<gurubuf+len)
