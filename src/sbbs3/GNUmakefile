@@ -252,28 +252,28 @@ FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@ 
+	$(QUIET)$(CC) $(LFLAGS) $^ -shared -o $@ 
 
 # Mail Server Link Rule
 FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ -shared -o $@
 
 # Mail Server Link Rule
 FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 
 $(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ -shared -o $@
 
 # Services Link Rule
 FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
 
 $(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ -shared -o $@
 
 # Synchronet Console Build Rule
 FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
@@ -500,7 +500,7 @@ JSEXEC_OBJS = \
 
 FORCE$(JSEXEC): $(JSEXEC_OBJS)
 
-$(JSEXEC): $(JSEXEC_OBJS) $(LIBS)
+$(JSEXEC): $(JSEXEC_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
 	
