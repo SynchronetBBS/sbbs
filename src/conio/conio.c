@@ -520,18 +520,21 @@ void ciowrap_clrscr(void)
 {
 	char *buf;
 	int i;
+	int width,height;
 	struct text_info ti;
 
 	if(!initialized)
 		initciowrap(CIOWRAP_AUTO_MODE);
 	ciowrap_gettextinfo(&ti);
 
-	buf=(char *)malloc(ti.screenheight*ti.screenwidth*2);
-	for(i=0;i<ti.screenheight*ti.screenwidth*2;) {
+	width=ti.winright-ti.winleft+1;
+	height=ti.winbottom-ti.wintop+1;
+	buf=(char *)malloc(width*height*2);
+	for(i=0;i<width*height*2;) {
 		buf[i++]=' ';
 		buf[i++]=ti.attribute;
 	}
-	ciowrap_puttext(1,1,ti.screenwidth,ti.screenheight,buf);
+	ciowrap_puttext(ti.winleft,ti.wintop,ti.winright,ti.winbottom,buf);
 	free(buf);
 }
 
