@@ -60,7 +60,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 		wave[i]=127;
 	}
 	/* Fade out */
-	for(k=2;k<=10;k++) {
+	for(k=10;k>1;k--) {
 		for(;i>0;i--) {
 			if(!endhigh && wave[i]<=127)
 				break;
@@ -96,7 +96,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 		wave[i]=127;
 	}
 	/* Fade in */
-	for(k=2;k<=10;k++) {
+	for(k=10;k>1;k--) {
 		for(;i<samples;i--) {
 			if(!starthigh && wave[i]<=127)
 				break;
@@ -152,7 +152,8 @@ void SineBeep(double freq, DWORD duration)
 		goto abrt;
 	if(waveOutWrite(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR)
 		goto abrt;
-	SLEEP(duration);
+	while(!(wh.dwFlags&WHDR_DONE))
+		SLEEP(1);
 abrt:
 	waveOutUnprepareHeader(waveOut, &wh, sizeof(wh));
 	waveOutReset(waveOut);
