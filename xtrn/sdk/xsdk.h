@@ -71,9 +71,15 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef USE_XPDEV
+#include "semwrap.h"
+#endif
+
 #define GLOBAL extern	/* turns XSDKVARS.C into a header file */
 #include "xsdkinet.h"
+#ifndef USE_XPDEV
 #include "xsdkwrap.h"
+#endif
 #include "xsdkvars.c"
 
 #ifdef __cplusplus
@@ -195,11 +201,17 @@ int  nopen(char *str, int access);
 
 /* Truncate Space
 	- Removes white space characters from the end of a string */
+#ifdef USE_XPDEV
+#include <genwrap.h>
+#else
 void truncsp(uchar *str);
+#endif
 
-#ifndef USE_XPDEV
 /* Adds Backslash
 	- Adds backslash to end of string if it doesn't exist */
+#ifdef USE_XPDEV
+#include <dirwrap.h>
+#else
 void backslash(char *str);
 #endif
 

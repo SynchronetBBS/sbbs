@@ -1989,13 +1989,7 @@ void initdata(void)
 	else				/* Version 1a */
 		name_len=30;
 
-#ifdef __unix__
-	#ifdef USE_XPDEV
-		initciowrap();
-	#else
-		_termios_setup();
-	#endif
-#endif
+	_termios_setup();
 
 	if(client_socket==INVALID_SOCKET)
 		xsdk_mode&=~XSDK_MODE_NOCONSOLE;
@@ -2037,6 +2031,7 @@ void get_term(void)
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str' and terminates at first tab */
 /****************************************************************************/
+#ifndef USE_XPDEV
 void truncsp(uchar *str)
 {
 	char c;
@@ -2046,6 +2041,7 @@ void truncsp(uchar *str)
 	while(c && (uchar)str[c-1]<=' ') c--;
 	str[c]=0;
 }
+#endif
 
 /****************************************************************************/
 /* Puts a backslash on path strings 										*/
