@@ -39,6 +39,18 @@ function writeln(str)
 	write(str + "\r\n");
 }
 
+function xtrn_name(code)
+{
+	if(this.xtrn_area==undefined)
+		return(code);
+
+	for(s in xtrn_area.sec_list)
+		for(p in xtrn_area.sec_list[s].prog_list)
+			if(xtrn_area.sec_list[s].prog_list[p].code.toLowerCase()==code.toLowerCase())
+				return(xtrn_area.sec_list[s].prog_list[p].name);
+	return(code);
+}
+
 // Get HTTP Request
 while(client.socket.data_waiting) {
 	request = client.socket.recvline(128 /*maxlen*/, 3 /*timeout*/);
@@ -136,7 +148,7 @@ for(n=0;n<system.node_list.length;n++) {
 	if(system.node_list[n].status==NODE_INUSE) {
 		user.number=system.node_list[n].useron;
 		if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-			action=format("running %s",user.curxtrn);
+			action=format("running %s",xtrn_name(user.curxtrn));
 		else
 			action=format(NodeAction[system.node_list[n].action]
 				,system.node_list[n].aux);
