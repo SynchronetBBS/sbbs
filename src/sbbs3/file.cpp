@@ -213,9 +213,11 @@ char * sbbs_t::getfilespec(char *str)
 {
 	bputs(text[FileSpecStarDotStar]);
 	if(!getstr(str,12,K_UPPER))
-		strcpy(str,"*.*");
+		strcpy(str,ALLFILES);
+#ifndef __unix__
 	else if(!strchr(str,'.') && strlen(str)<=8)
 		strcat(str,".*");
+#endif
 	if(sys_status&SS_ABORT)
 		return(0);
 	return(str);
