@@ -442,7 +442,7 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 	if(exist && !(cfg.file_misc&FM_NO_LFN)) {
 		fexistcase(path);	/* Get real (long?) filename */
 		ptr=getfname(path);
-		if(stricmp(ptr,fname) && stricmp(ptr,str))
+		if(stricmp(ptr,tmp) && stricmp(ptr,str))
 			bprintf("%.*s\r\n%21s",LEN_FDESC,ptr,"");
 	}
 
