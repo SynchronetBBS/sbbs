@@ -53,9 +53,10 @@ extern "C" {
 
 /* Valid link_list_t.flags bits */
 #define LINK_LIST_MALLOC		(1<<0)	/* List/node allocated with malloc() */
-#define LINK_LIST_ALWAYS_FREE	(1<<1)	/* Always free node data when removing */
-#define LINK_LIST_MUTEX			(1<<2)	/* Mutex protected linked-list */
-#define LINK_LIST_NODE_LOCKED	(1<<3)	/* Node is locked */
+#define LINK_LIST_ALWAYS_FREE	(1<<1)	/* ALWAYS free node data when removing */
+#define LINK_LIST_NEVER_FREE	(1<<2)	/* NEVER free node data when removing */
+#define LINK_LIST_MUTEX			(1<<3)	/* Mutex protected linked-list */
+#define LINK_LIST_NODE_LOCKED	(1<<4)	/* Node is locked */
 
 typedef struct list_node {
 	void*				data;		/* pointer to some kind of data */

@@ -89,7 +89,8 @@ long listFreeNodes(link_list_t* list)
 		if(node->flags&LINK_LIST_NODE_LOCKED)
 			break;
 
-		if(list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
+		if((list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
+			&& !(list->flags&LINK_LIST_NEVER_FREE))
 			listFreeNodeData(node);
 
 		next = node->next;
@@ -428,16 +429,12 @@ list_node_t* listAddNodeString(link_list_t* list, const char* str, list_node_t* 
 {
 	list_node_t*	node;
 	char*			buf;
-	size_t			length;
 
 	if(str==NULL)
 		return(NULL);
 
-	length = strlen(str)+1;
-
-	if((buf=(char*)malloc(length))==NULL)
+	if((buf=strdup(str))==NULL)
 		return(NULL);
-	memcpy(buf,str,length);
 
 	if((node=listAddNode(list,buf,after))==NULL) {
 		free(buf);
@@ -542,7 +539,8 @@ void* listRemoveNode(link_list_t* list, list_node_t* node)
 	if(list->last==node)
 		list->last = node->prev;
 
-	if(list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
+	if((list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
+		&& !(list->flags&LINK_LIST_NEVER_FREE))
 		listFreeNodeData(node);
 
 	data = node->data;
@@ -623,7 +621,7 @@ int main(int arg, char** argv)
 	char	str[32];
 	link_list_t list;
 
-	listInit(&list,0);
+	listInit(&list,LINK_LIST_NEVER_FREE);
 	for(i=0; i<100; i++) {
 		sprintf(str,"%u",i);
 		listPushNodeString(&list,str);
@@ -632,6 +630,7 @@ int main(int arg, char** argv)
 	while((p=listRemoveNode(&list,NULL))!=NULL)
 		printf("%d %s\n",listCountNodes(&list),p), free(p);
 
+	/* Yes, this test code leaks heap memory. :-) */
 	gets(str);
 	return 0;
 }
