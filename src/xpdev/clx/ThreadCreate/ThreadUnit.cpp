@@ -34,10 +34,11 @@ void __fastcall TMyThread::Execute()
 {
 	while(!Terminated) {
     	Synchronize(AddToLog);
+        /* TThreadList is a simplier way to use a thread-safe TList */
 		CriticalSection->Enter();
 		List->Add(new AnsiString(ThreadID));
         CriticalSection->Leave();
- 	    Sleep(1);
+ 	    Sleep(1000);
     }
 }
 //---------------------------------------------------------------------------
