@@ -828,6 +828,8 @@ void input_thread(void *arg)
 	}
 
     sbbs->input_thread_running = false;
+	if(node_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)	// Shutdown locally
+		sbbs->terminated = true;	// Signal JS to stop execution
 
 	pthread_mutex_destroy(&sbbs->input_thread_mutex);
 
@@ -2602,6 +2604,7 @@ void node_thread(void* arg)
 	time_t			now;
 	node_t			node;
 	user_t			user;
+	SOCKET			client_socket;
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
@@ -2613,6 +2616,8 @@ void node_thread(void* arg)
 
 	srand(clock());		/* Seed random number generator */
 	sbbs_random(10);	/* Throw away first number */
+
+	client_socket = node_socket[sbbs->cfg.node_num-1];
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
@@ -2681,8 +2686,8 @@ void node_thread(void* arg)
 		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
+	client_off(client_socket);
 	sbbs->hangup();	/* just to be sure we shut down the output_thread */
-	client_off(node_socket[sbbs->cfg.node_num-1]);
     node_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 
 	sbbs->logout();
@@ -3639,6 +3644,7 @@ void DLLCALL bbs_thread(void* arg)
     	if(node_socket[i]!=INVALID_SOCKET) {
         	lprintf("Closing node %d socket %d", i+1, node_socket[i]);
         	close_socket(node_socket[i]);
+			node_socket[i]=INVALID_SOCKET;
         }
 
 	sbbs->client_socket=INVALID_SOCKET;
