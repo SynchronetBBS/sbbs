@@ -60,7 +60,7 @@ extern const uchar* nular;
 #define FREE_AR(x)		if(x!=NULL && x!=nular)	{ FREE(x); x=NULL; }	
 
 char*	get_alloc(long *offset, char *outstr, int maxlen, FILE *instream);
-BOOL	allocerr(char* error, long offset, char *fname, uint size);
+BOOL	allocerr(FILE*, char* error, long offset, char *fname, uint size);
 char*	readline(long *offset, char *str, int maxlen, FILE *stream);
 
 BOOL	read_node_cfg(scfg_t* cfg, char* error);

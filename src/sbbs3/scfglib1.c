@@ -48,10 +48,11 @@ const char *scfgnulstr="";
 	truncsp()
 ***/
 
-BOOL allocerr(char* error, long offset, char *fname, uint size)
+BOOL allocerr(FILE* fp, char* error, long offset, char *fname, uint size)
 {
 	sprintf(error,"offset %ld in %s, allocating %u bytes of memory"
 		,offset,fname,size);
+	fclose(fp);
 	return(FALSE);
 }
 
@@ -77,6 +78,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 	if(!cfg->node_num) {
 		sprintf(error,"offset %ld in %s, Node number must be non-zero"
 			,offset,fname);
+		fclose(instream);
 		return(FALSE); 
 	}
 	get_str(cfg->node_name,instream);
@@ -157,7 +159,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 	if(cfg->mdm_results) {
 		if((cfg->mdm_result=(mdm_result_t *)MALLOC(sizeof(mdm_result_t)*cfg->mdm_results))
 			==NULL)
-		return allocerr(error,offset,fname,sizeof(mdm_result_t *)*cfg->mdm_results);
+		return allocerr(instream,error,offset,fname,sizeof(mdm_result_t *)*cfg->mdm_results);
 	} else
 		cfg->mdm_result=NULL;
 
@@ -207,13 +209,14 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 		else
 			sprintf(error,"Total nodes (%u) < node number in NODE.CNF (%u)"
 				,cfg->sys_nodes,cfg->node_num);
+		fclose(instream);
 		return(FALSE); 
 	}
 
 #if 0	/* old dynamic way */
 
 	if((cfg->node_path=(char **)MALLOC(sizeof(char *)*cfg->sys_nodes))==NULL)
-		return allocerr(error,offset,fname,sizeof(char *)*cfg->sys_nodes);
+		return allocerr(instream,error,offset,fname,sizeof(char *)*cfg->sys_nodes);
 
 	for(i=0;i<cfg->sys_nodes;i++) {
 		if(feof(instream)) break;
@@ -221,7 +224,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 		prep_dir(cfg->ctrl_dir, str);
 		offset+=LEN_DIR+1;
 		if((cfg->node_path[i]=(char *)MALLOC(strlen(str)+1))==NULL)
-			return allocerr(error,offset,fname,strlen(str)+1);
+			return allocerr(instream,error,offset,fname,strlen(str)+1);
 		strcpy(cfg->node_path[i],str); 
 	}
 
@@ -337,11 +340,13 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 
 	for(i=0;i<100 && !feof(instream);i++) {
 		get_int(cfg->level_timeperday[i],instream);
+#if 0	/* removed May 06, 2002 */
 		if(cfg->level_timeperday[i]>500)
 			cfg->level_timeperday[i]=500;
 		get_int(cfg->level_timepercall[i],instream);
 		if(cfg->level_timepercall[i]>500)
 			cfg->level_timepercall[i]=500;
+#endif
 		get_int(cfg->level_callsperday[i],instream);
 		get_int(cfg->level_freecdtperday[i],instream);
 		get_int(cfg->level_linespermsg[i],instream);
@@ -356,6 +361,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	if(i!=100) {
 		sprintf(error,"Insufficient User Level Information"
 			"%d user levels read, 100 needed.",i);
+		fclose(instream);
 		return(FALSE); 
 	}
 
@@ -363,20 +369,21 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	#ifdef SBBS
 	if(!cfg->total_shells) {
 		sprintf(error,"At least one command shell must be configured.");
+		fclose(instream);
 		return(FALSE); 
 	}
 	#endif
 
 	if(cfg->total_shells) {
 		if((cfg->shell=(shell_t **)MALLOC(sizeof(shell_t *)*cfg->total_shells))==NULL)
-			return allocerr(error,offset,fname,sizeof(shell_t *)*cfg->total_shells);
+			return allocerr(instream,error,offset,fname,sizeof(shell_t *)*cfg->total_shells);
 	} else
 		cfg->shell=NULL;
 
 	for(i=0;i<cfg->total_shells;i++) {
 		if(feof(instream)) break;
 		if((cfg->shell[i]=(shell_t *)MALLOC(sizeof(shell_t)))==NULL)
-			return allocerr(error,offset,fname,sizeof(shell_t));
+			return allocerr(instream,error,offset,fname,sizeof(shell_t));
 		memset(cfg->shell[i],0,sizeof(shell_t));
 
 		get_str(cfg->shell[i]->name,instream);
@@ -437,7 +444,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_grps) {
 		if((cfg->grp=(grp_t **)MALLOC(sizeof(grp_t *)*cfg->total_grps))==NULL)
-			return allocerr(error,offset,fname,sizeof(grp_t *)*cfg->total_grps);
+			return allocerr(instream,error,offset,fname,sizeof(grp_t *)*cfg->total_grps);
 	} else
 		cfg->grp=NULL;
 
@@ -445,7 +452,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 		if(feof(instream)) break;
 		if((cfg->grp[i]=(grp_t *)MALLOC(sizeof(grp_t)))==NULL)
-			return allocerr(error,offset,fname,sizeof(grp_t));
+			return allocerr(instream,error,offset,fname,sizeof(grp_t));
 		memset(cfg->grp[i],0,sizeof(grp_t));
 
 		get_str(cfg->grp[i]->lname,instream);
@@ -467,14 +474,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_subs) {
 		if((cfg->sub=(sub_t **)MALLOC(sizeof(sub_t *)*cfg->total_subs))==NULL)
-			return allocerr(error,offset,fname,sizeof(sub_t *)*cfg->total_subs);
+			return allocerr(instream,error,offset,fname,sizeof(sub_t *)*cfg->total_subs);
 	} else
 		cfg->sub=NULL;
 
 	for(i=0;i<cfg->total_subs;i++) {
 		if(feof(instream)) break;
 		if((cfg->sub[i]=(sub_t *)MALLOC(sizeof(sub_t)))==NULL)
-			return allocerr(error,offset,fname,sizeof(sub_t));
+			return allocerr(instream,error,offset,fname,sizeof(sub_t));
 		memset(cfg->sub[i],0,sizeof(sub_t));
 
 		get_int(cfg->sub[i]->grp,instream);
@@ -518,6 +525,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 				sprintf(error,"offset %ld in %s: Duplicate pointer index for subs #%d and #%d"
 					,offset,fname
 					,i+1,j+1);
+				fclose(instream);
 				return(FALSE); 
 			}
 #endif
@@ -540,7 +548,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_faddrs) {
 		if((cfg->faddr=(faddr_t *)MALLOC(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
-			return allocerr(error,offset,fname,sizeof(faddr_t)*cfg->total_faddrs);
+			return allocerr(instream,error,offset,fname,sizeof(faddr_t)*cfg->total_faddrs);
 	} else
 		cfg->faddr=NULL;
 
@@ -569,14 +577,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_qhubs) {
 		if((cfg->qhub=(qhub_t **)MALLOC(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
-			return allocerr(error,offset,fname,sizeof(qhub_t*)*cfg->total_qhubs);
+			return allocerr(instream,error,offset,fname,sizeof(qhub_t*)*cfg->total_qhubs);
 	} else
 		cfg->qhub=NULL;
 
 	for(i=0;i<cfg->total_qhubs;i++) {
 		if(feof(instream)) break;
 		if((cfg->qhub[i]=(qhub_t *)MALLOC(sizeof(qhub_t)))==NULL)
-			return allocerr(error,offset,fname,sizeof(qhub_t));
+			return allocerr(instream,error,offset,fname,sizeof(qhub_t));
 		memset(cfg->qhub[i],0,sizeof(qhub_t));
 
 		get_str(cfg->qhub[i]->id,instream);
@@ -591,11 +599,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 		if(k) {
 			if((cfg->qhub[i]->sub=(ushort *)MALLOC(sizeof(ushort)*k))==NULL)
-				return allocerr(error,offset,fname,sizeof(uint)*k);
+				return allocerr(instream,error,offset,fname,sizeof(uint)*k);
 			if((cfg->qhub[i]->conf=(ushort *)MALLOC(sizeof(ushort)*k))==NULL)
-				return allocerr(error,offset,fname,sizeof(ushort)*k);
+				return allocerr(instream,error,offset,fname,sizeof(ushort)*k);
 			if((cfg->qhub[i]->mode=(char *)MALLOC(sizeof(char)*k))==NULL)
-				return allocerr(error,offset,fname,sizeof(uchar)*k);
+				return allocerr(instream,error,offset,fname,sizeof(uchar)*k);
 		}
 
 		for(j=0;j<k;j++) {
@@ -629,14 +637,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_phubs) {
 		if((cfg->phub=(phub_t **)MALLOC(sizeof(phub_t *)*cfg->total_phubs))==NULL)
-			return allocerr(error,offset,fname,sizeof(phub_t*)*cfg->total_phubs);
+			return allocerr(instream,error,offset,fname,sizeof(phub_t*)*cfg->total_phubs);
 	} else
 		cfg->phub=NULL;
 
 	for(i=0;i<cfg->total_phubs;i++) {
 		if(feof(instream)) break;
 		if((cfg->phub[i]=(phub_t *)MALLOC(sizeof(phub_t)))==NULL)
-			return allocerr(error,offset,fname,sizeof(phub_t));
+			return allocerr(instream,error,offset,fname,sizeof(phub_t));
 		memset(cfg->phub[i],0,sizeof(phub_t));
 
 		get_str(cfg->phub[i]->name,instream);
