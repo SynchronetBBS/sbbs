@@ -770,7 +770,7 @@ extern "C" {
 
 	/* str_util.c */
 	DLLEXPORT void		DLLCALL truncsp(char* str);
-	DLLEXPORT char *	DLLCALL truncate(char* str, const char* set);
+	DLLEXPORT char *	DLLCALL truncstr(char* str, const char* set);
 	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
 	DLLEXPORT BOOL		DLLCALL findstr(char *insearch, char *fname);
 	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);

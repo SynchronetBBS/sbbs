@@ -244,7 +244,7 @@ void DLLCALL truncsp(char *str)
 /****************************************************************************/
 /* Truncate string at first occurance of char in specified character set	*/
 /****************************************************************************/
-char* DLLCALL truncate(char* str, const char* set)
+char* DLLCALL truncstr(char* str, const char* set)
 {
 	char* p;
 
