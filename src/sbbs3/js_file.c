@@ -668,13 +668,22 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(p->fp!=NULL);
 			break;
 		case FILE_PROP_EOF:
-			*vp = BOOLEAN_TO_JSVAL(feof(p->fp)!=0);
+			if(p->fp)
+				*vp = BOOLEAN_TO_JSVAL(feof(p->fp)!=0);
+			else
+				*vp = BOOLEAN_TO_JSVAL(JS_TRUE);
 			break;
 		case FILE_PROP_ERROR:
-			*vp = INT_TO_JSVAL(ferror(p->fp));
+			if(p->fp)
+				*vp = INT_TO_JSVAL(ferror(p->fp));
+			else
+				*vp = INT_TO_JSVAL(0);
 			break;
 		case FILE_PROP_POSITION:
-			*vp = INT_TO_JSVAL(ftell(p->fp));
+			if(p->fp)
+				*vp = INT_TO_JSVAL(ftell(p->fp));
+			else
+				*vp = INT_TO_JSVAL(-1);
 			break;
 		case FILE_PROP_LENGTH:
 			if(p->fp)	/* open? */
@@ -689,7 +698,10 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->debug);
 			break;
 		case FILE_PROP_DESCRIPTOR:
-			*vp = INT_TO_JSVAL(fileno(p->fp));
+			if(p->fp)
+				*vp = INT_TO_JSVAL(fileno(p->fp));
+			else
+				*vp = INT_TO_JSVAL(-1);
 			break;
 		case FILE_PROP_ETX:
 			*vp = INT_TO_JSVAL(p->etx);
