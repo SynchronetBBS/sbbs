@@ -2361,6 +2361,142 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsMethodSpec
 	js_DescribeObject(cx,glob,"Top-level functions and properties (common to all servers and services)");
 #endif
 
+	/* Numeric error constants from errno.h (platform-dependant) */
+	if(!JS_DefineProperty(cx, glob, "EPERM",INT_TO_JSVAL(EPERM)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOENT",INT_TO_JSVAL(ENOENT)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ESRCH",INT_TO_JSVAL(ESRCH)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EIO",INT_TO_JSVAL(EIO)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENXIO",INT_TO_JSVAL(ENXIO)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "E2BIG",INT_TO_JSVAL(E2BIG)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOEXEC",INT_TO_JSVAL(ENOEXEC)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EBADF",INT_TO_JSVAL(EBADF)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ECHILD",INT_TO_JSVAL(ECHILD)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EAGAIN",INT_TO_JSVAL(EAGAIN)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOMEM",INT_TO_JSVAL(ENOMEM)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EACCES",INT_TO_JSVAL(EACCES)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EFAULT",INT_TO_JSVAL(EFAULT)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EBUSY",INT_TO_JSVAL(EBUSY)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EEXIST",INT_TO_JSVAL(EEXIST)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EXDEV",INT_TO_JSVAL(EXDEV)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENODEV",INT_TO_JSVAL(ENODEV)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOTDIR",INT_TO_JSVAL(ENOTDIR)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EISDIR",INT_TO_JSVAL(EISDIR)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EINVAL",INT_TO_JSVAL(EINVAL)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENFILE",INT_TO_JSVAL(ENFILE)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EMFILE",INT_TO_JSVAL(EMFILE)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOTTY",INT_TO_JSVAL(ENOTTY)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EFBIG",INT_TO_JSVAL(EFBIG)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOSPC",INT_TO_JSVAL(ENOSPC)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ESPIPE",INT_TO_JSVAL(ESPIPE)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EROFS",INT_TO_JSVAL(EROFS)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EMLINK",INT_TO_JSVAL(EMLINK)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EPIPE",INT_TO_JSVAL(EPIPE)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EDOM",INT_TO_JSVAL(EDOM)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ERANGE",INT_TO_JSVAL(ERANGE)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EDEADLK",INT_TO_JSVAL(EDEADLK)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENAMETOOLONG",INT_TO_JSVAL(ENAMETOOLONG)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOLCK",INT_TO_JSVAL(ENOLCK)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOSYS",INT_TO_JSVAL(ENOSYS)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOTEMPTY",INT_TO_JSVAL(ENOTEMPTY)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+
+	/* Socket errors */
+	if(!JS_DefineProperty(cx, glob, "EINTR",INT_TO_JSVAL(EINTR)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ENOTSOCK",INT_TO_JSVAL(ENOTSOCK)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EMSGSIZE",INT_TO_JSVAL(EMSGSIZE)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EWOULDBLOCK",INT_TO_JSVAL(EWOULDBLOCK)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ECONNRESET",INT_TO_JSVAL(ECONNRESET)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ESHUTDOWN",INT_TO_JSVAL(ESHUTDOWN)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "ECONNABORTED",INT_TO_JSVAL(ECONNABORTED)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+	if(!JS_DefineProperty(cx, glob, "EINPROGRESS",INT_TO_JSVAL(EINPROGRESS)
+		,NULL,NULL,JSPROP_READONLY))
+		return(NULL);
+
 	return(glob);
 }
 
