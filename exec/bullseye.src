@@ -65,7 +65,7 @@ if_true	# not end of file
 		compare_substr str ".htm"
 		replace_text 563 "\1n\1h\1b{\1wContinue? Yes/No\1b} "
 		if_true
-			exec_bin typehtml
+			exec "?typehtml -color %s"
 		else
 			printfile str 0
 			end_if
