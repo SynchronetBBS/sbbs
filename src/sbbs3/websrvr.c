@@ -2443,50 +2443,34 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 }
 
 static JSContext* 
-js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *session)
+js_initcx(http_session_t *session)
 {
 	JSContext*	js_cx;
-	JSObject*	js_glob;
-	BOOL		success=FALSE;
 
 	lprintf(LOG_INFO,"%04d JavaScript: Initializing context (stack: %lu bytes)"
-		,sock,startup->js_cx_stack);
+		,session->socket,startup->js_cx_stack);
 
-    if((js_cx = JS_NewContext(runtime, startup->js_cx_stack))==NULL)
+    if((js_cx = JS_NewContext(session->js_runtime, startup->js_cx_stack))==NULL)
 		return(NULL);
 
-	lprintf(LOG_INFO,"%04d JavaScript: Context created",sock);
+	lprintf(LOG_INFO,"%04d JavaScript: Context created",session->socket);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
-	do {
-
-		lprintf(LOG_INFO,"%04d JavaScript: Initializing Global object",sock);
-		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL))==NULL) 
-			break;
-
-		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
-			break;
-
-		lprintf(LOG_INFO,"%04d JavaScript: Initializing System object",sock);
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
-			break;
-
-		if(js_CreateServerObject(js_cx,js_glob,&js_server_props)==NULL)
-			break;
-
-		if(glob!=NULL)
-			*glob=js_glob;
-
-		success=TRUE;
-
-	} while(0);
-
-	if(!success) {
+	lprintf(LOG_INFO,"%04d JavaScript: Creating Global Objects and Classes",session->socket);
+	if((session->js_glob=js_CreateGlobalObjects(js_cx, &scfg, NULL
+									,NULL						/* global */
+									,uptime						/* system */
+									,startup->host_name			/* system */
+									,SOCKLIB_DESC				/* system */
+									,&session->js_branch		/* js */
+									,&session->client			/* client */
+									,session->socket			/* client */
+		))==NULL
+		|| !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
 		JS_DestroyContext(js_cx);
-		session->js_cx=NULL;
 		return(NULL);
 	}
 
@@ -2509,24 +2493,11 @@ static BOOL js_setup(http_session_t* session)
 	}
 
 	if(session->js_cx==NULL) {	/* Context not yet created, create it now */
-		if(((session->js_cx=js_initcx(session->js_runtime, session->socket
-			,&session->js_glob, session))==NULL)) {
+		if(((session->js_cx=js_initcx(session))==NULL)) {
 			lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript context",session->socket);
 			send_error(session,"500 Error initializing JavaScript context");
 			return(FALSE);
 		}
-		if(js_CreateUserClass(session->js_cx, session->js_glob, &scfg)==NULL) 
-			lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user class",session->socket);
-
-		if(js_CreateFileClass(session->js_cx, session->js_glob)==NULL) 
-			lprintf(LOG_ERR,"%04d !JavaScript ERROR creating File class",session->socket);
-
-		if(js_CreateSocketClass(session->js_cx, session->js_glob)==NULL)
-			lprintf(LOG_ERR,"%04d !JavaScript ERROR creating Socket class",session->socket);
-
-		if(js_CreateMsgBaseClass(session->js_cx, session->js_glob, &scfg)==NULL)
-			lprintf(LOG_ERR,"%04d !JavaScript ERROR creating MsgBase class",session->socket);
-
 		argv=JS_NewArrayObject(session->js_cx, 0, NULL);
 
 		JS_DefineProperty(session->js_cx, session->js_glob, "argv", OBJECT_TO_JSVAL(argv)
