@@ -311,8 +311,10 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 	
 	/* Numeric Header Fields */
-	if(JS_GetProperty(cx, hdr, "attr", &val) && JSVAL_IS_INT(val)) 
+	if(JS_GetProperty(cx, hdr, "attr", &val) && JSVAL_IS_INT(val)) {
 		msg->hdr.attr=(ushort)JSVAL_TO_INT(val);
+		msg->idx.attr=msg->hdr.attr;
+	}
 	if(JS_GetProperty(cx, hdr, "auxattr", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.auxattr=JSVAL_TO_INT(val);
 	if(JS_GetProperty(cx, hdr, "netattr", &val) && JSVAL_IS_INT(val)) 
@@ -592,7 +594,7 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		if(!parse_header_object(cx, p, hdr, &msg))
 			break;
 
-		if(smb_putmsghdr(&(p->smb), &msg)!=0)
+		if(smb_putmsg(&(p->smb), &msg)!=0)
 			break;
 
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
@@ -757,6 +759,7 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		body;
 	JSObject*	hdr;
 	smbmsg_t	msg;
+	jsval		open_rval;
 	private_t*	p;
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -769,8 +772,12 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
-	if(!SMB_IS_OPEN(&(p->smb)))
-		return(JS_TRUE);
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		if(!js_open(cx, obj, 0, NULL, &open_rval))
+			return(JS_FALSE);
+		if(open_rval == JSVAL_FALSE)
+			return(JS_TRUE);
+	}
 
 	memset(&msg,0,sizeof(msg));
 
