@@ -48,21 +48,20 @@
 /* Global variables */
 BOOL				bbs_running=FALSE;
 bbs_startup_t		bbs_startup;
-uint				bbs_client_count=0;
 BOOL				ftp_running=FALSE;
 ftp_startup_t		ftp_startup;
-uint				ftp_client_count=0;
 BOOL				mail_running=FALSE;
 mail_startup_t		mail_startup;
-uint				mail_client_count=0;
 BOOL				services_running=FALSE;
 services_startup_t	services_startup;
-uint				services_client_count=0;
 uint				thread_count=1;
 uint				socket_count=0;
+uint				client_count=0;
+ulong				served=0;
 int					prompt_len=0;
 
-static const char* prompt = "[Threads: %d  Sockets: %d  Clients: %d] (?=Help): ";
+static const char* prompt = 
+"[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
 
 static const char* usage  = "\nusage: %s [[option] [...]]\n"
 							"\noptions:\n\n"
@@ -94,8 +93,7 @@ static void lputs(char *str)
 	if(str!=NULL)
 		printf("%s\n",str);
 	/* re-display prompt with current stats */
-	prompt_len = printf(prompt, thread_count, socket_count
-		,bbs_client_count + ftp_client_count + mail_client_count + services_client_count);
+	prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
 	fflush(stdout);
 	pthread_mutex_unlock(&mutex);
 }
@@ -134,6 +132,26 @@ static void socket_open(BOOL open)
 	    socket_count++;
     else if(socket_count>0)
     	socket_count--;
+	pthread_mutex_unlock(&mutex);
+	lputs(NULL); /* update displayed stats */
+}
+
+static void client_on(BOOL on, int sock, client_t* client, BOOL update)
+{
+   	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
+
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+
+	pthread_mutex_lock(&mutex);
+	if(on && !update) {
+		client_count++;
+	    served++;
+	} else if(!on && client_count>0)
+		client_count--;
 	pthread_mutex_unlock(&mutex);
 	lputs(NULL); /* update displayed stats */
 }
@@ -186,21 +204,6 @@ static void bbs_terminated(int code)
 	bbs_running=FALSE;
 }
 
-static void bbs_clients(int clients)
-{
-   	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
-
-	if(!mutex_initialized) {
-		pthread_mutex_init(&mutex,NULL);
-		mutex_initialized=TRUE;
-	}
-	pthread_mutex_lock(&mutex);
-	bbs_client_count=clients;
-	pthread_mutex_unlock(&mutex);
-	lputs(NULL); /* update displayed stats */
-}
-
 /****************************************************************************/
 /* FTP local/log print routine												*/
 /****************************************************************************/
@@ -235,21 +238,6 @@ static void ftp_started(void)
 static void ftp_terminated(int code)
 {
 	ftp_running=FALSE;
-}
-
-static void ftp_clients(int clients)
-{
-   	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
-
-	if(!mutex_initialized) {
-		pthread_mutex_init(&mutex,NULL);
-		mutex_initialized=TRUE;
-	}
-	pthread_mutex_lock(&mutex);
-	ftp_client_count=clients;
-	pthread_mutex_unlock(&mutex);
-	lputs(NULL); /* update displayed stats */
 }
 
 /****************************************************************************/
@@ -288,21 +276,6 @@ static void mail_terminated(int code)
 	mail_running=FALSE;
 }
 
-static void mail_clients(int clients)
-{
-   	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
-
-	if(!mutex_initialized) {
-		pthread_mutex_init(&mutex,NULL);
-		mutex_initialized=TRUE;
-	}
-	pthread_mutex_lock(&mutex);
-	mail_client_count=clients;
-	pthread_mutex_unlock(&mutex);
-	lputs(NULL); /* update displayed stats */
-}
-
 /****************************************************************************/
 /* Services local/log print routine											*/
 /****************************************************************************/
@@ -337,21 +310,6 @@ static void services_started(void)
 static void services_terminated(int code)
 {
 	services_running=FALSE;
-}
-
-static void services_clients(int clients)
-{
-   	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
-
-	if(!mutex_initialized) {
-		pthread_mutex_init(&mutex,NULL);
-		mutex_initialized=TRUE;
-	}
-	pthread_mutex_lock(&mutex);
-	services_client_count=clients;
-	pthread_mutex_unlock(&mutex);
-	lputs(NULL); /* update displayed stats */
 }
 
 /****************************************************************************/
@@ -431,12 +389,12 @@ int main(int argc, char** argv)
 	bbs_startup.event_log=event_lputs;
     bbs_startup.started=bbs_started;
     bbs_startup.terminated=bbs_terminated;
-    bbs_startup.clients=bbs_clients;
     bbs_startup.thread_up=thread_up;
     bbs_startup.socket_open=socket_open;
+    bbs_startup.client_on=client_on;
 /*	These callbacks haven't been created yet
     bbs_startup.status=bbs_status;
-    bbs_startup.client_on=client_on;
+    bbs_startup.clients=bbs_clients;
 */
     strcpy(bbs_startup.ctrl_dir,ctrl_dir);
 
@@ -446,9 +404,9 @@ int main(int argc, char** argv)
 	ftp_startup.lputs=ftp_lputs;
     ftp_startup.started=ftp_started;
     ftp_startup.terminated=ftp_terminated;
-    ftp_startup.clients=ftp_clients;
 	ftp_startup.thread_up=thread_up;
     ftp_startup.socket_open=socket_open;
+    ftp_startup.client_on=client_on;
 	ftp_startup.options=FTP_OPT_INDEX_FILE|FTP_OPT_ALLOW_QWK;
     strcpy(ftp_startup.index_file_name,"00index");
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
@@ -459,9 +417,9 @@ int main(int argc, char** argv)
 	mail_startup.lputs=mail_lputs;
     mail_startup.started=mail_started;
     mail_startup.terminated=mail_terminated;
-    mail_startup.clients=mail_clients;
 	mail_startup.thread_up=thread_up;
     mail_startup.socket_open=socket_open;
+    mail_startup.client_on=client_on;
 	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
 	/* Spam filtering */
 	mail_startup.options|=MAIL_OPT_USE_RBL;	/* Realtime Blackhole List */
@@ -500,9 +458,9 @@ int main(int argc, char** argv)
 	services_startup.lputs=services_lputs;
     services_startup.started=services_started;
     services_startup.terminated=services_terminated;
-    services_startup.clients=services_clients;
 	services_startup.thread_up=thread_up;
     services_startup.socket_open=socket_open;
+    services_startup.client_on=client_on;
     strcpy(services_startup.ctrl_dir,ctrl_dir);
 
 	/* Process arguments */
