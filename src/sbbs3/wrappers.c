@@ -61,8 +61,7 @@
 #include <stdlib.h>		/* rand */
 #include <errno.h>		/* ENOENT definitions */
 
-#include "gen_defs.h"	/* BOOL */ 
-#include "sbbswrap.h"	/* verify prototypes */
+#include "sbbs.h"		/* getfname */
 
 #ifdef _WIN32
 #define stat(f,s)	_stat(f,s)
@@ -104,10 +103,7 @@ int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 
 			/* build the full pathname */
 			strcpy(path,pattern);
-			p=strrchr(path,'\\');
-			if(!p) p=strrchr(path,'/');
-			if(p) p++;
-			else p=path;
+			p=getfname(path);
 			*p=0;
 			strcat(path,ff.name);
 
