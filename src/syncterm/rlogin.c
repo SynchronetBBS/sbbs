@@ -51,6 +51,7 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd, int bedumb)
 	char	nil=0;
 	char	*p;
 	unsigned int	neta;
+	unsigned long	l;
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
@@ -92,7 +93,9 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd, int bedumb)
 		return(-1);
 	}
 
-	fcntl(rlogin_socket, F_SETFL, fcntl(rlogin_socket, F_GETFL)|O_NONBLOCK);
+	l=1;
+	ioctlsocket(rlogin_socket, FIONBIO,&l);
+	/* fcntl(rlogin_socket, F_SETFL, fcntl(rlogin_socket, F_GETFL)|O_NONBLOCK); */
 
 	if(!bedumb) {
 		rlogin_send("",1,1000);

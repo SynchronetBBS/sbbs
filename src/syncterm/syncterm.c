@@ -71,4 +71,5 @@ int main(int argc, char **argv)
 	if(WSAInitialized && WSACleanup()!=0) 
 		fprintf(stderr,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
+	return(0);
 }
