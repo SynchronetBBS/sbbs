@@ -256,7 +256,7 @@ int uifcini32(uifcapi_t* uifcapi)
 		hbclr=LIGHTGRAY;
 		hfclr=YELLOW;
     }
-	lbclr=bclr|(hbclr<<4);	/* lightbar color */
+	lbclr=bclr|(LIGHTGRAY<<4);	/* lightbar color */
 
     for(i=0;i<MAX_BFLN;i+=2) {
         blk_scrn[i]='°';
