@@ -17,6 +17,6 @@ else
 if(user.number==0 || user.security.restrictions&UFLAG_G) {
     }
 else
-    template.leftnav.push({html: '<a href="ftp_urlftpqwk">Download QWK Packet</a>' });
+    template.leftnav.push({ html: '<a href="' + template.ftp_url + template.ftpqwk + '">Download QWK Packet</a>' });
         
 write_template("leftnav.inc");
