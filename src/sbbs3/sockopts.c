@@ -57,7 +57,9 @@ static const sockopt_name option_names[] = {
 	{ "DONTROUTE",		SO_DONTROUTE	},
 	{ "BROADCAST",		SO_BROADCAST	},
 	{ "OOBINLINE",		SO_OOBINLINE	},
+#ifdef SO_ACCEPTCONN
 	{ "ACCEPTCONN",		SO_ACCEPTCONN	},
+#endif
 	{ NULL }
 };
 
