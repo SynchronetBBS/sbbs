@@ -145,7 +145,7 @@ while(1) {
 	strcpy(opt[i++],"Timed Events");
 	strcpy(opt[i++],"Native Program List");
 	strcpy(opt[i++],"External Editors");
-	strcpy(opt[i++],"Online Hot Key Events");
+	strcpy(opt[i++],"Global Hot Key Events");
 	strcpy(opt[i++],"Online Programs (Doors)");
 	opt[i][0]=0;
 	SETHELP(WHERE);
@@ -1974,7 +1974,7 @@ while(1) {
 		j|=WIN_PUT;
 	SETHELP(WHERE);
 /*
-Online (Global) Hot Key Events:
+Global Hot Key Events:
 
 This is a list of programs or loadable modules that can be executed by
 anyone on the BBS at any time (while the BBS has control of user input).
@@ -1985,7 +1985,7 @@ To delete a hot key event, select it and hit  DEL .
 
 To configure a hot key event, select it and hit  ENTER .
 */
-	i=uifc.list(j,0,0,45,&dflt,&bar,"Online (Global) Hot Key Events",opt);
+	i=uifc.list(j,0,0,45,&dflt,&bar,"Global Hot Key Events",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -2044,9 +2044,9 @@ indicates a Ctrl-A hot key event.
         opt[k][0]=0;
 		SETHELP(WHERE);
 /*
-Online Hot Key Event:
+Global Hot Key Event:
 
-This menu allows you to change the settings for the selected online
+This menu allows you to change the settings for the selected global
 hot key event. Hot key events are control characters that are used to
 execute an external program or module anywhere in the BBS.
 */
