@@ -486,7 +486,7 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 /* First character MUST be an A,N or !.                                     */
 /* Modes - K_LINE and K_UPPER are supported.                                */
 /****************************************************************************/
-uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
+size_t sbbs_t::gettmplt(char *strout,char *templt, long mode)
 {
 	char	ch,str[256];
 	char	tmplt[128];
