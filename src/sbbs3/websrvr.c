@@ -55,6 +55,31 @@
  * Should support RFC2617 Digest auth.
  *
  * Fix up all the logging stuff.
+ *
+ * SSJS stuff could work using three different methods:
+ * 1) Temporary file as happens currently
+ *		Advantages:
+ *			Allows to keep current connection (keep-alive works)
+ *			write() doesn't need to be "special"
+ *		Disadvantages:
+ *			Depends on the temp dir being writable and capable of holding
+ *				the full reply
+ *			Everything goes throug the disk, so probobly some performance
+ *				penalty is involved
+ *			No way of sending directly to the remote system
+ * 2) nph- style
+ *		Advantages:
+ *			No file I/O involved
+ *			Can do magic tricks (ala my perl web wrapper)
+ *		Disadvantages:
+ *			Pretty much everything needs to be handled by the script.
+ * 3) Return body in http_reply object
+ *		All the advantages of 1)
+ *		Could use a special write() to make everything just great.
+ *		Still doesn't allow page to be sent until fully composed (ie: long
+ *			delays)
+ * 4) Type three with a callback that sends the header and current body, then
+ *		converts write() to send directly to remote.
  */
 
 #if defined(__unix__)
