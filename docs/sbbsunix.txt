@@ -43,10 +43,18 @@ A. Yes. As long as all the nodes can access the same live data files (via LAN)
    you can have as many instances of Synchronet on as many different platforms
    as you wish.
 
+Q. Does Synchronet for Unix support external DOS programs/doors?
+A. Not currently. DOSemu integration is on the "to do" list.
+
+Q. What external programs/doors does Synchronet for Unix support?
+A. Currently, only native programs are supported. These programs can either
+   use standard I/O (e.g. bash, pico, Lord/X, PimpWars) or socket I/O
+   (e.g. Synchronet XSDK doors).
+
 Q. Does Synchronet for Unix require X-Windows?
 A. No, Synchronet for Unix is currently a console-based application.
 
-Q. Are there any plans to make a GUI front-end for Synchronet for Unix?
+Q. Are there any plans to make a X-Windows front-end for Synchronet for Unix?
 A. Yes, but it will be optional.
 
 
@@ -147,11 +155,11 @@ Step-by-step Instructions
 
    A. Run SCFG:
       /sbbs/exec/scfg /sbbs/ctrl
-      (if you have problems with the libdialog interface, try running 
+      (if you have problems with the libdialog interface, try running
        "scfg -d" instead)
       Tip: Set the SBBSCTRL environment variable and you won't have to specify
            the path to the "ctrl" directory on the command-line:
-	   export SBBSCTRL=/sbbs/ctrl
+           export SBBSCTRL=/sbbs/ctrl
 
    B. Add the following to SCFG->External Programs->Native Program List:
       sh
@@ -173,7 +181,7 @@ Step-by-step Instructions
       Expand Line Feeds to CRLF       Yes
       Strip FidoNet Kludge Lines      No
       BBS Drop File Type              None
-   
+
    D. Configure SCFG->External Programs->Online Programs->Main->
       Synchronet BBS List:
       Name                            Synchronet BBS List
@@ -239,10 +247,10 @@ Step-by-step Instructions
       Access Requirements             UNIX
 
    NOTE: File extensions are not actually case-sensitive, but I use uppercase
-         extensions to denote DOS/Win32 file extensions and lowercase to 
-	 denote Unix file extensions. The Access Requirements actually
-	 determines *which* command line will be used for the current
-	 platform.
+         extensions to denote DOS/Win32 file extensions and lowercase to
+         denote Unix file extensions. The Access Requirements actually
+         determines *which* command line will be used for the current
+         platform.
 
    K. Change the "Access Requirements" for *all* the existing protocols under
       SCFG->File Options->Transfer Protocols to:
