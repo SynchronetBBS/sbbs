@@ -38,6 +38,13 @@
 #ifndef _GEN_DEFS_H
 #define _GEN_DEFS_H
 
+#include <errno.h>
+
+/* Resolve multi-named errno constants */
+#if defined(EDEADLK) && !defined(EDEADLOCK)
+	#define EDEADLOCK EDEADLK
+#endif
+
 #if defined(_WIN32)
 	#define WIN32_LEAN_AND_MEAN	/* Don't bring in excess baggage */
 	#include <windows.h>
