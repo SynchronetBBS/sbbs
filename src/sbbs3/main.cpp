@@ -728,7 +728,7 @@ bool sbbs_t::js_init()
 
 		js_DescribeObject(js_cx,server,"Server-specifc properties");
 
-		sprintf(ver,"%s v%s%c",TELNET_SERVER,VERSION,REVISION);
+		sprintf(ver,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
 		if(!JS_SetProperty(js_cx, server, "version", &val))
 			break;

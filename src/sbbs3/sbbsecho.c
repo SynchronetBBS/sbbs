@@ -3773,7 +3773,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 				if(msg.ftn_tid!=NULL)	/* use original TID */
 					f+=sprintf(fmsgbuf+f,"\1TID: %.256s\r", msg.ftn_tid);
 				else					/* generate TID */
-					f+=sprintf(fmsgbuf+f,"\1TID: SBBSecho v%s-%s r%s %s %s\r"
+					f+=sprintf(fmsgbuf+f,"\1TID: SBBSecho %s-%s r%s %s %s\r"
 						,SBBSECHO_VER,PLATFORM_DESC,revision,__DATE__,compiler);
 
 				/* Unknown kludge lines are added here */
@@ -3820,7 +3820,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 				if(!(scfg.sub[i]->misc&SUB_NOTAG)) {
 					if(!tear) {  /* No previous tear line */
-						sprintf(str,"--- SBBSecho v%s-%s\r"
+						sprintf(str,"--- SBBSecho %s-%s\r"
 							,SBBSECHO_VER,PLATFORM_DESC);
 						strcat((char *)fmsgbuf,str); }
 

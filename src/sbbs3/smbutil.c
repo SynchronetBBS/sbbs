@@ -323,7 +323,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		smb_freemsgdat(&smb,offset,length,1);
 		exit(1); }
 
-	sprintf(str,"SMBUTIL v%s-%s r%s %s %s"
+	sprintf(str,"SMBUTIL %s-%s r%s %s %s"
 		,SMBUTIL_VER
 		,PLATFORM_DESC
 		,revision
