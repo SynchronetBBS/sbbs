@@ -52,7 +52,7 @@ LD	:=	ld
 #
 # Compiler command-line flags.
 #
-CFLAGS	+=	-O2 -g
+CFLAGS	+=	-O2
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ endif
 #
 # Define primary target.
 #
-all: ${LIBDIR}ODoors62${SHLIB} ${LIBDIR}ODoors62${STATICLIB}
+all: ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB}
 #
 #------------------------------------------------------------------------------
 #
@@ -144,11 +144,11 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
 #         ${OBJDIR}ODoor.res
 #         ${OBJDIR}odsys${OBJFILE}\	this file is missing
 
-${LIBDIR}ODoors62${SHLIB} : ${OBJECTS}
+${LIBDIR}libODoors${SHLIB} : ${OBJECTS}
 	gcc -shared -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
-	ln -fs ${LIBDIR}libODoors${SHLIB}.6.2 ${LIBDIR}ODoors62${SHLIB}
+	ln -fs ${LIBDIR}libODoors${SHLIB}.6.2 ${LIBDIR}libODoors62${SHLIB}
 
-${LIBDIR}ODoors62${STATICLIB} : ${OBJECTS}
+${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
 	ar -r ${LIBDIR}libODoors${STATICLIB} ${OBJECTS}
 	ranlib ${LIBDIR}libODoors${STATICLIB}
 #
