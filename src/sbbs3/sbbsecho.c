@@ -2623,7 +2623,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			smb_hfield_str(&msg,RFC822REPLYID,get_msgid(&scfg,smbfile->subnum,&remsg));
 
 			smb_updatethread(smbfile,&remsg,smbfile->status.last_msg+1);
-			smb_unlockmsghdr(smbfile,&remsg);
 			smb_freemsgmem(&remsg);
 		}
 	}
