@@ -283,8 +283,12 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 			actstr="UNKNOWN"; 
 			break;
 	}
-	lprintf("Node %d !ERROR %d in %s line %d %s \"%s\" access=%d"
+	sprintf(str,"Node %d !ERROR %d in %s line %d %s \"%s\" access=%d"
 		,cfg.node_num, errno, src, line, actstr, object, access);
+	if(online==ON_LOCAL)
+		eprintf("%s",str);
+	else
+		lprintf("%s",str);
 	bprintf("\7\r\nERROR -   action: %s",actstr);   /* tell user about error */
 	bprintf("\7\r\n          object: %s",object);
 	bprintf("\7\r\n          access: %ld",access);
