@@ -344,7 +344,7 @@ char *ciolib_getpass(const char *prompt)
 
 	if(!initialized)
 		initciolib(CIOLIB_AUTO_MODE);
-	ciolib_cputs(prompt);
+	ciolib_cputs((char *)prompt);
 	while((ch=getch())!='\n') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
