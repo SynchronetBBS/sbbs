@@ -53,7 +53,7 @@
 #include "filewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"2.30"      /* SMB library version */
+#define SMBLIB_VERSION		"2.31"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
 
@@ -2339,5 +2339,49 @@ char* SMBCALL smb_dfieldtype(ushort type)
 	return(str);
 }
 
-/* End of SMBLIB.C */
+int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* msg, ulong newmsgnum)
+{
+	int			retval=SMB_ERR_NOT_FOUND;
+	ulong		nextmsgnum;
+	smbmsg_t	nextmsg;
 
+	if(!msg->hdr.thread_first) {	/* New msg is first reply */
+		msg->hdr.thread_first=newmsgnum;
+		if((retval=smb_lockmsghdr(smb,msg))!=SMB_SUCCESS)
+			return(retval);
+		retval=smb_putmsghdr(smb,msg);
+		smb_unlockmsghdr(smb,msg);
+		return(retval);
+	}
+	
+	/* Search for last reply and extend chain */
+	memset(&nextmsg,0,sizeof(nextmsg));
+	nextmsgnum=msg->hdr.thread_first;	/* start with first reply */
+	while(1) {
+		nextmsg.idx.offset=0;
+		nextmsg.hdr.number=nextmsgnum;
+		if(smb_getmsgidx(smb, &nextmsg)!=SMB_SUCCESS) /* invalid thread origin */
+			break;
+		if(smb_lockmsghdr(smb,msg)!=SMB_SUCCESS)
+			break;
+		if(smb_getmsghdr(smb, msg)!=SMB_SUCCESS) {
+			smb_unlockmsghdr(smb,msg); 
+			break;
+		}
+		if(nextmsg.hdr.thread_next && nextmsg.hdr.thread_next!=nextmsgnum) {
+			nextmsgnum=nextmsg.hdr.thread_next;
+			smb_unlockmsghdr(smb,&nextmsg);
+			smb_freemsgmem(&nextmsg);
+			continue; 
+		}
+		nextmsg.hdr.thread_next=newmsgnum;
+		retval=smb_putmsghdr(smb,&nextmsg);
+		smb_unlockmsghdr(smb,&nextmsg);
+		smb_freemsgmem(&nextmsg);
+		break; 
+	}
+
+	return(retval);
+}
+
+/* End of SMBLIB.C */
