@@ -1234,6 +1234,7 @@ void DLLCALL services_thread(void* arg)
 	if(total_clients) {
 		lprintf("0000 Waiting for %d clients to disconnect",total_clients);
 		while(1) {
+			total_clients=0;
 			for(i=0;i<(int)services;i++) 
 				total_clients+=service[i].clients;
 			if(!total_clients)
