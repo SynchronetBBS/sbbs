@@ -557,23 +557,9 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 		return(SMB_ERR_NOT_OPEN);
 	}
 	clearerr(smb->sid_fp);
-	if(!msg->hdr.number) {
-		if(fseek(smb->sid_fp,msg->offset*sizeof(idxrec_t),SEEK_SET)) {
-			sprintf(smb->last_error,"%d (%s) seeking to %u in index file"
-				,errno,STRERROR(errno)
-				,(unsigned)(msg->offset*sizeof(idxrec_t)));
-			return(SMB_ERR_SEEK);
-		}
-		if(!fread(&msg->idx,sizeof(idxrec_t),1,smb->sid_fp)) {
-			sprintf(smb->last_error,"%d (%s) reading index"
-				,errno,STRERROR(errno));
-			return(SMB_ERR_READ);
-		}
-		return(SMB_SUCCESS); 
-	}
 
 	length=filelength(fileno(smb->sid_fp));
-	if(!length) {
+	if(length<sizeof(idxrec_t)) {
 		sprintf(smb->last_error,"invalid index file length: %ld",length);
 		return(SMB_ERR_FILE_LEN);
 	}
@@ -583,23 +569,48 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 		return(SMB_ERR_FILE_LEN);
 	}
 
+	if(!msg->hdr.number) {
+		if(msg->offset%sizeof(idxrec_t) || msg->offset*sizeof(idxrec_t)>=length) {
+			sprintf(smb->last_error,"invalid index offset: %lu, byte offset: %lu, length: %lu"
+				,msg->offset, msg->offset*sizeof(idxrec_t), length);
+			return(SMB_ERR_HDR_OFFSET);
+		}
+		if(fseek(smb->sid_fp,msg->offset*sizeof(idxrec_t),SEEK_SET)) {
+			sprintf(smb->last_error,"%d (%s) seeking to %lu in index file"
+				,errno,STRERROR(errno)
+				,msg->offset*sizeof(idxrec_t));
+			return(SMB_ERR_SEEK);
+		}
+		if(!fread(&msg->idx,sizeof(idxrec_t),1,smb->sid_fp)) {
+			sprintf(smb->last_error,"%d (%s) reading index at offset %lu (byte %lu)"
+				,errno,STRERROR(errno),msg->offset,msg->offset*sizeof(idxrec_t));
+			return(SMB_ERR_READ);
+		}
+		return(SMB_SUCCESS); 
+	}
+
 	bot=0;
 	top=total;
 	l=total/2; /* Start at middle index */
 	while(1) {
+		if(l>=total) {
+			sprintf(smb->last_error,"msg %lu not found"
+				,msg->hdr.number);
+			return(SMB_ERR_NOT_FOUND);
+		}
 		if(fseek(smb->sid_fp,l*sizeof(idxrec_t),SEEK_SET)) {
-			sprintf(smb->last_error,"%d (%s) seeking to %u in index file"
+			sprintf(smb->last_error,"%d (%s) seeking to offset %lu (byte %lu) in index file"
 				,errno,STRERROR(errno)
-				,(unsigned)(l*sizeof(idxrec_t)));
+				,l,l*sizeof(idxrec_t));
 			return(SMB_ERR_SEEK);
 		}
 		if(!fread(&idx,sizeof(idxrec_t),1,smb->sid_fp)) {
-			sprintf(smb->last_error,"%d (%s) reading index"
-				,errno,STRERROR(errno));
+			sprintf(smb->last_error,"%d (%s) reading index at offset %lu (byte %lu)"
+				,errno,STRERROR(errno),l,l*sizeof(idxrec_t));
 			return(SMB_ERR_READ);
 		}
 		if(bot==top-1 && idx.number!=msg->hdr.number) {
-			sprintf(smb->last_error,"msg %ld not found"
+			sprintf(smb->last_error,"msg %lu not found"
 				,msg->hdr.number);
 			return(SMB_ERR_NOT_FOUND);
 		}
@@ -636,7 +647,7 @@ int SMBCALL smb_getfirstidx(smb_t* smb, idxrec_t *idx)
 		return(SMB_ERR_SEEK);
 	}
 	if(!fread(idx,sizeof(idxrec_t),1,smb->sid_fp)) {
-		sprintf(smb->last_error,"%d (%s) reading index"
+		sprintf(smb->last_error,"%d (%s) reading first index"
 			,errno,STRERROR(errno));
 		return(SMB_ERR_READ);
 	}
@@ -667,7 +678,7 @@ int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
 		return(SMB_ERR_SEEK);
 	}
 	if(!fread(idx,sizeof(idxrec_t),1,smb->sid_fp)) {
-		sprintf(smb->last_error,"%d (%s) reading index",errno,STRERROR(errno));
+		sprintf(smb->last_error,"%d (%s) reading last index",errno,STRERROR(errno));
 		return(SMB_ERR_READ);
 	}
 	return(SMB_SUCCESS);
@@ -1424,12 +1435,13 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	}
 	if(msg->idx.offset<sizeof(smbhdr_t)+sizeof(smbstatus_t) 
 		|| msg->idx.offset<smb->status.header_offset) {
-		sprintf(smb->last_error,"invalid header offset: %ld",msg->idx.offset);
+		sprintf(smb->last_error,"invalid header offset: %lu (0x%lX)"
+			,msg->idx.offset,msg->idx.offset);
 		return(SMB_ERR_HDR_OFFSET);
 	}
 	clearerr(smb->shd_fp);
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
-		sprintf(smb->last_error,"%d (%s) seeking to %ld in index"
+		sprintf(smb->last_error,"%d (%s) seeking to %lu in index"
 			,errno,STRERROR(errno),msg->idx.offset);
 		return(SMB_ERR_SEEK);
 	}
@@ -1672,6 +1684,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length
 	int		retval=0;
 	ushort	i;
 	ulong	l,blocks;
+	ulong	sda_offset;
 
 	if(smb->status.attr&SMB_HYPERALLOC)	/* do nothing */
 		return(SMB_SUCCESS);
@@ -1686,11 +1699,12 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length
 
 	clearerr(smb->sda_fp);
 	for(l=0;l<blocks;l++) {
-		if(fseek(smb->sda_fp,((offset/SDT_BLOCK_LEN)+l)*2L,SEEK_SET)) {
+		sda_offset=((offset/SDT_BLOCK_LEN)+l)*2L;
+		if(fseek(smb->sda_fp,sda_offset,SEEK_SET)) {
 			sprintf(smb->last_error
-				,"%d (%s) seeking to %ld of allocation file"
+				,"%d (%s) seeking to %lu (0x%lX) of allocation file"
 				,errno,STRERROR(errno)
-				,((offset/SDT_BLOCK_LEN)+l)*2L);
+				,sda_offset,sda_offset);
 			retval=SMB_ERR_SEEK;
 			break;
 		}
