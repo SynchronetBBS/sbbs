@@ -38,14 +38,12 @@
 #ifndef _STARTUP_H_
 #define _STARTUP_H_
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
+#include <stddef.h>		/* offsetof */
 #include "client.h"
 #include "ringbuf.h"
 #include "semwrap.h"	/* sem_t */
 #include "ini_file.h"	/* INI_MAX_VALUE_LEN */
+#include "sbbsdefs.h"	/* LOG_* (syslog.h) values */
 
 typedef struct {
 	ulong	max_bytes;
@@ -123,7 +121,24 @@ typedef struct {
 
 } bbs_startup_t;
 
-#define BBS_OPT_KEEP_ALIVE			(1<<0)	/* Send keep-alives					*/
+/* startup options that requires re-initialization/recycle when changed */
+#define OFFSET_AND_SIZE(s, f)	{ offsetof(s,f), sizeof(((s *)0)->f) }
+
+static struct init_field {
+	size_t	offset;
+	size_t	size;
+} bbs_init_fields[] = { 
+	 OFFSET_AND_SIZE(bbs_startup_t,first_node)
+	,OFFSET_AND_SIZE(bbs_startup_t,last_node)
+	,OFFSET_AND_SIZE(bbs_startup_t,telnet_port)
+	,OFFSET_AND_SIZE(bbs_startup_t,rlogin_port)
+	,OFFSET_AND_SIZE(bbs_startup_t,telnet_interface)
+	,OFFSET_AND_SIZE(bbs_startup_t,rlogin_interface)
+	,OFFSET_AND_SIZE(bbs_startup_t,ctrl_dir)
+	,OFFSET_AND_SIZE(bbs_startup_t,temp_dir)
+	,{ 0,0 }	/* terminator */
+};
+
 #define BBS_OPT_XTRN_MINIMIZED		(1<<1)	/* Run externals minimized			*/
 #define BBS_OPT_AUTO_LOGON			(1<<2)	/* Auto-logon via IP				*/
 #define BBS_OPT_DEBUG_TELNET		(1<<3)	/* Debug telnet commands			*/
@@ -140,6 +155,45 @@ typedef struct {
 #define BBS_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled				*/
 #define BBS_OPT_LOCAL_TIMEZONE		(1<<30)	/* Don't force UTC/GMT				*/
 #define BBS_OPT_MUTE				(1<<31)	/* Mute sounds						*/
+
+/* bbs_startup_t.options bits that require re-init/recycle when changed */
+#define BBS_INIT_OPTS	(BBS_OPT_ALLOW_RLOGIN|BBS_OPT_NO_EVENTS|BBS_OPT_NO_SPY_SOCKETS \
+						|BBS_OPT_NO_JAVASCRIPT|BBS_OPT_LOCAL_TIMEZONE)
+
+static ini_bitdesc_t bbs_options[] = {
+
+	{ BBS_OPT_XTRN_MINIMIZED		,"XTRN_MINIMIZED"		},
+	{ BBS_OPT_AUTO_LOGON			,"AUTO_LOGON"			},
+	{ BBS_OPT_DEBUG_TELNET			,"DEBUG_TELNET"			},
+	{ BBS_OPT_SYSOP_AVAILABLE		,"SYSOP_AVAILABLE"		},
+	{ BBS_OPT_ALLOW_RLOGIN			,"ALLOW_RLOGIN"			},
+	{ BBS_OPT_USE_2ND_RLOGIN		,"USE_2ND_RLOGIN"		},
+	{ BBS_OPT_NO_QWK_EVENTS			,"NO_QWK_EVENTS"		},
+	{ BBS_OPT_NO_TELNET_GA			,"NO_TELNET_GA"			},
+	{ BBS_OPT_NO_EVENTS				,"NO_EVENTS"			},
+	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ BBS_OPT_NO_SPY_SOCKETS		,"NO_SPY_SOCKETS"		},
+	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
+	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
+	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
+	{ BBS_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
+	{ BBS_OPT_MUTE					,"MUTE"					},
+	/* terminator */										
+	{ -1							,NULL					}
+};
+
+static ini_bitdesc_t log_mask_bits[] = {
+	{ (1<<LOG_EMERG)				,"EMERG"				},
+	{ (1<<LOG_ALERT)				,"ALERT"				},
+	{ (1<<LOG_CRIT)					,"CRIT"					},
+	{ (1<<LOG_ERR)					,"ERR"					},
+	{ (1<<LOG_WARNING)				,"WARNING"				},
+	{ (1<<LOG_NOTICE)				,"NOTICE"				},
+	{ (1<<LOG_INFO)					,"INFO"					},
+	{ (1<<LOG_DEBUG)				,"DEBUG"				},
+	/* the Gubinator */				
+	{ -1							,NULL					}
+};
 
 #ifdef __cplusplus
 extern "C" {
