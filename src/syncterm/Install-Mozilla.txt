@@ -1,0 +1,11 @@
+To install SyncTERM as the default rlogin and telnet handler for Mozilla,
+type in the URL "about:config"
+
+In the screen that comes up, right-click, New->Boolean
+network.protocol-handler.external.telnet = true
+network.protocol-handler.external.rlogin = true
+
+Then, right-click, New->String
+network.protocol-handler.app.telnet = /path/to/syncterm
+network.protocol-handler.app.rlogin = /path/to/syncterm
+
