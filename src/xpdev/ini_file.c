@@ -198,7 +198,7 @@ void* iniFreeNamedStringList(named_string_t** list)
 	return(NULL);
 }
 
-char** iniGetSectionList(FILE* fp)
+char** iniGetSectionList(FILE* fp, const char* prefix)
 {
 	char*	p;
 	char*	tp;
@@ -229,6 +229,11 @@ char** iniGetSectionList(FILE* fp)
 		if(tp==NULL)
 			continue;
 		*tp=0;
+		if(prefix!=NULL) {
+			if(strnicmp(p,prefix,strlen(prefix))!=0)
+				continue;
+			p+=strlen(prefix);
+		}
 		if((np=realloc(lp,sizeof(char*)*(items+2)))==NULL)
 			break;
 		lp=np;

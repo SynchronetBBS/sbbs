@@ -53,7 +53,8 @@ extern "C" {
 #endif
 
 /* Read all section names and return as an allocated string list */
-char**		iniGetSectionList		(FILE* fp);
+/* Optionally (if prefix!=NULL), returns a subset of section names */
+char**		iniGetSectionList		(FILE* fp, const char* prefix);
 /* Read all key names and return as an allocated string list */
 char**		iniGetKeyList			(FILE* fp, const char* section);
 /* Read all key and value pairs and return as a named string list */
