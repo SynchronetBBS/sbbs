@@ -142,7 +142,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	int 	i;
 	long	l,length;
 	ulong	offset,crc;
-	ushort		agent=AGENT_PROCESS;
+	ushort		agent=AGENT_SMBUTIL;
 	smbmsg_t	msg;
 
 	/* Read message text from stream (file or stdin) */
