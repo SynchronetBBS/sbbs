@@ -50,7 +50,6 @@
 #define RECVDIR 		(1<<7)	/* Directory specified to download to		*/
 #define DEBUG			(1<<8)	/* Debug output 							*/
 #define OVERWRITE		(1<<9)	/* Overwrite receiving files				*/
-#define ALARM			(1<<11) /* Alarm when starting and stopping xfer	*/
 
 							/* Zmodem mode bits 						*/
 #define CTRL_ESC	(1<<0)	/* Escape all control chars 				*/

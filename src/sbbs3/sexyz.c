@@ -62,7 +62,6 @@
 #include "ini_file.h"
 #include "eventwrap.h"
 #include "threadwrap.h"
-#include "xpbeep.h"
 
 /* sbbs */
 #include "ringbuf.h"
@@ -746,7 +745,8 @@ static int send_files(char** fname, uint fnames)
 
 			if((t=time(NULL)-startfile)<=0) 
 				t=1;
-			cps=sent_bytes/t;
+			if((cps=sent_bytes/t)==0)
+				cps=1;
 			if(success) {
 				xm.sent_files++;
 				xm.sent_bytes+=fsize;
@@ -778,6 +778,7 @@ static int send_files(char** fname, uint fnames)
 					,flows
 					,xm.block_size
 					,path); 
+				fflush(logfp);
 			}
 			total_bytes += sent_bytes;
 		} /* while(gi<(int)g.gl_pathc) */
@@ -883,9 +884,9 @@ static int receive_files(char** fname_list, int fnames)
 					);
 				lprintf(LOG_DEBUG,"Ymodem header (%u fields): %s", i, block+strlen(block)+1);
 				SAFECOPY(fname,block);
-				fprintf(statfp,"Incoming filename: %.64s ",fname);
 
 			} else {	/* Zmodem */
+				lprintf(LOG_INFO,"Waiting for Zmodem sender...");
 				i=zmodem_recv_init(&zm);
 				if(zm.cancelled)
 					return(1);
@@ -936,6 +937,8 @@ static int receive_files(char** fname_list, int fnames)
 			if(total_bytes<file_bytes)
 				total_bytes=file_bytes;
 
+			lprintf(LOG_DEBUG,"Incoming filename: %.64s ",fname);
+
 			if(mode&RECVDIR)
 				sprintf(str,"%s%s",fname_list[0],getfname(fname));
 			else {
@@ -960,12 +963,12 @@ static int receive_files(char** fname_list, int fnames)
 					} 
 				} 
 			}
-			fprintf(statfp,"\n"); 
 			fprintf(statfp,"File size: %lu bytes\n", file_bytes);
 			fprintf(statfp,"Remaining: %lu bytes in %u files\n", total_bytes, total_files);
 //			getchar();
 		}
 
+		lprintf(LOG_DEBUG,"Receiving: %.64s ",str);
 
 		fnum++;
 
@@ -1009,12 +1012,7 @@ static int receive_files(char** fname_list, int fnames)
 		success=FALSE;
 		if(mode&ZMODEM) {
 
-			for(errors=0; errors<zm.max_errors 
-				&& (ulong)ftell(fp) < file_bytes && !zm.cancelled; errors++) {
-				if((i = zmodem_recv_file_data(&zm,fp,0,file_bytes,startfile)) == ZEOF)
-					break;
-				lprintf(LOG_WARNING,"Error at byte %lu: %s", ftell(fp), chr((uchar)i));
-			}
+			errors=zmodem_recv_file_data(&zm,fp,0,file_bytes,startfile);
 
 			/*
  			 * wait for the eof header
@@ -1110,6 +1108,7 @@ static int receive_files(char** fname_list, int fnames)
 				,xm.block_size
 				,str
 				,serial_num); 
+			fflush(logfp);
 		}
 		if(mode&XMODEM)	/* maximum of one file */
 			break;
@@ -1146,7 +1145,6 @@ static const char* usage=
 #endif
 	"\n"
 	"opts   = -o  to overwrite files when receiving\n"
-	"         -a  to sound alarm at start and stop of transfer\n"
 	"         -!  to pause after abnormal exit (error)\n"
 	"         -telnet to enable Telnet mode\n"
 	"         -rlogin to enable RLogin (pass-through) mode\n"
@@ -1342,9 +1340,6 @@ int main(int argc, char **argv)
 					case 'O':
 						mode|=OVERWRITE;
 						break;
-					case 'A':
-						mode|=ALARM;
-						break;
 					case '!':
 						pause_on_abend=TRUE;
 						break;
@@ -1447,11 +1442,6 @@ int main(int argc, char **argv)
 //	if(mode&RECVDIR)
 //		backslash(fname[0]);
 
-	if(mode&ALARM) {
-		BEEP(1000,500);
-		BEEP(2000,500);
-	}
-
 	if(!winsock_startup())
 		return(-1);
 
@@ -1496,10 +1486,6 @@ int main(int argc, char **argv)
 //	sem_post(outbuf.sem);
 //	sem_post(outbuf.highwater_sem);
 
-	if(mode&ALARM) {
-		BEEP(2000,500);
-		BEEP(1000,500);
-	}
 	fprintf(statfp,"Exiting - Error level: %d, flows: %u, select_errors=%u"
 		,retval, flows, select_errors);
 	fprintf(statfp,"\n");
