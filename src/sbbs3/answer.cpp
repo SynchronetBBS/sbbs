@@ -107,18 +107,57 @@ bool sbbs_t::answer()
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
-#if 1
 				if(!trashcan(client.addr,"rlogin")) {
-					lprintf(LOG_INFO,"%04d !CLIENT IP NOT LISTED in rlogin.can",client_socket);
 					SAFECOPY(tmp
 						,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str : str2);
-					if(stricmp(tmp,useron.pass)) {
-						useron.number=0;
+					for(i=0;i<3;i++) {
+						if(stricmp(tmp,useron.pass)) {
+							rioctl(IOFI);       /* flush input buffer */
+							bputs(text[InvalidLogon]);
+							if(cfg.sys_misc&SM_ECHO_PW)
+								sprintf(str,"(%04u)  %-25s  FAILED Password attempt: '%s'"
+									,0,useron.alias,tmp);
+							else
+								sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
+									,0,useron.alias);
+								logline("+!",str);
+							putcom("PW: ");
+							console|=CON_R_ECHOX;
+							if(!(cfg.sys_misc&SM_ECHO_PW))
+								console|=CON_L_ECHOX;
+							getstr(tmp,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
+							console&=~(CON_R_ECHOX|CON_L_ECHOX);
+						}
+						else {
+							if(REALSYSOP) {
+								rioctl(IOFI);       /* flush input buffer */
+								if(!chksyspass())
+									bputs(text[InvalidLogon]);
+								else {
+									i=0;
+									break;
+								}
+							}
+							else
+								break;
+						}
 					}
-					else
-						lprintf(LOG_INFO,"%04d RLogin password auth",client_socket);
+					if(i) {
+						if(stricmp(tmp,useron.pass)) {
+							bputs(text[InvalidLogon]);
+							if(cfg.sys_misc&SM_ECHO_PW)
+								sprintf(str,"(%04u)  %-25s  FAILED Password attempt: '%s'"
+									,0,useron.alias,tmp);
+							else
+								sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
+									,0,useron.alias);
+								logline("+!",str);
+						}
+						lprintf(LOG_INFO,"%04d !CLIENT IP NOT LISTED in rlogin.can",client_socket);
+						useron.number=0;
+						hangup();
+					}
 				}
-#endif
 			}
 			else
 				lprintf(LOG_DEBUG,"Node %d RLogin: Unknown user: %s",cfg.node_num,rlogin_name);
