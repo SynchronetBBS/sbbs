@@ -78,6 +78,7 @@ DLLEXPORT uint	DLLCALL matchuser(scfg_t* cfg, char *str, BOOL sysop_alias); /* C
 DLLEXPORT char* DLLCALL alias(scfg_t* cfg, char* name, char* buf);
 DLLEXPORT int	DLLCALL putusername(scfg_t* cfg, int number, char * name);
 DLLEXPORT uint	DLLCALL lastuser(scfg_t* cfg);
+DLLEXPORT BOOL	DLLCALL del_lastuser(scfg_t* cfg);
 DLLEXPORT char	DLLCALL getage(scfg_t* cfg, char *birthdate);
 DLLEXPORT char*	DLLCALL username(scfg_t* cfg, int usernumber, char * str);
 DLLEXPORT char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name);

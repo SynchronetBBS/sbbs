@@ -127,6 +127,29 @@ uint DLLCALL lastuser(scfg_t* cfg)
 }
 
 /****************************************************************************/
+/* Returns the number of the last user in user.dat (deleted ones too)		*/
+/****************************************************************************/
+BOOL DLLCALL del_lastuser(scfg_t* cfg)
+{
+	char	str[256];
+	int		file;
+	long	length;
+
+	sprintf(str,"%suser/user.dat", cfg->data_dir);
+	if((file=nopen(str,O_RDWR|O_DENYNONE))==-1)
+		return(FALSE);
+	length=filelength(file);
+	if(length<U_LEN) {
+		close(file);
+		return(FALSE);
+	}
+	chsize(file,length-U_LEN);
+	close(file);
+	return(TRUE);
+}
+
+
+/****************************************************************************/
 /* Fills the structure 'user' with info for user.number	from user.dat		*/
 /* Called from functions useredit, waitforcall and main_sec					*/
 /****************************************************************************/
