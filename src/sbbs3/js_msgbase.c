@@ -973,6 +973,7 @@ js_remove_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		smb_freemsghdrmem(&msg);	/* prevent duplicate header fields */
 
 		msg.hdr.attr|=MSG_DELETE;
+		msg.idx.attr=msg.hdr.attr;
 
 		if(smb_putmsg(&(p->smb), &msg)!=0)
 			break;
