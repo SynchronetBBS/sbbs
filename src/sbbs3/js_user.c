@@ -747,17 +747,22 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	JSObject*	statsobj;
 	JSObject*	securityobj;
 	private_t*	p;
+	jsval		val;
+
+	/* Return existing user object if it's already been created */
+	if(JS_GetProperty(cx,parent,name,&val))
+		return(JSVAL_TO_OBJECT(val));
+
+	userobj = JS_DefineObject(cx, parent, name, &js_user_class, NULL, 0);
+
+	if(userobj==NULL)
+		return(NULL);
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
 		return(NULL);
 
 	p->cfg = cfg;
 	p->usernumber = usernumber;
-
-	userobj = JS_DefineObject(cx, parent, name, &js_user_class, NULL, 0);
-
-	if(userobj==NULL)
-		return(NULL);
 
 	JS_SetPrivate(cx, userobj, p);	
 
@@ -769,8 +774,10 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	statsobj = JS_DefineObject(cx, userobj, "stats"
 		,&js_user_stats_class, NULL, 0);
 
-	if(statsobj==NULL)
+	if(statsobj==NULL) {
+		free(p);
 		return(NULL);
+	}
 
 	JS_SetPrivate(cx, statsobj, p);
 
@@ -780,8 +787,10 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	securityobj = JS_DefineObject(cx, userobj, "security"
 		,&js_user_security_class, NULL, 0);
 
-	if(securityobj==NULL)
+	if(securityobj==NULL) {
+		free(p);
 		return(NULL);
+	}
 
 	JS_SetPrivate(cx, securityobj, p);
 

@@ -129,6 +129,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	uint		c,l,d;
 	JSBool		found;
 
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(cx,parent,"msg_area",&val))
+		return(JSVAL_TO_OBJECT(val));
+
 	areaobj = JS_DefineObject(cx, parent, "msg_area", &js_msg_area_class, NULL, 0);
 
 	if(areaobj==NULL)
