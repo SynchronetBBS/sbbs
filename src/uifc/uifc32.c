@@ -576,7 +576,7 @@ static void truncsp(char *str)
 int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *initial_title, char **option)
 {
-	uchar line[256],shade[256],*ptr,longopt
+	uchar line[256],shade[256],*ptr
 		,search[MAX_OPLN],bline=0,*win;
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
@@ -588,7 +588,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	uint title_len;
 	struct uifc_mouse_event mevnt;
 	char	*title;
-	int	a,b,c;
+	int	a,b,c,longopt;
 
 	if((title=(char *)MALLOC(strlen(initial_title)+1))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes."
@@ -1538,8 +1538,9 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	int max, int kmode)
 {
 	unsigned char save_buf[2048],in_win[2048]
-		,shade[160],height=3;
+		,shade[160];
 	int	width;
+	int height=3;
 	int i,plen,slen,j;
 	int	iwidth;
 
