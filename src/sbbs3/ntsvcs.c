@@ -47,11 +47,6 @@
 /* Windows-specific headers */
 #include <winsvc.h>
 
-/* Temporary: Do not include web server in 3.1x-Win32 release build */
-#if defined(_MSC_VER)
-	#define NO_WEB_SERVER
-#endif
-
 #define NTSVC_TIMEOUT_STARTUP	30000	/* Milliseconds */
 #define NTSVC_TIMEOUT_TERMINATE	30000	/* Milliseconds */
 
@@ -801,7 +796,7 @@ int main(int argc, char** argv)
 #if !defined(NO_WEB_SERVER)
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
-	web_startup.private_data=&web;
+	web_startup.cbdata=&web;
     web_startup.size=sizeof(web_startup);
 	web_startup.lputs=svc_lputs;
     web_startup.started=svc_started;
