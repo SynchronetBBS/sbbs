@@ -24,22 +24,22 @@ load("nodedefs.js");
 
 // CVS revision
 const REVISION = "$Revision$".split(' ')[1];
+
 // Please don't play with this, unless you're making custom hacks.
 // IF you're making a custom version, it'd be appreciated if you left the
 // version number alone, and add a token in the form of +hack (i.e. 1.0+cyan)
 // This is so everyone knows your revision base, AND type of hack used.
 const VERSION = "SynchronetIRCd-1.0b(" + REVISION + ")";
 const VERSION_STR = "Synchronet " 
-	+ system.version + system.revision + "-" + system.platform + system.beta_version
-	+ " (IRCd by Randy Sommerfeld)";
+	+ system.version + system.revision + "-" + system.platform + 
+	system.beta_version + " (IRCd by Randy Sommerfeld)";
+
 // This will dump all I/O to and from the server to your Synchronet console.
 // It also enables some more verbose WALLOPS, especially as they pertain to
 // blocking functions.
 // The special "DEBUG" oper command also switches this value.
-// FIXME: This introduces privacy concerns.  Should we make it difficult for
-// the sysop to snoop on private conversations?  A diligent sysop will always
-// be able to snoop regardless (either by custom hacks, or, a packet sniffer.)
 var debug = false;
+
 // Resolve connecting clients' hostnames?  If set to false, everyone will have
 // an IP address instead of a hostname in their nick!user@host identifier.
 // Resolving hostnames is a BLOCKING operation, so your IRCD *will* freeze for
@@ -51,11 +51,20 @@ var debug = false;
 // Exception: 'localhost' and '127.0.0.1' always get resolved internally to
 // the hostname defined on the M:Line regardless of this setting.
 var resolve_hostnames = true;
+
 // The number of seconds to block before giving up on outbound CONNECT
 // attempts (when connecting to another IRC server -- i.e. a hub)  This value
 // is important because connecing is a BLOCKING operation, so your IRC *will*
 // freeze for the amount of time it takes to connect.
 var ob_sock_timeout = 6;
+
+// Should we enable the USERS and SUMMON commands?  These allow IRC users to
+// view users on the local BBS and summon them to IRC via a Synchronet telegram
+// message respectively.  Some people might be running the ircd standalone, or
+// otherwise don't want anonymous IRC users to have access to these commands.
+// We enable this by default because there's typically nothing wrong with
+// seeing who's on an arbitrary BBS or summoning them to IRC.
+var enable_users_summon = true;
 
 // what our server is capable of from a server point of view.
 // TS3 = Version 3 of accepted interserver timestamp protocol.
@@ -1027,6 +1036,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.server_notice=IRCClient_server_notice;
 	this.setusermode=IRCClient_setusermode;
 	this.numeric=IRCClient_numeric;
+	this.numeric322=IRCClient_numeric322;
 	this.numeric351=IRCClient_numeric351;
 	this.numeric353=IRCClient_numeric353;
 	this.numeric391=IRCClient_numeric391;
@@ -1038,6 +1048,8 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.numeric440=IRCClient_numeric440;
 	this.numeric441=IRCClient_numeric441;
 	this.numeric442=IRCClient_numeric442;
+	this.numeric445=IRCClient_numeric445;
+	this.numeric446=IRCClient_numeric446;
 	this.numeric451=IRCClient_numeric451;
 	this.numeric461=IRCClient_numeric461;
 	this.numeric462=IRCClient_numeric462;
@@ -1337,6 +1349,20 @@ function IRCClient_numeric(num, str) {
 }
 
 //////////////////// Numeric Functions ////////////////////
+function IRCClient_numeric322(chan) {
+	var channel_name;
+
+	if ((chan.mode&CHANMODE_PRIVATE) && !(this.mode&USERMODE_OPER) &&
+	    !this.onchannel(chan.nam.toUpperCase) )
+		channel_name = "Priv";
+	else
+		channel_name = chan.nam;
+
+	if (!(chan.mode&CHANMODE_SECRET) || (this.mode&USERMODE_OPER) ||
+	    this.onchannel(chan.nam.toUpperCase()) )
+		this.numeric(322, channel_name + " " + chan.count_users() + " :" + chan.topic);
+}
+
 function IRCClient_numeric351() {
 	this.numeric(351, VERSION + " " + servername + " :" + VERSION_STR);
 }
@@ -1384,6 +1410,14 @@ function IRCClient_numeric441(str) {
 
 function IRCClient_numeric442(str) {
 	this.numeric("442", str + " :You're not on that channel.");
+}
+
+function IRCClient_numeric445() {
+	this.numeric(445, ":SUMMON has been disabled.");
+}
+
+function IRCClient_numeric446() {
+	this.numeric(446, ":USERS has been disabled.");
 }
 
 function IRCClient_numeric451() {
@@ -1437,8 +1471,9 @@ function IRCClient_motd() {
 }
 
 function IRCClient_names(chan) {
-	numnicks=0;
-	tmp="";
+	var Channel_user;
+	var numnicks=0;
+	var tmp="";
 	for(thisChannel_user in Channels[chan].users) {
 		Channel_user=Clients[Channels[chan].users[thisChannel_user]];
 		if (Channel_user.nick &&
@@ -1477,7 +1512,7 @@ function IRCClient_onchannel(chan_str) {
 }
 
 function IRCClient_num_channels_on() {
-	uchan_counter=0;
+	var uchan_counter=0;
 	for(tmp_uchan in this.channels) {
 		if (this.channels[tmp_uchan])
 			uchan_counter++;
@@ -1591,9 +1626,13 @@ function IRCClient_bcast_to_channel_servers(chan_str, str) {
 }
 
 function IRCClient_check_nickname(newnick) {
+	var qline_nick;
+	var checknick;
+	var regexp;
+
 	newnick = newnick.slice(0,max_nicklen);
 	// If you're trying to NICK to yourself, drop silently.
-	if(newnick.toUpperCase() == this.nick.toUpperCase())
+	if(newnick == this.nick)
 		return 0;
 	// First, check for valid characters.
 	regexp="^[A-Za-z\{\}\`\^\_\|\\]\\[\\\\][A-Za-z0-9\-\{\}\`\^\_\|\\]\\[\\\\]*$";
@@ -1603,7 +1642,8 @@ function IRCClient_check_nickname(newnick) {
 		return 0;
 	}
 	// Second, check for existing nickname.
-	if(searchbynick(newnick)) {
+	checknick = searchbynick(newnick);
+	if(checknick && (checknick.nick != this.nick) ) {
 		if (!this.server)
 			this.numeric("433", newnick + " :Nickname is already in use.");
 		return 0;
@@ -1903,17 +1943,19 @@ function IRCClient_do_stats(statschar) {
 			}       
 			break;
 		case "u":
-			var upsecs=time() - server_uptime;
-			var updays=upsecs / 86400;
+			var this_uptime=time() - server_uptime;
+			var updays=format("%lu",this_uptime / 86400);
 			if (updays < 1)
 				updays=0;
-			var uphours=(upsecs-(updays*86400))/3600;
+			var uphours=format("%lu",(this_uptime-(updays*86400))/3600);
 			if (uphours < 1)
 				uphours=0;
-			var upmins=((upsecs-(updays*86400))-(uphours*3600))/60;
+			var upmins=format("%02lu",((this_uptime-(updays*86400))-(uphours*3600))/60);
 			if (upmins < 1)
 				upmins=0;
-			var upsec=(((upsecs-(updays*86400))-(uphours*3600))-(upmins*60));
+			var upsec=format("%02lu",(((this_uptime-(updays*86400))-(uphours*3600))-(upmins*60)));
+			if (upmins == "0")
+				upmins = "00";
 			this.numeric(242,":Server Up " + updays + " days " + uphours + ":" + upmins + ":" + upsec);
 			break;
 		case "Y":
@@ -3032,22 +3074,30 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			break;
 		case "LIST":
-			// ignore args for now
+			var split_chans;
+
 			this.numeric("321", "Channel :Users  Name");
-			for(chan in Channels) {
-				if (Channels[chan].mode&CHANMODE_PRIVATE)
-					channel_name = "Priv";
-				else
-					channel_name = Channels[chan].nam
-				if (!(Channels[chan].mode&CHANMODE_SECRET))
-					this.numeric(322, channel_name + " " + Channels[chan].count_users() + " :" + Channels[chan].topic);
+
+			if (cmd[1]) {
+				split_chans = cmd[1].split(',');
+				for(chan in split_chans) {
+					if (Channels[split_chans[chan].toUpperCase()])
+						this.numeric322(Channels[split_chans[chan].toUpperCase()]);
+				}
+			} else {
+				for(chan in Channels) {
+					this.numeric322(Channels[chan]);
+				}
 			}
-			this.numeric("323", "End of /LIST");
+
+			this.numeric("323", "End of /LIST.");
 			break;
 		case "LUSERS":
 			this.lusers();
 			break;
 		case "MODE":
+			var chan;
+
 			if (!cmd[1])
 				break; // silently ignore
 			if (!cmd[2]) {
@@ -3108,6 +3158,12 @@ function IRCClient_registered_commands(command, cmdline) {
 			this.motd();
 			break;
 		case "NAMES":
+			var numnicks;
+			var tmp;
+			var chan;
+			var chans;
+			var Client;
+
 			if (!cmd[1]) {
 				for(chan in Channels) {
 					if(!(Channels[chan].mode&CHANMODE_SECRET) && !(Channels[chan].mode&CHANMODE_PRIVATE))
@@ -3155,6 +3211,8 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			break;
 		case "NICK":
+			var the_nick;
+
 			if (!cmd[1]) {
 				this.numeric(431, ":No nickname given.");
 				break;
@@ -3392,6 +3450,10 @@ function IRCClient_registered_commands(command, cmdline) {
 					break;
 				}
 			}
+			if(!enable_users_summon) {
+				this.numeric445();
+				break;
+			}
 			this.do_summon(cmd[1]);
 			break;
 		case "TIME":
@@ -3467,6 +3529,10 @@ function IRCClient_registered_commands(command, cmdline) {
 					dest_server.rawout(":" + this.nick + " USERS :" + dest_server.nick);
 					break;
 				}
+			}
+			if (!enable_users_summon) {
+				this.numeric446();
+				break;
 			}
 			this.do_users();
 			break;
@@ -4221,7 +4287,12 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
 			if (match_irc_mask(servername, cmd[2])) {
-				ThisOrigin.do_summon(cmd[1]);
+				if (enable_users_summon) {
+					ThisOrigin.do_summon(cmd[1]);
+				} else {
+					this.numeric445();
+					break;
+				}
 			} else {
 				var dest_server = searchbyserver(cmd[1]);
 				if (!dest_server)
@@ -4254,7 +4325,12 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
 			if (match_irc_mask(servername, cmd[1])) {
-				ThisOrigin.do_users();
+				if (!enable_users_summon) {
+					ThisOrigin.numeric446();
+					break;
+				} else {
+					ThisOrigin.do_users();
+				}
 			} else {
 				var dest_server = searchbyserver(cmd[1]);
 				if (!dest_server)
