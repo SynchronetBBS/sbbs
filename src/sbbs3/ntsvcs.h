@@ -45,4 +45,6 @@
 #define NTSVC_NAME_MAIL		"SynchronetMail"
 #define NTSVC_NAME_SERVICES "SynchronetServices"
 
+#define SERVICE_CONTROL_RECYCLE	128	/* User-defined control code */
+
 #endif	/* Don't add anything after this line */
