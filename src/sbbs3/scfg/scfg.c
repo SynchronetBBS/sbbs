@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     memset(&uifc,0,sizeof(uifc));
     p=getenv("SBBSCTRL");
     if(p!=NULL)
-        sprintf(cfg.ctrl_dir,"%.*s",sizeof(cfg.ctrl_dir)-1,p);
+        SAFECOPY(cfg.ctrl_dir,p);
     else
         getcwd(cfg.ctrl_dir,sizeof(cfg.ctrl_dir));
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
         			exit(0);
            }
         else
-            sprintf(cfg.ctrl_dir,"%.*s",sizeof(cfg.ctrl_dir)-1,argv[i]);
+            SAFECOPY(cfg.ctrl_dir,argv[i]);
     }
 
 if(backup_level>10) backup_level=10;
@@ -1785,7 +1785,8 @@ int lprintf(char *fmt, ...)
 	char sbuf[1024];
 
     va_start(argptr,fmt);
-    vsprintf(sbuf,fmt,argptr);
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
     strip_ctrl(sbuf);
     uifc.msg(sbuf);
