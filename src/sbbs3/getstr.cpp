@@ -141,7 +141,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				bputs("\r\n\r\nYou must set your terminal to NO PARITY, "
 					"8 DATA BITS, and 1 STOP BIT (N-8-1).\7\r\n");
 				return(0); 
-			} 
+			}
 		}
 		getstr_offset=i;
 		switch(ch) {
