@@ -55,8 +55,6 @@ enum {
 	,MOUSE_DRAGSTARTED
 };
 
-pthread_mutex_t in_mutex;
-pthread_mutex_t out_mutex;
 sem_t in_sem;
 
 struct in_mouse_event {
@@ -108,8 +106,6 @@ void init_mouse(void)
 	state.multi_timeout=300;
 	listInit(&state.input,0);
 	listInit(&state.output,0);
-	pthread_mutex_init(&in_mutex,NULL);
-	pthread_mutex_init(&out_mutex,NULL);
 	sem_init(&in_sem,0,0);
 	mouse_initialized=1;
 }
@@ -157,11 +153,7 @@ void ciomouse_gotevent(int event, int x, int y)
 	ime->y=y;
 	ime->nextevent=NULL;
 
-	pthread_mutex_lock(&in_mutex);
-
 	listPushNode(&state.input,ime);
-
-	pthread_mutex_unlock(&in_mutex);
 	sem_post(&in_sem);
 }
 
@@ -184,11 +176,7 @@ void add_outevent(int event, int x, int y)
 	ome->endy=y;
 	ome->nextevent=(struct out_mouse_event *)NULL;
 
-	pthread_mutex_lock(&out_mutex);
-
 	listPushNode(&state.output,ome);
-
-	pthread_mutex_unlock(&out_mutex);
 }
 
 int more_multies(int button, int clicks)
@@ -274,9 +262,7 @@ void ciolib_mouse_thread(void *data)
 		else {
 			struct in_mouse_event *in;
 
-			pthread_mutex_lock(&in_mutex);
 			in=listShiftNode(&state.input);
-			pthread_mutex_unlock(&in_mutex);
 			if(in==NULL)
 					continue;
 			but=CIOLIB_BUTTON_NUMBER(in->event);
@@ -449,9 +435,7 @@ int ciolib_getmouse(struct mouse_event *mevent)
 		SLEEP(1);
 	if(listCountNodes(&state.output)) {
 		struct out_mouse_event *out;
-		pthread_mutex_lock(&out_mutex);
 		out=listShiftNode(&state.output);
-		pthread_mutex_unlock(&out_mutex);
 		if(out==NULL)
 			return(-1);
 		mevent->event=out->event;
@@ -478,8 +462,6 @@ int ciolib_ungetmouse(struct mouse_event *mevent)
 	if((me=(struct mouse_event *)malloc(sizeof(struct mouse_event)))==NULL)
 		return(-1);
 	memcpy(me,mevent,sizeof(struct mouse_event));
-	pthread_mutex_lock(&out_mutex);
 	listAddNode(&state.output,me,FIRST_NODE);
-	pthread_mutex_unlock(&out_mutex);
 	return(0);
 }
