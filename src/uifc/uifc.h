@@ -377,7 +377,7 @@ typedef struct {
 /****************************************************************************/
 /* String input/exit box at a specified position							*/
 /****************************************************************************/
-	int (*getstrxy)(int left, int top, char *outstr, int max, long mode, int *lastkey);
+	int (*getstrxy)(int left, int top, int width, char *outstr, int max, long mode, int *lastkey);
 } uifcapi_t;
 
 /****************************************************************************/
