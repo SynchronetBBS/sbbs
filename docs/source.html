@@ -11,7 +11,7 @@
 <UL>
 	<LI>Anonymous FTP (for official source code releases): 
 	<UL>
-		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc230c.zip">v2.30c for DOS and OS/2</A> (1997)
+		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc230b.zip">v2.30b for DOS and OS/2</A> (1997)
 		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc300c.zip">v3.00c for Win32</A> (2001) 
 		<LI><A href="ftp://vert.synchro.net/sbbs_src.tgz">v3.10L for Unix</A> (2003)
 		<br>Required libraries<br>
@@ -34,6 +34,15 @@
 				<br>example: lib/mozilla/js/linux.release</tt>
 			<li><tt>lib/mozilla/nspr/<i><b>os</b></i>.release (or .debug)
 				<br>example: lib/mozilla/nspr/win32.release</tt>
+			<li>Or you may use one of the following module aliases<br>
+				 (for all required libraries for the specified OS and build type):
+			<ul><tt>
+				<li>lib-linux.debug
+				<li>lib-linux.release
+				<li>lib-win32.debug
+				<li>lib-win32.release
+			</tt>
+			</ul>
 		</ul>
 		<li>Required modules for <i>running</i> Synchronet (if you don't already have Synchronet installed):
 		<ul>
@@ -148,6 +157,10 @@ See <tt>docs\sbbscon.txt</tt> for more details on using the console mode version
 <h3>Step-by-step Instructions (using Borland C++ Builder)</h3>
 <ol>
 <li>Install C++ Builder (if you haven't already)
+<li>Make sure your C++ Builder <tt>bin\bcc32.cfg</tt> file contains the correct <i>include</i> and <i>lib</i> paths.
+<br>Example:<pre>
+-Ic:\borland\bcc55\include
+-Lc:\borland\bcc55\lib</pre>
 <li>Get the Synchronet source and library files (if you haven't already)
 <li>At a command prompt, go to the Synchronet <tt>src\sbbs3</tt> directory and run <tt>make</tt>
 <li>At a command prompt, go to the Synchronet <tt>src\sbbs3\scfg</tt> directory and run <tt>make</tt>
