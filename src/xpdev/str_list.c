@@ -64,16 +64,34 @@ size_t strListCount(const str_list_t list)
 	return(i);
 }
 
-static str_list_t str_list_add_at(str_list_t* list, char* str, size_t count)
+static str_list_t str_list_append(str_list_t* list, char* str, size_t index)
 {
 	str_list_t lp;
 
-	if((lp=(str_list_t)realloc(*list,sizeof(char*)*(count+2)))==NULL)
+	if((lp=(str_list_t)realloc(*list,sizeof(char*)*(index+2)))==NULL)
 		return(NULL);
 
 	*list=lp;
-	lp[count++]=str;
-	lp[count]=NULL;	/* terminate list */
+	lp[index++]=str;
+	lp[index]=NULL;	/* terminate list */
+
+	return(lp);
+}
+
+static str_list_t str_list_insert(str_list_t* list, char* str, size_t index)
+{
+	size_t	i;
+	size_t	count;
+	str_list_t lp;
+
+	count = strListCount(*list);
+	if((lp=(str_list_t)realloc(*list,sizeof(char*)*(count+1)))==NULL)
+		return(NULL);
+
+	*list=lp;
+	for(i=index;i<=count;i++)
+		lp[i+1]=lp[i];
+	lp[index]=str;
 
 	return(lp);
 }
@@ -87,22 +105,43 @@ str_list_t strListAddAt(str_list_t* list, const char* str, size_t count)
 
 	strcpy(buf,str);
 
-	return(str_list_add_at(list,buf,count));
+	return(str_list_append(list,buf,count));
 }
-
 
 str_list_t strListAdd(str_list_t* list, const char* str)
 {
 	return strListAddAt(list,str,strListCount(*list));
 }
 
-str_list_t	strListAddList(str_list_t* list, str_list_t add_list)
+str_list_t	strListAddList(str_list_t* list, const str_list_t add_list)
 {
 	size_t	i,j;
 
 	j=strListCount(*list);
 	for(i=0;add_list[i];i++)
 		strListAddAt(list,add_list[i],j++);
+
+	return(*list);
+}
+
+str_list_t strListInsert(str_list_t* list, const char* str, size_t index)
+{
+	char* buf;
+
+	if((buf=(char*)malloc(strlen(str)+1))==NULL)
+		return(NULL);
+
+	strcpy(buf,str);
+
+	return(str_list_insert(list,buf,index));
+}
+
+str_list_t	strListInsertList(str_list_t* list, const str_list_t add_list, size_t index)
+{
+	size_t	i;
+
+	for(i=0;add_list[i];i++)
+		strListInsert(list,add_list[i],index++);
 
 	return(*list);
 }
@@ -144,7 +183,7 @@ str_list_t	strListMerge(str_list_t* list, str_list_t add_list)
 
 	j=strListCount(*list);
 	for(i=0;add_list[i];i++)
-		str_list_add_at(list,add_list[i],j++);
+		str_list_append(list,add_list[i],j++);
 
 	return(*list);
 }

@@ -62,8 +62,14 @@ str_list_t	strListAdd(str_list_t* list, const char* str);
 /* Adds a string into the list at a specific index */
 str_list_t	strListAddAt(str_list_t* list, const char* str, size_t index);
 
-/* Append a string list onto an another string */
-str_list_t	strListAddList(str_list_t* list, str_list_t append_list);
+/* Append a string list onto an another string list */
+str_list_t	strListAddList(str_list_t* list, const str_list_t append_list);
+
+/* Inserts a string into the list at a specific index */
+str_list_t	strListInsert(str_list_t* list, const char* str, size_t index);
+
+/* Insert a string list onto an another string list */
+str_list_t	strListInsertList(str_list_t* list, const str_list_t append_list, size_t index);
 
 /* Add to an exiting or new string list by splitting specified string (str) */
 /* into multiple strings, separated by one of the delimit characters */
