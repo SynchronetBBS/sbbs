@@ -686,6 +686,8 @@ int ciolib_cprintf(char *fmat, ...)
 	ret=_vsnprintf(str,sizeof(str)-1,fmat,argptr);
 #else
     ret=vsnprintf(NULL,0,fmat,argptr);
+	if(ret<0)
+		return(EOF);
 	str=(char *)malloc(ret+1);
 	if(str==NULL)
 		return(EOF);
