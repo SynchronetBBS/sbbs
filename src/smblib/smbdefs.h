@@ -192,6 +192,8 @@
 #define NOU 				0x1294		// Noumea				(+11:00)
 #define WEL 				0x12D0		// Wellington			(+12:00)
 
+#define OTHER_ZONE(zone) (zone<=1000 && zone>=-1000)
+
 										/* Valid hfield_t.types */
 #define SENDER				0x00
 #define SENDERAGENT 		0x01
