@@ -38,6 +38,8 @@
 #ifndef _SMBWRAP_H
 #define _SMBWRAP_H
 
+#include "smblib.h"	/* SMBEXPORT/SMBCALL */
+
 /**********/
 /* Macros */
 /**********/
