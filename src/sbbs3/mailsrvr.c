@@ -697,8 +697,7 @@ static void pop3_thread(void* arg)
 		return;
 	}
 
-	active_clients++;
-	update_clients();
+	active_clients++, update_clients();
 
 	/* Initialize client display */
 	client.size=sizeof(client);
@@ -1132,8 +1131,7 @@ static void pop3_thread(void* arg)
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
-	active_clients--;
-	update_clients();
+	active_clients--,update_clients();
 	client_off(socket);
 
 	thread_down();
@@ -1145,11 +1143,12 @@ static void pop3_thread(void* arg)
 	mail_close_socket(socket);
 }
 
-static ulong rblchk(DWORD mail_addr_n, const char* rbl_addr)
+static ulong rblchk(SOCKET sock, DWORD mail_addr_n, const char* rbl_addr)
 {
 	char		name[256];
 	DWORD		mail_addr;
 	HOSTENT*	host;
+	struct in_addr dnsbl_result;
 
 	mail_addr=ntohl(mail_addr_n);
 	sprintf(name,"%ld.%ld.%ld.%ld.%s"
@@ -1160,13 +1159,20 @@ static ulong rblchk(DWORD mail_addr_n, const char* rbl_addr)
 		,rbl_addr
 		);
 
+	if(startup->options&MAIL_OPT_DNSBL_DEBUG)
+		lprintf("%04d SMTP DNSBL query: %s",sock,name);
+
 	if((host=gethostbyname(name))==NULL)
 		return(0);
 
-	return(*((ulong*)host->h_addr_list[0]));
+	dnsbl_result.s_addr = *((ulong*)host->h_addr_list[0]);
+	lprintf("%04d SMTP DNSBL query: %s resolved to: %s"
+		,sock,name,inet_ntoa(dnsbl_result));
+
+	return(dnsbl_result.s_addr);
 }
 
-static ulong dns_blacklisted(IN_ADDR addr, char* host_name, char* list)
+static ulong dns_blacklisted(SOCKET sock, IN_ADDR addr, char* host_name, char* list)
 {
 	char	fname[MAX_PATH+1];
 	char	str[256];
@@ -1202,7 +1208,7 @@ static ulong dns_blacklisted(IN_ADDR addr, char* host_name, char* list)
 		while(*tp && *tp>' ') tp++;
 		*tp=0;	
 
-		found = rblchk(addr.s_addr, p);
+		found = rblchk(sock, addr.s_addr, p);
 	}
 	fclose(fp);
 
@@ -1210,7 +1216,8 @@ static ulong dns_blacklisted(IN_ADDR addr, char* host_name, char* list)
 }
 
 
-static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_ip, char* to, char* from)
+static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_ip
+						   ,char* to, char* from)
 {
 	char	addr[64];
 	char	tmp[128];
@@ -1392,8 +1399,10 @@ static void smtp_thread(void* arg)
 		return;
 	}
 
+	active_clients++,update_clients();
+
 	/*  SPAM Filters (mail-abuse.org) */
-	dnsbl_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr,host_name,dnsbl);
+	dnsbl_result.s_addr = dns_blacklisted(socket,smtp.client_addr.sin_addr,host_name,dnsbl);
 	if(dnsbl_result.s_addr) {
 		lprintf("%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 			,socket, dnsbl, host_name, host_ip, inet_ntoa(dnsbl_result));
@@ -1404,9 +1413,10 @@ static void smtp_thread(void* arg)
 				,"550 Mail from %s refused due to listing at %s"
 				,host_ip, dnsbl);
 			mail_close_socket(socket);
-			thread_down();
 			lprintf("%04d !SMTP REFUSED SESSION from blacklisted server"
 				,socket);
+			thread_down();
+			active_clients--,update_clients();
 			return;
 		}
 	}
@@ -1419,6 +1429,7 @@ static void smtp_thread(void* arg)
 		sockprintf(socket,"421 System error");
 		mail_close_socket(socket);
 		thread_down();
+		active_clients--,update_clients();
 		return;
 	}
 
@@ -1427,9 +1438,6 @@ static void smtp_thread(void* arg)
 		sprintf(str,"%sSMTPSPY.TXT", scfg.data_dir);
 		spy=fopen(str,"a");
 	}
-
-	active_clients++;
-	update_clients();
 
 	/* Initialize client display */
 	client.size=sizeof(client);
@@ -2357,8 +2365,7 @@ static void smtp_thread(void* arg)
 
 	status(STATUS_WFC);
 
-	active_clients--;
-	update_clients();
+	active_clients--,update_clients();
 	client_off(socket);
 
 	thread_down();
@@ -2531,10 +2538,8 @@ static void sendmail_thread(void* arg)
 			continue;
 		}
 
-		if(active_sendmail!=0) {
-			active_sendmail=0;
-			update_clients();
-		}
+		if(active_sendmail!=0)
+			active_sendmail=0,update_clients();
 
 		smb_close(&smb);
 
@@ -2571,10 +2576,8 @@ static void sendmail_thread(void* arg)
 		smb_rewind(smb.sid_fp);
 		for(offset=0;offset<total_msgs;offset++) {
 
-			if(active_sendmail!=0) {
-				active_sendmail=0;
-				update_clients();
-			}
+			if(active_sendmail!=0)
+				active_sendmail=0,update_clients();
 
 			if(server_socket==INVALID_SOCKET)	/* server stopped */
 				break;
@@ -2616,8 +2619,7 @@ static void sendmail_thread(void* arg)
 			if(msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) 
 				continue;
 
-			active_sendmail=1;
-			update_clients();
+			active_sendmail=1,update_clients();
 
 			lprintf("0000 SEND Message #%lu from %s to %s"
 				,msg.hdr.number, msg.from, msg.to_net.addr);
@@ -2823,10 +2825,8 @@ static void sendmail_thread(void* arg)
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
-	if(active_sendmail!=0) {
-		active_sendmail=0;
-		update_clients();
-	}
+	if(active_sendmail!=0)
+		active_sendmail=0,update_clients();
 
 	thread_down();
 	lprintf("0000 SendMail thread terminated (%u threads remain)", thread_count);
@@ -3178,7 +3178,6 @@ void DLLCALL mail_server(void* arg)
 					lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
 				break;
 			}
-
 
 			if(server_socket!=INVALID_SOCKET
 				&& FD_ISSET(server_socket,&socket_set)) {
