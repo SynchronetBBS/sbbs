@@ -11,8 +11,14 @@
 // port		TCP port number (defaults to 119)
 // user		username (optional)
 // pass		password (optional)
-// area		subboard (internal code) newsgroup
+// area		subboard (internal code) newsgroup flags
 // ...
+
+// Defined area flags:
+// x		do not add tearlines & taglines to exported messages
+// n		do not add "From Newsgroup" text to imported messages
+// t		do not add tearline to imported messages
+// a		convert extended-ASCII chars to ASCII on imported messages
 
 const REVISION = "$Revision$".split(' ')[1];
 
@@ -263,18 +269,25 @@ for(i in area) {
 		if(hdr.from_net_type==NET_INTERNET)	/* no dupe loop */
 			continue;
 		if(hdr.from_net_type	/* don't gate messages between net types */
-			&& msgbase.settings!=null && !(msgbase.settings&SUB_GATE))
+			&& msgbase.settings!=undefined && !(msgbase.settings&SUB_GATE))
 			continue;
 
-		body = msgbase.get_msg_body(false, ptr
+		body = msgbase.get_msg_body(
+				 false	/* retrieve by offset */
+				,ptr	/* message number */
 				,true	/* remove ctrl-a codes */
 				,true	/* rfc822 formatted text */
-				,true	/* include tails */);
+				,true	/* include tails */
+				);
 		if(body == null) {
 			printf("!FAILED to read message number %ld\r\n",ptr);
 			continue;
 		}
-		body = ascii_str(body);
+		if(msgbase.settings!=undefined && msgbase.settings&SUB_ASCII) {
+			/* Convert Ex-ASCII chars to approximate ASCII equivalents */
+			body = ascii_str(body);
+			hdr.subject = ascii_str(hdr.subject);
+		}
 		if(flags.indexOf('x')==-1) {
 			body += tearline;
 			body += tagline;
@@ -527,6 +540,11 @@ for(i in area) {
 			var reason = format("Blocked subject (%s)",hdr.subject);
 			system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,server,hdr.to);
 			continue;
+		}
+
+		if(flags.indexOf('a')>=0) {	// import ASCII only (convert ex-ASCII to ASCII)
+			body = ascii_str(body);
+			hdr.subject = ascii_str(hdr.subject);
 		}
 
 		hdr.from_net_type=NET_INTERNET;
