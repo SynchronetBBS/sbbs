@@ -340,7 +340,6 @@ function Server_Work() {
 				var target = Users[kills[kill].toUpperCase()];
 				if (!target)
 					target = search_nickbuf(kills[kill]);
-				log("target.parent: " + target.parent + " this.nick: " + this.nick);
 				if (target && (this.hub ||
 				    (target.parent == this.nick)) ) {
 					umode_notice(USERMODE_KILL,"Notice","Received KILL message for " + target.nuh + ". From " + ThisOrigin.nick + " Path: " + target.nick + "!Synchronet!" + ThisOrigin.nick + " (" + reason + ")");
@@ -450,6 +449,8 @@ function Server_Work() {
 					var test_server = searchbyserver(cmd[7]);
 					if (!test_server || (this.nick !=
 					    test_server.parent)) {
+						if (debug && test_server)
+							log("this.nick: " + this.nick + " test_server.parent: " + test_server.parent);
 						umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to introduce nick from server not behind it: " + cmd[1] + "@" + cmd[7]);
 						this.ircout("KILL " + cmd[1] + " :Invalid Origin.");
 						break;
