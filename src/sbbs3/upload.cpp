@@ -274,7 +274,7 @@ bool sbbs_t::upload(uint dirnum)
 	f.misc=0;
 	f.altpath=altul;
 	bputs(text[Filename]);
-	if(!getstr(fname,12,K_UPPER) || strchr(fname,'?') || strchr(fname,'*')
+	if(!getstr(fname,12,0) || strchr(fname,'?') || strchr(fname,'*')
 		|| !checkfname(fname) || (trashcan(fname,"file") && !dir_op(dirnum))) {
 		if(fname[0])
 			bputs(text[BadFilename]);
@@ -300,7 +300,7 @@ bool sbbs_t::upload(uint dirnum)
 	else if(online==ON_LOCAL) {
 		bputs(text[FileNotOnDisk]);
 		bputs(text[EnterPath]);
-		if(!getstr(tmp,60,K_LINE|K_UPPER))
+		if(!getstr(tmp,60,K_LINE))
 			return(false);
 		backslash(tmp);
 		sprintf(src,"%s%s",tmp,fname); }
