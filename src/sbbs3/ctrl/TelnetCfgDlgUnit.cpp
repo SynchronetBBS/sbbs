@@ -95,6 +95,8 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         =MainForm->bbs_startup.options&BBS_OPT_ALLOW_RLOGIN;
     RLogin2ndNameCheckBox->Checked
         =MainForm->bbs_startup.options&BBS_OPT_USE_2ND_RLOGIN;
+    QWKEventsCheckBox->Checked
+        =!(MainForm->bbs_startup.options&BBS_OPT_NO_QWK_EVENTS);
 
     RLoginEnabledCheckBoxClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
@@ -164,6 +166,10 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->bbs_startup.options|=BBS_OPT_XTRN_MINIMIZED;
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_XTRN_MINIMIZED;
+    if(QWKEventsCheckBox->Checked==true)
+        MainForm->bbs_startup.options&=~BBS_OPT_NO_QWK_EVENTS;
+    else
+        MainForm->bbs_startup.options|=BBS_OPT_NO_QWK_EVENTS;
     if(AutoLogonCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_AUTO_LOGON;
     else

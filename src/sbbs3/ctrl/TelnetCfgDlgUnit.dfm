@@ -90,6 +90,17 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ShowHint = True
         TabOrder = 4
       end
+      object QWKEventsCheckBox: TCheckBox
+        Left = 182
+        Top = 108
+        Width = 144
+        Height = 25
+        Hint = 'Handle QWK Message Packet Events in This Instance'
+        Caption = 'QWK Msg Events'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 5
+      end
     end
     object TelnetTabSheet: TTabSheet
       Caption = 'Telnet'
