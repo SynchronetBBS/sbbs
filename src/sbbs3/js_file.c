@@ -149,7 +149,7 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			mode=JS_GetStringBytes(str);
 		} else if(JSVAL_IS_BOOLEAN(argv[i]))	/* shareable */
 			shareable=JSVAL_TO_BOOLEAN(argv[i]);
-		else	/* bufsize */
+		else if(JSVAL_IS_NUMBER(argv[i]))	/* bufsize */
 			JS_ValueToInt32(cx,argv[i],&bufsize);
 	}
 	SAFECOPY(p->mode,mode);
