@@ -710,29 +710,35 @@ int sbbs_t::syncatcodes(char *sp, int len)
 
 	/* Message header codes */
 	else if(!strcmp(sp,"MSG_TO") && current_msg!=NULL)
-		bputs(current_msg->to);
-	else if(!strcmp(sp,"MSG_TO_EXT") && current_msg!=NULL)
-		bputs(current_msg->to_ext);
-	else if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL)
-		bputs(current_msg->to_net.type==NET_FIDO
-			? faddrtoa(*(faddr_t *)current_msg->to_net.addr) 
-			: (char*)current_msg->to_net.addr);
+		bputs(current_msg->to==NULL ? nulstr : current_msg->to);
+	else if(!strcmp(sp,"MSG_TO_EXT") && current_msg!=NULL) {
+		if(current_msg->to_ext!=NULL)
+			bprintf("#%s",current_msg->to_ext);
+	}
+	else if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL) {
+		if(current_msg->to_net.type!=NET_NONE)
+			bprintf("(%s)",current_msg->to_net.type==NET_FIDO
+				? faddrtoa(*(faddr_t *)current_msg->to_net.addr) 
+				: (char*)current_msg->to_net.addr);
+	}
 	else if(!strcmp(sp,"MSG_FROM") && current_msg!=NULL) {
 		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
-			bputs(current_msg->from);
+			bputs(current_msg->from==NULL ? nulstr : current_msg->from);
 	}
 	else if(!strcmp(sp,"MSG_FROM_EXT") && current_msg!=NULL) {
 		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
-			bputs(current_msg->from_ext);
+			if(current_msg->from_ext!=NULL)
+				bprintf("#%s",current_msg->from_ext);
 	}
 	else if(!strcmp(sp,"MSG_FROM_NET") && current_msg!=NULL) {
-		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
-			bputs(current_msg->from_net.type==NET_FIDO
+		if(current_msg->to_net.type!=NET_NONE
+			&& (!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP))
+			bprintf("(%s)",current_msg->from_net.type==NET_FIDO
 				? faddrtoa(*(faddr_t *)current_msg->from_net.addr) 
 				: (char*)current_msg->from_net.addr);
 	}
 	else if(!strcmp(sp,"MSG_SUBJECT") && current_msg!=NULL)
-		bputs(current_msg->subj);
+		bputs(current_msg->subj==NULL ? nulstr : current_msg->subj);
 	else if(!strcmp(sp,"MSG_DATE") && current_msg!=NULL)
 		bputs(timestr((time_t *)&current_msg->hdr.when_written.time));
 	else if(!strcmp(sp,"MSG_TIMEZONE") && current_msg!=NULL)
