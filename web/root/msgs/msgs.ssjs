@@ -17,7 +17,15 @@ if(offset > 0)  {
 	}
 }
 var currpage=Math.floor(offset/max_messages);
-var total_pages=Math.floor(msgbase.total_msgs/max_messages);
+var msgcount=0;
+var msgarray;
+if(sub=='mail') {
+	msgarray=get_my_message_offsets();
+}
+else {
+	msgarray=get_all_message_offsets();
+}
+var total_pages=Math.floor(msgarray.length/max_messages);
 var firstpage=0;
 var lastpage=firstpage+max_pages-1;
 if(lastpage>total_pages)
@@ -55,9 +63,7 @@ for(var page=firstpage;page<=lastpage;page++) {
 		template.pagelinks += "<a href=\""+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(page*max_messages)+'">'+(page+1)+'</a> ';
 }
 
-
-hdr=msgbase.get_msg_header(true,msgbase.total_msgs-1-offset-max_messages);
-if(hdr!=null)  {
+if(offset+max_messages < msgarray.length)  {
 	template.pagelinks+='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'">NEXT</a>';
 }
 
@@ -83,22 +89,19 @@ if(sub!='mail')  {
 }
 
 write_template("header.inc");
-last_offset=msgbase.total_msgs-1-offset;
-var displayed=0;
+last_offset=msgarray.length-1-offset;
+
 template.messages=new Array;
 template.group=msg_area.grp_list[g];
 
-for(;displayed<max_messages && ((hdr=msgbase.get_msg_header(true,last_offset)) != null);last_offset--) {
-	if(hdr==null)
-		continue;
-	if(hdr.subject=='')
-		hdr.subject="-- No Subject --";
-	if(sub=='mail' && ((idx=msgbase.get_msg_index(true,last_offset))==null || idx.to!=user.number))
-		continue;
-	template.messages[displayed.toString()]=hdr;
- 	template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,last_offset,true,true));
+for(displayed=0;displayed<max_messages && last_offset >= 0 && msgarray[last_offset].hdr != null;last_offset--) {
+	if(msgarray[last_offset].hdr.subject=='')
+		msgarray[last_offset].hdr.subject="-- No Subject --";
+	template.messages[displayed.toString()]=msgarray[last_offset].hdr;
+	template.messages[displayed.toString()].attachments=count_attachments(msgarray[last_offset].hdr,msgbase.get_msg_body(true,msgarray[last_offset].offset,true,true));
 	displayed++;
 }
+
 write_template("msgs/msgs.inc");
 write_template("footer.inc");
 msgbase.close();
