@@ -649,6 +649,9 @@ while(client.socket.is_connected && !quit) {
 				hdr.from_ext=user.number;
 			}
 
+			if(!(user.security.restrictions&UFLAG_Q))	// Treat this as a local message
+				hdr.from_net_type=NET_NONE;
+
 			/* Security logging */
 			hdr.from_ip_addr	= client.ip_address;
 			hdr.from_host_name	= client.host_name;
