@@ -146,6 +146,11 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			sbbs->lncntr=val;
 			break;
 		case CON_PROP_ATTR:
+			if(JSVAL_IS_STRING(*vp)) {
+				if((str=JS_ValueToString(cx, *vp))==NULL)
+					break;
+				val=attrstr(JS_GetStringBytes(str));
+			}
 			sbbs->attr(val);
 			break;
 		case CON_PROP_TOS:
@@ -210,7 +215,7 @@ static struct JSPropertySpec js_console_properties[] = {
 static char* con_prop_desc[] = {
 	 "status bit field (see CON_* in sbbsdefs.js for bit definitions)"
 	,"current line counter (used for automatic screen pause)"
-	,"current display attributes"
+	,"current display attributes (set with number or string value)"
 	,"set to 1 if the terminal cursor is already at the top of the screen"
 	,"number of terminal rows"
 	,"automatically detected terminal settings (see USER_* in sbbsdefs.js for bit definitions)"
@@ -1120,17 +1125,36 @@ static JSClass js_console_class = {
 
 JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 {
-	JSObject* obj;
+	JSObject*	obj;
+	sbbs_t*		sbbs;
 
-	obj = JS_DefineObject(cx, parent, "console", &js_console_class, NULL, JSPROP_ENUMERATE);
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(NULL);
 
-	if(obj==NULL)
+	if((obj=JS_DefineObject(cx, parent, "console", &js_console_class, NULL, JSPROP_ENUMERATE))==NULL)
 		return(NULL);
 
 	if(!JS_DefineProperties(cx, obj, js_console_properties))
 		return(NULL);
 
 	if (!js_DefineMethods(cx, obj, js_console_functions)) 
+		return(NULL);
+
+	/* Create an array of pre-defined colors */
+
+	JSObject* color_list;
+
+	if((color_list=JS_NewArrayObject(cx,0,NULL))==NULL)
+		return(NULL);
+
+	for(uint i=0;i<sbbs->cfg.total_colors;i++) {
+
+		jsval val=INT_TO_JSVAL(sbbs->cfg.color[i]);
+		if(!JS_SetElement(cx, color_list, i, &val))
+			return(NULL);
+	}	
+	if(!JS_DefineProperty(cx, obj, "color_list", OBJECT_TO_JSVAL(color_list)
+		,NULL, NULL, 0))
 		return(NULL);
 
 #ifdef _DEBUG
