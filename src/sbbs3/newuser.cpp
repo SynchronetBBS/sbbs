@@ -346,8 +346,9 @@ void sbbs_t::newuser()
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
 			if(!strcmp(str,useron.pass)) break;
 			if(cfg.sys_misc&SM_ECHO_PW) 
-				sprintf(tmp,"%s FAILED Password verification: '%s' instead of '%s'",str
+				sprintf(tmp,"%s FAILED Password verification: '%s' instead of '%s'"
 					,useron.alias
+					,str
 					,useron.pass);
 			else
 				sprintf(tmp,"%s FAILED Password verification"
