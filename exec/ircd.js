@@ -1461,8 +1461,26 @@ function IRCClient_RMChan(rmchan_obj) {
 }
 
 //////////////////// Output Helper Functions ////////////////////
-function IRCClient_rawout(str) {
+function writeout(sock,str) {
+	if (!sock || !str)
+		return 0;
+	var send_tries;
 	var sent;
+	for (send_tries=0;send_tries<=10;send_tries++) {
+		sent = sock.send(str + "\r\n");
+		if (sent)
+			return 1;
+		log("!Warning: Socket error: " + sock.error + " -- Retrying.");
+		mswait(1);
+		if (!sock.is_connected)
+			return 0; // Failure
+	}
+	// If we get this far, we failed miserably.
+	log("!ERROR: Socket write failed after 10 retries!  Dropping socket.");
+	return 0;
+}
+
+function IRCClient_rawout(str) {
 	var sendsock;
 	var str_end;
 	var str_beg;
@@ -1484,42 +1502,36 @@ function IRCClient_rawout(str) {
 		return 0;
 	}
 
-	sent = sendsock.send(str + "\r\n");
-
-	if (!sent)
-		log("!ERROR: Socket write failed: " + sendsock.error);
+	if (!writeout(sendsock,str))
+		this.quit("Socket write failed miserably.");
 }
 
 function IRCClient_originatorout(str,origin) {
 	var send_data;
 	var sendsock;
-	var sent;
 
 	if (debug)
 		log(format("[%s->%s]: %s",origin.nick,this.nick,str));
 
 	sendsock = this.socket;
 	if((this.conntype == TYPE_USER) && this.local && !this.server) {
-		send_data = ":" + origin.ircnuh + " " + str + "\r\n";
+		send_data = ":" + origin.ircnuh + " " + str;
 	} else if (this.conntype && this.parent) {
 		sendsock = Clients[this.parent].socket;
-		send_data = ":" + origin.nick + " " + str + "\r\n";
+		send_data = ":" + origin.nick + " " + str;
 	} else if (this.conntype && this.server) {
-		send_data = ":" + origin.nick + " " + str + "\r\n";
+		send_data = ":" + origin.nick + " " + str;
 	} else {
 		log("!ERROR: No socket to send to?");
 		return 0;
 	}
 
-	sent = sendsock.send(send_data + "\r\n");
-
-	if (!sent)
-		log("!ERROR: Socket write failed: " + sendsock.error);
+	if (!writeout(sendsock,send_data))
+		this.quit("Socket write failed miserably.");
 }
 
 function IRCClient_ircout(str) {
 	var sendsock;
-	var sent;
 
 	if (debug)
 		log(format("[%s->%s]: %s",servername,this.nick,str));
@@ -1533,10 +1545,8 @@ function IRCClient_ircout(str) {
 		return 0;
 	}
 
-	sent = sendsock.send(":" + servername + " " + str + "\r\n");
-
-	if (!sent)
-		log("!ERROR: Socket write failed: " + sendsock.error);
+	if (!writeout(sendsock,":" + servername + " " + str))
+		this.quit("Socket write failed miserably.");
 }
 
 function IRCClient_server_notice(str) {
