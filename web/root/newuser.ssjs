@@ -119,13 +119,6 @@ if(system.newuser_questions & UQ_CMDSHELL) {
 else
 	template.shell_required=optional_str;
 
-if(system.newuser_questions & UQ_XEDIT) {
-	required.push("editor");
-	template.editor_required=required_str;
-}
-else
-	template.editor_required=optional_str;
-
 if(system.newuser_questions & UQ_NONETMAIL)
 	template.email_required=optional_str;
 else {
@@ -321,10 +314,12 @@ else {
 
 	template.title="New user created";
 	write_template("header.inc");
+	writeln("<p>");
 	if(http_request.query.netmail != undefined && http_request.query.netmail != '')
 		write("Your account has been created and the password has been mailed to: "+http_request.query.netmail);
 	else
 		write("Your account has been created and the password is: "+newpw);
+	writeln("</p>");
 	write_template("footer.inc");
 }
 
@@ -354,7 +349,7 @@ function gen_shell_list(current) {
 function gen_editor_list(current) {
 	var retval="";
 	retval='<select name="editor">\n';
-	retval+='<option value=""'+(current==''?' selected':'')+'>Internal Editor</option>\n';
+	retval+='<option value=""'+(current==''?' selected':'')+'>Internal Line Editor</option>\n';
 	for(ed in xtrn_area.editor) {
 		retval+='<option value="'+ed+'"'+(current==ed?' selected':'')+'>'+xtrn_area.editor[ed].name+'</option>\n';
 	}
