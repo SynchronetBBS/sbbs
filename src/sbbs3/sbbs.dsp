@@ -129,6 +129,10 @@ SOURCE=.\con_out.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\conobj.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\crc32.c
 # End Source File
 # Begin Source File
@@ -362,10 +366,6 @@ SOURCE=.\telgate.cpp
 # Begin Source File
 
 SOURCE=.\telnet.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\termobj.cpp
 # End Source File
 # Begin Source File
 
