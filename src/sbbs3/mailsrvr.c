@@ -1282,7 +1282,7 @@ static void signal_smtp_sem(void)
 /*****************************************************************************/
 static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
 						,char* host, char* ip, uint usernum
-						,char* sender, char* sender_addr, char* cmd)
+						,char* sender, char* sender_addr, char* reverse_path, char* cmd)
 {
 	char	str[1024];
     int		i,j,len;
@@ -1324,7 +1324,10 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
                 case 'Q':   /* QWK ID */
                     strcat(cmd,scfg.sys_id);
                     break;
-				case 'S':	/* sender */
+				case 'R':	/* reverse path */
+					strcat(cmd,reverse_path);
+					break;
+				case 'S':	/* sender name */
 					strcat(cmd,sender);
 					break;
 				case 'A':	/* sender address */
@@ -1448,7 +1451,7 @@ static BOOL
 js_mailproc(SOCKET sock, client_t* client, user_t* user
 			,char* fname, char* cmdline
 			,char* msgtxt_fname, char* rcptlst_fname, char* proc_err_fname
-			,char* sender, char* sender_addr)
+			,char* sender, char* sender_addr, char* reverse_path)
 {
 	char*		p;
 	char		path[MAX_PATH+1];
@@ -1560,6 +1563,10 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 		JS_DefineProperty(js_cx, js_glob, "sender_address"
 			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,sender_addr))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(js_cx, js_glob, "reverse_path"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,reverse_path))
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 		if(getfext(fname)==NULL) /* No extension specified, assume '.js' */
@@ -2059,7 +2066,7 @@ static void smtp_thread(void* arg)
 						if(*p==';' || *p==0)	/* comment or blank line */
 							continue;
 						mailcmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname
-							,host_name, host_ip, relay_user.number, sender, sender_addr, str);
+							,host_name, host_ip, relay_user.number, sender, sender_addr, reverse_path, str);
 						lprintf(LOG_DEBUG,"%04d SMTP Executing external process: %s", socket, str);
 #ifdef JAVASCRIPT
 						if(*p=='?') {
@@ -2068,7 +2075,7 @@ static void smtp_thread(void* arg)
 							truncstr(fname," \t");
 							js_mailproc(socket, &client, &relay_user
 								,fname, p ,msgtxt_fname, rcptlst_fname, proc_err_fname
-								,sender, sender_addr);
+								,sender, sender_addr, reverse_path);
 						} else									
 #endif
 							/* Native */
