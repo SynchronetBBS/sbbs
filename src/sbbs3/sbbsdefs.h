@@ -104,6 +104,7 @@ typedef struct {
 #define LEN_QWKID	8		/* Maximum length of QWK-ID					*/
 #define LEN_MODNAME 8		/* Maximum length of loadable module name	*/
 #define LEN_SIFNAME 8		/* Maximum length of SIF filename			*/
+#define LEN_EXTCODE (LEN_CODE*2)	/* Code prefix + suffix */
 
 							/* Lengths of various strings				*/
 #define LEN_GSNAME	15		/* Group/Lib short name						*/
@@ -929,8 +930,8 @@ typedef struct {						/* Users information */
 			netmail[LEN_NETMAIL+1], 	/* NetMail forwarding address */
 			tmpext[4],					/* QWK Packet extension */
 			comment[LEN_COMMENT+1], 	/* Private comment about user */
-			cursub[(LEN_CODE*2)+1],		/* Current sub-board internal code */
-			curdir[(LEN_CODE*2)+1],		/* Current directory internal code */
+			cursub[LEN_EXTCODE+1],		/* Current sub-board internal code */
+			curdir[LEN_EXTCODE+1],		/* Current directory internal code */
 			curxtrn[9];					/* Current external program internal code */
 
 	uchar	level,						/* Security level */

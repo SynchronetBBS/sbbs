@@ -43,7 +43,7 @@
 #include "startup.h"
 
 typedef struct {                        /* Message sub board info */
-	char	code[(LEN_CODE*2)+1];		/* Internal code (with optional lib prefix) */
+	char	code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
 	char	code_suffix[LEN_CODE+1];	/* Eight character code suffix */
 	char	lname[LEN_SLNAME+1],		/* Short name - used for prompts */
 			sname[LEN_SSNAME+1],		/* Long name - used for listing */
@@ -84,7 +84,7 @@ typedef struct {                        /* Message group info */
 } grp_t;
 
 typedef struct {                        /* Transfer Directory Info */
-	char	code[(LEN_CODE*2)+1];		/* Internal code (with optional lib prefix) */
+	char	code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
 	char	code_suffix[LEN_CODE+1];	/* Eight character code suffix */
 	char	lname[LEN_SLNAME+1],		/* Short name - used for prompts */
 			sname[LEN_SSNAME+1],		/* Long name - used for listing */
