@@ -121,6 +121,7 @@ SMBEXPORT int 	SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 	SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 	SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT void	SMBCALL smb_freemsgmem(smbmsg_t* msg);
+SMBEXPORT void	SMBCALL smb_freemsghdrmem(smbmsg_t* msg);
 SMBEXPORT ulong	SMBCALL smb_hdrblocks(ulong length);
 SMBEXPORT ulong	SMBCALL smb_datblocks(ulong length);
 SMBEXPORT long	SMBCALL smb_allochdr(smb_t* smb, ulong length);
