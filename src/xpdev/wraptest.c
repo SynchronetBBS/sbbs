@@ -278,6 +278,10 @@ int main()
 		}
 		sem_wait(&thread_data.child_sem);	/* wait for thread to end */
 	}
+	printf("\nsem_trywait_block test...");
+	t=time(NULL);
+	sem_trywait_block(&thread_data.parent_sem,5000);
+	printf("\ntimed-out after %ld seconds (should be 5 seconds)\n",time(NULL)-t);
 	sem_destroy(&thread_data.parent_sem);
 	sem_destroy(&thread_data.child_sem);
 	return 0;
