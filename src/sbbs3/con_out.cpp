@@ -76,6 +76,9 @@ int sbbs_t::bputs(char *str)
 	int i;
     ulong l=0;
 
+	if(online==ON_LOCAL) 			/* script running as event */
+		return(eprintf("%s",str));
+
 	while(str[l]) {
 		if(str[l]==CTRL_A	        /* ctrl-a */
 			&& str[l+1]!=0) {		/* valid */
@@ -110,6 +113,9 @@ int sbbs_t::bputs(char *str)
 int sbbs_t::rputs(char *str)
 {
     ulong l=0;
+
+	if(online==ON_LOCAL) 			/* script running as event */
+		return(eprintf("%s",str));
 
 	while(str[l])
 		outchar(str[l++]);
