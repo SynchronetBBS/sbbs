@@ -348,7 +348,6 @@ BOOL DLLCALL fexist(const char *filespec)
 
 	glob_t g;
     int c;
-    int l;
 
 	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
 		return(FALSE);
@@ -365,8 +364,7 @@ BOOL DLLCALL fexist(const char *filespec)
     // make sure it's not a directory
 	c = g.gl_pathc;
     while (c--) {
-    	l = strlen(g.gl_pathv[c]);
-    	if (l && g.gl_pathv[c][l-1] != '/') {
+    	if (lastchar(g.gl_pathv[c]) != '/') {
         	globfree(&g);
             return TRUE;
         }
