@@ -35,6 +35,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#ifndef _STARTUP_H_
+#define _STARTUP_H_
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -103,3 +106,42 @@ typedef struct {
 #define BBS_OPT_LOCAL_TIMEZONE		(1<<30)	/* Don't force UCT/GMT				*/
 #define BBS_OPT_MUTE				(1<<31)	/* Mute sounds						*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef DLLEXPORT
+#undef DLLEXPORT
+#endif
+#ifdef DLLCALL
+#undef DLLCALL
+#endif
+
+#ifdef _WIN32
+	#ifdef SBBS_EXPORTS
+		#define DLLEXPORT __declspec(dllexport)
+	#else
+		#define DLLEXPORT __declspec(dllimport)
+	#endif
+	#ifdef __BORLANDC__
+		#define DLLCALL __stdcall
+	#else
+		#define DLLCALL
+	#endif
+#else
+	#define DLLEXPORT
+	#define DLLCALL
+#endif
+
+/* arg is pointer to static bbs_startup_t* */
+DLLEXPORT void			DLLCALL bbs_thread(void* arg);
+DLLEXPORT void			DLLCALL bbs_terminate(void);
+DLLEXPORT const char*	DLLCALL js_ver(void);
+DLLEXPORT const char*	DLLCALL bbs_ver(void);
+DLLEXPORT long			DLLCALL	bbs_ver_num(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* Don't add anything after this line */
