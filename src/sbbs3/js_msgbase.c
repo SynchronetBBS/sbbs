@@ -44,7 +44,6 @@ static scfg_t* scfg=NULL;
 typedef struct
 {
 	smb_t	smb;
-	ushort	subnum;
 	BOOL	debug;
 
 } private_t;
@@ -69,16 +68,16 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	js_str = JS_ValueToString(cx, argv[0]);
 	code = JS_GetStringBytes(js_str);
 	if(stricmp(code,"mail")==0) {
-		p->subnum=INVALID_SUB;
+		p->smb.subnum=INVALID_SUB;
 		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,code);
 	} else {
-		for(p->subnum=0;p->subnum<scfg->total_subs;p->subnum++)
-			if(!stricmp(scfg->sub[p->subnum]->code,code))
+		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++)
+			if(!stricmp(scfg->sub[p->smb.subnum]->code,code))
 				break;
-		if(p->subnum>=scfg->total_subs)	/* unknown code */
+		if(p->smb.subnum>=scfg->total_subs)	/* unknown code */
 			return(JS_TRUE);
 		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s"
-			,scfg->sub[p->subnum]->data_dir,code);
+			,scfg->sub[p->smb.subnum]->data_dir,code);
 	}
 
 	if(argc>1)
@@ -143,7 +142,7 @@ static JSClass js_msghdr_class = {
 	,js_finalize_msgbase	/* finalize		*/
 };
 
-static BOOL parse_header_object(JSContext* cx, JSObject* hdr, ushort subnum, smbmsg_t* msg)
+static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbmsg_t* msg)
 {
 	char*		cp;
 	ushort		nettype;
@@ -418,7 +417,7 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		if(smb_getmsghdr(&(p->smb), &msg)!=0)
 			break;
 
-		if(!parse_header_object(cx, hdr, p->subnum, &msg))
+		if(!parse_header_object(cx, hdr, p->smb.subnum, &msg))
 			break;
 
 		if(smb_putmsghdr(&(p->smb), &msg)!=0)
@@ -528,14 +527,14 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((body=JS_GetStringBytes(js_str))==NULL)
 		return(JS_FALSE);
 
-	if(!parse_header_object(cx, hdr, p->subnum, &msg))
+	if(!parse_header_object(cx, hdr, p->smb.subnum, &msg))
 		return(JS_TRUE);
 
 	msg.hdr.when_written.time=time(NULL);
 	msg.hdr.when_written.zone=scfg->sys_timezone;
 
 	truncsp(body);
-	if(savemsg(scfg, &(p->smb), p->subnum, &msg, body)==0)
+	if(savemsg(scfg, &(p->smb), &msg, body)==0)
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 
 	return(JS_TRUE);

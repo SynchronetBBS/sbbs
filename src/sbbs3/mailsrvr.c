@@ -624,6 +624,8 @@ static void pop3_thread(void* arg)
 		memset(&user,0,sizeof(user));
 
 		sprintf(smb.file,"%smail",scfg.data_dir);
+		smb.retry_time=scfg.smb_retry_time;
+		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=0) {
 			lprintf("%04d !ERROR %d (%s) opening %s",socket,i,smb.last_error,smb.file);
 			sockprintf(socket,"-ERR %d opening %s",i,smb.file);
@@ -1427,7 +1429,8 @@ static void smtp_thread(void* arg)
 					}
 					fread(msgbuf,length,1,msgtxt);
 					msgbuf[length]=0;	/* ASCIIZ */
-					if((i=savemsg(&scfg, &smb, subnum, &msg, msgbuf))!=0) {
+					smb.subnum=subnum;
+					if((i=savemsg(&scfg, &smb, &msg, msgbuf))!=0) {
 						lprintf("%04d !SMTP ERROR %d (%s) saving message"
 							,socket,i,smb.last_error);
 						sockprintf(socket, "452 ERROR %d (%s) saving message"
@@ -1447,6 +1450,7 @@ static void smtp_thread(void* arg)
 				/* E-mail */
 				sprintf(smb.file,"%smail", scfg.data_dir);
 				smb.retry_time=scfg.smb_retry_time;
+				smb.subnum=INVALID_SUB;
 				if((i=smb_open(&smb))!=0) {
 					lprintf("%04d !SMTP ERROR %d (%s) opening %s"
 						,socket, i, smb.last_error, smb.file);
@@ -2359,6 +2363,8 @@ static void sendmail_thread(void* arg)
 		mswait(3000);
 
 		sprintf(smb.file,"%smail",scfg.data_dir);
+		smb.retry_time=scfg.smb_retry_time;
+		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=0) 
 			continue;
 		if((i=smb_locksmbhdr(&smb))!=0)
