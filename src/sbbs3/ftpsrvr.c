@@ -2042,10 +2042,15 @@ char* vpath(int lib, int dir, char* str)
 	return(str);
 }
 
-void badpassword(SOCKET sock)
+static BOOL badlogin(SOCKET sock, ulong* login_attempts)
 {
-	sockprintf(sock,"530 Password not accepted.");
 	mswait(5000);	/* As recommended by RFC2577 */
+	if(++(*login_attempts)>=3) {
+		sockprintf(sock,"421 Too many failed login attempts.");
+		return(TRUE);
+	}
+	sockprintf(sock,"530 Invalid login.");
+	return(FALSE);
 }
 
 static void ctrl_thread(void* arg)
@@ -2087,7 +2092,8 @@ static void ctrl_thread(void* arg)
 	long		filepos=0L;
 	long		timeleft;
 	ulong		l;
-	ulong		avail;
+	ulong		login_attempts=0;
+	ulong		avail;	/* disk space */
 	BOOL		detail;
 	BOOL		success;
 	BOOL		getdate;
@@ -2357,7 +2363,8 @@ static void ctrl_thread(void* arg)
 			user.number=matchuser(&scfg,user.alias);
 			if(!user.number) {
 				lprintf("%04d !UNKNOWN USER: %s",sock,user.alias);
-				badpassword(sock);
+				if(badlogin(sock,&login_attempts))
+					break;
 				continue;
 			}
 			if((i=getuserdat(&scfg, &user))!=0) {
@@ -2370,15 +2377,17 @@ static void ctrl_thread(void* arg)
 			if(user.misc&(DELETED|INACTIVE)) {
 				lprintf("%04d !DELETED or INACTIVE user #%d (%s)"
 					,sock,user.number,user.alias);
-				badpassword(sock);
 				user.number=0;
+				if(badlogin(sock,&login_attempts))
+					break;
 				continue;
 			}
 			if(user.rest&FLAG('T')) {
 				lprintf("%04d !T RESTRICTED user #%d (%s)"
 					,sock,user.number,user.alias);
-				badpassword(sock);
 				user.number=0;
+				if(badlogin(sock,&login_attempts))
+					break;
 				continue;
 			}
 			if(user.ltoday>scfg.level_callsperday[user.level]
@@ -2401,8 +2410,9 @@ static void ctrl_thread(void* arg)
 			if(!user.pass[0]) {	/* Guest/Anonymous */
 				if(trashcan(&scfg,password,"email")) {
 					lprintf("%04d !BLOCKED e-mail address: %s",sock,password);
-					badpassword(sock);
 					user.number=0;
+					if(badlogin(sock,&login_attempts))
+						break;
 					continue;
 				}
 				lprintf("%04d Guest: %s",sock,password);
@@ -2420,7 +2430,8 @@ static void ctrl_thread(void* arg)
 					lprintf("%04d !FAILED Password attempt for user %s"
 						,sock, user.alias);
 				user.number=0;
-				badpassword(sock);
+				if(badlogin(sock,&login_attempts))
+					break;
 				continue;
 			}
 
