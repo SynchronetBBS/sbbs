@@ -3,37 +3,37 @@ object CodeInputForm: TCodeInputForm
   Top = 374
   BorderStyle = bsDialog
   Caption = 'Parameter Required'
-  ClientHeight = 73
-  ClientWidth = 331
+  ClientHeight = 90
+  ClientWidth = 407
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
   Position = poScreenCenter
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
   object Bevel1: TBevel
-    Left = 8
-    Top = 8
-    Width = 228
-    Height = 55
+    Left = 10
+    Top = 10
+    Width = 280
+    Height = 68
     Anchors = [akLeft, akTop, akRight, akBottom]
     Shape = bsFrame
   end
   object Label: TLabel
-    Left = 13
-    Top = 26
-    Width = 98
-    Height = 20
+    Left = 16
+    Top = 32
+    Width = 129
+    Height = 24
     Alignment = taRightJustify
     AutoSize = False
     Caption = 'Name/ID/Code'
   end
   object OKBtn: TButton
-    Left = 247
-    Top = 8
-    Width = 75
-    Height = 25
+    Left = 304
+    Top = 10
+    Width = 92
+    Height = 31
     Anchors = [akTop, akRight]
     Caption = 'OK'
     Default = True
@@ -41,10 +41,10 @@ object CodeInputForm: TCodeInputForm
     TabOrder = 0
   end
   object CancelBtn: TButton
-    Left = 247
-    Top = 38
-    Width = 75
-    Height = 25
+    Left = 304
+    Top = 47
+    Width = 92
+    Height = 31
     Anchors = [akTop, akRight]
     Cancel = True
     Caption = 'Cancel'
@@ -52,10 +52,10 @@ object CodeInputForm: TCodeInputForm
     TabOrder = 1
   end
   object Edit: TEdit
-    Left = 124
-    Top = 26
-    Width = 98
-    Height = 21
+    Left = 153
+    Top = 32
+    Width = 120
+    Height = 24
     CharCase = ecUpperCase
     TabOrder = 2
   end
