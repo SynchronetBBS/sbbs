@@ -1005,12 +1005,14 @@ void curs_textmode(int mode)
 
 int curs_hidemouse(void)
 {
+/*
 	#ifdef NCURSES_VERSION_MAJOR
 		mousemask(0,NULL);
 		return(0);
 	#else
 		return(-1);
 	#endif
+*/
 }
 
 int curs_showmouse(void)
