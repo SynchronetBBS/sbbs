@@ -63,8 +63,8 @@ ulong _beginthread(void( *start_address )( void * )
 	   that thread resources are freed on exit() */
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-#ifdef __FreeBSD__
-	/* Default stack size in FreeBSD is too small for JS stuff */
+#ifdef BSD
+	/* Default stack size in BSD is too small for JS stuff */
 	if(stack_size==0)
 		stack_size=1<<17;
 #endif
