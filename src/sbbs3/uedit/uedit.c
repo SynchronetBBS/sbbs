@@ -1863,7 +1863,7 @@ int main(int argc, char** argv)  {
 					"\nToDo: Add Help";
 
 	while(1) {
-		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN|WIN_ORG|WIN_EXTKEY,0,5,0,&main_dflt,&main_bar
+		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN|WIN_ORG|WIN_EXTKEYS,0,5,0,&main_dflt,&main_bar
 			,title,mopt);
 
 		if(j == -2)
