@@ -137,10 +137,9 @@ function mime_get_attach(hdr, body, filename)
 			if(disp==undefined)
 				continue;
 			if(disp[1]==filename) {
-				var contyp=pieces[0].match(/^content-type:.*$/i);
-				if(contyp!=undefined && contyp[0]!=undefined) {
-					Message.content_type=contyp[0];
-				}
+				var contyp=pieces[0].match(/content-type:\s*([^\r\n]*)/i);
+				if(contyp!=undefined && contyp[0]!=undefined)
+					Message.content_type=contyp[1];
 				Message.body=decode_body(undefined,pieces[0],pieces[1]);
 				return(Message);
 			}
