@@ -601,7 +601,7 @@ int ciolib_cprintf(char *fmat, ...)
 	
     va_start(argptr,fmat);
 #ifdef _WIN32
-	ret=vsnprintf(str,sizeof(str)-1,fmat,argptr);
+	ret=_vsnprintf(str,sizeof(str)-1,fmat,argptr);
 #else
     ret=vsnprintf(NULL,0,fmat,argptr);
 	str=(char *)malloc(ret+1);
