@@ -87,7 +87,7 @@ void wsetcolor(WINDOW *win, int fg, int bg)  {
 	wbkgdset(win, colour);
 }
 
-void drawchatwin(WINDOW **uwin, WINDOW **swin, box_t *boxch) {
+void drawchatwin(WINDOW **uwin, WINDOW **swin, box_t *boxch, const char* topnmae, const char* botname) {
 	int maxy,maxx;
 
 	endwin();
@@ -98,7 +98,7 @@ void drawchatwin(WINDOW **uwin, WINDOW **swin, box_t *boxch) {
 	wclear(*uwin);
 	wborder(*uwin,  boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
 	wmove(*uwin,0,5);
-	waddstr(*uwin,"Remote User");
+	waddstr(*uwin,topname);
 	wmove(*uwin,1,2);
 	scrollok(*uwin,TRUE);
 	wrefresh(*uwin);
@@ -106,13 +106,13 @@ void drawchatwin(WINDOW **uwin, WINDOW **swin, box_t *boxch) {
 	wclear(*swin);
 	wborder(*swin,  boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
 	wmove(*swin,0,5);
-	waddstr(*swin,"Sysop");
+	waddstr(*swin,botname);
 	wmove(*swin,1,2);
 	scrollok(*swin,TRUE);
 	wrefresh(*swin);
 }
 
-int chatchar(WINDOW *win, int ch, box_t *boxch) {
+int chatchar(WINDOW *win, int ch, box_t *boxch, const char* name) {
 	int	maxy,maxx;
 	int	cury,curx;
 	getmaxyx(win,maxy,maxx);
@@ -139,7 +139,7 @@ int chatchar(WINDOW *win, int ch, box_t *boxch) {
 				whline(win,' ',maxx-2);
 				wborder(win, boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
 				wmove(win,0,5);
-				waddstr(win,"Sysop");
+				waddstr(win,name);
 				wmove(win,cury,curx);
 			}
 			wrefresh(win);
@@ -163,7 +163,7 @@ int chatchar(WINDOW *win, int ch, box_t *boxch) {
 					whline(win,' ',maxx-2);
 					wborder(win, boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
 					wmove(win,0,5);
-					waddstr(win,"Sysop");
+					waddstr(win,name);
 				}
 				wmove(win,cury,curx);
 			}
@@ -178,10 +178,13 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	int		in,out;
 	char	inpath[MAX_PATH];
 	char	outpath[MAX_PATH];
+	char	usrname[128];
 	char	*p;
 	char	ch;
 
-	drawchatwin(&uwin,&swin,boxch);
+	username(cfg,node->useron,usrname);
+
+	drawchatwin(&uwin,&swin,boxch,usrname,cfg->sys_op);
 
 	if(getnodedat(cfg,nodenum,node,NULL)) {
 		return(-1);
@@ -252,7 +255,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 			case 1:
 				lseek(in,-1L,SEEK_CUR);
 				if(ch) {
-					chatchar(uwin,ch,boxch);
+					chatchar(uwin,ch,boxch,usrname);
 					ch=0;
 					write(in,&ch,1);
 				}
@@ -275,7 +278,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 				default:
 					if(lseek(out,0,SEEK_CUR)>=PCHAT_LEN)
 						lseek(out,0,SEEK_SET);
-					chatchar(swin,ch,boxch);
+					chatchar(swin,ch,boxch,cfg->sys_op);
 					switch(write(out,&ch,1)) {
 						case -1:
 							close(in);
