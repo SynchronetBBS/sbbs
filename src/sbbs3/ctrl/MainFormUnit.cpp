@@ -2753,7 +2753,7 @@ void __fastcall TMainForm::CtrlMenuItemEditClick(TObject *Sender)
 {
 	char filename[MAX_PATH+1];
 
-    sprintf(filename,"%s%s"
+    iniFileName(filename,sizeof(filename)
     	,MainForm->cfg.ctrl_dir
         ,((TMenuItem*)Sender)->Hint.c_str());
     EditFile(filename,((TMenuItem*)Sender)->Caption);
