@@ -370,7 +370,7 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			,client->socket,client->service->protocol);
 
 	/* msg_area object */
-	if(js_CreateMsgAreaObject(cx, obj, &scfg, &user)==NULL) 
+	if(js_CreateMsgAreaObject(cx, obj, &scfg, &user, NULL)==NULL) 
 		lprintf("%04d %s !JavaScript ERROR creating msg_area object"
 			,client->socket,client->service->protocol);
 
