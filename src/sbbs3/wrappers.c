@@ -47,7 +47,6 @@
 #include <ctype.h>		/* toupper */
 #include <sys/kd.h>		/* KIOCSOUND */
 #include <sys/ioctl.h>	/* ioctl */
-#include <pthread.h>	/* POSIX threads */
 
 #ifdef __GLIBC__		/* actually, BSD, but will work for now */
 #include <sys/vfs.h>    /* statfs() */
