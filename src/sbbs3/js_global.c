@@ -574,7 +574,7 @@ js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	t=JSVAL_TO_INT(argv[1]);
 
 	strcpy(str,"-Invalid time-");
-	tm_p=gmtime(&t);
+	tm_p=localtime(&t);
 	if(tm_p)
 		strftime(str,sizeof(str),fmt,tm_p);
 

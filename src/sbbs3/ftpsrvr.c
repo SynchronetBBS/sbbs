@@ -3064,7 +3064,7 @@ static void ctrl_thread(void* arg)
 				}
 				if(!strnicmp(cmd,"MDTM ",5)) {
 					t=fdate(fname);
-					tm_p=gmtime(&t);
+					tm_p=gmtime(&t);	/* specifically use GMT/UTC representation */
 					if(tm_p==NULL)
 						memset(&tm,0,sizeof(tm));
 					else
@@ -3829,7 +3829,7 @@ static void ctrl_thread(void* arg)
 				sockprintf(sock,"213 %lu",flength(fname));
 			else if(getdate && success) {
 				t=fdate(fname);
-				tm_p=gmtime(&t);
+				tm_p=gmtime(&t);	/* specifically use GMT/UTC representation */
 				if(tm_p==NULL)
 					memset(&tm,0,sizeof(tm));
 				else

@@ -1381,7 +1381,7 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 	struct	tm tm;
 
 	now=time(NULL);
-	tm_p=gmtime(&now);
+	tm_p=localtime(&now);
 	if(tm_p)
 		tm=*tm_p;
 	else

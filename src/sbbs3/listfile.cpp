@@ -1281,7 +1281,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						getnodedat(cfg.node_num,&thisnode,1);
 						action=NODE_DLNG;
 						t=now+f.timetodl;
-						tm=gmtime(&t);
+						tm=localtime(&t);
 						if(tm==NULL)
 							break;
 						thisnode.aux=(tm->tm_hour*60)+tm->tm_min;

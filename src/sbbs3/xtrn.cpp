@@ -284,7 +284,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	strcpy(realcmdline, fullcmdline);	// for errormsg if failed to execute
 
 	now=time(NULL);
-	tm_p=gmtime(&now);
+	tm_p=localtime(&now);
 
 	if((retval=WaitForSingleObject(exec_mutex,5000))!=WAIT_OBJECT_0) {
 		errormsg(WHERE, ERR_TIMEOUT, "exec_mutex", retval);

@@ -607,7 +607,7 @@ char DLLCALL getage(scfg_t* cfg, char *birth)
 		return(0);
 
 	now=time(NULL);
-	tm=gmtime(&now);
+	tm=localtime(&now);
 	if(tm==NULL)
 		return(0);
 	age=(tm->tm_year)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
@@ -1046,7 +1046,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				break;
 			case AR_TIME:
 				now=time(NULL);
-				tm=gmtime(&now);
+				tm=localtime(&now);
 				if(tm==NULL || (tm->tm_hour*60)+tm->tm_min<(int)i)
 					result=not;
 				else
@@ -1375,12 +1375,12 @@ BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logonti
 	adjustuserrec(cfg,user->number,U_TTODAY,5,user->tlast);
 
 	/* Convert time_t to struct tm */
-	tm=gmtime(&now);
+	tm=localtime(&now);
 	if(tm==NULL)
 		return(FALSE);
 	tm_now=*tm;
 
-	tm=gmtime(&logontime);
+	tm=localtime(&logontime);
 	if(tm==NULL)
 		return(FALSE);
 

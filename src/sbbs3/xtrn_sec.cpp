@@ -213,7 +213,7 @@ int unixtojulian(time_t unix_time)
 	long j;
 	struct tm * tm;
 
-	tm=gmtime(&unix_time);
+	tm=localtime(&unix_time);
 	if(tm==NULL)
 		return(0);
 	j=36525L*(1900+tm->tm_year);
@@ -508,7 +508,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,'Y');                              /* 38: Error correcting connection */
 		write(file,str,strlen(str));
 
-		tm=gmtime(&ns_time);
+		tm=localtime(&ns_time);
 		if(tm!=NULL)
 		sprintf(str,"%c\r\n%c\r\n%u\r\n%lu\r\n%02d/%02d/%02d\r\n"
 			,(useron.misc&(NO_EXASCII|ANSI|COLOR))==ANSI
@@ -521,8 +521,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,TM_YEAR(tm->tm_year));
 		write(file,str,strlen(str));
 
-		tm=gmtime(&logontime);
-		tl=gmtime(&useron.laston);
+		tm=localtime(&logontime);
+		tl=localtime(&useron.laston);
 		if(tm!=NULL && tl!=NULL)
 		sprintf(str,"%02d:%02d\r\n%02d:%02d\r\n%u\r\n%u\r\n%lu\r\n"
 			"%lu\r\n%s\r\n%u\r\n%u\r\n"
@@ -614,7 +614,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		str2pas(useron.phone,str);
 		write(file,str,13); 					/* DataPhone */
 		write(file,str,13); 					/* HomePhone */
-		tm=gmtime(&useron.laston);
+		tm=localtime(&useron.laston);
 		if(tm!=NULL)
 			sprintf(tmp,"%02d:%02d",tm->tm_hour,tm->tm_min);
 		str2pas(tmp,str);
@@ -676,7 +676,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,&c,1);						/* NetMailEntered */
 		write(file,&c,1);						/* EchoMailEntered */
 
-		tm=gmtime(&logontime);
+		tm=localtime(&logontime);
 		if(tm!=NULL)
 			sprintf(tmp,"%02d:%02d",tm->tm_hour,tm->tm_min);
 		str2pas(tmp,str);
@@ -763,7 +763,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.number);					/* User number */
 		write(file,str,strlen(str));
 
-		tm=gmtime(&now);
+		tm=localtime(&now);
 		if(tm!=NULL)
 		sprintf(str,"%lu\r\n%02d:%02d\r\n%02d:%02d %02d/%02d/%02d\r\n%s\r\n"
 			,tleft								/* Time left in seconds */
@@ -774,7 +774,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,nulstr);							/* Conferences with access */
 		write(file,str,strlen(str));
 
-		tm=gmtime(&useron.laston);
+		tm=localtime(&useron.laston);
 		if(tm!=NULL)
 		sprintf(str,"%u\r\n%u\r\n%u\r\n%u\r\n%s\r\n%s %02u:%02u\r\n"
 			,0									/* Daily download total */
@@ -787,7 +787,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tm->tm_min);
 		write(file,str,strlen(str));
 
-		tm=gmtime(&ns_time);
+		tm=localtime(&ns_time);
 		if(tm!=NULL)
 		sprintf(str,"%s\r\n%s\r\n%02d/%02d/%02d\r\n%u\r\n%lu\r\n%u"
 			"\r\n%u\r\n%u\r\n"
@@ -813,7 +813,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,"Normal Connection");              /* Normal or ARQ connect */
 		write(file,str,strlen(str));
 
-		tm=gmtime(&now);
+		tm=localtime(&now);
 		if(tm!=NULL)
 		sprintf(str,"%02d/%02d/%02d %02d:%02d\r\n%u\r\n%u\r\n"
 			,tm->tm_mon+1,tm->tm_mday			/* Current date MM/DD/YY */
@@ -858,7 +858,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.pass);						/* User's password */
 		write(file,str,27);
 
-		tm=gmtime(&logontime);
+		tm=localtime(&logontime);
 		if(tm==NULL)
 			i=0;
 		else
@@ -965,7 +965,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,useron.phone,14);	/* Home or Voice Phone */
 		i=unixtojulian(useron.laston);
 		write(file,&i,2);				/* Date last on */
-		tm=gmtime(&useron.laston);
+		tm=localtime(&useron.laston);
 		if(tm!=NULL)
 			sprintf(str,"%02d:%02d",tm->tm_hour,tm->tm_min);
 		write(file,str,6);				/* Last time on */
@@ -1030,7 +1030,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		}
 
 		now=time(NULL);
-		tm=gmtime(&now);
+		tm=localtime(&now);
 		if(tm==NULL)
 			l=0;
 		else
@@ -1053,7 +1053,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			);
 		write(file,str,strlen(str));
 
-		tm=gmtime(&logontime);
+		tm=localtime(&logontime);
 		if(tm==NULL)
 			l=0;
 		else

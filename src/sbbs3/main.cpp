@@ -1002,7 +1002,7 @@ void event_thread(void* arg)
 	while(!sbbs->terminated && telnet_socket!=INVALID_SOCKET) {
 
 		now=time(NULL);
-		now_tm=*gmtime(&now);
+		now_tm=*localtime(&now);
 
 		if(now-lastsemchk>=sbbs->cfg.node_sem_check) {
 			check_semaphores=true;
@@ -1270,7 +1270,7 @@ void event_thread(void* arg)
 				}
 			}
 
-			tm=gmtime(&sbbs->cfg.qhub[i]->last); /* Qnet call out based on time */
+			tm=localtime(&sbbs->cfg.qhub[i]->last); /* Qnet call out based on time */
 			if((tm==NULL || sbbs->cfg.qhub[i]->last==-1L					/* or frequency */
 				|| ((sbbs->cfg.qhub[i]->freq
 					&& (now-sbbs->cfg.qhub[i]->last)/60>sbbs->cfg.qhub[i]->freq)
@@ -1342,7 +1342,7 @@ void event_thread(void* arg)
 			if(sbbs->cfg.phub[i]->node<first_node 
 				|| sbbs->cfg.phub[i]->node>last_node)
 				continue;
-			tm=gmtime(&sbbs->cfg.phub[i]->last);	  /* PostLink call out based on time */
+			tm=localtime(&sbbs->cfg.phub[i]->last);	  /* PostLink call out based on time */
 			if(tm==NULL || sbbs->cfg.phub[i]->last==-1
 				|| (((sbbs->cfg.phub[i]->freq								/* or frequency */
 					&& (now-sbbs->cfg.phub[i]->last)/60>sbbs->cfg.phub[i]->freq)
@@ -1384,7 +1384,7 @@ void event_thread(void* arg)
 		for(i=0;i<sbbs->cfg.total_events;i++) {
 			if(!sbbs->cfg.event[i]->node || sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes)
 				continue;
-			tm=gmtime(&sbbs->cfg.event[i]->last);
+			tm=localtime(&sbbs->cfg.event[i]->last);
 			if(tm==NULL || sbbs->cfg.event[i]->last==-1 ||
 				(((sbbs->cfg.event[i]->freq 
 					&& (now-sbbs->cfg.event[i]->last)/60>sbbs->cfg.event[i]->freq)
@@ -2506,7 +2506,7 @@ void sbbs_t::catsyslog(int crash)
 			return; 
 		}
 		now=time(NULL);
-		tm=gmtime(&now);
+		tm=localtime(&now);
 		if(tm==NULL)
 			return;
 		sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir,tm->tm_mon+1,tm->tm_mday

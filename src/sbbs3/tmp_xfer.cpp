@@ -170,7 +170,7 @@ void sbbs_t::temp_xfer()
 					t=now;
 					if(cur_cps) 
 						t+=(f.size/(ulong)cur_cps);
-					tm=gmtime(&t);
+					tm=localtime(&t);
 					if(tm==NULL)
 						break;
 					thisnode.aux=(tm->tm_hour*60)+tm->tm_min;

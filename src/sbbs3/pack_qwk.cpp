@@ -108,7 +108,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			return(false); }
 
 		now=time(NULL);
-		tm=gmtime(&now);
+		tm=localtime(&now);
 		if(tm==NULL)
 			return(false);
 

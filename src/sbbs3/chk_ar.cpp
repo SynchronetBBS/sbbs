@@ -379,7 +379,7 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				break;
 			case AR_TIME:
 				now=time(NULL);
-				tm=gmtime(&now);
+				tm=localtime(&now);
 				if(tm==NULL || (tm->tm_hour*60)+tm->tm_min<(int)i)
 					result=_not;
 				else

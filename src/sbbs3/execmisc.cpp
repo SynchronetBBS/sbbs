@@ -516,7 +516,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					lp=getintvar(csi,*(long *)csi->ip);
 					csi->ip+=4;
 					if(pp && lp) {
-						tm_p=gmtime(lp);
+						tm_p=localtime(lp);
 						if(tm_p) {
 							strftime(buf,128,str,tm_p);
 							*pp=copystrvar(csi,*pp,buf); } }

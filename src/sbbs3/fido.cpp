@@ -169,7 +169,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	}
 
 	now=time(NULL);
-	tm=gmtime(&now);
+	tm=localtime(&now);
 	if(tm!=NULL)
 		sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
 			,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)

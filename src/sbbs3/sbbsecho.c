@@ -397,7 +397,7 @@ do {
 	sprintf(hdr.from,"SBBSecho");
 
 	t=time(NULL);
-	tm=gmtime(&t);
+	tm=localtime(&t);
 	sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
 		,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
 		,tm->tm_hour,tm->tm_min,tm->tm_sec);
@@ -2616,7 +2616,7 @@ char *pktname(void)
 now=time(NULL);
 for(i=0;i<MAX_TOTAL_PKTS*2;i++) {
 	now+=i;
-	tm=gmtime(&now);
+	tm=localtime(&now);
 	sprintf(str,"%s%02u%02u%02u%02u.PK_",cfg.outbound,tm->tm_mday,tm->tm_hour
 		,tm->tm_min,tm->tm_sec);
 	if(!fexist(str))				/* Add 1 second if name exists */
@@ -3120,7 +3120,7 @@ for(j=0;j<area.uplinks;j++) {
 						break; } }
 			strcpy(outpkt[i].filename,pktname());
 			now=time(NULL);
-			tm=gmtime(&now);
+			tm=localtime(&now);
 			if((outpkt[i].stream=fnopen(&file,outpkt[i].filename
 				,O_WRONLY|O_CREAT))==NULL) {
 				printf("Unable to open %s for write.\n"
@@ -3607,7 +3607,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 				sprintf(hdr.from,"%.35s",msg.from);
 
-				tm=gmtime((time_t *)&msg.hdr.when_written.time);
+				tm=localtime((time_t *)&msg.hdr.when_written.time);
 				sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
 					,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
 					,tm->tm_hour,tm->tm_min,tm->tm_sec);
@@ -4685,7 +4685,7 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 		strcpy(packet,pktname());
 
 	now=time(NULL);
-	tm=gmtime(&now);
+	tm=localtime(&now);
 	if((stream=fnopen(&file,packet,O_WRONLY|O_APPEND|O_CREAT))==NULL) {
 		printf("Unable to open %s for write.\n"
 			,packet);

@@ -529,7 +529,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 	bputs(text[NScanDate]);
 	bputs(timestr(dt));
 	CRLF;
-	tp=gmtime(dt);
+	tp=localtime(dt);
 	if(tp==NULL) {
 		errormsg(WHERE,ERR_CHK,"time ptr",0);
 		return(FALSE);
@@ -889,7 +889,7 @@ void sbbs_t::user_info()
 
 	bprintf(text[UserStats],useron.alias,useron.number);
 
-	tm=gmtime(&useron.laston);
+	tm=localtime(&useron.laston);
 	if(tm!=NULL)
 		bprintf(text[UserDates]
 			,unixtodstr(&cfg,useron.firston,str)

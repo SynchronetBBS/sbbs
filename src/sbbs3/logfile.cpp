@@ -139,7 +139,7 @@ bool sbbs_t::syslog(char* code, char *entry)
 	struct tm * tm;
 
 	now=time(NULL);
-	tm=gmtime(&now);
+	tm=localtime(&now);
 	if(tm==NULL)
 		return(false);
 	sprintf(fname,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir,tm->tm_mon+1,tm->tm_mday

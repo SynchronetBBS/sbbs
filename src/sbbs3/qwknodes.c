@@ -97,7 +97,7 @@ char * unixtodstr(time_t unix, char *str)
 if(!unix)
 	strcpy(str,"00/00/00");
 else {
-	tm=gmtime(&unix);
+	tm=localtime(&unix);
 	if(tm==NULL) {
 		strcpy(str,"00/00/00");
 		return(str);

@@ -51,7 +51,7 @@ void sbbs_t::logout()
 	struct	tm * tm, tm_now;
 
 	now=time(NULL);
-	tm=gmtime(&now);
+	tm=localtime(&now);
 	if(tm==NULL)
 		return;
 	tm_now=*tm;
@@ -232,11 +232,11 @@ void sbbs_t::logofflist()
     int file;
     struct tm * tm, tm_now;
 
-	tm=gmtime(&now);
+	tm=localtime(&now);
 	if(tm==NULL)
 		return;
 	tm_now=*tm;
-	tm=gmtime(&logontime);
+	tm=localtime(&logontime);
 	if(tm==NULL)
 		return;
 	sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOL",cfg.data_dir,tm->tm_mon+1,tm->tm_mday

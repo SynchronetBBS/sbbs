@@ -237,7 +237,7 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_SYSTEM_LOG:                 /* System log */
 			if(!chksyspass())
 				return(0);
-			tm=gmtime(&now);
+			tm=localtime(&now);
 			if(tm==NULL)
 				return(0);
 			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log", cfg.data_dir
@@ -248,7 +248,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			if(!chksyspass())
 				return(0);
 			now-=(ulong)60L*24L*60L;
-			tm=gmtime(&now);
+			tm=localtime(&now);
 			if(tm==NULL)
 				return(0);
 			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir

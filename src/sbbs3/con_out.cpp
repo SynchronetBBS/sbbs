@@ -328,7 +328,7 @@ void sbbs_t::ctrl_a(char x)
 			break;
 		case 'T':   /* Time */
 			now=time(NULL);
-			tm=gmtime(&now);
+			tm=localtime(&now);
 			if(tm!=NULL)
 				bprintf("%02d:%02d %s"
 					,tm->tm_hour==0 ? 12

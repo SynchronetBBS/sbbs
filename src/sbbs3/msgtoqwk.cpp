@@ -290,7 +290,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		size++;
 		fputc(SP,qwk_fp); }
 
-	tm_p=gmtime((time_t *)&msg->hdr.when_written.time);
+	tm_p=localtime((time_t *)&msg->hdr.when_written.time);
 	if(tm_p)
 		tm=*tm_p;
 	else

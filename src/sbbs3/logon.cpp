@@ -539,11 +539,11 @@ ulong sbbs_t::logonstats()
 	close(dsts);
 	if(update_t>now+(24L*60L*60L)) /* More than a day in the future? */
 		errormsg(WHERE,ERR_CHK,"Daily stats time stamp",update_t);
-	tm = gmtime(&update_t);
+	tm = localtime(&update_t);
 	if(tm==NULL)
 		return(0);
 	update_tm=*tm;
-	tm = gmtime(&now);
+	tm = localtime(&now);
 	if(tm==NULL)
 		return(0);
 	if((tm->tm_mday>update_tm.tm_mday && tm->tm_mon==update_tm.tm_mon)

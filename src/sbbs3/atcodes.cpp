@@ -204,7 +204,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 
 	if(!strcmp(sp,"TIME") || !strcmp(sp,"SYSTIME")) {
 		now=time(NULL);
-		tm_p=gmtime(&now);
+		tm_p=localtime(&now);
 		if(tm_p!=NULL)
 			tm=*tm_p;
 		else
@@ -421,7 +421,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(unixtodstr(&cfg,useron.laston,str));
 
 	if(!strcmp(sp,"LASTTIMEON")) {
-		tm_p=gmtime(&useron.laston);
+		tm_p=localtime(&useron.laston);
 		if(tm_p)
 			tm=*tm_p;
 		else

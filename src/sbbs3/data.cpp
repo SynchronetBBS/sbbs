@@ -202,12 +202,12 @@ void sbbs_t::gettimeleft(void)
 			|| !(cfg.event[i]->days&(1<<tm->tm_wday)))
 			continue;
 
-		tm=gmtime(&cfg.event[i]->last);
+		tm=localtime(&cfg.event[i]->last);
 		if(tm)
 			last_tm=*tm;
 		else
 			memset(&last_tm,0,sizeof(last_tm));
-		tm=gmtime(&now);
+		tm=localtime(&now);
 		if(tm==NULL)
 			return;
 		tm->tm_hour=cfg.event[i]->time/60;   /* hasn't run yet today */

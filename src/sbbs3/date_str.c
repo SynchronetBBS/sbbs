@@ -95,7 +95,7 @@ char* DLLCALL unixtodstr(scfg_t* cfg, time_t unix_time, char *str)
 	if(!unix_time)
 		strcpy(str,"00/00/00");
 	else {
-		tm=gmtime(&unix_time);
+		tm=localtime(&unix_time);
 		if(tm==NULL) {
 			strcpy(str,"00/00/00");
 			return(str);

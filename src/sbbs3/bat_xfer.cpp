@@ -454,7 +454,7 @@ void sbbs_t::start_batch_download()
 	t=now;
 	if(cur_cps) 
 		t+=(totalsize/(ulong)cur_cps);
-	tm=gmtime(&t);
+	tm=localtime(&t);
 	if(tm==NULL)
 		return;
 	thisnode.aux=(tm->tm_hour*60)+tm->tm_min;

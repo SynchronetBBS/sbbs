@@ -121,7 +121,7 @@ void sbbs_t::useredit(int usernumber)
 				,user.comment);
 		else
 			CRLF;
-		tm=gmtime(&user.laston);
+		tm=localtime(&user.laston);
 		if(tm==NULL)
 			return;
 		bprintf(text[UserDates]
