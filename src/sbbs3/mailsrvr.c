@@ -637,7 +637,7 @@ static void pop3_thread(void* arg)
 	char		password[LEN_PASS+1];
 	char		challenge[256];
 	char		digest[MD5_DIGEST_SIZE];
-	char*		response;
+	char*		response="";
 	char*		msgtxt;
 	int			i;
 	int			rd;
