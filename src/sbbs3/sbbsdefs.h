@@ -117,6 +117,7 @@
 #define UQ_XEDIT		(1L<<15)	/* Ask for external editor				*/
 #define UQ_NODEF		(1L<<16)	/* Don't ask for default settings       */
 #define UQ_NOCOMMAS		(1L<<17)	/* Do not require commas in location	*/
+#define UQ_NONETMAIL	(1L<<18)	/* Don't ask for e-mail/netmail address	*/
 						
 						
 									/* Different bits in sys_misc				*/

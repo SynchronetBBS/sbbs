@@ -222,7 +222,7 @@ void sbbs_t::newuser()
 			else
 				break; }
 		if(!online) return;
-		while(!(sys_status&SS_RLOGIN) && /* cfg.uq&UQ_EMAIL && */ online) {
+		while(!(sys_status&SS_RLOGIN) && !(cfg.uq&UQ_NONETMAIL) && online) {
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
 				&& !trashcan(useron.netmail,"email"))

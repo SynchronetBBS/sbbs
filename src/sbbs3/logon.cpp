@@ -352,7 +352,7 @@ bool sbbs_t::logon()
 					if(!trashcan(useron.phone,"phone"))
 						break; } }
 			if(!(sys_status&SS_RLOGIN) 
-				&& /* cfg.uq&UQ_EMAIL && */ !useron.netmail[0]) {
+				&& !(cfg.uq&UQ_NONETMAIL) && !useron.netmail[0]) {
 				while(online) {
 					bputs(text[EnterNetMailAddress]);
 					if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
