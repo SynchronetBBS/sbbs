@@ -80,6 +80,8 @@
 
 #define TIMEOUT_THREAD_WAIT		15		/* Seconds */
 
+#define TIMEOUT_SOCKET_LISTEN	30		/* Seconds */
+
 #define XFER_REPORT_INTERVAL	60		/* Seconds */
 
 #define INDEX_FNAME_LEN			15
@@ -109,6 +111,16 @@ static SOCKET	server_socket=INVALID_SOCKET;
 static DWORD	active_clients=0;
 static DWORD	sockets=0;
 static HANDLE	socket_mutex=NULL;
+static BYTE 	socket_debug[20000]={0};
+
+#define	SOCKET_DEBUG_CTRL		(1<<0)	// 0x01
+#define SOCKET_DEBUG_CONNECT	(1<<1)	// 0x02
+#define SOCKET_DEBUG_READLINE	(1<<2)	// 0x04
+#define SOCKET_DEBUG_ACCEPT		(1<<3)	// 0x08
+#define SOCKET_DEBUG_DOWNLOAD	(1<<4)	// 0x10
+#define SOCKET_DEBUG_SELECT		(1<<5)	// 0x20
+#define SOCKET_DEBUG_RECV_CHAR	(1<<6)	// 0x40
+#define SOCKET_DEBUG_RECV_BUF	(1<<7)	// 0x80
 
 typedef struct {
 	SOCKET			socket;
@@ -457,7 +469,9 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 			recverror(socket,i,__LINE__);
 			return(i);
 		}
+		socket_debug[socket]|=SOCKET_DEBUG_RECV_CHAR;
 		i=recv(socket, &ch, 1, 0);
+		socket_debug[socket]&=~SOCKET_DEBUG_RECV_CHAR;
 		if(i<1) {
 #if 0
 			if(ERROR_VALUE==EWOULDBLOCK) {
@@ -724,7 +738,9 @@ static void receive_thread(void* arg)
 			error=TRUE;
 			break;
 		}
+		socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_RECV_BUF;
 		rd=recv(*xfer.data_sock,buf,sizeof(buf),0);
+		socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_RECV_BUF;
 		if(rd<1) {
 			if(rd==0) { /* Socket closed */
 				if(startup->options&FTP_OPT_DEBUG_DATA)
@@ -842,6 +858,8 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	int			addr_len;
 	SOCKADDR_IN	server_addr;
 	static xfer_t xfer;
+	struct timeval	tv;
+	fd_set			socket_set;
 
 	if((*inprogress)==TRUE) {
 		lprintf("%04d !TRANSFER already in progress",ctrl_sock);
@@ -887,8 +905,11 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			return;
 		}
 
-		if((result=connect(*data_sock, (struct sockaddr *)addr
-			,sizeof(struct sockaddr)))!=0) {
+		socket_debug[ctrl_sock]|=SOCKET_DEBUG_CONNECT;
+		result=connect(*data_sock, (struct sockaddr *)addr,sizeof(struct sockaddr));
+		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_CONNECT;
+
+		if(result!=0) {
 			lprintf("%04d !DATA ERROR %d (%d) connecting to client %s port %d on socket %d"
 					,ctrl_sock,result,ERROR_VALUE
 					,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port),*data_sock);
@@ -908,9 +929,32 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		if(startup->options&FTP_OPT_DEBUG_DATA)
 			lprintf("%04d PASV DATA socket %d listening on %s port %d"
 					,ctrl_sock,pasv_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
-		
+
+		/* Setup for select() */
+		tv.tv_sec=TIMEOUT_SOCKET_LISTEN;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(pasv_sock,&socket_set);
+
+		socket_debug[ctrl_sock]|=SOCKET_DEBUG_SELECT;
+		result=select(pasv_sock+1,&socket_set,NULL,NULL,&tv);
+		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_SELECT;
+		if(result<1) {
+			lprintf("%04d !PASV select returned %d (error: %d)",ctrl_sock,result,ERROR_VALUE);
+			sockprintf(ctrl_sock,"425 Error %d selecting socket for connection",ERROR_VALUE);
+			if(tmpfile)
+				remove(filename);
+			*inprogress=FALSE;
+			return;
+		}
+			
 		addr_len=sizeof(SOCKADDR_IN);
-		if((*data_sock=accept(pasv_sock,(struct sockaddr*)addr,&addr_len))==INVALID_SOCKET) {
+		socket_debug[ctrl_sock]|=SOCKET_DEBUG_ACCEPT;
+		*data_sock=accept(pasv_sock,(struct sockaddr*)addr,&addr_len);
+		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_ACCEPT;
+
+		if(*data_sock==INVALID_SOCKET) {
 			lprintf("%04d !PASV DATA ERROR %d accepting connection on socket %d"
 				,ctrl_sock,ERROR_VALUE,pasv_sock);
 			sockprintf(ctrl_sock,"425 Error %d accepting connection",ERROR_VALUE);
@@ -1373,14 +1417,18 @@ static void ctrl_thread(void* arg)
 	}
 	sockprintf(sock,"220 Please enter your user name.");
 
+	socket_debug[sock]|=SOCKET_DEBUG_CTRL;
 	while(1) {
 
+		socket_debug[sock]|=SOCKET_DEBUG_READLINE;
 		rd = sockreadline(sock, buf, sizeof(buf), &lastactive);
+		socket_debug[sock]&=~SOCKET_DEBUG_READLINE;
 		if(rd<1) {
 			if(transfer_inprogress==TRUE)
 				transfer_aborted=TRUE;
 			break;
 		}
+		truncsp(buf);
 		lastactive=time(NULL);
 		cmd=buf;
 		while(((BYTE)*cmd)==TELNET_IAC) {
@@ -1610,6 +1658,15 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock,"211 End");
 			continue;
 		}
+		if(!stricmp(cmd, "SITE DEBUG")) {
+			sockprintf(sock,"211-Debug");
+			for(i=0;i<sizeof(socket_debug);i++) 
+				if(socket_debug[i]!=0)
+					sockprintf(sock,"211-socket %d = %X",i,socket_debug[i]);
+			sockprintf(sock,"211 End");
+			continue;
+		}
+
 
 		if(!strnicmp(cmd, "PORT ",5)) {
 			p=cmd+5;
@@ -1621,7 +1678,7 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
-		if(!strcmp(cmd, "PASV")) {
+		if(!stricmp(cmd, "PASV")) {
 
 			if(pasv_sock!=INVALID_SOCKET) 
 				close_socket(&pasv_sock,__LINE__);
@@ -2594,6 +2651,8 @@ static void ctrl_thread(void* arg)
 					} 
 				}
 			}
+			socket_debug[sock]|=SOCKET_DEBUG_DOWNLOAD;
+
 			if(getsize && success) 
 				sockprintf(sock,"213 %lu",flength(fname));
 			else if(getdate && success) {
@@ -2629,6 +2688,7 @@ static void ctrl_thread(void* arg)
 					,sock,user.alias,p,cmd);
 			}
 			filepos=0;
+			socket_debug[sock]&=~SOCKET_DEBUG_DOWNLOAD;
 			continue;
 		}
 
@@ -2889,7 +2949,7 @@ static void ctrl_thread(void* arg)
 		
 		sockprintf(sock,"500 Syntax error: '%s'",cmd);
 		lprintf("%04d !FTP: UNSUPPORTED COMMAND: '%s'",sock,cmd);
-	}
+	} /* while(1) */
 
 	if(transfer_inprogress==TRUE) {
 		lprintf("%04d Waiting for transfer to complete...",sock);
@@ -2934,6 +2994,8 @@ static void ctrl_thread(void* arg)
 	active_clients--;
 	update_clients();
 	client_off(sock);
+
+	socket_debug[sock]&=~SOCKET_DEBUG_CTRL;
 
 	/* Free up resources here */
 	close_socket(&sock,__LINE__);
@@ -2998,7 +3060,6 @@ void DLLCALL ftp_server(void* arg)
 	time_t			start;
 	LINGER			linger;
 	fd_set			socket_set;
-	SOCKET			high_socket_set;
 	ftp_t*			ftp;
 	struct timeval	tv;
 
@@ -3170,9 +3231,8 @@ void DLLCALL ftp_server(void* arg)
 
 		FD_ZERO(&socket_set);
 		FD_SET(server_socket,&socket_set);
-		high_socket_set=server_socket+1;
 
-		if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
+		if((i=select(server_socket+1,&socket_set,NULL,NULL,&tv))<1) {
 			if(i==0) {
 				mswait(1);
 				continue;
