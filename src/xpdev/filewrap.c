@@ -43,6 +43,7 @@
 #include <fcntl.h>      /* fcntl() file/record locking */
 #include <sys/file.h>	/* L_SET for Solaris */
 #include <errno.h>
+#include <sys/param.h>	/* BSD */
 
 #endif
 
