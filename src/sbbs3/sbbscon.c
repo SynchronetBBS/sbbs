@@ -50,9 +50,6 @@
 
 #endif
 
-/* Constants */
-#define SBBSCON_VERSION		"1.20"
-
 /* Global variables */
 BOOL				bbs_running=FALSE;
 bbs_startup_t		bbs_startup;
@@ -75,36 +72,41 @@ char*				new_uid_name=NULL;
 static const char* prompt = 
 "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
 
-static const char* usage  = "\nusage: %s [[option] [...]]\n"
-							"\nTelnet server options:\n\n"
-							"td         enable Telnet option debug output\n"
-							"tf<node>   set first Telnet node number\n"
-							"tl<node>   set last Telnet node number\n"
-							"tp<port>   set Telnet server port\n"
-							"rp<port>   set RLogin server port (and enable RLogin server)\n"
-							"r2         use second RLogin name in BSD RLogin\n"
-							"nq         disable QWK events\n"
-
-							"\nFTP server options:\n\n"
-							"f-         disable FTP server\n"
-							"fp<port>   set FTP server port\n"
-
-							"\nMail server options:\n\n"
-							"m-         disable Mail server\n"
-							"p-         disable POP3 server\n"
-							"s-         disable SendMail thread\n"
-							"sp<port>   set SMTP server port\n"
-							"sr<port>   set SMTP relay port\n"
-							"pp<port>   set POP3 server port\n"
-
-							"\nGlobal options:\n\n"
-							"un<user>   set username for BBS to run as (UNIX only)\n"
-							"nh         disable hostname lookups\n"
-							"nj         disable JavaScript support\n"
-							"ns         disable Services (no services module)\n"
-							"lt         use local timezone (do not assume UTC/GMT)\n"
-							"defaults   show default settings\n"
+static const char* usage  = "usage: %s [[option] [...]]\n"
 							"\n"
+							"Telnet server options:\n\n"
+							"\ttd         enable Telnet option debug output\n"
+							"\ttf<node>   set first Telnet node number\n"
+							"\ttl<node>   set last Telnet node number\n"
+							"\ttp<port>   set Telnet server port\n"
+							"\trp<port>   set RLogin server port (and enable RLogin server)\n"
+							"\tr2         use second RLogin name in BSD RLogin\n"
+							"\tnq         disable QWK events\n"
+							"\n"
+							"FTP server options:\n"
+							"\n"
+							"\tf-         disable FTP server\n"
+							"\tfp<port>   set FTP server port\n"
+							"\n"
+							"Mail server options:\n"
+							"\n"
+							"\tm-         disable Mail server\n"
+							"\tp-         disable POP3 server\n"
+							"\ts-         disable SendMail thread\n"
+							"\tsp<port>   set SMTP server port\n"
+							"\tsr<port>   set SMTP relay port\n"
+							"\tpp<port>   set POP3 server port\n"
+							"\n"
+							"Global options:\n"
+							"\n"
+#ifdef __unix__
+							"\tun<user>   set username for BBS to run as\n"
+#endif
+							"\tnh         disable hostname lookups\n"
+							"\tnj         disable JavaScript support\n"
+							"\tns         disable Services (no services module)\n"
+							"\tlt         use local timezone (do not assume UTC/GMT)\n"
+							"\tdefaults   show default settings\n"
 							;
 
 static void lputs(char *str)
@@ -249,7 +251,7 @@ static int bbs_lputs(char *str)
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%sbbs  %.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%s     %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -428,8 +430,8 @@ int main(int argc, char** argv)
 	char*	ctrl_dir;
 	BOOL	quit=FALSE;
 
-	printf("\nSynchronet BBS Console Version %s  Copyright 2001 Rob Swindell\n"
-		,SBBSCON_VERSION);
+	printf("\n%s%c  %s\n\n"
+		,VERSION_NOTICE,REVISION,COPYRIGHT_NOTICE);
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
 	if(ctrl_dir==NULL)
@@ -748,7 +750,7 @@ int main(int argc, char** argv)
 					quit=TRUE;
 					break;
 				default:
-					printf("\nSynchronet BBS Console Version %s Help\n\n",SBBSCON_VERSION);
+					printf("\nSynchronet BBS Console Version %s%c Help\n\n",VERSION,REVISION);
 					printf("q   = quit\n");
 #if 0	/* to do */	
 					printf("n   = node list\n");
