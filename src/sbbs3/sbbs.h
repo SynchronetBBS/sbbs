@@ -461,9 +461,8 @@ public:
 	void	readmail(uint usernumber, int sent);
 
 	/* bulkmail.cpp */
-	void	bulkmail(uchar *ar);
-	int		bulkmailhdr(uint usernum, smbmsg_t* msg, ushort msgattr, ulong offset
-				,ulong length, char *title);
+	bool	bulkmail(uchar *ar);
+	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum);
 
 	/* con_out.cpp */
 	int		bputs(char *str);				/* BBS puts function */
