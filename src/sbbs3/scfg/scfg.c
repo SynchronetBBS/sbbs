@@ -72,16 +72,6 @@ void allocfail(uint size)
     bail(1);
 }
 
-time_t checktime(void)
-{
-	struct tm tm;
-
-memset(&tm,0,sizeof(tm));
-tm.tm_year=94;
-tm.tm_mday=1;
-return(mktime(&tm)^0x2D24BD00L);
-}
-
 int main(int argc, char **argv)
 {
 	char	**mopt,*p;
@@ -183,14 +173,6 @@ if(i!=0) {
     printf("uifc library init returned error %d\n",i);
     exit(1);
 }
-
-if(putenv("TZ=UTC0"))
-    printf("putenv() failed!\n");
-tzset();
-
-if((l=checktime())!=0) {   /* Check binary time */
-    printf("Time problem (%08lx)\n",l);
-    exit(1); }
 
 if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 	allocfail(sizeof(char *)*(MAX_OPTS+1));
