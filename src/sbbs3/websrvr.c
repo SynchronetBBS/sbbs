@@ -2686,7 +2686,7 @@ void http_logging_thread(void* arg)
 		pthread_mutex_lock(&log_mutex);
 		ld=listRemoveNode(log_list, FIRST_NODE);
 		pthread_mutex_unlock(&log_mutex);
-		if(ld==NULL) {
+		if(ld==NULL || ld->status==0) {
 			lprintf(LOG_ERR,"Received NULL linked list log entry",filename);
 			continue;
 		}
