@@ -461,7 +461,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
 		native && !(mode&EX_OFFLINE),	 			// handle inheritance flag
-		CREATE_NEW_CONSOLE|CREATE_SEPARATE_WOW_VDM, // creation flags
+		CREATE_NEW_CONSOLE/*|CREATE_SEPARATE_WOW_VDM*/, // creation flags
         NULL,  			// pointer to new environment block
 		p_startup_dir,	// pointer to current directory name
 		&startup_info,  // pointer to STARTUPINFO
