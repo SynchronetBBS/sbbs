@@ -13,10 +13,6 @@
 # Macros
 #DEBUG	=	1				# Comment out for release (non-debug) version
 
-# Enable auto-dependency checking
-.autodepend
-.cacheautodepend	
-
 SRC_ROOT = ..
 # Cross platform/compiler definitions
 !include ..\build\Common.bmake	# defines clean and output directory rules

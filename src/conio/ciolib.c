@@ -2,6 +2,8 @@
 #include <stdlib.h>	/* malloc */
 #include <stdio.h>
 
+#include <threadwrap.h>
+
 #define CIOLIB_NO_MACROS
 #include "ciolib.h"
 
@@ -371,10 +373,10 @@ char *ciolib_getpass(const char *prompt)
 	CIOLIB_INIT();
 	
 	ciolib_cputs((char *)prompt);
-	while((ch=getch())!='\n') {
+	while((ch=ciolib_getch())!='\n') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
-				getch();
+				ciolib_getch();
 				break;
 			case '\r':	/* Skip \r (ToDo: Should this be treeated as a \n? */
 				break;

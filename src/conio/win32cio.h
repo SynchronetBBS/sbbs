@@ -30,6 +30,7 @@ int	win32_putch(int);
 int	win32_wherex(void);
 int	win32_wherey(void);
 void	win32_settitle(const char *title);
+int	win32_initciolib(long inmode);
 
 #ifdef __cplusplus
 }
