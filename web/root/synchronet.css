@@ -2,8 +2,6 @@ a:link { color: yellow; }
 a:visited { color: lime; }
 a:hover { color: #ccffdd; }
  
-# body { background-image: url("/graphics/sync_pb_bg.jpg"); background-position: bottom left; background-repeat: no-repeat; background-attachment: fixed; background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
-
 body { background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
 
 p.title { text-align: center; font-size: x-large; font-weight: bolder; }
