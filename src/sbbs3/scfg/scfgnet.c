@@ -1121,7 +1121,7 @@ perform a call-out.
 void qhub_sub_edit(uint num)
 {
 	char str[256];
-	int i,j,k,l,m,n,bar=0;
+	int j,k,l,m,n,bar=0;
 
 k=0;
 while(1) {
@@ -1321,7 +1321,7 @@ void phub_edit(int num)
 {
 	static int phub_dflt;
 	char *p,done=0,str[256];
-	int i,j,k,n;
+	int i,j;
 
 while(!done) {
 	i=0;
