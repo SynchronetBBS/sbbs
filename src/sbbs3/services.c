@@ -396,19 +396,9 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	putuserdat(&scfg,&user);
 
-	/* user object */
-	if(js_CreateUserObject(cx, obj, &scfg, "user", user.number)==NULL) 
-		lprintf("%04d %s !JavaScript ERROR creating user object"
-			,client->socket,client->service->protocol);
-
-	/* file_area object */
-	if(js_CreateFileAreaObject(cx, obj, &scfg, &user, "")==NULL) 
-		lprintf("%04d %s !JavaScript ERROR creating file_area object"
-			,client->socket,client->service->protocol);
-
-	/* msg_area object */
-	if(js_CreateMsgAreaObject(cx, obj, &scfg, &user, NULL)==NULL) 
-		lprintf("%04d %s !JavaScript ERROR creating msg_area object"
+	/* user-specific objects */
+	if(!js_CreateUserObjects(cx, obj, &scfg, &user, NULL, NULL)) 
+		lprintf("%04d %s !JavaScript ERROR creating user objects"
 			,client->socket,client->service->protocol);
 
 	if(client->client!=NULL) {
