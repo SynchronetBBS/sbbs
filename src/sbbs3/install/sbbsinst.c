@@ -181,7 +181,7 @@ int filereadline(int sock, char *buf, size_t length, char *error)
 void bail(int code)
 {
     if(code) {
-        puts("\nHit a key...");
+        cputs("\nHit a key...");
         getch(); 
 	}
     uifc.bail();
