@@ -87,6 +87,7 @@ typedef struct {
 	char	hangup_sound[128];
     char	hack_sound[128];
     char	reserved_path1[128];
+	sem_t	recycle_sem;
 
 } ftp_startup_t;
 
