@@ -461,19 +461,11 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 	sockprintf(socket,".");	/* End of text */
 }
 
-static u_long resolve_ip(char *inaddr, ushort* port)
+static u_long resolve_ip(char *addr)
 {
-	char		addr[128];
 	char*		p;
 	HOSTENT*	host;
 
-	sprintf(addr,"%.*s",sizeof(addr)-1,inaddr);
-	p=strrchr(addr,':');	/* non-standard SMTP port */
-	if(p!=NULL) {
-		*p=0;
-		if(port!=NULL)
-			*port=atoi(p+1);
-	}
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
 			break;
@@ -481,7 +473,7 @@ static u_long resolve_ip(char *inaddr, ushort* port)
 		return(inet_addr(addr));
 
 	if ((host=gethostbyname(addr))==NULL) {
-		lprintf("0000 !ERROR resolving host name: %s",inaddr);
+		lprintf("0000 !ERROR resolving host name: %s",addr);
 		return(0);
 	}
 	return(*((ulong*)host->h_addr_list[0]));
@@ -1054,7 +1046,7 @@ static void smtp_thread(void* arg)
 	int			rd;
 	char		str[512];
 	char		tmp[128];
-	char		buf[1024],*p,*tp;
+	char		buf[1024],*p,*tp,*cp;
 	char		hdrfield[512];
 	char		alias_buf[128];
 	char		name_alias_buf[128];
@@ -1072,11 +1064,11 @@ static void smtp_thread(void* arg)
 	char		host_ip[64];
 	char*		telegram_buf;
 	char*		msgbuf;
+	char		dest_host[128];
+	ushort		dest_port;
 	int			addr_len;
 	ushort		xlat;
 	ushort		nettype=NET_NONE;
-	ushort		dest_port;
-	ulong		dest_ip;
 	uint		usernum;
 	ulong		crc;
 	ulong		length;
@@ -1302,7 +1294,7 @@ static void smtp_thread(void* arg)
 					length=filelength(fileno(msgtxt));
 					
 					p=strchr(sender_addr,'@');
-					if(p==NULL || resolve_ip(p+1,NULL)!=smtp.client_addr.sin_addr.s_addr) 
+					if(p==NULL || resolve_ip(p+1)!=smtp.client_addr.sin_addr.s_addr) 
 						/* Append real IP and hostname if different */
 						sprintf(str,"%s%s \1w[\1n%s\1h] (\1n%s\1h)%s"
 							,head,sender_addr,host_ip,host_name,tail);
@@ -1895,18 +1887,23 @@ static void smtp_thread(void* arg)
 
 			p=alias(&scfg,p,alias_buf);
 			if(p==alias_buf) 
-				lprintf("%04d SMTP ALIAS: %s",socket,p);
+				lprintf("%04d SMTP ADDRESS ALIAS: %s",socket,p);
 
 			tp=strrchr(p,'@');
 			if(cmd==SMTP_CMD_MAIL && tp!=NULL) {
 				
 				/* RELAY */
 				dest_port=server_addr.sin_port;
-				dest_ip=resolve_ip(tp+1,&dest_port);
+				sprintf(dest_host,"%.*s",sizeof(dest_host),tp+1);
+				cp=strrchr(dest_host,':');
+				if(cp!=NULL) {
+					*cp=0;
+					dest_port=atoi(cp+1);
+				}
 				sprintf(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
-				if((stricmp(tp+1,scfg.sys_inetaddr)!=0
-						&& dest_ip!=server_addr.sin_addr.s_addr
-						&& findstr(&scfg,tp+1,domain_list)==FALSE)
+				if((stricmp(dest_host,scfg.sys_inetaddr)!=0
+						&& resolve_ip(dest_host)!=server_addr.sin_addr.s_addr
+						&& findstr(&scfg,dest_host,domain_list)==FALSE)
 					|| dest_port!=server_addr.sin_port) {
 
 					sprintf(relay_list,"%srelay.cfg",scfg.ctrl_dir);
@@ -1943,7 +1940,7 @@ static void smtp_thread(void* arg)
 
 			p=alias(&scfg,p,name_alias_buf);
 			if(p==name_alias_buf) 
-				lprintf("%04d SMTP ALIAS: %s",socket,p);
+				lprintf("%04d SMTP NAME ALIAS: %s",socket,p);
 		
 			if(!strnicmp(p,"sub:",4)) {		/* Post on a sub-board */
 				p+=4;
@@ -2372,7 +2369,7 @@ static void sendmail_thread(void* arg)
 					bounce(&smb,&msg,err,TRUE);
 					continue;
 				}
-				if((dns=resolve_ip(startup->dns_server,NULL))==0) 
+				if((dns=resolve_ip(startup->dns_server))==0) 
 					continue;
 				p++;
 				lprintf("0000 SEND getting MX records for %s from %s",p,startup->dns_server);
@@ -2419,7 +2416,7 @@ static void sendmail_thread(void* arg)
 				}
 				
 				lprintf("%04d SEND resolving SMTP host name: %s", sock, server);
-				ip_addr=resolve_ip(server,NULL);
+				ip_addr=resolve_ip(server);
 				if(!ip_addr)  {
 					sprintf(err,"Failed to resolve SMTP host name: %s",server);
 					continue;
