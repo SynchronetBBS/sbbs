@@ -48,6 +48,7 @@ enum {
 	,CON_PROP_ATTR
 	,CON_PROP_TOS
 	,CON_PROP_ROWS
+	,CON_PROP_COLUMNS
 	,CON_PROP_AUTOTERM
 	,CON_PROP_TERMINAL
 	,CON_PROP_WORDWRAP
@@ -88,6 +89,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case CON_PROP_ROWS:
 			val=sbbs->rows;
+			break;
+		case CON_PROP_COLUMNS:
+			val=sbbs->cols;
 			break;
 		case CON_PROP_AUTOTERM:
 			val=sbbs->autoterm;
@@ -173,6 +177,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_ROWS:
 			sbbs->rows=val;
 			break;
+		case CON_PROP_COLUMNS:
+			sbbs->cols=val;
+			break;
 		case CON_PROP_AUTOTERM:
 			sbbs->autoterm=val;
 			break;
@@ -228,6 +235,7 @@ static struct JSPropertySpec js_console_properties[] = {
 	{	"attributes"		,CON_PROP_ATTR				,CON_PROP_FLAGS	,NULL,NULL},
 	{	"top_of_screen"		,CON_PROP_TOS				,CON_PROP_FLAGS	,NULL,NULL},
 	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,NULL,NULL},
+	{	"screen_columns"	,CON_PROP_COLUMNS			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"autoterm"			,CON_PROP_AUTOTERM			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"terminal"			,CON_PROP_TERMINAL			,CON_PROP_FLAGS ,NULL,NULL},
 	{	"timeout"			,CON_PROP_TIMEOUT			,CON_PROP_FLAGS	,NULL,NULL},
@@ -248,7 +256,8 @@ static char* con_prop_desc[] = {
 	,"current line counter (used for automatic screen pause)"
 	,"current display attributes (set with number or string value)"
 	,"set to 1 if the terminal cursor is already at the top of the screen"
-	,"number of terminal rows"
+	,"number of terminal screen rows (in lines)"
+	,"number of terminal screen columns (in character cells)"
 	,"bitfield of automatically detected terminal settings "
 		"(see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"terminal type description (e.g. 'ANSI')"
@@ -623,7 +632,7 @@ js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
 	int32		i;
-	int32		count;
+	int32		count=1;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
