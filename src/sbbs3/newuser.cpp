@@ -177,6 +177,7 @@ void sbbs_t::newuser()
 					,K_UPRLWR|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL);
 				truncsp(useron.alias);
 				if(useron.alias[0]<=SP || !isalpha(useron.alias[0])
+					|| !stricmp(useron.alias,cfg.sys_id)
 					|| strchr(useron.alias,0xff)
 					|| matchuser(&cfg,useron.alias) || trashcan(useron.alias,"name")
 					|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,SP))) {
