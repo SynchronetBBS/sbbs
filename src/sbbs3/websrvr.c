@@ -316,6 +316,7 @@ static void respond(http_session_t * session);
 static BOOL js_setup(http_session_t* session);
 static char *find_last_slash(char *str);
 
+#if 0
 static time_t time_gm( struct tm* ti )  {
 	time_t t;
 
@@ -332,6 +333,109 @@ static time_t time_gm( struct tm* ti )  {
 
 	return t;
 }
+#else
+static time_t
+sub_mkgmt(struct tm *tm)
+{
+        int y, nleapdays;
+        time_t t;
+        /* days before the month */
+        static const unsigned short moff[12] = {
+                0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
+        };
+
+        /*
+         * XXX: This code assumes the given time to be normalized.
+         * Normalizing here is impossible in case the given time is a leap
+         * second but the local time library is ignorant of leap seconds.
+         */
+
+        /* minimal sanity checking not to access outside of the array */
+        if ((unsigned) tm->tm_mon >= 12)
+                return (time_t) -1;
+        if (tm->tm_year < 1970 - 1900)
+                return (time_t) -1;
+
+        y = tm->tm_year + 1900 - (tm->tm_mon < 2);
+        nleapdays = y / 4 - y / 100 + y / 400 -
+            ((1970-1) / 4 - (1970-1) / 100 + (1970-1) / 400);
+        t = ((((time_t) (tm->tm_year - (1970 - 1900)) * 365 +
+                        moff[tm->tm_mon] + tm->tm_mday - 1 + nleapdays) * 24 +
+                tm->tm_hour) * 60 + tm->tm_min) * 60 + tm->tm_sec;
+
+        return (t < 0 ? (time_t) -1 : t);
+}
+
+time_t
+time_gm(struct tm *tm)
+{
+        time_t t, t2;
+        struct tm *tm2;
+        int sec;
+
+        /* Do the first guess. */
+        if ((t = sub_mkgmt(tm)) == (time_t) -1)
+                return (time_t) -1;
+
+        /* save value in case *tm is overwritten by gmtime() */
+        sec = tm->tm_sec;
+
+        tm2 = gmtime(&t);
+        if ((t2 = sub_mkgmt(tm2)) == (time_t) -1)
+                return (time_t) -1;
+
+        if (t2 < t || tm2->tm_sec != sec) {
+                /*
+                 * Adjust for leap seconds.
+                 *
+                 *     real time_t time
+                 *           |
+                 *          tm
+                 *         /        ... (a) first sub_mkgmt() conversion
+                 *       t
+                 *       |
+                 *      tm2
+                 *     /        ... (b) second sub_mkgmt() conversion
+                 *   t2
+                 *                        --->time
+                 */
+                /*
+                 * Do the second guess, assuming (a) and (b) are almost equal.
+                 */
+                t += t - t2;
+                tm2 = gmtime(&t);
+
+                /*
+                 * Either (a) or (b), may include one or two extra
+                 * leap seconds.  Try t, t + 2, t - 2, t + 1, and t - 1.
+                 */
+                if (tm2->tm_sec == sec
+                    || (t += 2, tm2 = gmtime(&t), tm2->tm_sec == sec)
+                    || (t -= 4, tm2 = gmtime(&t), tm2->tm_sec == sec)
+                    || (t += 3, tm2 = gmtime(&t), tm2->tm_sec == sec)
+                    || (t -= 2, tm2 = gmtime(&t), tm2->tm_sec == sec))
+                        ;        /* found */
+                else {
+                        /*
+                         * Not found.
+                         */
+                        if (sec >= 60)
+                                /*
+                                 * The given time is a leap second
+                                 * (sec 60 or 61), but the time library
+                                 * is ignorant of the leap second.
+                                 */
+                                ;        /* treat sec 60 as 59,
+                                           sec 61 as 0 of the next minute */
+                        else
+                                /* The given time may not be normalized. */
+                                t++;        /* restore t */
+                }
+        }
+
+        return (t < 0 ? (time_t) -1 : t);
+}
+#endif
 
 static int lprintf(int level, char *fmt, ...)
 {
@@ -748,7 +852,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	 * I can't help but feel that this may not be required for GET requests.
 	 * Look into this and revisit this section - ToDo
 	 */
-	if(!ret && (stats.st_mtime < session->req.if_modified_since) && !session->req.dynamic) {
+	if(!ret && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
 		status_line="304 Not Modified";
 		ret=-1;
 		send_file=FALSE;
