@@ -280,16 +280,16 @@ static const char *js_type_str[] = {
     "string",
     "number",
     "boolean",
+	"array",		// JSTYPE_LIMIT
 };
 
 JSBool 
 DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 {
-	int			i,a;
+	int			i;
 	jsuint		len=0;
 	jsval		val;
 	JSObject*	method;
-	JSObject*	alias_list;
 	JSObject*	method_array;
 
 	/* Return existing method_list array if it's already been created */
@@ -333,20 +333,9 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 		}
 
 		if(funcs[i].alias != NULL) {
-			alias_list = JS_NewArrayObject(cx, 0, NULL);
-			if(alias_list==NULL)
-				return(JS_FALSE);
-			for(a=0;funcs[i].alias[a]!=NULL;a++) {
-
-				JS_DefineFunction(cx, obj, funcs[i].alias[a], funcs[i].call, funcs[i].nargs, 0);
-
-				val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].alias[a]));
-				if(!JS_SetElement(cx, alias_list, a, &val))
-					return(JS_FALSE);
-			}
-			if(!JS_DefineProperty(cx, method, "alias_list", OBJECT_TO_JSVAL(alias_list)
-				, NULL, NULL, 0))
-				return(JS_FALSE);
+			JS_DefineFunction(cx, obj, funcs[i].alias, funcs[i].call, funcs[i].nargs, 0);
+			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].alias));
+			JS_SetProperty(cx, method, "alias", &val);
 		}
 
 		val=OBJECT_TO_JSVAL(method);
@@ -366,13 +355,12 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 JSBool 
 DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 {
-	int			i,a;
+	int			i;
 
 	for(i=0;funcs[i].name;i++) {
 		JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0);
 		if(funcs[i].alias != NULL)
-			for(a=0;funcs[i].alias[a]!=NULL;a++)
-				JS_DefineFunction(cx, obj, funcs[i].alias[a], funcs[i].call, funcs[i].nargs, 0);
+			JS_DefineFunction(cx, obj, funcs[i].alias, funcs[i].call, funcs[i].nargs, 0);
 	}
 	return(JS_TRUE);
 }

@@ -835,8 +835,10 @@ extern "C" {
 		JSType			type;		/* return type */
 		const char*		args;		/* arguments */
 		const char*		desc;		/* description */
-		const char**	alias;		/* aliases */
+		const char*		alias;		/* a.k.a. */
 	} jsMethodSpec;
+
+	#define JSTYPE_ARRAY JSTYPE_LIMIT
 
 	/* main.cpp */
 	DLLEXPORT int		DLLCALL js_MethodsToFunctions(jsMethodSpec meth[], JSFunctionSpec func[]);
