@@ -82,6 +82,8 @@
 
 #define GETMSGTXT_TAILS 	1			/* Get message tail(s) too */
 
+#define SMB_IS_OPEN(smb)	(smb->shd_fp!=NULL)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
