@@ -3,5 +3,4 @@ ifndef NO_X
  ifeq ($(os),linux)
   CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
  endif
- CIOLIB-MT_LDFLAGS	+=	-L/usr/X11R6/lib
 endif
