@@ -792,7 +792,7 @@ BOOL sbbs_write_ini(
 
 	} while(0);	/* finally */
 
-	free(list);
+	strListFree(&list);
 
 	return(result);
 }
