@@ -48,7 +48,7 @@ while(currpage>lastpage) {
 
 /* Try adjust so currpage is in the middle of firstpage and lastpage */
 lcount=0;
-while(currpage>firstpage+(max_pages/2) && lastpage<total_pages) {
+while(currpage>firstpage+(max_pages/2) && lastpage<(total_pages-1)) {
 	lcount++;
 	firstpage++;
 	lastpage=firstpage+max_pages-1;
