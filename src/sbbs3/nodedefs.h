@@ -119,7 +119,7 @@ typedef struct {					/* Node information kept in NODE.DAB */
             misc,                   /* Miscellaneous bits for node */
             aux;                    /* Auxillary word for node */
     ulong   extaux;                 /* Extended aux dword for node */
-            } _PACK node_t;
+            } node_t _PACK;
 
 #ifdef _WIN32
 #pragma pack(pop)		/* original packing */

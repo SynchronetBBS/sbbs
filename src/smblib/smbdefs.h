@@ -387,7 +387,7 @@ typedef struct {			// Time with time-zone
 	ulong	time;			// Local time (unix format)
 	short	zone;			// Time zone
 
-	} _PACK when_t;
+	} when_t _PACK;
 
 typedef struct {			// Index record
 
@@ -399,7 +399,7 @@ typedef struct {			// Index record
 	ulong	number; 		// number of message (1 based)
 	ulong	time;			// time/date message was imported/posted
 
-	} _PACK idxrec_t;
+	} idxrec_t _PACK;
 
 typedef struct {			// Message base header (fixed portion)
 
@@ -407,7 +407,7 @@ typedef struct {			// Message base header (fixed portion)
     ushort  version;        // version number (initially 100h for 1.00)
     ushort  length;         // length including this struct
 
-	} _PACK smbhdr_t;
+	} smbhdr_t _PACK;
 
 typedef struct {			// Message base status header
 
@@ -419,7 +419,7 @@ typedef struct {			// Message base status header
     ushort  max_age;        // Maximum age of message to keep in sub (in days)
 	ushort	attr;			// Attributes for this message base (SMB_HYPER,etc)
 
-	} _PACK smbstatus_t;
+	} smbstatus_t _PACK;
 
 typedef struct {			// Message header
 
@@ -441,7 +441,7 @@ typedef struct {			// Message header
     ulong   offset;         // Offset for buffer into data file (0 or mod 256)
 	ushort	total_dfields;	// Total number of data fields
 
-	} _PACK msghdr_t;
+	} msghdr_t _PACK;
 
 typedef struct {			// Data field
 
@@ -449,14 +449,14 @@ typedef struct {			// Data field
     ulong   offset;         // Offset into buffer 
     ulong   length;         // Length of data field
 
-    } _PACK dfield_t;
+    } dfield_t _PACK;
 
 typedef struct {			// Header field
 
 	ushort	type;
 	ushort	length; 		// Length of buffer
 
-	} _PACK hfield_t;
+	} hfield_t _PACK;
 
 typedef struct {			// FidoNet address (zone:net/node.point)
 
@@ -465,14 +465,14 @@ typedef struct {			// FidoNet address (zone:net/node.point)
 	ushort	node;
 	ushort	point;
 
-    } _PACK fidoaddr_t;
+    } fidoaddr_t _PACK;
 
 typedef struct {			// Network (type and address)
 
     ushort  type;
 	void	*addr;
 
-	} _PACK net_t;
+	} net_t _PACK;
 
 typedef struct {				// Message
 
@@ -499,7 +499,7 @@ typedef struct {				// Message
 	uchar		forwarded;		// Forwarded from agent to another
 	when_t		expiration; 	// Message will exipre on this day (if >0)
 
-	} _PACK smbmsg_t;
+	} smbmsg_t _PACK;
 
 typedef struct {			// Message base
 
@@ -514,7 +514,7 @@ typedef struct {			// Message base
 	char	shd_buf[SHD_BLOCK_LEN]; 	// File I/O buffer for header file
 	char	last_error[128];			// Last error message
 
-    } _PACK smb_t;
+    } smb_t _PACK;
 
 #ifdef _WIN32
 #pragma pack(pop)		/* original packing */
