@@ -558,7 +558,8 @@ while(client.socket.is_connected) {
 				log(format("!BLOCKED subject: %s",hdr.subject));
 				var reason = format("Blocked subject from %s (%s): %s"
 					,user.alias,hdr.from,hdr.subject);
-				system.spamlog("NNTP",reason,client.host_name,client.ip_address,hdr.to);
+				system.spamlog("NNTP","BLOCKED"
+					,reason,client.host_name,client.ip_address,hdr.to);
 				writeln("441 posting failed");
 				break;
 			}
