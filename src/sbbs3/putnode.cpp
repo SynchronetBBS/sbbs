@@ -47,6 +47,7 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 	char	str[256],firston[25];
 	int		wr;
 	int		wrerr;
+	int		attempts;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
@@ -82,15 +83,19 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 	}
 
 	number--;	/* make zero based */
-	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-	wr=write(nodefile,node,sizeof(node_t));
+	for(attempts=0;attempts<10;attempts++) {
+		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
+		wr=write(nodefile,node,sizeof(node_t));
+		if(wr==sizeof(node_t))
+			break;
+		mswait(100);
+	}
 	wrerr=errno;	/* save write error */
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 	close(nodefile);
 	nodefile=-1;
 
 	if(wr!=sizeof(node_t)) {
-		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 		errno=wrerr;
 		errormsg(WHERE,ERR_WRITE,"nodefile",number+1);
 	}
