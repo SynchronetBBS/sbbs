@@ -884,6 +884,7 @@ void sbbs_t::privchat(bool local)
 					}
 					local_y=15+localline;
 				}
+				continue;
 			}
 			else if(ch>=SP || ch==CR) {
 				if(ch!=CR) {
