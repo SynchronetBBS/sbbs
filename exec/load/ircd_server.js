@@ -409,40 +409,37 @@ function Server_Work() {
 			}
 			break;
 		case "NICK":
-			if (!cmd[2] || (!cmd[8] && (cmd[2][0] != ":")) )
+			if (!cmd[2])
 				break;
-			var collide = Users[cmd[1].toUpperCase()];
-			if ((collide) && (parseInt(collide.created) >
-			    parseInt(cmd[3]) ) && this.hub) {
-				// Nuke our side of things, allow this newly
-				// introduced nick to overrule.
-				collide.numeric(436, collide.nick + " :Nickname Collision KILL.");
-				this.bcast_to_servers("KILL " + collide.nick + " :Nickname Collision.");
-				collide.quit("Nickname Collision",true);
-			} else if (collide && !this.hub) {
-				umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to collide nick " + collide.nick + " forwards, reversing.");
-				// Don't collide our side of things from a leaf
-				this.ircout("KILL " + cmd[1] + " :Inverse Nickname Collision.");
-				// Reintroduce our nick, because the remote end
-				// probably killed it already on our behalf.
-				this.reintroduce_nick(collide);
-				break;
-			} else if (collide && this.hub) {
-				break;
-			}
-			if (cmd[2][0] == ":") {
-				cmd[2] = cmd[2].slice(1);
-				ThisOrigin.created = parseInt(cmd[2]);
-				ThisOrigin.bcast_to_uchans_unique("NICK " + cmd[1]);
-				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " NICK " + cmd[1] + " :" + cmd[2]);
-				push_nickbuf(ThisOrigin.nick,cmd[1]);
-				Users[cmd[1].toUpperCase()] = ThisOrigin;
-				delete Users[ThisOrigin.nick.toUpperCase()];
-				ThisOrigin.nick = cmd[1];
-			} else if (cmd[10]) {
+			if (ThisOrigin.server && cmd[8]) {
+				var collide = Users[cmd[1].toUpperCase()];
+				if (collide) {
+					if (collide.parent == this.nick) {
+						gnotice("Server " + this.nick + " trying to introduce nick " + collide.nick + " twice?! Ignoring.");
+						break;
+					} else if ((parseInt(collide.created) >
+					    parseInt(cmd[3])) && this.hub) {
+						// Nuke our side of things, allow this newly
+						// introduced nick to overrule.
+						collide.numeric(436, collide.nick + " :Nickname Collision KILL.");
+						this.bcast_to_servers("KILL " + collide.nick + " :Nickname Collision.");
+						collide.quit("Nickname Collision",true);
+					} else if (!this.hub) {
+						gnotice("Server " + this.nick + " trying to collide nick " + collide.nick + " forwards, reversing.");
+						// Don't collide our side of things from a leaf
+						this.ircout("KILL " + cmd[1] + " :Inverse Nickname Collision.");
+						// Reintroduce our nick, because the remote end
+						// probably killed it already on our behalf.
+						this.reintroduce_nick(collide);
+						break;
+					} else if (this.hub) {
+						// Other side should nuke on our behalf.
+						break;
+					}
+				}
 				if (!this.hub) {
 					if(!this.check_nickname(cmd[1],true)) {
-						umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to introduce invalid nickname: " + cmd[1] + ", killed.");
+						gnotice("Server " + this.nick + " trying to introduce invalid nickname: " + cmd[1] + ", killed.");
 						this.ircout("KILL " + cmd[1] + " :Bogus Nickname.");
 						break;
 					}
@@ -481,6 +478,36 @@ function Server_Work() {
 				}
 				var true_hops = parseInt(NewNick.hops)+1;
 				this.bcast_to_servers_raw("NICK " + NewNick.nick + " " + true_hops + " " + NewNick.created + " " + NewNick.get_usermode(true) + " " + NewNick.uprefix + " " + NewNick.hostname + " " + NewNick.servername + " 0 " + cmd[9] + " :" + NewNick.realname);
+			} else { // we're a user changing our nick.
+				var ctuc = cmd[1].toUpperCase();
+				if ((Users[ctuc])&&Users[ctuc].nick.toUpperCase() !=
+				    ThisOrigin.nick.toUpperCase()) {
+					gnotice("Server " + this.nick + " trying to collide nick via NICK changeover: " + ThisOrigin.nick + " -> " + cmd[1]);
+					server_bcast_to_servers("KILL " + ThisOrigin.nick + " :Bogus nickname changeover.");
+					ThisOrigin.quit("Bogus nickname changeover.");
+					this.ircout("KILL " + cmd[1] + " :Bogus nickname changeover.");
+					this.reintroduce_nick(Users[ctuc]);
+					break;
+				}
+				if (ThisOrigin.check_nickname(cmd[1]) < 1) {
+					gnotice("Server " + this.nick + " trying to change to bogus nick: " + ThisOrigin.nick + " -> " + cmd[1]);
+					this.bcast_to_servers_raw("KILL " + ThisOrigin.nick + " :Bogus nickname switch detected.");
+					this.ircout("KILL " + cmd[1] + " :Bogus nickname switch detected.");
+					ThisOrigin.quit("Bogus nickname switch detected.",true);
+					break;
+				}
+				if (this.hub)
+					ThisOrigin.created = parseInt(IRC_string(cmd[2]));
+				else
+					ThisOrigin.created = time();
+				ThisOrigin.bcast_to_uchans_unique("NICK " + cmd[1]);
+				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " NICK " + cmd[1] + " :" + ThisOrigin.created);
+				if (ctuc != ThisOrigin.nick.toUpperCase()) {
+					push_nickbuf(ThisOrigin.nick,cmd[1]);
+					Users[cmd[1].toUpperCase()] = ThisOrigin;
+					delete Users[ThisOrigin.nick.toUpperCase()];
+				}
+				ThisOrigin.nick = cmd[1];
 			}
 			break;
 		case "NOTICE":
