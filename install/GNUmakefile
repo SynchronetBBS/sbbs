@@ -87,26 +87,26 @@ binaries:	sbbs3 scfg umonitor uedit
 externals:	sbj sbl
 
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/include \
+	$(SBBSDIR)/src/conio $(SBBSDIR)/include \
 	$(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX) \
 	$(SBBSDIR)/lib/mozilla/nspr/$(machine).$(SUFFIX) \
 	$(SBBSDIR)/lib/fltk/$(machine)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
 scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/include \
+	$(SBBSDIR)/src/conio $(SBBSDIR)/include \
 	$(SBBSDIR)/lib/fltk/$(machine)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
 
 umonitor:	$(SBBSDIR)/src/sbbs3 \
 	$(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/include \
+	$(SBBSDIR)/src/conio $(SBBSDIR)/include \
 	$(SBBSDIR)/lib/fltk/$(machine)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/umonitor $(MKFLAGS)
 
 uedit:	$(SBBSDIR)/src/sbbs3 \
 	$(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/include \
+	$(SBBSDIR)/src/conio $(SBBSDIR)/include \
 	$(SBBSDIR)/lib/fltk/$(machine)
 
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/uedit $(MKFLAGS)
@@ -212,6 +212,11 @@ endif
 $(SBBSDIR)/src/uifc: cvslogin
 ifndef NOCVS
 	$(CVS_CO) -r $(CVSTAG)  src/uifc
+endif
+
+$(SBBSDIR)/src/conio: cvslogin
+ifndef NOCVS
+	$(CVS_CO) -r $(CVSTAG)  src/conio
 endif
 
 $(SBBSDIR)/src/xpdev: cvslogin
