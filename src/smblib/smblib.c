@@ -35,12 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-/* Compiler-specific headers */
-#if defined __WATCOMC__ || defined __TURBOC__ || defined _MSC_VER
-	#include <io.h>
-	#include <share.h>
-#endif
-
 #if defined __WATCOMC__ || defined __TURBOC__
 	#include <mem.h>
 #else
@@ -66,71 +60,19 @@
 
 /* SMB-specific headers */
 #include "smblib.h"
+#include "smbwrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
 #define SMBLIB_VERSION		"2.13"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
 
-#ifdef _WIN32
-#include <windows.h>		/* OF_SHARE_ */
-
-#ifndef SH_DENYNO
-#define SH_DENYNO		   OF_SHARE_DENY_NONE
-#define SH_DENYRW		   OF_SHARE_EXCLUSIVE
-#endif
-
-#endif
-
-#if defined _MSC_VER || defined __MINGW32__
-
-#define sopen(f,o,s,p)	   _sopen(f,o,s,p)
-#define close(f)		   _close(f)
-
-#include <sys/locking.h>
-
-/* Fix MinGW locking.h typo */
-#if defined LK_UNLOCK && !defined LK_UNLCK
-#define LK_UNLCK LK_UNLOCK
-#endif
-
-int lock(int file, long offset, int size) 
-{
-	int	i;
-	long	pos;
-   
-	pos=tell(file);
-	if(offset!=pos)
-		lseek(file, offset, SEEK_SET);
-	i=_locking(file,LK_NBLCK,size);
-	if(offset!=pos)
-		lseek(file, pos, SEEK_SET);
-	return(i);
-}
-
-int unlock(int file, long offset, int size)
-{
-	int	i;
-	long	pos;
-   
-	pos=tell(file);
-	if(offset!=pos)
-		lseek(file, offset, SEEK_SET);
-	i=_locking(file,LK_UNLCK,size);
-	if(offset!=pos)
-		lseek(file, pos, SEEK_SET);
-	return(i);
-}
-
-#endif
-
-
 int SMBCALL smb_ver(void)
 {
 	return(SMB_VERSION);
 }
 
-char*  SMBCALL smb_lib_ver(void)
+char* SMBCALL smb_lib_ver(void)
 {
 	return(SMBLIB_VERSION);
 }
@@ -149,7 +91,7 @@ int SMBCALL smb_open(smb_t* smb)
 		smb->retry_time=10;
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
 	sprintf(str,"%s.SHD",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IWRITE|S_IREAD))==-1
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
 		|| (smb->shd_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
 		if(file!=-1)
@@ -193,7 +135,7 @@ int SMBCALL smb_open(smb_t* smb)
 	setvbuf(smb->shd_fp,smb->shd_buf,_IOFBF,SHD_BLOCK_LEN);
 
 	sprintf(str,"%s.SDT",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IWRITE|S_IREAD))==-1
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
 		|| (smb->sdt_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
 		if(file!=-1)
@@ -204,7 +146,7 @@ int SMBCALL smb_open(smb_t* smb)
 	setvbuf(smb->sdt_fp,NULL,_IOFBF,2*1024);
 
 	sprintf(str,"%s.SID",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IWRITE|S_IREAD))==-1
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
 		|| (smb->sid_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
 		if(file!=-1)
@@ -246,7 +188,7 @@ int SMBCALL smb_open_da(smb_t* smb)
 
 	sprintf(str,"%s.SDA",smb->file);
 	while(1) {
-		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IWRITE|S_IREAD))!=-1)
+		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
 		if(errno!=EACCES) {
 			sprintf(smb->last_error,"%d opening %s",errno,str);
@@ -289,7 +231,7 @@ int SMBCALL smb_open_ha(smb_t* smb)
 
 	sprintf(str,"%s.SHA",smb->file);
 	while(1) {
-		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IWRITE|S_IREAD))!=-1)
+		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
 		if(errno!=EACCES) {
 			sprintf(smb->last_error,"%d opening %s",errno,str);
@@ -946,7 +888,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 
 	sprintf(str,"%s.SCH",smb->file);
 	while(1) {
-		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IWRITE|S_IREAD))!=-1)
+		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
 		if(errno!=EACCES) {
 			sprintf(smb->last_error,"%d opening %s", errno, str);
