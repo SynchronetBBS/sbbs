@@ -23,8 +23,9 @@ LIBFILE	=	.dll
 EXEFILE	=	.exe
 LIBODIR	=	bcc.win32.dll	# Library output directory
 EXEODIR =	bcc.win32.exe	# Executable output directory
+UIFC	=	..\uifc\		# Path to User Interfce library
 XPDEV	=	..\xpdev\		# Path to Cross-platform wrappers
-CFLAGS	=	-M -I$(XPDEV)
+CFLAGS	=	-M -I$(XPDEV) -I$(UIFC)
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 
@@ -146,5 +147,14 @@ $(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
 	$(LIBODIR)\scfglib2.obj
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+# SBBSecho Configuration Program
+$(ECHOCFG): echocfg.c rechocfg.c \
+	$(UIFC)uifc.c \
+	$(LIBODIR)\nopen.obj \
+	$(LIBODIR)\str_util.obj
+	@echo Creating $@
+	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
 
 !include depends.mk		# defines dependencies
