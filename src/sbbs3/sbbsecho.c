@@ -348,6 +348,9 @@ return(cmd);
 /****************************************************************************/
 int execute(char *cmdline)
 {
+#if 1
+	system(cmdline);
+#else
 	char c,d,e,cmdlen,*arg[30],str[256];
 	int i;
 
@@ -362,6 +365,7 @@ int execute(char *cmdline)
 	arg[d]=0;
 	i=spawnvp(P_WAIT,arg[0],arg);
 	return(i);
+#endif
 }
 /******************************************************************************
  Returns the system address with the same zone as the address passed
@@ -1694,7 +1698,7 @@ void pack_bundle(char *infile,faddr_t dest)
 		strcpy(outbound,cfg.outbound);
 	if(outbound[strlen(outbound)-1]=='\\')
 		outbound[strlen(outbound)-1]=0;
-	mkdir(outbound);
+	MKDIR(outbound);
 	strcat(outbound,"\\");
 
 	if(node<cfg.nodecfgs)
@@ -3456,7 +3460,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			if(sp) tp=sp+1;
 			sprintf(str,"%s%s",scfg.fidofile_dir,tp);
 			sprintf(tmp,"%sFILE\\%04u.IN",scfg.data_dir,usernumber);
-			mkdir(tmp);
+			MKDIR(tmp);
 			strcat(tmp,"\\");
 			strcat(tmp,tp);
 			mv(str,tmp,0);
@@ -3845,7 +3849,9 @@ int main(int argc, char **argv)
 
 	putenv("TZ=UTC0");
 	putenv("TMP=");
+#if !defined(__unix__)
 	_fmode=O_BINARY;
+#endif
 	setvbuf(stdout,NULL,_IONBF,0);
 
 	sub_code[0]=0;
@@ -4698,7 +4704,7 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 			strcat(outbound,str); }
 		if(outbound[strlen(outbound)-1]=='\\')
 			outbound[strlen(outbound)-1]=0;
-		mkdir(outbound);
+		MKDIR(outbound);
 		strcat(outbound,"\\");
 		if(addr.point)
 			sprintf(packet,"%s%08X.%cUT",outbound,addr.point,ch);
