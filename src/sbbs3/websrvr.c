@@ -2064,6 +2064,7 @@ static BOOL exec_cgi(http_session_t *session)
 	char	*p;
 	char	ch;
 	list_node_t	*node;
+	BOOL	orig_keep=FALSE;
 #endif
 
 	SAFECOPY(cmdline,session->req.physical_path);
@@ -2072,7 +2073,7 @@ static BOOL exec_cgi(http_session_t *session)
 
 	lprintf(LOG_INFO,"%04d Executing %s",session->socket,cmdline);
 
-	/* ToDo: Should only do this if the Content-Length header was NOT sent */
+	orig_keep=session->req.keep_alive;
 	session->req.keep_alive=FALSE;
 
 	/* Set up I/O pipes */
@@ -2201,7 +2202,7 @@ static BOOL exec_cgi(http_session_t *session)
 									SAFECOPY(cgi_status,value);
 									break;
 								case HEAD_LENGTH:
-									session->req.keep_alive=TRUE;
+									session->req.keep_alive=orig_keep;
 									listPushNodeString(&session->req.dynamic_heads,buf);
 									break;
 								case HEAD_TYPE:
