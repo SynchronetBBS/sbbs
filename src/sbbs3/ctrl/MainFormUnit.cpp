@@ -525,6 +525,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     ConfigCommand="%sSCFG %s /T2";
     MinimizeToSysTray=false;
     NodeDisplayInterval=1;  /* seconds */
+    ClientDisplayInterval=5;    /* seconds */
     Initialized=false;
 
     memset(&bbs_startup,0,sizeof(bbs_startup));
@@ -684,6 +685,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 	StatusBar->Panels->Items[4]->Text="Saving Settings...";
 
     NodeForm->Timer->Interval=NodeDisplayInterval*1000;
+    ClientForm->Timer->Interval=ClientDisplayInterval*1000;
     
     // Write Registry keys
 	TRegistry* Registry=new TRegistry;
@@ -770,6 +772,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteString("ConfigCommand",ConfigCommand);
     Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
     Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
+    Registry->WriteInteger("ClientDisplayInterval",ClientDisplayInterval);
 
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
@@ -1368,6 +1371,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	MinimizeToSysTray=Registry->ReadBool("MinimizeToSysTray");
 	if(Registry->ValueExists("NodeDisplayInterval"))
     	NodeDisplayInterval=Registry->ReadInteger("NodeDisplayInterval");
+	if(Registry->ValueExists("ClientDisplayInterval"))
+    	ClientDisplayInterval=Registry->ReadInteger("ClientDisplayInterval");
 
     if(Registry->ValueExists("MailLogFile"))
     	MailLogFile=Registry->ReadInteger("MailLogFile");
@@ -1583,6 +1588,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     }
     NodeForm->Timer->Interval=NodeDisplayInterval*1000;
     NodeForm->Timer->Enabled=true;
+    ClientForm->Timer->Interval=ClientDisplayInterval*1000;
+    ClientForm->Timer->Enabled=true;
+    
 	StatsTimer->Enabled=true;
     Initialized=true;
 }
@@ -1931,13 +1939,15 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->LoginCmdEdit->Text=LoginCommand;
     PropertiesDlg->ConfigCmdEdit->Text=ConfigCommand;
     PropertiesDlg->CtrlDirEdit->Text=CtrlDirectory;
-    PropertiesDlg->NodeIntEdit->Text=AnsiString(NodeDisplayInterval);
+    PropertiesDlg->NodeIntUpDown->Position=NodeDisplayInterval;
+    PropertiesDlg->ClientIntUpDown->Position=ClientDisplayInterval;
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
         CtrlDirectory=PropertiesDlg->CtrlDirEdit->Text;
-        NodeDisplayInterval=StrToIntDef(PropertiesDlg->NodeIntEdit->Text,1);
+        NodeDisplayInterval=PropertiesDlg->NodeIntUpDown->Position;
+        ClientDisplayInterval=PropertiesDlg->ClientIntUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
         SaveSettings(Sender);
     }

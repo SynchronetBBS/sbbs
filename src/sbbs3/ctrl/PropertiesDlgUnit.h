@@ -12,6 +12,7 @@
 #include <vcl\SysUtils.hpp>
 #include <vcl\Windows.hpp>
 #include <vcl\System.hpp>
+#include <ComCtrls.hpp>
 //----------------------------------------------------------------------------
 class TPropertiesDlg : public TForm
 {
@@ -28,6 +29,10 @@ __published:
     TCheckBox *TrayIconCheckBox;
     TLabel *Label4;
     TEdit *NodeIntEdit;
+    TUpDown *NodeIntUpDown;
+    TLabel *Label5;
+    TEdit *ClientIntEdit;
+    TUpDown *ClientIntUpDown;
 private:
 public:
 	virtual __fastcall TPropertiesDlg(TComponent* AOwner);

@@ -1,9 +1,9 @@
 object PropertiesDlg: TPropertiesDlg
-  Left = 624
-  Top = 451
+  Left = 629
+  Top = 497
   BorderStyle = bsDialog
   Caption = 'Control Panel Properties'
-  ClientHeight = 198
+  ClientHeight = 229
   ClientWidth = 433
   Color = clBtnFace
   ParentFont = True
@@ -15,7 +15,7 @@ object PropertiesDlg: TPropertiesDlg
     Left = 10
     Top = 10
     Width = 306
-    Height = 174
+    Height = 205
     Anchors = [akLeft, akTop, akRight, akBottom]
     Shape = bsFrame
   end
@@ -50,6 +50,14 @@ object PropertiesDlg: TPropertiesDlg
     Height = 24
     AutoSize = False
     Caption = 'Node Display Interval (in seconds)'
+  end
+  object Label5: TLabel
+    Left = 24
+    Top = 152
+    Width = 225
+    Height = 24
+    AutoSize = False
+    Caption = 'Client Display Interval (in seconds)'
   end
   object OKBtn: TButton
     Left = 329
@@ -96,17 +104,49 @@ object PropertiesDlg: TPropertiesDlg
   end
   object TrayIconCheckBox: TCheckBox
     Left = 24
-    Top = 152
+    Top = 182
     Width = 281
     Height = 24
+    Anchors = [akLeft, akBottom]
     Caption = 'Minimize to System Tray'
     TabOrder = 4
   end
   object NodeIntEdit: TEdit
     Left = 256
     Top = 120
-    Width = 49
+    Width = 25
     Height = 24
     TabOrder = 3
+  end
+  object NodeIntUpDown: TUpDown
+    Left = 281
+    Top = 120
+    Width = 19
+    Height = 24
+    Associate = NodeIntEdit
+    Min = 1
+    Max = 99
+    Position = 1
+    TabOrder = 7
+    Wrap = False
+  end
+  object ClientIntEdit: TEdit
+    Left = 256
+    Top = 152
+    Width = 25
+    Height = 24
+    TabOrder = 8
+  end
+  object ClientIntUpDown: TUpDown
+    Left = 281
+    Top = 152
+    Width = 19
+    Height = 24
+    Associate = ClientIntEdit
+    Min = 1
+    Max = 99
+    Position = 1
+    TabOrder = 9
+    Wrap = False
   end
 end

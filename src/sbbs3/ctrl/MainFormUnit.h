@@ -288,6 +288,7 @@ public:		// User declarations
     mail_startup_t 	mail_startup;
     ftp_startup_t	ftp_startup;
     int             NodeDisplayInterval;
+    int             ClientDisplayInterval;
     int             SpyTerminalWidth;
     int             SpyTerminalHeight;
     TFont*          SpyTerminalFont;
