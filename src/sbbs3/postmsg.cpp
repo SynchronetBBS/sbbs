@@ -530,6 +530,14 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	if(msg->to==NULL)	/* no recipient, don't add header */
 		return(smb_unlocksmbhdr(smb));
 
+	/* Look-up thread_orig if Reply-ID was specified */
+	if(msg->hdr.thread_orig==0 && msg->reply_id!=NULL) {
+		if(get_msg_by_id(cfg, smb, msg->reply_id, &remsg)==TRUE) {
+			msg->hdr.thread_orig=remsg->hdr.number;	/* needed for thread linkage */
+			smb_freemsgmem(&remsg);
+		}
+	}
+
 	/* Auto-thread linkage */
 	if(msg->hdr.thread_orig) {
 		memset(&remsg,0,sizeof(remsg));
