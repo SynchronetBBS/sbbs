@@ -3,8 +3,13 @@
 #ifndef TestThreadUnitH
 #define TestThreadUnitH
 //---------------------------------------------------------------------------
-#include <classes.hpp>
-#include <syncobjs.hpp>	/* TEvent/TSimpleEvent */
+#include <Classes.hpp>
+#include <SyncObjs.hpp>	/* TEvent/TSimpleEvent */
+
+#if !defined(INFINITE)  /* Missing in Kylix FT1 */
+#define INFINITE -1
+#endif
+
 //---------------------------------------------------------------------------
 class TTestThread : public TThread
 {            
