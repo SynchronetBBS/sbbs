@@ -175,8 +175,8 @@ public:
 	void	putcom(char *str, int len=0);  // Send string
 	void	hangup(void);		   // Hangup modem
 
-
-	uchar	telnet_option_request[0x100];
+	uchar	telnet_local_option[0x100];
+	uchar	telnet_remote_option[0x100];
 	void	send_telnet_cmd(uchar cmd, uchar opt);
 	void	request_telnet_opt(uchar cmd, uchar opt);
 

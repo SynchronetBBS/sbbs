@@ -225,9 +225,8 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	spymsg(msg);
 	sys_status|=SS_FILEXFER;	/* disable spy during file xfer */
 	/* enable telnet binary transmission in both directions */
-	if(!(telnet_mode&TELNET_MODE_BIN_RX))
-		request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
-	send_telnet_cmd(TELNET_WILL,TELNET_BINARY_TX);
+	request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
+	request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
 	ex_mode=0;
 	if(prot->misc&PROT_NATIVE)
 		ex_mode|=EX_NATIVE;
@@ -236,11 +235,9 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 #endif
 
 	i=external(cmdline,ex_mode,p);
-	/* disable telnet binary transmission mode */
-	send_telnet_cmd(TELNET_WONT,TELNET_BINARY_TX);
 	/* Got back to Text/NVT mode */
-	if(telnet_mode&TELNET_MODE_BIN_RX)
-		request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
+	request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
+	request_telnet_opt(TELNET_WONT,TELNET_BINARY_TX);
 
 	sys_status&=~SS_FILEXFER;
 	if(online==ON_REMOTE)

@@ -116,8 +116,6 @@ enum {
 
 /* bits for telnet_mode */   
    
-#define TELNET_MODE_BIN_RX	(1<<0)   
-#define TELNET_MODE_ECHO	(1<<1)   
 #define TELNET_MODE_GATE	(1<<2)	/* Pass-through telnet commands/responses */
 #define TELNET_MODE_OFF		(1<<3)	/* This is not a Telnet connection */
 

@@ -155,7 +155,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 				lprintf(LOG_DEBUG,"Node %d Telnet cmd from client: %s", cfg.node_num, dump);
 			}
 #endif
-			if(!(telnet_mode&TELNET_MODE_BIN_RX)) {
+			if(telnet_remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
 				if(*buf==0x1d) { // ^]
 					save_console=console;
 					console&=~CON_RAW_IN;	// Allow Ctrl-U/Ctrl-P
@@ -256,7 +256,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	telnet_mode&=~TELNET_MODE_GATE;
 
 	/* Disable Telnet Terminal Echo */
-	send_telnet_cmd(TELNET_WILL,TELNET_ECHO);
+	request_telnet_opt(TELNET_WILL,TELNET_ECHO);
 
 	close_socket(remote_socket);
 
