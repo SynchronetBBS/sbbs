@@ -58,6 +58,18 @@
 #include <FL/Fl_Box.H>
 #include <FL/fl_ask.H>		// fl_beep(), fl_message()
 
+/* How can we tell if the user has num lock down or not? */
+#define FL_KP_Home	(FL_KP+'7')
+#define FL_KP_End	(FL_KP+'1')
+#define FL_KP_Up	(FL_KP+'8')
+#define FL_KP_Down	(FL_KP+'2')
+#define FL_KP_Left	(FL_KP+'4')
+#define FL_KP_Right (FL_KP+'6')
+#define FL_KP_PgUp	(FL_KP+'9')
+#define FL_KP_PgDn	(FL_KP+'3')
+#define FL_KP_Ins   (FL_KP+'0')
+#define FL_KP_Del	(FL_KP+'.')
+
 /******************/
 /* Layout Defines */
 /******************/
@@ -363,7 +375,7 @@ int UIFC_Button::handle(int event)  {
 			do_callback();
 			return 1;
 		}
-		if(key==FL_Page_Up)  {
+		if(key==FL_Page_Up || key==FL_KP_PgUp)  {
 			for(i=0;i<parent()->children() && this!=parent()->child(i);i++)  {}
 			i=i-((parent()->h() - Fl::box_dh(parent()->box()))/UIFC_LINE_HEIGHT)+1;
 			if(i<0)
@@ -372,7 +384,7 @@ int UIFC_Button::handle(int event)  {
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
-		if(key==FL_Page_Down)  {
+		if(key==FL_Page_Down || key==FL_KP_PgDn)  {
 			for(i=0;i<parent()->children() && this!=parent()->child(i);i++)  {}
 			i=i+((parent()->h() - Fl::box_dh(parent()->box()))/UIFC_LINE_HEIGHT)-1;
 			if(i>parent()->children()-3)
@@ -381,7 +393,7 @@ int UIFC_Button::handle(int event)  {
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
-		if(key==FL_Up)  {
+		if(key==FL_Up || key==FL_KP_Up)  {
 			for(i=0;i<parent()->children() && this!=parent()->child(i);i++)  {}
 			i=i-1;
 			if(i<0)
@@ -390,7 +402,7 @@ int UIFC_Button::handle(int event)  {
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
-		if(key==FL_Down)  {
+		if(key==FL_Down || key==FL_KP_Down)  {
 			for(i=0;i<parent()->children() && this!=parent()->child(i);i++)  {}
 			i=i+1;
 			if(i>parent()->children()-3)
@@ -399,18 +411,19 @@ int UIFC_Button::handle(int event)  {
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
-		if(key==FL_Home)  {
+		if(key==FL_Home || key==FL_KP_Home)  {
 			i=0;
 			Fl::focus(parent()->child(i));
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
-		if(key==FL_End)  {
+		if(key==FL_End || key==FL_KP_End)  {
 			i=parent()->children()-3;
 			Fl::focus(parent()->child(i));
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
+		printf("key=%X\n",key);
 	}
 	return Fl_Button::handle(event);
 }
@@ -488,6 +501,7 @@ int UIFC_Input_Box::handle_key() {
 
 	switch (Fl::event_key()) {
 		case FL_Insert:
+		case FL_KP_Ins:
 			if (Fl::event_state() & FL_CTRL)
 				ascii = ctrl('C');
 			else
@@ -495,18 +509,22 @@ int UIFC_Input_Box::handle_key() {
 					ascii = ctrl('V');
 			break;
 		case FL_Delete:
+		case FL_KP_Del:
 			if (Fl::event_state() & FL_SHIFT)
 				ascii = ctrl('X');
     		else
 				ascii = ctrl('D');
 			break;    
 		case FL_Left:
+		case FL_KP_Left:
 			return shift_position(position()-1) + 1;
 			break;
 		case FL_Right:
+		case FL_KP_Right:
 			ascii = ctrl('F');
 			break;
 		case FL_Home:
+		case FL_KP_Home:
 			if (Fl::event_state() & FL_CTRL) {
 				shift_position(0);
 				return 1;
@@ -514,6 +532,7 @@ int UIFC_Input_Box::handle_key() {
 			return shift_position(line_start(position())) + 1;
 			break;
 		case FL_End:
+		case FL_KP_End:
 			if (Fl::event_state() & FL_CTRL) {
 				shift_position(size());
 				return 1;
@@ -717,11 +736,11 @@ static int handle_escape(int event)  {
 	if(event == FL_SHORTCUT && Fl::focus()->type()==FL_NORMAL_BUTTON)  {
 		int mode=((UIFC_Button *)Fl::focus())->mode;
 		key=Fl::event_key();
-		if(key==FL_Insert && (mode&WIN_INS))  {
+		if((key==FL_Insert || key==FL_KP_Ins) && (mode&WIN_INS))  {
 			GUI_RetVal=w->retval|MSK_INS;
 			return(1);
 		}
-		if(key==FL_Delete && (mode&WIN_DEL))  {
+		if((key==FL_Delete || key==FL_KP_Del) && (mode&WIN_DEL))  {
 			GUI_RetVal=w->retval|MSK_DEL;
 			return(1);
 		}
