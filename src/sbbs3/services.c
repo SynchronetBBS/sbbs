@@ -704,6 +704,12 @@ static void js_service_thread(void* arg)
 	if(service->clients)
 		service->clients--;
 
+#ifdef _WIN32
+	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)
+		&& !(service->options&BBS_OPT_MUTE))
+		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+
 	lprintf("%04d %s JavaScript service thread terminated (%u clients remain)"
 		, socket, service->protocol, service->clients);
 
@@ -820,6 +826,12 @@ static void native_service_thread(void* arg)
 
 	if(service->clients)
 		service->clients--;
+
+#ifdef _WIN32
+	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)
+		&& !(service->options&BBS_OPT_MUTE))
+		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 	lprintf("%04d %s service thread terminated (%u clients remain)"
 		,socket, service->protocol, service->clients);
@@ -1135,9 +1147,11 @@ void DLLCALL services_thread(void* arg)
 				continue;
 			}
 
+#ifdef _WIN32
 			if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)
 				&& !(service[i].options&BBS_OPT_MUTE))
 				PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 			if(trashcan(&scfg,host_ip,"ip")) {
 				lprintf("%04d !%s CLIENT BLOCKED in ip.can: %s"
@@ -1173,12 +1187,19 @@ void DLLCALL services_thread(void* arg)
 		}
 	}
 
+	/* Close Service Sockets */
+	for(i=0;i<(int)services;i++) {
+		if(service[i].socket!=INVALID_SOCKET)
+			close_socket(service[i].socket);
+		service[i].socket=INVALID_SOCKET;
+	}
+
 	/* Wait for Service Threads to terminate */
 	total_clients=0;
 	for(i=0;i<(int)services;i++) 
 		total_clients+=service[i].clients;
 	if(total_clients) {
-		lprintf("000 Waiting for %d clients to disconnect",total_clients);
+		lprintf("0000 Waiting for %d clients to disconnect",total_clients);
 		while(1) {
 			for(i=0;i<(int)services;i++) 
 				total_clients+=service[i].clients;
@@ -1186,13 +1207,7 @@ void DLLCALL services_thread(void* arg)
 				break;
 			mswait(500);
 		}
-	}
-
-	/* Close Service Sockets */
-	for(i=0;i<(int)services;i++) {
-		if(service[i].socket!=INVALID_SOCKET)
-			close_socket(service[i].socket);
-		service[i].socket=INVALID_SOCKET;
+		lprintf("0000 Finished waiting");
 	}
 
 	/* Free Service Data */
