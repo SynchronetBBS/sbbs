@@ -128,7 +128,7 @@ void sbbs_read_ini(
 	bbs->first_node
 		=iniReadShortInt(fp,section,"FirstNode",1);
 	bbs->last_node
-		=iniReadShortInt(fp,section,"FirstNode",4);
+		=iniReadShortInt(fp,section,"LastNode",4);
 
 	bbs->xtrn_polls_before_yield
 		=iniReadInteger(fp,section,"ExternalYield",10);
