@@ -223,7 +223,7 @@ void DLLCALL unix_beep(int freq, int dur)
 	speaker_fd = open("/dev/speaker", O_WRONLY|O_APPEND);
 	if(speaker_fd != -1)  {
 		tone.frequency=freq;
-		tone.duration=dur;
+		tone.duration=dur/10;
 		ioctl(speaker_fd,SPKRTONE,&tone);
 		close(speaker_fd);
 		return;
