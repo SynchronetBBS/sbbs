@@ -1022,10 +1022,8 @@ void input_thread(void *arg)
 
 		if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
 			pthread_mutex_unlock(&sbbs->input_thread_mutex);
-			if(i==0 && sock==sbbs->client_socket) {
-				YIELD();
+			if(i==0 && sock==sbbs->client_socket)
 				continue;
-			}
 
 			if(sock==sbbs->client_socket)  {
 	        	if(ERROR_VALUE == ENOTSOCK)
