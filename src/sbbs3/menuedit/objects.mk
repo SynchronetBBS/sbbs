@@ -7,9 +7,9 @@
 # LIBODIR, SLASH, and OFILE must be pre-defined
 
 
-OBJS	=	$(LIBODIR)$(SLASH)menuedit.$(OFILE)\
-	        $(LIBODIR)$(SLASH)ini_file.$(OFILE)\
-        	$(LIBODIR)$(SLASH)str_list.$(OFILE)\
-		$(LIBODIR)$(SLASH)genwrap.$(OFILE)\
-		$(LIBODIR)$(SLASH)dirwrap.$(OFILE)\
-		$(LIBODIR)$(SLASH)uifcx.$(OFILE)
+OBJS	=	$(MTOBJODIR)$(DIRSEP)menuedit$(OFILE)\
+	        $(MTOBJODIR)$(DIRSEP)ini_file$(OFILE)\
+        	$(MTOBJODIR)$(DIRSEP)str_list$(OFILE)\
+		$(MTOBJODIR)$(DIRSEP)genwrap$(OFILE)\
+		$(MTOBJODIR)$(DIRSEP)dirwrap$(OFILE)\
+		$(MTOBJODIR)$(DIRSEP)uifcx$(OFILE)

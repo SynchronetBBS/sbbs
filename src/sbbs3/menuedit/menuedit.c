@@ -37,8 +37,8 @@
 
 #include <stdlib.h>
 #include <malloc.h>		/* alloca */
-#include "uifc.h"
 #include "genwrap.h"
+#include "uifc.h"
 #include "dirwrap.h"
 #include "ini_file.h"
 
