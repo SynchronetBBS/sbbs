@@ -373,45 +373,6 @@ int getdir(char* p, user_t* user)
 JSRuntime* js_runtime=NULL;
 
 static JSBool
-js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	char		path[MAX_PATH+1];
-    uintN		i;
-    JSString*	str;
-    const char*	filename;
-    JSScript*	script;
-    JSBool		ok;
-    jsval		result;
-//    JSErrorReporter older;
-
-    for (i = 0; i < argc; i++) {
-		str = JS_ValueToString(cx, argv[i]);
-		if (!str)
-			return JS_FALSE;
-		argv[i] = STRING_TO_JSVAL(str);
-		filename = JS_GetStringBytes(str);
-		errno = 0;
-//    older = JS_SetErrorReporter(cx, my_LoadErrorReporter);
-		if(!strchr(filename,BACKSLASH))
-			sprintf(path,"%s%s",scfg.exec_dir,filename);
-		else
-			strcpy(path,filename);
-		script = JS_CompileFile(cx, obj, path);
-		if (!script)
-			ok = JS_FALSE;
-		else {
-			ok = JS_ExecuteScript(cx, obj, script, &result);
-			JS_DestroyScript(cx, script);
-			}
-//    JS_SetErrorReporter(cx, older);
-		if (!ok)
-			return JS_FALSE;
-    }
-
-    return JS_TRUE;
-}
-
-static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
@@ -431,39 +392,6 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-static JSBool
-js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	char		tmp[1024];
-    uintN		i;
-	JSString *	fmt;
-    JSString *	str;
-	va_list		arglist[64];
-
-	fmt = JS_ValueToString(cx, argv[0]);
-	if (!fmt)
-		return JS_FALSE;
-
-    for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
-		if(JSVAL_IS_STRING(argv[i])) {
-			str = JS_ValueToString(cx, argv[i]);
-			if (!str)
-			    return JS_FALSE;
-			arglist[i-1]=JS_GetStringBytes(str);
-		} else if(JSVAL_IS_INT(argv[i]))
-			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
-		else
-			arglist[i-1]=NULL;
-	}
-	
-	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
-
-	str = JS_NewStringCopyZ(cx, tmp);
-	*rval = STRING_TO_JSVAL(str);
-
-    return JS_TRUE;
-}
-
 static JSClass js_global_class = {
         "Global",0, 
         JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
@@ -471,9 +399,7 @@ static JSClass js_global_class = {
 }; 
 
 static JSFunctionSpec js_global_functions[] = {
-	{"load",            js_load,            1},		/* Load and execute a javascript file */
 	{"write",           js_write,           1},		/* write to HTML file */
-	{"format",			js_format,			1},		/* return a formatted string */
 	{0}
 };
 
@@ -1272,7 +1198,7 @@ static void send_thread(void* arg)
 		now=time(NULL);
 		if(total && now>=last_report+XFER_REPORT_INTERVAL) {
 			lprintf("%04d Sent %ld bytes (%ld total) of %s (%lu cps)"
-				,xfer.ctrl_sock,total,length,xfer.filename
+				,xfer.ctrl_sock,xfer.filepos+total,length,xfer.filename
 				,now-start ? total/(now-start) : total*2);
 			last_report=now;
 		}
@@ -3842,6 +3768,8 @@ static void ctrl_thread(void* arg)
 
 static void cleanup(int code)
 {
+	free_cfg(&scfg);
+
 	if(server_socket!=INVALID_SOCKET)
 		close_socket(&server_socket,__LINE__);
 	server_socket=INVALID_SOCKET;
@@ -3936,6 +3864,8 @@ void DLLCALL ftp_server(void* arg)
 
 	status("Initializing");
 
+    memset(&scfg, 0, sizeof(scfg));
+
 #ifdef __unix__		/* Ignore "Broken Pipe" signal */
 	signal(SIGPIPE,SIG_IGN);
 #endif
@@ -3985,7 +3915,6 @@ void DLLCALL ftp_server(void* arg)
 #endif
 
 	/* Initial configuration and load from CNF files */
-    memset(&scfg, 0, sizeof(scfg));
     sprintf(scfg.ctrl_dir, "%.*s",(int)sizeof(scfg.ctrl_dir)-1
     	,startup->ctrl_dir);
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);

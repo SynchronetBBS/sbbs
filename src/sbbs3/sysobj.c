@@ -39,6 +39,83 @@
 
 #ifdef JAVASCRIPT
 
+static scfg_t* scfg;
+
+static JSBool
+js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		path[MAX_PATH+1];
+    uintN		i;
+    JSString*	str;
+    const char*	filename;
+    JSScript*	script;
+    JSBool		ok;
+    jsval		result;
+
+    for (i = 0; i < argc; i++) {
+		str = JS_ValueToString(cx, argv[i]);
+		if (!str)
+			return JS_FALSE;
+		argv[i] = STRING_TO_JSVAL(str);
+		filename = JS_GetStringBytes(str);
+		errno = 0;
+		if(!strchr(filename,BACKSLASH))
+			sprintf(path,"%s%s",scfg->exec_dir,filename);
+		else
+			strcpy(path,filename);
+		script = JS_CompileFile(cx, obj, path);
+		if (!script)
+			ok = JS_FALSE;
+		else {
+			ok = JS_ExecuteScript(cx, obj, script, &result);
+			JS_DestroyScript(cx, script);
+			}
+		if (!ok)
+			return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+static JSBool
+js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		tmp[1024];
+    uintN		i;
+	JSString *	fmt;
+    JSString *	str;
+	va_list		arglist[64];
+
+	fmt = JS_ValueToString(cx, argv[0]);
+	if (!fmt)
+		return JS_FALSE;
+
+    for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
+		if(JSVAL_IS_STRING(argv[i])) {
+			str = JS_ValueToString(cx, argv[i]);
+			if (!str)
+			    return JS_FALSE;
+			arglist[i-1]=JS_GetStringBytes(str);
+		} else if(JSVAL_IS_INT(argv[i]))
+			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
+		else
+			arglist[i-1]=NULL;
+	}
+	
+	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
+
+	str = JS_NewStringCopyZ(cx, tmp);
+	*rval = STRING_TO_JSVAL(str);
+
+    return JS_TRUE;
+}
+
+static JSFunctionSpec js_global_functions[] = {
+	{"load",            js_load,            1},		/* Load and execute a javascript file */
+	{"format",			js_format,			1},		/* return a formatted string (ala printf) */
+	{0}
+};
+
 /* System Object Properites */
 enum {
 	 SYS_PROP_NAME
@@ -322,6 +399,11 @@ JSObject* DLLCALL js_CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* pa
 {
 	JSObject*	sysobj;
 	JSObject*	statsobj;
+
+	scfg = cfg;	/* for js_load() */
+
+	if (!JS_DefineFunctions(cx, parent, js_global_functions)) 
+		return(NULL);
 
 	sysobj = JS_DefineObject(cx, parent, "system", &js_system_class, NULL, 0);
 
