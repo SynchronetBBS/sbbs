@@ -674,6 +674,9 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_NewNumberValue(cx,msg.hdr.number,&v);
 	JS_DefineProperty(cx, hdrobj, "number", v, NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
+	JS_NewNumberValue(cx,msg.offset,&v);
+	JS_DefineProperty(cx, hdrobj, "offset", v, NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
 	if((js_str=JS_NewStringCopyZ(cx,truncsp(msg.to)))==NULL)
 		return(JS_FALSE);
 	JS_DefineProperty(cx, hdrobj, "to"
