@@ -324,6 +324,8 @@ function process_control_msg(cmd_list)
 		var cmd=cmd_list[c];
 		if(!cmd || !cmd.length)
 			continue;
+		if(cmd=="---")	/* don't parse past tear line */
+			break;
 		var token=cmd.split(/\s+/);
 		cmd=token[0];
 		var listname=token[1];
