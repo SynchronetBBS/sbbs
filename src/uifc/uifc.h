@@ -35,6 +35,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#ifndef _UIFC_H_
+#define _UIFC_H_
+
 #include <time.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -404,3 +407,5 @@ extern "C"
 #endif
 int uifcinifltk(uifcapi_t*);	/* FLTK implementation (by Deuce)			*/
 /****************************************************************************/
+
+#endif /* Don't add anything after this line! */
