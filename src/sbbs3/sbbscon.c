@@ -1028,7 +1028,8 @@ int main(int argc, char** argv)
 	SAFECOPY(new_gid_name,iniGetString(fp,"UNIX","Group","",value));
 	is_daemon=iniGetBool(fp,"UNIX","Daemonize",FALSE);
 	SAFECOPY(daemon_type,iniGetString(fp,"UNIX","LogFacility","U",value));
-#endif			
+	umask(iniGetInteger(fp,"UNIX","umask",077));
+#endif
 	/* close .ini file here */
 	if(fp!=NULL)
 		fclose(fp);
