@@ -424,13 +424,14 @@ return(i);
 void rerun_nodes()
 {
     int i;
+	int file;
     node_t node;
     
     for(i=0;i<cfg.sys_nodes;i++) {
-       	if(getnodedat(&cfg,i+1,&node,TRUE))
+       	if(getnodedat(&cfg,i+1,&node,&file))
             break;
         node.misc|=NODE_RRUN;
-        if(putnodedat(&cfg,i+1,&node))
+        if(putnodedat(&cfg,i+1,&node,file))
             break;
     }
 }
