@@ -882,13 +882,13 @@ int main(int argc, char** argv)
 	if(!winsock_cleanup())
 		return(-1);
 
-	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,BACKSLASH,host_name);
+	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,host_name);
 #if defined(__unix__) && defined(PREFIX)
 	if(!fexistcase(ini_file))
 		sprintf(ini_file,"%s/etc/sbbs.ini",PREFIX);
 #endif
 	if(!fexistcase(ini_file))
-		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,BACKSLASH);
+		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));

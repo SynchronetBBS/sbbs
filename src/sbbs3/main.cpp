@@ -1450,7 +1450,7 @@ void event_thread(void* arg)
 					sbbs->batch_add_list(bat_list);
 
 					sprintf(str,"%sfile%c%04u.qwk"
-						,sbbs->cfg.data_dir,BACKSLASH,sbbs->useron.number);
+						,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
 					if(sbbs->pack_qwk(str,&l,true /* pre-pack/off-line */)) {
 						eprintf("Packing completed");
 						sbbs->qwk_success(l,0,1);
@@ -1497,7 +1497,7 @@ void event_thread(void* arg)
 						sbbs->getusrsubs();
 						sbbs->batdn_total=0;
 						sprintf(str,"%sfile%c%04u.qwk"
-							,sbbs->cfg.data_dir,BACKSLASH,sbbs->useron.number);
+							,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
 						if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
 							sbbs->qwk_success(l,0,1);
 							sbbs->putmsgptrs(); 

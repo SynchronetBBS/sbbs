@@ -438,12 +438,7 @@ void sbbs_read_ini(
 			=iniGetShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
 
 
-	#ifdef __unix__
-		default_cgi_temp = "/tmp";
-	#else
-		if((default_cgi_temp = getenv("TEMP")) == NULL)
-			default_cgi_temp = nulstr;
-	#endif
+		default_cgi_temp = _PATH_TMP;
 		SAFECOPY(web->cgi_temp_dir
 			,iniGetString(fp,section,"CGITempDirectory",default_cgi_temp,value));
 

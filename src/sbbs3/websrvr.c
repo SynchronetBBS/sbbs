@@ -84,13 +84,6 @@ extern const uchar* nular;
 #define MAX_REQUEST_LINE		1024
 #define MAX_HEADERS_SIZE		16384	/* Maximum total size of all headers */
 
-/* These probobly exists somewhere else to... ToDo */
-#ifdef _WIN32
-	#define is_slash(x)			((x)=='/' || (x)=='\\')
-#else
-	#define is_slash(x)		(x=='/')
-#endif
-
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
 static uint 	http_threads_running=0;
@@ -1449,11 +1442,11 @@ static BOOL check_request(http_session_t * session)
 		lprintf("Path is: %s",path);
 	if(isdir(path)) {
 		last_ch=*lastchar(path);
-		if(!is_slash(last_ch))  {
+		if(!IS_PATH_DELIM(last_ch))  {
 			strcat(path,"/");
 		}
 		last_ch=*lastchar(session->req.virtual_path);
-		if(!is_slash(last_ch))  {
+		if(!IS_PATH_DELIM(last_ch))  {
 			strcat(session->req.virtual_path,"/");
 		}
 		last_slash=find_last_slash(path);
@@ -2460,8 +2453,8 @@ void DLLCALL web_server(void* arg)
 	prep_dir(startup->ctrl_dir, error_dir, sizeof(error_dir));
 
 	/* Trim off trailing slash/backslash */
-	if(*(p=lastchar(root_dir))==BACKSLASH)	*p=0;
-	if(*(p=lastchar(error_dir))==BACKSLASH)	*p=0;
+	if(IS_PATH_DELIM(*(p=lastchar(root_dir))))	*p=0;
+	if(IS_PATH_DELIM(*(p=lastchar(error_dir))))	*p=0;
 
 	uptime=0;
 	served=0;

@@ -287,8 +287,8 @@ void backslashcolon(char *str)
     int i;
 
 	i=strlen(str);
-	if(i && str[i-1]!='\\' && str[i-1]!='/' && str[i-1]!=':') {
-		str[i]=BACKSLASH; 
+	if(i && !IS_PATH_DELIM(str[i-1]) && str[i-1]!=':') {
+		str[i]=PATH_DELIM; 
 		str[i+1]=0; 
 	}
 }

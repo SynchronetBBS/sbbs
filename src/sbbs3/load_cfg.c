@@ -504,7 +504,7 @@ char* DLLCALL prep_dir(char* base, char* path, size_t buflen)
 		if(ch=='\\' || ch=='/')
 			sprintf(str,"%s%s",base,path);
 		else
-			sprintf(str,"%s%c%s",base,BACKSLASH,path);
+			sprintf(str,"%s%c%s",base,PATH_DELIM,path);
 	} else
 		strcpy(str,path);
 

@@ -231,11 +231,7 @@ void sbbs_t::errormsg(int line, const char *source, char action, const char *obj
 	errormsg_inside=true;
 
 	/* Don't log path to source code */
-	src=strrchr(source,BACKSLASH);
-	if(src==NULL) 
-		src=source;
-	else
-		src++;
+	src=getfname(source);
 
 	switch(action) {
 		case ERR_OPEN:
