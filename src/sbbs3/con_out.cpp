@@ -175,7 +175,7 @@ void sbbs_t::outchar(char ch)
 
 	#if 0 
 	if(console&CON_L_ECHO) {
-		if(console&CON_L_ECHOX && (uchar)ch>=SP)
+		if(console&CON_L_ECHOX && (uchar)ch>SP)
 			putch(password_char);
 		else if(cfg.node_misc&NM_NOBEEP && ch==BEL);	 /* Do nothing if beep */
 		else if(ch==BEL) {
@@ -185,7 +185,7 @@ void sbbs_t::outchar(char ch)
 	#endif
 
 	if(online==ON_REMOTE && console&CON_R_ECHO) {
-		if(console&CON_R_ECHOX && (uchar)ch>=SP) {
+		if(console&CON_R_ECHOX && (uchar)ch>SP) {
 			ch=text[YN][3];
 			if(text[YN][2]==0 || ch==0) ch='X';
 		}
