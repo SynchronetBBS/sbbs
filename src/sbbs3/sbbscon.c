@@ -916,7 +916,7 @@ static void handle_sigs(void)
 	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
 	while(1)  {
 		if((i=sigwait(&sigs,&sig))!=0) {   /* wait here until signaled */
-			lprintf(LOG_ERR,"     !sigwait FAILURE (%d), i);
+			lprintf(LOG_ERR,"     !sigwait FAILURE (%d)", i);
 			continue;
 		}
 		lprintf(LOG_NOTICE,"     Got signal (%d)", sig);
