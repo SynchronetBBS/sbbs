@@ -47,6 +47,7 @@
 #include <unistd.h>
 #include <curses.h>
 #include <sys/time.h>
+#include <signal.h>
 #endif
 #include "genwrap.h"
 #include "uifc.h"
@@ -1657,8 +1658,13 @@ int finduser(scfg_t *cfg, user_t *user)
 		for(i=1; i<=last; i++) {
 			user->number=i;
 			getuserdat(cfg,user);
+#ifdef BSD
 			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL 
 					|| user->number==un) {
+#else
+			if(strstr(user->alias, str)!=NULL || strstr(user->name, str)!=NULL || strstr(user->handle, str)!=NULL 
+					|| user->number==un) {
+#endif
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
 				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
@@ -1788,7 +1794,7 @@ int main(int argc, char** argv)  {
     }
 
 #ifdef __unix__
-	signal(SIGPIPE, SIG_IGN);   
+	signal(SIGPIPE, SIG_IGN);
 #endif
 
 	uifc.size=sizeof(uifc);
