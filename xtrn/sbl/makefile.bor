@@ -5,15 +5,15 @@
 ##################################################################
 
 # Macros
-CC	= bcc
-LD	= tlink
+CC	= \bc31\bin\bcc
+LD	= \bc31\bin\tlink
 SDK	= ..\sdk
 INCLUDE = \bc31\include;$(SDK)
 LIB     = \bc31\lib
 MODEL	= l
 CFLAGS	= -N -d -C -m$(MODEL) -I$(INCLUDE)
 LFLAGS  = /n /c
-OBJS    = xsdk.obj xsdkvars.obj ..\..\mswait\dos\mswait$(MODEL).obj
+OBJS    = xsdk.obj xsdkvars.obj $(SDK)\mswait$(MODEL).obj
 HEADERS = $(SDK)\xsdk.h $(SDK)\xsdkdefs.h $(SDK)\xsdkvars.c sbldefs.h
 
 # Implicit C Compile Rule
