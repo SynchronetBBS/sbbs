@@ -120,8 +120,10 @@ int chatchar(WINDOW *win, int ch, box_t *boxch, const char* name) {
 	switch(ch) {
 		case 8:
 			curx-=1;
-			if(curx<2)
+			if(curx<2) {
 				curx+=1;
+				beep();
+			}
 			mvwaddch(win,cury,curx,' ');
 			wmove(win,cury,curx);
 			wrefresh(win);
@@ -238,6 +240,8 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 					close(in);
 					in=-1;
 				}
+				if(ch!=ERR && ch!=0)
+					beep();
 			}
 			YIELD();
 			continue;
@@ -247,6 +251,8 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 			close(in);
 			in=-1;
 		}
+
+		utime(inpath,NULL);
 		while(1) {
 			switch(read(in,&ch,1)) {
 				case -1:
