@@ -1363,7 +1363,7 @@ time_t checktime(void)
 /***************/
 int main(int argc, char **argv)
 {
-	char	cmd[128]="",*p,*s;
+	char	cmd[128]="",*p;
 	char	path[MAX_PATH+1];
 	char*	to=NULL;
 	char*	to_number=NULL;
@@ -1485,13 +1485,11 @@ int main(int argc, char **argv)
 				SAFECOPY(cmd,argv[x]);
 			else {
 				SAFECOPY(smb.file,argv[x]);
-				p=strrchr(smb.file,'.');
-				s=strrchr(smb.file,'/');
-				if(s==NULL)
-					s=strrchr(smb.file,'\\');
-				if(p>s) *p=0;
+				if((p=getfext(smb.file))!=NULL && stricmp(p,".shd")==0)
+					*p=0;	/* Chop off .shd extension, if supplied on command-line */
+
 				sprintf(path,"%s.shd",smb.file);
-				if(!fexist(path) && !create) {
+				if(!fexistcase(path) && !create) {
 					fprintf(stderr,"\n%s doesn't exist (use -c to create)\n",path);
 					exit(1);
 				}
@@ -1551,7 +1549,12 @@ int main(int argc, char **argv)
 							y=strlen(cmd)-1;
 							break;
 						case 'P':
+							if((i=smb_lock(&smb))!=0) {
+								fprintf(stderr,"\n\7!smb_lock returned %d: %s\n",i,smb.last_error);
+								return(i);
+							}
 							packmsgs(atol(cmd+y+1));
+							smb_unlock(&smb);
 							y=strlen(cmd)-1;
 							break;
 						case 'R':
