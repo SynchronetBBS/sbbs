@@ -9,7 +9,6 @@ p.title { text-align: center; font-size: x-large; font-weight: bolder; }
 table.main { width: 90%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
 td.main { background-color: #007788; }
 
-
 table.member { width: 90%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
 td.member { background-color: #007788; }
 
@@ -47,8 +46,12 @@ table.msglist { margin-left: auto; margin-right: auto; background-color: #116677
 th.msglist { background-color: #007788; color: black; }
 a.msglist:hover { color: #ccffdd; }
 
+table.subinfo { margin-left: auto; margin-right: auto; background-color: #116677; }
+tr.subinfo {  background-color: #007788; }
+
 body.msg { background-color: black; }
-table.msg { margin-left: auto; margin-right: auto; }
+table.msg { margin-left: auto; margin-right: auto; background-color: #116677; }
+tr.msg {  background-color: #007788; }
 td.msgheader { font-weight: bold; }
 object.msg { margin: 0%; background-color: black; color: #aaaaaa; }
 p.msgcenter { text-align: center; }
