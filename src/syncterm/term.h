@@ -8,6 +8,7 @@ struct terminal {
 	int	width;
 	int	x;
 	int	y;
+	int nostatus;
 };
 
 extern struct terminal term;

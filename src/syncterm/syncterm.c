@@ -9,6 +9,7 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "term.h"
 #include "uifcinit.h"
 
 #ifdef _WINSOCKAPI_
@@ -261,6 +262,7 @@ int main(int argc, char **argv)
 			}
 			sprintf(str,"SyncTERM - %s",bbs->name);
 			settitle(str);
+			term.nostatus=bbs->nostatus;
 			if(drawwin())
 				return(1);
 			doterm(bbs);

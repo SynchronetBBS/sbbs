@@ -42,6 +42,7 @@ struct bbslist {
 	int				id;
 	int				reversed;
 	int				screen_mode;
+	int				nostatus;
 };
 
 struct bbslist *show_bbslist(int mode,char *path);
