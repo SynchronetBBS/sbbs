@@ -130,11 +130,7 @@ int total_clients=0;
 static void client_add(BOOL add)
 {
 	char 	str[128];
-	static  HANDLE mutex;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
     if(add) {
 	    clients++;
         total_clients++;
@@ -149,7 +145,6 @@ static void client_add(BOOL add)
     Str=AnsiString(str);
     if(MainForm->StatusBar->Panels->Items[3]->Text!=Str)
 		MainForm->StatusBar->Panels->Items[3]->Text=Str;
-    ReleaseMutex(mutex);
 }
 
 static void client_on(BOOL on, int sock, client_t* client, BOOL update)
@@ -173,7 +168,11 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
     if(i>=ClientForm->ListView->Items->Count)
         i=-1;
 
-    if(on==FALSE) { // Off
+    if(on) {
+	    if(!update)
+	        client_add(TRUE);
+    } else { // Off
+        client_add(FALSE);
         if(i>=0)
             ClientForm->ListView->Items->Delete(i);
         ReleaseMutex(mutex);
@@ -238,10 +237,6 @@ static void bbs_clients(int clients)
 	static HANDLE mutex;
     static save_clients;
 
-    if(clients>save_clients)
-        client_add(TRUE);
-    else if(clients<save_clients)
-        client_add(FALSE);
     save_clients=clients;
 
     if(!mutex)
@@ -346,20 +341,6 @@ static void services_started(void)
 
 static void services_clients(int clients)
 {
-	static HANDLE mutex;
-    static save_clients;
-
-    if(clients>save_clients)
-        client_add(TRUE);
-    else if(clients<save_clients)
-        client_add(FALSE);
-    save_clients=clients;
-
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
-
-    ReleaseMutex(mutex);
 }
 
 static int mail_lputs(char *str)
@@ -430,13 +411,6 @@ static void mail_status(char *str)
 static void mail_clients(int clients)
 {
 	static HANDLE mutex;
-    static save_clients;
-
-    if(clients>save_clients)
-        client_add(TRUE);
-    else if(clients<save_clients)
-        client_add(FALSE);
-    save_clients=clients;
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
@@ -555,13 +529,6 @@ static void ftp_status(char *str)
 static void ftp_clients(int clients)
 {
 	static HANDLE mutex;
-    static save_clients;
-
-    if(clients>save_clients)
-        client_add(TRUE);
-    else if(clients<save_clients)
-        client_add(FALSE);
-    save_clients=clients;
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
