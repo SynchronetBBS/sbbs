@@ -48,16 +48,16 @@
 
 typedef struct {
 
-	DWORD	size;				// sizeof(bbs_struct_t)
+	DWORD	size;				/* sizeof(bbs_struct_t) */
     WORD	first_node;
     WORD	last_node;
 	WORD	telnet_port;
 	WORD	rlogin_port;
-	WORD	outbuf_highwater_mark;	// output block size control
+	WORD	outbuf_highwater_mark;	/* output block size control */
 	WORD	outbuf_drain_timeout;
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
     DWORD   telnet_interface;
-    DWORD	options;			// See BBS_OPT definitions
+    DWORD	options;			/* See BBS_OPT definitions */
     DWORD	rlogin_interface;
     DWORD	xtrn_polls_before_yield;
     DWORD	js_max_bytes;
@@ -81,7 +81,7 @@ typedef struct {
     void	(*thread_up)(void*, BOOL up, BOOL setuid);
 	void	(*socket_open)(void*, BOOL open);
     void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
-    BOOL	(*seteuid)(BOOL user);	// Set Unix uid for thread (bind)
+    BOOL	(*seteuid)(BOOL user);	/* Set Unix uid for thread (bind) */
 	BOOL	(*setuid)(BOOL force);
 
 	/* Paths */

@@ -149,51 +149,51 @@
 #define EASTERN_ZONE		0x1000		/* Non-standard zone east of UT */
 
 										/* US Time Zones (standard) */
-#define AST 				0x40F0		// Atlantic 			(-04:00)
-#define EST 				0x412C		// Eastern				(-05:00)
-#define CST 				0x4168		// Central				(-06:00)
-#define MST 				0x41A4		// Mountain 			(-07:00)
-#define PST 				0x41E0		// Pacific				(-08:00)
-#define YST 				0x421C		// Yukon				(-09:00)
-#define HST 				0x4258		// Hawaii/Alaska		(-10:00)
-#define BST 				0x4294		// Bering				(-11:00)
+#define AST 				0x40F0		/* Atlantic 			(-04:00) */
+#define EST 				0x412C		/* Eastern				(-05:00) */
+#define CST 				0x4168		/* Central				(-06:00) */
+#define MST 				0x41A4		/* Mountain 			(-07:00) */
+#define PST 				0x41E0		/* Pacific				(-08:00) */
+#define YST 				0x421C		/* Yukon				(-09:00) */
+#define HST 				0x4258		/* Hawaii/Alaska		(-10:00) */
+#define BST 				0x4294		/* Bering				(-11:00) */
 
 										/* US Time Zones (daylight) */
-#define ADT 				0xC0F0		// Atlantic 			(-03:00)
-#define EDT 				0xC12C		// Eastern				(-04:00)
-#define CDT 				0xC168		// Central				(-05:00)
-#define MDT 				0xC1A4		// Mountain 			(-06:00)
-#define PDT 				0xC1E0		// Pacific				(-07:00)
-#define YDT 				0xC21C		// Yukon				(-08:00)
-#define HDT 				0xC258		// Hawaii/Alaska		(-09:00)
-#define BDT 				0xC294		// Bering				(-10:00)
+#define ADT 				0xC0F0		/* Atlantic 			(-03:00) */
+#define EDT 				0xC12C		/* Eastern				(-04:00) */
+#define CDT 				0xC168		/* Central				(-05:00) */
+#define MDT 				0xC1A4		/* Mountain 			(-06:00) */
+#define PDT 				0xC1E0		/* Pacific				(-07:00) */
+#define YDT 				0xC21C		/* Yukon				(-08:00) */
+#define HDT 				0xC258		/* Hawaii/Alaska		(-09:00) */
+#define BDT 				0xC294		/* Bering				(-10:00) */
 
 										/* Non-standard Time Zones */
-#define MID 				0x2294		// Midway				(-11:00)
-#define VAN 				0x21E0		// Vancouver			(-08:00)
-#define EDM 				0x21A4		// Edmonton 			(-07:00)
-#define WIN 				0x2168		// Winnipeg 			(-06:00)
-#define BOG 				0x212C		// Bogota				(-05:00)
-#define CAR 				0x20F0		// Caracas				(-04:00)
-#define RIO 				0x20B4		// Rio de Janeiro		(-03:00)
-#define FER 				0x2078		// Fernando de Noronha	(-02:00)
-#define AZO 				0x203C		// Azores				(-01:00)
-#define LON 				0x1000		// London				(+00:00)
-#define BER 				0x103C		// Berlin				(+01:00)
-#define ATH 				0x1078		// Athens				(+02:00)
-#define MOS 				0x10B4		// Moscow				(+03:00)
-#define DUB 				0x10F0		// Dubai				(+04:00)
-#define KAB 				0x110E		// Kabul				(+04:30)
-#define KAR 				0x112C		// Karachi				(+05:00)
-#define BOM 				0x114A		// Bombay				(+05:30)
-#define KAT 				0x1159		// Kathmandu			(+05:45)
-#define DHA 				0x1168		// Dhaka				(+06:00)
-#define BAN 				0x11A4		// Bangkok				(+07:00)
-#define HON 				0x11E0		// Hong Kong			(+08:00)
-#define TOK 				0x121C		// Tokyo				(+09:00)
-#define SYD 				0x1258		// Sydney				(+10:00)
-#define NOU 				0x1294		// Noumea				(+11:00)
-#define WEL 				0x12D0		// Wellington			(+12:00)
+#define MID 				0x2294		/* Midway				(-11:00) */
+#define VAN 				0x21E0		/* Vancouver			(-08:00) */
+#define EDM 				0x21A4		/* Edmonton 			(-07:00) */
+#define WIN 				0x2168		/* Winnipeg 			(-06:00) */
+#define BOG 				0x212C		/* Bogota				(-05:00) */
+#define CAR 				0x20F0		/* Caracas				(-04:00) */
+#define RIO 				0x20B4		/* Rio de Janeiro		(-03:00) */
+#define FER 				0x2078		/* Fernando de Noronha	(-02:00) */
+#define AZO 				0x203C		/* Azores				(-01:00) */
+#define LON 				0x1000		/* London				(+00:00) */
+#define BER 				0x103C		/* Berlin				(+01:00) */
+#define ATH 				0x1078		/* Athens				(+02:00) */
+#define MOS 				0x10B4		/* Moscow				(+03:00) */
+#define DUB 				0x10F0		/* Dubai				(+04:00) */
+#define KAB 				0x110E		/* Kabul				(+04:30) */
+#define KAR 				0x112C		/* Karachi				(+05:00) */
+#define BOM 				0x114A		/* Bombay				(+05:30) */
+#define KAT 				0x1159		/* Kathmandu			(+05:45) */
+#define DHA 				0x1168		/* Dhaka				(+06:00) */
+#define BAN 				0x11A4		/* Bangkok				(+07:00) */
+#define HON 				0x11E0		/* Hong Kong			(+08:00) */
+#define TOK 				0x121C		/* Tokyo				(+09:00) */
+#define SYD 				0x1258		/* Sydney				(+10:00) */
+#define NOU 				0x1294		/* Noumea				(+11:00) */
+#define WEL 				0x12D0		/* Wellington			(+12:00) */
 
 #define OTHER_ZONE(zone) (zone<=1000 && zone>=-1000)
 
@@ -338,33 +338,33 @@
 #define MSG_KILLREAD		(1<<6)
 #define MSG_MODERATED		(1<<7)
 #define MSG_VALIDATED		(1<<8)
-#define MSG_REPLIED			(1<<9)		// User replied to this message
+#define MSG_REPLIED			(1<<9)		/* User replied to this message */
 
 										/* Auxillary header attributes */
-#define MSG_FILEREQUEST 	(1<<0)		// File request
-#define MSG_FILEATTACH		(1<<1)		// File(s) attached to Msg
-#define MSG_TRUNCFILE		(1<<2)		// Truncate file(s) when sent
-#define MSG_KILLFILE		(1<<3)		// Delete file(s) when sent
-#define MSG_RECEIPTREQ		(1<<4)		// Return receipt requested
-#define MSG_CONFIRMREQ		(1<<5)		// Confirmation receipt requested
-#define MSG_NODISP			(1<<6)		// Msg may not be displayed to user
+#define MSG_FILEREQUEST 	(1<<0)		/* File request */
+#define MSG_FILEATTACH		(1<<1)		/* File(s) attached to Msg */
+#define MSG_TRUNCFILE		(1<<2)		/* Truncate file(s) when sent */
+#define MSG_KILLFILE		(1<<3)		/* Delete file(s) when sent */
+#define MSG_RECEIPTREQ		(1<<4)		/* Return receipt requested */
+#define MSG_CONFIRMREQ		(1<<5)		/* Confirmation receipt requested */
+#define MSG_NODISP			(1<<6)		/* Msg may not be displayed to user */
 
 										/* Message network attributes */
-#define MSG_LOCAL			(1<<0)		// Msg created locally
-#define MSG_INTRANSIT		(1<<1)		// Msg is in-transit
-#define MSG_SENT			(1<<2)		// Sent to remote
-#define MSG_KILLSENT		(1<<3)		// Kill when sent
-#define MSG_ARCHIVESENT 	(1<<4)		// Archive when sent
-#define MSG_HOLD			(1<<5)		// Hold for pick-up
-#define MSG_CRASH			(1<<6)		// Crash
-#define MSG_IMMEDIATE		(1<<7)		// Send Msg now, ignore restrictions
-#define MSG_DIRECT			(1<<8)		// Send directly to destination
-#define MSG_GATE			(1<<9)		// Send via gateway
-#define MSG_ORPHAN			(1<<10) 	// Unknown destination
-#define MSG_FPU 			(1<<11) 	// Force pickup
-#define MSG_TYPELOCAL		(1<<12) 	// Msg is for local use only
-#define MSG_TYPEECHO		(1<<13) 	// Msg is for conference distribution
-#define MSG_TYPENET 		(1<<14) 	// Msg is direct network mail
+#define MSG_LOCAL			(1<<0)		/* Msg created locally */
+#define MSG_INTRANSIT		(1<<1)		/* Msg is in-transit */
+#define MSG_SENT			(1<<2)		/* Sent to remote */
+#define MSG_KILLSENT		(1<<3)		/* Kill when sent */
+#define MSG_ARCHIVESENT 	(1<<4)		/* Archive when sent */
+#define MSG_HOLD			(1<<5)		/* Hold for pick-up */
+#define MSG_CRASH			(1<<6)		/* Crash */
+#define MSG_IMMEDIATE		(1<<7)		/* Send Msg now, ignore restrictions */
+#define MSG_DIRECT			(1<<8)		/* Send directly to destination */
+#define MSG_GATE			(1<<9)		/* Send via gateway */
+#define MSG_ORPHAN			(1<<10) 	/* Unknown destination */
+#define MSG_FPU 			(1<<11) 	/* Force pickup */
+#define MSG_TYPELOCAL		(1<<12) 	/* Msg is for local use only */
+#define MSG_TYPEECHO		(1<<13) 	/* Msg is for conference distribution */
+#define MSG_TYPENET 		(1<<14) 	/* Msg is direct network mail */
 
 
 enum {
@@ -395,16 +395,16 @@ enum {
     };
 
 enum {
-     XLAT_NONE              // No translation/End of translation list
-    ,XLAT_ENCRYPT           // Encrypted data
-    ,XLAT_ESCAPED           // 7-bit ASCII escaping for ctrl and 8-bit data
-    ,XLAT_HUFFMAN           // Static and adaptive Huffman coding compression
-    ,XLAT_LZW               // Limpel/Ziv/Welch compression
-    ,XLAT_MLZ78             // Modified LZ78 compression
-    ,XLAT_RLE               // Run length encoding compression
-    ,XLAT_IMPLODE           // Implode compression (PkZIP)
-    ,XLAT_SHRINK            // Shrink compression (PkZIP)
-	,XLAT_LZH				// LHarc (LHA) Dynamic Huffman coding
+     XLAT_NONE              /* No translation/End of translation list */
+    ,XLAT_ENCRYPT           /* Encrypted data */
+    ,XLAT_ESCAPED           /* 7-bit ASCII escaping for ctrl and 8-bit data */
+    ,XLAT_HUFFMAN           /* Static and adaptive Huffman coding compression */
+    ,XLAT_LZW               /* Limpel/Ziv/Welch compression */
+    ,XLAT_MLZ78             /* Modified LZ78 compression */
+    ,XLAT_RLE               /* Run length encoding compression */
+    ,XLAT_IMPLODE           /* Implode compression (PkZIP) */
+    ,XLAT_SHRINK            /* Shrink compression (PkZIP) */
+	,XLAT_LZH				/* LHarc (LHA) Dynamic Huffman coding */
 
 /* Add new ones here */
 
@@ -427,89 +427,89 @@ enum {
 #endif
 
 #if defined(PRAGMA_PACK)
-#pragma pack(push)		/* Disk image structures must be packed */
+#pragma pack(push,1)		/* Disk image structures must be packed */
 #pragma pack(1)
 #endif
 
-typedef struct _PACK {		// Time with time-zone
+typedef struct _PACK {		/* Time with time-zone */
 
-	ulong	time;			// Local time (unix format)
-	short	zone;			// Time zone
+	ulong	time;			/* Local time (unix format) */
+	short	zone;			/* Time zone */
 
 	} when_t;
 
-typedef struct _PACK {		// Index record
+typedef struct _PACK {		/* Index record */
 
-	ushort	to; 			// 16-bit CRC of recipient name (lower case)
-	ushort	from;			// 16-bit CRC of sender name (lower case)
-	ushort	subj;			// 16-bit CRC of subject (lower case, w/o RE:)
-	ushort	attr;			// attributes (read, permanent, etc.)
-	ulong	offset; 		// offset into header file
-	ulong	number; 		// number of message (1 based)
-	ulong	time;			// time/date message was imported/posted
+	ushort	to; 			/* 16-bit CRC of recipient name (lower case) */
+	ushort	from;			/* 16-bit CRC of sender name (lower case) */
+	ushort	subj;			/* 16-bit CRC of subject (lower case, w/o RE:) */
+	ushort	attr;			/* attributes (read, permanent, etc.) */
+	ulong	offset; 		/* offset into header file */
+	ulong	number; 		/* number of message (1 based) */
+	ulong	time;			/* time/date message was imported/posted */
 
 	} idxrec_t;
 
-typedef struct _PACK {		// Message base header (fixed portion)
+typedef struct _PACK {		/* Message base header (fixed portion) */
 
-    uchar   id[LEN_HEADER_ID];	// SMB<^Z>
-    ushort  version;        // version number (initially 100h for 1.00)
-    ushort  length;         // length including this struct
+    uchar   id[LEN_HEADER_ID];	/* SMB<^Z> */
+    ushort  version;        /* version number (initially 100h for 1.00) */
+    ushort  length;         /* length including this struct */
 
 	} smbhdr_t;
 
-typedef struct _PACK {		// Message base status header
+typedef struct _PACK {		/* Message base status header */
 
-	ulong	last_msg;		// last message number
-	ulong	total_msgs; 	// total messages
-	ulong	header_offset;	// byte offset to first header record
-	ulong	max_crcs;		// Maximum number of CRCs to keep in history
-    ulong   max_msgs;       // Maximum number of message to keep in sub
-    ushort  max_age;        // Maximum age of message to keep in sub (in days)
-	ushort	attr;			// Attributes for this message base (SMB_HYPER,etc)
+	ulong	last_msg;		/* last message number */
+	ulong	total_msgs; 	/* total messages */
+	ulong	header_offset;	/* byte offset to first header record */
+	ulong	max_crcs;		/* Maximum number of CRCs to keep in history */
+    ulong   max_msgs;       /* Maximum number of message to keep in sub */
+    ushort  max_age;        /* Maximum age of message to keep in sub (in days) */
+	ushort	attr;			/* Attributes for this message base (SMB_HYPER,etc) */
 
 	} smbstatus_t;
 
-typedef struct _PACK {		// Message header
+typedef struct _PACK {		/* Message header */
 
-	uchar	id[LEN_HEADER_ID];	// SHD<^Z>
-    ushort  type;           // Message type (normally 0)
-    ushort  version;        // Version of type (initially 100h for 1.00)
-    ushort  length;         // Total length of fixed record + all fields
-	ushort	attr;			// Attributes (bit field) (duped in SID)
-	ulong	auxattr;		// Auxillary attributes (bit field)
-    ulong   netattr;        // Network attributes
-	when_t	when_written;	// Date/time/zone message was written
-	when_t	when_imported;	// Date/time/zone message was imported
-    ulong   number;         // Message number
-    ulong   thread_orig;    // Original message number in thread
-    ulong   thread_next;    // Next message in thread
-    ulong   thread_first;   // First reply to this message
-	ushort	delivery_attempts;	// Delivery attempt counter
-	ulong	times_downloaded;	// Total number of times downloaded
-	ulong	last_downloaded;	// Date/time of last download
-	uchar	reserved[6];	// Reserved for future use
-    ulong   offset;         // Offset for buffer into data file (0 or mod 256)
-	ushort	total_dfields;	// Total number of data fields
+	uchar	id[LEN_HEADER_ID];	/* SHD<^Z> */
+    ushort  type;           /* Message type (normally 0) */
+    ushort  version;        /* Version of type (initially 100h for 1.00) */
+    ushort  length;         /* Total length of fixed record + all fields */
+	ushort	attr;			/* Attributes (bit field) (duped in SID) */
+	ulong	auxattr;		/* Auxillary attributes (bit field) */
+    ulong   netattr;        /* Network attributes */
+	when_t	when_written;	/* Date/time/zone message was written */
+	when_t	when_imported;	/* Date/time/zone message was imported */
+    ulong   number;         /* Message number */
+    ulong   thread_orig;    /* Original message number in thread */
+    ulong   thread_next;    /* Next message in thread */
+    ulong   thread_first;   /* First reply to this message */
+	ushort	delivery_attempts;	/* Delivery attempt counter */
+	ulong	times_downloaded;	/* Total number of times downloaded */
+	ulong	last_downloaded;	/* Date/time of last download */
+	uchar	reserved[6];	/* Reserved for future use */
+    ulong   offset;         /* Offset for buffer into data file (0 or mod 256) */
+	ushort	total_dfields;	/* Total number of data fields */
 
 	} msghdr_t;
 
-typedef struct _PACK {		// Data field
+typedef struct _PACK {		/* Data field */
 
-	ushort	type;			// Type of data field
-    ulong   offset;         // Offset into buffer 
-    ulong   length;         // Length of data field
+	ushort	type;			/* Type of data field */
+    ulong   offset;         /* Offset into buffer */ 
+    ulong   length;         /* Length of data field */
 
     } dfield_t;
 
-typedef struct _PACK {		// Header field
+typedef struct _PACK {		/* Header field */
 
 	ushort	type;
-	ushort	length; 		// Length of buffer
+	ushort	length; 		/* Length of buffer */
 
 	} hfield_t;
 
-typedef struct _PACK {		// FidoNet address (zone:net/node.point)
+typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
 
 	ushort	zone;
 	ushort	net;
@@ -518,7 +518,7 @@ typedef struct _PACK {		// FidoNet address (zone:net/node.point)
 
     } fidoaddr_t;
 
-typedef struct _PACK {		// Network (type and address)
+typedef struct _PACK {		/* Network (type and address) */
 
     ushort  type;
 	void	*addr;
@@ -529,67 +529,67 @@ typedef struct _PACK {		// Network (type and address)
 #pragma pack(pop)		/* original packing */
 #endif
 
-typedef struct {				// Message
+typedef struct {				/* Message */
 
-	idxrec_t	idx;			// Index
-	msghdr_t	hdr;			// Header record (fixed portion)
-	char		*to,			// To name
-				*to_ext,		// To extension
-				*from,			// From name
-				*from_ext,		// From extension
-				*from_org,		// From organization
-				*replyto,		// Reply-to name
-				*replyto_ext,	// Reply-to extension */
-				*id,			// RFC822 Message-ID
-				*reply_id,		// RFC822 Reply-ID
-				*reverse_path,	// SMTP reverse-path
-				*path,			// USENET Path
-				*newsgroups,	// USENET Newsgroups
-				*ftn_pid,		// FTN PID
-				*ftn_tid,		// FTN TID
-				*ftn_area,		// FTN AREA
-				*ftn_flags,		// FTN FLAGS
-				*ftn_msgid,		// FTN MSGID
-				*ftn_reply;		// FTN REPLY
-	char*		summary;		// Summary 
-	char*		subj;			// Subject 
-	ushort		to_agent,		// Type of agent message is to
-				from_agent, 	// Type of agent message is from
-				replyto_agent;	// Type of agent replies should be sent to
-	net_t		to_net, 		// Destination network type and address
-                from_net,       // Origin network address
-                replyto_net;    // Network type and address for replies
-	ushort		total_hfields;	// Total number of header fields
-	hfield_t	*hfield;		// Header fields (fixed length portion)
-	void		**hfield_dat;	// Header fields (variable length portion)
-	dfield_t	*dfield;		// Data fields (fixed length portion)
-	ulong		offset; 		// Offset (number of records) into index
-	int			forwarded;		// Forwarded from agent to another
-	ulong		expiration; 	// Message will expire on this day (if >0)
-	ulong		priority;		// Message priority (0 is lowest)
-	ulong		cost;			// Cost to download/read
+	idxrec_t	idx;			/* Index */
+	msghdr_t	hdr;			/* Header record (fixed portion) */
+	char		*to,			/* To name */
+				*to_ext,		/* To extension */
+				*from,			/* From name */
+				*from_ext,		/* From extension */
+				*from_org,		/* From organization */
+				*replyto,		/* Reply-to name */
+				*replyto_ext,	/* Reply-to extension */
+				*id,			/* RFC822 Message-ID */
+				*reply_id,		/* RFC822 Reply-ID */
+				*reverse_path,	/* SMTP reverse-path */
+				*path,			/* USENET Path */
+				*newsgroups,	/* USENET Newsgroups */
+				*ftn_pid,		/* FTN PID */
+				*ftn_tid,		/* FTN TID */
+				*ftn_area,		/* FTN AREA */
+				*ftn_flags,		/* FTN FLAGS */
+				*ftn_msgid,		/* FTN MSGID */
+				*ftn_reply;		/* FTN REPLY */
+	char*		summary;		/* Summary  */
+	char*		subj;			/* Subject  */
+	ushort		to_agent,		/* Type of agent message is to */
+				from_agent, 	/* Type of agent message is from */
+				replyto_agent;	/* Type of agent replies should be sent to */
+	net_t		to_net, 		/* Destination network type and address */
+                from_net,       /* Origin network address */
+                replyto_net;    /* Network type and address for replies */
+	ushort		total_hfields;	/* Total number of header fields */
+	hfield_t	*hfield;		/* Header fields (fixed length portion) */
+	void		**hfield_dat;	/* Header fields (variable length portion) */
+	dfield_t	*dfield;		/* Data fields (fixed length portion) */
+	ulong		offset; 		/* Offset (number of records) into index */
+	int			forwarded;		/* Forwarded from agent to another */
+	ulong		expiration; 	/* Message will expire on this day (if >0) */
+	ulong		priority;		/* Message priority (0 is lowest) */
+	ulong		cost;			/* Cost to download/read */
 
 	} smbmsg_t;
 
-typedef struct {			// Message base
+typedef struct {			/* Message base */
 
-    char    file[128];      // Path and base filename (no extension)
-    FILE    *sdt_fp;        // File pointer for data (.sdt) file
-    FILE    *shd_fp;        // File pointer for header (.shd) file
-    FILE    *sid_fp;        // File pointer for index (.sid) file
-    FILE    *sda_fp;        // File pointer for data allocation (.sda) file
-    FILE    *sha_fp;        // File pointer for header allocation (.sha) file
-	ulong	retry_time; 	// Maximum number of seconds to retry opens/locks
-	ulong	retry_delay;	// Time-slice yield (milliseconds) while retrying
-	smbstatus_t status; 	// Status header record
-	int		locked;			// SMB header is locked
-	char	shd_buf[SHD_BLOCK_LEN]; 	// File I/O buffer for header file
-	char	last_error[MAX_PATH*2];		// Last error message
+    char    file[128];      /* Path and base filename (no extension) */
+    FILE    *sdt_fp;        /* File pointer for data (.sdt) file */
+    FILE    *shd_fp;        /* File pointer for header (.shd) file */
+    FILE    *sid_fp;        /* File pointer for index (.sid) file */
+    FILE    *sda_fp;        /* File pointer for data allocation (.sda) file */
+    FILE    *sha_fp;        /* File pointer for header allocation (.sha) file */
+	ulong	retry_time; 	/* Maximum number of seconds to retry opens/locks */
+	ulong	retry_delay;	/* Time-slice yield (milliseconds) while retrying */
+	smbstatus_t status; 	/* Status header record */
+	int		locked;			/* SMB header is locked */
+	char	shd_buf[SHD_BLOCK_LEN]; 	/* File I/O buffer for header file */
+	char	last_error[MAX_PATH*2];		/* Last error message */
 
 	/* Private member variables (not initialized by or used by smblib) */
-	uint	subnum;			// Sub-board number
-	long	msgs;			// Number of messages loaded (for user)
-	long	curmsg;			// Current message number (for user)
+	uint	subnum;			/* Sub-board number */
+	long	msgs;			/* Number of messages loaded (for user) */
+	long	curmsg;			/* Current message number (for user) */
 
     } smb_t;
 

@@ -40,24 +40,24 @@
 
 /* commands */
 
-#define TELNET_IAC		255	// Interpret as command
-#define TELNET_DONT		254 // Don't do option
-#define TELNET_DO   	253 // Do option
-#define TELNET_WONT 	252 // Won't do option
-#define TELNET_WILL 	251 // Will do option
+#define TELNET_IAC		255	/* Interpret as command */
+#define TELNET_DONT		254 /* Don't do option */
+#define TELNET_DO   	253 /* Do option */
+#define TELNET_WONT 	252 /* Won't do option */
+#define TELNET_WILL 	251 /* Will do option */
 
-#define TELNET_SB       250	// sub-negotiation
-#define TELNET_GA		249	// Go ahead
-#define TELNET_EL		248 // Erase line
-#define TELNET_EC		247 // Erase char
-#define TELNET_AYT		246 // Are you there?
-#define TELNET_AO		245 // Abort output
-#define TELNET_IP		244 // Interrupt process
-#define TELNET_BRK		243 // Break
-#define TELNET_SYNC		242 // Data mark
-#define TELNET_NOP		241 // No operation
+#define TELNET_SB       250	/* sub-negotiation */
+#define TELNET_GA		249	/* Go ahead */
+#define TELNET_EL		248 /* Erase line */
+#define TELNET_EC		247 /* Erase char */
+#define TELNET_AYT		246 /* Are you there? */
+#define TELNET_AO		245 /* Abort output */
+#define TELNET_IP		244 /* Interrupt process */
+#define TELNET_BRK		243 /* Break */
+#define TELNET_SYNC		242 /* Data mark */
+#define TELNET_NOP		241 /* No operation */
 
-#define TELNET_SE       240 //  End of subnegotiation parameters.
+#define TELNET_SE       240 /*  End of subnegotiation parameters. */
 
 /* options */
 
@@ -65,7 +65,7 @@ enum {
  	 TELNET_BINARY
 	,TELNET_ECHO
 	,TELNET_RECONN
-	,TELNET_SUP_GA		// suppress go ahead
+	,TELNET_SUP_GA		/* suppress go ahead */
 	,TELNET_APPROX_MSG_SIZE
 	,TELNET_STATUS
 	,TELNET_TIMING_MARK
@@ -104,7 +104,7 @@ enum {
 	,TELNET_NEW_ENV_OPTION
 	,TELNET_3270E
 
-	,TELNET_EXOPL=255	// Extended options list
+	,TELNET_EXOPL=255	/* Extended options list */
 };
 
 /* Terminal-type sub option codes, see RFC 1091 */
@@ -116,8 +116,8 @@ enum {
    
 #define TELNET_MODE_BIN_RX	(1<<0)   
 #define TELNET_MODE_ECHO	(1<<1)   
-#define TELNET_MODE_GATE	(1<<2)	// Pass-through telnet commands/responses
-#define TELNET_MODE_OFF		(1<<3)	// This is not a Telnet connection
+#define TELNET_MODE_GATE	(1<<2)	/* Pass-through telnet commands/responses */
+#define TELNET_MODE_OFF		(1<<3)	/* This is not a Telnet connection */
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

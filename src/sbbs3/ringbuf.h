@@ -119,4 +119,4 @@ void	RINGBUFCALL RingBufReInit( RingBuf* rb );
 }
 #endif
 
-#endif	// Don't add anything afterthis endif
+#endif	/* Don't add anything afterthis endif */

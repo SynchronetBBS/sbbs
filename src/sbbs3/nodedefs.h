@@ -106,7 +106,7 @@ enum {                              /* Node Action */
     };
 
 #if defined(_WIN32) || defined(__BORLANDC__)	/* necessary for compatibility with SBBS v2 */
-#pragma pack(push)
+#pragma pack(push,1)
 #pragma pack(1)
 #endif
 
