@@ -134,7 +134,6 @@ static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
 static void showbuf(char *buf, char *title, BOOL markup);
-static void showfile(char *file, char *title, BOOL markup);
 
 /* Dynamic menu support */
 static int *last_menu_cur=NULL;
