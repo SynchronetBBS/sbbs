@@ -10,7 +10,7 @@
 
   <h1 id="siteName">@@system:name@@</h1> 
    <div id="Greeting"> 
-        @@JS:template.user_greeting@@
+        @@user_greeting@@
    </div>
    
    <table width="100%"  border="0" cellspacing="0" cellpadding="0">
