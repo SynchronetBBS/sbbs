@@ -53,6 +53,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	ulong	mailmsgs=0;
 	ulong	totalcdt,totaltime,lastmsg
 			,files,submsgs,msgs,netfiles=0,preqwk=0;
+	ulong	subs_scanned=0;
 	float	f;	/* Sparky is responsible */
 	time_t	start;
 	node_t	node;
@@ -308,6 +309,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				if(useron.rest&FLAG('Q') && !(cfg.sub[usrsub[i][j]]->misc&SUB_QNET))
 					continue;	/* QWK Net Node and not QWK networked, so skip */
 
+				subs_scanned++;
 				msgs=getlastmsg(usrsub[i][j],&lastmsg,0);
 				if(!msgs || lastmsg<=sub_ptr[usrsub[i][j]]) { /* no msgs */
 					if(sub_ptr[usrsub[i][j]]>lastmsg)	{ /* corrupted ptr */
@@ -420,7 +422,14 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				if(l<posts)
 					break; }
 		if(j<usrsubs[i]) /* if sub aborted, abort all */
-			break; }
+			break; 
+	}
+
+	sprintf(str,"Scanned %lu sub-boards for new messages",subs_scanned);
+	if(online==ON_LOCAL) /* event */
+		eprintf(str);
+	else
+		lprintf(str);
 
 	if((*msgcnt)+mailmsgs && time(NULL)-start) {
 		bprintf("\r\n\r\n\1n\1hPacked %lu messages in %lu seconds "
@@ -441,7 +450,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		fclose(personal);		 /* close PERSONAL.NDX */
 		sprintf(str,"%sPERSONAL.NDX",cfg.temp_dir);
 		if(!flength(str))
-			remove(str); }
+			remove(str); 
+	}
 	CRLF;
 
 	if(!prepack && (sys_status&SS_ABORT || !online))
