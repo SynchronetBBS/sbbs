@@ -888,7 +888,7 @@ void DLLCALL printnodedat(scfg_t* cfg, uint number, node_t* node)
 					printf("performing sysop activities");
 					break;
 				default:
-					printf(itoa(node->action,tmp,10));
+					printf(ultoa(node->action,tmp,10));
 					break;  }
 			if(!node->connection)
 				printf(" locally");
