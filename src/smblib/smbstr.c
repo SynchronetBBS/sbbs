@@ -297,7 +297,7 @@ char* SMBCALL smb_netaddr(net_t* net)
 }
 
 /****************************************************************************/
-/* Returns net_type for passing e-mail address (i.e. "user@addr")			*/
+/* Returns net_type for passed e-mail address (i.e. "user@addr")			*/
 /****************************************************************************/
 ushort SMBCALL smb_netaddr_type(const char* str)
 {
@@ -308,6 +308,10 @@ ushort SMBCALL smb_netaddr_type(const char* str)
 		return(NET_NONE);
 
 	p++;
+	SKIP_WHITESPACE(p);
+	if(*p==0)
+		return(NET_UNKNOWN);
+
 	if(isalpha(*p) && strchr(p,'.')==NULL)
 		return(NET_QWK);
 
