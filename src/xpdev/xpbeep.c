@@ -162,6 +162,9 @@ BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	memset(&wh, 0, sizeof(wh));
 	wh.lpData=wave;
 	wh.dwBufferLength=S_RATE*duration/1000;
+	if(wh.dwBufferLength<=S_RATE/freq*2)
+		wh.dwBufferLength=S_RATE/freq*2;
+
 	makewave(freq,wave,wh.dwBufferLength,shape);
 	if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR)
 		goto abrt;
@@ -191,6 +194,8 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	unsigned char	wave[S_RATE*15/2+1];
 
 	samples=S_RATE*duration/1000;
+	if(samples<=S_RATE/freq*2)
+		samples=S_RATE/freq*2;
 	makewave(freq,wave,samples,shape);
 	if(!sound_device_open_failed) {
 		if((dsp=open("/dev/dsp",O_WRONLY,0))<0) {
