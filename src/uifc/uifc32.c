@@ -2124,8 +2124,14 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	else {
 		while(i==0) {
 			if(p!=oldp) {
-				puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
-				oldp=p;
+				if(p > textbuf+(lines-(height-2-pad-pad)+1)*(width-4)*2)
+					p=textbuf+(lines-(height-2-pad-pad)+1)*(width-4)*2;
+				if(p<textbuf)
+					p=textbuf;
+				if(p!=oldp) {
+					puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
+					oldp=p;
+				}
 			}
 			if(kbwait()) {
 				j=inkey();
@@ -2139,8 +2145,6 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 								&& mevnt.starty<=top+pad+(height/2)-2
 								&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
 							p = p-((width-4)*2*(height-5));
-							if(p<textbuf)
-								p=textbuf;
 							continue;
 						}
 						/* Clicked Scroll Down */
@@ -2150,10 +2154,6 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 								&& mevnt.starty>=top+pad+height-(height/2+1)-2
 								&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
 							p=p+(width-4)*2*(height-5);
-							if(p > textbuf+(lines-height+1)*(width-4)*2)
-								p=textbuf+(lines-height+1)*(width-4)*2;
-							if(p<textbuf)
-								p=textbuf;
 							continue;
 						}
 						i=1;
@@ -2167,36 +2167,22 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 
 					case CIO_KEY_UP:	/* up arrow */
 						p = p-((width-4)*2);
-						if(p<textbuf)
-							p=textbuf;
 						break;
 					
 					case CIO_KEY_PPAGE:	/* PgUp */
 						p = p-((width-4)*2*(height-5));
-						if(p<textbuf)
-							p=textbuf;
 						break;
 
 					case CIO_KEY_NPAGE:	/* PgDn */
 						p=p+(width-4)*2*(height-5);
-						if(p > textbuf+(lines-height+1)*(width-4)*2)
-							p=textbuf+(lines-height+1)*(width-4)*2;
-						if(p<textbuf)
-							p=textbuf;
 						break;
 
 					case CIO_KEY_END:	/* end */
 						p=textbuf+(lines-height+1)*(width-4)*2;
-						if(p<textbuf)
-							p=textbuf;
 						break;
 
 					case CIO_KEY_DOWN:	/* dn arrow */
 						p = p+((width-4)*2);
-						if(p > textbuf+(lines-height+1)*(width-4)*2)
-							p=textbuf+(lines-height+1)*(width-4)*2;
-						if(p<textbuf)
-							p=textbuf;
 						break;
 
 					default:
