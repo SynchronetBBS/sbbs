@@ -1132,6 +1132,9 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(p->fp!=NULL)
 				fseek(p->fp,JSVAL_TO_INT(*vp),SEEK_SET);
 			break;
+		case FILE_PROP_DATE:
+			setfdate(p->name,JSVAL_TO_INT(*vp));
+			break;
 		case FILE_PROP_LENGTH:
 			if(p->fp!=NULL)
 				chsize(fileno(p->fp),JSVAL_TO_INT(*vp));
@@ -1312,7 +1315,6 @@ static struct JSPropertySpec js_file_properties[] = {
 	{	"name"				,FILE_PROP_NAME			,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"mode"				,FILE_PROP_MODE			,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"exists"			,FILE_PROP_EXISTS		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"date"				,FILE_PROP_DATE			,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"is_open"			,FILE_PROP_IS_OPEN		,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"eof"				,FILE_PROP_EOF			,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"error"				,FILE_PROP_ERROR		,FILE_PROP_FLAGS,	NULL,NULL},
@@ -1321,6 +1323,7 @@ static struct JSPropertySpec js_file_properties[] = {
 	{	"etx"				,FILE_PROP_ETX			,JSPROP_ENUMERATE,  NULL,NULL},
 	{	"debug"				,FILE_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"position"			,FILE_PROP_POSITION		,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"date"				,FILE_PROP_DATE			,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"length"			,FILE_PROP_LENGTH		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"attributes"		,FILE_PROP_ATTRIBUTES	,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"network_byte_order",FILE_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	NULL,NULL},
@@ -1342,7 +1345,6 @@ static char* file_prop_desc[] = {
 	 "filename specified in constructor - <small>READ ONLY</small>"
 	,"mode string specified in <i>open</i> call - <small>READ ONLY</small>"
 	,"<i>true</i> if the file exists - <small>READ ONLY</small>"
-	,"last modified date/time (time_t format) - <small>READ ONLY</small>"
 	,"<i>true</i> if the file has been opened successfully - <small>READ ONLY</small>"
 	,"<i>true</i> if the current file position is at the <i>end of file</i> - <small>READ ONLY</small>"
 	,"the last occurred error value (use clear_error to clear) - <small>READ ONLY</small>"
@@ -1350,6 +1352,7 @@ static char* file_prop_desc[] = {
 	,"end-of-text character (advanced use only), if non-zero used by <i>read</i>, <i>readln</i>, and <i>write</i>"
 	,"set to <i>true</i> to enable debug log output"
 	,"the current file position (offset in bytes), change value to seek within file"
+	,"last modified date/time (in time_t format)"
 	,"the current length of the file (in bytes)"
 	,"file mode/attributes"
 	,"set to <i>true</i> if binary data is to be written and read in Network Byte Order (big end first)"
