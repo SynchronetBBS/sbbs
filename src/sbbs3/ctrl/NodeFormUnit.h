@@ -70,6 +70,8 @@ __published:	// IDE-managed Components
     TMenuItem *ClearErrorsMenuItem;
     TToolButton *ChatButton;
     TMenuItem *ChatMenuItem;
+    TToolButton *SpyButton;
+    TMenuItem *SpyMenuItem;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TimerTick(TObject *Sender);
     void __fastcall FormHide(TObject *Sender);
@@ -80,6 +82,7 @@ __published:	// IDE-managed Components
 	void __fastcall DownButtonClick(TObject *Sender);
     void __fastcall ClearErrorButtonClick(TObject *Sender);
     void __fastcall ChatButtonClick(TObject *Sender);
+    void __fastcall SpyButtonClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
      __fastcall TNodeForm(TComponent* Owner);

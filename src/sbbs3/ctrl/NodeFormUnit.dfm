@@ -1,6 +1,6 @@
 object NodeForm: TNodeForm
-  Left = 391
-  Top = 182
+  Left = 471
+  Top = 304
   Width = 277
   Height = 214
   Caption = 'Nodes'
@@ -10,15 +10,15 @@ object NodeForm: TNodeForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -14
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   Position = poDefault
   OnHide = FormHide
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
   object Toolbar: TToolBar
     Left = 0
     Top = 0
@@ -81,14 +81,21 @@ object NodeForm: TNodeForm
       ImageIndex = 39
       OnClick = ChatButtonClick
     end
+    object SpyButton: TToolButton
+      Left = 161
+      Top = 0
+      Caption = 'SpyButton'
+      ImageIndex = 41
+      OnClick = SpyButtonClick
+    end
   end
   object ListBox: TListBox
     Left = 0
     Top = 25
     Width = 269
-    Height = 162
+    Height = 157
     Align = alClient
-    ItemHeight = 13
+    ItemHeight = 16
     MultiSelect = True
     PopupMenu = PopupMenu
     TabOrder = 1
@@ -127,6 +134,11 @@ object NodeForm: TNodeForm
       Caption = 'Chat with User'
       ImageIndex = 39
       OnClick = ChatButtonClick
+    end
+    object SpyMenuItem: TMenuItem
+      Caption = 'Spy on User'
+      ImageIndex = 41
+      OnClick = SpyButtonClick
     end
     object N1: TMenuItem
       Caption = '-'

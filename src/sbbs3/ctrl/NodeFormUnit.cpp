@@ -43,8 +43,10 @@
 #include <fcntl.h>
 #include <share.h>
 #include "NodeFormUnit.h"
+#include "SpyFormUnit.h"
 #include "nodedefs.h"
 #include "userdat.h"
+#include "ringbuf.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -54,8 +56,9 @@ __fastcall TNodeForm::TNodeForm(TComponent* Owner)
         : TForm(Owner)
 {
 //    OutputDebugString("NodeForm constructor\n");
-
 	MainForm=(TMainForm*)Application->MainForm;
+    MainForm->bbs_startup.spybuf
+        =(RingBuf**)calloc(1,sizeof(RingBuf*)*MAX_NODES);
 }
 //---------------------------------------------------------------------------
 
@@ -73,7 +76,7 @@ void __fastcall TNodeForm::FormHide(TObject *Sender)
 void __fastcall TNodeForm::FormShow(TObject *Sender)
 {
 //    OutputDebugString("NodeForm::FormShow\n");
-    
+
 	MainForm->ViewNodesMenuItem->Checked=true;
     MainForm->ViewNodesButton->Down=true;
 }
@@ -455,6 +458,22 @@ void __fastcall TNodeForm::ChatButtonClick(TObject *Sender)
                 ,username(node.useron,name)
                 );
             WinExec(str,SW_SHOWNORMAL);
+        }
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TNodeForm::SpyButtonClick(TObject *Sender)
+{
+    int i;
+    TSpyForm* SpyForm;
+
+    for(i=0;i<ListBox->Items->Count;i++)
+    	if(ListBox->Selected[i]==true) {
+            Application->CreateForm(__classid(TSpyForm), &SpyForm);
+            SpyForm->spybuf=&MainForm->bbs_startup.spybuf[i];
+            SpyForm->Caption="Spying on Node "+AnsiString(i+1);            
+            SpyForm->ShowModal();
+            delete SpyForm;
         }
 }
 //---------------------------------------------------------------------------

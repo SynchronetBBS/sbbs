@@ -40,6 +40,7 @@
 #endif
 
 #include "client.h"
+#include "ringbuf.h"
 
 typedef struct {
 
@@ -57,7 +58,7 @@ typedef struct {
     DWORD	rlogin_interface;
     DWORD	reserved_dword7;
     DWORD	reserved_dword6;
-    DWORD	reserved_dword5;
+    RingBuf** spybuf;
     DWORD	reserved_dword4;
     DWORD	reserved_dword3;
     DWORD	reserved_dword2;
