@@ -9,6 +9,8 @@
 #ifndef _ZMODEM_H
 #define _ZMODEM_H
 
+#include <stdio.h>	/* FILE */
+
 /*
  * ascii constants
  */

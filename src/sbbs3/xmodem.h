@@ -38,9 +38,7 @@
 #ifndef _XMODEM_H_
 #define _XMODEM_H_
 
-#include <stdio.h>		/* FILE */
-#include <sockwrap.h>	/* SOCKET */
-#include "crc16.h"
+#include "gen_defs.h"
 
 #define CPMEOF		CTRL_Z	/* CP/M End of file (^Z)					*/
 

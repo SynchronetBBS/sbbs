@@ -37,6 +37,7 @@
 
 #include <stdarg.h>		/* va_list */
 #include "sexyz.h"
+#include "crc16.h"
 #include "genwrap.h"	/* YIELD */
 #include "conwrap.h"	/* kbhit */
 
