@@ -1097,70 +1097,141 @@ void free_file_cfg(scfg_t* cfg)
 {
 	uint i;
 
-	for(i=0;i<cfg->total_fextrs;i++)
-		FREE_AND_NULL(cfg->fextr[i]);
-	FREE_AND_NULL(cfg->fextr);
+	if(cfg->fextr!=NULL) {
+		for(i=0;i<cfg->total_fextrs;i++) {
+			FREE_ALLOC(cfg->fextr[i]->cmd);
+			FREE_AND_NULL(cfg->fextr[i]);
+		}
+		FREE_AND_NULL(cfg->fextr);
+	}
 
-	for(i=0;i<cfg->total_fcomps;i++)
-		FREE_AND_NULL(cfg->fcomp[i]);
-	FREE_AND_NULL(cfg->fcomp);
+	if(cfg->fcomp!=NULL) {
+		for(i=0;i<cfg->total_fcomps;i++) {
+			FREE_ALLOC(cfg->fcomp[i]->cmd);
+			FREE_AND_NULL(cfg->fcomp[i]);
+		}
+		FREE_AND_NULL(cfg->fcomp);
+	}
 
-	for(i=0;i<cfg->total_fviews;i++)
-		FREE_AND_NULL(cfg->fview[i]);
-	FREE_AND_NULL(cfg->fview);
+	if(cfg->fview!=NULL) {
+		for(i=0;i<cfg->total_fviews;i++) {
+			FREE_ALLOC(cfg->fview[i]->cmd);
+			FREE_AND_NULL(cfg->fview[i]);
+		}
+		FREE_AND_NULL(cfg->fview);
+	}
 
-	for(i=0;i<cfg->total_ftests;i++)
-		FREE_AND_NULL(cfg->ftest[i]);
-	FREE_AND_NULL(cfg->ftest);
+	if(cfg->ftest!=NULL) {
+		for(i=0;i<cfg->total_ftests;i++) {
+			FREE_ALLOC(cfg->ftest[i]->cmd);
+			FREE_ALLOC(cfg->ftest[i]->workstr);
+			FREE_AND_NULL(cfg->ftest[i]);
+		}
+		FREE_AND_NULL(cfg->ftest);
+	}
 
-	for(i=0;i<cfg->total_dlevents;i++)
-		FREE_AND_NULL(cfg->dlevent[i]);
-	FREE_AND_NULL(cfg->dlevent);
+	if(cfg->dlevent!=NULL) {
+		for(i=0;i<cfg->total_dlevents;i++) {
+			FREE_ALLOC(cfg->dlevent[i]->cmd);
+			FREE_ALLOC(cfg->dlevent[i]->workstr);
+			FREE_AND_NULL(cfg->dlevent[i]);
+		}
+		FREE_AND_NULL(cfg->dlevent);
+	}
 
-	for(i=0;i<cfg->total_prots;i++)
-		FREE_AND_NULL(cfg->prot[i]);
-	FREE_AND_NULL(cfg->prot);
+	if(cfg->prot!=NULL) {
+		for(i=0;i<cfg->total_prots;i++) {
+			FREE_ALLOC(cfg->prot[i]->name);
+			FREE_ALLOC(cfg->prot[i]->ulcmd);
+			FREE_ALLOC(cfg->prot[i]->dlcmd);
+			FREE_ALLOC(cfg->prot[i]->batulcmd);
+			FREE_ALLOC(cfg->prot[i]->batdlcmd);
+			FREE_ALLOC(cfg->prot[i]->blindcmd);
+			FREE_ALLOC(cfg->prot[i]->bicmd);
+			FREE_AND_NULL(cfg->prot[i]);
+		}
+		FREE_AND_NULL(cfg->prot);
+	}
 
-	for(i=0;i<cfg->altpaths;i++)
-		FREE_AND_NULL(cfg->altpath[i]);
-	FREE_AND_NULL(cfg->altpath);
+	if(cfg->altpath!=NULL) {
+		for(i=0;i<cfg->altpaths;i++)
+			FREE_AND_NULL(cfg->altpath[i]);
+		FREE_AND_NULL(cfg->altpath);
+	}
 
-	for(i=0;i<cfg->total_libs;i++)
-		FREE_AND_NULL(cfg->lib[i]);
-	FREE_AND_NULL(cfg->lib);
+	if(cfg->lib!=NULL) {
+		for(i=0;i<cfg->total_libs;i++) {
+			FREE_ALLOC(cfg->lib[i]->lname);
+			FREE_ALLOC(cfg->lib[i]->sname);
+			FREE_AND_NULL(cfg->lib[i]);
+		}
+		FREE_AND_NULL(cfg->lib);
+	}
 
-	for(i=0;i<cfg->total_dirs;i++)
-		FREE_AND_NULL(cfg->dir[i]);
-	FREE_AND_NULL(cfg->dir);
+	if(cfg->dir!=NULL) {
+		for(i=0;i<cfg->total_dirs;i++) {
+			FREE_ALLOC(cfg->dir[i]->lname);
+			FREE_ALLOC(cfg->dir[i]->sname);
+			FREE_ALLOC(cfg->dir[i]->exts);
+			FREE_ALLOC(cfg->dir[i]->upload_sem);
+			FREE_AND_NULL(cfg->dir[i]);
+		}
+		FREE_AND_NULL(cfg->dir);
+	}
 
-	for(i=0;i<cfg->total_txtsecs;i++)
-		FREE_AND_NULL(cfg->txtsec[i]);
-	FREE_AND_NULL(cfg->txtsec);
+	if(cfg->txtsec!=NULL) {
+		for(i=0;i<cfg->total_txtsecs;i++) {
+			FREE_ALLOC(cfg->txtsec[i]->name);
+			FREE_AND_NULL(cfg->txtsec[i]);
+		}
+		FREE_AND_NULL(cfg->txtsec);
+	}
 }
 
 void free_chat_cfg(scfg_t* cfg)
 {
 	int i;
 
-	for(i=0;i<cfg->total_actsets;i++)
-		FREE_AND_NULL(cfg->actset[i]);
-	FREE_AND_NULL(cfg->actset);
+	if(cfg->actset!=NULL) {
+		for(i=0;i<cfg->total_actsets;i++) {
+			FREE_ALLOC(cfg->actset[i]->name);
+			FREE_AND_NULL(cfg->actset[i]);
+		}
+		FREE_AND_NULL(cfg->actset);
+	}
 
-	for(i=0;i<cfg->total_chatacts;i++)
-		FREE_AND_NULL(cfg->chatact[i]);
-	FREE_AND_NULL(cfg->chatact);
+	if(cfg->chatact!=NULL) {
+		for(i=0;i<cfg->total_chatacts;i++) {
+			FREE_ALLOC(cfg->chatact[i]->cmd);
+			FREE_ALLOC(cfg->chatact[i]->out);
+			FREE_AND_NULL(cfg->chatact[i]);
+		}
+		FREE_AND_NULL(cfg->chatact);
+	}
 
-	for(i=0;i<cfg->total_chans;i++)
-		FREE_AND_NULL(cfg->chan[i]);
-	FREE_AND_NULL(cfg->chan);
+	if(cfg->chan!=NULL) {
+		for(i=0;i<cfg->total_chans;i++) {
+			FREE_ALLOC(cfg->chan[i]->name);
+			FREE_AND_NULL(cfg->chan[i]);
+		}
+		FREE_AND_NULL(cfg->chan);
+	}
 
-	for(i=0;i<cfg->total_gurus;i++)
-		FREE_AND_NULL(cfg->guru[i]);
-	FREE_AND_NULL(cfg->guru);
+	if(cfg->guru!=NULL) {
+		for(i=0;i<cfg->total_gurus;i++) {
+			FREE_ALLOC(cfg->guru[i]->name);
+			FREE_AND_NULL(cfg->guru[i]);
+		}
+		FREE_AND_NULL(cfg->guru);
+	}
 
-	for(i=0;i<cfg->total_pages;i++)
-		FREE_AND_NULL(cfg->page[i]);
-	FREE_AND_NULL(cfg->page);
+	if(cfg->page!=NULL) {
+		for(i=0;i<cfg->total_pages;i++) {
+			FREE_ALLOC(cfg->page[i]->cmd);
+			FREE_AND_NULL(cfg->page[i]);
+		}
+		FREE_AND_NULL(cfg->page);
+	}
 
 }
 
@@ -1168,24 +1239,55 @@ void free_xtrn_cfg(scfg_t* cfg)
 {
 	int i;
 
-	for(i=0;i<cfg->total_swaps;i++)
-		FREE_AND_NULL(cfg->swap[i]);
-	FREE_AND_NULL(cfg->swap);
+	if(cfg->swap!=NULL) {
+		for(i=0;i<cfg->total_swaps;i++) {
+			FREE_ALLOC(cfg->swap[i]->cmd);
+			FREE_AND_NULL(cfg->swap[i]);
+		}
+		FREE_AND_NULL(cfg->swap);
+	}
 
-	for(i=0;i<cfg->total_xedits;i++)
-		FREE_AND_NULL(cfg->xedit[i]);
-	FREE_AND_NULL(cfg->xedit);
+	if(cfg->xedit!=NULL) {
+		for(i=0;i<cfg->total_xedits;i++) {
+			FREE_ALLOC(cfg->xedit[i]->name);
+			FREE_ALLOC(cfg->xedit[i]->lcmd);
+			FREE_ALLOC(cfg->xedit[i]->rcmd);
+			FREE_AND_NULL(cfg->xedit[i]);
+		}
+		FREE_AND_NULL(cfg->xedit);
+	}
 
-	for(i=0;i<cfg->total_xtrnsecs;i++)
-		FREE_AND_NULL(cfg->xtrnsec[i]);
-	FREE_AND_NULL(cfg->xtrnsec);
+	if(cfg->xtrnsec!=NULL) {
+		for(i=0;i<cfg->total_xtrnsecs;i++) {
+			FREE_ALLOC(cfg->xtrnsec[i]->name);
+			FREE_AND_NULL(cfg->xtrnsec[i]);
+		}
+		FREE_AND_NULL(cfg->xtrnsec);
+	}
 
-	for(i=0;i<cfg->total_xtrns;i++)
-		FREE_AND_NULL(cfg->xtrn[i]);
-	FREE_AND_NULL(cfg->xtrn);
+	if(cfg->xtrn!=NULL) {
+		for(i=0;i<cfg->total_xtrns;i++) {
+			FREE_ALLOC(cfg->xtrn[i]->name);
+			FREE_ALLOC(cfg->xtrn[i]->cmd);
+			FREE_ALLOC(cfg->xtrn[i]->clean);
+			FREE_AND_NULL(cfg->xtrn[i]);
+		}
+		FREE_AND_NULL(cfg->xtrn);
+	}
 
-	for(i=0;i<cfg->total_events;i++)
-		FREE_AND_NULL(cfg->event[i]);
-	FREE_AND_NULL(cfg->event);
+	if(cfg->event!=NULL) {
+		for(i=0;i<cfg->total_events;i++) {
+			FREE_ALLOC(cfg->event[i]->cmd);
+			FREE_AND_NULL(cfg->event[i]);
+		}
+		FREE_AND_NULL(cfg->event);
+	}
 
+	if(cfg->natvpgm!=NULL) {
+		for(i=0;i<cfg->total_natvpgms;i++) {
+			FREE_ALLOC(cfg->natvpgm[i]->name);
+			FREE_AND_NULL(cfg->natvpgm[i]);
+		}
+		FREE_AND_NULL(cfg->natvpgm);
+	}
 }

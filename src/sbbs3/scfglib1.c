@@ -900,48 +900,86 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 void free_node_cfg(scfg_t* cfg)
 {
-	FREE_AND_NULL(cfg->mdm_result);
+	int i;
+
+	if(cfg->mdm_result!=NULL) {
+		for(i=0;i<cfg->mdm_results;i++) {
+			FREE_ALLOC(cfg->mdm_result[i].str);
+		}
+		FREE_AND_NULL(cfg->mdm_result);
+	}
+
+	for(i=0;i<10;i++) { 						/* WFC 0-9 DOS commands */
+		FREE_ALLOC(cfg->wfc_cmd[i]); 
+	}
+	for(i=0;i<12;i++) { 						/* WFC F1-F12 shrinking DOS cmds */
+		FREE_ALLOC(cfg->wfc_scmd[i]); 
+	}
 }
 
 void free_main_cfg(scfg_t* cfg)
 {
 	int i;
 
-	for(i=0;i<cfg->sys_nodes;i++)
-		FREE_AND_NULL(cfg->node_path[i]);
-	FREE_AND_NULL(cfg->node_path);
-	for(i=0;i<cfg->total_shells;i++)
-		FREE_AND_NULL(cfg->shell[i]);
-	FREE_AND_NULL(cfg->shell);
+	if(cfg->node_path!=NULL) {
+		for(i=0;i<cfg->sys_nodes;i++)
+			FREE_AND_NULL(cfg->node_path[i]);
+		FREE_AND_NULL(cfg->node_path);
+	}
+	if(cfg->shell!=NULL) {
+		for(i=0;i<cfg->total_shells;i++) {
+			FREE_ALLOC(cfg->shell[i]->name);
+			FREE_AND_NULL(cfg->shell[i]);
+		}
+		FREE_AND_NULL(cfg->shell);
+	}
 }
 
 void free_msgs_cfg(scfg_t* cfg)
 {
 	int i;
 
-	for(i=0;i<cfg->total_grps;i++)
-		FREE_AND_NULL(cfg->grp[i]);
-	FREE_AND_NULL(cfg->grp);
+	if(cfg->grp!=NULL) {
+		for(i=0;i<cfg->total_grps;i++) {
+			FREE_ALLOC(cfg->grp[i]->lname);
+			FREE_ALLOC(cfg->grp[i]->sname);
+			FREE_AND_NULL(cfg->grp[i]);
+		}
+		FREE_AND_NULL(cfg->grp);
+	}
 
-	for(i=0;i<cfg->total_subs;i++)
-		FREE_AND_NULL(cfg->sub[i]);
-	FREE_AND_NULL(cfg->sub);
+	if(cfg->sub!=NULL) {
+		for(i=0;i<cfg->total_subs;i++) {
+			FREE_ALLOC(cfg->sub[i]->lname);
+			FREE_ALLOC(cfg->sub[i]->sname);
+			FREE_ALLOC(cfg->sub[i]->qwkname);
+			FREE_AND_NULL(cfg->sub[i]);
+		}
+		FREE_AND_NULL(cfg->sub);
+	}
 
 	FREE_AND_NULL(cfg->faddr);
 	cfg->total_faddrs=0;
 
-	for(i=0;i<cfg->total_qhubs;i++) {
-		FREE_AND_NULL(cfg->qhub[i]->mode);
-		FREE_AND_NULL(cfg->qhub[i]->conf);
-		FREE_AND_NULL(cfg->qhub[i]->sub);
-		FREE_AND_NULL(cfg->qhub[i]); }
-	FREE_AND_NULL(cfg->qhub);
-	cfg->qhub=NULL;
+	if(cfg->qhub!=NULL) {
+		for(i=0;i<cfg->total_qhubs;i++) {
+			FREE_ALLOC(cfg->qhub[i]->call);
+			FREE_ALLOC(cfg->qhub[i]->pack);
+			FREE_ALLOC(cfg->qhub[i]->unpack);
+			FREE_AND_NULL(cfg->qhub[i]->mode);
+			FREE_AND_NULL(cfg->qhub[i]->conf);
+			FREE_AND_NULL(cfg->qhub[i]->sub);
+			FREE_AND_NULL(cfg->qhub[i]); }
+		FREE_AND_NULL(cfg->qhub);
+	}
 
-	for(i=0;i<cfg->total_phubs;i++)
-		FREE_AND_NULL(cfg->phub[i]);
-	FREE_AND_NULL(cfg->phub);
-
+	if(cfg->phub!=NULL) {
+		for(i=0;i<cfg->total_phubs;i++) {
+			FREE_ALLOC(cfg->phub[i]->call);
+			FREE_AND_NULL(cfg->phub[i]);
+		}
+		FREE_AND_NULL(cfg->phub);
+	}
 }
 
 /************************************************************/
