@@ -1085,7 +1085,7 @@ void packmsgs(ulong packable)
 		if(m<datoffsets) {				/* another index pointed to this data */
 			printf("duplicate index\n");
 			msg.hdr.offset=datoffset[m].new;
-			smb_incdat(&smb,datoffset[m].new,smb_getmsgdatlen(&msg),1); 
+			smb_incmsgdat(&smb,datoffset[m].new,smb_getmsgdatlen(&msg),1); 
 		} else {
 
 			if(!(smb.status.attr&SMB_HYPERALLOC))
