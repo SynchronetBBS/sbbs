@@ -15,7 +15,7 @@ int rlogin_recv(char *buffer, size_t buflen)
 	if(!socket_check(rlogin_socket, NULL, NULL, 0))
 		return(-1);
 
-	if(!ioctlsocket(rlogin_socket,FIONREAD,&avail) && avail)
+	if(!ioctlsocket(rlogin_socket,FIONREAD,(void *)&avail) && avail)
 		r=recv(rlogin_socket,buffer,avail<buflen?avail:buflen,0);
 	else
 		return(0);
