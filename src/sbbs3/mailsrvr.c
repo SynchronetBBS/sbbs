@@ -47,6 +47,7 @@
 #include <stdio.h>
 #include <stdlib.h>		/* ltoa in GNU C lib */
 #include <stdarg.h>		/* va_list */
+#include <string.h>		/* strrchr */
 #include <ctype.h>		/* isdigit */
 #include <fcntl.h>		/* Open flags */
 #include <errno.h>		/* errno */
@@ -135,12 +136,10 @@ static BOOL winsock_startup(void)
     lprintf("!WinSock startup ERROR %d", status);
 	return (FALSE);
 }
-#define ERROR_VALUE			WSAGetLastError()
 
 #else /* No WINSOCK */
 
 #define winsock_startup()	(TRUE)
-#define ERROR_VALUE			errno
 
 #endif
 
@@ -1131,7 +1130,7 @@ static void smtp_thread(void* arg)
 
 	/*  SPAM Filters (maps.vix.com) */
 	if(startup->options&MAIL_OPT_USE_RBL
-		&& rblchk(smtp.client_addr.sin_addr.S_un.S_addr
+		&& rblchk(smtp.client_addr.sin_addr.s_addr
 			,"rbl.maps.vix.com"
 			)==TRUE) {
 		lprintf("%04d !SMTP SPAM server filtered (RBL): %s [%s]"
@@ -1144,7 +1143,7 @@ static void smtp_thread(void* arg)
 		return;
 	}
 	if(startup->options&MAIL_OPT_USE_DUL
-		&& rblchk(smtp.client_addr.sin_addr.S_un.S_addr
+		&& rblchk(smtp.client_addr.sin_addr.s_addr
 			,"dul.maps.vix.com"
 			)==TRUE) {
 		lprintf("%04d !SMTP SPAM server filtered (DUL): %s [%s]"
@@ -1157,7 +1156,7 @@ static void smtp_thread(void* arg)
 		return;
 	}
 	if(startup->options&MAIL_OPT_USE_RSS
-		&& rblchk(smtp.client_addr.sin_addr.S_un.S_addr
+		&& rblchk(smtp.client_addr.sin_addr.s_addr
 			,"relays.mail-abuse.org"
 			)==TRUE) {
 		lprintf("%04d !SMTP SPAM server filtered (RSS): %s [%s]"
@@ -1669,7 +1668,7 @@ static void smtp_thread(void* arg)
 				
 				/* RELAY */
 				if(stricmp(tp+1,scfg.sys_inetaddr) && 
-					resolve_ip(tp+1)!=server_addr.sin_addr.S_un.S_addr) {
+					resolve_ip(tp+1)!=server_addr.sin_addr.s_addr) {
 
 					if(!trashcan(&scfg,host_name,"RELAY") && 
 						!trashcan(&scfg,host_ip,"RELAY")) {
@@ -2072,7 +2071,7 @@ static void sendmail_thread(void* arg)
 			lprintf("SendMail: socket opened: %d",sock);
 
 			memset(&addr,0,sizeof(addr));
-			addr.sin_addr.S_un.S_addr = htonl(startup->interface_addr);
+			addr.sin_addr.s_addr = htonl(startup->interface_addr);
 			addr.sin_family = AF_INET;
 
 			lprintf("SendMail: binding socket");
@@ -2098,7 +2097,7 @@ static void sendmail_thread(void* arg)
 				}
 
 				memset(&server_addr,0,sizeof(server_addr));
-				server_addr.sin_addr.S_un.S_addr = ip_addr;
+				server_addr.sin_addr.s_addr = ip_addr;
 				server_addr.sin_family = AF_INET;
 				server_addr.sin_port   = htons(IPPORT_SMTP);
 				
@@ -2431,7 +2430,7 @@ void mail_server(void* arg)
 	/*****************************/
     memset(&server_addr, 0, sizeof(server_addr));
 
-	server_addr.sin_addr.S_un.S_addr = htonl(startup->interface_addr);
+	server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
     server_addr.sin_family = AF_INET;
     server_addr.sin_port   = htons(startup->smtp_port);
 
@@ -2474,7 +2473,7 @@ void mail_server(void* arg)
 		/*****************************/
 		memset(&server_addr, 0, sizeof(server_addr));
 
-		server_addr.sin_addr.S_un.S_addr = htonl(startup->interface_addr);
+		server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons(startup->pop3_port);
 

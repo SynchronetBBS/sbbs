@@ -398,7 +398,7 @@ int sbbs_t::syncatcodes(char *sp, int len)
 
 	else if(!strcmp(sp,"LOCAL-IP")) {
 		struct in_addr in_addr;
-		in_addr.S_un.S_addr=local_addr;
+		in_addr.s_addr=local_addr;
 		bprintf("%s",inet_ntoa(in_addr));
 	}
 

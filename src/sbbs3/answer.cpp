@@ -47,7 +47,7 @@ bool sbbs_t::answer()
 
 	answertime=logontime=starttime=now=time(NULL);
 	/* Caller ID is IP address */
-	addr.S_un.S_addr=client_addr;
+	addr.s_addr=client_addr;
 	strcpy(cid,inet_ntoa(addr)); 
 	
     tm=localtime(&now); 

@@ -40,8 +40,6 @@
 #include "execvxd.h"
 #include "telnet.h"
 
-#define ERROR_VALUE			GetLastError()
-
 #define XTRN_IO_BUF_LEN 5000
 
 extern SOCKET node_socket[];

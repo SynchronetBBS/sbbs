@@ -41,22 +41,36 @@
 /***************/
 /* OS-specific */
 /***************/
-#ifdef _WIN32			/* Windows */
+#if defined _WIN32	|| defined __OS2__	/* WinSock */
 
 #include <winsock.h>	/* socket/bind/etc. */
 
-#undef  EINTR
-#define EINTR		WSAEINTR
-#define ENOTSOCK	WSAENOTSOCK
-#define EWOULDBLOCK	WSAEWOULDBLOCK
-#define ECONNRESET	WSAECONNRESET
-
-#elif defined(__unix__)	/* Unix-variant */
+#elif defined __unix__	/* Unix-variant */
 
 #include <netinet/in.h>	/* IPPROTO_IP */
 #include <sys/socket.h>	/* socket/bind/etc. */
 #include <sys/ioctl.h>	/* FIONBIO */
 #include <unistd.h>		/* close */
+#include <errno.h>		/* errno */
+
+#endif
+
+/**********************************/
+/* Socket Implementation-specific */
+/**********************************/
+#ifdef _WINSOCKAPI_
+
+#undef  EINTR
+#define EINTR			WSAEINTR
+#define ENOTSOCK		WSAENOTSOCK
+#define EWOULDBLOCK		WSAEWOULDBLOCK
+#define ECONNRESET		WSAECONNRESET
+
+#define s_addr			S_un.S_addr
+
+#define ERROR_VALUE		WSAGetLastError()
+
+#else	/* BSD sockets */
 
 /* WinSockisms */
 #define HOSTENT			struct hostent
@@ -67,6 +81,7 @@
 #define INVALID_SOCKET  (SOCKET)(~0)
 #define closesocket		close
 #define ioctlsocket		ioctl
+#define ERROR_VALUE		errno
 
 #endif	/* __unix__ */
 

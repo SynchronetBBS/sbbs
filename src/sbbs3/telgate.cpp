@@ -54,9 +54,6 @@ u_long resolve_ip(char *addr)
 	return(*((ulong*)host->h_addr_list[0]));
 }
 
-
-#define ERROR_VALUE GetLastError()
-
 void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 {
 	char*	p;
@@ -91,7 +88,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	}
 
 	memset(&addr,0,sizeof(addr));
-	addr.sin_addr.S_un.S_addr = htonl(cfg.startup->interface_addr);
+	addr.sin_addr.s_addr = htonl(cfg.startup->interface_addr);
 	addr.sin_family = AF_INET;
 
 	if((i=bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
@@ -102,7 +99,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	}
 
 	memset(&addr,0,sizeof(addr));
-	addr.sin_addr.S_un.S_addr = ip_addr;
+	addr.sin_addr.s_addr = ip_addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(port);
 

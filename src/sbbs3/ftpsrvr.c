@@ -47,6 +47,7 @@
 #include <stdio.h>
 #include <stdlib.h>		/* ltoa in GNU C lib */
 #include <stdarg.h>		/* va_list, varargs */
+#include <string.h>		/* strrchr */
 #include <fcntl.h>		/* O_WRONLY, O_RDONLY, etc. */
 #include <errno.h>		/* EACCES */
 #include <ctype.h>		/* toupper */
@@ -163,12 +164,9 @@ static BOOL winsock_startup(void)
 	return (FALSE);
 }
 
-#define ERROR_VALUE			WSAGetLastError()
-
 #else /* No WINSOCK */
 
 #define winsock_startup()	(TRUE)
-#define ERROR_VALUE			errno
 
 #endif
 
@@ -843,7 +841,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 
 		memset(&server_addr, 0, sizeof(server_addr));
 
-		server_addr.sin_addr.S_un.S_addr = htonl(startup->interface_addr);
+		server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons(0);
 
@@ -1572,7 +1570,7 @@ static void ctrl_thread(void* arg)
 			p=cmd+5;
 			while(*p && *p<=' ') p++;
 			sscanf(p,"%ld,%ld,%ld,%ld,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
-			data_addr.sin_addr.S_un.S_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
+			data_addr.sin_addr.s_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
 			data_addr.sin_port=htons((u_short)((p1<<8)|p2));
 			sockprintf(sock,"200 PORT Command successful.");
 			continue;
@@ -1616,7 +1614,7 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 
-			ip_addr=ntohl(pasv_addr.sin_addr.S_un.S_addr);
+			ip_addr=ntohl(pasv_addr.sin_addr.s_addr);
 			port=ntohs(addr.sin_port);
 			sockprintf(sock,"227 Entering Passive Mode (%d,%d,%d,%d,%hd,%hd)"
 				,(ip_addr>>24)&0xff
@@ -3090,7 +3088,7 @@ void ftp_server(void* arg)
 	/*****************************/
     memset(&server_addr, 0, sizeof(server_addr));
 
-	server_addr.sin_addr.S_un.S_addr = htonl(startup->interface_addr);
+	server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
     server_addr.sin_family = AF_INET;
     server_addr.sin_port   = htons(startup->port);
 
