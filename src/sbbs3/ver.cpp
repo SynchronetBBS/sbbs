@@ -39,7 +39,7 @@
 
 #define BETA		" alpha"     /* Space if non-beta, " beta" otherwise */
 
-#if defined(__WINSOCKAPI__)
+#if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
 #endif
 
@@ -69,7 +69,7 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
-#if defined(__WINSOCKAPI__)
+#if defined(_WINSOCKAPI_)
 
 	center(WSAData.szDescription);
 	CRLF;
