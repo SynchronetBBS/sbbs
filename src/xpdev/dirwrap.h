@@ -170,6 +170,11 @@ DLLEXPORT char*		DLLCALL getfname(char* path);
 DLLEXPORT int		DLLCALL getfattr(char* filename);
 DLLEXPORT ulong		DLLCALL getfreediskspace(char* path);
 
+#if defined(__unix__)
+DLLEXPORT void DLLCALL _splitpath(const char *path, char *drive, char *dir, 
+								  char *fname, char *ext);
+#endif
+
 #if defined(__cplusplus)
 }
 #endif
