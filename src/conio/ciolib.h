@@ -12,9 +12,11 @@ enum {
 	,CIOLIB_MODE_CONIO
 };
 
-#ifndef __unix__		/* presumably, Win32 */
-#include <conio.h>
-#include <io.h>			/* isatty */
+#if defined(__BORLANDC__)	/* presumably, Win32 */
+
+	#include <conio.h>
+	#include <io.h>			/* isatty */
+
 #else
 
 #ifndef BOOL
