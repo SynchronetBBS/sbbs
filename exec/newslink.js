@@ -120,8 +120,10 @@ while(!cfg_file.eof) {
 delete cfg_file;
 
 printf("server: %s",server);
-printf("username: %s",username);
-printf("password: %s",password);
+if(debug) {
+	printf("username: %s",username);
+	printf("password: %s",password);
+}
 printf("%ld areas",area.length);
 
 if(server==undefined || !server.length) {
