@@ -123,6 +123,8 @@ static JSBool
 js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		mode="w+";	/* default mode */
+	uintN		i;
+	JSBool		bufsize=2*1024;
 	JSString*	str;
 	private_t*	p;
 
@@ -134,19 +136,28 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp!=NULL)  
 		return(JS_TRUE);
 		
-	if(argc) {	/*  mode specified */
-		if((str = JS_ValueToString(cx, argv[0]))==NULL) {
-			dbprintf(TRUE, 0, "invalid mode specified");
-			return(JS_FALSE);
-		}
-		mode=JS_GetStringBytes(str);
+
+	for(i=0;i<argc;i++) {
+		if(JSVAL_IS_STRING(argv[i])) {	/* mode */
+			if((str = JS_ValueToString(cx, argv[i]))==NULL) {
+				dbprintf(TRUE, 0, "invalid mode specified");
+				return(JS_FALSE);
+			}
+			mode=JS_GetStringBytes(str);
+		} else
+			JS_ValueToInt32(cx,argv[i],&bufsize);
 	}
 	sprintf(p->mode,"%.*s",sizeof(p->mode)-1,mode);
 
 	if((p->fp=fopen(p->name,p->mode))==NULL)
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-	else
+	else {
 		dbprintf(FALSE, p, "opened: %s",p->name);
+		if(!bufsize)
+			setvbuf(p->fp,NULL,_IONBF,0);	/* no buffering */
+		else
+			setvbuf(p->fp,NULL,_IOFBF,bufsize);
+	}
 
 	return(JS_TRUE);
 }
@@ -723,7 +734,7 @@ static JSClass js_file_class = {
 };
 
 static JSFunctionSpec js_file_functions[] = {
-	{"open",			js_open,			1},		/* open file (w/mode) */
+	{"open",			js_open,			1},		/* open file (w/mode) [buffered] */
 	{"close",			js_close,			0},		/* close file */
 	{"delete",			js_delete,			0},		/* delete the file */
 	{"remove",			js_delete,			0},		/* delete the file */
@@ -732,11 +743,11 @@ static JSFunctionSpec js_file_functions[] = {
 	{"flush",			js_flush,			0},		/* flush buffers */
 	{"lock",			js_lock,			2},		/* lock offset, length */
 	{"unlock",			js_unlock,			2},		/* unlock offset, length */
-	{"read",			js_read,			0},		/* read a string */
+	{"read",			js_read,			0},		/* read a string [length] */
 	{"readln",			js_readln,			0},		/* read a \n terminated string	*/
 	{"readBin",			js_readbin,			0},		/* read an integer (length) */
 	{"readAll",			js_readall,			0},		/* read all lines into an array */
-	{"write",			js_write,			1},		/* write a string */
+	{"write",			js_write,			1},		/* write a string [length] */
 	{"writeln",			js_writeln,			0},		/* write a \n terminated string */
 	{"writeBin",		js_writebin,		1},		/* read an integer (length) */
 	{"writeAll",		js_writeall,		0},		/* write array of strings to file */
