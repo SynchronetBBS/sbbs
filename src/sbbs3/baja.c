@@ -3367,7 +3367,7 @@ void compile(char *src)
 }
 
 char *banner=	"\n"
-				"BAJA v2.30 - Synchronet Shell/Module Compiler - "
+				"BAJA v2.31 - Synchronet Shell/Module Compiler - "
 				"Copyright 2001 Rob Swindell\n";
 
 char *usage=	"\n"
