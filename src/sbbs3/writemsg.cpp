@@ -404,7 +404,7 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 	xeditnum--;
 
 	if(cfg.xedit[xeditnum]->misc&QUICKBBS) {
-		sprintf(str,"%sMSGINF",cfg.temp_dir);
+		sprintf(str,"%sMSGINF",cfg.node_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; }
@@ -987,21 +987,28 @@ void sbbs_t::automsg()
 /****************************************************************************/
 void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 {
-	char	str[256],buf[SDT_BLOCK_LEN];
+	char	buf[SDT_BLOCK_LEN];
+	char	msgtmp[MAX_PATH+1];
 	ushort	xlat;
 	int 	file,i,j,x;
-	ulong	length,offset;
+	long	length,offset;
 	FILE	*instream;
 
 	if(!msg->hdr.total_dfields)
 		return;
-	sprintf(str,"%sINPUT.MSG",cfg.temp_dir);
-	remove(str);
-	msgtotxt(msg,str,0,1);
-	editfile(str);
-	length=flength(str)+2;	 /* +2 for translation string */
+	if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&QUICKBBS)
+		sprintf(msgtmp,"%sMSGTMP",cfg.node_dir);	/* QuickBBS editors are dumb */
+	else
+		sprintf(msgtmp,"%sINPUT.MSG",cfg.temp_dir);
+
+	remove(msgtmp);
+	msgtotxt(msg,msgtmp,0,1);
+	editfile(msgtmp);
+	length=flength(msgtmp);
 	if(length<1L)
 		return;
+
+	length+=2;	 /* +2 for translation string */
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		errormsg(WHERE,ERR_LOCK,smb.file,i);
@@ -1040,11 +1047,11 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 		smb_close_da(&smb); }
 
 	msg->hdr.offset=offset;
-	if((file=open(str,O_RDONLY|O_BINARY))==-1
+	if((file=open(msgtmp,O_RDONLY|O_BINARY))==-1
 		|| (instream=fdopen(file,"rb"))==NULL) {
 		smb_unlocksmbhdr(&smb);
 		smb_freemsgdat(&smb,offset,length,1);
-		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_BINARY);
+		errormsg(WHERE,ERR_OPEN,msgtmp,O_RDONLY|O_BINARY);
 		return; }
 
 	setvbuf(instream,NULL,_IOFBF,2*1024);
