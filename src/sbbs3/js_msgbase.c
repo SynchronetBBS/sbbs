@@ -82,7 +82,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	}
 
 	if(argc>1)
-		p->smb.retry_time=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[1],(int32*)&(p->smb.retry_time));
 	else
 		p->smb.retry_time=scfg->smb_retry_time;
 

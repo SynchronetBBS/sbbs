@@ -614,7 +614,7 @@ js_matchuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(argc>1)
-		sysop_alias=JSVAL_TO_BOOLEAN(argv[1]);
+		JS_ValueToBoolean(cx,argv[1],&sysop_alias);
 
 	if((p=JS_GetStringBytes(js_str))==NULL) {
 		*rval = INT_TO_JSVAL(0);
@@ -699,6 +699,7 @@ js_zonestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	JSString*	js_str;
 	short		zone;
+	int32		val=0;
 	scfg_t*		cfg;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -706,8 +707,10 @@ js_zonestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc<1)
 		zone=cfg->sys_timezone;
-	else
-		zone=(short)(JSVAL_TO_INT(argv[0]));
+	else {
+		JS_ValueToInt32(cx,argv[0],&val);
+		zone=(short)val;
+	}
 
 	js_str = JS_NewStringCopyZ(cx, zonestr(zone));
 
@@ -720,7 +723,7 @@ static JSBool
 js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		str[128];
-	time_t		t;
+	time_t		t=0;
 	JSString*	js_str;
 	scfg_t*		cfg;
 
@@ -730,7 +733,7 @@ js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc<1)
 		t=time(NULL);	/* use current time */
 	else
-		t=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&t);
 	timestr(cfg,&t,str);
 	js_str = JS_NewStringCopyZ(cx, str);
 
@@ -773,13 +776,13 @@ static JSBool
 js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		str[128];
-	time_t		t;
+	time_t		t=0;
 	JSString*	js_str;
 
 	if(argc<1)
 		t=time(NULL);	/* use current time */
 	else
-		t=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&t);
 	sectostr(t,str);
 	js_str = JS_NewStringCopyZ(cx, str);
 
@@ -871,7 +874,7 @@ js_hacklog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			node;
+	int32		node=1;
 	JSString*	js_msg;
 	char*		msg;
 	scfg_t*		cfg;
@@ -879,7 +882,8 @@ js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if((node=JSVAL_TO_INT(argv[0]))<1)
+	JS_ValueToInt32(cx,argv[0],&node);
+	if(node<1)
 		node=1;
 
 	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
@@ -897,7 +901,7 @@ js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 static JSBool
 js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			usernumber;
+	int32		usernumber=1;
 	JSString*	js_msg;
 	char*		msg;
 	scfg_t*		cfg;
@@ -905,7 +909,8 @@ js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if((usernumber=JSVAL_TO_INT(argv[0]))<1)
+	JS_ValueToInt32(cx,argv[0],&usernumber);
+	if(usernumber<1)
 		usernumber=1;
 
 	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
