@@ -1477,9 +1477,9 @@ appear in users' new-file scans again.
 /*
 `Include Transfers In System Statistics:`
 
-If this option is set to ~Yes~, then all files uploaded to or downloaded from
-this directory will be included in the system's daily and cumulative
-statistics.
+If this option is set to ~Yes~, then all files uploaded to or downloaded
+from this directory will be included in the system's daily and
+cumulative statistics.
 */
                             n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 								,"Include Transfers In System Statistics"
