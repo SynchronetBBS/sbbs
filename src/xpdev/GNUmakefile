@@ -66,7 +66,7 @@ include targets.mk		# defines all and clean targets
 # Implicit C Compile Rule
 $(ODIR)/%.o : %.c
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c $< -o$@
+	@$(CC) $(CFLAGS) -o $@ -c $<
 
 # Create output directories
 $(ODIR):
@@ -75,5 +75,5 @@ $(ODIR):
 # Executable Build Rule
 $(WRAPTEST): $(ODIR)/wraptest.o $(OBJS)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) $^ -o$@
+	@$(CC) $(LFLAGS) -o $@ $^
 
