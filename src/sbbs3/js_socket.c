@@ -320,8 +320,6 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-#define TIMEOUT_SOCK_READLINE	30	/* seconds */
-
 static JSBool
 js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -331,6 +329,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int			len;
 	BOOL		rd;
 	time_t		start;
+	time_t		timeout=30;	/* seconds */
 	JSString*	str;
 	private_t*	p;
 
@@ -344,6 +343,9 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
 
+	if(argc>1)
+		timeout = JSVAL_TO_INT(argv[1]);
+
 	start=time(NULL);
 	for(i=0;i<len;) {
 
@@ -351,10 +353,10 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			p->last_error=ERROR_VALUE;
 			break;		/* disconnected */
 		}
-		if(time(NULL)-start>TIMEOUT_SOCK_READLINE) 
-			break;		/* time-out */
 
 		if(!rd) {
+			if(time(NULL)-start>timeout) 
+				break;		/* time-out */
 			mswait(1);
 			continue;	/* no data */
 		}
@@ -369,10 +371,10 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		buf[i++]=ch;
 	}
-	if(i>0)
+	if(i>0 && buf[i-1]=='\r')
 		buf[i-1]=0;
 	else
-		buf[0]=0;
+		buf[i]=0;
 
 	str = JS_NewStringCopyZ(cx, buf);
 
