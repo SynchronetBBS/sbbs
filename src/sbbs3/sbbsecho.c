@@ -2249,6 +2249,35 @@ char* getfmsg(FILE *stream, ulong *outlen)
 	return(fbuf);
 }
 
+/****************************************************************************/
+/* Retrieve a message by FTN message-ID										*/
+/* Leaves message header in locked stated!									*/
+/****************************************************************************/
+BOOL DLLCALL get_msg_by_ftn_id(smb_t* smb, char* id, smbmsg_t* msg)
+{
+	ulong		n;
+	
+	for(n=0;n<smb->status.last_msg;n++) {
+		memset(msg,0,sizeof(smbmsg_t));
+		msg->offset=n;
+		if(smb_getmsgidx(smb, msg)!=0)
+			break;
+
+		if(smb_lockmsghdr(smb,msg)!=0)
+			continue;
+
+		/* should this be case sensitive? */
+		if(smb_getmsghdr(smb,msg)==SMB_SUCCESS && stricmp(msg->ftn_msgid,id)==0)
+			return(TRUE);
+
+		smb_unlockmsghdr(smb,msg); 
+
+		smb_freemsgmem(msg);
+	}
+
+	return(FALSE);
+}
+
 #define MAX_TAILLEN 1024
 
 /****************************************************************************/
@@ -2267,6 +2296,8 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	ulong	save;
 	faddr_t faddr,origaddr,destaddr;
 	smbmsg_t	msg;
+	smbmsg_t	remsg;
+	smbmsg_t	firstmsg;
 	smb_t	*smbfile;
 	char	fname[MAX_PATH+1];
 
@@ -2560,6 +2591,7 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	else
 		smbfile=&smb[cur_smb];
 
+
 	if(subnum!=INVALID_SUB && scfg.sub[subnum]->misc&SUB_LZH
 		&& bodylen+2L+taillen+2L>=SDT_BLOCK_LEN && bodylen) {
 		if((outbuf=(char *)malloc(bodylen*2L))==NULL) {
@@ -2601,20 +2633,68 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		return(-1); 
 	}
 
-	if(smbfile->status.attr&SMB_HYPERALLOC) {
-		if((i=smb_locksmbhdr(smbfile))!=0) {
-			printf("ERROR %d locking %s\n",i,smbfile->file);
-			logprintf("ERROR %d line %d locking %s",i,__LINE__,smbfile->file);
-			smb_freemsgmem(&msg);
-			free(sbody);
-			free(stail);
-			return(i); 
+	if((i=smb_locksmbhdr(smbfile))!=0) {
+		printf("ERROR %d locking %s\n",i,smbfile->file);
+		logprintf("ERROR %d line %d locking %s",i,__LINE__,smbfile->file);
+		smb_freemsgmem(&msg);
+		free(sbody);
+		free(stail);
+		return(i); 
+	}
+
+	if(msg.ftn_reply!=NULL) {	/* auto-thread linkage */
+
+		smb_getstatus(smbfile);
+		msg.idx.number=smbfile->status.last_msg+1; /* this *should* be the new message number */
+
+		if(get_msg_by_ftn_id(smbfile, msg.ftn_reply, &remsg)==TRUE) {
+			msg.hdr.thread_orig=remsg.hdr.number;	/* needed for thread linkage */
+
+			if(!remsg.hdr.thread_first) {	/* This msg is first reply */
+				remsg.hdr.thread_first=msg.idx.number;
+				smb_putmsghdr(smbfile,&remsg);
+				smb_unlockmsghdr(smbfile,&remsg);
+			} else {	/* Search for last reply and extend chain */
+				smb_unlockmsghdr(smbfile,&remsg);
+				memset(&firstmsg,0,sizeof(firstmsg));
+				m=remsg.hdr.thread_first;	/* start with first reply */
+				while(1) {
+					firstmsg.idx.offset=0;
+					firstmsg.hdr.number=m;
+					if(smb_getmsgidx(smbfile, &firstmsg)!=SMB_SUCCESS) /* invalid thread origin */
+						break;
+					if(smb_lockmsghdr(smbfile,&remsg)!=SMB_SUCCESS)
+						break;
+					if(smb_getmsghdr(smbfile, &remsg)!=SMB_SUCCESS) {
+						smb_unlockmsghdr(smbfile,&remsg); 
+						break;
+					}
+					if(firstmsg.hdr.thread_next && firstmsg.hdr.thread_next!=m) {
+						m=firstmsg.hdr.thread_next;
+						smb_unlockmsghdr(smbfile,&firstmsg);
+						smb_freemsgmem(&firstmsg);
+						continue; 
+					}
+					firstmsg.hdr.thread_next=msg.idx.number;
+					smb_putmsghdr(smbfile,&firstmsg);
+					smb_unlockmsghdr(smbfile,&firstmsg);
+					smb_freemsgmem(&firstmsg);
+					break; 
+				}
+			}
+
+			smb_freemsgmem(&remsg);
 		}
+
+	}
+
+	if(smbfile->status.attr&SMB_HYPERALLOC) {
 		msg.hdr.offset=smb_hallocdat(smbfile);
 		storage=SMB_HYPERALLOC; 
 	}
 	else {
 		if((i=smb_open_da(smbfile))!=0) {
+			smb_unlocksmbhdr(smbfile);
 			smb_freemsgmem(&msg);
 			printf("ERROR %d opening %s.sda\n",i,smbfile->file);
 			logprintf("ERROR %d line %d opening %s.sda",i,__LINE__
@@ -2632,8 +2712,7 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		smb_close_da(smbfile); }
 
 	if(msg.hdr.offset && msg.hdr.offset<1L) {
-		if(smbfile->status.attr&SMB_HYPERALLOC)
-			smb_unlocksmbhdr(smbfile);
+		smb_unlocksmbhdr(smbfile);
 		smb_freemsgmem(&msg);
 		free(sbody);
 		free(stail);
@@ -2658,8 +2737,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	free(sbody);
 	free(stail);
 	fflush(smbfile->sdt_fp);
-	if(smbfile->status.attr&SMB_HYPERALLOC)
-		smb_unlocksmbhdr(smbfile);
 
 	if(lzh)
 		bodylen+=2;
@@ -2668,7 +2745,8 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	if(taillen)
 		smb_dfield(&msg,TEXT_TAIL,taillen+2);
 
-	i=smb_addmsghdr(smbfile,&msg,storage);
+	i=smb_addmsghdr(smbfile,&msg,storage);	// calls smb_unlocksmbhdr() 
+
 	smb_freemsgmem(&msg);
 	if(i) {
 		printf("ERROR smb_addmsghdr returned %d\n",i);
