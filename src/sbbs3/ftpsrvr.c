@@ -92,7 +92,7 @@ BOOL direxist(char *dir)
 
 BOOL dir_op(scfg_t* cfg, user_t* user, uint dirnum)
 {
-	return(user->level>=90 || user->exempt&FLAG('R')
+	return(user->level>=SYSOP_LEVEL || user->exempt&FLAG('R')
 		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user)));
 }
 
@@ -1403,7 +1403,8 @@ static void ctrl_thread(void* arg)
 			sprintf(user.alias,"%.*s",(int)sizeof(user.alias)-1,p);
 			if(!stricmp(user.alias,"anonymous"))
 				strcpy(user.alias,"guest");
-			if(!stricmp(user.alias,"guest"))
+			user.number=matchuser(&scfg,user.alias);
+			if(user.number && getuserdat(&scfg, &user)==0 && user.pass[0]==0) 
 				sockprintf(sock,"331 User name okay, give your full e-mail address as password.");
 			else
 				sockprintf(sock,"331 User name okay, need password.");
@@ -1465,9 +1466,11 @@ static void ctrl_thread(void* arg)
 			}
 
 			sprintf(sys_pass,"%s:%s",user.pass,scfg.sys_pass);
-			if(!user.pass[0]) 	/* Guest/Anonymous */
+			if(!user.pass[0]) {	/* Guest/Anonymous */
 				lprintf("%04d Guest: %s",sock,password);
-			else if(user.level>=90 && !stricmp(password,sys_pass)) {
+				putuserrec(&scfg,user.number,U_NETMAIL,LEN_NETMAIL,password);
+			}
+			else if(user.level>=SYSOP_LEVEL && !stricmp(password,sys_pass)) {
 				lprintf("%04d Sysop access granted to %s", sock, user.alias);
 				sysop=TRUE;
 			}
@@ -1504,7 +1507,7 @@ static void ctrl_thread(void* arg)
 			}
 			if(sysop)
 				sockprintf(sock,"230-Sysop access granted.");
-			sockprintf(sock,"230-User logged in.");
+			sockprintf(sock,"230-%s logged in.",user.alias);
 			if(!(user.exempt&FLAG('D')) && (user.cdt+user.freecdt)>0)
 				sockprintf(sock,"230-You have %lu download credits."
 					,user.cdt+user.freecdt);
@@ -1516,6 +1519,8 @@ static void ctrl_thread(void* arg)
 			adjustuserrec(&scfg,user.number,U_LOGONS,5,1);
 			putuserrec(&scfg,user.number,U_LTODAY,5,ultoa(user.ltoday+1,str,10));
 			putuserrec(&scfg,user.number,U_MODEM,LEN_MODEM,"FTP");
+			putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
+			putuserrec(&scfg,user.number,U_NOTE,LEN_NOTE,host_ip);
 
 			continue;
 		}
