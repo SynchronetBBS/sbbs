@@ -115,6 +115,9 @@ static  wsa_error;
 #define SHUT_RDWR		2	/* for shutdown() */
 #endif
 
+#ifndef IPPORT_HTTP
+#define IPPORT_HTTP		80
+#endif
 #ifndef IPPORT_FTP
 #define IPPORT_FTP		21
 #endif
