@@ -302,7 +302,7 @@ void sbbs_read_ini(
 	section = "Web";
 
 	*run_web
-		=iniReadBool(fp,section,"AutoStart",TRUE);
+		=iniReadBool(fp,section,"AutoStart",FALSE);
 
 	web->interface_addr
 		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
