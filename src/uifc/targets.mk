@@ -1,4 +1,4 @@
 all: lib mtlib
 
-lib: $(LIBODIR) $(UIFCLIB)
-mtlib: $(LIBODIR) $(UIFCLIB-MT)
+lib: $(OBJODIR) $(LIBODIR) $(UIFCLIB)
+mtlib: $(MTOBJODIR) $(LIBODIR) $(UIFCLIB-MT)
