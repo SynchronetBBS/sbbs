@@ -277,8 +277,7 @@ for(i in area) {
 		writeln("Newsgroups: " + newsgroup);
 		writeln("");
 		if(hdr.to.toLowerCase()!="all") {
-			writeln("To: " + hdr.to);
-			writeln("");
+			writeln("  To: " + hdr.to);
 		}
 		write(body);
 		writeln(".");
