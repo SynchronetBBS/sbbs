@@ -413,6 +413,8 @@ static char* sys_prop_desc[] = {
 	,"text file directory"
 	,"tempory file directory"
 	,"executable file directory"
+	,"modified modules directory"
+	,"log file directory"
 
 	/* INSERT new tabled properties here */
 
