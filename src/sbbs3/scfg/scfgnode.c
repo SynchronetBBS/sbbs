@@ -198,7 +198,7 @@ Options with a trailing ... will produce a sub-menu of more options.
 	switch(uifc.list(WIN_ACT|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&node_dflt,0
 		,str,opt)) {
 		case -1:
-			i=save_changes(WIN_MID);
+			i=save_changes(WIN_MID|WIN_SAV);
 			if(!i) {
 				write_node_cfg(&cfg,backup_level);
                 rerun_nodes();
