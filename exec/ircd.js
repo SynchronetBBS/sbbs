@@ -259,7 +259,6 @@ function searchbychannel(chan) {
 function searchbyserver(server_name,ignore_wildcards) {
 	if (!server_name)
 		return 0;
-	log("ignore wildcards? " + ignore_wildcards);
 	if ((ignore_wildcards &&
 	    (servername.toUpperCase() == server_name.toUpperCase()) ) ||
 	   (!ignore_wildcards && match_irc_mask(servername,server_name)) )
