@@ -1757,7 +1757,7 @@ static void smtp_thread(void* arg)
 	BOOL		auth_login;
 	BOOL		routed=FALSE;
 	BOOL		dnsbl_recvhdr;
-	BOOL		msg_rejected;
+	BOOL		msg_handled;
 	uint		subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
@@ -2051,7 +2051,7 @@ static void smtp_thread(void* arg)
 				fclose(rcptlst), rcptlst=NULL;
 
 				/* External Mail Processing here */
-				msg_rejected=FALSE;
+				msg_handled=FALSE;
 				if(startup->proc_cfg_file[0] 
 					&& (proc_cfg=fopen(startup->proc_cfg_file,"r"))!=NULL) {
 					sprintf(proc_err_fname,"%sSMTP.%s.err", scfg.data_dir, session_id);
@@ -2104,40 +2104,39 @@ static void smtp_thread(void* arg)
 									,str);
 						}
 						fclose(proc_err);
-						msg_rejected=TRUE;
+						msg_handled=TRUE;
 					}
 					remove(proc_err_fname);	/* Remove error file here */
-					if(!msg_rejected
+					if(!msg_handled
 						&& (!fexist(msgtxt_fname) || !fexist(rcptlst_fname))) {
 						lprintf(LOG_WARNING,"%04d SMTP External process removed %s file"
 							,socket, fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
 						sockprintf(socket,ok_rsp);
-						msg_rejected=TRUE;
+						msg_handled=TRUE;
 					}
 				}
 
 				/* Re-open files */
-				/* We must do this before continuing for rejected msgs */
+				/* We must do this before continuing for handled msgs */
 				/* to prevent freopen(NULL) and orphaned temp files */
-				if((rcptlst=fopen(rcptlst_fname,"r"))==NULL) {
+				if((rcptlst=fopen(rcptlst_fname,fexist(rcptlst_fname) ? "r":"w+"))==NULL) {
 					lprintf(LOG_ERR,"%04d !SMTP ERROR %d re-opening recipient list: %s"
 						,socket, errno, rcptlst_fname);
-					if(!msg_rejected)
+					if(!msg_handled)
 						sockprintf(socket,sys_error);
 					continue;
 				}
 			
-				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
-					lprintf(LOG_ERR,"%04d !SMTP ERROR %d re-opening message file: %s"
-						,socket, errno, msgtxt_fname);
-					if(!msg_rejected)
-						sockprintf(socket,sys_error);
+				if(msg_handled) {
+					lprintf(LOG_NOTICE,"%04d SMTP Message handled by external mail processor"
+						,socket);
 					continue;
 				}
 
-				if(msg_rejected) {
-					lprintf(LOG_NOTICE,"%04d SMTP Message rejected by external mail processor"
-						,socket);
+				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
+					lprintf(LOG_ERR,"%04d !SMTP ERROR %d re-opening message file: %s"
+						,socket, errno, msgtxt_fname);
+					sockprintf(socket,sys_error);
 					continue;
 				}
 
@@ -2747,7 +2746,6 @@ static void smtp_thread(void* arg)
 			else if(!strnicmp(buf,"SAML FROM:",10))
 				cmd=SMTP_CMD_SAML;
 
-			/* reset recipient list */
 			/* reset recipient list */
 			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
 				lprintf(LOG_ERR,"%04d !SMTP ERROR %d re-opening %s"
