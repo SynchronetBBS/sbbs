@@ -77,7 +77,7 @@ void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
 			break;
 	}
-	if(!lockit) {
+	if(!lockit && cfg.node_misc&NM_CLOSENODEDAB) {
 		close(nodefile);
 		nodefile=-1;
 	}
