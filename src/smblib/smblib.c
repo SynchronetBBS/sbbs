@@ -801,6 +801,18 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			case SUBJECT:
 				msg->subj=(char*)msg->hfield_dat[i];
 				break;
+			case SMB_SUMMARY:
+				msg->summary=(char*)msg->hfield_dat[i];
+				break;
+			case SMB_EXPIRATION:
+				msg->expiration=*(time_t*)msg->hfield_dat[i];
+				break;
+			case SMB_PRIORITY:
+				msg->priority=*(ulong*)msg->hfield_dat[i];
+				break;
+			case SMB_COST:
+				msg->cost=*(ulong*)msg->hfield_dat[i];
+				break;
 			case RFC822MSGID:
 				msg->id=(char*)msg->hfield_dat[i];
 				break;
