@@ -24,6 +24,7 @@
  */
 
 #include <stdio.h>
+#include <stdarg.h>	/* va_list */
 #include <sys/stat.h>	/* struct stat */
 
 #include "sexyz.h"
