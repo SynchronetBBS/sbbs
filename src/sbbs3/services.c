@@ -1848,8 +1848,8 @@ void DLLCALL services_thread(void* arg)
 		status("Listening");
 
 		/* Setup recycle/shutdown semaphore file lists */
-		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown",startup->host_name,"services");
-		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle",startup->host_name,"services");
+		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown","services");
+		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle","services");
 		SAFEPRINTF(path,"%sservices.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
 		if(!initialized) {

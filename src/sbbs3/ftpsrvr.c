@@ -4693,8 +4693,8 @@ void DLLCALL ftp_server(void* arg)
 		status(STATUS_WFC);
 
 		/* Setup recycle/shutdown semaphore file lists */
-		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown",startup->host_name,"ftp");
-		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle",startup->host_name,"ftp");
+		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown","ftp");
+		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle","ftp");
 		SAFEPRINTF(path,"%sftpsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
 		if(!initialized) {

@@ -3023,8 +3023,8 @@ void DLLCALL web_server(void* arg)
 		}
 
 		/* Setup recycle/shutdown semaphore file lists */
-		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown",startup->host_name,"web");
-		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle",startup->host_name,"web");
+		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown","web");
+		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle","web");
 		SAFEPRINTF(path,"%swebsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
 		if(!initialized) {

@@ -4110,8 +4110,8 @@ void DLLCALL bbs_thread(void* arg)
 #endif // _WIN32 && _DEBUG && _MSC_VER
 
 	/* Setup recycle/shutdown semaphore file lists */
-	semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown",startup->host_name,"telnet");
-	semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle",startup->host_name,"telnet");
+	semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown","telnet");
+	semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle","telnet");
 	SAFEPRINTF(str,"%stelnet.rec",scfg.ctrl_dir);	/* legacy */
 	semfile_list_add(&recycle_semfiles,str);
 	if(!initialized) {
