@@ -1,6 +1,0 @@
-# This is for Hayes ACCURA/OPTIMA 96 or 144 modem
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	HAY24E
-COM_RATE	38400
-SPEC_INIT	AT&Q9S95=3

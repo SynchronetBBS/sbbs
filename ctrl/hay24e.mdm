@@ -1,8 +1,0 @@
-# This is for the Hayes ACCURA 24 EC modem
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	GEN2400
-COM_RATE	19200
-LOCKED_RATE	YES
-FLOW_CONTROL    BOTH
-SPEC_INIT	ATS95=3

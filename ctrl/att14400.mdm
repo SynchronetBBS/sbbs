@@ -1,8 +1,0 @@
-# This is for AT&T DataPort 9600 & 14400 modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	GEN2400
-COM_RATE	38400
-LOCKED_RATE	YES
-FLOW_CONTROL	BOTH
-SPEC_INIT	ATX6
