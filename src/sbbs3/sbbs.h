@@ -787,8 +787,8 @@ extern "C" {
 	/* fileobj.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(scfg_t* cfg, JSContext* cx, JSObject* parent
 													,user_t* user, char* html_index_file);
-	/* termobj.cpp */
-	JSObject* js_CreateTerminalObject(JSContext* cx, JSObject* parent);
+	/* conobj.cpp */
+	JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent);
 
 #endif
 
