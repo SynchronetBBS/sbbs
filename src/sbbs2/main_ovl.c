@@ -289,7 +289,7 @@ for(i=1;i<argc;i++) {
 				#else
 					,rioctl(GVERS)
 				#endif
-					,SMBLIB_VERSION
+					,smb_lib_ver()
 					,__BORLANDC__>>8
 					,__BORLANDC__&0xff);
 				lputs(crlf);
