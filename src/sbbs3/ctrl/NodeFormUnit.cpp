@@ -163,9 +163,8 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 	    lseek(nodedab, n*sizeof(node_t), SEEK_SET);
         if(eof(nodedab))
         	break;
-    	i=locking(nodedab, LK_LOCK, sizeof(node_t));
-        if(i!=0) {
-        	ListBox->Items->Add("Error "+AnsiString(i)+" locking record for"
+        if(locking(nodedab, LK_LOCK, sizeof(node_t))!=0) {
+        	ListBox->Items->Add("Error "+AnsiString(errno)+" locking record for"
 	            " node "+AnsiString(n+1));
             break; /* was continue */
         }
