@@ -18,7 +18,9 @@ if(!ini_file.open("r")) {
 		,ini_file.error, ini_fname));
 	exit();
 }
-name_list=ini_file.iniGetValue("config","names",new Array());
+listserver_address=ini_file.iniGetValue("config","address","listserver@"+system.inet_addr);
+alias_list=ini_file.iniGetValue("config","aliases",new Array());
+subj_cmd=ini_file.iniGetValue("config","SubjectCommand",false);
 list_array=ini_file.iniGetAllObjects("name","list:");
 ini_file.close();
 if(!list_array.length) {
@@ -26,10 +28,13 @@ if(!list_array.length) {
 	exit();
 }
 
-/* Set default list addresses */
-for(var l in list_array)
+for(var l in list_array) {
+	/* Set default list addresses */
 	if(!list_array[l].address)
 		list_array[l].address = format("%s@%s", list_array[l].name, system.inet_addr);
+	if(!list_array[l].description)
+		list_array[l].description = msg_area.sub[list_array[l].sub].description;
+}
 
 /* Inbound message from SMTP Server? */
 if(this.recipient_list_filename!=undefined) {	
@@ -52,12 +57,11 @@ if(this.recipient_list_filename!=undefined) {
 
 	var msgtxt_file = new File(message_text_filename);
 	if(!msgtxt_file.open("r")) {
-		error_file.writeln(log(LOG_ERR,format("!ERROR %s opening recipient list: %s"
+		error_file.writeln(log(LOG_ERR,format("!ERROR %s opening message text: %s"
 			,msgtxt_file.error, message_text_filename)));
 		exit();
 	}
-
-	msgtxt = msgtxt_file.readAll()
+	var msgtxt = msgtxt_file.readAll()
 	msgtxt_file.close();
 
 	load("mailproc_util.js");	// import parse_msg_header() and get_msg_body()
@@ -68,11 +72,13 @@ if(this.recipient_list_filename!=undefined) {
 	var r;
 	/* control message for list server? */
 	for(r=0;r<rcpt_list.length;r++) {
-		for(n=0;n<name_list.length;n++) {
-			if(rcpt_list[r].Recipient.search(new RegExp(name_list[n],"i"))!=-1)
+		if(rcpt_list[r].Recipient.toLowerCase()==listserver_address.toLowerCase())
+			break;
+		for(n=0;n<alias_list.length;n++) {
+			if(rcpt_list[r].Recipient.search(new RegExp(alias_list[n],"i"))!=-1)
 				break;
 		}
-		if(n<name_list.length)	/* match found */
+		if(n<alias_list.length)	/* match found */
 			break;
 	}
 	if(r<rcpt_list.length) { 
@@ -80,13 +86,43 @@ if(this.recipient_list_filename!=undefined) {
 		log(LOG_INFO,format("ListServer Control message from %s to %s: %s"
 			,header.from, header.to, header.subject));
 
-		process_control_msg(header, body); 
+		if(subj_cmd)
+			body.unshift(header.subject);	/* Process the subject as a command */
+
+		body=process_control_msg(body);
+		
+		header.to=header.from;
+		header.form=listserver_address;
+
+		/* Write response to message */
+		if(!msgtxt_file.open("w")) {
+			error_file.writeln(log(LOG_ERR,format("!ERROR %s opening message text: %s"
+				,msgtxt_file.error, message_text_filename)));
+			exit();
+		}
+		for(h in header)
+			msgtxt_file.writeln(h+": "+header[h]);
+		msgtxt_file.writeln();
+		msgtxt_file.writeAll(body);
+		msgtxt_file.close();
+
+		/* Re-write the recipient list */
+		if(!rcptlst_file.open("w")) {
+			error_file.writeln(log(LOG_ERR,format("!ERROR %s opening recipient list: %s"
+				,rcptlst_file.error, recipient_list_filename)));
+			exit();
+		}
+		rcptlst_file.writeln("[0]");
+		rcptlst_file.writeln("Recipient="+header.to);
+		rcptlst_file.writeln("RecipientAgent="+AGENT_PROCESS);
+		rcptlst_file.writeln("RecipientNetType="+NET_INTERNET);
+		rcptlst_file.writeln("RecipientNetAddr="+header.to);
+		rcptlst_file.close();
 
 		exit();
 	}
 
 	/* contribution to mailing list? */
-	var contribution=false;
 	for(r=0;r<rcpt_list.length;r++) {
 		var l;
 		for(l=0;l<list_array.length;l++) {
@@ -258,8 +294,39 @@ mailbase.close();
 /* End of Main */
 
 /* Handle Mailing List Control Messages (e.g. subscribe/unsubscribe) here */
-function process_control_msg(header, body)
+function process_control_msg(cmd_list)
 {
+	var response = new Array();
+	
+	response.push("Synchronet ListServer " +REVISION+ " Reponse:");
+
+	for(var c in cmd_list) {
+		var cmd=cmd_list[c];
+		if(!cmd.length)
+			continue;
+		var token=cmd.split(/\s+/);
+		switch(token[0].toLowerCase()) {
+			case "lists":
+				response.push("List of lists:");
+				for(var l in list_array)
+					response.push("\t"+list_array[l].name+"\t"+list_array[l].description);
+				break;
+			case "end":
+				return(response);
+			default:
+				response.push("!Bad command: " + cmd);
+			case "help":
+				response.push("Available commands:");
+				response.push("\tlists");
+				response.push("\tsubscribe");
+				response.push("\tunsubscribe");
+				response.push("\thelp");
+				response.push("\tend");
+				break;
+		}
+	}
+
+	return(response);
 }
 
 /* Handle Mailing List Contributions here */
@@ -280,6 +347,9 @@ function process_contribution(header, body, list)
 	// ToDo: Split header.from into separate name/address fields here
 
 	header.id = header["message-id"]; // Convert to Synchronet-compatible
+
+	if(!user.compare_ars(msgbase.cfg.moderated_ars))
+		header.attr |= MSG_MODERATED;
 
 	if(!msgbase.save_msg(header, body.join('\r\n'))) {
 		log(LOG_ERR,format("%s !ERROR %s saving message to sub: %s"
