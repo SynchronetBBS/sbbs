@@ -574,7 +574,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 							errorlog("TELNET_BUF OVERRUN");
 					}
 					RingBufWrite(&outbuf, bp, rd);
-					SetEvent(output_event);
+					sem_post(&output_sem);
 				}
 			} else {	// Windows 9x
 
@@ -630,7 +630,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 					else
                 		bp=telnet_expand(buf, rd, telnet_buf, rd, telnet_flag);
 					RingBufWrite(&outbuf, bp, rd);
-					SetEvent(output_event);
+					sem_post(&output_sem);
 				}
 			}
             if(!rd && !wr) {

@@ -121,7 +121,7 @@ public:
 
     RingBuf	inbuf;
     RingBuf	outbuf;
-	HANDLE	output_event;
+	sem_t	output_sem;
 	HANDLE	input_thread;
 
 	int 	outcom(uchar ch); 	   // send character

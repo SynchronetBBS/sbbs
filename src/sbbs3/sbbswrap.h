@@ -74,6 +74,10 @@ extern "C" {
 	#include <dirent.h>	/* POSIX directory functions */
 #endif
 
+/***************/
+/* OS-specific */
+/***************/
+
 #ifdef __unix__
 
 	#include <glob.h>	/* POSIX.2 directory pattern matching function */
@@ -115,9 +119,24 @@ extern "C" {
 
 #endif
 
-/***************/
-/* OS-specific */
-/***************/
+#ifdef __unix__
+
+	#include <semaphores.h>	/* POSIX 1003.1b semaphores */
+
+#elif defined(_WIN32)	/* semaphores */
+
+	typedef HANDLE sem_t;
+	#define sem_init(psem,ps,v) ResetEvent(*(psem))
+	#define sem_wait(psem)		WaitForSingleObject(*(psem),INFINITE)
+	#define sem_post(psem)		SetEvent(*(psem))
+	#define sem_destroy(psem)	CloseHandle(*(psem))
+
+#else
+
+	#warning "Need semaphore wrappers."
+
+#endif
+
 
 #if defined(_WIN32)
 
