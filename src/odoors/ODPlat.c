@@ -63,7 +63,6 @@
 #include <glob.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sched.h>
 #endif
 #include "ODGen.h"
 #include "ODCore.h"
@@ -808,8 +807,6 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
-   sched_yield();
-   
    /* Prevent 100% CPU usage! */
    if(Milliseconds==0)
       Milliseconds=1;
