@@ -779,7 +779,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = STRING_TO_JSVAL(str);
 	dbprintf(FALSE, p, "received %u bytes (recvline) lasterror=%d"
-		,strlen(buf),ERROR_VALUE);
+		,i,ERROR_VALUE);
 		
 	return(JS_TRUE);
 }
