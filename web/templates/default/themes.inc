@@ -1,4 +1,4 @@
-<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/">Members</a> : Pick Theme
+<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : Pick Theme
 <table class="theme" cellspacing="2" cellpadding="2">
     <tbody>
         <tr>

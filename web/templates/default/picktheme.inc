@@ -3,7 +3,7 @@
         <tr>
         <td class="theme">
             Current theme set to: %%theme:desc%%<br /><br />
-            <a href="/members/index.ssjs">Back to Members Page</a><br /><br />
+            <a href="../index.ssjs">Back</a><br /><br />
         </td>
         </tr>
     </tbody>
