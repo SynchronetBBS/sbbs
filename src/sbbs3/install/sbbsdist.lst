@@ -11,6 +11,9 @@
  t <sp> Text
  		A tag line defines a CVS tag to use.
 
+ m <sp> Make options
+        A list of command-line options to pass to make/gmake.
+
  f <sp> Text
  		A file line.
 		%s is replaced with sysname-machine from uname.
@@ -25,6 +28,7 @@
  Lines that start with anything but a C, T, f, t, D or s are ignored.
 
 T Current Source Tarball (v3.10l)
+m NOCVS
 f sbbs_src.tgz
 f lib-%s.tgz
 s ftp://ftp.synchro.net/				Official FTP server (T1)
