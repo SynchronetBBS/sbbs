@@ -222,7 +222,11 @@ if_true
 		if_true
 			shift_str 3
 			call get_arg
+			crlf
 			spy
+			if_true
+				print "\1n\r\nSpy session complete.\r\n"
+				end_if
 			end_if
 		return
 		end_if
