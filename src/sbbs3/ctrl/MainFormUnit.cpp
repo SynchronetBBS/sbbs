@@ -152,7 +152,7 @@ static void client_add(BOOL add)
     ReleaseMutex(mutex);
 }
 
-static void client_on(BOOL on, int sock, client_t* client)
+static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 {
     char    str[128];
     int     i,j;
