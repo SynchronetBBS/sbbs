@@ -1,0 +1,4 @@
+# This is for USRobotics 16800bps modem
+# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
+
+INCLUDE 	USR144

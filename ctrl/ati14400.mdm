@@ -1,0 +1,5 @@
+# This is for ATI etc 14400 modems
+# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
+
+INCLUDE 	ATI9600
+COM_RATE	57600
