@@ -21,7 +21,7 @@ OFILE	=	o
 
 LD		=	ld
 LIBFILE	=	.a
-EXEFILE	=	
+XPDEV	=	..\xpdev
 
 ifndef $(os)
 os		=	$(shell uname)
@@ -38,7 +38,7 @@ endif
 
 DELETE	=	rm -fv
 
-CFLAGS	=	-DJAVASCRIPT -I../mozilla/js/src
+CFLAGS	=	-DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV)
 
 ifeq ($(os),FreeBSD)	# FreeBSD
 CFLAGS	+= -D_THREAD_SAFE
@@ -75,6 +75,8 @@ include headers.mak		# defines $(HEADERS)
 include sbbsdefs.mak	# defines $(SBBSDEFS)
 
 SBBSLIB	=	$(LIBODIR)/sbbs.a
+
+vpath %.c $(XPDEV)
 
 # Implicit C Compile Rule for utils
 $(EXEODIR)/%.o : %.c
@@ -148,27 +150,30 @@ $(LIBODIR)/services.o: services.c services.h
 	@$(CC) $(CFLAGS) -c -DSERVICES_EXPORTS $< -o $@
 
 # Baja Utility
-$(BAJA): $(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/smbwrap.o $(EXEODIR)/crc32.o
+$(BAJA): $(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/filewrap.o $(EXEODIR)/crc32.o
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
 # Node Utility
-$(NODE): $(EXEODIR)/node.o $(EXEODIR)/smbwrap.o
+$(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 	@echo Linking $@
 	@$(CC) $^ -o $@ 
 
+SMBLIB = $(EXEODIR)/smblib.o $(EXEODIR)/filewrap.o
+
 # FIXSMB Utility
-$(FIXSMB): $(EXEODIR)/fixsmb.o $(EXEODIR)/smblib.o $(EXEODIR)/smbwrap.o
+$(FIXSMB): $(EXEODIR)/fixsmb.o 
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
 # CHKSMB Utility
-$(CHKSMB): $(EXEODIR)/chksmb.o $(EXEODIR)/smblib.o $(EXEODIR)/smbwrap.o $(EXEODIR)/conwrap.o
+$(CHKSMB): $(EXEODIR)/chksmb.o $(EXEODIR)/conwrap.o $(SMBLIB)
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
 # SMB Utility
-$(SMBUTIL): $(EXEODIR)/smbutil.o $(EXEODIR)/smblib.o $(EXEODIR)/smbwrap.o $(EXEODIR)/conwrap.o $(EXEODIR)/smbtxt.o $(EXEODIR)/crc32.o $(EXEODIR)/lzh.o 
+$(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o \
+	$(EXEODIR)/smbtxt.o $(EXEODIR)/crc32.o $(EXEODIR)/lzh.o 
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
