@@ -282,8 +282,15 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if(smb_getmsgidx(&(p->smb), &msg)!=0)
 		return(JS_TRUE);
 
-	if(smb_getmsghdr(&(p->smb), &msg)!=0)
+	if(smb_lockmsghdr(&(p->smb),&msg)!=0)
 		return(JS_TRUE);
+
+	if(smb_getmsghdr(&(p->smb), &msg)!=0) {
+		smb_unlockmsghdr(&(p->smb),&msg); 
+		return(JS_TRUE);
+	}
+
+	smb_unlockmsghdr(&(p->smb),&msg); 
 
 	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,NULL,obj))==NULL)
 		return(JS_TRUE);
@@ -404,16 +411,24 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if(smb_getmsgidx(&(p->smb), &msg)!=0)
 		return(JS_TRUE);
 
-	if(smb_getmsghdr(&(p->smb), &msg)!=0)
+	if(smb_lockmsghdr(&(p->smb),&msg)!=0)
 		return(JS_TRUE);
 
-	if(!parse_header_object(cx, hdr, p->subnum, &msg))
-		return(JS_TRUE);
+	do {
+		if(smb_getmsghdr(&(p->smb), &msg)!=0)
+			break;
 
-	if(smb_putmsghdr(&(p->smb), &msg)!=0)
-		return(JS_TRUE);
+		if(!parse_header_object(cx, hdr, p->subnum, &msg))
+			break;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		if(smb_putmsghdr(&(p->smb), &msg)!=0)
+			break;
+
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	} while(0);
+
+	smb_unlockmsghdr(&(p->smb),&msg); 
+
 	return(JS_TRUE);
 }
 
@@ -446,11 +461,20 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if(smb_getmsgidx(&(p->smb), &msg)!=0)
 		return(JS_TRUE);
 
-	if(smb_getmsghdr(&(p->smb), &msg)!=0)
+	if(smb_lockmsghdr(&(p->smb),&msg)!=0)
 		return(JS_TRUE);
 
-	if((buf=smb_getmsgtxt(&(p->smb), &msg, GETMSGTXT_TAILS))==NULL)
+	if(smb_getmsghdr(&(p->smb), &msg)!=0) {
+		smb_unlockmsghdr(&(p->smb),&msg); 
 		return(JS_TRUE);
+	}
+
+	if((buf=smb_getmsgtxt(&(p->smb), &msg, GETMSGTXT_TAILS))==NULL) {
+		smb_unlockmsghdr(&(p->smb),&msg); 
+		return(JS_TRUE);
+	}
+
+	smb_unlockmsghdr(&(p->smb),&msg); 
 
 	if(strip_ctrl_a) {
 		char* newbuf;
