@@ -296,20 +296,6 @@ void writestr(uchar *p)
 	fwrite(str,1,j+1,out);
 }
 
-/****************************************************************************/
-/* Returns 32-crc of string (not counting terminating NULL) 				*/
-/****************************************************************************/
-ulong crc32(char *str)
-{
-	int i=0;
-	ulong crc=0xffffffffUL;
-
-	while(str[i])
-		crc=ucrc32(str[i++],crc);
-	crc=~crc;
-	return(crc);
-}
-
 void cvttab(char *str)
 {
 	int i;
@@ -327,7 +313,7 @@ void newvar(uchar *in)
 	sprintf(name,"%.80s",in);
 	if(!case_sens)
 		strupr(name);
-	l=crc32(name);
+	l=crc32(name,0);
 	for(i=0;i<vars;i++)
 		if(var_name[i]==l)
 			break;
@@ -358,7 +344,7 @@ void writecrc(uchar *src, uchar *in)
 	if(!stricmp(name,"STR") || !name[0])
 		l=0;
 	else {
-		l=crc32(name);
+		l=crc32(name,0);
 
 		for(i=0;i<vars;i++)
 			if(var_name[i]==l)
@@ -385,7 +371,7 @@ long isvar(uchar *arg)
 		*p=0;
 	if(!case_sens)
 		strupr(name);
-	l=crc32(name);
+	l=crc32(name,0);
 
 	for(i=0;i<vars;i++)
 		if(var_name[i]==l)
