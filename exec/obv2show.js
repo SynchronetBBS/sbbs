@@ -96,19 +96,19 @@ for(i in text) {
 		/* Console control */
 		/*******************/
 
-		if(t.indexOf("%PA")>0) {
+		if(t.indexOf("%PA")>=0) {
 			t=t.replace(/%PA/g,"");					// Pauses the screen
 			console.pause();
 		}
-		if(t.indexOf("%PF")>0) {
+		if(t.indexOf("%PF")>=0) {
 			t=t.replace(/%PF/g,"");					// Turns Screen Pausing Off
 			bbs.sys_status|=SS_PAUSEOFF;
 		}
-		if(t.indexOf("%PO")>0) {
+		if(t.indexOf("%PO")>=0) {
 			t=t.replace(/%PO/g,"");					// Turns Screen Pausing Back On 
 			bbs.sys_status&=~SS_PAUSEOFF;
 		}
-		if(t.indexOf("%UA")>0) {
+		if(t.indexOf("%UA")>=0) {
 			t=t.replace(/%UA/g,"");					// Makes anything below it unabortable
 			bbs.sys_status&=~SS_ABORT;
 		}
