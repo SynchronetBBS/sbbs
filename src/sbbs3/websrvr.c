@@ -812,9 +812,9 @@ static void send_error(http_session_t * session, const char* message)
 			,"<HTML><HEAD><TITLE>%s Error</TITLE></HEAD>"
 			"<BODY><H1>%s Error</H1><BR><H3>In addition, "
 			"I can't seem to find the %s error file</H3><br>"
-			"please notify <a href=\"mailto:SysOp@%s\">"
-			"The SysOp</a></BODY></HTML>"
-			,error_code,error_code,error_code,scfg.sys_inetaddr);
+			"please notify <a href=\"mailto:sysop@%s\">"
+			"%s</a></BODY></HTML>"
+			,error_code,error_code,error_code,scfg.sys_inetaddr,scfg.sys_op);
 		sockprint(session->socket,sbuf);
 	}
 	close_request(session);
