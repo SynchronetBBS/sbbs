@@ -405,11 +405,11 @@ while(client.socket.is_connected) {
 			}
 			if(cmd[1]!='') {
 				if(cmd[1].indexOf('<')>=0)		/* message-id */
-					current_article=Number(cmd[1].slice(cmd[1].indexOf('.')+1,-1));
+					current_article=cmd[1];
 				else
 					current_article=Number(cmd[1]);
 			}
-			if(current_article<1) {
+			if(typeof(current_article)=="number" && current_article<1) {
 				writeln("420 no current article has been selected");
 				break;
 			}
