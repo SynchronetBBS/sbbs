@@ -137,6 +137,14 @@ int lputs(char* str)
 {
 	if(startup==NULL || startup->lputs==NULL)
     	return(0);
+
+#if defined(_WIN32) && defined(_DEBUG)
+	if(IsBadCodePtr((FARPROC)startup->lputs)) {
+		DebugBreak();
+		return(0);
+	}
+#endif
+
     return(startup->lputs(str));
 }
 
@@ -147,13 +155,6 @@ int lprintf(char *fmt, ...)
 
     if(startup==NULL || startup->lputs==NULL)
         return(0);
-
-#if defined(_WIN32) && defined(_DEBUG)
-	if(IsBadCodePtr((FARPROC)startup->lputs)) {
-		DebugBreak();
-		return(0);
-	}
-#endif
 
     va_start(argptr,fmt);
     vsprintf(sbuf,fmt,argptr);
