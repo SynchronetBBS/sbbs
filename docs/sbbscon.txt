@@ -151,7 +151,7 @@ local3.*				/var/log/synchronet.log
 You will have to create this file manually initially by running:
 touch /var/log/synchronet.log
 
-The send a HUP to syslogd like so:
+Then send a HUP to syslogd like so:
 killall -HUP syslogd
 
 You will want to investigate how your system rotates logs and set it up to
