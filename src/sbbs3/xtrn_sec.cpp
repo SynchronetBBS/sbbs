@@ -915,7 +915,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,-1 								/* Display on/off */
 			,0									/* Printer on/off */
 			,sys_status&SS_SYSPAGE ? -1:0		/* Page Bell on/off */
-			,cfg.node_misc&NM_ANSALARM ? -1:0	/* Caller Alarm on/off */
+			,startup->answer_sound[0] ? -1:0	/* Caller Alarm on/off */
 			,' ' 								/* Sysop next flag */
 			,0									/* Error corrected */
 			,useron.misc&NO_EXASCII ? '7'       /* Graphics mode */
