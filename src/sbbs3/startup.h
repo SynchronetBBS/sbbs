@@ -90,6 +90,7 @@ typedef struct {
 	char	hangup_sound[128];
     char	reserved_path2[128];
     char	reserved_path1[128];
+	BOOL	recycle_now;
 
 } bbs_startup_t;
 
