@@ -5,23 +5,23 @@
 # Available options:
 # NEED_JAVASCRIPT   = Set flags for use with JS
 
-SBBS_SRC	?=	$(XPDEV)../sbbs3/
+SBBS_SRC	?=	$(XPDEV)/../sbbs3
 CFLAGS	+=	-I$(SBBS_SRC)
 
 JS_CFLAGS += -DJAVASCRIPT
 ifdef JSINCLUDE
  JS_CFLAGS += -I$(JSINCLUDE)
 else
- JS_CFLAGS += -I$(XPDEV)../../include/mozilla/js
+ JS_CFLAGS += -I$(XPDEV)/../../include/mozilla/js
 endif
 ifndef JSLIBDIR
- JSLIBDIR := $(XPDEV)../../lib/mozilla/js/$(machine).$(BUILD)
+ JSLIBDIR := $(XPDEV)/../../lib/mozilla/js/$(machine).$(BUILD)
 endif
 ifndef JSLIB
  JSLIB	:=	js
 endif
 ifndef NSPRDIR
- NSPRDIR := $(XPDEV)../../lib/mozilla/nspr/$(machine).$(BUILD)
+ NSPRDIR := $(XPDEV)/../../lib/mozilla/nspr/$(machine).$(BUILD)
 endif
 JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
 #The following is needed for nspr support on Linux
