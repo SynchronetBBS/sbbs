@@ -1,6 +1,6 @@
 /* ircmsg.js */
 
-/* $Id$
+/* $Id$ */
 
 load("irclib.js");	// Thanks Cyan!
 
