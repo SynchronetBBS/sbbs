@@ -403,8 +403,8 @@ int write_flofile(char *attachment, faddr_t dest)
 	if(findstr(searchstr,fname))	/* file already in FLO file */
 		return(0);
 	if((stream=fnopen(&file,fname,O_WRONLY|O_APPEND|O_CREAT))==NULL) {
-		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
-		logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
+		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,strerror(errno));
+		logprintf("ERROR line %d opening %s %s",__LINE__,fname,strerror(errno));
 		return(-1); 
 	}
 	fprintf(stream,"^%s\r\n",attachment);
@@ -450,8 +450,8 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 			return(-1); }
 		startmsg=i+1;
 		if((fstream=fnopen(&fmsg,fname,O_RDWR|O_CREAT))==NULL) {
-			printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
-			logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
+			printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,strerror(errno));
+			logprintf("ERROR line %d opening %s %s",__LINE__,fname,strerror(errno));
 			return(-1); }
 
 		faddr=getsysfaddr(dest.zone);
@@ -656,7 +656,7 @@ void netmail_arealist(char type,faddr_t addr)
 									,cfg.listcfg[j].listpath);
 								logprintf("ERROR line %d couldn't open %s %s"
 									,__LINE__,cfg.listcfg[j].listpath
-									,sys_errlist[errno]);
+									,strerror(errno));
 								match=1;
 								break; }
 							while(!feof(stream)) {
@@ -785,14 +785,14 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 	if((afileout=fopen(outname,"w+b"))==NULL) {
 		printf("\7ERROR couldn't open %s.\n",outname);
 		logprintf("ERROR line %d opening %s %s",__LINE__,outname
-			,sys_errlist[errno]);
+			,strerror(errno));
 		fclose(nmfile);
 		free(outname);
 		return; }
 	if((afilein=fnopen(&file,cfg.areafile,O_RDONLY))==NULL) {
 		printf("\7ERROR couldn't open %s.\n",cfg.areafile);
 		logprintf("ERROR line %d opening %s %s",__LINE__,cfg.areafile
-			,sys_errlist[errno]);
+			,strerror(errno));
 		fclose(afileout);
 		fclose(nmfile);
 		free(outname);
@@ -1006,7 +1006,7 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 	fclose(afileout);
 	if(delfile(cfg.areafile))					/* Delete AREAS.BBS */
 		logprintf("ERROR line %d removing %s %s",__LINE__,cfg.areafile
-			,sys_errlist[errno]);
+			,strerror(errno));
 	if(rename(outname,cfg.areafile))		   /* Rename new AREAS.BBS file */
 		logprintf("ERROR line %d renaming %s to %s",__LINE__,outname,cfg.areafile);
 	free(outname);
@@ -1037,13 +1037,13 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 	if((outfile=fopen(outname,"w+b"))==NULL) {
 		printf("\7ERROR couldn't open %s.\n",outname);
 		logprintf("ERROR line %d opening %s %s",__LINE__,outname
-			,sys_errlist[errno]);
+			,strerror(errno));
 		free(outname);
 		return; }
 	if((cfgfile=fnopen(&file,cfg.cfgfile,O_RDONLY))==NULL) {
 		printf("\7ERROR couldn't open %s.\n",cfg.cfgfile);
 		logprintf("ERROR line %d opening %s",__LINE__,cfg.cfgfile
-			,sys_errlist[errno]);
+			,strerror(errno));
 		fclose(outfile);
 		free(outname);
 		return; }
@@ -1135,7 +1135,7 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 	fclose(outfile);
 	if(delfile(cfg.cfgfile))
 		logprintf("ERROR line %d removing %s %s",__LINE__,cfg.cfgfile
-			,sys_errlist[errno]);
+			,strerror(errno));
 	if(rename(outname,cfg.cfgfile))
 		logprintf("ERROR line %d renaming %s to %s",__LINE__,outname,cfg.cfgfile);
 	free(outname);
@@ -1164,7 +1164,7 @@ void command(char *instr,faddr_t addr)
 		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 			printf("\7ERROR couldn't open %s.\n",str);
 			logprintf("ERROR line %d opening %s %s",__LINE__,str
-				,sys_errlist[errno]);
+				,strerror(errno));
 			return; }
 		l=filelength(file);
 		if((buf=(char *)LMALLOC(l+1L))==NULL) {
@@ -1452,7 +1452,7 @@ int unpack(char *infile)
 	if((stream=fnopen(&file,infile,O_RDONLY))==NULL) {
 		printf("\7ERROR couldn't open %s.\n",infile);
 		logprintf("ERROR line %d opening %s %s",__LINE__,infile
-			,sys_errlist[errno]);
+			,strerror(errno));
 		bail(1); }
 	for(i=0;i<cfg.arcdefs;i++) {
 		str[0]=0;
@@ -1530,8 +1530,8 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 	}
 	sprintf(fname,"%sBUNDLES.SBE",cfg.outbound);
 	if((stream=fnopen(&file,fname,O_RDWR|O_CREAT))==NULL) {
-		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
-		logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
+		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,strerror(errno));
+		logprintf("ERROR line %d opening %s %s",__LINE__,fname,strerror(errno));
 		return(1); 
 	}
 
@@ -1566,7 +1566,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
 				printf("\7ERROR line %d opening %s\n",__LINE__,path);
 				logprintf("ERROR line %d opening %s %s",__LINE__,path
-					,sys_errlist[errno]);
+					,strerror(errno));
 				continue; 
 			}
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
@@ -1720,7 +1720,7 @@ void pack_bundle(char *infile,faddr_t dest)
 		if(flength(str)==0)
 			if(delfile(str))
 				logprintf("ERROR line %d removing %s %s",__LINE__,str
-					,sys_errlist[errno]);
+					,strerror(errno));
 		if(fexist(str)) {
 			p=strrchr(str,'/');
 			if(p==NULL)
@@ -1740,7 +1740,7 @@ void pack_bundle(char *infile,faddr_t dest)
 			pack(infile,str,dest);
 			if(delfile(infile))
 				logprintf("ERROR line %d removing %s %s",__LINE__,infile
-					,sys_errlist[errno]);
+					,strerror(errno));
 			return; }
 		else {
 			if(misc&FLO_MAILER)
@@ -1759,7 +1759,7 @@ void pack_bundle(char *infile,faddr_t dest)
 			pack(infile,str,dest);
 			if(delfile(infile))
 				logprintf("ERROR line %d removing %s %s",__LINE__,infile
-					,sys_errlist[errno]);
+					,strerror(errno));
 			return; } }
 
 	pack(infile,str,dest);	/* Won't get here unless all bundles are full */
@@ -1825,7 +1825,7 @@ BOOL unpack_bundle(void)
 			}
 			else if(delfile(fname))	/* successful, so delete bundle */
 				logprintf("ERROR line %d removing %s %s",__LINE__,fname
-					,sys_errlist[errno]);
+					,strerror(errno));
 			gi++;
 			return(TRUE); 
 		} 
@@ -1889,7 +1889,7 @@ int mv(char *src, char *dest, BOOL copy)
 	fclose(inp);
 	fclose(outp);
 	if(!copy && delfile(src)) {
-		logprintf("ERROR line %d removing %s %s",__LINE__,src,sys_errlist[errno]);
+		logprintf("ERROR line %d removing %s %s",__LINE__,src,strerror(errno));
 		return(-1); }
 	return(0);
 }
@@ -3081,7 +3081,7 @@ void attach_bundles(void)
 			fclose(fidomsg);
 			if(delfile(packet))
 				logprintf("ERROR line %d removing %s %s",__LINE__,packet
-					,sys_errlist[errno]);
+					,strerror(errno));
 			continue; }
 		if(fread(&pkthdr,sizeof(pkthdr_t),1,fidomsg)!=1) {
 			fclose(fidomsg);
@@ -3147,7 +3147,7 @@ void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
 					,O_WRONLY|O_APPEND))==NULL) {
 					printf("ERROR line %d opening %s for write.\n",__LINE__,outpkt[i].filename);
 					logprintf("ERROR line %d opening %s %s",__LINE__
-						,outpkt[i].filename,sys_errlist[errno]);
+						,outpkt[i].filename,strerror(errno));
 					continue; }
 				fputc(0,outpkt[i].stream);
 				fputc(0,outpkt[i].stream);
@@ -3197,7 +3197,7 @@ void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
 						printf("Unable to open %s for write.\n"
 							,outpkt[i].filename);
 						logprintf("ERROR line %d opening %s %s",__LINE__
-							,outpkt[i].filename,sys_errlist[errno]);
+							,outpkt[i].filename,strerror(errno));
 						bail(1); }
 					outpkt[i].curopen=1; }
 				if((strlen((char *)fbuf)+1+ftell(outpkt[i].stream))
@@ -3237,7 +3237,7 @@ void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
 				printf("Unable to open %s for write.\n"
 					,outpkt[i].filename);
 				logprintf("ERROR line %d opening %s %s"
-					,__LINE__,outpkt[i].filename,sys_errlist[errno]);
+					,__LINE__,outpkt[i].filename,strerror(errno));
 				bail(1); }
 			pkthdr.orignode=sysaddr.node;
 			fmsghdr.destnode=pkthdr.destnode=area.uplink[j].node;
@@ -3416,7 +3416,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 				fclose(fidomsg);
 				if(delfile(path))
 					logprintf("ERROR line %d removing %s %s",__LINE__,path
-						,sys_errlist[errno]); }
+						,strerror(errno)); }
 			else {
 				hdr.attr|=FIDO_RECV;
 				fseek(fidomsg,0L,SEEK_SET);
@@ -4248,7 +4248,7 @@ int main(int argc, char **argv)
 			fclose(fidomsg);
 			if(delfile(packet))
 				logprintf("ERROR line %d removing %s %s",__LINE__,packet
-					,sys_errlist[errno]);
+					,strerror(errno));
 			continue; }
 		if(fread(&pkthdr,sizeof(pkthdr_t),1,fidomsg)!=1) {
 			fclose(fidomsg);
@@ -4311,7 +4311,7 @@ int main(int argc, char **argv)
 			if((fidomsg=fnopen(&fmsg,packet,O_RDWR))==NULL) {
 				printf("\7ERROR line %d opening %s\n",__LINE__,packet);
 				logprintf("ERROR line %d opening %s %s",__LINE__,packet
-					,sys_errlist[errno]);
+					,strerror(errno));
 				continue; 
 			}
 			if(filelength(fmsg)<sizeof(pkthdr_t)) {
@@ -4675,7 +4675,7 @@ int main(int argc, char **argv)
 			if(misc&DELETE_PACKETS)
 				if(delfile(packet))
 					logprintf("ERROR line %d removing %s %s",__LINE__,packet
-						,sys_errlist[errno]); 
+						,strerror(errno)); 
 		}
 		globfree(&g);
 
@@ -4747,7 +4747,7 @@ int main(int argc, char **argv)
 			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
 				printf("\7ERROR line %d opening %s\n",__LINE__,path);
 				logprintf("ERROR line %d opening %s %s",__LINE__,path
-					,sys_errlist[errno]);
+					,strerror(errno));
 				continue; }
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
 				printf("\7ERROR invalid length of %lu bytes for %s\n",filelength(fmsg)
@@ -4772,7 +4772,7 @@ int main(int argc, char **argv)
 					fclose(fidomsg);
 					if(delfile(path))
 						logprintf("ERROR line %d removing %s %s",__LINE__,path
-							,sys_errlist[errno]); }
+							,strerror(errno)); }
 				else {
 					hdr.attr|=FIDO_RECV;
 					fseek(fidomsg,0L,SEEK_SET);
@@ -4809,7 +4809,7 @@ int main(int argc, char **argv)
 			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
 				printf("\7ERROR line %d opening %s\n",__LINE__,path);
 				logprintf("ERROR line %d opening %s %s",__LINE__,path
-					,sys_errlist[errno]);
+					,strerror(errno));
 				continue; }
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
 				printf("\7%s Invalid length of %lu bytes\n",path,filelength(fmsg));
@@ -4900,7 +4900,7 @@ int main(int argc, char **argv)
 				printf("Unable to open %s for write.\n"
 					,packet);
 				logprintf("ERROR line %d opening %s %s",__LINE__,packet
-					,sys_errlist[errno]);
+					,strerror(errno));
 				bail(1); }
 
 			if(!filelength(file)) {
@@ -4938,7 +4938,7 @@ int main(int argc, char **argv)
 			if(misc&DELETE_NETMAIL)
 				if(delfile(path))
 					logprintf("ERROR line %d removing %s %s",__LINE__,path
-						,sys_errlist[errno]);
+						,strerror(errno));
 			printf("\n"); 
 		}
 		globfree(&g);
