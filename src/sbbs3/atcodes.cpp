@@ -903,6 +903,15 @@ char* sbbs_t::atcode(char* sp, char* str)
 			);
 		return(str);
 	}
+	if(!strcmp(sp,"MSG_ID") && current_msg!=NULL)
+		return(current_msg->id==NULL ? nulstr : current_msg->id);
+	if(!strcmp(sp,"MSG_REPLY_ID") && current_msg!=NULL)
+		return(current_msg->reply_id==NULL ? nulstr : current_msg->reply_id);
+	if(!strcmp(sp,"MSG_NUM") && current_msg!=NULL) {
+		sprintf(str,"%lu",current_msg->hdr.number);
+		return(str);
+	}
+
 	if(!strcmp(sp,"SMB_AREA")) {
 		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
 			sprintf(str,"%s %s"
@@ -972,6 +981,35 @@ char* sbbs_t::atcode(char* sp, char* str)
 		}
 		return(str);
 	}
+	if(!strcmp(sp,"SMB_MSGS")) {
+		sprintf(str,"%ld",smb.msgs);
+		return(str);
+	}
+	if(!strcmp(sp,"SMB_CURMSG")) {
+		sprintf(str,"%ld",smb.curmsg);
+		return(str);
+	}
+	if(!strcmp(sp,"SMB_LAST_MSG")) {
+		sprintf(str,"%lu",smb.status.last_msg);
+		return(str);
+	}
+	if(!strcmp(sp,"SMB_MAX_MSGS")) {
+		sprintf(str,"%lu",smb.status.max_msgs);
+		return(str);
+	}
+	if(!strcmp(sp,"SMB_MAX_CRCS")) {
+		sprintf(str,"%lu",smb.status.max_crcs);
+		return(str);
+	}
+	if(!strcmp(sp,"SMB_MAX_AGE")) {
+		sprintf(str,"%hu",smb.status.max_age);
+		return(str);
+	}
+	if(!strcmp(sp,"SMB_TOTAL_MSGS")) {
+		sprintf(str,"%lu",smb.status.total_msgs);
+		return(str);
+	}
+
 	return(NULL);
 }
 
