@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -103,6 +103,7 @@ enum {
 
 	/* filenames */
 	,SYS_PROP_DEVNULL
+	,SYS_PROP_TEMP_PATH
 
 	/* last */
 	,SYS_PROP_LOCAL_HOSTNAME
@@ -280,6 +281,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SYS_PROP_DEVNULL:
 			p=_PATH_DEVNULL;
 			break;
+		case SYS_PROP_TEMP_PATH:
+			p=_PATH_TMP;
+			break;
 
 		case SYS_PROP_CLOCK:
 			JS_NewNumberValue(cx,msclock(),vp);
@@ -387,13 +391,14 @@ static jsSyncPropertySpec js_system_properties[] = {
 
 	/* filenames */
 	{	"devnull",					SYS_PROP_DEVNULL		,SYSOBJ_FLAGS,	311  },
+	{	"temp_path",				SYS_PROP_TEMP_PATH		,SYSOBJ_FLAGS,	311	 },
 
 	/* clock access */
 	{	"clock_ticks",				SYS_PROP_CLOCK			,SYSOBJ_FLAGS,	311  },
 	{	"clock_ticks_per_second",	SYS_PROP_CLOCK_PER_SEC	,SYSOBJ_FLAGS,	311  },
 
 	/* last */
-	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME,SYSOBJ_FLAGS,	311  },
+	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME	,SYSOBJ_FLAGS,	311  },
 	{0}
 };
 
@@ -456,7 +461,8 @@ static char* sys_prop_desc[] = {
 	,"log file directory"
 
 	/* filenames */
-	,"null device filename"
+	,"platform-specific \"null\" device filename"
+	,"platform-specific temporary file directory"
 
 	/* clock */
 	,"amount of elapsed processor time in clock 'ticks'"
