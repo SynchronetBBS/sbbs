@@ -1242,7 +1242,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	if(startup->options&WEB_OPT_DEBUG_RX) {
 		lprintf(LOG_DEBUG,"%04d RX: %s",session->socket,buf);
 		if(chucked)
-			lprintf(LOG_DEBUG,"%04d Long header, chucked %d bytes",session->socket,buf,chucked);
+			lprintf(LOG_DEBUG,"%04d Long header, chucked %d bytes",session->socket,chucked);
 	}
 	return(i);
 }
