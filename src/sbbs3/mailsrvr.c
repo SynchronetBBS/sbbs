@@ -1578,6 +1578,7 @@ static void smtp_thread(void* arg)
 		}
 		if(state<SMTP_STATE_HELO) {
 			/* RFC 821 4.1.1 "The first command in a session must be the HELO command." */
+			lprintf("!SMTP %04d Missing HELO command",socket);
 			sockprintf(socket, SMTP_BADSEQ);
 			continue;
 		}
@@ -1632,6 +1633,7 @@ static void smtp_thread(void* arg)
 		if(!strnicmp(buf,"RCPT TO:",8)) {
 
 			if(state<SMTP_STATE_MAIL_FROM) {
+				lprintf("!SMTP %04d Missing 'MAIL' command",socket);
 				sockprintf(socket, SMTP_BADSEQ);
 				continue;
 			}
@@ -1744,12 +1746,13 @@ static void smtp_thread(void* arg)
 			} else { /* Local (no-forward) */
 				fprintf(rcptlst,"#%u\n",usernum);
 				sockprintf(socket,SMTP_OK);
-				state=SMTP_STATE_RCPT_TO;
 			}
+			state=SMTP_STATE_RCPT_TO;
 			continue;
 		}
 		if(!strnicmp(buf,"DATA",4)) {
 			if(state<SMTP_STATE_RCPT_TO) {
+				lprintf("!SMTP %04d Missing 'RCPT TO' command", socket);
 				sockprintf(socket, SMTP_BADSEQ);
 				continue;
 			}
