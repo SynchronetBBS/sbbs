@@ -1040,7 +1040,7 @@ resize_window()
     return;
 }
 
-void
+int
 load_font()
 {
     XGCValues gcv;
@@ -1053,8 +1053,10 @@ load_font()
     if (font == NULL)
 	font = XLoadQueryFont(dpy, FONTVGA);
 
-    if (font == NULL)
+    if (font == NULL) {
+		return(-1);
 	err(1, "Could not open font ``%s''\n", xfont);
+    }
 
     gcv.font = font->fid;
     XChangeGC(dpy, gc, GCFont, &gcv);
@@ -1063,7 +1065,7 @@ load_font()
     FH = font->max_bounds.ascent + font->max_bounds.descent;
     FD = font->max_bounds.descent;
 
-    return;
+    return(0);
 }
 
 /* Calculate 16 bit RGB values for X from the 6 bit DAC values and the
@@ -1168,7 +1170,8 @@ init_mode(int mode)
 
     /* Update font. */
     xfont = vmode.fontname;
-    load_font();
+    if(load_font())
+		return(-1);
 
     /* Resize window if necessary. */
     resize_window();
