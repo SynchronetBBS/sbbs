@@ -910,7 +910,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 						if(thisnode.misc&NODE_INTR)
 							break;
 					}
-					Sleep(1);
+					YIELD();
 				}
             } else
 				loop_since_io=0;
