@@ -689,7 +689,7 @@ if(this.resolve_host==undefined) {	// v3.10?
 	sync_310 = true;
 }
 
-if (jsexec_revision_detail==undefined)
+if (!jsexec_revision_detail)
 	jsexec_revision_detail = "JSexec";
 
 if(this.server==undefined) {		// Running from JSexec?
