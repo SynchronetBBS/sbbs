@@ -218,7 +218,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     bool	native=false;			// DOS program by default
 	bool	nt=false;				// WinNT/2K? 
     bool	was_online=true;
-    uint	i;
+	bool	rio_abortable_save;
+	uint	i;
     time_t	hungup=0;
 	HANDLE	vxd=INVALID_HANDLE_VALUE;
 	HANDLE	rdslot=INVALID_HANDLE_VALUE;
@@ -517,12 +518,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     ReleaseMutex(exec_mutex);
 
 	/* Disable Ctrl-C checking */
-	bool rio_abortable_save=rio_abortable;
-	rio_abortable=false;
+	if(!(mode&EX_OFFLINE)) {
+		rio_abortable_save=rio_abortable;
+		rio_abortable=false;
+	}
 
-    // Executing app, monitor
+    // Executing app in foreground?, monitor
     retval=STILL_ACTIVE;
-    while(1) {
+    while(!(mode&EX_BG)) {
         if(!online && !(mode&EX_OFFLINE)) { // Tell VXD/VDD and external that user hung-up
         	if(was_online) {
 				logline("X!","Hung-up in external program");
@@ -709,7 +712,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}
 	}
 
-    if(retval==STILL_ACTIVE)
+    if(!(mode&EX_BG) && retval==STILL_ACTIVE)
 	    TerminateProcess(process_info.hProcess, GetLastError());
 
 	XTRN_CLEANUP;
@@ -725,14 +728,17 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}
 	}
 
-	curatr=0;	// Can't guarantee current attributes
+	if(!(mode&EX_OFFLINE)) {
 
-	rio_abortable=rio_abortable_save;	// Restore abortable state
+		curatr=0;	// Can't guarantee current attributes
 
-	/* Got back to Text/NVT mode */
-	sprintf(str,"%c%c%c",TELNET_IAC,TELNET_DONT,TELNET_BINARY);
-	putcom(str,3);
-	telnet_mode&=~TELNET_MODE_BIN_RX;
+		rio_abortable=rio_abortable_save;	// Restore abortable state
+
+		/* Got back to Text/NVT mode */
+		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_DONT,TELNET_BINARY);
+		putcom(str,3);
+		telnet_mode&=~TELNET_MODE_BIN_RX;
+	}
 
 //	lprintf("%s returned %d",realcmdline, retval);
 

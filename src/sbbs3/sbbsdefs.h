@@ -700,6 +700,7 @@ enum {						/* readmail and delmailidx which types		*/
 #define EX_POPEN	(1<<7)	/* Leave COM port open						*/
 #define EX_OFFLINE	(1<<8)	/* Run this program offline					*/
 #define EX_NATIVE	(1<<9)	/* Native 32-bit application				*/
+#define EX_BG		(1<<10)	/* Back-ground/detached process				*/
 
 #define OS2_POPEN	(1<<0)	/* Leave COM port open						*/
 

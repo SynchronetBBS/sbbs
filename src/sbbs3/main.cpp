@@ -1207,7 +1207,7 @@ void event_thread(void* arg)
 #endif
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call,nulstr,nulstr,NULL)
-						,EX_OFFLINE);
+						,EX_OFFLINE|EX_BG);
 					// status(STATUS_WFC);
 				}
 			} 
@@ -1249,7 +1249,7 @@ void event_thread(void* arg)
 #endif
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.phub[i]->call,nulstr,nulstr,NULL)
-							,EX_OFFLINE);
+						,EX_OFFLINE|EX_BG);
 					// status(STATUS_WFC);
 				} 
 			}
@@ -1379,9 +1379,12 @@ void event_thread(void* arg)
 					}
 					strcpy(str,sbbs->cfg.event[i]->code);
 					eprintf("Running event: %s",strupr(str));
+					int ex_mode = EX_OFFLINE;
+					if(!(sbbs->cfg.event[i]->misc&EVENT_EXCL))
+						ex_mode |= EX_BG;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.event[i]->cmd,nulstr,nulstr,NULL)
-						,EX_OFFLINE
+						,ex_mode
 						,sbbs->cfg.event[i]->dir);
 					sbbs->cfg.event[i]->last=time(NULL);
 					sprintf(str,"%stime.dab",sbbs->cfg.ctrl_dir);
