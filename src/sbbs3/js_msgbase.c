@@ -1302,8 +1302,10 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSObject*	hdr=NULL;
 	JSObject*	objarg;
 	JSObject*	rcpt_list=NULL;
+	JSClass*	cl;
 	smbmsg_t	rcpt_msg;
 	smbmsg_t	msg;
+	client_t*	client=NULL;
 	jsval		open_rval;
 	private_t*	p;
 
@@ -1329,6 +1331,10 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_OBJECT(argv[n])) {
 			objarg = JSVAL_TO_OBJECT(argv[n]);
+			if((cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0) {
+				client=JS_GetPrivate(cx,objarg);
+				continue;
+			}
 			if(JS_IsArrayObject(cx, objarg)) {		/* recipient_list is an array of objects */
 				if(body!=NULL && rcpt_list==NULL) {	/* body text already specified */
 					rcpt_list = objarg;
@@ -1363,7 +1369,7 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		if(body[0])
 			truncsp(body);
-		if(savemsg(scfg, &(p->smb), &msg, body)==0)
+		if(savemsg(scfg, &(p->smb), &msg, client, body)==0)
 			*rval = JSVAL_TRUE;
 
 		if(rcpt_list!=NULL) {	/* Sending to a list of recipients */
@@ -1624,7 +1630,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,JSDOCSTR("mark message as deleted")
 	,311
 	},
-	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header [,body_text] [,array rcpt_list]")
+	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header [,client] [,body_text] [,array rcpt_list]")
 	,JSDOCSTR("create a new message in message base, the <i>header</i> object may contain the following properties:<br>"
 	"<table>"
 	"<tr><td><tt>subject</tt><td>Message subject <i>(required)</i>"
@@ -1675,6 +1681,9 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>field_list[].type</tt><td>Other SMB header fields (type)"
 	"<tr><td><tt>field_list[].data</tt><td>Other SMB header fields (data)"
 	"</table>"
+	"<br>"
+	"The optional <i>client</i> argument is an instance of the <i>Client</i> class to be used for the "
+	"security log header fields (e.g. sender IP addres, hostname, protocol, and port). "
 	"<br>"
 	"The optional <i>rcpt_list</i> is an array of objects that specifies multiple recipients "
 	"for a single message (e.g. bulk e-mail). Each object in the array may include the following header properties "

@@ -100,9 +100,6 @@ bool sbbs_t::bulkmail(uchar *ar)
 	smb_hfield_str(&msg,SENDEREXT,str);
 	msg.idx.from=useron.number;
 
-	/* Security logging */
-	msg_client_hfields(&msg,&client);
-
 	smb_hfield_str(&msg,SUBJECT,title);
 	msg.idx.subj=smb_subject_crc(title);
 
@@ -111,7 +108,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 
 	memset(&smb,0,sizeof(smb));
 	smb.subnum=INVALID_SUB;	/* mail database */
-	i=savemsg(&cfg, &smb, &msg, msgbuf);
+	i=savemsg(&cfg, &smb, &msg, &client, msgbuf);
 	free(msgbuf);
 	if(i!=0) {
 		smb_close(&smb);

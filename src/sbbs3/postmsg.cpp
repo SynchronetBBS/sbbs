@@ -422,6 +422,9 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 {
 	int i;
 
+	if(client==NULL)
+		return(-1);
+
 	if((i=smb_hfield_str(msg,SENDERIPADDR,client->addr))!=SMB_SUCCESS)
 		return(i);
 	if((i=smb_hfield_str(msg,SENDERHOSTNAME,client->host))!=SMB_SUCCESS)
@@ -431,23 +434,14 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 	return smb_hfield(msg,SENDERPORT,sizeof(client->port),&client->port);
 }
 
-extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf)
+extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client, char* msgbuf)
 {
-	char	pad=0;
 	char	pid[128];
 	char	msg_id[256];
-	char*	lzhbuf=NULL;
-	ushort	xlat;
-	int		xlatlen;
+	ushort	xlat=XLAT_NONE;
 	int 	i;
-	int		storage;
-	long	lzhlen;
-	BOOL	lzh=FALSE;
-	ulong	l;
-	ulong	length;
-	long	offset;
-	ulong	crc=0xffffffff;
-	smbmsg_t remsg;
+	int		storage=SMB_SELFPACK;
+	long	dupechk_hashes=SMB_HASH_SOURCE_ALL;
 
 	if(msg==NULL)
 		return(SMB_FAILURE);
@@ -462,209 +456,70 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 			return(i);
 	}
 
-	if(filelength(fileno(smb->shd_fp))<1) {	 /* Create it if it doesn't exist */
-		if(smb->subnum==INVALID_SUB) {
-			smb->status.max_crcs=cfg->mail_maxcrcs;
-			smb->status.max_age=cfg->mail_maxage;
-			smb->status.max_msgs=0;
-			smb->status.attr=SMB_EMAIL;
-		} else {
-			smb->status.max_crcs=cfg->sub[smb->subnum]->maxcrcs;
-			smb->status.max_msgs=cfg->sub[smb->subnum]->maxmsgs;
-			smb->status.max_age=cfg->sub[smb->subnum]->maxage;
-			smb->status.attr=cfg->sub[smb->subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC : 0;
-		}
-		if((i=smb_create(smb))!=SMB_SUCCESS) 
-			return(i);
+	if(smb->subnum==INVALID_SUB) {	/* e-mail */
 
-		/* If msgbase doesn't exist, we can't be adding a header to an existing msg */
-		msg->hdr.total_dfields=0;
-	}
-	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) 
-		return(i);
+		smb->status.max_crcs=cfg->mail_maxcrcs;
+		smb->status.max_age=cfg->mail_maxage;
+		smb->status.max_msgs=0;	/* unlimited */
+		smb->status.attr=SMB_EMAIL;
 
-	if((i=smb_getstatus(smb))!=SMB_SUCCESS) {
-		smb_unlocksmbhdr(smb);
-		return(i);
-	}
+		if(cfg->sys_misc&SM_FASTMAIL)
+			storage=SMB_FASTALLOC;
 
-	if(msg->hdr.total_dfields==0) {
+	} else {	/* sub-board */
 
-		if(msgbuf==NULL)
-			return(SMB_FAILURE);
+		smb->status.max_crcs=cfg->sub[smb->subnum]->maxcrcs;
+		smb->status.max_msgs=cfg->sub[smb->subnum]->maxmsgs;
+		smb->status.max_age=cfg->sub[smb->subnum]->maxage;
+		smb->status.attr=0;
 
-		length=strlen(msgbuf);
+		if(cfg->sub[smb->subnum]->misc&SUB_HYPER)
+			storage = smb->status.attr = SMB_HYPERALLOC;
+		else if(cfg->sub[smb->subnum]->misc&SUB_FAST)
+			storage = SMB_FASTALLOC;
 
-		/* Remove white-space from end of message text */
-		while(length && (uchar)msgbuf[length-1]<=' ')
-			length--;
-
-		/* Calculate CRC-32 of message text (before encoding, if any) */
-		if(smb->status.max_crcs) {
-			for(l=0;l<length;l++)
-				crc=ucrc32(msgbuf[l],crc); 
-			crc=~crc;
-		}
-
-		/* LZH compress? */
-		if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_LZH 
-			&& length+sizeof(xlat)>=SDT_BLOCK_LEN
-			&& (lzhbuf=(char *)LMALLOC(length*2))!=NULL) {
-			lzhlen=lzh_encode((uchar *)msgbuf,length,(uchar *)lzhbuf);
-			if(lzhlen>1
-				&& smb_datblocks(lzhlen+(sizeof(xlat)*2)) 
-					< smb_datblocks(length+sizeof(xlat))) {
-				length=lzhlen+sizeof(xlat); 	/* Compressable */
-				lzh=TRUE;
-				msgbuf=lzhbuf; 
-			}
-		}
-
-		length+=sizeof(xlat);	/* xlat string terminator */
-
-		if(length&0x80000000) {
-			smb_unlocksmbhdr(smb);
-			sprintf(smb->last_error,"message length: 0x%lX",length);
-			FREE_AND_NULL(lzhbuf);
-			return(-1);
-		}
-
-		/* Allocate Data Blocks */
-		if(smb->status.attr&SMB_HYPERALLOC) {
-			offset=smb_hallocdat(smb);
-			storage=SMB_HYPERALLOC; 
-		} else {
-			if((i=smb_open_da(smb))!=SMB_SUCCESS) {
-				smb_unlocksmbhdr(smb);
-				FREE_AND_NULL(lzhbuf);
-				return(i);
-			}
-			if((smb->subnum==INVALID_SUB && cfg->sys_misc&SM_FASTMAIL)
-				|| (smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FAST)) {
-				offset=smb_fallocdat(smb,length,1);
-				storage=SMB_FASTALLOC; 
-			} else {
-				offset=smb_allocdat(smb,length,1);
-				storage=SMB_SELFPACK; 
-			}
-			smb_close_da(smb); 
-		}
-
-		if(offset<0) {
-			smb_unlocksmbhdr(smb);
-			FREE_AND_NULL(lzhbuf);
-			return((int)offset);
-		}
-
-		smb_fseek(smb->sdt_fp,offset,SEEK_SET);
-		xlatlen=0;
-		if(lzh) {
+		if(cfg->sub[smb->subnum]->misc&SUB_LZH)
 			xlat=XLAT_LZH;
-			smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
-			xlatlen+=sizeof(xlat);
-		}
-		xlat=XLAT_NONE;
-		smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
-		xlatlen+=sizeof(xlat);
 
-		smb_fwrite(smb,msgbuf,length-xlatlen,smb->sdt_fp);
-		for(l=length;l%SDT_BLOCK_LEN;l++)
-			smb_fwrite(smb,&pad,1,smb->sdt_fp);
+		/* enforce anonymous/private posts only */
+ 		if(cfg->sub[smb->subnum]->misc&SUB_PONLY)
+ 			msg->hdr.attr|=MSG_PRIVATE;
+ 		if(cfg->sub[smb->subnum]->misc&SUB_AONLY)
+ 			msg->hdr.attr|=MSG_ANONYMOUS;
 
-		fflush(smb->sdt_fp);
-
-		FREE_AND_NULL(lzhbuf);
-
-		/* Add CRC to CRC history (and check for duplicates) */
-		if(smb->status.max_crcs) {
-			i=smb_addcrc(smb,crc);
-			if(i) {
-				smb_freemsgdat(smb,offset,length,1);
-				smb_unlocksmbhdr(smb);
-				return(i);
-			} 
-		}
-		msg->hdr.offset=offset;
-		smb_dfield(msg,TEXT_BODY,length);
 	}
 
-	msg->hdr.version=smb_ver();
 	if(msg->hdr.when_imported.time==0) {
 		msg->hdr.when_imported.time=time(NULL);
 		msg->hdr.when_imported.zone=sys_timezone(cfg);
 	}
 	if(msg->hdr.when_written.time==0)	/* Uninitialized */
 		msg->hdr.when_written = msg->hdr.when_imported;
-	msg->idx.time=msg->hdr.when_imported.time;
-	msg->idx.number=smb->status.last_msg+1; /* this *should* be the new message number */
 
-	if(smb->subnum!=INVALID_SUB) {	/* enforce anonymous/private posts only */
-		if(cfg->sub[smb->subnum]->misc&SUB_PONLY)
-			msg->hdr.attr|=MSG_PRIVATE;
-		if(cfg->sub[smb->subnum]->misc&SUB_AONLY)
-			msg->hdr.attr|=MSG_ANONYMOUS;
-	}
+	if(smb->status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
+		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 
-	if(smb_get_hfield(msg,FIDOPID,NULL)==NULL) 	/* Don't create duplicate PIDs */
-		smb_hfield_str(msg,FIDOPID,program_id(pid));
+	if(client!=NULL)
+		msg_client_hfields(msg,client);
+ 
+ 	if(smb_get_hfield(msg,FIDOPID,NULL)==NULL) 	/* Don't create duplicate PIDs */
+ 		smb_hfield_str(msg,FIDOPID,program_id(pid));
+ 
+ 	/* Generate default (RFC822) message-id  */
+ 	if(smb_get_hfield(msg,RFC822MSGID,NULL)==NULL) {
+ 		SAFECOPY(msg_id,get_msgid(cfg,smb->subnum,msg));
+ 		smb_hfield_str(msg,RFC822MSGID,msg_id);
+ 	}
+ 
+ 	/* Generate FTN MSGID */
+ 	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO
+ 		&& smb_get_hfield(msg,FIDOMSGID,NULL)==NULL) {
+ 		SAFECOPY(msg_id,ftn_msgid(cfg->sub[smb->subnum],msg));
+ 		smb_hfield_str(msg,FIDOMSGID,msg_id);
+ 	}
 
-	/* Generate default (RFC822) message-id  */
-	if(smb_get_hfield(msg,RFC822MSGID,NULL)==NULL) {
-		SAFECOPY(msg_id,get_msgid(cfg,smb->subnum,msg));
-		smb_hfield_str(msg,RFC822MSGID,msg_id);
-	}
-
-	/* Generate FTN MSGID */
-	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO
-		&& smb_get_hfield(msg,FIDOMSGID,NULL)==NULL) {
-		SAFECOPY(msg_id,ftn_msgid(cfg->sub[smb->subnum],msg));
-		smb_hfield_str(msg,FIDOMSGID,msg_id);
-	}
-
-	if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
-		return(smb_unlocksmbhdr(smb));
-
-	/* Look-up thread_back if Reply-ID was specified */
-	if(msg->hdr.thread_back==0 && msg->reply_id!=NULL) {
-		if(smb_getmsgidx_by_msgid(smb,&remsg,msg->reply_id)==SMB_SUCCESS)
-			msg->hdr.thread_back=remsg.idx.number;	/* needed for threading backward */
-	}
-
-	/* Auto-thread linkage */
-	if(msg->hdr.thread_back) {
-		memset(&remsg,0,sizeof(remsg));
-		remsg.hdr.number=msg->hdr.thread_back;
-		if((i=smb_getmsgidx(smb, &remsg))!=SMB_SUCCESS)	/* invalid thread origin */
-			return(i);
-
-		if((i=smb_lockmsghdr(smb,&remsg))!=SMB_SUCCESS)
-			return(i);
-
-		if((i=smb_getmsghdr(smb, &remsg))!=SMB_SUCCESS) {
-			smb_unlockmsghdr(smb, &remsg); 
-			return(i);
-		}
-
-		/* Add RFC-822 Reply-ID (generate if necessary) */
-		if(msg->reply_id==NULL)
-			smb_hfield_str(msg,RFC822REPLYID,get_msgid(cfg,smb->subnum,&remsg));
-
-		/* Add FidoNet Reply if original message has FidoNet MSGID */
-		if(msg->ftn_reply==NULL && remsg.ftn_msgid!=NULL)
-			smb_hfield_str(msg,FIDOREPLYID,remsg.ftn_msgid);
-
-		i=smb_updatethread(smb, &remsg, smb->status.last_msg+1);
-		smb_unlockmsghdr(smb, &remsg);
-		smb_freemsgmem(&remsg);
-
-		if(i!=SMB_SUCCESS)
-			return(i); 
-	}
-
-	if((i=smb_addmsghdr(smb,msg,storage))==SMB_SUCCESS) // calls smb_unlocksmbhdr() 
+	if((i=smb_addmsg(smb,msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf,NULL))==SMB_SUCCESS)
 		signal_sub_sem(cfg,smb->subnum);
-	else
-		smb_freemsg_dfields(smb,msg,1);
 
 	return(i);
 }

@@ -2322,9 +2322,6 @@ static void smtp_thread(void* arg)
 					msg.idx.subj=smb_subject_crc(p);
 				}
 
-				/* Security logging */
-				msg_client_hfields(&msg,&client);
-
 				length=filelength(fileno(msgtxt))-ftell(msgtxt);
 
 				if(startup->max_msg_size && length>startup->max_msg_size) {
@@ -2367,7 +2364,7 @@ static void smtp_thread(void* arg)
 					smb_hfield_str(&msg, RECIPIENT, rcpt_name);
 
 					smb.subnum=subnum;
-					if((i=savemsg(&scfg, &smb, &msg, msgbuf))!=SMB_SUCCESS) {
+					if((i=savemsg(&scfg, &smb, &msg, &client, msgbuf))!=SMB_SUCCESS) {
 						lprintf(LOG_WARNING,"%04d !SMTP ERROR %d (%s) saving message"
 							,socket,i,smb.last_error);
 						sockprintf(socket, "452 ERROR %d (%s) saving message"
@@ -2386,7 +2383,7 @@ static void smtp_thread(void* arg)
 
 				/* E-mail */
 				smb.subnum=INVALID_SUB;
-				i=savemsg(&scfg, &smb, &msg, msgbuf);
+				i=savemsg(&scfg, &smb, &msg, &client, msgbuf);
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
