@@ -84,8 +84,184 @@ static	char *	text[TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
 
+extern "C" {
+
+static bbs_startup_t* startup=NULL;
+
+static void status(char* str)
+{
+	if(startup!=NULL && startup->status!=NULL)
+	    startup->status(str);
+}
+
+static void update_clients()
+{
+	if(startup!=NULL && startup->clients!=NULL)
+		startup->clients(node_threads_running);
+}
+
+void client_on(SOCKET sock, client_t* client)
+{
+	if(startup!=NULL && startup->client_on!=NULL)
+		startup->client_on(TRUE,sock,client);
+}
+
+static void client_off(SOCKET sock)
+{
+	if(startup!=NULL && startup->client_on!=NULL)
+		startup->client_on(FALSE,sock,NULL);
+}
+
+static void thread_up()
+{
+	if(startup!=NULL && startup->thread_up!=NULL)
+		startup->thread_up(TRUE);
+}
+
+static void thread_down()
+{
+	if(startup!=NULL && startup->thread_up!=NULL)
+		startup->thread_up(FALSE);
+}
+
+int lputs(char* str)
+{
+	if(startup==NULL || startup->lputs==NULL)
+    	return(0);
+    return(startup->lputs(str));
+}
+
+int lprintf(char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+    if(startup==NULL || startup->lputs==NULL)
+        return(0);
+
+    va_start(argptr,fmt);
+    vsprintf(sbuf,fmt,argptr);
+    va_end(argptr);
+    return(startup->lputs(sbuf));
+}
+
+int eprintf(char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+    if(startup==NULL || startup->event_log==NULL)
+        return(0);
+
+    va_start(argptr,fmt);
+    vsprintf(sbuf,fmt,argptr);
+    va_end(argptr);
+    return(startup->event_log(sbuf));
+}
+
+SOCKET open_socket(int type)
+{
+	SOCKET sock;
+
+	sock=socket(AF_INET, type, IPPROTO_IP);
+	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
+		startup->socket_open(TRUE);
+	return(sock);
+}
+
+int close_socket(SOCKET sock)
+{
+	int		result;
+
+	if(sock==INVALID_SOCKET || sock==0)
+		return(0);
+
+	shutdown(sock,SHUT_RDWR);	/* required on Unix */
+	result=closesocket(sock);
+	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
+		startup->socket_open(FALSE);
+	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
+		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
+	return(result);
+}
+
+/* Return true if connected, optionally sets *rd_p to true if read data available */
+BOOL socket_check(SOCKET sock, BOOL* rd_p)
+{
+	char	ch;
+	int		i,rd;
+	fd_set	socket_set;
+	struct	timeval tv;
+
+	if(rd_p!=NULL)
+		*rd_p=FALSE;
+
+	FD_ZERO(&socket_set);
+	FD_SET(sock,&socket_set);
+
+	tv.tv_sec=0;
+	tv.tv_usec=0;
+
+	i=select(sock+1,&socket_set,NULL,NULL,&tv);
+	if(i==SOCKET_ERROR)
+		return(FALSE);
+
+	if(i==0) 
+		return(TRUE);
+
+	rd=recv(sock,&ch,1,MSG_PEEK);
+	if(rd==1) {
+		if(rd_p!=NULL)
+			*rd_p=TRUE;
+		return(TRUE);
+	}
+
+	return(FALSE);
+}
+
+u_long resolve_ip(char *addr)
+{
+	HOSTENT*	host;
+	char*		p;
+
+	for(p=addr;*p;p++)
+		if(*p!='.' && !isdigit(*p))
+			break;
+	if(!(*p))
+		return(inet_addr(addr));
+	if ((host=gethostbyname(addr))==NULL) 
+		return(0);
+	return(*((ulong*)host->h_addr_list[0]));
+}
+
+} /* extern "C" */
+
 #ifdef JAVASCRIPT
 JSRuntime* js_runtime=NULL;
+
+static JSBool
+js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    uintN		i;
+    JSString *	str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+    for (i = 0; i < argc; i++) {
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+		    return(JS_FALSE);
+		if(sbbs->online==ON_LOCAL) {
+			if(startup!=NULL && startup->event_log!=NULL)
+				startup->event_log(JS_GetStringBytes(str));
+		} else
+			lputs(JS_GetStringBytes(str));
+		}
+
+	*rval = JSVAL_VOID;
+    return(JS_TRUE);
+}
 
 static JSBool
 js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -224,6 +400,7 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSFunctionSpec js_global_functions[] = {
+	{"log",				js_log,				1},		/* Log a string */
     {"print",           js_print,           0},		/* Print a string, auto-crlf */
     {"printf",          js_printf,          1},		/* Print a formatted string */
 	{"alert",			js_alert,			1},		/* alert (ala client-side) */
@@ -394,158 +571,6 @@ static BOOL winsock_startup(void)
 #define winsock_startup()	(TRUE)	
 
 #endif
-
-extern "C" {
-
-static bbs_startup_t* startup=NULL;
-
-static void status(char* str)
-{
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(str);
-}
-
-static void update_clients()
-{
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(node_threads_running);
-}
-
-void client_on(SOCKET sock, client_t* client)
-{
-	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(TRUE,sock,client);
-}
-
-static void client_off(SOCKET sock)
-{
-	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(FALSE,sock,NULL);
-}
-
-static void thread_up()
-{
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(TRUE);
-}
-
-static void thread_down()
-{
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(FALSE);
-}
-
-int lputs(char* str)
-{
-	if(startup==NULL || startup->lputs==NULL)
-    	return(0);
-    return(startup->lputs(str));
-}
-
-int lprintf(char *fmt, ...)
-{
-	va_list argptr;
-	char sbuf[1024];
-
-    if(startup==NULL || startup->lputs==NULL)
-        return(0);
-
-    va_start(argptr,fmt);
-    vsprintf(sbuf,fmt,argptr);
-    va_end(argptr);
-    return(startup->lputs(sbuf));
-}
-
-int eprintf(char *fmt, ...)
-{
-	va_list argptr;
-	char sbuf[1024];
-
-    if(startup==NULL || startup->event_log==NULL)
-        return(0);
-
-    va_start(argptr,fmt);
-    vsprintf(sbuf,fmt,argptr);
-    va_end(argptr);
-    return(startup->event_log(sbuf));
-}
-
-SOCKET open_socket(int type)
-{
-	SOCKET sock;
-
-	sock=socket(AF_INET, type, IPPROTO_IP);
-	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(TRUE);
-	return(sock);
-}
-
-int close_socket(SOCKET sock)
-{
-	int		result;
-
-	if(sock==INVALID_SOCKET || sock==0)
-		return(0);
-
-	shutdown(sock,SHUT_RDWR);	/* required on Unix */
-	result=closesocket(sock);
-	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(FALSE);
-	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
-		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
-	return(result);
-}
-
-/* Return true if connected, optionally sets *rd_p to true if read data available */
-BOOL socket_check(SOCKET sock, BOOL* rd_p)
-{
-	char	ch;
-	int		i,rd;
-	fd_set	socket_set;
-	struct	timeval tv;
-
-	if(rd_p!=NULL)
-		*rd_p=FALSE;
-
-	FD_ZERO(&socket_set);
-	FD_SET(sock,&socket_set);
-
-	tv.tv_sec=0;
-	tv.tv_usec=0;
-
-	i=select(sock+1,&socket_set,NULL,NULL,&tv);
-	if(i==SOCKET_ERROR)
-		return(FALSE);
-
-	if(i==0) 
-		return(TRUE);
-
-	rd=recv(sock,&ch,1,MSG_PEEK);
-	if(rd==1) {
-		if(rd_p!=NULL)
-			*rd_p=TRUE;
-		return(TRUE);
-	}
-
-	return(FALSE);
-}
-
-u_long resolve_ip(char *addr)
-{
-	HOSTENT*	host;
-	char*		p;
-
-	for(p=addr;*p;p++)
-		if(*p!='.' && !isdigit(*p))
-			break;
-	if(!(*p))
-		return(inet_addr(addr));
-	if ((host=gethostbyname(addr))==NULL) 
-		return(0);
-	return(*((ulong*)host->h_addr_list[0]));
-}
-
-} /* extern "C" */
 
 
 BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
