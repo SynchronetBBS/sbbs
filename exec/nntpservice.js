@@ -447,7 +447,7 @@ while(client.socket.is_connected) {
 			}
 			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
 
-			var hdr={ from: "", to: "", subject: "", id: "" };
+			var hdr={ from: "", subject: "", id: "" };
 			if(!(user.security.restrictions&(UFLAG_G|UFLAG_Q))) {	// !Guest and !Network Node
 				hdr.from=user.alias;
 				hdr.from_ext=user.number;
@@ -520,10 +520,12 @@ while(client.socket.is_connected) {
 						break;
 					case "references":
 						hdr.reply_id=data;
-						if(!hdr.to)
+						if(hdr.to==undefined)
 							hdr.to=getReferenceTo(data);
 						break;
 					case "newsgroups":
+						if(hdr.to==undefined)
+							hdr.to=data;
 						newsgroups=data.split(',');
 						break;
 					case "x-ftn-pid":
