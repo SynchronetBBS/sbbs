@@ -428,14 +428,12 @@ static void ansi_keyparse(void *par)
 					sem_post(&goahead);
 					break;
 				}
-				if(ch==13) {
-					/* The \r that goes with the next \n (hopefully) */
+				if(ch==10) {
+					/* The \n that goes with the prev \r (hopefully) */
 					/* Eat it and keep chuggin' */
 					sem_post(&goahead);
 					break;
 				}
-				if(ch==10)
-					ch=13;
 				ansi_inch=ch;
 				sem_post(&got_input);
 				sem_wait(&used_input);
