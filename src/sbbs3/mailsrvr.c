@@ -733,19 +733,19 @@ static void pop3_thread(void* arg)
 			msg.hdr.number=mail[l].number;
 			if((i=smb_getmsgidx(&smb,&msg))!=0) {
 				lprintf("%04d !POP3 ERROR %d (%s) getting message index"
-					,socket, i, smb->last_error);
+					,socket, i, smb.last_error);
 				break;
 			}
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 				lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
-					,socket, i, smb->last_error, msg.hdr.number);
+					,socket, i, smb.last_error, msg.hdr.number);
 				break; 
 			}
 			i=smb_getmsghdr(&smb,&msg);
 			smb_unlockmsghdr(&smb,&msg);
 			if(i!=0) {
 				lprintf("%04d !POP3 ERROR %d (%s) getting message header #%lu"
-					,socket, i, smb->last_error, msg.hdr.number);
+					,socket, i, smb.last_error, msg.hdr.number);
 				break;
 			}
 			for(i=0;i<msg.hdr.total_dfields;i++)
@@ -778,25 +778,25 @@ static void pop3_thread(void* arg)
 					msg.hdr.number=mail[l].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=0) {
 						lprintf("%04d !POP3 ERROR %d (%s) getting message index"
-							,socket, i, smb->last_error);
+							,socket, i, smb.last_error);
 						break;
 					}
 					if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 						lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
-							,socket, i, smb->last_error, msg.hdr.number);
+							,socket, i, smb.last_error, msg.hdr.number);
 						break; 
 					}
 					if((i=smb_getmsghdr(&smb,&msg))!=0) {
 						smb_unlockmsghdr(&smb,&msg);
 						lprintf("%04d !POP3 ERROR %d (%s) getting message header #%lu"
-							,socket, i, smb->last_error, msg.hdr.number);
+							,socket, i, smb.last_error, msg.hdr.number);
 						break;
 					}
 					msg.hdr.attr=mail[l].attr;
 					msg.idx.attr=msg.hdr.attr;
 					if((i=smb_putmsg(&smb,&msg))!=0)
 						lprintf("%04d !POP3 ERROR %d (%s) updating message index"
-							,socket, i, smb->last_error);
+							,socket, i, smb.last_error);
 					smb_unlockmsghdr(&smb,&msg);
 					smb_freemsgmem(&msg);
 				}
@@ -820,7 +820,7 @@ static void pop3_thread(void* arg)
 					msg.hdr.number=mail[msgnum-1].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=0) {
 						lprintf("%04d !POP3 ERROR %d (%s) getting message index"
-							,socket, i, smb->last_error);
+							,socket, i, smb.last_error);
 						sockprintf(socket,"-ERR %d getting message index",i);
 						break;
 					}
@@ -832,7 +832,7 @@ static void pop3_thread(void* arg)
 					}
 					if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 						lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
-							,socket, i, smb->last_error, msg.hdr.number);
+							,socket, i, smb.last_error, msg.hdr.number);
 						sockprintf(socket,"-ERR %d locking message header",i);
 						continue; 
 					}
@@ -841,7 +841,7 @@ static void pop3_thread(void* arg)
 					if(i!=0) {
 						smb_freemsgmem(&msg);
 						lprintf("%04d !POP3 ERROR %d (%s) getting message header #%lu"
-							,socket, i, smb->last_error, msg.hdr.number);
+							,socket, i, smb.last_error, msg.hdr.number);
 						sockprintf(socket,"-ERR %d getting message header",i);
 						continue;
 					}
@@ -863,14 +863,14 @@ static void pop3_thread(void* arg)
 					msg.hdr.number=mail[l].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=0) {
 						lprintf("%04d !POP3 ERROR %d (%s) getting message index"
-							,socket, i, smb->last_error);
+							,socket, i, smb.last_error);
 						break;
 					}
 					if(msg.idx.attr&MSG_DELETE) 
 						continue;
 					if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 						lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
-							,socket, i, smb->last_error, msg.hdr.number);
+							,socket, i, smb.last_error, msg.hdr.number);
 						break; 
 					}
 					i=smb_getmsghdr(&smb,&msg);
@@ -878,7 +878,7 @@ static void pop3_thread(void* arg)
 					if(i!=0) {
 						smb_freemsgmem(&msg);
 						lprintf("%04d !POP3 ERROR %d (%s) getting message header #%lu"
-							,socket, i, smb->last_error, msg.hdr.number);
+							,socket, i, smb.last_error, msg.hdr.number);
 						break;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
@@ -923,7 +923,7 @@ static void pop3_thread(void* arg)
 
 				if((i=smb_getmsgidx(&smb,&msg))!=0) {
 					lprintf("%04d !POP3 ERROR %d (%s) getting message index"
-						,socket, i, smb->last_error);
+						,socket, i, smb.last_error);
 					sockprintf(socket,"-ERR %d getting message index",i);
 					continue;
 				}
@@ -935,7 +935,7 @@ static void pop3_thread(void* arg)
 				}
 				if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 					lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
-						,socket, i, smb->last_error, msg.hdr.number);
+						,socket, i, smb.last_error, msg.hdr.number);
 					sockprintf(socket,"-ERR %d locking message header",i);
 					continue; 
 				}
@@ -943,7 +943,7 @@ static void pop3_thread(void* arg)
 				smb_unlockmsghdr(&smb,&msg);
 				if(i!=0) {
 					lprintf("%04d !POP3 ERROR %d (%s) getting message header #%lu"
-						,socket, i, smb->last_error, msg.hdr.number);
+						,socket, i, smb.last_error, msg.hdr.number);
 					sockprintf(socket,"-ERR %d getting message header",i);
 					continue;
 				}
@@ -976,10 +976,10 @@ static void pop3_thread(void* arg)
 
 				if((i=smb_lockmsghdr(&smb,&msg))!=0) 
 					lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
-						,socket, i, smb->last_error, msg.hdr.number);
+						,socket, i, smb.last_error, msg.hdr.number);
 				if((i=smb_putmsg(&smb,&msg))!=0)
 					lprintf("%04d !POP3 ERROR %d (%s) marking message #%lu as read"
-						,socket, i, smb->last_error, msg.hdr.number);
+						,socket, i, smb.last_error, msg.hdr.number);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
 				smb_freemsgtxt(msgtxt);
@@ -1003,20 +1003,20 @@ static void pop3_thread(void* arg)
 
 				if((i=smb_getmsgidx(&smb,&msg))!=0) {
 					lprintf("%04d !POP3 ERROR %d (%s) getting message index"
-						,socket, i, smb->last_error);
+						,socket, i, smb.last_error);
 					sockprintf(socket,"-ERR %d getting message index",i);
 					continue;
 				}
 				if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 					lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
-						,socket, i, smb->last_error, msg.hdr.number);
+						,socket, i, smb.last_error, msg.hdr.number);
 					sockprintf(socket,"-ERR %d locking message header",i);
 					continue; 
 				}
 				if((i=smb_getmsghdr(&smb,&msg))!=0) {
 					smb_unlockmsghdr(&smb,&msg);
 					lprintf("%04d !POP3 ERROR %d (%s) getting message header #%lu"
-						,socket, i, smb->last_error, msg.hdr.number);
+						,socket, i, smb.last_error, msg.hdr.number);
 					sockprintf(socket,"-ERR %d getting message header",i);
 					continue;
 				}
@@ -1026,7 +1026,7 @@ static void pop3_thread(void* arg)
 					smb_unlockmsghdr(&smb,&msg);
 					smb_freemsgmem(&msg);
 					lprintf("%04d !POP3 ERROR %d (%s) marking message as read"
-						, socket, i, smb->last_error);
+						, socket, i, smb.last_error);
 					sockprintf(socket,"-ERR %d marking message for deletion",i);
 					continue;
 				}
@@ -1503,7 +1503,7 @@ static void smtp_thread(void* arg)
 					if((i=smb_create(&smb))!=0) {
 						smb_close(&smb);
 						lprintf("%04d !SMTP ERROR %d (%s) creating %s"
-							,socket, i, smb->last_error, smb.file);
+							,socket, i, smb.last_error, smb.file);
 						sockprintf(socket, "452 Insufficient system storage");
 						continue;
 					} 
@@ -1512,7 +1512,7 @@ static void smtp_thread(void* arg)
 				if((i=smb_locksmbhdr(&smb))!=0) {
 					smb_close(&smb);
 					lprintf("%04d !SMTP ERROR %d (%s) locking %s"
-						,socket, i, smb->last_error, smb.file);
+						,socket, i, smb.last_error, smb.file);
 					sockprintf(socket, "452 Insufficient system storage");
 					continue; 
 				}
@@ -1562,7 +1562,7 @@ static void smtp_thread(void* arg)
 						smb_close_da(&smb);
 						smb_close(&smb);
 						lprintf("%04d !SMTP ERROR %d ADDING MESSAGE: %s"
-							, socket, i, smb->last_error);
+							, socket, i, smb.last_error);
 						sockprintf(socket, "554 Duplicate Message");
 						continue; 
 					} 
@@ -1578,7 +1578,7 @@ static void smtp_thread(void* arg)
 				while(!feof(rcptlst) && rcpt_count<MAX_RECIPIENTS) {
 					if((i=smb_copymsgmem(&newmsg,&msg))!=0) {
 						lprintf("%04d !SMTP ERROR %d (%s) copying message"
-							,socket, i, smb->last_error);
+							,socket, i, smb.last_error);
 						break;
 					}
 					if(fgets(str,sizeof(str)-1,rcptlst)==NULL)
@@ -1619,7 +1619,7 @@ static void smtp_thread(void* arg)
 					smb_freemsgmem(&newmsg);
 					if(i!=0) {
 						lprintf("%04d !SMTP ERROR %d (%s) adding message header"
-							,socket, i, smb->last_error);
+							,socket, i, smb.last_error);
 						break;
 					}
 					lprintf("%04d SMTP Created message #%ld from %s to %s <%s>"
@@ -2388,14 +2388,14 @@ static void sendmail_thread(void* arg)
 
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 				lprintf("0000 !SEND ERROR %d (%s) locking message header #%lu"
-					,i, smb->last_error, msg.idx.number);
+					,i, smb.last_error, msg.idx.number);
 				continue;
 			}
 			i=smb_getmsghdr(&smb,&msg);
 			smb_unlockmsghdr(&smb,&msg);
 			if(i!=0) {
 				lprintf("0000 !SEND ERROR %d (%s) reading message header #%lu"
-					,i, smb->last_error, msg.idx.number);
+					,i, smb.last_error, msg.idx.number);
 				continue; 
 			}
 
@@ -2581,11 +2581,11 @@ static void sendmail_thread(void* arg)
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) 
 				lprintf("%04d !SEND ERROR %d (%s) locking message header #%lu"
 					,sock
-					,i, smb->last_error, msg.hdr.number);
+					,i, smb.last_error, msg.hdr.number);
 			if((i=smb_putmsg(&smb,&msg))!=0)
 				lprintf("%04d !SEND ERROR %d (%s) deleting message #%lu"
 					,sock
-					,i, smb->last_error, msg.hdr.number);
+					,i, smb.last_error, msg.hdr.number);
 			if(msg.hdr.auxattr&MSG_FILEATTACH)
 				delfattach(&scfg,&msg);
 			smb_unlockmsghdr(&smb,&msg);
