@@ -186,7 +186,7 @@ int sbbs_random(int n)
 /* Return ASCII string representation of ulong								*/
 /* There may be a native GNU C Library function to this...					*/
 /****************************************************************************/
-#ifdef __unix__
+#if !defined _MSC_VER && !defined __BORLANDC__
 char* ultoa(ulong val, char* str, int radix)
 {
 	switch(radix) {
