@@ -1,5 +1,6 @@
 #include <uifc.h>
 #include <conio.h>
+#include <keys.h>
 
 #include "term.h"
 #include "uifcinit.h"
@@ -26,39 +27,43 @@ void viewscroll(void)
 		puttext(term.x+1,term.y+1,term.x+term.width,term.y+term.height,term.scrollback+(term.width*2*top));
 		key=getch();
 		switch(key) {
+			case 0:
+				switch(getch()<<8) {
+					case CIO_KEY_UP:
+						top--;
+						break;
+					case CIO_KEY_DOWN:
+						top++;
+						break;
+					case CIO_KEY_PPAGE:
+						top-=term.height;
+						break;
+					case CIO_KEY_NPAGE:
+						top+=term.height;
+						break;
+					case CIO_KEY_F(1):
+						init_uifc();
+						uifc.helpbuf=	"`Scrollback Buffer`\n\n"
+										"~ J ~ or ~ Up Arrow ~   Scrolls up one line\n"
+										"~ K ~ or ~ Down Arrow ~ Scrolls down one line\n"
+										"~ H ~ or ~ Page Up ~    Scrolls up one screen\n"
+										"~ L ~ or ~ Page Down ~  Scrolls down one screen\n";
+						uifc.showhelp();
+						uifcbail();
+						drawwin();
+						break;
+				}
+				break;
 			case 'j':
 			case 'J':
-			case KEY_UP:
-				top--;
-				break;
 			case 'k':
 			case 'K':
-			case KEY_DOWN:
-				top++;
-				break;
 			case 'h':
 			case 'H':
-			case KEY_PPAGE:
-				top-=term.height;
-				break;
 			case 'l':
 			case 'L':
-			case KEY_NPAGE:
-				top+=term.height;
-				break;
 			case ESC:
 				i=1;
-				break;
-			case KEY_F(1):
-				init_uifc();
-				uifc.helpbuf=	"`Scrollback Buffer`\n\n"
-								"~ J ~ or ~ Up Arrow ~   Scrolls up one line\n"
-								"~ K ~ or ~ Down Arrow ~ Scrolls down one line\n"
-								"~ H ~ or ~ Page Up ~    Scrolls up one screen\n"
-								"~ L ~ or ~ Page Down ~  Scrolls down one screen\n";
-				uifc.showhelp();
-				uifcbail();
-				drawwin();
 				break;
 		}
 	}
