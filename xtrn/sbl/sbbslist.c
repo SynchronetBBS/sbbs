@@ -845,7 +845,7 @@ int main(int argc, char **argv)
 
 		fprintf(html,"Online since: %s<BR>\n",unixtodstr(bbs.birth,tmp));
 
-		if(bbs.sysop_email[0]) {
+		if(strchr(bbs.sysop_email,'@')) {
 			fprintf(mail,"%s\n",bbs.sysop_email);
 			sprintf(sysop_email,"<A HREF=mailto:%s>%s</A>",bbs.sysop_email,bbs.sysop[0]);
 			sysop=sysop_email;
