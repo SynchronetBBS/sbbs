@@ -475,8 +475,8 @@ int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 			if(time(NULL)-start>=(time_t)smb->retry_time) 
 				break;
 		/* In case we've already locked it */
-		unlock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)); 
-		SLEEP(smb->retry_delay);
+		if(unlock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t))!=0)
+			SLEEP(smb->retry_delay);
 	}
 	safe_snprintf(smb->last_error,sizeof(smb->last_error),"timeout locking header");
 	return(SMB_ERR_TIMEOUT);
@@ -941,7 +941,6 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			return(SMB_ERR_MEM); 
 		}
 		msg->hfield=vp;
-		msg->total_hfields++;
 		if(smb_fread(smb,&msg->hfield[i],sizeof(hfield_t),smb->shd_fp)!=sizeof(hfield_t)) {
 			smb_freemsgmem(msg);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -958,6 +957,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			smb_freemsgmem(msg);  /* or 0 length field */
 			return(SMB_ERR_MEM); 
 		}
+		msg->total_hfields++;
 		memset(msg->hfield_dat[i],0,msg->hfield[i].length+1);  /* init to NULL */
 		if(msg->hfield[i].length
 			&& smb_fread(smb,msg->hfield_dat[i],msg->hfield[i].length,smb->shd_fp)
@@ -1509,7 +1509,6 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 			,get_errno(),STRERROR(get_errno()),msg->idx.offset);
 		return(SMB_ERR_SEEK);
 	}
-
 	/* Verify that the number of blocks required to stored the actual 
 	   (calculated) header length does not exceed the number allocated. */
 	hdrlen=smb_getmsghdrlen(msg);
@@ -1527,7 +1526,6 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		return(SMB_ERR_HDR_LEN);
 	}
 	msg->hdr.length=(ushort)hdrlen; /* store the actual header length */
-
 	/**********************************/
 	/* Set the message header ID here */
 	/**********************************/
@@ -1553,7 +1551,6 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
-
 	/*******************************************/
 	/* Write the variable length header fields */
 	/*******************************************/
@@ -1690,10 +1687,11 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 		smb_unlockmsghdr(smb,remsg);
 		return(retval);
 	}
-	
+
 	/* Search for last reply and extend chain */
 	memset(&nextmsg,0,sizeof(nextmsg));
 	nextmsgnum=remsg->hdr.thread_first;	/* start with first reply */
+
 	while(1) {
 		nextmsg.idx.offset=0;
 		nextmsg.hdr.number=nextmsgnum;
