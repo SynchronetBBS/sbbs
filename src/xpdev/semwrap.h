@@ -38,6 +38,8 @@
 #ifndef _SEMWRAP_H
 #define _SEMWRAP_H
 
+#include "gen_defs.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
