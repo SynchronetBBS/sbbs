@@ -547,10 +547,10 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 		return(JS_FALSE);
 	}
 	/* Give up timeslices every once in a while */
-	if(sbbs->js_branch.yield_freq && (sbbs->js_branch.counter%sbbs->js_branch.yield_freq)==0)
+	if(sbbs->js_branch.yield_interval && (sbbs->js_branch.counter%sbbs->js_branch.yield_interval)==0)
 		YIELD();
 
-	if(sbbs->js_branch.gc_freq && (sbbs->js_branch.counter%sbbs->js_branch.gc_freq)==0)
+	if(sbbs->js_branch.gc_interval && (sbbs->js_branch.counter%sbbs->js_branch.gc_interval)==0)
 		JS_MaybeGC(cx);
 
     return(JS_TRUE);

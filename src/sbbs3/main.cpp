@@ -764,8 +764,8 @@ bool sbbs_t::js_init()
 		return(false);
 
 	js_branch.limit = JAVASCRIPT_BRANCH_LIMIT;
-	js_branch.gc_freq = JAVASCRIPT_GC_FREQUENCY;
-	js_branch.yield_freq = JAVASCRIPT_YIELD_FREQUENCY;
+	js_branch.gc_interval = JAVASCRIPT_GC_INTERVAL;
+	js_branch.yield_interval = JAVASCRIPT_YIELD_INTERVAL;
 	js_branch.counter = 0;	/* loop counter */
 
 	bool success=false;

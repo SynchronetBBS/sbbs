@@ -881,10 +881,10 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 		return(JS_FALSE);
 	}
 	/* Give up timeslices every once in a while */
-	if(client->branch.yield_freq && (client->branch.counter%client->branch.yield_freq)==0)
+	if(client->branch.yield_interval && (client->branch.counter%client->branch.yield_interval)==0)
 		YIELD();
 
-	if(client->branch.gc_freq && (client->branch.counter%client->branch.gc_freq)==0)
+	if(client->branch.gc_interval && (client->branch.counter%client->branch.gc_interval)==0)
 		JS_MaybeGC(cx);
 
     return(JS_TRUE);
@@ -1133,8 +1133,8 @@ static void js_static_service_thread(void* arg)
 	service_client.socket = service->socket;
 	service_client.service = service;
 	service_client.branch.limit = JAVASCRIPT_BRANCH_LIMIT;
-	service_client.branch.gc_freq = JAVASCRIPT_GC_FREQUENCY;
-	service_client.branch.yield_freq = JAVASCRIPT_YIELD_FREQUENCY;
+	service_client.branch.gc_interval = JAVASCRIPT_GC_INTERVAL;
+	service_client.branch.yield_interval = JAVASCRIPT_YIELD_INTERVAL;
 
 	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL) {
 		lprintf("%04d !%s ERROR initializing JavaScript runtime"
@@ -2012,8 +2012,8 @@ void DLLCALL services_thread(void* arg)
 				client->udp_buf=udp_buf;
 				client->udp_len=udp_len;
 				client->branch.limit=JAVASCRIPT_BRANCH_LIMIT;
-				client->branch.gc_freq=JAVASCRIPT_GC_FREQUENCY;
-				client->branch.yield_freq=JAVASCRIPT_YIELD_FREQUENCY;
+				client->branch.gc_interval=JAVASCRIPT_GC_INTERVAL;
+				client->branch.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
 
 				udp_buf = NULL;
 

@@ -82,8 +82,8 @@ void usage(FILE* fp)
 		"\t-m <bytes>      set maximum heap size (default=%u bytes)\n"
 		"\t-s <bytes>      set context stack size (default=%u bytes)\n"
 		"\t-b <limit>      set branch limit (default=%u, 0=unlimited)\n"
-		"\t-y <freq>       set yield frequency (default=%u, 0=never)\n"
-		"\t-g <freq>       set garbage collection frequency (default=%u, 0=never)\n"
+		"\t-y <freq>       set yield interval (default=%u, 0=never)\n"
+		"\t-g <freq>       set garbage collection interval (default=%u, 0=never)\n"
 		"\t-t <filename>   send console output to stdout and filename\n"
 		"\t-e              send error messages to console instead of stderr\n"
 		"\t-n              send status messages to %s instead of stdout\n"
@@ -94,8 +94,8 @@ void usage(FILE* fp)
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_CONTEXT_STACK
 		,JAVASCRIPT_BRANCH_LIMIT
-		,JAVASCRIPT_YIELD_FREQUENCY
-		,JAVASCRIPT_GC_FREQUENCY
+		,JAVASCRIPT_YIELD_INTERVAL
+		,JAVASCRIPT_GC_INTERVAL
 		,_PATH_DEVNULL
 		,_PATH_DEVNULL
 		);
@@ -397,10 +397,10 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 		return(JS_FALSE);
 	}
 	/* Give up timeslices every once in a while */
-	if(branch.yield_freq && (branch.counter%branch.yield_freq)==0)
+	if(branch.yield_interval && (branch.counter%branch.yield_interval)==0)
 		YIELD();
 
-	if(branch.gc_freq && (branch.counter%branch.gc_freq)==0)
+	if(branch.gc_interval && (branch.counter%branch.gc_interval)==0)
 		JS_MaybeGC(cx);
 
 	if(terminated) {
@@ -659,8 +659,8 @@ int main(int argc, char **argv, char** environ)
 		statfp=nulfp;
 
 	branch.limit=JAVASCRIPT_BRANCH_LIMIT;
-	branch.yield_freq=JAVASCRIPT_YIELD_FREQUENCY;
-	branch.gc_freq=JAVASCRIPT_GC_FREQUENCY;
+	branch.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
+	branch.gc_interval=JAVASCRIPT_GC_INTERVAL;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
@@ -680,10 +680,10 @@ int main(int argc, char **argv, char** environ)
 					branch.limit=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'y':
-					branch.yield_freq=strtoul(argv[++argn],NULL,0);
+					branch.yield_interval=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'g':
-					branch.gc_freq=strtoul(argv[++argn],NULL,0);
+					branch.gc_interval=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'e':
 					errfp=confp;

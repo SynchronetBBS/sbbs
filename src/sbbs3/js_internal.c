@@ -70,10 +70,10 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			JS_NewNumberValue(cx,branch->limit,vp);
 			break;
 		case PROP_YIELD_INTERVAL:
-			JS_NewNumberValue(cx,branch->yield_freq,vp);
+			JS_NewNumberValue(cx,branch->yield_interval,vp);
 			break;
 		case PROP_GC_INTERVAL:
-			JS_NewNumberValue(cx,branch->gc_freq,vp);
+			JS_NewNumberValue(cx,branch->gc_interval,vp);
 			break;
 #ifdef jscntxt_h___
 		case PROP_GC_BYTES:
@@ -112,10 +112,10 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			JS_ValueToInt32(cx, *vp, (int32*)&branch->limit);
 			break;
 		case PROP_GC_INTERVAL:
-			JS_ValueToInt32(cx, *vp, (int32*)&branch->gc_freq);
+			JS_ValueToInt32(cx, *vp, (int32*)&branch->gc_interval);
 			break;
 		case PROP_YIELD_INTERVAL:
-			JS_ValueToInt32(cx, *vp, (int32*)&branch->yield_freq);
+			JS_ValueToInt32(cx, *vp, (int32*)&branch->yield_interval);
 			break;
 	}
 
