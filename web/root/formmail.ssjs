@@ -17,25 +17,15 @@ function results(level, text)
 	writeln("<html>");
 	writeln("<head>");
 	writeln("<title>Sending e-mail</title>");
-
-	if(level>LOG_WARNING) {
-		writeln('<meta http-equiv="Pragma" content="no-cache">');
-		writeln('<meta http-equiv="expires" content="0">');
-		writeln('<meta http-equiv="refresh" content="3; URL=' 
-			+ redir +'">');
-	}
 	writeln("</head>");
 
 	writeln("<body>");
 	writeln("<center>");
-	if(level<=LOG_WARNING) {
-		writeln("!ERROR: ");
-	}
+	if(level<=LOG_WARNING)
+		writeln("!ERROR: ".bold());
 	writeln(text);
-	if(level>LOG_WARNING) {
-		writeln("<p>");
-		writeln("Returning to <i>" + redir + "</i>");
-	}
+	writeln("<p>");
+	writeln(("Click here to return to " + redir.italics()).link(redir));
 	writeln("</body>");
 	writeln("</html>");
 	exit();
@@ -70,4 +60,4 @@ else {
 if(!msgbase.save_msg(hdr,client,http_request.post_data))
 	results(LOG_ERR,format("%s saving message", msgbase.error));
 
-results(LOG_INFO,"E-mail sent to <i>" + hdr.to + "</i> successfully.");
+results(LOG_INFO,"E-mail sent to " + String(hdr.to).italics().bold() + " successfully.");
