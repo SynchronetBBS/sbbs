@@ -46,6 +46,8 @@
 #define IPPORT_TELNET 23
 #endif
 
+#define Y2K_2DIGIT_WINDOW	70
+
 /* Misc bits */
 
 #define FROM_SMB	(1L<<0) 	/* BBS info imported from message base */
