@@ -3395,7 +3395,7 @@ function IRCClient_registered_commands(command, cmdline) {
 
 // Server connections are ConnType 5
 function IRCClient_server_commands(origin, command, cmdline) {
-	if (ThisOrigin.match(/[.]/))
+	if (origin.match(/[.]/))
 		var ThisOrigin = searchbyserver(origin);
 	else
 		var ThisOrigin = searchbynick(origin);
