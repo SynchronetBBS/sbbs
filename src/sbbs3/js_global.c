@@ -315,6 +315,35 @@ js_ascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		ch;
+	char*		p;
+	char		str[2];
+	JSString*	js_str;
+
+	if(JSVAL_IS_STRING(argv[0])) {	
+
+		if((p=JS_GetStringBytes(JSVAL_TO_STRING(argv[0])))==NULL) 
+			return(JS_FALSE);
+		ch=*p;
+	} else
+		ch=(char)JSVAL_TO_INT(argv[0]);
+
+	ch=toupper(ch)&~0x20;
+
+	str[0]=*p;
+	str[1]=0;
+
+	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+
 static char* dupestr(char* str)
 {
 	char* p;
@@ -823,7 +852,10 @@ static jsMethodSpec js_global_functions[] = {
 	},		
 	{"chksum",			js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 32-bit chksum of string")
-	},		
+	},
+	{"ctrl",			js_ctrl,			1,	JSTYPE_STRING,	JSDOCSTR("number or string")
+	,JSDOCSTR("return ASCII control character representing character passed - Example: <tt>ctrl('C') returns '\3'</tt>")
+	},
 	{"ascii",			js_ascii,			1,	JSTYPE_NUMBER,	JSDOCSTR("[string text] or [number value]")
 	,JSDOCSTR("convert string to ASCII value or vice-versa (returns number OR string)")
 	},		
