@@ -73,11 +73,11 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 static JSBool
 js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int		type=SOCK_STREAM;	/* default = TCP */
+	int32	type=SOCK_STREAM;	/* default = TCP */
 	private_t* p;
 
 	if(argc)
-		type=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&type);
 
 	*rval = JSVAL_VOID;
 
@@ -343,6 +343,7 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		cp;
 	int			len;
+	int32		i=0;
 	ulong		ip_addr;
 	ushort		port;
 	JSString*	data_str;
@@ -374,7 +375,8 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	/* port */
-	port = (ushort)JSVAL_TO_INT(argv[2]);
+	JS_ValueToInt32(cx, argv[2], &i);
+	port = (ushort)i;
 
 	dbprintf(FALSE, p, "sending %d bytes to port %u at %s"
 		,len, port, JS_GetStringBytes(ip_str));
@@ -450,7 +452,7 @@ static JSBool
 js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		buf;
-	int			len=512;
+	int32		len=512;
 	JSString*	str;
 
 	private_t*	p;
@@ -459,7 +461,7 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(argc)
-		len = JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
 		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
@@ -504,7 +506,7 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		buf;
 	char		ip_addr[64];
 	char		port[32];
-	int			len=512;
+	int32		len=512;
 	JSString*	str;
 	JSObject*	retobj;
 	SOCKADDR_IN	addr;
@@ -516,7 +518,7 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(argc)
-		len = JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
 		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
@@ -565,7 +567,7 @@ static JSBool
 js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		buf;
-	int			len;
+	int32		len;
 	JSString*	str;
 
 	private_t*	p;
@@ -574,7 +576,7 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(argc)
-		len = JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
 		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
@@ -605,7 +607,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char		ch;
 	char*		buf;
 	int			i;
-	int			len=512;
+	int32		len=512;
 	BOOL		rd;
 	time_t		start;
 	time_t		timeout=30;	/* seconds */
@@ -616,7 +618,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(argc)
-		len = JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
 		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
@@ -624,7 +626,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(argc>1)
-		timeout = JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],&timeout);
 
 	start=time(NULL);
 	for(i=0;i<len;) {
@@ -727,9 +729,9 @@ js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	cmd = JSVAL_TO_INT(argv[0]);
+	JS_ValueToInt32(cx,argv[0],&cmd);
 	if(argc>1)
-		arg = JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],(int32*)&arg);
 
 	if(ioctlsocket(p->sock,cmd,&arg)==0)
 		*rval = INT_TO_JSVAL(arg);
@@ -766,7 +768,7 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if(JSVAL_IS_BOOLEAN(argv[argn]))
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
 		else if(JSVAL_IS_INT(argv[argn]))
-			tv.tv_sec = JSVAL_TO_INT(argv[0]);
+			tv.tv_sec = JSVAL_TO_INT(argv[argn]);
 	}
 
 	FD_ZERO(&socket_set);
@@ -810,18 +812,18 @@ enum {
 
 #ifdef _DEBUG
 static char* socket_prop_desc[SOCK_PROPERTIES+1] = {
-	 "last occurred error value"
-	,"true if socket is in a connected state"
-	,"true if data is waiting to be read"
-	,"number of bytes waiting to be read"
+	 "error status for the last socket operation that failed - READ ONLY"
+	,"<i>true</i> if socket is in a connected state - READ ONLY"
+	,"<i>true</i> if data is waiting to be read - READ ONLY"
+	,"number of bytes waiting to be read - READ ONLY"
 	,"enable debug logging"
 	,"socket descriptor"
-	,"non-blocking operation"
-	,"local IP address"
-	,"local TCP/UDP port"
-	,"remote IP address"
-	,"remote TCP/UDP port"
-	,"socket type (TCP or UDP)"
+	,"use non-blocking operation (default is <i>false</i>)"
+	,"local IP address (in dotted-decimal format)"
+	,"local TCP or UDP port number"
+	,"remote IP address (in dotted-decimal format)"
+	,"remote TCP or UDP port number"
+	,"socket type, SOCK_STREAM (TCP) or SOCK_DGRAM (UDP)"
 	,NULL
 };
 #endif
@@ -840,16 +842,16 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SOCK_PROP_DEBUG:
-			p->debug = JSVAL_TO_BOOLEAN(*vp);
+			JS_ValueToBoolean(cx,*vp,&(p->debug));
 			break;
 		case SOCK_PROP_DESCRIPTOR:
-			p->sock = JSVAL_TO_INT(*vp);
+			JS_ValueToInt32(cx,*vp,(int32*)&(p->sock));
 			break;
 		case SOCK_PROP_LAST_ERROR:
-			p->last_error = JSVAL_TO_INT(*vp);
+			JS_ValueToInt32(cx,*vp,(int32*)&(p->last_error));
 			break;
 		case SOCK_PROP_NONBLOCKING:
-			p->nonblocking = JSVAL_TO_BOOLEAN(*vp);
+			JS_ValueToBoolean(cx,*vp,&(p->nonblocking));
 			ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 			break;
 	}
@@ -980,36 +982,36 @@ static JSClass js_socket_class = {
 
 static jsMethodSpec js_socket_functions[] = {
 	{"close",		js_close,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("close socket")
+	,JSDOCSTR("close (shutdown) the socket immediately")
 	},
 	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[port]")
-	,JSDOCSTR("bind socket to a port")
+	,JSDOCSTR("bind socket to a port (number or service name)")
 	},
-	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("string host, port")
-	,JSDOCSTR("connect to a specific port at the specified IP address or hostname")
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port")
+	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)")
 	},
 	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	""					
-	,JSDOCSTR("put socket in listening state (use before an accept)")
+	,JSDOCSTR("place socket in a state to listen for incoming connections (use before an accept)")
 	},
 	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	""					
-	,JSDOCSTR("accept an incoming connection, returns a new Socket object")
+	,JSDOCSTR("accept an incoming connection, returns a new <b>Socket</b> object representing the new connection")
 	},
 	{"write",		js_send,		1,	JSTYPE_ALIAS },
-	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string data")
+	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("data")
 	,JSDOCSTR("send a string (AKA write)")
 	},
-	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("string data, address, port")
-	,JSDOCSTR("send a string to a specific address and port (typically used for UDP sockets)")
+	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("data, address, port")
+	,JSDOCSTR("send data to a specific host (IP address or host name) and port (number or service name), for UDP sockets")
 	},
-	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
-	,JSDOCSTR("send a file")
+	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("send an entire file over the socket")
 	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
 	{"recv",		js_recv,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters (AKA read)")
 	},
 	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
-	,JSDOCSTR("receive a string, default maxlen is 512 characters, leave string in receive buffer")
+	,JSDOCSTR("receive a string, default maxlen is 512 characters, leaves string in receive buffer")
 	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
 	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
@@ -1017,19 +1019,19 @@ static jsMethodSpec js_socket_functions[] = {
 	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
 	},
 	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[maxlen]")
-	,JSDOCSTR("receive a string from (typically UDP) socket, return address and port of sender")
+	,JSDOCSTR("receive a string from (typically UDP) socket, returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i>")
 	},
-	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	JSDOCSTR("number option")
-	,JSDOCSTR("get socket option value")
+	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	JSDOCSTR("option")
+	,JSDOCSTR("get socket option value, option may be socket option name (see sockopts in sockdefs.js) or number")
 	},
-	{"setoption",	js_setsockopt,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number option, value")
-	,JSDOCSTR("set socket option value")
+	{"setoption",	js_setsockopt,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("option, value")
+	,JSDOCSTR("set socket option value, option may be socket option name (see sockopts in sockdefs.js) or number")
 	},
-	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("number cmd [,arg]")
-	,JSDOCSTR("send socket IOCTL")					
+	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("command [,argument]")
+	,JSDOCSTR("send socket IOCTL (advanced)")					
 	},
 	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[number timeout] [,bool write]")
-	,JSDOCSTR("poll socket for read or write ability (defaults to read), default timeout value is 0 seconds (immediate timeout)")
+	,JSDOCSTR("poll socket for read or write ability (default is <i>read</i>), default timeout value is 0 seconds (immediate timeout)")
 	},
 	{0}
 };
