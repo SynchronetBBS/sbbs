@@ -219,13 +219,14 @@ void sbbs_t::outchar(char ch)
 		if(!lbuflen)
 			latr=curatr;
 		if(lbuflen<LINE_BUFSIZE)
-			lbuf[lbuflen++]=ch; }
+			lbuf[lbuflen++]=ch; 
+	}
 
-	if(lncntr==rows-1 && ((useron.misc&UPAUSE && !(sys_status&SS_PAUSEOFF))
-		|| sys_status&SS_PAUSEON)) {
+	if(lncntr==rows-1 && ((useron.misc&UPAUSE) || sys_status&SS_PAUSEON) 
+		&& !(sys_status&SS_PAUSEOFF)) {
 		lncntr=0;
-		pause(); }
-
+		pause(); 
+	}
 }
 
 void sbbs_t::center(char *instr)
