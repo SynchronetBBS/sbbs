@@ -20,4 +20,3 @@ endif
 ifeq ($(os),linux)	# Linux
  XPDEV-MT_LIBS	+=	-lpthread
 endif
-MT_CFLAGS += -DLINK_LIST_THREADSAFE
