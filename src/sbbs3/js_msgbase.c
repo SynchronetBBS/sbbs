@@ -44,6 +44,7 @@ static scfg_t* scfg=NULL;
 typedef struct
 {
 	smb_t	smb;
+	ushort	subnum;
 	BOOL	debug;
 
 } private_t;
@@ -68,10 +69,17 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	memset(&(p->smb),0,sizeof(smb_t));
 	js_str = JS_ValueToString(cx, argv[0]);
 	code = JS_GetStringBytes(js_str);
-	if(stricmp(code,"mail")==0)
+	if(stricmp(code,"mail")==0) {
+		p->subnum=INVALID_SUB;
 		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,code);
-	else
+	} else {
+		for(p->subnum=0;p->subnum<scfg->total_subs;p->subnum++)
+			if(!stricmp(scfg->sub[p->subnum]->code,code))
+				break;
+		if(p->subnum>=scfg->total_subs)	/* unknown code */
+			return(JS_TRUE);
 		snprintf(p->smb.file,sizeof(p->smb.file),"%ssubs/%s",scfg->data_dir,code);
+	}
 
 	if(argc>1)
 		p->smb.retry_time=JSVAL_TO_INT(argv[0]);
@@ -305,6 +313,136 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	return(JS_TRUE);
 }
 
+static JSBool
+js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		cp;
+	char*		body;
+	ushort		nettype;
+	JSString*	js_str;
+	JSObject*	hdr;
+	smbmsg_t	msg;
+	jsval		val;
+	private_t*	p;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if(argc<2)
+		return(JS_TRUE);
+	
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	memset(&msg,0,sizeof(msg));
+
+	if(!JSVAL_IS_OBJECT(argv[0]))
+		return(JS_TRUE);
+	hdr = JSVAL_TO_OBJECT(argv[0]);
+
+	if(!JSVAL_IS_STRING(argv[1]))
+		return(JS_TRUE);
+	if((js_str=JS_ValueToString(cx,argv[1]))==NULL)
+		return(JS_FALSE);
+	if((body=JS_GetStringBytes(js_str))==NULL)
+		return(JS_FALSE);
+
+	/* Required Header Fields */
+	if(JS_GetProperty(cx, hdr, "subject", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(JS_FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
+	} else
+		cp="";
+	smb_hfield(&msg, SUBJECT, (ushort)strlen(cp), cp);
+	msg.idx.subj=crc16(cp);
+
+	if(JS_GetProperty(cx, hdr, "to", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(JS_FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
+	} else {
+		if(p->subnum==INVALID_SUB)	/* e-mail */
+			return(JS_TRUE);		/* "to" property required */
+		cp="All";
+	}
+	smb_hfield(&msg, RECIPIENT, (ushort)strlen(cp), cp);
+	if(p->subnum!=INVALID_SUB)
+		msg.idx.to=crc16(cp);
+
+	if(JS_GetProperty(cx, hdr, "from", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(JS_FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
+	} else
+		return(JS_TRUE);	/* "from" property required */
+	smb_hfield(&msg, SENDER, (ushort)strlen(cp), cp);
+	if(p->subnum!=INVALID_SUB)
+		msg.idx.from=crc16(cp);
+
+	/* Optional Header Fields */
+	if(JS_GetProperty(cx, hdr, "from_ext", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(JS_FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
+		smb_hfield(&msg, SENDEREXT, (ushort)strlen(cp), cp);
+		if(p->subnum==INVALID_SUB)
+			msg.idx.from=atoi(cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "from_net_type", &val) && val!=JSVAL_VOID) {
+		nettype=(ushort)JSVAL_TO_INT(val);
+		smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
+		if(p->subnum==INVALID_SUB && nettype!=NET_NONE)
+			msg.idx.from=0;
+	}
+
+	if(JS_GetProperty(cx, hdr, "from_net_addr", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(JS_FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
+		smb_hfield(&msg, SENDERNETADDR, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "to_ext", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(JS_FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
+		smb_hfield(&msg, RECIPIENTEXT, (ushort)strlen(cp), cp);
+		if(p->subnum==INVALID_SUB)
+			msg.idx.to=atoi(cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "to_net_type", &val) && val!=JSVAL_VOID) {
+		nettype=(ushort)JSVAL_TO_INT(val);
+		smb_hfield(&msg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
+		if(p->subnum==INVALID_SUB && nettype!=NET_NONE)
+			msg.idx.to=0;
+	}
+
+	if(JS_GetProperty(cx, hdr, "to_net_addr", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(JS_FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
+		smb_hfield(&msg, RECIPIENTNETADDR, (ushort)strlen(cp), cp);
+	}
+
+	msg.hdr.when_written.time=time(NULL);
+	msg.hdr.when_written.zone=scfg->sys_timezone;
+
+	if(savemsg(scfg, &(p->smb), p->subnum, &msg, body)==0)
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+
+	return(JS_TRUE);
+}
+
+
 /* MsgBase Object Properites */
 enum {
 	 SMB_PROP_LAST_ERROR
@@ -430,8 +568,9 @@ static JSClass js_msgbase_class = {
 
 static JSFunctionSpec js_msgbase_functions[] = {
 	{"close",			js_close,			0},		/* close msgbase */
-	{"get_msg_header",	js_get_msg_header,	2},
-	{"get_msg_body",	js_get_msg_body,	2},
+	{"get_msg_header",	js_get_msg_header,	2},		/* get_msg_header(by_index, number) */
+	{"get_msg_body",	js_get_msg_body,	2},		/* get_msg_body(by_index, number, [strip_ctrl_a]) */
+	{"save_msg",		js_save_msg,		2},		/* save_msg(code, hdr, body) */
 	{0}
 };
 
