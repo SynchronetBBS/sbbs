@@ -205,6 +205,12 @@ unsigned _stklen=16000; 		  /* Set stack size in code, not header */
 #define Y2K_2DIGIT_WINDOW	70
 #define VERIFICATION_MOD	FALSE
 
+#ifndef __16BIT__	/* Sockets */
+
+extern SOCKET client_socket;
+
+#endif
+
 typedef struct {
 
 	char	str[32];
