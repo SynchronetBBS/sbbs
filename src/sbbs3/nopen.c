@@ -69,12 +69,7 @@ FILE* DLLCALL fnopen(int *fd, char *str, int access)
 	char	mode[128];
 	int		file;
 	FILE *	stream;
-#if 0
-	if(access&O_CREAT && access&O_WRONLY) {	/* not compatible with fdopen */
-		access&=~O_WRONLY;
-		access|=O_RDWR;
-	}
-#endif
+
     if((file=nopen(str,access))==-1)
         return(NULL);
 
@@ -86,13 +81,13 @@ FILE* DLLCALL fnopen(int *fd, char *str, int access)
             strcpy(mode,"a+");
         else
             strcpy(mode,"a"); 
-	} else if(access&O_TRUNC) {
+	} else if(access&(O_TRUNC|O_WRONLY)) {
 		if(access&O_RDWR)
 			strcpy(mode,"w+");
 		else
 			strcpy(mode,"w");
 	} else {
-        if(access&(O_RDWR|O_WRONLY))
+        if(access&O_RDWR)
             strcpy(mode,"r+");
         else
             strcpy(mode,"r"); 
