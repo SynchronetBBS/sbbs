@@ -34,7 +34,7 @@ DELETE	=	echo y | del
 .cacheautodepend	
 
 # Optional compile flags (disable banner, warnings and such)
-CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par
+CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-8004
 CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS
 
 # Debug or release build?

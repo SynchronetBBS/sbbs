@@ -18,7 +18,7 @@ SLASH	=	\\
 OFILE	=	obj
 EXEFILE	=	.exe
 ODIR	=	bcc.win32	# Executable output directory
-XPDEV	=   ..\..\xpdev
+XPDEV	=   	..\..\xpdev
 UIFC	=	..\..\uifc
 CFLAGS	=	-M -I..;$(UIFC);$(XPDEV) -g1
 DELETE	=	echo y | del 
@@ -30,7 +30,7 @@ DELETE	=	echo y | del
 .cacheautodepend	
 
 # Optional compile flags (disable banner, warnings and such)
-CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-pro 
+CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-pro -w-8004
 #-w-aus
 
 # Debug or release build?
