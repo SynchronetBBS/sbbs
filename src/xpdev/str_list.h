@@ -80,6 +80,10 @@ BOOL		strListDelete(str_list_t* list, size_t index);
 /* Replace a string at a specific index */
 char*		strListReplace(const str_list_t list, size_t index, const char* str);
 
+/* Convenience macros for pushing, popping strings (LIFO stack) */
+#define		strListPush(list, str)	strListAppend(list, str, STR_LIST_LAST_INDEX)
+#define		strListPop(list)		strListRemove(list, STR_LIST_LAST_INDEX)
+
 /* Add to an exiting or new string list by splitting specified string (str) */
 /* into multiple strings, separated by one of the delimit characters */
 str_list_t	strListSplit(str_list_t* list, char* str, const char* delimit);
@@ -107,7 +111,7 @@ void		strListSortAlphaCaseReverse(str_list_t list);
 
 /* Read lines from file appending each line to string list */
 /* Pass NULL list to have list allocated for you */
-str_list_t	strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len, BOOL pad);
+str_list_t	strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len);
 
 /* Write to file (fp) each string in the list, optionally separated by separator (e.g. "\n") */
 size_t		strListWriteFile(FILE* fp, const str_list_t list, const char* separator);
