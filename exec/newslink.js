@@ -271,7 +271,7 @@ for(i in area) {
 		if(hdr.from_net_type==NET_INTERNET)	/* no dupe loop */
 			continue;
 		if(hdr.from_net_type	/* don't gate messages between net types */
-			&& msgbase.settings!=undefined && !(msgbase.settings&SUB_GATE))
+			&& msgbase.cfg!=undefined && !(msgbase.cfg.settings&SUB_GATE))
 			continue;
 
 		body = msgbase.get_msg_body(
@@ -285,7 +285,7 @@ for(i in area) {
 			printf("!FAILED to read message number %ld\r\n",ptr);
 			continue;
 		}
-		if(msgbase.settings!=undefined && msgbase.settings&SUB_ASCII) {
+		if(msgbase.cfg!=undefined && msgbase.cfg.settings&SUB_ASCII) {
 			/* Convert Ex-ASCII chars to approximate ASCII equivalents */
 			body = ascii_str(body);
 			hdr.subject = ascii_str(hdr.subject);
