@@ -43,7 +43,6 @@
     #define mswait(x) delay(x)
     #define putch(x)	_putch(x,TRUE)
     #define clreol()	clrtoeol()
-    #define strnicmp(x,y,z)       strncasecmp(x,y,z)
 #elif defined(_WIN32)
 	#include <share.h>
 	#include <conio.h>
