@@ -172,7 +172,7 @@ while(client.socket.is_connected) {
 					,hdr.from
 					,system.timestr(hdr.when_written_time)
 					,hdr.id			// message-id
-					,hdr.references	// references
+					,hdr.reply_id	// references
 					,hdr.data_length	// byte count
 					,Math.round(hdr.data_length/79)+1	// line count
 					));
@@ -217,7 +217,7 @@ while(client.socket.is_connected) {
 						field=hdr.id;
 						break;
 					case "references":
-						field=hdr.thread_orig;
+						field=hdr.reply_id;
 						break;
 					case "lines":
 						field=Math.round(hdr.data_length/79)+1;
@@ -297,7 +297,7 @@ while(client.socket.is_connected) {
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.id);
 				writeln("Date: " + system.timestr(hdr.when_written_time));
-				writeln("References: " + hdr.references);
+				writeln("References: " + hdr.reply_id);
 				writeln("Newsgroups: " + selected.newsgroup);
 			}
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
