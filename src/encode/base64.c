@@ -42,19 +42,21 @@
 static const char * base64alphabet = 
  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-char * b64_decode(char *target, const char *source, size_t tlen)
+char * b64_decode(char *target, const char *source, size_t tlen, size_t slen)
 {
 	const char	*read;
 	char	*write;
-	char	*end;
+	char	*tend;
+	const char	*send;
 	int		bits=0;
 	int		working=0;
 	char *	i;
 
 	write=target;
 	read=source;
-	end=target+tlen;
-	for(;*read && write<end;read++) {
+	tend=target+tlen;
+	send=source+slen;
+	for(;write<tend && read<send;read++) {
 		working<<=6;
 		i=strchr(base64alphabet,(char)*read);
 		if(i==NULL) {
@@ -70,7 +72,7 @@ char * b64_decode(char *target, const char *source, size_t tlen)
 	}
 	if(bits)
 		*(write++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
-	if(write == end)  {
+	if(write == tend)  {
 		*(--write)=0;
 		return(NULL);
 	}
@@ -89,10 +91,11 @@ static int add_char(char *pos, int ch, int done, char *end)
 	return(0);
 }
 
-char * b64_encode(char *target, const char *source, size_t tlen)  {
+char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 	const char	*read;
 	char	*write;
-	char	*end;
+	char	*tend;
+	const char	*send;
 	char	*tmpbuf;
 	int		done=0;
 	int		enc;
@@ -108,20 +111,21 @@ char * b64_encode(char *target, const char *source, size_t tlen)  {
 	else
 		write=target;
 
-	end=write+tlen;
-	for(;*read && !done;)  {
+	tend=write+tlen;
+	send=source+slen;
+	for(;(read < send) && !done;)  {
 		if(! *read)
 			done=1;
 		enc=(int)*(read++);
 		buf=(enc & 0x03)<<4;
 		enc=(enc&0xFC)>>2;
-		if(add_char(write++, enc, done, end))  {
+		if(add_char(write++, enc, done, tend))  {
 			if(target==source)
 				free(tmpbuf);
 			return(NULL);
 		}
 		enc=buf|(*read >> 4);
-		if(add_char(write++, enc, done, end))  {
+		if(add_char(write++, enc, done, tend))  {
 			if(target==source)
 				free(tmpbuf);
 			return(NULL);
@@ -130,7 +134,7 @@ char * b64_encode(char *target, const char *source, size_t tlen)  {
 			done=1;
 		buf=(*(read++)<<2)&0x3C;
 		enc=buf|(*read>>6);
-		if(add_char(write++, enc, done, end))  {
+		if(add_char(write++, enc, done, tend))  {
 			if(target==source)
 				free(tmpbuf);
 			return(NULL);
@@ -138,7 +142,7 @@ char * b64_encode(char *target, const char *source, size_t tlen)  {
 		if(! *read)
 			done=1;
 		enc=((int)*(read++))&0x3F;
-		if(add_char(write++, enc, done, end))  {
+		if(add_char(write++, enc, done, tend))  {
 			if(target==source)
 				free(tmpbuf);
 			return(NULL);
