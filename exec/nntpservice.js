@@ -295,7 +295,7 @@ while(client.socket.is_connected) {
 			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
 
 			var hdr=new Object();
-			if(!(user.security.restrictions&UFLAG_G)) {	// !Guest
+			if(!(user.security.restrictions&(UFLAG_G|UFLAG_Q))) {	// !Guest and !Network Node
 				hdr.from=user.alias;
 				hdr.from_ext=user.number;
 			}
@@ -347,7 +347,7 @@ while(client.socket.is_connected) {
 
 				switch(line.toLowerCase()) {
 					case "from":
-						if(user.security.restrictions&UFLAG_G) 	// Guest
+						if(user.security.restrictions&(UFLAG_G|UFLAG_Q)) // Guest or Network Node
 							hdr.from=data;
 						break;
 					case "subject":
@@ -362,6 +362,8 @@ while(client.socket.is_connected) {
 			for(g in msg_area.grp_list) 
 				for(s in msg_area.grp_list[g].sub_list) 
 					if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==newsgroups.toLowerCase()) {
+						if(!msg_area.grp_list[g].sub_list[s].can_post)
+							continue;
 
 						if(msgbase!=null) {
 							msgbase.close();
