@@ -97,7 +97,7 @@ if(system.name=="Vertrauen" &&
 /* Send New User Welcome E-mail */
 /********************************/
 welcome_msg = system.text_dir + "welcome.msg"; 
-if(send_newuser_welcome && file_exists(welcome_msg) && !qnet)
+if(send_newuser_welcome && file_exists(welcome_msg) && !qnet && user.number>1)
 	send_newuser_welcome_msg(welcome_msg);
 
 function send_newuser_welcome_msg(fname)
