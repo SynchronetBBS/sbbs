@@ -180,6 +180,8 @@ int sbbs_t::xtrn_sec()
 				lncntr=0;
 			}
 			exec_xtrn(usrxtrn[l]); 
+
+			lncntr=2;	/* force a pause before CLS */
 		}
 		if(usrxsecs<2)
 			break; 
@@ -1734,8 +1736,6 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.aux=0;
 	putnodedat(cfg.node_num,&thisnode);
-
-	lncntr=1;	/* force a pause before CLS */
 
 	return(true);
 }
