@@ -3661,7 +3661,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 				fmsgbuflen=strlen((char *)buf)+4096; /* over alloc for kludge lines */
 				fmsgbuf=MALLOC(fmsgbuflen);
 				if(!fmsgbuf) {
-					printf("ERROR allocating %u bytes for fmsgbuf\n",fmsgbuflen);
+					printf("ERROR allocating %lu bytes for fmsgbuf\n",fmsgbuflen);
 					logprintf("ERROR line %d allocating %lu bytes for fmsgbuf"
 						,__LINE__,fmsgbuflen);
 					smb_unlockmsghdr(&smb[cur_smb],&msg);
@@ -3707,7 +3707,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 				/* Unknown kludge lines are added here */
 				for(l=0;l<msg.total_hfields && f<fmsgbuflen;l++)
 					if(msg.hfield[l].type == FIDOCTRL)
-						f+=sprintf(fmsgbuf+f,"\1%.512s\r",msg.hfield_dat[l]);
+						f+=sprintf(fmsgbuf+f,"\1%.512s\r",(char*)msg.hfield_dat[l]);
 
 				for(l=0,cr=1;buf[l] && f<fmsgbuflen;l++) {
 					if(buf[l]==1) { /* Ctrl-A, so skip it and the next char */
