@@ -57,15 +57,11 @@ void sbbs_t::logout()
 	tm_now=*tm;
 
 	if(!useron.number) {				 /* Not logged in, so do nothing */
-#if 1
 		if(!online) {
-			sprintf(str,"%02d:%02d%c  T:%3u sec\r\n"
-				,tm->tm_hour>12 ? tm->tm_hour-12
-				: tm->tm_hour==0 ? 12 : tm->tm_hour, tm->tm_min
-				, tm->tm_hour>=12 ? 'p' : 'a'
+			sprintf(str,"%s  T:%3u sec\r\n"
+				,hhmmtostr(&cfg,tm,tmp)
 				,(uint)(now-answertime));
 			logline("@-",str); }
-#endif
 		return; 
 	}
 	strcpy(lastuseron,useron.alias);	/* for use with WFC status display */
@@ -160,9 +156,8 @@ void sbbs_t::logout()
 		putuserrec(&cfg,useron.number,U_CURSUB,8,cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
 	if(usrlibs>0)
 		putuserrec(&cfg,useron.number,U_CURDIR,8,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
-	sprintf(str,"%02d:%02d%c  ",tm_now.tm_hour>12 ? tm_now.tm_hour-12
-		: tm_now.tm_hour==0 ? 12 : tm_now.tm_hour, tm_now.tm_min
-		, tm_now.tm_hour>=12 ? 'p' : 'a');
+	hhmmtostr(&cfg,&tm_now,str);
+	strcat(str,"  ");
 	if(sys_status&SS_USERON)
 		sprintf(tmp,"T:%3u   R:%3lu   P:%3lu   E:%3lu   F:%3lu   "
 			"U:%3luk %lu   D:%3luk %lu"
