@@ -143,7 +143,6 @@ void add_outevent(int event, int x, int y)
 
 void ciolib_mouse_thread(void *data)
 {
-	struct timespec timeout;
 	struct in_mouse_event *old_in_event;
 	int	timedout;
 	int timeout_button=0;
