@@ -217,5 +217,10 @@ MAKEUSER_OBJS = \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE)
 
 JSEXEC_OBJS = \
-			$(OBJODIR)$(DIRSEP)jsexec$(OFILE) \
+			$(OBJODIR)$(DIRSEP)jsexec$(OFILE)
 
+SEXYZ_OBJS = \
+			$(OBJODIR)$(DIRSEP)sexyz$(OFILE) \
+			$(OBJODIR)$(DIRSEP)xmodem$(OFILE) \
+			$(OBJODIR)$(DIRSEP)zmodem$(OFILE) \
+			$(OBJODIR)$(DIRSEP)telnet$(OFILE)

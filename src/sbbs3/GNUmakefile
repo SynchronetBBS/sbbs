@@ -206,3 +206,9 @@ $(ANS2ASC): $(OBJODIR)/ans2asc.o
 $(ASC2ANS): $(OBJODIR)/asc2ans.o
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(OBJODIR)/asc2ans.o
+
+# SEXYZ
+$(SEXYZ): $(SEXYZ_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(SEXYZ_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS)
+
