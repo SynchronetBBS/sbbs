@@ -296,6 +296,7 @@ static void sopen_child_thread(void* arg)
 {
 	int fd;
 
+	printf("sopen_child_thread: %d",arg);
 	if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYWR))!=-1) {
 		if(arg)
 			printf("!FAILURE: was able to reopen in child thread\n");
@@ -306,3 +307,5 @@ static void sopen_child_thread(void* arg)
 	} else if(arg==0)
 		perror(LOCK_FNAME);
 }
+
+/* End of wraptest.c */
