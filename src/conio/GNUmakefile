@@ -5,7 +5,9 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 CFLAGS += $(XPDEV-MT_CFLAGS) $(CIOLIB-MT_CFLAGS)
 
 OBJS	+=	$(MTOBJODIR)$(DIRSEP)curs_cio$(OFILE)
-ifndef NO_X
+ifdef NO_X
+ CFLAGS	+=	-DNO_X
+else
  CFLAGS	+=	-I/usr/X11R6/include
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)console$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)x_cio$(OFILE)
