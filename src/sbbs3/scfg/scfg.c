@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 	BOOL	gui_mode=FALSE;
 	BOOL    door_mode=FALSE;
 
-    printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright 2003 "
+    printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright 2004 "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
 
 	cfg.size=sizeof(cfg);
