@@ -39,21 +39,30 @@
 
 #ifdef JAVASCRIPT
 
-BOOL debug=FALSE;
+typedef struct
+{
+	SOCKET	sock;
+	BOOL	external;	/* externally created, don't close */
+	BOOL	debug;
+	int		last_error;
 
-static void dbprintf(BOOL error, SOCKET sock, char* fmt, ...)
+} private_t;
+
+
+
+static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
 
-	if(!debug && !error)
+	if(p==NULL || (!p->debug && !error))
 		return;
 
     va_start(argptr,fmt);
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
 	
-	lprintf("%04u Socket %s%s",sock,error ? "ERROR: ":"",sbuf);
+	lprintf("%04u Socket %s%s",p->sock,error ? "ERROR: ":"",sbuf);
 }
 
 /* Socket Constructor (creates socket descriptor) */
@@ -62,24 +71,33 @@ static JSBool
 js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int		type=SOCK_STREAM;	/* default = TCP */
-	SOCKET	sock;
+	private_t* p;
 
 	if(argc)
 		type=JSVAL_TO_INT(argv[0]);
 
 	*rval = JSVAL_VOID;
 
-	if((sock=open_socket(type))==INVALID_SOCKET) {
+	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
+		dbprintf(TRUE, 0, "open_socket malloc failed");
+		return(JS_FALSE);
+	}
+
+	if((p->sock=open_socket(type))==INVALID_SOCKET) {
 		dbprintf(TRUE, 0, "open_socket failed with error %d",ERROR_VALUE);
 		return(JS_FALSE);
 	}
 
-	if(!JS_SetPrivate(cx, obj, (char*)(sock<<1))) {
-		dbprintf(TRUE, sock, "JS_SetPrivate failed");
+	p->debug=JS_FALSE;
+	p->last_error=0;
+	p->external=JS_FALSE;
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		dbprintf(TRUE, p, "JS_SetPrivate failed");
 		return(JS_FALSE);
 	}
 
-	dbprintf(FALSE, sock, "object constructed");
+	dbprintf(FALSE, p, "object constructed");
 	return(JS_TRUE);
 }
 
@@ -87,20 +105,19 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 
 static void js_finalize_socket(JSContext *cx, JSObject *obj)
 {
-	SOCKET	sock;
+	private_t* p;
 	
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
-
-	if(sock==0)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
-	close_socket(sock);
+	if(p->external==JS_FALSE && p->sock!=INVALID_SOCKET)
+		close_socket(p->sock);
 
-	dbprintf(FALSE, sock, "closed/deleted");
+	dbprintf(FALSE, p, "closed/deleted");
 
-	sock=0; /* use zero to signify invalid socket */
+	free(p);
 
-	JS_SetPrivate(cx, obj, (char*)(sock<<1));
+	JS_SetPrivate(cx, obj, NULL);
 }
 
 
@@ -109,22 +126,23 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 static JSBool
 js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	SOCKET	sock;
-	
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	*rval = JSVAL_VOID;
 
-	if(sock==0)
+	if(p->sock==INVALID_SOCKET)
 		return(JS_TRUE);
 
-	close_socket(sock);
+	close_socket(p->sock);
 
-	dbprintf(FALSE, sock, "closed");
+	p->last_error=ERROR_VALUE;
 
-	sock=0; /* use zero to signify invalid socket */
+	dbprintf(FALSE, p, "closed");
 
-	JS_SetPrivate(cx, obj, (char*)(sock<<1));
+	p->sock=INVALID_SOCKET; 
 
 	return(JS_TRUE);
 }
@@ -133,24 +151,26 @@ static JSBool
 js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int			i;
-	SOCKET		sock;
 	SOCKADDR_IN	addr;
-	
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	private_t*	p;
 
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+	
 	memset(&addr,0,sizeof(addr));
 	addr.sin_family = AF_INET;
 
 	if(argc)
 		addr.sin_port = (ushort)JSVAL_TO_INT(argv[0]);
 
-	if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
-		dbprintf(TRUE, sock, "bind failed with error %d",ERROR_VALUE);
+	if((i=bind(p->sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "bind failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return(JS_TRUE);
 	}
 
-	dbprintf(FALSE, sock, "bound to port %u",addr.sin_port);
+	dbprintf(FALSE, p, "bound to port %u",addr.sin_port);
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 	return(JS_TRUE);
 }
@@ -162,38 +182,41 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	ulong		ip_addr;
 	ushort		port;
 	JSString*	str;
-	SOCKET		sock;
 	SOCKADDR_IN	addr;
+	private_t*	p;
 
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	if(argc<2)
 		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
 	if((ip_addr=resolve_ip(JS_GetStringBytes(str)))==0) {
-		dbprintf(TRUE, sock, "resolve_ip failed with error %d",ERROR_VALUE);
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "resolve_ip failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return(JS_TRUE);
 	}
 
 	port = (ushort)JSVAL_TO_INT(argv[1]);
 
-	dbprintf(FALSE, sock, "connecting to port %u at %s", port, JS_GetStringBytes(str));
+	dbprintf(FALSE, p, "connecting to port %u at %s", port, JS_GetStringBytes(str));
 
 	memset(&addr,0,sizeof(addr));
 	addr.sin_addr.s_addr = ip_addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(port);
 
-	if((i=connect(sock, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
-		dbprintf(TRUE, sock, "connect failed with error %d",ERROR_VALUE);
+	if((i=connect(p->sock, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "connect failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return(JS_TRUE);
 	}
 
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
-	dbprintf(FALSE, sock, "connected to port %u at %s", port, JS_GetStringBytes(str));
+	dbprintf(FALSE, p, "connected to port %u at %s", port, JS_GetStringBytes(str));
 
 	return(JS_TRUE);
 }
@@ -201,27 +224,30 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		p;
+	char*		cp;
 	int			len;
-	SOCKET		sock;
 	JSString*	str;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
 
 	if(!argc)
 		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
-	p=JS_GetStringBytes(str);
-	len=strlen(p);
+	cp=JS_GetStringBytes(str);
+	len=strlen(cp);
 
-	if(send(sock,p,len,0)==len) {
-		dbprintf(FALSE, sock, "sent %u bytes",len);
+	if(send(p->sock,cp,len,0)==len) {
+		dbprintf(FALSE, p, "sent %u bytes",len);
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
-	} else
-		dbprintf(TRUE, sock, "send of %u bytes failed",len);
+	} else {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "send of %u bytes failed",len);
+	}
 		
 	return(JS_TRUE);
 }
@@ -231,10 +257,12 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		buf[513];
 	int			len;
-	SOCKET		sock;
 	JSString*	str;
 
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	if(argc)
 		len = JSVAL_TO_INT(argv[0]);
@@ -243,17 +271,18 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
 
-	len = recv(sock,buf,len,0);
-	if(len<0)
+	len = recv(p->sock,buf,len,0);
+	if(len<0) {
+		p->last_error=ERROR_VALUE;
 		len=0;
-
+	}
 	buf[len]=0;
 
 	str = JS_NewStringCopyZ(cx, buf);
 
 	*rval = STRING_TO_JSVAL(str);
 
-	dbprintf(FALSE, sock, "received %u bytes",len);
+	dbprintf(FALSE, p, "received %u bytes",len);
 		
 	return(JS_TRUE);
 }
@@ -263,10 +292,12 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		buf[513];
 	int			len;
-	SOCKET		sock;
 	JSString*	str;
 
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	if(argc)
 		len = JSVAL_TO_INT(argv[0]);
@@ -275,17 +306,18 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
 
-	len = recv(sock,buf,len,MSG_PEEK);
-	if(len<0)
+	len = recv(p->sock,buf,len,MSG_PEEK);
+	if(len<0) {
+		p->last_error=ERROR_VALUE;	
 		len=0;
-
+	}
 	buf[len]=0;
 
 	str = JS_NewStringCopyZ(cx, buf);
 
 	*rval = STRING_TO_JSVAL(str);
 
-	dbprintf(FALSE, sock, "received %u bytes",len);
+	dbprintf(FALSE, p, "received %u bytes",len);
 		
 	return(JS_TRUE);
 }
@@ -300,11 +332,12 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int			i;
 	int			len;
 	BOOL		rd;
-	SOCKET		sock;
 	time_t		start;
 	JSString*	str;
+	private_t*	p;
 
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	if(argc)
 		len = JSVAL_TO_INT(argv[0]);
@@ -316,17 +349,20 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	start=time(NULL);
 	for(i=0;i<len;i++) {
 
-		if(!socket_check(sock,&rd))
+		if(!socket_check(p->sock,&rd)) {
+			p->last_error=ERROR_VALUE;
 			break;		/* disconnected */
-
+		}
 		if(time(NULL)-start>TIMEOUT_SOCK_READLINE) 
 			break;		/* time-out */
 
 		if(!rd)
 			continue;	/* no data */
 
-		if(recv(sock, &ch, 1, 0)!=1) 
+		if(recv(p->sock, &ch, 1, 0)!=1) {
+			p->last_error=ERROR_VALUE;
 			break;
+		}
 
 		if(ch=='\n' && i>=1) 
 			break;
@@ -342,7 +378,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = STRING_TO_JSVAL(str);
 
-	dbprintf(FALSE, sock, "received %u bytes",strlen(buf));
+	dbprintf(FALSE, p, "received %u bytes",strlen(buf));
 		
 	return(JS_TRUE);
 }
@@ -354,19 +390,21 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	int			opt;
 	int			len;
 	int			val;
-	SOCKET		sock;
-	
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	lvl = JSVAL_TO_INT(argv[0]);
 	opt = JSVAL_TO_INT(argv[1]);
 	len = sizeof(val);
 
-	if(getsockopt(sock,lvl,opt,(char*)&val,&len)==0) {
-		dbprintf(FALSE, sock, "option %d (level: %d) = %d",opt,lvl,val);
+	if(getsockopt(p->sock,lvl,opt,(char*)&val,&len)==0) {
+		dbprintf(FALSE, p, "option %d (level: %d) = %d",opt,lvl,val);
 		*rval = INT_TO_JSVAL(val);
 	} else {
-		dbprintf(TRUE, sock, "error %d getting option %d (level: %d)"
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "error %d getting option %d (level: %d)"
 			,ERROR_VALUE,opt,lvl);
 		*rval = INT_TO_JSVAL(-1);
 	}
@@ -381,15 +419,17 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	int			lvl;
 	int			opt;
 	int			val;
-	SOCKET		sock;
-	
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	lvl = JSVAL_TO_INT(argv[0]);
 	opt = JSVAL_TO_INT(argv[1]);
 	val = JSVAL_TO_INT(argv[2]);
 
-	*rval = BOOLEAN_TO_JSVAL(setsockopt(sock,lvl,opt,(char*)&val,sizeof(val))==0);
+	*rval = BOOLEAN_TO_JSVAL(setsockopt(p->sock,lvl,opt,(char*)&val,sizeof(val))==0);
+	p->last_error=ERROR_VALUE;
 
 	return(JS_TRUE);
 }
@@ -407,21 +447,24 @@ enum {
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint       tiny;
-	SOCKET		sock;
+	private_t*	p;
 
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
     tiny = JSVAL_TO_INT(id);
 
-	dbprintf(FALSE, sock, "setting property %d",tiny);
+	dbprintf(FALSE, p, "setting property %d",tiny);
 
 	switch(tiny) {
 		case SOCK_PROP_DEBUG:
-			debug = JSVAL_TO_BOOLEAN(*vp);
+			p->debug = JSVAL_TO_BOOLEAN(*vp);
 			break;
 		case SOCK_PROP_DESCRIPTOR:
-			sock = JSVAL_TO_INT(*vp);
-			JS_SetPrivate(cx, obj, (char*)(sock<<1));
+			p->sock = JSVAL_TO_INT(*vp);
+			break;
+		case SOCK_PROP_LAST_ERROR:
+			p->last_error = JSVAL_TO_INT(*vp);
 			break;
 	}
 
@@ -433,9 +476,10 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	ulong		cnt;
 	BOOL		rd;
-	SOCKET		sock;
+	private_t*	p;
 
-	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
     tiny = JSVAL_TO_INT(id);
 
@@ -445,27 +489,27 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SOCK_PROP_LAST_ERROR:
-			*vp = INT_TO_JSVAL(ERROR_VALUE);
+			*vp = INT_TO_JSVAL(p->last_error);
 			break;
 		case SOCK_PROP_IS_CONNECTED:
-			*vp = BOOLEAN_TO_JSVAL(socket_check(sock,NULL));
+			*vp = BOOLEAN_TO_JSVAL(socket_check(p->sock,NULL));
 			break;
 		case SOCK_PROP_DATA_WAITING:
-			socket_check(sock,&rd);
+			socket_check(p->sock,&rd);
 			*vp = BOOLEAN_TO_JSVAL(rd);
 			break;
 		case SOCK_PROP_NREAD:
 			cnt=0;
-			if(ioctlsocket(sock, FIONREAD, &cnt)==0) 
+			if(ioctlsocket(p->sock, FIONREAD, &cnt)==0) 
 				*vp = INT_TO_JSVAL(cnt);
 			else
 				*vp = INT_TO_JSVAL(0);
 			break;
 		case SOCK_PROP_DEBUG:
-			*vp = INT_TO_JSVAL(debug);
+			*vp = INT_TO_JSVAL(p->debug);
 			break;
 		case SOCK_PROP_DESCRIPTOR:
-			*vp = INT_TO_JSVAL(sock);
+			*vp = INT_TO_JSVAL(p->sock);
 			break;
 	}
 
@@ -534,6 +578,7 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOCKET sock)
 {
 	JSObject* obj;
+	private_t*	p;
 
 	obj = JS_DefineObject(cx, parent, name, &js_socket_class, NULL, 0);
 
@@ -546,12 +591,20 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	if (!JS_DefineFunctions(cx, obj, js_socket_functions)) 
 		return(NULL);
 
-	if(!JS_SetPrivate(cx, obj, (char*)(sock<<1))) {
-		dbprintf(TRUE, sock, "JS_SetPrivate failed");
+	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
+		return(NULL);
+
+	p->sock=sock;
+	p->debug=JS_FALSE;
+	p->last_error=0;
+	p->external=JS_TRUE;
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		dbprintf(TRUE, p, "JS_SetPrivate failed");
 		return(NULL);
 	}
 
-	dbprintf(FALSE, sock, "object created");
+	dbprintf(FALSE, p, "object created");
 
 	return(obj);
 }
