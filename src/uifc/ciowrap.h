@@ -48,6 +48,9 @@ struct text_info {
 	unsigned char screenwidth;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #define clreol()	clrtoeol()
 #define putch(x)	echochar(x)
 short curses_color(short color);
@@ -71,3 +74,6 @@ void gettextinfo(struct text_info *info);
 void _setcursortype(int type);
 void textbackground(int colour);
 void textcolor(int colour);
+#ifdef __cplusplus
+}
+#endif
