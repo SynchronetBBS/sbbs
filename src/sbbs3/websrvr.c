@@ -2988,6 +2988,7 @@ void DLLCALL web_server(void* arg)
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
+	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
 
 	do {
@@ -3141,25 +3142,32 @@ void DLLCALL web_server(void* arg)
 
 		while(server_socket!=INVALID_SOCKET && !terminate_server) {
 
-			/* check for re-cycle semaphores */
-			if(active_clients==0 && !(startup->options&BBS_OPT_NO_RECYCLE)) {
-				if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
-					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+			/* check for re-cycle/shutdown semaphores */
+			if(active_clients==0) {
+				if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+					if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
+						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+						break;
+					}
+#if 0	/* unused */
+					if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
+						startup->recycle_now=TRUE;
+#endif
+					if(startup->recycle_now==TRUE) {
+						lprintf(LOG_INFO,"0000 Recycle semaphore signaled");
+						startup->recycle_now=FALSE;
+						break;
+					}
+				}
+				if(((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL
+						&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+					|| (startup->shutdown_now==TRUE
+						&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+					startup->shutdown_now=FALSE;
+					terminate_server=TRUE;
 					break;
 				}
-				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
-					startup->recycle_now=TRUE;
-				if(startup->recycle_now==TRUE) {
-					lprintf(LOG_INFO,"0000 Recycle semaphore signaled");
-					startup->recycle_now=FALSE;
-					break;
-				}
-			}
-			if((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL) {
-				lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p);
-				terminate_server=TRUE;
-				break;
-			}
+			}	
 
 			/* now wait for connection */
 

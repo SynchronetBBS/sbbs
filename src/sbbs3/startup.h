@@ -118,7 +118,7 @@ typedef struct {
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
 	char	host_name[128];
 	BOOL	recycle_now;
-	sem_t	recycle_sem;
+	BOOL	shutdown_now;
 	DWORD	log_mask;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */

@@ -3785,6 +3785,7 @@ void DLLCALL bbs_thread(void* arg)
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
+	startup->shutdown_now=FALSE;
 	terminate_server=false;
 
 	do {
@@ -4172,16 +4173,21 @@ void DLLCALL bbs_thread(void* arg)
 					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
 					break;
 				}
+#if 0	/* unused */
 				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
 					startup->recycle_now=TRUE;
+#endif
 				if(startup->recycle_now==TRUE) {
 					lprintf(LOG_INFO,"0000 Recycle semaphore signaled");
 					startup->recycle_now=FALSE;
 					break;
 				}
 			}
-			if((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL) {
-				lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p);
+			if(((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL
+					&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+				|| (startup->shutdown_now==TRUE
+					&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+				startup->shutdown_now=FALSE;
 				terminate_server=TRUE;
 				break;
 			}
