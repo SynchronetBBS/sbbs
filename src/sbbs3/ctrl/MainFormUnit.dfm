@@ -2439,6 +2439,11 @@ object MainForm: TMainForm
           Hint = 'DNSBL_EXEMPT.CFG'
           OnClick = CtrlMenuItemEditClick
         end
+        object ExternalMailProc: TMenuItem
+          Caption = 'External Mail Processing'
+          Hint = 'MAILPROC.CFG'
+          OnClick = CtrlMenuItemEditClick
+        end
       end
     end
     object FtpMenuItem: TMenuItem
