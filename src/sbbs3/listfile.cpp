@@ -494,20 +494,6 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 	return(true);
 }
 
-void sbbs_t::clearline(void)
-{
-	int i;
-
-	outchar(CR);
-	if(useron.misc&ANSI)
-		bputs("\x1b[K");
-	else {
-		for(i=0;i<79;i++)
-			outchar(SP);
-		outchar(CR); 
-	}
-}
-
 /****************************************************************************/
 /* Remove credits from uploader of file 'f'                                 */
 /****************************************************************************/
