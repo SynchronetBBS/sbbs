@@ -415,6 +415,44 @@ js_sound(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			i;
+	int			flags=GLOB_MARK;
+	char*		p;
+	glob_t		g;
+	JSObject*	array;
+	JSString*	js_str;
+    jsint       len=0;
+	jsval		val;
+
+	*rval = JSVAL_NULL;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_TRUE);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_TRUE);
+
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&flags);
+
+    if((array = JS_NewArrayObject(cx, 0, NULL))==NULL)
+		return(JS_FALSE);
+
+	glob(p,flags,NULL,&g);
+	for(i=0;i<(int)g.gl_pathc;i++) {
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,g.gl_pathv[i]));
+        if(!JS_SetElement(cx, array, len++, &val))
+			break;
+	}
+	globfree(&g);
+
+    *rval = OBJECT_TO_JSVAL(array);
+
+    return(JS_TRUE);
+}
 
 static JSClass js_global_class ={
         "Global",
@@ -444,6 +482,7 @@ static JSFunctionSpec js_global_functions[] = {
 	{"file_attrib",		js_fattr,			1},		/* get file mode/attributes */
 	{"file_date",		js_fdate,			1},		/* get file last modified date/time */
 	{"file_size",		js_flength,			1},		/* get file length (in bytes) */
+	{"directory",		js_directory,		1},		/* get directory listing (pattern, flags) */
 	{0}
 };
 
