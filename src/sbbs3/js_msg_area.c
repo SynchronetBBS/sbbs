@@ -145,7 +145,6 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	val=OBJECT_TO_JSVAL(grp_list);
 	if(!JS_SetProperty(cx, areaobj, "grp_list", &val)) 
 		return(NULL);
-	JS_SetPropertyAttributes(cx, areaobj, "grp_list", 0, &found);
 
 	for(l=0;l<cfg->total_grps;l++) {
 
@@ -174,7 +173,6 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		val=OBJECT_TO_JSVAL(sub_list);
 		if(!JS_SetProperty(cx, grpobj, "sub_list", &val)) 
 			return(NULL);
-		JS_SetPropertyAttributes(cx, grpobj, "sub_list", 0, &found);
 
 		for(d=0;d<cfg->total_subs;d++) {
 			if(cfg->sub[d]->grp!=l)

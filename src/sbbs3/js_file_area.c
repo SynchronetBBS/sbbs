@@ -93,7 +93,6 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	val=OBJECT_TO_JSVAL(lib_list);
 	if(!JS_SetProperty(cx, areaobj, "lib_list", &val)) 
 		return(NULL);
-	JS_SetPropertyAttributes(cx, areaobj, "lib_list", 0, &found);
 
 	for(l=0;l<cfg->total_libs;l++) {
 
@@ -127,7 +126,6 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		val=OBJECT_TO_JSVAL(dir_list);
 		if(!JS_SetProperty(cx, libobj, "dir_list", &val)) 
 			return(NULL);
-		JS_SetPropertyAttributes(cx, libobj, "dir_list", 0, &found);
 
 		for(d=0;d<cfg->total_dirs;d++) {
 			if(cfg->dir[d]->lib!=l)
