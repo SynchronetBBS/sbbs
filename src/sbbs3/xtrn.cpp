@@ -179,6 +179,22 @@ OPENVXDHANDLE GetAddressOfOpenVxDHandle(void)
 	return((OPENVXDHANDLE)GetProcAddress(hK32, "OpenVxDHandle"));
 }
 
+/*****************************************************************************/
+// Expands Single CR to CRLF
+/*****************************************************************************/
+BYTE* cr_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
+{
+	ulong	i,j;
+
+	for(i=j=0;i<inlen;i++) {
+		outbuf[j++]=inbuf[i];
+		if(inbuf[i]=='\r')
+			outbuf[j++]='\n';
+	}
+	newlen=j;
+    return(outbuf);
+}
+
 /* Clean-up resources while preserving current LastError value */
 #define XTRN_CLEANUP												\
 	last_error=GetLastError();										\
@@ -203,6 +219,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	char	title[256];
 	BYTE	buf[XTRN_IO_BUF_LEN],*bp;
     BYTE 	telnet_buf[XTRN_IO_BUF_LEN*2];
+    BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
     bool	wwiv_flag=false;
     bool	native=false;			// DOS program by default
@@ -645,17 +662,19 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 #endif
 					}
 					
-					/* LF expansion */
-					if(use_pipes && wr==1 && buf[0]=='\r') 
-						buf[wr++]='\n';
+					/* CR expansion */
+					if(use_pipes) 
+						bp=cr_expand(buf,wr,output_buf,wr);
+					else
+						bp=buf;
 
 					if(wrslot!=INVALID_HANDLE_VALUE
-						&& WriteFile(wrslot,buf,wr,&len,NULL)==TRUE) {
+						&& WriteFile(wrslot,bp,wr,&len,NULL)==TRUE) {
 						RingBufRead(&inbuf, NULL, len);
 						wr=len;
 						if(use_pipes) {
 							/* echo */
-							RingBufWrite(&outbuf, buf, wr);
+							RingBufWrite(&outbuf, bp, wr);
 							sem_post(&output_sem);
 						}
 					} else		// VDD not loaded yet
