@@ -35,15 +35,22 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <io.h>
+/* OS-specific */
+#ifndef __unix__
+	#include <io.h>
+	#include <share.h>
+#endif
+#ifdef _WIN32
+	#include <windows.h>
+#endif
+
+/* ANSI */
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <fcntl.h>
-#include <share.h>
-#ifdef _WIN32
-#include <windows.h>
-#endif
+
+/* Synchronet-specific */
 #include "cmdshell.h"
 #include "ars_defs.h"
 #include "crc32.h"
