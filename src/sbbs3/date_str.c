@@ -281,6 +281,62 @@ when_t DLLCALL rfc822date(char* date)
 }
 
 /****************************************************************************/
+/* Converts when_t.zone into ASCII format                                   */
+/****************************************************************************/
+char* DLLCALL zonestr(short zone)
+{
+    static char str[32];
+
+	switch((ushort)zone) {
+		case 0:     return("UTC");
+		case AST:   return("AST");
+		case EST:   return("EST");
+		case CST:   return("CST");
+		case MST:   return("MST");
+		case PST:   return("PST");
+		case YST:   return("YST");
+		case HST:   return("HST");
+		case BST:   return("BST");
+		case ADT:   return("ADT");
+		case EDT:   return("EDT");
+		case CDT:   return("CDT");
+		case MDT:   return("MDT");
+		case PDT:   return("PDT");
+		case YDT:   return("YDT");
+		case HDT:   return("HDT");
+		case BDT:   return("BDT");
+		case MID:   return("MID");
+		case VAN:   return("VAN");
+		case EDM:   return("EDM");
+		case WIN:   return("WIN");
+		case BOG:   return("BOG");
+		case CAR:   return("CAR");
+		case RIO:   return("RIO");
+		case FER:   return("FER");
+		case AZO:   return("AZO");
+		case LON:   return("LON");
+		case BER:   return("BER");
+		case ATH:   return("ATH");
+		case MOS:   return("MOS");
+		case DUB:   return("DUB");
+		case KAB:   return("KAB");
+		case KAR:   return("KAR");
+		case BOM:   return("BOM");
+		case KAT:   return("KAT");
+		case DHA:   return("DHA");
+		case BAN:   return("BAN");
+		case HON:   return("HON");
+		case TOK:   return("TOK");
+		case SYD:   return("SYD");
+		case NOU:   return("NOU");
+		case WEL:   return("WEL");
+		}
+
+	sprintf(str,"%02d:%02u",zone/60,zone<0 ? (-zone)%60 : zone%60);
+	return(str);
+}
+
+/****************************************************************************/
 /* Convert when_t structure to RFC822 date header field (string)			*/
 /****************************************************************************/
 char* DLLCALL msgdate(when_t when, char* buf)
