@@ -39,6 +39,7 @@
 	#include <sys/wait.h>		/* waitpid() */
 #endif
 
+#define JAVASCRIPT
 #include "sbbs.h"
 #include "sockwrap.h"		/* sendfilesocket() */
 #include "threadwrap.h"		/* _beginthread() */
@@ -71,6 +72,7 @@ static int		enc_count=0;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
+static time_t	uptime=0;
 static web_startup_t* startup=NULL;
 
 typedef struct  {
@@ -85,19 +87,25 @@ typedef struct  {
 	char    auth[128];				/* UserID:Password */
 	char	host[128];				/* The requested host. (virtual hosts) */
 	int		send_location;
+	DWORD	accept_encodings;
+	int		encoded_as;
+	const char*	mime_type;
+
+	/* CGI parameters */
 	char**	cgi_env;
 	uint	cgi_env_size;
 	uint	cgi_env_max_size;
 	char**	cgi_heads;
 	uint	cgi_heads_size;
 	uint	cgi_heads_max_size;
-	char	cgi_infile[128];
+	char	cgi_infile[MAX_PATH+1];
 	char	cgi_location[MAX_REQUEST_LINE];
 	char	cgi_status[MAX_REQUEST_LINE];
-	DWORD	accept_encodings;
-	int		encoded_as;
 	BOOL	was_cgi;
-	const char*	mime_type;
+
+	/* Dynamically (sever-side JS) generated HTML parameters */
+	FILE*	fp;
+
 } http_request_t;
 
 typedef struct  {
@@ -109,6 +117,13 @@ typedef struct  {
 	int				http_ver;       /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
 	char			useragent[MAX_REQUEST_LINE];
+	user_t			user;
+
+	/* JavaScript parameters */
+	JSRuntime*		js_runtime;
+	JSContext*		js_cx;
+	JSObject*		js_glob;
+
 } http_session_t;
 
 typedef struct {
@@ -800,7 +815,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	}
 
 	/* This could probobly be combined with the CGI-generated headers - ToDo */
-	for(i=0;i<session->req.cgi_heads_size;i++)
+	for(i=0;i<(int)session->req.cgi_heads_size;i++)
 		FREE_AND_NULL(session->req.cgi_heads[i]);
 	FREE_AND_NULL(session->req.cgi_heads);
 	session->req.cgi_heads_size=0;
@@ -857,10 +872,11 @@ static BOOL apply_encoding(http_session_t *session)  {
 	if(!strncmp(session->useragent,"Mozilla/4",9))
 		encoding=-1;
 		
-	lprintf("%04d Applying encoding %s to %s",session->socket,encode_types[encoding].name,session->req.physical_path);
 	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 	
 	if(encoding!=-1)  {
+
+		lprintf("%04d Applying encoding %s to %s",session->socket,encode_types[encoding].name,session->req.physical_path);
 		sprintf(path,encode_types[encoding].file,session->req.physical_path);
 		lprintf("%04d Encoded file is: %s",session->socket,path);
 		/* Check if has already been encoded */
@@ -907,8 +923,10 @@ static void send_error(http_session_t * session, char *message)
 	}
 	if(fexist(session->req.physical_path))
 		sock_sendfile(session->socket,session->req.physical_path);
-	else
+	else {
 		lprintf("%04d Error message file %s doesn't exist.",session->socket,session->req.physical_path);
+		/* It really needs to send some kind of default HTML error text here */
+	}
 	close_request(session);
 }
 
@@ -917,7 +935,6 @@ static BOOL check_ars(http_session_t * session)
 	char	*username;
 	char	*password;
 	uchar	*ar;
-	user_t	user;
 	BOOL	authorized;
 
 	if(session->req.auth[0]==0) {
@@ -930,8 +947,8 @@ static BOOL check_ars(http_session_t * session)
 	/* Require a password */
 	if(password==NULL)
 		password="";
-	user.number=matchuser(&scfg, username, FALSE);
-	if(user.number==0) {
+	session->user.number=matchuser(&scfg, username, FALSE);
+	if(session->user.number==0) {
 		if(scfg.sys_misc&SM_ECHO_PW)
 			lprintf("%04d !UNKNOWN USER: %s, Password: %s"
 				,session->socket,username,password);
@@ -940,27 +957,28 @@ static BOOL check_ars(http_session_t * session)
 				,session->socket,username);
 		return(FALSE);
 	}
-	lprintf("%04d User number: %d",session->socket,user.number);
-	getuserdat(&scfg, &user);
-	if(user.pass[0] && stricmp(user.pass,password)) {
+	lprintf("%04d User number: %d",session->socket,session->user.number);
+	getuserdat(&scfg, &session->user);
+	if(session->user.pass[0] && stricmp(session->user.pass,password)) {
 		/* Should go to the hack log? */
 		if(scfg.sys_misc&SM_ECHO_PW)
 			lprintf("%04d !PASSWORD FAILURE for user %s: '%s' expected '%s'"
-				,session->socket,username,password,user.pass);
+				,session->socket,username,password,session->user.pass);
 		else
 			lprintf("%04d !PASSWORD FAILURE for user %s"
 				,session->socket,username);
+		session->user.number=0;
 		return(FALSE);
 	}
 	ar = arstr(NULL,session->req.ars,&scfg);
-	authorized=chk_ar(&scfg,ar,&user);
+	authorized=chk_ar(&scfg,ar,&session->user);
 	if(ar!=NULL && ar!=nular)
 		free(ar);
 
 	if(authorized)  {
 		add_env(session,"AUTH_TYPE","Basic");
 		/* Should use name if set to do so somewhere ToDo */
-		add_env(session,"REMOTE_USER",user.alias);
+		add_env(session,"REMOTE_USER",session->user.alias);
 		return(TRUE);
 	}
 
@@ -1655,9 +1673,226 @@ static BOOL exec_cgi(http_session_t *session)
 #endif
 }
 
+/********************/
+/* JavaScript stuff */
+/********************/
+
+static void
+js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
+{
+	char	line[64];
+	char	file[MAX_PATH+1];
+	char*	warning;
+	http_session_t* session;
+
+	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
+		return;
+	
+	if(report==NULL) {
+		lprintf("!JavaScript: %s", message);
+		if(session->req.fp!=NULL)
+			fprintf(session->req.fp,"!JavaScript: %s", message);
+		return;
+    }
+
+	if(report->filename)
+		sprintf(file," %s",report->filename);
+	else
+		file[0]=0;
+
+	if(report->lineno)
+		sprintf(line," line %u",report->lineno);
+	else
+		line[0]=0;
+
+	if(JSREPORT_IS_WARNING(report->flags)) {
+		if(JSREPORT_IS_STRICT(report->flags))
+			warning="strict warning";
+		else
+			warning="warning";
+	} else
+		warning="";
+
+	lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+	if(session->req.fp!=NULL)
+		fprintf(session->req.fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
+}
+
+static JSBool
+js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    uintN		i;
+    JSString *	str;
+	http_session_t* session;
+
+	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(session->req.fp==NULL)
+		return(JS_FALSE);
+
+    for(i=0; i<argc; i++) {
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			continue;
+		fprintf(session->req.fp,"%s",JS_GetStringBytes(str));
+	}
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    uintN		i;
+    JSString *	str;
+	http_session_t* session;
+
+	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(session->req.fp==NULL)
+		return(JS_FALSE);
+
+    for (i=0; i<argc;i++) {
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			continue;
+		fprintf(session->req.fp,"%s",JS_GetStringBytes(str));
+	}
+
+	fprintf(session->req.fp,"\n");
+
+	return(JS_TRUE);
+}
+
+static JSFunctionSpec js_global_functions[] = {
+	{"write",           js_write,           1},		/* write to HTML file */
+	{"writeln",         js_writeln,         1},		/* write line to HTML file */
+	{0}
+};
+
+static JSContext* 
+js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob)
+{
+	char		ver[256];
+	JSContext*	js_cx;
+	JSObject*	js_glob;
+	JSObject*	server;
+	jsval		val;
+	BOOL		success=FALSE;
+
+	lprintf("%04d JavaScript: Initializing context (stack: %lu bytes)"
+		,sock,JAVASCRIPT_CONTEXT_STACK);
+
+    if((js_cx = JS_NewContext(runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+		return(NULL);
+
+	lprintf("%04d JavaScript: Context created",sock);
+
+    JS_SetErrorReporter(js_cx, js_ErrorReporter);
+
+	do {
+
+		lprintf("%04d JavaScript: Initializing Global object",sock);
+		if((js_glob=js_CreateGlobalObject(js_cx, &scfg))==NULL) 
+			break;
+
+		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
+			break;
+
+		lprintf("%04d JavaScript: Initializing System object",sock);
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
+			break;
+
+		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL,NULL,0))==NULL)
+			break;
+
+		sprintf(ver,"%s %s",server_name,revision);
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if(!JS_SetProperty(js_cx, server, "version", &val))
+			break;
+
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, web_ver()));
+		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
+			break;
+
+		if(glob!=NULL)
+			*glob=js_glob;
+
+		success=TRUE;
+
+	} while(0);
+
+	if(!success) {
+		JS_DestroyContext(js_cx);
+		return(NULL);
+	}
+
+	return(js_cx);
+}
+
+BOOL js_setup(http_session_t* session)
+{
+	if(session->js_runtime == NULL) {
+		lprintf("%04d JavaScript: Creating runtime: %lu bytes"
+			,session->socket,startup->js_max_bytes);
+
+		if((session->js_runtime = JS_NewRuntime(startup->js_max_bytes))==NULL) {
+			lprintf("%04d !ERROR creating JavaScript runtime",session->socket);
+			send_error(session,"500 Error creating JavaScript runtime");
+			return(FALSE);
+		}
+	}
+
+	if(session->js_cx==NULL) {	/* Context not yet created, create it now */
+		if(((session->js_cx=js_initcx(session->js_runtime, session->socket,&session->js_glob))==NULL)) {
+			lprintf("%04d !ERROR initializing JavaScript context",session->socket);
+			send_error(session,"500 Error initializing JavaScript context");
+			return(FALSE);
+		}
+		if(js_CreateUserClass(session->js_cx, session->js_glob, &scfg)==NULL) 
+			lprintf("%04d !JavaScript ERROR creating user class",session->socket);
+
+		if(js_CreateFileClass(session->js_cx, session->js_glob)==NULL) 
+			lprintf("%04d !JavaScript ERROR creating file class",session->socket);
+
+		if(js_CreateUserObject(session->js_cx, session->js_glob, &scfg, "user", session->user.number)==NULL) 
+			lprintf("%04d !JavaScript ERROR creating user object",session->socket);
+#if 0
+		if(js_CreateClientObject(session->js_cx, session->js_glob, "client", &client, session->socket)==NULL) 
+			lprintf("%04d !JavaScript ERROR creating client object",session->socket);
+#endif
+		if(js_CreateFileAreaObject(session->js_cx, session->js_glob, &scfg, &session->user
+			,NULL)==NULL) 
+			lprintf("%04d !JavaScript ERROR creating file area object",session->socket);
+	}
+
+	JS_SetContextPrivate(session->js_cx, session);
+
+	return(TRUE);
+}
+
+
+BOOL is_js(http_session_t * session)
+{
+	char* p;
+
+	if((p=strrchr(session->req.physical_path,'.'))==NULL)
+		return(FALSE);
+
+	if(stricmp(p,startup->js_ext)==0)
+		return(TRUE);
+
+	return(FALSE);
+}
+
 static void respond(http_session_t * session)
 {
-	BOOL	send_file=TRUE;
+	char		path[MAX_PATH+1];
+	BOOL		send_file=TRUE;
+	BOOL		success=FALSE;
+	JSScript*	js_script;
+	jsval		rval;
+
 
 	if(is_cgi(session))  {
 		if(!exec_cgi(session))  {
@@ -1666,6 +1901,53 @@ static void respond(http_session_t * session)
 		}
 		close_request(session);
 		return;
+	}
+
+	if(is_js(session)) {	/* Server-Side JavaScript */
+
+		if(!js_setup(session)) {
+			lprintf("%04d !ERROR setting up JavaScript support", session->socket);
+			send_error(session,"500 Internal Server Error");
+			return;
+		}
+
+		sprintf(path,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
+		if((session->req.fp=fopen(path,"w"))==NULL) {
+			lprintf("%04d !ERROR %d opening/creating %s", session->socket, errno, path);
+			send_error(session,"500 Internal Server Error");
+			return;
+		}
+
+		do {
+
+			/* RUN SCRIPT */
+			if((js_script=JS_CompileFile(session->js_cx, session->js_glob
+				,session->req.physical_path))==NULL) {
+				lprintf("%04d !JavaScript FAILED to compile script (%s)"
+					,session->socket,session->req.physical_path);
+				break;
+			}
+
+			if((success=JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval))!=TRUE) {
+				lprintf("%04d !JavaScript FAILED to execute script (%s)"
+					,session->socket,session->req.physical_path);
+				break;
+			}
+
+		} while(0);
+
+		/* Free up temporary resources here */
+
+		if(js_script!=NULL) 
+			JS_DestroyScript(session->js_cx, js_script);
+		if(session->req.fp!=NULL)
+			fclose(session->req.fp);
+
+		if(!success) {
+			send_error(session,"500 Internal Server Error");
+			return;
+		}
+		SAFECOPY(session->req.physical_path, path);
 	}
 
 	if(session->http_ver > HTTP_0_9)  {
@@ -1743,7 +2025,16 @@ void http_session_thread(void* arg)
 			}
 		}
 	}
-	lprintf("%04d Free()ing session",socket);
+
+	if(session.js_cx!=NULL) {
+		lprintf("%04d JavaScript: Destroying context",socket);
+		JS_DestroyContext(session.js_cx);	/* Free Context */
+	}
+
+	if(session.js_runtime!=NULL) {
+		lprintf("%04d JavaScript: Destroying runtime",socket);
+		JS_DestroyRuntime(session.js_runtime);
+	}
 
 	active_clients--;
 	update_clients();
@@ -1817,6 +2108,7 @@ void DLLCALL web_server(void* arg)
 	int				result;
 	time_t			start;
 	WORD			host_port;
+	char			host_ip[32];
 	char			path[MAX_PATH+1];
 	char			logstr[256];
 	SOCKADDR_IN		server_addr={0};
@@ -1855,6 +2147,7 @@ void DLLCALL web_server(void* arg)
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,"../html");
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,"../html/error");
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
+	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 
 	/* Copy html directories */
 	SAFECOPY(root_dir,startup->root_dir);
@@ -1922,7 +2215,7 @@ void DLLCALL web_server(void* arg)
 
 		sprintf(path,"%smime_types.cfg",scfg.ctrl_dir);
 		if(!read_mime_types(path)) {
-			lprintf("!ERROR %d reading %s", ERROR_VALUE,path);
+			lprintf("!ERROR %d reading %s", errno,path);
 			cleanup(1);
 			return;
 		}
@@ -1938,6 +2231,9 @@ void DLLCALL web_server(void* arg)
 				lprintf("!putenv() FAILED");
 			tzset();
 		}
+
+		if(uptime==0)
+			uptime=time(NULL);
 
 		active_clients=0;
 		update_clients();
@@ -2052,11 +2348,18 @@ void DLLCALL web_server(void* arg)
 				break;
 			}
 
+			SAFECOPY(host_ip,inet_ntoa(client_addr.sin_addr));
+
+			if(trashcan(&scfg,host_ip,"ip-silent")) {
+				close_socket(client_socket);
+				continue;
+			}
+
 			host_port=ntohs(client_addr.sin_port);
 
 			lprintf("%04d HTTP connection accepted from: %s port %u"
 				,client_socket
-				,inet_ntoa(client_addr.sin_addr), host_port);
+				,host_ip, host_port);
 
 			if(startup->socket_open!=NULL)
 				startup->socket_open(TRUE);
@@ -2070,7 +2373,7 @@ void DLLCALL web_server(void* arg)
 			}
 
 			memset(session, 0, sizeof(http_session_t));
-			SAFECOPY(session->host_ip,inet_ntoa(client_addr.sin_addr));
+			SAFECOPY(session->host_ip,host_ip);
 			session->addr=client_addr;
    			session->socket=client_socket;
 
