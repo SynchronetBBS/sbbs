@@ -111,7 +111,6 @@ bool sbbs_t::uploadfile(file_t *f)
 				if((stream=fopen(str,"r"))!=NULL) {
 					if(fgets(str,128,stream)) {
 						truncsp(str);
-						strupr(str);
 						padfname(str,f->name);
 						strcpy(tmp,f->name);
 						truncsp(tmp);
