@@ -85,7 +85,7 @@ endif
 #
 # Define primary target.
 #
-all: ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB} ex_diag
+all: ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB} ex_diag ex_hello
 #
 #------------------------------------------------------------------------------
 #
@@ -158,6 +158,9 @@ ex_chat: ex_chat.c ${LIBDIR}libODoors${SHLIB}
 
 ex_diag: ex_diag.c ${LIBDIR}libODoors${SHLIB}
 	$(CC) $(CFLAGS) ex_diag.c -o ex_diag -lODoors
+
+ex_hello: ex_hello.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_hello.c -o ex_hello -lODoors
 
 #
 #------------------------------------------------------------------------------

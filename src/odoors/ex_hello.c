@@ -15,7 +15,7 @@
 
 
 /* The opendoor.h file must be included by any program using OpenDoors. */
-#include "opendoor.h"
+#include "OpenDoor.h"
 
 
 /* The main() or WinMain() function: program execution begins here. */
