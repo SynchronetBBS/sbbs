@@ -639,6 +639,15 @@ static int close_socket(SOCKET sock)
 static void close_request(http_session_t * session)
 {
 	linked_list	*p;
+	time_t		now;
+
+	now=time(NULL);
+	localtime_r(&now,&session->req.ld->completed);
+	pthread_mutex_lock(&log_mutex);
+	listPushNode(log_list,session->req.ld);
+	pthread_mutex_unlock(&log_mutex);
+	sem_post(&log_sem);
+
 	while(session->req.dynamic_heads != NULL)  {
 		FREE_AND_NULL(session->req.dynamic_heads->val);
 		p=session->req.dynamic_heads->next;
@@ -856,7 +865,6 @@ static void send_error(http_session_t * session, const char* message)
 	char	error_code[4];
 	struct stat	sb;
 	char	sbuf[1024];
-	time_t	now;
 
 	lprintf(LOG_INFO,"%04d !ERROR %s",session->socket,message);
 	session->req.keep_alive=FALSE;
@@ -886,12 +894,6 @@ static void send_error(http_session_t * session, const char* message)
 		sockprint(session->socket,sbuf);
 		session->req.ld->size=strlen(sbuf);
 	}
-	now=time(NULL);
-	localtime_r(&now,&session->req.ld->completed);
-	pthread_mutex_lock(&log_mutex);
-	listPushNode(log_list,session->req.ld);
-	pthread_mutex_unlock(&log_mutex);
-	sem_post(&log_sem);
 	close_request(session);
 }
 
@@ -2520,26 +2522,12 @@ void http_session_thread(void* arg)
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
 					if(check_request(&session)) {
-						time_t	now;
 						if(session.req.send_location < MOVED_TEMP || session.req.virtual_path[0]!='/' || loop_count++ >= MAX_REDIR_LOOPS) {
 							respond(&session);
-							now=time(NULL);
-							localtime_r(&now,&session.req.ld->completed);
-							pthread_mutex_lock(&log_mutex);
-							listPushNode(log_list,session.req.ld);
-							pthread_mutex_unlock(&log_mutex);
-							sem_post(&log_sem);
 						}
 						else {
 							snprintf(redir_req,MAX_REQUEST_LINE,"%s %s%s%s",methods[session.req.method]
 								,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
-							now=time(NULL);
-							localtime_r(&now,&session.req.ld->completed);
-							session.req.ld->status=302;
-							pthread_mutex_lock(&log_mutex);
-							listPushNode(log_list,session.req.ld);
-							pthread_mutex_unlock(&log_mutex);
-							sem_post(&log_sem);
 							redir_req[MAX_REQUEST_LINE]=0;
 							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,redir_req);
 							redirp=redir_req;
