@@ -691,7 +691,7 @@
 "-g\r\nSystem Statistics Log:\r\n\r\nn"              565 SysStatsLogHdr
 "-g\r\nNode #%d Statistics Log:\r\n\r\nn"            566 NodeStatsLogHdr
 "_rhYour time has been reduced due to an "\          567 ReducedTime
-	"upcoming event.\r\n\r\n"
+	"upcoming event on \1w%s\r\n\r\n"
 "n\r\nTimed Event - Node: %d   Time: %02d:%02d   "\    568 EventInfo
 	"Last Ran: %s\r\n"
 "_rhi\r\n\r\nCarrier will be dropped in %d "\       569 UploadBeforeEvent
