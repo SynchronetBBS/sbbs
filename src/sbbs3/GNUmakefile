@@ -190,12 +190,12 @@ $(SBBSECHO): \
 	$(EXEODIR)/misc.o \
 	$(EXEODIR)/userdat.o \
 	$(EXEODIR)/rechocfg.o \
-	$(EXEODIR)/conwrap.o \ 
+	$(EXEODIR)/conwrap.o \
 	$(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/genwrap.o \
 	$(SMBLIB) \
 	$(EXEODIR)/smbtxt.o \
-	$(EXEODIR)/lzh.o 
+	$(EXEODIR)/lzh.o
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
