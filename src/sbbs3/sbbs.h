@@ -782,6 +782,7 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL putfiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT void		DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
 	DLLEXPORT void		DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
+	DLLEXPORT char*		DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path);
 
 	DLLEXPORT BOOL		DLLCALL removefiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT BOOL		DLLCALL addfiledat(scfg_t* cfg, file_t* f);

@@ -44,7 +44,7 @@
 /****************************************************************************/
 BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 {
-	char buf[F_LEN+1],str[256],tmp[128];
+	char buf[F_LEN+1],str[256];
 	int file;
 	long length;
 
@@ -73,9 +73,7 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 	f->cdt=atol(str);
 
 	if(!f->size) {					/* only read disk if this is null */
-			sprintf(str,"%s%s"
-				,f->altpath>0 && f->altpath<=cfg->altpaths ? cfg->altpath[f->altpath-1]
-				: cfg->dir[f->dir]->path,unpadfname(f->name,tmp));
+			getfilepath(cfg,f,str);
 			f->size=flength(str);
 			f->date=fdate(str);
 	/*
@@ -654,4 +652,19 @@ int DLLCALL update_uldate(scfg_t* cfg, file_t* f)
 	write(file,&f->dateuled,4);
 	close(file); 
 	return(0);
+}
+
+/****************************************************************************/
+/* Returns full path to specified file										*/
+/****************************************************************************/
+char* DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path)
+{
+	char	fname[MAX_PATH+1];
+
+	unpadfname(f->name,fname);
+	sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg->altpaths 
+		? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
+		,fname);
+
+	return(path);
 }

@@ -42,9 +42,10 @@
 /****************************************************************************/
 void sbbs_t::fileinfo(file_t* f)
 {
-	char	fname[13],ext[513];
+	char	ext[513];
 	char 	tmp[512];
 	char	path[MAX_PATH+1];
+	char	fpath[MAX_PATH+1];
 	uint	i,j;
 
 	for(i=0;i<usrlibs;i++)
@@ -54,29 +55,14 @@ void sbbs_t::fileinfo(file_t* f)
 		if(usrdir[i][j]==f->dir)
 			break;
 
-	unpadfname(f->name,fname);
-
-	sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths 
-			? cfg.altpath[f->altpath-1]:cfg.dir[f->dir]->path
-			,fname);
+	getfilepath(&cfg,f,path);
 	bprintf(text[FiLib],i+1,cfg.lib[cfg.dir[f->dir]->lib]->lname);
 	bprintf(text[FiDir],j+1,cfg.dir[f->dir]->lname);
-	bprintf(text[FiFilename],fname);
-#ifdef _WIN32
-	if(f->size!=-1) {
-
-		WIN32_FIND_DATA finddata;
-		HANDLE h=FindFirstFile(path,&finddata);
-
-		if(h!=INVALID_HANDLE_VALUE) {
-
-			if(stricmp(finddata.cFileName,fname))
-				bprintf(text[FiFilename],finddata.cFileName);
-
-			FindClose(h);
-		}
-	}
-#endif
+	bprintf(text[FiFilename],getfname(path));
+	SAFECOPY(fpath,path);
+	fexistcase(fpath);
+	if(strcmp(path,fpath))	/* Different "actual" filename */
+		bprintf(text[FiFilename],getfname(fpath));
 
 	if(f->size!=-1L)
 		bprintf(text[FiFileSize],ultoac(f->size,tmp));
@@ -94,9 +80,11 @@ void sbbs_t::fileinfo(file_t* f)
 	if(f->altpath) {
 		if(f->altpath<=cfg.altpaths) {
 			if(SYSOP)
-				bprintf(text[FiAlternatePath],cfg.altpath[f->altpath-1]); }
+				bprintf(text[FiAlternatePath],cfg.altpath[f->altpath-1]); 
+		}
 		else
-			bprintf(text[InvalidAlternatePathN],f->altpath); }
+			bprintf(text[InvalidAlternatePathN],f->altpath); 
+	}
 	CRLF;
 	if(f->misc&FM_EXTDESC) {
 		getextdesc(&cfg,f->dir,f->datoffset,ext);
