@@ -1,5 +1,5 @@
 if(user.number==0) {
-	http_reply.status='401 Premission Denied';
+	http_reply.status='401 Permission Denied';
 	http_reply.header["WWW-Authenticate"]='Basic realm="'+system.name+'"';
 }
 writeln('<html>');
