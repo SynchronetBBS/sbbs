@@ -1313,6 +1313,7 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 	uint		i,j;
 	FILE*		fp;
 	char		cmd[MAX_LINE_LEN+1];
+	char		host[MAX_LINE_LEN+1];
 	char**		sec_list;
 	service_t*	np;
 	service_t	serv;
@@ -1337,6 +1338,11 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 				break;
 		if(j<*services)	{ /* ignore duplicate services */
 			lprintf("Ignoring duplicate service: %s",sec_list[i]);
+			continue;
+		}
+
+		if(stricmp(iniGetString(fp,sec_list[i],"Host",startup->host_name,host), startup->host_name)) {
+			lprintf("Ignoring service (%s) for host: %s", sec_list[i], host);
 			continue;
 		}
 		if((np=(service_t*)realloc(service,sizeof(service_t)*((*services)+1)))==NULL) {
