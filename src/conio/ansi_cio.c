@@ -243,10 +243,14 @@ void ansi_textattr(unsigned char attr)
 	int br,obr;
 	int oa;
 
-	bl=attr>>7;
+	str[0]=0;
+	if(ansi_curr_attr==attr<<8)
+		return;
+
+	bl=attr&0x80;
 	bg=(attr>>4)&0x7;
 	fg=attr&0x07;
-	br=(attr>>3)&0x01;
+	br=attr&0x04;
 
 	oa=ansi_curr_attr>>8;
 	obl=oa>>7;
@@ -255,7 +259,38 @@ void ansi_textattr(unsigned char attr)
 	obr=(oa>>3)&0x01;
 
 	ansi_curr_attr=attr<<8;
-	ansi_sendstr(str,sprintf(str,"%c[%d;%d;3%d;4%dm",27,bl?0:5,br?1:2,ansi_colours[fg],ansi_colours[bg]));
+
+	strcpy(str,"\033[");
+	if(obl!=bl) {
+		if(!bl) {
+			strcat(str,"0;");
+			ofg=7;
+			obg=0;
+			obr=0;
+		}
+		else
+			strcat(str,"5;");
+	}
+	if(br!=obr) {
+		if(br)
+			strcat(str,"1;");
+		else
+#if 0
+			strcat(str,"2;");
+#else
+		{
+			strcat(str,"0;");
+			ofg=7;
+			obg=0;
+		}
+#endif
+	}
+	if(fg!=ofg)
+		sprintf(str+strlen(str),"3%d;",ansi_colours[fg]);
+	if(bg!=obg)
+		sprintf(str+strlen(str),"4%d;",ansi_colours[bg]);
+	str[strlen(str)-1]='m';
+	ansi_sendstr(str,-1);
 }
 
 static void ansi_keyparse(void *par)
