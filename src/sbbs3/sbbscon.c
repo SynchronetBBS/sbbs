@@ -680,9 +680,6 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	mail_startup.seteuid=do_seteuid;
 #endif
-	/* Spam filtering */
-	mail_startup.options|=MAIL_OPT_USE_RBL;	/* Realtime Blackhole List */
-	mail_startup.options|=MAIL_OPT_USE_RSS;	/* Relay Spam Stopper */
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
 #ifdef __unix__	/* Look up DNS server address */
