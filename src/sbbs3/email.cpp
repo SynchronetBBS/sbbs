@@ -244,8 +244,11 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 			smb_unlocksmbhdr(&smb);
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
-			bputs("\1r\1h\1iDuplicate message!\r\n");
-			return(false); } }
+			attr(cfg.color[clr_err]);
+			bputs("Duplicate message!\r\n");
+			return(false); 
+		} 
+	}
 
 	msg.hdr.offset=offset;
 
