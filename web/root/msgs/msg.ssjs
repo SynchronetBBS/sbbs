@@ -78,9 +78,13 @@ if(template.hdr.thread_first!=0) {
 }
 if(tmp!=undefined)
 	template.nextlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+next_msg_html+'</a>';
+else
+    template.nextlink='Next Message';
 tmp=find_np_message(template.idx.offset,false);
 if(tmp!=undefined)
 	template.prevlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+prev_msg_html+'</a>';
+else
+    template.prevlink='Previous Message';
 
 write_template("header.inc");
 write_template("msgs/msg.inc");
