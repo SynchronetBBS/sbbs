@@ -992,7 +992,7 @@ void input_thread(void *arg)
 					lprintf("Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
 				else
 					lprintf("Node %d !ERROR %d input->select socket %d"
-                		,sbbs->cfg.node_num, ERROR_VALUE, sock);
+                		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
 				break;
 			}
 #ifdef __unix__
@@ -1000,7 +1000,7 @@ void input_thread(void *arg)
 					FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
 				if(ERROR_VALUE != EAGAIN)  {
 					lprintf("Node %d !ERROR %d on local spy socket %d input->select"
-						, sbbs->cfg.node_num, errno, sock);
+						, sbbs->cfg.node_num, errno, uspy_socket[sbbs->cfg.node_num-1]);
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
@@ -3406,7 +3406,7 @@ void DLLCALL bbs_thread(void* arg)
 	SOCKADDR_IN		server_addr={0};
 	SOCKADDR_IN		client_addr;
 	socklen_t		client_addr_len;
-	SOCKET			client_socket;
+	SOCKET			client_socket=INVALID_SOCKET;
 	fd_set			socket_set;
 	SOCKET			high_socket_set;
 	int				i;
