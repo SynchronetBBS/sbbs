@@ -267,7 +267,7 @@ js_getstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(js_str!=NULL)
-		sprintf(p,"%.*s",maxlen,JS_GetStringBytes(js_str));
+		sprintf(p,"%.*s",(int)maxlen,JS_GetStringBytes(js_str));
 
 	sbbs->getstr(p,maxlen,mode);
 

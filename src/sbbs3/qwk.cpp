@@ -283,7 +283,7 @@ void sbbs_t::update_qwkroute(char *via)
 				break; }
 			total_nodes++; }
 		sprintf(qwk_node[i],"%.8s",node);
-		sprintf(qwk_path[i],"%.*s",(uint)((p-1)-via),via);
+		sprintf(qwk_path[i],"%.*s",(int)((p-1)-via),via);
 		qwk_time[i]=time(NULL);
 		p=strchr(p,'/'); }
 	}
