@@ -1281,8 +1281,15 @@ static void smtp_thread(void* arg)
 				if(telegram==TRUE) {
 					rewind(msgtxt);
 					length=filelength(fileno(msgtxt));
-					sprintf(str,"\1n\1h%s\1n: ",sender_addr);
-					/* Append real IP and hostname if different */
+					
+					p=strchr(sender_addr,'@');
+					if(p==NULL || resolve_ip(p+1)!=smtp.client_addr.sin_addr.s_addr) 
+						/* Append real IP and hostname if different */
+						sprintf(str,"\1n\1h%s [\1n%s\1h] (\1n%s\1h)\1n: "
+							,sender_addr,host_ip,host_name);
+					else
+						sprintf(str,"\1n\1h%s\1n: ",sender_addr);
+					
 					if((telegram_buf=(char*)malloc(length+strlen(str)+1))==NULL) {
 						lprintf("%04d !SMTP ERROR allocating %lu bytes of memory for telegram from %s"
 							,socket,length+strlen(str)+1,sender_addr);
@@ -1305,9 +1312,11 @@ static void smtp_thread(void* arg)
 						if(fgets(str,sizeof(str)-1,rcptlst)==NULL)
 							break;
 						usernum=atoi(str);
-						fgets(rcpt_name,sizeof(rcpt_name)-1,rcptlst);
+						if(fgets(rcpt_name,sizeof(rcpt_name)-1,rcptlst)==NULL)
+							break;
 						truncsp(rcpt_name);
-						fgets(rcpt_addr,sizeof(rcpt_addr)-1,rcptlst);
+						if(fgets(rcpt_addr,sizeof(rcpt_addr)-1,rcptlst)==NULL)
+							break;
 						truncsp(rcpt_addr);
 						putsmsg(&scfg,usernum,telegram_buf);
 						lprintf("%04d SMTP Created telegram from %s to %s <%s>"
@@ -1820,8 +1829,9 @@ static void smtp_thread(void* arg)
 					state=SMTP_STATE_RCPT;
 					continue;
 				}
-				*tp=0;	/* truncate at '@' */
 			}
+			*tp=0;	/* truncate at '@' */
+
 			while(*p && !isalnum(*p)) p++;	/* Skip '<' or '"' */
 			tp=strrchr(p,'"');	
 			if(tp!=NULL) *tp=0;	/* truncate at '"' */
@@ -1861,21 +1871,21 @@ static void smtp_thread(void* arg)
 				}
 			}
 			if(!usernum) {
-				lprintf("%04d !SMTP UNKNOWN USER: %s", socket, buf+8);
-				sockprintf(socket, "550 Unknown User: %s", buf+8);
+				lprintf("%04d !SMTP UNKNOWN USER:%s", socket, buf+8);
+				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
 			}
 			user.number=usernum;
 			if((i=getuserdat(&scfg, &user))!=0) {
 				lprintf("%04d !SMTP ERROR %d getting data on user #%u (%s)"
 					,socket, i, usernum, p);
-				sockprintf(socket, "550 Unknown User: %s", buf+8);
+				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
 			}
 			if(user.misc&(DELETED|INACTIVE)) {
 				lprintf("%04d !SMTP DELETED or INACTIVE user #%u (%s)"
 					,socket, usernum, p);
-				sockprintf(socket, "550 Unknown User: %s", buf+8);
+				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
 			}
 			if(state==SMTP_STATE_SEND) { /* Check if user online */
