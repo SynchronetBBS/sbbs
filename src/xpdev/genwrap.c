@@ -142,6 +142,7 @@ void DLLCALL unix_beep(int freq, int dur)
 {
 	static int console_fd=-1;
 
+#if !defined(__OpenBSD__) && !defined(__GNU__) && !defined(__NetBSD__) && !defined(__QNX__)
 #if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	int speaker_fd=-1;
 	tone_t tone;
@@ -175,6 +176,7 @@ void DLLCALL unix_beep(int freq, int dur)
 #endif /* solaris */
 	}
 #endif
+#endif /* Nasty Kludge */
 }
 #endif
 
