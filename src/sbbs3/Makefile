@@ -26,7 +26,8 @@ EXEODIR =	bcc.win32.exe	# Executable output directory
 UIFC	=	..\uifc\		# Path to User Interfce library
 CIOLIB	=	..\conio\		# Path to Console I/O library
 XPDEV	=	..\xpdev\		# Path to Cross-platform wrappers
-CFLAGS	=	-M -I$(XPDEV) -I$(UIFC) -I$(CIOLIB)
+SMBDIR	=	..\smblib\		# Path to Synchronet Message Base Library
+CFLAGS	=	-M -I$(SMBDIR) -I$(XPDEV) -I$(UIFC) -I$(CIOLIB)
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 WILDARGS=	$(MAKEDIR)\..\lib\wildargs.obj
@@ -76,8 +77,8 @@ SBBSLIB	=	$(LIBODIR)\sbbs.lib
 
 $(SBBSLIB):	$(SBBS)
 
-.path.c = .;$(XPDEV);$(UIFC);$(CIOLIB)
-.path.cpp = .;$(XPDEV);$(UIFC);$(CIOLIB)
+.path.c = .;$(XPDEV);$(UIFC);$(CIOLIB);$(SMBDIR)
+.path.cpp = .;$(XPDEV);$(UIFC);$(CIOLIB);$(SMBDIR)
 
 # Implicit C Compile Rule for SBBS.DLL
 .c.obj:
