@@ -572,6 +572,8 @@ void doterm(void)
 		/* Get local input */
 		if(kbhit()) {
 			key=getch();
+			if(key==17)
+				return;
 			if(key<256) {
 				ch[0]=key;
 				rlogin_send(ch,1,100);
