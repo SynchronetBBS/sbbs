@@ -252,6 +252,7 @@ int clearerrors(scfg_t *cfg, int nodenum, node_t *node) {
 	}
 	node->errors=0;
 	putnodedat(cfg,nodenum,node,nodefile);
+	uifc.msg("Error count cleared for this node.");
 	return(0);
 }
 
