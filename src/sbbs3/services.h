@@ -71,7 +71,8 @@ typedef struct {
 
 /* Option bit definitions	*/
 #define SERVICE_OPT_UDP			(1<<0)	/* UDP Socket */
-#define SERVICE_OPT_STATIC		(1<<1)	/* Static server (accepts client connectsions) */
+#define SERVICE_OPT_STATIC		(1<<1)	/* Static service (accepts client connectsions) */
+#define SERVICE_OPT_STATIC_LOOP (1<<2)	/* Loop static service until terminated */
 
 #ifdef __cplusplus
 extern "C" {

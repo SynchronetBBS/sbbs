@@ -956,7 +956,11 @@ static void js_static_service_thread(void* arg)
 		lprintf("%04d !JavaScript FAILED to compile script (%s)",service->socket,spath);
 	else  {
 		JS_SetBranchCallback(js_cx, js_BranchCallback);
-		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+
+		do {
+			JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
+
 		JS_DestroyScript(js_cx, js_script);
 	}
 	JS_DestroyContext(js_cx);	/* Free Context */
