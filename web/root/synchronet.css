@@ -48,8 +48,11 @@ tr.msglist2 { background-color: #007688; }
 th.msglist { background-color: #007788; color: black; }
 a.msglist:hover { color: #ccffdd; }
 
-table.subinfo { margin-left: auto; margin-right: auto; background-color: #116677; }
-tr.subinfo {  background-color: #007788; }
+table.subinfo { width: 45%; margin-left: auto; margin-right: auto; background-color: #116677; }
+tr.subinfo { white-space: nowrap;  background-color: #007788; }
+td.subinfbold { width: 1%; font-weight: bold; }
+td.subinfo { white-space: nowrap; font-weight: bold; }
+td.subinfonwr { white-space: nowrap; }
 
 body.msg { background-color: black; }
 table.msg { color: black; margin-left: auto; margin-right: auto; background-color: #116677; }
