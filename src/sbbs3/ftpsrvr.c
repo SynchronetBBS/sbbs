@@ -508,33 +508,8 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
-#if 0
-		char		ver[256];
-		JSObject*	server;
-		JSString*	js_str;
-		jsval		val;
-
-		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL
-			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
-			break;
-
-		sprintf(ver,"%s %s",FTP_SERVER,revision);
-		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
-			break;
-		val = STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(js_cx, server, "version", &val))
-			break;
-
-		if((js_str=JS_NewStringCopyZ(js_cx, ftp_ver()))==NULL)
-			break;
-		val = STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
-			break;
-
-#else
 		if(js_CreateServerObject(js_cx,js_glob,&js_server_props)==NULL)
 			break;
-#endif
 
 		if(glob!=NULL)
 			*glob=js_glob;
@@ -2763,7 +2738,8 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
-		getuserdat(&scfg, &user);	/* get current user data */
+		if(!(user.rest&FLAG('G')))
+			getuserdat(&scfg, &user);	/* get current user data */
 
 		if((timeleft=gettimeleft(&scfg,&user,logintime))<1L) {
 			sockprintf(sock,"421 Sorry, you've run out of time.");
@@ -3871,6 +3847,10 @@ static void ctrl_thread(void* arg)
 						}
 					}
 				}
+
+				js_val=BOOLEAN_TO_JSVAL(INT_TO_BOOL(user.misc&EXTDESC));
+				JS_SetProperty(js_cx, js_ftp, "extended_descriptions", &js_val);
+
 #endif
 				if((fp=fopen(ftp_tmpfname(fname,sock),"w+b"))==NULL) {
 					lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
