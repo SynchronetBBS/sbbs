@@ -110,18 +110,19 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
 /****************************************************************************/
 BOOL md(char *path)
 {
-	struct	_finddata_t ff;
-	long	ff_handle;
+	DIR*	dir;
 
-	ff_handle=_findfirst(path,&ff);
-	if (ff_handle==-1) {
+	dir=opendir(path);
+	if(dir==NULL) {
 		lprintf("Creating Directory %s... ",path);
 		if(_mkdir(path)) {
 			lprintf("!Fix configuration or make directory by "
 				"hand.");
-			return(FALSE); } }
+			return(FALSE); 
+		} 
+	}
 	else
-		_findclose(ff_handle);
+		closedir(dir);
 	
 	return(TRUE);
 }

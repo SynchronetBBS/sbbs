@@ -552,8 +552,8 @@ void sbbs_t::batch_upload()
     char	str1[256],str2[256];
 	uint	i,j,x,y;
     file_t	f;
-    struct	_finddata_t ff;
-	long	ff_handle;
+	DIR*	dir;
+	DIRENT*	dirent;
 
 	for(i=0;i<batup_total;) {
 		curdirnum=batup_dir[i]; 			/* for ARS */
@@ -584,33 +584,33 @@ void sbbs_t::batch_upload()
 		else i++; }
 	if(cfg.upload_dir==INVALID_DIR)
 		return;
-	sprintf(str1,"%s*.*",cfg.temp_dir);
-	ff_handle=_findfirst(str1,&ff);
-	while(ff_handle!=-1) {
-		if(!(ff.attrib&_A_SUBDIR)) {
-			memset(&f,0,sizeof(file_t));
-			f.dir=cfg.upload_dir;
-			padfname(ff.name,f.name);
-			strupr(f.name);
-			sprintf(str1,"%s%s",cfg.temp_dir,ff.name);
-			for(x=0;x<usrlibs;x++) {
-				for(y=0;y<usrdirs[x];y++)
-					if(cfg.dir[usrdir[x][y]]->misc&DIR_DUPES
-						&& findfile(&cfg,usrdir[x][y],f.name))
-						break;
-				if(y<usrdirs[x])
-					break; }
-			sprintf(str2,"%s%s",cfg.dir[f.dir]->path,ff.name);
-			if(x<usrlibs || fexist(str2)) {
-				bprintf(text[FileAlreadyOnline],f.name);
-				remove(str1); }
-			else {
-				mv(str1,str2,0);
-				uploadfile(&f); }
+	dir=opendir(cfg.temp_dir);
+	while((dirent=readdir(dir))!=NULL) {
+		sprintf(str1,"%s%s",cfg.temp_dir,dirent->d_name);
+		if(isdir(str1))
+			continue;
+		memset(&f,0,sizeof(file_t));
+		f.dir=cfg.upload_dir;
+		padfname(dirent->d_name,f.name);
+		strupr(f.name);
+		for(x=0;x<usrlibs;x++) {
+			for(y=0;y<usrdirs[x];y++)
+				if(cfg.dir[usrdir[x][y]]->misc&DIR_DUPES
+					&& findfile(&cfg,usrdir[x][y],f.name))
+					break;
+			if(y<usrdirs[x])
+				break; 
 		}
-		if(_findnext(ff_handle, &ff)!=0) {
-			_findclose(ff_handle);
-			ff_handle=-1; } }
+		sprintf(str2,"%s%s",cfg.dir[f.dir]->path,dirent->d_name);
+		if(x<usrlibs || fexist(str2)) {
+			bprintf(text[FileAlreadyOnline],f.name);
+			remove(str1); 
+		} else {
+			mv(str1,str2,0);
+			uploadfile(&f); 
+		}
+	}
+	closedir(dir);
 }
 
 /****************************************************************************/

@@ -272,30 +272,26 @@ BOOL filematch(char *filename, char *filespec)
 /****************************************************************************/
 /* Deletes all files in dir 'path' that match file spec 'spec'              */
 /****************************************************************************/
-int sbbs_t::delfiles(char *inpath, char *spec)
+uint sbbs_t::delfiles(char *inpath, char *spec)
 {
-	char	str[256],path[128];
-    int		files=0;
-    struct	_finddata_t ff;
-	long	ff_handle;
-
+	char	path[MAX_PATH];
+    uint	i,files=0;
+	glob_t	g;
 
 	strcpy(path,inpath);
 	backslash(path);
-	sprintf(str,"%s%s",path,spec);
-	ff_handle=_findfirst(str,&ff);
-	while(ff_handle!=-1) {
-		if(!(ff.attrib&_A_SUBDIR)) { /* not a directory */
-			sprintf(str,"%s%s",path,ff.name);
-			CHMOD(str,S_IWRITE);	// Incase it's been marked RDONLY
-			if(remove(str))
-				errormsg(WHERE,ERR_REMOVE,str,0);
-			else
-				files++;
-		}
-		if(_findnext(ff_handle,&ff)!=0) {
-			_findclose(ff_handle);
-			ff_handle=-1; } }
+	strcat(path,spec);
+	glob(path,0,NULL,&g);
+	for(i=0;i<g.gl_pathc;i++) {
+		if(isdir(g.gl_pathv[i]))
+			continue;
+		CHMOD(g.gl_pathv[i],S_IWRITE);	// Incase it's been marked RDONLY
+		if(remove(g.gl_pathv[i]))
+			errormsg(WHERE,ERR_REMOVE,g.gl_pathv[i],0);
+		else
+			files++;
+	}
+	globfree(&g);
 	return(files);
 }
 

@@ -52,9 +52,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 	ulong	n;
 	ulong	ex;
 	node_t	node;
-    struct	_finddata_t ff;
-	long	ff_handle;
-	FILE	*rep;
+	FILE*	rep;
+	DIR*	dir;
+	DIRENT*	dirent;
 
 	if(repfile!=NULL)
 		strcpy(str,repfile);
@@ -411,25 +411,21 @@ bool sbbs_t::unpack_rep(char* repfile)
 		sprintf(str,"%s%s.REP",cfg.temp_dir,cfg.sys_id);
 		remove(str);
 
-		sprintf(str,"%s*.*",cfg.temp_dir);
-		ff_handle=_findfirst(str,&ff);
-		while(ff_handle!=-1) {					/* Extra files */
-			if(!(ff.attrib&_A_SUBDIR)) {
-				// Create directory if necessary
-				sprintf(str,"%sQNET/%s.IN",cfg.data_dir,useron.alias);
-				_mkdir(str); 
-				// Move files
-				sprintf(str,"%s%s",cfg.temp_dir,ff.name);
-				sprintf(fname,"%sQNET/%s.IN/%s",cfg.data_dir,useron.alias,ff.name);
-				mv(str,fname,1);
-				sprintf(str,text[ReceivedFileViaQWK],ff.name,useron.alias);
-				putsmsg(&cfg,1,str);
-			}
-			if(_findnext(ff_handle,&ff)!=0) {
-				_findclose(ff_handle);
-				ff_handle=-1; 
-			} 
+		dir=opendir(cfg.temp_dir);
+		while((dirent=readdir(dir))!=NULL) {				/* Extra files */
+			// Create directory if necessary
+			sprintf(str,"%sQNET/%s.IN",cfg.data_dir,useron.alias);
+			_mkdir(str); 
+			// Move files
+			sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
+			if(isdir(str))
+				continue;
+			sprintf(fname,"%sQNET/%s.IN/%s",cfg.data_dir,useron.alias,dirent->d_name);
+			mv(str,fname,1);
+			sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,useron.alias);
+			putsmsg(&cfg,1,str);
 		} 
+		closedir(dir);
 		sprintf(str,"%sQNET-REP.NOW",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 			close(file);

@@ -49,9 +49,8 @@ void sbbs_t::temp_xfer()
 	ulong space;
     time_t start,end,t;
     file_t f;
+	glob_t g;
 	struct	tm * tm;
-    struct	_finddata_t ff;
-	long	ff_handle;
 
 	if(!usrlibs)
 		return;
@@ -216,17 +215,16 @@ void sbbs_t::temp_xfer()
 				bytes=files=0L;
 				CRLF;
 				sprintf(tmp2,"%s%s",cfg.temp_dir,str);
-				ff_handle=_findfirst(tmp2,&ff);
-				while(ff_handle!=-1 && !msgabort()) {
-            		if(!(ff.attrib&_A_SUBDIR)) {
-						bprintf("%s %10s\r\n",padfname(ff.name,str)
-							,ultoac(ff.size,tmp));
-						files++;
-						bytes+=ff.size;
-					}
-					if(_findnext(ff_handle, &ff)!=0) {
-						_findclose(ff_handle);
-						ff_handle=-1; } }
+				glob(tmp2,0,NULL,&g);
+				for(i=0;i<g.gl_pathc && !msgabort();i++) {
+					if(isdir(g.gl_pathv[i]))
+						continue;
+					bprintf("%s %15s\r\n",padfname(getfname(g.gl_pathv[i]),str)
+						,ultoac(flength(g.gl_pathv[i]),tmp));
+					files++;
+					bytes+=flength(g.gl_pathv[i]);
+				}
+				globfree(&g);
 				if(!files)
 					bputs(text[EmptyDir]);
 				else if(files>1)
@@ -280,8 +278,8 @@ void sbbs_t::extract(uint dirnum)
     uint	i,j;
 	ulong	space;
     file_t	f;
-    struct	_finddata_t ff;
-	long	ff_handle;
+	DIR*	dir;
+	DIRENT*	dirent;
 
 	temp_dirnum=curdirnum=dirnum;
 	if(!strcmp(cfg.dir[dirnum]->code,"TEMP"))
@@ -303,16 +301,16 @@ void sbbs_t::extract(uint dirnum)
 		sprintf(str,"%s*.*",cfg.temp_dir);
 		if(fexist(str)) {
 			bputs(text[RemovingTempFiles]);
-			ff_handle=_findfirst(str,&ff);
-			while(ff_handle!=-1) {
-        		if(!(ff.attrib&_A_SUBDIR)) {
-					sprintf(str,"%s%s",cfg.temp_dir,ff.name);
+			dir=opendir(cfg.temp_dir);
+			while((dirent=readdir(dir))!=NULL) {
+				sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
+        		if(!isdir(str))
 					remove(str);
-				}
-				if(_findnext(ff_handle, &ff)!=0) {
-					_findclose(ff_handle);
-					ff_handle=-1; } }
-			CRLF; } }
+			}
+			closedir(dir);
+			CRLF; 
+		} 
+	}
 	bputs(text[ExtractFrom]);
 	if(!getstr(fname,12,K_UPPER) || !checkfname(fname) || strchr(fname,'*')
 		|| strchr(fname,'?'))

@@ -503,13 +503,12 @@ void sbbs_t::upload(uint dirnum)
 /****************************************************************************/
 bool sbbs_t::bulkupload(uint dirnum)
 {
-	char*	p;
     char	str[MAX_PATH];
 	char	path[MAX_PATH];
 	char	spath[MAX_PATH];
     file_t	f;
-    struct	_finddata_t ff;
-	long	ff_handle;
+	DIR*	dir;
+	DIRENT*	dirent;
 
 	memset(&f,0,sizeof(file_t));
 	f.dir=dirnum;
@@ -517,35 +516,37 @@ bool sbbs_t::bulkupload(uint dirnum)
 	bprintf(text[BulkUpload],cfg.lib[cfg.dir[dirnum]->lib]->sname,cfg.dir[dirnum]->sname);
 	strcpy(path,altul>0 && altul<=cfg.altpaths ? cfg.altpath[altul-1]
 		: cfg.dir[dirnum]->path);
-	sprintf(str,"%s*.*",path);
-	ff_handle=_findfirst(str,&ff);
 	action=NODE_ULNG;
 	SYNC;
-	while(ff_handle!=-1 && !msgabort()) {
-		if(!(ff.attrib&_A_SUBDIR)) {
-			if(gettotalfiles(dirnum)>cfg.dir[dirnum]->maxfiles) {
-				bputs(text[DirFull]);
-				return(false); }
-			sprintf(str,"%s%s",path,ff.name);
-			GetShortPathName(str,spath,sizeof(spath));
-			p=strrchr(spath,'\\');
-			if(p) p++;
-			else p=spath;
-	//        strupr(ff.name);
-			padfname(p,str);
-			if(findfile(&cfg,f.dir,str)==0) {
-				strcpy(f.name,str);
-				f.cdt=ff.size;
-				bprintf(text[BulkUploadDescPrompt],f.name,f.cdt);
-				getstr(f.desc,LEN_FDESC,K_LINE);
-				if(sys_status&SS_ABORT)
-					return(true);
-				uploadfile(&f); }	/* used to abort here if the file failed upload */
+	dir=opendir(path);
+	while((dirent=readdir(dir))!=NULL && !msgabort()) {
+		if(gettotalfiles(dirnum)>cfg.dir[dirnum]->maxfiles) {
+			bputs(text[DirFull]);
+			break; 
 		}
-		if(_findnext(ff_handle, &ff)!=0) {
-			_findclose(ff_handle);
-			ff_handle=-1; } }
+		sprintf(str,"%s%s",path,dirent->d_name);
+		if(isdir(str))
+			continue;
+#ifdef _WIN32
+		GetShortPathName(str,spath,sizeof(spath));
+#else
+		strcpy(spath,str);
+#endif
+		padfname(getfname(spath),str);
 
+		if(findfile(&cfg,f.dir,str)==0) {
+			strcpy(f.name,str);
+			f.cdt=flength(spath);
+			bprintf(text[BulkUploadDescPrompt],f.name,f.cdt);
+			getstr(f.desc,LEN_FDESC,K_LINE);
+			if(sys_status&SS_ABORT)
+				break;
+			uploadfile(&f); 
+		}
+	}
+	closedir(dir);
+	if(sys_status&SS_ABORT)
+		return(true);
 	return(false);
 }
 

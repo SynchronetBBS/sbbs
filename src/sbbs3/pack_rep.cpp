@@ -53,9 +53,9 @@ bool sbbs_t::pack_rep(uint hubnum)
 	ulong	last,msgs;
 	post_t	HUGE16 *post;
 	mail_t	*mail;
-    struct	_finddata_t ff;
-	long	ff_handle;
-	FILE	*rep;
+	FILE*	rep;
+	DIR*	dir;
+	DIRENT*	dirent;
 	smbmsg_t msg;
 
 	msgcnt=0L;
@@ -193,19 +193,18 @@ bool sbbs_t::pack_rep(uint hubnum)
 	fclose(rep);			/* close MESSAGE.DAT */
 	CRLF;
 							/* Look for extra files to send out */
-	sprintf(str,"%sQNET/%s.OUT/*.*",cfg.data_dir,cfg.qhub[hubnum]->id);
-	ff_handle=_findfirst(str,&ff);
-	while(ff_handle!=-1) {
-		if(!(ff.attrib&_A_SUBDIR)) {
-			sprintf(str,"%sQNET/%s.OUT/%s",cfg.data_dir,cfg.qhub[hubnum]->id,ff.name);
-			sprintf(tmp2,"%s%s",cfg.temp_dir,ff.name);
-			lprintf(remove_ctrl_a(text[RetrievingFile],tmp),str);
-			if(!mv(str,tmp2,1))
-				netfiles++;
-		}
-		if(_findnext(ff_handle,&ff)!=0) {
-			_findclose(ff_handle);
-			ff_handle=-1; } }
+	sprintf(str,"%sQNET/%s.OUT",cfg.data_dir,cfg.qhub[hubnum]->id);
+	dir=opendir(str);
+	while((dirent=readdir(dir))!=NULL) {
+		sprintf(str,"%sQNET/%s.OUT/%s",cfg.data_dir,cfg.qhub[hubnum]->id,dirent->d_name);
+		if(isdir(str))
+			continue;
+		sprintf(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
+		lprintf(remove_ctrl_a(text[RetrievingFile],tmp),str);
+		if(!mv(str,tmp2,1))
+			netfiles++;
+	}
+	closedir(dir);
 	if(netfiles)
 		CRLF;
 

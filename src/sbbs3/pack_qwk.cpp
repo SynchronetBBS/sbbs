@@ -45,6 +45,7 @@
 bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 {
 	char	str[256],tmp2[256],ch,*p;
+	char*	fname;
 	int 	file,mode;
 	uint	i,j,k,conf;
 	long	l,size,msgndx,posts,ex;
@@ -56,11 +57,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	node_t	node;
 	mail_t	*mail;
 	post_t	HUGE16 *post;
+	glob_t	g;
 	FILE	*stream,*qwk,*personal,*ndx;
-    struct	_finddata_t ff;
-	long	ff_handle;
+	DIR*	dir;
+	DIRENT*	dirent;
 	struct	tm* tm;
 	smbmsg_t msg;
+
 
 	ex=EX_OUTL|EX_OUTR;
 	if(prepack)
@@ -440,22 +443,20 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		return(false);
 
 	if(/*!prepack && */ useron.rest&FLAG('Q')) { /* If QWK Net node, check for files */
-		sprintf(str,"%sQNET/%s.OUT/*.*",cfg.data_dir,useron.alias);
-		ff_handle=_findfirst(str,&ff);
-		while(ff_handle!=-1) {                 /* Move files into temp dir */
-			if(!(ff.attrib&_A_SUBDIR)) {
-				sprintf(str,"%sQNET/%s.OUT/%s",cfg.data_dir,useron.alias,ff.name);
-				strupr(str);
-				sprintf(tmp2,"%s%s",cfg.temp_dir,ff.name);
-				lncntr=0;	/* Default pause */
-				lprintf("Including %s in packet",str);
-				bprintf(text[RetrievingFile],str);
-				if(!mv(str,tmp2,1))
-					netfiles++;
-			}
-			if(_findnext(ff_handle,&ff)!=0) {
-				_findclose(ff_handle);
-				ff_handle=-1; } }
+		sprintf(str,"%sQNET/%s.OUT/",cfg.data_dir,useron.alias);
+		dir=opendir(str);
+		while((dirent=readdir(dir))!=NULL) {    /* Move files into temp dir */
+			sprintf(str,"%sQNET/%s.OUT/%s",cfg.data_dir,useron.alias,dirent->d_name);
+			if(isdir(str))
+				continue;
+			sprintf(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
+			lncntr=0;	/* Default pause */
+			lprintf("Including %s in packet",str);
+			bprintf(text[RetrievingFile],str);
+			if(!mv(str,tmp2,1))
+				netfiles++;
+		}
+		closedir(dir);
 		if(netfiles)
 			CRLF; }
 
@@ -513,16 +514,18 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			sprintf(tmp2,"%sGOODBYE",cfg.temp_dir);
 			mv(str,tmp2,1); }
 		sprintf(str,"%sQWK/BLT-*.*",cfg.text_dir);
-		ff_handle=_findfirst(str,&ff);
-		while(ff_handle!=-1) { 			/* Copy BLT-*.* files */
-			padfname(ff.name,str);
+		glob(str,0,NULL,&g);
+		for(i=0;i<g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
+			fname=getfname(g.gl_pathv[i]);
+			padfname(fname,str);
 			if(isdigit(str[4]) && isdigit(str[9])) {
-				sprintf(str,"%sQWK/%s",cfg.text_dir,ff.name);
-				sprintf(tmp2,"%s%s",cfg.temp_dir,ff.name);
-				mv(str,tmp2,1); }
-			if(_findnext(ff_handle, &ff)!=0) {
-				_findclose(ff_handle);
-				ff_handle=-1; } } }
+				sprintf(str,"%sQWK/%s",cfg.text_dir,fname);
+				sprintf(tmp2,"%s%s",cfg.temp_dir,fname);
+				mv(str,tmp2,1); 
+			}
+		}
+		globfree(&g);
+	}
 
 	if(prepack) {
 		for(i=1;i<=cfg.sys_nodes;i++) {
@@ -561,19 +564,21 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	CRLF;
 	if(!(useron.exempt&FLAG('T')) && i>timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
-		return(false); }
+		return(false); 
+	}
 
 	if(useron.rest&FLAG('Q')) {
 		sprintf(str,"%s.QWK",cfg.sys_id);
-		sprintf(tmp,"%s*.*",cfg.temp_dir);
-		ff_handle=_findfirst(tmp,&ff);
-		while(ff_handle!=-1) {
-			if(!(ff.attrib&_A_SUBDIR) && stricmp(str,ff.name)) {
-				sprintf(tmp,"%s%s",cfg.temp_dir,ff.name);
-				remove(tmp); }
-			if(_findnext(ff_handle, &ff)!=0) {
-				_findclose(ff_handle);
-				ff_handle=-1; } } }
+		dir=opendir(cfg.temp_dir);
+		while((dirent=readdir(dir))!=NULL) {
+			if(!stricmp(str,dirent->d_name))	/* QWK packet */
+				continue;
+			sprintf(tmp,"%s%s",cfg.temp_dir,dirent->d_name);
+			if(!isdir(tmp))
+				remove(tmp); 
+		}
+		closedir(dir);
+	}
 
 	return(true);
 }

@@ -37,7 +37,6 @@
 
 /* Platform-specific headers */
 #ifdef _WIN32
-	#include <io.h>			/* _findfirst */
 	#include <share.h>		/* SH_DENYNO */
 	#include <direct.h>		/* _mkdir/_rmdir() */
 	#include <process.h>	/* _beginthread */
@@ -1203,13 +1202,12 @@ static void ctrl_thread(void* arg)
 	time_t		logintime;
 	time_t		lastactive;
 	file_t		f;
+	glob_t		g;
 	node_t		node;
 	client_t	client;
 	struct tm	tm;
 	struct tm *	tm_p;
 	struct tm 	cur_tm;
-	long		ff_handle;
-    struct _finddata_t ff;
 
 	thread_up();
 
@@ -1730,36 +1728,34 @@ static void ctrl_thread(void* arg)
 				sprintf(path,"%s%s",local_dir, *p ? p : "*.*");
 				lprintf("%04d %s listing: %s", sock, user.alias, path);
 				sockprintf(sock, "150 Directory of %s%s", local_dir, p);
-
-				ff_handle=_findfirst(path,&ff);
-				while(ff_handle!=-1) {
+			
+				glob(path,0,NULL,&g);
+				for(i=0;i<(int)g.gl_pathc;i++) {
 					if(detail) {
-						f.size=ff.size;
-						tm_p=localtime(&ff.time_write);
+						f.size=flength(g.gl_pathv[i]);
+						t=fdate(g.gl_pathv[i]);
+						tm_p=localtime(&t);
 						if(tm_p==NULL)
 							memset(&tm,0,sizeof(tm));
 						else
 							tm=*tm_p;
 						fprintf(fp,"%crw-r--r--   1 %-8s local %9ld %s %2d "
-							,ff.attrib&_A_SUBDIR ? 'd':'-'
+							,isdir(g.gl_pathv[i]) ? 'd':'-'
 							,scfg.sys_id
 							,f.size
 							,mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
 							fprintf(fp,"%02d:%02d %s\r\n"
 								,tm.tm_hour,tm.tm_min
-								,ff.name);
+								,getfname(g.gl_pathv[i]));
 						else
 							fprintf(fp,"%5d %s\r\n"
 								,1900+tm.tm_year
-								,ff.name);
+								,getfname(g.gl_pathv[i]));
 					} else
-						fprintf(fp,"%s\r\n",ff.name);
-					if(_findnext(ff_handle,&ff)!=0) {
-						_findclose(ff_handle);
-						ff_handle=-1; 
-					} 
+						fprintf(fp,"%s\r\n",g.gl_pathv[i]);
 				}
+				globfree(&g);
 				fclose(fp);
 				filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,0L
 					,&transfer_inprogress,&transfer_aborted,TRUE,TRUE
@@ -2184,49 +2180,48 @@ static void ctrl_thread(void* arg)
 					,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code);
 
 				sprintf(path,"%s%s",scfg.dir[dir]->path,*p ? p : "*");
-				ff_handle=_findfirst(path,&ff);
-				while(ff_handle!=-1) {
-					sprintf(path,"%s%s",scfg.dir[dir]->path,ff.name);
-					GetShortPathName(path, str, sizeof(str));
-					p=strrchr(str,'\\');
-					if(p==NULL) p=str;
-					else p++;
-					padfname(p,f.name);
+				glob(path,0,NULL,&g);
+				for(i=0;i<(int)g.gl_pathc;i++) {
+					if(isdir(g.gl_pathv[i]))
+						continue;
+#ifdef _WIN32
+					GetShortPathName(g.gl_pathv[i], str, sizeof(str));
+#else
+					strcpy(str,g.gl_pathv[i]);
+#endif
+					padfname(getfname(str),f.name);
 					strupr(f.name);
 					f.dir=dir;
-					if(!(ff.attrib&_A_SUBDIR) /* not a directory */
-						&& ((filedat=getfileixb(&scfg,&f))==TRUE 
-							|| startup->options&FTP_OPT_DIR_FILES)) { 
-						if(detail) {
-							f.size=ff.size;
-							getfiledat(&scfg,&f);
-							tm_p=localtime(&ff.time_write);
-							if(tm_p==NULL)
-								memset(&tm,0,sizeof(tm));
-							else
-								tm=*tm_p;
-							fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d "
-								,NAME_LEN
-								,filedat ? dotname(f.uler,str) : scfg.sys_id
-								,scfg.dir[dir]->code
-								,f.size
-								,mon[tm.tm_mon],tm.tm_mday);
-							if(tm.tm_year==cur_tm.tm_year)
-								fprintf(fp,"%02d:%02d %s\r\n"
-									,tm.tm_hour,tm.tm_min
-									,ff.name);
-							else
-								fprintf(fp,"%5d %s\r\n"
-									,1900+tm.tm_year
-									,ff.name);
-						} else
-							fprintf(fp,"%s\r\n",ff.name);
-					}
-					if(_findnext(ff_handle,&ff)!=0) {
-						_findclose(ff_handle);
-						ff_handle=-1; 
-					} 
+					if((filedat=getfileixb(&scfg,&f))==FALSE
+						&& !(startup->options&FTP_OPT_DIR_FILES))
+						continue;
+					if(detail) {
+						f.size=flength(g.gl_pathv[i]);
+						getfiledat(&scfg,&f);
+						t=fdate(g.gl_pathv[i]);
+						tm_p=localtime(&t);
+						if(tm_p==NULL)
+							memset(&tm,0,sizeof(tm));
+						else
+							tm=*tm_p;
+						fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d "
+							,NAME_LEN
+							,filedat ? dotname(f.uler,str) : scfg.sys_id
+							,scfg.dir[dir]->code
+							,f.size
+							,mon[tm.tm_mon],tm.tm_mday);
+						if(tm.tm_year==cur_tm.tm_year)
+							fprintf(fp,"%02d:%02d %s\r\n"
+								,tm.tm_hour,tm.tm_min
+								,getfname(g.gl_pathv[i]));
+						else
+							fprintf(fp,"%5d %s\r\n"
+								,1900+tm.tm_year
+								,getfname(g.gl_pathv[i]));
+					} else
+						fprintf(fp,"%s\r\n",getfname(g.gl_pathv[i]));
 				}
+				globfree(&g);
 			} else
 				strcpy(fname,"NUL");
 
@@ -2433,26 +2428,26 @@ static void ctrl_thread(void* arg)
 					}
 				} else {
 					sprintf(cmd,"%s*.*",scfg.dir[dir]->path);
-					ff_handle=_findfirst(cmd,&ff);
-					while(ff_handle!=-1) {
-						sprintf(cmd,"%s%s",scfg.dir[dir]->path,ff.name);
-						GetShortPathName(cmd, str, sizeof(str));
-						p=strrchr(str,'\\');
-						if(p==NULL) p=str;
-						else p++;
-						padfname(p,f.name);
+					glob(cmd,0,NULL,&g);
+					for(i=0;i<(int)g.gl_pathc;i++) {
+						if(isdir(g.gl_pathv[i]))
+							continue;
+#ifdef _WIN32
+						GetShortPathName(g.gl_pathv[i], str, sizeof(str));
+#else
+						strcpy(str,g.gl_pathv[i]);
+#endif
+						padfname(getfname(str),f.name);
 						strupr(f.name);
 						f.dir=dir;
-						if(!(ff.attrib&_A_SUBDIR) && getfileixb(&scfg,&f)) { /* not a directory */
-							f.size=ff.size;
+						if(getfileixb(&scfg,&f)) {
+							f.size=flength(g.gl_pathv[i]);
 							getfiledat(&scfg,&f);
-							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN,ff.name,f.desc);
+							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
+								,getfname(g.gl_pathv[i]),f.desc);
 						}
-						if(_findnext(ff_handle,&ff)!=0) {
-							_findclose(ff_handle);
-							ff_handle=-1; 
-						} 
 					}
+					globfree(&g);
 				}
 				fclose(fp);
 			} else if(dir>=0) {

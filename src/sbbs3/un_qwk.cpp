@@ -49,9 +49,9 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	uint	i,j,n,lastsub=INVALID_SUB;
 	uint	blocks;
 	long	l,size,misc;
-    struct	_finddata_t ff;
-	long	ff_handle;
-	FILE	*qwk;
+	DIR*	dir;
+	DIRENT*	dirent;
+	FILE*	qwk;
 
 	#if 0
 	useron.number=1;
@@ -241,24 +241,22 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	sprintf(str,"%sNETFLAGS.DAT",cfg.temp_dir);
 	remove(str);
 
-	sprintf(str,"%s*.*",cfg.temp_dir);
-	ff_handle=_findfirst(str,&ff);
-	while(ff_handle!=-1) {
-		if(!(ff.attrib&_A_SUBDIR)) {
-			// Create directory if necessary
-			sprintf(str,"%sQNET/%s.IN",cfg.data_dir,cfg.qhub[hubnum]->id);
-			_mkdir(str);
-			// Copy files
-			sprintf(str,"%s%s",cfg.temp_dir,ff.name);
-			sprintf(fname,"%sQNET/%s.IN/%s",cfg.data_dir,cfg.qhub[hubnum]->id,ff.name);
-			mv(str,fname,1 /* overwrite */);
-			sprintf(str,text[ReceivedFileViaQWK],ff.name,cfg.qhub[hubnum]->id);
-			putsmsg(&cfg,1,str);
-			lprintf("Received %s from %s", ff.name, cfg.qhub[hubnum]->id);
-		}
-		if(_findnext(ff_handle,&ff)!=0) {
-			_findclose(ff_handle);
-			ff_handle=-1; } }
+	dir=opendir(cfg.temp_dir);
+	while((dirent=readdir(dir))!=NULL) {
+		// Create directory if necessary
+		sprintf(str,"%sQNET/%s.IN",cfg.data_dir,cfg.qhub[hubnum]->id);
+		_mkdir(str);
+		sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
+		if(isdir(str))	/* sub-dir */
+			continue;
+		// Copy files
+		sprintf(fname,"%sQNET/%s.IN/%s",cfg.data_dir,cfg.qhub[hubnum]->id,dirent->d_name);
+		mv(str,fname,1 /* overwrite */);
+		sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
+		putsmsg(&cfg,1,str);
+		lprintf("Received %s from %s", dirent->d_name, cfg.qhub[hubnum]->id);
+	}
+	closedir(dir);
 
 	lprintf("Finished Importing QWK Network Packet: %s",packet);
 	remove(packet);
