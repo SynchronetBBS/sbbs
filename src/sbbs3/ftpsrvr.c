@@ -4348,7 +4348,7 @@ void DLLCALL ftp_server(void* arg)
 		signal(SIGPIPE,SIG_IGN);
 #endif
 
-		lprintf("Synchronet FTP Server %s%s"
+		lprintf("Synchronet FTP Server Revision %s%s"
 			,revision
 #ifdef _DEBUG
 			," Debug"

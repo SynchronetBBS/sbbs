@@ -1043,7 +1043,7 @@ void DLLCALL services_thread(void* arg)
 		signal(SIGPIPE,SIG_IGN);
 #endif
 
-		lprintf("Synchronet Services %s%s"
+		lprintf("Synchronet Services Revision %s%s"
 			,revision
 #ifdef _DEBUG
 			," Debug"
