@@ -258,6 +258,7 @@ __published:	// IDE-managed Components
 	TMenuItem *ExportSettingsMenuItem;
 	TMenuItem *ImportSettingsMenuItem;
 	TMenuItem *DNSBLExemptions;
+	TMenuItem *BBSEditIPFilterSilent;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);

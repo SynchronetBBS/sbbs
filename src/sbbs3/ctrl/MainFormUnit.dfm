@@ -63,7 +63,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 196
     Width = 632
-    Height = 123
+    Height = 131
     Align = alClient
     Center = True
     IncrementalDisplay = True
@@ -1999,7 +1999,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 196
     Width = 632
-    Height = 123
+    Height = 131
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
@@ -2008,7 +2008,7 @@ object MainForm: TMainForm
       Left = 289
       Top = 0
       Width = 3
-      Height = 123
+      Height = 131
       Cursor = crHSplit
       MinSize = 1
     end
@@ -2016,7 +2016,7 @@ object MainForm: TMainForm
       Left = 0
       Top = 0
       Width = 289
-      Height = 123
+      Height = 131
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -2027,7 +2027,7 @@ object MainForm: TMainForm
       Left = 292
       Top = 0
       Width = 340
-      Height = 123
+      Height = 131
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -2037,7 +2037,7 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 319
+    Top = 327
     Width = 632
     Height = 25
     Panels = <
@@ -2249,6 +2249,11 @@ object MainForm: TMainForm
         object BBSEditIPFilter: TMenuItem
           Caption = 'IP Address Filter'
           Hint = 'IP.CAN'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditIPFilterSilent: TMenuItem
+          Caption = 'IP Address Filter (silent)'
+          Hint = 'IP-SILENT.CAN'
           OnClick = TextMenuItemEditClick
         end
         object BBSEditIPFilterMsg: TMenuItem
