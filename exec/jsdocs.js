@@ -154,7 +154,7 @@ f.writeln("<title>Synchronet JavaScript Object Model Reference</title>");
 f.writeln("</head>");
 
 f.writeln("<body>");
-f.writeln("<font face=arial,helvetica>");
+f.writeln("<font face=arial,helvetica size=-1>");
 
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
 f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
@@ -178,6 +178,7 @@ document_object("bbs"		,bbs);
 document_object("console"	,console);
 document_object("msg_area"	,msg_area);
 document_object("file_area"	,file_area);
+document_object("MsgBase"	,new MsgBase("mail"));
 document_object("File"		,new File("bogusfile"));
 
 f.writeln("</ul>");
