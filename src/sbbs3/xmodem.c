@@ -116,8 +116,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 					continue; 
 				}
 				lprintf(xm,LOG_WARNING,"\nCancelled remotely");
-				bail(-1);
-				break;
+				return(-1);
 			default:
 				lprintf(xm,LOG_WARNING,"\nReceived %s  Expected SOH, STX, or EOT",chr((uchar)i));
 			case NOINP: 	/* Nothing came in */
@@ -250,7 +249,7 @@ BOOL xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			if(getcom(0)==CAN) {
 				lprintf(xm,LOG_WARNING,"\nBlock %u: !Cancelled remotely", block_num);
 				xmodem_cancel(xm);
-				bail(1); 
+				return(FALSE); 
 			}
 			return(TRUE); 
 		}
@@ -264,7 +263,7 @@ BOOL xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			if(can) {
 				lprintf(xm,LOG_WARNING,"\nBlock %u: !Cancelled remotely", block_num);
 				xmodem_cancel(xm);
-				bail(1); 
+				return(FALSE); 
 			}
 			can=1; 
 		}
@@ -276,6 +275,77 @@ BOOL xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 		} 
 	}
 
+	return(FALSE);
+}
+
+BOOL xmodem_get_mode(xmodem_t* xm)
+{
+	int			i;
+	unsigned	errors;
+	unsigned	can;
+
+	lprintf(xm,LOG_INFO,"Waiting for transfer mode request...");
+
+	*(xm->mode)&=~(GMODE|CRC);
+	for(errors=can=0;errors<xm->max_errors;errors++) {
+		i=getcom(xm->recv_timeout);
+		if(can && i!=CAN)
+			can=0;
+		switch(i) {
+			case NAK: 		/* checksum */
+				lprintf(xm,LOG_INFO,"Receiver requested 8-bit Checksum mode");
+				return(TRUE); 
+			case 'C':
+				lprintf(xm,LOG_INFO,"Receiver requested 16-bit CRC mode");
+				*(xm->mode)|=CRC;
+				return(TRUE); 
+			case 'G':
+				lprintf(xm,LOG_INFO,"Receiver requested Streaming (16-bit CRC) mode");
+				*(xm->mode)|=(GMODE|CRC);
+				return(TRUE); 
+			case CAN:
+				if(can) {
+					lprintf(xm,LOG_WARNING,"!Receiver cancelled");
+					return(FALSE); 
+				}
+				can=1; 
+				break;
+			case NOINP:
+				break;
+			default:
+				lprintf(xm,LOG_WARNING,"Received %s  Expected NAK, C, or G"
+					,chr((uchar)i));
+				break;
+		} 
+	}
+
+	lprintf(xm,LOG_ERR,"!FAILED to get transfer mode request from receiver");
+	return(FALSE);
+}
+
+BOOL xmodem_put_eot(xmodem_t* xm)
+{
+	int ch;
+	unsigned errors;
+
+	for(errors=0;errors<xm->max_errors;errors++) {
+
+		lprintf(xm,LOG_INFO,"Sending end-of-Text indicator (%d)",errors+1);
+
+		while((ch=getcom(0))!=NOINP)
+			lprintf(xm,LOG_INFO,"Throwing out received: %s",chr((uchar)ch));
+
+		putcom(EOT);
+		if((ch=getcom(xm->recv_timeout))==NOINP)
+			continue;
+		lprintf(xm,LOG_INFO,"Received %s ",chr((uchar)ch)); 
+		if(ch==ACK)
+			return(TRUE);
+		if(ch==NAK && errors==0 && (*(xm->mode)&(YMODEM|GMODE))==YMODEM) {
+			continue;  /* chuck's double EOT trick so don't complain */
+		}
+		lprintf(xm,LOG_WARNING,"Expected ACK");
+	}
 	return(FALSE);
 }
 
@@ -292,16 +362,20 @@ char* xmodem_ver(char *buf)
 }
 
 void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
-				,int (*lputs)(void*, int level, const char* str)
-				,int (*send_byte)(void*, uchar ch, unsigned timeout)
-				,int (*recv_byte)(void*, unsigned timeout))
+				,int	(*lputs)(void*, int level, const char* str)
+				,void	(*progress)(void* unused, unsigned block_num, ulong fsize, time_t t)
+				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
+				,int	(*recv_byte)(void*, unsigned timeout))
 {
 	memset(xm,0,sizeof(xmodem_t));
 
 	/* Use sane default values */
-	xm->send_timeout=10;	/* seconds */
-	xm->byte_timeout=3;		/* seconds */
-	xm->ack_timeout=10;		/* seconds */
+	xm->send_timeout=10;		/* seconds */
+	xm->recv_timeout=10;		/* seconds */
+	xm->byte_timeout=3;			/* seconds */
+	xm->ack_timeout=10;			/* seconds */
+	xm->progress_interval=1;	/* seconds */
+
 	xm->block_size=1024;
 	xm->max_errors=10;
 	xm->g_delay=1;
@@ -309,6 +383,7 @@ void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 	xm->cbdata=cbdata;
 	xm->mode=mode;
 	xm->lputs=lputs;
+	xm->progress=progress;
 	xm->send_byte=send_byte;
 	xm->recv_byte=recv_byte;
 }
