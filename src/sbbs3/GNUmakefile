@@ -40,7 +40,7 @@ endif
 ifdef bcc
  CC		?=	bc++ -q
  CCPRE	:=	bcc
- CCPP	?=	bc++ -q
+ CXX	?=	bc++ -q
  LD		=	ilink -q
  CFLAGS +=	-mm -md -D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
 else
@@ -48,12 +48,12 @@ else
  CCPRE	?=	gcc
  ifdef BUILD_DEPENDS
   CC		=	../build/mkdep -a
-  CCPP	=	../build/mkdep -a
+  CXX	=	../build/mkdep -a
   LD		=	echo
   COMPILE_MSG	:= Depending
  else
   CC		?=	gcc
-  CCPP	?=	g++
+  CXX	?=	g++
   LD		?=	ld
   COMPILE_MSG	:= Compiling
  endif
@@ -270,7 +270,7 @@ $(LIBODIR)/%.o : %.cpp $(BUILD_DEPENDS)
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	$(QUIET)$(CCPP) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
+	$(QUIET)$(CXX) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 $(LIBODIR):
 	mkdir $(LIBODIR)
@@ -301,7 +301,7 @@ MKSHPPLIB		:=	libtool -dynamic -framework System -lcc_dynamic -lstdc++
 SHLIBOPTS	:=	
 else
 MKSHLIB		:=	$(CC)
-MKSHPPLIB		:=	$(CCPP)
+MKSHPPLIB		:=	$(CXX)
 endif
 
 # Monolithic Synchronet executable Build Rule
@@ -309,7 +309,7 @@ FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
+	$(QUIET)$(CXX) -o $@ $(LFLAGS) $^
 
 # Synchronet BBS library Link Rule
 FORCE$(SBBS): $(OBJS) $(LIBS)
@@ -571,7 +571,7 @@ FORCE$(JSEXEC): $(JSEXEC_OBJS)
 
 $(JSEXEC): $(JSEXEC_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) $(UTIL_LFLAGS) -o $@ $^ $(LFLAGS)
+	$(QUIET)$(CXX) $(UTIL_LFLAGS) -o $@ $^ $(LFLAGS)
 	
 # ANS2ASC
 FORCE$(ANS2ASC): $(LIBODIR)/ans2asc.o
