@@ -44,6 +44,7 @@ typedef struct
 	SOCKET	sock;
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
+	BOOL	nonblocking;
 	int		last_error;
 
 } private_t;
@@ -82,15 +83,12 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 		dbprintf(TRUE, 0, "open_socket malloc failed");
 		return(JS_FALSE);
 	}
+	memset(p,0,sizeof(private_t));
 
 	if((p->sock=open_socket(type))==INVALID_SOCKET) {
 		dbprintf(TRUE, 0, "open_socket failed with error %d",ERROR_VALUE);
 		return(JS_FALSE);
 	}
-
-	p->debug=JS_FALSE;
-	p->last_error=0;
-	p->external=JS_FALSE;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
@@ -451,6 +449,30 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	return(JS_TRUE);
 }
 
+static JSBool
+js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		cmd;
+	ulong		arg=0;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	cmd = JSVAL_TO_INT(argv[0]);
+	if(argc>1)
+		arg = JSVAL_TO_INT(argv[1]);
+
+	if(ioctlsocket(p->sock,cmd,&arg)==0)
+		*rval = INT_TO_JSVAL(arg);
+	else
+		*rval = INT_TO_JSVAL(-1);
+
+	p->last_error=ERROR_VALUE;
+
+	return(JS_TRUE);
+}
+
 /* Socket Object Properites */
 enum {
 	 SOCK_PROP_LAST_ERROR
@@ -459,6 +481,7 @@ enum {
 	,SOCK_PROP_NREAD
 	,SOCK_PROP_DEBUG
 	,SOCK_PROP_DESCRIPTOR
+	,SOCK_PROP_NONBLOCKING
 };
 
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -482,6 +505,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case SOCK_PROP_LAST_ERROR:
 			p->last_error = JSVAL_TO_INT(*vp);
+			break;
+		case SOCK_PROP_NONBLOCKING:
+			p->nonblocking = JSVAL_TO_BOOLEAN(*vp);
+			ioctlsocket(p->sock,FIONBIO,&(p->nonblocking));
 			break;
 	}
 
@@ -528,6 +555,9 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_DESCRIPTOR:
 			*vp = INT_TO_JSVAL(p->sock);
 			break;
+		case SOCK_PROP_NONBLOCKING:
+			*vp = BOOLEAN_TO_JSVAL(p->nonblocking);
+			break;
 	}
 
 	return(TRUE);
@@ -544,6 +574,7 @@ static struct JSPropertySpec js_socket_properties[] = {
 	{	"nread"				,SOCK_PROP_NREAD		,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"descriptor"		,SOCK_PROP_DESCRIPTOR	,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"nonblocking"		,SOCK_PROP_NONBLOCKING	,JSPROP_ENUMERATE,	NULL,NULL},
 	{0}
 };
 
@@ -573,6 +604,7 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"readline",		js_recvline,		0},		/* receive a \n terminated string	*/
 	{"getoption",		js_getsockopt,		2},		/* getsockopt(level,opt)			*/
 	{"setoption",		js_setsockopt,		3},		/* setsockopt(level,opt,val)		*/
+	{"ioctl",			js_ioctlsocket,		1},		/* ioctl(cmd,arg)					*/
 	{0}
 };
 
@@ -610,10 +642,9 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
 		return(NULL);
+	memset(p,0,sizeof(private_t));
 
 	p->sock=sock;
-	p->debug=JS_FALSE;
-	p->last_error=0;
 	p->external=JS_TRUE;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
