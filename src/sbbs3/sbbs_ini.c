@@ -159,11 +159,12 @@ void sbbs_read_ini(
 	char*		ctrl_dir;
 	char*		temp_dir;
 	char		host_name[128];
+	char		value[MAX_VALUE_LEN];
 	ulong		js_max_bytes;
 
 	section = "Global";
 
-	ctrl_dir=iniGetString(fp,section,"CtrlDirectory",nulstr);
+	ctrl_dir=iniGetString(fp,section,"CtrlDirectory",nulstr,value);
 	if(*ctrl_dir) {
 		backslash(ctrl_dir);
 		if(bbs!=NULL)		SAFECOPY(bbs->ctrl_dir,ctrl_dir);
@@ -171,14 +172,14 @@ void sbbs_read_ini(
 		if(mail!=NULL)		SAFECOPY(mail->ctrl_dir,ctrl_dir);
 		if(services!=NULL)	SAFECOPY(services->ctrl_dir,ctrl_dir);
 	}
-	temp_dir=iniGetString(fp,section,"TempDirectory",nulstr);
+	temp_dir=iniGetString(fp,section,"TempDirectory",nulstr,value);
 	if(*temp_dir) {
 		backslash(temp_dir);
 		if(bbs!=NULL)		SAFECOPY(bbs->temp_dir,temp_dir);
 		if(ftp!=NULL)		SAFECOPY(ftp->temp_dir,temp_dir);
 	}
 
-	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr));
+	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr,value));
 	js_max_bytes=iniGetInteger(fp,section,"JavaScriptMaxBytes",0);
 																		
 	/***********************************************************************/
@@ -215,7 +216,7 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 		SAFECOPY(bbs->host_name
-			,iniGetString(fp,section,"HostName",host_name));
+			,iniGetString(fp,section,"HostName",host_name,value));
 
 		/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
 	#if defined(__FreeBSD__)
@@ -225,9 +226,9 @@ void sbbs_read_ini(
 	#endif
 
 		SAFECOPY(bbs->xtrn_term_ansi
-			,iniGetString(fp,section,"ExternalTermANSI",default_term_ansi));
+			,iniGetString(fp,section,"ExternalTermANSI",default_term_ansi,value));
 		SAFECOPY(bbs->xtrn_term_dumb
-			,iniGetString(fp,section,"ExternalTermDumb","dumb"));
+			,iniGetString(fp,section,"ExternalTermDumb","dumb",value));
 
 	#if defined(__FreeBSD__)
 		default_dosemu_path="/usr/bin/doscmd";
@@ -236,12 +237,12 @@ void sbbs_read_ini(
 	#endif
 
 		SAFECOPY(bbs->dosemu_path
-			,iniGetString(fp,section,"DOSemuPath",default_dosemu_path));
+			,iniGetString(fp,section,"DOSemuPath",default_dosemu_path,value));
 
 		SAFECOPY(bbs->answer_sound
-			,iniGetString(fp,section,"AnswerSound",nulstr));
+			,iniGetString(fp,section,"AnswerSound",nulstr,value));
 		SAFECOPY(bbs->hangup_sound
-			,iniGetString(fp,section,"HangupSound",nulstr));
+			,iniGetString(fp,section,"HangupSound",nulstr,value));
 
 		bbs->options
 			=iniGetBitField(fp,section,"Options",bbs_options
@@ -270,21 +271,21 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 		SAFECOPY(ftp->host_name
-			,iniGetString(fp,section,"HostName",host_name));
+			,iniGetString(fp,section,"HostName",host_name,value));
 
 		SAFECOPY(ftp->index_file_name
-			,iniGetString(fp,section,"IndexFileName","00index"));
+			,iniGetString(fp,section,"IndexFileName","00index",value));
 		SAFECOPY(ftp->html_index_file
-			,iniGetString(fp,section,"HtmlIndexFile","00index.html"));
+			,iniGetString(fp,section,"HtmlIndexFile","00index.html",value));
 		SAFECOPY(ftp->html_index_script
-			,iniGetString(fp,section,"HtmlIndexScript","ftp-html.js"));
+			,iniGetString(fp,section,"HtmlIndexScript","ftp-html.js",value));
 
 		SAFECOPY(ftp->answer_sound
-			,iniGetString(fp,section,"AnswerSound",nulstr));
+			,iniGetString(fp,section,"AnswerSound",nulstr,value));
 		SAFECOPY(ftp->hangup_sound
-			,iniGetString(fp,section,"HangupSound",nulstr));
+			,iniGetString(fp,section,"HangupSound",nulstr,value));
 		SAFECOPY(ftp->hack_sound
-			,iniGetString(fp,section,"HackAttemptSound",nulstr));
+			,iniGetString(fp,section,"HackAttemptSound",nulstr,value));
 
 		ftp->options
 			=iniGetBitField(fp,section,"Options",ftp_options
@@ -323,30 +324,30 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,"MaxMsgSize",10*1024*1024);	/* 10MB */
 
 		SAFECOPY(mail->host_name
-			,iniGetString(fp,section,"HostName",host_name));
+			,iniGetString(fp,section,"HostName",host_name,value));
 
 		SAFECOPY(mail->relay_server
-			,iniGetString(fp,section,"RelayServer",mail->relay_server));
+			,iniGetString(fp,section,"RelayServer",mail->relay_server,value));
 		SAFECOPY(mail->dns_server
-			,iniGetString(fp,section,"DNSServer",mail->dns_server));
+			,iniGetString(fp,section,"DNSServer",mail->dns_server,value));
 
 		SAFECOPY(mail->default_user
-			,iniGetString(fp,section,"DefaultUser",nulstr));
+			,iniGetString(fp,section,"DefaultUser",nulstr,value));
 
 		SAFECOPY(mail->dnsbl_hdr
-			,iniGetString(fp,section,"DNSBlacklistHeader","X-DNSBL"));
+			,iniGetString(fp,section,"DNSBlacklistHeader","X-DNSBL",value));
 		SAFECOPY(mail->dnsbl_tag
-			,iniGetString(fp,section,"DNSBlacklistSubject","SPAM"));
+			,iniGetString(fp,section,"DNSBlacklistSubject","SPAM",value));
 
 		SAFECOPY(mail->pop3_sound
-			,iniGetString(fp,section,"POP3Sound",nulstr));
+			,iniGetString(fp,section,"POP3Sound",nulstr,value));
 		SAFECOPY(mail->inbound_sound
-			,iniGetString(fp,section,"InboundSound",nulstr));
+			,iniGetString(fp,section,"InboundSound",nulstr,value));
 		SAFECOPY(mail->outbound_sound
-			,iniGetString(fp,section,"OutboundSound",nulstr));
+			,iniGetString(fp,section,"OutboundSound",nulstr,value));
 
 		SAFECOPY(mail->proc_cfg_file
-			,iniGetString(fp,section,"ProcessConfigFile","mailproc.cfg"));
+			,iniGetString(fp,section,"ProcessConfigFile","mailproc.cfg",value));
 
 		mail->options
 			=iniGetBitField(fp,section,"Options",mail_options
@@ -368,15 +369,15 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 		SAFECOPY(services->host_name
-			,iniGetString(fp,section,"HostName",host_name));
+			,iniGetString(fp,section,"HostName",host_name,value));
 
 		SAFECOPY(services->cfg_file
-			,iniGetString(fp,section,"ConfigFile","services.cfg"));
+			,iniGetString(fp,section,"ConfigFile","services.cfg",value));
 
 		SAFECOPY(services->answer_sound
-			,iniGetString(fp,section,"AnswerSound",nulstr));
+			,iniGetString(fp,section,"AnswerSound",nulstr,value));
 		SAFECOPY(services->hangup_sound
-			,iniGetString(fp,section,"HangupSound",nulstr));
+			,iniGetString(fp,section,"HangupSound",nulstr,value));
 
 		services->options
 			=iniGetBitField(fp,section,"Options",service_options
@@ -399,12 +400,12 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 		SAFECOPY(web->host_name
-			,iniGetString(fp,section,"HostName",host_name));
+			,iniGetString(fp,section,"HostName",host_name,value));
 
 		SAFECOPY(web->root_dir
-			,iniGetString(fp,section,"RootDirectory","../html"));
+			,iniGetString(fp,section,"RootDirectory","../html",value));
 		SAFECOPY(web->error_dir
-			,iniGetString(fp,section,"ErrorDirectory","../html/error"));
+			,iniGetString(fp,section,"ErrorDirectory","../html/error",value));
 
 		iniFreeStringList(web->index_file_name);
 		web->index_file_name
@@ -413,7 +414,7 @@ void sbbs_read_ini(
 		web->cgi_ext
 			=iniGetStringList(fp,section,"CGIExtensions", "," ,".cgi");
 		SAFECOPY(web->ssjs_ext
-			,iniGetString(fp,section,"JavaScriptExtension",".ssjs"));
+			,iniGetString(fp,section,"JavaScriptExtension",".ssjs",value));
 
 		web->max_inactivity
 			=iniGetShortInt(fp,section,"MaxInactivity",120);		/* seconds */
@@ -428,7 +429,7 @@ void sbbs_read_ini(
 			default_cgi_temp = nulstr;
 	#endif
 		SAFECOPY(web->cgi_temp_dir
-			,iniGetString(fp,section,"CGITempDirectory",default_cgi_temp));
+			,iniGetString(fp,section,"CGITempDirectory",default_cgi_temp,value));
 
 		web->options
 			=iniGetBitField(fp,section,"Options",web_options

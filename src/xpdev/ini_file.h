@@ -40,6 +40,9 @@
 
 #include "genwrap.h"
 
+#define MAX_LINE_LEN	256		/* Maximum length of entire line, includes '\0' */
+#define MAX_VALUE_LEN	128		/* Maximum value length, includes '\0' */
+
 typedef struct {
 	ulong		bit;
 	const char*	name;
@@ -49,9 +52,9 @@ typedef struct {
 extern "C" {
 #endif
 
-/* Read all section names and return as a string list */
+/* Read all section names and return as an allocated string list */
 char**		iniGetSectionList		(FILE* fp);
-/* Read all key names and return as a string list */
+/* Read all key names and return as an allocated string list */
 char**		iniGetKeyList			(FILE* fp, const char* section);
 /* Read all key and value pairs and return as a named string list */
 named_string_t**
@@ -59,7 +62,7 @@ named_string_t**
 
 /* These functions read a single key of the specified type */
 char*		iniGetString	(FILE* fp, const char* section, const char* key, 
-							 const char* deflt);
+							 const char* deflt, char* value);
 char**		iniGetStringList(FILE* fp, const char* section, const char* key
 							,const char* sep, const char* deflt);
 long		iniGetInteger	(FILE* fp, const char* section, const char* key, 

@@ -404,6 +404,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	char*	section;
 	char*	key;
 	char**	list;
+	char	buf[MAX_VALUE_LEN];
 	int32	i;
 	jsval	val;
 	jsval	dflt=argv[2];
@@ -423,7 +424,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		case JSVAL_STRING:
 			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,
 				iniGetString(p->fp,section,key
-					,JS_GetStringBytes(JS_ValueToString(cx,dflt)))));
+					,JS_GetStringBytes(JS_ValueToString(cx,dflt)),buf)));
 			break;
 		case JSVAL_BOOLEAN:
 			*rval = BOOLEAN_TO_JSVAL(
