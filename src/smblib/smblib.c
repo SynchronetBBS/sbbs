@@ -1250,7 +1250,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 		sprintf(smb->last_error,"invalid file length: %ld", length);
 		return(SMB_ERR_FILE_LEN); 
 	}
-	if((buf=(ulong*)MALLOC(smb->status.max_crcs*4))==NULL) {
+	if((buf=(ulong*)MALLOC(length))==NULL) {
 		close(file);
 		sprintf(smb->last_error
 			,"malloc failure of %ld bytes"
