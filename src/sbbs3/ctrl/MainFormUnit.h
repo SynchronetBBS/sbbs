@@ -126,7 +126,6 @@ __published:	// IDE-managed Components
 	TMenuItem *FileSoundMenuItem;
 	TToolButton *SoundButton;
 	TAction *SoundToggle;
-	TMenuItem *BBSStatisticsLogMenuItem;
 	TMenuItem *ForceNetworkCalloutMenuItem;
 	TMenuItem *ForceTimedEventMenuItem;
 	TMenuItem *N1;
@@ -151,7 +150,6 @@ __published:	// IDE-managed Components
 	TMenuItem *MailEditMenuItem;
 	TMenuItem *MailEditAliasList;
     TTimer *UpTimer;
-    TMenuItem *BBSViewErrorLogMenuItem;
     TAction *ChatToggle;
     TMenuItem *SysopAvailableforChat1;
     TToolButton *SysopAvailButton;
@@ -182,6 +180,21 @@ __published:	// IDE-managed Components
     TMenuItem *TelnetEditRLoginList;
     TMenuItem *BBSLoginMenuItem;
     TMenuItem *UserListMenuItem;
+    TMenuItem *MailViewMenuItem;
+    TMenuItem *MailViewTodaysLog;
+    TMenuItem *MailViewDatesLog;
+    TMenuItem *FtpViewMenuItem;
+    TMenuItem *FtpViewTodaysLog;
+    TMenuItem *FtpViewDatesLog;
+    TMenuItem *MailViewYesterdaysLog;
+    TMenuItem *FtpViewYesterdaysLog;
+    TToolButton *ToolButton2;
+    TMenuItem *BBSViewMenuItem;
+    TMenuItem *BBSViewAnotherDaysLog;
+    TMenuItem *BBSViewYesterdaysLog;
+    TMenuItem *BBSViewTodaysLog;
+    TMenuItem *ViewErrorLog1;
+    TMenuItem *ViewStatisticsLog1;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -230,6 +243,7 @@ __published:	// IDE-managed Components
     void __fastcall SaveSettings(TObject *Sender);
     void __fastcall BBSLoginMenuItemClick(TObject *Sender);
     void __fastcall UserListMenuItemClick(TObject *Sender);
+    void __fastcall ViewLogClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
