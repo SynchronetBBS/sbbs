@@ -277,6 +277,20 @@ char* strrev(char* str)
     }
     return str;
 }
+/****************************************************************************/
+/* Convert ASCIIZ string to lower case										*/
+/****************************************************************************/
+char* strlwr(char* str)
+{
+	char* p=str;
+
+	while(*p) {
+		*p=tolower(*p);
+		p++;
+	}
+	return(str);
+}
+
 #endif
 
 /****************************************************************************/
@@ -284,11 +298,18 @@ char* strrev(char* str)
 /* e.g. convert "/sbbs/node1/../data" to "/sbbs/data/"						*/
 /****************************************************************************/
 #ifdef __unix__
+/* This is a bit of a hack, but it works */
 char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
 {
-#warning "Need _fullpath() equivalent for Unix - not critical"
-	strcpy(absPath,relPath);
-	return(absPath);
+	char *curdir = (char *) malloc(PATH_MAX+1);
+
+    getcwd(curdir, PATH_MAX);
+    chdir(relPath);
+    getcwd(absPath, maxLength);
+    chdir(curdir);
+	free(curdir);
+
+    return absPath;
 }
 #endif
 
