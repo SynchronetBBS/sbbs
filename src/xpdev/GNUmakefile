@@ -64,13 +64,19 @@ else
   else
    ifeq ($(os),qnx)	# QNX
     LFLAGS	:= 
-   else			# Linux / Other UNIX
-    XP_SEM :=	1
-    CFLAGS	+= -DUSE_XP_SEMAPHORES
-    ifdef bcc
-     LFLAGS	:=	libpthread.a
-    else
-     LFLAGS	:=	-lpthread
+   else
+    ifeq ($(os),darwin)	# Darwin/Mac OS X
+     CFLAGS	+= -D__unix__ -DUSE_XP_SEMAPHORES
+     LFLAGS	+= -lpthread
+     XP_SEM	:= 1
+    else			# Linux / Other UNIX
+     XP_SEM :=	1
+     CFLAGS	+= -DUSE_XP_SEMAPHORES
+     ifdef bcc
+      LFLAGS	:=	libpthread.a
+     else
+      LFLAGS	:=	-lpthread
+     endif
     endif
    endif
   endif

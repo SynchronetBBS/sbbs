@@ -135,6 +135,8 @@ extern "C" {
 	#define PLATFORM_DESC	"GNU/Hurd"
 #elif defined(__QNX__)
 	#define PLATFORM_DESC	"QNX"
+#elif defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)
+	#define PLATFORM_DESC	"Mac OS X"
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else
