@@ -44,9 +44,10 @@
 extern "C" {
 #endif
 
-str_list_t	csvCreate(str_list_t* records, str_list_t columns);
-str_list_t*	csvParse(str_list_t records);
-str_list_t*	csvReadFile(FILE* fp, str_list_t* columns);
+str_list_t	csvCreateList(str_list_t records[], str_list_t columns /* optional */);
+str_list_t	csvParseLine(char* line);
+str_list_t*	csvParseList(str_list_t list, str_list_t* columns /* optional */);
+str_list_t*	csvReadFile(FILE* fp, str_list_t* columns /* optional */);
 
 #if defined(__cplusplus)
 }

@@ -39,48 +39,6 @@
 #include "genwrap.h"	/* lastchar */
 #include <stdlib.h>		/* malloc */
 
-str_list_t csvParseLine(char* line)
-{
-	char*		p;
-	char*		buf;
-	size_t		count=0;
-	str_list_t	list;
-
-	if((list=strListInit())==NULL)
-		return(NULL);
-
-	if((buf=strdup(line))==NULL) {
-		strListFree(&list);
-		return(NULL);
-	}
-
-	for(p=strtok(buf,",");p;p=strtok(NULL,","))
-		strListAppend(&list,p,count++);
-
-	free(buf);
-
-	return(list);
-}
-
-str_list_t* csvParse(str_list_t records )
-{
-	size_t	i;
-	str_list_t* list;
-
-	if(records==NULL)
-		return(NULL);
-
-	if((list=(str_list_t*)malloc(sizeof(str_list_t*)*(strListCount(records)+1)))==NULL)
-		return(NULL);
-
-	for(i=0;records[i];i++)
-		list[i]=csvParseLine(records[i]);
-
-	list[i]=NULL; /* terminate */
-
-	return(list);
-}
-
 char* csvEncode(char* field)
 {
 	char* dst;
@@ -149,7 +107,7 @@ char* csvLine(str_list_t columns)
 	return(str);
 }
 
-str_list_t csvCreate(str_list_t data[], str_list_t columns)
+str_list_t csvCreate(str_list_t records[], str_list_t columns)
 {
 	char*		p;
 	str_list_t	list;
@@ -165,9 +123,9 @@ str_list_t csvCreate(str_list_t data[], str_list_t columns)
 		free(p);
 	}
 		
-	if(data!=NULL)
-		for(i=0;data[i]!=NULL;i++) {
-			p=csvLine(data[i]);
+	if(records!=NULL)
+		for(i=0;records[i]!=NULL;i++) {
+			p=csvLine(records[i]);
 			strListAppend(&list,p,li++);
 			free(p);
 		}
@@ -187,6 +145,55 @@ static void truncsp(char *str)
 	str[c]=0;
 }
 
+str_list_t csvParseLine(char* line)
+{
+	char*		p;
+	char*		buf;
+	size_t		count=0;
+	str_list_t	list;
+
+	if((list=strListInit())==NULL)
+		return(NULL);
+
+	if((buf=strdup(line))==NULL) {
+		strListFree(&list);
+		return(NULL);
+	}
+
+	for(p=strtok(buf,",");p;p=strtok(NULL,","))
+		strListAppend(&list,p,count++);
+
+	free(buf);
+
+	return(list);
+}
+
+str_list_t* csvParseList(str_list_t records, str_list_t* columns)
+{
+	size_t		i=0;
+	str_list_t* list;
+
+	if(records==NULL)
+		return(NULL);
+
+	if((list=(str_list_t*)malloc(sizeof(str_list_t*)*(strListCount(records)+1)))==NULL)
+		return(NULL);
+
+	if(columns!=NULL) {
+		if((*columns=csvParseLine(records[i++]))==NULL)
+			return(NULL);
+	}
+
+	while(records[i]!=NULL) {
+		list[i]=csvParseLine(records[i]);
+		i++;
+	}
+
+	list[i]=NULL; /* terminate */
+
+	return(list);
+}
+
 str_list_t*	csvReadFile(FILE* fp, str_list_t* columns)
 {
 	str_list_t*	records;
@@ -200,12 +207,9 @@ str_list_t*	csvReadFile(FILE* fp, str_list_t* columns)
 	for(i=0; lines[i]!=NULL; i++)
 		truncsp(lines[i]);
 
-	if(columns!=NULL) {
-		if((*columns=csvParseLine(strListRemove(&lines,0)))==NULL)
-			return(NULL);
-	}
+	records=csvParseList(lines,columns);
 
-	records=csvParse(lines);
+	strListFree(&lines);
 
 	return(records);
 }
