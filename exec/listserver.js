@@ -222,7 +222,7 @@ for(var l in list_array) {
 	log(LOG_DEBUG,format("ListServer: %s pointer read: %u"
 		,list.name, ptr));
 
-	if(isNan(ptr))
+	if(isNaN(ptr))
 		ptr = msgbase.last_msg+1;		// export none
 	else if(ptr < msgbase.first_msg)
 		ptr = msgbase.first_msg;		// export all
