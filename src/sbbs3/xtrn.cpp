@@ -52,6 +52,8 @@
 	#include <util.h>
 #elif defined(__linux__)
 	#include <pty.h>
+#elif defined(__DARWIN__)
+	#include <util.h>
 #elif defined(__QNX__)
 #if 0
 	#include <unix.h>

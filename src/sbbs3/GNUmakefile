@@ -79,7 +79,11 @@ os      :=  $(shell echo $(os) | tr -d "/")
 ifeq ($(os),openbsd)
 LIBFILE =	.so.0.0
 else
-LIBFILE	=	.so
+ ifeq ($(os),darwin)
+  LIBFILE =	.dylib
+ else
+  LIBFILE	=	.so
+ endif
 endif
 
 ifeq ($(os),freebsd)
@@ -130,6 +134,11 @@ ifeq ($(os),netbsd)
  CFLAGS += -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
  LFLAGS := -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
  UTIL_LFLAGS	+=	-lpth -L/usr/pkg/lib
+endif
+
+ifeq ($(os),darwin)
+ CFLAGS +=  -D_REENTRANT -D__unix__ -fno-common -D__DARWIN__
+ LFLAGS :=  -lm -lpthread
 endif
 
 # So far, only QNX has sem_timedwait()
@@ -226,6 +235,7 @@ vpath %.c $(XPDEV) $(UIFC)
 vpath %.cpp $(UIFC)
 
 LFLAGS		+=	-L./$(LIBODIR) -L$(NSPRDIR)
+ifneq ($(os),darwin)
 SBBSLDFLAGS	:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./ 
 #LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
 LFLAGS		+=	-Xlinker -rpath
@@ -239,6 +249,7 @@ LFLAGS		+=	-Xlinker -rpath-link
 LFLAGS		+=	-Xlinker $(NSPRDIR)
 else
 LFLAGS		+=	-l$(JSLIB) -lnspr4
+endif
 endif
 ifeq ($(os),freebsd)
 LFLAGS		+=	-pthread
@@ -284,6 +295,14 @@ SMBLIB_OBJS = \
 	$(LIBODIR)/crc16.o
 
 SHLIBOPTS	:=	-shared
+ifeq ($(os),darwin)
+MKSHLIB		:=	libtool -dynamic -framework System -lcc_dynamic
+MKSHPPLIB		:=	libtool -dynamic -framework System -lcc_dynamic -lstdc++
+SHLIBOPTS	:=	
+else
+MKSHLIB		:=	$(CC)
+MKSHPPLIB		:=	$(CCPP)
+endif
 
 # Monolithic Synchronet executable Build Rule
 FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
@@ -297,35 +316,35 @@ FORCE$(SBBS): $(OBJS) $(LIBS)
 
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) $(LFLAGS) -o $@ $^ $(SHLIBOPTS)
+	$(QUIET)$(MKSHPPLIB) $(LFLAGS) -o $@ $^ $(SHLIBOPTS)
 
 # FTP Server Link Rule
 FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(SHLIBOPTS) -o $@ 
+	$(QUIET)$(MKSHLIB) $(LFLAGS) $^ $(SHLIBOPTS) -o $@ 
 
 # Mail Server Link Rule
 FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
+	$(QUIET)$(MKSHLIB) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
 
 # Mail Server Link Rule
 FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 
 $(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
+	$(QUIET)$(MKSHLIB) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
 
 # Services Link Rule
 FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
 
 $(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
+	$(QUIET)$(MKSHLIB) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
 
 # Synchronet Console Build Rule
 FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
