@@ -1766,3 +1766,12 @@ void __fastcall TMainForm::UserListExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+void __fastcall TMainForm::HelpIndexMenuItemClick(TObject *Sender)
+{
+    char str[512];
+
+    sprintf(str,"start http://synchro.net/docs");
+    WinExec(str,SW_SHOWMINNOACTIVE);
+}
+//---------------------------------------------------------------------------
+
