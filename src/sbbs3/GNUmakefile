@@ -37,11 +37,19 @@ ifdef bcc
  LD		=	ilink -q
  CFLAGS +=	-mm -md -D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
 else
- CC		=	gcc
  CCPRE	:=	gcc
- CCPP	=	g++
- LD		=	ld
  CFLAGS	+=	-MMD -Wall
+ ifdef BUILD_DEPENDS
+  CC		=	../build/mkdep -a
+  CCPP	=	../build/mkdep -a
+  LD		=	echo
+  COMPILE_MSG	:= Depending
+ else
+  CC		=	gcc
+  CCPP	=	c++
+  LD		=	ld
+  COMPILE_MSG	:= Compiling
+ endif
 endif
 SLASH	=	/
 OFILE	=	o
@@ -159,32 +167,31 @@ vpath %.cpp $(UIFC)
 # Implicit C Compile Rule for utils
 $(EXEODIR)/%.o : %.c
    ifndef bcc
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
    endif
 	@$(CC) $(CFLAGS) -o $@ -c $<
 
 # Implicit C++ Compile Rule for utils
 $(EXEODIR)/%.o : %.cpp
    ifndef bcc
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
    endif
 	@$(CCPP) $(CFLAGS) -o $@ -c $<
 
 # Implicit C Compile Rule for SBBS
 $(LIBODIR)/%.o : %.c
    ifndef bcc
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
    endif
 	@$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 # Implicit C++ Compile Rule for SBBS
 $(LIBODIR)/%.o : %.cpp
    ifndef bcc
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
    endif
 	@$(CCPP) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
-# Create output directories
 $(LIBODIR):
 	mkdir $(LIBODIR)
 
@@ -204,83 +211,103 @@ MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o 
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CCPP) -o $@ $(LFLAGS) $^
+    endif
 
 # Synchronet BBS library Link Rule
 $(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o
+    ifndef BUILD_DEPENDS
 	$(LD) $(LFLAGS) -S -o $(SBBS) $^ $(LIBS) -o $@
+    endif
 
 # FTP Server Link Rule
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
+    ifndef BUILD_DEPENDS
 	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@ 
+    endif
 
 # Mail Server Link Rule
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
+    ifndef BUILD_DEPENDS
 	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@
+    endif
 
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBSLIB)
+    ifndef BUILD_DEPENDS
 	@$(CC) $(CFLAGS) -o $@ $^
+    endif
 
 # Specifc Compile Rules
 $(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DFTPSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mxlookup.o: mxlookup.c
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mime.o: mime.c
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<		
 
 $(LIBODIR)/websrvr.o: websrvr.c websrvr.h
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DWEBSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/base64.o: base64.c base64.h
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DWEBSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/services.o: services.c services.h
-	@echo Compiling $<
+	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DSERVICES_EXPORTS -o $@ -c $<
 
 # Baja Utility
 $(BAJA): $(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/crc32.o \
 	$(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
+    endif
 
 # Node Utility
 $(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^ 
+    endif
 
 SMBLIB = $(EXEODIR)/smblib.o $(EXEODIR)/filewrap.o $(EXEODIR)/crc16.o
 
 # FIXSMB Utility
 $(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o $(EXEODIR)/str_util.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
+    endif
 
 # CHKSMB Utility
 $(CHKSMB): $(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o $(EXEODIR)/genwrap.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
+    endif
 
 # SMB Utility
 $(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/genwrap.o $(EXEODIR)/smbtxt.o $(EXEODIR)/crc32.o $(EXEODIR)/lzh.o \
 	$(EXEODIR)/date_str.o $(EXEODIR)/str_util.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
+    endif
 
 # SBBSecho (FidoNet Packet Tosser)
 $(SBBSECHO): \
@@ -302,8 +329,10 @@ $(SBBSECHO): \
 	$(SMBLIB) \
 	$(EXEODIR)/smbtxt.o \
 	$(EXEODIR)/lzh.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
+    endif
 
 # SBBSecho Configuration Program
 $(ECHOCFG): \
@@ -316,8 +345,10 @@ $(ECHOCFG): \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o \
 	$(EXEODIR)/dirwrap.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^ $(UIFC_LFLAGS)
+    endif
 
 # ADDFILES
 $(ADDFILES): \
@@ -335,8 +366,10 @@ $(ADDFILES): \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/genwrap.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
+    endif
 
 # FILELIST
 $(FILELIST): \
@@ -354,8 +387,10 @@ $(FILELIST): \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/genwrap.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
+    endif
 
 # MAKEUSER
 $(MAKEUSER): \
@@ -373,11 +408,19 @@ $(MAKEUSER): \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/genwrap.o
+    ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
+    endif
 
+depend:
+	@$(DELETE) $(LIBODIR)/.depend
+	@$(DELETE) $(EXEODIR)/.depend
+	gmake BUILD_DEPENDS=1
 
 # Auto-dependency files (should go in output dir, but gcc v2.9.5 puts in cwd)
 -include ./*.d
+-include $(LIBODIR)/.depend
+-include $(EXEODIR)/.depend
 -include $(LIBODIR)/*.d
 -include $(EXEODIR)/*.d

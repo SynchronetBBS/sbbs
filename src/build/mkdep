@@ -37,6 +37,10 @@
 D=.depend			# default dependency file is .depend
 append=0
 pflag=
+outpath=.
+objfile=
+outfile=
+ALL_ARGS=
 
 while :
 	do case "$1" in
@@ -55,15 +59,21 @@ while :
 		-p)
 			pflag=p
 			shift ;;
+		-MMD)
+			shift;;
+		-o)
+			outfile=$2
+			objfile=`echo $outfile | sed -e 's;gcc.*/;;g'`
+			outpath=`echo $outfile | sed -e 's;/[^/]*;;g'`
+			D=$outpath\/$D
+			shift; shift ;;
+			
 		*)
-			break ;;
+			ALL_ARGS="$ALL_ARGS $1"
+			shift ;;
 	esac
+	test -z "$1" && break
 done
-
-case $# in 0) 
-	echo 'usage: mkdep [-ap] [-f file] [flags] file ...' >&2
-	exit 1;;
-esac
 
 TMP=_mkdep$$
 trap 'rm -f $TMP ; trap 2 ; kill -2 $$' 1 2 3 13 15
@@ -78,7 +88,7 @@ MKDEP_CPP_OPTS=${MKDEP_CPP_OPTS-"-M"};
 
 echo "# $@" > $TMP	# store arguments for debugging
 
-if $MKDEP_CPP $MKDEP_CPP_OPTS "$@" >> $TMP; then :
+if $MKDEP_CPP $MKDEP_CPP_OPTS $ALL_ARGS | sed -e "s;$objfile:;$outfile:;g;" >> $TMP; then :
 else
 	echo 'mkdep: compile failed' >&2
 	exit 1
