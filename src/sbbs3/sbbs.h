@@ -840,9 +840,17 @@ extern "C" {
 
 	#define JSTYPE_ARRAY JSTYPE_LIMIT
 
+	#ifdef _DEBUG	/* String compiled into debug build only, for JS documentation generation */
+		#define	JSDOCSTR(s)	s
+	#else
+		#define JSDOCSTR(s)	""
+	#endif
+
 	/* main.cpp */
 	DLLEXPORT int		DLLCALL js_MethodsToFunctions(jsMethodSpec meth[], JSFunctionSpec func[]);
 	DLLEXPORT JSBool	DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *fs);
+	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
+														,const char* name, char* str[], uintN flags);
 
 	/* js_global.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg);
