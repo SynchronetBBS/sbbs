@@ -803,15 +803,18 @@ js_exec_xtrn(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if((str=JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
+	if(JSVAL_IS_STRING(argv[0])) {
+		if((str=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
 
-	if((code=JS_GetStringBytes(str))==NULL)
-		return(JS_FALSE);
+		if((code=JS_GetStringBytes(str))==NULL)
+			return(JS_FALSE);
 
-	for(i=0;i<sbbs->cfg.total_xtrns;i++)
-		if(!stricmp(sbbs->cfg.xtrn[i]->code,code))
-			break;
+		for(i=0;i<sbbs->cfg.total_xtrns;i++)
+			if(!stricmp(sbbs->cfg.xtrn[i]->code,code))
+				break;
+	} else
+		i=JSVAL_TO_INT(argv[0]);
 
 	if(i>=sbbs->cfg.total_xtrns) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -1682,9 +1685,9 @@ js_bulkmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_upload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		i;
+	uint		dirnum;
 	char*		code;
 	sbbs_t*		sbbs;
     JSString*	str;
@@ -1692,22 +1695,59 @@ js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if((str=JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
+	if(JSVAL_IS_STRING(argv[0])) {
+		if((str=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
 
-	if((code=JS_GetStringBytes(str))==NULL)
-		return(JS_FALSE);
+		if((code=JS_GetStringBytes(str))==NULL)
+			return(JS_FALSE);
 
-	for(i=0;i<sbbs->cfg.total_dirs;i++)
-		if(!stricmp(sbbs->cfg.dir[i]->code,code))
-			break;
+		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
+			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
+				break;
+	} else
+		dirnum=JSVAL_TO_INT(argv[0]);
 
-	if(i>=sbbs->cfg.total_dirs) {
+	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return(JS_TRUE);
 	}
 
-	*rval = BOOLEAN_TO_JSVAL(sbbs->bulkupload(i)==0);
+	*rval = BOOLEAN_TO_JSVAL(sbbs->upload(dirnum));
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uint		dirnum;
+	char*		code;
+	sbbs_t*		sbbs;
+    JSString*	str;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(JSVAL_IS_STRING(argv[0])) {
+		if((str=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
+
+		if((code=JS_GetStringBytes(str))==NULL)
+			return(JS_FALSE);
+
+		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
+			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
+				break;
+	} else
+		dirnum=JSVAL_TO_INT(argv[0]);
+
+	if(dirnum>=sbbs->cfg.total_dirs) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->bulkupload(dirnum)==0);
 	return(JS_TRUE);
 }
 
@@ -1722,15 +1762,18 @@ js_resort_dir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if((str=JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
+	if(JSVAL_IS_STRING(argv[0])) {
+		if((str=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
 
-	if((code=JS_GetStringBytes(str))==NULL)
-		return(JS_FALSE);
+		if((code=JS_GetStringBytes(str))==NULL)
+			return(JS_FALSE);
 
-	for(i=0;i<sbbs->cfg.total_dirs;i++)
-		if(!stricmp(sbbs->cfg.dir[i]->code,code))
-			break;
+		for(i=0;i<sbbs->cfg.total_dirs;i++)
+			if(!stricmp(sbbs->cfg.dir[i]->code,code))
+				break;
+	} else
+		i=JSVAL_TO_INT(argv[0]);
 
 	if(i>=sbbs->cfg.total_dirs) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -1990,15 +2033,18 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
+	if(JSVAL_IS_STRING(argv[0])) {
+		if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
 
-	if((code=JS_GetStringBytes(js_str))==NULL)
-		return(JS_FALSE);
+		if((code=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
 
-	for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
-		if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
-			break;
+		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
+			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
+				break;
+	} else
+		dirnum=JSVAL_TO_INT(argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = INT_TO_JSVAL(0);
@@ -2032,15 +2078,18 @@ js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
+	if(JSVAL_IS_STRING(argv[0])) {
+		if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
 
-	if((code=JS_GetStringBytes(js_str))==NULL)
-		return(JS_FALSE);
+		if((code=JS_GetStringBytes(js_str))==NULL)
+			return(JS_FALSE);
 
-	for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
-		if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
-			break;
+		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
+			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
+				break;
+	} else
+		dirnum=JSVAL_TO_INT(argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = INT_TO_JSVAL(0);
@@ -2282,22 +2331,23 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"ver",				js_ver,				0},		// version info
 	{"sys_stats",		js_sys_stats,		0},		// system stats
 	{"node_stats",		js_node_stats,		0},		// node stats
-	{"userlist",		js_userlist,		0},		// user list
-	{"useredit",		js_useredit,		0},		// user edit
+	{"list_users",		js_userlist,		0},		// user list
+	{"edit_user",		js_useredit,		0},		// user edit
 	{"change_user",		js_change_user,		0},		// change to a different user
-	{"logonlist",		js_logonlist,		0},		// logon list
-	{"readmail",		js_readmail,		0},		// read private mail
+	{"list_logons",		js_logonlist,		0},		// logon list
+	{"read_mail",		js_readmail,		0},		// read private mail
 	{"email",			js_email,			1},		// send private e-mail
 	{"netmail",			js_netmail,			1},		// send private netmail
 	{"bulk_mail",		js_bulkmail,		0},		// send bulk private e-mail
-	{"bulk_upload",		js_bulkupload,		1},		// local upload of files to dir
+	{"upload",			js_upload,			1},		// upload of files to dirnum/code
+	{"bulk_upload",		js_bulkupload,		1},		// local upload of files to dirnum/code
 	{"resort_dir",		js_resort_dir,		1},		// re-sort file directory
-	{"listfiles",		js_listfiles,		1},		// listfiles(dirnum,filespec,mode)
-	{"listfileinfo",	js_listfileinfo,	1},		// listfileinfo(dirnum,filespec,mode)
-	{"postmsg",			js_postmsg,			1},		// postmsg(subnum/code, mode)
-	{"msgscan_cfg",		js_msgscan_cfg,		0},		// 
-	{"msgscan_ptrs",	js_msgscan_ptrs,	0},		// 
-	{"msgscan_reinit",	js_msgscan_reinit,	0},		// re-init new-scan ptrs
+	{"list_files",		js_listfiles,		1},		// listfiles(dirnum,filespec,mode)
+	{"list_file_info",	js_listfileinfo,	1},		// listfileinfo(dirnum,filespec,mode)
+	{"post_msg",		js_postmsg,			1},		// postmsg(subnum/code, mode)
+	{"cfg_msg_scan",	js_msgscan_cfg,		0},		// 
+	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0},		// 
+	{"reinit_msg_ptrs",	js_msgscan_reinit,	0},		// re-init new-scan ptrs
 	{"scan_subs",		js_scansubs,		0},		// scansubs(mode,all)
 	{"scan_dirs",		js_scandirs,		0},		// scandirs(mode,all)
 	{"scan_posts",		js_scanposts,		1},		// scanposts(subnum/code, mode, findstr)
@@ -2325,7 +2375,7 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"put_node_message",js_put_node_message,2},		// putnmsg(nodenum,str)
 	{"get_telegram",	js_get_telegram,	1},		// getsmsg(usernum)
 	{"put_telegram",	js_put_telegram,	2},		// putsmsg(usernum,str)
-	{"nodelist",		js_nodelist,		0},		// list all nodes
+	{"list_nodes",		js_nodelist,		0},		// list all nodes
 	{"whos_online",		js_whos_online,		0},		// list active nodes
 	{"spy",				js_spy,				1},		// spy on node
 	/* misc */
