@@ -68,7 +68,13 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep)
 	backslash(cfg->ctrl_dir);
 	if(read_main_cfg(cfg, &txt)==FALSE)
 		return(FALSE);
+
+	if(prep)
+		for(i=0;i<cfg->sys_nodes;i++) 
+			prep_dir(cfg->ctrl_dir, cfg->node_path[i]);
+
 	sprintf(cfg->node_dir,"%.*s",sizeof(cfg->node_dir)-1,cfg->node_path[cfg->node_num-1]);
+	prep_dir(cfg->ctrl_dir, cfg->node_dir);
 	if(read_node_cfg(cfg, &txt)==FALSE)
 		return(FALSE);
 	if(read_msgs_cfg(cfg, &txt)==FALSE)
@@ -158,9 +164,6 @@ void prep_cfg(scfg_t* cfg)
 	strlwr(cfg->logout_mod);
 	strlwr(cfg->sync_mod);
 	strlwr(cfg->expire_mod);
-
-	for(i=0;i<cfg->sys_nodes;i++) 
-		strlwr(cfg->node_path[i]); /* temporary Unix-compatibility hack */
 
 	for(i=0;i<cfg->total_subs;i++) {
 		strlwr(cfg->sub[i]->code); /* temporary Unix-compatibility hack */
@@ -253,8 +256,15 @@ BOOL md(char *inpath)
 
 	sprintf(path,"%.*s",MAX_PATH,inpath);
 
-	/* Truncate '.' if present */
-	if(path[0]!=0 && path[strlen(path)-1]=='.')
+	if(path[0]==0)
+		return(FALSE);
+
+	/* Remove trailing '.' if present */
+	if(path[strlen(path)-1]=='.')
+		path[strlen(path)-1]=0;
+
+	/* Remove trailing slash if present */
+	if(path[strlen(path)-1]=='\\' || path[strlen(path)-1]=='/')
 		path[strlen(path)-1]=0;
 
 	dir=opendir(path);
@@ -404,7 +414,7 @@ BOOL read_attr_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	return(TRUE);
 }
 
-void DLLEXPORT prep_dir(char* base, char* path)
+char* DLLCALL prep_dir(char* base, char* path)
 {
 #ifdef __unix__
 	char	*p;
@@ -412,7 +422,7 @@ void DLLEXPORT prep_dir(char* base, char* path)
 	char	str[LEN_DIR*2];
 
 	if(!path[0])
-		return;
+		return(path);
 	if(path[0]!='\\' && path[0]!='/' && path[1]!=':')           /* Relative to NODE directory */
 		sprintf(str,"%s%s",base,path);
 	else
@@ -429,9 +439,11 @@ void DLLEXPORT prep_dir(char* base, char* path)
 	strcat(str,".");                // Change C: to C:. and C:\SBBS\ to C:\SBBS\.
 	_fullpath(path,str,LEN_DIR+1);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
 	backslash(path);
+
+	return(path);
 }
 
-void prep_path(char* path)
+char* prep_path(char* path)
 {
 #ifdef __unix__				/* Change backslashes to forward slashes on Unix */
 	char	*p;
@@ -440,4 +452,6 @@ void prep_path(char* path)
 		if(*p=='\\') 
 			*p='/';
 #endif
+
+	return(path);
 }
