@@ -1,10 +1,11 @@
 install/GNUmakefile
+include
 src/xpdev
 src/uifc
 src/sbbs3
-src/mozilla
 ctrl
 text
+docs
 exec
 xtrn
 node1
