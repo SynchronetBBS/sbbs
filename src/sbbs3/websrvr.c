@@ -353,7 +353,6 @@ static void init_enviro(http_session_t *session)  {
 	if(!strcmp(session->host_name,"<no name>"))
 		add_env(session,"REMOTE_HOST",session->host_name);
 	add_env(session,"REMOTE_ADDR",session->host_ip);
-	add_env(session,"ELEBBS","/usr/home/admin/bbs");
 	return;
 }
 
