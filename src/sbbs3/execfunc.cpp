@@ -38,21 +38,14 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-extern SOCKET spy_socket[];
-extern RingBuf* node_inbuf[];
-
 int sbbs_t::exec_function(csi_t *csi)
 {
 	char	str[256],tmp2[128],ch;
 	char 	tmp[512];
 	uchar*	p;
-	char	ansi_seq[32];
-	int		ansi_len;
-	int		in;
 	int		s;
 	uint 	i,j,k;
 	long	l;
-	stats_t stats;
 	node_t	node;
 	struct	tm * tm;
 
@@ -132,31 +125,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			text_sec();
 			return(0);
 		case CS_INFO_SYSTEM:   /* System information */
-			bputs(text[SiHdr]);
-			getstats(&cfg,0,&stats);
-			bprintf(text[SiSysName],cfg.sys_name);
-			bprintf(text[SiSysID],cfg.sys_id);	/* QWK ID */
-			for(i=0;i<cfg.total_faddrs;i++)
-				bprintf(text[SiSysFaddr],faddrtoa(cfg.faddr[i]));
-			if(cfg.sys_psname[0])				/* PostLink/PCRelay */
-				bprintf(text[SiSysPsite],cfg.sys_psname,cfg.sys_psnum);
-			bprintf(text[SiSysLocation],cfg.sys_location);
-			bprintf(text[SiSysop],cfg.sys_op);
-			bprintf(text[SiSysNodes],cfg.sys_nodes);
-	//		bprintf(text[SiNodeNumberName],cfg.node_num,cfg.node_name);
-			bprintf(text[SiNodePhone],cfg.node_phone);
-			bprintf(text[SiTotalLogons],ultoac(stats.logons,tmp));
-			bprintf(text[SiLogonsToday],ultoac(stats.ltoday,tmp));
-			bprintf(text[SiTotalTime],ultoac(stats.timeon,tmp));
-			bprintf(text[SiTimeToday],ultoac(stats.ttoday,tmp));
-			ver();
-			if(yesno(text[ViewSysInfoFileQ])) {
-				CLS;
-				sprintf(str,"%ssystem.msg", cfg.text_dir);
-				printfile(str,0); }
-			if(yesno(text[ViewLogonMsgQ])) {
-				CLS;
-				menu("logon"); }
+			sys_info();
 			return(0);
 		case CS_INFO_SUBBOARD:	 /* Sub-board information */
 			if(!usrgrps) return(0);
@@ -170,56 +139,10 @@ int sbbs_t::exec_function(csi_t *csi)
 			ver();
 			return(0);
 		case CS_INFO_USER:	 /* User's statistics */
-			bprintf(text[UserStats],useron.alias,useron.number);
-
-			tm=gmtime(&useron.laston);
-			if(tm!=NULL)
-				bprintf(text[UserDates]
-					,unixtodstr(&cfg,useron.firston,str)
-					,unixtodstr(&cfg,useron.expire,tmp)
-					,unixtodstr(&cfg,useron.laston,tmp2)
-					,tm->tm_hour,tm->tm_min);
-
-			bprintf(text[UserTimes]
-				,useron.timeon,useron.ttoday
-				,cfg.level_timeperday[useron.level]
-				,useron.tlast
-				,cfg.level_timepercall[useron.level]
-				,useron.textra);
-			if(useron.posts)
-				i=useron.logons/useron.posts;
-			else
-				i=0;
-			bprintf(text[UserLogons]
-				,useron.logons,useron.ltoday
-				,cfg.level_callsperday[useron.level],useron.posts
-				,i ? 100/i : useron.posts>useron.logons ? 100 : 0
-				,useron.ptoday);
-			bprintf(text[UserEmails]
-				,useron.emails,useron.fbacks
-				,getmail(&cfg,useron.number,0),useron.etoday);
-			CRLF;
-			bprintf(text[UserUploads]
-				,ultoac(useron.ulb,tmp),useron.uls);
-			bprintf(text[UserDownloads]
-				,ultoac(useron.dlb,tmp),useron.dls,nulstr);
-			bprintf(text[UserCredits],ultoac(useron.cdt,tmp)
-				,ultoac(useron.freecdt,tmp2)
-				,ultoac(cfg.level_freecdtperday[useron.level],str));
-			bprintf(text[UserMinutes],ultoac(useron.min,tmp));
+			user_info();
 			return(0);
 		case CS_INFO_XFER_POLICY:
-			if(!usrlibs) return(0);
-			sprintf(str,"%smenu/tpolicy.*", cfg.text_dir);
-			if(fexist(str))
-				menu("tpolicy");
-			else {
-				bprintf(text[TransferPolicyHdr],cfg.sys_name);
-				bprintf(text[TpUpload]
-					,cfg.dir[usrdir[curlib][curdir[curlib]]]->up_pct);
-				bprintf(text[TpDownload]
-					,cfg.dir[usrdir[curlib][curdir[curlib]]]->dn_pct);
-				}
+			xfer_policy();
 			return(0);
 		case CS_XTRN_EXEC:
 			csi->logic=LOGIC_TRUE;
@@ -232,10 +155,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				csi->logic=LOGIC_FALSE;
 			return(0);
 		case CS_XTRN_SECTION:
-			if(useron.rest&FLAG('X'))
-				bputs(text[R_ExternalPrograms]);
-			else
-				xtrn_sec(); 	/* If external available, don't pause */
+			xtrn_sec();
 			return(0);
 		case CS_LOGOFF:
 			if(!noyes(text[LogOffQ])) {
@@ -251,11 +171,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			hangup();
 			return(0);
 		case CS_NODELIST_ALL:
-			CRLF;
-			bputs(text[NodeLstHdr]);
-			for(i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
-				getnodedat(i,&node,0);
-				printnodedat(i,&node); }
+			nodelist();
 			return(0);
 		case CS_NODELIST_USERS:
 			whos_online(true);
@@ -270,97 +186,16 @@ int sbbs_t::exec_function(csi_t *csi)
 			userlist(UL_ALL);
 			return(0);
 		case CS_USERLIST_LOGONS:
-			sprintf(str,"%slogon.lst", cfg.data_dir);
-			if(flength(str)<1) {
-				bputs("\r\n\r\n");
-				bputs(text[NoOneHasLoggedOnToday]); }
-			else {
-				bputs(text[CallersToday]);
-				printfile(str,P_NOATCODES|P_OPENCLOSE);
-				CRLF; }
+			logonlist();
 			return(0);
 		case CS_PAGE_SYSOP:
-			csi->logic=!sysop_page();
+			csi->logic=sysop_page() ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_PAGE_GURU:
-			csi->logic=!guru_page();
+			csi->logic=guru_page() ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_SPY:
-			i=atoi(csi->str);
-			if(!i || i>MAX_NODES) {
-				bprintf("Invalid node number: %d\r\n",i);
-				csi->logic=LOGIC_FALSE;
-				return(0);
-			}
-			if(i==cfg.node_num) {
-				bprintf("Can't spy on yourself.\r\n");
-				csi->logic=LOGIC_FALSE;
-				return(0);
-			}
-			if(spy_socket[i-1]!=INVALID_SOCKET) {
-				bprintf("Node %d already being spied (%lx)\r\n",i,spy_socket[i-1]);
-				csi->logic=LOGIC_FALSE;
-				return(0);
-			}
-			bprintf("*** Synchronet Remote Spy on Node %d: Ctrl-C to Abort ***"
-				"\r\n\r\n",i);
-			spy_socket[i-1]=client_socket;
-			ansi_len=0;
-			while(online 
-				&& client_socket!=INVALID_SOCKET 
-				&& spy_socket[i-1]!=INVALID_SOCKET 
-				&& !msgabort()) {
-				in=incom();
-				if(in==NOINP) {
-					gettimeleft();
-					mswait(1);
-					continue;
-				}
-				ch=in;
-				if(ch==ESC) {
-					if(!ansi_len) {
-						ansi_seq[ansi_len++]=ch;
-						continue;
-					}
-					ansi_len=0;
-				}
-				if(ansi_len && ansi_len<sizeof(ansi_seq)-2) {
-					if(ansi_len==1) {
-						if(ch=='[') {
-							ansi_seq[ansi_len++]=ch;
-							continue;
-						}
-						ansi_len=0;
-					}
-					if(ch=='R') { /* through-away cursor position report */
-						ansi_len=0;
-						continue;
-					}
-					ansi_seq[ansi_len++]=ch;
-					if(isalpha(ch)) {
-						RingBufWrite(node_inbuf[i-1],(uchar*)ansi_seq,ansi_len);
-						ansi_len=0;
-					}
-					continue;
-				}
-				if(ch==CTRL_P) {		/* Private node-node comm */
-					lncntr=0;						/* defeat pause */
-					spy_socket[i-1]=INVALID_SOCKET;	/* disable spy output */
-					nodesync(); 					/* read waiting messages */
-					nodemsg();						/* send a message */
-					spy_socket[i-1]=client_socket;	/* enable spy output */
-					continue; 
-				}
-				if(ch==CTRL_U) {		/* Users online */
-					lncntr=0;			/* defeat pause */
-					whos_online(true); 	/* list users */
-					continue;
-				}
-				if(node_inbuf[i-1]!=NULL) 
-					RingBufWrite(node_inbuf[i-1],(uchar*)&ch,1);
-			}
-			spy_socket[i-1]=INVALID_SOCKET;
-			csi->logic=LOGIC_TRUE;
+			csi->logic_state=spy(atoi(csi->str)) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_PRIVATE_CHAT:
 			privchat();
@@ -385,10 +220,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			readmail(useron.number,MAIL_YOUR);
 			return(0);
 		case CS_MAIL_READ_SENT: 	  /* Kill/read sent mail */
-			if(useron.rest&FLAG('K'))
-				bputs(text[R_ReadSentMail]);
-			else
-				readmail(useron.number,MAIL_SENT);
+			readmail(useron.number,MAIL_SENT);
 			return(0);
 		case CS_MAIL_READ_ALL:
 			readmail(useron.number,MAIL_ALL);
@@ -472,39 +304,10 @@ int sbbs_t::exec_function(csi_t *csi)
 			printfile(str,0);
 			return(0);
 		case CS_SYSTEM_STATS:               /* System Statistics */
-			bputs(text[SystemStatsHdr]);
-			getstats(&cfg,0,&stats);
-			bprintf(text[StatsTotalLogons],ultoac(stats.logons,tmp));
-			bprintf(text[StatsLogonsToday],ultoac(stats.ltoday,tmp));
-			bprintf(text[StatsTotalTime],ultoac(stats.timeon,tmp));
-			bprintf(text[StatsTimeToday],ultoac(stats.ttoday,tmp));
-			bprintf(text[StatsUploadsToday],ultoac(stats.ulb,tmp)
-				,stats.uls);
-			bprintf(text[StatsDownloadsToday],ultoac(stats.dlb,tmp)
-				,stats.dls);
-			bprintf(text[StatsPostsToday],ultoac(stats.ptoday,tmp));
-			bprintf(text[StatsEmailsToday],ultoac(stats.etoday,tmp));
-			bprintf(text[StatsFeedbacksToday],ultoac(stats.ftoday,tmp));
+			sys_stats();
 			return(0);
 		case CS_NODE_STATS:              /* Node Statistics */
-			i=atoi(csi->str);
-			if(i>cfg.sys_nodes) {
-				bputs(text[InvalidNode]);
-				return(0); }
-			if(!i) i=cfg.node_num;
-			bprintf(text[NodeStatsHdr],i);
-			getstats(&cfg,i,&stats);
-			bprintf(text[StatsTotalLogons],ultoac(stats.logons,tmp));
-			bprintf(text[StatsLogonsToday],ultoac(stats.ltoday,tmp));
-			bprintf(text[StatsTotalTime],ultoac(stats.timeon,tmp));
-			bprintf(text[StatsTimeToday],ultoac(stats.ttoday,tmp));
-			bprintf(text[StatsUploadsToday],ultoac(stats.ulb,tmp)
-				,stats.uls);
-			bprintf(text[StatsDownloadsToday],ultoac(stats.dlb,tmp)
-				,stats.dls);
-			bprintf(text[StatsPostsToday],ultoac(stats.ptoday,tmp));
-			bprintf(text[StatsEmailsToday],ultoac(stats.etoday,tmp));
-			bprintf(text[StatsFeedbacksToday],ultoac(stats.ftoday,tmp));
+			node_stats(atoi(csi->str));
 			return(0);
 		case CS_CHANGE_USER:                 /* Change to another user */
 			if(!chksyspass())

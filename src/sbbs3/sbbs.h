@@ -350,6 +350,13 @@ public:
 	bool	ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool dir=false);
 	SOCKET	ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN*);
 
+	void	sys_info(void);
+	void	user_info(void);
+	void	xfer_policy(void);
+	void	node_stats(uint node_num);
+	void	sys_stats(void);
+	void	logonlist(void);
+	bool	spy(uint node_num);
 
 	void	reset_logon_vars(void);
 
@@ -489,6 +496,7 @@ public:
 
 	/* getnode.cpp */
 	int		whos_online(bool listself);/* Lists active nodes, returns active nodes */
+	void	nodelist(void);
 
 	/* logonoff.cpp */
 	bool	answer();

@@ -843,3 +843,245 @@ char* sbbs_t::timestr(time_t *intime)
 {
 	return(::timestr(&cfg,intime,timestr_output));
 }
+
+void sbbs_t::sys_info()
+{
+	char	tmp[128];
+	uint	i;
+	stats_t stats;
+
+	bputs(text[SiHdr]);
+	getstats(&cfg,0,&stats);
+	bprintf(text[SiSysName],cfg.sys_name);
+	bprintf(text[SiSysID],cfg.sys_id);	/* QWK ID */
+	for(i=0;i<cfg.total_faddrs;i++)
+		bprintf(text[SiSysFaddr],faddrtoa(cfg.faddr[i]));
+	if(cfg.sys_psname[0])				/* PostLink/PCRelay */
+		bprintf(text[SiSysPsite],cfg.sys_psname,cfg.sys_psnum);
+	bprintf(text[SiSysLocation],cfg.sys_location);
+	bprintf(text[SiSysop],cfg.sys_op);
+	bprintf(text[SiSysNodes],cfg.sys_nodes);
+//	bprintf(text[SiNodeNumberName],cfg.node_num,cfg.node_name);
+	bprintf(text[SiNodePhone],cfg.node_phone);
+	bprintf(text[SiTotalLogons],ultoac(stats.logons,tmp));
+	bprintf(text[SiLogonsToday],ultoac(stats.ltoday,tmp));
+	bprintf(text[SiTotalTime],ultoac(stats.timeon,tmp));
+	bprintf(text[SiTimeToday],ultoac(stats.ttoday,tmp));
+	ver();
+	if(yesno(text[ViewSysInfoFileQ])) {
+		CLS;
+		sprintf(tmp,"%ssystem.msg", cfg.text_dir);
+		printfile(tmp,0); 
+	}
+	if(yesno(text[ViewLogonMsgQ])) {
+		CLS;
+		menu("logon"); 
+	}
+}
+
+void sbbs_t::user_info()
+{
+	uint	i;
+	char	str[128];
+	char	tmp[128];
+	char	tmp2[128];
+	struct	tm * tm;
+
+	bprintf(text[UserStats],useron.alias,useron.number);
+
+	tm=gmtime(&useron.laston);
+	if(tm!=NULL)
+		bprintf(text[UserDates]
+			,unixtodstr(&cfg,useron.firston,str)
+			,unixtodstr(&cfg,useron.expire,tmp)
+			,unixtodstr(&cfg,useron.laston,tmp2)
+			,tm->tm_hour,tm->tm_min);
+
+	bprintf(text[UserTimes]
+		,useron.timeon,useron.ttoday
+		,cfg.level_timeperday[useron.level]
+		,useron.tlast
+		,cfg.level_timepercall[useron.level]
+		,useron.textra);
+	if(useron.posts)
+		i=useron.logons/useron.posts;
+	else
+		i=0;
+	bprintf(text[UserLogons]
+		,useron.logons,useron.ltoday
+		,cfg.level_callsperday[useron.level],useron.posts
+		,i ? 100/i : useron.posts>useron.logons ? 100 : 0
+		,useron.ptoday);
+	bprintf(text[UserEmails]
+		,useron.emails,useron.fbacks
+		,getmail(&cfg,useron.number,0),useron.etoday);
+	CRLF;
+	bprintf(text[UserUploads]
+		,ultoac(useron.ulb,tmp),useron.uls);
+	bprintf(text[UserDownloads]
+		,ultoac(useron.dlb,tmp),useron.dls,nulstr);
+	bprintf(text[UserCredits],ultoac(useron.cdt,tmp)
+		,ultoac(useron.freecdt,tmp2)
+		,ultoac(cfg.level_freecdtperday[useron.level],str));
+	bprintf(text[UserMinutes],ultoac(useron.min,tmp));
+}
+
+void sbbs_t::xfer_policy()
+{
+	char	str[MAX_PATH+1];
+
+	if(!usrlibs) return;
+	sprintf(str,"%smenu/tpolicy.*", cfg.text_dir);
+	if(fexist(str))
+		menu("tpolicy");
+	else {
+		bprintf(text[TransferPolicyHdr],cfg.sys_name);
+		bprintf(text[TpUpload]
+			,cfg.dir[usrdir[curlib][curdir[curlib]]]->up_pct);
+		bprintf(text[TpDownload]
+			,cfg.dir[usrdir[curlib][curdir[curlib]]]->dn_pct);
+		}
+}
+
+void sbbs_t::node_stats(uint node_num)
+{
+	char	tmp[128];
+	stats_t	stats;
+
+	if(node_num>cfg.sys_nodes) {
+		bputs(text[InvalidNode]);
+		return; 
+	}
+	if(!node_num) node_num=cfg.node_num;
+	bprintf(text[NodeStatsHdr],node_num);
+	getstats(&cfg,node_num,&stats);
+	bprintf(text[StatsTotalLogons],ultoac(stats.logons,tmp));
+	bprintf(text[StatsLogonsToday],ultoac(stats.ltoday,tmp));
+	bprintf(text[StatsTotalTime],ultoac(stats.timeon,tmp));
+	bprintf(text[StatsTimeToday],ultoac(stats.ttoday,tmp));
+	bprintf(text[StatsUploadsToday],ultoac(stats.ulb,tmp)
+		,stats.uls);
+	bprintf(text[StatsDownloadsToday],ultoac(stats.dlb,tmp)
+		,stats.dls);
+	bprintf(text[StatsPostsToday],ultoac(stats.ptoday,tmp));
+	bprintf(text[StatsEmailsToday],ultoac(stats.etoday,tmp));
+	bprintf(text[StatsFeedbacksToday],ultoac(stats.ftoday,tmp));
+}
+
+void sbbs_t::sys_stats(void)
+{
+	char	tmp[128];
+	stats_t stats;
+
+	bputs(text[SystemStatsHdr]);
+	getstats(&cfg,0,&stats);
+	bprintf(text[StatsTotalLogons],ultoac(stats.logons,tmp));
+	bprintf(text[StatsLogonsToday],ultoac(stats.ltoday,tmp));
+	bprintf(text[StatsTotalTime],ultoac(stats.timeon,tmp));
+	bprintf(text[StatsTimeToday],ultoac(stats.ttoday,tmp));
+	bprintf(text[StatsUploadsToday],ultoac(stats.ulb,tmp)
+		,stats.uls);
+	bprintf(text[StatsDownloadsToday],ultoac(stats.dlb,tmp)
+		,stats.dls);
+	bprintf(text[StatsPostsToday],ultoac(stats.ptoday,tmp));
+	bprintf(text[StatsEmailsToday],ultoac(stats.etoday,tmp));
+	bprintf(text[StatsFeedbacksToday],ultoac(stats.ftoday,tmp));
+}
+
+void sbbs_t::logonlist(void)
+{
+	char	str[MAX_PATH+1];
+
+	sprintf(str,"%slogon.lst", cfg.data_dir);
+	if(flength(str)<1) {
+		bputs("\r\n\r\n");
+		bputs(text[NoOneHasLoggedOnToday]); 
+	} else {
+		bputs(text[CallersToday]);
+		printfile(str,P_NOATCODES|P_OPENCLOSE);
+		CRLF; 
+	}
+}
+
+extern SOCKET	spy_socket[];
+extern RingBuf* node_inbuf[];
+
+bool sbbs_t::spy(uint i /* node_num */)
+{
+	char	ch;
+	char	ansi_seq[32];
+	int		ansi_len;
+	int		in;
+
+	if(!i || i>MAX_NODES) {
+		bprintf("Invalid node number: %d\r\n",i);
+		return(false);
+	}
+	if(i==cfg.node_num) {
+		bprintf("Can't spy on yourself.\r\n");
+		return(false);
+	}
+	if(spy_socket[i-1]!=INVALID_SOCKET) {
+		bprintf("Node %d already being spied (%lx)\r\n",i,spy_socket[i-1]);
+		return(false);
+	}
+	bprintf("*** Synchronet Remote Spy on Node %d: Ctrl-C to Abort ***"
+		"\r\n\r\n",i);
+	spy_socket[i-1]=client_socket;
+	ansi_len=0;
+	while(online 
+		&& client_socket!=INVALID_SOCKET 
+		&& spy_socket[i-1]!=INVALID_SOCKET 
+		&& !msgabort()) {
+		in=incom();
+		if(in==NOINP) {
+			gettimeleft();
+			mswait(1);
+			continue;
+		}
+		ch=in;
+		if(ch==ESC) {
+			if(!ansi_len) {
+				ansi_seq[ansi_len++]=ch;
+				continue;
+			}
+			ansi_len=0;
+		}
+		if(ansi_len && ansi_len<sizeof(ansi_seq)-2) {
+			if(ansi_len==1) {
+				if(ch=='[') {
+					ansi_seq[ansi_len++]=ch;
+					continue;
+				}
+				ansi_len=0;
+			}
+			if(ch=='R') { /* through-away cursor position report */
+				ansi_len=0;
+				continue;
+			}
+			ansi_seq[ansi_len++]=ch;
+			if(isalpha(ch)) {
+				RingBufWrite(node_inbuf[i-1],(uchar*)ansi_seq,ansi_len);
+				ansi_len=0;
+			}
+			continue;
+		}
+		if(ch==CTRL_P) {		/* Private node-node comm */
+			lncntr=0;						/* defeat pause */
+			spy_socket[i-1]=INVALID_SOCKET;	/* disable spy output */
+			nodesync(); 					/* read waiting messages */
+			nodemsg();						/* send a message */
+			spy_socket[i-1]=client_socket;	/* enable spy output */
+			continue; 
+		}
+		if(ch==CTRL_U) {		/* Users online */
+			lncntr=0;			/* defeat pause */
+			whos_online(true); 	/* list users */
+			continue;
+		}
+		if(node_inbuf[i-1]!=NULL) 
+			RingBufWrite(node_inbuf[i-1],(uchar*)&ch,1);
+	}
+	spy_socket[i-1]=INVALID_SOCKET;
+	return(true);
+}
