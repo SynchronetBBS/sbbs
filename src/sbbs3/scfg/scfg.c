@@ -1192,10 +1192,10 @@ while(!done) {
 	strcpy(opt[i++],"Set Required Age");
 	strcpy(opt[i++],"Set Required Sex");
 	strcpy(opt[i++],"Set Required Connect Rate");
-	strcpy(opt[i++],"Set Required Post/Call Ratio");
+	strcpy(opt[i++],"Set Required Post/Call Ratio (percentage)");
 	strcpy(opt[i++],"Set Required Number of Credits");
-	strcpy(opt[i++],"Set Required Upload/Download Ratio");
-	strcpy(opt[i++],"Set Required Upload/Download File Ratio");
+	strcpy(opt[i++],"Set Required Upload/Download Byte Ratio (percentage)");
+	strcpy(opt[i++],"Set Required Upload/Download File Ratio (percentage)");
 	strcpy(opt[i++],"Set Required Time of Day");
 	strcpy(opt[i++],"Set Required Day of Week");
 	strcpy(opt[i++],"Set Required Node Number");
@@ -1467,7 +1467,7 @@ requirement evaluation. The valid range is 300 through 57600.
 You are being prompted to enter the post/call ratio to be used in this
 requirement evaluation (percentage). The valid range is 0 through 100.
 */
-			uifc.input(WIN_MID|WIN_SAV,0,0,"Post/Call Ratio (Percentage)"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Post/Call Ratio (percentage)"
 				,str,3,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1542,14 +1542,14 @@ be used in this requirement evaluation. The valid range is 0 through
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Upload/Download Ratio:
+Required Upload/Download Byte Ratio:
 
 You are being prompted to enter the upload/download ratio to be used in
 this requirement evaluation (percentage). The valid range is 0 through
 100. This ratio is based on the number of bytes uploaded by the user
 divided by the number of bytes downloaded.
 */
-			uifc.input(WIN_MID|WIN_SAV,0,0,"Upload/Download Ratio (Percentage)"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Upload/Download Byte Ratio (percentage)"
 				,str,3,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1592,7 +1592,7 @@ this requirement evaluation (percentage). The valid range is 0 through
 divided by the number of files downloaded.
 */
 			uifc.input(WIN_MID|WIN_SAV,0,0
-				,"Upload/Download File Ratio (Percentage)"
+				,"Upload/Download File Ratio (percentage)"
 				,str,3,K_NUMBER);
 			if(!str[0])
 				break;
