@@ -85,6 +85,7 @@ __published:
     TButton *OKBtn;
     TButton *CancelBtn;
     TButton *ApplyBtn;
+    TCheckBox *DirFilesCheckBox;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);

@@ -78,6 +78,7 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     CmdLogCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_RX;
 	DebugTxCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_TX;
 	DebugDataCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_DATA;
+    DirFilesCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DIR_FILES;
     AllowQWKCheckBox->Checked
         =MainForm->ftp_startup.options&FTP_OPT_ALLOW_QWK;
     LocalFileSysCheckBox->Checked
@@ -148,6 +149,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->ftp_startup.options|=FTP_OPT_ALLOW_QWK;
     else
 	    MainForm->ftp_startup.options&=~FTP_OPT_ALLOW_QWK;
+	if(DirFilesCheckBox->Checked==true)
+    	MainForm->ftp_startup.options|=FTP_OPT_DIR_FILES;
+    else
+	    MainForm->ftp_startup.options&=~FTP_OPT_DIR_FILES;
 	if(LocalFileSysCheckBox->Checked==false)
     	MainForm->ftp_startup.options|=FTP_OPT_NO_LOCAL_FSYS;
     else

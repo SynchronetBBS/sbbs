@@ -1,6 +1,6 @@
 object FtpCfgDlg: TFtpCfgDlg
-  Left = 325
-  Top = 113
+  Left = 812
+  Top = 620
   BorderStyle = bsDialog
   Caption = 'FTP Server Configuration'
   ClientHeight = 234
@@ -157,6 +157,17 @@ object FtpCfgDlg: TFtpCfgDlg
         ShowHint = True
         TabOrder = 9
       end
+      object DirFilesCheckBox: TCheckBox
+        Left = 148
+        Top = 105
+        Width = 125
+        Height = 20
+        Hint = 'Allow users access to files in directory, but not in database'
+        Caption = 'Directory File Access'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 10
+      end
     end
     object LogTabSheet: TTabSheet
       Caption = 'Log'
@@ -229,7 +240,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Left = 72
         Top = 11
         Width = 169
-        Height = 24
+        Height = 21
         Hint = 'WAV file to play when users connect'
         TabOrder = 0
       end
@@ -246,7 +257,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Left = 72
         Top = 37
         Width = 169
-        Height = 24
+        Height = 21
         Hint = 'WAV file to play when users disconnect'
         TabOrder = 2
       end
@@ -262,7 +273,7 @@ object FtpCfgDlg: TFtpCfgDlg
     end
   end
   object OKBtn: TButton
-    Left = 25
+    Left = 20
     Top = 201
     Width = 76
     Height = 24
@@ -274,7 +285,7 @@ object FtpCfgDlg: TFtpCfgDlg
     OnClick = OKBtnClick
   end
   object CancelBtn: TButton
-    Left = 110
+    Left = 104
     Top = 201
     Width = 75
     Height = 24
@@ -285,7 +296,7 @@ object FtpCfgDlg: TFtpCfgDlg
     TabOrder = 2
   end
   object ApplyBtn: TButton
-    Left = 194
+    Left = 189
     Top = 201
     Width = 76
     Height = 24
