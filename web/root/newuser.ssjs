@@ -21,23 +21,23 @@ template.posted=http_request.query;
 template.errs=new Object;
 
 /* Plain GET with no query, just display the sign-up page */
-if(http_request.method=='GET') {
-	template.gender_list='<SELECT NAME="gender">\n<OPTION VALUE="M">Male</OPTION>\n<OPTION VALUE="F">Female</OPTION>\n</SELECT>';
+if(http_request.method=='get') {
+	template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
 	showform();
 }
 else {
 	/* Create gender list drop-down */
 	if(http_request.query["gender"] != undefined)
 		gender=http_request.query["gender"].toUpperCase();
-	template.gender_list='<SELECT NAME="gender">\n';
-	template.gender_list+='<OPTION VALUE="M"'+(gender=='M'?' SELECTED':'')+'>Male</OPTION>\n';
-	template.gender_list+='<OPTION VALUE="F"'+(gender=='F'?' SELECTED':'')+'>Female</OPTION>\n</SELECT>';
+	template.gender_list='<select name="gender">\n';
+	template.gender_list+='<option value="M"'+(gender=='M'?' selected':'')+'>Male</option>\n';
+	template.gender_list+='<option value="F"'+(gender=='F'?' selected':'')+'>Female</option>\n</select>';
 
 	/* POST request... should be a valid application */
 	for(field in fields) {
 		if(http_request.query[fields[field]]==undefined) {
-			template.gender_list='<SELECT NAME="gender">\n<OPTION VALUE="M">Male</OPTION>\n<OPTION VALUE="F">Female</OPTION>\n</SELECT>';
-			err=1;
+			template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
+ 		err=1;
 			template.errs[fields[field]]="MISSING";
 			template.err_message+="Some fields missing from POST data... possible browser issue.\r\n";
 		}
