@@ -126,6 +126,7 @@ __published:
 	TLabel *MaxMsgSizeLabel;
 	TEdit *MaxMsgSizeEdit;
 	TCheckBox *AuthViaIpCheckBox;
+	TCheckBox *NotifyCheckBox;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
