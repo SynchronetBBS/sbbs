@@ -102,7 +102,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 
 	sprintf(msgpath,"%sINPUT.MSG", cfg.node_dir);
 	username(&cfg,usernumber,str2);
-	if(!writemsg(msgpath,top,title,mode,0,str2)) {
+	if(!writemsg(msgpath,top,title,mode,INVALID_SUB,str2)) {
 		bputs(text[Aborted]);
 		return(false); }
 

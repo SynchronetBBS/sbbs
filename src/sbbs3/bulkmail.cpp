@@ -63,7 +63,7 @@ void sbbs_t::bulkmail(uchar *ar)
 
 	sprintf(msgpath,"%sINPUT.MSG",cfg.node_dir);
 	sprintf(str2,"Bulk Mailing");
-	if(!writemsg(msgpath,nulstr,title,WM_EMAIL,0,str2)) {
+	if(!writemsg(msgpath,nulstr,title,WM_EMAIL,INVALID_SUB,str2)) {
 		bputs(text[Aborted]);
 		return; }
 

@@ -91,7 +91,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	nodesync();
 
 	sprintf(msgpath,"%snetmail.msg",cfg.node_dir);
-	if(!writemsg(msgpath,nulstr,title,mode,0,into)) {
+	if(!writemsg(msgpath,nulstr,title,mode,INVALID_SUB,into)) {
 		bputs(text[Aborted]);
 		return(false); }
 
@@ -329,7 +329,7 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 	nodesync();
 
 	sprintf(msgpath,"%snetmali.msg",cfg.node_dir);
-	if(!writemsg(msgpath,nulstr,title,mode|WM_QWKNET,0,to)) {
+	if(!writemsg(msgpath,nulstr,title,mode|WM_QWKNET,INVALID_SUB,to)) {
 		bputs(text[Aborted]);
 		return(false); }
 
