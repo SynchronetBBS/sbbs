@@ -60,6 +60,9 @@ char* DLLCALL ascii_str(uchar* str)
 	for(i=0;str[i];i++)
 		if(str[i]&0x80)
 			str[i]=sbtbl[str[i]^0x80];  /* seven bit table */
+		else if(str[i]==CTRL_A	        /* ctrl-a */
+			&& str[i+1]!=0)				/* valid */
+			i++;						/* skip the attribute code */
 
 	return((char*)str);
 }
@@ -74,7 +77,8 @@ int sbbs_t::bputs(char *str)
     ulong l=0;
 
 	while(str[l]) {
-		if(str[l]==CTRL_A) {        /* ctrl-a */
+		if(str[l]==CTRL_A	        /* ctrl-a */
+			&& str[l+1]!=0) {		/* valid */
 			ctrl_a(str[++l]);       /* skip the ctrl-a */
 			l++;					/* skip the attribute code */
 			continue; }
