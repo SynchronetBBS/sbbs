@@ -12,7 +12,4 @@
 #define CIO_KEY_PPAGE     0x49 << 8
 #define CIO_KEY_NPAGE     0x51 << 8
 
-#define CIO_KEY_BACKSPACE    0xff01   /* Windows never differentiates between a
-				   * backspace keypress and the backspace
-				   * char
-				   */
+#define CIO_KEY_MOUSE    0xff02
