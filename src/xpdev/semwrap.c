@@ -36,13 +36,15 @@
  ****************************************************************************/
 
 #include <errno.h>
-#include <sys/time.h>
 #include "threadwrap.h"
 #ifdef USE_XP_SEMAPHORES
 	#include "xpsem.h"
 #endif
 
 #if defined(__unix__)
+
+#include <sys/time.h>	/* timespec */
+
 int
 sem_trywait_block(sem_t *sem, unsigned long timeout)
 {
