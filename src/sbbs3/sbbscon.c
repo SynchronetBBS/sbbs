@@ -1064,6 +1064,7 @@ int main(int argc, char** argv)
     web_startup.terminated=web_terminated;
 	web_startup.thread_up=thread_up;
     web_startup.socket_open=socket_open;
+	web_startup.client_on=client_on;
 #ifdef __unix__
 	web_startup.seteuid=do_seteuid;
 	web_startup.setuid=do_setuid;
