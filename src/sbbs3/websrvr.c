@@ -312,6 +312,7 @@ static void respond(http_session_t * session);
 static BOOL js_setup(http_session_t* session);
 static char *find_last_slash(char *str);
 static BOOL check_extra_path(http_session_t * session);
+static BOOL exec_ssjs(http_session_t* session, char *script);
 
 static time_t
 sub_mkgmt(struct tm *tm)
@@ -977,36 +978,67 @@ static void send_error(http_session_t * session, const char* message)
 	char	error_code[4];
 	struct stat	sb;
 	char	sbuf[1024];
+	BOOL	sent_ssjs=FALSE;
 
 	session->req.if_modified_since=0;
 	lprintf(LOG_INFO,"%04d !ERROR: %s",session->socket,message);
 	session->req.keep_alive=FALSE;
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
-	sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
-	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
-	send_headers(session,message);
-	if(!stat(session->req.physical_path,&sb)) {
-		int	snt=0;
-		snt=sock_sendfile(session->socket,session->req.physical_path);
-		if(snt<0)
-			snt=0;
-		if(session->req.ld!=NULL)
-			session->req.ld->size=snt;
+	SAFECOPY(session->req.status,message);
+	if(atoi(error_code)<500) {
+		/*
+		 * Attempt to run SSJS error pages
+		 * If this fails, do the standard error page instead,
+		 * ie: Don't "upgrade" to a 500 error
+		 */
+
+		sprintf(sbuf,"%s%s.ssjs",error_dir,error_code);
+		if(!stat(sbuf,&sb)) {
+			lprintf(LOG_INFO,"%04d Using SSJS error page",session->socket);
+			if(js_setup(session)) {
+				sent_ssjs=exec_ssjs(session,sbuf);
+				if(sent_ssjs && send_headers(session,session->req.status)) {
+					int	snt=0;
+
+					lprintf(LOG_INFO,"%04d Sending generated error page",session->socket);
+					snt=sock_sendfile(session->socket,session->req.physical_path);
+					if(snt<0)
+						snt=0;
+					if(session->req.ld!=NULL)
+						session->req.ld->size=snt;
+				}
+				else
+					sent_ssjs=FALSE;
+			}
+		}
 	}
-	else {
-		lprintf(LOG_NOTICE,"%04d Error message file %s doesn't exist"
-			,session->socket,session->req.physical_path);
-		safe_snprintf(sbuf,sizeof(sbuf)
-			,"<HTML><HEAD><TITLE>%s Error</TITLE></HEAD>"
-			"<BODY><H1>%s Error</H1><BR><H3>In addition, "
-			"I can't seem to find the %s error file</H3><br>"
-			"please notify <a href=\"mailto:sysop@%s\">"
-			"%s</a></BODY></HTML>"
-			,error_code,error_code,error_code,scfg.sys_inetaddr,scfg.sys_op);
-		sockprint(session->socket,sbuf);
-		if(session->req.ld!=NULL)
-			session->req.ld->size=strlen(sbuf);
+	if(!sent_ssjs) {
+		sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
+		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
+		send_headers(session,message);
+		if(!stat(session->req.physical_path,&sb)) {
+			int	snt=0;
+			snt=sock_sendfile(session->socket,session->req.physical_path);
+			if(snt<0)
+				snt=0;
+			if(session->req.ld!=NULL)
+				session->req.ld->size=snt;
+		}
+		else {
+			lprintf(LOG_NOTICE,"%04d Error message file %s doesn't exist"
+				,session->socket,session->req.physical_path);
+			safe_snprintf(sbuf,sizeof(sbuf)
+				,"<HTML><HEAD><TITLE>%s Error</TITLE></HEAD>"
+				"<BODY><H1>%s Error</H1><BR><H3>In addition, "
+				"I can't seem to find the %s error file</H3><br>"
+				"please notify <a href=\"mailto:sysop@%s\">"
+				"%s</a></BODY></HTML>"
+				,error_code,error_code,error_code,scfg.sys_inetaddr,scfg.sys_op);
+			sockprint(session->socket,sbuf);
+			if(session->req.ld!=NULL)
+				session->req.ld->size=strlen(sbuf);
+		}
 	}
 	close_request(session);
 }
@@ -1563,7 +1595,6 @@ static int is_dynamic_req(http_session_t* session)
 	char	dir[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
 	char	ext[MAX_PATH+1];
-	char	path[MAX_PATH+1];
 
 	check_extra_path(session);
 	_splitpath(session->req.physical_path, drive, dir, fname, ext);
@@ -1580,13 +1611,6 @@ static int is_dynamic_req(http_session_t* session)
 			return(IS_STATIC);
 		}
 
-		sprintf(path,"%sSBBS_SSJS.%d.html",temp_dir,session->socket);
-		if((session->req.fp=fopen(path,"wb"))==NULL) {
-			lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
-			send_error(session,error_500);
-			return(IS_STATIC);
-		}
-		session->req.cleanup_file=strdup(path);
 		return(i);
 	}
 
@@ -2214,7 +2238,7 @@ static BOOL exec_cgi(http_session_t *session)
 						if(got_valid_headers)  {
 							session->req.dynamic=IS_CGI;
 							if(cgi_status[0]==0)
-								SAFECOPY(cgi_status,"200 OK");
+								SAFECOPY(cgi_status,session->req.status);
 							send_headers(session,cgi_status);
 						}
 						done_parsing_headers=TRUE;
@@ -2310,7 +2334,7 @@ JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx
 		reply = JS_DefineObject(cx, parent, "http_reply", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	if((js_str=JS_NewStringCopyZ(cx, "200 OK"))==NULL)
+	if((js_str=JS_NewStringCopyZ(cx, session->req.status))==NULL)
 		return(FALSE);
 	JS_DefineProperty(cx, reply, "status", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE);
@@ -2648,7 +2672,6 @@ static BOOL js_setup(http_session_t* session)
 
 		if((session->js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL) {
 			lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",session->socket);
-			send_error(session,"500 Error creating JavaScript runtime");
 			return(FALSE);
 		}
 	}
@@ -2656,7 +2679,6 @@ static BOOL js_setup(http_session_t* session)
 	if(session->js_cx==NULL) {	/* Context not yet created, create it now */
 		if(((session->js_cx=js_initcx(session))==NULL)) {
 			lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript context",session->socket);
-			send_error(session,"500 Error initializing JavaScript context");
 			return(FALSE);
 		}
 		argv=JS_NewArrayObject(session->js_cx, 0, NULL);
@@ -2678,14 +2700,12 @@ static BOOL js_setup(http_session_t* session)
 	lprintf(LOG_INFO,"%04d JavaScript: Initializing HttpRequest object",session->socket);
 	if(js_CreateHttpRequestObject(session->js_cx, session->js_glob, session)==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript HttpRequest object",session->socket);
-		send_error(session,"500 Error initializing JavaScript HttpRequest object");
 		return(FALSE);
 	}
 
 	lprintf(LOG_INFO,"%04d JavaScript: Initializing HttpReply object",session->socket);
 	if(js_CreateHttpReplyObject(session->js_cx, session->js_glob, session)==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript HttpReply object",session->socket);
-		send_error(session,"500 Error initializing JavaScript HttpReply object");
 		return(FALSE);
 	}
 
@@ -2694,7 +2714,7 @@ static BOOL js_setup(http_session_t* session)
 	return(TRUE);
 }
 
-static BOOL exec_ssjs(http_session_t* session)  {
+static BOOL exec_ssjs(http_session_t* session, char *script)  {
 	JSString*	js_str;
 	JSScript*	js_script;
 	jsval		rval;
@@ -2706,7 +2726,15 @@ static BOOL exec_ssjs(http_session_t* session)  {
 	char		str[MAX_REQUEST_LINE+1];
 	int			i;
 
+	sprintf(path,"%sSBBS_SSJS.%d.html",temp_dir,session->socket);
+	if((session->req.fp=fopen(path,"wb"))==NULL) {
+		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
+		return(FALSE);
+	}
+	session->req.cleanup_file=strdup(path);
+
 	js_add_request_prop(session,"real_path",session->req.physical_path);
+	js_add_request_prop(session,"virtual_path",session->req.virtual_path);
 	js_add_request_prop(session,"ars",session->req.ars);
 	js_add_request_prop(session,"request_string",session->req.request_line);
 	js_add_request_prop(session,"host",session->req.host);
@@ -2721,9 +2749,9 @@ static BOOL exec_ssjs(http_session_t* session)  {
 		session->js_branch.counter=0;
 
 		if((js_script=JS_CompileFile(session->js_cx, session->js_glob
-			,session->req.physical_path))==NULL) {
+			,script))==NULL) {
 			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)"
-				,session->socket,session->req.physical_path);
+				,session->socket,script);
 			return(FALSE);
 		}
 
@@ -2778,7 +2806,7 @@ static void respond(http_session_t * session)
 	}
 
 	if(session->req.dynamic==IS_SSJS) {	/* Server-Side JavaScript */
-		if(!exec_ssjs(session))  {
+		if(!exec_ssjs(session,session->req.physical_path))  {
 			send_error(session,error_500);
 			return;
 		}
