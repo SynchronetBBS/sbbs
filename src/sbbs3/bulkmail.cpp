@@ -106,6 +106,9 @@ bool sbbs_t::bulkmail(uchar *ar)
 	smb_hfield_str(&msg,SUBJECT,title);
 	msg.idx.subj=subject_crc(title);
 
+	msg.hdr.when_written.time=time(NULL);
+	msg.hdr.when_written.zone=sys_timezone(&cfg);
+
 	memset(&smb,0,sizeof(smb));
 	smb.subnum=INVALID_SUB;	/* mail database */
 	i=savemsg(&cfg, &smb, &msg, msgbuf);
