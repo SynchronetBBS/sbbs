@@ -638,7 +638,7 @@ static const char* get_mime_type(char *ext)
 
 /* This function appends append plus a newline IF the final dst string would have a length less than maxlen */
 static void safecat(char *dst, const char *append, size_t maxlen) {
-	int dstlen,appendlen;
+	size_t dstlen,appendlen;
 	dstlen=strlen(dst);
 	appendlen=strlen(append);
 	if(dstlen+appendlen+2 < maxlen) {
@@ -1239,16 +1239,18 @@ static void js_parse_query(http_session_t * session, char *p)  {
 	}
 }
 
-static int is_dynamic(http_session_t * session,char *req)  {
-	char*	p;
+static int is_dynamic_req(http_session_t* session)
+{
 	int		i=0;
+	char	drive[4];
+	char	dir[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
+	char	ext[MAX_PATH+1];
 	char	path[MAX_PATH+1];
 
-	if((p=strrchr(req,'.'))==NULL)  {
-		return(IS_STATIC);
-	}
+	_splitpath(session->req.physical_path, drive, dir, fname, ext);
 
-	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && stricmp(p,startup->ssjs_ext)==0)  {
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && stricmp(ext,startup->ssjs_ext)==0)  {
 		lprintf("Setting up JavaScript support");
 	
 		if(!js_setup(session)) {
@@ -1266,9 +1268,16 @@ static int is_dynamic(http_session_t * session,char *req)  {
 		return(IS_SSJS);
 	}
 
-	if(!(startup->options&WEB_OPT_NO_CGI) && startup->cgi_ext!=NULL) {
-		for(i=0; startup->cgi_ext[i]!=NULL; i++)  {
-			if(stricmp(p,startup->cgi_ext[i])==0)  {
+	if(!(startup->options&WEB_OPT_NO_CGI)) {
+		for(i=0; startup->cgi_ext!=NULL && startup->cgi_ext[i]!=NULL; i++)  {
+			if(stricmp(ext,startup->cgi_ext[i])==0)  {
+				init_enviro(session);
+				return(IS_CGI);
+			}
+		}
+		for(i=0; startup->cgi_dir!=NULL && startup->cgi_dir[i]!=NULL; i++)  {
+			FULLPATH(startup->cgi_dir[i],path,sizeof(path));
+			if(stricmp(dir,path)==0)  {
 				init_enviro(session);
 				return(IS_CGI);
 			}
@@ -1290,7 +1299,7 @@ static char *get_request(http_session_t * session, char *req_line)
 	retval=strtok(NULL," \t");
 	strtok(session->req.virtual_path,"?");
 	p=strtok(NULL,"");
-	session->req.dynamic=is_dynamic(session,session->req.virtual_path);
+	session->req.dynamic=is_dynamic_req(session);
 	if(session->req.dynamic)
 		SAFECOPY(session->req.query_str,p);
 	if(p!=NULL)  {
@@ -2257,9 +2266,9 @@ static void respond(http_session_t * session)
 		send_file=send_headers(session,session->req.status);
 	}
 	if(send_file)  {
-		lprintf("%04d Sending file",session->socket);
+		lprintf("%04d Sending file: %s",session->socket, session->req.physical_path);
 		sock_sendfile(session->socket,session->req.physical_path);
-		lprintf("%04d Sent file",session->socket);
+		lprintf("%04d Sent file: %s",session->socket, session->req.physical_path);
 	}
 	close_request(session);
 }
