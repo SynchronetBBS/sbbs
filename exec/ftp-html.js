@@ -38,6 +38,7 @@ function secstr(sec)
 
 var title = system.name + " BBS - FTP Server";
 var font_face = "<font face=Arial,Helvetica,sans-serif>";
+var font_size = 2;	// Change base font size here
 
 writeln('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">');
 writeln("<html>");
@@ -188,8 +189,8 @@ writeln("</h3>");
 
 /* Table Attributes */
 var hdr_background="white";
-var hdr_font="<font size=-1 color=black>";
-var dat_font="";
+var hdr_font=format("<font size=%d color=black>",font_size-1);
+var dat_font=format("<font size=%d>",font_size);
 var cell_spacing=""; //"cellspacing=2 cellpadding=2";
 
 /* Directory Listing */
@@ -210,7 +211,7 @@ if(dir_list.length) {
 	writeln("<tbody>");
 	for(i in dir_list) {
 		writeln("<tr>");
-
+	
 		/* filename */
 		writeln("<th nowrap align=left>" + dat_font 
 			+ dir_list[i].description.link(dir_list[i].link + "?$" + time_stamp));
@@ -297,7 +298,7 @@ if(file_list.length) {
 
 	/* Description */
 	write("<th>" + hdr_font + "Description");
-	if(curdir.settings!=undefined) {
+	if(!(user.security.restrictions&UFLAG_G) && curdir.settings!=undefined) {
 		if(user.settings&USER_EXTDESC)
 			writeln(format(" [%s]"
 				,(hdr_font+"short").link(format("%s?ext=off$%s",html_index_file, time_stamp))));
@@ -415,12 +416,12 @@ if(!file_list.length && !dir_list.length)
 	writeln("<br><b>No Files.</b><br>");
 
 /* Footer */
-write("<br><font size='-1' color=silver>Problems? Ask ");
+write(format("<br><font size=%d color=silver>Problems? Ask ",font_size-1));
 write(format("<a href=mailto:sysop@%s>%s</a>.",system.inetaddr,system.operator));
 
-write("<br><font size='-1'>Dynamically generated ");
+write(format("<br><font size=%d>Dynamically generated ",font_size-1));
 write(format("in %lu milliseconds ", new Date().valueOf()-start.valueOf()));
-write("by <a href=http://www.synchro.net>" + system.version + "</a>");
+write("by <a href=http://www.synchro.net>" + server.version + "</a>");
 writeln("<br>" + Date() + "</font>");
 writeln("</body>");
 writeln("</html>");
