@@ -1716,12 +1716,11 @@ void DLLCALL services_thread(void* arg)
 
 			if(startup->seteuid!=NULL)
 				startup->seteuid(FALSE);
-			result=retry_bind(socket, (struct sockaddr *) &addr, sizeof(addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
+			result=retry_bind(socket, (struct sockaddr *) &addr, sizeof(addr)
+				,startup->bind_retry_count, startup->bind_retry_delay, service[i].protocol, lprintf);
 			if(startup->seteuid!=NULL)
 				startup->seteuid(TRUE);
 			if(result!=0) {
-				lprintf(LOG_ERR,"%04d !ERROR %d binding %s socket to port %u"
-					,socket, ERROR_VALUE, service[i].protocol, service[i].port);
 				lprintf(LOG_ERR,"%04d %s",socket,BIND_FAILURE_HELP);
 				close_socket(socket);
 				continue;

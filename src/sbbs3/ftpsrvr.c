@@ -4671,12 +4671,11 @@ void DLLCALL ftp_server(void* arg)
 
 		if(startup->seteuid!=NULL)
 			startup->seteuid(FALSE);
-		result=retry_bind(server_socket, (struct sockaddr *) &server_addr,sizeof(server_addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
+		result=retry_bind(server_socket, (struct sockaddr *) &server_addr,sizeof(server_addr)
+			,startup->bind_retry_count,startup->bind_retry_delay,"FTP Server",lprintf);
 		if(startup->seteuid!=NULL)
 			startup->seteuid(TRUE);
 		if(result!=0) {
-			lprintf(LOG_ERR,"%04d !ERROR %d (%d) binding socket to port %u"
-				,server_socket, result, ERROR_VALUE,startup->port);
 			lprintf(LOG_ERR,"%04d %s", server_socket, BIND_FAILURE_HELP);
 			cleanup(1,__LINE__);
 			return;

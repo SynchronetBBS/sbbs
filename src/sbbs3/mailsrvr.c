@@ -4101,12 +4101,11 @@ void DLLCALL mail_server(void* arg)
 
 		if(startup->seteuid!=NULL)
 			startup->seteuid(FALSE);
-		result = retry_bind(server_socket,(struct sockaddr *)&server_addr,sizeof(server_addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
+		result = retry_bind(server_socket,(struct sockaddr *)&server_addr,sizeof(server_addr)
+			,startup->bind_retry_count,startup->bind_retry_delay,"SMTP Server",lprintf);
 		if(startup->seteuid!=NULL)
 			startup->seteuid(TRUE);
 		if(result != 0) {
-			lprintf(LOG_ERR,"%04d !ERROR %d (%d) binding SMTP socket to port %u"
-				,server_socket, result, ERROR_VALUE, startup->smtp_port);
 			lprintf(LOG_ERR,"%04d %s",server_socket, BIND_FAILURE_HELP);
 			cleanup(1);
 			return;
@@ -4149,12 +4148,11 @@ void DLLCALL mail_server(void* arg)
 
 			if(startup->seteuid!=NULL)
 				startup->seteuid(FALSE);
-			result = retry_bind(pop3_socket,(struct sockaddr *)&server_addr,sizeof(server_addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
+			result = retry_bind(pop3_socket,(struct sockaddr *)&server_addr,sizeof(server_addr)
+				,startup->bind_retry_count,startup->bind_retry_delay,"POP3 Server",lprintf);
 			if(startup->seteuid!=NULL)
 				startup->seteuid(TRUE);
 			if(result != 0) {
-				lprintf(LOG_ERR,"%04d !ERROR %d (%d) binding POP3 socket to port %u"
-					,pop3_socket, result, ERROR_VALUE, startup->pop3_port);
 				lprintf(LOG_ERR,"%04d %s",pop3_socket,BIND_FAILURE_HELP);
 				cleanup(1);
 				return;

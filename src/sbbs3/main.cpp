@@ -3953,12 +3953,11 @@ void DLLCALL bbs_thread(void* arg)
 
 	if(startup->seteuid!=NULL)
 		startup->seteuid(FALSE);
-    result = retry_bind(telnet_socket,(struct sockaddr *)&server_addr,sizeof(server_addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
+    result = retry_bind(telnet_socket,(struct sockaddr *)&server_addr,sizeof(server_addr)
+		,startup->bind_retry_count,startup->bind_retry_delay,"Telnet Server",lprintf);
 	if(startup->seteuid!=NULL)
 		startup->seteuid(TRUE);
 	if(result != 0) {
-		lprintf(LOG_ERR,"!ERROR %d (%d) binding Telnet socket to port %d"
-			,result, ERROR_VALUE,startup->telnet_port);
 		lprintf(LOG_NOTICE,"%s",BIND_FAILURE_HELP);
 		cleanup(1);
 		return;
@@ -3998,12 +3997,11 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(startup->seteuid!=NULL)
 			startup->seteuid(FALSE);
-		result = retry_bind(rlogin_socket,(struct sockaddr *)&server_addr,sizeof(server_addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
+		result = retry_bind(rlogin_socket,(struct sockaddr *)&server_addr,sizeof(server_addr)
+			,startup->bind_retry_count,startup->bind_retry_delay,"RLogin Server",lprintf);
 		if(startup->seteuid!=NULL)
 			startup->seteuid(TRUE);
 		if(result != 0) {
-			lprintf(LOG_ERR,"!ERROR %d (%d) binding RLogin socket to port %d"
-				,result, ERROR_VALUE,startup->rlogin_port);
 			lprintf(LOG_NOTICE,"%s",BIND_FAILURE_HELP);
 			cleanup(1);
 			return;
