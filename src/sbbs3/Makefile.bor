@@ -67,9 +67,9 @@ SBBSLIB	=	$(LIBODIR)\sbbs.lib
 
 # Create output directories if they don't exist
 $(LIBODIR):
-	if not exist $(LIBODIR) mkdir $(LIBODIR)
+	@if not exist $(LIBODIR) mkdir $(LIBODIR)
 $(EXEODIR):
-	if not exist $(EXEODIR) mkdir $(EXEODIR)
+	@if not exist $(EXEODIR) mkdir $(EXEODIR)
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): sbbscon.c $(OBJS) $(LIBODIR)\ver.$(OFILE) $(LIBODIR)\ftpsrvr.$(OFILE) \
