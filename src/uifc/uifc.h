@@ -48,8 +48,6 @@
 #endif
 #if !defined(__unix__)
     #include <io.h>
-#endif
-#if !defined(__FreeBSD__)
 	#include <malloc.h>		/* malloc prototype */
 #endif
 #if (defined(__unix__) || defined(_WIN32)) && !defined(__FLAT__)
