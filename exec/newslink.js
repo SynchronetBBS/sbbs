@@ -151,6 +151,7 @@ while(!cfg_file.eof) {
 		case "tagline":
 			str.shift();				// Remove first element (keyword)
 			tagline=str.join(' ');		// Combine remaining elements (tagline)
+			tagline+="\r\n";
 			break;
 		default:
 			printf("!UNRECOGNIZED configuration keyword: %s\r\n",str[0]);
