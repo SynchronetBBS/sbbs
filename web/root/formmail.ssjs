@@ -46,17 +46,22 @@ var hdr = { from: 'FormMail',
 			subject: 'WWW Form Submission' };
 
 // Use form-specified recipient
-if(http_request.query.recipient)	hdr.to				=http_request.query.recipient;
+if(http_request.query.recipient)	
+	hdr.to				=http_request.query.recipient[0];
 
 // Use form-specified message subject
-if(http_request.query.subject)		hdr.subject			=http_request.query.subject;
+if(http_request.query.subject)		
+	hdr.subject			=http_request.query.subject[0];
 
 // Use form-specified email address
-if(http_request.query.email) {		hdr.from_net_addr	=http_request.query.email;
-									hdr.from			=http_request.query.email; }
+if(http_request.query.email && http_request.query.email.toString().length) {
+	hdr.from_net_addr	=http_request.query.email;
+	hdr.from			=http_request.query.email; 
+}
 
 // Use form-specified real name
-if(http_request.query.realname)		hdr.from			=http_request.query.realname;
+if(http_request.query.realname && http_request.query.realname.toString().length)
+	hdr.from			=http_request.query.realname;
 
 hdr.to_net_type=netaddr_type(hdr.to);
 if(hdr.to_net_type!=NET_NONE)
@@ -76,8 +81,12 @@ for(i in http_request.query) {
 	if(String(http_request.query[i]).length)
 		body += format("%-10s = %s\r\n", i, http_request.query[i]);
 }
+
+body+=format("\r\nvia %s\r\nat %s [%s]\r\n"
+			 ,http_request.header['user-agent']
+			 ,http_request.remote_host, http_request.remote_ip);
 	
 if(!msgbase.save_msg(hdr,client,body))
 	results(LOG_ERR,format("%s saving message", msgbase.error));
 
-results(LOG_INFO,"E-mail sent to " + String(hdr.to).italics().bold() + " successfully.");
+results(LOG_INFO,"E-mail sent from " + hdr.from + " to " + String(hdr.to).italics().bold() + " successfully.");
