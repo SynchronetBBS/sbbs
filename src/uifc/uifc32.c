@@ -1520,6 +1520,7 @@ void umsg(char *str)
 /***************************************/
 void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *scrnoffset)
 {
+	_setcursortype(_NOCURSOR);
 	if(cursoffset<*scrnoffset)
 		*scrnoffset=cursoffset;
 
@@ -1529,6 +1530,7 @@ void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *
 	gotoxy(left,top);
 	cprintf("%-*.*s",width,width,outstr+*scrnoffset);
 	gotoxy(left+(cursoffset-*scrnoffset),top);
+	_setcursortype(_NORMALCURSOR);
 }
 
 /****************************************************************************/
