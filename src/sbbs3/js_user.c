@@ -58,6 +58,7 @@ enum {
 	,USER_PROP_COMP		
 	,USER_PROP_COMMENT	
 	,USER_PROP_NETMAIL	
+	,USER_PROP_EMAIL	/* READ ONLY */
 	,USER_PROP_ADDRESS	
 	,USER_PROP_LOCATION	
 	,USER_PROP_ZIPCODE	
@@ -151,6 +152,10 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case USER_PROP_NETMAIL:
 			s=user.netmail;
+			break;
+		case USER_PROP_EMAIL:
+			s=usermailaddr(p->cfg, tmp
+				,p->cfg->inetmail_misc&NMAIL_ALIAS ? user.alias : user.name);
 			break;
 		case USER_PROP_ADDRESS:
 			s=user.address;
@@ -501,7 +506,7 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"host_name"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"comment"			,USER_PROP_COMMENT	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"netmail"			,USER_PROP_NETMAIL	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"email"				,USER_PROP_NETMAIL	 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"email"				,USER_PROP_EMAIL	 	,USER_PROP_FLAGS|JSPROP_READONLY,		NULL,NULL},
 	{	"address"			,USER_PROP_ADDRESS	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"location"			,USER_PROP_LOCATION	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"zipcode"			,USER_PROP_ZIPCODE	 	,USER_PROP_FLAGS,		NULL,NULL},
