@@ -372,17 +372,29 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 	, char *search, char letter, ulong datoffset)
 {
 	char	str[256],ext[513]="",*ptr,*cr,*lf,exist=1;
+	char	path[MAX_PATH+1];
 	char 	tmp[512];
     uchar	alt;
     int		i,j;
     ulong	cdt;
+#ifdef _WIN32
+	char	lfn[MAX_PATH+1];
+	DWORD	lfn_len;
+#endif
 
 	if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC && useron.misc&EXTDESC) {
 		getextdesc(&cfg,dirnum,datoffset,ext);
 		if(useron.misc&BATCHFLAG && lncntr+extdesclines(ext)>=rows-2 && letter!='A')
 			return(false); }
+
 	attr(cfg.color[clr_filename]);
 	bputs(fname);
+
+	getrec((char *)buf,F_ALTPATH,2,str);
+	alt=(uchar)ahtoul(str);
+	sprintf(path,"%s%s",alt>0 && alt<=cfg.altpaths ? cfg.altpath[alt-1]:cfg.dir[dirnum]->path
+		,unpadfname(fname,tmp));
+
 	if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC) {
 		if(!(useron.misc&EXTDESC))
 			outchar('+');
@@ -393,11 +405,7 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 	if(useron.misc&BATCHFLAG) {
 		attr(cfg.color[clr_filedesc]);
 		bprintf("%c",letter); }
-	getrec((char *)buf,F_ALTPATH,2,str);
-	alt=(uchar)ahtoul(str);
-	sprintf(str,"%s%s",alt>0 && alt<=cfg.altpaths ? cfg.altpath[alt-1]:cfg.dir[dirnum]->path
-		,unpadfname(fname,tmp));
-	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexist(str)) {
+	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexist(path)) {
 		exist=0;
 		attr(cfg.color[clr_err]); }
 	else
@@ -426,6 +434,20 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 		outchar('-');
 	getrec((char *)buf,F_DESC,LEN_FDESC,str);
 	attr(cfg.color[clr_filedesc]);
+
+#ifdef _WIN32
+ 
+	if(!(cfg.sys_misc&SM_NOLFN) && Win98GetLongPathName!=NULL) {
+
+		lfn_len=Win98GetLongPathName(path,lfn,sizeof(lfn));
+		if(lfn_len!=0 && lfn_len!=strlen(path)) {
+			ptr=strrchr(lfn,'\\');
+			if(ptr!=NULL 
+				&& stricmp(ptr+1,str)) // Not same as description
+				bprintf("%.*s\r\n%21s",LEN_FDESC,ptr+1,"");
+		}
+	}
+#endif
 	if(!ext[0]) {
 		if(search[0]) { /* high-light string in string */
 			strcpy(tmp,str);
@@ -450,7 +472,6 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 			cr=ptr+LEN_FDESC;
 		else if(cr)
 			*cr=0;
-	//	  bprintf("%.*s\r\n",LEN_FDESC,ptr);
 		sprintf(str,"%.*s\r\n",LEN_FDESC,ptr);
 		putmsg(str,P_NOATCODES|P_SAVEATR);
 		if(!cr) {
