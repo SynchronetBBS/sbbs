@@ -46,6 +46,7 @@ static char* xtrn_sec_prop_desc[] = {
 	 "external program section number"
 	,"external program section internal code"
 	,"external program section name"
+	,"external program section access requirements"
 	,NULL
 };
 
@@ -56,12 +57,14 @@ static char* xtrn_prog_prop_desc[] = {
 	,"command-line"
 	,"clean-up command-line"
 	,"startup directory"
+	,"access requirements"
+	,"execution requirements"
 	,"toggle options (bitfield)"
 	,"drop file type"
 	,"event type (0=none)"
 	,"extra time given to users running this program"
 	,"maximum time allowed in program"
-	,"cost (in credits) to run this program"
+	,"execution cost (credits to run this program)"
 	/* Insert here */
 	,"program number"
 	,"program section number"
@@ -87,6 +90,7 @@ static char* xedit_prop_desc[] = {
 
 	 "name"
 	,"command-line"
+	,"access requirements"
 	,"toggle options (bitfield)"
 	,"drop file type"
 	,NULL
@@ -100,46 +104,69 @@ BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* x
 
 	if((js_str=JS_NewStringCopyZ(cx, xtrn->code))==NULL)
 		return(FALSE);
-	JS_DefineProperty(cx, obj, "code", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "code", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
 	if((js_str=JS_NewStringCopyZ(cx, xtrn->name))==NULL)
 		return(FALSE);
-	JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
 	if((js_str=JS_NewStringCopyZ(cx, xtrn->cmd))==NULL)
 		return(FALSE);
-	JS_DefineProperty(cx, obj, "cmd", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "cmd", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
 	if((js_str=JS_NewStringCopyZ(cx, xtrn->clean))==NULL)
 		return(FALSE);
-	JS_DefineProperty(cx, obj, "clean_cmd", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "clean_cmd", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
 	if((js_str=JS_NewStringCopyZ(cx, xtrn->path))==NULL)
 		return(FALSE);
-	JS_DefineProperty(cx, obj, "startup_dir", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "startup_dir", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
-	JS_DefineProperty(cx, obj, "settings", INT_TO_JSVAL(xtrn->misc)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if((js_str=JS_NewStringCopyZ(cx, xtrn->arstr))==NULL)
+		return(FALSE);
+	if(!JS_DefineProperty(cx, obj, "ars", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
-	JS_DefineProperty(cx, obj, "type", INT_TO_JSVAL(xtrn->type)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if((js_str=JS_NewStringCopyZ(cx, xtrn->run_arstr))==NULL)
+		return(FALSE);
+	if(!JS_DefineProperty(cx, obj, "execution_ars", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
-	JS_DefineProperty(cx, obj, "event", INT_TO_JSVAL(xtrn->event)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "settings", INT_TO_JSVAL(xtrn->misc)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
-	JS_DefineProperty(cx, obj, "textra", INT_TO_JSVAL(xtrn->textra)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "type", INT_TO_JSVAL(xtrn->type)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
-	JS_DefineProperty(cx, obj, "max_time", INT_TO_JSVAL(xtrn->maxtime)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "event", INT_TO_JSVAL(xtrn->event)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
-	JS_DefineProperty(cx, obj, "cost", INT_TO_JSVAL(xtrn->cost)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	if(!JS_DefineProperty(cx, obj, "textra", INT_TO_JSVAL(xtrn->textra)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
+
+	if(!JS_DefineProperty(cx, obj, "max_time", INT_TO_JSVAL(xtrn->maxtime)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
+
+	if(!JS_DefineProperty(cx, obj, "cost", INT_TO_JSVAL(xtrn->cost)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
 
 #ifdef _DEBUG
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", xtrn_prog_prop_desc, JSPROP_READONLY);
@@ -228,6 +255,12 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			return(NULL);
 		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, secobj, "name", &val))
+			return(NULL);
+
+		if((js_str=JS_NewStringCopyZ(cx, cfg->xtrnsec[l]->arstr))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
+		if(!JS_SetProperty(cx, secobj, "ars", &val))
 			return(NULL);
 
 		/* prog_list[] */
@@ -320,34 +353,43 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 		if((js_str=JS_NewStringCopyZ(cx, cfg->event[l]->cmd))==NULL)
 			return(NULL);
-		JS_DefineProperty(cx, eventobj, "cmd", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "cmd", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
 		if((js_str=JS_NewStringCopyZ(cx, cfg->event[l]->dir))==NULL)
 			return(NULL);
-		JS_DefineProperty(cx, eventobj, "startup_dir", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "startup_dir", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, eventobj, "node_num", INT_TO_JSVAL(cfg->event[l]->node)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "node_num", INT_TO_JSVAL(cfg->event[l]->node)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, eventobj, "time", INT_TO_JSVAL(cfg->event[l]->time)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "time", INT_TO_JSVAL(cfg->event[l]->time)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, eventobj, "freq", INT_TO_JSVAL(cfg->event[l]->freq)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "freq", INT_TO_JSVAL(cfg->event[l]->freq)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, eventobj, "days", INT_TO_JSVAL(cfg->event[l]->days)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "days", INT_TO_JSVAL(cfg->event[l]->days)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, eventobj, "mdays", INT_TO_JSVAL(cfg->event[l]->mdays)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "mdays", INT_TO_JSVAL(cfg->event[l]->mdays)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, eventobj, "last_run", INT_TO_JSVAL(cfg->event[l]->last)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "last_run", INT_TO_JSVAL(cfg->event[l]->last)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, eventobj, "settings", INT_TO_JSVAL(cfg->event[l]->misc)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, eventobj, "settings", INT_TO_JSVAL(cfg->event[l]->misc)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
 #ifdef _DEBUG
 		js_CreateArrayOfStrings(cx, eventobj, "_property_desc_list", event_prop_desc, JSPROP_READONLY);
@@ -384,19 +426,29 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->name))==NULL)
 			return(NULL);
-		JS_DefineProperty(cx, xeditobj, "name", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, xeditobj, "name", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
 		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->rcmd))==NULL)
 			return(NULL);
-		JS_DefineProperty(cx, xeditobj, "cmd", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, xeditobj, "cmd", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, xeditobj, "settings", INT_TO_JSVAL(cfg->xedit[l]->misc)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->arstr))==NULL)
+			return(NULL);
+		if(!JS_DefineProperty(cx, xeditobj, "ars", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
-		JS_DefineProperty(cx, xeditobj, "type", INT_TO_JSVAL(cfg->xedit[l]->type)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(!JS_DefineProperty(cx, xeditobj, "settings", INT_TO_JSVAL(cfg->xedit[l]->misc)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
+
+		if(!JS_DefineProperty(cx, xeditobj, "type", INT_TO_JSVAL(cfg->xedit[l]->type)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
 
 #ifdef _DEBUG
 		js_CreateArrayOfStrings(cx, xeditobj, "_property_desc_list", xedit_prop_desc, JSPROP_READONLY);
