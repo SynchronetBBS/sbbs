@@ -2205,6 +2205,11 @@ object MainForm: TMainForm
           Hint = 'NEWUSER.MSG'
           OnClick = TextMenuItemEditClick
         end
+        object BBSEditNupGuessMenuItem: TMenuItem
+          Caption = 'New User Password Failure'
+          Hint = 'NUPGUESS.MSG'
+          OnClick = TextMenuItemEditClick
+        end
         object BBSEditFeedbackMsg: TMenuItem
           Caption = 'New User Feedback Instructions'
           Hint = 'FEEDBACK.MSG'
