@@ -4,7 +4,7 @@
         <tr>
         <td class="info">
             <a href="userstats.ssjs">View your statistics</a><br />
-            <a href="sysinfo.ssjs">System information</a><br /><br />
+            <a href="sysinfo.ssjs">System information</a><br />
         </td>
         </tr>
     </tbody>
