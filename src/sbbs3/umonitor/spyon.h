@@ -1,4 +1,4 @@
-/* spyon.c */
+/* spyon.h */
 
 /* Synchronet for *nix node spy headers */
 
