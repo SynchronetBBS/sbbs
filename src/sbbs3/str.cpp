@@ -497,19 +497,16 @@ bool sbbs_t::inputnstime(time_t *dt)
 {
 	int hour;
 	struct tm tm;
-	struct tm * tp;
 	bool pm=false;
 	char str[256];
 
 	bputs(text[NScanDate]);
 	bputs(timestr(dt));
 	CRLF;
-	tp=localtime(dt);
-	if(tp==NULL) {
+	if(localtime_r(dt,&tm)==NULL) {
 		errormsg(WHERE,ERR_CHK,"time ptr",0);
 		return(FALSE);
 	}
-	tm=*tp;
 
 	bputs(text[NScanYear]);
 	ultoa(tm.tm_year+1900,str,10);
@@ -778,17 +775,16 @@ void sbbs_t::user_info()
 	char	str[128];
 	char	tmp[128];
 	char	tmp2[128];
-	struct	tm * tm;
+	struct	tm tm;
 
 	bprintf(text[UserStats],useron.alias,useron.number);
 
-	tm=localtime(&useron.laston);
-	if(tm!=NULL)
+	if(localtime_r(&useron.laston,&tm)!=NULL)
 		bprintf(text[UserDates]
 			,unixtodstr(&cfg,useron.firston,str)
 			,unixtodstr(&cfg,useron.expire,tmp)
 			,unixtodstr(&cfg,useron.laston,tmp2)
-			,tm->tm_hour,tm->tm_min);
+			,tm.tm_hour,tm.tm_min);
 
 	bprintf(text[UserTimes]
 		,useron.timeon,useron.ttoday

@@ -2244,7 +2244,6 @@ static void ctrl_thread(void* arg)
 	node_t		node;
 	client_t	client;
 	struct tm	tm;
-	struct tm *	tm_p;
 	struct tm 	cur_tm;
 #ifdef JAVASCRIPT
 	jsval		js_val;
@@ -2873,22 +2872,16 @@ static void ctrl_thread(void* arg)
 				sockprintf(sock, "150 Directory of %s%s", local_dir, p);
 
 				now=time(NULL);
-				tm_p=localtime(&now);
-				if(tm_p==NULL) 
+				if(localtime_r(&now,&cur_tm)==NULL) 
 					memset(&cur_tm,0,sizeof(cur_tm));
-				else
-					cur_tm=*tm_p;
 			
 				glob(path,0,NULL,&g);
 				for(i=0;i<(int)g.gl_pathc;i++) {
 					if(detail) {
 						f.size=flength(g.gl_pathv[i]);
 						t=fdate(g.gl_pathv[i]);
-						tm_p=localtime(&t);
-						if(tm_p==NULL)
+						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
-						else
-							tm=*tm_p;
 						fprintf(fp,"%crw-r--r--   1 %-8s local %9ld %s %2d "
 							,isdir(g.gl_pathv[i]) ? 'd':'-'
 							,scfg.sys_id
@@ -3072,11 +3065,8 @@ static void ctrl_thread(void* arg)
 				}
 				if(!strnicmp(cmd,"MDTM ",5)) {
 					t=fdate(fname);
-					tm_p=gmtime(&t);	/* specifically use GMT/UTC representation */
-					if(tm_p==NULL)
+					if(gmtime_r(&t,&tm)==NULL) /* specifically use GMT/UTC representation */
 						memset(&tm,0,sizeof(tm));
-					else
-						tm=*tm_p;
 					sockprintf(sock,"213 %u%02u%02u%02u%02u%02u"
 						,1900+tm.tm_year,tm.tm_mon+1,tm.tm_mday
 						,tm.tm_hour,tm.tm_min,tm.tm_sec);					
@@ -3166,11 +3156,8 @@ static void ctrl_thread(void* arg)
 				detail=FALSE;
 			sockprintf(sock,"150 Opening ASCII mode data connection for /bin/ls.");
 			now=time(NULL);
-			tm_p=localtime(&now);
-			if(tm_p==NULL) 
+			if(localtime_r(&now,&cur_tm)==NULL) 
 				memset(&cur_tm,0,sizeof(cur_tm));
-			else
-				cur_tm=*tm_p;
 
 			/* ASCII Index File */
 			if(startup->options&FTP_OPT_INDEX_FILE && startup->index_file_name[0]
@@ -3216,11 +3203,8 @@ static void ctrl_thread(void* arg)
 							t=time(NULL);
 							l=10240;
 						};
-						tm_p=localtime(&t);
-						if(tm_p==NULL) 
+						if(localtime_r(&t,&tm)==NULL) 
 							memset(&tm,0,sizeof(tm));
-						else
-							tm=*tm_p;
 						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s.qwk\r\n"
 							,NAME_LEN
 							,scfg.sys_id
@@ -3291,11 +3275,8 @@ static void ctrl_thread(void* arg)
 							}
 							else {
 								t=fdate(np);
-								tm_p=localtime(&t);
-								if(tm_p==NULL)
+								if(localtime_r(&t,&tm)==NULL)
 									memset(&tm,0,sizeof(tm));
-								else
-									tm=*tm_p;
 								fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 									,NAME_LEN
 									,scfg.sys_id
@@ -3370,11 +3351,8 @@ static void ctrl_thread(void* arg)
 						f.size=flength(g.gl_pathv[i]);
 						getfiledat(&scfg,&f);
 						t=fdate(g.gl_pathv[i]);
-						tm_p=localtime(&t);
-						if(tm_p==NULL)
+						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
-						else
-							tm=*tm_p;
 						if(filedat) {
 							if(f.misc&FM_ANON)
 								SAFECOPY(str,ANONYMOUS);
@@ -3837,11 +3815,8 @@ static void ctrl_thread(void* arg)
 				sockprintf(sock,"213 %lu",flength(fname));
 			else if(getdate && success) {
 				t=fdate(fname);
-				tm_p=gmtime(&t);	/* specifically use GMT/UTC representation */
-				if(tm_p==NULL)
+				if(gmtime_r(&t,&tm)==NULL)	/* specifically use GMT/UTC representation */
 					memset(&tm,0,sizeof(tm));
-				else
-					tm=*tm_p;
 				sockprintf(sock,"213 %u%02u%02u%02u%02u%02u"
 					,1900+tm.tm_year,tm.tm_mon+1,tm.tm_mday
 					,tm.tm_hour,tm.tm_min,tm.tm_sec);
@@ -4327,6 +4302,7 @@ void DLLCALL ftp_server(void* arg)
 	char			path[MAX_PATH+1];
 	char			error[256];
 	char			compiler[32];
+	char			str[256];
 	SOCKADDR_IN		server_addr;
 	SOCKADDR_IN		client_addr;
 	socklen_t		client_addr_len;
@@ -4408,7 +4384,7 @@ void DLLCALL ftp_server(void* arg)
 
 		t=time(NULL);
 		lprintf("Initializing on %.24s with options: %lx"
-			,ctime(&t),startup->options);
+			,ctime_r(&t,str,sizeof(str)),startup->options);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);

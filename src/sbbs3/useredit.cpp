@@ -58,7 +58,7 @@ void sbbs_t::useredit(int usernumber)
 	uint	i,j,k;
 	long	l;
 	user_t	user;
-	struct	tm * tm;
+	struct	tm tm;
 
 	if(online==ON_REMOTE && console&(CON_R_ECHO|CON_R_INPUT) && !chksyspass())
 		return;
@@ -121,12 +121,11 @@ void sbbs_t::useredit(int usernumber)
 				,user.comment);
 		else
 			CRLF;
-		tm=localtime(&user.laston);
-		if(tm==NULL)
+		if(localtime_r(&user.laston,&tm)==NULL)
 			return;
 		bprintf(text[UserDates]
 			,unixtodstr(&cfg,user.firston,str),unixtodstr(&cfg,user.expire,tmp)
-			,unixtodstr(&cfg,user.laston,tmp2),tm->tm_hour, tm->tm_min);
+			,unixtodstr(&cfg,user.laston,tmp2),tm.tm_hour, tm.tm_min);
 
 		bprintf(text[UserTimes]
 			,user.timeon,user.ttoday,cfg.level_timeperday[user.level]

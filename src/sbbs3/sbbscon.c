@@ -365,7 +365,7 @@ static int bbs_lputs(char *str)
 	char		logline[512];
 	char		tstr[64];
 	time_t		t;
-	struct tm*	tm_p;
+	struct tm	tm;
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -380,13 +380,12 @@ static int bbs_lputs(char *str)
 #endif
 
 	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
+	if(localtime_r(&t,&tm)==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
 	sprintf(logline,"%s     %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
@@ -419,7 +418,7 @@ static int ftp_lputs(char *str)
 	char		logline[512];
 	char		tstr[64];
 	time_t		t;
-	struct tm*	tm_p;
+	struct tm	tm;
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -434,13 +433,12 @@ static int ftp_lputs(char *str)
 #endif
 
 	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
+	if(localtime_r(&t,&tm)==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
 	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
@@ -473,7 +471,7 @@ static int mail_lputs(char *str)
 	char		logline[512];
 	char		tstr[64];
 	time_t		t;
-	struct tm*	tm_p;
+	struct tm	tm;
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -488,13 +486,12 @@ static int mail_lputs(char *str)
 #endif
 
 	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
+	if(localtime_r(&t,&tm)==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
 	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
@@ -527,7 +524,7 @@ static int services_lputs(char *str)
 	char		logline[512];
 	char		tstr[64];
 	time_t		t;
-	struct tm*	tm_p;
+	struct tm	tm;
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -542,13 +539,12 @@ static int services_lputs(char *str)
 #endif
 
 	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
+	if(localtime_r(&t,&tm)==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
 	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
@@ -581,7 +577,7 @@ static int event_lputs(char *str)
 	char		logline[512];
 	char		tstr[64];
 	time_t		t;
-	struct tm*	tm_p;
+	struct tm	tm;
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -596,13 +592,12 @@ static int event_lputs(char *str)
 #endif
 
 	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
+	if(localtime_r(&t,&tm)==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
 	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
@@ -619,7 +614,7 @@ static int web_lputs(char *str)
 	char		logline[512];
 	char		tstr[64];
 	time_t		t;
-	struct tm*	tm_p;
+	struct tm	tm;
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -634,13 +629,12 @@ static int web_lputs(char *str)
 #endif
 
 	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
+	if(localtime_r(&t,&tm)==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
 	sprintf(logline,"%shttp %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);

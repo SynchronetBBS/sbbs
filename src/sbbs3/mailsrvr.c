@@ -2893,6 +2893,7 @@ const char* DLLCALL mail_ver(void)
 void DLLCALL mail_server(void* arg)
 {
 	char			path[MAX_PATH+1];
+	char			str[256];
 	char			error[256];
 	char			compiler[32];
 	SOCKADDR_IN		server_addr;
@@ -2972,7 +2973,7 @@ void DLLCALL mail_server(void* arg)
 
 		t=time(NULL);
 		lprintf("Initializing on %.24s with options: %lx"
-			,ctime(&t),startup->options);
+			,ctime_r(&t,str,sizeof(str)),startup->options);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);

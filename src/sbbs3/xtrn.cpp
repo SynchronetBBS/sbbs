@@ -253,7 +253,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	DWORD	retval;
 	DWORD	last_error;
 	DWORD	loop_since_io=0;
-	struct	tm * tm_p;
+	struct	tm tm;
 	sbbsexec_start_t start;
 	OPENVXDHANDLE OpenVxDHandle;
 
@@ -296,7 +296,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	SAFECOPY(realcmdline, fullcmdline);	// for errormsg if failed to execute
 
 	now=time(NULL);
-	tm_p=localtime(&now);
+	if(localtime_r(&now,&tm)==NULL)
+		memset(&tm,0,sizeof(tm));
 
 	OpenVxDHandle=GetAddressOfOpenVxDHandle();
 
@@ -327,19 +328,18 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		putenv(sbbsdata);
 		putenv(sbbsexec);
 		putenv(sbbsnnum);
-		if(tm_p!=NULL) {		/* date/time env vars */
-			sprintf(env_day			,"DAY=%02u"			,tm_p->tm_mday);
-			sprintf(env_weekday		,"WEEKDAY=%s"		,wday[tm_p->tm_wday]);
-			sprintf(env_monthname	,"MONTHNAME=%s"		,mon[tm_p->tm_mon]);
-			sprintf(env_month		,"MONTH=%02u"		,tm_p->tm_mon+1);
-			sprintf(env_year		,"YEAR=%u"			,1900+tm_p->tm_year);
-			putenv(env_day);
-			putenv(env_weekday);
-			putenv(env_monthname);
-			putenv(env_month);
-			if(putenv(env_year))
-        		errormsg(WHERE,ERR_WRITE,"environment",0);
-		}
+		/* date/time env vars */
+		sprintf(env_day			,"DAY=%02u"			,tm.tm_mday);
+		sprintf(env_weekday		,"WEEKDAY=%s"		,wday[tm.tm_wday]);
+		sprintf(env_monthname	,"MONTHNAME=%s"		,mon[tm.tm_mon]);
+		sprintf(env_month		,"MONTH=%02u"		,tm.tm_mon+1);
+		sprintf(env_year		,"YEAR=%u"			,1900+tm.tm_year);
+		putenv(env_day);
+		putenv(env_weekday);
+		putenv(env_monthname);
+		putenv(env_month);
+		if(putenv(env_year))
+        	errormsg(WHERE,ERR_WRITE,"environment",0);
 
     } else { // DOS external
 
@@ -361,13 +361,12 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		fprintf(fp, "SBBSDATA=%s\n", cfg.data_dir);
 		fprintf(fp, "SBBSEXEC=%s\n", cfg.exec_dir);
         fprintf(fp, "SBBSNNUM=%d\n", cfg.node_num);
-		if(tm_p!=NULL) {	/* date/time env vars */
-			fprintf(fp, "DAY=%02u\n", tm_p->tm_mday);
-			fprintf(fp, "WEEKDAY=%s\n",wday[tm_p->tm_wday]);
-			fprintf(fp, "MONTHNAME=%s\n",mon[tm_p->tm_mon]);
-			fprintf(fp, "MONTH=%02u\n",tm_p->tm_mon+1);
-			fprintf(fp, "YEAR=%u\n",1900+tm_p->tm_year);
-		}
+		/* date/time env vars */
+		fprintf(fp, "DAY=%02u\n", tm.tm_mday);
+		fprintf(fp, "WEEKDAY=%s\n",wday[tm.tm_wday]);
+		fprintf(fp, "MONTHNAME=%s\n",mon[tm.tm_mon]);
+		fprintf(fp, "MONTH=%02u\n",tm.tm_mon+1);
+		fprintf(fp, "YEAR=%u\n",1900+tm.tm_year);
         fclose(fp);
 
         sprintf(fullcmdline, "%sDOSXTRN.EXE %s", cfg.exec_dir, str);

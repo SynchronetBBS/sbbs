@@ -1220,6 +1220,7 @@ void DLLCALL services_thread(void* arg)
 	char			error[256];
 	char			host_ip[32];
 	char			compiler[32];
+	char			str[128];
 	char			cmd[128];
 	SOCKADDR_IN		addr;
 	SOCKADDR_IN		client_addr;
@@ -1294,7 +1295,7 @@ void DLLCALL services_thread(void* arg)
 
 		t=time(NULL);
 		lprintf("Initializing on %.24s with options: %lx"
-			,ctime(&t),startup->options);
+			,ctime_r(&t,str,sizeof(str)),startup->options);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);

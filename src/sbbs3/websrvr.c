@@ -661,7 +661,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	time_t	ti;
 	char	status_line[MAX_REQUEST_LINE];
 	struct stat	stats;
-	struct tm	*t;
+	struct tm	tm;
 	linked_list	*p;
 
 	SAFECOPY(status_line,status);
@@ -689,8 +689,9 @@ static BOOL send_headers(http_session_t *session, const char *status)
 
 	/* General Headers */
 	ti=time(NULL);
-	t=gmtime(&ti);
-	sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_DATE),days[t->tm_wday],t->tm_mday,months[t->tm_mon],t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
+	if(gmtime_r(&ti,&tm)==NULL)
+		memset(&tm,0,sizeof(tm));
+	sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_DATE),days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon],tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	if(session->req.keep_alive)
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
 	else
@@ -716,11 +717,11 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE)
 			,session->req.mime_type);
 
-		t=gmtime(&stats.st_mtime);
+		gmtime_r(&stats.st_mtime,&tm);
 		sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
 			,get_header(HEAD_LASTMODIFIED)
-			,days[t->tm_wday],t->tm_mday,months[t->tm_mon]
-			,t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
+			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
+			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	} else 
 		if(ret)
 			sockprintf(session->socket,"%s: 0",get_header(HEAD_LENGTH));
@@ -2061,7 +2062,7 @@ void DLLCALL web_server(void* arg)
 
 		t=time(NULL);
 		lprintf("Initializing on %.24s with options: %lx"
-			,ctime(&t),startup->options);
+			,ctime_r(&t,logstr,sizeof(logstr)),startup->options);
 
 		lprintf("Root HTML directory: %s", root_dir);
 		lprintf("Error HTML directory: %s", error_dir);

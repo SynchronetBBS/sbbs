@@ -1189,7 +1189,7 @@ void event_thread(void* arg)
 	glob_t		g;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct tm	now_tm;
-	struct tm*	tm;
+	struct tm	tm;
 
 	eprintf("BBS Events thread started");
 
@@ -1216,7 +1216,7 @@ void event_thread(void* arg)
 	while(!sbbs->terminated && telnet_socket!=INVALID_SOCKET) {
 
 		now=time(NULL);
-		now_tm=*localtime(&now);
+		localtime_r(&now,&now_tm);
 
 		if(now-lastsemchk>=sbbs->cfg.node_sem_check) {
 			check_semaphores=true;
@@ -1494,13 +1494,15 @@ void event_thread(void* arg)
 				}
 			}
 
-			tm=localtime(&sbbs->cfg.qhub[i]->last); /* Qnet call out based on time */
-			if((tm==NULL || sbbs->cfg.qhub[i]->last==-1L					/* or frequency */
+			/* Qnet call out based on time */
+			if(localtime_r(&sbbs->cfg.qhub[i]->last,&tm)==NULL)
+				memset(&tm,0,sizeof(tm));
+			if((sbbs->cfg.qhub[i]->last==-1L					/* or frequency */
 				|| ((sbbs->cfg.qhub[i]->freq
 					&& (now-sbbs->cfg.qhub[i]->last)/60>sbbs->cfg.qhub[i]->freq)
 					|| (sbbs->cfg.qhub[i]->time
 						&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.qhub[i]->time
-						&& (now_tm.tm_mday!=tm->tm_mday || now_tm.tm_mon!=tm->tm_mon)))
+						&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
 						&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
 				sprintf(str,"%sqnet/%s.now"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
@@ -1565,13 +1567,15 @@ void event_thread(void* arg)
 			if(sbbs->cfg.phub[i]->node<first_node 
 				|| sbbs->cfg.phub[i]->node>last_node)
 				continue;
-			tm=localtime(&sbbs->cfg.phub[i]->last);	  /* PostLink call out based on time */
-			if(tm==NULL || sbbs->cfg.phub[i]->last==-1
+			/* PostLink call out based on time */
+			if(localtime_r(&sbbs->cfg.phub[i]->last,&tm)==NULL)
+				memset(&tm,0,sizeof(tm));
+			if(sbbs->cfg.phub[i]->last==-1
 				|| (((sbbs->cfg.phub[i]->freq								/* or frequency */
 					&& (now-sbbs->cfg.phub[i]->last)/60>sbbs->cfg.phub[i]->freq)
 				|| (sbbs->cfg.phub[i]->time
 					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.phub[i]->time
-				&& (now_tm.tm_mday!=tm->tm_mday || now_tm.tm_mon!=tm->tm_mon)))
+				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
 				&& sbbs->cfg.phub[i]->days&(1<<now_tm.tm_wday))) {
 
 				sbbs->cfg.phub[i]->last=time(NULL);
@@ -1609,13 +1613,14 @@ void event_thread(void* arg)
 				&& !(sbbs->cfg.event[i]->misc&EVENT_EXCL))
 				continue;	// ignore non-exclusive events for other instances
 
-			tm=localtime(&sbbs->cfg.event[i]->last);
-			if(tm==NULL || sbbs->cfg.event[i]->last==-1 ||
+			if(localtime_r(&sbbs->cfg.event[i]->last,&tm)==NULL)
+				memset(&tm,0,sizeof(tm));
+			if(sbbs->cfg.event[i]->last==-1 ||
 				(((sbbs->cfg.event[i]->freq 
 					&& (now-sbbs->cfg.event[i]->last)/60>sbbs->cfg.event[i]->freq)
 				|| 	(!sbbs->cfg.event[i]->freq 
 					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
-				&& (now_tm.tm_mday!=tm->tm_mday || now_tm.tm_mon!=tm->tm_mon)))
+				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
 				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday))) 
 			{
 				if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
@@ -2032,13 +2037,13 @@ bool sbbs_t::init()
 		if(filelength(fileno(logfile_fp))) {
 			log(crlf);
 			now=time(NULL);
-			struct tm * tm=localtime(&now);
-			if(tm!=NULL)
+			struct tm tm;
+			localtime_r(&now,&tm);
 			sprintf(str,"%s  %s %s %02d %u  "
 				"End of preexisting log entry (possible crash)"
-				,hhmmtostr(&cfg,tm,tmp)
-				,wday[tm->tm_wday]
-				,mon[tm->tm_mon],tm->tm_mday,tm->tm_year+1900);
+				,hhmmtostr(&cfg,&tm,tmp)
+				,wday[tm.tm_wday]
+				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900);
 			logline("L!",str);
 			log(crlf);
 			catsyslog(1); 
@@ -2751,7 +2756,7 @@ void sbbs_t::catsyslog(int crash)
 	char HUGE16 *buf;
 	int  i,file;
 	long length;
-	struct tm * tm;
+	struct tm tm;
 
 	if(logfile_fp==NULL) {
 		sprintf(str,"%snode.log",cfg.node_dir);
@@ -2773,11 +2778,9 @@ void sbbs_t::catsyslog(int crash)
 			return; 
 		}
 		now=time(NULL);
-		tm=localtime(&now);
-		if(tm==NULL)
-			return;
-		sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir,tm->tm_mon+1,tm->tm_mday
-			,TM_YEAR(tm->tm_year));
+		localtime_r(&now,&tm);
+		sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir,tm.tm_mon+1,tm.tm_mday
+			,TM_YEAR(tm.tm_year));
 		if((file=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
 			FREE((char *)buf);
@@ -3425,7 +3428,7 @@ void DLLCALL bbs_thread(void* arg)
 
 	t=time(NULL);
 	lprintf("Initializing on %.24s with options: %lx"
-		,ctime(&t),startup->options);
+		,ctime_r(&t,str,sizeof(str)),startup->options);
 
 	if(chdir(startup->ctrl_dir)!=0)
 		lprintf("!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);

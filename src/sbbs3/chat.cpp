@@ -1381,15 +1381,10 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 	int		file;
 	uint 	c,i,j,k;
 	long 	len;
-	struct	tm *tm_p;
 	struct	tm tm;
 
 	now=time(NULL);
-	tm_p=localtime(&now);
-	if(tm_p)
-		tm=*tm_p;
-	else
-		memset(&tm,0,sizeof(tm));
+	localtime_r(&now,&tm);
 
 	for(i=0;i<100;i++) {
 		if((answer[i]=(char *)MALLOC(513))==NULL) {

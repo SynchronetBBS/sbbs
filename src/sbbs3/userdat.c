@@ -569,33 +569,32 @@ int DLLCALL putusername(scfg_t* cfg, int number, char *name)
 char DLLCALL getage(scfg_t* cfg, char *birth)
 {
 	char	age;
-	struct	tm * tm;
+	struct	tm tm;
 	time_t	now;
 
 	if(!atoi(birth) || !atoi(birth+3))	/* Invalid */
 		return(0);
 
 	now=time(NULL);
-	tm=localtime(&now);
-	if(tm==NULL)
+	if(localtime_r(&now,&tm)==NULL)
 		return(0);
-	age=(tm->tm_year)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
+	age=(tm.tm_year)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
 	if(age>105)
 		age-=105;
-	tm->tm_mon++;	/* convert to 1 based */
+	tm.tm_mon++;	/* convert to 1 based */
 	if(cfg->sys_misc&SM_EURODATE) {		/* DD/MM/YY format */
 		if(atoi(birth)>31 || atoi(birth+3)>12)
 			return(0);
-		if(((birth[3]&0xf)*10)+(birth[4]&0xf)>tm->tm_mon ||
-			(((birth[3]&0xf)*10)+(birth[4]&0xf)==tm->tm_mon &&
-			((birth[0]&0xf)*10)+(birth[1]&0xf)>tm->tm_mday))
+		if(((birth[3]&0xf)*10)+(birth[4]&0xf)>tm.tm_mon ||
+			(((birth[3]&0xf)*10)+(birth[4]&0xf)==tm.tm_mon &&
+			((birth[0]&0xf)*10)+(birth[1]&0xf)>tm.tm_mday))
 			age--; }
 	else {							/* MM/DD/YY format */
 		if(atoi(birth)>12 || atoi(birth+3)>31)
 			return(0);
-		if(((birth[0]&0xf)*10)+(birth[1]&0xf)>tm->tm_mon ||
-			(((birth[0]&0xf)*10)+(birth[1]&0xf)==tm->tm_mon &&
-			((birth[3]&0xf)*10)+(birth[4]&0xf)>tm->tm_mday))
+		if(((birth[0]&0xf)*10)+(birth[1]&0xf)>tm.tm_mon ||
+			(((birth[0]&0xf)*10)+(birth[1]&0xf)==tm.tm_mon &&
+			((birth[3]&0xf)*10)+(birth[4]&0xf)>tm.tm_mday))
 			age--; }
 	if(age<0)
 		return(0);
@@ -1037,7 +1036,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 	uint	i,n,artype=AR_LEVEL,age;
 	ulong	l;
 	time_t	now;
-	struct tm * tm;
+	struct tm tm;
 
 	result = TRUE;
 
@@ -1179,9 +1178,9 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				break;
 			case AR_DAY:
 				now=time(NULL);
-				tm=localtime(&now);
-				if(tm==NULL || (equal && tm->tm_wday!=(int)n) 
-					|| (!equal && tm->tm_wday<(int)n))
+				localtime_r(&now,&tm);
+				if((equal && tm.tm_wday!=(int)n) 
+					|| (!equal && tm.tm_wday<(int)n))
 					result=not;
 				else
 					result=!not;
@@ -1281,8 +1280,8 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				break;
 			case AR_TIME:
 				now=time(NULL);
-				tm=localtime(&now);
-				if(tm==NULL || (tm->tm_hour*60)+tm->tm_min<(int)i)
+				localtime_r(&now,&tm);
+				if((tm.tm_hour*60)+tm.tm_min<(int)i)
 					result=not;
 				else
 					result=!not;
@@ -1600,7 +1599,7 @@ void DLLCALL subtract_cdt(scfg_t* cfg, user_t* user, long amt)
 BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 {
 	char str[128];
-	struct tm* tm, tm_now;
+	struct tm tm, tm_now;
 
 	user->tlast=(now-logontime)/60;
 
@@ -1610,17 +1609,14 @@ BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logonti
 	adjustuserrec(cfg,user->number,U_TTODAY,5,user->tlast);
 
 	/* Convert time_t to struct tm */
-	tm=localtime(&now);
-	if(tm==NULL)
+	if(localtime_r(&now,&tm_now)==NULL)
 		return(FALSE);
-	tm_now=*tm;
 
-	tm=localtime(&logontime);
-	if(tm==NULL)
+	if(localtime_r(&logontime,&tm)==NULL)
 		return(FALSE);
 
 	/* Reset daily stats if new day */
-	if(tm->tm_mday!=tm_now.tm_mday) 
+	if(tm.tm_mday!=tm_now.tm_mday) 
 		resetdailyuserdat(cfg, user);
 
 	return(TRUE);

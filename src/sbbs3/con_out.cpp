@@ -267,7 +267,7 @@ void sbbs_t::ctrl_a(char x)
 {
 	int		i;
 	char	tmp1[128],atr=curatr;
-	struct	tm * tm;
+	struct	tm tm;
 
 	if(x && (uchar)x<ESC) {    /* Ctrl-A through Ctrl-Z for users with MF only */
 		if(!(useron.flags1&FLAG(x+64)))
@@ -336,12 +336,11 @@ void sbbs_t::ctrl_a(char x)
 			break;
 		case 'T':   /* Time */
 			now=time(NULL);
-			tm=localtime(&now);
-			if(tm!=NULL)
-				bprintf("%02d:%02d %s"
-					,tm->tm_hour==0 ? 12
-					: tm->tm_hour>12 ? tm->tm_hour-12
-					: tm->tm_hour, tm->tm_min, tm->tm_hour>11 ? "pm":"am");
+			localtime_r(&now,&tm);
+			bprintf("%02d:%02d %s"
+				,tm.tm_hour==0 ? 12
+				: tm.tm_hour>12 ? tm.tm_hour-12
+				: tm.tm_hour, tm.tm_min, tm.tm_hour>11 ? "pm":"am");
 			break;
 		case 'D':   /* Date */
 			now=time(NULL);

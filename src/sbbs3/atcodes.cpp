@@ -92,7 +92,6 @@ char* sbbs_t::atcode(char* sp, char* str)
     stats_t stats;
     node_t  node;
 	struct	tm tm;
-	struct	tm * tm_p;
 
 	str[0]=0;
 
@@ -209,11 +208,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 
 	if(!strcmp(sp,"TIME") || !strcmp(sp,"SYSTIME")) {
 		now=time(NULL);
-		tm_p=localtime(&now);
-		if(tm_p!=NULL)
-			tm=*tm_p;
-		else
-			memset(&tm,0,sizeof(tm));
+		memset(&tm,0,sizeof(tm));
 		sprintf(str,"%02d:%02d %s"
 			,tm.tm_hour==0 ? 12
 			: tm.tm_hour>12 ? tm.tm_hour-12
@@ -426,11 +421,8 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(unixtodstr(&cfg,useron.laston,str));
 
 	if(!strcmp(sp,"LASTTIMEON")) {
-		tm_p=localtime(&useron.laston);
-		if(tm_p)
-			tm=*tm_p;
-		else
-			memset(&tm,0,sizeof(tm));
+		memset(&tm,0,sizeof(tm));
+		localtime_r(&useron.laston,&tm);
 		sprintf(str,"%02d:%02d %s"
 			,tm.tm_hour==0 ? 12
 			: tm.tm_hour>12 ? tm.tm_hour-12

@@ -44,7 +44,7 @@ bool sbbs_t::answer()
 	char 	tmp[MAX_PATH+1];
 	char 	tmp2[MAX_PATH+1];
 	int		i,l,in;
-	struct tm * tm;
+	struct tm tm;
 	struct in_addr addr;
 
 	useron.number=0;
@@ -52,15 +52,14 @@ bool sbbs_t::answer()
 	/* Caller ID is IP address */
 	addr.s_addr=client_addr;
 	strcpy(cid,inet_ntoa(addr)); 
-	
-    tm=localtime(&now); 
-	if(tm==NULL)
-		return(false);
+
+	memset(&tm,0,sizeof(tm));
+    localtime_r(&now,&tm); 
 
 	sprintf(str,"%s  %s %s %02d %u            Node %3u"
-		,hhmmtostr(&cfg,tm,str2)
-		,wday[tm->tm_wday]
-        ,mon[tm->tm_mon],tm->tm_mday,tm->tm_year+1900,cfg.node_num);
+		,hhmmtostr(&cfg,&tm,str2)
+		,wday[tm.tm_wday]
+        ,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900,cfg.node_num);
 	logline("@ ",str);
 
 	sprintf(str,"%s  %s [%s]", connection, client_name, cid);

@@ -62,7 +62,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	FILE	*stream,*qwk,*personal,*ndx;
 	DIR*	dir;
 	DIRENT*	dirent;
-	struct	tm* tm;
+	struct	tm tm;
 	smbmsg_t msg;
 
 	ex=EX_OUTL|EX_OUTR;	/* Need sh for wildcard expansion */
@@ -109,8 +109,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			return(false); }
 
 		now=time(NULL);
-		tm=localtime(&now);
-		if(tm==NULL)
+		if(localtime_r(&now,&tm)==NULL)
 			return(false);
 
 		fprintf(stream,"%s\r\n%s\r\n%s\r\n%s, Sysop\r\n0000,%s\r\n"
@@ -120,8 +119,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			,cfg.node_phone
 			,cfg.sys_op
 			,cfg.sys_id
-			,tm->tm_mon+1,tm->tm_mday,tm->tm_year+1900
-			,tm->tm_hour,tm->tm_min,tm->tm_sec);
+			,tm.tm_mon+1,tm.tm_mday,tm.tm_year+1900
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 		k=0;
 		for(i=0;i<usrgrps;i++)
 			for(j=0;j<usrsubs[i];j++)

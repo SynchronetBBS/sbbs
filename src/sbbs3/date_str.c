@@ -94,27 +94,26 @@ time_t DLLCALL dstrtounix(scfg_t* cfg, char *instr)
 /****************************************************************************/
 char* DLLCALL unixtodstr(scfg_t* cfg, time_t unix_time, char *str)
 {
-	struct tm* tm;
+	struct tm tm;
 
 	if(!unix_time)
 		strcpy(str,"00/00/00");
 	else {
-		tm=localtime(&unix_time);
-		if(tm==NULL) {
+		if(localtime_r(&unix_time,&tm)==NULL) {
 			strcpy(str,"00/00/00");
 			return(str);
 		}
-		if(tm->tm_mon>11) {	  /* DOS leap year bug */
-			tm->tm_mon=0;
-			tm->tm_year++; }
-		if(tm->tm_mday>31)
-			tm->tm_mday=1;
+		if(tm.tm_mon>11) {	  /* DOS leap year bug */
+			tm.tm_mon=0;
+			tm.tm_year++; }
+		if(tm.tm_mday>31)
+			tm.tm_mday=1;
 		if(cfg->sys_misc&SM_EURODATE)
-			sprintf(str,"%02u/%02u/%02u",tm->tm_mday,tm->tm_mon+1
-				,TM_YEAR(tm->tm_year));
+			sprintf(str,"%02u/%02u/%02u",tm.tm_mday,tm.tm_mon+1
+				,TM_YEAR(tm.tm_year));
 		else
-			sprintf(str,"%02u/%02u/%02u",tm->tm_mon+1,tm->tm_mday
-				,TM_YEAR(tm->tm_year)); }
+			sprintf(str,"%02u/%02u/%02u",tm.tm_mon+1,tm.tm_mday
+				,TM_YEAR(tm.tm_year)); }
 	return(str);
 }
 
@@ -154,35 +153,34 @@ char* DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str)
 {
     char*		mer;
 	uchar		hour;
-    struct tm*	gm;
+    struct tm	tm;
 
-	gm=localtime(intime);
-	if(gm==NULL) {
+	if(localtime_r(intime,&tm)==NULL) {
 		strcpy(str,"Invalid Time");
 		return(str); 
 	}
 	if(cfg->sys_misc&SM_MILITARY) {
 		sprintf(str,"%s %s %02u %4u %02u:%02u:%02u"
-			,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
-			,gm->tm_hour,gm->tm_min,gm->tm_sec);
+			,wday[tm.tm_wday],mon[tm.tm_mon],tm.tm_mday,1900+tm.tm_year
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 		return(str); 
 	}
-	if(gm->tm_hour>=12) {
-		if(gm->tm_hour==12)
+	if(tm.tm_hour>=12) {
+		if(tm.tm_hour==12)
 			hour=12;
 		else
-			hour=gm->tm_hour-12;
+			hour=tm.tm_hour-12;
 		mer="pm"; 
 	} else {
-		if(gm->tm_hour==0)
+		if(tm.tm_hour==0)
 			hour=12;
 		else
-			hour=gm->tm_hour;
+			hour=tm.tm_hour;
 		mer="am"; 
 	}
 	sprintf(str,"%s %s %02u %4u %02u:%02u %s"
-		,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
-		,hour,gm->tm_min,mer);
+		,wday[tm.tm_wday],mon[tm.tm_mon],tm.tm_mday,1900+tm.tm_year
+		,hour,tm.tm_min,mer);
 	return(str);
 }
 
@@ -350,13 +348,9 @@ char* DLLCALL zonestr(short zone)
 /****************************************************************************/
 char* DLLCALL msgdate(when_t when, char* buf)
 {
-	struct tm	tm;
-	struct tm*	tm_p;
+	struct tm tm;
 	
-	tm_p=localtime((const time_t*)&when.time);
-	if(tm_p!=NULL)
-		tm=*tm_p;
-	else
+	if(localtime_r((const time_t*)&when.time,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
 	sprintf(buf,"%s, %d %s %d %02d:%02d:%02d %s"
 		,wday[tm.tm_wday]

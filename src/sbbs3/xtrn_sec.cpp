@@ -218,16 +218,15 @@ int unixtojulian(time_t unix_time)
 {
 	int days[12]={0,31,59,90,120,151,181,212,243,273,304,334};
 	long j;
-	struct tm * tm;
+	struct tm tm;
 
-	tm=localtime(&unix_time);
-	if(tm==NULL)
+	if(localtime_r(&unix_time,&tm)==NULL)
 		return(0);
-	j=36525L*(1900+tm->tm_year);
-	if(!(j%100) && (tm->tm_mon+1)<3)
+	j=36525L*(1900+tm.tm_year);
+	if(!(j%100) && (tm.tm_mon+1)<3)
 		j--;
 	j=(j-(1900*36525))/100;
-	j+=tm->tm_mday+days[tm->tm_mon];
+	j+=tm.tm_mday+days[tm.tm_mon];
 	return(j);
 }
 
@@ -307,8 +306,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 	int		i,file;
 	ushort	w;
 	long	l;
-	struct tm * tm;
-	struct tm * tl;
+	struct tm tm;
+	struct tm tl;
 	stats_t stats;
 
 	if(type==XTRN_SBBS) {	/* SBBS XTRN.DAT file */
@@ -564,29 +563,27 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tm=localtime(&ns_time);
-		if(tm!=NULL)
+		localtime_r(&ns_time,&tm);
 		sprintf(str,"%c\n%c\n%u\n%lu\n%02d/%02d/%02d\n"
 			,(useron.misc&(NO_EXASCII|ANSI|COLOR))==ANSI
 				? 'Y':'N'                       /* 39: ANSI supported but NG mode */
 			,'Y'                                /* 40: Use record locking */
 			,14 								/* 41: BBS default color */
 			,useron.min 						/* 42: Time credits in minutes */
-			,tm->tm_mon+1						/* 43: File new-scan date */
-			,tm->tm_mday
-			,TM_YEAR(tm->tm_year));
+			,tm.tm_mon+1						/* 43: File new-scan date */
+			,tm.tm_mday
+			,TM_YEAR(tm.tm_year));
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tm=localtime(&logontime);
-		tl=localtime(&useron.laston);
-		if(tm!=NULL && tl!=NULL)
+		localtime_r(&logontime,&tm);
+		localtime_r(&useron.laston,&tl);
 		sprintf(str,"%02d:%02d\n%02d:%02d\n%u\n%u\n%lu\n"
 			"%lu\n%s\n%u\n%u\n"
-			,tm->tm_hour						/* 44: Time of this call */
-			,tm->tm_min
-			,tl->tm_hour						/* 45: Time of last call */
-			,tl->tm_min
+			,tm.tm_hour						/* 44: Time of this call */
+			,tm.tm_min
+			,tl.tm_hour						/* 45: Time of last call */
+			,tl.tm_min
 			,999								/* 46: Max daily files available */
 			,0									/* 47: Files downloaded so far today */
 			,useron.ulb/1024UL					/* 48: Total Kbytes uploaded */
@@ -680,9 +677,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		str2pas(useron.phone,str);
 		write(file,str,13); 					/* DataPhone */
 		write(file,str,13); 					/* HomePhone */
-		tm=localtime(&useron.laston);
-		if(tm!=NULL)
-			sprintf(tmp,"%02d:%02d",tm->tm_hour,tm->tm_min);
+		localtime_r(&useron.laston,&tm);
+		sprintf(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		str2pas(tmp,str);
 		write(file,str,6);						/* LastTime */
 		unixtodstr(&cfg,useron.laston,tmp);
@@ -742,9 +738,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,&c,1);						/* NetMailEntered */
 		write(file,&c,1);						/* EchoMailEntered */
 
-		tm=localtime(&logontime);
-		if(tm!=NULL)
-			sprintf(tmp,"%02d:%02d",tm->tm_hour,tm->tm_min);
+		localtime_r(&logontime,&tm);
+		sprintf(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		str2pas(tmp,str);
 		write(file,str,6);						/* LoginTime */
 		unixtodstr(&cfg,logontime,tmp);
@@ -833,20 +828,18 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tm=localtime(&now);
-		if(tm!=NULL)
+		localtime_r(&now,&tm);
 		sprintf(str,"%lu\n%02d:%02d\n%02d:%02d %02d/%02d/%02d\n%s\n"
 			,tleft								/* Time left in seconds */
-			,tm->tm_hour,tm->tm_min 			/* Current time HH:MM */
-			,tm->tm_hour,tm->tm_min 			/* Current time and date HH:MM */
-			,tm->tm_mon+1,tm->tm_mday			/* MM/DD/YY */
-			,TM_YEAR(tm->tm_year)
+			,tm.tm_hour,tm.tm_min 			/* Current time HH:MM */
+			,tm.tm_hour,tm.tm_min 			/* Current time and date HH:MM */
+			,tm.tm_mon+1,tm.tm_mday			/* MM/DD/YY */
+			,TM_YEAR(tm.tm_year)
 			,nulstr);							/* Conferences with access */
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tm=localtime(&useron.laston);
-		if(tm!=NULL)
+		localtime_r(&useron.laston,&tm);
 		sprintf(str,"%u\n%u\n%u\n%u\n%s\n%s %02u:%02u\n"
 			,0									/* Daily download total */
 			,0									/* Max download files */
@@ -854,20 +847,19 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,0									/* Max download k total */
 			,useron.phone						/* User phone number */
 			,unixtodstr(&cfg,useron.laston,tmp)	/* Last on date and time */
-			,tm->tm_hour						/* MM/DD/YY  HH:MM */
-			,tm->tm_min);
+			,tm.tm_hour						/* MM/DD/YY  HH:MM */
+			,tm.tm_min);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tm=localtime(&ns_time);
-		if(tm!=NULL)
+		localtime_r(&ns_time,&tm);
 		sprintf(str,"%s\n%s\n%02d/%02d/%02d\n%u\n%lu\n%u"
 			"\n%u\n%u\n"
 			,useron.misc&EXPERT 				/* Expert or Novice mode */
 				? "EXPERT":"NOVICE"
 			,"All"                              /* Transfer Protocol */
-			,tm->tm_mon+1,tm->tm_mday			/* File new-scan date */
-			,TM_YEAR(tm->tm_year)				/* in MM/DD/YY */
+			,tm.tm_mon+1,tm.tm_mday			/* File new-scan date */
+			,TM_YEAR(tm.tm_year)				/* in MM/DD/YY */
 			,useron.logons						/* Total logons */
 			,rows								/* Screen length */
 			,0									/* Highest message read */
@@ -887,12 +879,11 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tm=localtime(&now);
-		if(tm!=NULL)
+		localtime_r(&now,&tm);
 		sprintf(str,"%02d/%02d/%02d %02d:%02d\n%u\n%u\n"
-			,tm->tm_mon+1,tm->tm_mday			/* Current date MM/DD/YY */
-			,TM_YEAR(tm->tm_year)
-			,tm->tm_hour,tm->tm_min 			/* Current time HH:MM */
+			,tm.tm_mon+1,tm.tm_mday			/* Current date MM/DD/YY */
+			,TM_YEAR(tm.tm_year)
+			,tm.tm_hour,tm.tm_min 			/* Current time HH:MM */
 			,cfg.node_num						/* Node number */
 			,0);								/* Door number */
 		lfexpand(str,misc);
@@ -936,18 +927,17 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.pass);						/* User's password */
 		write(file,str,27);
 
-		tm=localtime(&logontime);
-		if(tm==NULL)
+		if(localtime_r(&logontime,&tm)==NULL)
 			i=0;
 		else
-			i=(tm->tm_hour*60)+tm->tm_min;
+			i=(tm.tm_hour*60)+tm.tm_min;
 		write(file,&i,2);						/* Logon time in min since mid */
 
 		now=time(NULL);
 		i=-(((now-starttime)/60)+useron.ttoday);/* Negative minutes used */
 		write(file,&i,2);
 
-		sprintf(str,"%02d:%02d",tm->tm_hour,tm->tm_min);
+		sprintf(str,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		write(file,str,5);
 
 		i=cfg.level_timepercall[useron.level];	/* Time allowed on */
@@ -1046,9 +1036,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,useron.phone,14);	/* Home or Voice Phone */
 		i=unixtojulian(useron.laston);
 		write(file,&i,2);				/* Date last on */
-		tm=localtime(&useron.laston);
-		if(tm!=NULL)
-			sprintf(str,"%02d:%02d",tm->tm_hour,tm->tm_min);
+		localtime_r(&useron.laston,&tm);
+		sprintf(str,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		write(file,str,6);				/* Last time on */
 		if(useron.misc&EXPERT)
 			i=1;
@@ -1114,12 +1103,11 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		}
 
 		now=time(NULL);
-		tm=localtime(&now);
-		if(tm==NULL)
+		if(localtime_r(&now,&tm)==NULL)
 			l=0;
 		else
-			l=((((long)tm->tm_hour*60L)+(long)tm->tm_min)*60L)
-				+(long)tm->tm_sec;
+			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
+				+(long)tm.tm_sec;
 
 		strcpy(tmp,name);
 		if((p=strchr(tmp,SP))!=NULL)
@@ -1138,12 +1126,11 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tm=localtime(&logontime);
-		if(tm==NULL)
+		if(localtime_r(&logontime,&tm)==NULL)
 			l=0;
 		else
-			l=((((long)tm->tm_hour*60L)+(long)tm->tm_min)*60L)
-				+(long)tm->tm_sec;
+			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
+				+(long)tm.tm_sec;
 
 		sprintf(str,"%s\n%s\n%u\n%u\n%u\n%u\n%lu\n%lu\n%s\n"
 			"%s\n%s\n%lu\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"

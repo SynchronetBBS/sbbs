@@ -168,13 +168,11 @@ void sbbs_t::gettimeleft(void)
     time_t  eventtime=0;
 	time_t	thisevent;
     long    tleft;
-    struct  tm *tm, last_tm;
+    struct  tm tm, last_tm;
 
 	now=time(NULL);
 
-	tm=localtime(&now);
-	if(tm==NULL)
-		return;
+	localtime_r(&now,&tm);
 	if(useron.exempt&FLAG('T')) {   /* Time online exemption */
 		timeleft=cfg.level_timepercall[useron.level]*60;
 		if(timeleft<10)             /* never get below 10 for exempt users */
@@ -199,22 +197,16 @@ void sbbs_t::gettimeleft(void)
 			continue;
 		if(!(cfg.event[i]->misc&EVENT_FORCE)
 			|| (!(cfg.event[i]->misc&EVENT_EXCL) && cfg.event[i]->node!=cfg.node_num)
-			|| !(cfg.event[i]->days&(1<<tm->tm_wday)))
+			|| !(cfg.event[i]->days&(1<<tm.tm_wday)))
 			continue;
 
-		tm=localtime(&cfg.event[i]->last);
-		if(tm)
-			last_tm=*tm;
-		else
-			memset(&last_tm,0,sizeof(last_tm));
-		tm=localtime(&now);
-		if(tm==NULL)
-			return;
-		tm->tm_hour=cfg.event[i]->time/60;   /* hasn't run yet today */
-		tm->tm_min=cfg.event[i]->time-(tm->tm_hour*60);
-		tm->tm_sec=0;
-		thisevent=mktime(tm);
-		if(tm->tm_mday==last_tm.tm_mday && tm->tm_mon==last_tm.tm_mon)
+		localtime_r(&cfg.event[i]->last,&last_tm);
+		localtime_r(&now,&tm);
+		tm.tm_hour=cfg.event[i]->time/60;   /* hasn't run yet today */
+		tm.tm_min=cfg.event[i]->time-(tm.tm_hour*60);
+		tm.tm_sec=0;
+		thisevent=mktime(&tm);
+		if(tm.tm_mday==last_tm.tm_mday && tm.tm_mon==last_tm.tm_mon)
 			thisevent+=24L*60L*60L;     /* already ran today, so add 24hrs */
 		if(!eventtime || thisevent<eventtime)
 			eventtime=thisevent; 

@@ -47,7 +47,7 @@ int sbbs_t::exec_function(csi_t *csi)
 	uint 	i,j,k;
 	long	l;
 	node_t	node;
-	struct	tm * tm;
+	struct	tm tm;
 
 	switch(*(csi->ip++)) {
 
@@ -239,22 +239,20 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_SYSTEM_LOG:                 /* System log */
 			if(!chksyspass())
 				return(0);
-			tm=localtime(&now);
-			if(tm==NULL)
+			if(localtime_r(&now,&tm)==NULL)
 				return(0);
 			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log", cfg.data_dir
-				,tm->tm_mon+1,tm->tm_mday,TM_YEAR(tm->tm_year));
+				,tm.tm_mon+1,tm.tm_mday,TM_YEAR(tm.tm_year));
 			printfile(str,0);
 			return(0);
 		case CS_SYSTEM_YLOG:                /* Yesterday's log */
 			if(!chksyspass())
 				return(0);
 			now-=(ulong)60L*24L*60L;
-			tm=localtime(&now);
-			if(tm==NULL)
+			if(localtime_r(&now,&tm)==NULL)
 				return(0);
 			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir
-				,tm->tm_mon+1,tm->tm_mday,TM_YEAR(tm->tm_year));
+				,tm.tm_mon+1,tm.tm_mday,TM_YEAR(tm.tm_year));
 			printfile(str,0);
 			return(0);
 		case CS_SYSTEM_STATS:               /* System Statistics */

@@ -48,18 +48,16 @@ void sbbs_t::logout()
 	int 	i,j;
 	ushort	ttoday;
 	node_t	node;
-	struct	tm * tm, tm_now;
+	struct	tm tm;
 
 	now=time(NULL);
-	tm=localtime(&now);
-	if(tm==NULL)
+	if(localtime_r(&now,&tm)==NULL)
 		return;
-	tm_now=*tm;
 
 	if(!useron.number) {				 /* Not logged in, so do nothing */
 		if(!online) {
 			sprintf(str,"%s  T:%3u sec\r\n"
-				,hhmmtostr(&cfg,tm,tmp)
+				,hhmmtostr(&cfg,&tm,tmp)
 				,(uint)(now-answertime));
 			logline("@-",str); }
 		return; 
@@ -159,7 +157,7 @@ void sbbs_t::logout()
 		putuserrec(&cfg,useron.number,U_CURSUB,8,cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
 	if(usrlibs>0)
 		putuserrec(&cfg,useron.number,U_CURDIR,8,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
-	hhmmtostr(&cfg,&tm_now,str);
+	hhmmtostr(&cfg,&tm,str);
 	strcat(str,"  ");
 	if(sys_status&SS_USERON)
 		sprintf(tmp,"T:%3u   R:%3lu   P:%3lu   E:%3lu   F:%3lu   "
@@ -230,23 +228,20 @@ void sbbs_t::logofflist()
 {
     char str[256];
     int file;
-    struct tm * tm, tm_now;
+    struct tm tm, tm_now;
 
-	tm=localtime(&now);
-	if(tm==NULL)
+	if(localtime_r(&now,&tm_now)==NULL)
 		return;
-	tm_now=*tm;
-	tm=localtime(&logontime);
-	if(tm==NULL)
+	if(localtime_r(&logontime,&tm)==NULL)
 		return;
-	sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOL",cfg.data_dir,tm->tm_mon+1,tm->tm_mday
-		,TM_YEAR(tm->tm_year));
+	sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOL",cfg.data_dir,tm.tm_mon+1,tm.tm_mday
+		,TM_YEAR(tm.tm_year));
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 		return; }
 	sprintf(str,"%-*.*s %-2d %-8.8s %2.2d:%2.2d %2.2d:%2.2d %3d%3ld%3ld%3ld%3ld"
 		"%3ld%3ld\r\n",LEN_ALIAS,LEN_ALIAS,useron.alias,cfg.node_num,connection
-		,tm->tm_hour,tm->tm_min,tm_now.tm_hour,tm_now.tm_min
+		,tm.tm_hour,tm.tm_min,tm_now.tm_hour,tm_now.tm_min
 		,(int)(now-logontime)/60,posts_read,logon_posts,logon_emails
 		,logon_fbacks,logon_uls,logon_dls);
 	write(file,str,strlen(str));

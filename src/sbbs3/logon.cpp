@@ -52,14 +52,11 @@ bool sbbs_t::logon()
 	uint	i,j,mailw;
 	ulong	totallogons;
 	node_t	node;
-	struct	tm* tm_p;
 	struct	tm	tm;
 
 	now=time(NULL);
-	tm_p=localtime(&now);
-	if(tm_p==NULL)
+	if(localtime_r(&now,&tm)==NULL)
 		return(false);
-	tm=*tm_p;
 
 	if(!useron.number)
 		return(false);
@@ -567,7 +564,7 @@ ulong sbbs_t::logonstats()
     time_t update_t=0;
     stats_t stats;
     node_t node;
-	struct tm * tm, update_tm;
+	struct tm tm, update_tm;
 
 	memset(&stats,0,sizeof(stats));
 	sprintf(str,"%sdsts.dab",cfg.ctrl_dir);
@@ -580,15 +577,12 @@ ulong sbbs_t::logonstats()
 	close(dsts);
 	if(update_t>now+(24L*60L*60L)) /* More than a day in the future? */
 		errormsg(WHERE,ERR_CHK,"Daily stats time stamp",update_t);
-	tm = localtime(&update_t);
-	if(tm==NULL)
+	if(localtime_r(&update_t,&update_tm)==NULL)
 		return(0);
-	update_tm=*tm;
-	tm = localtime(&now);
-	if(tm==NULL)
+	if(localtime_r(&now,&tm)==NULL)
 		return(0);
-	if((tm->tm_mday>update_tm.tm_mday && tm->tm_mon==update_tm.tm_mon)
-		|| tm->tm_mon>update_tm.tm_mon || tm->tm_year>update_tm.tm_year) {
+	if((tm.tm_mday>update_tm.tm_mday && tm.tm_mon==update_tm.tm_mon)
+		|| tm.tm_mon>update_tm.tm_mon || tm.tm_year>update_tm.tm_year) {
 
 		sprintf(str,"New Day - Prev: %s ",timestr(&update_t));
 		logentry("!=",str);
