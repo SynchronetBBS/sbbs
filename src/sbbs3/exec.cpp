@@ -666,11 +666,11 @@ long sbbs_t::exec_bin(char *mod, csi_t *csi)
 
 #ifdef JAVASCRIPT
 	if(cfg.mods_dir[0]) {
-		sprintf(str,"%s%s%s",cfg.mods_dir,mod,js_ext(mod));
+		sprintf(str,"%s%s.js",cfg.mods_dir,mod);
 		if(fexistcase(str)) 
 			return(js_execfile(str));
 	}
-	sprintf(str,"%s%s%s",cfg.exec_dir,mod,js_ext(mod));
+	sprintf(str,"%s%s.js",cfg.exec_dir,mod);
 	if(fexistcase(str)) 
 		return(js_execfile(str));
 #endif
