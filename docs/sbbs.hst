@@ -1254,3 +1254,65 @@ May 30, 1997 Version 2.30a Released
 September 5, 1997 Version 2.30b Released
 ****************************************
 
+!8 Fixed Y2K bugs in QWK, Fido, and log filenames where a 2-digit year
+   is used (would have used 100 in some places for the year 2000). When parsing
+   a 2-digit year, a 100-year window is used with 1970 as the pivot point.
+   e.g. "69" is assumed to refer to 2069, "70" is assumed to refer to 1970.
+
+&4 Birthdates are still stored in MM/DD/YY format. But if a user's age is
+   calculated to be more than 90, then 90 is subtracted from the calculated age
+   e.g. A user born in 01/01/00 is assumed to have been born in 2000, not 1900.
+
+*3 New @-codes: REV (Synchronet revision), CONN (current connection),
+   LOCATION (system location), TNODES (total nodes on system),
+   HOST (same as CPU), CID and IP (Caller-ID or user IP addr).
+
+*1 Down-arrow at a pause prompt now moves down one line at a time.
+
+*1 'Q' at the Pause prompt aborts the display (same as 'N' or Ctrl-C).
+
+*1 TAB (Ctrl-I) now works like CR (enter) when at string prompts.
+   i.e. you can now "TAB" from the NN: prompt to the PW: prompt in a
+   full-screen/ANSI login.
+
+!4 Creating REP packets that contained messages with "Replied-to" numbers
+   larger than 7-digits (some OLRs apparently send large bogus numbers in
+   this field), would corrupt the packet. When attempting to import such a
+   corrupted packet into an SBBS system, the error message was garbled.
+
+!1 Only the last line of an inter-node telegram was logged to the system
+   activity log. Now the entire telegram is logged.
+
+!1 High-priority input is no longer assumed when in RAW input mode (Ctrl-Z).
+
+!5 Guest account ('G' restriction) would save the real user's name in the
+   database (if asked during login via logon module). If the user then hungup
+   and called back and logged on as "New", they would be unable to use their
+   real name (if duplicate real names are disallowed in SCFG). The real name
+   field is now cleared upong logoff (for 'G' restricted users).
+
+!0 If a user hung-up without fully logging on (during the new user process,
+   for example), an inter-node message was sent to all active nodes saying that
+   he/she logged off (even though there was never a "logon" anouncment).
+
+!1 The number of posts read statistic was not being properly reset for QWKnet
+   node ('Q' restricted user) calls.
+
+!0 If EXEC_XTRN was called from a loadable module or shell, the node status was
+   not automatically changed back to "User at external program menu".
+
+!3 SBBS4OS2 created an invalid EXITINFO.BBS (created with DORINFOx.DEF). Would
+   cause doors that used this file to behave strangely or fail to function.
+
+&4 Changed NOPEN/NODEDAB retry counter from 500 (which could take several
+   minutes on some systems) to 50 (more like several seconds).
+
+!0 Hitting 'A' from a local node WFC no longer tries to answer a call.
+
+****************************************
+December 14, 1999 Version 2.30c Released
+****************************************
+
+*3 New @-codes: QWKID (System QWK-ID), INETADDR (System's Internet Address),
+   FIDOADDR (System's primary FidoNet address).
+
