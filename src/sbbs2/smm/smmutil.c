@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 	wall_t wall;
 	time_t now;
 
-fprintf(stderr,"\nSMMUTIL ú Synchronet Match Maker Utility ú v2.01á\n\n");
+fprintf(stderr,"\nSMMUTIL - Synchronet Match Maker Utility - v2.02\n\n");
 
 for(i=1;i<argc;i++)
 	if(isdigit(argv[i][0])) {
