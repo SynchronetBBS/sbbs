@@ -138,7 +138,7 @@ public:
 	bbs_startup_t*	startup;
 
 	bool	init(void);
-	bool	terminated;
+	BOOL	terminated;
 
 	client_t client;
 	SOCKET	client_socket;
