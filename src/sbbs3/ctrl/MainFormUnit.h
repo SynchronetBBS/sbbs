@@ -367,6 +367,7 @@ public:		// User declarations
     AnsiString		Password;
     bool            MinimizeToSysTray;
     bool            UndockableForms;
+    bool            UseFileAssociations;
     scfg_t		    cfg;
     char		    ini_file[MAX_PATH+1];
     bbs_startup_t 	bbs_startup;
@@ -393,6 +394,8 @@ public:		// User declarations
     void __fastcall WriteColor(TRegistry*, AnsiString, TColor);
     void __fastcall ReadFont(AnsiString, TFont*);
     void __fastcall WriteFont(AnsiString, TFont*);
+    void __fastcall EditFile(AnsiString filename, AnsiString Caption="Edit");
+    void __fastcall ViewFile(AnsiString filename, AnsiString Caption);
 };
 
 //---------------------------------------------------------------------------
