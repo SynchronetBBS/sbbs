@@ -406,7 +406,7 @@ function TForm1.LastUser: Integer;
 var Str: AnsiString;
     f: TFileStream;
 begin
-    Str:=data_dir+'USER/USER.DAT';
+    Str:=data_dir+'user/user.dat';
     try
         f:=TFileStream.Create(Str,fmOpenRead or fmShareDenyNone);
         Result := f.Size div U_LEN;
@@ -530,7 +530,7 @@ var Str: AnsiString;
     buf: array[0..U_LEN] of Char;
 begin
     { Open file and read user record }
-    Str:=data_dir+'USER/USER.DAT';
+    Str:=data_dir+'user/user.dat';
     try
         f:=TFileStream.Create(Str,fmOpenRead or fmShareDenyNone);
     except
@@ -627,12 +627,18 @@ begin
     ChatCheckListBox.Tag:=0;
 
     { Initialize controls based on bits set/unset }
-    if user_misc AND DELETED <> 0 then
-        Status.Text := 'Deleted User'
-    else if user_misc AND INACTIVE <> 0 then
-        Status.Text := 'Inactive User'
-    else
+    if user_misc AND DELETED <> 0 then begin
+        Status.Text := 'Deleted User';
+        Status.Color := clRed;
+        end
+    else if user_misc AND INACTIVE <> 0 then begin
+        Status.Text := 'Inactive User';
+        Status.Color := clYellow;
+        end
+    else begin
         Status.Text := 'Active User';
+        Status.Color := clMenu;
+        end;
 
     { Security }
     GetUserText(LevelEdit,buf+U_LEVEL,2);
@@ -830,7 +836,7 @@ begin
     for i:=0 to U_LEN-1 do buf[i]:=ETX;
 
     { Open file and read current user record }
-    Str:=data_dir+'USER/USER.DAT';
+    Str:=data_dir+'user/user.dat';
     if FileExists(Str) then
         f:=TFileStream.Create(Str,fmOpenReadWrite or fmShareExclusive)
     else
@@ -847,6 +853,7 @@ begin
     PutUserText(NetMailEdit,buf+U_NETMAIL,LEN_NETMAIL);
     PutUserText(AddressEdit,buf+U_ADDRESS,LEN_ADDRESS);
     PutUserText(LocationEdit,buf+U_LOCATION,LEN_LOCATION);
+	PutUserText(NoteEdit,buf+U_NOTE,LEN_NOTE);
     PutUserText(ZipCodeEdit,buf+U_ZIPCODE,LEN_ZIPCODE);
     PutUserText(PasswordEdit,buf+U_PASS,LEN_PASS);
     PutUserText(PhoneEdit,buf+U_PHONE,LEN_PHONE);
@@ -1148,7 +1155,7 @@ begin
     SearchStr:=AnsiUpperCase(FindEdit.Text);
     usernumber:=0;
     { Open USER.DAT to search for string }
-    Str:=data_dir+'USER/USER.DAT';
+    Str:=data_dir+'user/user.dat';
     if not FileExists(Str) then Exit;
     f:=TFileStream.Create(Str,fmOpenRead or fmShareDenyNone);
     if Sender = FindNextButton then
