@@ -248,6 +248,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 	}
+	cfg->total_prots=i;
 
 	/************************/
 	/* Alternate File Paths */
