@@ -100,8 +100,10 @@ bool sbbs_t::answer()
     mswait(200);
 	rioctl(IOFI);		/* flush input buffer */
 	putcom( "\r\n"		/* locate cursor at column 1 */
+			"\x1b[s"	/* save cursor position (necessary for HyperTerm auto-ANSI) */
     		"\x1b[99B"	/* locate cursor as far down as possible */
 			"\x1b[6n"	/* Get cursor position */
+			"\x1b[u"	/* restore cursor position */
 			"\x1b[!_"	/* RIP? */
 			"\x1b[0t_"	/* WIP? */
 			"\x1b[0m_"	/* "Normal" colors */
