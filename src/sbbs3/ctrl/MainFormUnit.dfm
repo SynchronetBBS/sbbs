@@ -2590,7 +2590,7 @@ object MainForm: TMainForm
       end
       object HelpFAQMenuItem: TMenuItem
         Caption = 'Frequently Asked Questions'
-        Hint = 'ftp://ftp.synchro.net/v3cfgfaq.txt'
+        Hint = 'ftp://vert.synchro.net/Synchronet/v3cfgfaq.txt'
         OnClick = WebPageMenuItemClick
       end
       object N7: TMenuItem
