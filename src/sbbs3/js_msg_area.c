@@ -179,6 +179,9 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 
 	for(l=0;l<cfg->total_grps;l++) {
 
+		if(user==NULL && (*cfg->grp[l]->ar)!=AR_NULL)
+			continue;
+
 		if(user!=NULL && !chk_ar(cfg,cfg->grp[l]->ar,user))
 			continue;
 
@@ -216,6 +219,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		for(d=0;d<cfg->total_subs;d++) {
 			if(cfg->sub[d]->grp!=l)
 				continue;
+
+			if(user==NULL && (*cfg->sub[d]->ar)!=AR_NULL)
+				continue;
+
 			if(user!=NULL && !chk_ar(cfg,cfg->sub[d]->ar,user))
 				continue;
 

@@ -162,6 +162,9 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 	for(l=0;l<cfg->total_xtrnsecs;l++) {
 
+		if(user==NULL && (*cfg->xtrnsec[l]->ar)!=AR_NULL)
+			continue;
+
 		if(user!=NULL && !chk_ar(cfg,cfg->xtrnsec[l]->ar,user))
 			continue;
 
@@ -199,6 +202,10 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		for(d=0;d<cfg->total_xtrns;d++) {
 			if(cfg->xtrn[d]->sec!=l)
 				continue;
+
+			if(user==NULL && (*cfg->xtrn[d]->ar)!=AR_NULL)
+				continue;
+
 			if(user!=NULL && !chk_ar(cfg,cfg->xtrn[d]->ar,user))
 				continue;
 
