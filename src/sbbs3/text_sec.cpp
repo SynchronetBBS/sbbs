@@ -79,9 +79,9 @@ int sbbs_t::text_sec()
 			break;
 		cursec--;
 		while(online) {
-			sprintf(str,"%smenu/text%u.*",cfg.text_dir,cursec+1);
+			sprintf(str,"%smenu/text%lu.*",cfg.text_dir,cursec+1);
 			if(fexist(str)) {
-				sprintf(str,"text%u",cursec+1);
+				sprintf(str,"text%lu",cursec+1);
 				menu(str);
 				usemenu=1; }
 			else {

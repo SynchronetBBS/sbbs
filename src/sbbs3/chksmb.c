@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 	lzhblocks=lzhsaved=acthdrblocks=actdatblocks=0;
 
 	for(l=smb.status.header_offset;l<length;l+=size) {
-		fprintf(stderr,"\r%2u%%  ",(long)(100.0/((float)length/l)));
+		fprintf(stderr,"\r%2lu%%  ",(long)(100.0/((float)length/l)));
 		msg.idx.offset=l;
 		msgerr=0;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
@@ -354,13 +354,13 @@ int main(int argc, char **argv)
 					if(msg.dfield[n].offset&0x80000000UL) {
 						msgerr=1;
 						if(extinfo)
-							printf("MSGERR: Invalid Data Field [%u] Offset: %lu\n"
+							printf("MSGERR: Invalid Data Field [%lu] Offset: %lu\n"
 								,n,msg.dfield[n].offset);
 						dfieldoffset++; }
 					if(msg.dfield[n].length&0x80000000UL) {
 						msgerr=1;
 						if(extinfo)
-							printf("MSGERR: Invalid Data Field [%u] Length: %lu\n"
+							printf("MSGERR: Invalid Data Field [%lu] Length: %lu\n"
 								,n,msg.dfield[n].length);
 						dfieldlength++; }
 					fseek(smb.sda_fp
@@ -397,12 +397,12 @@ int main(int argc, char **argv)
 			printf("%-20s: %s","To",msg.to);
 			if(msg.to_net.type && msg.to_net.addr)
 				printf(" (%s)",msg.to_net.type==NET_FIDO
-					? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : msg.to_net.addr);
+					? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : (char*)msg.to_net.addr);
 			printf("\n%-20s: %s","From",msg.from);
 			if(msg.from_net.type && msg.from_net.addr)
 				printf(" (%s)",msg.from_net.type==NET_FIDO
 					? faddrtoa(*(fidoaddr_t *)msg.from_net.addr)
-						: msg.from_net.addr);
+						: (char*)msg.from_net.addr);
 			printf("\n");
 			printf("%-20s: %.24s\n","When Written"
 				,ctime((time_t *)&msg.hdr.when_written.time));
@@ -444,7 +444,7 @@ int main(int argc, char **argv)
 
 		fseek(smb.sda_fp,0L,SEEK_SET);
 		for(l=0;l<length;l+=2) {
-			fprintf(stderr,"\r%2u%%  ",l ? (long)(100.0/((float)length/l)) : 0);
+			fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
 			i=0;
 			if(!fread(&i,2,1,smb.sda_fp))
 				break;
@@ -487,7 +487,7 @@ int main(int argc, char **argv)
 				break; }
 		for(m=0;m<l;m++)
 			if(offset[m]==idx.offset) {
-				fprintf(stderr,"%sDuplicate offset\n",beep,idx.offset);
+				fprintf(stderr,"%sDuplicate offset: %lu\n",beep,idx.offset);
 				dupeoff++;
 				break; }
 		if(idx.offset<smb.status.header_offset) {

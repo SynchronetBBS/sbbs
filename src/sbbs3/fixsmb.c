@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 	n=1;	/* messsage number */
 	for(l=smb.status.header_offset;l<length;l+=size) {
 		size=SHD_BLOCK_LEN;
-		printf("\r%2u%%  ",(long)(100.0/((float)length/l)));
+		printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
 		msg.idx.offset=l;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 			printf("\n(%06lX) smb_lockmsghdr returned %d\n",l,i);

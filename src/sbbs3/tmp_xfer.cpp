@@ -436,7 +436,7 @@ ulong sbbs_t::create_filelist(char *name, long mode)
 		if(j<usrdirs[i])
 			break; }
 	if(k>1) {
-		sprintf(str,"\r\n%d Files Listed.\r\n",k);
+		sprintf(str,"\r\n%ld Files Listed.\r\n",k);
 		write(file,str,strlen(str)); }
 	close(file);
 	if(k)

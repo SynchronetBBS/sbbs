@@ -740,14 +740,14 @@ void viewmsgs(ulong start, ulong count)
 				   "from_net.addr        %s\n"
 				,msg.from_net.type
 				,msg.from_net.type==NET_FIDO
-				? faddrtoa(*(fidoaddr_t *)msg.from_net.addr) : msg.from_net.addr);
+				? faddrtoa(*(fidoaddr_t *)msg.from_net.addr) : (char*)msg.from_net.addr);
 
 		if(msg.to_net.type)
 			printf("to_net.type          %02Xh\n"
 				   "to_net.addr          %s\n"
 				,msg.to_net.type
 				,msg.to_net.type==NET_FIDO
-				? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : msg.to_net.addr);
+				? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : (char*)msg.to_net.addr);
 
 		if(msg.replyto_net.type)
 			printf("replyto_net.type     %02Xh\n"
@@ -755,7 +755,7 @@ void viewmsgs(ulong start, ulong count)
 				,msg.replyto_net.type
 				,msg.replyto_net.type==NET_FIDO
 				? faddrtoa(*(fidoaddr_t *)msg.replyto_net.addr)
-					: msg.replyto_net.addr);
+					: (char*)msg.replyto_net.addr);
 
 		printf("from_agent           %02Xh\n"
 			   "to_agent             %02Xh\n"
@@ -813,7 +813,7 @@ void maint(void)
 
 	printf("Scanning for pre-flagged messages...\n");
 	for(m=0;m<l;m++) {
-		printf("\r%2u%%",m ? (long)(100.0/((float)l/m)) : 0);
+		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 		if(idx[m].attr&MSG_DELETE)
 			flagged++; }
 	printf("\r100%% (%lu pre-flagged for deletion)\n",flagged);
@@ -822,7 +822,7 @@ void maint(void)
 		printf("Scanning for messages more than %u days old...\n"
 			,smb.status.max_age);
 		for(m=f=0;m<l;m++) {
-			printf("\r%2u%%",m ? (long)(100.0/((float)l/m)) : 0);
+			printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 			if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
 				continue;
 			if((ulong)now>idx[m].time && (now-idx[m].time)/(24L*60L*60L)
@@ -834,7 +834,7 @@ void maint(void)
 
 	printf("Scanning for read messages to be killed...\n");
 	for(m=f=0;m<l;m++) {
-		printf("\r%2u%%",m ? (long)(100.0/((float)l/m)) : 0);
+		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 		if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
 			continue;
 		if((idx[m].attr&(MSG_READ|MSG_KILLREAD))==(MSG_READ|MSG_KILLREAD)) {
@@ -993,7 +993,7 @@ void packmsgs(ulong packable)
 
 		fseek(smb.sda_fp,0L,SEEK_SET);
 		for(l=m=0;l<length;l+=2) {
-			printf("\r%2u%%  ",l ? (long)(100.0/((float)length/l)) : 0);
+			printf("\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
 			i=0;
 			if(!fread(&i,2,1,smb.sda_fp))
 				break;
@@ -1006,7 +1006,7 @@ void packmsgs(ulong packable)
 
 		fseek(smb.sha_fp,0L,SEEK_SET);
 		for(l=n=0;l<length;l++) {
-			printf("\r%2u%%  ",l ? (long)(100.0/((float)length/l)) : 0);
+			printf("\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
 			ch=0;
 			if(!fread(&ch,1,1,smb.sha_fp))
 				break;
@@ -1043,7 +1043,7 @@ void packmsgs(ulong packable)
 		length=filelength(fileno(smb.shd_fp));
 		m=n=0;
 		for(l=smb.status.header_offset;l<length;l+=size) {
-			printf("\r%2u%%  ",(long)(100.0/((float)length/l)));
+			printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
 			msg.idx.offset=l;
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 				printf("\n(%06lX) smb_lockmsghdr returned %d\n",l,i);
@@ -1310,12 +1310,12 @@ void readmsgs(ulong start)
 			printf("To   : %s",msg.to);
 			if(msg.to_net.type)
 				printf(" (%s)",msg.to_net.type==NET_FIDO
-					? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : msg.to_net.addr);
+					? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : (char*)msg.to_net.addr);
 			printf("\nFrom : %s",msg.from);
 			if(msg.from_net.type)
 				printf(" (%s)",msg.from_net.type==NET_FIDO
 					? faddrtoa(*(fidoaddr_t *)msg.from_net.addr)
-						: msg.from_net.addr);
+						: (char*)msg.from_net.addr);
 			printf("\nDate : %.24s %s"
 				,timestr((time_t*)&msg.hdr.when_written.time)
 				,zonestr(msg.hdr.when_written.zone));
