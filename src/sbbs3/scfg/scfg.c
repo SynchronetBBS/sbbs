@@ -36,7 +36,6 @@
  ****************************************************************************/
 
 #include "scfg.h"
-#include "conwrap.h" /* getch() */
 
 /********************/
 /* Global Variables */
@@ -1904,8 +1903,9 @@ int lprintf(char *fmt, ...)
 void bail(int code)
 {
     if(code) {
-        puts("\nHit a key...");
-        getch(); }
+		printf("\nHit enter to continue...");
+		getchar();
+	}
     else if(forcesave) {
         uifc.pop("Loading Configs...");
         read_main_cfg(&cfg,error);
@@ -1979,8 +1979,8 @@ void errormsg(int line, char *source,  char action, char *object, ulong access)
     printf("          action: %s\n",actstr);
     printf("          object: %s\n",object);
     printf("          access: %ld (%lx)\n",access,access);
-    puts("\r\n<Hit any key>");
-    getch();
+    printf("\nHit enter to continue...");
+    getchar();
 #if !defined(__unix__)
     puttext(1,1,80,uifc.scrn_len,scrn_buf);
 #endif    
