@@ -120,17 +120,22 @@ int confirm(char *prompt)
 	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,prompt,opt);
 	if(i==0)
 		return(1);
-	return(0);	
+	if(i==-1)
+		return(-1);
+	return(0);
 }
 
 int check_save(scfg_t *cfg,user_t *user)
 {
+	int i;
+
 	if(modified) {
-		if(confirm("Save Changes?")) {
+		i=confirm("Save Changes?");
+		if(i==1) {
 			putuserdat(cfg,user);
 		}
 	}
-	return(0);
+	return(i);
 }
 
 /* Edit "Extended comment" */
@@ -200,6 +205,18 @@ int edit_stats(scfg_t *cfg, user_t *user)
  */
 int edit_security(scfg_t *cfg, user_t *user)
 {
+	int 	i,j;
+	char 	**opt;
+	char	onech[2];
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	
+	
 	return(0);
 }
 
@@ -222,6 +239,125 @@ int edit_security(scfg_t *cfg, user_t *user)
  */
 int edit_personal(scfg_t *cfg, user_t *user)
 {
+	int 	i,j;
+	char 	**opt;
+	char	onech[2];
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	j=0;
+	while(1) {
+		i=0;
+		sprintf(opt[i++],"Real Name:  %s",user->name);
+		sprintf(opt[i++],"Computer:   %s",user->comp);
+		sprintf(opt[i++],"NetMail:    %s",user->netmail);
+		sprintf(opt[i++],"Phone:      %s",user->phone);
+		sprintf(opt[i++],"Note:       %s",user->note);
+		sprintf(opt[i++],"Comment:    %s",user->comment);
+		sprintf(opt[i++],"Gender:     %c",user->sex);
+		sprintf(opt[i++],"Connection: %s",user->modem);
+		sprintf(opt[i++],"Handle:     %s",user->alias);
+		sprintf(opt[i++],"Bitrate:    Hrm...");
+		sprintf(opt[i++],"Password:   %s",user->pass);
+		sprintf(opt[i++],"Location:   %s",user->location);
+		sprintf(opt[i++],"Address:    %s",user->address);
+		sprintf(opt[i++],"Postal/Zip: %s",user->zipcode);
+		uifc.changes=FALSE;
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Personal Settings",opt)) {
+			case -1:
+				freeopt(opt);
+				return(0);
+			case 0:
+				/* Real Name */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Real Name",user->name,LEN_NAME,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 1:
+				/* Computer */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Computer",user->comp,LEN_COMP,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 2:
+				/* NetMail */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail Address",user->netmail,LEN_NETMAIL,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 3:
+				/* Phone */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Phone",user->phone,LEN_PHONE,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 4:
+				/* Note */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Note",user->note,LEN_NOTE,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 5:
+				/* Comment */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Comment",user->comment,LEN_COMMENT,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 6:
+				/* Gender */
+				sprintf(onech,"%c",user->sex);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Gender",onech,1,K_UPPER|K_ALPHA|K_EDIT);
+				if(onech[0]!=user->sex && (onech[0]=='M' || onech[0]=='F')) {
+					modified=1;
+					user->sex=onech[0];
+				}
+				break;
+			case 7:
+				/* Connection */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Connection",user->modem,LEN_MODEM,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 8:
+				/* Handle */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Handle",user->alias,LEN_ALIAS,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 9:
+				/* Bitrate */
+				break;
+			case 10:
+				/* Password */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Password",user->pass,LEN_PASS,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 11:
+				/* Location */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Location",user->location,LEN_LOCATION,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 12:
+				/* Address */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Address",user->address,LEN_ADDRESS,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+			case 13:
+				/* Postal/Zip */
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Postal/Zip Code",user->zipcode,LEN_ZIPCODE,K_EDIT);
+				if(uifc.changes)
+					modified=1;
+				break;
+		}
+	}
+
 	return(0);
 }
 
@@ -263,14 +399,16 @@ int edit_user(scfg_t *cfg, int usernum)
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Edit User",opt)) {
 			case -1:
 				if(modified) {
-					check_save(cfg,&user);
+					j=check_save(cfg,&user);
 				}
-				freeopt(opt);
-				return(0);
+				if(j!=-1) {
+					freeopt(opt);
+					return(0);
+				}
 				break;
 
 			case 0:
-				if(modified && confirm("This will undo any changes you have made.  Continue?")) {
+				if(modified && confirm("This will undo any changes you have made.  Continue?")==1) {
 					getuserdat(cfg,&user);
 				}
 
