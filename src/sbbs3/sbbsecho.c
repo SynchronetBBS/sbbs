@@ -98,6 +98,29 @@ return(i);
 }
 #endif
 
+#if defined(__unix__)	/* borrowed from MSVC */
+unsigned __cdecl _rotr (
+        unsigned val,
+        int shift
+        )
+{
+        register unsigned lobit;        /* non-zero means lo bit set */
+        register unsigned num = val;    /* number to rotate */
+
+        shift &= 0x1f;                  /* modulo 32 -- this will also make
+                                           negative shifts work */
+
+        while (shift--) {
+                lobit = num & 1;        /* get high bit */
+                num >>= 1;              /* shift right one bit */
+                if (lobit)
+                        num |= 0x80000000;  /* set hi bit if lo bit was set */
+        }
+
+        return num;
+}
+#endif
+
 /******************************************************************************
  Displays characters locally
 ******************************************************************************/
@@ -717,7 +740,7 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 {
 	FILE *nmfile,*afilein,*afileout,*fwdfile;
 	char str[1025],fields[1025],field1[81],field2[81],field3[81]
-		,drive[3],dir[66],name[9],ext[5],outpath[128]
+		,drive[3],dir[MAX_PATH+1],name[MAX_PATH+1],ext[MAX_PATH+1],outpath[128]
 		,*outname,*p,*tp,nomatch=0,match=0;
 	int i,j,k,x,y,file;
 	ulong tagcrc;
@@ -974,7 +997,7 @@ void alter_config(faddr_t addr,char *old,char *new,char option)
 {
 	FILE *outfile,*cfgfile;
 	char str[257],outpath[128],tmp[257],tmp2[257],*outname,*p,*tp
-		,drive[3],dir[66],name[9],ext[5],match=0;
+		,drive[3],dir[MAX_PATH+1],name[MAX_PATH+1],ext[MAX_PATH+1],match=0;
 	int i,j,k,file;
 	faddr_t taddr;
 
@@ -3991,7 +4014,7 @@ int main(int argc, char **argv)
 	read_echo_cfg();
 
 	if(misc&LOGFILE)
-		if((fidologfile=_fsopen(cfg.logfile,"ab",SH_DENYNO))==NULL) {
+		if((fidologfile=fnopen(NULL,cfg.logfile,O_RDWR|O_CREAT|O_DENYNONE))==NULL) {
 			printf("\7ERROR line %d opening %s\n",__LINE__,cfg.logfile);
 			bail(1); 
 		}
