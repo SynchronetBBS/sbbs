@@ -346,6 +346,7 @@ public:		// User declarations
     bool			MailLogFile;
     bool			FtpLogFile;
     AnsiString		CtrlDirectory;
+    AnsiString		TempDirectory;
     AnsiString      Hostname;
     AnsiString      LoginCommand;
     AnsiString      ConfigCommand;

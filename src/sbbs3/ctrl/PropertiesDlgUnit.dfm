@@ -278,7 +278,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object Label6: TLabel
         Left = 8
-        Top = 44
+        Top = 76
         Width = 110
         Height = 24
         AutoSize = False
@@ -286,7 +286,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object Label7: TLabel
         Left = 8
-        Top = 76
+        Top = 108
         Width = 110
         Height = 24
         AutoSize = False
@@ -294,11 +294,19 @@ object PropertiesDlg: TPropertiesDlg
       end
       object Label8: TLabel
         Left = 8
-        Top = 108
+        Top = 140
         Width = 110
         Height = 24
         AutoSize = False
         Caption = 'Log Window Size'
+      end
+      object Label9: TLabel
+        Left = 8
+        Top = 44
+        Width = 110
+        Height = 24
+        AutoSize = False
+        Caption = 'Temp Directory'
       end
       object CtrlDirEdit: TEdit
         Left = 120
@@ -312,7 +320,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object HostnameEdit: TEdit
         Left = 120
-        Top = 44
+        Top = 76
         Width = 169
         Height = 24
         Hint = 'Hostname (if different than configured in SCFG)'
@@ -322,7 +330,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object JS_MaxBytesEdit: TEdit
         Left = 120
-        Top = 76
+        Top = 108
         Width = 169
         Height = 24
         Hint = 
@@ -334,7 +342,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object MaxLogLenEdit: TEdit
         Left = 120
-        Top = 108
+        Top = 140
         Width = 169
         Height = 24
         Hint = 
@@ -343,6 +351,16 @@ object PropertiesDlg: TPropertiesDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
+      end
+      object TempDirEdit: TEdit
+        Left = 120
+        Top = 44
+        Width = 169
+        Height = 24
+        Hint = 'Temp directory (e.g. C:\TEMP)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
       end
     end
   end

@@ -156,6 +156,7 @@ void sbbs_read_ini(
 	const char*	default_cgi_temp;
 	const char*	default_dosemu_path;
 	char*		ctrl_dir;
+	char*		temp_dir;
 	char		host_name[128];
 	ulong		js_max_bytes;
 
@@ -167,6 +168,11 @@ void sbbs_read_ini(
 		SAFECOPY(ftp->ctrl_dir,ctrl_dir);
 		SAFECOPY(mail->ctrl_dir,ctrl_dir);
 		SAFECOPY(services->ctrl_dir,ctrl_dir);
+	}
+	temp_dir=iniReadString(fp,section,"TempDirectory",nulstr);
+	if(*temp_dir) {
+		SAFECOPY(bbs->temp_dir,ctrl_dir);
+		SAFECOPY(ftp->temp_dir,ctrl_dir);
 	}
 
 	SAFECOPY(host_name,iniReadString(fp,section,"HostName",nulstr));

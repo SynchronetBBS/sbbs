@@ -273,6 +273,8 @@ static void bbs_start(void)
     bbs_status("Starting");
     SAFECOPY(MainForm->bbs_startup.ctrl_dir
         ,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->bbs_startup.temp_dir
+        ,MainForm->TempDirectory.c_str());
     SAFECOPY(MainForm->bbs_startup.host_name
         ,MainForm->Hostname.c_str());
     MainForm->bbs_startup.js_max_bytes=MainForm->JS_MaxBytes;
@@ -574,6 +576,8 @@ static void ftp_start(void)
     ftp_status("Starting");
     SAFECOPY(MainForm->ftp_startup.ctrl_dir
         ,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->ftp_startup.temp_dir
+        ,MainForm->TempDirectory.c_str());
     SAFECOPY(MainForm->ftp_startup.host_name
         ,MainForm->Hostname.c_str());
     MainForm->ftp_startup.js_max_bytes=MainForm->JS_MaxBytes;
@@ -1398,6 +1402,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	Hostname=Registry->ReadString("Hostname");
     if(Registry->ValueExists("CtrlDirectory"))
     	CtrlDirectory=Registry->ReadString("CtrlDirectory");
+    if(Registry->ValueExists("TempDirectory"))
+    	TempDirectory=Registry->ReadString("TempDirectory");
+
     if(Registry->ValueExists("MaxLogLen"))
     	MaxLogLen=Registry->ReadInteger("MaxLogLen");
     if(Registry->ValueExists("JS_MaxBytes"))
@@ -1846,6 +1853,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 
     Registry->WriteString("Hostname",Hostname);
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
+    Registry->WriteString("TempDirectory",TempDirectory);
     Registry->WriteInteger("MaxLogLen",MaxLogLen);
     Registry->WriteInteger("JS_MaxBytes",JS_MaxBytes);
     Registry->WriteString("LoginCommand",LoginCommand);
@@ -2298,6 +2306,7 @@ void __fastcall TMainForm::ExportSettings(TObject* Sender)
     section = "Global";
     IniFile->WriteString(section,"Hostname",Hostname);
     IniFile->WriteString(section,"CtrlDirectory",CtrlDirectory);
+    IniFile->WriteString(section,"TempDirectory",TempDirectory);
     IniFile->WriteInteger(section,"JavaScriptMaxBytes",JS_MaxBytes);
 
     /***********************************************************************/
@@ -2770,6 +2779,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->ConfigCmdEdit->Text=ConfigCommand;
     PropertiesDlg->HostnameEdit->Text=Hostname;
     PropertiesDlg->CtrlDirEdit->Text=CtrlDirectory;
+    PropertiesDlg->TempDirEdit->Text=TempDirectory;    
     PropertiesDlg->NodeIntUpDown->Position=NodeDisplayInterval;
     PropertiesDlg->ClientIntUpDown->Position=ClientDisplayInterval;
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
@@ -2785,6 +2795,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
         Hostname=PropertiesDlg->HostnameEdit->Text;
         CtrlDirectory=PropertiesDlg->CtrlDirEdit->Text;
+        TempDirectory=PropertiesDlg->TempDirEdit->Text;
         Password=PropertiesDlg->PasswordEdit->Text;
         NodeDisplayInterval=PropertiesDlg->NodeIntUpDown->Position;
         ClientDisplayInterval=PropertiesDlg->ClientIntUpDown->Position;
