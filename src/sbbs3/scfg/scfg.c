@@ -1886,7 +1886,7 @@ int code_ok(char *str)
 	return(1);
 }
 
-int lprintf(char *fmt, ...)
+int lprintf(int level, char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
