@@ -2025,7 +2025,7 @@ tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 			tv.tv_usec=0;
 			i=select(pPortInfo->socket+1,&socket_set,NULL,NULL,&tv);
 			if(i==0 
-				|| (i==1 && recv(pPortInfo->socket+1,&ch,1,MSG_PEEK)==1))
+				|| (i==1 && recv(pPortInfo->socket,&ch,1,MSG_PEEK)==1))
 				*pbIsCarrier = TRUE;
 			else
 				*pbIsCarrier = FALSE;
@@ -3405,7 +3405,7 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 					if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,NULL)
 						==SOCKET_ERROR)
 						break;
-					if(recv(pPortInfo->socket+1,&ch,1,MSG_PEEK)!=1)
+					if(recv(pPortInfo->socket,&ch,1,MSG_PEEK)!=1)
 						break;
 				}
 			} 
