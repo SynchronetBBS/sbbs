@@ -176,14 +176,14 @@ int win32_keyboardio(int isgetch)
 					break;
 
 				if(input.Event.KeyEvent.dwControlKeyState & (LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED)) {
-					if(input.Event.KeyEvent.wVirtualScanCode >= CIO_KEY_F(1)
-							&& input.Event.KeyEvent.wVirtualScanCode <= CIO_KEY_F(10)) {
+					if(input.Event.KeyEvent.wVirtualScanCode >= 0x3B
+							&& input.Event.KeyEvent.wVirtualScanCode <= 0x44) {
 						/* Magic number to convert from Fx to ALT-Fx */
 						lastch=(input.Event.KeyEvent.wVirtualScanCode+45)<<8;
 						break;
 					}
-					if(input.Event.KeyEvent.wVirtualScanCode == CIO_KEY_F(11)
-							&& input.Event.KeyEvent.wVirtualScanCode == CIO_KEY_F(12)) {
+					if(input.Event.KeyEvent.wVirtualScanCode == 85
+							&& input.Event.KeyEvent.wVirtualScanCode == 86) {
 						/* Magic number to convert from F(x>10) to ALT-Fx */
 						lastch=(input.Event.KeyEvent.wVirtualScanCode+6)<<8;
 						break;
