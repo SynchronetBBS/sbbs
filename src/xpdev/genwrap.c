@@ -133,6 +133,31 @@ int DLLCALL xp_random(int n)
 }
 
 /****************************************************************************/
+/* Return ASCII string representation of ulong								*/
+/* There may be a native GNU C Library function to this...					*/
+/****************************************************************************/
+#if !defined _MSC_VER && !defined __BORLANDC__
+char* DLLCALL ultoa(ulong val, char* str, int radix)
+{
+	switch(radix) {
+		case 8:
+			sprintf(str,"%lo",val);
+			break;
+		case 10:
+			sprintf(str,"%lu",val);
+			break;
+		case 16:
+			sprintf(str,"%lx",val);
+			break;
+		default:
+			sprintf(str,"bad radix: %d",radix);
+			break;
+	}
+	return(str);
+}
+#endif
+
+/****************************************************************************/
 /* Write the version details of the current operating system into str		*/
 /****************************************************************************/
 char* DLLCALL os_version(char *str)
