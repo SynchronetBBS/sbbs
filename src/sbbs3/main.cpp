@@ -1076,7 +1076,7 @@ void input_thread(void *arg)
 #ifdef __unix__
 			else  {
 				if(ERROR_VALUE != EAGAIN)  {
-					lprintf("Node %d !ERRRO %d on local spy socket %d receive"
+					lprintf("Node %d !ERROR %d on local spy socket %d receive"
 						, sbbs->cfg.node_num, errno, sock);
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
