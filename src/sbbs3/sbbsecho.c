@@ -319,17 +319,17 @@ int write_flofile(char *attachment, faddr_t dest)
 	if(i<(int)cfg.nodecfgs)
 		attr=cfg.nodecfg[i].attr;
 
-	if(attr&ATTR_CRASH) ch='C';
-	else if(attr&ATTR_HOLD) ch='H';
-	else if(attr&ATTR_DIRECT) ch='D';
-	else ch='F';
+	if(attr&ATTR_CRASH) ch='c';
+	else if(attr&ATTR_HOLD) ch='h';
+	else if(attr&ATTR_DIRECT) ch='d';
+	else ch='f';
 	if(dest.zone==scfg.faddr[0].zone)		/* Default zone, use default outbound */
 		strcpy(outbound,cfg.outbound);
 	else								/* Inter-zone outbound is OUTBOUND.XXX */
-		sprintf(outbound,"%.*s.%03X\\"
+		sprintf(outbound,"%.*s.%03x\\"
 			,strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 	if(dest.point) {					/* Point destination is OUTBOUND\*.PNT */
-		sprintf(str,"%04X%04X.PNT"
+		sprintf(str,"%04x%04x.pnt"
 			,dest.net,dest.node);
 		strcat(outbound,str); }
 	if(outbound[strlen(outbound)-1]=='\\')
@@ -337,9 +337,9 @@ int write_flofile(char *attachment, faddr_t dest)
 	_mkdir(outbound);
 	strcat(outbound,"\\");
 	if(dest.point)
-		sprintf(fname,"%s%08X.%cLO",outbound,dest.point,ch);
+		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
 	else
-		sprintf(fname,"%s%04X%04X.%cLO",outbound,dest.net,dest.node,ch);
+		sprintf(fname,"%s%04x%04x.%clo",outbound,dest.net,dest.node,ch);
 	if((stream=fnopen(&file,fname,O_WRONLY|O_CREAT))==NULL) {
 		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
 		logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
@@ -1594,10 +1594,10 @@ void pack_bundle(char *infile,faddr_t dest)
 		if(dest.zone==scfg.faddr[0].zone)	/* Default zone, use default outbound */
 			strcpy(outbound,cfg.outbound);
 		else							/* Inter-zone outbound is OUTBOUND.XXX */
-			sprintf(outbound,"%.*s.%03X\\"
+			sprintf(outbound,"%.*s.%03x\\"
 				,strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 		if(dest.point) {				/* Point destination is OUTBOUND\*.PNT */
-			sprintf(str,"%04X%04X.PNT"
+			sprintf(str,"%04x%04x.pnt"
 				,dest.net,dest.node);
 			strcat(outbound,str); }
 		}
@@ -1617,10 +1617,11 @@ void pack_bundle(char *infile,faddr_t dest)
 			if(i) bail(1);
 			return; }
 
-	sprintf(fname,"%s%04hX%04hX.%s",outbound,(short)(scfg.faddr[0].net-dest.net)
-		,(short)(scfg.faddr[0].node-dest.node),day);
 	if(dest.point && !(misc&FLO_MAILER))
-		sprintf(fname,"%s%04hXP%03hX.%s",outbound,0,(short)dest.point,day);
+		sprintf(fname,"%s%04hxp%03hx.%s",outbound,0,(short)dest.point,day);
+	else
+		sprintf(fname,"%s%04hx%04hx.%s",outbound,(short)(scfg.faddr[0].net-dest.net)
+			,(short)(scfg.faddr[0].node-dest.node),day);
 	for(i='0';i<='Z';i++) {
 		if(i==':')
 			i='A';
@@ -4020,7 +4021,7 @@ int main(int argc, char **argv)
 	if(_chdir(scfg.ctrl_dir)!=0)
 		printf("!ERROR changing directory to: %s", scfg.ctrl_dir);
 
-    printf("Loading configuration files from %s\n", scfg.ctrl_dir);
+    printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
 	if(!load_cfg(&scfg, NULL)) {
 		printf("!Failed to load configuration files\n");
 		bail(1);
