@@ -41,6 +41,9 @@
 
 #undef JAVASCRIPT
 
+/* XPDEV Headers */
+#include "gen_defs.h"
+
 #define __COLORS
 #include "ciolib.h"
 #include "uifc.h"
