@@ -947,7 +947,7 @@ tODResult ODDirOpen(CONST char *pszPath, WORD wAttributes, tODDirHandle *phDir)
 #ifdef ODPLAT_NIX
    if(glob(pszPath,GLOB_NOSORT,NULL,&(pDirInfo->g)))
       return(kODRCNoMatch);
-   if(pDirInfo->g.gl_matchc==0)  {
+   if(pDirInfo->g.gl_pathc==0)  {
       globfree(&(pDirInfo->g));
       return(kODRCNoMatch);
    }
@@ -1096,7 +1096,7 @@ tODResult ODDirRead(tODDirHandle hDir, tODDirEntry *pDirEntry)
 	  if(!st.st_mode & S_IRUSR)
 	  	 pDirEntry->wAttributes |= DIR_ATTRIB_SYSTEM;
 	  pDirInfo->pos++;
-	  if(pDirInfo->pos==pDirInfo->g.gl_matchc)
+	  if(pDirInfo->pos==pDirInfo->g.gl_pathc)
 	     pDirInfo->bEOF=TRUE;
 	  if(pDirEntry->wAttributes==pDirInfo->wAttributes)
 	     return(kODRCSuccess);
