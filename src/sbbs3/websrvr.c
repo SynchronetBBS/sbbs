@@ -2054,6 +2054,7 @@ static BOOL check_request(http_session_t * session)
 	SAFECOPY(session->req.physical_path,path);
 	if(session->req.dynamic==IS_CGI)  {
 		add_env(session,"SCRIPT_NAME",session->req.virtual_path);
+		add_env(session,"SCRIPT_FILENAME",session->req.physical_path);
 	}
 	SAFECOPY(str,session->req.virtual_path);
 	last_slash=find_last_slash(str);
