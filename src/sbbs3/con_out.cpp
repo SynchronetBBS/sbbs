@@ -187,7 +187,7 @@ void sbbs_t::outchar(char ch)
 	if(online==ON_REMOTE && console&CON_R_ECHO) {
 		if(console&CON_R_ECHOX && (uchar)ch>=SP) {
 			ch=text[YN][3];
-			if(ch==0) ch='X';
+			if(text[YN][2]==0 || ch==0) ch='X';
 		}
 		if(ch==FF && useron.misc&ANSI) {
 			putcom("\x1b[2J\x1b[H");	/* clear screen, home cursor */
