@@ -119,7 +119,7 @@ int edit_list(struct bbslist *item)
 	int		copt=0,i,j;
 	char	str[6];
 
-	for(i=0;i<6)
+	for(i=0;i<6;i++)
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.msg("Cannot edit system BBS list");
