@@ -477,6 +477,10 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	if(!s)
 		return(0);
 
+	if(!sockprintf(socket,"Organization: %s"
+		,msg->from_org==NULL ? scfg.sys_name : msg->from_org))
+		return(0);
+
 	if(!sockprintf(socket,"Subject: %s",msg->subj))
 		return(0);
 
@@ -542,7 +546,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	/* MESSAGE BODY */
 	lines=0;
     for(i=0;i<msg->total_hfields;i++) {			/* delivery failure notification? */
-		if(msg->hfield[i].type==SMTPSYSMSG) { 
+		if(msg->hfield[i].type==SMTPSYSMSG || msg->hfield[i].type==SMB_COMMENT) { 
 			if(!sockprintf(socket,"%s",(char*)msg->hfield_dat[i]))
 				return(0);
 			lines++;
@@ -1709,7 +1713,7 @@ static void smtp_thread(void* arg)
 					} else {
 						newmsg.idx.to=0;
 						nettype=NET_INTERNET;
-						smb_hfield(&newmsg, RECIPIENTNETTYPE, nettype, &nettype);
+						smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
 						smb_hfield(&newmsg, RECIPIENTNETADDR
 							,(ushort)strlen(rcpt_addr), rcpt_addr);
 					}
@@ -1821,7 +1825,7 @@ static void smtp_thread(void* arg)
 					truncstr(p,">");
 				}
 				nettype=NET_INTERNET;
-				smb_hfield(&msg, REPLYTONETTYPE, nettype, &nettype);
+				smb_hfield(&msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
 				smb_hfield(&msg, REPLYTONETADDR, (ushort)strlen(p), p);
 				continue;
 			}
@@ -1860,6 +1864,12 @@ static void smtp_thread(void* arg)
 				if(tp) *tp=0;
 				truncsp(p);
 				SAFECOPY(sender,p);
+				continue;
+			}
+			if(!strnicmp(buf, "ORGANIZATION:",13)) {
+				p=buf+13;
+				while(*p && *p<=' ') p++;
+				smb_hfield(&msg, SENDERORG, (ushort)strlen(p), p);
 				continue;
 			}
 			if(!strnicmp(buf, "DATE:",5)) {
@@ -2427,15 +2437,16 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		attempts[0]=0;
 	sprintf(str,"%s reporting delivery failure of message %s"
 		,startup->host_name, attempts);
-	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(str), str);
+	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(str), str);
 	sprintf(str,"from %s to %s\r\n"
-		,msg->reverse_path,(char*)msg->to_net.addr);
-	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(str), str);
+		,msg->reverse_path==NULL ? msg->from : msg->reverse_path
+		,(char*)msg->to_net.addr);
+	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(str), str);
 	strcpy(str,"Reason:");
-	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(str), str);
-	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(err), err);
+	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(str), str);
+	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(err), err);
 	sprintf(str,"\r\nOriginal message text follows:\r\n");
-	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(str), str);
+	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(str), str);
 
 	if((i=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK))!=0)
 		lprintf("0000 !BOUNCE ERROR %d (%s) adding message header"
