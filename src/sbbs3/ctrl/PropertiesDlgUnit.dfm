@@ -9,6 +9,7 @@ object PropertiesDlg: TPropertiesDlg
   ParentFont = True
   OldCreateOrder = True
   Position = poScreenCenter
+  ShowHint = True
   PixelsPerInch = 120
   TextHeight = 16
   object Bevel1: TBevel
@@ -86,6 +87,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 88
     Width = 169
     Height = 24
+    Hint = 'Control directory (e.g. c:\sbbs\ctrl)'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 2
   end
   object ConfigCmdEdit: TEdit
@@ -93,6 +97,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 56
     Width = 169
     Height = 24
+    Hint = 'Configuration command line'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 1
   end
   object LoginCmdEdit: TEdit
@@ -100,6 +107,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 24
     Width = 169
     Height = 24
+    Hint = 'Login command-line or URL (default = telnet://localhost)'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 0
   end
   object TrayIconCheckBox: TCheckBox
@@ -107,7 +117,10 @@ object PropertiesDlg: TPropertiesDlg
     Top = 182
     Width = 281
     Height = 24
+    Hint = 'Create tray icon when minimized'
     Caption = 'Minimize to System Tray'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 4
   end
   object NodeIntEdit: TEdit
@@ -115,6 +128,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 120
     Width = 25
     Height = 24
+    Hint = 'Frequency of updates to Node window'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 3
     Text = '1'
   end
@@ -135,6 +151,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 152
     Width = 25
     Height = 24
+    Hint = 'Frequency of updates to clients window'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 8
     Text = '1'
   end
@@ -155,7 +174,10 @@ object PropertiesDlg: TPropertiesDlg
     Top = 214
     Width = 281
     Height = 24
+    Hint = 'Allow child windows to be "un-docked" from main window'
     Caption = 'Undockable Windows'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 10
   end
 end
