@@ -424,8 +424,9 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			p++;
 			while(*p==SP) p++; 
 		}
-		sprintf(tmp,"%.*s",(int)(LEN_FDESC-strlen(f.desc)),p);
-		strcat(f.desc,tmp);
+		SAFECOPY(tmp,p);
+		prep_desc(tmp);
+		sprintf(f.desc+strlen(f.desc),"%.*s",(int)(LEN_FDESC-strlen(f.desc)),tmp);
 
 		if(nextline[0]==SP || strlen(p)>LEN_FDESC) {	/* ext desc */
 			if(!(mode&NO_EXTEND)) {
@@ -437,6 +438,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			if(nextline[0]==SP) {
 				strcpy(str,nextline);				   /* tack on to end of desc */
 				p=str+dskip;
+				while(*p && *p<=' ') p++;
 				i=LEN_FDESC-strlen(f.desc);
 				if(i>1) {
 					p[i-1]=0;
