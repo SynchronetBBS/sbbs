@@ -1165,10 +1165,7 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 	hfield_t*	hp;
 	int i;
 
-	if(msg->hdr.length==0) 	/* uninitialized */
-		msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
-
-	if(msg->hdr.length+length>SMB_MAX_HDR_LEN)
+	if(smb_getmsghdrlen(msg)+sizeof(hfield_t)+length>SMB_MAX_HDR_LEN)
 		return(SMB_ERR_HDR_LEN);
 
 	i=msg->total_hfields;
@@ -1193,9 +1190,6 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 	else
 		msg->hfield_dat[i]=NULL;
 
-	/* Maintain hdr.length so we don't exceed SMB_MAX_HDR_LEN */
-	msg->hdr.length+=sizeof(hfield_t);
-	msg->hdr.length+=length;
 	return(SMB_SUCCESS);
 }
 
@@ -1228,10 +1222,7 @@ int SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* d
 	if(i<0)
 		return(SMB_ERR_NOT_FOUND);
 
-	if(msg->hdr.length==0) 	/* uninitialized */
-		msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
-
-	if(msg->hdr.length+length>SMB_MAX_HDR_LEN)
+	if(smb_getmsghdrlen(msg)+length>SMB_MAX_HDR_LEN)
 		return(SMB_ERR_HDR_LEN);
 
 	if((p=(BYTE*)REALLOC(msg->hfield_dat[i],msg->hfield[i].length+length+1))==NULL) 
@@ -1244,8 +1235,6 @@ int SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* d
 	msg->hfield[i].length+=length;
 	set_convenience_ptr(msg,type,msg->hfield_dat[i]);
 
-	/* Maintain hdr.length so we don't exceed SMB_MAX_HDR_LEN */
-	msg->hdr.length+=length;
 	return(SMB_SUCCESS);
 }
 
