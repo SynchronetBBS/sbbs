@@ -1121,6 +1121,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	int		out_pipe[2];
 	int		err_pipe[2];
 	fd_set ibits;
+	int	high_fd;
 	struct timeval timeout;
 
 	if(online==ON_LOCAL)
@@ -1612,12 +1613,15 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			/* Error Output */
 			FD_ZERO(&ibits);
 			FD_SET(err_pipe[0],&ibits);
+			high_fd=err_pipe[0];
 			FD_SET(out_pipe[0],&ibits);
+			if(out_pipe[0]>err_pipe[0])
+				high_fd=out_pipe[0];
 			timeout.tv_sec=0;
 			timeout.tv_usec=1000;
 			bp=buf;
 			i=0;
-			while ((select(err_pipe[0]+1,&ibits,NULL,NULL,&timeout)>0) && (i<(int)sizeof(buf)-1))  {
+			while ((select(high_fd+1,&ibits,NULL,NULL,&timeout)>0) && FD_ISSET(err_pipe[0],&ibits) && (i<(int)sizeof(buf)-1))  {
 				if((rd=read(err_pipe[0],bp,1))>0)  {
 					i+=rd;
 					bp++;
@@ -1626,6 +1630,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				}
 				else
 					break;
+				FD_ZERO(&ibits);
+				FD_SET(err_pipe[0],&ibits);
+				FD_SET(out_pipe[0],&ibits);
+				timeout.tv_sec=0;
+				timeout.tv_usec=1000;
 			}
 			if(i)
 				lprintf(LOG_NOTICE,"%.*s",i,buf);		/* lprintf mangles i? */
@@ -1636,16 +1645,20 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				i=0;
 			}
 
+#if 0
 			/* Output */
 			FD_ZERO(&ibits);
 			FD_SET(out_pipe[0],&ibits);
 			timeout.tv_sec=0;
-			timeout.tv_usec=0;
+			timeout.tv_usec=1000;
 			data_waiting=(select(out_pipe[0]+1,&ibits,NULL,NULL,&timeout)!=0);
+#else
+			data_waiting=FD_ISSET(out_pipe[0],&ibits);
+#endif
 			if(i==0 && data_waiting==0)
 				continue;
 
-			avail=RingBufFree(&outbuf)/2;	// Leave room for wwiv/telnet expansion
+			avail=(RingBufFree(&outbuf)-i)/2;	// Leave room for wwiv/telnet expansion
 			if(avail==0) {
 #if 0
 				lprintf("Node %d !output buffer full (%u bytes)"
