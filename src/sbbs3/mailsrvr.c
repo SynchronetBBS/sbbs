@@ -73,7 +73,7 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 #define SMTP_OK		"250 OK"
 #define SMTP_BADSEQ	"503 Bad sequence of commands"
 
-#define TIMEOUT_THREAD_WAIT		60		/* Seconds */
+#define TIMEOUT_THREAD_WAIT		15		/* Seconds */
 
 #define STATUS_WFC	"Listening"
 
@@ -964,7 +964,7 @@ static void pop3_thread(void* arg)
 					lprintf("%04d POP3 message deleted", socket);
 				continue;
 			}
-			lprintf("%04d !POP3 UNSUPPORTED COMMAND: %s", socket, buf);
+			lprintf("%04d !POP3 UNSUPPORTED COMMAND: '%s'", socket, buf);
 			sockprintf(socket,"-ERR UNSUPPORTED COMMAND: %s",buf);
 		}
 		if(user.number)
@@ -1790,7 +1790,7 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		sockprintf(socket,"500 Syntax error");
-		lprintf("%04d !SMTP UNSUPPORTED COMMAND: %s", socket, buf);
+		lprintf("%04d !SMTP UNSUPPORTED COMMAND: '%s'", socket, buf);
 	}
 
 	/* Free up resources here */
