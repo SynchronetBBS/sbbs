@@ -1256,7 +1256,7 @@ static int ugetstr(char *outstr, int max, long mode)
 #endif
 		f=inkey(0);
 		gotoxy(wherex()-i,y);
-		if(f == CR || f >= 0xff)
+		if(f == CR || (f >= 0xff && f != KEY_DC))
 		{
 			cputs(outstr);
 		}
