@@ -42,6 +42,9 @@
 char* crlf="\r\n";
 char* nulstr="";
 
+#define REPLACE_CHARS(str,ch1,ch2)	for(c=0;str[c];c++)	if(str[c]==ch1) str[c]=ch2;
+
+
 /****************************************************************************/
 /* Looks for a perfect match amoung all usernames (not deleted users)		*/
 /* Makes dots and underscores synomynous with spaces for comparisions		*/
@@ -50,6 +53,7 @@ char* nulstr="";
 uint DLLCALL matchuser(scfg_t* cfg, char *name)
 {
 	int file;
+	char dat[LEN_ALIAS+2];
 	char str[256],c;
 	ulong l,length;
 	FILE *stream;
@@ -61,34 +65,40 @@ uint DLLCALL matchuser(scfg_t* cfg, char *name)
 	if((stream=fdopen(file,"rb"))==NULL)
 		return(0);
 	for(l=0;l<length;l+=LEN_ALIAS+2) {
-		fread(str,LEN_ALIAS+2,1,stream);
+		fread(dat,sizeof(dat),1,stream);
 		for(c=0;c<LEN_ALIAS;c++)
-			if(str[c]==ETX) break;
-		str[c]=0;
-		if(!stricmp(str,name)) 
+			if(dat[c]==ETX) break;
+		dat[c]=0;
+		if(!stricmp(dat,name)) 
 			break;
 		/* convert dots to spaces */
-		for(c=0;str[c];c++)
-			if(str[c]=='.') 
-				str[c]=' ';
+		strcpy(str,dat);
+		REPLACE_CHARS(str,'.',' ');
 		if(!stricmp(str,name)) 
 			break;
 		/* convert spaces to dots */
-		for(c=0;str[c];c++)
-			if(str[c]==' ') 
-				str[c]='.';
+		strcpy(str,dat);
+		REPLACE_CHARS(str,' ','.');
 		if(!stricmp(str,name)) 
 			break;
 		/* convert dots to underscores */
-		for(c=0;str[c];c++)
-			if(str[c]=='.') 
-				str[c]='_';
+		strcpy(str,dat);
+		REPLACE_CHARS(str,'.','_');
+		if(!stricmp(str,name)) 
+			break;
+		/* convert underscores to dots */
+		strcpy(str,dat);
+		REPLACE_CHARS(str,'_','.');
+		if(!stricmp(str,name)) 
+			break;
+		/* convert spaces to underscores */
+		strcpy(str,dat);
+		REPLACE_CHARS(str,' ','_');
 		if(!stricmp(str,name)) 
 			break;
 		/* convert underscores to spaces */
-		for(c=0;str[c];c++)
-			if(str[c]=='_') 
-				str[c]=' ';
+		strcpy(str,dat);
+		REPLACE_CHARS(str,'_',' ');
 		if(!stricmp(str,name)) 
 			break;
 	}
