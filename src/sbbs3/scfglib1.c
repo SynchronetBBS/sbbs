@@ -343,7 +343,9 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 #if 0	/* removed May 06, 2002 */
 		if(cfg->level_timeperday[i]>500)
 			cfg->level_timeperday[i]=500;
+#endif
 		get_int(cfg->level_timepercall[i],instream);
+#if 0	/* removed May 06, 2002 */
 		if(cfg->level_timepercall[i]>500)
 			cfg->level_timepercall[i]=500;
 #endif
