@@ -784,7 +784,12 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		/* setup DOSemu env here */
 	}
 
-	if((pid=fork())==0) {
+	if((pid=fork())==-1) {
+		errormsg(WHERE,ERR_EXEC,cmdline,0);
+		return(-1);
+	}
+
+	if(pid==0) {	/* child process */
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
@@ -799,12 +804,17 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			}
 		argv[argc]=0;
 
-		i=execvp(argv[0],argv);
+		execvp(argv[0],argv);
+		exit(-1);	/* should never get here */
 	}
 
-	waitpid(pid, &i, 0);
-
-	return(WEXITSTATUS(i));
+	while(1) {
+		if(waitpid(pid, &i, 0)==-1) {
+			if(errno!=EINTR)
+				return(-1);
+		} else
+			return(WEXITSTATUS(i));
+	}
 }
 
 #endif	/* !WIN32 */
