@@ -13,28 +13,29 @@
 
 void main(void)
 {
-	char *files[]={ "SCFG.C"
-				,"SCFGSYS.C"
-				,"SCFGMSG.C"
-				,"SCFGSUB.C"
-				,"SCFGNODE.C"
-				,"SCFGCHAT.C"
-				,"SCFGXFR1.C"
-				,"SCFGXFR2.C"
-				,"SCFGNET.C"
-				,"SCFGXTRN.C"
+	char *files[]={
+                 "scfg.c"
+				,"scfgsys.c"
+				,"scfgmsg.c"
+				,"scfgsub.c"
+				,"scfgnode.c"
+				,"scfgchat.c"
+				,"scfgxfr1.c"
+				,"scfgxfr2.c"
+				,"scfgnet.c"
+				,"scfgxtrn.c"
 				,NULL };
 	char str[256],tmp[256];
 	int i,j,k,line,ixb;
 	long l;
 	FILE *stream,*out;
 
-if((out=fopen("SCFGHELP.DAT","wb"))==NULL) {
-	printf("error opening SCFGHELP.DAT\r\n");
+if((out=fopen("scfghelp.dat","wb"))==NULL) {
+	printf("error opening scfghelp.dat\r\n");
 	return; }
 
-if((ixb=open("SCFGHELP.IXB",O_WRONLY|O_CREAT|O_BINARY,S_IWRITE|S_IREAD))==-1) {
-	printf("error opening SCFGHELP.IXB\r\n");
+if((ixb=open("scfghelp.ixb",O_WRONLY|O_CREAT|O_BINARY,S_IWRITE|S_IREAD))==-1) {
+	printf("error opening scfghelp.ixb\r\n");
 	return; }
 
 for(i=0;files[i];i++) {
