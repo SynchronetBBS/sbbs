@@ -1,2 +1,3 @@
 #!/bin/sh
-/usr/local/bin/unzip $@
+#/usr/local/bin/unzip $@
+/usr/bin/unzip $@
