@@ -310,10 +310,11 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
             scfg.sys_misc&=~SM_USRVDELM;
         }
 
-        if(!save_cfg(&scfg,3)) {
+        if(!save_cfg(&scfg,5)) {
         	Application->MessageBox("Error saving configuration"
             	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
-        }
+        } else
+        	refresh_cfg(&scfg);
 
         MainForm->FirstRun=false;
         Close();
