@@ -6,6 +6,12 @@
 
 load("sbbsdefs.js");
 
+var keep = false;
+
+for(i=0;i<argc;i++)
+	if(argv[i]=="-k")
+		keep=true;
+
 var date_str = strftime("%b-%d-%y");	/* mmm-dd-yy */
 
 var temp_dir = backslash(system.temp_path) + "sbbs-" + date_str;
@@ -155,7 +161,7 @@ bail(0);
 
 function bail(code)
 {
-	if(cleanup) {
+	if(cleanup && !keep) {
 		chdir(temp_dir + "/..");
 		log(LOG_INFO, "Executing: " + cleanup + temp_dir);
 		var retval=system.exec(cleanup + temp_dir);
