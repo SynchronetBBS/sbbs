@@ -4450,7 +4450,7 @@ void DLLCALL ftp_server(void* arg)
     	,sizeof(server_addr)))!=0) {
 		lprintf("%04d !ERROR %d (%d) binding socket to port %u"
 			,server_socket, result, ERROR_VALUE,startup->port);
-		lprintf("!Another service may be using this port");
+		lprintf("%04d %s", server_socket, BIND_FAILURE_HELP);
 		cleanup(1);
 		return;
 	}

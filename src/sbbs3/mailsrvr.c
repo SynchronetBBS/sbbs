@@ -2761,7 +2761,7 @@ void DLLCALL mail_server(void* arg)
 	if (result != 0) {
 		lprintf("%04d !ERROR %d (%d) binding SMTP socket to port %u"
 			,server_socket, result, ERROR_VALUE, startup->smtp_port);
-		lprintf("!Another service may be using this port");
+		lprintf("%04d %s",server_socket, BIND_FAILURE_HELP);
 		cleanup(1);
 		return;
 	}
@@ -2807,7 +2807,7 @@ void DLLCALL mail_server(void* arg)
 		if (result != 0) {
 			lprintf("%04d !ERROR %d (%d) binding POP3 socket to port %u"
 				,pop3_socket, result, ERROR_VALUE, startup->pop3_port);
-			lprintf("!Another service may be using this port");
+			lprintf("%04d %s",pop3_socket,BIND_FAILURE_HELP);
 			cleanup(1);
 			return;
 		}

@@ -3206,7 +3206,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(result != 0) {
 		lprintf("!ERROR %d (%d) binding Telnet socket to port %d"
 			,result, ERROR_VALUE,startup->telnet_port);
-		lprintf("!Another service may be using this port");
+		lprintf(BIND_FAILURE_HELP);
 		cleanup(1);
 		return;
 	}
@@ -3263,7 +3263,7 @@ void DLLCALL bbs_thread(void* arg)
 		if(result != 0) {
 			lprintf("!ERROR %d (%d) binding RLogin socket to port %d"
 				,result, ERROR_VALUE,startup->rlogin_port);
-			lprintf("!Another service may be using this port");
+			lprintf(BIND_FAILURE_HELP);
 			cleanup(1);
 			return;
 		}

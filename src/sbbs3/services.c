@@ -892,8 +892,7 @@ void DLLCALL services_thread(void* arg)
 		if(bind(socket, (struct sockaddr *) &addr, sizeof(addr))!=0) {
 			lprintf("%04d !ERROR %d binding %s socket to port %u"
 				,socket, ERROR_VALUE, service[i].protocol, service[i].port);
-			lprintf("%04d !Another application or service may be using this port"
-				,socket);
+			lprintf("%04d %s",socket,BIND_FAILURE_HELP);
 			close_socket(socket);
 			continue;
 		}

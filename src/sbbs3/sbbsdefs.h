@@ -66,6 +66,8 @@
 
 #define ILLEGAL_FILENAME_CHARS	"\\/|<>+[]:=\";,%"
 
+#define BIND_FAILURE_HELP	"!Another application or service may be using this port"
+
 #ifndef __FLAT__
 #define __FLAT__	/* 32-bit "flat" memory model */
 #endif
