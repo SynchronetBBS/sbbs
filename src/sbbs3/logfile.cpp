@@ -113,7 +113,7 @@ void sbbs_t::logline(char *code, char *str)
 /****************************************************************************/
 /* Writes a comma then 'ch' to log, tracking column.						*/
 /****************************************************************************/
-void sbbs_t::logch(char ch, char comma)
+void sbbs_t::logch(char ch, bool comma)
 {
 
 	if(logfile_fp==NULL || (online==ON_LOCAL)) return;

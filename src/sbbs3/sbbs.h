@@ -609,7 +609,7 @@ public:
 	/* logio.cpp */
 	void	logentry(char *code,char *entry);
 	void	log(char *str);				/* Writes 'str' to node log */
-	void	logch(char ch, char comma);	/* Writes 'ch' to node log */
+	void	logch(char ch, bool comma);	/* Writes 'ch' to node log */
 	void	logline(char *code,char *str); /* Writes 'str' on it's own line in log */
 	void	logofflist(void);              /* List of users logon activity */
 	void	errorlog(char *text);			/* Logs errors to ERROR.LOG and NODE.LOG */
