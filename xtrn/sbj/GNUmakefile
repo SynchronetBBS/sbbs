@@ -16,7 +16,7 @@ XSDK		=	../sdk
 XPDEV	?=	../../src/xpdev/
 vpath %.c $(XSDK)
 NEED_THREADS	:=	1
-include $(XPDEV)/Common.gmake
+include $(XPDEV)Common.gmake
 CFLAGS	+=	-I$(XSDK)
 
 ifeq ($(os),sunos)
