@@ -1006,24 +1006,24 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		l=smb_fallochdr(smb,msg->hdr.length);
 	else
 		l=smb_allochdr(smb,msg->hdr.length);
+	if(storage!=SMB_HYPERALLOC)
+		smb_close_ha(smb);
 	if(l==-1L) {
 		smb_unlocksmbhdr(smb);
-		smb_close_ha(smb);
 		return(-1); 
 	}
 
-	smb->status.last_msg++;
-	msg->idx.number=msg->hdr.number=smb->status.last_msg;
+	msg->idx.number=msg->hdr.number=smb->status.last_msg+1;
 	msg->idx.offset=smb->status.header_offset+l;
 	msg->idx.time=msg->hdr.when_imported.time;
 	msg->idx.attr=msg->hdr.attr;
 	msg->offset=smb->status.total_msgs;
-	smb->status.total_msgs++;
-	smb_putstatus(smb);
-
-	if(storage!=SMB_HYPERALLOC)
-		smb_close_ha(smb);
 	i=smb_putmsg(smb,msg);
+	if(i==0) {	/* success */
+		smb->status.last_msg++;
+		smb->status.total_msgs++;
+		smb_putstatus(smb);
+	}
 	smb_unlocksmbhdr(smb);
 	return(i);
 }
@@ -1043,8 +1043,8 @@ int SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg)
 
 /****************************************************************************/
 /* Writes index information for 'msg'                                       */
-/* msg->idx 																 */
-/* and msg->offset must be set prior to calling to this function			 */
+/* msg->idx 																*/
+/* and msg->offset must be set prior to calling to this function			*/
 /* Returns 0 if everything ok                                               */
 /****************************************************************************/
 int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
@@ -1062,9 +1062,9 @@ int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 
 /****************************************************************************/
 /* Writes header information for 'msg'                                      */
-/* msg->hdr.length															 */
-/* msg->idx.offset															 */
-/* and msg->offset must be set prior to calling to this function			 */
+/* msg->hdr.length															*/
+/* msg->idx.offset															*/
+/* and msg->offset must be set prior to calling to this function			*/
 /* Returns 0 if everything ok                                               */
 /****************************************************************************/
 int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
@@ -1072,6 +1072,11 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	ushort	i;
 	ulong	l;
 
+	if(msg->idx.offset<sizeof(smbhdr_t)+sizeof(smbstatus_t) 
+		|| msg->idx.offset<smb->status.header_offset) {
+		sprintf(smb->last_error,"invalid header offset: %ld",msg->idx.offset);
+		return(-7);
+	}
 	clearerr(smb->shd_fp);
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
 		sprintf(smb->last_error,"seeking to %d in index",msg->idx.offset);
