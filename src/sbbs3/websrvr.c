@@ -2069,6 +2069,25 @@ static BOOL check_request(http_session_t * session)
 	return(TRUE);
 }
 
+static void get_cgi_handler(char* cmdline, size_t maxlen)
+{
+	char	path[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
+	char	value[INI_MAX_VALUE_LEN+1];
+	char*	ext;
+	FILE*	fp;
+
+	if((fp=iniOpenFile(iniFileName(path,sizeof(path),scfg.ctrl_dir,"cgi_handler.ini")))==NULL)
+		return;
+
+	ext=getfext(cmdline);
+	if(ext!=NULL && iniReadString(fp, ROOT_SECTION, ext+1, NULL, value)!=NULL) {
+		SAFECOPY(fname,cmdline);
+		safe_snprintf(cmdline,maxlen,"%s %s",value,fname);
+	}
+	fclose(fp);
+}
+
 static BOOL exec_cgi(http_session_t *session)
 {
 #ifdef __unix__
@@ -2355,6 +2374,16 @@ static BOOL exec_cgi(http_session_t *session)
 
 	SAFECOPY(cmdline,session->req.physical_path);
 
+	SAFECOPY(startup_dir,cmdline);
+	if((p=strrchr(startup_dir,'/'))!=NULL || (p=strrchr(startup_dir,'\\'))!=NULL)
+		*p=0;
+	else
+		SAFECOPY(startup_dir,cgi_dir);
+
+	lprintf(LOG_DEBUG,"%04d CGI startup dir: %s", session->socket, startup_dir);
+
+	get_cgi_handler(cmdline, sizeof(cmdline));
+
 	lprintf(LOG_INFO,"%04d Executing CGI: %s",session->socket,cmdline);
 
 	orig_keep=session->req.keep_alive;
@@ -2388,14 +2417,6 @@ static BOOL exec_cgi(http_session_t *session)
 
 	CloseHandle(rdoutpipe);
 	CloseHandle(wrinpipe);
-
-	SAFECOPY(startup_dir,cmdline);
-	if((p=strrchr(startup_dir,'/'))!=NULL || (p=strrchr(startup_dir,'\\'))!=NULL)
-		*p=0;
-	else
-		SAFECOPY(startup_dir,cgi_dir);
-
-	lprintf(LOG_DEBUG,"%04d CGI startup dir: %s", session->socket, startup_dir);
 
 	env_block = strListCreateBlock(session->req.cgi_env);
 
@@ -2455,14 +2476,15 @@ static BOOL exec_cgi(http_session_t *session)
 			}
 			else  {
 				/* This is the tricky part */
-				buf[0];
+				buf[0]=0;
 				i=pipereadline(rdpipe,buf,sizeof(buf));
 				if(i<0)  {
 					got_valid_headers=FALSE;
 					break;
 				}
 				SAFECOPY(header,buf);
-				if((directive=strtok(header,":"))!=NULL) {
+				if(strchr(header,':')!=NULL) {
+					directive=strtok(header,":");
 					value=strtok(NULL,"");
 					i=get_header_type(directive);
 					switch (i)  {
@@ -2497,15 +2519,18 @@ static BOOL exec_cgi(http_session_t *session)
 					}
 					continue;
 				}
-				msglen=i;	/* we may send this text later */
+				if(i) {
+					strcat(buf,"\r\n");	/* Add back the missing line terminator */
+					msglen=strlen(buf);	/* we will send this text later */
+				}
 				done_parsing_headers = TRUE;	/* invalid header */
 				session->req.dynamic=IS_CGI;
 				strListPush(&session->req.dynamic_heads,content_type);
 				send_headers(session,cgi_status);
 			}
 			if(msglen) {
-				lprintf(LOG_DEBUG,"%04d Sending %d bytes"
-					,session->socket,msglen);
+				lprintf(LOG_DEBUG,"%04d Sending %d bytes: %.*s"
+					,session->socket,msglen,msglen,buf);
 				wr=sendsocket(session->socket,buf,msglen);
 				/* log actual bytes sent */
 				if(session->req.ld!=NULL && wr>0)
