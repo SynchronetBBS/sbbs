@@ -23,13 +23,22 @@
 const REVISION = "$Revision$".split(' ')[1];
 
 var include_age_gender=true;
+var include_real_name=true;
 
 load("nodedefs.js");
 load("sockdefs.js");
 
-for(i=0;i<argc;i++)
-	if(argv[i].toLowerCase()=="-n")
-		include_age_gender = false;
+for(i=0;i<argc;i++) {
+	switch(argv[i].toLowerCase()) {
+		case "-n":	// no age or gender
+			include_age_gender = false;
+			break;
+		case "-a":	// aliases only
+			include_real_name = false;
+			break;
+	}
+}
+
 
 var output_buf = "";
 
@@ -260,9 +269,12 @@ if(user == null) {
 	exit();
 }
 
-uname = format("%s #%d",user.alias,user.number);
-write(format("User: %-30s In real life: %s\r\n"
-	  ,uname,user.name));
+uname = format("%s #%d", user.alias, user.number);
+write(format("User: %-30s", uname));
+if(include_real_name)
+	write(format(" In real life: %s", user.name));
+write("\r\n");
+
 write(format("From: %s\r\n",user.location));
 if(include_age_gender) {
 	birth=format("Birth: %s (Age: %u years)"
