@@ -38,6 +38,7 @@
 #include "sbbs.h"
 #include "md5.h"
 #include "base64.h"
+#include "uucode.h"
 
 #ifdef JAVASCRIPT
 
@@ -49,6 +50,7 @@ typedef struct
 	uchar	etx;
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
+	BOOL	uuencoded;
 
 } private_t;
 
@@ -196,7 +198,9 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		cp;
 	char*		buf;
+	char*		uubuf;
 	int32		len=512;
+	int32		uulen;
 	JSString*	str;
 	private_t*	p;
 
@@ -224,6 +228,18 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->etx) {
 		cp=strchr(buf,p->etx);
 		if(cp) *cp=0; 
+	}
+
+	if(p->uuencoded) {
+		uulen=len*2;
+		if((uubuf=malloc(uulen))==NULL)
+			return(JS_TRUE);
+		uulen=uuencode(uubuf,uulen,buf,len);
+		if(uulen>=0) {
+			free(buf);
+			buf=uubuf;
+		} else
+			free(uubuf);
 	}
 
 	str = JS_NewStringCopyZ(cx, buf);
@@ -359,9 +375,9 @@ static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		cp;
-	size_t		len;	/* string length */
-	size_t		tlen;	/* total length to write (may be greater than len) */
-	JSString*	str;
+	char*		uubuf=NULL;
+	int			len;	/* string length */
+	int			tlen;	/* total length to write (may be greater than len) */
 	private_t*	p;
 
 	*rval = JSVAL_FALSE;
@@ -374,21 +390,30 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	str = JS_ValueToString(cx, argv[0]);
-	cp = JS_GetStringBytes(str);
-	len = strlen(cp);
-	tlen = len;
+	cp=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	len=strlen(cp);
+
+	if(p->uuencoded && len && (uubuf=malloc(len))!=NULL) {
+		len=uudecode(uubuf,len,cp,len);
+		if(len<0) {
+			free(uubuf);
+			return(JS_TRUE);
+		}
+		cp=uubuf;
+	}
+
+	tlen=len;
 	if(argc>1) {
 		JS_ValueToInt32(cx,argv[1],(int32*)&tlen);
 		if(len>tlen)
 			len=tlen;
 	}
-	if(fwrite(cp,1,len,p->fp)==len) {
+
+	if(fwrite(cp,1,len,p->fp)==(size_t)len) {
 		if(tlen>len) {
 			len=tlen-len;
 			if((cp=malloc(len))==NULL) {
 				dbprintf(TRUE, p, "malloc failure of %u bytes", len);
-				*rval = JSVAL_FALSE;
 				return(JS_TRUE);
 			}
 			memset(cp,p->etx,len);
@@ -400,6 +425,9 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	} else 
 		dbprintf(TRUE, p, "write of %u bytes failed",len);
 		
+	if(uubuf!=NULL)
+		free(uubuf);
+
 	return(JS_TRUE);
 }
 
@@ -724,6 +752,7 @@ enum {
 	,FILE_PROP_POSITION	
 	,FILE_PROP_LENGTH	
 	,FILE_PROP_ATTRIBUTES
+	,FILE_PROP_UUENCODED
 	/* dynamically calculated */
 	,FILE_PROP_CHKSUM
 	,FILE_PROP_CRC16
@@ -751,6 +780,9 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	switch(tiny) {
 		case FILE_PROP_DEBUG:
 			p->debug = JSVAL_TO_BOOLEAN(*vp);
+			break;
+		case FILE_PROP_UUENCODED:
+			p->uuencoded = JSVAL_TO_BOOLEAN(*vp);
 			break;
 		case FILE_PROP_POSITION:
 			if(p->fp!=NULL)
@@ -827,7 +859,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(p->fp)
 				*vp = INT_TO_JSVAL(ferror(p->fp));
 			else
-				*vp = INT_TO_JSVAL(0);
+				*vp = INT_TO_JSVAL(errno);
 			break;
 		case FILE_PROP_POSITION:
 			if(p->fp)
@@ -845,7 +877,10 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			JS_NewNumberValue(cx,getfattr(p->name),vp);
 			break;
 		case FILE_PROP_DEBUG:
-			*vp = INT_TO_JSVAL(p->debug);
+			*vp = BOOLEAN_TO_JSVAL(p->debug);
+			break;
+		case FILE_PROP_UUENCODED:
+			*vp = BOOLEAN_TO_JSVAL(p->uuencoded);
 			break;
 		case FILE_PROP_DESCRIPTOR:
 			if(p->fp)
@@ -935,6 +970,7 @@ static struct JSPropertySpec js_file_properties[] = {
 	{	"position"			,FILE_PROP_POSITION		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"length"			,FILE_PROP_LENGTH		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"attributes"		,FILE_PROP_ATTRIBUTES	,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"uuencoded"			,FILE_PROP_UUENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
 	/* dynamically calculated */
 	{	"chksum"			,FILE_PROP_CHKSUM		,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"crc16"				,FILE_PROP_CRC16		,FILE_PROP_FLAGS,	NULL,NULL},
@@ -960,6 +996,7 @@ static char* file_prop_desc[] = {
 	,"the current file position (offset in bytes), change value to seek within file"
 	,"the current length of the file (in bytes)"
 	,"file mode/attributes"
+	,"<i>true</i> if read/write operations perform Unix-to-Unix encode/decode automatically"
 	,"calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
 	,"calculated 16-bit CRC of file contents - <small>READ ONLY</small>"
 	,"calculated 32-bit CRC of file contents - <small>READ ONLY</small>"
