@@ -54,6 +54,7 @@ enum {
 
 	,BBS_PROP_NODE_NUM
 	,BBS_PROP_NODE_MISC
+	,BBS_PROP_NODE_ACTION
 	,BBS_PROP_NODE_VAL_USER
 
 	,BBS_PROP_LOGON_ULB
@@ -123,6 +124,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case BBS_PROP_NODE_MISC:
 			val=sbbs->cfg.node_misc;
+			break;
+		case BBS_PROP_NODE_ACTION:
+			val=sbbs->action;
 			break;
 		case BBS_PROP_NODE_VAL_USER:
 			val=sbbs->cfg.node_valuser;
@@ -251,6 +255,9 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_NODE_MISC:
 			sbbs->cfg.node_misc=val;
 			break;
+		case BBS_PROP_NODE_ACTION:
+			sbbs->action=(uchar)val;
+			break;
 		case BBS_PROP_NODE_VAL_USER:
 			sbbs->cfg.node_valuser=(ushort)val;
 			break;
@@ -345,6 +352,7 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"time_left"			,BBS_PROP_TIMELEFT		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"node_num"			,BBS_PROP_NODE_NUM		,BBS_PROP_READONLY	,NULL,NULL},
 	{	"node_settings"		,BBS_PROP_NODE_MISC		,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"node_action"		,BBS_PROP_NODE_ACTION	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"node_val_user"		,BBS_PROP_NODE_VAL_USER	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"logon_ulb"			,BBS_PROP_LOGON_ULB		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"logon_dlb"			,BBS_PROP_LOGON_DLB		,JSPROP_ENUMERATE	,NULL,NULL},
@@ -867,6 +875,263 @@ js_logout(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_automsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->automsg();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_text_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->text_sec();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_xtrn_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->xtrn_sec();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_user_config(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->maindflts(&sbbs->useron);
+	if(!(sbbs->useron.rest&FLAG('G')))    /* not guest */
+		getuserdat(&sbbs->cfg,&sbbs->useron);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_sys_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->sys_info();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_sub_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(sbbs->usrgrps>0)
+		sbbs->subinfo(sbbs->usrsub[sbbs->curgrp][sbbs->cursub[sbbs->curgrp]]);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_dir_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(sbbs->usrlibs>0)
+		sbbs->dirinfo(sbbs->usrdir[sbbs->curlib][sbbs->curdir[sbbs->curlib]]);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_user_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->user_info();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_ver(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->ver();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_sys_stats(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->sys_stats();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_node_stats(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uint		node_num=0;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc>0)
+		node_num=JSVAL_TO_INT(argv[0]);
+
+	sbbs->node_stats(node_num);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_userlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			mode=UL_ALL;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc>0)
+		mode=JSVAL_TO_INT(argv[0]);
+
+	sbbs->userlist(mode);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_useredit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uint		usernumber=0;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc>0)
+		usernumber=JSVAL_TO_INT(argv[0]);
+
+	sbbs->useredit(usernumber);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_logonlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->logonlist();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_nodelist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->nodelist();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_whos_online(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->whos_online(true);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_spy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->spy(JSVAL_TO_INT(argv[0]));
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_telnet_gate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		addr;
@@ -1062,6 +1327,20 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"logout",			js_logout,			0},		// logout procedure
 	{"hangup",			js_hangup,			0},		// hangup immediately
 	{"nodesync",		js_nodesync,		0},		// synchronize node with system
+	{"automsg",			js_automsg,			0},		// edit/create auto-message
+	{"text_sec",		js_text_sec,		0},		// text section
+	{"xtrn_sec",		js_xtrn_sec,		0},		// external programs section
+	{"user_config",		js_user_config,		0},		// user config
+	{"sys_info",		js_sys_info,		0},		// system info
+	{"sub_info",		js_sub_info,		0},		// sub-board info
+	{"dir_info",		js_dir_info,		0},		// directory info
+	{"user_info",		js_user_info,		0},		// current user info
+	{"ver",				js_ver,				0},		// version info
+	{"sys_stats",		js_sys_stats,		0},		// system stats
+	{"node_stats",		js_node_stats,		0},		// node stats
+	{"userlist",		js_userlist,		0},		// user list
+	{"useredit",		js_useredit,		0},		// user edit
+	{"logonlist",		js_logonlist,		0},		// logon list
 	/* menuing */
 	{"menu",			js_menu,			1},		// show menu
 	{"log_key",			js_logkey,			1},		// log key to node.log (comma optional)
@@ -1076,7 +1355,7 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"telnet_gate",		js_telnet_gate,		1},		// external telnet gateway (w/opt mode)
 	/* security */
 	{"check_syspass",	js_chksyspass,		0},		// verify system password
-	/* chat */
+	/* chat/node stuff */
 	{"page_sysop",		js_pagesysop,		0},		// page sysop for chat
 	{"page_guru",		js_pageguru,		0},		// page guru for chat
 	{"multinode_chat",	js_multinode_chat,	0},		// multi-node chat
@@ -1086,6 +1365,9 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"put_node_message",js_put_node_message,2},		// putnmsg(nodenum,str)
 	{"get_telegram",	js_get_telegram,	1},		// getsmsg(usernum)
 	{"put_telegram",	js_put_telegram,	2},		// putsmsg(usernum,str)
+	{"nodelist",		js_nodelist,		0},		// list all nodes
+	{"whos_online",		js_whos_online,		0},		// list active nodes
+	{"spy",				js_spy,				1},		// spy on node
 	{0}
 };
 
