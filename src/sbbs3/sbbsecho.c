@@ -466,8 +466,9 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 	do {
 		for(i=startmsg;i;i++) {
 			sprintf(fname,"%s%u.msg",scfg.netmail_dir,i);
-			if(!fexist(fname))
-				break; }
+			if(!fexistcase(fname))
+				break; 
+		}
 		if(!i) {
 			printf("\7%s directory full!\n",scfg.netmail_dir);
 			logprintf("Directory full: %s",scfg.netmail_dir);
@@ -535,7 +536,7 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 		else
 			fwrite("\0",1,1,fstream);               /* Write NULL */
 		fclose(fstream);
-	} while(!fexist(fname));
+	} while(!fexistcase(fname));
 	return(0);
 }
 
@@ -1581,7 +1582,11 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 			return(0); 
 		}
 										/* Get attach names from existing MSGs */
+#ifdef __unix__
+		sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
+#else
 		sprintf(str,"%s*.msg",scfg.netmail_dir);
+#endif
 		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc;f++) {
 
@@ -1632,7 +1637,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 			if(!fread(&attach,1,sizeof(attach_t),stream))
 				break;
 			sprintf(str,"%s%s",cfg.outbound,attach.fname);
-			if(!fexist(str))
+			if(!fexistcase(str))
 				continue;
 			fncrc=crc32(strupr(attach.fname),0);
 			for(crcidx=0;crcidx<num_mfncrc;crcidx++)
@@ -1747,7 +1752,7 @@ void pack_bundle(char *infile,faddr_t dest)
 				logprintf("ERROR line %d removing %s %s",__LINE__,str
 					,strerror(errno));
 		}
-		if(fexist(str)) {
+		if(fexistcase(str)) {
 			if(flength(str)>=cfg.maxbdlsize)
 				continue;
 			file=sopen(str,O_WRONLY,SH_DENYRW);
@@ -1854,9 +1859,9 @@ BOOL unpack_bundle(void)
 				if(fdate(fname)+(48L*60L*60L)>time(NULL)) {
 					SAFECOPY(str,fname);
 					str[strlen(str)-2]='_';
-					if(fexist(str))
+					if(fexistcase(str))
 						str[strlen(str)-2]='-';
-					if(fexist(str))
+					if(fexistcase(str))
 						delfile(str);
 					if(rename(fname,str))
 						logprintf("ERROR line %d renaming %s to %s"
@@ -3425,7 +3430,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			else {
 				for(i=1;i;i++) {
 					sprintf(str,"%s%u.msg",scfg.netmail_dir,i);
-					if(!fexist(str))
+					if(!fexistcase(str))
 						break; }
 				if(!i) {
 					printf("Too many netmail messages");
@@ -3540,7 +3545,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 				else {
 					for(i=1;i;i++) {
 						sprintf(str,"%s%u.msg",scfg.netmail_dir,i);
-						if(!fexist(str))
+						if(!fexistcase(str))
 							break; }
 					if(!i) {
 						printf("Too many netmail messages");
@@ -4812,7 +4817,11 @@ int main(int argc, char **argv)
 
 		printf("\nScanning for Inbound NetMail Messages...\n");
 
+#ifdef __unix__
+		sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
+#else
 		sprintf(str,"%s*.msg",scfg.netmail_dir);
+#endif
 		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !kbhit();f++) {
 
@@ -4874,7 +4883,11 @@ int main(int argc, char **argv)
 
 		printf("\nPacking Outbound NetMail...\n");
 
+#ifdef __unix__
+		sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
+#else
 		sprintf(str,"%s*.msg",scfg.netmail_dir);
+#endif
 		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !kbhit();f++) {
 
@@ -5045,7 +5058,7 @@ int main(int argc, char **argv)
 
 	if(misc&(IMPORT_NETMAIL|IMPORT_ECHOMAIL) && misc&REPORT) {
 		now=time(NULL);
-		sprintf(str,"%sSBBSECHO.MSG",scfg.text_dir);
+		sprintf(str,"%ssbbsecho.msg",scfg.text_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			printf("ERROR line %d opening %s\n",__LINE__,str);
 			logprintf("ERROR line %d opening %s",__LINE__,str);
