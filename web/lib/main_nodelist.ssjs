@@ -4,10 +4,12 @@
 
 var show_gender=true;
 var show_location=true;
+var show_age=true;
 
 /*  Do not change anything else unless you need to :) */
 
 var start=new Date();
+var age='';
 var gender='';
 var location='';
 
@@ -36,7 +38,7 @@ for(n=0;n<system.node_list.length;n++) {
        t=time()-u.logontime;
        if(t&0x80000000) t=0;
        timeon=format("%u:%02u:%02u" ,Math.floor(t/(60*60)) ,Math.floor(t/60)%60 ,t%60);
-       template.who_online.push({ node: n+1, name: u.alias, email: u.email.replace(/@/g,"&#64;"), action: action, location: u.location, gender: gender, timeon: timeon });
+       template.who_online.push({ node: n+1, name: u.alias, email: u.email.replace(/@/g,"&#64;"), action: action, location: u.location, age: u.age, gender: gender, timeon: timeon });
     }
     else {
         action=format(NodeStatus[system.node_list[n].status],system.node_list[n].aux);
@@ -44,26 +46,4 @@ for(n=0;n<system.node_list.length;n++) {
     }
 }
 
-
-/*
-
-        if(include_location)
-        write(format(
-        "<td align=left>%s"
-        ,u.location
-                ));
-        if(include_age_gender) 
-        write(format(
-        "<td align=center>%d<td align=center>%s"
-        ,u.age
-        ,u.gender
-                ));
-        t=time()-u.logontime;
-        if(t&0x80000000) t=0;
-        write(format(
-                "<td align=center>%u:%02u:%02u"
-                ,Math.floor(t/(60*60))
-        ,Math.floor(t/60)%60
-        ,t%60
-
-*/  
+ 
