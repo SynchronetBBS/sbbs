@@ -1,13 +1,22 @@
-Upgrading to Synchronet BBS for Win32 v3.0b
+Upgrading to Synchronet BBS for Win32 v3.0c
 ===========================================
 
 This is an UPGRADE ONLY, so you must have Synchronet (v2.3 or 
-v3.0a) already installed before you can continue. A full
+v3.0b) already installed before you can continue. A full
 Synchronet installation package can be obtained via FTP or 
 Telnet/Zmodem from vert.synchro.net.
 
 This version has been tested with the following operating
-systems: Windows 95, Windows 98, Windows NT4, and Windows 2000.
+systems:
+
+	o Microsoft Windows 95
+	o Microsoft Windows 95a
+	o Microsoft Windows 95b (OSR2)
+	o Microsoft Windows 98
+	o Microsoft Windows Me
+	o Microsoft Windows NT 3.51
+	o Microsoft Windows NT 4
+	o Microsoft Windows 2000
 
 
 Configuration Files
@@ -54,15 +63,11 @@ SBBSCTRL
 ~~~~~~~~
 SBBSCTRL is the Sysop's console for SBBS v3. You still must use
 SCFG to configure the BBS options shared between the new and old
-versions (this will be replaced with a GUI Configuration program
-at some point in the future).
+versions.
 
 The installation program will create a short-cut to SBBSCTRL.EXE
 on your desktop and in your startup folder (so Synchronet will
 start automatically during boot-up).
-
-Auto-logon by IP is enabled in SBBSCTRL->Telnet->Configure and
-only users with the 'V' exemption can use this feature.
 
 
 Update Your Configuration
@@ -93,7 +98,6 @@ Known Issues
 o DOSKEY must be loaded in your autoexec.bat for the DOS shell to
   work right (Windows 95/98)
 o Backspace doesn't work right in DOS shell (Windows 95/98)
-o Can't ;RERUN v3 nodes
 o QNET.BIN doesn't work (see DOVE-NET.ZIP for alternatives)
 o First node (set in SBBSCTRL) configuration is used for all nodes
   (this is actually intentional, i.e. not a bug)
@@ -114,23 +118,8 @@ See DOCS\SBBS3FAQ.TXT for answers to frequently asked
 See DOCS\V3CFGFAQ.TXT for answers to frequently asked
     questions about configuring Synchronet v3.0.
 
-See DOCS\SBBSTODO.TXT for the current "to do" list for
-    Synchronet.
-
-See DOCS\FTPSRVR.DOC for details on setting up the
-    integrated FTP server.
-
-See DOCS\MAILSRVR.DOC for details on setting up the
-    integrated mail server.
-
-See DOCS\TELGATE.DOC for details on setting up the
-    MUD/Telnet gateway module.
-
 See DOCS\DOVE-NET.ZIP for details on joining DOVE-Net
     (Synchronet support message network).
-
-See DOCS\@CODES.TXT for a complete list of message 
-    variables (@-codes) supported in Synchronet.
 
 Thanks for your interest in Synchronet BBS Software
 (www.synchro.net).
