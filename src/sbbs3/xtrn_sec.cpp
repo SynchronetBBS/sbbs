@@ -1434,10 +1434,10 @@ void sbbs_t::moduserdat(uint xtrnnum)
 /****************************************************************************/
 bool sbbs_t::exec_xtrn(uint xtrnnum)
 {
-	char str[256],path[256],dropdir[128],name[32],c,mode;
+	char str[256],path[256],dropdir[128],name[32],c;
     int file;
 	uint i;
-	long tleft;
+	long tleft,mode;
     node_t node;
 	time_t start,end;
 
