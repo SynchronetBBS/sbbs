@@ -1,3 +1,9 @@
+# build/rules.mk
+#
+# Global build targets for all make systems
+#
+# $Id$
+
 $(OBJODIR):
 	$(QUIET)$(IFNOTEXIST) mkdir $(OBJODIR)
 
