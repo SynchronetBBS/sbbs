@@ -120,7 +120,7 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	str;
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -153,7 +153,7 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 	}
 	if(p->fp!=NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 		dbprintf(FALSE, p, "opened: %s",p->name);
 		if(!bufsize)
 			setvbuf(p->fp,NULL,_IONBF,0);	/* no buffering */
@@ -362,7 +362,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	str;
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -386,7 +386,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			len=tlen-len;
 			if((cp=malloc(len))==NULL) {
 				dbprintf(TRUE, p, "malloc failure of %u bytes", len);
-				*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+				*rval = JSVAL_FALSE;
 				return(JS_TRUE);
 			}
 			memset(cp,p->etx,len);
@@ -394,7 +394,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			free(cp);
 		}
 		dbprintf(FALSE, p, "wrote %u bytes",tlen);
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 	} else 
 		dbprintf(TRUE, p, "write of %u bytes failed",len);
 		
@@ -408,7 +408,7 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	str;
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -427,7 +427,7 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(fprintf(p->fp,"%s\n",cp)!=0)
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 
 	return(JS_TRUE);
 }
@@ -443,7 +443,7 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	size_t		size=sizeof(DWORD);
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -478,7 +478,7 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			break;
 	}
 	if(wr==size)
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 		
 	return(JS_TRUE);
 }
@@ -492,7 +492,7 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     jsval       elemval;
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -513,13 +513,13 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     if(!JS_GetArrayLength(cx, array, &limit))
 		return(JS_FALSE);
 
-    *rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+    *rval = JSVAL_TRUE;
 
     for(i=0;i<limit;i++) {
         if(!JS_GetElement(cx, array, i, &elemval))
 			break;
         js_writeln(cx, obj, 1, &elemval, rval);
-		if(*rval!=BOOLEAN_TO_JSVAL(JS_TRUE))
+		if(*rval!=JSVAL_TRUE)
 			break;
     }
 
@@ -533,7 +533,7 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int32		len=0;
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -555,7 +555,7 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		len=filelength(fileno(p->fp))-offset;
 
 	if(lock(fileno(p->fp),offset,len)==0)
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 
 	return(JS_TRUE);
 }
@@ -567,7 +567,7 @@ js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int32		len=0;
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -589,7 +589,7 @@ js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		len=filelength(fileno(p->fp))-offset;
 
 	if(unlock(fileno(p->fp),offset,len)==0)
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 
 	return(JS_TRUE);
 }
@@ -625,7 +625,7 @@ js_flush(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(p->fp==NULL)
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 	else 
 		*rval = BOOLEAN_TO_JSVAL(fflush(p->fp)==0);
 
@@ -643,10 +643,10 @@ js_clear_error(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	}
 
 	if(p->fp==NULL)
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 	else  {
 		clearerr(p->fp);
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 	}
 
 	return(JS_TRUE);
@@ -662,7 +662,7 @@ js_fprintf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	va_list		arglist[64];
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -792,7 +792,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case FILE_PROP_EXISTS:
 			if(p->fp)	/* open? */
-				*vp = BOOLEAN_TO_JSVAL(JS_TRUE);
+				*vp = JSVAL_TRUE;
 			else
 				*vp = BOOLEAN_TO_JSVAL(fexist(p->name));
 			break;
@@ -806,7 +806,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(p->fp)
 				*vp = BOOLEAN_TO_JSVAL(feof(p->fp)!=0);
 			else
-				*vp = BOOLEAN_TO_JSVAL(JS_TRUE);
+				*vp = JSVAL_TRUE;
 			break;
 		case FILE_PROP_ERROR:
 			if(p->fp)
