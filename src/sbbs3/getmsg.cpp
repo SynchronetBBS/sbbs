@@ -122,6 +122,7 @@ void sbbs_t::show_msgattr(ushort attr)
 /****************************************************************************/
 void sbbs_t::show_msghdr(smbmsg_t* msg)
 {
+	char	str[MAX_PATH+1];
 	char	*sender=NULL;
 	int 	i;
 
@@ -131,6 +132,14 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 		outchar(FF);
 	else
 		CRLF;
+
+	sprintf(str,"%smenu/msghdr.*", cfg.text_dir);
+	if(fexist(str)) {
+		menu("msghdr");
+		current_msg=NULL;
+		return; 
+	}
+
 	bprintf(text[MsgSubj],msg->subj);
 	if(msg->hdr.attr)
 		show_msgattr(msg->hdr.attr);
