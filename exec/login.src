@@ -36,6 +36,7 @@ if_greater
 	print "\r\n\1nEnter Name, Number, '\1hNew\1n', or '\1hGuest\1n'\r\nNN: "
 else
 	print "\r\n\1nEnter Name, Number, or '\1hNew\1n'\r\nNN: "
+	end_if
 getstr str 25 K_UPRLWR|K_LOWPRIO|K_E71DETECT|K_TAB
 truncsp str
 compare_str ""
