@@ -963,6 +963,38 @@ js_hacklog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_get_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		buf;
+	int32		node_num;
+	JSString*	js_str;
+	scfg_t*		cfg;
+
+	*rval = JSVAL_NULL;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	node_num=cfg->node_num;
+	if(argc) 
+		JS_ValueToInt32(cx,argv[0],&node_num);
+	if(node_num<1)
+		node_num=1;
+
+	if((buf=getnmsg(cfg,node_num))==NULL)
+		return(JS_TRUE);
+
+	js_str=JS_NewStringCopyZ(cx, buf);
+	free(buf);
+
+	if(js_str==NULL)
+		return(JS_FALSE);
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		node=1;
@@ -986,6 +1018,35 @@ js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	putnmsg(cfg,node,msg);
 
 	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_get_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		buf;
+	int32		usernumber=1;
+	JSString*	js_str;
+	scfg_t*		cfg;
+
+	*rval = JSVAL_NULL;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	JS_ValueToInt32(cx,argv[0],&usernumber);
+	if(usernumber<1)
+		usernumber=1;
+
+	if((buf=getsmsg(cfg,usernumber))==NULL)
+		return(JS_TRUE);
+
+	js_str=JS_NewStringCopyZ(cx, buf);
+	free(buf);
+
+	if(js_str==NULL)
+		return(JS_FALSE);
+	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
 
@@ -1118,8 +1179,14 @@ static jsMethodSpec js_system_functions[] = {
 	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, user, text, host, ip, port]")
 	,JSDOCSTR("log a suspected hack attempt")
 	},		
+	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("[number node]")
+	,JSDOCSTR("read any messages waiting for the specified node and return in a single string")
+	},		
 	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	JSDOCSTR("number node, string message")
 	,JSDOCSTR("send a node a short text message, delivered immediately")
+	},		
+	{"get_telegram",	js_get_telegram,	1,	JSTYPE_STRING,	JSDOCSTR("number user")
+	,JSDOCSTR("returns any short text messages waiting for the specified user")
 	},		
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("number user, string message")
 	,JSDOCSTR("send a user a short text message, delivered immediately or during next logon")
