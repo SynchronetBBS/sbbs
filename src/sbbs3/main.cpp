@@ -35,7 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifdef __unix__
+#if defined(__unix__)
 	#include <signal.h>	/* do we need bsd/signal on Linux? */
 #endif
 
@@ -58,7 +58,13 @@ uint riobp;
 // Globals
 #ifdef _WIN32
 HANDLE	exec_mutex;
-#endif
+
+	#ifdef _DEBUG
+			HANDLE	debug_log=INVALID_HANDLE_VALUE;
+		   _CrtMemState mem_chkpoint;
+	#endif // _DEBUG
+
+#endif // _WIN32
 
 static uint node_threads_running=0;
 		
@@ -71,7 +77,7 @@ static	SOCKET rlogin_socket=INVALID_SOCKET;
 static	pthread_mutex_t event_mutex;
 static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
-static	bool		scfg_reloaded=true;
+static	bool	scfg_reloaded=true;
 static	char *	text[TOTAL_TEXT];
 
 #ifdef JAVASCRIPT
@@ -132,39 +138,6 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	
 	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
 	sbbs->bputs(tmp);
-
-    return JS_TRUE;
-}
-
-static JSBool
-js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	char		tmp[1024];
-    uintN		i;
-	JSString *	fmt;
-    JSString *	str;
-	va_list		arglist[64];
-
-	fmt = JS_ValueToString(cx, argv[0]);
-	if (!fmt)
-		return JS_FALSE;
-
-    for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
-		if(JSVAL_IS_STRING(argv[i])) {
-			str = JS_ValueToString(cx, argv[i]);
-			if (!str)
-			    return JS_FALSE;
-			arglist[i-1]=JS_GetStringBytes(str);
-		} else if(JSVAL_IS_INT(argv[i]))
-			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
-		else
-			arglist[i-1]=NULL;
-	}
-	
-	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
-
-	str = JS_NewStringCopyZ(cx, tmp);
-	*rval = STRING_TO_JSVAL(str);
 
     return JS_TRUE;
 }
@@ -240,46 +213,6 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-static JSBool
-js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	char		path[MAX_PATH+1];
-    uintN		i;
-    JSString*	str;
-    const char*	filename;
-    JSScript*	script;
-    JSBool		ok;
-    jsval		result;
-//    JSErrorReporter older;
-
-    for (i = 0; i < argc; i++) {
-		str = JS_ValueToString(cx, argv[i]);
-		if (!str)
-			return JS_FALSE;
-		argv[i] = STRING_TO_JSVAL(str);
-		filename = JS_GetStringBytes(str);
-		errno = 0;
-//    older = JS_SetErrorReporter(cx, my_LoadErrorReporter);
-		if(!strchr(filename,BACKSLASH))
-			sprintf(path,"%s%s",scfg.exec_dir,filename);
-		else
-			strcpy(path,filename);
-		script = JS_CompileFile(cx, obj, path);
-		if (!script)
-			ok = JS_FALSE;
-		else {
-			ok = JS_ExecuteScript(cx, obj, script, &result);
-			JS_DestroyScript(cx, script);
-			}
-//    JS_SetErrorReporter(cx, older);
-		if (!ok)
-			return JS_FALSE;
-    }
-
-    return JS_TRUE;
-}
-
-
 static JSClass js_global_class ={
         "Global",0, 
         JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
@@ -289,11 +222,9 @@ static JSClass js_global_class ={
 static JSFunctionSpec js_global_functions[] = {
     {"print",           js_print,           0},		/* Print a string, auto-crlf */
     {"printf",          js_printf,          1},		/* Print a formatted string */
-    {"format",          js_format,          1},		/* Return a formatted string */
-    {"load",            js_load,            1},		/* Load and execute a javascript file */
 	{"alert",			js_alert,			1},		/* alert (ala client-side) */
 	{"prompt",			js_prompt,			2},		/* prompt (ala clent-side) */ 
-	{"confirm",			js_confirm,			1},		/* confirm (ala client side) */
+	{"confirm",			js_confirm,			1},		/* confirm (ala client-side) */
     {0}
 };
 
@@ -1432,7 +1363,7 @@ void event_thread(void* arg)
 
 //****************************************************************************
 sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
-			   scfg_t* global_cfg, char* global_text[])
+			   scfg_t* global_cfg, char* global_text[], client_t* client_info)
 {
 	char	nodestr[32];
 	uint	i;
@@ -1458,6 +1389,10 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
     input_thread_running = false;
     output_thread_running = false;
 
+	if(client_info==NULL)
+		memset(&client,0,sizeof(client));
+	else
+		memcpy(&client,client_info,sizeof(client));
 	client_addr = addr;
 	client_socket = sd;
 	sprintf(client_name, "%.*s", (int)sizeof(client_name)-1, name);
@@ -1483,7 +1418,6 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	telnet_last_rxch=0;
 	strcpy(cap_fname,"CAPTURE.TXT");
 	sys_status=lncntr=tos=criterrs=keybufbot=keybuftop=lbuflen=slcnt=0L;
-	debug=1;
 	curatr=LIGHTGRAY;
 	errorlevel=0;
 	logcol=1;
@@ -1901,7 +1835,7 @@ sbbs_t::~sbbs_t()
     else
     	strcpy(node,client_name);
 
-	lprintf("%s destructor", node);
+	lprintf("%s destructor begin", node);
 
     hangup();	/* close socket handle */
 
@@ -2029,9 +1963,12 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(batdn_cdt);
 	FREE_AND_NULL(batdn_alt);
 
-	/******************************************/
-	/* Free allocated configuration variables */
-	/******************************************/
+#if defined(_WIN32) && defined(_DEBUG)
+	if(!_CrtCheckMemory())
+		lprintf("!MEMORY ERRORS REPORTED IN DATA/DEBUG.LOG!");
+#endif
+
+	lprintf("%s destructor end", node);
 }
 
 /****************************************************************************/
@@ -2562,6 +2499,14 @@ void node_thread(void* arg)
 
 	if(sbbs->answer()) {
 
+		JS_BeginRequest(sbbs->js_cx);	/* Required for multi-thread support */
+
+		if(js_CreateUserObject(&sbbs->cfg, sbbs->js_cx, sbbs->js_glob, "user", &sbbs->useron)==NULL) {
+			lprintf("!JavaScript ERROR creating user object");
+		}
+		JS_EndRequest(sbbs->js_cx);	/* Required for multi-thread support */
+
+
 		if(sbbs->qwklogon) {
 			sbbs->getsmsg(sbbs->useron.number);
 			sbbs->qwk_sec();
@@ -2841,6 +2786,8 @@ void DLLCALL bbs_terminate(void)
 
 static void cleanup(int code)
 {
+    lputs("BBS System thread terminating");
+
 	if(telnet_socket!=INVALID_SOCKET) {
 		close_socket(telnet_socket);
 		telnet_socket=INVALID_SOCKET;
@@ -2861,7 +2808,16 @@ static void cleanup(int code)
 
 #ifdef _WIN32
 	CloseHandle(exec_mutex);
-#endif
+#ifdef _DEBUG
+	_CrtMemDumpAllObjectsSince(&mem_chkpoint);
+
+	if(debug_log!=INVALID_HANDLE_VALUE) {
+		CloseHandle(debug_log);
+		debug_log=INVALID_HANDLE_VALUE;
+	}
+#endif // _DEBUG
+#endif // _WIN32
+
 	pthread_mutex_destroy(&event_mutex);
 
 #ifdef JAVASCRIPT
@@ -2981,7 +2937,7 @@ void DLLCALL bbs_thread(void* arg)
 		cleanup(1);
         return;
     }
-#endif
+#endif // _WIN32
 
 	pthread_mutex_init(&event_mutex,NULL);
 
@@ -3179,7 +3135,7 @@ void DLLCALL bbs_thread(void* arg)
 
 
 	sbbs = new sbbs_t(0, server_addr.sin_addr.s_addr
-		,"BBS System", telnet_socket, &scfg, text);
+		,"BBS System", telnet_socket, &scfg, text, NULL);
     sbbs->online = 0;
 	if(sbbs->init()==false) {
 		lputs("!BBS initialization failed");
@@ -3189,7 +3145,7 @@ void DLLCALL bbs_thread(void* arg)
 	_beginthread(output_thread, 0, sbbs);
 
 	events = new sbbs_t(0, server_addr.sin_addr.s_addr
-		,"BBS Events", INVALID_SOCKET, &scfg, text);
+		,"BBS Events", INVALID_SOCKET, &scfg, text, NULL);
     events->online = 0;
 	if(events->init()==false) {
 		lputs("!Events initialization failed");
@@ -3213,6 +3169,40 @@ void DLLCALL bbs_thread(void* arg)
 	/* signal caller that we've started up successfully */
     if(startup->started!=NULL)
     	startup->started();
+
+#if defined(_WIN32) && defined(_DEBUG)
+	
+	sprintf(str,"%sDEBUG.LOG",scfg.data_dir);
+	if((debug_log=CreateFile(
+		str,				// pointer to name of the file
+		GENERIC_READ|GENERIC_WRITE,
+		FILE_SHARE_READ|FILE_SHARE_WRITE,
+		NULL,               // pointer to security attributes
+		OPEN_ALWAYS,		// how to create
+		FILE_ATTRIBUTE_NORMAL, // file attributes
+		NULL				// handle to file with attributes to 
+		))==INVALID_HANDLE_VALUE) {
+		lprintf("!ERROR %ld creating %s",GetLastError(),str);
+		cleanup(1);
+		return;
+	}
+
+	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_WARN, debug_log);
+	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE|_CRTDBG_MODE_WNDW);
+	_CrtSetReportFile(_CRT_ERROR, debug_log);
+	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE|_CRTDBG_MODE_WNDW);
+	_CrtSetReportFile(_CRT_ASSERT, debug_log);
+
+	/* Turns on memory leak checking during program termination */
+//	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
+
+#if defined(_WIN32)
+	/* Save this allocation point for comparison */
+	_CrtMemCheckpoint(&mem_chkpoint);
+#endif
+
+#endif // _WIN32 && _DEBUG
 
 	while(telnet_socket!=INVALID_SOCKET) {
 
@@ -3416,7 +3406,7 @@ void DLLCALL bbs_thread(void* arg)
 		lprintf("Connecting client to node %d",i);
 
 		sbbs_t* new_node = new sbbs_t(i, client_addr.sin_addr.s_addr, host_name
-        	,client_socket, &scfg, text);
+        	,client_socket, &scfg, text, &client);
 
 		new_node->client=client;
 
