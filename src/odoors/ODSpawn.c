@@ -225,13 +225,22 @@ ODAPIDEF BOOL ODCALL od_spawn(char *pszCommandLine)
 
 #ifdef ODPLAT_NIX
    sigset_t		block;
+   struct itimerval itv;
+   struct sigaction act;
+   int retval;
 
    /* Suspend kernel */
    sigemptyset(&block);
    sigaddset(&block,SIGALRM);
    sigprocmask(SIG_BLOCK,&block,NULL);
-   return(system(pszCommandLine)==-1);
+   retval=system(pszCommandLine);
+
+   /* Restore kernel */
+   sigemptyset(&block);
+   sigaddset(&block,SIGALRM);
    sigprocmask(SIG_UNBLOCK,&block,NULL);
+
+   return(retval==-1);
 #endif
 }
 
