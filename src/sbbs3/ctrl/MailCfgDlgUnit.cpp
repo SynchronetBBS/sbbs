@@ -100,6 +100,7 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     DNSServerEdit->Text=AnsiString(MainForm->mail_startup.dns_server);
     InboundSoundEdit->Text=AnsiString(MainForm->mail_startup.inbound_sound);
     OutboundSoundEdit->Text=AnsiString(MainForm->mail_startup.outbound_sound);
+    POP3SoundEdit->Text=AnsiString(MainForm->mail_startup.pop3_sound);
     DeliveryAttemptsEdit->Text
         =AnsiString(MainForm->mail_startup.max_delivery_attempts);
     RescanFreqEdit->Text=AnsiString(MainForm->mail_startup.rescan_frequency);
