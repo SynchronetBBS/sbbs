@@ -9,6 +9,7 @@ load("nodedefs.js");
 
 var include_age_gender=true;
 var include_location=false;
+var include_statistics=false;
 
 // Parse arguments
 for(i=0;i<argc;i++)
@@ -21,6 +22,9 @@ for(i=0;i<argc;i++)
 			break;
 		case "-l":
 			include_location=true;
+			break;
+		case "-s":	/* statistics */
+			include_statistics=true;
 			break;
 	}
 
@@ -72,13 +76,45 @@ writeln("</td>");
 writeln("</tr>");
 writeln("</table>");
 
+font_color = "<font color=black>";
+
+if(include_statistics) {
+	total	= time()-system.uptime;
+	days	= Math.floor(total/(24*60*60));
+	if(days) 
+		total%=(24*60*60);
+	hours	= Math.floor(total/(60*60));
+	min	= (Math.floor(total/60))%60;
+	sec	= total%60;
+
+	// Table
+	writeln("<table border=1 width=100%>");
+	writeln("<td>Up Time<td>" 
+		+ format("%u days, %u:%02u:%02u",days,hours,min,sec));
+	writeln("<td>Logons Today<td>" + system.stats.logons_today);
+	writeln("<td>Posts Today<td>" + system.stats.messages_posted_today);
+	writeln("<td>Uploads Today<td>" 
+		+ format("%lu bytes in %lu files"
+			,system.stats.bytes_uploaded_today
+			,system.stats.files_uploaded_today));
+	writeln("<tr>");
+	writeln("<td>Time-on Today<td>" + system.stats.timeon_today);
+	writeln("<td>New Users Today<td>" + system.stats.new_users_today);
+	writeln("<td>Emails Today<td>" + system.stats.email_sent_today);
+	writeln("<td>Downloads Today<td>" 
+		+ format("%lu bytes in %lu files"
+			,system.stats.bytes_downloaded_today
+			,system.stats.files_downloaded_today));
+	writeln("</table>");
+	writeln("<br>");
+}
+
 // Table
 writeln("<table border=0 width=100%>");
 
 // Header
 writeln("<thead>");
 writeln("<tr bgcolor=white>");
-font_color = "<font color=black>";
 
 write(format("<th align=center width=7%>%sNode",font_color));
 write(format("<th align=center width=20%>%sUser",font_color));
