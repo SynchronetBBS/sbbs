@@ -144,7 +144,7 @@ void bail(int code)
 		fprintf(statfp,"  Flow restraint count: %u",flows);
 	fprintf(statfp,"\n");
 
-	if(/* code && */ mode&PAUSE_ABEND) {
+	if(code && mode&PAUSE_ABEND) {
 		printf("Hit enter to continue...");
 		getchar();
 	}
@@ -270,6 +270,8 @@ uint recv_byte(SOCKET sock, int timeout, long mode)
 				continue;
 			}
 		}
+		if(mode&DEBUG_RX)
+			fprintf(statfp,"RX: %s\n",chr(ch));
 		return(ch);
 	}
 
@@ -434,6 +436,11 @@ void send_files(char** fname, uint fnames, FILE* log)
 
 			} else {	/* X/Ymodem */
 
+				newline();
+				fprintf(statfp,"Waiting for receiver to initiate transfer...");
+
+				mode|=DEBUG_RX;
+
 				mode&=~GMODE;
 				flows=0;
 				for(errors=can=0;errors<MAXERRORS;errors++) {
@@ -510,18 +517,19 @@ void send_files(char** fname, uint fnames, FILE* log)
 
 			} else {	/* X/Ymodem */
 
+				xm.mode=mode;
 				if(!(mode&XMODEM)) {
 					t=fdate(path);
 					memset(block,0,sizeof(block));
 					SAFECOPY(block,getfname(path));
 					sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %ld"
 						,fsize,t,total_files-sent_files,total_bytes-sent_bytes);
-					/*
-					fprintf(statfp,"Sending Ymodem block '%s'\n",block+strlen(block)+1);
-					*/
+					
+					fprintf(statfp,"Sending Ymodem header block '%s'\n",block+strlen(block)+1);
+					
 					for(errors=0;errors<MAXERRORS;errors++) {
 						xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
-						if(xmodem_get_ack(&xm,1))
+						if(mode&GMODE || xmodem_get_ack(&xm,1))
 							break; 
 					}
 					if(errors==MAXERRORS) {
@@ -1121,7 +1129,7 @@ int main(int argc, char **argv)
 	sscanf("$Revision$", "%*s %s", revision);
 
 	fprintf(statfp,"\nSynchronet External X/Y/Zmodem  v%s-%s"
-		"  Copyright 2003 Rob Swindell\n\n"
+		"  Copyright 2005 Rob Swindell\n\n"
 		,revision
 		,PLATFORM_DESC
 		);
