@@ -354,8 +354,8 @@ int main(int argc, char **argv)
 						msgerr=1;
 						if(extinfo)
 							printf("MSGERR: Unsupported translation type (%04X) "
-								"in dfield[%u]\n"
-								,xlat,i);
+								"in dfield[%u] (offset %ld)\n"
+								,xlat,i,msg.dfield[i].offset);
 						xlaterr++; }
 					else {
 						if(lzh) {
@@ -470,6 +470,13 @@ int main(int argc, char **argv)
 				,msg.hdr.offset);
 			printf("%-20s: %u\n","Total Data Fields"
 				,msg.hdr.total_dfields);
+			for(i=0;i<msg.hdr.total_dfields;i++)
+				printf("dfield[%u].type      : %02Xh\n"
+					   "dfield[%u].offset    : %lu (%lXh)\n"
+					   "dfield[%u].length    : %lu\n"
+					   ,i,msg.dfield[i].type
+					   ,i,msg.dfield[i].offset, msg.dfield[i].offset
+					   ,i,msg.dfield[i].length);
 			printf("\n"); }
 
 		smb_freemsgmem(&msg); }
