@@ -58,6 +58,12 @@
 #include "spyon.h"
 
 #define CTRL(x) (x&037)
+#define PCHAT_LEN 1000		/* Size of Private chat file */
+
+typedef struct {
+	chtype ls, rs, ts, bs, tl, tr, bl, br;
+} box_t;
+
 
 /********************/
 /* Global Variables */
@@ -68,6 +74,7 @@ int nodefile;
 const char *YesStr="Yes";
 const char *NoStr="No";
 scfg_t	cfg;
+box_t boxch;
 
 int lprintf(char *fmt, ...)
 {
@@ -178,8 +185,263 @@ void node_toggles(int nodenum)  {
 	}
 }
 
-int chat(int nodenum) {
-	return(-1);
+bool togglechat(int node_num, node_t *node, bool on)
+{
+    static int  org_act;
+
+	if(getnodedat(&cfg,node_num,node,&nodefile)) {
+		uifc.msg("Error reading node data!");
+		return(FALSE);
+	}
+    if(on) {
+        org_act=node->action;
+        if(org_act==NODE_PCHT)
+            org_act=NODE_MAIN;
+        node->misc|=NODE_LCHAT;
+    } else {
+        node->action=org_act;
+        node->misc&=~NODE_LCHAT;
+    }
+	putnodedat(&cfg,node_num,node,nodefile);
+    return(TRUE);
+}
+
+void wsetcolor(WINDOW *win, int fg, int bg)  {
+	int   attrs=A_NORMAL;
+	short	colour;
+	int		lastfg=0;
+	int		lastbg=0;
+
+	if (lastfg==fg && lastbg==bg)
+		return;
+
+	lastfg=fg;
+	lastbg=bg;
+
+	if (fg & 8)  {
+		attrs |= A_BOLD;
+	}
+	wattrset(win, attrs);
+	colour = COLOR_PAIR( ((fg&7)|(bg<<3))+1 );
+	#ifdef NCURSES_VERSION_MAJOR
+	wcolor_set(win, colour,NULL);
+	#endif
+	wbkgdset(win, colour);
+}
+
+void drawchatwin(WINDOW **uwin, WINDOW **swin) {
+	int maxy,maxx;
+
+	endwin();
+	getmaxyx(stdscr,maxy,maxx);
+	*uwin=newwin(maxy/2,maxx,0,0);
+	*swin=newwin(0,maxx,maxy/2,0);
+	wsetcolor(*uwin,YELLOW,BLUE);
+	wclear(*uwin);
+	wborder(*uwin,  boxch.ls, boxch.rs, boxch.ts, boxch.bs, boxch.tl, boxch.tr, boxch.bl, boxch.br);
+	wmove(*uwin,0,5);
+	waddstr(*uwin,"Remote User");
+	wmove(*uwin,1,2);
+	scrollok(*uwin,TRUE);
+	wrefresh(*uwin);
+	wsetcolor(*swin,YELLOW,BLUE);
+	wclear(*swin);
+	wborder(*swin,  boxch.ls, boxch.rs, boxch.ts, boxch.bs, boxch.tl, boxch.tr, boxch.bl, boxch.br);
+	wmove(*swin,0,5);
+	waddstr(*swin,"Sysop");
+	wmove(*swin,1,2);
+	scrollok(*swin,TRUE);
+	wrefresh(*swin);
+}
+
+int chatchar(WINDOW *win, int ch) {
+	int	maxy,maxx;
+	int	cury,curx;
+	getmaxyx(win,maxy,maxx);
+	getyx(win,cury,curx);
+	switch(ch) {
+		case 8:
+			curx-=1;
+			if(curx<2)
+				curx+=1;
+			mvwaddch(win,cury,curx,' ');
+			wmove(win,cury,curx);
+			wrefresh(win);
+			break;
+		
+		case '\r':
+		case '\n':
+			curx=2;
+			cury+=1;
+			wmove(win,cury,curx);
+			if(cury>=maxy-1) {
+				wscrl(win,1);
+				cury-=1;
+				wmove(win,cury,curx-1);
+				whline(win,' ',maxx-2);
+				wborder(win, boxch.ls, boxch.rs, boxch.ts, boxch.bs, boxch.tl, boxch.tr, boxch.bl, boxch.br);
+				wmove(win,0,5);
+				waddstr(win,"Sysop");
+				wmove(win,cury,curx);
+			}
+			wrefresh(win);
+			break;
+			
+		default:
+			waddch(win,ch);
+			getyx(win,cury,curx);
+			if(curx>=maxx-2) {
+				curx=2;
+				cury+=1;
+				if(cury>=maxy-1) {
+					wscrl(win,1);
+					cury-=1;
+					wmove(win,cury,curx-1);
+					whline(win,' ',maxx-2);
+					wborder(win, boxch.ls, boxch.rs, boxch.ts, boxch.bs, boxch.tl, boxch.tr, boxch.bl, boxch.br);
+					wmove(win,0,5);
+					waddstr(win,"Sysop");
+				}
+				wmove(win,cury,curx);
+			}
+			wrefresh(win);
+	}
+	return(0);
+}
+
+int chat(int nodenum, node_t *node, bbs_startup_t *bbs_startup) {
+	WINDOW	*uwin;
+	WINDOW	*swin;
+	int		in,out;
+	char	inpath[MAX_PATH];
+	char	outpath[MAX_PATH];
+	char	*p;
+	char	ch;
+	int		inpos=0;
+	int		outpos=0;
+
+	drawchatwin(&uwin,&swin);
+
+	if(getnodedat(&cfg,nodenum,node,NULL)) {
+		uifc.msg("Error reading node data!");
+		return(-1);
+	}
+
+	sprintf(outpath,"%slchat.dab",cfg.node_path[nodenum-1]);
+	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
+		,S_IREAD|S_IWRITE))==-1) {
+		uifc.msg("!Error opening lchat.dab");
+		return(-1);
+	}
+
+	sprintf(inpath,"%schat.dab",cfg.node_path[nodenum-1]);
+	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
+		,S_IREAD|S_IWRITE))==-1) {
+		close(out);
+		uifc.msg("!Error opening chat.dab");
+		return(-1);
+    }
+
+	if((p=(char *)MALLOC(PCHAT_LEN))==NULL) {
+		close(in);
+		close(out);
+		uifc.msg("!Error allocating memory");
+		return(-1);
+    }
+	memset(p,0,PCHAT_LEN);
+	write(in,p,PCHAT_LEN);
+	write(out,p,PCHAT_LEN);
+	FREE(p);
+	lseek(in,0,SEEK_SET);
+	lseek(out,0,SEEK_SET);
+	halfdelay(1);
+
+	togglechat(nodenum,node,TRUE);
+
+	while(in != -1) {
+		outpos=lseek(out,0,SEEK_CUR);
+		inpos=lseek(in,0,SEEK_CUR);
+		close(in);
+		close(out);
+		if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
+			,S_IREAD|S_IWRITE))==-1) {
+			break;
+		}
+		lseek(out,outpos,SEEK_SET);
+		if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
+			,S_IREAD|S_IWRITE))==-1) {
+			close(out);
+			break;
+	    }
+		lseek(in,inpos,SEEK_SET);
+		if(getnodedat(&cfg,nodenum,node,NULL)) {
+			uifc.msg("Loop error reading node data!");
+			break;
+		}
+	    if(node->misc&NODE_LCHAT) {
+			YIELD();
+			continue;
+		}
+		
+		if(!node->status || node->status>NODE_QUIET || node->action!=NODE_PCHT) {
+	        uifc.msg("CHAT: User Disconnected\r\n");
+			close(in);
+			in=-1;
+		}
+		switch (read(in,&ch,1)) {
+			case -1:
+				close(in);
+				in=-1;
+				break;
+				
+			case 0:
+				lseek(in,0,SEEK_SET);	/* Wrapped */
+				continue;
+				
+			case 1:
+				lseek(in,-1L,SEEK_CUR);
+				if(ch) {
+					chatchar(uwin,ch);
+					ch=0;
+					write(in,&ch,1);
+				}
+		}
+		if((ch=wgetch(swin))!=ERR) {
+			switch(ch)  {
+				case 0:
+					break;
+					
+				case ESC:
+				case 3:
+					close(in);
+					in=-1;
+					continue;
+					
+				default:
+					if(lseek(out,0,SEEK_CUR)>=PCHAT_LEN)
+						lseek(out,0,SEEK_SET);
+					chatchar(swin,ch);
+					switch(write(out,&ch,1)) {
+						case -1:
+							close(in);
+							in=-1;
+							break;
+					}
+			}
+		}
+	}
+	if(in != -1)
+		close(in);
+	if(out != -1)
+		close(out);
+	nocbreak();
+	cbreak();
+	togglechat(nodenum,node,FALSE);
+	delwin(uwin);
+	delwin(swin);
+	touchwin(stdscr);
+	refresh();
+	return(0);
 }
 
 int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
@@ -326,10 +588,23 @@ int main(int argc, char** argv)  {
 		exit(1);
 	}
 
+/*	if(!read_node_cfg(&cfg, str)) {
+		printf("ERROR! %s\n",str);
+		exit(1);
+	} */
+
     memset(&uifc,0,sizeof(uifc));
 
 	uifc.esc_delay=500;
 
+	boxch.ls=ACS_VLINE; 
+	boxch.rs=ACS_VLINE;
+	boxch.ts=ACS_HLINE;
+	boxch.bs=ACS_HLINE;
+	boxch.tl=ACS_ULCORNER;
+	boxch.tr=ACS_URCORNER;
+	boxch.bl=ACS_LLCORNER;
+	boxch.br=ACS_LRCORNER;
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
             )
@@ -344,6 +619,14 @@ int main(int argc, char** argv)  {
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
 				case 'I':
+					boxch.ls=186; 
+					boxch.rs=186;
+					boxch.ts=205;
+					boxch.bs=205;
+					boxch.tl=201;
+					boxch.tr=187;
+					boxch.bl=200;
+					boxch.br=188;
 					uifc.mode|=UIFC_IBM;
 					break;
                 default:
@@ -438,7 +721,7 @@ int main(int argc, char** argv)  {
 		}
 
 		if(j==-2-KEY_F(10)) {	/* Chat */
-			uifc.msg("Option not implemented");
+			chat(main_dflt+1,&node,&bbs_startup);
 			continue;
 		}
 
@@ -547,6 +830,10 @@ int main(int argc, char** argv)  {
 					sendmessage(j+1,&node);
 					break;
 
+				case 4:
+					chat(main_dflt+1,&node,&bbs_startup);
+					break;
+				
 				case -1:
 					break;
 					
