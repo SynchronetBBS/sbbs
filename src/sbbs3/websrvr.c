@@ -2462,9 +2462,9 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		reply=JSVAL_TO_OBJECT(val);
 		JS_GetProperty(cx, reply, "fast", &val);
 		if(JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
+			session->req.keep_alive=FALSE;
 			if(!ssjs_send_headers(session))
 				return(JS_FALSE);
-			session->req.keep_alive=FALSE;
 		}
 	}
 
