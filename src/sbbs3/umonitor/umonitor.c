@@ -474,12 +474,12 @@ int view_logs(scfg_t *cfg)
 				freeopt(opt);
 				return(0);
 			case 0:
-				sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOL",cfg->logs_dir,tm.tm_mon+1,tm.tm_mday
+				sprintf(str,"%slogs/%2.2d%2.2d%2.2d.lol",cfg->logs_dir,tm.tm_mon+1,tm.tm_mday
 					,TM_YEAR(tm.tm_year));
 				view_log(str,"Todays Callers");
 				break;
 			case 1:
-				sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOL",cfg->logs_dir,tm_yest.tm_mon+1
+				sprintf(str,"%slogs/%2.2d%2.2d%2.2d.lol",cfg->logs_dir,tm_yest.tm_mon+1
 					,tm_yest.tm_mday,TM_YEAR(tm_yest.tm_year));
 				view_log(str,"Yesterdays Callers");
 				break;
