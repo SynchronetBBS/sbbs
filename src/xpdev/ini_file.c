@@ -129,6 +129,9 @@ char* iniReadString(FILE* fp, const char* section, const char* key, const char* 
 	if((value=get_value(fp,section,key))==NULL)
 		return((char*)deflt);
 
+	if(*value==0)		/* blank value */
+		return((char*)deflt);
+
 	return(value);
 }
 
