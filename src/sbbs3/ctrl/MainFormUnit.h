@@ -295,6 +295,7 @@ __published:	// IDE-managed Components
     TMenuItem *ServicesEditIniMenuOption;
     TAction *ViewServices;
     TMenuItem *ViewServicesMenuItem;
+    TMenuItem *BBSEditTwitList;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
