@@ -59,10 +59,10 @@ uint riobp;
 #ifdef _WIN32
 HANDLE	exec_mutex;
 
-	#ifdef _DEBUG
+	#if defined(_DEBUG) && defined(_MSC_VER)
 			HANDLE	debug_log=INVALID_HANDLE_VALUE;
 		   _CrtMemState mem_chkpoint;
-	#endif // _DEBUG
+	#endif // _DEBUG && _MSC_VER
 
 #endif // _WIN32
 
@@ -1964,7 +1964,7 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(batdn_cdt);
 	FREE_AND_NULL(batdn_alt);
 
-#if defined(_WIN32) && defined(_DEBUG)
+#if defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
 	if(!_CrtCheckMemory())
 		lprintf("!MEMORY ERRORS REPORTED IN DATA/DEBUG.LOG!");
 #endif
@@ -2812,14 +2812,14 @@ static void cleanup(int code)
 
 #ifdef _WIN32
 	CloseHandle(exec_mutex);
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(_MSC_VER)
 	_CrtMemDumpAllObjectsSince(&mem_chkpoint);
 
 	if(debug_log!=INVALID_HANDLE_VALUE) {
 		CloseHandle(debug_log);
 		debug_log=INVALID_HANDLE_VALUE;
 	}
-#endif // _DEBUG
+#endif // _DEBUG && _MSC_VER
 #endif // _WIN32
 
 	pthread_mutex_destroy(&event_mutex);
@@ -3174,7 +3174,7 @@ void DLLCALL bbs_thread(void* arg)
     if(startup->started!=NULL)
     	startup->started();
 
-#if defined(_WIN32) && defined(_DEBUG)
+#if defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
 	
 	sprintf(str,"%sDEBUG.LOG",scfg.data_dir);
 	if((debug_log=CreateFile(
@@ -3201,12 +3201,10 @@ void DLLCALL bbs_thread(void* arg)
 	/* Turns on memory leak checking during program termination */
 //	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
 
-#if defined(_WIN32)
 	/* Save this allocation point for comparison */
 	_CrtMemCheckpoint(&mem_chkpoint);
-#endif
 
-#endif // _WIN32 && _DEBUG
+#endif // _WIN32 && _DEBUG && _MSC_VER
 
 	while(telnet_socket!=INVALID_SOCKET) {
 

@@ -54,7 +54,7 @@
 	#include <direct.h>		/* _mkdir() prototype */
 	#include <mmsystem.h>	/* SND_ASYNC */
 
-	#if defined(_DEBUG)
+	#if defined(_DEBUG) && defined(_MSC_VER)
 		#include <crtdbg.h> /* Windows debug macros and stuff */
 	#endif
 
