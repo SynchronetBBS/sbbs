@@ -57,7 +57,8 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 		return(-1); 
 	}
 
-	memset(node,0,sizeof(node_t));
+	if(node!=&thisnode)
+		memset(node,0,sizeof(node_t));
 	sprintf(str,"%snode.dab",cfg.ctrl_dir);
 	if(nodefile==-1) {
 		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
