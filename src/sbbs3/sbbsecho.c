@@ -3738,11 +3738,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 				if(msg.ftn_msgid!=NULL)	/* use original MSGID */
 					f+=sprintf(fmsgbuf+f,"\1MSGID: %.256s\r", msg.ftn_msgid);
 				else					/* generate MSGID */
-					f+=sprintf(fmsgbuf+f,"\1MSGID: <%lu.%s@%s> %08lX\r"
-						,msg.idx.number
-						,scfg.sub[i]->code
+					f+=sprintf(fmsgbuf+f,"\1MSGID: %s %08lX\r"
 						,faddrtoa(&scfg.sub[i]->faddr,NULL)
-						,msg.idx.time);
+						,(msg.idx.time<<5) | (msg.idx.number&0x1f)
+						);
 
 				if(msg.ftn_reply!=NULL)			/* use original REPLYID */
 					f+=sprintf(fmsgbuf+f,"\1REPLY: %.256s\r", msg.ftn_reply);
