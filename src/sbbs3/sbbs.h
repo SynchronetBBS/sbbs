@@ -291,7 +291,6 @@ public:
 	char 	*comspec;		/* Pointer to environment variable COMSPEC */
 	ushort	altul;			/* Upload to alternate path flag */
 	time_t	next_event; 	/* Next event time - from front-end */
-	char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 	char 	cid[LEN_CID+1]; /* Caller ID (IP Address) of current caller */
 	char 	*noaccess_str;	/* Why access was denied via ARS */
 	long 	noaccess_val;	/* Value of parameter not met in ARS */
@@ -344,9 +343,7 @@ public:
 	ulong	getlastmsg(uint subnum, ulong *ptr, time_t *t);
 	time_t	getmsgtime(uint subnum, ulong ptr);
 	ulong	getmsgnum(uint subnum, time_t t);
-	ulong	getposts(uint subnum);
 
-	int		getfiles(uint dirnum);
 	int		dir_op(uint dirnum);
 	int		getuserxfers(int fromuser, int destuser, char *fname);
 	uint	gettotalfiles(uint dirnum);
@@ -766,6 +763,12 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, 
 										char* host, SOCKADDR_IN* addr);
 
+#ifdef JAVASCRIPT
+
+	DLLEXPORT JSObject* DLLCALL CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent);
+
+#endif
+
 #ifdef SBBS /* These aren't exported */
 
 	/* misc.c */
@@ -790,8 +793,9 @@ extern "C" {
 	char *	readtext(long *line, FILE *stream);
 	BOOL 	md(char *path);
 
-	int 	lprintf(char *fmt, ...);
-	int 	lputs(char *);
+	int 	eprintf(char *fmt, ...);	/* event log */
+	int 	lprintf(char *fmt, ...);	/* telnet log */
+	int 	lputs(char *);				/* telnet log */
 
 	/* qwk.cpp */
 	void	remove_re(char *str);
@@ -811,16 +815,20 @@ extern "C" {
 	void	packchatpass(char *pass, node_t* node);
 	char *	unpackchatpass(char *pass, node_t* node);
 
+	ulong	getposts(scfg_t* cfg, uint subnum);
+	long	getfiles(scfg_t* cfg, uint dirnum);
+
 #endif /* SBBS */
+
+extern const char* wday[];	/* abbreviated weekday names */
+extern const char* mon[];	/* abbreviated month names */
+extern char lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 
 #ifdef __cplusplus
 }
 #endif
 
 /* Global data */
-
-extern const char* wday[];	/* abbreviated weekday names */
-extern const char* mon[];	/* abbreviated month names */
 
 #if defined(__FLAT__) || defined(_WIN32)
 
