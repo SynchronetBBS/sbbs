@@ -149,7 +149,7 @@ write(format("<th align=center width=10%>%sTime\r\n",font_color));
 writeln("</thead>");
 
 writeln("<tbody>");
-var u = new User(1);
+var u = new User(0);
 for(n=0;n<system.node_list.length;n++) {
 	write("<tr>");
 	write(format("<td align=right><font size=-1>%d",n+1));
