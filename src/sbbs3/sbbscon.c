@@ -57,7 +57,7 @@
 #include <grp.h>
 #include <stdarg.h>
 #include <stdlib.h>  /* Is this included from somewhere else? */
-#include <sys/syslog.h>
+#include <syslog.h>
 
 #endif
 
@@ -91,6 +91,7 @@ uint				socket_count=0;
 uint				client_count=0;
 ulong				served=0;
 int					prompt_len=0;
+static scfg_t				scfg;					/* To allow rerun */
 
 #ifdef __unix__
 char				new_uid_name[32];
@@ -425,7 +426,11 @@ static int ftp_lputs(char *str)
 		if(str==NULL)
 			return(0);
 		if (std_facilities)
+#ifdef __solaris__
+			syslog(LOG_INFO|LOG_DAEMON,"%s",str);
+#else
 			syslog(LOG_INFO|LOG_FTP,"%s",str);
+#endif
 		else
 			syslog(LOG_INFO,"ftp  %s",str);
 		return(strlen(str));
@@ -669,19 +674,119 @@ static void terminate(void)
 	services_terminate();
 #endif
 
-	while(bbs_running || ftp_running || web_running || mail_running || services_running)
-		SLEEP(1);
+	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
+		if(bbs_running)
+			lputs("BBS Thread Still Running");
+		if(ftp_running)
+			lputs("FTP Thread Still Running");
+		if(web_running)
+			lputs("WEB Thread Still Running");
+		if(mail_running)
+			lputs("MAIL Thread Still Running");
+		if(services_running)
+			lputs("SERVICES Thread Still Running");
+		SLEEP(10000);
+	}
 }
 
 #ifdef __unix__
 void _sighandler_quit(int sig)
 {
+	char	str[1024];
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
+
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
+	/* Can I get away with leaving this locked till exit? */
+
+	sprintf(str,"     Got quit signal (%d)",sig);
+	lputs(str);
 	terminate();
 
 	if(is_daemon)
 		unlink(SBBS_PID_FILE);
 
     exit(0);
+}
+
+void _sighandler_rerun(int sig)
+{
+	int		i;
+	node_t	node;
+
+	lputs("     Got HUP (rerun) signal");
+	
+	for(i=1;i<=scfg.sys_nodes;i++) {
+		getnodedat(&scfg,i,&node,NULL /* file */);
+		node.misc|=NODE_RRUN;
+		printnodedat(&scfg,i,&node);
+	}
+}
+
+#ifdef NEEDS_DAEMON
+/****************************************************************************/
+/* Daemonizes the process                                                   */
+/****************************************************************************/
+int
+daemon(nochdir, noclose)
+    int nochdir, noclose;
+{
+    int fd;
+
+    switch (fork()) {
+    case -1:
+        return (-1);
+    case 0:
+        break;
+    default:
+        _exit(0);
+    }
+
+    if (setsid() == -1)
+        return (-1);
+
+    if (!nochdir)
+        (void)chdir("/");
+
+    if (!noclose && (fd = open("/dev/null", O_RDWR, 0)) != -1) {
+        (void)dup2(fd, STDIN_FILENO);
+        (void)dup2(fd, STDOUT_FILENO);
+        (void)dup2(fd, STDERR_FILENO);
+        if (fd > 2)
+            (void)close(fd);
+    }
+    return (0);
+}
+#endif /* NEEDS_DAEMON */
+
+static void handle_sigs(void)  {
+	int		sig;
+	sigset_t			sigs;
+	char		str[1024];
+
+	sigfillset(&sigs);
+	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
+	while(1)  {
+		sigwait(&sigs,&sig);    /* wait here until signaled */
+		switch(sig)  {
+			/* QUIT-type signals */
+			case SIGINT:
+			case SIGQUIT:
+			case SIGABRT:
+			case SIGTERM:
+				_sighandler_quit(sig);
+				break;
+			case SIGHUP:    /* rerun */
+				_sighandler_rerun(sig);
+				break;
+			default:
+				sprintf(str,"     Got unhandled signal (%d)",sig);
+		}
+	}
 }
 #endif	/* __unix__ */
 
@@ -703,13 +808,13 @@ int main(int argc, char** argv)
 	char	host_name[128]="";
 	BOOL	quit=FALSE;
 	FILE*	fp=NULL;
-	scfg_t	scfg;
 	node_t	node;
 #ifdef __unix__
 	char	daemon_type[2];
 	FILE*	pidfile;
 	struct passwd* pw_entry;
 	struct group*  gr_entry;
+	sigset_t			sigs;
 #endif
 
 	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
@@ -1236,6 +1341,21 @@ int main(int argc, char** argv)
 		}
 	}
 
+	/* Set up blocked signals */
+	sigemptyset(&sigs);
+	sigaddset(&sigs,SIGINT);
+	sigaddset(&sigs,SIGQUIT);
+	sigaddset(&sigs,SIGABRT);
+	sigaddset(&sigs,SIGTERM);
+	sigaddset(&sigs,SIGHUP);
+	sigaddset(&sigs,SIGALRM);
+	sigaddset(&sigs,SIGPIPE);
+	sigaddset(&sigs,SIGHUP);
+	/* Debugging purposes ONLY */
+	sigfillset(&sigs);
+	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
+    signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
+	_beginthread((void(*)(void*))handle_sigs,0,NULL);
 #endif
 
 	if(run_bbs)
@@ -1252,14 +1372,6 @@ int main(int argc, char** argv)
 		_beginthread((void(*)(void*))web_server,0,&web_startup);
 
 #ifdef __unix__
-	// Set up QUIT-type signals so they clean up properly.
-	signal(SIGHUP, _sighandler_quit);
-	signal(SIGINT, _sighandler_quit);
-	signal(SIGQUIT, _sighandler_quit);
-	signal(SIGABRT, _sighandler_quit);
-	signal(SIGTERM, _sighandler_quit);
-	signal(SIGPIPE, SIG_IGN);	/* Ignore "Broken Pipe" signal */
-
 	if(getuid())  /*  are we running as a normal user?  */
 		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
 	
@@ -1287,6 +1399,9 @@ int main(int argc, char** argv)
 			bbs_lputs(str);
 
 			/* Can't recycle servers (re-bind ports) as non-root user */
+			/* ToDo: Something seems to be broken here on FreeBSD now */
+			/* ToDo: Now, they try to re-bind on FreeBSD */
+			/* ToDo: Seems like I switched problems with Linux */
  			bbs_startup.options|=BBS_OPT_NO_RECYCLE;
 			ftp_startup.options|=FTP_OPT_NO_RECYCLE;
 			mail_startup.options|=MAIL_OPT_NO_RECYCLE;
@@ -1294,8 +1409,8 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if(!isatty(fileno(stdin)))			/* redirected */
-		select(0,NULL,NULL,NULL,NULL);	/* so wait here until signaled */
+	if(!isatty(fileno(stdin)))  			/* redirected */
+		select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
 	else								/* interactive */
 #endif
 		while(!quit) {
