@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 604
-  Top = 455
+  Left = 446
+  Top = 149
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -2165,10 +2165,25 @@ object MainForm: TMainForm
           Hint = 'ATTR.CFG'
           OnClick = CtrlMenuItemEditClick
         end
+        object BBSEditNoNodesMessage: TMenuItem
+          Caption = 'Nodes Full Message'
+          Hint = 'NONODES.TXT'
+          OnClick = TextMenuItemEditClick
+        end
         object BBSEditAnswer: TMenuItem
           Caption = 'Answer Screen'
           Hint = 'ANSWER.ASC'
           OnClick = TextMenuItemEditClick
+        end
+        object BBSEditLogonMessage: TMenuItem
+          Caption = 'Logon Message'
+          Hint = 'MENU/LOGON.ASC'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditAutoMsg: TMenuItem
+          Caption = 'Auto Message'
+          Hint = 'MSGS/AUTO.MSG'
+          OnClick = DataMenuItemClick
         end
         object BBSEditZipComment: TMenuItem
           Caption = 'ZIP File Comment'
