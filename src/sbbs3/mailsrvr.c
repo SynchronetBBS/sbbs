@@ -1358,7 +1358,7 @@ static void smtp_thread(void* arg)
 	}
 	dns_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr.s_addr,tmp);
 	if(dns_result.s_addr) {
-		lprintf("%04d !SMTP SPAM server filtered (%s): %s [%s] = %s"
+		lprintf("%04d !SMTP SPAM server listed on %s: %s [%s] = %s"
 			,socket, tmp, host_name, host_ip, inet_ntoa(dns_result));
 		sprintf(str,"Listed on %s as %s", tmp, inet_ntoa(dns_result));
 		spamlog(&scfg, "SMTP", str, host_name, host_ip, NULL);
