@@ -198,7 +198,7 @@ extern "C" {
 	#define SLEEP(x)		DosSleep(x)
 	#define BEEP(freq,dur)	DosBeep(freq,dur)
 
-#elif defined(__unix__)
+#elif defined(__unix__) || defined(__APPLE__)
 
 	#if defined(_PTH_PTHREAD_H_)
 		#define SLEEP(x)		({ int y=x; struct timeval tv; \
