@@ -257,7 +257,7 @@ extern "C" {
 
 #elif defined(__BORLANDC__)
 
-#define CHMOD(s,m)		_chmod(s,1,m)
+#define CHMOD(p,a)		_rtl_chmod(p,1,a) 	/* _chmod obsolete in 4.x */
 #define PUTENV  		putenv
 #define GETCWD  		getcwd
 
@@ -275,9 +275,6 @@ extern "C" {
 	DLLEXPORT int	DLLCALL sbbs_random(int n);
 #endif
 
-#if __BORLANDC__ > 0x0410
-	#define _chmod(p,f,a)		_rtl_chmod(p,f,a) 	/* _chmod obsolete in 4.x */
-#endif
 
 #if !defined(_MSC_VER) && !defined(__BORLANDC__)
 	DLLEXPORT char* DLLCALL ultoa(ulong, char*, int radix);
