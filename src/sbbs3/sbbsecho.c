@@ -3410,6 +3410,50 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 	}
 }
 
+int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, char* info)
+{
+	char path[MAX_PATH+1];
+	uchar* fmsgbuf;
+	int i,file;
+	ulong l;
+
+	if((fmsgbuf=getfmsg(fidomsg,&l))==NULL) {
+		printf("ERROR Netmail allocation");
+		logprintf("ERROR line %d netmail allocation",__LINE__);
+		return(-1); 
+	}
+
+	if(!l && misc&KILL_EMPTY_MAIL)
+		printf("Empty NetMail");
+	else {
+		printf("Exporting: ");
+		for(i=1;i;i++) {
+			sprintf(path,"%s%u.msg",scfg.netmail_dir,i);
+			if(!fexistcase(path))
+				break; 
+		}
+		if(!i) {
+			printf("Too many netmail messages");
+			logprintf("Too many netmail messages");
+			return(-1); 
+		}
+		if((file=nopen(path,O_WRONLY|O_CREAT))==-1) {
+			printf("ERROR %u line %d creating %s",errno,__LINE__,path);
+			logprintf("ERROR %u line %d creating %s",errno,__LINE__,path);
+			return(-1);
+		}
+		write(file,&hdr,sizeof(hdr));
+		write(file,fmsgbuf,l+1); /* Write the '\0' terminator too */
+		close(file);
+		printf("%s", path);
+		logprintf("%s Exported to %s",info,path);
+	}
+	FREE(fmsgbuf); 
+
+	return(0);
+}
+
+
 /**************************************/
 /* Send netmail, returns 0 on success */
 /**************************************/
@@ -3447,47 +3491,31 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	printf("%s ",info);
 
 	if(!(misc&IMPORT_NETMAIL)) {
-		if(!path[0]) {
-			fmsgbuf=getfmsg(fidomsg,&l);
-			if(!fmsgbuf) {
-				printf("ERROR Netmail allocation");
-				logprintf("ERROR line %d netmail allocation",__LINE__);
-				return(2); }
-
-			if(!l && misc&KILL_EMPTY_MAIL)
-				printf("Empty NetMail - ");
-			else {
-				for(i=1;i;i++) {
-					sprintf(str,"%s%u.msg",scfg.netmail_dir,i);
-					if(!fexistcase(str))
-						break; }
-				if(!i) {
-					printf("Too many netmail messages");
-					logprintf("Too many netmail messages");
-					return(2); }
-				if((i=nopen(str,O_WRONLY|O_CREAT))==-1) {
-					printf("ERROR line %d opening %s",__LINE__,str);
-					logprintf("ERROR line %d opening %s",__LINE__,str);
-					return(2); }
-				write(i,&hdr,sizeof(hdr));
-				write(i,fmsgbuf,strlen((char *)fmsgbuf)+1); /* Write the NULL too */
-				close(i); }
-			FREE(fmsgbuf); }
 		printf("Ignored");
-		if(cfg.log&LOG_IGNORED)
+		if(!path[0]) {
+			printf(" - ");
+			pkt_to_msg(fidomsg,&hdr,info);
+		} else if(cfg.log&LOG_IGNORED)
 			logprintf("%s Ignored",info);
-		return(-1); }
+
+		return(-1); 
+	}
+
+	if(match>=scfg.total_faddrs && !(misc&IGNORE_ADDRESS)) {
+		printf("Wrong address");
+		if(!path[0]) {
+			printf(" - ");
+			pkt_to_msg(fidomsg,&hdr,info);
+		}
+		return(2); 
+	}
 
 	if(path[0]) {	/* .msg file, not .pkt */
 		if(hdr.attr&FIDO_ORPHAN) {
 			printf("Orphaned");
 			return(1); 
 		}
-		if(!(misc&IGNORE_ADDRESS) && match==scfg.total_faddrs) {
-			printf("Skipped");
-			return(2); 
-		}
-		if(!(misc&IGNORE_RECV) && hdr.attr&FIDO_RECV) {
+		if(hdr.attr&FIDO_RECV && !(misc&IGNORE_RECV)) {
 			printf("Already received");
 			return(3); 
 		}
@@ -3563,42 +3591,18 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			usernumber=1;								/* mail to 1 */
 		else {
 			if(match<scfg.total_faddrs) {
-				printf("Unknown user ");
+				printf("Unknown user");
 				if(cfg.log&LOG_UNKNOWN)
-					logprintf("%s Unknown user",info); }
-	/***
-			hdr.attr|=FIDO_ORPHAN;
-			fseek(fidomsg,0L,SEEK_SET);
-			fwrite(&hdr,sizeof(fmsghdr_t),1,fidomsg);
-	***/
+					logprintf("%s Unknown user",info); 
+			}
+
 			if(!path[0]) {
-				fmsgbuf=getfmsg(fidomsg,&l);
-				if(!fmsgbuf) {
-					printf("ERROR Netmail allocation");
-					logprintf("ERROR line %d netmail allocation",__LINE__);
-					return(2); }
-				if(!l && misc&KILL_EMPTY_MAIL) {
-					printf("Empty NetMail - Ignored");
-					if(cfg.log&LOG_IGNORED)
-						logprintf("%s Empty - Ignored",info); }
-				else {
-					for(i=1;i;i++) {
-						sprintf(str,"%s%u.msg",scfg.netmail_dir,i);
-						if(!fexistcase(str))
-							break; }
-					if(!i) {
-						printf("Too many netmail messages");
-						logprintf("Too many netmail messages");
-						return(2); }
-					if((i=nopen(str,O_WRONLY|O_CREAT))==-1) {
-						printf("ERROR line %d opening %s",__LINE__,str);
-						logprintf("ERROR line %d opening %s",__LINE__,str);
-						return(2); }
-					write(i,&hdr,sizeof(hdr));
-					write(i,fmsgbuf,strlen((char *)fmsgbuf)+1); /* Write the NULL too */
-					close(i); }
-				FREE(fmsgbuf); }
-			return(2); } }
+				printf(" - ");
+				pkt_to_msg(fidomsg,&hdr,info);
+			}
+			return(2); 
+		} 
+	}
 
 	/*********************/
 	/* Importing NetMail */
