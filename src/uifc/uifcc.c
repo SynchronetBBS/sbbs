@@ -642,6 +642,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		i=(*cur)-(*bar);
 		j=2;
 
+		longopt=0;
 		while(j<height-2 && i<opts) {
 			ptr=win;
 			if(i==(*cur))
