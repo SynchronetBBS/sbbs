@@ -22,14 +22,14 @@ CFLAGS += -DWRAPPER_IMPORTS -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS)
 # UIFC Library Link Rule
 $(UIFCLIB_BUILD): $(OBJS)
 	@echo Creating $@ ...
-	$(QUIET)ar rc $@ $(OBJS)
-	$(QUIET)ranlib $@
+	$(QUIET)$(AR) rc $@ $(OBJS)
+	$(QUIET)$(RANLIB) $@
 
 # MT-UIFC Library Link Rule
 $(UIFCLIB-MT_BUILD): $(MT_OBJS)
 	@echo Creating $@ ...
-	$(QUIET)ar rc $@ $(MT_OBJS)
-	$(QUIET)ranlib $@
+	$(QUIET)$(AR) rc $@ $(MT_OBJS)
+	$(QUIET)$(RANLIB) $@
 
 $(UIFCTEST): $(MTOBJODIR)$(DIRSEP)uifctest$(OFILE)
 	@echo Creating $@ ...
