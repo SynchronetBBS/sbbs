@@ -258,7 +258,7 @@ long listCountNodes(const link_list_t* list)
 	return(count);
 }
 
-list_node_t* listFindNode(const link_list_t* list, void* data, size_t length)
+list_node_t* listFindNode(const link_list_t* list, const void* data, size_t length)
 {
 	list_node_t* node;
 
@@ -642,7 +642,7 @@ void* listRemoveNode(link_list_t* list, list_node_t* node)
 		list->last = node->prev;
 
 	if((list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
-		&& !(list->flags&LINK_LIST_NEVER_FREE))
+		&& !(list->flags&LINK_LIST_DONT_FREE))
 		listFreeNodeData(node);
 
 	data = node->data;

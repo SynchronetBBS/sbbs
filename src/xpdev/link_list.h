@@ -54,12 +54,13 @@ extern "C" {
 
 /* Valid link_list_t.flags bits */
 #define LINK_LIST_MALLOC		(1<<0)	/* List/node allocated with malloc() */
-#define LINK_LIST_ALWAYS_FREE	(1<<1)	/* ALWAYS free node data when removing */
-#define LINK_LIST_NEVER_FREE	(1<<2)	/* NEVER free node data when removing */
-#define LINK_LIST_MUTEX			(1<<3)	/* Mutex-protected linked-list */
-#define LINK_LIST_SEMAPHORE		(1<<4)	/* Semaphore attached to linked-list */
-#define LINK_LIST_NODE_LOCKED	(1<<5)	/* Node is locked */
-#define LINK_LIST_ATTACH		(1<<6)	/* Attach during init */
+#define LINK_LIST_DONT_FREE		(1<<1)	/* Don't free node data when removing */
+#define LINK_LIST_ALWAYS_FREE	(1<<2)	/* ALWAYS free node data when removing */
+#define LINK_LIST_NEVER_FREE	(1<<3)	/* NEVER free node data (careful of memory leaks!) */
+#define LINK_LIST_MUTEX			(1<<4)	/* Mutex-protected linked-list */
+#define LINK_LIST_SEMAPHORE		(1<<5)	/* Semaphore attached to linked-list */
+#define LINK_LIST_NODE_LOCKED	(1<<6)	/* Node is locked */
+#define LINK_LIST_ATTACH		(1<<7)	/* Attach during init */
 
 typedef struct list_node {
 	void*				data;			/* pointer to some kind of data */
@@ -123,7 +124,7 @@ link_list_t*	listExtract(link_list_t* dest_list, const list_node_t* src_node, lo
 
 /* Simple search functions returning found node or NULL on error */
 list_node_t*	listNodeAt(const link_list_t*, long index);
-list_node_t*	listFindNode(const link_list_t*, void* data, size_t length);
+list_node_t*	listFindNode(const link_list_t*, const void* data, size_t length);
 
 /* Convenience functions */
 list_node_t*	listFirstNode(const link_list_t*);
@@ -172,6 +173,7 @@ BOOL			listSwapNodes(list_node_t* node1, list_node_t* node2);
 #define	listPushStringList(list, str_list)		listAddStringList(list, str_list, listLastNode(list))
 #define listInsertStringList(list, str_list)	listAddStringList(list, str_list, FIRST_NODE)
 #define listPopNode(list)						listRemoveNode(list, listLastNode(list))
+#define listPopFirstNode(list)					listRemoveNode(list, FIRST_NODE)
 
 /* Remove node from list, returning the node's data (if not free'd) */
 void*			listRemoveNode(link_list_t*, list_node_t* /* NULL=first */);
