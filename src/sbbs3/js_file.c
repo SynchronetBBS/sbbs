@@ -972,6 +972,26 @@ js_flush(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_rewind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(p->fp==NULL)
+		*rval = JSVAL_FALSE;
+	else  {
+		*rval = JSVAL_TRUE;
+		rewind(p->fp);
+	}
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_clear_error(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	private_t*	p;
@@ -1372,6 +1392,10 @@ static jsMethodSpec js_file_functions[] = {
 	},
 	{"flush",			js_flush,			0,	JSTYPE_BOOLEAN,	""
 	,JSDOCSTR("flush/commit buffers to disk")
+	},
+	{"rewind",			js_rewind,			0,	JSTYPE_BOOLEAN,	""
+	,JSDOCSTR("repositions the file pointer (<i>position</i>) to the beginning of a file "
+		"and clears error and end-of-file indicators")
 	},
 	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
 	,JSDOCSTR("lock file record for exclusive access (file must be opened <i>shareable</i>)")
