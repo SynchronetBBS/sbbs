@@ -8,7 +8,7 @@
     </head>
 <body>
 <p class="title">@@JS:system.name@@</p>
-
+<center>Welcome @@JS:user.alias@@</center>
 
 
 
