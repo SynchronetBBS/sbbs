@@ -107,14 +107,14 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 				newline();
 				fprintf(xm->statfp,"Received %s  Expected SOH, STX, or EOT\n",chr((uchar)i));
 			case NOINP: 	/* Nothing came in */
-				if(hdrblock)  /* Trying to get Ymodem header block */
+				if(hdrblock || (*xm->mode)&GMODE)
 					return(-1);
 				xmodem_put_nak(xm);
 				continue; 
 		}
 		i=getcom(xm->byte_timeout);
 		if(i==NOINP) {
-			if(hdrblock)  /* Trying to get Ymodem header block */
+			if(hdrblock || (*xm->mode)&GMODE)
 				return(-1);
 			xmodem_put_nak(xm);
 			continue; 
@@ -122,7 +122,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 		block_num=i;
 		i=getcom(xm->byte_timeout);
 		if(i==NOINP) {
-			if(hdrblock)  /* Trying to get Ymodem header block */
+			if(hdrblock || (*xm->mode)&GMODE)
 				return(-1);
 			xmodem_put_nak(xm);
 			continue; 
@@ -130,7 +130,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 		if(block_num!=(uchar)~i) {
 			newline();
 			fprintf(xm->statfp,"Block number error\n");
-			if(hdrblock)  /* Trying to get Ymodem header block */
+			if(hdrblock || (*xm->mode)&GMODE)
 				return(-1);
 			xmodem_put_nak(xm);
 			continue; 
@@ -148,6 +148,8 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 		}
 
 		if(b<xm->block_size) {
+			if(hdrblock || (*xm->mode)&GMODE)
+				return(-1);
 			xmodem_put_nak(xm);
 			continue; 
 		}
@@ -173,10 +175,9 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 			fprintf(xm->statfp,"Checksum error\n"); 
 		}
 
-		if((*xm->mode)&GMODE) {	/* Don't bother sending a NAK. He's not listening */
-			xmodem_cancel(xm);
-			bail(1); 
-		}
+		if((*xm->mode)&GMODE) 	/* Don't bother sending a NAK. He's not listening */
+			return(-1);
+
 		xmodem_put_nak(xm); 
 	}
 
