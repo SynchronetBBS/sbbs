@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -100,6 +100,7 @@ void usage(FILE* fp)
 		"\t-h[hostname]   use local or specified host name (instead of SCFG value)\n"
 		"\t-L<mask>       set log level mask (default=0x%x)\n"
 		"\t-E<level>      set error log level threshold (default=%d)\n"
+		"\t-f             use non-buffered stream for console messages\n"
 		"\t-a             append instead of overwriting message output files\n"
 		"\t-e<filename>   send error messages to file in addition to stderr\n"
 		"\t-o<filename>   send console messages to file instead of stdout\n"
@@ -745,6 +746,7 @@ int main(int argc, char **argv, char** environ)
 	int		argn;
 	long	result;
 	BOOL	loop=FALSE;
+	BOOL	nonbuffered_con=FALSE;
 
 	confp=stdout;
 	errfp=stderr;
@@ -776,6 +778,9 @@ int main(int argc, char **argv, char** environ)
 			switch(argv[argn][1]) {
 				case 'a':
 					omode="a";
+					break;
+				case 'f':
+					nonbuffered_con=TRUE;
 					break;
 				case 'm':
 					if(*p==0) p=argv[++argn];
@@ -910,6 +915,9 @@ int main(int argc, char **argv, char** environ)
 
 	/* Don't cache error log */
 	setvbuf(errfp,NULL,_IONBF,0);
+
+	if(nonbuffered_con)
+		setvbuf(confp,NULL,_IONBF,0);
 
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
