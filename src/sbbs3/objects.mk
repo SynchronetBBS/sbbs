@@ -11,6 +11,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)ars.$(OFILE)\
 			$(LIBODIR)$(SLASH)atcodes.$(OFILE)\
 			$(LIBODIR)$(SLASH)bat_xfer.$(OFILE)\
+			$(LIBODIR)$(SLASH)base64.$(OFILE)\
 			$(LIBODIR)$(SLASH)bulkmail.$(OFILE)\
 			$(LIBODIR)$(SLASH)chat.$(OFILE)\
 			$(LIBODIR)$(SLASH)chk_ar.$(OFILE)\
@@ -59,6 +60,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)lzh.$(OFILE)\
 			$(LIBODIR)$(SLASH)mail.$(OFILE)\
 			$(LIBODIR)$(SLASH)main.$(OFILE)\
+			$(LIBODIR)$(SLASH)md5.$(OFILE)\
 			$(LIBODIR)$(SLASH)msgtoqwk.$(OFILE)\
 			$(LIBODIR)$(SLASH)netmail.$(OFILE)\
 			$(LIBODIR)$(SLASH)newuser.$(OFILE)\
