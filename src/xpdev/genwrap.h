@@ -48,8 +48,10 @@
 	#include <strings.h>	/* strcasecmp() */
 	#include <unistd.h>		/* usleep */
 	#ifdef _THREAD_SAFE
-		#include <pthread.h>	/* Check for GNU PTH libs */
+		#include <pthread.h>/* Check for GNU PTH libs */
 	#endif
+#elif defined(_WIN32)
+	#include <process.h>	/* getpid() */
 #endif
 
 #if defined(__cplusplus)
@@ -156,9 +158,9 @@ extern "C" {
 	#define STRERROR(x)		truncsp(strerror(x))
 #endif
 
-/****************************/
-/* Common Utility Functions */
-/****************************/
+/**********************************/
+/* Common Utility Macro Functions */
+/**********************************/
 
 #if defined(_WIN32)
 
