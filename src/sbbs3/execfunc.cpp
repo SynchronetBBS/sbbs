@@ -375,7 +375,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
 					break;
 			if(i<cfg.total_prots) {
-				if(protocol(cmdstr(cfg.prot[i]->dlcmd,csi->str,csi->str,str),false)==0)
+				if(protocol(i,cmdstr(cfg.prot[i]->dlcmd,csi->str,csi->str,str),false)==0)
 					csi->logic=LOGIC_TRUE;
 				autohangup(); 
 			}
@@ -403,7 +403,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
 					break;
 			if(i<cfg.total_prots) {
-				if(protocol(cmdstr(cfg.prot[i]->ulcmd,csi->str,csi->str,str),true)==0)
+				if(protocol(i,cmdstr(cfg.prot[i]->ulcmd,csi->str,csi->str,str),true)==0)
 					csi->logic=LOGIC_TRUE;
 				autohangup(); 
 			}

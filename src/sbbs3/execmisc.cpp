@@ -966,7 +966,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 							break;
 					csi->logic=LOGIC_FALSE;
 					if(i<cfg.total_prots)
-						if(protocol(cmdstr(j==SEND_FILE_VIA
+						if(protocol(i,cmdstr(j==SEND_FILE_VIA
 							? cfg.prot[i]->dlcmd : cfg.prot[i]->ulcmd,str,str,buf)
 							,true)==0)
 							csi->logic=LOGIC_TRUE;
@@ -984,7 +984,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					if(!pp || !(*pp))
 						return(0);
 					if(i<cfg.total_prots)
-						if(protocol(cmdstr(j==SEND_FILE_VIA_VAR
+						if(protocol(i,cmdstr(j==SEND_FILE_VIA_VAR
 							? cfg.prot[i]->dlcmd : cfg.prot[i]->ulcmd,*pp,*pp,buf)
 							,true)==0)
 							csi->logic=LOGIC_TRUE;

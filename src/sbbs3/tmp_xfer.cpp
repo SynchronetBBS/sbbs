@@ -176,7 +176,7 @@ void sbbs_t::temp_xfer()
 
 					putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
 					start=time(NULL);
-					error=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),false);
+					error=protocol(i,cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),false);
 					end=time(NULL);
 					if(cfg.dir[temp_dirnum]->misc&DIR_TFREE)
 						starttime+=end-start;

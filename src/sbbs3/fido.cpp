@@ -252,7 +252,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 					&& chk_ar(cfg.prot[x]->ar,&useron))
 					break;
 			if(x<cfg.total_prots)	/* This should be always */
-				protocol(cmdstr(cfg.prot[x]->ulcmd,subj,nulstr,NULL),true); 
+				protocol(x,cmdstr(cfg.prot[x]->ulcmd,subj,nulstr,NULL),true); 
 		}
 		sprintf(tmp,"%s%s",cfg.temp_dir,title);
 		if(!fexistcase(subj) && fexistcase(tmp))

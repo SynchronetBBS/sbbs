@@ -178,11 +178,12 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 /****************************************************************************/
 /* Handles start and stop routines for transfer protocols                   */
 /****************************************************************************/
-int sbbs_t::protocol(char *cmdline, bool cd)
+int sbbs_t::protocol(uint prot, char *cmdline, bool cd)
 {
 	char	protlog[256],*p;
 	char	msg[256];
     int		i;
+	long	ex_mode;
 	FILE*	stream;
 
 	sprintf(protlog,"%sPROTOCOL.LOG",cfg.node_dir);
@@ -211,12 +212,14 @@ int sbbs_t::protocol(char *cmdline, bool cd)
 		telnet_mode|=TELNET_MODE_BIN_RX;
 	}
 	send_telnet_cmd(TELNET_WILL,TELNET_BINARY);
-	i=external(cmdline
-		,EX_OUTL
-#ifdef __unix__		/* file xfer progs use stdio on Unix */
-		|EX_INR|EX_OUTR|EX_BIN
+	ex_mode=0;
+	if(cfg.prot[prot]->misc&PROT_NATIVE)
+		ex_mode|=EX_NATIVE;
+#ifdef __unix__		/* file xfer progs must use stdio on Unix */
+	ex_mode|=(EX_INR|EX_OUTR|EX_BIN);
 #endif
-		,p);
+
+	i=external(cmdline,ex_mode,p);
 	/* disable telnet binary transmission mode */
 	send_telnet_cmd(TELNET_WONT,TELNET_BINARY);
 	/* Got back to Text/NVT mode */
