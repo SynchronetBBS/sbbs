@@ -117,6 +117,10 @@ while(!cfg_file.eof) {
 		continue;
 	str=line.split(/\s+/);
 	switch(str[0].toLowerCase()) {
+		case "disabled":
+			printf("!NewsLink DISABLED in %s\r\n",cfg_fname);
+			delete cfg_file;
+			exit();
 		case "server":
 			server=str[1];
 			break;
