@@ -1170,6 +1170,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	int i,plen,slen;
 
 	hidemouse();
+	resetdynamic();
 	plen=strlen(prompt);
 	if(!plen)
 		slen=4;
