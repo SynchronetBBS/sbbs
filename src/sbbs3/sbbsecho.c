@@ -687,51 +687,51 @@ return(p);
 }
 //#endif
 
-char check_elists(char *areatag,faddr_t addr)
+int check_elists(char *areatag,faddr_t addr)
 {
 	FILE *stream;
-	char str[1025],quit=0,match=0,*p;
-	int i,j,k,x,file;
+	char str[1025],quit=0,*p;
+	int i,j,k,x,file,match=0;
 
-i=matchnode(addr,0);
-if(i<cfg.nodecfgs) {
-	for(j=0;j<cfg.listcfgs;j++) {
-		quit=0;
-		for(k=0;k<cfg.listcfg[j].numflags;k++) {
-			if(quit) break;
-			for(x=0;x<cfg.nodecfg[i].numflags;x++)
-				if(!stricmp(cfg.listcfg[j].flag[k].flag
-					,cfg.nodecfg[i].flag[x].flag)) {
-					if((stream=fnopen(&file
-						,cfg.listcfg[j].listpath,O_RDONLY))==NULL) {
-						printf("\7ERROR couldn't open %s.\n"
-							,cfg.listcfg[j].listpath);
-						logprintf("ERROR line %d opening %s"
-							,__LINE__,cfg.listcfg[j].listpath);
+	i=matchnode(addr,0);
+	if(i<cfg.nodecfgs) {
+		for(j=0;j<cfg.listcfgs;j++) {
+			quit=0;
+			for(k=0;k<cfg.listcfg[j].numflags;k++) {
+				if(quit) break;
+				for(x=0;x<cfg.nodecfg[i].numflags;x++)
+					if(!stricmp(cfg.listcfg[j].flag[k].flag
+						,cfg.nodecfg[i].flag[x].flag)) {
+						if((stream=fnopen(&file
+							,cfg.listcfg[j].listpath,O_RDONLY))==NULL) {
+							printf("\7ERROR couldn't open %s.\n"
+								,cfg.listcfg[j].listpath);
+							logprintf("ERROR line %d opening %s"
+								,__LINE__,cfg.listcfg[j].listpath);
+							quit=1;
+							break; }
+						while(!feof(stream)) {
+							if(!fgets(str,255,stream))
+								break;
+							truncsp(str);
+							strcat(str,"\r\n");
+							p=str;
+							while(*p && *p<=SP) p++;
+							if(*p==';')     /* Ignore Comment Lines */
+								continue;
+							strcpy(str,p);
+							p=str;
+							while(*p && *p>SP) p++;
+							*p=0;
+							if(!stricmp(areatag,str)) {
+								match=1;
+								break; } }
+						fclose(stream);
 						quit=1;
-						break; }
-					while(!feof(stream)) {
-						if(!fgets(str,255,stream))
-							break;
-						truncsp(str);
-						strcat(str,"\r\n");
-						p=str;
-						while(*p && *p<=SP) p++;
-						if(*p==';')     /* Ignore Comment Lines */
-							continue;
-						strcpy(str,p);
-						p=str;
-						while(*p && *p>SP) p++;
-						*p=0;
-						if(!stricmp(areatag,str)) {
-							match=1;
-							break; } }
-					fclose(stream);
-					quit=1;
-					if(match)
-						return(match);
-					break; } } } }
-return(match);
+						if(match)
+							return(match);
+						break; } } } }
+	return(match);
 }
 /******************************************************************************
  Used by AREAFIX to add/remove/change areas in the areas file
@@ -1001,118 +1001,118 @@ void alter_config(faddr_t addr,char *old,char *new,char option)
 	int i,j,k,file;
 	faddr_t taddr;
 
-i=matchnode(addr,0);				  /* i = config number from here on */
-_splitpath(cfg.cfgfile,drive,dir,name,ext);
-sprintf(outpath,"%s%s",drive,dir);
-if((outname=tempname(outpath,"CFG"))==NULL) {
-	printf("\7ERROR creating temporary file name for %s.\n",outpath);
-	logprintf("ERROR tempnam(%s,CFG)",outpath);
-	return; }
-if((outfile=fopen(outname,"w+b"))==NULL) {
-	printf("\7ERROR couldn't open %s.\n",outname);
-	logprintf("ERROR line %d opening %s %s",__LINE__,outname
-		,sys_errlist[errno]);
-	free(outname);
-    return; }
-if((cfgfile=fnopen(&file,cfg.cfgfile,O_RDONLY))==NULL) {
-	printf("\7ERROR couldn't open %s.\n",cfg.cfgfile);
-	logprintf("ERROR line %d opening %s",__LINE__,cfg.cfgfile
-		,sys_errlist[errno]);
-	fclose(outfile);
-	free(outname);
-	return; }
+	i=matchnode(addr,0);				  /* i = config number from here on */
+	_splitpath(cfg.cfgfile,drive,dir,name,ext);
+	sprintf(outpath,"%s%s",drive,dir);
+	if((outname=tempname(outpath,"CFG"))==NULL) {
+		printf("\7ERROR creating temporary file name for %s.\n",outpath);
+		logprintf("ERROR tempnam(%s,CFG)",outpath);
+		return; }
+	if((outfile=fopen(outname,"w+b"))==NULL) {
+		printf("\7ERROR couldn't open %s.\n",outname);
+		logprintf("ERROR line %d opening %s %s",__LINE__,outname
+			,sys_errlist[errno]);
+		free(outname);
+		return; }
+	if((cfgfile=fnopen(&file,cfg.cfgfile,O_RDONLY))==NULL) {
+		printf("\7ERROR couldn't open %s.\n",cfg.cfgfile);
+		logprintf("ERROR line %d opening %s",__LINE__,cfg.cfgfile
+			,sys_errlist[errno]);
+		fclose(outfile);
+		free(outname);
+		return; }
 
-while(!feof(cfgfile)) {
-	if(!fgets(str,256,cfgfile))
-		break;
-	truncsp(str);
-	p=str;
-	while(*p && *p<=SP) p++;
-	if(*p==';') {
-		fprintf(outfile,"%s\r\n",str);
-        continue; }
-	sprintf(tmp,"%-.25s",p);
-	tp=strchr(tmp,SP);
-	if(tp)
-		*tp=0;								/* Chop off at space */
-	strupr(tmp);							/* Convert code to uppercase */
-	while(*p>SP) p++;						/* Skip code */
-    while(*p && *p<=SP) p++;                /* Skip white space */
-
-	if(option==0 && !strcmp(tmp,"USEPACKER")) {     /* Change Compression */
-		if(!*p)
-			continue;
-		strcpy(tmp2,p);
-		p=tmp2;
-		while(*p && *p>SP) p++;
-		*p=0;
-		p++;
-		if(!stricmp(new,tmp2)) {   /* Add to new definition */
-			fprintf(outfile,"%-10s %s %s %s\r\n",tmp,tmp2
-				,faddrtoa(&cfg.nodecfg[i].faddr,NULL)
-				,(*p) ? p : "");
-			match=1;
+	while(!feof(cfgfile)) {
+		if(!fgets(str,256,cfgfile))
+			break;
+		truncsp(str);
+		p=str;
+		while(*p && *p<=SP) p++;
+		if(*p==';') {
+			fprintf(outfile,"%s\r\n",str);
 			continue; }
-		else if(!stricmp(old,tmp2)) {	/* Remove from old def */
-			for(j=k=0;j<cfg.nodecfgs;j++) {
-				if(j==i)
-					continue;
-				if(!stricmp(cfg.arcdef[cfg.nodecfg[j].arctype].name,tmp2)) {
-					if(!k) {
-						fprintf(outfile,"%-10s %s",tmp,tmp2);
-						k++; }
-					fprintf(outfile," %s"
-						,faddrtoa(&cfg.nodecfg[j].faddr,NULL)); } }
-			fprintf(outfile,"\r\n");
-			continue; } }
+		sprintf(tmp,"%-.25s",p);
+		tp=strchr(tmp,SP);
+		if(tp)
+			*tp=0;								/* Chop off at space */
+		strupr(tmp);							/* Convert code to uppercase */
+		while(*p>SP) p++;						/* Skip code */
+		while(*p && *p<=SP) p++;                /* Skip white space */
 
-	if(option==1 && !strcmp(tmp,"AREAFIX")) {       /* Change Password */
-		if(!*p)
-			continue;
-		taddr=atofaddr(p);
-		if(!memcmp(&cfg.nodecfg[i].faddr,&taddr,sizeof(faddr_t))) {
-			while(*p && *p>SP) p++; 	/* Skip over address */
-			while(*p && *p<=SP) p++;	/* Skip over whitespace */
-			while(*p && *p>SP) p++; 	/* Skip over password */
-			while(*p && *p<=SP) p++;	/* Skip over whitespace */
-			fprintf(outfile,"%-10s %s %s %s\r\n",tmp
-				,faddrtoa(&cfg.nodecfg[i].faddr,NULL),new,p);
-			continue; } }
-
-	if(option>1 && !strcmp(tmp,"PASSIVE")) {        /* Toggle Passive Areas */
-		match=1;
-		for(j=k=0;j<cfg.nodecfgs;j++) {
-			if(option==2 && j==i) {
-				if(!k) fprintf(outfile,"%-10s",tmp);
-				fprintf(outfile," %s",faddrtoa(&cfg.nodecfg[j].faddr,NULL));
-				k++;
-				continue; }
-			if(option==3 && j==i)
+		if(option==0 && !strcmp(tmp,"USEPACKER")) {     /* Change Compression */
+			if(!*p)
 				continue;
-			if(cfg.nodecfg[j].attr&ATTR_PASSIVE) {
-				if(!k) fprintf(outfile,"%-10s",tmp);
-				fprintf(outfile," %s",faddrtoa(&cfg.nodecfg[j].faddr,NULL));
-				k++; } }
-		if(k) fprintf(outfile,"\r\n");
-		continue; }
-	fprintf(outfile,"%s\r\n",str); }
+			strcpy(tmp2,p);
+			p=tmp2;
+			while(*p && *p>SP) p++;
+			*p=0;
+			p++;
+			if(!stricmp(new,tmp2)) {   /* Add to new definition */
+				fprintf(outfile,"%-10s %s %s %s\r\n",tmp,tmp2
+					,faddrtoa(&cfg.nodecfg[i].faddr,NULL)
+					,(*p) ? p : "");
+				match=1;
+				continue; }
+			else if(!stricmp(old,tmp2)) {	/* Remove from old def */
+				for(j=k=0;j<cfg.nodecfgs;j++) {
+					if(j==i)
+						continue;
+					if(!stricmp(cfg.arcdef[cfg.nodecfg[j].arctype].name,tmp2)) {
+						if(!k) {
+							fprintf(outfile,"%-10s %s",tmp,tmp2);
+							k++; }
+						fprintf(outfile," %s"
+							,faddrtoa(&cfg.nodecfg[j].faddr,NULL)); } }
+				fprintf(outfile,"\r\n");
+				continue; } }
 
-if(!match) {
-	if(option==0)
-		fprintf(outfile,"%-10s %s %s\r\n","USEPACKER",new
-			,faddrtoa(&cfg.nodecfg[i].faddr,NULL));
-	if(option==2)
-		fprintf(outfile,"%-10s %s\r\n","PASSIVE"
-			,faddrtoa(&cfg.nodecfg[i].faddr,NULL)); }
+		if(option==1 && !strcmp(tmp,"AREAFIX")) {       /* Change Password */
+			if(!*p)
+				continue;
+			taddr=atofaddr(p);
+			if(!memcmp(&cfg.nodecfg[i].faddr,&taddr,sizeof(faddr_t))) {
+				while(*p && *p>SP) p++; 	/* Skip over address */
+				while(*p && *p<=SP) p++;	/* Skip over whitespace */
+				while(*p && *p>SP) p++; 	/* Skip over password */
+				while(*p && *p<=SP) p++;	/* Skip over whitespace */
+				fprintf(outfile,"%-10s %s %s %s\r\n",tmp
+					,faddrtoa(&cfg.nodecfg[i].faddr,NULL),new,p);
+				continue; } }
 
-fclose(cfgfile);
-fclose(outfile);
-if(delfile(cfg.cfgfile))
-	logprintf("ERROR line %d removing %s %s",__LINE__,cfg.cfgfile
-		,sys_errlist[errno]);
-if(rename(outname,cfg.cfgfile))
-	logprintf("ERROR line %d renaming %s to %s",__LINE__,outname,cfg.cfgfile);
-free(outname);
+		if(option>1 && !strcmp(tmp,"PASSIVE")) {        /* Toggle Passive Areas */
+			match=1;
+			for(j=k=0;j<cfg.nodecfgs;j++) {
+				if(option==2 && j==i) {
+					if(!k) fprintf(outfile,"%-10s",tmp);
+					fprintf(outfile," %s",faddrtoa(&cfg.nodecfg[j].faddr,NULL));
+					k++;
+					continue; }
+				if(option==3 && j==i)
+					continue;
+				if(cfg.nodecfg[j].attr&ATTR_PASSIVE) {
+					if(!k) fprintf(outfile,"%-10s",tmp);
+					fprintf(outfile," %s",faddrtoa(&cfg.nodecfg[j].faddr,NULL));
+					k++; } }
+			if(k) fprintf(outfile,"\r\n");
+			continue; }
+		fprintf(outfile,"%s\r\n",str); }
+
+	if(!match) {
+		if(option==0)
+			fprintf(outfile,"%-10s %s %s\r\n","USEPACKER",new
+				,faddrtoa(&cfg.nodecfg[i].faddr,NULL));
+		if(option==2)
+			fprintf(outfile,"%-10s %s\r\n","PASSIVE"
+				,faddrtoa(&cfg.nodecfg[i].faddr,NULL)); }
+
+	fclose(cfgfile);
+	fclose(outfile);
+	if(delfile(cfg.cfgfile))
+		logprintf("ERROR line %d removing %s %s",__LINE__,cfg.cfgfile
+			,sys_errlist[errno]);
+	if(rename(outname,cfg.cfgfile))
+		logprintf("ERROR line %d renaming %s to %s",__LINE__,outname,cfg.cfgfile);
+	free(outname);
 }
 /******************************************************************************
  Used by AREAFIX to process any '%' commands that come in via netmail
@@ -1481,7 +1481,7 @@ void pack(char *srcfile,char *destfile,faddr_t dest)
 			,j,errno,__LINE__,cmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile)); }
 }
 
-char attachment(char *bundlename,faddr_t dest,char cleanup)
+int attachment(char *bundlename,faddr_t dest,char cleanup)
 {
 	FILE *fidomsg,*stream;
 	char str[1025],*path,fname[129],*p;
@@ -1721,59 +1721,6 @@ void pack_bundle(char *infile,faddr_t dest)
 
 	pack(infile,str,dest);	/* Won't get here unless all bundles are full */
 }
-#if 0
-/******************************************************************************
- This function checks the inbound directory for the first bundle it finds, it
- will then unpack and delete the bundle.  If no bundles exist this function
- returns a 0, otherwise a 1 is returned.
-******************************************************************************/
-int unpack_bundle(void)
-{
-	char str[256];
-	static char fname[256];
-	int i;
-	struct _finddata_t ff;
-	static long find=-1;
-	BOOL		found;
-
-	for(i=0;i<7;i++) {
-		sprintf(str,"%s*.%s?",secure ? cfg.secure : cfg.inbound
-			,(i==0) ? "su" : (i==1) ? "mo" : (i==2) ? "tu" : (i==3) ? "we" : (i==4)
-			? "th" : (i==5) ? "fr" : "sa");
-		if(find==-1)
-			found=(find=_findfirst(str,&ff))!=-1;
-		else {
-			found=(_findnext(find,&ff)==0);
-			if(!found) {
-				_findclose(find);
-				found=(find=_findfirst(str,&ff))!=-1; 
-			} 
-		}
-		if(found) {
-			sprintf(fname,"%s%s",secure ? cfg.secure : cfg.inbound,ff.name);
-			if(unpack(fname)) {
-				if(ff.time_write+(48L*60L*60L)>time(NULL)) {
-					strcpy(str,fname);
-					str[strlen(str)-2]='_';
-					if(fexist(str))
-						str[strlen(str)-2]='-';
-					if(fexist(str))
-						delfile(str);
-					if(rename(fname,str))
-						logprintf("ERROR line %d renaming %s to %s"
-							,__LINE__,fname,str); } }
-			else if(delfile(fname))
-				logprintf("ERROR line %d removing %s %s",__LINE__,fname
-					,sys_errlist[errno]);
-			return(1); } }
-
-	if(find!=-1) {
-		_findclose(find);
-		find=-1;
-	}
-	return(0);
-}
-#else
 /******************************************************************************
  This function checks the inbound directory for the first bundle it finds, it
  will then unpack and delete the bundle.  If no bundles exist this function
@@ -1843,7 +1790,6 @@ BOOL unpack_bundle(void)
 
 	return(FALSE);
 }
-#endif
 
 void remove_re(char *str)
 {
@@ -2006,8 +1952,9 @@ void allocfail(uint size)
 void bail(int code)
 {
 	if(code || pause_on_exit) {
-		printf("\nHit any key...");
+		fprintf(stderr,"\nHit any key...");
 		getch();
+		fprintf(stderr,"\n");
 	}
 	exit(code);
 }
@@ -2672,12 +2619,12 @@ void seektonull(FILE *stream)
 {
 	char ch;
 
-while(!feof(stream)) {
-	if(!fread(&ch,1,1,stream))
-		break;
-	if(!ch)
-		break; }
-
+	while(!feof(stream)) {
+		if(!fread(&ch,1,1,stream))
+			break;
+		if(!ch)
+			break; 
+	}
 }
 
 /******************************************************************************
@@ -2690,15 +2637,15 @@ char *pktname(void)
     time_t now;
     struct tm *tm;
 
-now=time(NULL);
-for(i=0;i<MAX_TOTAL_PKTS*2;i++) {
-	now+=i;
-	tm=localtime(&now);
-	sprintf(str,"%s%02u%02u%02u%02u.PK_",cfg.outbound,tm->tm_mday,tm->tm_hour
-		,tm->tm_min,tm->tm_sec);
-	if(!fexist(str))				/* Add 1 second if name exists */
-		break; }
-return(str);
+	now=time(NULL);
+	for(i=0;i<MAX_TOTAL_PKTS*2;i++) {
+		now+=i;
+		tm=localtime(&now);
+		sprintf(str,"%s%02u%02u%02u%02u.PK_",cfg.outbound,tm->tm_mday,tm->tm_hour
+			,tm->tm_min,tm->tm_sec);
+		if(!fexist(str))				/* Add 1 second if name exists */
+			break; }
+	return(str);
 }
 /******************************************************************************
  This function puts a message into a Fido packet, writing both the header
@@ -2988,13 +2935,14 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char HUGE16 *inbuf
  passed in inaddr.	1 is returned if inaddr matches any of the addrs
  otherwise a 0 is returned.
 ******************************************************************************/
-char check_psb(addrlist_t addrlist,faddr_t inaddr)
+int check_psb(addrlist_t addrlist,faddr_t inaddr)
 {
 	int i;
 
 	for(i=0;i<addrlist.addrs;i++) {
 		if(!memcmp(&addrlist.addr[i],&inaddr,sizeof(faddr_t)))
-			return(1); }
+			return(1); 
+	}
 	return(0);
 }
 /******************************************************************************
@@ -3685,7 +3633,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 					continue; }
 				fmsgbuf=MALLOC(strlen((char *)buf)+512);
 				if(!fmsgbuf) {
-					printf("ERROR allocating %lu bytes for fmsgbuf\n"
+					printf("ERROR allocating %u bytes for fmsgbuf\n"
 						,strlen((char *)buf)+512);
 					logprintf("ERROR line %d allocating %lu bytes for fmsgbuf"
 						,__LINE__
@@ -3860,7 +3808,7 @@ int main(int argc, char **argv)
 	memset(&msg_seen,0,sizeof(addrlist_t));
 	memset(&msg_path,0,sizeof(addrlist_t));
 	memset(&fakearea,0,sizeof(areasbbs_t));
-	printf("\nSBBSecho Version %s (%s) SMBLIB %s ú Synchronet FidoNet Packet "
+	printf("\nSBBSecho Version %s (%s) SMBLIB %s - Synchronet FidoNet Packet "
 		"Tosser\n"
 		,SBBSECHO_VER
 #ifdef PLATFORM_DESC
