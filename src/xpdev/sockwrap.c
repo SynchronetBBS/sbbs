@@ -231,7 +231,7 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	return(FALSE);
 }
 
-int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen, int retries, int wait_secs, int *(lprintf)(int level, char *fmt, ...))
+int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen, uint retries, uint wait_secs, int *(lprintf)(int level, char *fmt, ...))
 {
 	int		result=-1;
 	int		i;
