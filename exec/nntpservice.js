@@ -263,6 +263,22 @@ while(client.socket.is_connected) {
 					case "lines":
 						field=Math.round(hdr.data_length/79)+1;
 						break;
+					/* FidoNet header fields */
+					case "x-ftn-pid":
+						field=hdr.ftn_pid;
+						break;
+					case "x-ftn-area":
+						field=hdr.ftn_area;
+						break;
+					case "x-ftn-flags":
+						field=hdr.ftn_flags;
+						break;
+					case "x-ftn-msgid":
+						field=hdr.ftn_msgid;
+						break;
+					case "x-ftn-reply":
+						field=hdr.ftn_reply;
+						break;
 				}
 
 				writeln(format("%u %s",i,field.toString()));
@@ -356,6 +372,18 @@ while(client.socket.is_connected) {
 				writeln("Date: " + hdr.date);
 				writeln("References: " + hdr.reply_id);
 				writeln("Newsgroups: " + selected.newsgroup);
+				/* FidoNet header */
+				if(msg.ftn_pid!=undefined)
+					writeln("X-FTN-PID: " + msg.ftn_pid);
+				if(msg.ftn_area!=undefined)
+					writeln("X-FTN-AREA: " + msg.ftn_area);
+				if(msg.ftn_flags!=undefined)
+					writeln("X-FTN-FLAGS: " + msg.ftn_flags);
+				if(msg.ftn_msgid!=undefined)
+					writeln("X-FTN-MSGID: " + msg.ftn_msgid);
+				if(msg.ftn_reply!=undefined)
+					writeln("X-FTN-REPLY: " + msg.ftn_reply);
+
 			}
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
 				writeln("");
@@ -477,7 +505,21 @@ while(client.socket.is_connected) {
 					case "newsgroups":
 						newsgroups=data.split(',');
 						break;
-					/* TODO: Parse date field */
+					case "x-ftn-pid":
+						hdr.ftn_pid=data;
+						break;
+					case "x-ftn-area":
+						hdr.ftn_area=data;
+						break;
+					case "x-ftn-flags":
+						hdr.ftn_flags=data;
+						break;
+					case "x-ftn-msgid":
+						hdr.ftn_msgid=data;
+						break;
+					case "x-ftn-reply":
+						hdr.ftn_reply=data;
+						break;
 				}
 			}
 

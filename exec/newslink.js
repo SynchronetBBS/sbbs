@@ -280,6 +280,19 @@ for(i in area) {
 		writeln("Date: " + hdr.date);
 		writeln("References: " + hdr.reply_id);
 		writeln("Newsgroups: " + newsgroup);
+
+		/* FidoNet header */
+		if(msg.ftn_pid!=undefined)
+			writeln("X-FTN-PID: " + msg.ftn_pid);
+		if(msg.ftn_area!=undefined)
+			writeln("X-FTN-AREA: " + msg.ftn_area);
+		if(msg.ftn_flags!=undefined)
+			writeln("X-FTN-FLAGS: " + msg.ftn_flags);
+		if(msg.ftn_msgid!=undefined)
+			writeln("X-FTN-MSGID: " + msg.ftn_msgid);
+		if(msg.ftn_reply!=undefined)
+			writeln("X-FTN-REPLY: " + msg.ftn_reply);
+
 		writeln("");
 		if(hdr.to.toLowerCase()!="all") {
 			writeln("  To: " + hdr.to);
@@ -402,6 +415,22 @@ for(i in area) {
 					break;
 				case "references":
 					hdr.reply_id=data;
+					break;
+				/* FidoNet headers */
+				case "x-ftn-pid":
+					hdr.ftn_pid=data;
+					break;
+				case "x-ftn-area":
+					hdr.ftn_area=data;
+					break;
+				case "x-ftn-flags":
+					hdr.ftn_flags=data;
+					break;
+				case "x-ftn-msgid":
+					hdr.ftn_msgid=data;
+					break;
+				case "x-ftn-reply":
+					hdr.ftn_reply=data;
 					break;
 			}
 		}
