@@ -109,6 +109,8 @@ struct {
 	char	make_cmdline[128];
 	char	sys_desc[1024];
 	struct utsname	name;	
+	char	sbbsuser[9];		/* Historical UName limit of 8 chars */
+	char	sbbsgroup[17];		/* Can't find historical limit for group names */
 } params; /* Build parameters */
 
 #define MAKEFILE "/tmp/SBBSmakefile"
@@ -178,6 +180,8 @@ int main(int argc, char **argv)
 	params.cvs=TRUE;
 	SAFECOPY(params.cvstag,"HEAD");
 	SAFECOPY(params.cvsroot,DEFAULT_CVSROOT);
+	SAFECOPY(params.sbbsuser,getenv("USER"));
+	SAFECOPY(params.sbbsgroup,getenv("GROUP"));
 
     printf("\r\nSynchronet Installation Utility (%s)  v%s  Copyright 2003 "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
@@ -295,6 +299,8 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s%s","Debug Build",params.debug?"Yes":"No");
 		sprintf(mopt[i++],"%-27.27s%s","Symlink Binaries",params.symlink?"Yes":"No");
 		sprintf(mopt[i++],"%-27.27s%s","Make Command-line",params.make_cmdline);
+		sprintf(mopt[i++],"%-27.27s%s","File Owner",params.sbbsuser);
+		sprintf(mopt[i++],"%-27.27s%s","File Group",params.sbbsgroup);
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
@@ -390,6 +396,16 @@ int main(int argc, char **argv)
 				uifc.input(WIN_MID,0,0,"",params.make_cmdline,65,K_EDIT);
 				break;
 			case 9:
+				uifc.helpbuf=	"`File Owner`\n"
+								"\n";
+				uifc.input(WIN_MID,0,0,"",params.sbbsuser,8,K_EDIT);
+				break;
+			case 10:
+				uifc.helpbuf=	"`File Group`\n"
+								"\n";
+				uifc.input(WIN_MID,0,0,"",params.sbbsgroup,32,K_EDIT);
+				break;
+			case 11:
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
 				bail(0);
 				break;
@@ -427,6 +443,8 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 	char	buf[1024];
 	char	url[MAX_PATH+1];
 	char	path[MAX_PATH+1];
+	char	sbbsuser[18];
+	char	sbbsgroup[43];
 	int		i;
 	int		fout,ret1,ret2;
 	ftp_FILE	*remote;
@@ -441,6 +459,11 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 	
 	sprintf(sbbsdir,"SBBSDIR=%s",params.install_path);
 	putenv(sbbsdir);
+
+	sprintf(sbbsuser,"SBBSUSER=%s",params.sbbsuser);
+	putenv(sbbsuser);
+	sprintf(sbbsgroup,"SBBSGROUP=%s",params.sbbsgroup);
+	putenv(sbbsgroup);
 
 	if(params.usebcc)
 		putenv("bcc=1");
