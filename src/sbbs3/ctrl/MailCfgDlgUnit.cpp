@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -124,10 +124,14 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         &MAIL_OPT_DEBUG_POP3;
     RelayRadioButton->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_RELAY_TX;
+#if 0 /* this is a stupid option */
     UserNumberCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_ALLOW_RX_BY_NUMBER;
+#endif
     AllowRelayCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_ALLOW_RELAY;
+    AuthViaIpCheckBox->Checked=MainForm->mail_startup.options
+    	&MAIL_OPT_SMTP_AUTH_VIA_IP;
     if(MainForm->mail_startup.options&MAIL_OPT_DNSBL_REFUSE)
 	    BLRefuseRadioButton->Checked=true;
     else if(MainForm->mail_startup.options&MAIL_OPT_DNSBL_BADUSER)
@@ -148,6 +152,7 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     DNSRadioButtonClick(Sender);
 	POP3EnabledCheckBoxClick(Sender);
     SendMailCheckBoxClick(Sender);
+    AllowRelayCheckBoxClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
 }
 //---------------------------------------------------------------------------
@@ -229,14 +234,20 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_DEBUG_POP3;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_DEBUG_POP3;
+#if 0 /* this is a stupid option */
 	if(UserNumberCheckBox->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_ALLOW_RX_BY_NUMBER;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_ALLOW_RX_BY_NUMBER;
+#endif
 	if(AllowRelayCheckBox->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_ALLOW_RELAY;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_ALLOW_RELAY;
+	if(AuthViaIpCheckBox->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_SMTP_AUTH_VIA_IP;
+    else
+	    MainForm->mail_startup.options&=~MAIL_OPT_SMTP_AUTH_VIA_IP;
 
     /* DNSBL */
 	MainForm->mail_startup.options&=
@@ -363,6 +374,12 @@ void __fastcall TMailCfgDlg::DNSBLExemptionsButtonClick(TObject *Sender)
     TextFileEditForm->Caption="Services Configuration";
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMailCfgDlg::AllowRelayCheckBoxClick(TObject *Sender)
+{
+	AuthViaIpCheckBox->Enabled=AllowRelayCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
 
