@@ -40,6 +40,7 @@ char	revision[16];
 char	compiler[32];
 
 #define NOANALYSIS		(1L<<0)
+#define NOCRC			(1L<<1)
 
 #ifdef __WATCOMC__
 	#define ffblk find_t
@@ -104,6 +105,7 @@ char *usage=
 "opts:\n"
 "       c    = create message base if it doesn't exist\n"
 "       a    = always pack msg base (disable compression analysis)\n"
+"       i    = ignore duplicate messages (do not store CRC)\n"
 "       d    = use default values (no prompt) for to, from, and subject\n"
 "       t<s> = set 'to' user name for imported message\n"
 "       n<s> = set 'to' netmail address for imported message\n"
@@ -199,7 +201,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	msg.hdr.when_written.zone=tzone;
 	msg.hdr.when_imported=msg.hdr.when_written;
 
-	if(smb.status.max_crcs) {
+	if(smb.status.max_crcs && !(mode&NOCRC)) {
 		crc=0xffffffffUL;
 		for(l=0;l<msgtxtlen;l++) 
 			crc=ucrc32(msgtxt[l],crc);
@@ -1315,6 +1317,9 @@ int main(int argc, char **argv)
 				switch(toupper(argv[x][j])) {
 					case 'A':
 						mode|=NOANALYSIS;
+						break;
+					case 'I':
+						mode|=NOCRC;
 						break;
 					case 'D':
 						to="All";
