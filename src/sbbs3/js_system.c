@@ -621,7 +621,7 @@ static JSBool
 js_alias(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
-	char		buf[80];
+	char		buf[128];
 	JSString*	js_str;
 	scfg_t*		cfg;
 
@@ -644,9 +644,30 @@ js_alias(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);
-
 	return(JS_TRUE);
 }
+
+static JSBool
+js_username(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int32		val;
+	char		buf[128];
+	JSString*	js_str;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	val=0;
+	JS_ValueToInt32(cx,argv[0],&val);
+
+	if((js_str = JS_NewStringCopyZ(cx, username(cfg,val,buf)))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
 
 static JSBool
 js_matchuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1147,6 +1168,9 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 
 static jsMethodSpec js_system_functions[] = {
+	{"username",		js_username,		1,	JSTYPE_STRING,	JSDOCSTR("number")
+	,JSDOCSTR("return user name for specified user number")
+	},
 	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("string alias")
 	,JSDOCSTR("return user name for alias")
 	},		
