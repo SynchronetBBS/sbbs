@@ -105,7 +105,8 @@ typedef struct {
 	char	userverified[26];			/* User who last vouched */
 	char	web_url[61];				/* Web-site address */
 	char	sysop_email[61];			/* Sysop's e-mail address */
-	char	unused[322];				/* Unused space */
+	time_t	exported;					/* Date last exported to SMB */
+	char	unused[318];				/* Unused space */
 } bbs_t;
 
 #ifdef _WIN32
