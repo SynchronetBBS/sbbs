@@ -2004,6 +2004,8 @@ static void respond(http_session_t * session)
 		do {
 
 			/* RUN SCRIPT */
+			JS_ClearPendingException(session->js_cx);
+
 			if((js_script=JS_CompileFile(session->js_cx, session->js_glob
 				,session->req.physical_path))==NULL) {
 				lprintf("%04d !JavaScript FAILED to compile script (%s)"

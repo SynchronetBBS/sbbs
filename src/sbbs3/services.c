@@ -853,6 +853,8 @@ static void js_service_thread(void* arg)
 	JS_SetProperty(js_cx, js_glob, "datagram", &val);
 	FREE_AND_NULL(service_client.udp_buf);
 
+	JS_ClearPendingException(js_cx);
+
 	js_script=JS_CompileFile(js_cx, js_glob, spath);
 
 	if(js_script==NULL) 
@@ -937,6 +939,8 @@ static void js_static_service_thread(void* arg)
 
 	val = BOOLEAN_TO_JSVAL(JS_FALSE);
 	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
+
+	JS_ClearPendingException(js_cx);
 
 	js_script=JS_CompileFile(js_cx, js_glob, spath);
 

@@ -633,6 +633,8 @@ long sbbs_t::js_execfile(const char *cmd)
 		JS_DefineProperty(js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
+		JS_ClearPendingException(js_cx);
+
 		js_script=JS_CompileFile(js_cx, js_scope, path);
 	}
 

@@ -974,7 +974,10 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			globfree(&g);
 		}
 
+
 		/* RUN SCRIPT */
+		JS_ClearPendingException(js_cx);
+
 		if((js_script=JS_CompileFile(js_cx, parent, spath))==NULL) {
 			lprintf("%04d !JavaScript FAILED to compile script (%s)",sock,spath);
 			break;
