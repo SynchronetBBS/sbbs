@@ -1532,8 +1532,8 @@ static void smtp_thread(void* arg)
 							break;
 						truncsp(rcpt_addr);
 						putsmsg(&scfg,usernum,telegram_buf);
-						lprintf("%04d SMTP Created telegram from %s to %s <%s>"
-							,socket, sender_addr, rcpt_name, rcpt_addr);
+						lprintf("%04d SMTP Created telegram (%ld bytes) from %s to %s <%s>"
+							,socket, length, sender_addr, rcpt_name, rcpt_addr);
 						rcpt_count++;
 					}
 					free(telegram_buf);
@@ -2039,7 +2039,7 @@ static void smtp_thread(void* arg)
 			else
 				p++;
 
-			truncstr(str,"> ");
+			truncstr(str,">");	/* was truncating at space too */
 
 			forward=FALSE;
 			no_forward=FALSE;
