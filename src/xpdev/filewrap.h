@@ -41,6 +41,7 @@
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
 #include <sys/stat.h>	/* S_IREAD and S_IWRITE (for use with sopen) */
+#include <stdio.h>
 
 #if defined(__unix__)
 	#include <unistd.h>	/* read, write, close, ftruncate, lseek, etc. */
@@ -128,6 +129,10 @@ extern "C" {
 #if !defined(__BORLANDC__) && defined(__unix__)
 	DLLEXPORT int	DLLCALL sopen(const char* fn, int access, int share, ...);
 	DLLEXPORT long	DLLCALL filelength(int fd);
+#endif
+
+#if defined(__unix__)
+	DLLEXPORT FILE * DLLCALL _fsopen(char *pszFilename, char *pszMode, int shmode);
 #endif
 
 DLLEXPORT time_t	DLLCALL filetime(int fd);

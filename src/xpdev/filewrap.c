@@ -240,3 +240,65 @@ int DLLCALL unlock(int file, long offset, long size)
 }
 
 #endif	/* !Unix && (MSVC || MinGW) */
+
+#ifdef __unix__
+FILE *_fsopen(char *pszFilename, char *pszMode, int shmode)
+{
+	int file;
+	int Mode=0;
+	char *p;
+	
+	for(p=pszMode;*p;p++)  {
+		switch (*p)  {
+			case 'r':
+				Mode |= 1;
+				break;
+			case 'w':
+				Mode |= 2;
+				break;
+			case 'a':
+				Mode |= 4;
+				break;
+			case '+':
+				Mode |= 8;
+				break;
+			case 'b':
+			case 't':
+				break;
+			default:
+				errno=EINVAL;
+			return(NULL);
+		}
+	}
+	switch(Mode)  {
+		case 1:
+			Mode=O_RDONLY;
+			break;
+		case 2:
+			Mode=O_WRONLY|O_CREAT;
+			break;
+		case 4:
+			Mode=O_APPEND|O_WRONLY|O_CREAT;
+			break;
+		case 9:
+			Mode=O_RDWR;
+			break;
+		case 10:
+			Mode=O_RDWR|O_CREAT;
+			break;
+		case 12:
+			Mode=O_RDWR|O_APPEND|O_CREAT;
+			break;
+		default:
+			errno=EINVAL;
+			return(NULL);
+	}
+	if(Mode&O_CREAT)
+		file=sopen(pszFilename,Mode,shmode,S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	else
+		file=sopen(pszFilename,Mode,shmode);
+	if(file==-1)
+		return(NULL);
+	return(fdopen(file,pszMode));
+}
+#endif
