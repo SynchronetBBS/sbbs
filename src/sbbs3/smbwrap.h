@@ -64,11 +64,6 @@
 	#define chsize(fd,size)		ftruncate(fd,size)
 
 	#define O_BINARY		0
-	#define SH_DENYNO		0
-	#define SH_DENYRW		F_WRLCK
-	#define SH_DENYRD       F_RDLCK
-	#define SH_DENYWR       F_WRLCK
-
 #endif
 
 #ifndef BOOL

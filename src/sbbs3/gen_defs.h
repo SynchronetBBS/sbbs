@@ -104,12 +104,15 @@
 
 #elif defined(__unix__)
 
+#include <fcntl.h>
+
 #define O_DENYNONE	0
 #define O_DENYALL	0
 #define O_BINARY	0
-#define SH_DENYNO	0
-#define SH_DENYRW	0
-#define SH_DENYWR	0
+#define SH_DENYNO	2          // open() will *not* block
+#define SH_DENYRW	F_WRLCK	   // blocks on read/write
+#define SH_DENYRD   F_RDLCK	   // blocks on read
+#define SH_DENYWR   F_WRLCK    // blocks on write (and read)
 
 #endif
 

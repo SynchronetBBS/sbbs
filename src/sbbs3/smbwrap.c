@@ -53,6 +53,7 @@
 /* SMB-specific */
 #include "smblib.h"		/* SMBCALL */
 #include "smbwrap.h"	/* Verify prototypes */
+#include "gen_defs.h"   /* SH_DENYNO */
 
 #ifdef _WIN32
 #define stat(f,s)	_stat(f,s)
