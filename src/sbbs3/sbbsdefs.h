@@ -48,7 +48,7 @@
 
 #ifdef JAVASCRIPT
 	#define VERSION 	"3.10"  /* Version: Major.minor  */
-	#define REVISION	'C'
+	#define REVISION	'D'
 #else
 	#define VERSION 	"3.00"  /* Version: Major.minor  */
 	#define REVISION	'G'
