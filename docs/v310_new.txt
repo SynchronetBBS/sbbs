@@ -2175,9 +2175,9 @@ o CWD's to paths with trailing filenames now fail (as they should)
     the CWD succeeds the subsequent requested paths were all wrong
 
 
-****************************************************
-* What's New in Synchronet Version 3.10 Revision L *
-****************************************************
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision L (Beta) *
+***********************************************************
 
 General
 ~~~~~~~
@@ -2200,6 +2200,21 @@ o Node window in SBBSCTRL no longer unnecessarily locks node.dab
 o QWK Bugfix: was always truncating MESSAGES.DAT, so appending to an existing
   QWK packet (pre-packed or aborted download) did not work at all (ever)
   - this also resulted in a side-effect of corrupted indexes (if enabled)
+
+o Beautified and sped-up (immensely) the unpacking of QWK network message 
+  packets
+
+
+Control Panel (Win32 GUI)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+o Bugfix: Configuration Wizard no longer fails to save configuration files
+  if there is no existing mail message database (data/mail.*)
+
+o Servers are recycled/refreshed after completing Configuration Wizard
+
+o Fixed DNS Server address detection on systems with multiple NICs
+
+o File->Import/Export Settings menu options now prompt for path/filename
 
 
 Telnet Server
@@ -2268,6 +2283,8 @@ o New properties: bbs.batch_upload_total and bbs.batch_dnload_total
 o bbs.batch_download() now checks if download queue is empty, now returns BOOL
   instead of VOID
 
+o New methods: bbs.good_password(), bbs.select_shell(), bbs.select_editor()
+
 o Fixed msg_area.grp_list[].sub_list[].is_operator and is_moderated properties
   - were true if configured as blank in SCFG (should be false)
 
@@ -2326,8 +2343,20 @@ o Now deletes attached file if MSG_KILLFILE aux attribute set
 
 o New log entry when a delivery failure notification message is created
 
+o Now correctly handles (and rejects) mail headers > 64K in size
+  - total length of all header fields for a single message cannot exceed 64K
+
 o Fixed failure to create delivery failure notification message:
   !BOUNCE ERROR -100 (msgbase not open) incrementing data allocation units
+
+
+FTP Server
+~~~~~~~~~~
+o SITE WHO command now reports total number of active FTP clients
+
+o Added SITE VER and SITE UPTIME commands
+
+o Added SITE RECYCLE and SITE RECYCLE ALL sysop-only commands
 
 
 /* End of V310_NEW.TXT */
