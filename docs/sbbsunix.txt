@@ -192,9 +192,9 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    B. Copy (or create symbolic links to) the following files:
       /sbbs/src/sbbs3/gcc.linux.exe.debug/*
-      /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfg
-      /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.ixb
-      /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.dat
+      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfg
+      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.ixb
+      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.dat
       (the paths will be different for other platforms or release builds)
 
    C. Copy (or create symbolic links to) the following shared libraries:
