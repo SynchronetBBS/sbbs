@@ -751,7 +751,7 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 	char	*out;
 	char	*p;
-	
+
 	if(target==NULL)  {
 		if((target=malloc(MAX_PATH+1))==NULL) {
 			return(NULL);
@@ -761,13 +761,25 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 	*out=0;
 
 	if(*path != '/')  {
-		p=getcwd(target,size);
-		if(p==NULL || strlen(p)+strlen(path)>=size)
-			return(NULL);
-		out=strrchr(target,'\0');
-		*(out++)='/';
-		*out=0;
-		out--;
+		if(*path == '~') {
+			p=getenv("HOME");
+			if(p==NULL || strlen(p)+strlen(path)>=size)
+				return(NULL);
+			strcpy(target,p);
+			out=strrchr(target,'\0');
+			path++;
+		}
+		else {
+			p=getcwd(NULL,size);
+			if(p==NULL || strlen(p)+strlen(path)>=size)
+				return(NULL);
+			strcpy(target,p);
+			free(p);
+			out=strrchr(target,'\0');
+			*(out++)='/';
+			*out=0;
+			out--;
+		}
 	}
 	strncat(target,path,size-1);
 	
