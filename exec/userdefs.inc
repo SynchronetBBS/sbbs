@@ -1,13 +1,10 @@
-# USERDEFS.INC
-
-# Copyright 1995 Digital Dynamics, All rights reserved.
+# userdefs.inc
 
 # Baja include file defining various Synchronet USER related constants
 
-# You man include use this file in your source (!include userdefs.inc),
-# but you may not distribute modified versions of this file. It is not
-# suggested that you modify this file AT ALL, but rather create your own
-# include file(s) for your own constant definitions.
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !define LEN_ALIAS	25	# User alias
 !define LEN_NAME        25      # User name
@@ -158,5 +155,6 @@
 !define USER_STRING_PHONE	10
 !define USER_STRING_MODEM	11
 !define USER_STRING_COMMENT	12
+!define USER_STRING_NETMAIL	13	# Requires v3 (03/02/00) or later
 
 # End of USERDEFS.INC
