@@ -66,11 +66,11 @@ SBBSLIB	=	$(LIBODIR)\sbbs.lib
 .path.cpp = .;$(XPDEV)
 
 # Implicit C Compile Rule for SBBS.DLL
-.c.$(OFILE):
+.c.obj:
 	@$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
 
 # Implicit C++ Compile Rule for SBBS.DLL
-.cpp.$(OFILE):
+.cpp.obj:
 	@$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
 
 # Create output directories if they don't exist
@@ -81,24 +81,24 @@ $(EXEODIR):
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(OBJS) \
-	$(LIBODIR)\sbbscon.$(OFILE) \
-	$(LIBODIR)\sbbs_ini.$(OFILE) \
-	$(LIBODIR)\ini_file.$(OFILE) \
-	$(LIBODIR)\ver.$(OFILE) \
-	$(LIBODIR)\ftpsrvr.$(OFILE) \
-	$(LIBODIR)\websrvr.$(OFILE) \
-	$(LIBODIR)\mailsrvr.$(OFILE) $(LIBODIR)\mxlookup.$(OFILE) $(LIBODIR)\mime.$(OFILE) \
-	$(LIBODIR)\services.$(OFILE)
+	$(LIBODIR)\sbbscon.obj \
+	$(LIBODIR)\sbbs_ini.obj \
+	$(LIBODIR)\ini_file.obj \
+	$(LIBODIR)\ver.obj \
+	$(LIBODIR)\ftpsrvr.obj \
+	$(LIBODIR)\websrvr.obj \
+	$(LIBODIR)\mailsrvr.obj $(LIBODIR)\mxlookup.obj $(LIBODIR)\mime.obj $(LIBODIR)\base64.obj \
+	$(LIBODIR)\services.obj
 	@$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $** $(LIBS)
 
 # SBBS DLL Link Rule
-$(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
+$(SBBS): $(OBJS) $(LIBODIR)\ver.obj
     @echo Linking $< ...
-	@$(LD) $(LFLAGS) c0d32.obj $(LIBS) $(OBJS) $(LIBODIR)\ver.$(OFILE), $*, $*, \
+	@$(LD) $(LFLAGS) c0d32.obj $(LIBS) $(OBJS) $(LIBODIR)\ver.obj, $*, $*, \
 		import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
-$(MAILSRVR): mailsrvr.c mxlookup.c mime.c crc32.c $(SBBSLIB)
+$(MAILSRVR): mailsrvr.c mxlookup.c mime.c base64.c crc32.c $(SBBSLIB)
     @echo Creating $@
 	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DMAILSRVR_EXPORTS -DSMB_IMPORTS -DWRAPPER_IMPORTS $** $(LIBS)
@@ -110,7 +110,7 @@ $(FTPSRVR): ftpsrvr.c nopen.c $(SBBSLIB)
 		-DFTPSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # FTP Server DLL Link Rule
-$(WEBSRVR): wesrvr.c $(XPDEV)sockwrap.c
+$(WEBSRVR): wesrvr.c $(XPDEV)sockwrap.c base64.c
     @echo Creating $@
 	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DWEBSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
