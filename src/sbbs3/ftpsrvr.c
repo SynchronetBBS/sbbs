@@ -1534,12 +1534,14 @@ static void send_thread(void* arg)
 						adjustuserrec(&scfg,uploader.number,U_CDT,10,mod);
 						ultoac(mod,tmp);
 					}
-					/* Inform uploader of downloaded file */
-					sprintf(str,text[DownloadUserMsg]
-						,getfname(xfer.filename)
-						,xfer.filepos ? "partially FTP-" : "FTP-"
-						,xfer.user->alias,tmp); 
-					putsmsg(&scfg,uploader.number,str); 
+					if(!(scfg.dir[f.dir]->misc&DIR_QUIET)) {
+						/* Inform uploader of downloaded file */
+						sprintf(str,text[DownloadUserMsg]
+							,getfname(xfer.filename)
+							,xfer.filepos ? "partially FTP-" : "FTP-"
+							,xfer.user->alias,tmp); 
+						putsmsg(&scfg,uploader.number,str); 
+					}
 				}
 			}
 			/* Need to update datedled in index */

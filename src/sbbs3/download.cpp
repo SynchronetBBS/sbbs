@@ -83,19 +83,19 @@ void sbbs_t::downloadfile(file_t* f)
 			mod=((ulong)(l*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
 			adjustuserrec(&cfg,i,U_MIN,10,mod);
 			sprintf(tmp,"%lu minute",mod);
-			sprintf(str,text[DownloadUserMsg]
-				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? temp_file : f->name
-				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? text[Partially] : nulstr
-				,useron.alias,tmp); }
-		else {
+		} else {
 			mod=(ulong)(l*(cfg.dir[f->dir]->dn_pct/100.0));
 			adjustuserrec(&cfg,i,U_CDT,10,mod);
 			ultoac(mod,tmp);
+		}
+		if(!(cfg.dir[f->dir]->misc&DIR_QUIET)) {
 			sprintf(str,text[DownloadUserMsg]
 				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? temp_file : f->name
 				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? text[Partially] : nulstr
-				,useron.alias,tmp); }
-		putsmsg(&cfg,i,str); }
+				,useron.alias,tmp); 
+			putsmsg(&cfg,i,str); 
+		}
+	}
 	/*******************/
 	/* Update IXB File */
 	/*******************/

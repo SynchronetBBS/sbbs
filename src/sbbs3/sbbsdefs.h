@@ -279,6 +279,7 @@
 #define DIR_CDTMIN	(1L<<15)		/* Give uploader minutes instead of cdt */
 #define DIR_SINCEDL (1L<<16)		/* Purge based on days since last dl */
 #define DIR_MOVENEW (1L<<17)		/* Files marked as new when moved */
+#define DIR_QUIET	(1L<<18)		/* Do not notify uploader of downloads */
 
                                     /* Bit values for file_t.misc */
 #define FM_EXTDESC  (1<<0)          /* Extended description exists */
