@@ -201,13 +201,7 @@ char* strrev(char* str)
 int DLLCALL xp_random(int n)
 {
 	float f;
-	static BOOL initialized;
 
-	if(!initialized) {
-		srand(time(NULL));	/* seed random number generator */
-		rand();				/* throw away first result */
-		initialized=TRUE;
-	}
 	if(n<2)
 		return(0);
 	f=(float)rand()/(float)RAND_MAX;
