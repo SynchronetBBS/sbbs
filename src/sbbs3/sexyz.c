@@ -1122,6 +1122,7 @@ int main(int argc, char **argv)
 	uint	fnames=0;
 	FILE*	fp;
 	FILE*	log=NULL;
+	BOOL	b;
 	char	compiler[32];
 
 	DESCRIBE_COMPILER(compiler);
@@ -1303,6 +1304,11 @@ int main(int argc, char **argv)
 	val=1;
 	ioctlsocket(sock,FIONBIO,&val);	
 #endif
+
+	/* Enable the Nagle Algorithm */
+	b=0;
+	setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&b,sizeof(b));
+
 	if(!DCDHIGH) {
 		newline();
 		fprintf(statfp,"No carrier\n");
