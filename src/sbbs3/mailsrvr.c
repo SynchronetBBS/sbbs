@@ -1379,7 +1379,7 @@ static void smtp_thread(void* arg)
 	status(str);
 
 	sockprintf(socket,"220 %s Synchronet SMTP Server %s/%s Ready"
-		,scfg.sys_inetaddr,revision,PLATFORM_DESC);
+		,startup->host_name,revision,PLATFORM_DESC);
 	while(1) {
 		rd = sockreadline(socket, buf, sizeof(buf));
 		if(rd<1) 
@@ -1650,7 +1650,7 @@ static void smtp_thread(void* arg)
 						"          by %s [%s] (Synchronet Mail Server %s/%s) with %s\r\n"
 						"          for %s; %s"
 						,host_name,hello_name,host_ip
-						,scfg.sys_inetaddr,inet_ntoa(server_addr.sin_addr)
+						,startup->host_name,inet_ntoa(server_addr.sin_addr)
 						,revision,PLATFORM_DESC
 						,esmtp ? "ESMTP" : "SMTP"
 						,rcpt_name,msgdate(msg.hdr.when_imported,date));
@@ -1835,7 +1835,7 @@ static void smtp_thread(void* arg)
 			p=buf+4;
 			while(*p && *p<=' ') p++;
 			SAFECOPY(hello_name,p);
-			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
+			sockprintf(socket,"250 %s",startup->host_name);
 			esmtp=FALSE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
@@ -1847,7 +1847,7 @@ static void smtp_thread(void* arg)
 			p=buf+4;
 			while(*p && *p<=' ') p++;
 			SAFECOPY(hello_name,p);
-			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
+			sockprintf(socket,"250 %s",startup->host_name);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
@@ -1856,7 +1856,7 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if(!stricmp(buf,"QUIT")) {
-			sockprintf(socket,"221 %s Service closing transmission channel",scfg.sys_inetaddr);
+			sockprintf(socket,"221 %s Service closing transmission channel",startup->host_name);
 			break;
 		} 
 		if(!stricmp(buf,"NOOP")) {
@@ -2647,7 +2647,7 @@ static void sendmail_thread(void* arg)
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			sockprintf(sock,"HELO %s",scfg.sys_inetaddr);
+			sockprintf(sock,"HELO %s",startup->host_name);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				sprintf(err,"%s replied with '%s' instead of 250",server,buf);
 				bounce(&smb,&msg,err,buf[0]=='5');
