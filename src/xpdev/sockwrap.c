@@ -87,8 +87,13 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 		count-=tell(file);		/* don't try to read beyond EOF */
 	}
 
+	if(count<0) {
+		errno=EINVAL;
+		return(-1);
+	}
+
 	total=0;
-	while(total!=count) {
+	while(total<count) {
 		rd=read(file,buf,sizeof(buf));
 		if(rd==-1)
 			return(-1);
@@ -112,9 +117,6 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 
 	if(offset!=NULL)
 		(*offset)+=total;
-
-	if(wr<1)
-		return(wr);
 
 	return(total);
 #endif
