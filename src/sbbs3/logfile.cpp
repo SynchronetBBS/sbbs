@@ -120,6 +120,32 @@ void sbbs_t::log(char *str)
 		logcol+=strlen(str);
 }
 
+bool sbbs_t::syslog(char* code, char *entry)
+{		
+	char	fname[MAX_PATH+1];
+	char	str[128];
+	char	tmp[64];
+	int		file;
+	struct tm * tm;
+
+	now=time(NULL);
+	tm=gmtime(&now);
+	if(tm==NULL)
+		return(false);
+	sprintf(fname,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir,tm->tm_mon+1,tm->tm_mday
+		,TM_YEAR(tm->tm_year));
+	if((file=nopen(fname,O_WRONLY|O_APPEND|O_CREAT))==-1) {
+		lprintf("!ERRROR opening/creating %s",fname); 
+		return(false);
+	}
+
+	sprintf(str,"%-2.2s %s  %s\r\n\r\n",code, hhmmtostr(&cfg,tm,tmp), entry);
+	write(file,str,strlen(str));
+	close(file);
+
+	return(true);
+}
+
 /****************************************************************************/
 /* Writes 'str' on it's own line in node.log								*/
 /****************************************************************************/
