@@ -460,8 +460,7 @@ void node_toggles(int nodenum)  {
 	getnodedat(nodenum,&node,0);
 	i=0;
 	uifc.helpbuf=	"`Node Toggles:`\n"
-					"\nToDo: Add help (Mention that changes take effect"
-					"\non menu exit not immediately)";
+					"\nToDo: Add help (Mention that changes take effect immediately)";
 	while(save==0) {
 		j=0;
 		sprintf(opt[j++],"%-30s%3s","Locked for SysOps only",node.misc&NODE_LOCK ? YesStr : NoStr);
@@ -469,7 +468,7 @@ void node_toggles(int nodenum)  {
 		sprintf(opt[j++],"%-30s%3s","Page disabled",node.misc&NODE_POFF ? YesStr : NoStr);
 		sprintf(opt[j++],"%-30s%3s","Activity alert disabled",node.misc&NODE_AOFF ? YesStr : NoStr);
 		sprintf(opt[j++],"%-30s%3s","Re-run on logoff",node.misc&NODE_RRUN ? YesStr : NoStr);
-		sprintf(opt[j++],"%-30s%3s","Down node after logoff",node.misc&NODE_DOWN ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Down node after logoff",(node.misc&NODE_DOWN || (node.status==NODE_OFFLINE)) ? YesStr : NoStr);
 		sprintf(opt[j++],"%-30s%3s","Reset private chat",node.misc&NODE_RPCHT ? YesStr : NoStr);
 		opt[j][0]=0;
 
@@ -495,7 +494,14 @@ void node_toggles(int nodenum)  {
 				break;
 
 			case 5:	/* Down */
-				node.misc ^= NODE_DOWN;
+				if(node.status == NODE_INUSE)
+					node.misc ^= NODE_DOWN;
+				if(node.status != NODE_INUSE) {
+					if(node.status!=NODE_OFFLINE)
+						node.status=NODE_OFFLINE;
+					else
+						node.status=NODE_WFC;
+				}
 				break;
 
 			case 6:	/* Reset chat */
@@ -510,9 +516,9 @@ void node_toggles(int nodenum)  {
 				uifc.msg("Option not implemented");
 				continue;
 		}
+		lock(nodefile,(long)(nodenum-1)*sizeof(node_t),sizeof(node_t));
+		putnodedat(nodenum,node);
 	}
-	lock(nodefile,(long)(nodenum-1)*sizeof(node_t),sizeof(node_t));
-	putnodedat(nodenum,node);
 }
 
 int main(int argc, char** argv)  {
