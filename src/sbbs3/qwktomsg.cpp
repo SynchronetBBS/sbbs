@@ -353,15 +353,17 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		if(j) {
 			if(j==1) {
 				bprintf("\r\nDuplicate message\r\n");
-				if(subnum==INVALID_SUB) {
-					sprintf(str,"%s duplicate e-mail attempt",useron.alias);
-					logline("E!",str); 
-				} else {
-					sprintf(str,"%s duplicate message attempt in %s %s"
-						,useron.alias
-						,cfg.grp[cfg.sub[subnum]->grp]->sname
-						,cfg.sub[subnum]->lname);
-					logline("P!",str); 
+				if(!fromhub) {
+					if(subnum==INVALID_SUB) {
+						sprintf(str,"%s duplicate e-mail attempt",useron.alias);
+						logline("E!",str); 
+					} else {
+						sprintf(str,"%s duplicate message attempt in %s %s"
+							,useron.alias
+							,cfg.grp[cfg.sub[subnum]->grp]->sname
+							,cfg.sub[subnum]->lname);
+						logline("P!",str); 
+					}
 				}
 			} else
 				errormsg(WHERE,ERR_CHK,smb.file,j);
@@ -371,7 +373,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			LFREE(tail);
 			return(false); } }
 
-	bputs(text[WritingIndx]);
+	if(online==ON_REMOTE)
+		bputs(text[WritingIndx]);
 
 	/*************************************/
 	/* Write SMB message header and text */
