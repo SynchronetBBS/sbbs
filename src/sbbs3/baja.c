@@ -2236,6 +2236,11 @@ void compile(char *src)
 		if(!stricmp(p,"FINDUSER")) {
 			fprintf(out,"%c",CS_FINDUSER);
 			continue; }
+		if(!stricmp(p,"MATCHUSER")) {
+			fprintf(out,"%c%c",CS_VAR_INSTRUCTION,MATCHUSER);
+			writecrc(src,arg);
+			writecrc(src,arg2);
+			continue; }
 
 		if(!stricmp(p,"LOG")) {
 			if(!(*arg)) break;
@@ -3367,7 +3372,7 @@ void compile(char *src)
 }
 
 char *banner=	"\n"
-				"BAJA v2.31 - Synchronet Shell/Module Compiler - "
+				"BAJA v2.32 - Synchronet Shell/Module Compiler - "
 				"Copyright 2001 Rob Swindell\n";
 
 char *usage=	"\n"

@@ -987,6 +987,19 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 							csi->logic=LOGIC_TRUE;
 					return(0);
 
+				case MATCHUSER:
+					lp=getintvar(csi,*(long *)csi->ip);
+					csi->ip+=4;
+					pp=getstrvar(csi,*(long *)csi->ip);
+					csi->ip+=4;
+					if(lp) {
+						if(pp && *pp)
+							*lp=matchuser(&cfg, *pp);
+						else
+							*lp=0; 
+					}
+					return(0);
+
 				default:
 					errormsg(WHERE,ERR_CHK,"var sub-instruction",*(csi->ip-1));
 					return(0); }
