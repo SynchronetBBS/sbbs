@@ -762,6 +762,8 @@ static char* user_stats_prop_desc[] = {
 	,"total bytes downloaded"
 	,"total files downloaded"
 	,"suspected leech downloads"
+	,"number of e-mail messages currently waiting"
+	,"number of e-mail messages sent, currently pending deletion"
 	,NULL
 };
 #endif
