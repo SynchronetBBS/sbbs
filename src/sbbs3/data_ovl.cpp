@@ -99,6 +99,10 @@ extern "C" BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subs
 	return(TRUE);
 }
 
+void sbbs_t::putmsgptrs()
+{
+	::putmsgptrs(&cfg,useron.number,subscan);
+}
 
 /****************************************************************************/
 /* Writes to DATA\USER\PTRS\xxxx.DAB the msgptr array for the current user	*/
