@@ -144,7 +144,9 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 			if(x<cfg.total_prots)	/* This should be always */
 				protocol(cmdstr(cfg.prot[x]->ulcmd,str2,nulstr,NULL),true); 
 		}
-		fexistcase(str2);
+		sprintf(tmp,"%s%s",cfg.temp_dir,title);
+		if(!fexistcase(str2) && fexistcase(tmp))
+			mv(tmp,str2,0);
 		l=flength(str2);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));

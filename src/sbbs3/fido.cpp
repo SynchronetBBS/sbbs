@@ -254,7 +254,9 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 			if(x<cfg.total_prots)	/* This should be always */
 				protocol(cmdstr(cfg.prot[x]->ulcmd,subj,nulstr,NULL),true); 
 		}
-		fexistcase(subj);
+		sprintf(tmp,"%s%s",cfg.temp_dir,title);
+		if(!fexistcase(subj) && fexistcase(tmp))
+			mv(tmp,subj,0);
 		l=flength(subj);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],fname,ultoac(l,tmp));
