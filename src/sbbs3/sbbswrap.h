@@ -43,6 +43,9 @@
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
+#ifdef DLLCALL
+#undef DLLCALL
+#endif
 
 #ifdef _WIN32
 	#ifdef WRAPPER_DLL
@@ -50,8 +53,14 @@
 	#else
 		#define DLLEXPORT	__declspec(dllimport)
 	#endif
+	#ifdef __BORLANDC__
+		#define DLLCALL __stdcall
+	#else
+		#define DLLCALL
+	#endif
 #else	/* !_WIN32 */
 	#define DLLEXPORT
+	#define DLLCALL
 #endif
 
 #ifdef __cplusplus
@@ -81,10 +90,10 @@ extern "C" {
 	#define _mkdir(dir)			mkdir(dir,0777)
 	#define _rmdir(dir)			rmdir(dir)
 
-	DLLEXPORT void	sbbs_beep(int freq, int dur);
-	DLLEXPORT long	filelength(int fd);
-	DLLEXPORT char*	strupr(char* str);
-	DLLEXPORT char*	strlwr(char* str);
+	DLLEXPORT void	DLLCALL sbbs_beep(int freq, int dur);
+	DLLEXPORT long	DLLCALL filelength(int fd);
+	DLLEXPORT char*	DLLCALL strupr(char* str);
+	DLLEXPORT char*	DLLCALL strlwr(char* str);
 
 #else	/* Unsupported OS */
 
@@ -146,7 +155,7 @@ extern "C" {
 #if defined(__BORLANDC__)
 	#define sbbs_random(x)		random(x)
 #else 
-	DLLEXPORT int	sbbs_random(int n);
+	DLLEXPORT int	DLLCALL sbbs_random(int n);
 #endif
 
 #if __BORLANDC__ > 0x0410
@@ -154,16 +163,16 @@ extern "C" {
 #endif
 
 #if !defined(_MSC_VER) && !defined(__BORLANDC__)
-	DLLEXPORT char* ultoa(ulong, char*, int radix);
+	DLLEXPORT char* DLLCALL ultoa(ulong, char*, int radix);
 #endif
 
 
 /* General file system wrappers for all platforms and compilers */
-DLLEXPORT BOOL		fexist(char *filespec);
-DLLEXPORT long		flength(char *filename);
-DLLEXPORT long		fdate(char *filename);
-DLLEXPORT int		getfattr(char* filename);
-DLLEXPORT ulong		getfreediskspace(char* path);
+DLLEXPORT BOOL		DLLCALL fexist(char *filespec);
+DLLEXPORT long		DLLCALL flength(char *filename);
+DLLEXPORT long		DLLCALL fdate(char *filename);
+DLLEXPORT int		DLLCALL getfattr(char* filename);
+DLLEXPORT ulong		DLLCALL getfreediskspace(char* path);
 
 #ifdef __cplusplus
 }

@@ -48,8 +48,8 @@
 	#ifndef __FLAT__
 		#define __FLAT__
 	#endif
-	#ifdef SMB_VB_COMPATIBLE
-		#define SMBCALL __stdcall	/* VB Compatible */
+	#ifdef __BORLANDC__
+		#define SMBCALL __stdcall
 	#else
 		#define SMBCALL
 	#endif

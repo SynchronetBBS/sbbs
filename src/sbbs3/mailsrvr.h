@@ -102,23 +102,36 @@ typedef struct {
 #define MAIL_OPT_USE_TCP_DNS		(1<<12)
 #define MAIL_OPT_MUTE				(1<<31)
 
+#ifdef DLLEXPORT
+#undef DLLEXPORT
+#endif
+#ifdef DLLCALL
+#undef DLLCALL
+#endif
+
 #ifdef _WIN32
 	#ifdef MAILSRVR_EXPORTS
-		#define MAIL_CALL __declspec( dllexport )
+		#define DLLEXPORT __declspec(dllexport)
 	#else
-		#define MAIL_CALL __declspec( dllimport )
+		#define DLLEXPORT __declspec(dllimport)
 	#endif
-#else /* !_WIN32 */
-	#define MAIL_CALL
+	#ifdef __BORLANDC__
+		#define DLLCALL __stdcall
+	#else
+		#define DLLCALL
+	#endif
+#else
+	#define DLLEXPORT
+	#define DLLCALL
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 /* arg is pointer to static mail_startup_t* */
-MAIL_CALL void	mail_server(void* arg);
-MAIL_CALL void	mail_terminate(void);
-MAIL_CALL char*	mail_ver(void);
+DLLEXPORT void	DLLCALL mail_server(void* arg);
+DLLEXPORT void	DLLCALL mail_terminate(void);
+DLLEXPORT char*	DLLCALL mail_ver(void);
 #ifdef __cplusplus
 }
 #endif

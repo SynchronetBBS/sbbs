@@ -669,14 +669,23 @@ public:
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
+#ifdef DLLCALL
+#undef DLLCALL
+#endif
 #ifdef _WIN32
 	#ifdef SBBS_EXPORTS
 		#define DLLEXPORT	__declspec(dllexport)
 	#else
-		#define DLLEXPORT	
+		#define DLLEXPORT	__declspec(dllimport)
+	#endif
+	#ifdef __BORLANDC__
+		#define DLLCALL __stdcall
+	#else
+		#define DLLCALL
 	#endif
 #else	/* !_WIN32 */
 	#define DLLEXPORT
+	#define DLLCALL
 #endif
 
 #ifdef __cplusplus
@@ -684,27 +693,27 @@ extern "C" {
 #endif
 
 	/* main.cpp */
-	DLLEXPORT 	BOOL	getstats(scfg_t* cfg, char node, stats_t* stats);
+	DLLEXPORT 	BOOL	DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats);
 
 	/* mail.cpp */
-	DLLEXPORT	int		getmail(scfg_t* cfg, int usernumber, BOOL sent);
-	DLLEXPORT	mail_t*	loadmail(smb_t* smb, long* msgs, uint usernumber
+	DLLEXPORT	int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent);
+	DLLEXPORT	mail_t*	DLLCALL loadmail(smb_t* smb, ulong* msgs, uint usernumber
 										,int which, long mode);
-	DLLEXPORT	void	freemail(mail_t* mail);
+	DLLEXPORT	void	DLLCALL freemail(mail_t* mail);
 
 	/* filedat.c */
-	DLLEXPORT 	BOOL	getfileixb(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	getfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	putfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	removefiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	addfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	findfile(scfg_t* cfg, uint dirnum, char *filename);
-	DLLEXPORT	char *	padfname(char *filename, char *str);
-	DLLEXPORT	char *	unpadfname(char *filename, char *str);
-	DLLEXPORT	BOOL	rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
+	DLLEXPORT 	BOOL	DLLCALL getfileixb(scfg_t* cfg, file_t* f);
+	DLLEXPORT 	BOOL	DLLCALL getfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT 	BOOL	DLLCALL putfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT 	BOOL	DLLCALL removefiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT 	BOOL	DLLCALL addfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT 	BOOL	DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename);
+	DLLEXPORT	char *	DLLCALL padfname(char *filename, char *str);
+	DLLEXPORT	char *	DLLCALL unpadfname(char *filename, char *str);
+	DLLEXPORT	BOOL	DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
 
 	/* str.cpp */
-	DLLEXPORT	BOOL	trashcan(scfg_t* cfg, char *insearch, char *name);
+	DLLEXPORT	BOOL	DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
 
 	/* misc.c */
 	int		nopen(char *str, int access);
@@ -724,13 +733,13 @@ extern "C" {
 	char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 	uint	hptoi(char *str);
 
-	DLLEXPORT ushort	crc16(char *str);
-	DLLEXPORT char *	zonestr(short zone);
-	DLLEXPORT int		putsmsg(scfg_t* cfg, int usernumber, char *strin);
+	DLLEXPORT ushort	DLLCALL crc16(char *str);
+	DLLEXPORT char *	DLLCALL zonestr(short zone);
+	DLLEXPORT int		DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
 
 	/* load_cfg.C */
 
-	DLLEXPORT BOOL		load_cfg(scfg_t* cfg, char* text[]);
+	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[]);
 	char *				readtext(long *line, FILE *stream);
 	BOOL 				md(char *path);
 

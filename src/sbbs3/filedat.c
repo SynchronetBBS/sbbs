@@ -42,7 +42,7 @@
 /* Need fields .name ,.dir and .offset to get other info    				*/
 /* Does not fill .dateuled or .datedled fields.                             */
 /****************************************************************************/
-BOOL getfiledat(scfg_t* cfg, file_t* f)
+BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 {
 	char buf[F_LEN+1],str[256],tmp[128];
 	int file;
@@ -114,7 +114,7 @@ BOOL getfiledat(scfg_t* cfg, file_t* f)
 /* Puts filedata into DIR_code.DAT file                                     */
 /* Called from removefiles                                                  */
 /****************************************************************************/
-BOOL putfiledat(scfg_t* cfg, file_t* f)
+BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 {
     char buf[F_LEN+1],str[256],tmp[128];
     int file;
@@ -168,7 +168,7 @@ BOOL putfiledat(scfg_t* cfg, file_t* f)
 /* changes the .datoffset field only                                        */
 /* returns 1 if added successfully, 0 if not.								*/
 /****************************************************************************/
-BOOL addfiledat(scfg_t* cfg, file_t* f)
+BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 {
 	char	str[256],fname[13],c,fdat[F_LEN+1];
 	char	tmp[128];
@@ -358,7 +358,7 @@ BOOL addfiledat(scfg_t* cfg, file_t* f)
 /* Need fields .name and .dir filled.                                       */
 /* only fills .offset, .dateuled, and .datedled                             */
 /****************************************************************************/
-BOOL getfileixb(scfg_t* cfg, file_t* f)
+BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 {
 	char			str[256],fname[13];
 	uchar HUGE16 *	ixbbuf;
@@ -414,7 +414,7 @@ BOOL getfileixb(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 /* Removes DAT and IXB entries for the file in the struct 'f'               */
 /****************************************************************************/
-BOOL removefiledat(scfg_t* cfg, file_t* f)
+BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 {
 	char	c,str[256],ixbname[12],HUGE16 *ixbbuf,fname[13];
     int		file;
@@ -486,7 +486,7 @@ BOOL removefiledat(scfg_t* cfg, file_t* f)
 /* it returns the 1, else returns 0.                                        */
 /* Called from upload and bulkupload                                        */
 /****************************************************************************/
-BOOL findfile(scfg_t* cfg, uint dirnum, char *filename)
+BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 {
 	char str[256],c,fname[13],HUGE16 *ixbbuf;
     int file;
@@ -525,7 +525,7 @@ BOOL findfile(scfg_t* cfg, uint dirnum, char *filename)
 /****************************************************************************/
 /* Turns FILE.EXT into FILE    .EXT                                         */
 /****************************************************************************/
-char * padfname(char *filename, char *str)
+char* DLLCALL padfname(char *filename, char *str)
 {
     char c,d;
 
@@ -549,7 +549,7 @@ char * padfname(char *filename, char *str)
 /****************************************************************************/
 /* Turns FILE    .EXT into FILE.EXT                                         */
 /****************************************************************************/
-char * unpadfname(char *filename, char *str)
+char* DLLCALL unpadfname(char *filename, char *str)
 {
     char c,d;
 
@@ -563,7 +563,7 @@ char * unpadfname(char *filename, char *str)
 /* Removes any files in the user transfer index (XFER.IXT) that match the   */
 /* specifications of dest, or source user, or filename or any combination.  */
 /****************************************************************************/
-BOOL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
+BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 {
     char str[256],*ixtbuf;
     int file;

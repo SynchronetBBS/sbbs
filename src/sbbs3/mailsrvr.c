@@ -54,31 +54,12 @@
 #include <errno.h>			/* errno */
 
 /* Synchronet-specific headers */
-#include "scfgdefs.h"
+#include "sbbs.h"
 #include "mailsrvr.h"
-#include "userdat.h"
-#include "smblib.h"
 #include "crc32.h"
-#include "sbbsinet.h"
-#include "sbbswrap.h"
 
 /* Constants */
 #define MAIL_VERSION "1.10"
-
-#ifdef _WIN32
-#define IMPORT	__declspec(dllimport)
-#else
-#define IMPORT
-#endif
-
-IMPORT BOOL		load_cfg(scfg_t* cfg, char* text[]);
-IMPORT ushort	crc16(char *str);
-IMPORT char *	zonestr(short zone);
-IMPORT int		putsmsg(scfg_t* cfg, int usernumber, char *strin);
-IMPORT mail_t*	loadmail(smb_t* smb, ulong* msgs, uint usernumber
-									,int which, long mode);
-IMPORT void		freemail(mail_t* mail);
-IMPORT BOOL		trashcan(scfg_t* cfg, char *insearch, char *name);
 
 int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL use_tcp);
 
@@ -2210,7 +2191,7 @@ static void sendmail_thread(void* arg)
 	thread_down();
 }
 
-void mail_terminate(void)
+void DLLCALL mail_terminate(void)
 {
 	if(server_socket!=INVALID_SOCKET) {
     	lprintf("MAIL Terminate: closing socket %d",server_socket);
@@ -2245,7 +2226,7 @@ static void cleanup(int code)
 	thread_down();
 }
 
-char* mail_ver(void)
+char* DLLCALL mail_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
@@ -2267,7 +2248,7 @@ char* mail_ver(void)
 	return(ver);
 }
 
-void mail_server(void* arg)
+void DLLCALL mail_server(void* arg)
 {
 	char			compiler[32];
 	SOCKADDR_IN		server_addr;

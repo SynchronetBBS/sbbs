@@ -42,20 +42,33 @@
 extern "C" {
 #endif
 
+#ifdef DLLEXPORT
+#undef DLLEXPORT
+#endif
+#ifdef DLLCALL
+#undef DLLCALL
+#endif
+
 #ifdef _WIN32
-	#ifdef SBBS
-		#define BBS_CALL __declspec( dllexport )
+	#ifdef SBBS_EXPORTS
+		#define DLLEXPORT __declspec(dllexport)
 	#else
-		#define BBS_CALL __declspec( dllimport )
+		#define DLLEXPORT __declspec(dllimport)
 	#endif
-#else	/* !_WIN32 */
-	#define BBS_CALL
+	#ifdef __BORLANDC__
+		#define DLLCALL __stdcall
+	#else
+		#define DLLCALL
+	#endif
+#else
+	#define DLLEXPORT
+	#define DLLCALL
 #endif
 
 /* arg is pointer to static bbs_startup_t* */
-BBS_CALL void	bbs_thread(void* arg);
-BBS_CALL void	bbs_terminate(void);
-BBS_CALL char*	bbs_ver(void);
+DLLEXPORT void	DLLCALL bbs_thread(void* arg);
+DLLEXPORT void	DLLCALL bbs_terminate(void);
+DLLEXPORT char*	DLLCALL bbs_ver(void);
 
 #ifdef __cplusplus
 }

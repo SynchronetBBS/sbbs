@@ -38,18 +38,27 @@
 #ifndef _USERDAT_H
 #define _USERDAT_H
 
-#ifdef EXPORT32
-#undef EXPORT32
+#ifdef DLLEXPORT
+#undef DLLEXPORT
+#endif
+#ifdef DLLCALL
+#undef DLLCALL
 #endif
 
 #ifdef _WIN32
 	#ifdef SBBS_EXPORTS
-		#define EXPORT32 __declspec(dllexport)
+		#define DLLEXPORT __declspec(dllexport)
 	#else
-		#define EXPORT32 __declspec(dllimport)
+		#define DLLEXPORT __declspec(dllimport)
+	#endif
+	#ifdef __BORLANDC__
+		#define DLLCALL __stdcall
+	#else
+		#define DLLCALL
 	#endif
 #else
-	#define EXPORT32
+	#define DLLEXPORT
+	#define DLLCALL
 #endif
 
 #ifdef __cplusplus
@@ -59,25 +68,25 @@ extern "C" {
 extern char* crlf;
 extern char* nulstr;
 
-EXPORT32 int	getuserdat(scfg_t* cfg, user_t* user); 	/* Fill userdat struct with user data   */
-EXPORT32 int	putuserdat(scfg_t* cfg, user_t* user);	/* Put userdat struct into user file	*/
-EXPORT32 void	getrec(char *instr,int start,int length,char *outstr); /* Retrieve a record from a string */
-EXPORT32 void	putrec(char *outstr,int start,int length,char *instr); /* Place a record into a string */
-EXPORT32 uint	matchuser(scfg_t* cfg, char *str); /* Checks for a username match */
-EXPORT32 uint	lastuser(scfg_t* cfg);
-EXPORT32 char	getage(scfg_t* cfg, char *birthdate);
-EXPORT32 char *	username(scfg_t* cfg, int usernumber, char * str);
-EXPORT32 int	getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit);
-EXPORT32 int	putnodedat(scfg_t* cfg, uint number, node_t *node);
-EXPORT32 uint	userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
-					,BOOL del);
+DLLEXPORT int	DLLCALL getuserdat(scfg_t* cfg, user_t* user); 	/* Fill userdat struct with user data   */
+DLLEXPORT int	DLLCALL putuserdat(scfg_t* cfg, user_t* user);	/* Put userdat struct into user file	*/
+DLLEXPORT void	DLLCALL getrec(char *instr,int start,int length,char *outstr); /* Retrieve a record from a string */
+DLLEXPORT void	DLLCALL putrec(char *outstr,int start,int length,char *instr); /* Place a record into a string */
+DLLEXPORT uint	DLLCALL matchuser(scfg_t* cfg, char *str); /* Checks for a username match */
+DLLEXPORT uint	DLLCALL lastuser(scfg_t* cfg);
+DLLEXPORT char	DLLCALL getage(scfg_t* cfg, char *birthdate);
+DLLEXPORT char*	DLLCALL username(scfg_t* cfg, int usernumber, char * str);
+DLLEXPORT int	DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit);
+DLLEXPORT int	DLLCALL putnodedat(scfg_t* cfg, uint number, node_t *node);
+DLLEXPORT uint	DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
+							,BOOL del);
 
-EXPORT32 BOOL	chk_ar(scfg_t* cfg, uchar* str, user_t* user); /* checks access requirements */
+DLLEXPORT BOOL	DLLCALL chk_ar(scfg_t* cfg, uchar* str, user_t* user); /* checks access requirements */
 
-EXPORT32 int	getuserrec(scfg_t*, int usernumber, int start, int length, char *str);
-EXPORT32 int	putuserrec(scfg_t*, int usernumber, int start, uint length, char *str);
-EXPORT32 ulong	adjustuserrec(scfg_t*, int usernumber, int start, int length, long adj);
-EXPORT32 void	subtract_cdt(scfg_t*, user_t*, long amt);
+DLLEXPORT int	DLLCALL getuserrec(scfg_t*, int usernumber, int start, int length, char *str);
+DLLEXPORT int	DLLCALL putuserrec(scfg_t*, int usernumber, int start, uint length, char *str);
+DLLEXPORT ulong	DLLCALL adjustuserrec(scfg_t*, int usernumber, int start, int length, long adj);
+DLLEXPORT void	DLLCALL subtract_cdt(scfg_t*, user_t*, long amt);
 
 #ifdef __cplusplus
 }

@@ -40,7 +40,7 @@
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL load_cfg(scfg_t* cfg, char* text[])
+BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
 {
 	char	str[256],fname[13];
 	int		i;

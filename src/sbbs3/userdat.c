@@ -47,7 +47,7 @@ char* nulstr="";
 /* Returns the number of the perfect matched username or 0 if no match		*/
 /* Called from functions waitforcall and newuser							*/
 /****************************************************************************/
-uint matchuser(scfg_t* cfg, char *name)
+uint DLLCALL matchuser(scfg_t* cfg, char *name)
 {
 	int file;
 	char str[256],c;
@@ -78,7 +78,7 @@ uint matchuser(scfg_t* cfg, char *name)
 /* Returns the number of the last user in USER.DAT (deleted ones too)		*/
 /* Called from function useredit											*/
 /****************************************************************************/
-uint lastuser(scfg_t* cfg)
+uint DLLCALL lastuser(scfg_t* cfg)
 {
 	char str[256];
 	long length;
@@ -93,7 +93,7 @@ uint lastuser(scfg_t* cfg)
 /* Fills the structure 'user' with info for user.number	from USER.DAT		*/
 /* Called from functions useredit, waitforcall and main_sec					*/
 /****************************************************************************/
-int getuserdat(scfg_t* cfg, user_t *user)
+int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 {
 	char userdat[U_LEN+1],str[U_LEN+1],tmp[64];
 	int i,file;
@@ -266,7 +266,7 @@ int getuserdat(scfg_t* cfg, user_t *user)
 /* Writes into user.number's slot in USER.DAT data in structure 'user'      */
 /* Called from functions newuser, useredit and main                         */
 /****************************************************************************/
-int putuserdat(scfg_t* cfg, user_t* user)
+int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 {
     int i,file;
     char userdat[U_LEN+1],str[U_LEN+1];
@@ -418,7 +418,7 @@ int putuserdat(scfg_t* cfg, user_t* user)
 /* Returns the username in 'str' that corresponds to the 'usernumber'       */
 /* Called from functions everywhere                                         */
 /****************************************************************************/
-char *username(scfg_t* cfg, int usernumber,char *strin)
+char* DLLCALL username(scfg_t* cfg, int usernumber,char *strin)
 {
     char str[256];
     char c;
@@ -453,7 +453,7 @@ char *username(scfg_t* cfg, int usernumber,char *strin)
 /* Places into 'strout' CR or ETX terminated string starting at             */
 /* 'start' and ending at 'start'+'length' or terminator from 'strin'        */
 /****************************************************************************/
-void getrec(char *strin,int start,int length,char *strout)
+void DLLCALL getrec(char *strin,int start,int length,char *strout)
 {
     int i=0,stop;
 
@@ -470,7 +470,7 @@ void getrec(char *strin,int start,int length,char *strout)
 /* Places into 'strout', 'strin' starting at 'start' and ending at          */
 /* 'start'+'length'                                                         */
 /****************************************************************************/
-void putrec(char *strout,int start,int length,char *strin)
+void DLLCALL putrec(char *strout,int start,int length,char *strin)
 {
     int i=0,j;
 
@@ -487,7 +487,7 @@ void putrec(char *strout,int start,int length,char *strin)
 /* Called from functions statusline, main_sec, xfer_sec, useredit and 		*/
 /* text files																*/
 /****************************************************************************/
-char getage(scfg_t* cfg, char *birth)
+char DLLCALL getage(scfg_t* cfg, char *birth)
 {
 	char	age;
 	struct	tm * tm;
@@ -529,7 +529,7 @@ char getage(scfg_t* cfg, char *birth)
 /* from NODE.DAB															*/
 /* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
 /****************************************************************************/
-int getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
+int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 {
 	char str[256];
 	int count=0;
@@ -570,7 +570,7 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 /* getnodedat(num,&node,1); must have been called before calling this func  */
 /*          NOTE: ------^   the indicates the node record has been locked   */
 /****************************************************************************/
-int putnodedat(scfg_t* cfg, uint number, node_t* node)
+int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 {
 	char str[256];
 	int file;
@@ -599,7 +599,7 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node)
 }
 
 /****************************************************************************/
-uint userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
+uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
     ,BOOL del)
 {
     char	str[256];
@@ -651,7 +651,7 @@ uint userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *d
 /****************************************************************************/
 /* Creates a short message for 'usernumber' than contains 'strin'           */
 /****************************************************************************/
-int putsmsg(scfg_t* cfg, int usernumber, char *strin)
+int DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin)
 {
     char str[256];
     int file,i;
@@ -992,7 +992,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 	return(result);
 }
 
-BOOL chk_ar(scfg_t* cfg, uchar *ar, user_t* user)
+BOOL DLLCALL chk_ar(scfg_t* cfg, uchar *ar, user_t* user)
 {
 	uchar *p;
 
@@ -1006,7 +1006,7 @@ BOOL chk_ar(scfg_t* cfg, uchar *ar, user_t* user)
 /* Fills 'str' with record for usernumber starting at start for length bytes*/
 /* Called from function ???													*/
 /****************************************************************************/
-int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
+int DLLCALL getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 {
 	char c,path[256];
 	int i,file;
@@ -1054,7 +1054,7 @@ int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 /* Places into USER.DAT at the offset for usernumber+start for length bytes */
 /* Called from various locations											*/
 /****************************************************************************/
-int putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char *str)
+int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char *str)
 {
 	char	str2[256];
 	int		file;
@@ -1109,7 +1109,7 @@ int putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char *str)
 /* Updates user 'usernumber's record (numeric string) by adding 'adj' to it */
 /* returns the new value.													*/
 /****************************************************************************/
-ulong adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj)
+ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj)
 {
 	char str[256],c,path[256];
 	char tmp[32];
@@ -1178,7 +1178,7 @@ ulong adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj
 /* Subtract credits from the current user online, accounting for the new    */
 /* "free credits" field.                                                    */
 /****************************************************************************/
-void subtract_cdt(scfg_t* cfg, user_t* user, long amt)
+void DLLCALL subtract_cdt(scfg_t* cfg, user_t* user, long amt)
 {
 	char tmp[64];
     long mod;

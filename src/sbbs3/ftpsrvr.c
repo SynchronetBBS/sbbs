@@ -56,11 +56,8 @@
 #include <sys/stat.h>		/* S_IWRITE */
 
 /* Synchronet-specific headers */
-#include "sbbsinet.h"
-#include "sbbswrap.h"
-#include "scfgdefs.h"
+#include "sbbs.h"
 #include "ftpsrvr.h"
-#include "userdat.h"
 #include "telnet.h"
 
 /* Constants */
@@ -85,27 +82,6 @@
 
 static const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
             ,"Jul","Aug","Sep","Oct","Nov","Dec"};
-
-#ifdef _WIN32
-	#define IMPORT	__declspec(dllimport)
-#else
-	#define IMPORT
-#endif
-
-IMPORT BOOL	load_cfg(scfg_t* cfg, char* text[]);
-
-IMPORT BOOL	getfileixb(scfg_t* cfg, file_t* f);
-IMPORT BOOL	getfiledat(scfg_t* cfg, file_t* f);
-
-IMPORT BOOL	putfiledat(scfg_t* cfg, file_t* f);
-IMPORT BOOL	removefiledat(scfg_t* cfg, file_t* f);
-IMPORT BOOL addfiledat(scfg_t* cfg, file_t* f);
-IMPORT BOOL	findfile(scfg_t* cfg, uint dirnum, char *filename);
-
-IMPORT char*	padfname(char *filename, char *str);
-IMPORT char*	unpadfname(char *filename, char *str);
-
-IMPORT BOOL	trashcan(scfg_t* cfg, char *insearch, char *name);
 
 BOOL direxist(char *dir)
 {
@@ -466,7 +442,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 	return(rd);
 }
 
-void ftp_terminate(void)
+void DLLCALL ftp_terminate(void)
 {
 	if(server_socket!=INVALID_SOCKET) {
     	lprintf("FTP Terminate: closing socket %d",server_socket);
@@ -2925,7 +2901,7 @@ static void cleanup(int code)
 	thread_down();
 }
 
-char* ftp_ver(void)
+char* DLLCALL ftp_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
@@ -2945,7 +2921,7 @@ char* ftp_ver(void)
 	return(ver);
 }
 
-void ftp_server(void* arg)
+void DLLCALL ftp_server(void* arg)
 {
 	char			compiler[32];
 	SOCKADDR_IN		server_addr;

@@ -72,7 +72,7 @@
 /* Returns TRUE if it exists, FALSE if it doesn't.                          */
 /* 'filespec' may contain wildcards!										*/
 /****************************************************************************/
-BOOL fexist(char *filespec)
+BOOL DLLCALL fexist(char *filespec)
 {
 #ifdef _WIN32
 
@@ -109,7 +109,7 @@ BOOL fexist(char *filespec)
 /****************************************************************************/
 /* Returns the length of the file in 'filename'                             */
 /****************************************************************************/
-long flength(char *filename)
+long DLLCALL flength(char *filename)
 {
 	STAT st;
 
@@ -122,7 +122,7 @@ long flength(char *filename)
 /****************************************************************************/
 /* Returns the time/date of the file in 'filename' in time_t (unix) format  */
 /****************************************************************************/
-long fdate(char *filename)
+long DLLCALL fdate(char *filename)
 {
 	STAT st;
 
@@ -135,7 +135,7 @@ long fdate(char *filename)
 /****************************************************************************/
 /* Returns the attributes (mode) for specified 'filename'					*/
 /****************************************************************************/
-int getfattr(char* filename)
+int DLLCALL getfattr(char* filename)
 {
 #ifdef _WIN32
 	long handle;
@@ -163,7 +163,7 @@ int getfattr(char* filename)
 /* Returns the length of the file in 'fd'									*/
 /****************************************************************************/
 #ifdef __unix__
-long filelength(int fd)
+long DLLCALL filelength(int fd)
 {
 	STAT st;
 
@@ -179,7 +179,7 @@ long filelength(int fd)
 /* Thanks to Casey Martin for this code										*/
 /****************************************************************************/
 #ifdef __unix__
-void sbbs_beep(int freq, int dur)
+void DLLCALL sbbs_beep(int freq, int dur)
 {
 	static int console_fd=-1;
 
@@ -198,7 +198,7 @@ void sbbs_beep(int freq, int dur)
 /* Return random number between 0 and n-1									*/
 /****************************************************************************/
 #ifndef __BORLANDC__
-int sbbs_random(int n)
+int DLLCALL sbbs_random(int n)
 {
 	float f;
 
@@ -215,7 +215,7 @@ int sbbs_random(int n)
 /* There may be a native GNU C Library function to this...					*/
 /****************************************************************************/
 #if !defined _MSC_VER && !defined __BORLANDC__
-char* ultoa(ulong val, char* str, int radix)
+char* DLLCALL ultoa(ulong val, char* str, int radix)
 {
 	switch(radix) {
 		case 8:
@@ -272,7 +272,7 @@ char* strlwr(char *str)
 		(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER); 
 #endif
 
-ulong getfreediskspace(char* path)
+ulong DLLCALL getfreediskspace(char* path)
 {
 #ifdef _WIN32
 	HINSTANCE		hK32;

@@ -39,8 +39,8 @@
 	#ifndef __FLAT__
 		#define __FLAT__
 	#endif
-	#ifdef LZH_VB_COMPATIBLE
-		#define LZHCALL __stdcall	/* VB Compatible */
+	#ifdef __BORLANDC__
+		#define LZHCALL __stdcall
 	#else
 		#define LZHCALL
 	#endif
