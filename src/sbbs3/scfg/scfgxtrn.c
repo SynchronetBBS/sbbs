@@ -912,6 +912,8 @@ online program name.
 		if(cfg.xtrn[i]->misc&EVENTONLY && cfg.xtrn[i]->event)
 			strcat(str,", Only");
 		sprintf(opt[k++],"%-27.27s%s","Execute on Event",str);
+		sprintf(opt[k++],"%-27.27s%s","Pause After Execution"
+			,cfg.xtrn[i]->misc&XTRN_PAUSE ? "Yes" : "No");
 		sprintf(opt[k++],"%-23.23s%-4s%s","BBS Drop File Type"
 			,cfg.xtrn[i]->misc&REALNAME ? "(R)":nulstr
 			,dropfile(cfg.xtrn[i]->type,cfg.xtrn[i]->misc));
@@ -1215,6 +1217,30 @@ to Yes.
                     uifc.changes=TRUE; }
                 break;
 			case 14:
+				k=cfg.xtrn[i]->misc&XTRN_PAUSE ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				SETHELP(WHERE);
+/*
+`Pause Screen After Execution:`
+
+Set this option to ~Yes~ if you would like an automatic screen pause
+(`[Hit a key]` prompt) to appear after the program executes.
+
+This can be useful if the program displays information just before exiting
+or you want to debug a program with a program not running correctly.
+*/
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Pause After Execution",opt);
+				if((!k && !(cfg.xtrn[i]->misc&XTRN_PAUSE))
+					|| (k && cfg.xtrn[i]->misc&XTRN_PAUSE)) {
+					cfg.xtrn[i]->misc^=XTRN_PAUSE;
+					uifc.changes=TRUE; 
+				}
+				break;
+			case 15:
 				k=0;
 				strcpy(opt[k++],"None");
 				sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
@@ -1278,7 +1304,7 @@ format, select the file format from the list.
 					} 
 				}
 				break;
-			case 15:
+			case 16:
 				k=0;
 				strcpy(opt[0],"Node Directory");
 				strcpy(opt[1],"Start-up Directory");
@@ -1300,7 +1326,7 @@ You can have the data file created in the current Node Directory or the
 					cfg.xtrn[i]->misc|=STARTUPDIR;
                     uifc.changes=TRUE; }
 				break;
-			case 16:
+			case 17:
 				while(1) {
 					k=0;
 					if(cfg.xtrn[i]->textra)
