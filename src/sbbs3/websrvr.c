@@ -124,6 +124,7 @@ typedef struct  {
 
 	/* CGI parameters */
 	char		query_str[MAX_REQUEST_LINE];
+	char		extra_path_info[MAX_REQUEST_LINE];
 
 	linked_list*	cgi_env;
 	linked_list*	dynamic_heads;
@@ -248,6 +249,7 @@ static DWORD monthdays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 
 
 static void respond(http_session_t * session);
 static BOOL js_setup(http_session_t* session);
+static char *find_last_slash(char *str);
 
 static time_t time_gm( struct tm* ti )  {
 	time_t t;
@@ -872,7 +874,7 @@ static BOOL check_ars(http_session_t * session)
 	}
 
 	if(authorized)  {
-		if(session->req.dynamic==IS_CGI)  {
+		if(session->req.dynamic==IS_CGI || session->req.dynamic==IS_STATIC)  {
 			add_env(session,"AUTH_TYPE","Basic");
 			/* Should use real name if set to do so somewhere ToDo */
 			add_env(session,"REMOTE_USER",session->user.alias);
@@ -1150,12 +1152,12 @@ static BOOL parse_headers(http_session_t * session)
 					b64_decode(session->req.auth,sizeof(session->req.auth),p,strlen(p));
 					break;
 				case HEAD_LENGTH:
-					if(session->req.dynamic==IS_CGI)
+					if(session->req.dynamic==IS_CGI || session->req.dynamic==IS_STATIC)
 						add_env(session,"CONTENT_LENGTH",value);
 					content_len=atoi(value);
 					break;
 				case HEAD_TYPE:
-					if(session->req.dynamic==IS_CGI)
+					if(session->req.dynamic==IS_CGI || session->req.dynamic==IS_STATIC)
 						add_env(session,"CONTENT_TYPE",value);
 					break;
 				case HEAD_IFMODIFIED:
@@ -1180,7 +1182,7 @@ static BOOL parse_headers(http_session_t * session)
 				default:
 					break;
 			}
-			if(session->req.dynamic==IS_CGI)  {
+			if(session->req.dynamic==IS_CGI || session->req.dynamic==IS_STATIC)  {
 				sprintf(env_name,"HTTP_%s",req_line);
 				add_env(session,env_name,value);
 			}
@@ -1200,7 +1202,7 @@ static BOOL parse_headers(http_session_t * session)
 			return(FALSE);
 		}
 	}
-	if(session->req.dynamic==IS_CGI)
+	if(session->req.dynamic==IS_CGI || session->req.dynamic==IS_STATIC)
 		add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
 	return TRUE;
 }
@@ -1271,17 +1273,17 @@ static int is_dynamic_req(http_session_t* session)
 		return(IS_SSJS);
 	}
 
+	init_enviro(session);
+
 	if(!(startup->options&WEB_OPT_NO_CGI)) {
 		for(i=0; startup->cgi_ext!=NULL && startup->cgi_ext[i]!=NULL; i++)  {
 			if(stricmp(ext,startup->cgi_ext[i])==0)  {
-				init_enviro(session);
 				return(IS_CGI);
 			}
 		}
 		/* It would be more secure if this was a true physical directory comparision */
 		sprintf(path,"/%s/",cgi_dir);
 		if(stricmp(dir,path)==0)  {
-			init_enviro(session);
 			return(IS_CGI);
 		}
 	}
@@ -1328,6 +1330,7 @@ static char *get_request(http_session_t * session, char *req_line)
 		SAFECOPY(session->req.query_str,query);
 	if(query!=NULL)  {
 		switch(session->req.dynamic) {
+			case IS_STATIC:
 			case IS_CGI:
 				add_env(session,"QUERY_STRING",query);
 				break;
@@ -1374,7 +1377,7 @@ static BOOL get_req(http_session_t * session)
 			session->http_ver=get_version(p);
 			if(session->http_ver>=HTTP_1_1)
 				session->req.keep_alive=TRUE;
-			if(session->req.dynamic==IS_CGI)  {
+			if(session->req.dynamic==IS_CGI || session->req.dynamic==IS_STATIC)  {
 				add_env(session,"REQUEST_METHOD",methods[session->req.method]);
 				add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
 					http_vers[session->http_ver] : "HTTP/0.9");
@@ -1429,6 +1432,48 @@ static char *find_first_slash(char *str)
 #endif
 }
 
+static BOOL check_extra_path(http_session_t * session, char *path)
+{
+	char	*p;
+	char	rpath[MAX_PATH+1];
+	char	vpath[MAX_PATH+1];
+	char	epath[MAX_PATH+1];
+	char	str[MAX_PATH+1];
+	struct	stat sb;
+
+	epath[0]=0;
+	if(((stat(session->req.physical_path,&sb))==-1) /* && errno==ENOTDIR */)
+	{
+		SAFECOPY(vpath,session->req.virtual_path);
+		SAFECOPY(rpath,path);
+
+		while((p=find_last_slash(vpath))!=NULL)
+		{
+			*p=0;
+			if((p=find_last_slash(rpath))!=NULL)
+			{
+				*p=0;
+			}
+			else
+			{
+				return(FALSE);
+			}
+			SAFECOPY(str,epath);
+			sprintf(epath,"/%s%s",(p+1),str);
+			if(stat(rpath,&sb)!=-1)
+			{
+				SAFECOPY(session->req.extra_path_info,epath);
+				SAFECOPY(session->req.virtual_path,vpath);
+				/* This is dependent on the size of path in check_request() */
+				sprintf(path,"%.*s",MAX_PATH,rpath);
+				session->req.dynamic=IS_CGI;
+				return(TRUE);
+			}
+		}
+	}
+	return(FALSE);
+}
+
 static BOOL check_request(http_session_t * session)
 {
 	char	path[MAX_PATH+1];
@@ -1455,6 +1500,7 @@ static BOOL check_request(http_session_t * session)
 	}
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf("Path is: %s",path);
+
 	if(isdir(path)) {
 		last_ch=*lastchar(path);
 		if(!IS_PATH_DELIM(last_ch))  {
@@ -1492,22 +1538,29 @@ static BOOL check_request(http_session_t * session)
 		return(FALSE);
 	}
 	if(stat(path,&sb)) {
-		if(startup->options&WEB_OPT_DEBUG_TX)
-			lprintf("404 - %s does not exist",path);
-		send_error(session,error_404);
-		return(FALSE);
+		/* Check if sneaky CGI script */
+		if(!check_extra_path(session,path))
+		{
+			if(startup->options&WEB_OPT_DEBUG_TX)
+				lprintf("404 - %s does not exist",path);
+			send_error(session,error_404);
+			return(FALSE);
+		}
 	}
 	SAFECOPY(session->req.physical_path,path);
 	if(session->req.dynamic==IS_CGI)  {
-		add_env(session,"PATH_TRANSLATED",path);
 		add_env(session,"SCRIPT_NAME",session->req.virtual_path);
 	}
 	SAFECOPY(str,session->req.virtual_path);
 	last_slash=find_last_slash(str);
 	if(last_slash!=NULL)
 		*(last_slash+1)=0;
-	if(session->req.dynamic==IS_CGI)
-		add_env(session,"PATH_INFO",str);
+	if(session->req.dynamic==IS_CGI && *(session->req.extra_path_info))
+	{
+		sprintf(str,"%s%s",startup->root_dir,session->req.extra_path_info);
+		add_env(session,"PATH_TRANSLATED",str);
+		add_env(session,"PATH_INFO",session->req.extra_path_info);
+	}
 
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
