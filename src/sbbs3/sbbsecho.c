@@ -2185,6 +2185,7 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	int 	i,chunk,lzh=0,storage;
 	ushort	xlat,net;
 	ulong	l,m,length,lzhlen,bodylen,taillen,crc;
+	ulong	save;
 	faddr_t faddr,origaddr,destaddr;
 	smbmsg_t	msg;
 	smb_t	*smbfile;
@@ -2256,6 +2257,7 @@ if((stail=(char HUGE16 *)LMALLOC(MAX_TAILLEN))==NULL) {
 for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
 
 	if(!l && !strncmp((char *)fbuf,"AREA:",5)) {
+		save=l;
         l+=5;
         while(l<length && fbuf[l]<=SP) l++;
         m=l;
@@ -2264,7 +2266,12 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
         if(m>l)
             smb_hfield(&msg,FIDOAREA,m-l,fbuf+l);
         while(l<length && fbuf[l]!=CR) l++;
-        continue; }
+		/* If unknown echo, keep AREA: line in message body */
+		if(cfg.badecho>=0 && subnum==cfg.area[cfg.badecho].sub)
+			l=save;
+		else
+			continue; 
+	}
 
 	ch=fbuf[l];
 	if(ch==1 && cr) {	/* kludge line */
