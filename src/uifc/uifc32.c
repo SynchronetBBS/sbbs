@@ -380,8 +380,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				width=j;
 		}
 	}
-	if(width>(SCRN_RIGHT+1)-SCRN_LEFT)
+	if(width>(SCRN_RIGHT+1)-SCRN_LEFT) {
 		width=(SCRN_RIGHT+1)-SCRN_LEFT;
+		*(title+width-7)='.';
+		*(title+width-6)='.';
+		*(title+width-5)='.';
+		*(title+width-4)=0;
+	}
 	if(mode&WIN_L2R)
 		left=36-(width/2);
 	else if(mode&WIN_RHT)
@@ -393,9 +398,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 	/* Dynamic Menus */
 	if(mode&WIN_DYN
-			&& cur != NULL 
-			&& bar != NULL 
-			&& last_menu_cur==cur 
+			&& cur != NULL
+			&& bar != NULL
+			&& last_menu_cur==cur
 			&& last_menu_bar==bar
 			&& save_menu_cur==*cur
 			&& save_menu_bar==*bar)
@@ -406,7 +411,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
-				return(-1); 
+				return(-1);
 			}
 			gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 				,SCRN_TOP+top+height,sav[api->savnum].buf);
@@ -414,7 +419,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			sav[api->savnum].top=SCRN_TOP+top;
 			sav[api->savnum].right=SCRN_LEFT+left+width+1;
 			sav[api->savnum].bot=SCRN_TOP+top+height;
-			api->savdepth++; 
+			api->savdepth++;
 		}
 		else if(mode&WIN_SAV
 			&& (sav[api->savnum].left!=SCRN_LEFT+left
@@ -427,15 +432,15 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
-				return(-1); 
+				return(-1);
 			}
 			gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 				,SCRN_TOP+top+height,sav[api->savnum].buf);	  /* save again */
 			sav[api->savnum].left=SCRN_LEFT+left;
 			sav[api->savnum].top=SCRN_TOP+top;
 			sav[api->savnum].right=SCRN_LEFT+left+width+1;
-			sav[api->savnum].bot=SCRN_TOP+top+height; 
-		} 
+			sav[api->savnum].bot=SCRN_TOP+top+height;
+		}
 	}
 
 	if(!is_redraw) {
@@ -449,7 +454,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					,blk_scrn);
 			if(SCRN_LEFT+left+width<=SCRN_RIGHT)
 				puttext(SCRN_LEFT+left+width,SCRN_TOP+top,SCRN_RIGHT+2
-					,SCRN_TOP+height+top,blk_scrn); 
+					,SCRN_TOP+height+top,blk_scrn);
 		}
 		ptr=win;
 		*(ptr++)='É';
@@ -458,7 +463,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		i=0;
 		for(;i<width-2;i++) {
 			*(ptr++)='Í';
-			*(ptr++)=hclr|(bclr<<4); 
+			*(ptr++)=hclr|(bclr<<4);
 		}
 		*(ptr++)='»';
 		*(ptr++)=hclr|(bclr<<4);
@@ -468,15 +473,15 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		b=(width-a-1)/2;
 		for(i=0;i<b;i++) {
 			*(ptr++)=' ';
-			*(ptr++)=hclr|(bclr<<4); 
+			*(ptr++)=hclr|(bclr<<4);
 		}
 		for(i=0;i<a;i++) {
 			*(ptr++)=title[i];
-			*(ptr++)=hclr|(bclr<<4); 
+			*(ptr++)=hclr|(bclr<<4);
 		}
 		for(i=0;i<width-(a+b)-2;i++) {
 			*(ptr++)=' ';
-			*(ptr++)=hclr|(bclr<<4); 
+			*(ptr++)=hclr|(bclr<<4);
 		}
 		*(ptr++)='º';
 		*(ptr++)=hclr|(bclr<<4);
@@ -484,7 +489,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		*(ptr++)=hclr|(bclr<<4);
 		for(i=0;i<width-2;i++) {
 			*(ptr++)='Í';
-			*(ptr++)=hclr|(bclr<<4); 
+			*(ptr++)=hclr|(bclr<<4);
 		}
 		*(ptr++)='¹';
 		*(ptr++)=hclr|(bclr<<4);
@@ -495,7 +500,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(!bar) {
 			if((*cur)>height-5)
 				(*cur)=height-5;
-			i=0; 
+			i=0;
 		}
 		else {
 			if((*bar)>=opts)
@@ -591,7 +596,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				for(i=1;i<width*2;i+=2)
 					shade[i]=DARKGRAY;
 				puttext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
-					,SCRN_TOP+top+height,shade); 
+					,SCRN_TOP+top+height,shade);
 			}
 	}
 	else {	/* Is a redraw */
