@@ -42,6 +42,7 @@
 /* Global Object Properites */
 enum {
 	 GLOB_PROP_ERRNO
+	,GLOB_PROP_ERRNO_STR
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -54,6 +55,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case GLOB_PROP_ERRNO:
 	        *vp = INT_TO_JSVAL(errno);
 			break;
+		case GLOB_PROP_ERRNO_STR:
+	        *vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, strerror(errno)));
+			break;
 	}
 	return(TRUE);
 }
@@ -64,6 +68,7 @@ static struct JSPropertySpec js_global_properties[] = {
 /*		 name,		tinyid,				flags,				getter,	setter	*/
 
 	{	"errno",	GLOB_PROP_ERRNO,	GLOBOBJ_FLAGS,		NULL,	NULL },
+	{	"errno_str",GLOB_PROP_ERRNO_STR,GLOBOBJ_FLAGS,		NULL,	NULL },
 	{0}
 };
 
