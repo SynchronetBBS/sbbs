@@ -196,7 +196,6 @@ public:
 
 	int 	nodefile;		/* File handle for node.dab */
 	int		node_ext;		/* File handle for node.exb */
-	FILE 	*capfile;		/* File string to use for capture file */
 	int 	inputfile;		/* File handle to use for input */
 
 							/* Batch download queue */
