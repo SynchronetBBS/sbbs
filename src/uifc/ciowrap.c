@@ -541,14 +541,10 @@ void _putch(unsigned char ch, BOOL refresh_now)
 	{
 		switch(ch) {
 			case 30:
-
-
-//				cha=ACS_UARROW;
-				cha='^';
+				cha=ACS_UARROW;
 				break;
 			case 31:
-//				cha=ACS_DARROW;
-				cha='V';
+				cha=ACS_DARROW;
 				break;
 			default:
 				cha=ch;
