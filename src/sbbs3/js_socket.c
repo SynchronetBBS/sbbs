@@ -272,7 +272,8 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	len = recv(p->sock,buf,len,0);
 	if(len<0) {
 		p->last_error=ERROR_VALUE;
-		len=0;
+		*rval = JSVAL_NULL;
+		return(JS_TRUE);
 	}
 	buf[len]=0;
 
@@ -307,7 +308,8 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	len = recv(p->sock,buf,len,MSG_PEEK);
 	if(len<0) {
 		p->last_error=ERROR_VALUE;	
-		len=0;
+		*rval = JSVAL_NULL;
+		return(JS_TRUE);
 	}
 	buf[len]=0;
 
@@ -355,8 +357,11 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 
 		if(!rd) {
-			if(time(NULL)-start>timeout) 
-				break;		/* time-out */
+			if(time(NULL)-start>timeout) {
+				dbprintf(FALSE, p, "recvline timeout");
+				*rval = JSVAL_NULL;
+				return(JS_TRUE);	/* time-out */
+			}
 			mswait(1);
 			continue;	/* no data */
 		}
