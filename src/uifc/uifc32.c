@@ -432,8 +432,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		top=(api->scrn_len-height+1)/2-2;
 	else if(mode&WIN_BOT)
 		top=s_bottom-height-top;
-	if(left<1)
-		left=1;
+	if(left<0)
+		left=0;
 	if(top<0)
 		top=0;
 
@@ -1164,17 +1164,20 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	else
 		slen=6;
 	width=plen+slen+max;
+	if(width>api->scrn_width-6)
+		width=api->scrn_width-6;
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2-2;
 	if(mode&WIN_L2R)
-		left=(SCRN_RIGHT-SCRN_LEFT-width+1)/2;
-	if(left<1)
-		left=1;
+		left=(SCRN_RIGHT-SCRN_LEFT-width+2)/2;
+	if(left<=-(SCRN_LEFT))
+		left=-(SCRN_LEFT)+1;
 	if(top<0)
 		top=0;
 	if(mode&WIN_SAV)
 		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
+	max=width-plen-slen;
 	i=0;
 	in_win[i++]='É';
 	in_win[i++]=hclr|(bclr<<4);
@@ -1731,8 +1734,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		top=(api->scrn_len-height+1)/2;
 	else if(mode&WIN_BOT)
 		top=api->scrn_len-height-3-top;
-	if(left<1)
-		left=1;
+	if(left<0)
+		left=0;
 	if(top<0)
 		top=0;
 

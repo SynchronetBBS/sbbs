@@ -181,7 +181,7 @@
 
 #define SCRN_TOP	3
 #define SCRN_LEFT	5
-#define SCRN_RIGHT 	(api->scrn_width-4)
+#define SCRN_RIGHT 	((int)api->scrn_width-4)
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_UPPER 	(1L<<0) 	/* Converts all letters to upper case		*/
