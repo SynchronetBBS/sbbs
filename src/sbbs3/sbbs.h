@@ -684,9 +684,13 @@ public:
 #endif
 
 #ifdef _WIN32
-#define DLLEXPORT	__declspec(dllexport)
-#else
-#define DLLEXPORT	
+	#ifdef SBBS_EXPORTS
+		#define DLLEXPORT	__declspec(dllexport)
+	#else
+		#define DLLEXPORT	
+	#endif
+#else	/* !_WIN32 */
+	#define DLLEXPORT
 #endif
 
 #ifdef __cplusplus
@@ -698,6 +702,9 @@ extern "C" {
 
 	/* mail.cpp */
 	DLLEXPORT	int		getmail(scfg_t* cfg, int usernumber, BOOL sent);
+	DLLEXPORT	mail_t*	loadmail(smb_t* smb, long* msgs, uint usernumber
+										,int which, long mode);
+	DLLEXPORT	void	freemail(mail_t* mail);
 
 	/* filedat.c */
 	DLLEXPORT 	BOOL	getfileixb(scfg_t* cfg, file_t* f);
@@ -742,8 +749,6 @@ extern "C" {
 	DLLEXPORT ushort	crc16(char *str);
 	DLLEXPORT char *	zonestr(short zone);
 	DLLEXPORT int		putsmsg(scfg_t* cfg, int usernumber, char *strin);
-	DLLEXPORT mail_t*	loadmail(smb_t* smb, long* msgs, uint usernumber
-										,int which, long mode);
 	DLLEXPORT BOOL		fexist(char *filespec);
 	DLLEXPORT long		flength(char *filespec);
 	DLLEXPORT long		fdate(char *filespec);
