@@ -78,10 +78,12 @@ externals:	sbj sbl
 
 
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-    $(SBBSDIR)/include $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX)
+    $(SBBSDIR)/include/mozilla $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX) \
+    $(SBBSDIR)/include/fltk $(SBBSDIR)/lib/fltk
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
-scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev
+scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
+    $(SBBSDIR)/include/fltk $(SBBSDIR)/lib/fltk
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
 
 baja:	$(SBBSDIR)/exec binaries
@@ -174,14 +176,19 @@ ifndef NOCVS
 	$(CVS_CO) -r $(CVSTAG)  src/xpdev
 endif
 
-$(SBBSDIR)/include: cvslogin
+$(SBBSDIR)/include/mozilla: cvslogin
 ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG)  include
+	$(CVS_CO) -r $(CVSTAG)  include/mozilla
 endif
 
 $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX): cvslogin
 ifndef NOCVS
 	$(CVS_CO) -r $(CVSTAG) lib/mozilla/js/$(os).$(SUFFIX)
+endif
+
+$(SBBSDIR)/lib/fltk/$(os): cvslogin
+ifndef NOCVS
+	$(CVS_CO) -r $(CVSTAG) lib/fltk/$(os)
 endif
 
 cvslogin: $(SBBSDIR)
