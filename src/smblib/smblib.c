@@ -1340,6 +1340,11 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		return(SMB_ERR_HDR_LEN);
 	}
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
+
 	if(!smb->locked && smb_locksmbhdr(smb))
 		return(SMB_ERR_LOCK);
 	if((i=smb_getstatus(smb))!=0) {
