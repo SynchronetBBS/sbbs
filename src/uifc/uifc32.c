@@ -1944,6 +1944,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	char inverse=0,high=0;
 	char *textbuf;
     char *p;
+	char *oldp=NULL;
 	int i,j,k,len;
 	int	 lines;
 	int pad=1;
@@ -2122,7 +2123,10 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	}
 	else {
 		while(i==0) {
-			puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
+			if(p!=oldp) {
+				puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
+				oldp=p;
+			}
 			if(kbwait()) {
 				j=inkey();
 				if(j==CIO_KEY_MOUSE) {
