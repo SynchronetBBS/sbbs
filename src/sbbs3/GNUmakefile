@@ -21,9 +21,9 @@ ifndef DEBUG
 endif
 
 ifdef DEBUG
- BUILD	=	"debug"
+ BUILD	=	debug
 else
- BUILD	=	"release"
+ BUILD	=	release
 endif
 
 ifdef bcc
