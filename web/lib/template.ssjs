@@ -49,13 +49,6 @@ function write_template(filename)  {
 function parse_regular_bit(bit, objname, obj) {
 	if(objname=="JS")
 		return(bit);
-	bit=bit.replace(new RegExp('([%^@])\\1'+objname+':([^^%@\r\n]*?)\\1\\1',"g"),
-		function (matched, start, exp, offset, s) {
-			var res=matched;
-			if(obj[exp]!=undefined)
-				res=escape_match(start, obj[exp]);
-			return(res);
-		});
 	if(objname=='') {
 		bit=bit.replace(/([%^@])\1([^^%@\r\n]*?)\:([^:%^@\r\n]*?)\1\1/g,
 			function (matched, start, objname, prop, offset, s) {
@@ -75,6 +68,15 @@ function parse_regular_bit(bit, objname, obj) {
 				return(res);
 			});
 		bit=bit.replace(/([%^@])\1(.*?)\1\1/g,'');
+	}
+	else {
+		bit=bit.replace(new RegExp('([%^@])\\1'+regex_escape(objname)+':([^^%@\r\n]*?)\\1\\1',"g"),
+			function (matched, start, exp, offset, s) {
+				var res=matched;
+				if(obj[exp]!=undefined)
+					res=escape_match(start, obj[exp]);
+				return(res);
+			});
 	}
 	return bit;
 }
@@ -100,4 +102,10 @@ function error(message)  {
 
 function horrible_error(message) {
 	write("<HTML><HEAD><TITLE>ERROR</TITLE></HEAD><BODY><p>"+message+"</p></BODY></HTML>");
+}
+
+function regex_escape(str)
+{
+	str=str.replace(/([\\\^\$\*\+\?\.\(\)\{\}\[\]])/g,"\\$1");
+	return(str);
 }
