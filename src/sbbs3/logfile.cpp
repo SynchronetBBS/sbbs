@@ -78,10 +78,10 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* reason, char* host, char* ip_
 	if((file=sopen(fname,O_CREAT|O_WRONLY|O_BINARY|O_APPEND,SH_DENYWR))==-1)
 		return(FALSE);
 
-	sprintf(hdr,"SUSPECTED SPAM REJECTED from %s [%s] on %.24s\r\nReason: "
+	sprintf(hdr,"SUSPECTED SPAM REJECTED on %.24s\r\nFrom: %s [%s]\r\nReason: "
+		,ctime(&now)
 		,host
 		,ip_addr
-		,ctime(&now)
 		);
 	write(file,hdr,strlen(hdr));
 	write(file,reason,strlen(reason));
