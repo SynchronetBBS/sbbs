@@ -758,8 +758,17 @@ extern "C" {
 	DLLEXPORT void		DLLCALL free_cfg(scfg_t* cfg);
 	DLLEXPORT void		DLLCALL free_text(char* text[]);
 
+	/* save_cfg.c */
+	DLLEXPORT BOOL		DLLCALL save_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_node_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_main_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_file_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
+
 	/* scfglib1.c */
-	DLLEXPORT void		prep_dir(char* base, char* dir);
+	DLLEXPORT char*		DLLCALL prep_dir(char* base, char* dir);
 
 	/* date_str.c */
 
