@@ -43,6 +43,97 @@ char *daystr(char days);
 
 static void hotkey_cfg(void);
 
+static char* dropfile(int type, ulong misc)
+{
+	static char str[128];
+	char fname[64]="";
+
+	switch(type) {
+		case XTRN_SBBS:
+			strcpy(fname,"XTRN.DAT");
+			break;
+		case XTRN_WWIV:
+			strcpy(fname,"CHAIN.TXT");
+			break;
+		case XTRN_GAP:
+			strcpy(fname,"DOOR.SYS");
+			break;
+		case XTRN_RBBS:
+			strcpy(fname,"DORINFO#.DEF");
+			break;
+		case XTRN_RBBS1:
+			strcpy(fname,"DORINFO1.DEF");
+            break;
+		case XTRN_WILDCAT:
+			strcpy(fname,"CALLINFO.BBS");
+			break;
+		case XTRN_PCBOARD:
+			strcpy(fname,"PCBOARD.SYS");
+			break;
+		case XTRN_SPITFIRE:
+			strcpy(fname,"SFDOORS.DAT");
+			break;
+		case XTRN_UTI:
+			strcpy(fname,"UTIDOOR.TXT");
+			break;
+		case XTRN_SR:
+			strcpy(fname,"DOORFILE.SR");
+			break;
+		case XTRN_TRIBBS:
+			strcpy(fname,"TRIBBS.SYS");
+			break;
+        case XTRN_DOOR32:
+            strcpy(fname,"DOOR32.SYS");
+            break;
+	}
+
+	if(misc&XTRN_LWRCASE)
+		strlwr(fname);
+
+	switch(type) {
+		case XTRN_SBBS:
+			sprintf(str,"%-15s %s","Synchronet",fname);
+			break;
+		case XTRN_WWIV:
+			sprintf(str,"%-15s %s","WWIV",fname);
+			break;
+		case XTRN_GAP:
+			sprintf(str,"%-15s %s","GAP",fname);
+			break;
+		case XTRN_RBBS:
+			sprintf(str,"%-15s %s","RBBS/QuickBBS",fname);
+			break;
+		case XTRN_RBBS1:
+			sprintf(str,"%-15s %s","RBBS/QuickBBS",fname);
+            break;
+		case XTRN_WILDCAT:
+			sprintf(str,"%-15s %s","Wildcat",fname);
+			break;
+		case XTRN_PCBOARD:
+			sprintf(str,"%-15s %s","PCBoard",fname);
+			break;
+		case XTRN_SPITFIRE:
+			sprintf(str,"%-15s %s","SpitFire",fname);
+			break;
+		case XTRN_UTI:
+			sprintf(str,"%-15s %s","MegaMail",fname);
+			break;
+		case XTRN_SR:
+			sprintf(str,"%-15s %s","Solar Realms",fname);
+			break;
+		case XTRN_TRIBBS:
+			sprintf(str,"%-15s %s","TriBBS",fname);
+			break;
+        case XTRN_DOOR32:
+            sprintf(str,"%-15s %s","Mystic",fname);
+            break;
+		default:
+			strcpy(str,"None");
+			break; 
+	}
+	return(str);
+}
+
 void xprogs_cfg()
 {
 	static int xprogs_dflt;
@@ -678,48 +769,9 @@ online program name.
 		if(cfg.xtrn[i]->misc&EVENTONLY && cfg.xtrn[i]->event)
 			strcat(str,", Only");
 		sprintf(opt[k++],"%-27.27s%s","Execute on Event",str);
-		switch(cfg.xtrn[i]->type) {
-			case XTRN_SBBS:
-				sprintf(str,"%-15s %s","Synchronet","XTRN.DAT");
-				break;
-			case XTRN_WWIV:
-				sprintf(str,"%-15s %s","WWIV","CHAIN.TXT");
-				break;
-			case XTRN_GAP:
-				sprintf(str,"%-15s %s","GAP","DOOR.SYS");
-				break;
-			case XTRN_RBBS:
-				sprintf(str,"%-15s %s","RBBS/QuickBBS","DORINFO#.DEF");
-				break;
-			case XTRN_RBBS1:
-				sprintf(str,"%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
-                break;
-			case XTRN_WILDCAT:
-				sprintf(str,"%-15s %s","Wildcat","CALLINFO.BBS");
-				break;
-			case XTRN_PCBOARD:
-				sprintf(str,"%-15s %s","PCBoard","PCBOARD.SYS");
-				break;
-			case XTRN_SPITFIRE:
-				sprintf(str,"%-15s %s","SpitFire","SFDOORS.DAT");
-				break;
-			case XTRN_UTI:
-				sprintf(str,"%-15s %s","MegaMail","UTIDOOR.TXT");
-				break;
-			case XTRN_SR:
-				sprintf(str,"%-15s %s","Solar Realms","DOORFILE.SR");
-				break;
-			case XTRN_TRIBBS:
-				sprintf(str,"%-15s %s","TriBBS","TRIBBS.SYS");
-				break;
-            case XTRN_DOOR32:
-                sprintf(str,"%-15s %s","Mystic","DOOR32.SYS");
-                break;
-			default:
-				strcpy(str,"None");
-				break; }
 		sprintf(opt[k++],"%-23.23s%-4s%s","BBS Drop File Type"
-			,cfg.xtrn[i]->misc&REALNAME ? "(R)":nulstr,str);
+			,cfg.xtrn[i]->misc&REALNAME ? "(R)":nulstr
+			,dropfile(cfg.xtrn[i]->type,cfg.xtrn[i]->misc));
 		sprintf(opt[k++],"%-27.27s%s","Place Drop File In"
 			,cfg.xtrn[i]->misc&STARTUPDIR ? "Start-Up Directory":"Node Directory");
 		sprintf(opt[k++],"Time Options...");
@@ -1052,7 +1104,24 @@ format, select the file format from the list.
 						uifc.changes=TRUE; }
 					else if(k==1 && cfg.xtrn[i]->misc&REALNAME) {
 						cfg.xtrn[i]->misc&=~REALNAME;
-						uifc.changes=TRUE; } }
+						uifc.changes=TRUE; 
+					} 
+				}
+				if(cfg.xtrn[i]->type) {
+					strcpy(opt[0],"Yes");
+					strcpy(opt[1],"No");
+					opt[2][0]=0;
+					k=cfg.xtrn[i]->misc&XTRN_LWRCASE ? 0:1;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Lowercase Filename",opt);
+					if(k==0 && !(cfg.xtrn[i]->misc&XTRN_LWRCASE)) {
+						cfg.xtrn[i]->misc|=XTRN_LWRCASE;
+						uifc.changes=TRUE; 
+					}
+					else if(k==1 && cfg.xtrn[i]->misc&XTRN_LWRCASE) {
+						cfg.xtrn[i]->misc&=~XTRN_LWRCASE;
+						uifc.changes=TRUE; 
+					} 
+				}
 				break;
 			case 14:
 				k=0;
@@ -1312,47 +1381,8 @@ This is the internal code for the external editor.
 			,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
 		sprintf(opt[k++],"%-32.32s%s","Strip FidoNet Kludge Lines"
 			,cfg.xedit[i]->misc&STRIPKLUDGE ? "Yes":"No");
-		switch(cfg.xedit[i]->type) {
-			case XTRN_SBBS:
-				sprintf(str,"%-15s %s","Synchronet","XTRN.DAT");
-				break;
-			case XTRN_WWIV:
-				sprintf(str,"%-15s %s","WWIV","CHAIN.TXT");
-				break;
-			case XTRN_GAP:
-				sprintf(str,"%-15s %s","GAP","DOOR.SYS");
-				break;
-			case XTRN_RBBS:
-				sprintf(str,"%-15s %s","RBBS/QuickBBS","DORINFO#.DEF");
-				break;
-			case XTRN_RBBS1:
-				sprintf(str,"%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
-                break;
-			case XTRN_WILDCAT:
-				sprintf(str,"%-15s %s","Wildcat","CALLINFO.BBS");
-				break;
-			case XTRN_PCBOARD:
-				sprintf(str,"%-15s %s","PCBoard","PCBOARD.SYS");
-				break;
-			case XTRN_SPITFIRE:
-				sprintf(str,"%-15s %s","SpitFire","SFDOORS.DAT");
-				break;
-			case XTRN_UTI:
-				sprintf(str,"%-15s %s","MegaMail","UTIDOOR.TXT");
-				break;
-			case XTRN_SR:
-				sprintf(str,"%-15s %s","Solar Realms","DOORFILE.SR");
-				break;
-			case XTRN_TRIBBS:
-				sprintf(str,"%-15s %s","TriBBS","TRIBBS.SYS");
-                break;
-			case XTRN_DOOR32:
-				sprintf(str,"%-15s %s","Mystic","DOOR32.SYS");
-                break;
-			default:
-				strcpy(str,"None");
-                break; }
-		sprintf(opt[k++],"%-32.32s%s","BBS Drop File Type",str);
+		sprintf(opt[k++],"%-32.32s%s","BBS Drop File Type"
+			,dropfile(cfg.xedit[i]->type,cfg.xedit[i]->misc));
         opt[k][0]=0;
 		SETHELP(WHERE);
 /*
@@ -1619,7 +1649,23 @@ format, select the file format from the list.
 					cfg.xedit[i]->type=k;
                     if(cfg.xedit[i]->type==XTRN_DOOR32)
                         cfg.xedit[i]->misc|=XTRN_NATIVE;
-					uifc.changes=TRUE; }
+					uifc.changes=TRUE; 
+				}
+				if(cfg.xedit[i]->type) {
+					strcpy(opt[0],"Yes");
+					strcpy(opt[1],"No");
+					opt[2][0]=0;
+					k=cfg.xedit[i]->misc&XTRN_LWRCASE ? 0:1;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Lowercase Filename",opt);
+					if(k==0 && !(cfg.xedit[i]->misc&XTRN_LWRCASE)) {
+						cfg.xedit[i]->misc|=XTRN_LWRCASE;
+						uifc.changes=TRUE; 
+					}
+					else if(k==1 && cfg.xedit[i]->misc&XTRN_LWRCASE) {
+						cfg.xedit[i]->misc&=~XTRN_LWRCASE;
+						uifc.changes=TRUE; 
+					} 
+				}
 				break;
 
 				} } }
