@@ -2463,11 +2463,14 @@ static void smtp_thread(void* arg)
 				sprintf(str,"SPAM BAIT (%s) taken", rcpt_addr);
 				lprintf("%04d !SMTP %s by: %s"
 					,socket, str, reverse_path);
-				spamlog(&scfg, "SMTP", "REFUSED and FILTERED", str
+				strcpy(tmp,"REFUSED");
+				if(dnsbl_result.s_addr==0)	{ /* Don't double-filter */
+					filter_ip(&scfg, "SMTP", str, host_ip, reverse_path);
+					strcat(tmp," and FILTERED");
+				}
+				spamlog(&scfg, "SMTP", tmp, "Spam Bait Taken"
 					,host_name, host_ip, rcpt_addr, reverse_path);
-				filter_ip(&scfg, "SMTP", str, host_ip, reverse_path);
-				sockprintf(socket, "550 Unknown User:%s", buf+8);
-				continue;
+				break;
 			}
 
 			/* Check for blocked recipients */
