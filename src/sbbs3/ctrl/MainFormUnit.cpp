@@ -469,6 +469,21 @@ static int ftp_lputs(char *str)
         return(0);
     }
 
+#if defined(_DEBUG)
+    if(IsBadReadPtr(FtpForm,sizeof(void*))) {
+        DebugBreak();
+        return(0);
+    }
+    if(IsBadReadPtr(FtpForm->Log,sizeof(void*))) {
+        DebugBreak();
+        return(0);
+    }
+    if(IsBadReadPtr(FtpForm->Log->Lines,sizeof(void*))) {
+        DebugBreak();
+        return(0);
+    }
+#endif
+
     while(FtpForm->Log->Text.Length()>=MAX_LOGLEN)
         FtpForm->Log->Lines->Delete(0);
 

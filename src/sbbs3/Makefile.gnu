@@ -53,26 +53,38 @@ LFLAGS  :=
 DELETE	=	rm -f -v
 OUTLIB	=	-o
 
-ifeq ($(os),freebsd)	# FreeBSD
-CFLAGS	:=	-DJAVASCRIPT -pthread
-LIBS	:=	-pthread
-else			        # Linux / Other UNIX
 CFLAGS	:=	-DJAVASCRIPT -I../mozilla/js/src
-LIBS	:=	$(LIBDIR)/libpthread.a
+
+ifeq ($(os),freebsd)	# FreeBSD
+CFLAGS	:=	$(CFLAGS) -pthread -D_THREAD_SAFE
+LIBS	:=	-pthread
+else			# Linux / Other UNIX
+LIBS	:=	$(LIBDIR)/libpthread.a 
 endif
 
 endif   # Unix (end)
+
+# Math library needed
+LIBS	:=	$(LIBS) -lm
 
 ifdef DEBUG
 CFLAGS	:=	$(CFLAGS) -g -O0 -D_DEBUG 
 LIBODIR	:=	$(LIBODIR).debug
 EXEODIR	:=	$(EXEODIR).debug
-LIBS	:=	$(LIBS) -lm ../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
-else
+ifeq ($(os),freebsd)	# FreeBSD
+LIBS	:=	$(LIBS) ../mozilla/js/src/FreeBSD4.3-RELEASE_DBG.OBJ/libjs.a
+else			# Linux
+LIBS	:=	$(LIBS) ../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
+endif
+else # RELEASE
 LFLAGS	:=	$(LFLAGS) -S
 LIBODIR	:=	$(LIBODIR).release
 EXEODIR	:=	$(EXEODIR).release
-LIBS	:=	$(LIBS) -lm ../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
+ifeq ($(os),freebsd)	# FreeBSD
+LIBS	:=	$(LIBS) ../mozilla/js/src/FreeBSD4.3-RELEASE_OPT.OBJ/libjs.a
+else
+LIBS	:=	$(LIBS) ../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
+endif
 endif
 
 include targets.mak		# defines all targets
