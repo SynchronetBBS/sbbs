@@ -420,11 +420,11 @@ enum {
 /* Typedefs */
 /************/
 
-#if defined(_WIN32) || defined(__BORLANDC__)
+#if defined(_WIN32) || defined(__BORLANDC__) 
 	#define PRAGMA_PACK
 #endif
 
-#if defined(PRAGMA_PACK)
+#if defined(PRAGMA_PACK) || defined(__WATCOMC__)
 	#define _PACK
 #else
 	#define _PACK __attribute__ ((packed))
