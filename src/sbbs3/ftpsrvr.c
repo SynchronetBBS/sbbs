@@ -2204,7 +2204,7 @@ static void ctrl_thread(void* arg)
 	BOOL		delfile;
 	BOOL		tmpfile;
 	BOOL		credits;
-	BOOL		filedat;
+	BOOL		filedat=FALSE;
 	BOOL		transfer_inprogress;
 	BOOL		transfer_aborted;
 	BOOL		sysop=FALSE;
@@ -2224,7 +2224,7 @@ static void ctrl_thread(void* arg)
 	user_t		user;
 	time_t		t;
 	time_t		now;
-	time_t		logintime;
+	time_t		logintime=0;
 	time_t		lastactive;
 	file_t		f;
 	glob_t		g;

@@ -709,7 +709,7 @@ void sbbs_t::batch_add_list(char *list)
 			sprintf(f.name,"%.12s",str);
 			strupr(f.name);
 			lncntr=0;
-			for(i=k=0;i<usrlibs;i++) {
+			for(i=j=k=0;i<usrlibs;i++) {
 				for(j=0;j<usrdirs[i];j++,k++) {
 					outchar('.');
 					if(k && !(k%5))

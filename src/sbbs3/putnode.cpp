@@ -45,8 +45,8 @@
 void sbbs_t::putnodedat(uint number, node_t* node)
 {
 	char	str[256],firston[25];
-	int		wr;
-	int		wrerr;
+	int		wr=0;
+	int		wrerr=0;
 	int		attempts;
 
 	if(!number)

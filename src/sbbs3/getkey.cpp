@@ -423,7 +423,7 @@ bool sbbs_t::noyes(char *str)
 long sbbs_t::getkeys(char *keys, ulong max)
 {
 	char	str[81];
-	uchar	ch,n=0,c;
+	uchar	ch,n=0,c=0;
 	ulong	i=0;
 
 	SAFECOPY(str,keys);

@@ -432,7 +432,7 @@ int main(int argc, char **argv)
 	int i,j,mode=0,misc;
 	int	modify=0;
 	int loop=0;
-	long value;
+	long value=0;
 	node_t node;
 
 	printf("\nSynchronet Node Display/Control Utility v1.10  Copyright 2000 Rob Swindell\n\n");

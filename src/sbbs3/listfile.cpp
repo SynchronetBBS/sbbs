@@ -56,7 +56,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 	uchar	flagprompt=0;
 	uint	i,j;
 	int		file,found=0,lastbat=0,disp;
-	long	l,m=0,n,anchor,next,datbuflen;
+	long	l,m=0,n,anchor=0,next,datbuflen;
 	file_t	f,bf[26];	/* bf is batch flagged files */
 
 	if(mode&FL_ULTIME) {
@@ -590,9 +590,9 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 							,long totalfiles)
 {
-	char	ch,c,d,str[256],fname[128],*p,remcdt,remfile;
+	char	ch,c,d,str[256],fname[128],*p,remcdt=0,remfile=0;
 	char 	tmp[512];
-	uint	i,j,ml,md,udir,ulib;
+	uint	i,j,ml=0,md=0,udir,ulib;
 	file_t	f;
 
 	for(ulib=0;ulib<usrlibs;ulib++)
@@ -853,7 +853,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 	int		error;
 	int		found=0;
     uint	i,j;
-	long	usrxfrlen;
+	long	usrxfrlen=0;
     long	m,l;
 	long	usrcdt;
     time_t	start,end,t;

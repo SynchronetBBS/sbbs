@@ -42,8 +42,8 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 {
 	char	str[512],tmp[512],buf[1025],ch,op,*p,**pp,**pp1,**pp2;
 	ushort	w;
-	uint 	i,j;
-	long	l,*lp,*lp1,*lp2;
+	uint 	i=0,j;
+	long	l,*lp=NULL,*lp1=NULL,*lp2=NULL;
 	void	*vp;
 	va_list arglist[64];
 	struct	dirent *de;

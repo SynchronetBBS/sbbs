@@ -62,7 +62,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	char	msgtmp[MAX_PATH+1];
 	char 	tmp[512];
 	int		i,j,file,linesquoted=0;
-	long	length,qlen,qtime,ex_mode=0;
+	long	length,qlen=0,qtime=0,ex_mode=0;
 	ulong	l;
 	FILE *	stream;
 

@@ -1150,7 +1150,7 @@ static void smtp_thread(void* arg)
 	ushort		xlat;
 	ushort		nettype;
 	uint		usernum;
-	ulong		crc;
+	ulong		crc=0;
 	ulong		lines=0;
 	ulong		length;
 	ulong		offset;

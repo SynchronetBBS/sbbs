@@ -684,8 +684,8 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fp)
 /****************************************************************************/
 int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node, int file)
 {
-	size_t	wr;
-	int		wrerr;
+	size_t	wr=0;
+	int		wrerr=0;
 	int		attempts;
 
 	if(!number || number>cfg->sys_nodes || file<0) {

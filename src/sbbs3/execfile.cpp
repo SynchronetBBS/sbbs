@@ -339,7 +339,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				return(0);
 			padfname(csi->str,f.name);
 			strupr(f.name);
-			for(x=0;x<usrlibs;x++) {
+			for(x=y=0;x<usrlibs;x++) {
 				for(y=0;y<usrdirs[x];y++)
 					if(findfile(&cfg,usrdir[x][y],f.name))
 						break;

@@ -709,7 +709,7 @@ void sbbs_t::privchat(bool local)
 	char 	tmp[512];
 	uchar	ch;
 	int 	in,out,i,n,echo=1,x,y,activity,remote_activity;
-    int		local_y,remote_y;
+    int		local_y=1,remote_y=1;
 	node_t	node;
 
 	if(useron.rest&FLAG('C')) {
@@ -1202,7 +1202,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 /****************************************************************************/
 void sbbs_t::nodemsg()
 {
-	char	str[256],line[256],buf[512],logbuf[512],ch;
+	char	str[256],line[256],buf[512],logbuf[512],ch=0;
 	char 	tmp[512];
 	int 	i,usernumber,done=0;
 	node_t	node,savenode;

@@ -850,13 +850,13 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 		}
 
 	if(!strncmp(str,"RESETALL ",9)) {              /* set all ptrs */
-		for(x=0;x<usrgrps;x++)
+		for(x=y=0;x<usrgrps;x++)
 			for(y=0;y<usrsubs[x];y++)
 				if(subscan[usrsub[x][y]].cfg&SUB_CFG_NSCAN)
 					qwksetptr(usrsub[x][y],str+9,1); }
 
 	else if(!strncmp(str,"ALLPTR ",7)) {              /* set all ptrs */
-		for(x=0;x<usrgrps;x++)
+		for(x=y=0;x<usrgrps;x++)
 			for(y=0;y<usrsubs[x];y++)
 				if(subscan[usrsub[x][y]].cfg&SUB_CFG_NSCAN)
 					qwksetptr(usrsub[x][y],str+7,1); }
@@ -936,7 +936,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	else if(!strncmp(str,"FREQ ",5)) {                  /* file request */
 		padfname(str+5,f.name);
 		strupr(f.name);
-		for(x=0;x<usrlibs;x++) {
+		for(x=y=0;x<usrlibs;x++) {
 			for(y=0;y<usrdirs[x];y++)
 				if(findfile(&cfg,usrdir[x][y],f.name))
 					break;

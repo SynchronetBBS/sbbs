@@ -498,7 +498,8 @@ bool sbbs_t::inputnstime(time_t *dt)
 	int hour;
 	struct tm tm;
 	struct tm * tp;
-	char pm,str[256];
+	bool pm=false;
+	char str[256];
 
 	bputs(text[NScanDate]);
 	bputs(timestr(dt));
@@ -546,14 +547,14 @@ bool sbbs_t::inputnstime(time_t *dt)
 		hour=tm.tm_hour;
 	else {
 		if(tm.tm_hour==0) {	/* 12 midnite */
-			pm=0;
+			pm=false;
 			hour=12; }
 		else if(tm.tm_hour>12) {
 			hour=tm.tm_hour-12;
-			pm=1; }
+			pm=true; }
 		else {
 			hour=tm.tm_hour;
-			pm=0; } }
+			pm=false; } }
 	ultoa(hour,str,10);
 	if(!getstr(str,2,K_EDIT|K_AUTODEL|K_NUMBER|K_NOCRLF) || sys_status&SS_ABORT) {
 		CRLF;

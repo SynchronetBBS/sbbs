@@ -186,7 +186,7 @@ int matchnode(faddr_t addr, int exact)
 void read_echo_cfg()
 {
 	uchar str[1025],tmp[512],*p,*tp;
-	short attr;
+	short attr=0;
 	int i,j,file;
 	FILE *stream;
 	faddr_t addr,route_addr;

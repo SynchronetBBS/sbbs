@@ -389,6 +389,8 @@ void sbbs_t::readmail(uint usernumber, int which)
 						replied=email(1,str2,msg.subj,WM_EMAIL|WM_QUOTE);
 					else if((i=finduser(str))!=0)
 						replied=email(i,str2,msg.subj,WM_EMAIL|WM_QUOTE);
+					else
+						replied=false;
 					sprintf(str2,text[DeleteMailQ],msg.from); }
 
 				if(replied==true && !(msg.hdr.attr&MSG_REPLIED)) {

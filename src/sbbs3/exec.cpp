@@ -505,7 +505,7 @@ void sbbs_t::freevars(csi_t *bin)
 char * sbbs_t::copystrvar(csi_t *csi, char *p, char *str)
 {
 	char *np;	/* New pointer after realloc */
-	int i;
+	int i=0;
 
 	if(p!=csi->str) {
 		if(p)
