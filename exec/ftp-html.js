@@ -74,11 +74,11 @@ writeln("<option>Go To...</option>");
 writeln(format("<option value=/%s>Root</option>",html_index_file));
 for(l in file_area.lib_list) {
 	writeln(format("<optgroup label=%s>",file_area.lib_list[l].name));
-	writeln(format("<option value=%s> [%s]"
+	writeln(format("<option value=%s>[%s]"
 		,file_area.lib_list[l].link
 		,file_area.lib_list[l].name));
 	for(d in file_area.lib_list[l].dir_list) {
-		writeln(format("<option value=%s>&nbsp&nbsp&nbsp&nbsp %s"
+		writeln(format("<option value=%s>%s"
 			,file_area.lib_list[l].dir_list[d].link
 			,file_area.lib_list[l].dir_list[d].name));
 	}
