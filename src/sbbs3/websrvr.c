@@ -1389,12 +1389,13 @@ static BOOL parse_headers(http_session_t * session)
 	}
 	if(content_len)  {
 		if((session->req.post_data=malloc(content_len+1)) != NULL)  {
-			recvbufsocket(session->socket,session->req.post_data,content_len);
-			session->req.post_len=content_len;
+			session->req.post_len=recvbufsocket(session->socket,session->req.post_data,content_len);
+			if(session->req.post_len<0)
+				session->req.post_len=0;
 			if(session->req.dynamic==IS_SSJS)  {
 				js_parse_post(session);
 			}
-			session->req.post_data[content_len]=0;
+			session->req.post_data[session->req.post_len]=0;
 		}
 		else  {
 			lprintf(LOG_CRIT,"%04d !ERROR Allocating %d bytes of memory",session->socket,content_len);
