@@ -247,7 +247,7 @@ BOOL read_attr_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	strcpy(fname,"attr.cfg");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fnopen(str,O_RDONLY))==NULL) {
+	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		lprintf(txt->openerr,str);
 		return(FALSE); }
 	if(txt->reading && txt->reading[0])
