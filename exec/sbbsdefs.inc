@@ -232,6 +232,7 @@
 !global _CAP_FNAME
 !global _CID
 !global _COMSPEC
+!global _QUESTION
 
 				# Integer variables
 !global _USERON.NUMBER

@@ -100,6 +100,9 @@ char ** sbbs_t::getstrvar(csi_t *bin, long name)
 			break;
 		case 0x15755030:
 			return((char **)&comspec);
+		case 0x5E049062:
+			sysvar_p[sysvar_pi]=question;
+			break;
 
 		case 0xf19cd046:
 			sysvar_p[sysvar_pi]=(char*)wordwrap;
