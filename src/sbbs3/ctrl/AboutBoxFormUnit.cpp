@@ -38,6 +38,7 @@
 #pragma hdrstop
 
 #include "AboutBoxFormUnit.h"
+#include "emulvt.hpp"
 #include "bbs_thrd.h" 	// bbs_startup_t
 #include "mailsrvr.h"
 #include "ftpsrvr.h"
@@ -106,8 +107,12 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
     Memo->Lines->Add(mail_ver());
     Memo->Lines->Add(ftp_ver());
     Memo->Lines->Add(ver);
+#if 0
     Memo->Lines->Add("EmulVT ANSI Terminal Emulation v2.15 "
         "(c) 1996-2000 François Piette");
+#else
+    Memo->Lines->Add("Synchronet Local Spy ANSI Terminal Emulation"+CopyRight);
+#endif
 
 }
 //---------------------------------------------------------------------------
