@@ -79,7 +79,7 @@ bool sbbs_t::uploadfile(file_t *f)
 	strcpy(tmp,f->name);
 	truncsp(tmp);
 	for(i=0;i<cfg.total_ftests;i++)
-		if(cfg.ftest[i]->ext[0]=='*' || !strcmp(tmp+9,cfg.ftest[i]->ext)) {
+		if(cfg.ftest[i]->ext[0]=='*' || !stricmp(tmp+9,cfg.ftest[i]->ext)) {
 			if(!chk_ar(cfg.ftest[i]->ar,&useron))
 				continue;
 			attr(LIGHTGRAY);
@@ -333,7 +333,7 @@ bool sbbs_t::upload(uint dirnum)
 		if(p!=NULL)
 			*p=0;
 		ch=strlen(str+i);
-		if(!strcmp(tmp+9,str+i))
+		if(!stricmp(tmp+9,str+i))
 			break; 
 	}
 	if(j && i>=j) {

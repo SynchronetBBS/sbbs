@@ -323,7 +323,7 @@ void sbbs_t::extract(uint dirnum)
 	strcpy(str,f.name);
 	truncsp(str);
 	for(i=0;i<cfg.total_fextrs;i++)
-		if(!strcmp(str+9,cfg.fextr[i]->ext) && chk_ar(cfg.fextr[i]->ar,&useron)) {
+		if(!stricmp(str+9,cfg.fextr[i]->ext) && chk_ar(cfg.fextr[i]->ar,&useron)) {
 			strcpy(excmd,cfg.fextr[i]->cmd);
 			break; }
 	if(i==cfg.total_fextrs) {

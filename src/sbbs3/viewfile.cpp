@@ -95,7 +95,7 @@ void sbbs_t::viewfiles(uint dirnum, char *fspec)
 	padfname(fspec,tmp);
 	truncsp(tmp);
 	for(i=0;i<cfg.total_fviews;i++)
-		if(!strcmp(tmp+9,cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron)) {
+		if(!stricmp(tmp+9,cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron)) {
 			strcpy(viewcmd,cfg.fview[i]->cmd);
 			break; }
 	if(i==cfg.total_fviews) {
