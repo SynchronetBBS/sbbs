@@ -13,8 +13,8 @@ if(http_request.query.Action=="Delete Message(s)") {
 	var deleted=0;
 	var errors=0;
 	errorlist=new Array;
-	for(off in http_request.query.offset) {
-		if(msgbase.remove_msg(true,parseInt(http_request.query.offset[off])))
+	for(num in http_request.query.number) {
+		if(msgbase.remove_msg(false,parseInt(http_request.query.number[num])))
 			deleted++;
 		else {
 			errors++;
