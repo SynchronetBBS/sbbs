@@ -2264,6 +2264,7 @@ void DLLCALL mail_server(void* arg)
 	time_t			start;
 	LINGER			linger;
 	fd_set			socket_set;
+	SOCKET			high_socket_set;
 	pop3_t*			pop3;
 	smtp_t*			smtp;
 
@@ -2494,10 +2495,14 @@ void DLLCALL mail_server(void* arg)
 
 		FD_ZERO(&socket_set);
 		FD_SET(server_socket,&socket_set);
-		if(startup->options&MAIL_OPT_ALLOW_POP3)
+		high_socket_set=server_socket+1;
+		if(startup->options&MAIL_OPT_ALLOW_POP3) {
 			FD_SET(pop3_socket,&socket_set);
+			if(pop3_socket+1>high_socket_set)
+				high_socket_set=pop3_socket+1;
+		}
 
-		if((i=select(0,&socket_set,NULL,NULL,NULL))<1) {
+		if((i=select(high_socket_set,&socket_set,NULL,NULL,NULL))<1) {
 			if(!i) {
 				lprintf("select returned zero");
 				break;
