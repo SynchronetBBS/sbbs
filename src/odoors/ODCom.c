@@ -70,6 +70,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #endif
 #include "ODCore.h"
 #include "ODGen.h"
@@ -185,6 +187,7 @@ typedef struct
 #endif /* INCLUDE_DOOR32_COM */
 #ifdef INCLUDE_SOCKET_COM
 	SOCKET	socket;
+	int	old_delay;
 #endif
 } tPortInfo;
 
@@ -1831,8 +1834,13 @@ tODResult ODComOpenFromExistingHandle(tPortHandle hPort,
 
 #ifdef INCLUDE_SOCKET_COM
 	if(pPortInfo->Method == kComMethodSocket) {
+		int delay=FALSE;
 
 		pPortInfo->socket = dwExistingHandle;
+
+		getsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &(pPortInfo->old_delay), &delay);
+		delay=FALSE;
+		setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &delay, sizeof(delay));
 
         pPortInfo->bIsOpen = TRUE;
 
@@ -1965,6 +1973,7 @@ tODResult ODComClose(tPortHandle hPort)
 
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
+		 setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &(pPortInfo->old_delay), sizeof(pPortInfo->old_delay));
          closesocket(pPortInfo->socket);
          break;
 #endif /* INCLUDE_SOCKET_COM */
