@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -43,7 +43,8 @@
 
 static char* xtrn_sec_prop_desc[] = {
 
-	 "external program section number"
+	 "index into sec_list array"
+	,"unique number for this external program section"
 	,"external program section internal code"
 	,"external program section name"
 	,"external program section access requirements"
@@ -52,7 +53,12 @@ static char* xtrn_sec_prop_desc[] = {
 
 static char* xtrn_prog_prop_desc[] = {
 
-	 "internal code"
+	 "index into prog_list array"
+	,"program number"
+	,"progarm section index"
+	,"program section number"
+	,"program section internal code"
+	,"internal code"
 	,"name"
 	,"command-line"
 	,"clean-up command-line"
@@ -66,8 +72,6 @@ static char* xtrn_prog_prop_desc[] = {
 	,"maximum time allowed in program"
 	,"execution cost (credits to run this program)"
 	/* Insert here */
-	,"program number"
-	,"program section number"
 	,"user has sufficient access to run this program"
 	,NULL
 };
@@ -180,6 +184,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 										  ,user_t* user)
 {
 	JSObject*	areaobj;
+	JSObject*	allsec;
 	JSObject*	allprog;
 	JSObject*	secobj;
 	JSObject*	progobj;
@@ -191,7 +196,8 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	JSObject*	prog_list;
 	JSString*	js_str;
 	jsval		val;
-	jsuint		index;
+	jsuint		sec_index;
+	jsuint		prog_index;
 	uint		l,d;
 
 	/* Return existing object if it's already been created */
@@ -208,6 +214,15 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	js_DescribeSyncObject(cx,areaobj,"External Program Areas",310);
 #endif
 
+	/* xtrn_area.sec[] */
+	if((allsec=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
+		return(NULL);
+
+	val=OBJECT_TO_JSVAL(allsec);
+	if(!JS_SetProperty(cx, areaobj, "sec", &val))
+		return(NULL);
+
+	/* xtrn_area.prog[] */
 	if((allprog=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
 		return(NULL);
 
@@ -215,7 +230,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(!JS_SetProperty(cx, areaobj, "prog", &val))
 		return(NULL);
 
-	/* sec_list[] */
+	/* xtrn_area.sec_list[] */
 	if((sec_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 		return(NULL);
 
@@ -234,11 +249,20 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if((secobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
-		if(!JS_GetArrayLength(cx, sec_list, &index))
+		if(!JS_GetArrayLength(cx, sec_list, &sec_index))
 			return(NULL);
 
 		val=OBJECT_TO_JSVAL(secobj);
-		if(!JS_SetElement(cx, sec_list, index, &val))
+		if(!JS_SetElement(cx, sec_list, sec_index, &val))
+			return(NULL);
+
+		/* Add as property (associative array element) */
+		if(!JS_DefineProperty(cx, allsec, cfg->xtrnsec[l]->code, val
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+			return(NULL);
+
+		val=INT_TO_JSVAL(sec_index);
+		if(!JS_SetProperty(cx, secobj, "index", &val))
 			return(NULL);
 
 		val=INT_TO_JSVAL(l);
@@ -288,11 +312,11 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if((progobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return(NULL);
 
-			if(!JS_GetArrayLength(cx, prog_list, &index))
+			if(!JS_GetArrayLength(cx, prog_list, &prog_index))
 				return(NULL);							
 
 			val=OBJECT_TO_JSVAL(progobj);
-			if(!JS_SetElement(cx, prog_list, index, &val))
+			if(!JS_SetElement(cx, prog_list, prog_index, &val))
 				return(NULL);
 
 			/* Add as property (associative array element) */
@@ -300,21 +324,33 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
-			if(!js_CreateXtrnProgProperties(cx, progobj, cfg->xtrn[d]))
+			val=INT_TO_JSVAL(prog_index);
+			if(!JS_SetProperty(cx, progobj, "index", &val))
 				return(NULL);
 
 			val=INT_TO_JSVAL(d);
 			if(!JS_SetProperty(cx, progobj, "number", &val))
 				return(NULL);
 
-			val=INT_TO_JSVAL(cfg->xtrn[d]->sec);
+			val=INT_TO_JSVAL(sec_index);
+			if(!JS_SetProperty(cx, progobj, "sec_index", &val))
+				return(NULL);
+
+			val=INT_TO_JSVAL(l);
 			if(!JS_SetProperty(cx, progobj, "sec_number", &val))
 				return(NULL);
 
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,cfg->xtrnsec[l]->code));
+			if(!JS_SetProperty(cx, progobj, "sec_code", &val))
+				return(NULL);
+
+			if(!js_CreateXtrnProgProperties(cx, progobj, cfg->xtrn[d]))
+				return(NULL);
+
 			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->run_ar,user))
-				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+				val=JSVAL_TRUE;
 			else
-				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+				val=JSVAL_FALSE;
 			if(!JS_SetProperty(cx, progobj, "can_run", &val))
 				return(NULL);
 
@@ -330,6 +366,10 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	}
 
 #ifdef _DEBUG
+
+	js_DescribeSyncObject(cx,allsec,"Associative array of all external program sections (use internal code as index)",312);
+	JS_DefineProperty(cx,allsec,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+
 	js_DescribeSyncObject(cx,allprog,"Associative array of all external programs (use internal code as index)",311);
 	JS_DefineProperty(cx,allprog,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif

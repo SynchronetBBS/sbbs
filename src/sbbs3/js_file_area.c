@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -42,7 +42,8 @@
 #ifdef _DEBUG
 
 static char* lib_prop_desc[] = {
-	 "library number"
+	 "index into lib_list array"
+	,"unique number for this library"
 	,"library name"
 	,"library description"
 	,"library access requirements"
@@ -52,7 +53,9 @@ static char* lib_prop_desc[] = {
 
 static char* dir_prop_desc[] = {
 
-	 "directory number"
+	 "index into dir_list array"
+	,"unique number for this directory"
+	,"library index"
 	,"library number"
 	,"library name"
 	,"directory internal code"
@@ -97,8 +100,9 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	JSObject*	dir_list;
 	JSString*	js_str;
 	jsval		val;
-	jsuint		index;
-	uint		l,d,ln,dn;
+	jsuint		lib_index;
+	jsuint		dir_index;
+	uint		l,d;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"file_area",&val) && val!=JSVAL_VOID)
@@ -151,7 +155,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(!JS_SetProperty(cx, areaobj, "lib_list", &val)) 
 		return(NULL);
 
-	for(l=ln=0;l<cfg->total_libs;l++) {
+	for(l=0;l<cfg->total_libs;l++) {
 #if 0
 		if(user==NULL && (*cfg->lib[l]->ar)!=AR_NULL)
 			continue;
@@ -162,11 +166,11 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if((libobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
-		if(!JS_GetArrayLength(cx, lib_list, &index))
+		if(!JS_GetArrayLength(cx, lib_list, &lib_index))
 			return(NULL);
 
 		val=OBJECT_TO_JSVAL(libobj);
-		if(!JS_SetElement(cx, lib_list, index, &val))
+		if(!JS_SetElement(cx, lib_list, lib_index, &val))
 			return(NULL);
 
 		/* Add as property (associative array element) */
@@ -174,7 +178,11 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 			return(NULL);
 
-		val=INT_TO_JSVAL(ln);
+		val=INT_TO_JSVAL(lib_index);
+		if(!JS_SetProperty(cx, libobj, "index", &val))
+			return(NULL);
+
+		val=INT_TO_JSVAL(l);
 		if(!JS_SetProperty(cx, libobj, "number", &val))
 			return(NULL);
 
@@ -228,11 +236,11 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if((dirobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return(NULL);
 
-			if(!JS_GetArrayLength(cx, dir_list, &index))	/* inexplicable exception here on Jul-6-2001 */
-				return(NULL);								/* and again on Aug-7-2001 and Oct-21-2001 */
+			if(!JS_GetArrayLength(cx, dir_list, &dir_index))
+				return(NULL);								
 
 			val=OBJECT_TO_JSVAL(dirobj);
-			if(!JS_SetElement(cx, dir_list, index, &val))
+			if(!JS_SetElement(cx, dir_list, dir_index, &val))
 				return(NULL);
 
 			/* Add as property (associative array element) */
@@ -240,12 +248,19 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
-			val=INT_TO_JSVAL(dn);
+			val=INT_TO_JSVAL(dir_index);
+			if(!JS_SetProperty(cx, dirobj, "index", &val))
+				return(NULL);
+
+			val=INT_TO_JSVAL(d);
 			if(!JS_SetProperty(cx, dirobj, "number", &val))
 				return(NULL);
-			dn++;
 
-			val=INT_TO_JSVAL(ln);
+			val=INT_TO_JSVAL(lib_index);
+			if(!JS_SetProperty(cx, dirobj, "lib_index", &val))
+				return(NULL);
+
+			val=INT_TO_JSVAL(cfg->dir[d]->lib);
 			if(!JS_SetProperty(cx, dirobj, "lib_number", &val))
 				return(NULL);
 
@@ -406,12 +421,11 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 #ifdef _DEBUG
 		js_CreateArrayOfStrings(cx, libobj, "_property_desc_list", lib_prop_desc, JSPROP_READONLY);
 #endif
-		ln++;
 	}
 
 #ifdef _DEBUG
-	js_DescribeSyncObject(cx,alldirs,"Associative array of all libraries (use name as index)",312);
-	JS_DefineProperty(cx,alldirs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+	js_DescribeSyncObject(cx,alllibs,"Associative array of all libraries (use name as index)",312);
+	JS_DefineProperty(cx,alllibs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 
 #ifdef _DEBUG
