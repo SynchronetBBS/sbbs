@@ -589,7 +589,8 @@ void sbbs_t::qwk_sec()
 				batdn_total=1;
 				batdn_dir[0]=cfg.total_dirs;
 				sprintf(batdn_name[0],"%s.qwk",cfg.sys_id);
-				if(!create_batchdn_lst() || !create_batchup_lst()
+				if(!create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false) 
+					|| !create_batchup_lst()
 					|| !create_bimodem_pth()) {
 					batup_total=batdn_total=0;
 					continue; }

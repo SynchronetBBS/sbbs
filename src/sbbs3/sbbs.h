@@ -623,7 +623,7 @@ public:
 	void	batch_create_list(void);
 	void	batch_add_list(char *list);
 	bool	create_batchup_lst(void);
-	bool	create_batchdn_lst(void);
+	bool	create_batchdn_lst(bool native);
 	bool	create_bimodem_pth(void);
 	void	batch_upload(void);
 	void	batch_download(int xfrprot);

@@ -118,12 +118,6 @@ void sbbs_t::batchmenu()
 					break; 
 				}
 				xfer_prot_menu(XFER_BIDIR);
-				if(!create_batchdn_lst())
-					break;
-				if(!create_batchup_lst())
-					break;
-				if(!create_bimodem_pth())
-					break;
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
 				strcpy(tmp2,"Q");
@@ -140,6 +134,13 @@ void sbbs_t::batchmenu()
 						&& chk_ar(cfg.prot[i]->ar,&useron))
 						break;
 				if(i<cfg.total_prots) {
+					if(!create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false))
+						break;
+					if(!create_batchup_lst())
+						break;
+					if(!create_bimodem_pth())
+						break;
+
 					xfrprot=i;
 					action=NODE_BXFR;
 					SYNC;
@@ -371,10 +372,6 @@ BOOL sbbs_t::start_batch_download()
 		return(FALSE); 
 	}
 	xfer_prot_menu(XFER_BATCH_DOWNLOAD);
-	if(!create_batchdn_lst())
-		return(FALSE);
-	if(!create_bimodem_pth())
-		return(FALSE);
 	ASYNC;
 	mnemonics(text[ProtocolOrQuit]);
 	strcpy(str,"Q");
@@ -393,6 +390,11 @@ BOOL sbbs_t::start_batch_download()
 			break;
 	if(i>=cfg.total_prots)
 		return(FALSE);	/* no protocol selected */
+
+	if(!create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false))
+		return(FALSE);
+	if(!create_bimodem_pth())
+		return(FALSE);
 
 	xfrprot=i;
 	list=NULL;
@@ -478,27 +480,31 @@ BOOL sbbs_t::start_batch_download()
 /* Creates the file BATCHDN.LST in the node directory. Returns true if      */
 /* everything goes okay, false if not.                                      */
 /****************************************************************************/
-bool sbbs_t::create_batchdn_lst()
+bool sbbs_t::create_batchdn_lst(bool native)
 {
-	char	str[256];
+	char	path[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
 	int		file;
 	uint	i;
 
-	sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
-	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
+	sprintf(path,"%sBATCHDN.LST",cfg.node_dir);
+	if((file=nopen(path,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
+		errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
 		return(false); 
 	}
 	for(i=0;i<batdn_total;i++) {
 		if(batdn_dir[i]>=cfg.total_dirs || cfg.dir[batdn_dir[i]]->seqdev)
-			strcpy(str,cfg.temp_dir);
+			SAFECOPY(path,cfg.temp_dir);
 		else
-			strcpy(str,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
+			SAFECOPY(path,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
 				? cfg.altpath[batdn_alt[i]-1] : cfg.dir[batdn_dir[i]]->path);
-		write(file,str,strlen(str));
-		unpadfname(batdn_name[i],str);
-		strcat(str,crlf);
-		write(file,str,strlen(str)); 
+
+		unpadfname(batdn_name[i],fname);
+		strcat(path,fname);
+		if(native)
+			fexistcase(path);
+		strcat(path,crlf);
+		write(file,path,strlen(path)); 
 	}
 	close(file);
 	return(true);
