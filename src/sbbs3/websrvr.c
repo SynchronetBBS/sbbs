@@ -163,6 +163,25 @@ static char	*months[]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oc
 static const char * base64alphabet = 
  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
+static DWORD monthdays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+static time_t time_gm( struct tm* ti )  {
+	time_t t;
+
+	t=(ti->tm_year-70)*365;
+	t+=(ti->tm_year-69)/4;
+	t+=monthdays[ti->tm_mon];
+	if(ti->tm_mon >= 2 && ti->tm_year+1900%400 ? (ti->tm_year+1900%100 ? (ti->tm_year+1900%4 ? 0:1):0):1)
+		++t;
+	t += ti->tm_mday - 1;
+	t = t * 24 + ti->tm_hour;
+	t = t * 60 + ti->tm_min;
+	t = t * 60 + ti->tm_sec;
+
+	return t;
+}
+
+
 static int lprintf(char *fmt, ...)
 {
 	va_list argptr;
@@ -403,7 +422,7 @@ static time_t decode_date(char *date)
 			ti.tm_year -= 1900;
 	}
 
-	t=mktime(&ti);
+	t=time_gm(&ti);
 	lprintf("Parsed date as: %d",t);
 	return(t);
 }
