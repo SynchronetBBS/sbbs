@@ -43,6 +43,10 @@
 	extern WSADATA WSAData;
 #endif
 
+#if defined(__unix__)
+	#include <sys/utsname.h>	/* uname() */
+#endif
+
 void sbbs_t::ver()
 {
 	char str[128],compiler[32];
