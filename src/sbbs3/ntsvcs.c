@@ -75,6 +75,8 @@ typedef struct {
 	void*					startup;
 	void					(*thread)(void* arg);
 	void					(WINAPI *ctrl_handler)(DWORD);
+	HANDLE					log_pipe;
+	BOOL					autostart;
 	SERVICE_STATUS			status;
 	SERVICE_STATUS_HANDLE	status_handle;
 } sbbs_ntsvc_t;
@@ -86,7 +88,8 @@ sbbs_ntsvc_t bbs ={
 		"This service provides the critical functions of your Synchronet BBS.",
 	&bbs_startup,
 	bbs_thread,
-	bbs_ctrl_handler
+	bbs_ctrl_handler,
+	INVALID_HANDLE_VALUE
 };
 
 sbbs_ntsvc_t ftp = {
@@ -95,7 +98,8 @@ sbbs_ntsvc_t ftp = {
 	"Provides support for FTP clients (including web browsers) for file transfers.",
 	&ftp_startup,
 	ftp_server,
-	ftp_ctrl_handler
+	ftp_ctrl_handler,
+	INVALID_HANDLE_VALUE
 };
 
 #if !defined(NO_WEB_SERVER)
@@ -105,7 +109,8 @@ sbbs_ntsvc_t web = {
 	"Provides support for Web (HTML/HTTP) clients (browsers).",
 	&web_startup,
 	web_server,
-	web_ctrl_handler
+	web_ctrl_handler,
+	INVALID_HANDLE_VALUE
 };
 #endif
 
@@ -116,7 +121,8 @@ sbbs_ntsvc_t mail = {
 		"access their e-mail using an Internet mail client (using POP3).",
 	&mail_startup,
 	mail_server,
-	mail_ctrl_handler
+	mail_ctrl_handler,
+	INVALID_HANDLE_VALUE
 };
 
 #if !defined(NO_SERVICES)
@@ -128,7 +134,8 @@ sbbs_ntsvc_t services = {
 		"file for configuration of individual Synchronet Services.",
 	&services_startup,
 	services_thread,
-	services_ctrl_handler
+	services_ctrl_handler,
+	INVALID_HANDLE_VALUE
 };
 #endif
 
@@ -262,11 +269,49 @@ static int event_lputs(char *str)
 /************************************/
 static int svc_lputs(void* p, char* str)
 {
-	char line[1024];
+	char	line[1024];
+	char	pipe_name[256];
+	DWORD	len;
+	DWORD	wr;
 	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
 
-	snprintf(line,sizeof(line),"%s: %s",svc==NULL ? "Synchronet" : svc->name, str);
+	len = snprintf(line,sizeof(line),"%s: %s",svc==NULL ? "Synchronet" : svc->name, str);
 	OutputDebugString(line);
+	if(svc!=NULL && svc->log_pipe == INVALID_HANDLE_VALUE) {
+#ifdef USE_NAMED_PIPES
+		sprintf(pipe_name,"\\\\.\\pipe\\%s",svc->name);
+		svc->log_pipe = CreateNamedPipe(
+			pipe_name,					// pointer to pipe name
+			PIPE_ACCESS_OUTBOUND,       // pipe open mode
+			PIPE_TYPE_MESSAGE,			// pipe-specific modes
+			1,							// maximum number of instances
+			1024,						// output buffer size, in bytes
+			0,							// input buffer size, in bytes
+			1000,						// time-out time, in milliseconds
+			NULL);						// pointer to security attributes
+#else
+		sprintf(pipe_name,"\\\\.\\mailslot\\%s",svc->name);
+		svc->log_pipe = CreateFile(
+			pipe_name,				// pointer to name of the file
+			GENERIC_WRITE,			// access (read-write) mode
+			FILE_SHARE_READ,		// share mode
+			NULL,					// pointer to security attributes
+			OPEN_EXISTING,			// how to create
+			FILE_ATTRIBUTE_NORMAL,  // file attributes
+			NULL					// handle to file with attributes to copy
+			);
+#endif
+	}
+	if(svc!=NULL && svc->log_pipe != INVALID_HANDLE_VALUE) {
+		if(!WriteFile(svc->log_pipe,line,len,&wr,NULL) || wr!=len) {
+			sprintf(line,"!ERROR %d writing %u bytes to %s pipe (wr=%d)"
+				,GetLastError(),len,svc->name,wr);
+			OutputDebugString(line);
+		} else {
+			sprintf(line,"Wrote %u bytes to %s pipe",wr,svc->name);
+			OutputDebugString(line);
+		}
+	}
     return(0);
 }
 
@@ -295,7 +340,7 @@ static void svc_terminated(void* p, int code)
 /***************/
 
 /* Common ServiceMain for all services */
-static void WINAPI svc_start(sbbs_ntsvc_t* svc)
+static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 {
 	svc_lputs(svc,"Starting service");
 
@@ -316,36 +361,41 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc)
 
 	svc->status.dwCurrentState=SERVICE_STOPPED;
 	SetServiceStatus(svc->status_handle, &svc->status);
+
+	if(svc->log_pipe!=INVALID_HANDLE_VALUE) {
+		CloseHandle(svc->log_pipe);
+		svc->log_pipe=INVALID_HANDLE_VALUE;
+	}
 }
 
 /* Service-specific ServiceMain stub functions */
 
 static void WINAPI bbs_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&bbs);
+	svc_start(&bbs, dwArgc, lpszArgv);
 }
 
 static void WINAPI ftp_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&ftp);
+	svc_start(&ftp, dwArgc, lpszArgv);
 }
 
 #if !defined(NO_WEB_SERVER)
 static void WINAPI web_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&web);
+	svc_start(&web, dwArgc, lpszArgv);
 }
 #endif
 
 static void WINAPI mail_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&mail);
+	svc_start(&mail, dwArgc, lpszArgv);
 }
 
 #if !defined(NO_SERVICES)
 static void WINAPI services_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&services);
+	svc_start(&services, dwArgc, lpszArgv);
 }
 #endif
 
@@ -374,7 +424,8 @@ static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* descripti
 /* Utility function to create a service with description (on Win2K+)		*/
 /****************************************************************************/
 static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
-								,char* name, char* display_name, char* description, char* path)
+								,char* name, char* display_name, char* description, char* path
+								,BOOL autostart)
 {
     SC_HANDLE   hService;
 
@@ -386,7 +437,8 @@ static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
         display_name,					// name to display
         SERVICE_ALL_ACCESS,				// desired access
         SERVICE_WIN32_SHARE_PROCESS,	// service type
-		SERVICE_AUTO_START,				// start type (auto or manual)
+		autostart						// start type (auto or manual)
+			? SERVICE_AUTO_START : SERVICE_DEMAND_START,				
         SERVICE_ERROR_NORMAL,			// error control type
         path,							// service's binary
         NULL,							// no load ordering group
@@ -444,7 +496,8 @@ static int install(const char* svc_name)
 				,ntsvc_list[i]->name
 				,ntsvc_list[i]->display_name
 				,ntsvc_list[i]->description
-				,path);
+				,path
+				,ntsvc_list[i]->autostart);
 
 	if(hSCMlib!=NULL)
 		FreeLibrary(hSCMlib);
@@ -532,7 +585,7 @@ int main(int argc, char** argv)
 	char*	ctrl_dir;
 	char*	arg;
 	char	str[MAX_PATH+1];
-	char	ini_file[MAX_PATH+1]="";
+	char	ini_file[MAX_PATH+1];
 	char	host_name[128]="";
 	int		i;
 	FILE*	fp=NULL;
@@ -554,36 +607,6 @@ int main(int argc, char** argv)
 	printf("\nSynchronet NT Services  Version %s%c  %s\n\n"
 		,VERSION,REVISION,COPYRIGHT_NOTICE);
 
-	for(i=1;i<argc;i++) {
-		arg=argv[i];
-		while(*arg=='-')
-			arg++;
-		if(strcspn(arg,"\\/")!=strlen(arg)) {
-			strcpy(ini_file,arg);
-			continue;
-		}
-		if(!stricmp(arg,"install"))
-			return install(argv[i+1]);
-
-		if(!stricmp(arg,"remove"))
-			return uninstall(argv[i+1]);
-	}
-
-	printf("Available Services:\n\n");
-	printf("%-20s %s\n","Name","Description");
-	printf("%-20s %s\n","----","-----------");
-	for(i=0;ntsvc_list[i]!=NULL;i++)
-		printf("%-20s %s\n",ntsvc_list[i]->name,ntsvc_list[i]->display_name);
-
-	SAFECOPY(str,getfname(argv[0]));
-	*getfext(str)=0;
-
-	printf("\nUsage: %s [command] [service] [ctrl_dir]\n", str);
-
-	printf("\nCommands:\n");
-    printf("\tinstall\t to install a service by name (default: ALL services)\n");
-    printf("\tremove\t to remove a service by name (default: ALL services)\n");
-
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
 	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
 		ctrl_dir="\\sbbs\\ctrl";		/* Not set? Use default */
@@ -599,8 +622,7 @@ int main(int argc, char** argv)
 	if(!winsock_cleanup())
 		return(-1);
 
-	if(ini_file[0]==0) 	/* INI file not specified on command-line */
-		sbbs_get_ini_fname(ini_file, ctrl_dir, host_name);
+	sbbs_get_ini_fname(ini_file, ctrl_dir, host_name);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
@@ -653,18 +675,27 @@ int main(int argc, char** argv)
 #endif
 
 	/* Read .ini file here */
-	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
+	if((fp=fopen(ini_file,"r"))!=NULL) {
 		sprintf(str,"Reading %s",ini_file);
 		svc_lputs(NULL, str);
 	}
 
 	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp, 
-		NULL,	&bbs_startup,
-		NULL,	&ftp_startup, 
-		NULL,	&web_startup,
-		NULL,	&mail_startup, 
-		NULL,	&services_startup);
+	sbbs_read_ini(fp 
+		,&bbs.autostart			,&bbs_startup
+		,&ftp.autostart			,&ftp_startup 
+#if defined(NO_WEB_SERVER
+		,NULL					,NULL
+#else
+		,&web.autostart			,&web_startup
+#endif
+		,&mail.autostart		,&mail_startup 
+#if defined(NO_SERVICES)
+		,NULL					,NULL
+#else
+		,&services.autostart	,&services_startup
+#endif
+		);
 
 	/* close .ini file here */
 	if(fp!=NULL)
@@ -675,6 +706,32 @@ int main(int argc, char** argv)
 		sprintf(str,"!ERROR %d changing directory to: %s", errno, ctrl_dir);
 		svc_lputs(NULL,str);
 	}
+
+	for(i=1;i<argc;i++) {
+		arg=argv[i];
+		while(*arg=='-')
+			arg++;
+		if(!stricmp(arg,"install"))
+			return install(argv[i+1]);
+
+		if(!stricmp(arg,"remove"))
+			return uninstall(argv[i+1]);
+	}
+
+	printf("Available Services:\n\n");
+	printf("%-20s %s\n","Name","Description");
+	printf("%-20s %s\n","----","-----------");
+	for(i=0;ntsvc_list[i]!=NULL;i++)
+		printf("%-20s %s\n",ntsvc_list[i]->name,ntsvc_list[i]->display_name);
+
+	SAFECOPY(str,getfname(argv[0]));
+	*getfext(str)=0;
+
+	printf("\nUsage: %s [command] [service]\n", str);
+
+	printf("\nCommands:\n");
+    printf("\tinstall\t to install a service by name (default: ALL services)\n");
+    printf("\tremove\t to remove a service by name (default: ALL services)\n");
 
     printf("\nStartServiceCtrlDispatcher being called.\n" );
     printf("This may take several seconds.  Please wait.\n" );
