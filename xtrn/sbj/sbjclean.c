@@ -1,49 +1,46 @@
-/* SBJCLEAN.C */
-
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* sbjclean.c */
 
 /* Clean-up program for Synchronet Blackjack Online External Program */
 
+/* $Id$ */
+
 #define SBJCLEAN
 
-#include "sbj.c"
+#include "sbj.c"	/* Just for a couple of functions we need */
 
+uchar	node_num;
 
 int main(int argc, char **argv)
 {
-	char *p;
-	int i;
+	char*	p;
+	char	node_dir[MAX_PATH+1];
 
-node_dir[0]=0;
-for(i=1;i<argc;i++)
-	if(!stricmp(argv[i],"/L"))
-		logit=1;
-	else strcpy(node_dir,argv[i]);
-
-p=getenv("SBBSNODE");
-if(!node_dir[0] && p)
+	if((p=getenv("SBBSNODE"))==NULL) {
+		fprintf(stderr,"!Need SBBSNODE env var\n");
+		return(-1);
+	}
 	strcpy(node_dir,p);
 
-if(!node_dir[0]) {	  /* node directory not specified */
-	printf("usage: sbjclean <node directory>\r\n");
-	getch();
-	return(1); }
+	if((p=getenv("SBBSNNUM"))==NULL) {
+		fprintf(stderr,"!Need SBBSNNUM env var\n");
+		return(-1);
+	}
+	node_num=atoi(p);
 
-if(node_dir[strlen(node_dir)-1]!='\\'
-	&& node_dir[strlen(node_dir)-1]!='/')  /* make sure node_dir ends in '/' */
-	strcat(node_dir,"/");
+	if(node_dir[strlen(node_dir)-1]!='\\'
+		&& node_dir[strlen(node_dir)-1]!='/')  /* make sure node_dir ends in '/' */
+		strcat(node_dir,"/");
 
-initdata();                                 /* read XTRN.DAT and more */
-
-if((gamedab=open("GAME.DAB",O_RDWR|O_DENYNONE|O_BINARY))==-1) {
-	printf("Error opening GAME.DAB\r\n");                /* open deny none */
-    return(1); }
-getgamedat(1);
-node[node_num-1]=0;
-status[node_num-1]=0;
-putgamedat();
-if(curplayer==node_num)
-	nextplayer();
-close(gamedab);
-return(0);
+	if((gamedab=open("GAME.DAB",O_RDWR|O_DENYNONE|O_BINARY))==-1) {
+		printf("Error opening GAME.DAB\r\n");                /* open deny none */
+		return(1); 
+	}
+	getgamedat(1);
+	node[node_num-1]=0;
+	status[node_num-1]=0;
+	putgamedat();
+	if(curplayer==node_num)
+		nextplayer();
+	close(gamedab);
+	return(0);
 }
