@@ -29,7 +29,9 @@ const REVISION = "$Revision$".split(' ')[1];
 // version number alone, and add a token in the form of +hack (i.e. 1.0+cyan)
 // This is so everyone knows your revision base, AND type of hack used.
 const VERSION = "SynchronetIRCd-1.0b(" + REVISION + ")";
-const VERSION_STR = "Synchronet " + system.version + system.revision + "-" + system.platform + " (IRCd by Randy Sommerfeld)";
+const VERSION_STR = "Synchronet " 
+	+ system.version + system.revision + "-" + system.platform + system.beta_version
+	+ " (IRCd by Randy Sommerfeld)";
 // This will dump all I/O to and from the server to your Synchronet console.
 // It also enables some more verbose WALLOPS, especially as they pertain to
 // blocking functions.
@@ -518,6 +520,7 @@ function remove_kline(kl_hm) {
 }
 
 function connect_to_server(this_cline,the_port) {
+	log("Connecting to server: " + this_cline.host);
 	if (!the_port && this_cline.port)
 		the_port = this_cline.port;
 	else if (!the_port)

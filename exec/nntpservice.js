@@ -103,8 +103,9 @@ var selected=null;
 var current_article=0;
 var quit=false;
 
-writeln(format("200 %s News (Synchronet %s%s-%s NNTP Service %s)"
-		,system.name,system.version,system.revision,system.platform,REVISION));
+writeln(format("200 %s News (Synchronet %s%s-%s%s NNTP Service %s)"
+		,system.name,system.version,system.revision,system.platform,system.beta_version
+		,REVISION));
 
 if(!no_anonymous)
 	login("guest");	// Login as guest/anonymous by default

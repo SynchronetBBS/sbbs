@@ -411,7 +411,7 @@ for(i in area) {
 			+ system.inetaddr
 			+ " [Synchronet "
 			+ system.version + system.revision 
-			+ "-" + system.platform
+			+ "-" + system.platform + system.beta_version
 			+ " NewsLink " + REVISION
 			+ "]"
 			);

@@ -150,7 +150,7 @@ switch(request) {
 	case "ver":
 		writeln("Synchronet Gopher Service " + REVISION);
 		writeln(server.version);
-		writeln(system.version_notice + system.revision);
+		writeln(system.version_notice + system.revision + system.beta_version);
 		writeln("Compiled " + system.compiled_when + " with " + system.compiled_with);
 		writeln(system.js_version);
 		writeln(system.os_version);
