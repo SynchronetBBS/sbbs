@@ -92,7 +92,66 @@ enum {
 	,SYS_PROP_TEXT_DIR
 	,SYS_PROP_TEMP_DIR
 	,SYS_PROP_EXEC_DIR
+
+	/* Must be last */
+	,SYS_PROPERTIES
 };
+
+#ifdef _DEBUG
+static char* sys_prop_desc[SYS_PROPERTIES+1] = {
+	 "BBS name"
+	,"operator name"
+	,"system QWK-ID (for QWK packets)"
+	,"settings (see SS_* in sbbsdefs.js)"
+	,"PostLink name"
+	,"PostLink system number"
+	,"Internet address (host name)"
+	,"location (city, state)"
+	,"timezone"
+	,"days between forced password changes"
+	,"days to preserve deleted user records"
+
+	,"last useron"
+	,"free disk space"
+
+	,"total number of BBS nodes"
+	,"last displayable node number"
+
+	,"new user password"
+	,"new user magic word"
+	,"new user level"
+	,"new user flag set #1"
+	,"new user flag set #2"
+	,"new user flag set #3"
+	,"new user flag set #4"
+	,"new user restriction flags"
+	,"new user exemption flags"
+	,"new user credits"
+	,"new user extra minutes"
+	,"new user command shell"
+	,"new user external editor"
+	,"new user settings"
+	,"new user file transfer protocol"
+	,"new user expiration date"
+	,"new user questions (see UQ_* in sbbsdefs.js)"
+
+	,"expired user level"
+	,"expired user flag set #1"
+	,"expired user flag set #2"
+	,"expired user flag set #3"
+	,"expired user flag set #4"
+	,"expired user restriction flags"
+	,"expired user exemption flags"
+
+	/* directories */
+	,"node directory"
+	,"control filedirectory"
+	,"data file directory"
+	,"text file directory"
+	,"tempory file directory"
+	,"executable file directory"
+};
+#endif
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -362,7 +421,33 @@ enum {
 	,SYSSTAT_PROP_TOTALMAIL
 	,SYSSTAT_PROP_FEEDBACK
 
+	/* Must be last */
+
+	,SYSSTAT_PROPERTIES
 };
+
+#ifdef _DEBUG
+static char* sysstat_prop_desc[SYSSTAT_PROPERTIES+1] = {
+	 "total logons"
+	,"logons today"
+	,"total time used"
+	,"time used today"
+	,"files uploaded today"
+	,"bytes uploaded today"
+	,"files downloaded today"
+	,"bytes downloaded today"
+	,"messages posted today"
+	,"email sent today"
+	,"feedback sent today"
+	,"new users today"
+
+	,"total active user records"
+	,"total files in file bases"
+	,"total messages in message bases"
+	,"total messages in mail base"
+	,"total feedback messsages waiting"
+};
+#endif
 
 static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -837,41 +922,41 @@ js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 
 static jsMethodSpec js_system_functions[] = {
-	{"alias",			js_alias,			1,	JSTYPE_STRING,	"string alias"
-	,"return user name for alias"
+	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("string alias")
+	,JSDOCSTR("return user name for alias")
 	},		
-	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	"string username"
-	,"exact user name matching"
+	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("string username")
+	,JSDOCSTR("exact user name matching")
 	},		
-	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	"string filename, search"
-	,"search text/filename.can for pseudo-regexp"
+	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
+	,JSDOCSTR("search text/filename.can for pseudo-regexp")
 	},		
-	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	"string filename, search"
-	,"search any file for pseudo-regexp"
+	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
+	,JSDOCSTR("search any file for pseudo-regexp")
 	},		
-	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	"[number timezone]"
-	,"convert time zone int to string"
+	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[number timezone]")
+	,JSDOCSTR("convert time zone int to string")
 	},		
-	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	"[number time]"
-	,"convert time_t into a time string"
+	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	JSDOCSTR("[number time]")
+	,JSDOCSTR("convert time_t into a time string")
 	},		
-	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	"[number time]"
-	,"convert time_t into a date string"
+	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[number time]")
+	,JSDOCSTR("convert time_t into a date string")
 	},		
-	{"secondstr",		js_secondstr,		1,	JSTYPE_STRING,	"[number time]"
-	,"convert time_t into a hh:mm:ss string"
+	{"secondstr",		js_secondstr,		1,	JSTYPE_STRING,	JSDOCSTR("[number time]")
+	,JSDOCSTR("convert time_t into a hh:mm:ss string")
 	},		
-	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	"[protocol, action, reason, host, ip, to]"
-	,"log a suspected SPAM attempt"
+	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, action, reason, host, ip, to]")
+	,JSDOCSTR("log a suspected SPAM attempt")
 	},		
-	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	"[protocol, user, text, host, ip, port]"
-	,"log a suspected hack attempt"
+	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, user, text, host, ip, port]")
+	,JSDOCSTR("log a suspected hack attempt")
 	},		
-	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	"number node, string message"
-	,"send a node a short text message, delivered immediately"
+	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	JSDOCSTR("number node, string message")
+	,JSDOCSTR("send a node a short text message, delivered immediately")
 	},		
-	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	"number user, string message"
-	,"send a user a short text message, delivered immediately or next during next logon"
+	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("number user, string message")
+	,JSDOCSTR("send a user a short text message, delivered immediately or next during next logon")
 	},		
 	{0}
 };
@@ -889,6 +974,21 @@ enum {
 	,NODE_PROP_AUX
 	,NODE_PROP_EXTAUX
 };
+
+#ifdef _DEBUG
+static char* node_prop_desc[] = {
+	 "status"
+	,"error counter"
+	,"current user action"
+	,"current user number"
+	,"connection speed (0xffff = TCP)"
+	,"settings"
+	,"auxillary bits"
+	,"extended auxillary bits"
+	,NULL
+};
+#endif
+
 
 static JSBool js_node_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -1058,6 +1158,16 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetPrivate(cx, sysobj, cfg))	/* Store a pointer to scfg_t */
 		return(NULL);
 
+	if(!JS_DefineProperties(cx, sysobj, js_system_properties))
+		return(NULL);
+
+	if (!js_DefineMethods(cx, sysobj, js_system_functions)) 
+		return(NULL);
+
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, sysobj, "_property_desc_list", sys_prop_desc, JSPROP_READONLY);
+#endif
+
 	/****************************/
 	/* static string properties */
 	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, host_name));
@@ -1128,12 +1238,6 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetProperty(cx, sysobj, "uptime", &val))
 		return(NULL);
 
-	if(!JS_DefineProperties(cx, sysobj, js_system_properties))
-		return(NULL);
-
-	if (!js_DefineMethods(cx, sysobj, js_system_functions)) 
-		return(NULL);
-
 	statsobj = JS_DefineObject(cx, sysobj, "stats", &js_sysstats_class, NULL, JSPROP_ENUMERATE);
 
 	if(statsobj==NULL)
@@ -1143,6 +1247,10 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 
 	if(!JS_DefineProperties(cx, statsobj, js_sysstats_properties))
 		return(NULL);
+
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", sysstat_prop_desc, JSPROP_READONLY);
+#endif
 
 	/* node_list property */
 
@@ -1163,6 +1271,10 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 
 		if(!JS_DefineProperties(cx, nodeobj, js_node_properties))
 			return(NULL);
+
+#ifdef _DEBUG
+		js_CreateArrayOfStrings(cx, sysobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
+#endif
 
 		val=OBJECT_TO_JSVAL(nodeobj);
 		if(!JS_SetElement(cx, node_list, i, &val))

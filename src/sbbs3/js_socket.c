@@ -803,7 +803,28 @@ enum {
 	,SOCK_PROP_REMOTE_IP
 	,SOCK_PROP_REMOTE_PORT
 	,SOCK_PROP_TYPE
+
+	/* MUST be last */
+	,SOCK_PROPERTIES
 };
+
+#ifdef _DEBUG
+static char* socket_prop_desc[SOCK_PROPERTIES+1] = {
+	 "last occurred error value"
+	,"true if socket is in a connected state"
+	,"true if data is waiting to be read"
+	,"number of bytes waiting to be read"
+	,"enable debug logging"
+	,"socket descriptor"
+	,"non-blocking operation"
+	,"local IP address"
+	,"local TCP/UDP port"
+	,"remote IP address"
+	,"remote TCP/UDP port"
+	,"socket type (TCP or UDP)"
+	,NULL
+};
+#endif
 
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -958,56 +979,56 @@ static JSClass js_socket_class = {
 };
 
 static jsMethodSpec js_socket_functions[] = {
-	{"close",		js_close,		0,	JSTYPE_VOID,		""					
-	,"close socket"		
+	{"close",		js_close,		0,	JSTYPE_VOID,	""
+	,JSDOCSTR("close socket")
 	},
-	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	"[port]"			
-	,"bind socket to a port"
+	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[port]")
+	,JSDOCSTR("bind socket to a port")
 	},
-	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,		"string host, port"	
-	,"connect to a specific port at the specified IP address or hostname"	
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("string host, port")
+	,JSDOCSTR("connect to a specific port at the specified IP address or hostname")
 	},
 	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	""					
-	,"put socket in listening state (use before an accept)"
+	,JSDOCSTR("put socket in listening state (use before an accept)")
 	},
 	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	""					
-	,"accept an incoming connection, returns a new Socket object"
+	,JSDOCSTR("accept an incoming connection, returns a new Socket object")
 	},
-	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	"string data"		
-	,"send a string"					
+	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string data")
+	,JSDOCSTR("send a string")
 	,"write"
 	},
-	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	"string data, address, port"
-	,"send a string to a specific address and port (typically used for UDP sockets)"	
+	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("string data, address, port")
+	,JSDOCSTR("send a string to a specific address and port (typically used for UDP sockets)")
 	},
-	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	"string filename"	
-	,"send a file"
+	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
+	,JSDOCSTR("send a file")
 	},
-	{"recv",		js_recv,		0,	JSTYPE_STRING,	"[maxlen]"			
-	,"receive a string, default maxlen is 512 characters"	
+	{"recv",		js_recv,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	,JSDOCSTR("receive a string, default maxlen is 512 characters")
 	,"read"
 	},
-	{"peek",		js_peek,		0,	JSTYPE_STRING,	"[maxlen]"			
-	,"receive a string, default maxlen is 512 characters, leave string in receive buffer"
+	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	,JSDOCSTR("receive a string, default maxlen is 512 characters, leave string in receive buffer")
 	},
-	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	"[maxlen] [,timeout]"
-	,"receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds"
+	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen] [,timeout]")
+	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds")
 	,"readline"
 	},
-	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	"[maxlen]"			
-	,"receive a string from (typically UDP) socket, return address and port of sender"
+	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[maxlen]")
+	,JSDOCSTR("receive a string from (typically UDP) socket, return address and port of sender")
 	},
-	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	"number option"	
-	,"get socket option value"
+	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	JSDOCSTR("number option")
+	,JSDOCSTR("get socket option value")
 	},
-	{"setoption",	js_setsockopt,	2,	JSTYPE_BOOLEAN,	"number option, value"
-	,"set socket option value"
+	{"setoption",	js_setsockopt,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number option, value")
+	,JSDOCSTR("set socket option value")
 	},
-	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	"number cmd [,arg]"	
-	,"send socket IOCTL"							
+	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("number cmd [,arg]")
+	,JSDOCSTR("send socket IOCTL")					
 	},
-	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	"[number timeout] [,bool write]"
-	,"poll socket for read or write ability (defaults to read), default timeout value is 0 seconds (immediate timeout)" 
+	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[number timeout] [,bool write]")
+	,JSDOCSTR("poll socket for read or write ability (defaults to read), default timeout value is 0 seconds (immediate timeout)")
 	},
 	{0}
 };
@@ -1058,6 +1079,10 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
 		return(NULL);
 	}
+
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
+#endif
 
 	dbprintf(FALSE, p, "object created");
 

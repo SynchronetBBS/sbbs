@@ -55,7 +55,28 @@ enum {
 	,CON_PROP_TIMELEFT_WARN		/* low timeleft warning flag */
 	,CON_PROP_ABORTABLE
 	,CON_PROP_TELNET_MODE
+
+	/* Must be last */
+	,CON_PROPERTIES
 };
+
+#ifdef _DEBUG
+static char* con_prop_desc[CON_PROPERTIES+1] = {
+	 "status bits (see CON_* in sbbsdefs.js)"
+	,"current line counter (used for automatic screen pause"
+	,"current display attributes"
+	,"top-of-screen"
+	,"number of terminal rows"
+	,"automatically detected terminal settings"
+	,"word-wrap buffer"
+	,"current yes/no question"
+	,"user inactivity timeout reference"
+	,"low timeleft warning flag"
+	,"output can be aborted with Ctrl-C"
+	,"current telnet mode"
+};
+
+#endif
 
 static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -918,112 +939,112 @@ js_lock_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 }
 
 static jsMethodSpec js_console_functions[] = {
-	{"inkey",			js_inkey,			0, JSTYPE_STRING,	"[number mode]"
-	,"get a single key, no wait"
+	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[number mode]")
+	,JSDOCSTR("get a single key, no wait")
 	},		
-	{"getkey",			js_getkey,			0, JSTYPE_STRING,	"[number mode]"
-	,"get a single key, with wait"
+	{"getkey",			js_getkey,			0, JSTYPE_STRING,	JSDOCSTR("[number mode]")
+	,JSDOCSTR("get a single key, with wait")
 	},		
-	{"getstr",			js_getstr,			0, JSTYPE_STRING,	"[string][,maxlen][,mode]"
-	,"get a string"
+	{"getstr",			js_getstr,			0, JSTYPE_STRING,	JSDOCSTR("[string][,maxlen][,mode]")
+	,JSDOCSTR("get a string")
 	},		
-	{"getnum",			js_getnum,			0, JSTYPE_NUMBER,	"[maxnum]"
-	,"get a number"
+	{"getnum",			js_getnum,			0, JSTYPE_NUMBER,	JSDOCSTR("[maxnum]")
+	,JSDOCSTR("get a number")
 	},		
-	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	"string keys, [maxnum]"
-	,"get one of a list of keys"
+	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("string keys, [maxnum]")
+	,JSDOCSTR("get one of a list of keys")
 	},		
-	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	"format [,string] [,mode]"
-	,"get a string based on template"
+	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	JSDOCSTR("format [,string] [,mode]")
+	,JSDOCSTR("get a string based on template")
 	},		
 	{"ungetstr",		js_ungetstr,		1, JSTYPE_VOID,		""
-	,"put a string in the keyboard buffer"
+	,JSDOCSTR("put a string in the keyboard buffer")
 	},		
-	{"yesno",			js_yesno,			1, JSTYPE_BOOLEAN,	"string question"
-	,"YES/no question"
+	{"yesno",			js_yesno,			1, JSTYPE_BOOLEAN,	JSDOCSTR("string question")
+	,JSDOCSTR("YES/no question")
 	},		
-	{"noyes",			js_noyes,			1, JSTYPE_BOOLEAN,	"string question"
-	,"NO/yes question"
+	{"noyes",			js_noyes,			1, JSTYPE_BOOLEAN,	JSDOCSTR("string question")
+	,JSDOCSTR("NO/yes question")
 	},		
-	{"mnemonics",		js_mnemonics,		1, JSTYPE_VOID,		"string text"
-	,"print a mnemonics string"
+	{"mnemonics",		js_mnemonics,		1, JSTYPE_VOID,		JSDOCSTR("string text")
+	,JSDOCSTR("print a mnemonics string")
 	},		
 	{"clear",           js_clear,			0, JSTYPE_VOID,		""
-	,"clear screen"
+	,JSDOCSTR("clear screen")
 	},		
 	{"clearline",       js_clearline,		0, JSTYPE_VOID,		""
-	,"clear current line"
+	,JSDOCSTR("clear current line")
 	},		
 	{"crlf",            js_crlf,			0, JSTYPE_VOID,		""
-	,"output a carriage-return/line-feed pair (new-line)"
+	,JSDOCSTR("output a carriage-return/line-feed pair (new-line)")
 	},		
 	{"pause",			js_pause,			0, JSTYPE_VOID,		""
-	,"display pause prompt and wait for key hit"
+	,JSDOCSTR("display pause prompt and wait for key hit")
 	},		
-	{"print",			js_print,			1, JSTYPE_VOID,		"string text"
-	,"display a string (supports ^A and @-codes)"
+	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("string text")
+	,JSDOCSTR("display a string (supports ^A and @-codes)")
 	},		
-	{"write",			js_write,			1, JSTYPE_VOID,		"string text"
-	,"display a raw string"
+	{"write",			js_write,			1, JSTYPE_VOID,		JSDOCSTR("string text")
+	,JSDOCSTR("display a raw string")
 	},		
-	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		"string text [,number mode]"
-	,"display message text (^A, @-codes, etc) with mode"
+	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("string text [,number mode]")
+	,JSDOCSTR("display message text (^A, @-codes, etc) with mode")
 	},		
-	{"center",			js_center,			1, JSTYPE_VOID,		"string text"
-	,"display a string centered on the screen"
+	{"center",			js_center,			1, JSTYPE_VOID,		JSDOCSTR("string text")
+	,JSDOCSTR("display a string centered on the screen")
 	},		
-	{"printfile",		js_printfile,		1, JSTYPE_VOID,		"string text [,number mode]"
-	,"print a file with optional mode"
+	{"printfile",		js_printfile,		1, JSTYPE_VOID,		JSDOCSTR("string text [,number mode]")
+	,JSDOCSTR("print a file with optional mode")
 	},		
-	{"printtail",		js_printtail,		2, JSTYPE_VOID,		"string text, number lines [,number mode]"
-	,"print last x lines of file with optional mode"
+	{"printtail",		js_printtail,		2, JSTYPE_VOID,		JSDOCSTR("string text, number lines [,number mode]")
+	,JSDOCSTR("print last x lines of file with optional mode")
 	},		
-	{"editfile",		js_editfile,		1, JSTYPE_VOID,		"string filename"
-	,"edit a text file"
+	{"editfile",		js_editfile,		1, JSTYPE_VOID,		JSDOCSTR("string filename")
+	,JSDOCSTR("edit a text file")
 	},		
-	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	"[number, string title, string item, string ars]"
-	,"user selection menu, call for each item, then with no args to display select menu"
+	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	JSDOCSTR("[number, string title, string item, string ars]")
+	,JSDOCSTR("user selection menu, call for each item, then with no args to display select menu")
 	},		
 	{"saveline",		js_saveline,		0, JSTYPE_VOID,		""
-	,"save last output line"
+	,JSDOCSTR("save last output line")
 	},		
 	{"restoreline",		js_restoreline,		0, JSTYPE_VOID,		""
-	,"restore last output line"
+	,JSDOCSTR("restore last output line")
 	},		
-	{"ansi",			js_ansi,			1, JSTYPE_STRING,	"number attribute"
-	,"returns ANSI encoding of specified attribute"
+	{"ansi",			js_ansi,			1, JSTYPE_STRING,	JSDOCSTR("number attribute")
+	,JSDOCSTR("returns ANSI encoding of specified attribute")
 	},		
 	{"ansi_save",		js_ansi_save,		0, JSTYPE_VOID,		""
-	,"Save current cursor position"
+	,JSDOCSTR("Save current cursor position")
 	,"ansi_pushxy"
 	},
 	{"ansi_restore",	js_ansi_restore,	0, JSTYPE_VOID,		""
-	,"Restore saved cursor position"
+	,JSDOCSTR("Restore saved cursor position")
 	,"ansi_popxy"
 	},
-	{"ansi_gotoxy",		js_ansi_gotoxy,		2, JSTYPE_VOID,		"number x,y"
-	,"Move cursor to a specific screen coordinate (ANSI)"
+	{"ansi_gotoxy",		js_ansi_gotoxy,		2, JSTYPE_VOID,		JSDOCSTR("number x,y")
+	,JSDOCSTR("Move cursor to a specific screen coordinate (ANSI)")
 	},
-	{"ansi_up",			js_ansi_up,			0, JSTYPE_VOID,		"[number rows]"
-	,"Move cursor up one or more rows (ANSI)"
+	{"ansi_up",			js_ansi_up,			0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
+	,JSDOCSTR("Move cursor up one or more rows (ANSI)")
 	},
-	{"ansi_down",		js_ansi_down,		0, JSTYPE_VOID,		"[number rows]"
-	,"Move cursor down one or more rows (ANSI)"
+	{"ansi_down",		js_ansi_down,		0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
+	,JSDOCSTR("Move cursor down one or more rows (ANSI)")
 	},
-	{"ansi_right",		js_ansi_right,		0, JSTYPE_VOID,		"[number columns]" 
-	,"Move cursor right one or more columns (ANSI)"
+	{"ansi_right",		js_ansi_right,		0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
+	,JSDOCSTR("Move cursor right one or more columns (ANSI)")
 	},
-	{"ansi_left",		js_ansi_left,		0, JSTYPE_VOID,		"[number columns]" 
-	,"Move cursor left one or more columns (ANSI)"
+	{"ansi_left",		js_ansi_left,		0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
+	,JSDOCSTR("Move cursor left one or more columns (ANSI)")
 	},
 	{"ansi_getlines",	js_ansi_getlines,	0, JSTYPE_VOID,		""
-	,"Auto-detect the number of rows/lines on the user's terminal (ANSI)"
+	,JSDOCSTR("Auto-detect the number of rows/lines on the user's terminal (ANSI)")
 	},
 	{"ansi_getxy",		js_ansi_getxy,		0, JSTYPE_OBJECT,	""
-	,"Returns the current cursor position as an object (with x and y properties)"
+	,JSDOCSTR("Returns the current cursor position as an object (with x and y properties)")
 	},
-	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		"[boolean lock]"
-	,"Lock the user input thread (allowing direct client socket access)"
+	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		JSDOCSTR("[boolean lock]")
+	,JSDOCSTR("Lock the user input thread (allowing direct client socket access)")
 	},
 	{0}
 };
@@ -1056,6 +1077,10 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 
 	if (!js_DefineMethods(cx, obj, js_console_functions)) 
 		return(NULL);
+
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", con_prop_desc, JSPROP_READONLY);
+#endif
 
 	return(obj);
 }

@@ -47,7 +47,21 @@ enum {
 	,CLIENT_PROP_TIME		/* connect time */
 	,CLIENT_PROP_PROTOCOL	/* protocol description */
 	,CLIENT_PROP_USER		/* user name */
+
+	/* Must be last */
+	,CLIENT_PROPERTIES
 };
+
+#ifdef _DEBUG
+	static char* client_prop_desc[CLIENT_PROPERTIES+1] = {
+	 "IP address"
+	,"host name"
+	,"TCP/UDP port number"
+	,"connect time"
+	,"protocol description"
+	,"user name"
+	};
+#endif
 
 static JSBool js_client_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -138,6 +152,10 @@ JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 	JS_DefineProperties(cx, obj, js_client_properties);
 
 	js_CreateSocketObject(cx, obj, "socket", sock);
+
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", client_prop_desc, JSPROP_READONLY);
+#endif
 
 	return(obj);
 }
