@@ -66,7 +66,12 @@ function document_object(name, obj)
 
 	if(table_depth)
 		table_close();
-	f.writeln("<h2>"+name+" object</h2>");
+	f.writeln("<h2>"+name+" object");
+	if(obj._description!=undefined)
+		f.writeln("<br><font size=-1>"+obj._description+"</font>");
+	f.writeln("</h2>");
+	if(obj._constructor!=undefined)
+		f.writeln("<p>" + obj._constructor + "</p>");
 	table_open(name);
 	f.writeln("<caption align=left><b>" + name.italics() + " properties" + "</b></caption>");
 	f.writeln("<tr bgcolor=gray>");
@@ -101,7 +106,7 @@ function document_object(name, obj)
 // open HTML output file
 f=new File("jsdocs.html");
 if(!f.open("w")) {
-	print("!Can't open output file");
+	printf("!Error %d opening output file\n",errno);
 	exit();
 }
 
