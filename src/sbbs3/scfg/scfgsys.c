@@ -1082,13 +1082,13 @@ This option allows you to change the parent of your data directory.
 The \DATA\ suffix (sub-directory) cannot be changed or removed.
 */
 						strcpy(str,cfg.data_dir);
-						if(strstr(str,"\\DATA\\")!=NULL)
-							*strstr(str,"\\DATA\\")=0;
+						if(strstr(str,"/data/")!=NULL)
+							*strstr(str,"/data/")=0;
 						if(uinput(WIN_MID|WIN_SAV,0,9,"Data Dir Parent"
 							,str,50,K_EDIT)>0) {
-							if(str[strlen(str)-1]!='\\')
-								strcat(str,"\\");
-							strcat(str,"DATA\\");
+							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
+								strcat(str,"/");
+							strcat(str,"data/");
 							strcpy(cfg.data_dir,str); }
                         break;
 					case 2:
@@ -1106,13 +1106,13 @@ This option allows you to change the parent of your exec directory.
 The \EXEC\ suffix (sub-directory) cannot be changed or removed.
 */
 						strcpy(str,cfg.exec_dir);
-						if(strstr(str,"\\EXEC\\")!=NULL)
-							*strstr(str,"\\EXEC\\")=0;
+						if(strstr(str,"/exec/")!=NULL)
+							*strstr(str,"/exec/")=0;
 						if(uinput(WIN_MID|WIN_SAV,0,9,"Exec Dir Parent"
 							,str,50,K_EDIT)>0) {
-							if(str[strlen(str)-1]!='\\')
-								strcat(str,"\\");
-							strcat(str,"EXEC\\");
+							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
+								strcat(str,"/");
+							strcat(str,"exec/");
 							strcpy(cfg.exec_dir,str); }
                         break;
 					case 3:

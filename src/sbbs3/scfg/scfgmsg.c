@@ -88,11 +88,11 @@ void clearptrs(int subnum)
 	struct ffblk ff;
 
 upop("Clearing Pointers...");
-sprintf(str,"%sUSER\\PTRS\\*.IXB",cfg.data_dir);
+sprintf(str,"%suser/ptrs/*.ixb",cfg.data_dir);
 last=findfirst(str,&ff,0);
 while(!last) {
 	if(ff.ff_fsize>=((long)cfg.sub[subnum]->ptridx+1L)*10L) {
-		sprintf(str,"%sUSER\\PTRS\\%s",cfg.data_dir,ff.ff_name);
+		sprintf(str,"%suser/ptrs/%s",cfg.data_dir,ff.ff_name);
 		if((file=nopen(str,O_WRONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 			bail(1); }
@@ -243,7 +243,7 @@ select Yes.
 				if(cfg.sub[j]->grp==i) {
 					sprintf(str,"%s.s*",cfg.sub[j]->code);
 					if(!cfg.sub[j]->data_dir[0])
-						sprintf(tmp,"%sSUBS\\",cfg.data_dir);
+						sprintf(tmp,"%ssubs/",cfg.data_dir);
 					else
 						strcpy(tmp,cfg.sub[j]->data_dir);
 					delfiles(tmp,str);
@@ -440,13 +440,13 @@ export the current message group into.
 						continue;
 					ported++;
 					if(k==1) {		/* AREAS.BBS *.MSG */
-						sprintf(str,"%s%s\\",cfg.echomail_dir,cfg.sub[j]->code);
+						sprintf(str,"%s%s/",cfg.echomail_dir,cfg.sub[j]->code);
 						fprintf(stream,"%-30s %-20s %s\r\n"
 							,str,stou(cfg.sub[j]->sname),str2);
 						continue; }
 					if(k==2) {		/* AREAS.BBS SMB */
 						if(!cfg.sub[j]->data_dir[0])
-							sprintf(str,"%sSUBS\\%s",cfg.data_dir,cfg.sub[j]->code);
+							sprintf(str,"%ssubs/%s",cfg.data_dir,cfg.sub[j]->code);
 						else
 							sprintf(str,"%s%s",cfg.sub[j]->data_dir,cfg.sub[j]->code);
 						fprintf(stream,"%-30s %-20s %s\r\n"
@@ -546,6 +546,7 @@ import into the current message group.
 							(SUB_FIDO|SUB_NAME|SUB_TOUSER|SUB_QUOTE|SUB_HYPER);
 						if(k==1) {		/* AREAS.BBS *.MSG */
 							p=strrchr(str,'\\');
+                            if(p==NULL) p=strrchr(str,'/');
                             if(p) *p=0;
                             else p=str;
 							//sprintf(tmpsub.echopath,"%.*s",LEN_DIR,str);
@@ -563,6 +564,7 @@ import into the current message group.
 							}
 						if(k==2) {		/* AREAS.BBS SMB */
 							p=strrchr(str,'\\');
+                            if(p==NULL) p=strrchr(str,'/');                            
                             if(p) *p=0;
                             else p=str;
 							sprintf(tmpsub.data_dir,"%.*s",LEN_DIR,str);

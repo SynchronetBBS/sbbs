@@ -190,7 +190,7 @@ select No or hit  ESC .
 		upop("Reading NODE.CNF...");
 		read_node_cfg(&cfg,&txt);
 		upop(0);
-		sprintf(str,"..\\NODE%d\\",i);
+		sprintf(str,"../node%d/",i);
 		sprintf(tmp,"Node %d Path",i);
 SETHELP(WHERE);
 /*
@@ -211,7 +211,7 @@ If you want to abort the creation of this new node, hit  ESC .
 			continue;
 		truncsp(str);
 		strcpy(cfg.node_path[i-1],str);
-		if(str[strlen(str)-1]=='\\')
+		if(str[strlen(str)-1]=='\\' || str[strlen(str)-1]=='/')
 			str[strlen(str)-1]=0;
 		mkdir(str);
 		cfg.node_num=++cfg.sys_nodes;
@@ -596,8 +596,8 @@ Remember: The %! command line specifier is an abreviation for your
 						break;
 					case 6:
 						strcpy(str,cfg.ctrl_dir);
-						if(strstr(str,"\\CTRL\\")!=NULL)
-							*strstr(str,"\\CTRL\\")=0;
+						if(strstr(str,"/ctrl/")!=NULL)
+							*strstr(str,"/ctrl/")=0;
 SETHELP(WHERE);
 /*
 Control Directory Parent:
@@ -611,15 +611,16 @@ The \CTRL\ suffix (sub-directory) cannot be changed or removed.
 */
 						if(uinput(WIN_MID|WIN_SAV,0,9,"Control Dir Parent"
 							,str,50,K_EDIT)>0) {
-							if(str[strlen(str)-1]!='\\')
-								strcat(str,"\\");
-							strcat(str,"CTRL\\");
+							if(str[strlen(str)-1]!='\\'
+                                && str[strlen(str)-1]!='/')
+								strcat(str,"/");
+							strcat(str,"ctrl/");
 							strcpy(cfg.ctrl_dir,str); }
 						break;
 					case 7:
 						strcpy(str,cfg.text_dir);
-						if(strstr(str,"\\TEXT\\")!=NULL)
-							*strstr(str,"\\TEXT\\")=0;
+						if(strstr(str,"/text/")!=NULL)
+							*strstr(str,"/text/")=0;
 SETHELP(WHERE);
 /*
 Text Directory Parent:
@@ -635,9 +636,9 @@ The \TEXT\ suffix (sub-directory) cannot be changed or removed.
 */
 						if(uinput(WIN_MID|WIN_SAV,0,10,"Text Dir Parent"
 							,str,50,K_EDIT)>0) {
-							if(str[strlen(str)-1]!='\\')
-								strcat(str,"\\");
-							strcat(str,"TEXT\\");
+							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
+								strcat(str,"/");
+							strcat(str,"text/");
 							strcpy(cfg.text_dir,str); }
 						break; } }
 			break;

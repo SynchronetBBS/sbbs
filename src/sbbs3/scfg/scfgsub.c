@@ -199,7 +199,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 		if(j==0) {
 				sprintf(str,"%s.s*",cfg.sub[subnum[i]]->code);
 				if(!cfg.sub[subnum[i]]->data_dir[0])
-					sprintf(tmp,"%sSUBS\\",cfg.data_dir);
+					sprintf(tmp,"%ssubs/",cfg.data_dir);
 				else
 					strcpy(tmp,cfg.sub[subnum[i]]->data_dir);
 				delfiles(tmp,str);
@@ -1087,7 +1087,7 @@ should be re-scanned.
 						: cfg.sub[i]->misc&SUB_FAST ? "Fast Allocation"
 						: "Self-packing");
 					if(!cfg.sub[i]->data_dir[0])
-						sprintf(str,"%sSUBS\\",cfg.data_dir);
+						sprintf(str,"%ssubs/",cfg.data_dir);
 					else
 						strcpy(str,cfg.sub[i]->data_dir);
 					sprintf(opt[n++],"%-27.27s%.40s","Storage Directory",str);
@@ -1177,7 +1177,7 @@ by entering the conference number you want to use.
 								if(cfg.sub[i]->data_dir[0])
 									sprintf(str,"%s",cfg.sub[i]->data_dir);
 								else
-									sprintf(str,"%sSUBS\\",cfg.data_dir);
+									sprintf(str,"%ssubs/",cfg.data_dir);
 								sprintf(str2,"%s.*",cfg.sub[i]->code);
 								delfiles(str,str2); }
 

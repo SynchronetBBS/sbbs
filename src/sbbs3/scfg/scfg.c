@@ -37,12 +37,6 @@
 
 #include "scfg.h"
 
-#ifdef __FLAT__
-	unsigned _stklen=64000;
-#else
-	unsigned _stklen=32000;
-#endif
-
 extern char uifc_status;
 
 /********************/
@@ -50,7 +44,6 @@ extern char uifc_status;
 /********************/
 
 scfg_t	cfg;
-long freedosmem;
 int  no_dirchk=0,forcesave=0;
 extern int all_msghdr;
 extern int no_msghdr;
@@ -103,10 +96,6 @@ int main(int argc, char **argv)
 	long	l;
 	char 	str[129];
 	FILE	*instream;
-#ifndef __FLAT__
-    int     no_emsovl=0;
-	union	REGS reg;
-#endif
 
 printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
 	"Rob Swindell\r\n",PLATFORM_DESC,VERSION);
@@ -147,6 +136,7 @@ printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
                 case 'F':
                 	forcesave=!forcesave;
                     break;
+#if !defined(__unix__)
                 case 'V':
                     textmode(atoi(argv[i]+2));
                     break;
@@ -178,22 +168,19 @@ printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
                             break;
                     }
                     break;
+#endif                    
                 default:
-                    printf("\r\nusage: scfg [ctrl_dir] [-c] [-m] [-n] [-s] [-u] [-h] "
-                        "[-t#] [-b#]\r\n"
-                        "\r\n"
-                        "-c  =  force color mode\r\n"
+                    printf("\nusage: scfg [ctrl_dir] [options]"
+                        "\n\noptions:\n\n"
                         "-s  =  don't check directories\r\n"
                         "-f  =  force save of config files\r\n"
                         "-u  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
+#if !defined(__unix__)
+                        "-c  =  force color mode\r\n"
                         "-v# =  set video mode to #\r\n"
                         "-l# =  set screen lines to #\r\n"
-#ifndef __FLAT__
-                        "-t# =  set supported time slice APIs to #\r\n"
-                        "-m  =  show free memory\r\n"
-                        "-n  =  don't use EMS\r\n"
-#endif
+#endif                        
                         "-b# =  set automatic back-up level (default=3 max=10)\r\n"
                         );
         			exit(0);
@@ -208,29 +195,9 @@ backslashcolon(cfg.ctrl_dir);
 
 scrn_len=uifcini();
 
-#if !defined(__FLAT__)
-if(!no_emsovl) {
-	cputs("\r\nEMS: ");
-	if((i=open("EMMXXXX0",O_RDONLY))==-1)
-		cputs("not installed.");
-	else {
-		close(i);
-		reg.h.ah=0x46;			/* Get EMS version */
-		int86(0x67,&reg,&reg);
-		if(reg.h.ah)
-			cputs("\7error getting version.");
-		else {
-			cprintf("Version %u.%u ",(reg.h.al&0xf0)>>4,reg.h.al&0xf);
-			if(_OvrInitEms(0,0,23))    /* use up to 360K */
-				cprintf("allocation failed."); } }
-	cputs("\r\n"); }
-#endif
-
-#ifdef __FLAT__
     if(putenv("TZ=UTC0"))
         printf("putenv() failed!\n");
     tzset();
-#endif
 
 if((l=checktime())!=0) {   /* Check binary time */
 	printf("Time problem (%08lx)\n",l);
@@ -251,15 +218,16 @@ for(i=0;i<14;i++)
 txt.reading=nulstr;
 txt.readit=nulstr;
 
-strcpy(str,argv[0]);
-p=strrchr(str,'\\');
-if(!p) {
-	sprintf(helpdatfile,"..\\EXEC\\SCFGHELP.DAT");
-	sprintf(helpixbfile,"..\\EXEC\\SCFGHELP.IXB"); }
-else {
-	*p=0;
-	sprintf(helpdatfile,"%s\\SCFGHELP.DAT",str);
-	sprintf(helpixbfile,"%s\\SCFGHELP.IXB",str); }
+sprintf(str,"%.*s",sizeof(str)-1,cfg.ctrl_dir);
+p=strrchr(str,'/');
+if(p==NULL)
+    p=strrchr(str,'\\');
+if(p!=NULL)
+    *p=0;
+else
+    strcpy(str,"../exec");
+sprintf(helpdatfile,"%s/scfghelp.dat",str);
+sprintf(helpixbfile,"%s/scfghelp.ixb",str);
 
 sprintf(str,"Synchronet Configuration for %s v%s",PLATFORM_DESC,VERSION);
 if(uscrn(str)) {
@@ -279,15 +247,7 @@ strcpy(mopt[i++],"Command Shells");
 strcpy(mopt[i++],"External Programs");
 strcpy(mopt[i++],"Text File Sections");
 mopt[i][0]=0;
-#ifndef __FLAT__
-freedosmem=farcoreleft();
-#endif
 while(1) {
-#if 0
-	if(freedosmem!=farcoreleft()) {
-		errormsg(WHERE,ERR_CHK,"lost memory",freedosmem-farcoreleft());
-		freedosmem=farcoreleft(); }
-#endif
 	SETHELP(WHERE);
 /*
 Main Configuration Menu:
@@ -872,8 +832,8 @@ int delfiles(char *inpath, char *spec)
 
 strcpy(path,inpath);
 c=strlen(path);
-if(path[c-1]!='\\' && path[c-1]!=':')
-    strcat(path,"\\");
+if(path[c-1]!='\\' && path[c-1]!='/' && path[c-1]!=':')
+    strcat(path,"/");
 sprintf(str,"%s%s",path,spec);
 done=findfirst(str,&ff,0);
 while(!done) {

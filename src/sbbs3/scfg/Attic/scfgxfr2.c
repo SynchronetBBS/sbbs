@@ -151,7 +151,7 @@ library, select Yes.
 				if(cfg.dir[j]->lib==i) {
 					sprintf(str,"%s.*",cfg.dir[j]->code);
 					if(!cfg.dir[j]->data_dir[0])
-						sprintf(tmp,"%sDIRS\\",cfg.data_dir);
+						sprintf(tmp,"%sdirs/",cfg.data_dir);
 					else
 						strcpy(tmp,cfg.dir[j]->data_dir);
 					delfiles(tmp,str); }
@@ -621,7 +621,7 @@ contents, usually an abreviation of the directory's name.
 			umsg("Invalid Code");
 			helpbuf=0;
 			continue; }
-		sprintf(path,"%sDIRS\\%s",cfg.data_dir,code);
+		sprintf(path,"%sdirs/%s",cfg.data_dir,code);
 		SETHELP(WHERE);
 /*
 Directory File Path:
@@ -679,7 +679,7 @@ select Yes.
 		if(j==0) {
 				sprintf(str,"%s.*",cfg.dir[dirnum[i]]->code);
 				if(!cfg.dir[dirnum[i]]->data_dir[0])
-					sprintf(tmp,"%sDIRS\\",cfg.data_dir);
+					sprintf(tmp,"%sdirs/",cfg.data_dir);
 				else
 					strcpy(tmp,cfg.dir[dirnum[i]]->data_dir);
 				delfiles(tmp,str); }
@@ -1386,7 +1386,7 @@ appear in users' new-file scans again.
 				sprintf(opt[n++],"%-27.27s%s","Extensions Allowed"
 					,cfg.dir[i]->exts);
 				if(!cfg.dir[i]->data_dir[0])
-					sprintf(str,"%sDIRS\\",cfg.data_dir);
+					sprintf(str,"%sdirs/",cfg.data_dir);
 				else
 					strcpy(str,cfg.dir[i]->data_dir);
 				sprintf(opt[n++],"%-27.27s%.40s","Data Directory"
