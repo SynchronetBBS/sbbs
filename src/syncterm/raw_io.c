@@ -5,7 +5,7 @@
 #include "bbslist.h"
 #include "conn.h"
 
-int rlogin_recv(char *buffer, size_t buflen)
+int raw_recv(char *buffer, size_t buflen)
 {
 	int	r;
 	int	avail;
@@ -24,7 +24,7 @@ int rlogin_recv(char *buffer, size_t buflen)
 	return(r);
 }
 
-int rlogin_send(char *buffer, size_t buflen, unsigned int timeout)
+int raw_send(char *buffer, size_t buflen, unsigned int timeout)
 {
 	int sent=0;
 	int	ret;
@@ -52,7 +52,7 @@ int rlogin_send(char *buffer, size_t buflen, unsigned int timeout)
 	return(0);
 }
 
-int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
+int raw_connect(char *addr, int port, char *ruser, char *passwd)
 {
 	HOSTENT *ent;
 	SOCKADDR_IN	saddr;
@@ -94,22 +94,17 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
 	if(connect(conn_socket, (struct sockaddr *)&saddr, sizeof(saddr))) {
 		char str[LIST_ADDR_MAX+20];
 
-		rlogin_close();
+		raw_close();
 		sprintf(str,"Cannot connect to %s!",addr);
 		uifcmsg(str,	"`Unable to connect`\n\n"
 						"Cannot connect to the remost system... it is down or unreachable.");
 		return(-1);
 	}
 
-	rlogin_send("",1,1000);
-	rlogin_send(passwd,strlen(passwd)+1,1000);
-	rlogin_send(ruser,strlen(ruser)+1,1000);
-	rlogin_send("ansi-bbs/9600",14,1000);
-
 	return(0);
 }
 
-int rlogin_close(void)
+int raw_close(void)
 {
 	return(closesocket(conn_socket));
 }

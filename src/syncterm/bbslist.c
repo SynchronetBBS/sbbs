@@ -7,6 +7,7 @@
 
 #include "bbslist.h"
 #include "uifcinit.h"
+#include "conn.h"
 
 enum {
 	 USER_BBSLIST
@@ -40,6 +41,7 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 	FILE	*listfile;
 	char	*bbsname;
 	str_list_t	bbses;
+	BOOL	dumb;
 
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		bbses=iniReadSectionList(listfile,NULL);
@@ -54,7 +56,10 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 			list[*i]->calls=iniReadInteger(listfile,bbsname,"TotalCalls",0);
 			iniReadString(listfile,bbsname,"UserName","",list[*i]->user);
 			iniReadString(listfile,bbsname,"Password","",list[*i]->password);
-			list[*i]->dumb=iniReadBool(listfile,bbsname,"BeDumb",0);
+			list[*i]->conn_type=iniReadInteger(listfile,bbsname,"ConnectionType",CONN_TYPE_RLOGIN);
+			dumb=iniReadBool(listfile,bbsname,"BeDumb",0);
+			if(dumb)
+				list[*i]->conn_type=CONN_TYPE_RAW;
 			list[*i]->reversed=iniReadBool(listfile,bbsname,"Reversed",0);
 			list[*i]->type=type;
 			list[*i]->id=*i;
@@ -84,9 +89,7 @@ int edit_list(struct bbslist *item,char *listpath)
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
 						"SyncTERM supports system-wide and per-user lists.  You may only edit entries"
-						"in your own personal list.\n"
-						"\n"
-						"The Be Dumb option can be used to connect to BBSs which support 'dumb' telnet";
+						"in your own personal list.\n";
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
 	}
@@ -99,11 +102,11 @@ int edit_list(struct bbslist *item,char *listpath)
 		return(0);
 	for(;;) {
 		sprintf(opt[0],"BBS Name:       %s",item->name);
-		sprintf(opt[1],"RLogin Address: %s",item->addr);
-		sprintf(opt[2],"RLogin Port:    %hu",item->port);
+		sprintf(opt[1],"Address:        %s",item->addr);
+		sprintf(opt[2],"Port:           %hu",item->port);
 		sprintf(opt[3],"Username:       %s",item->user);
 		sprintf(opt[4],"Password");
-		sprintf(opt[5],"Be Dumb:        %s",item->dumb?"Yes":"No");
+		sprintf(opt[5],"Connection:     %s",conn_types[item->conn_type]);
 		sprintf(opt[6],"Reversed:       %s",item->reversed?"Yes":"No");
 		uifc.changes=0;
 
@@ -125,23 +128,19 @@ int edit_list(struct bbslist *item,char *listpath)
 				iniRenameSection(&inifile,tmp,item->name);
 				break;
 			case 1:
-				uifc.helpbuf=	"`RLogin address`\n\n"
+				uifc.helpbuf=	"`Address`\n\n"
 								"Enter the domain name of the system to connect to ie:\n"
 								"nix.synchro.net";
-				uifc.input(WIN_MID|WIN_SAV,0,0,"RLogin Address",item->addr,LIST_ADDR_MAX,K_EDIT);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Address",item->addr,LIST_ADDR_MAX,K_EDIT);
 				iniSetString(&inifile,item->name,"Address",item->addr,NULL);
 				break;
 			case 2:
 				i=item->port;
 				sprintf(str,"%hu",item->port?item->port:513);
-				uifc.helpbuf=	"`RLogin port`\n\n"
-								"Enter the port which RLogin is listening to on the remote system\n\n"
-								"~ NOTE:~\n"
-								"Connecting to telnet ports currently appears to work... however, if an\n"
-								"ASCII 255 char is sent by either end, it will be handled incorreclty by\n"
-								"the remote system.  Further, if the remote system follows the RFC, some\n"
-								"Terminal weirdness should be expected.  This program DOES NOT do telnet.";
-				uifc.input(WIN_MID|WIN_SAV,0,0,"RLogin Port",str,5,K_EDIT|K_NUMBER);
+				uifc.helpbuf=	"`Port`\n\n"
+								"Enter the port which the BBS is listening to on the remote system\n"
+								"Telnet is generally port 23 and RLogin is generally 513\n";
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Port",str,5,K_EDIT|K_NUMBER);
 				j=atoi(str);
 				if(j<1 || j>65535)
 					j=513;
@@ -165,9 +164,11 @@ int edit_list(struct bbslist *item,char *listpath)
 				iniSetString(&inifile,item->name,"Password",item->password,NULL);
 				break;
 			case 5:
-				item->dumb=!item->dumb;
+				item->conn_type++;
+				if(item->conn_type==CONN_TYPE_TERMINATOR)
+					item->conn_type=CONN_TYPE_RLOGIN;
 				changed=1;
-				iniSetBool(&inifile,item->name,"BeDumb",item->dumb,NULL);
+				iniSetInteger(&inifile,item->name,"ConnectionType",item->conn_type,NULL);
 				break;
 			case 6:
 				item->reversed=!item->reversed;
@@ -203,7 +204,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
 	iniSetString(&inifile,bbs->name,"UserName",bbs->user,NULL);
 	iniSetString(&inifile,bbs->name,"Password",bbs->password,NULL);
-	iniSetBool(&inifile,bbs->name,"BeDumb",bbs->dumb,NULL);
+	iniSetInteger(&inifile,bbs->name,"ConnectionType",bbs->conn_type,NULL);
 	iniSetBool(&inifile,bbs->name,"Reversed",bbs->reversed,NULL);
 	if((listfile=fopen(listpath,"w"))!=NULL) {
 		iniWriteFile(listfile,inifile);
@@ -314,10 +315,10 @@ struct bbslist *show_bbslist(int mode, char *path)
 					uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",list[listcount-1]->name,LIST_NAME_MAX,K_EDIT);
 					if(uifc.changes) {
 						uifc.changes=0;
-						uifc.helpbuf=	"`RLogin address`\n\n"
+						uifc.helpbuf=	"`Address`\n\n"
 										"Enter the domain name of the system to connect to ie:\n"
 										"nix.synchro.net";
-						uifc.input(WIN_MID|WIN_SAV,0,0,"RLogin Address",list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Address",list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
 					}
 					if(!uifc.changes) {
 						free(list[listcount-1]);
@@ -328,27 +329,26 @@ struct bbslist *show_bbslist(int mode, char *path)
 						while(!list[listcount-1]->port) {
 							list[listcount-1]->port=513;
 							sprintf(str,"%hu",list[listcount-1]->port);
-							uifc.helpbuf=	"`RLogin port`\n\n"
-											"Enter the port which RLogin is listening to on the remote system\n\n"
-											"~ NOTE:~\n"
-											"Connecting to telnet ports currently appears to work... however, if an\n"
-											"ASCII 255 char is sent by either end, it will be handled incorreclty by\n"
-											"the remote system.  Further, if the remote system follows the RFC, some\n"
-											"Terminal weirdness should be expected.  This program DOES NOT do telnet.";
-							uifc.input(WIN_MID|WIN_SAV,0,0,"RLogin Port",str,5,K_EDIT|K_NUMBER);
+							uifc.helpbuf=	"`Port`\n\n"
+											"Enter the port which the BBS is listening to on the remote system\n"
+											"Telnet is generally port 23 and RLogin is generally 513\n";
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Port",str,5,K_EDIT|K_NUMBER);
 							j=atoi(str);
 							if(j<1 || j>65535)
 								j=0;
 							list[listcount-1]->port=j;
 						}
 						if(list[listcount-1]->port != 513) {
-							uifc.helpbuf=	"`Be Dumb`\n\n"
-											"Select this option if attempting to connect to a dumb telnet BBS";
-							list[listcount-1]->dumb=0;
-							uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->dumb,NULL,"Be Dumb",YesNo);
-							list[listcount-1]->dumb=!list[listcount-1]->dumb;
+							uifc.helpbuf=	"`Connection Type`\n\n"
+											"Select the type of connection you wish to make:\n"
+											"~ RLogin:~ Auto-login with RLogin protocol\n"
+											"~ Telnet:~ Use more common Telnet protocol (experimental)\n"
+											"~ Raw:   ~ Make a raw socket connection (experimental)\n";
+							list[listcount-1]->conn_type=CONN_TYPE_RLOGIN;
+							uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->conn_type,NULL,"Connection Type",&conn_types[1]);
+							list[listcount-1]->conn_type++;
 						}
-						if(!list[listcount-1]->dumb) {
+						if(list[listcount-1]->conn_type==CONN_TYPE_RLOGIN) {
 							uifc.helpbuf=	"`Username`\n\n"
 											"Enter the username to attempt auto-login to the remote with.";
 							uifc.input(WIN_MID|WIN_SAV,0,0,"User Name",list[listcount-1]->user,MAX_USER_LEN,K_EDIT);

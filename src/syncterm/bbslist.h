@@ -23,8 +23,8 @@ struct bbslist {
 	char			user[MAX_USER_LEN+1];
 	char			password[MAX_PASSWD_LEN+1];
 	int				type;
+	int				conn_type;
 	int				id;
-	int				dumb;
 	int				reversed;
 };
 

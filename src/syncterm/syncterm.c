@@ -6,7 +6,7 @@
 #include <dirwrap.h>
 
 #include "bbslist.h"
-#include "rlogin.h"
+#include "conn.h"
 #include "uifcinit.h"
 
 #ifdef _WINSOCKAPI_
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	FULLPATH(path,drive,sizeof(path));
 	atexit(uifcbail);
 	while((bbs=show_bbslist(BBSLIST_SELECT,path))!=NULL) {
-		if(!rlogin_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->dumb)) {
+		if(!conn_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->conn_type)) {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
 			str_list_t	inifile;

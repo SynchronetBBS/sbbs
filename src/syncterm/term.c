@@ -4,7 +4,7 @@
 #include <mouse.h>
 #include <keys.h>
 
-#include "rlogin.h"
+#include "conn.h"
 #include "term.h"
 #include "uifcinit.h"
 #include "menu.h"
@@ -32,19 +32,19 @@ void doterm(void)
 	/* Main input loop */
 	for(;;) {
 		/* Get remote input */
-		i=rlogin_recv(buf,sizeof(buf));
+		i=conn_recv(buf,sizeof(buf));
 		switch(i) {
 			case -1:
 				free(scrollback);
 				cterm_end();
-				rlogin_close();
+				conn_close();
 				uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 				return;
 			case 0:
 				break;
 			default:
 				cterm_write(buf,i,prn,sizeof(prn));
-				rlogin_send(prn,strlen(prn),0);
+				conn_send(prn,strlen(prn),0);
 				break;
 		}
 
@@ -62,37 +62,37 @@ void doterm(void)
 							break;
 
 						case CIO_KEY_LEFT:
-							rlogin_send("\033[D",3,0);
+							conn_send("\033[D",3,0);
 							break;
 						case CIO_KEY_RIGHT:
-							rlogin_send("\033[C",3,0);
+							conn_send("\033[C",3,0);
 							break;
 						case CIO_KEY_UP:
-							rlogin_send("\033[A",3,0);
+							conn_send("\033[A",3,0);
 							break;
 						case CIO_KEY_DOWN:
-							rlogin_send("\033[B",3,0);
+							conn_send("\033[B",3,0);
 							break;
 						case CIO_KEY_HOME:
-							rlogin_send("\033[H",3,0);
+							conn_send("\033[H",3,0);
 							break;
 						case CIO_KEY_END:
 #ifdef CIO_KEY_SELECT
 						case CIO_KEY_SELECT:	/* Some terminfo/termcap entries use KEY_SELECT as the END key! */
 #endif
-							rlogin_send("\033[K",3,0);
+							conn_send("\033[K",3,0);
 							break;
 						case CIO_KEY_F(1):
-							rlogin_send("\033OP",3,0);
+							conn_send("\033OP",3,0);
 							break;
 						case CIO_KEY_F(2):
-							rlogin_send("\033OQ",3,0);
+							conn_send("\033OQ",3,0);
 							break;
 						case CIO_KEY_F(3):
-							rlogin_send("\033Ow",3,0);
+							conn_send("\033Ow",3,0);
 							break;
 						case CIO_KEY_F(4):
-							rlogin_send("\033Ox",3,0);
+							conn_send("\033Ox",3,0);
 							break;
 						case 0x1f00:	/* ALT-S */
 							viewscroll();
@@ -102,7 +102,7 @@ void doterm(void)
 				case 17:	/* CTRL-Q */
 					cterm_end();
 					free(scrollback);
-					rlogin_close();
+					conn_close();
 					return;
 				case 19:	/* CTRL-S */
 					i=wherex();
@@ -111,7 +111,7 @@ void doterm(void)
 						case -1:
 							cterm_end();
 							free(scrollback);
-							rlogin_close();
+							conn_close();
 							return;
 					}
 					gotoxy(i,j);
@@ -122,7 +122,7 @@ void doterm(void)
 				default:
 					if(key<256) {
 						ch[0]=key;
-						rlogin_send(ch,1,0);
+						conn_send(ch,1,0);
 					}
 					
 			}
