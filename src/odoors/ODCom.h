@@ -92,6 +92,7 @@ typedef enum
    kComMethodWin32,
    kComMethodDoor32,
 	kComMethodSocket,
+	kComMethodStdIO,
 } tComMethod;
 
 /* Serial I/O event types. */

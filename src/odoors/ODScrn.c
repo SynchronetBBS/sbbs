@@ -93,7 +93,7 @@
 /* Private variables used by the screen I/O functions. */
 
 /* Segment address of video buffer. */
-#ifdef ODPLAT_DOS
+#if defined(ODPLAT_DOS) || defined(ODPLAT_NIX)
 static WORD wBufferSegment;
 static void *pAllocatedBufferMemory;
 #endif /* ODPLAT_DOS */
@@ -942,13 +942,16 @@ tODResult ODScrnInitialize(void)
 {
    BOOL bClear = TRUE;
 
-#ifdef ODPLAT_DOS
+#if defined(ODPLAT_DOS) || defined(ODPLAT_NIX)
    BYTE btDisplayMode;
 
    /* In silent mode, we perform all output in a block of memory that is */
    /* never displayed.                                                   */
+   /* *nix is always in "silent mode"									 */
+#ifndef ODPLAT_NIX
    if(od_control.od_silent_mode)
    {
+#endif
       /* Allocate memory for screen buffer, using standard pointer type */
       /* for current memory model.                                      */
       pAllocatedBufferMemory = malloc(SCREEN_BUFFER_SIZE);
@@ -961,6 +964,7 @@ tODResult ODScrnInitialize(void)
       /* Set the screen buffer far pointer to point to the allocated */
       /* buffer.                                                     */
       pScrnBuffer = pAllocatedBufferMemory;
+#ifndef ODPLAT_NIX
    }
    else
    {
@@ -1054,6 +1058,7 @@ tODResult ODScrnInitialize(void)
       }
    }
 #endif /* ODPLAT_DOS */
+#endif /* ODPLAT_DOS/NIX */
 
 #ifdef ODPLAT_WIN32
    /* Allocate memory for screen buffer. */
@@ -1108,12 +1113,17 @@ void ODScrnShutdown(void)
    }
 #else /* !ODPLAT_WIN32 */
    /* In silent mode, we must deallocate screen buffer memory. */
+   /* *nix is always in silent mode							   */
+#ifndef ODPLAT_NIX
    if(od_control.od_silent_mode && pAllocatedBufferMemory != NULL)
    {
+#endif
       free(pAllocatedBufferMemory);
       pAllocatedBufferMemory = NULL;
       pScrnBuffer = NULL;
+#ifndef ODPLAT_NIX
    }
+#endif
 #endif
 }
 

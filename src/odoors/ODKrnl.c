@@ -71,6 +71,9 @@
 #include <limits.h>
 
 #include "OpenDoor.h"
+#ifdef ODPLAT_NIX
+#include <signal.h>
+#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODPlat.h"
@@ -164,7 +167,17 @@ tODSemaphoreHandle hODActiveSemaphore = NULL;
  */
 tODResult ODKrnlInitialize(void)
 {
+#ifdef ODPLAT_NIX
+   sigset_t		block;
+#endif
+
    tODResult Result = kODRCSuccess;
+   
+#ifdef ODPLAT_NIX
+   sigemptyset(&block);
+   sigaddset(&block,SIGHUP);
+   sigprocmask(SIG_BLOCK,&block,NULL);
+#endif
 
    /* Initialize time of next status update and next time deduction. */
    nNextStatusUpdateTime = time(NULL) + STATUS_UPDATE_PERIOD;
@@ -330,8 +343,9 @@ ODAPIDEF void ODCALL od_kernel(void)
          ODKrnlHandleReceivedChar(ch, TRUE);
       }
    }
+#endif
 
-
+#ifdef ODPLAT_DOS
 check_keyboard_again:
     if(nKrnlFuncPending && !bShellChatActive)
     {

@@ -62,6 +62,10 @@
 #include <time.h>
 
 #include "OpenDoor.h"
+#ifdef ODPLAT_NIX
+#include <signal.h>
+#include <sys/ioctl.h>
+#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODPlat.h"
@@ -100,6 +104,10 @@
 #define INCLUDE_SOCKET_COM                          /* TCP/IP socket I/O.    */
 #endif /* ODPLAT_WIN32 */
 
+/* Serial I/O mechanisms supported inder *nix version */
+#ifdef ODPLAT_NIX
+#define INCLUDE_STDIO_COM
+#endif /* ODPLAT_NIX */
 
 /* Include "windows.h" for Win32-API based serial I/O. */
 #ifdef INCLUDE_WIN32_COM
@@ -1748,6 +1756,22 @@ no_fossil:
    }
 #endif /* INCLUDE_WIN32_COM */
 
+#ifdef INCLUDE_STDIO_COM
+   if(pPortInfo->Method == kComMethodStdIO ||
+      pPortInfo->Method == kComMethodUnspecified)
+   {
+      /* Set port state as open. */
+      pPortInfo->bIsOpen = TRUE;
+
+      /* Set serial I/O method. */
+      pPortInfo->Method = kComMethodStdIO;
+
+      /* Return with success. */
+      return(kODRCSuccess);
+
+   }
+#endif /* INCLUDE_STDIO_COM */
+
    /* If we get to this point, then no form of serial I/O could be */
    /* initialized.                                                 */
    return(kODRCGeneralFailure);
@@ -1916,6 +1940,11 @@ tODResult ODComClose(tPortHandle hPort)
          break;
 #endif /* INCLUDE_SOCKET_COM */
 
+#ifdef INCLUDE_STDIO_COM
+	  case kComMethodStdIO:
+	     break;
+#endif
+
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -1944,6 +1973,9 @@ tODResult ODComClose(tPortHandle hPort)
  */
 tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 {
+#ifdef ODPLAT_NIX
+   sigset_t	  sigs;
+#endif
    tPortInfo *pPortInfo = ODHANDLE2PTR(hPort, tPortInfo);
    int nPort;
 
@@ -2035,6 +2067,15 @@ tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 			break;
 		}
 #endif
+	  case kComMethodStdIO:
+	    {
+			sigpending(&sigs);
+			if(sigismember(&sigs,SIGHUP))
+				*pbIsCarrier = FALSE;
+			else
+				*pbIsCarrier = TRUE;
+			break;
+		}
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -2136,6 +2177,11 @@ set_dtr:
          break;
 #endif /* INCLUDE_SOCKET_CO */
 
+#ifdef INCLUDE_STDIO_COM
+	  case kComMethodStdIO:
+	     return(kODRCUnsupported);
+#endif
+
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -2231,6 +2277,12 @@ still_sending:
 			return(kODRCUnsupported);
 #endif /* INCLUDE_SOCKET_COM */
 
+#ifdef INCLUDE_STDIO_COM
+	  case kComMethodStdIO:
+			*pnOutboundWaiting = 0;
+			return(kODRCUnsupported);
+#endif	        
+
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -2294,6 +2346,11 @@ tODResult ODComClearOutbound(tPortHandle hPort)
       case kComMethodSocket:
 			return(kODRCUnsupported);
 #endif /* INCLUDE_SOCKET_COM */
+
+#ifdef INCLUDE_STDIO_COM
+      case kComMethodStdIO:
+			return(kODRCUnsupported);
+#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -2360,6 +2417,10 @@ tODResult ODComClearInbound(tPortHandle hPort)
 			return(kODRCUnsupported);
 #endif /* INCLUDE_SOCKET_COM */
 
+#ifdef INCLUDE_STDIO_COM
+      case kComMethodStdIO:
+			return(kODRCUnsupported);
+#endif
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -2472,6 +2533,12 @@ tODResult ODComInbound(tPortHandle hPort, int *pnInboundWaiting)
 			break;
 #endif /* INCLUDE_SOCKET_COM */
 
+#ifdef INCLUDE_STDIO_COM
+      case kComMethodStdIO:
+			if(ioctl(0,FIONREAD,pnInboundWaiting) == -1)
+				*pnInboundWaiting = 0;
+			break;
+#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -2687,6 +2754,37 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 		}
 #endif /* INCLUDE_SOCKET_COM */
 
+#ifdef INCLUDE_STDIO_COM
+      case kComMethodStdIO:
+		{
+			fd_set	socket_set;
+			struct	timeval tv;
+			int		select_ret, recv_ret;
+
+			FD_ZERO(&socket_set);
+			FD_SET(0,&socket_set);
+
+			tv.tv_sec=0;
+			tv.tv_usec=0;
+
+			select_ret = select(1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
+			if (select_ret == -1)
+				return (kODRCGeneralFailure);
+			if (select_ret == 0)
+				return (kODRCNothingWaiting);
+
+			recv_ret = read(0, pbtNext, 1);
+			if(recv_ret != -1)
+				break;
+			return (kODRCGeneralFailure);
+
+			if (recv_ret == 0)
+				 return (kODRCNothingWaiting);
+
+			break;
+		}
+#endif
+
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -2837,6 +2935,13 @@ keep_going:
 		}
 #endif /* INCLUDE_SOCKET_COM */
 
+#ifdef INCLUDE_STDIO_COM
+	  case kComMethodStdIO:
+	    {
+		    write(1,&btToSend,1,0);
+			break;
+		}
+#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -3036,6 +3141,14 @@ tODResult ODComGetBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize,
 		}
 #endif /* INCLUDE_SOCKET_COM */
 
+#ifdef INCLUDE_STDIO_COM
+      case kComMethodStdIO:
+	    {
+		    for(*pnBytesRead=0;
+				*pnBytesRead<nSize && (ODComGetByte(hPort, (pbtBuffer+*pnBytesRead), FALSE)==kODRCSuccess);
+				*pnBytesRead++);
+		}
+#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -3286,6 +3399,15 @@ try_again:
 		}
 #endif /* INCLUDE_SOCKET_COM */
 
+#ifdef INCLUDE_STDIO_COM
+      case kComMethodStdIO:
+	    {
+			if(write(1,pbtBuffer,nSize)!=nSize)
+				return (kODRCGeneralFailure);
+		    break;
+		}
+#endif
+
       default:
          /* If we get here, then the current serial I/O method is not */
          /* handled by this function.                                 */
@@ -3319,9 +3441,10 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 
    switch(pPortInfo->Method)
    {
-#if defined(INCLUDE_UART_COM) || defined(INCLUDE_FOSSIL_COM)
+#if defined(INCLUDE_UART_COM) || defined(INCLUDE_FOSSIL_COM) || defined(INCLUDE_STDIO_COM)
       case kComMethodFOSSIL:
       case kComMethodUART:
+	  case kComMethodStdIO:
          switch(Event)
          {
             case kNoCarrier:

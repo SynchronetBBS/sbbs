@@ -93,10 +93,16 @@
 #define OD_DLL
 #endif /* !OD_WIN32_STATIC */
 #else /* !WIN32 */
+#if defined(__unix__) || defined(__NetBSD__)
+#define ODPLAT_NIX
+#undef ODPLAT_DOS
+#else
 #define ODPLAT_DOS
 #undef ODPLAT_WIN32
 #pragma message("Compiling for DOS version of OpenDoors")
+#endif /* !NIX */
 #endif /* !WIN32 */
+
 
 /* Include any other headers required by OpenDoor.h. */
 #ifdef ODPLAT_WIN32 
