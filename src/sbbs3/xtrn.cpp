@@ -782,9 +782,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	if(startup_dir!=NULL && startup_dir[0])
 		chdir(startup_dir);
 
+	lprintf("Node %02d executing external: %s",cfg.node_num,cmdline);
+
 	argv[0]=cmdline;	/* point to the beginning of the string */
 	argc=1;
-	for(i=0;cmdlien[i];i++)	/* Break up command line */
+	for(i=0;cmdline[i];i++)	/* Break up command line */
 		if(cmdline[i]==SP) {
 			argv[i]=0;			/* insert nulls */
 			argv[argc++]=cmdline+i+1; /* point to the beginning of the next arg */
