@@ -325,75 +325,77 @@ char short_bbs_info(bbs_t bbs)
 	char	str[128];
 	int		i,j;
 
-for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
-	for(j=0;list_fmt[j];j++) {
-		if(j) bputs(" ");
-		switch(toupper(list_fmt[j])) {
-			case 'N':
-				bprintf("\1h\1m%-25.25s",i ? nulstr : bbs.name);
-				break;
-			case 'S':
-				bprintf("\1h\1c%-15.15s",i ? nulstr : bbs.software);
-				break;
-			case 'P':
-				if(bbs.number[i].modem.min_rate==0xffff) {
-					if(bbs.number[i].telnet.port!=0 
-						&& bbs.number[i].telnet.port!=IPPORT_TELNET)
-						sprintf(str,"%s:%hu"
-							,bbs.number[i].telnet.addr
-							,bbs.number[i].telnet.port);
-					else
-						strcpy(str,bbs.number[i].telnet.addr);
-					bprintf("\1h\1b%-28.28s",str);
-				} else
-					bprintf("\1n\1g%12.12s",bbs.number[i].modem.number);
-				break;
-			case 'B':
-				if(bbs.number[i].modem.min_rate!=0xffff)
-					bprintf("\1h\1g%5u",bbs.number[i].modem.max_rate);
-				break;
-			case 'M':
-				if(bbs.number[i].modem.min_rate!=0xffff)
-					bprintf("\1h\1b%-15.15s",bbs.number[i].modem.desc);
-				break;
-			case 'Y':
-				bprintf("\1h\1y%-25.25s",i ? nulstr : bbs.sysop[0]);
-				break;
-			case 'T':
-				if(i) bputs("   ");
-				else  bprintf("\1y\1h%3u",bbs.nodes);
-				break;
-			case 'U':
-				if(i) bputs("     ");
-				else  bprintf("\1n\1r%5u",bbs.users);
-                break;
-			case 'H':
-				if(i) bprintf("%10.10s",nulstr);
-				else  bprintf("\1h\1r%10u",bbs.megs);
-				break;
-			case 'L':
-				bprintf("\1n\1c%-20.20s",bbs.number[i].modem.location);
-				break;
-			case 'F':
-				bprintf("\1n\1b%s",i ? nulstr : unixtodstr(bbs.birth,tmp));
-				break;
-			case 'V':
-				bprintf("\1n\1m%s",i ? nulstr : unixtodstr(bbs.verified,tmp));
-				break;
-			case 'D':
-				bprintf("\1n%s",i ? nulstr : unixtodstr(bbs.updated,tmp));
-				break;
-			case 'C':
-				bprintf("\1n\1y%s",i ? nulstr : unixtodstr(bbs.created,tmp));
-                break;
-			default:
-				bprintf("%c",list_fmt[j]);
-				break;
-				} }
-	bputs("\r\n"); }
-if(kbhit())
-	return(0);
-return(1);
+    for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
+        for(j=0;list_fmt[j];j++) {
+            if(j) bputs(" ");
+            switch(toupper(list_fmt[j])) {
+                case 'N':
+                    bprintf("\1h\1m%-25.25s",i ? nulstr : bbs.name);
+                    break;
+                case 'S':
+                    bprintf("\1h\1c%-15.15s",i ? nulstr : bbs.software);
+                    break;
+                case 'P':
+                    if(bbs.number[i].modem.min_rate==0xffff) {
+                        if(bbs.number[i].telnet.port!=0 
+                            && bbs.number[i].telnet.port!=IPPORT_TELNET)
+                            sprintf(str,"%s:%hu"
+                                ,bbs.number[i].telnet.addr
+                                ,bbs.number[i].telnet.port);
+                        else
+                            strcpy(str,bbs.number[i].telnet.addr);
+                        bprintf("\1h\1b%-28.28s",str);
+                    } else
+                        bprintf("\1n\1g%12.12s",bbs.number[i].modem.number);
+                    break;
+                case 'B':
+                    if(bbs.number[i].modem.min_rate!=0xffff)
+                        bprintf("\1h\1g%5u",bbs.number[i].modem.max_rate);
+                    break;
+                case 'M':
+                    if(bbs.number[i].modem.min_rate!=0xffff)
+                        bprintf("\1h\1b%-15.15s",bbs.number[i].modem.desc);
+                    break;
+                case 'Y':
+                    bprintf("\1h\1y%-25.25s",i ? nulstr : bbs.sysop[0]);
+                    break;
+                case 'T':
+                    if(i) bputs("   ");
+                    else  bprintf("\1y\1h%3u",bbs.nodes);
+                    break;
+                case 'U':
+                    if(i) bputs("     ");
+                    else  bprintf("\1n\1r%5u",bbs.users);
+                    break;
+                case 'H':
+                    if(i) bprintf("%10.10s",nulstr);
+                    else  bprintf("\1h\1r%10u",bbs.megs);
+                    break;
+                case 'L':
+                    bprintf("\1n\1c%-20.20s",bbs.number[i].modem.location);
+                    break;
+                case 'F':
+                    bprintf("\1n\1b%s",i ? nulstr : unixtodstr(bbs.birth,tmp));
+                    break;
+                case 'V':
+                    bprintf("\1n\1m%s",i ? nulstr : unixtodstr(bbs.verified,tmp));
+                    break;
+                case 'D':
+                    bprintf("\1n%s",i ? nulstr : unixtodstr(bbs.updated,tmp));
+                    break;
+                case 'C':
+                    bprintf("\1n\1y%s",i ? nulstr : unixtodstr(bbs.created,tmp));
+                    break;
+                default:
+                    bprintf("%c",list_fmt[j]);
+                    break;
+                    } }
+        bputs("\r\n"); }
+#if 0
+    if(kbhit())
+        return(0);
+#endif
+    return(1);
 }
 
 char long_bbs_info(bbs_t bbs)
@@ -501,8 +503,10 @@ if(aborted) {
 	aborted=0;
 	return(0); }
 if(!sbl_pause) {
+#if 0
 	if(kbhit())
 		return(0);
+#endif
 	return(1); }
 nodesync();
 #if VERIFICATION_MOD
@@ -976,8 +980,10 @@ int main(int argc, char **argv)
 					if(!sbl_pause)
 						lncntr=0; }
 				bprintf("\r\n\1n\1h%u systems listed.\r\n",i);
+#if 0
 				if(kbhit())
 					getch();
+#endif                    
 				if(lncntr)
 					pause();
 				break;
@@ -1130,8 +1136,10 @@ int main(int argc, char **argv)
 						continue; } }
 				if(!ch || !found) {
 					CRLF;
+#if 0
 					if(kbhit())
 						getch();
+#endif                        
 					if(found)
 						bprintf("\1n\1h%u systems listed.\r\n",found);
 					pause(); }
@@ -1303,8 +1311,10 @@ int main(int argc, char **argv)
 					if(!ch && !short_bbs_info(bbs))
 						break; }
 				close(file);
+#if 0
 				if(kbhit())
 					getch();
+#endif                    
 				if(lncntr)
 					pause();
 				break;
