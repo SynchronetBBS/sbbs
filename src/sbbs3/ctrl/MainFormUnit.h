@@ -54,6 +54,7 @@
 #include <ImgList.hpp>
 #include <Buttons.hpp>
 #include <Graphics.hpp>
+#include <vcl\Registry.hpp>	/* TRegistry */
 #include "Trayicon.h"
 //---------------------------------------------------------------------------
 #define APP_TITLE "Synchronet Control Panel"
@@ -176,7 +177,7 @@ __published:	// IDE-managed Components
     TMenuItem *BBSEditIPFilterMsg;
     TMenuItem *BBSEditHostFilter;
     TMenuItem *BBSEditHostFilterMsg;
-    TMenuItem *AllowedRelayList1;
+    TMenuItem *AllowedRelayList;
     TMenuItem *SaveSettingsMenuOption;
     TMenuItem *N6;
     TMenuItem *TelnetEditMenuItem;
@@ -232,6 +233,7 @@ __published:	// IDE-managed Components
     TToolButton *ToolButton3;
     TToolButton *ReloadConfigButton;
     TMenuItem *MailViewSpamLog;
+    TMenuItem *DomainList;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -319,7 +321,11 @@ public:		// User declarations
     bool            SpyTerminalKeyboardActive;
 	TPageControl* __fastcall PageControl(int num);
 	int __fastcall  PageNum(TPageControl* obj);
-    void __fastcall FormMinimize(TObject *Sender);    
+    void __fastcall FormMinimize(TObject *Sender);
+    void __fastcall ReadColor(TRegistry*, AnsiString, TColor&);
+    void __fastcall WriteColor(TRegistry*, AnsiString, TColor);
+    void __fastcall ReadFont(AnsiString, TFont*);
+    void __fastcall WriteFont(AnsiString, TFont*);
 };
 
 //---------------------------------------------------------------------------

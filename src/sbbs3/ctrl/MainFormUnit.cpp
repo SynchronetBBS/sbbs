@@ -630,6 +630,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     	Application->MessageBox("Error opening registry key"
         	,REG_KEY,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
+        return;
     }
    	if(Registry->ValueExists("MainFormTop"))
 	   	Top=Registry->ReadInteger("MainFormTop");
@@ -984,6 +985,59 @@ int __fastcall TMainForm::PageNum(TPageControl* obj)
        	return(PAGE_LOWERLEFT);
 	return(PAGE_LOWERRIGHT);
 }
+void __fastcall TMainForm::ReadColor(TRegistry* Registry
+    ,AnsiString name, TColor& color)
+{
+    if(Registry->ValueExists(name + "Color"))
+        color=StringToColor(Registry->ReadString(name + "Color"));
+}
+void __fastcall TMainForm::WriteColor(TRegistry* Registry
+    ,AnsiString name, TColor color)
+{
+    Registry->WriteString(name + "Color", ColorToString(color));
+}
+void __fastcall TMainForm::ReadFont(AnsiString subkey, TFont* Font)
+{
+    // Read Registry keys
+	TRegistry* Registry=new TRegistry;
+    AnsiString key = REG_KEY + subkey + "Font";
+    if(!Registry->OpenKey(key,true)) {
+    	Application->MessageBox("Error opening registry key"
+        	,key.c_str(),MB_OK|MB_ICONEXCLAMATION);
+        Application->Terminate();
+        return;
+    }
+    if(Registry->ValueExists("Name"))
+        Font->Name=Registry->ReadString("Name");
+    if(Registry->ValueExists("Color"))
+        Font->Color=StringToColor(Registry->ReadString("Color"));
+    if(Registry->ValueExists("Height"))
+        Font->Height=Registry->ReadInteger("Height");
+    if(Registry->ValueExists("Size"))
+        Font->Size=Registry->ReadInteger("Size");
+
+    Registry->CloseKey();
+    delete Registry;
+}
+void __fastcall TMainForm::WriteFont(AnsiString subkey, TFont* Font)
+{
+    // Read Registry keys
+	TRegistry* Registry=new TRegistry;
+    AnsiString key = REG_KEY + subkey + "Font";
+    if(!Registry->OpenKey(key,true)) {
+    	Application->MessageBox("Error opening registry key"
+        	,key.c_str(),MB_OK|MB_ICONEXCLAMATION);
+        Application->Terminate();
+        return;
+    }
+    Registry->WriteString("Name",Font->Name);
+    Registry->WriteString("Color",ColorToString(Font->Color));
+    Registry->WriteInteger("Height",Font->Height);
+    Registry->WriteInteger("Size",Font->Size);
+
+    Registry->CloseKey();
+    delete Registry;
+}
 void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 {
     bool	TelnetFormFloating=false;
@@ -1011,6 +1065,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	Application->MessageBox("Error opening registry key"
         	,REG_KEY,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
+        return;
     }
 
     TopPanel->Height=Height/3;
@@ -1059,6 +1114,19 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	MailFormPage=Registry->ReadInteger("MailFormPage");
     if(Registry->ValueExists("FtpFormPage"))
     	FtpFormPage=Registry->ReadInteger("FtpFormPage");
+
+    ReadColor(Registry,"TelnetLog",TelnetForm->Log->Color);
+    ReadFont("TelnetLog",TelnetForm->Log->Font);
+    ReadColor(Registry,"EventsLog",EventsForm->Log->Color);
+    ReadFont("EventsLog",EventsForm->Log->Font);
+    ReadColor(Registry,"MailLog",MailForm->Log->Color);
+    ReadFont("MailLog",MailForm->Log->Font);
+    ReadColor(Registry,"FtpLog",FtpForm->Log->Color);
+    ReadFont("FtpLog",FtpForm->Log->Font);
+    ReadColor(Registry,"NodeList",NodeForm->ListBox->Color);
+    ReadFont("NodeList",NodeForm->ListBox->Font);
+    ReadColor(Registry,"ClientList",ClientForm->ListView->Color);
+    ReadFont("ClientList",ClientForm->ListView->Font);
 
 	if(Registry->ValueExists("TelnetFormTop"))
     	TelnetForm->Top=Registry->ReadInteger("TelnetFormTop");
@@ -1426,6 +1494,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     	Application->MessageBox("Error creating registry key"
         	,REG_KEY,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
+        return;
     }
 
     Registry->WriteInteger("MainFormTop",Top);
@@ -1475,7 +1544,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     	,LowerLeftPageControl->Width);
 
     Registry->WriteBool("UndockableForms",UndockableForms);
-    
+
     Registry->WriteBool("TelnetFormFloating",TelnetForm->Floating);
     Registry->WriteBool("EventsFormFloating",EventsForm->Floating);
     Registry->WriteBool("NodeFormFloating",NodeForm->Floating);
@@ -1498,6 +1567,19 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     	,PageNum((TPageControl*)StatsForm->HostDockSite));
     Registry->WriteInteger("ClientFormPage"
     	,PageNum((TPageControl*)ClientForm->HostDockSite));
+
+    WriteColor(Registry,"TelnetLog",TelnetForm->Log->Color);
+    WriteFont("TelnetLog",TelnetForm->Log->Font);
+    WriteColor(Registry,"EventsLog",EventsForm->Log->Color);
+    WriteFont("EventsLog",EventsForm->Log->Font);
+    WriteColor(Registry,"MailLog",MailForm->Log->Color);
+    WriteFont("MailLog",MailForm->Log->Font);
+    WriteColor(Registry,"FtpLog",FtpForm->Log->Color);
+    WriteFont("FtpLog",FtpForm->Log->Font);
+    WriteColor(Registry,"NodeList",NodeForm->ListBox->Color);
+    WriteFont("NodeList",NodeForm->ListBox->Font);
+    WriteColor(Registry,"ClientList",ClientForm->ListView->Color);
+    WriteFont("ClientList",ClientForm->ListView->Font);
 
     Registry->WriteBool("ToolBarVisible",Toolbar->Visible);
     Registry->WriteBool("StatusBarVisible",StatusBar->Visible);
