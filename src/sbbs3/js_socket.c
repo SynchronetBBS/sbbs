@@ -513,6 +513,30 @@ js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	return(JS_TRUE);
 }
 
+static JSBool
+js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	fd_set	socket_set;
+	struct	timeval tv = {0, 0};
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(argc>0)
+		tv.tv_sec = JSVAL_TO_INT(argv[0]);
+
+	FD_ZERO(&socket_set);
+	FD_SET(p->sock,&socket_set);
+
+	*rval = INT_TO_JSVAL(select(p->sock+1,&socket_set,NULL,NULL,&tv));
+
+	p->last_error=ERROR_VALUE;
+
+	return(JS_TRUE);
+}
+
+
 /* Socket Object Properites */
 enum {
 	 SOCK_PROP_LAST_ERROR
@@ -655,6 +679,7 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"getoption",		js_getsockopt,		1},		/* getsockopt(opt)					*/
 	{"setoption",		js_setsockopt,		2},		/* setsockopt(opt,val)				*/
 	{"ioctl",			js_ioctlsocket,		1},		/* ioctl(cmd,arg)					*/
+	{"poll",			js_poll,			1},		/* poll(seconds)					*/
 	{0}
 };
 
