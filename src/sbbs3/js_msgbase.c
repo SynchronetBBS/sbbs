@@ -533,7 +533,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_tid!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_tid"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_pid))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_tid))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_area!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_area"

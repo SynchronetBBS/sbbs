@@ -100,7 +100,7 @@ function parse_news_header(hdr, line)
 			hdr.ftn_pid=data;
 			break;
 		case "x-ftn-tid":
-			hdr.ftn_pid=data;
+			hdr.ftn_tid=data;
 			break;
 		case "x-ftn-area":
 			hdr.ftn_area=data;
