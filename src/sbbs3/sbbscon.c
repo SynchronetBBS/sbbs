@@ -762,11 +762,11 @@ static void read_startup_ini(void)
 #if defined(__unix__)
 	{
 		char	value[INI_MAX_VALUE_LEN];
-		SAFECOPY(new_uid_name,iniGetString(fp,"UNIX","User","",value));
-		SAFECOPY(new_gid_name,iniGetString(fp,"UNIX","Group","",value));
-		is_daemon=iniGetBool(fp,"UNIX","Daemonize",FALSE);
-		SAFECOPY(daemon_type,iniGetString(fp,"UNIX","LogFacility","U",value));
-		umask(iniGetInteger(fp,"UNIX","umask",077));
+		SAFECOPY(new_uid_name,iniReadString(fp,"UNIX","User","",value));
+		SAFECOPY(new_gid_name,iniReadString(fp,"UNIX","Group","",value));
+		is_daemon=iniReadBool(fp,"UNIX","Daemonize",FALSE);
+		SAFECOPY(daemon_type,iniReadString(fp,"UNIX","LogFacility","U",value));
+		umask(iniReadInteger(fp,"UNIX","umask",077));
 	}
 #endif
 	/* close .ini file here */

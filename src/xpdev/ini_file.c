@@ -469,7 +469,7 @@ char* iniSetStringList(str_list_t* list, const char* section, const char* key
 	return iniSetString(list, section, key, value, style);
 }
 
-char* iniGetString(FILE* fp, const char* section, const char* key, const char* deflt, char* value)
+char* iniReadString(FILE* fp, const char* section, const char* key, const char* deflt, char* value)
 {
 	if(get_value(fp,section,key,value)==NULL || *value==0 /* blank */) {
 		if(deflt==NULL)
@@ -480,7 +480,7 @@ char* iniGetString(FILE* fp, const char* section, const char* key, const char* d
 	return(value);
 }
 
-str_list_t iniGetStringList(FILE* fp, const char* section, const char* key
+str_list_t iniReadStringList(FILE* fp, const char* section, const char* key
 						 ,const char* sep, const char* deflt)
 {
 	char*	value;
@@ -536,7 +536,7 @@ void* iniFreeNamedStringList(named_string_t** list)
 	return(NULL);
 }
 
-str_list_t iniGetSectionList(FILE* fp, const char* prefix)
+str_list_t iniReadSectionList(FILE* fp, const char* prefix)
 {
 	char*	p;
 	char	str[INI_MAX_LINE_LEN];
@@ -566,7 +566,7 @@ str_list_t iniGetSectionList(FILE* fp, const char* prefix)
 	return(lp);
 }
 
-str_list_t iniGetKeyList(FILE* fp, const char* section)
+str_list_t iniReadKeyList(FILE* fp, const char* section)
 {
 	char*	p;
 	char*	vp;
@@ -600,7 +600,7 @@ str_list_t iniGetKeyList(FILE* fp, const char* section)
 }
 
 named_string_t**
-iniGetNamedStringList(FILE* fp, const char* section)
+iniReadNamedStringList(FILE* fp, const char* section)
 {
 	char*	name;
 	char*	value;
@@ -650,7 +650,7 @@ iniGetNamedStringList(FILE* fp, const char* section)
 
 /* These functions read a single key of the specified type */
 
-long iniGetInteger(FILE* fp, const char* section, const char* key, long deflt)
+long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 {
 	char*	value;
 	char	buf[INI_MAX_VALUE_LEN];
@@ -664,13 +664,13 @@ long iniGetInteger(FILE* fp, const char* section, const char* key, long deflt)
 	return(strtol(value,NULL,0));
 }
 
-ushort iniGetShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
+ushort iniReadShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
 {
-	return((ushort)iniGetInteger(fp, section, key, deflt));
+	return((ushort)iniReadInteger(fp, section, key, deflt));
 }
 
 #if !defined(NO_SOCKET_SUPPORT)
-ulong iniGetIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
+ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
@@ -688,7 +688,7 @@ ulong iniGetIpAddress(FILE* fp, const char* section, const char* key, ulong defl
 }
 #endif
 
-double iniGetFloat(FILE* fp, const char* section, const char* key, double deflt)
+double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
@@ -702,7 +702,7 @@ double iniGetFloat(FILE* fp, const char* section, const char* key, double deflt)
 	return(atof(value));
 }
 
-BOOL iniGetBool(FILE* fp, const char* section, const char* key, BOOL deflt)
+BOOL iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
@@ -721,7 +721,7 @@ BOOL iniGetBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 	return(strtol(value,NULL,0));
 }
 
-ulong iniGetBitField(FILE* fp, const char* section, const char* key, 
+ulong iniReadBitField(FILE* fp, const char* section, const char* key, 
 						ini_bitdesc_t* bitdesc, ulong deflt)
 {
 	int		i;

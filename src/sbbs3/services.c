@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1506,24 +1506,24 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 		return(service);
 
 	lprintf(LOG_INFO,"Reading %s",services_ini);
-	sec_list = iniGetSectionList(fp,"");
+	sec_list = iniReadSectionList(fp,"");
     for(i=0; sec_list!=NULL && sec_list[i]!=NULL; i++) {
 		memset(&serv,0,sizeof(service_t));
-		SAFECOPY(serv.protocol,iniGetString(fp,sec_list[i],"Protocol",sec_list[i],prot));
+		SAFECOPY(serv.protocol,iniReadString(fp,sec_list[i],"Protocol",sec_list[i],prot));
 		serv.socket=INVALID_SOCKET;
-		serv.interface_addr=iniGetIpAddress(fp,sec_list[i],"Interface",startup->interface_addr);
-		serv.port=iniGetShortInt(fp,sec_list[i],"Port",0);
-		serv.max_clients=iniGetInteger(fp,sec_list[i],"MaxClients",0);
-		serv.listen_backlog=iniGetInteger(fp,sec_list[i],"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
-		serv.options=iniGetBitField(fp,sec_list[i],"Options",service_options,0);
-		SAFECOPY(serv.cmd,iniGetString(fp,sec_list[i],"Command","",cmd));
+		serv.interface_addr=iniReadIpAddress(fp,sec_list[i],"Interface",startup->interface_addr);
+		serv.port=iniReadShortInt(fp,sec_list[i],"Port",0);
+		serv.max_clients=iniReadInteger(fp,sec_list[i],"MaxClients",0);
+		serv.listen_backlog=iniReadInteger(fp,sec_list[i],"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
+		serv.options=iniReadBitField(fp,sec_list[i],"Options",service_options,0);
+		SAFECOPY(serv.cmd,iniReadString(fp,sec_list[i],"Command","",cmd));
 
 		/* JavaScript operating parameters */
-		serv.js_max_bytes=iniGetInteger(fp,sec_list[i]		,strJavaScriptMaxBytes		,startup->js_max_bytes);
-		serv.js_cx_stack=iniGetInteger(fp,sec_list[i]		,strJavaScriptContextStack	,startup->js_cx_stack);
-		serv.js_branch_limit=iniGetInteger(fp,sec_list[i]	,strJavaScriptBranchLimit	,startup->js_branch_limit);
-		serv.js_gc_interval=iniGetInteger(fp,sec_list[i]	,strJavaScriptGcInterval	,startup->js_gc_interval);
-		serv.js_yield_interval=iniGetInteger(fp,sec_list[i]	,strJavaScriptYieldInterval	,startup->js_yield_interval);
+		serv.js_max_bytes=iniReadInteger(fp,sec_list[i]		,strJavaScriptMaxBytes		,startup->js_max_bytes);
+		serv.js_cx_stack=iniReadInteger(fp,sec_list[i]		,strJavaScriptContextStack	,startup->js_cx_stack);
+		serv.js_branch_limit=iniReadInteger(fp,sec_list[i]	,strJavaScriptBranchLimit	,startup->js_branch_limit);
+		serv.js_gc_interval=iniReadInteger(fp,sec_list[i]	,strJavaScriptGcInterval	,startup->js_gc_interval);
+		serv.js_yield_interval=iniReadInteger(fp,sec_list[i]	,strJavaScriptYieldInterval	,startup->js_yield_interval);
 
 		for(j=0;j<*services;j++)
 			if(service[j].interface_addr==serv.interface_addr && service[j].port==serv.port
@@ -1534,11 +1534,11 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 			continue;
 		}
 
-		if(stricmp(iniGetString(fp,sec_list[i],"Host",startup->host_name,host), startup->host_name)!=0) {
+		if(stricmp(iniReadString(fp,sec_list[i],"Host",startup->host_name,host), startup->host_name)!=0) {
 			lprintf(LOG_NOTICE,"Ignoring service (%s) for host: %s", sec_list[i], host);
 			continue;
 		}
-		if(stricmp(iniGetString(fp,sec_list[i],"NotHost","",host), startup->host_name)==0) {
+		if(stricmp(iniReadString(fp,sec_list[i],"NotHost","",host), startup->host_name)==0) {
 			lprintf(LOG_NOTICE,"Ignoring service (%s) not for host: %s", sec_list[i], host);
 			continue;
 		}

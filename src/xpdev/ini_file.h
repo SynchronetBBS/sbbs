@@ -63,35 +63,35 @@ extern "C" {
 
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
-str_list_t	iniGetSectionList		(FILE*, const char* prefix);
+str_list_t	iniReadSectionList(FILE*, const char* prefix);
 /* Read all key names and return as an allocated string list */
-str_list_t	iniGetKeyList			(FILE*, const char* section);
+str_list_t	iniReadKeyList(FILE*, const char* section);
 /* Read all key and value pairs and return as a named string list */
 named_string_t**
-			iniGetNamedStringList	(FILE*, const char* section);
+			iniReadNamedStringList	(FILE*, const char* section);
 
 /* These functions read a single key of the specified type */
-char*		iniGetString	(FILE*, const char* section, const char* key, 
+char*		iniReadString(FILE*, const char* section, const char* key, 
 							 const char* deflt, char* value);
-str_list_t	iniGetStringList(FILE*, const char* section, const char* key
+str_list_t	iniReadStringList(FILE*, const char* section, const char* key
 							,const char* sep, const char* deflt);
-long		iniGetInteger	(FILE*, const char* section, const char* key, 
+long		iniReadInteger(FILE*, const char* section, const char* key, 
 							 long deflt);
-ushort		iniGetShortInt	(FILE*, const char* section, const char* key, 
+ushort		iniReadShortInt(FILE*, const char* section, const char* key, 
 							 ushort deflt);
-ulong		iniGetIpAddress(FILE*, const char* section, const char* key, 
+ulong		iniReadIpAddress(FILE*, const char* section, const char* key, 
 							 ulong deflt);
-double		iniGetFloat	(FILE*, const char* section, const char* key, 
+double		iniReadFloat(FILE*, const char* section, const char* key, 
 							 double deflt);
-BOOL		iniGetBool		(FILE*, const char* section, const char* key, 
+BOOL		iniReadBool(FILE*, const char* section, const char* key, 
 							 BOOL deflt);
-ulong		iniGetBitField	(FILE*, const char* section, const char* key, 
+ulong		iniReadBitField(FILE*, const char* section, const char* key, 
 							 ini_bitdesc_t* bitdesc, ulong deflt);
 
-/* Free string list returned from iniGet*List functions */
+/* Free string list returned from iniRead*List functions */
 void*		iniFreeStringList(str_list_t list);
 
-/* Free named string list returned from iniGetNamedStringList */
+/* Free named string list returned from iniReadNamedStringList */
 void*		iniFreeNamedStringList(named_string_t** list);
 
 

@@ -42,20 +42,20 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 	str_list_t	bbses;
 
 	if((listfile=fopen(listpath,"r"))!=NULL) {
-		bbses=iniGetSectionList(listfile,NULL);
+		bbses=iniReadSectionList(listfile,NULL);
 		while((bbsname=strListPop(&bbses))!=NULL) {
 			if((list[*i]=(struct bbslist *)malloc(sizeof(struct bbslist)))==NULL)
 				break;
 			strcpy(list[*i]->name,bbsname);
-			iniGetString(listfile,bbsname,"Address","",list[*i]->addr);
-			list[*i]->port=iniGetShortInt(listfile,bbsname,"Port",513);
-			list[*i]->added=iniGetInteger(listfile,bbsname,"Added",0);
-			list[*i]->connected=iniGetInteger(listfile,bbsname,"LastConnected",0);
-			list[*i]->calls=iniGetInteger(listfile,bbsname,"TotalCalls",0);
-			iniGetString(listfile,bbsname,"UserName","",list[*i]->user);
-			iniGetString(listfile,bbsname,"Password","",list[*i]->password);
-			list[*i]->dumb=iniGetBool(listfile,bbsname,"BeDumb",0);
-			list[*i]->reversed=iniGetBool(listfile,bbsname,"Reversed",0);
+			iniReadString(listfile,bbsname,"Address","",list[*i]->addr);
+			list[*i]->port=iniReadShortInt(listfile,bbsname,"Port",513);
+			list[*i]->added=iniReadInteger(listfile,bbsname,"Added",0);
+			list[*i]->connected=iniReadInteger(listfile,bbsname,"LastConnected",0);
+			list[*i]->calls=iniReadInteger(listfile,bbsname,"TotalCalls",0);
+			iniReadString(listfile,bbsname,"UserName","",list[*i]->user);
+			iniReadString(listfile,bbsname,"Password","",list[*i]->password);
+			list[*i]->dumb=iniReadBool(listfile,bbsname,"BeDumb",0);
+			list[*i]->reversed=iniReadBool(listfile,bbsname,"Reversed",0);
 			list[*i]->type=type;
 			list[*i]->id=*i;
 			(*i)++;
