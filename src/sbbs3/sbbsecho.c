@@ -2267,7 +2267,9 @@ BOOL DLLCALL get_msg_by_ftn_id(smb_t* smb, char* id, smbmsg_t* msg)
 			continue;
 
 		/* should this be case sensitive? */
-		if(smb_getmsghdr(smb,msg)==SMB_SUCCESS && stricmp(msg->ftn_msgid,id)==0)
+		if(smb_getmsghdr(smb,msg)==SMB_SUCCESS 
+			&& msg->ftn_msgid!=NULL
+			&& stricmp(msg->ftn_msgid,id)==0)
 			return(TRUE);
 
 		smb_unlockmsghdr(smb,msg); 
