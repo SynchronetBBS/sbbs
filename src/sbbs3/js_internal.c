@@ -130,6 +130,9 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case PROP_YIELD_INTERVAL:
 			JS_ValueToInt32(cx, *vp, (int32*)&branch->yield_interval);
 			break;
+		case PROP_MAXBYTES:
+			JS_ValueToInt32(cx, *vp, (int32*)&cx->runtime->gcMaxBytes);
+			break;
 	}
 
 	return(JS_TRUE);
@@ -150,7 +153,7 @@ static struct JSPropertySpec js_properties[] = {
 	{	"gc_counter",		PROP_GC_COUNTER,	RT_PROP_FLAGS,		NULL,	NULL },
 	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	RT_PROP_FLAGS,		NULL,	NULL },
 	{	"bytes",			PROP_BYTES,			RT_PROP_FLAGS,		NULL,	NULL },
-	{	"max_bytes",		PROP_MAXBYTES,		RT_PROP_FLAGS,		NULL,	NULL },
+	{	"max_bytes",		PROP_MAXBYTES,		JSPROP_ENUMERATE,	NULL,	NULL },
 #endif
 	{0}
 };
@@ -162,11 +165,11 @@ static char* prop_desc[] = {
 	,"maximum number of branches, used for infinite-loop detection (0=disabled)"
 	,"interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)"
 	,"interval of periodic garbage collection attempts (lower number=higher frequency, 0=disabled)"
-	,"number of garbage collections attempted in this runtime"
+	,"number of garbage collections attempted in this runtime - <small>READ ONLY</small>"
 #ifdef jscntxt_h___
-	,"number of garbage collections performed in this runtime"
-	,"number of heap bytes in use after last garbage collection"
-	,"number of heap bytes currently in use"
+	,"number of garbage collections performed in this runtime - <small>READ ONLY</small>"
+	,"number of heap bytes in use after last garbage collection - <small>READ ONLY</small>"
+	,"number of heap bytes currently in use - <small>READ ONLY</small>"
 	,"maximum number of bytes available for heap"
 #endif
 	,NULL
@@ -202,7 +205,7 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 		return(NULL);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"JavaScript internal control object");
+	js_DescribeObject(cx,obj,"JavaScript execution and garbage collection control object");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", prop_desc, JSPROP_READONLY);
 #endif
 
