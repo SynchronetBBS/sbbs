@@ -57,6 +57,7 @@ __fastcall TSpyForm::TSpyForm(TComponent* Owner)
     Terminal->Align=alClient;
     Terminal->OnKeyPress=FormKeyPress;
     Terminal->OnMouseUp=FormMouseUp;
+    Terminal->AutoWrap=true;
     ActiveControl=Terminal;
 }
 //---------------------------------------------------------------------------
