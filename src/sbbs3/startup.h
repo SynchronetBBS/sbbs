@@ -44,7 +44,7 @@
 
 #include "client.h"
 #include "ringbuf.h"
-#include "threadwrap.h"	/* sem_t */
+#include "semwrap.h"	/* sem_t */
 #include "ini_file.h"	/* INI_MAX_VALUE_LEN */
 
 typedef struct {

@@ -40,6 +40,7 @@
 
 #include "client.h"				/* client_t */
 #include "startup.h"			/* BBS_OPT_* */
+#include "semwrap.h"			/* sem_t */
 
 typedef struct {
 	DWORD	size;				/* sizeof(web_startup_t) */

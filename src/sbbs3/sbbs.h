@@ -105,6 +105,7 @@
 /***********************/
 #ifdef __cplusplus
 	#include "startup.h"
+	#include "threadwrap.h"	/* pthread_mutex_t */
 #endif
 #ifdef SBBS	
 	#include "text.h"

@@ -45,12 +45,15 @@
 #endif
 
 /* Synchronet-specific headers */
-#include "conwrap.h"	/* kbhit/getch */
 #include "sbbs.h"		/* load_cfg() */
 #include "sbbs_ini.h"	/* sbbs_read_ini() */
 #include "ftpsrvr.h"	/* ftp_startup_t, ftp_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
+
+/* XPDEV headers */
+#include "conwrap.h"	/* kbhit/getch */
+#include "threadwrap.h"	/* pthread_mutex_t */
 
 #ifdef __unix__
 
