@@ -289,9 +289,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(putenv(dszlog)) 		/* Makes the DSZ LOG active */
         	errormsg(WHERE,ERR_WRITE,"environment",0);
 		sprintf(sbbsnode,"SBBSNODE=%s",cfg.node_dir);
-		putenv(sbbsnode);		/* create environment var to contain node num */
+		putenv(sbbsnode);		/* create environment var to contain node path */
 		sprintf(sbbsnnum,"SBBSNNUM=%d",cfg.node_num);
 		putenv(sbbsnnum);	   /* create environment var to contain node num */
+		sprintf(sbbsctrl,"SBBSCTRL=%s",cfg.ctrl_dir);
+		putenv(sbbsctrl);
 
     } else { // DOS external
 
