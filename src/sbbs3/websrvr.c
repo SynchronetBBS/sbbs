@@ -2473,7 +2473,6 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		p;
 	JSBool		inc_logons=JS_FALSE;
 	user_t		user;
-	jsval		val;
 	JSString*	js_str;
 	http_session_t*	session;
 
@@ -2627,6 +2626,14 @@ static BOOL js_setup(http_session_t* session)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 		JS_DefineProperty(session->js_cx, session->js_glob, "argc", INT_TO_JSVAL(0)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+		JS_DefineProperty(session->js_cx, session->js_glob, "web_root_dir",
+			STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx, root_dir))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		JS_DefineProperty(session->js_cx, session->js_glob, "web_error_dir",
+			STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx, error_dir))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
 	}
 
 	lprintf(LOG_INFO,"%04d JavaScript: Initializing HttpRequest object",session->socket);
@@ -3179,6 +3186,9 @@ void DLLCALL web_server(void* arg)
 		t=time(NULL);
 		lprintf(LOG_INFO,"Initializing on %.24s with options: %lx"
 			,CTIME_R(&t,logstr),startup->options);
+
+		if(chdir(startup->ctrl_dir)!=0)
+			lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
 
 		lprintf(LOG_DEBUG,"Root HTML directory: %s", root_dir);
 		lprintf(LOG_DEBUG,"Error HTML directory: %s", error_dir);
