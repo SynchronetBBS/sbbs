@@ -71,6 +71,7 @@ HANDLE	exec_mutex;
 time_t	uptime;
 
 static	uint node_threads_running=0;
+static	uint thread_count=0;
 		
 char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 RingBuf* node_inbuf[MAX_NODES];
@@ -116,12 +117,15 @@ static void client_off(SOCKET sock)
 
 static void thread_up()
 {
+	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
 }
 
 static void thread_down()
 {
+	if(thread_count>0)
+		thread_count--;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(FALSE);
 }
@@ -818,10 +822,9 @@ void input_thread(void *arg)
 
 	pthread_mutex_destroy(&sbbs->input_thread_mutex);
 
+	thread_down();
 	lprintf("Node %d input thread terminated (received %lu bytes in %lu packets)"
 		,sbbs->cfg.node_num, total_recv, total_pkts);
-
-	thread_down();
 }
 
 void output_thread(void* arg)
@@ -875,8 +878,12 @@ void output_thread(void* arg)
 		if(i==SOCKET_ERROR) {
 			lprintf("!%s: ERROR %d selecting socket %u for send"
 				,node,ERROR_VALUE,sbbs->client_socket);
+#if 0	// This was causing continuous error loop on blocked IPs (on some systems)
 			mswait(1);
 			continue;
+#else
+			break;
+#endif
 		}
 		if(i<1) {
 			mswait(1);
@@ -937,9 +944,8 @@ void output_thread(void* arg)
 	else
 		stats[0]=0;
 
-	lprintf("%s output thread terminated %s", node, stats);
-
 	thread_down();
+	lprintf("%s output thread terminated %s", node, stats);
 }
 
 void event_thread(void* arg)
@@ -1528,10 +1534,8 @@ void event_thread(void* arg)
 	sbbs->cfg.node_num=0;
     sbbs->event_thread_running = false;
 
-	eprintf("BBS Event thread terminated");
-
 	thread_down();
-
+	eprintf("BBS Event thread terminated (%u threads remain)", thread_count);
 }
 
 
@@ -2944,11 +2948,11 @@ static void cleanup(int code)
 
 	pthread_mutex_destroy(&event_mutex);
 
-    lputs("BBS System thread terminated");
 	status("Down");
+	thread_down();
+    lputs("BBS System thread terminated (%u threads remain)", thread_count);
 	if(startup->terminated!=NULL)
 		startup->terminated(code);
-	thread_down();
 }
 
 void DLLCALL bbs_thread(void* arg)
@@ -3550,8 +3554,8 @@ void DLLCALL bbs_thread(void* arg)
 				sbbs->putcom("Please try again later.\r\n");
 			}
 			mswait(3000);
-			close_socket(client_socket);
 			client_off(client_socket);
+			close_socket(client_socket);
 			continue;
 		}
 
@@ -3581,8 +3585,8 @@ void DLLCALL bbs_thread(void* arg)
 			sbbs->putnodedat(new_node->cfg.node_num,&node);
 			delete new_node;
 			node_socket[i-1]=INVALID_SOCKET;
-			close_socket(client_socket);
 			client_off(client_socket);
+			close_socket(client_socket);
 			continue;
 		}
 
