@@ -3897,7 +3897,7 @@ void DLLCALL bbs_thread(void* arg)
 	    else {
 	        lprintf("Node %d local spy using socket %d", i, uspy_listen_socket[i-1]);
 	        if(startup!=NULL && startup->socket_open!=NULL)
-	            startup->socket_open(TRUE);
+	            startup->socket_open(startup->cbdata,TRUE);
 	    }
 	
 	    uspy_addr.sun_family=AF_LOCAL;
