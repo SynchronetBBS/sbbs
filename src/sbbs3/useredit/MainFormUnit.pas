@@ -1133,7 +1133,7 @@ var Str: AnsiString;
 begin
     SearchStr:=AnsiUpperCase(FindEdit.Text);
     usernumber:=0;
-    { Open NAME.DAT write user name }
+    { Open USER.DAT to search for string }
     Str:=data_dir+'USER/USER.DAT';
     if not FileExists(Str) then Exit;
     f:=TFileStream.Create(Str,fmOpenRead or fmShareDenyNone);
