@@ -4,12 +4,10 @@ if [ -x gcc.$os.exe.release/$0 ]
 	then exec gcc.$os.exe.release/$0 $@
 elif [ -x gcc.$os.exe.debug/$0 ]
 	then exec gcc.$os.exe.debug/$0 $@
-elif [ -x bcc.$os.exe.release/$0 ]
-	then exec bcc.$os.exe.release/$0 $@
-elif [ -x bcc.$os.exe.debug/$0 ]
-	then exec bcc.$os.exe.debug/$0 $@
 elif [ -x *.$os.exe.release/$0 ]
 	then exec *.$os.exe.release/$0 $@
 elif [ -x *.$os.exe.debug/$0 ]
 	then exec *.$os.exe.debug/$0 $@
+elif [ -x *.$os.exe.*/$0 ]
+	then exec *.$os.exe.*/$0 $@
 fi
