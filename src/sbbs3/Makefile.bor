@@ -62,7 +62,7 @@ $(EXEODIR):
 	mkdir $(EXEODIR)
 
 # SBBS DLL Link Rule
-$(SBBS) $(SBBSLIB): $(OBJS) $(LIBODIR)\ver.$(OFILE)
+$(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
     @echo Linking $< ...
 	$(LD) $(LFLAGS) c0d32.obj $(OBJS) $(LIBODIR)\ver.$(OFILE), $*, $*, \
 		import32.lib cw32mt.lib ws2_32.lib
