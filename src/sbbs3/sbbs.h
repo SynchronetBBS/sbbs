@@ -107,8 +107,10 @@
 /***********************/
 /* Synchronet-specific */
 /***********************/
+#ifdef SBBS	/* Only SBBS is multi-threaded */
+	#include "threadwrap.h"	/* must be before dirwrap.h for OpenBSD FULLPATH */
+#endif
 #include "genwrap.h"
-#include "threadwrap.h"	/* must be before dirwrap.h for OpenBSD FULLPATH */
 #include "dirwrap.h"
 #include "filewrap.h"
 #include "sockwrap.h"
