@@ -86,7 +86,7 @@ if(sub=='mail' || (!(msgbase.cfg.settings&SUB_NOUSERSIG) && !(hdrs.attr&MSG_ANON
    }
 }
 
-if(!msgbase.save_msg(hdrs,body)) {
+if(!msgbase.save_msg(hdrs,client,body)) {
 	error(msgbase.last_error);
 }
 
