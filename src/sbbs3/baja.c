@@ -85,7 +85,7 @@ uint *label_indx=NULL
 char bin_file[MAX_PATH+1]="";
 
 uint display=0,line=0,labels=0,gotos=0,calls=0,defines=0,case_sens=0;
-BOOL pause=FALSE;
+BOOL pause_on_error=FALSE;
 
 FILE *out=NULL;
 
@@ -97,7 +97,7 @@ void bail(int retval)
 	if(retval!=0) {
 		if(bin_file[0]!=0)
 			remove(bin_file);
-		if(pause) {
+		if(pause_on_error) {
 			printf("\nHit enter to contiue...");
 			getchar();
 		}
@@ -3403,7 +3403,7 @@ int main(int argc, char **argv)
 					strcpy(outdir,argv[i]+2);
 					break;
 				case 'P':
-					pause=TRUE;
+					pause_on_error=TRUE;
 					break;
 				case 'Q':
 					show_banner=0;
