@@ -117,6 +117,7 @@ void sbbs_read_ini(
 	const char*	default_cgi_temp;
 	char*		ctrl_dir;
 	char		host_name[128];
+	ulong		js_max_bytes;
 
 	section = "Global";
 
@@ -129,6 +130,7 @@ void sbbs_read_ini(
 	}
 
 	SAFECOPY(host_name,iniReadString(fp,section,"HostName",nulstr));
+	js_max_bytes=iniReadInteger(fp,section,"JavaScriptMaxBytes",0);
 																		
 	/***********************************************************************/
 	section = "BBS";
@@ -154,7 +156,7 @@ void sbbs_read_ini(
 	bbs->xtrn_polls_before_yield
 		=iniReadInteger(fp,section,"ExternalYield",10);
 	bbs->js_max_bytes
-		=iniReadInteger(fp,section,"JavaScriptMaxBytes",0);
+		=iniReadInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 	/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
 #if defined(__FreeBSD__)
@@ -195,7 +197,7 @@ void sbbs_read_ini(
 	ftp->qwk_timeout
 		=iniReadShortInt(fp,section,"QwkTimeout",600);		/* seconds */
 	ftp->js_max_bytes
-		=iniReadInteger(fp,section,"JavaScriptMaxBytes",bbs->js_max_bytes);
+		=iniReadInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 	SAFECOPY(ftp->host_name
 		,iniReadString(fp,section,"HostName",host_name));
@@ -282,7 +284,7 @@ void sbbs_read_ini(
 		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
 
 	services->js_max_bytes
-		=iniReadInteger(fp,section,"JavaScriptMaxBytes",bbs->js_max_bytes);
+		=iniReadInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 	SAFECOPY(services->host_name
 		,iniReadString(fp,section,"HostName",host_name));
@@ -310,7 +312,7 @@ void sbbs_read_ini(
 	web->port
 		=iniReadShortInt(fp,section,"Port",IPPORT_HTTP);
 	web->js_max_bytes
-		=iniReadInteger(fp,section,"JavaScriptMaxBytes",bbs->js_max_bytes);
+		=iniReadInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 	SAFECOPY(web->host_name
 		,iniReadString(fp,section,"HostName",host_name));
