@@ -42,7 +42,9 @@
 /*********************************************/
 /* Standard Borland/Turbo C/C++ Header Files */
 /*********************************************/
-#ifndef __unix__
+#ifdef __unix__
+	#include <sys/filio.h>	/* FIONREAD on SunOS */
+#else
 	#include <io.h>
 	#include <share.h>
 	#include <conio.h>
