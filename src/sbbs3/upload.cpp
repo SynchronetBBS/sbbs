@@ -388,10 +388,10 @@ void sbbs_t::upload(uint dirnum)
 		SYNC;
 		if(!noyes(text[MultipleDiskQ])) {
 			bputs(text[HowManyDisksTotal]);
-			if((i=getnum(99))<2)
+			if((int)(i=getnum(99))<2)
 				return;
 			bputs(text[NumberOfFile]);
-			if((j=getnum(i))<1)
+			if((int)(j=getnum(i))<1)
 				return;
 			if(j==1)
 				upload_lastdesc[0]=0;
