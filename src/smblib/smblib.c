@@ -81,11 +81,17 @@
 #define SH_DENYRW		   OF_SHARE_EXCLUSIVE
 #endif
 
-#ifdef _MSC_VER	  /* Microsoft C */
+#if defined _MSC_VER || defined __MINGW32__
+
 #define sopen(f,o,s,p)	   _sopen(f,o,s,p)
 #define close(f)		   _close(f)
 
 #include <sys/locking.h>
+
+/* Fix MinGW locking.h typo */
+#if defined LK_UNLOCK && !defined LK_UNLCK
+#define LK_UNLCK LK_UNLOCK
+#endif
 
 int lock(int file, long offset, int size) 
 {
@@ -95,7 +101,7 @@ int lock(int file, long offset, int size)
 	pos=tell(file);
 	if(offset!=pos)
 		lseek(file, offset, SEEK_SET);
-	i=locking(file,LK_NBLCK,size);
+	i=_locking(file,LK_NBLCK,size);
 	if(offset!=pos)
 		lseek(file, pos, SEEK_SET);
 	return(i);
@@ -109,7 +115,7 @@ int unlock(int file, long offset, int size)
 	pos=tell(file);
 	if(offset!=pos)
 		lseek(file, offset, SEEK_SET);
-	i=locking(file,LK_UNLCK,size);
+	i=_locking(file,LK_UNLCK,size);
 	if(offset!=pos)
 		lseek(file, pos, SEEK_SET);
 	return(i);
