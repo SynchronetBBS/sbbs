@@ -39,9 +39,7 @@
 #include "qwk.h"
 
 /****************************************************************************/
-/* Converts a QWK message packet into a message. The 'qwkbuf' pointer       */
-/* points to the message header and 'str' is the file to output to.         */
-/* Returns the 1 on success or 0 if failure.								*/
+/* Converts a QWK message packet into a message.							*/
 /****************************************************************************/
 bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	, uint touser)
