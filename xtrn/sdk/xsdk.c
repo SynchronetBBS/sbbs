@@ -1429,7 +1429,7 @@ void cls(void)
 			bpause(); }
 
 	if(user_misc&ANSI)
-		bprintf("\x1b[2J");
+		bputs("\x1b[2J\x1b[H");	/* clear screen, home cursor */
 	else 
 		outchar(FF);
 	tos=1;
