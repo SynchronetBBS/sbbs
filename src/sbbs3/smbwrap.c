@@ -35,10 +35,119 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+/* OS-specific */
+#if defined(__unix__)
+
+#include <glob.h>       /* glob() wildcard matching */
+#include <string.h>     /* strlen() */
+
+#endif
+
+/* ANSI */
+#include <sys/types.h>	/* _dev_t */
+#include <sys/stat.h>	/* struct stat */
+
+
+/* SMB-specific */
+#include "smblib.h"		/* SMBCALL */
+#include "smbwrap.h"	/* Verify prototypes */
+
+#ifdef _WIN32
+#define stat(f,s)	_stat(f,s)
+#define STAT		struct _stat
+#else
+#define STAT		struct stat
+#endif
+
+/****************************************************************************/
+/* Returns the length of the file in 'filename'                             */
+/****************************************************************************/
+long SMBCALL flength(char *filename)
+{
+	STAT st;
+
+	if(stat(filename, &st)!=0)
+		return(-1L);
+
+	return(st.st_size);
+}
+
+/****************************************************************************/
+/* Checks the file system for the existence of one or more files.			*/
+/* Returns TRUE if it exists, FALSE if it doesn't.                          */
+/* 'filespec' may contain wildcards!										*/
+/****************************************************************************/
+BOOL SMBCALL fexist(char *filespec)
+{
+#ifdef _WIN32
+
+	long	handle;
+	struct _finddata_t f;
+
+	if((handle=_findfirst(filespec,&f))==-1)
+		return(FALSE);
+
+ 	_findclose(handle);
+
+ 	if(f.attrib&_A_SUBDIR)
+		return(FALSE);
+
+	return(TRUE);
+
+#elif defined(__unix__)	/* portion by cmartin */
+
+	glob_t *aglob;
+    int c;
+    int l;
+
+    // start the search
+    glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, aglob);
+
+    if (!aglob->gl_pathc) {
+	    // no results
+    	globfree(aglob);
+    	return FALSE;
+    }
+
+    // make sure it's not a directory
+	c = aglob->gl_pathc;
+    while (c--) {
+    	l = strlen(aglob->gl_pathv[c]);
+    	if (aglob->gl_pathv[c][l] != '/') {
+        	globfree(aglob);
+            return TRUE;
+        }
+    }
+        
+    globfree(aglob);
+    return FALSE;
+
+#else
+
+#warning "fexist() port needs to support wildcards!"
+
+	return(FALSE);
+
+#endif
+}
+
 #if defined(__unix__)
 
 #include <unistd.h>
 #include <fcntl.h>
+
+/****************************************************************************/
+/* Returns the length of the file in 'fd'									*/
+/****************************************************************************/
+long filelength(int fd)
+{
+	stat st;
+
+	if(fstat(fd, &st)!=0)
+		return(-1L);
+
+	return(st.st_size);
+}
 
 /* Sets a lock on a portion of a file */
 int lock(int fd, int pos, int len)

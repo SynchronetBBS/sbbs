@@ -44,26 +44,24 @@
 
 #if defined(_WIN32)
 
-#include <io.h>				/* _sopen */
-#include <windows.h>		/* OF_SHARE_ */
+	#include <io.h>				/* _sopen */
+	#include <fcntl.h>			/* O_BINARY */
+	#include <windows.h>		/* OF_SHARE_ */
 
-#define sopen(f,o,s)		_sopen(f,o,s,S_IREAD|S_IWRITE)
-#define close(f)			_close(f)
+	#define sopen(f,o,s)		_sopen(f,o,s,S_IREAD|S_IWRITE)
+	#define close(f)			_close(f)
 							
-#ifndef SH_DENYNO
-#define SH_DENYNO			OF_SHARE_DENY_NONE
-#define SH_DENYWR			OF_SHARE_DENY_WRITE
-#define SH_DENYRW			OF_SHARE_EXCLUSIVE
-#endif
+	#ifndef SH_DENYNO
+	#define SH_DENYNO			OF_SHARE_DENY_NONE
+	#define SH_DENYWR			OF_SHARE_DENY_WRITE
+	#define SH_DENYRW			OF_SHARE_EXCLUSIVE
+	#endif
 
 #elif defined(__unix__)
 
-	#ifdef chsize
-    	#undef chsize		
-    #endif
-	#define chsize			ftruncate
-    #define stricmp			strcasecmp
-    #define strnicmp		strncasecmp
+	#define stricmp(x,y)		strcasecmp(x,y)
+	#define strnicmp(x,y,z)		strncasecmp(x,y,z)
+	#define chsize(fd,size)		ftruncate(fd,size)
 
 	#define O_BINARY		0
 	#define SH_DENYNO		0
@@ -80,13 +78,17 @@ extern "C" {
 #endif
 
 #if !defined(__BORLANDC__)
-	int lock(int fd, long pos, int len);
-	int unlock(int fd, long pos, int len);
+	int		lock(int fd, long pos, int len);
+	int		unlock(int fd, long pos, int len);
 #endif
 
 #if defined(__unix__)
-	int sopen(char *fn, int access, int share);
+	int		sopen(char *fn, int access, int share);
+	long	filelength(int fd);
 #endif
+
+SMBEXPORT BOOL	SMBCALL fexist(char *filespec);
+SMBEXPORT long	SMBCALL flength(char *filename);
 
 #ifdef __cplusplus
 }

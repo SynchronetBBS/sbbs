@@ -47,8 +47,6 @@
 #include <ctype.h>		/* toupper */
 #include <sys/kd.h>		/* KIOCSOUND */
 #include <sys/ioctl.h>	/* ioctl */
-#include <glob.h>       /* glob() wildcard matching */
-#include <string.h>     /* strlen() */
 
 #ifdef __GLIBC__		/* actually, BSD, but will work for now */
 #include <sys/vfs.h>    /* statfs() */
@@ -72,86 +70,6 @@
 #else
 #define STAT		struct stat
 #endif
-
-/****************************************************************************/
-/* Checks the file system for the existence of one or more files.			*/
-/* Returns TRUE if it exists, FALSE if it doesn't.                          */
-/* 'filespec' may contain wildcards!										*/
-/****************************************************************************/
-BOOL DLLCALL fexist(char *filespec)
-{
-#ifdef _WIN32
-
-	long	handle;
-	struct _finddata_t f;
-
-	if((handle=_findfirst(filespec,&f))==-1)
-		return(FALSE);
-
- 	_findclose(handle);
-
- 	if(f.attrib&_A_SUBDIR)
-		return(FALSE);
-
-	return(TRUE);
-
-#elif defined(__unix__)	/* portion by cmartin */
-
-	glob_t *aglob;
-    int c;
-    int l;
-
-    // start the search
-    glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, aglob);
-
-    if (!aglob->gl_pathc) {
-	    // no results
-    	globfree(aglob);
-    	return FALSE;
-    }
-
-    // make sure it's not a directory
-	c = aglob->gl_pathc;
-    while (c--) {
-    	l = strlen(aglob->gl_pathv[c]);
-    	if (aglob->gl_pathv[c][l] != '/') {
-        	globfree(aglob);
-            return TRUE;
-        }
-    }
-        
-    globfree(aglob);
-    return FALSE;
-
-#else
-
-#warning "fexist() port needs to support wildcards!"
-
-	STAT st;
-
-	if(stat(filespec, &st)!=0)
-		return(FALSE);
-
-	if(st.st_mode&S_IFDIR)	/* Directory, not a file */
-		return(FALSE);		
-
-	return(TRUE);
-
-#endif
-}
-
-/****************************************************************************/
-/* Returns the length of the file in 'filename'                             */
-/****************************************************************************/
-long DLLCALL flength(char *filename)
-{
-	STAT st;
-
-	if(stat(filename, &st)!=0)
-		return(-1L);
-
-	return(st.st_size);
-}
 
 /****************************************************************************/
 /* Returns the time/date of the file in 'filename' in time_t (unix) format  */
@@ -192,21 +110,6 @@ int DLLCALL getfattr(char* filename)
 	return(st.st_mode);
 #endif
 }
-
-/****************************************************************************/
-/* Returns the length of the file in 'fd'									*/
-/****************************************************************************/
-#ifdef __unix__
-long DLLCALL filelength(int fd)
-{
-	STAT st;
-
-	if(fstat(fd, &st)!=0)
-		return(-1L);
-
-	return(st.st_size);
-}
-#endif
 
 /****************************************************************************/
 /* Generate a tone at specified frequency for specified milliseconds		*/
