@@ -629,6 +629,41 @@ js_matchuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_matchuserdata(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+	int32		offset=0;
+	int32		usernumber=0;
+	int			len;
+	scfg_t*		cfg;
+	BOOL		sysop_alias=TRUE;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	JS_ValueToInt32(cx,argv[0],&offset);
+	if((len=user_rec_len(offset))<0)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	if(argc>2)
+		JS_ValueToInt32(cx,argv[2],&usernumber);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	*rval = INT_TO_JSVAL(userdatdupe(cfg,usernumber,offset,len,p,FALSE /* deleted users */));
+	return(JS_TRUE);
+}
+
+static JSBool
 js_trashcan(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		str;
@@ -999,9 +1034,12 @@ static jsMethodSpec js_system_functions[] = {
 	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("string alias")
 	,JSDOCSTR("return user name for alias")
 	},		
-	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("string username")
-	,JSDOCSTR("exact user name matching")
+	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("string username [bool sysop_alias]")
+	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i>")
 	},		
+	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data, [usernumber]")
+	,JSDOCSTR("search user database for data in a specific field (specified by offset), returns first matching user number")
+	},
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
 	,JSDOCSTR("search text/filename.can for pseudo-regexp")
 	},		
