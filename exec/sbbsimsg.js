@@ -47,8 +47,18 @@ function list_users(show)
 			text[line]=text[line].slice(1);
 		if(text[line].charAt(0)==';')		// comment
 			continue;
+		sp=text[line].indexOf(' ');
+		tab=text[line].indexOf('\t');
+		if(tab>0 && tab<sp)
+			sp=tab;
+		if(sp>0)							// truncate at first space or tab
+			text[line]=text[line].slice(0,sp);
 		if(text[line]==system.inetaddr)
 			continue;
+
+		if(show) 
+			print(format("\1n\1h%s\1n",text[line]));
+
 		sock = new Socket();
 		if(!sock.connect(text[line],79)) {
 			log(format("!Finger connection to %s FAILED with error %d"
@@ -57,8 +67,12 @@ function list_users(show)
 		}
 		sock.send("\r\n");	// Get list of active users
 		var response=new Array();
-		while(bbs.online && sock.is_connected) 
-			response.push(truncsp(sock.readline()));
+		while(bbs.online && sock.is_connected) {
+			str=sock.readline();
+			if(str==null)
+				break;
+			response.push(truncsp(str));
+		}
 		sock.close();
 
 		// Skip header
@@ -71,8 +85,6 @@ function list_users(show)
 		for(i in response) {
 			if(response[i]=="")
 				continue;
-			if(show && !imsg_user.length) // first user, show hostname
-				print(format("\1n\1h%s\1n",text[line]));
 
 			if(show)
 				print(format("\1h\1y%.25s\1n\1g %.48s"
