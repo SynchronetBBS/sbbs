@@ -917,45 +917,114 @@ js_lock_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return(JS_TRUE);
 }
 
-
 static jsMethodSpec js_console_functions[] = {
-	{"inkey",			js_inkey,			0},		// get key - no wait 
-	{"getkey",			js_getkey,			0},		// get key - with wait 
-	{"getstr",			js_getstr,			0},		// get string 
-	{"getnum",			js_getnum,			0},		// get number 
-	{"getkeys",			js_getkeys,			1},		// get one of a list of keys 
-	{"gettemplate",		js_gettemplate,		1},		// get a string based on template 
-	{"ungetstr",		js_ungetstr,		1},		// put a string in the keyboard buffer 
-	{"yesno",			js_yesno,			1},		// Y/n question 
-	{"noyes",			js_noyes,			1},		// N/y question 
-	{"mnemonics",		js_mnemonics,		1},		// mnemonics input 
-	{"clear",           js_clear,			0},		// clear screen 
-	{"clearline",       js_clearline,		0},		// clear current line 
-	{"crlf",            js_crlf,			0},		// output cr/lf 
-	{"pause",			js_pause,			0},		// pause 
-	{"print",			js_print,			1},		// display a string (supports ^A and @-codes) 
-	{"write",			js_write,			1},		// display a raw string 
-	{"putmsg",			js_putmsg,			1},		// display message text (^A, @-codes, etc) with mode 
-	{"center",			js_center,			1},		// display a string centered on the screen 
-	{"printfile",		js_printfile,		1},		// print a file, optional mode
-	{"printtail",		js_printtail,		2},		// print last x lines of file, optional mode
-	{"editfile",		js_editfile,		1},		// edit text file
-	{"uselect",			js_uselect,			0},		// user selection menu
-	{"saveline",		js_saveline,		0},		// save last output line 
-	{"restoreline",		js_restoreline,		0},		// restore last output line 
-	{"ansi",			js_ansi,			1},		// returns ANSI encoding of attribute arg
-	{"ansi_save",		js_ansi_save,		0},
-	{"ansi_pushxy",		js_ansi_save,		0},
-	{"ansi_restore",	js_ansi_restore,	0},
-	{"ansi_popxy",		js_ansi_restore,	0},
-	{"ansi_gotoxy",		js_ansi_gotoxy,		2},
-	{"ansi_up",			js_ansi_up,			0},
-	{"ansi_down",		js_ansi_down,		0},
-	{"ansi_right",		js_ansi_right,		0},
-	{"ansi_left",		js_ansi_left,		0},
-	{"ansi_getlines",	js_ansi_getlines,	0},
-	{"ansi_getxy",		js_ansi_getxy,		0},
-	{"lock_input",		js_lock_input,		1},
+	{"inkey",			js_inkey,			0, JSTYPE_STRING,	"[number mode]"
+	,"get a single key, no wait"
+	},		
+	{"getkey",			js_getkey,			0, JSTYPE_STRING,	"[number mode]"
+	,"get a single key, with wait"
+	},		
+	{"getstr",			js_getstr,			0, JSTYPE_STRING,	"[string][,maxlen][,mode]"
+	,"get a string"
+	},		
+	{"getnum",			js_getnum,			0, JSTYPE_NUMBER,	"[maxnum]"
+	,"get a number"
+	},		
+	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	"string keys, [maxnum]"
+	,"get one of a list of keys"
+	},		
+	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	"format [,string] [,mode]"
+	,"get a string based on template"
+	},		
+	{"ungetstr",		js_ungetstr,		1, JSTYPE_VOID,		""
+	,"put a string in the keyboard buffer"
+	},		
+	{"yesno",			js_yesno,			1, JSTYPE_BOOLEAN,	"string question"
+	,"YES/no question"
+	},		
+	{"noyes",			js_noyes,			1, JSTYPE_BOOLEAN,	"string question"
+	,"NO/yes question"
+	},		
+	{"mnemonics",		js_mnemonics,		1, JSTYPE_VOID,		"string text"
+	,"print a mnemonics string"
+	},		
+	{"clear",           js_clear,			0, JSTYPE_VOID,		""
+	,"clear screen"
+	},		
+	{"clearline",       js_clearline,		0, JSTYPE_VOID,		""
+	,"clear current line"
+	},		
+	{"crlf",            js_crlf,			0, JSTYPE_VOID,		""
+	,"output a carriage-return/line-feed pair (new-line)"
+	},		
+	{"pause",			js_pause,			0, JSTYPE_VOID,		""
+	,"display pause prompt and wait for key hit"
+	},		
+	{"print",			js_print,			1, JSTYPE_VOID,		"string text"
+	,"display a string (supports ^A and @-codes)"
+	},		
+	{"write",			js_write,			1, JSTYPE_VOID,		"string text"
+	,"display a raw string"
+	},		
+	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		"string text [,number mode]"
+	,"display message text (^A, @-codes, etc) with mode"
+	},		
+	{"center",			js_center,			1, JSTYPE_VOID,		"string text"
+	,"display a string centered on the screen"
+	},		
+	{"printfile",		js_printfile,		1, JSTYPE_VOID,		"string text [,number mode]"
+	,"print a file with optional mode"
+	},		
+	{"printtail",		js_printtail,		2, JSTYPE_VOID,		"string text, number lines [,number mode]"
+	,"print last x lines of file with optional mode"
+	},		
+	{"editfile",		js_editfile,		1, JSTYPE_VOID,		"string filename"
+	,"edit a text file"
+	},		
+	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	"[number, string title, string item, string ars]"
+	,"user selection menu, call for each item, then with no args to display select menu"
+	},		
+	{"saveline",		js_saveline,		0, JSTYPE_VOID,		""
+	,"save last output line"
+	},		
+	{"restoreline",		js_restoreline,		0, JSTYPE_VOID,		""
+	,"restore last output line"
+	},		
+	{"ansi",			js_ansi,			1, JSTYPE_STRING,	"number attribute"
+	,"returns ANSI encoding of specified attribute"
+	},		
+	{"ansi_save",		js_ansi_save,		0, JSTYPE_VOID,		""
+	,"Save current cursor position"
+	,"ansi_pushxy"
+	},
+	{"ansi_restore",	js_ansi_restore,	0, JSTYPE_VOID,		""
+	,"Restore saved cursor position"
+	,"ansi_popxy"
+	},
+	{"ansi_gotoxy",		js_ansi_gotoxy,		2, JSTYPE_VOID,		"number x,y"
+	,"Move cursor to a specific screen coordinate (ANSI)"
+	},
+	{"ansi_up",			js_ansi_up,			0, JSTYPE_VOID,		"[number rows]"
+	,"Move cursor up one or more rows (ANSI)"
+	},
+	{"ansi_down",		js_ansi_down,		0, JSTYPE_VOID,		"[number rows]"
+	,"Move cursor down one or more rows (ANSI)"
+	},
+	{"ansi_right",		js_ansi_right,		0, JSTYPE_VOID,		"[number columns]" 
+	,"Move cursor right one or more columns (ANSI)"
+	},
+	{"ansi_left",		js_ansi_left,		0, JSTYPE_VOID,		"[number columns]" 
+	,"Move cursor left one or more columns (ANSI)"
+	},
+	{"ansi_getlines",	js_ansi_getlines,	0, JSTYPE_VOID,		""
+	,"Auto-detect the number of rows/lines on the user's terminal (ANSI)"
+	},
+	{"ansi_getxy",		js_ansi_getxy,		0, JSTYPE_OBJECT,	""
+	,"Returns the current cursor position as an object (with x and y properties)"
+	},
+	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		"[boolean lock]"
+	,"Lock the user input thread (allowing direct client socket access)"
+	},
 	{0}
 };
 

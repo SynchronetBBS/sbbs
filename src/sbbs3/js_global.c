@@ -708,34 +708,88 @@ static JSClass js_global_class = {
 };
 
 static jsMethodSpec js_global_functions[] = {
-	{"exit",			js_exit,			0},		/* stop execution */
-	{"load",            js_load,            1},		/* Load and execute a javascript file */
-	{"format",			js_format,			1},		/* return a formatted string (ala printf) */
-	{"mswait",			js_mswait,			0},		/* millisecond wait/sleep routine */
-	{"sleep",			js_mswait,			0},		/* millisecond wait/sleep routine */
-	{"random",			js_random,			1},		/* return random int between 0 and n */
-	{"time",			js_time,			0},		/* return time in Unix format */
-	{"beep",			js_beep,			0},		/* local beep (freq, dur) */
-	{"sound",			js_sound,			0},		/* play sound file */
-	{"crc16",			js_crc16,			1},		/* calculate 16-bit CRC of string */
-	{"crc32",			js_crc32,			1},		/* calculate 32-bit CRC of string */
-	{"chksum",			js_chksum,			1},		/* calculate 32-bit chksum of string */
-	{"ascii",			js_ascii,			1},		/* convert str to ascii-val or vice-versa */
-	{"ascii_str",		js_ascii_str,		1},		/* convert ex-ascii in str to plain ascii */
-	{"strip_ctrl",		js_strip_ctrl,		1},		/* strip ctrl chars from string */
-	{"strip_exascii",	js_strip_exascii,	1},		/* strip ex-ascii chars from string */
-	{"truncsp",			js_truncsp,			1},		/* truncate space off end of string */
-	{"truncstr",		js_truncstr,		2},		/* truncate string at first char in set */
-	{"file_exists",		js_fexist,			1},		/* verify file existence */
-	{"file_remove",		js_remove,			1},		/* delete a file */
-	{"file_isdir",		js_isdir,			1},		/* check if directory */
-	{"file_attrib",		js_fattr,			1},		/* get file mode/attributes */
-	{"file_date",		js_fdate,			1},		/* get file last modified date/time */
-	{"file_size",		js_flength,			1},		/* get file length (in bytes) */
-	{"directory",		js_directory,		1},		/* get directory listing (pattern, flags) */
-	{"mkdir",			js_mkdir,			1},		/* make directory */
-	{"rmdir",			js_rmdir,			1},		/* remove directory */
-	{"strftime",		js_strftime,		2},		/* format time string */
+	{"exit",			js_exit,			0,	JSTYPE_VOID,	""
+	,"stop execution"
+	},		
+	{"load",            js_load,            1,	JSTYPE_VOID,	"string filename [,args]"
+	,"Load and execute a javascript file"
+	},		
+	{"format",			js_format,			1,	JSTYPE_STRING,	"string format [,args]"
+	,"return a formatted string (ala printf)"
+	},		
+	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	"[number milliseconds]"
+	,"millisecond wait/sleep routine"
+	,"sleep"
+	},		
+	{"random",			js_random,			1,	JSTYPE_NUMBER,	"number max"
+	,"return random int between 0 and n"
+	},		
+	{"time",			js_time,			0,	JSTYPE_NUMBER,	""
+	,"return time in Unix format"
+	},		
+	{"beep",			js_beep,			0,	JSTYPE_VOID,	"[number freq, duration]"
+	,"local beep (freq, dur)"
+	},		
+	{"sound",			js_sound,			0,	JSTYPE_BOOLEAN,	"[string filename]"
+	,"play sound file"
+	},		
+	{"crc16",			js_crc16,			1,	JSTYPE_NUMBER,	"string text"
+	,"calculate 16-bit CRC of string"
+	},		
+	{"crc32",			js_crc32,			1,	JSTYPE_NUMBER,	"string text"
+	,"calculate 32-bit CRC of string"
+	},		
+	{"chksum",			js_chksum,			1,	JSTYPE_NUMBER,	"string text"
+	,"calculate 32-bit chksum of string"
+	},		
+	{"ascii",			js_ascii,			1,	JSTYPE_NUMBER,	"[string text] or [number value]"
+	,"convert str to ascii-val or vice-versa"
+	},		
+	{"ascii_str",		js_ascii_str,		1,	JSTYPE_STRING,	"string text"
+	,"convert ex-ascii in str to plain ascii"
+	},		
+	{"strip_ctrl",		js_strip_ctrl,		1,	JSTYPE_STRING,	"string text"
+	,"strip ctrl chars from string"
+	},		
+	{"strip_exascii",	js_strip_exascii,	1,	JSTYPE_STRING,	"string text"
+	,"strip ex-ascii chars from string"
+	},		
+	{"truncsp",			js_truncsp,			1,	JSTYPE_STRING,	"string text"
+	,"truncate space off end of string"
+	},		
+	{"truncstr",		js_truncstr,		2,	JSTYPE_STRING,	"string text, charset"
+	,"truncate string at first char in set"
+	},		
+	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	"string filename"
+	,"verify file existence"
+	},		
+	{"file_remove",		js_remove,			1,	JSTYPE_BOOLEAN,	"string filename"
+	,"delete a file"
+	},		
+	{"file_isdir",		js_isdir,			1,	JSTYPE_BOOLEAN,	"string filename"
+	,"check if directory"
+	},		
+	{"file_attrib",		js_fattr,			1,	JSTYPE_NUMBER,	"string filename"
+	,"get file mode/attributes"
+	},		
+	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	"string filename"
+	,"get file last modified date/time"
+	},		
+	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	"string filename"
+	,"get file length (in bytes)"
+	},		
+	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	"string pattern [,number flags]"
+	,"get directory listing (pattern, flags)"
+	},		
+	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	"string directory"
+	,"make directory"
+	},		
+	{"rmdir",			js_rmdir,			1,	JSTYPE_BOOLEAN,	"string directory"
+	,"remove directory"
+	},		
+	{"strftime",		js_strftime,		2,	JSTYPE_STRING,	"string format, number time"
+	,"format time string"
+	},		
 	{0}
 };
 

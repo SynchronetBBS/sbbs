@@ -823,23 +823,53 @@ static JSClass js_file_class = {
 };
 
 static jsMethodSpec js_file_functions[] = {
-	{"open",			js_open,			1},		/* open file (w/mode) [buffered] */
-	{"close",			js_close,			0},		/* close file */
-	{"delete",			js_delete,			0},		/* delete the file */
-	{"remove",			js_delete,			0},		/* delete the file */
-	{"clear_error",		js_clear_error,		0},		/* clear error */
-	{"clearError",		js_clear_error,		0},		/* clear error */
-	{"flush",			js_flush,			0},		/* flush buffers */
-	{"lock",			js_lock,			2},		/* lock offset, length */
-	{"unlock",			js_unlock,			2},		/* unlock offset, length */
-	{"read",			js_read,			0},		/* read a string [length] */
-	{"readln",			js_readln,			0},		/* read a \n terminated string	*/
-	{"readBin",			js_readbin,			0},		/* read an integer (length) */
-	{"readAll",			js_readall,			0},		/* read all lines into an array */
-	{"write",			js_write,			1},		/* write a string [length] */
-	{"writeln",			js_writeln,			0},		/* write a \n terminated string */
-	{"writeBin",		js_writebin,		1},		/* read an integer (length) */
-	{"writeAll",		js_writeall,		0},		/* write array of strings to file */
+	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	"[string mode, boolean shareable, number buflen]"
+	,"open file (w/mode) [buffered]"
+	},		
+	{"close",			js_close,			0,	JSTYPE_VOID,	""
+	,"close file"
+	},		
+	{"delete",			js_delete,			0,	JSTYPE_BOOLEAN, ""
+	,"Remove the file from the disk"
+	,"remove"
+	},		
+	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, ""
+	,"Clears the current error value"
+	,"clearError"
+	},
+	{"flush",			js_flush,			0,	JSTYPE_BOOLEAN,	""
+	,"flush buffers"
+	},
+	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	"[offset, length]"
+	,"lock file record"
+	},		
+	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	"[offset, length]"
+	,"unlock file record"
+	},		
+	{"read",			js_read,			0,	JSTYPE_STRING,	"[number maxlen]"
+	,"read a string from file, maxlen defaults to 512 characters"
+	},
+	{"readln",			js_readln,			0,	JSTYPE_STRING,	"[number maxlen]"
+	,"read a line-feed terminated string, maxlen defaults 512 characters"
+	},		
+	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	"[number bytes]"
+	,"read a binary integer from the file, default number of bytes is 4 (32-bits)"
+	},
+	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	""
+	,"read all lines into an array of strings"
+	},
+	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	"string text [,number len]"
+	,"write a string to the file"
+	},
+	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, "[string text]"
+	,"write a line-feed terminated string to the file"
+	},
+	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	"number value [,number bytes]"
+	,"write a binary integer to the file, default number of bytes is 4 (32-bits)"
+	},
+	{"writeAll",		js_writeall,		0,	JSTYPE_BOOLEAN,	"array lines"
+	,"write an array of strings to file"
+	},		
 	{0}
 };
 

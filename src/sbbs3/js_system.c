@@ -837,18 +837,42 @@ js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 
 static jsMethodSpec js_system_functions[] = {
-	{"alias",			js_alias,			1},		// return user name for alias
-	{"matchuser",		js_matchuser,		1},		// exact user name matching
-	{"trashcan",		js_trashcan,		2},		// search file for pseudo-regexp
-	{"findstr",			js_findstr,			2},		// search file for pseudo-regexp
-	{"zonestr",			js_zonestr,			0},		// convert zone int to string
-	{"timestr",			js_timestr,			0},		// convert a time_t into a time string
-	{"datestr",			js_datestr,			0},		// convert a time_t into a date string
-	{"secondstr",		js_secondstr,		1},		// convert a time_t into a hh:mm:ss string
-	{"spamlog",			js_spamlog,			6},		// spamlog(prot,action,reason,host,ip,to)
-	{"hacklog",			js_hacklog,			5},		// hacklog(prot,user,text,host,ip,port)
-	{"put_node_message",js_put_node_message,2},		// putnmsg(nodenum,str)
-	{"put_telegram",	js_put_telegram,	2},		// putsmsg(usernum,str)
+	{"alias",			js_alias,			1,	JSTYPE_STRING,	"string alias"
+	,"return user name for alias"
+	},		
+	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	"string username"
+	,"exact user name matching"
+	},		
+	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	"string filename, search"
+	,"search text/filename.can for pseudo-regexp"
+	},		
+	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	"string filename, search"
+	,"search any file for pseudo-regexp"
+	},		
+	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	"[number timezone]"
+	,"convert time zone int to string"
+	},		
+	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	"[number time]"
+	,"convert time_t into a time string"
+	},		
+	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	"[number time]"
+	,"convert time_t into a date string"
+	},		
+	{"secondstr",		js_secondstr,		1,	JSTYPE_STRING,	"[number time]"
+	,"convert time_t into a hh:mm:ss string"
+	},		
+	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	"[protocol, action, reason, host, ip, to]"
+	,"log a suspected SPAM attempt"
+	},		
+	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	"[protocol, user, text, host, ip, port]"
+	,"log a suspected hack attempt"
+	},		
+	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	"number node, string message"
+	,"send a node a short text message, delivered immediately"
+	},		
+	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	"number user, string message"
+	,"send a user a short text message, delivered immediately or next during next logon"
+	},		
 	{0}
 };
 
