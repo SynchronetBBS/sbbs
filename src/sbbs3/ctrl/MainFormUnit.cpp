@@ -964,7 +964,7 @@ void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
 		str,  			// pointer to command line string
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
-		TRUE,  			// handle inheritance flag
+		FALSE, 			// handle inheritance flag
 		CREATE_NEW_CONSOLE|CREATE_SEPARATE_WOW_VDM, // creation flags
         NULL,  			// pointer to new environment block
 		cfg.ctrl_dir,	// pointer to current directory name
