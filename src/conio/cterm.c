@@ -51,7 +51,7 @@ const char *octave="C#D#EF#G#A#B";
 
 /* Characters allowed in music strings... if one that is NOT in here is
  * found, CTerm leaves music capture mode and tosses the buffer away */
-const char musicchars="abcdefgABCDEFGpPnN0123456789.-+#oOtOlLmMsS<> ";
+const char *musicchars="aAbBcCdDeEfFgGlLmMnNoOpPsStT0123456789.-+#<> ";
 const uint note_frequency[]={	/* Hz*1000 */
 /* Octave 0 (Note 1) */
 	 65406
@@ -185,7 +185,10 @@ void play_music(void)
 	int		dotted=0;
 	int		notenum;
 
-	for(p=cterm.musicbuf;*p;p++) {
+	p=cterm.musicbuf;
+	if((*p=='B' || *p=='F') && *(p+1)==' ')
+		p++;
+	for(;*p;p++) {
 		notenum=0;
 		switch(toupper(*p)) {
 			case 'M':
