@@ -2261,16 +2261,16 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				,*p,str[128];
 	char	msg_id[256];
 	BOOL	done,esc,cr;
-	int 	i,chunk,lzh=0,storage;
+	int 	i,storage;
 	uint	col;
 	ushort	xlat,net;
-	ulong	l,m,length,lzhlen,bodylen,taillen,crc;
+	ulong	l,m,length,bodylen,taillen,crc;
 	ulong	save;
+	long	dupechk_hashes;
 	faddr_t faddr,origaddr,destaddr;
-	smbmsg_t	msg;
-	smbmsg_t	remsg;
-	smb_t	*smbfile;
+	smb_t*	smbfile;
 	char	fname[MAX_PATH+1];
+	smbmsg_t	msg;
 
 	if(twit_list) {
 		sprintf(fname,"%stwitlist.cfg",scfg.ctrl_dir);
@@ -2508,6 +2508,7 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 	if(bodylen>=2 && sbody[bodylen-2]=='\r' && sbody[bodylen-1]=='\n')
 		bodylen-=2; 						/* remove last CRLF if present */
+	sbody[bodylen]=0;
 
 	while(taillen && stail[taillen-1]<=' ')	/* trim all garbage off the tail */
 		taillen--;
@@ -2518,22 +2519,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		smb_freemsgmem(&msg);
 		free(sbody);
 		return(3);
-	}
-
-	if(smb[cur_smb].status.max_crcs) {
-		for(l=0,crc=0xffffffff;l<bodylen;l++)
-			crc=ucrc32(sbody[l],crc);
-		crc=~crc;
-		i=smb_addcrc(&smb[cur_smb],crc);
-		if(i) {
-			if(i==SMB_DUPE_MSG)
-				printf("Duplicate ");
-			else
-				printf("smb_addcrc returned %d ",i);
-			smb_freemsgmem(&msg);
-			free(sbody);
-			return(i); 
-		} 
 	}
 
 	if(!origaddr.zone && subnum==INVALID_SUB)
@@ -2549,140 +2534,45 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		smbfile=email;
 		if(net) {
 			smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(ushort),&net);
-			smb_hfield(&msg,RECIPIENTNETADDR,sizeof(fidoaddr_t),&destaddr); } }
-	else
+			smb_hfield(&msg,RECIPIENTNETADDR,sizeof(fidoaddr_t),&destaddr); 
+		}
+		smbfile->status.attr = SMB_EMAIL;
+		smbfile->status.max_age = scfg.mail_maxage;
+		smbfile->status.max_crcs = scfg.mail_maxcrcs;
+		if(scfg.sys_misc&SM_FASTMAIL)
+			storage= SMB_FASTALLOC;
+		else
+			storage = SMB_SELFPACK;
+		if(smbfile->status.max_crcs)
+			dupechk_hashes=SMB_HASH_SOURCE_BODY;
+		xlat=XLAT_NONE;
+	} else {
 		smbfile=&smb[cur_smb];
-
-
-	if(subnum!=INVALID_SUB && scfg.sub[subnum]->misc&SUB_LZH
-		&& bodylen+2L+taillen+2L>=SDT_BLOCK_LEN && bodylen) {
-		if((outbuf=(char *)malloc(bodylen*2L))==NULL) {
-			printf("ERROR allocating %lu bytes for lzh\n",bodylen*2);
-			logprintf("ERROR line %d allocating %lu bytes for lzh",__LINE__
-				,bodylen*2);
-			smb_freemsgmem(&msg);
-			free(sbody);
-			return(-1); 
-		}
-		lzhlen=lzh_encode((uchar *)sbody,bodylen,(uchar *)outbuf);
-		if(lzhlen>1 &&
-			smb_datblocks(lzhlen+4L+taillen+2L)<
-			smb_datblocks(bodylen+2L+taillen+2L)) {
-			bodylen=lzhlen; 	/* Compressable */
-			l=bodylen+4;
-			free(sbody);
-			lzh=1;
-			sbody=outbuf; 
-		}
-		else {					/* Uncompressable */
-			l=bodylen+2;
-			free(outbuf); 
-		} 
-	}
-	else
-		l=bodylen+2;
-
-	if(taillen)
-		l+=(taillen+2);
-
-	if(l&0xfff00000) {
-		printf("ERROR checking msg len %lu\n",l);
-		logprintf("ERROR line %d checking msg len %lu",__LINE__,l);
-		smb_freemsgmem(&msg);
-		free(sbody);
-		return(-1); 
+		smbfile->status.max_age	 = scfg.sub[subnum]->maxage;
+		smbfile->status.max_crcs = scfg.sub[subnum]->maxcrcs;
+		smbfile->status.max_msgs = scfg.sub[subnum]->maxmsgs;
+		if(scfg.sub[subnum]->misc&SUB_HYPER)
+			storage = smb->status.attr = SMB_HYPERALLOC;
+		else if(scfg.sub[subnum]->misc&SUB_FAST)
+			storage = SMB_FASTALLOC;
+		else
+			storage = SMB_SELFPACK;
+		dupechk_hashes=SMB_HASH_SOURCE_FTN_ID;
+		if(smbfile->status.max_crcs)
+			dupechk_hashes|=SMB_HASH_SOURCE_BODY;
+		if(scfg.sub[subnum]->misc&SUB_LZH)
+			xlat=XLAT_LZH;
+		else
+			xlat=XLAT_NONE;
 	}
 
-	if((i=smb_locksmbhdr(smbfile))!=SMB_SUCCESS) {
-		printf("ERROR %d locking %s\n",i,smbfile->file);
-		logprintf("ERROR %d line %d locking %s",i,__LINE__,smbfile->file);
-		smb_freemsgmem(&msg);
-		free(sbody);
-		return(i); 
-	}
-#if 0
-	/* Generate default (RFC822) message-id (always) */
-	SAFECOPY(msg_id,get_msgid(&scfg,subnum,&msg));
-	smb_hfield_str(&msg,RFC822MSGID,msg_id);
-#endif
-	if(msg.ftn_reply!=NULL) {	/* auto-thread linkage */
-
-		if(smb_getstatus(smbfile)==SMB_SUCCESS
-			&& smb_getmsghdr_by_ftnid(smbfile, &remsg, msg.ftn_reply)==SMB_SUCCESS) {
-
-			msg.hdr.thread_back=remsg.idx.number;	/* needed for threading backward */
-
-			/* Add RFC-822 Reply-ID if original message has RFC-822 Message-ID */
-			if(remsg.id!=NULL)
-				smb_hfield_str(&msg,RFC822REPLYID,remsg.id);
-
-			smb_updatethread(smbfile,&remsg,smbfile->status.last_msg+1);
-			smb_freemsgmem(&remsg);
-		}
-	}
-
-	if(smbfile->status.attr&SMB_HYPERALLOC) {
-		msg.hdr.offset=smb_hallocdat(smbfile);
-		storage=SMB_HYPERALLOC; 
-	}
-	else {
-		if((i=smb_open_da(smbfile))!=SMB_SUCCESS) {
-			smb_unlocksmbhdr(smbfile);
-			smb_freemsgmem(&msg);
-			printf("ERROR %d opening %s.sda\n",i,smbfile->file);
-			logprintf("ERROR %d line %d opening %s.sda",i,__LINE__
-				,smbfile->file);
-			free(sbody);
-			return(i); 
-		}
-		if(subnum!=INVALID_SUB && scfg.sub[subnum]->misc&SUB_FAST) {
-			msg.hdr.offset=smb_fallocdat(smbfile,l,1);
-			storage=SMB_FASTALLOC; }
-		else {
-			msg.hdr.offset=smb_allocdat(smbfile,l,1);
-			storage=SMB_SELFPACK; }
-		smb_close_da(smbfile); }
-
-	if(msg.hdr.offset && msg.hdr.offset<1L) {
-		smb_unlocksmbhdr(smbfile);
-		smb_freemsgmem(&msg);
-		free(sbody);
-		printf("ERROR %ld allocating records\n",msg.hdr.offset);
-		logprintf("ERROR line %d %ld allocating records",__LINE__,msg.hdr.offset);
-		return(-1); 
-	}
-	fseek(smbfile->sdt_fp,msg.hdr.offset,SEEK_SET);
-	if(lzh) {
-		xlat=XLAT_LZH;
-		fwrite(&xlat,2,1,smbfile->sdt_fp); }
-	xlat=XLAT_NONE;
-	fwrite(&xlat,2,1,smbfile->sdt_fp);
-	chunk=30000;
-	for(l=0;l<bodylen;l+=chunk) {
-		if(l+chunk>bodylen)
-			chunk=bodylen-l;
-		fwrite(sbody+l,1,chunk,smbfile->sdt_fp); }
-	if(taillen) {
-		fwrite(&xlat,2,1,smbfile->sdt_fp);
-		fwrite(stail,1,taillen,smbfile->sdt_fp); }
-	free(sbody);
-	fflush(smbfile->sdt_fp);
-
-	if(lzh)
-		bodylen+=2;
-	bodylen+=2;
-	smb_dfield(&msg,TEXT_BODY,bodylen);
-	if(taillen)
-		smb_dfield(&msg,TEXT_TAIL,taillen+2);
-
-	i=smb_addmsghdr(smbfile,&msg,storage);	// calls smb_unlocksmbhdr() 
+	i=smb_addmsg(smbfile, &msg, storage, dupechk_hashes, xlat, sbody, stail);
 
 	if(i!=SMB_SUCCESS) {
-		printf("ERROR smb_addmsghdr returned %d: %s\n"
+		printf("ERROR smb_addmsg returned %d: %s\n"
 			,i,smbfile->last_error);
-		logprintf("ERROR smb_addmsghdr returned %d: %s"
+		logprintf("ERROR smb_addmsg returned %d: %s"
 			,i,smbfile->last_error);
-		smb_freemsg_dfields(smbfile,&msg,1);
 	}
 	smb_freemsgmem(&msg);
 
