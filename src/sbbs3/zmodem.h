@@ -248,6 +248,7 @@ typedef struct {
 	/* Status */
 	BOOL		cancelled;
 	BOOL		file_skipped;
+	BOOL		no_streaming;
 
 	/* Configuration */
 	long*		mode;

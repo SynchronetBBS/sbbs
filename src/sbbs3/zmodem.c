@@ -357,7 +357,7 @@ zmodem_tx_header(zmodem_t* zm, unsigned char * p)
 		}
 	}
 	else {
-		zmodem_tx_hex_header(zm, p);
+		zmodem_tx_hex_header(zm, p);	/* <--- is this a bug? (rrs) */
 	}
 }
 
@@ -1197,10 +1197,10 @@ void zmodem_send_zrinit(zmodem_t* zm)
 	
 	zrinit_header[ZF0] = ZF0_CANBRK | ZF0_CANFDX | ZF0_CANOVIO | ZF0_CANFC32;
 
-#if 0
-	zrinit_header[ZP0] = sizeof(zm->rx_data_subpacket) >> 8;
-	zrinit_header[ZP1] = sizeof(zm->rx_data_subpacket) & 0xff;
-#endif
+	if(zm->no_streaming) {
+		zrinit_header[ZP0] = sizeof(zm->rx_data_subpacket) >> 8;
+		zrinit_header[ZP1] = sizeof(zm->rx_data_subpacket) & 0xff;
+	}
 
 	zmodem_tx_hex_header(zm, zrinit_header);
 }
@@ -1769,9 +1769,6 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, ti
 	unsigned n;
 	int type;
 
-	/*
- 	 * create a ZRPOS frame and send it to the other side
-	 */
 	zmodem_send_pos_header(zm, ZRPOS, ftell(fp), /* Hex? */ TRUE);
 
 	/*
@@ -1785,11 +1782,17 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, ti
 			if (type == TIMEOUT) {
 				return TIMEOUT;
 			}
-		} while (type != ZDATA && !zm->cancelled);
+			if(zm->cancelled)
+				return(ZCAN);
+		} while (type != ZDATA);
 
 		pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
 			(zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
-	} while (pos != ftell(fp) && !zm->cancelled);
+		if(pos==ftell(fp))
+			break;
+		lprintf(zm,LOG_WARNING,"Wrong ZDATA block (%lu vs %lu)", pos, ftell(fp));
+
+	} while(!zm->cancelled);
 		
 	do {
 		type = zmodem_rx_data(zm,zm->rx_data_subpacket,sizeof(zm->rx_data_subpacket),&n);
@@ -1803,7 +1806,10 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, ti
 		if(zm->progress!=NULL)
 			zm->progress(zm->cbdata,offset,ftell(fp),fsize,start);
 
-	} while (type == FRAMEOK && !zm->cancelled);
+		if(zm->cancelled)
+			return(ZCAN);
+
+	} while (type == FRAMEOK);
 
 	return type;
 }
