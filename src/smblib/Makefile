@@ -21,7 +21,7 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 !include ..\build\Common.bmake	# defines clean and output directory rules
 
-CFLAGS = $(CFLAGS) -I$(XPDEV_SRC) -DSMB_EXPORTS
+CFLAGS = $(CFLAGS) -I$(XPDEV_SRC) -DSMB_EXPORTS -DMD5_EXPORTS
 
 # SBBS DLL Link Rule
 $(SMBLIB_BUILD): $(OBJS)
