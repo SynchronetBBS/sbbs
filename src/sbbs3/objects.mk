@@ -106,4 +106,5 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)dirwrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)filewrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)threadwrap.$(OFILE)\
+			$(LIBODIR)$(SLASH)semwrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)sockwrap.$(OFILE)
