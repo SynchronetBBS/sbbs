@@ -51,8 +51,8 @@ time_t DLLCALL dstrtounix(scfg_t* cfg, char *instr)
 		return(0);
 
 	if(isdigit(instr[0]) && isdigit(instr[1])
-		&& isdigit(instr[3] && isdigit(instr[4])
-		&& isdigit(instr[6] && isdigit(instr[7]))
+		&& isdigit(instr[3]) && isdigit(instr[4])
+		&& isdigit(instr[6]) && isdigit(instr[7]))
 		p=instr;	/* correctly formatted */
 	else {
 		p=instr;	/* incorrectly formatted */
