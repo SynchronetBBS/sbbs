@@ -41,6 +41,7 @@
 #include <ctype.h>		/* isdigit */
 #include <stdlib.h>		/* atoi */
 #include <string.h>
+#include <errno.h>		/* errno */
 #include "smblib.h"
 #include "sbldefs.h"
 #include "genwrap.h"	/* PLATFORM_DESC */
