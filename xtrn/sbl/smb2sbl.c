@@ -45,7 +45,7 @@
 #include <sys/stat.h>	/* S_IWRITE */
 #include <ctype.h>		/* isdigit */
 #include <stdlib.h>		/* atoi */
-#ifndef __BSD
+#ifndef __unix__
 	#include <malloc.h>
 #endif
 #include <string.h>

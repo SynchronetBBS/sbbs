@@ -52,9 +52,7 @@
 
 #elif defined __unix__	/* Unix-variant */
 
-#ifdef __BSD
 #include <sys/types.h>	/* u_intXX_t */
-#endif
 
 #include <netdb.h>		/* gethostbyname */
 #include <netinet/in.h>	/* IPPROTO_IP */
