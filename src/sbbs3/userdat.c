@@ -121,7 +121,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	char userdat[U_LEN+1],str[U_LEN+1],tmp[64];
 	int i,file;
 
-	if(!user->number || user->number>lastuser(cfg)) {
+	if(!user->number) {
 		memset(user,0,sizeof(user_t));
 		return(-1); 
 	}
@@ -129,6 +129,10 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1) {
 		memset(user,0,sizeof(user_t));
 		return(errno); 
+	}
+	if(user->number > (filelength(file)/U_LEN)) {
+		close(file);
+		return(-1);	/* no such user record */
 	}
 	lseek(file,(long)((long)(user->number-1)*U_LEN),SEEK_SET);
 	i=0;
