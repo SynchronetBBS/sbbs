@@ -2540,7 +2540,7 @@ static char* strip_chars(uchar* str, uchar* set)
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
 hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
-						 ,const uchar* data, size_t length)
+						 ,const void* data, size_t length)
 {
 	hash_t*	hash;
 
@@ -2565,7 +2565,7 @@ hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
 /* Supports string hash "pre-processing" (e.g. lowercase, strip whitespace)	*/
 /* Returns NULL on failure													*/
 hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned flags
-							,const uchar* str)
+							,const char* str)
 {
 	uchar*	p=(uchar*)str;
 	hash_t*	hash;
@@ -2645,7 +2645,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 
 /* length=0 specifies ASCIIZ data											*/
 int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
-								 ,unsigned flags, const uchar* data, size_t length)
+								 ,unsigned flags, const void* data, size_t length)
 {
 	int			retval;
 	size_t		n;
@@ -2680,7 +2680,7 @@ int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 }
 
 int SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
-								 ,unsigned flags, const uchar* data, size_t length)
+								 ,unsigned flags, const void* data, size_t length)
 {
 	int retval;
 
