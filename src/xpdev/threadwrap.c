@@ -41,7 +41,7 @@
 /* Wrapper for Win32 create/begin thread function							*/
 /* Uses POSIX threads														*/
 /****************************************************************************/
-#if defined(__unix__) && defined(SBBS)
+#if defined(__unix__)
 #if defined(_POSIX_THREADS)
 ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist)
