@@ -197,10 +197,140 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		buf[513];
+	int			len;
+	SOCKET		sock;
+	JSString*	str;
+
+	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+
+	if(argc)
+		len = JSVAL_TO_INT(argv[0]);
+	else
+		len = sizeof(buf)-1;
+
+	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
+
+	len = recv(sock,buf,len,MSG_PEEK);
+	if(len<0)
+		len=0;
+
+	buf[len]=0;
+
+	str = JS_NewStringCopyZ(cx, buf);
+
+	*rval = STRING_TO_JSVAL(str);
+		
+	return(JS_TRUE);
+}
+
+#define TIMEOUT_SOCK_READLINE	30	/* seconds */
+
+static JSBool
+js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		ch;
+	char		buf[513];
+	int			i;
+	int			len;
+	BOOL		rd;
+	SOCKET		sock;
+	time_t		start;
+	JSString*	str;
+
+	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+
+	if(argc)
+		len = JSVAL_TO_INT(argv[0]);
+	else
+		len = sizeof(buf)-1;
+
+	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
+
+	start=time(NULL);
+	for(i=0;i<len;i++) {
+
+		if(!socket_check(sock,&rd))
+			break;		/* disconnected */
+
+		if(time(NULL)-start>TIMEOUT_SOCK_READLINE) 
+			break;		/* time-out */
+
+		if(!rd)
+			continue;	/* no data */
+
+		if(recv(sock, &ch, 1, 0)!=1) 
+			break;
+
+		if(ch=='\n' && i>=1) 
+			break;
+
+		buf[i]=ch;
+	}
+	if(i>0)
+		buf[i-1]=0;
+	else
+		buf[0]=0;
+
+	str = JS_NewStringCopyZ(cx, buf);
+
+	*rval = STRING_TO_JSVAL(str);
+		
+	return(JS_TRUE);
+}
+
+static JSBool
+js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			lvl;
+	int			opt;
+	int			len;
+	int			val;
+	SOCKET		sock;
+	
+	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+
+	lvl = JSVAL_TO_INT(argv[0]);
+	opt = JSVAL_TO_INT(argv[1]);
+	len = sizeof(val);
+
+	if(getsockopt(sock,lvl,opt,(char*)&val,&len)==0)
+		*rval = INT_TO_JSVAL(val);
+	else
+		*rval = INT_TO_JSVAL(-1);
+
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			lvl;
+	int			opt;
+	int			val;
+	SOCKET		sock;
+	
+	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+
+	lvl = JSVAL_TO_INT(argv[0]);
+	opt = JSVAL_TO_INT(argv[1]);
+	val = JSVAL_TO_INT(argv[2]);
+
+	*rval = BOOLEAN_TO_JSVAL(setsockopt(sock,lvl,opt,(char*)&val,sizeof(val))==0);
+
+	return(JS_TRUE);
+}
+
 /* Socket Object Properites */
 enum {
 	 SOCK_PROP_LAST_ERROR
 	,SOCK_PROP_IS_CONNECTED
+	,SOCK_PROP_DATA_WAITING
+	,SOCK_PROP_NREAD
 };
 
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -211,6 +341,8 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint       tiny;
+	ulong		cnt;
+	BOOL		rd;
 	SOCKET		sock;
 
 	sock=(uint)JS_GetPrivate(cx,obj)>>1;
@@ -224,6 +356,17 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_IS_CONNECTED:
 			*vp = BOOLEAN_TO_JSVAL(socket_check(sock,NULL));
 			break;
+		case SOCK_PROP_DATA_WAITING:
+			socket_check(sock,&rd);
+			*vp = BOOLEAN_TO_JSVAL(rd);
+			break;
+		case SOCK_PROP_NREAD:
+			cnt=0;
+			if(ioctlsocket(sock, FIONREAD, &cnt)==0) 
+				*vp = INT_TO_JSVAL(cnt);
+			else
+				*vp = INT_TO_JSVAL(0);
+			break;
 	}
 
 	return(TRUE);
@@ -236,6 +379,8 @@ static struct JSPropertySpec js_socket_properties[] = {
 
 	{	"last_error"		,SOCK_PROP_LAST_ERROR	,OBJ_FLAGS,			NULL,NULL},
 	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,OBJ_FLAGS,			NULL,NULL},
+	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,OBJ_FLAGS,			NULL,NULL},
+	{	"nread"				,SOCK_PROP_NREAD		,OBJ_FLAGS,			NULL,NULL},
 	{0}
 };
 
@@ -256,7 +401,14 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"bind",			js_bind,			0},		/* bind to a port */
 	{"connect",         js_connect,         2},		/* connect to an IP address and port */
 	{"send",			js_send,			1},		/* send a string */
-	{"recv",			js_recv,			0},		/* recv a string */
+	{"write",			js_send,			1},		/* send a string */
+	{"recv",			js_recv,			0},		/* receive a string */
+	{"read",			js_recv,			0},		/* receive a string */
+	{"peek",			js_peek,			0},		/* receive a string, leave in buffer */
+	{"recvline",		js_recvline,		0},		/* receive a \n terminated string	*/
+	{"readline",		js_recvline,		0},		/* receive a \n terminated string	*/
+	{"getoption",		js_getsockopt,		2},		/* getsockopt(level,opt)			*/
+	{"setoption",		js_setsockopt,		3},		/* setsockopt(level,opt,val)		*/
 	{0}
 };
 
