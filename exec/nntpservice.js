@@ -11,6 +11,7 @@
 // Tested clients:
 //					Microsoft Outlook Express 6
 //					Netscape Communicator 4.77
+//					Xnews 5.04.25
 //					Mozilla 1.1 (Requires -auto, and a prior login via other method)
 
 load("sbbsdefs.js");
