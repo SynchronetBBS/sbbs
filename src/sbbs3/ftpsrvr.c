@@ -816,6 +816,9 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	}
 	*inprogress=TRUE;
 
+	if(*data_sock!=INVALID_SOCKET)
+		close_socket(data_sock,__LINE__);
+
 	if(pasv_sock==INVALID_SOCKET) {	/* !PASV */
 
 		if((*data_sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
@@ -846,6 +849,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			if(tmpfile)
 				remove(filename);
 			*inprogress=FALSE;
+			close_socket(data_sock,__LINE__);
 			return;
 		}
 
@@ -858,6 +862,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			if(tmpfile)
 				remove(filename);
 			*inprogress=FALSE;
+			close_socket(data_sock,__LINE__);
 			return;
 		}
 		if(startup->options&FTP_OPT_DEBUG_DATA)
