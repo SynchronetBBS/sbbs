@@ -82,7 +82,7 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort refs)
 	for(l=0;l<blocks;l++)
 		if(!fwrite(&refs,sizeof(refs),1,smb->sda_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) writing allocation bytes at offset %ld"
+				,"%d '%s' writing allocation bytes at offset %ld"
 				,get_errno(),STRERROR(get_errno())
 				,((offset/SDT_BLOCK_LEN)+l)*sizeof(refs));
 			return(SMB_ERR_WRITE);
@@ -121,7 +121,7 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort refs)
 	fflush(smb->sda_fp);
 	if(l<blocks) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d (%s) writing allocation bytes"
+			,"%d '%s' writing allocation bytes"
 			,get_errno(),STRERROR(get_errno()));
 		return(SMB_ERR_WRITE);
 	}
@@ -156,7 +156,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 		sda_offset=((offset/SDT_BLOCK_LEN)+l)*sizeof(i);
 		if(fseek(smb->sda_fp,sda_offset,SEEK_SET)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) seeking to %lu (0x%lX) of allocation file"
+				,"%d '%s' seeking to %lu (0x%lX) of allocation file"
 				,get_errno(),STRERROR(get_errno())
 				,sda_offset,sda_offset);
 			retval=SMB_ERR_SEEK;
@@ -164,7 +164,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 		}
 		if(smb_fread(smb,&i,sizeof(i),smb->sda_fp)!=sizeof(i)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) reading allocation bytes at offset %ld"
+				,"%d '%s' reading allocation bytes at offset %ld"
 				,get_errno(),STRERROR(get_errno())
 				,sda_offset);
 			retval=SMB_ERR_READ;
@@ -176,14 +176,14 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 			i-=refs;
 		if(fseek(smb->sda_fp,-(int)sizeof(i),SEEK_CUR)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) seeking backwards 2 bytes in allocation file"
+				,"%d '%s' seeking backwards 2 bytes in allocation file"
 				,get_errno(),STRERROR(get_errno()));
 			retval=SMB_ERR_SEEK;
 			break;
 		}
 		if(!fwrite(&i,sizeof(i),1,smb->sda_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) writing allocation bytes at offset %ld"
+				,"%d '%s' writing allocation bytes at offset %ld"
 				,get_errno(),STRERROR(get_errno())
 				,sda_offset);
 			retval=SMB_ERR_WRITE; 
@@ -217,7 +217,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 		}
 		if(smb_fread(smb,&i,sizeof(i),smb->sda_fp)!=sizeof(i)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) reading allocation record at offset %ld"
+				,"%d '%s' reading allocation record at offset %ld"
 				,get_errno(),STRERROR(get_errno())
 				,((offset/SDT_BLOCK_LEN)+l)*sizeof(i));
 			return(SMB_ERR_READ);
@@ -228,7 +228,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 		}
 		if(!fwrite(&i,sizeof(i),1,smb->sda_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) writing allocation record at offset %ld"
+				,"%d '%s' writing allocation record at offset %ld"
 				,get_errno(),STRERROR(get_errno())
 				,((offset/SDT_BLOCK_LEN)+l)*sizeof(i));
 			return(SMB_ERR_WRITE); 
@@ -289,7 +289,7 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 	for(l=0;l<blocks;l++)
 		if(!fwrite(&c,1,1,smb->sha_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) writing allocation record"
+				,"%d '%s' writing allocation record"
 				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
@@ -372,7 +372,7 @@ long SMBCALL smb_allochdr(smb_t* smb, ulong length)
 	for(l=0;l<blocks;l++)
 		if(fputc(1,smb->sha_fp)!=1) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) writing allocation record"
+				,"%d '%s' writing allocation record"
 				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
@@ -402,7 +402,7 @@ long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
 	for(l=0;l<blocks;l++)
 		if(!fwrite(&c,1,1,smb->sha_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d (%s) writing allocation record"
+				,"%d '%s' writing allocation record"
 				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
