@@ -920,12 +920,10 @@ double iniGetFloat(str_list_t* list, const char* section, const char* key, doubl
 
 static BOOL parseBool(const char* value)
 {
-	if(!stricmp(value,"TRUE"))
+	if(!stricmp(value,"TRUE") || !stricmp(value,"YES"))
 		return(TRUE);
-	if(!stricmp(value,"FALSE"))
-		return(FALSE);
 
-	return(strtol(value,NULL,0));
+	return(INT_TO_BOOL(strtol(value,NULL,0)));
 }
 
 BOOL iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
