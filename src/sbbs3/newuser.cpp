@@ -197,6 +197,7 @@ BOOL sbbs_t::newuser()
 				getstr(useron.alias,LEN_ALIAS,kmode);
 				truncsp(useron.alias);
 				if(useron.alias[0]<=SP || !isalpha(useron.alias[0])
+					|| alias(&cfg,useron.alias,tmp)!=useron.alias
 					|| !stricmp(useron.alias,cfg.sys_id)
 					|| strchr(useron.alias,0xff)
 					|| matchuser(&cfg,useron.alias,TRUE /* sysop_alias */) 
