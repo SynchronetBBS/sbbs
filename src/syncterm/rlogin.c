@@ -104,7 +104,7 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd, int bedumb)
 		tv.tv_usec=10000;
 		#endif
 
-		setsockopt(rlogin_socket,SOL_SOCKET,SO_RCVTIMEO,&tv,sizeof(tv));
+		setsockopt(rlogin_socket,SOL_SOCKET,SO_RCVTIMEO,(void *)&tv,sizeof(tv));
 	}
 	else {
 		unsigned long	l=1;
