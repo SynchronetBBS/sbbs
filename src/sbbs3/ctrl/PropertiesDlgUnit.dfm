@@ -1,9 +1,9 @@
 object PropertiesDlg: TPropertiesDlg
-  Left = 629
-  Top = 497
+  Left = 496
+  Top = 224
   BorderStyle = bsDialog
   Caption = 'Control Panel Properties'
-  ClientHeight = 229
+  ClientHeight = 261
   ClientWidth = 433
   Color = clBtnFace
   ParentFont = True
@@ -15,7 +15,7 @@ object PropertiesDlg: TPropertiesDlg
     Left = 10
     Top = 10
     Width = 306
-    Height = 205
+    Height = 237
     Anchors = [akLeft, akTop, akRight, akBottom]
     Shape = bsFrame
   end
@@ -107,7 +107,6 @@ object PropertiesDlg: TPropertiesDlg
     Top = 182
     Width = 281
     Height = 24
-    Anchors = [akLeft, akBottom]
     Caption = 'Minimize to System Tray'
     TabOrder = 4
   end
@@ -117,6 +116,7 @@ object PropertiesDlg: TPropertiesDlg
     Width = 25
     Height = 24
     TabOrder = 3
+    Text = '1'
   end
   object NodeIntUpDown: TUpDown
     Left = 281
@@ -136,6 +136,7 @@ object PropertiesDlg: TPropertiesDlg
     Width = 25
     Height = 24
     TabOrder = 8
+    Text = '1'
   end
   object ClientIntUpDown: TUpDown
     Left = 281
@@ -148,5 +149,13 @@ object PropertiesDlg: TPropertiesDlg
     Position = 1
     TabOrder = 9
     Wrap = False
+  end
+  object UndockableCheckBox: TCheckBox
+    Left = 24
+    Top = 214
+    Width = 281
+    Height = 24
+    Caption = 'Undockable Windows'
+    TabOrder = 10
   end
 end

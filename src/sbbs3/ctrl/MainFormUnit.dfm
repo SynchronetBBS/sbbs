@@ -1968,6 +1968,7 @@ object MainForm: TMainForm
       DockSite = True
       TabOrder = 0
       Visible = False
+      OnUnDock = PageControlUnDock
     end
     object UpperRightPageControl: TPageControl
       Left = 292
@@ -1978,6 +1979,7 @@ object MainForm: TMainForm
       DockSite = True
       TabOrder = 1
       Visible = False
+      OnUnDock = PageControlUnDock
     end
   end
   object BottomPanel: TPanel
@@ -2006,6 +2008,7 @@ object MainForm: TMainForm
       DockSite = True
       TabOrder = 0
       Visible = False
+      OnUnDock = PageControlUnDock
     end
     object LowerRightPageControl: TPageControl
       Left = 292
@@ -2016,6 +2019,7 @@ object MainForm: TMainForm
       DockSite = True
       TabOrder = 1
       Visible = False
+      OnUnDock = PageControlUnDock
     end
   end
   object StatusBar: TStatusBar

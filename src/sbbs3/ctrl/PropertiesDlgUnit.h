@@ -33,6 +33,7 @@ __published:
     TLabel *Label5;
     TEdit *ClientIntEdit;
     TUpDown *ClientIntUpDown;
+    TCheckBox *UndockableCheckBox;
 private:
 public:
 	virtual __fastcall TPropertiesDlg(TComponent* AOwner);

@@ -1945,6 +1945,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->NodeIntUpDown->Position=NodeDisplayInterval;
     PropertiesDlg->ClientIntUpDown->Position=ClientDisplayInterval;
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
+    PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
@@ -1952,6 +1953,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         NodeDisplayInterval=PropertiesDlg->NodeIntUpDown->Position;
         ClientDisplayInterval=PropertiesDlg->ClientIntUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
+        UndockableForms=PropertiesDlg->UndockableCheckBox->Checked;
         SaveSettings(Sender);
     }
     delete PropertiesDlg;
