@@ -522,7 +522,7 @@ public:
 	bool	removefcdt(file_t* f);
 	bool	movefile(file_t* f, int newdir);
 	char *	getfilespec(char *str);
-	int		delfiles(char *path, char *spec);
+	uint	delfiles(char *path, char *spec);
 	bool	checkfname(char *fname);
 	bool	addtobatdl(file_t* f);
 
@@ -694,6 +694,7 @@ extern "C" {
 	DLLEXPORT 	BOOL	DLLCALL removefiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT 	BOOL	DLLCALL addfiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT 	BOOL	DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename);
+	DLLEXPORT	char *	DLLCALL getfname(char *path);
 	DLLEXPORT	char *	DLLCALL padfname(char *filename, char *str);
 	DLLEXPORT	char *	DLLCALL unpadfname(char *filename, char *str);
 	DLLEXPORT	BOOL	DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
