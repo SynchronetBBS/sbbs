@@ -84,11 +84,17 @@
 "\r\nDelete message #%lu '%s'"                          073 DeletePostQ
 "\1n\1hI\1n\1g) AutoLogon via IP address      : "\      074 UserDefaultsAutoLogon
 	"\1h%s\r\n"
-"<UNUSED>"                                              075 Unused75
+"\1n\r\n\1m%s sent to \1h%s #%u\r\n"               	  075 MsgSentToUser
 "_\r\nyhString to search for: "                      076 SearchStringPrompt
-"<UNUSED>"                                              077 Unused77
+"\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\			  077 PrivateChatSeparator
+	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
+	"Time Left: \1g%-8s\1w"\
+	" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
 "gh%4lu:ng %-22.22s %-22.22s h%cng %.25s\r\n"    078 SubMsgLstFmt
-"<UNUSED>"                                              079 Unused79
+"\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\			  079 SysopChatSeparator
+	"\1rSplit-Screen \1cSysop\1r Chat          \1y"\
+	"Time Left: \1g%-8s\1w"\
+	" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
 "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
 "l_chGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
 "nc<h%ldnc> %s\r\n"                                082 TextSectionLstFmt
@@ -127,11 +133,11 @@
 "View logon message"                                    114 ViewLogonMsgQ
 "\r\n\r\nYou can't read mail you've sent.\r\n"          115 R_ReadSentMail
 "\r\nwhMessage Scan "                                 116 MessageScan
-"nc(h%lu ncsub-boards)hw complete.\r\n"          117 MessageScanComplete
+"complete.\r\n"                                         117 MessageScanComplete
 "riaborted.n\r\n"                                    118 MessageScanAborted
 "\r\nLog off"                                           119 LogOffQ
 "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
-"<UNUSED>"                                              121 Unused121
+"\r\n\1n\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
 "\r\nrhNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
 "\r\n\r\nYou can't use the external programs.\r\n"      123 R_ExternalPrograms
 "\r\n-gUsage Statistics for h%s #%dn\r\n\r\n"       124 UserStats
@@ -156,7 +162,7 @@
 "\r\nRaw message input mode is now "                    139 RawMsgInputModeIsNow
 "OFF"                                                   140 OFF
 "ON"                                                    141 ON
-"<UNUSED>"                                              142 Unused142
+"\r\n\1n\1mPaging \1h%s #%u\1n\1m for private chat\r\n" 142 PagingUser
 "\r\n-gSystem Statistics:\r\n\r\nn"                  143 SystemStatsHdr
 "\r\n-gNode #%d Statistics:\r\n\r\nn"                144 NodeStatsHdr
 "Total Logons    : %s\r\n"                              145 StatsTotalLogons
@@ -176,9 +182,10 @@
 "\r\nNo error log exists.\r\n"                          159 NoErrorLogExists
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
-"<UNUSED>"                                              162 Unused162
+"\1n\r\n\1mSending telegram to \1h%s #%u\1n\1m "\	  162 SendingTelegramToUser
+	"(Max 5 lines, Blank line ends):\r\n\r\n\1g\1h"  
 "Delete Guru file"                                      163 DeleteGuruLogQ
-"<UNUSED>"                                              164 Unused164
+"\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
 "\r\n\r\nYou can't download.\r\n"                       165 R_Download
 "\r\nwhSearching all directories...\r\n"              166 SearchingAllDirs
 "whSearching all libraries...\r\n"                    167 SearchingAllLibs
@@ -191,7 +198,7 @@
 "\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
 "\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
 "_\r\n\r\nyhFilespec: n"                            175 FileSpec
-"<UNUSED>"                                              176 Unused176
+"<UNUSED176>"                                           176 Unused176
 "\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
 "\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
 "-gDirectories of h%-40.40s     "\                   179 DirLstHdr
@@ -200,9 +207,9 @@
 "\r\n_ghFile Libraries ng                   "\     181 LibLstHdr
 	"                       Directories\r\n\r\nh"
 "ng(h%ung) %-40.40s %12.12s h%4u\r\n"             182 LibLstFmt
-"<UNUSED>"                                              183 Unused183
+"<UNUSED183>"                                           183 Unused183
 "_\r\ngh%s ngTransfer Policy\r\n\r\nn"            184 TransferPolicyHdr
-"<UNUSED>"                                              185 Unused185
+"<UNUSED185>"                                           185 Unused185
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
 	"credit value\r\n"
 "All downloads are rewarded with %d%% of the "\         187 TpDownload
@@ -583,8 +590,8 @@
 "\r\n_yhHow many rows on your monitor "\             497 HowManyRows
 	"[Auto Detect]: "
 "\r\n_yhCurrent Password: w"                        498 CurrentPassword
-"\r\nForward personal e-mail to network mail address"   499 ForwardMailQ
-"\r\n_yhNetwork mail address "\                      500 EnterNetMailAddress
+"\r\nForward E-mail to NetMail address"                 499 ForwardMailQ
+"\r\n_yhNetMail/e-mail address "\                    500 EnterNetMailAddress
 	"(Example: name@address)\r\n: "
 "nlgSelect h%sng:\r\n\r\n"                        501 SelectItemHdr
 "gh%3d: ng%s\r\n"                                   502 SelectItemFmt
@@ -614,7 +621,7 @@
 "\r\nSysop page is now %s\r\n"                          521 SysopPageIsNow
 "\r\n%s is not available.\r\n"                          522 SysopIsNotAvailable
 "Chat with %s instead"                                  523 ChatWithGuruInsteadQ
-"\r\nqbhPrivate: g~Tngelegram, "\                 524 PrivateMsgPrompt
+"\r\nbhPrivate: g~Tngelegram, "\                   524 PrivateMsgPrompt
 	"h~Mngessage, h~Cnghat, or h~Qnguit: ch"
 "\r\nhyNode, User name, w#yNumber, "\               525 NodeToPrivateChat
 	"w'yHandle, or w^Uyser list: wh"
@@ -852,4 +859,4 @@
 ""                                                      717 NodeActionPrivateChat
 ""                                                      718 NodeActionPaging
 ""                                                      719 NodeActionRetrieving
-"YN"                                                    720 YN
+"YNQ*"                                                  720 YNQP (Yes/No/Quit/Password chars)
