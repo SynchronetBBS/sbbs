@@ -2297,7 +2297,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	faddr_t faddr,origaddr,destaddr;
 	smbmsg_t	msg;
 	smbmsg_t	remsg;
-	smbmsg_t	firstmsg;
 	smb_t	*smbfile;
 	char	fname[MAX_PATH+1];
 
@@ -2644,48 +2643,13 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 	if(msg.ftn_reply!=NULL) {	/* auto-thread linkage */
 
-		smb_getstatus(smbfile);
-		msg.idx.number=smbfile->status.last_msg+1; /* this *should* be the new message number */
-
-		if(get_msg_by_ftn_id(smbfile, msg.ftn_reply, &remsg)==TRUE) {
+		if(smb_getstatus(smbfile)==SMB_SUCCESS
+			&& get_msg_by_ftn_id(smbfile, msg.ftn_reply, &remsg)==TRUE) {
 			msg.hdr.thread_orig=remsg.hdr.number;	/* needed for thread linkage */
-
-			if(!remsg.hdr.thread_first) {	/* This msg is first reply */
-				remsg.hdr.thread_first=msg.idx.number;
-				smb_putmsghdr(smbfile,&remsg);
-				smb_unlockmsghdr(smbfile,&remsg);
-			} else {	/* Search for last reply and extend chain */
-				smb_unlockmsghdr(smbfile,&remsg);
-				memset(&firstmsg,0,sizeof(firstmsg));
-				m=remsg.hdr.thread_first;	/* start with first reply */
-				while(1) {
-					firstmsg.idx.offset=0;
-					firstmsg.hdr.number=m;
-					if(smb_getmsgidx(smbfile, &firstmsg)!=SMB_SUCCESS) /* invalid thread origin */
-						break;
-					if(smb_lockmsghdr(smbfile,&remsg)!=SMB_SUCCESS)
-						break;
-					if(smb_getmsghdr(smbfile, &remsg)!=SMB_SUCCESS) {
-						smb_unlockmsghdr(smbfile,&remsg); 
-						break;
-					}
-					if(firstmsg.hdr.thread_next && firstmsg.hdr.thread_next!=m) {
-						m=firstmsg.hdr.thread_next;
-						smb_unlockmsghdr(smbfile,&firstmsg);
-						smb_freemsgmem(&firstmsg);
-						continue; 
-					}
-					firstmsg.hdr.thread_next=msg.idx.number;
-					smb_putmsghdr(smbfile,&firstmsg);
-					smb_unlockmsghdr(smbfile,&firstmsg);
-					smb_freemsgmem(&firstmsg);
-					break; 
-				}
-			}
-
+			smb_updatethread(smbfile,&remsg,smbfile->status.last_msg+1);
+			smb_unlockmsghdr(smbfile,&remsg);
 			smb_freemsgmem(&remsg);
 		}
-
 	}
 
 	if(smbfile->status.attr&SMB_HYPERALLOC) {
