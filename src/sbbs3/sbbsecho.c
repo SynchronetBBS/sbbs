@@ -3196,12 +3196,12 @@ void attach_bundles(void)
 			pkt_faddr.net=pkthdr.destnet;
 			pkt_faddr.node=pkthdr.destnode;
 			pkt_faddr.point=0;				/* No point info in the 2.0 hdr! */
-			memcpy(&two_plus,&pkthdr.empty,20);
+			memcpy(&two_plus,&pkthdr.empty,sizeof(pkthdr.empty));
 			if(two_plus.cword==_rotr(two_plus.cwcopy,8)  /* 2+ Packet Header */
 				&& two_plus.cword && two_plus.cword&1)
 				pkt_faddr.point=two_plus.destpoint;
 			else if(pkthdr.baud==2) {				/* Type 2.2 Packet Header */
-				memcpy(&two_two,&pkthdr.empty,20);
+				memcpy(&two_two,&pkthdr.empty,sizeof(pkthdr.empty));
 				pkt_faddr.point=pkthdr.month; }
 			printf("Sending to %s\n",faddrtoa(&pkt_faddr,NULL));
 			pack_bundle(packet,pkt_faddr); 
@@ -3362,21 +3362,21 @@ void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
 			pkthdr.prodcode=0;
 			pkthdr.sernum=0;
 			if(node<cfg.nodecfgs)
-				memcpy(pkthdr.password,cfg.nodecfg[node].pktpwd,8);
+				memcpy(pkthdr.password,cfg.nodecfg[node].pktpwd,sizeof(pkthdr.password));
 			else
-				memset(pkthdr.password,0,8);
+				memset(pkthdr.password,0,sizeof(pkthdr.password));
 			pkthdr.origzone=sysaddr.zone;
 			fmsghdr.destzone=pkthdr.destzone=area.uplink[j].zone;
 			memset(pkthdr.empty,0,sizeof(two_two_t));
 
 			if(node<cfg.nodecfgs) {
 				if(cfg.nodecfg[node].pkt_type==PKT_TWO_TWO) {
-					memset(&two,0,20);
+					memset(&two,0,sizeof(two));
 					strcpy(two.origdomn,"fidonet");
 					strcpy(two.destdomn,"fidonet");
-					memcpy(&pkthdr.empty,&two,20); }
+					memcpy(&pkthdr.empty,&two,sizeof(pkthdr.empty)); }
 				else if(cfg.nodecfg[node].pkt_type==PKT_TWO_PLUS) {
-					memset(&two_p,0,20);
+					memset(&two_p,0,sizeof(two_p));
 					if(sysaddr.point) {
 						pkthdr.orignet=-1;
 						two_p.auxnet=sysaddr.net; }
@@ -3388,7 +3388,7 @@ void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
 					two_p.destzone=pkthdr.destzone;
 					two_p.origpoint=sysaddr.point;
 					two_p.destpoint=area.uplink[j].point;
-					memcpy(&pkthdr.empty,&two_p,sizeof(two_plus_t)); }
+					memcpy(&pkthdr.empty,&two_p,sizeof(pkthdr.empty)); }
 			}
 			fwrite(&pkthdr,sizeof(pkthdr_t),1,outpkt[totalpkts].stream);
 			putfmsg(outpkt[totalpkts].stream,fbuf,fmsghdr,area,seenbys,paths);
@@ -4373,12 +4373,12 @@ int main(int argc, char **argv)
 			pkt_faddr.net=pkthdr.destnet;
 			pkt_faddr.node=pkthdr.destnode;
 			pkt_faddr.point=0;				/* No point info in the 2.0 hdr! */
-			memcpy(&two_plus,&pkthdr.empty,20);
+			memcpy(&two_plus,&pkthdr.empty,sizeof(two_plus));
 			if(two_plus.cword==_rotr(two_plus.cwcopy,8)  /* 2+ Packet Header */
 				&& two_plus.cword && two_plus.cword&1)
 				pkt_faddr.point=two_plus.destpoint;
 			else if(pkthdr.baud==2) {				/* Type 2.2 Packet Header */
-				memcpy(&two_two,&pkthdr.empty,20);
+				memcpy(&two_two,&pkthdr.empty,sizeof(two_two));
 				pkt_faddr.point=pkthdr.month; }
 			printf("Sending to %s\n",faddrtoa(&pkt_faddr,NULL));
 			pack_bundle(packet,pkt_faddr); }
@@ -4453,7 +4453,7 @@ int main(int argc, char **argv)
 
 			printf("%21s: %s "
 				,secure ? "Importing Secure Pkt" : "Importing Packet",packet+offset);
-			memcpy(&two_plus,&pkthdr.empty,20);
+			memcpy(&two_plus,&pkthdr.empty,sizeof(two_plus));
 			if(two_plus.cword==_rotr(two_plus.cwcopy,8)  /* 2+ Packet Header */
 				&& two_plus.cword && two_plus.cword&1) {
 				pkt_type=PKT_TWO_PLUS;
@@ -4467,7 +4467,7 @@ int main(int argc, char **argv)
 			}
 			else if(pkthdr.baud==2) {				/* Type 2.2 Packet Header */
 				pkt_type=PKT_TWO_TWO;
-				memcpy(&two_two,&pkthdr.empty,20);
+				memcpy(&two_two,&pkthdr.empty,sizeof(two_two));
 				pkt_faddr.point=pkthdr.year ? pkthdr.year:0;
 				printf("(Type 2.2)");
 				if(cfg.log&LOG_PACKETS)
@@ -5019,6 +5019,7 @@ int main(int argc, char **argv)
 				bail(1); }
 
 			if(!filelength(file)) {
+				memset(&pkthdr,0,sizeof(pkthdr));
 				pkthdr.orignode=hdr.orignode;
 				pkthdr.destnode=hdr.destnode;
 				pkthdr.year=tm->tm_year+1900;
@@ -5033,15 +5034,30 @@ int main(int argc, char **argv)
 				pkthdr.destnet=hdr.destnet;
 				pkthdr.prodcode=0x00;
 				pkthdr.sernum=0;
-				i=matchnode(addr,0);
-				if(i<cfg.nodecfgs)
-					memcpy(pkthdr.password,cfg.nodecfg[i].pktpwd,8);
-				else
-					memset(pkthdr.password,0,8);
 				pkthdr.origzone=hdr.origzone;
 				pkthdr.destzone=hdr.destzone;
-				memset(pkthdr.empty,0,20);
-				fwrite(&pkthdr,sizeof(pkthdr_t),1,stream); }
+				i=matchnode(addr,0);
+				if(i<cfg.nodecfgs) {
+					if(cfg.nodecfg[i].pkt_type==PKT_TWO_PLUS) {
+						memset(&two_plus,0,sizeof(two_plus));
+						if(hdr.origpoint) {
+							pkthdr.orignet=-1;
+							two_plus.auxnet=hdr.orignet; 
+						}
+						two_plus.cwcopy=0x0100;
+						two_plus.prodcode=pkthdr.prodcode;
+						two_plus.revision=pkthdr.sernum;
+						two_plus.cword=0x0001;
+						two_plus.origzone=pkthdr.origzone;
+						two_plus.destzone=pkthdr.destzone;
+						two_plus.origpoint=hdr.origpoint;
+						two_plus.destpoint=hdr.destpoint;
+						memcpy(&pkthdr.empty,&two_plus,sizeof(pkthdr.empty)); 
+					}
+					memcpy(pkthdr.password,cfg.nodecfg[i].pktpwd,sizeof(pkthdr.password));
+				}
+				fwrite(&pkthdr,sizeof(pkthdr_t),1,stream); 
+			}
 
 			putfmsg(stream,fmsgbuf,hdr,fakearea,msg_seen,msg_path);
 
