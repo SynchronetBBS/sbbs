@@ -221,7 +221,9 @@ extern "C" {
 #endif
 
 /* Target Platform Description */
-#if defined(_WIN32)
+#if defined(_WIN64)
+	#define PLATFORM_DESC	"Win64"
+#elif defined(_WIN32)
 	#define PLATFORM_DESC	"Win32"
 #elif defined(__OS2__)
 	#define PLATFORM_DESC	"OS/2"
