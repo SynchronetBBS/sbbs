@@ -18,16 +18,15 @@
 <!--webbot bot="Include" endspan i-checksum="23126" -->
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
-<h2><u>[12.0] - </u><a name="External Program Configuration"><u>External Program
-Configuration</u></a>
+<h2><a name="ExternalProgramConfiguration">[12.0] - External Program
+Configuration</a>
 
 </h2>
 <pre>Selecting the External Programs option from the SCFG will bring you to the
 following sub-menu, an explanation of the options shown here follow.</pre>
 <h2><img border="0" src="images/scfg_xtrn_section.gif" width="572" height="331"><br>
 <br>
-<u>[12.1] - <a name="Fixed Events">Fixed Events</a>
-</u>
+<a name="FixedEvents">[12.1] - Fixed Events</a>
 
 </h2>
 <pre><img border="0" src="images/scfg_xtrn_fixed.gif" width="572" height="331">
@@ -52,7 +51,7 @@ following sub-menu, an explanation of the options shown here follow.</pre>
 <b>Daily Event:
 </b>        This is the command line for a program that will run after the first
         user that logs on after midnight, logs off (regardless of what node).</pre>
-<h2><u>[12.2] - </u><a name="Timed Events"><u>Timed Events</u></a>
+<h2><a name="TimedEvents">[12.2] - Timed Events</a>
 
 </h2>
 <pre>Selecting Timed Events from the External Programs menu will give you a list of
@@ -90,20 +89,20 @@ called MAIN, and the options available for timed events.</pre>
 <b>Force Users Off-line For Event:
 </b>	Setting this to Yes will cause the BBS to force users offline for this
 	event.</pre>
-<h2><u>[12.3] - </u><a name="Global Swap List"><u>Global Swap List</u></a>
+<h2><a name="GlobalSwapList">[12.3] - Global Swap List</a>
 
 </h2>
 <pre><img border="0" src="images/scfg_xtrn_swaplist.gif" width="572" height="331">
 
 This is a list of programs which, when run, will cause Synchronet to swap out
 of memory.  This is useful for large executables, or programs which have the
-possibility of utilitizing a large amount of memory.  Shown is an example of
+possibility of Utilitizing a large amount of memory.  Shown is an example of
 what might be in your swap list. Notice that it is not necessary to specify
 an extension for the programs unless an extension is specified on the command
 line to be executed. If a file extension is specified (EXE, COM, or BAT)
 the extension must be specified on the command line for the program to be found
 in the swap list.</pre>
-<h2><u>[12.4] - Win32 / <a name="OS/2 Program List">OS/2 Program Lis</a>t</u>
+<h2><a name="Win32/OS2ProgramList">[12.4] - Win32 / OS/2 Program List</a>
 
 </h2>
 <pre><img border="0" src="images/scfg_xtrn_winos2list.gif" width="572" height="331"><u>
@@ -116,7 +115,7 @@ included with an extension (e.g. .EXE) unless you actually configure your
 external program command lines in SCFG with extensions (note ZIP and UNZIP do
 not have specified extensions). All native OS/2 programs that you wish to
 execute from the BBS must be added to this list.</pre>
-<h2><u>[12.5] - </u><a name="External Editors"><u>External Editors</u></a>
+<h2><a name="ExternalEditors">[12.5] - External Editors</a>
 
 </h2>
 <pre>This selection will bring up a list of external editors that are available as
@@ -168,7 +167,7 @@ edit its settings. The available settings are (example given is for SyncEdit):</
 <b>BBS Drop File Type:
 </b>	If this editor requires a BBS drop file (DOOR.SYS, DORINFO#.DEF, etc)
 	use this option to select the drop file format.</pre>
-<h2><u>[12.6] - </u><a name="Online Programs"><u>Online Programs</u></a>
+<h2><a name="OnlinePrograms">[12.6] - Online Programs</a>
 
 </h2>
 <pre>This selection will generate a list of configured external program sections.
@@ -183,7 +182,7 @@ Synchronet has been designed to eliminate the need for batch files and
 drop file conversion programs to run external programs (doors) on your BBS.
 Synchronet supports many different drop file types (often referred to as
 drop files) listed below.</pre>
-<h3><u>[12.7] - <a name="Supported Dropfile Types:">Supported Dropfile Types:</a></u>
+<h3><a name="SupportedDropfileTypes:">[12.7] - Supported Dropfile Types:</a>
 
 </h3>
 <pre>Software		Write File(s)			Read File(s)
@@ -199,7 +198,7 @@ TriBBS			TRIBBS.SYS
 MegaMail		UTIDOOR.TXT
 Solar Realms		DOORFILE.SR
 Synchronet		XTRN.DAT			MODUSER.DAT</pre>
-<h2><u>[12.8] - </u><a name="Call-back Verifiers"><u>Call-back Verifiers</u></a>
+<h2><a name="Call-backVerifiers">[12.8] - Call-back Verifiers</a>
 
 </h2>
 <pre>Call-back verification and user upgrade programs for other BBS packages may be
@@ -215,8 +214,8 @@ EXITINFO.BBS:	Security level and Flag Set #1
 USERS.SYS:	Security level and Expiration Date
 MODUSER.DAT:	Security level, Flag Set #1-#4, Exemptions, Restrictions,
 		Expiration Date, Credits, and Minutes</pre>
-<h2><u>[12.9] - </u><a name="Installing a New External Program"><u>Installing a
-New External Program</u></a>
+<h2><a name="InstallingNewExternalProgram">[12.9] - Installing a
+New External Program</a>
 
 </h2>
 <pre>Install your new external program into a sub-directory off your XTRN directory.
@@ -230,14 +229,14 @@ only required for programs that do NOT support multiple nodes.
 
 The full path and file name of the drop file can be specified on the command
 line by using the %f command line specifier in SCFG.</pre>
-<h2><u>[12.10] - </u><a name="Configuring a New External Program"><u>Configuring
-a New External Program</u></a>
+<h2><a name="ConfiguringNewExternalProgram">[12.10] - Configuring
+a New External Program</a>
 
 </h2>
 <pre>Run SCFG from any NODE directory (or hit 'C' at the Waiting For Call screen).
 Select &quot;External Programs&quot; and hit enter. Hit END and ENTER for the External
 Program Sections menu and select an External Program Section to add this
-new program to. Select &quot;Available External Programs&quot; and hit the INSert key.
+new program to. Select &quot;Available External Programs&quot; and hit the Insert key.
 Enter a description for your new external program.
 
 Now your new external program appears in the list. Hit ENTER to edit the
@@ -268,7 +267,7 @@ configuration for this program. Synchronet BBS List is given as an example.</pre
 
 <b>Clean-up Command Line:
 </b>	If your external program requires a clean-up command line (usually only
-	multiuser programs), select &quot;Clean-up Command Line&quot; and enter the
+	multi-user programs), select &quot;Clean-up Command Line&quot; and enter the
 	required command line for your program. Note: Most programs do NOT
 	require this option.
 
@@ -300,7 +299,7 @@ configuration for this program. Synchronet BBS List is given as an example.</pre
 	program, use this option to determine what requirements must be met to
 	run the program.
 
-<b>Multiuser:
+<b>Multi-user:
 </b>	If this program supports multiple simultaneous users, set this option
 	to &quot;Yes&quot;.
 
@@ -344,7 +343,7 @@ configuration for this program. Synchronet BBS List is given as an example.</pre
 
 <b>Place Drop File In:</b>
 	This is the directory where the drop file will be created. In general,
-	for multiuser programs or programs that can have the path and filename
+	for multi-user programs or programs that can have the path and filename
 	of the drop file included on the command line or in a config file,
 	select &quot;Node Directory&quot;. For single user programs that require the drop
 	file to be in the current directory, select &quot;Start-up Directory&quot;.
@@ -372,8 +371,8 @@ configuration for this program. Synchronet BBS List is given as an example.</pre
 		enter the door with 60 minutes remaining on the BBS, when
 		they get back to the BBS they will still have 60 minutes of
 		time remaining.</pre>
-<h2><u>[12.11] - </u><a name="Examples for some popular programs"><u>Examples
-for some popular programs</u></a>
+<h2><a name="ExampleDoorGameSetups">[12.11] - Examples
+for some popular programs</a>
 
 </h2>
 <pre>It is advised to install all your doors off the SBBS\XTRN directory
@@ -382,10 +381,10 @@ your doors in an easy to reference point.  Also, this is where the
 pre-configured doors (SBL,SMM) are installed by default.</pre>
 <pre>When configuring your Doors it is best whenever possible to place the
 dropfiles in your SBBS\NODE# directories and configure the game to
-look there for the file.  This ensures smooth MultiNode usage if your
+look there for the file.  This ensures smooth Multinode usage if your
 door supports multiple users at the same time.</pre>
-<h3><u>[12.11.1] - </u><a name="Legend of the Red Dragon (L.O.R.D.)"><u>Legend
-of the Red Dragon (L.O.R.D.)</u></a>
+<h3><a name="LORD">[12.11.1] - Legend
+of the Red Dragon (L.O.R.D.)</a>
 
 </h3>
 <pre>From the LORDCFG program your configuration should look something like this:</pre>
@@ -399,7 +398,7 @@ it can't be altered.</pre>
 <pre>Now go into your SCFG program and create a new external program.  It should
 look like this when it's all setup:</pre>
 <pre><img border="0" src="images/scfg_xtrn_lord.gif" width="572" height="331"></pre>
-<h3><u>[12.11.2] - U<a name="Usurper">surper</a></u></h3>
+<h3><a name="Usurper">[12.11.2] - Usurper</a></h3>
 <pre>You MUST use a fossil driver in order to use this program. Follow the Usurper
 documentation for getting the game going.  </pre>
 <pre>Next, bring up the USURPER.CFG into a text editor and edit the first few lines
@@ -422,7 +421,7 @@ of dropfile (I used DORINFO1.DEF like the Usurper documentation recommends).
     Now you'll need to go into your SCFG program and add an external program.
 Set it up to look something like this:</pre>
 <pre><img border="0" src="images/scfg_xtrn_usurper.gif" width="572" height="331"></pre>
-<h3><u><a name="Trade Wars 2002">[12.11.3] - Trade Wars 2002</a></u></h3>
+<h3><a name="TradeWars2002">[12.11.3] - Trade Wars 2002</a></h3>
 <pre>From the TEDIT program your configuration should look something like this:</pre>
 <pre><img border="0" src="images/tw2002.gif" width="572" height="331"></pre>
 <pre>You will need to do this for each of your nodes.  Be sure to set the 'Path
@@ -431,7 +430,7 @@ To Drop File' to the node directory of the node you are configuring.
 Now go into your SCFG program and create a new external program.  It should
 look like this when it's all setup:</pre>
 <pre><img border="0" src="images/scfg_xtrn_tw2002.gif" width="572" height="331"></pre>
-<h3><u><a name="Barren Realms Elite (BRE)">[12.11.4] - Barren Realms Elite (BRE)</a></u></h3>
+<h3><a name="BRE">[12.11.4] - Barren Realms Elite (BRE)</a></h3>
 <pre>Install and Configure BRE per the instructions in the BRE documentation.</pre>
 <pre>Now go into your SCFG program and create a new external program.  It should
 look like this when it's all setup:</pre>
@@ -441,9 +440,9 @@ BRE and the other SR / John Daily games are easy with Synchronet since
 it supports SR Games native DOORFILE.SR . Just place the DOORFILE.SR
 in BRE's directory and all is well.</pre>
 <pre>** Note: BRE is not Multiplayer and can only be used on one node at a time.
-         However, we can leave Allow Mulitple Users ON in SCFG as BRE will
+         However, we can leave Allow Multiple Users ON in SCFG as BRE will
          inform the player the game is in use by itself.</pre>
-<h2><u>[12.12] - </u><a name="Internal Telnet gateway"><u>Internal Gateway</u></a><u>s</u></h2>
+<h2><a name="InternalGateways">[12.12] - Internal Gateways</a></h2>
 <pre>This allows users on your system to be connected to other TCP/Telnet services
 on the Internet through your BBS. Typically, these services would be other
 telnetable BBSs and MUDs, although really, you can gate to any single-port
@@ -471,8 +470,8 @@ follows:</pre>
 <pre>While using the telgate gateway (and not currently in telnet &quot;Binary&quot; mode),
 users can press ctrl-] for a menu of telgate commands including: Disconnect,
 Toggle Echo, List Users, and Private Message.</pre>
-<h2><u>[12.13] - </u><a name="Troubleshooting External Programs"><u>Troubleshooting
-External Programs</u></a></h2>
+<h2><a name="TroubleshootingExternalPrograms">[12.13] - Troubleshooting
+External Programs</a></h2>
 <pre>   This section will explain common reasons why an external program may not be
 functioning properly and what can be done to get the program functioning
 properly.  It is impossible for Digital Dynamics to be familiar with every
@@ -517,7 +516,7 @@ SOLUTION: If the game is using a FOSSIL driver, make sure the locked rate of
 PROBLEM : The program works fine when only one user is playing, but when a
 	  second user tries to enter it doesn't function properly.
 SOLUTION: The program is probably not intended for multiple simultaneous users.
-	  Be sure to set the 'Mulitple Concurrent Users' option to NO if this
+	  Be sure to set the 'Multiple Concurrent Users' option to NO if this
 	  is the case.</pre>
 <p>   <a href="#top"><b>Back to Top</b></a></p>
 <!--webbot bot="Include" U-Include="_borders/bottom.htm" TAG="BODY" startspan -->

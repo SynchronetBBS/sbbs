@@ -18,7 +18,7 @@
 <!--webbot bot="Include" endspan i-checksum="23126" -->
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
-<h2><u>[14.0] - </u><a name="Multinode Configuration"><u>Multinode Configuration</u></a>
+<h2><a name="MultinodeConfiguration">[14.0] - Multinode Configuration</a>
 </h2>
 <pre>Synchronet Version 2.x runs under DOS v3.0 or greater and SHARE (or NetWare).
 A DOS process is required for each node on a Synchronet system (unless
@@ -26,7 +26,7 @@ running Synchronet for OS/2). You can run multiple nodes on one cpu with DOS
 multitaskers such as DESQview, Windows, or OS/2 or you can run one node per CPU
 and let the CPU's share the same data on a common hard disk via Local Area
 Network (LAN).</pre>
-<h2><u>[14.1] - </u><a name="LAN Method"><u>LAN Method</u></a>
+<h2><a name="LANMethod">[14.1] - LAN Method</a>
 </h2>
 <pre>Using one CPU per node is by far the fastest way to run multiple Synchronet
 nodes. Since SBBS4DOS runs in 8086 real mode, any IBM PC can run Synchronet
@@ -46,9 +46,9 @@ preferable over a local hard disk (especially on XT's) due to NetWare's high
 speed file system and dedicated memory for intelligent disk caching. Synchronet
 will run on any NOS that allows multiple CPU's running DOS to access data on a 
 common disk.</pre>
-<h2><u>[14.2] - </u><a name="Multitasker Method"><u>Multitasker Method</u></a>
+<h2><a name="MultitaskerMethod">[14.2] - Multitasker Method</a>
 </h2>
-<pre>Any program that allows the simulataneous execution of multiple DOS programs
+<pre>Any program that allows the simultaneous execution of multiple DOS programs
 should be able to run multiple SBBS4DOS nodes per CPU. To reliably and
 efficiently run multiple DOS sessions on one CPU, you will probably need an
 80386 CPU (the faster, the better), and at least 2 megabytes of memory
@@ -74,17 +74,17 @@ for what kind of performance is not an easy question to answer. It depends
 heavily on the multitasking software, modem speed, and hardware I/O. Under any
 configuration, expect some amount of performance degradation when running
 multiple nodes per CPU.</pre>
-<h2><u>[14.3] - </u><a name="Is it Safe?"><u>Is it Safe?</u></a>
+<h2><a name="Safe?">[14.3] - Is it Safe?</a>
 </h2>
 <pre>Many Sysops will worry how reliable the system is with multiple simultaneous
-users. Rest assurred that Synchronet was designed from the ground up for
+users. Rest assured that Synchronet was designed from the ground up for
 multiple simultaneous users. Data integrity and system fault tolerance is never
 sacrificed when adding nodes to a Synchronet system.
 
 Users can post on the same sub-board, e-mail the same user, download the same
 file, run the same external program, perform virtually any system function
 simultaneously. Note: External programs must support multiple simultaneous
-users if the program has been configured for multiuser access from Synchronet.
+users if the program has been configured for multi-user access from Synchronet.
 
 Considerations and precautions have been taken where user data is concerned
 to allow changes to the real-time database to take place immediately - even if
@@ -106,7 +106,7 @@ count (or time-out) that will deny access to the requesting node and log a
 critical error for that node. This situation should not occur, but provisions 
 are made for it in case of hardware failure of a node with a file or record 
 open with write access.</pre>
-<h2><u>[14.4] - </u><a name="Multinode: DESQview"><u>Multinode: DESQview</u></a>
+<h2><a name="MultinodeDESQview">[14.4] - Multinode: DESQview</a>
 </h2>
 <pre><a name="How many nodes?"><b><u>How many nodes?</u></b></a></pre>
 <pre>The answer to this question depends on the speed of your machine. Here is
@@ -124,7 +124,7 @@ CPU	Nodes
 
 	<b>Note:</b> You can run more than the suggested number of nodes, but
 	      performance will decrease with each additional node.</pre>
-<pre><a name="How much memory?"><b><u>How much memory?</u></b></a></pre>
+<pre><a name="How much memory?"><b>How much memory?</b></a></pre>
 <pre>You will need roughly 500k of available expanded memory for each node. When
 running multiple nodes, a disk cache is required. Around 1 to 2 MB should be
 used in most situations. Here is another table of estimated total system memory
@@ -140,8 +140,8 @@ Nodes	MB of RAM
 8	6
 9	7
 10	7</pre>
-<h3><a name="Example DESQview v2.42"><u>Example Synchronet for DOS setup
-parameters for DESQview v2.42</u></a>
+<h3><a name="ExampleDESQview">Example Synchronet for DOS setup
+parameters for DESQview v2.42</a>
 </h3>
 <pre>ษ1ออChangeอaอProgramออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
 บ                               Change a Program                              บ
@@ -315,7 +315,7 @@ DESQview CONVSCR program.
 IMPORTANT: When running under DESQView you will be required to load DOS's SHARE
 	   program.  Be sure that you do NOT load SHARE into high memory (or
 	   allow any memory managers to do so)!</pre>
-<h2><u>[14.5] - </u><a name="Multinode: OS/2"><u>Multinode: OS/2</u></a>
+<h2><a name="MultinodeOS/2">[14.5] - Multinode: OS/2</a>
 </h2>
 <pre><a name="0s2 System Requirements">System Requirements</a>
 -------------------
@@ -363,7 +363,7 @@ IDLE_SECONDS			0
 IDLE_SENSITIVITY		100
 HW_TIMER			ON
 INT_DURING_IO			ON</pre>
-<h2><u>[14.6] - </u><a name="Multinode: Windows 3.x"><u>Multinode: Windows 3.x</u></a>
+<h2><a name="MultinodeWindows3.x">[14.6] - Multinode: Windows 3.x</a>
 </h2>
 <pre><a name="Win31 System Requirements">System Requirements</a>
 -------------------
@@ -445,7 +445,7 @@ probably will NOT be sufficient for high speed modems, and you will probably
 want to purchase a third party communications driver that can handle higher
 baud rates under windows. When running windows, be sure to load SHARE before
 you run windows!</pre>
-<h2><u>[14.7] - </u><a name="Multinode: Windows 95"><u>Multinode: Windows 9x</u></a>
+<h2><a name="MultinodeWindows9x">[14.7] - Multinode: Windows 9x</a>
 </h2>
 <pre><a name="Win9x System Requirements">System Requirements</a>
 -------------------
@@ -489,7 +489,7 @@ to change for better efficiency:
 
 2) In SCFG under each node, set the toggle option 'Windows/OS2 Time Slice API'
    to 'YES'.</pre>
-<h2><u>[14.8] - </u><a name="Multinode: LAN"><u>Multinode: LAN</u></a>
+<h2><a name="MultinodeLAN">[14.8] - Multinode: LAN</a>
 </h2>
 <pre>Most of the information necessary for setting up your nodes on a LAN will be
 provided by the documentation for your Network Operating System. All that

@@ -19,7 +19,7 @@
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
 
-<h2><u>[10.0] - File Transfer Section</u></h2>
+<h2><a name="FileTransferSection">[10.0] - File Transfer Section</a></h2>
 <pre>The Synchronet file transfer section is used for transferring data and program
 files between the BBS and the remote user. Files are stored in a logical
 hierarchy of libraries and directories. A library is a group of directories
@@ -56,9 +56,9 @@ Windows CD-ROM          Utilities
                         Games
                         Desktop Publishing
                         Fonts</pre>
-<h2><u>[10.1] - </u><a name="Synchronet FTP Server Documentation"><u>Synchronet FTP Server
-Documentation</u></a></h2>
-<pre><b><u>FTP Filename Aliases</u></b>
+<h2><a name="SynchronetFTPServer">[10.1] - Synchronet FTP Server
+Documentation</a></h2>
+<pre><b>FTP Filename Aliases</b>
 
 You can create a list of file aliases that will appear in your FTP root 
 directory for:</pre>
@@ -84,7 +84,7 @@ the dynamically generated Auto Index file (if you have this option enabled).</pr
 <pre>Lines beginning with a ';' are considered comments and are ignored.</pre>
 <pre>Example Alias:</pre>
 <pre>sbbs_for_dos.zip bbs://main/sbbs/sbbs230b.zip Current version for SBBS for DOS</pre>
-<pre><b><u>Sysop Access</u></b>
+<pre><b>Sysop Access</b>
 
 To login with system operator access, you must login with a user account that
 has a security level of 90 or higher (user #1 usually has level 99) and enter 
@@ -95,7 +95,7 @@ syspass is the system password.</pre>
 you normal (non-sysop) access.</pre>
 <pre>Sysop access allows you to mount local file systems and will enable secure
 BBS database features in the future (such as deleting/renaming files).</pre>
-<pre><b><u>Local File System Access
+<pre><b>Local File System Access<u>
 </u></b>
 This is a powerful new feature that allows the sysop to access any and all
 locally accessible files and file systems via FTP (very convenient for
@@ -105,7 +105,7 @@ FTP configuration dialog in SBBSCTRL to enable this feature.</pre>
 (see &quot;Sysop Access&quot; for details). Once logged in with sysop access, you may
 mount the local file system. There are two ways to mount the local file system
 (and subsequently to revert to the BBS file system):</pre>
-<pre><b><u>SMNT (Structure Mount)</u></b>
+<pre><b>SMNT (Structure Mount)</b>
 
 Sysops may use the FTP &quot;SMNT&quot; command to mount the local files system. Since most 
 FTP clients do not support the SMNT command, you'll probably need to use the 
@@ -118,7 +118,7 @@ directory (for Windows' command-line ftp, type &quot;quote SMNT C:\&quot;).</pre
 by using &quot;SMNT \\othersys\drive&quot; where othersys is the name of the other
 computer and drive is the share name of the desired drive.</pre>
 <pre>To switch back to (mount) the BBS file database, use &quot;SMNT bbs:&quot;</pre>
-<pre><b><u>CD (Change Directory)</u></b>
+<pre><b>CD (Change Directory)</b>
 
 Sysops can mount the local file system using a special case of the CD (CWD, XCWD)
 command. By prefixing &quot;local:&quot; to the new directory, the local file system will
@@ -131,11 +131,11 @@ Example: &quot;cd d:\&quot;.</pre>
 <pre>Since some FTP clients do not support the SMNT command, nor allow users to enter
 verbatim FTP commands, the CD method is the easiest and most reliable method of
 accessing the local file system.&nbsp;</pre>
-<h2><u>[10.2] - </u><a name="Setting Up the File Transfer Section"><u>Setting Up the File
-Transfer Section</u></a></h2>
+<h2><a name="SettingUpFileTransferSection">[10.2] - Setting Up the File
+Transfer Section</a></h2>
 <pre>Run the SCFG utility, and select File Options from the menu. Following are
 example screens and the options available from the File Options sub-menu.</pre>
-<h3><u>[10.2.1] - </u><a name="Main Options"><u>File Options</u></a>
+<h3><a name="FileOptions">[10.2.1] - File Options</a>
 </h3>
 <p><img border="0" src="images/scfg_xfer_options.gif" width="572" height="331">
 </p>
@@ -188,7 +188,7 @@ example screens and the options available from the File Options sub-menu.</pre>
 	possible leech download, the user is probably trying to get something
 	for nothing, though this is hard to prove without actually watching
 	the file transfer in progress.</pre>
-<h2><u>[10.3] - </u><a name="Viewable Files"><u>Viewable Files</u></a>
+<h2><a name="ViewableFiles">[10.3] - Viewable Files</a>
 </h2>
 <pre>This is a list of file types that have content information that can be viewed
 through the execution of an external program or Baja module. Here are a couple
@@ -198,7 +198,7 @@ of command line examples for a few file types.</pre>
       additional option (Access Requirements) which is not shown here.
       Users not meeting any access requirements which are set will not
       be able to perform, or be affected by, that function.</pre>
-<h2><u>[10.4] - </u><a name="Testable Files"><u>Testable Files</u></a>
+<h2><a name="TestableFiles">[10.4] - Testable Files</a>
 </h2>
 <pre>This is a list of file types that will have a command line executed to test
 the file integrity upon their upload. The file types are specified by extension
@@ -227,7 +227,7 @@ Domain Entertainment:</pre>
 
 <b>NOTE:</b> Users not meeting any access requirements which are set will not
       be able to perform, or be affected by, that function.</pre>
-<h2><u>[10.5] - </u><a name="Download Events"><u>Download Events</u></a>
+<h2><a name="DownloadEvents">[10.5] - Download Events</a>
 </h2>
 <pre>Download events are an event that you wish to have executed before a user
 downloads a file from your BBS.  This can be useful adding a comment to
@@ -239,7 +239,7 @@ a user attempts to download a file.</pre>
 <pre><img border="0" src="images/scfg_xfer_event.gif" width="572" height="331"></pre>
 <pre>Selecting the available event will allow you to edit the options available.</pre>
 <pre><img border="0" src="images/scfg_xfer_eventc.gif" width="572" height="331"></pre>
-<h2><u>[10.6] - </u><a name="Extractable Files"><u>Extractable Files</u></a>
+<h2><a name="ExtractableFiles">[10.6] - Extractable Files</a>
 </h2>
 <pre>This is a list of archive file types that can be extracted to the temp
 directory by an external program. The file types are specified by their
@@ -277,7 +277,7 @@ the file(s). Here are some example command lines for extracting various files:</
 </b>                This is the file specification to extract from the archive.
 
 <b>        See Appendix A for a complete list of the available specifiers.</b></pre>
-<h2><u>[10.7] - </u><a name="Compressable Files"><u>Compressable Files</u></a>
+<h2><a name="CompressableFiles">[10.7] - Compressable Files</a>
 </h2>
 <pre>This is a list of archive file types that can be created for QWK packets
 and temporary archives for download. The file types are specified by their
@@ -287,12 +287,12 @@ the archive. Here are some example command lines for various compression types:<
 
 For these compression command lines to work, you must have the appropriate
 executable files (PKZIP, ARJ, and LHA) in your EXEC directory.</pre>
-<h2><u>[10.8] - </u><a name="Transfer Protocols"><u>Transfer Protocols</u></a>
+<h2><a name="TransferProtocols">[10.8] - Transfer Protocols</a>
 </h2>
 <pre>This is a list of file transfer protocols that can be used to transfer files
 either to or from a remote user. For each protocol, you can specify the
 mnemonic (hot-key) to use to specify that protocol, the command line to use for
-uploads, downloads, batch uploads, batch downloads, bidirectional file
+uploads, downloads, batch uploads, batch downloads, bi-directional file
 transfers, and the support of DSZLOG. If the protocol doesn't support a
 certain method of transfer, or you don't wish it to be available for a certain
 method of transfer, leave the command line for that method blank. Be advised,
@@ -301,8 +301,8 @@ protocol menus (ULPROT, DLPROT, BATUPROT, BATDPROT, and BIPROT) in the
 TEXT\MENU directory accordingly. The '%f' command line specifier is used to
 represent the filename or batch file list. The following is an example list of
 protocols and their respective sub-menus and options:</pre>
-<h3><u>[10.8.1] - <a name="Version 3.0 (Win32 / Telnet) using FDSZ :">Version 3.0 (Win32 /
-Telnet) using FDSZ :</a></u>
+<h3><a name="FDSZ">[10.8.1] - Version 3.0 (Win32 /
+Telnet) using FDSZ :</a>
 </h3>
 <pre><b>IMPORTANT: </b>If you are running Synchronet as a Telnet Server then you
            must use a Protocol that supports FOSSIL Communications
@@ -317,8 +317,8 @@ Telnet) using FDSZ :</a></u>
 <pre><img border="0" src="images/scfg_xfer_proto_fdsz_z.gif" width="572" height="331"></pre>
 <pre><b>FDSZ Ymodem-G</b></pre>
 <pre><img border="0" src="images/scfg_xfer_proto_fdsz_g.gif" width="572" height="331"></pre>
-<h3><u>[10.8.2] - </u><a name="Version 2.30 (DOS/OS2) using DSZ :"><u>Version 2.30 (DOS/OS2) using
-DSZ :</u></a>
+<h3><a name="DSZ">[10.8.2] - Version 2.30 (DOS/OS2) using
+DSZ :</a>
 </h3>
 <pre><img border="0" src="images/scfg_xfer_proto_dsz.gif" width="572" height="331">
 
@@ -333,8 +333,8 @@ DSZ :</u></a>
 
 <b>DSZ Ymodem-G:</b></pre>
 <pre><img border="0" src="images/scfg_xfer_proto_dsz_g.gif" width="572" height="331"></pre>
-<h3><u>[10.8.3] - </u><a name="Version 2.30 (DOS/OS2) using HS/Link :"><u>Version 2.30 (DOS/OS2)
-using HS/Link :</u></a>
+<h3><a name="HS/Link">[10.8.3] - Version 2.30 (DOS/OS2)
+using HS/Link :</a>
 </h3>
 <pre><b>HS/Link Bi-Directional Transfers:</b></pre>
 <pre><img border="0" src="images/scfg_xfer_proto_dsz_h.gif" width="572" height="331"></pre>
@@ -348,7 +348,7 @@ using HS/Link :</u></a>
 	   Synchronet should not be set to use UART.  Just because a front-end
 	   mailer or door game requires a FOSSIL driver, it does NOT mean
 	   that you must also set Synchronet to use a FOSSIL.</pre>
-<h2><u>[10.9] - </u><a name="Creating File Libraries"><u>Creating File Libraries</u></a>
+<h2><a name="CreatingFileLibraries">[10.9] - Creating File Libraries</a>
 </h2>
 <pre>Select &quot;File Transfers&quot; from the SCFG main menu. Then select &quot;File Libraries&quot;.
 Hit INS (insert key) to create a file library. File libraries are groups of
@@ -407,7 +407,7 @@ PD/ShareWare CD-ROM	Windows Programs, Fonts, Icons, etc.
 You must have at least one file library and one file directory for anyone to be
 able to use the file transfer section. Following is a list of options available
 when creating or modifying a file library.</pre>
-<h3><u>[10.9.1] - </u><a name="Library Options"><u>Library Options</u></a>
+<h3><a name="LibraryOptions">[10.9.1] - Library Options</a>
 </h3>
 <pre>Selecting a library name from the list of available libraries will give you a
 sub-menu of options for that library.</pre>
@@ -433,7 +433,7 @@ sub-menu of options for that library.</pre>
 <b>Import Areas:
 </b>	If you wish to import a text file of area information into the
 	current file library, use this option.</pre>
-<h2><u>[10.10] - </u><a name="Creating File Directories"><u>Creating File Directories</u></a>
+<h2><a name="CreatingFileDirectories">[10.10] - Creating File Directories</a>
 </h2>
 <pre>After you have created at least one file library, you need to create
 directories for the library. Creating a file directory is much like creating
@@ -455,8 +455,7 @@ existence&quot; and &quot;Search for New Files&quot; toggle options to &quot;No&
 
 Following is a list of options available in the SCFG when creating or modifying
 a file directory.</pre>
-<h3><u>[10.10.1] - </u><a name="Main Directory Options"><u>Main Directory Options</u>
-</a>
+<h3><a name="MainDirectoryOptions">[10.10.1] - Main Directory Options</a>
 </h3>
 <pre><img border="0" src="images/scfg_xfer_dir.gif" width="572" height="331">
 
@@ -552,7 +551,7 @@ a file directory.</pre>
 
 <b>Purge by Age:
 </b>	This is maximum age of files (in days) to keep in this directory.
-	The DELFILES utiltity (included with Synchronet) must be run as
+	The DELFILES utility (included with Synchronet) must be run as
 	a timed event to automatically purge old files from your file areas.
 
 <b>Credit on Upload:
@@ -565,7 +564,7 @@ a file directory.</pre>
 	directory, users will be credited this percentage of credits for
 	subsequent downloads of any file that they upload to this
 	directory.</pre>
-<h3><u>[10.10.2] - </u><a name="Toggle Options"><u>Toggle Options</u></a>
+<h3><a name="ToggleOptions">[10.10.2] - Toggle Options</a>
 </h3>
 <pre><img border="0" src="images/scfg_xfer_dir_toggles.gif" width="572" height="331">
 
@@ -652,7 +651,7 @@ a file directory.</pre>
 </b>	Setting this option to 'Yes' will cause the uploading user to receive
 	time (in minutes) for their upload rather than credits.  The minutes
 	a user receives will be based upon the percentage awarded multiplied
-	by the time it took for the receipient of the file to download it.
+	by the time it took for the recipient of the file to download it.
 
 <b>Anonymous Uploads:
 </b>        If you want users with the 'A' exemption to be able to upload file
@@ -672,8 +671,7 @@ a file directory.</pre>
 </b>	If this option is set to 'Yes', then when a file is moved from this
         directory to another, it's upload date will be reset to the current
 	date/time automatically.</pre>
-<h3><u>[10.10.3] - </u><a name="Advanced Options"><u>Advanced Options</u>
-</a></h3>
+<h3><a name="AdvancedOptions">[10.10.3] - Advanced Options</a></h3>
 <p><img border="0" src="images/scfg_xfer_dir_advanced.gif" width="572" height="331"></p>
 <pre><b>Extensions Allowed:
 </b>        This is a list of file extensions (separated by commas) that are
@@ -690,14 +688,14 @@ a file directory.</pre>
 </b>        Directories can be sorted either by filename or upload date in an
         ascending or descending order. This option selects the value to sort
         on and in which direction.</pre>
-<h3><u>[10.11] - </u><a name="IMPORTANT - Adding files to the BBS database"><u>IMPORTANT - Adding
-files to the BBS database</u></a></h3>
+<h3><a name="AddingFilesToDatabase">[10.11] - IMPORTANT - Adding
+files to the BBS database</a></h3>
 <pre>Now that you've created at least one file library and one file directory inside
 that file library, any files located in the storage path for that directory
 are not automatically available for users to download. The file has to be
 added to the BBS file database first.
 
-<b><u>Manual Upload</u></b>
+<b>Manual Upload</b>
 
 Logon to the BBS as yourself (most likely, user #1), go to the file transfer
 section. Select the file area you wish to add the file to and hit 'U' for
@@ -706,7 +704,7 @@ that you specified in SCFG you will be prompted for file descriptions and other
 questions about the file. If the file is not already in the storage directory,
 you will be prompted for the path from where to copy the file.
 
-<b><u>ADDFILES</u></b>
+<b>ADDFILES</b>
 
 If you have an ASCII list of your files with descriptions (often called
 FILES.BBS or DIR##), you'll want to use the Synchronet ADDFILES program to
@@ -715,7 +713,7 @@ is usually only the case for CD-ROMs and when converting a file database from
 another BBS. See the Utility Reference Chapter for more information on
 ADDFILES.
 
-<b><u>Bulk Upload
+<b>Bulk Upload<u>
 </u></b>
 To add the files that are located in the storage paths of your configured
 directories, exit the configuration program, logon to the BBS as yourself
@@ -723,8 +721,8 @@ directories, exit the configuration program, logon to the BBS as yourself
 &quot;;UPLOAD ALL&quot; then hit ENTER. If there are any files that are in your storage
 paths, but not already in the BBS file database you will be prompted to enter
 a description for each file.</pre>
-<h3><u>[10.11.1] - </u><a name="Creating Offline File Directories"><u>Creating Offline File
-Directories</u></a></h3>
+<h3><a name="CreatingOfflineFileDirectories">[10.11.1] - Creating Offline File
+Directories</a></h3>
 <pre>Each library can have an offline file directory. This is where you can place
 files that have been removed from the system, but the file information (name,
 description, uploader, etc.) remains in the database. Offline directories
@@ -736,7 +734,7 @@ specified per library. Offline file directories should have the &quot;Check for 
 existence&quot; toggle option set to &quot;No&quot;. The minimum security level to upload
 should be set to 90 so that users will not be allowed to upload to this
 directory.</pre>
-<h3><u>[10.11.2] - </u><a name="Creating a Sysop Directory"><u>Creating a Sysop Directory</u></a></h3>
+<h3><a name="CreatingSysopDirectory">[10.11.2] - Creating a Sysop Directory</a></h3>
 <pre>A sysop file directory is a directory that users can upload to, but they can
 not see nor download from. You can only have one sysop directory on the
 system and it can belong to any one of the file libraries. A sysop file
@@ -746,8 +744,8 @@ to sysop) transfer section command. The minimum security level to access should
 be set to 90 or higher so that only sysops can view the directory and download
 from it and the upload access level should be set to 0 (or higher, if you want
 to restrict the number of users who can upload to the sysop dir).</pre>
-<h3><u>[10.11.3] - </u><a name="Creating a User-to-User Transfer Directory"><u>Creating a
-User-to-User Transfer Directory</u></a></h3>
+<h3><a name="CreatingUser-to-UserDirectory">[10.11.3] - Creating a
+User-to-User Transfer Directory</a></h3>
 <pre>A user-to-user transfer directory is used for users to send a file directly
 to another user (or group of users) with only that user (or group of users)
 being able to see the file and download it. It's like a private e-mail file
@@ -762,8 +760,8 @@ if you want to restrict the number of users who can upload user-to-user
 files). This directory should have the &quot;Allow extended descriptions&quot; toggle
 option set to &quot;Yes&quot; so that the uploader of the file can attach a more
 detailed description if he or she wishes.</pre>
-<h3><u>[10.11.4] - </u><a name="Creating a Default Upload Directory"><u>Creating a Default Upload
-Directory</u></a></h3>
+<h3><a name="CreatingDefaultUploadDirectory">[10.11.4] - Creating a Default Upload
+Directory</a></h3>
 <pre>A default upload directory is used if you want all uploads to go to a single
 directory.  If you wish to use this feature, you must create a directory with
 the short name up &quot;Uploads&quot; (not case sensitive).  Set the minimum level to
@@ -773,15 +771,15 @@ of users who can upload to this directory).  You should set the required
 upload access level of all other directories in the library to 90 or higher so
 that all upload attempts to those directories will force the file uploaded into
 this directory.</pre>
-<h3><u>[10.11.5] - </u><a name="Supporting Blind Batch Uploads"><u>Supporting Blind Batch Uploads</u></a></h3>
+<h3><a name="SupportingBlindBatchUploads">[10.11.5] - Supporting Blind Batch Uploads</a></h3>
 <pre>Some sysops would like for their users to be able to do a batch upload of files
 to a directory without having to enter the files into an upload queue before
 hand.  These are called Blind Batch Uploads.  In order for this feature to
 work, you MUST have created a default upload directory (see the section above
 describing this procedure).  Once you have created a default upload directory,
 the user need only go to the Batch Transfer menu and begin his upload.</pre>
-<h2><u>[10.12] - </u><a name="CD-ROM and Other Slow Media Devices"><u>CD-ROM and Other Slow Media
-Devices</u></a></h2>
+<h2><a name="CD-ROM/SlowMediaDevices">[10.12] - CD-ROM and Other Slow Media
+Devices</a></h2>
 <pre>It is assumed that you have already installed your CD-ROM drive and any
 necessary device drivers so that it can be accessed as a DOS device (like
 a hard disk or floppy disk).
@@ -856,7 +854,7 @@ SET SBBSNODE=D:\BBS\NODE1
 
 Now run ADDFILES (from your EXEC directory) for each of your CD-ROM file
 description lists (or only once if a FILES.BBS exists in each directory). See
-the Utility Refernce chapter for specifics on how to use ADDFILES. Example
+the Utility Reference chapter for specifics on how to use ADDFILES. Example
 (assuming description lists are in DIR## format):
 
 ADDFILES CD-G-GIFS +D:\DESC\G-GIFS.LST 33 13
@@ -878,14 +876,14 @@ ADDFILES *FILES.LST
 These will add the file descriptions to your Synchronet file database.
 Now you should be able to run SBBS and have users download files from your
 CD-ROM.</pre>
-<h3><u>[10.12.1] - </u><a name="Alternate File Paths"><u>Alternate File Paths</u></a></h3>
+<h3><a name="AlternateFilePaths">[10.12.1] - Alternate File Paths</a></h3>
 <pre>Since a CD-ROM disk is &quot;read only&quot;, you cannot alter the physical organization
 of files and directories on the CD-ROM. Normally, you would have one logical
 Synchronet file directory for every physical DOS directory. But for CD-ROMs
 that have their files spread across a large number of directories, you may not
-want your logical directory structure to mimick the physical structure.
+want your logical directory structure to mimic the physical structure.
 Synchronet can store roughly a thousand files per directory and many CD-ROMs
-have far less than that per directory to accomodate BBS software that have a
+have far less than that per directory to accommodate BBS software that have a
 lower maximum number of files per directory. Each logical directory in
 Synchronet takes up memory so it is advantageous to keep the number of
 directories to a minimum when working with large quantities of files.

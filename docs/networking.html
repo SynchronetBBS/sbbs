@@ -16,16 +16,17 @@
 <hr>
 
 <!--webbot bot="Include" endspan i-checksum="23126" -->
+
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
-<h2><u>[9.0] - </u><a name="Networking"><u>Networking</u></a></h2>
+<h2><a name="Networking">[9.0] - Networking</a></h2>
 <pre>Selecting the Networks option from the SCFG will produce a list of available
 network technologies.
 
 <img border="0" src="images/scfg_networks.gif" width="572" height="331">
 
-Select the network technolgoy of your interest and refer to the following
+Select the network technology of your interest and refer to the following
 section that pertains to your selected network technology.</pre>
-<h3><u>[9.1] - </u><a name="QWK Packet Networking"><u>QWK Packet Networking</u></a></h3>
+<h3><a name="QWKPacketNetworking">[9.1] - QWK Packet Networking</a></h3>
 <pre>Let's start with some basic definitions. A QWK netted BBS is either a node,
 a hub, or both. A node is a BBS that calls another QWK net hub to transfer
 packets (receiving QWK and sending REP). A hub is a system that receives calls
@@ -43,7 +44,7 @@ configurable. It consists of a tear line and the Synchronet product name:
  þ Synchronet þ
 
 The configured tagline text will be attached to the end of the above tagline.</pre>
-<h3><u>[9.1.1] - </u><a name="Network Hubs"><u>Network Hubs</u></a></h3>
+<h3><a name="NetworkHubs">[9.1.1] - Network Hubs</a></h3>
 <pre>Selecting this option produces a list of configured hubs that your system
 calls to upload REP packets to and download QWK packets from. If a system
 calls your system for messages, it is a node and your system is the hub and you
@@ -71,7 +72,7 @@ Selecting a hub from the list of available hubs will produce a sub-menu:
 </b>	This is the command line to execute to perform the call-out.
 
 <b>Call-out Node:
-</b>        This is the number of the node which should peform the call-out.
+</b>        This is the number of the node which should perform the call-out.
 
 <b>Call-out Days:
 </b>        These are the days to perform the call-out.
@@ -79,7 +80,7 @@ Selecting a hub from the list of available hubs will produce a sub-menu:
 <b>Call-out Time/Frequency:
 </b>        This is either the specific time to call-out, or the number of times
         per day to call-out.</pre>
-<h3><u>[9.1.2] - </u><a name="Networked Sub-boards"><u>Networked Sub-boards</u></a></h3>
+<h3><a name="NetworkedSub-boards">[9.1.2] - Networked Sub-boards</a></h3>
 <pre>Selecting this option will give a sub-menu containing a list of networked
 sub-boards that will look something like this:</pre>
 <pre><img border="0" src="images/scfg_networks_qwkhubs_vert_subs.gif" width="572" height="331">
@@ -106,15 +107,15 @@ For each sub-board the following options are available:
         always want to set this to &quot;Strip out&quot;. If the hub is not a Synchronet
         BBS, but allows ANSI escape sequences in messages, set this option
         to &quot;Expand to ANSI&quot;.</pre>
-<h3><u>[9.1.3] - </u><a name="Configuring Your BBS as a QWK Node"><u>Configuring Your BBS as a
-QWK Node</u></a></h3>
-<pre>In the SCFG program, you'll need to specifiy your system's tagline (usually
+<h3><a name="ConfiguringQWKNode">[9.1.3] - Configuring Your BBS as a
+QWK Node</a></h3>
+<pre>In the SCFG program, you'll need to specify your system's tagline (usually
 the system name and phone number), the hubs to call, when to call, what node
 will do the calling, and which sub-boards to carry for each hub (a sub-board
 can send and receive messages from more than one hub!).
 
 The hub's System ID is important and must match the System ID of the hub BBS.
-For each hub, you can specifiy a list of sub-boards to network. For each
+For each hub, you can specify a list of sub-boards to network. For each
 sub-board, you must also set the conference number for the sub-board on the
 hub BBS. In Synchronet, conference numbers are based on the Group/Sub-board
 relationship. Group 1 / Sub 1 is conference number 1001, Group 2 / Sub 3 is
@@ -135,8 +136,8 @@ If your hub is a Synchronet BBS, use the included QNET module (*QNET),
 otherwise you probably use a batch file to execute a scripted terminal program.
 Example scripts for Telix, Robocomm, and Qmodem are included in the EXEC
 directory (SBBSQNET.*).</pre>
-<h3><u>[9.1.4] - </u><a name="Configuring Your BBS as a QWK Network Hub"><u>Configuring Your BBS
-as a QWK Network Hub</u></a></h3>
+<h3><a name="ConfiguringQWKHub">[9.1.4] - Configuring Your BBS
+as a QWK Network Hub</a></h3>
 <pre>Being a QWK network hub, just means that other QWK network compatible systems
 are going to logon to your system and upload and download messages. All you
 have to do is create a user account for each QWK network node that is going
@@ -156,8 +157,8 @@ the level you've given the account.
 
 Be sure to give all node accounts sufficient access to read and write messages
 on the sub-boards networked between the node and your BBS.</pre>
-<h2><u>[9.2] - </u><a name="Step-by-step Instructions for Joining DOVE-Net"><u>Step-by-step
-Instructions for Joining DOVE-Net</u></a></h2>
+<h2><a name="JoiningDoveNet">[9.2] - Step-by-step
+Instructions for Joining DOVE-Net</a></h2>
 <pre>DOVE-Net is a message base network connecting numerous BBSs and users on
 those BBSs together through QWK and Fido network technologies. DOVE-Net
 consists of primarily Synchronet BBSs. This is due to the fact that the
@@ -345,8 +346,8 @@ and the hub sysop are very experienced with QWK networking. It is also
 important that if you SWITCH hubs in the future, that you delete all the
 messages in the DOVE-Net sub-boards before your first call-out to the new
 hub BBS. Otherwise, you may flood the network with duplicate messages.</pre>
-<h2><u>[9.3] - </u><a name="Transferring Files Through QWK Network"><u>Transferring Files
-Through QWK Network</u></a></h2>
+<h2><a name="TransferringFilesThroughQWK">[9.3] - Transferring Files
+Through QWK Network</a></h2>
 <pre>Synchronet allows the transferring of files between a QWK network node and hub
 with great simplicity. If you wish to send a file to a QWK network hub (your
 system calls directly) or QWK network node (their system calls yours directly),
@@ -369,7 +370,7 @@ The transferring of files can be made automated for other programs to share
 data over the network. One popular use for this is Online Games that support
 inter-BBS play. One such game is Barren Realms Elite (BRE), see the external
 programs section for more information on this.</pre>
-<h2><u>[9.4] - </u><a name="PostLink Networking"><u>PostLink Networking</u></a></h2>
+<h2><a name="PostLinkNetworking">[9.4] - PostLink Networking</a></h2>
 <pre>PostLink is a message networking program written by Kip Compton and available
 for purchase from Bonnie Anthony (see Contacts Appendix). It is a derivation
 from PCRelay software. RelayNet (AKA RIME), headed by Bonnie Anthony, ILink
@@ -419,9 +420,9 @@ in SCFG is only used for documentary purposes. Synchronet includes a UTI
 (UTI*.EXE) included in your EXEC directory. See the Utility Reference for
 more information on the Synchronet UTI Driver.
 
-Be sure to set the &quot;PostLink Networked&quot; Netork Option to 'Yes' for each of
+Be sure to set the &quot;PostLink Networked&quot; Network Option to 'Yes' for each of
 your PostLink networked sub-boards.</pre>
-<h2><u>[9.5] - </u><a name="FidoNet Networking"><u>FidoNet Networking</u></a>
+<h2><a name="FidoNetNetworking">[9.5] - FidoNet Networking</a>
 </h2>
 <pre>FidoNet is both a network technology (referred to as FTN) and an actual message
 network. The technology was developed specifically for FidoNet, but is used
@@ -453,7 +454,7 @@ The above command line tells Synchronet that someone is currently connected
 next scheduled event is in 60 minutes. See Appendix B for all the available
 switches for running Synchronet.
 
-SBBSecho is an included Synchronet utiltiy (registered seperately) to
+SBBSecho is an included Synchronet utility (registered separately) to
 import/export NetMail and EchoMail bundles/packets.
 
 NetMail will be exported to and imported from the directory specified in the
@@ -461,8 +462,8 @@ Networks configuration in SCFG. EchoMail will be imported to and exported from
 the EchoMail path specified for that sub-board, or off the base EchoMail
 directory specified in SCFG Network options in a subdirectory named after the
 internal code of the sub-board.</pre>
-<h3><u>[9.5.1] - </u><a name="Step-by-Step instructions for setting up FidoNet using SBBSecho and InterMail"><u>Step-by-Step
-instructions for setting up FidoNet using SBBSecho and InterMail</u></a>
+<h3><a name="FidoNetUsingSBBSECHOandInterMail">[9.5.1] - Step-by-Step
+instructions for setting up FidoNet using SBBSecho and InterMail</a>
 </h3>
 <pre>One of the most difficult tasks that the novice sysop will encounter is the
 setting up of FidoNet.	These instructions will take you step by step through
@@ -502,7 +503,7 @@ backbone or files from the FidoNet filebone.
     temporary address specified in Policy 4 when specifying your node address
     in the front-end mailer.
 </pre>
-<pre><b><u>Setting up InterMail v2.xx or FrontDoor v2.xx</u></b>
+<pre><b>Setting up InterMail v2.xx or FrontDoor v2.xx</b>
 
  4) Install InterMail per IM.DOC (included with InterMail).
 
@@ -583,7 +584,7 @@ backbone or files from the FidoNet filebone.
  8) Now run IMNC to compile the nodelist.
 
 
-<b><u>Settup up FidoNet in SCFG</u></b>
+<b>Setting up FidoNet in SCFG</b>
 
  9) Run SCFG from one of your node directories, or hit 'C' from the waiting for
     caller screen.  Then select Networks-&gt;FidoNet EchoMail and NetMail.
@@ -676,7 +677,7 @@ backbone or files from the FidoNet filebone.
     for information on the available options.
 
     a) Under Paths...-&gt;Outbound Directory be sure to enter the path where
-       outgoing mail packets and bundles should be placed (ie: C:\IM\OUTBOUND).
+       outgoing mail packets and bundles should be placed (i.e.: C:\IM\OUTBOUND).
 
     b) Select the appropriate Mailer Type.
 
@@ -756,7 +757,7 @@ backbone or files from the FidoNet filebone.
     be able to send and receive FidoNet echomail and netmail.
 
 
-<b><u>Examples for Receiving File Echoes via TICK (third party file echo program)</u></b>
+<b>Examples for Receiving File Echoes via TICK (third party file echo program)</b>
 
 Example TIC.CFG:
 
@@ -786,7 +787,7 @@ set tz=
 ---------------------------------[  End  ]-------------------------------------
 
 
-<b><u>Setting up ALLFIX (third party file echo program) with Synchronet BBS Software
+<b>Setting up ALLFIX (third party file echo program) with Synchronet BBS Software<u>
 </u></b>
 In ASETUP-&gt;System data-&gt;Global Options:
 
@@ -823,7 +824,7 @@ Add &quot;%sbbs%\exec\addfiles * /diz&quot;
 
 Search for &quot;:outmail&quot;
 Add &quot;%allfix%\allfix file&quot;</pre>
-<h3><u>[9.5.2] - </u><a name="Sending FidoNet NetMail"><u>Sending FidoNet NetMail</u></a></h3>
+<h3><a name="SendingFidoNetNetMail">[9.5.2] - Sending FidoNet NetMail</a></h3>
 <pre>Once you have a FidoNet address and have your Front-end mailer functioning
 properly, you may send NetMail messages and allow, if you wish, your users
 to send NetMail. You can set a NetMail cost in credits for users in SCFG-&gt;
@@ -870,7 +871,7 @@ Example: &quot;CR:Hello&quot; or &quot;CR: Hello&quot;
 Becomes: &quot;Hello&quot; before it is sent out by Synchronet.</pre>
   </blockquote>
 </blockquote>
-<h2>    <u>[9.6] - </u><a name="Internet Networking"><u>Internet Networking</u></a></h2>
+<h2>    <a name="InternetNetworking">[9.6] - Internet Networking</a></h2>
 <pre><img border="0" src="images/scfg_networks_internet.gif" width="572" height="331">
 
 <b>System Address:
@@ -933,6 +934,7 @@ read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation
 .</font></p>
 
 <!--webbot bot="Include" endspan i-checksum="55766" -->
+
 </body>
 
 </html>

@@ -18,10 +18,10 @@
 <!--webbot bot="Include" endspan i-checksum="23126" -->
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
-<h2><u>[17.1] - </u><a name="Customization: Menus and Text Files"><u>Customization:
-Menus and Text Files</u></a></h2>
+<h2><a name="MenusAndTextFiles">[17.1] - Customization:
+Menus and Text Files</a></h2>
 <pre>One of the easiest and possibly the most obvious ways to customize or
-personalize your BBS is to change the look of the menus. Menus are mearly ASCII
+personalize your BBS is to change the look of the menus. Menus are merely ASCII
 text files (with optional ctrl-a codes or ANSI escape sequences) stored in the
 TEXT\MENU directory. The filenames are descriptive of the menu subject and
 the extensions represent the content of the file. The possible extensions and
@@ -101,7 +101,7 @@ XFERCFG         Transfer section configuration menu
 XFERINFO        Transfer section information menu
 
 
-<u><b>Optional Menus</b></u>
+<b>Optional Menus</b>
 
 The following files must be created in the TEXT\MENU directory if you wish to
 use them.
@@ -118,7 +118,7 @@ CHAN		Multinode Chat Channels
 TMESSAGE        Displays when the user enters the transfer section
 TPOLICY         Transfer policy (&amp;T transfer section command)
 
-<b><u>Other Optional Message Files</u></b>
+<b>Other Optional Message Files</b>
 
 If you want to have an information file displayed for sub-boards when using
 the 'I' scanning command and 'IS' main menu command, create a file for the
@@ -140,7 +140,7 @@ as the extension. Example:
 
 <b>DATA\DIRS\GAMES.HDR</b>
 
-<b><u>Colors</u></b>
+<b>Colors</b>
 
 To modify some of colors of the BBS you can edit the ATTR.CFG file which is
 located in the CTRL directory. The file contains one color per line and is
@@ -148,7 +148,7 @@ commented as to the use of the color. The colors are represented with ctrl-a
 code attribute letters/numbers. The number of colors you can change with this
 method is very small.
 
-<b><u>Text Files
+<b>Text Files<u>
 </u></b>
 There are some text files that are displayed to users at different points
 in the system. The locations and descriptions follow (* indicates optional):
@@ -175,7 +175,7 @@ in the system. The locations and descriptions follow (* indicates optional):
 <b>TEXT\QWK\BBSNEWS</b>       *Included in QWK packets
 <b>TEXT\QWK\BLT-0.? </b>      *Included in QWK packets (? must be number)
 
-<b><u>Logon Message Flow Chart</u></b>
+<b>Logon Message Flow Chart</b>
 
 Displayed filenames are in upper case.
 
@@ -225,13 +225,13 @@ Displayed filenames are in upper case.
 	    ÚÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄ¿
 	    ³ Logon Event(s) ³
 	    ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ</pre>
-<h3><u>[17.1.1] - </u><a name="Text/Colors"><u>Text/Colors</u></a></h3>
+<h3><a name="Text/Colors">[17.1.1] - Text/Colors</a></h3>
 <pre>Virtually all the text and color that the BBS displays is stored in the file
 TEXT.DAT in the CTRL directory. The syntax of this file is VERY specific and
 extreme caution should be taken when editing it. Knowledge of the C language
 would be very helpful in producing the desired results. If all you want to
 do is change colors of a certain text line, take care not to disturb the
-arrangement of the other characters on the line. Ctrl-a codes can be preceeded
+arrangement of the other characters on the line. Ctrl-a codes can be preceded
 by an embedded ctrl-a character (usually a black happy face) or by a '\1' 
 (the printf() equivalent of ctrl-a).
 
@@ -244,18 +244,18 @@ background to blue, you might try to use the sequence &quot;\14&quot; which won'
 You could either embed the actual ctrl-a character (which is preferred) or
 use &quot;\0014&quot;.
 
-Some of the strings have characters preceeded by a tilde ('~'). These strings
-are referred to as mnemonics. The tilde preceeds a character that is to be
+Some of the strings have characters preceded by a tilde ('~'). These strings
+are referred to as mnemonics. The tilde precedes a character that is to be
 highlighted for users supporting ANSI and enclosed in parenthesis for non-ANSI
 users. Usually used for prompt strings that contain the valid key commands.
 The colors to use for the highlighted characters, normal characters, and the
 command character are specified in the CTRL\ATTR.CFG file.
 
 The order of the % specifiers (if they exist) in a TEXT.DAT line cannot be
-altered. The display of %s specifiers can be supressed by changing the '%s' to
-'%.0s'. Another way to supress the display of specifiers is to enclose them
+altered. The display of %s specifiers can be suppressed by changing the '%s' to
+'%.0s'. Another way to suppress the display of specifiers is to enclose them
 between Ctrl-A( and Ctrl-A). Any text between Ctrl-A( and Ctrl-A) would only
-be displayed to users of level 90 or higher. To supress the display to all
+be displayed to users of level 90 or higher. To suppress the display to all
 users, put the text/specifiers between Ctrl-ACtrl-Z and Ctrl-A) (assuming
 that the Z flag from flag set #1 is not set on any user accounts).
 
@@ -263,8 +263,8 @@ that the Z flag from flag set #1 is not set on any user accounts).
 Make a backup of the TEXT.DAT file before you edit it. If you damage the file
 syntax when editing it, Synchronet may execute erroneously or even fail to
 initialize.</pre>
-<h3><u>[17.1.2] - </u><a name="Node Action Text"><u>Node Action Text</u></a></h3>
-<pre>The node action text can be over-riden by editing the NodeAction lines in
+<h3><a name="NodeActionText">[17.1.2] - Node Action Text</a></h3>
+<pre>The node action text can be over-ridden by editing the NodeAction lines in
 the TEXT.DAT file (see previous section for details on TEXT.DAT). The node
 action text is what is displayed on the node status line when a node is in
 use. (i.e. instead of &quot;Node  1: So-and-so uploading at 14400bps&quot;, you could
@@ -279,14 +279,14 @@ You can also include the following optional specifiers (in this order):
 <b>%s</b>	User's computer type
 <b>%s</b>	User's note
 <b>%s</b>	Date user was first online
-<b>%u</b>	Auxillary value (chat channel, door number, paged node, etc)
+<b>%u</b>	Auxiliary value (chat channel, door number, paged node, etc)
 <b>%u</b>	Connection rate (in bps)
 
 If you include any of the above specifiers, you must also include any of the
 specifiers above it. The order of the specifiers cannot be changed. If you
-wish to supress the display of a %s specifier, use &quot;%.0s&quot; instead of &quot;%s&quot;.
-To supress other specifiers, see the previous section for details.</pre>
-<h3><u>[17.1.3] - </u><a name="Trash Can Files"><u>Trash Can Files</u></a></h3>
+wish to suppress the display of a %s specifier, use &quot;%.0s&quot; instead of &quot;%s&quot;.
+To suppress other specifiers, see the previous section for details.</pre>
+<h3><a name="TrashCanFiles">[17.1.3] - Trash Can Files</a></h3>
 <pre>Trash can files are used to be able to reject text during certain sequences on
 the BBS.  For example, if you don't want a user to be able to log on with a
 certain name or use a certain phone number, you would place the information you
@@ -322,7 +322,7 @@ the various trash can files and their function are as follows:
 
 The trash can files also allow special key characters to be used within them,
 the tilde '~' character means &quot;contained within&quot; and the carrot '^' character
-means &quot;begining with&quot;.  For example:
+means &quot;beginning with&quot;.  For example:
 
 <b>sysop	</b>in the name.can would mean users could not use the name &quot;sysop&quot;.
 
@@ -330,20 +330,20 @@ means &quot;begining with&quot;.  For example:
 	like &quot;sysopa&quot; or &quot;sysops&quot; etc.
 
 <b>sysop~</b>	would mean users could not use names that have the word &quot;sysop&quot;
-	anyhwere in them, like &quot;imthesysop&quot; or &quot;mesysophere&quot;.
+	anywhere in them, like &quot;imthesysop&quot; or &quot;mesysophere&quot;.
 
 These key characters can be used in any of the trash can files.</pre>
-<h2><u>[17.2] - </u><a name="Customization: Message Variables"><u>Customization:
-Message Variables</u></a></h2>
-<pre><u><b>Using Message Variables</b></u>
+<h2><a name="MessageVariables">[17.2] - Customization:
+Message Variables</a></h2>
+<pre><b>Using Message Variables</b>
 
 Message Variables (also called @-Codes) are a way to customize text files in
 Synchronet to display information about the user online or the BBS.
-If Synchronet encounters an @-Code in a text file (ie: TEXT.DAT, menus, etc.),
+If Synchronet encounters an @-Code in a text file (i.e.: TEXT.DAT, menus, etc.),
 it will replace the @-Code in the file with the information that it corresponds
 with. @-Codes in e-mail messages and posts will only be expanded if they were
 posted locally (not networked) by user #1. TEXT.DAT lines that have %
-specifiers willnot expand @-Codes unless the % specifiers are removed.
+specifiers will not expand @-Codes unless the % specifiers are removed.
 
 For example, placing the following line in a text file displayed to a user
 named Fred Jones living on 100 Maple Street:
@@ -375,7 +375,7 @@ to demonstrate where the padding begins and ends).
 
 Note: All codes must be uppercase and sandwiched between @ symbols
       (e.g. @USER@).</pre>
-<pre><b><u>System Information</u></b></pre>
+<pre><b>System Information</b></pre>
 <pre><b>Code		Description						Ver
 </b>---------------------------------------------------------------------------
 BBS		Name of BBS					
@@ -459,7 +459,7 @@ TNODE		Total number of nodes on system
 TUSER		Total number of user slots on system
 VER		BBS version number
 WHO		Display status of all active nodes</pre>
-<pre><b><u>User Information</u></b>
+<pre><b>User Information</b>
 
 <b>Code		Description						Ver
 </b>---------------------------------------------------------------------------
@@ -539,7 +539,7 @@ UPK		Total kilobytes uploaded by user
 UPS		&lt;same as UPFILES&gt;				
 USER		User's name or alias (same as ALIAS)            
 ZIP             User's zip/postal code                          </pre>
-<pre><b><u>Display</u></b>
+<pre><b>Display</b>
 
 <b>Code		Description						Ver
 </b>---------------------------------------------------------------------------
@@ -568,7 +568,7 @@ LEFT:n		Move cursor left n columns		(ANSI)		3.0b
 GOTOXY:x,y	Move cursor to x/y (1-based)		(ANSI)		3.0b
 PUSHXY		Save current cursor position		(ANSI)		3.0b
 POPXY		Restore saved cursor position		(ANSI)		3.0b</pre>
-<pre><b><u>Miscellaneous</u></b></pre>
+<pre><b>Miscellaneous</b></pre>
 <pre>There a few special Synchronet specific @-Codes which require a parameter
 (following the colon and before the terminating @ symbol):</pre>
 <pre><b>Code		Description						Ver
@@ -583,13 +583,13 @@ Synchronet command line specifiers may be used in the FILENAME parameter to
 the TYPE: @-Code allowing symbolic replacment for specific Synchronet
 directories (%!, %z, %k, %j, etc).
 
-Examples:
+<b>Examples:</b>
 
 @EXEC:MYMOD@
 @TYPE:%zSYSTEM.MSG@
 @MENU:YESNO@</pre>
-<h2><u>[17.3] - </u><a name="Customization: Message Color Codes"><u>Customization:
-Message Color Codes</u></a></h2>
+<h2><a name="MessageColorCodes">[17.3] - Customization:
+Message Color Codes</a></h2>
 <pre>Synchronet supports six different Color Code formats.  When Synchronet
 encounters one of these Color Codes in a message, it changes the text following
 the Color Code to the specified color.	Support of the formats which are not
@@ -600,7 +600,7 @@ Attribute Codes) only affect the text that is displayed on the SAME LINE.  When
 using Synchronet color codes, the new color is retained from line to line until
 another color code is processed or the end of the text is reached.
 
-<b><u>Synchronet Format</u></b>
+<b>Synchronet Format</b>
 
 The native Synchronet Color Code format (preferred) consists of a Control-A
 followed by a singe character.	The following is a list of valid Control-A
@@ -646,7 +646,7 @@ Normal	    _		Same as 'N' but only sends ANSI codes if the
 			Blinking or Background attribute is set.
 
 Synchronet also supports Special Control-A codes used to hide text from users
-not meeting certain criteria (ie: Security Level or Flags from Flag Set #1).
+not meeting certain criteria (i.e.: Security Level or Flags from Flag Set #1).
 The following is a list of Special Control-A codes, and a brief description
 of each code's usage:
 
@@ -671,7 +671,7 @@ of each code's usage:
 High Bit	(greater than ASCII 127) Used for cursor right positioning.
 
 
-<b><u>WWIV Format</u></b>
+<b>WWIV Format</b>
 
 Synchronet also supports Color Codes which are native to WWIV BBS software.
 These codes consist of a Control-C followed by a number (0 through 7):
@@ -689,7 +689,7 @@ These codes consist of a Control-C followed by a number (0 through 7):
  8		Low Intensity Blue
  9		Low Intensity Cyan
 
-<b><u>Celerity Format
+<b>Celerity Format<u>
 </u></b>
 Synchronet also supports Color Codes which are native to Celerity BBS software.
 These codes consist of a pipe symbol '|' followed by a letter (case sensitive):
@@ -720,7 +720,7 @@ Example: &quot;|b|S|W&quot; would set the current color to high intensity white 
 Note:	 Due to conflicting escape sequences (namely, the pipe character),
 	 Celerity color codes are not supported when using RIP terminal mode.
 
-<b><u>Renegade Format</u></b>
+<b>Renegade Format</b>
 
 Synchronet also supports Color Codes which are native to Renegade BBS software.
 These codes consist of a pipe symbol '|' followed by a number (0-23):
@@ -758,7 +758,7 @@ Example: &quot;|15|17&quot; would set the current color to high intensity white 
 Note:	 Due to conflicting escape sequences (namely, the pipe character),
 	 Renegade color codes are not supported when using RIP terminal mode.
 
-<b><u>PCBoard/Wildcat Format</u></b>
+<b>PCBoard/Wildcat Format</b>
 
 Two of the Color Code formats which Synchronet supports (PCBoard and Wildcat)
 use similar, yet cryptic, methods of displaying colors.  The PCBoard method
@@ -787,7 +787,7 @@ Foreground choices available:
 
 Example: &quot;@1F@&quot; in Wildcat format and &quot;@X1F&quot; in PCBoard format would set the
 	 current color to high intensity white on a blue background.</pre>
-<h2><u>[17.4] - </u><a name="SIF Questionnaire File"><u>SIF Questionnaire File</u></a></h2>
+<h2><a name="SIFQuestionnaireFile">[17.4] - SIF Questionnaire File</a></h2>
 <pre>An automatic new user SIF questionnaire can be specified in SCFG-&gt;System.
 If a newuser SIF is specified, all users who logon and don't have a copy of
 the answered questionnaire data in their user file will be given the
@@ -843,7 +843,7 @@ element descriptions:
         &quot;1234...&quot;. If this string is specified in 'c' input mode, 'u' and 'n'
         have no effect and input will be converted to uppercase automatically.
                                    
-<b><u>Example 1:</u></b></pre>
+<b>Example 1:</b></pre>
 <table border="0" cellpadding="3" cellspacing="3" width="70%" bgcolor="#CCCCCC">
   <tr>
     <td width="100%">
@@ -857,7 +857,7 @@ Enter string: &lt;EOT&gt;sulr8.3</pre>
 allow the user to input a maximum of eight characters, a minimum of three and
 append a CRLF onto the end of the data field.
 
-<b><u>Example 2:</u></b></pre>
+<b>Example 2:</b></pre>
 <table border="0" cellpadding="3" cellspacing="3" width="70%" bgcolor="#CCCCCC">
   <tr>
     <td width="100%">
@@ -873,7 +873,7 @@ C&gt; Third Answer</pre>
 user to input one character, either A,B, or C. No other characters will be
 accepted as input.
 
-<b><u>Example 3:</u></b></pre>
+<b>Example 3:</b></pre>
 <table border="0" cellpadding="3" cellspacing="3" width="70%" bgcolor="#CCCCCC">
   <tr>
     <td width="100%">
@@ -888,7 +888,7 @@ numbers in the 'N' character positions, and automatically skips over the
 
 
 See <b>EXAMPLE.SIF</b> in the <b>SBBS\TEXT</b> directory for more information.</pre>
-<h2><u>[17.5] - </u><a name="GURU.DAT"><u>GURU.DAT</u></a></h2>
+<h2><a name="GURU.DAT">[17.5] - GURU.DAT</a></h2>
 <pre>The Synchronet Guru is an artificial intelligence engine that users can chat
 with for entertainment or educational purposes. You may wish to fool the users
 into believing the guru is a live human, or tell them up-front that it's just
@@ -935,7 +935,7 @@ response is made and the evaluation of the user's line is complete.
 All expressions are evaluated from the top of the file down, so if a true
 expression is encountered toward the top of the file, all of the remaining
 expressions are ignored until the next evaluation. Notice that the last set of
-responses is preceeded by a pair of empty parenthesis. This is an &quot;always true&quot;
+responses is preceded by a pair of empty parenthesis. This is an &quot;always true&quot;
 expression and should always be the last expression in the file. Omitting this
 fall-through expression is a syntax error. If all the previous expressions are
 evaluated as false, then a response will be picked from the set following the
@@ -952,7 +952,7 @@ line by following the string with a caret '^'symbol (e.g. if the user types
 &quot;I said, Hello!&quot;, an expression of (HELLO) would evaluate to true, but an
 expression of (HELLO^) would be false).
 
-An expression can contain multiple strings conected with logic symbols. The
+An expression can contain multiple strings connected with logic symbols. The
 valid logic symbols are &amp; (and) and | (or) (e.g. if you have the expression
 (HELLO&amp;GURU) the user must type both &quot;hello&quot; and &quot;guru&quot; in the input line in
 order for the expression to be true. If you have the expression (HELLO|HI), it
@@ -966,7 +966,7 @@ expression (HELLO&amp;GURU&amp;[LEVEL 20]) would evaluate as TRUE only if the us
 typed the words &quot;HELLO&quot; and &quot;GURU&quot; and had a level of 20 or higher. See the
 ARS chapter for details on the AR string syntax and possible keywords.
 
-<b><u>RESPONSES:</u></b>
+<b>RESPONSES:</b>
 
 Each expression can be followed by up to 100 responses and each response can
 be up to 512 bytes long. Responses can not contain the characters ( or ) and
@@ -975,7 +975,7 @@ back-slash '\'. Responses are picked at random from the group below the first
 expression that is evaluated as true. The more responses you have to each
 expression, the less likely The Guru is to repeat himself. The Guru can also
 respond with information about the current user or perform an action. To
-initiate these special responses, you must preceed a valid response variable
+initiate these special responses, you must precede a valid response variable
 with a back-quote (`) character. The valid response variables and their
 definitions are as follows:
 

@@ -18,7 +18,7 @@
 <!--webbot bot="Include" endspan i-checksum="23126" -->
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
-<h2><u>[8.0] - Message Base</u></h2>
+<h2><a name="MessageBase">[8.0] - Message Base</a></h2>
 <pre>The Synchronet message base is used for storing messages from a user or sysop
 to other users or a specific user. The messages are divided into sub-boards
 where each sub-board has a unique message topic. Sub-boards are grouped
@@ -42,7 +42,7 @@ Main                    Sysop Notices
                         Programming</pre>
 <pre>The Synchronet configuration program (<a href="system_config.html">SCFG</a>) is used for adding, deleting,
 and configuring message groups and sub-boards.</pre>
-<h2><u>[8.1] - </u><a name="Electronic Mail (E-mail)"><u>Electronic Mail (E-mail)</u></a>
+<h2><a name="ElectronicMail">[8.1] - Electronic Mail (E-mail)</a>
 </h2>
 <pre>Synchronet has a separate private personal mailbox for each user on the system.
 Users may receive local E-mail, NetMail, and Attached Files in their mailbox.
@@ -66,9 +66,9 @@ Options-&gt;Allow Anonymous E-mail is set to Yes.
 
 When replying to another message in E-mail, the original message may be quoted
 if the SCFG-&gt;System-&gt;Message Options-&gt;Allow Quoting in E-mail is set to Yes.</pre>
-<h3><u>[8.2.1] - </u><a name="Synchronet Mail Server"><u>Synchronet Mail Server Documentation</u></a>
+<h3><a name="SynchronetMailServer">[8.2.1] - Synchronet Mail Server Documentation</a>
 </h3>
-<pre><b><u>Set-up:</u></b>
+<pre><b>Set-up:</b>
 
 1. Set SCFG-&gt;Networks-&gt;Internet-&gt;Address to your system's Internet address 
    (domain name or static IP).</pre>
@@ -82,7 +82,7 @@ if the SCFG-&gt;System-&gt;Message Options-&gt;Allow Quoting in E-mail is set to
    ISP's DNS server OR set Relay Server to the address of your ISP's SMTP 
    server. 
 </pre>
-<pre><b><u>Notes:</u></b></pre>
+<pre><b>Notes:</b></pre>
 <pre>Users will be able to send Internet e-mail from your BBS now (if you have a 
 customized TEXT.DAT make sure you have updated line 62, &quot;InternetMailing&quot;).</pre>
 <pre>Your users will be able to receive e-mail at your BBS using any of the
@@ -119,7 +119,7 @@ you (the sysop) can receive e-mail at yourbbs@vert.sync3.net.</pre>
 through VERT by sending a QWKnet NetMail message to NETMAIL@VERT with the 
 actual destination Internet address as the first line of the message.
 </pre>
-<pre><b><u>Relaying:</u></b>
+<pre><b>Relaying:</b>
 
 As of v1.10, the Synchronet Mail Server can be used to relay e-mail to external
 servers. Due to the security (SPAM) risks of opening the SMTP server up to just
@@ -128,10 +128,9 @@ relay mail. You do this by creating the file TEXT\RELAY.CAN and list the IP
 addresses or host names of the systems you wish to give relay access to. If you
 wish to allow relay access to all hosts (not recommended), simply create a 
 RELAY.CAN with one line containing &quot;.~&quot;.</pre>
-<h2><u>[8.3] - <a name="Setting Up the Message Base">Setting Up the Message Base</a>
-</u>
+<h2><a name="SettingUpMessageBase">[8.3] - Setting Up the Message Base</a>
 </h2>
-<h3><u>[8.3.1] - <a name="Creating Message Groups">Creating Message Groups</a>:</u>
+<h3><a name="CreatingMessageGroups">[8.3.1] - Creating Message Groups:</a>
 </h3>
 <pre>Hit 'C' from the wait for call screen and select &quot;Message Base&quot; from the SCFG
 main menu and add any additional message groups you want. A message group is a
@@ -193,7 +192,7 @@ to the end of the group list, highlight the bottom line. Hit INS (insert key)
 to add a new message group, or DEL (delete key) to remove an existing one.
 Following is a list of options available when creating or modifying a message
 group.</pre>
-<h3><u>[8.3.2] - </u><a name="Message Group Options"><u>Message Group Options</u></a>
+<h3><a name="MessageGroupOptions">[8.3.2] - Message Group Options</a>
 </h3>
 <pre><img border="0" src="images/scfg_msg_areas.gif" width="572" height="331"></pre>
 <pre><b>Long Name:</b>
@@ -222,7 +221,7 @@ group.</pre>
 <b>Message Sub-boards...:
 </b>	Select this option to get a list of, and be able to edit, the sub-
 	boards within this group.</pre>
-<h3><u>[8.3.3] - <a name="Creating Message Sub-boards">Creating Message Sub-boards</a>:</u></h3>
+<h3><a name="CreatingMessageSub-boards">[8.3.3] - Creating Message Sub-boards:</a></h3>
 <pre>To create sub-boards, hit enter on the message group you want to add the
 sub-boards to, then select &quot;Message Sub-boards&quot;. Adding sub-boards is very
 similar to adding groups except you will be prompted for an internal code.
@@ -230,7 +229,7 @@ The internal code should be a short description (name abbreviation) for the
 sub-board. To configure the particulars for the sub-board, select it by hitting
 enter on it from the sub-board list. Following is a list of options available
 when creating or modifying a message sub-board.</pre>
-<h3><u>[8.3.4] - </u><a name="Sub-board Main Options"><u>Sub-board Main Options</u></a></h3>
+<h3><a name="Sub-boardMainOptions">[8.3.4] - Sub-board Main Options</a></h3>
 <pre><img border="0" src="images/scfg_msg_areas_gen.gif" width="572" height="331">
 
 <b>Long Name:
@@ -286,7 +285,7 @@ when creating or modifying a message sub-board.</pre>
 	previously imported messages to keep track of (using CRC calculation).
 	This number, if used, should be set to about one weeks worth of
 	messages. Large numbers in this field will slow down message importing.</pre>
-<h3><u>[8.3.5] - </u><a name="Toggle Options"><u>Toggle Options</u></a></h3>
+<h3><a name="ToggleOptions">[8.3.5] - Toggle Options</a></h3>
 <pre><img border="0" src="images/scfg_msg_area_toggles.gif" width="572" height="331">
 
 <b>Allow Private Posts:
@@ -333,7 +332,7 @@ when creating or modifying a message sub-board.</pre>
 </b>        If you wish all posts to be prompted for a 'To' user, set this option
         to Yes. Many networks do not allow private messages on networked
         sub-boards, so the only way to send a message 'To' someone is to send
-        it publicy with a 'To' field. Normally, 'To' users are only prompted
+        it publicly with a 'To' field. Normally, 'To' users are only prompted
         for on private posts.
 
 <b>Allow Message Quoting:
@@ -356,7 +355,7 @@ when creating or modifying a message sub-board.</pre>
 	importing to be slower, but can conserve disk space (30% to 50%) which
 	can mean tens or even hundreds of megabytes of extra space on BBSs with
 	large message bases.</pre>
-<h3><u>[8.3.6] - </u><a name="Network Options"><u>Network Options</u></a></h3>
+<h3><a name="NetworkOptions">[8.3.6] - Network Options</a></h3>
 <pre><img border="0" src="images/scfg_msg_area_netopts.gif" width="572" height="331">
 
 <b>Append Tag/Origin Line:
@@ -420,7 +419,7 @@ when creating or modifying a message sub-board.</pre>
 <b>EchoMail Semaphore File:
 </b>	This is the path and filename of a file that should be created to
 	trigger your front-end mailer to export FidoNet EchoMail.</pre>
-<h3><u>[8.3.7] - </u><a name="Advanced Options"><u>Advanced Options</u></a></h3>
+<h3><a name="AdvancedOptions">[8.3.7] - Advanced Options</a></h3>
 <pre><img border="0" src="images/scfg_msg_area_advopts.gif" width="572" height="331">
 
 <b>QWK Conference Number:
@@ -481,7 +480,7 @@ when creating or modifying a message sub-board.</pre>
 	number of kilobytes on the SMBUTIL command line. If for example, you
 	only want it to pack the message base if it can save 500k or more of
 	disk space, then use &quot;SMBUTIL P500&quot; for a command line. This will keep
-	SMBUTIL from packing the message base everytime it is run (which can be
+	SMBUTIL from packing the message base every time it is run (which can be
 	time consuming) even if only a small amount of disk space will be saved
 	from the operation.
 
@@ -520,8 +519,8 @@ when creating or modifying a message sub-board.</pre>
 </b>	Where Synchronet should place the data files for this sub-board.
 	Normally this option should be left BLANK unless it is required that
         the data be placed on a different drive letter.</pre>
-<h3><u>[8.4] - </u><a name="Importing QWK Packet from Previous BBS Software"><u>Importing QWK
-Packet from Previous BBS Software</u></a></h3>
+<h3><a name="QWKPacketPreviousSoftware">[8.4] - Importing QWK
+Packet from Previous BBS Software</a></h3>
 <pre>If you are upgrading to Synchronet from another BBS package and have your
 messages in QWK packet format, you can import them into Synchronet as follows:
 
@@ -538,12 +537,12 @@ messages in QWK packet format, you can import them into Synchronet as follows:
 6.      Run SBBS from your NODE1 directory and your messages should be
         imported immediately.
 7.      Run SCFG and delete the TEMP QWK network hub.</pre>
-<h3><u>[8.5] - </u><a name="Posting a Message"><u>Posting a Message</u></a></h3>
+<h3><a name="PostingMessage">[8.5] - Posting a Message</a></h3>
 <pre>When posting a message on a sub-board, users or sysops can specify that the
 message is NOT to be distributed across a message network (kept local only).
 This is done by starting the message title with &quot;NE:&quot; which stands for
 &quot;No Echo&quot; (only useful on networked sub-boards).</pre>
-<h3><u>[8.6] - </u><a name="Remote QWK Functions"><u>Remote QWK Functions</u></a></h3>
+<h3><a name="RemoteQWKFunctions">[8.6] - Remote QWK Functions</a></h3>
 <pre>Following are examples on how to perform various functions remotely via QWK.
 Note that some of these functions are intended only for users who are using QWK
 mail doors to retrieve their messages from the BBS, and not for BBSs which are
@@ -636,12 +635,12 @@ Subj: CONTROL [ON | OFF]
 Note: Include control files (DOOR.ID, CONTROL.DAT, NETFLAGS.DAT, etc)
 
 Subj: VIA [ON | OFF]
-Note: Include messge path (@VIA) line in messages.
+Note: Include message path (@VIA) line in messages.
 
 Subj: TZ [ON | OFF]
 Note: Include time zone (@TZ) line in messages.
 
-<b><u>Downloading Files in QWK</u></b>
+<b>Downloading Files in QWK</b>
 
 If there are any files in the batch download queue when a QWK packet is
 created, they will be added to the QWK packet automatically. This is what
@@ -653,7 +652,7 @@ the batch download queue. Then when a QWK packet is created, the file is
 automatically included. Multiple file requests can be made and all files
 will be included in the QWK packet.
 
-<b><u>Sending Netmail via QWK</u></b>
+<b>Sending Netmail via QWK</b>
 
 If a user wishes to send netmail via a QWK packet generated from his offline
 mail reader, he must post a message in the E-mail conference (number 0) with

@@ -18,13 +18,13 @@
 <!--webbot bot="Include" endspan i-checksum="23126" -->
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
-<h2><u>[15.1] - <a name="CHKSMB">CHKSMB</a>  - Checks mail/message base for
-validity</u></h2>
+<h2>[15.1] - <a name="CHKSMB">CHKSMB</a>  - Checks mail/message base for
+validity</h2>
 <pre><b>usage: chksmb [/opts] &lt;filespec.SHD&gt;</b>
 
 opts:
        s - stop after errored message base
-       p - pause after errored messsage base
+       p - pause after errored message base
        q - quiet mode (no beeps while checking)
 
 <b><i>WARNING:</i></b> All BBS nodes should be DOWNed (offline) or inactive when utilizing
@@ -46,8 +46,8 @@ Most mail and/or message bases which are corrupted can be reconstructed
 (fixed) using the SMBUTIL program with the pack option.
 
 Message bases with corrupted index files must be fixed with the FIXSMB program.</pre>
-<h2><u>[15.2] - <a name="FIXSMB">FIXSMB</a>  - Rebuild Synchronet Message/Mail
-Base</u></h2>
+<h2>[15.2] - <a name="FIXSMB">FIXSMB</a>  - Rebuild Synchronet Message/Mail
+Base</h2>
 <pre><b>usage: fixsmb [/opts] &lt;smb_file&gt;
 </b>
  opts:
@@ -58,7 +58,7 @@ Base</u></h2>
 </b>
 Use the FIXSMB utility whenever CHKSMB shows that a message base has become
 corrupted due to problems with the index.</pre>
-<h2><u>[15.3] - <a name="SMBUTIL">SMBUTIL</a>  - Synchronet Message Base Utility</u></h2>
+<h2>[15.3] - <a name="SMBUTIL">SMBUTIL</a>  - Synchronet Message Base Utility</h2>
 <pre><b>usage: smbutil [/opts] cmd &lt;filespec.SHD&gt;
 </b>
 cmd:
@@ -117,8 +117,8 @@ corrupted message base), you should add the '/a' switch to the command line:
 </b>
 The maintenance and pack commands are likely all that you will ever need to
 SMBUTIL for.</pre>
-<h2><u>[15.4] - <a name="SMBACTIV">SMBACTIV</a>  - Checks Synchronet Message
-Base Activity</u></h2>
+<h2>[15.4] - <a name="SMBACTIV">SMBACTIV</a>  - Checks Synchronet Message
+Base Activity</h2>
 <pre>SMBACTIV.EXE is used to create a list of the number of users that are currently
 reading each message area (sub-board) on your BBS. If a message area has a
 very low number of active users, then it may be a waste of disk space and
@@ -144,8 +144,8 @@ would create a list of all sub-boards that have 50 or less active users. To
 create a list of sub-boards that have no active users, you would use:
 
 <b>SMBACTIV 0</b></pre>
-<h2><u>[15.5] - <a name="ADDFILES">ADDFILES</a>  - Adds Files to Synchronet File
-Database</u></h2>
+<h2>[15.5] - <a name="ADDFILES">ADDFILES</a>  - Adds Files to Synchronet File
+Database</h2>
 <pre><b>usage: addfiles code [.alt_path] [/opts] [&quot;*user&quot;] +list [desc_off] [size_off]
 </b>
    or: <b>addfiles code [.alt_path] [/opts] [&quot;*user&quot;]  file &quot;description&quot;
@@ -174,7 +174,7 @@ example for importing DIRxx format:
 <b>       addfiles games +c:\lists\dir01 33
 </b>
 
-<b><u>SBBSNODE DOS Environment variable:</u></b>
+<b>SBBSNODE DOS Environment variable:</b>
 
 The environment variable SBBSNODE must be set prior to running ADDFILES. Add
 the following line to your AUTOEXEC.BAT:
@@ -182,19 +182,19 @@ the following line to your AUTOEXEC.BAT:
 <b>SET SBBSNODE=C:\SBBS\NODE1</b>
 
 Where, the path to NODE1 reflects the complete path of your NODE1 directory.</pre>
-<h3><u>Parameter Explanations:</u></h3>
-<pre><u><b>dir_code:</b></u></pre>
+<h3>Parameter Explanations:</h3>
+<pre><b>dir_code:</b></pre>
 <pre>The dir_code parameter is the first argument and is the internal code of the
 Synchronet file directory you are adding the files to. This parameter is
 not case sensitive. The dir_code parameter is required. Use * for Auto-ADD.
 
-<b><u>.alt_path:
-</u></b>
+<b>.alt_path:
+</b>
 If the files are located on an alternate file path, you can specify the
 alternate file path number by using the &quot;.x&quot; paramter, where 'x' is the
 number of the alternate path.
 
-<b><u>/opts:
+<b>/opts:<u>
 </u></b>
 If desired, you may specify a list of options. The available options are:
 
@@ -211,7 +211,7 @@ Z - Check for and import FILE_ID.DIZ and DESC.SDI as extended description
 K - Keep original short description (don't override with DIZ)
 S - Search for files in directory (no file list for names and descriptions)
 
-<b><u>*user:
+<b>*user:<u>
 </u></b>
 The *user parameter sets the name of the uploader of the files to the
 string following the asterisk. An example would be: &quot;*Digital Man&quot;. If an
@@ -232,8 +232,8 @@ added. Example:
 The above command line would add the files listed in FILES.BBS using &quot;Bob&quot;
 as the uploader, and then add TICTAC.ZIP using &quot;John Doe&quot; as the uploader.
 
-<b><u>file &quot;description&quot;:
-</u></b>
+<b>file &quot;description&quot;:
+</b>
 You can specify individual filename and description pairs on the command line
 to add. The filename is NOT case sensitive and the description IS. The
 quotation marks are only necessary for descriptions of more than one word.
@@ -243,7 +243,7 @@ TICTAC.ZIP Tic-Tac-Toe		is OK
 TICTAC.ZIP Tic Tac Toe		is NOT OK
 TICTAC.ZIP &quot;Tic Tac Toe&quot;        is OK
 
-<b><u>+list [desc_off] [size_off]:
+<b>+list [desc_off] [size_off]:<u>
 </u></b>
 An ASCII text file list can be specified for adding to the database. The format
 of the file must be as follows (FILES.BBS lists work best):
@@ -286,7 +286,7 @@ If a file list is specified on the command line, but is not found in the
 current directory, the storage path for that directory is searched. If the
 file list exists, it will be imported from there.
 
-<b><u>desc_off:</u></b>
+<b>desc_off:</b>
 
 If a filelist is specified on the command line, a description offset can be
 specified as the next argument. If used, this parameter will specify at what
@@ -308,9 +308,9 @@ lists, where the file doesn't actually exist on the drive. For PCBoard DIR
 file format, this offset should be set to 13. Example:
 
 <b>ADDFILES GAMES +DIR10 33 13</b></pre>
-<h2><u>[15.6] - <a name="FILELIST">FILELIST</a>&nbsp; - Generate Synchronet File
-Directory Listings</u></h2>
-<pre><b><u>Description:
+<h2>[15.6] - <a name="FILELIST">FILELIST</a>&nbsp; - Generate Synchronet File
+Directory Listings</h2>
+<pre><b>Description:<u>
 </u></b>
 This utility creates an ASCII text file list of the files in a Synchronet file
 transfer database. This utility is useful for creating file lists for users to
@@ -328,7 +328,7 @@ utility for Synchronet. If you are just trying to ADD files to your Synchronet
 database, then you need to read Sysop Commands - specifically the &quot;;UPLOAD&quot;
 sysop transfer section command.
 
-<b><u>Syntax:</u></b>
+<b>Syntax:</b>
 
 <b>usage: FILELIST [dir_code] [switches] outfile
 </b>
@@ -351,7 +351,7 @@ switches: /LIB name All directories of specified library
           /+        Include extended description indicator (+)
           /-        Include offline file indicator (-)
           /*        Short-hand for /PAD /HDR /CDT /+ /-</pre>
-<h3><u>Parameter Descriptions:</u></h3>
+<h3>Parameter Descriptions:</h3>
 <pre>Either the &quot;/LIB name&quot;, &quot;/ALL&quot;, or &lt;dir_code&gt; parameter must be included for
 a list to be generated. If you want to create a list of files for a single
 file directory, use that directory's internal code as the first parameter on
@@ -379,7 +379,7 @@ If you want a small header to be placed at the beginning of each directory,
 include the &quot;/HDR&quot; switch. The header contains the library short name, the
 directory long name, and the total number of files in the directory.
 
-If you want the credit value of the file (normally the same as the filesize)
+If you want the credit value of the file (normally the same as the file size)
 included in the listing, include the &quot;/CDT&quot; switch on the command line.
 
 If you want the name of the uploader of each file to be included in the list,
@@ -413,7 +413,7 @@ If you want extended descriptions to be automatically justified under the
 normal description, include the &quot;/JST&quot; switch on the command line. You do not
 have to include the &quot;/EXT&quot; switch if you use this switch.
 
-If you want the '+' indentifier for extended descriptions to be included in the
+If you want the '+' identifiers for extended descriptions to be included in the
 list, use the &quot;/+&quot; switch.
 
 If you want the existence of each file to be verified and non-existent
@@ -424,7 +424,7 @@ To generate a list most closely resembling the internal Synchronet file listing
 format, use the &quot;/*&quot; switch. It is the same as including the &quot;/HDR&quot;, &quot;/CDT&quot;,
 &quot;/PAD&quot;, &quot;/+&quot;, and &quot;/-&quot; switches.
 
-<b><u>SBBSNODE Environment Variable:
+<b>SBBSNODE Environment Variable:<u>
 </u></b>
 Prior to running FILELIST you must set the SBBSNODE environment variable to
 the path of one of your NODE directories.
@@ -433,9 +433,9 @@ Example:
 
 <b>SET SBBSNODE=C:\SBBS\NODE1
 </b>
-<b><u>Examples:
+<b>Examples:<u>
 </u></b>
-<b><u>FILES.BBS
+<b>FILES.BBS<u>
 </u></b>
 If you want to create a simple FILES.BBS format listing of your GAMES directory
 (and the directory's internal code is &quot;GAMES&quot;), then use the following command
@@ -449,7 +449,7 @@ GAMES file directory. This file could then be imported into another BBS package
 or used by another FILES.BBS compatible program for searching, sorting, moving
 or other file maintenance.
 
-<b><u>FILELIST.TXT
+<b>FILELIST.TXT<u>
 </u></b>
 If you want to create a list of all the files on your BBS that closely matches
 the format of the internal Synchronet file listings, use the following command
@@ -467,7 +467,7 @@ To generate the same list, but include any extended descriptions as well, add
 the &quot;/EXT&quot; switch after the &quot;/ALL&quot; parameter.
 
 
-<b><u>FILESTAT.TXT
+<b>FILESTAT.TXT<u>
 </u></b>
 If you wanted to create a list of all the files on your BBS with detailed
 statistical information, you may want to use a command line similar to the
@@ -484,7 +484,7 @@ this generated file and created file popularity graphs or a list of the most
 valued uploaders. The possibilities are endless.
 
 
-<b><u>NOTE:
+<b>NOTE:<u>
 </u></b>
 The functionality of creating file lists is not limited to only this utility.
 There are commands to generate file lists (of both New files and All files)
@@ -496,8 +496,8 @@ file containing a list of files uploaded since the user's last logon.
 The main advantages of this utility over the internal file list generation
 capabilities of Synchronet are its output format flexibility and compatibility
 with the FILES.BBS standard.</pre>
-<h2><u>[15.7] - <a name="DUPEFIND">DUPEFIND</a>  - Synchronet Duplicate File
-Finder</u></h2>
+<h2>[15.7] - <a name="DUPEFIND">DUPEFIND</a>  - Synchronet Duplicate File
+Finder</h2>
 <pre>DUPEFIND.EXE is used to find duplicate file names in your Synchronet file
 database. This is most useful for CD-ROM installations, where files may be
 duplicated on the CD-ROM and your hard disk. Duplicate files can be a waste
@@ -521,8 +521,8 @@ to certain libraries. Example:
 <b>DUPEFIND 1 3
 </b>
 would only search file libraries 1 through 3 for duplicate file names.</pre>
-<h2><u>[15.8] - <a name="DELFILES">DELFILES</a>  - Removes Files from Synchronet
-File Database</u></h2>
+<h2>[15.8] - <a name="DELFILES">DELFILES</a>  - Removes Files from Synchronet
+File Database</h2>
 <pre><b>   usage: DELFILES &lt;dir_code or * for ALL&gt; [switches]
 </b>
 switches: /LIB name All directories of specified library
@@ -531,7 +531,7 @@ switches: /LIB name All directories of specified library
           /NOL      Remove files with no link (don't exist in database)
           /RPT      Report findings only (don't delete any files)
 
-<b><u>Examples:
+<b>Examples:<u>
 </u></b>
 If you wanted to remove ALL files that are offline (don't exist on disk) you
 would use the command line:
@@ -559,7 +559,7 @@ Or you can specify a library name rather than a directory name:
 Appending /RPT to the command line will cause DELFILES to generate a report
 of files that would have been removed, but it will not actually remove any
 files.</pre>
-<h2><u>[15.9] - Synchronet <a name="MLABELS">MLABELS</a>  Utility</u></h2>
+<h2>[15.9] - Synchronet <a name="MLABELS">MLABELS</a>  Utility</h2>
 <pre>The MLABELS utility is used to generate a list of mailing labels from a
 Synchronet user database. Two basic label forms are supported, single
 column (e.g. Avery 4145) and double column (e.g. Avery 4143). Specific
@@ -574,12 +574,12 @@ Syntax:
 
 <b>	MLABELS C:\SBBS\DATA\USER [-required] [/options] &lt;output&gt;
 </b>
-<b><u>User Data Path
+<b>User Data Path<u>
 </u></b>
 The first parameter is the path to your USER.DAT file. The example given is
 the default location of the USER.DAT file (&quot;\SBBS\DATA\USER&quot;).
 
-<b><u>Requirements
+<b>Requirements<u>
 </u></b>
 The second parameter, &quot;-require&quot; is optional. Use this parameter to specify
 a security requirement for the users to be included. Multiple &quot;-require&quot;
@@ -594,7 +594,7 @@ parameters can be specified, and the syntax is as follows:
 The syntax of the -require option is identical to the ALLUSERS utility, so
 please see the chapter on ALLUSERS for examples of how to use this parameter.
 
-<b><u>Options
+<b>Options<u>
 </u></b>
 The next parameter, if specified, are one or more valid option characters
 following the slash '/' character. The available option characters are:
@@ -602,7 +602,7 @@ following the slash '/' character. The available option characters are:
 D		Double column labels
 A		Add ATTN: &lt;Alias/Real Name&gt; to the labels
 
-<b><u>Output
+<b>Output<u>
 </u></b>
 The last parameter is the name of the output file. If you want the output
 to go immediately to the printer, specify &quot;PRN&quot; as the output file.
@@ -617,7 +617,7 @@ Example:
 
 <b>	MLABELS \SBBS\DATA\USER LABELS.TXT
 </b>
-<b><u>Complete Example</u></b>
+<b>Complete Example</b>
 
 <b>MLABELS \SBBS\DATA\USER -L50 -M59 -FP /DA PRN
 </b>
@@ -626,13 +626,13 @@ users with security levels between 50 and 59 and flag 'P' from flag set #1,
 and send the output directly to the printer, adding &quot;ATTN: &lt;Alias/Name&gt;&quot;
 to the end of each label.
 
-<b><u>Example label:</u></b>
+<b>Example label:</b>
 
 John Doe
 555 Main St.
 Small Town, Ny 01234
 ATTN: Mr. Anonymous</pre>
-<h2><u>[15.10] - Synchronet <a name="QWKNODES">QWKNODES</a>  Utility</u></h2>
+<h2>[15.10] - Synchronet <a name="QWKNODES">QWKNODES</a>  Utility</h2>
 <pre><b>usage: qwknodes [/opts] cmds
 </b>
  cmds: r  =  create ROUTE.DAT
@@ -648,7 +648,7 @@ ATTN: Mr. Anonymous</pre>
 The QWKNODES utility is used to scan through all the messages in all of your
 QWK networked sub-boards and create one or more lists:
 
-<b><u>ROUTE.DAT
+<b>ROUTE.DAT<u>
 </u></b>
 The DATA\QNET\ROUTE.DAT file is automatically created and maintained by SBBS.
 It includes the routing necessary to get netmail from your BBS to any other
@@ -665,7 +665,7 @@ your system). This is a convenience for your QWKnet nodes which allows them to
 immediately send routed QWK netmail (without waiting for SBBS to create the
 ROUTE.DAT automatically while parsing incoming echomail).
 
-<b><u>USERS.DAT
+<b>USERS.DAT<u>
 </u></b>
 The DATA\QNET\USERS.DAT file (if it exists) is used by SBBS to look-up user
 names on other BBSs in your QWK network when attempting to send e-mail to an
@@ -677,7 +677,7 @@ if you wish to create a list of ALL active users in your QWK network). Only
 users who are active in the message bases (on any of the BBSs) will appear in
 the USERS.DAT file.
 
-<b><u>NODES.DAT
+<b>NODES.DAT<u>
 </u></b>
 While this file is informative (list of all QWKnet nodes that have generated
 messages in your QWKnet sub-boards) it is not used by SBBS currently. If the
@@ -685,17 +685,17 @@ messages in your QWKnet sub-boards) it is not used by SBBS currently. If the
 a copy of each node's tagline in the list in addition to their QWK-ID and
 routing details.
 
-<b><u>/A
+<b>/A<u>
 </u></b>
 The /A option is used to append (concatenate) an existing output file. If this
 option isn't specified any existing output file (ROUTE.DAT, USERS.DAT, or
 NODES.DAT) will be truncated and overwritten.
 
-<b><u>/M#
-</u></b>
+<b>/M#
+</b>
 The maximum message age option is used to specify a maximum age of messages
 (in days) to include in the list of messages scanned to obtain user/node
-/routing information from (example: /M90 to specify a maxium age of 90 days
+/routing information from (example: /M90 to specify a maximum age of 90 days
 causing QWKNODES to ignore any messages older than 90 days). The default
 behavior is all messages (no maximum age).
 
@@ -707,7 +707,7 @@ behavior is all messages (no maximum age).
 
 	QWKNODES RN	-&gt; To create ROUTE.DAT and NODES.DAT
 	QWKNODES U	-&gt; To create USERS.DAT</pre>
-<h2><u>[15.11] - Synchronet <a name="ALLUSERS">ALLUSERS</a>  Utility</u></h2>
+<h2>[15.11] - Synchronet <a name="ALLUSERS">ALLUSERS</a>  Utility</h2>
 <pre>ALLUSERS can allow a sysop to modify the security settings for a large number
 of users with one command line. If you're a Synchronet sysop, you may have
 found yourself at one time or another going through the internal User Editor
@@ -721,19 +721,19 @@ command line, you can change security levels, add/remove flags, exemptions,
 or restrictions to some or all of the users in your database. The syntax is
 pretty simple:
 
-<b><u>Syntax
+<b>Syntax<u>
 </u></b>
 <b>ALLUSERS C:\SBBS\DATA\USER -require /modify
 </b>
 
-<b><u>User Data Path
+<b>User Data Path<u>
 </u></b>
 The first parameter, &quot;C:\SBBS\DATA\USER&quot; is the directory where your USER.DAT
 file is located. The example given is the default location of the USER.DAT
 file. If the USER.DAT is in the current directory, the path should be simply
 &quot;.&quot; for current directory. This parameter is not optional.
 
-<b><u>Requirements
+<b>Requirements<u>
 </u></b>
 The second parameter, &quot;-require&quot; is optional. Use this parameter to specify
 a security requirement for the modifications to follow. Multiple &quot;-require&quot;
@@ -745,7 +745,7 @@ parameters can be specified, and the syntax is as follows:
 -E&lt;flags&gt;	set required exemption flags
 -R&lt;flags&gt;	set required restriction flags
 
-<b><u>Examples:</u></b>
+<b>Examples:</b>
 
 -L20  indicates that only users with a level of 20 or higher will be modified
 -M80  indicates that only users with a level of 80 or lower will be modified
@@ -756,7 +756,7 @@ parameters can be specified, and the syntax is as follows:
 If multiple requirement parameters are specified, they must each begin with
 a dash '-' character and be separated by at least one space.
 
-<b><u>Examples:</u></b>
+<b>Examples:</b>
 
 -L50 -M59  indicates that only users between level 50 and 59 will be modified
 -RB -F2M   indicates that only users with the 'B' restriction and flag 'M' in
@@ -764,15 +764,15 @@ a dash '-' character and be separated by at least one space.
 
 Multiple required flags may be specified as well.
 
-<b><u>Example:</u></b>
+<b>Example:</b>
 
 -F4AC	   indicates that only users with both the 'A' and 'C' flags from
 	   flag set #4 will be modified
 -EPLM	   indicates that only users with the 'P', 'L', and 'M' exemptions
 	   will be modified
 
-<b><u>Modifications
-</u></b>
+<b>Modifications
+</b>
 Next on the command line are one or more modification parameters. Each
 modification parameter begins with the slash '/' character. The available
 modification parameters are as follows:
@@ -782,7 +782,7 @@ modification parameters are as follows:
 /E[+|-]&lt;flags&gt;		add or remove exemption flags
 /R[+|-]&lt;flags&gt;		add or remove restriction flags
 
-<b><u>Examples:</u></b>
+<b>Examples:</b>
 
 /L20  indicates that all users' levels will be changed to 20
 /FA   indicates that flag 'A' from flag set #1 will be added to all users
@@ -796,19 +796,19 @@ Flags and parameters are not case sensitive, so &quot;/FA&quot; and &quot;/fa&qu
 
 Multiple modification parameters can be used.
 
-<b><u>Example:</u></b>
+<b>Example:</b>
 
 /L40 /F2-Z   indicates that all users will be set to level 40 and have flag
 	     'Z' from flag set #2 removed
 
 Multiple flags per modification may be specified.
 
-<b><u>Example:</u></b>
+<b>Example:</b>
 
 /RAB	     indicates that both 'A' and 'B' restrictions will be added to
 	     all users.
 
-<b><u>Complete Examples</u></b>
+<b>Complete Examples</b>
 
 To change all level 20 users to level 30, use the following command line:
 
@@ -829,7 +829,7 @@ To give all users with level 50 or higher, the 'M' and 'L' exemptions:
 To remove flag 'C' from flag sets #1 and #2 from all users:
 
 <b>ALLUSERS C:\SBBS\DATA\USER /F1-C /F2-C</b></pre>
-<h2><u>[15.12] - Synchronet <a name="AUTONODE">AUTONODE</a>  Utility</u></h2>
+<h2>[15.12] - Synchronet <a name="AUTONODE">AUTONODE</a>  Utility</h2>
 <pre>The AUTONODE utility is used for automatically finding an available local
 node for logon and running that node. You set the first local node number
 in SCFG-&gt;System-&gt;Advanced Options-&gt;First Local Auto-Node.
@@ -854,7 +854,7 @@ prompt or to exit back to DOS after logoff, you can specify which command
 line to use when running SBBS. The default is &quot;SBBS L Q&quot;, which tells
 Synchronet to take the user straight to the logon prompt and then quit back
 to DOS.</pre>
-<h2><u>[15.13] - Synchronet <a name="NODE">Node</a>  Display/Control Utility</u></h2>
+<h2>[15.13] - Synchronet <a name="NODE">Node</a>  Display/Control Utility</h2>
 <pre>The NODE utility can be used to display or control the status of nodes from
 the DOS prompt or via batch files.
 
@@ -899,7 +899,7 @@ Synchronet EXEC directory to your search path in your AUTOEXEC.BAT. Example:
 </b>
 (DOS and UTIL directory are included for example only).
 
-<b><u>Running NODE</u></b>
+<b>Running NODE</b>
 
 To run the NODE utility, you must type the word &quot;NODE&quot;, an action (ex: &quot;LOCK&quot;),
 then a list of nodes to take the action on (ex: &quot;1 2 4 5&quot;). If no node numbers
@@ -919,7 +919,7 @@ user number on node 5 to 1).
 The optional &quot;/debug&quot; switch can be used to view the current numeric values
 associated with the node status.
 
-<b><u>Example Usage</u></b>
+<b>Example Usage</b>
 
 Example #1: To list the status of all your nodes, type
 
@@ -953,7 +953,7 @@ Example #8: To down node 2, type
 
 <b>NODE DOWN ON 2</b>
 
-<b><u>Definition of Numeric Values</u></b>
+<b>Definition of Numeric Values</b>
 
 Possible Node Status Values:
 
@@ -968,7 +968,7 @@ Possible Node Status Values:
 8	Running timed event
 9	Waiting for timed event node to finish running event
 
-Possible Node Action Values:
+<b>Possible Node Action Values:</b>
 
 0	Main Prompt
 1	Reading Messages
@@ -983,7 +983,7 @@ Possible Node Action Values:
 10	Transfer Prompt
 11	Downloading File (aux=estimated time of transfer completion)
 12	Uploading File
-13	Bidirectional Transfer (aux=estimated time of transfer completion)
+13	Bi-directional Transfer (aux=estimated time of transfer completion)
 14	Listing Files
 15	Logging on
 16	In Local Chat with Sysop
@@ -996,7 +996,7 @@ Possible Node Action Values:
 23	Paging another node for Private Chat (aux=node being paged)
 24	Retrieving file from a sequential device (aux=device num)
 
-Bits Used in Node Misc:
+<b>Bits Used in Node Misc:</b>
 
 0       Anonymous User
 1       Locked for sysops only
@@ -1010,7 +1010,7 @@ Bits Used in Node Misc:
 9       Down this node after logoff
 10      Reset private chat
 11	Message is waiting for node</pre>
-<h2><u>[15.14] - <a name="UTI">UTI</a>  Driver</u></h2>
+<h2>[15.14] - <a name="UTI">UTI</a>  Driver</h2>
 <pre>This UTI driver complies with UTI Driver Specification Rev 2.1 by Kip Compton.
 This driver is for use with PostLink v1.05+ and possibly MegaMail.
 
@@ -1033,11 +1033,11 @@ You may need to know that the conference identifiers, as well as the name of
 each conference, is the same as the Synchronet internal code for each
 conference. This allows you to modify your message base configuration in
 Synchronet without having to immediately &quot;Update&quot; the network or mail software
-confernece list to avoid a catastrophe. However, you should still &quot;Update&quot; the
+conference list to avoid a catastrophe. However, you should still &quot;Update&quot; the
 network or mail software to avoid configuration confusion - especially when
 deleting sub-boards.
 
-<b><u>ERROR LEVELS</u></b>
+<b>ERROR LEVELS</b>
 
 If one of the UTI driver programs exits with an error level, you can define
 the error with the following table. If the UTI driver program exits with an
@@ -1062,7 +1062,7 @@ and try increasing it.
 
 If you get an error 3, then you need to make more DOS memory available to the
 UTI driver and the parent program (i.e. PostLink).</pre>
-<h2><u>[15.15] - <a name="SLOG">System/Node Statistics Log</a>  Viewing Utility</u></h2>
+<h2>[15.15] - <a name="SLOG">System/Node Statistics Log</a>  Viewing Utility</h2>
 <pre><b>Usage: slog [path]
 </b>
 where path is the directory where CSTS.DAB is located. If your SBBSCTRL
@@ -1092,16 +1092,16 @@ Example:
 or
 
 <b>SLOG &gt; SLOG.TXT</b></pre>
-<h2><u>[15.16] - </u><a name="DSTSEDIT"><u>Daily Statistics Editor Documentation</u></a></h2>
-<pre><b><u>Description:</u></b>
+<h2>[15.16] - <a name="DSTSEDIT">Daily Statistics Editor Documentation</a></h2>
+<pre><b>Description:</b>
 
 DSTSEDIT (Daily Statistics Editor) is used to edit the statistic values of your
 BBS that are stored in the DSTS.DAB file in your CTRL directory. There is also
-a seperate DSTS.DAB file in each node directory which stores the statistic 
+a separate DSTS.DAB file in each node directory which stores the statistic 
 values for that individual node. This utility can be used to edit either of the
 two statistic types: System or Node.
 
-<b><u>Usage:</u></b>
+<b>Usage:</b>
 
 To edit your system's statistics, you can either run DSTSEDIT with your CTRL
 directory as the current directory, or run DSTSEDIT with the path of the
@@ -1114,8 +1114,8 @@ node's directory as the current directory, or run DSTSEDIT with the node's
 directory as an argument.
 
 	Example: <b>DSTSEDIT <a href="file:///C:/SBBS/NODE1">C:\SBBS\NODE1</a></b></pre>
-<h2><u>[15.17] - <a name="TOTALS">TOTALS</a>: External Programs Credit Gain/Loss
-Log Totalling Utility</u></h2>
+<h2>[15.17] - <a name="TOTALS">TOTALS</a>: External Programs Credit Gain/Loss
+Log Totaling Utility</h2>
 <pre>The TOTALS.COM utility is used to generate a total gain/loss of multiple log
 files created by SBBS external programs that adjust user credits and log the
 adjustments in text files. Each file containing one line that contains the
@@ -1131,11 +1131,11 @@ Synchronet Blackjack, Dice War, and Domain Poker.
 
 	<b>	totals *.log
 		totals 06*.log 07*.log 080192.log</b></pre>
-<h2><u>[15.17] - </u><a name="ANS2MSG"><u>ANS2MSG</u></a></h2>
+<h2>[15.17] - <a name="ANS2MSG">ANS2MSG</a></h2>
 <pre>ANSI to Synchronet Ctrl-A message format conversion utility 
 
 This utility will convert basic non-animated ANSI files into Synchronet Ctrl-A
-code files that can be displayed to olor or monochrome ansi users with 
+code files that can be displayed to color or monochrome ansi users with 
 attractive results as well as non-ansi users. This allows you to use an ANSI
 drawing program (such as TheDraw) to create your menus in ANSI and convert the
 ANSI file to Ctrl-A message format for your .ASC or .MSG version. Or you can
@@ -1143,7 +1143,7 @@ use the converted file for all users by keeping the ANSI (.ANS) version in
 a directory other than TEXT\MENU.
 
 If, for example, you create a main menu with an ANSI drawing program that you
-want your ASCII and monchrome ANSI users to see with attractive output, use
+want your ASCII and monochrome ANSI users to see with attractive output, use
 ANS2MSG to create the .MON and .ASC versions.
 
 Type: <b>ANS2MSG MAIN.ANS MAIN.MON</b>
@@ -1154,7 +1154,7 @@ in your TEXT\MENU directory to create the ASCII version.
 
 If you rename MAIN.ANS or move into a directory other than TEXT\MENU, then
 you will not need the .MON version as the .ASC version will be used for all
-termain types.
+terminal types.
 
 This utility is also useful for creating colorful system, newuser, feedback
 and other Synchronet .MSG files for display. For example, create 
@@ -1162,9 +1162,9 @@ TEXT\SYSTEM.ANS with your favorite ANSI editor and then convert to .MSG by
 typing: <b>ANS2MSG SYSTEM.ANS SYSTEM.MSG</b>
 
 Be aware that ANSI animation codes are NOT supported since there aren't Ctrl-A
-equivalents. The following ANSI codes (preceeded by &lt;ESC&gt;[) are supported:
+equivalents. The following ANSI codes (preceded by &lt;ESC&gt;[) are supported:
 
-<b><u>ANSI Code 	Ctrl-A Code	Explanation (* indicates not supported by IBM)</u></b>
+<b>ANSI Code 	Ctrl-A Code	Explanation (* indicates not supported by IBM)</b>
 2J		L		Clear Screen
 #C		7Fh-FFh 	Move cursor right # columns
 0m		N		Normal attribute
@@ -1192,11 +1192,11 @@ equivalents. The following ANSI codes (preceeded by &lt;ESC&gt;[) are supported:
 45m		5		Foreground magenta
 46m		6		Foreground cyan
 47m		7		Foreground white</pre>
-<h2><u>[15.18] - </u><a name="MSG2ANS"><u>MSG2ANS</u></a></h2>
+<h2>[15.18] - <a name="MSG2ANS">MSG2ANS</a></h2>
 <pre>Converts Synchronet Ctrl-A file to ANSI escape sequences.
 
 This utility allows you to convert files that use Ctrl-A codes into ANSI files.
-(the oposite of the ANS2MSG utility).
+(the opposite of the ANS2MSG utility).
 
 The syntax is: <b>MSG2ANS infile.ext outfile.ext</b>
 
