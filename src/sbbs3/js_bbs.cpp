@@ -2477,52 +2477,53 @@ js_select_editor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 static jsMethodSpec js_bbs_functions[] = {
 	{"atcode",			js_atcode,			1,	JSTYPE_STRING,	JSDOCSTR("string code")
-	,JSDOCSTR("return @-code value")
+	,JSDOCSTR("returns @-code value, specified <i>code</i> string does not include @ character delimiters")
 	},
 	/* text.dat */
 	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("number line")
-	,JSDOCSTR("return a text string from text.dat")
+	,JSDOCSTR("returns specified text string from text.dat")
 	},
 	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number line, string text")
-	,JSDOCSTR("replace a text string")
+	,JSDOCSTR("replaces specified text string in memory")
 	},
 	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[number line]")
-	,JSDOCSTR("revert to original text string, no argument indicates revert all text lines")
+	,JSDOCSTR("reverts specified text string to original text string; "
+		"if <i>line</i> unspecified, reverts all text lines")
 	},
 	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string basefilename")
 	,JSDOCSTR("load an alternate text.dat from ctrl directory, automatically appends '.dat' to basefilename")
 	},
 	/* procedures */
 	{"newuser",			js_newuser,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("new user procedure")
+	,JSDOCSTR("interactive new user procedure")
 	},
 	{"login",			js_login,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("string username, password_prompt")
-	,JSDOCSTR("login with username and pw prompt")
+	,JSDOCSTR("login with <i>username</i>, displaying <i>password_prompt</i> for password (if required)")
 	},
 	{"logon",			js_logon,			0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("logon procedure")
+	,JSDOCSTR("interactive logon procedure")
 	},
 	{"logoff",			js_logoff,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("logoff procedure")
+	,JSDOCSTR("interactive logoff procedure")
 	},
 	{"logout",			js_logout,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("logout procedure")
+	,JSDOCSTR("non-interactive logout procedure")
 	},
 	{"hangup",			js_hangup,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("hangup immediately")
+	,JSDOCSTR("hangup (disconnect) immediately")
 	},
 	{"node_sync",		js_nodesync,		0,	JSTYPE_ALIAS },
 	{"nodesync",		js_nodesync,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("synchronize with node database, checks for messages, interruption, etc. (AKA node_sync)")
 	},
 	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("edit/create the auto-message")
+	,JSDOCSTR("read/create system's auto-message")
 	},		
 	{"time_bank",		js_time_bank,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("enter the time banking system")
 	},		
 	{"qwk_sec",			js_qwk_sec,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("enter the QWK message packet section")
+	,JSDOCSTR("enter the QWK message packet upload/download/config section")
 	},		
 	{"text_sec",		js_text_sec,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("enter the text files section")
@@ -2537,7 +2538,7 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("enter the batch file transfer menu")
 	},		
 	{"batch_download",	js_batchdownload,	0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("start the batch download")
+	,JSDOCSTR("start a batch download")
 	},		
 	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("filename")
 	,JSDOCSTR("add file list to batch download queue")
@@ -2555,10 +2556,10 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("display system information")
 	},		
 	{"sub_info",		js_sub_info,		1,	JSTYPE_VOID,	JSDOCSTR("[subboard]")
-	,JSDOCSTR("display message sub-board information (current subboard, if unspecified)")
+	,JSDOCSTR("display message sub-board information (current <i>subboard</i>, if unspecified)")
 	},		
 	{"dir_info",		js_dir_info,		0,	JSTYPE_VOID,	JSDOCSTR("[directory]")
-	,JSDOCSTR("display file directory information (current directory, if unspecified)")
+	,JSDOCSTR("display file directory information (current <i>directory</i>, if unspecified)")
 	},		
 	{"user_info",		js_user_info,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("display current user information")
@@ -2597,22 +2598,25 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("send bulk private e-mail")
 	},		
 	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
-	,JSDOCSTR("upload file to file directory number or internal code")
+	,JSDOCSTR("upload file to file directory specified by number or internal code")
 	},		
 	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
-	,JSDOCSTR("add files (already in local storage path) to file directory number or internal code")
+	,JSDOCSTR("add files (already in local storage path) to file directory "
+		"specified by number or internal code")
 	},		
 	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
-	,JSDOCSTR("re-sort the specified file directory (number or internal code)")
+	,JSDOCSTR("re-sort the file directory specified by number or internal code)")
 	},		
 	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("directory [,string filespec] [,number mode]")
-	,JSDOCSTR("list files in the specified file directory, optionally specifying a file specification (wildcards) and mode")
+	,JSDOCSTR("list files in the specified file directory, "
+		"optionally specifying a file specification (wildcards) and <i>mode</i> (bitfield)")
 	},		
 	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("directory [,string filespec] [,number mode]")
 	,JSDOCSTR("list extended file information for files in the specified file directory")
 	},		
 	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board [,number mode]")
-	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) with optinal mode")
+	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) "
+		"with optinal <i>mode</i> (bitfield)")
 	},		
 	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[number mode]")
 	,JSDOCSTR("configure message scan")
@@ -2630,11 +2634,12 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("scan directories for files")
 	},		
 	{"scan_posts",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board, number mode, string find]")
-	,JSDOCSTR("scan posts in the specified message sub-board (number or internal code), optionally search for 'find' string")
+	,JSDOCSTR("scan posts in the specified message sub-board (number or internal code), "
+		"optionally search for 'find' string")
 	},		
 	/* menuing */
 	{"menu",			js_menu,			1,	JSTYPE_VOID,	JSDOCSTR("base_filename")
-	,JSDOCSTR("display a menu file")
+	,JSDOCSTR("display a menu file from the text/menu directory")
 	},		
 	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key [,boolean comma]")
 	,JSDOCSTR("log key to node.log (comma optional)")
@@ -2644,7 +2649,7 @@ static jsMethodSpec js_bbs_functions[] = {
 	},		
 	/* users */
 	{"finduser",		js_finduser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username_or_number")
-	,JSDOCSTR("find user name (partial name support)")
+	,JSDOCSTR("find user name (partial name support), interactive")
 	},		
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename, search_string")
 	,JSDOCSTR("search file for psuedo-regexp (search string) in trashcan file (text/base_filename.can)")
@@ -2669,7 +2674,8 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("prompt for and verify system password")
 	},
 	{"good_password",	js_chkpass,			1,	JSTYPE_STRING,	JSDOCSTR("string password")
-	,JSDOCSTR("check if requested user password meets minimum password requirements (length, uniqueness, etc.)")
+	,JSDOCSTR("check if requested user password meets minimum password requirements "
+		"(length, uniqueness, etc.)")
 	},
 	/* chat/node stuff */
 	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	""
@@ -2703,27 +2709,27 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("list all nodes")
 	},		
 	{"whos_online",		js_whos_online,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("list active nodes only")
+	,JSDOCSTR("list active nodes only (who's online)")
 	},		
 	{"spy",				js_spy,				1,	JSTYPE_VOID,	JSDOCSTR("node_number")
 	,JSDOCSTR("spy on a node")
 	},		
 	/* misc */
 	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("string str [,string fpath] [,string fspec]")
-	,JSDOCSTR("return command string using Synchronet command-line specifiers")
+	,JSDOCSTR("return expanded command string using Synchronet command-line specifiers")
 	},		
 	/* input */
 	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	""	
-	,JSDOCSTR("get a file specification from the user (wildcards)")
+	,JSDOCSTR("returns a file specification input by the user (optionally with wildcards)")
 	},		
 	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("number time")
-	,JSDOCSTR("get newscan time, returns new newscan time value (time_t)")
+	,JSDOCSTR("confirm or change newscan time, returns new newscan time value (time_t format)")
 	},		
 	{"select_shell",	js_select_shell,	0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("allows user to select a new command shell")
+	,JSDOCSTR("prompt user to select a new command shell")
 	},
 	{"select_editor",	js_select_editor,	0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("allows user to select a new external message editor")
+	,JSDOCSTR("prompt user to select a new external message editor")
 	},
 	{0}
 };
