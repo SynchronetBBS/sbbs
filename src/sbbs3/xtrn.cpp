@@ -37,12 +37,7 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
-#include "execvxd.h"
 #include "telnet.h"
-
-#define XTRN_IO_BUF_LEN 5000
-
-extern SOCKET node_socket[];
 
 /*****************************************************************************/
 /* Interrupt routine to expand WWIV Ctrl-C# codes into ANSI escape sequences */
@@ -103,7 +98,10 @@ BYTE* wwiv_expand(BYTE* buf, ulong buflen, BYTE* outbuf, ulong& newlen
     newlen=j;
     return(outbuf);
 }
+
+/*****************************************************************************/
 // Escapes Telnet IAC (255) by doubling the IAC char
+/*****************************************************************************/
 BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen, bool& iac)
 {
 	BYTE*   first_iac;
@@ -136,6 +134,16 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen, bool&
     newlen=outlen;
     return(outbuf);
 }
+
+
+#ifdef _WIN32
+
+#include "execvxd.h"	/* Win9X FOSSIL VxD API */
+
+#define XTRN_IO_BUF_LEN 5000
+
+extern SOCKET node_socket[];
+
 // -------------------------------------------------------------------------
 // GetAddressOfOpenVxDHandle
 //
@@ -144,7 +152,6 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen, bool&
 // given ring 3 event handle. The ring 0 handle can be used by VxDs to
 // synchronize with the Win32 app.
 //
-
 typedef HANDLE (WINAPI *OPENVXDHANDLE)(HANDLE);
 
 OPENVXDHANDLE GetAddressOfOpenVxDHandle(void)
@@ -707,6 +714,15 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 	return(retval);
 }
+
+#else	/* !WIN32 */
+
+int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
+{
+	system(cmdline);
+}
+
+#endif	/* !WIN32 */
 
 uint fakeriobp=0xffff;
 
