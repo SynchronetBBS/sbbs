@@ -812,7 +812,8 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str);
 	/* RFC822 date header to when_t */
 	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
-
+	/* when_t to RFC822 date header */
+	DLLEXPORT char *	DLLCALL msgdate(when_t when, char* buf);
 
 	/* logfile.cpp */
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text 

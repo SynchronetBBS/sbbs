@@ -235,6 +235,14 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 			return(FALSE);
 		smb_hfield(msg, RECIPIENTNETADDR, (ushort)strlen(cp), cp);
 	}
+
+	if(JS_GetProperty(cx, hdr, "date", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		msg->hdr.when_written=rfc822date(cp);
+	}
 	
 	/* Numeric Header Fields */
 	if(JS_GetProperty(cx, hdr, "attr", &val) && val!=JSVAL_VOID) 
@@ -245,11 +253,11 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 		msg->hdr.netattr=JSVAL_TO_INT(val);
 	if(JS_GetProperty(cx, hdr, "when_written_time", &val) && val!=JSVAL_VOID) 
 		msg->hdr.when_written.time=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "wren_written_zone", &val) && val!=JSVAL_VOID) 
+	if(JS_GetProperty(cx, hdr, "when_written_zone", &val) && val!=JSVAL_VOID) 
 		msg->hdr.when_written.zone=(short)JSVAL_TO_INT(val);
 	if(JS_GetProperty(cx, hdr, "when_imported_time", &val) && val!=JSVAL_VOID) 
 		msg->hdr.when_imported.time=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "wren_imported_zone", &val) && val!=JSVAL_VOID) 
+	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val) && val!=JSVAL_VOID) 
 		msg->hdr.when_imported.zone=(short)JSVAL_TO_INT(val);
 
 	return(TRUE);
@@ -561,8 +569,10 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(!parse_header_object(cx, hdr, p->smb.subnum, &msg))
 		return(JS_TRUE);
 
-	msg.hdr.when_written.time=time(NULL);
-	msg.hdr.when_written.zone=scfg->sys_timezone;
+	if(msg.hdr.when_written.time==0) {
+		msg.hdr.when_written.time=time(NULL);
+		msg.hdr.when_written.zone=scfg->sys_timezone;
+	}
 
 	truncsp(body);
 	if(savemsg(scfg, &(p->smb), &msg, body)==0)

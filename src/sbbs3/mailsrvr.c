@@ -391,29 +391,6 @@ static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 	return(TRUE);
 }
 
-static char *msgdate(when_t when, char* buf)
-{
-	struct tm	tm;
-	struct tm*	tm_p;
-	
-	tm_p=localtime((const time_t*)&when.time);
-	if(tm_p!=NULL)
-		tm=*tm_p;
-	else
-		memset(&tm,0,sizeof(tm));
-	sprintf(buf,"%s, %d %s %d %02d:%02d:%02d %s"
-		,wday[tm.tm_wday]
-		,tm.tm_mday
-		,mon[tm.tm_mon]
-		,1900+tm.tm_year
-		,tm.tm_hour
-		,tm.tm_min
-		,tm.tm_sec
-		,zonestr(when.zone)
-		);
-	return(buf);
-}
-
 #define MAX_LINE_LEN	1000
 
 static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromaddr
