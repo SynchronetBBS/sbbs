@@ -113,7 +113,7 @@ $(LIBODIR)/mxlookup.o: mxlookup.c
 	$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@		
 
 # Baja Utility
-$(BAJA): baja.c ars.c smbwrap.c
+$(BAJA): baja.c ars.c smbwrap.c crc32.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Node Utility
