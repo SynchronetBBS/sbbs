@@ -82,9 +82,9 @@ function date(time)
 	var mon=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 	var d=new Date(time*1000);
 
-	return(format("<TT>%02d-%s-%d %02d:%02d"
-			,d.getUTCDate()
+	return(format("<TT>%s %02d %d %02d:%02d"
 			,mon[d.getUTCMonth()]
+			,d.getUTCDate()
 			,d.getUTCFullYear()
 			,d.getUTCHours()
 			,d.getUTCMinutes()));
@@ -98,9 +98,13 @@ function bytes(nbytes)
 /* File Listing */
 if(file.length) {
 
+	var show_ext_desc=true;	/* show extended descriptions */
 	var total_bytes=0;
-	var	total_downloads=0;
+	var total_downloads=0;
 	var most_recent=0;
+
+	if (curdir.name==undefined)
+		show_ext_desc=false;	/* aliased files have no ext desc */
 
 	write("<table border=0 nowrap " + cell_spacing + " width=100%>\r\n");
 
@@ -113,7 +117,7 @@ if(file.length) {
 	write("<th>" + hdr_font + "Date/Time");
 	if(curdir.name!=undefined) {	/* not valid for aliased files in root */
 		write("<th>" + hdr_font + "Uploader");
-		write("<th>" + hdr_font + "Count");
+		write("<th>" + hdr_font + "Hits");
 	}
 	write("</thead>");
 
@@ -136,11 +140,14 @@ if(file.length) {
 		write("<TD valign=top align=right>" + dat_font + "<font color=black>" + bytes(file[i].size)); 
 
 		/* description */
-		write("<TD valign=top>" + dat_font);
-		if (0 && file[i].misc&FM_EXTDESC)
-			write("<PRE>" + file[i].extended_description);
-		else
-			write("<TT>" + file[i].description);
+		write("<TD valign=top>");
+		if (show_ext_desc) {
+			if(file[i].misc&FM_EXTDESC)
+				write("<PRE>" + file[i].extended_description);
+			else
+				write("<TT>" + file[i].description);
+		} else
+			write(dat_font + file[i].description);
 
 		/* date/time */
 		write("<TD valign=top align=center nowrap>" + dat_font + "<font color=black>" 
