@@ -40,7 +40,7 @@
 
 int sbbs_t::exec_misc(csi_t *csi, char *path)
 {
-	char	str[512],buf[1025],ch,*p,**pp,**pp1,**pp2;
+	char	str[512],tmp[512],buf[1025],ch,*p,**pp,**pp1,**pp2;
 	ushort	w;
 	uint 	i,j;
 	long	l,*lp,*lp1,*lp2;
