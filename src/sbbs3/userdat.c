@@ -523,6 +523,7 @@ int DLLCALL putusername(scfg_t* cfg, int number, char *name)
 	char str[256];
 	int file;
 	long length;
+	uint total_users;
 
 	if (number<1) 
 		return(-1);
@@ -531,6 +532,12 @@ int DLLCALL putusername(scfg_t* cfg, int number, char *name)
 	if((file=nopen(str,O_RDWR|O_CREAT))==-1) 
 		return(-2); 
 	length=filelength(file);
+
+	/* Truncate corrupted name.dat */
+	total_users=lastuser(cfg);
+	if((uint)(length/(LEN_ALIAS+2))>total_users)
+		chsize(file,total_users*(LEN_ALIAS+2));
+
 	if(length && length%(LEN_ALIAS+2)) {
 		close(file);
 		return(-3); 
