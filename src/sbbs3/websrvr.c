@@ -948,7 +948,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 
 	start=time(NULL);
 	for(i=0;TRUE;) {
-		if(!socket_check(session->socket,&rd)) {
+		if(!socket_check(session->socket,&rd,1000)) {
 			session->req.keep_alive=FALSE;
 			close_request(session);
 			session->socket=INVALID_SOCKET;
@@ -962,7 +962,6 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 				session->socket=INVALID_SOCKET;
 				return(-1);        /* time-out */
 			}
-			YIELD();
 			continue;       /* no data */
 		}
 
@@ -1053,8 +1052,8 @@ int recvbufsocket(int sock, char *buf, long count)
 	}
 
 	/* ToDo Timeout here too? */
-	while(rd<count && socket_check(sock,NULL))  {
-		i=read(sock,buf,count-rd);
+	while(rd<count && socket_check(sock,NULL,100))  {
+		i=recv(sock,buf,count-rd,0);
 		if(i<=0)  {
 			*buf=0;
 			return(0);
