@@ -12,7 +12,9 @@
 // subboard newsgroup
 // ...
 
-printf("Synchronet NewsLink session started (v1.00 Alpha)");
+const VERSION="1.00 Alpha"
+
+printf("Synchronet NewsLink session started (v%s)", VERSION);
 
 var cfg_fname = system.ctrl_dir + "newslink.cfg";
 
@@ -21,6 +23,7 @@ load("sbbsdefs.js");
 var debug = false;
 var reset_ptrs = false;		// Reset export pointers, export all messages
 var update_ptrs = false;	// Update export pointers, don't export anything
+var email_addresses = true;	// Include e-mail addresses in headers
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -30,6 +33,8 @@ for(i=0;i<argc;i++) {
 		reset_ptrs = true;
 	else if(argv[i].toLowerCase()=="-u")
 		update_ptrs = true;
+	else if(argv[i].toLowerCase()=="-ne")
+		email_addresses = false;
 	else
 		cfg_fname = argv[i];
 }
@@ -122,6 +127,9 @@ if(!socket.connect(server,port)) {
 printf("Connected");
 readln();
 
+writeln("slave");
+readln();
+
 if(username!=undefined && username.length) {
 	printf("Authenticating...");
 	writeln(format("AUTHINFO USER %s",username));
@@ -138,7 +146,12 @@ if(username!=undefined && username.length) {
 	printf("Authenticated");
 }
 
+/******************************/
 /* Export and Import Messages */
+/******************************/
+var exported=0;
+var imported=0;
+
 printf("Scanning %lu message bases...",area.length);
 for(i in area) {
 	
@@ -147,7 +160,7 @@ for(i in area) {
 		break;
 	}
 
-	printf("%s",area[i].toString());
+//	printf("%s",area[i].toString());
 	
 	sub = area[i][1];
 	newsgroup = area[i][2];
@@ -165,7 +178,7 @@ for(i in area) {
 	import_ptr = 0;
 	ptr_fname = msgbase.file + ".snl";
 	ptr_file = new File(ptr_fname);
-	if(ptr_file.open("r")) {
+	if(ptr_file.open("rb")) {
 		export_ptr = ptr_file.readBin();
 		printf("%s export ptr: %ld",sub,export_ptr);
 		import_ptr = ptr_file.readBin();
@@ -202,10 +215,19 @@ for(i in area) {
 			continue;
 
 		body = msgbase.get_msg_body(false, ptr
-				,true /* remove ctrl-a codes */);
+				,true	/* remove ctrl-a codes */
+				,false	/* include tails */);
 		if(body == null) {
 			printf("!FAILED to read message number %ld",ptr);
 			continue;
+		}
+		tail = msgbase.get_msg_tail(false, ptr
+				,true	/* remove ctrl-a codes */);
+		if(tail != null) {
+			body += tail;
+			body += format("--- Synchronet NewsLink v%s\r\n",VERSION);
+			body += format(" *  %s telnet://%s\r\n"
+				,system.name,system.inetaddr);
 		}
 
 		writeln("POST");
@@ -215,9 +237,18 @@ for(i in area) {
 			break;
 		}
 
-		if(hdr.from_net_type)
-			writeln(format("From: \"%s\" <%s@%s>"
-				,hdr.from,hdr.from,hdr.from_net_addr));
+		if(!email_addresses)
+			writeln(format("From: %s@%s",hdr.from,newsgroup));
+		else if(hdr.from.indexOf('@')!=-1)
+			writeln(format("From: %s",hdr.from));
+		else if(hdr.from_net_type && hdr.from_net_addr!=null) {
+			if(hdr.from_net_addr.indexOf('@')!=-1)
+				writeln(format("From: \"%s\" <%s>"
+					,hdr.from,hdr.from_net_addr));
+			else
+				writeln(format("From: \"%s\" <%s@%s>"
+					,hdr.from,hdr.from,hdr.from_net_addr));
+		}
 		else if(hdr.from.indexOf(' ')>0)
 			writeln(format("From: \"%s\"@%s"
 				,hdr.from,system.inetaddr));
@@ -238,6 +269,7 @@ for(i in area) {
 			break;
 		}
 		printf("Posted message %lu to newsgroup: %s",ptr,newsgroup);
+		exported++;
 	}
 	if(ptr > msgbase.last_msg)
 		ptr = msgbase.last_msg;
@@ -248,10 +280,6 @@ for(i in area) {
 	/***************************/	
 
 	ptr = import_ptr;
-	if(ptr < 0) {
-		printf("Fixing %s import ptr: %ld",newsgroup,ptr);
-		ptr = 0;
-	}
 
 	writeln(format("GROUP %s",newsgroup));
 	rsp = readln();
@@ -262,13 +290,20 @@ for(i in area) {
 		continue;
 	}
 	str = rsp.split(' ');
+
+	first_msg = Number(str[2]);
 	last_msg = Number(str[3]);
 
 	printf("%s import ptr: %ld, last_msg: %ld",newsgroup,ptr,last_msg);
 
-	if(ptr > last_msg)
-		ptr = last_msg;
-	for(ptr++;socket.is_connected && ptr<=last_msg;ptr++) {
+	if(ptr < first_msg)
+		ptr = first_msg;
+	else {
+		if(ptr > last_msg)
+			ptr = last_msg;
+		ptr++;
+	}
+	for(;socket.is_connected && ptr<=last_msg;ptr++) {
 		writeln(format("ARTICLE %lu",ptr));
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
@@ -341,16 +376,18 @@ for(i in area) {
 		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)	// avoid dupe loop
 			continue;
 		hdr.from_net_type=NET_INTERNET;
-		hdr.from_net_addr=hdr.from;
-		if(msgbase.save_msg(hdr,body)) 
+//		hdr.from_net_addr=hdr.from;
+		if(msgbase.save_msg(hdr,body)) {
 			printf("Message %lu imported into %s",ptr,sub);
+			imported++;
+		}
 	}
 	if(ptr > last_msg)
 		ptr = last_msg;
 	import_ptr = ptr;
 
 	/* Save Pointers */
-	if(!ptr_file.open("w"))
+	if(!ptr_file.open("wb"))
 		printf("!ERROR %d creating/opening %s",errno,ptr_fname);
 	else {
 		ptr_file.writeBin(export_ptr);
@@ -361,8 +398,12 @@ for(i in area) {
 	delete msgbase;
 }
 
+writeln("quit");
+readln();
+
 delete socket;
 
-printf("Synchronet NewsLink session complete");
+printf("Synchronet NewsLink session complete (%lu exported, %lu imported)"
+	   ,exported, imported);
 
 /* End of newslink.js */
