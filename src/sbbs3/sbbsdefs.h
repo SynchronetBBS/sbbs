@@ -411,6 +411,7 @@ typedef enum {						/* Values for xtrn_t.event			*/
 #define CON_RAW_IN   (1<<8) /* Raw input mode - no editing capabilities */
 #define CON_ECHO_OFF (1<<10)/* Remote & Local echo disabled for ML/MF	*/
 #define CON_UPARROW  (1<<11)/* Up arrow hit - move up one line			*/
+#define CON_NO_INACT (1<<13)/* Console inactivity detection disabled	*/
 
 							/* Number of milliseconds                   */
 #define DELAY_HANGUP 250    /* Delay before modem drops carrier         */

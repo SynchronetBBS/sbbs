@@ -253,9 +253,9 @@ char sbbs_t::getkey(long mode)
 				,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr);
 			RESTORELINE; }
 
-		if(online==ON_LOCAL && cfg.node_misc&NM_NO_INACT)
+		if((online==ON_LOCAL && cfg.node_misc&NM_NO_INACT) || console&CON_NO_INACT)
 			timeout=now;
-		if(now-timeout>=cfg.sec_warn) { 					/* warning */
+		else if(now-timeout>=cfg.sec_warn) { 					/* warning */
 			if(sys_status&SS_USERON) {
 				SAVELINE;
 				bputs(text[AreYouThere]); }
