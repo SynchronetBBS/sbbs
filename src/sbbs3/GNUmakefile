@@ -110,16 +110,17 @@ else
  LIBS	+=	../../lib/mozilla/js/$(os).$(BUILD)/libjs.a
 endif
 
-# The following are needed for echocfg
+# The following are needed for echocfg (uses UIFC)
+UIFC_OBJS =	$(EXEODIR)/uifcx.o
 ifdef USE_FLTK
- CFLAGS += -DUSE_FLTK -I../../include/fltk
- LFLAGS_FLTK = -L../../lib/fltk/$(os) -L/usr/X11R6/lib -lm -lfltk -lX11
- UIFC_FLTK = $(EXEODIR)/uifcfltk.o
+ CFLAGS +=	-DUSE_FLTK -I../../include/fltk
+ UIFC_LFLAGS += -L../../lib/fltk/$(os) -L/usr/X11R6/lib -lm -lfltk -lX11
+ UIFC_OBJS+=	$(EXEODIR)/uifcfltk.o
 endif
 ifdef USE_CURSES
- CFLAGS += -DUSE_CURSES
- LFLAGS_CURSES = -lcurses
- UIFC_CURSES = $(EXEODIR)/uifcc.o
+ CFLAGS +=	-DUSE_CURSES
+ UIFC_LFLAGS += -lcurses
+ UIFC_OBJS +=	$(EXEODIR)/uifcc.o
 endif
 
 include targets.mk		# defines all targets
@@ -280,15 +281,13 @@ $(SBBSECHO): \
 $(ECHOCFG): \
 	$(EXEODIR)/echocfg.o \
 	$(EXEODIR)/rechocfg.o \
-	$(EXEODIR)/uifcx.o \
-	$(UIFC_FLTK) \
-	$(UIFC_CURSES) \
+	$(UIFC_OBJS) \
 	$(EXEODIR)/nopen.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o
 	@echo Linking $@
-	@$(CC) -o $@ $^ $(LFLAGS_FLTK) $(LFLAGS_CURSES)
+	@$(CC) -o $@ $^ $(UIFC_LFLAGS)
 
 # ADDFILES
 $(ADDFILES): \
