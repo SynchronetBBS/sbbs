@@ -57,6 +57,7 @@ enum {
 	,CON_PROP_ABORTED
 	,CON_PROP_ABORTABLE
 	,CON_PROP_TELNET_MODE
+	,CON_PROP_GETSTR_OFFSET
 	,CON_PROP_CTRLKEY_PASSTHRU
 };
 
@@ -110,6 +111,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case CON_PROP_TELNET_MODE:
 			val=sbbs->telnet_mode;
+			break;
+		case CON_PROP_GETSTR_OFFSET:
+			val=sbbs->getstr_offset;
 			break;
 		case CON_PROP_WORDWRAP:
 			if((js_str=JS_NewStringCopyZ(cx, sbbs->wordwrap))==NULL)
@@ -196,6 +200,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_TELNET_MODE:
 			sbbs->telnet_mode=val;
 			break;
+		case CON_PROP_GETSTR_OFFSET:
+			sbbs->getstr_offset=val;
+			break;
 		case CON_PROP_QUESTION:
 			if((str=JS_ValueToString(cx, *vp))==NULL)
 				break;
@@ -230,6 +237,7 @@ static struct JSPropertySpec js_console_properties[] = {
 	{	"telnet_mode"		,CON_PROP_TELNET_MODE		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"wordwrap"			,CON_PROP_WORDWRAP			,JSPROP_ENUMERATE|JSPROP_READONLY ,NULL,NULL},
 	{	"question"			,CON_PROP_QUESTION			,CON_PROP_FLAGS ,NULL,NULL},
+	{	"getstr_offset"		,CON_PROP_GETSTR_OFFSET		,CON_PROP_FLAGS ,NULL,NULL},
 	{	"ctrlkey_passthru"	,CON_PROP_CTRLKEY_PASSTHRU	,CON_PROP_FLAGS	,NULL,NULL},
 	{0}
 };
@@ -251,6 +259,7 @@ static char* con_prop_desc[] = {
 	,"current telnet mode bitfield (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"word-wrap buffer (used by getstr)	- <small>READ ONLY</small>"
 	,"current yes/no question (set by yesno and noyes)"
+	,"cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt>"
 	,"control key pass-through bitmask, set bits represent control key combinations "
 		"<i>not</i> handled by <tt>inkey()</tt> method"
 	,NULL
@@ -610,6 +619,25 @@ js_pause(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	int32		i;
+	int32		count;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc)
+		JS_ValueToInt32(cx, argv[0], &count);
+	for(i=0;i<count;i++)
+		sbbs->outchar('\a');
+	
+	*rval=JSVAL_VOID;
+    return(JS_TRUE);
+}
+
+static JSBool
 js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSString*	str;
@@ -892,16 +920,21 @@ static JSBool
 js_ansi_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		x=1,y=1;
+	jsval		val;
 	sbbs_t*		sbbs;
-
-	if(argc<2)
-		return(JS_FALSE);
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	JS_ValueToInt32(cx,argv[0],&x);
-	JS_ValueToInt32(cx,argv[1],&y);
+	if(JSVAL_IS_OBJECT(argv[0])) {
+		JS_GetProperty(cx, JSVAL_TO_OBJECT(argv[0]),"x", &val);
+		JS_ValueToInt32(cx,val,&x);
+		JS_GetProperty(cx, JSVAL_TO_OBJECT(argv[0]),"y", &val);
+		JS_ValueToInt32(cx,val,&y);
+	} else {
+		JS_ValueToInt32(cx,argv[0],&x);
+		JS_ValueToInt32(cx,argv[1],&y);
+	}
 
 	sbbs->GOTOXY(x,y);
 	*rval=JSVAL_VOID;
@@ -1108,7 +1141,10 @@ static jsMethodSpec js_console_functions[] = {
 	},		
 	{"pause",			js_pause,			0, JSTYPE_VOID,		""
 	,JSDOCSTR("display pause prompt and wait for key hit")
-	},		
+	},
+	{"beep",			js_beep,			1, JSTYPE_VOID,		JSDOCSTR("[number count]")
+	,JSDOCSTR("beep for count number of times (default count is 1)")
+	},
 	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("display a string (supports Ctrl-A codes)")
 	},		
@@ -1146,32 +1182,43 @@ static jsMethodSpec js_console_functions[] = {
 	{"ansi",			js_ansi,			1, JSTYPE_STRING,	JSDOCSTR("number attribute")
 	,JSDOCSTR("returns ANSI encoding of specified attribute")
 	},		
+	{"pushxy",			js_ansi_save,		0, JSTYPE_ALIAS	},
 	{"ansi_pushxy",		js_ansi_save,		0, JSTYPE_ALIAS	},
 	{"ansi_save",		js_ansi_save,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("save current cursor position (AKA ansi_pushxy)")
 	},
+	{"popxy",			js_ansi_restore,	0, JSTYPE_ALIAS },
 	{"ansi_popxy",		js_ansi_restore,	0, JSTYPE_ALIAS },
 	{"ansi_restore",	js_ansi_restore,	0, JSTYPE_VOID,		""
 	,JSDOCSTR("restore saved cursor position (AKA ansi_popxy)")
 	},
-	{"ansi_gotoxy",		js_ansi_gotoxy,		2, JSTYPE_VOID,		JSDOCSTR("number x,y")
-	,JSDOCSTR("Move cursor to a specific screen coordinate (ANSI)")
+	{"gotoxy",			js_ansi_gotoxy,		1, JSTYPE_ALIAS },
+	{"ansi_gotoxy",		js_ansi_gotoxy,		1, JSTYPE_VOID,		JSDOCSTR("number x,y")
+	,JSDOCSTR("Move cursor to a specific screen coordinate (ANSI), "
+	"arguments can be separate x and y cooridinates or an object with x and y properites "
+	"(like that returned from <tt>console.getxy()</tt>)")
 	},
+	{"up",				js_ansi_up,			0, JSTYPE_ALIAS },
 	{"ansi_up",			js_ansi_up,			0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
 	,JSDOCSTR("Move cursor up one or more rows (ANSI)")
 	},
+	{"down",			js_ansi_down,		0, JSTYPE_ALIAS },
 	{"ansi_down",		js_ansi_down,		0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
 	,JSDOCSTR("Move cursor down one or more rows (ANSI)")
 	},
+	{"right",			js_ansi_right,		0, JSTYPE_ALIAS },
 	{"ansi_right",		js_ansi_right,		0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
 	,JSDOCSTR("Move cursor right one or more columns (ANSI)")
 	},
+	{"left",			js_ansi_left,		0, JSTYPE_ALIAS },
 	{"ansi_left",		js_ansi_left,		0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
 	,JSDOCSTR("Move cursor left one or more columns (ANSI)")
 	},
+	{"getlines",		js_ansi_getlines,	0, JSTYPE_ALIAS },
 	{"ansi_getlines",	js_ansi_getlines,	0, JSTYPE_VOID,		""
 	,JSDOCSTR("Auto-detect the number of rows/lines on the user's terminal (ANSI)")
 	},
+	{"getxy",			js_ansi_getxy,		0, JSTYPE_ALIAS },
 	{"ansi_getxy",		js_ansi_getxy,		0, JSTYPE_OBJECT,	""
 	,JSDOCSTR("Returns the current cursor position as an object (with x and y properties)")
 	},
