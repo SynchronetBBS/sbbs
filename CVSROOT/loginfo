@@ -25,4 +25,4 @@
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
 ALL (echo %p %{sVv}; cat) | smbutil -o -i -tAll "-sCVS commit %p/%s" -f$USER i /sbbs/data/subs/syncprog;sync
-ALL (echo %p %{sVv}; cat) | jexec ircmsg -s bbs.synchro.net -c #synchronet -n cvs
+ALL (echo %p %{sVv}; cat) | jsexec ircmsg -s bbs.synchro.net -c #synchronet -n cvs
