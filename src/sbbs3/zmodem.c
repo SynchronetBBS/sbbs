@@ -82,7 +82,7 @@ void
 zmodem_tx_raw(zmodem_t* zm, unsigned char ch)
 {
 	if(zm->raw_trace)
-		lprintf(zm,LOG_INFO,"%s ",chr(ch));
+		lprintf(zm,LOG_INFO,"RX: %s ",chr(ch));
 
 	if(zm->send_byte(zm->cbdata,ch,zm->send_timeout))
 		lprintf(zm,LOG_ERR,"!Send error: %u",ERROR_VALUE);
@@ -149,7 +149,7 @@ zmodem_tx_hex(zmodem_t* zm, uchar val)
 {
 	char* xdigit="0123456789abcdef";
 
-	lprintf(zm,LOG_INFO,"%02X ",val);
+//	lprintf(zm,LOG_INFO,"TX: %02X ",val);
 
 	zmodem_tx_raw(zm, xdigit[val>>4]);
 	zmodem_tx_raw(zm, xdigit[val&0xf]);
@@ -432,7 +432,7 @@ zmodem_tx_pos_header(zmodem_t* zm, int type,long pos)
 void
 zmodem_tx_znak(zmodem_t* zm)
 {
-	lprintf(zm,LOG_INFO,"tx_znak");
+//	lprintf(zm,LOG_INFO,"tx_znak");
 
 	zmodem_tx_pos_header(zm, ZNAK, zm->ack_file_pos);
 }
@@ -1051,7 +1051,7 @@ zmodem_rx_header_raw(zmodem_t* zm, int to,int errors)
 				/*
 				 * unrecognized header style
 				 */
-				lprintf(zm,LOG_ERR,"unrecognized header style %c",c);
+				lprintf(zm,LOG_ERR,"!UNRECOGNIZED header style %c",c);
 				if(errors) {
 					return INVHDR;
 				}
@@ -1123,8 +1123,12 @@ void zmodem_parse_zrinit(zmodem_t* zm)
 	zm->can_fcs_32						= (zm->rxd_header[ZF0] & ZF0_CANFC32) != 0;
 	zm->escape_all_control_characters	= (zm->rxd_header[ZF0] & ZF0_ESCCTL)  != 0;
 	zm->escape_8th_bit					= (zm->rxd_header[ZF0] & ZF0_ESC8)    != 0;
-
 	zm->use_variable_headers			= (zm->rxd_header[ZF1] & ZF1_CANVHDR) != 0;
+
+	lprintf(zm,LOG_INFO,"Zmodem mode: CRC-%u, escape %s chars, %s headers"
+		,zm->can_fcs_32 ? 32 : 16
+		,zm->escape_all_control_characters ? "ALL" : "normal"
+		,zm->use_variable_headers ? "variable" : "fixed");
 }
 
 int zmodem_get_zrinit(zmodem_t* zm)
@@ -1197,12 +1201,6 @@ zmodem_send_from(zmodem_t* zm, FILE * fp)
 
 	while (!feof(fp)) {
 
-		now=time(NULL);
-		if(now-last_progress>=zm->progress_interval) {
-			zm->progress(zm->cbdata, ftell(fp), zm->current_file_size, now-zm->transfer_start);
-			last_progress=now;
-		}
-
 		/*
 		 * read a block from the file
 		 */
@@ -1213,6 +1211,12 @@ zmodem_send_from(zmodem_t* zm, FILE * fp)
 			 * nothing to send ?
 			 */
 			break;
+		}
+
+		now=time(NULL);
+		if(now-last_progress>=zm->progress_interval || feof(fp)) {
+			zm->progress(zm->cbdata, ftell(fp), zm->current_file_size, now-zm->transfer_start);
+			last_progress=now;
 		}
 
 		/*
@@ -1292,13 +1296,13 @@ BOOL zmodem_send_file(zmodem_t* zm, char* name, FILE* fp, BOOL request_init)
 
 	if(request_init) {
 		for(errors=0;errors<zm->max_errors;errors++) {
-			lprintf(zm,LOG_INFO,"\nSending ZRQINIT (%u of %u)",errors+1,zm->max_errors);
+			lprintf(zm,LOG_INFO,"Sending ZRQINIT (%u of %u)",errors+1,zm->max_errors);
 			i = zmodem_get_zrinit(zm);
 			if(i == ZRINIT) {
 				zmodem_parse_zrinit(zm);
 				break;
 			}
-			lprintf(zm,LOG_WARNING,"\n!RX header: %d 0x%02X", i, i);
+			lprintf(zm,LOG_WARNING,"!RX header type: %d 0x%02X", i, i);
 		}
 		if(errors>=zm->max_errors)
 			return(FALSE);
@@ -1408,7 +1412,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* name, FILE* fp, BOOL request_init)
 		if(type == ZSKIP) {
 			zm->file_skipped=TRUE;
 			fclose(fp);
-			lprintf(zm,LOG_INFO,"zmtx: skipped file \"%s\"                       ",name);
+			lprintf(zm,LOG_WARNING,"!File skipped by receiver");
 			return(FALSE);
 		}
 
@@ -1446,7 +1450,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* name, FILE* fp, BOOL request_init)
 
 	} while (type == ZRPOS || type == ZNAK);
 
-	lprintf(zm,LOG_INFO,"\nzmtx: finishing transfer on rx of type %d", type);
+	lprintf(zm,LOG_INFO,"\nFinishing transfer on rx of header type: %s", chr((uchar)type));
 
 	/*
 	 * file sent. send end of file frame
@@ -1460,19 +1464,15 @@ BOOL zmodem_send_file(zmodem_t* zm, char* name, FILE* fp, BOOL request_init)
 
 	zm->raw_trace = FALSE;
 	for(errors=0;errors<zm->max_errors;errors++) {
-		lprintf(zm,LOG_INFO,"zmtx: sending EOF frame... %u of %u", errors+1, zm->max_errors);
+		lprintf(zm,LOG_INFO,"Sending EOF frame (%u of %u)", errors+1, zm->max_errors);
 		zmodem_tx_hex_header(zm,zeof_frame);
-		type = zmodem_rx_header(zm,zm->recv_timeout);
-		lprintf(zm,LOG_INFO,"type = %d", type);
-		if(type!=ZRINIT || zm->cancelled)
+		if(zmodem_rx_header(zm,zm->recv_timeout==ZRINIT) || zm->cancelled)
 			break;
 	}
 
 	/*
 	 * and close the input file
 	 */
-
-	lprintf(zm,LOG_INFO,"zmtx: sent file \"%s\"                                    ",name);
 
 	fclose(fp);
 
