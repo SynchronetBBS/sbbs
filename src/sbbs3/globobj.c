@@ -140,6 +140,12 @@ js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	return(JS_FALSE);
+}
+
 static JSClass js_global_class ={
         "Global",
 		JSCLASS_HAS_PRIVATE, /* needed for scfg_t ptr */
@@ -148,9 +154,11 @@ static JSClass js_global_class ={
     }; 
 
 static JSFunctionSpec js_global_functions[] = {
+	{"exit",			js_exit,			0},		/* stop execution */
 	{"load",            js_load,            1},		/* Load and execute a javascript file */
 	{"format",			js_format,			1},		/* return a formatted string (ala printf) */
 	{"mswait",			js_mswait,			0},		/* millisecond wait/sleep routine */
+	{"sleep",			js_mswait,			0},		/* millisecond wait/sleep routine */
 	{"beep",			js_beep,			0},		/* local beep (freq, dur) */
 	{0}
 };
