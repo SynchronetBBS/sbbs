@@ -39,8 +39,8 @@
 #include "cmdshell.h"
 
 #define TIMEOUT_SOCK_READLINE	30	/* seconds */
-
-#define TIMEOUT_SOCKET_LISTEN	30	/* seconds */
+#define TIMEOUT_SOCK_LISTEN		30	/* seconds */
+#define TIMEOUT_FTP_RESPONSE	300	/* seconds */
 
 int sbbs_t::exec_net(csi_t* csi)
 {
@@ -483,9 +483,9 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
 				if(!socket_check(sock,&data_avail))
 					return(FALSE);
 
-				if(time(NULL)-start>TIMEOUT_SOCK_READLINE) {
-					lprintf("!ftp_cmd: TIMEOUT_SOCK_READLINE (%d) exceeded"
-						,TIMEOUT_SOCK_READLINE);
+				if(time(NULL)-start>TIMEOUT_FTP_RESPONSE) {
+					lprintf("!ftp_cmd: TIMEOUT_FTP_RESPONSE (%d) exceeded"
+						,TIMEOUT_FTP_RESPONSE);
 					return(FALSE);
 				}
 
@@ -667,7 +667,7 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	} else {	/* Normal (Active) FTP */
 
 		/* Setup for select() */
-		tv.tv_sec=TIMEOUT_SOCKET_LISTEN;
+		tv.tv_sec=TIMEOUT_SOCK_LISTEN;
 		tv.tv_usec=0;
 
 		FD_ZERO(&socket_set);
@@ -794,7 +794,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 	} else {	/* Normal (Active) FTP */
 
 		/* Setup for select() */
-		tv.tv_sec=TIMEOUT_SOCKET_LISTEN;
+		tv.tv_sec=TIMEOUT_SOCK_LISTEN;
 		tv.tv_usec=0;
 
 		FD_ZERO(&socket_set);
