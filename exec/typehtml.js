@@ -37,7 +37,7 @@ for(i in argv) {
 }
 
 if(this.f==undefined) {
-	print("usage: typehtml [-mono] <filename>");
+	print("usage: typehtml [-mono | -color] <filename>");
 	exit(1);
 }
 
