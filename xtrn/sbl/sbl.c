@@ -473,7 +473,7 @@ for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
 			,bbs.number[i].modem.min_rate);
 }
 bputs("\r\n\1w\1h");
-for(i=0;i<5;i++) {
+for(i=0;i<DESC_LINES;i++) {
 	if(!bbs.desc[i][0])
 		break;
 	bprintf("%15s%s\r\n",nulstr,bbs.desc[i]); }
@@ -696,8 +696,8 @@ if(getstr(str,10,K_NUMBER|K_EDIT|K_AUTODEL))
 	bbs->megs=atol(str);
 if(aborted) return(0);
 
-for(i=0;i<5;i++) {
-	bprintf("\1y\1hBBS Description (%d of 5): ",i+1);
+for(i=0;i<DESC_LINES;i++) {
+	bprintf("\1y\1hBBS Description (%d of %d): ",i+1,DESC_LINES);
 	if(!getstr(bbs->desc[i],50,K_EDIT|K_AUTODEL|K_LINE))
 		break; }
 
@@ -1005,7 +1005,13 @@ int main(int argc, char **argv)
 					strupr(tmpbbs.userverified);
 					strupr(tmpbbs.userupdated);
 					strupr(tmpbbs.web_url);
-					if(strstr(tmpbbs.name,name)
+					for(i=0;i<DESC_LINES;i++) {
+						strupr(tmpbbs.desc[i]);
+						if(strstr(tmpbbs.desc[i],name))
+							break;
+					}
+					if(i<DESC_LINES
+						|| strstr(tmpbbs.name,name)
 						|| strstr(tmpbbs.user,name)
 						|| strstr(tmpbbs.software,name)
 						|| strstr(tmpbbs.userverified,name)
