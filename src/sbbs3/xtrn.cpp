@@ -605,9 +605,13 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 				len=sizeof(buf);
 				avail=RingBufFree(&outbuf);
+				if(avail==0) 
+					lprintf("!Node %d output buffer full (%u bytes)"
+						,cfg.node_num,RingBufFull(&outbuf));
 				if(len>avail)
             		len=avail;
-				if(ReadFile(rdslot,buf,len,&rd,NULL)==TRUE && rd>0) {
+				if(avail>=RingBufFull(&outbuf)
+					&& ReadFile(rdslot,buf,len,&rd,NULL)==TRUE && rd>0) {
 					if(mode&EX_WWIV) {
                 		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
 						if(rd>sizeof(wwiv_buf))
@@ -648,9 +652,13 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				rd=0;
 				len=sizeof(buf);
 				avail=RingBufFree(&outbuf);
+				if(avail==0) 
+					lprintf("!Node %d output buffer full (%u bytes)"
+						,cfg.node_num,RingBufFull(&outbuf));
+
 				if(len>avail)
             		len=avail;
-				if(len && avail>=RingBufFull(&outbuf)) {
+				if(avail>=RingBufFull(&outbuf)) {
 					if(!DeviceIoControl(
 						vxd,					// handle to device of interest
 						SBBSEXEC_IOCTL_READ,	// control code of operation to perform
