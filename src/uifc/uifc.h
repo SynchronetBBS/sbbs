@@ -104,6 +104,9 @@
 	#define LFREE free
 	#define FREE free
 #endif
+#if !defined(FREE_AND_NULL)
+	#define FREE_AND_NULL(x)			if(x!=NULL) { FREE(x); x=NULL; }
+#endif
 
 #if !defined(MAX_PATH)	/* maximum path length */
 	#if defined MAXPATHLEN
