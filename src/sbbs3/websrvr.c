@@ -2334,6 +2334,7 @@ static BOOL exec_cgi(http_session_t *session)
 	time_t	start;
 
 	/* Win32-specific */
+	char*	env_block;
 	char	startup_dir[MAX_PATH+1];
 	int		wr;
 	HANDLE	rdpipe=INVALID_HANDLE_VALUE;
@@ -2343,6 +2344,7 @@ static BOOL exec_cgi(http_session_t *session)
 	DWORD	waiting;
 	DWORD	msglen;
 	DWORD	retval;
+	BOOL	success;
     PROCESS_INFORMATION process_info;
 	SECURITY_ATTRIBUTES sa;
     STARTUPINFO startup_info={0};
@@ -2395,18 +2397,24 @@ static BOOL exec_cgi(http_session_t *session)
 
 	lprintf(LOG_DEBUG,"%04d CGI startup dir: %s", session->socket, startup_dir);
 
-    if(!CreateProcess(
+	env_block = strListCreateBlock(session->req.cgi_env);
+
+    success=CreateProcess(
 		NULL,			// pointer to name of executable module
 		cmdline,  		// pointer to command line string
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
 		TRUE,	 		// handle inheritance flag
 		CREATE_NEW_CONSOLE, // creation flags
-        NULL,  			// pointer to new environment block
+        env_block,  	// pointer to new environment block
 		startup_dir,	// pointer to current directory name
 		&startup_info,  // pointer to STARTUPINFO
 		&process_info  	// pointer to PROCESS_INFORMATION
-		)) {
+		);
+
+	strListFreeBlock(env_block);
+	
+	if(!success) {
 		lprintf(LOG_ERR,"%04d !ERROR %d running %s",session->socket,GetLastError(),cmdline);
 		return(FALSE);
     }
