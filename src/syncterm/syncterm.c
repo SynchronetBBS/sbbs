@@ -297,7 +297,9 @@ int main(int argc, char **argv)
 	return(0);
 
 	USAGE:
-    printf("\nusage: syncterm [options] [URL]"
+	uifcbail();
+	clrscr();
+    cprintf("\nusage: syncterm [options] [URL]"
         "\n\noptions:\n\n"
         "-c  =  force color mode\n"
 		"-m  =  force monochrome mode\n"
@@ -317,7 +319,8 @@ int main(int argc, char **argv)
 		"URL format is: (rlogin|telnet)://[user[:password]@]domainname[:port]\n"
 		"examples: rlogin://deuce:password@nix.synchro.net:5885\n"
 		"          telnet://deuce@nix.synchro.net\n"
-		"          telnet://nix.synchro.net\n"
+		"          telnet://nix.synchro.net\n\nPress any key to exit..."
         );
+	getch();
     exit(0);
 }
