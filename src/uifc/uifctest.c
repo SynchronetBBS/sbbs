@@ -38,6 +38,7 @@
 #include <signal.h>
 #include <stdio.h>
 /* #include "curs_fix.h" */
+#include "filepick.h"
 #include "uifc.h"
 
 /********************/
@@ -61,6 +62,7 @@ int main(int argc, char** argv)  {
 	int		last;
 	int		edtuser=0;
 	char	longtitle[1024];
+	struct file_pick fper;
 	/******************/
 	/* Ini file stuff */
 	/******************/
@@ -138,7 +140,8 @@ int main(int argc, char** argv)  {
 
 	strcpy(mopt[0],"Long Title");
 	strcpy(mopt[1],"String Input");
-	mopt[2][0]=0;
+	strcpy(mopt[2],"File picker");
+	mopt[3][0]=0;
 
 	uifc.helpbuf=	"`Test Suite:`\n"
 					"\nToDo: Add Help";
@@ -167,8 +170,12 @@ int main(int argc, char** argv)  {
 		if(j==1) {
 			/* String input */
 			strcpy(longtitle,"This is a test if string input... enter/edit this field");
-			uifc.input(WIN_MID,0,0,"Input",longtitle,sizeof(longtitle),K_EDIT);
+			uifc.input(WIN_MID|WIN_NOBRDR,0,0,"Input",longtitle,sizeof(longtitle),K_EDIT);
 			uifc.showbuf(WIN_MID, 0, 0, uifc.scrn_width-4, uifc.scrn_len-4, "Result:", longtitle, NULL, NULL);
+		}
+		if(j==2) {
+			/* File picker */
+			filepick(&uifc, "Bob", &fper, NULL, NULL, 0);
 		}
 	}
 }
