@@ -40,9 +40,9 @@
     <td class="msgnavright">@@nextlink@@</td>
 </tr>
 @@JS:if(template.replyto!=undefined) '<tr class="msg"><td colspan="4"><b>In Reply To: </b><a href="msg.ssjs?msg_sub='+sub+'&amp;message='+template.replyto.number+'">'+template.replyto.subject+'</a> ('+template.replyto.from+')</td></tr>'; else '';@@
-@@JS:if(template.replies.length<=0) '<!--' else '';@@
+@@JS:if(template.replies.length<=0) '<!--'; else '';@@
 <tr class="msg"><td colspan="4"><b>Replies: </b><<REPEAT replies>><a href="msg.ssjs?msg_sub=^^sub:code^^&amp;message=^^replies:number^^">%%replies:subject%%</a> (%%replies:from%%)<<END REPEAT replies>></td></tr>
-@@JS:if(template.replies.length<=0) '-->' else '';@@
+@@JS:if(template.replies.length<=0) '-->'; else '';@@
 @@JS:if(template.attachments==undefined) '<!--'; else '';@@
 <tr class="msg"><td colspan="4"><b>Attachments:</b><br />
 <<REPEAT attachments>>
