@@ -321,7 +321,13 @@ enum {								/* Node Action */
 #pragma pack(1)
 #endif
 
-typedef struct {						/* Node information kept in NODE.DAB */
+#ifdef __GNUC__ 
+	#define _PACK __attribute__ ((packed))
+#else
+	#define _PACK
+#endif
+
+typedef struct _PACK {					/* Node information kept in NODE.DAB */
 	uchar	status,						/* Current Status of Node */
 			errors,						/* Number of Critical Errors */
 			action;						/* Action User is doing on Node */
