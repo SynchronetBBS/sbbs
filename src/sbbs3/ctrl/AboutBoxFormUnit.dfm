@@ -1,10 +1,10 @@
 object AboutBoxForm: TAboutBoxForm
-  Left = 756
-  Top = 187
+  Left = 508
+  Top = 407
   BorderStyle = bsDialog
   Caption = 'About Synchronet BBS Software'
-  ClientHeight = 286
-  ClientWidth = 423
+  ClientHeight = 368
+  ClientWidth = 592
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -19,15 +19,16 @@ object AboutBoxForm: TAboutBoxForm
   object Bevel: TBevel
     Left = 9
     Top = 9
-    Width = 408
-    Height = 224
-    Anchors = [akLeft, akTop, akBottom]
+    Width = 573
+    Height = 306
+    Anchors = [akLeft, akTop, akRight, akBottom]
   end
   object Logo: TImage
     Left = 25
     Top = 25
-    Width = 376
-    Height = 56
+    Width = 540
+    Height = 104
+    Anchors = [akLeft, akTop, akRight]
     Picture.Data = {
       09544D65746166696C656E420100D7CDC69A00000000000063114003E8030000
       0000DA460100090000032AA10000CF00EE020000000004000000030108000500
@@ -2609,12 +2610,11 @@ object AboutBoxForm: TAboutBoxForm
       0A0C8312090C8512080C8612080C8812080C8A12070C8B12070C8D12070C8E12
       070C9012080C9112080C9212080C9312090C9512090C96120A0C97120B0C9812
       0C0C98120D0C99120E0C99120F0C9A12110C030000000000}
-    Stretch = True
     Transparent = True
   end
   object OKButton: TButton
-    Left = 176
-    Top = 249
+    Left = 256
+    Top = 331
     Width = 75
     Height = 24
     Anchors = [akLeft, akBottom]
@@ -2622,14 +2622,15 @@ object AboutBoxForm: TAboutBoxForm
     ModalResult = 1
     TabOrder = 0
   end
-  object WebLabel: TStaticText
+  object CopyrightLabel: TStaticText
     Left = 16
-    Top = 208
-    Width = 145
+    Top = 292
+    Width = 225
     Height = 20
     Cursor = crHandPoint
     Hint = 'http://www.synchro.net/copyright.html'
     Alignment = taRightJustify
+    Anchors = [akLeft, akBottom]
     AutoSize = False
     Caption = 'Copyright 2001 -'
     Font.Charset = DEFAULT_CHARSET
@@ -2645,22 +2646,24 @@ object AboutBoxForm: TAboutBoxForm
   end
   object Memo: TMemo
     Left = 16
-    Top = 89
-    Width = 393
-    Height = 112
+    Top = 136
+    Width = 557
+    Height = 149
+    Anchors = [akLeft, akTop, akRight, akBottom]
     Color = clWhite
     ReadOnly = True
     ScrollBars = ssHorizontal
     TabOrder = 2
   end
-  object StaticText1: TStaticText
-    Left = 160
-    Top = 208
+  object NameLabel: TStaticText
+    Left = 242
+    Top = 292
     Width = 105
     Height = 20
     Cursor = crHandPoint
     Hint = 'http://www.synchro.net/author.html'
     Alignment = taCenter
+    Anchors = [akBottom]
     AutoSize = False
     Caption = 'Rob Swindell'
     Font.Charset = DEFAULT_CHARSET
@@ -2674,13 +2677,14 @@ object AboutBoxForm: TAboutBoxForm
     TabOrder = 3
     OnClick = WebPageLabelClick
   end
-  object StaticText2: TStaticText
-    Left = 264
-    Top = 208
-    Width = 145
+  object WebSiteLabel: TStaticText
+    Left = 352
+    Top = 292
+    Width = 222
     Height = 20
     Cursor = crHandPoint
     Hint = 'http://www.synchro.net/'
+    Anchors = [akRight, akBottom]
     AutoSize = False
     Caption = '- www.synchro.net'
     Font.Charset = DEFAULT_CHARSET

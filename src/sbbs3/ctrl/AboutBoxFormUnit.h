@@ -50,10 +50,10 @@ __published:	// IDE-managed Components
 	TButton *OKButton;
     TBevel *Bevel;
 	TImage *Logo;
-	TStaticText *WebLabel;
+    TStaticText *CopyrightLabel;
     TMemo *Memo;
-    TStaticText *StaticText1;
-    TStaticText *StaticText2;
+    TStaticText *NameLabel;
+    TStaticText *WebSiteLabel;
 	void __fastcall FormShow(TObject *Sender);
     void __fastcall WebPageLabelClick(TObject *Sender);
 private:	// User declarations
