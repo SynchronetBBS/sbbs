@@ -79,7 +79,7 @@ bool sbbs_t::uploadfile(file_t *f)
 			attr(LIGHTGRAY);
 			bputs(cfg.ftest[i]->workstr);
 
-			sprintf(sbbsfilename,"SBBSFILENAME=%.12s",unpadfname(f->name,fname));
+			sprintf(sbbsfilename,"SBBSFILENAME=%.64s",unpadfname(f->name,fname));
 			putenv(sbbsfilename);
 			sprintf(sbbsfiledesc,"SBBSFILEDESC=%.*s",LEN_FDESC,f->desc);
 			putenv(sbbsfiledesc);
