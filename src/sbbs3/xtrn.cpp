@@ -780,7 +780,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	if(startup_dir!=NULL && startup_dir[0])
 		chdir(startup_dir);
 
-	system(cmdline);	/* This is going to be a lot of work for me... :-) */
+//	system(cmdline);	/* This is going to be a lot of work for me... :-) */
 
 	return(0);
 }
