@@ -1684,7 +1684,7 @@ js_bulkmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_upload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_upload_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uint		dirnum;
 	char*		code;
@@ -2338,7 +2338,7 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"email",			js_email,			1},		// send private e-mail
 	{"netmail",			js_netmail,			1},		// send private netmail
 	{"bulk_mail",		js_bulkmail,		0},		// send bulk private e-mail
-	{"upload",			js_upload,			1},		// upload of files to dirnum/code
+	{"upload_file",		js_upload_file,		1},		// upload of files to dirnum/code
 	{"bulk_upload",		js_bulkupload,		1},		// local upload of files to dirnum/code
 	{"resort_dir",		js_resort_dir,		1},		// re-sort file directory
 	{"list_files",		js_listfiles,		1},		// listfiles(dirnum,filespec,mode)
