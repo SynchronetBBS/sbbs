@@ -20,21 +20,29 @@
     <!-- %%JS:template.color=0%% -->
     <<REPEAT messages>>
     <tr class=@@JS:((template.color++)%2==0)?'"msglist1"':'"msglist2"';@@>
-    @@JS:template.can_delete?'<td><label for="number"><input name="number" value="^^messages:number^^" type="checkbox"></td>':''@@
-	   <td>
+    @@JS:template.can_delete?'<td align=center><label for="number"><input name="number" value="^^messages:number^^" type="checkbox"></td>':''@@
+	   <td align=center>
     		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach_black.gif" />'; else '&nbsp;';@@
 	   </td>
 	   <td>
+          @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '<b>';@@
 		  <a class="msglist" href="msg.ssjs?msg_sub=^^sub:code^^&amp;message=^^messages:number^^">%%messages:subject%%</a>
+          @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '</b>';@@
 	   </td>
 	   <td>
+          @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '<b>';@@
 		  %%messages:from%%
+          @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '</b>';@@
 	   </td>
 	   <td>
+          @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '<b>';@@
 		  %%messages:to%%
+          @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '</b>';@@
 	   </td>
 	   <td align=right nowrap="nowrap">
+          @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '<b>';@@
 		  %%JS:system.timestr(@@messages:when_written_time@@)%%
+          @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '</b>';@@
 	   </td>
     </tr>
     <<END REPEAT messages>>
