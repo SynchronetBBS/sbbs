@@ -1,5 +1,7 @@
  Distribution list format:
 
+ R <sp> File revision information
+
  C <sp> Text description of release
 		Indicates a CVS release... contains one AND ONLY ONE tag line,
 		then a number of server lines.
@@ -26,6 +28,8 @@
  		A depends line.  Line is only parsed if the current sysname/machine is <sysname-machine>
 
  Lines that start with anything but a C, T, f, t, D or s are ignored.
+
+R $Revision$
 
 T Current Source Tarball (v3.10L beta)
 m NOCVS=1
