@@ -238,6 +238,19 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+void js_timeval(JSContext* cx, jsval val, struct timeval* tv)
+{
+	jsdouble jsd;
+
+	if(JSVAL_IS_INT(val))
+		tv->tv_sec = JSVAL_TO_INT(val);
+	else if(JSVAL_IS_DOUBLE(val)) {
+		JS_ValueToNumber(cx,val,&jsd);
+		tv->tv_sec = (int)jsd;
+		tv->tv_usec = (int)(jsd*1000000.0)%1000000;
+	}
+}
+
 static JSBool
 js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -270,7 +283,7 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	tv.tv_sec = 10;	/* default time-out */
 
 	if(argc>2)	/* time-out value specified */
-		JS_ValueToInt32(cx,argv[2],(int32*)&tv.tv_sec);
+		js_timeval(cx,argv[2],&tv);
 
 	dbprintf(FALSE, p, "connecting to port %u at %s", port, JS_GetStringBytes(str));
 
@@ -923,7 +936,6 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	uintN	argn;
 	int		result;
 	struct	timeval tv = {0, 0};
-	jsdouble jsd;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -939,13 +951,8 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	for(argn=0;argn<argc;argn++) {
 		if(JSVAL_IS_BOOLEAN(argv[argn]))
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
-		else if(JSVAL_IS_INT(argv[argn]))
-			tv.tv_sec = JSVAL_TO_INT(argv[argn]);
-		else if(JSVAL_IS_DOUBLE(argv[argn])) {
-			JS_ValueToNumber(cx,argv[argn],&jsd);
-			tv.tv_sec = (int)jsd;
-			tv.tv_usec = (int)(jsd*1000000.0)%1000000;
-		}
+		else if(JSVAL_IS_NUMBER(argv[argn]))
+			js_timeval(cx,argv[argn],&tv);
 	}
 
 	FD_ZERO(&socket_set);
@@ -1194,7 +1201,7 @@ static jsMethodSpec js_socket_functions[] = {
 	},
 	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout]")
 	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)"
-	", default <i>timeout</i> value is <i>10</i> (seconds)")
+	", default <i>timeout</i> value is <i>10.0</i> (seconds)")
 	},
 	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	""					
 	,JSDOCSTR("place socket in a state to listen for incoming connections (use before an accept)")
