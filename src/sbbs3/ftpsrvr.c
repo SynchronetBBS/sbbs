@@ -505,7 +505,7 @@ static void send_thread(void* arg)
 	if((fp=fopen(xfer.filename,"rb"))==NULL) {
 		lprintf("%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
 		sockprintf(xfer.ctrl_sock,"450 ERROR %d opening %s.",errno,xfer.filename);
-		if(xfer.tmpfile)
+		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 			remove(xfer.filename);
 		close_socket(xfer.data_sock,__LINE__);
 		*xfer.inprogress=FALSE;
@@ -516,8 +516,8 @@ static void send_thread(void* arg)
 	*xfer.inprogress=TRUE;
 	*xfer.aborted=FALSE;
 	if(startup->options&FTP_OPT_DEBUG_DATA || xfer.filepos)
-		lprintf("%04d DATA socket %d sending from offset %ld"
-			,xfer.ctrl_sock,*xfer.data_sock,xfer.filepos);
+		lprintf("%04d DATA socket %d sending %s from offset %ld"
+			,xfer.ctrl_sock,*xfer.data_sock,xfer.filename,xfer.filepos);
 
 	fseek(fp,xfer.filepos,SEEK_SET);
 	last_report=start=time(NULL);
@@ -632,7 +632,11 @@ static void send_thread(void* arg)
 
 	fclose(fp);
 	*xfer.inprogress=FALSE;
-	if(xfer.tmpfile || (!error && xfer.delfile))
+	if(xfer.tmpfile) {
+		if(!(startup->options&FTP_OPT_KEEP_TEMP_FILES))
+			remove(xfer.filename);
+	} 
+	else if(xfer.delfile && !error)
 		remove(xfer.filename);
 
 	thread_down();
@@ -1780,8 +1784,8 @@ static void ctrl_thread(void* arg)
 				fclose(fp);
 				filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,0L
 					,&transfer_inprogress,&transfer_aborted
-					,startup->options&FTP_OPT_KEEP_TEMP_FILES ? FALSE : TRUE
-					,TRUE
+					,TRUE	/* delfile */
+					,TRUE	/* tmpfile */
 					,&lastactive,&user,-1,FALSE,FALSE,FALSE,NULL);
 				continue;
 			} /* Local LIST/NLST */
@@ -2252,8 +2256,8 @@ static void ctrl_thread(void* arg)
 			fclose(fp);
 			filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,0L
 				,&transfer_inprogress,&transfer_aborted
-				,startup->options&FTP_OPT_KEEP_TEMP_FILES ? FALSE : TRUE
-				,TRUE
+				,TRUE /* delfile */
+				,TRUE /* tmpfile */
 				,&lastactive,&user,dir,FALSE,FALSE,FALSE,NULL);
 			continue;
 		}
@@ -2388,10 +2392,7 @@ static void ctrl_thread(void* arg)
 				success=TRUE;
 				credits=FALSE;
 				tmpfile=TRUE;
-				if(startup->options&FTP_OPT_KEEP_TEMP_FILES)
-					delfile=FALSE;
-				else
-					delfile=TRUE;
+				delfile=TRUE;
 				fprintf(fp,"%-*s File/Folder Descriptions\r\n"
 					,INDEX_FNAME_LEN,startup->index_file_name);
 				if(lib<0) {
@@ -3015,7 +3016,7 @@ void DLLCALL ftp_server(void* arg)
 	}
 
 	t=time(NULL);
-	lprintf("Initializing on %s with options: %lx"
+	lprintf("Initializing on %.24s with options: %lx"
 		,ctime(&t),startup->options);
 
 #ifdef _WIN32
