@@ -52,7 +52,7 @@ LD	:=	ld
 #
 # Compiler command-line flags.
 #
-CFLAGS	+=	-O2 -g
+CFLAGS	+=	-O2 -g -L.
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------
@@ -146,11 +146,15 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
 #         ${OBJDIR}odsys${OBJFILE}\	this file is missing
 
 ${LIBDIR}libODoors${SHLIB} : ${OBJECTS}
-	gcc -shared -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
+	$(CC) $(CFLAGS) -shared -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
 	ln -fs ${LIBDIR}libODoors${SHLIB}.6.2 ${LIBDIR}libODoors${SHLIB}
 
 ${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
 	ar -r ${LIBDIR}libODoors${STATICLIB} ${OBJECTS}
 	ranlib ${LIBDIR}libODoors${STATICLIB}
+	
+ex_chat: ex_chat.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_chat.c -o ex_chat -lODoors
+
 #
 #------------------------------------------------------------------------------
