@@ -542,6 +542,22 @@ js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_strlen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    JSString*	str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((str=JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	*rval = INT_TO_JSVAL(bstrlen(JS_GetStringBytes(str)));
+    return(JS_TRUE);
+}
+
+static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSString*	str;
@@ -1005,7 +1021,10 @@ static jsMethodSpec js_console_functions[] = {
 	},		
 	{"center",			js_center,			1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("display a string centered on the screen")
-	},		
+	},
+	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("string text")
+	,JSDOCSTR("returns the number of characters in text, excluding Ctrl-A codes")
+	},
 	{"printfile",		js_printfile,		1, JSTYPE_VOID,		JSDOCSTR("string text [,number mode]")
 	,JSDOCSTR("print a file with optional mode")
 	},		
