@@ -6,6 +6,7 @@
 	#include <mmsystem.h>
 #elif defined(__unix__)
 	#include <fcntl.h>
+	#include <soundcard.h>
 	#include <sys/soundcard.h>
 	/* KIOCSOUND */
 	#if defined(__FreeBSD__)
