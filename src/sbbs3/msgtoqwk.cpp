@@ -130,10 +130,12 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		size+=strlen(str); 
 
 		str[0]=0;
-		if(msg->reply_id)
+		if(msg->reply_id) {
+			SAFECOPY(tmp,msg->reply_id);
+			truncstr(tmp," ");
 			sprintf(str,"@REPLY: %.*s%c"
-				,(int)(sizeof(str)-12),msg->reply_id,QWK_NEWLINE);
-		else if(msg->hdr.thread_orig) {
+				,(int)(sizeof(str)-12),tmp,QWK_NEWLINE);
+		} else if(msg->hdr.thread_orig) {
 			memset(&orig_msg,0,sizeof(orig_msg));
 			orig_msg.hdr.number=msg->hdr.thread_orig;
 			if(smb_getmsgidx(&smb, &orig_msg))
