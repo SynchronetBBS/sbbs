@@ -233,7 +233,8 @@ $(SBBSECHO): \
 $(ECHOCFG): \
 	$(EXEODIR)/echocfg.o \
 	$(EXEODIR)/rechocfg.o \
-	$(EXEODIR)/uifc.o \
+	$(EXEODIR)/uifcc.o \
+	$(EXEODIR)/uifcx.o \
 	$(EXEODIR)/nopen.o \
 	$(EXEODIR)/str_util.o
 	@echo Linking $@
