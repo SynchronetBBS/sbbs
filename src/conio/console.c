@@ -27,7 +27,67 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- */
+ * July 22, 1999
+ *
+ * To All Licensees, Distributors of Any Version of BSD:
+ *
+ * As you know, certain of the Berkeley Software Distribution ("BSD") source
+ * code files require that further distributions of products containing all or
+ * portions of the software, acknowledge within their advertising materials
+ * that such products contain software developed by UC Berkeley and its
+ * contributors.
+ * 
+ * Specifically, the provision reads:
+ * 
+ * "     * 3. All advertising materials mentioning features or use of this software
+ *       *    must display the following acknowledgement:
+ *       *    This product includes software developed by the University of
+ *       *    California, Berkeley and its contributors."
+ * 
+ * Effective immediately, licensees and distributors are no longer required to
+ * include the acknowledgement within advertising materials.  Accordingly, the
+ * foregoing paragraph of those BSD Unix files containing it is hereby deleted
+ * in its entirety.
+ * 
+ * William Hoskins
+ * Director, Office of Technology Licensing
+ * University of California, Berkeley
+ *
+ *
+ */ 
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
 
 #include <sys/param.h>
 #include <sys/time.h>
@@ -121,8 +181,6 @@ struct x11 x11;
 
 /* X pixel values for the RGB triples */
 DWORD pixels[16];
-
-#define NUMMODES	(sizeof(vparams) / sizeof(struct video_params))
 
 static	fd_set	fdset;		/* File Descriptors to select on */
 
@@ -1026,20 +1084,6 @@ update_pixels()
 		else
 		    pixels[i] = WhitePixel(dpy, DefaultScreen(dpy));
 	}
-}
-
-/* Find the requested mode in the 'vmodelist' table. This function returns the
-   index into this table; we will also use the index for accessing the
-   'videoparams' array. */
-int find_vmode(int mode)
-{
-    unsigned i;
-
-    for (i = 0; i < NUMMODES; i++)
-	if (vparams[i].mode == mode)
-	    return i;
-
-    return -1;
 }
 
 int
