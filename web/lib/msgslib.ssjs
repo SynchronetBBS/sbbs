@@ -39,7 +39,7 @@ function get_my_message_offsets()
 		if(idx.to!=user.number)
 			continue;
 		if((hdr=msgbase.get_msg_header(true,last_offset))==null)
-			continuel
+			continue;
 		msg=new Array;
 		msg["hdr"]=hdr;
 		msg.idx=idx;
