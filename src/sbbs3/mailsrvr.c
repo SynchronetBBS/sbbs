@@ -2314,8 +2314,13 @@ void DLLCALL mail_server(void* arg)
 		return;
 	}
 
-	if(startup->relay_port==0)
-		startup->relay_port=IPPORT_SMTP;
+	/* Setup intelligent defaults */
+	if(startup->relay_port==0)				startup->relay_port=IPPORT_SMTP;
+	if(startup->smtp_port==0)				startup->smtp_port=IPPORT_SMTP;
+	if(startup->pop3_port==0)				startup->pop3_port=110;
+	if(startup->rescan_frequency==0)		startup->rescan_frequency=3600;	/* 60 minutes */
+	if(startup->max_delivery_attempts==0)	startup->max_delivery_attempts=50;
+	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 
 	thread_up();
 
@@ -2374,16 +2379,13 @@ void DLLCALL mail_server(void* arg)
 		return;
 	}
 
-	if(!startup->max_clients) {
+	if(startup->max_clients==0) {
 		startup->max_clients=scfg.sys_nodes;
 		if(startup->max_clients<10)
 			startup->max_clients=10;
 	}
 
 	lprintf("Maximum clients: %u",startup->max_clients);
-
-	if(!startup->max_inactivity) 
-		startup->max_inactivity=120; /* seconds */
 
 	lprintf("Maximum inactivity: %u seconds",startup->max_inactivity);
 
