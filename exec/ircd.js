@@ -2886,13 +2886,21 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 			if (MODE[cm].state && (chan.mode&cm) && 
 			    !(cmode.addbits&cm)) {
 				cmode.delbits |= cm;
-			} else if (MODE[cm].list) {
+			} else if (MODE[cm].list && MODE[cm].isnick) {
 				for (member in chan.modelist[cm]) {
 					cmode.delmodes += MODE[cm].modechar;
 					cmode.delmodeargs += " " +
 						chan.modelist[cm][member].nick;
 					delete chan.modelist[cm][member];
 				}
+			} else if (MODE[cm].list && !MODE[cm].isnick) {
+				for (ban in chan.modelist[cm]) {
+					cmode.delmodes += MODE[cm].modechar;
+					cmode.delmodeargs += " " +
+						chan.modelist[cm][ban];
+					delete chan.modelist[cm][ban];
+					delete chan.bantime[ban];
+					delete chan.bancreator[ban];
 			}
 		}
 	}
@@ -3180,16 +3188,16 @@ function IRCClient_finalize_server_connect(states) {
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
 	if (!this.sentps) {
-	for (cl in CLines) {
-		if(IRC_match(this.nick,CLines[cl].servername)) {
-			this.rawout("PASS " + CLines[cl].password + " :" + states);
+		for (cl in CLines) {
+			if(IRC_match(this.nick,CLines[cl].servername)) {
+				this.rawout("PASS " + CLines[cl].password + " :" + states);
 				break;
 			}
 		}
 		this.rawout("CAPAB " + server_capab);
 		this.rawout("SERVER " + servername + " 1 :" + serverdesc);
 	}
-	this.bcast_to_servers_raw(":" + servername + " SERVER " + this.nick + " 2 :" + this.realname);
+	this.bcast_to_servers_raw(":" + servername + " SERVER " + this.nick + " 2 :" + this.info);
 	this.synchronize();
 }
 
