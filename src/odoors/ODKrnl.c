@@ -185,10 +185,12 @@ tODResult ODKrnlInitialize(void)
    tODResult Result = kODRCSuccess;
    
 #ifdef ODPLAT_NIX
-   /* Block SIGHUP for carrier detect use */
-   sigemptyset(&block);
-   sigaddset(&block,SIGHUP);
-   sigprocmask(SIG_BLOCK,&block,NULL);
+   /* HUP Detection */
+   act.sa_handler=sig_no_carrier;
+   /* If two HUP signals are recieved, die on the second */
+   act.sa_flags=SA_RESETHAND;
+   sigemptyset(&(act.sa_mask));
+   sigaction(SIGHUP,&act,NULL);
 
    /* Run kernel on SIGALRM (Every 1 second) */
    act.sa_handler=sig_run_kernel;
@@ -197,31 +199,28 @@ tODResult ODKrnlInitialize(void)
    sigaction(SIGALRM,&act,NULL);
    itv.it_interval.tv_sec=1;
    itv.it_interval.tv_usec=0;
-   itv.it_value.tv_sec=0;
-   itv.it_value.tv_usec=250000;
+   itv.it_value.tv_sec=1;
+   itv.it_value.tv_usec=0;
    setitimer(ITIMER_REAL,&itv,NULL);
    
-   /* Make sure SIGALRM is unblocked */
-   sigemptyset(&block);
-   sigaddset(&block,SIGALRM);
-   sigprocmask(SIG_UNBLOCK,&block,NULL);
-
    /* Make stdin signal driven. */
    act.sa_handler=sig_get_char;
    act.sa_flags=0;
    sigemptyset(&(act.sa_mask));
    sigaction(SIGIO,&act,NULL);
 
-   /* Make sure SIGIO is unblocked */
-   sigemptyset(&block);
-   sigaddset(&block,SIGIO);
-   sigprocmask(SIG_UNBLOCK,&block,NULL);
-   
    /* Have SIGIO signales delivered to this process */
    fcntl(0,F_SETOWN,getpid());
    
    /* Enable SIGIO when read possible on stdin */
    fcntl(0,F_SETFL,fcntl(0,F_GETFL)|O_ASYNC);
+
+   /* Make sure SIGHUP, SIGALRM, and SIGIO are unblocked */
+   sigemptyset(&block);
+   sigaddset(&block,SIGHUP);
+   sigaddset(&block,SIGALRN);
+   sigaddset(&block,SIGIO);
+   sigprocmask(SIG_UNBLOCK,&block,NULL);
 #endif
 
    /* Initialize time of next status update and next time deduction. */
@@ -368,6 +367,7 @@ ODAPIDEF void ODCALL od_kernel(void)
 #ifndef OD_MULTITHREADED
    /* If not operating in local mode, then perform remote-mode specific */
    /* activies.                                                         */
+#ifndef ODPLAT_NIX	/* On *nix, this is handled by signals */
    if(od_control.baud != 0)
    {
       /* If carrier detection is enabled, then shutdown OpenDoors if */
@@ -381,15 +381,14 @@ ODAPIDEF void ODCALL od_kernel(void)
          }
       }
 
-#ifndef ODPLAT_NIX	/* On *nix, this is handled by a signal */
       /* Loop, obtaining any new characters from the serial port and */
       /* adding them to the common local/remote input queue.         */
       while(ODComGetByte(hSerialPort, &ch, FALSE) == kODRCSuccess)
       {
          ODKrnlHandleReceivedChar(ch, TRUE);
       }
-#endif
    }
+#endif
 
 #ifdef ODPLAT_DOS
 check_keyboard_again:
@@ -698,7 +697,9 @@ statup:
 
    ODKrnlTimeUpdate();
 
+#ifndef ODPLAT_NIX
    ODTimerStart(&RunKernelTimer, 250);
+#endif
 
    OD_API_EXIT();
 
@@ -1645,6 +1646,14 @@ static void sig_get_char(int sig)
    while(ODComGetByte(hSerialPort, &ch, FALSE) == kODRCSuccess)
    {
       ODKrnlHandleReceivedChar(ch, TRUE);
+   }
+}
+
+static void sig_no_carrier(int sig)
+{
+   if(od_control.baud != 0)
+   {
+      ODKrnlForceOpenDoorsShutdown(ERRORLEVEL_NOCARRIER);
    }
 }
 #endif
