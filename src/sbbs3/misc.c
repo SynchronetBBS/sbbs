@@ -376,6 +376,7 @@ uint hptoi(char *str)
 
 /****************************************************************************/
 /* Converts an ASCII Hex string into an ulong                               */
+/* by Steve Deppe (Ille Homine Albe)										*/
 /****************************************************************************/
 ulong ahtoul(char *str)
 {
