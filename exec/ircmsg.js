@@ -36,7 +36,7 @@ for(i=0;i<argc;i++) {
 	}
 }
 
-if(msg == undefined || msg=='') {
+if(msg == undefined || msg.search(/^\s*$/)) {
 	log("Cowardly refusing to send empty message");
 	exit();
 }
