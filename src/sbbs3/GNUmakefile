@@ -495,10 +495,14 @@ $(JSEXEC): $(JSEXEC_OBJS) $(LIBS)
 	@$(CCPP) -o $@ $(LFLAGS) $^
 	
 # ANS2MSG
-FORCE$(ANS2MSG): $(ANS2MSG).o
+$(ANS2MSG): $(LIBODIR)/ans2msg.o
+	@echo Linking $@
+	@$(CC) -o $@ $^
 
-# MSG2NAS
-FORCE$(MSG2ANS): $(MSG2ANS).o
+# MSG2ANS
+$(MSG2ANS): $(LIBODIR)/msg2ans.o
+	@echo Linking $@
+	@$(CC) -o $@ $^
 
 # Single servers
 FTPCON_OBJS	= $(LIBODIR)/sbbsftp.o $(LIBODIR)/conwrap.o \
