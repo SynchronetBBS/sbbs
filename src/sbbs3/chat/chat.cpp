@@ -38,6 +38,7 @@
 //---------------------------------------------------------------------------
 
 #include <vcl.h>
+#include <stdio.h>      // sprintf
 #pragma hdrstop
 USERES("chat.res");
 USEFORM("MainFormUnit.cpp", MainForm);
@@ -84,8 +85,13 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmdline, int)
     if(argv!=NULL)
         argv[len]=0;
 
-    if(!user_name[0])
+    if(!user_name[0]) {
+        char errmsg[512];
+        sprintf(errmsg,"Invalid command-line: '%s'",cmdline);
+	Application->MessageBox(errmsg
+            ,"Synchronet Chat",MB_OK|MB_ICONEXCLAMATION);
         return 0;
+    }
 
     node_num=(atoi(node_number));
 
