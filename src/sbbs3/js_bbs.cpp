@@ -79,6 +79,8 @@ enum {
 	,BBS_PROP_CONNECTION		/* READ ONLY */
 	,BBS_PROP_RLOGIN_NAME
 	,BBS_PROP_CLIENT_NAME
+
+	,BBS_PROP_ALTUL
 };
 
 static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -193,6 +195,10 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case BBS_PROP_CLIENT_NAME:
 			p=sbbs->client_name;
+			break;
+
+		case BBS_PROP_ALTUL:
+			val=sbbs->altul;
 			break;
 
 		default:
@@ -321,6 +327,11 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_CLIENT_NAME:
 			sprintf(sbbs->client_name,"%.*s",sizeof(sbbs->client_name)-1,p);
 			break;
+
+		case BBS_PROP_ALTUL:
+			if(val<sbbs->cfg.altpaths)
+				sbbs->altul=(ushort)val;
+			break;
 		default:
 			return(JS_TRUE);
 	}
@@ -373,6 +384,7 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"connection"		,BBS_PROP_CONNECTION	,BBS_PROP_READONLY	,NULL,NULL},
 	{	"rlogin_name"		,BBS_PROP_RLOGIN_NAME	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"alt_ul_dir"		,BBS_PROP_ALTUL			,JSPROP_ENUMERATE	,NULL,NULL},
 	{0}
 };
 
@@ -889,6 +901,20 @@ js_automsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_time_bank(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->time_bank();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
 js_text_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -925,6 +951,62 @@ js_xfer_policy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		return(JS_FALSE);
 
 	sbbs->xfer_policy();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_batchmenu(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->batchmenu();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_batchdownload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->start_batch_download();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_batchaddlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->batch_add_list(JS_GetStringBytes(JS_ValueToString(cx, argv[0])));
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_temp_xfer(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->temp_xfer();
 
 	*rval = JSVAL_VOID;
 	return(JS_TRUE);
@@ -1081,6 +1163,21 @@ js_useredit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		usernumber=JSVAL_TO_INT(argv[0]);
 
 	sbbs->useredit(usernumber);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_change_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uint		usernumber=0;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->change_user();
 
 	*rval = JSVAL_VOID;
 	return(JS_TRUE);
@@ -1246,6 +1343,68 @@ js_bulkmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		FREE(ar);
 
 	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uint		i;
+	char*		code;
+	sbbs_t*		sbbs;
+    JSString*	str;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((str=JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	if((code=JS_GetStringBytes(str))==NULL)
+		return(JS_FALSE);
+
+	for(i=0;i<sbbs->cfg.total_dirs;i++)
+		if(!stricmp(sbbs->cfg.dir[i]->code,code))
+			break;
+
+	if(i>=sbbs->cfg.total_dirs) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	sbbs->bulkupload(i);
+
+	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	return(JS_TRUE);
+}
+
+js_resort_dir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uint		i;
+	char*		code;
+	sbbs_t*		sbbs;
+    JSString*	str;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((str=JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	if((code=JS_GetStringBytes(str))==NULL)
+		return(JS_FALSE);
+
+	for(i=0;i<sbbs->cfg.total_dirs;i++)
+		if(!stricmp(sbbs->cfg.dir[i]->code,code))
+			break;
+
+	if(i>=sbbs->cfg.total_dirs) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	sbbs->resort(i);
+
+	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 	return(JS_TRUE);
 }
 
@@ -1430,6 +1589,215 @@ js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	return(JS_TRUE);
 }
 
+static JSBool
+js_cmdstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	char*		fpath="";
+	char*		fspec="";
+	JSString*	js_str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+ 	js_str = JS_ValueToString(cx, argv[0]);
+ 	if (!js_str)
+ 		return(JS_FALSE);
+
+	p=JS_GetStringBytes(js_str);
+
+	for(uintN i=1;i<argc;i++) {
+		if(JSVAL_IS_STRING(argv[i])) {
+			js_str = JS_ValueToString(cx, argv[i]);
+			if(fpath==NULL)
+				fpath=JS_GetStringBytes(js_str);
+			else
+				fspec=JS_GetStringBytes(js_str);
+		}
+	}
+
+	p=sbbs->cmdstr(p,fpath,fspec,NULL);
+
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_getfilespec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	char		tmp[128];
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	p=sbbs->getfilespec(tmp);
+
+	if(p==NULL)
+		*rval=JSVAL_NULL;
+	else
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		mode=0;
+	char*		code;
+	char*		fspec=ALLFILES;
+	uint		dirnum;
+    JSString*	js_str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	if((code=JS_GetStringBytes(js_str))==NULL)
+		return(JS_FALSE);
+
+	for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
+		if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
+			break;
+
+	if(dirnum>=sbbs->cfg.total_dirs) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	for(uintN i=1;i<argc;i++) {
+		if(JSVAL_IS_INT(argv[i]))
+			mode=JSVAL_TO_INT(argv[i]);
+		else if(JSVAL_IS_STRING(argv[i])) {
+			js_str = JS_ValueToString(cx, argv[i]);
+			fspec=JS_GetStringBytes(js_str);
+		}
+	}
+
+	*rval = INT_TO_JSVAL(sbbs->listfiles(dirnum,fspec,0 /* tofile */,mode));
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		mode=FI_INFO;
+	char*		code;
+	char*		fspec=ALLFILES;
+	uint		dirnum;
+    JSString*	js_str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	if((code=JS_GetStringBytes(js_str))==NULL)
+		return(JS_FALSE);
+
+	for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
+		if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
+			break;
+
+	if(dirnum>=sbbs->cfg.total_dirs) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	for(uintN i=1;i<argc;i++) {
+		if(JSVAL_IS_INT(argv[i]))
+			mode=JSVAL_TO_INT(argv[i]);
+		else if(JSVAL_IS_STRING(argv[i])) {
+			js_str = JS_ValueToString(cx, argv[i]);
+			fspec=JS_GetStringBytes(js_str);
+		}
+	}
+
+	*rval = INT_TO_JSVAL(sbbs->listfileinfo(dirnum,fspec,mode));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_scansubs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		mode=SCAN_NEW;
+	BOOL		all=FALSE;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	for(uintN i=1;i<argc;i++) {
+		if(JSVAL_IS_INT(argv[i]))
+			mode=JSVAL_TO_INT(argv[i]);
+		else if(JSVAL_IS_BOOLEAN(argv[i]))
+			all=JSVAL_TO_BOOLEAN(argv[i]);
+	}
+
+	if(all)
+		sbbs->scanallsubs(mode);
+	else
+		sbbs->scansubs(mode);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_scandirs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		mode=0;
+	BOOL		all=FALSE;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	for(uintN i=1;i<argc;i++) {
+		if(JSVAL_IS_INT(argv[i]))
+			mode=JSVAL_TO_INT(argv[i]);
+		else if(JSVAL_IS_BOOLEAN(argv[i]))
+			all=JSVAL_TO_BOOLEAN(argv[i]);
+	}
+
+	if(all)
+		sbbs->scanalldirs(mode);
+	else
+		sbbs->scandirs(mode);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	time_t		t;
+	sbbs_t*		sbbs;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	t = JSVAL_TO_INT(argv[0]);
+
+	if(sbbs->inputnstime(&t)==true) {
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		argv[0] = INT_TO_JSVAL(t);
+	}
+
+	return(JS_TRUE);
+}
+
 
 static JSFunctionSpec js_bbs_functions[] = {
 	/* text.dat */
@@ -1445,10 +1813,15 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"logout",			js_logout,			0},		// logout procedure
 	{"hangup",			js_hangup,			0},		// hangup immediately
 	{"nodesync",		js_nodesync,		0},		// synchronize node with system
-	{"automsg",			js_automsg,			0},		// edit/create auto-message
+	{"auto_msg",		js_automsg,			0},		// edit/create auto-message
+	{"time_bank",		js_time_bank,		0},		// time bank
 	{"text_sec",		js_text_sec,		0},		// text section
 	{"xtrn_sec",		js_xtrn_sec,		0},		// external programs section
 	{"xfer_policy",		js_xfer_policy,		0},		// display file transfer policy
+	{"batch_menu",		js_batchmenu,		0},		// batch file transfer menu
+	{"batch_download",	js_batchdownload,	0},		// start batch download
+	{"batch_add_list",	js_batchaddlist,	1},		// add file list to batch download queue
+	{"temp_xfer",		js_temp_xfer,		0},		// temp xfer menu
 	{"user_config",		js_user_config,		0},		// user config
 	{"sys_info",		js_sys_info,		0},		// system info
 	{"sub_info",		js_sub_info,		0},		// sub-board info
@@ -1459,11 +1832,18 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"node_stats",		js_node_stats,		0},		// node stats
 	{"userlist",		js_userlist,		0},		// user list
 	{"useredit",		js_useredit,		0},		// user edit
+	{"change_user",		js_change_user,		0},		// change to a different user
 	{"logonlist",		js_logonlist,		0},		// logon list
 	{"readmail",		js_readmail,		0},		// read private mail
 	{"email",			js_email,			1},		// send private e-mail
 	{"netmail",			js_netmail,			1},		// send private netmail
-	{"bulkmail",		js_bulkmail,		0},		// send bulk private e-mail
+	{"bulk_mail",		js_bulkmail,		0},		// send bulk private e-mail
+	{"bulk_upload",		js_bulkupload,		1},		// local upload of files to dir
+	{"resort_dir",		js_resort_dir,		1},		// re-sort file directory
+	{"listfiles",		js_listfiles,		1},		// listfiles(dirnum,filespec,mode)
+	{"listfileinfo",	js_listfileinfo,	1},		// listfileinfo(dirnum,filespec,mode)
+	{"scan_subs",		js_scansubs,		0},		// scansubs(mode,all)
+	{"scan_dirs",		js_scandirs,		0},		// scandirs(mode,all)
 	/* menuing */
 	{"menu",			js_menu,			1},		// show menu
 	{"log_key",			js_logkey,			1},		// log key to node.log (comma optional)
@@ -1491,6 +1871,11 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"nodelist",		js_nodelist,		0},		// list all nodes
 	{"whos_online",		js_whos_online,		0},		// list active nodes
 	{"spy",				js_spy,				1},		// spy on node
+	/* misc */
+	{"cmdstr",			js_cmdstr,			1},		// command string
+	/* input */
+	{"get_filespec",	js_getfilespec,		0},		// get file specification
+	{"get_newscantime",	js_getnstime,		1},		// get newscan time
 	{0}
 };
 
