@@ -27,7 +27,7 @@ endif
 
 
 # CIOLIB Library Link Rule
-$(CIOLIB): $(OBJS)
+$(CIOLIB-MT): $(OBJS)
 	@echo Creating $@ ...
 	$(QUIET)ar rc $@ $^
 	$(QUIET)ranlib $@

@@ -21,11 +21,11 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 !include ..\build\Common.bmake	# defines clean and output directory rules
 
-CFLAGS = $(CFLAGS) -I$(XPDEV_SRC) -I$(CIOLIB_SRC)
+CFLAGS = $(CFLAGS) $(XPDEV-MT_CFLAGS) $(MT_CFLAGS) -I$(CIOLIB_SRC)
 
 # SBBS DLL Link Rule
-$(CIOLIB): $(OBJS)
-    @echo Creating $< ...
+$(CIOLIB-MT): $(OBJS)
+    @echo Creating $<
 	-$(QUIET)$(DELETE) $@
 	$(QUIET)for %f in ($(OBJS)) do $(QUIET)tlib $@ +%f
 
