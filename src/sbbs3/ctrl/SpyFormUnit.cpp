@@ -52,7 +52,6 @@ __fastcall TSpyForm::TSpyForm(TComponent* Owner)
 {
     Width=MainForm->SpyTerminalWidth;
     Height=MainForm->SpyTerminalHeight;
-    KeyboardActive->Checked=MainForm->SpyTerminalKeyboardActive;
     Terminal = new TEmulVT(this);
     Terminal->Parent=this;
     Terminal->Align=alClient;
@@ -120,6 +119,8 @@ void __fastcall TSpyForm::FormShow(TObject *Sender)
     Terminal->Clear();
     Terminal->WriteStr("*** Synchronet Local Spy ***\r\n\r\n");
     Terminal->WriteStr("ANSI Terminal Emulation:"+CopyRight+"\r\n\r\n");
+
+    KeyboardActive->Checked=!MainForm->SpyTerminalKeyboardActive;
     KeyboardActiveClick(Sender);
 }
 //---------------------------------------------------------------------------
