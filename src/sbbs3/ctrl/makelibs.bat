@@ -8,4 +8,5 @@ echo Creating import libraries from %dllsrc%
 implib sbbs.lib 	%dllsrc%\sbbs.dll
 implib mailsrvr.lib 	%dllsrc%\mailsrvr.dll
 implib ftpsrvr.lib 	%dllsrc%\ftpsrvr.dll
+implib websrvr.lib 	%dllsrc%\websrvr.dll
 implib services.lib	%dllsrc%\services.dll
