@@ -34,18 +34,16 @@
     <USERDEFINES value="SBBS;SMB_GETMSGTXT;_DEBUG"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
-    <INCLUDEPATH value="D:\Borland\Shared\Images\Buttons\;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="D:\Borland\Shared\Images\Buttons\;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="..;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-ID:\Borland\Shared\Images\Buttons\. -I..\DLL -I..\..\sbbs3 
-      -ID:\BORLAND\CBUILDER4\OBJREPOS\. -ID:\Borland\CBuilder4\Projects\. 
-      -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -DSBBS 
+    <IDLCFLAGS value="-I.. -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -DSBBS 
       -DSMB_GETMSGTXT -D_DEBUG -boa"/>
-    <CFLAG1 value="-Od -H=d:\BORLAND\CBUILD~2\lib\vcl50.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y 
-      -v -vi- -c -tW -tWM"/>
+    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl50.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
+      -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zi"/>
@@ -85,40 +83,42 @@ ProductVersion=3.0.0.0
 Comments=
 
 [HistoryLists\hlIncludePath]
-Count=15
-Item0=D:\Borland\Shared\Images\Buttons\;..\DLL;..;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
-Item1=D:\Borland\Shared\Images\Buttons\;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
-Item2=D:\Borland\Shared\Images\Buttons;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
-Item3=..;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
-Item4=..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
-Item5=..;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item6=..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item7=..\;..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item8=..\;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item9=..\;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item10=..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item11=..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item12=..\;..\..\sbbs3;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item13=..\;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item14=..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Count=16
+Item0=..;$(BCB)\include;$(BCB)\include\vcl
+Item1=D:\Borland\Shared\Images\Buttons\;..\DLL;..;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
+Item2=D:\Borland\Shared\Images\Buttons\;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
+Item3=D:\Borland\Shared\Images\Buttons;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
+Item4=..;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
+Item5=..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;$(BCB)\include;$(BCB)\include\vcl
+Item6=..;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item7=..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item8=..\;..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item9=..\;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item10=..\;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item11=..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item12=..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item13=..\;..\..\sbbs3;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item14=..\;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item15=..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
-Count=15
-Item0=D:\Borland\Shared\Images\Buttons\;..\DLL;..;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item1=D:\Borland\Shared\Images\Buttons\;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item2=D:\Borland\Shared\Images\Buttons;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item3=..;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item4=..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item5=..;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item6=..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item7=..\;..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item8=..\;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item9=..\;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item10=..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item11=..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item12=..\;..\..\sbbs3;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item13=..\;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item14=..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Count=16
+Item0=$(BCB)\lib\obj;$(BCB)\lib
+Item1=D:\Borland\Shared\Images\Buttons\;..\DLL;..;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item2=D:\Borland\Shared\Images\Buttons\;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item3=D:\Borland\Shared\Images\Buttons;..\DLL;..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item4=..;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item5=..\..\sbbs3;D:\BORLAND\CBUILDER4\OBJREPOS\;D:\Borland\CBuilder4\Projects\;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item6=..;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item7=..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item8=..\;..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item9=..\;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item10=..\;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item11=..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item12=..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item13=..\;..\..\sbbs3;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item14=..\;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item15=..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
 
 [HistoryLists\hlDebugSourcePath]
 Count=1
