@@ -2336,7 +2336,7 @@ static void ctrl_thread(void* arg)
 				&& !stricmp(p,str) && !delecmd) {
 				lprintf("%04d %s creating/updating QWK packet...",sock,user.alias);
 				sprintf(str,"%sPACK%04u.NOW",scfg.data_dir,user.number);
-				if((file=open(str,O_WRONLY|O_CREAT,_S_IWRITE))==-1) {
+				if((file=open(str,O_WRONLY|O_CREAT,S_IWRITE))==-1) {
 					lprintf("%04d !ERROR %d opening %s",sock, errno, str);
 					sockprintf(sock, "451 !ERROR %d creating semaphore file",errno);
 					filepos=0;

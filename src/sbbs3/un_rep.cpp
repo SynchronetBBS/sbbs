@@ -417,7 +417,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(!(ff.attrib&_A_SUBDIR)) {
 				// Create directory if necessary
 				sprintf(str,"%sQNET/%s.IN",cfg.data_dir,useron.alias);
-				mkdir(str); 
+				_mkdir(str); 
 				// Move files
 				sprintf(str,"%s%s",cfg.temp_dir,ff.name);
 				sprintf(fname,"%sQNET/%s.IN/%s",cfg.data_dir,useron.alias,ff.name);

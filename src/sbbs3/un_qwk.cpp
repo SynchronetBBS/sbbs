@@ -247,7 +247,7 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		if(!(ff.attrib&_A_SUBDIR)) {
 			// Create directory if necessary
 			sprintf(str,"%sQNET/%s.IN",cfg.data_dir,cfg.qhub[hubnum]->id);
-			mkdir(str);
+			_mkdir(str);
 			// Copy files
 			sprintf(str,"%s%s",cfg.temp_dir,ff.name);
 			sprintf(fname,"%sQNET/%s.IN/%s",cfg.data_dir,cfg.qhub[hubnum]->id,ff.name);

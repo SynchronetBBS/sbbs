@@ -209,7 +209,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	if(mode&WM_FILE) {
 		strcpy(fname,subj);
 		sprintf(str,"%sFILE/%04u.OUT", cfg.data_dir, useron.number);
-		mkdir(str);
+		_mkdir(str);
 		strcpy(tmp, cfg.data_dir);
 		if(tmp[0]=='.')    /* Relative path */
 			sprintf(tmp,"%s%s", cfg.node_dir, cfg.data_dir);

@@ -78,6 +78,8 @@ extern "C" {
 	#define stricmp(x,y)		strcasecmp(x,y)
 	#define strnicmp(x,y,z)		strncasecmp(x,y,z)
 	#define chsize(fd,size)		ftruncate(fd,size)
+	#define _mkdir(dir)			mkdir(dir,0777)
+	#define _rmdir(dir)			rmdir(dir)
 
 	DLLEXPORT void	sbbs_beep(int freq, int dur);
 	DLLEXPORT long	filelength(int fd);
@@ -94,6 +96,10 @@ extern "C" {
 /*********************/
 /* Compiler-specific */
 /*********************/
+
+#ifdef _MSC_VER
+	#define snprintf			_snprintf
+#endif
 
 #ifdef __BORLANDC__
 	#define sbbs_random(x)		random(x)

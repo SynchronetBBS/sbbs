@@ -116,7 +116,7 @@ BOOL md(char *path)
 	ff_handle=_findfirst(path,&ff);
 	if (ff_handle==-1) {
 		lprintf("Creating Directory %s... ",path);
-		if(mkdir(path)) {
+		if(_mkdir(path)) {
 			lprintf("!Fix configuration or make directory by "
 				"hand.");
 			return(FALSE); } }
