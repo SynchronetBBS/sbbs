@@ -223,7 +223,7 @@ if((file=open(str,O_RDWR|O_DENYNONE|O_BINARY))!=-1) {
 
 		memset(&msg,0,sizeof(smbmsg_t));
 		memcpy(msg.hdr.id,"SHD\x1a",4);
-		msg.hdr.version=SMB_VERSION;
+		msg.hdr.version=smb_ver();
 		msg.hdr.when_written.time=time(NULL);
 
 		msg.hdr.offset=offset;
@@ -318,7 +318,7 @@ if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYNO))!=-1) {
 
 		memset(&msg,0,sizeof(smbmsg_t));
 		memcpy(msg.hdr.id,"SHD\x1a",4);
-		msg.hdr.version=SMB_VERSION;
+		msg.hdr.version=smb_ver();
 		msg.hdr.when_written.time=time(NULL);
 
 		msg.hdr.offset=offset;
@@ -490,7 +490,7 @@ while(!feof(stream)) {
 
 	memset(&msg,0,sizeof(smbmsg_t));
 	memcpy(msg.hdr.id,"SHD\x1a",4);
-	msg.hdr.version=SMB_VERSION;
+	msg.hdr.version=smb_ver();
 	msg.hdr.when_written.time=time(NULL);
     
 	msg.hdr.offset=offset;
