@@ -43,12 +43,6 @@
 	#endif
 	#include "ciowrap.h"
     #define mswait(x) delay(x)
-	#if defined(putch) && defined(NO_ECHOCHAR)
-		#undef putch
-	#endif
-	#if !defined(putch)
-    	#define putch(x)	_putch(x,TRUE)
-	#endif
     #define clreol()	clrtoeol()
 #elif defined(_WIN32)
 	#include <share.h>

@@ -56,10 +56,7 @@ struct text_info {
 extern "C" {
 #endif
 #define clreol()	clrtoeol()
-#ifdef __NetBSD__
-#else
-#define putch(x)	addch(x)
-#endif
+#define putch(x)	_putch(x,TRUE)
 short curses_color(short color);
 int puttext(int sx, int sy, int ex, int ey, unsigned char *fill);
 #define gettext(x1,y1,x2,y2,z)	cio_gettext(x1,y1,x2,y2,z)
