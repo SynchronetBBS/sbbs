@@ -199,6 +199,7 @@ function list_users(show)
 			console.line_counter=0;	// defeat pause
 			printf("\1n\1h%-25.25s\1n ",sys[i].addr);
 		}
+		replies++;	// we're adding the number of Finger requests here
 
 		sock = new Socket();
 		is_connected = false;
@@ -235,7 +236,6 @@ function list_users(show)
 
 
 		parse_response(response,show);
-		replies++;
 	}
 	
 	
