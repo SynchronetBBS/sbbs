@@ -2,6 +2,8 @@ a:link { color: yellow; }
 a:visited { color: lime; }
 a:hover { color: #ccffdd; }
  
+# body { background-image: url("/graphics/sync_pb_bg.jpg"); background-position: bottom left; background-repeat: no-repeat; background-attachment: fixed; background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
+
 body { background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
 
 p.title { text-align: center; font-size: x-large; font-weight: bolder; }
@@ -52,8 +54,11 @@ table.subinfo { margin-left: auto; margin-right: auto; background-color: #116677
 tr.subinfo {  background-color: #007788; }
 
 body.msg { background-color: black; }
-table.msg { margin-left: auto; margin-right: auto; background-color: #116677; }
+table.msg { color: black; margin-left: auto; margin-right: auto; background-color: #116677; }
 tr.msg {  background-color: #007788; }
+td.msgnavleft { width: 25%;  background-color: #007788; text-align: left; }
+td.msgnavmid { width: 25%; text-align: center;  background-color: #007788; }
+td.msgnavright { width: 25%;  background-color: #007788; text-align: right; }
 td.msgheader { font-weight: bold; }
 object.msg { margin: 0%; background-color: black; color: #aaaaaa; }
 p.msgcenter { text-align: center; }
