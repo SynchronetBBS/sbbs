@@ -634,8 +634,8 @@ if(!max_wall)
 
 if((file=open("WALL.DAB",O_RDWR|O_BINARY|O_DENYNONE))==-1
 	|| (dab_fp=fdopen(file,"r+b"))==NULL) {
-	printf("Error opening WALL.DAB\n");
-    exit(1); }
+    return(0); 
+}
 
 if((file=open("WALL.TMP",O_WRONLY|O_CREAT|O_TRUNC|O_BINARY|O_DENYALL
 	,S_IWRITE|S_IREAD))==-1
