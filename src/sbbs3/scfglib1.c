@@ -500,6 +500,17 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->sub[i]->code_suffix,instream);
 		get_str(cfg->sub[i]->data_dir,instream);
 
+#ifdef SBBS
+		if(cfg->sub[i]->grp >= cfg->total_grps) {
+			sprintf(error,"offset %ld in %s: invalid group number (%u) for sub-board: %s"
+				,offset,fname
+				,cfg->sub[i]->grp
+				,cfg->sub[i]->code_suffix);
+			fclose(instream);
+			return(FALSE); 
+		}
+#endif
+
 		get_str(cfg->sub[i]->arstr,instream);
 		get_str(cfg->sub[i]->read_arstr,instream);
 		get_str(cfg->sub[i]->post_arstr,instream);
@@ -531,9 +542,9 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 #ifdef SBBS
 		for(j=0;j<i;j++)
 			if(cfg->sub[i]->ptridx==cfg->sub[j]->ptridx) {
-				sprintf(error,"offset %ld in %s: Duplicate pointer index for subs #%d and #%d"
+				sprintf(error,"offset %ld in %s: Duplicate pointer index for subs %s and %s"
 					,offset,fname
-					,i+1,j+1);
+					,cfg->sub[i]->code_suffix,cfg->sub[j]->code_suffix);
 				fclose(instream);
 				return(FALSE); 
 			}
