@@ -137,7 +137,7 @@ static JSBool js_BranchCallback(JSContext *cx, JSScript* script)
 	if(bg->parent_cx!=NULL && !JS_IsRunning(bg->parent_cx)) 	/* die when parent dies */
 		return(JS_FALSE);
 
-	return js_GenericBranchCallback(cx,&bg->branch);
+	return js_CommonBranchCallback(cx,&bg->branch);
 }
 
 static JSBool

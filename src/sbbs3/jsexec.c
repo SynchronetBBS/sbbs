@@ -462,7 +462,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static JSBool
 js_BranchCallback(JSContext *cx, JSScript *script)
 {
-    return(js_GenericBranchCallback(cx,&branch));
+    return(js_CommonBranchCallback(cx,&branch));
 }
 
 static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)

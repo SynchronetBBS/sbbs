@@ -907,7 +907,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 		return(JS_FALSE);
 	}
 
-	return js_GenericBranchCallback(cx,&client->branch);
+	return js_CommonBranchCallback(cx,&client->branch);
 }
 
 static void js_init_args(JSContext* js_cx, JSObject* js_obj, const char* cmdline)
