@@ -356,6 +356,9 @@ int write_flofile(char *attachment, faddr_t dest, BOOL bundle)
 		ch='#';
 	else
 		ch='^';
+	if(*attachment == '^')	/* work-around for BRE/FE inter-BBS attachment bug */
+		attachment++;
+	fexistcase(attachment);	/* just in-case it's the wrong case for a Unix file system */
 	sprintf(searchstr,"%c%s",ch,attachment);
 	if(findstr(searchstr,fname))	/* file already in FLO file */
 		return(0);
