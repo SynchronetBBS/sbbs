@@ -815,6 +815,7 @@ int main(int argc, char** argv)  {
 	box_t	boxch;
 	scfg_t	cfg;
 	int		done;
+	int		ciolib_mode=CIOLIB_MODE_AUTO;
 
 	/******************/
 	/* Ini file stuff */
@@ -905,23 +906,43 @@ int main(int argc, char** argv)  {
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
 				case 'I':
-					/* Set up ex-ascii codes */
-					boxch.ls=186;
-					boxch.rs=186;
-					boxch.ts=205;
-					boxch.bs=205;
-					boxch.tl=201;
-					boxch.tr=187;
-					boxch.bl=200;
-					boxch.br=188;
-					uifc.mode|=UIFC_IBM;
+					switch(toupper(argv[i][2])) {
+						case 'A':
+							ciolib_mode=CIOLIB_MODE_ANSI;
+							break;
+						case 'C':
+							ciolib_mode=CIOLIB_MODE_CURSES;
+							break;
+						case 0:
+							printf("NOTICE: The -i option is depreciated, use -if instead\r\n");
+							SLEEP(2000);
+						case 'F':
+							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
+							break;
+						case 'X':
+							ciolib_mode=CIOLIB_MODE_X;
+							break;
+						case 'W':
+							ciolib_mode=CIOLIB_MODE_CONIO;
+							break;
+						default:
+							goto USAGE;
+					}
 					break;
                 default:
                     printf("\nusage: %s [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
                         "-c  =  force color mode\n"
                         "-e# =  set escape delay to #msec\n"
-						"-i  =  force IBM charset\n"
+						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
+#ifdef __unix__
+						"       X = X11 mode\r\n"
+						"       C = Curses mode\r\n"
+						"       F = Curses mode with forced IBM charset\r\n"
+#else
+						"       W = Win32 native mode\r\n"
+#endif
+						"       A = ANSI mode\r\n"
                         "-l# =  set screen lines to #\n"
 						,argv[0]
                         );
@@ -932,11 +953,12 @@ int main(int argc, char** argv)  {
 	signal(SIGPIPE, SIG_IGN);
 
 	uifc.size=sizeof(uifc);
-#ifdef USE_CURSES
-	i=uifcinic(&uifc);  /* curses */
-#else
+	i=initciolib(ciolib_mode);
+	if(i!=0) {
+    	printf("ciolib library init returned error %d\n",i);
+    	exit(1);
+	}
 	i=uifcini32(&uifc);  /* curses */
-#endif
 	if(i!=0) {
 		printf("uifc library init returned error %d\n",i);
 		exit(1);
