@@ -202,7 +202,7 @@ static JSBool
 js_listen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	private_t*	p;
-	int			backlog=1;
+	int32		backlog=1;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -228,7 +228,6 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	private_t*	p;
 	private_t*	new_p;
 	JSObject*	sockobj;
-	int			backlog=1;
 	SOCKET		new_socket;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
