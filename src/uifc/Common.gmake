@@ -2,9 +2,20 @@
 # NEED_CURSES       = Set flags suitable for building with the curses lib
 # NEED_UIFC			= Set flags for use with UIFC
 # XCURSES			= Use XCurses
+# NEED_CIOWRAP		= Set flage suitable for using with ciowrap lib
+# NO_X				= Don't use X version of ciowrap
 
 # You really should set this first.
 UIFC_SRC	?=	$(XPDEV)../uifc/
+
+# ciowrap stuff
+ifndef NO_X
+ X_DIR	?=	/usr/X11R6/
+ CIOWRAP_CFLAGS	+=	-I${X_DIR}include
+ CIOWRAP_LDFLAGS	+=	-L${X_DIR}lib -lX11
+ CIOWRAP_OBJS	+=	$(LIBODIR)/console.o $(LIBODIR)/x_cio.o
+endif
+CIOWRAP_OBJS	+=	$(LIBODIR)/curs_cio.o $(LIBODIR)/ciowrap.o
 
 # UIFC Related stuff
 UIFC_CFLAGS	+=	-I$(UIFC_SRC)
@@ -18,12 +29,12 @@ endif
 ifdef USE_DIALOG
  LDFLAGS	+=	-L$(XPDEV)../libdialog -ldialog $(CURSESLIB)
  UIFC_CFLAGS	+=	-I$(XPDEV)../libdialog -DUSE_DIALOG
- UIFC_NEED_CURSES	:=	1
+ UIFC_NEED_CIOWRAP	:=	1
 endif
 ifdef USE_CURSES
  UIFC_CFLAGS +=	-DUSE_CURSES
  UIFC_OBJS +=	$(LIBODIR)/uifcc.o
- UIFC_NEED_CURSES	:=	1
+ UIFC_NEED_CIOWRAP	:=	1
 endif
 ifdef USE_UIFC32
  UIFC_CFLAGS +=	-DUSE_UIFC32
@@ -31,8 +42,7 @@ ifdef USE_UIFC32
  USE_CIOWRAP	:=	1
 endif
 ifdef USE_CIOWRAP
- UIFC_OBJS +=	$(LIBODIR)/ciowrap.o
- UIFC_NEED_CURSES	:=	1
+ UIFC_NEED_CIOWRAP	:=	1
 endif
 
 # Curses Stuff
@@ -49,13 +59,23 @@ else
  endif
 endif
 
-ifdef NEED_CURSES
- CFLAGS +=	$(CURSES_CFLAGS)
- LDFLAGS	+=	$(CURSES_LDFLAGS)
+CIOWRAP_CFLAGS	+=	$(CURSES_CFLAGS)
+CIOWRAP_LDFLAGS	+=	$(CURSES_LDFLAGS)
+
+ifdef NEED_CIOWRAP
+ CFLAGS +=	$(CIOWRAP_CFLAGS)
+ LDFLAGS	+=	$(CIOWRAP_LDFLAGS)
+ OBJS	+=	$(CIOWRAP_OBJS)
 endif
-ifdef UIFC_NEED_CURSES
- UIFC_CFLAGS	+=	$(CURSES_CFLAGS)
- UIFC_LDFLAGS	+=	$(CURSES_LDFLAGS)
+ifdef UIFC_NEED_CIOWRAP
+ UIFC_CFLAGS	+=	$(CIOWRAP_CFLAGS)
+ UIFC_LDFLAGS	+=	$(CIOWRAP_LDFLAGS)
+ UIFC_OBJS		+=	$(CIOWRAP_OBJS)
+endif
+
+ifdef NEED_CURSES
+ CFLAGS	+=	$(CURSES_CFLAGS)
+ LDFLAGS	+=	$(CURSES_LDFLAGS)
 endif
 
 ifdef NEED_UIFC

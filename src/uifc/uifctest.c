@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <signal.h>
 #include <stdio.h>
 #include "curs_fix.h"
 #include "uifc.h"

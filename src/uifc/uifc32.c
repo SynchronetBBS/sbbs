@@ -41,17 +41,16 @@
 	#ifdef __QNX__
 		#include <strings.h>
 	#endif
-	#include "ciowrap.h"
     #define mswait(x) delay(x)
-    #define clreol()	clrtoeol()
 #elif defined(_WIN32)
 	#include <share.h>
 	#include <conio.h>
 	#include <windows.h>
-	#include "keys.h"
 	#define mswait(x) Sleep(x)
 #endif
 
+#include "ciowrap.h"
+#include "keys.h"
 #include "uifc.h"
 #define MAX_GETSTR	5120
 							/* Bottom line elements */
