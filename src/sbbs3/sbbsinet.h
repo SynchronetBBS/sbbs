@@ -58,8 +58,10 @@
 #include <sys/ioctl.h>	/* FIONBIO */
 #include <unistd.h>		/* close */
 
+/* WinSockisms */
 #define HOSTENT			struct hostent
 #define SOCKADDR_IN		struct sockaddr_in
+#define LINGER			struct linger
 #define SOCKET			int
 #define SOCKET_ERROR	-1
 #define INVALID_SOCKET  (SOCKET)(~0)
