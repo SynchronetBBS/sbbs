@@ -2822,7 +2822,6 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 					return (kODRCNothingWaiting);
 			}
 
-/*			recv_ret = fread(pbtNext, 1, 1, stdin); */
 			recv_ret = read(STDIN_FILENO, pbtNext, 1);
 			if(recv_ret == 1)
 				break;
@@ -3004,7 +3003,7 @@ keep_going:
 			}
 		}
 
-	    if(fwrite(&btToSend,1,1,stdout)!=1)
+	    if(write(STDOUT_FILENO, &btToSend, 1)!=1)
 		   return(kODRCGeneralFailure);
 		break;
 		}
@@ -3488,7 +3487,7 @@ try_again:
 					return(kODRCGeneralFailure);
 				}
 
-				retval=fwrite(pbtBuffer+pos,1,nSize-pos,stdout);
+				retval=write(STDOUT_FILENO, pbtBuffer+pos,1);
 				if(retval!=nSize-pos) {
 					od_sleep(1);
 				}
