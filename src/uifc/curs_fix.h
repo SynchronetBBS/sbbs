@@ -1,6 +1,16 @@
 /* $Id$ */
 
-#include <curses.h>
+#ifdef XCURSES
+ #include <xcurses.h>
+#endif
+
+#ifdef N_CURSES_LIB
+ #include <ncurses.h>
+#endif
+
+#ifdef CURSES_LIB
+ #include <curses.h>
+#endif
 
 #ifndef	ACS_SBSD
 #define ACS_SBSD	ACS_SBSS

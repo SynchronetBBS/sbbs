@@ -601,7 +601,13 @@ void initciowrap(long inmode)
 {
 	short	fg, bg, pair=0;
 
+#ifdef XCURSES
+	char	*argv[2]={"Syhcnronet",NULL};
+
+	Xinitscr(1,argv);
+#else
 	initscr();
+#endif
 	start_color();
 	cbreak();
 	noecho();

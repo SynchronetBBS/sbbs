@@ -335,7 +335,7 @@ static void truncsp(char *str)
 	uint c;
 
 	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
+	while(c && (uchar)str[c-1]<=' ') c--;
 	str[c]=0;
 }
 
@@ -1200,7 +1200,7 @@ in_win[i++]='º';
 in_win[i++]=hclr|(bclr<<4);
 
 if(plen) {
-	in_win[i++]=SP;
+	in_win[i++]=' ';
 	in_win[i++]=lclr|(bclr<<4); }
 
 for(c=0;prompt[c];c++) {
@@ -1213,7 +1213,7 @@ if(plen) {
 	c++; }
 
 for(c=0;c<max+2;c++) {
-	in_win[i++]=SP;
+	in_win[i++]=' ';
 	in_win[i++]=lclr|(bclr<<4); }
 
 in_win[i++]='º';
@@ -1392,7 +1392,7 @@ while(1) {
 						gettext(wherex()+1,y,wherex()+(j-i),y,buf);
 						puttext(wherex(),y,wherex()+(j-i)-1,y,buf);
 						gotoxy(wherex()+(j-i),y);
-						putch(SP);
+						putch(' ');
 						gotoxy(wherex()-((j-i)+1),y);
 						for(k=i;k<j;k++)
 							str[k]=str[k+1];
@@ -1412,7 +1412,7 @@ while(1) {
 				gettext(wherex(),y,wherex()+(j-i),y,buf);
 				puttext(wherex()-1,y,wherex()+(j-i)-1,y,buf);
 				gotoxy(wherex()+(j-i),y);
-				putch(SP);
+				putch(' ');
 				gotoxy(wherex()-((j-i)+2),y);
 				i--;
 				j--;
@@ -1438,7 +1438,7 @@ while(1) {
 			continue;
 		if(mode&K_ALPHA && !isalpha(ch))
 			continue;
-		if((ch>=SP || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max)) {
+		if((ch>=' ' || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max)) {
 			if(mode&K_UPPER)
 				ch=toupper(ch);
 			if(ins) {
@@ -1624,7 +1624,7 @@ void upop(char *str)
 		showmouse();
 		return; }
 	gettext(28,12,53,14,sav);
-	memset(buf,SP,25*3*2);
+	memset(buf,' ',25*3*2);
 	for(i=1;i<26*3*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
 	buf[0]='Ú';
@@ -1689,7 +1689,7 @@ void help()
 		return; }
 	hidemouse();
 	gettext(1,1,80,25,savscrn);
-	memset(buf,SP,76*21*2);
+	memset(buf,' ',76*21*2);
 	for(i=1;i<76*21*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
 	buf[0]='Ú';

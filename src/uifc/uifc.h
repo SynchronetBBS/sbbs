@@ -215,7 +215,6 @@
 #define FF		0x0c				/* Form feed				^L	*/
 #define CR		'\r'				/* Carriage return			^M	*/
 #define ESC 	0x1b				/* Escape					^[	*/
-#define SP      ' '                 /* Space                        */
 #define DEL     0x7f                /* Delete                   ^BS */
 #endif
 

@@ -392,7 +392,7 @@ static void truncsp(char *str)
 	uint c;
 
 	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
+	while(c && (uchar)str[c-1]<=' ') c--;
 	if(str[c]!=0)	/* don't write to string constants */
 		str[c]=0;
 }
@@ -1260,7 +1260,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	in_win[i++]=hclr|(bclr<<4);
 
 	if(plen) {
-		in_win[i++]=SP;
+		in_win[i++]=' ';
 		in_win[i++]=lclr|(bclr<<4); 
 	}
 
@@ -1276,7 +1276,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	}
 
 	for(c=0;c<max+2;c++) {
-		in_win[i++]=SP;
+		in_win[i++]=' ';
 		in_win[i++]=lclr|(bclr<<4); 
 	}
 
@@ -1467,7 +1467,7 @@ static int ugetstr(char *outstr, int max, long mode)
 							gettext(wherex(),y,wherex()+(j-i),y,buf);
 							puttext(wherex()-1,y,wherex()+(j-i)-1,y,buf);
 							gotoxy(wherex()+(j-i),y);
-							putch(SP);
+							putch(' ');
 							gotoxy(wherex()-((j-i)+2),y);
 							i--;
 							j--;
@@ -1482,7 +1482,7 @@ static int ugetstr(char *outstr, int max, long mode)
 						gettext(wherex()+1,y,wherex()+(j-i),y,buf);
 						puttext(wherex(),y,wherex()+(j-i)-1,y,buf);
 						gotoxy(wherex()+(j-i),y);
-						putch(SP);
+						putch(' ');
 						gotoxy(wherex()-((j-i)+1),y);
 						for(k=i;k<j;k++)
 							str[k]=str[k+1];
@@ -1520,7 +1520,7 @@ static int ugetstr(char *outstr, int max, long mode)
 				continue;
 			if(mode&K_ALPHA && !isalpha(ch))
 				continue;
-			if((ch>=SP || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max) && isprint(ch))
+			if((ch>=' ' || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max) && isprint(ch))
 			{
 				if(mode&K_UPPER)
 					ch=toupper(ch);
@@ -1729,7 +1729,7 @@ void upop(char *str)
 		return; 
 	}
 	gettext(28,12,53,14,sav);
-	memset(buf,SP,25*3*2);
+	memset(buf,' ',25*3*2);
 	for(i=1;i<26*3*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
 		buf[0]='Ú';
@@ -1829,7 +1829,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	gettext(1,1,api->scrn_width,api->scrn_len,savscrn);
 
 	if(!is_redraw) {
-		memset(buf,SP,width*height*2);
+		memset(buf,' ',width*height*2);
 		for(i=1;i<width*height*2;i+=2)
 			buf[i]=(hclr|(bclr<<4));
 	    buf[0]='Ú';
@@ -1916,7 +1916,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		curs_set(1);
 		return; 
 	}
-	memset(textbuf,SP,(width-2-pad-pad)*lines*2);
+	memset(textbuf,' ',(width-2-pad-pad)*lines*2);
 	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
 	i=0;

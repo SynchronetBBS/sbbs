@@ -1,6 +1,7 @@
 # Available Options:
 # NEED_CURSES       = Set flags suitable for building with the curses lib
 # NEED_UIFC			= Set flags for use with UIFC
+# XCURSES			= Use XCurses
 
 # You really should set this first.
 UIFC_SRC	?=	$(XPDEV)../uifc/
@@ -27,15 +28,25 @@ endif
 ifdef USE_UIFC32
  UIFC_CFLAGS +=	-DUSE_UIFC32
  UIFC_OBJS +=	$(LIBODIR)/uifc32.o
+ USE_CIOWRAP	:=	1
+endif
+ifdef USE_CIOWRAP
  UIFC_OBJS +=	$(LIBODIR)/ciowrap.o
  UIFC_NEED_CURSES	:=	1
 endif
 
 # Curses Stuff
-ifeq ($(os),qnx)
- CURSES_LDFLAGS += -lncurses
+ifdef XCURSES
+ CURSES_LDFLAGS += -lXCurses -L/usr/local/lib -lXaw -lXmu -lXt -lX11 -lSM -lICE -lXext -L/usr/X11R6/lib
+ CURSES_CFLAGS	+= -DXCURSES -I/usr/local/include
 else
- CURSES_LDFLAGS += -lcurses
+ ifeq ($(os),qnx)
+  CURSES_LDFLAGS += -lncurses
+  CURSES_CFLAGS	+= -DN_CURSES_LIB
+ else
+  CURSES_LDFLAGS += -lcurses
+  CURSES_CFLAGS	+= -DCURSES_LIB
+ endif
 endif
 
 ifdef NEED_CURSES
