@@ -604,14 +604,14 @@ int sbbs_t::exec_function(csi_t *csi)
 			if(!chksyspass(0))
 				return(0);
 			bputs(text[Filename]);
-			if(getstr(str,60,K_UPPER))
+			if(getstr(str,60,0))
 				printfile(str,0);
 			return(0);
 		case CS_EDIT_TEXT_FILE:              /* Edit ASCII/Ctrl-A file */
 			if(!chksyspass(0))
 				return(0);
 			bputs(text[Filename]);
-			if(getstr(str,60,K_UPPER))
+			if(getstr(str,60,0))
 				editfile(str);
 			return(0);
 		case CS_GURU_LOG:
