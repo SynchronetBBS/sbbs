@@ -234,25 +234,98 @@ extern mswtyp;
 #endif
 
 typedef struct {
+/****************************************************************************/
+/* Size of the structure (for version compatibility verification).			*/
+/****************************************************************************/
     size_t  size;
+/****************************************************************************/
+/* Controls general UIFC library behavior.									*/
+/****************************************************************************/
     long    mode;
+/****************************************************************************/
+/* Set to TRUE when changes to data have been made by input function.		*/ 
+/****************************************************************************/
     BOOL    changes;
-    uint    savdepth;
+/****************************************************************************/
+/* The overlapped-window save buffer number.								*/
+/****************************************************************************/
     uint    savnum;
+/****************************************************************************/
+/* The current overlapped-window save buffer depth.							*/
+/****************************************************************************/
+    uint    savdepth;
+/****************************************************************************/
+/* Screen length															*/
+/****************************************************************************/
     uint    scrn_len;
+/****************************************************************************/
+/* Alternative method of setting current help text.							*/
+/****************************************************************************/
     char*   helpbuf;
+/****************************************************************************/
+/* Location of the help data and index files.								*/
+/****************************************************************************/
     char    helpdatfile[256];
     char    helpixbfile[256];
+/****************************************************************************/
+/* Exit/uninitialize function.												*/
+/****************************************************************************/
     void    (*bail) (void);
+/****************************************************************************/
+/* Fill the screen with the appropriate background attribute.				*/
+/* str is the title for the application banner.								*/
+/* Returns 0 on success, non-zero on failure.								*/
+/****************************************************************************/
     int     (*scrn) (char* str);
+/****************************************************************************/
+/* Popup a message, maybe wait for the user to hit a key or click button.	*/
+/****************************************************************************/
     void    (*msg)  (char* str);
+/****************************************************************************/
+/* Popup/down a status message.												*/
+/* str is the message to display on popup.									*/
+/* if str==NULL, then the the status is to be cleared (popdown).			*/
+/****************************************************************************/
     void    (*pop)  (char* str);
+/****************************************************************************/
+/* General menu function.													*/
+/* mode contains WIN_* flags to control display and functionality.			*/
+/* left, top and width specify desired screen locations and window size.	*/
+/* cur is a pointer to the current (default) option.						*/
+/* bar is a pointer to the current location of the lightbar (which used).	*/
+/* title is the caption for the menu.										*/
+/* Menus can centered left to right and top to bottom automatically.		*/
+/* mode bits are set with macros WIN_*										*/
+/* option is an array of char arrays, first element of last char array		*/
+/* must be NULL.															*/
+/* Returns the 0-based selected option number, -1 for ESC, or the selected	*/
+/* option number OR'd with MSK_INS, MSK_DEL, MSK_GET, or MSK_PUT.			*/
+/****************************************************************************/
     int     (*list) (int mode, char left, int top, char width, int* dflt
                         ,int* bar, char *title, char** option);
-    int     (*input)(int imode, char left, char top, char* prompt, char* str
+/****************************************************************************/
+/* Windowed string input routine.											*/
+/* mode contains WIN_* flags to control display and functionality.			*/
+/* left and top specify desired screen location.							*/
+/* prompt is displayed before the input is requested.						*/
+/* str is the string to input or edit.										*/
+/* len is the maximum length of the string									*/
+/* kmode contains flags that control the string input (K_* macros)			*/
+/* Returns the length of the string or -1 on escape/abort.					*/
+/****************************************************************************/
+    int     (*input)(int mode, char left, char top, char* prompt, char* str
             	        ,char len, int kmode);
+/****************************************************************************/
+/* Sets the current help index by source code file and line number.			*/
+/****************************************************************************/
     void    (*sethelp)(int line, char* file);
 } uifcapi_t;
 
-int uifcini(uifcapi_t*);
-int uifcinix(uifcapi_t*);
+/****************************************************************************/
+/* Initialization routines for each UIFC implementation.					*/
+/* Returns 0 on success, non-zero on failure.								*/
+/****************************************************************************/
+int uifcini(uifcapi_t*);	/* Original implementation based on conio		*/
+int uifcinix(uifcapi_t*);	/* Standard I/O implementation					*/
+int uifcinid(uifcapi_t*);	/* Unix libdialog implementation (by Deuce)		*/
+/****************************************************************************/
