@@ -729,6 +729,7 @@ static int sockreadline(http_session_t * session, time_t timeout, char *buf, siz
 		if(!rd) {
 			if(time(NULL)-start>timeout) {
 				close_socket(session->socket);
+				session->socket=INVALID_SOCKET;
 				return(-1);        /* time-out */
 			}
 			mswait(1);
