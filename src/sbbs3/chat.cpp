@@ -703,14 +703,9 @@ void sbbs_t::privchat(bool local)
 {
 	char	str[128],c,*p,localbuf[5][81],remotebuf[5][81]
 			,localline=0,remoteline=0,localchar=0,remotechar=0
-			,*sep="\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "
-				"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "
-				"Time Left: \1g%-8s\1w"
-				" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
-			,*local_sep="\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "
-				"\1rSplit-Screen \1cSysop\1r Chat          \1y"
-				"Time Left: \1g%-8s\1w"
-				" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ";
+			,*sep=text[PrivateChatSeparator]
+			,*local_sep=text[SysopChatSeparator]
+			;
 	char 	tmp[512];
 	uchar	ch;
 	int 	in,out,i,n,echo=1,x,y,activity,remote_activity;
@@ -741,9 +736,9 @@ void sbbs_t::privchat(bool local)
 				? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
 			return; }
 		if(node.action!=NODE_PAGE) {
-			bprintf("\r\n\1n\1mPaging \1h%s #%u\1n\1m for private chat\r\n"
+			bprintf(text[PagingUser]
 				,node.misc&NODE_ANON ? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp)
-				,node.useron);
+				,node.misc&NODE_ANON ? 0 : node.useron);
 			sprintf(str,text[NodePChatPageMsg]
 				,cfg.node_num,thisnode.misc&NODE_ANON
 					? text[UNKNOWN_USER] : useron.alias);
@@ -1267,10 +1262,9 @@ void sbbs_t::nodemsg()
 					bputs(text[R_Email]);
 					break; }
 				now=time(NULL);
-				bprintf("\1n\r\n\1mSending telegram to \1h%s #%u\1n\1m (Max 5 "
-					"lines, Blank line ends):\r\n\r\n\1g\1h"
+				bprintf(text[SendingTelegramToUser]
 					,username(&cfg,usernumber,tmp),usernumber);
-				sprintf(buf,"\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"
+				sprintf(buf,text[TelegramFmt]
 					,thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias
 					,timestr(&now));
 				i=0;
@@ -1297,8 +1291,8 @@ void sbbs_t::nodemsg()
 					,username(&cfg,usernumber,tmp),usernumber);
 				logline("C",str);
 				logline(nulstr,logbuf);
-				bprintf("\1n\1mTelegram sent to \1h%s\r\n"
-					,username(&cfg,usernumber,tmp));
+				bprintf(text[MsgSentToUser],"Telegram"
+					,username(&cfg,usernumber,tmp),usernumber);
 				break;
 			case 'M':   /* Message */
 				bputs("Message\r\n");
@@ -1312,9 +1306,10 @@ void sbbs_t::nodemsg()
 						bprintf(text[CantPageNode],node.misc&NODE_ANON
 							? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
 					else {
-						bprintf("\r\n\1n\1mSending message to \1h%s\r\n"
+						bprintf(text[SendingMessageToUser]
 							,node.misc&NODE_ANON ? text[UNKNOWN_USER]
-							: username(&cfg,node.useron,tmp));
+							: username(&cfg,node.useron,tmp)
+							,node.misc&NODE_ANON ? 0 : node.useron);
 						bputs(text[NodeMsgPrompt]);
 						if(!getstr(line,69,K_LINE))
 							break;
@@ -1323,7 +1318,7 @@ void sbbs_t::nodemsg()
 								? text[UNKNOWN_USER] : useron.alias,line);
 						putnmsg(i,buf);
 						if(!(node.misc&NODE_ANON))
-							bprintf("\r\n\1n\1mMessage sent to \1h%s #%u\r\n"
+							bprintf(text[MsgSentToUser],"Message"
 								,username(&cfg,usernumber,tmp),usernumber);
 						sprintf(str,"Sent message to %s on node %d:"
 							,username(&cfg,usernumber,tmp),i);
