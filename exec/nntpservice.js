@@ -389,6 +389,10 @@ while(client.socket.is_connected) {
 							msgbase.close();
 							delete msgbase;
 						}
+						log(format("misc=%x",msg_area.grp_list[g].sub_list[s].settings));
+						if(msg_area.grp_list[g].sub_list[s].settings&SUB_NAME
+							&& !(user.security.restrictions&(UFLAG_G|UFLAG_Q)))
+							hdr.from=user.name;	// Use real names
 
 						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 						if(msgbase.save_msg(hdr,body)) {
