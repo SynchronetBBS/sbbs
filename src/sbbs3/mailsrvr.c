@@ -1682,40 +1682,45 @@ static void smtp_thread(void* arg)
 					state=SMTP_STATE_RCPT_TO;
 					continue;
 				}
-				*tp=0;
+				*tp=0;	/* truncate at '@' */
 			}
 			while(*p && !isalnum(*p)) p++;	/* Skip '<' or '"' */
-			tp=strrchr(p,'"');	/* Convert first.last"@domain.com */
-			if(tp!=NULL) *tp=0;
+			tp=strrchr(p,'"');	
+			if(tp!=NULL) *tp=0;	/* truncate at '"' */
 
 			p=alias(p,alias_buf);
 
+											/* RX by sysop alias */
 			if(!stricmp(p,"SYSOP") || !stricmp(p,scfg.sys_id) 
-				|| !stricmp(p,"POSTMASTER"))
+				|| !stricmp(p,"POSTMASTER") || !stricmp(p,scfg.sys_op))
 				usernum=1;
 			else if(startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER 
 				&& isdigit(*p)) {
-				usernum=atoi(p);
+				usernum=atoi(p);			/* RX by user number */
 				/* verify usernum */
 				username(&scfg,usernum,str);
 				if(!str[0] || !stricmp(str,"DELETED USER"))
 					usernum=0;
 				p=str;
 			} else {
-				usernum=matchuser(&scfg,p);
-				if(!usernum && !stricmp(p,scfg.sys_op))
-					usernum=1;
-				if(!usernum) {
-					/* convert "first.last" to "first last" */
-					for(i=0;str[i];i++)
-						if(str[i]=='.')
-							str[i]=' ';
-					usernum=matchuser(&scfg,p);
+				usernum=matchuser(&scfg,p);	/* RX by "user alias", "user.alias" or "user_alias" */
+
+				if(!usernum) { /* RX by "real name", "real.name", or "sysop.alias" */
+					
+					/* convert "user.name" to "user name" */
+					sprintf(rcpt_name,"%.*s",sizeof(rcpt_name)-1,p);
+					for(tp=rcpt_name;*tp;tp++)	
+						if(*tp=='.') *tp=' ';
+
+					if(!stricmp(rcpt_name,scfg.sys_op))
+						usernum=1;			/* RX by "sysop.alias" */
+
+					if(!usernum)			/* RX by "real name" */
+						usernum=userdatdupe(&scfg, 0, U_NAME, LEN_NAME, p, FALSE);
+
+					if(!usernum)			/* RX by "real.name" */
+						usernum=userdatdupe(&scfg, 0, U_NAME, LEN_NAME, rcpt_name, FALSE);
 				}
-				if(!usernum && !stricmp(p,scfg.sys_op))
-					usernum=1;
-				if(!usernum) 
-					usernum=userdatdupe(&scfg, 0, U_NAME, LEN_NAME, p, FALSE);
 			}
 			if(!usernum) {
 				lprintf("%04d !SMTP UNKNOWN USER: %s", socket, buf+8);
