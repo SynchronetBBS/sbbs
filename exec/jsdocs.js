@@ -161,13 +161,15 @@ function document_properties(name, obj)
 function document_object(name, obj, type)
 {
 	object_header(name,obj,type);
-	f.writeln("<ul>");
-	document_methods(name,obj);
-	object_depth++;
-	document_properties(name,obj);
-	object_depth--;
-	f.writeln("</ul>");
-	table_close();
+	if(obj._dont_document==undefined) {
+		f.writeln("<ul>");
+		document_methods(name,obj);
+		object_depth++;
+		document_properties(name,obj);
+		object_depth--;
+		f.writeln("</ul>");
+		table_close();
+	}
 }
 
 // open HTML output file
