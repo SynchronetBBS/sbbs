@@ -1,5 +1,5 @@
   Answers to frequently asked questions re: configuring Synchronet Version 3
-       by Rob Swindell (digital man), May 2000, last updated January 2003
+       by Rob Swindell (digital man), May 2000, last updated February 2003
 
 Q: I want to create custom menus. Is there any detailed documentation or
    samples regarding custom menus on Synchronet?  
@@ -20,6 +20,15 @@ A: This is normally an abbreviation of your BBS's name that YOU determine
    and configure in SBBSCTRL:BBS->Configure->Message Options. You may want to
    look at NODES.DAT in DOVE-NET.ZIP for any conflicts with other DOVE-Net
    systems' QWK-IDs.
+
+Q: How do I get my FTP server to work behind my firewall/NAT/router?
+A: See http://www.ncftpd.com/ncftpd/doc/misc/ftp_and_firewalls.html for
+   details.
+
+Q: How do I disable the New User Feedback requirement?
+A: In sbbs v3.10-win32, run the Configuration Wizard and un-check the
+   "Require new user feedback" checkbox. Otherwise, set SCFG->Nodes->Node 1
+   ->Advanced Options->Validation User to "0".
 
 Q: What is the "!QWKTOMSG failed" or "Duplicate message" warnings in my 
    Telnet/Event log while importing DOVE-Net QWK packets into my message 
@@ -208,6 +217,8 @@ A: SCFG and SCFG32 are console-mode programs that only work in an 80x25
    size is no larger than the screen window size (80x25).
 
 Q: How come some of the times diplayed are off by exactly one hour?
+A: In v3.10, try setting SCFG->System->Toggle Options->Use Local/System Time
+   Zone to "Yes". That *should* fix the problem.
 A: There is a time-zone bug in the Microsoft Visual C++ run-time library I'm
    using in Synchronet v3 related to day-light savings time. Those of you
    using v3 in a timezone which has daylight savings, may see a different time
