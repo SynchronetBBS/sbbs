@@ -255,9 +255,9 @@ void win32_textmode(int mode)
 	rc.Right=vid_modes[modeidx].xsize-1;
 	rc.Top=0;
 	rc.Bottom=vid_modes[modeidx].ysize-1;
-	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE),TRUE,&rc);
 	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
 	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE),TRUE,&rc);
+	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
 }
 
 int win32_gettext(int left, int top, int right, int bottom, void* buf)
