@@ -740,10 +740,7 @@ int main(int argc, char** argv)  {
 						read(buffile,buf,j);
 						close(buffile);
 						*(buf+j)=0;
-						uifc.helpbuf=buf;
-						uifc.helptitle="Error Log";
-						uifc.showhelp();
-						uifc.helptitle=NULL;
+						uifc.showbuf(buf,"Error Log",0);
 						free(buf);
 						continue;
 					}
