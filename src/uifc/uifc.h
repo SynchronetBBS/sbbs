@@ -174,6 +174,8 @@
 #define WIN_DYN 	(1<<16) /* Dynamic window - return at least every second */
 #define WIN_HLP 	(1<<17) /* Parse 'Help codes' */
 #define WIN_PACK 	(1<<18) /* Pack text in window (No padding) */
+#define WIN_IMM 	(1<<19) /* Draw window and return immediately */
+#define WIN_FAT		(1<<20)	/* Do not pad outside borders */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 
@@ -193,6 +195,7 @@
 #define K_CHAT		(1L<<8) 	/* In chat multi-chat						*/
 #define K_NOCRLF	(1L<<9) 	/* Don't print CRLF after string input      */
 #define K_ALPHA 	(1L<<10)	/* Only allow alphabetic characters 		*/
+#define K_SCANNING	(1L<<11)	/* UPC Scanner is active... abort on '%'	*/
 
 #define HELPBUF_SIZE 4000
 
@@ -365,6 +368,10 @@ typedef struct {
 /****************************************************************************/
 	void (*timedisplay)(void);
 
+/****************************************************************************/
+/* String input/exit box at a specified position							*/
+/****************************************************************************/
+	int (*getstrxy)(int left, int top, char *outstr, int max, long mode);
 } uifcapi_t;
 
 /****************************************************************************/
