@@ -439,7 +439,7 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 
 	do {
 		for(i=startmsg;i;i++) {
-			sprintf(fname,"%s%u.MSG",scfg.netmail_dir,i);
+			sprintf(fname,"%s%u.msg",scfg.netmail_dir,i);
 			if(!fexist(fname))
 				break; }
 		if(!i) {
@@ -1653,10 +1653,10 @@ void pack_bundle(char *infile,faddr_t dest)
 
 	node=matchnode(dest,0);
 	strcpy(str,infile);
-	str[strlen(str)-1]='T';
+	str[strlen(str)-1]='t';
 	if(rename(infile,str))				   /* Change .PK_ file to .PKT file */
 		logprintf("ERROR line %d renaming %s to %s",__LINE__,infile,str);
-	infile[strlen(infile)-1]='T';
+	infile[strlen(infile)-1]='t';
 	time(&now);
 	sprintf(day,"%-.2s",ctime(&now));
 	strupr(day);
@@ -2666,7 +2666,7 @@ char *pktname(void)
 	for(i=0;i<MAX_TOTAL_PKTS*2;i++) {
 		now+=i;
 		tm=localtime(&now);
-		sprintf(str,"%s%02u%02u%02u%02u.PK_",cfg.outbound,tm->tm_mday,tm->tm_hour
+		sprintf(str,"%s%02u%02u%02u%02u.pk_",cfg.outbound,tm->tm_mday,tm->tm_hour
 			,tm->tm_min,tm->tm_sec);
 		if(!fexist(str))				/* Add 1 second if name exists */
 			break; }
@@ -3292,7 +3292,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 				printf("Empty NetMail - ");
 			else {
 				for(i=1;i;i++) {
-					sprintf(str,"%s%u.MSG",scfg.netmail_dir,i);
+					sprintf(str,"%s%u.msg",scfg.netmail_dir,i);
 					if(!fexist(str))
 						break; }
 				if(!i) {
@@ -3407,7 +3407,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 						logprintf("%s Empty - Ignored",info); }
 				else {
 					for(i=1;i;i++) {
-						sprintf(str,"%s%u.MSG",scfg.netmail_dir,i);
+						sprintf(str,"%s%u.msg",scfg.netmail_dir,i);
 						if(!fexist(str))
 							break; }
 					if(!i) {
@@ -4710,10 +4710,10 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 		if(addr.zone==scfg.faddr[0].zone) /* Default zone, use default outbound */
 			strcpy(outbound,cfg.outbound);
 		else						 /* Inter-zone outbound is OUTBOUND.XXX */
-			sprintf(outbound,"%.*s.%03X/"
+			sprintf(outbound,"%.*s.%03x/"
 				,(int)strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
 		if(addr.point) {			/* Point destination is OUTBOUND.PNT */
-			sprintf(str,"%04X%04X.PNT"
+			sprintf(str,"%04X%04X.pnt"
 				,addr.net,addr.node);
 			strcat(outbound,str); }
 		if(outbound[strlen(outbound)-1]=='\\'
