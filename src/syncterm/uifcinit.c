@@ -38,7 +38,7 @@ void uifcbail(void)
 	uifc_initialized=0;
 }
 
-void uifcmsg(char *msg)
+void uifcmsg(char *msg, char *helpbuf)
 {
 	int i;
 	char	*buf;
@@ -51,8 +51,10 @@ void uifcmsg(char *msg)
 		gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	}
 	init_uifc();
-	if(uifc_initialized)
+	if(uifc_initialized) {
+		uifc.helpbuf=helpbuf;
 		uifc.msg(msg);
+	}
 	else
 		fprintf(stderr,"%s\n",msg);
 	if(!i) {

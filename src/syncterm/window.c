@@ -21,7 +21,9 @@ int drawwin(void)
 	term.x=(txtinfo.screenwidth-term.width)/2;
 	term.y=(txtinfo.screenheight-term.height)/2;
 	if((winbuf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2))==NULL) {
-		uifcmsg("Cannot allocate memory for terminal buffer");
+		uifcmsg("Cannot allocate memory for terminal buffer".	"`Memory error`\n\n"
+																"Either your system is dangerously low on resources or your\n"
+																"window is farking huge!");
 		return(-1);
 	}
 	p=str;
