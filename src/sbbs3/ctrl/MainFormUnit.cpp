@@ -1717,6 +1717,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     Initialized=true;
 
     UpTimer->Enabled=true; /* Start updating the status bar */
+
+    if(!Application->Active)	/* Starting up minimized? */
+    	FormMinimize(Sender);   /* Put icon in systray */
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::SaveSettings(TObject* Sender)
