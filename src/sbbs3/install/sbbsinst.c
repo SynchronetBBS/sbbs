@@ -35,17 +35,54 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <sys/utsname.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "conwrap.h"
 #include "uifc.h"
 #include "sbbs.h"
+#include "ftpio.h"
+
+/***************/
+/* Definitions */
+/***************/
+#define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
+#define RELEASE_LIST_URL1	"ftp://freebsd.synchro.net/main/misc/sbbs-release.lst"
+#define RELEASE_LIST_URL2	"ftp://freebsd.synchro.net/main/misc/sbbs-release.lst"
+#define RELEASE_LIST_URL3	"ftp://freebsd.synchro.net/main/misc/sbbs-release.lst"
+#define RELEASE_LIST_URL4	"ftp://freebsd.synchro.net/main/misc/sbbs-release.lst"
+#define MAX_RELEASES		50
+#define	MAX_DIST_FILES			10
+#define MAX_SERVERS			100
+#define MAX_FILELEN			32
+
+/*******************/
+/* DistList Format */
+/*******************/
+
+struct server_ent_t {
+	char	desc[78];
+	char	addr[256];
+};
+
+struct dist_t {
+	char					version[78];
+	char					tag[20];
+	struct server_ent_t		**servers;
+	char					**files;
+	int						type;
+};
+
+enum {
+	 CVS_SERVER
+	,DIST_SET
+};
 
 /********************/
 /* Global Variables */
 /********************/
-
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
 struct {
@@ -56,21 +93,34 @@ struct {
 	BOOL symlink;
 	BOOL cvs;
 	char cvstag[256];
+	char cvsroot[256];
 } params; /* Build parameters */
 
 #define MAKEFILE "/tmp/SBBSmakefile"
 
-#define CVSCOMMAND "cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
+#define CVSCOMMAND "cvs -z3 "
 
 char **opt;
 char tmp[256];
 char error[256];
 char cflags[MAX_PATH+1];
+char cvsroot[MAX_PATH+1];
 int  backup_level=5;
 BOOL keep_makefile=FALSE;
 
-void write_makefile(void);
+/*************/
+/* Constants */
+/*************/
+char *ftp_user="anonymous";
+char *ftp_pass="new@synchro.net";
+
+/**************/
+/* Prototypes */
+/**************/
 void install_sbbs(void);
+struct dist_t **get_distlist(void);
+int choose_release(char **opts);
+int choose_server(char **opts);
 
 void bail(int code)
 {
@@ -93,9 +143,12 @@ int main(int argc, char **argv)
 {
 	char	**mopt;
 	int 	i=0;
-	int		main_dflt=1;
+	int		release=0;
+	int		server=0;
+	int		main_dflt=0;
 	char 	str[129];
 	BOOL    door_mode=FALSE;
+	struct dist_t 	**distlist;
 
 	/************/
 	/* Defaults */
@@ -107,6 +160,7 @@ int main(int argc, char **argv)
 	params.symlink=TRUE;
 	params.cvs=TRUE;
 	strcpy(params.cvstag,"HEAD");
+	strcpy(params.cvsroot,DEFAULT_CVSROOT);
 
     printf("\r\nSynchronet Installation Utility (%s)  v%s  Copyright 2003 "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
@@ -137,9 +191,6 @@ int main(int argc, char **argv)
 				case 'I':
 					uifc.mode|=UIFC_IBM;
 					break;
-				case 'K':
-					keep_makefile=TRUE;
-					break;
                 case 'V':
 #if !defined(__unix__)
                     textmode(atoi(argv[i]+2));
@@ -150,7 +201,6 @@ int main(int argc, char **argv)
                         "\n\noptions:\n\n"
                         "-d  =  run in standard input/output/door mode\r\n"
                         "-c  =  force color mode\r\n"
-						"-k  =  keep temporary makefile: " MAKEFILE "\r\n"
 #ifdef USE_CURSES
                         "-e# =  set escape delay to #msec\r\n"
 						"-i  =  force IBM charset\r\n"
@@ -189,6 +239,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	distlist=get_distlist();
+
 	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
@@ -207,327 +259,312 @@ int main(int argc, char **argv)
 		bail(1);
 	}
 
+release=-2;
 while(1) {
-	i=0;
-	sprintf(mopt[i++],"%-33.33s%s","Install Path",params.install_path);
-	sprintf(mopt[i++],"%-33.33s%s","Compiler",params.usebcc?"BCC":"GCC");
-	sprintf(mopt[i++],"%-33.33s%s","Compiler Flags",params.cflags);
-	sprintf(mopt[i++],"%-33.33s%s","Release Version",params.release?"Yes":"No");
-	sprintf(mopt[i++],"%-33.33s%s","Symlink Binaries",params.symlink?"Yes":"No");
-	sprintf(mopt[i++],"%-33.33s%s","Pull sources from CVS",params.cvs?"Yes":"No");
-	sprintf(mopt[i++],"%-33.33s%s","CVS Tag (e.g. sbbs310k)",params.cvstag);
-	sprintf(mopt[i++],"%-33.33s","Start Installation");
-	mopt[i][0]=0;
-
-	uifc.helpbuf=	"`Main Installation Menu:`\n"
-					"\nToDo: Add help.";
-	switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,60,&main_dflt,0
-		,"Configure",mopt)) {
-		case 0:
-			uifc.helpbuf=	"`Install Path`\n"
-							"\n"
-							"\nPath to install the Synchronet BBS system into."
-							"\nSome common paths:"
-							"\n /sbbs"
-							"\n	/usr/local/sbbs"
-							"\n	/opt/sbbs"
-							"\n	/home/bbs/sbbs";
-			uifc.input(WIN_MID,0,0,"Install Path",params.install_path,40,K_EDIT);
-			break;
-		case 1:
-			strcpy(opt[0],"BCC");
-			strcpy(opt[1],"GCC");
-			opt[2][0]=0;
-			i=params.usebcc?0:1;
-			uifc.helpbuf=	"`Build From CVS`\n"
-							"\nToDo: Add help.";
-			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Compiler",opt);
-			if(!i)
-				params.usebcc=TRUE;
-			else if(i==1)
-				params.usebcc=FALSE;
-			i=0;
-			break;
-		case 2:
-			uifc.helpbuf=	"`Compiler Flags`\n"
-							"\nToDo: Add help.";
-			uifc.input(WIN_MID,0,0,"Additional Compiler Flags",params.cflags,40,K_EDIT);
-			break;
-		case 3:
-			strcpy(opt[0],"Yes");
-			strcpy(opt[1],"No");
-			opt[2][0]=0;
-			i=params.release?0:1;
-			uifc.helpbuf=	"`Build Release Version`\n"
-							"\nToDo: Add help.";
-			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Build a release version",opt);
-			if(!i)
-				params.release=TRUE;
-			else if(i==1)
-				params.release=FALSE;
-			i=0;
-			break;
-		case 4:
-			strcpy(opt[0],"Yes");
-			strcpy(opt[1],"No");
-			opt[2][0]=0;
-			i=params.symlink?0:1;
-			uifc.helpbuf=	"`Symlink Binaries:`\n"
-							"\n"
-							"\nShould the installer create symlinks to the binaries or copy them from"
-							"\nthe compiled location?";
-			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Symlink Binaries",opt);
-			if(!i)
-				params.symlink=TRUE;
-			else if(i==1)
-				params.symlink=FALSE;
-			i=0;
-			break;
-		case 5:
-			strcpy(opt[0],"Yes");
-			strcpy(opt[1],"No");
-			opt[2][0]=0;
-			i=params.cvs?0:1;
-			uifc.helpbuf=	"`Pull sources from CVS:`\n"
-							"\n"
-							"\nShould the installer do a CVS update before compiling the binaies?"
-							"\n"
-							"\nIf this is the first time you have ran SBBSINST, you `MUST` enable this.";
-			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Pull from CVS",opt);
-			if(!i)
-				params.cvs=TRUE;
-			else if(i==1)
-				params.cvs=FALSE;
-			i=0;
-			break;
-		case 6:
-			uifc.helpbuf=	"`CVS Tag:`\n"
-							"\n"
-							"\nCVS tag to use when updating sources.  Enter \"HEAD\" to use current sources.";
-			uifc.input(WIN_MID,0,0,"CVS Tag",params.cvstag,40,K_EDIT);
-			break;
-		case 7:
-			write_makefile();
-			install_sbbs();
+	if(release==-2)
+		release=choose_release((char **)distlist);
+	if(release==-1)  {
+		i=0;
+		strcpy(opt[0],"Yes");
+		strcpy(opt[1],"No");
+		opt[2][0]=0;
+		uifc.helpbuf=	"`Exit SBBSINST:`\n"
+						"\n"
+						"\nIf you want to exit the Synchronet installation utility, select `Yes`."
+						"\nOtherwise, select `No` or hit ~ ESC ~.";
+		i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SBBSINST",opt);
+		if(!i)
 			bail(0);
-			break;
-		case -1:
-			i=0;
-			strcpy(opt[0],"Yes");
-			strcpy(opt[1],"No");
-			opt[2][0]=0;
-			uifc.helpbuf=	"`Exit SBBSINST:`\n"
-							"\n"
-							"\nIf you want to exit the Synchronet installation utility, select `Yes`."
-							"\nOtherwise, select `No` or hit ~ ESC ~.";
-			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SBBSINST",opt);
-			if(!i)
+		release=-2;
+	}
+
+	if(release>=0)  {
+		server=choose_server((char **)(((struct dist_t **)distlist)[release]->servers));
+		if(server==-1)
+			release=-2;
+	}
+
+	while(release>=0 && server>=0) {
+		i=0;
+		sprintf(mopt[i++],"%-33.33s%s","Install Path",params.install_path);
+		sprintf(mopt[i++],"%-33.33s%s","Compiler",params.usebcc?"BCC":"GCC");
+		sprintf(mopt[i++],"%-33.33s%s","Compiler Flags",params.cflags);
+		sprintf(mopt[i++],"%-33.33s%s","Release Version",params.release?"Yes":"No");
+		sprintf(mopt[i++],"%-33.33s%s","Symlink Binaries",params.symlink?"Yes":"No");
+		sprintf(mopt[i++],"%-33.33s","Start Installation");
+		mopt[i][0]=0;
+
+		uifc.helpbuf=	"`Main Installation Menu:`\n"
+						"\nToDo: Add help.";
+		switch(uifc.list(WIN_MID|WIN_ACT,0,0,60,&main_dflt,0
+			,"Configure",mopt)) {
+			case 0:
+				uifc.helpbuf=	"`Install Path`\n"
+								"\n"
+								"\nPath to install the Synchronet BBS system into."
+								"\nSome common paths:"
+								"\n /sbbs"
+								"\n	/usr/local/sbbs"
+								"\n	/opt/sbbs"
+								"\n	/home/bbs/sbbs";
+				uifc.input(WIN_MID,0,0,"Install Path",params.install_path,40,K_EDIT);
+				break;
+			case 1:
+				strcpy(opt[0],"BCC");
+				strcpy(opt[1],"GCC");
+				opt[2][0]=0;
+				i=params.usebcc?0:1;
+				uifc.helpbuf=	"`Build From CVS`\n"
+								"\nToDo: Add help.";
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Compiler",opt);
+				if(!i)
+					params.usebcc=TRUE;
+				else if(i==1)
+					params.usebcc=FALSE;
+				i=0;
+				break;
+			case 2:
+				uifc.helpbuf=	"`Compiler Flags`\n"
+								"\nToDo: Add help.";
+				uifc.input(WIN_MID,0,0,"Additional Compiler Flags",params.cflags,40,K_EDIT);
+				break;
+			case 3:
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				i=params.release?0:1;
+				uifc.helpbuf=	"`Build Release Version`\n"
+								"\nToDo: Add help.";
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Build a release version",opt);
+				if(!i)
+					params.release=TRUE;
+				else if(i==1)
+					params.release=FALSE;
+				i=0;
+				break;
+			case 4:
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				i=params.symlink?0:1;
+				uifc.helpbuf=	"`Symlink Binaries:`\n"
+								"\n"
+								"\nShould the installer create symlinks to the binaries or copy them from"
+								"\nthe compiled location?";
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Symlink Binaries",opt);
+				if(!i)
+					params.symlink=TRUE;
+				else if(i==1)
+					params.symlink=FALSE;
+				i=0;
+				break;
+			case 5:
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				i=params.cvs?0:1;
+				uifc.helpbuf=	"`Pull sources from CVS:`\n"
+								"\n"
+								"\nShould the installer do a CVS update before compiling the binaies?"
+								"\n"
+								"\nIf this is the first time you have ran SBBSINST, you `MUST` enable this.";
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Pull from CVS",opt);
+				if(!i)
+					params.cvs=TRUE;
+				else if(i==1)
+					params.cvs=FALSE;
+				i=0;
+				break;
+			case 6:
+				uifc.helpbuf=	"`CVS Tag:`\n"
+								"\n"
+								"\nCVS tag to use when updating sources.  Enter \"HEAD\" to use current sources.";
+				uifc.input(WIN_MID,0,0,"CVS Tag",params.cvstag,40,K_EDIT);
+				break;
+			case 7:
+				install_sbbs();
 				bail(0);
-			break; 
+				break;
+			case -1:
+				server=-2;
+				break; 
 		} 
 	}
 }
-
-void write_makefile(void)  
-{
-	int		i;
-	FILE *	makefile;
-	char*	build;
-	char*	ccpre;
-	char	platform[]=PLATFORM_DESC;
-	char	cvs_co[MAX_PATH*2];
-
-	strlwr(platform);
-	makefile=fopen(MAKEFILE,"w");
-	if(makefile==NULL)  {
-	    uifc.msg("Cannot create " MAKEFILE);
-		return;
-	}
-	if(!params.release)
-		fprintf(makefile,"DEBUG    :=  1\n");
-
-	if(params.symlink) {
-		fprintf(makefile,"INSBIN   :=	-@ln -s\n");
-		fprintf(makefile,"INSDAT   :=	-@ln -s\n");
-	} else {
-		fprintf(makefile,"INSBIN   :=	@install -c -s\n");
-		fprintf(makefile,"INSDAT   :=	@install -c \n");
-	}
-
-	if(params.usebcc)  {
-		ccpre="bcc";
-		fprintf(makefile,"MKFLAGS	+=	bcc=1\n");
-	}
-	else 
-		ccpre="gcc";
-
-/* Not supported
-ifndef SBBSOWNER
- SBBSCHOWN	:= $(USER)
-endif
-
-ifdef SBBSGROUP
- SBBSCHOWN	:= $(SBBSCHOWN):$(SBBSGROUP)
-endif
-
-ifdef UNIX_INSTALL
- ifndef PREFIX
-  PREFIX	:=	/usr/local
- endif
- MKFLAGS	+=	PREFIX=$(PREFIX)
-else	# Classic Install
- ifndef SBBSDIR
-  SBBSDIR	:=	$(shell pwd)
- endif
-endif
-
-*/
-	if(params.release)  {
-		build="release";
-		fprintf(makefile,"MKFLAGS	+=	RELEASE=1\n");
-	} else {
-		build="debug";
-		fprintf(makefile,"MKFLAGS	+=	DEBUG=1\n");
-	}
-	if(params.cflags[0]) {
-		sprintf(cflags,"CFLAGS=%s",params.cflags);
-		putenv(cflags);
-	}
-	fprintf(makefile,"SBBSDIR := %s\n",params.install_path);
-
-/* Not supported
-ifdef JSLIB
- MKFLAGS	+=	JSLIB=$(JSLIB)
-endif
-*/
-
-	fprintf(makefile,"all:          binaries baja externals\n\n");
-	fprintf(makefile,"externals:    sbj sbl\n\n");
-	fprintf(makefile,"binaries:     sbbs3 scfg\n\n");
-
-	fprintf(makefile,"sbbs3:");
-	if(params.cvs) {
-		fprintf(makefile,"\t$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc \\\n");
-		fprintf(makefile,"\t$(SBBSDIR)/src/xpdev $(SBBSDIR)/src/mozilla \\\n");
-	}
-	fprintf(makefile,"\t$(SBBSDIR)/lib/mozilla/js/%s.%s\n",platform,build);
-	fprintf(makefile,"\tgmake -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)\n");
-
-	/* what's this doing *here* ? */
-	fprintf(makefile,"MKFLAGS += BAJAPATH=../src/sbbs3/%s.%s.exe.%s/baja\n\n",ccpre,platform,build);
-
-	fprintf(makefile,"scfg:");
-	if(params.cvs)
-		fprintf(makefile,"\t$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev\n");
-	fprintf(makefile,"\tgmake -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)\n\n");
-
-	fprintf(makefile,"baja:");
-	if(params.cvs)
-		fprintf(makefile," $(SBBSDIR)/exec");
-	fprintf(makefile," binaries\n");
-	fprintf(makefile,"\tgmake -C $(SBBSDIR)/exec $(MKFLAGS)\n\n");
-
-	fprintf(makefile,"sbj:");
-	if(params.cvs)
-		fprintf(makefile,"$(SBBSDIR)/xtrn");
-	fprintf(makefile,"\n");
-	fprintf(makefile,"\tgmake -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)\n\n");
-
-	fprintf(makefile,"sbl:");
-	if(params.cvs)
-		fprintf(makefile," $(SBBSDIR)/xtrn");
-	fprintf(makefile,"\n");
-	fprintf(makefile,"\tgmake -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS)\n\n");
-
-	fprintf(makefile,"install: all");
-	if(params.cvs) {
-		fprintf(makefile," $(SBBSDIR)/ctrl $(SBBSDIR)/text \\\n");
-		fprintf(makefile,"\t$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4");
-	}
-	fprintf(makefile,"\n");
-	fprintf(makefile,"\techo Installing to $(SBBSDIR)\n");
-	if(params.release)  {
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/baja\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/node\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/chksmb\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/fixsmb\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/addfiles\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/smbutil\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbs\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbsecho\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/filelist\n",ccpre,platform,build);
-		fprintf(makefile,"\tstrip $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfg\n",ccpre,platform,build);
-	}
-
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/baja $(SBBSDIR)/exec/baja\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/node $(SBBSDIR)/exec/node\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/chksmb $(SBBSDIR)/exec/chksmb\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/fixsmb $(SBBSDIR)/exec/fixsmb\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/addfiles $(SBBSDIR)/exec/addfiles\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/smbutil $(SBBSDIR)/exec/smbutil\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbs $(SBBSDIR)/exec/sbbs\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbsecho $(SBBSDIR)/exec/sbbsecho\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/filelist $(SBBSDIR)/exec/filelist\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfg $(SBBSDIR)/exec/scfg\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSDAT) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSDAT) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat\n\n",ccpre,platform,build);
-/* Not implemented
-fprintf(makefile,"\t 	chown -R $(SBBSCHOWN) $(SBBSDIR)");
-*/
-
-	if(params.cvs)  {
-		sprintf(cvs_co,"\tcd $(SBBSDIR); %s co -r %s", CVSCOMMAND, params.cvstag);
-
-		fprintf(makefile,"$(SBBSDIR)/ctrl: cvslogin\n");
-		fprintf(makefile,"%s ctrl\n\n",cvs_co);
-
-		fprintf(makefile,"$(SBBSDIR)/text: cvslogin\n");
-		fprintf(makefile,"%s text\n\n",cvs_co);
-
-		fprintf(makefile,"$(SBBSDIR)/exec: cvslogin\n");
-		fprintf(makefile,"%s exec\n\n",cvs_co);
-
-		for(i=1;i<=4;i++) {
-			fprintf(makefile,"$(SBBSDIR)/node%d: cvslogin\n",i);
-			fprintf(makefile,"%s node%d\n\n",cvs_co,i);
-		}
-
-		fprintf(makefile,"$(SBBSDIR)/xtrn: cvslogin\n");
-		fprintf(makefile,"%s xtrn\n\n",cvs_co);
-
-		fprintf(makefile,"$(SBBSDIR)/src/sbbs3: cvslogin\n");
-		fprintf(makefile,"%s src/sbbs3\n\n",cvs_co);
-
-		fprintf(makefile,"$(SBBSDIR)/src/uifc: cvslogin\n");
-		fprintf(makefile,"%s src/uifc\n\n",cvs_co);
-
-		fprintf(makefile,"$(SBBSDIR)/src/xpdev: cvslogin\n");
-		fprintf(makefile,"%s src/xpdev\n\n",cvs_co);
-
-		fprintf(makefile,"$(SBBSDIR)/src/mozilla: cvslogin\n");
-		fprintf(makefile,"%s src/mozilla\n\n",cvs_co);
-
-		fprintf(makefile,"$(SBBSDIR)/lib/mozilla/js/%s.%s: cvslogin\n",platform,build);
-		fprintf(makefile,"%s lib/mozilla/js/%s.%s\n\n",cvs_co, platform, build);
-
-
-		fprintf(makefile,"cvslogin: $(SBBSDIR)\n");
-		fprintf(makefile,"\t@echo Press \\<ENTER\\> when prompted for password\n");
-		fprintf(makefile,"\t@%s login\n\n",CVSCOMMAND);
-	}
-	fprintf(makefile,"$(SBBSDIR):\n");
-	fprintf(makefile,"\t@[ ! -e $(SBBSDIR) ] && mkdir $(SBBSDIR);\n");
-	fclose(makefile);
 }
+
+		/* Some jiggery-pokery here to avoid having to enter the CVS password */
+/*		fprintf(makefile,"\tif(grep '%s' -q ~/.cvspass) then echo \"%s A\" >> ~/.cvspass; fi\n",
+ *				params.cvsroot,params.cvsroot);
+ *
+ *		Actually, it looks like you don't NEED to login if the password is blank... huh.
+ */
 
 void install_sbbs(void)  {
 	uifc.bail();
 	system("gmake -f " MAKEFILE " install");
 	if(!keep_makefile)
 		unlink(MAKEFILE);
+}
+
+struct dist_t **
+get_distlist(void)
+{
+	int ret1,ret2,ret3,ret4;
+	int i;
+	char	in_line[256];
+	struct dist_t	**release;
+	char	**file=NULL;
+	struct server_ent_t	**server=NULL;
+	int		r=0;
+	int		f=0;
+	int		s=0;
+	char	*p;
+	ftp_FILE	*list;
+	char	sep[2]={'\t',0};
+	char	str[1024];
+	struct utsname	name;	
+	char	sys_desc[1024];
+
+	if(uname(&name))  {
+		strcpy(name.machine,"Unknown");
+		strcpy(name.sysname,name.machine);
+	}
+	sprintf(sys_desc,"%s-%s",name.sysname,name.machine);
+	printf("Sys: %s\n",sys_desc);
+
+	uifc.pop("Fetching distribution list");
+	if((list=ftpGetURL(RELEASE_LIST_URL1,ftp_user,ftp_pass,&ret1))==NULL
+			&& (list=ftpGetURL(RELEASE_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
+			&& (list=ftpGetURL(RELEASE_LIST_URL3,ftp_user,ftp_pass,&ret3))==NULL
+			&& (list=ftpGetURL(RELEASE_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL)  {
+		printf("Cannot get distribution list!\n");
+		sprintf(str,"%s - %s\n%s - %s\n%s - %s\n%s - %s\n",
+				RELEASE_LIST_URL1,ftpErrString(ret1),
+				RELEASE_LIST_URL2,ftpErrString(ret1),
+				RELEASE_LIST_URL3,ftpErrString(ret1),
+				RELEASE_LIST_URL4,ftpErrString(ret1));
+		uifc.pop(NULL);
+		uifc.msg(str);
+		bail(EXIT_FAILURE);
+	}
+
+	if((release=(struct dist_t **)MALLOC(sizeof(void *)*MAX_RELEASES))==NULL)
+		allocfail(sizeof(void *)*MAX_RELEASES);
+	for(i=0;i<MAX_RELEASES;i++)
+		if((release[i]=(void *)MALLOC(sizeof(struct dist_t)))==NULL)
+			allocfail(sizeof(struct dist_t));
+
+	while((list->gets(in_line,sizeof(in_line),list))!=NULL)  {
+		printf("Parsing: %s",in_line);
+		i=strlen(in_line);
+		while(i>0 && in_line[i]<=' ')
+			in_line[i--]=0;
+
+		if(in_line[0]=='D')  {
+			strcpy(str,in_line);
+			sep[0]=' ';
+			p=strtok(str,sep);
+			p=strtok(NULL,sep);
+			if(strstr(p,sys_desc)==NULL)
+				break;
+			sep[0]='\n';
+			p=strtok(NULL,sep);
+			strcpy(in_line,p);
+		}
+
+		switch(in_line[0])  {
+			case 'C':
+				if(file!=NULL)
+					file[f]="";
+				if(server!=NULL)
+					memset(server[s],0,sizeof(struct server_ent_t));
+
+				file=NULL;
+
+				if((server=(struct server_ent_t **)MALLOC(sizeof(void *)*MAX_SERVERS))==NULL)
+					allocfail(sizeof(struct server_ent_t *)*MAX_SERVERS);
+				for(i=0;i<MAX_SERVERS;i++)
+					if((server[i]=(struct server_ent_t *)MALLOC(sizeof(struct server_ent_t)))==NULL)
+						allocfail(64);
+				f=0;
+				s=0;
+
+				memset(release[r],0,sizeof(struct dist_t));
+				strcpy(release[r]->version,in_line+2);
+				release[r]->type=CVS_SERVER;
+				release[r]->servers=server;
+				r++;
+				break;
+			case 'T':
+				if(file!=NULL)
+					file[f]="";
+				if(server!=NULL)
+					memset(server[s],0,sizeof(struct server_ent_t));
+
+				if((file=(char **)MALLOC(sizeof(char *)*MAX_DIST_FILES))==NULL)
+					allocfail(sizeof(char *)*MAX_DIST_FILES);
+				for(i=0;i<MAX_DIST_FILES;i++)
+					if((file[i]=(char *)MALLOC(MAX_FILELEN))==NULL)
+						allocfail(MAX_FILELEN);
+
+				if((server=(struct server_ent_t **)MALLOC(sizeof(struct server_ent_t *)*MAX_SERVERS))==NULL)
+					allocfail(sizeof(struct server_ent_t *)*MAX_SERVERS);
+				for(i=0;i<MAX_SERVERS;i++)
+					if((server[i]=(struct server_ent_t *)MALLOC(sizeof(struct server_ent_t)))==NULL)
+						allocfail(64);
+				f=0;
+				s=0;
+
+				memset(release[r],0,sizeof(struct dist_t));
+				strcpy(release[r]->version,in_line+2);
+				release[r]->type=DIST_SET;
+				release[r]->servers=server;
+				release[r]->files=file;
+				r++;
+				break;
+			case 'f':
+				strcpy(file[f++],in_line+2);
+				break;
+			case 't':
+				strcpy(release[r-1]->tag,in_line+2);
+				break;
+			case 's':
+				p=in_line+2;
+				sep[0]='\t';
+				strcpy(server[s]->addr,strtok(p,sep));
+				strcpy(server[s]->desc,strtok(NULL,sep));
+				s++;
+				break;
+		}
+	}
+	memset(release[r],0,sizeof(struct dist_t));
+	uifc.pop(NULL);
+	return(release);
+}
+
+int choose_release(char **opts)
+{
+	static int		dist_dflt=0;
+
+	uifc.helpbuf=	"`Distribution List:`\n"
+			"\nToDo: Add help.";
+	return(uifc.list(WIN_ESC|WIN_ORG|WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&dist_dflt,0
+			,"Select Distribution",opts));
+}
+
+int choose_server(char **opts)
+{
+	static int		srvr_dflt=0;
+
+	uifc.helpbuf=	"`Server List:`\n"
+				"\nToDo: Add help.";
+	return(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&srvr_dflt,0
+		,"Select Server",opts));
+
 }
 /* End of SBBSINST.C */
