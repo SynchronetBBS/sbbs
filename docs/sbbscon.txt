@@ -225,7 +225,7 @@ Linux:
    # chkconfig --add sbbs
 
 4) Start the Synchronet system service:
-   # service sbbs start
+   # /etc/init.d/sbbs start
 
 FreeBSD:
 --------
