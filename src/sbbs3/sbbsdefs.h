@@ -392,6 +392,7 @@ typedef enum {						/* Values for xtrn_t.event			*/
 #define QWK_TZ		(1L<<10)		/* Include "@TZ" time zone in msgs  */
 #define QWK_VIA 	(1L<<11)		/* Include "@VIA" seen-bys in msgs  */
 #define QWK_NOCTRL	(1L<<12)		/* No extraneous control files		*/
+#define QWK_EXT		(1L<<13)		/* QWK Extended (QWKE) format		*/
 
 							/* Bits in user.chat						*/
 #define CHAT_ECHO	(1<<0)	/* Multinode chat echo						*/
