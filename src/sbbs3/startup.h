@@ -65,7 +65,7 @@ typedef struct {
     RingBuf** node_spybuf;		// Spy output buffer (each node)
     RingBuf** node_inbuf;		// User input buffer (each node)
     sem_t**	node_spysem;		// Spy output semaphore (each node)
-    DWORD	reserved_dword1;
+    DWORD	user_id;			// Unix uid to use for threads
     int 	(*event_log)(char*);	// Event log - put string
 	int 	(*lputs)(char*);		// Log - put string
 	void	(*status)(char*);

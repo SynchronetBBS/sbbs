@@ -54,7 +54,7 @@ typedef struct {
     DWORD   interface_addr;
     DWORD	options;			/* See FTP_OPT definitions */
     DWORD	js_max_bytes;
-    DWORD	reserved_dword7;
+    DWORD	user_id;			/* Unix uid to use for threads */
     DWORD	reserved_dword6;
     DWORD	reserved_dword5;
     DWORD	reserved_dword4;
