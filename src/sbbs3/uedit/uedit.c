@@ -1757,10 +1757,6 @@ int main(int argc, char** argv)  {
 			continue;
 		}
 		
-		if(j==-2-KEY_F(4)) {	/* Find? */
-			continue;
-		}
-
 		if(j <= -2)
 			continue;
 
