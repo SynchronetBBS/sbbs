@@ -72,15 +72,15 @@ char sbbs_t::inkey(long mode)
 
 	timeout=time(NULL);
 
-	/* Is this control key flagged as passthru? */
-	if(ch<' ' && cfg.ctrlkey_passthru&(1<<ch))
-		return(ch);	/* do not handle here */
+	/* Is this a control key */
+	if(ch<' ') {
+		if(cfg.ctrlkey_passthru&(1<<ch))	/*  flagged as passthru? */
+			return(ch);						/* do not handle here */
+		return(handle_ctrlkey(ch,mode));
+	}
 
 	if(mode&K_UPPER)
 		ch=toupper(ch);
-
-	if(ch<' ')
-		return(handle_ctrlkey(ch,mode));
 
 	return(ch);
 }
