@@ -1147,6 +1147,17 @@ Chinky:
 	clear();
 
 	file=fopen(Az1,"r");
+	if(file==NULL) {
+		COLOR(4,0);
+		PRINT("  View/Edit configuration of which ");
+		COLOR(12,0);
+		PRINT("existing");
+		COLOR(4,0);
+		PRINT(" Node?\r\n");
+		PRINT("  (Node is not yet existing!)");
+		sleep(2);
+		return;
+	}
 	readline(a1,sizeof(a1),file); // 'Path and name of drop file
 	readline(b1,sizeof(b1),file);
 	readline(c1,sizeof(c1),file);
