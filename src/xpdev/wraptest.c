@@ -125,7 +125,7 @@ int main()
 	}
 	if(dir!=NULL)
 		closedir(dir);
-	printf("\nFree disk space: %lu bytes\n",getfreediskspace(path));
+	printf("\nFree disk space: %lu kbytes\n",getfreediskspace(path,1024));
 
 	/* Thread (and inter-process communication) test */
 	printf("\nSemaphore test\n");
