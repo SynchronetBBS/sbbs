@@ -353,68 +353,129 @@ long filelength(int fd)
 }
 
 /* Sets a lock on a portion of a file */
-int lock(int fd, long pos, int len)
+#ifdef __QNX__
+int DLLCALL lock(int fd, long pos, long len)
+#else	/* Not QNX */
+int DLLCALL lock(int fd, long pos, int len)
+#endif
 {
-	int	flags;
- 	struct flock alock;
+	#if defined(F_SANERDLCKNO) || !defined(BSD)
+ 		struct flock alock;
 
-	if((flags=fcntl(fd,F_GETFL))<0)
-		return -1;
+	#ifndef F_SANEWRLCKNO
+		int	flags;
+		if((flags=fcntl(fd,F_GETFL))==-1)
+			return -1;
 
-	if(flags==O_RDONLY)
-		alock.l_type = F_RDLCK; // set read lock to prevent writes
-	else
-		alock.l_type = F_WRLCK; // set write lock to prevent all access
-	alock.l_whence = L_SET;	  // SEEK_SET
-	alock.l_start = pos;
-	alock.l_len = len;
+		if(flags==O_RDONLY)
+			alock.l_type = F_RDLCK; /* set read lock to prevent writes */
+		else
+			alock.l_type = F_WRLCK; /* set write lock to prevent all access */
+	#else
+		alock.l_type = F_SANEWRLCKNO;
+	#endif
+		alock.l_whence = L_SET;		/* SEEK_SET */
+		alock.l_start = pos;
+		alock.l_len = (int)len;
 
-	return fcntl(fd, F_SETLK, &alock);
+		if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL)
+			return(-1);
+	#endif
+
+	#if !defined(F_SANEWRLCKNO) && !defined(__QNX__)
+		/* use flock (doesn't work over NFS) */
+		if(flock(fd,LOCK_EX|LOCK_NB)!=0 && errno != EOPNOTSUPP)
+			return(-1);
+	#endif
+
+		return(0);
 }
 
 /* Removes a lock from a file record */
-int unlock(int fd, long pos, int len)
+#ifdef __QNX__
+int DLLCALL unlock(int fd, long pos, long len)
+#else
+int DLLCALL unlock(int fd, long pos, int len)
+#endif
 {
-	struct flock alock;
 
-	alock.l_type = F_UNLCK;   // remove the lock
+#if defined(F_SANEUNLCK) || !defined(BSD)
+	struct flock alock;
+#ifdef F_SANEUNLCK
+	alock.l_type = F_SANEUNLCK;   /* remove the lock */
+#else
+	alock.l_type = F_UNLCK;   /* remove the lock */
+#endif
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
-	alock.l_len = len;
-	return fcntl(fd, F_SETLK, &alock);
+	alock.l_len = (int)len;
+	if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL)
+		return(-1);
+#endif
+
+#if !defined(F_SANEUNLCK) && !defined(__QNX__)
+	/* use flock (doesn't work over NFS) */
+	if(flock(fd,LOCK_UN|LOCK_NB)!=0 && errno != EOPNOTSUPP)
+		return(-1);
+#endif
+
+	return(0);
 }
 
 /* Opens a file in specified sharing (file-locking) mode */
-int sopen(char *fn, int access, int share)
+#ifdef __QNX__
+int DLLCALL qnx_sopen(char *fn, int access, int share)
+{
+#undef sopen		/* Stupid macro trick */
+	return(sopen(fn, access, share, S_IREAD|S_IWRITE));
+#define sopen(x,y,z)	qnx_sopen(x,y,z)
+}
+#else
+int DLLCALL sopen(char *fn, int access, int share)
 {
 	int fd;
+#ifndef F_SANEWRLCKNO
+	int	flock_op=LOCK_NB;	/* non-blocking */
+#endif
+#if defined(F_SANEWRLCKNO) || !defined(BSD)
 	struct flock alock;
+#endif
 
 	if ((fd = open(fn, access, S_IREAD|S_IWRITE)) < 0)
 		return -1;
 
-	if (share == SH_DENYNO)
-		// no lock needed
+	if (share == SH_DENYNO) /* no lock needed */
 		return fd;
-
+#if defined(F_SANEWRLCKNO) || !defined(BSD)
+	/* use fcntl (doesn't work correctly with threads) */
 	alock.l_type = share;
 	alock.l_whence = L_SET;
 	alock.l_start = 0;
-	alock.l_len = 0;       // lock to EOF
+	alock.l_len = 0;       /* lock to EOF */
 
-#if 0
-	/* The l_pid field is only used with F_GETLK to return the process 
-		ID of the process holding a blocking lock.  */
-	alock.l_pid = getpid();
-#endif
-
-	if (fcntl(fd, F_SETLK, &alock) < 0) {
+	if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL) {	/* EINVAL means the file does not support locking */
 		close(fd);
 		return -1;
 	}
+#endif
+
+#ifndef F_SANEWRLCKNO
+	/* use flock (doesn't work over NFS) */
+	if(share==SH_DENYRW)
+		flock_op|=LOCK_EX;
+	else   /* SH_DENYWR */
+		flock_op|=LOCK_SH;
+	if(flock(fd,flock_op)!=0 && errno != EOPNOTSUPP) { /* That object doesn't do locks */
+		if(errno==EWOULDBLOCK) 
+			errno=EAGAIN;
+		close(fd);
+		return(-1);
+	}
+#endif
 
 	return fd;
 }
+#endif /* !QNX */
 
 #elif defined _MSC_VER || defined __MINGW32__
 

@@ -89,6 +89,10 @@
 	#define PLATFORM_DESC	"FreeBSD"
 #elif defined(__OpenBSD__)
 	#define PLATFORM_DESC	"OpenBSD"
+#elif defined(__NetBSD__)
+	#define PLATFORM_DESC	"NetBSD"
+#elif defined(__QNX__)
+	#define PLATFORM_DESC	"QNX"
 #elif defined(BSD)
 	#define PLATFORM_DESC	"BSD"
 #elif defined(__unix__)
@@ -198,7 +202,12 @@
 	#define _rmdir(dir)			rmdir(dir)
 	#define tell(fd)			lseek(fd,0,SEEK_CUR)
 
+#ifdef __QNX__
+	int		qnx_sopen(char *fn, int access, int share);
+	#define sopen(x,y,z)	qnx_sopen(x,y,z)
+#else
 	int		sopen(char *fn, int access, int share);
+#endif
 	long	filelength(int fd);
 	char*	strupr(char* str);
 	char*	strlwr(char* str);
@@ -233,7 +242,7 @@
 extern "C" {
 #endif
 
-#if !defined(__BORLANDC__)
+#if !defined(__BORLANDC__) && !defined(__QNX__)
 	int	lock(int fd, long pos, int len);
 	int	unlock(int fd, long pos, int len);
 #endif
