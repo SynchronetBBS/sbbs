@@ -418,6 +418,7 @@ int main(int argc, char **argv)
 	int i,j,mode=0,misc;
 	int	modify=0;
 	int loop=0;
+	int pause=0;
 	long value=0;
 	node_t node;
 
@@ -478,10 +479,12 @@ int main(int argc, char **argv)
 			node_num=atoi(argv[i]);
 		else {
 			node_num=onoff=value=0;
-			if(!stricmp(argv[i],"/DEBUG"))
+			if(!stricmp(argv[i],"-DEBUG"))
 				debug=1;
-			if(!stricmp(argv[i],"/LOOP"))
+			if(!stricmp(argv[i],"-LOOP"))
 				loop=1;
+			if(!stricmp(argv[i],"-PAUSE"))
+				pause=1;
 
 			else if(!stricmp(argv[i],"LOCK"))
 				mode=MODE_LOCK;
@@ -596,6 +599,11 @@ int main(int argc, char **argv)
 								node.misc|=misc;
 							else if(onoff==2)
 								node.misc&=~misc; }
+						if(pause) {
+							printf("Hit enter...");
+							getchar();
+							printf("\n");
+						}
 						if(modify)
 							putnodedat(j,node);
 						printnodedat(j,node);
