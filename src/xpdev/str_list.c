@@ -162,6 +162,29 @@ char* strListReplace(const str_list_t list, size_t index, const char* str)
 	return(buf);
 }
 
+BOOL strListSwap(const str_list_t list, size_t index1, size_t index2)
+{
+	char*	tmp;
+	size_t	count;
+
+	count = strListCount(list);
+
+	if(index1==STR_LIST_LAST_INDEX && count)
+		index1 = count-1;
+
+	if(index2==STR_LIST_LAST_INDEX && count)
+		index2 = count-1;
+
+	if(index1 >= count || index2 >= count || index1 == index2)	
+		return(FALSE);	/* invalid index, do nothing */
+
+	tmp=list[index1];
+	list[index1]=list[index2];
+	list[index2]=tmp;
+
+	return(TRUE);
+}
+
 char* strListAppend(str_list_t* list, const char* str, size_t index)
 {
 	char* buf;
