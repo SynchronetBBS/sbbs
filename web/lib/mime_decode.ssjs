@@ -25,7 +25,7 @@ function mime_decode(hdr, body)
 		/* Search for attachments */
 		for(bit in msgbits) {
 			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
-			var disp=pieces[0].match(/content-disposition:\s+attachment[;\s]*filename=([^;\r\n]*)/i);
+			var disp=pieces[0].match(/content-disposition:\s+attachment[;\s]*filename="?([^";\r\n]*)"?/i);
 			if(disp==undefined)
 				continue;
 			if(Message.attachments==undefined)
@@ -34,11 +34,11 @@ function mime_decode(hdr, body)
 		}
 		/* Search for HTML encoded bit */
 		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
+			var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
 			var pheads=pieces[0];
 			if(pheads==undefined)
 				continue;
-			var content=pieces.slice(1).join('');
+			var content=pieces.slice(2).join('');
 			if(content==undefined)
 				continue;
 			if(pheads.search(/content-type: text\/html/i)!=-1) {
@@ -49,9 +49,9 @@ function mime_decode(hdr, body)
 		}
 		/* Search for plaintext bit */
 		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
+			var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
 			var pheads=pieces[0];
-			var content=pieces.slice(1).join('');
+			var content=pieces.slice(2).join('');
 			if(content==undefined)
 				continue;
 			if(pheads.search(/content-type: text\/plain/i)!=-1) {
@@ -140,20 +140,21 @@ function mime_get_attach(hdr, body, filename)
 		return(undefined);
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
-		var bound=CT.match(/;\s*boundary="?([^;\r\n]*?)"?/);
-		re=new RegExp ("--"+bound[1]);
+		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
+		re=new RegExp ("--"+bound[1]+"-{0,2}");
 		msgbits=body.split(re);
 		/* Search for attachments */
 		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/\r?\n\r?\n/,2);
-			var disp=pieces[0].match(/content-disposition:\s+attachment[;\s]*filename=([^;\r\n]*)/i);
+			var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
+			var disp=pieces[0].match(/content-disposition:\s+attachment[;\s]*filename="?([^";\r\n]*)"?/i);
 			if(disp==undefined)
 				continue;
 			if(disp[1]==filename) {
 				var contyp=pieces[0].match(/content-type:\s*([^\r\n]*)/i);
+				var content=pieces.slice(2).join('');
 				if(contyp!=undefined && contyp[0]!=undefined)
 					Message.content_type=contyp[1];
-				Message.body=decode_body(undefined,pieces[0],pieces[1]);
+				Message.body=decode_body(undefined,pieces[0],content);
 				return(Message);
 			}
 		}
