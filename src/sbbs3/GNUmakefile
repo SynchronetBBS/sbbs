@@ -88,7 +88,7 @@ $(SBBSLIB) : $(SBBS)
 	$(QUIET)touch -- '$(SBBSLIB)'
 
 PWD	:=	$(shell pwd)
-LD_RUN_PATH	:=	.;$(PWD)/$(LIBODIR);$(PWD)/$(JSLIBDIR);$(PWD)/$(NSPRDIR)
+LD_RUN_PATH	:=	.:$(PWD)/$(LIBODIR):$(PWD)/$(JSLIBDIR):$(PWD)/$(NSPRDIR)
 export LD_RUN_PATH
 
 CON_OBJS	= $(LIBODIR)/sbbscon.o $(LIBODIR)/conwrap.o \
