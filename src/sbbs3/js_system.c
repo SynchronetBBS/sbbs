@@ -1012,6 +1012,7 @@ js_filter_ip(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		host=NULL;
 	char*		ip_addr=NULL;
 	char*		from=NULL;
+	char*		fname=NULL;
 	scfg_t*		cfg;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -1033,8 +1034,10 @@ js_filter_ip(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			ip_addr=p;
 		else if(from==NULL)
 			from=p;
+		else if(fname==NULL)
+			fname=p;
 	}
-	*rval = BOOLEAN_TO_JSVAL(filter_ip(cfg,prot,reason,host,ip_addr,from));
+	*rval = BOOLEAN_TO_JSVAL(filter_ip(cfg,prot,reason,host,ip_addr,from,fname));
 	return(JS_TRUE);
 }
 
