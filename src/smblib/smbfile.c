@@ -151,10 +151,11 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 			,smb->file, fp);
 		return(SMB_ERR_OPEN);
 	}
-	SAFEPRINTF2(path,"%s.%s",smb->file,ext);
 
 	if(*fp!=NULL)	/* Already open! */
 		return(SMB_SUCCESS);
+
+	SAFEPRINTF2(path,"%s.%s",smb->file,ext);
 
 	while(1) {
 		if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,share,S_IREAD|S_IWRITE))!=-1)
