@@ -91,7 +91,7 @@ static BOOL		scfg_reloaded=TRUE;
 static uint 	http_threads_running=0;
 static ulong	active_clients=0;
 static ulong	sockets=0;
-static BOOL		recycle_server=FALSE;
+static BOOL		terminate_server=FALSE;
 static uint		thread_count=0;
 static SOCKET	server_socket=INVALID_SOCKET;
 static ulong	mime_count=0;
@@ -2451,12 +2451,8 @@ void http_session_thread(void* arg)
 
 void DLLCALL web_terminate(void)
 {
-	recycle_server=FALSE;
-	if(server_socket!=INVALID_SOCKET) {
-    	lprintf(LOG_INFO,"%04d Web Terminate: closing socket",server_socket);
-		close_socket(server_socket);
-		server_socket=INVALID_SOCKET;
-    }
+   	lprintf(LOG_INFO,"%04d Web Server terminate",server_socket);
+	terminate_server=TRUE;
 }
 
 static void cleanup(int code)
@@ -2477,8 +2473,9 @@ static void cleanup(int code)
 
 	thread_down();
 	status("Down");
-    lprintf(LOG_INFO,"#### Web Server thread terminated (%u threads remain, %lu clients served)"
-		,thread_count, served);
+	if(terminate_server || code)
+		lprintf(LOG_INFO,"#### Web Server thread terminated (%u threads remain, %lu clients served)"
+			,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -2555,7 +2552,7 @@ void DLLCALL web_server(void* arg)
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,WEB_DEFAULT_ERROR_DIR);
 	if(startup->cgi_dir[0]==0)				SAFECOPY(startup->error_dir,WEB_DEFAULT_CGI_DIR);
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5; /* seconds */
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,"ssjs");
@@ -2581,7 +2578,7 @@ void DLLCALL web_server(void* arg)
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
-	recycle_server=TRUE;
+	terminate_server=FALSE;
 	do {
 
 		thread_up(FALSE /* setuid */);
@@ -2832,10 +2829,10 @@ void DLLCALL web_server(void* arg)
 
 		cleanup(0);
 
-		if(recycle_server) {
+		if(!terminate_server) {
 			lprintf(LOG_INFO,"Recycling server...");
 			mswait(2000);
 		}
 
-	} while(recycle_server);
+	} while(!terminate_server);
 }
