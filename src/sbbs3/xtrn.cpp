@@ -48,7 +48,7 @@
 	#include <pty.h>
 #endif
 	#include <termios.h>
-	static void setup_term(int fd);	
+	static void setup_term(int fd, char* term);	
 #endif
 #define XTRN_IO_BUF_LEN 5000
 
@@ -1011,7 +1011,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}
 	}
 	if(pid==0) {	/* child process */
-		setup_term(0);
+		setup_term(0, startup->xtrn_term);
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
@@ -1331,7 +1331,7 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 
 #ifdef __unix__
 void
-setup_term(int fd)
+setup_term(int fd, char* term)
 {
 	struct termios tt;
 	// Shoud set speed here...
@@ -1342,7 +1342,7 @@ setup_term(int fd)
 	tt.c_lflag = TTYDEF_LFLAG;
 	tcsetattr(fd, TCSAFLUSH, &tt);
 
-	setenv("TERM","ansi-bbs",1);
+	setenv("TERM",term,1);
 	/* The following termcap entry is nice:
 
 <---SNIP--->

@@ -88,7 +88,9 @@ typedef struct {
     char	reserved_path3[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
-    char	reserved_path2[128];
+	char	xtrn_term[32];			/* external terminal type (e.g. "ansi-bbs") */
+	char	reserved_str2[32];
+    char	reserved_str1[64];
     char	host_name[128];
 	BOOL	recycle_now;
 

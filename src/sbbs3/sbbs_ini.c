@@ -88,6 +88,7 @@ void sbbs_read_ini(
 	)
 {
 	const char*	section;
+	const char* default_term;
 	char*		ctrl_dir;
 	char*		host_name;
 
@@ -134,6 +135,16 @@ void sbbs_read_ini(
 		=iniReadInteger(fp,section,"ExternalYield",10);
 	bbs->js_max_bytes
 		=iniReadInteger(fp,section,"JS_MaxBytes",0);
+
+	/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
+#if defined(__FreeBSD__)
+	default_term="cons25";
+#else
+	default_term="pc3";
+#endif
+
+	SAFECOPY(bbs->xtrn_term
+		,iniReadString(fp,section,"ExternalTerm",default_term));
 
 	SAFECOPY(bbs->answer_sound
 		,iniReadString(fp,section,"AnswerSound",nulstr));
