@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
         Thread->ChildEvent->WaitFor(INFINITE);
         Thread->ChildEvent->ResetEvent();
     }
-    Thread->ChildEvent->WaitFor(INFINITE);	/* wait for thread to end */
+    Thread->WaitFor();	/* wait for thread to end */
 	return 0;
 }
 //---------------------------------------------------------------------------
