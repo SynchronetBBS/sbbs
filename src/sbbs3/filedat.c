@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -50,24 +50,20 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 
 	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
-	//	errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(FALSE); 
 	}
 	length=filelength(file);
 	if(f->datoffset>length) {
 		close(file);
-	//	errormsg(WHERE,ERR_LEN,str,length);
 		return(FALSE); 
 	}
 	if(length%F_LEN) {
 		close(file);
-	//	errormsg(WHERE,ERR_LEN,str,length);
 		return(FALSE); 
 	}
 	lseek(file,f->datoffset,SEEK_SET);
 	if(read(file,buf,F_LEN)!=F_LEN) {
 		close(file);
-	//	errormsg(WHERE,ERR_READ,str,F_LEN);
 		return(FALSE); 
 	}
 	close(file);
@@ -77,7 +73,6 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 	f->cdt=atol(str);
 
 	if(!f->size) {					/* only read disk if this is null */
-	//	  if(dir[f->dir]->misc&DIR_FCHK) {
 			sprintf(str,"%s%s"
 				,f->altpath>0 && f->altpath<=cfg->altpaths ? cfg->altpath[f->altpath-1]
 				: cfg->dir[f->dir]->path,unpadfname(f->name,tmp));
@@ -134,30 +129,25 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 	putrec(buf,F_ALTPATH+2,2,crlf);
 	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
-//		errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 		return(FALSE); 
 	}
 	length=filelength(file);
 	if(length%F_LEN) {
 		close(file);
-//		errormsg(WHERE,ERR_LEN,str,length);
 		return(FALSE); 
 	}
 	if(f->datoffset>length) {
 		close(file);
-//		errormsg(WHERE,ERR_LEN,str,length);
 		return(FALSE); 
 	}
 	lseek(file,f->datoffset,SEEK_SET);
 	if(write(file,buf,F_LEN)!=F_LEN) {
 		close(file);
-//		errormsg(WHERE,ERR_WRITE,str,F_LEN);
 		return(FALSE); 
 	}
 	length=filelength(file);
 	close(file);
 	if(length%F_LEN) {
-//		errormsg(WHERE,ERR_LEN,str,length);
 		return(FALSE);
 	}
 	return(TRUE);
@@ -182,8 +172,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/* Add data to DAT File */
 	/************************/
 	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYRW))==-1) {
-//		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT);
+	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYRW,S_IREAD|S_IWRITE))==-1) {
 		return(FALSE); 
 	}
 	length=filelength(file);
@@ -192,7 +181,6 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	else {
 		if(length%F_LEN) {
 			close(file);
-//			errormsg(WHERE,ERR_LEN,str,length);
 			return(FALSE); 
 		}
 		for(l=0;l<length;l+=F_LEN) {    /* Find empty slot */
@@ -202,12 +190,6 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		}
 		if(l/F_LEN>=MAX_FILES || l/F_LEN>=cfg->dir[f->dir]->maxfiles) {
 			close(file);
-#if 0
-			bputs(text[DirFull]);
-			sprintf(str,"Directory Full: %s %s"
-				,cfg->lib[cfg->dir[f->dir]->lib]->sname,cfg->dir[f->dir]->sname);
-			logline("U!",str);
-#endif
 			return(FALSE); 
 		} 
 	}
@@ -230,13 +212,11 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	lseek(file,l,SEEK_SET);
 	if(write(file,fdat,F_LEN)!=F_LEN) {
 		close(file);
-//		errormsg(WHERE,ERR_WRITE,str,F_LEN);
 		return(FALSE); 
 	}
 	length=filelength(file);
 	close(file);
 	if(length%F_LEN) {
-//		errormsg(WHERE,ERR_LEN,str,length);
 		return(FALSE);
 	}
 
@@ -244,7 +224,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/* Update last upload date/time stamp file */
 	/*******************************************/
 	sprintf(str,"%s%s.dab",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW))!=-1) {
+	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))!=-1) {
 		now=time(NULL);
 		write(file,&now,4);
 		close(file); 
@@ -257,25 +237,21 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
 		fname[i]=fname[i+1];
 	sprintf(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))==-1) {
-//		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT);
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))==-1) {
 		return(FALSE); 
 	}
 	length=filelength(file);
 	if(length) {    /* IXB file isn't empty */
 		if(length%F_IXBSIZE) {
 			close(file);
-//			errormsg(WHERE,ERR_LEN,str,length);
 			return(FALSE); 
 		}
 		if((ixbbuf=(uchar *)MALLOC(length))==NULL) {
 			close(file);
-//			errormsg(WHERE,ERR_ALLOC,str,length);
 			return(FALSE); 
 		}
 		if(lread(file,ixbbuf,length)!=length) {
 			close(file);
-//			errormsg(WHERE,ERR_READ,str,length);
 			FREE((char *)ixbbuf);
 			return(FALSE); 
 		}
@@ -287,7 +263,6 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 				for(i=0;i<12 && toupper(fname[i])==toupper(ixbbuf[l+i]);i++);
 				if(i==12) {     /* file already in directory index */
 					close(file);
-//					errormsg(WHERE,ERR_CHK,str,0);
 					FREE((char *)ixbbuf);
 					return(FALSE); 
 				}
@@ -312,13 +287,11 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		lseek(file,l,SEEK_SET);
 		if(write(file,fname,11)!=11) {  /* Write filename to IXB file */
 			close(file);
-//			errormsg(WHERE,ERR_WRITE,str,11);
 			FREE((char *)ixbbuf);
 			return(FALSE); 
 		}
 		if(write(file,idx,3)!=3) {  /* Write DAT offset into IXB file */
 			close(file);
-//			errormsg(WHERE,ERR_WRITE,str,3);
 			FREE((char *)ixbbuf);
 			return(FALSE); 
 		}
@@ -326,7 +299,6 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		write(file,&f->datedled,4);              /* Write 0 for datedled */
 		if(lwrite(file,&ixbbuf[l],length-l)!=length-l) { /* Write rest of IXB */
 			close(file);
-//			errormsg(WHERE,ERR_WRITE,str,length-l);
 			FREE((char *)ixbbuf);
 			return(FALSE); 
 		}
@@ -334,12 +306,10 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	else {              /* IXB file is empty... No files */
 		if(write(file,fname,11)!=11) {  /* Write filename it IXB file */
 			close(file);
-//			errormsg(WHERE,ERR_WRITE,str,11);
 			return(FALSE); 
 		}
 		if(write(file,idx,3)!=3) {  /* Write DAT offset into IXB file */
 			close(file);
-//			errormsg(WHERE,ERR_WRITE,str,3);
 			return(FALSE); 
 		}
 		write(file,&f->dateuled,sizeof(time_t));
@@ -347,8 +317,6 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	}
 	length=filelength(file);
 	close(file);
-///	if(length%F_IXBSIZE)
-//		errormsg(WHERE,ERR_LEN,str,length);
 	return(TRUE);
 }
 
@@ -366,24 +334,20 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 
 	sprintf(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
-	//	errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(FALSE); 
 	}
 	length=filelength(file);
 	if(length%F_IXBSIZE) {
 		close(file);
-	//	errormsg(WHERE,ERR_LEN,str,length);
 		return(FALSE); 
 	}
 	if((ixbbuf=(uchar *)MALLOC(length))==NULL) {
 		close(file);
-	//	errormsg(WHERE,ERR_ALLOC,str,length);
 		return(FALSE); 
 	}
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
 		FREE((char *)ixbbuf);
-	//	errormsg(WHERE,ERR_READ,str,length);
 		return(FALSE); 
 	}
 	close(file);
@@ -396,7 +360,6 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 			break; 
 	}
 	if(l>=length) {
-	//	errormsg(WHERE,ERR_CHK,str,0);
 		FREE((char *)ixbbuf);
 		return(FALSE); 
 	}
@@ -424,7 +387,6 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 		fname[i]=fname[i+1];
 	sprintf(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
-//		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(FALSE); 
 	}
 	length=filelength(file);
@@ -434,18 +396,15 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 	}
 	if((ixbbuf=(char *)MALLOC(length))==0) {
 		close(file);
-//		errormsg(WHERE,ERR_ALLOC,str,length);
 		return(FALSE); 
 	}
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-//		errormsg(WHERE,ERR_READ,str,length);
 		FREE((char *)ixbbuf);
 		return(FALSE); 
 	}
 	close(file);
 	if((file=sopen(str,O_WRONLY|O_TRUNC|O_BINARY,SH_DENYRW))==-1) {
-//		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_TRUNC);
 		return(FALSE); 
 	}
 	for(l=0;l<length;l+=F_IXBSIZE) {
@@ -455,7 +414,6 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 		if(stricmp(ixbname,fname))
 			if(lwrite(file,&ixbbuf[l],F_IXBSIZE)!=F_IXBSIZE) {
 				close(file);
-//				errormsg(WHERE,ERR_WRITE,str,F_IXBSIZE);
 				FREE((char *)ixbbuf);
 				return(FALSE); 
 		} 
@@ -464,14 +422,12 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 	close(file);
 	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
-//		errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 		return(FALSE); 
 	}
 	lseek(file,f->datoffset,SEEK_SET);
 	c=ETX;          /* If first char of record is ETX, record is unused */
 	if(write(file,&c,1)!=1) { /* So write a D_T on the first byte of the record */
 		close(file);
-//		errormsg(WHERE,ERR_WRITE,str,1);
 		return(FALSE); 
 	}
 	close(file);
@@ -503,11 +459,9 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 		return(FALSE); }
 	if((ixbbuf=(char *)MALLOC(length))==NULL) {
 		close(file);
-	//    errormsg(WHERE,ERR_ALLOC,str,length);
 		return(FALSE); }
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-	//    errormsg(WHERE,ERR_READ,str,length);
 		FREE((char *)ixbbuf);
 		return(FALSE); }
 	close(file);
@@ -579,25 +533,21 @@ BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 		return(FALSE); 
 	}
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
-//		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(FALSE); 
 	}
 	length=filelength(file);
 	if((ixtbuf=(char *)MALLOC(length))==NULL) {
 		close(file);
-//		errormsg(WHERE,ERR_ALLOC,str,length);
 		return(FALSE); 
 	}
 	if(read(file,ixtbuf,length)!=length) {
 		close(file);
 		FREE(ixtbuf);
-//		errormsg(WHERE,ERR_READ,str,length);
 		return(FALSE); 
 	}
 	close(file);
 	if((file=sopen(str,O_WRONLY|O_TRUNC|O_BINARY,SH_DENYRW))==-1) {
 		FREE(ixtbuf);
-//		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_TRUNC);
 		return(FALSE); 
 	}
 	for(l=0;l<length;l+=24) {
