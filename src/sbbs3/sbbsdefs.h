@@ -258,6 +258,7 @@
 #define SUB_LZH 	(1L<<25)		/* Use LZH compression for msgs */
 #define SUB_SSDEF	(1L<<26)		/* Default ON for Scan for Your msgs */
 #define SUB_HYPER	(1L<<27)		/* Hyper allocation */
+#define SUB_HDRMOD	(1L<<31)		/* Modified sub-board header info (SCFG) */
 
                                     /* Bit values for dir[x].misc */
 #define DIR_FCHK	(1L<<0) 		/* Check for file existance */
