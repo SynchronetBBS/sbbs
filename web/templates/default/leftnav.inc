@@ -22,7 +22,7 @@
         
 <!-- start Nodelisting -->
 
-      @@JS:if(template.show_nodelist)'Who\'s Online now ...<br /><br /><table class="main_nodelist"><tbody><tr><td class="main_nodelist"><a href="mailto:'+template.user_email+'">'+template.user_name+'</a> '+template.node_action+'</td></tr></tbody></table>';@@
+      @@JS:if(template.node_list.length)'Who\'s Online now ...<br /><br /><table class="main_nodelist"><tbody><<REPEAT node_list>><tr><td class="main_nodelist"><a href="mailto:@@node_list:email@@">%%node_list:name%%</a> %%node_list:action%%</td></tr><<END REPEAT node_list>></tbody></table>';@@
  
      </div>
      </td>                        
