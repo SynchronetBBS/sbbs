@@ -1360,6 +1360,8 @@ static void js_parse_post(http_session_t * session)
 		value_len=strcspn(lp,"&");
 		value=lp;
 		lp[value_len]=0;
+		lp+=value_len;
+		lp++;
 		unescape(value);
 		unescape(key);
 		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
@@ -1515,6 +1517,8 @@ static void js_parse_query(http_session_t * session, char *p)  {
 		value_len=strcspn(lp,"&");
 		value=lp;
 		lp[value_len]=0;
+		lp+=value_len;
+		lp++;
 		unescape(value);
 		unescape(key);
 		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
