@@ -1,8 +1,10 @@
-// Basic FormMail script, emulates Matt's FormMail.pl Script
+// Basic FormMail script, emulates Matt Wright's FormMail.pl script
 
 // $Id$
 
 load("sbbsdefs.js");
+
+var log_results = true;
 
 // List of supported 'config' form fields (not included in body text by default)
 var config_fields = {
@@ -78,7 +80,18 @@ if(http_request.query.required) {
 // Send HTTP/HTML results here
 function results(level, text, missing)
 {
-	log(level,"FormMail: " + text);
+	var plain_text = text.replace(/<[^>]*>/g,"");	// strip HTML tags
+
+	log(level,"FormMail: " + plain_text);
+
+	if(log_results) {
+		var fname = system.logs_dir + "formmail.log";
+		var file = new File(fname);
+		if(file.open("a")) {
+			file.printf("%s  %s\n",strftime("%b-%d-%y %H:%M"),plain_text);
+			file.close();
+		}
+	}
 
 	if(missing && http_request.query.missing_fields_redirect) {
 		http_reply.status='307 Temporary Redirect';
