@@ -49,9 +49,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 {
     size_t	i,l,x,z;    /* i=current position, l=length, j=printed chars */
                     /* x&z=misc */
-	char	str1[256],str2[256];
+	char	str1[256],str2[256],undo[256];
     uchar	ch;
-	uchar	ins=0,atr;
+	uchar	atr;
 
 	console&=~(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE);
 	sys_status&=~SS_ABORT;
@@ -84,6 +84,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			bputs("\x1b[K");  /* destroy to eol */ 
 	}
 
+	SAFECOPY(undo,str1);
 	i=l=strlen(str1);
 	if(mode&K_AUTODEL && str1[0] && !(mode&K_NOECHO)) {
 		ch=getkey(mode|K_GETSTR);
@@ -117,7 +118,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 	}
 
 	while(!(sys_status&SS_ABORT) && online && input_thread_running) {
-		if(console&(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE))
+		if(mode&K_LEFTEXIT
+			&& console&(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE))
 			break;
 		if((ch=getkey(mode|K_GETSTR))==CR)
 			break;
@@ -143,15 +145,17 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			case CTRL_A: /* Ctrl-A for ANSI */
 				if(!(mode&K_MSG) || useron.rest&FLAG('A') || i>maxlen-3)
 					break;
-				if(ins) {
+				if(console&CON_INSERT) {
 					if(l<maxlen)
 						l++;
 					for(x=l;x>i;x--)
 						str1[x]=str1[x-1];
 					rprintf("%.*s",l-i,str1+i);
 					rprintf("\x1b[%dD",l-i);
+#if 0
 					if(i==maxlen-1)
-						ins=0; 
+						console&=~CON_INSERT; 
+#endif
 				}
 				outchar(str1[i++]=1);
 				break;
@@ -203,13 +207,15 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					break;
 				if(useron.rest&FLAG('B')) {
 					if (i+6<maxlen) {
-						if(ins) {
+						if(console&CON_INSERT) {
 							for(x=l+6;x>i;x--)
 								str1[x]=str1[x-6];
 							if(l+5<maxlen)
 								l+=6;
+#if 0
 							if(i==maxlen-1)
-								ins=0; 
+								console&=~CON_INSERT; 
+#endif
 						}
 						str1[i++]='(';
 						str1[i++]='b';
@@ -220,17 +226,19 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						if(!(mode&K_NOECHO))
 							bputs("(beep)"); 
 					}
-					if(ins)
+					if(console&CON_INSERT)
 						redrwstr(str1,i,l,0);
 					break; 
 				}
-				if(ins) {
+				if(console&CON_INSERT) {
 					if(l<maxlen)
 						l++;
 					for(x=l;x>i;x--)
 						str1[x]=str1[x-1];
+#if 0
 					if(i==maxlen-1)
-						ins=0; 
+						console&=~CON_INSERT; 
+#endif
 				}
 				if(i<maxlen) {
 					str1[i++]=BEL;
@@ -240,8 +248,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				break;
 			case CTRL_H:	/* Ctrl-H/Backspace */
 				if(i==0) {
-					if(mode&K_LEFTEXIT)
-						console|=CON_BACKSPACE;
+					console|=CON_BACKSPACE;
 					break;
 				}
 				i--;
@@ -261,32 +268,36 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				break;
 			case CTRL_I:	/* Ctrl-I/TAB */
 				if(!(i%EDIT_TABSIZE)) {
-					if(ins) {
+					if(console&CON_INSERT) {
 						if(l<maxlen)
 							l++;
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
+#if 0
 						if(i==maxlen-1)
-							ins=0; 
+							console&=~CON_INSERT; 
+#endif
 					}
 					str1[i++]=SP;
 					if(!(mode&K_NOECHO))
 						outchar(SP); 
 				}
 				while(i<maxlen && i%EDIT_TABSIZE) {
-					if(ins) {
+					if(console&CON_INSERT) {
 						if(l<maxlen)
 							l++;
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
+#if 0
 						if(i==maxlen-1)
-							ins=0; 
+							console&=~CON_INSERT; 
+#endif
 					}
 					str1[i++]=SP;
 					if(!(mode&K_NOECHO))
 						outchar(SP); 
 				}
-				if(ins && !(mode&K_NOECHO))
+				if(console&CON_INSERT && !(mode&K_NOECHO))
 					redrwstr(str1,i,l,0);
 				break;
 
@@ -311,7 +322,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					if(mode&K_LINE)
 						attr(LIGHTGRAY); 
 				}
-				CRLF;
+				if(!(mode&K_NOCRLF))
+					CRLF;
 				return(l);
 
 			case CTRL_N:    /* Ctrl-N Next word */
@@ -331,19 +343,17 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			case CTRL_V:	/* Ctrl-V			Toggles Insert/Overwrite */
 				if(!(useron.misc&ANSI) || mode&K_NOECHO)
 					break;
-				if(ins) {
-					ins=0;
-					redrwstr(str1,i,l,0); 
-				}
-				else if(i<l) {
-					ins=1;
-					bprintf("\x1b[s\x1b[79C");    	/* save pos  */
-					z=curatr;                       /* and go to EOL */
-					attr(z|BLINK|HIGH);
+				console^=CON_INSERT;
+				ANSI_SAVE();
+				GOTOXY(80,1);
+				z=curatr;                       /* and go to EOL */
+				attr(BLINK|HIGH|LIGHTGRAY);
+				if(console&CON_INSERT)
 					outchar('°');
-					attr(z);
-					bputs("\x1b[u");				/* restore pos */
-				}
+				else
+					outchar(' ');
+				attr(z);
+				ANSI_RESTORE();
 				break;
 			case CTRL_W:    /* Ctrl-W   Delete word left */
 				if(i<l) {
@@ -382,26 +392,41 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					} 
 				}
 				break;
+			case CTRL_Y:    /* Ctrl-Y   Delete to end of line */
+				if(i!=l) {	/* if not at EOL */
+					if(useron.misc&ANSI && !(mode&K_NOECHO))
+						bputs("\x1b[K");
+					l=i; 
+					break;
+				}
+				/* fall-through */
 			case CTRL_X:    /* Ctrl-X   Delete entire line */
 				if(mode&K_NOECHO)
 					l=0;
 				else {
-					while(i<l) {
-						outchar(SP);
-						i++; 
+					if(useron.misc&ANSI) {
+						bprintf("\x1b[%uD\x1b[K",i);
+						l=0;
+					} else {
+						while(i<l) {
+							outchar(SP);
+							i++; 
+						}
+						while(l) {
+							l--;
+							bputs("\b \b"); 
+						} 
 					}
-					while(l) {
-						l--;
-						bputs("\b \b"); 
-					} 
 				}
 				i=0;
+				console|=CON_BACKSPACE;
 				break;
-			case CTRL_Y:    /* Ctrl-Y   Delete to end of line */
-				if(useron.misc&ANSI && !(mode&K_NOECHO)) {
-					bputs("\x1b[K");
-					l=i; 
-				}
+			case CTRL_Z:	/* Undo */
+				SAFECOPY(str1,undo);
+				i=l=strlen(str1);
+				rprintf("\r%s",str1);
+				if(useron.misc&ANSI)
+					bputs("\x1b[K");  /* destroy to eol */ 
 				break;
 			case 28:    /* Ctrl-\ Previous word */
 				if(i && (useron.misc&ANSI) && !(mode&K_NOECHO)) {
@@ -432,7 +457,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					l=i;
 				str1[l]=0;
 				strcpy(strout,str1);
-				if((strip_invalid_attr(strout) || ins) && !(mode&K_NOECHO))
+				if((strip_invalid_attr(strout) || console&CON_INSERT) && !(mode&K_NOECHO))
 					redrwstr(strout,i,l,K_MSG);
 				if(mode&K_LINE && !(mode&K_NOECHO))
 					attr(LIGHTGRAY);
@@ -462,13 +487,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				bprintf("\x1b[%dD",(l-i)+1);
 				break;
 			default:
-				if(mode&K_WRAP && i==maxlen && ch>=SP && !ins) {
+				if(mode&K_WRAP && i==maxlen && ch>=SP && !(console&CON_INSERT)) {
 					str1[i]=0;
 					if(ch==SP && !(mode&K_CHAT)) { /* don't wrap a space */ 
 						strcpy(strout,str1);	   /* as last char */
 						if(strip_invalid_attr(strout) && !(mode&K_NOECHO))
 							redrwstr(strout,i,l,K_MSG);
-						if(!(mode&K_NOECHO))
+						if(!(mode&(K_NOECHO|K_NOCRLF)))
 							CRLF;
 						return(i); 
 					}
@@ -482,7 +507,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						strcpy(strout,str1);
 						if(strip_invalid_attr(strout) && !(mode&K_NOECHO))
 							redrwstr(strout,i,l,K_MSG);
-						if(!(mode&K_NOECHO))
+						if(!(mode&(K_NOECHO|K_NOCRLF)))
 							CRLF;
 						return(i); 
 					}
@@ -497,7 +522,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					strcpy(strout,str1);
 					if(strip_invalid_attr(strout) && !(mode&K_NOECHO))
 						redrwstr(strout,i,x,(char)mode);
-					if(!(mode&K_NOECHO))
+					if(!(mode&K_NOECHO|K_NOCRLF))
 						CRLF;
 					return(x); 
 				}
@@ -508,17 +533,19 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 							ch=toupper(ch);
 						else
 							ch=tolower(ch);
-					if(ins) {
+					if(console&CON_INSERT && i!=l) {
 						if(l<maxlen)    /* l<maxlen */
 							l++;
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
 						rprintf("%.*s",l-i,str1+i);
 						rprintf("\x1b[%dD",l-i);
+#if 0
 						if(i==maxlen-1) {
 							bputs("  \b\b");
-							ins=0; 
+							console&=~CON_INSERT; 
 						} 
+#endif
 					}
 					str1[i++]=ch;
 					if(!(mode&K_NOECHO))
@@ -538,7 +565,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 	str1[l]=0;
 	if(!(sys_status&SS_ABORT)) {
 		strcpy(strout,str1);
-		if((strip_invalid_attr(strout) || ins) && !(mode&K_NOECHO))
+		if((strip_invalid_attr(strout) || console&CON_INSERT) && !(mode&K_NOECHO))
 			redrwstr(strout,i,l,K_MSG); 
 	}
 	else
