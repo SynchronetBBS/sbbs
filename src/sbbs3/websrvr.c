@@ -752,6 +752,9 @@ static void close_request(http_session_t * session)
 	}
 
 	memset(&session->req,0,sizeof(session->req));
+	if(session->subscan!=NULL)
+		putmsgptrs(&scfg, session->user.number, session->subscan);
+	FREE_AND_NULL(session->subscan);
 }
 
 static int get_header_type(char *header)
@@ -1007,6 +1010,13 @@ void http_logon(http_session_t * session, user_t *usr)
 	else
 		session->user=*usr;
 
+	if(session->user.number!=0) {
+		FREE_AND_NULL(session->subscan);
+		session->subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
+		if(session->subscan!=NULL)
+			getmsgptrs(&scfg,session->user.number,session->subscan);
+	}
+
 	if(session->user.number==session->last_user_num)
 		return;
 
@@ -1020,10 +1030,6 @@ void http_logon(http_session_t * session, user_t *usr)
 		putuserrec(&scfg,session->user.number,U_MODEM,LEN_MODEM,"HTTP");
 		putuserrec(&scfg,session->user.number,U_COMP,LEN_COMP,session->host_name);
 		putuserrec(&scfg,session->user.number,U_NOTE,LEN_NOTE,session->host_ip);
-		FREE_AND_NULL(session->subscan);
-		session->subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
-		if(session->subscan!=NULL)
-			getmsgptrs(&scfg,session->user.number,session->subscan);
 	}
 	session->client.user=session->username;
 	client_on(session->socket, &session->client, /* update existing client record? */TRUE);
@@ -1041,9 +1047,6 @@ void http_logoff(http_session_t * session)
 
 	SAFECOPY(session->username,unknown);
 	logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time);
-	if(session->subscan!=NULL)
-		putmsgptrs(&scfg, session->user.number, session->subscan);
-	FREE_AND_NULL(session->subscan);
 	memset(&session->user,0,sizeof(session->user));
 	session->last_user_num=session->user.number;
 }
