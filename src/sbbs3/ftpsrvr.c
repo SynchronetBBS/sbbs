@@ -1739,7 +1739,7 @@ static void ctrl_thread(void* arg)
 
 				p=cmd+4;
 				while(*p && *p<=' ') p++;
-				sprintf(path,"%s%s",local_dir, *p ? p : "*.*");
+				sprintf(path,"%s%s",local_dir, *p ? p : "*");
 				lprintf("%04d %s listing: %s", sock, user.alias, path);
 				sockprintf(sock, "150 Directory of %s%s", local_dir, p);
 			
@@ -1767,7 +1767,7 @@ static void ctrl_thread(void* arg)
 								,1900+tm.tm_year
 								,getfname(g.gl_pathv[i]));
 					} else
-						fprintf(fp,"%s\r\n",g.gl_pathv[i]);
+						fprintf(fp,"%s\r\n",getfname(g.gl_pathv[i]));
 				}
 				globfree(&g);
 				fclose(fp);
@@ -2441,7 +2441,7 @@ static void ctrl_thread(void* arg)
 							,INDEX_FNAME_LEN,scfg.dir[i]->code,scfg.dir[i]->lname);
 					}
 				} else {
-					sprintf(cmd,"%s*.*",scfg.dir[dir]->path);
+					sprintf(cmd,"%s*",scfg.dir[dir]->path);
 					glob(cmd,0,NULL,&g);
 					for(i=0;i<(int)g.gl_pathc;i++) {
 						if(isdir(g.gl_pathv[i]))
