@@ -116,7 +116,7 @@ void net_cfg()
 
 while(1) {
 	i=0;
-	strcpy(opt[i++],"Internet");
+	strcpy(opt[i++],"Internet E-mail");
 	strcpy(opt[i++],"QWK Packet Networks");
 	strcpy(opt[i++],"FidoNet EchoMail and NetMail");
 	strcpy(opt[i++],"PostLink Networks");
@@ -777,7 +777,7 @@ This is the Site Name of this hub. It is used for only for reference.
 						phub_edit(i); }
                     break; } } }
 
-	else if(i==0) { 	/* Internet */
+	else if(i==0) { 	/* Internet E-mail */
 		done=0;
 		while(!done) {
 			i=0;
@@ -801,13 +801,13 @@ This is the Site Name of this hub. It is used for only for reference.
 			opt[i][0]=0;
 			SETHELP(WHERE);
 /*
-Internet:
+Internet E-mail:
 
 This menu contains configuration options that pertain specifically to
 Internet E-mail.
 */
 			i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&inet_dflt,0
-				,"Internet",opt);
+				,"Internet E-mail",opt);
 			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
