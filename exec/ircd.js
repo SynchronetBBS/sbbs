@@ -1111,7 +1111,11 @@ function IRCClient_lusers() {
 
 function IRCClient_motd() {
 	motd_file = new File(system.text_dir + "ircmotd.txt");
-	if (motd_file.open("r")) {
+	if (motd_file.exists==false)
+		this.numeric(422, ":MOTD file missing: " + motd_file.name);
+	else if (motd_file.open("r")==false)
+		this.numeric(422, ":MOTD error " + errno + " opening: " + motd_file.name);
+	else {
 		this.numeric(375, ":- " + servername + " Message of the Day -");
 		this.numeric(372, ":- " + strftime("%m/%d/%Y %H:%M",motd_file.date));
 		while (!motd_file.eof) {
@@ -1119,8 +1123,7 @@ function IRCClient_motd() {
 			if (motd_line != null)
 				this.numeric(372, ":- " + motd_line);
 		}
-	} else {
-		this.numeric(422, ":MOTD file is missing.");
+		motd_file.close();
 	}
 	this.numeric(376, ":End of /MOTD command.");
 }
