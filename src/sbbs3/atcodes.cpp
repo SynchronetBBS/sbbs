@@ -1026,7 +1026,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_CURMSG")) {
-		sprintf(str,"%ld",smb.curmsg);
+		sprintf(str,"%ld",smb.curmsg+1);
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_LAST_MSG")) {
