@@ -38,6 +38,7 @@
 #include <stdlib.h>		/* malloc */
 #include <string.h>		/* memset */
 
+#include "genwrap.h"	/* msclock() */
 #include "threadwrap.h"	/* GetCurrentThreadId */
 #include "msg_queue.h"
 
@@ -151,15 +152,31 @@ long msgQueueReadLevel(msg_queue_t* q)
 static BOOL list_wait(link_list_t* list, long timeout)
 {
 #if defined(LINK_LIST_THREADSAFE)
-	if(timeout==-1)	/* infinite */
+	if(timeout<0)	/* infinite */
 		return listSemWait(list)==0;
 	if(timeout==0)	/* poll */
 		return listSemTryWait(list)==0;
 
 	return listSemTryWaitBlock(list,timeout)==0);
 #else
-	return(TRUE);
+	clock_t	start;
+	long	count;
+	
+	start=msclock();
+	while((count=listCountNodes(list))==0) {
+		if(timeout==0)
+			break;
+		if(timeout>0 && msclock()-start > timeout)
+			break;
+		YIELD();
+	}
+	return(INT_TO_BOOL(count));
 #endif
+}
+
+BOOL msgQueueWait(msg_queue_t* q, long timeout)
+{
+	return(list_wait(msgQueueReadList(q),timeout));
 }
 
 void* msgQueueRead(msg_queue_t* q, long timeout)

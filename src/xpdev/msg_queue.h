@@ -67,6 +67,7 @@ long			msgQueueDetach(msg_queue_t*);
 void*			msgQueueSetPrivateData(msg_queue_t*, void*);
 void*			msgQueueGetPrivateData(msg_queue_t*);
 
+BOOL			msgQueueWait(msg_queue_t* q, long timeout);
 long			msgQueueReadLevel(msg_queue_t*);
 void*			msgQueueRead(msg_queue_t*, long timeout);
 void*			msgQueuePeek(msg_queue_t*, long timeout);
