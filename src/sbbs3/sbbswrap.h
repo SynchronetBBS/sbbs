@@ -159,6 +159,8 @@ extern "C" {
 	DLLEXPORT char*	DLLCALL strupr(char* str);
 	DLLEXPORT char*	DLLCALL strlwr(char* str);
 	DLLEXPORT char* DLLCALL strrev(char* str);
+	DLLEXPORT char* DLLCALL _fullpath(char* absPath, const char* relPath
+										,size_t maxLength);
 
 #else	/* Unsupported OS */
 

@@ -313,6 +313,18 @@ char* strrev(char* str)
 #endif
 
 /****************************************************************************/
+/* Create an absolute or full path name for the specified relative path.	*/
+/****************************************************************************/
+#ifdef __unix__
+char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
+{
+#warning "Need _fullpath() equivalent for Unix - not critical"
+	strcpy(absPath,relPath);
+	return(absPath);
+}
+#endif
+
+/****************************************************************************/
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
 /****************************************************************************/
 #ifdef _WIN32
