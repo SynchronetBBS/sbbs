@@ -351,16 +351,16 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 	snprintf(str[3][1],12,"%s/%s",getnumstr(str[3][2],sstats.uls),getnumstr(str[3][3],m));
 	getsizestr(str[3][2],sstats.dlb,TRUE);
 	getnumstr(str[3][3],sstats.dls);
-	snprintf(statbuf,sizeof(statbuf),"Node #: %-3d %6s  Space: %s"
-			"\nLogons: %-11s Total: %-11s Timeon: %-11s Total: %-11s"
-			"\nEmails: %-11s Posts: %-11s Fbacks: %-11s Users: %-11s"
-			"\nUloads: %-11s Files: %-11s Dloads: %-11s Files: %-11s",
+	snprintf(statbuf,sizeof(statbuf),"`Node #`: %-3d %6s  `Space`: %s"
+			"\n`Logons`: %-11s `Total`: %-11s `Timeon`: %-11s `Total`: %-11s"
+			"\n`Emails`: %-11s `Posts`: %-11s `Fbacks`: %-11s `Users`: %-11s"
+			"\n`Uloads`: %-11s `Files`: %-11s `Dloads`: %-11s `Files`: %-11s",
 			nodenum,str[0][0],str[0][1],
 			str[1][0],str[1][1],str[1][2],str[1][3],
 			str[2][0],str[2][1],str[2][2],str[2][3],
 			str[3][0],str[3][1],str[3][2],str[3][3]);
 
-	uifc.showbuf(WIN_L2R|WIN_DYN|WIN_PACK,1,1,80,6,"Statistics",statbuf,curp,barp);
+	uifc.showbuf(WIN_HLP|WIN_L2R|WIN_DYN|WIN_PACK,1,1,80,6,"Statistics",statbuf,curp,barp);
 /* Node 5 :	Mar 11  Space: 162,024k
    Logons: 23/103      Total: 62,610      Timeon: 322/2430    Total: 5,321,900   
    Emails: 4/265       Posts: 4/12811     Fbacks: 2/17	       Users: 1/592
