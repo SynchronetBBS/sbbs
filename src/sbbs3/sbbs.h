@@ -77,6 +77,7 @@
 /* Synchronet-specific */
 /***********************/
 #include "sbbsinet.h"
+#include "sbbswrap.h"
 #include "smblib.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
@@ -103,13 +104,6 @@ int unlock(int file, long offset, int size);
 }
 #endif
 #endif /* !__BORLANDC__ */
-
-#if defined(__GNUC__)	/* GNU CC */
-
-#warning "ultoa needs to be defined or replaced"
-#define ultoa	ltoa
-
-#endif	/* __GNUC__ */
 
 
 #ifdef __cplusplus
@@ -660,11 +654,6 @@ public:
 	void	scanalldirs(long mode);
 	void	scandirs(long mode);
 
-#ifdef _WIN32
-	#define beep(freq, dur)	Beep(freq, dur)
-#else
-	#define beep(freq, dur)
-#endif
 	#define nosound()
 	#define checkline()
 
@@ -676,6 +665,9 @@ public:
 };
 #endif
 
+#ifdef DLLEXPORT
+#undef DLLEXPORT
+#endif
 #ifdef _WIN32
 	#ifdef SBBS_EXPORTS
 		#define DLLEXPORT	__declspec(dllexport)
@@ -730,22 +722,10 @@ extern "C" {
 	ulong	ahtoul(char *str);	/* Converts ASCII hex to ulong */
 	char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 	uint	hptoi(char *str);
-#ifndef __BORLANDC__
-	int		sbbs_random(int n);	/* return random number between 0 and n-1 */
-#define random(x) sbbs_random(x)
-#endif
-
-#ifndef _WIN32
-	long	filelength(int fd);
-#endif
 
 	DLLEXPORT ushort	crc16(char *str);
 	DLLEXPORT char *	zonestr(short zone);
 	DLLEXPORT int		putsmsg(scfg_t* cfg, int usernumber, char *strin);
-	DLLEXPORT BOOL		fexist(char *filespec);
-	DLLEXPORT long		flength(char *filespec);
-	DLLEXPORT long		fdate(char *filespec);
-	DLLEXPORT ulong		getfreediskspace(char* path);
 
 	/* load_cfg.C */
 
@@ -789,16 +769,6 @@ char *	unpackchatpass(char *pass, node_t* node);
 extern const char* wday[];	/* abbreviated weekday names */
 extern const char* mon[];		/* abbreviated month names */
 
-/*********************/
-/* OS specific stuff */
-/*********************/
-
-#ifdef _WIN32
-	#define mswait(x) Sleep(x)
-#else
-	void mswait(int msecs);
-#endif
-
 #if defined(__FLAT__) || defined(_WIN32)
 
 #define lread(f,b,l) read(f,b,l)
@@ -808,10 +778,6 @@ extern const char* mon[];		/* abbreviated month names */
 
 #define lkbrd(x)	0
 
-#endif
-
-#if (__BORLANDC__ > 0x0410)
-#define _chmod(p,f,a) _rtl_chmod(p,f,a) 	// _chmod obsolete in 4.x
 #endif
 
 #endif	/* Don't add anything after this line */

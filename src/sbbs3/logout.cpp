@@ -117,7 +117,7 @@ void sbbs_t::logout()
 			CLS;
 			lputs("\r\n\r\nAlerting Sysop...");
 			while(!lkbrd(1)) {
-				beep(1000,200);
+				sbbs_beep(1000,200);
 				nosound();
 				mswait(200); }
 			lkbrd(0); }

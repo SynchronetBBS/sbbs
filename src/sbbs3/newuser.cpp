@@ -300,7 +300,7 @@ void sbbs_t::newuser()
 
 	c=0;
 	while(c<LEN_PASS) { 				/* Create random password */
-		useron.pass[c]=random(43)+'0';
+		useron.pass[c]=sbbs_random(43)+'0';
 		if(isalnum(useron.pass[c]))
 			c++; }
 	useron.pass[c]=0;

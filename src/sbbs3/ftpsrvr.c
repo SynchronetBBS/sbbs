@@ -54,18 +54,11 @@
 
 /* Synchronet-specific headers */
 #include "sbbsinet.h"
+#include "sbbswrap.h"
 #include "scfgdefs.h"
 #include "ftpsrvr.h"
 #include "userdat.h"
 #include "telnet.h"
-
-#if defined(__GNUC__)	/* GNU CC */
-
-#warning "ultoa needs to be defined or replaced"
-#define ultoa	ltoa
-
-#endif	/* __GNUC__ */
-
 
 /* Constants */
 
@@ -97,24 +90,19 @@ static const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #endif
 
 IMPORT BOOL	load_cfg(scfg_t* cfg, char* text[]);
-IMPORT BOOL	fexist(char *filespec);
-IMPORT long	flength(char *filespec);
-IMPORT long	fdate(char *filespec);
 
 IMPORT BOOL	getfileixb(scfg_t* cfg, file_t* f);
 IMPORT BOOL	getfiledat(scfg_t* cfg, file_t* f);
 
 IMPORT BOOL	putfiledat(scfg_t* cfg, file_t* f);
 IMPORT BOOL	removefiledat(scfg_t* cfg, file_t* f);
-IMPORT BOOL  addfiledat(scfg_t* cfg, file_t* f);
+IMPORT BOOL addfiledat(scfg_t* cfg, file_t* f);
 IMPORT BOOL	findfile(scfg_t* cfg, uint dirnum, char *filename);
 
 IMPORT char*	padfname(char *filename, char *str);
 IMPORT char*	unpadfname(char *filename, char *str);
 
 IMPORT BOOL	trashcan(scfg_t* cfg, char *insearch, char *name);
-
-IMPORT ulong getfreediskspace(char* path);
 
 BOOL direxist(char *dir)
 {
@@ -175,19 +163,12 @@ static BOOL winsock_startup(void)
 	return (FALSE);
 }
 
+#define ERROR_VALUE			WSAGetLastError()
+
 #else /* No WINSOCK */
 
 #define winsock_startup()	(TRUE)
-
-#endif
-
-#ifdef _WIN32	/* Windows */
-
-#define ERROR_VALUE			WSAGetLastError()
-
-#else /* Non-Windows */
-
-#define ERROR_VALUE		errno
+#define ERROR_VALUE			errno
 
 #endif
 
@@ -2923,8 +2904,11 @@ static void cleanup(int code)
 	server_socket=INVALID_SOCKET;
 
 	update_clients();
+
+#ifdef _WINSOCKAPI_
 	if(WSACleanup()!=0) 
 		lprintf("!WSACleanup ERROR %d",ERROR_VALUE);
+#endif
 
     lprintf("FTP Server thread terminated");
 	status("Down");
@@ -2978,15 +2962,15 @@ void ftp_server(void* arg)
 	startup=(ftp_startup_t*)arg;
 
     if(startup==NULL) {
-    	Beep(100,500);
+    	sbbs_beep(100,500);
     	fprintf(stderr, "No startup structure passed!\n");
     	return;
     }
 
 	if(startup->size!=sizeof(ftp_startup_t)) {	/* verify size */
-		Beep(100,500);
-		Beep(300,500);
-		Beep(100,500);
+		sbbs_beep(100,500);
+		sbbs_beep(300,500);
+		sbbs_beep(100,500);
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}
@@ -3034,11 +3018,13 @@ void ftp_server(void* arg)
 		return;
 	}
 
+#ifdef _WIN32
     if((socket_mutex=CreateMutex(NULL,FALSE,NULL))==NULL) {
     	lprintf("!ERROR %d creating socket_mutex", GetLastError());
 		cleanup(1);
         return;
     }
+#endif
 
 	/* Initial configuration and load from CNF files */
     memset(&scfg, 0, sizeof(scfg));

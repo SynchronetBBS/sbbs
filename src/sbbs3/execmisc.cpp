@@ -686,7 +686,7 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 					l=*(long *)csi->ip;
 					csi->ip+=4;
 					if(lp)
-						*lp=random(l);
+						*lp=sbbs_random(l);
 					return(0);
 				case TIME_INT_VAR:
 					lp=getintvar(csi,*(long *)csi->ip);

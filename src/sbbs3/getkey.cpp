@@ -45,7 +45,7 @@
 /****************************************************************************/
 char sbbs_t::getkey(long mode)
 {
-	char ch,coldkey,c=0,spin=random(5);
+	char ch,coldkey,c=0,spin=sbbs_random(5);
 
 	if(!online)
 		return(0);
@@ -64,7 +64,7 @@ char sbbs_t::getkey(long mode)
 			return(0); }
 
 		if(sys_status&SS_SYSPAGE) {
-			beep(random(800),100);
+			sbbs_beep(sbbs_random(800),100);
 		}
 
 		if(mode&K_SPIN)

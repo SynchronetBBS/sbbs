@@ -58,13 +58,7 @@
 #include "smblib.h"
 #include "crc32.h"
 #include "sbbsinet.h"
-
-#if defined(__GNUC__)	/* GNU CC */
-
-#warning "ultoa needs to be defined or replaced"
-#define ultoa	ltoa
-
-#endif	/* __GNUC__ */
+#include "sbbswrap.h"
 
 /* Constants */
 #define MAIL_VERSION "1.10"
@@ -141,20 +135,12 @@ static BOOL winsock_startup(void)
     lprintf("!WinSock startup ERROR %d", status);
 	return (FALSE);
 }
+#define ERROR_VALUE			WSAGetLastError()
 
 #else /* No WINSOCK */
 
 #define winsock_startup()	(TRUE)
-
-#endif
-
-#ifdef _WIN32	/* Windows */
-
-#define ERROR_VALUE			GetLastError()
-
-#else /* Non-Windows */
-
-#define ERROR_VALUE		errno
+#define ERROR_VALUE			errno
 
 #endif
 
@@ -2241,8 +2227,10 @@ static void cleanup(int code)
 
 	update_clients();
 
+#ifdef _WINSOCKAPI_	
 	if(WSACleanup()!=0) 
 		lprintf("!WSACleanup ERROR %d",ERROR_VALUE);
+#endif
 
     lprintf("Mail Server thread terminated");
 	status("Down");
@@ -2301,15 +2289,15 @@ void mail_server(void* arg)
 	startup=(mail_startup_t*)arg;
 
     if(startup==NULL) {
-    	Beep(100,500);
+    	sbbs_beep(100,500);
     	fprintf(stderr, "No startup structure passed!\n");
     	return;
     }
 
 	if(startup->size!=sizeof(mail_startup_t)) {	/* verify size */
-		Beep(100,500);
-		Beep(300,500);
-		Beep(100,500);
+		sbbs_beep(100,500);
+		sbbs_beep(300,500);
+		sbbs_beep(100,500);
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}

@@ -166,7 +166,7 @@ void sbbs_t::outchar(char ch)
 			putch('X');
 		else if(cfg.node_misc&NM_NOBEEP && ch==7);	 /* Do nothing if beep */
 		else if(ch==7) {
-				beep(2000,110);
+				sbbs_beep(2000,110);
 				nosound(); }
 		else putch(ch); }
 	#endif
@@ -184,7 +184,7 @@ void sbbs_t::outchar(char ch)
 					break;
 				i++;
 				if(sys_status&SS_SYSPAGE)
-					beep(i,80);
+					sbbs_beep(i,80);
 				else
 					mswait(80); }
 			if(i==1440) {							/* timeout - beep flush outbuf */
@@ -535,7 +535,7 @@ void sbbs_t::attr(int atr)
 bool sbbs_t::msgabort()
 {
 	if(sys_status&SS_SYSPAGE) {
-		beep(random(800),1);
+		sbbs_beep(sbbs_random(800),1);
 	}
 
 	checkline();

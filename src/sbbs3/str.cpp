@@ -864,9 +864,9 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1)
 		bprintf(" (%lXh)",access);
 	if(cfg.sys_misc&SM_ERRALARM) {
-		beep(500,220); beep(250,220);
-		beep(500,220); beep(250,220);
-		beep(500,220); beep(250,220);
+		sbbs_beep(500,220); sbbs_beep(250,220);
+		sbbs_beep(500,220); sbbs_beep(250,220);
+		sbbs_beep(500,220); sbbs_beep(250,220);
 		nosound(); }
 	bputs("\r\n\r\nThe sysop has been notified. <Hit a key>");
 	getkey(0);

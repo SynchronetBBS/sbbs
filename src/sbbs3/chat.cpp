@@ -620,7 +620,7 @@ void sbbs_t::sysop_page(void)
 	else if(cfg.sys_misc&SM_SHRTPAGE) {
 		bprintf(text[PagingGuru],cfg.sys_op);
 		for(i=0;i<10 && !lkbrd(1);i++) {
-			beep(1000,200);
+			sbbs_beep(1000,200);
 			mswait(200);
 			outchar('.'); }
 		CRLF; }
@@ -1368,7 +1368,7 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 			if(answers==100)
 				while(*ptr && *ptr!='(' && ptr<gurubuf+len)
 					ptr++;
-			i=random(answers);
+			i=sbbs_random(answers);
 			for(j=0,k=0;answer[i][j];j++) {
 				if(answer[i][j]=='`') {
 					j++;
@@ -1493,32 +1493,32 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 				else
 					theanswer[k++]=answer[i][j]; }
 			theanswer[k]=0;
-			mswait(500+random(1000));	 /* thinking time */
+			mswait(500+sbbs_random(1000));	 /* thinking time */
 			if(action!=NODE_MCHT) {
 				for(i=0;i<k;i++) {
 					if(mistakes && theanswer[i]!=theanswer[i-1] &&
-						((!isalnum(theanswer[i]) && !random(100))
-						|| (isalnum(theanswer[i]) && !random(30)))) {
-						c=j=((uint)random(3)+1);	/* 1 to 3 chars */
+						((!isalnum(theanswer[i]) && !sbbs_random(100))
+						|| (isalnum(theanswer[i]) && !sbbs_random(30)))) {
+						c=j=((uint)sbbs_random(3)+1);	/* 1 to 3 chars */
 						if(c<strcspn(theanswer+(i+1),"\0., "))
 							c=j=1;
 						while(j) {
-							outchar(97+random(26));
-							mswait(25+random(150));
+							outchar(97+sbbs_random(26));
+							mswait(25+sbbs_random(150));
 							j--; }
-						if(random(100)) {
-							mswait(100+random(300));
+						if(sbbs_random(100)) {
+							mswait(100+sbbs_random(300));
 							while(c) {
 								bputs("\b \b");
-								mswait(50+random(50));
+								mswait(50+sbbs_random(50));
 								c--; } } }
 					outchar(theanswer[i]);
 					if(theanswer[i]==theanswer[i+1])
-						mswait(25+random(50));
+						mswait(25+sbbs_random(50));
 					else
-						mswait(25+random(150));
+						mswait(25+sbbs_random(150));
 					if(theanswer[i]==SP)
-						mswait(random(50)); 
+						mswait(sbbs_random(50)); 
 					} }
 			else {
 				mswait(strlen(theanswer)*100);
@@ -1677,7 +1677,7 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 	console|=(CON_L_ECHO|CON_R_ECHO);					/* make sure echo is on */
 	if(action==NODE_CHAT) {	/* only page if from chat section */
 		bprintf(text[PagingGuru],cfg.guru[gurunum]->name);
-		ch=random(25)+25;
+		ch=sbbs_random(25)+25;
 		while(ch--) {
 			mswait(200);
 			outchar('.'); } }

@@ -235,7 +235,7 @@ bool sbbs_t::logon()
 
 			c=0;
 			while(c<LEN_PASS) { 				/* Create random password */
-				str[c]=random(43)+'0';
+				str[c]=sbbs_random(43)+'0';
 				if(isalnum(str[c]))
 					c++; }
 			str[c]=0;

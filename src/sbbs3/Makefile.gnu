@@ -8,7 +8,6 @@
 DEBUG	=	1		# Comment out for release (non-debug) version
 CC		=	gcc
 LD		=	ld
-OS		=	Win32 
 CFLAGS	=	-Id:/cygwin/usr/include/mingw32
 LFLAGS  =	-L$(LIB)
 
@@ -25,9 +24,6 @@ SBBS	=	sbbs.dll
 FTPSRVR	=	ftpsrvr.dll
 
 MAILSRVR=	mailsrvr.dll
-
-vpath .c .
-VPATH	=	.
 
 OBJS	=	ansiterm.o\
 			answer.o\
@@ -98,14 +94,16 @@ OBJS	=	ansiterm.o\
 			userdat.o\
 			useredit.o\
 			viewfile.o\
+			wrappers.o\
 			writemsg.o\
 			xtrn.o\
 			xtrn_sec.o 
 
-HEADERS =	sbbs.h sbbsdefs.h scfgdefs.h gen_defs.h nodedefs.h text.h \
-			smblib.h smbdefs.h
+HEADERS =	sbbs.h sbbsdefs.h sbbswrap.h scfgdefs.h gen_defs.h nodedefs.h \
+			smblib.h smbdefs.h text.h
 
-SBBSDEFS=	-DSBBS -DSBBS_EXPORTS -DSMB_GETMSGTXT -DSMBDLL -DLZHDLL
+SBBSDEFS=	-DSBBS -DSBBS_EXPORTS -DSMB_GETMSGTXT -DSMBDLL -DLZHDLL \
+			-DWRAPPER_DLL
 
 # Implicit C Compile Rule for SBBS.DLL
 .c.o:
@@ -146,7 +144,7 @@ data.o:        	$(HEADERS)
 data_ovl.o:    	$(HEADERS)
 date_str.o:    	$(HEADERS)
 download.o:    	$(HEADERS)
-email.o:			$(HEADERS) cmdshell.h
+email.o:		$(HEADERS) cmdshell.h
 exec.o:			$(HEADERS) cmdshell.h
 execfile.o:		$(HEADERS) cmdshell.h
 execfunc.o:		$(HEADERS) cmdshell.h
@@ -159,12 +157,12 @@ getkey.o:    	$(HEADERS)
 getmsg.o:    	$(HEADERS)
 getnode.o:		$(HEADERS)
 getstr.o:    	$(HEADERS)
-inkey.o:    		$(HEADERS)
+inkey.o:    	$(HEADERS)
 listfile.o:		$(HEADERS)
 load_cfg.o:		$(HEADERS)
 logfile.o:		$(HEADERS)
-login.o:			$(HEADERS)
-logon.o:    		$(HEADERS) cmdshell.h
+login.o:		$(HEADERS)
+logon.o:    	$(HEADERS) cmdshell.h
 logout.o:		$(HEADERS)
 lzh.o:			$(HEADERS)
 mail.o:	       	$(HEADERS)
@@ -176,12 +174,12 @@ newuser.o:		$(HEADERS)
 pack_qwk.o:		$(HEADERS) qwk.h post.h
 pack_rep.o:		$(HEADERS) qwk.h post.h
 postmsg.o:     	$(HEADERS)
-prntfile.o:     	$(HEADERS)
+prntfile.o:     $(HEADERS)
 putmsg.o:		$(HEADERS)
 putnode.o:		$(HEADERS)
 qwk.o:			$(HEADERS) qwk.h post.h
 qwktomsg.o:		$(HEADERS) qwk.h
-readmail.o:     	$(HEADERS)
+readmail.o:     $(HEADERS)
 readmsgs.o:		$(HEADERS) post.h
 ringbuf.o:		$(HEADERS)
 scandirs.o:    	$(HEADERS)
@@ -203,6 +201,7 @@ useredit.o:    	$(HEADERS)
 getuser.o:		$(HEADERS)
 ver.o:			$(HEADERS) $(OBJS)
 viewfile.o:		$(HEADERS)
-writemsg.o:     	$(HEADERS)
+wrappers.o:    	$(HEADERS)
+writemsg.o:    	$(HEADERS)
 xtrn.o:        	$(HEADERS) cmdshell.h
 xtrn_sec.o:    	$(HEADERS)
