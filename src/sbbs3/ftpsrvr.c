@@ -541,7 +541,7 @@ JSContext* js_initcx(JSObject** glob)
 		return(NULL);
 	}
 
-	if((sysobj=CreateSystemObject(&scfg, js_cx, js_glob))==NULL) {
+	if((sysobj=js_CreateSystemObject(&scfg, js_cx, js_glob))==NULL) {
 		JS_DestroyContext(js_cx);
 		return(NULL);
 	}
@@ -1553,6 +1553,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	int			result;
 	int			addr_len;
 	SOCKADDR_IN	server_addr;
+	BOOL		reuseaddr;
 	static xfer_t xfer;
 	struct timeval	tv;
 	fd_set			socket_set;
@@ -1583,11 +1584,15 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		if(startup->options&FTP_OPT_DEBUG_DATA)
 			lprintf("%04d DATA socket %d opened",ctrl_sock,*data_sock);
 
+		/* Use port-1 for all data connections */
+		reuseaddr=TRUE;
+		setsockopt(*data_sock,SOL_SOCKET,SO_REUSEADDR,(char*)&reuseaddr,sizeof(reuseaddr));
+
 		memset(&server_addr, 0, sizeof(server_addr));
 
 		server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
 		server_addr.sin_family = AF_INET;
-		server_addr.sin_port   = htons(0);	/* 20? */
+		server_addr.sin_port   = htons((WORD)(startup->port-1));	/* 20? */
 
 		if((result=bind(*data_sock, (struct sockaddr *) &server_addr
 			,sizeof(server_addr)))!=0) {
@@ -2283,10 +2288,13 @@ static void ctrl_thread(void* arg)
 			}
 
 #ifdef JAVASCRIPT
-			if((js_user=CreateUserObject(&scfg, js_cx, js_glob, "user", &user))==NULL) {
+			if((js_user=js_CreateUserObject(&scfg, js_cx, js_glob, "user", &user))==NULL) {
 				lprintf("%04d !JavaScript ERROR creating user object",sock);
 			}
-//			js_CreateLibsObject(&scfg, js_cx, js_glob, "libraries
+			if(js_CreateFileAreaObject(&scfg, js_cx, js_glob, &user
+				,startup->html_index_file)==NULL) {
+				lprintf("%04d !JavaScript ERROR creating file area object",sock);
+			}
 #endif
 
 			if(sysop)
@@ -2753,8 +2761,9 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				/* RETR */
-				lprintf("%04d %s downloading: %s (%ld bytes)"
-					,sock,user.alias,fname,flength(fname));
+				lprintf("%04d %s downloading: %s (%ld bytes) in %s mode"
+					,sock,user.alias,fname,flength(fname)
+					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 				sockprintf(sock,"150 Opening BINARY mode data connection for file transfer.");
 				filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,filepos
 					,&transfer_inprogress,&transfer_aborted,FALSE,FALSE
@@ -2776,7 +2785,8 @@ static void ctrl_thread(void* arg)
 				else				/* relative */
 					sprintf(fname,"%s%s",local_dir,p);
 
-				lprintf("%04d %s uploading %s", sock,user.alias,fname);
+				lprintf("%04d %s uploading: %s in %s mode", sock,user.alias,fname
+					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 				sockprintf(sock,"150 Opening BINARY mode data connection for file transfer.");
 				filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,filepos
 					,&transfer_inprogress,&transfer_aborted,FALSE,FALSE
@@ -3178,8 +3188,9 @@ static void ctrl_thread(void* arg)
 				success=TRUE;
 				delfile=TRUE;
 				credits=FALSE;
-				lprintf("%04d %s downloading QWK packet (%ld bytes)"
-					,sock,user.alias,flength(fname));
+				lprintf("%04d %s downloading QWK packet (%ld bytes) in %s mode"
+					,sock,user.alias,flength(fname)
+					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 			/* ASCII Index File */
 			} else if(startup->options&FTP_OPT_INDEX_FILE 
 				&& !stricmp(p,startup->index_file_name)
@@ -3192,8 +3203,9 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(!getsize && !getdate)
-					lprintf("%04d %s downloading index for %s"
-						,sock,user.alias,vpath(lib,dir,str));
+					lprintf("%04d %s downloading index for %s in %s mode"
+						,sock,user.alias,vpath(lib,dir,str)
+						,pasv_sock==INVALID_SOCKET ? "active":"passive");
 				success=TRUE;
 				credits=FALSE;
 				tmpfile=TRUE;
@@ -3333,8 +3345,9 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(!getsize && !getdate)
-					lprintf("%04d %s downloading HTML index for %s"
-						,sock,user.alias,vpath(lib,dir,str));
+					lprintf("%04d %s downloading HTML index for %s in %s mode"
+						,sock,user.alias,vpath(lib,dir,str)
+						,pasv_sock==INVALID_SOCKET ? "active":"passive");
 				success=TRUE;
 				credits=FALSE;
 				tmpfile=TRUE;
@@ -3421,8 +3434,9 @@ static void ctrl_thread(void* arg)
 					if(fexist(fname)) {
 						success=TRUE;
 						if(!getsize && !getdate && !delecmd)
-							lprintf("%04d %s downloading: %s (%ld bytes)"
-								,sock,user.alias,fname,flength(fname));
+							lprintf("%04d %s downloading: %s (%ld bytes) in %s mode"
+								,sock,user.alias,fname,flength(fname)
+								,pasv_sock==INVALID_SOCKET ? "active":"passive");
 					} 
 				}
 			}
@@ -3553,8 +3567,9 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				sprintf(fname,"%sfile/%04d.rep",scfg.data_dir,user.number);
-				lprintf("%04d %s uploading %s"
-					,sock,user.alias,fname);
+				lprintf("%04d %s uploading: %s in %s mode"
+					,sock,user.alias,fname
+					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 			} else {
 				if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user)) {
 					lprintf("%04d !%s has insufficient access to upload to /%s/%s"
@@ -3582,9 +3597,10 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,"553 File already exists.");
 					continue;
 				}
-				lprintf("%04d %s uploading %s to /%s/%s"
+				lprintf("%04d %s uploading: %s to /%s/%s in %s mode"
 					,sock,user.alias,fname
-					,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code);
+					,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code
+					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 			}
 			sockprintf(sock,"150 Opening BINARY mode data connection for file transfer.");
 			filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,filepos
