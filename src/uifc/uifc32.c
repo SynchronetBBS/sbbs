@@ -383,10 +383,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	}
 	if(width>(SCRN_RIGHT+1)-SCRN_LEFT) {
 		width=(SCRN_RIGHT+1)-SCRN_LEFT;
-		*(title+width-7)='.';
-		*(title+width-6)='.';
-		*(title+width-5)='.';
-		*(title+width-4)=0;
+		if(strlen(title)>(width-4)) {
+			*(title+width-7)='.';
+			*(title+width-6)='.';
+			*(title+width-5)='.';
+			*(title+width-4)=0;
+		}
 	}
 	if(mode&WIN_L2R)
 		left=36-(width/2);
