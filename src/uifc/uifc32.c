@@ -1481,7 +1481,12 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 			}
 			if(mode&K_ALPHA && !isalpha(ch))
 				continue;
+#if 0
+			/* This broke swedish chars... */
 			if((ch>=' ' || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max) && isprint(ch))
+#else
+			if((ch>=' ' || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max))
+#endif
 			{
 				if(mode&K_UPPER)
 					ch=toupper(ch);
