@@ -109,7 +109,7 @@ sbbs_ntsvc_t event ={
 	NULL,
 	NULL,
 	NULL,
-	NULL,
+	&bbs_startup.log_mask,
 	NULL,
 	NULL,
 	NULL,
