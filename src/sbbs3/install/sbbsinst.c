@@ -516,7 +516,7 @@ fprintf(makefile,"\t 	chown -R $(SBBSCHOWN) $(SBBSDIR)");
 
 void install_sbbs(void)  {
 	uifc.bail();
-	system("gmake -f " MAKEFILE " all");
+	system("gmake -f " MAKEFILE " install");
 	unlink(MAKEFILE);
 }
 /* End of SBBSINST.C */
