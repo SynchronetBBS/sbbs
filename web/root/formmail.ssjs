@@ -4,17 +4,46 @@
 
 load("sbbsdefs.js");
 
-// List of supported 'hidden' field (not included in body text)
-var hidden_fields = {
+// List of supported 'config' form fields (not included in body text by default)
+var config_fields = {
+	// FormMail.pl
 	recipient:1,
+	subject:1,
+	email:1,
+	realname:1,
+	sort:1,
+	required:1,
+	missing_fields_redirect:1,
+	env_report:1,
+	print_config:1,
+	print_blank_fields:1,
 	redirect:1,
-	subject:1
+	title:1,
+	bgcolor:1,
+	background:1,
+	text_color:1,
+	link_color:1,
+	vlink_color:1,
+	alink_color:1,
+	return_link_url:1,
+	return_link_title:1,
+
+	// formmail.ssjs
+	value_fmt_string:1,
 };
 
 var value_fmt_string = "%-10s = %s";
 if(http_request.query.value_fmt_string
 	&& strip_ctrl(http_request.query.value_fmt_string).length)
 	value_fmt_string = strip_ctrl(http_request.query.value_fmt_string);
+
+var print_blank_fields = false;
+if(http_request.query.print_blank_fields)
+	print_blank_fields = Boolean(http_request.query.print_blank_fields[0]);
+
+var print_config = [];
+if(http_request.query.print_config)
+	print_config = http_request.query.print_config[0].split(/\s*,\s*/);
 
 var return_link_url = http_request.header.referer;
 if(http_request.query.return_link_url && http_request.query.return_link_url.length)
@@ -24,11 +53,37 @@ var return_link_title = "Click here to return to " + return_link_url.toString().
 if(http_request.query.return_link_title && http_request.query.return_link_title.length)
 	return_link_title = strip_ctrl(http_request.query.return_link_title);
 
-var redirect = http_request.query.redirect[0];
+// Test for required form fields here
+var redirect;
+if(http_request.query.redirect)
+   redirect = strip_ctrl(http_request.query.redirect[0]);
 
-function results(level, text)
+if(http_request.query.required) {
+	var required = http_request.query.required[0].split(/\s*,\s*/);
+	var i;
+	var missing = [];
+	for(i in required) {
+		if(!http_request.query[required[i]] || !http_request.query[required[i]][0].length)
+			missing.push(required[i]);
+	}
+	if(missing.length)
+		results(LOG_ERR,"Missing the following form fields: " + missing.join(", "), true);
+}
+
+var title = "Thank You";
+if(http_request.query.title)
+	title = http_request.query.title;
+
+// Send HTTP/HTML results here
+function results(level, text, missing)
 {
-	log(level,text);
+	log(level,"FormMail: " + text);
+
+	if(missing && http_request.query.missing_fields_redirect) {
+		http_reply.status='307 Temporary Redirect';
+		http_reply.header.location=http_request.query.missing_fields_redirect;
+		exit();
+	}
 
 	if(redirect) {
 		http_reply.status='307 Temporary Redirect';
@@ -38,10 +93,11 @@ function results(level, text)
 
 	writeln("<html>");
 	writeln("<head>");
-	writeln("<title>Sending e-mail</title>");
+	writeln("<title>" + title + "</title>");
 	writeln("</head>");
 
-	writeln("<body>");
+	writeln("<body" + body_attributes() + ">");
+
 	writeln("<center>");
 	if(level<=LOG_WARNING)
 		writeln("!ERROR: ".bold());
@@ -53,6 +109,30 @@ function results(level, text)
 	exit();
 }
 
+function body_attributes()
+{
+	var i;
+	var result='';
+
+	for(i in {bgcolor:1, background:1, link_color:1
+		,vlink_color:1, alink_color:1, text_color:1} ) {
+		if(http_request.query[i])
+			result+=format(' %s="%s"', i, http_request.query[i]);
+	}
+	return result;
+}
+
+function find(val, list)
+{
+	var n;
+
+	for(n in list)
+		if(list[n]==val)
+			return(true);
+	return(false);
+}
+
+// Open mail database here
 var msgbase=new MsgBase("mail");
 if(!msgbase.open())
 	results(LOG_ERR,format("%s opening mail base", msgbase.error));
@@ -63,10 +143,11 @@ if(!msgbase.open())
 var i;
 var body="Form fields follow:\r\n\r\n";
 for(i in http_request.query) {
-	if(hidden_fields[i])
+	if(config_fields[i] && !find(i,print_config))
 		continue;
-	if(http_request.query[i].toString().length)
-		body += format(value_fmt_string, i, http_request.query[i]) + "\r\n";
+	if(!print_blank_fields && !http_request.query[i].toString().length)
+		continue;
+	body += format(value_fmt_string, i, http_request.query[i]) + "\r\n";
 }
 
 body+=format("\r\nvia %s\r\nat %s [%s]\r\n"
