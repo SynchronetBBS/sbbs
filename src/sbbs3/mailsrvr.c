@@ -2096,7 +2096,7 @@ static void smtp_thread(void* arg)
 				}
 				else {
 					if(rcpt_count>1)
-						smb_incdat(&smb,msg.hdr.offset,length,(ushort)(rcpt_count-1));
+						smb_incmsg_dfields(&smb,&msg,(ushort)(rcpt_count-1));
 					sockprintf(socket,ok_rsp);
 					signal_smtp_sem();
 				}
@@ -2885,7 +2885,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	else {
 		lprintf("0000 !Delivery failure notification (message #%ld) created for %s"
 			,newmsg.hdr.number, newmsg.from);
-		if((i=smb_incmsg(smb,&newmsg))!=0)
+		if((i=smb_incmsg_dfields(smb,&newmsg,1))!=0)
 			lprintf("0000 !BOUNCE ERROR %d (%s) incrementing data allocation units"
 				,i,smb->last_error);
 	}
