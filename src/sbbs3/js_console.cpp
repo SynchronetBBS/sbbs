@@ -1306,15 +1306,16 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	if((color_list=JS_NewArrayObject(cx,0,NULL))==NULL)
 		return(NULL);
 
+	if(!JS_DefineProperty(cx, obj, "color_list", OBJECT_TO_JSVAL(color_list)
+		,NULL, NULL, 0))
+		return(NULL);
+
 	for(uint i=0;i<sbbs->cfg.total_colors;i++) {
 
 		jsval val=INT_TO_JSVAL(sbbs->cfg.color[i]);
 		if(!JS_SetElement(cx, color_list, i, &val))
 			return(NULL);
 	}	
-	if(!JS_DefineProperty(cx, obj, "color_list", OBJECT_TO_JSVAL(color_list)
-		,NULL, NULL, 0))
-		return(NULL);
 
 #ifdef _DEBUG
 	js_DescribeObject(cx,obj,"Controls the user's Telnet/RLogin terminal");

@@ -207,6 +207,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	if((allsubs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
 		return(NULL);
 
+	val=OBJECT_TO_JSVAL(allsubs);
+	if(!JS_SetProperty(cx, areaobj, "sub", &val))
+		return(NULL);
+
 	/* grp_list[] */
 	if((grp_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 		return(NULL);
@@ -225,6 +229,13 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			continue;
 
 		if((grpobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			return(NULL);
+
+		if(!JS_GetArrayLength(cx, grp_list, &index))
+			return(NULL);
+
+		val=OBJECT_TO_JSVAL(grpobj);
+		if(!JS_SetElement(cx, grp_list, index, &val))
 			return(NULL);
 
 		val=INT_TO_JSVAL(l);
@@ -266,6 +277,13 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				continue;
 
 			if((subobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+				return(NULL);
+
+			if(!JS_GetArrayLength(cx, sub_list, &index))
+				return(NULL);							
+
+			val=OBJECT_TO_JSVAL(subobj);
+			if(!JS_SetElement(cx, sub_list, index, &val))
 				return(NULL);
 
 			if(!js_CreateMsgAreaProperties(cx, cfg, subobj, d))
@@ -321,13 +339,6 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			}
 
 
-			if(!JS_GetArrayLength(cx, sub_list, &index))
-				return(NULL);							
-
-			val=OBJECT_TO_JSVAL(subobj);
-			if(!JS_SetElement(cx, sub_list, index, &val))
-				return(NULL);
-
 			/* Add as property (associative array element) */
 			if(!JS_DefineProperty(cx, allsubs, cfg->sub[d]->code, val
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
@@ -343,17 +354,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		js_CreateArrayOfStrings(cx, grpobj, "_property_desc_list", msg_grp_prop_desc, JSPROP_READONLY);
 #endif
 
-		if(!JS_GetArrayLength(cx, grp_list, &index))
-			return(NULL);
-
-		val=OBJECT_TO_JSVAL(grpobj);
-		if(!JS_SetElement(cx, grp_list, index, &val))
-			return(NULL);
 	}
-
-	val=OBJECT_TO_JSVAL(allsubs);
-	if(!JS_SetProperty(cx, areaobj, "sub", &val))
-		return(NULL);
 
 #ifdef _DEBUG
 	js_DescribeObject(cx,allsubs,"Associative array of all sub-boards (use internal code as index)");

@@ -1618,6 +1618,10 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if((node_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 		return(NULL);
 
+	if(!JS_DefineProperty(cx, sysobj, "node_list", OBJECT_TO_JSVAL(node_list)
+		, NULL, NULL, JSPROP_ENUMERATE))
+		return(NULL);
+
 	for(i=0;i<cfg->sys_nodes && i<cfg->sys_lastnode;i++) {
 
 		nodeobj = JS_NewObject(cx, &js_node_class, NULL, node_list);
@@ -1642,10 +1646,6 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 		if(!JS_SetElement(cx, node_list, i, &val))
 			return(NULL);
 	}	
-
-	if(!JS_DefineProperty(cx, sysobj, "node_list", OBJECT_TO_JSVAL(node_list)
-		, NULL, NULL, JSPROP_ENUMERATE))
-		return(NULL);
 
 	return(sysobj);
 }

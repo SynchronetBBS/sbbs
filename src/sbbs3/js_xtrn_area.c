@@ -184,6 +184,10 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if((allprog=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
 		return(NULL);
 
+	val=OBJECT_TO_JSVAL(allprog);
+	if(!JS_SetProperty(cx, areaobj, "prog", &val))
+		return(NULL);
+
 	/* sec_list[] */
 	if((sec_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 		return(NULL);
@@ -201,6 +205,13 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			continue;
 
 		if((secobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			return(NULL);
+
+		if(!JS_GetArrayLength(cx, sec_list, &index))
+			return(NULL);
+
+		val=OBJECT_TO_JSVAL(secobj);
+		if(!JS_SetElement(cx, sec_list, index, &val))
 			return(NULL);
 
 		val=INT_TO_JSVAL(l);
@@ -223,13 +234,13 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if((prog_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 			return(NULL);
 
-#ifdef _DEBUG
-		js_DescribeObject(cx,secobj,"Online Program (door) Sections");
-#endif
-
 		val=OBJECT_TO_JSVAL(prog_list);
 		if(!JS_SetProperty(cx, secobj, "prog_list", &val)) 
 			return(NULL);
+
+#ifdef _DEBUG
+		js_DescribeObject(cx,secobj,"Online Program (door) Sections");
+#endif
 
 		for(d=0;d<cfg->total_xtrns;d++) {
 			if(cfg->xtrn[d]->sec!=l)
@@ -242,6 +253,18 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 				continue;
 
 			if((progobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+				return(NULL);
+
+			if(!JS_GetArrayLength(cx, prog_list, &index))
+				return(NULL);							
+
+			val=OBJECT_TO_JSVAL(progobj);
+			if(!JS_SetElement(cx, prog_list, index, &val))
+				return(NULL);
+
+			/* Add as property (associative array element) */
+			if(!JS_DefineProperty(cx, allprog, cfg->xtrn[d]->code, val
+				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
 			if(!js_CreateXtrnProgProperties(cx, progobj, cfg->xtrn[d]))
@@ -262,18 +285,6 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, progobj, "can_run", &val))
 				return(NULL);
 
-			if(!JS_GetArrayLength(cx, prog_list, &index))
-				return(NULL);							
-
-			val=OBJECT_TO_JSVAL(progobj);
-			if(!JS_SetElement(cx, prog_list, index, &val))
-				return(NULL);
-
-			/* Add as property (associative array element) */
-			if(!JS_DefineProperty(cx, allprog, cfg->xtrn[d]->code, val
-				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-				return(NULL);
-
 #ifdef _DEBUG
 			js_DescribeObject(cx,progobj,"Online External Programs (doors)");
 #endif
@@ -283,18 +294,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		js_CreateArrayOfStrings(cx, secobj, "_property_desc_list", xtrn_sec_prop_desc, JSPROP_READONLY);
 #endif
 
-		if(!JS_GetArrayLength(cx, sec_list, &index))
-			return(NULL);
-
-		val=OBJECT_TO_JSVAL(secobj);
-		if(!JS_SetElement(cx, sec_list, index, &val))
-			return(NULL);
-
 	}
-
-	val=OBJECT_TO_JSVAL(allprog);
-	if(!JS_SetProperty(cx, areaobj, "prog", &val))
-		return(NULL);
 
 #ifdef _DEBUG
 	js_DescribeObject(cx,allprog,"Associative array of all external programs (use internal code as index)");
@@ -305,9 +305,17 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if((event_array=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
 		return(NULL);
 
+	val=OBJECT_TO_JSVAL(event_array);
+	if(!JS_SetProperty(cx, areaobj, "event", &val))
+		return(NULL);
+
 	for(l=0;l<cfg->total_events;l++) {
 
 		if((eventobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			return(NULL);
+
+		if(!JS_DefineProperty(cx, event_array, cfg->event[l]->code, OBJECT_TO_JSVAL(eventobj)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 			return(NULL);
 
 		if((js_str=JS_NewStringCopyZ(cx, cfg->event[l]->cmd))==NULL)
@@ -344,15 +352,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 #ifdef _DEBUG
 		js_CreateArrayOfStrings(cx, eventobj, "_property_desc_list", event_prop_desc, JSPROP_READONLY);
 #endif
-
-		if(!JS_DefineProperty(cx, event_array, cfg->event[l]->code, OBJECT_TO_JSVAL(eventobj)
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-			return(NULL);
 	}
-
-	val=OBJECT_TO_JSVAL(event_array);
-	if(!JS_SetProperty(cx, areaobj, "event", &val))
-		return(NULL);
 
 #ifdef _DEBUG
 	js_DescribeObject(cx,event_array,"Associative array of all timed events (use internal code as index)");
@@ -361,6 +361,10 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 	/* Create editor property */
 	if((xedit_array=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
+		return(NULL);
+
+	val=OBJECT_TO_JSVAL(xedit_array);
+	if(!JS_SetProperty(cx, areaobj, "editor", &val))
 		return(NULL);
 
 	for(l=0;l<cfg->total_xedits;l++) {
@@ -372,6 +376,10 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			continue;
 
 		if((xeditobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			return(NULL);
+
+		if(!JS_DefineProperty(cx, xedit_array, cfg->xedit[l]->code, OBJECT_TO_JSVAL(xeditobj)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 			return(NULL);
 
 		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->name))==NULL)
@@ -393,15 +401,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 #ifdef _DEBUG
 		js_CreateArrayOfStrings(cx, xeditobj, "_property_desc_list", xedit_prop_desc, JSPROP_READONLY);
 #endif
-
-		if(!JS_DefineProperty(cx, xedit_array, cfg->xedit[l]->code, OBJECT_TO_JSVAL(xeditobj)
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-			return(NULL);
 	}
-
-	val=OBJECT_TO_JSVAL(xedit_array);
-	if(!JS_SetProperty(cx, areaobj, "editor", &val))
-		return(NULL);
 
 #ifdef _DEBUG
 	js_DescribeObject(cx,xedit_array,"Associative array of all external editors (use internal code as index)");

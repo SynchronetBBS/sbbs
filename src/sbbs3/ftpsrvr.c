@@ -657,8 +657,22 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			break;
 		}
 
+		/* file[] */
+		val=OBJECT_TO_JSVAL(file_array);
+		if(!JS_SetProperty(js_cx, parent, "file_list", &val)) {
+			lprintf("%04d !JavaScript FAILED to set file property",sock);
+			break;
+		}
+
 		if((dir_array=JS_NewArrayObject(js_cx, 0, NULL))==NULL) {
 			lprintf("%04d !JavaScript FAILED to create dir_array",sock);
+			break;
+		}
+
+		/* dir[] */
+		val=OBJECT_TO_JSVAL(dir_array);
+		if(!JS_SetProperty(js_cx, parent, "dir_list", &val)) {
+			lprintf("%04d !JavaScript FAILED to set dir property",sock);
 			break;
 		}
 
@@ -682,20 +696,6 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, parent, "html_index_file", &val)) {
 			lprintf("%04d !JavaScript FAILED to set html_index_file property",sock);
-			break;
-		}
-
-		/* file[] */
-		val=OBJECT_TO_JSVAL(file_array);
-		if(!JS_SetProperty(js_cx, parent, "file_list", &val)) {
-			lprintf("%04d !JavaScript FAILED to set file property",sock);
-			break;
-		}
-
-		/* dir[] */
-		val=OBJECT_TO_JSVAL(dir_array);
-		if(!JS_SetProperty(js_cx, parent, "dir_list", &val)) {
-			lprintf("%04d !JavaScript FAILED to set dir property",sock);
 			break;
 		}
 

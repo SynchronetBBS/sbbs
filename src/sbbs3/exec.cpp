@@ -595,7 +595,7 @@ long sbbs_t::js_execfile(const char *cmd)
 		if(cfg.mods_dir[0]==0 || !fexistcase(path))
 			sprintf(path,"%s%s%s",cfg.exec_dir,fname,js_ext(fname));
 	} else
-		sprintf(path,"%s%s",fname,js_ext(fname));
+		SAFECOPY(path,fname);
 
 	if(!fexistcase(path)) {
 		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
@@ -607,6 +607,9 @@ long sbbs_t::js_execfile(const char *cmd)
 	if(js_scope!=NULL) {
 
 		JSObject* argv=JS_NewArrayObject(js_cx, 0, NULL);
+
+		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 		if(args!=NULL && argv!=NULL) {
 			while(*args) {
@@ -626,8 +629,6 @@ long sbbs_t::js_execfile(const char *cmd)
 				args+=(strlen(args)+1);
 			}
 		}
-		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 		JS_DefineProperty(js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 

@@ -99,11 +99,12 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((js_argv=JS_NewArrayObject(cx, 0, NULL)) == NULL)
 			return(JS_FALSE);
 
+		JS_DefineProperty(cx, obj, "argv", OBJECT_TO_JSVAL(js_argv)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
 		for(i=1; i<argc; i++)
 			JS_SetElement(cx, js_argv, i-1, &argv[i]);
 
-		JS_DefineProperty(cx, obj, "argv", OBJECT_TO_JSVAL(js_argv)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 		JS_DefineProperty(cx, obj, "argc", INT_TO_JSVAL(argc-1)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}

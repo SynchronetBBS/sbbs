@@ -104,6 +104,10 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if((alldirs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
 		return(NULL);
 
+	val=OBJECT_TO_JSVAL(alldirs);
+	if(!JS_SetProperty(cx, areaobj, "dir", &val))
+		return(NULL);
+
 	JS_NewNumberValue(cx,cfg->min_dspace,&val);
 	if(!JS_SetProperty(cx, areaobj, "min_diskspace", &val)) 
 		return(NULL);
@@ -136,6 +140,13 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			continue;
 
 		if((libobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			return(NULL);
+
+		if(!JS_GetArrayLength(cx, lib_list, &index))
+			return(NULL);
+
+		val=OBJECT_TO_JSVAL(libobj);
+		if(!JS_SetElement(cx, lib_list, index, &val))
 			return(NULL);
 
 		val=INT_TO_JSVAL(l);
@@ -184,6 +195,18 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				continue;
 
 			if((dirobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+				return(NULL);
+
+			if(!JS_GetArrayLength(cx, dir_list, &index))	/* inexplicable exception here on Jul-6-2001 */
+				return(NULL);								/* and again on Aug-7-2001 and Oct-21-2001 */
+
+			val=OBJECT_TO_JSVAL(dirobj);
+			if(!JS_SetElement(cx, dir_list, index, &val))
+				return(NULL);
+
+			/* Add as property (associative array element) */
+			if(!JS_DefineProperty(cx, alldirs, cfg->dir[d]->code, val
+				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
 			val=INT_TO_JSVAL(d);
@@ -307,21 +330,6 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 #ifdef _DEBUG
 			js_CreateArrayOfStrings(cx, dirobj, "_property_desc_list", dir_prop_desc, JSPROP_READONLY);
-#endif
-
-			if(!JS_GetArrayLength(cx, dir_list, &index))	/* inexplicable exception here on Jul-6-2001 */
-				return(NULL);								/* and again on Aug-7-2001 and Oct-21-2001 */
-
-			val=OBJECT_TO_JSVAL(dirobj);
-			if(!JS_SetElement(cx, dir_list, index, &val))
-				return(NULL);
-
-			/* Add as property (associative array element) */
-			if(!JS_DefineProperty(cx, alldirs, cfg->dir[d]->code, val
-				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-				return(NULL);
-
-#ifdef _DEBUG
 			js_DescribeObject(cx,dirobj,"File Transfer Directories");
 #endif
 		}
@@ -329,19 +337,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 #ifdef _DEBUG
 		js_CreateArrayOfStrings(cx, libobj, "_property_desc_list", lib_prop_desc, JSPROP_READONLY);
 #endif
-
-		if(!JS_GetArrayLength(cx, lib_list, &index))
-			return(NULL);
-
-		val=OBJECT_TO_JSVAL(libobj);
-		if(!JS_SetElement(cx, lib_list, index, &val))
-			return(NULL);
-
 	}
-
-	val=OBJECT_TO_JSVAL(alldirs);
-	if(!JS_SetProperty(cx, areaobj, "dir", &val))
-		return(NULL);
 
 #ifdef _DEBUG
 	js_DescribeObject(cx,alldirs,"Associative array of all directories (use internal code as index)");

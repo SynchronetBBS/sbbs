@@ -767,6 +767,8 @@ static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* spath)
 		args=p+1;
 	}
 	argv=JS_NewArrayObject(js_cx, 0, NULL);
+	JS_DefineProperty(js_cx, js_obj, "argv", OBJECT_TO_JSVAL(argv)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	if(args!=NULL && argv!=NULL) {
 		while(*args) {
@@ -786,8 +788,6 @@ static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* spath)
 			args+=(strlen(args)+1);
 		}
 	}
-	JS_DefineProperty(js_cx, js_obj, "argv", OBJECT_TO_JSVAL(argv)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	JS_DefineProperty(js_cx, js_obj, "argc", INT_TO_JSVAL(argc)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 }
