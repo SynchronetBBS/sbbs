@@ -481,6 +481,8 @@ static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 
 static BOOL js_init(char** environ)
 {
+	fprintf(statfp,"%s\n",(char *)JS_GetImplementationVersion());
+
 	fprintf(statfp,"JavaScript: Creating runtime: %lu bytes\n"
 		,js_max_bytes);
 
