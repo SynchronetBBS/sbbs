@@ -114,6 +114,9 @@
 #include "mouse.h"
 #include "vgafont.h"
 
+#define CONSOLE_MAX_ROWS	256
+#define CONSOLE_MAX_COLS	256
+
 /* Console definition variables */
 int console_new_mode=NO_NEW_MODE;
 int CurrMode;
@@ -502,28 +505,16 @@ void
 get_lines()
 {
 	int i;
+	TextLine *newlines;
 
 	if (lines == NULL) {
-		lines = (TextLine *)malloc(sizeof(TextLine) * (DpyRows+1));
+		lines = (TextLine *)malloc(sizeof(TextLine) * (CONSOLE_MAX_ROWS+1));
 		if (lines == NULL)
 			err(1, "Could not allocate data structure for text lines\n");
 
-		for (i = 0; i < (DpyRows+1); ++i) {
+		for (i = 0; i < (CONSOLE_MAX_ROWS+1); ++i) {
 			lines[i].max_length = DpyCols;
-			lines[i].data = (WORD *)malloc(DpyCols * sizeof(WORD));
-			if (lines[i].data == NULL)
-				err(1, "Could not allocate data structure for text lines\n");
-			lines[i].changed = 1;
-		}
-	} else {
-		lines = (TextLine *)realloc(lines, sizeof(TextLine) * (DpyRows+1));
-		if (lines == NULL)
-			err(1, "Could not allocate data structure for text lines\n");
-
-		for (i = 0; i < (DpyRows+1); ++i) {
-			lines[i].max_length = DpyCols;
-			lines[i].data = (WORD *)realloc(lines[i].data,
-							   DpyCols * sizeof(WORD));
+			lines[i].data = (WORD *)malloc(CONSOLE_MAX_COLS * sizeof(WORD));
 			if (lines[i].data == NULL)
 				err(1, "Could not allocate data structure for text lines\n");
 			lines[i].changed = 1;
@@ -934,13 +925,6 @@ video_async_event(void *crap)
 	for (;;) {
 		video_update();
 
-		if(console_new_mode!=NO_NEW_MODE)
-			init_mode(console_new_mode);
-		while(!sem_trywait(&x11_beep))
-			x11.XBell(dpy, 0);
-		if(!sem_trywait(&x11_title))
-			x11.XStoreName(dpy, win, window_title);
-
 		tv.tv_sec=0;
 		tv.tv_usec=54925;
 		/*
@@ -967,6 +951,12 @@ video_async_event(void *crap)
 				perror("select");
 				break;
 			case 0:
+				if(console_new_mode!=NO_NEW_MODE)
+					init_mode(console_new_mode);
+				while(!sem_trywait(&x11_beep))
+					x11.XBell(dpy, 0);
+				if(!sem_trywait(&x11_title))
+					x11.XStoreName(dpy, win, window_title);
 				break;
 			default:
 				if (FD_ISSET(xfd, &fdset)) {
