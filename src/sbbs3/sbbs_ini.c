@@ -50,6 +50,7 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_USE_2ND_RLOGIN		,"USE_2ND_RLOGIN"		},
 	{ BBS_OPT_NO_QWK_EVENTS			,"NO_QWK_EVENTS"		},
 	{ BBS_OPT_NO_TELNET_GA			,"NO_TELNET_GA"			},
+	{ BBS_OPT_NO_EVENTS				,"NO_EVENTS"			},
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
 	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
