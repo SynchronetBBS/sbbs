@@ -24,7 +24,7 @@ extern INT16 ibbs_game_num;
 
 
 // price arrays
-extern long gun_price[A_BOMB+1];
+extern DWORD gun_price[A_BOMB+1];
 extern INT16 	drug_price[HEROIN+1];
 extern INT16 no_kernel;
 extern INT16 ibbs;

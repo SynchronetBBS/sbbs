@@ -8,7 +8,7 @@ extern unsigned _stklen;
 
 // price arrays
 extern INT16 no_rip_m;
-extern long gun_price[A_BOMB+1];
+extern DWORD gun_price[A_BOMB+1];
 extern INT16 	drug_price[HEROIN+1];
 //extern INT16 fast_mail;
 INT16 no_forrest_IGM=FALSE;

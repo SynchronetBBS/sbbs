@@ -17,7 +17,7 @@
 extern unsigned _stklen=20000U;
 
 // price arrays
-INT32    gun_price[ULTRASOUND_GUN+1] =  {
+DWORD    gun_price[ULTRASOUND_GUN+1] =  {
                                             0,
                                             70,
                                             1500,
