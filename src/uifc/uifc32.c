@@ -2071,17 +2071,17 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	}
 	len=strlen(hbuf);
 
-	lines=1;		/* The first one is free */
+	lines=0;
 	k=0;
 	for(j=0;j<len;j++) {
 		k++;
-		if(hbuf[j]==LF)
-			lines++;
-		if(k>72) {
+		if((hbuf[j]==LF) || (k>width-2-pad-pad && (hbuf[j+1]!='\n'))) {
 			k=0;
 			lines++;
 		}
 	}
+	if(k)
+		lines++;
 	if(lines < height-2-pad-pad)
 		lines=height-2-pad-pad;
 
@@ -2124,8 +2124,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	else {
 		while(i==0) {
 			if(p!=oldp) {
-				if(p > textbuf+(lines-(height-2-pad-pad)+1)*(width-4)*2)
-					p=textbuf+(lines-(height-2-pad-pad)+1)*(width-4)*2;
+				if(p > textbuf+(lines-(height-2-pad-pad))*(width-4)*2)
+					p=textbuf+(lines-(height-2-pad-pad))*(width-4)*2;
 				if(p<textbuf)
 					p=textbuf;
 				if(p!=oldp) {
