@@ -2285,7 +2285,7 @@ static void ctrl_thread(void* arg)
 		host_name="<no name>";
 
 	if(!(startup->options&FTP_OPT_NO_HOST_LOOKUP))
-		lprintf("%04d Host name: %s", sock, host_name);
+		lprintf("%04d Hostname: %s", sock, host_name);
 
 	if(trashcan(&scfg,host_ip,"ip")) {
 		lprintf("%04d !CLIENT BLOCKED in ip.can: %s", sock, host_ip);

@@ -3494,7 +3494,7 @@ void DLLCALL bbs_thread(void* arg)
 		if(startup->options&BBS_OPT_NO_HOST_LOOKUP)
 			h=NULL;
 		else {
-			sbbs->bprintf("Resolving host name...");
+			sbbs->bprintf("Resolving hostname...");
 			h=gethostbyaddr((char *)&client_addr.sin_addr
 				,sizeof(client_addr.sin_addr),AF_INET);
 			sbbs->putcom(crlf);
@@ -3505,12 +3505,12 @@ void DLLCALL bbs_thread(void* arg)
 			host_name="<no name>";
 
 		if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))
-			lprintf("%04d Host name: %s", client_socket, host_name);
+			lprintf("%04d Hostname: %s", client_socket, host_name);
 
 		if(sbbs->trashcan(host_name,"host")) {
 			close_socket(client_socket);
 			lprintf("%04d !CLIENT BLOCKED in host.can",client_socket);
-			sprintf(logstr, "Blocked Host Name: %s",host_name);
+			sprintf(logstr, "Blocked Hostname: %s",host_name);
 			sbbs->syslog("@!",logstr);
 			continue;
 		}

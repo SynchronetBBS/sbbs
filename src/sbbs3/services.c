@@ -251,7 +251,7 @@ static u_long resolve_ip(char *addr)
 		return(inet_addr(addr));
 
 	if ((host=gethostbyname(addr))==NULL) {
-		lprintf("0000 !ERROR resolving host name: %s",addr);
+		lprintf("0000 !ERROR resolving hostname: %s",addr);
 		return(0);
 	}
 	return(*((ulong*)host->h_addr_list[0]));
