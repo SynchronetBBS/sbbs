@@ -1544,7 +1544,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 		return(0); 
 	}
 
-	if(mode=ATTACHMENT_NETMAIL) {				/* Create netmail attaches */
+	if(mode==ATTACHMENT_NETMAIL) {				/* Create netmail attaches */
 
 		if(!filelength(file)) {
 			fclose(stream);
