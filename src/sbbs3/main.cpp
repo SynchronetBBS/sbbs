@@ -270,34 +270,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 }
 
-static JSBool
-js_sys_status_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
-{
-	sbbs_t*		sbbs;
-
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	*vp = INT_TO_JSVAL(sbbs->sys_status);
-
-	return(JS_TRUE);
-
-}
-
-static JSBool
-js_sys_status_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
-{
-	sbbs_t*		sbbs;
-
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	JS_ValueToInt32(cx, *vp, &sbbs->sys_status);
-
-	return(JS_TRUE);
-
-}
-
 bool sbbs_t::js_initcx()
 {
 	char node[128];
@@ -323,37 +295,20 @@ bool sbbs_t::js_initcx()
 		JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
 
 		/* Global Object */
-		if((js_glob=js_CreateGlobalObject(&cfg, js_cx))==NULL)
+		if((js_glob=js_CreateGlobalObject(js_cx, &cfg))==NULL)
 			break;
 
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
 			break;
 
 		/* System Object */
-		JSObject* sysobj;
-		
-		if((sysobj=js_CreateSystemObject(&cfg, js_cx, js_glob))==NULL)
+		if(js_CreateSystemObject(js_cx, js_glob, &cfg)==NULL)
 			break;
 
-		/* add sys_status */
-		if(!JS_DefineProperty(js_cx, sysobj, "status", INT_TO_JSVAL(sbbs->sys_status)
-			,js_sys_status_get
-			,js_sys_status_set
-			,JSPROP_ENUMERATE))
+		/* Client Object */
+		if(js_CreateClientObject(js_cx, js_glob, "client", &client, client_socket)==NULL)
 			break;
 
-#if 0	/* Server Object? */
-		jsval	val;
-		char	ver[256];
-		sprintf(ver,"%s v%s",TELNET_SERVER,VERSION);
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
-		if(!JS_SetProperty(js_cx, sysobj, "version", &val))
-			break;
-
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, bbs_ver()));
-		if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
-			break;
-#endif
 		/* BBS Object */
 		if(js_CreateBbsObject(js_cx, js_glob)==NULL)
 			break;
@@ -502,7 +457,7 @@ int close_socket(SOCKET sock)
 	result=closesocket(sock);
 	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(FALSE);
-	if(result!=0)
+	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
 		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
 	return(result);
 }
@@ -1943,7 +1898,7 @@ sbbs_t::~sbbs_t()
 #ifdef JAVASCRIPT
 	/* Free Context */
 	if(js_cx!=NULL) {	
-		lprintf("%s JavaScript: Destorying context",node);
+		lprintf("JavaScript: Destroying context for %s",node);
 		JS_DestroyContext(js_cx);
 		js_cx=NULL;
 	}
@@ -2555,9 +2510,15 @@ void node_thread(void* arg)
 #ifdef JAVASCRIPT
 		JS_BeginRequest(sbbs->js_cx);	/* Required for multi-thread support */
 
-		if(js_CreateUserObject(&sbbs->cfg, sbbs->js_cx, sbbs->js_glob, "user", &sbbs->useron)==NULL) {
+		/* User Object */
+		if(js_CreateUserObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, "user", &sbbs->useron)==NULL) {
 			lprintf("!JavaScript ERROR creating user object");
 		}
+		/* FileArea Object */
+		if(js_CreateFileAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron, "")==NULL) {
+			lprintf("!JavaScript ERROR createing file_area object");
+		}
+
 		JS_EndRequest(sbbs->js_cx);	/* Required for multi-thread support */
 #endif
 
@@ -2807,6 +2768,7 @@ time_t checktime(void)
     return(mktime(&tm)-0x2D24BD00L);
 }
 
+/* Returns char string of version and revision */
 char* DLLCALL bbs_ver(void)
 {
 	static char ver[256];
@@ -2827,6 +2789,18 @@ char* DLLCALL bbs_ver(void)
 		);
 
 	return(ver);
+}
+
+/* Returns binary-coded version and revision (e.g. 0x31000|'A') */
+long DLLCALL bbs_ver_num(void)
+{
+	char*	minor;
+
+	if((minor=strchr(VERSION,'.'))==NULL)
+		return(0);
+	minor++;
+
+	return((strtoul(VERSION,NULL,16)<<16)|(strtoul(minor,NULL,16)<<8)|REVISION);
 }
 
 void DLLCALL bbs_terminate(void)
@@ -3060,6 +3034,7 @@ void DLLCALL bbs_thread(void* arg)
 	startup->node_inbuf=node_inbuf;
 
 #ifdef JAVASCRIPT
+	lprintf("JavaScript: %s",JS_GetImplementationVersion());
 	lprintf("JavaScript: Creating runtime: %lu bytes", JAVASCRIPT_RUNTIME_MEMORY);
 	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
 		lprintf("!JS_NewRuntime failed");
