@@ -341,18 +341,21 @@ void center(char *str)
 char	outbuf[5000];
 ulong	outbufbot=0;
 ulong	outbuftop=0;
-HANDLE	output_event;
+sem_t	output_sem;
 
 void output_thread(void* arg)
 {
 	int		i,len;
 	char	str[256];
 
+	sem_init(&output_sem,0,0);
+
 	while(client_socket!=INVALID_SOCKET) {
 		if(outbufbot==outbuftop) {
-			ResetEvent(output_event);
-			WaitForSingleObject(output_event,10000);
-			continue; }
+			sem_init(&sbbs->output_sem,0,0);
+			sem_wait(&sbbs->output_sem);
+			continue; 
+		}
 
 		if(outbuftop>outbufbot)
 			len=outbuftop-outbufbot;
@@ -361,8 +364,12 @@ void output_thread(void* arg)
 		i=send(client_socket,outbuf+outbufbot,len,0);
 		if(i!=len) {
 			sprintf(str,"!XSDK Error %d (%d) sending on socket %d\n"
-				,i,GetLastError(),client_socket);
+				,i,ERROR_VALUE,client_socket);
+#ifdef _WIN32
 			OutputDebugString(str);
+#else
+			fprintf(stderr,"%s",str);
+#endif
 		}
 		outbufbot+=len;
 		if(outbufbot>=sizeof(outbuf))
@@ -387,7 +394,7 @@ void outchar(char ch)
 		outbuf[outbuftop++]=ch;
 		if(outbuftop==sizeof(outbuf))
 			outbuftop=0;
-		SetEvent(output_event);
+		sem_post(&output_sem);
 	}
 
 #endif
@@ -539,8 +546,12 @@ char inkey(long mode)
 		i=ioctlsocket(client_socket,FIONREAD,&cnt);
 		if(i) {
 			sprintf(str,"!XSDK Error %d (%d) checking readcnt on socket %d\n"
-				,i,GetLastError(),client_socket);
+				,i,ERROR_VALUE,client_socket);
+#ifdef _WIN32
 			OutputDebugString(str);
+#else
+			fprintf(stderr,"%s",str);
+#endif
 		}
 	}
 
@@ -706,8 +717,12 @@ if(com_port && !((*msr)&DCD)) exit(0);
 	if((i=select(0,&socket_set,NULL,NULL,&timeout))>0) {
 		if((i=recv(client_socket,&ch,1,MSG_PEEK))!=1) {
 			sprintf(str,"!XSDK Error %d (%d) checking state of socket %d\n"
-				,i,GetLastError(),client_socket);
+				,i,ERROR_VALUE,client_socket);
+#ifdef _WIN32
 			OutputDebugString(str);
+#else
+			fprintf(stderr,"%s",str);
+#endif
 			exit(0);
 		}
 	}
@@ -1892,20 +1907,22 @@ void initdata(void)
 
 #ifndef __16BIT__
 	if(client_socket!=INVALID_SOCKET) {
-		output_event=CreateEvent(
+
+#ifdef _WIN32
+		output_sem=CreateEvent(
 						 NULL	// pointer to security attributes
 						,TRUE	// flag for manual-reset event
 						,FALSE	// flag for initial state
 						,NULL	// pointer to event-object name
 						);
-		if(output_event==NULL) {
+		if(output_sem==NULL) {
 			printf("\r\n\7Error %d creating output_event\r\n",GetLastError());
 			exit(1);
 		}
-
-		_beginthread(output_thread,0,NULL);
-	}
 #endif
+		_beginthread(output_thread,0,NULL);
+#endif
+	}
 
 }
 
