@@ -987,6 +987,8 @@ void sbbs_t::maindflts(user_t* user)
 					logline(nulstr,str);
 				}
 				sprintf(str,"%suser/%04u.sig",cfg.data_dir,user->number);
+				if(fexist(str) && yesno("View signature"))
+					printfile(str,0);
 				if(!noyes("Create/Edit signature"))
 					editfile(str);
 				else if(fexist(str) && !noyes("Delete signature"))
