@@ -101,6 +101,13 @@
 
 #endif
 
+/* Standard file descriptors.  */
+#ifndef STDIN_FILENO
+#define STDIN_FILENO    0       /* Standard input */
+#define STDOUT_FILENO   1       /* Standard output */
+#define STDERR_FILENO   2       /* Standard error output */
+#endif
+
 #ifndef O_DENYNONE
 #define O_DENYNONE		SH_DENYNO
 #endif
