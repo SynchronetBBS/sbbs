@@ -908,6 +908,10 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				}
 				else if(inbuf[i]>=' ' && inbuf[i]<DEL)
 					tmpbuf[j++]=inbuf[i];
+#if 0		/* ASCII 127 - Not displayed? */
+				else if(inbuf[i]==DEL && exascii)
+					j+=sprintf(tmpbuf+j,"&#8962;",exasctbl[ch].value);
+#endif
 				else if(inbuf[i]<' ') /* unknown control chars */
 				{
 					if(ansi && inbuf[i]==ESC)
