@@ -18,7 +18,7 @@ ifndef XPDEV
  XPDEV		=	../../src/xpdev
 endif
 ifndef SBBS_SRC
- SBBS_SRC	:=	$(XPDEV)../sbbs3
+ SBBS_SRC	:=	$(XPDEV)/../sbbs3
 endif
 NEED_THREADS	:=	1
 include $(XPDEV)/Common.gmake
