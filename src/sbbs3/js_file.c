@@ -562,6 +562,59 @@ js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     return(JS_TRUE);
 }
 
+static JSBool
+js_iniGetAllObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		name="name";
+	char*		prefix=NULL;
+	char**		sec_list;
+    jsint       i,k;
+    jsval       val;
+    JSObject*	array;
+    JSObject*	object;
+	private_t*	p;
+	named_string_t** key_list;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(argc)
+		name=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+
+	if(argc>1)
+		prefix=JS_GetStringBytes(JS_ValueToString(cx, argv[1]));
+
+    array = JS_NewArrayObject(cx, 0, NULL);
+
+	sec_list = iniGetSectionList(p->fp,prefix);
+    for(i=0;sec_list && sec_list[i];i++) {
+	    object = JS_NewObject(cx, NULL, NULL, obj);
+
+		JS_DefineProperty(cx, object, name
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,sec_list[i]))
+			,NULL,NULL,JSPROP_ENUMERATE);
+
+		key_list = iniGetNamedStringList(p->fp,sec_list[i]);
+		for(k=0;key_list && key_list[k];k++)
+			JS_DefineProperty(cx, object, key_list[k]->name
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,key_list[k]->value))
+				,NULL,NULL,JSPROP_ENUMERATE);
+		iniFreeNamedStringList(key_list);
+
+		val=OBJECT_TO_JSVAL(object);
+        if(!JS_SetElement(cx, array, i, &val))
+			break;
+	}
+	iniFreeStringList(sec_list);
+
+    *rval = OBJECT_TO_JSVAL(array);
+
+    return(JS_TRUE);
+}
 
 static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1319,6 +1372,13 @@ static jsMethodSpec js_file_functions[] = {
 	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("section")
 	,JSDOCSTR("parse an entire section from a .ini file "
 		"and return all of its keys and values as properties of an object")
+	},
+	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix]")
+	,JSDOCSTR("parse all sections from a .ini file and return all sections and keys "
+		"an array of objects with each section's keys as properties of each section object, "
+		"<i>name_property</i> is the name of the property to create to contain the section's name "
+		"(default is <tt>\"name\"</tt>), "
+		"the optional <i>prefix</i> has the same use as in the <tt>iniGetSections</tt> method")
 	},
 	{0}
 };
