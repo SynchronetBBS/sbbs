@@ -1927,8 +1927,9 @@ void __fastcall TMainForm::FileOpenMenuItemClick(TObject *Sender)
 
 void __fastcall TMainForm::BBSLoginMenuItemClick(TObject *Sender)
 {
-    if(!strnicmp(LoginCommand.c_str(),"start ",6))
-        WinExec(LoginCommand.c_str(),SW_SHOWMINNOACTIVE);
+    if(!strnicmp(LoginCommand.c_str(),"start ",6)) /* Doesn't work on NT */
+        ShellExecute(Handle, "open", LoginCommand.c_str()+6,
+            NULL,NULL,SW_SHOWDEFAULT);
     else if(!strnicmp(LoginCommand.c_str(),"telnet:",7))
         ShellExecute(Handle, "open", LoginCommand.c_str(),
             NULL,NULL,SW_SHOWDEFAULT);
