@@ -68,9 +68,9 @@
 #pragma resource "*.dfm"
 TMainForm *MainForm;
 
-extern "C" __declspec(dllimport) BOOL load_cfg(scfg_t* cfg, char* text[]);
-extern "C" __declspec(dllimport) BOOL getstats(scfg_t* cfg, char node, stats_t* stats);
-extern "C" __declspec(dllimport) int getmail(scfg_t* cfg, int usernumber, BOOL sent);
+extern "C" __declspec(dllimport) BOOL __stdcall load_cfg(scfg_t* cfg, char* text[]);
+extern "C" __declspec(dllimport) BOOL __stdcall getstats(scfg_t* cfg, char node, stats_t* stats);
+extern "C" __declspec(dllimport) int  __stdcall getmail(scfg_t* cfg, int usernumber, BOOL sent);
 #define MAX_LOGLEN 20000
 
 #define LOG_TIME_FMT "  m/d  hh:mm:ssa/p"
@@ -266,7 +266,7 @@ static void bbs_start(void)
 	Screen->Cursor=crAppStart;
     bbs_status("Starting");
     strcpy(MainForm->bbs_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
-	_beginthread(bbs_thread,0,&MainForm->bbs_startup);
+	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
 }
 
 static int mail_lputs(char *str)
@@ -364,7 +364,7 @@ static void mail_start(void)
 	Screen->Cursor=crAppStart;
     mail_status("Starting");
     strcpy(MainForm->mail_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
-	_beginthread(mail_server,0,&MainForm->mail_startup);
+	_beginthread((void(*)(void*))mail_server,0,&MainForm->mail_startup);
 }
 
 static int ftp_lputs(char *str)
@@ -463,7 +463,7 @@ static void ftp_start(void)
 	Screen->Cursor=crAppStart;
     ftp_status("Starting");
     strcpy(MainForm->ftp_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
-	_beginthread(ftp_server,0,&MainForm->ftp_startup);
+	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
 }
 //---------------------------------------------------------------------------
 
