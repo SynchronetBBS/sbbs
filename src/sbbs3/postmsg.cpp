@@ -272,7 +272,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	msg.idx.number=smb.status.last_msg+1; /* this *should* be the new message number */
 
 	/* Generate default (RFC822) message-id (always) */
-	SAFECOPY(msg_id,gen_msgid(&cfg,subnum,&msg));
+	SAFECOPY(msg_id,get_msgid(&cfg,subnum,&msg));
 	smb_hfield(&msg,RFC822MSGID,strlen(msg_id),msg_id);
 
 	/* Generate FTN (FTS-9) MSGID */
@@ -481,7 +481,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 
 	/* Generate default (RFC822) message-id  */
 	if(smb_get_hfield(msg,RFC822MSGID,NULL)==NULL) {
-		SAFECOPY(msg_id,gen_msgid(cfg,smb->subnum,msg));
+		SAFECOPY(msg_id,get_msgid(cfg,smb->subnum,msg));
 		smb_hfield(msg,RFC822MSGID,strlen(msg_id),msg_id);
 	}
 

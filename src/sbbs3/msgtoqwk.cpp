@@ -117,15 +117,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		size+=strlen(str); }
 	
 	if(mode&MSGID && (uint)subnum!=INVALID_SUB) {
-		if(msg->id)
-			sprintf(str,"@MSGID: %.*s%c"
-				,(int)(sizeof(str)-12),msg->id,QWK_NEWLINE);
-		else
-			sprintf(str,"@MSGID: <%08lX.%lu.%s@%s>%c"
-				,msg->idx.time,msg->idx.number
-				,cfg.sub[subnum]->code
-				,cfg.sys_inetaddr
-				,QWK_NEWLINE);
+		sprintf(str,"@MSGID: %.*s%c"
+			,(int)(sizeof(str)-12),get_msgid(&cfg,subnum,msg),QWK_NEWLINE);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); 
 
@@ -141,10 +134,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			if(smb_getmsgidx(&smb, &orig_msg))
 				sprintf(str,"@REPLY: <%s>%c",smb.last_error,QWK_NEWLINE);
 			else
-				sprintf(str,"@REPLY: <%08lX.%lu.%s@%s>%c"
-					,orig_msg.idx.time,msg->hdr.thread_orig
-					,cfg.sub[subnum]->code
-					,cfg.sys_inetaddr
+				sprintf(str,"@REPLY: %s%c"
+					,get_msgid(&cfg,subnum,&orig_msg)
 					,QWK_NEWLINE);
 		}
 		if(str[0]) {

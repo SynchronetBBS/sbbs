@@ -3742,8 +3742,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 					f+=sprintf(fmsgbuf+f,"\1FLAGS %.256s\r", msg.ftn_flags);
 
 				f+=sprintf(fmsgbuf+f,"\1MSGID: %.256s\r"
-					,msg.ftn_msgid!=NULL ? msg.ftn_msgid
-						: ftn_msgid(scfg.sub[i],&msg));
+					,ftn_msgid(scfg.sub[i],&msg));
 
 				if(msg.ftn_reply!=NULL)			/* use original REPLYID */
 					f+=sprintf(fmsgbuf+f,"\1REPLY: %.256s\r", msg.ftn_reply);
@@ -3757,8 +3756,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 						smb_getmsghdr(&smb[cur_smb],&orig_msg);
 						smb_unlockmsghdr(&smb[cur_smb],&orig_msg);
 						f+=sprintf(fmsgbuf+f,"\1REPLY: %.256s\r"
-							,orig_msg.ftn_msgid!=NULL ? orig_msg.ftn_msgid 
-									: ftn_msgid(scfg.sub[i],&orig_msg));	
+							,ftn_msgid(scfg.sub[i],&orig_msg));	
 					}
 				}
 				if(msg.ftn_pid!=NULL)	/* use original PID */

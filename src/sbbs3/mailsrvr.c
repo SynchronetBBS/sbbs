@@ -507,12 +507,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 		s=sockprintf(socket,"Reply-To: %s",msg->replyto_net.addr);
 	if(!s)
 		return(0);
-	if(msg->id!=NULL)
-		s=sockprintf(socket,"Message-ID: %s",msg->id);
-	else
-		s=sockprintf(socket,"Message-ID: <%08lX.%lu@%s>"
-			,msg->hdr.when_written.time,msg->idx.number,scfg.sys_inetaddr);
-	if(!s)
+	if(!sockprintf(socket,"Message-ID: %s",get_msgid(&scfg,INVALID_SUB,msg)))
 		return(0);
 	if(msg->reply_id!=NULL)
 		if(!sockprintf(socket,"In-Reply-To: %s",msg->reply_id))

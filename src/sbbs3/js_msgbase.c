@@ -375,7 +375,6 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	smbmsg_t	orig_msg;
 	JSObject*	hdrobj;
 	private_t*	p;
-	BOOL		regenerate_msg_id = FALSE;
 
 	*rval = JSVAL_NULL;
 	
@@ -393,8 +392,6 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		msg.offset=JSVAL_TO_INT(argv[1]);
 	else									/* Get by number */
 		msg.hdr.number=JSVAL_TO_INT(argv[1]);
-	if(JSVAL_IS_BOOLEAN(argv[2]))
-		regenerate_msg_id = JSVAL_TO_BOOLEAN(argv[2]);
 
 	if(smb_getmsgidx(&(p->smb), &msg)!=0)
 		return(JS_TRUE);
@@ -522,7 +519,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	/* Reply-ID (References) */
-	if(!regenerate_msg_id && msg.reply_id!=NULL)
+	if(msg.reply_id!=NULL)
 		val=msg.reply_id;
 	else {
 		reply_id[0]=0;
@@ -532,7 +529,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			if(smb_getmsgidx(&(p->smb), &orig_msg))
 				sprintf(reply_id,"<%s>",p->smb.last_error);
 			else
-				SAFECOPY(reply_id,gen_msgid(scfg,p->smb.subnum,&orig_msg));
+				SAFECOPY(reply_id,get_msgid(scfg,p->smb.subnum,&orig_msg));
 		}
 		val=reply_id;
 	}
@@ -541,12 +538,8 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* Message-ID */
-	if(msg.id!=NULL && *msg.id!=0)
-		val=msg.id;
-	else {
-		SAFECOPY(msg_id,gen_msgid(scfg,p->smb.subnum,&msg));
-		val=msg_id;
-	}
+	SAFECOPY(msg_id,get_msgid(scfg,p->smb.subnum,&msg));
+	val=msg_id;
 	JS_DefineProperty(cx, hdrobj, "id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
