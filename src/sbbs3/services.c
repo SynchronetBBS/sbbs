@@ -1154,7 +1154,15 @@ static void native_service_thread(void* arg)
 
 void DLLCALL services_terminate(void)
 {
+	DWORD i;
+
 	terminated=TRUE;
+	for(i=0;i<services;i++) {
+		if(service[i].socket==INVALID_SOCKET)
+			continue;
+		close_socket(service[i].socket);
+		service[i].socket=INVALID_SOCKET;
+	}
 }
 
 #define NEXT_FIELD(p)	while(*p && *p>' ') p++; while(*p && *p<=' ') p++;
@@ -1519,6 +1527,10 @@ void DLLCALL services_thread(void* arg)
 				FD_SET(service[i].socket,&socket_set);
 				if(service[i].socket>high_socket)
 					high_socket=service[i].socket;
+			}
+			if(high_socket==0) {	/* No dynamic services? */
+				YIELD();
+				continue;
 			}
 			tv.tv_sec=startup->sem_chk_freq;
 			tv.tv_usec=0;
