@@ -6,6 +6,7 @@
 
 // Gopher		70	0-unlimited	0		gopherservice.js
 
+load("sbbsdefs.js");
 load("nodedefs.js");
 
 const VERSION = "1.00 Alpha";
