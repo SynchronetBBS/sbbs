@@ -516,9 +516,13 @@ int main(int argc, char** argv)
 			arg++;
 		if(!stricmp(arg,"defaults")) {
 			printf("default settings:\n\n");
-			printf("telnet port:\t%u",bbs_startup.telnet_port);
-			printf("telnet first_node:\t%u",bbs_startup.first_node);
-			printf("telnet last_node:\t%u",bbs_startup.last_node);
+			printf("Telnet server port:\t%u\n",bbs_startup.telnet_port);
+			printf("Telnet first node:\t%u\n",bbs_startup.first_node);
+			printf("Telnet last node:\t%u\n",bbs_startup.last_node);
+			printf("FTP server port:\t%u\n",ftp_startup.port);
+			printf("SMTP server port:\t%u\n",mail_startup.smtp_port);
+			printf("SMTP relay port:\t%u\n",mail_startup.relay_port);
+			printf("POP3 server port:\t%u\n",mail_startup.pop3_port);
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
