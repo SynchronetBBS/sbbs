@@ -57,12 +57,12 @@ void quotestr(char *str);
 bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	,char *dest)
 {
-	char	str[256],quote[128],c,HUGE16 *buf,ex_mode=0,*p,*tp
+	char	str[256],quote[128],c,HUGE16 *buf,*p,*tp
 				,useron_level;
 	char	msgtmp[MAX_PATH+1];
 	char 	tmp[512];
 	int		i,j,file,linesquoted=0;
-	long	length,qlen,qtime;
+	long	length,qlen,qtime,ex_mode=0;
 	ulong	l;
 	FILE *	stream;
 
@@ -297,6 +297,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				ex_mode|=(EX_OUTR|EX_INR);
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
 				ex_mode|=EX_WWIV; }
+		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&EX_NATIVE)
+			ex_mode|=XTRN_NATIVE;
 
 		if(!linesquoted && fexist(msgtmp))
 			remove(msgtmp);
@@ -761,9 +763,9 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 /****************************************************************************/
 void sbbs_t::editfile(char *str)
 {
-	char *buf,str2[128],mode=0;
+	char *buf,str2[128];
     int file;
-	long length,maxlines,lines,l;
+	long length,maxlines,lines,l,mode=0;
 
 	maxlines=cfg.level_linespermsg[useron.level];
 	sprintf(str2,"%sQUOTES.TXT",cfg.node_dir);
@@ -773,6 +775,8 @@ void sbbs_t::editfile(char *str)
 		return; }
 	if(useron.xedit) {
 		editor_inf(useron.xedit,nulstr,nulstr,0,INVALID_SUB);
+		if(cfg.xedit[useron.xedit-1]->misc&EX_NATIVE)
+			mode|=XTRN_NATIVE;
 		if(cfg.xedit[useron.xedit-1]->misc&IO_INTS) {
 			if(online==ON_REMOTE)
 				mode|=(EX_OUTR|EX_INR);
