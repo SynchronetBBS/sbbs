@@ -37,6 +37,7 @@
 
 #if defined(__unix__)
 	#include <unistd.h>	/* _POSIX_THREADS */
+	#include <stdlib.h>	/* realpath() */
 #endif
 
 #include "threadwrap.h"	/* DLLCALL */
