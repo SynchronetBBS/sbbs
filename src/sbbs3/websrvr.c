@@ -669,14 +669,14 @@ static void close_request(http_session_t * session)
 	uint i;
 	
 	
-	if(session->req.cgi_heads_size)  {
+	if(session->req.cgi_heads_size && session->req.cgi_heads!=NULL)  {
 		for(i=0;i<session->req.cgi_heads_size;i++)
 			FREE_AND_NULL(session->req.cgi_heads[i]);
 		FREE_AND_NULL(session->req.cgi_heads);
 		session->req.cgi_heads_size=0;
 	}
 	
-	if(session->req.cgi_env_size)  {
+	if(session->req.cgi_env_size && session->req.cgi_env!=NULL)  {
 		for(i=0;i<session->req.cgi_env_size;i++)
 			FREE_AND_NULL(session->req.cgi_env[i]);
 		FREE_AND_NULL(session->req.cgi_env);
