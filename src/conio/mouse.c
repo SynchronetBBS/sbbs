@@ -26,6 +26,17 @@ struct out_mouse_event {
 	void *nextevent;
 };
 
+struct curr_event {
+	int	event;		/* Current event (if successfull)
+				 * ie: If you're already clicked, and not moved, a double-click
+				 * is the "Current Event" */
+	int	sx;		/* Current event start x */
+	int	sy;		/* Current event start y */
+	clock_t	ts;		/* msclock() time this event will finish
+				 * ie: When double-click is current, release+timeout or
+				 * press+timeout */
+}
+
 struct mouse_state {
 	int	buttonstate;		/* Current state of all buttons */
 	int	knownbuttonstatemask;	/* Mask of buttons that have done something since */
@@ -39,15 +50,7 @@ struct mouse_state {
 	int	click_drift;	/* Allowed "drift" during a click event */
 	struct in_mouse_event	*events_in;	/* Pointer to recevied events stack */
 	struct out_mouse_event	*events_out;	/* Pointer to output events stack */
-	int	b1_currevent;	/* Event that is currently being processed on button 1 */
-	int	b1_ce_sx;	/* Start X for current b1 event */
-	int	b1_ce_sy;	/* Start Y for current b1 event */
-	int	b2_currevent;	
-	int	b2_ce_sx;	/* Start X for current b2 event */
-	int	b2_ce_sy;	/* Start Y for current b2 event */
-	int	b3_currevent;
-	int	b3_ce_sx;	/* Start X for current b3 event */
-	int	b3_ce_sy;	/* Start Y for current b3 event */
+	struct curr_event	pending[3];	/* Per-button pending events */
 };
 
 struct mouse_state state;
@@ -136,7 +139,7 @@ static void add_outevent(int event, int bstate, int kbsm, sx, sy, ex, ey)
 	pthread_mutex_unlock(&in_mutex);
 }
 
-static void coilib_mouse_thread(void *data)
+static void ciolib_mouse_thread(void *data)
 {
 	int	use_timeout=0;
 	struct timespec timeout;
