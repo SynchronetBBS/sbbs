@@ -87,18 +87,6 @@ enum {
 	,CTRL_Z
 };
 
-#ifndef MAX_PATH
-	#if defined MAXPATHLEN
-		#define MAX_PATH MAXPATHLEN	/* clib.h */
-	#elif defined PATH_MAX
-		#define MAX_PATH PATH_MAX
-	#elif defined _MAX_PATH
-		#define MAX_PATH _MAX_PATH
-	#else
-		#define MAX_PATH 260		
-	#endif
-#endif
-
 /* Unsigned type short-hands	*/
 #ifndef uchar
 	#define uchar	unsigned char
