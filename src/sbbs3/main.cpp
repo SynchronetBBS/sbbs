@@ -2963,7 +2963,7 @@ void DLLCALL bbs_thread(void* arg)
 	lprintf("Initializing on %.24s with options: %lx"
 		,ctime(&t),startup->options);
 
-	if(_chdir(startup->ctrl_dir)!=0)
+	if(chdir(startup->ctrl_dir)!=0)
 		lprintf("!ERROR changing directory to: %s", startup->ctrl_dir);
 
 	/* Initial configuration and load from CNF files */
