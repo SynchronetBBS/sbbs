@@ -2388,19 +2388,15 @@ static void sendmail_thread(void* arg)
 				port=IPPORT_SMTP;
 
 
-			lprintf("0000 SEND opening socket");
 			if((sock=mail_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
 				lprintf("0000 !SEND ERROR %d opening socket", ERROR_VALUE);
 				continue;
 			}
 
-			lprintf("%04d SEND socket opened",sock);
-
 			memset(&addr,0,sizeof(addr));
 			addr.sin_addr.s_addr = htonl(startup->interface_addr);
 			addr.sin_family = AF_INET;
 
-			lprintf("%04d SEND binding socket",sock);
 			if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
 				lprintf("%04d !SEND ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
 				continue;
