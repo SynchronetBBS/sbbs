@@ -1489,6 +1489,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	client_socket = sd;
 	sprintf(client_name, "%.*s", (int)sizeof(client_name)-1, name);
 	client_socket_dup=INVALID_SOCKET;
+	client_ident[0]=0;
 
 	/* Init some important variables */
 
@@ -1508,7 +1509,6 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
     telnet_cmdlen=0;
 	telnet_mode=0;
 	telnet_last_rxch=0;
-	strcpy(cap_fname,"CAPTURE.TXT");
 	sys_status=lncntr=tos=criterrs=keybufbot=keybuftop=lbuflen=slcnt=0L;
 	curatr=LIGHTGRAY;
 	errorlevel=0;
@@ -3402,7 +3402,8 @@ void DLLCALL bbs_thread(void* arg)
     		,(char *)&linger, sizeof(linger));
 
 		if(result != 0) {
-			lprintf("!ERROR %d (%d) setting socket options.", result, ERROR_VALUE);
+			lprintf("%04d !ERROR %d (%d) setting socket options."
+				,client_socket, result, ERROR_VALUE);
 			close_socket(client_socket);
 			continue;
 		}
@@ -3412,18 +3413,19 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(sbbs->trashcan(host_ip,"ip")) {
 			close_socket(client_socket);
-			lprintf("!CLIENT BLOCKED in ip.can");
+			lprintf("%04d !CLIENT BLOCKED in ip.can"
+				,client_socket);
 			sprintf(logstr, "Blocked IP: %s",host_ip);
-			sbbs->logline("@!",logstr);
+			sbbs->syslog("@!",logstr);
 			continue;
 		}
 
 		if(rlogin) {
 			if(!sbbs->trashcan(host_ip,"rlogin")) {
 				close_socket(client_socket);
-				lprintf("!CLIENT IP NOT LISTED in rlogin.can");
+				lprintf("%04d !CLIENT IP NOT LISTED in rlogin.can",client_socket);
 				sprintf(logstr, "Invalid RLogin from: %s",host_ip);
-				sbbs->logline("@!",logstr);
+				sbbs->syslog("@!",logstr);
 				continue;
 			}
 			sbbs->outcom(0); /* acknowledge RLogin per RFC 1282 */
@@ -3453,9 +3455,9 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(sbbs->trashcan(host_name,"host")) {
 			close_socket(client_socket);
-			lprintf("!CLIENT BLOCKED in host.can");
+			lprintf("%04d !CLIENT BLOCKED in host.can",client_socket);
 			sprintf(logstr, "Blocked Host Name: %s",host_name);
-			sbbs->logline("@!",logstr);
+			sbbs->syslog("@!",logstr);
 			continue;
 		}
 
@@ -3492,7 +3494,7 @@ void DLLCALL bbs_thread(void* arg)
 		}
 
 		if(i>last_node) {
-			lprintf("No nodes available for login.");
+			lprintf("%04d !No nodes available for login.",client_socket);
 			sprintf(str,"%snonodes.txt",scfg.text_dir);
 			if(fexist(str))
 				sbbs->printfile(str,P_NOABORT);
@@ -3513,8 +3515,14 @@ void DLLCALL bbs_thread(void* arg)
 
 		new_node->client=client;
 
+		/* copy the IDENT response, if any */
+		if(identity!=NULL)
+			sprintf(new_node->client_ident,"%.*s"
+				,sizeof(new_node->client_ident)-1,identity);
+
 		if(new_node->init()==false) {
-			lprintf("!Node %d Initialization failure",new_node->cfg.node_num);
+			lprintf("%04d !Node %d Initialization failure"
+				,client_socket,new_node->cfg.node_num);
 			sprintf(str,"%snonodes.txt",scfg.text_dir);
 			if(fexist(str))
 				sbbs->printfile(str,P_NOABORT);
@@ -3530,8 +3538,6 @@ void DLLCALL bbs_thread(void* arg)
 			client_off(client_socket);
 			continue;
 		}
-		if(identity!=NULL)
-			new_node->logline("@*",identity);
 
 		if(rlogin==true) {
 			new_node->connection="RLogin";
