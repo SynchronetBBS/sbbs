@@ -5,7 +5,13 @@
 
 const table_tag = "<table border=1 width=100%>";
 
+const li_tag =	"<li onclick = 'this.className = (this.className == \"showList\") ? \"defaultStyles\" : \"showList\";'\n" +
+				"\tonselectstart = 'event.returnValue = false;'" +
+				">";
+
+
 table_depth=0;
+object_depth=0;
 
 body = "";
 
@@ -38,7 +44,8 @@ function document_methods(name,obj)
 	if(obj._method_list == undefined)
 		return;
 
-	f.writeln("<li><a href=#" + name +"_methods>methods</a>");
+	f.writeln(li_tag);
+	f.writeln("<a href=#" + name +"_methods>methods</a>");
 
 	table_close();
 	table_open(name);
@@ -85,7 +92,10 @@ function object_header(name, obj, type)
 	if(type==undefined)
 		type="object";
 
-	f.writeln("<li><a href=#" + name +">" + name + " " + type + "</a>");
+	f.writeln(li_tag);
+	if(!object_depth)
+		f.write("[+] &nbsp");
+	f.writeln(name.bold().link("#"+name) + " " + type);
 
 	if(table_depth)
 		table_close();
@@ -100,7 +110,8 @@ function object_header(name, obj, type)
 function properties_header(name, obj)
 {
 
-	f.writeln("<li><a href=#" + name +"_properties>properties</a>");
+	f.writeln(li_tag);
+	f.writeln("<a href=#" + name +"_properties>properties</a>");
 
 	table_close();
 	if(obj._method_list != undefined)
@@ -149,11 +160,12 @@ function document_properties(name, obj)
 
 function document_object(name, obj, type)
 {
-	
 	object_header(name,obj,type);
-	f.writeln("<ul type=disc>");
+	f.writeln("<ul>");
 	document_methods(name,obj);
+	object_depth++;
 	document_properties(name,obj);
+	object_depth--;
 	f.writeln("</ul>");
 	table_close();
 }
@@ -168,6 +180,15 @@ if(!f.open("w")) {
 f.writeln("<html>");
 f.writeln("<head>");
 f.writeln("<title>Synchronet JavaScript Object Model Reference</title>");
+
+if(1) {	/* Style sheet */
+	f.writeln("<STYLE>");
+	f.writeln("\tOL LI                { cursor: hand; }");
+	f.writeln("\tUL LI                { display: none;list-style: square; }");
+	f.writeln("\t.showList LI         { display: list-item; }");
+	f.writeln("</STYLE>");
+}
+
 f.writeln("</head>");
 
 f.writeln("<body>");
@@ -177,10 +198,10 @@ f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
 f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
 		 ,system.full_version,system.compiled_when);
 
-f.writeln("<ul>");
+f.writeln("<ol type=square>");
 
 object_header("global"		,_global);
-f.writeln("<ul type=disc>");
+f.writeln("<ul>");
 document_methods("global"	,_global);
 properties_header("global"	,_global);
 writeln("<tr><td>" + "argc".bold() + "<td>number<td>number of arguments passed to the script</td>");
@@ -202,7 +223,7 @@ document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "
 document_object("File"		,new File("bogusfile"), "class");
 document_object("Socket"	,new Socket(), "class");
 
-f.writeln("</ul>");
+f.writeln("</ol>");
 
 f.write(body);
 
