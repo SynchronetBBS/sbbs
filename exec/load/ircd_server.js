@@ -1005,10 +1005,10 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		this.netsplit();
 	}
 
-	if((server.client_remove!=undefined) && this.local)
-		server.client_remove(this.socket);
-
 	if (this.local) {
+		if (server.client_remove!=undefined)
+			server.client_remove(this.socket);
+
 		this.rawout("ERROR :Closing Link: [" + this.uprefix + "@" + this.hostname + "] (" + str + ")");
 		// FIXME: wrong phrasing below
 		umode_notice(USERMODE_CLIENT,"Client","SERVER exiting: " +
@@ -1106,3 +1106,4 @@ function IRCClient_server_chan_info(sni_chan) {
 	if (modeargs)
 		this.ircout("MODE " + sni_chan.nam + " " + modestr + " " + modeargs);
 }
+
