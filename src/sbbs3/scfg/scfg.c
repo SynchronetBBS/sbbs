@@ -45,6 +45,7 @@ scfg_t	cfg;    /* Synchronet Configuration */
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
 BOOL no_dirchk=FALSE,forcesave=FALSE;
+BOOL new_install=FALSE;
 static BOOL auto_save=FALSE;
 extern BOOL all_msghdr;
 extern BOOL no_msghdr;
@@ -102,7 +103,8 @@ int main(int argc, char **argv)
 #endif
             )
             switch(toupper(argv[i][1])) {
-                case 'N':   /* No EMS, ignore */
+                case 'N':   /* Set "New Installation" flag */
+					new_install=TRUE;
                     continue;
 		        case 'M':   /* Monochrome mode */
         			uifc.mode|=UIFC_MONO;
@@ -797,6 +799,7 @@ To configure a command shell, select it and hit  ENTER .
 		if(j==-1)
 			continue;
 		if(!j) {
+			cfg.new_install=new_install;
 			write_main_cfg(&cfg,backup_level);
             refresh_cfg(&cfg);
         }
@@ -1903,6 +1906,7 @@ void bail(int code)
         read_chat_cfg(&cfg,error);
         read_xtrn_cfg(&cfg,error);
         uifc.pop(0);
+		cfg.new_install=new_install;
         write_main_cfg(&cfg,backup_level);
         write_msgs_cfg(&cfg,backup_level);
         write_file_cfg(&cfg,backup_level);

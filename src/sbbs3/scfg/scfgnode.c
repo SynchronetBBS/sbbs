@@ -93,6 +93,7 @@ select No or hit  ESC .
 		if(!i) {
 			--cfg.sys_nodes;
 /*			FREE(cfg.node_path[cfg.sys_nodes]); */
+			cfg.new_install=new_install;
 			write_main_cfg(&cfg,backup_level);
             refresh_cfg(&cfg);
         }
@@ -129,6 +130,7 @@ If you want to abort the creation of this new node, hit  ESC .
 		MKDIR(str);
 		cfg.node_num=++cfg.sys_nodes;
 		sprintf(cfg.node_name,"Node %u",cfg.node_num);
+		cfg.new_install=new_install;
 		write_node_cfg(&cfg,backup_level);
 		write_main_cfg(&cfg,backup_level);
 		free_node_cfg(&cfg);

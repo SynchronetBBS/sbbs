@@ -182,6 +182,7 @@ online external programs (doors).
             if(i==-1)
                 break;
 			if(!i) {
+				cfg.new_install=new_install;
                 write_xtrn_cfg(&cfg,backup_level);
 				write_main_cfg(&cfg,backup_level);
                 refresh_cfg(&cfg);

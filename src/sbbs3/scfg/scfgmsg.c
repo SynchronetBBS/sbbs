@@ -843,6 +843,7 @@ E-mail and public posts (on sub-boards).
 				if(i==-1)
 				   continue;
 				if(!i) {
+					cfg.new_install=new_install;
 					write_msgs_cfg(&cfg,backup_level);
 					write_main_cfg(&cfg,backup_level);
                     refresh_cfg(&cfg);
