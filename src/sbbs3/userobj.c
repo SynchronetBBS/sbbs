@@ -452,7 +452,7 @@ JSObject* DLLCALL js_CreateUserObject(scfg_t* cfg, JSContext* cx, JSObject* pare
 
 	/* user.stats */
 	statsobj = JS_DefineObject(cx, userobj, "stats"
-		,&js_user_stats_class, NULL, JSPROP_ENUMERATE);
+		,&js_user_stats_class, NULL, 0);
 
 	if(statsobj==NULL)
 		return(NULL);
@@ -463,7 +463,7 @@ JSObject* DLLCALL js_CreateUserObject(scfg_t* cfg, JSContext* cx, JSObject* pare
 
 	/* user.security */
 	securityobj = JS_DefineObject(cx, userobj, "security"
-		,&js_user_security_class, NULL, JSPROP_ENUMERATE);
+		,&js_user_security_class, NULL, 0);
 
 	if(securityobj==NULL)
 		return(NULL);
