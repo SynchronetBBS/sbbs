@@ -154,22 +154,22 @@ endif
 # CVS checkout command-line
 CVS_CO = @cd $(SBBSDIR); cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co -r $(CVSTAG)
 
-src: cvslogin
+src: 
 ifndef NOCVS
 	$(CVS_CO) src-sbbs3
 endif
 
-run: cvslogin
+run: 
 ifndef NOCVS
 	$(CVS_CO) run-sbbs3
 endif
 
-$(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX): cvslogin
+$(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX): 
 ifndef NOCVS
 	$(CVS_CO) lib/mozilla/js/$(machine).$(SUFFIX)
 endif
 
-$(SBBSDIR)/lib/mozilla/nspr/$(machine).$(SUFFIX): cvslogin
+$(SBBSDIR)/lib/mozilla/nspr/$(machine).$(SUFFIX): 
 ifndef NOCVS
 	$(CVS_CO) lib/mozilla/nspr/$(machine).$(SUFFIX)
 endif
