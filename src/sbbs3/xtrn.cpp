@@ -436,7 +436,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		fclose(fp);
 
 		/* not temporary */
+#if 0
 		SuspendThread(input_thread);
+#else
+		pthread_mutex_lock(&input_thread_mutex);
+#endif
 	}
 
     if(!CreateProcess(
@@ -706,7 +710,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		CloseHandle(hungup_event);
 
 	if(native)
+#if 0
 		ResumeThread(input_thread);
+#else
+		pthread_mutex_unlock(&input_thread_mutex);
+#endif
 	else {	// Get return value
     	sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
         FILE* fp=fopen(str,"r");
@@ -789,6 +797,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		return(-1);
 	}
 
+	pthread_mutex_lock(&input_thread_mutex);
+
 	if(pid==0) {	/* child process */
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
@@ -808,13 +818,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		exit(-1);	/* should never get here */
 	}
 
-	while(1) {
-		if(waitpid(pid, &i, 0)==-1) {
-			if(errno!=EINTR)
-				return(-1);
-		} else
-			return(WEXITSTATUS(i));
-	}
+	waitpid(pid, &i, 0);
+
+	pthread_mutex_unlock(&input_thread_mutex);
+
+	return(WEXITSTATUS(i));
 }
 
 #endif	/* !WIN32 */
@@ -947,7 +955,7 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 #ifdef __OS2__
 					strcpy(str,"OS2");
 #else
-					strcat(str,PLATFORM_DESC);
+					strcpy(str,PLATFORM_DESC);
 #endif
 					strlwr(str);
 					strcat(cmd,str);

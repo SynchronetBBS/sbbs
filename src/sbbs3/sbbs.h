@@ -123,6 +123,7 @@ public:
     RingBuf	outbuf;
 	sem_t	output_sem;
 	HANDLE	input_thread;
+	pthread_mutex_t	input_thread_mutex;
 
 	int 	outcom(uchar ch); 	   // send character
 	int 	incom(void);		   // receive character
@@ -139,8 +140,8 @@ public:
 	uchar	telnet_last_rxch;
 
 	bool	event_thread_running;
-    bool	input_thread_running;
     bool	output_thread_running;
+    bool	input_thread_running;
 
 	char 	menu_dir[128];	/* Over-ride default menu dir */
 	char 	menu_file[128]; /* Over-ride menu file */
