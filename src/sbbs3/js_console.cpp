@@ -620,24 +620,6 @@ js_printtail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_menu(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-    JSString*	str;
-	sbbs_t*		sbbs;
-
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	str = JS_ValueToString(cx, argv[0]);
-	if (!str)
-		return(JS_FALSE);
-
-	sbbs->menu(JS_GetStringBytes(str));
-
-    return(JS_TRUE);
-}
-
-static JSBool
 js_uselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uintN		i;
@@ -883,7 +865,6 @@ static JSFunctionSpec js_console_functions[] = {
 	{"center",			js_center,			1},		// display a string centered on the screen 
 	{"printfile",		js_printfile,		1},		// print a file, optional mode
 	{"printtail",		js_printtail,		2},		// print last x lines of file, optional mode
-	{"menu",			js_menu,			1},		// print menu (auto-extension) 
 	{"uselect",			js_uselect,			0},		// user selection menu
 	{"saveline",		js_saveline,		0},		// save last output line 
 	{"restoreline",		js_restoreline,		0},		// restore last output line 
