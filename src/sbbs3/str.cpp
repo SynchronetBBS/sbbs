@@ -775,7 +775,7 @@ void sbbs_t::subinfo(uint subnum)
 	if(cfg.sub[subnum]->misc&SUB_FIDO)
 		bprintf(text[SubInfoFidoNet]
 			,cfg.sub[subnum]->origline
-			,faddrtoa(&cfg.sub[subnum]->faddr,str));
+			,smb_faddrtoa(&cfg.sub[subnum]->faddr,str));
 	sprintf(str,"%s%s.msg",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	if(fexist(str) && yesno(text[SubInfoViewFileQ]))
 		printfile(str,0);
@@ -837,7 +837,7 @@ void sbbs_t::sys_info()
 	bprintf(text[SiSysName],cfg.sys_name);
 	bprintf(text[SiSysID],cfg.sys_id);	/* QWK ID */
 	for(i=0;i<cfg.total_faddrs;i++)
-		bprintf(text[SiSysFaddr],faddrtoa(&cfg.faddr[i],tmp));
+		bprintf(text[SiSysFaddr],smb_faddrtoa(&cfg.faddr[i],tmp));
 	if(cfg.sys_psname[0])				/* PostLink/PCRelay */
 		bprintf(text[SiSysPsite],cfg.sys_psname,cfg.sys_psnum);
 	bprintf(text[SiSysLocation],cfg.sys_location);
