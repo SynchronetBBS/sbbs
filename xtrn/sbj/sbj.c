@@ -149,8 +149,6 @@ char	*UserSays="\1n\1m\1h%s \1n\1msays \"\1c\1h%s\1n\1m\"\r\n";
 char	*UserWhispers="\1n\1m\1h%s \1n\1mwhispers \"\1c\1h%s\1n\1m\"\r\n";
 char	*ShoeStatus="\r\n\1_\1w\1hShoe: %u/%u\r\n";
 
-#ifndef SBJCLEAN
-
 void play(void);
 char *cardstr(card_t card);
 char hand(card_t card[MAX_CARDS], char count);
@@ -184,6 +182,8 @@ char *joined(void);
 char *left(void);
 void strip_symbols(char *str);
 void debug(void);
+
+#ifndef SBJCLEAN
 
 int my_random(int n)
 {
