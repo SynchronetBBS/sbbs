@@ -299,7 +299,13 @@ public:
 	ulong 	timeleft;		/* Number of seconds user has left online */
 	char	sbbsnode[MAX_PATH+1];	/* Environment var to contain node dir path */
 	char	sbbsnnum[MAX_PATH+1];	/* Environment var to contain node num */
-	char	sbbsctrl[MAX_PATH+1];	/* Environmetn var to contain ctrl dir path */
+	char	sbbsctrl[MAX_PATH+1];	/* Environment var to contain ctrl dir path */
+	char	env_day[16];			/* Environment var for day of month */
+	char	env_weekday[16];		/* Environment var for name of weekday */
+	char	env_month[16];			/* Environment var for month number (1-based) */
+	char	env_monthname[16];		/* Environment var for day of month abbreviation */
+	char	env_year[16];			/* Environment var for the year */
+
 	char 	*comspec;		/* Pointer to environment variable COMSPEC */
 	ushort	altul;			/* Upload to alternate path flag */
 	char 	cid[LEN_CID+1]; /* Caller ID (IP Address) of current caller */

@@ -287,7 +287,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	if(native && mode&EX_OUTR && !(mode&EX_OFFLINE))
 		use_pipes=true;
 
- 	if(native) { // Native (32-bit) external
+ 	if(native || mode&EX_OFFLINE) { // Native (32-bit) external
 
 		// Current environment passed to child process
 		sprintf(dszlog,"DSZLOG=%sPROTOCOL.LOG",cfg.node_dir);
@@ -299,6 +299,13 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		putenv(sbbsnnum);	   /* create environment var to contain node num */
 		sprintf(sbbsctrl,"SBBSCTRL=%s",cfg.ctrl_dir);
 		putenv(sbbsctrl);
+		if(tm_p!=NULL) {
+			sprintf(env_day			,"DAY=%02u\n"		,tm_p->tm_mday);
+			sprintf(env_weekday		,"WEEKDAY=%s\n"		,wday[tm_p->tm_wday]);
+			sprintf(env_monthname	,"MONTHNAME=%s\n"	,mon[tm_p->tm_mon]);
+			sprintf(env_month		,"MONTH=%02u\n"		,tm_p->tm_mon+1);
+			sprintf(env_year		,"YEAR=%u\n"		,1900+tm_p->tm_year);
+		}
 
     } else { // DOS external
 
@@ -608,7 +615,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         	Sleep(500);
 		} else {
 
-			if(nt) {	// Windows NT/2000
+			if(nt || use_pipes) {	// Windows NT/2000
 
 				/* Write to VDD */
 
