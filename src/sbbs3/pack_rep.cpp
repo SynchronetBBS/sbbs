@@ -82,8 +82,6 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/*********************/
 	/* Pack new messages */
 	/*********************/
-	console|=CON_L_ECHO;
-
 	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	smb.subnum=INVALID_SUB;
