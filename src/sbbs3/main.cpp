@@ -196,15 +196,18 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if (!prompt)
 	    return JS_FALSE;
 
-	str = JS_ValueToString(cx, argv[1]);
-	if (!str)
-	    return JS_FALSE;
+	if(argc>1) {
+		str = JS_ValueToString(cx, argv[1]);
+		if (str==NULL)
+		    return JS_FALSE;
+		sprintf(instr,"%.*s",sizeof(instr)-1,JS_GetStringBytes(str));
+	} else
+		instr[0]=0;
 
 	sbbs->bprintf("\1n\1y\1h%s\1w: ",JS_GetStringBytes(prompt));
 
-	sprintf(instr,"%.*s",sizeof(instr)-1,JS_GetStringBytes(str));
 	if(!sbbs->getstr(instr,sizeof(instr)-1,K_EDIT)) {
-		*rval = STRING_TO_JSVAL(NULL);
+		*rval = JSVAL_NULL;
 		return(JS_TRUE);
 	}
 
@@ -220,7 +223,7 @@ static JSFunctionSpec js_global_functions[] = {
     {"print",           js_print,           0},		/* Print a string, auto-crlf */
     {"printf",          js_printf,          1},		/* Print a formatted string */
 	{"alert",			js_alert,			1},		/* alert (ala client-side) */
-	{"prompt",			js_prompt,			2},		/* prompt (ala clent-side) */ 
+	{"prompt",			js_prompt,			1},		/* prompt (ala clent-side) */ 
 	{"confirm",			js_confirm,			1},		/* confirm (ala client-side) */
     {0}
 };
@@ -480,7 +483,7 @@ int close_socket(SOCKET sock)
 {
 	int		result;
 
-	if(sock==INVALID_SOCKET)
+	if(sock==INVALID_SOCKET || sock==0)
 		return(0);
 
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
