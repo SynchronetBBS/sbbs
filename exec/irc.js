@@ -881,7 +881,7 @@ function Channels_nick_add(nick,cname)  {
 	var i=0;
 	var j=0;
 
-	for(i=0;i<length;i++)  {
+	for(i=0;i<this.length;i++)  {
 		if(cname.toUpperCase()==this.channel[i].name)  {
 			this.channel[i].nick.push(nick);
 		}
