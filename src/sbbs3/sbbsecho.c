@@ -3763,8 +3763,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 				continue; }
 
 			if(start_tick)
-				export_ticks+=clock()-start_tick;
-			start_tick=clock();
+				export_ticks+=msclock()-start_tick;
+			start_tick=msclock();
 
 			for(m=exp=0;m<posts;m++) {
 				printf("\r%8s %5lu of %-5lu  "
@@ -3977,7 +3977,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 	printf("\n");
 	if(start_tick)	/* Last possible increment of export_ticks */
-		export_ticks+=clock()-start_tick;
+		export_ticks+=msclock()-start_tick;
 
 	pkt_to_pkt(buf,fakearea,pkt_faddr,hdr,msg_seen,msg_path,1);
 
@@ -4535,8 +4535,8 @@ int main(int argc, char **argv)
 				memset(&hdr,0,sizeof(fmsghdr_t));
 
 				if(start_tick)
-					import_ticks+=clock()-start_tick;
-				start_tick=clock();
+					import_ticks+=msclock()-start_tick;
+				start_tick=msclock();
 
 				if(fmsgbuf) {
 					FREE(fmsgbuf);
@@ -4807,7 +4807,7 @@ int main(int argc, char **argv)
 				j=fmsgtosmsg(fmsgbuf,hdr,0,cfg.area[i].sub);
 
 				if(start_tick) {
-					import_ticks+=clock()-start_tick;
+					import_ticks+=msclock()-start_tick;
 					start_tick=0; 
 				}
 
@@ -4847,7 +4847,7 @@ int main(int argc, char **argv)
 		globfree(&g);
 
 		if(start_tick) {
-			import_ticks+=clock()-start_tick;
+			import_ticks+=msclock()-start_tick;
 			start_tick=0; 
 		}
 
@@ -4859,7 +4859,7 @@ int main(int argc, char **argv)
 		}	/* End of Secure : Inbound loop */
 
 		if(start_tick)	/* Last possible increment of import_ticks */
-			import_ticks+=clock()-start_tick;
+			import_ticks+=msclock()-start_tick;
 
 		for(j=MAX_OPEN_SMBS-1;(int)j>=0;j--)		/* Close open bases */
 			if(smb[j].shd_fp)
