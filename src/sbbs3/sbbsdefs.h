@@ -62,14 +62,6 @@
 #define __FLAT__	/* 32-bit "flat" memory model */
 #endif
 
-#ifdef _MSC_VER	/* Visual C++ */
-
-#define O_DENYNONE	_SH_DENYNO
-#define O_DENYALL	_SH_DENYRW
-#define S_IWRITE	_S_IWRITE
-
-#endif
-
 /************/
 /* Maximums */
 /************/
