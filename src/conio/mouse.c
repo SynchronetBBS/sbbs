@@ -73,7 +73,7 @@ void init_mouse(void)
 	memset(&state,0,sizeof(state));
 	state.input=malloc(sizeof(link_list_t));
 	state.output=malloc(sizeof(link_list_t));
-	state.click_timeout=200;
+	state.click_timeout=0;
 	state.multi_timeout=300;
 	listInit(state.input,LINK_LIST_NEVER_FREE);
 	listInit(state.output,LINK_LIST_NEVER_FREE);
@@ -307,18 +307,34 @@ void ciolib_mouse_thread(void *data)
 							state.button_x[but-1]=in->x;
 							state.button_y[but-1]=in->y;
 							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
+							if(state.timeout[but-1]==0)
+								state.timeout[but-1]=1;
+							if(state.click_timeout==0)
+								state.timeout[but-1]=0;
 							break;
 						case MOUSE_CLICKED:
 							state.button_state[but-1]=MOUSE_DOUBLEPRESSED;
 							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
+							if(state.timeout[but-1]==0)
+								state.timeout[but-1]=1;
+							if(state.click_timeout==0)
+								state.timeout[but-1]=0;
 							break;
 						case MOUSE_DOUBLECLICKED:
 							state.button_state[but-1]=MOUSE_TRIPLEPRESSED;
 							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
+							if(state.timeout[but-1]==0)
+								state.timeout[but-1]=1;
+							if(state.click_timeout==0)
+								state.timeout[but-1]=0;
 							break;
 						case MOUSE_TRIPLECLICKED:
 							state.button_state[but-1]=MOUSE_QUADPRESSED;
 							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
+							if(state.timeout[but-1]==0)
+								state.timeout[but-1]=1;
+							if(state.click_timeout==0)
+								state.timeout[but-1]=0;
 							break;
 					}
 					break;
@@ -334,19 +350,27 @@ void ciolib_mouse_thread(void *data)
 						case MOUSE_SINGLEPRESSED:
 							state.button_state[but-1]=MOUSE_CLICKED;
 							state.timeout[but-1]=more_multies(but,1)?MSEC_CLOCK()+state.multi_timeout:MSEC_CLOCK();
+							if(state.timeout[but-1]==0)
+								state.timeout[but-1]=1;
 							break;
 						case MOUSE_DOUBLEPRESSED:
 							state.button_state[but-1]=MOUSE_DOUBLECLICKED;
 							state.timeout[but-1]=more_multies(but,2)?MSEC_CLOCK()+state.multi_timeout:MSEC_CLOCK();
+							if(state.timeout[but-1]==0)
+								state.timeout[but-1]=1;
 							break;
 						case MOUSE_TRIPLEPRESSED:
 							state.button_state[but-1]=MOUSE_TRIPLECLICKED;
 							state.timeout[but-1]=more_multies(but,3)?MSEC_CLOCK()+state.multi_timeout:MSEC_CLOCK();
+							if(state.timeout[but-1]==0)
+								state.timeout[but-1]=1;
 							break;
 						case MOUSE_QUADPRESSED:
 							state.button_state[but-1]=MOUSE_NOSTATE;
 							add_outevent(CIOLIB_BUTTON_QUAD_CLICK(but),state.button_x[but-1],state.button_y[but-1]);
 							state.timeout[but-1]=0;
+							if(state.timeout[but-1]==0)
+								state.timeout[but-1]=1;
 							break;
 						case MOUSE_DRAGSTARTED:
 							add_outevent(CIOLIB_BUTTON_DRAG_END(but),in->x,in->y);
@@ -363,6 +387,7 @@ void ciolib_mouse_thread(void *data)
 		for(but=1;but<=3;but++) {
 			if(state.button_state[but-1]!=MOUSE_NOSTATE 
 					&& state.button_state[but-1]!=MOUSE_DRAGSTARTED 
+					&& state.timeout[but-1]!=0
 					&& (timeout_button==0 || state.timeout[but-1]<ttime)) {
 				ttime=state.timeout[but-1];
 				timeout_button=but;
