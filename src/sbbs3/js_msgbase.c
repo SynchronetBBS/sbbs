@@ -258,8 +258,9 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 static JSBool
 js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char		id[128];
-	char		references[128];
+	char		msg_id[128];
+	char		reply_id[128];
+	char*		val;
 	ulong		l;
 	smbmsg_t	msg;
 	JSObject*	hdrobj;
@@ -378,22 +379,32 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_DefineProperty(cx, hdrobj, "data_length", INT_TO_JSVAL(l)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	/* References */
-	references[0]=0;
-	if(p->smb.subnum!=INVALID_SUB && msg.hdr.thread_orig)
-		sprintf(references,"<%lu.%s@%s>"
-			,msg.hdr.thread_orig,scfg->sub[p->smb.subnum]->code,scfg->sys_inetaddr);
-	JS_DefineProperty(cx, hdrobj, "references", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,references))
+	/* Reply-ID (References) */
+	if(msg.reply_id!=NULL)
+		val=msg.reply_id;
+	else {
+		reply_id[0]=0;
+		if(p->smb.subnum!=INVALID_SUB && msg.hdr.thread_orig)
+			sprintf(reply_id,"<%lu.%s@%s>"
+				,msg.hdr.thread_orig,scfg->sub[p->smb.subnum]->code,scfg->sys_inetaddr);
+		val=reply_id;
+	}
+	JS_DefineProperty(cx, hdrobj, "reply_id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* Message-ID */
-	if(p->smb.subnum==INVALID_SUB)
-		sprintf(id,"<%08lX.%lu@%s>"
-			,msg.hdr.when_written.time,msg.idx.number,scfg->sys_inetaddr);
-	else
-		sprintf(id,"<%lu.%s@%s>"
-			,msg.idx.number,scfg->sub[p->smb.subnum]->code,scfg->sys_inetaddr);
-	JS_DefineProperty(cx, hdrobj, "id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,id))
+	if(msg.id!=NULL)
+		val=msg.id;
+	else {
+		if(p->smb.subnum==INVALID_SUB)
+			sprintf(msg_id,"<%08lX.%lu@%s>"
+				,msg.hdr.when_written.time,msg.idx.number,scfg->sys_inetaddr);
+		else
+			sprintf(msg_id,"<%lu.%s@%s>"
+				,msg.idx.number,scfg->sub[p->smb.subnum]->code,scfg->sys_inetaddr);
+		val=msg_id;
+	}
+	JS_DefineProperty(cx, hdrobj, "id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	*rval = OBJECT_TO_JSVAL(hdrobj);
