@@ -63,6 +63,7 @@
 #include <errno.h>		/* ENOENT definitions */
 
 #include "sbbs.h"		/* getfname */
+#include "smbwrap.h"    /* SH_DENY* */
 
 #ifdef _WIN32
 #define stat(f,s)	_stat(f,s)
@@ -313,19 +314,29 @@ char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
 /* Uses POSIX threads														*/
 /****************************************************************************/
 #ifdef __unix__
+#ifdef _POSIX_THREADS
 ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist)
 {
 	pthread_t	thread;
+	pthread_attr_t attr;
+
+	pthread_attr_init(&attr);     /* initialize attribute structure */
+
+	/* set thread attributes to PTHREAD_CREATE_DETACHED which will ensure
+	   that thread resources are freed on exit() */
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	if(pthread_create(&thread
-		,NULL	/* default attributes */
-		,start_address
+		,&attr	/* default attributes */
+		/* POSIX defines this arg as "void *(*start_address)" */
+		,(void *) start_address
 		,arglist)==0)
-		return(1 /* thread handle? */);
+		return((int) thread /* thread handle */);
 
 	return(-1);	/* error */
 }
+#endif  // _POSIX_THREADS
 #endif
 
 /****************************************************************************/
