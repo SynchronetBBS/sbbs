@@ -409,7 +409,7 @@ while(client.socket.is_connected && !quit) {
 						field=Math.round(hdr.data_length/79)+1;
 						break;
 					case "xref":
-						field=xref(msgbase,hdr):
+						field=xref(msgbase,hdr);
 						break;
 					/* FidoNet header fields */
 					case "x-ftn-pid":
