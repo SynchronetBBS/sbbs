@@ -1433,6 +1433,10 @@ int main(int argc, char** argv)
 	/* Read in configuration files */
     memset(&scfg,0,sizeof(scfg));
     SAFECOPY(scfg.ctrl_dir,bbs_startup.ctrl_dir);
+
+	if(chdir(scfg.ctrl_dir)!=0)
+		fprintf(stderr,"\n!ERROR %d changing directory to: %s\n", errno, scfg.ctrl_dir);
+
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
