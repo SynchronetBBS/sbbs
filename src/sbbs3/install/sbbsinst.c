@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 		SAFECOPY(params.sbbsgroup,p);
 	params.useX=TRUE;
 
-	sscanf("$Revision$" + 11, "%s", revision);
+	sscanf("$Revision$", "%*s %s", revision);
 
     printf("\r\nSynchronet Installation %s-%s  Copyright 2003 "
         "Rob Swindell\r\n",revision,PLATFORM_DESC);
@@ -719,7 +719,7 @@ get_distlist(void)
 
 		switch(in_line[0])  {
 			case 'R':	/* revision */
-				SAFECOPY(distlist_rev,in_line+2);
+				sscanf(in_line+2, "%*s %s", distlist_rev);
 				break;
 			case 'C':
 				if(file!=NULL)
