@@ -50,8 +50,10 @@ char sbbs_t::getkey(long mode)
 	char	telnet_cmd[16];
 	time_t	last_telnet_cmd=0;
 
-	if(!online || !input_thread_running)
+	if(!online || !input_thread_running) {
+		mswait(1);	// just in case someone is looping on getkey() when they shouldn't
 		return(0);
+	}
 	sys_status&=~SS_ABORT;
 	if((sys_status&SS_USERON || action==NODE_DFLT) && !(mode&K_GETSTR))
 		mode|=(useron.misc&SPIN);
