@@ -1472,7 +1472,7 @@ function writeout(sock,str) {
 		if (sent)
 			return 1;
 		log("!Warning: Socket error: " + sock.error + " -- Retrying.");
-		mswait(1);
+		mswait(100);
 		if (!sock.is_connected)
 			return 0; // Failure
 	}
