@@ -180,10 +180,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 
 		case SYS_PROP_NEW_PASS:
-			p=cfg->new_magic;
+			p=cfg->new_pass;
 			break;
 		case SYS_PROP_NEW_MAGIC:
-			p=cfg->new_pass;
+			p=cfg->new_magic;
 			break;
 		case SYS_PROP_NEW_LEVEL:
 			*vp = INT_TO_JSVAL(cfg->new_level);
