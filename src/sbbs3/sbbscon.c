@@ -55,7 +55,7 @@ mail_startup_t	mail_startup;
 
 static const char* prompt = "Command (?=Help): ";
 
-static lputs(char *str)
+static void lputs(char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
@@ -259,9 +259,9 @@ int main(int argc, char** argv)
 	mail_startup.lputs=mail_lputs;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
-	_beginthread(bbs_thread,0,&bbs_startup);
-	_beginthread(ftp_server,0,&ftp_startup);
-//	_beginthread(mail_server,0,&mail_startup);
+	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
+	_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
+//	_beginthread((void(*)(void*))mail_server,0,&mail_startup);
 
 	while(!quit) {
 		ch=getch();
