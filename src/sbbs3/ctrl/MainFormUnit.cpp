@@ -746,7 +746,47 @@ static void web_start(void)
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
+/* Server recycle callback (read relevant startup .ini file section)		*/
+static void recycle(void* cbdata)
+{
+    char            str[MAX_PATH*2];
+    FILE*           fp=NULL;
+	bbs_startup_t*  bbs=NULL;
+	ftp_startup_t*  ftp=NULL;
+	web_startup_t*  web=NULL;
+	mail_startup_t* mail=NULL;
+	services_startup_t* services=NULL;
 
+    SAFEPRINTF(str,"Reading %s",MainForm->ini_file);
+	if(cbdata==(void*)&MainForm->bbs_startup) {
+		bbs=&MainForm->bbs_startup;
+        bbs_lputs(cbdata,LOG_INFO,str);
+	} else if(cbdata==(void*)&MainForm->ftp_startup) {
+		ftp=&MainForm->ftp_startup;
+        ftp_lputs(cbdata,LOG_INFO,str);
+    } else if(cbdata==(void*)&MainForm->web_startup) {
+		web=&MainForm->web_startup;
+        web_lputs(cbdata,LOG_INFO,str);
+    } else if(cbdata==(void*)&MainForm->mail_startup) {
+		mail=&MainForm->mail_startup;
+        mail_lputs(cbdata,LOG_INFO,str);
+	} else if(cbdata==(void*)&MainForm->services_startup) {
+		services=&MainForm->services_startup;
+        service_lputs(cbdata,LOG_INFO,str);
+    }
+
+    fp=fopen(MainForm->ini_file,"r");
+    sbbs_read_ini(fp
+        ,&MainForm->global
+        ,NULL   ,bbs
+        ,NULL   ,ftp
+        ,NULL   ,web
+        ,NULL   ,mail
+        ,NULL   ,services
+        );
+    if(fp!=NULL)
+        fclose(fp);
+}
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
         : TForm(Owner)
@@ -789,6 +829,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_startup.status=bbs_status;
     bbs_startup.clients=bbs_clients;
     bbs_startup.started=bbs_started;
+    bbs_startup.recycle=recycle;
     bbs_startup.terminated=bbs_terminated;
     bbs_startup.thread_up=thread_up;
     bbs_startup.client_on=client_on;
@@ -806,6 +847,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     mail_startup.status=mail_status;
     mail_startup.clients=mail_clients;
     mail_startup.started=mail_started;
+    mail_startup.recycle=recycle;
     mail_startup.terminated=mail_terminated;
     mail_startup.options=MAIL_OPT_ALLOW_POP3;
     mail_startup.thread_up=thread_up;
@@ -826,6 +868,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     ftp_startup.status=ftp_status;
     ftp_startup.clients=ftp_clients;
     ftp_startup.started=ftp_started;
+    ftp_startup.recycle=recycle;
     ftp_startup.terminated=ftp_terminated;
     ftp_startup.thread_up=thread_up;
     ftp_startup.client_on=client_on;
@@ -844,6 +887,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     web_startup.status=web_status;
     web_startup.clients=web_clients;
     web_startup.started=web_started;
+    web_startup.recycle=recycle;
     web_startup.terminated=web_terminated;
     web_startup.thread_up=thread_up;
     web_startup.client_on=client_on;
@@ -857,6 +901,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     services_startup.status=services_status;
     services_startup.clients=services_clients;
     services_startup.started=services_started;
+    services_startup.recycle=recycle;    
     services_startup.terminated=services_terminated;
     services_startup.thread_up=thread_up;
     services_startup.client_on=client_on;
@@ -1545,6 +1590,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     int		FtpFormPage=PAGE_LOWERRIGHT;
     int		WebFormPage=PAGE_LOWERRIGHT;
     int     ServicesFormPage=PAGE_LOWERRIGHT;
+#if 0   /* not yet working */
     bool	TelnetFormVisible=true;
     bool	EventsFormVisible=true;
     bool	ServicesFormVisible=true;
@@ -1554,7 +1600,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     bool 	MailFormVisible=true;
     bool	FtpFormVisible=true;
     bool	WebFormVisible=true;
-
+#endif
 
     AnsiString	Str;
 
@@ -1604,7 +1650,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("WebFormFloating"))
             WebFormFloating=Registry->ReadBool("WebFormFloating");
     }
-
+#if 0
     if(Registry->ValueExists("TelnetFormVisible"))
         TelnetFormVisible=Registry->ReadBool("TelnetFormVisible");
     if(Registry->ValueExists("EventsFormVisible"))
@@ -1623,7 +1669,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         FtpFormVisible=Registry->ReadBool("FtpFormVisible");
     if(Registry->ValueExists("WebFormVisible"))
         WebFormVisible=Registry->ReadBool("WebFormVisible");
-
+#endif
     if(Registry->ValueExists("TelnetFormPage"))
     	TelnetFormPage=Registry->ReadInteger("TelnetFormPage");
     if(Registry->ValueExists("EventsFormPage"))
@@ -1784,8 +1830,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	FtpLogFile=true;
 
     FILE* fp;
-    if(Registry->ValueExists("Imported")
-        && Registry->ReadBool("Imported")
+    if((!Registry->ValueExists("SysAutoStart")
+        || (Registry->ValueExists("Imported") && Registry->ReadBool("Imported")))
         && ini_file[0]) {
         if((fp=fopen(ini_file,"r"))==NULL) {
             char err[MAX_PATH*2];
@@ -2327,104 +2373,9 @@ void __fastcall TMainForm::SaveRegistrySettings(TObject* Sender)
     Registry->WriteString("ConfigCommand",ConfigCommand);
     Registry->WriteString("Password",Password);
     Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
-    Registry->WriteBool("UseFileAssociations",UseFileAssociations);    
+    Registry->WriteBool("UseFileAssociations",UseFileAssociations);
     Registry->WriteInteger("NodeDisplayInterval",NodeForm->Timer->Interval/1000);
     Registry->WriteInteger("ClientDisplayInterval",ClientForm->Timer->Interval/1000);
-
-#if 0   /* Moved to sbbs.ini */
-    Registry->WriteString("Hostname",global.host_name);
-    Registry->WriteString("CtrlDirectory",global.ctrl_dir);
-    Registry->WriteString("TempDirectory",global.temp_dir);
-
-    /* JavaScript Operating Parameters */
-    Registry->WriteInteger("JS_MaxBytes",global.js.max_bytes);
-    Registry->WriteInteger("JS_ContextStack",global.js.cx_stack);
-    Registry->WriteInteger("JS_BranchLimit",global.js.branch_limit);
-    Registry->WriteInteger("JS_GcInterval",global.js.gc_interval);
-    Registry->WriteInteger("JS_YieldInterval",global.js.yield_interval);
-
-    Registry->WriteInteger("SemFileCheckFrequency",global.sem_chk_freq);
-
-    Registry->WriteInteger("SysAutoStart",SysAutoStart);
-    Registry->WriteInteger("MailAutoStart",MailAutoStart);
-    Registry->WriteInteger("FtpAutoStart",FtpAutoStart);
-    Registry->WriteInteger("WebAutoStart",WebAutoStart);    
-    Registry->WriteInteger("ServicesAutoStart",ServicesAutoStart);
-    Registry->WriteInteger("MailLogFile",MailLogFile);
-    Registry->WriteInteger("FtpLogFile",FtpLogFile);
-
-    Registry->WriteInteger("TelnetInterface",bbs_startup.telnet_interface);
-    Registry->WriteInteger("RLoginInterface",bbs_startup.rlogin_interface);
-
-	Registry->WriteInteger("TelnetPort",bbs_startup.telnet_port);
-	Registry->WriteInteger("RLoginPort",bbs_startup.rlogin_port);
-    Registry->WriteInteger("FirstNode",bbs_startup.first_node);
-    Registry->WriteInteger("LastNode",bbs_startup.last_node);
-
-    Registry->WriteInteger("ExternalYield",bbs_startup.xtrn_polls_before_yield);
-    Registry->WriteString("AnswerSound",AnsiString(bbs_startup.answer_sound));
-    Registry->WriteString("HangupSound",AnsiString(bbs_startup.hangup_sound));
-
-    Registry->WriteInteger("StartupOptions",bbs_startup.options);
-
-    Registry->WriteInteger("MailMaxClients",mail_startup.max_clients);
-    Registry->WriteInteger("MailMaxInactivity",mail_startup.max_inactivity);
-    Registry->WriteInteger("MailInterface",mail_startup.interface_addr);
-    Registry->WriteInteger("MailMaxDeliveryAttempts"
-        ,mail_startup.max_delivery_attempts);
-    Registry->WriteInteger("MailRescanFrequency"
-        ,mail_startup.rescan_frequency);
-    Registry->WriteInteger("MailMaxRecipients"
-        ,mail_startup.max_recipients);
-    Registry->WriteInteger("MailMaxMsgSize"
-        ,mail_startup.max_msg_size);
-    Registry->WriteInteger("MailLinesPerYield"
-        ,mail_startup.lines_per_yield);
-
-    Registry->WriteInteger("MailSMTPPort",mail_startup.smtp_port);
-    Registry->WriteInteger("MailPOP3Port",mail_startup.pop3_port);
-
-    Registry->WriteString("MailDefaultUser",mail_startup.default_user);
-	Registry->WriteString("MailDNSBlacklistHeader",mail_startup.dnsbl_hdr);
-	Registry->WriteString("MailDNSBlacklistSubject",mail_startup.dnsbl_tag);
-
-    Registry->WriteString("MailRelayServer",mail_startup.relay_server);
-    Registry->WriteInteger("MailRelayPort",mail_startup.relay_port);
-    Registry->WriteString("MailDNSServer",mail_startup.dns_server);
-
-    Registry->WriteString("MailInboundSound",AnsiString(mail_startup.inbound_sound));
-    Registry->WriteString("MailOutboundSound",AnsiString(mail_startup.outbound_sound));
-    Registry->WriteInteger("MailOptions",mail_startup.options);
-
-    Registry->WriteString("MailPOP3Sound",AnsiString(mail_startup.pop3_sound));
-
-	Registry->WriteInteger("FtpPort",ftp_startup.port);
-    Registry->WriteInteger("FtpMaxClients",ftp_startup.max_clients);
-    Registry->WriteInteger("FtpMaxInactivity",ftp_startup.max_inactivity);
-    Registry->WriteInteger("FtpQwkTimeout",ftp_startup.qwk_timeout);
-    Registry->WriteInteger("FtpInterface",ftp_startup.interface_addr);
-    Registry->WriteString("FtpAnswerSound",AnsiString(ftp_startup.answer_sound));
-    Registry->WriteString("FtpHangupSound",AnsiString(ftp_startup.hangup_sound));
-    Registry->WriteString("FtpHackAttemptSound",AnsiString(ftp_startup.hack_sound));
-
-    Registry->WriteString("FtpIndexFileName"
-    	,AnsiString(ftp_startup.index_file_name));
-    Registry->WriteString("FtpHtmlIndexFile"
-    	,AnsiString(ftp_startup.html_index_file));
-    Registry->WriteString("FtpHtmlIndexScript"
-    	,AnsiString(ftp_startup.html_index_script));
-
-    Registry->WriteInteger("FtpOptions",ftp_startup.options);
-
-    Registry->WriteInteger("ServicesInterface",services_startup.interface_addr);
-
-    Registry->WriteString("ServicesAnswerSound"
-        ,AnsiString(services_startup.answer_sound));
-    Registry->WriteString("ServicesHangupSound"
-        ,AnsiString(services_startup.hangup_sound));
-
-    Registry->WriteInteger("ServicesOptions",services_startup.options);
-#endif  /* End of options moved to sbbs.ini */
 
 	Registry->WriteInteger( "SpyTerminalWidth"
                             ,SpyTerminalWidth);
