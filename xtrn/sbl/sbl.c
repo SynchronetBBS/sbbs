@@ -849,7 +849,7 @@ int main(int argc, char **argv)
 			close(file); }
 
 	if(maint)
-		return;
+		return(0);
 
 	strcpy(list_fmt,DEF_LIST_FMT);
 	while(1) {
