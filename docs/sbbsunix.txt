@@ -89,6 +89,9 @@ Step-by-step Instructions
 
 Note: These instructions assume you are already logged in as 'root'.
 
+Note: The "make" command may be used in place of "gmake" on systems where
+      the GNU Make utility is named "make" (e.g. some Linux distros).
+
 Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
 1. Get the required installation and source code modules from CVS:
