@@ -81,9 +81,7 @@ function find_np_message(offset,next)
 
 	if(!next)
 		step=1;
-write("offset: "+offset+" step: "+step+"<BR>");
 	for(last_offset=parseInt(offset)+step;last_offset>0 && (idx=msgbase.get_msg_index(true,last_offset))!=null;last_offset+=step) {
-write("checking: "+last_offset+"<BR>");
 		if(idx.attr&MSG_DELETE)
 			continue;
 		if(sub!='mail')
