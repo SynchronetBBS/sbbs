@@ -36,9 +36,6 @@
 #endif
 
 #ifdef _WIN32
-	#ifndef __FLAT__
-		#define __FLAT__
-	#endif
 	#ifdef __BORLANDC__
 		#define LZHCALL __stdcall
 	#else
