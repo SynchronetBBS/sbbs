@@ -3180,6 +3180,26 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	return(TRUE);
 }
 
+static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
+{
+	int i;
+
+	if((i=smb_lockmsghdr(smb,msg))!=0) {
+		lprintf(LOG_WARNING,"0000 !SEND ERROR %d (%s) locking message header #%lu"
+			,i, smb->last_error, msg->idx.number);
+		return(i);
+	}
+	msg->hdr.netattr&=~MSG_INTRANSIT;
+	i=smb_putmsghdr(smb,msg);
+	smb_unlockmsghdr(smb,msg);
+	
+	if(i!=0)
+		lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) writing message header #%lu"
+			,i, smb->last_error, msg->idx.number);
+
+	return(i);
+}
+
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
@@ -3302,16 +3322,25 @@ static void sendmail_thread(void* arg)
 					,i, smb.last_error, msg.idx.number);
 				continue;
 			}
-			i=smb_getmsghdr(&smb,&msg);
-			smb_unlockmsghdr(&smb,&msg);
-			if(i!=0) {
+			if((i=smb_getmsghdr(&smb,&msg))!=0) {
+				smb_unlockmsghdr(&smb,&msg);
 				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) reading message header #%lu"
 					,i, smb.last_error, msg.idx.number);
 				continue; 
 			}
-
-			if(msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) 
+			if(msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) {
+				smb_unlockmsghdr(&smb,&msg);
 				continue;
+			}
+			if(msg.hdr.netattr&MSG_INTRANSIT) {
+				smb_unlockmsghdr(&smb,&msg);
+				lprintf(LOG_ERR,"0000 SEND Message #%lu from %s to %s - in transit"
+					,msg.hdr.number, msg.from, msg.to_net.addr);
+				continue;
+			}
+			msg.hdr.netattr|=MSG_INTRANSIT;	/* Prevent another sendmail thread from sending this msg */
+			smb_putmsghdr(&smb,&msg);
+			smb_unlockmsghdr(&smb,&msg);
 
 			active_sendmail=1, update_clients();
 
@@ -3325,6 +3354,7 @@ static void sendmail_thread(void* arg)
 
 			lprintf(LOG_DEBUG,"0000 SEND getting message text");
 			if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS))==NULL) {
+				remove_msg_intransit(&smb,&msg);
 				lprintf(LOG_ERR,"0000 !SEND ERROR (%s) retrieving message text",smb.last_error);
 				continue;
 			}
@@ -3344,12 +3374,14 @@ static void sendmail_thread(void* arg)
 
 				p=strrchr(to,'@');
 				if(p==NULL) {
+					remove_msg_intransit(&smb,&msg);
 					lprintf(LOG_WARNING,"0000 !SEND INVALID destination address: %s", to);
 					sprintf(err,"Invalid destination address: %s", to);
 					bounce(&smb,&msg,err,TRUE);
 					continue;
 				}
 				if((dns=resolve_ip(startup->dns_server))==INADDR_NONE) {
+					remove_msg_intransit(&smb,&msg);
 					lprintf(LOG_WARNING,"0000 !SEND INVALID DNS server address: %s"
 						,startup->dns_server);
 					continue;
@@ -3359,6 +3391,7 @@ static void sendmail_thread(void* arg)
 				if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
 					,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE
 					,TIMEOUT_THREAD_WAIT/2))!=0) {
+					remove_msg_intransit(&smb,&msg);
 					lprintf(LOG_WARNING,"0000 !SEND ERROR %d obtaining MX records for %s from %s"
 						,i,p,startup->dns_server);
 					sprintf(err,"Error %d obtaining MX record for %s",i,p);
@@ -3372,6 +3405,7 @@ static void sendmail_thread(void* arg)
 
 
 			if((sock=mail_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+				remove_msg_intransit(&smb,&msg);
 				lprintf(LOG_ERR,"0000 !SEND ERROR %d opening socket", ERROR_VALUE);
 				continue;
 			}
@@ -3386,6 +3420,7 @@ static void sendmail_thread(void* arg)
 			if(startup->seteuid!=NULL)
 				startup->seteuid(TRUE);
 			if(i!=0) {
+				remove_msg_intransit(&smb,&msg);
 				lprintf(LOG_ERR,"%04d !SEND ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
 				continue;
 			}
@@ -3427,6 +3462,7 @@ static void sendmail_thread(void* arg)
 				success=TRUE;
 			}
 			if(!success) {	/* Failed to send, so bounce */
+				remove_msg_intransit(&smb,&msg);
 				bounce(&smb,&msg,err,FALSE);	
 				continue;
 			}
@@ -3435,12 +3471,14 @@ static void sendmail_thread(void* arg)
 
 			/* HELO */
 			if(!sockgetrsp(sock,"220",buf,sizeof(buf))) {
+				remove_msg_intransit(&smb,&msg);
 				sprintf(err,badrsp_err,server,buf,"220");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
 			sockprintf(sock,"HELO %s",startup->host_name);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
+				remove_msg_intransit(&smb,&msg);
 				sprintf(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
@@ -3456,6 +3494,7 @@ static void sendmail_thread(void* arg)
 			else
 				sockprintf(sock,"MAIL FROM: <%s>",fromaddr);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
+				remove_msg_intransit(&smb,&msg);
 				sprintf(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
@@ -3469,6 +3508,7 @@ static void sendmail_thread(void* arg)
 			truncstr(toaddr,"> ");
 			sockprintf(sock,"RCPT TO: <%s>", toaddr);
 			if(!sockgetrsp(sock,"25", buf, sizeof(buf))) {
+				remove_msg_intransit(&smb,&msg);
 				sprintf(err,badrsp_err,server,buf,"25*");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
@@ -3476,6 +3516,7 @@ static void sendmail_thread(void* arg)
 			/* DATA */
 			sockprintf(sock,"DATA");
 			if(!sockgetrsp(sock,"354", buf, sizeof(buf))) {
+				remove_msg_intransit(&smb,&msg);
 				sprintf(err,badrsp_err,server,buf,"354");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
@@ -3484,6 +3525,7 @@ static void sendmail_thread(void* arg)
 				,sock, strlen(msgtxt));
 			lines=sockmsgtxt(sock,&msg,msgtxt,-1);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
+				remove_msg_intransit(&smb,&msg);
 				sprintf(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
@@ -3492,6 +3534,7 @@ static void sendmail_thread(void* arg)
 
 			msg.hdr.attr|=MSG_DELETE;
 			msg.idx.attr=msg.hdr.attr;
+			msg.hdr.netattr&=~MSG_INTRANSIT;
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) 
 				lprintf(LOG_ERR,"%04d !SEND ERROR %d (%s) locking message header #%lu"
 					,sock
