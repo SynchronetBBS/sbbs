@@ -66,39 +66,52 @@ Options-&gt;Allow Anonymous E-mail is set to Yes.
 
 When replying to another message in E-mail, the original message may be quoted
 if the SCFG-&gt;System-&gt;Message Options-&gt;Allow Quoting in E-mail is set to Yes.</pre>
-<h3><a name="SynchronetMailServer">[8.2.1] - Synchronet Mail Server Documentation</a>
+<h3><a name="SynchronetMailServer">[8.2.1] - Internet (SMTP/POP3) Mail Server</a>
+<b><font color="#FF0000"><i>(v3+ Only)</i></font></b>
 </h3>
-<pre><b>Set-up:</b>
-
-1. Set SCFG-&gt;Networks-&gt;Internet-&gt;Address to your system's Internet address 
+<pre><b>Set-up:</b></pre>
+<ol>
+  <li>
+<pre>Set SCFG-&gt;Networks-&gt;Internet-&gt;Address to your system's Internet address 
    (domain name or static IP).</pre>
-<pre>2. Set SCFG-&gt;Networks-&gt;Internet-&gt;Allow Sending of Netmail to &quot;Yes&quot;.</pre>
-<pre>3. Set SCFG-&gt;Networks-&gt;Internet-&gt;Allow File Attachments to &quot;No&quot;
+  </li>
+  <li>
+<pre>Set SCFG-&gt;Networks-&gt;Internet-&gt;Allow Sending of Netmail to &quot;Yes&quot;.</pre>
+  </li>
+  <li>
+<pre>Set SCFG-&gt;Networks-&gt;Internet-&gt;Allow File Attachments to &quot;No&quot;
    (File attachments from the BBS are not supported at this time).</pre>
-<pre>4. Set SCFG-&gt;Networks-&gt;Internet-&gt;Send NetMail using Alias however you wish
+  </li>
+  <li>
+<pre>Set SCFG-&gt;Networks-&gt;Internet-&gt;Send NetMail using Alias however you wish
    (Users can receive e-mail to their Alias OR real-name regardless of this
    setting).</pre>
-<pre>5. Set SBBSCTRL-&gt;Mail Server-&gt;Configure-&gt;DNS Server to the address of your
-   ISP's DNS server OR set Relay Server to the address of your ISP's SMTP 
-   server. 
-</pre>
+  </li>
+  <li><pre>Set SBBSCTRL-&gt;Mail Server-&gt;Configure-&gt;<i>DNS Server</i> to the address of your
+   ISP's Primary DNS server (run &quot;<b>ipconfig /all</b>&quot; from the Windows command line
+   to display your ISP's Primary DNS server) OR set <i>Relay Server</i> to the address
+   of your ISP's SMTP server (check your e-mail program for your configured SMTP
+   server hostname).</pre>
+  </li>
+</ol>
 <pre><b>Notes:</b></pre>
 <pre>Users will be able to send Internet e-mail from your BBS now (if you have a 
-customized TEXT.DAT make sure you have updated line 62, &quot;InternetMailing&quot;).</pre>
+customized <b>TEXT.DAT</b> make sure you have updated line 62, &quot;<i>InternetMailing</i>&quot;).</pre>
 <pre>Your users will be able to receive e-mail at your BBS using any of the
 following ways:
 	</pre>
-<pre>	<b>First.Last@your.bbs.domain	Example: digital.man@vert.sync3.net
-	RealFirst.Last@your.bbs.domain	Example: rob.swindell@vert.sync3.net
-	UserNumber@your.bbs.domain	Example: 1@vert.sync3.net
-	&quot;First Last&quot;@your.bbs.domain	Example: &quot;digital man&quot;@vert.sync3.net
-	&quot;RealFirst Last&quot;@you.bbs.domain	Example: &quot;rob swindell&quot;@vert.sync3.net</b></pre>
+<pre>	<b>First.Last@your.bbs.domain
+</b>	<b>First_Last@your.bbs.domain
+	RealFirst.Last@your.bbs.domain	
+	UserNumber@your.bbs.domain 	(if <i>RX By User Number</i> is toggled on)
+	&quot;First Last&quot;@your.bbs.domain	
+	&quot;RealFirst Last&quot;@you.bbs.domain	</b></pre>
 <pre>E-mail user names are not case sensitive (e.g. Digital.Man and digital.man are
-both valid user names). In order for users to receive mail via usernumber, that
+both valid user names). In order for users to receive mail via user number, that
 option must be checked in SBBSCTRL-&gt;Mail-&gt;Configure.</pre>
-<pre>E-mail sent to &quot;SYSOP&quot;, &quot;POSTMASTER&quot;, your BBS's QWKID, or the sysop name
+<pre>E-mail sent to &quot;<b>SYSOP</b>&quot;, &quot;<b>POSTMASTER</b>&quot;, your BBS's QWKID, or the sysop name
 (as configured in SCFG) will automatically go to user #1 on the BBS.</pre>
-<pre>Additional aliases can be configured by creating the text file CTRL\ALIAS.CFG
+<pre>Additional aliases can be configured by creating the text file <b>ctrl/alias.cfg</b>
 with the following syntax:</pre>
 <pre>-------------------------------[ Begin ]--------------------------------------</pre>
 <pre>; This is a comment
@@ -114,31 +127,30 @@ address and they receive an Internet e-mail, it will automatically be forwarded
 to the configured address.</pre>
 <pre>The sysop of QWKnet nodes can receive e-mail at their QWK-ID @ their hub's
 Internet domain/ip address. Example: If YOURBBS (QWK-ID) polls VERT for QWKnet,
-you (the sysop) can receive e-mail at yourbbs@vert.sync3.net.</pre>
+you (the sysop) can receive e-mail at yourbbs@vert.synchro.net.</pre>
 <pre>You (or any of the user's on YOURBBS) can send Internet e-mail from YOURBBS 
 through VERT by sending a QWKnet NetMail message to NETMAIL@VERT with the 
 actual destination Internet address as the first line of the message.
-</pre>
-<pre><b>Relaying:</b>
+
+<b>Relaying:</b>
 
 As of v1.10, the Synchronet Mail Server can be used to relay e-mail to external
 servers. Due to the security (SPAM) risks of opening the SMTP server up to just
 anyone, you must specify which hostnames or IP addresses you wish to allow to
-relay mail. You do this by creating the file TEXT\RELAY.CAN and list the IP
+relay mail. You do this by creating the file <b>text/relay.can</b> and list the IP
 addresses or host names of the systems you wish to give relay access to. If you
 wish to allow relay access to all hosts (not recommended), simply create a 
-RELAY.CAN with one line containing &quot;.~&quot;.</pre>
+<b>relay.can</b> with one line containing &quot;<b>.~</b>&quot;.</pre>
 <h2><a name="SettingUpMessageBase">[8.3] - Setting Up the Message Base</a>
 </h2>
 <h3><a name="CreatingMessageGroups">[8.3.1] - Creating Message Groups:</a>
 </h3>
-<pre>Hit 'C' from the wait for call screen and select &quot;Message Base&quot; from the SCFG
-main menu and add any additional message groups you want. A message group is a
-group of message sub-boards that have a similar subject matter or other common
-element. It is common to put all of your local sub-boards in one group and your
-networked sub-boards (where messages are shared with other BBSs) into other
-groups. An example configuration that separates local and networked sub-boards
-into groups:
+<pre>Run SCFG and select &quot;<i>Message Base</i>&quot; from the SCFG main menu and add any 
+additional message groups you want. A message group is a group of message 
+sub-boards that have a similar subject matter or other common element. It is 
+common to put all of your local sub-boards in one group and your networked 
+sub-boards (where messages are shared with other BBSs) into other groups. An 
+example configuration that separates local and networked sub-boards into groups:
 
 <b>Group			Sub-boards</b>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -188,8 +200,8 @@ groups.
 To add message groups, select the position you want the new message group
 to be in with the arrow keys. If you want the new message group to be the
 first group, highlight the top line. If you want the message group to be added
-to the end of the group list, highlight the bottom line. Hit INS (insert key)
-to add a new message group, or DEL (delete key) to remove an existing one.
+to the end of the group list, highlight the bottom line. Hit <i>INS</i> (insert key)
+to add a new message group, or <i>DEL</i> (delete key) to remove an existing one.
 Following is a list of options available when creating or modifying a message
 group.</pre>
 <h3><a name="MessageGroupOptions">[8.3.2] - Message Group Options</a>
@@ -571,73 +583,73 @@ is to take effect.
 
 <i>Examples:</i>
 
-To: SBBS (All messages must be sent to SBBS)
+To: <b>SBBS</b> (All messages must be sent to SBBS)
 
-Subj: DROP [conf#]
+Subj: <b>DROP [conf#]</b>
 Note: Drop current conference (or specified conference #) from future packets.
 
-Subj: ADD [YOURS] [ptr | -msgs | mm/dd/yy]
+Subj: <b>ADD [YOURS] [ptr | -msgs | mm/dd/yy]</b>
 Note: Add current conference to future packets and optionally set the message
       pointer.
       If &quot;YOURS&quot; is specified, only mail addressed to you will be packed for
       this conference.
       The YOURS option is for users only.
 
-Subj: YOURS [ptr | -msgs | mm/dd/yy]
+Subj: <b>YOURS [ptr | -msgs | mm/dd/yy]</b>
 Note: Same as &quot;ADD YOURS&quot;.
       For users only
 
-Subj: RESET [ptr | -msgs | mm/dd/yy]
+Subj: <b>RESET [ptr | -msgs | mm/dd/yy]</b>
 Note: Set message pointer for current conference.
 
-Subj: SUBPTR [ptr | -msgs | mm/dd/yy]
+Subj: <b>SUBPTR [ptr | -msgs | mm/dd/yy]</b>
 Note: Same as &quot;RESET&quot;.
 
-Subj: RESETALL [ptr | -msgs | mm/dd/yy]
+Subj: <b>RESETALL [ptr | -msgs | mm/dd/yy]</b>
 Note: Set message pointers for all conferences.
 
-Subj: ALLPTR [ptr | -msgs | mm/dd/yy]
+Subj: <b>ALLPTR [ptr | -msgs | mm/dd/yy]</b>
 Note: Same as &quot;RESETALL&quot;.
 
-Subj: FREQ &lt;filename&gt;
+Subj: <b>FREQ &lt;filename&gt;</b>
 Note: File Request from file transfer database (not attachments).  QWK netted
       BBSs will receive the requested file into their hubs IN sub-directory,
       normally located in the \SBBS\DATA\QNET directory
 
-Subj: FILES [ON | OFF | mm/dd/yy]
+Subj: <b>FILES [ON | OFF | mm/dd/yy]</b>
 Note: Include files list in packet and/or specify new-scan date.
       Specifying files with the date only will turn this option ON.
       For users only
 
-Subj: ATTACH [ON | OFF]
+Subj: <b>ATTACH [ON | OFF]</b>
 Note: Include file attachments in packet automatically (e-mail only).
       For users only
 
-Subj: OWN [ON | OFF]
+Subj: <b>OWN [ON | OFF]</b>
 Note: Include messages from you (affects all conferences).
       For users only
 
-Subj: MAIL [ALL | ON | OFF]
+Subj: <b>MAIL [ALL | ON | OFF]</b>
 Note: Include private mail-box (ALL includes previously read mail).
       For users only
 
-Subj: DELMAIL [ON | OFF]
+Subj: <b>DELMAIL [ON | OFF]</b>
 Note: Automatically delete mail-box after successful packet download.
       For users only
 
-Subj: CTRL-A [KEEP | EXPAND | STRIP]
+Subj: <b>CTRL-A [KEEP | EXPAND | STRIP]</b>
 Note: Ctrl-A color/attribute codes - leave-in, expand to ANSI, or remove.
 
-Subj: NDX [ON | OFF]
+Subj: <b>NDX [ON | OFF]</b>
 Note: Include index (.NDX) files (not necessary for Synchronet QWKnet)
 
-Subj: CONTROL [ON | OFF]
+Subj: <b>CONTROL [ON | OFF]</b>
 Note: Include control files (DOOR.ID, CONTROL.DAT, NETFLAGS.DAT, etc)
 
-Subj: VIA [ON | OFF]
+Subj: <b>VIA [ON | OFF]</b>
 Note: Include message path (@VIA) line in messages.
 
-Subj: TZ [ON | OFF]
+Subj: <b>TZ [ON | OFF]</b>
 Note: Include time zone (@TZ) line in messages.
 
 <b>Downloading Files in QWK</b>
@@ -645,7 +657,7 @@ Note: Include time zone (@TZ) line in messages.
 If there are any files in the batch download queue when a QWK packet is
 created, they will be added to the QWK packet automatically. This is what
 makes the FREQ control command so useful. A user (or QWK network node) just
-posts a message (on any sub-board) to SBBS with the title &quot;FREQ FILENAME.EXT&quot;
+posts a message (on any sub-board) to SBBS with the title &quot;<b>FREQ FILENAME.EXT</b>&quot;
 (where FILENAME.EXT is the filename and extension of the file to download).
 When the REP packet is extracted, the requested file (if found) is added to
 the batch download queue. Then when a QWK packet is created, the file is
