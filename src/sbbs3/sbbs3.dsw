@@ -126,7 +126,7 @@ Package=<4>
     Project_Dep_Name sbbs
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name smblib_mt
+    Project_Dep_Name xpdev_mt
     End Project Dependency
 }}}
 
