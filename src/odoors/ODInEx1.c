@@ -2004,7 +2004,7 @@ malloc_error:
          ODComSetPreferredMethod(hSerialPort, kComMethodSocket);
       }
 
-#ifdef ODPLAT_WIN32
+#if defined ODPLAT_WIN32 || defined ODPLAT_NIX
       /* Check whether a handle has been provided by the caller. */
       if(od_control.od_open_handle != 0)
       {
