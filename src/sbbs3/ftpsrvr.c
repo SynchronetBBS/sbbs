@@ -2018,9 +2018,17 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	xfer->desc=desc;
 	SAFECOPY(xfer->filename,filename);
 	if(receiving)
-		_beginthread(receive_thread,0,(void*)xfer);
+		result=_beginthread(receive_thread,0,(void*)xfer);
 	else
-		_beginthread(send_thread,0,(void*)xfer);
+		result=_beginthread(send_thread,0,(void*)xfer);
+
+	if(result==-1) {
+		lprintf("%04d !ERROR %d creating transfer thread",ctrl_sock,errno);
+		sockprintf(ctrl_sock,"425 Error %d creating transfer thread",errno);
+		if(tmpfile)
+			remove(filename);
+		*inprogress=FALSE;
+	}
 }
 
 /* convert "user name" to "user.name" or "mr. user" to "mr._user" */
