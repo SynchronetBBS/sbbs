@@ -311,7 +311,7 @@ int main(int argc, char **argv)
 		if(msg.hdr.attr&MSG_DELETE)
 			body=tail=NULL;
 		else {
-			if((body=smb_getmsgtxt(&smb,&msg,0))==NULL) {
+			if((body=smb_getmsgtxt(&smb,&msg,GETMSGTXT_BODY_ONLY))==NULL) {
 				fprintf(stderr,"%sGet text body failure\n",beep);
 				msgerr=TRUE;
 				if(extinfo)
