@@ -369,14 +369,22 @@ while(client.socket.is_connected) {
 				break;
 
 			if(cmd[0].toUpperCase()!="BODY") {
-				if(hdr.from_net_type)
-					writeln(format("From: \"%s\" <%s@%s>"
-						,hdr.from,hdr.from,hdr.from_net_addr));
-				else
+				if(!hdr.from_net_type)	/* local message */
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
 						,hdr.from.replace(/ /g,"_")
 						,system.inetaddr));
+				else if(!hdr.from_net_addr.length)
+					writeln(format("From: %s",hdr.from));
+				else if(hdr.from_net_addr.indexOf('@')!=-1)
+					writeln(format("From: \"%s\" <%s>"
+						,hdr.from
+						,hdr.from_net_addr));
+				else
+					writeln(format("From: \"%s\" <%s@%s>"
+						,hdr.from
+						,hdr.from.replace(/ /g,"_")
+						,hdr.from_net_addr));
 				writeln("To: " + hdr.to);
 				writeln("X-Comment-To: " + hdr.to);
 				writeln("Subject: " + hdr.subject);
