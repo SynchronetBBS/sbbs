@@ -1,3 +1,11 @@
+X_PATH ?=	/usr/X11R6
+X_HEADERS	?=	$(X_PATH)$(DIRSEP)include
+X_PRESENT	= $(shell if [ ! \( -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)Xlib.h -a -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)Xutil.h -a -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)keysym.h -a -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)Xatom.h \) ] ; then echo NO ; else echo YES ; fi )
+ifeq ($(X_PRESENT),NO)
+ NO_X=1
+else
+endif
+
 ifeq ($(os),sunos)
  CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
 else
@@ -5,7 +13,7 @@ else
 endif
 ifndef NO_X
  ifdef STATIC
-  CIOLIB-MT_LIBS		+=	-L/usr/X11R6/lib -lX11
+  CIOLIB-MT_LIBS		+=	-L$(X_PATH)$(DIRSEP)lib -lX11
  else
   ifeq ($(os),linux)
    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
