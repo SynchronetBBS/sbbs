@@ -353,6 +353,7 @@ static void init_enviro(http_session_t *session)  {
 	if(!strcmp(session->host_name,"<no name>"))
 		add_env(session,"REMOTE_HOST",session->host_name);
 	add_env(session,"REMOTE_ADDR",session->host_ip);
+	add_env(session,"ELEBBS","/usr/home/admin/bbs");
 	return;
 }
 
@@ -734,13 +735,17 @@ BOOL send_headers(http_session_t *session, const char *status)
 	/* Should be dynamic to allow POST for CGIs */
 	sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
 	if(session->req.send_location) {
-		if(*session->req.request=='/')  {
+		if(!strnicmp(session->req.request,"http://",7))  {
 			location_offset=strlen(root_dir);
 			if(session->req.host[0])
-				location_offset+=strlen(session->req.host)+1;
-			sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),session->req.request+location_offset);
-		} else
-			sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),session->req.request);
+				location_offset+=(strlen(session->req.host)+1);
+			lprintf("%04d Sending location as %s Offset: %d",session->socket,session->req.request+location_offset,location_offset);
+			sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),(session->req.request+location_offset));
+		} else  {
+			location_offset=strlen(root_dir);
+			sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),(session->req.request+location_offset));
+			lprintf("%04d Sending location as %s Offset: %d",session->socket,session->req.request+location_offset,location_offset);
+		}
 	}
 	if(!ret) {
 		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
@@ -782,11 +787,13 @@ static void send_error(http_session_t * session, char *message)
 	lprintf("%04d !ERROR %s",session->socket,message);
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
-	sprintf(session->req.request,"%s%s.html",error_dir,error_code);
+	sprintf(session->req.request,"%s/%s.html",error_dir,error_code);
 	if(session->http_ver > HTTP_0_9)
 		send_headers(session,message);
 	if(fexist(session->req.request))
 		sock_sendfile(session->socket,session->req.request);
+	else
+		lprintf("%04d Error message file %s doesn't exist.",session->socket,session->req.request);
 	close_request(session);
 }
 
@@ -972,9 +979,8 @@ static BOOL parse_headers(http_session_t * session)
 	char	*p;
 	int		i;
 	int		content_len=0;
-	char	cgi_infilename[128];
 	char	env_name[128];
-	FILE*	fp;
+	int		incgi;
 
 	lprintf("%04d Parsing headers",session->socket);
 	while(!sockreadline(session,req_line,sizeof(req_line))&&strlen(req_line)) {
@@ -1042,20 +1048,15 @@ static BOOL parse_headers(http_session_t * session)
 			add_env(session,env_name,value);
 		}
 	}
-	sprintf(cgi_infilename,"%s/SBBS_CGI.%d",startup->cgi_temp_dir,session->socket);
-	if((fp=fopen(cgi_infilename,"w"))!=NULL)  {
+	sprintf(session->req.cgi_infile,"%s/SBBS_CGI.%d",startup->cgi_temp_dir,session->socket);
+	if((incgi=open(session->req.cgi_infile,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR))>0)  {
+		lprintf("%04d Created %s",session->socket,session->req.cgi_infile);
 		if(content_len)  {
-			p=malloc(content_len);
-			if(p!=NULL)  {
-				read(session->socket,p,content_len);
-				fwrite(p,content_len,1,fp);
-				free(p);
-			}
+			getfilesock(session->socket,incgi,NULL,content_len);
 		}
-		fclose(fp);
-		SAFECOPY(session->req.cgi_infile,cgi_infilename);
+		close(incgi);
 	} else  {
-		lprintf("%04d !ERROR %d creating %s",session->socket,errno,cgi_infilename);
+		lprintf("%04d !ERROR %d creating %s",session->socket,errno,session->req.cgi_infile);
 	}
 	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
 	lprintf("%04d Done parsing headers",session->socket);
@@ -1189,21 +1190,22 @@ static BOOL check_request(http_session_t * session)
 	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
 		session->req.host[0]=0;
 	if(session->req.host[0]) {
-		sprintf(path,"%s%s",root_dir,session->req.host);
-		if(isdir(path))
-			sprintf(path,"%s%s%s",root_dir,session->req.host,session->req.request);
+		sprintf(str,"%s/%s",root_dir,session->req.host);
+		if(isdir(str))
+			sprintf(str,"%s/%s%s",root_dir,session->req.host,session->req.request);
 	} else
-		sprintf(path,"%s%s",root_dir,session->req.request);
+		sprintf(str,"%s%s",root_dir,session->req.request);
 	
-	if(FULLPATH(session->req.request,path,sizeof(session->req.request))==NULL) {
+	if(FULLPATH(path,str,sizeof(session->req.request))==NULL) {
 		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
 	if(!fexist(path)) {
 		lprintf("%04d Requested file doesn't exist: %s", session->socket, path);
 		last_ch=*lastchar(path);
-		if(last_ch!='/' && last_ch!='\\')
+		if(last_ch!='/' && last_ch!='\\')  {
 			strcat(path,"/");
+		}
 		strcat(path,startup->index_file_name);
 		session->req.send_location=MOVED_PERM;
 	}
@@ -1262,6 +1264,7 @@ static BOOL check_request(http_session_t * session)
 		send_error(session,str);
 		return(FALSE);
 	}
+	lprintf("%04d Validated as %s",session->socket,session->req.request);
 	
 	return(TRUE);
 }
@@ -1318,7 +1321,6 @@ static BOOL parse_cgi_headers(http_session_t *session,FILE *output)  {
 static void send_cgi_response(http_session_t *session,FILE *output)  {
 	int			i;
 	long		filepos;
-	char *		content;
 	struct stat	stats;
 	time_t		ti;
 	struct tm	*t;
@@ -1365,12 +1367,7 @@ static void send_cgi_response(http_session_t *session,FILE *output)  {
 	FREE_AND_NULL(session->req.cgi_heads);
 	session->req.cgi_heads_size=0;
 	
-	content=malloc(stats.st_size-filepos);
-	if(content!=NULL)  {
-		fread(content,stats.st_size-filepos,1,output);
-		write(session->socket,content,stats.st_size-filepos);
-		free(content);
-	}
+	sendfilesocket(session->socket,fileno(output),&filepos,stats.st_size-filepos);
 }
 
 static BOOL exec_cgi(http_session_t *session)  
@@ -1425,7 +1422,7 @@ static BOOL exec_cgi(http_session_t *session)
 	if(child>0)  {
 		waitpid(child,&status,0);
 		lprintf("%04d Child exited",session->socket);
-		unlink(session->req.cgi_infile);
+//		unlink(session->req.cgi_infile);
 		if(WIFEXITED(status))  {
 			/* Parse headers */
 			output=fopen(session->req.request,"r");
@@ -1434,7 +1431,7 @@ static BOOL exec_cgi(http_session_t *session)
 				send_cgi_response(session,output);
 				lprintf("%04d Sent response file.",session->socket);
 				fclose(output);
-				unlink(session->req.request);
+//				unlink(session->req.request);
 				return(WEXITSTATUS(status)==EXIT_SUCCESS);
 			}
 			else  {
@@ -1449,7 +1446,7 @@ static BOOL exec_cgi(http_session_t *session)
 #else
 	sprintf(cmdline,"%s /C %s < %s > %s",comspec,cmdline,session->req.cgi_infile,session->req.request);
 	system(cmdline);
-	unlink(session->req.cgi_infile);
+//	unlink(session->req.cgi_infile);
 	return(TRUE);
 #endif
 }
