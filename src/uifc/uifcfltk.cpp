@@ -783,7 +783,7 @@ int uifcinifltk(uifcapi_t* uifcapi)
     api->scrn_len=24;
 	api->mode |= UIFC_MOUSE;
 
-	Fl::scheme("plastic");
+//	Fl::scheme("plastic");
 	Fl::add_handler(handle_escape);
 	Fl::visible_focus(TRUE);
 	Fl::visual(FL_DOUBLE|FL_INDEX);
