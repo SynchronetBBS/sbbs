@@ -175,6 +175,8 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 				writeln("POP3");
 			if(test_port(119))
 				writeln("NNTP");
+			if(test_port(70))
+				writeln("Gopher");
 			if(test_port(80))
 				writeln("HTTP");
 			if(test_port(113))
