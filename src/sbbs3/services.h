@@ -80,6 +80,7 @@ typedef struct {
 	/* Misc */
     char	host_name[128];
 	BOOL	recycle_now;
+	sem_t	recycle_sem;
 
 } services_startup_t;
 

@@ -78,6 +78,8 @@ typedef struct {
 	/* Misc */
     char	host_name[128];
 	BOOL	recycle_now;
+	sem_t	recycle_sem;
+
 } web_startup_t;
 
 #define WEB_OPT_DEBUG_RX			(1<<0)	/* Log all received requests		*/

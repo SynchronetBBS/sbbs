@@ -96,6 +96,7 @@ typedef struct {
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
 	char	host_name[128];
 	BOOL	recycle_now;
+	sem_t	recycle_sem;
 
 } bbs_startup_t;
 

@@ -87,6 +87,7 @@ typedef struct {
 	/* Misc */
     char	host_name[128];
 	BOOL	recycle_now;
+	sem_t	recycle_sem;
 
 } mail_startup_t;
 
