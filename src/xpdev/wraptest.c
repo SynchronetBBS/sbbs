@@ -2,6 +2,8 @@
 
 /* Verification of cross-platform development wrappers */
 
+/* $Id$ */
+
 #include <time.h>	/* ctime */
 
 #include "genwrap.h"
