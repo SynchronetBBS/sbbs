@@ -222,7 +222,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				w=sizeof(buf)-1;
 
 			start=time(NULL);
-			for(i=0;i<w;i++) {
+			for(i=0;i<w;) {
 
 				if(!online)
 					return(1);
@@ -230,14 +230,15 @@ int sbbs_t::exec_net(csi_t* csi)
 				if(!socket_check(*lp,&rd))
 					return(0);
 
-				if(time(NULL)-start>TIMEOUT_SOCK_READLINE) {
-					lprintf("!socket_readline: timeout (%d) exceeded"
-						,TIMEOUT_SOCK_READLINE);
-					return(0);
-				}
-
-				if(!rd)
+				if(!rd) {
+					if(time(NULL)-start>TIMEOUT_SOCK_READLINE) {
+						lprintf("!socket_readline: timeout (%d) exceeded"
+							,TIMEOUT_SOCK_READLINE);
+						return(0);
+					}
+					mswait(1);
 					continue;
+				}
 
 				if(recv(*lp, &ch, 1, 0)!=1) {
 					csi->socket_error=ERROR_VALUE;
@@ -247,9 +248,13 @@ int sbbs_t::exec_net(csi_t* csi)
 				if(ch=='\n' && i>=1) 
 					break;
 
-				buf[i]=ch;
+				buf[i++]=ch;
 			}
-			buf[i-1]=0;
+			if(i>0 && buf[i-1]=='\r')
+				buf[i-1]=0;
+			else
+				buf[i]=0;
+
 			if(csi->etx) {
 				p=strchr(buf,csi->etx);
 				if(p) *p=0; 
@@ -483,14 +488,15 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
 				if(!socket_check(sock,&data_avail))
 					return(FALSE);
 
-				if(time(NULL)-start>TIMEOUT_FTP_RESPONSE) {
-					lprintf("!ftp_cmd: TIMEOUT_FTP_RESPONSE (%d) exceeded"
-						,TIMEOUT_FTP_RESPONSE);
-					return(FALSE);
-				}
-
-				if(!data_avail)
+				if(!data_avail) {
+					if(time(NULL)-start>TIMEOUT_FTP_RESPONSE) {
+						lprintf("!ftp_cmd: TIMEOUT_FTP_RESPONSE (%d) exceeded"
+							,TIMEOUT_FTP_RESPONSE);
+						return(FALSE);
+					}
+					mswait(1);
 					continue;
+				}
 
 				if(recv(sock, &ch, 1, 0)!=1) {
 					csi->socket_error=ERROR_VALUE;
