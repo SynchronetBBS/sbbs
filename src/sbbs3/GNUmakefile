@@ -235,6 +235,8 @@ SMBLIB_OBJS = \
 
 # Monolithic Synchronet executable Build Rule
 FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
+
+$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 	@echo Linking $@
 	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
 
