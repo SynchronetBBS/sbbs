@@ -401,19 +401,24 @@ BOOL download_stats(ulong bytes)
 	return(TRUE);
 }
 
-void recverror(SOCKET socket, int rd)
+void recverror(SOCKET socket, int rd, int line)
 {
 	if(rd==0) 
-		lprintf("%04d Socket closed by peer on receive",socket);
+		lprintf("%04d Socket closed by peer on receive (line %d)"
+			,socket, line);
 	else if(rd==SOCKET_ERROR) {
 		if(ERROR_VALUE==ECONNRESET) 
-			lprintf("%04d Connection reset by peer on receive",socket);
+			lprintf("%04d Connection reset by peer on receive (line %d)"
+				,socket, line);
 		else if(ERROR_VALUE==ECONNABORTED) 
-			lprintf("%04d Connection aborted by peer on receive",socket);
+			lprintf("%04d Connection aborted by peer on receive (line %d)"
+				,socket, line);
 		else
-			lprintf("%04d !ERROR %d receiving on socket", socket, ERROR_VALUE);
+			lprintf("%04d !ERROR %d receiving on socket (line %d)"
+				,socket, ERROR_VALUE, line);
 	} else
-		lprintf("%04d !ERROR: recv on socket returned unexpected value: %d",socket,rd);
+		lprintf("%04d !ERROR: recv on socket returned unexpected value: %d (line %d)"
+			,socket, rd, line);
 }
 
 int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
@@ -425,7 +430,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 	
 	while(rd<len-1) {
 
-		tv.tv_sec=1;
+		tv.tv_sec=0;
 		tv.tv_usec=0;
 
 		FD_ZERO(&socket_set);
@@ -449,7 +454,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 				mswait(1);
 				continue;
 			}
-			recverror(socket,i);
+			recverror(socket,i,__LINE__);
 			return(i);
 		}
 		i=recv(socket, &ch, 1, 0);
@@ -460,7 +465,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 				continue;
 			}
 #endif
-			recverror(socket,i);
+			recverror(socket,i,__LINE__);
 			return(i);
 		}
 		if(ch=='\n' && rd>=1) {
@@ -1078,7 +1083,8 @@ void parsepath(char** pp, user_t* user, int* curlib, int* curdir)
 	for(dir=0;dir<scfg.total_dirs;dir++) {
 		if(scfg.dir[dir]->lib!=lib)
 			continue;
-		if(!chk_ar(&scfg,scfg.dir[dir]->ar,user))
+		if(dir!=scfg.sysop_dir && dir!=scfg.upload_dir 
+			&& !chk_ar(&scfg,scfg.dir[dir]->ar,user))
 			continue;
 		if(!stricmp(scfg.dir[dir]->code,p))
 			break;
@@ -2673,6 +2679,7 @@ static void ctrl_thread(void* arg)
 			}
 			else if(!strncmp(p,"./",2))
 				p+=2;
+			/* Need to add support for uploading to aliased directories */
 			if(lib<0 && (tp=strchr(p,'/'))!=NULL) {
 				dir=-1;
 				*tp=0;
@@ -2691,7 +2698,8 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<scfg.total_dirs;i++) {
 					if(scfg.dir[i]->lib!=lib)
 						continue;
-					if(!chk_ar(&scfg,scfg.dir[i]->ar,&user))
+					if(i!=scfg.sysop_dir && i!=scfg.upload_dir 
+						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user))
 						continue;
 					if(!stricmp(scfg.dir[i]->code,p))
 						break;
