@@ -194,6 +194,8 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 !include objects.mk		# defines $(OBJS)
 #!include libobjs.mk		# defines $(LIB_OBJS)
 
+.SUFFIXES
+.SUFFIXES .c .cpp
 # Implicit C Compile Rule
 {.}.c{$(OBJODIR)}$(OFILE):
 	@$(CC) $(CFLAGS) $(CCFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
