@@ -2264,6 +2264,18 @@ function IRCClient_registered_commands(command, cmdline) {
 					break;
 			}
 			break;
+		case "EVAL":	/* Evaluate a JavaScript expression */
+			if (!(this.mode&USERMODE_OPER)) {
+				this.numeric481();
+				break;
+			}
+			cmd.shift();
+			try {
+				this.server_notice("Result: " + eval(cmd.toString()));
+			} catch(e) {
+				this.server_notice("!" + e);
+			}
+			break;
 		case "INFO":
 			this.numeric("371", ":" + VERSION + " Copyright 2003 Randy Sommerfeld.");
 			this.numeric("371", ":" + system.version_notice + " " + system.copyright + ".");
