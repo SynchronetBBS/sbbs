@@ -55,9 +55,6 @@ enum {
 	,CON_PROP_TIMELEFT_WARN		/* low timeleft warning flag */
 	,CON_PROP_ABORTABLE
 	,CON_PROP_TELNET_MODE
-
-	/* Must be last */
-	,CON_PROPERTIES
 };
 
 static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -197,7 +194,7 @@ static struct JSPropertySpec js_console_properties[] = {
 };
 
 #ifdef _DEBUG
-static char* con_prop_desc[CON_PROPERTIES+1] = {
+static char* con_prop_desc[] = {
 	 "status bit field (see CON_* in sbbsdefs.js for bit definitions)"
 	,"current line counter (used for automatic screen pause)"
 	,"current display attributes"
@@ -210,6 +207,7 @@ static char* con_prop_desc[CON_PROPERTIES+1] = {
 	,"current telnet mode (see TELNET_MODE_* in sbbsdefs.js for valid values)"
 	,"word-wrap buffer (used by getstr)"
 	,"current yes/no question (set by yesno and noyes)"
+	,NULL
 };
 #endif
 

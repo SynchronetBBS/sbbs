@@ -47,13 +47,10 @@ enum {
 	,CLIENT_PROP_TIME		/* connect time */
 	,CLIENT_PROP_PROTOCOL	/* protocol description */
 	,CLIENT_PROP_USER		/* user name */
-
-	/* Must be last */
-	,CLIENT_PROPERTIES
 };
 
 #ifdef _DEBUG
-	static char* client_prop_desc[CLIENT_PROPERTIES+1] = {
+	static char* client_prop_desc[] = {
 	 "client's IP address (in dotted-decimal format)"
 	,"client's host name (up to 64 characters)"
 	,"client's TCP or UDP port number"
@@ -62,6 +59,7 @@ enum {
 	,"user's name/alias (if logged in)"
 	/* this next one must be last */
 	,"instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
+	,NULL
 	};
 #endif
 

@@ -798,12 +798,10 @@ enum {
 	,SOCK_PROP_REMOTE_PORT
 	,SOCK_PROP_TYPE
 
-	/* MUST be last */
-	,SOCK_PROPERTIES
 };
 
 #ifdef _DEBUG
-static char* socket_prop_desc[SOCK_PROPERTIES+1] = {
+static char* socket_prop_desc[] = {
 	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
 	,"<i>true</i> if data is waiting to be read - <small>READ ONLY</small>"

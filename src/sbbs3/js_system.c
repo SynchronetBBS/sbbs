@@ -446,10 +446,6 @@ enum {
 	,SYSSTAT_PROP_TOTALMSGS
 	,SYSSTAT_PROP_TOTALMAIL
 	,SYSSTAT_PROP_FEEDBACK
-
-	/* Must be last */
-
-	,SYSSTAT_PROPERTIES
 };
 
 static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -558,7 +554,7 @@ static struct JSPropertySpec js_sysstats_properties[] = {
 };
 
 #ifdef _DEBUG
-static char* sysstat_prop_desc[SYSSTAT_PROPERTIES+1] = {
+static char* sysstat_prop_desc[] = {
 	 "total logons"
 	,"logons today"
 	,"total time used"
@@ -576,6 +572,7 @@ static char* sysstat_prop_desc[SYSSTAT_PROPERTIES+1] = {
 	,"feedback sent today"
 	,"total active user records"
 	,"new users today"
+	,NULL
 };
 #endif
 
