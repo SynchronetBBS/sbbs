@@ -110,7 +110,7 @@ typedef struct  {
 } linked_list;
 
 typedef struct  {
-	BOOL		method;
+	int			method;
 	char		virtual_path[MAX_PATH+1];
 	char		physical_path[MAX_PATH+1];
 	BOOL		parsed_headers;
@@ -236,10 +236,11 @@ static struct {
 	{ -1,					NULL /* terminator */	},
 };
 
+/* Everything MOVED_TEMP and everything after is a magical internal redirect */
 enum  {
 	NO_LOCATION
-	,MOVED_TEMP
 	,MOVED_PERM
+	,MOVED_TEMP
 	,MOVED_STAT
 };
 
@@ -1342,7 +1343,7 @@ static char *get_request(http_session_t * session, char *req_line)
 				break;
 		}
 	}
-	
+
 	return(retval);
 }
 
@@ -1365,12 +1366,21 @@ static char *get_method(http_session_t * session, char *req_line)
 	return(NULL);
 }
 
-static BOOL get_req(http_session_t * session)
+static BOOL get_req(http_session_t * session, char *request_line)
 {
 	char	req_line[MAX_REQUEST_LINE];
 	char *	p;
-	
-	if(sockreadline(session,req_line,sizeof(req_line))>0) {
+
+	req_line[0]=0;
+	if(request_line == NULL) {
+		if(sockreadline(session,req_line,sizeof(req_line))<0)
+			req_line[0]=0;
+	}
+	else {
+		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",socket,request_line);
+		SAFECOPY(req_line,request_line);
+	}
+	if(req_line[0]) {
 		if(startup->options&WEB_OPT_DEBUG_RX)
 			lprintf(LOG_DEBUG,"%04d Got request line: %s",session->socket,req_line);
 		p=NULL;
@@ -1529,7 +1539,7 @@ static BOOL check_request(http_session_t * session)
 			return(FALSE);
 		}
 		strcat(session->req.virtual_path,startup->index_file_name[i]);
-		session->req.send_location=MOVED_PERM;
+		session->req.send_location=MOVED_STAT;
 	}
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
 		session->req.keep_alive=FALSE;
@@ -2335,9 +2345,11 @@ void http_session_thread(void* arg)
 	char*			host_name;
 	HOSTENT*		host;
 	SOCKET			socket;
+	char			redir_req[MAX_REQUEST_LINE+1];
+	char			*redirp;
 	http_session_t	session=*(http_session_t*)arg;	/* copies arg BEFORE it's freed */
 
-	free(arg);	
+	free(arg);
 
 	socket=session.socket;
 	lprintf(LOG_DEBUG,"%04d Session thread started", session.socket);
@@ -2387,10 +2399,24 @@ void http_session_thread(void* arg)
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
 		SAFECOPY(session.req.status,"200 OK");
-		if(get_req(&session)) {
-			if((session.http_ver<HTTP_1_0)||parse_headers(&session)) {
-				if(check_request(&session)) {
-					respond(&session);
+		session.req.send_location=NO_LOCATION;
+		redirp=NULL;
+		while(redirp==NULL || session.req.send_location >= MOVED_TEMP) {
+			session.req.send_location=NO_LOCATION;
+			if(get_req(&session,redirp)) {
+				/* At this point, if redirp is non-NULL then the headers have already been parsed */
+				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
+					if(check_request(&session)) {
+						if(session.req.send_location < MOVED_TEMP)
+							respond(&session);
+						else {
+							snprintf(redir_req,MAX_REQUEST_LINE,"%s %s%s%s",methods[session.req.method]
+								,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
+							redir_req[MAX_REQUEST_LINE]=0;
+							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,redir_req);
+							redirp=redir_req;
+						}
+					}
 				}
 			}
 		}
