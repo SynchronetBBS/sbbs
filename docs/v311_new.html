@@ -367,7 +367,102 @@ Unix compatibility)
 based on the platform ARS (e.g. pkunzip for DOS/Win32 and unzip for Unix)
 </ul>
 
-<p align="right"><font face="Arial" size="1" , "Helvetica">Copyright © 2003 Rob 
+<h2>Changes in v3.11b (Beta)</h2>
+<ul>
+	<li>Baja bug-fix: expected <tt>!included</tt>files to be in current directory, now 
+	looks in directory of <tt>.src</tt> file<br>
+	(this fixes the problem with the SBBSCTRL:BBS-&gt;Edit and Compile Baja 
+	Source... menu option)</li>
+	<li>Baja feature: Include directory may be over-ridden with the new <tt>-i</tt> 
+	command-line option</li>
+	<li>Mail server: Added <var>DNSBL_THROTTLE </var>option to throttle receipt of messages 
+	from DNSBL-listed servers (in <samp>sbbs.ini</samp> only)<br>
+	(this feature needs to be added to the Synchronet Control Panel at a later 
+	date)</li>
+	<li>BBS bug-fix: sysop &quot;BULKMAIL&quot; function didn't set message's <var>when_written</var> 
+	date/time/zone</li>
+	<li>BBS bug-fix: when using internal 
+	editor to edit a file larger than the allowed maximum number of lines, would 
+	display error message, free buffer and still read file contents into buffer 
+	causing A/V or segfault</li>
+	<li>BBS bug-fix: when using internal editor, and quote buffer exceeded 
+	lines-per-message limit for user, would read max bytes and then add null 
+	terminator, one byte beyond the buffer bounds, causing a later free of the 
+	buffer to assert failure</li>
+	<li>BBS bug-fix: Baja <code>PRINTF</code> and <code>PRINT &lt;var&gt;</code> functions no longer expand 
+	@-codes<br>
+	(potential security risk when displaying variables containing 
+	user-supplied strings)</li>
+	<li>BBS bug-fix: pack_rep() no longer leaves console with local echo enabled 
+	causing subsequent QWK packing events to spew unintended output strings into 
+	the event log</li>
+	<li>BBS bug-fix: cursor movement functions (e.g. <code>cursor_left</code>) should do 
+	nothing if passed a count less than 1 - this indirectly fixes a bug in 
+	<code>getstr()</code> when hitting Ctrl-X when already at the first character in the 
+	string</li>
+	<li>BBS bug-fix: <code>getfname()</code> would return a pointer to a sub-directory 
+	(instead of the filename) if passed a path that included both forward and 
+	back-slashes (reported side-effect was the failure to display menu files in 
+	Baja modules that called the <code>MENU</code> function with a path that contained a 
+	back-slash and the configured text directory contained a forward-slash)</li>
+	<li>BBS enhancement: turn on/off local console output when packing REP 
+	packets</li>
+	<li>BBS enhancement: improved internal daily checking of inactive/expired 
+	user accounts: skipping user #1, better error handling, etc.</li>
+	<li>BBS enhancement: enable TCP Nagle algorithm when running 
+	socket-based external programs<br>
+		(improving
+	performance for socket doors that don't perform their own buffering)</li>
+	<li>BBS enhancement: socket options (configured in <code>ctrl/sockopts.cfg</code>) are 
+	re-applied to client sockets when returning from external programs (which 
+	could have modified them)</li>
+	<li>JS bug-fix: <code>system.new_user()</code> 
+	method no longer creates <code>system.user</code> object (harmless bug</li>
+	<li>JS bug-fix: <code>msg_area.sub</code> object (associative array) contained 
+	sub-board's <var>is_moderated</var> properties (bool) rather than the sub-board objects 
+	themselves</li>
+	<li>JS bug-fix: support for full 32-bit <code>system.uptime</code> value<br>
+	(cause of 
+	invalid uptime numbers after early January 2004)</li>
+	<li>JS bug-fix: support for full 32-bit file date/times in the FTP server's 
+	HTML index</li>
+	<li>JS feature: created more named constants for standard (Unix <samp>errno.h</samp>) 
+	socket error values<br>
+	(e.g. <code>ECONNREFUSED</code>, <code>ENOTCONN</code>, 
+	<code>ENOBUFS</code>, <code>EADDRINUSE</code>, etc.)</li>
+	<li>JS enhancement: <code>printf</code>-style functions now convert any non-number 
+	(integer or float) arguments, including bools, to strings<br>
+	(this prevents 
+	accidental crashes due to printing a bool variable with &quot;%s&quot;, for example</li>)<li>NewsLink feature: filter incoming messages to or from names in the 
+	<samp>twitlist.cfg</samp> file</li>
+	<li>NewsLink feature: <samp>newslink.cfg</samp> option &quot;interface&quot; to specify a different 
+	network interface IP address to bind to for outbound NNTP sessions</li>
+	<li>NewsLink bug-fix: using variable name &quot;host&quot; for server hostname instead 
+	of &quot;server&quot; to resolve conflict with internal global &quot;server&quot; object</li>
+	<li>NewsLink docs: new documentation file (<samp>docs/newslink.txt</samp>)</li>
+	<li>DynDNS bug-fix: enforce a maximum of 10 command/response pairs, avoiding 
+	potential infinite loop</li>
+	<li>Services feature: each service may have a separately-configured network 
+	interface (configured with the &quot;interface&quot; key in the <samp>ctrl/services.ini</samp> file) - 
+	defaults to use the services network interface specified in <samp>sbbs.ini</samp> or 
+	Synchronet Control Panel</li>
+	<li>SBBSecho bug-fix: double memory free (segfault/AV) when exporting 
+	echomail </li>
+	<li>SBBSecho bug-fix: if packed-message header can't be read (end of 
+	packet?), don't report/log message as &quot;grunged&quot;</li>
+	<li>SBBSecho bug-fix: when processing AreaFix messages, expected 
+	kludge lines to terminate in line-feed instead of carriage-return<br>
+	(bug introduced in rev 1.105)</li>
+	<li>SBBSecho enhancement: only check NetMail attributes (e.g. Local, 
+	Orphaned, Already Received), if from <samp>.msg </samp>file (not <samp>.pkt</samp>)</li>
+	<li>SMBLIB bug-fix: smb_hfield() and smb_hfield_append() no longer adjust 
+	msg-&gt;hdr.length since this value is needed by smb_putmsghdr() to <i>
+	accurately</i> detect an illegal header length increase (exceeds allocated 
+	space for header) - the header length is now calculated each time for each 
+	call to smb_hfield/hfield_append()</li>
+</ul>
+
+<p align="right"><font face="Arial" size="1" , "Helvetica">Copyright © 2004 Rob 
 Swindell <br>
 &nbsp;$Id$</font></p>
 
