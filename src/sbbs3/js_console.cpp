@@ -295,7 +295,7 @@ js_getkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_handle_ctrlkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		mode=0;
+	int32		mode=0;
 	sbbs_t*		sbbs;
     JSString*	js_str;
 
