@@ -1384,7 +1384,7 @@ int main(int argc, char **argv)
 	tzset();
 
 	if((t=checktime())!=0) {
-		fprintf(stderr,"Time problem (%ld)\n",t);
+		fprintf(stderr,"!TIME PROBLEM (%ld)\n",t);
 		return(-1);
 	}
 

@@ -239,7 +239,7 @@ static time_t checktime(void)
     memset(&tm,0,sizeof(tm));
     tm.tm_year=94;
     tm.tm_mday=1;
-    return(mktime(&tm)^0x2D24BD00L);
+    return(mktime(&tm)-0x2D24BD00L);
 }
 
 static void recverror(SOCKET socket, int rd)
@@ -2327,7 +2327,7 @@ void DLLCALL mail_server(void* arg)
 	tzset();
 
 	if((t=checktime())!=0) {   /* Check binary time */
-		lprintf("!TIME PROBLEM (%08lx)",t);
+		lprintf("!TIME PROBLEM (%ld)",t);
 		cleanup(1);
 		return;
     }
