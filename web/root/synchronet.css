@@ -66,10 +66,13 @@ td.main_stats { text-align: right; padding: 2px; background-color:#CCCCCC; }
 td.main_stats_bold { text-align: right; color: #7788FF; font-weight:bold; padding: 2px; background-color:#CCCCCC; }
 
 #sectionLinks{ margin: 0px; padding: 0px 10px 0px 0px; }
-
 #sectionLinks a:link, #sectionLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; background-image:  url("/graphics/bg_nav.jpg"); font-weight: bold; padding: 3px 0px 3px 10px; color: #21536A; text-decoration:none; }
-
 #sectionLinks a:hover{ border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;  background-color: #DDEEFF; background-image: none; font-weight: bold; text-decoration: underline; }
+
+#sectionSubLinks{ margin: 0px; padding: 0px 20px 0px 10px; }
+#sectionSubLinks a:link, #sectionSubLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; font-weight: bold; font-size:9px; padding: 3px 30px 3px 10px; color: #7788FF; text-decoration:none; }
+#sectionSubLinks a:hover{ border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;  background-color: #DDEEFF; background-image: none; font-weight: bold; text-decoration: underline; }
+
 
 table.msglist { font-weight: normal; font-size: smaller; margin-left: auto; margin-right: auto; background-color: #888888; }
 tr.msglist1 { background-color: #AAAAAA; }
