@@ -81,11 +81,54 @@ enum {
 	,BBS_PROP_CLIENT_NAME
 
 	,BBS_PROP_ALTUL
+
+	/* READ ONLY */
+	,BBS_PROP_SMB_GROUP		
+	,BBS_PROP_SMB_GROUP_DESC
+	,BBS_PROP_SMB_GROUP_NUM
+	,BBS_PROP_SMB_SUB
+	,BBS_PROP_SMB_SUB_DESC
+	,BBS_PROP_SMB_SUB_CODE
+	,BBS_PROP_SMB_SUB_NUM
+	,BBS_PROP_SMB_ATTR
+	,BBS_PROP_SMB_LAST_MSG
+	,BBS_PROP_SMB_TOTAL_MSGS
+
+	/* READ ONLY */
+	,BBS_PROP_MSG_TO
+	,BBS_PROP_MSG_TO_EXT
+	,BBS_PROP_MSG_TO_NET
+	,BBS_PROP_MSG_TO_AGENT
+	,BBS_PROP_MSG_FROM
+	,BBS_PROP_MSG_FROM_EXT
+	,BBS_PROP_MSG_FROM_NET
+	,BBS_PROP_MSG_FROM_AGENT
+	,BBS_PROP_MSG_REPLYTO
+	,BBS_PROP_MSG_REPLYTO_EXT
+	,BBS_PROP_MSG_REPLYTO_NET
+	,BBS_PROP_MSG_REPLYTO_AGENT
+	,BBS_PROP_MSG_SUBJECT
+	,BBS_PROP_MSG_DATE
+	,BBS_PROP_MSG_TIMEZONE
+	,BBS_PROP_MSG_DATE_IMPORTED
+	,BBS_PROP_MSG_ATTR
+	,BBS_PROP_MSG_AUXATTR
+	,BBS_PROP_MSG_NETATTR
+	,BBS_PROP_MSG_OFFSET
+	,BBS_PROP_MSG_NUMBER
+	,BBS_PROP_MSG_EXPIRATION
+	,BBS_PROP_MSG_FORWARDED
+	,BBS_PROP_MSG_THREAD_ORIG
+	,BBS_PROP_MSG_THREAD_NEXT
+	,BBS_PROP_MSG_THREAD_FIRST
+	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
+
 };
 
 static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	char*		p=NULL;
+	char*		nulstr="";
 	ulong		val=0;
     jsint       tiny;
 	sbbs_t*		sbbs;
@@ -199,6 +242,206 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 		case BBS_PROP_ALTUL:
 			val=sbbs->altul;
+			break;
+
+		/* Currently Open Message Base (sbbs.smb) */
+		case BBS_PROP_SMB_GROUP:
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+				p=nulstr;
+			else
+				p=sbbs->cfg.grp[sbbs->cfg.sub[sbbs->smb.subnum]->grp]->sname;
+			break;
+		case BBS_PROP_SMB_GROUP_DESC:
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+				p=nulstr;
+			else
+				p=sbbs->cfg.grp[sbbs->cfg.sub[sbbs->smb.subnum]->grp]->lname;
+			break;
+		case BBS_PROP_SMB_GROUP_NUM:
+			if(sbbs->smb.subnum!=INVALID_SUB && sbbs->smb.subnum<sbbs->cfg.total_subs) {
+				uint ugrp;
+				for(ugrp=0;ugrp<sbbs->usrgrps;ugrp++)
+					if(sbbs->usrgrp[ugrp]==sbbs->cfg.sub[sbbs->smb.subnum]->grp)
+						break;
+				val=ugrp+1;
+			}
+			break;
+		case BBS_PROP_SMB_SUB:
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+				p=nulstr;
+			else
+				p=sbbs->cfg.sub[sbbs->smb.subnum]->sname;
+			break;
+		case BBS_PROP_SMB_SUB_DESC:
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+				p=nulstr;
+			else
+				p=sbbs->cfg.sub[sbbs->smb.subnum]->lname;
+			break;
+		case BBS_PROP_SMB_SUB_CODE:
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+				p=nulstr;
+			else
+				p=sbbs->cfg.sub[sbbs->smb.subnum]->code;
+			break;
+		case BBS_PROP_SMB_SUB_NUM:
+			if(sbbs->smb.subnum!=INVALID_SUB && sbbs->smb.subnum<sbbs->cfg.total_subs) {
+				uint ugrp;
+				for(ugrp=0;ugrp<sbbs->usrgrps;ugrp++)
+					if(sbbs->usrgrp[ugrp]==sbbs->cfg.sub[sbbs->smb.subnum]->grp)
+						break;
+				uint usub;
+				for(usub=0;usub<sbbs->usrsubs[ugrp];usub++)
+					if(sbbs->usrsub[ugrp][usub]==sbbs->smb.subnum)
+						break;
+				val=ugrp+1;
+			}
+			break;
+		case BBS_PROP_SMB_ATTR:
+			val=sbbs->smb.status.attr;
+			break;
+		case BBS_PROP_SMB_LAST_MSG:
+			val=sbbs->smb.status.last_msg;
+			break;
+		case BBS_PROP_SMB_TOTAL_MSGS:
+			val=sbbs->smb.status.total_msgs;
+			break;
+
+		/* Currently Displayed Message Header (sbbs.current_msg) */
+		case BBS_PROP_MSG_TO:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->to;
+			break;
+		case BBS_PROP_MSG_TO_EXT:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->to_ext;
+			break;
+		case BBS_PROP_MSG_TO_NET:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->to_net.type==NET_FIDO
+					? faddrtoa(*(faddr_t *)sbbs->current_msg->to_net.addr) 
+					: (char*)sbbs->current_msg->to_net.addr;
+			break;
+		case BBS_PROP_MSG_TO_AGENT:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->to_agent;
+			break;
+		case BBS_PROP_MSG_FROM:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->from;
+			break;
+		case BBS_PROP_MSG_FROM_EXT:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->from_ext;
+			break;
+		case BBS_PROP_MSG_FROM_NET:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->from_net.type==NET_FIDO
+					? faddrtoa(*(faddr_t *)sbbs->current_msg->from_net.addr) 
+					: (char*)sbbs->current_msg->from_net.addr;
+			break;
+		case BBS_PROP_MSG_FROM_AGENT:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->from_agent;
+			break;
+		case BBS_PROP_MSG_REPLYTO:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->replyto;
+			break;
+		case BBS_PROP_MSG_REPLYTO_EXT:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->replyto_ext;
+			break;
+		case BBS_PROP_MSG_REPLYTO_NET:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->replyto_net.type==NET_FIDO
+					? faddrtoa(*(faddr_t *)sbbs->current_msg->replyto_net.addr) 
+					: (char*)sbbs->current_msg->replyto_net.addr;
+			break;
+		case BBS_PROP_MSG_REPLYTO_AGENT:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->replyto_agent;
+			break;
+
+		case BBS_PROP_MSG_SUBJECT:
+			if(sbbs->current_msg==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->subj;
+			break;
+		case BBS_PROP_MSG_DATE:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.when_written.time;
+			break;
+		case BBS_PROP_MSG_TIMEZONE:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.when_written.zone;
+			break;
+		case BBS_PROP_MSG_DATE_IMPORTED:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.when_imported.time;
+			break;
+		case BBS_PROP_MSG_ATTR:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.attr;
+			break;
+		case BBS_PROP_MSG_AUXATTR:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.auxattr;
+			break;
+		case BBS_PROP_MSG_NETATTR:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.netattr;
+			break;
+		case BBS_PROP_MSG_OFFSET:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->offset;
+			break;
+		case BBS_PROP_MSG_NUMBER:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.number;
+			break;
+		case BBS_PROP_MSG_EXPIRATION:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->expiration.time;
+			break;
+		case BBS_PROP_MSG_FORWARDED:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->forwarded;
+			break;
+		case BBS_PROP_MSG_THREAD_ORIG:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.thread_orig;
+			break;
+		case BBS_PROP_MSG_THREAD_NEXT:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.thread_next;
+			break;
+		case BBS_PROP_MSG_THREAD_FIRST:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.thread_first;
+			break;
+		case BBS_PROP_MSG_DELIVERY_ATTEMPTS:
+			if(sbbs->current_msg!=NULL)
+				val=sbbs->current_msg->hdr.delivery_attempts;
 			break;
 
 		default:
@@ -348,7 +591,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-#define BBS_PROP_READONLY JSPROP_ENUMERATE|JSPROP_READONLY
+#define PROP_READONLY JSPROP_ENUMERATE|JSPROP_READONLY
 
 static struct JSPropertySpec js_bbs_properties[] = {
 /*		 name				,tinyid					,flags				,getter,setter	*/
@@ -361,7 +604,7 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"last_new_file_time",BBS_PROP_LAST_NS_TIME	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"online"			,BBS_PROP_ONLINE		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"time_left"			,BBS_PROP_TIMELEFT		,JSPROP_ENUMERATE	,NULL,NULL},
-	{	"node_num"			,BBS_PROP_NODE_NUM		,BBS_PROP_READONLY	,NULL,NULL},
+	{	"node_num"			,BBS_PROP_NODE_NUM		,PROP_READONLY		,NULL,NULL},
 	{	"node_settings"		,BBS_PROP_NODE_MISC		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"node_action"		,BBS_PROP_NODE_ACTION	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"node_val_user"		,BBS_PROP_NODE_VAL_USER	,JSPROP_ENUMERATE	,NULL,NULL},
@@ -381,10 +624,50 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"cursub"			,BBS_PROP_CURSUB		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"curlib"			,BBS_PROP_CURLIB		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"curdir"			,BBS_PROP_CURDIR		,JSPROP_ENUMERATE	,NULL,NULL},
-	{	"connection"		,BBS_PROP_CONNECTION	,BBS_PROP_READONLY	,NULL,NULL},
+	{	"connection"		,BBS_PROP_CONNECTION	,PROP_READONLY		,NULL,NULL},
 	{	"rlogin_name"		,BBS_PROP_RLOGIN_NAME	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"alt_ul_dir"		,BBS_PROP_ALTUL			,JSPROP_ENUMERATE	,NULL,NULL},
+
+	{	"smb_group"			,BBS_PROP_SMB_GROUP			,PROP_READONLY	,NULL,NULL},
+	{	"smb_group_desc"	,BBS_PROP_SMB_GROUP_DESC	,PROP_READONLY	,NULL,NULL},
+	{	"smb_group_number"	,BBS_PROP_SMB_GROUP_NUM		,PROP_READONLY	,NULL,NULL},
+	{	"smb_sub"			,BBS_PROP_SMB_SUB			,PROP_READONLY	,NULL,NULL},
+	{	"smb_sub_desc"		,BBS_PROP_SMB_SUB_DESC		,PROP_READONLY	,NULL,NULL},
+	{	"smb_sub_code"		,BBS_PROP_SMB_SUB_CODE		,PROP_READONLY	,NULL,NULL},
+	{	"smb_sub_number"	,BBS_PROP_SMB_SUB_NUM		,PROP_READONLY	,NULL,NULL},
+	{	"smb_attr"			,BBS_PROP_SMB_ATTR			,PROP_READONLY	,NULL,NULL},
+	{	"smb_last_msg"		,BBS_PROP_SMB_LAST_MSG		,PROP_READONLY	,NULL,NULL},
+	{	"smb_total_msgs"	,BBS_PROP_SMB_TOTAL_MSGS	,PROP_READONLY	,NULL,NULL},
+																		
+	{	"msg_to"			,BBS_PROP_MSG_TO			,PROP_READONLY	,NULL,NULL},
+	{	"msg_to_ext"		,BBS_PROP_MSG_TO_EXT		,PROP_READONLY	,NULL,NULL},
+	{	"msg_to_net"		,BBS_PROP_MSG_TO_NET		,PROP_READONLY	,NULL,NULL},
+	{	"msg_to_agent"		,BBS_PROP_MSG_TO_AGENT		,PROP_READONLY	,NULL,NULL},
+	{	"msg_from"			,BBS_PROP_MSG_FROM			,PROP_READONLY	,NULL,NULL},
+	{	"msg_from_ext"		,BBS_PROP_MSG_FROM_EXT		,PROP_READONLY	,NULL,NULL},
+	{	"msg_from_net"		,BBS_PROP_MSG_FROM_NET		,PROP_READONLY	,NULL,NULL},
+	{	"msg_from_agent"	,BBS_PROP_MSG_FROM_AGENT	,PROP_READONLY	,NULL,NULL},
+	{	"msg_replyto"		,BBS_PROP_MSG_REPLYTO		,PROP_READONLY	,NULL,NULL},
+	{	"msg_replyto_ext"	,BBS_PROP_MSG_REPLYTO_EXT	,PROP_READONLY	,NULL,NULL},
+	{	"msg_replyto_net"	,BBS_PROP_MSG_REPLYTO_NET	,PROP_READONLY	,NULL,NULL},
+	{	"msg_replyto_agent"	,BBS_PROP_MSG_REPLYTO_AGENT	,PROP_READONLY	,NULL,NULL},
+	{	"msg_subject"		,BBS_PROP_MSG_SUBJECT		,PROP_READONLY	,NULL,NULL},
+	{	"msg_date"			,BBS_PROP_MSG_DATE			,PROP_READONLY	,NULL,NULL},
+	{	"msg_timezone"		,BBS_PROP_MSG_TIMEZONE		,PROP_READONLY	,NULL,NULL},
+	{	"msg_date_imported"	,BBS_PROP_MSG_DATE_IMPORTED	,PROP_READONLY	,NULL,NULL},
+	{	"msg_attr"			,BBS_PROP_MSG_ATTR			,PROP_READONLY	,NULL,NULL},
+	{	"msg_auxattr"		,BBS_PROP_MSG_AUXATTR		,PROP_READONLY	,NULL,NULL},
+	{	"msg_netattr"		,BBS_PROP_MSG_NETATTR		,PROP_READONLY	,NULL,NULL},
+	{	"msg_offset"		,BBS_PROP_MSG_OFFSET		,PROP_READONLY	,NULL,NULL},
+	{	"msg_number"		,BBS_PROP_MSG_NUMBER		,PROP_READONLY	,NULL,NULL},
+	{	"msg_expiration"	,BBS_PROP_MSG_EXPIRATION	,PROP_READONLY	,NULL,NULL},
+	{	"msg_forwarded"		,BBS_PROP_MSG_FORWARDED		,PROP_READONLY	,NULL,NULL},
+	{	"msg_thread_orig"	,BBS_PROP_MSG_THREAD_ORIG	,PROP_READONLY	,NULL,NULL},
+	{	"msg_thread_first"	,BBS_PROP_MSG_THREAD_FIRST	,PROP_READONLY	,NULL,NULL},
+	{	"msg_thread_next"	,BBS_PROP_MSG_THREAD_NEXT	,PROP_READONLY	,NULL,NULL},
+	{	"msg_delivery_attempts"	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
+														,PROP_READONLY	,NULL,NULL},
 	{0}
 };
 
