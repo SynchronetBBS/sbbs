@@ -1433,7 +1433,7 @@ static jsMethodSpec js_global_functions[] = {
 	{"lfexpand",		js_lfexpand,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("expand line-feeds (LF) to carriage-return/line-feeds (CRLF)")
 	},		
-	{"getfilename",		js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
+	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns filename portion of passed path string")
 	},		
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
