@@ -293,6 +293,27 @@ js_getkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_handle_ctrlkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		mode=0;
+	sbbs_t*		sbbs;
+    JSString*	js_str;
+
+	*rval = JSVAL_FALSE;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	JS_ValueToInt32(cx, argv[1], &mode);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->handle_ctrlkey(*JS_GetStringBytes(js_str),mode));
+    return(JS_TRUE);
+}
+
+static JSBool
 js_getstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		*p;
@@ -1142,6 +1163,9 @@ static jsMethodSpec js_console_functions[] = {
 	},
 	{"telnet_cmd",		js_telnet_cmd,		2, JSTYPE_VOID,		JSDOCSTR("number cmd [,number option]")
 	,JSDOCSTR("Send telnet command (with optional command option) to remote client")
+	},
+	{"handle_ctrlkey",	js_handle_ctrlkey,	2, JSTYPE_BOOLEAN,	JSDOCSTR("string key [,number mode]")
+	,JSDOCSTR("Call internal control key handler for specified control key, returns true if handled")
 	},
 	{0}
 };

@@ -47,10 +47,7 @@
 /****************************************************************************/
 char sbbs_t::inkey(long mode)
 {
-	char	str[512];
-	char 	tmp[512];
 	uchar	ch=0;
-	uint	i,j;
 
     if(keybuftop!=keybufbot) {
         ch=keybuf[keybufbot++];
@@ -78,6 +75,21 @@ char sbbs_t::inkey(long mode)
 	/* Is this control key flagged as passthru? */
 	if(ch<' ' && cfg.ctrlkey_passthru&(1<<ch))
 		return(ch);	/* do not handle here */
+
+	if(mode&K_UPPER)
+		ch=toupper(ch);
+
+	if(ch<' ')
+		return(handle_ctrlkey(ch,mode));
+
+	return(ch);
+}
+
+char sbbs_t::handle_ctrlkey(char ch, long mode)
+{
+	char	str[512];
+	char 	tmp[512];
+	uint	i,j;
 
 	if(ch==CTRL_C) {  /* Ctrl-C Abort */
 		sys_status|=SS_ABORT;
@@ -110,43 +122,42 @@ char sbbs_t::inkey(long mode)
 		return(0); 
 	}
 
-	if(mode&K_UPPER)
-		ch=toupper(ch);
-
 	if(console&CON_RAW_IN)	 /* ignore ctrl-key commands if in raw mode */
 		return(ch);
 
-	if(ch<SP) { 				/* Control chars */
-		if(ch==LF)				/* ignore LF's if not in raw mode */
+	if(ch==LF)				/* ignore LF's if not in raw mode */
+		return(0);
+
+	/* Global hot key event */
+	for(i=0;i<cfg.total_hotkeys;i++)
+		if(cfg.hotkey[i]->key==ch)
+			break;
+	if(i<cfg.total_hotkeys) {
+		if(hotkey_inside>1)	/* only allow so much recursion */
 			return(0);
-		for(i=0;i<cfg.total_hotkeys;i++)
-			if(cfg.hotkey[i]->key==ch)
-				break;
-		if(i<cfg.total_hotkeys) {
-			if(hotkey_inside>1)	/* only allow so much recursion */
-				return(0);
-			hotkey_inside++;
-			if(mode&K_SPIN)
-				bputs("\b ");
-			if(!(sys_status&SS_SPLITP)) {
-				SAVELINE;
-				attr(LIGHTGRAY);
-				CRLF; 
-			}
-			external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
-			if(!(sys_status&SS_SPLITP)) {
-				CRLF;
-				RESTORELINE; 
-			}
-			lncntr=0;
-			hotkey_inside--;
-			return(0);
+		hotkey_inside++;
+		if(mode&K_SPIN)
+			bputs("\b ");
+		if(!(sys_status&SS_SPLITP)) {
+			SAVELINE;
+			attr(LIGHTGRAY);
+			CRLF; 
 		}
-		if(ch==CTRL_O) {	/* Ctrl-O toggles pause temporarily */
+		external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
+		if(!(sys_status&SS_SPLITP)) {
+			CRLF;
+			RESTORELINE; 
+		}
+		lncntr=0;
+		hotkey_inside--;
+		return(0);
+	}
+
+	switch(ch) {
+		case CTRL_O:	/* Ctrl-O toggles pause temporarily */
 			useron.misc^=UPAUSE;
 			return(0); 
-		}
-		if(ch==CTRL_P) {	/* Ctrl-P Private node-node comm */
+		case CTRL_P:	/* Ctrl-P Private node-node comm */
 			if(!(sys_status&SS_USERON))
 				return(0);			 /* keep from being recursive */
 			if(hotkey_inside>1)	/* only allow so much recursion */
@@ -169,9 +180,8 @@ char sbbs_t::inkey(long mode)
 			lncntr=0;
 			hotkey_inside--;
 			return(0); 
-		}
 
-		if(ch==CTRL_U) { /* Ctrl-U Users online */
+		case CTRL_U:	/* Ctrl-U Users online */
 			/* needs recursion checking */
 			if(!(sys_status&SS_USERON))
 				return(0);
@@ -194,8 +204,9 @@ char sbbs_t::inkey(long mode)
 			lncntr=0;
 			hotkey_inside--;
 			return(0); 
-		}
-		if(ch==CTRL_T && !(sys_status&SS_SPLITP)) { /* Ctrl-T Time information */
+		case CTRL_T: /* Ctrl-T Time information */
+			if(sys_status&SS_SPLITP)
+				return(ch);
 			if(!(sys_status&SS_USERON))
 				return(0);
 			if(hotkey_inside>1)	/* only allow so much recursion */
@@ -217,8 +228,9 @@ char sbbs_t::inkey(long mode)
 			lncntr=0;
 			hotkey_inside--;
 			return(0); 
-		}
-		if(ch==CTRL_K && !(sys_status&SS_SPLITP)) {  /*  Ctrl-k Control key menu */
+		case CTRL_K:  /*  Ctrl-k Control key menu */
+			if(sys_status&SS_SPLITP)
+				return(ch);
 			if(!(sys_status&SS_USERON))
 				return(0);
 			if(hotkey_inside>1)	/* only allow so much recursion */
@@ -235,9 +247,7 @@ char sbbs_t::inkey(long mode)
 			lncntr=0;
 			hotkey_inside--;
 			return(0); 
-		}
-
-		if(ch==ESC && console&CON_R_INPUT) {
+		case ESC:
 			if(mode&K_GETSTR)
 				i=60;	// 3 seconds in GETSTR mode
 			else
@@ -306,10 +316,6 @@ char sbbs_t::inkey(long mode)
 			for(j=0;j<i;j++)
 				ungetkey(str[j]);
 			return(0); 
-		}
-
-	}	/* end of control chars */
-
+	}
 	return(ch);
 }
-
