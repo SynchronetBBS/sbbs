@@ -138,7 +138,9 @@ SMBEXPORT void*		SMBCALL smb_get_hfield(smbmsg_t* msg, ushort type, hfield_t* hf
 SMBEXPORT char*		SMBCALL smb_hfieldtype(ushort type);
 SMBEXPORT ushort	SMBCALL smb_hfieldtypelookup(const char*);
 SMBEXPORT char*		SMBCALL smb_dfieldtype(ushort type);
-SMBEXPORT int 		SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg,int storage);
+SMBEXPORT int 		SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage);
+SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage
+						,ushort attr, ushort xlat, const uchar* body, const uchar* tail);
 SMBEXPORT int 		SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 		SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 		SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg);
@@ -175,6 +177,7 @@ SMBEXPORT hash_t*	SMBCALL	smb_hash(ulong msgnum, ulong time, unsigned source
 								,unsigned flags, const void* data, size_t length);
 SMBEXPORT hash_t*	SMBCALL	smb_hashstr(ulong msgnum, ulong time, unsigned source
 								,unsigned flags, const char* str);
+SMBEXPORT char*		SMBCALL smb_hashsource(uchar type);
 SMBEXPORT hash_t**	SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, const uchar* text);
 SMBEXPORT int		SMBCALL smb_addhashes(smb_t* smb, hash_t** hash_list);
 
@@ -216,7 +219,7 @@ SMBEXPORT int 		SMBCALL smb_fputc(int ch, FILE* fp);
 SMBEXPORT int 		SMBCALL smb_fseek(FILE* fp, long offset, int whence);
 SMBEXPORT long		SMBCALL smb_ftell(FILE* fp);
 SMBEXPORT size_t	SMBCALL smb_fread(smb_t*, void* buf, size_t bytes, FILE* fp);
-SMBEXPORT size_t	SMBCALL smb_fwrite(smb_t*, void* buf, size_t bytes, FILE* fp);
+SMBEXPORT size_t	SMBCALL smb_fwrite(smb_t*, const void* buf, size_t bytes, FILE* fp);
 SMBEXPORT long		SMBCALL smb_fgetlength(FILE* fp);
 SMBEXPORT int 		SMBCALL smb_fsetlength(FILE* fp, long length);
 SMBEXPORT void		SMBCALL smb_rewind(FILE* fp);

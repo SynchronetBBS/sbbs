@@ -1397,7 +1397,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 			close(file);
 			FREE(buf);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"duplicate message detected");
+				,"duplicate message text CRC detected");
 			return(SMB_DUPE_MSG);
 		} 
 
@@ -1495,6 +1495,225 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	}
 	smb_unlocksmbhdr(smb);
 	return(i);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage
+					   ,ushort attr, ushort xlat, const uchar* body, const uchar* tail)
+{
+	uchar*		lzhbuf=NULL;
+	long		lzhlen;
+	int			retval;
+	size_t		n;
+	size_t		l,length;
+	size_t		xlatlen;
+	size_t		taillen=0;
+	size_t		bodylen=0;
+	long		offset;
+	ulong		crc=0xffffffff;
+	hash_t		found;
+	hash_t**	hashes=NULL;	/* This is a NULL-terminated list of hashes */
+	smbmsg_t	remsg;
+
+	if(!SMB_IS_OPEN(smb)) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
+
+	if(filelength(fileno(smb->shd_fp))<1) {	 /* Create it if it doesn't exist */
+		memset(&smb->status,0,sizeof(smb->status));
+		smb->status.attr=attr;
+		if((retval=smb_create(smb))!=SMB_SUCCESS) 
+			return(retval);
+	}
+
+	if(!smb->locked && smb_locksmbhdr(smb)!=SMB_SUCCESS)
+		return(SMB_ERR_LOCK);
+
+	msg->hdr.total_dfields = 0;
+
+	/* try */
+	do {
+
+		if((retval=smb_getstatus(smb))!=SMB_SUCCESS)
+			break;
+
+		msg->hdr.number=smb->status.last_msg+1;
+
+		hashes=smb_msghashes(smb,msg,body);
+
+		if(smb_findhash(smb, hashes, &found, /* update? */FALSE)==SMB_SUCCESS) {
+			safe_snprintf(smb->last_error,sizeof(smb->last_error)
+				,"duplicate %s hash found (message #%lu)"
+				,smb_hashsource(found.source), found.number);
+			retval=SMB_DUPE_MSG;
+			break;
+		}
+
+		if(tail!=NULL && (taillen=strlen(tail))>0)
+			taillen+=sizeof(xlat);	/* xlat string terminator */
+
+		if(body!=NULL && (bodylen=strlen(body))>0) {
+
+			/* Remove white-space from end of message text */
+			while(bodylen && body[bodylen-1]<=' ')
+				bodylen--;
+
+			/* Calculate CRC-32 of message text (before encoding, if any) */
+			if(smb->status.max_crcs) {
+				for(l=0;l<bodylen;l++)
+					crc=ucrc32(body[l],crc); 
+				crc=~crc;
+
+				/* Add CRC to CRC history (and check for duplicates) */
+				if((retval=smb_addcrc(smb,crc))!=SMB_SUCCESS)
+					break;
+			}
+
+			bodylen+=sizeof(xlat);	/* xlat string terminator */
+
+			/* LZH compress? */
+			if(xlat==XLAT_LZH && bodylen+taillen>=SDT_BLOCK_LEN
+				&& (lzhbuf=(uchar *)malloc(bodylen*2))!=NULL) {
+				lzhlen=lzh_encode((uchar*)body,bodylen-sizeof(xlat),lzhbuf);
+				if(lzhlen>1
+					&& smb_datblocks(lzhlen+(sizeof(xlat)*2)+taillen) 
+						< smb_datblocks(bodylen+taillen)) {
+					bodylen=lzhlen+(sizeof(xlat)*2); 	/* Compressible */
+					body=lzhbuf; 
+				} else
+					xlat=XLAT_NONE;
+			} else
+				xlat=XLAT_NONE;
+		}
+
+		length=bodylen+taillen;
+
+		if(length&0x80000000) {
+			sprintf(smb->last_error,"message length: 0x%lX",length);
+			retval=SMB_ERR_DAT_LEN;
+			break;
+		}
+
+		/* Allocate Data Blocks */
+		if(smb->status.attr&SMB_HYPERALLOC) {
+			offset=smb_hallocdat(smb);
+			storage=SMB_HYPERALLOC; 
+		} else {
+			if((retval=smb_open_da(smb))!=SMB_SUCCESS)
+				break;
+			if(storage==SMB_FASTALLOC)
+				offset=smb_fallocdat(smb,length,1);
+			else { /* SMB_SELFPACK */
+				offset=smb_allocdat(smb,length,1);
+				storage=SMB_SELFPACK; 
+			}
+			smb_close_da(smb); 
+		}
+
+		if(offset<0) {
+			retval=offset;
+			break;
+		}
+		msg->hdr.offset=offset;
+
+		smb_fseek(smb->sdt_fp,offset,SEEK_SET);
+
+		if(bodylen) {
+			smb_dfield(msg,TEXT_BODY,bodylen);
+
+			xlatlen=0;
+			if(xlat!=XLAT_NONE) {	/* e.g. XLAT_LZH */
+				smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
+				xlatlen+=sizeof(xlat);
+			}
+			xlat=XLAT_NONE;	/* xlat string terminator */
+			smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
+			xlatlen+=sizeof(xlat);
+
+			smb_fwrite(smb,body,bodylen-xlatlen,smb->sdt_fp);
+		}
+
+		if(taillen) {
+			smb_dfield(msg,TEXT_TAIL,taillen);
+
+			xlat=XLAT_NONE;	/* xlat string terminator */
+			smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
+
+			smb_fwrite(smb,tail,taillen-sizeof(xlat),smb->sdt_fp);
+		}
+
+		for(l=length;l%SDT_BLOCK_LEN;l++)
+			smb_fputc(0,smb->sdt_fp);
+
+		fflush(smb->sdt_fp);
+
+		if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
+			break;
+
+		msg->hdr.version=smb_ver();
+		if(msg->hdr.when_imported.time==0) {
+			msg->hdr.when_imported.time=time(NULL);
+			msg->hdr.when_imported.zone=0;	/* how do we detect system TZ? */
+		}
+		if(msg->hdr.when_written.time==0)	/* Uninitialized */
+			msg->hdr.when_written = msg->hdr.when_imported;
+		msg->idx.time=msg->hdr.when_imported.time;
+
+		/* Look-up thread_back if Reply-ID was specified */
+		if(msg->hdr.thread_back==0 && msg->reply_id!=NULL) {
+			if(smb_getmsgidx_by_msgid(smb,&remsg,msg->reply_id)==SMB_SUCCESS)
+				msg->hdr.thread_back=remsg.idx.number;	/* needed for threading backward */
+		}
+
+		/* Auto-thread linkage */
+		if(msg->hdr.thread_back) {
+			memset(&remsg,0,sizeof(remsg));
+			remsg.hdr.number=msg->hdr.thread_back;
+			if((retval=smb_getmsgidx(smb, &remsg))!=SMB_SUCCESS)	/* invalid thread origin */
+				break;
+
+			if((retval=smb_lockmsghdr(smb,&remsg))!=SMB_SUCCESS)
+				break;
+
+			if((retval=smb_getmsghdr(smb, &remsg))!=SMB_SUCCESS) {
+				smb_unlockmsghdr(smb, &remsg); 
+				break;
+			}
+
+			/* Add RFC-822 Reply-ID if original message has RFC Message-ID */
+			if(msg->reply_id==NULL && remsg.id!=NULL)
+				smb_hfield_str(msg,RFC822REPLYID,remsg.id);
+
+			/* Add FidoNet Reply if original message has FidoNet MSGID */
+			if(msg->ftn_reply==NULL && remsg.ftn_msgid!=NULL)
+				smb_hfield_str(msg,FIDOREPLYID,remsg.ftn_msgid);
+
+			retval=smb_updatethread(smb, &remsg, msg->hdr.number);
+			smb_unlockmsghdr(smb, &remsg);
+			smb_freemsgmem(&remsg);
+
+			if(retval!=SMB_SUCCESS)
+				break;
+		}
+
+		if(smb_addhashes(smb,hashes)==SMB_SUCCESS)
+			msg->flags|=MSG_FLAG_HASHED;
+
+		retval=smb_addmsghdr(smb,msg,storage); // calls smb_unlocksmbhdr() 
+
+	} while(0);
+	/* finally */
+
+	if(retval!=SMB_SUCCESS)
+		smb_freemsg_dfields(smb,msg,1);
+
+	smb_unlocksmbhdr(smb);
+	FREE_AND_NULL(lzhbuf);
+	FREE_LIST(hashes,n);
+
+	return(retval);
 }
 
 /****************************************************************************/
@@ -2229,7 +2448,7 @@ size_t SMBCALL smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 	return(ret);
 }
 
-size_t SMBCALL smb_fwrite(smb_t* smb, void* buf, size_t bytes, FILE* fp)
+size_t SMBCALL smb_fwrite(smb_t* smb, const void* buf, size_t bytes, FILE* fp)
 {
 	return(fwrite(buf,1,bytes,fp));
 }
@@ -2345,6 +2564,13 @@ char* SMBCALL smb_dfieldtype(ushort type)
 	}
 	sprintf(str,"%02Xh",type);
 	return(str);
+}
+
+char* SMBCALL smb_hashsource(uchar type)
+{
+	if(type==TEXT_BODY || type==TEXT_TAIL)
+		return(smb_dfieldtype(type));
+	return(smb_hfieldtype(type));
 }
 
 int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
@@ -2611,8 +2837,8 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	if(smb_findhash(smb, hashes, &found, update)==SMB_SUCCESS && !update) {
 		retval=SMB_DUPE_MSG;
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"Duplicate type %u hash found for message #%lu"
-			,found.source, found.number);
+			,"duplicate %s hash found (message #%lu)"
+			,smb_hashsource(found.source), found.number);
 	} else
 		if((retval=smb_addhashes(smb,hashes))==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
