@@ -186,8 +186,11 @@ int initciolib(int mode)
 		case CIOLIB_MODE_CURSES_IBM:
 			try_curses_init(mode);
 			break;
+
 		case CIOLIB_MODE_X:
+#ifndef NO_X
 			try_x_init(mode);
+#endif
 			break;
 #endif
 		case CIOLIB_MODE_ANSI:
