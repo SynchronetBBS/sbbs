@@ -586,7 +586,7 @@ void dump_hashes(void)
 		printf("\n");
 		printf("%-10s: %lu\n",		"Number",	hash.number);
 		printf("%-10s: %s\n",		"Source",	smb_hashsource(hash.source));
-		printf("%-10s: %s\n",		"Time",		my_timestr(&hash.time));
+		printf("%-10s: %s\n",		"Time",		my_timestr((time_t*)&hash.time));
 		printf("%-10s: %x\n",		"Flags",	hash.flags);
 		if(hash.flags&SMB_HASH_CRC16)
 			printf("%-10s: %04x\n",	"CRC-16",	hash.crc16);
