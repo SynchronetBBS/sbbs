@@ -335,14 +335,19 @@ void sbbs_t::batchmenu()
 /****************************************************************************/
 void sbbs_t::start_batch_download()
 {
-	char	ch,str[256],tmp2[256],tmp3[128],fname[64];
-	char 	tmp[512];
+	char	ch;
+	char	tmp[32];
+	char	fname[64];
+	char	str[MAX_PATH+1];
+	char 	path[MAX_PATH+1];
+	char*	list;
+	size_t	list_len;
+	int		error;
     int		j;
     uint	i,xfrprot;
     ulong	totalcdt,totalsize,totaltime;
     time_t	start,end,t;
 	struct	tm * tm;
-    file_t	f;
 
 	if(useron.rest&FLAG('D')) {     /* Download restriction */
 		bputs(text[R_Download]);
@@ -353,52 +358,6 @@ void sbbs_t::start_batch_download()
 		&& totalcdt>useron.cdt+useron.freecdt) {
 		bprintf(text[YouOnlyHaveNCredits]
 			,ultoac(useron.cdt+useron.freecdt,tmp));
-		return; 
-	}
-
-	if(online==ON_LOCAL) {          /* Local download */
-		bputs(text[EnterPath]);
-		if(!getstr(str,60,K_LINE|K_UPPER))
-			return;
-		backslash(str);
-		for(i=0;i<batdn_total;i++) {
-			curdirnum=batdn_dir[i]; 		/* for ARS */
-			lncntr=0;
-			unpadfname(batdn_name[i],tmp);
-			sprintf(tmp2,"%s%s",str,tmp);
-			seqwait(cfg.dir[batdn_dir[i]]->seqdev);
-			bprintf(text[RetrievingFile],tmp);
-			sprintf(tmp3,"%s%s"
-				,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
-				? cfg.altpath[batdn_alt[i]-1]
-				: cfg.dir[batdn_dir[i]]->path
-				,tmp);
-			j=mv(tmp3,tmp2,1);
-			getnodedat(cfg.node_num,&thisnode,1);
-			thisnode.aux=30; /* clear the seq dev # */
-			putnodedat(cfg.node_num,&thisnode);
-			CRLF;
-			if(j)   /* copy unsuccessful */
-				return;
-			for(j=0;j<cfg.total_dlevents;j++)
-				if(!stricmp(cfg.dlevent[j]->ext,batdn_name[i]+9)
-					&& chk_ar(cfg.dlevent[j]->ar,&useron)) {
-					bputs(cfg.dlevent[j]->workstr);
-					external(cmdstr(cfg.dlevent[j]->cmd,tmp2,nulstr,NULL),EX_OUTL);
-					CRLF; 
-				}
-			}
-		for(i=0;i<batdn_total;i++) {
-			curdirnum=batdn_dir[i]; 		/* for ARS */
-			f.dir=batdn_dir[i];
-			strcpy(f.name,batdn_name[i]);
-			f.datoffset=batdn_offset[i];
-			f.size=batdn_size[i];
-			f.altpath=batdn_alt[i];
-			downloadfile(&f);
-			closefile(&f); 
-		}
-		batdn_total=0;
 		return; 
 	}
 
@@ -418,81 +377,99 @@ void sbbs_t::start_batch_download()
 		return;
 	ASYNC;
 	mnemonics(text[ProtocolOrQuit]);
-	strcpy(tmp2,"Q");
+	strcpy(str,"Q");
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
 			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-			strcat(tmp2,tmp); 
+			strcat(str,tmp); 
 		}
 	ungetkey(useron.prot);
-	ch=(char)getkeys(tmp2,0);
+	ch=(char)getkeys(str,0);
 	if(ch=='Q' || sys_status&SS_ABORT)
 		return;
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch
 			&& chk_ar(cfg.prot[i]->ar,&useron))
 			break;
-	if(i<cfg.total_prots) {
-		xfrprot=i;
-		for(i=0;i<batdn_total;i++) {
-			curdirnum=batdn_dir[i]; 		/* for ARS */
-			unpadfname(batdn_name[i],fname);
-			if(cfg.dir[batdn_dir[i]]->seqdev) {
-				lncntr=0;
-				sprintf(tmp2,"%s%s",cfg.temp_dir,fname);
-				if(!fexist(tmp2)) {
-					seqwait(cfg.dir[batdn_dir[i]]->seqdev);
-					bprintf(text[RetrievingFile],fname);
-					sprintf(str,"%s%s"
-						,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
-						? cfg.altpath[batdn_alt[i]-1]
-						: cfg.dir[batdn_dir[i]]->path
-						,fname);
-					mv(str,tmp2,1); /* copy the file to temp dir */
-					getnodedat(cfg.node_num,&thisnode,1);
-					thisnode.aux=40; /* clear the seq dev # */
-					putnodedat(cfg.node_num,&thisnode);
-					CRLF; 
-				} 
-			}
-			else
-				sprintf(tmp2,"%s%s"
+	if(i>=cfg.total_prots)
+		return;	/* no protocol selected */
+
+	xfrprot=i;
+	list=NULL;
+	for(i=0;i<batdn_total;i++) {
+		curdirnum=batdn_dir[i]; 		/* for ARS */
+		unpadfname(batdn_name[i],fname);
+		if(cfg.dir[batdn_dir[i]]->seqdev) {
+			lncntr=0;
+			sprintf(path,"%s%s",cfg.temp_dir,fname);
+			if(!fexist(path)) {
+				seqwait(cfg.dir[batdn_dir[i]]->seqdev);
+				bprintf(text[RetrievingFile],fname);
+				sprintf(str,"%s%s"
 					,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
 					? cfg.altpath[batdn_alt[i]-1]
 					: cfg.dir[batdn_dir[i]]->path
 					,fname);
-			sprintf(str,"total_dlevents=%d",cfg.total_dlevents);
-			for(j=0;j<cfg.total_dlevents;j++) {
-				if(stricmp(cfg.dlevent[j]->ext,batdn_name[i]+9))
-					continue;
-				if(!chk_ar(cfg.dlevent[j]->ar,&useron))
-					continue;
-				bputs(cfg.dlevent[j]->workstr);
-				external(cmdstr(cfg.dlevent[j]->cmd,tmp2,nulstr,NULL),EX_OUTL);
+				mv(str,path,1); /* copy the file to temp dir */
+				getnodedat(cfg.node_num,&thisnode,1);
+				thisnode.aux=40; /* clear the seq dev # */
+				putnodedat(cfg.node_num,&thisnode);
 				CRLF; 
-			}
+			} 
 		}
-
-		sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
-		getnodedat(cfg.node_num,&thisnode,1);
-		action=NODE_DLNG;
-		t=now;
-		if(cur_cps) 
-			t+=(totalsize/(ulong)cur_cps);
-		tm=gmtime(&t);
-		if(tm==NULL)
+		else
+			sprintf(path,"%s%s"
+				,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
+				? cfg.altpath[batdn_alt[i]-1]
+				: cfg.dir[batdn_dir[i]]->path
+				,fname);
+		if(list==NULL)
+			list_len=0;
+		else
+			list_len=strlen(list)+1;	/* add one for ' ' */
+		if((list=(char*)realloc(list,list_len+strlen(path)))==NULL) {
+			errormsg(WHERE,ERR_ALLOC,"list",list_len+strlen(path));
 			return;
-		thisnode.aux=(tm->tm_hour*60)+tm->tm_min;
-		thisnode.action=action;
-		putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
-		start=time(NULL);
-		protocol(cmdstr(cfg.prot[xfrprot]->batdlcmd,str,nulstr,NULL),false);
-		end=time(NULL);
-		batch_download(xfrprot);
-		if(batdn_total)
-			notdownloaded(totalsize,start,end);
-		autohangup(); 
+		}
+		if(!list_len)
+			strcpy(list,path);
+		else {
+			strcat(list," ");
+			strcat(list,path);
+		}
+		for(j=0;j<cfg.total_dlevents;j++) {
+			if(stricmp(cfg.dlevent[j]->ext,batdn_name[i]+9))
+				continue;
+			if(!chk_ar(cfg.dlevent[j]->ar,&useron))
+				continue;
+			bputs(cfg.dlevent[j]->workstr);
+			external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL),EX_OUTL);
+			CRLF; 
+		}
 	}
+
+	sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
+	getnodedat(cfg.node_num,&thisnode,1);
+	action=NODE_DLNG;
+	t=now;
+	if(cur_cps) 
+		t+=(totalsize/(ulong)cur_cps);
+	tm=gmtime(&t);
+	if(tm==NULL)
+		return;
+	thisnode.aux=(tm->tm_hour*60)+tm->tm_min;
+	thisnode.action=action;
+	putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
+	start=time(NULL);
+	error=protocol(cmdstr(cfg.prot[xfrprot]->batdlcmd,str,list,NULL),false);
+	end=time(NULL);
+	if(cfg.prot[xfrprot]->misc&PROT_DSZLOG || !error)
+		batch_download(xfrprot);
+	if(batdn_total)
+		notdownloaded(totalsize,start,end);
+	autohangup(); 
+	if(list!=NULL)
+		free(list);
 }
 
 /****************************************************************************/
