@@ -61,7 +61,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 	}
 	*buf=0;
 
-    for(i=0;i<msg->total_hfields;i++) {			/* comment headers are part of text */
+    for(i=0;i<(uint)msg->total_hfields;i++) {			/* comment headers are part of text */
 		if(msg->hfield[i].type!=SMB_COMMENT && msg->hfield[i].type!=SMTPSYSMSG)
 			continue;
 		str=(char*)msg->hfield_dat[i];
@@ -76,7 +76,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 		l+=sprintf(buf+l,"%s\r\n",str);
 	}
 
-	for(i=0;i<msg->hdr.total_dfields;i++) {
+	for(i=0;i<(uint)msg->hdr.total_dfields;i++) {
 		if(msg->dfield[i].length<=sizeof(xlat))
 			continue;
 		switch(msg->dfield[i].type) {
