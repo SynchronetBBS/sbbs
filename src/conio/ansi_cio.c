@@ -18,6 +18,7 @@ unsigned int ansi_nextchar;
 int ansi_got_row=0;
 int ansi_got_col=0;
 int ansi_esc_delay=25;
+int puttext_no_move=0;
 
 const int 	ansi_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 const int 	ansi_colours[8]={0,4,2,6,1,5,3,7};
@@ -195,7 +196,8 @@ int ansi_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 		}
 	}
 
-	gotoxy(ti.curx,ti.cury);
+	if(!puttext_no_move)
+		gotoxy(ti.curx,ti.cury);
 	if(attrib!=ti.attribute)
 		textattr(ti.attribute);
 }
@@ -414,6 +416,7 @@ int ansi_putch(unsigned char ch)
 	buf[1]=ansi_curr_attr>>8;
 
 	gettextinfo(&ti);
+	puttext_no_move=1;
 
 	switch(ch) {
 		case '\r':
@@ -469,6 +472,7 @@ int ansi_putch(unsigned char ch)
 			break;
 	}
 
+	puttext_no_move=0;
 	return(ch);
 }
 
