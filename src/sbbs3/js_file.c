@@ -277,7 +277,6 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char		buf[513];
 	int			len;
 	JSString*	str;
-
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -306,6 +305,88 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	return(JS_TRUE);
+}
+	
+static JSBool
+js_readint(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	BYTE		b;
+	WORD		w;
+	DWORD		l;
+	size_t		size=sizeof(DWORD);
+	private_t*	p;
+
+	*rval = JSVAL_VOID;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+	if(argc>1) 
+		size = JSVAL_TO_INT(argv[1]);
+
+	switch(size) {
+		case sizeof(BYTE):
+			fread(&b,1,size,p->fp);
+			*rval = INT_TO_JSVAL(b);
+			break;
+		case sizeof(WORD):
+			fread(&w,1,size,p->fp);
+			*rval = INT_TO_JSVAL(w);
+			break;
+		case sizeof(DWORD):
+			fread(&l,1,size,p->fp);
+			*rval = INT_TO_JSVAL(l);
+			break;
+	}
+		
+	return(JS_TRUE);
+}
+
+static JSBool
+js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+	if(lock(fileno(p->fp),JSVAL_TO_INT(argv[0]),JSVAL_TO_INT(argv[1]))==0)
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+	if(unlock(fileno(p->fp),JSVAL_TO_INT(argv[0]),JSVAL_TO_INT(argv[1]))==0)
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_delete(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	private_t*	p;
@@ -322,20 +403,6 @@ js_delete(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	return(JS_TRUE);
 }
-
-
-static JSBool
-js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	return(JS_TRUE);
-}
-	
-static JSBool
-js_readint(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	return(JS_TRUE);
-}
-
 
 static JSBool
 js_flush(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -522,10 +589,8 @@ static JSFunctionSpec js_file_functions[] = {
 	{"remove",			js_delete,			0},		/* delete the file */
 	{"clear_error",		js_clear_error,		0},		/* clear error */
 	{"flush",			js_flush,			0},		/* flush buffers */
-#if 0
 	{"lock",			js_lock,			2},		/* lock offset, length */
 	{"unlock",			js_unlock,			2},		/* unlock offset, length */
-#endif
 	{"read",			js_read,			0},		/* read a string */
 	{"readln",			js_readln,			0},		/* read a \n terminated string	*/
 	{"readint",			js_readint,			0},		/* read an integer (length) */
