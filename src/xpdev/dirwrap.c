@@ -47,11 +47,13 @@
 	#include <unistd.h>		/* usleep */
 	#include <fcntl.h>		/* O_NOCCTY */
 	#include <ctype.h>		/* toupper */
+	#include <sys/param.h>
 
-	#if defined(__FreeBSD__)
-		#include <sys/param.h>
+	#if defined(BSD)
 		#include <sys/mount.h>
+	#if defined(__FreeBSD__)
 		#include <sys/kbio.h>
+	#endif
 	#endif
 
 	#include <sys/ioctl.h>	/* ioctl */
@@ -633,7 +635,7 @@ ulong DLLCALL getfreediskspace(const char* path)
 
 
 /* statfs is also used under FreeBSD */
-#elif defined(__GLIBC__) || defined(__FreeBSD__)
+#elif defined(__GLIBC__) || defined(BSD)
 
 	struct statfs fs;
 

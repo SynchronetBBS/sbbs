@@ -42,10 +42,9 @@
 #include <unistd.h>
 #include <termios.h>
 
-/* Do the correct thing under BSD */
 #if defined(__FreeBSD__)
 	#include <sys/kbio.h>
-#else /* Linux and others */
+#elif defined(__linux__)
 	#include <sys/kd.h>
 #endif
 
