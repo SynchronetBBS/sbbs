@@ -68,7 +68,7 @@ cmdkey 'R'
 	setstr "irc.synchro.net 6667 #Synchronet"
 	getstr str 50 K_EDIT|K_LINE|K_AUTODEL
 	if_true
-		exec "?irc %s"
+		exec "?irc -a %s"
 		end_if
 	end_cmd
 
