@@ -2217,6 +2217,7 @@ static BOOL js_setup(http_session_t* session)
 	lprintf(LOG_INFO,"     JavaScript: Initializing User Objects");
 	if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, NULL
 		,NULL /* ftp index file */, NULL /* subscan */)) {
+		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript User Objects",session->socket);
 		send_error(session,"500 Error initializing JavaScript User Objects");
 		return(FALSE);
 	}
