@@ -39,6 +39,10 @@
 #define JAVASCRIPT
 #endif
 
+#ifdef __unix__
+#include <signal.h>
+#endif
+
 #include "sbbs.h"
 
 JSRuntime*	js_runtime;
@@ -616,16 +620,16 @@ long js_exec(const char *fname, char** args)
 	return(result);
 }
 
-void break_handler(void)
+void break_handler(int type)
 {
-	fprintf(stderr,"\n-> Terminated Locally <-\n");
+	fprintf(stderr,"\n-> Terminated Locally (%d)<-\n",type);
 	terminated=TRUE;
 }
 
 #if defined(_WIN32)
 BOOL WINAPI ControlHandler(DWORD CtrlType)
 {
-	break_handler();
+	break_handler((int)CtrlType);
 	return TRUE;
 }
 #endif
@@ -749,6 +753,10 @@ int main(int argc, char **argv, char** environ)
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
 	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
+#elif defined(__unix__)
+	signal(SIGQUIT,break_handler);
+	signal(SIGINT,break_handler);
+	signal(SIGTERM,break_handler);
 #endif
 
 	result=js_exec(module,&argv[argn]);
