@@ -1124,7 +1124,7 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 	fclose(instream);
 
 	smb_unlocksmbhdr(&smb);
-	msg->hdr.length=smb_getmsghdrlen(msg);
+	msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
 	if((i=smb_putmsghdr(&smb,msg))!=0)
 		errormsg(WHERE,ERR_WRITE,smb.file,i);
 }
