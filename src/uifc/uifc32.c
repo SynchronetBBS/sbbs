@@ -1025,7 +1025,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						continue;
 					}
 					/* Clicked Scroll Down */
-					if(mevnt.x=s_left+left
+					if(mevnt.x==s_left+left
 							&& mevnt.y==(s_top+top+height)-3
 							&& mevnt.button==1) {
 						if(!opts)
