@@ -75,7 +75,7 @@
 /****************************************************************************/
 /* Return the filename portion of a full pathname							*/
 /****************************************************************************/
-char* DLLCALL getfname(char* path)
+char* DLLCALL getfname(const char* path)
 {
 	char *fname;
 
@@ -85,7 +85,7 @@ char* DLLCALL getfname(char* path)
 	if(fname!=NULL) 
 		fname++;
 	else 
-		fname=path;
+		fname=(char*)path;
 	return(fname);
 }
 
@@ -161,7 +161,7 @@ int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 			glob->gl_pathv=new_pathv;
 
 			/* build the full pathname */
-			strcpy(path,pattern);
+			SAFECOPY(path,pattern);
 			p=getfname(path);
 			*p=0;
 			strcat(path,ff.name);
@@ -271,7 +271,7 @@ void rewinddir(DIR* dir)
 /****************************************************************************/
 /* Returns the time/date of the file in 'filename' in time_t (unix) format  */
 /****************************************************************************/
-time_t DLLCALL fdate(char *filename)
+time_t DLLCALL fdate(const char *filename)
 {
 	struct stat st;
 
@@ -287,7 +287,7 @@ time_t DLLCALL fdate(char *filename)
 /****************************************************************************/
 /* Returns the length of the file in 'filename'                             */
 /****************************************************************************/
-long DLLCALL flength(char *filename)
+long DLLCALL flength(const char *filename)
 {
 #if defined(__BORLANDC__) && !defined(__unix__)	/* stat() doesn't work right */
 
@@ -324,7 +324,7 @@ long DLLCALL flength(char *filename)
 /* Returns TRUE if it exists, FALSE if it doesn't.                          */
 /* 'filespec' may contain wildcards!										*/
 /****************************************************************************/
-BOOL DLLCALL fexist(char *filespec)
+BOOL DLLCALL fexist(const char *filespec)
 {
 #if defined(_WIN32)
 
@@ -419,7 +419,7 @@ BOOL DLLCALL fexistcase(char *path)
 /****************************************************************************/
 /* Returns TRUE if the filename specified is a directory					*/
 /****************************************************************************/
-BOOL DLLCALL isdir(char *filename)
+BOOL DLLCALL isdir(const char *filename)
 {
 	struct stat st;
 
@@ -432,7 +432,7 @@ BOOL DLLCALL isdir(char *filename)
 /****************************************************************************/
 /* Returns the attributes (mode) for specified 'filename'					*/
 /****************************************************************************/
-int DLLCALL getfattr(char* filename)
+int DLLCALL getfattr(const char* filename)
 {
 #if defined(_WIN32)
 	long handle;
@@ -464,7 +464,7 @@ int DLLCALL getfattr(char* filename)
 		(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER); 
 #endif
 
-ulong DLLCALL getfreediskspace(char* path)
+ulong DLLCALL getfreediskspace(const char* path)
 {
 #if defined(_WIN32)
 	char			root[16];
