@@ -260,12 +260,7 @@ public:
 	uchar 	action;			/* Current action of user */
 	long 	online; 		/* Remote/Local or not online */
 	long 	sys_status; 	/* System Status */
-	ushort 	*sub_cfg;		/* User configuration for this sub-board */
-	ulong	*sub_ptr;		/* Highest read message */
-	ulong	*sub_last;		/* last read message pointer */
-	ushort	*sav_sub_cfg;	/* Save cfg and ptrs for subs */
-	ulong	*sav_sub_ptr;	/* for fast pointer update */
-	ulong	*sav_sub_last;	/* last read message pointer */
+	subscan_t	*subscan;	/* User sub configuration/scan info */
 
 	ulong	logon_ulb,		/* Upload Bytes This Call */
 			logon_dlb,		/* Download Bytes This Call */
@@ -806,6 +801,10 @@ extern "C" {
 										,char* host, char* ip_addr, char* to);
 
 	DLLEXPORT char *	DLLCALL remove_ctrl_a(char* instr, char* outstr);
+
+	/* data_ovl.cpp */
+	DLLEXPORT BOOL		DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan);
+	DLLEXPORT BOOL		DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan);
 
 #ifdef JAVASCRIPT
 
