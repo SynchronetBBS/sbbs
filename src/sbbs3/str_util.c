@@ -336,7 +336,7 @@ static ulong msgid_serialno(smbmsg_t* msg)
 }
 
 /****************************************************************************/
-/* Returns a FidoNet FTS-9 compliant message-ID								*/
+/* Returns a FidoNet (FTS-9) message-ID										*/
 /****************************************************************************/
 char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg)
 {
@@ -350,6 +350,30 @@ char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg)
 		,sub->code
 		,msgid_serialno(msg)
 		);
+
+	return(msgid);
+}
+
+/****************************************************************************/
+/* Return a general purpose (RFC-822) message-ID							*/
+/****************************************************************************/
+char* DLLCALL gen_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg)
+{
+	static char msgid[256];
+
+	if(subnum>=cfg->total_subs)
+		snprintf(msgid,sizeof(msgid)
+			,"<%08lX.%lu@%s>"
+			,msg->idx.time
+			,msg->idx.number
+			,cfg->sys_inetaddr);
+	else
+		snprintf(msgid,sizeof(msgid)
+			,"<%08lX.%lu.%s@%s>"
+			,msg->idx.time
+			,msg->idx.number
+			,cfg->sub[subnum]->code
+			,cfg->sys_inetaddr);
 
 	return(msgid);
 }
