@@ -1544,9 +1544,7 @@ static int is_dynamic_req(http_session_t* session)
 				return(IS_CGI);
 			}
 		}
-		/* It would be more secure if this was a true physical directory comparision */
-		sprintf(path,"/%s/",cgi_dir);
-		if(stricmp(dir,path)==0)  {
+		if(stricmp(dir,cgi_dir)==0)  {
 			init_enviro(session);
 			return(IS_CGI);
 		}
