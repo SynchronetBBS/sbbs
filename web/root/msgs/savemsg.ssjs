@@ -28,7 +28,7 @@ else {
 		if(usr!=0)
 			hdrs.to_ext=usr;
 		else
-			error("Cannot find that local user (Not net address specified)");
+			error("Cannot find that local user (no network address specified)");
 	}
 }
 
