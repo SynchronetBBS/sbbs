@@ -95,6 +95,7 @@ static  wsa_error;
 
 /* WinSock-isms */
 #define HOSTENT			struct hostent
+#define IN_ADDR			struct in_addr
 #define SOCKADDR_IN		struct sockaddr_in
 #define LINGER			struct linger
 #define SOCKET			int
