@@ -11,8 +11,8 @@ function file_size_str(size, bytes)
 			return format("%ldB",size);
 		if(size<10000)         /* Bytes with comma */
 			return format("%ld,%03ldB",(size/1000),(size%1000));
-		size = size/1024;
 	}
+	size = size/1024;
 	if(size<1000)  /* KB */
 		return format("%ldK",size);
 	if(size<100000)  /* KB With comma */
