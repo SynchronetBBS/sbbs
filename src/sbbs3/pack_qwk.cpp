@@ -477,7 +477,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	if(/*!prepack && */ useron.rest&FLAG('Q')) { /* If QWK Net node, check for files */
 		sprintf(str,"%sqnet/%s.out/",cfg.data_dir,useron.alias);
 		dir=opendir(str);
-		while((dirent=readdir(dir))!=NULL) {    /* Move files into temp dir */
+		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {    /* Move files into temp dir */
 			sprintf(str,"%sqnet/%s.out/%s",cfg.data_dir,useron.alias,dirent->d_name);
 			if(isdir(str))
 				continue;
@@ -606,7 +606,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	if(useron.rest&FLAG('Q')) {
 		sprintf(str,"%s.qwk",cfg.sys_id);
 		dir=opendir(cfg.temp_dir);
-		while((dirent=readdir(dir))!=NULL) {
+		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 			if(!stricmp(str,dirent->d_name))	/* QWK packet */
 				continue;
 			sprintf(tmp,"%s%s",cfg.temp_dir,dirent->d_name);

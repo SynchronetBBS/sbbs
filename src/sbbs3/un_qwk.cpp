@@ -256,7 +256,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	remove(str);
 
 	dir=opendir(cfg.temp_dir);
-	while((dirent=readdir(dir))!=NULL) {
+	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 		// Create directory if necessary
 		sprintf(str,"%sqnet/%s.in",cfg.data_dir,cfg.qhub[hubnum]->id);
 		_mkdir(str);

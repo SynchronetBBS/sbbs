@@ -617,7 +617,7 @@ void sbbs_t::batch_upload()
 	if(cfg.upload_dir==INVALID_DIR)
 		return;
 	dir=opendir(cfg.temp_dir);
-	while((dirent=readdir(dir))!=NULL) {
+	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 		sprintf(str1,"%s%s",cfg.temp_dir,dirent->d_name);
 		if(isdir(str1))
 			continue;

@@ -532,7 +532,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 	action=NODE_ULNG;
 	SYNC;
 	dir=opendir(path);
-	while((dirent=readdir(dir))!=NULL && !msgabort()) {
+	while(dir!=NULL && (dirent=readdir(dir))!=NULL && !msgabort()) {
 		if(getfiles(&cfg,dirnum)>=cfg.dir[dirnum]->maxfiles) {
 			bputs(text[DirFull]);
 			break; 

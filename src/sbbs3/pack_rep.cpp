@@ -201,7 +201,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	sprintf(str,"%sqnet/%s.out",cfg.data_dir,cfg.qhub[hubnum]->id);
 	strlwr(str);
 	dir=opendir(str);
-	while((dirent=readdir(dir))!=NULL) {
+	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 		sprintf(str,"%sqnet/%s.out/%s",cfg.data_dir,cfg.qhub[hubnum]->id,dirent->d_name);
 		strlwr(str);
 		if(isdir(str))

@@ -306,7 +306,7 @@ void sbbs_t::extract(uint dirnum)
 		if(fexist(str)) {
 			bputs(text[RemovingTempFiles]);
 			dir=opendir(cfg.temp_dir);
-			while((dirent=readdir(dir))!=NULL) {
+			while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 				sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
         		if(!isdir(str))
 					remove(str);

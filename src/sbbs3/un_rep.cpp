@@ -415,7 +415,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		remove(str);
 
 		dir=opendir(cfg.temp_dir);
-		while((dirent=readdir(dir))!=NULL) {				/* Extra files */
+		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {				/* Extra files */
 			// Create directory if necessary
 			sprintf(str,"%sqnet/%s.in",cfg.data_dir,useron.alias);
 			_mkdir(str); 
