@@ -343,6 +343,39 @@ char *ciolib_cgets(char *str)
 	return(&str[2]);
 }
 
+#ifdef _MSC_VER	/* Use lame vsscanf() implementation */
+/* This is a way to do _vsscanf without using fancy stack tricks or using the
+ * "_input" method provided by Microsoft, which is no longer exported as of .NET.
+ * The function has a limit of 25 arguments (or less if you run out of stack space),
+ *  but how many arguments do you need?
+ */
+/* From "krabsheva" - http://www.codeguru.com/Cpp/Cpp/string/comments.php/c5631/?thread=1051 */
+int vsscanf( const char *buffer, const char *format, va_list arg_ptr )
+{
+	int i, ret;
+	void *arg_arr[25];
+
+	// Do exception handling in case we go too far //
+	__try
+	{
+		for ( i = 0; i < 25; i++ )
+			arg_arr[i] = va_arg( arg_ptr, void * );
+	}
+	__except( EXCEPTION_EXECUTE_HANDLER )
+	{
+	}
+
+	/* This is lame, but the extra arguments won't be used by sscanf */
+	ret = sscanf( buffer, format, arg_arr[0], arg_arr[1], arg_arr[2], arg_arr[3],
+		arg_arr[4], arg_arr[5], arg_arr[6], arg_arr[7], arg_arr[8], arg_arr[9],
+		arg_arr[10], arg_arr[11], arg_arr[12], arg_arr[13], arg_arr[14],
+		arg_arr[15], arg_arr[16], arg_arr[17], arg_arr[18], arg_arr[19],
+		arg_arr[20], arg_arr[21], arg_arr[22], arg_arr[23], arg_arr[24] );
+
+	return ret;
+}
+#endif
+
 int ciolib_cscanf (char *format , ...)
 {
 	char str[255];
@@ -353,11 +386,7 @@ int ciolib_cscanf (char *format , ...)
 	
 	str[0]=-1;
 	va_start(argptr,format);
-#ifdef _MSC_VER	/* MSVC doesn't have vsscanf */
-	ret=0;
-#else
 	ret=vsscanf(ciolib_cgets(str),format,argptr);
-#endif
 	va_end(argptr);
 	return(ret);
 }
