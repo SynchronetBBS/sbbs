@@ -1099,7 +1099,7 @@ return(0);
 void nodemsg()
 {
 	static	inside;
-	char	str[256],line[256],buf[512],logbuf[512],ch;
+	char	str[256],line[256],buf[512],ch;
 	int 	i,j,usernumber,done=0;
 	node_t	node,savenode;
 
@@ -1166,15 +1166,12 @@ while(online && !done) {
 				,thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias
 				,timestr(&now));
 			i=0;
-			logbuf[0]=0;
 			while(online && i<5) {
 				bprintf("%4s",nulstr);
 				if(!getstr(line,70,K_WRAP|K_MSG))
 					break;
 				sprintf(str,"%4s%s\r\n",nulstr,line);
 				strcat(buf,str);
-				if(line[0])
-					strcat(logbuf,line);
 				i++; }
 			if(!i)
 				break;
@@ -1185,7 +1182,7 @@ while(online && !done) {
 			sprintf(str,"Sent telegram to %s #%u"
 				,username(usernumber,tmp),usernumber);
 			logline("C",str);
-			logline(nulstr,logbuf);
+			logline(nulstr,line);
 			bprintf("\1n\1mTelegram sent to \1h%s\r\n"
 				,username(usernumber,tmp));
 			break;

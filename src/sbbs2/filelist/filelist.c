@@ -8,7 +8,7 @@
 
 #include "sbbs.h"
 
-#define FILELIST_VER "2.12"
+#define FILELIST_VER "2.11"
 
 #define MAX_NOTS 25
 
@@ -263,7 +263,7 @@ if(!unix)
 else {
 	t=gmtime(&unix);
 	sprintf(str,"%02u/%02u/%02u",t->tm_mon+1,t->tm_mday
-		,t->tm_year%100); }
+		,t->tm_year); }
 return(str);
 }
 

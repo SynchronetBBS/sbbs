@@ -106,13 +106,6 @@ bprintf(text[MsgAttr]
 	,attr&MSG_PERMANENT ? "Permanent  " :nulstr
 	,attr&MSG_MODERATED ? "Moderated  " :nulstr
 	,attr&MSG_VALIDATED ? "Validated  " :nulstr
-	,attr&MSG_REPLIED	? "Replied  "	:nulstr
-	,nulstr
-	,nulstr
-	,nulstr
-	,nulstr
-	,nulstr
-	,nulstr
 	);
 }
 

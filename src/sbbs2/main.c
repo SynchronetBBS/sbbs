@@ -245,7 +245,7 @@ if(length) {
 	now=time(NULL);
 	unixtodos(now,&date,&curtime);
 	sprintf(str,"%sLOGS\\%2.2d%2.2d%2.2d.LOG",data_dir,date.da_mon,date.da_day
-		,TM_YEAR(date.da_year-1900));
+		,date.da_year-1900);
 	if((file=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
 		FREE((char *)buf);

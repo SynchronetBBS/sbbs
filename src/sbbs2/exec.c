@@ -26,7 +26,7 @@ char **getstrvar(csi_t *bin, long name)
 {
 	int i;
 
-if(sysvar_pi>=MAX_SYSVARS) sysvar_pi=0;
+if(sysvar_pi==MAX_SYSVARS) sysvar_pi=0;
 switch(name) {
 	case 0:
 		return((char **)&(bin->str));

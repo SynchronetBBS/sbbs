@@ -393,8 +393,6 @@ if(!atoi(birth) || !atoi(birth+3))	/* Invalid */
 	return(0);
 getdate(&date);
 age=(date.da_year-1900)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
-if(age>90)
-	age-=90;
 if(sys_misc&SM_EURODATE) {		/* DD/MM/YY format */
 	if(atoi(birth)>31 || atoi(birth+3)>12)
 		return(0);

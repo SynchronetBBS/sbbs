@@ -196,7 +196,7 @@ crc=~crc;
 
 memset(&msg,0,sizeof(smbmsg_t));
 memcpy(msg.hdr.id,"SHD\x1a",4);
-msg.hdr.version=smb_ver();
+msg.hdr.version=SMB_VERSION;
 msg.hdr.attr=msg.idx.attr=msgattr;
 if(mode&WM_FILE)
 	msg.hdr.auxattr|=MSG_FILEATTACH;

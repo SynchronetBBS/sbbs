@@ -68,8 +68,6 @@ while(!(sys_status&SS_ABORT) && (ch=getkey(mode|K_GETSTR))!=CR && online) {
 		break;
 	if(ch==LF) /* Ctrl-J same as CR */
 		break;
-	if(ch==TAB && !(mode&K_WRAP))	/* TAB same as CR */
-		break;
 	if(!i && mode&K_UPRLWR && (ch==SP || ch==TAB))
 		continue;	/* ignore beginning white space if upper/lower */
     if(mode&K_E71DETECT && ch==(CR|0x80) && l>1) {

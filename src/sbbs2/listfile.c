@@ -693,7 +693,7 @@ int listfile(char *fname, char HUGE16 *buf, uint dirnum
 
 if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC && useron.misc&EXTDESC) {
 	getextdesc(dirnum,datoffset,ext);
-	if(useron.misc&BATCHFLAG && lncntr+cntlines(ext)>=rows-2 && letter!='A')
+	if(useron.misc&BATCHFLAG && lncntr+cntlines(ext)>=rows-2)
 		return(0); }
 attr(color[clr_filename]);
 bputs(fname);

@@ -484,11 +484,8 @@ if(ch==26 && action!=NODE_PCHT) {	 /* Ctrl-Z toggle raw input mode */
 	if(action!=NODE_MAIN && action!=NODE_XFER)
 		return(26);
 	return(0); }
-if(console&CON_RAW_IN)	{ /* ignore ctrl-key commands if in raw mode */
-	if(!ch && (!(mode&K_GETSTR) || mode&K_LOWPRIO || node_misc&NM_LOWPRIO))
-		mswait(0);
+if(console&CON_RAW_IN)	/* ignore ctrl-key commands if in raw mode */
 	return(ch);
-}
 if(ch<SP) { 				/* Control chars */
 	if(ch==LF)				/* ignore LF's in not in raw mode */
 		return(0);

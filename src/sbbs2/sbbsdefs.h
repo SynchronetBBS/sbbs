@@ -18,15 +18,14 @@
 /*************/
 
 #define VERSION 	"2.30"  /* Version: Major.minor  */
-#define REVISION	'C'
-#define BETA		" beta"     /* Space if non-beta, " áeta" otherwise */
-
-#define Y2K_2DIGIT_WINDOW	70
+#define REVISION	'A'
+#define BETA		" "     /* Space if non-beta, " áeta" otherwise */
 
 /************/
 /* Maximums */
 /************/
 
+#define DEMO_NODES		  2
 #define MAX_NODES		250
 
 #ifdef __FLAT__
@@ -366,8 +365,8 @@ enum {								/* Values for xtrn_t.event			*/
 #define SEC_CID 	  10	/* Ten second pause for caller ID			*/
 #define SEC_RING	   6	/* Maximum seconds between rings			*/
 
-#define LOOP_NOPEN	  50	/* Retries before file access denied		*/
-#define LOOP_NODEDAB  50	/* Retries on NODE.DAB locking/unlocking	*/
+#define LOOP_NOPEN	 500	/* Retries before file access denied		*/
+#define LOOP_NODEDAB 500	/* Retries on NODE.DAB locking/unlocking	*/
 
 							/* String lengths							*/
 #define LEN_ALIAS		25	/* User alias								*/
@@ -710,7 +709,6 @@ enum {						/* Values of mode for userlist function     */
 #define ANSI_SAVE() 	bputs("\x1b[s")
 #define ANSI_RESTORE()	bputs("\x1b[u")
 #define GOTOXY(x,y)     bprintf("\x1b[%d;%dH",y,x)
-#define TM_YEAR(yy)		((yy)%100)
 
 extern	long crc32tbl[];
 #define ucrc32(ch,crc) (crc32tbl[(crc^ch)&0xff]^(crc>>8))

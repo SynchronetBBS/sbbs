@@ -45,8 +45,6 @@ if(birth[0]<=SP)
 	return(0);
 getdate(&date);
 age=(date.da_year-1900)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
-if(age>90)
-	age-=90;
 if(atoi(birth)>12 || atoi(birth+3)>31)
 	return(0);
 if(((birth[0]&0xf)*10)+(birth[1]&0xf)>date.da_mon ||
@@ -77,7 +75,7 @@ now=time(NULL);
 gm=localtime(&now);
 fseek(log,0L,SEEK_END);
 fprintf(log,"%02u/%02u/%02u %02u:%02u:%02u %s\r\n"
-    ,gm->tm_mon+1,gm->tm_mday,TM_YEAR(gm->tm_year),gm->tm_hour,gm->tm_min,gm->tm_sec
+    ,gm->tm_mon+1,gm->tm_mday,gm->tm_year,gm->tm_hour,gm->tm_min,gm->tm_sec
     ,buf);
 fflush(log);
 }

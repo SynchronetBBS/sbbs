@@ -35,7 +35,6 @@ if(!useron.number) {				 /* Not logged in, so do nothing */
 strcpy(lastuseron,useron.alias);	/* for use with WFC status display */
 
 if(useron.rest&FLAG('G')) {        /* Reset guest's msg scan cfg */
-	putuserrec(useron.number,U_NAME,LEN_NAME,nulstr);
 	for(i=0;i<total_subs;i++) {
 		if(sub[i]->misc&SUB_NSDEF)
 			sub[i]->misc|=SUB_NSCAN;
@@ -53,9 +52,8 @@ if(batdn_total) {
 		for(i=0;i<batdn_total;i++)
 			fprintf(stream,"%s\r\n",batdn_name[i]);
 		fclose(stream); } }
-	
-if(sys_status&SS_USERON && thisnode.status!=NODE_QUIET 
-	&& !(useron.rest&FLAG('Q')))
+
+if(thisnode.status!=NODE_QUIET && !(useron.rest&FLAG('Q')))
 	for(i=1;i<=sys_nodes;i++)
 		if(i!=node_num) {
 			getnodedat(i,&node,0);
@@ -230,7 +228,7 @@ void logofflist()
 
 unixtodos(logontime,&date,&ontime);
 sprintf(str,"%sLOGS\\%2.2d%2.2d%2.2d.LOL",data_dir,date.da_mon,date.da_day
-    ,TM_YEAR(date.da_year-1900));
+    ,date.da_year-1900);
 if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
     errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
     return; }

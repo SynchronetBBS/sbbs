@@ -49,7 +49,7 @@ time_t dstrtounix(char *str)
 if(!strcmp(str,"00/00/00"))
 	return(0);
 curtime.ti_hour=curtime.ti_min=curtime.ti_sec=0;
-if(str[6]<'7')
+if(str[6]<7)
 	date.da_year=2000+((str[6]&0xf)*10)+(str[7]&0xf);
 else
 	date.da_year=1900+((str[6]&0xf)*10)+(str[7]&0xf);

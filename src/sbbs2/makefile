@@ -132,10 +132,9 @@ $(LIB)\c0X32.OBJ $(OBJS) $(OS)\ver.obj $(OVLOBJS)
 +, $*, $*, $(LIB)\import32.lib $(LIB)\cw32mt.lib
 !else
 	$(LD) $(LFLAGS) @&&+
-$(LIB)\c0$(MODEL) $(OBJS) $(OS)\ver.obj /o $(OVLOBJS), \
-$*, $*, ..\spawno\spawnl $(LIB)\overlay $(LIB)\c$(MODEL) \
+$(LIB)\c0$(MODEL) $(OBJS) $(OS)\ver.obj /o $(OVLOBJS)
++, $*, $*, ..\spawno\spawnl $(LIB)\overlay $(LIB)\c$(MODEL) \
 	$(LIB)\math$(MODEL) $(LIB)\emu
-+
 !endif
 
 $(OS)\smblib.obj: smb\smblib.c smb\smblib.h smb\smbdefs.h

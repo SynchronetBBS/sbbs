@@ -214,7 +214,7 @@ while(!feof(smb.sid_fp)) {
         ==NULL) {
 		smb_unlocksmbhdr(&smb);
 		errormsg(WHERE,ERR_ALLOC,smb.file,sizeof(mail_t)*(l+1));
-        return(0); }
+        return(i); }
 	(*mail)[l].offset=idx.offset;
 	(*mail)[l].number=idx.number;
 	(*mail)[l].to=idx.to;
@@ -518,7 +518,6 @@ while(online && !done) {
 			sprintf(str,"%sFILE\\%04u.IN",data_dir,usernumber);
 			rmdir(str); }
 		if(which==MAIL_YOUR && !(msg.hdr.attr&MSG_READ)) {
-			mail[curmsg].attr|=MSG_READ;
 			if(thisnode.status==NODE_INUSE)
 				telluser(msg);
 			if(msg.total_hfields)

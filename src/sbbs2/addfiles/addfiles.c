@@ -6,7 +6,7 @@
 
 #include "sbbs.h"
 
-#define ADDFILES_VER "2.24"
+#define ADDFILES_VER "2.23"
 
 char tmp[256];
 char *crlf="\r\n";
@@ -262,7 +262,7 @@ if(!unix)
 else {
 	t=gmtime(&unix);
 	sprintf(str,"%02u/%02u/%02u",t->tm_mon+1,t->tm_mday
-		,TM_YEAR(t->tm_year)); }
+		,t->tm_year); }
 return(str);
 }
 

@@ -170,7 +170,7 @@ fclose(instream);
 
 memset(&msg,0,sizeof(smbmsg_t));
 memcpy(msg.hdr.id,"SHD\x1a",4);
-msg.hdr.version=smb_ver();
+msg.hdr.version=SMB_VERSION;
 if(mode&WM_FILE)
 	msg.hdr.auxattr|=MSG_FILEATTACH;
 msg.hdr.when_written.time=msg.hdr.when_imported.time=time(NULL);
@@ -346,7 +346,7 @@ fclose(instream);
 
 memset(&msg,0,sizeof(smbmsg_t));
 memcpy(msg.hdr.id,"SHD\x1a",4);
-msg.hdr.version=smb_ver();
+msg.hdr.version=SMB_VERSION;
 if(mode&WM_FILE)
 	msg.hdr.auxattr|=MSG_FILEATTACH;
 msg.hdr.when_written.time=msg.hdr.when_imported.time=time(NULL);

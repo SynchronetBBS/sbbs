@@ -51,7 +51,7 @@ HEADERS = ..\sbbs.h ..\sbbsdefs.h ..\scfgvars.c &
 # Main EXE Link Rule
 $(MAIN): $(OBJS) 
 	@echo Linking $[@ ...
-        $(LD) $(LFLAGS) file { $(OBJS) } option map
+        $(LD) $(LFLAGS) file { $(OBJS) }
 
 # Global Variables
 $(OS)\scfgvars.obj: ..\scfgvars.c ..\sbbsdefs.h
