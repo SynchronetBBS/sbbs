@@ -471,6 +471,7 @@ public:
 	void	center(char *str);
 
 	/* getstr.cpp */
+	size_t	getstr_offset;
 	size_t	getstr(char *str, size_t length, long mode);
 	long	getnum(ulong max);
 
