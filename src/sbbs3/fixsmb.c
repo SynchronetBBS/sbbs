@@ -101,7 +101,7 @@ int fixsmb(char* sub)
 {
 	char*		p;
 	char*		text;
-	char		str[MAX_PATH+1],c;
+	char		c;
 	int 		i,w;
 	ulong		l,length,size,n;
 	smbmsg_t	msg;
@@ -220,24 +220,7 @@ int fixsmb(char* sub)
 			msg.idx.number=msg.hdr.number;
 			msg.idx.attr=msg.hdr.attr;
 			msg.idx.time=msg.hdr.when_imported.time;
-			msg.idx.subj=smb_subject_crc(msg.subj);
-			if(smb.status.attr&SMB_EMAIL) {
-				if(msg.to_ext)
-					msg.idx.to=atoi(msg.to_ext);
-				else
-					msg.idx.to=0;
-				if(msg.from_ext)
-					msg.idx.from=atoi(msg.from_ext);
-				else
-					msg.idx.from=0; 
-			} else {
-				SAFECOPY(str,msg.to);
-				strlwr(str);
-				msg.idx.to=crc16(str,0);
-				SAFECOPY(str,msg.from);
-				strlwr(str);
-				msg.idx.from=crc16(str,0); 
-			}
+			smb_init_idx(&smb,&msg);
 			if((i=smb_putmsg(&smb,&msg))!=0) {
 				printf("\nsmb_putmsg returned %d: %s\n",i,smb.last_error);
 				continue; 
