@@ -113,8 +113,9 @@ void __fastcall TUserListForm::ListViewCompare(TObject *Sender,
 void __fastcall TUserListForm::FormClose(TObject *Sender,
       TCloseAction &Action)
 {
+    ListView->Items->BeginUpdate();
     ListView->Items->Clear();
-
+    ListView->Items->EndUpdate();
 }
 //---------------------------------------------------------------------------
 
