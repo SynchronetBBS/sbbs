@@ -937,8 +937,9 @@ int		pstrcmp(char **str1, char **str2);  /* Compares pointers to pointers */
 int		strsame(char *str1, char *str2);	/* Compares number of same chars */
 
 /* nopen.c */
-int		nopen(char *str, int access);
-FILE *	fnopen(int *file, char *str, int access);
+int		nopen(const char* str, int access);
+FILE *	fnopen(int* file, const char* str, int access);
+BOOL	ftouch(const char* fname);
 
 /* load_cfg.c */
 BOOL 	md(char *path);

@@ -43,7 +43,7 @@
 /* number of times if the attempted file is already open or denying access  */
 /* for some other reason.	All files are opened in BINARY mode.			*/
 /****************************************************************************/
-int nopen(char *str, int access)
+int nopen(const char* str, int access)
 {
 	int file,share,count=0;
 
@@ -64,7 +64,7 @@ int nopen(char *str, int access)
 /* This function performs an nopen, but returns a file stream with a buffer */
 /* allocated.																*/
 /****************************************************************************/
-FILE* fnopen(int *fd, char *str, int access)
+FILE* fnopen(int* fd, const char* str, int access)
 {
 	char	mode[128];
 	int		file;
@@ -99,4 +99,16 @@ FILE* fnopen(int *fd, char *str, int access)
 	}
     setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
     return(stream);
+}
+
+BOOL ftouch(const char* fname)
+{
+	int file;
+
+	file=nopen(fname,O_WRONLY|O_CREAT);
+	if(file<0)
+		return(FALSE);
+	close(file);
+
+	return(TRUE);
 }
