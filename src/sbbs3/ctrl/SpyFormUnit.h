@@ -49,22 +49,22 @@
 #include <ToolWin.hpp>
 #include <Menus.hpp>
 #include <ActnList.hpp>
+#include <Buttons.hpp>
 //---------------------------------------------------------------------------
 class TSpyForm : public TForm
 {
 __published:	// IDE-managed Components
     TTimer *Timer;
     TImageList *ImageList;
-    TMainMenu *SpyMenu;
-    TMenuItem *SettingsMenuItem;
-    TMenuItem *KeyboardActiveMenuItem;
-    TMenuItem *FontMenuItem;
     TPopupMenu *PopupMenu;
     TMenuItem *KeyboardActivePopupMenuItem;
     TActionList *ActionList;
     TAction *KeyboardActive;
     TAction *ChangeFont;
     TMenuItem *FontPopupMenuItem;
+    TPanel *ToolBar;
+    TSpeedButton *FontButton;
+    TCheckBox *KeyboardActiveCheckBox;
     void __fastcall SpyTimerTick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
     void __fastcall FormClose(TObject *Sender, TCloseAction &Action);

@@ -38,7 +38,6 @@
 
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
-#include "sbbsdefs.h"
 
 #define SPYBUF_LEN  10000
 //---------------------------------------------------------------------------
@@ -58,60 +57,7 @@ __fastcall TSpyForm::TSpyForm(TComponent* Owner)
     Terminal->Align=alClient;
     Terminal->OnKeyPress=FormKeyPress;
     Terminal->OnMouseUp=FormMouseUp;
-}
-bool strip_ansi(char* str)
-{
-    char*   p=str;
-    char    newstr[SPYBUF_LEN];
-    int     newlen=0;
-    bool    ff=false;
-
-    for(p=str;*p && newlen<(sizeof(newstr)-1);) {
-
-        switch(*p) {
-            case BEL:   /* bell */
-                Beep();
-                break;
-            case BS:    /* backspace */
-                if(newlen)
-                    newlen--;
-                break;
-             case FF:   /* form feed */
-                newlen=0;
-                ff=true;
-                break;
-             case ESC:
-                if(*(p+1)=='[') {    /* ANSI */
-                    p+=2;
-                    if(!strncmp(p,"2J",2)) {
-                        newlen=0;
-                        ff=true;
-                    }
-                    while(*p && !isalpha(*p)) p++;
-                }
-                break;
-            case CR:
-                if(*(p+1)!=LF) {
-                    while(newlen) {
-                        newlen--;
-                        if(newstr[newlen]==LF) {
-                            newlen++;
-                            break;
-                        }
-                    }
-                    break;
-                } /* Fall through */
-             default:
-                newstr[newlen++]=*p;
-                break;
-        }
-        if(*p==0)
-            break;
-        p++;
-    }
-    newstr[newlen]=0;
-    strcpy(str,newstr);
-    return(ff);
+    ActiveControl=Terminal;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
@@ -124,19 +70,10 @@ void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
 
     rd=RingBufRead(*outbuf,buf,sizeof(buf)-1);
     if(rd) {
-#if 0
-        buf[rd]=0;
-        if(strip_ansi(buf))
-            Log->Lines->Clear();
-        Log->SelLength=0;
-        Log->SelStart=Log->Lines->Text.Length();
-        Log->SelText=AnsiString(buf);
-#else
         Terminal->WriteBuffer(buf,rd);
-#endif
-        Timer->Interval=100;
+        Timer->Interval=1;
     } else
-        Timer->Interval=500;
+        Timer->Interval=250;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSpyForm::FormShow(TObject *Sender)
@@ -153,6 +90,7 @@ void __fastcall TSpyForm::FormShow(TObject *Sender)
     Terminal->Clear();
     Terminal->WriteStr("*** Synchronet Local Spy ***\r\n\r\n");
     Terminal->WriteStr("ANSI Terminal Emulation:"+CopyRight+"\r\n\r\n");
+    KeyboardActiveClick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -187,12 +125,17 @@ void __fastcall TSpyForm::FormKeyPress(TObject *Sender, char &Key)
 {
     if(KeyboardActive->Checked && inbuf!=NULL && *inbuf!=NULL)
         RingBufWrite(*inbuf,&Key,1);
+
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TSpyForm::KeyboardActiveClick(TObject *Sender)
 {
     KeyboardActive->Checked=!KeyboardActive->Checked;
+    if(KeyboardActive->Checked)
+        Terminal->Cursor=crIBeam;
+    else
+        Terminal->Cursor=crDefault;
 }
 //---------------------------------------------------------------------------
 

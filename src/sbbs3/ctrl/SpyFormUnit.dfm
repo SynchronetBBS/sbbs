@@ -37,7 +37,6 @@ object SpyForm: TSpyForm
     000FF800000FFC00001FFE00001FE0000001C000000180000001800000018000
     00018000000180000001FC00001FFC00001FFE00001FFC00000FF800000FF800
     001FF800003FFC180C7FFE380EFFFFF80FFFFFF80FFFFFF80FFFFFFFFFFF}
-  Menu = SpyMenu
   OldCreateOrder = False
   Position = poDefaultPosOnly
   OnClose = FormClose
@@ -46,6 +45,31 @@ object SpyForm: TSpyForm
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
+  object ToolBar: TPanel
+    Left = 0
+    Top = 0
+    Width = 576
+    Height = 21
+    Align = alTop
+    BevelOuter = bvNone
+    TabOrder = 0
+    object FontButton: TSpeedButton
+      Left = 128
+      Top = 0
+      Width = 81
+      Height = 19
+      Action = ChangeFont
+      Flat = True
+    end
+    object KeyboardActiveCheckBox: TCheckBox
+      Left = 8
+      Top = 0
+      Width = 113
+      Height = 19
+      Action = KeyboardActive
+      TabOrder = 0
+    end
+  end
   object Timer: TTimer
     Enabled = False
     Interval = 500
@@ -196,19 +220,6 @@ object SpyForm: TSpyForm
       FFFFFFFF00000000FFFFFFFF905C3F0300000000000000000000000000000000
       000000000000}
   end
-  object SpyMenu: TMainMenu
-    Left = 288
-    Top = 24
-    object SettingsMenuItem: TMenuItem
-      Caption = 'Settings'
-      object KeyboardActiveMenuItem: TMenuItem
-        Action = KeyboardActive
-      end
-      object FontMenuItem: TMenuItem
-        Action = ChangeFont
-      end
-    end
-  end
   object PopupMenu: TPopupMenu
     Left = 80
     Top = 104
@@ -223,11 +234,13 @@ object SpyForm: TSpyForm
     Left = 328
     Top = 24
     object KeyboardActive: TAction
-      Caption = 'Keyboard Active'
+      Caption = 'Active Keyboard'
+      Hint = 'Activate Local Keyboard'
       OnExecute = KeyboardActiveClick
     end
     object ChangeFont: TAction
-      Caption = 'Font...'
+      Caption = 'Change Font'
+      Hint = 'Change Font'
       OnExecute = ChangeFontClick
     end
   end
