@@ -50,19 +50,62 @@ enum {
 };
 #define BLINK 128
 
-#define LASTMODE	-1
-#define BW40		0
-#define C40			1
-#define BW80		2
-#define	C80			3
-#define MONO		7
-#define C80X50		64
-#define C4350		C80X50
-#define C80X14		128
-#define C80X21		129
-#define	C80X28		130
-#define C80X43		131
-#define C80X60		132
+enum text_modes
+{
+    /* DOS-compatible modes */
+
+    LASTMODE = -1,
+    BW40     = 0,
+    C40,
+    BW80,
+    C80,
+    MONO     = 7,
+
+    /* New Color modes */
+
+    C40X14   = 8,
+    C40X21,
+    C40X28,
+    C40X43,
+    C40X50,
+    C40X60,
+
+    C80X14,
+    C80X21,
+    C80X28,
+    C80X43,
+    C80X50,
+    C80X60,
+
+    /* New Black & White modes */
+
+    BW40X14,
+    BW40X21,
+    BW40X28,
+    BW40X43,
+    BW40X50,
+    BW40X60,
+
+    BW80X14,
+    BW80X21,
+    BW80X28,
+    BW80X43,
+    BW80X50,
+    BW80X60,
+
+    /* New Monochrome modes */
+
+    MONO14,             /* Invalid VGA mode */
+    MONO21,
+    MONO28,
+    MONO43,
+    MONO50,
+    MONO60,
+
+    C4350    = C80X50,	/* this is actually "64" in the "real" conio */
+
+    _ORIGMODE = 65      /* original mode at program startup */
+};
 
 #define COLOR_MODE	C80
 
