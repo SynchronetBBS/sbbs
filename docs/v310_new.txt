@@ -1258,9 +1258,20 @@ o Changed use of gmtime() to localtime() for systems using local/system
   time zone rather than GMT/UTC (the default)
 
 o Including Win32 console-mode version of Synchronet (sbbs.exe)
-  - Less overhead
-  - More ideally suited to run as an NT service
-  - Identical to Unix version
+  - less overhead
+  - more ideally suited to run as an NT service
+  - identical to Unix version
+
+o Better error reporting (includes text description of errno)
+
+o All TCP servers support recycling via semaphore and semaphore files
+  - ctrl/telnet.rec, ftpsrvr.rec, mailsrvr.rec, and services.rec
+  - waits until server is not in-use before recycling
+  - re-loads config files
+  - re-binds sockets
+
+o Fixed bugs in parsing ARS keywords: UNIX, LINUX, and WIN32
+  - any additional ARS keywords in the same string were corrupted
 
 
 Configuration Utility (SCFG) Updated for Version 3.x
@@ -1271,10 +1282,10 @@ o Fixed access violations/segfaults when adding file options:
   protocols, download events, viewable/testable/compressable/extractable file
   types, and alternate file paths, at the end of the list
 
-o Created System "Toggle Option" to use local/system time zone instead of
+o New System "Toggle Option" to use local/system time zone instead of
   GMT/UTC
 
-o Created Node "Toggle Option" to leave NODE.DAB open (defaults to "Yes")
+o New Node "Toggle Option" to leave NODE.DAB open (defaults to "Yes")
   - This is how Synchronet operated prior to v3, but was changed in the
     interest of Linux/smbfs-compatibility
   - In the interest of performance and reliability, I've changed the default
@@ -1293,39 +1304,49 @@ Control Panel (Win32)
 ~~~~~~~~~~~~~~~~~~~~~
 o Fixed resource (thread and process handle) leak when using BBS->Configure
 
+o Fixed potentially incorrect client counter in status bar
+
+o New File->Properties->Advanced tab to set control directory and host name
+  - Host name should be set only if different for this instance of sbbsctrl
+
 
 JavaScript (http://synchro.net/docs/js.html)
 ~~~~~~~~~~
 o Added BranchCallback for detecting infinite loops and releasing timeslices
   while executing scripts
 
-o Created MsgBase.subnum (0-based sub-board number) property
+o New MsgBase.subnum (0-based sub-board number) property
 
-o Created message hdr.date property for proper RFC822 date representation
+o New message hdr.date property for proper RFC822 date representation
 
 o Added time to message-id for messages in sub-boards (for more uniqueness)
 
 o Added extra bool param to MsgBase.get_msg_body() method (tails)
   - defaults to true if unspecified
 
-o Created MsgBase.get_msg_tail() method
+o New MsgBase.get_msg_tail() method
   - returns message tail (tear/taglines) only
 
-o Created errno global property (mirrors C RTL "errno" variable)
+o New global properties:
+  - errno     (mirrors C RTL "errno" variable)
+  - errno_str (String description of errno value)
 
-o Created global methods: 
+o New global methods: 
   - ascii_str(String)	  return ex-ascii string converted to pure ascii
   - strip_exascii(String) return string with ex-ascii chars removed
 
-o Created system methods:
+o New system methods:
   - system.spamlog(prot, reason, host, ip_addr, to)
   - system.hacklog(prot, user, text, host, ip_addr, port)
 
-o Create system.host_name property 
+o New system.host_name property 
   - may be different from Internet address configured in SCFG->Networks->
     Internet e-mail
   - configured with sbbsctrl->File->Properites->Advanced
   - only required for multiple machine BBSes (e.g. vert/rob/cvs.synchro.net)
+
+o New socket method:
+  - socket.sendfile(filename)
 
 o Global printf() function outputs to event log when appropriate
 
@@ -1333,7 +1354,9 @@ o Fixed JavaScript context corruption caused by bbs.login() method
 
 o Fixed null pointer dereferences when accessing properites of unopen JS file
 
-o Fixed bug in File.writeAll() method
+o Fixed bug in File.writeAll() method (would stop writing prematurely)
+
+o Doesn't ask for new/your message scan if user has access to no message areas
 
 
 Telnet Server
@@ -1359,7 +1382,7 @@ o No longer clears useron number in node.dab when logging off
   - Multinode chat users need this value to display the user name that left 
     chat channel (disconnected)
 
-o Created toggle option to check time left online while executing doors
+o New toggle option to check time left online while executing doors
 
 o Switched back to using DOSXTRN for offline events
   - Executing events without DOSXTRN caused too many problems
