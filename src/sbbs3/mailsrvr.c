@@ -75,6 +75,7 @@ static char* pop_err	=	"-ERR";
 static char* ok_rsp		=	"250 OK";
 static char* auth_ok	=	"235 User Authenticated";
 static char* sys_error	=	"421 System error";
+static char* sys_unavail=	"421 System unavailable, try again later";
 static char* badarg_rsp =	"501 Bad argument";
 static char* badseq_rsp	=	"503 Bad sequence of commands";
 static char* badauth_rsp=	"535 Authentication failure";
@@ -735,15 +736,6 @@ static void pop3_thread(void* arg)
 		memset(&msg,0,sizeof(msg));
 		memset(&user,0,sizeof(user));
 
-		sprintf(smb.file,"%smail",scfg.data_dir);
-		smb.retry_time=scfg.smb_retry_time;
-		smb.subnum=INVALID_SUB;
-		if((i=smb_open(&smb))!=0) {
-			lprintf("%04d !ERROR %d (%s) opening %s",socket,i,smb.last_error,smb.file);
-			sockprintf(socket,"-ERR %d opening %s",i,smb.file);
-			break;
-		}
-
 		srand(time(NULL));	/* seed random number generator */
 		rand();	/* throw-away first result */
 		sprintf(challenge,"<%x%x%lx%lx@%s>"
@@ -846,6 +838,20 @@ static void pop3_thread(void* arg)
 			lprintf("%04d POP3 %s logged in %s", socket, user.alias, apop ? "via APOP":"");
 		sprintf(str,"POP3: %s",user.alias);
 		status(str);
+
+		sprintf(smb.file,"%smail",scfg.data_dir);
+		if(smb_islocked(&smb)) {
+			lprintf("%04d !POP3 MAIL BASE LOCKED: %s",socket,smb.last_error);
+			sockprintf(socket,"-ERR database locked, try again later");
+			break;
+		}
+		smb.retry_time=scfg.smb_retry_time;
+		smb.subnum=INVALID_SUB;
+		if((i=smb_open(&smb))!=0) {
+			lprintf("%04d !POP3 ERROR %d (%s) opening %s",socket,i,smb.last_error,smb.file);
+			sockprintf(socket,"-ERR %d opening %s",i,smb.file);
+			break;
+		}
 
 		mail=loadmail(&smb,&msgs,user.number,MAIL_YOUR,0);
 
@@ -1696,6 +1702,18 @@ static void smtp_thread(void* arg)
 				active_clients--, update_clients();
 			return;
 		}
+	}
+
+	sprintf(smb.file,"%smail",scfg.data_dir);
+	if(smb_islocked(&smb)) {
+		lprintf("%04d !SMTP MAIL BASE LOCKED: %s"
+			,socket, smb.last_error);
+		sockprintf(socket,sys_unavail);
+		mail_close_socket(socket);
+		thread_down();
+		if(active_clients)
+			active_clients--, update_clients();
+		return;
 	}
 
 	srand(time(NULL));	/* seed random number generator */
