@@ -1444,6 +1444,55 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 	return smb_hfield(msg, *type=RFC822HEADER, (ushort)strlen(buf), buf);
 }
 
+static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result)
+{
+	char		host_name[128];
+	IN_ADDR		check_addr;
+	char		*fromstr;
+	char		ip[16];
+	char		*p;
+	char		*p2;
+	char		dnsbl[256];
+
+	fromstr=(char *)MALLOC(strlen(buf)+1);
+	if(fromstr==NULL)
+		return(0);
+	strcpy(fromstr,buf);
+	strlwr(fromstr);
+	do {
+		p=strstr(fromstr,"from ");
+		if(p==NULL)
+			break;
+		p+=4;
+		while(*p && isspace(*p))
+			p++;
+		if(!*p)
+			break;
+		p2=host_name;
+		for(;*p && !isspace(*p) && p2<host_name+126;p++)  {
+			*p2++=*p;
+		}
+		*p2=0;
+		p=strtok(fromstr,"[");
+		if(p==NULL)
+			break;
+		p=strtok(NULL,"]");
+		if(p==NULL)
+			break;
+		strncpy(ip,p,16);
+		ip[15]=0;
+		if(!inet_aton(ip,&check_addr))
+			break;
+		if(startup->options&DNSBL_DEBUG)
+			lprintf("%04d DEBUG checking %s (%s)",socket,host_name,ip);
+		if((dnsbl_result->s_addr=dns_blacklisted(socket,check_addr,host_name,dnsbl)))
+				lprintf("%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
+					,socket, dnsbl, host_name, ip, inet_ntoa(*dnsbl_result));
+	} while(0);
+	free(fromstr);
+	return(dnsbl_result->s_addr);
+}
+
 static void smtp_thread(void* arg)
 {
 	int			i;
@@ -1925,6 +1974,15 @@ static void smtp_thread(void* arg)
 						,tmp, host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket, "554 Subject not allowed.");
 					continue;
+				}
+				if(startup->options&MAIL_OPT_DNSBL_CHECK_ALL)  {
+					for(i=0;!dnsbl_result.s_addr && i<msg.total_hfields;i++)  {
+						if(msg.hfield[i].type == RFC822HEADER
+							&& strnicmp(msg.hfield_dat[i],"Received:",9)==0)  {
+							if(chk_received_hdr(socket,msg.hfield_dat[i],&dnsbl_result))
+								break;
+						}
+					}
 				}
 				if(relay_user.number==0 && dnsbl_result.s_addr) {
 					if(startup->options&MAIL_OPT_DNSBL_IGNORE) {
