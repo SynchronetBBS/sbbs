@@ -104,6 +104,7 @@ char *usage=
 "opts:\n"
 "       c    = create message base if it doesn't exist\n"
 "       a    = always pack msg base (disable compression analysis)\n"
+"       d    = use default values (no prompt) for to, from, and subject\n"
 "       t<s> = set 'to' user name for imported message\n"
 "       n<s> = set 'to' netmail address for imported message\n"
 "       u<s> = set 'to' user number for imported message\n"
@@ -1314,6 +1315,12 @@ int main(int argc, char **argv)
 				switch(toupper(argv[x][j])) {
 					case 'A':
 						mode|=NOANALYSIS;
+						break;
+					case 'D':
+						to="All";
+						from="Sysop";
+						from_number="1";
+						subj="Anouncement";
 						break;
 					case 'Z':
 						if(isdigit(argv[x][j+1]))
