@@ -189,7 +189,7 @@ int win32_getch(void)
 		}
 
 		while(1) {
-			GetNumberOfConsoleInputEvents(GetStdHandle(STD_INPUT_HANDLE), &num)
+			GetNumberOfConsoleInputEvents(GetStdHandle(STD_INPUT_HANDLE), &num);
 			if(num || mouse_pending())
 				break;
 			SLEEP(1);
