@@ -1074,11 +1074,11 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 		if(option==1 && !strcmp(tmp,"AREAFIX")) {       /* Change Password */
 			if(!*p)
 				continue;
-			taddr=atofaddr(p);
+			taddr=smb_atofaddr(&sys_faddr,p);
 			if(!memcmp(&cfg.nodecfg[i].faddr,&taddr,sizeof(faddr_t))) {
-				FIND_WHITESPACE(p); 	/* Skip over address */
+				FIND_WHITESPACE(p); /* Skip over address */
 				SKIP_WHITESPACE(p);	/* Skip over whitespace */
-				FIND_WHITESPACE(p); 	/* Skip over password */
+				FIND_WHITESPACE(p); /* Skip over password */
 				SKIP_WHITESPACE(p);	/* Skip over whitespace */
 				fprintf(outfile,"%-10s %s %s %s\n",tmp
 					,smb_faddrtoa(&cfg.nodecfg[i].faddr,NULL),new,p);
@@ -3653,13 +3653,15 @@ void export_echomail(char *sub_code,faddr_t addr)
 						continue; } }
 
 				if((!addr.zone && !(misc&EXPORT_ALL)
-					&& msg.from_net.type==NET_FIDO)
+					&& (msg.from_net.type==NET_FIDO || msg.from_net.type==NET_FIDO_ASCII))
 					|| !strnicmp(msg.subj,"NE:",3)) {   /* no echo */
 					smb_unlockmsghdr(&smb[cur_smb],&msg);
 					smb_freemsgmem(&msg);
 					continue; }  /* From a Fido node, ignore it */
 
-				if(msg.from_net.type && msg.from_net.type!=NET_FIDO
+				if(msg.from_net.type!=NET_NONE 
+					&& msg.from_net.type!=NET_FIDO
+					&& msg.from_net.type!=NET_FIDO_ASCII
 					&& !(scfg.sub[i]->misc&SUB_GATE)) {
 					smb_unlockmsghdr(&smb[cur_smb],&msg);
 					smb_freemsgmem(&msg);
