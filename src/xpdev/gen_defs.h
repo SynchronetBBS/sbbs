@@ -249,5 +249,11 @@ typedef struct {
 	#define FREE free
 #endif
 
+/********************************/
+/* Handy Pointer-freeing Macros */
+/********************************/
+#define FREE_AND_NULL(x)		if(x!=NULL) { FREE(x); x=NULL; }
+#define FREE_LIST_ITEMS(list,i)	for(i=0;list && list[i];i++) { FREE_AND_NULL(list[i]); }
+#define FREE_LIST(list,i)		FREE_LIST_ITEMS(list,i) FREE_AND_NULL(list)
 
 #endif /* Don't add anything after this #endif statement */

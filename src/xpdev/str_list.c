@@ -344,11 +344,7 @@ void strListFreeStrings(str_list_t list)
 {
 	size_t i;
 
-	if(list!=NULL) {
-		for(i=0; list[i]!=NULL; i++)
-			free(list[i]);
-		list[0]=NULL;	/* terminate */
-	}
+	FREE_LIST_ITEMS(list,i);
 }
 
 void strListFree(str_list_t* list)
