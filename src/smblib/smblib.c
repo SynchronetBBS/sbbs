@@ -800,11 +800,21 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 				msg->reply_id=msg->hfield_dat[i];
 				break;
 			case FIDOMSGID:
-				msg->ftn_id=msg->hfield_dat[i];
+				msg->ftn_msgid=msg->hfield_dat[i];
 				break;
 			case FIDOREPLYID:
-				msg->ftn_reply_id=msg->hfield_dat[i];
+				msg->ftn_reply=msg->hfield_dat[i];
 				break;
+			case FIDOAREA:
+				msg->ftn_area=msg->hfield_dat[i];
+				break;
+			case FIDOPID:
+				msg->ftn_pid=msg->hfield_dat[i];
+				break;
+			case FIDOFLAGS:
+				msg->ftn_flags=msg->hfield_dat[i];
+				break;
+			
 		}
 		l+=msg->hfield[i].length; 
 	}

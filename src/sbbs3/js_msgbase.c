@@ -252,7 +252,7 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 		smb_hfield(msg, RFC822REPLYID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_id", &val) && val!=JSVAL_VOID) {
+	if(JS_GetProperty(cx, hdr, "ftn_msgid", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)
 			return(FALSE);
 		if((cp=JS_GetStringBytes(js_str))==NULL)
@@ -260,12 +260,36 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 		smb_hfield(msg, FIDOMSGID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_reply_id", &val) && val!=JSVAL_VOID) {
+	if(JS_GetProperty(cx, hdr, "ftn_reply", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)
 			return(FALSE);
 		if((cp=JS_GetStringBytes(js_str))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOREPLYID, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "ftn_area", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, FIDOAREA, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "ftn_flags", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, FIDOFLAGS, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "ftn_pid", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, FIDOPID, (ushort)strlen(cp), cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "date", &val) && val!=JSVAL_VOID) {
@@ -456,15 +480,23 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_DefineProperty(cx, hdrobj, "id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	/* FidoNet Message-ID */
-	if(msg.ftn_id!=NULL)
-		JS_DefineProperty(cx, hdrobj, "ftn_id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+	/* FidoNet Header Fields */
+	if(msg.ftn_msgid!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_msgid", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_reply!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_reply", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_pid!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_pid", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_area!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_area", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_flags!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_flags", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	/* FidoNet Reply-ID */
-	if(msg.ftn_reply_id!=NULL)
-		JS_DefineProperty(cx, hdrobj, "ftn_reply_id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	smb_freemsgmem(&msg);
 
