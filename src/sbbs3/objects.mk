@@ -44,6 +44,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)inkey.$(OFILE)\
 			$(LIBODIR)$(SLASH)ident.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_bbs.$(OFILE)\
+			$(LIBODIR)$(SLASH)js_branch.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_client.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_console.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_file.$(OFILE)\
