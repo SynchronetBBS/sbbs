@@ -109,7 +109,7 @@ void _termios_setup(void)
     atexit(_termios_reset);
 
     /* install the Ctrl-Z handler */
-    signal(SIGSTOP, _sighandler_stop);
+    signal(SIGTSTP, _sighandler_stop);
     signal(SIGCONT, _sighandler_cont);
 }
 
@@ -124,6 +124,9 @@ int kbhit(void)
 		if(!istty)
 			return 0;
 	}
+
+    if(!beensetup)
+    	_termios_setup();
 
 	/* set up select() args */
 	FD_ZERO(&inp);
