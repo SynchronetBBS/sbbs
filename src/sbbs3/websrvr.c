@@ -244,6 +244,9 @@ enum  {
 	,MOVED_STAT
 };
 
+/* Max. times to follow internal redirects for a single request */
+#define MAX_REDIR_LOOPS	20
+
 static char	*days[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 static char	*months[]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 
@@ -2348,6 +2351,7 @@ void http_session_thread(void* arg)
 	char			redir_req[MAX_REQUEST_LINE+1];
 	char			*redirp;
 	http_session_t	session=*(http_session_t*)arg;	/* copies arg BEFORE it's freed */
+	int				loop_count;
 
 	free(arg);
 
@@ -2401,13 +2405,15 @@ void http_session_thread(void* arg)
 		SAFECOPY(session.req.status,"200 OK");
 		session.req.send_location=NO_LOCATION;
 		redirp=NULL;
-		while(redirp==NULL || session.req.send_location >= MOVED_TEMP) {
+		loop_count=0;
+		while((redirp==NULL || session.req.send_location >= MOVED_TEMP)
+				 && !session.finished && server_socket!=INVALID_SOCKET) {
 			session.req.send_location=NO_LOCATION;
 			if(get_req(&session,redirp)) {
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
 					if(check_request(&session)) {
-						if(session.req.send_location < MOVED_TEMP || session.req.virtual_path[0]!='/')
+						if(session.req.send_location < MOVED_TEMP || session.req.virtual_path[0]!='/' || loop_count++ >= MAX_REDIR_LOOPS)
 							respond(&session);
 						else {
 							snprintf(redir_req,MAX_REQUEST_LINE,"%s %s%s%s",methods[session.req.method]
