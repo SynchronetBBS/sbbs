@@ -77,52 +77,53 @@ out[i]=0;
 return(out);
 }
 
-
-
 void clearptrs(int subnum)
 {
 	char str[256];
 	ushort idx,ch;
-	int last,file,i;
+	int file,i,gi;
 	long l=0L;
-	struct ffblk ff;
+	glob_t g;
 
-uifc.pop("Clearing Pointers...");
-sprintf(str,"%suser/ptrs/*.ixb",cfg.data_dir);
-last=findfirst(str,&ff,0);
-while(!last) {
-	if(ff.ff_fsize>=((long)cfg.sub[subnum]->ptridx+1L)*10L) {
-		sprintf(str,"%suser/ptrs/%s",cfg.data_dir,ff.ff_name);
-		if((file=nopen(str,O_WRONLY))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
-			bail(1); }
-		while(filelength(file)<(long)(cfg.sub[subnum]->ptridx)*10) {
-			lseek(file,0L,SEEK_END);
-			idx=tell(file)/10;
-			for(i=0;i<cfg.total_subs;i++)
-				if(cfg.sub[i]->ptridx==idx)
-					break;
-			write(file,&l,4);
-			write(file,&l,4);
-			ch=0xff;			/* default to scan ON for unknown sub */
-			if(i<cfg.total_subs) {
-				if(!(cfg.sub[i]->misc&SUB_NSDEF))
-					ch&=~5;
-				if(!(cfg.sub[i]->misc&SUB_SSDEF))
-					ch&=~2; }
-			write(file,&ch,2); }
-		lseek(file,((long)cfg.sub[subnum]->ptridx)*10L,SEEK_SET);
-		write(file,&l,4);	/* date set to null */
-		write(file,&l,4);	/* date set to null */
-		ch=0xff;
-		if(!(cfg.sub[subnum]->misc&SUB_NSDEF))
-			ch&=~5;
-		if(!(cfg.sub[subnum]->misc&SUB_SSDEF))
-			ch&=~2;
-		write(file,&ch,2);
-		close(file); }
-	last=findnext(&ff); }
-uifc.pop(0);
+    uifc.pop("Clearing Pointers...");
+    sprintf(str,"%suser/ptrs/*.ixb",cfg.data_dir);
+
+	glob(str,0,NULL,&g);
+   	for(gi=0;gi<g.gl_pathc;gi++) {
+
+        if(flength(g.gl_pathv[gi])>=((long)cfg.sub[subnum]->ptridx+1L)*10L) {
+            if((file=nopen(g.gl_pathv[gi],O_WRONLY))==-1) {
+                errormsg(WHERE,ERR_OPEN,g.gl_pathv[gi],O_WRONLY);
+                bail(1);
+            }
+            while(filelength(file)<(long)(cfg.sub[subnum]->ptridx)*10) {
+                lseek(file,0L,SEEK_END);
+                idx=tell(file)/10;
+                for(i=0;i<cfg.total_subs;i++)
+                    if(cfg.sub[i]->ptridx==idx)
+                        break;
+                write(file,&l,4);
+                write(file,&l,4);
+                ch=0xff;			/* default to scan ON for unknown sub */
+                if(i<cfg.total_subs) {
+                    if(!(cfg.sub[i]->misc&SUB_NSDEF))
+                        ch&=~5;
+                    if(!(cfg.sub[i]->misc&SUB_SSDEF))
+                        ch&=~2; }
+                write(file,&ch,2); }
+            lseek(file,((long)cfg.sub[subnum]->ptridx)*10L,SEEK_SET);
+            write(file,&l,4);	/* date set to null */
+            write(file,&l,4);	/* date set to null */
+            ch=0xff;
+            if(!(cfg.sub[subnum]->misc&SUB_NSDEF))
+                ch&=~5;
+            if(!(cfg.sub[subnum]->misc&SUB_SSDEF))
+                ch&=~2;
+            write(file,&ch,2);
+            close(file); }
+        }
+	globfree(&g);
+    uifc.pop(0);
 }
 
 void msgs_cfg()
