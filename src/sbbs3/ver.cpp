@@ -39,7 +39,9 @@
 
 #define BETA		" alpha"     /* Space if non-beta, " beta" otherwise */
 
-extern WSADATA WSAData;
+#if defined(__WINSOCKAPI__)
+	extern WSADATA WSAData;
+#endif
 
 void sbbs_t::ver()
 {
@@ -47,7 +49,7 @@ void sbbs_t::ver()
 
 	CRLF;
 	strcpy(str,VERSION_NOTICE);
-#ifdef _DEBUG
+#if defined(_DEBUG)
 	strcat(str,"Debug");
 #endif
 	center(str);
@@ -67,14 +69,18 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
+#if defined(__WINSOCKAPI__)
+
+	center(WSAData.szDescription);
+	CRLF;
+
+#endif
+
 #if defined(__OS2__) && defined(__BORLANDC__)
 
 	sprintf(str,"OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
 
 #elif defined(_WIN32)
-
-	center(WSAData.szDescription);
-	CRLF;
 
 	/* Windows Version */
 	char*			winflavor=nulstr;
