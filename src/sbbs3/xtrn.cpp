@@ -720,7 +720,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
-	system(cmdline);
+//	system(cmdline);	This is going to be a lot of work for me... :-)
+	return(0);
 }
 
 #endif	/* !WIN32 */
