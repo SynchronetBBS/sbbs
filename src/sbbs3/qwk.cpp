@@ -310,7 +310,8 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 		posts_read+=msgcnt;
 
 		sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
-		remove(str);
+		if(fexistcase(str))
+			remove(str);
 
 		if(!bi) {
 			batch_download(-1);
@@ -612,7 +613,8 @@ void sbbs_t::qwk_sec()
 					for(i=0;i<cfg.total_subs;i++)
 						sav_ptr[i]=subscan[i].ptr; }
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
-				remove(str);
+				if(fexistcase(str))
+					remove(str);
 				unpack_rep();
 				delfiles(cfg.temp_dir,ALLFILES);
 				//autohangup();
@@ -624,7 +626,7 @@ void sbbs_t::qwk_sec()
 
 		else if(ch=='D') {   /* Download QWK Packet of new messages */
 			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
-			if(!fexist(str) && !pack_qwk(str,&msgcnt,0)) {
+			if(!fexistcase(str) && !pack_qwk(str,&msgcnt,0)) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];
 				last_ns_time=ns_time;
@@ -639,10 +641,10 @@ void sbbs_t::qwk_sec()
 					continue; }
 				backslashcolon(str);
 				sprintf(tmp2,"%s%s.qwk",str,cfg.sys_id);
-				if(fexist(tmp2)) {
+				if(fexistcase(tmp2)) {
 					for(i=0;i<10;i++) {
-						sprintf(tmp2,"%s%s.QW%d",str,cfg.sys_id,i);
-						if(!fexist(tmp2))
+						sprintf(tmp2,"%s%s.qw%d",str,cfg.sys_id,i);
+						if(!fexistcase(tmp2))
 							break; }
 					if(i==10) {
 						bputs(text[FileAlreadyThere]);
