@@ -577,7 +577,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->last_error);
 			break;
 		case SOCK_PROP_IS_CONNECTED:
-			if(!p->is_connected)
+			if(!p->is_connected && !p->external)
 				*vp = JSVAL_FALSE;
 			else
 				*vp = BOOLEAN_TO_JSVAL(socket_check(p->sock,NULL));
@@ -694,8 +694,8 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 		return(NULL);
 	memset(p,0,sizeof(private_t));
 
-	p->sock=sock;
-	p->external=JS_TRUE;
+	p->sock = sock;
+	p->external = JS_TRUE;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
