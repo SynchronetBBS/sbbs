@@ -242,15 +242,21 @@ DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* nam
 	JSString*	js_str;
 	jsval		val;
 	size_t		i;
+	jsuint		len=0;
 		
-	if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)
-		return(JS_FALSE);
+	if(JS_GetProperty(cx,parent,name,&val) && val!=JSVAL_VOID)
+		array=JSVAL_TO_OBJECT(val);
+	else
+		if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)
+			return(JS_FALSE);
+
+	JS_GetArrayLength(cx, array, &len);
 
 	for(i=0;str[i]!=NULL;i++) {
 		if((js_str = JS_NewStringCopyZ(cx, str[i]))==NULL)
 			break;
 		val = STRING_TO_JSVAL(js_str);
-		if(!JS_SetElement(cx, array, i, &val))
+		if(!JS_SetElement(cx, array, len+i, &val))
 			break;
 	}
 
