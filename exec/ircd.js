@@ -987,7 +987,7 @@ if(this.server==undefined) {		// Running from JSexec?
 		default_port = mline_port;
 
 	server = { socket: false, terminated: false,
-		version_detail: "JSexec " + jsexec_revision };
+		version_detail: jsexec_revision_detail };
 	server.socket = create_new_socket(default_port)
 	if (!server.socket)
 		exit();
