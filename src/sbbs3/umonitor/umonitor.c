@@ -930,6 +930,7 @@ int main(int argc, char** argv)  {
 					}
 					break;
                 default:
+					USAGE:
                     printf("\nusage: %s [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
                         "-c  =  force color mode\n"
