@@ -568,14 +568,13 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 
 	/* Terminated? */ 
 	if(terminated) {
-		lprintf("%04d %s !Terminated"
-			,client->socket,client->service->protocol);
+		JS_ReportError(cx,"Terminated");
+		client->js_loop=0;
 		return(JS_FALSE);
 	}
-	/* Infinite loop detection */
+	/* Infinite loop? */
 	if(client->js_loop>JAVASCRIPT_BRANCH_LIMIT) {
-		lprintf("%04d %s !INFINITE LOOOP (%lu branches) detected"
-			,client->socket,client->service->protocol,JAVASCRIPT_BRANCH_LIMIT);
+		JS_ReportError(cx,"Infinite loop (%lu branches) detected",client->js_loop);
 		client->js_loop=0;
 		return(JS_FALSE);
 	}
