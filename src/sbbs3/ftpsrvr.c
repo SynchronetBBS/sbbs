@@ -389,7 +389,7 @@ static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
-    JSString *	str;
+    JSString*	str=NULL;
 	FILE*	fp;
 
 	if((fp=(FILE*)JS_GetContextPrivate(cx))==NULL)
@@ -402,11 +402,30 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		fprintf(fp,"%s",JS_GetStringBytes(str));
 	}
 
+	if(str==NULL)
+		*rval = JSVAL_VOID;
+	else
+		*rval = STRING_TO_JSVAL(str);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	FILE*	fp;
+
+	if((fp=(FILE*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	js_write(cx,obj,argc,argv,rval);
+	fprintf(fp,"\r\n");
 	return(JS_TRUE);
 }
 
 static JSFunctionSpec js_global_functions[] = {
 	{"write",           js_write,           1},		/* write to HTML file */
+	{"writeln",         js_writeln,         1},		/* write to HTML file */
+	{"print",			js_writeln,         1},		/* alias for writeln */
 	{0}
 };
 
