@@ -103,7 +103,7 @@ enum {                              /* Node Action */
 	,NODE_LAST_ACTION				/* Must be last */
     };
 
-#ifdef _WIN32	/* necessary for compatibility with SBBS v2 */
+#if defined(_WIN32) || defined(__BORLANDC__)	/* necessary for compatibility with SBBS v2 */
 #pragma pack(push)
 #pragma pack(1)
 #endif
@@ -121,7 +121,7 @@ typedef struct _PACK {				/* Node information kept in node.dab */
     ulong   extaux;                 /* Extended aux dword for node */
             } node_t;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__BORLANDC__)
 #pragma pack(pop)		/* original packing */
 #endif
 

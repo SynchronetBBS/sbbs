@@ -382,7 +382,7 @@ enum {
 	#define _PACK
 #endif
 
-#ifdef _WIN32	
+#if defined(_WIN32) || defined(__BORLANDC__)	
 #pragma pack(push)		/* Disk image structures must be packed */
 #pragma pack(1)
 #endif
@@ -479,7 +479,7 @@ typedef struct _PACK {		// Network (type and address)
 
 	} net_t;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__BORLANDC__)
 #pragma pack(pop)		/* original packing */
 #endif
 

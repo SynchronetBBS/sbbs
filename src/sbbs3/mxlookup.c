@@ -49,7 +49,7 @@
 #include "gen_defs.h"
 #include "smbdefs.h"		/* _PACK */
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__BORLANDC__)
 #pragma pack(push)
 #pragma pack(1)
 #endif
@@ -76,7 +76,7 @@ typedef struct _PACK {
 	WORD	length;
 } dns_rr_t;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__BORLANDC__)
 #pragma pack(pop)		/* original packing */
 #endif
 
