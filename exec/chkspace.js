@@ -39,7 +39,7 @@ for(i in dirs) {
 
 	if(!msgbase.save_msg(hdr, "WARNING: Only " + freespace + " kilobytes of free disk space in " 
 		+ dirs[i] + " on " + system.timestr()))
-		log(LOG_ERROR,"!Error " + msgbase.last_error + "saving mail message");
+		log(LOG_ERR,"!Error " + msgbase.last_error + "saving mail message");
 
 	log(LOG_INFO,"E-mailed low disk space notification to sysop");
 }
