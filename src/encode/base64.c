@@ -99,7 +99,7 @@ char * b64_encode(char *target, const char *source, size_t tlen)  {
 	
 	read=source;
 	if(source==target)  {
-		tmpbuf=malloc(tlen);
+		tmpbuf=(char *)malloc(tlen);
 		if(tmpbuf==NULL)
 			return(NULL);
 		write=tmpbuf;
