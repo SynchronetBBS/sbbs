@@ -1460,11 +1460,11 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	msg->idx.attr=msg->hdr.attr;
 	msg->offset=smb->status.total_msgs;
 	i=smb_putmsg(smb,msg);
-	if(i==0) {	/* success */
+	if(i==SMB_SUCCESS) {
 		smb->status.last_msg++;
 		smb->status.total_msgs++;
 		smb_putstatus(smb);
-		smb_hashmsg(smb,msg,NULL);
+/*		smb_hashmsg(smb,msg,NULL); */
 	}
 	smb_unlocksmbhdr(smb);
 	return(i);
