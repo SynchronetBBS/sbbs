@@ -138,6 +138,8 @@ int DLLCALL sopen(char *fn, int access, int share)
 	else   /* SH_DENYWR */
 		flock_op|=LOCK_SH;
 	if(flock(fd,flock_op)!=0) {
+		if(errno==EWOULDBLOCK) 
+			errno=EAGAIN;
 		close(fd);
 		return(-1);
 	}
