@@ -925,6 +925,7 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	JS_SetPrivate(cx, statsobj, p);
 	JS_SetPrivate(cx, securityobj, p);
+	JS_SetPrivate(cx, limitsobj, p);
 
 	return(JS_TRUE);
 }
