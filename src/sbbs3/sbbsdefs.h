@@ -336,7 +336,8 @@ enum {
 	,clr_chatremote
 	,clr_multichat
 	,clr_external
-	,TOTAL_COLORS };
+	,MIN_COLORS 
+};
 
 enum {								/* Values for xtrn_t.type				*/
 	 XTRN_NONE						/* No data file needed					*/

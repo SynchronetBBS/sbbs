@@ -38,6 +38,8 @@
 #include "sbbs.h"
 
 static void prep_cfg(scfg_t* cfg);
+static void free_attr_cfg(scfg_t* cfg);
+
 char *	readtext(long *line, FILE *stream);
 int 	lprintf(char *fmt, ...);
 
@@ -240,6 +242,7 @@ void DLLCALL free_cfg(scfg_t* cfg)
 	free_file_cfg(cfg);
 	free_chat_cfg(cfg);
 	free_xtrn_cfg(cfg);
+	free_attr_cfg(cfg);
 }
 
 void DLLCALL free_text(char* text[])
@@ -404,8 +407,8 @@ char *readtext(long *line,FILE *stream)
 /****************************************************************************/
 BOOL read_attr_cfg(scfg_t* cfg, char* error)
 {
+	char*	p;
     char    str[256],fname[13];
-    int     i;
 	long	offset=0;
     FILE    *instream;
 
@@ -415,17 +418,29 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 		sprintf(error,"%d opening %s",errno,str);
 		return(FALSE); 
 	}
-	for(i=0;i<TOTAL_COLORS && !feof(instream) && !ferror(instream);i++) {
-		readline(&offset,str,4,instream);
-		cfg->color[i]=attrstr(str); 
+	FREE_AND_NULL(cfg->color);
+	for(cfg->total_colors=0;!feof(instream) && !ferror(instream);cfg->total_colors++) {
+		if(readline(&offset,str,4,instream)==NULL)
+			break;
+		if((p=realloc(cfg->color,cfg->total_colors+1))==NULL)
+			break;
+		cfg->color=p;
+		cfg->color[cfg->total_colors]=attrstr(str); 
 	}
-	if(i<TOTAL_COLORS) {
-		sprintf(error,"Less than TOTAL_COLORS (%u) defined in %s"
-			,TOTAL_COLORS,fname);
+	if(cfg->total_colors<MIN_COLORS) {
+		sprintf(error,"Less than MIN_COLORS (%lu<%u) defined in %s"
+			,cfg->total_colors,MIN_COLORS,fname);
 		return(FALSE); 
 	}
 	fclose(instream);
 	return(TRUE);
+}
+
+static void free_attr_cfg(scfg_t* cfg)
+{
+	if(cfg->color!=NULL)
+		FREE_AND_NULL(cfg->color);
+	cfg->total_colors=0;
 }
 
 char* DLLCALL prep_dir(char* base, char* path)
