@@ -640,7 +640,8 @@ void sbbs_t::chatsection()
 /****************************************************************************/
 bool sbbs_t::sysop_page(void)
 {
-	int i;
+	char	str[256];
+	int		i;
 
 	if(useron.rest&FLAG('C')) {
 		bputs(text[R_Chat]);
@@ -650,6 +651,9 @@ bool sbbs_t::sysop_page(void)
 	if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
 		|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron))
 		|| useron.exempt&FLAG('C')) {
+
+		sprintf(str,"%s paged sysop for chat",useron.alias);
+		logline("C",str);
 
 		for(i=0;i<cfg.total_pages;i++)
 			if(chk_ar(cfg.page[i]->ar,&useron))
