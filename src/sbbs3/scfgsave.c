@@ -435,7 +435,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		put_str(cfg->sub[i]->tagline,stream);
 		put_str(cfg->sub[i]->origline,stream);
 		put_str(cfg->sub[i]->echomail_sem,stream);
-		put_str(dir,stream);	/* echopath */
+		put_str(cfg->sub[i]->newsgroup,stream);
 		put_int(cfg->sub[i]->faddr,stream);
 		put_int(cfg->sub[i]->maxmsgs,stream);
 		put_int(cfg->sub[i]->maxcrcs,stream);
