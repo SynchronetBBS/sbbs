@@ -43,7 +43,7 @@ static char* truncsp(char* str)
 	unsigned c;
 
 	c=strlen(str);
-	while(c && (str[c-1]==' ' || str[c-1]=='\t' || str[c-1]=='\r' || str[c-1]=='\n') c--;
+	while(c && (str[c-1]==' ' || str[c-1]=='\t' || str[c-1]=='\r' || str[c-1]=='\n')) c--;
 	str[c]=0;
 
 	return(str);
