@@ -383,40 +383,6 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 	lputs(NULL); /* update displayed stats */
 }
 
-static int con_lputs(char *str)
-{
-	char		logline[512];
-	char		tstr[64];
-	time_t		t;
-	struct tm	tm;
-
-#ifdef __unix__
-	if (is_daemon)  {
-		if(str==NULL)
-			return(0);
-		if (std_facilities)
-			syslog(LOG_INFO|LOG_AUTH,"%s",str);
-		else
-			syslog(LOG_INFO,"     %s",str);
-		return(strlen(str));
-	}
-#endif
-
-	t=time(NULL);
-	if(localtime_r(&t,&tm)==NULL)
-		tstr[0]=0;
-	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm.tm_mon+1,tm.tm_mday
-			,tm.tm_hour,tm.tm_min,tm.tm_sec);
-
-	sprintf(logline,"%s     %.*s",tstr,(int)sizeof(logline)-32,str);
-	truncsp(logline);
-	lputs(logline);
-	
-    return(strlen(logline)+1);
-}
-
 /****************************************************************************/
 /* BBS local/log print routine												*/
 /****************************************************************************/
@@ -740,7 +706,7 @@ static void terminate(void)
 	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
 		if(count && (count%10)==0) {
 			if(bbs_running)
-				con_lputs("BBS System thread still running");
+				bbs_lputs("BBS System thread still running");
 			if(ftp_running)
 				ftp_lputs("FTP Server thread still running");
 			if(web_running)
@@ -883,7 +849,7 @@ static void handle_sigs(void)  {
 /****************************************************************************/
 /* Displays appropriate usage info											*/
 /****************************************************************************/
-void show_usage(char *cmd)
+static void show_usage(char *cmd)
 {
 	printf(usage,cmd);
 	if(has_bbs)
@@ -896,21 +862,9 @@ void show_usage(char *cmd)
 		printf(services_usage);
 }
 
-int command_is(char *cmdline, char *cmd)
+static int command_is(char *cmdline, char *cmd)
 {
-	char	cmdexe[64];
-
-	SAFECOPY(cmdexe,cmd);
-	strcat(cmdexe,".exe");
-	if(strlen(cmdline)<strlen(cmd))
-		return(0);
-	if(!stricmp(cmd,(cmdline+strlen(cmdline)-strlen(cmd))))
-		return(1);
-	if(strlen(cmdline)<strlen(cmdexe))
-		return(0);
-	if(!stricmp(cmdexe,(cmdline+strlen(cmdline)-strlen(cmdexe))))
-		return(1);
-	return(0);
+	return(strnicmp(getfname(cmdline),cmd,strlen(cmd))==0);
 }
 
 /****************************************************************************/
@@ -942,28 +896,20 @@ int main(int argc, char** argv)
 
 	if(command_is(argv[0],"sbbs_ftp"))
 		run_ftp=has_ftp=TRUE;
-	else if (command_is(argv[0],"sbbs_mail"))
+	else if(command_is(argv[0],"sbbs_mail"))
 		run_mail=has_mail=TRUE;
-	else if (command_is(argv[0],"sbbs_bbs"))
+	else if(command_is(argv[0],"sbbs_bbs"))
 		run_bbs=has_bbs=TRUE;
-#ifndef NO_SERVICES
-	else if (command_is(argv[0],"sbbs_srvc"))
+	else if(command_is(argv[0],"sbbs_srvc"))
 		run_services=has_services=TRUE;
-#endif
-#ifndef NO_WEB_SERVER
-	else if (command_is(argv[0],"sbbs_web"))
+	else if(command_is(argv[0],"sbbs_web"))
 		run_web=has_web=TRUE;
-#endif
 	else {
 		run_bbs=has_bbs=TRUE;
 		run_ftp=has_ftp=TRUE;
 		run_mail=has_mail=TRUE;
-#ifndef NO_SERVICES
 		run_services=has_services=TRUE;
-#endif
-#ifndef NO_WEB_SERVER
 		run_web=has_web=TRUE;
-#endif
 	}
 
 #ifdef __QNX__
@@ -1117,7 +1063,7 @@ int main(int argc, char** argv)
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
 		sprintf(str,"Reading %s",ini_file);
-		con_lputs(str);
+		bbs_lputs(str);
 	}
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
@@ -1498,7 +1444,7 @@ int main(int argc, char** argv)
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
-	con_lputs(str);
+	bbs_lputs(str);
 	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
 		fprintf(stderr,"\n!ERROR Loading Configuration Files: %s\n", error);
         return(-1);
@@ -1541,14 +1487,14 @@ int main(int argc, char** argv)
 
 #ifdef __unix__
 	if(getuid())  /*  are we running as a normal user?  */
-		con_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
+		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
 	
 	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
-		con_lputs("Warning: No user account specified, running as root.");
+		bbs_lputs("Warning: No user account specified, running as root.");
 	
 	else 
 	{
-		con_lputs("Waiting for child threads to bind ports...");
+		bbs_lputs("Waiting for child threads to bind ports...");
 		while((run_bbs && !(bbs_running || bbs_stopped)) 
 				|| (run_ftp && !(ftp_running || ftp_stopped)) 
 				|| (run_web && !(web_running || web_stopped)) 
@@ -1556,25 +1502,25 @@ int main(int argc, char** argv)
 				|| (run_services && !(services_running || services_stopped)))  {
 			mswait(1000);
 			if(run_bbs && !(bbs_running || bbs_stopped))
-				con_lputs("Waiting for BBS thread");
+				bbs_lputs("Waiting for BBS thread");
 			if(run_web && !(web_running || web_stopped))
-				con_lputs("Waiting for Web thread");
+				bbs_lputs("Waiting for Web thread");
 			if(run_ftp && !(ftp_running || ftp_stopped))
-				con_lputs("Waiting for FTP thread");
+				bbs_lputs("Waiting for FTP thread");
 			if(run_mail && !(mail_running || mail_stopped))
-				con_lputs("Waiting for Mail thread");
+				bbs_lputs("Waiting for Mail thread");
 			if(run_services && !(services_running || services_stopped))
-				con_lputs("Waiting for Services thread");
+				bbs_lputs("Waiting for Services thread");
 		}
 
 		if(!do_setuid())
 				/* actually try to change the uid of this process */
-			con_lputs("!Setting new user_id failed!  (Does the user exist?)");
+			bbs_lputs("!Setting new user_id failed!  (Does the user exist?)");
 	
 		else {
 			char str[256];
 			sprintf(str,"Successfully changed user_id to %s", new_uid_name);
-			con_lputs(str);
+			bbs_lputs(str);
 
 			/* Can't recycle servers (re-bind ports) as non-root user */
 			/* ToDo: Something seems to be broken here on FreeBSD now */
