@@ -1168,7 +1168,7 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	lprintf("%04d !SMTP BLOCKED SOURCE: %s"
 		,socket, addr);
 	sprintf(tmp,"Blocked source e-mail address: %s", addr);
-	spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, to);
+	spamlog(&scfg, "SMTP", "MAIL REFUSED", tmp, host_name, host_ip, to);
 	sockprintf(socket, "554 Sender not allowed.");
 
 	return(FALSE);
@@ -1331,17 +1331,17 @@ static void smtp_thread(void* arg)
 	/*  SPAM Filters (mail-abuse.org) */
 	dnsbl_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr.s_addr,dnsbl);
 	if(dnsbl_result.s_addr) {
-		lprintf("%04d SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
+		lprintf("%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 			,socket, dnsbl, host_name, host_ip, inet_ntoa(dnsbl_result));
 		if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
 			sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-			spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, NULL);
+			spamlog(&scfg, "SMTP", "SESSION REFUSED", str, host_name, host_ip, NULL);
 			sockprintf(socket
 				,"550 Mail from %s refused due to listing at %s"
 				,host_ip, dnsbl);
 			mail_close_socket(socket);
 			thread_down();
-			lprintf("%04d !SMTP REFUSED MAIL from blacklisted server"
+			lprintf("%04d !SMTP REFUSED SESSION from blacklisted server"
 				,socket);
 			return;
 		}
@@ -1413,7 +1413,7 @@ static void smtp_thread(void* arg)
 
 				if(dnsbl_result.s_addr) {
 					if(startup->options&MAIL_OPT_DNSBL_IGNORE) {
-						lprintf("%04d SMTP IGNORED MAIL from blacklisted server"
+						lprintf("%04d !SMTP IGNORED MAIL from blacklisted server"
 							,socket);
 						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 						spamlog(&scfg, "SMTP", "IGNORED", str, host_name, host_ip, rcpt_addr);
@@ -1421,14 +1421,19 @@ static void smtp_thread(void* arg)
 						sockprintf(socket,SMTP_OK);
 						continue;
 					}
-					/* flag message as spam (should this be X-DNSBL?) */
-					sprintf(str,"X-RBL: %s is listed on %s as %s"
-						,host_ip, dnsbl, inet_ntoa(dnsbl_result));
-					smb_hfield(&msg,RFC822HEADER,strlen(str),str);
-					lprintf("%04d SMTP FLAGGED MAIL from blacklisted server"
-						,socket);
-					sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-					spamlog(&scfg, "SMTP", "FLAGGED", str, host_name, host_ip, rcpt_addr);
+					/* tag message as spam (should this be X-DNSBL?) */
+					if(startup->dnsbl_hdr[0]) {
+						sprintf(str,"%s: %s is listed on %s as %s"
+							,startup->dnsbl_hdr, host_ip
+							,dnsbl, inet_ntoa(dnsbl_result));
+						smb_hfield(&msg,RFC822HEADER,strlen(str),str);
+						lprintf("%04d !SMTP TAGGED MAIL HEADER from blacklisted server with: %s"
+							,socket, startup->dnsbl_hdr);
+					}
+					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
+						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+						spamlog(&scfg, "SMTP", "TAGGED", str, host_name, host_ip, rcpt_addr);
+					}
 				}
 
 				if(telegram==TRUE) {		/* Telegram */
@@ -1731,15 +1736,18 @@ static void smtp_thread(void* arg)
 						,socket, p, reverse_path);
 					sprintf(tmp,"Blocked subject (%s) from: %s"
 						,p, reverse_path);
-					spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
+					spamlog(&scfg, "SMTP", "MAIL REFUSED", tmp, host_name, host_ip, rcpt_addr);
 					sockprintf(socket, "554 Subject not allowed.");
 					break;
 				}
-				if(dnsbl_result.s_addr && startup->dnsbl_flag[0]) {
+				if(dnsbl_result.s_addr && startup->dnsbl_tag[0]
+					&& !(startup->options&MAIL_OPT_DNSBL_IGNORE)) {
 					sprintf(str,"%.*s: %.*s"
-						,(int)sizeof(str)/2, startup->dnsbl_flag
+						,(int)sizeof(str)/2, startup->dnsbl_tag
 						,(int)sizeof(str)/2, p);
 					p=str;
+					lprintf("%04d !SMTP TAGGED MAIL SUBJECT from blacklisted server with: %s"
+						,socket, startup->dnsbl_tag);
 				}
 				smb_hfield(&msg, SUBJECT, (ushort)strlen(p), p);
 				strlwr(p);
@@ -1984,7 +1992,7 @@ static void smtp_thread(void* arg)
 					,socket, MAX_RECIPIENTS);
 				sprintf(tmp,"Maximum recipient count (%d) from: %s"
 					,MAX_RECIPIENTS, reverse_path);
-				spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
+				spamlog(&scfg, "SMTP", "MAIL REFUSED", tmp, host_name, host_ip, rcpt_addr);
 				sockprintf(socket, "552 Too many recipients");
 				continue;
 			}
@@ -1995,8 +2003,19 @@ static void smtp_thread(void* arg)
 					,socket, rcpt_addr, reverse_path);
 				sprintf(str,"Blocked recipient e-mail address from: %s"
 					,reverse_path);
-				spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, rcpt_addr);
+				spamlog(&scfg, "SMTP", "MAIL REFUSED", str, host_name, host_ip, rcpt_addr);
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				continue;
+			}
+
+			if(dnsbl_result.s_addr && startup->options&MAIL_OPT_DNSBL_BADUSER) {
+				lprintf("%04d !SMTP REFUSED MAIL from blacklisted server"
+					,socket);
+				sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+				spamlog(&scfg, "SMTP", "MAIL REFUSED", str, host_name, host_ip, NULL);
+				sockprintf(socket
+					,"550 Mail from %s refused due to listing at %s"
+					,host_ip, dnsbl);
 				continue;
 			}
 
@@ -2037,7 +2056,7 @@ static void smtp_thread(void* arg)
 							,socket, reverse_path, host_ip, p);
 						sprintf(tmp,"Relay attempt from: %s to: %s"
 							,reverse_path, p);
-						spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
+						spamlog(&scfg, "SMTP", "MAIL REFUSED", tmp, host_name, host_ip, rcpt_addr);
 						if(startup->options&MAIL_OPT_ALLOW_RELAY)
 							sockprintf(socket, "553 Relaying through this server "
 							"requires authentication.  "
