@@ -86,3 +86,13 @@ void DLLCALL semfile_list_init(link_list_t* filelist, const char* parent,
 	SAFEPRINTF4(path,"%s%s.%s.%s",parent,action,hostname,service);
 	listPushNodeString(filelist,path);
 }
+
+void DLLCALL semfile_list_add(link_list_t* filelist, const char* path)
+{
+	listPushNodeString(filelist, path);
+}
+
+void DLLCALL semfile_list_free(link_list_t* filelist)
+{
+	listFree(filelist);
+}

@@ -884,6 +884,8 @@ extern "C" {
 	DLLEXPORT char*		DLLCALL semfile_list_check(time_t* t, link_list_t* filelist);
 	DLLEXPORT void		DLLCALL semfile_list_init(link_list_t* filelist, const char* parent, 
 								   const char* action, const char* hostname, const char* service);
+	DLLEXPORT void		DLLCALL semfile_list_add(link_list_t* filelist, const char* fname);
+	DLLEXPORT void		DLLCALL semfile_list_free(link_list_t* filelist);
 
 
 #ifdef JAVASCRIPT
