@@ -1304,7 +1304,6 @@ void DLLCALL ftp_terminate(void)
 	if(server_socket!=INVALID_SOCKET) {
     	lprintf("%04d FTP Terminate: closing socket",server_socket);
 		ftp_close_socket(&server_socket,__LINE__);
-	    server_socket=INVALID_SOCKET;
     }
 }
 
@@ -4228,7 +4227,6 @@ static void cleanup(int code)
 
 	if(server_socket!=INVALID_SOCKET)
 		ftp_close_socket(&server_socket,__LINE__);
-	server_socket=INVALID_SOCKET;
 
 	update_clients();
 
