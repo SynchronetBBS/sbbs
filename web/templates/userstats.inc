@@ -11,7 +11,7 @@
     Expire:
   </td>
   <td>
-    Not Imp.
+    %%JS:strftime("%m/%d/%y",user.security.expiration_date)%%
   </td>
   <td>
     Last on:
