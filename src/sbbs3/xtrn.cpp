@@ -598,6 +598,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     // Executing app in foreground?, monitor
     retval=STILL_ACTIVE;
     while(!(mode&EX_BG)) {
+		if(mode&EX_CHKTIME)
+			gettimeleft();
         if(!online && !(mode&EX_OFFLINE)) { // Tell VXD/VDD and external that user hung-up
         	if(was_online) {
 				sprintf(str,"%s hung-up in external program",useron.alias);
@@ -1018,6 +1020,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		while(!terminated) {
 			if(waitpid(pid, &i, WNOHANG)!=0)	/* child exited */
 				break;
+
+			if(mode&EX_CHKTIME)
+				gettimeleft();
 			
 			if(!online && !(mode&EX_OFFLINE)) {
 				sprintf(str,"%s hung-up in external program",useron.alias);
