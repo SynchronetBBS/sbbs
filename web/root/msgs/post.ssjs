@@ -1,7 +1,5 @@
 load("html_inc/msgslib.ssjs");
 
-template.group=msg_area.grp_list[msg_area.sub[sub].grp_name];
-
 if(sub=='mail') {
 	template.sub=new Object;
 	template.sub.description="Personal E-Mail";
@@ -9,6 +7,7 @@ if(sub=='mail') {
 }
 else {
 	template.sub=msg_area.sub[sub];
+	template.group=msg_area.grp_list[msg_area.sub[sub].grp_name];
 }
 
 if(sub!='mail') {
