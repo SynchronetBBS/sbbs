@@ -552,6 +552,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	OutputDebugString(dbgstr);
 #endif
 
+	CloseHandle(process_info.hThread);
+
 	if(!native) {
 
 		if(!(mode&EX_OFFLINE) && !nt) {
@@ -559,6 +561,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			if((retval=WaitForSingleObject(start_event, 5000))!=WAIT_OBJECT_0) {
 				XTRN_CLEANUP;
                 TerminateProcess(process_info.hProcess, __LINE__);
+				CloseHandle(process_info.hProcess);
 				errormsg(WHERE, ERR_TIMEOUT, "start_event", retval);
 				return(GetLastError());
 			}
@@ -578,6 +581,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				)) {
 				XTRN_CLEANUP;
                 TerminateProcess(process_info.hProcess, __LINE__);
+				CloseHandle(process_info.hProcess);
 				errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_COMPLETE);
 				return(GetLastError());
 			}
@@ -839,6 +843,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	}
 
 	XTRN_CLEANUP;
+	CloseHandle(process_info.hProcess);
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
