@@ -54,7 +54,7 @@ bool sbbs_t::uploadfile(file_t *f)
     long length;
 	FILE *stream;
 
-	f->misc=0;
+	// f->misc=0; Removed AUG-22-2001 - broken anonymous uploads
 	curdirnum=f->dir;
 	if(findfile(&cfg,f->dir,f->name)) {
 		errormsg(WHERE,ERR_CHK,f->name,f->dir);
