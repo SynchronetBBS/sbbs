@@ -3,6 +3,7 @@ OBJS	:=	$(LIBODIR)/filewrap.o \
 			$(LIBODIR)/genwrap.o \
 			$(LIBODIR)/sbbs_ini.o \
 			$(LIBODIR)/ini_file.o \
+			$(LIBODIR)/str_list.o \
 			$(LIBODIR)/scfglib1.o \
 			$(LIBODIR)/scfglib2.o \
 			$(LIBODIR)/nopen.o \
