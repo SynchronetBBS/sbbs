@@ -125,8 +125,10 @@ void sbbs_read_ini(
 	char		value[INI_MAX_VALUE_LEN];
 	global_startup_t global_buf;
 
-	if(global==NULL)
+	if(global==NULL) {
+		memset(&global_buf,0,sizeof(global_buf));
 		global=&global_buf;
+	}
 
 	read_ini_globals(fp, global);
 
