@@ -38,14 +38,14 @@ if(http_request.virtual_path=="/msgs/subinfo.ssjs" && sub!='mail')
 	template.topnav.push({html: '<a class="tlink" href="/msgs">Message Groups</a><a class="tlink" href="/msgs/subs.ssjs?msg_grp='+template.sub.name+'">'+template.sub.description+'</a><span class="tlink">Sub Information</span>'});
 
 if(http_request.virtual_path=="/msgs/msgs.ssjs" && sub!='mail')
-	template.topnav.push({html: '<a class="tlink" href="index.ssjs">Message Groups</a><a class="tlink" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a><a class="tlink" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">'+template.sub.description+'</a>'});
+	template.topnav.push({html: '<a class="tlink" href="index.ssjs">Message Groups</a><a class="tlink" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a><a class="tlink" href="subinfo.ssjs?msg_sub='+encodeURIComponent(template.sub.code)+'" title="Click for Sub Info">'+template.sub.description+'</a>'});
 else if(http_request.virtual_path=="/msgs/msgs.ssjs")
-	template.topnav.push({html: '<a class="tlink" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">'+template.sub.description+'</a>'});
+	template.topnav.push({html: '<a class="tlink" href="subinfo.ssjs?msg_sub='+encodeURIComponent(template.sub.code)+'" title="Click for Sub Info">'+template.sub.description+'</a>'});
 
 if(http_request.virtual_path=="/msgs/msg.ssjs" && sub!='mail')
-	template.topnav.push({html: '<a class="tlink" href="index.ssjs">Message Groups</a><a class="tlink" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a><a class="tlink" href="msgs.ssjs?msg_sub=^^sub:code^^">'+template.sub.description+'</a><span class="tlink">Reading Messages</span>'});
+	template.topnav.push({html: '<a class="tlink" href="index.ssjs">Message Groups</a><a class="tlink" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a><a class="tlink" href="msgs.ssjs?msg_sub='+encodeURIComponent(tempalte.sub.code)+'">'+template.sub.description+'</a><span class="tlink">Reading Messages</span>'});
 else if(http_request.virtual_path=="/msgs/msg.ssjs")
-	template.topnav.push({html: '<a class="tlink" href="msgs.ssjs?msg_sub=^^sub:code^^">'+template.sub.description+'</a><span class="tlink">Reading E-Mail</span>'});
+	template.topnav.push({html: '<a class="tlink" href="msgs.ssjs?msg_sub='+encodeURIComponent(template.sub.code)+'">'+template.sub.description+'</a><span class="tlink">Reading E-Mail</span>'});
 
 if(sub!='mail' && http_request.virtual_path=="/msgs/post.ssjs")
 	template.topnav.push({html: '<a href="/msgs" class="tlink">Message Groups</a>'});
