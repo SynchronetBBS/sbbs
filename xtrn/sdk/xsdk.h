@@ -42,17 +42,15 @@
 /*********************************************/
 /* Standard Borland/Turbo C/C++ Header Files */
 /*********************************************/
-#include <io.h>
-#include <dos.h>
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <bios.h>
+#ifndef __unix__
+	#include <io.h>
+	#include <dos.h>
+	#include <share.h>
+	#include <windows.h>
 #endif
 #include <time.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <share.h>
 #include <conio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -63,16 +61,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#ifdef __TURBOC__
-    #include <dir.h>
-#endif
-
-#ifdef __WATCOMC__
-	#include <graph.h>
-#endif
-
 #define GLOBAL extern	/* turns XSDKVAR.C into a header file */
 #include "xsdkvars.c"
+#include "sbbsinet.h"
 
 #ifdef __cplusplus
 	extern "C" {
