@@ -385,8 +385,10 @@ static void ansi_keythread(void *params)
 	_beginthread(ansi_keyparse,1024,NULL);
 
 	for(;;) {
-		if(!ansi_raw_inch)
-			ansi_raw_inch=fgetc(stdin);
+		if(!ansi_raw_inch) {
+			if(read(fileno(stdin),&ansi_raw_inch,1)!=1)
+				ansi_raw_inch=0;
+		}
 		else
 			SLEEP(1);
 	}
