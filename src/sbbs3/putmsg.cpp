@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -72,42 +72,50 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 				sys_status|=SS_NEST_PF; 	/* keep it only one message deep! */
 				sprintf(tmp3,"%s%s",cfg.text_dir,tmp2);
 				printfile(tmp3,0);
-				sys_status&=~SS_NEST_PF; }
+				sys_status&=~SS_NEST_PF; 
+			}
 			else if(toupper(str[l+1])=='Z')             /* Ctrl-AZ==EOF */
 				break;
 			else {
 				ctrl_a(str[l+1]);
-				l+=2; } }
+				l+=2; 
+			} 
+		}
 		else if((str[l]=='`' || str[l]=='ú') && str[l+1]=='[') {   
 			outchar(ESC); /* Convert `[ and ú[ to ESC[ */
-			l++; }
+			l++; 
+		}
 		else if(cfg.sys_misc&SM_PCBOARD && str[l]=='@' && str[l+1]=='X'
 			&& isxdigit(str[l+2]) && isxdigit(str[l+3])) {
 			sprintf(tmp2,"%.2s",str+l+2);
 			attr(ahtoul(tmp2));
 			exatr=1;
-			l+=4; }
+			l+=4; 
+		}
 		else if(cfg.sys_misc&SM_WILDCAT && str[l]=='@' && str[l+3]=='@'
 			&& isxdigit(str[l+1]) && isxdigit(str[l+2])) {
 			sprintf(tmp2,"%.2s",str+l+1);
 			attr(ahtoul(tmp2));
 			// exatr=1;
-			l+=4; }
+			l+=4; 
+		}
 		else if(cfg.sys_misc&SM_RENEGADE && str[l]=='|' && isdigit(str[l+1])
 			&& !(useron.misc&(RIP|WIP))) {
 			sprintf(tmp2,"%.2s",str+l+1);
 			i=atoi(tmp2);
-			if(i>=16) { 				 /* setting background */
+			if(i>=16) { 				/* setting background */
 				i-=16;
 				i<<=4;
-				i|=(curatr&0x0f); } 	/* leave foreground alone */
+				i|=(curatr&0x0f);		/* leave foreground alone */
+			} 	
 			else
 				i|=(curatr&0xf0);		/* leave background alone */
 			attr(i);
 			exatr=1;
 			l+=2;	/* Skip |x */
 			if(isdigit(str[l]))
-				l++; }	/* Skip second digit if it exists */
+				l++;	/* Skip second digit if it exists */
+		}	
 		else if(cfg.sys_misc&SM_CELERITY && str[l]=='|' && isalpha(str[l+1])
 			&& !(useron.misc&(RIP|WIP))) {
 			switch(str[l+1]) {
@@ -161,10 +169,11 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 					break;
 				case 'S':   /* swap foreground and background */
 					attr((curatr&0x07)<<4);
-					break; }
+					break; 
+			}
 			exatr=1;
 			l+=2;	/* Skip |x */
-			}  /* Skip second digit if it exists */
+		}  /* Skip second digit if it exists */
 		else if(cfg.sys_misc&SM_WWIV && str[l]==CTRL_C && isdigit(str[l+1])) {
 			exatr=1;
 			switch(str[l+1]) {
@@ -197,8 +206,10 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 					break;
 				case '9':
 					attr(CYAN);
-					break; }
-			l+=2; }
+					break; 
+			}
+			l+=2; 
+		}
 		else {
 			if(str[l]==LF) {
 				if(exatr) 	/* clear at newline for extra attr codes */
@@ -214,7 +225,9 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 					lncntr=0;			/* so defeat pause */
 				if(str[l]=='"') {
 					l++;				/* don't pass on keyboard reassignment */
-					continue; } }
+					continue; 
+				} 
+			}
 			if(str[l]=='!' && str[l+1]=='|' && useron.misc&(RIP|WIP)) /* RIP */
 				lncntr=0;				/* so defeat pause */
 			if(str[l]==ESC && str[l+1]=='$')    /* WIP command */
@@ -223,10 +236,13 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 				i=show_atcode((char *)str+l);	/* returns 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
 				if(i)					/* if valid string, go to top */
-					continue; }
+					continue; 
+			}
 			if(str[l]!=26)
 				outchar(str[l]);
-			l++; } }
+			l++; 
+		} 
+	}
 	if(!(mode&P_SAVEATR)) {
 		console=orgcon;
 		attr(tmpatr); 
@@ -241,34 +257,18 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 }
 
 /****************************************************************************/
-/* Displays a text file to the screen, reading/display a block at time		*/
+/* Displays a text file to the screen										*/
 /****************************************************************************/
 void sbbs_t::putmsg_fp(FILE *fp, long length, long mode)
 {
-	char *buf,tmpatr;
-	int i,j,b=8192,orgcon=console;
-	long l;
+	char*	buf;
 
-	tmpatr=curatr;	/* was lclatr(-1) */
-	if((buf=(char *)MALLOC(b+1))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,nulstr,b+1L);
-		return; }
-	for(l=0;l<length;l+=b) {
-		if(l+b>length)
-			b=length-l;
-		i=j=fread(buf,1,b,fp);
-		if(!j) break;						/* No bytes read */
-		if(l+i<length)						/* Not last block */
-			while(i && buf[i-1]!=LF) i--;	/* Search for last LF */
-		if(!i) i=j; 						/* None found */
-		buf[i]=0;
-		if(i<j)
-			fseek(fp,(long)-(j-i),SEEK_CUR);
-		b=i;
-		if(putmsg(buf,mode|P_SAVEATR))
-			break; }
-	if(!(mode&P_SAVEATR)) {
-		console=orgcon;
-		attr(tmpatr); }
-	FREE(buf);
+	if((buf=(char*)MALLOC(length+1))==NULL) {
+		errormsg(WHERE,ERR_ALLOC,"fp",length+1);
+		return; 
+	}
+	memset(buf,0,length+1);
+	fread(buf,sizeof(char),length,fp);
+	putmsg(buf,mode);
+	FREE(buf); 
 }
