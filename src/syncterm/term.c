@@ -54,7 +54,8 @@ void doterm(void)
 			switch(key) {
 				case 0xff:
 				case 0:
-					switch(key|(getch()<<8)) {
+					key|=getch()<<8;
+					switch(key) {
 						case CIO_KEY_MOUSE:
 							getmouse(&mevent);
 							break;
@@ -92,12 +93,9 @@ void doterm(void)
 						case CIO_KEY_F(4):
 							rlogin_send("\033Ox",3,100);
 							break;
-#ifdef __unix__
-						case 128|'S':	/* Under curses, ALT sets the high bit of the char */
-						case 128|'s':	/* Under curses, ALT sets the high bit of the char */
+						case 0x1f00:	/* ALT-S */
 							viewscroll();
 							break;
-#endif
 					}
 					break;
 				case 17:	/* CTRL-Q */

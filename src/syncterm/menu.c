@@ -2,30 +2,35 @@
 #include <ciolib.h>
 #include <keys.h>
 
+#include "cterm.h"
 #include "term.h"
 #include "uifcinit.h"
 
 void viewscroll(void)
 {
-#if 0
 	int	top;
 	int key;
 	int i;
-	char	*buf;
+	char	*scrollback;
 	struct	text_info txtinfo;
+	int	x,y;
 
+	x=wherex();
+	y=wherey();
 	uifcbail();
     gettextinfo(&txtinfo);
-	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
-	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	scrollback=(char *)malloc((term.width*2*backlines)+(txtinfo.screenheight*txtinfo.screenwidth*2));
+	memcpy(scrollback,cterm.scrollback,term.width*2*backlines);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm.backpos)*cterm.width*2);
 	drawwin();
-	top=term.backpos-term.height;
+	top=cterm.backpos;
+	gotoxy(1,1);
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
-		if(top>term.backpos-term.height)
-			top=term.backpos-term.height;
-		puttext(term.x+1,term.y+1,term.x+term.width,term.y+term.height,term.scrollback+(term.width*2*top));
+		if(top>cterm.backpos)
+			top=cterm.backpos;
+		puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,scrollback+(term.width*2*top));
 		key=getch();
 		switch(key) {
 			case 0:
@@ -57,21 +62,29 @@ void viewscroll(void)
 				break;
 			case 'j':
 			case 'J':
+				top--;
+				break;
 			case 'k':
 			case 'K':
+				top++;
+				break;
 			case 'h':
 			case 'H':
+				top-=term.height;
+				break;
 			case 'l':
 			case 'L':
+				top+=term.height;
+				break;
 			case ESC:
 				i=1;
 				break;
 		}
 	}
-	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
-	free(buf);
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm.backpos)*cterm.width*2);
+	free(scrollback);
+	gotoxy(x,y);
 	return;
-#endif
 }
 
 int syncmenu(void)

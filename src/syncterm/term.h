@@ -9,6 +9,7 @@ struct terminal {
 };
 
 extern struct terminal term;
+extern int backlines;
 
 void doterm(void);
 
