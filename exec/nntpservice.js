@@ -270,7 +270,8 @@ while(client.socket.is_connected) {
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from,hdr.from,hdr.from_net_addr));
 				else
-					writeln("From: " + hdr.from);
+					writeln(format("From: \"%s\"@%s"
+						,hdr.from,system.inetaddr));
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.number);
 				writeln("Date: " + system.timestr(hdr.when_written_time));
