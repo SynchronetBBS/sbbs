@@ -1,3 +1,0 @@
-TONE	=	$(EXEODIR)$(DIRSEP)tone$(EXEFILE)
-
-all:	$(EXEODIR) $(OBJODIR) $(TONE)

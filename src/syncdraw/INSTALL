@@ -1,7 +1,0 @@
-change to src/ and type "make"
-copy mdraw to ~/bin, /usr/local/bin or somewhere else in your path.
-Create ~/.mdraw and copy mdraw.config and allfont.fnt to this location
-
-now you can type "mdraw" and start the program.
-
-(Don't forget to rehash if you're using tcsh)
