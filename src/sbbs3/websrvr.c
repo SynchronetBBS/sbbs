@@ -780,6 +780,7 @@ static void close_request(http_session_t * session)
 		session->socket=INVALID_SOCKET;
 		session->finished=TRUE;
 	}
+	memset(&session->req,0,sizeof(session->req));
 }
 
 static int get_header_type(char *header)
