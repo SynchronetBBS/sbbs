@@ -48,10 +48,7 @@
     <<END REPEAT messages>>
     </table>
     <br />
-    <div align="center">
-	<input type="button" onclick="SetAllCheckBoxes('DeleteMsg', 'number', true);" value="Select All">&nbsp;
-	<input type="button" onclick="SetAllCheckBoxes('DeleteMsg', 'number', false);" value="Deselect All">&nbsp;
-	<input class="msg" type="submit" name="Action" value="Delete Message(s)" /></div>
+    @@JS:template.can_delete?'<div align="center"><input type="button" onclick="SetAllCheckBoxes(\'DeleteMsg\', \'number\', true);" value="Select All">&nbsp;<input type="button" onclick="SetAllCheckBoxes(\'DeleteMsg\', \'number\', false);" value="Deselect All">&nbsp;	<input class="msg" type="submit" name="Action" value="Delete Message(s)" /></div>':''@@
 </form>
 		
 <script type="text/javascript">
