@@ -28,7 +28,7 @@ for(n=0;n<system.node_list.length;n++) {
             action=format(NodeAction[system.node_list[n].action]
                     ,system.node_list[n].aux);
        if(show_gender) {
-            if(u.gender="F")
+            if(u.gender=="F")
                 gender="Female";
             else
            gender="Male";
