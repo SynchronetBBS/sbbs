@@ -174,7 +174,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 			fprintf(err_fp,"\n\7realloc(%ld) failure\n",msgtxtlen+i+1);
 			exit(1);
 		}
-		strcpy(msgtxt+msgtxtlen,buf);
+		strncpy(msgtxt+msgtxtlen,buf,i);
 		msgtxtlen+=i;
 	}
 
