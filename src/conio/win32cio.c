@@ -392,7 +392,7 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
 	for(y=0;y<bs.Y;y++) {
 		for(x=0;x<bs.X;x++) {
-			ci[(y*bs.X)+x].Char.AsciiChar=ch;
+			ci[(y*bs.X)+x].Char.AsciiChar=bu[((y*bs.X)+x)*2];
 			ci[(y*bs.X)+x].Attributes=DOStoWinAttr(bu[(((y*bs.X)+x)*2)+1]);
 		}
 	}
