@@ -356,7 +356,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[128],c;
-	char	dir[LEN_DIR+1];
+	char	dir[LEN_DIR+1]="";
 	int 	i,j,k,file,x;
 	short	n;
 	long	l;
