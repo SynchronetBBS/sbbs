@@ -108,6 +108,10 @@ bool sbbs_t::answer()
 		send_telnet_cmd(TELNET_WILL,TELNET_SUP_GA);
 	}
 
+	/* if using xterm, set window title */
+	sprintf(str,"\033]2;%s\007",cfg.sys_name);
+	putcom(str);
+
 	/* Detect terminal type */
     mswait(200);
 	rioctl(IOFI);		/* flush input buffer */
