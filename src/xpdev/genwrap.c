@@ -431,11 +431,37 @@ char* DLLCALL truncsp(char* str)
 	size_t i,len;
 
 	i=len=strlen(str);
-	while(i && (str[i-1]==' ' || str[i-1]=='\t' || str[i-1]=='\r' || str[i-1]=='\n')) i--;
+	while(i && (str[i-1]==' ' || str[i-1]=='\t' || str[i-1]=='\r' || str[i-1]=='\n')) 
+		i--;
 	if(i!=len)
 		str[i]=0;	/* truncate */
 
 	return(str);
+}
+
+/****************************************************************************/
+/* Truncates all white-space chars off end of \n-terminated lines in 'str'	*/
+/****************************************************************************/
+char* DLLCALL truncsp_lines(char* dst)
+{
+	char* sp;
+	char* dp;
+	char* src;
+
+	if((src=strdup(dst))==NULL)
+		return(dst);
+
+	for(sp=src, dp=dst; *sp!=0; sp++) {
+		if(*sp=='\n')
+			while(dp!=dst 
+				&& (*(dp-1)==' ' || *(dp-1)=='\t' || *(dp-1)=='\r') && *(dp-1)!='\n') 
+					dp--;
+		*(dp++)=*sp;
+	}
+	*dp=0;
+
+	free(src);
+	return(dst);
 }
 
 /****************************************************************************/
@@ -446,7 +472,8 @@ char* DLLCALL truncnl(char* str)
 	size_t i,len;
 
 	i=len=strlen(str);
-	while(i && (str[i-1]=='\r' || str[i-1]=='\n')) i--;
+	while(i && (str[i-1]=='\r' || str[i-1]=='\n')) 
+		i--;
 	if(i!=len)
 		str[i]=0;	/* truncate */
 

@@ -173,6 +173,8 @@ extern "C" {
 
 /* Truncate white-space chars off end of string */
 DLLEXPORT char*		DLLCALL truncsp(char* str);
+/* Truncate white-space chars off end of every \n-terminated line in string */
+DLLEXPORT char*		DLLCALL truncsp_lines(char* str);
 /* Truncate new-line chars off end of string */
 DLLEXPORT char*		DLLCALL truncnl(char* str);
 
