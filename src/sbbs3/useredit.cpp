@@ -180,7 +180,8 @@ void sbbs_t::useredit(int usernumber)
 				putuserrec(&cfg,user.number,U_HANDLE,LEN_HANDLE,user.handle);
 				break;
 			case 'B':
-				bputs(text[EnterYourBirthday]);
+				bprintf(text[EnterYourBirthday]
+					,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
 				gettmplt(user.birth,"nn/nn/nn",K_LINE|K_EDIT|K_AUTODEL);
 				putuserrec(&cfg,user.number,U_BIRTH,LEN_BIRTH,user.birth);
 				break;

@@ -273,7 +273,8 @@ void sbbs_t::newuser()
 			bputs(text[EnterYourSex]);
 			useron.sex=(char)getkeys("MF",0); }
 		while(cfg.uq&UQ_BIRTH && online) {
-			bputs(text[EnterYourBirthday]);
+			bprintf(text[EnterYourBirthday]
+				,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
 			if(gettmplt(useron.birth,"nn/nn/nn",K_EDIT)==8 && getage(&cfg,useron.birth))
 				break; }
 		if(yesno(text[UserInfoCorrectQ]))
