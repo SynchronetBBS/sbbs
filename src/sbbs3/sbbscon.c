@@ -397,34 +397,32 @@ int main(int argc, char** argv)
 	signal(SIGTERM, _sighandler_quit);
 #endif
 
-
-	while(!quit) {
-		if(!isatty(fileno(stdin))) {	/* redirected */
-			mswait(1);
-			continue;
-		}
-		ch=getch();
-		printf("%c\n",ch);
-		switch(ch) {
-			case 'q':
-				quit=TRUE;
-				break;
-			default:
-				printf("\nSynchronet BBS Console Version %s Help\n\n",SBBSCON_VERSION);
-				printf("q   = quit\n");
+	if(!isatty(fileno(stdin)))			/* redirected */
+		select(0,NULL,NULL,NULL,NULL);	/* so wait here until signaled */
+	else								/* interactive */
+		while(!quit) {
+			ch=getch();
+			printf("%c\n",ch);
+			switch(ch) {
+				case 'q':
+					quit=TRUE;
+					break;
+				default:
+					printf("\nSynchronet BBS Console Version %s Help\n\n",SBBSCON_VERSION);
+					printf("q   = quit\n");
 #if 0	/* to do */	
-				printf("n   = node list\n");
-				printf("w   = who's online\n");
-				printf("l#  = lock node #\n");
-				printf("d#  = down node #\n");
-				printf("i#  = interrupt node #\n");
-				printf("c#  = chat with node #\n");
-				printf("s#  = spy on node #\n");
+					printf("n   = node list\n");
+					printf("w   = who's online\n");
+					printf("l#  = lock node #\n");
+					printf("d#  = down node #\n");
+					printf("i#  = interrupt node #\n");
+					printf("c#  = chat with node #\n");
+					printf("s#  = spy on node #\n");
 #endif
-				lputs("");	/* redisplay prompt */
-				break;
+					lputs("");	/* redisplay prompt */
+					break;
+			}
 		}
-	}
 
 	bbs_terminate();
 	ftp_terminate();
