@@ -1,6 +1,9 @@
 XPDEV_LIBS	+=	-lm
 XPDEV-MT_LIBS	+=	-lm
 ifeq ($(os),netbsd)     # NetBSD
+ CFLAGS		+=	-DUSE_SENDFILE
+endif
+ifeq ($(os),netbsd)     # NetBSD
  XPDEV_LIBS	+=	-lossaudio
  XPDEV-MT_LIBS	+=	-lossaudio -lpthread
 endif
