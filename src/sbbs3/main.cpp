@@ -873,7 +873,11 @@ void output_thread(void* arg)
         	avail=buftop-bufbot;
 
 		if(!avail) {
+/** 
+    This caused occasional segfaults on Linux and *could* have been the cause
+    of blocked output on Win32 (what was I thinking?)
 			sem_init(&sbbs->output_sem,0,0);
+**/
 			sem_wait(&sbbs->output_sem);
 			continue; 
 		}
@@ -1737,7 +1741,7 @@ bool sbbs_t::init()
 #ifdef _WIN32
 	output_sem=CreateEvent(
 					 NULL	// pointer to security attributes
-					,true	// flag for manual-reset event
+					,false	// flag for manual-reset event
 					,false	// flag for initial state
 					,NULL	// pointer to event-object name
 					);
