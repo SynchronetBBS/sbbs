@@ -860,13 +860,16 @@ daemon(nochdir, noclose)
 #endif /* NEEDS_DAEMON */
 
 static void handle_sigs(void)  {
-	int		sig;
-	sigset_t			sigs;
+	int			sig;
+	sigset_t	sigs;
 	char		str[1024];
 
 	thread_up(NULL,TRUE,TRUE);
 
 	if (is_daemon) {
+		/* Write the standard .pid file if running as a daemon */
+		/* Must be here so signals are sent to the correct thread */
+
 		if(pidfile!=NULL) {
 			fprintf(pidfile,"%d",getpid());
 			fclose(pidfile);
@@ -1469,12 +1472,9 @@ int main(int argc, char** argv)
 			is_daemon=FALSE;
 		}
 
-		/* Write the standard .pid file if running as a daemon */
-		/* Must be here so signals are sent to the correct thread */
-
+		/* Open here to use startup permissions to create the file */
 		pidfile=fopen(SBBS_PID_FILE,"w");
 	}
-
 	old_uid = getuid();
 	if((pw_entry=getpwnam(new_uid_name))!=0)
 	{
