@@ -68,14 +68,12 @@ static int show = 1;
 static int blink = 1;
 BYTE CursRow0=0;
 BYTE CursCol0=0;
-#ifdef DISABLED
 typedef struct TextLine {
     u_short	*data;
     u_char	max_length;	/* Not used, but here for future use */
     u_char	changed:1;
 } TextLine;
 TextLine *lines = NULL;
-#endif
 
 /* Indices into the video parameter table. We will use that array to
    initialize the registers on startup and when the video mode changes. */
@@ -412,7 +410,6 @@ video_update_text()
 	for (r = 0; r < (DpyRows+1); ++r) {
 	    int cc = 0;
 
-#ifdef DISABLED
 	    if (!lines[r].changed) {
 		if ((r == or || r == CursRow0) && (or != CursRow0 || oc !=CursCol0))
 		    lines[r].changed = 1;
@@ -429,19 +426,14 @@ video_update_text()
 		    }
 		}
 	    }
-#endif
 
-#ifdef DISABLED
 	    if (!lines[r].changed)
 		continue;
-#endif
 
 	    reset_poll();
-#ifdef DISABLED
 	    lines[r].changed = 0;
 	    memcpy(lines[r].data,
 		   &vmem[r * DpyCols], sizeof(u_short) * DpyCols);
-#endif
 
 	    for (c = 0; c < DpyCols; ++c) {
 		int cv = vmem[r * DpyCols + c];
@@ -523,7 +515,6 @@ sigalrm(int sig)
     video_update(NULL);
 }
 
-#ifdef DISABLED
 /* Get memory for the text line buffer. */
 void
 get_lines()
@@ -557,7 +548,6 @@ get_lines()
 	}
     }
 }
-#endif
 
 static void
 Failure(void *arg)
@@ -642,11 +632,6 @@ video_event(XEvent *ev)
 				    : (be->y > mouse_status.range.h)
 				    ? mouse_status.range.h : be->y;
 
-#ifdef DISABLED
-		if ((K1_STATUS & (K1_ALT|K1_CTRL)) == (K1_ALT|K1_CTRL)) {
-		    quit(0);
-		}
-#endif
 		break;
 	    }
         case NoExpose:
@@ -654,10 +639,8 @@ video_event(XEvent *ev)
         case GraphicsExpose:
         case Expose: {
 		int r;
-#ifdef DISABLED
 		for (r = 0; r < (DpyRows+1); ++r)
 		    lines[r].changed = 1;
-#endif
 		break;
 	    }
 	case KeyRelease: {
@@ -965,8 +948,6 @@ video_event(XEvent *ev)
 void
 video_async_event(int sig)
 {
-    	int int9 = 0;
-
 	for (;;) {
                 int x;
                 fd_set fdset;
@@ -980,7 +961,7 @@ video_async_event(int sig)
                 XFlush(dpy);
                 while (QLength(dpy) > 0) {
                         XNextEvent(dpy, &ev);
-                        int9 |= video_event(&ev);
+                        video_event(&ev);
                 }
 
                 FD_ZERO(&fdset);
@@ -1000,16 +981,12 @@ video_async_event(int sig)
                         return;
                 case 0:
 			XFlush(dpy);
-#ifdef DISABLED
-			if (int9)
-			    hardint(0x01);
-#endif
                         return;
                 default:
                         if (FD_ISSET(xfd, &fdset)) {
                                 do {
                                         XNextEvent(dpy, &ev);
-                                        int9 |= video_event(&ev);
+                                        video_event(&ev);
                                 } while (QLength(dpy));
                         }
                         break;
@@ -1185,9 +1162,7 @@ init_mode(int mode)
     /* Resize window if necessary. */
     resize_window();
 
-#ifdef DISABLED
 	get_lines();
-#endif
 	if (mode & 0x80)
 	    return;
 	/* Initialize video memory with black background, white foreground */
@@ -1341,6 +1316,12 @@ kbd_init()
 }
 
 int
+mouse_init(void)
+{
+	return(0);
+}
+
+int
 console_init()
 {
     int fd;
@@ -1359,10 +1340,8 @@ console_init()
 		return(-1);
     if(video_init())
 		return(-1);
-#ifdef DISABLED
     if(mouse_init())
 		return(-1);
-#endif
     if(timer_init())
 		return(-1);
 
