@@ -93,7 +93,7 @@ bool sbbs_t::logon()
 		sprintf(str,"%stooslow.msg",cfg.text_dir);
 		if(fexist(str))
 			printfile(str,0);
-		sprintf(str,"(%04u)  %-25s  Modem speed: %u<%u"
+		sprintf(str,"(%04u)  %-25s  Modem speed: %lu<%u"
 			,useron.number,useron.alias,cur_rate,cfg.node_minbps);
 		logline("+!",str);
 		return(false); }
