@@ -235,6 +235,7 @@ BOOL SBBSExec::OnSysDynamicDeviceExit()
 BOOL SBBSExec::OnCreateVM(VMHANDLE hVM)
 {
 	DBTRACExd(0,"CreateVM, handle, time",hVM,Get_System_Time());
+	DBTRACEx(0,"Current Thread Handle",Get_Cur_Thread_Handle());
 
 	if(start.event) {
 		new_vm=find_vm(NULL);
@@ -699,6 +700,7 @@ DWORD SBBSExec::OnW32DeviceIoControl(PIOCTLPARAMS pIOCTL)
 
 		case SBBSEXEC_IOCTL_START:
 			DBTRACEd(0,"IOCTL: START",Get_System_Time());
+			DBTRACEx(0,"Current Thread Handle",Get_Cur_Thread_Handle());
 			if(start.event) {
 				DBTRACE(0,"Exec already started!");
 				return(SBBSEXEC_ERROR_INUSE);
@@ -807,6 +809,9 @@ DWORD SBBSExec::OnW32DeviceIoControl(PIOCTLPARAMS pIOCTL)
 
             if(vm->input_sem!=NULL) // Wake up int14 handler
             	Signal_Semaphore(vm->input_sem);
+
+			// Wake up the VDM (improves keyboard response - dramatically!)
+			Wake_Up_VM(vm->handle);
 			break;
 
 		case SBBSEXEC_IOCTL_DISCONNECT:

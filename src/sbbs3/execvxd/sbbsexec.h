@@ -43,7 +43,7 @@
 
 #define SBBSExec_DeviceID	UNDEFINED_DEVICE_ID
 #define SBBSExec_Major		1
-#define SBBSExec_Minor		0
+#define SBBSExec_Minor		1
 #define SBBSExec_Init_Order	UNDEFINED_INIT_ORDER
 
 #include "..\execvxd.h"		// sbbsexec_start_t definition
