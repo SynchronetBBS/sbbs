@@ -1400,6 +1400,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	CtrlDirectory=Registry->ReadString("CtrlDirectory");
     if(Registry->ValueExists("JS_MaxBytes"))
     	JS_MaxBytes=Registry->ReadInteger("JS_MaxBytes");
+    if(JS_MaxBytes==0)
+        JS_MaxBytes=JAVASCRIPT_MAX_BYTES;
 
     if(Registry->ValueExists("LoginCommand"))
     	LoginCommand=Registry->ReadString("LoginCommand");
