@@ -172,6 +172,9 @@ __published:	// IDE-managed Components
     TMenuItem *N4;
     TMenuItem *FileOpenMenuItem;
     TMenuItem *N5;
+    TMenuItem *BBSEditIPFilterMsg;
+    TMenuItem *BBSEditHostFilter;
+    TMenuItem *BBSEditHostFilterMsg;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall PanelUnDock(TObject *Sender, TControl *Client,
@@ -211,31 +214,14 @@ __published:	// IDE-managed Components
 	void __fastcall BBSStatisticsLogMenuItemClick(TObject *Sender);
 	void __fastcall ForceTimedEventMenuItemClick(TObject *Sender);
 	void __fastcall ForceNetworkCalloutMenuItemClick(TObject *Sender);
-	void __fastcall BBSEditGuruBrainClick(TObject *Sender);
-	void __fastcall BBSEditTextStringsClick(TObject *Sender);
-	void __fastcall BBSEditColorsClick(TObject *Sender);
-	void __fastcall BBSEditAnswerClick(TObject *Sender);
-	void __fastcall BBSEditZipCommentClick(TObject *Sender);
-	void __fastcall BBSEditSystemInfoClick(TObject *Sender);
-	void __fastcall BBSEditNewUserMsgClick(TObject *Sender);
-	void __fastcall BBSEditFeedbackMsgClick(TObject *Sender);
-	void __fastcall BBSEditIPFilterClick(TObject *Sender);
-	void __fastcall BBSEditNameFilterClick(TObject *Sender);
-	void __fastcall BBSEditFilenameFilterClick(TObject *Sender);
-	void __fastcall PhoneNumberPHONECAN1Click(TObject *Sender);
-	void __fastcall BBSEditNameFilterBadMsgClick(TObject *Sender);
-	void __fastcall BBSEditFileFilterBadMsgClick(TObject *Sender);
-	void __fastcall BBSEditPhoneFilterBadMsgClick(TObject *Sender);
+	void __fastcall TextMenuItemEditClick(TObject *Sender);
+	void __fastcall CtrlMenuItemEditClick(TObject *Sender);
 	void __fastcall MailEditAliasListClick(TObject *Sender);
     void __fastcall UpTimerTick(TObject *Sender);
     void __fastcall BBSViewErrorLogMenuItemClick(TObject *Sender);
     void __fastcall ChatToggleExecute(TObject *Sender);
     void __fastcall ViewClientsExecute(TObject *Sender);
     void __fastcall UserEditorExecute(TObject *Sender);
-    void __fastcall FtpEditAliasListClick(TObject *Sender);
-    void __fastcall FtpEditLoginMessageClick(TObject *Sender);
-    void __fastcall FtpEditHelloMessageClick(TObject *Sender);
-    void __fastcall FtpEditGoodbyeMessageClick(TObject *Sender);
     void __fastcall FileOpenMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations

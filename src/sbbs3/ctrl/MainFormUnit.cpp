@@ -1521,220 +1521,37 @@ void __fastcall TMainForm::ForceNetworkCalloutMenuItemClick(
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::BBSEditGuruBrainClick(TObject *Sender)
+void __fastcall TMainForm::TextMenuItemEditClick(TObject *Sender)
 {
 	char filename[MAX_PATH];
 
-    sprintf(filename,"%sGURU.DAT"
-    	,MainForm->cfg.ctrl_dir);
+    sprintf(filename,"%s%s"
+    	,MainForm->cfg.text_dir
+        ,((TMenuItem*)Sender)->Hint.c_str());
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
 	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Guru Brain (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditTextStringsClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sTEXT.DAT"
-    	,MainForm->cfg.ctrl_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Text Strings (See SYSOP.DOC for help)";
+    TextFileEditForm->Caption=((TMenuItem*)Sender)->Caption;
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
 
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::BBSEditColorsClick(TObject *Sender)
+void __fastcall TMainForm::CtrlMenuItemEditClick(TObject *Sender)
 {
 	char filename[MAX_PATH];
 
-    sprintf(filename,"%sATTR.CFG"
-    	,MainForm->cfg.ctrl_dir);
+    sprintf(filename,"%s%s"
+    	,MainForm->cfg.ctrl_dir
+        ,((TMenuItem*)Sender)->Hint.c_str());
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
 	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Default Colors (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditAnswerClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sANSWER.ASC"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Answer Screen (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditZipCommentClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sZIPMSG.TXT"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="ZIP File Comment";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditSystemInfoClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sSYSTEM.MSG"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="System Information Screen (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditNewUserMsgClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sNEWUSER.MSG"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="New User Message (See SYSOP.DOC for help)";
+    TextFileEditForm->Caption=((TMenuItem*)Sender)->Caption;
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
 
 }
-//---------------------------------------------------------------------------
 
-void __fastcall TMainForm::BBSEditFeedbackMsgClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sFEEDBACK.MSG"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="New User Feedback Instructions";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditIPFilterClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sIP.CAN"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="IP and Host Name Filters (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditNameFilterClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sNAME.CAN"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="User Name/Alias Filters (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditFilenameFilterClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sFILE.CAN"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Filename Filters (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::PhoneNumberPHONECAN1Click(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sPHONE.CAN"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Phone Number Filters (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditNameFilterBadMsgClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sBADNAME.MSG"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Bad User Name Message (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditFileFilterBadMsgClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sBADFILE.MSG"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Bad Filename Message (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::BBSEditPhoneFilterBadMsgClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sBADPHONE.MSG"
-    	,MainForm->cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Bad Phone Number Message (See SYSOP.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::MailEditAliasListClick(TObject *Sender)
@@ -1833,59 +1650,6 @@ void __fastcall TMainForm::UserEditorExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::FtpEditAliasListClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sFTPALIAS.CFG"
-    	,MainForm->cfg.ctrl_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="FTP Filename Aliases (See FTPSRVR.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::FtpEditLoginMessageClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sFTPLOGIN.TXT", cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="FTP Login Message";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::FtpEditHelloMessageClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sFTPHELLO.TXT", cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="FTP Hello Message";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::FtpEditGoodbyeMessageClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sFTPBYE.TXT", cfg.text_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="FTP Goodbye Message";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
-//---------------------------------------------------------------------------
-
 void __fastcall TMainForm::FileOpenMenuItemClick(TObject *Sender)
 {
     TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
@@ -1907,4 +1671,5 @@ void __fastcall TMainForm::FileOpenMenuItemClick(TObject *Sender)
     delete dlg;
 }
 //---------------------------------------------------------------------------
+
 

@@ -2095,70 +2095,102 @@ object MainForm: TMainForm
         Caption = '-'
       end
       object BBSEditMenuItem: TMenuItem
+        AutoHotkeys = maManual
         Caption = '&Edit'
         ImageIndex = 29
         object BBSEditGuruBrain: TMenuItem
-          Caption = '&Guru Brain'
-          OnClick = BBSEditGuruBrainClick
+          Caption = 'Guru Brain'
+          Hint = 'GURU.DAT'
+          OnClick = CtrlMenuItemEditClick
         end
         object BBSEditTextStrings: TMenuItem
-          Caption = '&Text Strings'
-          OnClick = BBSEditTextStringsClick
+          Caption = 'Text Strings'
+          Hint = 'TEXT.DAT'
+          OnClick = CtrlMenuItemEditClick
         end
         object BBSEditColors: TMenuItem
-          Caption = 'Default &Colors'
-          OnClick = BBSEditColorsClick
+          Caption = 'Default Colors'
+          Hint = 'ATTR.CFG'
+          OnClick = CtrlMenuItemEditClick
         end
         object BBSEditAnswer: TMenuItem
-          Caption = '&Answer Screen'
-          OnClick = BBSEditAnswerClick
+          Caption = 'Answer Screen'
+          Hint = 'ANSWER.ASC'
+          OnClick = TextMenuItemEditClick
         end
         object BBSEditZipComment: TMenuItem
-          Caption = '&ZIP File Comment'
-          OnClick = BBSEditZipCommentClick
+          Caption = 'ZIP File Comment'
+          Hint = 'ZIPMSG.TXT'
+          OnClick = TextMenuItemEditClick
         end
         object BBSEditSystemInfo: TMenuItem
-          Caption = '&System Information'
-          OnClick = BBSEditSystemInfoClick
+          Caption = 'System Information'
+          Hint = 'SYSTEM.MSG'
+          OnClick = TextMenuItemEditClick
         end
         object BBSEditNewUserMsg: TMenuItem
-          Caption = '&New User Message'
-          OnClick = BBSEditNewUserMsgClick
+          Caption = 'New User Message'
+          Hint = 'NEWUSER.MSG'
+          OnClick = TextMenuItemEditClick
         end
         object BBSEditFeedbackMsg: TMenuItem
-          Caption = 'New User Feedback &Instructions'
-          OnClick = BBSEditFeedbackMsgClick
+          Caption = 'New User Feedback Instructions'
+          Hint = 'FEEDBACK.MSG'
+          OnClick = TextMenuItemEditClick
         end
-        object BBSEditFilters: TMenuItem
-          Caption = '&Filters'
-          object BBSEditIPFilter: TMenuItem
-            Caption = '&IP Address and Host Name Filters'
-            OnClick = BBSEditIPFilterClick
-          end
-          object BBSEditNameFilter: TMenuItem
-            Caption = '&User Name Filters'
-            OnClick = BBSEditNameFilterClick
-          end
-          object BBSEditNameFilterBadMsg: TMenuItem
-            Caption = '&Bad User Name Message'
-            OnClick = BBSEditNameFilterBadMsgClick
-          end
-          object BBSEditFilenameFilter: TMenuItem
-            Caption = '&Filename Filters'
-            OnClick = BBSEditFilenameFilterClick
-          end
-          object BBSEditFileFilterBadMsg: TMenuItem
-            Caption = 'Bad Filename &Message'
-            OnClick = BBSEditFileFilterBadMsgClick
-          end
-          object PhoneNumberPHONECAN1: TMenuItem
-            Caption = '&Phone Number Filters'
-            OnClick = PhoneNumberPHONECAN1Click
-          end
-          object BBSEditPhoneFilterBadMsg: TMenuItem
-            Caption = 'Bad Phone &Number Message'
-            OnClick = BBSEditPhoneFilterBadMsgClick
-          end
+      end
+      object BBSEditFilters: TMenuItem
+        AutoHotkeys = maManual
+        Caption = '&Filters'
+        object BBSEditIPFilter: TMenuItem
+          Caption = 'IP Address Filters'
+          Hint = 'IP.CAN'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditIPFilterMsg: TMenuItem
+          Caption = 'IP Address Filter Message'
+          Hint = 'BADIP.MSG'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditHostFilter: TMenuItem
+          Caption = 'Host Name Filters'
+          Hint = 'HOST.CAN'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditHostFilterMsg: TMenuItem
+          Caption = 'Host Name Filter Message'
+          Hint = 'BADHOST.MSG'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditNameFilter: TMenuItem
+          Caption = 'User Name Filters'
+          Hint = 'NAME.CAN'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditNameFilterBadMsg: TMenuItem
+          Caption = 'User Name Filter Message'
+          Hint = 'BADNAME.MSG'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditFilenameFilter: TMenuItem
+          Caption = 'File Name Filters'
+          Hint = 'FILE.CAN'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditFileFilterBadMsg: TMenuItem
+          Caption = 'File Name Filter Message'
+          Hint = 'BADFILE.MSG'
+          OnClick = TextMenuItemEditClick
+        end
+        object PhoneNumberPHONECAN1: TMenuItem
+          Caption = 'Phone Number Filters'
+          Hint = 'PHONE.CAN'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditPhoneFilterBadMsg: TMenuItem
+          Caption = 'Phone Number Filter Message'
+          Hint = 'BADPHONE.MSG'
+          OnClick = TextMenuItemEditClick
         end
       end
     end
@@ -2210,7 +2242,7 @@ object MainForm: TMainForm
       end
     end
     object FtpMenuItem: TMenuItem
-      Caption = '&FTP'
+      Caption = 'FTP'
       object FtpConfigureMenuItem: TMenuItem
         Action = FtpConfigure
         Caption = '&Configure'
@@ -2227,23 +2259,28 @@ object MainForm: TMainForm
         Caption = '-'
       end
       object FtpEditMenuItem: TMenuItem
+        AutoHotkeys = maManual
         Caption = '&Edit'
         ImageIndex = 29
         object FtpEditLoginMessage: TMenuItem
-          Caption = '&Login Message'
-          OnClick = FtpEditLoginMessageClick
+          Caption = 'Login Message'
+          Hint = 'FTPLOGIN.TXT'
+          OnClick = TextMenuItemEditClick
         end
         object FtpEditHelloMessage: TMenuItem
-          Caption = '&Hello Message'
-          OnClick = FtpEditHelloMessageClick
+          Caption = 'Hello Message'
+          Hint = 'FTPHELLO.TXT'
+          OnClick = TextMenuItemEditClick
         end
         object FtpEditGoodbyeMessage: TMenuItem
-          Caption = '&Goodbye Message'
-          OnClick = FtpEditGoodbyeMessageClick
+          Caption = 'Goodbye Message'
+          Hint = 'FTPBYE.TXT'
+          OnClick = TextMenuItemEditClick
         end
         object FtpEditAliasList: TMenuItem
-          Caption = 'Filename &Aliases'
-          OnClick = FtpEditAliasListClick
+          Caption = 'Filename Aliases'
+          Hint = 'FTPALIAS.CFG'
+          OnClick = CtrlMenuItemEditClick
         end
       end
     end
