@@ -635,14 +635,12 @@ int main(int argc, char** argv)  {
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
     strcpy(bbs_startup.ctrl_dir,ctrl_dir);
-    strcpy(bbs_startup.temp_dir,ctrl_dir);		/* Why is this necessary on my system?  -Deuce */
 
 	/* Initialize FTP startup structure */
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
     strcpy(ftp_startup.index_file_name,"00index");
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
-    strcpy(ftp_startup.temp_dir,ctrl_dir);		/* Why is this necessary on my system?  -Deuce */
 
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
@@ -840,7 +838,10 @@ int main(int argc, char** argv)  {
 							"\nToDo: Add help";
 			switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
 				case 0:	/* Spy */
-	    			snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup.temp_dir, j+1);
+					if(bbs_startup.temp_dir[0])
+		    			snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup.temp_dir, j+1);
+					else
+		    			snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup.temp_dir, j+1);
 					endwin();
 					i=spyon(str);
 					refresh();
