@@ -521,6 +521,7 @@ int DLLCALL putusername(scfg_t* cfg, int number, char *name)
 {
 	char str[256];
 	int file;
+	int wr;
 	long length;
 	uint total_users;
 
@@ -529,7 +530,7 @@ int DLLCALL putusername(scfg_t* cfg, int number, char *name)
 
 	sprintf(str,"%suser/name.dat", cfg->data_dir);
 	if((file=nopen(str,O_RDWR|O_CREAT))==-1) 
-		return(-2); 
+		return(errno); 
 	length=filelength(file);
 
 	/* Truncate corrupted name.dat */
@@ -552,9 +553,11 @@ int DLLCALL putusername(scfg_t* cfg, int number, char *name)
 	lseek(file,(long)(((long)number-1)*(LEN_ALIAS+2)),SEEK_SET);
 	putrec(str,0,LEN_ALIAS,name);
 	putrec(str,LEN_ALIAS,2,crlf);
-	write(file,str,LEN_ALIAS+2);
+	wr=write(file,str,LEN_ALIAS+2);
 	close(file);
 
+	if(wr!=LEN_ALIAS+2)
+		return(errno);
 	return(0);
 }
 
@@ -1736,4 +1739,79 @@ char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 	}
 	fclose(fp);
 	return(p);
+}
+
+int DLLCALL newuserdat(scfg_t* cfg, user_t* user)
+{
+	char	str[MAX_PATH+1];
+	char	tmp[128];
+	int		c;
+	int		err;
+	int		file;
+	int		unum=1;
+	int		last;
+	long	misc;
+	FILE*	stream;
+
+	sprintf(str,"%suser/name.dat",cfg->data_dir);
+	if(fexist(str)) {
+		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
+			return(errno); 
+		}
+		last=filelength(file)/(LEN_ALIAS+2);	   /* total users */
+		while(unum<=last) {
+			fread(str,LEN_ALIAS+2,1,stream);
+			for(c=0;c<LEN_ALIAS;c++)
+				if(str[c]==ETX) break;
+			str[c]=0;
+			if(!c) {	 /* should be a deleted user */
+				getuserrec(cfg,unum,U_MISC,8,str);
+				misc=ahtoul(str);
+				if(misc&DELETED) {	 /* deleted bit set too */
+					getuserrec(cfg,unum,U_LASTON,8,str);
+					if((time(NULL)-ahtoul(str))/86400>=cfg->sys_deldays) 
+						break; /* deleted long enough ? */
+				} 
+			}
+			unum++; 
+		}
+		fclose(stream); 
+	}
+
+	last=lastuser(cfg);		/* Check against data file */
+
+	if(unum>last+1) 		/* Corrupted name.dat? */
+		unum=last+1;
+	else if(unum<=last) {	/* Overwriting existing user */
+		getuserrec(cfg,unum,U_MISC,8,str);
+		misc=ahtoul(str);
+		if(!(misc&DELETED)) /* Not deleted? Set usernumber to end+1 */
+			unum=last+1; 
+	}
+
+	user->number=unum;		/* store the new user number */
+
+	if((err=putusername(cfg,user->number,user->alias))!=0)
+		return(err);
+
+	if((err=putuserdat(cfg,user))!=0)
+		return(err);
+
+	sprintf(str,"%sfile/%04u.in",cfg->data_dir,user->number);  /* delete any files */
+	delfiles(str,ALLFILES);                                    /* waiting for user */
+	rmdir(str);
+	sprintf(tmp,"%04u.*",user->number);
+	sprintf(str,"%sfile",cfg->data_dir);
+	delfiles(str,tmp);
+
+	sprintf(str,"%suser/ptrs/%04u.ixb",cfg->data_dir,user->number); /* msg ptrs */
+	remove(str);
+	sprintf(str,"%smsgs/%04u.msg",cfg->data_dir,user->number); /* delete short msg */
+	remove(str);
+	sprintf(str,"%suser/%04u.msg",cfg->data_dir,user->number); /* delete ex-comment */
+	remove(str);
+	sprintf(str,"%suser/%04u.sig",cfg->data_dir,user->number); /* delete signature */
+	remove(str);
+
+	return(0);
 }

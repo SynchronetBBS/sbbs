@@ -73,6 +73,7 @@ extern char* nulstr;
 
 DLLEXPORT int	DLLCALL getuserdat(scfg_t* cfg, user_t* user); 	/* Fill userdat struct with user data   */
 DLLEXPORT int	DLLCALL putuserdat(scfg_t* cfg, user_t* user);	/* Put userdat struct into user file	*/
+DLLEXPORT int	DLLCALL newuserdat(scfg_t* cfg, user_t* user);	/* Create new userdat in user file */
 DLLEXPORT uint	DLLCALL matchuser(scfg_t* cfg, char *str, BOOL sysop_alias); /* Checks for a username match */
 DLLEXPORT char* DLLCALL alias(scfg_t* cfg, char* name, char* buf);
 DLLEXPORT int	DLLCALL putusername(scfg_t* cfg, int number, char * name);
