@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -65,7 +65,8 @@ char *ultoac(ulong l, char *string)
 	for(k=1;i>-1;k++) {
 		string[j--]=str[i--];
 		if(j>0 && !(k%3))
-			string[j--]=','; }
+			string[j--]=','; 
+	}
 	return(string);
 }
 
@@ -80,7 +81,8 @@ char *faddrtoa(fidoaddr_t addr)
 	sprintf(str,"%hu:%hu/%hu",addr.zone,addr.net,addr.node);
 	if(addr.point) {
 		sprintf(point,".%u",addr.point);
-		strcat(str,point); }
+		strcat(str,point); 
+	}
 	return(str);
 }
 
@@ -93,7 +95,8 @@ void truncsp(char *str)
 
 	c=strlen(str);
 	while(c && (uchar)str[c-1]<=SP) c--;
-	str[c]=0;
+	if(str[c]!=0)
+		str[c]=0;
 }
 
 char* DLLCALL strip_ctrl(char *str)
@@ -101,13 +104,16 @@ char* DLLCALL strip_ctrl(char *str)
 	char tmp[1024];
 	int i,j;
 
-	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++)
+	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++) {
 		if(str[i]==CTRL_A && str[i+1]!=0)
 			i++;
 		else if((uchar)str[i]>=SP)
 			tmp[j++]=str[i];
-	tmp[j]=0;
-	strcpy(str,tmp);
+	}
+	if(i!=j) {
+		tmp[j]=0;
+		strcpy(str,tmp);
+	}
 	return(str);
 }
 
@@ -147,7 +153,8 @@ int main(int argc, char **argv)
 
 	if(argc<2) {
 		printf("%s",usage);
-		exit(1); }
+		exit(1); 
+	}
 
 	errlast=errors=0;
 	for(x=1;x<argc;x++) {
@@ -157,7 +164,8 @@ int main(int argc, char **argv)
 			fprintf(stderr,"\7\nHit any key to continue...");
 			if(!getch())
 				getch();
-			printf("\n"); }
+			printf("\n"); 
+		}
 		errlast=errors;
 		if(argv[x][0]=='-'
 #if !defined(__unix__)	/* just for backwards compatibility */
@@ -186,8 +194,10 @@ int main(int argc, char **argv)
 						break;
 					default:
 						printf("%s",usage);
-						exit(1); }
-			continue; }
+						exit(1); 
+			}
+			continue; 
+		}
 
 	SAFECOPY(smb.file,argv[x]);
 	p=strrchr(smb.file,'.');
@@ -197,7 +207,8 @@ int main(int argc, char **argv)
 	sprintf(str,"%s.shd",smb.file);
 	if(!fexist(str)) {
 		printf("\n%s doesn't exist.\n",smb.file);
-		continue; }
+		continue; 
+	}
 
 	fprintf(stderr,"\nChecking %s Headers\n\n",smb.file);
 
@@ -205,43 +216,52 @@ int main(int argc, char **argv)
 	if((i=smb_open(&smb))!=0) {
 		printf("smb_open returned %d: %s\n",i,smb.last_error);
 		errors++;
-		continue; }
+		continue; 
+	}
 
 	length=filelength(fileno(smb.shd_fp));
 	if(length<sizeof(smbhdr_t)) {
 		printf("Empty\n");
 		smb_close(&smb);
-		continue; }
+		continue; 
+	}
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
 		printf("smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		errors++;
-		continue; }
+		continue; 
+	}
 
 	if((length/SHD_BLOCK_LEN)*sizeof(ulong)) {
 		if((number=(ulong *)MALLOC(((length/SHD_BLOCK_LEN)+2)*sizeof(ulong)))
 			==NULL) {
 			printf("Error allocating %lu bytes of memory\n"
 				,(length/SHD_BLOCK_LEN)*sizeof(ulong));
-			return(++errors); } }
+			return(++errors); 
+		} 
+	}
 	else
 		number=NULL;
 
 	if(chkalloc && !(smb.status.attr&SMB_HYPERALLOC)) {
 		if((i=smb_open_ha(&smb))!=0) {
 			printf("smb_open_ha returned %d: %s\n",i,smb.last_error);
-			return(++errors); }
+			return(++errors); 
+		}
 
 		if((i=smb_open_da(&smb))!=0) {
 			printf("smb_open_da returned %d: %s\n",i,smb.last_error);
-			return(++errors); } }
+			return(++errors); 
+		} 
+	}
 
 	headers=deleted=orphan=dupenumhdr=attr=zeronum=timeerr=lockerr=hdrerr=0;
 	actalloc=datactalloc=deldatblocks=delhdrblocks=xlaterr=0;
 	lzhblocks=lzhsaved=acthdrblocks=actdatblocks=0;
 
 	for(l=smb.status.header_offset;l<length;l+=size) {
+		size=SHD_BLOCK_LEN;
 		fprintf(stderr,"\r%2lu%%  ",(long)(100.0/((float)length/l)));
 		msg.idx.offset=l;
 		msgerr=0;
@@ -249,8 +269,8 @@ int main(int argc, char **argv)
 			printf("\n(%06lX) smb_lockmsghdr returned %d: %s\n",l,i,smb.last_error);
 			lockerr++;
 			headers++;
-			size=SHD_BLOCK_LEN;
-			continue; }
+			continue; 
+		}
 		if((i=smb_getmsghdr(&smb,&msg))!=0) {
 			smb_unlockmsghdr(&smb,&msg);
 			if(chkalloc && !(smb.status.attr&SMB_HYPERALLOC)) {
@@ -259,15 +279,20 @@ int main(int argc, char **argv)
 				j=fgetc(smb.sha_fp);
 				if(j) { 			/* Allocated block or at EOF */
 					printf("%s\n(%06lX) smb_getmsghdr returned %d: %s\n",beep,l,i,smb.last_error);
-					hdrerr++; }
+					hdrerr++; 
+				}
 				else
-					delhdrblocks++; }
+					delhdrblocks++; 
+			}
 			else {
 				/* printf("%s\n(%06lX) smb_getmsghdr returned %d\n",beep,l,i); */
-				delhdrblocks++; }
-			size=SHD_BLOCK_LEN;
-			continue; }
+				delhdrblocks++; 
+			}
+			continue; 
+		}
 		smb_unlockmsghdr(&smb,&msg);
+		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
+
 		truncsp(msg.from);
 		strip_ctrl(msg.from);
 		fprintf(stderr,"#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
@@ -287,7 +312,8 @@ int main(int argc, char **argv)
 			if(number)
 				number[headers]=0;
 			if(smb.status.attr&SMB_HYPERALLOC)
-				deldatblocks+=smb_datblocks(smb_getmsgdatlen(&msg)); }
+				deldatblocks+=smb_datblocks(smb_getmsgdatlen(&msg)); 
+		}
 		else {
 			actdatblocks+=smb_datblocks(smb_getmsgdatlen(&msg));
 			if(msg.hdr.number>smb.status.last_msg) {
@@ -296,7 +322,8 @@ int main(int argc, char **argv)
 				if(extinfo)
 					printf("MSGERR: Header number (%lu) greater than last (%lu)\n"
 						,msg.hdr.number,smb.status.last_msg);
-				hdrnumerr++; }
+				hdrnumerr++; 
+			}
 
 			if(smb_getmsgidx(&smb,&msg)) {
 				fprintf(stderr,"%sNot found in index\n",beep);
@@ -304,7 +331,8 @@ int main(int argc, char **argv)
 				if(extinfo)
 					printf("MSGERR: Header number (%lu) not found in index\n"
 						,msg.hdr.number);
-				orphan++; }
+				orphan++; 
+			}
 			else if(msg.hdr.attr!=msg.idx.attr) {
 				fprintf(stderr,"%sAttributes mismatch index\n",beep);
 				msgerr=1;
@@ -312,21 +340,24 @@ int main(int argc, char **argv)
 					printf("MSGERR: Header attributes (%04X) do not match index "
 						"attributes (%04X)\n"
 						,msg.hdr.attr,msg.idx.attr);
-				attr++; }
+				attr++; 
+			}
 			else if(msg.hdr.when_imported.time!=msg.idx.time) {
 				fprintf(stderr,"%sImport date/time mismatch index\n",beep);
 				msgerr=1;
 				if(extinfo)
 					printf("MSGERR: Header import date/time does not match "
 						"index import date/time\n");
-				timeerr++; }
+				timeerr++; 
+			}
 
 			if(msg.hdr.number==0) {
 				fprintf(stderr,"%sZero message number\n",beep);
 				msgerr=1;
 				if(extinfo)
 					printf("MSGERR: Header number is zero (invalid)\n");
-				zeronum++; }
+				zeronum++; 
+			}
 			if(number) {
 				for(m=0;m<headers;m++)
 					if(number[m] && msg.hdr.number==number[m]) {
@@ -336,8 +367,10 @@ int main(int argc, char **argv)
 							printf("MSGERR: Header number (%lu) duplicated\n"
 								,msg.hdr.number);
 						dupenumhdr++;
-						break; }
-				number[headers]=msg.hdr.number; }
+						break; 
+					}
+				number[headers]=msg.hdr.number; 
+			}
 			if(chkxlat) {		/* Check translation strings */
 				for(i=0;i<msg.hdr.total_dfields;i++) {
 					fseek(smb.sdt_fp,msg.hdr.offset+msg.dfield[i].offset,SEEK_SET);
@@ -347,7 +380,8 @@ int main(int argc, char **argv)
 					if(xlat==XLAT_LZH) {
 						lzh=1;
 						if(!fread(&xlat,2,1,smb.sdt_fp))
-							xlat=0xffff; }
+							xlat=0xffff; 
+					}
 					if(xlat!=XLAT_NONE) {
 						fprintf(stderr,"%sUnsupported Xlat %04X dfield[%u]\n"
 							,beep,xlat,i);
@@ -356,7 +390,8 @@ int main(int argc, char **argv)
 							printf("MSGERR: Unsupported translation type (%04X) "
 								"in dfield[%u] (offset %ld)\n"
 								,xlat,i,msg.dfield[i].offset);
-						xlaterr++; }
+						xlaterr++; 
+					}
 					else {
 						if(lzh) {
 							lzhmsg=1;
@@ -365,10 +400,12 @@ int main(int argc, char **argv)
 									-smb_datblocks(msg.dfield[i].length))
 									*SDT_BLOCK_LEN;
 								lzhblocks+=smb_datblocks(msg.dfield[i].length);
-							} } } } } }
-
-		size=smb_getmsghdrlen(&msg);
-		while(size%SHD_BLOCK_LEN) size++;
+							} 
+						} 
+					} 
+				} 
+			} 
+		}
 
 		if(chkalloc && !(smb.status.attr&SMB_HYPERALLOC)) {
 			fseek(smb.sha_fp,(l-smb.status.header_offset)/SHD_BLOCK_LEN,SEEK_SET);
@@ -378,7 +415,8 @@ int main(int argc, char **argv)
 					fprintf(stderr,"%sDeleted Header Block %lu marked %02X\n"
 						,beep,m/SHD_BLOCK_LEN,i);
 					msgerr=1;
-					delalloc++; }
+					delalloc++; 
+					}
 	***/
 				if(!(msg.hdr.attr&MSG_DELETE) && (i=fgetc(smb.sha_fp))!=1) {
 					fprintf(stderr,"%sActive Header Block %lu marked %02X\n"
@@ -388,7 +426,9 @@ int main(int argc, char **argv)
 						printf("MSGERR: Active header block %lu marked %02X "
 							"instead of 01\n"
 							,m/SHD_BLOCK_LEN,i);
-					actalloc++; } }
+					actalloc++; 
+				} 
+			}
 
 			if(!(msg.hdr.attr&MSG_DELETE)) {
 				acthdrblocks+=(size/SHD_BLOCK_LEN);
@@ -398,13 +438,15 @@ int main(int argc, char **argv)
 						if(extinfo)
 							printf("MSGERR: Invalid Data Field [%lu] Offset: %lu\n"
 								,n,msg.dfield[n].offset);
-						dfieldoffset++; }
+						dfieldoffset++; 
+					}
 					if(msg.dfield[n].length&0x80000000UL) {
 						msgerr=1;
 						if(extinfo)
 							printf("MSGERR: Invalid Data Field [%lu] Length: %lu\n"
 								,n,msg.dfield[n].length);
-						dfieldlength++; }
+						dfieldlength++; 
+					}
 					fseek(smb.sda_fp
 						,((msg.hdr.offset+msg.dfield[n].offset)/SDT_BLOCK_LEN)*2
 						,SEEK_SET);
@@ -418,15 +460,21 @@ int main(int argc, char **argv)
 								printf("MSGERR: Active Data Block %lu.%lu "
 									"marked free\n"
 									,n,m/SHD_BLOCK_LEN);
-							datactalloc++; } } } }
+							datactalloc++; 
+						} 
+					} 
+				} 
+			}
 			else
-				delhdrblocks+=(size/SHD_BLOCK_LEN); }
+				delhdrblocks+=(size/SHD_BLOCK_LEN); 
+		}
 
 		else {	 /* Hyper Alloc */
 			if(msg.hdr.attr&MSG_DELETE)
 				delhdrblocks+=(size/SHD_BLOCK_LEN);
 			else
-				acthdrblocks+=(size/SHD_BLOCK_LEN); }
+				acthdrblocks+=(size/SHD_BLOCK_LEN); 
+		}
 
 		totallzhmsgs+=lzhmsg;
 		headers++;
@@ -477,9 +525,11 @@ int main(int argc, char **argv)
 					   ,i,msg.dfield[i].type
 					   ,i,msg.dfield[i].offset, msg.dfield[i].offset
 					   ,i,msg.dfield[i].length);
-			printf("\n"); }
+			printf("\n"); 
+		}
 
-		smb_freemsgmem(&msg); }
+		smb_freemsgmem(&msg); 
+	}
 
 	if(number)
 		FREE(number);
@@ -500,12 +550,14 @@ int main(int argc, char **argv)
 			if(!fread(&i,2,1,smb.sda_fp))
 				break;
 			if(!i)
-				deldatblocks++; }
+				deldatblocks++; 
+		}
 
 		fclose(smb.sha_fp);
 		fclose(smb.sda_fp);
 
-		fprintf(stderr,"\r%79s\r100%%\n",""); }
+		fprintf(stderr,"\r%79s\r100%%\n",""); 
+	}
 
 	total=filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
 
@@ -517,10 +569,12 @@ int main(int argc, char **argv)
 
 	if((offset=(ulong *)MALLOC(total*sizeof(ulong)))==NULL) {
 		printf("Error allocating %lu bytes of memory\n",total*sizeof(ulong));
-		return(++errors); }
+		return(++errors); 
+	}
 	if((number=(ulong *)MALLOC(total*sizeof(ulong)))==NULL) {
 		printf("Error allocating %lu bytes of memory\n",total*sizeof(ulong));
-		return(++errors); }
+		return(++errors); 
+	}
 	fseek(smb.sid_fp,0L,SEEK_SET);
 
 	for(l=0;l<total;l++) {
@@ -530,35 +584,43 @@ int main(int argc, char **argv)
 		fprintf(stderr,"#%-5lu (%06lX) 1st Pass ",idx.number,idx.offset);
 		if(idx.attr&MSG_DELETE) {
 	//		fprintf(stderr,"%sMarked for deletion\n",beep);
-			delidx++; }
+			delidx++; 
+		}
 		for(m=0;m<l;m++)
 			if(number[m]==idx.number) {
 				fprintf(stderr,"%sDuplicate message number\n",beep);
 				dupenum++;
-				break; }
+				break; 
+			}
 		for(m=0;m<l;m++)
 			if(offset[m]==idx.offset) {
 				fprintf(stderr,"%sDuplicate offset: %lu\n",beep,idx.offset);
 				dupeoff++;
-				break; }
+				break; 
+			}
 		if(idx.offset<smb.status.header_offset) {
 			fprintf(stderr,"%sInvalid offset\n",beep);
 			idxofferr++;
-			break; }
+			break; 
+		}
 		if(idx.number==0) {
 			fprintf(stderr,"%sZero message number\n",beep);
 			idxzeronum++;
-			break; }
+			break; 
+		}
 		if(idx.number>smb.status.last_msg) {
 			fprintf(stderr,"%sOut-Of-Range message number\n",beep);
 			idxnumerr++;
-			break; }
+			break; 
+		}
 		number[l]=idx.number;
-		offset[l]=idx.offset; }
+		offset[l]=idx.offset; 
+	}
 
 	if(l<total) {
 		fprintf(stderr,"%sError reading index record\n",beep);
-		idxerr=1; }
+		idxerr=1; 
+	}
 	else {
 		fprintf(stderr,"\r%79s\r","");
 		for(m=0;m<total;m++) {
@@ -569,8 +631,11 @@ int main(int argc, char **argv)
 					fprintf(stderr,"%sMisordered message number\n",beep);
 					misnumbered++;
 					number[n]=0;
-					break; } }
-		fprintf(stderr,"\r%79s\r100%%\n",""); }
+					break; 
+				} 
+		}
+		fprintf(stderr,"\r%79s\r100%%\n",""); 
+	}
 	FREE(number);
 	FREE(offset);
 
@@ -721,7 +786,8 @@ int main(int argc, char **argv)
 		|| actalloc || datactalloc || misnumbered || timeerr
 		|| dfieldoffset || dfieldlength || xlaterr || idxerr) {
 		printf("%shas Errors!\n",beep);
-		errors++; }
+		errors++; 
+	}
 	else
 		printf("is OK\n");
 
@@ -749,7 +815,8 @@ int main(int argc, char **argv)
 		fprintf(stderr,"\7\nHit any key to continue...");
 		if(!getch())
 			getch();
-		fprintf(stderr,"\n"); }
+		fprintf(stderr,"\n"); 
+	}
 
 
 	return(errors);
