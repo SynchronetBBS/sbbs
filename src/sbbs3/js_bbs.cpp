@@ -354,6 +354,21 @@ js_hangup(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_nodesync(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->getnodedat(sbbs->cfg.node_num,&sbbs->thisnode,0);
+	sbbs->nodesync();
+	*rval=JSVAL_VOID;
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_exec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uintN		i;
@@ -838,6 +853,7 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"logoff",			js_logoff,			0},		// logoff procedure
 	{"logout",			js_logout,			0},		// logout procedure
 	{"hangup",			js_hangup,			0},		// hangup immediately
+	{"nodesync",		js_nodesync,		0},		// synchronize node with system
 	/* menuing */
 	{"menu",			js_menu,			1},		// show menu
 	{"log_key",			js_logkey,			1},		// log key to node.log (comma optional)
