@@ -269,7 +269,7 @@ BOOL md(char *inpath)
 	dir=opendir(path);
 	if(dir==NULL) {
 		lprintf("Creating directory: %s",path);
-		if(_mkdir(path)) {
+		if(MKDIR(path)) {
 			lprintf("!Error %d: Fix configuration or make directory by "
 				"hand.",errno);
 			return(FALSE); 
@@ -444,7 +444,7 @@ char* DLLCALL prep_dir(char* base, char* path)
 
 	backslashcolon(str);
 	strcat(str,".");                // Change C: to C:. and C:\SBBS\ to C:\SBBS\.
-	_fullpath(abspath,str,LEN_DIR+1);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
+	FULLPATH(abspath,str,LEN_DIR+1);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
 	backslash(abspath);
 
 	sprintf(path,"%.*s",LEN_DIR,abspath);

@@ -2940,7 +2940,7 @@ static void ctrl_thread(void* arg)
 					sprintf(path,"%s%s",root_dir(local_dir),p);
 				else {
 					sprintf(fname,"%s%s",local_dir,p);
-					_fullpath(path,fname,sizeof(path));
+					FULLPATH(path,fname,sizeof(path));
 				}
 
 				if(!direxist(path)) {
