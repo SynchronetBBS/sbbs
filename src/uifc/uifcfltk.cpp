@@ -796,6 +796,10 @@ int uifcinifltk(uifcapi_t* uifcapi)
 
 	CurrWin=0;
 	MainWin=NULL;
+
+#if defined(_WIN32)
+	FreeConsole();		// close popup console window
+#endif
     return(0);
 }
 
