@@ -368,7 +368,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		for(i=0;i<opts;i++) {
 			truncsp(option[i]);
 			if((j=strlen(option[i])+5)>width)
-				width=j; 
+				width=j;
 		}
 	}
 	if(width>(SCRN_RIGHT+1)-SCRN_LEFT)
@@ -534,7 +534,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				while(c<width-4) {
 					*(ptr++)=' ';
 					*(ptr++)=a;
-					c++; 
+					c++;
 				}
 				*(ptr++)='º';
 				*(ptr++)=hclr|(bclr<<4);
@@ -1638,7 +1638,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	else if(mode&WIN_RHT)
 		left=api->scrn_width-(width+4+left);
 	if(mode&WIN_T2B)
-		top=(api->scrn_len/2)-(height/2)-2;
+		top=(api->scrn_len/2)-(height/2);
 	else if(mode&WIN_BOT)
 		top=api->scrn_len-height-3-top;
 
@@ -1647,8 +1647,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 
 	/* Dynamic Menus */
 	if(mode&WIN_DYN
-			&& curp != NULL 
-			&& barp != NULL 
+			&& curp != NULL
+			&& barp != NULL
 			&& last_menu_cur==curp
 			&& last_menu_bar==barp
 			&& save_menu_cur==*curp
@@ -1666,7 +1666,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			,__LINE__,width*21*2);
 		FREE(savscrn);
 		_setcursortype(cursor);
-		return; 
+		return;
 	}
 	gettext(1,1,api->scrn_width,api->scrn_len,savscrn);
 
@@ -1734,7 +1734,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		puttext(left,top+1,left+width-1,top+height,buf);
 	}
 	len=strlen(hbuf);
-	
+
 	i=0;
 	lines=1;		/* The first one is free */
 	k=0;
@@ -1882,7 +1882,7 @@ void help()
 					continue; 
 				}
 				fread(&l,4,1,fp);
-				break; 
+				break;
 			}
 			fclose(fp);
 			if(l==-1L)
@@ -1897,11 +1897,11 @@ void help()
 					fread(hbuf,HELPBUF_SIZE,1,fp);
 					fclose(fp); 
 				} 
-			} 
-		} 
+			}
+		}
 	}
 	else
 		strcpy(hbuf,api->helpbuf);
 
-	showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len-2, "Online Help", hbuf, NULL, NULL);
+	showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len, "Online Help", hbuf, NULL, NULL);
 }
