@@ -1555,7 +1555,7 @@ static void smtp_thread(void* arg)
 				p=buf+8;
 				while(*p && *p<=' ') p++;
 				if(trashcan(&scfg,p,"subject")) {
-					lprintf("%04d !SMTP ILLEGAL SUBJECT '%s' from %s [%s]"
+					lprintf("%04d !SMTP ILLEGAL SUBJECT '%s' from %s"
 						,socket, p, reverse_path);
 					sprintf(tmp,"Blocked subject '%s' from %s"
 						,p, reverse_path);
