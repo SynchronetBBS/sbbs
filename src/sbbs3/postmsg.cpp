@@ -268,22 +268,16 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	/* using the idx records here is not technically necessary, just for convenience */
 	msg.idx.attr=msg.hdr.attr;
-	msg.idx.time=msg.hdr.when_written.time;
+	msg.idx.time=msg.hdr.when_imported.time;
+	msg.idx.number=smb.status.last_msg+1; /* this *should* be the new message number */
 
 	/* Generate default (RFC822) message-id (always) */
-	sprintf(msg_id,"<%08lX.%lu.%s@%s>"
-		,msg.idx.time
-		,smb.status.last_msg+1	/* this *will* be the new message number */
-		,cfg.sub[subnum]->code,cfg.sys_inetaddr);
+	SAFECOPY(msg_id,gen_msgid(&cfg,subnum,&msg));
 	smb_hfield(&msg,RFC822MSGID,strlen(msg_id),msg_id);
 
-	/* Generate FTN MSGID */
+	/* Generate FTN (FTS-9) MSGID */
 	if(cfg.sub[subnum]->misc&SUB_FIDO) {
-		sprintf(msg_id,"<%lu.%s@%s> %08lX"
-			,smb.status.last_msg+1	/* this *will* be the new message number */
-			,cfg.sub[subnum]->code,faddrtoa(&cfg.sub[subnum]->faddr,NULL)
-			,msg.idx.time
-			);
+		SAFECOPY(msg_id,ftn_msgid(cfg.sub[subnum],&msg));
 		smb_hfield(&msg,FIDOMSGID,strlen(msg_id),msg_id);
 	}
 	if(remsg) {
@@ -475,6 +469,8 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	msg->hdr.when_imported.zone=cfg->sys_timezone;
 	msg->hdr.offset=offset;
 	msg->idx.time=msg->hdr.when_imported.time;
+	msg->idx.number=smb->status.last_msg+1; /* this *should* be the new message number */
+
 	if(smb->subnum!=INVALID_SUB) {	/* enforce anonymous/private posts only */
 		if(cfg->sub[smb->subnum]->misc&SUB_PONLY)
 			msg->hdr.attr|=MSG_PRIVATE;
@@ -485,16 +481,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 
 	/* Generate default (RFC822) message-id  */
 	if(smb_get_hfield(msg,RFC822MSGID,NULL)==NULL) {
-		if(smb->subnum==INVALID_SUB)
-			sprintf(msg_id,"<%08lX.%lu@%s>"
-				,msg->idx.time
-				,smb->status.last_msg+1	/* this *will* be the new message number */
-				,cfg->sys_inetaddr);
-		else
-			sprintf(msg_id,"<%08lX.%lu.%s@%s>"
-				,msg->idx.time
-				,smb->status.last_msg+1	/* this *will* be the new message number */
-				,cfg->sub[smb->subnum]->code,cfg->sys_inetaddr);
+		SAFECOPY(msg_id,gen_msgid(cfg,smb->subnum,msg));
 		smb_hfield(msg,RFC822MSGID,strlen(msg_id),msg_id);
 	}
 
@@ -504,7 +491,6 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		SAFECOPY(msg_id,ftn_msgid(cfg->sub[smb->subnum],msg));
 		smb_hfield(msg,FIDOMSGID,strlen(msg_id),msg_id);
 	}
-
 
 	if((i=smb_addmsghdr(smb,msg,storage))!=0) // calls smb_unlocksmbhdr() 
 		smb_freemsgdat(smb,offset,length,1);
