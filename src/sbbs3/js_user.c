@@ -448,6 +448,10 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case USER_PROP_PROT:	
 			putuserrec(p->cfg,p->usernumber,U_PROT,1,strupr(str)); /* single char */
 			break;
+		case USER_PROP_LOGONTIME:	 
+			JS_ValueToInt32(cx,*vp,&val);
+			putuserrec(p->cfg,p->usernumber,U_LOGONTIME,8,ultoa(val,tmp,16));
+			break;
 			
 		/* security properties*/
 		case USER_PROP_PASS:	
@@ -542,6 +546,7 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"temp_file_ext"		,USER_PROP_TMPEXT	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"newscan_date"		,USER_PROP_NS_TIME	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"download_protocol"	,USER_PROP_PROT		 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"logontime"			,USER_PROP_LOGONTIME 	,USER_PROP_FLAGS,		NULL,NULL},
 	{0}
 };
 
