@@ -1880,11 +1880,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
             ServicesAutoStart=true;
 
         if(Registry->ValueExists("Hostname"))
-            SAFECOPY(global.host_name,Registry->ReadString("Hostname"));
-        if(Registry->ValueExists("CtrlDirectory"))
-            SAFECOPY(global.ctrl_dir,Registry->ReadString("CtrlDirectory"));
+            SAFECOPY(global.host_name,Registry->ReadString("Hostname").c_str());
+		if(Registry->ValueExists("CtrlDirectory"))
+            SAFECOPY(global.ctrl_dir,Registry->ReadString("CtrlDirectory").c_str());
         if(Registry->ValueExists("TempDirectory"))
-            SAFECOPY(global.temp_dir,Registry->ReadString("TempDirectory"));
+            SAFECOPY(global.temp_dir,Registry->ReadString("TempDirectory").c_str());
 
         if(Registry->ValueExists("SemFileCheckFrequency"))
             global.sem_chk_freq=Registry->ReadInteger("SemFileCheckFrequency");
@@ -2078,7 +2078,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("ServicesOptions"))
             services_startup.options=Registry->ReadInteger("ServicesOptions");
 
-        if(SaveIniSettings(Sender))
+		if(SaveIniSettings(Sender))
             Registry->WriteBool("Imported",true);   /* Use the .ini file for these settings from now on */
     }
 
