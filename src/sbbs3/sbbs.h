@@ -300,8 +300,9 @@ public:
 	int		exec(csi_t *csi);
 	int		exec_function(csi_t *csi);
 	int		exec_misc(csi_t *csi, char *path);
-	int		execmsg(csi_t *csi);
-	int		execfile(csi_t *csi);
+	int		exec_net(csi_t *csi);
+	int		exec_msg(csi_t *csi);
+	int		exec_file(csi_t *csi);
 	long	exec_bin(char *mod, csi_t *csi);
 	void	clearvars(csi_t *bin);
 	void	freevars(csi_t *bin);
@@ -310,6 +311,7 @@ public:
 	char*	copystrvar(csi_t *csi, char *p, char *str);
 	void	skipto(csi_t *csi, uchar inst);
 	bool	ftp_cmd(csi_t* csi, SOCKET ctrl_sock, char* cmdsrc, char* rsp);
+	bool	ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest);
 	bool	ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool dir=false);
 	SOCKET	ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN*);
 
@@ -663,9 +665,10 @@ public:
 
 };
 
-extern SOCKET	open_socket(int type);
-extern int		close_socket(SOCKET);
-extern u_long	resolve_ip(char *addr);
+SOCKET	open_socket(int type);
+int		close_socket(SOCKET);
+bool	socket_check(SOCKET sock);
+u_long	resolve_ip(char *addr);
 
 #endif
 
