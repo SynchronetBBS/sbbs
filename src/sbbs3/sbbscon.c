@@ -120,6 +120,8 @@ gid_t				new_gid;
 gid_t				old_gid;
 BOOL				is_daemon=FALSE;
 BOOL				std_facilities=FALSE;
+FILE*				pidfile;
+
 #endif
 
 static const char* prompt;
@@ -805,14 +807,10 @@ static void handle_sigs(void)  {
 	int		sig;
 	sigset_t			sigs;
 	char		str[1024];
-	FILE*	pidfile;
 
 	thread_up(TRUE,TRUE);
 
-	/* Write the standard .pid file if running as a daemon */
-	/* Must be here so signals are sent to the correct thread */
-	if(is_daemon)  {
-		pidfile=fopen(SBBS_PID_FILE,"w");
+	if (is_daemon) {
 		if(pidfile!=NULL) {
 			fprintf(pidfile,"%d",getpid());
 			fclose(pidfile);
@@ -945,7 +943,7 @@ int main(int argc, char** argv)
 	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,host_name);
 #if defined(__unix__) && defined(PREFIX)
 	if(!fexistcase(ini_file))
-		sprintf(ini_file,"%s/etc/sbbs.ini",PREFIX);
+		sprintf(ini_file,PREFIX"/etc/sbbs.ini");
 #endif
 	if(!fexistcase(ini_file))
 		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
@@ -1422,6 +1420,11 @@ int main(int argc, char** argv)
 			printf("!ERROR %d running as daemon",errno);
 			is_daemon=FALSE;
 		}
+
+		/* Write the standard .pid file if running as a daemon */
+		/* Must be here so signals are sent to the correct thread */
+
+		pidfile=fopen(SBBS_PID_FILE,"w");
 	}
 
 	old_uid = getuid();
