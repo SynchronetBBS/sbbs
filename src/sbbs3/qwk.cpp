@@ -488,7 +488,7 @@ void sbbs_t::qwk_sec()
 					,"Extended (QWKE) Packet Format"
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[UserDefaultsWhich]);
-				ch=(char)getkeys("AEDFIOQTYMNCZV",0);
+				ch=(char)getkeys("AEDFIOQTYMNCXZV",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q')
 					break;
 				switch(ch) {
