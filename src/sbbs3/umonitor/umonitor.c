@@ -638,7 +638,8 @@ int main(int argc, char** argv)  {
 		mopt[i-1][0]=0;
 
 		uifc.helpbuf=	"`Synchronet Monitor:`\n"
-						"\nToDo: Add help.";
+						"\nCTRL-E displays the error log"
+						"\nToDo: Add more help.";
 						
 		j=uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT|WIN_DYN,0,0,70,&main_dflt,&main_bar
 			,title,mopt);
