@@ -274,6 +274,10 @@ SOURCE=.\js_user.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\js_xtrn_area.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\listfile.cpp
 # End Source File
 # Begin Source File
