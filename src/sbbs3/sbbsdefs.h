@@ -268,25 +268,26 @@ typedef struct {
 #define SUB_HDRMOD		(1L<<31)	/* Modified sub-board header info (SCFG) */
 
                                     /* Bit values for dir[x].misc */
-#define DIR_FCHK	(1L<<0) 		/* Check for file existance */
-#define DIR_RATE	(1L<<1) 		/* Force uploads to be rated G,R, or X */
-#define DIR_MULT	(1L<<2) 		/* Ask for multi-disk numbering */
-#define DIR_DUPES	(1L<<3) 		/* Search this dir for upload dupes */
-#define DIR_FREE	(1L<<4) 		/* Free downloads */
-#define DIR_TFREE	(1L<<5) 		/* Time to download is free */
-#define DIR_CDTUL	(1L<<6) 		/* Credit Uploads */
-#define DIR_CDTDL	(1L<<7) 		/* Credit Downloads */
-#define DIR_ANON	(1L<<8) 		/* Anonymous uploads */
-#define DIR_AONLY	(1L<<9) 		/* Anonymous only */
-#define DIR_ULDATE	(1L<<10)		/* Include upload date in listing */
-#define DIR_DIZ 	(1L<<11)		/* FILE_ID.DIZ and DESC.SDI support */
-#define DIR_NOSCAN	(1L<<12)		/* Don't new-scan this directory */
-#define DIR_NOAUTO	(1L<<13)		/* Don't auto-add this directory */
-#define DIR_ULTIME	(1L<<14)		/* Deduct time during uploads */
-#define DIR_CDTMIN	(1L<<15)		/* Give uploader minutes instead of cdt */
-#define DIR_SINCEDL (1L<<16)		/* Purge based on days since last dl */
-#define DIR_MOVENEW (1L<<17)		/* Files marked as new when moved */
-#define DIR_QUIET	(1L<<18)		/* Do not notify uploader of downloads */
+#define DIR_FCHK	(1<<0) 			/* Check for file existance */
+#define DIR_RATE	(1<<1) 			/* Force uploads to be rated G,R, or X */
+#define DIR_MULT	(1<<2) 			/* Ask for multi-disk numbering */
+#define DIR_DUPES	(1<<3) 			/* Search this dir for upload dupes */
+#define DIR_FREE	(1<<4) 			/* Free downloads */
+#define DIR_TFREE	(1<<5) 			/* Time to download is free */
+#define DIR_CDTUL	(1<<6) 			/* Credit Uploads */
+#define DIR_CDTDL	(1<<7) 			/* Credit Downloads */
+#define DIR_ANON	(1<<8) 			/* Anonymous uploads */
+#define DIR_AONLY	(1<<9) 			/* Anonymous only */
+#define DIR_ULDATE	(1<<10)			/* Include upload date in listing */
+#define DIR_DIZ 	(1<<11)			/* FILE_ID.DIZ and DESC.SDI support */
+#define DIR_NOSCAN	(1<<12)			/* Don't new-scan this directory */
+#define DIR_NOAUTO	(1<<13)			/* Don't auto-add this directory */
+#define DIR_ULTIME	(1<<14)			/* Deduct time during uploads */
+#define DIR_CDTMIN	(1<<15)			/* Give uploader minutes instead of cdt */
+#define DIR_SINCEDL (1<<16)			/* Purge based on days since last dl */
+#define DIR_MOVENEW (1<<17)			/* Files marked as new when moved */
+#define DIR_QUIET	(1<<18)			/* Do not notify uploader of downloads */
+#define DIR_NOSTAT	(1<<19)			/* Do not include transfers in system stats */
 
                                     /* Bit values for file_t.misc */
 #define FM_EXTDESC  (1<<0)          /* Extended description exists */

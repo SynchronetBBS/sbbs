@@ -186,8 +186,10 @@ bool sbbs_t::uploadfile(file_t *f)
 		} 
 	}
 
-	logon_ulb+=length;  /* Update 'this call' stats */
-	logon_uls++;
+	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
+		logon_ulb+=length;  /* Update 'this call' stats */
+		logon_uls++;
+	}
 	if(cfg.dir[f->dir]->misc&DIR_AONLY)  /* Forced anonymous */
 		f->misc|=FM_ANON;
 	f->cdt=length;

@@ -54,8 +54,10 @@ void sbbs_t::downloadfile(file_t* f)
 	getfiledat(&cfg,f); /* Get current data - right after download */
 	if((length=f->size)<0L)
 		length=0L;
-	logon_dlb+=length;  /* Update 'this call' stats */
-	logon_dls++;
+	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
+		logon_dlb+=length;  /* Update 'this call' stats */
+		logon_dls++;
+	}
 	bprintf(text[FileNBytesSent],f->name,ultoac(length,tmp));
 	sprintf(str,"%s downloaded %s from %s %s"
 		,useron.alias

@@ -1566,6 +1566,9 @@ static void send_thread(void* arg)
 				}
 			}
 			/* Need to update datedled in index */
+
+			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
+				download_stats(total);
 		}	
 
 		if(xfer.credits) {
@@ -1574,8 +1577,6 @@ static void send_thread(void* arg)
 			if(xfer.dir>=0 && !is_download_free(&scfg,xfer.dir,xfer.user))
 				subtract_cdt(&scfg, xfer.user, xfer.credits);
 		}
-		if(!xfer.tmpfile && !xfer.delfile)
-			download_stats(total);
 	}
 
 	fclose(fp);
@@ -1853,7 +1854,8 @@ static void receive_thread(void* arg)
 					xfer.user->cdt=adjustuserrec(&scfg,xfer.user->number,U_CDT,10
 						,(ulong)(f.cdt*(scfg.dir[f.dir]->up_pct/100.0))); 
 			}
-			upload_stats(total);
+			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
+				upload_stats(total);
 		}
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock,"226 Upload complete (%lu cps).",cps);
