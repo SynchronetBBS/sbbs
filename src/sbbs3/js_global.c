@@ -835,7 +835,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	scfg_t*		cfg;
 	uchar   	attr_stack[64]; /* Saved attributes (stack) */
 	int     	attr_sp=0;                /* Attribute stack pointer */
-	uchar		clear_screen=0;
+	ulong		clear_screen=0;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
 		return(JS_FALSE);
