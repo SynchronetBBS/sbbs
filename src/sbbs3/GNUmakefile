@@ -34,6 +34,8 @@ include $(SBBS_SRC)/Common.gmake
 include $(UIFC_SRC)/Common.gmake
 include $(SMBLIB_SRC)/Common.gmake
 
+UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS)
+
 ifeq ($(os),freebsd)
  BSD	=	1
 else
