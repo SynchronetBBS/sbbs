@@ -108,33 +108,24 @@ BYTE* wwiv_expand(BYTE* buf, ulong buflen, BYTE* outbuf, ulong& newlen
 /*****************************************************************************/
 // Escapes Telnet IAC (255) by doubling the IAC char
 /*****************************************************************************/
-BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen, bool& iac)
+BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 {
 	BYTE*   first_iac;
 	ulong	i,outlen;
 
     first_iac=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
 
-	if(first_iac==NULL && !iac) {	/* Nothing to expand */
+	if(first_iac==NULL) {	/* Nothing to expand */
 		newlen=inlen;
 		return(inbuf);
 	}
 
-	if(first_iac!=NULL) {
-		outlen=first_iac-inbuf;
-		memcpy(outbuf, inbuf, outlen);
-	} else
-		outlen=0;
+	outlen=first_iac-inbuf;
+	memcpy(outbuf, inbuf, outlen);
 
     for(i=outlen;i<inlen;i++) {
-		if(iac==true) {
-			outbuf[outlen++]=TELNET_IAC;
-//			lprintf("Telnet IAC escaped");
-		}
 		if(inbuf[i]==TELNET_IAC)
-			iac=true;
-		else
-			iac=false;
+			outbuf[outlen++]=TELNET_IAC;
 		outbuf[outlen++]=inbuf[i];
 	}
     newlen=outlen;
@@ -214,7 +205,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     BYTE 	telnet_buf[XTRN_IO_BUF_LEN*2];
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
     bool	wwiv_flag=false;
-	bool	telnet_flag=false;
     bool	native=false;			// DOS program by default
 	bool	nt=false;				// WinNT/2K? 
     bool	was_online=true;
@@ -620,7 +610,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 						if(rd>sizeof(wwiv_buf))
 							errorlog("WWIV_BUF OVERRUN");
 					} else {
-                		bp=telnet_expand(buf, rd, telnet_buf, rd, telnet_flag);
+                		bp=telnet_expand(buf, rd, telnet_buf, rd);
 						if(rd>sizeof(telnet_buf))
 							errorlog("TELNET_BUF OVERRUN");
 					}
@@ -683,7 +673,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 					if(mode&EX_WWIV)
                 		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
 					else
-                		bp=telnet_expand(buf, rd, telnet_buf, rd, telnet_flag);
+                		bp=telnet_expand(buf, rd, telnet_buf, rd);
 					RingBufWrite(&outbuf, bp, rd);
 					sem_post(&output_sem);
 				}
@@ -815,7 +805,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	pid_t	pid;
 	int		in_pipe[2];
 	int		out_pipe[2];
-	bool	telnet_flag=false;
 
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
@@ -943,7 +932,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				continue;
 			}
 			if(mode&EX_BIN)	/* telnet IAC expansion */
-           		bp=telnet_expand(buf, rd, output_buf, output_len, telnet_flag);
+           		bp=telnet_expand(buf, rd, output_buf, output_len);
 			else			/* LF to CRLF expansion */
 				bp=lf_expand(buf, rd, output_buf, output_len);
 			
