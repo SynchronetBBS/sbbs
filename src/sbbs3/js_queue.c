@@ -69,9 +69,11 @@ static void js_finalize_queue(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx, obj, NULL);
 }
 
-static void parse_queued_value(JSContext *cx, JSObject *parent
+static size_t js_decode_value(JSContext *cx, JSObject *parent
 							   ,queued_value_t* v, jsval* rval, BOOL peek)
 {
+	size_t			count=1;
+	size_t			decoded;
 	queued_value_t* pv;
 	queued_value_t	term;
 	jsval	prop_val;
@@ -82,8 +84,8 @@ static void parse_queued_value(JSContext *cx, JSObject *parent
 
 	*rval = JSVAL_VOID;
 
-	if(v==NULL)
-		return;
+	if(v==NULL || v->type==JSTYPE_VOID)
+		return(count);
 
 	switch(v->type) {
 		case JSTYPE_BOOLEAN:
@@ -99,26 +101,21 @@ static void parse_queued_value(JSContext *cx, JSObject *parent
 					free(v->value.s);
 			}
 			break;
+		case JSTYPE_ARRAY:
 		case JSTYPE_OBJECT:
 			obj = JS_DefineObject(cx, parent, v->name, NULL, NULL
 				,JSPROP_ENUMERATE);
-			for(pv=v+1;memcmp(pv,&term,sizeof(term));pv++) {
-				parse_queued_value(cx,obj,pv,&prop_val,peek);
-				JS_DefineProperty(cx, obj, pv->name, prop_val
-					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-			}
-			*rval = OBJECT_TO_JSVAL(obj);
-			break;
-		case JSTYPE_ARRAY:
-			obj = JS_DefineObject(cx, parent, v->name, NULL, NULL
-				,JSPROP_ENUMERATE);
-			for(pv=v+1;memcmp(pv,&term,sizeof(term));pv++) {
-				parse_queued_value(cx,obj,pv,&prop_val,peek);
-				JS_SetElement(cx,obj,index++,&prop_val);
+			for(pv=v+1,count++;memcmp(pv,&term,sizeof(term));pv+=decoded,count+=decoded) {
+				decoded=js_decode_value(cx,obj,pv,&prop_val,peek);
+				if(v->type==JSTYPE_ARRAY)
+					JS_SetElement(cx,obj,index++,&prop_val);
+				else
+					JS_DefineProperty(cx, obj, pv->name, prop_val,NULL,NULL,JSPROP_ENUMERATE);
 			}
 			*rval = OBJECT_TO_JSVAL(obj);
 			break;
 	}
+	return(count);
 }
 
 /* Queue Object Methods */
@@ -167,7 +164,7 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	} else
 		v=msgQueueRead(q, /* timeout */0);
 
-	parse_queued_value(cx, obj, v, rval, /* peek */FALSE);
+	js_decode_value(cx, obj, v, rval, /* peek */FALSE);
 
 	FREE_AND_NULL(v);
 
@@ -187,7 +184,7 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	v=msgQueuePeek(q, /* timeout */0);
 
-	parse_queued_value(cx, obj, v, rval, /* peek */TRUE);
+	js_decode_value(cx, obj, v, rval, /* peek */TRUE);
 
 	FREE_AND_NULL(v);
 
@@ -222,7 +219,7 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 			nv->value.b=JSVAL_TO_BOOLEAN(val);
 			break;
 		case JSVAL_OBJECT:
-			nv->type=JSTYPE_ARRAY;
+			nv->type=JSTYPE_OBJECT;
 			obj = JSVAL_TO_OBJECT(val);
 
 			if(JSVAL_IS_NULL(val))
@@ -249,12 +246,14 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 				if((v=js_encode_value(cx,prop_val,name,v,count))==NULL)
 					break;
 			}
-			v=js_encode_value(cx,JSVAL_NULL,NULL,v,count);	/* terminate object */
+			v=js_encode_value(cx,JSVAL_VOID,NULL,v,count);	/* terminate object */
 			break;
 		default:
 			if(JSVAL_IS_NUMBER(val)) {
 				nv->type = JSTYPE_NUMBER;
 				JS_ValueToNumber(cx,val,&nv->value.n);
+			} else if(JSVAL_IS_VOID(val)) {
+				nv->type = JSTYPE_VOID;
 			} else {
 				nv->type= JSTYPE_STRING;
 				nv->value.s = strdup(JS_GetStringBytes(JS_ValueToString(cx,val)));
