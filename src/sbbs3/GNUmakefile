@@ -22,7 +22,7 @@ CFLAGS 	=	-D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -O2
 else
 CC		=	gcc
 LD		=	ld
-CFLAGS	=	-Wall -O
+CFLAGS	=	-Wall
 endif
 SLASH	=	/
 OFILE	=	o
@@ -43,6 +43,8 @@ ifdef bcc
 LIBODIR	:=	bcc.linux.lib
 EXEODIR	:=	bcc.linux.exe
 else
+# -O doesn't work on FreeBSD (possible conflict with -g)
+CFLAGS	+=	-O
 LIBODIR	:=	gcc.linux.lib
 EXEODIR	:=	gcc.linux.exe
 endif
