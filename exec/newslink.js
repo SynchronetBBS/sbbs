@@ -17,7 +17,7 @@ const VERSION="1.00 Alpha"
 printf("Synchronet NewsLink session started (v%s)", VERSION);
 
 var tearline = format("--- Synchronet NewsLink v%s\r\n",VERSION);
-var tagline	=  format(" *  %s, %s telnet://%s\r\n"
+var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
 					  ,system.name,system.location,system.inetaddr);
 var antispam = format("remove-%s-this."
 					  ,random(50000).toString(36));
@@ -328,7 +328,7 @@ for(i in area) {
 			printf("!ARTICLE %lu failure: %s",ptr,rsp);
 			continue;
 		}
-		body="";
+		body=format("\1n\1b\1hFrom newsgroup\1n\1b: \1h\1c%s\1n\r\n\r\n",newsgroup);
 		header=true;
 		var hdr=new Object();
 		while(socket.is_connected) {
@@ -396,7 +396,6 @@ for(i in area) {
 		hdr.from_net_type=NET_INTERNET;
 //		hdr.from_net_addr=hdr.from;
 		body += tearline;
-		body += tagline;
 		if(msgbase.save_msg(hdr,body)) {
 			printf("Message %lu imported into %s",ptr,sub);
 			imported++;
