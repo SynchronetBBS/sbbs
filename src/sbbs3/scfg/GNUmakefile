@@ -25,10 +25,13 @@ XPDEV	=	../../xpdev/
 SBBS_SRC =	..
 NEED_UIFC	:=	1
 CFLAGS		=	-DSCFG
+SMBLIB_SRC	:=	../../smblib/
+NEED_SMBLIB	:=	1
 
 include $(XPDEV)/Common.gmake
 include $(UIFC_SRC)/Common.gmake
 include $(SBBS_SRC)/Common.gmake
+include $(SMBLIB_SRC)/Common.gmake
 
 ifeq ($(os),netbsd)
  CFLAGS		+=	$(PTHREAD_CFLAGS)
