@@ -201,9 +201,9 @@ int main(int argc, char **argv)
 	smbmsg_t msg;
 	FILE	*stream;
 
-	sscanf("$Revision$" + 11, "%s", revision);
+	sscanf("$Revision$", "%*s %s", revision);
 
-	fprintf(stderr,"\nSMB2SBL v2.%s-%s - Updates SBL via SMB - Copyright 2002 "
+	fprintf(stderr,"\nSMB2SBL v2.%s-%s - Updates SBL via SMB - Copyright 2003 "
 		"Rob Swindell\n\n",revision,PLATFORM_DESC);
 
 #if 0
