@@ -2,10 +2,10 @@
 <html>
 <head>
 <title>%%title%%</title>
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <link rel="stylesheet" href="/synchronet.css" type="text/css">
 </head>
-<body class="object">
-<PRE>@@body@@</PRE>
+<body class="msg">
+<pre>@@body@@</pre>
 </body>
 </html>

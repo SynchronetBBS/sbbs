@@ -1,97 +1,97 @@
-<div align="center"><p><a href="http://^^JS:system.inet_addr^^/">Home</a> : <a href="/members/">Members</a> : <a href="/members/info.ssjs">Information</a> : <b>System Info</b></p></div>
-<div align="center">
-<table>
+<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/">Members</a> : <a class="navigation" href="/members/info.ssjs">Information</a> : System Info</p>
+<table class="sysinfo" cellpadding="2" cellspacing="2">
   <tr>
-	<td>
+	<td class="sysinfo">
       System:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
       %%JS:system.name%%
-	</td>
+	</td >
   </tr>
   <tr>
-	<td>
+	<td class="sysinfo">
       QWK ID:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
       %%JS:system.qwk_id%%
-	</td>
+	</td >
   </tr>
 <<REPEAT fidoaddrs>>
   <tr>
-	<td>
+	<td class="sysinfo">
       FidoNet Address:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
       %%fidoaddrs:address%%
-	</td>
+	</td >
   </tr>
 <<END REPEAT fidoaddrs>>
   <tr>
-	<td>
+	<td class="sysinfo">
       Location:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
       %%JS:system.location%%
-	</td>
+	</td >
   </tr>
   <tr>
-	<td>
+	<td class="sysinfo">
       Operator:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
       %%JS:system.operator%%
-	</td>
+	</td >
   </tr>
   <tr>
-	<td>
+	<td class="sysinfo">
       Nodes:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
 	  %%JS:system.nodes%%
-	</td>
+	</td >
   </tr>
   <tr>
-	<td>
+	<td class="sysinfo">
       Node Phone:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
 	  Telnet and RLogin Only
-	</td>
+	</td >
   </tr>
   <tr>
-	<td>
+	<td class="sysinfo">
       Total Logons:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
 	  %%JS:system.stats.total_logons%%
-	</td>
+	</td >
   </tr>
   <tr>
-	<td>
+	<td class="sysinfo">
       Logons Today:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
 	  %%JS:system.stats.logons_today%%
-	</td>
+	</td >
   </tr>
   <tr>
-	<td>
+	<td class="sysinfo">
       Total Time:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
 	  %%JS:system.stats.total_timeon%%
-	</td>
+	</td >
   </tr>
   <tr>
-	<td>
+	<td class="sysinfo">
       Time Today:
-	</td>
-	<td>
+	</td >
+	<td class="sysinfo">
 	  %%JS:system.stats.timeon_today%%
-	</td>
+	</td >
   </tr>
 </table>
+<div align="center">
 <p>Synchronet BBS for %%JS:system.platform%%
 Version %%JS:system.full_version%%</p>
 <p>Revision %%JS:system.revision%%
@@ -104,14 +104,14 @@ Version %%JS:system.full_version%%</p>
 <p>%%JS:system.socket_lib%%</P>
 <p>%%JS:system.os_version%%</P>
 <table>
-<tr><td>
-<pre class="leftalign">@@sysinfo@@</pre>
-</td></tr>
-<tr><td>
-&nbsp;
-</td></tr>
-<tr><td>
-<pre class="leftalign">@@logon@@</pre>
-</td></tr>
+<tr>
+    <td><pre class="leftalign">@@sysinfo@@</pre></td>
+</tr>
+<tr>
+    <td>&nbsp;</td>
+</tr>
+<tr>
+    <td><pre class="leftalign">@@logon@@</pre></td>
+</tr>
 </table>
 </div>

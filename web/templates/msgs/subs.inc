@@ -1,20 +1,15 @@
-<div align="center"><p><a href="http://^^JS:system.inet_addr^^/">Home</a> :  <a href="/members/">Members</a> : <a href="index.ssjs">Groups</a> : <b>%%group:description%%</b></p></div>
-<table class="centeralign">
+<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> :  <a class="navigation" href="/members/">Members</a> : <a class="navigation" href="index.ssjs">Groups</a> : <b>%%group:description%%</b></p>
+<table class="sublist" cellpadding="2" cellspacing="2">
 <tr>
-<th class="sublist">Sub</th><th class="sublist">Info</th><th class="grouplist">Description</th>
+    <th class="sublist">Sub</th>
+    <th class="sublist">Info</th>
+    <th class="sublist">Description</th>
 </tr>
 <<REPEAT subs>>
 <tr>
-	<td>
-		<a href="msgs.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^subs:code^^">%%subs:name%%</a>
-		
-	</td>
-    <td>
-    <a href="subinfo.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^subs:code^^">[?]</a>
-    </td>
-	<td>
-		%%subs:description%%
-	</td>
+	<td class="sublist"><a class="msglist" href="msgs.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^subs:code^^">%%subs:name%%</a></td>
+    <td class="sublist"><a class="msglist" href="subinfo.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^subs:code^^">[?]</a></td>
+	<td class="sublist">%%subs:description%%</td>
 </tr>
 <<END REPEAT subs>>
 </table>
