@@ -2335,6 +2335,10 @@ static jsMethodSpec js_global_functions[] = {
 	{0}
 };
 
+#if defined(EDEADLK) && !defined(EDEADLOCK)
+	#define EDEADLOCK EDEADLK
+#endif
+
 static jsConstIntSpec js_global_const_ints[] = {
 	/* Numeric error constants from errno.h (platform-dependant) */
 	{"EPERM"		,EPERM			},
