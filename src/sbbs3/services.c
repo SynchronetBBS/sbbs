@@ -247,6 +247,54 @@ static time_t checktime(void)
 }
 
 /* Global JavaScript Methods */
+
+static JSBool
+js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uintN		i;
+	char*		cp;
+	JSString*	str;
+	service_client_t* client;
+
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	for(i=0; i<argc; i++) {
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			continue;
+		if((cp=JS_GetStringBytes(str))==NULL)
+			continue;
+		sendsocket(client->socket,cp,strlen(cp));
+	}
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uintN		i;
+	char*		cp;
+	JSString*	str;
+	service_client_t* client;
+
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	for(i=0; i<argc; i++) {
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			continue;
+		if((cp=JS_GetStringBytes(str))==NULL)
+			continue;
+		sendsocket(client->socket,cp,strlen(cp));
+	}
+
+	cp="\r\n";
+	sendsocket(client->socket,cp,2);
+
+	return(JS_TRUE);
+}
+
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -413,6 +461,8 @@ js_logout(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSFunctionSpec js_global_functions[] = {
+	{"write",			js_write,			1},		/* write to client socket */
+	{"writeln",			js_writeln,			1},		/* write line to client socket */
 	{"log",				js_log,				1},		/* Log a string */
  	{"login",			js_login,			2},		/* Login specified username and password */
 	{"logout",			js_logout,			0},		/* Logout user */
