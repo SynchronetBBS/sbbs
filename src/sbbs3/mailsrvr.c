@@ -289,15 +289,19 @@ int sockprintf(SOCKET sock, char *fmt, ...)
 	}
 
 	/* Check socket for writability (using select) */
-	tv.tv_sec=60;
+	tv.tv_sec=300;
 	tv.tv_usec=0;
 
 	FD_ZERO(&socket_set);
 	FD_SET(sock,&socket_set);
 
 	if((result=select(sock+1,NULL,&socket_set,NULL,&tv))<1) {
-		lprintf("%04d !ERROR %d (%d) selecting socket for send"
-			,sock, result, ERROR_VALUE, sock);
+		if(result==0)
+			lprintf("%04d !TIMEOUT selecting socket for send"
+				,sock);
+		else
+			lprintf("%04d !ERROR %d selecting socket for send"
+				,sock, ERROR_VALUE);
 		return(0);
 	}
 
@@ -446,41 +450,54 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromad
 	char*		tp;
 	char*		boundary=NULL;
 	int			i;
+	int			s;
 	ulong		lines;
 
 	/* HEADERS */
-	sockprintf(socket,"Date: %s",msgdate(msg->hdr.when_written,date));
+	if(!sockprintf(socket,"Date: %s",msgdate(msg->hdr.when_written,date)))
+		return(0);
 	if(fromaddr[0]=='<')
-		sockprintf(socket,"From: \"%s\" %s",msg->from,fromaddr);
+		s=sockprintf(socket,"From: \"%s\" %s",msg->from,fromaddr);
 	else
-		sockprintf(socket,"From: \"%s\" <%s>",msg->from,fromaddr);
-	sockprintf(socket,"Subject: %s",msg->subj);
+		s=sockprintf(socket,"From: \"%s\" <%s>",msg->from,fromaddr);
+	if(!s)
+		return(0);
+	if(!sockprintf(socket,"Subject: %s",msg->subj))
+		return(0);
 	if(strchr(msg->to,'@')!=NULL || msg->to_net.addr==NULL)
-		sockprintf(socket,"To: %s",msg->to);	/* Avoid double-@ */
+		s=sockprintf(socket,"To: %s",msg->to);	/* Avoid double-@ */
 	else if(msg->to_net.type==NET_INTERNET || msg->to_net.type==NET_QWK) {
 		if(strchr((char*)msg->to_net.addr,'<')!=NULL)
-			sockprintf(socket,"To: %s",(char*)msg->to_net.addr);
+			s=sockprintf(socket,"To: %s",(char*)msg->to_net.addr);
 		else
-			sockprintf(socket,"To: \"%s\" <%s>",msg->to,(char*)msg->to_net.addr);
+			s=sockprintf(socket,"To: \"%s\" <%s>",msg->to,(char*)msg->to_net.addr);
 	} else {
 		usermailaddr(&scfg,toaddr,msg->to);
-		sockprintf(socket,"To: \"%s\" <%s>",msg->to,toaddr);
+		s=sockprintf(socket,"To: \"%s\" <%s>",msg->to,toaddr);
 	}
+	if(!s)
+		return(0);
 	if(msg->replyto_net.type==NET_INTERNET)
-		sockprintf(socket,"Reply-To: %s",msg->replyto_net.addr);
+		s=sockprintf(socket,"Reply-To: %s",msg->replyto_net.addr);
 	else
-		sockprintf(socket,"Reply-To: %s",fromaddr);
+		s=sockprintf(socket,"Reply-To: %s",fromaddr);
+	if(!s)
+		return(0);
 	if(msg->id!=NULL)
-		sockprintf(socket,"Message-ID: %s",msg->id);
+		s=sockprintf(socket,"Message-ID: %s",msg->id);
 	else
-		sockprintf(socket,"Message-ID: <%08lX.%lu@%s>"
+		s=sockprintf(socket,"Message-ID: <%08lX.%lu@%s>"
 			,msg->hdr.when_written.time,msg->idx.number,scfg.sys_inetaddr);
+	if(!s)
+		return(0);
 	if(msg->reply_id!=NULL)
-		sockprintf(socket,"In-Reply-To: %s",msg->reply_id);
+		if(!sockprintf(socket,"In-Reply-To: %s",msg->reply_id))
+			return(0);
     for(i=0;i<msg->total_hfields;i++) { 
-		if(msg->hfield[i].type==RFC822HEADER)
-			sockprintf(socket,"%s",(char*)msg->hfield_dat[i]);
-        else if(msg->hdr.auxattr&MSG_FILEATTACH && msg->hfield[i].type==FILEATTACH) 
+		if(msg->hfield[i].type==RFC822HEADER) { 
+			if(!sockprintf(socket,"%s",(char*)msg->hfield_dat[i]))
+				return(0);
+        } else if(msg->hdr.auxattr&MSG_FILEATTACH && msg->hfield[i].type==FILEATTACH) 
             strncpy(filepath,(char*)msg->hfield_dat[i],sizeof(filepath)-1);
     }
 	if(msg->hdr.auxattr&MSG_FILEATTACH) {
@@ -499,7 +516,8 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromad
         sockprintf(socket,"");
         mimetextpartheader(socket,boundary);
 	}
-	sockprintf(socket,"");	/* Header Terminator */
+	if(!sockprintf(socket,""))	/* Header Terminator */
+		return(0);
 	/* MESSAGE BODY */
 	lines=0;
 	p=msgtxt;
@@ -573,6 +591,7 @@ static void pop3_thread(void* arg)
 	BOOL		activity=FALSE;
 	ulong		l;
 	ulong		lines;
+	ulong		lines_sent;
 	ulong		msgs,bytes,msgnum,msgbytes;
 	SOCKET		socket;
 	HOSTENT*	host;
@@ -977,21 +996,26 @@ static void pop3_thread(void* arg)
 					usermailaddr(&scfg,fromaddr,msg.from);	/* unresolved exception here Nov-06-2000 */
 				lprintf("%04d POP3 sending message text (%u bytes)"
 					,socket,strlen(msgtxt));
-				lines=sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
+				lines_sent=sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
-				lprintf("%04d POP3 message transfer complete (%lu lines)",socket,lines);
+				if(lines_sent!=lines)
+					lprintf("%04d !POP3 ERROR sending message text (sent %lu of %lu lines)"
+						,lines_sent,lines);
+				else {
+					lprintf("%04d POP3 message transfer complete (%lu lines)",socket,lines);
 
-				msg.hdr.attr|=MSG_READ;
-				msg.idx.attr=msg.hdr.attr;
-				msg.hdr.netattr|=MSG_SENT;
+					msg.hdr.attr|=MSG_READ;
+					msg.idx.attr=msg.hdr.attr;
+					msg.hdr.netattr|=MSG_SENT;
 
-				if((i=smb_lockmsghdr(&smb,&msg))!=0) 
-					lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
-						,socket, i, smb.last_error, msg.hdr.number);
-				if((i=smb_putmsg(&smb,&msg))!=0)
-					lprintf("%04d !POP3 ERROR %d (%s) marking message #%lu as read"
-						,socket, i, smb.last_error, msg.hdr.number);
-				smb_unlockmsghdr(&smb,&msg);
+					if((i=smb_lockmsghdr(&smb,&msg))!=0) 
+						lprintf("%04d !POP3 ERROR %d (%s) locking message header #%lu"
+							,socket, i, smb.last_error, msg.hdr.number);
+					if((i=smb_putmsg(&smb,&msg))!=0)
+						lprintf("%04d !POP3 ERROR %d (%s) marking message #%lu as read"
+							,socket, i, smb.last_error, msg.hdr.number);
+					smb_unlockmsghdr(&smb,&msg);
+				}
 				smb_freemsgmem(&msg);
 				smb_freemsgtxt(msgtxt);
 				continue;
@@ -1754,17 +1778,22 @@ static void smtp_thread(void* arg)
 			if(!strnicmp(buf, "TO:",3)) {
 				p=buf+3;
 				while(*p && *p<=' ') p++;
+				truncsp(p);
+				smb_hfield(&msg, RFC822TO, (ushort)strlen(p), p);
+
 				if(*p=='<')  {
 					p++;
 					truncstr(p,">");
 					SAFECOPY(rcpt_name,p);
 				}
-				smb_hfield(&msg, RFC822TO, (ushort)strlen(p), p);
 				continue;
 			}
 			if(!strnicmp(buf, "REPLY-TO:",9)) {
 				p=buf+9;
 				while(*p && *p<=' ') p++;
+				truncsp(p);
+				smb_hfield(&msg, RFC822REPLYTO, (ushort)strlen(p), p);
+
 				if(*p=='<')  {
 					p++;
 					truncstr(p,">");
@@ -1777,6 +1806,11 @@ static void smtp_thread(void* arg)
 			if(!strnicmp(buf, "FROM:", 5)) {
 				if(!chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr))
 					break;
+
+				p=buf+5;
+				while(*p && *p<=' ') p++;
+				truncsp(p);
+				smb_hfield(&msg, RFC822FROM, (ushort)strlen(p), p);
 
 				/* Get the sender's address */
 				if((p=strchr(buf+5,'<'))!=NULL)
@@ -2329,8 +2363,9 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		delfattach(&scfg,msg);
 	smb_unlockmsghdr(smb,msg);
 
-	if(!msg->idx.from && !msg->from_net.type) {
-		lprintf("0000 !Deleted undeliverable local message from %s", msg->from);
+	if(msg->from_agent==AGENT_PROCESS	/* don't bounce 'bounce messages' */
+		|| (msg->idx.from==0 && msg->from_net.type==NET_NONE)) {
+		lprintf("0000 !Deleted undeliverable message from %s", msg->from);
 		return(TRUE);
 	}
 	
@@ -2348,7 +2383,6 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		sprintf(str,"%u",newmsg.idx.to);
 		smb_hfield(&newmsg, RECIPIENTEXT, (ushort)strlen(str), str);
 	}
-	smb_hfield(&newmsg, RECIPIENTAGENT, sizeof(ushort), &newmsg.from_agent);
 	smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(newmsg.from_net.type), &newmsg.from_net.type);
 	if(newmsg.from_net.type && newmsg.from_net.addr!=NULL) 
 		smb_hfield(&newmsg, RECIPIENTNETADDR, (ushort)strlen(newmsg.from_net.addr)
@@ -3049,7 +3083,7 @@ void DLLCALL mail_server(void* arg)
 					high_socket_set=pop3_socket+1;
 			}
 
-			tv.tv_sec=5;
+			tv.tv_sec=2;
 			tv.tv_usec=0;
 
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
