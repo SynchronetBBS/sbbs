@@ -165,9 +165,12 @@ for(i in area) {
 			hdr.from_net_type = NET_INTERNET;
 
 			/* Copy to message base */
-			mailbase.save_msg(hdr,body);
-			printf("Exported message %lu to list server: %s\r\n",ptr,listserv);
-			exported++;
+			if(mailbase.save_msg(hdr,body)) {
+				printf("Exported message %lu to list server: %s\r\n",ptr,listserv);
+				exported++;
+			} else
+				printf("ERROR %s exporting message %lu to list server: %s\r\n"
+					,msgbase.error, ptr, listserv);
 		}
 	}
 	if(ptr > msgbase.last_msg)
