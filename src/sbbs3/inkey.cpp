@@ -78,8 +78,12 @@ char sbbs_t::inkey(long mode)
 		sys_status|=SS_ABORT;
 		if(mode&K_SPIN) /* back space once if on spinning cursor */
 			bputs("\b \b");
-		return(0); }
+		return(0); 
+	}
 	if(ch==CTRL_Z && action!=NODE_PCHT) {	 /* Ctrl-Z toggle raw input mode */
+		if(hotkey_inside>1)	/* only allow so much recursion */
+			return(0);
+		hotkey_inside++;
 		if(mode&K_SPIN)
 			bputs("\b ");
 		SAVELINE;
@@ -95,9 +99,11 @@ char sbbs_t::inkey(long mode)
 		CRLF;
 		RESTORELINE;
 		lncntr=0;
+		hotkey_inside--;
 		if(action!=NODE_MAIN && action!=NODE_XFER)
-			return(26);
-		return(0); }
+			return(CTRL_Z);
+		return(0); 
+	}
 
 	if(mode&K_UPPER)
 		ch=toupper(ch);
@@ -106,7 +112,7 @@ char sbbs_t::inkey(long mode)
 		return(ch);
 
 	if(ch<SP) { 				/* Control chars */
-		if(ch==LF)				/* ignore LF's in not in raw mode */
+		if(ch==LF)				/* ignore LF's if not in raw mode */
 			return(0);
 		for(i=0;i<cfg.total_hotkeys;i++)
 			if(cfg.hotkey[i]->key==ch)
@@ -114,6 +120,7 @@ char sbbs_t::inkey(long mode)
 		if(i<cfg.total_hotkeys) {
 			if(hotkey_inside>1)	/* only allow so much recursion */
 				return(0);
+			hotkey_inside++;
 			if(mode&K_SPIN)
 				bputs("\b ");
 			if(!(sys_status&SS_SPLITP)) {
@@ -121,22 +128,25 @@ char sbbs_t::inkey(long mode)
 				attr(LIGHTGRAY);
 				CRLF; 
 			}
-			hotkey_inside++;
 			external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
-			hotkey_inside--;
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
 				RESTORELINE; 
 			}
 			lncntr=0;
+			hotkey_inside--;
 			return(0);
 		}
 		if(ch==CTRL_O) {	/* Ctrl-O toggles pause temporarily */
 			useron.misc^=UPAUSE;
-			return(0); }
+			return(0); 
+		}
 		if(ch==CTRL_P) {	/* Ctrl-P Private node-node comm */
 			if(!(sys_status&SS_USERON))
 				return(0);			 /* keep from being recursive */
+			if(hotkey_inside>1)	/* only allow so much recursion */
+				return(0);
+			hotkey_inside++;
 			if(mode&K_SPIN)
 				bputs("\b ");
 			if(!(sys_status&SS_SPLITP)) {
@@ -152,11 +162,17 @@ char sbbs_t::inkey(long mode)
 				RESTORELINE; 
 			}
 			lncntr=0;
-			return(0); }
+			hotkey_inside--;
+			return(0); 
+		}
 
 		if(ch==CTRL_U) { /* Ctrl-U Users online */
+			/* needs recursion checking */
 			if(!(sys_status&SS_USERON))
 				return(0);
+			if(hotkey_inside>1)	/* only allow so much recursion */
+				return(0);
+			hotkey_inside++;
 			if(mode&K_SPIN)
 				bputs("\b ");
 			if(!(sys_status&SS_SPLITP)) {
@@ -171,10 +187,15 @@ char sbbs_t::inkey(long mode)
 				RESTORELINE; 
 			}
 			lncntr=0;
-			return(0); }
+			hotkey_inside--;
+			return(0); 
+		}
 		if(ch==CTRL_T && !(sys_status&SS_SPLITP)) { /* Ctrl-T Time information */
 			if(!(sys_status&SS_USERON))
 				return(0);
+			if(hotkey_inside>1)	/* only allow so much recursion */
+				return(0);
+			hotkey_inside++;
 			if(mode&K_SPIN)
 				bputs("\b ");
 			SAVELINE;
@@ -189,10 +210,15 @@ char sbbs_t::inkey(long mode)
 			SYNC;
 			RESTORELINE;
 			lncntr=0;
-			return(0); }
+			hotkey_inside--;
+			return(0); 
+		}
 		if(ch==CTRL_K && !(sys_status&SS_SPLITP)) {  /*  Ctrl-k Control key menu */
 			if(!(sys_status&SS_USERON))
 				return(0);
+			if(hotkey_inside>1)	/* only allow so much recursion */
+				return(0);
+			hotkey_inside++;
 			if(mode&K_SPIN)
 				bputs("\b ");
 			SAVELINE;
@@ -202,7 +228,9 @@ char sbbs_t::inkey(long mode)
 			ASYNC;
 			RESTORELINE;
 			lncntr=0;
-			return(0); }
+			hotkey_inside--;
+			return(0); 
+		}
 
 		if(ch==ESC && console&CON_R_INPUT) {
 			if(mode&K_GETSTR)
@@ -217,13 +245,15 @@ char sbbs_t::inkey(long mode)
 			if(ch!='[') {
 				ungetkey(ESC);
 				ungetkey(ch);
-				return(0); }
+				return(0); 
+			}
 			i=j=0;
 			autoterm|=ANSI; 			/* <ESC>[x means they have ANSI */
 			if(!(useron.misc&ANSI) && useron.misc&AUTOTERM && sys_status&SS_USERON
 				&& useron.number) {
 				useron.misc|=ANSI;
-				putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,str,16)); }
+				putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,str,16)); 
+			}
 			while(i<10 && j<30) {		/* up to 3 seconds */
 				if(rioctl(RXBC)) {
 					ch=incom();
@@ -234,40 +264,46 @@ char sbbs_t::inkey(long mode)
 							case 'B':
 								return(LF); 	/* ctrl-j (dn arrow) */
 							case 'C':
-								return(0x6);	/* ctrl-f (rt arrow) */
+								return(CTRL_F);	/* ctrl-f (rt arrow) */
 							case 'D':
 								return(0x1d);	/* ctrl-] (lf arrow) */
 							case 'H':
-								return(0x2);	/* ctrl-b (beg line) */
+								return(CTRL_B);	/* ctrl-b (beg line) */
 							case 'K':
-								return(0x5);	/* ctrl-e (end line) */
-							}
+								return(CTRL_E);	/* ctrl-e (end line) */
+						}
 						ungetkey(ESC);
 						ungetkey('[');
 						for(j=0;j<i;j++)
 							ungetkey(str[j]);
 						ungetkey(ch);
-						return(0); }
+						return(0); 
+					}
 					if(ch=='R') {       /* cursor position report */
 						if(i && !(useron.rows)) {	/* auto-detect rows */
 							str[i]=0;
 							rows=atoi(str);
 							lprintf("Node %d ANSI cursor position report: %u rows"
 								,cfg.node_num, rows);
-							if(rows<10 || rows>99) rows=24; }
-						return(0); }
-					str[i++]=ch; }
-				else {
+							if(rows<10 || rows>99) rows=24; 
+						}
+						return(0); 
+					}
+					str[i++]=ch; 
+				} else {
 					mswait(100);
-					j++; } }
+					j++; 
+				} 
+			}
 
 			ungetkey(ESC);		/* should only get here if time-out */
 			ungetkey('[');
 			for(j=0;j<i;j++)
 				ungetkey(str[j]);
-			return(0); }
+			return(0); 
+		}
 
-			}	/* end of control chars */
+	}	/* end of control chars */
 
 	return(ch);
 }
