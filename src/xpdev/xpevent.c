@@ -41,8 +41,7 @@
 #define _EVENT_CHECK_VALIDITY(event)		\
 	if (event==NULL || (event->magic != EVENT_MAGIC)) {	\
 		errno = EINVAL;			\
-		retval = FALSE;			\
-		goto RETURN;			\
+		return(FALSE);			\
 	}
 
 xpevent_t
@@ -53,7 +52,7 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, void *name)
 	event = (xpevent_t)malloc(sizeof(struct xpevent));
 	if (event == NULL) {
 		errno = ENOSPC;
-		goto RETURN;
+		return(NULL);
 	}
 
 	/*
@@ -61,17 +60,15 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, void *name)
 	 */
 	if (pthread_mutex_init(&event->lock, NULL) != 0) {
 		free(event);
-		event=NULL;
 		errno = ENOSPC;
-		goto RETURN;
+		return(NULL);
 	}
 
 	if (pthread_cond_init(&event->gtzero, NULL) != 0) {
 		pthread_mutex_destroy(&event->lock);
 		free(event);
-		event=NULL;
 		errno = ENOSPC;
-		goto RETURN;
+		return(NULL);
 	}
 
 	event->mreset=bManualReset;
@@ -79,17 +76,13 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, void *name)
 	event->nwaiters = 0;
 	event->magic=EVENT_MAGIC;
 
-  RETURN:
-	return event;
+	return(event);
 }
 
 BOOL
 SetEvent(xpevent_t event)
 {
-	if (event==NULL || (event->magic != EVENT_MAGIC)) {
-		errno = EINVAL;
-		return(FALSE);
-	}
+	_EVENT_CHECK_VALIDITY(event)
 
 	pthread_mutex_lock(&event->lock);
 
@@ -112,12 +105,7 @@ SetEvent(xpevent_t event)
 BOOL
 ResetEvent(xpevent_t event)
 {
-	BOOL	retval=FALSE;
-
-	if (event==NULL || (event->magic != EVENT_MAGIC)) {
-		errno = EINVAL;
-		return(FALSE);
-	}
+	_EVENT_CHECK_VALIDITY(event)
 
 	pthread_mutex_lock(&event->lock);
 
@@ -131,10 +119,7 @@ ResetEvent(xpevent_t event)
 BOOL
 CloseEvent(xpevent_t event)
 {
-	if (event==NULL || (event->magic != EVENT_MAGIC)) {
-		errno = EINVAL;
-		return(FALSE);
-	}
+	_EVENT_CHECK_VALIDITY(event)
 
 	/* Make sure there are no waiters. */
 	pthread_mutex_lock(&event->lock);
@@ -164,8 +149,7 @@ WaitEvent(xpevent_t event, DWORD ms)
 
 	if (event==NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
-		retval = WAIT_FAILED;
-		goto RETURN;
+		return(WAIT_FAILED);
 	}
 
 	if(ms && ms!=INFINITE) {
@@ -208,7 +192,7 @@ WaitEvent(xpevent_t event, DWORD ms)
 
 	if(retval==0) {
 		retval=WAIT_OBJECT_0;
-		if(!(&event->mreset))
+		if(!event->mreset)
 			event->value=FALSE;
 	}
 
