@@ -1006,7 +1006,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	}
 #else
 	for(i=0;TRUE;) {
-		if(revc(session->socket, &ch, 1, 0)!=1)  {
+		if(recv(session->socket, &ch, 1, 0)!=1)  {
 			session->req.keep_alive=FALSE;
 			close_request(session);
 			session->socket=INVALID_SOCKET;
