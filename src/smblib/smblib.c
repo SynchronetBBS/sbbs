@@ -845,7 +845,7 @@ int SMBCALL smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 /* Adds a header field to the 'msg' structure (in memory only)              */
 /****************************************************************************/
-int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, ushort length, void* data)
+int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 {
 	void* vp,**vpp;
 	int i;
