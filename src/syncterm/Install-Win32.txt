@@ -1,0 +1,41 @@
+Internet Explorer for Windows handles telnet preferences in a very different way
+from other Internet browsers. Internet Explorer doesn't let you set preferences
+from within the program. Instead, it works with the Windows operating system.
+
+Note: The process of changing Windows telnet preferences is extremely complex
+and should be attempted only by experienced users. If you do not set your
+preferences correctly, you can disable Windows' inherent telnet ability and
+possibly damage your operating system.
+
+Note: You should know the correct path to get to your operating system's telnet
+preferences before you attempt to change telnet settings; otherwise, your telnet
+preferences won't work correctly.
+
+
+From the Windows desktop, double-click My Computer. 
+
+
+Since Internet Explorer changes the general Windows interface, this step varies
+according to which version of Internet Explorer you have installed: 
+
+
+If you use Internet Explorer 5.5, from the Tools menu, select
+Internet Options. 
+If you use Internet Explorer 5.0, from the View menu, choose Options or Folder
+Options... . (For Internet Explorer 5.0 in Windows 2000, choose Tools, then
+Folder Options... .) 
+
+
+In the window that appears, choose the File Types tab. 
+
+
+Scroll down the list of registered file types and select URL:Telnet Protocol. 
+
+
+Click Open, and then Edit... . 
+Note: Depending on the version of Internet Explorer that you have, you may need to click Edit... and then Edit... again. 
+
+The Edit window will allow you to type the path to the telnet program you wish to use. When you are finished, click OK to close the windows. 
+
+Now, do the same thing for URL:RLogin Protocol.
+
