@@ -1192,7 +1192,7 @@ static int ugetstr(char *outstr, int max, long mode)
 
 	curs_set(1);
 	y=wherey();
-	if(mode&K_EDIT) {
+	if(mode&K_EDIT && outstr[0]) {
 	/***
 		truncsp(outstr);
 	***/
@@ -1202,6 +1202,7 @@ static int ugetstr(char *outstr, int max, long mode)
 		textattr(lclr|(bclr<<4));
 		strcpy(str,outstr);
 		i=j=strlen(str);
+#if 0
 		while(inkey(1)==0) {
 #ifndef __FLAT__
 			if(api->mode&UIFC_MOUSE) {
@@ -1210,17 +1211,12 @@ static int ugetstr(char *outstr, int max, long mode)
 #endif
 			mswait(1);
 		}
+#endif
 		f=inkey(0);
 		gotoxy(wherex()-i,y);
-		if(f != KEY_DC && f != KEY_BACKSPACE)
+		if(f >= 0xff)
 		{
 			cputs(outstr);
-			if(isprint(f))
-			{
-				putch(f);
-				i++;
-				j++;
-			}
 		}
 		else
 		{
@@ -1242,9 +1238,13 @@ static int ugetstr(char *outstr, int max, long mode)
 			/* ToDo More Mouse Stuff */
 		}
 #endif
-		if(inkey(1))
+		if(f || inkey(1))
 		{
-			ch=inkey(0);
+			if(f)
+				ch=f;
+			else
+				ch=inkey(0);
+			f=0;
 			switch(ch)
 			{
 				case KEY_F(1):	/* F1 Help */
