@@ -222,10 +222,12 @@ for(var l in list_array) {
 	log(LOG_DEBUG,format("ListServer: %s pointer read: %u"
 		,list.name, ptr));
 
-	if(ptr < msgbase.first_msg)
-		ptr = msgbase.first_msg;
+	if(isNan(ptr))
+		ptr = msgbase.last_msg+1;		// export none
+	else if(ptr < msgbase.first_msg)
+		ptr = msgbase.first_msg;		// export all
 	else
-		ptr++;
+		ptr++;							// export next
 
 	for(;ptr<=last_msg && !js.terminated; ptr++) {
 		hdr = msgbase.get_msg_header(
@@ -503,7 +505,7 @@ function process_contribution(header, body, list)
 	// Convert from RFC822 to Synchronet-compatible
 	header = convert_msg_header(header);
 
-	if(!user.compare_ars(msgbase.cfg.moderated_ars))
+	if(msg_area.sub[list.sub.toLowerCase()].is_moderated)
 		header.attr |= MSG_MODERATED;
 
 	if(!msgbase.save_msg(header, body.join('\r\n'))) {
