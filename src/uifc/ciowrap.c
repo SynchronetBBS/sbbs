@@ -10,6 +10,7 @@ void initciowrap(int mode)
 {
 #ifndef NO_X
 	if(!console_init()) {
+		cio_api.mode=X_MODE;
 		cio_api.puttext=x_puttext;
 		cio_api.gettext=x_gettext;
 		cio_api.textattr=x_textattr;
@@ -34,6 +35,7 @@ void initciowrap(int mode)
 	fprintf(stderr,"X init failed\n");
 #endif
 	curs_initciowrap(mode);
+	cio_api.mode=CURSES_MODE;
 	cio_api.puttext=curs_puttext;
 	cio_api.gettext=curs_gettext;
 	cio_api.textattr=curs_textattr;

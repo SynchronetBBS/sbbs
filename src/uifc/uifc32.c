@@ -355,13 +355,13 @@ int uifcini32(uifcapi_t* uifcapi)
 #ifdef __unix__
 	initciowrap(api->mode);
 	#ifdef NCURSES_VERSION_MAJOR
-		ESCDELAY=api->esc_delay;
-#ifdef DISABLED
-		if(mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL)==BUTTON1_CLICKED|BUTTON3_CLICKED)
-			api->mode|=UIFC_MOUSE;
-		else
-			mousemask(0,NULL);
-#endif
+		if(cio_api.mode==CURSES_MODE) {
+			ESCDELAY=api->esc_delay;
+			if(mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL)==BUTTON1_CLICKED|BUTTON3_CLICKED)
+				api->mode|=UIFC_MOUSE;
+			else
+				mousemask(0,NULL);
+		}
 	#endif
 	
 #else
@@ -486,9 +486,8 @@ static void hidemouse(void)
 			mouse_set(0);
 		#endif
 		#ifdef NCURSES_VERSION_MAJOR
-#ifdef DISABLED
-			mousemask(0,NULL);
-#endif
+			if(cio_api.mode==CURSES_MODE)
+				mousemask(0,NULL);
 		#endif
 	}
 }
@@ -500,9 +499,8 @@ static void showmouse(void)
 			mouse_set(BUTTON1_CLICKED|BUTTON3_CLICKED);
 		#endif
 		#ifdef NCURSES_VERSION_MAJOR
-#ifdef DISABLED
-			mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL);
-#endif
+			if(cio_api.mode==CURSES_MODE)
+				mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL);
 		#endif
 	}
 }
@@ -573,16 +571,16 @@ void uifcbail(void)
 	hidemouse();
 	clrscr();
 #ifdef __unix__
-#ifdef DISABLED
-	nl();
-	nocbreak();
-	noraw();
-	refresh();
-	endwin();
-#endif
+	if(cio_api.mode==CURSES_MODE) {
+		nl();
+		nocbreak();
+		noraw();
+		refresh();
+		endwin();
 #ifdef XCURSES
-	XCursesExit();
+		XCursesExit();
 #endif
+	}
 #endif
 	FREE(blk_scrn);
 	FREE(tmp_buffer);

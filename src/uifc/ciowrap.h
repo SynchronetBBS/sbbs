@@ -50,6 +50,12 @@ enum
 	_NORMALCURSOR
 };
 
+enum
+{
+	 X_MODE
+	,CURSES_MODE
+};
+
 struct text_info {
     unsigned char currmode;
     unsigned char screenheight;
@@ -57,6 +63,7 @@ struct text_info {
 };
 
 typedef struct {
+	int		mode;
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,unsigned char *);
 	int		(*gettext)		(int,int,int,int,unsigned char *);
