@@ -27,6 +27,7 @@ const EVENT_TYPE_NOTE_OFF		=0x80
 const EVENT_TYPE_NOTE_ON		=0x90
 
 var filename;
+var tonefilename;
 var debug=false;
 var channel=0;
 var note_start=0;
@@ -66,6 +67,9 @@ for(i=0;i<argc;i++) {
 		case "-c": /* channel */
 			channel=parseInt(argv[++i]);
 			break;
+		case "-t": /* .ton file output */
+			tonefilename=argv[++i];
+			break;
 		default:
 			filename=argv[i];
 			break;
@@ -88,6 +92,13 @@ if(!file.open("rb")) {
 }
 
 file.network_byte_order = true;
+
+var tonefile;
+if(tonefilename) {
+	tonefile=new File(tonefilename);
+	if(!tonefile.open("w"))
+		alert("error " +tonefile.error+ " creating " + tonefilename);
+}
 
 while(!file.eof && !js.terminated) {
 	/* Read chunk */
@@ -208,8 +219,11 @@ while(!file.eof && !js.terminated) {
 							if(note_on)
 								break;
 							writeln("\t\tnote on:  " + note);
-							if(delta)
+							if(delta) {
 								sleep(delta*ticks_per_msec());
+								if(tonefile)
+									tonefile.writeln("r " + delta*ticks_per_msec());
+							}
 							note_on=note;
 							break;
 						case EVENT_TYPE_NOTE_OFF:
@@ -224,6 +238,8 @@ while(!file.eof && !js.terminated) {
 								freq*=Math.pow(2,note/12);
 								writeln("\t\tPlaying " + Math.floor(freq) + " for " + delta);
 								beep(freq,delta*ticks_per_msec());
+								if(tonefile)
+									tonefile.writeln(Math.floor(freq) +" "+ delta*ticks_per_msec());
 							}
 							note_on=0;
 							break;
