@@ -186,8 +186,8 @@ void sbbs_read_ini(
 
 		section = "BBS";
 
-		*run_bbs
-			=iniGetBool(fp,section,"AutoStart",TRUE);
+		if(run_bbs!=NULL)
+			*run_bbs=iniGetBool(fp,section,"AutoStart",TRUE);
 
 		bbs->telnet_interface
 			=iniGetIpAddress(fp,section,"TelnetInterface",INADDR_ANY);
@@ -253,8 +253,8 @@ void sbbs_read_ini(
 
 		section = "FTP";
 
-		*run_ftp
-			=iniGetBool(fp,section,"AutoStart",TRUE);
+		if(run_ftp!=NULL)
+			*run_ftp=iniGetBool(fp,section,"AutoStart",TRUE);
 
 		ftp->interface_addr
 			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
@@ -296,8 +296,8 @@ void sbbs_read_ini(
 
 		section = "Mail";
 
-		*run_mail
-			=iniGetBool(fp,section,"AutoStart",TRUE);
+		if(run_mail!=NULL)
+			*run_mail=iniGetBool(fp,section,"AutoStart",TRUE);
 
 		mail->interface_addr
 			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
@@ -358,8 +358,8 @@ void sbbs_read_ini(
 
 		section = "Services";
 
-		*run_services
-			=iniGetBool(fp,section,"AutoStart",TRUE);
+		if(run_services!=NULL)
+			*run_services=iniGetBool(fp,section,"AutoStart",TRUE);
 
 		services->interface_addr
 			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
@@ -388,8 +388,8 @@ void sbbs_read_ini(
 
 		section = "Web";
 
-		*run_web
-			=iniGetBool(fp,section,"AutoStart",FALSE);
+		if(run_web!=NULL)
+			*run_web=iniGetBool(fp,section,"AutoStart",FALSE);
 
 		web->interface_addr
 			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
