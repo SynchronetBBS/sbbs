@@ -46,20 +46,22 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
 
-/* Anonymous/Real Name/etc stuff */
-if(msgbase.cfg.settings&SUB_AONLY || (msgbase.cfg.settings&SUB_ANON && http_request.query.anonymous != undefined && http_request.query.anonymous[0]=='Yes'))
-	hdrs.attr|=MSG_ANONYMOUS;
-if(msgbase.cfg.settings&SUB_NAME)
-	hdrs.from=user.name;
+if(sub != 'mail') {
+	/* Anonymous/Real Name/etc stuff */
+	if(msgbase.cfg.settings&SUB_AONLY || (msgbase.cfg.settings&SUB_ANON && http_request.query.anonymous != undefined && http_request.query.anonymous[0]=='Yes'))
+		hdrs.attr|=MSG_ANONYMOUS;
+	if(msgbase.cfg.settings&SUB_NAME)
+		hdrs.from=user.name;
 
-/* Private message stuff */
-/* Note, apparently, "private" is a magical property... */
-if(msgbase.cfg.settings&SUB_PONLY || (msgbase.cfg.settings&SUB_PRIV && http_request.query['private']!=undefined && http_request.query['private'][0]=='Yes'))
-	hdrs.attr|=MSG_PRIVATE;
+	/* Private message stuff */
+	/* Note, apparently, "private" is a magical property... */
+	if(msgbase.cfg.settings&SUB_PONLY || (msgbase.cfg.settings&SUB_PRIV && http_request.query['private']!=undefined && http_request.query['private'][0]=='Yes'))
+		hdrs.attr|=MSG_PRIVATE;
 
-/* Moderated stuff */
-if(msgbase.cfg.moderated_ars!='')
-	hdrs.attr|=MSG_MODERATED;
+	/* Moderated stuff */
+	if(msgbase.cfg.moderated_ars!='')
+		hdrs.attr|=MSG_MODERATED;
+}
 
 /* Set kill when read flag */
 if(sub=="mail" && hdrs.to_net_type==NET_NONE && system.settings&SYS_DELREADM)
