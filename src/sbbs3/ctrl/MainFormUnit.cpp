@@ -600,6 +600,15 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
 	Height=400;	// Just incase we mess it up in the IDE
     Width=700;
 
+    // Verify SBBS.DLL version
+    long bbs_ver = bbs_ver_num();
+    if(bbs_ver < (0x300<<8) || bbs_ver > (0x399<<8)) {
+        char str[128];
+        sprintf(str,"Incorrect SBBS.DLL Version (%lX)",bbs_ver);
+    	Application->MessageBox(str,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+        Application->Terminate();
+    }
+
 	if(putenv("TZ=UCT0")) {
     	Application->MessageBox("Error settings timezone"
         	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
@@ -1707,6 +1716,20 @@ void __fastcall TMainForm::CtrlMenuItemEditClick(TObject *Sender)
     delete TextFileEditForm;
 
 }
+void __fastcall TMainForm::DataMenuItemClick(TObject *Sender)
+{
+	char filename[MAX_PATH+1];
+
+    sprintf(filename,"%s%s"
+    	,MainForm->cfg.data_dir
+        ,((TMenuItem*)Sender)->Hint.c_str());
+	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+	TextFileEditForm->Filename=AnsiString(filename);
+    TextFileEditForm->Caption=((TMenuItem*)Sender)->Caption;
+	TextFileEditForm->ShowModal();
+    delete TextFileEditForm;
+}
+//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 
@@ -1943,6 +1966,7 @@ void __fastcall TMainForm::HelpSysopMenuItemClick(TObject *Sender)
     WinExec(str,SW_SHOWMINNOACTIVE);
 }
 //---------------------------------------------------------------------------
+
 
 
 
