@@ -84,7 +84,7 @@ sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
 scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/include \ 
+	$(SBBSDIR)/include \
 	$(SBBSDIR)/lib/fltk/$(os)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
 
