@@ -83,11 +83,13 @@
 /****************************************************************************/
 char* DLLCALL getfname(const char* path)
 {
-	char *fname;
+	char* fname;
+	char* bslash;
 
 	fname=strrchr(path,'/');
-	if(fname==NULL) 
-		fname=strrchr(path,'\\');
+	bslash=strrchr(path,'\\');
+	if(bslash>fname)
+		fname=bslash;
 	if(fname!=NULL) 
 		fname++;
 	else 
