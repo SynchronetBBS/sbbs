@@ -1923,6 +1923,11 @@ static void sendmail_thread(void* arg)
 
 	while(server_socket!=INVALID_SOCKET) {
 
+		if(startup->options&MAIL_OPT_NO_SENDMAIL) {
+			mswait(1000);
+			continue;
+		}
+
 		if(active_sendmail!=0) {
 			active_sendmail=0;
 			update_clients();
