@@ -32,10 +32,6 @@ ifdef USE_UIFC32
  UIFC_OBJS +=	$(LIBODIR)/ciowrap.o
  UIFC_NEED_CURSES	:=	1
 endif
-ifdef NEED_UIFC
- CFLAGS	+=	$(UIFC_CFLAGS)
- LDFLAGS	+=	$(UIFC_LDFLAGS)
-endif
 
 # Curses Stuff
 ifeq ($(os),qnx)
