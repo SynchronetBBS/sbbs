@@ -1,0 +1,227 @@
+#include <stdarg.h>
+
+#include "conio.h"
+#include "od_cio.h"
+
+int OD_nextch;
+int OD_attr;
+
+int OD_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
+{
+	return(od_puttext(sx,sy,ex,ey,fill));
+}
+
+int OD_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
+{
+	return(od_gettext(sx,sy,ex,ey,fill));
+}
+
+void OD_textattr(unsigned char attr)
+{
+	OD_attr=attr;
+	od_set_attrib(attr);
+}
+
+int parsekey(int ch)
+{
+	switch(ch) {
+		case OD_KEY_F1:
+			OD_nextch=0x3b<<8;
+			break;
+			
+		case OD_KEY_F2:
+			OD_nextch=0x3c<<8;
+			break;
+			
+		case OD_KEY_F3:
+			OD_nextch=0x3d<<8;
+			break;
+			
+		case OD_KEY_F4:
+			OD_nextch=0x3e<<8;
+			break;
+			
+		case OD_KEY_F5:
+			OD_nextch=0x3f<<8;
+			break;
+			
+		case OD_KEY_F6:
+			OD_nextch=0x40<<8;
+			break;
+			
+		case OD_KEY_F7:
+			OD_nextch=0x41<<8;
+			break;
+			
+		case OD_KEY_F8:
+			OD_nextch=0x42<<8;
+			break;
+			
+		case OD_KEY_F9:
+			OD_nextch=0x43<<8;
+			break;
+			
+		case OD_KEY_F10:
+			OD_nextch=0x44<<8;
+			break;
+
+		case OD_KEY_UP:
+			OD_nextch=0x48<<8;
+			break;
+			
+		case OD_KEY_DOWN:
+			OD_nextch=0x50<<8;
+			break;
+
+		case OD_KEY_LEFT:
+			OD_nextch=0x4b<<8;
+			break;
+
+		case OD_KEY_RIGHT:
+			OD_nextch=0x4d<<8;
+			break;
+
+		case OD_KEY_INSERT:
+			OD_nextch=0x52<<8;
+			break;
+
+		case OD_KEY_DELETE:
+			OD_nextch=0x53<<8;
+			break;
+
+		case OD_KEY_HOME:
+			OD_nextch=0x47<<8;
+			break;
+
+		case OD_KEY_END:
+			OD_nextch=0x4f<<8;
+			break;
+
+		case OD_KEY_PGUP:
+			OD_nextch=0x49<<8;
+			break;
+
+		case OD_KEY_PGDN:
+			OD_nextch=0x51<<8;
+			break;
+
+		case OD_KEY_SHIFTTAB:
+			OD_nextch=0;
+			break;
+	}
+}
+
+int OD_kbhit(void)
+{
+	int ch;
+	tODInputEvent ie;
+
+	if(OD_nextch)
+		return(1)
+
+	if(!od_get_input(&ie,0,GETIN_NORMAL))
+		return(0);
+
+	if(ie.EventType==EVENT_CHARACTER) {
+		OD_nextch=ie.chKeyPress;
+		return(1);
+	}
+	
+	parsekey(ie.chKeyPress);
+
+	if(OD_nextch)
+		return(1)
+}
+
+void OD_delay(long msec)
+{
+	usleep(msec*1000);
+}
+
+int OD_wherey(void)
+{
+	int row,col;
+
+	od_get_cursor(&row,&col);
+	return(row);
+}
+
+int OD_wherex(void)
+{
+	int row,col;
+
+	od_get_cursor(&row,&col);
+	return(col);
+}
+
+/* Put the character _c on the screen at the current cursor position. 
+ * The special characters return, linefeed, bell, and backspace are handled
+ * properly, as is line wrap and scrolling. The cursor position is updated. 
+ */
+int OD_putch(unsigned char ch)
+{
+	od_putch(ch);
+	return(ch);
+}
+
+void OD_gotoxy(int x, int y)
+{
+	od_set_cursor(y,x);
+}
+
+void OD_gettextinfo(struct text_info *info)
+{
+	info->currmode=3;
+	info->screenheight=od_control.user_screenheight;
+	info->screenwidth=od_control.user_screenheight;
+	info->curx=wherex();
+	info->cury=wherey();
+	info->attribute=OD_attr;
+}
+
+void OD_setcursortype(int type)
+{
+}
+
+int OD_getch(void)
+{
+	int ch;
+	tODInputEvent ie;
+
+	while(1) {
+		if(OD_nextch) {
+			ch=OD_nextch&0xff;
+			OD_nextch>>8;
+			return(ch)
+		}
+
+		od_get_input(&ie,OD_NO_TIMEOUT,GETIN_NORMAL);
+
+		if(ie.EventType==EVENT_CHARACTER)
+			return(ie.chKeyPress);
+
+		parsekey(ie.chKeyPress);
+	}
+}
+
+int OD_getche(void)
+{
+	int ch;
+
+	if(OD_nextch)
+		return(OD_getch());
+	ch=OD_getch();
+	if(ch)
+		putch(ch);
+	return(ch);
+}
+
+int OD_beep(void)
+{
+	od_putch(7);
+	return(0);
+}
+
+void OD_textmode(int mode)
+{
+}
