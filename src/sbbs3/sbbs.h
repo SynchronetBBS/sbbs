@@ -880,6 +880,7 @@ extern "C" {
 									,const char* fpath, const char* fspec, char* cmd);
 
 	/* semfile.c */
+	DLLEXPORT BOOL		DLLCALL semfile_signal(const char* fname, const char* text);
 	DLLEXPORT BOOL		DLLCALL semfile_check(time_t* t, const char* fname);
 	DLLEXPORT char*		DLLCALL semfile_list_check(time_t* t, link_list_t* filelist);
 	DLLEXPORT void		DLLCALL semfile_list_init(link_list_t* filelist, const char* parent, 
