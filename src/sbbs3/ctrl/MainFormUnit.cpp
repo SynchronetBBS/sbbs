@@ -1633,7 +1633,10 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     if(cfg.new_install) {
     	Application->BringToFront();
-    	Sleep(3000);	// Let 'em see the logo for a bit
+        for(int i=0;i<10;i++) {
+	        Application->ProcessMessages();
+	    	Sleep(300);	// Let 'em see the logo for a bit
+        }
         BBSConfigWizardMenuItemClick(Sender);
     }
 
