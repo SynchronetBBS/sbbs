@@ -45,8 +45,8 @@
 #include <string.h>		/* strchr */
 
 /* Synchronet-specific */
-#include "gen_defs.h"
 #include "sbbsinet.h"
+#include "gen_defs.h"
 #include "smbdefs.h"		/* _PACK */
 
 #ifdef _WIN32
