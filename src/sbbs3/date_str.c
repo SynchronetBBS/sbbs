@@ -335,6 +335,7 @@ char* DLLCALL zonestr(short zone)
 		case WEL:   return("WEL");
 		}
 
+	zone=smb_tzutc(zone);
 	if(zone>0)
 		plus="+";
 	else
