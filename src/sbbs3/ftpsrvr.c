@@ -4279,7 +4279,9 @@ void DLLCALL ftp_server(void* arg)
 		startup->options&=~FTP_OPT_NO_JAVASCRIPT;
 	else
 		startup->options|=FTP_OPT_NO_JAVASCRIPT;
+#ifdef JAVASCRIPT
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
+#endif
 
 	thread_up();
 
