@@ -1,3 +1,24 @@
+/*****************************************************************************/
+/* SSJS templating library													 */
+/* %%name%% is replaced with the HTML encoded value of template.name		 */
+/* ^^name^^ is replaced with the URI encoded value of template.name			 */
+/* @@name@@ is replaced with the value if template.name						 */
+/* 																			 */
+/* @@JS:js_expression@@ is replaced with the return value of js_expression 	 */
+/* (^^ and %% are also supported)											 */
+/* 																			 */
+/* <<REPEAT name>>															 */
+/* ... @@name:sname@@ ...													 */
+/* <<END REPEAT name>>														 */
+/* 																			 */
+/* Iterates over the array/object template.name and replaces name:sname with */
+/* the value of template.name.sname.										 */
+/* (^^ and %% are also supported)											 */
+/*																			 */
+/*****************************************************************************/
+
+/* $Id$ */
+
 // Configuration
 template_dir=system.textdir+"html_templates";
 
