@@ -517,16 +517,16 @@ typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
 
     } fidoaddr_t;
 
+#if defined(PRAGMA_PACK)
+#pragma pack(pop)		/* original packing */
+#endif
+
 typedef struct _PACK {		/* Network (type and address) */
 
     ushort  type;
 	void	*addr;
 
 	} net_t;
-
-#if defined(PRAGMA_PACK)
-#pragma pack(pop)		/* original packing */
-#endif
 
 typedef struct {				/* Message */
 
