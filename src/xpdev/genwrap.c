@@ -39,13 +39,12 @@
 #include <stdlib.h>	/* RAND_MAX */
 #include <fcntl.h>	/* O_NOCTTY */
 
-#ifdef __unix__
-#ifndef __FreeBSD__
-#include <sys/kd.h>	/* KIOCSOUND */
-#endif
-#ifdef __FreeBSD__
-#include <sys/kbio.h>
-#endif
+#if defined(__unix__)
+	/* KIOCSOUND */
+	#if defined(__FreeBSD__)
+		#include <sys/kbio.h>
+	#else
+		#include <sys/kd.h>	
 #endif	/* __unix__ */
 
 #include "genwrap.h"	/* Verify prototypes */
@@ -53,7 +52,7 @@
 /****************************************************************************/
 /* Convert ASCIIZ string to upper case										*/
 /****************************************************************************/
-#ifdef __unix__
+#if defined(__unix__)
 char* DLLCALL strupr(char* str)
 {
 	char*	p=str;
@@ -95,7 +94,7 @@ char* strrev(char* str)
 /* Generate a tone at specified frequency for specified milliseconds		*/
 /* Thanks to Casey Martin for this code										*/
 /****************************************************************************/
-#ifdef __unix__
+#if defined(__unix__)
 void DLLCALL unix_beep(int freq, int dur)
 {
 	static int console_fd=-1;
@@ -114,7 +113,7 @@ void DLLCALL unix_beep(int freq, int dur)
 /****************************************************************************/
 /* Return random number between 0 and n-1									*/
 /****************************************************************************/
-#ifndef __BORLANDC__
+#if !defined(__BORLANDC__j)
 int DLLCALL xp_random(int n)
 {
 	float f;

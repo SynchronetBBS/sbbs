@@ -68,7 +68,7 @@
 /**********************************/
 /* Socket Implementation-specific */
 /**********************************/
-#ifdef _WINSOCKAPI_
+#if defined(_WINSOCKAPI_)
 
 #undef  EINTR
 #define EINTR			(WSAEINTR-WSABASEERR)

@@ -38,9 +38,9 @@
 #ifndef _GEN_DEFS_H
 #define _GEN_DEFS_H
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN	/* Don't bring in excess baggage */
-#include <windows.h>
+#if defined(_WIN32)
+	#define WIN32_LEAN_AND_MEAN	/* Don't bring in excess baggage */
+	#include <windows.h>
 #endif
 
 #include <sys/types.h>
@@ -88,7 +88,7 @@ enum {
 };
 
 #ifndef MAX_PATH
-	#ifdef MAXPATHLEN
+	#if defined MAXPATHLEN
 		#define MAX_PATH MAXPATHLEN	/* clib.h */
 	#elif defined PATH_MAX
 		#define MAX_PATH PATH_MAX

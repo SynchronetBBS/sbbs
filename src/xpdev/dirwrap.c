@@ -37,28 +37,28 @@
 
 #include <string.h>	/* strrchr */
 
-#ifdef _WIN32
+#if defined(_WIN32)
 
-#include <windows.h>	/* WINAPI, etc */
-#include <io.h>			/* _findfirst */
+	#include <windows.h>	/* WINAPI, etc */
+	#include <io.h>			/* _findfirst */
 
 #elif defined __unix__
 
-#include <unistd.h>		/* usleep */
-#include <fcntl.h>		/* O_NOCCTY */
-#include <ctype.h>		/* toupper */
+	#include <unistd.h>		/* usleep */
+	#include <fcntl.h>		/* O_NOCCTY */
+	#include <ctype.h>		/* toupper */
 
-#ifdef __FreeBSD__
-#include <sys/param.h>
-#include <sys/mount.h>
-#include <sys/kbio.h>
-#endif
+	#if defined(__FreeBSD__)
+		#include <sys/param.h>
+		#include <sys/mount.h>
+		#include <sys/kbio.h>
+	#endif
 
-#include <sys/ioctl.h>	/* ioctl */
+	#include <sys/ioctl.h>	/* ioctl */
 
-#ifdef __GLIBC__		/* actually, BSD, but will work for now */
-#include <sys/vfs.h>    /* statfs() */
-#endif
+	#if defined(__GLIBC__)		/* actually, BSD, but will work for now */
+		#include <sys/vfs.h>    /* statfs() */
+	#endif
 
 #endif /* __unix__ */
 
@@ -99,7 +99,7 @@ static int glob_compare( const void *arg1, const void *arg2 )
    return stricmp( * ( char** ) arg1, * ( char** ) arg2 );
 }
 
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__)
 	#pragma argsused
 #endif
 
@@ -256,7 +256,7 @@ time_t DLLCALL fdate(char *filename)
 /****************************************************************************/
 long DLLCALL flength(char *filename)
 {
-#ifdef __BORLANDC__	/* stat() doesn't work right */
+#if defined(__BORLANDC__)	/* stat() doesn't work right */
 
 	long	handle;
 	struct _finddata_t f;
@@ -293,7 +293,7 @@ long DLLCALL flength(char *filename)
 /****************************************************************************/
 BOOL DLLCALL fexist(char *filespec)
 {
-#ifdef _WIN32
+#if defined(_WIN32)
 
 	long	handle;
 	struct _finddata_t f;
@@ -369,7 +369,7 @@ BOOL DLLCALL isdir(char *filename)
 /****************************************************************************/
 int DLLCALL getfattr(char* filename)
 {
-#ifdef _WIN32
+#if defined(_WIN32)
 	long handle;
 	struct _finddata_t	finddata;
 
@@ -394,14 +394,14 @@ int DLLCALL getfattr(char* filename)
 /****************************************************************************/
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
 /****************************************************************************/
-#ifdef _WIN32
+#if defined(_WIN32)
 	typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)
 		(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER); 
 #endif
 
 ulong DLLCALL getfreediskspace(char* path)
 {
-#ifdef _WIN32
+#if defined(_WIN32)
 	char			root[16];
 	DWORD			TotalNumberOfClusters;
 	DWORD			NumberOfFreeClusters;
@@ -424,14 +424,14 @@ ulong DLLCALL getfreediskspace(char* path)
 			&size,		// receives the number of bytes on disk
 			NULL))		// receives the free bytes on disk
 			return(0);
-#ifdef _ANONYMOUS_STRUCT
+#if defined(_ANONYMOUS_STRUCT)
 		if(avail.HighPart)
 #else
 		if(avail.u.HighPart)
 #endif
 			return(0xffffffff);	/* 4GB max */
 
-#ifdef _ANONYMOUS_STRUCT
+#if defined(_ANONYMOUS_STRUCT)
 		return(avail.LowPart);
 #else
 		return(avail.u.LowPart);

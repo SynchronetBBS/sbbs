@@ -40,20 +40,20 @@
 
 #include "gen_defs.h"	/* ulong */
 
-#ifdef DLLEXPORT
-#undef DLLEXPORT
+#if defined(DLLEXPORT)
+	#undef DLLEXPORT
 #endif
-#ifdef DLLCALL
-#undef DLLCALL
+#if defined(DLLCALL)
+	#undef DLLCALL
 #endif
 
-#ifdef _WIN32
-	#ifdef WRAPPER_DLL
+#if defined(_WIN32)
+	#if defined(WRAPPER_DLL)
 		#define DLLEXPORT	__declspec(dllexport)
 	#else
 		#define DLLEXPORT	__declspec(dllimport)
 	#endif
-	#ifdef __BORLANDC__
+	#if defined(__BORLANDC__)
 		#define DLLCALL __stdcall
 	#else
 		#define DLLCALL
@@ -63,21 +63,15 @@
 	#define DLLCALL
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C" {
-#endif
-
-#ifdef _MSC_VER
-	#include "msdirent.h"
-#else
-	#include <dirent.h>	/* POSIX directory functions */
 #endif
 
 /****************/
 /* RTL-specific */
 /****************/
 
-#ifdef __unix__
+#if defined(__unix__)
 
 	#define ALLFILES "*"	/* matches all files in a directory */
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
@@ -159,7 +153,10 @@ extern "C" {
 	struct dirent  *	readdir  (DIR *__dir);
 	int                 closedir (DIR *__dir);
 	void                rewinddir(DIR *__dir);
+#else
+	#include <dirent.h>	/* POSIX directory functions */
 #endif
+
 
 /**********/
 /* Macros */
@@ -205,7 +202,7 @@ DLLEXPORT char*		DLLCALL getfname(char* path);
 DLLEXPORT int		DLLCALL getfattr(char* filename);
 DLLEXPORT ulong		DLLCALL getfreediskspace(char* path);
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }
 #endif
 
