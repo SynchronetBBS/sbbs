@@ -236,6 +236,7 @@ static void status(char* str)
 int sockprintf(SOCKET sock, char *fmt, ...)
 {
 	int		len;
+	int		maxlen;
 	int		result;
 	va_list argptr;
 	char	sbuf[1024];
@@ -243,13 +244,17 @@ int sockprintf(SOCKET sock, char *fmt, ...)
 	struct timeval tv;
 
     va_start(argptr,fmt);
-    len=vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;
-	if(startup->options&MAIL_OPT_DEBUG_TX)
-		lprintf(LOG_DEBUG,"%04d TX: %s", sock, sbuf);
-	strcat(sbuf,"\r\n");
-	len+=2;
+    len=vsnprintf(sbuf,maxlen=sizeof(sbuf)-2,fmt,argptr);
     va_end(argptr);
+
+	if(len<0)		/* format error? */
+		return(0);
+	if(len>maxlen)	/* output truncated */
+		len=maxlen;
+	if(startup->options&MAIL_OPT_DEBUG_TX)
+		lprintf(LOG_DEBUG,"%04d TX: %.*s", sock, len, sbuf);
+	memcpy(sbuf+len,"\r\n",2);
+	len+=2;
 
 	if(sock==INVALID_SOCKET) {
 		lprintf(LOG_WARNING,"!INVALID SOCKET in call to sockprintf");
