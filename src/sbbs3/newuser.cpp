@@ -468,6 +468,9 @@ void sbbs_t::newuser()
 	remove(str);
 	sprintf(str,"%suser/%04u.msg",cfg.data_dir,useron.number); /* delete ex-comment */
 	remove(str);
+	sprintf(str,"%suser/%04u.sig",cfg.data_dir,useron.number); /* delete signature */
+	remove(str);
+
 	if(cfg.newuser_mod[0])
 		exec_bin(cfg.newuser_mod,&main_csi);
 	user_event(EVENT_NEWUSER);

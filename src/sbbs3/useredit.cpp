@@ -948,45 +948,49 @@ void sbbs_t::maindflts(user_t* user)
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'W':
-				if(noyes(text[NewPasswordQ]))
-					break;
-				bputs(text[CurrentPassword]);
-				console|=CON_R_ECHOX;
-				if(!(cfg.sys_misc&SM_ECHO_PW))
-					console|=CON_L_ECHOX;
-				ch=getstr(str,LEN_PASS,K_UPPER);
-				console&=~(CON_R_ECHOX|CON_L_ECHOX);
-				if(strcmp(str,user->pass)) {
-					bputs(text[WrongPassword]);
-					pause();
-					break; }
-				bputs(text[NewPassword]);
-				if(!getstr(str,LEN_PASS,K_UPPER|K_LINE))
-					break;
-				truncsp(str);
-				if(!chkpass(str,user,false)) {
-					CRLF;
-					pause();
-					break; }
-				bputs(text[VerifyPassword]);
-				console|=CON_R_ECHOX;
-				if(!(cfg.sys_misc&SM_ECHO_PW))
-					console|=CON_L_ECHOX;
-				getstr(tmp,LEN_PASS,K_UPPER);
-				console&=~(CON_R_ECHOX|CON_L_ECHOX);
-				if(strcmp(str,tmp)) {
-					bputs(text[WrongPassword]);
-					pause();
-					break; }
-				if(!online)
-					break;
-				putuserrec(&cfg,user->number,U_PASS,LEN_PASS,str);
-				now=time(NULL);
-				putuserrec(&cfg,user->number,U_PWMOD,8,ultoa(now,tmp,16));
-				bputs(text[PasswordChanged]);
-				sprintf(str,"%s changed password",useron.alias);
-				logline(nulstr,str);
-				pause();
+				if(!noyes(text[NewPasswordQ])) {
+					bputs(text[CurrentPassword]);
+					console|=CON_R_ECHOX;
+					if(!(cfg.sys_misc&SM_ECHO_PW))
+						console|=CON_L_ECHOX;
+					ch=getstr(str,LEN_PASS,K_UPPER);
+					console&=~(CON_R_ECHOX|CON_L_ECHOX);
+					if(strcmp(str,user->pass)) {
+						bputs(text[WrongPassword]);
+						pause();
+						break; }
+					bputs(text[NewPassword]);
+					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE))
+						break;
+					truncsp(str);
+					if(!chkpass(str,user,false)) {
+						CRLF;
+						pause();
+						break; }
+					bputs(text[VerifyPassword]);
+					console|=CON_R_ECHOX;
+					if(!(cfg.sys_misc&SM_ECHO_PW))
+						console|=CON_L_ECHOX;
+					getstr(tmp,LEN_PASS,K_UPPER);
+					console&=~(CON_R_ECHOX|CON_L_ECHOX);
+					if(strcmp(str,tmp)) {
+						bputs(text[WrongPassword]);
+						pause();
+						break; }
+					if(!online)
+						break;
+					putuserrec(&cfg,user->number,U_PASS,LEN_PASS,str);
+					now=time(NULL);
+					putuserrec(&cfg,user->number,U_PWMOD,8,ultoa(now,tmp,16));
+					bputs(text[PasswordChanged]);
+					sprintf(str,"%s changed password",useron.alias);
+					logline(nulstr,str);
+				}
+				sprintf(str,"%suser/%04u.sig",cfg.data_dir,user->number);
+				if(!noyes("Create/Edit signature"))
+					editfile(str);
+				else if(fexist(str) && !noyes("Delete signature"))
+					remove(str);
 				break;
 			case 'Z':
 				menu("dlprot");

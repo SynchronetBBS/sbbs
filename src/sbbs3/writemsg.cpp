@@ -402,6 +402,21 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 
 	if(buf[l])
 		bputs(text[NoMoreLines]);
+
+	/* Signature file */
+	sprintf(str,"%suser/%04u.sig",cfg.data_dir,useron.number);
+	FILE* sig;
+	if(!(mode&WM_EXTDESC) && fexist(str) && (sig=fopen(str,"rb"))!=NULL) {
+		while(!feof(sig)) {
+			if(!fgets(str,sizeof(str)-1,sig))
+				break;
+			fputs(str,stream);
+			l+=strlen(str);	/* byte counter */
+			i++;			/* line counter */
+		}
+		fclose(sig);
+	}
+
 	fclose(stream);
 	LFREE((char *)buf);
 	bprintf(text[SavedNBytes],l,i);
