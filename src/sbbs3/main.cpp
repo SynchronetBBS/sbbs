@@ -2601,19 +2601,23 @@ void node_thread(void* arg)
 	update_clients();
 	thread_up(TRUE /* setuid */);
 
+#ifdef _DEBUG
+	lprintf("Node %d thread started",sbbs->cfg.node_num);
+#endif
+
 	srand(clock());		/* Seed random number generator */
 	sbbs_random(10);	/* Throw away first number */
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
-			lprintf("!JavaScript Initialization FAILURE");
+			lprintf("Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
 	}
 
 	if(sbbs->js_cx!=NULL) {
 		/* User class */
 		if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &scfg)==NULL) 
-			lprintf("!JavaScript ERROR creating user class");
+			lprintf("Node %d !JavaScript ERROR creating user class",sbbs->cfg.node_num);
 	}
 #endif
 
@@ -2848,13 +2852,17 @@ void node_thread(void* arg)
 	node.useron=0;
 	sbbs->putnodedat(sbbs->cfg.node_num,&node);
 
-    if(!sbbs->input_thread_running && !sbbs->output_thread_running 
-		&& !sbbs->event_thread_running) {
+	if(node_threads_running>0)
+		node_threads_running--;
+	lprintf("Node %d thread terminated (%u node threads remain)"
+		,sbbs->cfg.node_num, node_threads_running);
+    if(!sbbs->input_thread_running && !sbbs->output_thread_running)
 		delete sbbs;
-	    node_threads_running--;
-		update_clients();
-		thread_down();
-    }
+    else
+		lprintf("Node %d !ORPHANED I/O THREAD(s)",sbbs->cfg.node_num);
+
+	update_clients();
+	thread_down();
 }
 
 time_t checktime(void)
