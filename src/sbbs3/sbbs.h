@@ -92,9 +92,10 @@
 	#endif
 	#define JS_THREADSAFE	/* required for multi-thread support */
 	#include <jsapi.h>
+	#include <jsprf.h>		/* JS-safe sprintf functions */
 
 	#define	JAVASCRIPT_RUNTIME_MEMORY	(1*1024*1024)
-	#define JAVASCRIPT_CONTEXT_STACK	(8*1024)
+	#define JAVASCRIPT_CONTEXT_STACK	(16*1024)
 #endif
 
 /***********************/
