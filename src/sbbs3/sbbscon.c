@@ -1058,6 +1058,14 @@ int main(int argc, char** argv)
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
 
+	/* We call this function to set defaults, even if there's no .ini file */
+	sbbs_read_ini(fp, 
+		&run_bbs,		&bbs_startup,
+		&run_ftp,		&ftp_startup, 
+		&run_web,		&web_startup,
+		&run_mail,		&mail_startup, 
+		&run_services,	&services_startup);
+
 	/* read/default any sbbscon-specific .ini keys here */
 #if defined(__unix__)
 	SAFECOPY(new_uid_name,iniGetString(fp,"UNIX","User","",value));
@@ -1404,14 +1412,6 @@ int main(int argc, char** argv)
 
 		pidfile=fopen(SBBS_PID_FILE,"w");
 	}
-
-	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp, 
-		&run_bbs,		&bbs_startup,
-		&run_ftp,		&ftp_startup, 
-		&run_web,		&web_startup,
-		&run_mail,		&mail_startup, 
-		&run_services,	&services_startup);
 
 	old_uid = getuid();
 	if((pw_entry=getpwnam(new_uid_name))!=0)
