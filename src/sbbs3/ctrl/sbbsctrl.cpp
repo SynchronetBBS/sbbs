@@ -36,13 +36,8 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
-USERES("sbbsctrl.res");
 USEFORM("MainFormUnit.cpp", MainForm);
 USEFORM("CtrlPathDialogUnit.cpp", CtrlPathDialog);
-USELIB("sbbs.lib");
-USELIB("mailsrvr.lib");
-USELIB("ftpsrvr.lib");
-USELIB("services.lib");
 USEFORM("TextFileEditUnit.cpp", TextFileEditForm);
 USEFORM("TelnetFormUnit.cpp", TelnetForm);
 USEFORM("FtpFormUnit.cpp", FtpForm);
@@ -54,8 +49,6 @@ USEFORM("StatsLogFormUnit.cpp", StatsLogForm);
 USEFORM("CodeInputFormUnit.cpp", CodeInputForm);
 USEFORM("ClientFormUnit.cpp", ClientForm);
 USEFORM("SpyFormUnit.cpp", SpyForm);
-USEUNIT("..\ringbuf.c");
-USEUNIT("emulvt.pas");
 USEFORM("UserListFormUnit.cpp", UserListForm);
 USEFORM("UserMsgFormUnit.cpp", UserMsgForm);
 USEFORM("PropertiesDlgUnit.cpp", PropertiesDlg);
@@ -80,16 +73,16 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
         Application->Initialize();
         Application->Title = "Synchronet Control Panel";
 		Application->CreateForm(__classid(TMainForm), &MainForm);
-         Application->CreateForm(__classid(TTelnetForm), &TelnetForm);
-         Application->CreateForm(__classid(TFtpForm), &FtpForm);
-         Application->CreateForm(__classid(TMailForm), &MailForm);
-         Application->CreateForm(__classid(TNodeForm), &NodeForm);
-         Application->CreateForm(__classid(TStatsForm), &StatsForm);
-         Application->CreateForm(__classid(TClientForm), &ClientForm);
-         Application->CreateForm(__classid(TUserListForm), &UserListForm);
-         Application->CreateForm(__classid(TEventsForm), &EventsForm);
-         Application->CreateForm(__classid(TServicesForm), &ServicesForm);
-         Application->Run();
+		Application->CreateForm(__classid(TTelnetForm), &TelnetForm);
+		Application->CreateForm(__classid(TFtpForm), &FtpForm);
+		Application->CreateForm(__classid(TMailForm), &MailForm);
+		Application->CreateForm(__classid(TNodeForm), &NodeForm);
+		Application->CreateForm(__classid(TStatsForm), &StatsForm);
+		Application->CreateForm(__classid(TClientForm), &ClientForm);
+		Application->CreateForm(__classid(TUserListForm), &UserListForm);
+		Application->CreateForm(__classid(TEventsForm), &EventsForm);
+		Application->CreateForm(__classid(TServicesForm), &ServicesForm);
+		Application->Run();
     }
     catch (Exception &exception)
     {

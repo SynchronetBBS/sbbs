@@ -1,6 +1,6 @@
 object ServicesCfgDlg: TServicesCfgDlg
-  Left = 791
-  Top = 165
+  Left = 578
+  Top = 317
   BorderStyle = bsDialog
   Caption = 'Services Configuration'
   ClientHeight = 301
@@ -39,6 +39,9 @@ object ServicesCfgDlg: TServicesCfgDlg
   OldCreateOrder = False
   Position = poScreenCenter
   OnShow = FormShow
+  DesignSize = (
+    352
+    301)
   PixelsPerInch = 120
   TextHeight = 16
   object PageControl: TPageControl
@@ -46,7 +49,8 @@ object ServicesCfgDlg: TServicesCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = GeneralTabSheet
+    ActivePage = SoundTabSheet
+    TabIndex = 1
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'

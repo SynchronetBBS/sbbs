@@ -765,7 +765,7 @@ object ConfigWizard: TConfigWizard
           Width = 185
           Height = 24
           Style = csDropDownList
-          ItemHeight = 16
+          ItemHeight = 0
           ParentShowHint = False
           ShowHint = True
           TabOrder = 0
@@ -815,7 +815,7 @@ object ConfigWizard: TConfigWizard
         Top = 40
         Width = 241
         Height = 24
-        ItemHeight = 16
+        ItemHeight = 0
         TabOrder = 0
         OnChange = VerifyInternetAddresses
       end

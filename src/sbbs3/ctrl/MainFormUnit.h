@@ -49,8 +49,9 @@
 //---------------------------------------------------------------------------
 #include <io.h>			// Undefined symbol '_chmod' ???
 #include "scfgdefs.h"  	// scfg_t
-#include "mailsrvr.h"
-#include "ftpsrvr.h"
+#include "ftpsrvr.h"	// ftp_startup_t
+#include "websrvr.h"	// web_startup_t
+#include "mailsrvr.h"	// mail_startup_t
 #include "services.h"   // services_startup_t
 #include <ImgList.hpp>
 #include <Buttons.hpp>
@@ -332,8 +333,9 @@ public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
     bool            Initialized;
     bool			SysAutoStart;
-    bool            MailAutoStart;
     bool            FtpAutoStart;
+    bool            WebAutoStart;
+    bool            MailAutoStart;
     bool            ServicesAutoStart;
     bool			MailLogFile;
     bool			FtpLogFile;
@@ -347,8 +349,9 @@ public:		// User declarations
     bool            UndockableForms;
     scfg_t		    cfg;
     bbs_startup_t 	bbs_startup;
-    mail_startup_t 	mail_startup;
     ftp_startup_t	ftp_startup;
+    web_startup_t	web_startup;
+    mail_startup_t 	mail_startup;
     services_startup_t  services_startup;
     int             NodeDisplayInterval;
     int             ClientDisplayInterval;

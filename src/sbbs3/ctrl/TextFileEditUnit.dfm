@@ -1,6 +1,6 @@
 object TextFileEditForm: TTextFileEditForm
-  Left = 476
-  Top = 367
+  Left = 317
+  Top = 253
   Width = 783
   Height = 540
   Caption = 'TextFileEditForm'

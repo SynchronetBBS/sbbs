@@ -656,6 +656,9 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     strcpy(ftp_startup.html_index_file,"00index.html");
     strcpy(ftp_startup.html_index_script,"ftp-html.js");
 
+    memset(&web_startup,0,sizeof(web_startup));
+    web_startup.size=sizeof(web_startup);
+
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
     services_startup.interface_addr=INADDR_ANY;
@@ -2083,6 +2086,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
     sbbs_read_ini(fp
     	,(BOOL*)&SysAutoStart   		,&bbs_startup
     	,(BOOL*)&FtpAutoStart 			,&ftp_startup
+    	,(BOOL*)&WebAutoStart 			,&web_startup
     	,(BOOL*)&MailAutoStart 	    	,&mail_startup
     	,(BOOL*)&ServicesAutoStart     	,&services_startup
         );
