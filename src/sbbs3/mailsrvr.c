@@ -2384,6 +2384,7 @@ static void sendmail_thread(void* arg)
 	char		mx2[128];
 	char		err[128];
 	char		buf[512];
+	char		toaddr[256];
 	char		fromaddr[256];
 	char*		server;
 	char*		msgtxt=NULL;
@@ -2652,10 +2653,16 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 			/* RCPT */
-			if(strchr((char*)msg.to_net.addr,'<')!=NULL)
-				sockprintf(sock,"RCPT TO: %s", (char*)msg.to_net.addr);
+			p=strrchr((char*)msg.to_net.addr,'<');
+			if(p==NULL)
+				p=(char*)msg.to_net.addr;
 			else
-				sockprintf(sock,"RCPT TO: <%s>", (char*)msg.to_net.addr);
+				p++;
+			SAFECOPY(toaddr,p);
+			p=strchr(toaddr,'>');
+			if(p!=NULL)
+				*p=0;
+			sockprintf(sock,"RCPT TO: <%s>", toaddr);
 			if(!sockgetrsp(sock,"25", buf, sizeof(buf))) {
 				sprintf(err,"%s replied with '%s' instead of 25*",server,buf);
 				bounce(&smb,&msg,err,buf[0]=='5');
