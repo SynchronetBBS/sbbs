@@ -797,6 +797,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	BYTE*	bp;
 	BYTE	buf[XTRN_IO_BUF_LEN];
     BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
+	ulong	avail;
     ulong	output_len;
 	bool	native=false;			// DOS program by default
 	int		i;
@@ -934,7 +935,21 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				mswait(1);
 				continue;
 			}
-			if((rd=read(out_pipe[0],buf,sizeof(buf)))<1) {
+
+			avail=RingBufFree(&outbuf);
+			if(avail==0) {
+				lprintf("!Node %d output buffer full (%u bytes)"
+					,cfg.node_num,RingBufFull(&outbuf));
+				mswait(1);
+				continue;
+			}
+
+			if(rd>avail)
+				rd=avail;
+			if(rd>sizeof(buf)
+				rd=sizeof(buf);
+
+			if((rd=read(out_pipe[0],buf,rd))<1) {
 				mswait(1);
 				continue;
 			}
@@ -943,6 +958,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			else			/* LF to CRLF expansion */
 				bp=lf_expand(buf, rd, output_buf, output_len);
 			
+			/* Does expanded size fit? */
+			if(output_len>RingBufFree(&outbuf)) {
+				lprintf("!Node %d output buffer overflow (%u bytes)"
+					,cfg.node_num,output_len);
+				mswait(1);
+				continue;
+			}
+
 			RingBufWrite(&outbuf, bp, output_len);
 			sem_post(&output_sem);	
 		}
@@ -950,7 +973,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(waitpid(pid, &i, WNOHANG)==0)  {		// Child still running? 
 			kill(pid, SIGHUP);					// Tell child user has hung up
 			time_t start=time(NULL);			// Wait up to 10 seconds
-			while(time()-start<10) {			// for child to terminate
+			while(time(NULL)-start<10) {		// for child to terminate
 				if(waitpid(pid, &i, WNOHANG)!=0)
 					break;
 				mswait(500);
