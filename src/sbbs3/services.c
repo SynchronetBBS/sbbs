@@ -1030,7 +1030,8 @@ void DLLCALL services_thread(void* arg)
 
 	lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 
-	srand(time(NULL));
+	srand(clock());		/* Seed random number generator */
+	sbbs_random(10);	/* Throw away first number */
 
 	if(!(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
 		if(PUTENV("TZ=UTC0"))
