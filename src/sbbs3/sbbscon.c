@@ -109,11 +109,9 @@ static void lputs(char *str)
 }
 
 #ifdef __unix__
-
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
-
 BOOL do_setuid() 
 {
 	uid_t new_uid;
@@ -122,12 +120,14 @@ BOOL do_setuid()
 	if(new_uid_name==NULL)	/* unspecified */
 		return TRUE;
 	if((pw_entry=getpwnam(new_uid_name)) && (new_uid=pw_entry->pw_uid))
-		if(!setuid(new_uid)) 
+		if(!setuid(new_uid)) {
+			lputs("setuid SUCCESSFUL");
 			return TRUE;
+		}
 
+	lputs("!setuid FAILED");
 	return FALSE;
 }
-
 #endif   /* __unix__ */
 
 static void thread_up(BOOL up)
@@ -588,18 +588,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
-	_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
-	_beginthread((void(*)(void*))mail_server,0,&mail_startup);
-	_beginthread((void(*)(void*))services_thread,0,&services_startup);
-
 #ifdef __unix__
-	// Set up QUIT-type signals so they clean up properly.
-	signal(SIGHUP, _sighandler_quit);
-	signal(SIGINT, _sighandler_quit);
-	signal(SIGQUIT, _sighandler_quit);
-	signal(SIGABRT, _sighandler_quit);
-	signal(SIGTERM, _sighandler_quit);
 
 	if(getuid())  /*  are we running as a normal user?  */
 		fprintf(stderr,
@@ -616,7 +605,22 @@ int main(int argc, char** argv)
 	
 	else
 		printf("*** Successfully changed to user %s.\n", new_uid_name);
-	
+
+#endif
+
+	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
+	_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
+	_beginthread((void(*)(void*))mail_server,0,&mail_startup);
+	_beginthread((void(*)(void*))services_thread,0,&services_startup);
+
+#ifdef __unix__
+	// Set up QUIT-type signals so they clean up properly.
+	signal(SIGHUP, _sighandler_quit);
+	signal(SIGINT, _sighandler_quit);
+	signal(SIGQUIT, _sighandler_quit);
+	signal(SIGABRT, _sighandler_quit);
+	signal(SIGTERM, _sighandler_quit);
+
 	if(!isatty(fileno(stdin)))			/* redirected */
 		select(0,NULL,NULL,NULL,NULL);	/* so wait here until signaled */
 	else								/* interactive */
