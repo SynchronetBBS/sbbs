@@ -73,6 +73,7 @@
 
 #define MAX_SERVICES			128
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
+#define MAX_UDP_BUF_LEN			8192	/* 8K */
 
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
@@ -101,6 +102,9 @@ typedef struct {
 	client_t*		client;
 	service_t*		service;
 	ulong			js_loop;
+	/* Initial UDP datagram */
+	BYTE*			udp_buf;
+	int				udp_len;
 } service_client_t;
 
 static service_t	*service;
@@ -580,6 +584,7 @@ static void js_service_thread(void* arg)
 	int						argc=0;
 	JSString*				arg_str;
 	JSObject*				argv;
+	JSString*				datagram;
 	JSObject*				js_glob;
 	JSScript*				js_script;
 	JSRuntime*				js_runtime;
@@ -707,6 +712,16 @@ static void js_service_thread(void* arg)
 
 	val = BOOLEAN_TO_JSVAL(JS_FALSE);
 	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
+
+	if(service->options&SERVICE_OPT_UDP 
+		&& service_client.udp_buf != NULL
+		&& service_client.udp_len > 0) {
+		datagram = JS_NewStringCopyN(js_cx, service_client.udp_buf, service_client.udp_len);
+		val = STRING_TO_JSVAL(datagram);
+	} else
+		val = JSVAL_VOID;
+	JS_SetProperty(js_cx, js_glob, "datagram", &val);
+	FREE_AND_NULL(service_client.udp_buf);
 
 	js_script=JS_CompileFile(js_cx, js_glob, spath);
 
@@ -979,6 +994,8 @@ void DLLCALL services_thread(void* arg)
 	socklen_t		client_addr_len;
 	SOCKET			socket;
 	SOCKET			client_socket;
+	BYTE*			udp_buf = NULL;
+	int				udp_len;
 	int				i;
 	int				result;
 	ulong			total_clients;
@@ -1093,7 +1110,9 @@ void DLLCALL services_thread(void* arg)
 
 			service[i].socket=INVALID_SOCKET;
 
-			if((socket = open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+			if((socket = open_socket(
+				(service[i].options&SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM))
+				==INVALID_SOCKET) {
 				lprintf("!ERROR %d opening socket", ERROR_VALUE);
 				cleanup(1);
 				return;
@@ -1117,14 +1136,18 @@ void DLLCALL services_thread(void* arg)
 				continue;
 			}
 
-			lprintf("%04d %s socket bound to port %u"
-				,socket, service[i].protocol, service[i].port);
+			lprintf("%04d %s socket bound to %s port %u"
+				,socket, service[i].protocol
+				,service[i].options&SERVICE_OPT_UDP ? "UDP" : "TCP"
+				,service[i].port);
 
-			if(listen(socket,10)!=0) {
-				lprintf("%04d !ERROR %d listening on %s socket"
-					,socket, ERROR_VALUE, service[i].protocol);
-				close_socket(socket);
-				continue;
+			if(!(service[i].options&SERVICE_OPT_UDP)) {
+				if(listen(socket,10)!=0) {
+					lprintf("%04d !ERROR %d listening on %s socket"
+						,socket, ERROR_VALUE, service[i].protocol);
+					close_socket(socket);
+					continue;
+				}
 			}
 			service[i].socket=socket;
 			total_sockets++;
@@ -1205,15 +1228,61 @@ void DLLCALL services_thread(void* arg)
 					continue;
 
 				client_addr_len = sizeof(client_addr);
-				if((client_socket=accept(service[i].socket,
-					(struct sockaddr *)&client_addr,&client_addr_len))==INVALID_SOCKET) {
-					if(ERROR_VALUE == ENOTSOCK)
-            			lprintf("%04d %s socket closed while listening"
-							,service[i].socket, service[i].protocol);
-					else
-						lprintf("%04d %s !ERROR %d accept failed", 
-							service[i].socket, service[i].protocol, ERROR_VALUE);
-					break;
+
+				if(service[i].options&SERVICE_OPT_UDP) {
+					/* UDP */
+					if((udp_buf = (BYTE*)calloc(1, MAX_UDP_BUF_LEN)) == NULL) {
+						lprintf("%04d %s !ERROR %d allocating UDP buffer"
+							,service[i].socket, service[i].protocol, errno);
+						break;
+					}
+
+					udp_len = recvfrom(service[i].socket
+						,udp_buf, MAX_UDP_BUF_LEN, 0 /* flags */
+						,(struct sockaddr *)&client_addr, &client_addr_len);
+					if(udp_len<1) {
+						FREE_AND_NULL(udp_buf);
+						lprintf("%04d %s !ERROR %d recvfrom failed"
+							,service[i].socket, service[i].protocol, ERROR_VALUE);
+						break;
+					}
+
+					if((client_socket = open_socket(SOCK_DGRAM))
+						==INVALID_SOCKET) {
+						FREE_AND_NULL(udp_buf);
+						lprintf("%04d %s !ERROR %d opening socket"
+							,service[i].socket, service[i].protocol, ERROR_VALUE);
+						break;
+					}
+
+					/* Set client address as default addres for send/recv */
+					if(connect(client_socket
+						,(struct sockaddr *)&client_addr, client_addr_len)!=0) {
+						FREE_AND_NULL(udp_buf);
+						lprintf("%04d %s !ERROR %d connect failed"
+							,client_socket, service[i].protocol, ERROR_VALUE);
+						break;
+					}
+#if 0
+					if(send(client_socket,"test\r\n",6,0)!=6) {
+						FREE_AND_NULL(udp_buf);
+						lprintf("%04d %s !SEND TEST ERROR %d"
+						,client_socket, service[i].protocol, ERROR_VALUE);
+						break;
+					}
+#endif
+				} else { 
+					/* TCP */
+					if((client_socket=accept(service[i].socket
+						,(struct sockaddr *)&client_addr, &client_addr_len))==INVALID_SOCKET) {
+						if(ERROR_VALUE == ENOTSOCK)
+            				lprintf("%04d %s socket closed while listening"
+								,service[i].socket, service[i].protocol);
+						else
+							lprintf("%04d %s !ERROR %d accept failed" 
+								,service[i].socket, service[i].protocol, ERROR_VALUE);
+						break;
+					}
 				}
 				strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
 
@@ -1236,6 +1305,7 @@ void DLLCALL services_thread(void* arg)
 #endif
 
 				if(trashcan(&scfg,host_ip,"ip")) {
+					FREE_AND_NULL(udp_buf);
 					lprintf("%04d !%s CLIENT BLOCKED in ip.can: %s"
 						,client_socket, service[i].protocol, host_ip);
 					mswait(3000);
@@ -1244,6 +1314,7 @@ void DLLCALL services_thread(void* arg)
 				}
 
 				if((client=malloc(sizeof(service_client_t)))==NULL) {
+					FREE_AND_NULL(udp_buf);
 					lprintf("%04d !%s ERROR allocating %u bytes of memory for service_client"
 						,client_socket, service[i].protocol, sizeof(service_client_t));
 					mswait(3000);
@@ -1259,6 +1330,10 @@ void DLLCALL services_thread(void* arg)
 				client->addr=client_addr;
 				client->service=&service[i];
 				client->service->clients++;		/* this should be mutually exclusive */
+				client->udp_buf=udp_buf;
+				client->udp_len=udp_len;
+
+				udp_buf = NULL;
 
 				SAFECOPY(cmd,service[i].cmd);
 				strlwr(cmd);
