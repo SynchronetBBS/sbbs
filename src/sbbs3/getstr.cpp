@@ -97,6 +97,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			ungetkey(ch); }
 
 	while(!(sys_status&SS_ABORT) && (ch=getkey(mode|K_GETSTR))!=CR && online) {
+		if(!input_thread_running)
+			break;
 		if(sys_status&SS_ABORT)
 			break;
 		if(ch==LF && mode&K_MSG) /* Down-arrow same as CR */
