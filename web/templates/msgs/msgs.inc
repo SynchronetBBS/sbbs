@@ -8,7 +8,7 @@
 <<REPEAT messages>>
 <TR bgcolor=@@JS:((template.color++)%2==0)?'"#00868B"':'"#008B8B"';@@>
 	<TD>
-		@@JS:if(@@messages:attachments@@>0) '<img src="/graphics/attach.gif">'; else '&nbsp;';@@
+		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach.gif">'; else '&nbsp;';@@
 	</TD>
 	<TD>
 		<A HREF="msg.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^&message=^^messages:number^^">%%messages:subject%%</A>
