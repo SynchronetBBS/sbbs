@@ -28,6 +28,7 @@
 	#include <malloc.h>
 #endif
 
+#include "conwrap.h"		/* getch() */
 #include "sbbs.h"			/* load_cfg() */
 #include "sbbsdefs.h"
 #include "smblib.h"
@@ -35,7 +36,6 @@
 #include "post.h"
 #include "lzh.h"
 #include "sbbsecho.h"
-#include "conwrap.h"		/* getch() */
 
 #ifdef __TURBOC__
     unsigned _stklen=20000;
@@ -179,7 +179,9 @@ for(i=j=0;i<len && j<128;i++) {
                 strcat(cmd,fpath);
                 break;
             case 'G':   /* Temp directory */
-                if(cfg->temp_dir[0]!='\\' && cfg->temp_dir[1]!=':') {
+                if(cfg->temp_dir[0]!='\\' 
+					&& cfg->temp_dir[0]!='/' 
+					&& cfg->temp_dir[1]!=':') {
                     strcpy(str,cfg->node_dir);
                     strcat(str,cfg->temp_dir);
                     if(FULLPATH(str2,str,40))
@@ -190,7 +192,9 @@ for(i=j=0;i<len && j<128;i++) {
                     strcat(cmd,cfg->temp_dir);
                 break;
             case 'J':
-                if(cfg->data_dir[0]!='\\' && cfg->data_dir[1]!=':') {
+                if(cfg->data_dir[0]!='\\' 
+					&& cfg->data_dir[0]!='/' 
+					&& cfg->data_dir[1]!=':') {
                     strcpy(str,cfg->node_dir);
                     strcat(str,cfg->data_dir);
                     if(FULLPATH(str2,str,40))
@@ -201,7 +205,9 @@ for(i=j=0;i<len && j<128;i++) {
                     strcat(cmd,cfg->data_dir);
                 break;
             case 'K':
-                if(cfg->ctrl_dir[0]!='\\' && cfg->ctrl_dir[1]!=':') {
+                if(cfg->ctrl_dir[0]!='\\' 
+					&& cfg->ctrl_dir[0]!='/' 
+					&& cfg->ctrl_dir[1]!=':') {
                     strcpy(str,cfg->node_dir);
                     strcat(str,cfg->ctrl_dir);
                     if(FULLPATH(str2,str,40))
@@ -224,7 +230,9 @@ for(i=j=0;i<len && j<128;i++) {
                 strcat(cmd,fspec);
                 break;
             case '!':   /* EXEC Directory */
-                if(cfg->exec_dir[0]!='\\' && cfg->exec_dir[1]!=':') {
+                if(cfg->exec_dir[0]!='\\' 
+					&& cfg->exec_dir[0]!='/' 
+					&& cfg->exec_dir[1]!=':') {
                     strcpy(str,cfg->node_dir);
                     strcat(str,cfg->exec_dir);
                     if(FULLPATH(str2,str,40))
@@ -326,16 +334,17 @@ int write_flofile(char *attachment, faddr_t dest)
 	if(dest.zone==scfg.faddr[0].zone)		/* Default zone, use default outbound */
 		strcpy(outbound,cfg.outbound);
 	else								/* Inter-zone outbound is OUTBOUND.XXX */
-		sprintf(outbound,"%.*s.%03x\\"
+		sprintf(outbound,"%.*s.%03x/"
 			,strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 	if(dest.point) {					/* Point destination is OUTBOUND\*.PNT */
 		sprintf(str,"%04x%04x.pnt"
 			,dest.net,dest.node);
 		strcat(outbound,str); }
-	if(outbound[strlen(outbound)-1]=='\\')
+	if(outbound[strlen(outbound)-1]=='\\'
+		|| outbound[strlen(outbound)-1]=='/')
 		outbound[strlen(outbound)-1]=0;
 	MKDIR(outbound);
-	strcat(outbound,"\\");
+	strcat(outbound,"/");
 	if(dest.point)
 		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
 	else
@@ -1519,7 +1528,10 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 			if(!(hdr.attr&FIDO_FILE))		/* Not a file attach */
 				continue;
 			num_mfncrc++;
-			if((p=strrchr(hdr.subj,'\\'))!=NULL)
+			p=strrchr(hdr.subj,'/');
+			if(p==NULL)
+				p=strrchr(hdr.subj,'\\');
+			if(p!=NULL)
 				p++;
 			else
 				p=hdr.subj;
@@ -1603,7 +1615,7 @@ void pack_bundle(char *infile,faddr_t dest)
 		if(dest.zone==scfg.faddr[0].zone)	/* Default zone, use default outbound */
 			strcpy(outbound,cfg.outbound);
 		else							/* Inter-zone outbound is OUTBOUND.XXX */
-			sprintf(outbound,"%.*s.%03x\\"
+			sprintf(outbound,"%.*s.%03x/"
 				,strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 		if(dest.point) {				/* Point destination is OUTBOUND\*.PNT */
 			sprintf(str,"%04x%04x.pnt"
@@ -1612,10 +1624,11 @@ void pack_bundle(char *infile,faddr_t dest)
 		}
 	else
 		strcpy(outbound,cfg.outbound);
-	if(outbound[strlen(outbound)-1]=='\\')
+	if(outbound[strlen(outbound)-1]=='\\'
+		|| outbound[strlen(outbound)-1]=='/')
 		outbound[strlen(outbound)-1]=0;
 	MKDIR(outbound);
-	strcat(outbound,"\\");
+	strcat(outbound,"/");
 
 	if(node<cfg.nodecfgs)
 		if(cfg.nodecfg[node].arctype==0xffff) {    /* Uncompressed! */
@@ -1640,7 +1653,10 @@ void pack_bundle(char *infile,faddr_t dest)
 				logprintf("ERROR line %d removing %s %s",__LINE__,str
 					,sys_errlist[errno]);
 		if(fexist(str)) {
-			if((p=strrchr(str,'\\'))!=NULL)
+			p=strrchr(str,'/');
+			if(p==NULL)
+				p=strrchr(str,'\\');
+			if(p!=NULL)
 				p++;
 			else
 				p=str;
@@ -1661,7 +1677,10 @@ void pack_bundle(char *infile,faddr_t dest)
 			if(misc&FLO_MAILER)
 				j=write_flofile(str,dest);
 			else {
-				if((p=strrchr(str,'\\'))!=NULL)
+				p=strrchr(str,'/');
+				if(p==NULL)
+					p=strrchr(str,'\\');
+				if(p!=NULL)
 					p++;
 				else
 					p=str;
@@ -2969,7 +2988,7 @@ void strip_psb(char HUGE16 *inbuf)
 	if((p=strstr((char *)fbuf,"\r\1PATH:"))!=NULL)
 		*(p)=0;
 }
-void attach_bundles()
+void attach_bundles(void)
 {
 	FILE *fidomsg;
 	char str[1025],path[512],*packet;
@@ -3446,9 +3465,9 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			if(!sp) sp=strrchr(tp,'\\');
 			if(sp) tp=sp+1;
 			sprintf(str,"%s%s",scfg.fidofile_dir,tp);
-			sprintf(tmp,"%sFILE\\%04u.IN",scfg.data_dir,usernumber);
+			sprintf(tmp,"%sFILE/%04u.IN",scfg.data_dir,usernumber);
 			MKDIR(tmp);
-			strcat(tmp,"\\");
+			strcat(tmp,"/");
 			strcat(tmp,tp);
 			mv(str,tmp,0);
 			if(!p)
@@ -3779,9 +3798,9 @@ int main(int argc, char **argv)
 	addrlist_t msg_seen,msg_path;
 	areasbbs_t fakearea,curarea;
 	char *usage="\n"
-	"usage: sbbsecho [cfg_file] [/switches] [sub_code]\n"
+	"usage: sbbsecho [cfg_file] [-switches] [sub_code]\n"
 	"\n"
-	"where: cfg_file is the filename of config file (default is ctrl\\sbbsecho.cfg)\n"
+	"where: cfg_file is the filename of config file (default is ctrl/sbbsecho.cfg)\n"
 	"       sub_code is the internal code for a sub-board (default is ALL subs)\n"
 	"\n"
 	"valid switches:\n"
@@ -3846,7 +3865,11 @@ int main(int argc, char **argv)
 	sub_code[0]=0;
 
 	for(i=1;i<argc;i++) {
-		if(argv[i][0]=='/') {
+		if(argv[i][0]=='-'
+#if !defined(__unix__)
+			|| argv[i][0]=='/'
+#endif
+			) {
 			j=1;
 			while(argv[i][j]) {
 				switch(toupper(argv[i][j])) {
@@ -3927,7 +3950,8 @@ int main(int argc, char **argv)
 						bail(0); }
 				j++; } }
 		else {
-			if(strchr(argv[i],'\\') || argv[i][1]==':' || strchr(argv[i],'.'))
+			if(strchr(argv[i],'\\') || strchr(argv[i],'/') 
+				|| argv[i][1]==':' || strchr(argv[i],'.'))
 				sprintf(cfg.cfgfile,"%.100s",argv[i]);
 			else
 				sprintf(sub_code,"%.8s",argv[i]); }  }
@@ -3941,7 +3965,7 @@ int main(int argc, char **argv)
 		bail(1); }
 	SAFECOPY(scfg.ctrl_dir,p); 
 
-	if(_chdir(scfg.ctrl_dir)!=0)
+	if(chdir(scfg.ctrl_dir)!=0)
 		printf("!ERROR changing directory to: %s", scfg.ctrl_dir);
 
     printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
@@ -4685,16 +4709,17 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 		if(addr.zone==scfg.faddr[0].zone) /* Default zone, use default outbound */
 			strcpy(outbound,cfg.outbound);
 		else						 /* Inter-zone outbound is OUTBOUND.XXX */
-			sprintf(outbound,"%.*s.%03X\\"
+			sprintf(outbound,"%.*s.%03X/"
 				,strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
 		if(addr.point) {			/* Point destination is OUTBOUND.PNT */
 			sprintf(str,"%04X%04X.PNT"
 				,addr.net,addr.node);
 			strcat(outbound,str); }
-		if(outbound[strlen(outbound)-1]=='\\')
+		if(outbound[strlen(outbound)-1]=='\\'
+			|| outbound[strlen(outbound)-1]=='/')
 			outbound[strlen(outbound)-1]=0;
 		MKDIR(outbound);
-		strcat(outbound,"\\");
+		strcat(outbound,"/");
 		if(addr.point)
 			sprintf(packet,"%s%08X.%cUT",outbound,addr.point,ch);
 		else
@@ -4808,4 +4833,5 @@ FREE(smb);
 FREE(email);
 
 bail(0);
+return(0);
 }
