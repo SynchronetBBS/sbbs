@@ -259,7 +259,7 @@ int main(int argc, char** argv)
     mail_startup.relay_port=IPPORT_SMTP;
     mail_startup.interface_addr=INADDR_ANY;
 	mail_startup.lputs=mail_lputs;
-	mail_startup.options|=MAIL_OPT_ALLOW_POP3
+	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
 	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
