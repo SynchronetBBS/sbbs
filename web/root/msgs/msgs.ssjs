@@ -108,12 +108,9 @@ else {
 }
 
 for(displayed=0;displayed<max_messages && last_offset >= 0;last_offset--) {
-	var hdr=msgbase.get_msg_header(true,msgarray[last_offset].offset);
+	var hdr=clean_msg_headers(msgbase.get_msg_header(true,msgarray[last_offset].offset),0);
 	if(hdr==null)
 		continue;
-	msgarray[last_offset].hdr != null
-	if(hdr.subject=='')
-		hdr.subject="-- No Subject --";
 	template.messages[displayed.toString()]=hdr;
 	template.messages[displayed.toString()].attachments=count_attachments(msgarray[last_offset].hdr,msgbase.get_msg_body(true,msgarray[last_offset].offset));
 	template.messages[displayed.toString()].offset=msgarray[last_offset].offset;

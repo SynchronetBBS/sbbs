@@ -2,6 +2,9 @@ load("sbbsdefs.js");
 load("html_inc/template.ssjs");
 load("html_inc/msgsconfig.ssjs");
 
+/* Flags for clean_msg_headers() */
+CLEAN_MSG_REPLY	=	(1<<0);
+
 http_reply.header["Pragma"]="no-cache";
 http_reply.header["Expires"]="0";
 
@@ -120,4 +123,17 @@ function can_delete(mnum)
 			return(false);
 	}
 	return(true);
+}
+
+function clean_msg_headers(hdr,flags)
+{
+	if(hdr.subject=='')
+		hdr.subject="-- No Subject --";
+	if(hdr.attr&MSG_ANONYMOUS) {
+		if((!(flags&CLEAN_MSG_REPLY)) && user.security.level>=90)
+			hdr.from='Anonymous ('+hdr.from+')';
+		else
+			hdr.from="Anonymous";
+	}
+	return(hdr);
 }

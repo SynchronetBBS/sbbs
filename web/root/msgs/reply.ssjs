@@ -17,7 +17,7 @@ if(sub!='mail') {
 if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
-hdr=msgbase.get_msg_header(false,parseInt(http_request.query.reply_to));
+hdr=clean_msg_headers(msgbase.get_msg_header(false,parseInt(http_request.query.reply_to)),CLEAN_MSG_REPLY);
 template.subject=hdr.subject;
 if(template.subject.search(/^re:\s+/i)==-1)
 	template.subject='Re: '+template.subject;
