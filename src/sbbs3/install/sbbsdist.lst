@@ -27,16 +27,20 @@
 
  Lines that start with anything but a C, T, f, t, D or s are ignored.
 
-T Current Source Tarball (v3.10l)
+T Current Source Tarball (v3.10L beta)
 m NOCVS=1
 f sbbs_src.tgz
 f lib-%s.tgz
-s ftp://ftp.synchro.net/				Official FTP server (T1)
-s ftp://vert.synchro.net/				Vertrauen FTP server (256kbps)
-s ftp://rob.synchro.net/				Vertrauen FTP server (256kbps)
-s ftp://cvs.synchro.net/				Vertrauen FTP server (256kbps)
+s ftp://ftp.synchro.net/			Official FTP server (T1)
+s ftp://vert.synchro.net/			Vertrauen FTP server (256kbps)
+s ftp://rob.synchro.net/			Vertrauen FTP server (256kbps)
+s ftp://cvs.synchro.net/			Vertrauen FTP server (256kbps)
 s ftp://freebsd.synchro.net/Synchronet/        	Deuce's FTP server (128kbps)
 
-C Current Beta (CVS)
+C Version 3.10L beta from CVS (stable)
+t sbbs310L
+s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official CVS Server (256kbps)
+
+C Current Development Code from CVS (unstable)
 t HEAD
-s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official Synchronet Server (256kbps)
+s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official CVS Server (256kbps)
