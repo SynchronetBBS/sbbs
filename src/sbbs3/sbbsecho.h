@@ -234,6 +234,7 @@ typedef struct {
 	nodecfg_t  *nodecfg;			/* Each node configuration */
 	echolist_t *listcfg;			/* Each echolist configuration */
 	areasbbs_t *area;				/* Each area configuration */
+	BOOL		check_path;			/* Enable circular path detection */
 	} config_t;
 
 #ifdef __WATCOMC__
