@@ -14,7 +14,7 @@
 # PREFIX = Set to the UNIX base directory to install to
 # bcc = Set to use Borland compiler
 # os = Set to the OS name (Not required)
-# SBBSOWNER = Owner for the installed files
+# SBBSUSER = Owner for the installed files
 # SBBSGROUP = Group for the installed files
 # NOCVS	= do not do CVS update
 # JSLIB = Full path and filename to JavaScript library.
@@ -42,9 +42,9 @@ endif
 INSTALL	?=	CLASSIC		# Can be CLASSIC or UNIX
 CVSTAG	?=	HEAD		# CVS tag to pull... HEAD means current.
 
-SBBSOWNER	?= $(USER)
+SBBSUSER	?= $(USER)
 SBBSGROUP	?= $(GROUP)
-SBBSCHOWN	:= $(SBBSOWNER):$(SBBSGROUP)
+SBBSCHOWN	:= $(SBBSUSER):$(SBBSGROUP)
 
 ifeq ($(INSTALL),UNIX)
  PREFIX	?=	/usr/local
