@@ -972,7 +972,6 @@ static void js_static_service_thread(void* arg)
 	SOCKET					socket;
 	/* JavaScript-specific */
 	JSObject*				js_glob;
-	JSObject*				js_scope;
 	JSScript*				js_script;
 	JSRuntime*				js_runtime;
 	JSContext*				js_cx;
@@ -996,9 +995,8 @@ static void js_static_service_thread(void* arg)
 	service_client.branch.gc_freq = JAVASCRIPT_GC_FREQUENCY;
 	service_client.branch.yield_freq = JAVASCRIPT_YIELD_FREQUENCY;
 
-	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL
-		|| (js_cx=js_initcx(js_runtime,service->socket,&service_client,&js_glob))==NULL) {
-		lprintf("%04d !%s ERROR initializing JavaScript context"
+	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL) {
+		lprintf("%04d !%s ERROR initializing JavaScript runtime"
 			,service->socket,service->protocol);
 		close_socket(service->socket);
 		service->socket=INVALID_SOCKET;
@@ -1010,35 +1008,33 @@ static void js_static_service_thread(void* arg)
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
 		sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
 
-	js_init_cmdline(js_cx, js_glob, spath);
-
-	val = BOOLEAN_TO_JSVAL(JS_FALSE);
-	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
-
-
-	JS_SetBranchCallback(js_cx, js_BranchCallback);
 	do {
-	
-		JS_ClearPendingException(js_cx);
-
-		if((js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob))==NULL) {
-			lprintf("%04d !JavaScript FAILED to create scope object", service->socket);
+		if((js_cx=js_initcx(js_runtime,service->socket,&service_client,&js_glob))==NULL) {
+			lprintf("%04d !%s ERROR initializing JavaScript context"
+				,service->socket,service->protocol);
 			break;
 		}
 
-		if((js_script=JS_CompileFile(js_cx, js_scope, spath))==NULL)  {
+		js_init_cmdline(js_cx, js_glob, spath);
+
+		val = BOOLEAN_TO_JSVAL(JS_FALSE);
+		JS_SetProperty(js_cx, js_glob, "logged_in", &val);
+
+		JS_SetBranchCallback(js_cx, js_BranchCallback);
+	
+		if((js_script=JS_CompileFile(js_cx, js_glob, spath))==NULL)  {
 			lprintf("%04d !JavaScript FAILED to compile script (%s)",service->socket,spath);
 			break;
 		}
 
-		JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
+		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		JS_DestroyScript(js_cx, js_script);
-		JS_ClearScope(js_cx, js_scope);
 
-		JS_GC(js_cx);
+		JS_DestroyContext(js_cx);	/* Free Context */
 	} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
 
-	JS_DestroyContext(js_cx);	/* Free Context */
+	if(js_cx!=NULL)
+		JS_DestroyContext(js_cx);	/* Free Context */
 
 	JS_DestroyRuntime(js_runtime);
 
