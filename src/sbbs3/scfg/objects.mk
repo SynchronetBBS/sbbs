@@ -30,7 +30,6 @@ OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
             $(LIBODIR)$(SLASH)userdat.$(OFILE)\
             $(LIBODIR)$(SLASH)date_str.$(OFILE)\
 			$(LIBODIR)$(SLASH)str_util.$(OFILE)\
-			$(LIBODIR)$(SLASH)genwrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)dirwrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)filewrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)uifcx.$(OFILE)
