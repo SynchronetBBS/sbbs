@@ -141,8 +141,7 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     char    str[128],*p;
     DWORD   addr;
 
-    sprintf(str,"%.*s",sizeof(str)-1
-        ,NetworkInterfaceEdit->Text.c_str());
+    SAFECOPY(str,NetworkInterfaceEdit->Text.c_str());
     p=str;
     while(*p && *p<=' ') p++;
     if(*p && isdigit(*p)) {
@@ -169,23 +168,17 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         =DeliveryAttemptsEdit->Text.ToIntDef(10);
     MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(300);
 
-    sprintf(MainForm->mail_startup.default_user,"%.*s"
-	    ,sizeof(MainForm->mail_startup.default_user)-1
+    SAFECOPY(MainForm->mail_startup.default_user
         ,DefaultUserEdit->Text.c_str());
-    sprintf(MainForm->mail_startup.dns_server,"%.*s"
-	    ,sizeof(MainForm->mail_startup.dns_server)-1
+    SAFECOPY(MainForm->mail_startup.dns_server
         ,DNSServerEdit->Text.c_str());
-    sprintf(MainForm->mail_startup.relay_server,"%.*s"
-	    ,sizeof(MainForm->mail_startup.relay_server)-1
+    SAFECOPY(MainForm->mail_startup.relay_server
         ,RelayServerEdit->Text.c_str());
-    sprintf(MainForm->mail_startup.inbound_sound,"%.*s"
-	    ,sizeof(MainForm->mail_startup.inbound_sound)-1
+    SAFECOPY(MainForm->mail_startup.inbound_sound
         ,InboundSoundEdit->Text.c_str());
-    sprintf(MainForm->mail_startup.outbound_sound,"%.*s"
-	    ,sizeof(MainForm->mail_startup.outbound_sound)-1
+    SAFECOPY(MainForm->mail_startup.outbound_sound
         ,OutboundSoundEdit->Text.c_str());
-    sprintf(MainForm->mail_startup.pop3_sound,"%.*s"
-	    ,sizeof(MainForm->mail_startup.pop3_sound)-1
+    SAFECOPY(MainForm->mail_startup.pop3_sound
         ,POP3SoundEdit->Text.c_str());
 
 	if(RelayRadioButton->Checked==true)

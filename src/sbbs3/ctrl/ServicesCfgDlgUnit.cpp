@@ -60,8 +60,7 @@ void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
     char    str[128],*p;
     DWORD   addr;
 
-    sprintf(str,"%.*s",sizeof(str)-1
-        ,NetworkInterfaceEdit->Text.c_str());
+    SAFECOPY(str,NetworkInterfaceEdit->Text.c_str());
     p=str;
     while(*p && *p<=' ') p++;
     if(*p && isdigit(*p)) {
@@ -81,11 +80,9 @@ void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
     MainForm->ServicesAutoStart=AutoStartCheckBox->Checked;
 
 
-    sprintf(MainForm->services_startup.answer_sound,"%.*s"
-	    ,sizeof(MainForm->services_startup.answer_sound)-1
+    SAFECOPY(MainForm->services_startup.answer_sound
         ,AnswerSoundEdit->Text.c_str());
-    sprintf(MainForm->services_startup.hangup_sound,"%.*s"
-	    ,sizeof(MainForm->services_startup.hangup_sound)-1
+    SAFECOPY(MainForm->services_startup.hangup_sound
         ,HangupSoundEdit->Text.c_str());
 
 	if(HostnameCheckBox->Checked==false)

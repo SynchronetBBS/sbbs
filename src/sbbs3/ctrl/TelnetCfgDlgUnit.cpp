@@ -115,8 +115,7 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     char    str[128],*p;
     DWORD   addr;
 
-    sprintf(str,"%.*s",sizeof(str)-1
-        ,TelnetInterfaceEdit->Text.c_str());
+    SAFECOPY(str,TelnetInterfaceEdit->Text.c_str());
     p=str;
     while(*p && *p<=' ') p++;
     if(*p && isdigit(*p)) {
@@ -134,8 +133,7 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     } else
         MainForm->bbs_startup.telnet_interface=0;
 
-    sprintf(str,"%.*s",sizeof(str)-1
-        ,RLoginInterfaceEdit->Text.c_str());
+    SAFECOPY(str,RLoginInterfaceEdit->Text.c_str());
     p=str;
     while(*p && *p<=' ') p++;
     if(*p && isdigit(*p)) {
@@ -162,11 +160,9 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
         =XtrnYieldEdit->Text.ToIntDef(10);
 
     MainForm->SysAutoStart=AutoStartCheckBox->Checked;
-    sprintf(MainForm->bbs_startup.answer_sound,"%.*s"
-	    ,sizeof(MainForm->bbs_startup.answer_sound)-1
+    SAFECOPY(MainForm->bbs_startup.answer_sound
         ,AnswerSoundEdit->Text.c_str());
-    sprintf(MainForm->bbs_startup.hangup_sound,"%.*s"
-	    ,sizeof(MainForm->bbs_startup.hangup_sound)-1
+    SAFECOPY(MainForm->bbs_startup.hangup_sound
         ,HangupSoundEdit->Text.c_str());
 	if(KeepAliveCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_KEEP_ALIVE;

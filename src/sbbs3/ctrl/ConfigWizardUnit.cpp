@@ -148,8 +148,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     int status;
 
     memset(&scfg,0,sizeof(scfg));
-    sprintf(scfg.ctrl_dir,"%.*s",sizeof(scfg.ctrl_dir)-1
-        ,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(scfg.ctrl_dir,MainForm->CtrlDirectory.c_str());
     scfg.size=sizeof(scfg);
     char error[256];
     if(!load_cfg(&scfg,NULL,FALSE,error)) {
@@ -182,8 +181,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
                     p++;
                     while(*p && *p<=' ') p++;
                     truncsp(p);
-                    sprintf(MainForm->mail_startup.dns_server,"%.*s"
-                        ,sizeof(MainForm->mail_startup.dns_server),p);
+                    SAFECOPY(MainForm->mail_startup.dns_server,p);
                     break;
                 }
             }
@@ -483,8 +481,7 @@ void __fastcall TConfigWizard::VerifyQWK(TObject *Sender)
 {
     char    qwk_id[9];
 
-    sprintf(qwk_id,"%.*s",sizeof(qwk_id)-1
-        ,QWKIDEdit->Text.c_str());
+    SAFECOPY(qwk_id,QWKIDEdit->Text.c_str());
     NextButton->Enabled=(
         strlen(qwk_id)>=2
         && isalpha(qwk_id[0])
