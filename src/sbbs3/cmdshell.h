@@ -269,7 +269,7 @@ enum {
 	,CS_FILE_SET_LIBRARY
 	,CS_FILE_SEND				//Like file_get, but no password needed
 	,CS_FILE_BATCH_ADD_LIST
-	,CS_FILE_UNUSED1			//0xD0
+	,CS_FILE_RECEIVE			//0xD0
 	,CS_NODELIST_ALL
 	,CS_NODELIST_USERS
 	,CS_CHAT_SECTION
@@ -329,7 +329,7 @@ enum {
 	 SHOW_VARS						// Show all variables
 	,PRINT_VAR						// Print a single variable
 	,VAR_PRINTF 					// Print a formated line of text
-	,VAR_RESERVED_4
+	,VAR_PRINTF_LOCAL				// Print a formated line of text to local display
 	,VAR_RESERVED_3
 	,VAR_RESERVED_2
 	,VAR_RESERVED_1
@@ -502,6 +502,13 @@ enum {
 	,CS_SOCKET_READ					// Read input buffer
 	,CS_SOCKET_WRITE				// Write to socket
 	,CS_SOCKET_CHECK				// Check connection
+	,CS_SOCKET_READLINE				// Read a cr/lf delimited line from socket
+	,CS_SOCKET_UNUSED6
+	,CS_SOCKET_UNUSED5
+	,CS_SOCKET_UNUSED4
+	,CS_SOCKET_UNUSED3
+	,CS_SOCKET_UNUSED2
+	,CS_SOCKET_UNUSED1
 
 	,CS_FTP_LOGIN					// socket, username, password
 	,CS_FTP_LOGOUT
@@ -512,6 +519,13 @@ enum {
 	,CS_FTP_GET						// path, offset
 	,CS_FTP_RENAME					
 	,CS_FTP_DELETE
+	,CS_FTP_UNUSED7
+	,CS_FTP_UNUSED6
+	,CS_FTP_UNUSED5
+	,CS_FTP_UNUSED4
+	,CS_FTP_UNUSED3
+	,CS_FTP_UNUSED2
+	,CS_FTP_UNUSED1
 	};
 
 /* Preceeded by CS_FIO_FUNCTION */
