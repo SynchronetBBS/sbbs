@@ -120,5 +120,6 @@ $(SCFG): $(OBJS)
 	@echo Linking $@
 	@$(CC) -o $@ $(OBJS) $(LFLAGS)
 
-# Auto-dependency files
+# Auto-dependency files (should go in output dir, but gcc v2.9.5 puts in cwd)
+-include ./*.d
 -include $(ODIR)/*.d

@@ -319,6 +319,7 @@ $(MAKEUSER): \
 	@$(CC) -o $@ $^
 
 
-# Auto-dependency files
+# Auto-dependency files (should go in output dir, but gcc v2.9.5 puts in cwd)
+-include ./*.d
 -include $(LIBODIR)/*.d
 -include $(EXEODIR)/*.d
