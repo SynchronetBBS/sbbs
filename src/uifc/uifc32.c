@@ -145,7 +145,7 @@ int uifcini32(uifcapi_t* uifcapi)
     api->input=uinput;
     api->sethelp=sethelp;
     api->showhelp=help;
-	api->showbuf=NULL;
+	api->showbuf=showbuf;
 	api->timedisplay=timedisplay;
 
 #ifdef __unix__
