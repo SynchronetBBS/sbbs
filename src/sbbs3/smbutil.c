@@ -45,9 +45,16 @@
 	#define findnext(x) _dos_findnext(x)
 #endif
 
-#include <ctype.h>	/* isdigit() */
-#include <conio.h>	/* getch() */
+#if defined(_WIN32)
+	#include <ctype.h>	/* isdigit() */
+	#include <conio.h>	/* getch() */
+#endif
+
+/* ANSI */
+#include <time.h>	/* time */
+
 #include "smblib.h"
+#include "smbwrap.h"
 #include "crc32.h"
 
 #ifdef __WATCOMC__
@@ -121,74 +128,6 @@ ucrc16(0,&crc);
 ucrc16(0,&crc);
 return(crc);
 }
-
-
-#ifdef _MSC_VER
-
-/****************************************************************************/
-/* Checks the disk drive for the existence of a file. Returns 1 if it       */
-/* exists, 0 if it doesn't.                                                 */
-/****************************************************************************/
-int fexist(char *filespec)
-{
-	long	handle;
-    struct _finddata_t f;
-
-if((handle=_findfirst(filespec,&f))==-1)
-    return(0);
-_findclose(handle);
-if(f.attrib&_A_SUBDIR)
-	return(0);
-return(1);
-}
-
-/****************************************************************************/
-/* Returns the length of the file in 'filespec'                             */
-/****************************************************************************/
-long flength(char *filespec)
-{
-	long	handle;
-    struct _finddata_t f;
-
-if((handle=_findfirst(filespec,&f))==-1)
-	return(-1L);
-_findclose(handle);
-return(f.size);
-}
-
-
-#else
-
-/****************************************************************************/
-/* Checks the disk drive for the existence of a file. Returns 1 if it       */
-/* exists, 0 if it doesn't.                                                 */
-/****************************************************************************/
-char fexist(char *filespec)
-{
-	struct ffblk f;
-
-if(findfirst(filespec,&f,0)==0)
-    return(1);
-return(0);
-}
-
-/****************************************************************************/
-/* Returns the length of the file in 'filespec'                             */
-/****************************************************************************/
-long flength(char *filespec)
-{
-	struct ffblk f;
-
-if(findfirst(filespec,&f,0)==0)
-#ifdef __WATCOMC__
-	return(f.size);
-#else
-	return(f.ff_fsize);
-#endif
-return(-1L);
-}
-
-#endif /* _MSC_VER */
 
 void remove_re(char *str)
 {
@@ -355,7 +294,7 @@ smb_freemsgmem(&msg);
 /****************************************************************************/
 /* Shows the message base header											*/
 /****************************************************************************/
-void showstatus()
+void showstatus(void)
 {
 	int i;
 
@@ -388,7 +327,7 @@ printf("last_msg        =%lu\n"
 /****************************************************************************/
 /* Configure message base header											*/
 /****************************************************************************/
-void config()
+void config(void)
 {
 	char max_msgs[128],max_crcs[128],max_age[128],header_offset[128],attr[128];
 	int i;
@@ -1379,8 +1318,8 @@ int main(int argc, char **argv)
 	int i,j,x,y;
 
 #ifdef __TURBOC__
-	timezone=0; 		/* Fix for Borland C++ EST default */
-	daylight=0; 		/* Fix for Borland C++ EDT default */
+//	timezone=0; 		/* Fix for Borland C++ EST default */
+//	daylight=0; 		/* Fix for Borland C++ EDT default */
 #elif defined(__WATCOMC__)
 	putenv("TZ=UCT0");  /* Fix for Watcom C++ EDT default */
 #endif
