@@ -43,9 +43,9 @@
 void sbbs_t::readmail(uint usernumber, int which)
 {
 	char	str[256],str2[256],str3[256],done=0,domsg=1
-			,*p,*tp,*sp,ch;
+			,*p,*p2,*tp,*sp,ch;
 	char 	tmp[512];
-	int		i,j;
+	int		i,j,k;
 	int		error;
 	int		mismatches=0,act;
 	ulong 	msgs,curmsg;
@@ -433,6 +433,46 @@ void sbbs_t::readmail(uint usernumber, int which)
 				if(curmsg<msgs-1) curmsg++;
 				else done=1;
 				break;
+#if 0
+			case 'X':  /* Delete range(s) */
+				i=0;	/* Low */
+				j=0;	/* High */
+				for(p=str;*p;p++) {
+					if((*p<'0' || *p>'9') && *p!='-')
+						break;
+					if(*p=='-') {
+						*p=0;
+						i=atoi(str);
+						p2=p+1;
+					}
+				}
+				if(*p) {
+					/* Error notice (Invalid range) */
+					break;
+				}
+				j=atoi(p2);
+				for(k=i;i<=j;i++) {
+					if(msg.hdr.attr&MSG_PERMANENT) {
+						bputs("\r\nPermanent message.\r\n");
+						domsg=0;
+						break; }
+					if(msg.total_hfields)
+						smb_freemsgmem(&msg);
+					msg.total_hfields=0;
+					msg.idx.offset=0;
+					if(loadmsg(&msg,msg.idx.number)) {
+						msg.hdr.attr^=MSG_DELETE;
+						msg.idx.attr=msg.hdr.attr;
+	//					  mail[curmsg].attr=msg.hdr.attr;
+						if((i=smb_putmsg(&smb,&msg))!=0)
+							errormsg(WHERE,ERR_WRITE,smb.file,i);
+						smb_unlockmsghdr(&smb,&msg); }
+					if(curmsg<msgs-1) curmsg++;
+					else done=1;
+					break;
+				}
+				break;
+#endif
 			case 'F':  /* Forward last piece */
 				domsg=0;
 				bputs(text[ForwardMailTo]);
