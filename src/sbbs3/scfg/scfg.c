@@ -104,7 +104,6 @@ int main(int argc, char **argv)
 	char	**mopt,*p;
 	int 	i,j,main_dflt=0,chat_dflt=0;
     int     scrn_len;
-    int     text_mode=C80;
 	uint	u;
 	long	l;
 	char 	str[129];
@@ -154,27 +153,33 @@ printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
                 	forcesave=!forcesave;
                     break;
                 case 'V':
-                    text_mode=atoi(argv[i]+2);
+                    textmode(atoi(argv[i]+2));
                     break;
                 case 'L':
                     switch(atoi(argv[i]+2)) {
+                        case 14:
+                            textmode(C80X14);
+                            break;
                         case 21:
-                            text_mode=C80X21;
+                            textmode(C80X21);
+                            break;
+                        case 25:
+                            textmode(C80);
                             break;
                         case 28:
-                            text_mode=C80X28;
+                            textmode(C80X28);
                             break;
                         case 43:
-                            text_mode=C80X43;
+                            textmode(C80X43);
                             break;
                         case 50:
-                            text_mode=C80X50;
+                            textmode(C80X50);
                             break;
                         case 60:
-                            text_mode=C80X60;
+                            textmode(C80X60);
                             break;
                         default:
-                            text_mode=C4350;
+                            textmode(C4350);
                             break;
                     }
                     break;
@@ -208,7 +213,6 @@ backslashcolon(cfg.ctrl_dir);
 
 init_mdms();
 
-textmode(text_mode);
 scrn_len=uifcini();
 
 #if !defined(__FLAT__)
