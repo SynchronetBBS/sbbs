@@ -588,19 +588,6 @@ js_clear(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_home(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	sbbs_t*		sbbs;
-
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	sbbs->cursor_home();
-	*rval=JSVAL_VOID;
-    return(JS_TRUE);
-}
-
-static JSBool
 js_clearline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
