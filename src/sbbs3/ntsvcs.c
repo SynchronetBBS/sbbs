@@ -507,6 +507,74 @@ static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* descripti
 		changeServiceConfig2(hService, SERVICE_CONFIG_DESCRIPTION, &service_desc);
 }
 
+static BOOL register_event_source(char* name, char* path)
+{
+	char	keyname[256];
+	HKEY	hKey;
+	DWORD	type;
+	DWORD	disp;
+	LONG	retval;
+	char*	value;
+
+	sprintf(keyname,"system\\CurrentControlSet\\services\\eventlog\\application\\%s",name);
+
+	retval=RegCreateKeyEx(
+		HKEY_LOCAL_MACHINE,			// handle to an open key
+		keyname,			// address of subkey name
+		0,				// reserved
+		"",				// address of class string
+		0,				// special options flag
+		KEY_ALL_ACCESS, // desired security access
+		NULL,           // address of key security structure
+		&hKey,			// address of buffer for opened handle
+		&disp			// address of disposition value buffer
+		);
+
+	if(retval!=ERROR_SUCCESS) {
+		fprintf(stderr,"!Error %d creating/opening registry key (HKLM\\%s)\n"
+			,retval,keyname);
+		return(FALSE);
+	}
+
+	value="EventMessageFile";
+	retval=RegSetValueEx(
+		hKey,			// handle to key to set value for
+		value,			// name of the value to set
+		0,				// reserved
+		REG_SZ,			// flag for value type
+		path,			// address of value data
+		strlen(path)	// size of value data
+		);
+
+	if(retval!=ERROR_SUCCESS) {
+		RegCloseKey(hKey);
+		fprintf(stderr,"!Error %d setting registry key value (%s)\n"
+			,retval,value);
+		return(FALSE);
+	}
+
+	value="TypesSupported";
+	type=EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE;
+	retval=RegSetValueEx(
+		hKey,			// handle to key to set value for
+		value,			// name of the value to set
+		0,				// reserved
+		REG_DWORD,		// flag for value type
+		(BYTE*)&type,	// address of value data
+		sizeof(type)	// size of value data
+		);
+
+	RegCloseKey(hKey);
+
+	if(retval!=ERROR_SUCCESS) {
+		fprintf(stderr,"!Error %d setting registry key value (%s)\n"
+			,retval,value);
+		return(FALSE);
+	}
+
+	return(TRUE);
+}
+
 /****************************************************************************/
 /* Utility function to create a service with description (on Win2K+)		*/
 /****************************************************************************/
@@ -540,6 +608,8 @@ static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 		describe_service(hSCMlib, hService,description);
 		CloseServiceHandle(hService);
 		printf("Successful\n");
+
+		register_event_source(name,path);
 	}
 
 	return(hService);
@@ -702,9 +772,9 @@ static void set_service_start_type(SC_HANDLE hSCManager, char* name
 }
 
 /****************************************************************************/
-/* Disable one or all services												*/
+/* Enable (set to auto-start) or disable one or all services				*/
 /****************************************************************************/
-static int disable(const char* svc_name)
+static int enable(const char* svc_name, BOOL enabled)
 {
 	int			i;
     SC_HANDLE   hSCManager;
@@ -725,38 +795,7 @@ static int disable(const char* svc_name)
 			set_service_start_type(hSCManager
 				,ntsvc_list[i]->name
 				,ntsvc_list[i]->display_name
-				,SERVICE_DISABLED);
-
-	CloseServiceHandle(hSCManager);
-
-	return(0);
-}
-
-/****************************************************************************/
-/* Enable (set to auto-start) one or all services							*/
-/****************************************************************************/
-static int enable(const char* svc_name)
-{
-	int			i;
-    SC_HANDLE   hSCManager;
-
-    hSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
-                        SC_MANAGER_ALL_ACCESS   // access required
-                        );
-    if(hSCManager==NULL) {
-		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
-		return(-1);
-	}
-
-	for(i=0;ntsvc_list[i]!=NULL;i++)
-		if(svc_name==NULL	/* All? */
-			|| !stricmp(ntsvc_list[i]->name, svc_name))
-			set_service_start_type(hSCManager
-				,ntsvc_list[i]->name
-				,ntsvc_list[i]->display_name
-				,SERVICE_AUTO_START);
+				,enabled ? SERVICE_AUTO_START : SERVICE_DISABLED);
 
 	CloseServiceHandle(hSCManager);
 
@@ -891,10 +930,10 @@ int main(int argc, char** argv)
 			return uninstall(argv[i+1]);
 
 		if(!stricmp(arg,"disable"))
-			return disable(argv[i+1]);
+			return enable(argv[i+1], FALSE);
 
 		if(!stricmp(arg,"enable"))
-			return enable(argv[i+1]);
+			return enable(argv[i+1], TRUE);
 	}
 
 	printf("Available Services:\n\n");
