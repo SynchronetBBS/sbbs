@@ -17,10 +17,10 @@ CC		=	gcc
 LD		=	ld
 XSDK		=	../sdk
 ifndef XPDEV
- XPDEV		=	/src/xpdev
+ XPDEV		=	../../src/xpdev
 endif
 ifndef SBBS_SRC
- SBBS_SRC	=	/src/sbbs3
+ SBBS_SRC	=	../../src/sbbs3
 endif
 
 ifndef os
