@@ -1054,6 +1054,8 @@ void DLLCALL services_thread(void* arg)
 	/* Open and Bind Listening Sockets */
 	for(i=0;i<(int)services;i++) {
 
+		service[i].socket=INVALID_SOCKET;
+
 		if((socket = open_socket(SOCK_STREAM))==INVALID_SOCKET) {
 			lprintf("!ERROR %d opening socket", ERROR_VALUE);
 			cleanup(1);
@@ -1100,6 +1102,8 @@ void DLLCALL services_thread(void* arg)
 		FD_ZERO(&socket_set);	
 		high_socket=0;
 		for(i=0;i<(int)services;i++) {
+			if(service[i].socket==INVALID_SOCKET)
+				continue;
 			FD_SET(service[i].socket,&socket_set);
 			if(service[i].socket>high_socket)
 				high_socket=service[i].socket;
