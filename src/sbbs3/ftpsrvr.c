@@ -99,7 +99,7 @@ static DWORD	active_clients=0;
 static DWORD	sockets=0;
 static DWORD	thread_count=0;
 static HANDLE	socket_mutex=NULL;
-static time_t	uptime;
+static time_t	uptime=0;
 static BOOL		recycle_server=FALSE;
 #ifdef _DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
@@ -4274,6 +4274,7 @@ const char* DLLCALL ftp_ver(void)
 
 void DLLCALL ftp_server(void* arg)
 {
+	char			path[MAX_PATH+1];
 	char			error[256];
 	char			compiler[32];
 	SOCKADDR_IN		server_addr;
@@ -4284,6 +4285,7 @@ void DLLCALL ftp_server(void* arg)
 	int				result;
 	time_t			t;
 	time_t			start;
+	time_t			initialized;
 	LINGER			linger;
 	fd_set			socket_set;
 	ftp_t*			ftp;
@@ -4331,17 +4333,17 @@ void DLLCALL ftp_server(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-	#ifdef __unix__		/* Ignore "Broken Pipe" signal */
+#ifdef __unix__		/* Ignore "Broken Pipe" signal */
 		signal(SIGPIPE,SIG_IGN);
-	#endif
+#endif
 
 		lprintf("Synchronet FTP Server Version %s%s"
 			,FTP_VERSION
-	#ifdef _DEBUG
+#ifdef _DEBUG
 			," Debug"
-	#else
+#else
 			,""
-	#endif
+#endif
 			);
 
 		COMPILER_DESC(compiler);
@@ -4363,7 +4365,8 @@ void DLLCALL ftp_server(void* arg)
 			}
 		}
 
-		uptime=time(NULL);
+		if(uptime==0)
+			uptime=time(NULL);
 
 		if(!winsock_startup()) {
 			cleanup(1);
@@ -4374,13 +4377,13 @@ void DLLCALL ftp_server(void* arg)
 		lprintf("Initializing on %.24s with options: %lx"
 			,ctime(&t),startup->options);
 
-	#ifdef _WIN32
+#ifdef _WIN32
 		if((socket_mutex=CreateMutex(NULL,FALSE,NULL))==NULL) {
     		lprintf("!ERROR %d creating socket_mutex", GetLastError());
 			cleanup(1);
 			return;
 		}
-	#endif
+#endif
 
 		/* Initial configuration and load from CNF files */
 		sprintf(scfg.ctrl_dir, "%.*s",(int)sizeof(scfg.ctrl_dir)-1
@@ -4429,7 +4432,7 @@ void DLLCALL ftp_server(void* arg)
 
 		lprintf("%04d FTP socket opened",server_socket);
 
-	#if 1
+#if 1
 		linger.l_onoff=TRUE;
 		linger.l_linger=5;	/* seconds */
 
@@ -4440,7 +4443,7 @@ void DLLCALL ftp_server(void* arg)
 			cleanup(1);
 			return;
 		}
-	#endif
+#endif
 
 		/*****************************/
 		/* Listen for incoming calls */
@@ -4477,11 +4480,19 @@ void DLLCALL ftp_server(void* arg)
 		lprintf("%04d FTP Server thread started on port %d",server_socket,startup->port);
 		status(STATUS_WFC);
 
+		initialized=time(NULL);
+
 		while(server_socket!=INVALID_SOCKET) {
+
+			sprintf(path,"%sftpsrvr.rec",scfg.ctrl_dir);
+			if(fdate(path)>initialized) {
+				lprintf("0000 Recycle semaphore detected");
+				break;
+			}
 
 			/* now wait for connection */
 
-			tv.tv_sec=2;
+			tv.tv_sec=5;
 			tv.tv_usec=0;
 
 			FD_ZERO(&socket_set);
