@@ -335,9 +335,11 @@ ulong _beginthread(void( *start_address )( void * )
 
 	return(-1);	/* error */
 }
-#else	/* _POSIX_THREADS */
+#else
 
 #error "Need _beginthread implementation for non-POSIX thread library."
+
+#endif
 
 #endif	/* __unix__ */
 
