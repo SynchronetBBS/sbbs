@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -34,6 +34,9 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
+
+#ifndef _TELNET_H
+#define _TELNET_H
 
 /* commands */
 
@@ -104,6 +107,11 @@ enum {
 	,TELNET_EXOPL=255	// Extended options list
 };
 
+/* Terminal-type sub option codes, see RFC 1091 */
+#define TELNET_TERM_IS		0
+#define TELNET_TERM_SEND	1
+#define TELNET_TERM_MAXLEN	40
+
 /* bits for telnet_mode */   
    
 #define TELNET_MODE_BIN_RX	(1<<0)   
@@ -144,3 +152,5 @@ DLLEXPORT const char* DLLCALL telnet_opt_desc(uchar opt);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* don't add anything after this line */
