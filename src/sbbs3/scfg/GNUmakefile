@@ -116,7 +116,7 @@ $(ODIR):
 	mkdir $(ODIR)
 
 $(MAKEHELP): makehelp.c
-	@$(CC) makehelp.c -o $(MAKEHELP)
+	@$(CC) $(CFLAGS) makehelp.c -o $(MAKEHELP)
 
 $(SCFGHELP): $(OBJS) $(MAKEHELP)
 	@$(MAKEHELP) $(ODIR)
