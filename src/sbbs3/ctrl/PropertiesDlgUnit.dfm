@@ -43,9 +43,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 9
     Width = 312
     Height = 272
-    ActivePage = SettingsTabSheet
+    ActivePage = CustomizeTabSheet
     Anchors = [akLeft, akTop, akBottom]
-    TabIndex = 0
+    TabIndex = 1
     TabOrder = 2
     object SettingsTabSheet: TTabSheet
       Caption = 'Settings'
@@ -132,7 +132,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 265
         Top = 76
         Width = 19
-        Height = 30
+        Height = 24
         Associate = NodeIntEdit
         Min = 1
         Max = 99
@@ -155,7 +155,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 265
         Top = 108
         Width = 19
-        Height = 30
+        Height = 24
         Associate = ClientIntEdit
         Min = 1
         Max = 99
@@ -201,7 +201,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 265
         Top = 138
         Width = 18
-        Height = 29
+        Height = 24
         Associate = SemFreqEdit
         Min = 1
         Max = 99
@@ -219,7 +219,6 @@ object PropertiesDlg: TPropertiesDlg
         Width = 134
         Height = 24
         ItemHeight = 16
-        ItemIndex = 0
         TabOrder = 0
         Text = 'Node List'
         OnChange = SourceComboBoxChange
@@ -230,6 +229,7 @@ object PropertiesDlg: TPropertiesDlg
           'Event Log'
           'FTP Server Log'
           'Mail Server Log'
+          'Web Server Log'
           'Services Log')
       end
       object ExampleEdit: TEdit
@@ -281,6 +281,7 @@ object PropertiesDlg: TPropertiesDlg
           'Event Log'
           'FTP Server Log'
           'Mail Server Log'
+          'Web Server Log'
           'Services Log'
           'All  Windows')
       end

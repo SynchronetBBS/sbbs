@@ -7,6 +7,7 @@
 #include "TelnetFormUnit.h"
 #include "EventsFormUnit.h"
 #include "FtpFormUnit.h"
+#include "WebFormUnit.h"
 #include "MailFormUnit.h"
 #include "ServicesFormUnit.h"
 #include "PropertiesDlgUnit.h"
@@ -62,7 +63,11 @@ void __fastcall TPropertiesDlg::SourceComboBoxChange(TObject *Sender)
             ExampleEdit->Font=MailForm->Log->Font;
         	ExampleEdit->Color=MailForm->Log->Color;
             break;
-        case 6: /* Services Log */
+        case 6: /* Web Server Log */
+            ExampleEdit->Font=WebForm->Log->Font;
+        	ExampleEdit->Color=WebForm->Log->Color;
+            break;
+        case 7: /* Services Log */
             ExampleEdit->Font=ServicesForm->Log->Font;
         	ExampleEdit->Color=ServicesForm->Log->Color;
             break;
@@ -119,7 +124,11 @@ void __fastcall TPropertiesDlg::ChangeScheme(int target)
             MailForm->Log->Font=ExampleEdit->Font;
         	MailForm->Log->Color=ExampleEdit->Color;
             break;
-        case 6: /* Services Log */
+        case 6: /* Web Server Log */
+            WebForm->Log->Font=ExampleEdit->Font;
+        	WebForm->Log->Color=ExampleEdit->Color;
+            break;
+        case 7: /* Services Log */
             ServicesForm->Log->Font=ExampleEdit->Font;
         	ServicesForm->Log->Color=ExampleEdit->Color;
             break;
