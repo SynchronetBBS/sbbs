@@ -39,6 +39,34 @@
 
 #ifdef JAVASCRIPT
 
+/* Global Object Properites */
+enum {
+	 GLOB_PROP_ERRNO
+};
+
+static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+    jsint       tiny;
+
+    tiny = JSVAL_TO_INT(id);
+
+	switch(tiny) {
+		case GLOB_PROP_ERRNO:
+	        *vp = INT_TO_JSVAL(errno);
+			break;
+	}
+	return(TRUE);
+}
+
+#define GLOBOBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
+
+static struct JSPropertySpec js_global_properties[] = {
+/*		 name,		tinyid,				flags,				getter,	setter	*/
+
+	{	"errno",	GLOB_PROP_ERRNO,	GLOBOBJ_FLAGS,		NULL,	NULL },
+	{0}
+};
+
 static JSBool
 js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -515,12 +543,18 @@ js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 	
-static JSClass js_global_class ={
-        "Global",
-		JSCLASS_HAS_PRIVATE, /* needed for scfg_t ptr */
-        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
-        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
-    }; 
+static JSClass js_global_class = {
+     "Global"				/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_system_get			/* getProperty	*/
+	,JS_PropertyStub		/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
 
 static JSFunctionSpec js_global_functions[] = {
 	{"exit",			js_exit,			0},		/* stop execution */
@@ -561,6 +595,9 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg)
 		return(NULL);
 
 	if (!JS_DefineFunctions(cx, glob, js_global_functions)) 
+		return(NULL);
+
+	if(!JS_DefineProperties(cx, glob, js_global_properties))
 		return(NULL);
 
 	if(!JS_SetPrivate(cx, glob, cfg))	/* Store a pointer to scfg_t */
