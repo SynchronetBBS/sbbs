@@ -425,7 +425,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,useron.alias);
 			putsmsg(&cfg,1,str);
 		} 
-		closedir(dir);
+		if(dir!=NULL)
+			closedir(dir);
 		sprintf(str,"%sqnet-rep.now",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 			close(file);

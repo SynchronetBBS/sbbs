@@ -579,7 +579,8 @@ bool sbbs_t::bulkupload(uint dirnum)
 			uploadfile(&f); 
 		}
 	}
-	closedir(dir);
+	if(dir!=NULL)
+		closedir(dir);
 	if(sys_status&SS_ABORT)
 		return(true);
 	return(false);

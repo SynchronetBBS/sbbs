@@ -642,7 +642,8 @@ void sbbs_t::batch_upload()
 			uploadfile(&f); 
 		}
 	}
-	closedir(dir);
+	if(dir!=NULL)
+		closedir(dir);
 }
 
 /****************************************************************************/

@@ -494,7 +494,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			if(!mv(str,tmp2,1))
 				netfiles++;
 		}
-		closedir(dir);
+		if(dir!=NULL)
+			closedir(dir);
 		if(netfiles)
 			CRLF; }
 
@@ -616,7 +617,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			if(!isdir(tmp))
 				remove(tmp); 
 		}
-		closedir(dir);
+		if(dir!=NULL)
+			closedir(dir);
 	}
 
 	return(true);

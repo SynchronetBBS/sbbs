@@ -311,7 +311,8 @@ void sbbs_t::extract(uint dirnum)
         		if(!isdir(str))
 					remove(str);
 			}
-			closedir(dir);
+			if(dir!=NULL)
+				closedir(dir);
 			CRLF; 
 		} 
 	}
