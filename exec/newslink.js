@@ -224,18 +224,14 @@ for(i in area) {
 
 		body = msgbase.get_msg_body(false, ptr
 				,true	/* remove ctrl-a codes */
-				,false	/* include tails */);
+				,true	/* include tails */);
 		if(body == null) {
 			printf("!FAILED to read message number %ld",ptr);
 			continue;
 		}
-		tail = msgbase.get_msg_tail(false, ptr
-				,true	/* remove ctrl-a codes */);
-		if(tail != null) {
-			body += tail;
-			body += tearline;
-			body += tagline;
-		}
+		body = ascii_str(body);
+		body += tearline;
+		body += tagline;
 
 		if(0) 
 			writeln(format("IHAVE %s",hdr.id));
@@ -280,6 +276,10 @@ for(i in area) {
 		writeln("References: " + hdr.reply_id);
 		writeln("Newsgroups: " + newsgroup);
 		writeln("");
+		if(hdr.to.toLowerCase()!="all") {
+			writeln("To: " + hdr.to);
+			writeln("");
+		}
 		write(body);
 		writeln(".");
 		rsp = readln();
@@ -287,7 +287,7 @@ for(i in area) {
 			printf("!POST failure: %s",rsp);
 			break;
 		}
-		printf("Posted message %lu to newsgroup: %s",ptr,newsgroup);
+		printf("Exported message %lu to newsgroup: %s",ptr,newsgroup);
 		exported++;
 	}
 	if(ptr > msgbase.last_msg)
@@ -329,7 +329,7 @@ for(i in area) {
 			printf("!ARTICLE %lu failure: %s",ptr,rsp);
 			continue;
 		}
-		body=format("\1n\1b\1hFrom newsgroup\1n\1b: \1h\1c%s\1n\r\n\r\n",newsgroup);
+		body=format("\1n\1b\1hFrom Newsgroup\1n\1b: \1h\1c%s\1n\r\n\r\n",newsgroup);
 		header=true;
 		var hdr=new Object();
 		while(socket.is_connected) {
