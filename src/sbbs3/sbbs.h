@@ -58,6 +58,10 @@
 		#include <crtdbg.h> /* Windows debug macros and stuff */
 	#endif
 
+	typedef DWORD(WINAPI * GetLongPathName_t)(LPCTSTR,LPTSTR,DWORD); 
+
+	extern GetLongPathName_t Win98GetLongPathName;
+
 #elif defined(__unix__)		/* Unix-variant */
 
 	#include <unistd.h>		/* close */
