@@ -41,6 +41,8 @@
 
 #ifdef JAVASCRIPT
 
+void js_timeval(JSContext* cx, jsval val, struct timeval* tv);	/* js_socket.c */
+
 /* Global Object Properites */
 enum {
 	 GLOB_PROP_ERRNO
@@ -1413,7 +1415,6 @@ js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	SOCKET*		psock;
 	jsval		val;
 	int			len=0;
-	jsdouble	jsd;
 
 	*rval = JSVAL_NULL;
 
@@ -1422,13 +1423,8 @@ js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
 		else if(JSVAL_IS_OBJECT(argv[argn]))
 			inarray = JSVAL_TO_OBJECT(argv[argn]);
-		else if(JSVAL_IS_INT(argv[argn]))
-			tv.tv_sec = JSVAL_TO_INT(argv[argn]);
-		else if(JSVAL_IS_DOUBLE(argv[argn])) {
-			JS_ValueToNumber(cx,argv[argn],&jsd);
-			tv.tv_sec = (int)jsd;
-			tv.tv_usec = (int)(jsd*1000000.0)%1000000;
-		}
+		else if(JSVAL_IS_NUMBER(argv[argn]))
+			js_timeval(cx,argv[argn],&tv);
 	}
 
     if(inarray==NULL || !JS_IsArrayObject(cx, inarray))
