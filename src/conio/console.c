@@ -577,12 +577,15 @@ video_event(XEvent *ev)
 					copybuf=NULL;
 				}
 				pthread_mutex_unlock(&copybuf_mutex);
+				break;
 		}
 		case SelectionNotify: {
 				int format;
 				unsigned long len, bytes_left, dummy;
 				Atom type;
 
+				if(ev->xselection.requestor!=win)
+					break;
 				x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
 				if(bytes_left > 0 && format==8)
 					x11.XGetWindowProperty(dpy, win, ev->xselection.property,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&pastebuf);
