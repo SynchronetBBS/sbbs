@@ -35,10 +35,10 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "dirwrap.h"	/* backslash */
 #include "sbbs_ini.h"
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
 #include "ini_opts.h"	/* bbs_options, ftp_options, etc. */
-#include "dirwrap.h"	/* backslash */
 
 static const char*	nulstr="";
 static const char*	strOptions="Options";
