@@ -331,7 +331,7 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node) {
 	if(free<1000) {
 		free=getfreediskspace(cfg->temp_dir,0);
 		getsizestr(str[0][1],free,TRUE);
-	} 
+	}
 	else
 		getsizestr(str[0][1],free,FALSE);
 	snprintf(str[1][0],12,"%s/%s",getnumstr(str[3][2],nstats.ltoday),getnumstr(str[3][3],sstats.ltoday));
@@ -445,6 +445,7 @@ int main(int argc, char** argv)  {
 		printf("ERROR! %s\n",str);
 		exit(1);
 	}
+	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 
     memset(&uifc,0,sizeof(uifc));
 
