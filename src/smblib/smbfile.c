@@ -161,10 +161,10 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 	while(1) {
 		if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,share,S_IREAD|S_IWRITE))!=-1)
 			break;
-		if(errno!=EACCES && errno!=EAGAIN) {
+		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) opening %s"
-				,errno,STRERROR(errno),path);
+				,get_errno(),STRERROR(get_errno()),path);
 			return(SMB_ERR_OPEN);
 		}
 		if(!start)
@@ -181,7 +181,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 	if((*fp=fdopen(file,"r+b"))==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) fdopening %s (%d)"
-			,errno,STRERROR(errno),path,file);
+			,get_errno(),STRERROR(get_errno()),path,file);
 		close(file);
 		return(SMB_ERR_OPEN); 
 	}

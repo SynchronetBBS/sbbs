@@ -157,7 +157,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 		if(fseek(smb->sda_fp,sda_offset,SEEK_SET)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) seeking to %lu (0x%lX) of allocation file"
-				,errno,STRERROR(errno)
+				,get_errno(),STRERROR(get_errno())
 				,sda_offset,sda_offset);
 			retval=SMB_ERR_SEEK;
 			break;
@@ -177,7 +177,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 		if(fseek(smb->sda_fp,-(int)sizeof(i),SEEK_CUR)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) seeking backwards 2 bytes in allocation file"
-				,errno,STRERROR(errno));
+				,get_errno(),STRERROR(get_errno()));
 			retval=SMB_ERR_SEEK;
 			break;
 		}
