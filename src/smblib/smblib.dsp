@@ -98,11 +98,31 @@ SOURCE=.\md5.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\smbadd.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\smballoc.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\smbdump.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\smbfile.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\smbhash.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\smblib.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\smbstr.c
 # End Source File
 # Begin Source File
 
