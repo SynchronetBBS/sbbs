@@ -4569,6 +4569,9 @@ void DLLCALL ftp_server(void* arg)
 				break;
 			}
 
+			if(server_socket==INVALID_SOCKET)	/* terminated */
+				break;
+
 			client_addr_len = sizeof(client_addr);
 			client_socket = accept(server_socket, (struct sockaddr *)&client_addr
         		,&client_addr_len);
