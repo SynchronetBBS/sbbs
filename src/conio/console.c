@@ -432,23 +432,30 @@ video_update_text()
 
     static char buf[256];
     int r, c;
-    int attr = vmem[0] & 0xff00;
+    int attr;
     XGCValues v;
+	WORD *vmemc;
+	int cursrow;
+	int curscol;
+	int flush=0;
 
+	cursrow=CursRow;
+	curscol=CursCol;
 	wakeup_poll();	/* Wake up anyone waiting on kbd poll */
 
-	setgc(attr);
-
+    vmemc = (WORD *)malloc(DpyCols*(DpyRows+1)*sizeof(WORD));
+	memcpy(vmemc, vmem, DpyCols*(DpyRows+1)*sizeof(WORD));
 	for (r = 0; r < (DpyRows+1); ++r) {
 	    if (!lines[r].changed) {
 			for (c = 0; c < DpyCols; ++c) {
-				if ((lines[r].data[c] != vmem[r * DpyCols + c]) 
+				if ((lines[r].data[c] != vmemc[r * DpyCols + c]) 
 						|| (lines[r].data[c] & 0x8000 && show != os)
 						|| (lines[r].exposed[c])
-						|| (((r == or && c==oc) || (r == CursRow && c==CursCol)) && (or != CursRow || oc !=CursCol))) {
-					setgc(vmem[r * DpyCols + c]  & 0xff00);
-					x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
+						|| (((r == or && c==oc) || (r == cursrow && c==curscol)) && (or != cursrow || oc !=curscol))) {
+					setgc(vmemc[r * DpyCols + c]  & 0xff00);
+					x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmemc[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
 					lines[r].changed = 2;
+					flush=1;
 				}
 			}
 	    }
@@ -458,23 +465,22 @@ video_update_text()
 
 		reset_poll();
 		memcpy(lines[r].data,
-			&vmem[r * DpyCols], sizeof(WORD) * DpyCols);
+			&vmemc[r * DpyCols], sizeof(WORD) * DpyCols);
 
 		if(lines[r].changed==1) {
 			for (c = 0; c < DpyCols; ++c) {
-				setgc(vmem[r * DpyCols + c]  & 0xff00);
-				x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
+				setgc(vmemc[r * DpyCols + c]  & 0xff00);
+				x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmemc[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
 			}
 		}
 		lines[r].changed = 0;
 		memset(lines[r].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
-		x11.XFlush(dpy);
 	}
 
 	if (CursStart <= CursEnd && CursEnd <= FH &&
-	    (show != os) && CursRow < (DpyRows+1) &&CursCol < DpyCols) {
+	    (show != os) && cursrow < (DpyRows+1) &&curscol < DpyCols) {
 
-	    attr = vmem[CursRow * DpyCols +CursCol] & 0xff00;
+	    attr = vmemc[cursrow * DpyCols +curscol] & 0xff00;
 	    v.foreground = pixels[(attr >> 8) & 0x0f] ^
 			pixels[(attr >> 12) & 0x07];
 	    if (v.foreground) {
@@ -485,15 +491,19 @@ video_update_text()
 	    }
 	    x11.XChangeGC(dpy, cgc, GCForeground | GCFunction, &v);
 	    x11.XFillRectangle(dpy, win, cgc,
-			   2 +CursCol * FW,
-			   2 + CursRow * FH + CursStart * FS,
+			   2 +curscol * FW,
+			   2 + cursrow * FH + CursStart * FS,
 			   FW, (CursEnd + 1)*FS - (CursStart*FS));
-		x11.XFlush(dpy);
+		flush=1;
 	}
 
-	or =CursRow;
-	oc =CursCol;
+	free(vmemc);
+
+	or =cursrow;
+	oc =curscol;
 	os =show;
+	if(flush)
+		x11.XFlush(dpy);
 }
 
 void
