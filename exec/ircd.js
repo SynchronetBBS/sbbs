@@ -227,7 +227,7 @@ function terminate_everything(terminate_reason) {
 	for(thisClient in Clients) {
 		var Client = Clients[thisClient];
 		if (Client && Client.local)
-			Client.quit(terminate_reason,false)
+			Client.quit(terminate_reason,true)
 	}
 	exit();
 }
@@ -527,9 +527,9 @@ function scan_for_klined_clients() {
 			if (theuser.local && !theuser.server && 
 			    (theuser.conntype == TYPE_USER)) {
 				if (isklined(theuser.uprefix + "@" + theuser.hostname))
-					theuser.quit("User has been K:Lined (" + KLines[thiskl].reason + ")",true);
+					theuser.quit("User has been K:Lined (" + KLines[thiskl].reason + ")");
 				if (iszlined(theuser.ip))
-					theuser.quit("User has been Z:Lined",true);
+					theuser.quit("User has been Z:Lined");
 			}
 		}
 	}
@@ -907,9 +907,9 @@ server_uptime = time();
 
 WhoWasHistory = new Array;
 NickHistory = new Array;
-whowas_buffer = 10000;
+whowas_buffer = 1000;
 whowas_pointer = 0;
-nick_buffer = 10000;
+nick_buffer = 1000;
 nick_pointer = 0;
 
 // Parse command-line arguments.
@@ -1184,7 +1184,23 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	}
 }
 
-function IRCClient_Quit(str,do_bcast) {
+// Okay, welcome to my world.
+// str = The string used for the quit reason UNLESS 'is_netsplit' is set to
+//       true, in which case it becomes the string used to QUIT individual
+//       clients in a netsplit (i.e. "server.one server.two")
+// suppress_bcast = Set to TRUE if you don't want the message to be broadcast
+//       accross the entire network.  Useful for netsplits, global kills, or
+//       other network messages where the rest of the network is nuking the
+//       client on their own.
+// is_netsplit = Should never be used except in a recursive call from the
+//       'this.netsplit()' function.  Tells the function that we're recursive
+//       and to use 'str' as the reason for quiting all the clients
+// origin = an object typically only passed in the case of a SQUIT, contains
+//       the client who originated the message (i.e. for generating netsplit
+//       messages.)
+function IRCClient_Quit(str,suppress_bcast,is_netsplit,origin) {
+	var tmp;
+
 	if (!str)
 		str = this.nick;
 
@@ -1202,16 +1218,26 @@ function IRCClient_Quit(str,do_bcast) {
 			ww_serverdesc = Clients[this.parent].realname;
 		WhoWasHistory[whowas_pointer] = new WhoWas(this.nick,this.uprefix,this.hostname,this.realname,this.servername,ww_serverdesc);
 		whowas_pointer++;
-		if (do_bcast && (this.conntype > TYPE_UNREGISTERED) )
+		if (!suppress_bcast && (this.conntype > TYPE_UNREGISTERED) )
 			this.bcast_to_servers(tmp);
-	} else if (this.server) {
-		if (this.local)
-			this.netsplit(servername + " " + this.nick);
-		else
-			this.netsplit(str);
+	} else if (this.server && is_netsplit) {
+		this.netsplit(str);
+	} else if (this.server && this.local) {
+		if (!suppress_bcast)
+			this.bcast_to_servers_raw("SQUIT " + this.nick + " :" + str);
+		this.netsplit(servername + " " + this.nick);
+	} else if (this.server && origin) {
+		if (!suppress_bcast)
+			this.bcast_to_servers_raw(":" + origin.nick + " SQUIT " + this.nick + " :" + str);
+		this.netsplit(origin.nick + " " + this.nick);
+	} else { // we should never land here
+		oper_notice("Notice","Netspliting a server which isn't local and doesn't have an origin.");
+		if (!suppress_bcast)
+			this.bcast_to_servers_raw("SQUIT " + this.nick + " :" + str);
+		this.netsplit();
 	}
 
-	if((server.client_remove!=undefined) && !this.sentps)
+	if((server.client_remove!=undefined) && !this.sentps && this.local)
 		server.client_remove(this.socket);
 
 	if (this.local) {
@@ -1234,7 +1260,7 @@ function IRCClient_netsplit(ns_reason) {
 		    (Clients[sqclient] != undefined)) {
 			if ((Clients[sqclient].servername == this.nick) ||
 			    (Clients[sqclient].linkparent == this.nick))
-				Clients[sqclient].quit(ns_reason,false);
+				Clients[sqclient].quit(ns_reason,true,true);
 		}
 	}
 }
@@ -2517,7 +2543,7 @@ function IRCClient_do_complex_who(cmd) {
 				this.numeric352(wc);
 			who_count++;
 		}
-		if (who_count >= max_who)
+		if (!(this.mode&USERMODE_OPER) && (who_count >= max_who))
 			break;
 	}
 
@@ -3158,7 +3184,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 							if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
 								var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
 								if (!qwk_master) {
-									this.quit("No QWK master available for authorization.");
+									this.quit("No QWK master available for authorization.",true);
 									return 0;
 								} else {
 									qwk_master.rawout(":" + servername + " PASS " + this.password + " :" + qwkid + " QWK");
@@ -3175,11 +3201,11 @@ function IRCClient_unregistered_commands(command, cmdline) {
 			}
 			if ((!this_nline || ((this_nline.password == "*") &&
 			    !this.sentps)) && !qwk_slave) {
-				this.quit("ERROR: Server not configured.");
+				this.quit("ERROR: Server not configured.",true);
 				return 0;
 			}
 			if (searchbyserver(cmd[1])) {
-				this.quit("ERROR: Server already exists.");
+				this.quit("ERROR: Server already exists.",true);
 				return 0;
 			}
 			this.nick = cmd[1].toLowerCase();
@@ -3222,7 +3248,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 	}
 	if (this.uprefix && isklined(this.uprefix + "@" + this.hostname)) {
 		this.numeric(465, ":You've been K:Lined from this server.");
-		this.quit("You've been K:Lined from this server.");
+		this.quit("You've been K:Lined from this server.",true);
 		return 0;
 	}
 	if (this.password && (unreg_username || (this.nick != "*")) &&
@@ -3248,13 +3274,13 @@ function IRCClient_unregistered_commands(command, cmdline) {
 		tmp_iline = this.searchbyiline();
 		if (!tmp_iline) {
 			this.numeric(463, ":Your host isn't among the privileged.");
-			this.quit("You are not authorized to use this server.");
+			this.quit("You are not authorized to use this server.",true);
 			return 0;
 		}
 		if (tmp_iline.password) {
 			if (tmp_iline.password != this.password) {
 				this.numeric(464, ":Password Incorrect.");
-				this.quit("Denied.");
+				this.quit("Denied.",true);
 				return 0;
 			}
 		}
@@ -3547,10 +3573,10 @@ function IRCClient_registered_commands(command, cmdline) {
 				if (!target)
 					target = searchbynick(search_nickbuf(kills[kill]));
 				if (target && target.local) {
-					target.quit("Local kill by " + this.nick + " (" + reason + ")",true);
+					target.quit("Local kill by " + this.nick + " (" + reason + ")");
 				} else if (target) {
 					server_bcast_to_servers(":" + this.nick + " KILL " + target.nick + " :" + reason);
-					target.quit("Killed (" + this.nick + " (" + reason + "))");
+					target.quit("Killed (" + this.nick + " (" + reason + "))",true);
 				} else {
 					this.numeric401(kills[kill]);
 				}
@@ -3881,7 +3907,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			this.pinged = false;
 			break;
 		case "QUIT":
-			this.quit(ircstring(cmdline),true);
+			this.quit(ircstring(cmdline));
 			break;
 		case "PRIVMSG":
 			if (!cmd[1]) {
@@ -3960,7 +3986,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			if (!reason)
 				reason = this.nick;
 			if (sq_server == -1) {
-				this.quit(reason,true);
+				this.quit(reason);
 				break;
 			}
 			if (!sq_server.local) { 
@@ -3972,8 +3998,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				break;
 			}
 			oper_notice("Routing","from " + servername + ": Received SQUIT " + cmd[1] + " from " + this.nick + "[" + this.uprefix + "@" + this.hostname + "] (" + reason + ")");
-			sq_server.quit(reason,false);
-			this.bcast_to_servers_raw("SQUIT " + sq_server.nick + " :" + reason);
+			sq_server.quit(reason);
 			break;
 		case "STATS":
 			if(!cmd[1])
@@ -4380,8 +4405,8 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			}
 			break;
 		case "ERROR":
-			oper_notice("Notice", "ERROR from " + ThisOrigin.nick + "[(+)0@" + this.hostname + "] -- " + ircstring(cmdline));
-			ThisOrigin.quit();
+			oper_notice("Notice", "ERROR from " + this.nick + "[(+)0@" + this.hostname + "] -- " + ircstring(cmdline));
+			ThisOrigin.quit(ircstring(cmdline));
 			break;
 		case "INFO":
 			if (!cmd[1])
@@ -4479,7 +4504,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 						my_server.finalize_server_connect("QWK");
 						break;
 					} else {
-						my_server.quit("ERROR: Server not configured.");
+						my_server.quit("ERROR: Server not configured.",true);
 						break;
 					}
 				} else if (dest_server) {
@@ -4652,21 +4677,21 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (!reason || !cmd[2])
 				reason = ThisOrigin.nick;
 			if (sq_server == -1) {
-				this.quit("Forwards SQUIT.",false);
 				this.bcast_to_servers_raw("SQUIT " + this.nick + " :Forwards SQUIT.");
+				this.quit("Forwards SQUIT.",true);
 				break;
 			}
 			// message from our uplink telling us a server is gone
 			if (this.id == sq_server.parent) {
-				sq_server.quit(ThisOrigin.nick + " " + sq_server.nick,false);
+				sq_server.quit(reason,false,false,ThisOrigin);
 				break;
 			}
+			// oper or server going for squit of a server
 			if (!sq_server.local) {
 				sq_server.rawout(":" + ThisOrigin.nick + " SQUIT " + sq_server.nick + " :" + reason);
 				break;
 			}
 			sq_server.quit(reason);
-			this.bcast_to_servers_raw("SQUIT " + sq_server.nick + " :" + reason);
 			break;
 		case "KILL":
 			if (!cmd[2])
@@ -4684,7 +4709,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				if (target && (this.hub ||
 				    (target.parent == this.id)) ) {
 					this.bcast_to_servers_raw(":" + ThisOrigin.nick + " KILL " + target.nick + " :" + reason);
-					target.quit("KILLED by " + ThisOrigin.nick + " (" + reason + ")",false);
+					target.quit("KILLED by " + ThisOrigin.nick + " (" + reason + ")",true);
 				} else if (target && !this.hub) {
 					oper_notice("Notice","Non-Hub server " + this.nick + " trying to KILL " + target.nick);
 					this.reintroduce_nick(target);
@@ -4887,7 +4912,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			this.pinged = false;
 			break;
 		case "QUIT":
-			ThisOrigin.quit(ircstring(cmdline),true);
+			ThisOrigin.quit(ircstring(cmdline));
 			break;
 		case "SERVER":
 			if (!cmd[3])
@@ -4913,7 +4938,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 					newsrv.linkparent = ThisOrigin.nick;
 				} else {
 					oper_notice("Routing","from " + servername + ": Non-Hub link " + this.nick + " introduced " + cmd[1] + "(*).");
-					this.quit("Too many servers.  You have no H:Line to introduce " + cmd[1] + ".");
+					this.quit("Too many servers.  You have no H:Line to introduce " + cmd[1] + ".",true);
 					return 0;
 				}
 			} else {
@@ -5037,11 +5062,11 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				for (wi_nick in wi_nicks) {
 					var wi = searchbynick(wi_nicks[wi_nick]);
 					if (wi)
-						this.do_whois(wi);
+						ThisOrigin.do_whois(wi);
 					else
-						this.numeric401(wi_nicks[wi_nick]);
+						ThisOrigin.numeric401(wi_nicks[wi_nick]);
 				}
-				this.numeric(318, wi_nicks[0]+" :End of /WHOIS list.");
+				ThisOrigin.numeric(318, wi_nicks[0]+" :End of /WHOIS list.");
 			} else {
 				var dest_server = searchbyserver(cmd[2]);
 				if (!dest_server)
@@ -5077,7 +5102,7 @@ function IRCClient_work() {
 	var origin;
 
 	if (!this.socket.is_connected) {
-		this.quit("Connection reset by peer",true);
+		this.quit("Connection reset by peer");
 		return 0;
 	}
 	if (this.socket.data_waiting &&
@@ -5134,7 +5159,7 @@ function IRCClient_work() {
 	if (this.nick) {
 		if ( (this.pinged) && ((time() - this.pinged) > YLines[this.ircclass].pingfreq) ) {
 			this.pinged = false;
-			this.quit("Ping Timeout",true);
+			this.quit("Ping Timeout");
 		} else if (!this.pinged && ((time() - this.idletime) > YLines[this.ircclass].pingfreq)) {
 			this.pinged = time();
 			this.rawout("PING :" + servername);
