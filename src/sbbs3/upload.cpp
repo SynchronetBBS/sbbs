@@ -45,10 +45,11 @@
 /****************************************************************************/
 bool sbbs_t::uploadfile(file_t *f)
 {
-	char path[256],str[256],fname[25];
+	char path[MAX_PATH+1];
+	char str[MAX_PATH+1],fname[25];
 	char ext[F_EXBSIZE+1];
 	char desc[F_EXBSIZE+1];
-	char tmp[128];
+	char tmp[MAX_PATH+1];
 	int  file;
     uint i;
     long length;
@@ -62,6 +63,9 @@ bool sbbs_t::uploadfile(file_t *f)
 	sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths
 		? cfg.altpath[f->altpath-1]
 		: cfg.dir[f->dir]->path,unpadfname(f->name,fname));
+	sprintf(tmp,"%s%s",cfg.temp_dir,fname);
+	if(!fexist(path) && fexist(tmp))
+		mv(tmp,path,0);
 	if(!fexist(path)) {
 		bprintf(text[FileNotReceived],f->name);
 		sprintf(str,"%s attempted to upload %s to %s %s (Not received)"
