@@ -422,15 +422,14 @@
 "Read your mail now"                                    362 ReadYourMailNowQ
 "Sorry, the system is closed to new users.\r\n"         363 NoNewUsers
 "New User Password: "                                   364 NewUserPasswordPrompt
-"bh[wûb] yUse automatic terminal type detection"             365 AutoTerminalQ
-"bh[wûb] yDoes your terminal support ANSI"                       366 AnsiTerminalQ
-"bh[wûb] yDo you have a color terminal"                          367 ColorTerminalQ
+"Use automatic terminal type detection"                 365 AutoTerminalQ
+"Does your terminal support ANSI"                       366 AnsiTerminalQ
+"Do you have a color terminal"                          367 ColorTerminalQ
 "ngAre you using hRIPtermng or a hRIPscrip "\     368 RipTerminalQ
 	"ngcompatible terminal program?\r\n"\
 	"hwIMPORTANT:ng If you are not absolutely "\
 	"sure, hit hwiNnbh"
-"bh[wûb] yDoes your terminal support "\            369 ExAsciiTerminalQ
-	"IBM extended ASCII"         
+"Does your terminal support IBM extended ASCII"         369 ExAsciiTerminalQ
 "nYou can't use that name (duplicate or invalid).\r\n" 370 YouCantUseThatName
 "l-gYour password is h%s\r\n"                       371 YourPasswordIs
 "\r\n_whWrite down your password and keep it "\      372 NewUserPasswordVerify
@@ -588,11 +587,10 @@
 "\r\n_gWhich or [hwQng]uit: n"                   494 UserDefaultsWhich
 "On"                                                    495 On
 "Off"                                                   496 Off
-"\r\n_yhHow many rows on your monitor "\             497 HowManyRows
-	"[Auto Detect]: "
+"\r\n_bh[wûb] yHow many rows on your monitor "\   497 HowManyRows
+	"[\1wAuto Detect\1y]: "
 "\r\n_yhCurrent Password: w"                        498 CurrentPassword
-"bh[wûb] yForward personal e-mail to "\            499 ForwardMailQ
-	"network mail address"       
+"Forward personal e-mail to network mail address"       499 ForwardMailQ
 "_bh[wûb] yNetwork mail address "\                500 EnterNetMailAddress
 	"(Example: user@domain)\r\n: "
 "nlgSelect h%sng:\r\n\r\n"                        501 SelectItemHdr
