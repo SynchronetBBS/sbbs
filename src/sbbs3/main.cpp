@@ -300,6 +300,15 @@ js_sys_status_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 bool sbbs_t::js_initcx()
 {
+	char node[128];
+
+    if(cfg.node_num)
+    	sprintf(node,"Node %d",cfg.node_num);
+    else
+    	strcpy(node,client_name);
+
+	lprintf("%s JavaScript: Initializing context",node);
+
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(false);
 
@@ -657,7 +666,9 @@ void input_thread(void *arg)
 
 	thread_up();
 
+#ifdef _DEBUG
 	lprintf("Node %d input thread started",sbbs->cfg.node_num);
+#endif
 
 	pthread_mutex_init(&sbbs->input_thread_mutex,NULL);
     sbbs->input_thread_running = true;
@@ -800,7 +811,9 @@ void output_thread(void* arg)
     	sprintf(node,"Node %d",sbbs->cfg.node_num);
     else
     	strcpy(node,sbbs->client_name);
+#ifdef _DEBUG
 	lprintf("%s output thread started",node);
+#endif
 
     sbbs->output_thread_running = true;
 	sbbs->console|=CON_R_ECHO;
@@ -1484,7 +1497,6 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	curatr=LIGHTGRAY;
 	errorlevel=0;
 	logcol=1;
-	next_event=0;
 	logfile_fp=NULL;
 	nodefile=-1;
 	node_ext=-1;
@@ -1954,6 +1966,7 @@ sbbs_t::~sbbs_t()
 #ifdef JAVASCRIPT
 	/* Free Context */
 	if(js_cx!=NULL) {	
+		lprintf("%s JavaScript: Destorying context",node);
 		JS_DestroyContext(js_cx);
 		js_cx=NULL;
 	}
@@ -2895,6 +2908,7 @@ static void cleanup(int code)
 
 #ifdef JAVASCRIPT
 	if(js_runtime!=NULL) {
+		lprintf("JavaScript: Destroying runtime");
 		JS_DestroyRuntime(js_runtime);
 		js_runtime=NULL;
 	}
@@ -3047,9 +3061,11 @@ void DLLCALL bbs_thread(void* arg)
     }
 
 	/* Create missing directories */
+	lprintf("Verifying/creating data directories");
 	make_data_dirs(&scfg);
 
 	/* Create missing node directories and dsts.dab files */
+	lprintf("Verifying/creating node directories");
 	for(i=0;i<=scfg.sys_nodes;i++) {
 		if(i)
 			md(scfg.node_path[i-1]);
@@ -3077,11 +3093,13 @@ void DLLCALL bbs_thread(void* arg)
 	startup->node_inbuf=node_inbuf;
 
 #ifdef JAVASCRIPT
+	lprintf("JavaScript: Creating runtime: %lu bytes", JAVASCRIPT_RUNTIME_MEMORY);
 	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
 		lprintf("!JS_NewRuntime failed");
 		cleanup(1);
 		return;
 	}
+	lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
 #endif
 
     /* open a socket and wait for a client */
