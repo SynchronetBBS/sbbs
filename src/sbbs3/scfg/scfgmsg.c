@@ -437,6 +437,7 @@ export the current message group into.
 					sprintf(str,"Open Failure: %d (%s)"
 						,errno,strerror(errno));
 					uifc.msg(str);
+					uifc.changes=q;
 					break; 
 				}
 				uifc.pop("Exporting Areas...");
