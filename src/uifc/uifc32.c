@@ -136,7 +136,7 @@ static void reset_dynamic(void) {
 
 int kbwait(void) {
 	int timeout=0;
-	while(timeout++<500) {
+	while(timeout++<50) {
 		if(kbhit())
 			return(TRUE);
 		mswait(1);
