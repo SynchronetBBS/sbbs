@@ -2069,28 +2069,9 @@ void compile(char *src)
 			writecrc(src,arg2);			/* int var (nbytes) */
 			continue;
 		}
-		if(!stricmp(p,"SOCKET_PEEK")) {
-			if(!(*arg) || !(*arg2)) break;
-
-			/* length */
-			if(!(*arg3))
-				i=0;
-			else if((l=isvar(arg3))!=0) {
-				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(10,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }				// place holder
-			else
-				i=val(src,arg3);
-
-			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_PEEK);
-			writecrc(src,arg);			/* int var (socket) */
-			writecrc(src,arg2);			/* str var (buffer) */
-			fwrite(&i,sizeof(i),1,out);	/* word (length) */
-			continue;
-		}
-		if(!stricmp(p,"SOCKET_READ")) {
+		if(!stricmp(p,"SOCKET_READ") 
+			|| !stricmp(p,"SOCKET_READLINE") 
+			|| !stricmp(p,"SOCKET_PEEK")) {
 			if(!(*arg) || !(*arg2)) break;
 
 			/* length */
@@ -2105,7 +2086,13 @@ void compile(char *src)
 			else 
 				i=val(src,arg3);
 
-			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_READ);
+			if(!stricmp(p,"SOCKET_READ"))
+				ch=CS_SOCKET_READ;
+			else if(!stricmp(p,"SOCKET_READLINE"))
+				ch=CS_SOCKET_READLINE;
+			else
+				ch=CS_SOCKET_PEEK;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,ch);
 			writecrc(src,arg);			/* int var (socket) */
 			writecrc(src,arg2);			/* str var (buffer) */
 			fwrite(&i,sizeof(i),1,out);	/* word (length) */
