@@ -36,11 +36,15 @@
  ****************************************************************************/
 
 /* Synchronet-specific headers */
+#include "sbbsdefs.h"	/* VERSION, REVISION, and COPYRIGHT_NOTICE */
 #include "conwrap.h"	/* kbhit/getch */
-#include "sbbs.h"
+#include "dirwrap.h"	/* BACKSLASH */
+#include "startup.h"	/* bbs_startup_t, bbs_thread */
 #include "ftpsrvr.h"	/* ftp_startup_t, ftp_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
+#include "ini_file.h"
+#include "sbbs_ini.h"
 
 #ifdef __unix__
 
@@ -59,6 +63,7 @@
 #define SBBS_LOG_NAME	"synchronet"
 
 /* Global variables */
+BOOL				run_bbs=TRUE;
 BOOL				bbs_running=FALSE;
 BOOL				bbs_stopped=FALSE;
 bbs_startup_t		bbs_startup;
@@ -308,6 +313,18 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 		client_count--;
 	pthread_mutex_unlock(&mutex);
 	lputs(NULL); /* update displayed stats */
+}
+
+/****************************************************************************/
+/* Truncates white-space chars off end of 'str'								*/
+/****************************************************************************/
+static void truncsp(char *str)
+{
+	uint c;
+
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=SP) c--;
+	str[c]=0;
 }
 
 /****************************************************************************/
@@ -634,7 +651,10 @@ int main(int argc, char** argv)
 	char*	p;
 	char*	arg;
 	char*	ctrl_dir;
+	char	str[MAX_PATH+1];
+	char	ini_file[MAX_PATH+1];
 	BOOL	quit=FALSE;
+	FILE*	fp;
 #ifdef __unix__
 	FILE *pidfile;
 	struct passwd* pw_entry;
@@ -646,7 +666,9 @@ int main(int argc, char** argv)
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
 	if(ctrl_dir==NULL)
-		ctrl_dir="/sbbs/ctrl/";		/* Not set? Use default */
+		ctrl_dir="/sbbs/ctrl";		/* Not set? Use default */
+
+	sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,BACKSLASH);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
@@ -701,6 +723,8 @@ int main(int argc, char** argv)
     mail_startup.socket_open=socket_open;
     mail_startup.client_on=client_on;
 	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
+	SAFECOPY(mail_startup.dnsbl_tag,"SPAM");
+	SAFECOPY(mail_startup.dnsbl_hdr,"X-DNSBL");
 #ifdef __unix__
 	mail_startup.seteuid=do_seteuid;
 #endif
@@ -748,8 +772,12 @@ int main(int argc, char** argv)
 	/* Process arguments */
 	for(i=1;i<argc;i++) {
 		arg=argv[i];
-		while(*arg=='-')/* ignore prepended slashes */
+		while(*arg=='-')
 			arg++;
+		if(strchr(arg,BACKSLASH)) {
+			strcpy(ini_file,arg);
+			continue;
+		}
 		if(!stricmp(arg,"defaults")) {
 			printf("Default settings:\n");
 			printf("\n");
@@ -1068,6 +1096,18 @@ int main(int argc, char** argv)
 		}
 	}
 
+	if((fp=fopen(ini_file,"r"))!=NULL) {
+		sprintf(str,"Reading %s",ini_file);
+		bbs_lputs(str);
+		sbbs_read_ini(fp, 
+			&run_bbs,		&bbs_startup,
+			&run_ftp,		&ftp_startup, 
+			&run_mail,		&mail_startup, 
+			&run_services,	&services_startup);
+
+		/* read any sbbscon-specific ini keys here */
+		fclose(fp);
+	}
 
 #ifdef __unix__
 	/* Write the standard .pid file if running as a daemon */
@@ -1081,7 +1121,8 @@ int main(int argc, char** argv)
 
 #endif
 
-	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
+	if(run_bbs)
+		_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
 	if(run_ftp)
 		_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
 	if(run_mail)
@@ -1109,7 +1150,7 @@ int main(int argc, char** argv)
 	{
 		bbs_lputs("Waiting for child threads to bind ports...");
 		while(!bbs_stopped && !ftp_stopped && !mail_stopped && !services_stopped
-			&& ((!bbs_running) 
+			&& ((run_bbs && !bbs_running) 
 				|| (run_ftp && !ftp_running) 
 				|| (run_mail && !mail_running) 
 				|| (run_services && !services_running)))
@@ -1162,7 +1203,7 @@ int main(int argc, char** argv)
 #endif
 
 	while(bbs_running || ftp_running || mail_running || services_running)
-		mswait(1);
+		SLEEP(1);
 
 	/* erase the prompt */
 	printf("\r%*s\r",prompt_len,"");
