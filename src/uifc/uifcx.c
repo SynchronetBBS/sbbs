@@ -248,7 +248,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
         
         truncsp(str);
         i=atoi(str);
-        if(i>0) {
+        if(i>0 && i<=opts) {
             *cur=--i;
             return(*cur);
         }
