@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-int no_msghdr=0,all_msghdr=0;
+BOOL no_msghdr=FALSE,all_msghdr=FALSE;
 
 static char nulbuf[256]={0};
 static int  pslen;
