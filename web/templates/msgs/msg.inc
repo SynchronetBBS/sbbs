@@ -11,7 +11,7 @@
 <TR>
 <TD COLSPAN=4>
 <OBJECT TYPE="text/html" BORDER=2 DATA="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" STANDBY="Loading Message..." WIDTH="100%" HEIGHT="450">
-@@body@@
+<pre class="leftalign">@@body@@</pre>
 </OBJECT>
 </TD>
 </TR>
