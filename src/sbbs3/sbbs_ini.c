@@ -51,7 +51,11 @@ static const char*	strLogMask="LogMask";
 static const char*	strBindRetryCount="BindRetryCount";
 static const char*	strBindRetryDelay="BindRetryDelay";
 
-#define DEFAULT_LOG_MASK		0xff	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG */
+#if defined(SBBSNTSVCS)
+	#define DEFAULT_LOG_MASK		0x3f	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE */
+#else
+	#define DEFAULT_LOG_MASK		0xff	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG */
+#endif
 #define DEFAULT_MAX_MSG_SIZE    (10*1024*1024)	/* 10MB */
 #define DEFAULT_BIND_RETRY_COUNT	10
 #define DEFAULT_BIND_RETRY_DELAY	15
