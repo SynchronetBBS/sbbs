@@ -37,12 +37,7 @@
 
 #include "sbbs.h"
 
-#if defined(JAVASCRIPT) || defined(__unix__)
-	#define BETA	" Beta"
-#else
-	#define BETA	" Beta"     /* Space if non-beta, " beta" otherwise */
-#endif
-extern "C" const char* beta_version = BETA;
+extern "C" const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
@@ -88,7 +83,7 @@ void sbbs_t::ver()
 	sprintf(str,"Revision %c%s %s %.5s  "
 		"SMBLIB %s  %s"
 		,toupper(REVISION)
-		,BETA
+		,beta_version
 		,__DATE__,__TIME__
 		,smb_lib_ver(),compiler);
 
