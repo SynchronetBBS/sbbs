@@ -283,6 +283,11 @@ int main(int argc, char **argv)
 
 	distlist=get_distlist();
 
+	if(distlist==NULL) {
+		printf("No installation files or distribution list present!\n");
+		exit(1);
+	}
+
 	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
@@ -812,6 +817,8 @@ get_distlist(void)
 	}
 	memset(dist[r],0,sizeof(dist_t));
 	uifc.pop(NULL);
+	if(r<1)
+		return(NULL);
 	return(dist);
 }
 
