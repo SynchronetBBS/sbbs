@@ -93,6 +93,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)sockopts.$(OFILE)\
 			$(LIBODIR)$(SLASH)sortdir.$(OFILE)\
 			$(LIBODIR)$(SLASH)str.$(OFILE)\
+			$(LIBODIR)$(SLASH)str_list.$(OFILE)\
 			$(LIBODIR)$(SLASH)str_util.$(OFILE)\
 			$(LIBODIR)$(SLASH)telgate.$(OFILE)\
 			$(LIBODIR)$(SLASH)telnet.$(OFILE)\

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -40,6 +40,7 @@
 #include <ctype.h>		/* isdigit */
 #include "sockwrap.h"	/* inet_addr */
 #include "ini_file.h"
+#include "str_list.h"	/* strList functions */
 
 #define INI_MAX_LINE_LEN	256		/* Maximum length of entire line, includes '\0' */
 
@@ -137,7 +138,6 @@ char** iniGetStringList(FILE* fp, const char* section, const char* key
 	char*	value;
 	char	buf[INI_MAX_VALUE_LEN];
 	char**	lp;
-	char**	np;
 	char*	token;
 	char	list[INI_MAX_VALUE_LEN];
 	ulong	items=0;
@@ -153,32 +153,18 @@ char** iniGetStringList(FILE* fp, const char* section, const char* key
 	token=strtok(list,sep);
 	while(token!=NULL) {
 		truncsp(token);
-		if((np=realloc(lp,sizeof(char*)*(items+2)))==NULL)
+		if(strListAdd(&lp,token,items++)==NULL)
 			break;
-		lp=np;
-		if((lp[items]=malloc(strlen(token)+1))==NULL)
-			break;
-		strcpy(lp[items++],token);
 		token=strtok(NULL,sep);
 	}
-
-	lp[items]=NULL;	/* terminate list */
 
 	return(lp);
 }
 
 void* iniFreeStringList(char** list)
 {
-	ulong	i;
-
-	if(list==NULL)
-		return(NULL);
-
-	for(i=0;list[i]!=NULL;i++)
-		free(list[i]);
-
-	free(list);
-	return(NULL);
+	strListFree(&list);
+	return(list);
 }
 
 void* iniFreeNamedStringList(named_string_t** list)
@@ -205,7 +191,6 @@ char** iniGetSectionList(FILE* fp, const char* prefix)
 	char*	p;
 	char*	tp;
 	char**	lp;
-	char**	np;
 	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
 
@@ -234,15 +219,9 @@ char** iniGetSectionList(FILE* fp, const char* prefix)
 		if(prefix!=NULL)
 			if(strnicmp(p,prefix,strlen(prefix))!=0)
 				continue;
-		if((np=realloc(lp,sizeof(char*)*(items+2)))==NULL)
+		if(strListAdd(&lp,p,items++)==NULL)
 			break;
-		lp=np;
-		if((lp[items]=malloc(strlen(p)+1))==NULL)
-			break;
-		strcpy(lp[items++],p);
 	}
-
-	lp[items]=NULL;	/* terminate list */
 
 	return(lp);
 }
@@ -252,7 +231,6 @@ char** iniGetKeyList(FILE* fp, const char* section)
 	char*	p;
 	char*	tp;
 	char**	lp;
-	char**	np;
 	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
 
@@ -283,15 +261,9 @@ char** iniGetKeyList(FILE* fp, const char* section)
 			continue;
 		*tp=0;
 		truncsp(p);
-		if((np=realloc(lp,sizeof(char*)*(items+2)))==NULL)
+		if(strListAdd(&lp,p,items++)==NULL)
 			break;
-		lp=np;
-		if((lp[items]=malloc(strlen(p)+1))==NULL)
-			break;
-		strcpy(lp[items++],p);
 	}
-
-	lp[items]=NULL;	/* terminate list */
 
 	return(lp);
 }
