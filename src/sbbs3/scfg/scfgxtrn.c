@@ -51,9 +51,6 @@ while(1) {
 	i=0;
 	strcpy(opt[i++],"Fixed Events");
 	strcpy(opt[i++],"Timed Events");
-#if 0
-	strcpy(opt[i++],"Global Swap List");
-#endif    
 	strcpy(opt[i++],"Native Program List");
 	strcpy(opt[i++],"External Editors");
 	strcpy(opt[i++],"Online Programs (Doors)");
@@ -83,11 +80,6 @@ online external programs (doors).
 		case 1:
 			tevents_cfg();
 			break;
-#if 0
-		case 2:
-			swap_cfg();
-			break;
-#endif
 		case 2:
 			natvpgm_cfg();
 			break;
@@ -368,23 +360,6 @@ These are the days of the week that this event will be executed.
 					changes=1; }
 				break;
 			case 5:
-#if 0
-				sprintf(str,"%2.2d:%2.2d",cfg.event[i]->time/60
-					,cfg.event[i]->time%60);
-				SETHELP(WHERE);
-/*
-Time to Execute Event:
-
-This is the time (in 24 hour HH:MM format) to execute the event.
-*/
-				if(uinput(WIN_MID|WIN_SAV,0,0
-					,"Time to Execute Event (HH:MM)"
-					,str,5,K_UPPER|K_EDIT)>0) {
-					cfg.event[i]->time=atoi(str)*60;
-					if((p=strchr(str,':'))!=NULL)
-						cfg.event[i]->time+=atoi(p+1); }
-				break;
-#else
                 if(cfg.event[i]->freq==0)
                     k=0;
                 else
@@ -442,7 +417,6 @@ per day.
                         }
                     }
                 break;
-#endif
 			case 6:
 				k=1;
 				strcpy(opt[0],"Yes");
@@ -622,13 +596,8 @@ online program name.
 		sprintf(opt[k++],"%-27.27s%s%s","Intercept Standard I/O"
 			,cfg.xtrn[i]->misc&IO_INTS ? "Yes" : "No"
 			,cfg.xtrn[i]->misc&WWIVCOLOR ? ", WWIV" : nulstr);
-#ifdef __FLAT__
 		sprintf(opt[k++],"%-27.27s%s","Native (32-bit) Executable"
 			,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
-#else
-		sprintf(opt[k++],"%-27.27s%s","Swap BBS out of Memory"
-			,cfg.xtrn[i]->misc&SWAP ? "Yes" : "No");
-#endif
 		sprintf(opt[k++],"%-27.27s%s","Modify User Data"
             ,cfg.xtrn[i]->misc&MODUSERDAT ? "Yes" : "No");
 		switch(cfg.xtrn[i]->event) {
@@ -802,7 +771,7 @@ online program to be free, set this value to 0.
 				getar(str,cfg.xtrn[i]->run_arstr);
                 break;
 			case 8:
-				k=1;
+				k=cfg.xtrn[i]->misc&MULTIUSER ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -824,7 +793,7 @@ set this option to Yes.
 					changes=1; }
                 break;
 			case 9:
-				k=1;
+				k=cfg.xtrn[i]->misc&IO_INTS ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -832,8 +801,8 @@ set this option to Yes.
 /*
 Intercept Standard I/O:
 
-If this online program uses a FOSSIL driver or SOCKET communications, set
-this option to No.
+If this online program uses a FOSSIL driver or SOCKET communications,
+set this option to No.
 */
 				savnum=4;
 				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept Standard I/O"
@@ -844,9 +813,11 @@ this option to No.
 				else if(k==1 && cfg.xtrn[i]->misc&IO_INTS) {
 					cfg.xtrn[i]->misc&=~(IO_INTS|WWIVCOLOR);
 					changes=1; }
+                else if(k==-1)
+                    break;
 				if(!(cfg.xtrn[i]->misc&IO_INTS))
 					break;
-				k=1;
+				k=cfg.xtrn[i]->misc&WWIVCOLOR ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -868,9 +839,8 @@ option to Yes.
 					cfg.xtrn[i]->misc&=~WWIVCOLOR;
                     changes=1; }
                 break;
-#ifdef __FLAT__
 			case 10:
-				k=0;
+				k=cfg.xtrn[i]->misc&XTRN_NATIVE ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -891,32 +861,8 @@ set this option to Yes.
 					cfg.xtrn[i]->misc&=~XTRN_NATIVE;
 					changes=1; }
 				break;
-#else
-			case 10:
-				k=0;
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
-				SETHELP(WHERE);
-/*
-Swap BBS out of Memory to Run Executable:
-
-If this online programs requires a large amount of free memory,
-set this option to Yes to have the BBS swapped out of memory.
-*/
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
-					,"Swap BBS out of Memory",opt);
-				if(!k && !(cfg.xtrn[i]->misc&SWAP)) {
-					cfg.xtrn[i]->misc|=SWAP;
-					changes=1; }
-				else if(k==1 && cfg.xtrn[i]->misc&SWAP) {
-					cfg.xtrn[i]->misc&=~SWAP;
-					changes=1; }
-				break;
-#endif
 			case 11:
-				k=1;
+				k=cfg.xtrn[i]->misc&MODUSERDAT ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -979,7 +925,7 @@ specific user event, select the event. Otherwise, select No.
 					changes=1; }
 				if(!cfg.xtrn[i]->event)
 					break;
-				k=1;
+				k=cfg.xtrn[i]->misc&EVENTONLY ? 0:1;
                 strcpy(opt[0],"Yes");
                 strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1040,7 +986,7 @@ format, select the file format from the list.
 					strcpy(opt[0],"Yes");
 					strcpy(opt[1],"No");
 					opt[2][0]=0;
-					k=1;
+					k=cfg.xtrn[i]->misc&REALNAME ? 0:1;
 					k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Use Real Names",opt);
 					if(k==0 && !(cfg.xtrn[i]->misc&REALNAME)) {
 						cfg.xtrn[i]->misc|=REALNAME;
@@ -1135,7 +1081,7 @@ Setting this option to 0, disables this feature.
 							cfg.xtrn[i]->maxtime=atoi(str);
 							break;
 						case 2:
-							k=1;
+							k=cfg.xtrn[i]->misc&FREETIME ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1265,9 +1211,6 @@ This is the internal code for the external editor.
 		k=0;
 		sprintf(opt[k++],"%-32.32s%s","Name",cfg.xedit[i]->name);
 		sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.xedit[i]->code);
-#if 0
-		sprintf(opt[k++],"%-32.32s%.40s","Local Command Line",cfg.xedit[i]->lcmd);
-#endif        
 		sprintf(opt[k++],"%-32.32s%.40s","Remote Command Line",cfg.xedit[i]->rcmd);
 		sprintf(opt[k++],"%-32.32s%.40s","Access Requirements",cfg.xedit[i]->arstr);
 		sprintf(opt[k++],"%-32.32s%s%s","Intercept Standard I/O"
@@ -1372,18 +1315,6 @@ abreviation of the name.
 					umsg("Invalid Code");
 					helpbuf=0; }
                 break;
-#if 0
-			case 2:
-				SETHELP(WHERE);
-/*
-External Editor Local Command Line:
-
-This is the command line to execute when using this editor locally.
-*/
-				uinput(WIN_MID|WIN_SAV,0,10,"Local"
-					,cfg.xedit[i]->lcmd,50,K_EDIT);
-				break;
-#endif
 		   case 2:
 				SETHELP(WHERE);
 /*
@@ -1400,7 +1331,7 @@ This is the command line to execute when using this editor remotely.
 				getar(str,cfg.xedit[i]->arstr);
 				break;
 			case 4:
-				k=1;
+				k=cfg.xedit[i]->misc&IO_INTS ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1422,7 +1353,7 @@ set this option to No.
 					changes=1; }
 				if(!(cfg.xedit[i]->misc&IO_INTS))
 					break;
-				k=1;
+				k=cfg.xedit[i]->misc&WWIVCOLOR ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1444,7 +1375,7 @@ option to Yes.
                     changes=1; }
                 break;
 			case 5:
-				k=0;
+				k=cfg.xedit[i]->misc&XTRN_NATIVE ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1502,7 +1433,7 @@ drop file (like SyncEdit v2.x).
 					changes=1; }
                 break;
 			case 7:
-				k=1;
+				k=cfg.xedit[i]->misc&QUICKBBS ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1524,7 +1455,7 @@ this option to Yes.
                     changes=1; }
 				break;
 			case 8:
-				k=1;
+				k=cfg.xedit[i]->misc&EXPANDLF ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1729,22 +1660,6 @@ This is the executable filename of the native external program.
 			continue; }
 		memset((natvpgm_t *)cfg.natvpgm[i],0,sizeof(natvpgm_t));
 		strcpy(cfg.natvpgm[i]->name,str);
-#if 0
-		SETHELP(WHERE);
-/*
-Leave COM Port Open During Execution:
-
-If this program accesses the COM port via handle (currently open COM
-port), set this option to Yes, otherwise set it to No.
-*/
-		strcpy(opt[0],"Yes (This Program Uses Port Handle)");
-		strcpy(opt[1],"No  (This Program Uses Port Number)");
-		opt[2][0]=0;
-		j=1;
-		if(ulist(WIN_MID|WIN_SAV,0,0,0,&j,0
-			,"Leave COM Port Open During Execution?",opt)==0)
-			cfg.natvpgm[i]->misc|=OS2_POPEN;
-#endif            
 		cfg.total_natvpgms++;
 		changes=1;
 		continue; }
@@ -1766,28 +1681,6 @@ This is the executable filename of the Native external program.
 	if(uinput(WIN_MID|WIN_SAV,0,5,"Native (32-bit) Program Name",str,12
 		,K_EDIT)>0)
 		strcpy(cfg.natvpgm[i]->name,str);
-#if 0
-	SETHELP(WHERE);
-/*
-Leave COM Port Open During Execution:
-
-If this program accesses the COM port via handle (currently open COM
-port), set this option to Yes, otherwise set it to No.
-*/
-	strcpy(opt[0],"Yes (This Program Uses Port Handle)");
-	strcpy(opt[1],"No  (This Program Uses Port Number)");
-	opt[2][0]=0;
-	j=1;
-	savnum=1;
-	j=ulist(WIN_MID|WIN_SAV,0,0,0,&j,0
-		,"Leave COM Port Open During Execution",opt);
-	if(j==0 && !(cfg.natvpgm[i]->misc&OS2_POPEN)) {
-		cfg.natvpgm[i]->misc|=OS2_POPEN;
-		changes=1; }
-	else if(j==1 && cfg.natvpgm[i]->misc&OS2_POPEN) {
-		cfg.natvpgm[i]->misc&=~OS2_POPEN;
-		changes=1; }
-#endif    
 	}
 return(0);
 }
