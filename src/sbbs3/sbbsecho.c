@@ -3551,6 +3551,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 	char	str[1025],tear,cr;
 	char	compiler[32];
 	char*	buf=NULL;
+	char*	minus;
 	uchar*	fmsgbuf=NULL;
 	ulong	fmsgbuflen;
 	int		tzone;
@@ -3729,8 +3730,13 @@ void export_echomail(char *sub_code,faddr_t addr)
 				f=0;
 
 				tzone=smb_tzutc(msg.hdr.when_written.zone);
-				f+=sprintf(fmsgbuf+f,"\1TZUTC: %02d%02u\r"		/* TZUTC (FSP-1001) */
-					,tzone/60,tzone<0 ? (-tzone)%60 : tzone%60);
+				if(tzone<0) {
+					minus="-";
+					tzone=-tzone;
+				} else
+					minutes="";
+				f+=sprintf(fmsgbuf+f,"\1TZUTC: %s%02d%02u\r"		/* TZUTC (FSP-1001) */
+					,minus,tzone/60,tzone%60);
 
 				if(msg.ftn_flags!=NULL)
 					f+=sprintf(fmsgbuf+f,"\1FLAGS %.256s\r", msg.ftn_flags);
