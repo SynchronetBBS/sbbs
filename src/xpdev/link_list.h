@@ -94,10 +94,10 @@ long			listAttach(link_list_t*);
 long			listDetach(link_list_t*);
 
 #if defined(LINK_LIST_THREADSAFE)
-BOOL			listSemPost(const link_list_t*);
-BOOL			listSemWait(const link_list_t*);
-BOOL			listSemTryWait(const link_list_t*);
-BOOL			listSemTryWaitBlock(const link_list_t*, unsigned long timeout);
+BOOL			listSemPost(link_list_t*);
+BOOL			listSemWait(link_list_t*);
+BOOL			listSemTryWait(link_list_t*);
+BOOL			listSemTryWaitBlock(link_list_t*, unsigned long timeout);
 #endif
 
 /* Lock/unlock mutex-protected linked lists (no-op for unprotected lists) */
