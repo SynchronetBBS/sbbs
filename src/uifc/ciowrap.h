@@ -61,7 +61,7 @@ int wherey(void);
 int wherex(void);
 void _putch(unsigned char ch, BOOL refresh_now);
 int cprintf(char *fmat, ...);
-void cputs(char *str);
+void cputs(unsigned char *str);
 void gotoxy(int x, int y);
 void clrscr(void);
 void initciowrap(long inmode);

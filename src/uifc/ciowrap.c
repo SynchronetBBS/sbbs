@@ -307,8 +307,8 @@ int cio_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 
 void textattr(unsigned char attr)
 {
-	int   attrs=A_NORMAL;
-	short	colour;
+	chtype   attrs=A_NORMAL;
+	int	colour;
 
 	if (lastattr==attr)
 		return;
@@ -327,6 +327,7 @@ void textattr(unsigned char attr)
 	#ifdef NCURSES_VERSION_MAJOR
 	color_set(colour,NULL);
 	#endif
+	/* bkgdset(colour); */
 	bkgdset(colour);
 }
 
@@ -366,7 +367,7 @@ int wherex(void)
 
 void _putch(unsigned char ch, BOOL refresh_now)
 {
-	int	cha;
+	chtype	cha;
 
 	if(!(mode&UIFC_IBM))
 	{
@@ -527,9 +528,11 @@ void _putch(unsigned char ch, BOOL refresh_now)
 				cha=ch;
 		}
 	}
-			
 
-	addch(cha);
+	if(ch == ' ')
+		addch(A_BOLD|' ');
+	else
+		addch(cha);
 	if(refresh_now)
 		refresh();
 }
@@ -537,7 +540,7 @@ void _putch(unsigned char ch, BOOL refresh_now)
 int cprintf(char *fmat, ...)
 {
     va_list argptr;
-	char	str[MAX_BFLN];
+	unsigned char	str[MAX_BFLN];
 	int		pos;
 
     va_start(argptr,fmat);
@@ -551,7 +554,7 @@ int cprintf(char *fmat, ...)
     return(1);
 }
 
-void cputs(char *str)
+void cputs(unsigned char *str)
 {
 	int		pos;
 
@@ -585,6 +588,7 @@ void initciowrap(long inmode)
 	nonl();
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
+	idcok(stdscr,FALSE);
 	raw();
 
 	/* Set up color pairs */
