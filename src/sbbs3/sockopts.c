@@ -44,19 +44,19 @@ typedef struct {
 
 static const sockopt_name option_names[] = {
 	{ "DEBUG",			SO_DEBUG		},
-	{ "ACCEPTCONN",		SO_ACCEPTCONN	},
-	{ "REUSEADDR",		SO_REUSEADDR	},	
-	{ "KEEPALIVE",		SO_KEEPALIVE	},
-	{ "DONTROUTE",		SO_DONTROUTE	},
-	{ "BROADCAST",		SO_BROADCAST	},
-	{ "OOBINLINE",		SO_OOBINLINE	},
+	{ "LINGER",			SO_LINGER		},
 	{ "SNDBUF",			SO_SNDBUF		},
 	{ "RCVBUF",			SO_RCVBUF		},
 	{ "SNDLOWAT",		SO_SNDLOWAT		},
 	{ "RCVLOWAT",		SO_RCVLOWAT		},
 	{ "SNDTIMEO",		SO_SNDTIMEO		},
 	{ "RCVTIMEO",		SO_RCVTIMEO		},
-	{ "LINGER",			SO_LINGER		},
+	{ "REUSEADDR",		SO_REUSEADDR	},	
+	{ "KEEPALIVE",		SO_KEEPALIVE	},
+	{ "DONTROUTE",		SO_DONTROUTE	},
+	{ "BROADCAST",		SO_BROADCAST	},
+	{ "OOBINLINE",		SO_OOBINLINE	},
+	{ "ACCEPTCONN",		SO_ACCEPTCONN	},
 	{ NULL }
 };
 
@@ -95,9 +95,8 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 			continue;
 		p=str;
 		while(*p && *p>' ') p++;
-		if(*p) *p=0;
+		if(*p) *(p++)=0;
 		option=sockopt(str);
-		if(*p) p++;
 		while(*p && *p<=' ') p++;
 		len=sizeof(value);
 		value=strtol(p,NULL,0);
@@ -121,6 +120,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 			break;
 		}
 #if 0
+		len = sizeof(value);
 		getsockopt(sock,SOL_SOCKET,option,(char*)&value,&len);
 		lprintf("%04d socket option: %s set to %d", sock, str, value);
 #endif
