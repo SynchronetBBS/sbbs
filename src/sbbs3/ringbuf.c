@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -96,6 +96,7 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
     rb->size=size;
 #ifdef RINGBUF_SEM
 	sem_init(&rb->sem,0,0);
+	sem_init(&rb->empty_sem,0,0);
 	sem_init(&rb->highwater_sem,0,0);
 #endif
 #ifdef RINGBUF_MUTEX
@@ -109,8 +110,10 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
     if(rb->pStart!=NULL)
 		os_free(rb->pStart);
 #ifdef RINGBUF_SEM
-	sem_post(&rb->sem);		/* just incase someone's waiting */
+	sem_post(&rb->sem);			/* just incase someone's waiting */
+	sem_post(&rb->empty_sem);	/* just incase someone's waiting */
 	sem_destroy(&rb->sem);
+	sem_destroy(&rb->empty_sem);
 	sem_destroy(&rb->highwater_sem);
 #endif
 #ifdef RINGBUF_MUTEX
@@ -133,7 +136,7 @@ DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
 	if(head >= tail)
 		retval = head - tail;
 	else
-		retval = rb->size - (tail - head);
+		retval = rb->size - (tail - (head + 1));
 
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_unlock(&rb->mutex);
@@ -196,6 +199,9 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 	sem_post(&rb->sem);
 	if(rb->highwater_mark!=0 && RingBufFull(rb)>=rb->highwater_mark)
 		sem_post(&rb->highwater_sem);
+/*	do we need this here?
+	sem_reset(&rb->empty_sem); 
+*/
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_unlock(&rb->mutex);
@@ -248,9 +254,11 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
     if(rb->pTail > rb->pEnd)
 		rb->pTail = rb->pStart;
 
-#ifdef RINGBUF_SEM		/* clear semaphores, if appropriate */
-	if(len-cnt==0)	/* empty */
+#ifdef RINGBUF_SEM		/* clear/signal semaphores, if appropriate */
+	if(len-cnt==0) {	/* empty */
+		sem_post(&rb->empty_sem);
 		sem_reset(&rb->sem);
+	}
 	if(len-cnt<rb->highwater_mark)
 		sem_reset(&rb->highwater_sem);
 #endif
@@ -311,6 +319,7 @@ void RINGBUFCALL RingBufReInit(RingBuf* rb)
 	rb->pHead = rb->pTail = rb->pStart;
 #ifdef RINGBUF_SEM
 	sem_reset(&rb->sem);
+	sem_reset(&rb->empty_sem);
 	sem_reset(&rb->highwater_sem);
 #endif
 #ifdef RINGBUF_MUTEX
