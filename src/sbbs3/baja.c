@@ -1576,10 +1576,13 @@ void compile(char *src)
 			writecrc(src,arg);
 			continue; }
 
-		if(!stricmp(p,"PRINTF")) {
+		if(!stricmp(p,"PRINTF") || !stricmp(p,"LPRINTF") || !stricmp(p,"PRINTF_LOCAL")) {
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
-			fputc(VAR_PRINTF,out);
+			if(!stricmp(p,"PRINTF"))
+				fputc(VAR_PRINTF,out);
+			else
+				fputc(VAR_PRINTF_LOCAL,out);
 			p=strrchr(arg,'"');
 			if(!p)
 				break;
@@ -3256,6 +3259,9 @@ void compile(char *src)
 			continue; }
 		if(!stricmp(p,"FILE_PUT")) {
 			fprintf(out,"%c",CS_FILE_PUT);
+			continue; }
+		if(!stricmp(p,"FILE_RECEIVE")) {
+			fprintf(out,"%c",CS_FILE_RECEIVE);
 			continue; }
 		if(!stricmp(p,"FILE_FIND_OLD")) {
 			fprintf(out,"%c",CS_FILE_FIND_OLD);
