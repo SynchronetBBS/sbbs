@@ -57,7 +57,13 @@ extern const uchar* nular;
 #define FREE_AND_NULL(x) if(x!=NULL) { FREE(x); x=NULL; }
 
 /* allocated with arstr() */	
-#define FREE_AR(x)		if(x!=NULL && x!=nular)	{ FREE(x); x=NULL; }	
+#define FREE_AR(x)		if(x!=NULL && x!=nular)	{ FREE(x); x=NULL; }
+
+#if defined(SCFG)	/* Don't compile AR strings for SCFG */
+	#define ARSTR(str,cfg)	NULL
+#else
+	#define ARSTR(str,cfg)	arstr(NULL,str,cfg)
+#endif
 
 char*	get_alloc(long *offset, char *outstr, int maxlen, FILE *instream);
 BOOL	allocerr(FILE*, char* error, long offset, char *fname, uint size);

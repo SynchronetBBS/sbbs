@@ -22,7 +22,7 @@ XPDEV	=   	..\..\xpdev
 UIFC	=	..\..\uifc
 LIB	=	..\..\..\lib
 INCLUDE	=	..\..\..\include
-CFLAGS	=	-M -I..;$(UIFC);$(XPDEV) 
+CFLAGS	=	-DSCFG -M -I..;$(UIFC);$(XPDEV) 
 DELETE	=	echo y | del 
 
 .path.c = .;..;$(UIFC);$(XPDEV)
