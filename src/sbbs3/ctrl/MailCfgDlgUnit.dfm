@@ -50,7 +50,7 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SendMailTabSheet
+    ActivePage = SoundTabSheet
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -101,7 +101,7 @@ object MailCfgDlg: TMailCfgDlg
           ' <ANY>'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 2
       end
       object MaxClientsEdit: TEdit
         Left = 113
@@ -111,7 +111,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Maximum number of simultaneous clients (default=10)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 3
       end
       object MaxInactivityEdit: TEdit
         Left = 113
@@ -123,7 +123,7 @@ object MailCfgDlg: TMailCfgDlg
           'lt=120)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 5
       end
       object HostnameCheckBox: TCheckBox
         Left = 185
@@ -134,7 +134,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Hostname Lookup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 1
       end
       object DebugTXCheckBox: TCheckBox
         Left = 185
@@ -145,7 +145,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log TX'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 4
       end
       object LogFileCheckBox: TCheckBox
         Left = 185
@@ -186,7 +186,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'RBL'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 0
+        TabOrder = 2
       end
       object RSSCheckBox: TCheckBox
         Left = 185
@@ -197,7 +197,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'RSS'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 3
       end
       object DULCheckBox: TCheckBox
         Left = 256
@@ -208,7 +208,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'DUL'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 4
       end
       object SMTPPortEdit: TEdit
         Left = 113
@@ -218,7 +218,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'TCP port number for incoming SMTP connections (default=25)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 0
       end
       object UserNumberCheckBox: TCheckBox
         Left = 185
@@ -231,7 +231,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'RX by User Number'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 1
       end
       object DebugHeadersCheckBox: TCheckBox
         Left = 185
@@ -332,7 +332,7 @@ object MailCfgDlg: TMailCfgDlg
         Checked = True
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 0
+        TabOrder = 3
         TabStop = True
         OnClick = DNSRadioButtonClick
       end
@@ -344,7 +344,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Host name or IP address of your ISP'#39's DNS server'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 4
       end
       object TcpDnsCheckBox: TCheckBox
         Left = 250
@@ -355,7 +355,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'TCP'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 5
       end
       object RelayRadioButton: TRadioButton
         Left = 9
@@ -366,7 +366,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Relay Server'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 6
         OnClick = DNSRadioButtonClick
       end
       object RelayServerEdit: TEdit
@@ -379,7 +379,7 @@ object MailCfgDlg: TMailCfgDlg
           'il)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 7
       end
       object RelayPortEdit: TEdit
         Left = 250
@@ -389,7 +389,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'TCP port number for the SMTP relay server (default=25)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 8
       end
       object DeliveryAttemptsEdit: TEdit
         Left = 113
@@ -399,7 +399,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Maximum number of delivery attempts'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 1
       end
       object RescanFreqEdit: TEdit
         Left = 250
@@ -409,7 +409,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Seconds between message base rescans'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 2
       end
       object SendMailCheckBox: TCheckBox
         Left = 9
@@ -420,7 +420,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Enabled'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 0
         OnClick = SendMailCheckBoxClick
       end
     end
@@ -478,7 +478,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Sound file to play when accepting POP3 connections'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 4
       end
       object POP3SoundButton: TButton
         Left = 304
@@ -486,7 +486,7 @@ object MailCfgDlg: TMailCfgDlg
         Width = 25
         Height = 26
         Caption = '...'
-        TabOrder = 3
+        TabOrder = 5
         OnClick = POP3SoundButtonClick
       end
       object OutboundSoundEdit: TEdit
@@ -497,7 +497,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Sound file to play when sending mail'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 2
       end
       object OutboundSoundButton: TButton
         Left = 304
@@ -505,7 +505,7 @@ object MailCfgDlg: TMailCfgDlg
         Width = 25
         Height = 26
         Caption = '...'
-        TabOrder = 5
+        TabOrder = 3
         OnClick = OutboundSoundButtonClick
       end
     end

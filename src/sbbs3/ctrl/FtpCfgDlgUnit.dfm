@@ -17,7 +17,7 @@ object FtpCfgDlg: TFtpCfgDlg
     Top = 4
     Width = 342
     Height = 229
-    ActivePage = GeneralTabSheet
+    ActivePage = SoundTabSheet
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -72,7 +72,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Hint = 'Maximum number of simultaneous clients (default=10)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 4
       end
       object MaxInactivityEdit: TEdit
         Left = 105
@@ -84,7 +84,7 @@ object FtpCfgDlg: TFtpCfgDlg
           'lt=300)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 5
       end
       object PortEdit: TEdit
         Left = 105
@@ -104,7 +104,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Hint = 'Your network adapter'#39's static IP address or blank for <ANY>'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 2
       end
       object AutoIndexCheckBox: TCheckBox
         Left = 9
@@ -113,7 +113,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Height = 24
         Hint = 'Automatically generate index files for file descriptions'
         Caption = 'Auto Index'
-        TabOrder = 5
+        TabOrder = 6
         OnClick = AutoIndexCheckBoxClick
       end
       object IndexFileNameEdit: TEdit
@@ -124,7 +124,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Hint = 'Name of auto-index file (default=00index)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 7
       end
       object AllowQWKCheckBox: TCheckBox
         Left = 182
@@ -135,7 +135,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'QWK Packets'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 8
       end
       object LocalFileSysCheckBox: TCheckBox
         Left = 182
@@ -148,7 +148,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'Local File System'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 9
       end
       object HostnameCheckBox: TCheckBox
         Left = 182
@@ -159,7 +159,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'Hostname Lookup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 9
+        TabOrder = 1
       end
       object DirFilesCheckBox: TCheckBox
         Left = 182
@@ -185,7 +185,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'Transmitted Responses'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 0
+        TabOrder = 1
       end
       object CmdLogCheckBox: TCheckBox
         Left = 9
@@ -196,7 +196,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'Received Commands'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 0
       end
       object DebugDataCheckBox: TCheckBox
         Left = 9

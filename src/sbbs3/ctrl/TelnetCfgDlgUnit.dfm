@@ -17,7 +17,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 4
     Width = 342
     Height = 229
-    ActivePage = GeneralTabSheet
+    ActivePage = SoundTabSheet
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -46,7 +46,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Auto Startup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 0
+        TabOrder = 2
       end
       object FirstNodeEdit: TEdit
         Left = 105
@@ -56,7 +56,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Hint = 'First node number available for Telnet logins'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 0
       end
       object XtrnMinCheckBox: TCheckBox
         Left = 182
@@ -67,7 +67,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Minimize Externals'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 4
       end
       object LastNodeEdit: TEdit
         Left = 105
@@ -77,7 +77,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Hint = 'Last node number available for Telnet logins'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 1
       end
       object HostnameCheckBox: TCheckBox
         Left = 182
@@ -88,7 +88,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Hostname Lookup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 3
       end
       object QWKEventsCheckBox: TCheckBox
         Left = 182
@@ -130,7 +130,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Log Received Commands'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 0
+        TabOrder = 3
       end
       object TelnetInterfaceEdit: TEdit
         Left = 105
@@ -152,7 +152,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Hint = 'TCP port for incoming connections (default=23)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 0
       end
       object KeepAliveCheckBox: TCheckBox
         Left = 9
@@ -163,7 +163,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Send Keep-Alives'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 2
       end
       object AutoLogonCheckBox: TCheckBox
         Left = 9
@@ -216,7 +216,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
           ' <ANY>'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 2
       end
       object RLoginEnabledCheckBox: TCheckBox
         Left = 226
@@ -227,7 +227,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Enabled'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 1
         OnClick = RLoginEnabledCheckBoxClick
       end
       object RLoginIPallowButton: TButton
@@ -239,7 +239,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Allowed IPs'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 4
         OnClick = RLoginIPallowButtonClick
       end
       object RLogin2ndNameCheckBox: TCheckBox
@@ -251,7 +251,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Use 2nd Login Name'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 3
       end
     end
     object SoundTabSheet: TTabSheet
