@@ -180,7 +180,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
     bool	wwiv_flag=false;
 	bool	telnet_flag=false;
-    bool	native=false;			// DOS program
+    bool	native=false;			// DOS program by default
     bool	was_online=true;
     uint	i;
     time_t	hungup=0;
@@ -276,10 +276,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         fprintf(fp, "SBBSNODE=%s\n", cfg.node_dir);
         fprintf(fp, "SBBSNNUM=%d\n", cfg.node_num);
 		if(tm_p!=NULL) {
-			fprintf(fp, "DAY=%u\n", tm_p->tm_mday);
+			fprintf(fp, "DAY=%02u\n", tm_p->tm_mday);
 			fprintf(fp, "WEEKDAY=%s\n",wday[tm_p->tm_wday]);
 			fprintf(fp, "MONTHNAME=%s\n",mon[tm_p->tm_mon]);
-			fprintf(fp, "MONTH=%u\n",tm_p->tm_mon+1);
+			fprintf(fp, "MONTH=%02u\n",tm_p->tm_mon+1);
 			fprintf(fp, "YEAR=%u\n",1900+tm_p->tm_year);
 		}
         fclose(fp);
