@@ -284,6 +284,8 @@ __published:	// IDE-managed Components
     void __fastcall ViewEventsExecute(TObject *Sender);
     void __fastcall DataMenuItemClick(TObject *Sender);
     void __fastcall BBSConfigWizardMenuItemClick(TObject *Sender);
+    void __fastcall PageControlUnDock(TObject *Sender,
+          TControl *Client, TWinControl *NewTarget, bool &Allow);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
@@ -298,6 +300,7 @@ public:		// User declarations
     AnsiString      LoginCommand;
     AnsiString      ConfigCommand;
     bool            MinimizeToSysTray;
+    bool            UndockableForms;
     scfg_t		    cfg;
     bbs_startup_t 	bbs_startup;
     mail_startup_t 	mail_startup;

@@ -522,6 +522,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     LoginCommand="telnet://localhost";
     ConfigCommand="%sSCFG %s /T2";
     MinimizeToSysTray=false;
+    UndockableForms=false;
     NodeDisplayInterval=1;  /* seconds */
     ClientDisplayInterval=5;    /* seconds */
     Initialized=false;
@@ -1033,21 +1034,25 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("LowerLeftPageControlWidth"))
     	LowerLeftPageControl->Width
         	=Registry->ReadInteger("LowerLeftPageControlWidth");
+    if(Registry->ValueExists("UndockableForms"))
+        UndockableForms=Registry->ReadBool("UndockableForms");
 
-    if(Registry->ValueExists("TelnetFormFloating"))
-    	TelnetFormFloating=Registry->ReadBool("TelnetFormFloating");
-    if(Registry->ValueExists("EventsFormFloating"))
-    	EventsFormFloating=Registry->ReadBool("EventsFormFloating");
-    if(Registry->ValueExists("NodeFormFloating"))
-    	NodeFormFloating=Registry->ReadBool("NodeFormFloating");
-    if(Registry->ValueExists("StatsFormFloating"))
-    	StatsFormFloating=Registry->ReadBool("StatsFormFloating");
-    if(Registry->ValueExists("ClientFormFloating"))
-    	ClientFormFloating=Registry->ReadBool("ClientFormFloating");
-    if(Registry->ValueExists("MailFormFloating"))
-    	MailFormFloating=Registry->ReadBool("MailFormFloating");
-    if(Registry->ValueExists("FtpFormFloating"))
-    	FtpFormFloating=Registry->ReadBool("FtpFormFloating");
+    if(UndockableForms) {
+        if(Registry->ValueExists("TelnetFormFloating"))
+            TelnetFormFloating=Registry->ReadBool("TelnetFormFloating");
+        if(Registry->ValueExists("EventsFormFloating"))
+            EventsFormFloating=Registry->ReadBool("EventsFormFloating");
+        if(Registry->ValueExists("NodeFormFloating"))
+            NodeFormFloating=Registry->ReadBool("NodeFormFloating");
+        if(Registry->ValueExists("StatsFormFloating"))
+            StatsFormFloating=Registry->ReadBool("StatsFormFloating");
+        if(Registry->ValueExists("ClientFormFloating"))
+            ClientFormFloating=Registry->ReadBool("ClientFormFloating");
+        if(Registry->ValueExists("MailFormFloating"))
+            MailFormFloating=Registry->ReadBool("MailFormFloating");
+        if(Registry->ValueExists("FtpFormFloating"))
+            FtpFormFloating=Registry->ReadBool("FtpFormFloating");
+    }
 
     if(Registry->ValueExists("TelnetFormPage"))
     	TelnetFormPage=Registry->ReadInteger("TelnetFormPage");
@@ -1476,6 +1481,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("LowerLeftPageControlWidth"
     	,LowerLeftPageControl->Width);
 
+    Registry->WriteBool("UndockableForms",UndockableForms);
+    
     Registry->WriteBool("TelnetFormFloating",TelnetForm->Floating);
     Registry->WriteBool("EventsFormFloating",EventsForm->Floating);
     Registry->WriteBool("NodeFormFloating",NodeForm->Floating);
@@ -1980,6 +1987,14 @@ void __fastcall TMainForm::BBSConfigWizardMenuItemClick(TObject *Sender)
     delete ConfigWizard;
 
 #endif
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::PageControlUnDock(TObject *Sender,
+      TControl *Client, TWinControl *NewTarget, bool &Allow)
+{
+    if(NewTarget==NULL) /* Desktop */
+        Allow=UndockableForms;
 }
 //---------------------------------------------------------------------------
 
