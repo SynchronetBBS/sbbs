@@ -253,7 +253,7 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	subscan_t*	scan;
 
-	if((scan=(subscan_t*)JS_GetContextPrivate(cx))==NULL)
+	if((scan=(subscan_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_TRUE);
 
     tiny = JSVAL_TO_INT(id);
@@ -279,7 +279,7 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	subscan_t*	scan;
 
-	if((scan=(subscan_t*)JS_GetContextPrivate(cx))==NULL)
+	if((scan=(subscan_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_TRUE);
 
     tiny = JSVAL_TO_INT(id);
