@@ -219,7 +219,6 @@ public:
 	/*********************************/
 	char 	*text[TOTAL_TEXT];			/* Text from ctrl\text.dat */
 	char 	*text_sav[TOTAL_TEXT];		/* Text from ctrl\text.dat */
-	char 	orgcmd[129];	/* Original command to execute bbs */
 	char 	dszlog[127];	/* DSZLOG enviornment variable */
 	int		keybuftop,keybufbot;	/* Keyboard input buffer pointers */
 	char 	keybuf[KEY_BUFSIZE];	/* Keyboard input buffer */
@@ -265,7 +264,7 @@ public:
 			logon_posts,	/* Posts This Call */
 			logon_emails,	/* Emails This Call */
 			logon_fbacks;	/* Feedbacks This Call */
-	uchar	logon_ml;		/* ML of the user apon logon */
+	uchar	logon_ml;		/* ML of the user upon logon */
 
 	uint 	main_cmds;		/* Number of Main Commands this call */
 	uint 	xfer_cmds;		/* Number of Xfer Commands this call */
@@ -297,7 +296,6 @@ public:
 	char	sbbsctrl[MAX_PATH];	/* Environmetn var to contain ctrl dir path */
 	char 	*comspec;		/* Pointer to environment variable COMSPEC */
 	ushort	altul;			/* Upload to alternate path flag */
-	time_t	next_event; 	/* Next event time - from front-end */
 	char 	cid[LEN_CID+1]; /* Caller ID (IP Address) of current caller */
 	char 	*noaccess_str;	/* Why access was denied via ARS */
 	long 	noaccess_val;	/* Value of parameter not met in ARS */
