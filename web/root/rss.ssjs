@@ -126,7 +126,8 @@ if(channel.image_url==undefined)	channel.image_url		='graphics/sync_pbgj1_white_
 if(channel.image_title==undefined)	channel.image_title		=channel.title;
 if(channel.image_link==undefined)	channel.image_link		=channel.link;
 
-
+http_reply.header["Content-Type"]='application/rss+xml';
+writeln('<?xml version="1.0" ?>');
 writeln('<rss version="0.91">');
 writeln('\t<channel>');
 writeln('\t\t<title>'		+ channel.title			+ '</title>');
@@ -171,7 +172,7 @@ if(msgbase.open()) {
 		writeln('\t\t\t\t<author>' + encode(hdr.from) + '</author>');
 		writeln('\t\t\t\t<guid>' + encode(hdr.id) + '</guid>');
 		writeln('\t\t\t\t<description>' + encode(body.slice(0,500)) + '</description>');
-		writeln('\t\t\t\t<link>' + link_root + '&item=' + hdr.number + '</link>');
+		writeln('\t\t\t\t<link>' + link_root + '&amp;item=' + hdr.number + '</link>');
 		writeln('\t\t\t</item>');
 	}
     msgbase.close();
