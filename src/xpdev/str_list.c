@@ -55,11 +55,7 @@ size_t strListCount(const str_list_t list)
 {
 	size_t i;
 
-	if(list==NULL)
-		return(0);
-
-	for(i=0; list[i]!=NULL; i++)
-		;
+	COUNT_LIST_ITEMS(list,i);
 
 	return(i);
 }
