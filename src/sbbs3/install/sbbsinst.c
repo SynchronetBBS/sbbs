@@ -49,16 +49,18 @@
 /* Definitions */
 /***************/
 #define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
-#define DIST_LIST_URL1		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
-#define DIST_LIST_URL2		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
-#define DIST_LIST_URL3		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
-#define DIST_LIST_URL4		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define DIST_LIST_URL1		"ftp://freebsd.synchro.net/main/misc/sbbsdist.lst"
+#define DIST_LIST_URL2		"ftp://freebsd.synchro.net/main/misc/sbbsdist.lst"
+#define DIST_LIST_URL3		"ftp://freebsd.synchro.net/main/misc/sbbsdist.lst"
+#define DIST_LIST_URL4		"ftp://freebsd.synchro.net/main/misc/sbbsdist.lst"
 #define DEFAULT_DISTFILE	"sbbs-src.tgz"
 #define DEFAULT_LIBFILE		"libs-%s.tgz"	/* MUST HAVE ONE %s */
 #define MAX_DISTRIBUTIONS	50
 #define	MAX_DIST_FILES		10
 #define MAX_SERVERS			100
 #define MAX_FILELEN			32
+#define MAKE_CMDLINE		"gmake install -f install/GNUmakefile"
+#define MAKE_ERROR			"make failure.\n"
 
 /*******************/
 /* DistList Format */
@@ -276,10 +278,10 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
-		uifc.helpbuf=	"`Synchronet Installation Settings:`\n"
+		uifc.helpbuf=	"`Synchronet Installation:`\n"
 						"\nToDo: Add help.";
 		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT,0,0,70,&main_dflt,0
-			,"Synchronet Installation Settings",mopt)) {
+			,"Synchronet Installation",mopt)) {
 			case 0:
 				i=choose_dist((char **)distlist);
 				if(i>=0)  {
@@ -333,7 +335,7 @@ int main(int argc, char **argv)
 				uifc.helpbuf=	"`Debug Build`\n"
 								"\nToDo: Add help.";
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Build a debug version",opt);
+					,"Build a Debug Version",opt);
 				if(!i)
 					params.debug=TRUE;
 				else if(i==1)
@@ -432,9 +434,8 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				printf("Could not checkout install makefile.\n");
 				exit(EXIT_FAILURE);
 			}
-			sprintf(cmd,"gmake install -f install/GNUmakefile");
-			if(system(cmd))  {
-				printf("'Nuff said.\n");
+			if(system(MAKE_CMDLINE))  {
+				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
 			exit(EXIT_SUCCESS);
@@ -473,9 +474,8 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				}
 				unlink(dist->files[i]);
 			}
-			sprintf(cmd,"gmake install -f install/GNUmakefile");
-			if(system(cmd))  {
-				printf("'Nuff said.\n");
+			if(system(MAKE_CMDLINE))  {
+				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
 			exit(EXIT_SUCCESS);
@@ -488,9 +488,8 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 					exit(EXIT_FAILURE);
 				}
 			}
-			sprintf(cmd,"gmake install -f install/GNUmakefile");
-			if(system(cmd))  {
-				printf("'Nuff said.\n");
+			if(system(MAKE_CMDLINE))  {
+				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
 			exit(EXIT_SUCCESS);
