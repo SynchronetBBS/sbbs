@@ -293,7 +293,7 @@ else {
 			showform();
 		}
 		var msg="Your account on "+system.name+" has been created!\n\n";
-		msg += "User name: "+http_request.query.name+"\n";
+		msg += "User name: "+http_request.query.alias+"\n";
 		msg += "Password: "+newpw+"\n";
 
 		if(!msgbase.save_msg(hdrs,msg))  {
