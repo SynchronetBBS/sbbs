@@ -40,6 +40,17 @@
 #include "genwrap.h"
 #include "crc32.h"
 
+static char* hash_source_string(smbmsg_t* msg, int source)
+{
+	switch(source) {
+		case RFC822MSGID:
+			return(msg->id);
+		case FIDOMSGID:
+			return(msg->ftn_msgid);
+	}
+	return("hash");
+}
+
 /****************************************************************************/
 /****************************************************************************/
 int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
@@ -86,8 +97,10 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
 
 		if(smb_findhash(smb, hashes, &found, /* update? */FALSE)==SMB_SUCCESS) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"duplicate %s hash found (message #%lu)"
-				,smb_hashsource(found.source), found.number);
+				,"duplicate %s (%s) found in message #%lu"
+				,smb_hashsource(found.source)
+				,hash_source_string(msg,found.source)
+				,found.number);
 			retval=SMB_DUPE_MSG;
 			break;
 		}
