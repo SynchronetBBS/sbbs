@@ -625,7 +625,8 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 						exit(EXIT_FAILURE);
 					}
 					offset+=ret2;
-					printf("\b\b\b\b%3lu%%",(long)(((float)offset/(float)flen)*100.0));
+					if(flen)
+						printf("\b\b\b\b%3lu%%",(long)(((float)offset/(float)flen)*100.0));
 					fflush(stdout);
 				}
 				printf("\n");
