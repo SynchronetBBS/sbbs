@@ -305,7 +305,7 @@ int bstrlen(uchar *str)
 	int i=0;
 
 	while(*str) {
-		if(*str<SP) {	/* ctrl char */
+		if(*str<' ') {	/* ctrl char */
 			if(*str==1) /* ctrl-A */
 				str++;
 			else if(*str!=CR && *str!=LF && *str!=FF)
@@ -328,7 +328,7 @@ void center(char *str)
 
 	j=bstrlen(str);
 	for(i=0;i<(80-j)/2;i++)
-		outchar(SP);
+		outchar(' ');
 	bputs(str);
 }
 
@@ -887,7 +887,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 	if(mode&K_LINE && user_misc&ANSI) {
 		attr(LIGHTGRAY|HIGH|(BLUE<<4));  /* white on blue */
 		for(i=0;i<maxlen;i++)
-			outchar(SP);
+			outchar(' ');
 		bprintf("\x1b[%dD",maxlen); 
 	}
 	i=l=0;	/* i=total number of chars, j=number of printable chars */
@@ -922,7 +922,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 			rputs(str1);
 			i=l; 
 		}
-		if(ch!=SP && ch!=TAB)
+		if(ch!=' ' && ch!=TAB)
 			ungetkey(ch); 
 	}
 
@@ -952,12 +952,12 @@ int getstr(char *strout, size_t maxlen, long mode)
 			case 4:	/* Ctrl-D Delete word right */
         		if(i<l) {
 					x=i;
-					while(x<l && str1[x]!=SP) {
-						outchar(SP);
+					while(x<l && str1[x]!=' ') {
+						outchar(' ');
 						x++; 
 					}
-					while(x<l && str1[x]==SP) {
-						outchar(SP);
+					while(x<l && str1[x]==' ') {
+						outchar(' ');
 						x++; 
 					}
 					bprintf("\x1b[%dD",x-i);   /* move cursor back */
@@ -967,7 +967,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 						z++; 
 					}
 					while(z<l) {					/* write over extra chars */
-						outchar(SP);
+						outchar(' ');
 						z++; 
 					}
 					bprintf("\x1b[%dD",z-i);
@@ -1005,9 +1005,9 @@ int getstr(char *strout, size_t maxlen, long mode)
 			case 14:	/* Ctrl-N Next word */
 				if(i<l && (user_misc&ANSI)) {
 					x=i;
-					while(str1[i]!=SP && i<l)
+					while(str1[i]!=' ' && i<l)
 						i++;
-					while(str1[i]==SP && i<l)
+					while(str1[i]==' ' && i<l)
 						i++;
 					bprintf("\x1b[%dC",i-x); 
 				}
@@ -1015,9 +1015,9 @@ int getstr(char *strout, size_t maxlen, long mode)
 			case 0x1c:	  /* Ctrl-\ Previous word */
 				if(i && (user_misc&ANSI)) {
 					x=i;
-					while(str1[i-1]==SP && i)
+					while(str1[i-1]==' ' && i)
 						i--;
-					while(str1[i-1]!=SP && i)
+					while(str1[i-1]!=' ' && i)
 						i--;
 					bprintf("\x1b[%dD",x-i); 
 				}
@@ -1035,8 +1035,8 @@ int getstr(char *strout, size_t maxlen, long mode)
 						if(i==maxlen-1)
 							ins=0; 
 					}
-					str1[i++]=SP;
-					outchar(SP); 
+					str1[i++]=' ';
+					outchar(' '); 
 				}
 				while(i<maxlen && i%TABSIZE) {
             		if(ins) {
@@ -1047,8 +1047,8 @@ int getstr(char *strout, size_t maxlen, long mode)
 						if(i==maxlen-1)
 							ins=0; 
 					}
-					str1[i++]=SP;
-					outchar(SP); 
+					str1[i++]=' ';
+					outchar(' '); 
 				}
 				if(ins)
 					redrwstr(str1,i,l,0);
@@ -1065,7 +1065,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 						outchar(str1[z]=str1[z+1]);
 						z++; 
 					}
-					outchar(SP);		/* write over the last char */
+					outchar(' ');		/* write over the last char */
 					bprintf("\x1b[%dD",(l-i)+1); 
 				}
 				else
@@ -1075,7 +1075,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 				str1[l]=0;
 				l=bstrlen(str1);
 				for(x=0;x<(maxlen-l)/2;x++)
-					str2[x]=SP;
+					str2[x]=' ';
 				str2[x]=0;
 				strcat(str2,str1);
 				strcpy(strout,str2);
@@ -1094,11 +1094,11 @@ int getstr(char *strout, size_t maxlen, long mode)
 			case 23:	/* Ctrl-W   Delete word left */
 				if(i<l) {
 					x=i;							/* x=original offset */
-					while(i && str1[i-1]==SP) {
+					while(i && str1[i-1]==' ') {
 						outchar(BS);
 						i--; 
 					}
-					while(i && str1[i-1]!=SP) {
+					while(i && str1[i-1]!=' ') {
 						outchar(BS);
 						i--; 
 					}
@@ -1108,19 +1108,19 @@ int getstr(char *strout, size_t maxlen, long mode)
 						z++; 
 					}
 					while(z<l) {					/* write over extra chars */
-						outchar(SP);
+						outchar(' ');
 						z++; 
 					}
 					bprintf("\x1b[%dD",z-i);        /* back to new x corridnant */
 					l-=x-i; 						/* l=new length */
 				}
 				else {
-            		while(i && str1[i-1]==SP) {
+            		while(i && str1[i-1]==' ') {
 						i--;
 						l--;
 						bputs("\b \b"); 
 					}
-					while(i && str1[i-1]!=SP) {
+					while(i && str1[i-1]!=' ') {
 						i--;
 						l--;
 						bputs("\b \b"); 
@@ -1129,7 +1129,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 				break;
 			case 24:	/* Ctrl-X   Delete entire line */
 				while(i<l) {
-					outchar(SP);
+					outchar(' ');
 					i++; 
 				}
 				while(l) {
@@ -1182,7 +1182,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 					outchar(str1[z]=str1[z+1]);
 					z++; 
 				}
-				outchar(SP);		/* write over the last char */
+				outchar(' ');		/* write over the last char */
 				bprintf("\x1b[%dD",(l-i)+1);
 				break;
 			case ESC:
@@ -1216,9 +1216,9 @@ int getstr(char *strout, size_t maxlen, long mode)
 				}
 				break;
 			default:
-				if(mode&K_WRAP && i==maxlen && ch>=SP && !ins) {
+				if(mode&K_WRAP && i==maxlen && ch>=' ' && !ins) {
 					str1[i]=0;
-					if(ch==SP) {	/* don't wrap a space as last char */
+					if(ch==' ') {	/* don't wrap a space as last char */
 						strcpy(strout,str1);
 						if(stripattr(strout))
 							redrwstr(strout,i,l,K_MSG);
@@ -1228,7 +1228,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 					x=i-1;
 					z=1;
 					wordwrap[0]=ch;
-					while(str1[x]!=SP && x)
+					while(str1[x]!=' ' && x)
 						wordwrap[z++]=str1[x--];
 					if(x<(maxlen/2)) {
 						wordwrap[1]=0;	/* only wrap one character */
@@ -1251,9 +1251,9 @@ int getstr(char *strout, size_t maxlen, long mode)
 					CRLF;
 					return(x); 
 				}
-				if(i<maxlen && ch>=SP) {
+				if(i<maxlen && ch>=' ') {
 					if(mode&K_UPRLWR)
-						if(!i || (i && (str1[i-1]==SP || str1[i-1]=='-'
+						if(!i || (i && (str1[i-1]==' ' || str1[i-1]=='-'
 							|| str1[i-1]=='.' || str1[i-1]=='_')))
 							ch=toupper(ch);
 						else
@@ -1320,7 +1320,7 @@ void redrwstr(char *strin, int i, int l, long mode)
 	}
 	else {
 		while(c<79)	{ /* clear to end of line */
-			outchar(SP);
+			outchar(' ');
 			c++; 
 		}
 		while(c>l) { /* back space to end of string */
@@ -1501,7 +1501,7 @@ void ctrl_a(char x)
 			bprintf("\x1b[%uC",(uchar)x-0x7f);
 		else
 			for(i=0;i<(uchar)x-0x7f;i++)
-				outchar(SP);
+				outchar(' ');
 		return; }
 
 	switch(toupper(x)) {
@@ -1538,7 +1538,7 @@ void ctrl_a(char x)
 			else {
 				i=j=wherey();
 				while(i++<80)
-					outchar(SP);
+					outchar(' ');
 				while(j++<80)
 					outchar(BS); }
 #endif
@@ -1986,7 +1986,11 @@ void initdata(void)
 		name_len=30;
 
 #ifdef __unix__
-	_termios_setup();
+	#ifdef USE_XPDEV
+		initciowrap();
+	#else
+		_termios_setup();
+	#endif
 #endif
 
 	if(client_socket==INVALID_SOCKET)
@@ -2035,13 +2039,14 @@ void truncsp(uchar *str)
 
 	str[strcspn(str,"\t")]=0;
 	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
+	while(c && (uchar)str[c-1]<=' ') c--;
 	str[c]=0;
 }
 
 /****************************************************************************/
 /* Puts a backslash on path strings 										*/
 /****************************************************************************/
+#ifndef USE_XPDEV
 void backslash(char *str)
 {
     int i;
@@ -2052,6 +2057,7 @@ void backslash(char *str)
 		str[i+1]=0; 
 	}
 }
+#endif	/* USE_XPDEV */
 
 
 /****************************************************************************/

@@ -195,9 +195,11 @@ int  nopen(char *str, int access);
 	- Removes white space characters from the end of a string */
 void truncsp(uchar *str);
 
+#ifndef USE_XPDEV
 /* Adds Backslash
 	- Adds backslash to end of string if it doesn't exist */
 void backslash(char *str);
+#endif
 
 /* Check Time Left
 	- Checks the amount of time the user has left and sets the timeleft
