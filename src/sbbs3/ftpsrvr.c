@@ -254,7 +254,8 @@ static int ftp_close_socket(SOCKET* sock, int line)
 #ifndef _WIN32
 #define ReleaseMutex(x)
 #else
-	if((result=WaitForSingleObject(socket_mutex,5000))!=WAIT_OBJECT_0) 
+	if(socket_mutex!=NULL
+		&& (result=WaitForSingleObject(socket_mutex,5000))!=WAIT_OBJECT_0) 
 		lprintf("%04d !ERROR %d getting socket mutex from line %u"
 			,*sock,ERROR_VALUE,line);
 
@@ -281,7 +282,8 @@ static int ftp_close_socket(SOCKET* sock, int line)
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
 			lprintf("%04d !ERROR %d closing socket from line %u",*sock,ERROR_VALUE,line);
-	}
+	} else if(sock==&server_socket || *sock==server_socket)
+		lprintf("%04d Server socket closed (%u sockets in use) from line %u",*sock,sockets,line);
 #ifdef _DEBUG
 	else 
 		lprintf("%04d Socket closed (%u sockets in use) from line %u",*sock,sockets,line);
@@ -2233,6 +2235,7 @@ static void ctrl_thread(void* arg)
 	FILE*		fp;
 	FILE*		alias_fp;
 	SOCKET		sock;
+	SOCKET		tmp_sock;
 	SOCKET		pasv_sock=INVALID_SOCKET;
 	SOCKET		data_sock=INVALID_SOCKET;
 	HOSTENT*	host;
@@ -4202,16 +4205,14 @@ static void ctrl_thread(void* arg)
 
 #endif
 
-	status(STATUS_WFC);
+/*	status(STATUS_WFC); server thread should control status display */
 
-	active_clients--;
-	update_clients();
+	if(pasv_sock!=INVALID_SOCKET)
+		ftp_close_socket(&pasv_sock,__LINE__);
+	if(data_sock!=INVALID_SOCKET)
+		ftp_close_socket(&data_sock,__LINE__);
+
 	client_off(sock);
-
-	thread_down();
-
-	lprintf("%04d CTRL thread terminated (%u clients, %u threads remain)"
-		,sock, active_clients, thread_count);
 
 #ifdef _DEBUG
 	socket_debug[sock]&=~SOCKET_DEBUG_CTRL;
@@ -4221,12 +4222,15 @@ static void ctrl_thread(void* arg)
 	socket_debug[sock]&=~SOCKET_DEBUG_TERMINATE;
 #endif
 
-	/* Free up resources here (MUST BE LAST) */
-	ftp_close_socket(&sock,__LINE__);
-	if(pasv_sock!=INVALID_SOCKET)
-		ftp_close_socket(&pasv_sock,__LINE__);
-	if(data_sock!=INVALID_SOCKET)
-		ftp_close_socket(&data_sock,__LINE__);
+	tmp_sock=sock;
+	ftp_close_socket(&tmp_sock,__LINE__);
+
+	active_clients--;
+	update_clients();
+
+	thread_down();
+	lprintf("%04d CTRL thread terminated (%u clients, %u threads remain)"
+		,sock, active_clients, thread_count);
 }
 
 static void cleanup(int code)
@@ -4563,11 +4567,25 @@ void DLLCALL ftp_server(void* arg)
 			start=time(NULL);
 			while(active_clients) {
 				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf("0000 !TIMEOUT waiting for %d active clients ",active_clients);
+					lprintf("0000 !TIMEOUT waiting for %d active clients",active_clients);
 					break;
 				}
 				mswait(100);
 			}
+			lprintf("000 Done waiting");
+		}
+
+		if(thread_count>1) {
+			lprintf("0000 Waiting for %d threads to terminate...", thread_count-1);
+			start=time(NULL);
+			while(thread_count>1) {
+				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
+					lprintf("0000 !TIMEOUT waiting for %d threads",thread_count-1);
+					break;
+				}
+				mswait(100);
+			}
+			lprintf("000 Done waiting");
 		}
 
 		cleanup(0);
