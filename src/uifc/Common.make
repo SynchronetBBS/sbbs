@@ -6,4 +6,4 @@ UIFC_LDFLAGS  =       -L$(UIFC_SRC)$(DIRSEP)$(LIBODIR)
 UIFC-MT_CFLAGS   =       -I$(UIFC_SRC)
 UIFC-MT_LDFLAGS  =       -L$(UIFC_SRC)$(DIRSEP)$(LIBODIR)
 UIFC_LIBS	=	-luifc
-UIFC-MT_LIBS	=	-luifc
+UIFC-MT_LIBS	=	-luifc-mt
