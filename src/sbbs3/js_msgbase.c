@@ -184,7 +184,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		smb_hfield(msg, SENDERORG, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "from_net_type", &val) && JSVAL_IS_STRING(val)) {
+	if(JS_GetProperty(cx, hdr, "from_net_type", &val) && JSVAL_IS_INT(val)) {
 		nettype=(ushort)JSVAL_TO_INT(val);
 		smb_hfield(msg, SENDERNETTYPE, sizeof(nettype), &nettype);
 		if(p->smb.status.attr&SMB_EMAIL && nettype!=NET_NONE)
@@ -205,7 +205,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			msg->idx.to=atoi(cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_net_type", &val) && JSVAL_IS_STRING(val)) {
+	if(JS_GetProperty(cx, hdr, "to_net_type", &val) && JSVAL_IS_INT(val)) {
 		nettype=(ushort)JSVAL_TO_INT(val);
 		smb_hfield(msg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
 		if(p->smb.status.attr&SMB_EMAIL && nettype!=NET_NONE)
@@ -230,7 +230,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		smb_hfield(msg, REPLYTOEXT, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_net_type", &val) && JSVAL_IS_STRING(val)) {
+	if(JS_GetProperty(cx, hdr, "replyto_net_type", &val) && JSVAL_IS_INT(val)) {
 		nettype=(ushort)JSVAL_TO_INT(val);
 		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
 	}
@@ -311,19 +311,19 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 	
 	/* Numeric Header Fields */
-	if(JS_GetProperty(cx, hdr, "attr", &val) && JSVAL_IS_STRING(val)) 
+	if(JS_GetProperty(cx, hdr, "attr", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.attr=(ushort)JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "auxattr", &val) && JSVAL_IS_STRING(val)) 
+	if(JS_GetProperty(cx, hdr, "auxattr", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.auxattr=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "netattr", &val) && JSVAL_IS_STRING(val)) 
+	if(JS_GetProperty(cx, hdr, "netattr", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.netattr=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "when_written_time", &val) && JSVAL_IS_STRING(val)) 
+	if(JS_GetProperty(cx, hdr, "when_written_time", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.when_written.time=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "when_written_zone", &val) && JSVAL_IS_STRING(val)) 
+	if(JS_GetProperty(cx, hdr, "when_written_zone", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.when_written.zone=(short)JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "when_imported_time", &val) && JSVAL_IS_STRING(val)) 
+	if(JS_GetProperty(cx, hdr, "when_imported_time", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.when_imported.time=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val) && JSVAL_IS_STRING(val)) 
+	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.when_imported.zone=(short)JSVAL_TO_INT(val);
 
 	return(TRUE);
