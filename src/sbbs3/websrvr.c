@@ -1276,7 +1276,8 @@ static int is_dynamic_req(http_session_t* session)
 			}
 		}
 		for(i=0; startup->cgi_dir!=NULL && startup->cgi_dir[i]!=NULL; i++)  {
-			FULLPATH(startup->cgi_dir[i],path,sizeof(path));
+			if(FULLPATH(path,startup->cgi_dir[i],sizeof(path))==NULL)
+				continue;
 			if(stricmp(dir,path)==0)  {
 				init_enviro(session);
 				return(IS_CGI);
