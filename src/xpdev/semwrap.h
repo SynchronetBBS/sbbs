@@ -61,6 +61,7 @@ extern "C" {
 		#include <semaphore.h>	/* POSIX semaphores */
 	#endif
 
+	/* NOT POSIX */
 	int 	sem_trywait_block(sem_t *sem, unsigned long timeout);
 
 #elif defined(_WIN32)	
@@ -78,6 +79,7 @@ extern "C" {
 	#define sem_destroy(psem)			CloseHandle(*(psem))
 	/* No Win32 implementation for sem_getvalue() */
 
+	/* NOT POSIX */
 	#define sem_trywait_block(psem,t)	(WaitForSingleObject(*(psem),t)==WAIT_OBJECT_0?0:(errno=EAGAIN,-1))
 
 #elif defined(__OS2__)	/* These have *not* been tested! */
@@ -94,6 +96,9 @@ extern "C" {
 	#error "Need semaphore wrappers."
 
 #endif
+
+/* Change semaphore to "unsignaled" (NOT POSIX) */
+#define sem_reset(psem)					while(sem_trywait(psem)==0)
 
 #if defined(__cplusplus)
 }
