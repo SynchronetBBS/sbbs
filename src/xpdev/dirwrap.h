@@ -67,6 +67,8 @@ extern "C" {
 
 #else	
 
+	#include <direct.h>		/* mkdir() */
+
 	#define ALLFILES "*.*"	/* matches all files in a directory */
 	#ifdef __WATCOMC__
 		#define MKDIR(dir)		mkdir(dir)
@@ -145,8 +147,6 @@ extern "C" {
 	struct dirent  *	readdir  (DIR *__dir);
 	int                 closedir (DIR *__dir);
 	void                rewinddir(DIR *__dir);
-#elif defined(__WATCOMC__)
-	#include <direct.h>	/* opendir, etc defined here in Watcom */
 #else
 	#include <dirent.h>	/* POSIX directory functions */
 #endif
