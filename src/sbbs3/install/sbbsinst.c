@@ -390,9 +390,7 @@ endif
 		sprintf(cflags,"CFLAGS=%s",params.cflags);
 		putenv(cflags);
 	}
-	fprintf(makefile,"SBBSDIR := ");
-	fputs(params.install_path);
-	fprintf(makefile,"\n");
+	fprintf(makefile,"SBBSDIR := %s\n",params.install_path);
 
 /* Not supported
 ifdef JSLIB
@@ -410,7 +408,7 @@ endif
 	fprintf(makefile," $(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/%s.%s\n",platform,build);
 	fprintf(makefile,"\n");	
 	fprintf(makefile,"	gmake -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)\n");
-	fputs(makefile,"     MKFLAGS	+=	BAJAPATH=../src/sbbs3/%s.%s.exe.%s/baja\n\n",ccpre,platform,build);
+	fprintf(makefile,"     MKFLAGS	+=	BAJAPATH=../src/sbbs3/%s.%s.exe.%s/baja\n\n",ccpre,platform,build);
 
 	fprintf(makefile,"scfg:");
 	if(params.cvs)
