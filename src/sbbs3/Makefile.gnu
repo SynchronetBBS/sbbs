@@ -129,6 +129,9 @@ $(LIBODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h
 $(LIBODIR)/mxlookup.o: mxlookup.c
 	$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@		
 
+$(LIBODIR)/services.o: services.c services.h
+	$(CC) $(CFLAGS) -c -DSERVICES_EXPORTS $< -o $@
+
 # Baja Utility
 $(BAJA): baja.c ars.c smbwrap.c crc32.c
 	$(CC) $(CFLAGS) -o $@ $^
