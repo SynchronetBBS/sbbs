@@ -665,7 +665,7 @@ static struct {
 	{ 163	,"pound"	}, /* 156 Pound sign */
 	{ 165	,"yen"		}, /* 157 Yen sign */
 	{ 8359	,NULL		}, /* 158 Pt (unicode) */
-	{ 131	,NULL		}, /* 159 Florin (non-standard) */
+	{ 402	,NULL		}, /* 402 Florin (non-standard alsi 159?) */
 	{ 225	,"aacute"	}, /* 160 a, acute accent */
 	{ 237	,"iacute"	}, /* 161 i, acute accent */
 	{ 243	,"oacute"	}, /* 162 o, acute accent */
@@ -743,7 +743,7 @@ static struct {
 	{ 937	,NULL		}, /* 234 greek char? */
 	{ 948	,NULL		}, /* 235 greek char? */
 	{ 8734	,NULL		}, /* 236 infinity symbol (unicode) */
-	{ 248	,"oslash"	}, /* 237 o, slash (also #966?) */
+	{ 966	,"oslash"	}, /* 237 Greek Phi */
 	{ 949	,NULL		}, /* 238 rounded E */
 	{ 8745	,NULL		}, /* 239 unside down U (unicode) */
 	{ 8801	,NULL		}, /* 240 drawing symbol (unicode) */
