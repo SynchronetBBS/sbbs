@@ -111,7 +111,8 @@ function menu(fname)
 		if(exec)
 			eval(exec);
 
-		console.putmsg(eval(prompt));
+		if(prompt)
+			console.putmsg(eval(prompt));
 
 		var cmd;
 		if(hotkeys)
