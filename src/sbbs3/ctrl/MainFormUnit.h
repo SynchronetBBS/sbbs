@@ -47,6 +47,7 @@
 #include <ExtCtrls.hpp>
 #include <ActnList.hpp>
 //---------------------------------------------------------------------------
+#include <io.h>			// Undefined symbol '_chmod' ???
 #include "scfgdefs.h"  	// scfg_t
 #include "mailsrvr.h"
 #include "ftpsrvr.h"
