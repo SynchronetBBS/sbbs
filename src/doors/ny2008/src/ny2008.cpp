@@ -281,7 +281,7 @@ loadbadwords(void) {
 	fclose(fp);
 }
 
-INT16
+int
 main(int argc,char *argv[]) {
 	FILE *justfile,*njustfile;
 	char key;
