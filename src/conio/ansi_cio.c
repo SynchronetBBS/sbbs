@@ -423,7 +423,7 @@ int ansi_putch(int ch)
 	struct text_info ti;
 	WORD sch;
 	int i;
-	char buf[2];
+	unsigned char buf[2];
 
 	buf[0]=ch;
 	buf[1]=ansi_curr_attr>>8;
