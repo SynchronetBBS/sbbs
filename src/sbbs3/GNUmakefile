@@ -19,14 +19,6 @@ include $(SRC_ROOT)/build/Common.gmake
 UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS)
 UTIL_LIBS	+=	$(SMBLIB_LIBS)
 
-ifeq ($(os),freebsd)
- BSD	=	1
-else
- ifeq ($(os),openbsd)
-  BSD	=	1
- endif
-endif
-
 ifndef bcc
  LDFLAGS	+=	-lm
  ifneq ($(os),sunos)
