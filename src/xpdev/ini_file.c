@@ -217,6 +217,17 @@ static size_t find_value_index(str_list_t list, const char* section, const char*
 	return(i);
 }
 
+BOOL iniSectionExists(str_list_t* list, const char* section)
+{
+	size_t	i;
+
+	if(section==ROOT_SECTION)
+		return(TRUE);
+
+	i=find_section_index(*list,section);
+	return((*list)[i]!=NULL);
+}
+
 BOOL iniKeyExists(str_list_t* list, const char* section, const char* key)
 {
 	char	val[INI_MAX_VALUE_LEN];

@@ -121,6 +121,7 @@ char*		iniSetBitField(str_list_t*, const char* section, const char* key, ini_bit
 char*		iniSetStringList(str_list_t*, const char* section, const char* key
 					,const char* sep, str_list_t value, ini_style_t*);
 
+BOOL		iniSectionExists(str_list_t*, const char* section);
 BOOL		iniKeyExists(str_list_t*, const char* section, const char* key);
 BOOL		iniValueExists(str_list_t*, const char* section, const char* key);
 BOOL		iniRemoveKey(str_list_t*, const char* section, const char* key);
