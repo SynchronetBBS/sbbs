@@ -985,6 +985,7 @@ static JSBool
 js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	JSString*	js_str;
+	JSObject*	cfgobj;
 	char*		base;
 	private_t*	p;
 
@@ -1007,6 +1008,16 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		return(JS_FALSE);
 	}
 
+	JS_DefineProperties(cx,obj,js_msgbase_properties);
+
+#ifdef _DEBUG
+	js_DescribeObject(cx,obj,"Class used for accessing message bases");
+	js_DescribeConstructor(cx,obj,"To create a new MsgBase object: "
+		"<tt>var msgbase = new MsgBase('<i>code</i>')</tt><br>"
+		"where <i>code</i> is a sub-board internal code, or <tt>mail</tt> for the e-mail message base");
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", msgbase_prop_desc, JSPROP_READONLY);
+#endif
+
 	if(stricmp(base,"mail")==0) {
 		p->smb.subnum=INVALID_SUB;
 		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,"mail");
@@ -1016,7 +1027,15 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 				break;
 		}
 		if(p->smb.subnum<scfg->total_subs) {
-			js_CreateMsgAreaProperties(cx, obj, scfg->sub[p->smb.subnum]);
+			cfgobj=JS_NewObject(cx,NULL,NULL,obj);
+			js_CreateMsgAreaProperties(cx, cfgobj, scfg->sub[p->smb.subnum]);
+#ifdef _DEBUG
+			js_DescribeObject(cx,cfgobj
+				,"Configuration parameters for this message area (<i>sub-boards only</i>) "
+				"- <small>READ ONLY</small>");
+#endif
+			JS_DefineProperty(cx,obj,"cfg",OBJECT_TO_JSVAL(cfgobj)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 			snprintf(p->smb.file,sizeof(p->smb.file),"%s%s"
 				,scfg->sub[p->smb.subnum]->data_dir,scfg->sub[p->smb.subnum]->code);
 		} else { /* unknown code */
@@ -1030,14 +1049,6 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		return(JS_FALSE);
 	}
 
-#ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Class used for accessing message bases");
-	js_DescribeConstructor(cx,obj,"To create a new MsgBase object: "
-		"<tt>var msgbase = new MsgBase('<i>code</i>')</tt><br>"
-		"where <i>code</i> is a sub-board internal code, or <tt>mail</tt> for the e-mail message base");
-	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", msgbase_prop_desc, JSPROP_READONLY);
-#endif
-
 	return(JS_TRUE);
 }
 
@@ -1050,7 +1061,7 @@ JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t*
 		,&js_msgbase_class
 		,js_msgbase_constructor
 		,1	/* number of constructor args */
-		,js_msgbase_properties
+		,NULL //js_msgbase_properties
 		,NULL //js_msgbase_functions
 		,NULL,NULL);
 
