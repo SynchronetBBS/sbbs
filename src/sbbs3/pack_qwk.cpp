@@ -67,7 +67,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	smbmsg_t msg;
 
 
-	ex=EX_SH|EX_OUTL|EX_OUTR;	/* Need sh for wildcard expansion */
+	ex=EX_OUTL|EX_OUTR;	/* Need sh for wildcard expansion */
 	if(prepack)
 		ex|=EX_OFFLINE;
 
@@ -82,7 +82,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			k=0;
 		i=external(cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL),ex);
 		if(!i)
-			preqwk=1; }
+			preqwk=1; 
+	}
 
 	if(useron.rest&FLAG('Q') && useron.qwk&QWK_RETCTLA)
 		useron.qwk|=(QWK_NOINDEX|QWK_NOCTRL|QWK_VIA|QWK_TZ);
@@ -573,7 +574,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/* Compress Packet */
 	/*******************/
 	sprintf(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
-	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL),ex);
+	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL)
+		,ex|EX_SH);	/* Needs sh for wildcard expansion */
 	if(!fexist(packet)) {
 		bputs(text[QWKCompressionFailed]);
 		if(i)
