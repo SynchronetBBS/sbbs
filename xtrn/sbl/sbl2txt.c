@@ -144,7 +144,8 @@ fprintf(out," Last updated on %s\r\n\r\n",timestr(&bbs.updated));
 
 void main(int argc, char **argv)
 {
-	char software[16]="";
+	char	software[16]="";
+	char	telnet_port[16];
 	int i,in;
 	FILE *out;
 	bbs_t bbs;
@@ -169,10 +170,20 @@ while(!eof(in)) {
 		continue;
 	// long_bbs_info(out,bbs);
 	for(i=0;i<bbs.total_numbers;i++)
-		fprintf(out,"%-25.25s  %12.12s  %5u  %s\r\n"
-			,bbs.name,bbs.number[i].modem.number
-			,bbs.number[i].modem.max_rate
-			,bbs.number[i].modem.desc);
+		if(bbs.number[i].modem.min_rate==0xffff) {
+			if(bbs.number[i].telnet.port && bbs.number[i].telnet.port!=23)
+				sprintf(telnet_port,":%u",bbs.number[i].telnet.port);
+			else
+				telnet_port[0]=0;
+			fprintf(out,"%-25.25s  telnet://%s%s\r\n"
+					,bbs.name
+					,bbs.number[i].telnet.addr
+					,telnet_port);
+		} else
+			fprintf(out,"%-25.25s  %12.12s  %5u  %s\r\n"
+				,bbs.name,bbs.number[i].modem.number
+				,bbs.number[i].modem.max_rate
+				,bbs.number[i].modem.desc);
 	}
 close(in);
 fclose(out);
