@@ -5,6 +5,8 @@
 
 // $Id$
 
+load("mailutil.js");
+
 RFC822HEADER = 0xb0	// from smbdefs.h
 
 function write_news_header(hdr,writeln)
@@ -93,8 +95,8 @@ function parse_news_header(hdr, line)
 		case "to":
 		case "apparently-to":
 		case "x-comment-to":
-			hdr.to = getName(data);
-			hdr.to_net_addr = getEmail(data);
+			hdr.to = mail_get_name(data);
+			hdr.to_net_addr = mail_get_address(data);
 			break;
 		case "newsgroups":
 			hdr.newsgroups=data;
@@ -103,8 +105,8 @@ function parse_news_header(hdr, line)
 			hdr.path=data;
 			break;
 		case "from":
-			hdr.from = getName(data);
-			hdr.from_net_addr = getEmail(data);
+			hdr.from = mail_get_name(data);
+			hdr.from_net_addr = mail_get_address(data);
 			break;
 		case "organization":
 			hdr.from_org=data;
@@ -164,28 +166,4 @@ function parse_news_header(hdr, line)
 			);
 			break;
 	}
-}
-
-
-//Michael J. Ryan - 2004-04-16 - tracker1(at)theroughnecks.net
-// gets the name portion for the "to/from"
-function getName(strIn) {
-	var reName1 = /[^\"]*\"([^\"]*)\".*/	//quoted name
-	var reName2 = /(\S[^<]+)\s+<.*/			//unquoted name
-	var reName3 = /[^<]*<([^@>]).*/			//first part of email address
-	var strName = strIn;
-	if (reName1.test(strIn)) strName = strIn.replace(reName1,"$1");
-	else if (reName2.test(strIn)) strName = strIn.replace(reName2,"$1");
-	else if (reName3.test(strIn)) strName = strIn.replace(reName3,"$1");
-	return strName; //original string
-}
-
-//Michael J. Ryan - 2004-04-16 - tracker1(at)theroughnecks.net
-// gets the email portion for the "to/from"
-function getEmail(strIn) {
-	var reEmail1 = /[^<]*<([^>]+)>.*/
-	var strEmail = strIn;
-	log("getEmail(" + strEmail + ")");
-	if (strIn.match(reEmail1)) return strIn.replace(reEmail1,"$1");
-	return null;
 }
