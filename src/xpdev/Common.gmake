@@ -1,2 +1,10 @@
 XPDEV_LIBS	+=	-lm
 XPDEV-MT_LIBS	+=	-lm
+ifeq ($(os),netbsd)     # NetBSD
+ XPDEV_LIBS	+=	-lossaudio
+ XPDEV-MT_LIBS	+=	-lossaudio
+endif
+ifeq ($(os),openbsd)    # OpenBSD
+ XPDEV_LIBS	+=	-lossaudio
+ XPDEV-MT_LIBS	+=	-lossaudio
+endif
