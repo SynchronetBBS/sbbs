@@ -131,6 +131,9 @@ void bail(int code)
 		fprintf(statfp,"\nHit enter to continue...");
 		getchar();
 	}
+
+	if(code)
+		fprintf(statfp,"\nReturning error code: %d\n",code);
 	exit(code);
 }
 
@@ -476,6 +479,13 @@ static BOOL js_init(char** environ)
 	return(TRUE);
 }
 
+static const char* js_ext(const char* fname)
+{
+	if(strchr(fname,'.')==NULL)
+		return(".js");
+	return("");
+}
+
 long js_exec(const char *fname, char** args)
 {
 	int			argc=0;
@@ -489,19 +499,18 @@ long js_exec(const char *fname, char** args)
 	int32		result=0;
 	
 	if(strcspn(fname,"/\\")==strlen(fname)) {
-		sprintf(path,"%s%s",scfg.mods_dir,fname);
+		sprintf(path,"%s%s%s",scfg.mods_dir,fname,js_ext(fname));
 		if(scfg.mods_dir[0]==0 || !fexistcase(path))
-			sprintf(path,"%s%s",scfg.exec_dir,fname);
+			sprintf(path,"%s%s%s",scfg.exec_dir,fname,js_ext(fname));
 	} else
-		sprintf(path,"%.*s",(int)sizeof(path)-4,fname);
-	/* Add extension if not specified */
-	if(!strchr(path,'.'))
-		strcat(path,".js");
+		sprintf(path,"%s%s",fname,js_ext(fname));
 
 	if(!fexistcase(path)) {
 		fprintf(errfp,"!Module file (%s) doesn't exist\n",path);
 		return(-1); 
 	}
+
+	JS_ClearPendingException(js_cx);
 
 	js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob);
 
@@ -526,23 +535,26 @@ long js_exec(const char *fname, char** args)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	if((js_script=JS_CompileFile(js_cx, js_scope, path))==NULL) {
-		fprintf(errfp,"!Error executing %s\n",fname);
+		fprintf(errfp,"!Error compiling %s\n",path);
 		return(-1);
 	}
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
-	if(!JS_ExecuteScript(js_cx, js_scope, js_script, &rval))
-		result=-1;
+	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
+
+	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
+
+	if(rval!=JSVAL_VOID) {
+		fprintf(statfp,"Using JavaScript exit_code: %s\n",JS_GetStringBytes(JS_ValueToString(js_cx,rval)));
+		JS_ValueToInt32(js_cx,rval,&result);
+	}
 
 	JS_DestroyScript(js_cx, js_script);
 
 	JS_ClearScope(js_cx, js_scope);
 
 	JS_GC(js_cx);
-
-	if(result==0 && rval!=JSVAL_VOID)	/* No error? Use script result */
-		JS_ValueToInt32(js_cx,rval,&result);
 
 	return(result);
 }
