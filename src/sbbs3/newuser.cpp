@@ -123,6 +123,11 @@ void sbbs_t::newuser()
 	useron.sex=SP;
 	useron.prot=cfg.new_prot;
 	strcpy(useron.note,cid);		/* Caller ID if supported, NULL otherwise */
+	if((i=userdatdupe(0,U_NOTE,LEN_NOTE,cid,true))!=0) {	/* Duplicate IP address */
+		sprintf(useron.comment,"Warning: same IP address as user #%d",i);
+		logline("N!",useron.comment); 
+	}
+
 	strcpy(useron.alias,"New");     /* just for status line */
 	strcpy(useron.modem,connection);
 	if(!lastuser(&cfg)) {	/* Automatic sysop access for first user */
