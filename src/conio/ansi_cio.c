@@ -50,9 +50,10 @@
 #define	ANSI_TIMEOUT	500
 
 sem_t	got_key;
-sem_t	used_key;
 sem_t	got_input;
 sem_t	used_input;
+sem_t	goahead;
+sem_t	need_key;
 WORD	ansi_curr_attr=0x07<<8;
 
 int ansi_rows=24;
@@ -352,9 +353,13 @@ static void ansi_keyparse(void *par)
 
 	seq[0]=0;
 	for(;;) {
+		sem_wait(&goahead);
+		sem_post(&need_key);
 		timedout=0;
 		if(timeout) {
 			if(sem_trywait_block(&got_key,timeout)) {
+				/* Sneak it back down just in case */
+				sem_trywait(&need_key);
 				gotesc=0;
 				timeout=0;
 				timedout=1;
@@ -375,7 +380,6 @@ static void ansi_keyparse(void *par)
 		else {
 			ch=ansi_raw_inch;
 			ansi_raw_inch=0;
-			sem_post(&used_key);
 		}
 		switch(gotesc) {
 			case 1:	/* Escape Sequence */
@@ -432,7 +436,7 @@ static void ansi_keythread(void *params)
 	_beginthread(ansi_keyparse,1024,NULL);
 
 	for(;;) {
-		sem_wait(&used_key);
+		sem_wait(&need_key);
 		if(fread(&ansi_raw_inch,1,1,stdin)==1)
 			sem_post(&got_key);
 		else
@@ -445,6 +449,8 @@ int ansi_kbhit(void)
 	int sval=1;
 
 	sem_getvalue(&got_input,&sval);
+	sem_trywait(&goahead);
+	sem_post(&goahead);
 	return(sval);
 }
 
@@ -625,6 +631,8 @@ int ansi_getch(void)
 {
 	int ch;
 
+	sem_trywait(&goahead);
+	sem_post(&goahead);
 	sem_wait(&got_input);
 	ch=ansi_inch&0xff;
 	ansi_inch=ansi_inch>>8;
@@ -707,9 +715,10 @@ int ansi_initciolib(long inmode)
 
 	/* Initialize used_* to 1 so they can be immediately waited on */
 	sem_init(&got_key,0,0);
-	sem_init(&used_key,0,1);
 	sem_init(&got_input,0,0);
 	sem_init(&used_input,0,1);
+	sem_init(&goahead,0,0);
+	sem_init(&need_key,0,0);
 
 	vmem=(WORD *)malloc(ansi_rows*ansi_cols*sizeof(WORD));
 	ansi_sendstr(init,-1);
