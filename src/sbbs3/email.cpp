@@ -101,7 +101,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	if(cfg.sys_misc&SM_DELREADM)
 		msgattr|=MSG_KILLREAD;
 
-	sprintf(msgpath,"%sINPUT.MSG", cfg.node_dir);
+	sprintf(msgpath,"%sinput.msg", cfg.node_dir);
 	username(&cfg,usernumber,str2);
 	if(!writemsg(msgpath,top,title,mode,INVALID_SUB,str2)) {
 		bputs(text[Aborted]);
