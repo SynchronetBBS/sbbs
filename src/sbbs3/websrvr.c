@@ -2708,7 +2708,7 @@ void http_logging_thread(void* arg)
 		if(logfile!=NULL) {
 			sprintf(sizestr,"%d",ld->size);
 			strftime(timestr,sizeof(timestr),"%d/%b/%G:%H:%M:%S %z",&ld->completed);
-			while(!lock(fileno(logfile),0,1)) {
+			while(lock(fileno(logfile),0,1)) {
 				SLEEP(10);
 			}
 			fprintf(logfile,"%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
