@@ -38,6 +38,8 @@
 #ifndef _DIRWRAP_H
 #define _DIRWRAP_H
 
+#include <stdlib.h>		/* _fullpath() on Win32 */
+
 #include "gen_defs.h"	/* ulong */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
