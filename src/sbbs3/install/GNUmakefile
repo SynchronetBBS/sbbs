@@ -35,7 +35,7 @@ DELETE	=	rm -f -v
 OUTLIB	=	-o
 
 CFLAGS	+=	-O2
-CFLAGS	+=	-Wall -I$(UIFC) -I$(XPDEV) -I/usr/local/include -I..
+CFLAGS	+=	-Wall -I$(UIFC) -I$(XPDEV) -I..
 
 LFLAGS	:=	-static -L/usr/local/lib
 
