@@ -180,7 +180,7 @@ CON_OBJS	= $(EXEODIR)/sbbscon.o $(EXEODIR)/conwrap.o \
 		  $(EXEODIR)/ini_file.o $(EXEODIR)/sbbs_ini.o
 FTP_OBJS	= $(LIBODIR)/ftpsrvr.o
 MAIL_OBJS	= $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o \
- 		  $(LIBODIR)/mime.o
+ 		  $(LIBODIR)/mime.o $(LIBODIR)/base64.o
 WEB_OBJS	= $(LIBODIR)/websrvr.o $(LIBODIR)/sockwrap.o $(LIBODIR)/base64.o
 SERVICE_OBJS= $(LIBODIR)/services.o
 

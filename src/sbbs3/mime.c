@@ -43,14 +43,9 @@
 
 #include "sbbs.h"
 #include "mailsrvr.h"
+#include "base64.h"
 
 #define SIZEOF_MIMEBOUNDARY     36
-#define BASE64_BITMASK          0x0000003F
-
-static const char * base64alphabet = 
- "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-
-static void tobase64(char * in, char * out, int bytesread);
 
 char * mimegetboundary()
 {
@@ -106,36 +101,23 @@ void mimetextpartheader(SOCKET socket, char * boundary)
 BOOL base64out(SOCKET socket, char * pathfile)
 {
     FILE *  fp;
-    char    in[3]={0};
-    char    out[5];     /* one for the '\0' */
-    char    line[77];   /* one for the '\0' */
+    char    in[57];
+    char    out[77];
     int     bytesread;
-    int     i = 0;
 
     if((fp=fopen(pathfile,"rb"))==NULL) 
         return(FALSE);
     while(1) {
-        bytesread=fread(in,1,3,fp);
-        tobase64(in,out,bytesread);
-        if(i==0)
-            strcpy(line,out);
-        else
-            strcat(line,out);
-        if(i==18) {
-            if(!sockprintf(socket,line)) {
-				fclose(fp);
-				return(FALSE);
-			}
-            i=-1;
-        }
-        if(bytesread!=3 || feof(fp))
+        bytesread=fread(in,1,57,fp);
+		if((b64_encode(out,in,sizeof(out),bytesread)==NULL)
+				|| !sockprintf(socket,out))  {
+			fclose(fp);
+			return(FALSE);
+		}
+        if(bytesread!=57 || feof(fp))
             break;
-        i++;
-        memset(in,0,3);
     }
 	fclose(fp);
-    if(i!=-1)   /* already printed the last line */
-        sockprintf(socket,line);
     sockprintf(socket,"");
 	return(TRUE);
 }
@@ -181,38 +163,3 @@ void endmime(SOCKET socket, char * boundary)
     sockprintf(socket,bndline);
     sockprintf(socket,"");
 }
-
-static void tobase64(char * in, char * out, int bytesread)
-{
-#define BITCAST_MASK    0x000000FF
-    unsigned int  tmpnum0 = ((unsigned int)in[0])&BITCAST_MASK;
-    unsigned int  tmpnum1 = ((unsigned int)in[1])&BITCAST_MASK;
-    unsigned int  data = ((unsigned int)in[2])&BITCAST_MASK;
-
-    data|=(tmpnum1<<8);
-    data|=(tmpnum0<<16);
-    if(bytesread==0) {
-        out[0]='\0';
-        return;
-    }
-    out[4]='\0';
-    out[3]=base64alphabet[(data&BASE64_BITMASK)];
-    out[2]=base64alphabet[((data>>6)&BASE64_BITMASK)];
-    out[1]=base64alphabet[((data>>12)&BASE64_BITMASK)];
-    out[0]=base64alphabet[((data>>18)&BASE64_BITMASK)];
-    if(bytesread==1) {
-        /* pad last bytes */
-        out[3]=base64alphabet[64];
-        out[2]=base64alphabet[64];
-    }
-    else if(bytesread==2)
-        out[3]=base64alphabet[64];
-
-#undef BITCAST_MASK
-}
-
-
-
-
-
-    
