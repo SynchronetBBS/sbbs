@@ -18,8 +18,8 @@ int drawwin(void)
 		term.height=49;
 	else
 		term.height=24;
-	term.x=(txtinfo.screenwidth-term.width)/2;
-	term.y=(txtinfo.screenheight-term.height)/2;
+	term.x=(txtinfo.screenwidth-term.width)/2+2;
+	term.y=(txtinfo.screenheight-term.height)/2+2;
 	if((winbuf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2))==NULL) {
 		uifcmsg("Cannot allocate memory for terminal buffer",	"`Memory error`\n\n"
 																"Either your system is dangerously low on resources or your\n"
@@ -41,12 +41,6 @@ int drawwin(void)
 			if(!*p)
 				p=str;
 			winbuf[c++]=YELLOW|(BLUE<<4);
-		}
-	}
-	for(x=term.x;x<term.x+term.width;x++) {
-		for(y=term.y;y<term.y+term.height;y++) {
-			winbuf[(y*txtinfo.screenwidth+x)*2]=' ';
-			winbuf[(y*txtinfo.screenwidth+x)*2+1]=0;
 		}
 	}
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,winbuf);
