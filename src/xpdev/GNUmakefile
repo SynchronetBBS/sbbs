@@ -34,7 +34,6 @@ OFILE	=	o
 
 ifndef os
  os		=	$(shell uname)
- $(warning OS not specified on command line, setting to '$(os)'.)
 endif
 os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
 #os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
@@ -59,9 +58,9 @@ else
    LFLAGS	:=	libpthread.a
   else
    LFLAGS	:=	-lpthread
-  endif	!bcc
- endif	!OpenBSD
-endif	!FreeBSD
+  endif
+ endif
+endif
 
 ifdef DEBUG
  ifdef bcc
