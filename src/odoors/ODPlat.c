@@ -62,6 +62,7 @@
 #include <glob.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sched.h>
 #endif
 #include "ODGen.h"
 #include "ODCore.h"
@@ -614,6 +615,8 @@ BOOL ODTimerElapsed(tODTimer *pTimer)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
+   tv.tv_sec=0;
+   tv.tv_usec=1000;
    gettimeofday(&tv,NULL);
    end.tv_sec=pTimer->Start.tv_sec+(pTimer->Duration / 1000);
    end.tv_usec=(pTimer->Start.tv_usec+(pTimer->Duration*1000))%1000000;
@@ -804,6 +807,12 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
+   sched_yield();
+   
+   /* Prevent 100% CPU usage! */
+   if(Milliseconds==0)
+      Milliseconds=1;
+	  
    tv.tv_sec=Milliseconds/1000;
    tv.tv_usec=(Milliseconds%1000)*1000;
    select(0,NULL,NULL,NULL,&tv);
