@@ -10,6 +10,6 @@ WRAPTEST	= $(EXEODIR)$(DIRSEP)wraptest$(EXEFILE)
 
 all: lib mtlib
 
-lib:	$(LIBODIR) $(XPDEV_LIB)
+lib:	$(OBJODIR) $(LIBODIR) $(XPDEV_LIB)
 
-mtlib:	$(LIBODIR) $(XPDEV-MT_LIB)
+mtlib:	$(MTOBJODIR) $(LIBODIR) $(XPDEV-MT_LIB)
