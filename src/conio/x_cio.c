@@ -177,7 +177,7 @@ void x_gotoxy(int x, int y)
 
 void x_gettextinfo(struct text_info *info)
 {
-	info->currmode=VideoMode;
+	info->currmode=CurrMode;
 	info->screenheight=DpyRows+1;
 	info->screenwidth=DpyCols;
 	info->curx=wherex();

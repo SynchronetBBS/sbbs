@@ -60,7 +60,6 @@ int CurrMode;
 sem_t	console_mode_changed;
 int InitCS;
 int InitCE;
-BYTE VideoMode;
 int FW, FH;
 WORD DpyCols;
 BYTE DpyRows;
@@ -118,7 +117,6 @@ struct x11 {
 struct x11 x11;
 
 /* X pixel values for the RGB triples */
-struct dac_colors *dac_rgb;
 DWORD pixels[16];
 
 #define NUMMODES	(sizeof(vparams) / sizeof(struct video_params))
@@ -996,9 +994,9 @@ dac2rgb(XColor *color, int i)
 {
     int m;
 
-    color->red   = dac_rgb[palette[i]].red << 10;
-    color->green = dac_rgb[palette[i]].green << 10;
-    color->blue  = dac_rgb[palette[i]].blue << 10;
+    color->red   = dac_default16[palette[i]].red << 10;
+    color->green = dac_default16[palette[i]].green << 10;
+    color->blue  = dac_default16[palette[i]].blue << 10;
 }
 
 /* Calculate 'pixels[]' from the current DAC table and palette.
@@ -1049,6 +1047,7 @@ init_mode(int mode)
     idx = find_vmode(mode);
     if (idx == -1) {
 		fprintf(stderr,"Cannot initialize selected mode (%d)\n",mode);
+		console_new_mode=NO_NEW_MODE;
 		sem_post(&console_mode_changed);
 		return(-1);
 	}
@@ -1065,7 +1064,7 @@ init_mode(int mode)
 
     /* Point 'palette[]' to the Attribute Controller space. We will only use
        the first 16 slots. */
-	palette = palettes[vmode.colour];
+	palette = palettes[vmode.palette];
 
     /* Load 'pixels[]' from default DAC values. */
     update_pixels();
@@ -1128,28 +1127,6 @@ init_window()
     /* Get the default visual and depth for later use. */
     depth = DefaultDepth(dpy, DefaultScreen(dpy));
     visual = DefaultVisual(dpy, DefaultScreen(dpy));
-
-	return(0);
-}
-
-/* Initialize the VGA emulator
-
-   XXX This is not nearly finished right now.
-*/
-static int
-init_vga(void)
-{
-    int i;
-
-    /* Zero-fill 'dac_rgb' on allocation; the default (EGA) table has only
-       64 entries. */
-    dac_rgb = (struct dac_colors *)calloc(256, sizeof(struct dac_colors));
-    if (dac_rgb == NULL)
-		return(-1);
-
-    /* Copy the default DAC table to a working copy we can trash. */
-	for (i = 0; i < 64; i++)
-		dac_rgb[i] = dac_default64[i]; /* Structure copy */
 
 	return(0);
 }
@@ -1291,10 +1268,6 @@ video_init()
        an empty window of size (1, 1). It makes a couple of init functions a
        lot easier. */
     if(init_window())
-		return(-1);
-
-   	/* Set VGA emulator to a sane state */
-   	if(init_vga())
 		return(-1);
 
     /* Initialize mode 3 (text, 80x25, 16 colors) */

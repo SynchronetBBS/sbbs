@@ -50,9 +50,7 @@ struct dac_colors {
     BYTE blue;
 };
 
-/* We need a working copy of the default DAC table. This is filled from
-   'dac_default{64,256}[]' in 'video.c:init_vga()'. */
-extern struct dac_colors *dac_rgb;
+extern int CurrMode;
 
 extern int InitCS;
 extern int InitCE;
@@ -64,7 +62,6 @@ extern BYTE CursCol;
 extern BYTE CursStart;
 extern BYTE CursEnd;
 
-extern BYTE VideoMode;
 extern WORD DpyCols;
 extern BYTE DpyRows;
 
