@@ -511,6 +511,7 @@ int main(int argc, char **argv, char** environ)
 					SAFECOPY(scfg.ctrl_dir,argv[++argn]);
 					break;
 				default:
+					fprintf(errfp,"\n!Unsupported option: %s\n",argv[argn]);
 					usage(errfp);
 					bail(1);
 			}
@@ -530,6 +531,7 @@ int main(int argc, char **argv, char** environ)
 	}	
 
 	if(module==NULL) {
+		fprintf(errfp,"\n!Module name not specified\n");
 		usage(errfp);
 		bail(1); 
 	}
