@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -53,16 +53,18 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
     uchar	ch;
 	uchar	ins=0,atr;
 
-	console&=~CON_UPARROW;
+	console&=~(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE);
 	sys_status&=~SS_ABORT;
 	if(mode&K_LINE && useron.misc&ANSI && !(mode&K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
 		for(i=0;i<maxlen;i++)
 			outchar(SP);
-		bprintf("\x1b[%dD",maxlen); }
+		bprintf("\x1b[%dD",maxlen); 
+	}
 	if(wordwrap[0]) {
 		strcpy(str1,wordwrap);
-		wordwrap[0]=0; }
+		wordwrap[0]=0; 
+	}
 	else str1[0]=0;
 	if(mode&K_EDIT)
 		strcat(str1,strout);
@@ -75,10 +77,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		if(mode&K_AUTODEL && str1[0]) {
 			i=(cfg.color[clr_inputline]&0x77)<<4;
 			i|=(cfg.color[clr_inputline]&0x77)>>4;
-			attr(i); }
+			attr(i); 
+		}
 		rputs(str1);
 		if(mode&K_EDIT && !(mode&(K_LINE|K_AUTODEL)) && useron.misc&ANSI)
-			bputs("\x1b[K");  /* destroy to eol */ }
+			bputs("\x1b[K");  /* destroy to eol */ 
+	}
 
 	i=l=strlen(str1);
 	if(mode&K_AUTODEL && str1[0] && !(mode&K_NOECHO)) {
@@ -87,22 +91,42 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		if(isprint(ch) || ch==DEL) {
 			for(i=0;i<l;i++)
 				bputs("\b \b");
-			i=l=0; }
+			i=l=0; 
+		}
 		else {
 			for(i=0;i<l;i++)
 				outchar(BS);
 			rputs(str1);
-			i=l; }
+			i=l; 
+		}
 		if(ch!=SP && ch!=TAB)
-			ungetkey(ch); }
+			ungetkey(ch); 
+	}
 
-	while(!(sys_status&SS_ABORT) && (ch=getkey(mode|K_GETSTR))!=CR && online) {
-		if(!input_thread_running)
+	if(mode&K_USEOFFSET) {
+		i=getstr_offset;
+		if(i>l)
+			i=l;
+		if(l-i) {
+			if(useron.misc&ANSI)
+				bprintf("\x1b[%dD",l-i);
+			else
+				for(i=0;i<l-i;i++)
+					outchar(BS);
+		}
+	}
+
+	while(!(sys_status&SS_ABORT) && online && input_thread_running) {
+		if(console&(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE))
 			break;
-		if(sys_status&SS_ABORT)
+		if((ch=getkey(mode|K_GETSTR))==CR)
 			break;
-		if(ch==LF && mode&K_MSG) /* Down-arrow same as CR */
+		if(sys_status&SS_ABORT || !online)
 			break;
+		if(ch==LF && mode&K_MSG) { /* Down-arrow same as CR */
+			console|=CON_DOWNARROW;
+			break;
+		}
 		if(ch==TAB && (mode&K_TAB || !(mode&K_WRAP)))	/* TAB same as CR */
 			break;
 		if(!i && mode&K_UPRLWR && (ch==SP || ch==TAB))
@@ -111,7 +135,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			if(strstr(str1,"")) {
 				bputs("\r\n\r\nYou must set your terminal to NO PARITY, "
 					"8 DATA BITS, and 1 STOP BIT (N-8-1).\7\r\n");
-				return(0); } }
+				return(0); 
+			} 
+		}
+		getstr_offset=i;
 		switch(ch) {
 			case CTRL_A: /* Ctrl-A for ANSI */
 				if(!(mode&K_MSG) || useron.rest&FLAG('A') || i>maxlen-3)
@@ -124,43 +151,52 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					rprintf("%.*s",l-i,str1+i);
 					rprintf("\x1b[%dD",l-i);
 					if(i==maxlen-1)
-						ins=0; }
+						ins=0; 
+				}
 				outchar(str1[i++]=1);
 				break;
 			case CTRL_B: /* Ctrl-B Beginning of Line */
 				if(useron.misc&ANSI && i && !(mode&K_NOECHO)) {
 					bprintf("\x1b[%dD",i);
-					i=0; }
+					i=0; 
+				}
 				break;
 			case CTRL_D: /* Ctrl-D Delete word right */
 				if(i<l) {
 					x=i;
 					while(x<l && str1[x]!=SP) {
 						outchar(SP);
-						x++; }
+						x++; 
+					}
 					while(x<l && str1[x]==SP) {
 						outchar(SP);
-						x++; }
+						x++; 
+					}
 					bprintf("\x1b[%dD",x-i);   /* move cursor back */
 					z=i;
 					while(z<l-(x-i))  {             /* move chars in string */
 						outchar(str1[z]=str1[z+(x-i)]);
-						z++; }
+						z++; 
+					}
 					while(z<l) {                    /* write over extra chars */
 						outchar(SP);
-						z++; }
+						z++; 
+					}
 					bprintf("\x1b[%dD",z-i);
-					l-=x-i; }                       /* l=new length */
+					l-=x-i;							/* l=new length */
+				}
 				break;
 			case CTRL_E: /* Ctrl-E End of line */
 				if(useron.misc&ANSI && i<l) {
 					bprintf("\x1b[%dC",l-i);  /* move cursor to eol */
-					i=l; }
+					i=l; 
+				}
 				break;
 			case CTRL_F: /* Ctrl-F move cursor forewards */
 				if(i<l && (useron.misc&ANSI)) {
 					bputs("\x1b[C");   /* move cursor right one */
-					i++; }
+					i++; 
+				}
 				break;
 			case CTRL_G: /* Bell */
 				if(!(mode&K_MSG))
@@ -173,7 +209,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 							if(l+5<maxlen)
 								l+=6;
 							if(i==maxlen-1)
-								ins=0; }
+								ins=0; 
+						}
 						str1[i++]='(';
 						str1[i++]='b';
 						str1[i++]='e';
@@ -181,25 +218,32 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						str1[i++]='p';
 						str1[i++]=')';
 						if(!(mode&K_NOECHO))
-							bputs("(beep)"); }
+							bputs("(beep)"); 
+					}
 					if(ins)
 						redrwstr(str1,i,l,0);
-					break; }
-				 if(ins) {
+					break; 
+				}
+				if(ins) {
 					if(l<maxlen)
 						l++;
 					for(x=l;x>i;x--)
 						str1[x]=str1[x-1];
 					if(i==maxlen-1)
-						ins=0; }
-				 if(i<maxlen) {
+						ins=0; 
+				}
+				if(i<maxlen) {
 					str1[i++]=BEL;
 					if(!(mode&K_NOECHO))
-						outchar(BEL); }
-				 break;
+						outchar(BEL); 
+				}
+				break;
 			case CTRL_H:	/* Ctrl-H/Backspace */
-				if(!i)
+				if(i==0) {
+					if(mode&K_LEFTEXIT)
+						console|=CON_BACKSPACE;
 					break;
+				}
 				i--;
 				l--;
 				if(i!=l) {              /* Deleting char in middle of line */
@@ -207,9 +251,11 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					z=i;
 					while(z<l)  {       /* move the characters in the line */
 						outchar(str1[z]=str1[z+1]);
-						z++; }
+						z++; 
+					}
 					outchar(SP);        /* write over the last char */
-					bprintf("\x1b[%dD",(l-i)+1); }
+					bprintf("\x1b[%dD",(l-i)+1); 
+				}
 				else if(!(mode&K_NOECHO))
 					bputs("\b \b");
 				break;
@@ -221,10 +267,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
 						if(i==maxlen-1)
-							ins=0; }
+							ins=0; 
+					}
 					str1[i++]=SP;
 					if(!(mode&K_NOECHO))
-						outchar(SP); }
+						outchar(SP); 
+				}
 				while(i<maxlen && i%EDIT_TABSIZE) {
 					if(ins) {
 						if(l<maxlen)
@@ -232,10 +280,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
 						if(i==maxlen-1)
-							ins=0; }
+							ins=0; 
+					}
 					str1[i++]=SP;
 					if(!(mode&K_NOECHO))
-						outchar(SP); }
+						outchar(SP); 
+				}
 				if(ins && !(mode&K_NOECHO))
 					redrwstr(str1,i,l,0);
 				break;
@@ -259,7 +309,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						bputs("\b");
 					bputs(strout);
 					if(mode&K_LINE)
-						attr(LIGHTGRAY); }
+						attr(LIGHTGRAY); 
+				}
 				CRLF;
 				return(l);
 
@@ -270,7 +321,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						i++;
 					while(str1[i]==SP && i<l)
 						i++;
-					bprintf("\x1b[%dC",i-x); }
+					bprintf("\x1b[%dC",i-x); 
+				}
 				break;
 			case CTRL_R:    /* Ctrl-R Redraw Line */
 				if(!(mode&K_NOECHO))
@@ -281,7 +333,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					break;
 				if(ins) {
 					ins=0;
-					redrwstr(str1,i,l,0); }
+					redrwstr(str1,i,l,0); 
+				}
 				else if(i<l) {
 					ins=1;
 					bprintf("\x1b[s\x1b[79C");    	/* save pos  */
@@ -289,37 +342,45 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					attr(z|BLINK|HIGH);
 					outchar('°');
 					attr(z);
-					bputs("\x1b[u"); }  /* restore pos */
+					bputs("\x1b[u");				/* restore pos */
+				}
 				break;
 			case CTRL_W:    /* Ctrl-W   Delete word left */
 				if(i<l) {
 					x=i;                            /* x=original offset */
 					while(i && str1[i-1]==SP) {
 						outchar(BS);
-						i--; }
+						i--; 
+					}
 					while(i && str1[i-1]!=SP) {
 						outchar(BS);
-						i--; }
+						i--; 
+					}
 					z=i;                            /* i=z=new offset */
 					while(z<l-(x-i))  {             /* move chars in string */
 						outchar(str1[z]=str1[z+(x-i)]);
-						z++; }
+						z++; 
+					}
 					while(z<l) {                    /* write over extra chars */
 						outchar(SP);
-						z++; }
+						z++; 
+					}
 					bprintf("\x1b[%dD",z-i);        /* back to new x corridnant */
-					l-=x-i; }                       /* l=new length */
-				else {
+					l-=x-i;                         /* l=new length */
+				} else {
 					while(i && str1[i-1]==SP) {
 						i--;
 						l--;
 						if(!(mode&K_NOECHO))
-							bputs("\b \b"); }
+							bputs("\b \b"); 
+					}
 					while(i && str1[i-1]!=SP) {
 						i--;
 						l--;
 						if(!(mode&K_NOECHO))
-							bputs("\b \b"); } }
+							bputs("\b \b"); 
+					} 
+				}
 				break;
 			case CTRL_X:    /* Ctrl-X   Delete entire line */
 				if(mode&K_NOECHO)
@@ -327,16 +388,20 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				else {
 					while(i<l) {
 						outchar(SP);
-						i++; }
+						i++; 
+					}
 					while(l) {
 						l--;
-						bputs("\b \b"); } }
+						bputs("\b \b"); 
+					} 
+				}
 				i=0;
 				break;
 			case CTRL_Y:    /* Ctrl-Y   Delete to end of line */
 				if(useron.misc&ANSI && !(mode&K_NOECHO)) {
 					bputs("\x1b[K");
-					l=i; }
+					l=i; 
+				}
 				break;
 			case 28:    /* Ctrl-\ Previous word */
 				if(i && (useron.misc&ANSI) && !(mode&K_NOECHO)) {
@@ -345,16 +410,24 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						i--;
 					while(str1[i-1]!=SP && i)
 						i--;
-					bprintf("\x1b[%dD",x-i); }
+					bprintf("\x1b[%dD",x-i); 
+				}
 				break;
 			case 29:  /* Ctrl-]/Left Arrow  Reverse Cursor Movement */
-				if(i && (useron.misc&ANSI) && !(mode&K_NOECHO)) {
+				if(i==0) {
+					if(mode&K_LEFTEXIT)
+						console|=CON_LEFTARROW;
+					break;
+				}
+				if((useron.misc&ANSI) && !(mode&K_NOECHO)) {
 					bputs("\x1b[D");   /* move cursor left one */
-					i--; }
+					i--; 
+				}
 				break;
 			case 30:  /* Ctrl-^/Up Arrow */
 				if(!(mode&K_EDIT))
 					break;
+#if 0
 				if(i>l)
 					l=i;
 				str1[l]=0;
@@ -365,6 +438,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					attr(LIGHTGRAY);
 				console|=CON_UPARROW;
 				return(l);
+#else
+				console|=CON_UPARROW;
+				break;
+#endif
 			case DEL:  /* Ctrl-BkSpc (DEL) Delete current char */
 				if(i==l) {	/* Backspace if end of line */
 					if(i) {
@@ -379,7 +456,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				z=i;
 				while(z<l)  {       /* move the characters in the line */
 					outchar(str1[z]=str1[z+1]);
-					z++; }
+					z++; 
+				}
 				outchar(SP);        /* write over the last char */
 				bprintf("\x1b[%dD",(l-i)+1);
 				break;
@@ -392,7 +470,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 							redrwstr(strout,i,l,K_MSG);
 						if(!(mode&K_NOECHO))
 							CRLF;
-						return(i); }
+						return(i); 
+					}
 					x=i-1;
 					z=1;
 					wordwrap[0]=ch;
@@ -405,12 +484,14 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 							redrwstr(strout,i,l,K_MSG);
 						if(!(mode&K_NOECHO))
 							CRLF;
-						return(i); }
+						return(i); 
+					}
 					wordwrap[z]=0;
 					if(!(mode&K_NOECHO))
 						while(z--) {
 							bputs("\b \b");
-							i--; }
+							i--; 
+						}
 					strrev(wordwrap);
 					str1[x]=0;
 					strcpy(strout,str1);
@@ -418,7 +499,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						redrwstr(strout,i,x,(char)mode);
 					if(!(mode&K_NOECHO))
 						CRLF;
-					return(x); }
+					return(x); 
+				}
 				if(i<maxlen && ch>=SP) {
 					if(mode&K_UPRLWR)
 						if(!i || (i && (str1[i-1]==SP || str1[i-1]=='-'
@@ -435,14 +517,20 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						rprintf("\x1b[%dD",l-i);
 						if(i==maxlen-1) {
 							bputs("  \b\b");
-							ins=0; } }
+							ins=0; 
+						} 
+					}
 					str1[i++]=ch;
 					if(!(mode&K_NOECHO))
-						outchar(ch); } }
+						outchar(ch); 
+				} 
+		}
 		if(i>l)
 			l=i;
 		if(mode&K_CHAT && !l)
-			return(0); }
+			return(0); 
+	}
+	getstr_offset=i;
 	if(!online)
 		return(0);
 	if(i>l)
@@ -451,7 +539,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 	if(!(sys_status&SS_ABORT)) {
 		strcpy(strout,str1);
 		if((strip_invalid_attr(strout) || ins) && !(mode&K_NOECHO))
-			redrwstr(strout,i,l,K_MSG); }
+			redrwstr(strout,i,l,K_MSG); 
+	}
 	else
 		l=0;
 	if(mode&K_LINE && !(mode&K_NOECHO)) attr(LIGHTGRAY);
@@ -459,7 +548,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		outchar(CR);
 		if(!(mode&K_MSG && sys_status&SS_ABORT))
 			outchar(LF);
-		lncntr=0; }
+		lncntr=0; 
+	}
 	return(l);
 }
 
@@ -483,22 +573,27 @@ long sbbs_t::getnum(ulong max)
 				ch=getkey(K_UPPER);
 			if(ch==BS || ch==DEL) {
 				bputs("\b \b");
-				continue; }
+				continue; 
+			}
 			CRLF;
 			lncntr=0;
-			return(-1); }
+			return(-1); 
+		}
 		else if(sys_status&SS_ABORT) {
 			CRLF;
 			lncntr=0;
-			return(-1); }
+			return(-1); 
+		}
 		else if(ch==CR) {
 			CRLF;
 			lncntr=0;
-			return(i); }
+			return(i); 
+		}
 		else if((ch==BS || ch==DEL) && n) {
 			bputs("\b \b");
 			i/=10;
-			n--; }
+			n--; 
+		}
 		else if(isdigit(ch) && (i*10UL)+(ch&0xf)<=max && (ch!='0' || n)) {
 			i*=10L;
 			n++;
@@ -507,6 +602,9 @@ long sbbs_t::getnum(ulong max)
 			if(i*10UL>max && !(useron.misc&COLDKEYS)) {
 				CRLF;
 				lncntr=0;
-				return(i); } } }
+				return(i); 
+			} 
+		} 
+	}
 	return(0);
 }
