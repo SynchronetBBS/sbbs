@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdlib.h>		/* malloc/free on FreeBSD */
 #include <errno.h>		/* ENOMEM */
 
 #include "sockwrap.h"	/* sendsocket */
