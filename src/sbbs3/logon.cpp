@@ -96,7 +96,8 @@ bool sbbs_t::logon()
 		sprintf(str,"(%04u)  %-25s  Modem speed: %lu<%u"
 			,useron.number,useron.alias,cur_rate,cfg.node_minbps);
 		logline("+!",str);
-		return(false); }
+		return(false); 
+	}
 
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
@@ -119,7 +120,8 @@ bool sbbs_t::logon()
 		else
 			useron.xedit=0;
 		useron.prot=cfg.new_prot;
-		useron.shell=cfg.new_shell; }
+		useron.shell=cfg.new_shell; 
+	}
 
 	if(cfg.node_dollars_per_call) {
 		adjustuserrec(&cfg,useron.number,U_CDT,10
@@ -131,16 +133,16 @@ bool sbbs_t::logon()
 			,cfg.node_dollars_per_call,now-answertime);
 		logline("$+",str);
 		hangup();
-		return(false); }
-
-	//lclini(node_scrnlen-1);
+		return(false); 
+	}
 
 	if(!chk_ar(cfg.node_ar,&useron)) {
 		bputs(text[NoNodeAccess]);
 		sprintf(str,"(%04u)  %-25s  Insufficient node access"
 			,useron.number,useron.alias);
 		logline("+!",str);
-		return(false); }
+		return(false); 
+	}
 
 	getnodedat(cfg.node_num,&thisnode,1);
 	if(thisnode.misc&NODE_LOCK) {
@@ -150,13 +152,16 @@ bool sbbs_t::logon()
 			sprintf(str,"(%04u)  %-25s  Locked node logon attempt"
 				,useron.number,useron.alias);
 			logline("+!",str);
-			return(false); }
+			return(false); 
+		}
 		if(yesno(text[RemoveNodeLockQ])) {
 			getnodedat(cfg.node_num,&thisnode,1);
 			logline("S-","Removed Node Lock");
-			thisnode.misc&=~NODE_LOCK; }
+			thisnode.misc&=~NODE_LOCK; 
+		}
 		else
-			getnodedat(cfg.node_num,&thisnode,1); }
+			getnodedat(cfg.node_num,&thisnode,1); 
+	}
 
 	if((useron.exempt&FLAG('Q') && useron.misc&QUIET))
 		thisnode.status=NODE_QUIET;
@@ -179,11 +184,14 @@ bool sbbs_t::logon()
 		for(i=0;i<usrgrps;i++) {
 			for(j=0;j<usrsubs[i];j++) {
 				if(!strcmp(cfg.sub[usrsub[i][j]]->code,useron.cursub))
-					break; }
+					break; 
+			}
 			if(j<usrsubs[i]) {
 				curgrp=i;
 				cursub[i]=j;
-				break; } }
+				break; 
+			} 
+		}
 		for(i=0;i<usrlibs;i++) {
 			for(j=0;j<usrdirs[i];j++)
 				if(!strcmp(cfg.dir[usrdir[i][j]]->code,useron.curdir))
@@ -191,12 +199,16 @@ bool sbbs_t::logon()
 			if(j<usrdirs[i]) {
 				curlib=i;
 				curdir[i]=j;
-				break; } } }
+				break; 
+			} 
+		} 
+	}
 
 
 	if(useron.misc&AUTOTERM) {
 		useron.misc&=~(ANSI|RIP|WIP);
-		useron.misc|=autoterm; }
+		useron.misc|=autoterm; 
+	}
 
 	if(!chk_ar(cfg.shell[useron.shell]->ar,&useron)) {
 		useron.shell=cfg.new_shell;
@@ -205,7 +217,9 @@ bool sbbs_t::logon()
 				if(chk_ar(cfg.shell[i]->ar,&useron))
 					break;
 			if(i==cfg.total_shells)
-				useron.shell=0; } }
+				useron.shell=0; 
+		} 
+	}
 
 	logon_ml=useron.level;
 	logontime=time(NULL);
@@ -221,7 +235,8 @@ bool sbbs_t::logon()
 
 	if(!SYSOP && online==ON_REMOTE) {
 		rioctl(IOCM|ABORT);	/* users can't abort anything */
-		rioctl(IOCS|ABORT); }
+		rioctl(IOCS|ABORT); 
+	}
 
 	CLS;
 	if(useron.rows)
@@ -233,12 +248,14 @@ bool sbbs_t::logon()
 		bputs(text[HappyBirthday]);
 		pause();
 		CLS;
-		user_event(EVENT_BIRTHDAY); }
+		user_event(EVENT_BIRTHDAY); 
+	}
 	unixtodstr(&cfg,useron.laston,tmp);
 	if(strcmp(str,tmp)) {			/* str still equals logon time */
 		useron.ltoday=1;
 		useron.ttoday=useron.etoday=useron.ptoday=useron.textra=0;
-		useron.freecdt=cfg.level_freecdtperday[useron.level]; }
+		useron.freecdt=cfg.level_freecdtperday[useron.level]; 
+	}
 	else
 		useron.ltoday++;
 
@@ -255,7 +272,8 @@ bool sbbs_t::logon()
 			while(c<LEN_PASS) { 				/* Create random password */
 				str[c]=sbbs_random(43)+'0';
 				if(isalnum(str[c]))
-					c++; }
+					c++; 
+			}
 			str[c]=0;
 			bprintf(text[YourPasswordIs],str);
 
@@ -266,12 +284,14 @@ bool sbbs_t::logon()
 					truncsp(str);
 					if(chkpass(str,&useron,true))
 						break;
-					CRLF; }
+					CRLF; 
+				}
 
 			while(online) {
 				if(cfg.sys_misc&SM_PWEDIT) {
 					CRLF;
-					bputs(text[VerifyPassword]); }
+					bputs(text[VerifyPassword]); 
+				}
 				else
 					bputs(text[NewUserPasswordVerify]);
 				console|=CON_R_ECHOX;
@@ -281,13 +301,16 @@ bool sbbs_t::logon()
 				console&=~(CON_R_ECHOX|CON_L_ECHOX);
 				if(strcmp(str,tmp)) {
 					bputs(text[Wrong]);
-					continue; }
-				break; }
+					continue; 
+				}
+				break; 
+			}
 			strcpy(useron.pass,str);
 			useron.pwmod=time(NULL);
 			putuserrec(&cfg,useron.number,U_PWMOD,8,ultoa(useron.pwmod,str,16));
 			bputs(text[PasswordChanged]);
-			pause(); }
+			pause(); 
+		}
 		if(useron.ltoday>cfg.level_callsperday[useron.level]
 			&& !(useron.exempt&FLAG('L'))) {
 			bputs(text[NoMoreLogons]);
@@ -295,14 +318,16 @@ bool sbbs_t::logon()
 				,useron.number,useron.alias);
 			logline("+!",str);
 			hangup();
-			return(false); }
+			return(false); 
+		}
 		if(useron.rest&FLAG('L') && useron.ltoday>1) {
 			bputs(text[R_Logons]);
 			sprintf(str,"(%04u)  %-25s  Out of logons"
 				,useron.number,useron.alias);
 			logline("+!",str);
 			hangup();
-			return(false); }
+			return(false); 
+		}
 		if(!(useron.rest&FLAG('G'))) {
 			if(!useron.name[0] && ((cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME)
 				|| cfg.uq&UQ_COMPANY))
@@ -321,9 +346,11 @@ bool sbbs_t::logon()
 								,useron.name,0)))
 							bputs(text[YouCantUseThatName]);
 						else
-							break; }
+							break; 
+					}
 					else
-						break; }
+						break; 
+				}
 			if(cfg.uq&UQ_HANDLE && !useron.handle[0]) {
 				sprintf(useron.handle,"%.*s",LEN_HANDLE,useron.alias);
 				while(online) {
@@ -337,22 +364,27 @@ bool sbbs_t::logon()
 						|| trashcan(useron.handle,"name"))
 						bputs(text[YouCantUseThatName]);
 					else
-						break; } }
+						break; 
+				} 
+			}
 			if(cfg.uq&UQ_LOCATION && !useron.location[0])
 				while(online) {
 					bputs(text[EnterYourCityState]);
 					if(getstr(useron.location,LEN_LOCATION,K_UPRLWR|(cfg.uq&UQ_NOEXASC)))
-						break; }
+						break; 
+				}
 			if(cfg.uq&UQ_ADDRESS && !useron.address[0])
 				while(online) {
 					bputs(text[EnterYourAddress]);
 					if(getstr(useron.address,LEN_ADDRESS,K_UPRLWR|(cfg.uq&UQ_NOEXASC)))
-						break; }
+						break; 
+				}
 			if(cfg.uq&UQ_ADDRESS && !useron.zipcode[0])
 				while(online) {
 					bputs(text[EnterYourZipCode]);
 					if(getstr(useron.zipcode,LEN_ZIPCODE,K_UPPER|(cfg.uq&UQ_NOEXASC)))
-						break; }
+						break; 
+				}
 			if(cfg.uq&UQ_PHONE && !useron.phone[0]) {
 				i=yesno(text[CallingFromNorthAmericaQ]);
 				while(online) {
@@ -360,13 +392,16 @@ bool sbbs_t::logon()
 					if(i) {
 						if(gettmplt(useron.phone,cfg.sys_phonefmt
 							,K_LINE|(cfg.uq&UQ_NOEXASC))<strlen(cfg.sys_phonefmt))
-							 continue; }
-					else {
+							 continue; 
+					} else {
 						if(getstr(useron.phone,LEN_PHONE
 							,K_UPPER|(cfg.uq&UQ_NOEXASC))<5)
-							continue; }
+							continue; 
+					}
 					if(!trashcan(useron.phone,"phone"))
-						break; } }
+						break; 
+				} 
+			}
 			if(!(sys_status&SS_RLOGIN) 
 				&& !(cfg.uq&UQ_NONETMAIL) && !useron.netmail[0]) {
 				while(online) {
@@ -383,14 +418,16 @@ bool sbbs_t::logon()
 			if(cfg.new_sif[0]) {
 				sprintf(str,"%suser/%4.4u.dat",cfg.data_dir,useron.number);
 				if(flength(str)<1L)
-					create_sif_dat(cfg.new_sif,str); } 
+					create_sif_dat(cfg.new_sif,str); 
+			} 
 		}
 	}	
 	if(!online) {
 		sprintf(str,"(%04u)  %-25s  Unsuccessful logon"
 			,useron.number,useron.alias);
 		logline("+!",str);
-		return(false); }
+		return(false); 
+	}
 	strcpy(useron.modem,connection);
 	useron.logons++;
 	putuserdat(&cfg,&useron);
@@ -401,7 +438,8 @@ bool sbbs_t::logon()
 		sprintf(str,"(%04u)  %-25s  QWK Network Connection"
 			,useron.number,useron.alias);
 		logline("++",str);
-		return(true); }
+		return(true); 
+	}
 
 	/********************/
 	/* SUCCESSFUL LOGON */
@@ -418,14 +456,16 @@ bool sbbs_t::logon()
 		sprintf(str,"%slogon.lst",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT|O_APPEND);
-			return(false); }
+			return(false); 
+		}
 		sprintf(str,text[LastFewCallersFmt],cfg.node_num
 			,totallogons,useron.alias
 			,cfg.sys_misc&SM_LISTLOC ? useron.location : useron.note
 			,tm.tm_hour,tm.tm_min
 			,connection,useron.ltoday);
 		write(file,str,strlen(str));
-		close(file); }
+		close(file); 
+	}
 
 	if(cfg.sys_logon[0])				/* execute system logon event */
 		external(cmdstr(cfg.sys_logon,nulstr,nulstr,NULL),EX_OUTR|EX_OUTL); /* EX_SH */
@@ -435,21 +475,25 @@ bool sbbs_t::logon()
 
 	sys_status|=SS_PAUSEON;	/* always force pause on during this section */
 	mailw=getmail(&cfg,useron.number,0);
-	bprintf(text[SiSysName],cfg.sys_name);
-	//bprintf(text[SiNodeNumberName],cfg.node_num,cfg.node_name);
-	bprintf(text[LiUserNumberName],useron.number,useron.alias);
-	bprintf(text[LiLogonsToday],useron.ltoday
-		,cfg.level_callsperday[useron.level]);
-	bprintf(text[LiTimeonToday],useron.ttoday
-		,cfg.level_timeperday[useron.level]+useron.min);
-	bprintf(text[LiMailWaiting],mailw);
-	strcpy(str,text[LiSysopIs]);
-	if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
-		|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron)))
-		strcat(str,text[LiSysopAvailable]);
-	else
-		strcat(str,text[LiSysopNotAvailable]);
-	bprintf("%s\r\n\r\n",str);
+
+	if(!(cfg.sys_misc&SM_NOSYSINFO)) {
+		bprintf(text[SiSysName],cfg.sys_name);
+		//bprintf(text[SiNodeNumberName],cfg.node_num,cfg.node_name);
+		bprintf(text[LiUserNumberName],useron.number,useron.alias);
+		bprintf(text[LiLogonsToday],useron.ltoday
+			,cfg.level_callsperday[useron.level]);
+		bprintf(text[LiTimeonToday],useron.ttoday
+			,cfg.level_timeperday[useron.level]+useron.min);
+		bprintf(text[LiMailWaiting],mailw);
+		strcpy(str,text[LiSysopIs]);
+		if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
+			|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron)))
+			strcat(str,text[LiSysopAvailable]);
+		else
+			strcat(str,text[LiSysopNotAvailable]);
+		bprintf("%s\r\n\r\n",str);
+	}
+
 	if(sys_status&SS_EVENT)
 		bputs(text[ReducedTime]);
 	getnodedat(cfg.node_num,&thisnode,1);
@@ -459,18 +503,21 @@ bool sbbs_t::logon()
 	if(useron.chat&CHAT_NOPAGE)
 		thisnode.misc|=NODE_POFF;
 	putnodedat(cfg.node_num,&thisnode);
+
 	getsmsg(useron.number); 		/* Moved from further down */
 	SYNC;
 	c=0;
 	for(i=1;i<=cfg.sys_nodes;i++)
 		if(i!=cfg.node_num) {
 			getnodedat(i,&node,0);
-			if(node.status==NODE_INUSE
-				|| ((node.status==NODE_QUIET || node.errors) && SYSOP)) {
+			if(!(cfg.sys_misc&SM_NONODELIST)
+				&& (node.status==NODE_INUSE
+					|| ((node.status==NODE_QUIET || node.errors) && SYSOP))) {
 				if(!c)
 					bputs(text[NodeLstHdr]);
 				printnodedat(i,&node);
-				c=1; }
+				c=1; 
+			}
 			if(node.status==NODE_INUSE && i!=cfg.node_num && node.useron==useron.number
 				&& !SYSOP && !(useron.exempt&FLAG('G'))) {
 				strcpy(tmp,"On two nodes at the same time");
@@ -480,7 +527,8 @@ bool sbbs_t::logon()
 				errorlog(tmp);
 				bputs(text[UserOnTwoNodes]);
 				hangup();
-				return(false); }
+				return(false); 
+			}
 			if(thisnode.status!=NODE_QUIET
 				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 				&& !(node.misc&NODE_AOFF) && node.useron!=useron.number) {
@@ -488,7 +536,9 @@ bool sbbs_t::logon()
 					,cfg.node_num
 					,thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias
 					,connection);
-				putnmsg(i,str); } }
+				putnmsg(i,str); 
+			} 
+		}
 
 	if(cfg.sys_exp_warn && useron.expire && useron.expire>now /* Warn user of coming */
 		&& (useron.expire-now)/(1440L*60L)<=cfg.sys_exp_warn) /* expiration */
@@ -496,17 +546,18 @@ bool sbbs_t::logon()
 
 	if(criterrs && SYSOP)
 		bprintf(text[CriticalErrors],criterrs);
-	if((i=getuserxfers(0,useron.number,0))!=0) {
-		bprintf(text[UserXferForYou],i,i>1 ? "s" : nulstr); }
-	if((i=getuserxfers(useron.number,0,0))!=0) {
-		bprintf(text[UnreceivedUserXfer],i,i>1 ? "s" : nulstr); }
+	if((i=getuserxfers(0,useron.number,0))!=0)
+		bprintf(text[UserXferForYou],i,i>1 ? "s" : nulstr); 
+	if((i=getuserxfers(useron.number,0,0))!=0)
+		bprintf(text[UnreceivedUserXfer],i,i>1 ? "s" : nulstr);
 	SYNC;
 	sys_status&=~SS_PAUSEON;	/* Turn off the pause override flag */
 	if(online==ON_REMOTE)
 		rioctl(IOSM|ABORT);		/* Turn abort ability on */
 	if(mailw) {
 		if(yesno(text[ReadYourMailNowQ]))
-			readmail(useron.number,MAIL_YOUR); }
+			readmail(useron.number,MAIL_YOUR); 
+	}
 	if(usrgrps && useron.misc&ASK_NSCAN && yesno(text[NScanAllGrpsQ]))
 		scanallsubs(SCAN_NEW);
 	if(usrgrps && useron.misc&ASK_SSCAN && yesno(text[SScanAllGrpsQ]))
@@ -533,7 +584,8 @@ ulong sbbs_t::logonstats()
 	sprintf(str,"%sdsts.dab",cfg.ctrl_dir);
 	if((dsts=nopen(str,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return(0L); }
+		return(0L); 
+	}
 	read(dsts,&update_t,4);         /* Last updated         */
 	read(dsts,&stats.logons,4);     /* Total number of logons on system */
 	close(dsts);
@@ -556,13 +608,15 @@ ulong sbbs_t::logonstats()
 		sprintf(str,"%slogon.lst",cfg.data_dir);    /* Truncate logon list */
 		if((dsts=nopen(str,O_TRUNC|O_CREAT|O_WRONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_TRUNC|O_CREAT|O_WRONLY);
-			return(0L); }
+			return(0L); 
+		}
 		close(dsts);
 		for(i=0;i<=cfg.sys_nodes;i++) {
 			if(i) {     /* updating a node */
 				getnodedat(i,&node,1);
 				node.misc|=NODE_EVENT;
-				putnodedat(i,&node); }
+				putnodedat(i,&node); 
+			}
 			sprintf(str,"%sdsts.dab",i ? cfg.node_path[i-1] : cfg.ctrl_dir);
 			if((dsts=nopen(str,O_RDWR))==-1) /* node doesn't have stats yet */
 				continue;
@@ -570,7 +624,8 @@ ulong sbbs_t::logonstats()
 			if((csts=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 				close(dsts);
 				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
-				continue; }
+				continue; 
+			}
 			lseek(dsts,8L,SEEK_SET);        /* Skip time and logons */
 			write(csts,&now,4);
 			read(dsts,&stats.ltoday,4);
@@ -609,7 +664,9 @@ ulong sbbs_t::logonstats()
 			write(dsts,&stats.ttoday,4);        /* Emails today       */
 			write(dsts,&stats.ttoday,4);        /* Feedback today     */
 			write(dsts,&stats.ttoday,2);        /* New users Today    */
-			close(dsts); } }
+			close(dsts); 
+		} 
+	}
 
 	if(thisnode.status==NODE_QUIET)       /* Quiet users aren't counted */
 		return(0);
@@ -621,7 +678,8 @@ ulong sbbs_t::logonstats()
 		sprintf(str,"%sdsts.dab",i ? cfg.ctrl_dir : cfg.node_dir);
 		if((dsts=nopen(str,O_RDWR))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-			return(0L); }
+			return(0L); 
+		}
 		lseek(dsts,4L,SEEK_SET);        /* Skip time stamp */
 		read(dsts,&stats.logons,4);
 		read(dsts,&stats.ltoday,4);
@@ -630,7 +688,8 @@ ulong sbbs_t::logonstats()
 		lseek(dsts,4L,SEEK_SET);        /* Rewind back and overwrite */
 		write(dsts,&stats.logons,4);
 		write(dsts,&stats.ltoday,4);
-		close(dsts); }
+		close(dsts); 
+	}
 	return(stats.logons);
 }
 
