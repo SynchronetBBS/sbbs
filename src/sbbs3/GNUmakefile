@@ -221,16 +221,16 @@ SMBLIB_OBJS = \
 
 
 # Monolithic Synchronet executable Build Rule
-FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o
+FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 
-$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o
+$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 	@echo Linking $@
 	@$(CCPP) -o $@ $(LFLAGS) $^
 
 # Synchronet BBS library Link Rule
-FORCE$(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o
+FORCE$(SBBS): $(OBJS) $(LIBS)
 
-$(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o
+$(SBBS): $(OBJS) $(LIBS)
 	$(LD) $(LFLAGS) -S -o $(SBBS) $^ $(LIBS) -o $@
 
 # FTP Server Link Rule
@@ -469,9 +469,9 @@ JSEXEC_OBJS = \
 
 FORCE$(JSEXEC): $(JSEXEC_OBJS)
 
-$(JSEXEC): $(JSEXEC_OBJS)
+$(JSEXEC): $(JSEXEC_OBJS) $(LIBS)
 	@echo Linking $@
-	@$(CC) -o $@ $(LIBS) $^
+	@$(CCPP) -o $@ $(LFLAGS) $^
 	
 # ANS2MSG
 FORCE$(ANS2MSG): $(ANS2MSG).o
