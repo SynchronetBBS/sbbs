@@ -3238,12 +3238,8 @@ void DLLCALL web_server(void* arg)
 			}
 
 			if(client_socket == INVALID_SOCKET)	{
-				if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) {
-            		lprintf(LOG_INFO,"Web Server socket closed");
-					break;
-				}
 				lprintf(LOG_WARNING,"!ERROR %d accepting connection", ERROR_VALUE);
-				break;
+				continue;
 			}
 
 			SAFECOPY(host_ip,inet_ntoa(client_addr.sin_addr));
