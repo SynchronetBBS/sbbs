@@ -1351,8 +1351,10 @@ show_progress(zmodem_t* zm, ulong offset)
 	time_t	t;
 	long	l;
 	uint	cps;
+	time_t	now;
 
-	t=time(NULL)-zm->transfer_start;
+	now=time(NULL);
+	t=now-zm->transfer_start;
 	if(!t) t=1; 		/* t is time so far */
 
 	cps=offset/t; 	/* cps so far */
@@ -1360,17 +1362,20 @@ show_progress(zmodem_t* zm, ulong offset)
 	l=zm->current_file_size/cps;		/* total transfer est time */
 	l-=t;								/* now, it's est time left */
 
-	fprintf(zm->statfp,"\rByte: %lu/%luk  "
-		"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
-		,offset/1024
-		,zm->current_file_size/1024
-		,t/60L
-		,t%60L
-		,l/60L
-		,l%60L
-		,cps
-		,(long)(((float)offset/(float)zm->current_file_size)*100.0)
-		);
+	if(zm->last_status!=now) {
+		fprintf(zm->statfp,"\rByte: %lu/%luk  "
+			"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
+			,offset/1024
+			,zm->current_file_size/1024
+			,t/60L
+			,t%60L
+			,l/60L
+			,l%60L
+			,cps
+			,(long)(((float)offset/(float)zm->current_file_size)*100.0)
+			);
+		zm->last_status=now;
+	}
 
 }
 

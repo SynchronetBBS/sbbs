@@ -228,6 +228,7 @@ typedef struct {
 
 	long current_file_size;
 	time_t transfer_start;
+	time_t last_status;
 
 	int receive_32_bit_data;
 	int raw_trace;
