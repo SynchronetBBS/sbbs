@@ -41,8 +41,6 @@
 #include <stdlib.h>		/* malloc */
 #include <string.h>		/* strdup */
 
-#include "truncsp.c"	/* truncsp() and truncnl() */
-
 /***********************************/
 /* CSV (Comma Separated Value) API */
 /***********************************/

@@ -171,6 +171,11 @@ extern "C" {
 	#endif
 #endif
 
+/* Truncate white-space chars off end of string */
+DLLEXPORT char*		DLLCALL truncsp(char* str);
+/* Truncate new-line chars off end of string */
+DLLEXPORT char*		DLLCALL truncnl(char* str);
+
 #if defined(__unix__)
 	#define STRERROR(x)		strerror(x)
 #else

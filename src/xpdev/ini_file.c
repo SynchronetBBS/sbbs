@@ -54,8 +54,6 @@
 
 static ini_style_t default_style;
 
-#include "truncsp.c"	/* truncsp() and truncnl() */
-
 static char* section_name(char* p)
 {
 	char*	tp;
