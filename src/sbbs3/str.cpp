@@ -209,7 +209,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
         		if(useron.misc&COLOR)
 					attr(cfg.color[clr_inputline]);
 				else
-					attr(BLACK|(LIGHTGRAY<<4));
+					attr(BLACK|BG_LIGHTGRAY);
 				bputs(" \b");
 				m++; }
 			if((buf[m+1]&0xdf)=='R') {		/* Add CRLF */
@@ -343,7 +343,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
         		if(useron.misc&COLOR)
 					attr(cfg.color[clr_inputline]);
 				else
-					attr(BLACK|(LIGHTGRAY<<4));
+					attr(BLACK|BG_LIGHTGRAY);
 				bputs(" \b");
 				m++; }
 			if((buf[m+1]&0xdf)=='R') {		/* Add CRLF */
@@ -365,7 +365,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
         		if(useron.misc&COLOR)
 					attr(cfg.color[clr_inputline]);
 				else
-					attr(BLACK|(LIGHTGRAY<<4));
+					attr(BLACK|BG_LIGHTGRAY);
 				m++; }
 			if((buf[m+1]&0xdf)=='R') {
 				cr=1;
@@ -464,7 +464,7 @@ uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
 			if(useron.misc&COLOR)
 				attr(cfg.color[clr_inputline]);
 			else
-				attr(BLACK|(LIGHTGRAY<<4)); }
+				attr(BLACK|BG_LIGHTGRAY); }
 		while(c<t) {
 			if(tmplt[c]=='N' || tmplt[c]=='A' || tmplt[c]=='!')
 				outchar(SP);

@@ -302,11 +302,11 @@ void sbbs_t::ctrl_a(char x)
 			console&=~CON_ECHO_OFF;
 			break;
 		case '-':								/* turn off all attributes if */
-			if(atr&(HIGH|BLINK|(LIGHTGRAY<<4)))	/* high intensity, blink or */
+			if(atr&(HIGH|BLINK|BG_LIGHTGRAY))	/* high intensity, blink or */
 				attr(LIGHTGRAY);				/* background bits are set */
 			break;
 		case '_':								/* turn off all attributes if */
-			if(atr&(BLINK|(LIGHTGRAY<<4)))		/* blink or background is set */
+			if(atr&(BLINK|BG_LIGHTGRAY))		/* blink or background is set */
 				attr(LIGHTGRAY);
 			break;
 		case 'P':	/* Pause */
@@ -411,35 +411,35 @@ void sbbs_t::ctrl_a(char x)
 			attr(atr);
 			break;
 		case '0':	/* Black Background */
-			atr=(atr&0x8f)|(uchar)(BLACK<<4);
+			atr=(atr&0x8f);
 			attr(atr);
 			break;
 		case '1':	/* Red Background */
-			atr=(atr&0x8f)|(uchar)(RED<<4);
+			atr=(atr&0x8f)|(uchar)BG_RED;
 			attr(atr);
 			break;
 		case '2':	/* Green Background */
-			atr=(atr&0x8f)|(uchar)(GREEN<<4);
+			atr=(atr&0x8f)|(uchar)BG_GREEN;
 			attr(atr);
 			break;
 		case '3':	/* Yellow Background */
-			atr=(atr&0x8f)|(uchar)(BROWN<<4);
+			atr=(atr&0x8f)|(uchar)BG_BROWN;
 			attr(atr);
 			break;
 		case '4':	/* Blue Background */
-			atr=(atr&0x8f)|(uchar)(BLUE<<4);
+			atr=(atr&0x8f)|(uchar)BG_BLUE;
 			attr(atr);
 			break;
 		case '5':	/* Magenta Background */
-			atr=(atr&0x8f)|(uchar)(MAGENTA<<4);
+			atr=(atr&0x8f)|(uchar)BG_MAGENTA;
 			attr(atr);
 			break;
 		case '6':	/* Cyan Background */
-			atr=(atr&0x8f)|(uchar)(CYAN<<4);
+			atr=(atr&0x8f)|(uchar)BG_CYAN;
 			attr(atr);
 			break;
 		case '7':	/* White Background */
-			atr=(atr&0x8f)|(uchar)(LIGHTGRAY<<4);
+			atr=(atr&0x8f)|(uchar)BG_LIGHTGRAY;
 			attr(atr);
 			break; }
 }
@@ -460,9 +460,9 @@ void sbbs_t::attr(int atr)
 	if(!(useron.misc&COLOR)) {  /* eliminate colors if user doesn't have them */
 		if(atr&LIGHTGRAY)       /* if any foreground bits set, set all */
 			atr|=LIGHTGRAY;
-		if(atr&(LIGHTGRAY<<4))  /* if any background bits set, set all */
-			atr|=(LIGHTGRAY<<4);
-		if(atr&LIGHTGRAY && atr&(LIGHTGRAY<<4))
+		if(atr&BG_LIGHTGRAY)  /* if any background bits set, set all */
+			atr|=BG_LIGHTGRAY;
+		if(atr&LIGHTGRAY && atr&BG_LIGHTGRAY)
 			atr&=~LIGHTGRAY;    /* if background is solid, foreground is black */
 		if(!atr)
 			atr|=LIGHTGRAY; }   /* don't allow black on black */
@@ -471,7 +471,7 @@ void sbbs_t::attr(int atr)
 
 	if((!(atr&HIGH) && curatr&HIGH) || (!(atr&BLINK) && curatr&BLINK)
 		|| atr==LIGHTGRAY) {
-		bputs("\x1b[0m");
+		bputs(ansi(ANSI_NORMAL));
 		curatr=LIGHTGRAY; }
 
 	if(atr==LIGHTGRAY)                  /* no attributes */
@@ -509,30 +509,30 @@ void sbbs_t::attr(int atr)
 		if((curatr&0x7)!=LIGHTGRAY)
 			bputs(ansi(LIGHTGRAY)); }
 
-	if((atr&0x70)==(BLACK<<4)) {        /* background colors */
-		if((curatr&0x70)!=(BLACK<<4))
-			bputs("\x1b[40m"); }
-	else if((atr&0x70)==(RED<<4)) {
-		if((curatr&0x70)!=(RED<<4))
-			bputs(ansi(RED<<4)); }
-	else if((atr&0x70)==(GREEN<<4)) {
-		if((curatr&0x70)!=(GREEN<<4))
-			bputs(ansi(GREEN<<4)); }
-	else if((atr&0x70)==(BROWN<<4)) {
-		if((curatr&0x70)!=(BROWN<<4))
-			bputs(ansi(BROWN<<4)); }
-	else if((atr&0x70)==(BLUE<<4)) {
-		if((curatr&0x70)!=(BLUE<<4))
-			bputs(ansi(BLUE<<4)); }
-	else if((atr&0x70)==(MAGENTA<<4)) {
-		if((curatr&0x70)!=(MAGENTA<<4))
-			bputs(ansi(MAGENTA<<4)); }
-	else if((atr&0x70)==(CYAN<<4)) {
-		if((curatr&0x70)!=(CYAN<<4))
-			bputs(ansi(CYAN<<4)); }
-	else if((atr&0x70)==(LIGHTGRAY<<4)) {
-		if((curatr&0x70)!=(LIGHTGRAY<<4))
-			bputs(ansi(LIGHTGRAY<<4)); }
+	if((atr&0x70)==0) {        /* background colors */
+		if((curatr&0x70)!=0)
+			bputs(ansi(BG_BLACK)); }
+	else if((atr&0x70)==BG_RED) {
+		if((curatr&0x70)!=BG_RED)
+			bputs(ansi(BG_RED)); }
+	else if((atr&0x70)==BG_GREEN) {
+		if((curatr&0x70)!=BG_GREEN)
+			bputs(ansi(BG_GREEN)); }
+	else if((atr&0x70)==BG_BROWN) {
+		if((curatr&0x70)!=BG_BROWN)
+			bputs(ansi(BG_BROWN)); }
+	else if((atr&0x70)==BG_BLUE) {
+		if((curatr&0x70)!=BG_BLUE)
+			bputs(ansi(BG_BLUE)); }
+	else if((atr&0x70)==BG_MAGENTA) {
+		if((curatr&0x70)!=BG_MAGENTA)
+			bputs(ansi(BG_MAGENTA)); }
+	else if((atr&0x70)==BG_CYAN) {
+		if((curatr&0x70)!=BG_CYAN)
+			bputs(ansi(BG_CYAN)); }
+	else if((atr&0x70)==BG_LIGHTGRAY) {
+		if((curatr&0x70)!=BG_LIGHTGRAY)
+			bputs(ansi(BG_LIGHTGRAY)); }
 
 	curatr=atr;
 }

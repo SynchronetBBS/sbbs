@@ -48,8 +48,14 @@ char *sbbs_t::ansi(int atr)
 {
 
 	switch(atr) {
+
+		/* Special case */
+		case ANSI_NORMAL:
+			return("\x1b[0m");
 		case BLINK:
 			return("\x1b[5m");
+
+		/* Foreground */
 		case HIGH:
 			return("\x1b[1m");
 		case BLACK:
@@ -68,20 +74,25 @@ char *sbbs_t::ansi(int atr)
 			return("\x1b[36m");
 		case LIGHTGRAY:
 			return("\x1b[37m");
-		case (RED<<4):
+
+		/* Background */
+		case BG_BLACK:
+			return("\x1b[40m");
+		case BG_RED:
 			return("\x1b[41m");
-		case (GREEN<<4):
+		case BG_GREEN:
 			return("\x1b[42m");
-		case (BROWN<<4):
+		case BG_BROWN:
 			return("\x1b[43m");
-		case (BLUE<<4):
+		case BG_BLUE:
 			return("\x1b[44m");
-		case (MAGENTA<<4):
+		case BG_MAGENTA:
 			return("\x1b[45m");
-		case (CYAN<<4):
+		case BG_CYAN:
 			return("\x1b[46m");
-		case (LIGHTGRAY<<4):
-			return("\x1b[47m"); }
+		case BG_LIGHTGRAY:
+			return("\x1b[47m"); 
+	}
 
 	return("-Invalid use of ansi()-");
 }

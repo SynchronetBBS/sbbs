@@ -1045,12 +1045,6 @@ uchar attrstr(char *str)
 			case 'W':	/* White */
 				atr=(atr&0xf8)|LIGHTGRAY;
 				break;
-			case '0':	/* Black Background */
-				atr=(uchar)((atr&0x8f)|(BLACK<<4));
-				break;
-			case '7':	/* White Background */
-				atr=(uchar)((atr&0x8f)|(LIGHTGRAY<<4));
-				break;
 			case 'R':
 				atr=(uchar)((atr&0xf8)|RED);
 				break;
@@ -1069,25 +1063,33 @@ uchar attrstr(char *str)
 			case 'C':
 				atr=(uchar)((atr&0xf8)|CYAN);
 				break;
+			case '0':	/* Black Background */
+				atr=(uchar)(atr&0x8f);
+				break;
 			case '1':	/* Red Background */
-				atr=(uchar)((atr&0x8f)|(RED<<4));
+				atr=(uchar)((atr&0x8f)|BG_RED);
 				break;
 			case '2':	/* Green Background */
-				atr=(uchar)((atr&0x8f)|(GREEN<<4));
+				atr=(uchar)((atr&0x8f)|BG_GREEN);
 				break;
 			case '3':	/* Yellow Background */
-				atr=(uchar)((atr&0x8f)|(BROWN<<4));
+				atr=(uchar)((atr&0x8f)|BG_BROWN);
 				break;
 			case '4':	/* Blue Background */
-				atr=(uchar)((atr&0x8f)|(BLUE<<4));
+				atr=(uchar)((atr&0x8f)|BG_BLUE);
 				break;
 			case '5':	/* Magenta Background */
-				atr=(uchar)((atr&0x8f)|(MAGENTA<<4));
+				atr=(uchar)((atr&0x8f)|BG_MAGENTA);
 				break;
 			case '6':	/* Cyan Background */
-				atr=(uchar)((atr&0x8f)|(CYAN<<4));
-				break; }
-		l++; }
+				atr=(uchar)((atr&0x8f)|BG_CYAN);
+				break; 
+			case '7':	/* White Background */
+				atr=(uchar)((atr&0x8f)|BG_LIGHTGRAY);
+				break;
+			}
+		l++; 
+	}
 	return(atr);
 }
 

@@ -177,7 +177,7 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 					attr(MAGENTA);
 					break;
 				case '4':
-					attr(LIGHTGRAY|HIGH|(BLUE<<4));
+					attr(LIGHTGRAY|HIGH|BG_BLUE);
 					break;
 				case '5':
 					attr(GREEN);

@@ -577,7 +577,6 @@ typedef enum {						/* Values for xtrn_t.event			*/
 #define AUTOLOGON	(1L<<22)		/* AutoLogon via IP					*/
 
 #define CLREOL      256     /* Character to erase to end of line 		*/
-#define HIGH        8       /* High intensity for curatr				*/
 
 							/* Online status (online)					*/
 #define ON_LOCAL	1	 	/* Online locally							*/
@@ -805,53 +804,19 @@ extern long crc32tbl[];
 
 #define ucrc32(ch,crc)	(crc32tbl[(crc^ch)&0xff]^(crc>>8))
 
-#ifdef __WATCOMC__
-
-	#if !defined(__COLORS)
-	#define __COLORS
-
-	enum COLORS {
-		BLACK,			/* dark colors */
-		BLUE,
-		GREEN,
-		CYAN,
-		RED,
-		MAGENTA,
-		BROWN,
-		LIGHTGRAY,
-		DARKGRAY,		/* light colors */
-		LIGHTBLUE,
-		LIGHTGREEN,
-		LIGHTCYAN,
-		LIGHTRED,
-		LIGHTMAGENTA,
-		YELLOW,
-		WHITE
-	};
-	#endif
-
-	#define BLINK		128 /* blink bit */
-
-	#define ffblk find_t
-    #define findfirst(x,y,z) _dos_findfirst(x,z,y)
-	#define findnext(x) _dos_findnext(x)
-#endif
-
-#if DEBUG	/* if DEBUG, call function */
-#define DLOG(where,txt) dlog(where,txt)
-#else		/* else, do nothing - function isn't even valid */
-#define DLOG(where,txt)
-#endif
-
+/**************************************/
+/* Text Attribute (color) Definitions */
+/**************************************/
+#define HIGH  0x08      /* High intensity foreground text */
 #ifndef BLINK
-#define BLINK 128
+#define BLINK 0x80		/* Blinking text */
 #endif
 
 #ifndef __COLORS
 #define __COLORS
 
 enum COLORS {
-	BLACK,			/* dark colors */
+	BLACK,			/* dark colors (HIGH bit unset) */
 	BLUE,
 	GREEN,
 	CYAN,
@@ -859,7 +824,7 @@ enum COLORS {
 	MAGENTA,
 	BROWN,
 	LIGHTGRAY,
-	DARKGRAY,		/* light colors */
+	DARKGRAY,		/* light colors (HIGH bit set) */
 	LIGHTBLUE,
 	LIGHTGREEN,
 	LIGHTCYAN,
@@ -869,7 +834,17 @@ enum COLORS {
 	WHITE
 };
 
-#endif
+#endif	/* __COLORS */
+
+#define ANSI_NORMAL		0x100
+#define BG_BLACK		0x200
+#define BG_BLUE			(BLUE<<4)
+#define BG_GREEN		(GREEN<<4)
+#define BG_CYAN			(CYAN<<4)
+#define BG_RED			(RED<<4)
+#define BG_MAGENTA		(MAGENTA<<4)
+#define BG_BROWN		(BROWN<<4)
+#define BG_LIGHTGRAY	(LIGHTGRAY<<4)
 
 /********************/
 /* Type Definitions */
