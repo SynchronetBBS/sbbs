@@ -41,10 +41,14 @@
 	#endif
 	#include "ciowrap.h"
     #define mswait(x) delay(x)
+    #define putch(x)	_putch(x,TRUE)
+    #define clreol()	clrtoeol()
+    #define strnicmp(x,y,z)       strncasecmp(x,y,z)
 #elif defined(_WIN32)
 	#include <share.h>
 	#include <conio.h>
 	#include <windows.h>
+	#include "keys.h"
 	#define mswait(x) Sleep(x)
 #endif
 
@@ -56,24 +60,26 @@
 #define BL_GET      (1<<2)  /* Get key */
 #define BL_PUT      (1<<3)  /* Put key */
 
+#ifdef __unix__
 enum {
 	 BLACK
 	,BLUE	
 	,GREEN	
-	,CYAN	
+	,CYAN
 	,RED		
-	,MAGENTA	
+	,MAGENTA
 	,BROWN	
 	,LIGHTGRAY	
-	,DARKGRAY	
+	,DARKGRAY
 	,LIGHTBLUE	
 	,LIGHTGREEN	
-	,LIGHTCYAN	
-	,LIGHTRED	
+	,LIGHTCYAN
+	,LIGHTRED
 	,LIGHTMAGENTA
 	,YELLOW
 	,WHITE
 };
+#endif
 
 #define BLINK	128
 
@@ -93,7 +99,6 @@ static char  *utimestr(time_t *intime);
 static void  help();
 static int   ugetstr(char *outstr, int max, long mode);
 static void  timedisplay(void);
-#define putch(x)	_putch(x,TRUE)
 
 /* API routines */
 static void uifcbail(void);
@@ -125,6 +130,20 @@ static void reset_dynamic(void) {
 /* Initialization function, see uifc.h for details.							*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
+
+#ifdef _WIN32    /* ToDo Merge with __unix__ */
+int inkey(int mode)
+{
+	int c;
+
+if(mode)
+	return(kbhit());
+c=getch();
+if(!c)
+	c=(getch()<<8);
+return(c);
+}
+#endif
 
 int uifcini32(uifcapi_t* uifcapi)
 {
@@ -262,14 +281,13 @@ int uscrn(char *str)
 {
     textattr(bclr|(cclr<<4));
     gotoxy(1,1);
-    clrtoeol();
+    clreol();
     gotoxy(3,1);
 	cputs(str);
     if(!puttext(1,2,api->scrn_width,api->scrn_len,blk_scrn))
         return(-1);
     gotoxy(1,api->scrn_len+1);
-    clrtoeol();
-	refresh();
+    clreol();
 	reset_dynamic();
     return(0);
 }
@@ -873,12 +891,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						break;
 					case KEY_F(5):	/* F5 */
 						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1)) {
-							return((*cur)|MSK_GET); 
+							return((*cur)|MSK_GET);
 						}
 						break;
 					case KEY_F(6):	/* F6 */
 						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1)) {
-							return((*cur)|MSK_PUT); 
+							return((*cur)|MSK_PUT);
 						}
 						break;
 					case KEY_IC:	/* insert */
@@ -943,7 +961,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(a==1 && !s)
 							break;
 						if(strlen(option[j])>b
-							&& ((!a && s && !strncasecmp(option[j]+b,search,s+1))
+							&& ((!a && s && !strnicmp(option[j]+b,search,s+1))
 							|| ((a || !s) && toupper(option[j][b])==toupper(i)))) {
 							if(a) s=0;
 							else s++;
@@ -1014,7 +1032,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						} 
 					}
 					if(a==2)
-						s=0; 
+						s=0;
 				}
 				else
 					switch(i) {
@@ -1452,7 +1470,7 @@ void bottomline(int line)
 	i+=4;
 	gotoxy(i,api->scrn_len+1);
 	textattr(BLACK|(cclr<<4));
-	clrtoeol();
+	clreol();
 }
 
 
