@@ -469,6 +469,7 @@ static void close_request(http_session_t * session)
 {
 	if(!session->req.keep_alive) {
 		close_socket(session->socket);
+		session->socket=INVALID_SOCKET;
 		session->finished=TRUE;
 	}
 }
@@ -595,12 +596,14 @@ static void send_error(char *message, http_session_t * session)
 {
 	char	error_code[4];
 
+	lprintf("%04d !ERROR %s",session->socket,message);
 	session->req.send_location=FALSE;
 	SAFECOPY(error_code,message);
 	sprintf(session->req.request,"%s%s.html",error_dir,error_code);
 	if(session->http_ver > HTTP_0_9)
 		send_headers(session,message);
-	sock_sendfile(session->socket,session->req.request);
+	if(fexist(session->req.request))
+		sock_sendfile(session->socket,session->req.request);
 	close_request(session);
 }
 
@@ -708,7 +711,7 @@ static BOOL read_mime_types(char* fname)
 	return(mime_count>0);
 }
 
-static int sockreadline(SOCKET socket, time_t timeout, char *buf, size_t length)
+static int sockreadline(http_session_t * session, time_t timeout, char *buf, size_t length)
 {
 	char	ch;
 	DWORD	i;
@@ -717,21 +720,22 @@ static int sockreadline(SOCKET socket, time_t timeout, char *buf, size_t length)
 
 	start=time(NULL);
 	for(i=0;TRUE;) {
-		if(!socket_check(socket,&rd)) {
-			close_socket(socket);
+		if(!socket_check(session->socket,&rd)) {
+			close_socket(session->socket);
+			session->socket=INVALID_SOCKET;
 			return(-1);
 		}
 
 		if(!rd) {
 			if(time(NULL)-start>timeout) {
-				close_socket(socket);
+				close_socket(session->socket);
 				return(-1);        /* time-out */
 			}
 			mswait(1);
 			continue;       /* no data */
 		}
 
-		if(recv(socket, &ch, 1, 0)!=1)
+		if(recv(session->socket, &ch, 1, 0)!=1)
 			break;
 
 		if(ch=='\n')
@@ -750,7 +754,7 @@ static int sockreadline(SOCKET socket, time_t timeout, char *buf, size_t length)
 	else
 		buf[i]=0;
 
-	lprintf("%04d RX: %s",socket,buf);
+	lprintf("%04d RX: %s",session->socket,buf);
 	return(0);
 }
 
@@ -763,11 +767,11 @@ static BOOL parse_headers(http_session_t * session)
 	int		i;
 
 	lprintf("%04d Parsing headers",session->socket);
-	while(!sockreadline(session->socket,TIMEOUT_THREAD_WAIT,req_line,sizeof(req_line))&&strlen(req_line)) {
+	while(!sockreadline(session,TIMEOUT_THREAD_WAIT,req_line,sizeof(req_line))&&strlen(req_line)) {
 		/* Check this... SHOULD append lines starting with spaces or horizontal tabs. */
 		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) && (next_char[0]=='\t' || next_char[0]==' ')) {
 			i=strlen(req_line);
-			sockreadline(session->socket,TIMEOUT_THREAD_WAIT,req_line+i,sizeof(req_line)-i);
+			sockreadline(session,TIMEOUT_THREAD_WAIT,req_line+i,sizeof(req_line)-i);
 		}
 		strtok(req_line,":");
 		if((value=strtok(NULL,""))!=NULL) {
@@ -916,7 +920,7 @@ static BOOL get_req(http_session_t * session)
 	char	req_line[MAX_REQUEST_LINE];
 	char *	p;
 	
-	if(!sockreadline(session->socket,TIMEOUT_THREAD_WAIT,req_line,sizeof(req_line))) {
+	if(!sockreadline(session,TIMEOUT_THREAD_WAIT,req_line,sizeof(req_line))) {
 		lprintf("%04d Got request line: %s",session->socket,req_line);
 		p=get_method(req_line,session);
 		if(p!=NULL) {
