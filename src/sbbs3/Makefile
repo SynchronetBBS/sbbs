@@ -28,6 +28,7 @@ XPDEV	=	..\xpdev\		# Path to Cross-platform wrappers
 CFLAGS	=	-M -I$(XPDEV) -I$(UIFC)
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
+WILDARGS=	$(MAKEDIR)\..\lib\wildargs.obj
 
 # Enable auto-dependency checking
 .autodepend
@@ -140,17 +141,17 @@ SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj \
 # FIXSMB Utility
 $(FIXSMB): fixsmb.c $(SMBLIB) $(LIBODIR)\str_util.obj
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	@$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # CHKSMB Utility
 $(CHKSMB): chksmb.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	@$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
 
 # SMB Utility
 $(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c date_str.c str_util.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	@$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
 
 # SBBSecho (FidoNet Packet Tosser)
 $(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
