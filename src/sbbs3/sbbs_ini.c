@@ -46,7 +46,7 @@ static const char*	strInterface="Interface";
 static const char*	strHostName="HostName";
 static const char*	strLogMask="LogMask";
 
-#define DEFAULT_LOG_MASK		0x7f	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO */
+#define DEFAULT_LOG_MASK		0xff	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG */
 #define DEFAULT_MAX_MSG_SIZE    (10*1024*1024)	/* 10MB */
 
 void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
