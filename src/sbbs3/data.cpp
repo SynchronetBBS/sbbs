@@ -108,7 +108,7 @@ uint sbbs_t::finduser(char *instr)
 /****************************************************************************/
 /* Returns the number of files in the directory 'dirnum'                    */
 /****************************************************************************/
-long getfiles(scfg_t* cfg, uint dirnum)
+long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 {
 	char str[256];
 	long l;
