@@ -11,6 +11,8 @@ const li_tag =	"<li onclick = 'this.className = (this.className == \"showList\")
 				"\tonselectstart = 'event.returnValue = false;'" +
 				">";
 
+min_ver=0;
+max_ver=9999;
 total_methods=0;
 total_properties=0;
 table_depth=0;
@@ -42,6 +44,11 @@ function table_close()
 	}
 }
 
+function verstr(ver)
+{
+	return(format("%u.%u",ver/100,ver%100));
+}
+
 function document_methods(name,obj)
 {
 	if(obj._method_list == undefined)
@@ -64,10 +71,18 @@ function document_methods(name,obj)
 	writeln("Returns".fontcolor("white"));
 	writeln("<th align=left width=200>");
 	writeln("Usage".fontcolor("white"));
+	if(obj._method_list[0].ver) {
+		writeln("<th align=left width=50>");
+		writeln("Ver".fontcolor("white"));
+	}
 	writeln("<th align=left>");
 	writeln("Description".fontcolor("white"));
 
 	for(method in obj._method_list) {
+		if(obj._method_list[method].ver < min_ver
+			|| obj._method_list[method].ver > max_ver)
+			continue;
+
 		write("<tr valign=top>");
 
 		if(obj==_global)
@@ -81,12 +96,9 @@ function document_methods(name,obj)
 			,func
 			,obj._method_list[method].args
 			));
+		if(obj._method_list[method].ver)
+			writeln("<td>" + verstr(obj._method_list[method].ver));
 		writeln("<td>" + obj._method_list[method].desc);
-		/**
-		write("<td>");
-		if(obj._method_list[method].alias != undefined)
-			writeln(obj._method_list[method].alias)
-		**/
 		total_methods++;
 	}
 }
@@ -106,6 +118,8 @@ function object_header(name, obj, type)
 	writeln("<h2><a name=" + name + ">" + name + " " + type + "</a>");
 	if(obj._description!=undefined)
 		writeln("<br><font size=-1>"+obj._description+"</font>");
+	if(obj._ver>310)
+		writeln("<font size=-1> - introduced in v"+verstr(obj._ver)+"</font>");
 	writeln("</h2>");
 	if(obj._constructor!=undefined)
 		writeln("<p>" + obj._constructor + "</p>");
@@ -130,6 +144,10 @@ function properties_header(name, obj)
 	writeln("Name".fontcolor("white"));
 	writeln("<th align=left width=100>");
 	writeln("Type".fontcolor("white"));
+	if(obj._property_ver_list && obj._property_ver_list.length) {
+		writeln("<th align=left width=50>");
+		writeln("Ver".fontcolor("white"));
+	}
 	writeln("<th align=left>");
 	writeln("Description".fontcolor("white"));
 }
@@ -137,11 +155,22 @@ function properties_header(name, obj)
 function document_properties(name, obj)
 {
 	var prop_name;
+	var count=0;
+	var prop_num;
 
 	prop_hdr=false;
 
 	p=0;
 	for(prop in obj) {
+		prop_num=count++;
+
+		if(min_ver && (!obj._property_ver_list || !obj._property_ver_list[prop_num]))
+			continue;
+		if(obj._property_ver_list 
+			&& (obj._property_ver_list[prop_num] < min_ver 
+			||  obj._property_ver_list[prop_num] > max_ver))
+			continue;
+
 		prop_name=name + "." + prop;
 
 		if(typeof(obj[prop])=="object" && prop!="socket") {
@@ -157,14 +186,22 @@ function document_properties(name, obj)
 		}
 		write("<tr valign=top>");
 		writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
+		if(obj._property_ver_list)
+			writeln("<td>" 
+				+ (obj._property_ver_list[p] ? verstr(obj._property_ver_list[p]) : "N/A"));
 		if(obj._property_desc_list!=undefined)
-			writeln("<td>" + obj._property_desc_list[p++] + "</td>");
+			writeln("<td>" + obj._property_desc_list[p]);
+		p++;
 		total_properties++;
 	}
 }
 
 function document_object(name, obj, type)
 {
+	if(obj._ver > max_ver)
+		return;
+
+	printf("Documenting: %s\r\n",name);
 	object_header(name,obj,type);
 	if(obj._dont_document==undefined) {
 		if(obj._assoc_array!=undefined)
