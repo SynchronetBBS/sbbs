@@ -933,7 +933,7 @@ js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if(argc>1)
 		JS_ValueToInt32(cx,argv[1],&arg);
 
-	if(ioctlsocket(p->sock,cmd,&arg)==0)
+	if(ioctlsocket(p->sock,cmd,(ulong*)&arg)==0)
 		JS_NewNumberValue(cx,arg,rval);
 	else
 		*rval = INT_TO_JSVAL(-1);
