@@ -303,8 +303,8 @@ bool sbbs_t::js_initcx()
 		if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
 			break;
 
-		/* Terminal Object */
-		if(js_CreateTerminalObject(js_cx, js_glob)==NULL)
+		/* Console Object */
+		if(js_CreateConsoleObject(js_cx, js_glob)==NULL)
 			break;
 
 		success=true;
