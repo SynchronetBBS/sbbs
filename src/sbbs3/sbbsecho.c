@@ -2315,23 +2315,14 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	destaddr.point=fmsghdr.destpoint;
 
 	smb_hfield_str(&msg,SENDER,fmsghdr.from);
-	strlwr(fmsghdr.from);
-	if(subnum==INVALID_SUB)
-		msg.idx.from=0;
-	else
-		msg.idx.from=crc16(fmsghdr.from,0);
-
 	smb_hfield_str(&msg,RECIPIENT,fmsghdr.to);
-	strlwr(fmsghdr.to);
-	msg.idx.to=crc16(fmsghdr.to,0);
 
 	if(user) {
 		sprintf(str,"%u",user);
 		smb_hfield_str(&msg,RECIPIENTEXT,str);
-		msg.idx.to=user; }
+	}
 
 	smb_hfield_str(&msg,SUBJECT,fmsghdr.subj);
-	msg.idx.subj=smb_subject_crc(fmsghdr.subj);
 
 	if(fbuf==NULL) {
 		printf("ERROR allocating fbuf\n");
