@@ -94,7 +94,7 @@ static	bool	scfg_reloaded=true;
 static	char *	text[TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
-static	bool	recycle_server=false;
+static	bool	terminate_server=false;
 
 extern "C" {
 
@@ -1378,7 +1378,7 @@ void output_thread(void* arg)
     sbbs->output_thread_running = true;
 	sbbs->console|=CON_R_ECHO;
 
-	while(sbbs->client_socket!=INVALID_SOCKET && telnet_socket!=INVALID_SOCKET) {
+	while(sbbs->client_socket!=INVALID_SOCKET && !terminate_server) {
 
     	if(bufbot==buftop)
 	    	avail=RingBufFull(&sbbs->outbuf);
@@ -1512,7 +1512,7 @@ void event_thread(void* arg)
 	}
 #endif
 
-	while(!sbbs->terminated && telnet_socket!=INVALID_SOCKET) {
+	while(!sbbs->terminated && !terminate_server) {
 
 		now=time(NULL);
 		localtime_r(&now,&now_tm);
@@ -3547,12 +3547,8 @@ long DLLCALL bbs_ver_num(void)
 
 void DLLCALL bbs_terminate(void)
 {
-	recycle_server=false;
-	if(telnet_socket!=INVALID_SOCKET) {
-    	lprintf(LOG_DEBUG,"BBS Terminate: closing telnet socket %d",telnet_socket);
-		close_socket(telnet_socket);
-		telnet_socket=INVALID_SOCKET;
-    }
+   	lprintf(LOG_DEBUG,"BBS Server terminate",telnet_socket);
+	terminate_server=true;
 }
 
 static void cleanup(int code)
@@ -3602,8 +3598,9 @@ static void cleanup(int code)
 
 	status("Down");
 	thread_down();
-    lprintf(LOG_INFO,"BBS System thread terminated (%u threads remain, %lu clients served)"
-		,thread_count, served);
+	if(terminate_server || code)
+		lprintf(LOG_INFO,"BBS System thread terminated (%u threads remain, %lu clients served)"
+			,thread_count, served);
 	if(startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -3665,7 +3662,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 #endif
 	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 	if(startup->temp_dir[0])				backslash(startup->temp_dir);
 
 	sprintf(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
@@ -3677,7 +3674,7 @@ void DLLCALL bbs_thread(void* arg)
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
-	recycle_server=true;
+	terminate_server=false;
 	do {
 
 	thread_up(FALSE /* setuid */);
@@ -4054,7 +4051,7 @@ void DLLCALL bbs_thread(void* arg)
     	startup->started(startup->cbdata);
 
 
-	while(telnet_socket!=INVALID_SOCKET) {
+	while(!terminate_server) {
 
 		if(node_threads_running==0 && !event_mutex_locked) {	/* check for re-run flags */
 			bool rerun=false;
@@ -4107,8 +4104,11 @@ void DLLCALL bbs_thread(void* arg)
 		/* now wait for connection */
 
 		FD_ZERO(&socket_set);
-		FD_SET(telnet_socket,&socket_set);
-		high_socket_set=telnet_socket+1;
+		high_socket_set=0;
+		if(telnet_socket!=INVALID_SOCKET) {
+			FD_SET(telnet_socket,&socket_set);
+			high_socket_set=telnet_socket+1;
+		}
 		if(startup->options&BBS_OPT_ALLOW_RLOGIN 
 			&& rlogin_socket!=INVALID_SOCKET) {
 			FD_SET(rlogin_socket,&socket_set);
@@ -4146,7 +4146,7 @@ void DLLCALL bbs_thread(void* arg)
 			break;
 		}
 
-		if(telnet_socket==INVALID_SOCKET)	/* terminated */
+		if(terminate_server)	/* terminated */
 			break;
 
 		client_addr_len = sizeof(client_addr);
@@ -4473,12 +4473,12 @@ void DLLCALL bbs_thread(void* arg)
 
 	cleanup(0);
 
-	if(recycle_server) {
+	if(!terminate_server) {
 		lprintf(LOG_INFO,"Recycling server...");
 		mswait(2000);
 	}
 
-	} while(recycle_server);
+	} while(!terminate_server);
 
 }
 
