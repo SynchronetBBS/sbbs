@@ -80,6 +80,9 @@ typedef struct {
     char	cgi_temp_dir[128];
     char**	index_file_name;		/* Index filenames */
 	char	logfile_base[128];		/* Logfile base name (date is appended) */
+	char	answer_sound[128];
+	char	hangup_sound[128];
+    char	hack_sound[128];
 
 	/* Misc */
     char	host_name[128];

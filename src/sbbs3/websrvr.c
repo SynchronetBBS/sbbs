@@ -1156,6 +1156,10 @@ static BOOL check_ars(http_session_t * session)
 		else
 			lprintf(LOG_WARNING,"%04d !PASSWORD FAILURE for user %s"
 				,session->socket,username);
+#ifdef _WIN32
+		if(startup->hack_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
+			PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 		return(FALSE);
 	}
 
@@ -1188,6 +1192,11 @@ static BOOL check_ars(http_session_t * session)
 	/* Should go to the hack log? */
 	lprintf(LOG_WARNING,"%04d !AUTHORIZATION FAILURE for user %s, ARS: %s"
 		,session->socket,username,session->req.ars);
+
+#ifdef _WIN32
+	if(startup->hack_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
+		PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 	return(FALSE);
 }
@@ -2645,6 +2654,11 @@ void http_session_thread(void* arg)
 	socket=session.socket;
 	lprintf(LOG_DEBUG,"%04d Session thread started", session.socket);
 
+#ifdef _WIN32
+	if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
+		PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+
 	thread_up(TRUE /* setuid */);
 	session.finished=FALSE;
 
@@ -2750,6 +2764,11 @@ void http_session_thread(void* arg)
 		lprintf(LOG_INFO,"%04d JavaScript: Destroying runtime",socket);
 		JS_DestroyRuntime(session.js_runtime);
 	}
+
+#ifdef _WIN32
+	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
+		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 	active_clients--;
 	update_clients();
@@ -2960,12 +2979,13 @@ void DLLCALL web_server(void* arg)
 	if(startup->port==0)					startup->port=IPPORT_HTTP;
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,WEB_DEFAULT_ROOT_DIR);
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,WEB_DEFAULT_ERROR_DIR);
-	if(startup->cgi_dir[0]==0)				SAFECOPY(startup->error_dir,WEB_DEFAULT_CGI_DIR);
+	if(startup->cgi_dir[0]==0)				SAFECOPY(startup->cgi_dir,WEB_DEFAULT_CGI_DIR);
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,"ssjs");
+	if(startup->js_ext[0]==0)				SAFECOPY(startup->js_ext,"bbs");
 
 	sprintf(js_server_props.version,"%s %s",server_name,revision);
 	js_server_props.version_detail=web_ver();
