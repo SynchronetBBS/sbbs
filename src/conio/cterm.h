@@ -34,6 +34,12 @@
 #ifndef _CTERM_H_
 #define _CTERM_H_
 
+enum {
+	 CTERM_MUSIC_NORMAL
+	,CTERM_MUSIC_LEGATO
+	,CTERM_MUSIC_STACATTO
+};
+
 struct cterminal {
 	int	height;
 	int	width;
@@ -47,6 +53,11 @@ struct cterminal {
 	int	sequence;
 	char	musicbuf[1024];
 	int music;
+	int	tempo;
+	int	octave;
+	int notelen;
+	int noteshape;
+	int musicfore;
 	char *scrollback;
 	int backpos;
 	int backlines;

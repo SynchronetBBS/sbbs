@@ -47,10 +47,276 @@ struct cterminal cterm;
 /* const int tabs[11]={1,8,16,24,32,40,48,56,64,72,80}; */
 const int cterm_tabs[11]={9,17,25,33,41,49,57,65,73,80,80.1};
 
+const char *octave="C#D#EF#G#A#B";
+
+/* Characters allowed in music strings... if one that is NOT in here is
+ * found, CTerm leaves music capture mode and tosses the buffer away */
+const char musicchars="abcdefgABCDEFGpPnN0123456789.-+#oOtOlLmMsS<> ";
+const uint note_frequency[]={	/* Hz*1000 */
+/* Octave 0 (Note 1) */
+	 65406
+	,69296
+	,73416
+	,77782
+	,82407
+	,87307
+	,92499
+	,97999
+	,103820
+	,110000
+	,116540
+	,123470
+/* Octave 1 */
+	,130810
+	,138590
+	,146830
+	,155560
+	,164810
+	,174610
+	,185000
+	,196000
+	,207650
+	,220000
+	,233080
+	,246940
+/* Octave 2 */
+	,261620
+	,277180
+	,293660
+	,311130
+	,329630
+	,349230
+	,369990
+	,392000
+	,415300
+	,440000
+	,466160
+	,493880
+/* Octave 3 */
+	,523250
+	,554370
+	,587330
+	,622250
+	,659260
+	,698460
+	,739990
+	,783990
+	,830610
+	,880000
+	,932330
+	,987770
+/* Octave 4 */
+	,1046500
+	,1108700
+	,1174700
+	,1244500
+	,1318500
+	,1396900
+	,1480000
+	,1568000
+	,1661200
+	,1760000
+	,1864600
+	,1975500
+/* Octave 5 */
+	,2093000
+	,2217500
+	,2349300
+	,2489000
+	,2637000
+	,2793800
+	,2959900
+	,3136000
+	,3322400
+	,3520000
+	,3729300
+	,3951100
+/* Octave 6 */
+	,4186000
+	,4435000
+	,4698600
+	,4978000
+	,5274000
+	,5587000
+	,5920000
+	,6272000
+	,6644000
+	,7040000
+	,7458600
+	,7902200
+};
+void playnote(int notenum, int notelen, int dotted)
+{
+	/* Tempo is quarter notes per minute */
+	int duration;
+	int pauselen;
+
+	if(dotted)
+		duration=360000/cterm.tempo;
+	else
+		duration=240000/cterm.tempo;
+	duration/=notelen;
+	switch(cterm.noteshape) {
+		case CTERM_MUSIC_STACATTO:
+			pauselen=duration/4;
+			break;
+		case CTERM_MUSIC_LEGATO:
+			pauselen=0;
+			break;
+		case CTERM_MUSIC_NORMAL:
+		default:
+			pauselen=duration/8;
+			break;
+	}
+	duration-=pauselen;
+	BEEP(note_frequency[notenum]/1000,duration);
+	SLEEP(pauselen);
+}
+
 void play_music(void)
 {
-	/* ToDo Music code parsing stuff */
+	int		i;
+	char	*p;
+	char	*out;
+	int		offset=0;
+	char	note;
+	int		notelen;
+	char	numbuf[10];
+	int		dotted=0;
+	int		notenum;
+
+	for(p=cterm.musicbuf;*p;p++) {
+		notenum=0;
+		switch(toupper(*p)) {
+			case 'M':
+				p++;
+				switch(toupper(*p)) {
+					case 'F':
+						cterm.musicfore=TRUE;
+						break;
+					case 'B':
+						cterm.musicfore=FALSE;
+						break;
+					case 'N':
+						cterm.noteshape=CTERM_MUSIC_NORMAL;
+						break;
+					case 'L':
+						cterm.noteshape=CTERM_MUSIC_LEGATO;
+						break;
+					case 'S':
+						cterm.noteshape=CTERM_MUSIC_STACATTO;
+						break;
+					default:
+						p--;
+				}
+				break;
+			case 'T':						/* Tempo */
+				out=numbuf;
+				while(isdigit(*(p+1)))
+					*(out++)=*(++p);
+				*out=0;
+				cterm.tempo=atoi(numbuf);
+				if(cterm.tempo>255)
+					cterm.tempo=255;
+				if(cterm.tempo<32)
+					cterm.tempo=32;
+				i=1;
+				break;
+			case 'O':						/* Octave */
+				out=numbuf;
+				while(isdigit(*(p+1)))
+					*(out++)=*(++p);
+				*out=0;
+				cterm.octave=atoi(numbuf);
+				if(cterm.octave>6)
+					cterm.octave=6;
+				i=1;
+				break;
+			case 'N':						/* Note by number */
+				if(isdigit(*(p+1))) {
+					out=numbuf;
+					while(isdigit(*(p+1))) {
+						*(out++)=*(p+1);
+						p++;
+					}
+					*out=0;
+					notenum=atoi(numbuf);
+					i=1;
+				}
+				if(notenum==0) {
+					notenum=-1;
+					offset=1;
+				}
+				/* Fall-through */
+			case 'A':						/* Notes in current octave by letter */
+			case 'B':
+			case 'C':
+			case 'D':
+			case 'E':
+			case 'F':
+			case 'G':
+			case 'P':
+				note=toupper(*p);
+				notelen=cterm.notelen;
+				offset=0;
+				dotted=0;
+				i=1;
+				while(i) {
+					i=0;
+					if(*(p+1)=='+' || *(p+1)=='#') {	/* SHARP */
+						offset+=1;
+						p++;
+						i=1;
+					}
+					if(*(p+1)=='-') {					/* FLAT */
+						offset-=1;
+						p++;
+						i=1;
+					}
+					if(*(p+1)=='.') {					/* Dotted note (1.5*notelen) */
+						dotted=1;
+						p++;
+						i=1;
+					}
+					if(isdigit(*(p+1))) {
+						out=numbuf;
+						while(isdigit(*(p+1))) {
+							*(out++)=*(p+1);
+							p++;
+						}
+						*out=0;
+						notelen=atoi(numbuf);
+						i=1;
+					}
+				}
+				if(notenum==0) {
+					out=strchr(octave,note);
+					if(out==NULL) {
+						notenum=-1;
+						offset=1;
+					}
+					else {
+						notenum=cterm.octave*12+1;
+						notenum+=(out-octave);
+					}
+				}
+				notenum+=offset;
+				playnote(notenum,notelen,dotted);
+				break;
+			case '<':							/* Down one octave */
+				cterm.octave--;
+				if(cterm.octave<0)
+					cterm.octave=0;
+				break;
+			case '>':							/* Up one octave */
+				cterm.octave++;
+				if(cterm.octave>6)
+					cterm.octave=6;
+				break;
+		}
+	}
 	cterm.music=0;
+	cterm.musicbuf[0]=0;
 }
 
 void scrolldown(void)
@@ -519,6 +785,11 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	cterm.escbuf[0]=0;
 	cterm.sequence=0;
 	cterm.music=0;
+	cterm.tempo=120;
+	cterm.octave=4;
+	cterm.notelen=4;
+	cterm.noteshape=CTERM_MUSIC_NORMAL;
+	cterm.musicfore=TRUE;
 	cterm.backpos=0;
 	cterm.backlines=backlines;
 	cterm.scrollback=scrollback;
@@ -648,9 +919,17 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 					}
 				}
 				else if (cterm.music) {
-					strcat(cterm.musicbuf,ch);
 					if(ch[0]==14)
 						play_music();
+					else {
+						if(strchr(musicchars,ch[0])!=NULL)
+							strcat(cterm.musicbuf,ch);
+						else {
+							/* Kill non-music strings */
+							cterm.music=0;
+							cterm.musicbuf[0]=0;
+						}
+					}
 				}
 				else {
 					switch(buf[j]) {
