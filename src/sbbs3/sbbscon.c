@@ -1386,12 +1386,11 @@ int main(int argc, char** argv)
 	else 
 	{
 		bbs_lputs("Waiting for child threads to bind ports...");
-		while(!bbs_stopped && !ftp_stopped && !mail_stopped && !services_stopped
-			&& ((run_bbs && !bbs_running) 
-				|| (run_ftp && !ftp_running) 
-				|| (run_web && !web_running) 
-				|| (run_mail && !mail_running) 
-				|| (run_services && !services_running)))
+		while((run_bbs && !(bbs_running || bbs_stopped)) 
+				|| (run_ftp && !(ftp_running || ftp_stopped)) 
+				|| (run_web && !(web_running || web_stopped)) 
+				|| (run_mail && !(mail_running || mail_stopped)) 
+				|| (run_services && !(services_running || services_stopped)))
 			mswait(1);
 
 		if(!do_setuid())
