@@ -328,6 +328,12 @@ Default Configuration (SCFG) Screen-shots
 4: Access Requirements   UNIX
 
 [Testable File Type]
+1: File Extension        zip
+2: Command Line          zip -z %f < %zzipmsg.txt
+3: Working String        Adding ZIP Comment...
+4: Access Requirements   UNIX
+
+[Testable File Type]
 1: File Extension        tgz
 2: Command Line          tar -tzf %s
 3: Working String        Testing TGZ Integrity...
