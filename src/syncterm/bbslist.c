@@ -118,13 +118,13 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 
 int edit_list(struct bbslist *item)
 {
-	char	opt[6][80];
-	char	*opts[6];
+	char	opt[7][80];
+	char	*opts[7];
 	int		changed=0;
 	int		copt=0,i,j;
 	char	str[6];
 
-	for(i=0;i<6;i++)
+	for(i=0;i<7;i++)
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
@@ -135,7 +135,7 @@ int edit_list(struct bbslist *item)
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
 	}
-	opt[5][0]=0;
+	opt[6][0]=0;
 	for(;;) {
 		sprintf(opt[0],"BBS Name:       %s",item->name);
 		sprintf(opt[1],"RLogin Address: %s",item->addr);
@@ -191,6 +191,8 @@ int edit_list(struct bbslist *item)
 								"Enter your password for auto-login.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Password",item->password,MAX_PASSWD_LEN,K_EDIT);
 				break;
+			case 5:
+				item->dumb=!item->dumb;
 		}
 		if(uifc.changes)
 			changed=1;
