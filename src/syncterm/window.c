@@ -14,10 +14,9 @@ int drawwin(void)
 	strcpy(str,"SyncTERM ");
     gettextinfo(&txtinfo);
 	term.width=80;
-	if(term.nostatus)
-		term.height=txtinfo.screenheight;
-	else
-		term.height=txtinfo.screenheight-1;
+	term.height=txtinfo.screenheight;
+	if(!term.nostatus)
+		term.height--;
 	if(term.height<24) {
 		term.height=24;
 		term.nostatus=1;
