@@ -238,7 +238,7 @@ FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
+	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $(JSLIB) $^
 
 # Synchronet BBS library Link Rule
 FORCE$(SBBS): $(OBJS) $(LIBS)
