@@ -1112,6 +1112,8 @@ user.
 				else
 					strcpy(str,"None");
 				sprintf(opt[i++],"%-27.27s%s","Mail Database Backups",str);
+				sprintf(opt[i++],"%-27.27s%lX","Control Key Pass-through"
+					,cfg.ctrlkey_passthru);
 				opt[i][0]=0;
 				uifc.savnum=0;
 				SETHELP(WHERE);
@@ -1310,7 +1312,7 @@ format. An example for North American phone numbers is NNN-NNN-NNNN.
 					case 12:
 						SETHELP(WHERE);
 /*
-User Database Backups:
+`User Database Backups:`
 
 Setting this option to anything but 0 will enable automatic daily
 backups of the user database. This number determines how many backups
@@ -1325,7 +1327,7 @@ to keep on disk.
 					case 13:
 						SETHELP(WHERE);
 /*
-Mail Database Backups:
+`Mail Database Backups:`
 
 Setting this option to anything but 0 will enable automatic daily
 backups of the mail database. This number determines how many backups
@@ -1333,11 +1335,36 @@ to keep on disk.
 */
 						sprintf(str,"%u",cfg.mail_backup_level);
 						uifc.input(WIN_MID|WIN_SAV,0,0
-							,"Number of Daily Mail Database Backups to Keep)"
+							,"Number of Daily Mail Database Backups to Keep"
 							,str,4,K_NUMBER|K_EDIT);
 						cfg.mail_backup_level=atoi(str);
                         break;
+					case 14:
+						SETHELP(WHERE);
+/*
+`Control Key Pass-through:`
 
+This value is a 32-bit hexadecimal number. Each set bit represents a
+control key combination that will `not` be handled internally by
+Synchronet or by a Global Hot Key Event.
+
+To disable internal handling of the `Ctrl-C` key combination (for example),
+set this value to `8`. The value is determined by taking 2 to the power of
+the ASCII value of the control character (Ctrl-A is 1, Ctrl-B is 2, etc).
+In the case of Ctrl-C, taking 2 to the power of 3 equals 8.
+
+To pass-through multiple control key combinations, multiple bits must be
+set (or'd together) which may require the use of a hexadecimal
+calculator.
+
+If unsure, leave this value set to `0`, the default.
+*/
+						sprintf(str,"%lX",cfg.ctrlkey_passthru);
+						uifc.input(WIN_MID|WIN_SAV,0,0
+							,"Control Key Pass-through"
+							,str,8,K_UPPER|K_EDIT);
+						cfg.ctrlkey_passthru=strtoul(str,NULL,16);
+                        break;
 						} }
 				break;
 		case 11: /* Loadable Modules */
