@@ -12,6 +12,7 @@
 static void getkey(void)
 {
 	printf("Hit any key...");
+	fflush(stdout);
 	while(getch()==0);
 	printf("\r%20s\r","");
 }
@@ -39,7 +40,7 @@ int main()
 		printf("getch() returned %d\n",ch);
 	} while(ch!=ESC);
 
-#if 0
+#if 1
 	/* BEEP test */
 	printf("\nBEEP() test\n");
 	getkey();
