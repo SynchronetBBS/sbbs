@@ -44,7 +44,7 @@
 bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	, uint touser)
 {
-	char	str[256],*body,*tail,col=0,lastch=0,*p,*lzhbuf,qwkbuf[128];
+	char	str[256],*body,*tail,col=0,lastch=0,*p,*lzhbuf,qwkbuf[129];
 	uint 	i,j,k,lzh=0,storage,skip=0;
 	ushort	xlat;
 	long	l,bodylen,taillen,length;
@@ -117,6 +117,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		strlwr(str);
 		msg.idx.to=crc16(str); }
 
+	memset(qwkbuf,0,sizeof(qwkbuf));
 	fread(qwkbuf,1,128,qwk_fp);
 
 	if(useron.rest&FLAG('Q') || fromhub) {      /* QWK Net */
