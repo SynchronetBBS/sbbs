@@ -1,12 +1,15 @@
-// Use guest user if the current user is super-duper
-if(user.number==0 && this.login!=undefined)
-	login("Guest");	// requires v3.12b+
-if(user.number==0)
-	exit();
-
 load("sbbsdefs.js");
 load("../web/lib/template.ssjs");
 load("../web/lib/msgsconfig.ssjs");
+
+// Use guest user if the current user is super-duper
+if(user.number==0 && this.login!=undefined)
+	login("Guest");	// requires v3.12b (websrvr 1.263 or later)
+if(user.number==0) {
+    error("Message Group access requires login");
+	exit();
+}
+
 
 /* Flags for clean_msg_headers() */
 var CLEAN_MSG_REPLY	=	(1<<0);
