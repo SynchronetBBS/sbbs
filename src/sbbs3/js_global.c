@@ -479,7 +479,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>1)
 		JS_ValueToInt32(cx,argv[1],&len);
 
-	if((linebuf=(char*)malloc(len+1))==NULL)
+	if((linebuf=(char*)malloc((len*2)+2))==NULL) /* room for ^A codes */
 		return(JS_FALSE);
 
 	outbuf[0]=0;
@@ -492,18 +492,24 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		else if(inbuf[i]=='\t') {
 			if((col%8)==0)
 				col++;
-			while(col%8)
-				col++;
+			col+=(col%8);
+		} else if(inbuf[i]==CTRL_A && inbuf[i+1]!=0) {
+			if(l<(len*2)) {
+				strncpy(linebuf+l,inbuf+i,2);
+				l+=2;
+			}
+			i+=2;
+			continue;
 		} else if(inbuf[i]>=' ')
 			col++;
 		linebuf[l]=inbuf[i++];
-		if(col<=len && l<=len) {
+		if(col<=len) {
 			l++;
 			continue;
 		}
 		/* wrap line here */
 		k=l;
-		while(k && linebuf[k]>' ') k--;
+		while(k && linebuf[k]>' ' && linebuf[k-1]!=CTRL_A) k--;
 		if(k==0)	/* continuous printing chars, no word wrap possible */
 			strncat(outbuf,linebuf,l+1);
 		else {
@@ -514,7 +520,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 		strcat(outbuf,"\r\n");
 		/* skip white space (but no more than one LF) for starting of new line */
-		while(inbuf[i] && inbuf[i]<=' ' && inbuf[i]!='\n') i++;	
+		while(inbuf[i] && inbuf[i]<=' ' && inbuf[i]!='\n' && inbuf[i]!=CTRL_A) i++;	
 		if(inbuf[i]=='\n') i++;
 		l=0;
 		col=1;
