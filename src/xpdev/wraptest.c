@@ -64,6 +64,7 @@ int main()
 		else
 			SLEEP(1);
 	}
+	SLEEP(5000);	/* wait for all threads to quit */
 
 	/* Exclusive sopen test */
 	printf("\nsopen() test\n");
