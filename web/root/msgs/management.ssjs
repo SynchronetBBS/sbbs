@@ -22,13 +22,13 @@ if(http_request.query.Action=="Delete Message(s)") {
 			errorlist.push("Cannot delete message "+mnum);
 			continue;
 		}
-		if(sub!='mail' && !msg_area.grp_list[g].sub_list[s].is_operator) {
-			if(!msg_area.grp_list[g].sub_list[s].settings&SUB_DEL) {
+		if(sub!='mail' && !msg_area.sub[sub].is_operator) {
+			if(!msg_area.sub[sub].settings&SUB_DEL) {
 				errorlist.push("Only operators can delete messages!");
 				errors++;
 				continue;
 			}
-			if(msg_area.grp_list[g].sub_list[s].settings&SUB_DELLAST) {
+			if(msg_area.sub[sub].settings&SUB_DELLAST) {
 				if(msgbase.last_msg!=mnum) {
 					errorlist.push("You can only delete the last post!");
 					errors++;

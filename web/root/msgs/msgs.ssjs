@@ -25,7 +25,7 @@ if(sub=='mail') {
 }
 else {
 	msgarray=get_all_message_offsets();
-	template.can_delete=msg_area.grp_list[g].sub_list[s].is_operator;
+	template.can_delete=msg_area.sub[sub].is_operator;
 }
 var total_pages=Math.floor(msgarray.length/max_messages);
 var firstpage=0;
@@ -63,15 +63,15 @@ if(total_pages>1) {
 		if(currpage==page)
 			template.pagelinks += '<b>'+(page+1)+'</b> ';
 		else
-			template.pagelinks += "<a href=\""+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(page*max_messages)+'">'+(page+1)+'</a> ';
+			template.pagelinks += "<a href=\""+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(page*max_messages)+'">'+(page+1)+'</a> ';
 	}
 
 	if(offset+max_messages < msgarray.length)  {
-		template.pagelinks+='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'">NEXT</a>';
+		template.pagelinks+='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'">NEXT</a>';
 	}
 
 	if(offset>0) {
-		template.pagelinks='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'">PREV</a> '+template.pagelinks;
+		template.pagelinks='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'">PREV</a> '+template.pagelinks;
 	}
 }
 
@@ -82,12 +82,12 @@ if(sub=='mail') {
 	template.sub.code="mail";
 }
 else {
-	template.title="Messages in "+msg_area.grp_list[g].sub_list[s].description;
-	template.sub=msg_area.grp_list[g].sub_list[s];
+	template.title="Messages in "+msg_area.sub[sub].description;
+	template.sub=msg_area.sub[sub];
 }
 
 if(sub!='mail')  {
-	if(! msg_area.grp_list[g].sub_list[s].can_read)  {
+	if(! msg_area.sub[sub].can_read)  {
 		error("You don't have sufficient rights to read this sub");
 	}
 }
@@ -96,7 +96,14 @@ write_template("header.inc");
 last_offset=msgarray.length-1-offset;
 
 template.messages=new Array;
-template.group=msg_area.grp_list[g];
+if(sub=='mail') {
+	template.group=new Object;
+	template.group.name="E-Mail";
+	template.group.description="E-Mail";
+}
+else {
+	template.group=msg_area.grp[msg_area.sub[sub].grp_name];
+}
 
 for(displayed=0;displayed<max_messages && last_offset >= 0 && msgarray[last_offset].hdr != null;last_offset--) {
 	if(msgarray[last_offset].hdr.subject=='')

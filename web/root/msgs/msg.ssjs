@@ -7,10 +7,10 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 
 if(sub=='mail') {
 	template.group=new Object;
-	template.group.number=-1;
+	template.group.name="E-Mail";
 }
 else {
-	template.group=msg_area.grp_list[g];
+	template.group=msg_area.grp[msg_area.sub[sub].grp_name];
 }
 
 if(sub=='mail') {
@@ -19,8 +19,8 @@ if(sub=='mail') {
 	template.sub.code="mail";
 }
 else {
-	template.sub=msg_area.grp_list[g].sub_list[s];
-	if(!msg_area.grp_list[g].sub_list[s].can_read)
+	template.sub=msg_area.sub[sub];
+	if(!msg_area.sub[sub].can_read)
 		error("You can't read messages in this sub!");
 }
 

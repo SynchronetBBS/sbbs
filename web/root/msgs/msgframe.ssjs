@@ -1,7 +1,7 @@
 /*
  * Message FS emulator
  * Request messages in the form:
- * msgframe.ssjs/group/sub/messageID/filename
+ * msgframe.ssjs/sub/messageID/filename
  */
 
 load("html_inc/template.ssjs");
@@ -11,9 +11,8 @@ var path=http_request.path_info.split(/\//);
 if(path==undefined) {
         error("No path info!");
 }
-var group=parseInt(path[1]);
-var sub=path[2];
-var id=parseInt(path[3]);
+var sub=path[1];
+var id=parseInt(path[2]);
 
 var msgbase = new MsgBase(sub);
 
@@ -23,10 +22,10 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 
 if(sub=='mail') {
 	template.group=new Object;
-	template.group.number=-1;
+	template.group.name="E-Mail";
 }
 else {
-	template.group=msg_area.grp_list[group];
+	template.group=msg_area.grp[msg_area.sub[sub].grp_name];
 }
 
 if(sub=='mail') {
@@ -35,7 +34,7 @@ if(sub=='mail') {
 	template.sub.code="mail";
 }
 else {
-	template.sub=msg_area.grp_list[group].sub_list[sub];
+	template.sub=msg_area.sub[sub];
 }
 
 template.hdr=msgbase.get_msg_header(false,id);

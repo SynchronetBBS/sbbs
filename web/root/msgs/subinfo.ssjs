@@ -1,7 +1,7 @@
 load("sbbsdefs.js");
 load("html_inc/msgslib.ssjs");
 
-if((g==undefined || isNaN(g) || g==-1) && sub=='mail') {
+if(sub=='mail') {
 	template.type="Internet";
 	template.sub=new Object;
 	template.sub.description="Internet E-Mail";
@@ -15,7 +15,7 @@ if((g==undefined || isNaN(g) || g==-1) && sub=='mail') {
 	template.sub.max_msgs="Unknown";
 }
 else {
-	template.sub=msg_area.grp_list[g].sub_list[s];
+	template.sub=msg_area.sub[sub];
 	if(template.sub.settings & SUB_FIDO) {
 		template.type="FidoNet";
 		template.tagline=template.sub.fidonet_origin;

@@ -1,7 +1,7 @@
 /* 
  * Inline attachment FS emulator
  * Request attachments in the form:
- * attachments.ssjs/group/sub/messageID/Content-ID
+ * attachments.ssjs/sub/messageID/Content-ID
  */
 
 load("html_inc/template.ssjs");
@@ -11,10 +11,9 @@ var path=http_request.path_info.split(/\//);
 if(path==undefined) {
 	error("No path info!");
 }
-var group=parseInt(path[1]);
-var sub=path[2];
-var id=parseInt(path[3]);
-var cid=path[4];
+var sub=path[1];
+var id=parseInt(path[2]);
+var cid=path[3];
 
 var msgbase = new MsgBase(sub);
 if(msgbase.open!=undefined && msgbase.open()==false) {

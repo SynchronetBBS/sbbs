@@ -8,21 +8,12 @@ http_reply.header["Expires"]="0";
 var grp=http_request.query.msg_grp;
 if(grp=='' || grp==null)
 	grp=undefined;
-var g=parseInt(http_request.query.msg_grp);
 var sub=http_request.query.msg_sub;
 if(grp=='E-Mail')
 	sub='mail';
 var s=-1;
-if(sub != undefined)  {
-	if(msg_area.grp_list[g] != undefined) {
-		for(stmp in msg_area.grp_list[g].sub_list)  {
-			if(msg_area.grp_list[g].sub_list[stmp].code == sub)  {
-				s=stmp;
-			}
-		}
-	}
+if(sub != undefined)
 	var msgbase = new MsgBase(sub);
-}
 var message=http_request.query.message;
 var m=parseInt(http_request.query.message);
 var path=http_request.virtual_path;

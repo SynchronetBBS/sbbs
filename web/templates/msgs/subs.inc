@@ -7,8 +7,8 @@
 </tr>
 <<REPEAT subs>>
 <tr>
-	<td class="sublist"><a class="msglist" href="msgs.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^subs:code^^">%%subs:name%%</a></td>
-    <td class="sublist"><a class="msglist" href="subinfo.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^subs:code^^">[?]</a></td>
+	<td class="sublist"><a class="msglist" href="msgs.ssjs?msg_sub=^^subs:code^^">%%subs:name%%</a></td>
+    <td class="sublist"><a class="msglist" href="subinfo.ssjs?msg_sub=^^subs:code^^">[?]</a></td>
 	<td class="sublist">%%subs:description%%</td>
 </tr>
 <<END REPEAT subs>>

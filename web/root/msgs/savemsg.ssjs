@@ -1,6 +1,6 @@
 load("html_inc/msgslib.ssjs");
 
-template.group=msg_area.grp_list[g];
+template.group=msg_area.grp[msg_area.sub[sub].grp_name];
 
 if(sub=='mail') {
 	template.sub=new Object;
@@ -8,12 +8,12 @@ if(sub=='mail') {
 	template.sub.code="mail";
 }
 else {
-	template.sub=msg_area.grp_list[g].sub_list[s];
+	template.sub=msg_area.sub[sub];
 }
 
 var hdrs = new Object;
 if(sub!='mail')  {
-	if(! msg_area.grp_list[g].sub_list[s].can_post)  {
+	if(! msg_area.sub[sub].can_post)  {
 		error("You don't have sufficient rights to post in this sub");
 	}
 }

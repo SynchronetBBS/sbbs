@@ -1,6 +1,5 @@
 <form action="savemsg.ssjs" method="post">
 <table class="postmsg" border="0" cellspacing="2" cellpadding="0">
-<input type="hidden" name="msg_grp" value="%%group:number%%" />
 <input type="hidden" name="msg_sub" value="%%sub:code%%" />
   <tbody>
     <tr>
