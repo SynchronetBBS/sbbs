@@ -5,8 +5,8 @@
 SMBLIB_SRC	?=	$(XPDEV)../smblib/
 
 SMBLIB_CFLAGS	+=	-I$(SMBLIB_SRC)
-SMBLIB_LDFLAGS	+=	-L$(SMBLIB_SRC) -lsmb
 SMBLIB_ODIR	?=	$(XPDEV)../smblib/$(LIBODIR)
+SMBLIB_LDFLAGS	+=	-L$(SMBLIB_ODIR) -lsmb
 SMBLIB_TARGET	:=	$(SMBLIB_ODIR)/libsmb.a
 SMBLIB_OBJS	:= \
         $(SMBLIB_ODIR)/smblib.o \
