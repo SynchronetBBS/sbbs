@@ -63,6 +63,16 @@ Add "gkermit" to SCFG->External Programs->Native Program List.
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+v3.10 and earlier versions of Synchronet could not dynamically-generate
+transfer protocol menus, so newly-added protocols will not appear unless
+you manually add the new protocol to your text/menu/*prot.asc file(s).
+
+v3.11 and later can display dynamically-generated menus, so if you're running
+this version or later and have the files text/menu/*prot.asc, you can delete
+them and have new protocols automatically appear on the dynamic menus.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 If you or your BBS users find Kermit support useful, you can thank Michel
 Samson and Winston Smith for their promotion of Kermit and help with testing
 Kermit support in Synchronet.
