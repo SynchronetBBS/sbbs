@@ -144,3 +144,69 @@ function IRC_match(mtchstr,mask) {
 	final_mask=final_mask + mask + "$";
 	return mtchstr.toUpperCase().match(final_mask.toUpperCase());
 }
+
+// This will create a 'default mask' when given a complete user@host string.
+// If the 'host' contains less than two dots, then it's returned verbatim,
+// but the 'user' portion is always prefixed with a *, and the ~ is lopped off.
+// Useful for creating access masks (for bots), or quick ban masks (for bans)
+// In the case of a ban, simply prefix the output with '*!' to get a valid ban.
+// ** This function is intelligent enough to strip off any 'Nick!' notation
+//    before the user@host portion.
+// EXAMPLE: user@somehost.com -> *user@somehost.com
+//          ~hello@something.cool.com -> *hello@*.cool.com
+//          ~hi@whatever.com -> *hi@whatever.com
+//          test@10.20.30.40 -> *test@10.20.30.*
+// RETURNS: The formatted mask in user@host form.
+function IRC_create_default_mask(uh) {
+	if (uh.match(/[!]/))
+		tmp = uh.slice(uh.indexOf("!")+1);
+	var tmp = uh.split("@");
+	if (tmp[0][0] == "~")
+		tmp[0] = tmp[0].slice(1);
+	tmp[0] = tmp[0].slice(0,9); // always make sure there's room.
+	var uh_chopped = tmp[1].slice(tmp[1].indexOf(".")+1);
+	if (uh_chopped.indexOf(".") == -1)
+		uh_chopped = tmp[1];
+	else
+		uh_chopped = "*." + uh_chopped;
+	return "*" + tmp[0] + "@" + uh_chopped;
+}
+
+// Checks to see if a given nickname is a legal IRC nickname.  Nickname
+// length is checked only if provided as an argument, otherwise it's ignored.
+// Remember, nickname length can differ per IRC network.
+// RETURNS: 1 on failure (nickname is illegal), 0 on success (nick is legal)
+function IRC_check_nick(nick,mnicklen) {
+	if (mnicklen && (nick.length > mnicklen))
+		return 1;
+	var regexp="^[A-Za-z\{\}\`\^\_\|\\]\\[\\\\][A-Za-z0-9\-\{\}\`\^\_\|\\]\\[\\\\]*$";
+	if (!nick.match(regexp))
+		return 1;
+	return 0;
+}
+
+// This will check to see if the host as passed is valid.  This *only* checks
+// the hostname, not anything else (i.e. username, nickname)
+// Set 'wilds' to true if you also allow IRC wildcards to be in the hostname.
+// Set 'uh' to true if you're allowing '@' (as in, passing the full u@h)
+// Set 'nick' to true if passing the entire nick!user@host string
+// RETURNS: 1 on failure (illegal hostname), 0 on success (legal hostname)
+function IRC_check_host(host,wilds,uh,nick) {
+	var regexp = "^[A-Za-z0-9\-\.";
+	if (wilds)
+		regexp += "\?\*";
+	if (uh) {
+		if (host.slice(host.indexOf("@")+1).indexOf("@") != -1)
+			return 1; // only one @ allowed.
+		regexp += "\@";
+	}
+	if (nick) {
+		if (host.slice(host.indexOf("!")+1).indexOf("!") != -1)
+			return 1; // only one ! allowed.
+		regexp += "\!";
+	}
+	regexp += "]+$";
+	if (!host.match(regexp))
+		return 1;
+	return 0;
+}
