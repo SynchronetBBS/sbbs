@@ -83,7 +83,7 @@ $(EXEODIR):
 	mkdir $(EXEODIR)
 
 # Monolithic Synchronet executable Build Rule
-$(SBBSMONO): sbbscon.c $(OBJS) $(LIBODIR)/ver.o # $(LIBODIR)/ftpsrvr.o $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o
+$(SBBSMONO): sbbscon.c conwrap.c $(OBJS) $(LIBODIR)/ver.o $(LIBODIR)/ftpsrvr.o # $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o
 	$(CC) -o $(SBBSMONO) $^ $(LIBS)
 
 # Synchronet BBS library Link Rule
