@@ -545,7 +545,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					str1[i++]=ch;
 					if(!(mode&K_NOECHO))
 						outchar(ch); 
-				} 
+				} else
+					outchar(BEL);	/* Added at Angus McLeod's request */
 		}
 		if(i>l)
 			l=i;
