@@ -1968,7 +1968,7 @@ js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	if((msg=JS_GetStringBytes(js_msg))==NULL) 
 		return(JS_FALSE);
 
-	sbbs->putnmsg(node,msg);
+	putnmsg(&sbbs->cfg,node,msg);
 
 	*rval = JSVAL_VOID;
 	return(JS_TRUE);

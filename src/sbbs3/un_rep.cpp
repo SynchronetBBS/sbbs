@@ -235,7 +235,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 					|| node.status==NODE_QUIET)) {
 					sprintf(str,text[EmailNodeMsg]
 						,cfg.node_num,tmp);
-					putnmsg(k,str);
+					putnmsg(&cfg,k,str);
 					break; } }
 			if(k>cfg.sys_nodes) {
 				sprintf(str,text[UserSentYouMail],tmp);

@@ -88,6 +88,8 @@ DLLEXPORT void	DLLCALL packchatpass(char *pass, node_t* node);
 DLLEXPORT char* DLLCALL unpackchatpass(char *pass, node_t* node);
 
 DLLEXPORT int	DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
+DLLEXPORT int	DLLCALL putnmsg(scfg_t* cfg, int num, char *strin);
+
 DLLEXPORT uint	DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
 							,BOOL del);
 

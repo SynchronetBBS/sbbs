@@ -477,7 +477,7 @@ bool sbbs_t::upload(uint dirnum)
 				if(node.useron==destuser[j] && !(node.misc&NODE_POFF)
 					&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 					sprintf(str,text[UserToUserXferNodeMsg],cfg.node_num,useron.alias);
-					putnmsg(i,str);
+					putnmsg(&cfg,i,str);
 					break; } }
 			if(i>cfg.sys_nodes) {   /* User not online */
 				sprintf(str,text[UserSentYouFile],useron.alias);

@@ -214,7 +214,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 			sprintf(str
 				,text[UserReadYourMailNodeMsg]
 				,cfg.node_num,useron.alias);
-			putnmsg(n,str);
+			putnmsg(&cfg,n,str);
 			break; } }
 	if(n>cfg.sys_nodes) {
 		now=time(NULL);

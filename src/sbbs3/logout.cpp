@@ -82,7 +82,7 @@ void sbbs_t::logout()
 					sprintf(str,text[NodeLoggedOff],cfg.node_num
 						,thisnode.misc&NODE_ANON
 						? text[UNKNOWN_USER] : useron.alias);
-					putnmsg(i,str); } }
+					putnmsg(&cfg,i,str); } }
 
 	if(!online) {		/* NOT re-login */
 

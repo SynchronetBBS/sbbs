@@ -247,7 +247,7 @@ int sbbs_t::bulkmailhdr(uint usernum, smbmsg_t *msg, ushort msgattr, ulong offse
 		if(node.useron==usernum && !(node.misc&NODE_POFF)
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 			sprintf(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
-			putnmsg(i,str);
+			putnmsg(&cfg,i,str);
 			break; } }
 	if(i>cfg.sys_nodes) {   /* User wasn't online, so leave short msg */
 		sprintf(str,text[UserSentYouMail],useron.alias);

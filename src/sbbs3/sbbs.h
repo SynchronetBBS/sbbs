@@ -508,7 +508,6 @@ public:
 	/* putnode.cpp */
 	int		putnodedat(uint number, node_t * node);
 	int		putnodeext(uint number, char * str);
-	int		putnmsg(int num, char *strin);
 
 	/* logonoff.cpp */
 	bool	answer();

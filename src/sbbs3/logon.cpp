@@ -524,7 +524,7 @@ bool sbbs_t::logon()
 					,cfg.node_num
 					,thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias
 					,connection);
-				putnmsg(i,str); 
+				putnmsg(&cfg,i,str); 
 			} 
 		}
 

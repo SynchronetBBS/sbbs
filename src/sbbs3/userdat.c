@@ -967,7 +967,7 @@ uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen,
 }
 
 /****************************************************************************/
-/* Creates a short message for 'usernumber' than contains 'strin'           */
+/* Creates a short message for 'usernumber' that contains 'strin'           */
 /****************************************************************************/
 int DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin)
 {
@@ -995,6 +995,36 @@ int DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin)
 			putnodedat(cfg,i,&node,file); 
 		} 
 	}
+	return(0);
+}
+
+/****************************************************************************/
+/* Creates a short message for node 'num' that contains 'strin'             */
+/****************************************************************************/
+int DLLCALL putnmsg(scfg_t* cfg, int num, char *strin)
+{
+    char str[256];
+    int file,i;
+    node_t node;
+
+	sprintf(str,"%smsgs/n%3.3u.msg",cfg->data_dir,num);
+	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
+		return(errno); 
+	lseek(file,0L,SEEK_END);	// Instead of opening with O_APPEND
+	i=strlen(strin);
+	if(write(file,strin,i)!=i) {
+		close(file);
+		return(errno); 
+	}
+	close(file);
+	getnodedat(cfg,num,&node,NULL);
+	if((node.status==NODE_INUSE || node.status==NODE_QUIET)
+		&& !(node.misc&NODE_NMSG)) {
+		getnodedat(cfg,num,&node,&file);
+		node.misc|=NODE_NMSG;
+		putnodedat(cfg,num,&node,file); 
+	}
+
 	return(0);
 }
 

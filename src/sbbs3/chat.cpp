@@ -332,7 +332,7 @@ void sbbs_t::multinodechat(int channel)
 						strcat(buf,crlf);
 						if(useron.chat&CHAT_ECHO)
 							bputs(buf);
-						putnmsg(j,buf);
+						putnmsg(&cfg,j,buf);
 						break;
 					case 'Q':	/* quit */
 						done=1;
@@ -454,7 +454,7 @@ void sbbs_t::multinodechat(int channel)
 									? text[UNKNOWN_USER] : useron.alias
 									,"you");
 								strcat(buf,crlf);
-								putnmsg(usr[j],buf); }
+								putnmsg(&cfg,usr[j],buf); }
 
 
 							/* Display to all other users */
@@ -468,10 +468,10 @@ void sbbs_t::multinodechat(int channel)
 								if(i==j)
 									continue;
 								getnodedat(usr[i],&node,0);
-								putnmsg(usr[i],buf); }
+								putnmsg(&cfg,usr[i],buf); }
 							for(i=0;i<qusrs;i++) {
 								getnodedat(qusr[i],&node,0);
-								putnmsg(qusr[i],buf); }
+								putnmsg(&cfg,qusr[i],buf); }
 							continue; } }
 
 					sprintf(buf,text[ChatLineFmt]
@@ -483,10 +483,10 @@ void sbbs_t::multinodechat(int channel)
 						bputs(buf);
 					for(i=0;i<usrs;i++) {
 						getnodedat(usr[i],&node,0);
-						putnmsg(usr[i],buf); }
+						putnmsg(&cfg,usr[i],buf); }
 					for(i=0;i<qusrs;i++) {
 						getnodedat(qusr[i],&node,0);
-						putnmsg(qusr[i],buf); }
+						putnmsg(&cfg,qusr[i],buf); }
 					if(!usrs && channel && gurubuf
 						&& cfg.chan[channel-1]->misc&CHAN_GURU)
 						guruchat(pgraph,gurubuf,cfg.chan[channel-1]->guru);
@@ -742,7 +742,7 @@ void sbbs_t::privchat(bool local)
 			sprintf(str,text[NodePChatPageMsg]
 				,cfg.node_num,thisnode.misc&NODE_ANON
 					? text[UNKNOWN_USER] : useron.alias);
-			putnmsg(n,str);
+			putnmsg(&cfg,n,str);
 			sprintf(str,"%s paged %s on node %d to private chat"
 				,useron.alias,username(&cfg,node.useron,tmp),n);
 			logline("C",str); }
@@ -1316,7 +1316,7 @@ void sbbs_t::nodemsg()
 						sprintf(buf,text[NodeMsgFmt],cfg.node_num
 							,thisnode.misc&NODE_ANON
 								? text[UNKNOWN_USER] : useron.alias,line);
-						putnmsg(i,buf);
+						putnmsg(&cfg,i,buf);
 						if(!(node.misc&NODE_ANON))
 							bprintf(text[MsgSentToUser],"Message"
 								,username(&cfg,usernumber,tmp),usernumber);
@@ -1338,7 +1338,7 @@ void sbbs_t::nodemsg()
 						if((node.status==NODE_INUSE
 							|| (SYSOP && node.status==NODE_QUIET))
 							&& (SYSOP || !(node.misc&NODE_POFF)))
-							putnmsg(i,buf); }
+							putnmsg(&cfg,i,buf); }
 					sprintf(str,"%s sent message to all nodes",useron.alias);
 					logline("C",str);
 					logline(nulstr,line); 
