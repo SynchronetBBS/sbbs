@@ -1327,7 +1327,7 @@ static void smtp_thread(void* arg)
 						truncsp(rcpt_name);
 						truncsp(rcpt_addr);
 
-						_snprintf(hdrfield,sizeof(hdrfield),
+						snprintf(hdrfield,sizeof(hdrfield),
 							"Received: from %s (%s [%s])\r\n"
 							"          by %s [%s] (Synchronet Mail Server %s) with %s\r\n"
 							"          for %s; %s"
@@ -2106,8 +2106,8 @@ static void sendmail_thread(void* arg)
 				if((i=connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)))!=0) {
 					lprintf("!SendMail: ERROR %d (%d) connecting to SMTP server: %s"
 						,i,ERROR_VALUE, server);
-					sprintf(err,"Error %ld connecting to SMTP server: %s"
-						,ERROR_VALUE,server);
+					sprintf(err,"Error %d connecting to SMTP server: %s"
+						,(int)ERROR_VALUE,server);
 					continue;
 				}
 				success=TRUE;
