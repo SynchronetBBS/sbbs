@@ -241,6 +241,13 @@ int win32_getche(void)
 	return(ch);
 }
 
+#ifndef ENABLE_EXTENDED_FLAGS
+#define ENABLE_INSERT_MODE		0x0020
+#define ENABLE_QUICK_EDIT_MODE	0x0040
+#define ENABLE_EXTENDED_FLAGS	0x0080
+#define ENABLE_AUTO_POSITION	0x0100
+#endif
+
 int win32_initciolib(long inmode)
 {
 	DWORD conmode;
@@ -249,7 +256,7 @@ int win32_initciolib(long inmode)
 		return(0);
 	if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
 		return(0);
-	conmode&=~ENABLE_PROCESSED_INPUT;
+	conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
 	conmode|=ENABLE_MOUSE_INPUT;
 	if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode))
 		return(0);
