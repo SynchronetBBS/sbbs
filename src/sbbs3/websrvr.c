@@ -1197,6 +1197,7 @@ static BOOL parse_headers(http_session_t * session)
 			if(session->req.dynamic==IS_SSJS)  {
 				js_parse_post(session);
 			}
+			session->req.post_data[content_len]=0;
 		}
 		else  {
 			lprintf("%04d !ERROR Allocating %d bytes of memory",session->socket,content_len);
