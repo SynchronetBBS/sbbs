@@ -828,7 +828,10 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         FtpStopExecute(Sender);
     }
 
+    time_t start=time(NULL);
 	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled) {
+        if(time(NULL)-start>15)
+            break;
         Application->ProcessMessages();
         Sleep(1);
     }
