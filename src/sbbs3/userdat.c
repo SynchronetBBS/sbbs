@@ -103,7 +103,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 		return(-1); 
 	}
 	sprintf(userdat,"%suser/user.dat",cfg->data_dir);
-	if((file=nopen(userdat,O_RDONLY))==-1) {
+	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1) {
 		close(file);
 		memset(user,0,sizeof(user_t));
 		return(errno); 
@@ -372,7 +372,7 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_UNUSED+29,2,crlf);
 
 	sprintf(str,"%suser/user.dat", cfg->data_dir);
-	if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
+	if((file=nopen(str,O_WRONLY|O_CREAT|O_DENYNONE))==-1) {
 		return(errno);
 	}
 
@@ -609,7 +609,7 @@ uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen,
 
 	truncsp(dat);
 	sprintf(str,"%suser/user.dat", cfg->data_dir);
-	if((file=nopen(str,O_RDONLY))==-1)
+	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1)
 		return(0);
 	length=filelength(file);
 	for(l=0;l<length;l+=U_LEN) {
@@ -1014,7 +1014,7 @@ int DLLCALL getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *
 	if(!usernumber)
 		return(-1);
 	sprintf(path,"%suser/user.dat",cfg->data_dir);
-	if((file=nopen(path,O_RDONLY))==-1) 
+	if((file=nopen(path,O_RDONLY|O_DENYNONE))==-1) 
 		return(errno);
 	if(usernumber<1
 		|| filelength(file)<(long)((long)(usernumber-1L)*U_LEN)+(long)start) {
@@ -1065,7 +1065,7 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char 
 		return(-1);
 
 	sprintf(str2,"%suser/user.dat",cfg->data_dir);
-	if((file=nopen(str2,O_WRONLY))==-1)
+	if((file=nopen(str2,O_WRONLY|O_DENYNONE))==-1)
 		return(errno);
 
 	strcpy(str2,str);
@@ -1121,7 +1121,7 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 		return(0UL); 
 
 	sprintf(path,"%suser/user.dat",cfg->data_dir);
-	if((file=nopen(path,O_RDWR))==-1)
+	if((file=nopen(path,O_RDWR|O_DENYNONE))==-1)
 		return(0UL); 
 
 	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);

@@ -693,7 +693,7 @@ int sbbs_t::searchdn(char *search,int usernum)
 	if(!search[0])
 		return(usernum);
 	sprintf(userdat,"%suser/user.dat", cfg.data_dir);
-	if((file=nopen(userdat,O_RDONLY))==-1)
+	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
 		return(usernum);
 	while(i) {
 		lseek(file,(long)((long)(i-1)*U_LEN),0);
