@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 #else
 		"gmake"
 #endif
-		" install -f install/GNUmakefile";
+		" install -f install/GNUmakefile");
 	params.usebcc=FALSE;
 	SAFECOPY(params.cflags,"");
 	params.debug=FALSE;
