@@ -654,6 +654,7 @@ public:
 	void	qwk_success(ulong msgcnt, char bi, char prepack);
 	void	qwksetptr(uint subnum, char *buf, int reset);
 	void	qwkcfgline(char *buf,uint subnum);
+	int		set_qwk_flag(ulong flag);
 
 	/* pack_qwk.cpp */
 	bool	pack_qwk(char *packet, ulong *msgcnt, bool prepack);

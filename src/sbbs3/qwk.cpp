@@ -965,3 +965,18 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 }
 
 
+int sbbs_t::set_qwk_flag(ulong flag)
+{
+	int i;
+	char str[32];
+
+	if((i=getuserrec(&cfg,useron.number,U_QWK,8,str))!=0)
+		return(i);
+	useron.qwk=ahtoul(str);
+	useron.qwk|=flag;
+	if((i=putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16)))!=0)
+		return(i);
+
+	return(0);
+}
+
