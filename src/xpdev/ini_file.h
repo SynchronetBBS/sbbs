@@ -61,29 +61,29 @@ extern "C" {
 
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
-str_list_t	iniGetSectionList		(FILE* fp, const char* prefix);
+str_list_t	iniGetSectionList		(FILE*, const char* prefix);
 /* Read all key names and return as an allocated string list */
-str_list_t	iniGetKeyList			(FILE* fp, const char* section);
+str_list_t	iniGetKeyList			(FILE*, const char* section);
 /* Read all key and value pairs and return as a named string list */
 named_string_t**
-			iniGetNamedStringList	(FILE* fp, const char* section);
+			iniGetNamedStringList	(FILE*, const char* section);
 
 /* These functions read a single key of the specified type */
-char*		iniGetString	(FILE* fp, const char* section, const char* key, 
+char*		iniGetString	(FILE*, const char* section, const char* key, 
 							 const char* deflt, char* value);
-str_list_t	iniGetStringList(FILE* fp, const char* section, const char* key
+str_list_t	iniGetStringList(FILE*, const char* section, const char* key
 							,const char* sep, const char* deflt);
-long		iniGetInteger	(FILE* fp, const char* section, const char* key, 
+long		iniGetInteger	(FILE*, const char* section, const char* key, 
 							 long deflt);
-ushort		iniGetShortInt	(FILE* fp, const char* section, const char* key, 
+ushort		iniGetShortInt	(FILE*, const char* section, const char* key, 
 							 ushort deflt);
-ulong		iniGetIpAddress(FILE* fp, const char* section, const char* key, 
+ulong		iniGetIpAddress(FILE*, const char* section, const char* key, 
 							 ulong deflt);
-double		iniGetFloat	(FILE* fp, const char* section, const char* key, 
+double		iniGetFloat	(FILE*, const char* section, const char* key, 
 							 double deflt);
-BOOL		iniGetBool		(FILE* fp, const char* section, const char* key, 
+BOOL		iniGetBool		(FILE*, const char* section, const char* key, 
 							 BOOL deflt);
-ulong		iniGetBitField	(FILE* fp, const char* section, const char* key, 
+ulong		iniGetBitField	(FILE*, const char* section, const char* key, 
 							 ini_bitdesc_t* bitdesc, ulong deflt);
 
 /* Free string list returned from iniGet*List functions */
@@ -94,27 +94,29 @@ void*		iniFreeNamedStringList(named_string_t** list);
 
 
 /* File I/O Functions */
-str_list_t	iniReadFile(FILE* fp);
-BOOL		iniWriteFile(FILE* fp, const str_list_t list);
+str_list_t	iniReadFile(FILE*);
+BOOL		iniWriteFile(FILE*, const str_list_t);
 
 /* StringList functions */
-size_t		iniAddSection(str_list_t* list, const char* section);
-char*		iniSetString(str_list_t* list, const char* section, const char* key, const char* value
+size_t		iniAddSection(str_list_t*, const char* section);
+char*		iniSetString(str_list_t*, const char* section, const char* key, const char* value
 					,ini_style_t*);
-char*		iniSetInteger(str_list_t* list, const char* section, const char* key, long value
+char*		iniSetInteger(str_list_t*, const char* section, const char* key, long value
 					,ini_style_t*);
-char*		iniSetShortInt(str_list_t* list, const char* section, const char* key, ushort value
+char*		iniSetShortInt(str_list_t*, const char* section, const char* key, ushort value
 					,ini_style_t*);
-char*		iniSetHexInt(str_list_t* list, const char* section, const char* key, ulong value
+char*		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
-char*		iniSetFloat(str_list_t* list, const char* section, const char* key, double value
+char*		iniSetFloat(str_list_t*, const char* section, const char* key, double value
 					,ini_style_t*);
-char*		iniSetIpAddress(str_list_t* list, const char* section, const char* key, ulong value
+char*		iniSetIpAddress(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
-char*		iniSetBool(str_list_t* list, const char* section, const char* key, BOOL value
+char*		iniSetBool(str_list_t*, const char* section, const char* key, BOOL value
 					,ini_style_t*);
-char*		iniSetBitField(str_list_t* list, const char* section, const char* key, ulong value
-					,ini_bitdesc_t*, ini_style_t*);
+char*		iniSetBitField(str_list_t*, const char* section, const char* key, ini_bitdesc_t*, ulong value
+					,ini_style_t*);
+char*		iniSetStringList(str_list_t*, const char* section, const char* key
+					,const char* sep, str_list_t value, ini_style_t*);
 
 #if defined(__cplusplus)
 }
