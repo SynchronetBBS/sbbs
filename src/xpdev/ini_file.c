@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -170,7 +170,7 @@ char** iniReadStringList(FILE* fp, const char* section, const char* key
 	return(lp);
 }
 
-char** iniFreeStringList(char** list)
+void* iniFreeStringList(char** list)
 {
 	ulong	i;
 
@@ -179,6 +179,25 @@ char** iniFreeStringList(char** list)
 
 	for(i=0;list[i]!=NULL;i++)
 		free(list[i]);
+
+	free(list);
+	return(NULL);
+}
+
+void* iniFreeNamedStringList(named_string_t** list)
+{
+	ulong	i;
+
+	if(list==NULL)
+		return(NULL);
+
+	for(i=0;list[i]!=NULL;i++) {
+		if(list[i]->name!=NULL)
+			free(list[i]->name);
+		if(list[i]->value!=NULL)
+			free(list[i]->value);
+		free(list[i]);
+	}
 
 	free(list);
 	return(NULL);
@@ -230,7 +249,6 @@ char** iniReadSectionList(FILE* fp)
 
 char** iniReadKeyList(FILE* fp, const char* section)
 {
-
 	char*	p;
 	char*	tp;
 	char**	lp;
@@ -277,6 +295,71 @@ char** iniReadKeyList(FILE* fp, const char* section)
 
 	return(lp);
 }
+
+named_string_t**
+iniReadNamedStringList(FILE* fp, const char* section)
+{
+	char*	p;
+	char*	name;
+	char*	value;
+	char*	tp;
+	char	str[MAX_LINE_LEN];
+	ulong	items=0;
+	named_string_t** lp;
+	named_string_t** np;
+
+	if((lp=malloc(sizeof(named_string_t*)))==NULL)
+		return(NULL);
+
+	*lp=NULL;
+
+	if(fp==NULL)
+		return(lp);
+
+	rewind(fp);
+
+	if(!find_section(fp,section))
+		return(lp);
+
+	while(!feof(fp)) {
+		if(fgets(str,sizeof(str),fp)==NULL)
+			break;
+		p=str;
+		while(*p && *p<=' ') p++;
+		if(*p==';')
+			continue;
+		if(*p=='[')
+			break;
+		tp=strchr(p,'=');
+		if(tp==NULL)
+			continue;
+		*tp=0;
+		truncsp(p);
+		name=p;
+		p=tp+1;
+		while(*p && *p<=' ') p++;
+		truncsp(p);
+		value=p;
+		if((np=realloc(lp,sizeof(named_string_t*)*(items+2)))==NULL)
+			break;
+		lp=np;
+		if((lp[items]=malloc(sizeof(named_string_t)))==NULL)
+			break;
+		if((lp[items]->name=malloc(strlen(name)+1))==NULL)
+			break;
+		strcpy(lp[items]->name,name);
+		if((lp[items]->value=malloc(strlen(value)+1))==NULL)
+			break;
+		strcpy(lp[items]->value,value);
+		items++;
+	}
+
+	lp[items]=NULL;	/* terminate list */
+
+	return(lp);
+}
+
+/* These functions read a single key of the specified type */
 
 long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 {
