@@ -412,11 +412,16 @@ void sbbs_t::newuser()
 		fclose(stream); }
 
 	j=lastuser(&cfg);		/* Check against data file */
-	if(i<=j) {			/* Overwriting existing user */
+
+	if(i>j+1) {				/* Corrupted name.dat? */
+		errormsg(WHERE,ERR_CHK,"name.dat",i);
+		i=j+1;
+	} else if(i<=j) {			/* Overwriting existing user */
 		getuserrec(&cfg,i,U_MISC,8,str);
 		misc=ahtoul(str);
 		if(!(misc&DELETED)) /* Not deleted? Set usernumber to end+1 */
-			i=j+1; }
+			i=j+1; 
+	}
 
 	useron.number=i;
 	if((i=putuserdat(&cfg,&useron))!=0) {
