@@ -53,6 +53,7 @@ extern "C" {
 #define LINK_LIST_MALLOC		(1<<0)	/* List/node allocated with malloc() */
 #define LINK_LIST_ALWAYS_FREE	(1<<1)	/* Always free node data when removing */
 #define LINK_LIST_MUTEX			(1<<2)	/* Mutex protected linked-list */
+#define LINK_LIST_NODE_LOCKED	(1<<3)	/* Node is locked */
 
 typedef struct list_node {
 	void*				data;		/* pointer to some kind of data */
@@ -74,13 +75,13 @@ typedef struct link_list {
 
 /* Initialization, Allocation, and Freeing of Lists and Nodes */
 link_list_t*	listInit(link_list_t* /* NULL to auto-allocate */, long flags);
-link_list_t*	listFree(link_list_t*);
-void			listFreeNodes(link_list_t*);
-void			listFreeNodeData(list_node_t* node);
+BOOL			listFree(link_list_t*);
+long			listFreeNodes(link_list_t*);
+BOOL			listFreeNodeData(list_node_t* node);
 
 /* Lock/unlock mutex-protoected linked lists */
-void			listLock(link_list_t*);
-void			listUnlock(link_list_t*);
+void			listLock(const link_list_t*);
+void			listUnlock(const link_list_t*);
 
 /* Return count or index of nodes, or -1 on error */
 long			listCountNodes(const link_list_t*);
@@ -106,6 +107,11 @@ list_node_t*	listLastNode(const link_list_t*);
 list_node_t*	listNextNode(const list_node_t*);
 list_node_t*	listPrevNode(const list_node_t*);
 void*			listNodeData(const list_node_t*);
+
+/* Primitive node locking */
+void			listLockNode(list_node_t*);
+void			listUnlockNode(list_node_t*);
+BOOL			listNodeIsLocked(const list_node_t*);
 
 /* Add node to list, returns pointer to new node or NULL on error */
 list_node_t*	listAddNode(link_list_t*, void* data, list_node_t* after /* NULL=insert */);
