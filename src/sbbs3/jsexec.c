@@ -592,6 +592,10 @@ long js_exec(const char *fname, char** args)
 	JS_DefineProperty(js_cx, js_glob, "argc", INT_TO_JSVAL(argc)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
+	JS_DefineProperty(js_cx, js_glob, "jsexec_revision"
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,revision))
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
 	if(fp==stdin) 	 /* Using stdin for script source */
