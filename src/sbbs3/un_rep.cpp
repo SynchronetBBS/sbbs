@@ -61,7 +61,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		strcpy(str,repfile);
 	else
 		sprintf(str,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
-	if(!fexist(str)) {
+	if(!fexistcase(str)) {
 		bputs(text[QWKReplyNotReceived]);
 		logline("U!",AttemptedToUploadREPpacket);
 		logline(nulstr,"REP file not received");
