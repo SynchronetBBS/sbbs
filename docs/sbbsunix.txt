@@ -506,6 +506,13 @@ Default Configuration (SCFG) Screen-shots
 16: Place Drop File In         Node Directory
 
 
+SBBSecho zip/unzip configuration (ctrl/sbbsecho.cfg)
+================================
+PACKER ZIP 0 504B
+  PACK zip -j %f %s
+  UNPACK unzip -o -j %f -d %s
+
+
 Send comments/questions to rob@synchro.net
 
 /* End of sbbsunix.txt */
