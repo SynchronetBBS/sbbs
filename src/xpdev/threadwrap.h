@@ -73,6 +73,22 @@ extern "C" {
 	#define pthread_mutex_unlock(pmtx)	ReleaseMutex(*(pmtx))
 	#define	pthread_mutex_destroy(pmtx)	CloseHandle(*(pmtx))
 
+#elif defined(__OS2__)	/* These have *not* been tested! */
+
+	/* POSIX semaphores */
+	typedef HEV sem_t;
+	#define	sem_init(psem,ps,v)			DosCreateEventSem(NULL,psem,0,0);
+	#define sem_wait(psem)				DosWaitEventSem(*(psem),-1)
+	#define sem_post(psem)				DosPostEventSem(*(psem))
+	#define sem_destroy(psem)			DosCloseEventSem(*(psem))
+
+	/* POSIX mutexes */
+	typedef HEV pthread_mutex_t;
+	#define pthread_mutex_init(pmtx,v)	DosCreateMutexSem(NULL,pmtx,0,0)
+	#define pthread_mutex_lock(pmtx)	DosRequestMutexSem(*(psem),-1)
+	#define pthread_mutex_unlock(pmtx)	DosReleaseMutexSem(*(psem))
+	#define	pthread_mutex_destroy(pmtx)	DosCloseMutexSem(*(psem))
+
 #else
 
 	#error "Need semaphore wrappers."
