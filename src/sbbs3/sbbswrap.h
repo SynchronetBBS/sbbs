@@ -122,7 +122,7 @@ extern "C" {
 #ifdef __unix__
 
 	#include <semaphore.h>	/* POSIX 1003.1b semaphores */
-	ulong _beginthread(void( __cdecl *start_address )( void * )
+	ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist);
 
 #elif defined(_WIN32)	/* semaphores */
