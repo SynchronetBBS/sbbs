@@ -17,6 +17,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)chk_ar.$(OFILE)\
 			$(LIBODIR)$(SLASH)con_hi.$(OFILE)\
 			$(LIBODIR)$(SLASH)con_out.$(OFILE)\
+			$(LIBODIR)$(SLASH)crc16.$(OFILE)\
 			$(LIBODIR)$(SLASH)crc32.$(OFILE)\
 			$(LIBODIR)$(SLASH)dat_rec.$(OFILE)\
 			$(LIBODIR)$(SLASH)data.$(OFILE)\
