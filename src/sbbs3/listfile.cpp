@@ -332,7 +332,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 				if((int)(i=batchflagprompt(dirnum,bf,letter-'A'+1,l/F_IXBSIZE))<1) {
 					FREE((char *)ixbbuf);
 					FREE((char *)datbuf);
-					if(i==-1)
+					if((int)i==-1)
 						return(-1);
 					else
 						return(found); }
@@ -770,7 +770,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 							,j+1,cfg.dir[usrdir[ml][j]]->lname);
 					SYNC;
 					bprintf(text[MoveToDirPrompt],usrdirs[ml]);
-					if((md=getnum(usrdirs[ml]))==-1)
+					if((int)(md=getnum(usrdirs[ml]))==-1)
 						return(2);
 					if(!md)
 						md=usrdirs[ml]-1;
@@ -1134,7 +1134,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						bprintf(text[MoveToLibLstFmt],i+1,cfg.lib[usrlib[i]]->lname);
 					SYNC;
 					bprintf(text[MoveToLibPrompt],cfg.dir[dirnum]->lib+1);
-					if((i=getnum(usrlibs))==-1)
+					if((int)(i=getnum(usrlibs))==-1)
 						continue;
 					if(!i)
 						i=cfg.dir[dirnum]->lib;
@@ -1146,7 +1146,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							,j+1,cfg.dir[usrdir[i][j]]->lname);
 					SYNC;
 					bprintf(text[MoveToDirPrompt],usrdirs[i]);
-					if((j=getnum(usrdirs[i]))==-1)
+					if((int)(j=getnum(usrdirs[i]))==-1)
 						continue;
 					if(!j)
 						j=usrdirs[i]-1;
