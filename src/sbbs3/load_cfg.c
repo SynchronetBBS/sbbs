@@ -42,7 +42,6 @@ static void prep_cfg(scfg_t* cfg);
 static void free_attr_cfg(scfg_t* cfg);
 
 char *	readtext(long *line, FILE *stream);
-/*int 	lprintf(char *fmt, ...);*/
 
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
