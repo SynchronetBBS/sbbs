@@ -29,16 +29,16 @@ SCFG needs to be told the location of your Synchronet ctrl directory, where
 it expects to find the Synchronet configuration (.cnf) files. This can be done
 by passing the path to your ctrl directory on the SCFG command line. Example:
 
-	scfg /sbbs/ctrl
+    scfg /sbbs/ctrl
 or:
-	scfg /usr/local/sbbs/ctrl
+    scfg /usr/local/sbbs/ctrl
 
 or by setting the SBBSCTRL environment variable before running SCFG.  Example:
 
-Unix (bash):	export SBBSCTRL=/sbbs/ctrl
-Unix (sh):	SBBSCTRL=/sbbs/ctrl && export SBBSCTRL
-Unix (csh):	setenv SBBSCTRL /sbbs/ctrl
-Win32:		set SBBSCTRL=/sbbs/ctrl
+Unix (bash): export SBBSCTRL=/sbbs/ctrl
+Unix (sh):   SBBSCTRL=/sbbs/ctrl && export SBBSCTRL
+Unix (csh):  setenv SBBSCTRL /sbbs/ctrl
+Win32:       set SBBSCTRL=/sbbs/ctrl
 
 Generally speaking, if you are running Linux, your shell is bash.  You can
 verify your shell by typing ``echo $SHELL'' at a command line.
@@ -120,7 +120,7 @@ The default initalization file is ctrl/sbbs.ini. A different initialization
 filename may be used by specifying the path and filename on the sbbs
 command-line. Example:
 
-	sbbs /sbbs/ctrl/mybbs.ini
+    sbbs /sbbs/ctrl/mybbs.ini
 
 If the path and filename of the initialization file is not passed on the
 command-line, sbbs will use the SBBSCTRL environment variable to determine
@@ -146,7 +146,7 @@ via syslog rather than the local console, set Daemonize=True in this section.
 
 To configure syslog and the LogFacility, a good default to use is
 LogFacility=3 Then, in /etc/syslog.conf you will need to add the line:
-local3.*				/var/log/synchronet.log
+local3.*                 /var/log/synchronet.log
 
 You will have to create this file manually initially by running:
 touch /var/log/synchronet.log
@@ -193,7 +193,7 @@ Installing the termcap file:
    http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/termcap
 2) Enter the command ``cat termcap >> /etc/termcap''
 3) *** FreeBSD Only *** run the command:
-	``cap_mkdb -f /usr/share/misc/termcap /etc/termcap''
+   ``cap_mkdb -f /usr/share/misc/termcap /etc/termcap''
 
 Once the terminal capability files are installed, edit the ExternalTermANSI
 value in the [BBS] section of your .ini file to read:

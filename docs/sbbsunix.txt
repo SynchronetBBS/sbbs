@@ -340,7 +340,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    D. If (and only if) the last line of the output looks like this:
       '#2  0x00000000 in ?? ()' (The number at the start will vary)
       display backtraces of all threads:
-	  (gdb) thread apply all bt
+      (gdb) thread apply all bt
 
    E. Copy and paste in e-mail to rob[at]synchro[dot]net or post in one of the
       Synchronet discussion groups (http://www.synchro.net/docs/support.html).
