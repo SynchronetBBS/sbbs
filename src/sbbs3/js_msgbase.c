@@ -57,7 +57,6 @@ static JSBool
 js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		code;
-	int			i;
 	JSString*	js_str;
 	private_t*	p;
 
@@ -86,7 +85,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	else
 		p->smb.retry_time=scfg->smb_retry_time;
 
-	if((i=smb_open(&(p->smb)))!=0) 
+	if(smb_open(&(p->smb))!=0) 
 		return(JS_FALSE);
 
 	p->debug=JS_FALSE;
