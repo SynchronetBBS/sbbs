@@ -38,6 +38,9 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include "uifc.h"
+#ifdef __QNX__
+#include <strings.h>
+#endif
 
 #if defined(__OS2__)
 
@@ -84,7 +87,9 @@ enum {
 #define BLINK	128
 #define SH_DENYWR	1
 #define SH_DENYRW	2
+#ifndef O_BINARY
 #define O_BINARY	0
+#endif
 
 static char hfclr,hbclr,hclr,lclr,bclr,cclr,show_free_mem=0;
 static char* helpfile=0;
@@ -106,7 +111,9 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill);
 static short curses_color(short color);
 static void textattr(unsigned char attr);
 static int kbhit(void);
+#ifndef __QNX__
 static void delay(int msec);
+#endif
 static int ugetstr(char *outstr, int max, long mode);
 static int wherey(void);
 static int wherex(void);
@@ -2047,10 +2054,12 @@ static int kbhit(void)
 	return(select(fileno(stdin)+1,&rfds,NULL,NULL,&timeout));
 }
 
+#ifndef __QNX__
 static void delay(msec)
 {
 	usleep(msec*1000);
 }
+#endif
 
 static int wherey(void)
 {
