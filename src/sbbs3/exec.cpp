@@ -550,6 +550,9 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	if(!(sbbs->js_loop%JAVASCRIPT_YIELD_FREQUENCY))
 		mswait(1);
 
+	if(!(sbbs->js_loop%JAVASCRIPT_GC_FREQUENCY))
+		JS_MaybeGC(cx);
+
     return(JS_TRUE);
 }
 
