@@ -63,6 +63,11 @@ $(LIBODIR):
 $(EXEODIR):
 	if not exist $(EXEODIR) mkdir $(EXEODIR)
 
+# Monolithic Synchronet executable Build Rule
+$(SBBSMONO): sbbscon.c $(OBJS) $(LIBODIR)\ver.$(OFILE) $(LIBODIR)\ftpsrvr.$(OFILE) \
+	$(LIBODIR)\mailsrvr.$(OFILE) $(LIBODIR)\mxlookup.$(OFILE)
+	$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $** $(LIBS)
+
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
     @echo Linking $< ...
@@ -84,7 +89,7 @@ $(SBBSCON): sbbscon.c $(SBBSLIB)
 	$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # Baja Utility
-$(BAJA): baja.c ars.c
+$(BAJA): baja.c ars.c crc32.c
 	@echo Compiling $** ...
 	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
@@ -104,7 +109,7 @@ $(CHKSMB): chksmb.c smblib.c smbwrap.c
 	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # SMB Utility
-$(SMBUTIL): smbutil.c smblib.c smbwrap.c smbtxt.c lzh.c
+$(SMBUTIL): smbutil.c smblib.c smbwrap.c smbtxt.c crc32.c lzh.c
 	@echo Compiling $** ...
 	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
