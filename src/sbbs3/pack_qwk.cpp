@@ -87,7 +87,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	}
 
 	if(useron.rest&FLAG('Q') && useron.qwk&QWK_RETCTLA)
-		useron.qwk|=(QWK_NOINDEX|QWK_NOCTRL|QWK_VIA|QWK_TZ);
+		useron.qwk|=(QWK_NOINDEX|QWK_NOCTRL|QWK_VIA|QWK_TZ|QWK_MSGID);
 
 	if(useron.qwk&QWK_EXPCTLA)
 		mode=A_EXPAND;
