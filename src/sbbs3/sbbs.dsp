@@ -237,6 +237,14 @@ SOURCE=.\js_global.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\js_msg_area.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\js_msgbase.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\js_socket.c
 # End Source File
 # Begin Source File
