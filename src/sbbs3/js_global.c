@@ -362,19 +362,6 @@ js_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-
-static char* dupestr(char* str)
-{
-	char* p;
-
-	p = (char*)malloc(strlen(str)+1);
-
-	if(p == NULL)
-		return(NULL);
-
-	return(strcpy(p,str));
-}
-
 static JSBool
 js_ascii_str(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -385,7 +372,7 @@ js_ascii_str(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	if((p=dupestr(str))==NULL)
+	if((p=strdup(str))==NULL)
 		return(JS_FALSE);
 
 	ascii_str(p);
@@ -410,7 +397,7 @@ js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	if((p=dupestr(str))==NULL)
+	if((p=strdup(str))==NULL)
 		return(JS_FALSE);
 
 	strip_ctrl(p);
@@ -434,7 +421,7 @@ js_strip_exascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	if((p=dupestr(str))==NULL)
+	if((p=strdup(str))==NULL)
 		return(JS_FALSE);
 
 	strip_exascii(p);
@@ -615,7 +602,7 @@ js_rot13(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	if((p=dupestr(str))==NULL)
+	if((p=strdup(str))==NULL)
 		return(JS_FALSE);
 
 	js_str = JS_NewStringCopyZ(cx, rot13(p));
@@ -1633,7 +1620,7 @@ js_truncsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	if((p=dupestr(str))==NULL)
+	if((p=strdup(str))==NULL)
 		return(JS_FALSE);
 
 	truncsp(p);
@@ -1661,8 +1648,7 @@ js_truncstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((set=JS_GetStringBytes(JS_ValueToString(cx, argv[1])))==NULL) 
 		return(JS_FALSE);
 
-
-	if((p=dupestr(str))==NULL)
+	if((p=strdup(str))==NULL)
 		return(JS_FALSE);
 
 	truncstr(p,set);
@@ -1675,6 +1661,27 @@ js_truncstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
+
+static JSBool
+js_backslash(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		path[MAX_PATH+1];
+	char*		str;
+	JSString*	js_str;
+
+	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+	
+	SAFECOPY(path,str);
+	backslash(path);
+
+	if((js_str = JS_NewStringCopyZ(cx, path))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
 
 static JSBool
 js_getfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -2276,17 +2283,22 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"truncsp",			js_truncsp,			1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("truncate white-space characters off end of string")
+	,JSDOCSTR("truncate (trim) white-space characters off end of string")
 	,310
-	},		
+	},
 	{"truncstr",		js_truncstr,		2,	JSTYPE_STRING,	JSDOCSTR("string text, charset")
-	,JSDOCSTR("truncate string at first char in <i>charset</i>")
+	,JSDOCSTR("truncate (trim) string at first char in <i>charset</i>")
 	,310
 	},		
 	{"lfexpand",		js_lfexpand,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("expand line-feeds (LF) to carriage-return/line-feeds (CRLF)")
 	,310
-	},		
+	},
+	{"backslash",		js_backslash,		1,	JSTYPE_STRING,	JSDOCSTR("string path")
+	,JSDOCSTR("returns directory path with trailing (platform-specific) path delimeter "
+		"(i.e. \"slash\" or \"backslash\")")
+	,311
+	},
 	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("string path")
 	,JSDOCSTR("returns filename portion of passed path string")
 	,311
