@@ -243,7 +243,9 @@ select Yes.
 		if(j==0)
 			for(j=0;j<cfg.total_subs;j++)
 				if(cfg.sub[j]->grp==i) {
-					sprintf(str,"%s.s*",cfg.sub[j]->code);
+					sprintf(str,"%s%s.s*"
+						,cfg.grp[cfg.sub[j]->grp]->code_prefix
+						,cfg.sub[j]->code_suffix);
 					strlwr(str);
 					if(!cfg.sub[j]->data_dir[0])
 						sprintf(tmp,"%ssubs/",cfg.data_dir);
@@ -288,6 +290,7 @@ select Yes.
 		j=0;
 		sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.grp[i]->lname);
 		sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.grp[i]->sname);
+		sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.grp[i]->code_prefix);
 		sprintf(opt[j++],"%-27.27s%.40s","Access Requirements"
 			,cfg.grp[i]->arstr);
 		strcpy(opt[j++],"Clone Options");
@@ -334,10 +337,23 @@ main menu and reading messages prompts.
 					,cfg.grp[i]->sname,LEN_GSNAME,K_EDIT);
 				break;
 			case 2:
+				SETHELP(WHERE);
+/*
+`Internal Code Prefix:`
+
+This is an `optional` code prefix used to help generate unique internal
+codes for the sub-boards in this message group. If this option
+is used, sub-board internal codes will be made up of this prefix and the
+specified code suffix for each sub-board.
+*/
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
+					,cfg.grp[i]->code_prefix,LEN_CODE,K_EDIT|K_UPPER);
+				break;
+			case 3:
 				sprintf(str,"%s Group",cfg.grp[i]->sname);
 				getar(str,cfg.grp[i]->arstr);
 				break;
-			case 3: 	/* Clone Options */
+			case 4: 	/* Clone Options */
 				j=0;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -381,7 +397,7 @@ of CRCs, maximum age of messages, storage method, and data directory.
 
 								cfg.sub[j]->faddr=cfg.sub[k]->faddr; } } }
 				break;
-			case 4:
+			case 5:
 				k=0;
 				ported=0;
 				q=uifc.changes;
@@ -447,32 +463,44 @@ export the current message group into.
 						continue;
 					ported++;
 					if(k==1) {		/* AREAS.BBS *.MSG */
-						sprintf(str,"%s%s/",cfg.echomail_dir,cfg.sub[j]->code);
+						sprintf(str,"%s%s%s/"
+							,cfg.echomail_dir
+							,cfg.grp[cfg.sub[j]->grp]->code_prefix
+							,cfg.sub[j]->code_suffix);
 						fprintf(stream,"%-30s %-20s %s\r\n"
 							,str,stou(cfg.sub[j]->sname),str2);
 						continue; }
 					if(k==2) {		/* AREAS.BBS SMB */
 						if(!cfg.sub[j]->data_dir[0])
-							sprintf(str,"%ssubs/%s",cfg.data_dir,cfg.sub[j]->code);
+							sprintf(str,"%ssubs/%s%s"
+								,cfg.data_dir
+								,cfg.grp[cfg.sub[j]->grp]->code_prefix
+								,cfg.sub[j]->code_suffix);
 						else
-							sprintf(str,"%s%s",cfg.sub[j]->data_dir,cfg.sub[j]->code);
+							sprintf(str,"%s%s%s"
+								,cfg.sub[j]->data_dir
+								,cfg.grp[cfg.sub[j]->grp]->code_prefix
+								,cfg.sub[j]->code_suffix);
 						fprintf(stream,"%-30s %-20s %s\r\n"
 							,str,stou(cfg.sub[j]->sname),str2);
                         continue; }
 					if(k==3) {		/* AREAS.BBS SBBSECHO */
-						fprintf(stream,"%-30s %-20s %s\r\n"
-							,cfg.sub[j]->code,stou(cfg.sub[j]->sname),str2);
+						fprintf(stream,"%s%-30s %-20s %s\r\n"
+							,cfg.grp[cfg.sub[j]->grp]->code_prefix
+							,cfg.sub[j]->code_suffix
+							,stou(cfg.sub[j]->sname)
+							,str2);
 						continue; }
 					if(k==4) {		/* FIDONET.NA */
 						fprintf(stream,"%-20s %s\r\n"
 							,stou(cfg.sub[j]->sname),cfg.sub[j]->lname);
 						continue; }
-					fprintf(stream,"%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n"
+					fprintf(stream,"%s\r\n%s\r\n%s\r\n%s%s\r\n%s\r\n%s\r\n"
 							"%s\r\n%s\r\n%s\r\n"
 						,cfg.sub[j]->lname
 						,cfg.sub[j]->sname
 						,cfg.sub[j]->qwkname
-						,cfg.sub[j]->code
+						,cfg.grp[cfg.sub[j]->grp]->code_prefix,cfg.sub[j]->code_suffix
 						,cfg.sub[j]->data_dir
 						,cfg.sub[j]->arstr
 						,cfg.sub[j]->read_arstr
@@ -501,7 +529,7 @@ export the current message group into.
 				uifc.msg(str);
 				uifc.changes=q;
 				break;
-			case 5:
+			case 6:
 				ported=0;
 				k=0;
 				strcpy(opt[k++],"SUBS.TXT    (Synchronet)");
@@ -558,7 +586,7 @@ import into the current message group.
                             else p=str;
 							//sprintf(tmpsub.echopath,"%.*s",LEN_DIR,str);
 							p++;
-							sprintf(tmpsub.code,"%.8s",p);
+							sprintf(tmpsub.code_suffix,"%.8s",p);
 							while(*p && *p<=SP) p++;
 							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,p);
 							p=strchr(tmpsub.sname,SP);
@@ -576,7 +604,7 @@ import into the current message group.
                             else p=str;
 							sprintf(tmpsub.data_dir,"%.*s",LEN_DIR,str);
 							p++;
-							sprintf(tmpsub.code,"%.8s",p);
+							sprintf(tmpsub.code_suffix,"%.8s",p);
 							while(*p && *p<=SP) p++;
 							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,p);
 							p=strchr(tmpsub.sname,SP);
@@ -591,7 +619,7 @@ import into the current message group.
 							p=str;
 							while(*p && *p>SP) p++;
 							*p=0;
-							sprintf(tmpsub.code,"%.8s",str);
+							sprintf(tmpsub.code_suffix,"%.8s",str);
 							p++;
 							while(*p && *p<=SP) p++;
 							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,p);
@@ -607,7 +635,7 @@ import into the current message group.
                             p=str;
 							while(*p && *p>SP) p++;
 							*p=0;
-							sprintf(tmpsub.code,"%.8s",str);
+							sprintf(tmpsub.code_suffix,"%.8s",str);
 							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,utos(str));
 							sprintf(tmpsub.qwkname,"%.10s",tmpsub.sname);
 							p++;
@@ -627,7 +655,7 @@ import into the current message group.
 						sprintf(tmpsub.qwkname,"%.*s",10,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
-						sprintf(tmpsub.code,"%.*s",8,str);
+						sprintf(tmpsub.code_suffix,"%.*s",8,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
 						sprintf(tmpsub.data_dir,"%.*s",LEN_DIR,str);
@@ -683,15 +711,15 @@ import into the current message group.
 							if(!fgets(str,128,stream)) break;
 							truncsp(str); } }
 
-					truncsp(tmpsub.code);
-                    strip_slash(tmpsub.code);
+					truncsp(tmpsub.code_suffix);
+                    strip_slash(tmpsub.code_suffix);
 					truncsp(tmpsub.sname);
 					truncsp(tmpsub.lname);
 					truncsp(tmpsub.qwkname);
 					for(j=0;j<cfg.total_subs;j++) {
 						if(cfg.sub[j]->grp!=i)
 							continue;
-						if(!stricmp(cfg.sub[j]->code,tmpsub.code))
+						if(!stricmp(cfg.sub[j]->code_suffix,tmpsub.code_suffix))
 							break; }
 					if(j==cfg.total_subs) {
 
@@ -720,7 +748,7 @@ import into the current message group.
                         cfg.sub[j]->grp=i;
 						if(cfg.total_faddrs)
 							cfg.sub[j]->faddr=cfg.faddr[0];
-						strcpy(cfg.sub[j]->code,tmpsub.code);
+						strcpy(cfg.sub[j]->code_suffix,tmpsub.code_suffix);
 						strcpy(cfg.sub[j]->sname,tmpsub.sname);
 						strcpy(cfg.sub[j]->lname,tmpsub.lname);
 						strcpy(cfg.sub[j]->qwkname,tmpsub.qwkname);
@@ -740,7 +768,7 @@ import into the current message group.
                 uifc.msg(str);
 				break;
 
-			case 6:
+			case 7:
                 sub_cfg(i);
 				break; } } }
 

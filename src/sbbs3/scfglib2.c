@@ -304,7 +304,11 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		get_str(cfg->lib[i]->parent_path,instream);
 
-		for(j=0;j<8;j++)
+		get_str(cfg->lib[i]->code_prefix,instream);
+
+		get_int(c,instream);
+
+		for(j=0;j<3;j++)
 			get_int(n,instream);	/* 0x0000 */
 
 		for(j=0;j<16;j++)
@@ -344,7 +348,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		else if(!stricmp(cfg->dir[i]->sname,"OFFLINE"))	/* Offline files dir */
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
-		get_str(cfg->dir[i]->code,instream);
+		get_str(cfg->dir[i]->code_suffix,instream);
 
 		get_str(cfg->dir[i]->data_dir,instream);
 

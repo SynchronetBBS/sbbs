@@ -422,8 +422,11 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		put_str(cfg->grp[i]->lname,stream);
 		put_str(cfg->grp[i]->sname,stream);
 		put_str(cfg->grp[i]->arstr,stream);
+		put_str(cfg->grp[i]->code_prefix,stream);
+		c=0;
+		put_int(c,stream);
 		n=0;
-		for(j=0;j<32;j++)
+		for(j=0;j<27;j++)
 			put_int(n,stream);
 		n=(short)0xffff;
 		for(j=0;j<16;j++)
@@ -445,7 +448,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		put_str(cfg->sub[i]->lname,stream);
 		put_str(cfg->sub[i]->sname,stream);
 		put_str(cfg->sub[i]->qwkname,stream);
-		put_str(cfg->sub[i]->code,stream);
+		put_str(cfg->sub[i]->code_suffix,stream);
 #if 1
 		if(cfg->sub[i]->data_dir[0]) {
 			backslash(cfg->sub[i]->data_dir);
@@ -482,7 +485,8 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			else
 				sprintf(smb.file,"%s",cfg->sub[i]->data_dir);
 			prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
-			strcat(smb.file,cfg->sub[i]->code);
+			strcat(smb.file,cfg->grp[cfg->sub[i]->grp]->code_prefix);
+			strcat(smb.file,cfg->sub[i]->code_suffix);
 			if(smb_open(&smb)!=0) {
 				/* errormsg(WHERE,ERR_OPEN,smb.file,x); */
 				continue; 
@@ -784,9 +788,12 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 		put_str(cfg->lib[i]->sname,stream);
 		put_str(cfg->lib[i]->arstr,stream);
 		put_str(cfg->lib[i]->parent_path,stream);
+		put_str(cfg->lib[i]->code_prefix,stream);
 
+		c=0;
+		put_int(c,stream);
 		n=(short)0x0000;
-		for(j=0;j<8;j++)
+		for(j=0;j<3;j++)
 			put_int(n,stream); 
 
 		n=(short)0xffff;
@@ -803,7 +810,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				put_int(cfg->dir[i]->lib,stream);
 				put_str(cfg->dir[i]->lname,stream);
 				put_str(cfg->dir[i]->sname,stream);
-				put_str(cfg->dir[i]->code,stream);
+				put_str(cfg->dir[i]->code_suffix,stream);
 #if 1
 				if(cfg->dir[i]->data_dir[0]) {
 					backslash(cfg->dir[i]->data_dir);
@@ -821,7 +828,10 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				if(cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path,cfg->dir[i]->path);
 					if(!path[0])		/* no file storage path specified */
-						sprintf(path,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
+						sprintf(path,"%sdirs/%s%s/"
+							,cfg->data_dir
+							,cfg->lib[cfg->dir[i]->lib]->code_prefix
+							,cfg->dir[i]->code_suffix);
 					else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
 						SAFECOPY(path,cfg->lib[cfg->dir[i]->lib]->parent_path);
 						prep_dir(cfg->ctrl_dir,path,sizeof(path));

@@ -166,9 +166,7 @@ void prep_cfg(scfg_t* cfg)
 #endif
 
 	for(i=0;i<cfg->total_subs;i++) {
-#ifdef __unix__
-		strlwr(cfg->sub[i]->code); /* temporary Unix-compatibility hack */
-#endif
+
 		if(!cfg->sub[i]->data_dir[0])	/* no data storage path specified */
 			sprintf(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->sub[i]->data_dir, sizeof(cfg->sub[i]->data_dir));
@@ -184,6 +182,13 @@ void prep_cfg(scfg_t* cfg)
 		/* default origin line */
 		if(!cfg->sub[i]->origline[0])
 			strcpy(cfg->sub[i]->origline,cfg->origline);
+
+		/* A sub-board's internal code is the combination of the grp's code_prefix & the sub's code_suffix */
+		sprintf(cfg->sub[i]->code,"%s%s"
+			,cfg->grp[cfg->sub[i]->grp]->code_prefix
+			,cfg->sub[i]->code_suffix);
+
+		strlwr(cfg->sub[i]->code); 		/* data filenames are all lowercase */
 	}
 
 	for(i=0;i<cfg->total_libs;i++) {
@@ -192,9 +197,6 @@ void prep_cfg(scfg_t* cfg)
 	}
 
 	for(i=0;i<cfg->total_dirs;i++) {
-#ifdef __unix__
-		strlwr(cfg->dir[i]->code); 	/* temporary Unix-compatibility hack */
-#endif
 
 		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
 			sprintf(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
@@ -207,29 +209,35 @@ void prep_cfg(scfg_t* cfg)
 		else
 			prep_dir(cfg->ctrl_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 
+		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
+		sprintf(cfg->dir[i]->code,"%s%s"
+			,cfg->lib[cfg->dir[i]->lib]->code_prefix
+			,cfg->dir[i]->code_suffix);
+
+		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
+
 		prep_path(cfg->dir[i]->upload_sem);
 	}
 
-#ifdef __unix__
+
+	/* make data filenames are all lowercase */
 	for(i=0;i<cfg->total_shells;i++)
-		strlwr(cfg->shell[i]->code);	/* temporary Unix-compatibility hack */
+		strlwr(cfg->shell[i]->code);
 
 	for(i=0;i<cfg->total_gurus;i++)
-		strlwr(cfg->guru[i]->code); 	/* temporary Unix-compatibility hack */
+		strlwr(cfg->guru[i]->code); 
 
 	for(i=0;i<cfg->total_txtsecs;i++)
-		strlwr(cfg->txtsec[i]->code); 	/* temporary Unix-compatibility hack */
+		strlwr(cfg->txtsec[i]->code);
 
 	for(i=0;i<cfg->total_xtrnsecs;i++)
-		strlwr(cfg->xtrnsec[i]->code); 	/* temporary Unix-compatibility hack */
-#endif
+		strlwr(cfg->xtrnsec[i]->code);
+
 	for(i=0;i<cfg->total_xtrns;i++) {
 		prep_dir(cfg->ctrl_dir, cfg->xtrn[i]->path, sizeof(cfg->xtrn[i]->path));
 	}
 	for(i=0;i<cfg->total_events;i++) {
-#ifdef __unix__
-		strlwr(cfg->event[i]->code); 	/* temporary Unix-compatibility hack */
-#endif
+		strlwr(cfg->event[i]->code); 	/* data filenames are all lowercase */
 		prep_dir(cfg->ctrl_dir, cfg->event[i]->dir, sizeof(cfg->event[i]->dir));
 	}
 

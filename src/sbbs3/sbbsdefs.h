@@ -549,9 +549,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_MISC		U_SEX+1 		/* Miscellaneous flags in 8byte hex */
 #define U_OLDXEDIT	U_MISC+8 		/* External editor (Version 1 method  */
 #define U_LEECH 	U_OLDXEDIT+2 	/* two hex digits - leech attempt count */
-#define U_CURSUB	U_LEECH+2  	/* Current sub (internal code  */
-#define U_CURDIR	U_CURSUB+8 	/* Current dir (internal code  */
-#define U_CURXTRN	U_CURDIR+8 	/* unused */
+#define U_CURSUB	U_LEECH+2  	/* Current sub (internal code)  */
+#define U_CURXTRN	U_CURSUB+16 /* Current xtrn (internal code) */
 #define U_MAIN_CMD	U_CURXTRN+8+2 	/* unused */
 #define U_XFER_CMD	U_MAIN_CMD+LEN_MAIN_CMD 		/* unused */
 #define U_SCAN_CMD	U_XFER_CMD+LEN_XFER_CMD+2  	/* unused */
@@ -567,8 +566,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_NS_TIME	U_CHAT+8 		/* New-file scan date/time */
 #define U_PROT		U_NS_TIME+8 	/* Default transfer protocol */
 #define U_LOGONTIME	U_PROT+1
-#define U_UNUSED	U_LOGONTIME+8
-#define U_LEN		(U_UNUSED+20+2)
+#define U_CURDIR	U_LOGONTIME+8	/* Current dir (internal code  */
+#define U_UNUSED	U_CURDIR+16
+#define U_LEN		(U_UNUSED+4+2)
 
 /****************************************************************************/
 /* Offsets into DIR .DAT file for different fields for each file 			*/
@@ -909,8 +909,8 @@ typedef struct {						/* Users information */
 			netmail[LEN_NETMAIL+1], 	/* NetMail forwarding address */
 			tmpext[4],					/* QWK Packet extension */
 			comment[LEN_COMMENT+1], 	/* Private comment about user */
-			cursub[9],					/* Current sub-board internal code */
-			curdir[9],					/* Current directory internal code */
+			cursub[(LEN_CODE*2)+1],		/* Current sub-board internal code */
+			curdir[(LEN_CODE*2)+1],		/* Current directory internal code */
 			curxtrn[9];					/* Current external program internal code */
 
 	uchar	level,						/* Security level */

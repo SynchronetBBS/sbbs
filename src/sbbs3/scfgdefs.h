@@ -43,7 +43,8 @@
 #include "startup.h"
 
 typedef struct {                        /* Message sub board info */
-	char	code[LEN_CODE+1];			/* Eight character code */
+	char	code[(LEN_CODE*2)+1];		/* Internal code (with optional lib prefix) */
+	char	code_suffix[LEN_CODE+1];	/* Eight character code suffix */
 	char	lname[LEN_SLNAME+1],		/* Short name - used for prompts */
 			sname[LEN_SSNAME+1],		/* Long name - used for listing */
 			arstr[LEN_ARSTR+1],			/* Access requirements */
@@ -76,13 +77,15 @@ typedef struct {                        /* Message sub board info */
 typedef struct {                        /* Message group info */
 	char	lname[LEN_GLNAME+1],		/* Short name */
 			sname[LEN_GSNAME+1],		/* Long name */
-			arstr[LEN_ARSTR+1];			/* Access requirements */
+			arstr[LEN_ARSTR+1],			/* Access requirements */
+			code_prefix[LEN_CODE+1];	/* Prefix for internal code */
 	uchar	*ar;
 
 } grp_t;
 
 typedef struct {                        /* Transfer Directory Info */
-	char	code[LEN_CODE+1];			/* Eight character code */
+	char	code[(LEN_CODE*2)+1];		/* Internal code (with optional lib prefix) */
+	char	code_suffix[LEN_CODE+1];	/* Eight character code suffix */
 	char	lname[LEN_SLNAME+1],		/* Short name - used for prompts */
 			sname[LEN_SSNAME+1],		/* Long name - used for listing */
 			arstr[LEN_ARSTR+1],			/* Access Requirements */
@@ -114,6 +117,7 @@ typedef struct {                        /* Transfer Library Information */
 	char	lname[LEN_GLNAME+1],		/* Short Name - used for prompts */
 			sname[LEN_GSNAME+1],		/* Long Name - used for listings */
 			arstr[LEN_ARSTR+1],			/* Access Requirements */
+			code_prefix[LEN_CODE+1],	/* Prefix for internal code */
 			parent_path[48];			/* Parent for dir paths */
 	uchar	*ar;
 	ushort	offline_dir;				/* Offline file directory */
