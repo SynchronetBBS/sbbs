@@ -80,7 +80,7 @@ int lprintf(int level, char *fmat, ...)
 	return(chcount);
 }
 
-void prep_desc(char *str)
+void prep_desc(uchar *str)
 {
 	char tmp[1024];
 	int i,j;
@@ -92,7 +92,7 @@ void prep_desc(char *str)
 			continue;
 		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
 			continue;
-		else if((uchar)str[i]>=SP)
+		else if(str[i]>=SP)
 			tmp[j++]=str[i];
 		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
 			tmp[j++]=SP;
