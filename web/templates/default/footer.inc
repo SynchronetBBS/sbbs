@@ -6,6 +6,10 @@
       <td>
           <div align="left">
           <a href="http://www.synchro.net/"><img src="/graphics/sync_pbgj1_teal_bg.gif" title="Powered by: Synchronet" alt="Powered by: Synchronet" width="175" height="85" border="0" /></a></div>
+		  <font size=-3>
+			@@JS:server.version@@<br />
+			@@JS:system.version_notice@@
+		  </font>
       </td>
       <td>
           <div align="right">
