@@ -2,13 +2,19 @@ if(user.number==0) {
 	http_reply.status='401 Permission Denied';
 	http_reply.header["WWW-Authenticate"]='Basic realm="'+system.name+'"';
 }
+else {
+// Note: A 302 here would mean the index would be displayed as "/login.ssjs"
+// That is to say, it would display the indes AS login.ssjs.
+	// http_reply.status='302 Found';
+	http_reply.status='307 Temporary Redirect';
+}
+http_reply.header.location='../index.ssjs';
+http_reply.header.pragma='no-cache';
+http_reply.header.expires='0';
+http_reply.header['cache-control']='must-revalidate';
+
 writeln('<html>');
 writeln('<head>');
-writeln('<meta http-equiv="Pragma" content="no-cache">');
-writeln('<meta http-equiv="expires" content="0">');
-writeln('<meta http-equiv="refresh" content="0; URL=../index.ssjs?login=' 
-		+ new Date().valueOf().toString(36) + '">');
 writeln('</head>');
-writeln('<body>Logging in...</body>');
+writeln('<body>Logging in to <a href="/">'+system.name+'</a></body>');
 writeln('</html>');
-
