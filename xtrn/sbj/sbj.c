@@ -1742,7 +1742,7 @@ void create_gamedab()
 {
 
 if((gamedab=sopen("GAME.DAB"
-	,O_WRONLY|O_CREAT|O_BINARY,SH_DENYNO,S_IWRITE|S_IREAD))==-1) {
+	,O_WRONLY|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
 	bputs("Error creating GAME.DAB\r\n");
 	pause();
 	exit(1); }
