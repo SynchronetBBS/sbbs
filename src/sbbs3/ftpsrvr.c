@@ -90,6 +90,7 @@ static DWORD	active_clients=0;
 static DWORD	sockets=0;
 static DWORD	thread_count=0;
 static time_t	uptime=0;
+static DWORD	served=0;
 static BOOL		recycle_server=FALSE;
 static char		revision[16];
 #ifdef _DEBUG
@@ -2705,7 +2706,7 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 		if(!stricmp(cmd, "SITE UPTIME")) {
-			sockprintf(sock,"211 %s",sectostr(time(NULL)-uptime,str));
+			sockprintf(sock,"211 %s (%lu served)",sectostr(time(NULL)-uptime,str),served);
 			continue;
 		}
 		if(!stricmp(cmd, "SITE RECYCLE") && user.level>=SYSOP_LEVEL) {
@@ -4312,8 +4313,8 @@ static void ctrl_thread(void* arg)
 	update_clients();
 
 	thread_down();
-	lprintf("%04d CTRL thread terminated (%u clients, %u threads remain)"
-		,sock, active_clients, thread_count);
+	lprintf("%04d CTRL thread terminated (%u clients, %u threads remain, %lu served)"
+		,sock, active_clients, thread_count, served);
 }
 
 static void cleanup(int code, int line)
@@ -4336,7 +4337,8 @@ static void cleanup(int code, int line)
 	thread_down();
 	status("Down");
 	if(code)
-		lprintf("#### FTP Server thread terminated (%u threads remain)", thread_count);
+		lprintf("#### FTP Server thread terminated (%u threads remain, %lu clients served)"
+			,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
 }
@@ -4418,6 +4420,8 @@ void DLLCALL ftp_server(void* arg)
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
 
+	uptime=0;
+	served=0;
 	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
 	do {
@@ -4481,7 +4485,7 @@ void DLLCALL ftp_server(void* arg)
 		}
 
 		if(uptime==0)
-			uptime=time(NULL);
+			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
 		/* Use DATA/TEMP for temp dir - should ch'd to be FTP/HOST specific */
 		prep_dir(scfg.data_dir, scfg.temp_dir);
@@ -4641,6 +4645,7 @@ void DLLCALL ftp_server(void* arg)
 			ftp->client_addr=client_addr;
 
 			_beginthread (ctrl_thread, 0, ftp);
+			served++;
 		}
 
 		if(active_clients) {
@@ -4678,5 +4683,5 @@ void DLLCALL ftp_server(void* arg)
 
 	} while(recycle_server);
 
-    lprintf("#### FTP Server thread terminated (%u threads remain)", thread_count);
+    lprintf("#### FTP Server thread terminated (%u threads remain, %lu clients served)", thread_count, served);
 }
