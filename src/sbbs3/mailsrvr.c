@@ -1411,39 +1411,39 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 	if(buf[0]<=' ' && *type!=UNKNOWN) {	/* folded header, append to previous */
 		p=buf;
 		truncsp(p);
-		smb_hfield_append(msg,*type,2,"\r\n");
-		return smb_hfield_append(msg,*type, (ushort)strlen(p), p);
+		smb_hfield_append_str(msg,*type,"\r\n");
+		return smb_hfield_append_str(msg, *type, p);
 	}
 
 	if(!strnicmp(buf, "TO:",3)) {
 		p=buf+3;
 		SKIP_WHITESPACE(p);
 		truncsp(p);
-		return smb_hfield(msg, *type=RFC822TO, (ushort)strlen(p), p);
+		return smb_hfield_str(msg, *type=RFC822TO, p);
 	}
 	if(!strnicmp(buf, "REPLY-TO:",9)) {
 		p=buf+9;
 		SKIP_WHITESPACE(p);
 		truncsp(p);
-		smb_hfield(msg, *type=RFC822REPLYTO, (ushort)strlen(p), p);
+		smb_hfield_str(msg, *type=RFC822REPLYTO, p);
 		if(*p=='<')  {
 			p++;
 			truncstr(p,">");
 		}
 		nettype=NET_INTERNET;
 		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
-		return smb_hfield(msg, *type=REPLYTONETADDR, (ushort)strlen(p), p);
+		return smb_hfield_str(msg, *type=REPLYTONETADDR, p);
 	}
 	if(!strnicmp(buf, "FROM:", 5)) {
 		p=buf+5;
 		SKIP_WHITESPACE(p);
 		truncsp(p);
-		return smb_hfield(msg, *type=RFC822FROM, (ushort)strlen(p), p);
+		return smb_hfield_str(msg, *type=RFC822FROM, p);
 	}
 	if(!strnicmp(buf, "ORGANIZATION:",13)) {
 		p=buf+13;
 		SKIP_WHITESPACE(p);
-		return smb_hfield(msg, *type=SENDERORG, (ushort)strlen(p), p);
+		return smb_hfield_str(msg, *type=SENDERORG, p);
 	}
 	if(!strnicmp(buf, "DATE:",5)) {
 		p=buf+5;
@@ -1454,15 +1454,15 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 	if(!strnicmp(buf, "MESSAGE-ID:",11)) {
 		p=buf+11;
 		SKIP_WHITESPACE(p);
-		return smb_hfield(msg, *type=RFC822MSGID, (ushort)strlen(p), p);
+		return smb_hfield_str(msg, *type=RFC822MSGID, p);
 	}
 	if(!strnicmp(buf, "IN-REPLY-TO:",12)) {
 		p=buf+12;
 		SKIP_WHITESPACE(p);
-		return smb_hfield(msg, *type=RFC822REPLYID, (ushort)strlen(p), p);
+		return smb_hfield_str(msg, *type=RFC822REPLYID, p);
 	}
 	/* Fall-through */
-	return smb_hfield(msg, *type=RFC822HEADER, (ushort)strlen(buf), buf);
+	return smb_hfield_str(msg, *type=RFC822HEADER, buf);
 }
 
 static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result, char *dnsbl, char *dnsbl_ip)
@@ -1946,7 +1946,7 @@ static void smtp_thread(void* arg)
 							lprintf("%04d !SMTP TAGGED MAIL SUBJECT from blacklisted server with: %s"
 								,socket, startup->dnsbl_tag);
 						}
-						smb_hfield(&msg, SUBJECT, (ushort)strlen(p), p);
+						smb_hfield_str(&msg, SUBJECT, p);
 						msg.idx.subj=subject_crc(p);
 						continue;
 					}
@@ -2040,7 +2040,7 @@ static void smtp_thread(void* arg)
 						sprintf(str,"%s: %s is listed on %s as %s"
 							,startup->dnsbl_hdr, dnsbl_ip
 							,dnsbl, inet_ntoa(dnsbl_result));
-						smb_hfield(&msg,RFC822HEADER,strlen(str),str);
+						smb_hfield_str(&msg, RFC822HEADER, str);
 						lprintf("%04d !SMTP TAGGED MAIL HEADER from blacklisted server with: %s"
 							,socket, startup->dnsbl_hdr);
 					}
@@ -2059,10 +2059,10 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 				nettype=NET_INTERNET;
-				smb_hfield(&msg, SMTPREVERSEPATH, (ushort)strlen(reverse_path), reverse_path);
-				smb_hfield(&msg, SENDER, (ushort)strlen(sender), sender);
+				smb_hfield_str(&msg, SMTPREVERSEPATH, reverse_path);
+				smb_hfield_str(&msg, SENDER, sender);
 				smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
-				smb_hfield(&msg, SENDERNETADDR, (ushort)strlen(sender_addr), sender_addr);
+				smb_hfield_str(&msg, SENDERNETADDR, sender_addr);
 				if(msg.idx.subj==0) {
 					p="";
 					smb_hfield(&msg, SUBJECT, 0, p);
@@ -2095,7 +2095,7 @@ static void smtp_thread(void* arg)
 				if(subnum!=INVALID_SUB) {	/* Message Base */
 					if(rcpt_name[0]==0)
 						strcpy(rcpt_name,"All");
-					smb_hfield(&msg, RECIPIENT, (ushort)strlen(rcpt_name), rcpt_name);
+					smb_hfield_str(&msg, RECIPIENT, rcpt_name);
 
 					smb.subnum=subnum;
 					if((i=savemsg(&scfg, &smb, &msg, msgbuf))!=0) {
@@ -2155,20 +2155,19 @@ static void smtp_thread(void* arg)
 						,revision,PLATFORM_DESC
 						,esmtp ? "ESMTP" : "SMTP"
 						,rcpt_name,msgdate(msg.hdr.when_imported,date));
-					smb_hfield(&newmsg, RFC822HEADER, (ushort)strlen(hdrfield), hdrfield);
+					smb_hfield_str(&newmsg, RFC822HEADER, hdrfield);
 
-					smb_hfield(&newmsg, RECIPIENT, (ushort)strlen(rcpt_name), rcpt_name);
+					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
 
 					newmsg.idx.to=usernum;
 					if(nettype==NET_NONE) {	/* Local destination */
 						sprintf(str,"%u",usernum);
-						smb_hfield(&newmsg, RECIPIENTEXT, (ushort)strlen(str), str);
+						smb_hfield_str(&newmsg, RECIPIENTEXT, str);
 					} else {
 						if(nettype!=NET_QWK)
 							newmsg.idx.to=0;
 						smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
-						smb_hfield(&newmsg, RECIPIENTNETADDR
-							,(ushort)strlen(rcpt_addr), rcpt_addr);
+						smb_hfield_str(&newmsg, RECIPIENTNETADDR, rcpt_addr);
 					}
 
 					i=smb_addmsghdr(&smb,&newmsg,SMB_SELFPACK);
@@ -2987,21 +2986,19 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	newmsg.hdr.delivery_attempts=0;
 
 	sprintf(str,"Delivery failure: %.100s",newmsg.subj);
-	smb_hfield(&newmsg, SUBJECT, (ushort)strlen(str), str);
-	smb_hfield(&newmsg, RECIPIENT, (ushort)strlen(newmsg.from), newmsg.from);
+	smb_hfield_str(&newmsg, SUBJECT, str);
+	smb_hfield_str(&newmsg, RECIPIENT, newmsg.from);
 	if(newmsg.idx.to) {
 		sprintf(str,"%u",newmsg.idx.to);
-		smb_hfield(&newmsg, RECIPIENTEXT, (ushort)strlen(str), str);
+		smb_hfield_str(&newmsg, RECIPIENTEXT, str);
 	}
 	if(newmsg.from_net.type!=NET_NONE && newmsg.from_net.type!=NET_FIDO
 		&& newmsg.reverse_path!=NULL) {
-		smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(newmsg.from_net.type)
-			,&newmsg.from_net.type);
-		smb_hfield(&newmsg, RECIPIENTNETADDR, (ushort)strlen(newmsg.reverse_path)
-			,newmsg.reverse_path);
+		smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(newmsg.from_net.type), &newmsg.from_net.type);
+		smb_hfield_str(&newmsg, RECIPIENTNETADDR, newmsg.reverse_path);
 	}
 	strcpy(str,"Mail Delivery Subsystem");
-	smb_hfield(&newmsg, SENDER, (ushort)strlen(str), str);
+	smb_hfield_str(&newmsg, SENDER, str);
 	smb_hfield(&newmsg, SENDERAGENT, sizeof(agent), &agent);
 	
 	/* Put error message in subject for now */
@@ -3011,16 +3008,15 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		attempts[0]=0;
 	sprintf(str,"%s reporting delivery failure of message %s"
 		,startup->host_name, attempts);
-	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(str), str);
+	smb_hfield_str(&newmsg, SMB_COMMENT, str);
 	sprintf(str,"from %s to %s\r\n"
 		,msg->reverse_path==NULL ? msg->from : msg->reverse_path
 		,(char*)msg->to_net.addr);
-	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(str), str);
+	smb_hfield_str(&newmsg, SMB_COMMENT, str);
 	strcpy(str,"Reason:");
-	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(str), str);
-	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(err), err);
-	sprintf(str,"\r\nOriginal message text follows:\r\n");
-	smb_hfield(&newmsg, SMB_COMMENT, (ushort)strlen(str), str);
+	smb_hfield_str(&newmsg, SMB_COMMENT, str);
+	smb_hfield_str(&newmsg, SMB_COMMENT, err);
+	smb_hfield_str(&newmsg, SMB_COMMENT, "\r\nOriginal message text follows:\r\n");
 
 	if((i=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK))!=0)
 		lprintf("0000 !BOUNCE ERROR %d (%s) adding message header"

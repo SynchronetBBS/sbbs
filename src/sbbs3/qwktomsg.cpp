@@ -110,20 +110,20 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		msg.idx.to=touser;
 
 		username(&cfg,touser,str);
-		smb_hfield(&msg,RECIPIENT,strlen(str),str);
+		smb_hfield_str(&msg,RECIPIENT,str);
 		sprintf(str,"%u",touser);
-		smb_hfield(&msg,RECIPIENTEXT,strlen(str),str); 
+		smb_hfield_str(&msg,RECIPIENTEXT,str); 
 	} else {
 		sprintf(str,"%25.25s",(char *)hdrblk+21);     /* To user */
 		truncsp(str);
-		smb_hfield(&msg,RECIPIENT,strlen(str),str);
+		smb_hfield_str(&msg,RECIPIENT,str);
 		strlwr(str);
 		msg.idx.to=crc16(str,0); 
 	}
 
 	sprintf(str,"%25.25s",hdrblk+71);   /* Subject */
 	truncsp(str);
-	smb_hfield(&msg,SUBJECT,strlen(str),str);
+	smb_hfield_str(&msg,SUBJECT,str);
 	msg.idx.subj=subject_crc(str);
 
 	/********************************/
@@ -259,18 +259,18 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		strupr(str);
 		j=NET_QWK;
 		smb_hfield(&msg,SENDERNETTYPE,2,&j);
-		smb_hfield(&msg,SENDERNETADDR,strlen(str),str);
+		smb_hfield_str(&msg,SENDERNETADDR,str);
 		sprintf(str,"%25.25s",hdrblk+46);  /* From user */
 		truncsp(str);
 	} else {
 		sprintf(str,"%u",useron.number);
-		smb_hfield(&msg,SENDEREXT,strlen(str),str);
+		smb_hfield_str(&msg,SENDEREXT,str);
 		if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME)
 			strcpy(str,useron.name);
 		else
 			strcpy(str,useron.alias);
 	}
-	smb_hfield(&msg,SENDER,strlen(str),str);
+	smb_hfield_str(&msg,SENDER,str);
 	if((uint)subnum==INVALID_SUB) {
 		if(useron.rest&FLAG('Q') || fromhub)
 			msg.idx.from=0;
@@ -293,7 +293,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		p=header+i+7;					/* Skip "@MSGID:" */
 		while(*p && *p<=SP) p++;		/* Skip any spaces */
 		truncstr(p," ");				/* Truncate at first space char */
-		smb_hfield(&msg,RFC822MSGID,strlen(p),p);
+		smb_hfield_str(&msg,RFC822MSGID,p);
 	}
 	if(!strnicmp(header+skip,"@REPLY:",7)) {
 		if(!fromhub)
@@ -307,7 +307,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		p=header+i+7;					/* Skip "@REPLY:" */
 		while(*p && *p<=SP) p++;		/* Skip any spaces */
 		truncstr(p," ");				/* Truncate at first space char */
-		smb_hfield(&msg,RFC822REPLYID,strlen(p),p);
+		smb_hfield_str(&msg,RFC822REPLYID,p);
 	}
 	if(!strnicmp(header+skip,"@TZ:",4)) {
 		if(!fromhub)
@@ -331,7 +331,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		}
 		p=header+i+9;					/* Skip "@REPLYTO:" */
 		while(*p && *p<=SP) p++;		/* Skip any spaces */
-		smb_hfield(&msg,REPLYTO,strlen(p),p);
+		smb_hfield_str(&msg,REPLYTO,p);
 	}
 	free(header);
 

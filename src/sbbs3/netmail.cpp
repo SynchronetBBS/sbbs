@@ -228,16 +228,16 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	msg.hdr.offset=offset;
 
 	net=NET_INTERNET;
-	smb_hfield(&msg,RECIPIENT,strlen(name),name);
+	smb_hfield_str(&msg,RECIPIENT,name);
 	msg.idx.to=0;	/* Out-bound NetMail set to 0 */
 	smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(net),&net);
-	smb_hfield(&msg,RECIPIENTNETADDR,strlen(addr),addr);
+	smb_hfield_str(&msg,RECIPIENTNETADDR,addr);
 
 	strcpy(str,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
-	smb_hfield(&msg,SENDER,strlen(str),str);
+	smb_hfield_str(&msg,SENDER,str);
 
 	sprintf(str,"%u",useron.number);
-	smb_hfield(&msg,SENDEREXT,strlen(str),str);
+	smb_hfield_str(&msg,SENDEREXT,str);
 	msg.idx.from=useron.number;
 
 	/*
@@ -245,7 +245,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	smb_hfield(&msg,SENDERNETADDR,strlen(sys_inetaddr),sys_inetaddr);
 	*/
 
-	smb_hfield(&msg,SUBJECT,strlen(title),title);
+	smb_hfield_str(&msg,SUBJECT,title);
 	strcpy(str,title);
 	msg.idx.subj=subject_crc(str);
 
@@ -420,18 +420,18 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 	msg.hdr.offset=offset;
 
 	net=NET_QWK;
-	smb_hfield(&msg,RECIPIENT,strlen(to),to);
+	smb_hfield_str(&msg,RECIPIENT,to);
 	msg.idx.to=touser;
 	smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(net),&net);
-	smb_hfield(&msg,RECIPIENTNETADDR,strlen(fulladdr),fulladdr);
+	smb_hfield_str(&msg,RECIPIENTNETADDR,fulladdr);
 
-	smb_hfield(&msg,SENDER,strlen(useron.alias),useron.alias);
+	smb_hfield_str(&msg,SENDER,useron.alias);
 
 	sprintf(str,"%u",useron.number);
-	smb_hfield(&msg,SENDEREXT,strlen(str),str);
+	smb_hfield_str(&msg,SENDEREXT,str);
 	msg.idx.from=useron.number;
 
-	smb_hfield(&msg,SUBJECT,strlen(title),title);
+	smb_hfield_str(&msg,SUBJECT,title);
 	msg.idx.subj=subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);

@@ -260,20 +260,20 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	msg.hdr.offset=offset;
 
 	username(&cfg,usernumber,str);
-	smb_hfield(&msg,RECIPIENT,strlen(str),str);
+	smb_hfield_str(&msg,RECIPIENT,str);
 
 	sprintf(str,"%u",usernumber);
-	smb_hfield(&msg,RECIPIENTEXT,strlen(str),str);
+	smb_hfield_str(&msg,RECIPIENTEXT,str);
 	msg.idx.to=usernumber;
 
 	strcpy(str,useron.alias);
-	smb_hfield(&msg,SENDER,strlen(str),str);
+	smb_hfield_str(&msg,SENDER,str);
 
 	sprintf(str,"%u",useron.number);
-	smb_hfield(&msg,SENDEREXT,strlen(str),str);
+	smb_hfield_str(&msg,SENDEREXT,str);
 	msg.idx.from=useron.number;
 
-	smb_hfield(&msg,SUBJECT,strlen(title),title);
+	smb_hfield_str(&msg,SUBJECT,title);
 	msg.idx.subj=subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);

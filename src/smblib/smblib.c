@@ -1198,6 +1198,14 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 }
 
 /****************************************************************************/
+/* Convenience function to add an ASCIIZ string header field				*/
+/****************************************************************************/
+int SMBCALL smb_hfield_str(smbmsg_t* msg, ushort type, const char* str)
+{
+	return smb_hfield(msg, type, strlen(str), (void*)str);
+}
+
+/****************************************************************************/
 /* Appends data to an existing header field (in memory only)				*/
 /****************************************************************************/
 int SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* data)
@@ -1239,6 +1247,13 @@ int SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* d
 	return(SMB_SUCCESS);
 }
 
+/****************************************************************************/
+/* Appends data to an existing ASCIIZ header field (in memory only)			*/
+/****************************************************************************/
+int SMBCALL smb_hfield_append_str(smbmsg_t* msg, ushort type, const char* str)
+{
+	return smb_hfield_append(msg, type, strlen(str), (void*)str);
+}
 
 /****************************************************************************/
 /* Searches for a specific header field (by type) and returns it			*/

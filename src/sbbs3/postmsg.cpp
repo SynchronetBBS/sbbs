@@ -37,13 +37,12 @@
 
 #include "sbbs.h"
 
-static char* program_id()
+static char* program_id(char* pid)
 {
-	static char str[128];
 	char compiler[64];
 
 	DESCRIBE_COMPILER(compiler);
-	sprintf(str,"%.10s %s%c-%s%s%s %s %s"
+	sprintf(pid,"%.10s %s%c-%s%s%s %s %s"
 		,VERSION_NOTICE,VERSION,REVISION,PLATFORM_DESC
 		,beta_version
 #ifdef _DEBUG
@@ -52,7 +51,7 @@ static char* program_id()
 		,""
 #endif
 		,__DATE__,compiler);
-	return(str);
+	return(pid);
 }
 
 /****************************************************************************/
@@ -64,7 +63,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	char	str[256],touser[256],title[LEN_TITLE+1],buf[SDT_BLOCK_LEN]
 			,top[256];
 	char	msg_id[256];
-	char*	pid;
+	char	pid[128];
 	ushort	xlat,msgattr;
 	int 	i,j,x,file,storage;
 	ulong	l,length,offset,crc=0xffffffff;
@@ -314,23 +313,22 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	msg.idx.time=msg.hdr.when_imported.time;
 	msg.idx.number=smb.status.last_msg+1; /* this *should* be the new message number */
 
-	pid=program_id();
-	smb_hfield(&msg,FIDOPID,strlen(pid),pid);
+	smb_hfield_str(&msg,FIDOPID,program_id(pid));
 
 	/* Generate default (RFC822) message-id (always) */
 	SAFECOPY(msg_id,get_msgid(&cfg,subnum,&msg));
-	smb_hfield(&msg,RFC822MSGID,strlen(msg_id),msg_id);
+	smb_hfield_str(&msg,RFC822MSGID,msg_id);
 
 	/* Generate FTN (FTS-9) MSGID */
 	if(cfg.sub[subnum]->misc&SUB_FIDO) {
 		SAFECOPY(msg_id,ftn_msgid(cfg.sub[subnum],&msg));
-		smb_hfield(&msg,FIDOMSGID,strlen(msg_id),msg_id);
+		smb_hfield_str(&msg,FIDOMSGID,msg_id);
 	}
 	if(remsg) {
 		if(remsg->ftn_msgid!=NULL)
-			smb_hfield(&msg,FIDOREPLYID,strlen(remsg->ftn_msgid),remsg->ftn_msgid);
+			smb_hfield_str(&msg,FIDOREPLYID,remsg->ftn_msgid);
 		if(remsg->id!=NULL)
-			smb_hfield(&msg,RFC822REPLYID,strlen(remsg->id),remsg->id);
+			smb_hfield_str(&msg,RFC822REPLYID,remsg->id);
 		msg.hdr.thread_orig=remsg->hdr.number;
 		if(!remsg->hdr.thread_first) {
 			remsg->hdr.thread_first=smb.status.last_msg+1;
@@ -380,19 +378,19 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	msg.hdr.offset=offset;
 
-	smb_hfield(&msg,RECIPIENT,strlen(touser),touser);
+	smb_hfield_str(&msg,RECIPIENT,touser);
 	strlwr(touser);
 	msg.idx.to=crc16(touser,0);
 
 	strcpy(str,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
-	smb_hfield(&msg,SENDER,strlen(str),str);
+	smb_hfield_str(&msg,SENDER,str);
 	strlwr(str);
 	msg.idx.from=crc16(str,0);
 
 	sprintf(str,"%u",useron.number);
-	smb_hfield(&msg,SENDEREXT,strlen(str),str);
+	smb_hfield_str(&msg,SENDEREXT,str);
 
-	smb_hfield(&msg,SUBJECT,strlen(title),title);
+	smb_hfield_str(&msg,SUBJECT,title);
 	msg.idx.subj=subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);
@@ -443,7 +441,7 @@ extern "C" void DLLCALL signal_sub_sem(scfg_t* cfg, uint subnum)
 extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf)
 {
 	char	pad=0;
-	char*	pid;
+	char	pid[128];
 	char*	reply_id;
 	char	msg_id[256];
 	char*	lzhbuf=NULL;
@@ -602,22 +600,20 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	}
 	smb_dfield(msg,TEXT_BODY,length);
 
-	if(smb_get_hfield(msg,FIDOPID,NULL)==NULL) {	/* Don't create duplicate PIDs */
-		pid=program_id();
-		smb_hfield(msg,FIDOPID,strlen(pid),pid);
-	}
+	if(smb_get_hfield(msg,FIDOPID,NULL)==NULL) 	/* Don't create duplicate PIDs */
+		smb_hfield_str(msg,FIDOPID,program_id(pid));
 
 	/* Generate default (RFC822) message-id  */
 	if(smb_get_hfield(msg,RFC822MSGID,NULL)==NULL) {
 		SAFECOPY(msg_id,get_msgid(cfg,smb->subnum,msg));
-		smb_hfield(msg,RFC822MSGID,strlen(msg_id),msg_id);
+		smb_hfield_str(msg,RFC822MSGID,msg_id);
 	}
 
 	/* Generate FTN MSGID */
 	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO
 		&& smb_get_hfield(msg,FIDOMSGID,NULL)==NULL) {
 		SAFECOPY(msg_id,ftn_msgid(cfg->sub[smb->subnum],msg));
-		smb_hfield(msg,FIDOMSGID,strlen(msg_id),msg_id);
+		smb_hfield_str(msg,FIDOMSGID,msg_id);
 	}
 
 	if(msg->to==NULL)	/* no recipient, don't add header */
@@ -649,12 +645,12 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		/* Add RFC-822 Reply-ID (generate if necessary) */
 		if(msg->reply_id==NULL) {
 			reply_id=get_msgid(cfg,smb->subnum,&remsg);
-			smb_hfield(msg,RFC822REPLYID,strlen(reply_id),reply_id);
+			smb_hfield_str(msg,RFC822REPLYID,reply_id);
 		}
 
 		/* Add FidoNet Reply if original message has FidoNet MSGID */
 		if(msg->ftn_reply==NULL && remsg.ftn_msgid!=NULL)
-			smb_hfield(msg,FIDOREPLYID,strlen(remsg.ftn_msgid),remsg.ftn_msgid);
+			smb_hfield_str(msg,FIDOREPLYID,remsg.ftn_msgid);
 
 		if(!remsg.hdr.thread_first) {	/* This msg is first reply */
 			remsg.hdr.thread_first=msg->idx.number;

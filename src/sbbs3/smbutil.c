@@ -224,7 +224,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		SAFECOPY(str,to);
 
 	truncsp(str);
-	i=smb_hfield(&msg,RECIPIENT,(ushort)strlen(str),str);
+	i=smb_hfield_str(&msg,RECIPIENT,str);
 	if(i) {
 		fprintf(stderr,"\n\7!smb_hfield returned %d: %s\n",i,smb.last_error);
 		smb_freemsgdat(&smb,offset,length,1);
@@ -239,7 +239,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		} else
 			SAFECOPY(str,to_number);
 		truncsp(str);
-		i=smb_hfield(&msg,RECIPIENTEXT,(ushort)strlen(str),str);
+		i=smb_hfield_str(&msg,RECIPIENTEXT,str);
 		if(i) {
 			fprintf(stderr,"\n\7!smb_hfield returned %d: %s\n",i,smb.last_error);
 			smb_freemsgdat(&smb,offset,length,1);
@@ -270,7 +270,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 				smb_freemsgdat(&smb,offset,length,1);
 				exit(1); 
 			}
-			i=smb_hfield(&msg,RECIPIENTNETADDR,(ushort)strlen(str),str);
+			i=smb_hfield_str(&msg,RECIPIENTNETADDR,str);
 			if(i) {
 				fprintf(stderr,"\n\7!smb_hfield returned %d: %s\n",i,smb.last_error);
 				smb_freemsgdat(&smb,offset,length,1);
@@ -285,7 +285,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	} else
 		SAFECOPY(str,from);
 	truncsp(str);
-	i=smb_hfield(&msg,SENDER,(ushort)strlen(str),str);
+	i=smb_hfield_str(&msg,SENDER,str);
 	if(i) {
 		fprintf(stderr,"\n\7!smb_hfield returned %d: %s\n",i,smb.last_error);
 		smb_freemsgdat(&smb,offset,length,1);
@@ -298,7 +298,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		} else
 			SAFECOPY(str,from_number);
 		truncsp(str);
-		i=smb_hfield(&msg,SENDEREXT,(ushort)strlen(str),str);
+		i=smb_hfield_str(&msg,SENDEREXT,str);
 		if(i) {
 			fprintf(stderr,"\n\7!smb_hfield returned %d: %s\n",i,smb.last_error);
 			smb_freemsgdat(&smb,offset,length,1);
@@ -317,7 +317,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	} else
 		SAFECOPY(str,subject);
 	truncsp(str);
-	i=smb_hfield(&msg,SUBJECT,(ushort)strlen(str),str);
+	i=smb_hfield_str(&msg,SUBJECT,str);
 	if(i) {
 		fprintf(stderr,"\n\7!smb_hfield returned %d: %s\n",i,smb.last_error);
 		smb_freemsgdat(&smb,offset,length,1);
@@ -339,7 +339,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		,__DATE__
 		,compiler
 		);
-	smb_hfield(&msg,FIDOPID,(ushort)strlen(str),str);
+	smb_hfield_str(&msg,FIDOPID,str);
 
 	i=smb_addmsghdr(&smb,&msg,smb.status.attr&SMB_HYPERALLOC);
 

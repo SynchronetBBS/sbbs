@@ -135,7 +135,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			return(FALSE);
 	} else
 		cp="";
-	smb_hfield(msg, SUBJECT, (ushort)strlen(cp), cp);
+	smb_hfield_str(msg, SUBJECT, cp);
 	msg->idx.subj=subject_crc(cp);
 
 	if(JS_GetProperty(cx, hdr, "to", &val) && val!=JSVAL_VOID) {
@@ -146,7 +146,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			return(FALSE);					/* "to" property required */
 		cp="All";
 	}
-	smb_hfield(msg, RECIPIENT, (ushort)strlen(cp), cp);
+	smb_hfield_str(msg, RECIPIENT, cp);
 	if(!(p->smb.status.attr&SMB_EMAIL)) {
 		SAFECOPY(to,cp);
 		strlwr(to);
@@ -158,7 +158,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			return(FALSE);
 	} else
 		return(FALSE);	/* "from" property required */
-	smb_hfield(msg, SENDER, (ushort)strlen(cp), cp);
+	smb_hfield_str(msg, SENDER, cp);
 	if(!(p->smb.status.attr&SMB_EMAIL)) {
 		SAFECOPY(from,cp);
 		strlwr(from);
@@ -169,7 +169,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "from_ext", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, SENDEREXT, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, SENDEREXT, cp);
 		if(p->smb.status.attr&SMB_EMAIL)
 			msg->idx.from=atoi(cp);
 	}
@@ -177,7 +177,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "from_org", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, SENDERORG, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, SENDERORG, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "from_net_type", &val) && val!=JSVAL_VOID) {
@@ -191,7 +191,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "from_net_addr", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, SENDERNETADDR, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, SENDERNETADDR, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "from_agent", &val) && val!=JSVAL_VOID) {
@@ -203,7 +203,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "to_ext", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, RECIPIENTEXT, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, RECIPIENTEXT, cp);
 		if(p->smb.status.attr&SMB_EMAIL)
 			msg->idx.to=atoi(cp);
 	}
@@ -211,7 +211,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "to_org", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, RECIPIENTORG, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, RECIPIENTORG, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "to_net_type", &val) && val!=JSVAL_VOID) {
@@ -225,7 +225,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "to_net_addr", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, RECIPIENTNETADDR, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, RECIPIENTNETADDR, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "to_agent", &val) && val!=JSVAL_VOID) {
@@ -237,19 +237,19 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "replyto", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, REPLYTO, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, REPLYTO, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "replyto_ext", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, REPLYTOEXT, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, REPLYTOEXT, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "replyto_org", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, REPLYTOORG, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, REPLYTOORG, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "replyto_net_type", &val) && val!=JSVAL_VOID) {
@@ -261,7 +261,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "replyto_net_addr", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, REPLYTONETADDR, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, REPLYTONETADDR, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "replyto_agent", &val) && val!=JSVAL_VOID) {
@@ -274,69 +274,69 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "id", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, RFC822MSGID, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, RFC822MSGID, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "reply_id", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, RFC822REPLYID, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, RFC822REPLYID, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "reverse_path", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, SMTPREVERSEPATH, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, SMTPREVERSEPATH, cp);
 	}
 
 	/* USENET headers */
 	if(JS_GetProperty(cx, hdr, "path", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, USENETPATH, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, USENETPATH, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "newsgroups", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, USENETNEWSGROUPS, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, USENETNEWSGROUPS, cp);
 	}
 
 	/* FTN headers */
 	if(JS_GetProperty(cx, hdr, "ftn_msgid", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, FIDOMSGID, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, FIDOMSGID, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_reply", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, FIDOREPLYID, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, FIDOREPLYID, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_area", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, FIDOAREA, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, FIDOAREA, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_flags", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, FIDOFLAGS, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, FIDOFLAGS, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_pid", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, FIDOPID, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, FIDOPID, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_tid", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
-		smb_hfield(msg, FIDOTID, (ushort)strlen(cp), cp);
+		smb_hfield_str(msg, FIDOTID, cp);
 	}
 
 	if(JS_GetProperty(cx, hdr, "date", &val) && val!=JSVAL_VOID) {
@@ -413,7 +413,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 				continue;
 			if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 				return(FALSE);
-			smb_hfield(msg, type, (ushort)strlen(cp), cp);
+			smb_hfield_str(msg, type, cp);
 		}
 	}
 
