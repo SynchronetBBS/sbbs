@@ -51,6 +51,7 @@
 #endif
 
 /* ANSI */
+#include <stdio.h>
 #include <time.h>	/* time */
 #include <errno.h>	/* errno */
 #include <string.h>	/* strrchr */

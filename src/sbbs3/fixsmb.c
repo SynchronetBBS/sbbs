@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdio.h>	
 #include <stdlib.h>	/* atoi */
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */

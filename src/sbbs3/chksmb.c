@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 /* ANSI */
+#include <stdio.h>	
 #include <string.h>		/* strrchr */
 #include <time.h>		/* ctime */
 
