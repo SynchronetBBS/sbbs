@@ -234,18 +234,6 @@ static time_t checktime(void)
     return(mktime(&tm)-0x2D24BD00L);
 }
 
-/************************************************/
-/* Truncates white-space chars off end of 'str' */
-/************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
-}
-
 /* Global JavaScript Methods */
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)

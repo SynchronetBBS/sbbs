@@ -305,18 +305,6 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 	lputs(NULL); /* update displayed stats */
 }
 
-/************************************************/
-/* Truncates white-space chars off end of 'str' */
-/************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
-}
-
 /****************************************************************************/
 /* BBS local/log print routine												*/
 /****************************************************************************/

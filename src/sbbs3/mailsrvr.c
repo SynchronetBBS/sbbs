@@ -397,19 +397,6 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 	return(rd);
 }
 
-/************************************************/
-/* Truncates white-space chars off end of 'str' */
-/************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
-}
-
-
 static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 {
 	int rd;
