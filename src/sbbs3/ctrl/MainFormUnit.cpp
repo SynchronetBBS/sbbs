@@ -776,13 +776,13 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
         if(time(NULL)-start>30)
             break;
         Application->ProcessMessages();
-        Sleep(1);
+        Sleep(0);
     }
     /* Extra time for callbacks to be called by child threads */
     start=time(NULL);
     while(time(NULL)<start+2) {
         Application->ProcessMessages();
-        Sleep(1);
+        Sleep(0);
     }
 }
 //---------------------------------------------------------------------------
