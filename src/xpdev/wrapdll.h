@@ -45,11 +45,11 @@
 	#undef DLLCALL
 #endif
 
-#if defined(_WIN32) && defined(WRAPPER_DLL)
-	#if defined(WRAPPER_EXPORTS)
-		#define DLLEXPORT	__declspec(dllexport)
-	#else
+#if defined(_WIN32) && (defined(WRAPPER_IMPORTS) || defined(WRAPPER_EXPORTS))
+	#if defined(WRAPPER_IMPORTS)
 		#define DLLEXPORT	__declspec(dllimport)
+	#else
+		#define DLLEXPORT	__declspec(dllexport)
 	#endif
 	#if defined(__BORLANDC__)
 		#define DLLCALL __stdcall
