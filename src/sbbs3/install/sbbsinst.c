@@ -194,8 +194,8 @@ while(1) {
 		sprintf(mopt[i++],"%-33.33s%s","CVS Tag",params.cvstag);
 	mopt[i][0]=0;
 
-	uifc.helpbuf="Main Installation Menu:
-ToDo: Add help.";
+	uifc.helpbuf=	"Main Installation Menu:\n"
+					"\nToDo: Add help.";
 	switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,60,&main_dflt,0
 		,"Configure",mopt)) {
 		case 0:
@@ -204,14 +204,14 @@ ToDo: Add help.";
 			bail(0);
 			break;
 		case 1:
-			uifc.helpbuf="Install Path
-
-Path to install the Synchronet BBS system into.
-Some common paths:
-	/sbbs
-	/usr/local/sbbs
-	/opt/sbbs
-	/home/bbs/sbbs";
+			uifc.helpbuf=	"Install Path\n"
+							"\n"
+							"\nPath to install the Synchronet BBS system into."
+							"\nSome common paths:"
+							"\n /sbbs"
+							"\n	/usr/local/sbbs"
+							"\n	/opt/sbbs"
+							"\n	/home/bbs/sbbs";
 			uifc.input(WIN_MID,0,0,"Install Path",params.install_path,40,K_EDIT);
 			break;
 		case 2:
@@ -219,8 +219,8 @@ Some common paths:
 			strcpy(opt[1],"GCC");
 			opt[2][0]=0;
 			i=params.usebcc?0:1;
-			uifc.helpbuf="Build From CVS
-ToDo: Add help.";
+			uifc.helpbuf=	"Build From CVS\n"
+							"\nToDo: Add help.";
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Compiler",opt);
 			if(!i)
@@ -230,8 +230,8 @@ ToDo: Add help.";
 			i=0;
 			break;
 		case 3:
-			uifc.helpbuf="Compiler Flags
-ToDo: Add help.";
+			uifc.helpbuf=	"Compiler Flags\n"
+							"\nToDo: Add help.";
 			uifc.input(WIN_MID,0,0,"Additional Compiler Flags",params.cflags,40,K_EDIT);
 			break;
 		case 4:
@@ -239,8 +239,8 @@ ToDo: Add help.";
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
 			i=params.release?0:1;
-			uifc.helpbuf="Build Release Version
-ToDo: Add help.";
+			uifc.helpbuf=	"Build Release Version\n"
+							"\nToDo: Add help.";
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Build a release version?",opt);
 			if(!i)
@@ -254,10 +254,10 @@ ToDo: Add help.";
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
 			i=params.symlink?0:1;
-			uifc.helpbuf="Symlink Binaries:
-
-Should the installer create symlinks to the binaries or copy them from
-the compiled location?";
+			uifc.helpbuf=	"Symlink Binaries:\n"
+							"\n"
+							"\nShould the installer create symlinks to the binaries or copy them from"
+							"\nthe compiled location?";
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Symlink Binaries?",opt);
 			if(!i)
@@ -271,11 +271,11 @@ the compiled location?";
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
 			i=params.cvs?0:1;
-			uifc.helpbuf="Pull sources from CVS:
-
-Should the installer do a CVS update before compiling the binaies?
-
-If this is the first time you have ran SBBSINST, you MUST enable this.";
+			uifc.helpbuf=	"Pull sources from CVS:\n"
+							"\n"
+							"\nShould the installer do a CVS update before compiling the binaies?"
+							"\n"
+							"\nIf this is the first time you have ran SBBSINST, you MUST enable this.";
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Pull from CVS?",opt);
 			if(!i)
@@ -285,9 +285,9 @@ If this is the first time you have ran SBBSINST, you MUST enable this.";
 			i=0;
 			break;
 		case 7:
-			uifc.helpbuf="CVS Tag:
-
-CVS tag to use when updating sources.  Enter \"HEAD\" to use current sources.";
+			uifc.helpbuf=	"CVS Tag:\n"
+							"\n"
+							"\nCVS tag to use when updating sources.  Enter \"HEAD\" to use current sources.";
 			uifc.input(WIN_MID,0,0,"CVS Tag",params.cvstag,40,K_EDIT);
 			break;
 		case -1:
@@ -295,10 +295,10 @@ CVS tag to use when updating sources.  Enter \"HEAD\" to use current sources.";
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
-			uifc.helpbuf="Exit SBBSINST:
-
-If you want to exit the Synchronet installation utility, select Yes.
-Otherwise, select No or hit  ESC .";
+			uifc.helpbuf=	"Exit SBBSINST:\n"
+							"\n"
+							"\nIf you want to exit the Synchronet installation utility, select Yes."
+							"\nOtherwise, select No or hit  ESC .";
 			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SBBSINST",opt);
 			if(!i)
 				bail(0);
