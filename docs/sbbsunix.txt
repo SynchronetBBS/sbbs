@@ -321,10 +321,32 @@ Default Configuration (SCFG) Screen-shots
 2: Command Line          unzip -C -l %s
 3: Access Requirements   UNIX
 
+[Viewable File Type]
+1: File Extension        tgz
+2: Command Line          tar -tzf %s
+3: Access Requirements   UNIX
+
+[Viewable File Type]
+1: File Extension        tar
+2: Command Line          tar -tf %s
+3: Access Requirements   UNIX
+
 [Testable File Type]
 1: File Extension        zip
 2: Command Line          unzip -t %f
 3: Working String        Testing ZIP Integrity...
+4: Access Requirements   UNIX
+
+[Testable File Type]
+1: File Extension        tgz
+2: Command Line          tar -tzf %s
+3: Working String        Testing TGZ Integrity...
+4: Access Requirements   UNIX
+
+[Testable File Type]
+1: File Extension        tar
+2: Command Line          tar -tf %s
+3: Working String        Testing TAR Integrity...
 4: Access Requirements   UNIX
 
 [Extractable File Type]
@@ -332,9 +354,29 @@ Default Configuration (SCFG) Screen-shots
 2: Command Line          unzip -C -o -j %f %s -d %g
 3: Access Requirements   UNIX
 
+[Extractable File Type]
+1: File Extension        tgz
+2: Command Line          tar -xzf %f %s -C %g
+3: Access Requirements   UNIX
+
+[Extractable File Type]
+1: File Extension        tar
+2: Command Line          tar -xf %f %s -C %g
+3: Access Requirements   UNIX
+
 [Compressable File Type]
 1: File Extension        zip
 2: Command Line          zip -j -D %f %s
+3: Access Requirements   UNIX
+
+[Compressable File Type]
+1: File Extension        tgz
+2: Command Line          tar -czf %f %s
+3: Access Requirements   UNIX
+
+[Compressable File Type]
+1: File Extension        tar
+2: Command Line          tar -cf %f %s
 3: Access Requirements   UNIX
 
 [File Transfer Protocol]
