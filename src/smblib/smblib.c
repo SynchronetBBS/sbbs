@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -939,9 +939,9 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 	}
 	rewind(smb->shd_fp);
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
-		sprintf(smb->last_error,"%d (%s) seeking to %u in header"
+		sprintf(smb->last_error,"%d (%s) seeking to %lu in header"
 			,errno,STRERROR(errno)
-			,(unsigned)msg->idx.offset);
+			,msg->idx.offset);
 		return(SMB_ERR_SEEK);
 	}
 
@@ -956,8 +956,8 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		return(SMB_ERR_READ);
 	}
 	if(memcmp(msg->hdr.id,SHD_HEADER_ID,LEN_HEADER_ID)) {
-		sprintf(smb->last_error,"corrupt message header ID: %.*s"
-			,LEN_HEADER_ID,msg->hdr.id);
+		sprintf(smb->last_error,"corrupt message header ID: %.*s at offset %lu"
+			,LEN_HEADER_ID,msg->hdr.id,msg->idx.offset);
 		return(SMB_ERR_HDR_ID);
 	}
 	if(msg->hdr.version<0x110) {
