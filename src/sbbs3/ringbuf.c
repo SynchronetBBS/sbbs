@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -93,6 +93,9 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
 	rb->pHead=rb->pTail=rb->pStart;
 	rb->pEnd=rb->pStart+size;
     rb->size=size;
+#ifdef RINGBUF_SEM
+	sem_init(&rb->sem,0,0);
+#endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_init(&rb->mutex,NULL);
 #endif
@@ -103,6 +106,10 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
 {
     if(rb->pStart!=NULL)
 		os_free(rb->pStart);
+#ifdef RINGBUF_SEM
+	sem_post(&rb->sem);		/* just incase someone's waiting */
+	sem_destroy(&rb->sem);
+#endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_destroy(&rb->mutex);
 #endif
@@ -182,6 +189,9 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
     if(rb->pHead > rb->pEnd)
     	rb->pHead = rb->pStart;
 
+#ifdef RINGBUF_SEM
+	sem_post(&rb->sem);
+#endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_unlock(&rb->mutex);
 #endif
