@@ -2628,7 +2628,8 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,"553 Insufficient access.");
 					continue;
 				}
-				if(strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)) {
+				if(strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)
+					|| trashcan(&scfg,p,"FILE")) {
 					lprintf("%04d !%s illegal filename attempt: %s"
 						,sock,user.alias,p);
 					sockprintf(sock,"553 Illegal filename attempt");
