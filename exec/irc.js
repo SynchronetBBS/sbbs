@@ -1,6 +1,7 @@
 // irc.js
 
 // Deuce's IRC client module for Synchronet
+// With the "Manny Mods".  :-)
 
 // $Id$
 
@@ -23,6 +24,7 @@ var connected=0;
 var quit=0;
 var nick=user.handle;
 var nicks=new Array();
+var loading=true;
 
 /* Command-line args can override default server values */
 if(argv[0]!=undefined)
@@ -47,13 +49,15 @@ if(!sock.connect(irc_server,irc_port)) {
 }
 
 sock.send("PASS "+user.security.password+"\r\n");
-screen.print_line("PASS ********");
+if (nick=="")
+	nick=user.alias;
+nick=nick.replace(/\s+/g,"_");
 sock.send("NICK "+nick+"\r\n");
-screen.print_line("NICK "+nick);
 username=user.alias;
 username=username.replace(/\s+/g,"_");
 sock.send("USER "+username+" 0 * :"+user.name+"\r\n");
-screen.print_line("USER "+username+" 0 * :"+user.name);
+
+channels=new Channels();
 
 // Wait for welcome message...
 while(!connected)  {
@@ -67,8 +71,6 @@ while(!connected)  {
 		exit();
 	}
 }
-
-channels=new Channels();
 
 // Main loop
 while(!quit)  {
@@ -113,9 +115,9 @@ function handle_command(prefix,command,message)  {
 			break;
 		case "KICK":
 			tmp_str=message.shift();
-			from_nick=message.shift();
+			tmp_str2=message.shift();
+			from_nick=get_nick(prefix);
 			full_message=message.join(" ").substr(1);
-			tmp_str2=get_nick(prefix);
 			if(tmp_str2.toUpperCase()==nick.toUpperCase())  {
 				channels.part(tmp_str,"");
 			}
@@ -363,12 +365,19 @@ function handle_command(prefix,command,message)  {
 			screen.print_line(tmp_str2);
 			break;
 			
+		case "376":		// MOTD End
+			if (loading) {
+				loading = false;
+				channels.join(default_channel);
+			}
 		// :Message
 		case "001":		// Sent on successful registration
 		case "002":		// Sent on successful registration
 		case "003":		// Sent on successful registration
 		case "004":		// Sent on successful registration
 		case "005":		// Sent on successful registration
+		case "265":             // Local Users
+		case "266":             // Global Users
 		case "381":		// You're OPER
 		case "302":		// USERHOST Reply
 		case "303":		// ISON Reply
@@ -389,7 +398,6 @@ function handle_command(prefix,command,message)  {
 		case "259":		// Admin e-mail
 		case "375":		// MOTD Start
 		case "372":		// MOTD
-		case "376":		// MOTD End
 		case "333":		// Extended TOPIC info (apparently)
 			message.shift();
 			tmp_str=message.shift();
@@ -446,6 +454,10 @@ function handle_command(prefix,command,message)  {
 
 		// <word> :Message errors.
 		case "433":		// Nickname already in use
+			message.shift();
+			nick=message.shift()+"_";
+			sock.send("NICK " + nick + "\r\n");
+			break;
 		case "401":		// No such nick
 		case "402":		// No such server
 		case "403":		// No such channel
@@ -625,6 +637,14 @@ function send_command(command,param)  {
 		case "TOPIC":
 			sock.send("TOPIC "+channels.current.name+" :"+param+"\r\n");
 			break;
+		case "KICK":
+			if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
+				sock.send(command+" "+param+"\r\n");
+			}
+			else  {
+				sock.send("KICK "+channels.current.name+" "+param+"\r\n");
+			}
+			break;
 		default:
 			if(command.slice(0,1)=="#" || command.slice(0,1)=="&")  {
 				for(i=0;i<channels.length;i++)  {
@@ -803,7 +823,8 @@ function Channels()  {
 	this.part=Channels_part;
 	this.joined=Channels_joined;
 	this.current getter=function() {return this.channel[this.index];};
-	this.join(default_channel);
+// Joining is not attempted until numeric 376 (End of MOTD)
+//	this.join(default_channel);
 	this.nick_change=Channels_nick_change;
 	this.nick_quit=Channels_nick_quit;
 	this.nick_part=Channels_nick_part;
@@ -1188,8 +1209,8 @@ function Screen_handle_key(key)  {
 				}
 				else  {
 					channels.current.send(screen.input_buffer);
+					screen.print_line("\x01N\x01M<\x01N\x01W"+nick+"\x01N\x01M>\x01N\x01W "+screen.input_buffer);
 				}
-				screen.print_line("\x01N\x01M<\x01N\x01W"+nick+"\x01N\x01M>\x01N\x01W "+screen.input_buffer);
 			}
 			screen.input_buffer="";
 			screen.update_input_line();
