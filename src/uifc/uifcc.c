@@ -173,6 +173,9 @@ int uifcinic(uifcapi_t* uifcapi)
     api->list=ulist;
     api->input=uinput;
     api->sethelp=sethelp;
+#ifdef __unix__
+    api->showhelp=help;
+#endif
 
 #if defined(LOCALE)
   (void) setlocale(LC_ALL, "");
