@@ -295,7 +295,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			s=user.tmpext;
 			break;
 		case USER_PROP_CHAT:
-			val=user.laston;
+			val=user.chat;
 			break;
 		case USER_PROP_NS_TIME:
 			val=user.laston;
@@ -488,7 +488,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static struct JSPropertySpec js_user_properties[] = {
 /*		 name				,tinyid					,flags,				getter,	setter	*/
 
-	{	"number"			,USER_PROP_NUMBER		,USER_PROP_NUMBER,		NULL,NULL},
+	{	"number"			,USER_PROP_NUMBER		,USER_PROP_FLAGS,		NULL,NULL},
 	{	"alias"				,USER_PROP_ALIAS 		,USER_PROP_FLAGS,		NULL,NULL},
 	{	"name"				,USER_PROP_NAME		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"handle"			,USER_PROP_HANDLE	 	,USER_PROP_FLAGS,		NULL,NULL},
