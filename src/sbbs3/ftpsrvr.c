@@ -138,7 +138,7 @@ static int lprintf(char *fmt, ...)
     if(startup==NULL || startup->lputs==NULL)
         return(0);
 
-#if defined(_WIN32) && defined(_DEBUG)
+#if 0 && defined(_WIN32) && defined(_DEBUG)
 	if(IsBadCodePtr((FARPROC)startup->lputs)) {
 		DebugBreak();
 		return(0);
@@ -1526,6 +1526,7 @@ static void receive_thread(void* arg)
 	ulong		dur;
 	ulong		cps;
 	BOOL		error=FALSE;
+	BOOL		filedat;
 	FILE*		fp;
 	file_t		f;
 	xfer_t		xfer;
@@ -1548,6 +1549,9 @@ static void receive_thread(void* arg)
 		thread_down();
 		return;
 	}
+
+	if(xfer.append)
+		xfer.filepos=filelength(fileno(fp));
 
 	*xfer.aborted=FALSE;
 	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
@@ -1676,13 +1680,11 @@ static void receive_thread(void* arg)
 			padfname(getfname(fname),f.name);
 			strupr(f.name);
 			f.dir=xfer.dir;
+			filedat=getfileixb(&scfg,&f);
 			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
 				f.misc|=FM_ANON;
-			f.cdt=total;
+			f.cdt=flength(xfer.filename);
 			f.dateuled=time(NULL);
-			f.timesdled=0;
-			f.datedled=0L;
-			f.opencount=0;
 
 			/* Desciption specified with DESC command? */
 			if(xfer.desc!=NULL && *xfer.desc!=0)	
@@ -1734,8 +1736,14 @@ static void receive_thread(void* arg)
 				SAFECOPY(f.desc,getfname(xfer.filename));
 
 			SAFECOPY(f.uler,xfer.user->alias);	/* exception here, Aug-27-2002 */
-			if(!addfiledat(&scfg,&f))
-				lprintf("%04d !ERROR adding file (%s) to database",xfer.ctrl_sock,f.name);
+			if(filedat) {
+				if(!putfiledat(&scfg,&f))
+					lprintf("%04d !ERROR updating file (%s) in database",xfer.ctrl_sock,f.name);
+				/* need to update the index here */
+			} else {
+				if(!addfiledat(&scfg,&f))
+					lprintf("%04d !ERROR adding file (%s) to database",xfer.ctrl_sock,f.name);
+			}
 
 			if(f.misc&FM_EXTDESC)
 				putextdesc(&scfg,f.dir,f.datoffset,ext);
@@ -1746,7 +1754,8 @@ static void receive_thread(void* arg)
 			/**************************/
 			/* Update Uploader's Info */
 			/**************************/
-			xfer.user->uls=(short)adjustuserrec(&scfg, xfer.user->number,U_ULS,5,1);
+			if(!xfer.append && xfer.filepos==0)
+				xfer.user->uls=(short)adjustuserrec(&scfg, xfer.user->number,U_ULS,5,1);
 			xfer.user->ulb=adjustuserrec(&scfg, xfer.user->number,U_ULB,10,total);
 			if(scfg.dir[f.dir]->up_pct && scfg.dir[f.dir]->misc&DIR_CDTUL) { /* credit for upload */
 				if(scfg.dir[f.dir]->misc&DIR_CDTMIN && cps)    /* Give min instead of cdt */
@@ -2210,6 +2219,7 @@ static void ctrl_thread(void* arg)
 	BOOL		sysop=FALSE;
 	BOOL		local_fsys=FALSE;
 	BOOL		alias_dir;
+	BOOL		append;
 	FILE*		fp;
 	FILE*		alias_fp;
 	SOCKET		sock;
@@ -3880,6 +3890,7 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 
+			append=FALSE;
 			lib=curlib;
 			dir=curdir;
 			p=cmd+5;
@@ -3938,6 +3949,9 @@ static void ctrl_thread(void* arg)
 					,sock,user.alias,fname
 					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 			} else {
+
+				append=(strnicmp(cmd,"APPE",4)==0);
+			
 				if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user)) {
 					lprintf("%04d !%s has insufficient access to upload to /%s/%s"
 						,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code);
@@ -3957,7 +3971,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				sprintf(fname,"%s%s",scfg.dir[dir]->path,p);
-				if((strnicmp(cmd,"STOR",4)==0 && fexist(fname))
+				if((!append && filepos==0 && fexist(fname))
 					|| (startup->options&FTP_OPT_INDEX_FILE 
 						&& !stricmp(p,startup->index_file_name))
 					|| (startup->options&FTP_OPT_HTML_INDEX_FILE 
@@ -3968,7 +3982,7 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,"553 File already exists.");
 					continue;
 				}
-				if(strnicmp(cmd,"APPE",4)==0) {	/* RESUME */
+				if(append || filepos) {	/* RESUME */
 #ifdef _WIN32
 					GetShortPathName(fname, str, sizeof(str));
 #else
@@ -3980,13 +3994,16 @@ static void ctrl_thread(void* arg)
 					f.cdt=0;
 					f.size=-1;
 					if(!getfileixb(&scfg,&f) || !getfiledat(&scfg,&f)) {
-						lprintf("%04d !%s file (%s) not in database for %.4s command"
-							,sock,user.alias,fname,cmd);
-						sockprintf(sock,"550 File not found: %s",p);
-						continue;
+						if(filepos) {
+							lprintf("%04d !%s file (%s) not in database for %.4s command"
+								,sock,user.alias,fname,cmd);
+							sockprintf(sock,"550 File not found: %s",p);
+							continue;
+						}
+						append=FALSE;
 					}
 					/* Verify user is original uploader */
-					if(stricmp(f.uler,user.alias)) {
+					if((append || filepos) && stricmp(f.uler,user.alias)) {
 						lprintf("%04d !%s cannot resume upload of %s, uploaded by %s"
 							,sock,user.alias,fname,f.uler);
 						sockprintf(sock,"553 Insufficient access (can't resume upload from different user).");
@@ -4008,7 +4025,7 @@ static void ctrl_thread(void* arg)
 				,dir
 				,TRUE	/* uploading */
 				,TRUE	/* credits */
-				,strnicmp(cmd,"APPE",4)==0 ? TRUE : FALSE	/* append */
+				,append
 				,desc
 				);
 			filepos=0;
@@ -4260,7 +4277,8 @@ static void cleanup(int code, int line)
 
 	thread_down();
 	status("Down");
-    lprintf("#### FTP Server thread terminated (%u threads remain)", thread_count);
+	if(code)
+		lprintf("#### FTP Server thread terminated (%u threads remain)", thread_count);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
 }
@@ -4597,4 +4615,6 @@ void DLLCALL ftp_server(void* arg)
 		}
 
 	} while(recycle_server);
+
+    lprintf("#### FTP Server thread terminated (%u threads remain)", thread_count);
 }
