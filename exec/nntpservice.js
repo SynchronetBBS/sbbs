@@ -423,6 +423,12 @@ while(client.socket.is_connected) {
 				}
 			}
 
+			if(system.trashcan("subject",hdr.subject)) {
+				log(format("!BLOCKED subject: %s",hdr.subject));
+				writeln("441 posting failed");
+				break;
+			}
+
             for(n in newsgroups) 
     			for(g in msg_area.grp_list) 
 				    for(s in msg_area.grp_list[g].sub_list) 

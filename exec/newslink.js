@@ -398,6 +398,11 @@ for(i in area) {
 		}
 		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)	// avoid dupe loop
 			continue;
+		if(system.trashcan("subject",hdr.subject)) {
+			printf("!BLOCKED subject: %s",hdr.subject);
+			continue;
+		}
+
 		hdr.from_net_type=NET_INTERNET;
 //		hdr.from_net_addr=hdr.from;
 		body += tearline;
