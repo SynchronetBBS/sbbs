@@ -856,8 +856,11 @@ int main(int argc, char** argv)
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
-	if(ctrl_dir==NULL || ctrl_dir[0]==0)
+	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
 		ctrl_dir="/sbbs/ctrl";		/* Not set? Use default */
+		printf("!SBBSCTRL environment variable not set, using default value: %s\n\n"
+			,ctrl_dir);
+	}
 
 	if(!winsock_startup())
 		return(-1);
