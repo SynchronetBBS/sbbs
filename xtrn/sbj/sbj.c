@@ -185,7 +185,6 @@ char *left(void);
 void strip_symbols(char *str);
 void debug(void);
 
-#ifndef __BORLANDC__
 int my_random(int n)
 {
 	float f;
@@ -196,14 +195,13 @@ int my_random(int n)
 
 	return((int)(n*f));
 }
-#endif
 
 /****************************************************************************/
 /* Entry point																*/
 /****************************************************************************/
 int main(int argc, char **argv)
 {
-	char str[81],*p;
+	char str[81],compiler[32],*p;
 	int i,file;
 	FILE *stream;
 
@@ -335,11 +333,16 @@ int main(int argc, char **argv)
 	sec_warn=120;	
 	sec_timeout=180;
 
+	COMPILER_DESC(compiler);
+
 #define SBJ_INDENT "                                "
 	while(1) {
 		cls();
-		center("\1n\1h\1cSynchronet \1rBlackjack! \1cv3.10\r\n");
-		sprintf(str,"\1w(XSDK v%s)\r\n\r\n",xsdk_ver);
+		sprintf(str,"\1n\1h\1cSynchronet \1rBlackjack! \1cv3.10 for %s\r\n"
+			,PLATFORM_DESC);
+		center(str);
+		sprintf(str,"\1w(XSDK v%s %s %s)\r\n\r\n"
+            ,xsdk_ver,compiler,__DATE__);
 		center(str);
 
 		aborted=0;
