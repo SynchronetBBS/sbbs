@@ -210,72 +210,23 @@
 #ifdef _WIN32
 #include <windows.h>	// Sleep()
 #include <process.h>	// _beginthread()
-#include <winsock.h>	// socket stuff
-WSADATA WSAData;		// WinSock data
 #endif
 
 #include "xsdk.h"
 
-char *xsdk_ver="3.01"
+#ifdef _WINSOCKAPI_
+WSADATA WSAData;		// WinSock data
+#endif
+
+char *xsdk_ver="3.10"
 #ifdef _WIN32
 	"/Win32"
+#elif defined(__linux__)
+	"/Linux"
+#elif defined(__unix__)
+	"/Unix"
 #endif
 	;
-
-
-#ifdef __TURBOC__
-extern long timezone=0L;
-extern daylight=0;
-#endif
-
-#ifdef __SC__
-#include <disp.h>
-short wherey(void);
-void clrscr(void);
-#endif  
-
-#ifdef _MSC_VER	  /* Microsoft C */
-
-#define sopen(f,o,s,p)	   _sopen(f,o,s,p)
-#define close(f)		   _close(f)
-#define SH_DENYNO		   _SH_DENYNO
-#define SH_DENYRW		   _SH_DENYRW
-
-#include <sys/locking.h>
-
-int lock(int file, long offset, int size) 
-{
-	int	i;
-	long	pos;
-   
-	pos=tell(file);
-	if(offset!=pos)
-		lseek(file, offset, SEEK_SET);
-	i=locking(file,LK_NBLCK,size);
-	if(offset!=pos)
-		lseek(file, pos, SEEK_SET);
-	return(i);
-}
-
-int unlock(int file, long offset, int size)
-{
-	int	i;
-	long	pos;
-   
-	pos=tell(file);
-	if(offset!=pos)
-		lseek(file, offset, SEEK_SET);
-	i=locking(file,LK_UNLCK,size);
-	if(offset!=pos)
-		lseek(file, pos, SEEK_SET);
-	return(i);
-}
-
-void clrscr(void)
-{
-}
-
-#endif /* _MSC_VER */
 
 #ifndef __16BIT__	/* Sockets */
 
@@ -1469,29 +1420,11 @@ void cls(void)
 
 	if(user_misc&ANSI)
 		bprintf("\x1b[2J");
-	else {
+	else 
 		outchar(FF);
-		clrscr(); }
 	tos=1;
 	lncntr=0;
 }
-
-#ifdef __WATCOMC__
-
-short wherey(void)
-{
-	struct rccoord rc;
-
-	rc=_gettextposition();
-	return(rc.col);
-}
-
-void clrscr(void)
-{
-	_clearscreen(_GCLEARSCREEN);
-}
-
-#endif
 
 /****************************************************************************/
 /* performs the correct attribute modifications for the Ctrl-A code			*/
@@ -2140,81 +2073,6 @@ uint usernumber(char *username)
 
 
 /****************************************************************************/
-/* Checks the disk drive for the existance of a file. Returns 1 if it 		*/
-/* exists, 0 if it doesn't.													*/
-/* Called from upload														*/
-/****************************************************************************/
-char fexist(char *filespec)
-{
-#if defined(_MSC_VER)	/* Microsoft */
-
-	long	handle;
-    struct _finddata_t f;
-
-	if((handle=_findfirst(filespec,&f))==-1)
-		return(FALSE);
-	_findclose(handle);
-	if(f.attrib&_A_SUBDIR)
-		return(FALSE);
-	return(TRUE);
-
-#elif defined(__SC__)	/* Symantec */
-
-	if(findfirst(filespec,0)==NULL)
-		return(0);
-	return(1);
-
-#else					/* Borland/Watcom */
-
-	struct ffblk f;
-
-	if(findfirst(filespec,&f,0)==NULL)
-		return(1);
-	return(0);
-
-#endif
-}
-
-/****************************************************************************/
-/* Returns the length of the first file found that matches 'filespec'       */
-/* -1 if the file doesn't exist.                                            */
-/****************************************************************************/
-long flength(char *filespec)
-{
-#if defined(_MSC_VER)	/* Microsoft */
-
-	long	handle;
-    struct _finddata_t f;
-
-	if((handle=_findfirst(filespec,&f))==-1)
-		return(-1L);
-	_findclose(handle);
-	return(f.size);
-
-#elif defined(__SC__)	/* Symantec */
-
-	struct FILE *f;
-
-	if((f=findfirst(filespec,0))==NULL)
-		return(-1);
-	return(f->size);
-
-#else					/* Borland/Watcom */
-
-	struct ffblk f;
-
-	if(findfirst(filespec,&f,0)==NULL)
-#ifdef __TURBOC__	/* Borland */
-		return(f.ff_fsize);
-#else				/* Other (Watcom) */
-		return(f.size);
-#endif
-	return(-1L);
-
-#endif				
-}
-
-/****************************************************************************/
 /* Returns in 'string' a character representation of the number in l with   */
 /* commas. Maximum value of l is 4 gigabytes.								*/
 /****************************************************************************/
@@ -2223,7 +2081,7 @@ char *ultoac(ulong l, char *string)
 	char str[81];
 	char i,j,k;
 
-	ultoa(l,str,10);
+	sprintf(str,"%lu",10);
 	i=strlen(str)-1;
 	j=i/3+1+i;
 	string[j--]=0;
@@ -2773,34 +2631,4 @@ void ungetkey(char ch)
 	if(keybuftop==KEY_BUFSIZE)
 		keybuftop=0;
 }
-
-#ifdef __SC__					/* Missing from Symantec RTL */
-void clrscr(void) 
-{
-        asm
-        {       mov ah,8        /*function # for "Get char with attr*/
-                xor bh,bh       /*page 0*/
-                int 10h         /*Call interrupt 10h (video)*/
-                
-                mov bh,ah       /*set "set attr" to "current attr"*/
-                mov ah,6        /*function # for "Scroll Window Up"*/
-                xor cx,cx       /*set upper row & column (0,0)*/
-                xor al,al       /*set "# lines to scroll" to 0*/
-                mov dh,119      /*set lowqer colum*/
-                int 10h         /*Call interrupt 10h*/
-                
-                mov ah,2        /*function # for "Set Cursor Position"*/
-                xor bh,bh       /*set page to 0*/
-                xor dx,dx       /*set row & colum to 0 (upper left)*/
-                int 10h         /*Call interrupt 10h*/
-        }
-        return;
-}
-
-short wherey(void)
-{
-        struct disp_t rc;
-        return(rc.cursorcol);
-}               
-#endif  /* __SC__ */
 
