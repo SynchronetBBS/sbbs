@@ -84,7 +84,8 @@ int main(void)
 		}
 		fwrite(&bbs,sizeof(bbs_t),1,out); 
 	}
-	fcloseall();
+	fclose(in);
+	fclose(out);
 	putchar('\n');
 	if(remove("sbl.dab")) {
 		printf("\n\7Data file in use, can't remove.\n");
