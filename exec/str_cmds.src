@@ -215,7 +215,7 @@ if_true
 		return
                 end_if
 
-	compare_str "DOS"
+	compare_str "DOS"	# DOS/Windows shell
 	if_true
 		chksyspass
 		if_true
@@ -224,12 +224,12 @@ if_true
 		return
 		end_if
 
-	compare_str "SHELL"	# OS-independant shell
+	compare_str "SHELL"	# Unix shell (-i for interactive)
 	if_true
 		chksyspass
 		if_true
-			exec_int "%y"
-			end_if
+			exec_int "%y -i"	
+			end_if	
 		return
 		end_if
 
