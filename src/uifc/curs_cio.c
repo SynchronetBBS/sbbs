@@ -4,8 +4,11 @@
 #include <unistd.h>
 
 #include "ciowrap.h"
+#undef getch			/* I'm going to need to use the real getch() in here */
 #include "curs_cio.h"
 #include "uifc.h"		/* UIFC_IBM */
+
+static int curs_nextgetch=0;
 
 static int lastattr=0;
 static long mode;
@@ -378,6 +381,8 @@ int curs_kbhit(void)
 	struct timeval timeout;
 	fd_set	rfds;
 
+	if(curs_nextgetch)
+		return(1);
 	timeout.tv_sec=0;
 	timeout.tv_usec=0;
 	FD_ZERO(&rfds);
@@ -675,4 +680,20 @@ void curs_clreol(void)
 void curs_putch(unsigned char c)
 {
 	_putch(c,TRUE);
+}
+
+int curs_getch(void)
+{
+	int ch;
+
+	if(curs_nextgetch) {
+		ch=curs_nextgetch;
+		curs_nextgetch=0;
+	}
+	else {
+		while((ch=getch())==ERR) {
+			SLEEP(1);
+		}
+		
+	}
 }

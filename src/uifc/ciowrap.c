@@ -53,6 +53,6 @@ void initciowrap(int mode)
 	cio_api.gettextinfo=curs_gettextinfo;
 	cio_api.setcursortype=curs_setcursortype;
 	cio_api.clreol=curs_clreol;
-	cio_api.getch=getch;
+	cio_api.getch=curs_getch;
 	cio_api.beep=beep;
 }

@@ -212,7 +212,7 @@ void x_clreol(void)
 
 int x_getch(void)
 {
-	return(tty_read(0));
+	return(tty_read(TTYF_BLOCK));
 }
 
 int x_beep(void)
