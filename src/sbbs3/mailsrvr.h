@@ -57,6 +57,8 @@ typedef struct {
     DWORD   interface_addr;
     DWORD	options;			/* See MAIL_OPT definitions */
     DWORD	max_msg_size;
+    DWORD	js_max_bytes;
+	DWORD	js_cx_stack;
 
 	void*	cbdata;				/* Private data passed to callbacks */ 
 
