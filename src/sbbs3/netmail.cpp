@@ -247,8 +247,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
-	smb_unlocksmbhdr(&smb);
-	i=smb_addmsghdr(&smb,&msg,SMB_SELFPACK);
+	i=smb_addmsghdr(&smb,&msg,SMB_SELFPACK);	// calls smb_unlocksmbhdr() 
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 
@@ -435,8 +434,7 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
-	smb_unlocksmbhdr(&smb);
-	i=smb_addmsghdr(&smb,&msg,SMB_SELFPACK);
+	i=smb_addmsghdr(&smb,&msg,SMB_SELFPACK); // calls smb_unlocksmbhdr() 
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 

@@ -1213,14 +1213,12 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	msg->hdr.offset=offset;
 	msg->hdr.version=smb_ver();
 
-	smb_unlocksmbhdr(&smb);
-
 	fseek(smb.sdt_fp,offset,SEEK_SET);
 	fwrite(buf,length,1,smb.sdt_fp);
 	fflush(smb.sdt_fp);
 	FREE(buf);
 
-	i=smb_addmsghdr(&smb,msg,storage);
+	i=smb_addmsghdr(&smb,msg,storage);	// calls smb_unlocksmbhdr() 
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 
