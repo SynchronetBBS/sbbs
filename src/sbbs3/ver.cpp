@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-#define BETA		" "     /* Space if non-beta, " beta" otherwise */
+#define BETA		" alpha"     /* Space if non-beta, " beta" otherwise */
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
