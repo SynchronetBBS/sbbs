@@ -224,3 +224,440 @@ function Channel_occupants() {
 	return chan_occupants;
 }
 
+// Yay, version 3.0 of this.set_chanmode(), eradicates any global variables.
+function ChanMode(chan,user) {
+	this.tmplist = new Array();
+	this.tmplist[CHANMODE_OP] = new Array();
+	this.tmplist[CHANMODE_OP][false] = new Array(); //deop
+	this.tmplist[CHANMODE_OP][true] = new Array(); //op
+	this.tmplist[CHANMODE_VOICE] = new Array();
+	this.tmplist[CHANMODE_VOICE][false] = new Array(); //devoice
+	this.tmplist[CHANMODE_VOICE][true] = new Array(); //voice
+	this.tmplist[CHANMODE_BAN] = new Array();
+	this.tmplist[CHANMODE_BAN][false] = new Array(); //unban
+	this.tmplist[CHANMODE_BAN][true] = new Array(); //ban
+	this.state_arg = new Array();
+	this.state_arg[CHANMODE_KEY] = "";
+	this.state_arg[CHANMODE_LIMIT] = "";
+	this.addbits = 0;
+	this.delbits = 0;
+	this.addmodes = "";
+	this.addmodeargs = "";
+	this.delmodes = "";
+	this.delmodeargs = "";
+	this.chan = chan;
+	this.user = user;
+	// Functions.
+	this.tweaktmpmodelist = ChanMode_tweaktmpmodelist;
+	this.tweaktmpmode = ChanMode_tweaktmpmode;
+	this.affect_mode_list = ChanMode_affect_mode_list;
+}
+
+function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
+	if (!chan || !modeline)
+		return;
+
+	var cmode = new ChanMode(chan,this);
+
+	var cm_args = modeline.split(' ');
+
+	var add=true;
+
+	var mode_counter=0;
+	var mode_args_counter=1; // start counting at args, not the modestring
+
+	for (modechar in cm_args[0]) {
+		mode_counter++;
+		switch (cm_args[0][modechar]) {
+			case "+":
+				if (!add)
+					add=true;
+				mode_counter--;
+				break;
+			case "-":
+				if (add)
+					add=false;
+				mode_counter--;
+				break;
+			case "b":
+				if(add && (cm_args.length<=mode_args_counter)) {
+					cmode.addbits|=CHANMODE_BAN;//list bans
+					break;
+				}
+				cmode.tweaktmpmodelist(CHANMODE_BAN,add,
+					cm_args[mode_args_counter]);
+				mode_args_counter++;
+				break;
+			case "i":
+				cmode.tweaktmpmode(CHANMODE_INVITE,add);
+				break;
+			case "k":
+				if(cm_args.length > mode_args_counter) {
+					cmode.tweaktmpmode(CHANMODE_KEY,add);
+					cmode.state_arg[CHANMODE_KEY]=cm_args[mode_args_counter];
+					mode_args_counter++;
+				}
+				break;
+			case "l":
+				if (add && (cm_args.length > mode_args_counter)) {
+					cmode.tweaktmpmode(CHANMODE_LIMIT,true);
+					var regexp = "^[0-9]{1,5}$";
+					if(cm_args[mode_args_counter].match(regexp))
+						cmode.state_arg[CHANMODE_LIMIT]=cm_args[mode_args_counter];
+					mode_args_counter++;
+				} else if (!add) {
+					cmode.tweaktmpmode(CHANMODE_LIMIT,false);
+					if (cm_args.length > mode_args_counter)
+						mode_args_counter++;
+				}
+				break;
+			case "m":
+				cmode.tweaktmpmode(CHANMODE_MODERATED,add);
+				break;
+			case "n":
+				cmode.tweaktmpmode(CHANMODE_NOOUTSIDE,add);
+				break;
+			case "o":
+				if (cm_args.length <= mode_args_counter)
+					break;
+				cmode.tweaktmpmodelist(CHANMODE_OP,add,
+					cm_args[mode_args_counter]);
+				mode_args_counter++;
+				break;
+			case "p":
+				if( (add && !(chan.mode&CHANMODE_SECRET) ||
+				     (cmode.delbits&CHANMODE_SECRET) ) ||
+				    (!add) )
+					cmode.tweaktmpmode(CHANMODE_PRIVATE,add);
+				break;
+			case "s":
+				if( (add && !(chan.mode&CHANMODE_PRIVATE) ||
+				     (cmode.delbits&CHANMODE_PRIVATE) ) ||
+				    (!add) )
+					cmode.tweaktmpmode(CHANMODE_SECRET,add);
+				break;
+			case "t":
+				cmode.tweaktmpmode(CHANMODE_TOPIC,add);
+				break;
+			case "v":
+				if (cm_args.length <= mode_args_counter)
+					break;
+				cmode.tweaktmpmodelist(CHANMODE_VOICE,add,
+					cm_args[mode_args_counter]);
+				mode_args_counter++;
+				break;
+			default:
+				if ((!this.parent) && (!this.server))
+					this.numeric(472, cm_args[0][modechar] + " :is unknown mode char to me.");
+				mode_counter--;
+				break;
+		}
+		if (mode_counter == max_modes)
+			break;
+	}
+
+	// If we're bouncing modes, traverse our side of what the modes look
+	// like and remove any modes not mentioned by what was passed to the
+	// function.  Or, clear any ops, voiced members, or bans on the 'bad'
+	// side of the network sync.
+	if (bounce_modes) {
+		for (cm in MODE) {
+			if (MODE[cm].state && (chan.mode&cm) && 
+			    !(cmode.addbits&cm)) {
+				cmode.delbits |= cm;
+			} else if (MODE[cm].list && MODE[cm].isnick) {
+				for (member in chan.modelist[cm]) {
+					cmode.delmodes += MODE[cm].modechar;
+					cmode.delmodeargs += " " +
+						chan.modelist[cm][member].nick;
+					delete chan.modelist[cm][member];
+				}
+			} else if (MODE[cm].list && !MODE[cm].isnick) {
+				for (ban in chan.modelist[cm]) {
+					cmode.delmodes += MODE[cm].modechar;
+					cmode.delmodeargs += " " +
+						chan.modelist[cm][ban];
+					delete chan.modelist[cm][ban];
+					delete chan.bantime[ban];
+					delete chan.bancreator[ban];
+				}
+			}
+		}
+	}
+
+	// Now we run through all the mode toggles and construct our lists for
+	// later display.  We also play with the channel bit switches here.
+	for (cm in MODE) {
+		if (MODE[cm].state) {
+			if ((cm&CHANMODE_KEY) && (cmode.addbits&CHANMODE_KEY)&& 
+			    cmode.state_arg[cm] && chan.arg[cm] &&
+			    !this.server && !this.parent && !bounce_modes) {
+				this.numeric(467, chan.nam +
+					" :Channel key already set.");
+			} else if ((cmode.addbits&cm) && (!(chan.mode&cm) ||
+			    ((cm==CHANMODE_LIMIT)&&(chan.arg[CHANMODE_LIMIT]!=
+			     cmode.state_arg[CHANMODE_LIMIT])) ) ) {
+				cmode.addmodes += MODE[cm].modechar;
+				chan.mode |= cm;
+				if (MODE[cm].args && MODE[cm].state) {
+					cmode.addmodeargs += " " +
+						cmode.state_arg[cm];
+					chan.arg[cm] = cmode.state_arg[cm];
+				}
+			} else if ((cmode.delbits&cm) && (chan.mode&cm)) {
+				cmode.delmodes += MODE[cm].modechar;
+				chan.mode &= ~cm;
+				if (MODE[cm].args && MODE[cm].state) {
+					cmode.delmodeargs += " " +
+						cmode.state_arg[cm];
+					chan.arg[cm] = "";
+				}
+			}
+		}
+	}
+
+	// This is a special case, if +b was passed to us without arguments,
+	// we simply display a list of bans on the channel.
+	if (cmode.addbits&CHANMODE_BAN) {
+		for (the_ban in chan.modelist[CHANMODE_BAN]) {
+			this.numeric(367, chan.nam + " " + chan.modelist[CHANMODE_BAN][the_ban] + " " + chan.bancreator[the_ban] + " " + chan.bantime[the_ban]);
+		}
+		this.numeric(368, chan.nam + " :End of Channel Ban List.");
+	}
+
+	// Bans are a specialized case, sigh.
+	for (z in cmode.tmplist[CHANMODE_BAN][true]) { // +b
+		var set_ban = create_ban_mask(
+			cmode.tmplist[CHANMODE_BAN][add][z]);
+		if ((chan.count_modelist(CHANMODE_BAN) >= max_bans) &&
+		     !this.server && !this.parent) {
+			this.numeric(478, chan.nam + " " + set_ban + " :" +
+				"Cannot add ban, channel's ban list is full.");
+		} else if (set_ban && !chan.isbanned(set_ban)) {
+			cmode.addmodes += "b";
+			cmode.addmodeargs += " " + set_ban;
+			var banid = chan.modelist[CHANMODE_BAN].push(set_ban);
+			chan.bantime[banid] = time();
+			chan.bancreator[banid] = this.nuh;
+		}
+	}
+
+	for (z in cmode.tmplist[CHANMODE_BAN][false]) { // -b
+		for (ban in chan.modelist[CHANMODE_BAN]) {
+			if (cmode.tmplist[CHANMODE_BAN][false][z].toUpperCase()
+			    == chan.modelist[CHANMODE_BAN][ban].toUpperCase()) {
+				cmode.delmodes += "b";
+				cmode.delmodeargs += " " +
+					cmode.tmplist[CHANMODE_BAN][false][z];
+				delete chan.modelist[CHANMODE_BAN][ban];
+				delete chan.bantime[ban];
+				delete chan.bancreator[ban];
+			}
+		}
+	}
+
+	// Modes where we just deal with lists of nicks.
+	cmode.affect_mode_list(CHANMODE_OP);
+	cmode.affect_mode_list(CHANMODE_VOICE);
+
+	if (!cmode.addmodes && !cmode.delmodes)
+		return 0;
+
+	var final_modestr = "";
+
+	if (cmode.addmodes)
+		final_modestr += "+" + cmode.addmodes;
+	if (cmode.delmodes)
+		final_modestr += "-" + cmode.delmodes;
+	if (cmode.addmodeargs)
+		final_modestr += cmode.addmodeargs;
+	if (cmode.delmodeargs)
+		final_modestr += cmode.delmodeargs;
+
+	var final_args = final_modestr.split(' ');
+	var arg_counter = 0;
+	var mode_counter = 0;
+	var mode_output = "";
+	var f_mode_args = "";
+	for (marg in final_args[0]) {
+		switch (final_args[0][marg]) {
+			case "+":
+				mode_output += "+";
+				add = true;
+				break;
+			case "-":
+				mode_output += "-";
+				add = false;
+				break;
+			case "l":
+				if (!add) {
+					mode_counter++;
+					mode_output += final_args[0][marg];
+					break;
+				}
+			case "b": // only modes with arguments
+			case "k":
+			case "l":
+			case "o":
+			case "v":
+				arg_counter++;
+				f_mode_args += " " + final_args[arg_counter];
+			default:
+				mode_counter++;
+				mode_output += final_args[0][marg];
+				break;
+		}
+		if (mode_counter >= max_modes) {
+			var str = "MODE " + chan.nam + " " + mode_output + f_mode_args;
+			if (!this.server)
+				this.bcast_to_channel(chan, str, true);
+			else
+				this.bcast_to_channel(chan, str, false);
+			if (chan.nam[0] != "&")
+				this.bcast_to_servers(str);
+
+			if (add)
+				mode_output = "+";
+			else
+				mode_output = "-";
+			f_mode_args = "";
+		}
+	}
+
+	if (mode_output.length > 1) {
+		str = "MODE " + chan.nam + " " + mode_output + f_mode_args;
+		if (!this.server)
+			this.bcast_to_channel(chan, str, true);
+		else
+			this.bcast_to_channel(chan, str, false);
+		if (chan.nam[0] != "&")
+			this.bcast_to_servers(str);
+	}
+
+	return 1;
+}
+
+function IRCClient_do_join(chan_name,join_key) {
+	if((chan_name[0] != "#") && (chan_name[0] != "&") && !this.parent) {
+		this.numeric403(chan_name);
+		return 0;
+	}
+	for (theChar in chan_name) {
+		var theChar_code = chan_name[theChar].charCodeAt(0);
+		if ((theChar_code <= 32) || (theChar_code == 44) ||
+		    (chan_name[theChar].charCodeAt(0) == 160)) {
+			if (this.local)
+				this.numeric(479, chan_name + " :Channel name contains illegal characters.");
+			return 0;
+		}
+	}
+	if (this.channels[chan_name.toUpperCase()])
+		return 0;
+	if ((true_array_len(this.channels) >= max_user_chans) && this.local) {
+		this.numeric("405", chan_name + " :You have joined too many channels.");
+		return 0;
+	}
+	var chan = chan_name.toUpperCase().slice(0,max_chanlen);
+	if (Channels[chan] != undefined) {
+		if (this.local) {
+			if ((Channels[chan].mode&CHANMODE_INVITE) &&
+			    (chan != this.invited)) {
+				this.numeric("473", Channels[chan].nam + " :Cannot join channel (+i: invite only)");
+				return 0;
+			}
+			if ((Channels[chan].mode&CHANMODE_LIMIT) &&
+			    (Channels[chan].count_users() >= Channels[chan].arg[CHANMODE_LIMIT])) {
+				this.numeric("471", Channels[chan].nam + " :Cannot join channel (+l: channel is full)");
+				return 0;
+			}
+			if ((Channels[chan].mode&CHANMODE_KEY) &&
+			    (Channels[chan].arg[CHANMODE_KEY] != join_key)) {
+				this.numeric("475", Channels[chan].nam + " :Cannot join channel (+k: key required)");
+				return 0;
+			}
+			if (Channels[chan].isbanned(this.nuh) &&
+			    (chan != this.invited) ) {
+				this.numeric("474", Channels[chan].nam + " :Cannot join channel (+b: you're banned!)");
+				return 0;
+			}
+		}
+		// add to existing channel
+		Channels[chan].users[this.id] = this;
+		var str="JOIN :" + Channels[chan].nam;
+		if (!this.local) {
+			this.bcast_to_channel(Channels[chan], str, false);
+		} else {
+			this.bcast_to_channel(Channels[chan], str, true);
+			if (Channels[chan].topic) {
+				this.numeric332(Channels[chan]);
+				this.numeric333(Channels[chan]);
+			} else {
+				this.numeric331(Channels[chan]);
+			}
+		}
+		if (chan_name[0] != "&")
+			server_bcast_to_servers(":" + this.nick + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam);
+	} else {
+		// create a new channel
+		Channels[chan]=new Channel(chan);
+		Channels[chan].nam=chan_name.slice(0,max_chanlen);
+		Channels[chan].mode=CHANMODE_NONE;
+		Channels[chan].topic="";
+		Channels[chan].created=time();
+		Channels[chan].users = new Array();
+		Channels[chan].users[this.id] = this;
+		Channels[chan].modelist[CHANMODE_BAN] = new Array;
+		Channels[chan].modelist[CHANMODE_VOICE] = new Array;
+		Channels[chan].modelist[CHANMODE_OP] = new Array;
+		Channels[chan].modelist[CHANMODE_OP][this.id] = this;
+		var str="JOIN :" + chan_name;
+		this.originatorout(str,this);
+		if (chan_name[0] != "&")
+			server_bcast_to_servers(":" + servername + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam + " " + Channels[chan].chanmode() + " :@" + this.nick);
+	}
+	if (this.invited.toUpperCase() == Channels[chan].nam.toUpperCase())
+		this.invited = "";
+	this.channels[chan] = Channels[chan];
+	if (!this.parent) {
+		this.names(Channels[chan]);
+		this.numeric(366, Channels[chan].nam + " :End of /NAMES list.");
+	}
+	return 1; // success
+}
+
+function IRCClient_do_part(chan_name) {
+	var chan;
+	var str;
+
+	if((chan_name[0] != "#") && (chan_name[0] != "&") && !this.parent) {
+		this.numeric403(chan_name);
+		return 0;
+	}
+	chan = chan_name.toUpperCase();
+	if (Channels[chan] != undefined) {
+		if (this.channels[chan]) {
+			str = "PART " + Channels[chan].nam;
+			if (this.parent)
+				this.bcast_to_channel(Channels[chan], str, false);
+			else
+				this.bcast_to_channel(Channels[chan], str, true);
+			this.rmchan(Channels[chan]);
+			if (chan_name[0] != "&")
+				this.bcast_to_servers(str);
+		} else if (this.local) {
+			this.numeric442(chan_name);
+		}
+	} else if (this.local) {
+		this.numeric403(chan_name);
+	}
+}
+
+function IRCClient_part_all() {
+	var partingChannel;
+
+	for(thisChannel in this.channels) {
+		partingChannel=this.channels[thisChannel];
+		this.do_part(Channels[partingChannel].nam);
+	}
+}
+
