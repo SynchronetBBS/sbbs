@@ -82,6 +82,7 @@ static	bool	scfg_reloaded=true;
 static	char *	text[TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
+static	time_t	uptime;
 
 #ifdef JAVASCRIPT
 JSRuntime* js_runtime=NULL;
@@ -314,7 +315,7 @@ bool sbbs_t::js_initcx()
 			break;
 
 		/* System Object */
-		if(js_CreateSystemObject(js_cx, js_glob, &cfg)==NULL)
+		if(js_CreateSystemObject(js_cx, js_glob, &cfg, uptime)==NULL)
 			break;
 
 		/* Client Object */
@@ -2970,6 +2971,8 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->xtrn_polls_before_yield==0)	startup->xtrn_polls_before_yield=10;
 
 	thread_up();
+
+	uptime=time(NULL);
 
 	status("Initializing");
 
