@@ -1508,7 +1508,7 @@ static void smtp_thread(void* arg)
 						sockprintf(socket, "452 Insufficient system storage");
 						continue; 
 					}
-					SAFECOPY(telegram_buf,str);
+					strcpy(telegram_buf,str);	/* can't use SAFECOPY here */
 					if(fread(telegram_buf+strlen(str),1,length,msgtxt)!=length) {
 						lprintf("%04d !SMTP ERROR reading %lu bytes from telegram file"
 							,socket,length);
