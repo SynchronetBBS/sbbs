@@ -460,7 +460,8 @@ char *binstr(uchar *buf, ushort length)
 
 	str[0]=0;
 	for(i=0;i<length;i++)
-		if(buf[i] && (buf[i]<SP || buf[i]>=0x7f) && buf[i]!=CR && buf[i]!=LF)
+		if(buf[i] && (buf[i]<' ' || buf[i]>=0x7f) 
+			&& buf[i]!='\r' && buf[i]!='\n' && buf[i]!='\t')
 			break;
 	if(i==length)		/* not binary */
 		return(buf);
@@ -512,8 +513,6 @@ char *my_timestr(time_t *intime)
 /****************************************************************************/
 void viewmsgs(ulong start, ulong count)
 {
-	char when_written[128]
-		,when_imported[128];
 	int i;
 	ulong l=0;
 	smbmsg_t msg;
@@ -534,131 +533,87 @@ void viewmsgs(ulong start, ulong count)
 			fprintf(stderr,"\n\7!smb_getmsghdr returned %d: %s\n",i,smb.last_error);
 			break; }
 
-		sprintf(when_written,"%.24s %s"
-			,my_timestr((time_t*)&msg.hdr.when_written.time)
-			,zonestr(msg.hdr.when_written.zone));
-		sprintf(when_imported,"%.24s %s"
-			,my_timestr((time_t*)&msg.hdr.when_imported.time)
-			,zonestr(msg.hdr.when_imported.zone));
+		printf("%-16.16s %ld\n"		,"index record",ftell(smb.sid_fp)/sizeof(idxrec_t));
+		printf("%-16.16s %ld\n"		,"number"			,msg.hdr.number);
 
-		printf( "%-20.20s %s\n"
-				"%-20.20s %s\n"
-				"%-20.20s %s\n"
-				"%-20.20s %04Xh\n"
-				"%-20.20s %04Xh\n"
-				"%-20.20s %u\n"
-				"%-20.20s %04Xh\n"
-				"%-20.20s %08lXh\n"
-				"%-20.20s %08lXh\n"
-				"%-20.20s %s\n"
-				"%-20.20s %s\n"
-				"%-20.20s %ld (%ld)\n"
-				"%-20.20s %ld\n"
-				"%-20.20s %ld\n"
-				"%-20.20s %ld\n"
-				"%-20.20s %s\n"
-				"%-20.20s %06lXh\n"
-				"%-20.20s %u\n",
+		/* convenience strings */
+		if(msg.subj)
+			printf("%-16.16s %s\n"	,"subject"			,msg.subj);
+		if(msg.to) {
+			printf("%-16.16s %s"	,"to"				,msg.to);
+			if(msg.to_net.addr && strchr(msg.to,'@')==NULL)
+				printf(" (%s)",net_addr(&msg.to_net)); 
+			if(msg.to_ext)
+				printf(" #%s",msg.to_ext);
+			printf("\n");
+		}
+		if(msg.from) {
+			printf("%-16.16s %s"	,"from"				,msg.from);
+			if(msg.from_net.addr && strchr(msg.from,'@')==NULL)
+				printf(" (%s)",net_addr(&msg.from_net)); 
+			if(msg.from_ext)
+				printf(" #%s",msg.from_ext);
+			printf("\n");
+		}
+		if(msg.replyto) {
+			printf("%-16.16s %s"	,"reply-to"			,msg.replyto);
+			if(msg.replyto_net.addr && strchr(msg.replyto,'@')==NULL)
+				printf(" (%s)",net_addr(&msg.replyto_net)); 
+			if(msg.replyto_ext)
+				printf(" #%s",msg.replyto_ext);
+			printf("\n");
+		}
+		if(msg.summary)
+			printf("%-16.16s %s\n"	,"summary"			,msg.summary);
 
-			"subj",
-			msg.subj,
+		/* optional fixed fields */
+		if(msg.hdr.thread_orig)
+			printf("%-16.16s %ld\n"	,"thread_orig"		,msg.hdr.thread_orig);
+		if(msg.hdr.thread_next)
+			printf("%-16.16s %ld\n"	,"thread_next"		,msg.hdr.thread_next);
+		if(msg.hdr.thread_first)
+			printf("%-16.16s %ld\n"	,"thread_first"		,msg.hdr.thread_first);
+		if(msg.hdr.delivery_attempts)
+			printf("%-16.16s %hu\n"	,"delivery_attempts",msg.hdr.delivery_attempts);
+		if(msg.hdr.times_downloaded)
+			printf("%-16.16s %lu\n"	,"times_downloaded"	,msg.hdr.times_downloaded);
+		if(msg.hdr.last_downloaded)
+			printf("%-16.16s %s\n"	,"last_downloaded"	,my_timestr((time_t*)&msg.hdr.last_downloaded));
 
-			"from",
-			msg.from,
+		/* convenience integers */
+		if(msg.cost)
+			printf("%-16.16s %lu\n"	,"cost"				,msg.cost);
+		if(msg.priority)
+			printf("%-16.16s %lu\n"	,"priority"			,msg.priority);
+		if(msg.expiration)
+			printf("%-16.16s %s\n"	,"expiration"	
+				,my_timestr((time_t *)&msg.expiration));
 
-			"to",
-			msg.to,
+		printf("%-16.16s %s %s\n"	,"when_written"	
+			,my_timestr((time_t *)&msg.hdr.when_written.time), zonestr(msg.hdr.when_written.zone));
+		printf("%-16.16s %s %s\n"	,"when_imported"	
+			,my_timestr((time_t *)&msg.hdr.when_imported.time), zonestr(msg.hdr.when_imported.zone));
+		printf("%-16.16s %04Xh\n"	,"type"				,msg.hdr.type);
+		printf("%-16.16s %04Xh\n"	,"version"			,msg.hdr.version);
+		printf("%-16.16s %04Xh\n"	,"attr"				,msg.hdr.attr);
+		printf("%-16.16s %08lXh\n"	,"auxattr"			,msg.hdr.auxattr);
+		printf("%-16.16s %08lXh\n"	,"netattr"			,msg.hdr.netattr);
+		printf("%-16.16s %06lXh\n"	,"header offset"	,msg.idx.offset);
+		printf("%-16.16s %u\n"		,"header length"	,msg.hdr.length);
 
-			"type",
-			msg.hdr.type,
-
-			"version",
-			msg.hdr.version,
-
-			"length",
-			msg.hdr.length,
-
-			"attr",
-			msg.hdr.attr,
-
-			"auxattr",
-			msg.hdr.auxattr,
-
-			"netattr",
-			msg.hdr.netattr,
-
-			"when_written",
-			when_written,
-
-			"when_imported",
-			when_imported,
-
-			"number",
-			msg.hdr.number,
-			ftell(smb.sid_fp)/sizeof(idxrec_t),
-
-			"thread_orig",
-			msg.hdr.thread_orig,
-
-			"thread_next",
-			msg.hdr.thread_next,
-
-			"thread_first",
-			msg.hdr.thread_first,
-
-			"reserved[16]",
-			binstr(msg.hdr.reserved,16),
-
-			"offset",
-			msg.hdr.offset,
-
-			"total_dfields",
-			msg.hdr.total_dfields
-			);
-		for(i=0;i<msg.hdr.total_dfields;i++)
-			printf("dfield[%02u].type      %02Xh\n"
-				   "dfield[%02u].offset    %lu\n"
-				   "dfield[%02u].length    %lu\n"
-				   ,i,msg.dfield[i].type
-				   ,i,msg.dfield[i].offset
-				   ,i,msg.dfield[i].length);
-
+		/* variable fields */
 		for(i=0;i<msg.total_hfields;i++)
-			printf("hfield[%02u].type      %02Xh\n"
-				   "hfield[%02u].length    %d\n"
-				   "hfield[%02u]_dat       %s\n"
-				   ,i,msg.hfield[i].type
-				   ,i,msg.hfield[i].length
-				   ,i,binstr(msg.hfield_dat[i],msg.hfield[i].length));
+			printf("%-16.16s %s\n"
+				,smb_hfieldtype(msg.hfield[i].type)
+				,binstr((uchar *)msg.hfield_dat[i],msg.hfield[i].length));
 
-		if(msg.from_net.type)
-			printf("from_net.type        %02Xh\n"
-				   "from_net.addr        %s\n"
-				,msg.from_net.type
-				,msg.from_net.type==NET_FIDO
-				? faddrtoa((fidoaddr_t *)msg.from_net.addr,NULL) : (char*)msg.from_net.addr);
-
-		if(msg.to_net.type)
-			printf("to_net.type          %02Xh\n"
-				   "to_net.addr          %s\n"
-				,msg.to_net.type
-				,msg.to_net.type==NET_FIDO
-				? faddrtoa((fidoaddr_t *)msg.to_net.addr,NULL) : (char*)msg.to_net.addr);
-
-		if(msg.replyto_net.type)
-			printf("replyto_net.type     %02Xh\n"
-				   "replyto_net.addr     %s\n"
-				,msg.replyto_net.type
-				,msg.replyto_net.type==NET_FIDO
-				? faddrtoa((fidoaddr_t *)msg.replyto_net.addr,NULL)
-					: (char*)msg.replyto_net.addr);
-
-		printf("from_agent           %02Xh\n"
-			   "to_agent             %02Xh\n"
-			   "replyto_agent        %02Xh\n"
-			   ,msg.from_agent
-			   ,msg.to_agent
-			   ,msg.replyto_agent);
+		printf("%-16.16s %06lXh\n"	,"data offset"		,msg.hdr.offset);
+		for(i=0;i<msg.hdr.total_dfields;i++)
+			printf("data field[%u]    %s, offset %lu, length %lu\n"
+				,i
+				,smb_dfieldtype(msg.dfield[i].type)
+				,msg.dfield[i].offset
+				,msg.dfield[i].length);
 
 		printf("\n");
 		smb_freemsgmem(&msg);
