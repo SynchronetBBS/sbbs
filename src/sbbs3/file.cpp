@@ -281,8 +281,10 @@ bool sbbs_t::checkfname(char *fname)
 		return(false); }
 	if(strstr(fname,".."))
 		return(false);
+#if 0	/* long file name support */
 	if(strcspn(fname,".")>8)
 		return(false);
+#endif
 	d=strlen(fname);
 	while(c<d) {
 		if(fname[c]<=SP || fname[c]&0x80)
