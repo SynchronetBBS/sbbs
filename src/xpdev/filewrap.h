@@ -126,7 +126,7 @@
 extern "C" {
 #endif
 
-#if !defined(__BORLANDC__)
+#if !defined(__BORLANDC__) && !defined(__WATCOMC__)
 	DLLEXPORT int	DLLCALL	lock(int fd, long pos, long len);
 	DLLEXPORT int	DLLCALL unlock(int fd, long pos, long len);
 #endif
