@@ -471,7 +471,7 @@ FORCE$(JSEXEC): $(JSEXEC_OBJS)
 
 $(JSEXEC): $(JSEXEC_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	@$(CC) -o $@ $(LIBS) $^
 	
 # ANS2MSG
 FORCE$(ANS2MSG): $(ANS2MSG).o
