@@ -561,6 +561,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	jsint		items;
 	jsval		v;
 	JSBool		by_offset=JS_FALSE;
+	JSBool		expand_fields=JS_TRUE;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -575,10 +576,19 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	memset(&msg,0,sizeof(msg));
 
+	/* Parse boolean arguments first */
 	for(n=0;n<argc;n++) {
-		if(JSVAL_IS_BOOLEAN(argv[n]))
+		if(!JSVAL_IS_BOOLEAN(argv[n]))
+			continue;
+		if(n)
+			expand_fields=JSVAL_TO_BOOLEAN(argv[n]);
+		else
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_NUMBER(argv[n])) {
+	}
+
+	/* Now parse message offset/id and get message */
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset)							/* Get by offset */
 				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
 			else									/* Get by number */
@@ -671,31 +681,38 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, hdrobj, "to_agent",INT_TO_JSVAL(msg.to_agent)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "from_agent",INT_TO_JSVAL(msg.from_agent)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "replyto_agent",INT_TO_JSVAL(msg.replyto_agent)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	if(expand_fields || msg.to_agent)
+		JS_DefineProperty(cx, hdrobj, "to_agent",INT_TO_JSVAL(msg.to_agent)
+			,NULL,NULL,JSPROP_ENUMERATE);
+	if(expand_fields || msg.from_agent)
+		JS_DefineProperty(cx, hdrobj, "from_agent",INT_TO_JSVAL(msg.from_agent)
+			,NULL,NULL,JSPROP_ENUMERATE);
+	if(expand_fields || msg.replyto_agent)
+		JS_DefineProperty(cx, hdrobj, "replyto_agent",INT_TO_JSVAL(msg.replyto_agent)
+			,NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, hdrobj, "to_net_type",INT_TO_JSVAL(msg.to_net.type)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	if(expand_fields || msg.to_net.type)
+		JS_DefineProperty(cx, hdrobj, "to_net_type",INT_TO_JSVAL(msg.to_net.type)
+			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.to_net.type
 		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.to_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "to_net_addr"
 			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, hdrobj, "from_net_type",INT_TO_JSVAL(msg.from_net.type)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	if(expand_fields || msg.from_net.type)
+		JS_DefineProperty(cx, hdrobj, "from_net_type",INT_TO_JSVAL(msg.from_net.type)
+			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.from_net.type
 		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.from_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "from_net_addr"
 			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, hdrobj, "replyto_net_type",INT_TO_JSVAL(msg.replyto_net.type)
-		,NULL,NULL,JSPROP_ENUMERATE);
+
+	if(expand_fields || msg.replyto_net.type)
+		JS_DefineProperty(cx, hdrobj, "replyto_net_type",INT_TO_JSVAL(msg.replyto_net.type)
+			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.replyto_net.type
 		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.replyto_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "replyto_net_addr"
@@ -724,17 +741,24 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		JS_DefineProperty(cx, hdrobj, "from_port"
 			,INT_TO_JSVAL(*port)
 			,NULL,NULL,JSPROP_ENUMERATE);
-		
-	JS_DefineProperty(cx, hdrobj, "forwarded",INT_TO_JSVAL(msg.forwarded)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_NewNumberValue(cx,msg.expiration,&v);
-	JS_DefineProperty(cx, hdrobj, "expiration",v,NULL,NULL,JSPROP_ENUMERATE);
-	JS_NewNumberValue(cx,msg.priority,&v);
-	JS_DefineProperty(cx, hdrobj, "priority",v,NULL,NULL,JSPROP_ENUMERATE);
-	JS_NewNumberValue(cx,msg.cost,&v);
-	JS_DefineProperty(cx, hdrobj, "cost",v,NULL,NULL,JSPROP_ENUMERATE);
+	
+	if(expand_fields || msg.forwarded)
+		JS_DefineProperty(cx, hdrobj, "forwarded",INT_TO_JSVAL(msg.forwarded)
+			,NULL,NULL,JSPROP_ENUMERATE);
+	if(expand_fields || msg.expiration) {
+		JS_NewNumberValue(cx,msg.expiration,&v);
+		JS_DefineProperty(cx, hdrobj, "expiration",v,NULL,NULL,JSPROP_ENUMERATE);
+	}
+	if(expand_fields || msg.priority) {
+		JS_NewNumberValue(cx,msg.priority,&v);
+		JS_DefineProperty(cx, hdrobj, "priority",v,NULL,NULL,JSPROP_ENUMERATE);
+	}
+	if(expand_fields || msg.cost) {
+		JS_NewNumberValue(cx,msg.cost,&v);
+		JS_DefineProperty(cx, hdrobj, "cost",v,NULL,NULL,JSPROP_ENUMERATE);
+	}
 
-
+	/* Fixed length portion of msg header */
 	JS_DefineProperty(cx, hdrobj, "type", INT_TO_JSVAL(msg.hdr.type)
 		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "version", INT_TO_JSVAL(msg.hdr.version)
@@ -783,7 +807,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		val=msg.reply_id;
 	else {
 		reply_id[0]=0;
-		if(msg.hdr.thread_orig) {
+		if(expand_fields && msg.hdr.thread_orig) {
 			memset(&orig_msg,0,sizeof(orig_msg));
 			orig_msg.hdr.number=msg.hdr.thread_orig;
 			if(smb_getmsgidx(&(p->smb), &orig_msg))
@@ -799,13 +823,15 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* Message-ID */
-	SAFECOPY(msg_id,get_msgid(scfg,p->smb.subnum,&msg));
-	val=msg_id;
-	if((js_str=JS_NewStringCopyZ(cx,truncsp(val)))==NULL)
-		return(JS_FALSE);
-	JS_DefineProperty(cx, hdrobj, "id"
-		,STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(expand_fields || msg.id!=NULL) {
+		SAFECOPY(msg_id,get_msgid(scfg,p->smb.subnum,&msg));
+		val=msg_id;
+		if((js_str=JS_NewStringCopyZ(cx,truncsp(val)))==NULL)
+			return(JS_FALSE);
+		JS_DefineProperty(cx, hdrobj, "id"
+			,STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	}
 
 	/* USENET Fields */
 	if(msg.path!=NULL
@@ -1541,8 +1567,10 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,JSDOCSTR("close message base (if open)")
 	,310
 	},
-	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("[boolean by_offset,] number_or_id")
-	,JSDOCSTR("returns a specific message header, <i>null</i> on failure")
+	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean expand_fields]")
+	,JSDOCSTR("returns a specific message header, <i>null</i> on failure. "
+	"Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) "
+	"if you will be re-writing the header later with <i>put_msg_header()</i>")
 	,310
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[boolean by_offset,] number, object header")
