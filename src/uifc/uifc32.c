@@ -1522,6 +1522,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							return(-1);
 						default:
 							return(-2-i);
+				}
 			}
 		}
 		else
@@ -1530,6 +1531,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			save_menu_cur=*cur;
 			save_menu_bar=*bar;
 			return(-2-i);
+		}
 	}
 }
 
