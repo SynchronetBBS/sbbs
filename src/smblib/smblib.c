@@ -455,7 +455,7 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 	}
 	while(1) {
 		if(lock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0) {
-			smb->locked=1;	/* TRUE */
+			smb->locked=TRUE;
 			return(SMB_SUCCESS);
 		}
 		if(!start)
@@ -465,7 +465,7 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 				break;						
 		/* In case we've already locked it */
 		if(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0)
-			smb->locked=0;	/* FALSE */
+			smb->locked=FALSE;
 		SLEEP(smb->retry_delay);
 	}
 	safe_snprintf(smb->last_error,sizeof(smb->last_error),"timeout locking header");
@@ -540,13 +540,28 @@ int SMBCALL smb_unlocksmbhdr(smb_t* smb)
 	}
 	result = unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t));
 	if(result==0)
-		smb->locked=0;	/* FALSE */
+		smb->locked=FALSE;
 	return(result);
 }
 
 /********************************/
 /* Individual Message Functions */
 /********************************/
+
+/****************************************************************************/
+/* Is the offset a valid message header offset?								*/
+/****************************************************************************/
+static BOOL smb_valid_hdr_offset(smb_t* smb, ulong offset)
+{
+	if(offset<sizeof(smbhdr_t)+sizeof(smbstatus_t) 
+		|| offset<smb->status.header_offset) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error)
+			,"invalid header offset: %lu (0x%lX)"
+			,offset,offset);
+		return(FALSE);
+	}
+	return(TRUE);
+}
 
 /****************************************************************************/
 /* Attempts for smb.retry_time number of seconds to lock the hdr for 'msg'  */
@@ -559,6 +574,9 @@ int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
+	if(!smb_valid_hdr_offset(smb,msg->idx.offset))
+		return(SMB_ERR_HDR_OFFSET);
+
 	while(1) {
 		if(!lock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)))
 			return(SMB_SUCCESS);
@@ -796,7 +814,7 @@ static void set_convenience_ptr(smbmsg_t* msg, ushort hfield_type, void* hfield_
 				break; 
 			}
 		case FORWARDED: 	/* fall through */
-			msg->forwarded=1;
+			msg->forwarded=TRUE;
 			break;
 		case SENDERAGENT:
 			if(!msg->forwarded)
@@ -930,7 +948,6 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->ftn_flags=NULL;
 }
 
-
 /****************************************************************************/
 /* Read header information into 'msg' structure                             */
 /* msg->idx.offset must be set before calling this function 				*/
@@ -948,6 +965,10 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
+
+	if(!smb_valid_hdr_offset(smb,msg->idx.offset))
+		return(SMB_ERR_HDR_OFFSET);
+
 	rewind(smb->shd_fp);
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -1172,6 +1193,8 @@ int SMBCALL smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg)
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
+	if(!smb_valid_hdr_offset(smb,msg->idx.offset))
+		return(SMB_ERR_HDR_OFFSET);
 	return(unlock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)));
 }
 
@@ -1556,13 +1579,10 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
-	if(msg->idx.offset<sizeof(smbhdr_t)+sizeof(smbstatus_t) 
-		|| msg->idx.offset<smb->status.header_offset) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"invalid header offset: %lu (0x%lX)"
-			,msg->idx.offset,msg->idx.offset);
+
+	if(!smb_valid_hdr_offset(smb,msg->idx.offset))
 		return(SMB_ERR_HDR_OFFSET);
-	}
+
 	clearerr(smb->shd_fp);
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -1813,7 +1833,7 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort refs)
 /****************************************************************************/
 int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 {
-	int		da_opened=0;
+	BOOL	da_opened=FALSE;
 	int		retval=0;
 	ushort	i;
 	ulong	l,blocks;
@@ -1827,7 +1847,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 	if(smb->sda_fp==NULL) {
 		if((i=smb_open_da(smb))!=SMB_SUCCESS)
 			return(i);
-		da_opened=1;
+		da_opened=TRUE;
 	}
 
 	clearerr(smb->sda_fp);
@@ -1925,7 +1945,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
 {
 	int		i=0;
-	int		da_opened=0;
+	BOOL	da_opened=FALSE;
 	ushort	x;
 
 	if(smb->status.attr&SMB_HYPERALLOC)  /* Nothing to do */
@@ -1934,7 +1954,7 @@ int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
 	if(smb->sda_fp==NULL) {
 		if((i=smb_open_da(smb))!=SMB_SUCCESS)
 			return(i);
-		da_opened=1;
+		da_opened=TRUE;
 	}
 
 	for(x=0;x<msg->hdr.total_dfields;x++) {
@@ -2000,6 +2020,9 @@ int SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg)
 
 	if(smb->status.attr&SMB_HYPERALLOC)  /* Nothing to do */
 		return(SMB_SUCCESS);
+
+	if(!smb_valid_hdr_offset(smb,msg->idx.offset))
+		return(SMB_ERR_HDR_OFFSET);
 
 	if((i=smb_freemsg_dfields(smb,msg,1))!=SMB_SUCCESS)
 		return(i);
