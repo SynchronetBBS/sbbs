@@ -62,6 +62,10 @@
 
 	#include <unistd.h>		/* close */
 
+	#ifdef __FreeBSD__		/* FreeBSD-specific */
+		#include <sys/param.h>	/* PATH_MAX */
+	#endif
+
 #endif
 
 /******************/
@@ -277,18 +281,18 @@ public:
 	size_t 	logcol; 		/* Current column of log file */
 	uint 	criterrs; 		/* Critical error counter */
 
-	uint 	curgrp, 		/* Current group */
-			*cursub,		/* Current sub-board for each group */
-			curlib, 		/* Current library */
-			*curdir;		/* Current directory for each library */
-	uint 	*usrgrp,		/* Real group numbers */
-			usrgrps;		/* Number groups this user has access to */
-	uint 	*usrlib,		/* Real library numbers */
-			usrlibs;		/* Number of libs this user can access */
-	uint 	**usrsub,		/* Real sub numbers */
-			*usrsubs;		/* Num of subs with access for each grp */
-	uint 	**usrdir,		/* Real dir numbers */
-			*usrdirs;		/* Num of dirs with access for each lib */
+	uint 	curgrp; 		/* Current group */
+	uint	*cursub;		/* Current sub-board for each group */
+	uint	curlib; 		/* Current library */
+	uint	*curdir;		/* Current directory for each library */
+	uint 	*usrgrp;		/* Real group numbers */
+	uint	usrgrps;		/* Number groups this user has access to */
+	uint 	*usrlib;		/* Real library numbers */
+	uint	usrlibs;		/* Number of libs this user can access */
+	uint 	**usrsub;		/* Real sub numbers */
+	uint	*usrsubs;		/* Num of subs with access for each grp */
+	uint 	**usrdir;		/* Real dir numbers */
+	uint	*usrdirs;		/* Num of dirs with access for each lib */
 	uint	cursubnum;		/* For ARS */
 	uint	curdirnum;		/* For ARS */
 	ulong 	timeleft;		/* Number of seconds user has left online */
