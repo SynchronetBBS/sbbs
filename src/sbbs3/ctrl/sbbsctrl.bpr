@@ -2,16 +2,16 @@
 <!-- C++Builder XML Project -->
 <PROJECT>
   <MACROS>
-    <VERSION value="BCB.05.03"/>
+    <VERSION value="BCB.06.00"/>
     <PROJECT value="sbbsctrl.exe"/>
-    <OBJFILES value="emulvt.obj sbbsctrl.obj MainFormUnit.obj CtrlPathDialogUnit.obj 
-      TextFileEditUnit.obj TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj 
-      NodeFormUnit.obj StatsFormUnit.obj AboutBoxFormUnit.obj 
-      StatsLogFormUnit.obj CodeInputFormUnit.obj ClientFormUnit.obj 
-      SpyFormUnit.obj ..\ringbuf.obj UserListFormUnit.obj UserMsgFormUnit.obj 
-      PropertiesDlgUnit.obj EventsFormUnit.obj ConfigWizardUnit.obj 
-      ServicesFormUnit.obj TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj 
-      FtpCfgDlgUnit.obj ServicesCfgDlgUnit.obj"/>
+    <OBJFILES value="sbbsctrl.obj MainFormUnit.obj CtrlPathDialogUnit.obj TextFileEditUnit.obj 
+      TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj NodeFormUnit.obj 
+      StatsFormUnit.obj AboutBoxFormUnit.obj StatsLogFormUnit.obj 
+      CodeInputFormUnit.obj ClientFormUnit.obj SpyFormUnit.obj ..\ringbuf.obj 
+      emulvt.obj UserListFormUnit.obj UserMsgFormUnit.obj PropertiesDlgUnit.obj 
+      EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
+      TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
+      ServicesCfgDlgUnit.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -25,11 +25,11 @@
       TelnetCfgDlgUnit.dfm MailCfgDlgUnit.dfm FtpCfgDlgUnit.dfm 
       ServicesCfgDlgUnit.dfm"/>
     <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib services.lib"/>
-    <LIBRARIES value="VCLX50.lib bcbsmp50.lib vcl50.lib"/>
-    <SPARELIBS value="vcl50.lib bcbsmp50.lib VCLX50.lib"/>
-    <PACKAGES value="vcl50.bpi vclx50.bpi vcljpg50.bpi bcbsmp50.bpi vclmid50.bpi vcldb50.bpi 
-      vclbde50.bpi inet50.bpi inetdb50.bpi vcldbx50.bpi qrpt50.bpi teeui50.bpi 
-      teedb50.bpi tee50.bpi dss50.bpi nmfast50.bpi dclocx50.bpi"/>
+    <LIBRARIES value="vclx.lib bcbsmp.lib vcl.lib rtl.lib"/>
+    <SPARELIBS value="rtl.lib vcl.lib bcbsmp.lib vclx.lib"/>
+    <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi vcljpg.bpi bcbsmp.bpi dsnap.bpi dbrtl.bpi 
+      vcldb.bpi bdertl.bpi inet.bpi inetdb.bpi vcldbx.bpi qrpt.bpi teeui.bpi 
+      teedb.bpi tee.bpi dss.bpi nmfast.bpi dclocx.bpi"/>
     <PATHCPP value=".;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
@@ -44,22 +44,61 @@
     <LIBPATH value="..\;..;d:\Borland\CBuilder5\Projects\;$(BCB)\Projects\Lib;C:\Borland\CBuilder5\Projects\;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
+    <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -I.. -Id:\Borland\CBuilder5\Projects\. 
-      -IC:\Borland\CBuilder5\Projects\. -I$(BCB)\include -I$(BCB)\include\vcl 
-      -src_suffix cpp -DSBBS -boa"/>
-    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl50.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
-    <PFLAGS value="-$Y- -$L- -$D- -v -JPHNE -M"/>
+    <IDLCFLAGS value="-src_suffix cpp -DSBBS -I..\. -I.. -Id:\Borland\CBuilder5\Projects\. 
+      -IC:\Borland\CBuilder5\Projects\. -I$(BCB)\include -I$(BCB)\include\vcl -boa"/>
+    <CFLAG1 value="-Od -H=c:\borland\CBUILD~2\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi 
+      -c -tW -tWM"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
     <LFLAGS value="-D&quot;&quot; -aa -Tpe -GD -s -Gn"/>
+    <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
     <ALLOBJ value="c0w32.obj sysinit.obj $(OBJFILES)"/>
     <ALLRES value="$(RESFILES)"/>
     <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
+    <OTHERFILES value=""/>
   </LINKER>
+  <FILELIST>
+      <FILE FILENAME="sbbsctrl.cpp" FORMNAME="" UNITNAME="sbbsctrl" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="sbbsctrl.res" FORMNAME="" UNITNAME="sbbsctrl" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="MainFormUnit.cpp" FORMNAME="MainForm" UNITNAME="MainFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="CtrlPathDialogUnit.cpp" FORMNAME="CtrlPathDialog" UNITNAME="CtrlPathDialogUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="sbbs.lib" FORMNAME="" UNITNAME="sbbs" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="mailsrvr.lib" FORMNAME="" UNITNAME="mailsrvr" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ftpsrvr.lib" FORMNAME="" UNITNAME="ftpsrvr" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="services.lib" FORMNAME="" UNITNAME="services" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="TextFileEditUnit.cpp" FORMNAME="TextFileEditForm" UNITNAME="TextFileEditUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="TelnetFormUnit.cpp" FORMNAME="TelnetForm" UNITNAME="TelnetFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FtpFormUnit.cpp" FORMNAME="FtpForm" UNITNAME="FtpFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="MailFormUnit.cpp" FORMNAME="MailForm" UNITNAME="MailFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="NodeFormUnit.cpp" FORMNAME="NodeForm" UNITNAME="NodeFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="StatsFormUnit.cpp" FORMNAME="StatsForm" UNITNAME="StatsFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="AboutBoxFormUnit.cpp" FORMNAME="AboutBoxForm" UNITNAME="AboutBoxFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="StatsLogFormUnit.cpp" FORMNAME="StatsLogForm" UNITNAME="StatsLogFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="CodeInputFormUnit.cpp" FORMNAME="CodeInputForm" UNITNAME="CodeInputFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ClientFormUnit.cpp" FORMNAME="ClientForm" UNITNAME="ClientFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="SpyFormUnit.cpp" FORMNAME="SpyForm" UNITNAME="SpyFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\ringbuf.c" FORMNAME="" UNITNAME="ringbuf" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="emulvt.pas" FORMNAME="" UNITNAME="emulvt" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="UserListFormUnit.cpp" FORMNAME="UserListForm" UNITNAME="UserListFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="UserMsgFormUnit.cpp" FORMNAME="UserMsgForm" UNITNAME="UserMsgFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="PropertiesDlgUnit.cpp" FORMNAME="PropertiesDlg" UNITNAME="PropertiesDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="EventsFormUnit.cpp" FORMNAME="EventsForm" UNITNAME="EventsFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ConfigWizardUnit.cpp" FORMNAME="ConfigWizardForm" UNITNAME="ConfigWizardUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ServicesFormUnit.cpp" FORMNAME="ServicesForm" UNITNAME="ServicesFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="TelnetCfgDlgUnit.cpp" FORMNAME="TelnetCfgDlg" UNITNAME="TelnetCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="MailCfgDlgUnit.cpp" FORMNAME="MailCfgDlg" UNITNAME="MailCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FtpCfgDlgUnit.cpp" FORMNAME="FtpCfgDlg" UNITNAME="FtpCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ServicesCfgDlgUnit.cpp" FORMNAME="ServicesCfgDlg" UNITNAME="ServicesCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
   <IDEOPTIONS>
 [Version Info]
 IncludeVerInfo=1
@@ -150,9 +189,14 @@ DebugSourceDirs=$(BCB)\source\vcl
 
 [Parameters]
 RunParams=
+Launcher=
+UseLauncher=0
+DebugCWD=
 HostApplication=
 RemoteHost=
 RemotePath=
+RemoteLauncher=
+RemoteCWD=
 RemoteDebug=0
 
 [Compiler]
