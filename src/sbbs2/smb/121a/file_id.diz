@@ -1,0 +1,10 @@
+Synchronet Message Base Specification v1.21a
+Released 08/31/95. Designed for high volume,
+high speed, multi-network, multimedia e-mail
+storage and retrieval. Includes comprehensive
+95 page technical specification, 38 function
+royalty free C library, tons of C source code
+including conversion programs from QWK, Fido
+(FTSC-1), and Internet (RFC-822) messages.
+New: Hyper Allocation storage method and LZH
+compression/decompression functions.
