@@ -2833,7 +2833,7 @@ void putfmsg(FILE *stream,uchar HUGE16 *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 	if(area.name==NULL)	{ /* NetMail, so add FSP-1010 Via kludge line */
 		t=time(NULL);
 		tm=gmtime(&t);
-		fprintf(stream,"\1Via: %s @%04u%02u%02u.%02u%02u%02u.UTC "
+		fprintf(stream,"\1Via %s @%04u%02u%02u.%02u%02u%02u.UTC "
 			"SBBSecho %s-%s r%s\r"
 			,faddrtoa(&addr,NULL)
 			,tm->tm_year+1900
