@@ -1,12 +1,12 @@
-<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/">Members</a> : <a class="navigation" href="/members/info.ssjs">Information</a> : Your Stats</p>
+<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/info.ssjs">Information</a> : Your Stats</p>
 <table class="userstats" border="0" cellpadding="2" cellspacing="2">
 <tr>
   <td class="userstats">First on:</td>
-  <td class="userstats">%%JS:strftime("%m/%d/%y",user.stats.firston_date)%%</td>
+  <td class="userstats">%%JS:strftime("%b-%d-%y",user.stats.firston_date)%%</td>
   <td class="userstats">Expire:</td>
-  <td class="userstats">%%JS:user.security.expiration_date?strftime("%m/%d/%y",user.security.expiration_date):"Never"%%</td>
+  <td class="userstats">%%JS:user.security.expiration_date?strftime("%b-%d-%y",user.security.expiration_date):"Never"%%</td>
   <td class="userstats">Last on:</td>
-  <td class="userstats">%%JS:strftime("%m/%d/%y",user.stats.laston_date)%%</td>
+  <td class="userstats">%%JS:strftime("%b-%d-%y",user.stats.laston_date)%%</td>
   <td class="userstats" colspan="2">%%JS:strftime("%H:%M",user.stats.laston_date)%%</td>
 </tr>
 <tr>
