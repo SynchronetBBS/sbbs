@@ -150,7 +150,9 @@ int DLLCALL sopen(char *fn, int access, int share)
 #ifndef F_SANEWRLCKNO
 	int	flock_op=LOCK_NB;	/* non-blocking */
 #endif
+#ifndef BSD
 	struct flock alock;
+#endif
 
 	if ((fd = open(fn, access, S_IREAD|S_IWRITE)) < 0)
 		return -1;
