@@ -103,7 +103,7 @@ void sbbs_t::ansi_getlines()
 		&& online==ON_REMOTE) {                 /* Remote */
 		SYNC;
 		putcom("\x1b[s\x1b[99B\x1b[6n\x1b[u");
-		inkey(TIMEOUT_ANSI_GETXY*1000); 
+		inkey(K_NONE,TIMEOUT_ANSI_GETXY*1000); 
 	}
 }
 
