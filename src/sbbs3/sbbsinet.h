@@ -47,9 +47,11 @@
 
 #elif defined __unix__	/* Unix-variant */
 
+#include <netdb.h>		/* gethostbyname */
 #include <netinet/in.h>	/* IPPROTO_IP */
 #include <sys/socket.h>	/* socket/bind/etc. */
 #include <sys/ioctl.h>	/* FIONBIO */
+#include <arpa/inet.h>	/* inet_ntoa */
 #include <unistd.h>		/* close */
 #include <errno.h>		/* errno */
 
