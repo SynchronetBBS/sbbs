@@ -407,7 +407,7 @@ static void ansi_keythread(void *params)
 
 int ansi_kbhit(void)
 {
-	int sval;
+	int sval=1;
 
 	sem_getvalue(&got_input,&sval);
 	return(sval);
