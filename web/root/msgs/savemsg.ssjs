@@ -31,6 +31,10 @@ else {
 			error("Cannot find that local user (Not net address specified)");
 	}
 }
+
+var body=http_request.query.body;
+body=word_wrap(body, 80);
+
 hdrs.from=user.alias;
 hdrs.to=http_request.query.to;
 hdrs.subject=http_request.query.subject;
@@ -40,7 +44,7 @@ if(http_request.query.reply_to != undefined)  {
 if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
-if(!msgbase.save_msg(hdrs,http_request.query.body))  {
+if(!msgbase.save_msg(hdrs,body))  {
 	error(msgbase.last_error);
 }
 http_reply.status="201 Created";
