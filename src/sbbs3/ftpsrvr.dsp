@@ -91,5 +91,9 @@ LINK32=link.exe
 
 SOURCE=.\ftpsrvr.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\nopen.c
+# End Source File
 # End Target
 # End Project
