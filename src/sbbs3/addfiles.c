@@ -323,6 +323,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			,errno,strerror(errno),listpath);
 		sprintf(listpath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 				: scfg.dir[f.dir]->path,inpath);
+		fexistcase(listpath);
 		if((stream=fopen(listpath,"r"))==NULL) {
 			printf("Can't open: %s\n"
 				   "        or: %s\n",inpath,listpath);
@@ -903,7 +904,7 @@ int main(int argc, char **argv)
 				addlist("",f,desc_offset,size_offset);
 				continue; 
 			}
-			sprintf(str,"%s.lst",scfg.dir[f.dir]->code);
+			sprintf(str,"%s%s.lst",scfg.dir[f.dir]->path,scfg.dir[f.dir]->code);
 			if(fexistcase(str) && flength(str)>0L) {
 				printf("Auto-adding %s\n",str);
 				addlist(str,f,desc_offset,size_offset);
@@ -924,9 +925,9 @@ int main(int argc, char **argv)
 
 	else {
 		if(!listgiven && !namegiven) {
-			sprintf(str,"%s.lst",scfg.dir[f.dir]->code);
+			sprintf(str,"%s%s.lst",scfg.dir[f.dir]->path, scfg.dir[f.dir]->code);
 			if(!fexistcase(str) || flength(str)<=0L)
-				strcpy(str,"FILES.BBS");
+				sprintf(str,"%s%s",scfg.dir[f.dir]->path, auto_name);
 			addlist(str,f,desc_offset,size_offset);
 			if(mode&SYNC_LIST)
 				synclist(str,f.dir); 
