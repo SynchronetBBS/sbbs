@@ -275,7 +275,7 @@ $(ECHOCFG): \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o
 	@echo Linking $@
-	@$(CC) -o -L../../lib/fltk/$(os) -lfltk -lcurses $@ $^
+	@$(CC) -L../../lib/fltk/$(os) -lfltk -lcurses -o $@ $^
 
 # ADDFILES
 $(ADDFILES): \
