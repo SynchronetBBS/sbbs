@@ -97,6 +97,7 @@ static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
 static DWORD	active_clients=0;
 static DWORD	sockets=0;
+static DWORD	thread_count=0;
 static HANDLE	socket_mutex=NULL;
 static time_t	uptime;
 #ifdef _DEBUG
@@ -106,10 +107,10 @@ static time_t	uptime;
 	#define SOCKET_DEBUG_SEND		(1<<1)	// 0x02
 	#define SOCKET_DEBUG_READLINE	(1<<2)	// 0x04
 	#define SOCKET_DEBUG_ACCEPT		(1<<3)	// 0x08
-	#define SOCKET_DEBUG_DOWNLOAD	(1<<4)	// 0x10
+	#define SOCKET_DEBUG_SENDTHREAD	(1<<4)	// 0x10
 	#define SOCKET_DEBUG_TERMINATE	(1<<5)	// 0x20
 	#define SOCKET_DEBUG_RECV_CHAR	(1<<6)	// 0x40
-	#define SOCKET_DEBUG_RECV_BUF	(1<<7)	// 0x80
+	#define SOCKET_DEBUG_FILEXFER	(1<<7)	// 0x80
 #endif
 
 
@@ -211,12 +212,15 @@ static void client_off(SOCKET sock)
 
 static void thread_up(void)
 {
+	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
 }
 
 static void thread_down(void)
 {
+	if(thread_count>0)
+		thread_count--;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(FALSE);
 }
@@ -1125,13 +1129,13 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 
 		if(server_socket==INVALID_SOCKET) {
 			sockprintf(socket,"421 Server downed, aborting.");
-			lprintf("%04d Server downed, aborting.",socket);
+			lprintf("%04d Server downed, aborting",socket);
 			return(0);
 		}
 		if(i<1) {
 			if(i==0) {
 				if((time(NULL)-(*lastactive))>startup->max_inactivity) {
-					lprintf("%04d Disconnecting due to to inactivity.",socket);
+					lprintf("%04d Disconnecting due to to inactivity",socket);
 					sockprintf(socket,"421 Disconnecting due to inactivity (%u seconds)."
 						,startup->max_inactivity);
 					return(0);
@@ -1356,7 +1360,10 @@ static void send_thread(void* arg)
 	}
 	thread_up();
 
-	*xfer.inprogress=TRUE;
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_SENDTHREAD)
+			socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_SENDTHREAD;
+#endif
+
 	*xfer.aborted=FALSE;
 	if(startup->options&FTP_OPT_DEBUG_DATA || xfer.filepos)
 		lprintf("%04d DATA socket %d sending %s from offset %lu"
@@ -1518,6 +1525,10 @@ static void send_thread(void* arg)
 	else if(xfer.delfile && !error)
 		remove(xfer.filename);
 
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_SENDTHREAD)
+			socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_SENDTHREAD;
+#endif
+
 	thread_down();
 }
 
@@ -1554,12 +1565,12 @@ static void receive_thread(void* arg)
 		lprintf("%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
 		sockprintf(xfer.ctrl_sock,"450 ERROR %d opening %s.",errno,xfer.filename);
 		ftp_close_socket(xfer.data_sock,__LINE__);
+		*xfer.inprogress=FALSE;
 		return;
 	}
 
 	thread_up();
 
-	*xfer.inprogress=TRUE;
 	*xfer.aborted=FALSE;
 	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
 		lprintf("%04d DATA socket %d receiving from offset %lu"
@@ -1619,11 +1630,11 @@ static void receive_thread(void* arg)
 			continue;
 		}
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_RECV_BUF)
 		socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_RECV_BUF;
 #endif
 		rd=recv(*xfer.data_sock,buf,sizeof(buf),0);
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_RECV_BUF)
 		socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_RECV_BUF;
 #endif
 		if(rd<1) {
@@ -2541,7 +2552,7 @@ static void ctrl_thread(void* arg)
 			client_on(sock,&client);
 
 
-			lprintf("%04d %s logged in.",sock,user.alias);
+			lprintf("%04d %s logged in",sock,user.alias);
 			logintime=time(NULL);
 			timeleft=gettimeleft(&scfg,&user,logintime);
 			sprintf(str,"%sftphello.txt",scfg.text_dir);
@@ -3796,7 +3807,7 @@ static void ctrl_thread(void* arg)
 					} 
 				}
 			}
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_DOWNLOAD)
 			socket_debug[sock]|=SOCKET_DEBUG_DOWNLOAD;
 #endif
 
@@ -3835,7 +3846,7 @@ static void ctrl_thread(void* arg)
 					,sock,user.alias,vpath(lib,dir,str),p,cmd);
 			}
 			filepos=0;
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_DOWNLOAD)
 			socket_debug[sock]&=~SOCKET_DEBUG_DOWNLOAD;
 #endif
 			continue;
@@ -4143,7 +4154,7 @@ static void ctrl_thread(void* arg)
 					transfer_aborted=TRUE;
 				}
 				if((time(NULL)-lastactive)>startup->max_inactivity) {
-					lprintf("%04d Disconnecting due to to inactivity.",sock);
+					lprintf("%04d Disconnecting due to to inactivity",sock);
 					sockprintf(sock,"421 Disconnecting due to inactivity (%u seconds)."
 						,startup->max_inactivity);
 					ftp_close_socket(&data_sock,__LINE__);
@@ -4160,7 +4171,7 @@ static void ctrl_thread(void* arg)
 		logoutuserdat(&scfg, &user, time(NULL), logintime);
 
 	if(user.number)
-		lprintf("%04d %s logged off.",sock,user.alias);
+		lprintf("%04d %s logged off",sock,user.alias);
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
@@ -4185,8 +4196,11 @@ static void ctrl_thread(void* arg)
 	active_clients--;
 	update_clients();
 	client_off(sock);
-	lprintf("%04d CTRL thread terminated (%u clients remain)"
-		,sock, active_clients);
+
+	thread_down();
+
+	lprintf("%04d CTRL thread terminated (%u clients, %u threads remain)"
+		,sock, active_clients, thread_count);
 
 #ifdef _DEBUG
 	socket_debug[sock]&=~SOCKET_DEBUG_CTRL;
@@ -4195,14 +4209,13 @@ static void ctrl_thread(void* arg)
 #if defined(_DEBUG) && defined(SOCKET_DEBUG_TERMINATE)
 	socket_debug[sock]&=~SOCKET_DEBUG_TERMINATE;
 #endif
-	/* Free up resources here */
+
+	/* Free up resources here (MUST BE LAST) */
 	ftp_close_socket(&sock,__LINE__);
 	if(pasv_sock!=INVALID_SOCKET)
 		ftp_close_socket(&pasv_sock,__LINE__);
 	if(data_sock!=INVALID_SOCKET)
 		ftp_close_socket(&data_sock,__LINE__);
-
-	thread_down();
 }
 
 static void cleanup(int code)
@@ -4227,11 +4240,11 @@ static void cleanup(int code)
 	}
 #endif
 
-    lprintf("#### FTP Server thread terminated");
+	thread_down();
 	status("Down");
+    lprintf("#### FTP Server thread terminated (%u threads remain)", thread_count);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
-	thread_down();
 }
 
 const char* DLLCALL ftp_ver(void)
