@@ -142,9 +142,9 @@ int lprintf(int level, char *fmt, ...)
 	}
 #endif
 	if(level<=err_level)
-		ret=fprintf(errfp,"%s",sbuf);
+		ret=fprintf(errfp,"%s\n",sbuf);
 	if(level>err_level || (errfp!=stderr && errfp!=confp))
-		ret=fprintf(confp,"%s",sbuf);
+		ret=fprintf(confp,"%s\n",sbuf);
     return(ret);
 }
 
@@ -199,7 +199,7 @@ static BOOL winsock_startup(void)
 		return(TRUE);
 	}
 
-    lprintf(LOG_ERR,"!WinSock startup ERROR %d\n", status);
+    lprintf(LOG_ERR,"!WinSock startup ERROR %d", status);
 	return(FALSE);
 }
 
@@ -215,7 +215,7 @@ void bail(int code)
 
 #if defined(_WINSOCKAPI_)
 	if(WSAInitialized && WSACleanup()!=0) 
-		lprintf(LOG_ERR,"!WSACleanup ERROR %d\n",ERROR_VALUE);
+		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
 	if(pause_on_exit || (code && pause_on_error)) {
@@ -243,8 +243,6 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			return(JS_FALSE);
 		lprintf(level,"%s",JS_GetStringBytes(str));
 	}
-	if(argc)
-		lprintf(level,"\n");
 
 	if(str==NULL)
 		*rval = JSVAL_VOID;
@@ -482,7 +480,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	const char*	warning;
 
 	if(report==NULL) {
-		lprintf(LOG_ERR,"!JavaScript: %s\n", message);
+		lprintf(LOG_ERR,"!JavaScript: %s", message);
 		return;
     }
 
@@ -504,7 +502,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	} else
 		warning="";
 
-	lprintf(LOG_ERR,"!JavaScript %s%s%s: %s\n",warning,file,line,message);
+	lprintf(LOG_ERR,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
 static JSBool
@@ -612,12 +610,12 @@ long js_exec(const char *fname, char** args)
 			SAFECOPY(path,fname);
 
 		if(!fexistcase(path)) {
-			lprintf(LOG_ERR,"!Module file (%s) doesn't exist\n",path);
+			lprintf(LOG_ERR,"!Module file (%s) doesn't exist",path);
 			return(-1); 
 		}
 
 		if((fp=fopen(path,"r"))==NULL) {
-			lprintf(LOG_ERR,"!Error %d (%s) opening %s\n",errno,STRERROR(errno),path);
+			lprintf(LOG_ERR,"!Error %d (%s) opening %s",errno,STRERROR(errno),path);
 			return(-1);
 		}
 	}
@@ -680,7 +678,7 @@ long js_exec(const char *fname, char** args)
 #endif
 		len=strlen(line);
 		if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
-			lprintf(LOG_ERR,"!Error allocating %u bytes of memory\n"
+			lprintf(LOG_ERR,"!Error allocating %u bytes of memory"
 				,js_buflen+len);
 			return(-1);
 		}
@@ -691,7 +689,7 @@ long js_exec(const char *fname, char** args)
 		fclose(fp);
 
 	if((js_script=JS_CompileScript(js_cx, js_glob, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
-		lprintf(LOG_ERR,"!Error compiling script from %s\n",path);
+		lprintf(LOG_ERR,"!Error compiling script from %s",path);
 		return(-1);
 	}
 	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
@@ -867,16 +865,16 @@ int main(int argc, char **argv, char** environ)
 
 	if(scfg.ctrl_dir[0]==0) {
 		if((p=getenv("SBBSCTRL"))==NULL) {
-			lprintf(LOG_ERR,"\nSBBSCTRL environment variable not set and -c option not specified.\n");
-			lprintf(LOG_ERR,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-			lprintf(LOG_ERR,"\n     or: %s -c /sbbs/ctrl [module]\n",argv[0]);
+			fprintf(errfp,"\nSBBSCTRL environment variable not set and -c option not specified.\n");
+			fprintf(errfp,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
+			fprintf(errfp,"\n     or: %s -c /sbbs/ctrl [module]\n",argv[0]);
 			bail(1); 
 		}
 		SAFECOPY(scfg.ctrl_dir,p);
 	}	
 
 	if(module==NULL && isatty(fileno(stdin))) {
-		lprintf(LOG_ERR,"\n!Module name not specified\n");
+		fprintf(errfp,"\n!Module name not specified\n");
 		usage(errfp);
 		bail(1); 
 	}
@@ -884,11 +882,11 @@ int main(int argc, char **argv, char** environ)
 	banner(statfp);
 
 	if(chdir(scfg.ctrl_dir)!=0)
-		lprintf(LOG_ERR,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
+		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
-		lprintf(LOG_ERR,"!ERROR loading configuration files: %s\n",error);
+		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		bail(1);
 	}
 	prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
@@ -901,9 +899,9 @@ int main(int argc, char **argv, char** environ)
 
 #if defined(__unix__)
 	if(daemonize) {
-		lprintf(LOG_INFO,"Running as daemon\n");
+		fprintf(statfp,"\nRunning as daemon\n");
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
-			lprintf(LOG_ERR,"!ERROR %d running as daemon\n",errno);
+			fprintf(statfp,"!ERROR %d running as daemon\n",errno);
 			daemonize=FALSE;
 		}
 	}
@@ -931,7 +929,7 @@ int main(int argc, char **argv, char** environ)
 		recycled=FALSE;
 
 		if(!js_init(environ)) {
-			lprintf(LOG_ERR,"!JavaScript initialization failure\n");
+			lprintf(LOG_ERR,"!JavaScript initialization failure");
 			bail(1);
 		}
 		fprintf(statfp,"\n");
