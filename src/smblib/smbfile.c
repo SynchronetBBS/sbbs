@@ -102,7 +102,7 @@ size_t SMBCALL smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 	while(1) {
 		if((ret=fread(buf,sizeof(char),bytes,fp))==bytes)
 			return(ret);
-		if(errno!=EDEADLOCK)
+		if(get_errno()!=EDEADLOCK)
 			return(ret);
 		if(!start)
 			start=time(NULL);
