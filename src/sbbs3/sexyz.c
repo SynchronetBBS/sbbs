@@ -742,7 +742,7 @@ static int send_files(char** fname, uint fnames)
 			} else
 				lprintf(LOG_WARNING,"File Transfer Failure");
 
-			if(xm.total_files-xm->sent_files)
+			if(xm.total_files-xm.sent_files)
 				lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %lu"
 					,((xm.total_bytes-xm.sent_bytes)/cps)/60
 					,((xm.total_bytes-xm.sent_bytes)/cps)%60
