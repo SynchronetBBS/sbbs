@@ -614,8 +614,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	}
 
 	msg->hdr.version=smb_ver();
-	msg->hdr.when_imported.time=time(NULL);
-	msg->hdr.when_imported.zone=sys_timezone(cfg);
+	if(msg->hdr.when_imported.time==0) {
+		msg->hdr.when_imported.time=time(NULL);
+		msg->hdr.when_imported.zone=sys_timezone(cfg);
+	}
 	if(msg->hdr.when_written.time==0)	/* Uninitialized */
 		msg->hdr.when_written = msg->hdr.when_imported;
 	msg->idx.time=msg->hdr.when_imported.time;
@@ -644,7 +646,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		smb_hfield_str(msg,FIDOMSGID,msg_id);
 	}
 
-	if(msg->to==NULL)	/* no recipient, don't add header */
+	if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
 		return(smb_unlocksmbhdr(smb));
 
 	/* Look-up thread_orig if Reply-ID was specified */
