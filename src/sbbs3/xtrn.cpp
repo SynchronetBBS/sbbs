@@ -1355,10 +1355,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			if(rd>(int)sizeof(buf))
 				rd=sizeof(buf);
 
-			if((rd=read(out_pipe[0],buf,rd))<1) {
-				YIELD();
+			if((rd=read(out_pipe[0],buf,rd))<1)
 				continue;
-			}
 				
 			if(mode&EX_BIN)	/* telnet IAC expansion */
    	       		bp=telnet_expand(buf, rd, output_buf, output_len);
