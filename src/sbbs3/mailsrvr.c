@@ -896,8 +896,7 @@ static void pop3_thread(void* arg)
 					,socket,strlen(msgtxt));
 				sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
-				lprintf("%04d POP3 message transfer complete (%u bytes)"
-					,socket, strlen(msgtxt));
+				lprintf("%04d POP3 message transfer complete",socket);
 
 				msg.hdr.attr|=MSG_READ;
 				msg.idx.attr=msg.hdr.attr;
@@ -2180,8 +2179,7 @@ static void sendmail_thread(void* arg)
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			lprintf("%04d SEND message transfer complete (%u bytes)"
-				,sock, strlen(msgtxt));
+			lprintf("%04d SEND message transfer complete", sock);
 
 			msg.hdr.attr|=MSG_DELETE;
 			msg.idx.attr=msg.hdr.attr;
