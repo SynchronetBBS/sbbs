@@ -817,6 +817,14 @@ extern "C" {
 	/* js_file_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg 
 													,user_t* user, char* html_index_file);
+
+	/* js_msg_area.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+													,user_t* user);
+
+	/* js_msgbase.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent);
+
 	/* js_socket.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent
