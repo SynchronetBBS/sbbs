@@ -128,10 +128,6 @@ SOURCE=.\rechocfg.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\sbbs.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\sbbsecho.c
 # End Source File
 # Begin Source File
