@@ -81,7 +81,7 @@ if(join) {
 if(msg)
 	send(msg);
 else while(msg=readln())	/* read from stdin */
-	msg=expand_tabs(msg);
+	send(msg);
 
 while(my_server.poll(0) && (response=my_server.recvline()))
 	log(response);
