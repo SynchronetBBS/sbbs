@@ -62,6 +62,10 @@
 		#include <sys/vfs.h>    /* statfs() */
 	#endif
 
+	#if defined(__solaris__)
+		#include <sys/statvfs.h>
+	#endif
+
 #endif /* __unix__ */
 
 #if defined(__WATCOMC__)
@@ -713,6 +717,17 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 	struct statfs fs;
 
     if (statfs(path, &fs) < 0)
+    	return 0;
+
+	if(unit>1)
+		fs.f_bavail/=unit;
+    return fs.f_bsize * fs.f_bavail;
+    
+#elif defined(__solaris__)
+
+	struct statvfs fs;
+
+    if (statvfs(path, &fs) < 0)
     	return 0;
 
 	if(unit>1)

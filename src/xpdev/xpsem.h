@@ -54,8 +54,22 @@ typedef struct xp_sem *xp_sem_t;
 #define SEM_FAILED	((xp_sem_t *)0)
 #define SEM_VALUE_MAX	UINT_MAX
 
+#if defined(__cplusplus)
+#define __BEGIN_DECLS   extern "C" {
+#define __END_DECLS     }
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+#define __P(protos)     ()              /* traditional C preprocessor */
+/* full-blown ANSI C */
+/* #define __P(protos)     protos */
+
+#ifdef __solaris__
+typedef unsigned int	u_int32_t;
+#endif
+
 #ifndef KERNEL
-#include <sys/cdefs.h>
 
 __BEGIN_DECLS
 int	 xp_sem_init __P((xp_sem_t *, int, unsigned int));

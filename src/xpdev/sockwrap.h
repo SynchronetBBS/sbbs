@@ -68,6 +68,7 @@
 #include <unistd.h>			/* close */
 #if defined(__solaris__)
 	#include <sys/filio.h>  /* FIONBIO */
+	#define INADDR_NONE -1L
 #else
 	#include <sys/ioctl.h>	/* FIONBIO */
 #endif

@@ -70,6 +70,11 @@
 #elif defined(__unix__)
 
 	#include <fcntl.h>
+	#ifdef __solaris__
+		#define LOCK_NB	1
+		#define LOCK_SH 2
+		#define LOCK_EX 4
+	#endif
 
 	#ifdef __QNX__
 		#include <share.h>

@@ -14,7 +14,7 @@ ifndef VERBOSE
 endif
 
 # Compiler-specific options
-CFLAGS	+=	-MMD -Wall
+CFLAGS	+=	-MMD
 CCPRE	?=	gcc
 ifdef BUILD_DEPENDS
  CC	=	$(XPDEV)../build/mkdep -a
@@ -54,7 +54,11 @@ else
  ifeq ($(os),openbsd)
   DELETE :=	rm -f
  else
-  DELETE	=	rm -fv
+  ifeq ($(os),sunos)
+   DELETE :=	rm -f
+  else
+   DELETE	=	rm -fv
+  endif
  endif
 endif
 
@@ -112,8 +116,11 @@ else
      PTHREAD_LDFLAGS    += -lpthread
      XP_SEM    := 1
     else
-     ifeq ($(os),solaris)  # Solaris
+     ifeq ($(os),sunos)  # Solaris
+      XP_SEM :=    1
       PTHREAD_CFLAGS    +=    -D_POSIX_PTHREAD_SEMANTICS
+      PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
+      PTHREAD_LDFLAGS    +=    -lpthread
      else            # Linux / Other UNIX
       XP_SEM :=    1
       PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES

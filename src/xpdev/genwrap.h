@@ -263,7 +263,8 @@ extern "C" {
 #endif
 
 #if defined(__solaris__)
-	#define CTIME_R(x,y)	ctime_r(x,y,sizeof y)
+	#define CTIME_R(x,y)	ctime_r(x,y)
+	/* #define CTIME_R(x,y)	ctime_r(x,y,sizeof y) */
 #else
 	#define CTIME_R(x,y)	ctime_r(x,y)
 #endif
