@@ -24,6 +24,10 @@ include $(XPDEV)Common.gmake
 include $(SBBS_SRC)Common.gmake
 include $(UIFC_SRC)Common.gmake
 
+ifeq ($(os),sunos)
+ LDFLAGS	+=	-lnsl
+endif
+
 FORCE$(EXEODIR)/uedit: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 
 $(EXEODIR)/uedit: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
