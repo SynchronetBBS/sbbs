@@ -90,6 +90,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 smb_t smb;
 ulong mode=0L;
 ushort tzone=0;
+ushort xlat=XLAT_NONE;
 FILE* err_fp;
 
 /************************/
@@ -118,6 +119,7 @@ char *usage=
 "       i    = ignore dupes (do not store CRCs or search for duplicate hashes)\n"
 "       d    = use default values (no prompt) for to, from, and subject\n"
 "       o    = print errors on stdout (instead of stderr)\n"
+"       l    = LZH-compress message text\n"
 "       t<s> = set 'to' user name for imported message\n"
 "       n<s> = set 'to' netmail address for imported message\n"
 "       u<s> = set 'to' user number for imported message\n"
@@ -312,7 +314,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 
 	if((i=smb_addmsg(&smb,&msg,smb.status.attr&SMB_HYPERALLOC
-		,INT_TO_BOOL(mode&NOCRC),XLAT_NONE,msgtxt,NULL))!=SMB_SUCCESS) {
+		,INT_TO_BOOL(mode&NOCRC),xlat,msgtxt,NULL))!=SMB_SUCCESS) {
 		fprintf(err_fp,"\n\7!smb_addmsg returned %d: %s\n",i,smb.last_error);
 		exit(1); 
 	}
@@ -1457,6 +1459,9 @@ int main(int argc, char **argv)
 						break;
 					case 'O':
 						err_fp=stdout;
+						break;
+					case 'L':
+						xlat=XLAT_LZH;
 						break;
 					default:
 						printf("\nUnknown opt '%c'\n",argv[x][j]);
