@@ -1357,7 +1357,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							}
 							return(-1);
 						default:
-							return(-2-i);
+							if(mode&WIN_EXTKEYS)
+								return(-2-i);
 				}
 			}
 		}
