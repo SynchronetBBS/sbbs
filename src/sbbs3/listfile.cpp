@@ -477,7 +477,8 @@ void sbbs_t::clearline(void)
 	else {
 		for(i=0;i<79;i++)
 			outchar(SP);
-		outchar(CR); }
+		outchar(CR); 
+	}
 }
 
 /****************************************************************************/
