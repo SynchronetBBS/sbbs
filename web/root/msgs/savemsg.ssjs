@@ -70,7 +70,7 @@ if(msgbase.cfg.settings&SUB_KILLP && hdrs.attr&MSG_PRIVATE)
 	hdrs.attr|=MSG_KILLREAD;
 
 /* Sig stuff */
-if(!(msgbase.cfg.settings&SUB_NOUSERSIG) && ) {
+if(!(msgbase.cfg.settings&SUB_NOUSERSIG) && !(hdrs.attr&MSG_ANONYMOUS)) {
 	sigfile=new File(format("%suser/%04u.sig",system.data_dir,user.number));
 	if(sigfile.exists) {
 		sigfile.open("r",true);
