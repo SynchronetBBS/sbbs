@@ -109,8 +109,8 @@ struct uifc_mouse_event {
 
 /* Mouse support */
 #ifdef _WIN32
-int	uifc_last_button_press=0;
-struct uifc_mouse_event	last_mouse_click;
+static struct uifc_mouse_event	uifc_last_button_press;
+static struct uifc_mouse_event	last_mouse_click;
 #define kbhit()	console_hit()
 int	console_hit(void);
 #endif
@@ -156,8 +156,6 @@ int console_hit(void)
 					|| input.Event.MouseEvent.dwButtonState==FROM_LEFT_1ST_BUTTON_PRESSED
 					|| input.Event.MouseEvent.dwButtonState==RIGHTMOST_BUTTON_PRESSED))
 				return(1);
-			else
-				uifc_last_button_press=0;
 		}
 		if(ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
 			&& num) {
@@ -203,30 +201,33 @@ int inkey()
 				return(input.Event.KeyEvent.wVirtualScanCode<<8);
 				break;
 			case MOUSE_EVENT:
-				if(input.Event.MouseEvent.dwEventFlags!=0) {
-					uifc_last_button_press=0;
+				if(input.Event.MouseEvent.dwEventFlags!=0)
 					continue;
-				}
 				if(input.Event.MouseEvent.dwButtonState==0) {
-					if(uifc_last_button_press) {
-						last_mouse_click.x=input.Event.MouseEvent.dwMousePosition.X;
-						last_mouse_click.y=input.Event.MouseEvent.dwMousePosition.Y;
-						last_mouse_click.button=uifc_last_button_press;
-						uifc_last_button_press=0;
+					if(uifc_last_button_press.button
+							&& uifc_last_button_press.x==input.Event.MouseEvent.dwMousePosition.X
+							&& uifc_last_button_press.y==input.Event.MouseEvent.dwMousePosition.Y) {
+						memcpy(&last_mouse_click,&uifc_last_button_press,sizeof(last_mouse_click));
+						memset(&uifc_last_button_press,0,sizeof(uifc_last_button_press));
 						return(KEY_MOUSE);
+					}
+					else {
+						memset(&uifc_last_button_press,0,sizeof(uifc_last_button_press));
 					}
 				}
 				else {
-					uifc_last_button_press=0;
+					memset(&uifc_last_button_press,0,sizeof(uifc_last_button_press));
 					switch(input.Event.MouseEvent.dwButtonState) {
 						case FROM_LEFT_1ST_BUTTON_PRESSED:
-							uifc_last_button_press=1;
+							uifc_last_button_press.x=input.Event.MouseEvent.dwMousePosition.X;
+							uifc_last_button_press.y=input.Event.MouseEvent.dwMousePosition.Y;
+							uifc_last_button_press.button=1;
 							break;
 						case RIGHTMOST_BUTTON_PRESSED:
-							uifc_last_button_press=2;
+							uifc_last_button_press.x=input.Event.MouseEvent.dwMousePosition.X;
+							uifc_last_button_press.y=input.Event.MouseEvent.dwMousePosition.Y;
+							uifc_last_button_press.button=2;
 							break;
-						default:
-							uifc_last_button_press=0;
 					}
 				}
 		}
@@ -327,6 +328,8 @@ int uifcini32(uifcapi_t* uifcapi)
 
     gettextinfo(&txtinfo);
 #ifdef _WIN32
+	memset(&uifc_last_button_press,0,sizeof(uifc_last_button_press));
+	memset(&last_mouse_click,0,sizeof(last_mouse_click));
 	api->mode|=UIFC_MOUSE;
     /* unsupported mode? */
     if(txtinfo.screenheight<MIN_LINES
