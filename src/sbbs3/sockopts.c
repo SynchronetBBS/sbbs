@@ -60,6 +60,7 @@ static const sockopt_name option_names[] = {
 #ifdef SO_ACCEPTCONN
 	{ "ACCEPTCONN",		SO_ACCEPTCONN	},
 #endif
+	{ "TCP_NODELAY",	TCP_NODELAY		},
 	{ NULL }
 };
 
@@ -128,6 +129,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 				len=sizeof(linger);
 				break;
 			case SO_KEEPALIVE:
+			case TCP_NODELAY:
 				if(type!=SOCK_STREAM)
 					continue;
 				break;
@@ -135,7 +137,10 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 #if 0
 		lprintf("%04d setting socket option: %s to %d", sock, str, value);
 #endif
-		result=setsockopt(sock,SOL_SOCKET,option,vp,len);
+		if(option==TCP_NODELAY)
+			result=setsockopt(sock,IPPROTO_TCP,option,vp,len);
+		else
+			result=setsockopt(sock,SOL_SOCKET,option,vp,len);
 		if(result) {
 			sprintf(error,"%d setting socket option (%s, %d) to %d"
 				,ERROR_VALUE, name, option, value);
