@@ -12,8 +12,8 @@ CIOWRAP_CFLAGS	+=	-I$(CONIO_SRC)
 # ciowrap stuff
 ifndef NO_X
  X_DIR	?=	/usr/X11R6/
- CIOWRAP_CFLAGS	+=	-I${X_DIR}include
- CIOWRAP_LDFLAGS	+=	-L${X_DIR}lib -lX11
+ CIOWRAP_CFLAGS	+=	-I${X_DIR}/include
+ CIOWRAP_LDFLAGS	+=	-L${X_DIR}/lib -lX11
  CIOWRAP_OBJS	+=	$(LIBODIR)/console.o $(LIBODIR)/x_cio.o
 else
  CIOWRAP_CFLAGS	+=	-DNO_X
