@@ -35,7 +35,17 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+/* Platform-specific */
+#ifdef _WIN32
+	#include <windows.h>	/* avoid DWORD conflict */
+#endif
+
+/* ANSI */
 #include <stdio.h>
+#include <string.h>		/* strchr */
+
+/* Synchronet-specific */
+#include "gen_defs.h"
 #include "sbbsinet.h"
 
 #ifdef _WIN32
