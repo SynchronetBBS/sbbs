@@ -1077,7 +1077,7 @@ BOOL http_checkuser(http_session_t * session)
 				return(FALSE);
 			}
 		}
-		session->last_js_user_num==session->user.number;
+		session->last_js_user_num=session->user.number;
 	}
 	return(TRUE);
 }
