@@ -1559,32 +1559,31 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 <---SNIP--->
 # Handy for HyperTerminal and such
 ansi-bbs|ANSI terminals (emulators):\
-        :co#80:li#24:am:\
-        :bs:mi:ms:pt:xn:xo:it#8:\
-        :RA=\E[?7l:SA=\E?7h:\
-        :bl=^G:cr=^M:ta=^I:\
-        :@7=\E[K:kh=\E[H::cm=\E[%i%d;%dH:\
-        :le=^H:up=\E[A:do=\E[B:nd=\E[C:\
-        :LE=\E[%dD:RI=\E[%dC:UP=\E[%dA:DO=\E[%dB:\
-        :ho=\E[H:cl=\E[H\E[2J:ce=\E[K:cb=\E[1K:cd=\E[J:sf=\ED:sr=\EM:\
-        :ct=\E[3g:st=\EH:\
-        :cs=\E[%i%d;%dr:sc=\E7:rc=\E8:\
-        :ic=\E[@:IC=\E[%d@:al=\E[L:AL=\E[%dL:\
-        :dc=\E[P:DC=\E[%dP:dl=\E[M:DL=\E[%dM:\
-        :so=\E[7m:se=\E[m:us=\E[4m:ue=\E[m:\
-        :mb=\E[5m:mh=\E[2m:md=\E[1m:mr=\E[7m:me=\E[m:\
-        :sc=\E7:rc=\E8:\
-        :ku=\E[A:kd=\E[B:kr=\E[C:kl=\E[D:\
-        :ZG#0:ZA=\E[0%?%p1%{0}%>%p1%{4}%<%&%t;1%;%?%p2%t;7%;%?%p3%t;5%;%?%p4%t;4%;m:\
-        :is=:rs=\Ec:kb=^H:\
-        :as=\E[m:ae=:eA=:\
-        :ac=0\333+\257,\256.\031-\030a\261f\370g\361j\331k\277l\332m\300n\305q\304t\264u\303v\301w\302x\263~\025:\
-        :kD=\177:kH=\E[Y:kN=\E[U:kP=\E[V:\
-        :kj=\177::kf=\E[U:kg=\E[V:\
-        :k0=\EOP:k1=\EOQ:k2=\EOR:k3=\EOS:k4=\EOT:\
-        :k5=\EOU:k6=\EOV:k7=\EOW:k8=\EOX:k9=\EOY:\
-        :gb=\332\300\277\331\304\263:\
-        :Co#8:pa#64:so=\E[7m:se=\E[27m:AF=\E[3%dm:AB=\E[4%dm:op=\E[39;49m:
+	:co#80:li#24:am:\
+	:bs:mi:ms:pt:xn:xo:it#8:\
+	:RA=\E[?7l:SA=\E?7h:\
+	:bl=^G:cr=^M:ta=^I:\
+	:cm=\E[%i%d;%dH:\
+	:le=^H:up=\E[A:do=\E[B:nd=\E[C:\
+	:ho=\E[H:cl=\E[H\E[2J:ce=\E[K:cb=\E[1K:cd=\E[J:sf=\ED:sr=\EM:\
+	:ct=\E[3g:st=\EH:\
+	:cs=\E[%i%d;%dr:sc=\E7:rc=\E8:\
+	:ic=\E[@:IC=\E[%d@:al=\E[L:AL=\E[%dL:\
+	:dc=\E[P:DC=\E[%dP:dl=\E[M:DL=\E[%dM:\
+	:so=\E[7m:se=\E[m:us=\E[4m:ue=\E[m:\
+	:mb=\E[5m:mh=\E[2m:md=\E[1m:mr=\E[7m:me=\E[m:\
+	:sc=\E7:rc=\E8:\
+	:ku=\E[A:kd=\E[B:kr=\E[C:kl=\E[D:\
+	:is=:rs=\Ec:kb=^H:\
+	:kD=\177:kH=\E[Y:kN=\E[U:kP=\E[V:\
+	:kh=\E[2J:@7=\E[k:\
+	:Co#8:pa#64:so=\E[7m:se=\E[27m:AF=\E[3%dm:AB=\E[4%dm:op=\E[39;49m:\
+	:gb=\332\300\277\331\304\263:\
+	:k0=\EOP:k1=\EOQ:k2=\EOR:k3=\EOS:k4=\EOT:\
+	:k5=\EOU:k6=\EOV:k7=\EOW:k8=\EOX:k9=\EOY:\
+	:ac=l\332m\300k\277j\331u\264t\303v\301w\302q\304x\263n\305`^Da\260f\370g\361~\371.^Y-^Xh\261i^U0\333y\363z\362:\
+	:LE=\E[%dD:RI=\E[%dC:UP=\E[%dA:DO=\E[%dB:
+
 
 <---SNIP--->
 
