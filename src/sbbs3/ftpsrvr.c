@@ -524,43 +524,51 @@ JSContext* js_initcx(JSObject** glob)
 	JSObject*	js_glob;
 	JSObject*	sysobj;
 	jsval		val;
+	BOOL		success=FALSE;
 
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
 
+	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
-    if((js_glob = JS_NewObject(js_cx, &js_global_class, NULL, NULL))==NULL) {
+	do {
+
+		if((js_glob = JS_NewObject(js_cx, &js_global_class, NULL, NULL))==NULL) 
+			break;
+
+		if (!JS_InitStandardClasses(js_cx, js_glob)) 
+			break;
+
+		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
+			break;
+
+		if((sysobj=js_CreateSystemObject(&scfg, js_cx, js_glob))==NULL) 
+			break;
+
+		sprintf(ver,"%s v%s",FTP_SERVER,FTP_VERSION);
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if(!JS_SetProperty(js_cx, sysobj, "version", &val))
+			break;
+
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ftp_ver()));
+		if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
+			break;
+
+		if(glob!=NULL)
+			*glob=js_glob;
+
+		success=TRUE;
+
+	} while(0);
+
+	JS_EndRequest(js_cx);		/* Required for multi-thread support */
+
+	if(!success) {
 		JS_DestroyContext(js_cx);
 		return(NULL);
 	}
-
-    if (!JS_InitStandardClasses(js_cx, js_glob)) {
-		JS_DestroyContext(js_cx);
-		return(NULL);
-	}
-
-    if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) {
-		JS_DestroyContext(js_cx);
-		return(NULL);
-	}
-
-	if((sysobj=js_CreateSystemObject(&scfg, js_cx, js_glob))==NULL) {
-		JS_DestroyContext(js_cx);
-		return(NULL);
-	}
-
-	sprintf(ver,"%s v%s",FTP_SERVER,FTP_VERSION);
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
-	if(!JS_SetProperty(js_cx, sysobj, "version", &val))
-		return(FALSE);
-
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ftp_ver()));
-	if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
-		return(FALSE);
-
-	if(glob!=NULL)
-		*glob=js_glob;
 
 	return(js_cx);
 }
@@ -2294,6 +2302,8 @@ static void ctrl_thread(void* arg)
 			}
 
 #ifdef JAVASCRIPT
+			JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+
 			if((js_user=js_CreateUserObject(&scfg, js_cx, js_glob, "user", &user))==NULL) {
 				lprintf("%04d !JavaScript ERROR creating user object",sock);
 			}
@@ -2301,6 +2311,7 @@ static void ctrl_thread(void* arg)
 				,startup->html_index_file)==NULL) {
 				lprintf("%04d !JavaScript ERROR creating file area object",sock);
 			}
+			JS_EndRequest(js_cx);	/* Required for multi-thread support */
 #endif
 
 			if(sysop)
@@ -3311,6 +3322,8 @@ static void ctrl_thread(void* arg)
 				|| !strnicmp(p,html_index_ext,strlen(html_index_ext)))
 				&& !delecmd) {
 #ifdef JAVASCRIPT
+				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+
 				js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, "name"));
 				JS_SetProperty(js_cx, js_glob, "ftp_sort", &js_val);
 				js_val=BOOLEAN_TO_JSVAL(FALSE);
@@ -3345,6 +3358,7 @@ static void ctrl_thread(void* arg)
 						JS_SetProperty(js_cx, js_glob, "ftp_sort", &js_val);
 					}
 				}
+				JS_EndRequest(js_cx);	/* Required for multi-thread support */
 #endif
 				sprintf(fname,"%sftp%d.tx", scfg.data_dir, sock);
 				if((fp=fopen(fname,"w+b"))==NULL) {
@@ -3362,10 +3376,14 @@ static void ctrl_thread(void* arg)
 				tmpfile=TRUE;
 				delfile=TRUE;
 #ifdef JAVASCRIPT
+				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+
 				js_val=INT_TO_JSVAL(timeleft);
 				if(!JS_SetProperty(js_cx, js_user, "time_left", &js_val))
 					lprintf("%04d !JavaScript ERROR setting user.time_left",sock);
 				js_generate_index(js_cx, js_glob, sock, fp, lib, dir, &user);
+
+				JS_EndRequest(js_cx);	/* Required for multi-thread support */
 #endif
 				fclose(fp);
 			} else if(dir>=0) {
@@ -3800,8 +3818,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
-	/* Free Context */
-	JS_DestroyContext(js_cx);
+	JS_DestroyContext(js_cx);	/* Free Context */
 #endif
 
 	status(STATUS_WFC);
