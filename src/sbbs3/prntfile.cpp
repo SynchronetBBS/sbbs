@@ -46,22 +46,23 @@ void sbbs_t::printfile(char *str, long mode)
 {
 	char* buf;
 	char* p;
-	int file,wip=0,rip=0;
+	int file;
+	BOOL wip=FALSE,rip=FALSE,html=FALSE;
 	long length,savcon=console;
 	FILE *stream;
 
 	p=strrchr(str,'.');
 	if(p!=NULL) {
 		if(stricmp(p,".wip")==0) {
-			wip=1;
+			wip=TRUE;
 			mode|=P_NOPAUSE;
 		}
 		else if(stricmp(p,".rip")==0) {
-			rip=1;
+			rip=TRUE;
 			mode|=P_NOPAUSE;
 		}
 		else if(stricmp(p,".html")==0)  {
-			html=1;
+			html=TRUE;
 			mode|=(P_HTML|P_NOPAUSE);
 		}
 	}
