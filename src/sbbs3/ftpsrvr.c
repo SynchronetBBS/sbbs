@@ -270,6 +270,8 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 			}
 			if(ERROR_VALUE==ECONNRESET) 
 				lprintf("%04d Connection reset by peer on send",sock);
+			else if(ERROR_VALUE==ECONNABORTED)
+				lprintf("%04d Connection aborted by peer on send",sock);
 			else
 				lprintf("%04d !ERROR %d sending",sock,ERROR_VALUE);
 			return(0);
@@ -399,6 +401,8 @@ void recverror(SOCKET socket, int rd)
 	else if(rd==SOCKET_ERROR) {
 		if(ERROR_VALUE==ECONNRESET) 
 			lprintf("%04d Connection reset by peer on receive",socket);
+		else if(ERROR_VALUE==ECONNABORTED) 
+			lprintf("%04d Connection aborted by peer on receive",socket);
 		else
 			lprintf("%04d !ERROR %d receiving on socket", socket, ERROR_VALUE);
 	} else
@@ -542,6 +546,9 @@ static void send_thread(void* arg)
 			if(wr==SOCKET_ERROR) {
 				if(ERROR_VALUE==ECONNRESET) 
 					lprintf("%04d DATA Connection reset by peer, sending on socket %d"
+						,xfer.ctrl_sock,*xfer.data_sock);
+				else if(ERROR_VALUE==ECONNABORTED) 
+					lprintf("%04d DATA Connection aborted by peer, sending on socket %d"
 						,xfer.ctrl_sock,*xfer.data_sock);
 				else
 					lprintf("%04d !DATA ERROR %d sending on data socket %d"
@@ -691,6 +698,9 @@ static void receive_thread(void* arg)
 			if(rd==SOCKET_ERROR) {
 				if(ERROR_VALUE==ECONNRESET) 
 					lprintf("%04d Connection reset by peer, receiving on socket %d"
+						,xfer.ctrl_sock,*xfer.data_sock);
+				else if(ERROR_VALUE==ECONNABORTED) 
+					lprintf("%04d Connection aborted by peer, receiving on socket %d"
 						,xfer.ctrl_sock,*xfer.data_sock);
 				else
 					lprintf("%04d !DATA ERROR %d receiving on data socket %d"
