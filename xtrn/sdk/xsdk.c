@@ -1131,8 +1131,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 					if(i) {
 						i--;
 						l--;
-						if(!(mode&K_NOECHO))
-							bputs("\b \b");
+						bputs("\b \b");
 					}
 					break;
 				}
