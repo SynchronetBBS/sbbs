@@ -1320,7 +1320,7 @@ static void smtp_thread(void* arg)
 		spamlog(&scfg, "SMTP", "Listed on RBL (http://mail-abuse.org/rbl)"
 			,host_name, host_ip, NULL);
 		sockprintf(socket
-			,"571 Mail from %s refused, see http://mail-abuse.org/rbl"
+			,"550 Mail from %s refused, see http://mail-abuse.org/rbl"
 			,host_ip);
 		mail_close_socket(socket);
 		thread_down();
@@ -1335,7 +1335,7 @@ static void smtp_thread(void* arg)
 		spamlog(&scfg, "SMTP", "Listed on DUL (http://mail-abuse.org/dul)"
 			,host_name, host_ip, NULL);
 		sockprintf(socket
-			,"571 Mail from %s refused, see http://mail-abuse.org/dul"
+			,"550 Mail from %s refused, see http://mail-abuse.org/dul"
 			,host_ip);
 		mail_close_socket(socket);
 		thread_down();
@@ -1350,7 +1350,7 @@ static void smtp_thread(void* arg)
 		spamlog(&scfg, "SMTP", "Listed on RSS (http://mail-abuse.org/rss)"
 			,host_name, host_ip, NULL);
 		sockprintf(socket
-			,"571 Mail from %s refused, see http://mail-abuse.org/rss"
+			,"550 Mail from %s refused, see http://mail-abuse.org/rss"
 			,host_ip);					
 		mail_close_socket(socket);
 		thread_down();
@@ -1363,7 +1363,7 @@ static void smtp_thread(void* arg)
 		sprintf(str,"Listed on %s as %s", tmp, inet_ntoa(dns_result));
 		spamlog(&scfg, "SMTP", str, host_name, host_ip, NULL);
 		sockprintf(socket
-			,"571 Mail from %s refused due to listing at %s"
+			,"550 Mail from %s refused due to listing at %s"
 			,host_ip, tmp);
 		mail_close_socket(socket);
 		thread_down();
