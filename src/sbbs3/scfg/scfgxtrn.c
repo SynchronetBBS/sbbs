@@ -383,6 +383,8 @@ This is the internal code for the timed event.
 			,cfg.event[i]->misc&XTRN_SH ? "Yes" : "No");
 		sprintf(opt[k++],"%-32.32s%s","Background Execution"
 			,cfg.event[i]->misc&EX_BG ? "Yes" : "No");
+		sprintf(opt[k++],"%-32.32s%s","Always Run After Initialization"
+			,cfg.event[i]->misc&EVENT_INIT ? "Yes":"No");
 
 		opt[k][0]=0;
 		SETHELP(WHERE);
@@ -691,7 +693,33 @@ set this option to Yes. Exclusive events will not run in the background.
                 }
                 break;
 
-				} } }
+			case 12:
+				k=cfg.event[i]->misc&EVENT_INIT ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				uifc.savnum=2;
+				SETHELP(WHERE);
+/*
+`Always Run After Initialization:`
+
+If you want this event to always run after the BBS is initialized or
+re-initialized, set this option to ~Yes~.
+*/
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Always Run After Initialization",opt);
+				if(!k && !(cfg.event[i]->misc&EVENT_INIT)) {
+					cfg.event[i]->misc|=EVENT_INIT;
+					uifc.changes=1; 
+				}
+				else if(k==1 && cfg.event[i]->misc&EVENT_INIT) {
+					cfg.event[i]->misc&=~EVENT_INIT;
+                    uifc.changes=1; 
+				}
+                break;
+			} 
+		} 
+	}
 }
 
 
