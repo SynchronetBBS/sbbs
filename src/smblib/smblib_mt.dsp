@@ -49,7 +49,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo
+# ADD LIB32 /nologo /out:"msvc.win32.mt.release\smb.lib"
 
 !ELSEIF  "$(CFG)" == "smblib_mt - Win32 Debug"
 
@@ -72,7 +72,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"msvc.win32.mt.debug\smblib.lib"
+# ADD LIB32 /nologo /out:"msvc.win32.mt.debug\smb.lib"
 
 !ENDIF 
 
