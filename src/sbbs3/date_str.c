@@ -254,28 +254,34 @@ when_t DLLCALL rfc822date(char* date)
 	while(*p && isdigit(*p)) p++;
 	/* TIME ZONE */
 	while(*p && *p<=' ') p++;
-	if(*p && (isdigit(*p) || *p=='-')) { /* HHMM or -HHMM format */
-		sprintf(str,"%.*s",*p=='-'? 3:2,p);
-		when.zone=atoi(str)*60;
-		p+=(*p=='-') ? 3:2;
-		when.zone+=atoi(p);
+	if(*p) {
+		if(isdigit(*p) || *p=='-' || *p=='+') { /* [+|-]HHMM format */
+			if(*p=='+') p++;
+			sprintf(str,"%.*s",*p=='-'? 3:2,p);
+			when.zone=atoi(str)*60;
+			p+=(*p=='-') ? 3:2;
+			if(when.zone<0)
+				when.zone-=atoi(p);
+			else
+				when.zone+=atoi(p);
+		}
+		else if(!strnicmp(p,"PDT",3))
+			when.zone=(short)PDT;
+		else if(!strnicmp(p,"MDT",3))
+			when.zone=(short)MDT;
+		else if(!strnicmp(p,"CDT",3))
+			when.zone=(short)CDT;
+		else if(!strnicmp(p,"EDT",3))
+			when.zone=(short)EDT;
+		else if(!strnicmp(p,"PST",3))
+			when.zone=(short)PST;
+		else if(!strnicmp(p,"MST",3))
+			when.zone=(short)MST;
+		else if(!strnicmp(p,"CST",3))
+			when.zone=(short)CST;
+		else if(!strnicmp(p,"EST",3))
+			when.zone=(short)EST;
 	}
-	else if(!strnicmp(p,"PDT",3))
-		when.zone=(short)PDT;
-	else if(!strnicmp(p,"MDT",3))
-		when.zone=(short)MDT;
-	else if(!strnicmp(p,"CDT",3))
-		when.zone=(short)CDT;
-	else if(!strnicmp(p,"EDT",3))
-		when.zone=(short)EDT;
-	else if(!strnicmp(p,"PST",3))
-		when.zone=(short)PST;
-	else if(!strnicmp(p,"MST",3))
-		when.zone=(short)MST;
-	else if(!strnicmp(p,"CST",3))
-		when.zone=(short)CST;
-	else if(!strnicmp(p,"EST",3))
-		when.zone=(short)EST;
 
 	when.time=mktime(&tm);
 
@@ -355,11 +361,19 @@ char* DLLCALL zonestr(short zone)
 /****************************************************************************/
 char* DLLCALL msgdate(when_t when, char* buf)
 {
-	struct tm tm;
+	struct tm	tm;
+	char		plus='+';
+	short		tz;
+	
+	tz=smb_tzutc(when.zone);
+	if(tz<0) {
+		plus='-';
+		tz=-tz;
+	}
 	
 	if(localtime_r((const time_t*)&when.time,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
-	sprintf(buf,"%s, %d %s %d %02d:%02d:%02d %s"
+	sprintf(buf,"%s, %d %s %d %02d:%02d:%02d %c%02u%02u"
 		,wday[tm.tm_wday]
 		,tm.tm_mday
 		,mon[tm.tm_mon]
@@ -367,7 +381,8 @@ char* DLLCALL msgdate(when_t when, char* buf)
 		,tm.tm_hour
 		,tm.tm_min
 		,tm.tm_sec
-		,zonestr(when.zone)
+		/* RFC1123: implementations SHOULD use numeric timezones instead of timezone names */
+		,plus, tz/60, tz%60	
 		);
 	return(buf);
 }
