@@ -399,7 +399,8 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 			if(time(NULL)-start>=(time_t)smb->retry_time) 
 				break;						
 		/* In case we've already locked it */
-		unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t)); 
+		if(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0)
+			smb->locked=0;	/* FALSE */
 		SLEEP(smb->retry_delay);
 	}
 	sprintf(smb->last_error,"timeout locking header");
@@ -951,7 +952,8 @@ void* SMBCALL smb_get_hfield(smbmsg_t* msg, ushort type, hfield_t* hfield)
 
 	for(i=0;i<msg->total_hfields;i++)
 		if(msg->hfield[i].type == type) {
-			hfield = &msg->hfield[i];
+			if(hfield != NULL)
+				hfield = &msg->hfield[i];
 			return(msg->hfield_dat[i]);
 		}
 
