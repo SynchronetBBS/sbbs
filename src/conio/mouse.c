@@ -57,8 +57,8 @@ struct mouse_state {
 	int	click_timeout;			/* Timeout between press and release events for a click (ms) */
 	int	multi_timeout;			/* Timeout after a click for detection of multi clicks (ms) */
 	int	click_drift;			/* Allowed "drift" during a click event */
-	struct in_mouse_event	*events_in;		/* Pointer to recevied events stack */
-	struct out_mouse_event	*events_out;	/* Pointer to output events stack */
+	struct in_mouse_event	*events_in;		/* Pointer to recevied events queue */
+	struct out_mouse_event	*events_out;	/* Pointer to output events queue */
 };
 
 struct mouse_state state;
@@ -211,6 +211,9 @@ void ciolib_mouse_thread(void *data)
 			but=CIOLIB_BUTTON_NUMBER(state.events_in->event);
 			switch(CIOLIB_BUTTON_BASE(state.events_in->event)) {
 				case CIOLIB_MOUSE_MOVE:
+					if(state.events_in->x==state.button_x[but]
+							&& state.events_in->y==state.button_y[but])
+						break;
 					add_outevent(CIOLIB_MOUSE_MOVE,state.events_in->x,state.events_in->y);
 					for(but=1;but<=3;but++) {
 						switch(state.button_state[but-1]) {
