@@ -51,6 +51,9 @@
 #include "smblib.h"
 #include "genwrap.h"
 #include "filewrap.h"
+#include "md5.h"
+#include "crc16.h"
+#include "crc32.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
 #define SMBLIB_VERSION		"2.40"      /* SMB library version */
@@ -2456,7 +2459,7 @@ static char* strip_chars(uchar* str, uchar* set)
 
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
-hash_t* smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags, uchar* data)
+hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags, uchar* data)
 {
 	uchar*	p=data;
 	size_t	len;

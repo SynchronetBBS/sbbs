@@ -39,9 +39,6 @@
 #define _SMBLIB_H
 
 #include "lzh.h"
-#include "md5.h"
-#include "crc16.h"
-#include "crc32.h"
 
 #ifdef SMBEXPORT
 	#undef SMBEXPORT

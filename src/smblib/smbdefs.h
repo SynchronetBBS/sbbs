@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 #include "dirwrap.h"	/* MAX_PATH */
+#include "md5.h"		/* MD5_DIGEST_SIZE */
 
 /**********/
 /* Macros */
