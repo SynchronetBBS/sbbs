@@ -128,12 +128,16 @@ int x_cprintf(char *fmat, ...)
 	va_list argptr;
 	unsigned char   str[4097];
 	int             pos;
+	int				ret;
 
 	va_start(argptr,fmat);
-	vsprintf(str,fmat,argptr);
+	ret=vsprintf(str,fmat,argptr);
 	va_end(argptr);
-	x_cputs(str);
-	return(1);
+	if(ret>=0)
+		x_cputs(str);
+	else
+		ret=EOF;
+	return(ret);
 }
 
 void x_cputs(unsigned char *str)

@@ -583,15 +583,16 @@ int curs_cprintf(char *fmat, ...)
     va_list argptr;
 	unsigned char	str[MAX_BFLN];
 	int		pos;
+	int		ret;
 
     va_start(argptr,fmat);
-    vsprintf(str,fmat,argptr);
+    ret=vsprintf(str,fmat,argptr);
     va_end(argptr);
-	for(pos=0;str[pos];pos++)
-	{
-		putch(str[pos]);
-	}
-    return(1);
+	if(ret>=0)
+		curs_cputs(str);
+	else
+		ret=EOF;
+    return(ret);
 }
 
 void curs_cputs(unsigned char *str)
