@@ -1051,6 +1051,7 @@ void DLLCALL web_terminate(void)
 	if(server_socket!=INVALID_SOCKET) {
     	lprintf("%04d Web Terminate: closing socket",server_socket);
 		close_socket(server_socket);
+		server_socket=INVALID_SOCKET;
     }
 }
 
