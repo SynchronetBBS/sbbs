@@ -62,6 +62,7 @@ typedef struct {
 	void		(*progress)(void*, unsigned block_num, ulong offset, ulong fsize, time_t t);
 	int			(*send_byte)(void*, uchar ch, unsigned timeout);
 	int			(*recv_byte)(void*, unsigned timeout);
+	BOOL		(*is_connected)(void*);
 
 } xmodem_t;
 
@@ -70,7 +71,9 @@ void		xmodem_init(xmodem_t*, void* cbdata, long* mode
 						,int	(*lputs)(void*, int level, const char* str)
 						,void	(*progress)(void* unused, unsigned block_num, ulong offset, ulong fsize, time_t t)
 						,int	(*send_byte)(void*, uchar ch, unsigned timeout)
-						,int	(*recv_byte)(void*, unsigned timeout));
+						,int	(*recv_byte)(void*, unsigned timeout)
+						,BOOL	(*is_connected)(void*)
+						);
 char*		xmodem_ver(char *buf);
 const char* xmodem_source(void);
 void		xmodem_cancel(xmodem_t*);

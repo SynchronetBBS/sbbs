@@ -539,6 +539,12 @@ static void output_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"output thread terminated\n%s", stats);
 }
+
+BOOL is_connected(void* unused)
+{
+	return socket_check(sock,NULL,NULL,0);
+}
+
 /****************************************************************************/
 /* Returns the number of blocks required to send len bytes					*/
 /****************************************************************************/
@@ -860,7 +866,7 @@ static int receive_files(char** fname_list, int fnames)
 	while((i=getcom(0))!=NOINP)
 		lprintf(LOG_WARNING,"Throwing out received: %s",chr((uchar)i));
 
-	while(!terminate && !cancelled) {
+	while(!terminate && !cancelled && is_connected(NULL)) {
 		if(mode&XMODEM) {
 			SAFECOPY(str,fname_list[0]);	/* we'll have at least one fname */
 			file_bytes=file_bytes_left=0x7fffffff;
@@ -1041,7 +1047,7 @@ static int receive_files(char** fname_list, int fnames)
 			errors=0;
 			block_num=1;
 			xmodem_put_nak(&xm, block_num);
-			while(1) {
+			while(is_connected(NULL)) {
 				xmodem_progress(NULL,block_num,ftell(fp),file_bytes,startfile);
 				i=xmodem_get_block(&xm, block, block_num); 	
 
@@ -1215,8 +1221,8 @@ int main(int argc, char **argv)
 
 	RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
 
-	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte);
-	zmodem_init(&zm,NULL,&mode,lputs,zmodem_progress,send_byte,recv_byte);
+	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected);
+	zmodem_init(&zm,NULL,&mode,lputs,zmodem_progress,send_byte,recv_byte,is_connected);
 
 	/* Generate path/sexyz[.host].ini from path/sexyz[.exe] */
 	SAFECOPY(str,argv[0]);

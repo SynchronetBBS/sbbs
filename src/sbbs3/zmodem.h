@@ -260,6 +260,7 @@ typedef struct {
 	int			(*send_byte)(void*, uchar ch, unsigned timeout);
 	int			(*recv_byte)(void*, unsigned timeout);
 	void		(*progress)(void*, ulong start_pos, ulong current_pos, ulong fsize, time_t start);
+	BOOL		(*is_connected)(void*);
 
 } zmodem_t;
 
@@ -267,7 +268,9 @@ void		zmodem_init(zmodem_t*, void* cbdata, long* mode
 						,int	(*lputs)(void*, int level, const char* str)
 						,void	(*progress)(void*, ulong, ulong, ulong, time_t)
 						,int	(*send_byte)(void*, uchar ch, unsigned timeout)
-						,int	(*recv_byte)(void*, unsigned timeout));
+						,int	(*recv_byte)(void*, unsigned timeout)
+						,BOOL	(*is_connected)(void*)
+						);
 char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);
 void		zmodem_send_nak(zmodem_t*);
