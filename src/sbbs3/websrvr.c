@@ -469,8 +469,12 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	FD_SET(sock,&socket_set);
 
 	if((result=select(sock+1,NULL,&socket_set,NULL,&tv))<1) {
-		lprintf("%04d !ERROR %d (%d) selecting socket for send"
-			,sock, result, ERROR_VALUE, sock);
+		if(result==0)
+			lprintf("%04d !TIMEOUT selecting socket for send"
+				,sock);
+		else
+			lprintf("%04d !ERROR %d selecting socket for send"
+				,sock, ERROR_VALUE);
 		return(0);
 	}
 
