@@ -964,15 +964,8 @@ typedef struct {						/* File (transfers) Data */
 
 } file_t;
 
-typedef struct {						/* Mail data (taken from index) */
-	ulong	offset, 					/* Offset to header (in bytes) */
-			number; 					/* Number of message */
-	time_t	time;						/* Time imported */
-	ushort	to, 						/* To user # */
-			from,						/* From user # */
-			subj,						/* CRC-16 of subject */
-			attr;						/* Attributes */
-} mail_t;
+typedef idxrec_t post_t;
+typedef idxrec_t mail_t;
 
 typedef struct {						/* System/Node Statistics */
 	ulong 	logons,						/* Total Logons on System */
