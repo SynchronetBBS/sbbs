@@ -445,6 +445,60 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uchar*		buf;
+	int32		len=128;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = JSVAL_VOID;
+
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&len);
+
+	if((buf=(uchar*)malloc(len))==NULL)
+		return(JS_TRUE);
+
+	len=RingBufRead(&sbbs->inbuf,buf,len);
+
+	if(len>0)
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx,(char*)buf,len));
+
+	free(buf);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		buf;
+	int32		len=128;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = JSVAL_VOID;
+
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&len);
+
+	if((buf=(char*)malloc(len))==NULL)
+		return(JS_TRUE);
+
+	len=sbbs->getstr(buf,len,K_NONE);
+
+	if(len>0)
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,buf));
+
+	free(buf);
+	return(JS_TRUE);
+}
+
+static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
@@ -471,7 +525,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
 
@@ -609,13 +663,19 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("add a line of text to the server and/or system log, "
 		"<i>values</i> are typically string constants or variables")
 	},
-	{"write",			js_write,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
-	,JSDOCSTR("print a value to the server output")
+	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
+	,JSDOCSTR("read up to count characters from input stream")
 	},
-	{"writeln",			js_print,			0,	JSTYPE_ALIAS },
-    {"print",           js_print,           0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
-	,JSDOCSTR("print a line of text to the console or event log with automatic line termination (CRLF), "
-		"<i>values</i> are typically string constants or variables (AKA writeln)")
+	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
+	,JSDOCSTR("read a single line, up to count characters, from input stream")
+	},
+	{"write",			js_write,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
+	,JSDOCSTR("send one or more values (typically strings) to the server output")
+	},
+	{"print",			js_writeln,			0,	JSTYPE_ALIAS },
+    {"writeln",         js_writeln,         0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
+	,JSDOCSTR("send a line of text to the console or event log with automatic line termination (CRLF), "
+		"<i>values</i> are typically string constants or variables (AKA print)")
 	},
     {"printf",          js_printf,          1,	JSTYPE_STRING,	JSDOCSTR("string format [,value][,value]")
 	,JSDOCSTR("print a formatted string - <small>CAUTION: for experienced C programmers ONLY</small>")
