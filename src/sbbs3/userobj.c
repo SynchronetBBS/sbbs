@@ -99,6 +99,25 @@ enum {
 	,USER_PROP_PROT		
 };
 
+static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+    jsint       tiny;
+	user_t*		user;
+
+	if((user=(user_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
+
+    tiny = JSVAL_TO_INT(id);
+
+	switch(tiny) {
+		case USER_PROP_MISC:
+			JS_ValueToInt32(cx, *vp, &user->misc);
+			break;
+	}
+
+	return(TRUE);
+}
+
 static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	char*		p=NULL;
@@ -283,6 +302,8 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		sprintf(tmp,"%c",user->prot);
 		p=tmp;
 		break;
+	default:
+		return(TRUE);
 	}
 	if(p!=NULL) 
 		*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
@@ -295,26 +316,46 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 #define USEROBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
 static struct JSPropertySpec js_user_properties[] = {
-/*		 name			,tinyid						,flags,				getter,	setter	*/
+/*		 name				,tinyid					,flags,				getter,	setter	*/
 
 	{	"alias"				,USER_PROP_ALIAS 		,USEROBJ_FLAGS,		NULL,NULL},
 	{	"name"				,USER_PROP_NAME		 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"handle"			,USER_PROP_HANDLE	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"note"				,USER_PROP_NOTE		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"ip_address"		,USER_PROP_NOTE		 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"computer"			,USER_PROP_COMP		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"host_name"			,USER_PROP_COMP		 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"comment"			,USER_PROP_COMMENT	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"netmail"			,USER_PROP_NETMAIL	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"email"				,USER_PROP_NETMAIL	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"address"			,USER_PROP_ADDRESS	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"location"			,USER_PROP_LOCATION	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"zipcode"			,USER_PROP_ZIPCODE	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"password"			,USER_PROP_PASS		 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"phone"				,USER_PROP_PHONE  	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"birthdate"			,USER_PROP_BIRTH  	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"modem"				,USER_PROP_MODEM      	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"connection"		,USER_PROP_MODEM      	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"screen_rows"		,USER_PROP_ROWS		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"gender"			,USER_PROP_SEX		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"cursub"			,USER_PROP_CURSUB	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"curdir"			,USER_PROP_CURDIR	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"editor"			,USER_PROP_XEDIT 	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"command_shell"		,USER_PROP_SHELL 	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"settings"			,USER_PROP_MISC		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"qwk_settings"		,USER_PROP_QWK		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"chat_settings"		,USER_PROP_CHAT		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"temp_file_ext"		,USER_PROP_TMPEXT	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"newscan_date"		,USER_PROP_NS_TIME	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"download_protocol"	,USER_PROP_PROT		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{0}
+};
+
+/* user.stats: These should be READ ONLY by nature */
+static struct JSPropertySpec js_user_stats_properties[] = {
+/*		 name				,tinyid					,flags,				getter,	setter	*/
+
 	{	"laston_date"		,USER_PROP_LASTON	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"firston_date"		,USER_PROP_FIRSTON	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"expiration_date"	,USER_PROP_EXPIRE     	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"password_date"		,USER_PROP_PWMOD      	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"total_logons"		,USER_PROP_LOGONS     	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"logons_today"		,USER_PROP_LTODAY     	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"total_timeon"		,USER_PROP_TIMEON     	,USEROBJ_FLAGS,		NULL,NULL},
@@ -330,8 +371,16 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"files_uploaded"	,USER_PROP_ULS        	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"bytes_downloaded"	,USER_PROP_DLB        	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"files_downloaded"	,USER_PROP_DLS        	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"credits"			,USER_PROP_CDT		 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"minutes"			,USER_PROP_MIN		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{0}
+};
+
+/* user.security */
+static struct JSPropertySpec js_user_security_properties[] = {
+/*		 name				,tinyid					,flags,				getter,	setter	*/
+
+	{	"password"			,USER_PROP_PASS		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"password_date"		,USER_PROP_PWMOD      	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"level"				,USER_PROP_LEVEL 	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"flags1"			,USER_PROP_FLAGS1	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"flags2"			,USER_PROP_FLAGS2	 	,USEROBJ_FLAGS,		NULL,NULL},
@@ -339,20 +388,11 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"flags4"			,USER_PROP_FLAGS4	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"exemptions"		,USER_PROP_EXEMPT	 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"restrictions"		,USER_PROP_REST		 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"screen_rows"		,USER_PROP_ROWS		 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"gender"			,USER_PROP_SEX		 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"settings"			,USER_PROP_MISC		 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"cursub"			,USER_PROP_CURSUB	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"curdir"			,USER_PROP_CURDIR	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"credits"			,USER_PROP_CDT		 	,USEROBJ_FLAGS,		NULL,NULL},
 	{	"free_credits"		,USER_PROP_FREECDT	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"editor"			,USER_PROP_XEDIT 	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"command_shell"		,USER_PROP_SHELL 	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"qwk_settings"		,USER_PROP_QWK		 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"temp_file_ext"		,USER_PROP_TMPEXT	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"chat_settings"		,USER_PROP_CHAT		 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"newscan_date"		,USER_PROP_NS_TIME	 	,USEROBJ_FLAGS,		NULL,NULL},
-	{	"download_protocol"	,USER_PROP_PROT		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"minutes"			,USER_PROP_MIN		 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"extra_time"		,USER_PROP_TEXTRA  	 	,USEROBJ_FLAGS,		NULL,NULL},
+	{	"expiration_date"	,USER_PROP_EXPIRE     	,USEROBJ_FLAGS,		NULL,NULL},
 	{0}
 };
 
@@ -362,39 +402,76 @@ static JSClass js_user_class = {
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
 	,js_user_get			/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
+	,js_user_set			/* setProperty	*/
 	,JS_EnumerateStub		/* enumerate	*/
 	,JS_ResolveStub			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-static JSClass js_userstats_class = {
-     "Stats"				/* name			*/
+static JSClass js_user_stats_class = {
+     "UserStats"			/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
-	,NULL /* js_sysstats_get		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
+	,js_user_get			/* getProperty	*/
+	,js_user_set			/* setProperty	*/
 	,JS_EnumerateStub		/* enumerate	*/
 	,JS_ResolveStub			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
 
+
+static JSClass js_user_security_class = {
+     "UserSecurity"			/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_user_get			/* getProperty	*/
+	,js_user_set			/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
 
 JSObject* DLLCALL CreateUserObject(scfg_t* cfg, JSContext* cx, JSObject* parent, char* name, user_t* user)
 {
 	JSObject*	userobj;
+	JSObject*	statsobj;
+	JSObject*	securityobj;
 
 	userobj = JS_DefineObject(cx, parent, name, &js_user_class, NULL, 0);
 
 	if(userobj==NULL)
 		return(NULL);
 
-	JS_SetPrivate(cx, userobj, user);	/* Store a pointer to scfg_t */
+	JS_SetPrivate(cx, userobj, user);	/* Store a pointer to user_t */
 
 	JS_DefineProperties(cx, userobj, js_user_properties);
+
+	/* user.stats */
+	statsobj = JS_DefineObject(cx, userobj, "stats"
+		,&js_user_stats_class, NULL, JSPROP_ENUMERATE);
+
+	if(statsobj==NULL)
+		return(NULL);
+
+	JS_SetPrivate(cx, statsobj, user);	/* Store a pointer to user_t */
+
+	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
+
+	/* user.security */
+	securityobj = JS_DefineObject(cx, userobj, "security"
+		,&js_user_security_class, NULL, JSPROP_ENUMERATE);
+
+	if(securityobj==NULL)
+		return(NULL);
+
+	JS_SetPrivate(cx, securityobj, user);	/* Store a pointer to user_t */
+
+	JS_DefineProperties(cx, securityobj, js_user_security_properties);
 
 	return(userobj);
 }
