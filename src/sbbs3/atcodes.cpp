@@ -221,6 +221,9 @@ int sbbs_t::atcodes(char *instr)
 	else if(!strcmp(sp,"BDATE"))
 		bputs(useron.birth);
 
+	else if(!strcmp(sp,"AGE"))
+		bprintf("%u",getage(&cfg,useron.birth));
+
 	else if(!strcmp(sp,"CALLS") || !strcmp(sp,"NUMTIMESON"))
 		bprintf("%u",useron.logons);
 
