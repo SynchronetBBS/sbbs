@@ -64,7 +64,7 @@ int DLLCALL sockopt(char* str)
 	int i;
 
 	for(i=0;option_names[i].name;i++) {
-		if(stricmp(str,option_names[i].name))
+		if(stricmp(str,option_names[i].name)==0)
 			return(option_names[i].value);
 	}
 	return(strtoul(str,NULL,0));
