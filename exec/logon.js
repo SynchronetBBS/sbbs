@@ -14,7 +14,7 @@ load("sbbsdefs.js");
 if(user.security.restrictions&UFLAG_G) {
 	while(bbs.online) {
 		printf("\1y\1hFor our records, please enter your full name: \1w");
-		name=bbs.getstr(25,K_UPRLWR);
+		name=console.getstr(25,K_UPRLWR);
 		if(!name || !name.length)
 			continue;
 		bbs.log_str("Guest: " + name);
@@ -24,7 +24,7 @@ if(user.security.restrictions&UFLAG_G) {
 	
 	while(bbs.online) {
 		printf("\1y\1hPlease enter your location (City, State): \1w");
-		location=bbs.getstr(30,K_UPRLWR);
+		location=console.getstr(30,K_UPRLWR);
 		if(!location || !location.length)
 			continue;
 		bbs.log_str("  " + location);
@@ -36,7 +36,7 @@ if(user.security.restrictions&UFLAG_G) {
 		bbs.log_str("\r\n");
 	while(bbs.online) {
 		printf("\1y\1hWhere did you hear about this BBS?\r\n: \1w");
-		ref=bbs.getstr(70);
+		ref=console.getstr(70);
 		if(!ref || !ref.length)
 			continue;
 		bbs.log_str(ref + "\r\n");
