@@ -1683,7 +1683,6 @@ int finduser(scfg_t *cfg, user_t *user)
 		for(i=1; i<=last; i++) {
 			user->number=i;
 			getuserdat(cfg,user);
-			/* Only FreeBSD has strcasestr */
 			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL 
 					|| user->number==un) {
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
