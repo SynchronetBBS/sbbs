@@ -504,6 +504,9 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			return; 
 		}
 
+		if(tleft>0x7fff)	/* Reduce time-left for broken 16-bit doors		*/
+			tleft=0x7fff;	/* That interpret this value as a signed short	*/
+
 		sprintf(str,"COM%d:\n%lu\n%u\n%u\n%lu\n%c\n%c\n%c\n%c\n"
 			,online==ON_REMOTE ? cfg.com_port:0	/* 01: COM port - 0 if Local */
 			,cur_rate							/* 02: DCE rate */
@@ -582,9 +585,9 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		localtime_r(&useron.laston,&tl);
 		sprintf(str,"%02d:%02d\n%02d:%02d\n%u\n%u\n%lu\n"
 			"%lu\n%s\n%u\n%u\n"
-			,tm.tm_hour						/* 44: Time of this call */
+			,tm.tm_hour							/* 44: Time of this call */
 			,tm.tm_min
-			,tl.tm_hour						/* 45: Time of last call */
+			,tl.tm_hour							/* 45: Time of last call */
 			,tl.tm_min
 			,999								/* 46: Max daily files available */
 			,0									/* 47: Files downloaded so far today */
@@ -1280,7 +1283,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.name
 			,name
 			,useron.level
-			,timeleft/60
+			,tleft/60
 			,useron.misc&ANSI ? 1 : 0
 			,cfg.node_num);
 		lfexpand(str,misc);
