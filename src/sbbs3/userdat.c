@@ -133,7 +133,8 @@ uint DLLCALL total_users(scfg_t* cfg)
 	length=filelength(file);
 	for(l=0;l<length;l+=U_LEN) {
 		lseek(file,l+U_MISC,SEEK_SET);
-		read(file,str,8);
+		if(read(file,str,8)!=8)
+			continue;
 		getrec(str,0,8,str);
 		if(ahtoul(str)&(DELETED|INACTIVE))
 			continue;
