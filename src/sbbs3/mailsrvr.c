@@ -75,7 +75,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 #define SMTP_OK		"250 OK"
 #define SMTP_BADSEQ	"503 Bad sequence of commands"
 
-#define TIMEOUT_THREAD_WAIT		30		/* Seconds */
+#define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 
 #define MAX_RECIPIENTS			1000	/* 0xffff = abs max */
 
@@ -151,20 +151,41 @@ static BOOL winsock_startup(void)
 
 static void update_clients(void)
 {
-	if(startup!=NULL && startup->clients!=NULL)
+	if(startup!=NULL && startup->clients!=NULL) {
+#if defined(_WIN32) && defined(_DEBUG)
+		if(IsBadCodePtr((FARPROC)startup->clients)) {
+			DebugBreak();
+			return;
+		}
+#endif
 		startup->clients(active_clients+active_sendmail);
+	}
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
-	if(startup!=NULL && startup->client_on!=NULL)
+	if(startup!=NULL && startup->client_on!=NULL) {
+#if defined(_WIN32) && defined(_DEBUG)
+		if(IsBadCodePtr((FARPROC)startup->client_on)) {
+			DebugBreak();
+			return;
+		}
+#endif
 		startup->client_on(TRUE,sock,client,update);
+	}
 }
 
 static void client_off(SOCKET sock)
 {
-	if(startup!=NULL && startup->client_on!=NULL)
+	if(startup!=NULL && startup->client_on!=NULL) {
+#if defined(_WIN32) && defined(_DEBUG)
+		if(IsBadCodePtr((FARPROC)startup->client_on)) {
+			DebugBreak();
+			return;
+		}
+#endif
 		startup->client_on(FALSE,sock,NULL,FALSE);
+	}
 }
 
 static void thread_up(BOOL setuid)
@@ -180,8 +201,15 @@ static void thread_down(void)
 {
 	if(thread_count>0)
 		thread_count--;
-	if(startup!=NULL && startup->thread_up!=NULL)
+	if(startup!=NULL && startup->thread_up!=NULL) {
+#if defined(_WIN32) && defined(_DEBUG)
+		if(IsBadCodePtr((FARPROC)startup->thread_up)) {
+			DebugBreak();
+			return;
+		}
+#endif
 		startup->thread_up(FALSE);
+	}
 }
 
 SOCKET mail_open_socket(int type)
@@ -206,8 +234,15 @@ int mail_close_socket(SOCKET sock)
 
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
-	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
+	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) {
+#if defined(_WIN32) && defined(_DEBUG)
+		if(IsBadCodePtr((FARPROC)startup->socket_open)) {
+			DebugBreak();
+			return(-1);
+		}
+#endif
 		startup->socket_open(FALSE);
+	}
 	sockets--;
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
@@ -223,8 +258,15 @@ int mail_close_socket(SOCKET sock)
 
 static void status(char* str)
 {
-	if(startup!=NULL && startup->status!=NULL)
+	if(startup!=NULL && startup->status!=NULL) {
+#if defined(_WIN32) && defined(_DEBUG)
+		if(IsBadCodePtr((FARPROC)startup->status)) {
+			DebugBreak();
+			return;
+		}
+#endif
 	    startup->status(str);
+	}
 }
 
 int sockprintf(SOCKET sock, char *fmt, ...)
@@ -318,6 +360,11 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 	start=time(NULL);
 	
 	while(rd<len-1) {
+
+		if(server_socket==INVALID_SOCKET) {
+			lprintf("%04d !ABORTING sockreadline",socket);
+			return(-1);
+		}
 
 		tv.tv_sec=0;
 		tv.tv_usec=0;
@@ -2302,13 +2349,13 @@ static void sendmail_thread(void* arg)
 		smb_rewind(smb.sid_fp);
 		for(offset=0;offset<total_msgs;offset++) {
 
-			if(server_socket==INVALID_SOCKET)	/* server stopped */
-				break;
-
 			if(active_sendmail!=0) {
 				active_sendmail=0;
 				update_clients();
 			}
+
+			if(server_socket==INVALID_SOCKET)	/* server stopped */
+				break;
 
 			if(sock!=INVALID_SOCKET) {
 				mail_close_socket(sock);
@@ -2541,6 +2588,11 @@ static void sendmail_thread(void* arg)
 	smb_freemsgtxt(msgtxt);
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
+
+	if(active_sendmail!=0) {
+		active_sendmail=0;
+		update_clients();
+	}
 
 	thread_down();
 	lprintf("0000 SendMail thread terminated (%u threads remain)", thread_count);
