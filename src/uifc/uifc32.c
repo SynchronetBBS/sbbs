@@ -324,7 +324,7 @@ static void timedisplay()
 
 	now=time(NULL);
 	if(difftime(now,savetime)>=60) {
-		uprintf(55,1,bclr|(cclr<<4),utimestr(&now));
+		uprintf(api->scrn_width-25,1,bclr|(cclr<<4),utimestr(&now));
 		savetime=now; 
 	}
 }
