@@ -1097,7 +1097,6 @@ static const char* usage=
 	"         d  to disable dropped carrier detection\n"
 	"         a  to sound alarm at start and stop of transfer\n"
 	"         p  to pause after abnormal exit (error)\n"
-	"         l  to disable local keyboard (Ctrl-C) checking\n"
 	"cmd    = v  to display detailed version information\n"
 	"         sx to send Xmodem     rx to recv Xmodem\n"
 	"         sX to send Xmodem-1k  rc to recv Xmodem-CRC\n"
@@ -1190,7 +1189,7 @@ int main(int argc, char **argv)
 
 			else if(toupper(argv[i][0])=='V') {
 
-				fprintf(statfp,"%-8s %s\n",getfname(__FILE__),revision);
+				fprintf(statfp,"%-8s %s\n",getfname(__FILE__)		,revision);
 				fprintf(statfp,"%-8s %s\n",getfname(xmodem_source()),xmodem_ver(str));
 				fprintf(statfp,"%-8s %s\n",getfname(zmodem_source()),zmodem_ver(str));
 #ifdef _DEBUG
@@ -1210,9 +1209,6 @@ int main(int argc, char **argv)
 
 			else if(toupper(argv[i][0])=='A')
 				mode|=ALARM;
-
-			else if(toupper(argv[i][0])=='L')
-				mode|=NO_LOCAL;
 
 			else if(toupper(argv[i][0])=='P')
 				mode|=PAUSE_ABEND;

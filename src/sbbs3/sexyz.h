@@ -54,7 +54,6 @@
 #endif
 
 #define CPMEOF		CTRL_Z	/* CP/M End of file (^Z)					*/
-#define LOC_ABORT	0x2e03	/* Local abort key	(^C)					*/
 
 #define SEND		(1<<0)	/* Sending file(s)							*/
 #define RECV		(1<<1)	/* Receiving file(s)						*/
@@ -68,7 +67,6 @@
 #define OVERWRITE	(1<<9)	/* Overwrite receiving files				*/
 #define IGNORE_DCD	(1<<10) /* Ignore DCD								*/
 #define ALARM		(1<<11) /* Alarm when starting and stopping xfer	*/
-#define NO_LOCAL	(1<<12) /* Don't check local keyboard               */
 #define PAUSE_ABEND	(1<<13)	/* Pause on abnormal exit					*/
 #define TELNET		(1<<14)	/* Telnet IAC escaping						*/
 
