@@ -351,36 +351,37 @@ static void ansi_keyparse(void *par)
 	int		timeout=0;
 	int		timedout=0;
 	int		sval;
+	int		unknown=0;
 
 	seq[0]=0;
 	for(;;) {
 		sem_wait(&goahead);
-		if(!timedout)
-			sem_post(&need_key);
-		timedout=0;
-		if(timeout) {
-			if(sem_trywait_block(&got_key,timeout)) {
-				gotesc=0;
-				timeout=0;
-				timedout=1;
-			}
-		}
-		else
-			sem_wait(&got_key);
-		if(timedout) {
+		if(timedout || unknown) {
 			for(p=seq;*p;p++) {
 				ansi_inch=*p;
 				sem_post(&got_input);
 				sem_wait(&used_input);
 				sem_wait(&goahead);
 			}
-			/* We ended up eating one too many... add one back */
-			sem_post(&goahead);
+			gotesc=0;
+			timeout=0;
 			seq[0]=0;
-			continue;
+		}
+		if(!timedout)
+			sem_post(&need_key);
+		timedout=0;
+		unknown=0;
+		if(timeout) {
+			if(sem_trywait_block(&got_key,timeout)) {
+				timedout=1;
+				sem_post(&goahead);
+				continue;
+			}
 		}
 		else
-			ch=ansi_raw_inch;
+			sem_wait(&got_key);
+
+		ch=ansi_raw_inch;
 
 		switch(gotesc) {
 			case 1:	/* Escape Sequence */
@@ -396,6 +397,9 @@ static void ansi_keyparse(void *par)
 						&& ch!='?'
 						&& (strlen(seq)==2?ch != '[':1)
 						&& (strlen(seq)==2?ch != 'O':1)) {
+					unknown=1;
+					gotesc=0;
+					timeout=0;
 					for(i=0;aKeySequences[i].pszSequence[0];i++) {
 						if(!strcmp(seq,aKeySequences[i].pszSequence)) {
 							ansi_inch=aKeySequences[i].chExtendedKey;
@@ -406,12 +410,15 @@ static void ansi_keyparse(void *par)
 							sem_wait(&goahead);
 							sem_post(&got_input);
 							sem_wait(&used_input);
+							unknown=0;
+							seq[0]=0;
 							break;
 						}
 					}
-					seq[0]=0;
-					gotesc=0;
-					timeout=0;
+					if(unknown) {
+						sem_post(&goahead);
+						continue;
+					}
 				}
 				else {
 					/* Need more keys... keep looping */
