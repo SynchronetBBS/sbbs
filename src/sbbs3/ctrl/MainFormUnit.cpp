@@ -1510,7 +1510,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(CtrlDirectory.UpperCase().AnsiPos("MAIN.CNF"))
 		CtrlDirectory.SetLength(CtrlDirectory.Length()-8);
     strcpy(cfg.ctrl_dir,CtrlDirectory.c_str());
-	if(!load_cfg(&cfg, NULL)) {
+    cfg.size=sizeof(cfg);
+	if(!load_cfg(&cfg, NULL, TRUE)) {
     	Application->MessageBox("Failed to load configuration files.","ERROR"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();

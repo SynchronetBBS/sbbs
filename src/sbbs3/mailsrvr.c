@@ -2380,7 +2380,8 @@ void DLLCALL mail_server(void* arg)
     sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
     	,startup->ctrl_dir);
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);
-	if(!load_cfg(&scfg, NULL)) {
+	scfg.size=sizeof(scfg);
+	if(!load_cfg(&scfg, NULL, TRUE)) {
 		lprintf("!Failed to load configuration files");
 		cleanup(1);
 		return;

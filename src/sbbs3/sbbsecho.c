@@ -3909,7 +3909,8 @@ int main(int argc, char **argv)
 		printf("!ERROR changing directory to: %s", scfg.ctrl_dir);
 
     printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
-	if(!load_cfg(&scfg, NULL)) {
+	scfg.size=sizeof(scfg);
+	if(!load_cfg(&scfg, NULL, TRUE)) {
 		printf("!Failed to load configuration files\n");
 		bail(1);
 	}
