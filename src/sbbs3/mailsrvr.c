@@ -3190,7 +3190,8 @@ void DLLCALL mail_server(void* arg)
 				_beginthread (smtp_thread, 0, smtp);
 			}
 
-			if(FD_ISSET(pop3_socket,&socket_set)) {
+			if(pop3_socket!=INVALID_SOCKET
+				&& FD_ISSET(pop3_socket,&socket_set)) {
 
 				client_addr_len = sizeof(client_addr);
 				client_socket = accept(pop3_socket, (struct sockaddr *)&client_addr
