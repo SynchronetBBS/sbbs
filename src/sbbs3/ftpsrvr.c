@@ -2939,7 +2939,10 @@ void DLLCALL ftp_server(void* arg)
 	time_t			t;
 	time_t			start;
 	LINGER			linger;
+	fd_set			socket_set;
+	SOCKET			high_socket_set;
 	ftp_t*			ftp;
+	struct timeval	tv;
 
 	startup=(ftp_startup_t*)arg;
 
@@ -3098,6 +3101,27 @@ void DLLCALL ftp_server(void* arg)
 	while(server_socket!=INVALID_SOCKET) {
 
 		/* now wait for connection */
+
+		tv.tv_sec=2;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(server_socket,&socket_set);
+		high_socket_set=server_socket+1;
+
+		if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
+			if(i==0) {
+				mswait(1);
+				continue;
+			}
+			if(ERROR_VALUE==EINTR)
+				lprintf("0000 FTP Server listening interrupted");
+			else if(ERROR_VALUE == ENOTSOCK)
+            	lprintf("0000 FTP Server sockets closed");
+			else
+				lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
+			break;
+		}
 
 		client_addr_len = sizeof(client_addr);
 		client_socket = accept(server_socket, (struct sockaddr *)&client_addr
