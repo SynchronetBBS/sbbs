@@ -459,14 +459,13 @@ ADDFILES_OBJS = \
 	$(LIBODIR)/scfglib1.o \
 	$(LIBODIR)/scfglib2.o \
 	$(LIBODIR)/nopen.o \
-	$(LIBODIR)/crc16.o \
 	$(LIBODIR)/str_util.o \
 	$(LIBODIR)/dat_rec.o \
 	$(LIBODIR)/userdat.o \
 	$(LIBODIR)/filedat.o \
-	$(LIBODIR)/filewrap.o \
 	$(LIBODIR)/dirwrap.o \
-	$(LIBODIR)/genwrap.o
+	$(LIBODIR)/genwrap.o \
+	$(SMBLIB_OBJS)
 
 FORCE$(ADDFILES): $(ADDFILES_OBJS)
 
@@ -483,13 +482,12 @@ FILELIST_OBJS = \
 	$(LIBODIR)/scfglib1.o \
 	$(LIBODIR)/scfglib2.o \
 	$(LIBODIR)/nopen.o \
-	$(LIBODIR)/crc16.o \
 	$(LIBODIR)/str_util.o \
 	$(LIBODIR)/dat_rec.o \
 	$(LIBODIR)/filedat.o \
-	$(LIBODIR)/filewrap.o \
 	$(LIBODIR)/dirwrap.o \
-	$(LIBODIR)/genwrap.o
+	$(LIBODIR)/genwrap.o \
+	$(SMBLIB_OBJS)
 
 FORCE$(FILELIST): $(FILELIST_OBJS)
 
@@ -506,13 +504,12 @@ MAKEUSER_OBJS = \
 	$(LIBODIR)/scfglib1.o \
 	$(LIBODIR)/scfglib2.o \
 	$(LIBODIR)/nopen.o \
-	$(LIBODIR)/crc16.o \
 	$(LIBODIR)/str_util.o \
 	$(LIBODIR)/dat_rec.o \
 	$(LIBODIR)/userdat.o \
-	$(LIBODIR)/filewrap.o \
 	$(LIBODIR)/dirwrap.o \
-	$(LIBODIR)/genwrap.o
+	$(LIBODIR)/genwrap.o \
+	$(SMBLIB_OBJS)
 
 FORCE$(MAKEUSER): $(MAKEUSER_OBJS)
 
