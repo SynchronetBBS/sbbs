@@ -88,7 +88,7 @@ externals:	sbj sbl
 
 
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-    $(SBBSDIR)/src/mozilla
+    $(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX)
 	gmake -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
       MKFLAGS	+=	BAJAPATH=../src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja
 
@@ -104,7 +104,7 @@ sbj:	$(SBBSDIR)/xtrn
 sbl:	$(SBBSDIR)/xtrn
 	gmake -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3 XPDEV=$(SBBSDIR)/src/xpdev
 
-install: all $(SBBSDIR)/ctrl $(SBBSDIR)/text $(SBBSDIR)/node1
+install: all $(SBBSDIR)/ctrl $(SBBSDIR)/text $(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
 ifeq ($(INSTALL),UNIX)
 	@echo ERROR: UNIX Install type not yet supported.
 	fail
@@ -148,6 +148,21 @@ ifndef NOCVS
 	$(CVS_CO) node1
 endif
 
+$(SBBSDIR)/node2: cvslogin
+ifndef NOCVS
+	$(CVS_CO) node2
+endif
+
+$(SBBSDIR)/node3: cvslogin
+ifndef NOCVS
+	$(CVS_CO) node3
+endif
+
+$(SBBSDIR)/node4: cvslogin
+ifndef NOCVS
+	$(CVS_CO) node4
+endif
+
 $(SBBSDIR)/xtrn: cvslogin
 ifndef NOCVS
 	$(CVS_CO) -N xtrn
@@ -171,6 +186,11 @@ endif
 $(SBBSDIR)/src/mozilla: cvslogin
 ifndef NOCVS
 	$(CVS_CO) src/mozilla
+endif
+
+$(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX): cvslogin
+ifndef NOCVS
+	$(CVS_CO) lib/mozilla/js/$(os).$(SUFFIX)
 endif
 
 cvslogin: $(SBBSDIR)
