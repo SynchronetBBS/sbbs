@@ -384,6 +384,8 @@ list_node_t* listAddNode(link_list_t* list, void* data, list_node_t* after)
 	if((node=(list_node_t*)malloc(sizeof(list_node_t)))==NULL)
 		return(NULL);
 
+	memset(node,0,sizeof(list_node_t));
+
 	return(list_add_node(list,node,after));
 }
 
