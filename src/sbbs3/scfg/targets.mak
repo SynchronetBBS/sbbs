@@ -1,20 +1,19 @@
 # targets.mak
 
-# Make 'include file' defining targets for Synchronet project
+# Make 'include file' defining targets for Synchronet SCFG project
 
 # $Id$
 
 # LIBODIR, EXEODIR, SLASH, LIBFILE, EXEFILE, and DELETE must be pre-defined
 
 SCFG	=	$(EXEODIR)$(SLASH)scfg$(EXEFILE) 
-SCFGOBJ	=	$(OBJODIR)$(SLASH)scfg$(OBJFILE) 
+SCFGHELP=	$(EXEODIR)$(SLASH)scfghelp.dat
 
 all:	$(LIBODIR) $(SBBSLIBODIR) $(UIFCLIBODIR) $(EXEODIR) \
-		$(OBJS)\
-		$(SCFG)
+		$(SCFG) $(SCFGHELP)
 
 clean:
-	$(DELETE) $(LIBODIR)/*
-	$(DELETE) $(EXEODIR)/*
-	$(DELETE) $(SBBSLIBODIR)/*
-	$(DELETE) $(UIFCLIBODIR)/*
+	$(DELETE) $(LIBODIR)$(SLASH)*
+	$(DELETE) $(EXEODIR)$(SLASH)*
+	$(DELETE) $(SBBSLIBODIR)$(SLASH)*
+	$(DELETE) $(UIFCLIBODIR)$(SLASH)*
