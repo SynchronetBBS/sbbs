@@ -1,6 +1,6 @@
 /* conwrap.c */
 
-/* -- To give DOS's getch() function to Unix - Casey Martin 2000 */
+/* DOS's kbhit and getch functions for Unix - Casey Martin 2000 */
 
 /* $Id$ */
 
@@ -53,26 +53,17 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "conwrap.h"	// Verify prototypes
+#include "conwrap.h"				/* Verify prototypes */
 
-static struct termios current;            // our current term settings
-static struct termios original;           // old termios settings
-static int beensetup = 0;                 // has _termios_setup() been called?
-
-/*
-	I'm using a variable function here simply for the sake of speed.  The
-    termios functions must be called before a kbhit() can be successful, so
-    on the first call, we just set up the terminal, point to variable function
-    to kbhit_norm(), and then call the new function.  Otherwise, testing would
-	be required on every call to determine if termios has already been setup.
-
-    Maybe I'm being way too anal, though.
-*/
+static struct termios current;		/* our current term settings			*/
+static struct termios original;     /* old termios settings					*/
+static int beensetup = 0;           /* has _termios_setup() been called?	*/
+static int istty = 0;				/* is stdin a tty?						*/		
 
 /* Resets the termios to its previous state */
 void _termios_reset(void)
 {
-	tcsetattr(0, TCSANOW, &original);
+	tcsetattr(STDIN_FILENO, TCSANOW, &original);
 }
 
 /************************************************
@@ -83,10 +74,10 @@ void _termios_reset(void)
 #endif
 void _sighandler_stop(int sig)
 {
-    // clean up the terminal
+    /* clean up the terminal */
     _termios_reset();
 
-    // ... and stop
+    /* ... and stop */
 	kill(getpid(), SIGSTOP);
 }
 #if defined(__BORLANDC__)
@@ -94,8 +85,8 @@ void _sighandler_stop(int sig)
 #endif
 void _sighandler_cont(int sig)
 {
-    // restore terminal
-	tcsetattr(0, TCSANOW, &current);
+    /* restore terminal */
+	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 }
 
 
@@ -107,17 +98,18 @@ void _termios_setup(void)
 	tcgetattr(STDIN_FILENO, &original);
   
 	memcpy(&current, &original, sizeof(struct termios));
-	current.c_cc[VMIN] = 1;           // read() will return with one char
-	current.c_cc[VTIME] = 0;          // read() blocks forever
-	current.c_lflag &= ~ICANON;       // character mode
-    current.c_lflag &= ~ECHO;         // turn off echoing
+	current.c_cc[VMIN] = 1;           /* read() will return with one char */
+	current.c_cc[VTIME] = 0;          /* read() blocks forever */
+	current.c_lflag &= ~ICANON;       /* character mode */
+    current.c_lflag &= ~ECHO;         /* turn off echoing */
 	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 
-    // Let's install an exit function, also.  This way, we can reset
-    // the termios silently
+    /* Let's install an exit function, also.  This way, we can reset
+     * the termios silently
+	 */
     atexit(_termios_reset);
 
-    // install the Ctrl-Z handler
+    /* install the Ctrl-Z handler */
     signal(SIGSTOP, _sighandler_stop);
     signal(SIGCONT, _sighandler_cont);
 }
@@ -127,8 +119,15 @@ int kbhit(void)
 {
 	fd_set inp;
 	struct timeval timeout = {0, 0};
+	struct stat st;
 
-	// set up select() args
+	if(!istty) {
+		istty = isatty(STDIN_FILENO);
+		if(!istty)
+			return 0;
+	}
+
+	/* set up select() args */
 	FD_ZERO(&inp);
 	FD_SET(STDIN_FILENO, &inp);
 
@@ -141,15 +140,13 @@ int getch(void)
 {
 	char c;
 
-    if (!beensetup)
-    	// I hate to test for this every time, but this shouldn't be
-        // called that often anyway...
+    if(!beensetup)
     	_termios_setup();
 
-    // get a char out of stdin
+    /* get a char out of stdin */
     read(STDIN_FILENO, &c, 1);
 
     return c;
 }
 
-#endif // __unix__
+#endif /* __unix__ */
