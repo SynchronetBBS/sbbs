@@ -304,7 +304,7 @@ typedef struct {
 /* Returns the 0-based selected option number, -1 for ESC, or the selected	*/
 /* option number OR'd with MSK_INS, MSK_DEL, MSK_GET, or MSK_PUT.			*/
 /****************************************************************************/
-    int     (*list) (int mode, char left, int top, char width, int* dflt
+    int     (*list) (int mode, int left, int top, int width, int* dflt
                         ,int* bar, char *title, char** option);
 /****************************************************************************/
 /* Windowed string input routine.											*/
@@ -317,8 +317,8 @@ typedef struct {
 /* This function sets uifcapi_t.changes to TRUE if the string is modified.	*/
 /* Returns the length of the string or -1 on escape/abort.					*/
 /****************************************************************************/
-    int     (*input)(int mode, char left, char top, char* prompt, char* str
-            	        ,char len, int kmode);
+    int     (*input)(int mode, int left, int top, char* prompt, char* str
+            	        ,int len, int kmode);
 /****************************************************************************/
 /* Sets the current help index by source code file and line number.			*/
 /****************************************************************************/

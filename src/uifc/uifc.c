@@ -72,7 +72,7 @@ static uint max_opts=MAX_OPTS;
 static uifcapi_t* api;
 
 /* Prototypes */
-static int  uprintf(char x, char y, char attr, char *fmt,...);
+static int  uprintf(int x, int y, char attr, char *fmt,...);
 static void bottomline(int line);
 static char *utimestr(time_t *intime);
 static void help();
@@ -80,10 +80,10 @@ static void help();
 /* API routines */
 static void uifcbail(void);
 static int uscrn(char *str);
-static int ulist(int mode, char left, int top, char width, int *dflt, int *bar
+static int ulist(int mode, int left, int top, int width, int *dflt, int *bar
 	,char *title, char **option);
-static int uinput(int imode, char left, char top, char *prompt, char *str
-	,char len ,int kmode);
+static int uinput(int imode, int left, int top, char *prompt, char *str
+	,int len ,int kmode);
 static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
@@ -336,7 +336,7 @@ static void truncsp(char *str)
 /****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
-int ulist(int mode, char left, int top, char width, int *cur, int *bar
+int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *title, char **option)
 {
 	uchar line[256],shade[256],win[MAX_BFLN],*ptr,a,b,c,longopt
@@ -1160,8 +1160,8 @@ hitesc:
 /*************************************************************************/
 /* This function is a windowed input string input routine.               */
 /*************************************************************************/
-int uinput(int mode, char left, char top, char *prompt, char *str,
-	char max, int kmode)
+int uinput(int mode, int left, int top, char *prompt, char *str,
+	int max, int kmode)
 {
 	unsigned char c,tmp[81],save_buf[2048],in_win[2048]
 		,shade[160],width,height=3;
@@ -1461,7 +1461,7 @@ return(j);
 /****************************************************************************/
 /* Performs printf() through puttext() routine								*/
 /****************************************************************************/
-static int uprintf(char x, char y, char attr, char *fmat, ...)
+static int uprintf(int x, int y, char attr, char *fmat, ...)
 {
 	va_list argptr;
 	char str[256],buf[512];
