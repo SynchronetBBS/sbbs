@@ -610,7 +610,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_startup.size=sizeof(bbs_startup);
     bbs_startup.first_node=1;
     bbs_startup.last_node=4;
-	bbs_startup.options=BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE;
+	bbs_startup.options=BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE|BBS_OPT_SEND_TELNET_GA;
 	bbs_startup.telnet_port=IPPORT_TELNET;
     bbs_startup.telnet_interface=INADDR_ANY;
     bbs_startup.rlogin_port=513;
