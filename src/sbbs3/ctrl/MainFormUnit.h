@@ -214,7 +214,7 @@ __published:	// IDE-managed Components
     TMenuItem *HelpSysopMenuItem;
     TAction *ViewEvents;
     TMenuItem *ViewEventsMenuItem;
-    TMenuItem *BBSConfigureTrayMenuItem;
+    TMenuItem *ConfigureTrayMenuItem;
     TMenuItem *BBSEditAutoMsg;
     TMenuItem *BBSEditLogonMessage;
     TMenuItem *BBSEditNoNodesMessage;
@@ -308,7 +308,6 @@ __published:	// IDE-managed Components
     void __fastcall ServicesStopExecute(TObject *Sender);
     void __fastcall ServicesConfigureExecute(TObject *Sender);
     void __fastcall UserTruncateMenuItemClick(TObject *Sender);
-	void __fastcall TrayIconClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
