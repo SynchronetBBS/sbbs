@@ -76,6 +76,7 @@
 #endif
 
 #define STATUS_WFC				"Listening"
+#define ANONYMOUS				"anonymous"
 
 #define BBS_VIRTUAL_PATH		"bbs:/""/"	/* this is actually bbs:<slash><slash> */
 #define LOCAL_FSYS_DIR			"local:"
@@ -3205,9 +3206,16 @@ static void ctrl_thread(void* arg)
 							memset(&tm,0,sizeof(tm));
 						else
 							tm=*tm_p;
+						if(filedat) {
+							if(f.misc&FM_ANON)
+								strcpy(str,ANONYMOUS);
+							else
+								dotname(f.uler,str);
+						} else
+							strcpy(str,scfg.sys_id);
 						fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d "
 							,NAME_LEN
-							,filedat ? dotname(f.uler,str) : scfg.sys_id
+							,str
 							,scfg.dir[dir]->code
 							,f.size
 							,mon[tm.tm_mon],tm.tm_mday);
