@@ -82,6 +82,10 @@ BOOL				run_services=TRUE;
 BOOL				services_running=FALSE;
 BOOL				services_stopped=FALSE;
 services_startup_t	services_startup;
+BOOL				run_web=TRUE;
+BOOL				web_running=FALSE;
+BOOL				web_stopped=FALSE;
+web_startup_t		web_startup;
 uint				thread_count=1;
 uint				socket_count=0;
 uint				client_count=0;
@@ -607,6 +611,60 @@ static int event_lputs(char *str)
     return(strlen(logline)+1);
 }
 
+/****************************************************************************/
+/* web local/log print routine											*/
+/****************************************************************************/
+static int web_lputs(char *str)
+{
+	char		logline[512];
+	char		tstr[64];
+	time_t		t;
+	struct tm*	tm_p;
+
+#ifdef __unix__
+	if (is_daemon)  {
+		if(str==NULL)
+			return(0);
+		if (std_facilities)
+			syslog(LOG_INFO|LOG_DAEMON,"%s",str);
+		else
+			syslog(LOG_INFO,"srvc %s",str);
+		return(strlen(str));
+	}
+#endif
+
+	t=time(NULL);
+	tm_p=localtime(&t);
+	if(tm_p==NULL)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm_p->tm_mon+1,tm_p->tm_mday
+			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+
+	sprintf(logline,"%shttp %.*s",tstr,(int)sizeof(logline)-32,str);
+	truncsp(logline);
+	lputs(logline);
+	
+    return(strlen(logline)+1);
+}
+
+static void web_started(void)
+{
+	web_running=TRUE;
+	web_stopped=FALSE;
+	#ifdef _THREAD_SUID_BROKEN
+	    do_seteuid(FALSE);
+	    do_setuid();
+	#endif
+}
+
+static void web_terminated(int code)
+{
+	web_running=FALSE;
+	web_stopped=TRUE;
+}
+
 
 
 #ifdef __unix__
@@ -619,7 +677,7 @@ void _sighandler_quit(int sig)
 #ifdef JAVASCRIPT
 	services_terminate();
 #endif
-    while(bbs_running || ftp_running || mail_running || services_running)
+    while(bbs_running || ftp_running || web_running || mail_running || services_running)
 		mswait(1);
 	if(is_daemon)
 		unlink(SBBS_PID_FILE);
@@ -709,6 +767,19 @@ int main(int argc, char** argv)
     strcpy(ftp_startup.index_file_name,"00index");
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
 
+	/* Initialize Web Server startup structure */
+    memset(&web_startup,0,sizeof(web_startup));
+    web_startup.size=sizeof(web_startup);
+	web_startup.lputs=web_lputs;
+    web_startup.started=web_started;
+    web_startup.terminated=web_terminated;
+	web_startup.thread_up=thread_up;
+    web_startup.socket_open=socket_open;
+#ifdef __unix__
+	web_startup.seteuid=do_seteuid;
+#endif
+    strcpy(web_startup.ctrl_dir,ctrl_dir);
+
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
@@ -787,6 +858,7 @@ int main(int argc, char** argv)
 	sbbs_read_ini(fp, 
 		&run_bbs,		&bbs_startup,
 		&run_ftp,		&ftp_startup, 
+		&run_web,		&web_startup,
 		&run_mail,		&mail_startup, 
 		&run_services,	&services_startup);
 
@@ -1173,6 +1245,8 @@ int main(int argc, char** argv)
 	if(run_services)
 		_beginthread((void(*)(void*))services_thread,0,&services_startup);
 #endif
+	if(run_web)
+		_beginthread((void(*)(void*))web_server,0,&web_startup);
 
 #ifdef __unix__
 	// Set up QUIT-type signals so they clean up properly.
@@ -1195,6 +1269,7 @@ int main(int argc, char** argv)
 		while(!bbs_stopped && !ftp_stopped && !mail_stopped && !services_stopped
 			&& ((run_bbs && !bbs_running) 
 				|| (run_ftp && !ftp_running) 
+				|| (web_ftp && !web_running) 
 				|| (run_mail && !mail_running) 
 				|| (run_services && !services_running)))
 			mswait(1);
@@ -1288,7 +1363,7 @@ int main(int argc, char** argv)
 	services_terminate();
 #endif
 
-	while(bbs_running || ftp_running || mail_running || services_running)
+	while(bbs_running || ftp_running || web_running || mail_running || services_running)
 		SLEEP(1);
 
 	/* erase the prompt */
