@@ -754,9 +754,16 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 
 	StatusBar->Panels->Items[4]->Text="Closing...";
     time_t start=time(NULL);
-	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled) {
+	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled
+    	|| ServicesStop->Enabled) {
         if(time(NULL)-start>30)
             break;
+        Application->ProcessMessages();
+        Sleep(1);
+    }
+    /* Extra time for callbacks to be called by child threads */
+    start=time(NULL);
+    while(time(NULL)<start+2) {
         Application->ProcessMessages();
         Sleep(1);
     }
@@ -790,6 +797,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
             return;
         FtpStopExecute(Sender);
     }
+    ServicesStopExecute(Sender);
 
     CanClose=true;
 }
