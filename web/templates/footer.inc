@@ -3,7 +3,7 @@
   <tbody>
     <tr>
       <td>
-            <div align="left">
+            <br><div align="left">
             <a href="http://www.synchro.net/"><img alt="Powered by: Synchronet" src="/graphics/sync_pb.gif" border=0></a></div>
       </td>
       <td>

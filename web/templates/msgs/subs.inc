@@ -1,5 +1,5 @@
 <CENTER>
-<P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <A HREF="index.ssjs">Groups</A> : <B>%%group:description%%</B></P>
+<P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> :  <A href="/members/">Members</A> : <A HREF="index.ssjs">Groups</A> : <B>%%group:description%%</B></P>
 <TABLE>
 <<REPEAT subs>>
 <TR>

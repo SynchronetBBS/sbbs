@@ -1,5 +1,5 @@
 <CENTER>
-<P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <B>Groups</B></P>
+<P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <A href="/members/">Members</A> : <B>Groups</B></P>
 <TABLE>
 <<REPEAT groups>>
 <TR>

@@ -1,5 +1,5 @@
 <CENTER>
-<A HREF="http://^^JS:system.inet_addr^^">Home</A> : <A HREF="index.ssjs">Groups</A> : <A HREF="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</A> :
+<A HREF="http://^^JS:system.inet_addr^^">Home</A> : <A href="/members/">Members</A> : <A HREF="index.ssjs">Groups</A> : <A HREF="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</A> :
 <A HREF="msgs.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^">%%sub:description%%</A>
 <A HREF="subinfo.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^">[?]</A><BR>
 <TABLE BORDER=0 width="95%">
