@@ -2633,7 +2633,8 @@ static void respond(http_session_t * session)
 				snt=0;
 			session->req.ld->size=snt;
 		}
-		lprintf(LOG_INFO,"%04d Sent file: %s",session->socket, session->req.physical_path);
+		if(snt>0)
+			lprintf(LOG_INFO,"%04d Sent file: %s",session->socket, session->req.physical_path);
 	}
 	close_request(session);
 }
