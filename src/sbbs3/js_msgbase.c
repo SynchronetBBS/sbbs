@@ -77,7 +77,8 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 				break;
 		if(p->subnum>=scfg->total_subs)	/* unknown code */
 			return(JS_TRUE);
-		snprintf(p->smb.file,sizeof(p->smb.file),"%ssubs/%s",scfg->data_dir,code);
+		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s"
+			,scfg->sub[p->subnum]->data_dir,code);
 	}
 
 	if(argc>1)
