@@ -312,15 +312,19 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	}
 
 	/* Check socket for writability (using select) */
-	tv.tv_sec=60;
+	tv.tv_sec=300;
 	tv.tv_usec=0;
 
 	FD_ZERO(&socket_set);
 	FD_SET(sock,&socket_set);
 
 	if((result=select(sock+1,NULL,&socket_set,NULL,&tv))<1) {
-		lprintf("%04d !ERROR %d (%d) selecting socket for send"
-			,sock, result, ERROR_VALUE, sock);
+		if(result==0)
+			lprintf("%04d !TIMEOUT selecting socket for send"
+				,sock);
+		else
+			lprintf("%04d !ERROR %d selecting socket for send"
+				,sock, ERROR_VALUE);
 		return(0);
 	}
 	while((result=sendsocket(sock,sbuf,len))!=len) {
@@ -2349,7 +2353,7 @@ static void ctrl_thread(void* arg)
 	client_on(sock,&client,FALSE /* update */);
 
 	sockprintf(sock,"220-%s (%s)",scfg.sys_name, startup->host_name);
-	sockprintf(sock," Synchronet FTP Server %s/%s Ready"
+	sockprintf(sock," Synchronet FTP Server %s-%s Ready"
 		,revision,PLATFORM_DESC);
 	sprintf(str,"%sftplogin.txt",scfg.text_dir);
 	if((fp=fopen(str,"rb"))!=NULL) {
@@ -4506,7 +4510,7 @@ void DLLCALL ftp_server(void* arg)
 			}
 			/* now wait for connection */
 
-			tv.tv_sec=5;
+			tv.tv_sec=2;
 			tv.tv_usec=0;
 
 			FD_ZERO(&socket_set);
