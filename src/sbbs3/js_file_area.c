@@ -43,6 +43,11 @@ enum {	/* file_area Object Properties */
 	 PROP_MIN_DSPACE
 	,PROP_MIN_LEECH_PCT
 	,PROP_MIN_LEECH_SEC
+
+	/* directory numbers */
+	,PROP_USER_DIR
+	,PROP_SYSOP_DIR
+	,PROP_UPLOAD_DIR
 };
 
 static JSClass js_file_area_class = {
