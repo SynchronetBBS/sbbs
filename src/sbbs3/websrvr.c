@@ -1544,7 +1544,8 @@ static BOOL check_request(http_session_t * session)
 			return(FALSE);
 		}
 		strcat(session->req.virtual_path,startup->index_file_name[i]);
-		session->req.send_location=MOVED_STAT;
+		if(session->req.send_location != MOVED_PERM)
+			session->req.send_location=MOVED_STAT;
 	}
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
 		session->req.keep_alive=FALSE;
