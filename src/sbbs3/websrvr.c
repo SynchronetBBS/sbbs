@@ -2467,9 +2467,89 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSBool		inc_logons=JS_FALSE;
+	user_t		user;
+	jsval		val;
+	JSString*	js_str;
+	http_session_t*	session;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	/* User name */
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	memset(&user,0,sizeof(user));
+
+	if(isdigit(*p))
+		user.number=atoi(p);
+	else if(*p)
+		user.number=matchuser(&scfg,p,FALSE);
+
+	if(getuserdat(&scfg,&user)!=0) {
+		lprintf(LOG_NOTICE,"%04d !USER NOT FOUND: '%s'"
+			,session->socket,p);
+		return(JS_TRUE);
+	}
+
+	if(user.misc&(DELETED|INACTIVE)) {
+		lprintf(LOG_WARNING,"%04d !DELETED OR INACTIVE USER #%d: %s"
+			,session->socket,user.number,p);
+		return(JS_TRUE);
+	}
+
+	/* Password */
+	if(user.pass[0]) {
+		if((js_str=JS_ValueToString(cx, argv[1]))==NULL) 
+			return(JS_FALSE);
+
+		if((p=JS_GetStringBytes(js_str))==NULL) 
+			return(JS_FALSE);
+
+		if(stricmp(user.pass,p)) { /* Wrong password */
+			lprintf(LOG_WARNING,"%04d !INVALID PASSWORD ATTEMPT FOR USER: %s"
+				,session->socket,user.alias);
+			return(JS_TRUE);
+		}
+	}
+
+	if(argc>2)
+		JS_ValueToBoolean(cx,argv[2],&inc_logons);
+
+	if(inc_logons) {
+		user.logons++;
+		user.ltoday++;
+	}
+
+	http_logon(session, &user);
+
+	/* user-specific objects */
+	if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
+		,NULL /* ftp index file */, session->subscan /* subscan */)) {
+		lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
+		send_error(session,"500 Error initializing JavaScript User Objects");
+		return(FALSE);
+	}
+
+	*rval=BOOLEAN_TO_JSVAL(JS_TRUE);
+
+	return(JS_TRUE);
+}
+
 static JSFunctionSpec js_global_functions[] = {
 	{"write",           js_write,           1},		/* write to HTML file */
 	{"writeln",         js_writeln,         1},		/* write line to HTML file */
+	{"login",           js_login,           2},		/* log in as a different user */
 	{0}
 };
 
