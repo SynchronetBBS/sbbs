@@ -2495,7 +2495,7 @@ object MainForm: TMainForm
         end
         object ExternalMailProc: TMenuItem
           Caption = 'External Mail Processing'
-          Hint = 'MAILPROC.CFG'
+          Hint = 'mailproc.ini'
           OnClick = CtrlMenuItemEditClick
         end
       end
@@ -2589,6 +2589,7 @@ object MainForm: TMainForm
         Caption = '-'
       end
       object WebEditMenuItem: TMenuItem
+        AutoHotkeys = maManual
         Caption = 'Edit'
         object WebEditMimeTypesMenuItem: TMenuItem
           Caption = 'MIME Types'
@@ -2615,6 +2616,7 @@ object MainForm: TMainForm
         Caption = '-'
       end
       object ServicesEditMenuItem: TMenuItem
+        AutoHotkeys = maManual
         Caption = 'Edit'
         object ServicesEditIniMenuOption: TMenuItem
           Caption = 'services.ini'
