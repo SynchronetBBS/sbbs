@@ -165,8 +165,9 @@ BUILDPATH	=	debug
 BUILDPATH	=	release
 !endif
 
+OBJODIR =	$(CCPRE).win32.obj.$(BUILDPATH)
+MTOBJODIR =	$(CCPRE).win32.obj.$(BUILDPATH)-mt
 LIBODIR =	$(CCPRE).win32.lib.$(BUILDPATH)
-OBJODIR =	$(CCPRE).win32.obj.$(BUILDPATH)$(OBJPATH_SUFFIX)
 EXEODIR =	$(CCPRE).win32.exe.$(BUILDPATH)
 
 # Paths
@@ -189,9 +190,17 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 #!include libobjs.mk		# defines $(LIB_OBJS)
 
 # Implicit C Compile Rule
-{.}.c$(OFILE):
+{.}.c${OBJODIR}$(OFILE):
 	@$(CC) $(CFLAGS) $(CCFLAGS) -c $< $(OUTPUT)$@
 
 # Implicit C++ Compile Rule
-{.}.cpp$(OFILE):
+{.}.cpp{OBJODIR}$(OFILE):
 	@$(CC) $(CFLAGS) $(CXXFLAGS) -c $< $(OUTPUT)$@
+
+# Implicit MT C Compile Rule
+{.}.c{MTOBJODIR}$(OFILE):
+	@$(CC) $(CFLAGS) $(CCFLAGS) $(PTHREAD_CFLAGS) -c $< $(OUTPUT)$@
+
+# Implicit MT C++ Compile Rule
+{.}.cpp{MTOBJODIR}$(OFILE):
+	@$(CC) $(CFLAGS) $(CXXFLAGS) $(PTHREAD_CFLAGS) -c $< $(OUTPUT)$@
