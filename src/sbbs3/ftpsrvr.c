@@ -1121,6 +1121,137 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 	return(rd);
 }
 
+/*****************************************************************************/
+/* Returns command line generated from instr with %c replacments             */
+/*****************************************************************************/
+char * cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *cmd)
+{
+	char	str[256];
+    int		i,j,len;
+#ifdef _WIN32
+	char sfpath[MAX_PATH];
+#endif
+
+    len=strlen(instr);
+    for(i=j=0;i<len;i++) {
+        if(instr[i]=='%') {
+            i++;
+            cmd[j]=0;
+            switch(toupper(instr[i])) {
+                case 'A':   /* User alias */
+                    strcat(cmd,user->alias);
+                    break;
+                case 'B':   /* Baud (DTE) Rate */
+                case 'C':   /* Connect Description */
+                case 'D':   /* Connect (DCE) Rate */
+                case 'E':   /* Estimated Rate */
+                case 'H':   /* Port Handle or Hardware Flow Control */
+                case 'P':   /* COM Port */
+                case 'R':   /* Rows */
+                case 'T':   /* Time left in seconds */
+                case '&':   /* Address of msr */
+                case 'Y':	/* COMSPEC */
+					/* UNSUPPORTED */
+					break;
+                case 'F':   /* File path */
+                    strcat(cmd,fpath);
+                    break;
+                case 'G':   /* Temp directory */
+                    strcat(cmd,scfg.temp_dir);
+                    break;
+                case 'I':   /* UART IRQ Line */
+                    strcat(cmd,ultoa(scfg.com_irq,str,10));
+                    break;
+                case 'J':
+                    strcat(cmd,scfg.data_dir);
+                    break;
+                case 'K':
+                    strcat(cmd,scfg.ctrl_dir);
+                    break;
+                case 'L':   /* Lines per message */
+                    strcat(cmd,ultoa(scfg.level_linespermsg[user->level],str,10));
+                    break;
+                case 'M':   /* Minutes (credits) for user */
+                    strcat(cmd,ultoa(user->min,str,10));
+                    break;
+                case 'N':   /* Node Directory (same as SBBSNODE environment var) */
+                    strcat(cmd,scfg.node_dir);
+                    break;
+                case 'O':   /* SysOp */
+                    strcat(cmd,scfg.sys_op);
+                    break;
+                case 'Q':   /* QWK ID */
+                    strcat(cmd,scfg.sys_id);
+                    break;
+                case 'S':   /* File Spec */
+                    strcat(cmd,fspec);
+                    break;
+                case 'U':   /* UART I/O Address (in hex) */
+                    strcat(cmd,ultoa(scfg.com_base,str,16));
+                    break;
+                case 'V':   /* Synchronet Version */
+                    sprintf(str,"%s%c",VERSION,REVISION);
+                    break;
+                case 'W':   /* Time-slice API type (mswtype) */
+#if 0 //ndef __FLAT__
+                    strcat(cmd,ultoa(mswtyp,str,10));
+#endif
+                    break;
+                case 'X':
+                    strcat(cmd,scfg.shell[user->shell]->code);
+                    break;
+                case 'Z':
+                    strcat(cmd,scfg.text_dir);
+                    break;
+				case '~':	/* DOS-compatible (8.3) filename */
+#ifdef _WIN32
+					strcpy(sfpath,fpath);
+					GetShortPathName(fpath,sfpath,sizeof(sfpath));
+					strcat(cmd,sfpath);
+#else
+                    strcat(cmd,fpath);
+#endif			
+					break;
+                case '!':   /* EXEC Directory */
+                    strcat(cmd,scfg.exec_dir);
+                    break;
+                case '#':   /* Node number (same as SBBSNNUM environment var) */
+                    sprintf(str,"%d",scfg.node_num);
+                    strcat(cmd,str);
+                    break;
+                case '*':
+                    sprintf(str,"%03d",scfg.node_num);
+                    strcat(cmd,str);
+                    break;
+                case '$':   /* Credits */
+                    strcat(cmd,ultoa(user->cdt+user->freecdt,str,10));
+                    break;
+                case '%':   /* %% for percent sign */
+                    strcat(cmd,"%");
+                    break;
+				case '?':	/* Platform */
+#ifdef __OS2__
+					strcpy(str,"OS2");
+#else
+					strcpy(str,PLATFORM_DESC);
+#endif
+					strlwr(str);
+					strcat(cmd,str);
+					break;
+                default:    /* unknown specification */
+                    if(isdigit(instr[i])) {
+                        sprintf(str,"%0*d",instr[i]&0xf,user->number);
+                        strcat(cmd,str); }
+                    break; }
+            j=strlen(cmd); }
+        else
+            cmd[j++]=instr[i]; }
+    cmd[j]=0;
+
+    return(cmd);
+}
+
+
 void DLLCALL ftp_terminate(void)
 {
 	if(server_socket!=INVALID_SOCKET) {
@@ -1313,7 +1444,12 @@ static void send_thread(void* arg)
 static void receive_thread(void* arg)
 {
 	char		buf[8192];
+	char		ext[F_EXBSIZE+1];
+	char		desc[F_EXBSIZE+1];
+	char		cmd[MAX_PATH*2];
+	char		tmp[MAX_PATH+1];
 	char		fname[MAX_PATH+1];
+	int			i;
 	int			rd;
 	int			file;
 	ulong		total=0;
@@ -1439,14 +1575,58 @@ static void receive_thread(void* arg)
 			f.timesdled=0;
 			f.datedled=0L;
 			f.opencount=0;
-			if(xfer.desc==NULL || *xfer.desc==0) {
-				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,getfname(xfer.filename));
-/* old way		strcpy(f.desc,"Received via FTP: No description given"); */
-			} else
+
+			/* Desciption specified with DESC command? */
+			if(xfer.desc!=NULL && *xfer.desc!=0)	
 				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,xfer.desc);
+
+			/* FILE_ID.DIZ support */
+			if(scfg.dir[f.dir]->misc&DIR_DIZ) {
+				for(i=0;i<scfg.total_fextrs;i++)
+					if(!stricmp(scfg.fextr[i]->ext,f.name+9) && chk_ar(&scfg,scfg.fextr[i]->ar,xfer.user))
+						break;
+				if(i<scfg.total_fextrs) {
+					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
+					remove(tmp);
+					system(cmdstr(xfer.user,scfg.fextr[i]->cmd,fname,"FILE_ID.DIZ",cmd));
+					if(!fexist(tmp)) {
+						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
+						remove(tmp);
+						system(cmdstr(xfer.user,scfg.fextr[i]->cmd,fname,"DESC.SDI",cmd)); 
+					}
+					if((file=nopen(tmp,O_RDONLY))!=-1) {
+						memset(ext,0,sizeof(ext));
+						read(file,ext,sizeof(ext)-1);
+						for(i=sizeof(ext)-1;i;i--)
+							if(ext[i-1]>SP)
+								break;
+						ext[i]=0;
+						if(!f.desc[0]) {
+							strcpy(desc,ext);
+							strip_exascii(desc);
+							strip_ctrl(desc);
+							for(i=0;desc[i];i++)
+								if(isalnum(desc[i]))
+									break;
+							sprintf(f.desc,"%.*s",LEN_FDESC,desc+i); 
+						}
+						close(file);
+						remove(tmp);
+						f.misc|=FM_EXTDESC; 
+					} 
+				} 
+			} /* FILE_ID.DIZ support */
+
+			if(f.desc[0]==0) 	/* no description given, use (long) filename */
+				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,getfname(xfer.filename));
+
 			strcpy(f.uler,xfer.user->alias);
 			if(!addfiledat(&scfg,&f))
 				lprintf("%04d !ERROR adding file (%s) to database",xfer.ctrl_sock,f.name);
+
+			if(f.misc&FM_EXTDESC)
+				putextdesc(&scfg,f.dir,f.datoffset,ext);
+
 			if(scfg.dir[f.dir]->upload_sem[0])
 				if((file=sopen(scfg.dir[f.dir]->upload_sem,O_WRONLY|O_CREAT|O_TRUNC,SH_DENYNO))!=-1)
 					close(file);
@@ -3931,6 +4111,9 @@ void DLLCALL ftp_server(void* arg)
 		cleanup(1);
 		return;
 	}
+
+	/* Use DATA/TEMP for temp dir - should ch'd to be FTP/HOST specific */
+	prep_dir(scfg.data_dir, scfg.temp_dir);
 
 	if(!startup->max_clients) {
 		startup->max_clients=scfg.sys_nodes;
