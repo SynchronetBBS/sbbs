@@ -125,6 +125,8 @@ extern "C" {
 	#define PLATFORM_DESC	"OpenBSD"
 #elif defined(__NetBSD__)
 	#define PLATFORM_DESC	"NetBSD"
+#elif defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)
+	#define PLATFORM_DESC	"Mac OS X"
 #elif defined(BSD)
 	#define PLATFORM_DESC	"BSD"
 #elif defined(__solaris__)
@@ -135,8 +137,6 @@ extern "C" {
 	#define PLATFORM_DESC	"GNU/Hurd"
 #elif defined(__QNX__)
 	#define PLATFORM_DESC	"QNX"
-#elif defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)
-	#define PLATFORM_DESC	"Mac OS X"
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else
