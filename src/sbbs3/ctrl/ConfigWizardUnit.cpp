@@ -153,10 +153,32 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
 
     if(scfg.new_install) {
         TIME_ZONE_INFORMATION tz;
-        memset(&tz,0,sizeof(tz));
-        GetTimeZoneInformation(&tz);
-        /* How to convert to SMB tz format? */
+	    memset(&tz,0,sizeof(tz));
+    	DWORD tzRet=GetTimeZoneInformation(&tz);
+
+        /* Convert to SMB tz format */
         scfg.sys_timezone=0;
+		if(tz.Bias>0) {
+        	switch(tz.Bias|US_ZONE) {
+				case AST:
+				case EST:
+				case CST:
+				case MST:
+				case PST:
+				case YST:
+				case HST:
+				case BST:
+	                scfg.sys_timezone=tz.Bias|US_ZONE;
+			        if(tzRet==TIME_ZONE_ID_DAYLIGHT)
+			   	    	scfg.sys_timezone|=DAYLIGHT;
+                    break;
+                default:
+					scfg.sys_timezone=tz.Bias|WESTERN_ZONE;
+                    break;
+            }
+		} else if(tz.Bias<0)
+			scfg.sys_timezone=(-tz.Bias)|EASTERN_ZONE;
+
         /* Get DNS Server Address */
 #if 0 /* Old way */
         sprintf(str,"%s /c ipconfig /all > %sipconfig.txt"
@@ -249,14 +271,13 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
             strcpy(str,tz_str[i]);
         TimeZoneComboBox->Items->Add(str);
     }
+   	sprintf(str,"Other (%s)",zonestr(scfg.sys_timezone));
+    TimeZoneComboBox->Items->Add(str);
+
     for(i=0;i<sizeof(tz_val)/sizeof(tz_val[0]);i++)
         if((scfg.sys_timezone&((short)~DAYLIGHT))==tz_val[i])
             break;
-
-    if(i<sizeof(tz_val)/sizeof(tz_val[0]))
-        TimeZoneComboBox->ItemIndex=i;
-    else
-        TimeZoneComboBox->ItemIndex=0;
+    TimeZoneComboBox->ItemIndex=i;
     DaylightCheckBox->Enabled=scfg.sys_timezone&US_ZONE;
     DaylightCheckBox->Checked=scfg.sys_timezone&DAYLIGHT;
     if(scfg.sys_misc&SM_MILITARY)
@@ -298,7 +319,8 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
         strcpy(scfg.sys_inetaddr,InternetAddressComboBox->Text.c_str());
         strcpy(scfg.qnet_tagline,QNetTaglineEdit->Text.c_str());
         scfg.sys_nodes=NodesUpDown->Position;
-        if(TimeZoneComboBox->ItemIndex>=0)
+        if(TimeZoneComboBox->ItemIndex>=0
+        	&& TimeZoneComboBox->ItemIndex<=sizeof(tz_val)/sizeof(tz_val[0]))
             scfg.sys_timezone=tz_val[TimeZoneComboBox->ItemIndex];
         if(DaylightCheckBox->Checked)
             scfg.sys_timezone|=DAYLIGHT;
@@ -528,8 +550,11 @@ void __fastcall TConfigWizard::VerifyInternetAddresses(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TConfigWizard::TimeZoneComboBoxChange(TObject *Sender)
 {
-    if(TimeZoneComboBox->ItemIndex>=0)
+    if(TimeZoneComboBox->ItemIndex>=0
+    	&& TimeZoneComboBox->ItemIndex<=sizeof(tz_val)/sizeof(tz_val[0]))
         DaylightCheckBox->Enabled=tz_val[TimeZoneComboBox->ItemIndex]&US_ZONE;
+    else
+	    DaylightCheckBox->Enabled=false;
     if(!DaylightCheckBox->Enabled)
         DaylightCheckBox->Checked=false;
 }
