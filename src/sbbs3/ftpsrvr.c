@@ -1865,11 +1865,11 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons((WORD)(startup->port-1));	/* 20? */
 
-		if(startup->seteuid!=NULL)
-			startup->seteuid(FALSE);
 		result=bind(*data_sock, (struct sockaddr *) &server_addr,sizeof(server_addr));
-		if(startup->seteuid!=NULL)
-			startup->seteuid(TRUE);
+		if(result!=0) {
+			server_addr.sin_port = 0;	/* any user port */
+			result=bind(*data_sock, (struct sockaddr *) &server_addr,sizeof(server_addr));
+		}
 		if(result!=0) {
 			lprintf ("%04d !DATA ERROR %d (%d) binding socket %d"
 				,ctrl_sock, result, ERROR_VALUE, *data_sock);
