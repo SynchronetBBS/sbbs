@@ -68,13 +68,12 @@ var enable_users_summon = true;
 
 // what our server is capable of from a server point of view.
 // TS3 = Version 3 of accepted interserver timestamp protocol.
-// NOQUIT = NOQUIT interserver command supported.
+// NOQUIT = QUIT clients on behalf of a SQUIT server? (no netsplit spam)
 // SSJOIN = SJOIN interserver command supported without dual TS, single TS only.
 // BURST = Sending of network synch data is done in a 3-stage burst (BURST cmd)
 // UNCONNECT = UNCONNECT interserver command supported.
 // NICKIP = 9th parameter of interserver NICK command is an integer IP.
-// TSMODE = Timestamps are given on plain MODE commands.
-// ZIP = server supports gzip on the fly for interserver communication.
+// TSMODE = 2nd arg to standard MODE is the channel's TS.
 var server_capab = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP TSMODE";
 
 // EVERY server on the network MUST have the same values in ALL of these
@@ -1615,7 +1614,7 @@ function IRCClient_numeric322(chan,show_modes) {
 
 	if ((chan.mode&CHANMODE_PRIVATE) && !(this.mode&USERMODE_OPER) &&
 	    !this.onchannel(chan.nam.toUpperCase()) ) {
-		channel_name = "Priv";
+		channel_name = "*";
 	} else {
 		channel_name = chan.nam;
 		if (disp_topic)
@@ -2074,7 +2073,7 @@ function IRCClient_global(target,type_str,send_str) {
 	global_str = ":" + this.nick + " " + global_str;
 	if(this.parent)
 		Clients[this.parent].bcast_to_servers_raw(global_str);
-	else
+	else if (this.flags&OLINE_CAN_GGNOTICE)
 		server_bcast_to_servers(global_str);
 	return 1;
 }
@@ -2092,10 +2091,11 @@ function IRCClient_globops(str) {
 }
 
 function IRCClient_do_msg(target,type_str,send_str) {
-	if ((target[0] == "$") && (this.mode&USERMODE_OPER))
+	if ((target[0] == "$") && (this.mode&USERMODE_OPER) &&
+	    (this.flags&OLINE_CAN_LGNOTICE))
 		return this.global(target,type_str,send_str);
 
-	send_to_list = -1;
+	var send_to_list = -1;
 	if (target[0] == "@" && ( (target[1] == "#") || target[1] == "&") ) {
 		send_to_list = CHANMODE_OP;
 		target = target.slice(1);
@@ -2105,10 +2105,11 @@ function IRCClient_do_msg(target,type_str,send_str) {
 	}
 		
 	if ((target[0] == "#") || (target[0] == "&")) {
-		chan = searchbychannel(target);
+		var chan = searchbychannel(target);
 		if (!chan) {
 			// check to see if it's a #*hostmask* oper message
-			if ((target[0] == "#") && (this.mode&USERMODE_OPER)) {
+			if ((target[0] == "#") && (this.mode&USERMODE_OPER) &&
+			    (this.flags&OLINE_CAN_LGNOTICE)) {
 				return this.global(target,type_str,send_str);
 			} else {
 				this.numeric401(target);
@@ -2133,15 +2134,16 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			return 0;
 		}
 		if(send_to_list == -1) {
-			str = type_str +" "+ chan.nam +" :"+ send_str;
+			var str = type_str +" "+ chan.nam +" :"+ send_str;
 			this.bcast_to_channel(chan.nam, str, false);
 			this.bcast_to_channel_servers(chan.nam, str);
 		} else {
+			var prefix_chr;
 			if (send_to_list == CHANMODE_OP)
 				prefix_chr="@";
 			else if (send_to_list == CHANMODE_VOICE)
 				prefix_chr="+";
-			str = type_str +" " + prefix_chr + chan.nam + " :"+ send_str;
+			var str = type_str +" " + prefix_chr + chan.nam + " :"+ send_str;
 			this.bcast_to_list(chan, str, false, send_to_list);
 			this.bcast_to_channel_servers(chan.nam, str);
 		}
@@ -2162,7 +2164,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 		} else {
 			var real_target = target;
 		}
-		target_socket = searchbynick(real_target);
+		var target_socket = searchbynick(real_target);
 		if (target_socket) {
 			if (target_server &&
 			    (target_server.parent != target_socket.parent)) {
@@ -2172,7 +2174,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			if (target_server && 
 			    (target_server.id == target_socket.parent) )
 				target = real_target;
-			str = type_str + " " + target + " :" + send_str;
+			var str = type_str + " " + target + " :" + send_str;
 			target_socket.originatorout(str,this);
 			if (target_socket.away && (type_str == "PRIVMSG") &&
 			    !this.server && this.local)
@@ -4318,7 +4320,8 @@ function IRCClient_registered_commands(command, cmdline) {
 			nickid.rmchan(Channels[chanid.nam.toUpperCase()]);
 			break;
 		case "KILL":
-			if (!(this.mode&USERMODE_OPER)) {
+			if (!(this.mode&USERMODE_OPER) ||
+			    !(this.flags&OLINE_CAN_LKILL)) {
 				this.numeric481();
 				break;
 			}
@@ -4344,6 +4347,10 @@ function IRCClient_registered_commands(command, cmdline) {
 				if (target && target.local) {
 					target.quit("Local kill by " + this.nick + " (" + reason + ")");
 				} else if (target) {
+					if (!(this.flags&OLINE_CAN_GKILL)) {
+						this.numeric481();
+						break;
+					}
 					var trg_srv = searchbyserver(
 						target.servername);
 					if (trg_srv && trg_srv.isulined) {
