@@ -247,10 +247,10 @@ $(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^ 
 
-SMBLIB = $(EXEODIR)/smblib.o $(EXEODIR)/filewrap.o
+SMBLIB = $(EXEODIR)/smblib.o $(EXEODIR)/filewrap.o $(EXEODIR)/crc16.o
 
 # FIXSMB Utility
-$(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o
+$(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o $(EXEODIR)/str_util.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
 
