@@ -74,3 +74,9 @@ function get_all_message_offsets()
 	}
 	return(offsets);
 }
+
+function msgs_done()
+{
+	if(msgbase!=undefined)
+		msgbase.close();
+}
