@@ -1199,6 +1199,259 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		fclose(doscmdrc);
 		SAFECOPY(str,fullcmdline);
 		sprintf(fullcmdline,"%s -F %s",startup->dosemu_path,str);
+
+#elif defined(__linux__) && defined(USE_DOSEMU)
+
+		/* dosemu integration  --  Ryan Underwood, <nemesis @ icequake.net> */
+
+		FILE *dosemubat;
+		int setup_override;
+		char tok[MAX_PATH+1];
+ 
+		char dosemuconf[MAX_PATH+1];
+		char dosemubinloc[MAX_PATH+1];
+		char virtualconf[75];
+		char dosterm[15];
+		char log_external[MAX_PATH+1];
+
+		/*  on the Unix side. xtrndir is the parent of the door's startup dir. */
+		char xtrndir[MAX_PATH+1];
+
+		/*  on the DOS side.  */
+		char xtrndir_dos[MAX_PATH+1];
+		char ctrldir_dos[MAX_PATH+1];
+		char datadir_dos[MAX_PATH+1];
+		char execdir_dos[MAX_PATH+1];
+
+		/* Default locations that can be overridden by 
+		 * the sysop in emusetup.bat */
+
+		const char nodedrive[] = "D:";
+		const char xtrndrive[] = "E:";
+		const char ctrldrive[] = "F:";
+		const char datadrive[] = "G:";
+		const char execdrive[] = "H:";
+
+		SAFECOPY(str,startup_dir);
+			if((p=strrchr(str,'/'))!=NULL)  /* kill trailing slash */
+				*p=0;
+			if((p=strrchr(str,'/'))!=NULL)  /* kill the last element of the path */
+				*p=0;
+
+		SAFECOPY(xtrndir,str);
+
+		/* construct DOS equivalents for the unix directories */
+
+		SAFECOPY(ctrldir_dos,cfg.ctrl_dir);
+		for (p = ctrldir_dos; *p; p++)
+			if(*p=='/')
+				*p='\\';
+
+		p=lastchar(ctrldir_dos);
+		if (*p=='\\') *p=0;
+
+		SAFECOPY(datadir_dos,cfg.data_dir);
+		for (p = datadir_dos; *p; p++)
+			if(*p=='/')
+				*p='\\';
+
+		p=lastchar(datadir_dos);
+		if (*p=='\\') *p=0;
+
+		SAFECOPY(execdir_dos,cfg.exec_dir);
+		for (p = execdir_dos; *p; p++)
+			if(*p=='/')
+				*p='\\';
+
+		p=lastchar(execdir_dos);
+		if (*p=='\\') *p=0;
+
+		SAFECOPY(xtrndir_dos,xtrndir);
+		for (p = xtrndir_dos; *p; p++)
+			if(*p=='/')
+				*p='\\';
+
+		/* check for existence of a dosemu.conf in the door directory.
+		 * It is a good idea to be able to use separate configs for each
+		 * door. */
+
+		sprintf(str,"%sdosemu.conf",startup_dir);
+		if (access(str, R_OK) < 0) {
+
+		/* If we can't find it in the door dir, look for a global one
+		 * in the ctrl dir. */
+
+			sprintf(str,"%sdosemu.conf",cfg.ctrl_dir);
+			if (access(str, R_OK < 0)) {
+
+		/* If we couldn't find either, try for the system one, then
+		 * error out. */
+				SAFECOPY(str,"/etc/dosemu/dosemu.conf");
+				if (access(str, R_OK < 0)) {
+				
+					SAFECOPY(str,"/etc/dosemu.conf");
+					if (access(str, R_OK < 0)) {
+						errormsg(WHERE,ERR_READ,str,0);
+						return(-1);
+					}
+					else SAFECOPY(dosemuconf,str);  /* using system conf */
+				}
+				else SAFECOPY(dosemuconf,str);  /* using system conf */
+			}
+			else SAFECOPY(dosemuconf,str);   /* using global conf */
+		}
+		else SAFECOPY(dosemuconf,str);  /* using door-specific conf */
+
+		/* same deal for emusetup.bat. */
+
+		sprintf(str,"%semusetup.bat",startup_dir);
+		fprintf(stderr, str);
+		if (access(str, R_OK) < 0) {
+
+		/* If we can't find it in the door dir, look for a global one
+		 * in the ctrl dir. */
+
+			sprintf(str,"%semusetup.bat",cfg.ctrl_dir);
+			if (access(str, R_OK) < 0) {
+
+		/* If we couldn't find either, set an error condition. */
+				setup_override = -1;
+			}
+			else setup_override = 0;  /* using global bat */
+		}
+		else setup_override = 1;  /* using door-specific bat */
+
+		/* Create the external bat here to be placed in the node dir. */
+
+		sprintf(str,"%sexternal.bat",cfg.node_dir);
+		if(!(dosemubat=fopen(str,"w+"))) {
+			errormsg(WHERE,ERR_CREATE,str,0);
+			return(-1);
+		}
+
+		fprintf(dosemubat,"@echo off\r\n");
+		fprintf(dosemubat,"set DSZLOG=%s\\PROTOCOL.LOG\r\n",nodedrive);
+		fprintf(dosemubat,"set SBBSNODE=%s\r\n",nodedrive);
+		fprintf(dosemubat,"set SBBSNNUM=%d\r\n",cfg.node_num);
+		fprintf(dosemubat,"set SBBSCTRL=%s\r\n",ctrldrive);
+		fprintf(dosemubat,"set SBBSDATA=%s\r\n",datadrive);
+		fprintf(dosemubat,"set SBBSEXEC=%s\r\n",execdrive);
+
+		/* clear existing redirections on dos side */
+		fprintf(dosemubat,"lredir del %s\r\nlredir del %s\r\nlredir del %s\r\nlredir del %s\r\n",xtrndrive,ctrldrive,datadrive,execdrive);
+
+		/* redirect necessary drive letters to unix paths */
+		fprintf(dosemubat,"lredir %s linux\\fs%s\r\n",xtrndrive,xtrndir_dos);
+		fprintf(dosemubat,"lredir %s linux\\fs%s\r\n",ctrldrive,ctrldir_dos);
+		fprintf(dosemubat,"lredir %s linux\\fs%s\r\n",datadrive,datadir_dos);
+		fprintf(dosemubat,"lredir %s linux\\fs%s\r\n",execdrive,execdir_dos);
+
+		/* change to the drive where the parent of the startup_dir is mounted */
+		fprintf(dosemubat,"%s\r\n",xtrndrive);
+
+		if(startup_dir!=NULL && startup_dir[0]) {
+
+			SAFECOPY(str,startup_dir);
+
+		/* if theres a trailing slash, dump it */
+
+			p=lastchar(str);
+			if (*p=='/') *p=0;
+
+			if ((p=strrchr(str, '/'))!=NULL)
+				SAFECOPY(str,p+1);  /* str = game's starting dir */
+
+			else str[0] = '\0';
+		}
+
+		else str[0] = '\0';
+
+		fprintf(dosemubat,"cd %s\r\n",str);  /* startup_dir  */
+
+		if (setup_override == 1)
+			fprintf(dosemubat,"call %s\\%s\\emusetup.bat %s\r\n",xtrndrive,str,cmdline);
+		else if (setup_override == 0)
+			fprintf(dosemubat,"call %s\\emusetup.bat\r\n",ctrldrive);
+		/* if (setup_override == -1) do_nothing */
+
+		/*  Check if it's a bat file, to prepend "call" to the command  */
+
+		SAFECOPY(tok,cmdline);
+		truncstr(tok," ");
+
+		p = strstr(tok, ".bat");  /*  check if it's a bat file  */
+		if (p)
+			fprintf(dosemubat,"call ");  /* if so, "call" it */
+
+		fprintf(dosemubat,"%s\r\n",cmdline);
+		fprintf(dosemubat,"exitemu\r\n");
+
+		/* Check the "Stdio Interception" flag from scfg for this door.  If it's
+		 * enabled, we enable doorway mode.  Else, it's vmodem for us, unless
+		 * it's a timed event.
+		 */
+
+		if (!(mode&(EX_INR|EX_OUTR)) && online!=ON_LOCAL)
+			SAFECOPY(virtualconf,"-I\"serial { virtual com 1 }\"");
+		else
+			virtualconf[0] = '\0';
+
+		/* Set the interception bits, since we are always going to want Synchronet
+		 * to intercept dos programs under Unix.
+		 */
+
+		mode |= (EX_INR|EX_OUTR);
+
+		/* See if we have the dosemu link in the door's dir.  If so, use the dosemu
+		 * that it points to as our command to execute.  If not, use DOSemuPath.
+		 */
+ 
+		sprintf(str,"%sdosemu.bin",startup_dir);
+		if (access(str,R_OK) < 0)
+			SAFECOPY(dosemubinloc,(cmdstr(startup->dosemu_path,nulstr,nulstr,tok)));
+		else
+			SAFECOPY(dosemubinloc,str);
+
+		/* Attempt to keep dosemu from prompting for a disclaimer. */
+
+		sprintf(str, "%s/.dosemu", cfg.ctrl_dir);
+		if (access(str,R_OK) < 0) {
+			mkdir(str, 0755);
+		}
+
+		/* Touch the disclaimer file. */
+		strcat(str, "/disclaimer");
+		if ((i = open(str, O_WRONLY|O_CREAT)) != -1) {
+			close(i);
+		}
+
+		/* Set up the command for dosemu to execute with 'unix -e'. */
+
+		sprintf(str,"%sexternal.bat",nodedrive);
+
+		/* need TERM=linux for maintenance programs to work
+		 * (dosemu won't start with no controlling terminal)
+		 * Also, redirect stdout to a log if it's a timed event.
+		 */
+		 
+		if (online==ON_LOCAL) {
+			SAFECOPY(dosterm,"TERM=linux");
+			sprintf(log_external,">> %sdosevent_%s.log",cfg.logs_dir,fname);
+		}
+		else {
+			dosterm[0]='\0';
+			log_external[0] = '\0';
+		}
+
+		/* Drum roll. */
+
+		sprintf(fullcmdline,
+		"/usr/bin/env %s HOME=%s QUIET=1 DOSDRIVE_D=%s %s -I\"video { none }\" -I\"keystroke \\r\" %s -f%s -E%s -o%sdosemu.log 2> %sdosemu_boot.log %s",
+			dosterm,cfg.ctrl_dir,cfg.node_dir,dosemubinloc,virtualconf,dosemuconf,str,cfg.node_dir,cfg.node_dir,log_external);
+
+		fprintf(dosemubat,"REM For debugging: %s\r\n",fullcmdline);
+		fclose(dosemubat);
+
 #else
 		bprintf("\r\nExternal DOS programs are not yet supported in \r\n%s\r\n"
 			,VERSION_NOTICE);

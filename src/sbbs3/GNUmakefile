@@ -149,6 +149,10 @@ ifdef PREFIX
  CFLAGS += -DPREFIX=$(PREFIX)
 endif
 
+ifdef USE_DOSEMU
+ CFLAGS += -DUSE_DOSEMU
+endif
+
 ifndef JSLIBDIR
  JSLIBDIR := ../../lib/mozilla/js/$(os).$(BUILD)
 endif
