@@ -3471,18 +3471,24 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			logprintf("%s Ignored",info);
 		return(-1); }
 
-	if(hdr.attr&FIDO_ORPHAN) {
-		printf("Orphaned");
-		return(1); }
-	if(!(misc&IGNORE_ADDRESS) && match==scfg.total_faddrs && path[0]) {
-		printf("Skipped");
-		return(2); }
-	if(!(misc&IGNORE_RECV) && hdr.attr&FIDO_RECV) {
-		printf("Already received");
-		return(3); }
-	if(hdr.attr&FIDO_LOCAL && !(misc&LOCAL_NETMAIL)) {
-		printf("Created locally");
-		return(4); }
+	if(path[0]) {	/* .msg file, not .pkt */
+		if(hdr.attr&FIDO_ORPHAN) {
+			printf("Orphaned");
+			return(1); 
+		}
+		if(!(misc&IGNORE_ADDRESS) && match==scfg.total_faddrs) {
+			printf("Skipped");
+			return(2); 
+		}
+		if(!(misc&IGNORE_RECV) && hdr.attr&FIDO_RECV) {
+			printf("Already received");
+			return(3); 
+		}
+		if(hdr.attr&FIDO_LOCAL && !(misc&LOCAL_NETMAIL)) {
+			printf("Created locally");
+			return(4); 
+		}
+	}
 
 	if(email->shd_fp==NULL) {
 		sprintf(email->file,"%smail",scfg.data_dir);
