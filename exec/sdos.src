@@ -55,7 +55,7 @@ if_true
 	end_if
 
 cmdstr "dir"
-	menu sdos\root
+	menu sdos/root
 	end_cmd
 
 call global
@@ -184,7 +184,7 @@ if_true
 		end_if
 	compare_str ".."
 	if_true
-		menu sdos\root
+		menu sdos/root
 		return
 		end_if
 	compare_word ".."
@@ -193,7 +193,7 @@ if_true
 		end_if
 	compare_str ""
 	if_true
-		menu sdos\root
+		menu sdos/root
 		return
 		end_if
 	compare_word "\\"
@@ -202,17 +202,17 @@ if_true
 		end_if
 	compare_str ""
 	if_true
-		menu sdos\root
+		menu sdos/root
 		return
 		end_if
 	compare_word "files"
 	if_true
-		menu sdos\files
+		menu sdos/files
 		return
 		end_if
 	compare_word "mail"
 	if_true
-		menu sdos\mail
+		menu sdos/mail
 		return
 		end_if
 	shift_str 1
@@ -348,7 +348,7 @@ if_true
         end_if
 
 cmdstr "dir"
-	menu sdos\files
+	menu sdos/files
 	end_cmd
 
 cmdstr "batch"
@@ -436,7 +436,7 @@ cmdstr "temp"
 	end_cmd
 
 cmdstr "upload"
-	chkfile "..\text\menu\upload.*"
+	chkfile "%zmenu/upload.*"
 	if_true
 		menu upload
 		end_if
@@ -549,7 +549,7 @@ if_true
         end_if
 
 cmdstr "dir"
-	menu sdos\mail
+	menu sdos/mail
 	end_cmd
 
 cmdstr "config"
@@ -644,7 +644,7 @@ end_cmd
 
 compare_user_misc UM_expert
 if_false
-	menu MAINCFG
+	menu maincfg
 	end_if
 async
 print "\r\nyhConfig: n"
@@ -654,7 +654,7 @@ logkey
 cmdkey ?
 	compare_user_misc UM_expert
 	if_true
-		menu MAINCFG
+		menu maincfg
 		end_if
 	goto main_cfg
 	end_cmd

@@ -12,11 +12,11 @@ or _sys_misc SM_RA_EMU  # Swap Msg ReRead/Reply commands
 # Set return point for main menu commands (via end_cmd)
 cmd_home
 
-# Display TEXT\MENU\MAIN.* if not in expert mode
+# Display text/menu/main.* if not in expert mode
 compare_ars expert
 if_false
 	cls
-	menu RENEGADE\MAIN
+	menu renegade/main
 	end_if
 
 # Update node status
@@ -76,7 +76,7 @@ cmdkey ?
 	compare_ars expert
 	if_true
 		cls
-		menu RENEGADE\MAIN
+		menu renegade/main
 		end_if
 	end_cmd
 
@@ -198,7 +198,7 @@ cmd_home
 compare_ars expert
 if_false
 	cls
-	menu RENEGADE\EMAIL
+	menu renegade/email
 	end_if
 async
 compare_ars exempt T
@@ -246,7 +246,7 @@ cmdkey ?
 	compare_ars expert
 	if_true
 		cls
-		menu RENEGADE\EMAIL
+		menu renegade/email
 		end_if
 	end_cmd
 
@@ -309,7 +309,7 @@ end_cmd
 
 compare_ars expert
 if_false
-	menu MAINCFG
+	menu maincfg
 	end_if
 async
 print "\r\nyhConfig: n"
@@ -319,7 +319,7 @@ logkey
 cmdkey ?
 	compare_ars expert
 	if_true
-		menu MAINCFG
+		menu maincfg
 		end_if
 	goto main_cfg
 	end_cmd
@@ -355,7 +355,7 @@ cmd_home
 compare_ars expert
 if_false
 	cls
-	menu RENEGADE\TRANSFER
+	menu renegade/transfer
 	end_if
 
 # Update node status
@@ -446,7 +446,7 @@ cmdkey ?
 	compare_ars expert
 	if_true
 		cls
-		menu RENEGADE\TRANSFER
+		menu renegade/transfer
 		end_if
 	end_cmd
 
@@ -554,7 +554,7 @@ cmdkey /A
 
 cmdkey U
 	print "\r\nchUpload File\r\n"
-	chkfile "..\text\menu\upload.*"
+	chkfile "%zmenu/upload.*"
 	if_true
 		menu upload
                 end_if
@@ -615,7 +615,7 @@ cmd_home
 compare_ars expert
 if_false
 	cls
-	menu RENEGADE\MESSAGE
+	menu renegade/message
 	end_if
 
 # Update node status
@@ -684,7 +684,7 @@ cmdkey ?
         compare_ars expert
         if_true
 		cls
-                menu RENEGADE\MESSAGE
+                menu renegade/message
                 end_if
         end_cmd
 
@@ -832,7 +832,7 @@ end_cmd
 cmd_home
 compare_ars expert
 if_false
-	menu MAININFO
+	menu maininfo
 	end_if
 async
 print "\r\nyhInfo: n"
@@ -842,7 +842,7 @@ logkey
 cmdkey ?
 	compare_ars expert
 	if_true
-		menu MAININFO
+		menu maininfo
 		end_if
 	end_cmd
 

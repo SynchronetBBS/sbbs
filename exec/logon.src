@@ -56,13 +56,13 @@ if_true
 	log "\r\n"
 	end_if
 
-compare_ars rest G or rest X or flag S
-if_false
-	no_yes Do you want to enter the \1cSynchronet Match Maker\1b
-	if_false
-		exec_xtrn smm
-		end_if
-	end_if
+#compare_ars rest G or rest X or flag S
+#if_false
+#	no_yes Do you want to enter the \1cSynchronet Match Maker\1b
+#	if_false
+#		exec_xtrn smm
+#		end_if
+#	end_if
 
 compare_user_misc UM_ANSI
 if_true
@@ -92,7 +92,7 @@ set i 0
 	else
 		sprintf str "LOGON%ld" i
 		end_if
-	chkfile "%zMENU\%s.*"
+	chkfile "%zmenu/%s.*"
 	if_false
 		goto logon_event
 		end_if
@@ -123,7 +123,7 @@ else
 	endif
 
 # Auto-message
-setstr "%jMSGS\\AUTO.MSG"
+setstr "%jmsgs/auto.msg"
 get_file_length i str
 compare i 0 
 if_greater

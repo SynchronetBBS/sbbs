@@ -10,7 +10,7 @@
 
 :main
 cmd_home
-menu MAJOR\MAIN
+menu majro/main
 getstr 10
 compare_str ""
 if_true
@@ -38,7 +38,7 @@ cmdkey F
 
 cmdkey E
 	cmd_home
-	menu MAJOR\EMAIL
+	menu major/email
 	getstr 10
 	compare_str ""
 	if_true
@@ -109,7 +109,7 @@ cmdkey D
 
 cmdkey A
 	cmd_home
-	menu MAJOR\USERDEFS
+	menu major/userdefs
 	getstr 10
 	compare_str ""
 	if_true
@@ -172,7 +172,7 @@ end_cmd
 
 :message
 cmd_home
-menu MAJOR\MSG
+menu major/msg
 getstr 10
 compare_str ""
 if_true
@@ -203,7 +203,7 @@ cmdkey W
 
 cmdkey Q
 	cmd_home
-	menu MAJOR\QUICKSCN
+	menu major/quickscn
 	getstr 10
 	compare_str ""
 	if_true
@@ -227,7 +227,7 @@ cmdkey Q
 
 	cmdstr C
 		cmd_home
-		menu MAINCFG
+		menu maincfg
 		async
 		print "\r\nyhConfig: n"
 		getcmd ?QNPIS
@@ -236,7 +236,7 @@ cmdkey Q
 		cmdkey ?
 			compare_ars expert
 			if_true
-				menu MAINCFG
+				menu maincfg
 				end_if
 			end_cmd
 
@@ -282,7 +282,7 @@ return
 ############################ Transfer Menu Commands ###########################
 :transfers
 cmd_home
-menu MAJOR\FILE
+menu major/file
 getstr 10
 compare_str ""
 if_true
@@ -314,7 +314,7 @@ cmdkey D
 
 cmdkey U
 	print "\r\nchUpload File\r\n"
-	chkfile "..\text\menu\upload.*"
+	chkfile "%zmenu/upload.*"
 	if_true
 		menu upload
                 end_if

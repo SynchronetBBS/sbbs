@@ -34,7 +34,7 @@ cmd_home
 compare_user_misc UM_EXPERT
 if_false
 	cls
-	menu MAIN
+	menu main
 	end_if
 
 # Update node status
@@ -152,7 +152,7 @@ cmdkey ;
 	end_cmd
 
 cmdkey T
-	chkfile "%zmenu\tmessage.*"
+	chkfile "%zmenu/tmessage.*"
 	if_true
 		menu tmessage
 		end_if
@@ -354,7 +354,7 @@ hangup
 cmd_home
 compare_user_misc UM_expert
 if_false
-	menu E-MAIL
+	menu e-mail
 	end_if
 async
 print "\r\nyhE-mail: n"
@@ -364,7 +364,7 @@ logkey
 cmdkey ?
 	compare_user_misc UM_expert
 	if_true
-		menu E-MAIL
+		menu e-mail
 		end_if
 	end_cmd
 
@@ -432,7 +432,7 @@ return
 cmd_home
 compare_user_misc UM_expert
 if_false
-	menu MAININFO
+	menu maininfo
 	end_if
 async
 print "\r\nyhInfo: n"
@@ -442,7 +442,7 @@ logkey
 cmdkey ?
 	compare_user_misc UM_expert
 	if_true
-		menu MAININFO
+		menu maininfo
 		end_if
 	end_cmd
 
@@ -476,7 +476,7 @@ return
 
 compare_user_misc UM_expert
 if_false
-	menu MAINCFG
+	menu maincfg
 	end_if
 async
 print "\r\nyhConfig: n"
@@ -486,7 +486,7 @@ logkey
 cmdkey ?
 	compare_user_misc UM_expert
 	if_true
-		menu MAINCFG
+		menu maincfg
 		end_if
 	goto main_cfg
 	end_cmd
@@ -534,7 +534,7 @@ cmd_home
 compare_user_misc UM_expert
 if_false
 	cls
-	menu TRANSFER
+	menu transfer
 	end_if
 
 # Update node status
@@ -666,7 +666,7 @@ pause_reset
 cmdkey ?
 	compare_user_misc UM_expert
 	if_true
-		menu TRANSFER
+		menu transfer
 		end_if
 	end_cmd
 
@@ -787,7 +787,7 @@ cmdkey T
 
 cmdkey U
 	print "\r\nchUpload File\r\n"
-	chkfile "%zmenu\upload.*"
+	chkfile "%zmenu/upload.*"
 	if_true
 		menu upload
 		end_if
@@ -824,7 +824,7 @@ cmdkey &
 	:xfercfg
 	compare_user_misc UM_expert
 	if_false
-		menu XFERCFG
+		menu xfercfg
 		end_if
 	async
 	print "\r\nyhConfig: n"
@@ -834,7 +834,7 @@ cmdkey &
 	cmdkey ?
 		compare_user_misc UM_expert
 		if_true
-			menu XFERCFG
+			menu xfercfg
 			end_if
 		goto xfercfg
 		end_cmd
@@ -880,7 +880,7 @@ hangup
 cmd_home
 compare_user_misc UM_expert
 if_false
-	menu XFERINFO
+	menu xferinfo
 	end_if
 async
 print "\r\nyhInfo: n"
@@ -890,7 +890,7 @@ logkey
 cmdkey ?
 	compare_user_misc UM_expert
 	if_true
-		menu XFERINFO
+		menu xferinfo
 		end_if
 	end_cmd
 

@@ -134,13 +134,14 @@ if_true
 		if_true
 			shift_str 4
 			call get_arg
-			exec command /c rem >> %jQNET\%s.NOW
+			exec command /c rem >> %jqnet/%s.now
 			end_if
 		return
 		end_if
 
 	compare_word "NODE"
 	if_true
+		strlwr str
 		exec_int %!%s
 		return
 		end_if
@@ -163,20 +164,20 @@ if_true
 
 	compare_str "SLOG"
 	if_true
-		exec_int %!SLOG /P
+		exec_int %!slog /p
 		return
 		end_if
 
 	compare_str "NLOG"
         if_true
-		exec_int %!SLOG %n /P
+		exec_int %!slog %n /p
 		return
 		end_if
 
 	compare_word "NLOG "
         if_true
 		shift_str 5
-		exec_int %!SLOG ..\NODE%s /P
+		exec_int %!slog %n../node%s /p
 		return
                 end_if
 

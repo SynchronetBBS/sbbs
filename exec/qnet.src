@@ -127,9 +127,9 @@ if_true
 	goto usage
 	end_if
 
-sprintf log "%%j\%s.LOG" hubid
-sprintf rep "%%j\%s.REP" hubid
-sprintf qwk "%%j\%s.QWK" hubid
+sprintf log "%%j/%s.log" hubid
+sprintf rep "%%j/%s.rep" hubid
+sprintf qwk "%%j/%s.qwk" hubid
 chkfile qwk
 if_true
 	printf "\7BAJAQNET: %s already exists!\r\n" qwk

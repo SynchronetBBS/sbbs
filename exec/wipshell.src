@@ -19,7 +19,7 @@ str tmp
 cmd_home
 clear_abort
 cls
-printfile_remote "%zMENU\WIPMAIN.WIP"
+printfile_remote "%zmenu/wipmain.wip"
 node_action NODE_MAIN
 inc_main_cmds
 sync
@@ -43,7 +43,7 @@ cmdkey E
 	cmd_home
 	clear_abort
 	cls
-	printfile_remote "%zMENU\E-MAIL.WIP"
+	printfile_remote "%zmenu/e-mail.wip"
 	sync
 	print_local "\r\n[WIP] E-mail Menu: "
 	getkey
@@ -80,7 +80,7 @@ cmdkey I
 	cmd_home
 	clear_abort
 	cls
-	printfile_remote "%zMENU\INFO.WIP"
+	printfile_remote "%zmenu/info.wip"
 	sync
 	print_local "\r\n[WIP] Info Menu: "
 	getkey
@@ -116,7 +116,7 @@ cmdkey M
 	cmd_home
 	clear_abort
 	cls
-	printfile_remote "%zMENU\MSGS.WIP"
+	printfile_remote "%zmenu/msgs.wip"
 	sync
 	print_local "\r\n[WIP] Messages Menu: "
 	getkey
@@ -209,7 +209,7 @@ return
 cmd_home
 clear_abort
 cls
-printfile "%zMENU\MSGCFG.WIP"
+printfile "%zmenu/msgcfg.wip"
 sync
 print_local "\r\n[WIP] Message Scan Config: "
 getkey
@@ -236,7 +236,7 @@ return
 cmd_home
 clear_abort
 cls
-printfile_remote "%zMENU\WIPFILE.WIP"
+printfile_remote "%zmenu/wipfile.wip"
 node_action NODE_XFER
 inc_file_cmds
 sync
@@ -345,7 +345,7 @@ cmdkey U
 	if_false
 		end_cmd
 		end_if
-	chkfile "..\text\menu\upload.*"
+	chkfile "%ztext/menu/upload.*"
 	if_true
 		menu upload
                 end_if

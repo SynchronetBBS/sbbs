@@ -8,13 +8,13 @@
 
 !include sbbsdefs.inc
 
-menu pcboard\welcome
+menu pcboard/welcome
 
 cmd_home
 compare_ars expert
 if_false
 	cls
-	menu pcboard\brdm
+	menu pcboard/brdm
 	end_if
 node_action node_main
 async
@@ -31,7 +31,7 @@ cmdstr ?
 	compare_ars expert
 	if_true
 		cls
-		menu pcboard\brdm
+		menu pcboard/brdm
 		end_if
 	end_cmd
 
@@ -39,7 +39,7 @@ cmdstr HELP
 	compare_ars expert
 	if_true
 		cls
-		menu pcboard\brdm
+		menu pcboard/brdm
 		end_if
 	end_cmd
 
@@ -89,7 +89,7 @@ cmdstr D
 	end_cmd
 
 cmdstr U
-	chkfile "..\text\menu\upload.*"
+	chkfile "%zmenu/upload.*"
 	if_true
 		menu upload
                 end_if
@@ -230,8 +230,8 @@ cmdstr P
 	end_cmd
 
 cmdstr I
-	menu ..\ANSWER
-	menu pcboard\welcome
+	menu ../ANSWER
+	menu pcboard/welcome
 	end_cmd
 
 cmdstr WHO
@@ -243,7 +243,7 @@ cmdstr CHAT
 	end_cmd
 
 cmdstr NEWS
-	menu LOGON
+	menu logon
 	end_cmd
 
 cmdstr DOOR
@@ -299,7 +299,7 @@ end_cmd
 cmd_home
 compare_ars expert
 if_false
-	menu E-MAIL
+	menu e-mail
 	end_if
 async
 print "\r\nyhE-mail: n"
@@ -309,7 +309,7 @@ logkey
 cmdkey ?
 	compare_ars expert
 	if_true
-		menu E-MAIL
+		menu e-mail
 		end_if
 	end_cmd
 

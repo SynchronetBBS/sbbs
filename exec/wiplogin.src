@@ -51,7 +51,7 @@ if_greater_or_equal
 cmd_home
 clear_abort
 cls
-printfile "%zMENU\LOGIN.WIP"
+printfile "%zmenu/login.wip"
 sync
 print_local "\r\n[WIP] Login Menu: "
 
@@ -61,7 +61,7 @@ logkey_comma
 cmdkey L
 	print_local "Login\r\n"
 	print_local "Enter name: "
-	printfile "%zMENU\NAMEPASS.WIP"
+	printfile "%zmenu/namepass.wip"
 	getstr str 25 K_UPRLWR|K_LOWPRIO|K_NOECHO
 	truncsp str
 	compare_str ""
