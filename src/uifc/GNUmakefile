@@ -17,7 +17,7 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
-CFLAGS += -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS)
+CFLAGS += -DWRAPPER_IMPORTS -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS)
 
 # UIFC Library Link Rule
 $(UIFCLIB): $(OBJS)
@@ -30,3 +30,6 @@ $(UIFCLIB-MT): $(MT_OBJS)
 	@echo Creating $@ ...
 	$(QUIET)ar rc $@ $(MT_OBJS)
 	$(QUIET)ranlib $@
+
+$(UIFCTEST): $(MTOBJODIR)$(DIRSEP)uifctest$(OFILE)
+	$(QUIET)$(CC) $(MT_LDFLAGS) $(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(LDFLAGS) -o $@ $^ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
