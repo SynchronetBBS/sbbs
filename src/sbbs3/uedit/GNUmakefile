@@ -18,10 +18,11 @@ USE_UIFC32	:=	1	# Use new uifc32 implementation
 
 XPDEV	=	../../xpdev/
 SBBS_SRC	=   ../
+UIFC_SRC	= ../../uifc/
 NEED_UIFC	:=	1
 include $(XPDEV)Common.gmake
 include $(SBBS_SRC)Common.gmake
-include $(UIFC)Common.gmake
+include $(UIFC_SRC)Common.gmake
 
 FORCE$(EXEODIR)/uedit: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 
