@@ -240,7 +240,7 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		cp;
 	char*		buf;
-	int			len=512;
+	int32		len=512;
 	JSString*	str;
 	private_t*	p;
 
@@ -253,7 +253,7 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 
 	if(argc)
-		len = JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=malloc(len+1))==NULL)
 		return(JS_TRUE);
@@ -284,7 +284,7 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		cp;
 	char*		buf;
-	ulong		len=512;
+	int32		len=512;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -296,7 +296,7 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	
 	if(argc)
-		len = JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=malloc(len))==NULL)
 		return(JS_TRUE);
@@ -327,7 +327,7 @@ js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	size_t		size=sizeof(DWORD);
 	private_t*	p;
 
-	*rval = JSVAL_TO_INT(-1);
+	*rval = INT_TO_JSVAL(-1);
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -336,7 +336,7 @@ js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 
 	if(argc) 
-		size = JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],(int32*)&size);
 
 	switch(size) {
 		case sizeof(BYTE):
@@ -411,7 +411,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	len = strlen(cp);
 	tlen = len;
 	if(argc>1) {
-		tlen=JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],(int32*)&tlen);
 		if(len>tlen)
 			len=tlen;
 	}
@@ -468,6 +468,7 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	BYTE		b;
 	WORD		w;
 	DWORD		l;
+	int32		val=0;
 	size_t		wr=0;
 	size_t		size=sizeof(DWORD);
 	private_t*	p;
@@ -481,19 +482,22 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 
 	if(argc>1) 
-		size = JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],(int32*)&size);
 
 	switch(size) {
 		case sizeof(BYTE):
-			b = (BYTE)JSVAL_TO_INT(argv[0]);
+			JS_ValueToInt32(cx,argv[0],&val);
+			b = (BYTE)val;
 			wr=fwrite(&b,1,size,p->fp);
 			break;
 		case sizeof(WORD):
-			w = (WORD)JSVAL_TO_INT(argv[0]);
+			JS_ValueToInt32(cx,argv[0],&val);
+			w = (WORD)val;
 			wr=fwrite(&w,1,size,p->fp);
 			break;
 		case sizeof(DWORD):
-			l = JSVAL_TO_INT(argv[0]);
+			JS_ValueToInt32(cx,argv[0],&val);
+			l = val;
 			wr=fwrite(&l,1,size,p->fp);
 			break;
 		default:	
@@ -524,10 +528,13 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-    if(!JS_IsArrayObject(cx, JSVAL_TO_OBJECT(argv[0])))
+	if(!JSVAL_IS_OBJECT(argv[0]))
 		return(JS_TRUE);
 
     array = JSVAL_TO_OBJECT(argv[0]);
+
+    if(!JS_IsArrayObject(cx, array))
+		return(JS_TRUE);
 
     JS_GetArrayLength(cx, array, &limit);
 
@@ -602,7 +609,7 @@ js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(len==0)
 		len=filelength(fileno(p->fp))-offset;
 
-	if(unlock(fileno(p->fp),JSVAL_TO_INT(argv[0]),JSVAL_TO_INT(argv[1]))==0)
+	if(unlock(fileno(p->fp),offset,len)==0)
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 
 	return(JS_TRUE);
