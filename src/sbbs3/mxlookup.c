@@ -225,7 +225,14 @@ int dns_getmx(char* name, char* mx, char* mx2
 		len-=sizeof(msghdr.length);
 	}
 
-	send(sock,msg+offset,len,0);
+	i=send(sock,msg+offset,len,0);
+	if(i!=len) {
+		if(i==SOCKET_ERROR)
+			result=ERROR_VALUE;
+		else
+			result=-2;
+		return(result);
+	}
 
 	tv.tv_sec=timeout;
 	tv.tv_usec=0;
