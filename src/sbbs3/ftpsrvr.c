@@ -390,7 +390,7 @@ int getdir(char* p, user_t* user)
 /*********************************/
 #ifdef JAVASCRIPT
 
-JSRuntime* js_runtime=NULL;
+static JSRuntime* js_runtime=NULL;
 
 static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -551,7 +551,7 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 {
 	JSObject*	file;
 	jsval		val;
-	jsint		index;
+	jsuint		index;
 
 	if((file=JS_NewObject(js_cx, &js_file_class, NULL, NULL))==NULL)
 		return(FALSE);
