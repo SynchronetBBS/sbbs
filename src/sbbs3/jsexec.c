@@ -470,8 +470,8 @@ static BOOL js_init(char** environ)
 	if((js_glob=js_CreateGlobalObject(js_cx, &scfg, js_global_functions))==NULL)
 		return(FALSE);
 
-	/* Branch Object */
-	if(js_CreateBranchObject(js_cx, js_glob, &branch)==NULL)
+	/* Internal JS Object */
+	if(js_CreateInternalJsObject(js_cx, js_glob, &branch)==NULL)
 		return(FALSE);
 
 	/* System Object */

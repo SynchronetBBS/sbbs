@@ -44,12 +44,12 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)inkey.$(OFILE)\
 			$(LIBODIR)$(SLASH)ident.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_bbs.$(OFILE)\
-			$(LIBODIR)$(SLASH)js_branch.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_client.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_console.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_file.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_file_area.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_global.$(OFILE)\
+			$(LIBODIR)$(SLASH)js_internal.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_msg_area.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_msgbase.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_socket.$(OFILE)\

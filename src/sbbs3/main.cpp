@@ -789,8 +789,8 @@ bool sbbs_t::js_init()
 		if(js_CreateSystemObject(js_cx, js_glob, &cfg, uptime, startup->host_name)==NULL)
 			break;
 
-		/* Branch Object */
-		if(js_CreateBranchObject(js_cx, js_glob, &js_branch)==NULL)
+		/* Internal JS Object */
+		if(js_CreateInternalJsObject(js_cx, js_glob, &js_branch)==NULL)
 			break;
 
 		/* Client Object */

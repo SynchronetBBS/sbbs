@@ -781,8 +781,8 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
 			break;
 
-		/* Branch Object */
-		if(js_CreateBranchObject(js_cx, js_glob, &service_client->branch)==NULL)
+		/* Internal JS Object */
+		if(js_CreateInternalJsObject(js_cx, js_glob, &service_client->branch)==NULL)
 			break;
 
 		/* Client Object */
