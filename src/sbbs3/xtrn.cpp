@@ -39,6 +39,10 @@
 #include "cmdshell.h"
 #include "telnet.h"
 
+#ifdef __unix__
+	#include <sys/wait.h>	// WEXITSTATUS
+#endif
+
 /*****************************************************************************/
 /* Interrupt routine to expand WWIV Ctrl-C# codes into ANSI escape sequences */
 /*****************************************************************************/
@@ -730,6 +734,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     bool	native=false;			// DOS program by default
 	int		i;
 	int		argc;
+	pid_t	pid;
 		
 	if(cmdline[0]=='*') {   /* Baja module */
 		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
@@ -779,23 +784,27 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		/* setup DOSemu env here */
 	}
 
-	if(startup_dir!=NULL && startup_dir[0])
-		chdir(startup_dir);
+	if((pid=fork())==0) {
+		if(startup_dir!=NULL && startup_dir[0])
+			chdir(startup_dir);
 
-	lprintf("Node %02d executing external: %s",cfg.node_num,cmdline);
+		lprintf("Node %02d executing external: %s",cfg.node_num,cmdline);
 
-	argv[0]=cmdline;	/* point to the beginning of the string */
-	argc=1;
-	for(i=0;cmdline[i];i++)	/* Break up command line */
-		if(cmdline[i]==SP) {
-			argv[i]=0;			/* insert nulls */
-			argv[argc++]=cmdline+i+1; /* point to the beginning of the next arg */
-		}
-	argv[argc]=0;
+		argv[0]=cmdline;	/* point to the beginning of the string */
+		argc=1;
+		for(i=0;cmdline[i];i++)	/* Break up command line */
+			if(cmdline[i]==SP) {
+				argv[i]=0;			/* insert nulls */
+				argv[argc++]=cmdline+i+1; /* point to the beginning of the next arg */
+			}
+		argv[argc]=0;
 
-	i=execvp(argv[0],argv);
+		i=execvp(argv[0],argv);
+	}
 
-	return(i);
+	waitpid(pid, &i, 0);
+
+	return(WEXITSTATUS(i));
 }
 
 #endif	/* !WIN32 */
