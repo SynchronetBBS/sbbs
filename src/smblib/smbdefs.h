@@ -128,6 +128,7 @@
 #define SMB_ERR_HDR_VER		-104		/* Unsupported version */
 #define SMB_ERR_HDR_FIELD	-105		/* Missing header field */
 #define SMB_ERR_NOT_FOUND	-110		/* Item not found */
+#define SMB_ERR_DAT_OFFSET	-120		/* Invalid data offset (>2GB) */
 #define SMB_ERR_OPEN		-200		/* File open error */
 #define SMB_ERR_SEEK		-201		/* File seek/setpos error */
 #define SMB_ERR_LOCK		-202		/* File lock error */
