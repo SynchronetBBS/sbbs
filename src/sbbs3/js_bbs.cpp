@@ -1507,9 +1507,7 @@ js_batchdownload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	sbbs->start_batch_download();
-
-	*rval = JSVAL_VOID;
+	*rval = BOOLEAN_TO_JSVAL(sbbs->start_batch_download());
 	return(JS_TRUE);
 }
 
@@ -2500,7 +2498,7 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"batch_menu",		js_batchmenu,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("enter the batch file transfer menu")
 	},		
-	{"batch_download",	js_batchdownload,	0,	JSTYPE_VOID,	""
+	{"batch_download",	js_batchdownload,	0,	JSTYPE_BOOLEAN,	""
 	,JSDOCSTR("start the batch download")
 	},		
 	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("filename")

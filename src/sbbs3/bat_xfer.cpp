@@ -201,12 +201,6 @@ void sbbs_t::batchmenu()
 				}
 				break;
 			case 'D':
-				if(useron.rest&FLAG('D')) {
-					bputs(text[R_Download]);
-					break; }
-				if(!batdn_total) {
-					bputs(text[DownloadQueueIsEmpty]);
-					break; }
 				start_batch_download();
 				break;
 			case 'L':
@@ -333,7 +327,7 @@ void sbbs_t::batchmenu()
 /****************************************************************************/
 /* Download files from batch queue                                          */
 /****************************************************************************/
-void sbbs_t::start_batch_download()
+BOOL sbbs_t::start_batch_download()
 {
 	char	ch;
 	char	tmp[32];
@@ -349,16 +343,21 @@ void sbbs_t::start_batch_download()
     time_t	start,end,t;
 	struct	tm tm;
 
+	if(batdn_total==0) {
+		bputs(text[DownloadQueueIsEmpty]);
+		return(FALSE);
+	}
 	if(useron.rest&FLAG('D')) {     /* Download restriction */
 		bputs(text[R_Download]);
-		return; }
+		return(FALSE); 
+	}
 	for(i=0,totalcdt=0;i<batdn_total;i++)
 		totalcdt+=batdn_cdt[i];
 	if(!(useron.exempt&FLAG('D'))
 		&& totalcdt>useron.cdt+useron.freecdt) {
 		bprintf(text[YouOnlyHaveNCredits]
 			,ultoac(useron.cdt+useron.freecdt,tmp));
-		return; 
+		return(FALSE); 
 	}
 
 	for(i=0,totalsize=totaltime=0;i<batdn_total;i++) {
@@ -368,13 +367,13 @@ void sbbs_t::start_batch_download()
 	}
 	if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime>timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
-		return; 
+		return(FALSE); 
 	}
 	menu("batdprot");
 	if(!create_batchdn_lst())
-		return;
+		return(FALSE);
 	if(!create_bimodem_pth())
-		return;
+		return(FALSE);
 	ASYNC;
 	mnemonics(text[ProtocolOrQuit]);
 	strcpy(str,"Q");
@@ -386,13 +385,13 @@ void sbbs_t::start_batch_download()
 	ungetkey(useron.prot);
 	ch=(char)getkeys(str,0);
 	if(ch=='Q' || sys_status&SS_ABORT)
-		return;
+		return(FALSE);
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch
 			&& chk_ar(cfg.prot[i]->ar,&useron))
 			break;
 	if(i>=cfg.total_prots)
-		return;	/* no protocol selected */
+		return(FALSE);	/* no protocol selected */
 
 	xfrprot=i;
 	list=NULL;
@@ -429,7 +428,7 @@ void sbbs_t::start_batch_download()
 			list_len=strlen(list)+1;	/* add one for ' ' */
 		if((list=(char*)realloc(list,list_len+strlen(path)+1	/* add one for '\0'*/))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,"list",list_len+strlen(path));
-			return;
+			return(FALSE);
 		}
 		if(!list_len)
 			strcpy(list,path);
@@ -468,6 +467,8 @@ void sbbs_t::start_batch_download()
 	autohangup(); 
 	if(list!=NULL)
 		free(list);
+
+	return(TRUE);
 }
 
 /****************************************************************************/

@@ -600,7 +600,7 @@ public:
 	bool	create_bimodem_pth(void);
 	void	batch_upload(void);
 	void	batch_download(int xfrprot);
-	void	start_batch_download(void);
+	BOOL	start_batch_download(void);
 
 	/* tmp_xfer.cpp */
 	void	temp_xfer(void);
