@@ -10,7 +10,9 @@
 
 //#include <process.h>
 #include <math.h>
-//#include <dos.h>
+#ifndef __unix__
+#include <dir.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
