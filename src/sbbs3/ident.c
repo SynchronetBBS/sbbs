@@ -38,10 +38,11 @@
 #include "sbbs.h"
 #include "ident.h"
 
-char *identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t maxlen)
+char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t maxlen)
 {
 	char		req[128];
 	char*		identity=NULL;
+	int			rd;
 	SOCKET		sock=INVALID_SOCKET;
 	SOCKADDR_IN	addr;
 
@@ -52,23 +53,24 @@ char *identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t m
 		}
 
 		addr=*client_addr;
-		addr.sin_port=113;	/* per RFC1413 */
+		addr.sin_port=htons(113);	/* per RFC1413 */
 
-		if(connect(sock, &addr, sizeof(addr)!=0) {
+		if(connect(sock, (struct sockaddr*)&addr, sizeof(addr))!=0) {
 			sprintf(buf,"ERROR %d connecting to server",ERROR_VALUE);
 			break;
 		}
 
-		sprintf(req,"%u, %u\r\n", client_adr.sin_port, local_port);
-		if(send(sock,req,strlen(req),0)!=strlen(req)) {
+		sprintf(req,"%u, %u\r\n", ntohs(client_addr->sin_port), local_port);
+		if(send(sock,req,strlen(req),0)!=(int)strlen(req)) {
 			sprintf(buf,"ERROR %d sending request",ERROR_VALUE);
 			break;
 		}
-
-		if(recv(sock,buf,maxlen,0)<1) {
+		rd=recv(sock,buf,maxlen,0);
+		if(rd<1) {
 			sprintf(buf,"ERROR %d receving response",ERROR_VALUE);
 			break;
 		}
+		buf[rd]=0;
 		identity=buf;
 	} while(0);
 
