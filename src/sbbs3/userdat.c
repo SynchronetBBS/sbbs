@@ -134,8 +134,8 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	i=0;
 	while(i<LOOP_NODEDAB
 		&& lock(file,(long)((long)(user->number-1)*U_LEN),U_LEN)==-1) {
-		if(i>10)
-			mswait(55);
+		if(i)
+			mswait(100);
 		i++; 
 	}
 
@@ -403,8 +403,8 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	i=0;
 	while(i<LOOP_NODEDAB
 		&& lock(file,(long)((long)(user->number-1)*U_LEN),U_LEN)==-1) {
-		if(i>10)
-			mswait(55);
+		if(i)
+			mswait(100);
 		i++; 
 	}
 
@@ -553,9 +553,9 @@ char DLLCALL getage(scfg_t* cfg, char *birth)
 /****************************************************************************/
 int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 {
-	char str[256];
-	int count=0;
-	int file;
+	char	str[MAX_PATH];
+	int		count;
+	int		file;
 
 	if(!number || number>cfg->sys_nodes)
 		return(-1);
@@ -567,17 +567,16 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 	}
 
 	number--;	/* make zero based */
-	while(count<LOOP_NODEDAB) {
-		if(count>10)
+	for(count=0;count<LOOP_NODEDAB;count++) {
+		if(count)
 			mswait(100);
 		lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 		if(lockit
-			&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))==-1) {
-			count++;
-			continue; }
+			&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
+			continue; 
 		if(read(file,node,sizeof(node_t))==sizeof(node_t))
 			break;
-		count++; }
+	}
 
 	close(file);
 	if(count==LOOP_NODEDAB) 
@@ -593,8 +592,8 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 /****************************************************************************/
 int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 {
-	char str[256];
-	int file;
+	char	str[MAX_PATH];
+	int		file;
 
 	if(!number || number>cfg->sys_nodes) 
 		return(-1);
@@ -622,7 +621,7 @@ int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
     ,BOOL del)
 {
-    char	str[256];
+    char	str[MAX_PATH];
     uint	i;
 	int		file;
     long	l,length;
@@ -638,13 +637,15 @@ uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen,
 		lseek(file,l+offset,SEEK_SET);
 		i=0;
 		while(i<LOOP_NODEDAB && lock(file,l,U_LEN)==-1) {
-			if(i>10)
-				mswait(55);
-			i++; }
+			if(i)
+				mswait(100);
+			i++; 
+		}
 
 		if(i>=LOOP_NODEDAB) {
 			close(file);
-			return(0); }
+			return(0); 
+		}
 
 		read(file,str,datlen);
 		for(i=0;i<datlen;i++)
@@ -1067,9 +1068,10 @@ int DLLCALL getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *
 	i=0;
 	while(i<LOOP_NODEDAB
 		&& lock(file,(long)((long)(usernumber-1)*U_LEN)+start,length)==-1) {
-		if(i>10)
-			mswait(55);
-		i++; }
+		if(i)
+			mswait(100);
+		i++; 
+	}
 
 	if(i>=LOOP_NODEDAB) {
 		close(file);
@@ -1120,9 +1122,10 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char 
 	i=0;
 	while(i<LOOP_NODEDAB
 		&& lock(file,(long)((long)(usernumber-1)*U_LEN)+start,length)==-1) {
-		if(i>10)
-			mswait(55);
-		i++; }
+		if(i)
+			mswait(100);
+		i++; 
+	}
 
 	if(i>=LOOP_NODEDAB) 
 		return(-3);
@@ -1170,9 +1173,10 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	i=0;
 	while(i<LOOP_NODEDAB
 		&& lock(file,(long)((long)(usernumber-1)*U_LEN)+start,length)==-1) {
-		if(i>10)
-			mswait(55);
-		i++; }
+		if(i)
+			mswait(100);
+		i++; 
+	}
 
 	if(i>=LOOP_NODEDAB) {
 		close(file);

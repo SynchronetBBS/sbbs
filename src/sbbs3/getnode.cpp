@@ -45,12 +45,13 @@
 /****************************************************************************/
 void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 {
-	char str[256];
-	int count=0;
+	char	str[MAX_PATH];
+	int		count;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return; }
+		return; 
+	}
 
 	if(nodefile==-1) {
 		sprintf(str,"%snode.dab",cfg.ctrl_dir);
@@ -62,17 +63,16 @@ void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	}
 
 	number--;	/* make zero based */
-	while(count<LOOP_NODEDAB) {
-		if(count>10)
+	for(count=0;count<LOOP_NODEDAB;count++) {
+		if(count)
 			mswait(100);
-		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 		if(lockit
-			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))==-1) {
-			count++;
-			continue; }
+			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))!=0) {
+			continue; 
+		}
+		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
 			break;
-		count++; 
 	}
 	if(!lockit) {
 		close(nodefile);
@@ -81,11 +81,10 @@ void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 
 	if(count>(LOOP_NODEDAB/2) && count!=LOOP_NODEDAB) {
 		sprintf(str,"NODE.DAB COLLISION - Count: %d",count);
-		logline("!!",str); }
-	if(count==LOOP_NODEDAB) {
-		errormsg(WHERE,ERR_READ,"node.dab",number+1);
-		return; 
+		logline("!!",str); 
 	}
+	else if(count==LOOP_NODEDAB) 
+		errormsg(WHERE,ERR_READ,"node.dab",number+1);
 }
 
 /****************************************************************************/
@@ -99,7 +98,8 @@ void sbbs_t::nodesync()
 	char	str[256],today[32];
 	int		atr=curatr; /* was lclatr(-1) 01/29/96 */
 
-	if(nodesync_inside) return;
+	if(nodesync_inside) 
+		return;
 	nodesync_inside=1;
 
 	if(thisnode.action!=action) {
@@ -171,9 +171,9 @@ void sbbs_t::nodesync()
 /****************************************************************************/
 void sbbs_t::getnmsg()
 {
-	char str[256], HUGE16 *buf;
-	int file;
-	long length;
+	char	str[MAX_PATH], HUGE16 *buf;
+	int		file;
+	long	length;
 
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.misc&=~NODE_NMSG;          /* clear the NMSG flag */
@@ -186,7 +186,8 @@ void sbbs_t::getnmsg()
 		/**
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR);
 		**/
-		return; }
+		return; 
+	}
 	length=filelength(file);
 	if(!length) {
 		close(file);
@@ -216,12 +217,13 @@ void sbbs_t::getnmsg()
 /****************************************************************************/
 void sbbs_t::getnodeext(uint number, char *ext)
 {
-    char str[256];
-    int count=0;
+    char	str[MAX_PATH];
+    int		count;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return; }
+		return; 
+	}
 
 	sprintf(str,"%snode.exb",cfg.ctrl_dir);
 	if((node_ext=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
@@ -231,16 +233,15 @@ void sbbs_t::getnodeext(uint number, char *ext)
 	}
 
 	number--;   /* make zero based */
-	while(count<LOOP_NODEDAB) {
-		if(count>10)
+	for(count=0;count<LOOP_NODEDAB;count++) {
+		if(count)
 			mswait(100);
-		if(lock(node_ext,(long)number*128L,128)==-1) {
-			count++;
-			continue; }
+		if(lock(node_ext,(long)number*128L,128)==-1) 
+			continue; 
 		lseek(node_ext,(long)number*128L,SEEK_SET);
 		if(read(node_ext,ext,128)==128)
 			break;
-		count++; }
+	}
 	unlock(node_ext,(long)number*128L,128);
 	close(node_ext);
 	node_ext=-1;
@@ -249,10 +250,8 @@ void sbbs_t::getnodeext(uint number, char *ext)
 		sprintf(str,"NODE.EXB COLLISION - Count: %d",count);
 		logline("!!",str); 
 	}
-	if(count==LOOP_NODEDAB) {
+	else if(count==LOOP_NODEDAB) 
 		errormsg(WHERE,ERR_READ,"node.exb",number+1);
-		return; 
-	}
 }
 
 
@@ -262,9 +261,9 @@ void sbbs_t::getnodeext(uint number, char *ext)
 /****************************************************************************/
 void sbbs_t::getsmsg(int usernumber)
 {
-	char str[256], HUGE16 *buf;
-    int file;
-    long length;
+	char	str[MAX_PATH], HUGE16 *buf;
+    int		file;
+    long	length;
 
 	sprintf(str,"%smsgs/%4.4u.msg",cfg.data_dir,usernumber);
 	if(flength(str)<1L)
@@ -304,8 +303,8 @@ void sbbs_t::getsmsg(int usernumber)
 /****************************************************************************/
 int sbbs_t::whos_online(bool listself)
 {
-    int i,j;
-    node_t node;
+    int		i,j;
+    node_t	node;
 
 	CRLF;
 	bputs(text[NodeLstHdr]);
@@ -509,8 +508,10 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 					else hour=node->aux/60;
 					strcpy(mer,"am"); }
 				bprintf(" ETA %02d:%02d %s"
-					,hour,node->aux%60,mer); }
-			break; }
+					,hour,node->aux%60,mer); 
+			}
+			break; 
+	}
 	i=NODE_LOCK;
 	if(node->status==NODE_INUSE || SYSOP)
 		i|=NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG;
@@ -524,7 +525,8 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			outchar('M');
 		if(node->misc&(i&NODE_POFF))
 			outchar('P');
-		outchar(')'); }
+		outchar(')'); 
+	}
 	if(SYSOP && ((node->misc
 		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN|NODE_LCHAT))
 		|| node->status==NODE_QUIET)) {
@@ -545,10 +547,12 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			outchar('D');
 		if(node->misc&NODE_LCHAT)
 			outchar('C');
-		outchar(']'); }
+		outchar(']'); 
+	}
 	if(node->errors && SYSOP) {
 		attr(cfg.color[clr_err]);
-		bprintf(" %d error%c",node->errors, node->errors>1 ? 's' : '\0' ); }
+		bprintf(" %d error%c",node->errors, node->errors>1 ? 's' : '\0' ); 
+	}
 	attr(LIGHTGRAY);
 	CRLF;
 }

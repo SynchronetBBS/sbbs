@@ -634,6 +634,8 @@ void input_thread(void *arg)
 
         	if(ERROR_VALUE == ENOTSOCK)
                 lprintf("Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==ESHUTDOWN)
+				lprintf("Node %d socket shutdown on input->select", sbbs->cfg.node_num);
 			else if(ERROR_VALUE==EINTR)
 				lprintf("Node %d input thread interrupted",sbbs->cfg.node_num);
             else if(ERROR_VALUE==ECONNRESET) 
@@ -674,6 +676,8 @@ void input_thread(void *arg)
                 lprintf("Node %d socket closed by peer on receive", sbbs->cfg.node_num);
             else if(ERROR_VALUE==ECONNRESET) 
 				lprintf("Node %d connection reset by peer on receive", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==ESHUTDOWN)
+				lprintf("Node %d socket shutdown on receive", sbbs->cfg.node_num);
             else if(ERROR_VALUE==ECONNABORTED) 
 				lprintf("Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
 			else
@@ -1573,15 +1577,20 @@ bool sbbs_t::init()
 		lseek(nodefile,0L,SEEK_END);
 		write(nodefile,&node,sizeof(node_t)); 
 	}
-	if(cfg.node_num) {
-		if(lock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t))
-			|| unlock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t))) {
-			errormsg(WHERE, ERR_LOCK, str, cfg.node_num);
-			return(false); 
+	for(i=0; cfg.node_num && i<LOOP_NODEDAB; i++) {
+		if(lock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t))==0) {
+			unlock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t));
+			break;
 		}
+		mswait(100);
 	}
 	close(nodefile);
 	nodefile=-1;
+
+	if(i>=LOOP_NODEDAB) {
+		errormsg(WHERE, ERR_LOCK, str, cfg.node_num);
+		return(false); 
+	}
 
 #if 0
 	sprintf(str,"%s%s",cfg.ctrl_dir,"node.exb");
@@ -1964,7 +1973,7 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(batdn_cdt);
 	FREE_AND_NULL(batdn_alt);
 
-#if defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
+#if 0 && defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
 	if(!_CrtCheckMemory())
 		lprintf("!MEMORY ERRORS REPORTED IN DATA/DEBUG.LOG!");
 #endif
@@ -1989,8 +1998,8 @@ int sbbs_t::nopen(char *str, int access)
     else share=SH_DENYRW;
     while(((file=sopen(str,O_BINARY|access,share))==-1)
         && errno==EACCES && count++<LOOP_NOPEN)
-        if(count>10)
-            mswait(55);
+        if(count)
+            mswait(100);
     if(count>(LOOP_NOPEN/2) && count<=LOOP_NOPEN) {
         sprintf(logstr,"NOPEN COLLISION - File: %s Count: %d"
             ,str,count);
@@ -2812,7 +2821,7 @@ static void cleanup(int code)
 
 #ifdef _WIN32
 	CloseHandle(exec_mutex);
-#if defined(_DEBUG) && defined(_MSC_VER)
+#if 0 && defined(_DEBUG) && defined(_MSC_VER)
 	_CrtMemDumpAllObjectsSince(&mem_chkpoint);
 
 	if(debug_log!=INVALID_HANDLE_VALUE) {

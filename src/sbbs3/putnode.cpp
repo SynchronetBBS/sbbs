@@ -44,11 +44,14 @@
 /****************************************************************************/
 void sbbs_t::putnodedat(uint number, node_t* node)
 {
-	char str[256],firston[25];
+	char	str[256],firston[25];
+	int		wr;
+	int		wrerr;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return; }
+		return; 
+	}
 	if(number==cfg.node_num) {
 		if((node->status==NODE_INUSE || node->status==NODE_QUIET)
 			&& node->action<NODE_LAST_ACTION
@@ -80,14 +83,17 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 
 	number--;	/* make zero based */
 	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-	if(write(nodefile,node,sizeof(node_t))!=sizeof(node_t)) {
-		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-		errormsg(WHERE,ERR_WRITE,"nodefile",number+1);
-		return; 
-	}
+	wr=write(nodefile,node,sizeof(node_t));
+	wrerr=errno;	/* save write error */
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 	close(nodefile);
 	nodefile=-1;
+
+	if(wr!=sizeof(node_t)) {
+		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
+		errno=wrerr;
+		errormsg(WHERE,ERR_WRITE,"nodefile",number+1);
+	}
 }
 
 /****************************************************************************/
@@ -120,8 +126,8 @@ void sbbs_t::putnmsg(int num, char *strin)
 
 void sbbs_t::putnodeext(uint number, char *ext)
 {
-    char str[256];
-    int count=0;
+    char	str[MAX_PATH];
+    int		count;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
@@ -133,16 +139,15 @@ void sbbs_t::putnodeext(uint number, char *ext)
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_RDWR|O_DENYNONE);
 		return; 
 	}
-	while(count<LOOP_NODEDAB) {
-		if(count>10)
-			mswait(55);
+	for(count=0;count<LOOP_NODEDAB;count++) {
+		if(count)
+			mswait(100);
 		lseek(node_ext,(long)number*128L,SEEK_SET);
-		if(lock(node_ext,(long)number*128L,128)==-1) {
-			count++;
-			continue; }
+		if(lock(node_ext,(long)number*128L,128)==-1) 
+			continue; 
 		if(write(node_ext,ext,128)==128)
 			break;
-		count++; }
+	}
 	unlock(node_ext,(long)number*128L,128);
 	close(node_ext);
 	node_ext=-1;

@@ -948,8 +948,8 @@ static int nopen(char *str, int access)
     else share=SH_DENYRW;
     while(((file=sopen(str,O_BINARY|access,share))==-1)
         && errno==EACCES && count++<LOOP_NOPEN)
-        if(count>10)
-            mswait(55);
+        if(count)
+            mswait(100);
     return(file);
 }
 

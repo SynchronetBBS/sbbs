@@ -73,6 +73,60 @@ enum {
 char tmp[256];
 int nodefile;
 
+#if defined(_WIN32)	/* Microsoft-supplied cls() routine - ugh! */
+
+/* Standard error macro for reporting API errors */
+#define PERR(bSuccess, api){if(!(bSuccess)) printf("%s:Error %d from %s \
+    on line %d\n", __FILE__, GetLastError(), api, __LINE__);}
+
+void cls(void)
+{
+    COORD coordScreen = { 0, 0 };    /* here's where we'll home the
+                                        cursor */
+    BOOL bSuccess;
+    DWORD cCharsWritten;
+    CONSOLE_SCREEN_BUFFER_INFO csbi; /* to get buffer info */
+    DWORD dwConSize;                 /* number of character cells in
+                                        the current buffer */
+	HANDLE hConsole;
+
+	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    /* get the number of character cells in the current buffer */
+
+    bSuccess = GetConsoleScreenBufferInfo( hConsole, &csbi );
+    PERR( bSuccess, "GetConsoleScreenBufferInfo" );
+    dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
+
+    /* fill the entire screen with blanks */
+
+    bSuccess = FillConsoleOutputCharacter( hConsole, (TCHAR) ' ',
+       dwConSize, coordScreen, &cCharsWritten );
+    PERR( bSuccess, "FillConsoleOutputCharacter" );
+
+    /* get the current text attribute */
+
+    bSuccess = GetConsoleScreenBufferInfo( hConsole, &csbi );
+    PERR( bSuccess, "ConsoleScreenBufferInfo" );
+
+    /* now set the buffer's attributes accordingly */
+
+    bSuccess = FillConsoleOutputAttribute( hConsole, csbi.wAttributes,
+       dwConSize, coordScreen, &cCharsWritten );
+    PERR( bSuccess, "FillConsoleOutputAttribute" );
+
+    /* put the cursor at (0, 0) */
+
+    bSuccess = SetConsoleCursorPosition( hConsole, coordScreen );
+    PERR( bSuccess, "SetConsoleCursorPosition" );
+    return;
+}
+#else /* !_WIN32 */
+
+#define cls()
+
+#endif
+
 #if !defined _MSC_VER && !defined __BORLANDC__
 char* itoa(int val, char* str, int radix)
 {
@@ -94,6 +148,21 @@ char* itoa(int val, char* str, int radix)
 }
 #endif
 
+#if defined(_WIN32)
+
+	#define mswait(x)			Sleep(x)
+
+#elif defined(__OS2__)
+
+	#define mswait(x)			DosSleep(x)
+
+#elif defined(__unix__)
+
+	#define mswait(x)			usleep(x*1000)
+
+#endif
+
+
 /****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
 /* from NODE.DAB															*/
@@ -101,23 +170,24 @@ char* itoa(int val, char* str, int radix)
 /****************************************************************************/
 void getnodedat(uchar number, node_t *node, char lockit)
 {
-	int count=0;
+	int count;
 
 	number--;	/* make zero based */
-	while(count<LOOP_NODEDAB) {
+	for(count=0;count<LOOP_NODEDAB;count++) {
+		if(count)
+			mswait(100);
 		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 		if(lockit
-			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))==-1) {
-			count++;
-			continue; }
+			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
+			continue; 
 		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
 			break;
-		count++; }
-	if(count)
-		printf("NODE.DAB COLLISION (READ) - Count:%d\n",count);
-	if(count==LOOP_NODEDAB) {
-		printf("Error reading nodefile for node %d\n",number+1);
-		return; }
+	}
+	if(count>=(LOOP_NODEDAB/2))
+		printf("NODE.DAB COLLISION (READ) - Count: %d\n",count);
+	else if(count==LOOP_NODEDAB) {
+		printf("!Error reading nodefile for node %d\n",number+1);
+	}
 }
 
 /****************************************************************************/
@@ -357,6 +427,8 @@ int main(int argc, char **argv)
 	char str[256],ctrl_dir[41],*p,debug=0;
 	int sys_nodes,node_num=0,onoff=0;
 	int i,j,mode=0,misc;
+	int	modify=0;
+	int loop=0;
 	long value;
 	node_t node;
 
@@ -419,6 +491,9 @@ int main(int argc, char **argv)
 			node_num=onoff=value=0;
 			if(!stricmp(argv[i],"/DEBUG"))
 				debug=1;
+			if(!stricmp(argv[i],"/LOOP"))
+				loop=1;
+
 			else if(!stricmp(argv[i],"LOCK"))
 				mode=MODE_LOCK;
 			else if(!stricmp(argv[i],"ANON"))
@@ -464,78 +539,93 @@ int main(int argc, char **argv)
 				mode=MODE_EXTAUX;
 				value=atoi(argv[i]+7); }
 			}
+		if(mode!=MODE_LIST)
+			modify=1;
+
 		if((mode && node_num) || i+1==argc)
-			for(j=1;j<=sys_nodes;j++)
-				if(!node_num || j==node_num) {
-					getnodedat(j,&node,1);
-					misc=0;
-					switch(mode) {
-						case MODE_ANON:
-							misc=NODE_ANON;
-							break;
-						case MODE_LOCK:
-							misc=NODE_LOCK;
-							break;
-						case MODE_INTR:
-							misc=NODE_INTR;
-							break;
-						case MODE_DOWN:
-							misc=NODE_DOWN;
-							break;
-						case MODE_RRUN:
-							misc=NODE_RRUN;
-							break;
-						case MODE_EVENT:
-							misc=NODE_EVENT;
-							break;
-						case MODE_NOPAGE:
-							misc=NODE_POFF;
-							break;
-						case MODE_NOALERTS:
-							misc=NODE_AOFF;
-							break;
-						case MODE_STATUS:
-							node.status=value;
-							break;
-						case MODE_ERRORS:
-							node.errors=value;
-							break;
-						case MODE_ACTION:
-							node.action=value;
-							break;
-						case MODE_USERON:
-							node.useron=value;
-							break;
-						case MODE_MISC:
-							node.misc=value;
-							break;
-						case MODE_CONN:
-							node.connection=value;
-							break;
-						case MODE_AUX:
-							node.aux=value;
-							break;
-						case MODE_EXTAUX:
-							node.extaux=value;
-							break; }
-					if(misc) {
-						if(onoff==0)
-							node.misc^=misc;
-						else if(onoff==1)
-							node.misc|=misc;
-						else if(onoff==2)
-							node.misc&=~misc; }
-					putnodedat(j,node);
-					printnodedat(j,node);
-					if(debug) {
-						printf("status=%u\n",node.status);
-						printf("errors=%u\n",node.errors);
-						printf("action=%d\n",node.action);
-						printf("useron=%u\n",node.useron);
-						printf("conn=%u\n",node.connection);
-						printf("misc=%u\n",node.misc);
-						printf("aux=%u\n",node.aux);
-						printf("extaux=%lu\n",node.extaux); } } }
+			while(1) {
+				for(j=1;j<=sys_nodes;j++)
+					if(!node_num || j==node_num) {
+						getnodedat(j,&node,modify);
+						misc=0;
+						switch(mode) {
+							case MODE_ANON:
+								misc=NODE_ANON;
+								break;
+							case MODE_LOCK:
+								misc=NODE_LOCK;
+								break;
+							case MODE_INTR:
+								misc=NODE_INTR;
+								break;
+							case MODE_DOWN:
+								misc=NODE_DOWN;
+								break;
+							case MODE_RRUN:
+								misc=NODE_RRUN;
+								break;
+							case MODE_EVENT:
+								misc=NODE_EVENT;
+								break;
+							case MODE_NOPAGE:
+								misc=NODE_POFF;
+								break;
+							case MODE_NOALERTS:
+								misc=NODE_AOFF;
+								break;
+							case MODE_STATUS:
+								node.status=value;
+								break;
+							case MODE_ERRORS:
+								node.errors=value;
+								break;
+							case MODE_ACTION:
+								node.action=value;
+								break;
+							case MODE_USERON:
+								node.useron=value;
+								break;
+							case MODE_MISC:
+								node.misc=value;
+								break;
+							case MODE_CONN:
+								node.connection=value;
+								break;
+							case MODE_AUX:
+								node.aux=value;
+								break;
+							case MODE_EXTAUX:
+								node.extaux=value;
+								break; }
+						if(misc) {
+							if(onoff==0)
+								node.misc^=misc;
+							else if(onoff==1)
+								node.misc|=misc;
+							else if(onoff==2)
+								node.misc&=~misc; }
+						if(modify)
+							putnodedat(j,node);
+						printnodedat(j,node);
+						if(debug) {
+							printf("status=%u\n",node.status);
+							printf("errors=%u\n",node.errors);
+							printf("action=%d\n",node.action);
+							printf("useron=%u\n",node.useron);
+							printf("conn=%u\n",node.connection);
+							printf("misc=%u\n",node.misc);
+							printf("aux=%u\n",node.aux);
+							printf("extaux=%lu\n",node.extaux); 
+						}  /* debug */
+					} /* if(!node_num) */
+
+				if(!loop)
+					break;
+				mswait(1000);
+				cls();
+			} /* while(1) */
+
+	} /* for i<argc */
 
 	close(nodefile);
 	return(0);
