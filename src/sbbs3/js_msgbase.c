@@ -1790,8 +1790,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		}
 		if(p->smb.subnum<scfg->total_subs) {
 			cfgobj=JS_NewObject(cx,NULL,NULL,obj);
-			js_CreateMsgAreaProperties(cx, scfg, cfgobj, p->smb.subnum
-				,scfg->sub[p->smb.subnum]->grp, p->smb.subnum);
+			js_CreateMsgAreaProperties(cx, scfg, cfgobj, p->smb.subnum);
 #ifdef _DEBUG
 			js_DescribeSyncObject(cx,cfgobj
 				,"Configuration parameters for this message area (<i>sub-boards only</i>) "
