@@ -461,7 +461,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(!is_redraw) {
 		if(mode&WIN_ORG) { /* Clear around menu */
 			if(top)
-				puttext(1,s_top,api->scrn_width,s_top+top-1,blk_scrn);
+				puttext(1,2,api->scrn_width,s_top+top-1,blk_scrn);
 			if(s_top+height+top<=api->scrn_len)
 				puttext(1,s_top+height+top,api->scrn_width,api->scrn_len,blk_scrn);
 			if(left)
