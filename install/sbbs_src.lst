@@ -1,4 +1,6 @@
 install/GNUmakefile
+install/termcap
+install/terminfo
 include
 src/xpdev
 src/uifc
