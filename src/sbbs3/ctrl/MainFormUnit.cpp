@@ -597,24 +597,12 @@ void __fastcall TMainForm::ViewToolbarMenuItemClick(TObject *Sender)
     ViewToolbarMenuItem->Checked=Toolbar->Visible;
 }
 //---------------------------------------------------------------------------
-
-
-
-void __fastcall TMainForm::PanelUnDock(TObject *Sender, TControl *Client,
-      TWinControl *NewTarget, bool &Allow)
-{
-//	if(NewTarget==NULL)
-    	Allow=false;
-}
-//---------------------------------------------------------------------------
-
 void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
-
-    SaveSettings();
+    SaveSettings(Sender);
 }
-
-void __fastcall TMainForm::SaveSettings(void)
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::SaveSettings(TObject* Sender)
 {
     // Write Registry keys
 	TRegistry* Registry=new TRegistry;
