@@ -227,7 +227,7 @@ static int services_lputs(char *str)
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%ssvc  %.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%ssrvc %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
 	lputs(logline);
 	
