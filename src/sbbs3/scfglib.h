@@ -38,7 +38,7 @@
 #ifndef _SCFGLIB_H
 #define _SCFGLIB_H
 
-#define SAVE_MEMORY
+/* #define SAVE_MEMORY /* This makes it difficult to free */
 
 #define get_int(var,stream) { if(!fread(&var,1,sizeof(var),stream)) \
 								memset(&var,0,sizeof(var)); \
@@ -48,6 +48,13 @@
                               offset+=sizeof(var); }
 
 #define FREE_AND_NULL(x) if(x!=NULL) { FREE(x); x=NULL; }
+
+/* The FREE_ALLOC macro is used for get_alloc() buffers only */
+#ifdef SCFG
+#define FREE_ALLOC(x)	/* static */
+#else
+#define FREE_ALLOC(x) if(x!=NULL && x!=scfgnulstr) { FREE(x); x=NULL; }
+#endif
 
 typedef struct {
     char    *openerr,
@@ -86,7 +93,6 @@ void free_chat_cfg(scfg_t* cfg);
 long aftol(char *str);              /* Converts flag string to long */
 char *ltoaf(long l, char *str);     /* Converts long to flag string */
 char *faddrtoa(faddr_t addr);   /* FidoNet address to ASCII text conversion */
-char chardupe(char *str);       /* Searches for duplicate chars in str */
 uchar attrstr(char *str);		/* Convert ATTR string into attribute int */
 
 #ifdef __cplusplus
