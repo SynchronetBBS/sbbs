@@ -78,8 +78,6 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 
-#define MAX_RECIPIENTS			100		/* 0xffff = abs max */
-
 #define STATUS_WFC	"Listening"
 
 static mail_startup_t* startup=NULL;
@@ -1469,7 +1467,7 @@ static void smtp_thread(void* arg)
 					/* Send telegram to users */
 					rewind(rcptlst);
 					rcpt_count=0;
-					while(!feof(rcptlst)  && rcpt_count<MAX_RECIPIENTS) {
+					while(!feof(rcptlst)  && rcpt_count<startup->max_recipients) {
 						if(fgets(str,sizeof(str)-1,rcptlst)==NULL)
 							break;
 						usernum=atoi(str);
@@ -1632,7 +1630,7 @@ static void smtp_thread(void* arg)
 				smb_unlocksmbhdr(&smb);
 				rewind(rcptlst);
 				rcpt_count=0;
-				while(!feof(rcptlst) && rcpt_count<MAX_RECIPIENTS) {
+				while(!feof(rcptlst) && rcpt_count<startup->max_recipients) {
 					if((i=smb_copymsgmem(&newmsg,&msg))!=0) {
 						lprintf("%04d !SMTP ERROR %d (%s) copying message"
 							,socket, i, smb.last_error);
@@ -1989,11 +1987,11 @@ static void smtp_thread(void* arg)
 			SAFECOPY(rcpt_addr,p);
 
 			/* Check recipient counter */
-			if(rcpt_count>=MAX_RECIPIENTS) {
+			if(rcpt_count>=startup->max_recipients) {
 				lprintf("%04d !SMTP MAXIMUM RECIPIENTS (%d) REACHED"
-					,socket, MAX_RECIPIENTS);
+					,socket, startup->max_recipients);
 				sprintf(tmp,"Maximum recipient count (%d) from: %s"
-					,MAX_RECIPIENTS, reverse_path);
+					,startup->max_recipients, reverse_path);
 				spamlog(&scfg, "SMTP", "MAIL REFUSED", tmp, host_name, host_ip, rcpt_addr);
 				sockprintf(socket, "552 Too many recipients");
 				continue;
@@ -2845,6 +2843,7 @@ void DLLCALL mail_server(void* arg)
 	if(startup->rescan_frequency==0)		startup->rescan_frequency=3600;	/* 60 minutes */
 	if(startup->max_delivery_attempts==0)	startup->max_delivery_attempts=50;
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
+	if(startup->max_recipients==0) 			startup->max_recipients=100;
 
 	recycle_server=TRUE;
 	do {

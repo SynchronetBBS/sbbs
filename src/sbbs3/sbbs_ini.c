@@ -201,6 +201,8 @@ void sbbs_read_ini(
 		=iniReadShortInt(fp,section,"RescanFrequency",mail->rescan_frequency);
 	mail->lines_per_yield
 		=iniReadShortInt(fp,section,"LinesPerYield",100);
+	mail->max_recipients
+		=iniReadShortInt(fp,section,"MaxRecipients",100);
 
 	SAFECOPY(mail->relay_server
 		,iniReadString(fp,section,"RelayServer",mail->relay_server));

@@ -52,7 +52,7 @@ typedef struct {
 	WORD	rescan_frequency;	/* In seconds */
 	WORD	relay_port;
 	WORD	lines_per_yield;
-	WORD	reserved_word1;
+	WORD	max_recipients;
     DWORD   interface_addr;
     DWORD	options;			/* See MAIL_OPT definitions */
     DWORD	reserved_dword8;
