@@ -37,6 +37,7 @@ while(1)  {
 		case "-a":
 			real_names=false;
 			argv.shift();
+			break;
 		default:
 			break LOOP;
 	}
@@ -63,7 +64,8 @@ if(!sock.connect(irc_server,irc_port)) {
 	clean_exit();
 }
 
-sock.send("PASS "+user.security.password+"\r\n");
+// sock.send("PASS "+user.security.password+"\r\n");	// for futire use with JS IRC server
+sock.send("PASS \r\n");
 if (nick=="")
 	nick=user.alias;
 nick=nick.replace(/\s+/g,"_");
