@@ -3244,20 +3244,6 @@ void DLLCALL bbs_thread(void* arg)
 
 	}
 
-	LINGER linger;
-
-	linger.l_onoff=true;
-    linger.l_linger=5;	/* seconds */
-
-	result = setsockopt(telnet_socket, SOL_SOCKET, SO_LINGER
-    	,(char *)&linger, sizeof(linger));
-
-	if(result != 0) {
-		lprintf("!ERROR %d (%d) setting Telnet socket options.", result, ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-
 	/*****************************/
 	/* Listen for incoming calls */
 	/*****************************/
@@ -3302,20 +3288,6 @@ void DLLCALL bbs_thread(void* arg)
 		}
 
 		lprintf("RLogin socket %d opened",rlogin_socket);
-
-		LINGER linger;
-
-		linger.l_onoff=true;
-		linger.l_linger=5;	/* seconds */
-
-		result = setsockopt(telnet_socket, SOL_SOCKET, SO_LINGER
-    		,(char *)&linger, sizeof(linger));
-
-		if(result != 0) {
-			lprintf("!ERROR %d (%d) setting RLogin socket options.", result, ERROR_VALUE);
-			cleanup(1);
-			return;
-		}
 
 		/*****************************/
 		/* Listen for incoming calls */
@@ -3541,22 +3513,6 @@ void DLLCALL bbs_thread(void* arg)
 		if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
 			PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
-
-		linger.l_onoff=true;
-		linger.l_linger=5;	/* seconds */
-
-		result = setsockopt(client_socket, SOL_SOCKET, SO_LINGER
-    		,(char *)&linger, sizeof(linger));
-
-		if(result != 0) {
-			lprintf("%04d !ERROR %d (%d) setting socket options."
-				,client_socket, result, ERROR_VALUE);
-			close_socket(client_socket);
-			continue;
-		}
-
-		if(set_socket_options(&scfg, client_socket, logstr))
-			lprintf("%04d !ERROR %s",client_socket, logstr);
 
    		sbbs->client_socket=client_socket;	// required for output to the user
         sbbs->online=ON_REMOTE;

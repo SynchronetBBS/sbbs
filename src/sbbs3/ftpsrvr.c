@@ -1781,7 +1781,6 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 					,BOOL append
 					,char* desc)
 {
-	char		error[256];
 	int			result;
 	socklen_t	addr_len;
 	SOCKADDR_IN	server_addr;
@@ -1910,9 +1909,6 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		if(startup->options&FTP_OPT_DEBUG_DATA)
 			lprintf("%04d PASV DATA socket %d connected to %s port %u"
 				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
-		if(set_socket_options(&scfg, *data_sock, error))
-			lprintf("%04d !PASV DATA ERROR %s for socket %d"
-				,ctrl_sock,error,*data_sock);
 	}
 
 	if((xfer=malloc(sizeof(xfer_t)))==NULL) {
@@ -4290,7 +4286,6 @@ void DLLCALL ftp_server(void* arg)
 	time_t			t;
 	time_t			start;
 	time_t			initialized=0;
-	LINGER			linger;
 	fd_set			socket_set;
 	ftp_t*			ftp;
 	struct timeval	tv;
@@ -4439,19 +4434,6 @@ void DLLCALL ftp_server(void* arg)
 
 		lprintf("%04d FTP socket opened",server_socket);
 
-#if 1
-		linger.l_onoff=TRUE;
-		linger.l_linger=5;	/* seconds */
-
-		if((result=setsockopt(server_socket, SOL_SOCKET, SO_LINGER
-    		,(char *)&linger, sizeof(linger)))!=0) {
-			lprintf ("%04d !ERROR %d (%d) setting socket options."
-				,server_socket, result, ERROR_VALUE);
-			cleanup(1,__LINE__);
-			return;
-		}
-#endif
-
 		/*****************************/
 		/* Listen for incoming calls */
 		/*****************************/
@@ -4548,9 +4530,6 @@ void DLLCALL ftp_server(void* arg)
 			if(startup->socket_open!=NULL)
 				startup->socket_open(TRUE);
 			sockets++;
-
-			if(set_socket_options(&scfg, client_socket, error))
-				lprintf("%04d !ERROR %s",client_socket, error);
 
 			if(active_clients>=startup->max_clients) {
 				lprintf("%04d !MAXMIMUM CLIENTS (%d) reached, access denied"
