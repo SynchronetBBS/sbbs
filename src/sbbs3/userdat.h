@@ -90,6 +90,7 @@ DLLEXPORT int	DLLCALL getuserrec(scfg_t*, int usernumber, int start, int length,
 DLLEXPORT int	DLLCALL putuserrec(scfg_t*, int usernumber, int start, uint length, char *str);
 DLLEXPORT ulong	DLLCALL adjustuserrec(scfg_t*, int usernumber, int start, int length, long adj);
 DLLEXPORT BOOL	DLLCALL logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
+DLLEXPORT void	DLLCALL resetdailyuserdat(scfg_t*, user_t*);
 DLLEXPORT void	DLLCALL subtract_cdt(scfg_t*, user_t*, long amt);
 
 #ifdef __cplusplus

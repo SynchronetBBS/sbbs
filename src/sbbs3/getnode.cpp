@@ -119,14 +119,9 @@ void sbbs_t::nodesync()
 			unixtodstr(&cfg,now,today);
 			if(strcmp(str,today)) { /* New day, clear "today" user vars */
 				sys_status|=SS_NEWDAY;	// So we don't keep doing this over&over
-				putuserrec(&cfg,useron.number,U_ETODAY,5,"0");
-				putuserrec(&cfg,useron.number,U_PTODAY,5,"0");
-				putuserrec(&cfg,useron.number,U_TTODAY,5,"0");
-				putuserrec(&cfg,useron.number,U_LTODAY,5,"0");
-				putuserrec(&cfg,useron.number,U_TEXTRA,5,"0");
-				putuserrec(&cfg,useron.number,U_FREECDT,10
-					,ultoa(cfg.level_freecdtperday[useron.level],str,10));
-				getuserdat(&cfg, &useron); } }
+				resetdailyuserdat(&cfg,&useron);
+			} 
+		}
 		if(thisnode.misc&NODE_UDAT && !(useron.rest&FLAG('G'))) {   /* not guest */
 			getuserdat(&cfg, &useron);
 			getnodedat(cfg.node_num,&thisnode,1);

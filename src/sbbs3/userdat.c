@@ -255,13 +255,11 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	getrec(userdat,U_CHAT,8,str);
 	user->chat=ahtoul(str);
 
+	/* Reset daily stats if not logged on today */
 	unixtodstr(cfg, time(NULL),str);
 	unixtodstr(cfg, user->laston,tmp);
-	if(strcmp(str,tmp) && user->ltoday) {
-		user->ltoday=user->ttoday=user->ptoday=user->etoday=user->textra=0;
-		user->freecdt=cfg->level_freecdtperday[user->level];
-	}
-
+	if(strcmp(str,tmp) && user->ltoday) 
+		resetdailyuserdat(cfg,user);
 
 #if 0 // removed 01/19/00
 	if(useron.number==user->number) {
@@ -1286,6 +1284,8 @@ void DLLCALL subtract_cdt(scfg_t* cfg, user_t* user, long amt)
 		user->cdt=adjustuserrec(cfg, user->number,U_CDT,10,-amt);
 }
 
+/****************************************************************************/
+/****************************************************************************/
 BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 {
 	char str[128];
@@ -1309,15 +1309,35 @@ BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logonti
 		return(FALSE);
 
 	/* Reset daily stats if new day */
-	if(tm->tm_mday!=tm_now.tm_mday) {					/* date has changed while online */
-		putuserrec(cfg,user->number,U_LTODAY,5,"0");	/* so zero logons today */
-		putuserrec(cfg,user->number,U_ETODAY,5,"0");	/* and e-mails today */
-		putuserrec(cfg,user->number,U_PTODAY,5,"0");	/* and posts today */
-		putuserrec(cfg,user->number,U_FREECDT,10		/* and free credits per day */
-			,ultoa(cfg->level_freecdtperday[user->level],str,10));
-		putuserrec(cfg,user->number,U_TTODAY,5,"0");	/* and time on today */
-		putuserrec(cfg,user->number,U_TEXTRA,5,"0");	/* and extra time */
-	}
+	if(tm->tm_mday!=tm_now.tm_mday) 
+		resetdailyuserdat(cfg, user);
 
 	return(TRUE);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+void DLLCALL resetdailyuserdat(scfg_t* cfg, user_t* user)
+{
+	char str[128];
+
+	/* logons today */
+	user->ltoday=0;	
+	putuserrec(cfg,user->number,U_LTODAY,5,"0");
+	/* e-mails today */
+	user->etoday=0;	
+	putuserrec(cfg,user->number,U_ETODAY,5,"0");	
+	/* posts today */
+	user->ptoday=0;	
+	putuserrec(cfg,user->number,U_PTODAY,5,"0");
+	/* free credits per day */				
+	user->freecdt=cfg->level_freecdtperday[user->level];
+	putuserrec(cfg,user->number,U_FREECDT,10		
+		,ultoa(user->freecdt,str,10));
+	/* time used today */
+	user->ttoday=0;
+	putuserrec(cfg,user->number,U_TTODAY,5,"0");
+	/* extra time today */
+	user->textra=0;
+	putuserrec(cfg,user->number,U_TEXTRA,5,"0");	
 }
