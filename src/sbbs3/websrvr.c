@@ -746,7 +746,7 @@ static void close_request(http_session_t * session)
 		session->finished=TRUE;
 
 	if(session->js_cx!=NULL && (session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)) {
-		lprintf(LOG_INFO,"%04d JavaScript: Garbage Collection",session->socket);
+		JS_ClearScope(session->js_cx,session->js_glob);
 		JS_GC(session->js_cx);
 	}
 
@@ -1009,7 +1009,7 @@ void http_logon(http_session_t * session, user_t *usr)
 	if(session->user.number==session->last_user_num)
 		return;
 
-	lprintf(LOG_INFO,"%04d HTTP Logon (%d)",session->socket,session->user.number);
+	lprintf(LOG_DEBUG,"%04d HTTP Logon (%d)",session->socket,session->user.number);
 
 	if(session->user.number==0)
 		SAFECOPY(session->username,unknown);
@@ -1032,7 +1032,7 @@ void http_logoff(http_session_t * session)
 	if(session->last_user_num<=0)
 		return;
 
-	lprintf(LOG_INFO,"%04d HTTP Logoff (%d)",session->socket,session->user.number);
+	lprintf(LOG_DEBUG,"%04d HTTP Logoff (%d)",session->socket,session->user.number);
 
 	SAFECOPY(session->username,unknown);
 	logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time);
@@ -2897,7 +2897,7 @@ void http_logging_thread(void* arg)
 
 	thread_up(TRUE /* setuid */);
 
-	lprintf(LOG_INFO,"%04d http logging thread started", server_socket);
+	lprintf(LOG_DEBUG,"%04d http logging thread started", server_socket);
 
 	for(;!terminate_http_logging_thread;) {
 		struct log_data *ld;
@@ -2961,7 +2961,7 @@ void http_logging_thread(void* arg)
 		logfile=NULL;
 	}
 	thread_down();
-	lprintf(LOG_INFO,"%04d http logging thread terminated",server_socket);
+	lprintf(LOG_DEBUG,"%04d http logging thread terminated",server_socket);
 
 	http_logging_thread_running=FALSE;
 }
