@@ -87,6 +87,7 @@ typedef struct {
 } ftp_startup_t;
 
 /* startup options that requires re-initialization/recycle when changed */
+#if defined(STARTUP_INIT_FIELD_TABLES)
 static struct init_field ftp_init_fields[] = { 
 	 OFFSET_AND_SIZE(ftp_startup_t,port)
 	,OFFSET_AND_SIZE(ftp_startup_t,interface_addr)
@@ -94,6 +95,7 @@ static struct init_field ftp_init_fields[] = {
 	,OFFSET_AND_SIZE(ftp_startup_t,temp_dir)
 	,{ 0,0 }	/* terminator */
 };
+#endif
 
 #define FTP_OPT_DEBUG_RX			(1<<0)
 #define FTP_OPT_DEBUG_DATA			(1<<1)
@@ -113,6 +115,7 @@ static struct init_field ftp_init_fields[] = {
 /* ftp_startup_t.options bits that require re-init/recycle when changed */
 #define FTP_INIT_OPTS	(FTP_OPT_LOCAL_TIMEZONE)
 
+#if defined(STARTUP_INI_BITDESC_TABLES)
 static ini_bitdesc_t ftp_options[] = {
 
 	{ FTP_OPT_DEBUG_RX				,"DEBUG_RX"				},
@@ -132,6 +135,7 @@ static ini_bitdesc_t ftp_options[] = {
 	/* terminator */										
 	{ 0 							,NULL					}
 };
+#endif
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

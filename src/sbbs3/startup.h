@@ -124,6 +124,7 @@ typedef struct {
 /* startup options that requires re-initialization/recycle when changed */
 #define OFFSET_AND_SIZE(s, f)	{ offsetof(s,f), sizeof(((s *)0)->f) }
 
+#if defined(STARTUP_INIT_FIELD_TABLES)
 static struct init_field {
 	size_t	offset;
 	size_t	size;
@@ -138,6 +139,7 @@ static struct init_field {
 	,OFFSET_AND_SIZE(bbs_startup_t,temp_dir)
 	,{ 0,0 }	/* terminator */
 };
+#endif
 
 #define BBS_OPT_XTRN_MINIMIZED		(1<<1)	/* Run externals minimized			*/
 #define BBS_OPT_AUTO_LOGON			(1<<2)	/* Auto-logon via IP				*/
@@ -160,6 +162,7 @@ static struct init_field {
 #define BBS_INIT_OPTS	(BBS_OPT_ALLOW_RLOGIN|BBS_OPT_NO_EVENTS|BBS_OPT_NO_SPY_SOCKETS \
 						|BBS_OPT_NO_JAVASCRIPT|BBS_OPT_LOCAL_TIMEZONE)
 
+#if defined(STARTUP_INI_BITDESC_TABLES)
 static ini_bitdesc_t bbs_options[] = {
 
 	{ BBS_OPT_XTRN_MINIMIZED		,"XTRN_MINIMIZED"		},
@@ -194,6 +197,7 @@ static ini_bitdesc_t log_mask_bits[] = {
 	/* the Gubinator */				
 	{ 0								,NULL					}
 };
+#endif
 
 #ifdef __cplusplus
 extern "C" {

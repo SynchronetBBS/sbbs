@@ -35,6 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#define STARTUP_INI_BITDESC_TABLES
+
 #include "dirwrap.h"	/* backslash */
 #include "sbbs_ini.h"
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */

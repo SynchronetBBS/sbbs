@@ -88,6 +88,7 @@ typedef struct {
 
 } web_startup_t;
 
+#if defined(STARTUP_INIT_FIELD_TABLES)
 /* startup options that requires re-initialization/recycle when changed */
 static struct init_field web_init_fields[] = { 
 	 OFFSET_AND_SIZE(web_startup_t,port)
@@ -99,6 +100,7 @@ static struct init_field web_init_fields[] = {
 	,OFFSET_AND_SIZE(web_startup_t,logfile_base)
 	,{ 0,0 }	/* terminator */
 };
+#endif
 
 #define WEB_OPT_DEBUG_RX			(1<<0)	/* Log all received requests		*/
 #define WEB_OPT_DEBUG_TX			(1<<1)	/* Log all transmitted responses	*/
@@ -109,6 +111,7 @@ static struct init_field web_init_fields[] = {
 /* web_startup_t.options bits that require re-init/recycle when changed */
 #define WEB_INIT_OPTS	(BBS_OPT_LOCAL_TIMEZONE|WEB_OPT_HTTP_LOGGING)
 
+#if defined(STARTUP_INI_BITDESC_TABLES)
 static ini_bitdesc_t web_options[] = {
 
 	{ WEB_OPT_DEBUG_RX				,"DEBUG_RX"				},
@@ -128,6 +131,7 @@ static ini_bitdesc_t web_options[] = {
 	/* terminator */										
 	{ 0								,NULL					}
 };
+#endif
 
 #define WEB_DEFAULT_ROOT_DIR		"../html"
 #define WEB_DEFAULT_ERROR_DIR		"error"

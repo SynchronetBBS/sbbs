@@ -63,6 +63,7 @@
 #ifndef JAVASCRIPT
 #define JAVASCRIPT	/* required to include JS API headers */
 #endif
+#define SERVICES_INI_BITDESC_TABLE	/* required to defined service_options */
 #include "sbbs.h"
 #include "services.h"
 #include "ident.h"	/* identify() */

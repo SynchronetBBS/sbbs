@@ -100,6 +100,7 @@ typedef struct {
 } mail_startup_t;
 
 /* startup options that requires re-initialization/recycle when changed */
+#if defined(STARTUP_INIT_FIELD_TABLES)
 static struct init_field mail_init_fields[] = { 
 	 OFFSET_AND_SIZE(mail_startup_t,smtp_port)
 	,OFFSET_AND_SIZE(mail_startup_t,pop3_port)
@@ -107,6 +108,7 @@ static struct init_field mail_init_fields[] = {
 	,OFFSET_AND_SIZE(mail_startup_t,ctrl_dir)
 	,{ 0,0 }	/* terminator */
 };
+#endif
 
 #define MAIL_OPT_DEBUG_RX_HEADER		(1<<0)
 #define MAIL_OPT_DEBUG_RX_BODY			(1<<1)
@@ -141,6 +143,7 @@ static struct init_field mail_init_fields[] = {
 /* mail_startup_t.options bits that require re-init/recycle when changed */
 #define MAIL_INIT_OPTS	(MAIL_OPT_ALLOW_POP3|MAIL_OPT_NO_SENDMAIL|MAIL_OPT_LOCAL_TIMEZONE)
 
+#if defined(STARTUP_INI_BITDESC_TABLES)
 static ini_bitdesc_t mail_options[] = {
 
 	{ MAIL_OPT_DEBUG_RX_HEADER		,"DEBUG_RX_HEADER"		},
@@ -173,6 +176,7 @@ static ini_bitdesc_t mail_options[] = {
 	/* terminator */
 	{ 0 							,NULL					}
 };
+#endif
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT
