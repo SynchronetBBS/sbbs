@@ -396,10 +396,10 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%s\n%s\n%x\n%s\n%s\n%s\n"
+		sprintf(str,"%s\n%s\n%lx\n%s\n%s\n%s\n"
 			,ltoaf(useron.exempt,tmp)			/* Exemptions */
 			,ltoaf(useron.rest,tmp2)			/* Restrictions */
-			,useron.expire						/* Expiration date in unix form */
+			,(long)useron.expire				/* Expiration date in unix form */
 			,useron.address 					/* Address */
 			,useron.location					/* City/State */
 			,useron.zipcode 					/* Zip/Postal code */
@@ -1132,7 +1132,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
 				+(long)tm.tm_sec;
 
-		sprintf(str,"%s\n%s\n%u\n%u\n%u\n%u\n%lu\n%u\n%s\n"
+		sprintf(str,"%s\n%s\n%u\n%u\n%u\n%u\n%lu\n%lu\n%s\n"
 			"%s\n%s\n%lu\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 			"%lu\n%lu\n%s\n%s\n"
 			,dropdir
@@ -1142,7 +1142,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.dls 						/* Total downloads */
 			,cfg.level_timepercall[useron.level]/* Minutes allowed this call */
 			,l									/* Secs since midnight (logon) */
-			,starttime-logontime				/* Extra time in seconds */
+			,(long)(starttime-logontime)		/* Extra time in seconds */
 			,"FALSE"                            /* Sysop next? */
 			,"FALSE"                            /* From Front-end? */
 			,"FALSE"                            /* Software Flow Control? */
