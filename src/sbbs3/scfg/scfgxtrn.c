@@ -51,10 +51,12 @@ while(1) {
 	i=0;
 	strcpy(opt[i++],"Fixed Events");
 	strcpy(opt[i++],"Timed Events");
+#if 0
 	strcpy(opt[i++],"Global Swap List");
-	strcpy(opt[i++],"Native (32-bit) Program List");
+#endif    
+	strcpy(opt[i++],"Native Program List");
 	strcpy(opt[i++],"External Editors");
-	strcpy(opt[i++],"Online Programs");
+	strcpy(opt[i++],"Online Programs (Doors)");
 	opt[i][0]=0;
 	SETHELP(WHERE);
 /*
@@ -79,16 +81,18 @@ online external programs (doors).
 		case 1:
 			tevents_cfg();
 			break;
+#if 0
 		case 2:
 			swap_cfg();
 			break;
-		case 3:
+#endif
+		case 2:
 			natvpgm_cfg();
 			break;
-		case 4:
+		case 3:
 			xedit_cfg();
 			break;
-		case 5:
+		case 4:
 			xtrnsec_cfg();
 			break; } }
 }
@@ -547,11 +551,16 @@ online program name.
 			,cfg.xtrn[i]->run_arstr);
 		sprintf(opt[k++],"%-27.27s%s","Multiple Concurrent Users"
 			,cfg.xtrn[i]->misc&MULTIUSER ? "Yes" : "No");
-		sprintf(opt[k++],"%-27.27s%s%s","Intercept I/O Interrupts"
+		sprintf(opt[k++],"%-27.27s%s%s","Intercept Standard I/O"
 			,cfg.xtrn[i]->misc&IO_INTS ? "Yes" : "No"
 			,cfg.xtrn[i]->misc&WWIVCOLOR ? ", WWIV" : nulstr);
+#ifdef __FLAT__
+		sprintf(opt[k++],"%-27.27s%s","Native (32-bit) Executable"
+			,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
+#else
 		sprintf(opt[k++],"%-27.27s%s","Swap BBS out of Memory"
 			,cfg.xtrn[i]->misc&SWAP ? "Yes" : "No");
+#endif
 		sprintf(opt[k++],"%-27.27s%s","Modify User Data"
             ,cfg.xtrn[i]->misc&MODUSERDAT ? "Yes" : "No");
 		switch(cfg.xtrn[i]->event) {
@@ -607,6 +616,9 @@ online program name.
 			case XTRN_TRIBBS:
 				sprintf(str,"%-15s %s","TriBBS","TRIBBS.SYS");
 				break;
+            case XTRN_DOOR32:
+                sprintf(str,"%-15s %s","Mystic","DOOR32.SYS");
+                break;
 			default:
 				strcpy(str,"None");
 				break; }
@@ -750,13 +762,13 @@ set this option to Yes.
 				opt[2][0]=0;
 				SETHELP(WHERE);
 /*
-Intercept I/O Interrupts:
+Intercept Standard I/O:
 
-If this online program has its own serial communication abilities, set
+If this online program uses a FOSSIL driver or SOCKET communications, set
 this option to No.
 */
 				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O Interrupts"
+				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept Standard I/O"
 					,opt);
 				if(!k && !(cfg.xtrn[i]->misc&IO_INTS)) {
 					cfg.xtrn[i]->misc|=IO_INTS;
@@ -788,6 +800,30 @@ option to Yes.
 					cfg.xtrn[i]->misc&=~WWIVCOLOR;
                     changes=1; }
                 break;
+#ifdef __FLAT__
+			case 10:
+				k=0;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				SETHELP(WHERE);
+/*
+Native (32-bit) Executable:
+
+If this online program is a native 32-bit executable,
+set this option to Yes.
+*/
+				savnum=4;
+				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Native (32-bit)",opt);
+				if(!k && !(cfg.xtrn[i]->misc&XTRN_NATIVE)) {
+					cfg.xtrn[i]->misc|=XTRN_NATIVE;
+					changes=1; }
+				else if(k==1 && cfg.xtrn[i]->misc&XTRN_NATIVE) {
+					cfg.xtrn[i]->misc&=~XTRN_NATIVE;
+					changes=1; }
+				break;
+#else
 			case 10:
 				k=0;
 				strcpy(opt[0],"Yes");
@@ -810,6 +846,7 @@ set this option to Yes to have the BBS swapped out of memory.
 					cfg.xtrn[i]->misc&=~SWAP;
 					changes=1; }
 				break;
+#endif
 			case 11:
 				k=1;
 				strcpy(opt[0],"Yes");
@@ -911,6 +948,7 @@ to Yes.
 				sprintf(opt[k++],"%-15s %s","Solar Realms","DOORFILE.SR");
 				sprintf(opt[k++],"%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
 				sprintf(opt[k++],"%-15s %s","TriBBS","TRIBBS.SYS");
+				sprintf(opt[k++],"%-15s %s","Mystic","DOOR32.SYS");
 				opt[k][0]=0;
 				k=cfg.xtrn[i]->type;
 				SETHELP(WHERE);
@@ -927,6 +965,8 @@ format, select the file format from the list.
 					break;
 				if(cfg.xtrn[i]->type!=k) {
 					cfg.xtrn[i]->type=k;
+                    if(cfg.xtrn[i]->type==XTRN_DOOR32)
+                        cfg.xtrn[i]->misc|=XTRN_NATIVE;
 					changes=1; }
 				if(cfg.xtrn[i]->type && cfg.uq&UQ_ALIASES) {
 					strcpy(opt[0],"Yes");
@@ -1062,7 +1102,7 @@ void xedit_cfg()
 
 while(1) {
 	for(i=0;i<cfg.total_xedits && i<MAX_OPTS;i++)
-		sprintf(opt[i],"%-8.8s    %.40s",cfg.xedit[i]->code,cfg.xedit[i]->lcmd);
+		sprintf(opt[i],"%-8.8s    %.40s",cfg.xedit[i]->code,cfg.xedit[i]->rcmd);
 	opt[i][0]=0;
 	j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 	savnum=0;
@@ -1157,12 +1197,16 @@ This is the internal code for the external editor.
 		k=0;
 		sprintf(opt[k++],"%-32.32s%s","Name",cfg.xedit[i]->name);
 		sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.xedit[i]->code);
+#if 0
 		sprintf(opt[k++],"%-32.32s%.40s","Local Command Line",cfg.xedit[i]->lcmd);
+#endif        
 		sprintf(opt[k++],"%-32.32s%.40s","Remote Command Line",cfg.xedit[i]->rcmd);
 		sprintf(opt[k++],"%-32.32s%.40s","Access Requirements",cfg.xedit[i]->arstr);
-		sprintf(opt[k++],"%-32.32s%s%s","Intercept I/O Interrupts"
+		sprintf(opt[k++],"%-32.32s%s%s","Intercept Standard I/O"
 			,cfg.xedit[i]->misc&IO_INTS ? "Yes":"No"
 			,cfg.xedit[i]->misc&WWIVCOLOR ? ", WWIV" : nulstr);
+        sprintf(opt[k++],"%-32.32s%s","Native (32-bit) Executable"
+			,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 		sprintf(opt[k++],"%-32.32s%s","Quoted Text"
 			,cfg.xedit[i]->misc&QUOTEALL ? "All":cfg.xedit[i]->misc&QUOTENONE
 				? "None" : "Prompt User");
@@ -1203,6 +1247,9 @@ This is the internal code for the external editor.
 				break;
 			case XTRN_TRIBBS:
 				sprintf(str,"%-15s %s","TriBBS","TRIBBS.SYS");
+                break;
+			case XTRN_DOOR32:
+				sprintf(str,"%-15s %s","Mystic","DOOR32.SYS");
                 break;
 			default:
 				strcpy(str,"None");
@@ -1257,6 +1304,7 @@ abreviation of the name.
 					umsg("Invalid Code");
 					helpbuf=0; }
                 break;
+#if 0
 			case 2:
 				SETHELP(WHERE);
 /*
@@ -1267,8 +1315,8 @@ This is the command line to execute when using this editor locally.
 				uinput(WIN_MID|WIN_SAV,0,10,"Local"
 					,cfg.xedit[i]->lcmd,50,K_EDIT);
 				break;
-
-		   case 3:
+#endif
+		   case 2:
 				SETHELP(WHERE);
 /*
 External Editor Remote Command Line:
@@ -1278,12 +1326,12 @@ This is the command line to execute when using this editor remotely.
 				uinput(WIN_MID|WIN_SAV,0,10,"Remote"
 					,cfg.xedit[i]->rcmd,50,K_EDIT);
 				break;
-			case 4:
+			case 3:
 				savnum=2;
 				sprintf(str,"%s External Editor",cfg.xedit[i]->name);
 				getar(str,cfg.xedit[i]->arstr);
 				break;
-			case 5:
+			case 4:
 				k=1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -1291,12 +1339,12 @@ This is the command line to execute when using this editor remotely.
 				savnum=2;
 				SETHELP(WHERE);
 /*
-Intercept I/O Interrupts:
+Intercept Standard I/O:
 
-If this external editor has its own serial communication abilities or
-requires a FOSSIL driver, set this option to No.
+If this external editor uses a FOSSIL driver or SOCKET communications,
+set this option to No.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O Interrupts"
+				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept Standard I/O"
 					,opt);
 				if(!k && !(cfg.xedit[i]->misc&IO_INTS)) {
 					cfg.xedit[i]->misc|=IO_INTS;
@@ -1327,6 +1375,29 @@ option to Yes.
 					cfg.xedit[i]->misc&=~WWIVCOLOR;
                     changes=1; }
                 break;
+			case 5:
+				k=0;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				SETHELP(WHERE);
+/*
+Native (32-bit) Executable:
+
+If this online program is a native 32-bit executable,
+set this option to Yes.
+*/
+				savnum=2;
+				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Native (32-bit)",opt);
+				if(!k && !(cfg.xedit[i]->misc&XTRN_NATIVE)) {
+					cfg.xedit[i]->misc|=XTRN_NATIVE;
+					changes=1; }
+				else if(k==1 && cfg.xedit[i]->misc&XTRN_NATIVE) {
+					cfg.xedit[i]->misc&=~XTRN_NATIVE;
+					changes=1; }
+				break;
+
 			case 6:
 				k=3;
 				strcpy(opt[0],"All");
@@ -1420,6 +1491,7 @@ instead of a carriage return/line feed pair, set this option to Yes.
 				sprintf(opt[k++],"%-15s %s","Solar Realms","DOORFILE.SR");
 				sprintf(opt[k++],"%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
 				sprintf(opt[k++],"%-15s %s","TriBBS","TRIBBS.SYS");
+				sprintf(opt[k++],"%-15s %s","Mystic","DOOR32.SYS");
 				opt[k][0]=0;
 				k=cfg.xedit[i]->type;
 				SETHELP(WHERE);
@@ -1436,6 +1508,8 @@ format, select the file format from the list.
 					break;
 				if(cfg.xedit[i]->type!=k) {
 					cfg.xedit[i]->type=k;
+                    if(cfg.xedit[i]->type==XTRN_DOOR32)
+                        cfg.xedit[i]->misc|=XTRN_NATIVE;
 					changes=1; }
 				break;
 
