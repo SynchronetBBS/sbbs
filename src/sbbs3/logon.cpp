@@ -507,9 +507,9 @@ bool sbbs_t::logon()
 	if(mailw) {
 		if(yesno(text[ReadYourMailNowQ]))
 			readmail(useron.number,MAIL_YOUR); }
-	if(useron.misc&ASK_NSCAN && yesno(text[NScanAllGrpsQ]))
+	if(usrgrps && useron.misc&ASK_NSCAN && yesno(text[NScanAllGrpsQ]))
 		scanallsubs(SCAN_NEW);
-	if(useron.misc&ASK_SSCAN && yesno(text[SScanAllGrpsQ]))
+	if(usrgrps && useron.misc&ASK_SSCAN && yesno(text[SScanAllGrpsQ]))
 		scanallsubs(SCAN_TOYOU);
 	return(true);
 }
