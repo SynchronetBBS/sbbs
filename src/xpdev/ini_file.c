@@ -41,6 +41,7 @@
 #if !defined(NO_SOCKET_SUPPORT)
 	#include "sockwrap.h"	/* inet_addr */
 #endif
+#include "dirwrap.h"	/* fexist */
 #include "filewrap.h"	/* chsize */
 #include "ini_file.h"
 
@@ -972,6 +973,21 @@ ulong iniGetBitField(str_list_t* list, const char* section, const char* key,
 		return(deflt);
 
 	return(parseBitField(value,bitdesc));
+}
+
+FILE* iniOpenFile(const char* fname)
+{
+	char* mode="r+";
+
+	if(!fexist(fname))
+		mode="w+";
+
+	return(fopen(fname,mode));
+}
+
+BOOL iniCloseFile(FILE* fp)
+{
+	return(fclose(fp)==0);
 }
 
 str_list_t iniReadFile(FILE* fp)

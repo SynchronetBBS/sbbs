@@ -96,8 +96,10 @@ void*		iniFreeNamedStringList(named_string_t** list);
 
 
 /* File I/O Functions */
+FILE*		iniOpenFile(const char* fname);
 str_list_t	iniReadFile(FILE*);
 BOOL		iniWriteFile(FILE*, const str_list_t);
+BOOL		iniCloseFile(FILE*);
 
 /* StringList functions */
 str_list_t	iniGetSectionList(str_list_t* list, const char* prefix);
