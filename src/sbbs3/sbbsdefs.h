@@ -654,6 +654,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SS_FILEXFER	(1L<<27) /* File transfer in progress, halt spy			*/
 
 								/* Bits in 'mode' for getkey and getstr     */
+#define K_NONE		0			/* Use as a place holder for no mode flags	*/
 #define K_UPPER 	(1L<<0) 	/* Converts all letters to upper case		*/
 #define K_UPRLWR	(1L<<1) 	/* Upper/Lower case automatically			*/
 #define K_NUMBER	(1L<<2) 	/* Allow numbers only						*/
