@@ -152,6 +152,7 @@ library, select Yes.
 			for(j=0;j<cfg.total_dirs;j++)
 				if(cfg.dir[j]->lib==i) {
 					sprintf(str,"%s.*",cfg.dir[j]->code);
+					strlwr(str);
 					if(!cfg.dir[j]->data_dir[0])
 						sprintf(tmp,"%sdirs/",cfg.data_dir);
 					else
@@ -721,6 +722,7 @@ select Yes.
 			continue;
 		if(j==0) {
 				sprintf(str,"%s.*",cfg.dir[dirnum[i]]->code);
+				strlwr(str);
 				if(!cfg.dir[dirnum[i]]->data_dir[0])
 					sprintf(tmp,"%sdirs/",cfg.data_dir);
 				else

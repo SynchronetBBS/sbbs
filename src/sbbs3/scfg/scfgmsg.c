@@ -244,6 +244,7 @@ select Yes.
 			for(j=0;j<cfg.total_subs;j++)
 				if(cfg.sub[j]->grp==i) {
 					sprintf(str,"%s.s*",cfg.sub[j]->code);
+					strlwr(str);
 					if(!cfg.sub[j]->data_dir[0])
 						sprintf(tmp,"%ssubs/",cfg.data_dir);
 					else
