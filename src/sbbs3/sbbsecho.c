@@ -67,14 +67,6 @@
 #include "lzh.h"
 #include "sbbsecho.h"
 
-#ifdef __TURBOC__
-    unsigned _stklen=20000;
-#endif
-
-#ifdef __WATCOMC__
-    #define O_DENYNONE SH_DENYNO
-#endif
-
 smb_t *smb,*email;
 long misc=(IMPORT_PACKETS|IMPORT_NETMAIL|IMPORT_ECHOMAIL|EXPORT_ECHOMAIL
 			|DELETE_NETMAIL|DELETE_PACKETS);
@@ -88,6 +80,7 @@ two_plus_t two_plus;
 faddr_t		sys_faddr;
 config_t	cfg;
 scfg_t		scfg;
+char		revision[16];
 
 BOOL pause_on_exit=FALSE;
 
@@ -398,7 +391,7 @@ int write_flofile(char *attachment, faddr_t dest)
 		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
 	else
 		sprintf(fname,"%s%04x%04x.%clo",outbound,dest.net,dest.node,ch);
-	if((stream=fnopen(&file,fname,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
+	if((stream=fnopen(&file,fname,O_WRONLY|O_APPEND|O_CREAT))==NULL) {
 		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
 		logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
 		return(-1); }
@@ -3695,7 +3688,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 				if(!(scfg.sub[i]->misc&SUB_NOTAG)) {
 					if(!tear) {  /* No previous tear line */
-						sprintf(str,"--- SBBSecho/%s v%s\r",PLATFORM_DESC,SBBSECHO_VER);
+						sprintf(str,"--- SBBSecho v%s-%s (rev %s)\r"
+							,SBBSECHO_VER,PLATFORM_DESC,revision);
 						strcat((char *)fmsgbuf,str); }
 
 					sprintf(str," * Origin: %s (%s)\r"
@@ -3767,7 +3761,6 @@ int main(int argc, char **argv)
 {
 	FILE*	fidomsg;
 	char	packet[MAX_PATH+1];
-	char	revision[16];
 	char	ch,str[1025],fname[256],path[512],sub_code[9]
 			,*p,*tp
 			,areatagstr[128],outbound[128]
