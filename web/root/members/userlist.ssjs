@@ -25,6 +25,7 @@ for(i=1;i<=lastuser;i++) {
 	usr.location=u.location.toString();
 	usr.connection=u.connection.toString();
 	usr.logon=strftime("%m/%d/%y",u.logontime);
+	usr.laston=0-u.logontime;
 	template.users.push(usr);
 }
 template.users.sort(alphasort);
@@ -35,8 +36,19 @@ write_template("footer.inc");
 
 function alphasort (a,b)
 {
-	var au=a.alias.toUpperCase();
-	var bu=b.alias.toUpperCase();
+	if(http_request.query["sort"]==undefined)
+		return(0);
+	var sortby=http_request.query["sort"]
+	var au;
+	var bu;
+	if(a[sortby].toUpperCase!=undefined)
+		au=a[sortby].toUpperCase();
+	else
+		au=a[sortby];
+	if(b[sortby].toUpperCase!=undefined)
+		bu=b[sortby].toUpperCase();
+	else
+		bu=b[sortby];
 	if(au<bu)
 		return -1;
 	if(bu>au)
