@@ -137,7 +137,7 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);		\
 		p=strchr(str,SP);									\
 		if(p) {												\
-			strcpy(main_csi.str,p+1);						\
+			SAFECOPY(main_csi.str,p+1);						\
 			*p=0; 											\
 		} else												\
 			main_csi.str[0]=0;								\
@@ -253,10 +253,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 	attr(cfg.color[clr_external]);        /* setup default attributes */
 
-    strcpy(str,cmdline);		/* Set str to program name only */
+    SAFECOPY(str,cmdline);		/* Set str to program name only */
     p=strchr(str,SP);
     if(p) *p=0;
-    strcpy(fname,str);
+    SAFECOPY(fname,str);
 
     p=strrchr(fname,'/');
     if(!p) p=strrchr(fname,'\\');
@@ -281,20 +281,21 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     else
     	sprintf(fullcmdline, "%s%s", comspec_str, cmdline);
 
-	strcpy(realcmdline, fullcmdline);	// for errormsg if failed to execute
+	SAFECOPY(realcmdline, fullcmdline);	// for errormsg if failed to execute
 
 	now=time(NULL);
 	tm_p=localtime(&now);
-
-	if((retval=WaitForSingleObject(exec_mutex,5000))!=WAIT_OBJECT_0) {
-		errormsg(WHERE, ERR_TIMEOUT, "exec_mutex", retval);
-		return(GetLastError());
-	}
 
 	OpenVxDHandle=GetAddressOfOpenVxDHandle();
 
 	if(OpenVxDHandle==NULL) 
 		nt=true;	// Windows NT/2000
+
+	if(!nt && !native && !(cfg.xtrn_misc&XTRN_NO_MUTEX)
+		&& (retval=WaitForSingleObject(exec_mutex,5000))!=WAIT_OBJECT_0) {
+		errormsg(WHERE, ERR_TIMEOUT, "exec_mutex", retval);
+		return(GetLastError());
+	}
 
 	if(native && mode&EX_OUTR && !(mode&EX_OFFLINE))
 		use_pipes=true;
@@ -914,10 +915,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 	attr(cfg.color[clr_external]);        /* setup default attributes */
 
-    strcpy(str,cmdline);		/* Set str to program name only */
+    SAFECOPY(str,cmdline);		/* Set str to program name only */
     p=strchr(str,SP);
     if(p) *p=0;
-    strcpy(fname,str);
+    SAFECOPY(fname,str);
 
     p=strrchr(fname,'/');
     if(!p) p=strrchr(fname,'\\');
@@ -1219,7 +1220,7 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 				case '~':	/* DOS-compatible (8.3) filename */
 #ifdef _WIN32
 					char sfpath[MAX_PATH+1];
-					strcpy(sfpath,fpath);
+					SAFECOPY(sfpath,fpath);
 					GetShortPathName(fpath,sfpath,sizeof(sfpath));
 					strcat(cmd,sfpath);
 #else
