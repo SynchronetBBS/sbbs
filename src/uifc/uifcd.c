@@ -352,7 +352,7 @@ void help()
 {
 	char hbuf[HELPBUF_SIZE],str[256];
     char *p;
-	ushort line;
+	unsigned short line;
 	long l;
 	FILE *fp;
 

@@ -1664,7 +1664,7 @@ void help()
 		,hbuf[HELPBUF_SIZE],str[256];
     char *p;
 	uint i,j,k,len;
-	ushort line;
+	unsigned short line;
 	long l;
 	FILE *fp;
 #ifndef __FLAT__
