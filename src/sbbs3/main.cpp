@@ -2916,7 +2916,7 @@ const char* DLLCALL bbs_ver(void)
 	static char ver[256];
 	char compiler[32];
 
-	COMPILER_DESC(compiler);
+	DESCRIBE_COMPILER(compiler);
 
 	sprintf(ver,"%s v%s%c%s  SMBLIB v%s  Compiled %s %s with %s"
 		,TELNET_SERVER
@@ -3079,7 +3079,7 @@ void DLLCALL bbs_thread(void* arg)
 	lastuseron[0]=0;
 
 	char compiler[32];
-	COMPILER_DESC(compiler);
+	DESCRIBE_COMPILER(compiler);
 
 	lprintf("%s Version %s Revision %c%s"
 		,TELNET_SERVER
@@ -3153,7 +3153,7 @@ void DLLCALL bbs_thread(void* arg)
 		sprintf(startup->host_name,"%.*s",sizeof(startup->host_name),scfg.sys_inetaddr);
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
-		if(PUTENV("TZ=UTC0"))
+		if(putenv("TZ=UTC0"))
 			lprintf("!putenv() FAILED");
 		tzset();
 

@@ -129,7 +129,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(COPYRIGHT_NOTICE);
 
 	if(!strcmp(sp,"COMPILER")) {
-		COMPILER_DESC(str);
+		DESCRIBE_COMPILER(str);
 		return(str);
 	}
 

@@ -39,7 +39,7 @@
 #define _MAILSRVR_H_
 
 #include "client.h"				/* client_t */
-#include "sbbsinet.h"           /* SOCKET */
+#include "sockwrap.h"           /* SOCKET */
 
 typedef struct {
 

@@ -970,7 +970,7 @@ const char* DLLCALL services_ver(void)
 	static char ver[256];
 	char compiler[32];
 
-	COMPILER_DESC(compiler);
+	DESCRIBE_COMPILER(compiler);
 
 	sprintf(ver,"Synchronet Services v%s%s  "
 		"Compiled %s %s with %s"
@@ -1049,7 +1049,7 @@ void DLLCALL services_thread(void* arg)
 #endif
 			);
 
-		COMPILER_DESC(compiler);
+		DESCRIBE_COMPILER(compiler);
 
 		lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 
@@ -1081,7 +1081,7 @@ void DLLCALL services_thread(void* arg)
 			sprintf(startup->host_name,"%.*s",sizeof(startup->host_name),scfg.sys_inetaddr);
 
 		if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
-			if(PUTENV("TZ=UTC0"))
+			if(putenv("TZ=UTC0"))
 				lprintf("!putenv() FAILED");
 			tzset();
 

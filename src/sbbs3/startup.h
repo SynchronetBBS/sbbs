@@ -44,7 +44,7 @@
 
 #include "client.h"
 #include "ringbuf.h"
-#include "sbbswrap.h"
+#include "threadwrap.h"	/* sem_t */
 
 typedef struct {
 

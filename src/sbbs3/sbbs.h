@@ -112,10 +112,12 @@
 /***********************/
 /* Synchronet-specific */
 /***********************/
-#include "sbbsinet.h"
-#include "sbbswrap.h"
+#include "genwrap.h"
+#include "dirwrap.h"
+#include "filewrap.h"
+#include "sockwrap.h"
+#include "threadwrap.h"
 #include "smblib.h"
-#include "smbwrap.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
 #include "scfglib.h"
@@ -758,7 +760,6 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL removefiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT BOOL		DLLCALL addfiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT BOOL		DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename);
-	DLLEXPORT char *	DLLCALL getfname(char *path);
 	DLLEXPORT char *	DLLCALL padfname(char *filename, char *str);
 	DLLEXPORT char *	DLLCALL unpadfname(char *filename, char *str);
 	DLLEXPORT BOOL		DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
@@ -907,7 +908,6 @@ FILE *	fnopen(int *file, char *str, int access);
 	void	remove_re(char *str);
 
 	/* ver.cpp */
-	char*	os_version(char *str);
 	char*	socklib_version(char* str);
 
 	/* sortdir.cpp */

@@ -1022,7 +1022,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetProperty(cx, sysobj, "msgbase_lib", &val))
 		return(NULL);
 
-	COMPILER_DESC(str);
+	DESCRIBE_COMPILER(str);
 	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
 	if(!JS_SetProperty(cx, sysobj, "compiled_with", &val))
 		return(NULL);

@@ -45,7 +45,7 @@
 #include <string.h>		/* strchr */
 
 /* Synchronet-specific */
-#include "sbbsinet.h"
+#include "sockwrap.h"
 #include "gen_defs.h"
 #include "smbdefs.h"		/* _PACK */
 
