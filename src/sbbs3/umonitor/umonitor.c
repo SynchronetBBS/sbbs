@@ -46,6 +46,7 @@
 #include <unistd.h>
 
 #include "ciolib.h"
+#include "keys.h"
 #define __COLORS		/* Disable the colour macros in sbbsdefs.h ToDo */
 #include "sbbs.h"
 #include "genwrap.h"
@@ -862,14 +863,14 @@ int main(int argc, char** argv)  {
 
 	uifc.esc_delay=500;
 
-	boxch.ls=ACS_VLINE; 
-	boxch.rs=ACS_VLINE;
-	boxch.ts=ACS_HLINE;
-	boxch.bs=ACS_HLINE;
-	boxch.tl=ACS_ULCORNER;
-	boxch.tr=ACS_URCORNER;
-	boxch.bl=ACS_LLCORNER;
-	boxch.br=ACS_LRCORNER;
+	boxch.ls=186; 
+	boxch.rs=186;
+	boxch.ts=205;
+	boxch.bs=205;
+	boxch.tl=201;
+	boxch.tr=187;
+	boxch.bl=200;
+	boxch.br=188;
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
             )
@@ -1047,27 +1048,27 @@ int main(int argc, char** argv)  {
 		if(main_dflt==0)
 			continue;
 
-		if(j==-2-KEY_DC) {	/* Clear errors */
+		if(j==-2-CIO_KEY_DC) {	/* Clear errors */
 			clearerrors(&cfg, main_dflt,&node);
 			continue;
 		}
 
-		if(j==-2-KEY_F(10)) {	/* Chat */
+		if(j==-2-CIO_KEY_F(10)) {	/* Chat */
 			if(getnodedat(&cfg,main_dflt,&node,NULL)) {
 				uifc.msg("Error reading node data!");
 				continue;
 			}
 			if((node.status==NODE_INUSE) && node.useron)
-				chat(&cfg,main_dflt,&node,&boxch,uifc.timedisplay);
+				chat(&cfg,main_dflt,&node,&boxch,NULL);
 			continue;
 		}
 
-		if(j==-2-KEY_F(11)) {	/* Send message */
+		if(j==-2-CIO_KEY_F(11)) {	/* Send message */
 			sendmessage(&cfg, main_dflt,&node);
 			continue;
 		}
 		
-		if(j==-2-KEY_F(12)) {	/* Spy */
+		if(j==-2-CIO_KEY_F(12)) {	/* Spy */
 			dospy(main_dflt,&bbs_startup);
 			continue;
 		}
@@ -1169,7 +1170,7 @@ int main(int argc, char** argv)  {
 						break;
 	
 					case 6:
-						chat(&cfg,main_dflt,&node,&boxch,uifc.timedisplay);
+						chat(&cfg,main_dflt,&node,&boxch,NULL);
 						break;
 					
 					case -1:

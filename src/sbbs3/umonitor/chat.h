@@ -35,11 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#undef getch
-#include <curses.h>
-
 typedef struct {
-	chtype ls, rs, ts, bs, tl, tr, bl, br;
+	char ls, rs, ts, bs, tl, tr, bl, br;
 } box_t;
 
 int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallback)(void));

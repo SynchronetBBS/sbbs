@@ -38,12 +38,27 @@
 #include <sys/types.h>
 #include <utime.h>
 
+#include "ciolib.h"
+#define __COLORS
 #include "sbbs.h"
 #include "chat.h"
 
 #define PCHAT_LEN 1000		/* Size of Private chat file */
 
-bool togglechat(scfg_t *cfg, int node_num, node_t *node, bool on)
+typedef struct {
+	int	left;
+	int	top;
+	int	right;
+	int	bottom;
+	int	x;
+	int	y;
+	int colour;
+} WINDOW;
+
+WINDOW	uwin;
+WINDOW	swin;
+
+int togglechat(scfg_t *cfg, int node_num, node_t *node, int on)
 {
     static int  org_act;
 
@@ -64,119 +79,53 @@ bool togglechat(scfg_t *cfg, int node_num, node_t *node, bool on)
     return(TRUE);
 }
 
-void wsetcolor(WINDOW *win, int fg, int bg)  {
-	int   attrs=A_NORMAL;
-	short	colour;
-	int		lastfg=0;
-	int		lastbg=0;
+void drawchatwin(box_t *boxch, char* topname, char* botname) {
+	struct text_info ti;
+	int	i;
 
-	if (lastfg==fg && lastbg==bg)
-		return;
+	_wscroll=0;
+	gettextinfo(&ti);
+	textcolor(WHITE);
+	textbackground(BLACK);
+	clrscr();
+	uwin.top=1;
+	uwin.left=1;
+	uwin.right=ti.screenwidth;
+	uwin.bottom=ti.screenheight/2-1;
+	uwin.colour=GREEN;
+	swin.top=ti.screenheight/2+1;
+	swin.left=1;
+	swin.right=ti.screenwidth;
+	swin.bottom=ti.screenheight;
+	swin.colour=LIGHTGREEN;
 
-	lastfg=fg;
-	lastbg=bg;
+	gotoxy(1,ti.screenheight/2);
+	putch(196);
+	putch(196);
+	putch(196);
+	putch(196);
+	putch(180);
+	cputs(topname);
+	putch(195);
+	for(i=wherex();i<=ti.screenwidth;i++)
+		putch(196);
 
-	if (fg & 8)  {
-		attrs |= A_BOLD;
-	}
-	wattrset(win, attrs);
-	colour = COLOR_PAIR( ((fg&7)|(bg<<3))+1 );
-	#ifdef NCURSES_VERSION_MAJOR
-	wcolor_set(win, colour,NULL);
-	#endif
-	wbkgdset(win, colour);
+	_wscroll=1;
 }
 
-void drawchatwin(WINDOW **uwin, WINDOW **swin, box_t *boxch, const char* topname, const char* botname) {
-	int maxy,maxx;
-
-	endwin();
-	getmaxyx(stdscr,maxy,maxx);
-	*uwin=newwin(maxy/2-1,maxx,1,0);
-	*swin=newwin(maxy-maxy/2-1,maxx,maxy/2,0);
-	wsetcolor(*uwin,YELLOW,BLUE);
-	wclear(*uwin);
-	wborder(*uwin,  boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
-	wmove(*uwin,0,5);
-	waddstr(*uwin,topname);
-	wmove(*uwin,1,2);
-	scrollok(*uwin,TRUE);
-	wrefresh(*uwin);
-	wsetcolor(*swin,YELLOW,BLUE);
-	wclear(*swin);
-	wborder(*swin,  boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
-	wmove(*swin,0,5);
-	waddstr(*swin,botname);
-	wmove(*swin,1,2);
-	scrollok(*swin,TRUE);
-	wrefresh(*swin);
-}
-
-int chatchar(WINDOW *win, int ch, box_t *boxch, const char* name) {
-	int	maxy,maxx;
-	int	cury,curx;
-	getmaxyx(win,maxy,maxx);
-	getyx(win,cury,curx);
-	switch(ch) {
-		case 8:
-			curx-=1;
-			if(curx<2) {
-				curx+=1;
-				beep();
-			}
-			mvwaddch(win,cury,curx,' ');
-			wmove(win,cury,curx);
-			wrefresh(win);
-			break;
-
-		case '\r':
-		case '\n':
-			curx=2;
-			cury+=1;
-			wmove(win,cury,curx);
-			if(cury>=maxy-1) {
-				wscrl(win,1);
-				cury-=1;
-				wmove(win,cury,curx-1);
-				whline(win,' ',maxx-2);
-				wborder(win, boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
-				wmove(win,0,5);
-				waddstr(win,name);
-				wmove(win,cury,curx);
-			}
-			wrefresh(win);
-			break;
-			
-		case TAB:
-			curx+=8;
-			curx-=((curx-2)%8)+1;
-			wmove(win,cury,curx);
-			ch=' ';
-		default:
-			waddch(win,ch);
-			getyx(win,cury,curx);
-			if(curx>=maxx-2) {
-				curx=2;
-				cury+=1;
-				if(cury>=maxy-1) {
-					wscrl(win,1);
-					cury-=1;
-					wmove(win,cury,curx-1);
-					whline(win,' ',maxx-2);
-					wborder(win, boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
-					wmove(win,0,5);
-					waddstr(win,name);
-				}
-				wmove(win,cury,curx);
-			}
-			wrefresh(win);
-	}
+int chatchar(WINDOW *win, int ch) {
+	window(win->left,win->top,win->right,win->bottom);
+	gotoxy(win->x,win->y);
+	textcolor(win->colour);
+	putch(ch);
+	if(ch=='\r')
+		putch('\n');
+	win->x=wherex();
+	win->y=wherey();
 	return(0);
 }
 
 int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallback)(void)) {
-	WINDOW	*uwin;
-	WINDOW	*swin;
 	int		in,out;
 	char	inpath[MAX_PATH];
 	char	outpath[MAX_PATH];
@@ -185,18 +134,28 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	char	ch;
 	time_t	now;
 	time_t	last_nodechk=0;
+	struct text_info ti;
+	char	*buf;
+
+	gettextinfo(&ti);
+	if((buf=(char *)malloc(ti.screenwidth*ti.screenheight*2))==NULL) {
+		return(-1);
+	}
 
 	if(getnodedat(cfg,nodenum,node,NULL)) {
+		free(buf);
 		return(-1);
 	}
 
 	username(cfg,node->useron,usrname);
 
-	drawchatwin(&uwin,&swin,boxch,usrname,cfg->sys_op);
+	gettext(1,1,ti.screenwidth,ti.screenheight,buf);
+	drawchatwin(boxch,usrname,cfg->sys_op);
 
 	sprintf(outpath,"%slchat.dab",cfg->node_path[nodenum-1]);
 	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
 		,S_IREAD|S_IWRITE))==-1) {
+		free(buf);
 		return(-1);
 	}
 
@@ -204,12 +163,14 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
 		,S_IREAD|S_IWRITE))==-1) {
 		close(out);
+		free(buf);
 		return(-1);
     }
 
 	if((p=(char *)MALLOC(PCHAT_LEN))==NULL) {
 		close(in);
 		close(out);
+		free(buf);
 		return(-1);
     }
 	memset(p,0,PCHAT_LEN);
@@ -218,11 +179,6 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	FREE(p);
 	lseek(in,0,SEEK_SET);
 	lseek(out,0,SEEK_SET);
-	#ifdef __NetBSD__
-	timeout(100);
-	#else
-	halfdelay(1);
-	#endif
 
 	togglechat(cfg,nodenum,node,TRUE);
 
@@ -239,39 +195,42 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 			last_nodechk=now;
 		}
 		if(node->misc&NODE_LCHAT) {
-			if((ch=wgetch(swin))) {
+			if(kbhit()) {
+				ch=getch();
 				if(ch==ESC || ch==3) {
 					close(in);
 					in=-1;
 				}
-				if(ch!=ERR && ch!=0)
-					beep();
+				if(ch==0 || ch==-1) {		/* Special keys... eat 'em. */
+					getch();
+				}
 			}
 			YIELD();
 			continue;
 		}
-		
+
 		if(node->status==NODE_WFC || node->status>NODE_QUIET || node->action!=NODE_PCHT) {
 			close(in);
 			in=-1;
 		}
 
 		utime(inpath,NULL);
+		_setcursortype(_NORMALCURSOR);
 		while(1) {
 			switch(read(in,&ch,1)) {
 				case -1:
 					close(in);
 					in=-1;
 					break;
-					
+
 				case 0:
 					lseek(in,0,SEEK_SET);	/* Wrapped */
 					continue;
-					
+
 				case 1:
 					lseek(in,-1L,SEEK_CUR);
 					if(ch) {
-						chatchar(uwin,ch,boxch,usrname);
+						chatchar(&uwin,ch);
 						ch=0;
 						write(in,&ch,1);
 						continue;
@@ -281,27 +240,25 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 			break;
 		}
 
-		if((ch=wgetch(swin))) {
+		if(kbhit()) {
+			ch=getch();
 			switch(ch)  {
-				#if ERR!=0
-				case 0:
-				#endif
-				case ERR:
+				case 0:			/* Special Chars */
+				case -1:
 					ch=0;
-					write(out,&ch,1);
-					lseek(out,-1,SEEK_CUR);
+					getch();
 					break;
-					
+
 				case ESC:
 				case 3:
 					close(in);
 					in=-1;
 					continue;
-					
+
 				default:
 					if(lseek(out,0,SEEK_CUR)>=PCHAT_LEN)
 						lseek(out,0,SEEK_SET);
-					chatchar(swin,ch,boxch,cfg->sys_op);
+					chatchar(&swin,ch);
 					switch(write(out,&ch,1)) {
 						case -1:
 							close(in);
@@ -317,12 +274,11 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 		close(in);
 	if(out != -1)
 		close(out);
-	nocbreak();
-	cbreak();
 	togglechat(cfg,nodenum,node,FALSE);
-	delwin(uwin);
-	delwin(swin);
-	touchwin(stdscr);
-	refresh();
+	puttext(1,1,ti.screenwidth,ti.screenheight,buf);
+	free(buf);
+	window(ti.winleft,ti.wintop,ti.winright,ti.wintop);
+	gotoxy(ti.curx,ti.cury);
+	textattr(ti.attribute);
 	return(0);
 }
