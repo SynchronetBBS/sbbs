@@ -1,8 +1,10 @@
-# SIMPLE.SRC
-
-# Copyright 1995 Digital Dynamics
+# simple.src
 
 # Simple Synchronet Command Shell - for beginner/first-time users
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 

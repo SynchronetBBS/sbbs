@@ -1,6 +1,10 @@
-# MAJOR.SRC
+# major.src
 
 # MajorBBS Clone Command Shell for Synchronet
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 

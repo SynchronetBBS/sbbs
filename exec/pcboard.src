@@ -1,6 +1,10 @@
-# PCBOARD.SRC
+# pcboard.src
 
 # PCBoard v15.1 menu/command emulation
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 

@@ -1,6 +1,10 @@
-# FILE_IO.SRC
+# file_io.src
 
-# Baja module for performing various i/o operations on a single file
+# Module for performing various i/o operations on a single file
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include file_io.inc
 

@@ -1,6 +1,10 @@
-# MATRIX.SRC
+# matrix.src
 
-# Baja answer module for Synchronet BBS v2.2
+# Light-bar answer module for Synchronet BBS v2.2+
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 !define LAST 2

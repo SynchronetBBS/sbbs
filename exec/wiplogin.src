@@ -1,6 +1,10 @@
-# WIPLOGIN.SRC
+# wiplogin.src
+
+# $id$
 
 # ANSWER.WIP requires button press
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 

@@ -1,14 +1,11 @@
-# DIR_ATTR.INC
-
-# Copyright 1995 Digital Dynamics, All rights reserved.
+# dir_attr.inc
 
 # Baja include file defining DOS Directory Entry Attribute constants
 # Specifically used with the SET_FILE_ATTRIB and GET_FILE_ATTRIB functions
 
-# You man include use this file in your source (!include dir_attr.inc),
-# but you may not distribute modified versions of this file. It is not
-# suggested that you modify this file AT ALL, but rather create your own
-# include file(s) for your own constant definitions.
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !define FA_NORMAL   0x00
 !define FA_RDONLY   0x01

@@ -1,6 +1,10 @@
-# DIR.SRC
+# dir.src
 
 # Test of Directory System Functions
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 !include dir_attr.inc

@@ -1,7 +1,11 @@
-# CNTNODES.SRC
+# cntnodes.src
 
 # Counts number of nodes in use and number of nodes waiting for call
 # Sets global variables NODES_INUSE and NODES_WFC
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 

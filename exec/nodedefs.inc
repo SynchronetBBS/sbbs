@@ -1,13 +1,10 @@
-# NODEDEFS.INC
-
-# Copyright 1995 Digital Dynamics, All rights reserved.
+# nodedefs.inc
 
 # Baja include file for NODE.DAB (_NODEFILE) field values
 
-# You man include use this file in your source (!include sbbsdefs.inc),
-# but you may not distribute modified versions of this file. It is not
-# suggested that you modify this file AT ALL, but rather create your own
-# include file(s) for your own constant definitions.
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 					# Possible values for node STATUS
 !define NODE_WFC		0	# Waiting for Call

@@ -1,13 +1,10 @@
-# FILE_IO.INC
-
-# Copyright 1995 Digital Dynamics, All rights reserved.
+# file_io.inc
 
 # Baja include file defining various File I/O related constants
 
-# You man include use this file in your source (!include file_io.inc),
-# but you may not distribute modified versions of this file. It is not
-# suggested that you modify this file AT ALL, but rather create your own
-# include file(s) for your own constant definitions.
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !define O_RDONLY	 1	# Read only
 !define O_WRONLY	 2	# Write only

@@ -1,6 +1,11 @@
-# NOYESBAR.SRC
+# noyesbar.src
 
 # Sep 28 1995 - Digital Man
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
+
 str tmp
 
 copy tmp str

@@ -1,6 +1,10 @@
-# SDOS.SRC
+# sdos.src
 
 # DOS shell for Synchronet version 2 systems
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 # Thanks to Yojimbo for the BDOS shell that inspired this one
 

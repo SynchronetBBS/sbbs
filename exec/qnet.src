@@ -1,4 +1,8 @@
-# QNET.SRC
+# qnet.src
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 ###############################################################################
 #		  Baja module for performing QWKnet call-outs		      #

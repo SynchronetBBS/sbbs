@@ -1,8 +1,11 @@
-# WIPSHELL.SRC
+# wipshell.src
 
 # WIP Windows Interface Protocol {tm} Durand Communications Networks, Inc.
 # Command Shell for Synchronet Multinode BBS Software
-# Copyright 1995 Digital Dynamics
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 
