@@ -1,4 +1,4 @@
-/* uifcc.c */
+/* uifc32.c */
 
 /* Curses implementation of UIFC (user interface) library based on uifc.c */
 
@@ -405,7 +405,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_L2R)
 		left=(s_right-s_left)/2-(width/2)+(api->scrn_width-s_right);
 	else if(mode&WIN_RHT)
-		left=s_right-(width+4+left);
+		left=s_right-width;
 	if(mode&WIN_T2B)
 		top=(api->scrn_len/2)-(height/2)-2;
 	else if(mode&WIN_BOT)
