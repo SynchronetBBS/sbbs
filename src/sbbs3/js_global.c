@@ -832,6 +832,8 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	time_t		now;
 	BOOL		nodisplay=FALSE;
 	scfg_t*		cfg;
+	uchar   	attr_stack[64]; /* Saved attributes (stack) */
+	int     	attr_sp;                /* Attribute stack pointer */
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
 		return(JS_FALSE);
@@ -907,6 +909,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 					{
 						esccount++;
 						tmpbuf[j++]=inbuf[i];
+						tmpbuf[j++]=inbuf[++i];
 					}
 					else if(exascii) {
 						ch=inbuf[i];
@@ -1111,9 +1114,23 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			}
 			else if(ctrl_a && tmpbuf[i]==1)		/* CTRL-A codes */
 			{
+/*				j+=sprintf(outbuf+j,"<!-- CTRL-A-%c (%u) -->",tmpbuf[i+1],tmpbuf[i+1]); */
 				if(nodisplay && tmpbuf[i+1] != ')')
 					continue;
-				switch(toupper(tmpbuf[i+1]))
+				if(tmpbuf[i+1]>0x7f)
+				{
+					j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
+					lastcolor=0;
+					l=tmpbuf[i+1]-0x7f;
+					if(l>81-hpos)
+						l=81-hpos;
+					for(k=0; k<l; k++)
+					{
+						j+=sprintf(outbuf+j,"%s","&nbsp;");
+						hpos++;
+					}
+				}
+				else switch(toupper(tmpbuf[i+1]))
 				{
 					case 'K':
 						fg=0;
@@ -1168,6 +1185,34 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 						break;
 					case 'I':
 						blink=TRUE;
+						break;
+					case '+':
+						if(attr_sp<(int)sizeof(attr_stack))
+							attr_stack[attr_sp++]=(blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | fg;
+					case '-':
+						if(attr_sp>0)
+						{
+							blink=(attr_stack[--attr_sp]&(1<<7))?TRUE:FALSE;
+							bg=(attr_stack[attr_sp] >> 4) & 7;
+							blink=(attr_stack[attr_sp]&(1<<3))?TRUE:FALSE;
+							fg=attr_stack[attr_sp] & 7;
+						}
+						else if(bold || blink || bg)
+						{
+							bold=FALSE;
+							blink=FALSE;
+							fg=7;
+							bg=0;
+						}
+						break;
+					case '_':
+						if(blink || bg)
+						{
+							bold=FALSE;
+							blink=FALSE;
+							fg=7;
+							bg=0;
+						}
 						break;
 					case 'N':
 						bold=FALSE;
