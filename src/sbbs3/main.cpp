@@ -738,7 +738,7 @@ void input_thread(void *arg)
             else if(ERROR_VALUE==ECONNABORTED) 
 				lprintf("Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
 			else
-				lprintf("!Node %d: ERROR %d input->select socket %d"
+				lprintf("Node %d !ERROR %d input->select socket %d"
                 	,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
 			sbbs->online=0;
 			break;
@@ -776,7 +776,7 @@ void input_thread(void *arg)
             else if(ERROR_VALUE==ECONNABORTED) 
 				lprintf("Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
 			else
-				lprintf("!Node %d: ERROR %d receiving from socket %d"
+				lprintf("Node %d !ERROR %d receiving from socket %d"
                 	,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
 			sbbs->online=0;
 			break;

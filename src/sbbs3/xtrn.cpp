@@ -667,7 +667,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				len=sizeof(buf);
 				avail=RingBufFree(&outbuf);
 				if(avail==0) 
-					lprintf("!Node %d output buffer full (%u bytes)"
+					lprintf("Node %d !output buffer full (%u bytes)"
 						,cfg.node_num,RingBufFull(&outbuf));
 				if(len>avail)
             		len=avail;
@@ -727,7 +727,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				len=sizeof(buf);
 				avail=RingBufFree(&outbuf);
 				if(avail==0) 
-					lprintf("!Node %d output buffer full (%u bytes)"
+					lprintf("Node %d !output buffer full (%u bytes)"
 						,cfg.node_num,RingBufFull(&outbuf));
 
 				if(len>avail)
@@ -1020,7 +1020,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 			avail=RingBufFree(&outbuf);
 			if(avail==0) {
-				lprintf("!Node %d output buffer full (%u bytes)"
+				lprintf("Node %d !output buffer full (%u bytes)"
 					,cfg.node_num,RingBufFull(&outbuf));
 				mswait(1);
 				continue;
@@ -1042,7 +1042,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			
 			/* Does expanded size fit? */
 			if(output_len>RingBufFree(&outbuf)) {
-				lprintf("!Node %d output buffer overflow (%u bytes)"
+				lprintf("Node %d !output buffer overflow (%u bytes)"
 					,cfg.node_num,output_len);
 				mswait(1);
 				continue;

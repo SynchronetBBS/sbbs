@@ -161,10 +161,12 @@ bool sbbs_t::syslog(char* code, char *entry)
 /****************************************************************************/
 void sbbs_t::logline(char *code, char *str)
 {
-	if(online==ON_LOCAL)
-		eprintf("%s",str);
-	else
-		lprintf("Node %d %s", cfg.node_num, str);
+	if(strchr(str,'\n')==NULL) {	// Keep the console log pretty
+		if(online==ON_LOCAL)
+			eprintf("%s",str);
+		else
+			lprintf("Node %d %s", cfg.node_num, str);
+	}
 	if(logfile_fp==NULL || (online==ON_LOCAL && strcmp(code,"!!"))) return;
 	if(logcol!=1)
 		fprintf(logfile_fp,"\r\n");
@@ -281,8 +283,8 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 			actstr="UNKNOWN"; 
 			break;
 	}
-	lprintf("!Node %d: ERROR %d (0x%X) in %s line %d %s %s access=%d"
-		,cfg.node_num, errno, errno, src, line, actstr, object, access);
+	lprintf("Node %d !ERROR %d in %s line %d %s %s access=%d"
+		,cfg.node_num, errno, src, line, actstr, object, access);
 	bprintf("\7\r\nERROR -   action: %s",actstr);   /* tell user about error */
 	bprintf("\7\r\n          object: %s",object);
 	bprintf("\7\r\n          access: %ld",access);
@@ -348,7 +350,7 @@ void sbbs_t::errorlog(char *text)
 	logline("!!",text);
 	sprintf(str,"%serror.log",cfg.data_dir);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
-		sprintf(tmp2,"ERROR opening/creating %s",str);
+		sprintf(tmp2,"!ERROR opening/creating %s",str);
 		logline("!!",tmp2);
 		errorlog_inside=0;
 		return; }
