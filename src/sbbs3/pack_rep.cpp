@@ -63,10 +63,10 @@ bool sbbs_t::pack_rep(uint hubnum)
 	delfiles(cfg.temp_dir,ALLFILES);
 	sprintf(str,"%s%s.rep",cfg.data_dir,cfg.qhub[hubnum]->id);
 	if(fexist(str)) {
-		lprintf("Updating %s", str);
+		eprintf("Updating %s", str);
 		external(cmdstr(cfg.qhub[hubnum]->unpack,str,ALLFILES,NULL),EX_OFFLINE);
 	} else
-		lprintf("Creating %s", str);
+		eprintf("Creating %s", str);
 	/*************************************************/
 	/* Create SYSID.MSG, write header and leave open */
 	/*************************************************/
@@ -97,7 +97,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	mail=loadmail(&smb,&mailmsgs,0,MAIL_YOUR,0);
 	packedmail=0;
 	if(mailmsgs) {
-		lprintf("Packing NetMail for %s", cfg.qhub[hubnum]->id);
+		eprintf("Packing NetMail for %s", cfg.qhub[hubnum]->id);
 		for(l=0;(ulong)l<mailmsgs;l++) {
 	//		bprintf("\b\b\b\b\b%-5lu",l+1);
 
@@ -117,7 +117,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			packedmail++;
 			smb_unlockmsghdr(&smb,&msg);
 			smb_freemsgmem(&msg); }
-		lprintf("Packed %d NetMail messages",packedmail); }
+		eprintf("Packed %d NetMail messages",packedmail); }
 	smb_close(&smb);					/* Close the e-mail */
 	if(mailmsgs)
 		FREE(mail);
@@ -134,7 +134,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			if(sub_ptr[j]>last) {
 				sub_ptr[j]=last;
 				sub_last[j]=last; }
-			lprintf(remove_ctrl_a(text[NScanStatusFmt],tmp)
+			eprintf(remove_ctrl_a(text[NScanStatusFmt],tmp)
 				,cfg.grp[cfg.sub[j]->grp]->sname
 				,cfg.sub[j]->lname,0L,msgs);
 			continue; }
@@ -147,7 +147,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			continue; }
 
 		post=loadposts(&posts,j,sub_ptr[j],LP_BYSELF|LP_OTHERS|LP_PRIVATE|LP_REP);
-		lprintf(remove_ctrl_a(text[NScanStatusFmt],tmp)
+		eprintf(remove_ctrl_a(text[NScanStatusFmt],tmp)
 			,cfg.grp[cfg.sub[j]->grp]->sname
 			,cfg.sub[j]->lname,posts,msgs);
 		if(!posts)	{ /* no new messages */
@@ -187,7 +187,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			smb_unlockmsghdr(&smb,&msg);
 			msgcnt++;
 			submsgs++; }
-		lprintf(remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
+		eprintf(remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
 		LFREE(post);
 		smb_close(&smb); }
 
@@ -203,7 +203,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		if(isdir(str))
 			continue;
 		sprintf(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
-		lprintf(remove_ctrl_a(text[RetrievingFile],tmp),str);
+		eprintf(remove_ctrl_a(text[RetrievingFile],tmp),str);
 		if(!mv(str,tmp2,1))
 			netfiles++;
 	}
