@@ -91,7 +91,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* reason, char* hos
 		,timestr(cfg,&now,tstr)
 		,host
 		,ip_addr
-		,to
+		,to_user
 		);
 	write(file,hdr,strlen(hdr));
 	write(file,reason,strlen(reason));
