@@ -272,6 +272,7 @@ DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, char *fmt, ...);
 
 #if defined(_WIN32)
 #define		msclock()	clock()
+#define		MSCLOCKS_PER_SEC	CLOCKS_PER_SEC
 #else
 #define		MSCLOCKS_PER_SEC	1000
 clock_t		msclock(void);
