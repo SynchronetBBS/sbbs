@@ -344,6 +344,8 @@ js_confirm(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 	    return(JS_FALSE);
 
+	printf("%s (Y/N)?", JS_GetStringBytes(str));
+
 	*rval = BOOLEAN_TO_JSVAL(FALSE);
 	return(JS_TRUE);
 }

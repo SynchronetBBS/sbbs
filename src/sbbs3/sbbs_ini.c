@@ -79,17 +79,20 @@ static void read_ini_globals(FILE* fp, global_startup_t* global)
 	char		value[INI_MAX_VALUE_LEN];
 	char*		p;
 
-	if(*(p=iniReadString(fp,section,"CtrlDirectory",nulstr,value))) {
+	p=iniReadString(fp,section,"CtrlDirectory",nulstr,value);
+	if(*p) {
 	    SAFECOPY(global->ctrl_dir,value);
 		backslash(global->ctrl_dir);
     }
 
-	if(*(p=iniReadString(fp,section,"TempDirectory",nulstr,value))) {
+	p=iniReadString(fp,section,"TempDirectory",nulstr,value);
+	if(*p) {
 	    SAFECOPY(global->temp_dir,value);
 		backslash(global->temp_dir);
     }
 
-	if(*(p=iniReadString(fp,section,strHostName,nulstr,value)))
+	p=iniReadString(fp,section,strHostName,nulstr,value);
+	if(*p)
         SAFECOPY(global->host_name,value);
 
 	global->sem_chk_freq=iniReadShortInt(fp,section,strSemFileCheckFrequency,0);
