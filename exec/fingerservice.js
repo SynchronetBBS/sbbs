@@ -23,6 +23,7 @@ const VERSION="Synchronet Finger Service Version 1.00a";
 var include_age_gender=true;
 
 load("nodedefs.js");
+load("sockdefs.js");
 
 for(i=0;i<argc;i++)
 	if(argv[i].toLowerCase()=="-n")
@@ -140,6 +141,12 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			send_file(system.data_dir + "msgs/auto.msg");
 			break;
 
+		case "sockopts":
+			for(i in sockopts)
+				writeln(format("%s = %d"
+					,sockopts[i],client.socket.getoption(sockopts[i])));
+			break;
+
 		case "stats":	/* Statistics */
 			for(i in system.stats)
 				writeln(i + " = " + system.stats[i]);
@@ -201,11 +208,12 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			break;
 
 		default:
-			writeln("Supported special requests:");
+			writeln("Supported special requests (prepended with '?'):");
 			writeln("\tver");
 			writeln("\ttime");
 			writeln("\tstats");
 			writeln("\tservices");
+			writeln("\tsockopts");
 			writeln("\tnodelist");
 			writeln("\tauto.msg");
 			writeln("\tlogon.lst");
