@@ -1017,6 +1017,11 @@ void input_thread(void *arg)
 #ifdef __unix__
 		else if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET
 				&& FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
+			if(!socket_check(uspy_socket[sbbs->cfg.node_num-1],NULL,NULL,0)) {
+				close_socket(uspy_socket[sbbs->cfg.node_num-1]);
+				uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
+				continue;
+			}
 			sock=uspy_socket[sbbs->cfg.node_num-1];
 		}
 #endif
@@ -3957,6 +3962,14 @@ void DLLCALL bbs_thread(void* arg)
 						uspy_socket[i-1]=new_socket;
 						sprintf(str,"Spy connection established to node %d\r\n",i);
 						send(uspy_socket[i-1],str,strlen(str),0);
+					}
+				}
+				if(uspy_socket[i-1]!=INVALID_SOCKET
+				&& FD_ISSET(uspy_socket[i-1],&socket_set)) {
+					if(!socket_check(uspy_socket[i-1],NULL,NULL,0)) {
+						lprintf("Spy socket for node %d disconnected",i);
+						close_socket(uspy_socket[i-1]);
+						uspy_socket[i-1]=INVALID_SOCKET;
 					}
 				}
 			}
