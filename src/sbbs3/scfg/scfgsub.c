@@ -816,7 +816,7 @@ compatible mail programs you use support the LZH translation.
 					sprintf(opt[n++],"%-27.27s%s","QWK Networked"
 						,cfg.sub[i]->misc&SUB_QNET ? "Yes":"No");
 					sprintf(opt[n++],"QWK Tagline");
-					sprintf(opt[n++],"%-27.27s%s","Internet"
+					sprintf(opt[n++],"%-27.27s%s","Internet (UUCP/NNTP)"
 						,cfg.sub[i]->misc&SUB_INET ? "Yes":"No");
 					sprintf(opt[n++],"%-27.27s%s","PostLink or PCRelay"
                         ,cfg.sub[i]->misc&SUB_PNET ? "Yes":"No");
@@ -978,10 +978,10 @@ here. If this option is left blank, the default tagline is used.
 /*
 Sub-board Networked via Internet:
 
-If this sub-board is networked to the Internet via UUCP, this option
-should be set to Yes.
+If this sub-board is networked to the Internet via UUCP or NNTP, this
+option should be set to Yes.
 
-It will allow the Network restriction to function properly.
+It will allow the Network user restriction to function properly.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via Internet",opt);
