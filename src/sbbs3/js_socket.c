@@ -969,6 +969,7 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 enum {
 	 SOCK_PROP_LAST_ERROR
 	,SOCK_PROP_IS_CONNECTED
+	,SOCK_PROP_IS_WRITEABLE
 	,SOCK_PROP_DATA_WAITING
 	,SOCK_PROP_NREAD
 	,SOCK_PROP_DEBUG
@@ -1043,6 +1044,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	ulong		cnt;
 	BOOL		rd;
+	BOOL		wr;
 	private_t*	p;
 	socklen_t	addr_len;
 	SOCKADDR_IN	addr;
@@ -1068,6 +1070,10 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				*vp = JSVAL_FALSE;
 			else
 				*vp = BOOLEAN_TO_JSVAL(socket_check(p->sock,NULL,NULL,0));
+			break;
+		case SOCK_PROP_IS_WRITEABLE:
+			socket_check(p->sock,NULL,&wr,0);
+			*vp = BOOLEAN_TO_JSVAL(wr);
 			break;
 		case SOCK_PROP_DATA_WAITING:
 			socket_check(p->sock,&rd,NULL,0);
@@ -1147,6 +1153,7 @@ static struct JSPropertySpec js_socket_properties[] = {
 	{	"error"				,SOCK_PROP_LAST_ERROR	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"last_error"		,SOCK_PROP_LAST_ERROR	,JSPROP_READONLY,	NULL,NULL},	/* alias */
 	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"is_writeable"		,SOCK_PROP_IS_WRITEABLE	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"nread"				,SOCK_PROP_NREAD		,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
