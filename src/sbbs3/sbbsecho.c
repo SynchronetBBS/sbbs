@@ -1183,7 +1183,7 @@ void command(char *instr,faddr_t addr)
 	strupr(instr);
 	if((p=strstr(instr,"HELP"))!=NULL) {
 		sprintf(str,"%sAREAMGR.HLP",scfg.exec_dir);
-		if(!fexist(str))
+		if(!fexistcase(str))
 			return;
 		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 			printf("\7ERROR couldn't open %s.\n",str);
