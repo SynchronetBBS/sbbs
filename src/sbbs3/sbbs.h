@@ -103,8 +103,10 @@
 /***********************/
 /* Synchronet-specific */
 /***********************/
+#ifdef __cplusplus
+	#include "startup.h"
+#endif
 #ifdef SBBS	
-	#include "threadwrap.h"	/* must be before dirwrap.h for OpenBSD FULLPATH */
 	#include "text.h"
 #endif
 #include "genwrap.h"

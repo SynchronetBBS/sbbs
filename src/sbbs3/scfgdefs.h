@@ -40,8 +40,6 @@
 #ifndef _SCFGDEFS_H_
 #define _SCFGDEFS_H_
 
-#include "startup.h"
-
 typedef struct {                        /* Message sub board info */
 	char	code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
 	char	code_suffix[LEN_CODE+1];	/* Eight character code suffix */
