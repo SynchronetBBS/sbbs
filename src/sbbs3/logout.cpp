@@ -144,7 +144,7 @@ void sbbs_t::logout()
 		putuserrec(&cfg,useron.number,U_MIN,10,ultoa(useron.min,str,10)); }
 
 	if(timeleft>0 && starttime-logontime>0) 			/* extra time */
-		useron.textra+=(starttime-logontime)/60;
+		useron.textra+=(ushort)((starttime-logontime)/60);
 
 	putuserrec(&cfg,useron.number,U_TEXTRA,5,ultoa(useron.textra,str,10));
 	putuserrec(&cfg,useron.number,U_NS_TIME,8,ultoa(last_ns_time,str,16));

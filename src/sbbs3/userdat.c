@@ -1859,12 +1859,14 @@ void DLLCALL subtract_cdt(scfg_t* cfg, user_t* user, long amt)
 BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 {
 	char str[128];
+	time_t tused;
 	struct tm tm, tm_now;
 
 	if(user==NULL)
 		return(FALSE);
 
-	user->tlast=(now-logontime)/60;
+	tused=(now-logontime)/60;
+	user->tlast=(ushort)(tused > USHRT_MAX ? USHRT_MAX : tused);
 
 	putuserrec(cfg,user->number,U_LASTON,8,ultoa(now,str,16));
 	putuserrec(cfg,user->number,U_TLAST,5,ultoa(user->tlast,str,10));

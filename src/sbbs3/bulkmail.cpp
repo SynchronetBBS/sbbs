@@ -175,7 +175,7 @@ void sbbs_t::bulkmail(uchar *ar)
 	if(!msgs)
 		smb_freemsgdat(&smb,offset,length,1);
 	else if(msgs>1)
-		smb_incdat(&smb,offset,length,msgs-1);
+		smb_incdat(&smb,offset,length,(ushort)msgs-1);
 	smb_close_da(&smb);
 
 	smb_close(&smb);

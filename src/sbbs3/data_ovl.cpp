@@ -131,7 +131,7 @@ extern "C" BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subs
 			continue;
 		while(filelength(file)<(long)(cfg->sub[i]->ptridx)*10) {
 			lseek(file,0L,SEEK_END);
-			idx=tell(file)/10;
+			idx=(ushort)(tell(file)/10);
 			for(j=0;j<cfg->total_subs;j++)
 				if(cfg->sub[j]->ptridx==idx)
 					break;
