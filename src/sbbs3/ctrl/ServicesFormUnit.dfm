@@ -1,6 +1,6 @@
 object ServicesForm: TServicesForm
-  Left = 458
-  Top = 334
+  Left = 381
+  Top = 320
   Width = 870
   Height = 640
   Caption = 'Services'
@@ -63,8 +63,7 @@ object ServicesForm: TServicesForm
     object ConfigureButton: TToolButton
       Left = 54
       Top = 0
-      Hint = 'Configure Services'
-      ImageIndex = 4
+      Action = MainForm.ServicesConfigure
       ParentShowHint = False
       ShowHint = True
     end

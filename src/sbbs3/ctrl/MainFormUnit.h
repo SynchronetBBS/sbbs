@@ -237,6 +237,11 @@ __published:	// IDE-managed Components
     TMenuItem *BBSEditSubjectFilterMenuItem;
     TAction *ServicesStart;
     TAction *ServicesStop;
+    TMenuItem *ServicesMenuItem;
+    TMenuItem *ServicesConfigureMenuItem;
+    TMenuItem *ServicesStartMenuItem;
+    TMenuItem *ServicesStopMenuItem;
+    TAction *ServicesConfigure;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -299,6 +304,7 @@ __published:	// IDE-managed Components
     void __fastcall ReloadConfigExecute(TObject *Sender);
     void __fastcall ServicesStartExecute(TObject *Sender);
     void __fastcall ServicesStopExecute(TObject *Sender);
+    void __fastcall ServicesConfigureExecute(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);

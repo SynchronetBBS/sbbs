@@ -53,12 +53,14 @@
 #include "FtpFormUnit.h"
 #include "MailFormUnit.h"
 #include "NodeFormUnit.h"
+
 #include "StatsFormUnit.h"
 #include "ClientFormUnit.h"
 #include "CtrlPathDialogUnit.h"
 #include "TelnetCfgDlgUnit.h"
 #include "MailCfgDlgUnit.h"
 #include "FtpCfgDlgUnit.h"
+#include "ServicesCfgDlgUnit.h"
 #include "AboutBoxFormUnit.h"
 #include "CodeInputFormUnit.h"
 #include "TextFileEditUnit.h"
@@ -1472,6 +1474,23 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("FtpOptions"))
     	ftp_startup.options=Registry->ReadInteger("FtpOptions");
 
+    if(Registry->ValueExists("ServicesInterface"))
+    	services_startup.interface_addr
+            =Registry->ReadInteger("ServicesInterface");
+
+    if(Registry->ValueExists("ServicesAnswerSound"))
+    	sprintf(services_startup.answer_sound,"%.*s"
+        	,sizeof(services_startup.answer_sound)-1
+        	,Registry->ReadString("ServicesAnswerSound").c_str());
+
+    if(Registry->ValueExists("ServicesHangupSound"))
+    	sprintf(services_startup.hangup_sound,"%.*s"
+        	,sizeof(services_startup.hangup_sound)-1
+        	,Registry->ReadString("ServicesHangupSound").c_str());
+
+    if(Registry->ValueExists("ServicesOptions"))
+    	services_startup.options=Registry->ReadInteger("ServicesOptions");
+
     Registry->CloseKey();
     delete Registry;
 
@@ -1764,6 +1783,15 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     	,AnsiString(ftp_startup.html_index_script));
 
     Registry->WriteInteger("FtpOptions",ftp_startup.options);
+
+    Registry->WriteInteger("ServicesInterface",services_startup.interface_addr);
+
+    Registry->WriteString("ServicesAnswerSound"
+        ,AnsiString(services_startup.answer_sound));
+    Registry->WriteString("ServicesHangupSound"
+        ,AnsiString(services_startup.hangup_sound));
+
+    Registry->WriteInteger("ServicesOptions",services_startup.options);
 
 	Registry->WriteInteger( "SpyTerminalWidth"
                             ,SpyTerminalWidth);
@@ -2204,4 +2232,12 @@ void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 
 //---------------------------------------------------------------------------
 
+
+void __fastcall TMainForm::ServicesConfigureExecute(TObject *Sender)
+{
+	Application->CreateForm(__classid(TServicesCfgDlg), &ServicesCfgDlg);
+	ServicesCfgDlg->ShowModal();
+    delete ServicesCfgDlg;
+}
+//---------------------------------------------------------------------------
 

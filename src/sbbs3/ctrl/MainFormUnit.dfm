@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 573
-  Top = 540
+  Left = 534
+  Top = 529
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -2478,6 +2478,18 @@ object MainForm: TMainForm
         end
       end
     end
+    object ServicesMenuItem: TMenuItem
+      Caption = 'Services'
+      object ServicesConfigureMenuItem: TMenuItem
+        Action = ServicesConfigure
+      end
+      object ServicesStartMenuItem: TMenuItem
+        Action = ServicesStart
+      end
+      object ServicesStopMenuItem: TMenuItem
+        Action = ServicesStop
+      end
+    end
     object ViewMenuItem: TMenuItem
       Caption = '&View'
       object ViewNodesMenuItem: TMenuItem
@@ -2678,17 +2690,23 @@ object MainForm: TMainForm
       OnExecute = ReloadConfigExecute
     end
     object ServicesStart: TAction
-      Caption = 'ServicesStart'
+      Caption = 'Start'
       Hint = 'Start Services'
       ImageIndex = 0
       OnExecute = ServicesStartExecute
     end
     object ServicesStop: TAction
-      Caption = 'ServicesStop'
+      Caption = 'Stop'
       Enabled = False
       Hint = 'Stop Services'
       ImageIndex = 2
       OnExecute = ServicesStopExecute
+    end
+    object ServicesConfigure: TAction
+      Caption = 'Configure'
+      Hint = 'Configure Services'
+      ImageIndex = 4
+      OnExecute = ServicesConfigureExecute
     end
   end
   object ImageList: TImageList
