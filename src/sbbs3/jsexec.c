@@ -94,6 +94,7 @@ void usage(FILE* fp)
 		"\t-h[hostname]   use local or specified host name (instead of SCFG value)\n"
 		"\t-L<mask>       set log level mask (default=0x%x)\n"
 		"\t-E<level>      set error log level threshold (default=%d)\n"
+		"\t-a             append instead of overwriting message output files\n"
 		"\t-e<filename>   send error messages to file in addition to stderr\n"
 		"\t-o<filename>   send console messages to file instead of stdout\n"
 		"\t-n             send status messages to %s instead of stderr\n"
@@ -663,13 +664,17 @@ int main(int argc, char **argv, char** environ)
 	char	error[512];
 	char*	module=NULL;
 	char*	p;
+	char*	omode="w";
 	int		argn;
 	long	result;
 	BOOL	loop=FALSE;
 
 	confp=stdout;
 	errfp=stderr;
-	nulfp=fopen(_PATH_DEVNULL,"w+");
+	if((nulfp=fopen(_PATH_DEVNULL,"w+"))==NULL) {
+		perror(_PATH_DEVNULL);
+		bail(-1);
+	}
 	if(isatty(fileno(stderr)))
 		statfp=stderr;
 	else	/* if redirected, don't send status messages to stderr */
@@ -692,6 +697,9 @@ int main(int argc, char **argv, char** environ)
 		if(argv[argn][0]=='-') {
 			p=argv[argn]+2;
 			switch(argv[argn][1]) {
+				case 'a':
+					omode="a";
+					break;
 				case 'm':
 					if(*p==0) p=argv[++argn];
 					js_max_bytes=strtoul(p,NULL,0);
@@ -728,14 +736,14 @@ int main(int argc, char **argv, char** environ)
 					break;
 				case 'e':
 					if(*p==0) p=argv[++argn];
-					if((errfp=fopen(p,"a"))==NULL) {
+					if((errfp=fopen(p,omode))==NULL) {
 						perror(p);
 						bail(1);
 					}
 					break;
 				case 'o':
 					if(*p==0) p=argv[++argn];
-					if((confp=fopen(p,"a"))==NULL) {
+					if((confp=fopen(p,omode))==NULL) {
 						perror(p);
 						bail(1);
 					}
@@ -806,6 +814,9 @@ int main(int argc, char **argv, char** environ)
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
+
+	/* Don't cache error log */
+	setvbuf(errfp,NULL,_IONBF,0);
 
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
