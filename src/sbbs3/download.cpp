@@ -258,14 +258,13 @@ void sbbs_t::autohangup()
 		bputs(ultoa(c,tmp,10));
 		attr(GREEN);
 		outchar(']');
-		while((k=inkey(0))!=0 && online) {
+		while((k=inkey(K_NONE,DELAY_AUTOHG))!=0 && online) {
 			if(toupper(k)=='H') {
 				c=0;
 				break; }
 			if(toupper(k)=='A') {
 				a=1;
 				break; } }
-		mswait(DELAY_AUTOHG);
 		if(!a) {
 			outchar(BS);
 			outchar(BS); } }
