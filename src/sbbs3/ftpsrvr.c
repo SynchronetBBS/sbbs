@@ -2425,7 +2425,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_ip,"ip")) {
-		lprintf(LOG_WARNING,"%04d !CLIENT BLOCKED in ip.can: %s", sock, host_ip);
+		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", sock, host_ip);
 		sockprintf(sock,"550 Access denied.");
 		ftp_close_socket(&sock,__LINE__);
 		thread_down();
@@ -2433,7 +2433,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_WARNING,"%04d !CLIENT BLOCKED in host.can: %s", sock, host_name);
+		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", sock, host_name);
 		sockprintf(sock,"550 Access denied.");
 		ftp_close_socket(&sock,__LINE__);
 		thread_down();
@@ -2645,7 +2645,7 @@ static void ctrl_thread(void* arg)
 			sprintf(sys_pass,"%s:%s",user.pass,scfg.sys_pass);
 			if(!user.pass[0]) {	/* Guest/Anonymous */
 				if(trashcan(&scfg,password,"email")) {
-					lprintf(LOG_WARNING,"%04d !BLOCKED e-mail address: %s",sock,password);
+					lprintf(LOG_NOTICE,"%04d !BLOCKED e-mail address: %s",sock,password);
 					user.number=0;
 					if(badlogin(sock,&login_attempts))
 						break;
