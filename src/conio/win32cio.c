@@ -34,29 +34,116 @@
 #include <windows.h>	/* INPUT_RECORD, etc. */
 #include <genwrap.h>
 #include <stdio.h>		/* stdin */
+
 #include "ciolib.h"
 #include "keys.h"
+#include "vparams.h"
 #include "win32cio.h"
 
 #define VID_MODES	7
 
 const int 	cio_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
-struct vid_mode {
-	int	mode;
-	int	xsize;
-	int	ysize;
-	int	colour;
+struct keyvals {
+	int	VirtualKeyCode
+		,Key
+		,Shift
+		,CTRL
+		,ALT;
 };
 
-const struct vid_mode vid_modes[VID_MODES]={
-	 {BW40,40,25,0}
-	,{C40,40,25,1}
-	,{BW80,80,25,0}
-	,{C80,80,25,1}
-	,{MONO,80,25,1}
-	,{C4350,80,50,1}
-	,{C80X50,80,50,1}
+const struct keyvals keyval[] =
+{
+	{VK_BACK, 0x08, 0x08, 0x7f, 0x0e00},
+	{VK_TAB, 0x09, 0x0f00, 0x9400, 0xa500},
+	{VK_RETURN, 0x0d, 0x0d, 0x0a, 0xa600},
+	{VK_ESCAPE, 0x1b, 0x1b, 0x1b, 0x0100},
+	{VK_SPACE, 0x20, 0x20, 0x0300, 0x20,},
+	{'0', '0', ')', 0, 0x8100},
+	{'1', '1', '!', 0, 0x7800},
+	{'2', '2', '@', 0x0300, 0x7900},
+	{'3', '3', '#', 0, 0x7a00},
+	{'4', '4', '$', 0, 0x7b00},
+	{'5', '5', '%', 0, 0x7c00},
+	{'6', '6', '^', 0x1e, 0x7d00},
+	{'7', '7', '&', 0, 0x7e00},
+	{'8', '8', '*', 0, 0x7f00},
+	{'9', '9', '(', 0, 0x8000},
+	{'A', 'a', 'A', 0x01, 0x1e00},
+	{'B', 'b', 'B', 0x02, 0x3000},
+	{'C', 'c', 'C', 0x03, 0x2e00},
+	{'D', 'd', 'D', 0x04, 0x2000},
+	{'E', 'e', 'E', 0x05, 0x1200},
+	{'F', 'f', 'F', 0x06, 0x2100},
+	{'G', 'g', 'G', 0x07, 0x2200},
+	{'H', 'h', 'H', 0x08, 0x2300},
+	{'I', 'i', 'I', 0x09, 0x1700},
+	{'J', 'j', 'J', 0x0a, 0x2400},
+	{'K', 'k', 'K', 0x0b, 0x2500},
+	{'L', 'l', 'L', 0x0c, 0x2600},
+	{'M', 'm', 'M', 0x0d, 0x3200},
+	{'N', 'n', 'N', 0x0e, 0x3100},
+	{'O', 'o', 'O', 0x0f, 0x1800},
+	{'P', 'p', 'P', 0x10, 0x1900},
+	{'Q', 'q', 'Q', 0x11, 0x1000},
+	{'R', 'r', 'R', 0x12, 0x1300},
+	{'S', 's', 'S', 0x13, 0x1f00},
+	{'T', 't', 'T', 0x14, 0x1400},
+	{'U', 'u', 'U', 0x15, 0x1600},
+	{'V', 'v', 'V', 0x16, 0x2f00},
+	{'W', 'w', 'W', 0x17, 0x1100},
+	{'X', 'x', 'X', 0x18, 0x2d00},
+	{'Y', 'y', 'Y', 0x19, 0x1500},
+	{'Z', 'z', 'Z', 0x1a, 0x2c00},
+	{VK_PRIOR, 0x4900, 0x4900, 0x8400, 0x9900},
+	{VK_NEXT, 0x5100, 0x5100, 0x7600, 0xa100},
+	{VK_END, 0x4f00, 0x4f00, 0x7500, 0x9f00},
+	{VK_HOME, 0x4700, 0x4700, 0x7700, 0x9700},
+	{VK_LEFT, 0x4b00, 0x4b00, 0x7300, 0x9b00},
+	{VK_UP, 0x4800, 0x4800, 0x8d00, 0x9800},
+	{VK_RIGHT, 0x4d00, 0x4d00, 0x7400, 0x9d00},
+	{VK_DOWN, 0x5000, 0x5000, 0x9100, 0xa000},
+	{VK_INSERT, 0x5200, 0x5200, 0x9200, 0xa200},
+	{VK_DELETE, 0x5300, 0x5300, 0x9300, 0xa300},
+	{VK_NUMPAD0, '0', 0x5200, 0x9200, 0},
+	{VK_NUMPAD1, '1', 0x4f00, 0x7500, 0},
+	{VK_NUMPAD2, '2', 0x5000, 0x9100, 0},
+	{VK_NUMPAD3, '3', 0x5100, 0x7600, 0},
+	{VK_NUMPAD4, '4', 0x4b00, 0x7300, 0},
+	{VK_NUMPAD5, '5', 0x4c00, 0x8f00, 0},
+	{VK_NUMPAD6, '6', 0x4d00, 0x7400, 0},
+	{VK_NUMPAD7, '7', 0x4700, 0x7700, 0},
+	{VK_NUMPAD8, '8', 0x4800, 0x8d00, 0},
+	{VK_NUMPAD9, '9', 0x4900, 0x8400, 0},
+	{VK_MULTIPLY, '*', '*', 0x9600, 0x3700},
+	{VK_ADD, '+', '+', 0x9000, 0x4e00},
+	{VK_SUBTRACT, '-', '-', 0x8e00, 0x4a00},
+	{VK_DECIMAL, '.', '.', 0x5300, 0x9300},
+	{VK_DIVIDE, '/', '/', 0x9500, 0xa400},
+	{VK_F1, 0x3b00, 0x5400, 0x5e00, 0x6800},
+	{VK_F2, 0x3c00, 0x5500, 0x5f00, 0x6900},
+	{VK_F3, 0x3d00, 0x5600, 0x6000, 0x6a00},
+	{VK_F4, 0x3e00, 0x5700, 0x6100, 0x6b00},
+	{VK_F5, 0x3f00, 0x5800, 0x6200, 0x6c00},
+	{VK_F6, 0x4000, 0x5900, 0x6300, 0x6d00},
+	{VK_F7, 0x4100, 0x5a00, 0x6400, 0x6e00},
+	{VK_F8, 0x4200, 0x5b00, 0x6500, 0x6f00},
+	{VK_F9, 0x4300, 0x5c00, 0x6600, 0x7000},
+	{VK_F10, 0x4400, 0x5d00, 0x6700, 0x7100},
+	{VK_F11, 0x8500, 0x8700, 0x8900, 0x8b00},
+	{VK_F12, 0x8600, 0x8800, 0x8a00, 0x8c00},
+	{0xdc, '\\', '|', 0x1c, 0x2b00},
+	{0xbf, '/', '?', 0, 0x3500},
+	{0xbd, '-', '_', 0x1f, 0x8200},
+	{0xbb, '=', '+', 0, 0x8300},
+	{0xdb, '[', '{', 0x1b, 0x1a00},
+	{0xdd, ']', '}', 0x1d, 0x1b00},
+	{0xba, ';', ':', 0, 0x2700},
+	{0xde, '\'', '"', 0, 0x2800},
+	{0xbc, ',', '<', 0, 0x3300},
+	{0xbe, '.', '>', 0, 0x3400},
+	{0xc0, '`', '~', 0, 0x2900},
+	{0, 0, 0, 0, 0}	/** END **/
 };
 
 static int lastch=0;
@@ -115,6 +202,24 @@ unsigned char WintoDOSAttr(WORD newattr)
 	return(ret);
 }
 
+int win32_getchcode(WORD code, DWORD state)
+{
+	int i;
+
+	for(i=0;keyval[i].Key;i++) {
+		if(keyval[i].VirtualKeyCode==code) {
+			if(state & (RIGHT_ALT_PRESSED|LEFT_ALT_PRESSED))
+				return(keyval[i].ALT);
+			if(state & (RIGHT_CTRL_PRESSED|LEFT_CTRL_PRESSED))
+				return(keyval[i].CTRL);
+			if(state & (SHIFT_PRESSED))
+				return(keyval[i].Shift;
+			return(keyval[i].Key);
+		}
+	}
+	return(0);
+}
+
 int win32_keyboardio(int isgetch)
 {
 	INPUT_RECORD input;
@@ -153,50 +258,7 @@ int win32_keyboardio(int isgetch)
 
 		switch(input.EventType) {
 			case KEY_EVENT:
-				if(!input.Event.KeyEvent.bKeyDown)
-					continue;
-#if 0
-				sprintf(str,"keydown=%d\n",input.Event.KeyEvent.bKeyDown);
-				OutputDebugString(str);
-				sprintf(str,"repeat=%d\n",input.Event.KeyEvent.wRepeatCount);
-				OutputDebugString(str);
-				sprintf(str,"keycode=%x\n",input.Event.KeyEvent.wVirtualKeyCode);
-				OutputDebugString(str);
-				sprintf(str,"scancode=%x\n",input.Event.KeyEvent.wVirtualScanCode);
-				OutputDebugString(str);
-				sprintf(str,"ascii=%d\n",input.Event.KeyEvent.uChar.AsciiChar);
-				OutputDebugString(str);
-				sprintf(str,"dwControlKeyState=%lx\n",input.Event.KeyEvent.dwControlKeyState);
-				OutputDebugString(str);
-#endif
-
-				if(input.Event.KeyEvent.wVirtualScanCode==0x38 /* ALT */
-						|| input.Event.KeyEvent.wVirtualScanCode==0x36 /* SHIFT */
-						|| input.Event.KeyEvent.wVirtualScanCode==0x1D /* CTRL */ )
-					break;
-
-				if(input.Event.KeyEvent.dwControlKeyState & (LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED)) {
-					if(input.Event.KeyEvent.wVirtualScanCode >= 0x3B
-							&& input.Event.KeyEvent.wVirtualScanCode <= 0x44) {
-						/* Magic number to convert from Fx to ALT-Fx */
-						lastch=(input.Event.KeyEvent.wVirtualScanCode+45)<<8;
-						break;
-					}
-					if(input.Event.KeyEvent.wVirtualScanCode == 85
-							&& input.Event.KeyEvent.wVirtualScanCode == 86) {
-						/* Magic number to convert from F(x>10) to ALT-Fx */
-						lastch=(input.Event.KeyEvent.wVirtualScanCode+6)<<8;
-						break;
-					}
-
-					lastch=input.Event.KeyEvent.wVirtualScanCode<<8;
-					break;
-				}
-
-				if(input.Event.KeyEvent.uChar.AsciiChar)
-					lastch=input.Event.KeyEvent.uChar.AsciiChar;
-				else
-					lastch=input.Event.KeyEvent.wVirtualScanCode<<8;
+				lastch=win32_getchcode(input.Event.KeyEvent.wVirtualKeyCode, input.Event.KeyEvent.dwControlKeyState);
 				break;
 			case MOUSE_EVENT:
 				if(domouse) {
@@ -283,7 +345,6 @@ int win32_initciolib(long inmode)
 
 	win32_textmode(inmode);
 	cio_api.mouse=1;
-	j=vid_modes[modeidx].ysize*vid_modes[modeidx].xsize*2;
 	return(1);
 }
 
@@ -306,15 +367,15 @@ void win32_textmode(int mode)
 	SMALL_RECT	rc;
 
 	for(i=0;i<VID_MODES;i++) {
-		if(vid_modes[i].mode==mode)
+		if(vparams[i].mode==mode)
 			modeidx=i;
 	}
-	sz.X=vid_modes[modeidx].xsize;
-	sz.Y=vid_modes[modeidx].ysize;
+	sz.X=vparams[modeidx].charwidth;
+	sz.Y=vparams[modeidx].charheight;
 	rc.Left=0;
-	rc.Right=vid_modes[modeidx].xsize-1;
+	rc.Right=vparams[modeidx].charwidth-1;
 	rc.Top=0;
-	rc.Bottom=vid_modes[modeidx].ysize-1;
+	rc.Bottom=vparams[modeidx].charheight-1;
 	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
 	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE),TRUE,&rc);
 	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
@@ -353,12 +414,12 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 
 void win32_gettextinfo(struct text_info* info)
 {
-	info->currmode=vid_modes[modeidx].mode;
+	info->currmode=vparams[modeidx].mode;
 	info->curx=xpos;
 	info->cury=ypos;
 	info->attribute=currattr;
-	info->screenheight=vid_modes[modeidx].ysize;
-	info->screenwidth=vid_modes[modeidx].xsize;
+	info->screenheight=vparams[modeidx].charheight;
+	info->screenwidth=vparams[modeidx].charwidth;
 }
 
 void win32_gotoxy(int x, int y)
