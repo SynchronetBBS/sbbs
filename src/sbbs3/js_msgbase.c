@@ -59,7 +59,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	JSString*	js_str;
 	private_t*	p;
 
-	*rval = JSVAL_VOID;
+//	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) 
 		return(JS_FALSE);
@@ -71,11 +71,14 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		p->smb.subnum=INVALID_SUB;
 		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,code);
 	} else {
-		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++)
+		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++) {
 			if(!stricmp(scfg->sub[p->smb.subnum]->code,code))
 				break;
-		if(p->smb.subnum>=scfg->total_subs)	/* unknown code */
-			return(JS_TRUE);
+		}
+		if(p->smb.subnum>=scfg->total_subs)	{ /* unknown code */
+			free(p);
+			return(JS_FALSE);
+		}
 		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s"
 			,scfg->sub[p->smb.subnum]->data_dir,code);
 	}
@@ -85,13 +88,17 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	else
 		p->smb.retry_time=scfg->smb_retry_time;
 
-	if(smb_open(&(p->smb))!=0) 
+	if(smb_open(&(p->smb))!=0)  {
+		free(p);
 		return(JS_FALSE);
+	}
 
 	p->debug=JS_FALSE;
 
-	if(!JS_SetPrivate(cx, obj, p)) 
+	if(!JS_SetPrivate(cx, obj, p)) {
+		free(p);
 		return(JS_FALSE);
+	}
 
 	return(JS_TRUE);
 }
@@ -158,6 +165,7 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 	} else
 		cp="";
 	smb_hfield(msg, SUBJECT, (ushort)strlen(cp), cp);
+	strlwr(cp);
 	msg->idx.subj=crc16(cp);
 
 	if(JS_GetProperty(cx, hdr, "to", &val) && val!=JSVAL_VOID) {
@@ -171,8 +179,10 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 		cp="All";
 	}
 	smb_hfield(msg, RECIPIENT, (ushort)strlen(cp), cp);
-	if(subnum!=INVALID_SUB)
+	if(subnum!=INVALID_SUB) {
+		strlwr(cp);
 		msg->idx.to=crc16(cp);
+	}
 
 	if(JS_GetProperty(cx, hdr, "from", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)
@@ -182,8 +192,10 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 	} else
 		return(FALSE);	/* "from" property required */
 	smb_hfield(msg, SENDER, (ushort)strlen(cp), cp);
-	if(subnum!=INVALID_SUB)
+	if(subnum!=INVALID_SUB) {
+		strlwr(cp);
 		msg->idx.from=crc16(cp);
+	}
 
 	/* Optional Header Fields */
 	if(JS_GetProperty(cx, hdr, "from_ext", &val) && val!=JSVAL_VOID) {
@@ -236,6 +248,7 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 		smb_hfield(msg, RECIPIENTNETADDR, (ushort)strlen(cp), cp);
 	}
 
+	/* RFC822 headers */
 	if(JS_GetProperty(cx, hdr, "id", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)
 			return(FALSE);
@@ -252,6 +265,24 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 		smb_hfield(msg, RFC822REPLYID, (ushort)strlen(cp), cp);
 	}
 
+	/* USENET headers */
+	if(JS_GetProperty(cx, hdr, "path", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, USENETPATH, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "newsgroups", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, USENETNEWSGROUPS, (ushort)strlen(cp), cp);
+	}
+
+	/* FTN headers */
 	if(JS_GetProperty(cx, hdr, "ftn_msgid", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)
 			return(FALSE);
@@ -325,12 +356,14 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	char		date[128];
 	char		msg_id[256];
 	char		reply_id[256];
+	char		path[1024];
 	char*		val;
 	ulong		l;
 	smbmsg_t	msg;
 	smbmsg_t	orig_msg;
 	JSObject*	hdrobj;
 	private_t*	p;
+	BOOL		regenerate_msg_id = FALSE;
 
 	*rval = JSVAL_NULL;
 	
@@ -346,6 +379,8 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		msg.offset=JSVAL_TO_INT(argv[1]);
 	else									/* Get by number */
 		msg.hdr.number=JSVAL_TO_INT(argv[1]);
+	if(JSVAL_IS_BOOLEAN(argv[2]))
+		regenerate_msg_id = JSVAL_TO_BOOLEAN(argv[2]);
 
 	if(smb_getmsgidx(&(p->smb), &msg)!=0)
 		return(JS_TRUE);
@@ -452,7 +487,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	/* Reply-ID (References) */
-	if(msg.reply_id!=NULL)
+	if(!regenerate_msg_id && msg.reply_id!=NULL)
 		val=msg.reply_id;
 	else {
 		reply_id[0]=0;
@@ -491,23 +526,39 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_DefineProperty(cx, hdrobj, "id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	/* FidoNet Header Fields */
-	if(msg.ftn_msgid!=NULL)
-		JS_DefineProperty(cx, hdrobj, "ftn_msgid", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_reply!=NULL)
-		JS_DefineProperty(cx, hdrobj, "ftn_reply", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_pid!=NULL)
-		JS_DefineProperty(cx, hdrobj, "ftn_pid", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_area!=NULL)
-		JS_DefineProperty(cx, hdrobj, "ftn_area", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_flags!=NULL)
-		JS_DefineProperty(cx, hdrobj, "ftn_flags", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+	/* USENET Fields */
+	if(msg.path!=NULL)
+		sprintf(path, "%s!%.*s", scfg->sys_inetaddr, sizeof(path)/2, msg.path);
+	else
+		sprintf(path, "%s!not-for-mail", scfg->sys_inetaddr);
+	JS_DefineProperty(cx, hdrobj, "path", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,path))
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.newsgroups!=NULL)
+		JS_DefineProperty(cx, hdrobj, "newsgroups"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.newsgroups))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
+	/* FidoNet Header Fields */
+	if(msg.ftn_msgid!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_msgid"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_msgid))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_reply!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_reply"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_reply))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_pid!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_pid"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_pid))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_area!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_area"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_area))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_flags!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_flags"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_flags))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	smb_freemsgmem(&msg);
 
