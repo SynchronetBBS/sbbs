@@ -169,6 +169,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	*/
 
 	CRLF;
+	current_msg=NULL;
 }
 
 #if !LZH
