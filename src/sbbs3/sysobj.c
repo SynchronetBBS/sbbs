@@ -1,6 +1,6 @@
 /* sysobj.c */
 
-/* Synchronet JavaScript "System" Object */
+/* Synchronet JavaScript "system" Object */
 
 /* $Id$ */
 
@@ -145,11 +145,11 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static struct JSPropertySpec js_system_properties[] = {
 /*		 name,		tinyid,				flags,				getter,	setter	*/
+
 	{	"name",		SYS_PROP_NAME,		SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"operator",	SYS_PROP_OP,		SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"qwk_id",	SYS_PROP_ID,		SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"misc",		SYS_PROP_MISC,		JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"status",	SYS_PROP_MISC,		JSPROP_ENUMERATE,	NULL,	NULL },
+	{	"settings",	SYS_PROP_MISC,		JSPROP_ENUMERATE,	NULL,	NULL },
 	{	"psname",	SYS_PROP_PSNAME,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"psnum",	SYS_PROP_PSNUM,		SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"inetaddr",	SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		NULL,	NULL },
@@ -283,6 +283,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static struct JSPropertySpec js_sysstats_properties[] = {
 /*		 name,						tinyid,						flags,			getter,	setter	*/
+
 	{	"total_logons",				SYSSTAT_PROP_LOGONS,		SYSSTAT_FLAGS,	NULL,	NULL },
 	{	"logons_today",				SYSSTAT_PROP_LTODAY,		SYSSTAT_FLAGS,	NULL,	NULL },
 	{	"total_timeon",				SYSSTAT_PROP_TIMEON,		SYSSTAT_FLAGS,	NULL,	NULL },
