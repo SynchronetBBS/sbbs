@@ -620,7 +620,7 @@ typedef struct {				/* Message */
 	hfield_t	*hfield;		/* Header fields (fixed length portion) */
 	void		**hfield_dat;	/* Header fields (variable length portion) */
 	dfield_t	*dfield;		/* Data fields (fixed length portion) */
-	ulong		offset; 		/* Offset (number of records) into index */
+	long		offset; 		/* Offset (number of records) into index */
 	int			forwarded;		/* Forwarded from agent to another */
 	ulong		expiration; 	/* Message will expire on this day (if >0) */
 	ulong		priority;		/* Message priority (0 is lowest) */
