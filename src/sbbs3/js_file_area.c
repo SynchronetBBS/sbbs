@@ -289,7 +289,8 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				return(NULL);
 
 			/* Add as property (associative array element) */
-			if(!JS_SetProperty(cx, alldirs, cfg->dir[d]->code, &val))
+			if(!JS_DefineProperty(cx, alldirs, cfg->dir[d]->code, val
+				,NULL,NULL,JSPROP_READONLY))
 				return(NULL);
 
 #ifdef _DEBUG

@@ -312,8 +312,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				return(NULL);
 
 			/* Add as property (associative array element) */
-			if(!JS_SetProperty(cx, allsubs, cfg->sub[d]->code, &val))
+			if(!JS_DefineProperty(cx, allsubs, cfg->sub[d]->code, val
+				,NULL,NULL,JSPROP_READONLY))
 				return(NULL);
+
 
 #ifdef _DEBUG
 			js_DescribeObject(cx,subobj,"Message Sub-boards");

@@ -240,7 +240,8 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 				return(NULL);
 
 			/* Add as property (associative array element) */
-			if(!JS_SetProperty(cx, allprog, cfg->xtrn[d]->code, &val))
+			if(!JS_DefineProperty(cx, allprog, cfg->xtrn[d]->code, val
+				,NULL,NULL,JSPROP_READONLY))
 				return(NULL);
 
 #ifdef _DEBUG
