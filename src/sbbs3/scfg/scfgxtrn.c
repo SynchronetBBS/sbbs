@@ -1094,6 +1094,8 @@ You can have the data file created in the current Node Directory or the
 					sprintf(opt[k++],"%-25.25s%s","Maximum Time",str);
 					sprintf(opt[k++],"%-25.25s%s","Suspended (Free) Time"
 						,cfg.xtrn[i]->misc&FREETIME ? "Yes" : "No");
+					sprintf(opt[k++],"%-25.25s%s","Monitor Time Left"
+						,cfg.xtrn[i]->misc&XTRN_CHKTIME ? "Yes" : "No");
 					opt[k][0]=0;
 					SETHELP(WHERE);
 /*
@@ -1162,7 +1164,31 @@ online program (e.g. Free Time), set this option to Yes.
 							else if(k==1 && cfg.xtrn[i]->misc&FREETIME) {
 								cfg.xtrn[i]->misc&=~FREETIME;
 								uifc.changes=TRUE; }
-							break; } }
+							break; 
+						case 3:
+							k=cfg.xtrn[i]->misc&XTRN_CHKTIME ? 0:1;
+							strcpy(opt[0],"Yes");
+							strcpy(opt[1],"No");
+							opt[2][0]=0;
+							SETHELP(WHERE);
+/*
+Monitor Time Left:
+
+If you want Synchronet to monitor the user's time left onlnie while this
+program runs (and disconnect the user if their time runs out), set this
+option to Yes.
+*/
+							k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+								,"Monitor Time Left",opt);
+							if(!k && !(cfg.xtrn[i]->misc&XTRN_CHKTIME)) {
+								cfg.xtrn[i]->misc|=XTRN_CHKTIME;
+								uifc.changes=TRUE; }
+							else if(k==1 && cfg.xtrn[i]->misc&XTRN_CHKTIME) {
+								cfg.xtrn[i]->misc&=~XTRN_CHKTIME;
+								uifc.changes=TRUE; }
+							break;
+						} 
+					}
 					break;
 
 				} } }
