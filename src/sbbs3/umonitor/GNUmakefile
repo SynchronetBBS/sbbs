@@ -14,9 +14,9 @@
 # $Id$
 
 # Macros
-ifndef DEBUG
- ifndef RELEASE
-  DEBUG	:=	1
+ifndef RELEASE
+ ifndef DEBUG
+  RELEASE	:=	1
  endif
 endif
 
