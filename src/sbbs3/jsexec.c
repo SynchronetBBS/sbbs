@@ -394,6 +394,20 @@ js_chdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_putenv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+
+	if((p=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(putenv(p)==0);
+	return(JS_TRUE);
+}
+
 static jsSyncMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1},
 	{"read",			js_read,            1},
@@ -406,6 +420,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"prompt",			js_prompt,			1},
 	{"confirm",			js_confirm,			1},
 	{"chdir",			js_chdir,			1},
+	{"putenv",			js_putenv,			1},
     {0}
 };
 
