@@ -1004,8 +1004,6 @@ static void send_error(http_session_t * session, const char* message)
 
 void http_logon(http_session_t * session, user_t *usr)
 {
-	int	i;
-
 	if(usr==NULL)
 		getuserdat(&scfg, &session->user);
 	else
