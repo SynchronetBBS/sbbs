@@ -447,7 +447,6 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 			logprintf("Directory full: %s",scfg.netmail_dir);
 			return(-1); }
 		startmsg=i+1;
-		strupr(fname);
 		if((fstream=fnopen(&fmsg,fname,O_RDWR|O_CREAT))==NULL) {
 			printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
 			logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
