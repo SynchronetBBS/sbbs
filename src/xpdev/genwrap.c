@@ -147,7 +147,8 @@ void DLLCALL unix_beep(int freq, int dur)
 #if defined(__solaris__)
 		ioctl(console_fd, KIOCCMD, KBD_CMD_BELL);
 #else
-		ioctl(console_fd, KIOCSOUND, (int) (1193180 / freq));
+		if(freq != 0)	/* Don't divide by zero */
+			ioctl(console_fd, KIOCSOUND, (int) (1193180 / freq));
 #endif /* solaris */
 		SLEEP(dur);
 #if defined(__solaris__)
