@@ -228,12 +228,31 @@ while(client.socket.is_connected) {
 				break;
 			}
 
-			if(cmd[0].toUpperCase()!="BODY")
-				hdr=msgbase.get_msg_header(false,current_article);
+			hdr=null;
+			body=null;
+			hdr=msgbase.get_msg_header(false,current_article);
 			if(cmd[0].toUpperCase()!="HEAD") 
 				body=msgbase.get_msg_body(false,current_article
 					,true /* remove ctrl-a codes */);
-			
+
+/* Eliminate dupe loops 
+			if(user.security.restrictions&UFLAG_Q && hdr!=null) 
+*/
+			if(hdr==null) {
+				writeln("430 no such arctile found");
+				break;
+			}
+			if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
+				writeln("430 unvalidated message");
+				break;
+			}
+			if(hdr.attr&MSG_PRIVATE 
+				&& hdr.to.toLowerCase()!=user.alias.toLowerCase() 
+				&& hdr.to.toLowerCase()!=user.name.toLowerCase()) {
+				writeln("430 private message");
+				break;
+			}
+
 			switch(cmd[0].toUpperCase()) {
 				case "ARTICLE":
 					writeln(format("220 <%u> article retrieved - head and body follow",hdr.number));
@@ -242,7 +261,7 @@ while(client.socket.is_connected) {
 					writeln(format("221 <%u> article retrieved - header follows",hdr.number));
 					break;
 				case "BODY":
-					writeln(format("222 <%u> article retrieved - body follows",hdr.number));
+					writeln(format("222 <%u> article retrieved - body follows",current_article));
 					break;
 			}
 
@@ -258,9 +277,9 @@ while(client.socket.is_connected) {
 				writeln("References: " + hdr.thread_orig);
 				writeln("Newsgroups: " + selected.newsgroup);
 			}
-			if(cmd[0].toUpperCase()=="ARTICLE")	/* both, separate with blank line */
+			if(hdr!=null && body!=null)	/* both, separate with blank line */
 				writeln("");
-			if(cmd[0].toUpperCase()!="HEAD") 
+			if(body!=null) 
 				write(body);
 			writeln(".");
 			break;
