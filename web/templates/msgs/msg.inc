@@ -12,4 +12,10 @@
 </TD>
 </TR>
 </TABLE>
+@@JS:if(template.attachments==undefined) '<!--'; else '';@@
+<b>Attachments:</b><br>
+<<REPEAT attachments>>
+<a href="attachments.ssjs/^^group:code^^/^^sub:code^^/^^hdr:number^^/^^attachments:name^^">%%attachments:name%%</a><br>
+<<END REPEAT attachments>>
+@@JS:if(template.attachments==undefined) '-->'; else '';@@
 <A HREF="reply.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^&reply_to=^^hdr:number^^">Reply</A>
