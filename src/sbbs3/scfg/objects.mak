@@ -1,6 +1,6 @@
 # objects.mak
 
-# Make 'include file' listing object files for SBBS.DLL
+# Make 'include file' listing object files for Synchronet SCFG
 
 # $Id$
 
@@ -31,6 +31,3 @@ OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
             $(SBBSLIBODIR)$(SLASH)wrappers.$(OFILE)\
 			$(UIFCLIBODIR)$(SLASH)uifcx.$(OFILE)
 
-ifdef USE_DIALOG
-OBJS := $(OBJS)			$(UIFCLIBODIR)$(SLASH)uifcd.$(OFILE)
-endif
