@@ -48,6 +48,8 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
 	FILE 	*instream;
 	read_cfg_text_t txt;
 
+	free_cfg(cfg);	/* free allocated config parameters */
+
 	memset(&txt,0,sizeof(txt));
 	txt.openerr=	"!ERROR: opening %s for read.";
 	txt.error= 		"!ERROR: offset %lu in %s:";
@@ -74,6 +76,10 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
 		return(FALSE);
 
 	if(text!=NULL) {
+
+		/* Free existing text if allocated */
+		free_text(text);
+
 		strcpy(fname,"text.dat");
 		sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 		if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
@@ -107,6 +113,28 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
     cfg->com_port=1;	/* All nodes use "COM1" */
 
 	return(TRUE);
+}
+
+void free_cfg(scfg_t* cfg)
+{
+	free_node_cfg(cfg);
+	free_main_cfg(cfg);
+	free_msgs_cfg(cfg);
+	free_file_cfg(cfg);
+	free_chat_cfg(cfg);
+	free_xtrn_cfg(cfg);
+}
+
+void free_text(char* text[])
+{
+	int i;
+
+	if(text==NULL)
+		return;
+
+	for(i=0;i<TOTAL_TEXT;i++) {
+		FREE_AND_NULL(text[i]); 
+	}
 }
 
 /****************************************************************************/
