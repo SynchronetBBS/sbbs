@@ -23,6 +23,7 @@ sys_status&=~(SS_USERON|SS_TMPSYSOP|SS_LCHAT|SS_ABORT
 keybufbot=keybuftop=lbuflen=slcnt=altul=timeleft_warn=0;
 logon_uls=logon_ulb=logon_dls=logon_dlb=0;
 logon_posts=logon_emails=logon_fbacks=0;
+posts_read=0;
 batdn_total=batup_total=0;
 usrgrps=usrlibs=0;
 curgrp=curlib=0;
@@ -221,8 +222,6 @@ for(i=0;i<total_events;i++) {
 						if(j==node_num)
 							continue;
 						getnodedat(j,&node,0);
-						if(node.status==NODE_EVENT_WAITING)  /* two nodes */
-							break;							 /* waiting ?!?! */
 						if(node.status!=NODE_OFFLINE
 							&& node.status!=NODE_EVENT_LIMBO)
 							break; }
@@ -1042,7 +1041,7 @@ while(!gotcaller) {
                 now=time(NULL);
                 unixtodos(now,&date,&curtime);
                 sprintf(str,"%sLOGS\\%2.2d%2.2d%2.2d.LOG"
-                    ,data_dir,date.da_mon,date.da_day,date.da_year-1900);
+                    ,data_dir,date.da_mon,date.da_day,TM_YEAR(date.da_year-1900));
 				external(cmdstr(node_viewer,str,nulstr,NULL),0);
                 return(0);
             case 'M':   /* Read all mail */
@@ -1123,7 +1122,7 @@ while(!gotcaller) {
                 now-=(ulong)60L*24L*60L;
                 unixtodos(now,&date,&curtime);
                 sprintf(str,"%sLOGS\\%2.2d%2.2d%2.2d.LOG"
-                    ,data_dir,date.da_mon,date.da_day,date.da_year-1900);
+                    ,data_dir,date.da_mon,date.da_day,TM_YEAR(date.da_year-1900));
 				external(cmdstr(node_viewer,str,nulstr,NULL),0);
                 return(0);
 			case 'Z':
@@ -1197,7 +1196,7 @@ while(!gotcaller) {
 				ans=1; }
 		if(mdm_misc&MDM_DUMB && DCDHIGH)
 			ans=1; }
-	if(ans) {
+	if(ans && com_port) {
         lputc(FF);
 		if(mdm_misc&MDM_CALLERID) {
 			lputs("Obtaining Caller-ID...");
@@ -1451,6 +1450,7 @@ if(online==ON_REMOTE) {
 #endif
 	strcat(str,decrypt(CopyrightNotice,0));
 	center(str);
+	mswait(500);
 	while(i++<30 && l<40) { 		/* wait up to 3 seconds for response */
 		if((c=(incom()&0x7f))=='R') {   /* break immediately if response */
 			str[l++]=c;

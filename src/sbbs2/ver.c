@@ -47,7 +47,7 @@ sprintf(str,"Revision %c%s %s %.5s  "
 #else
 	,rioctl(GVERS)
 #endif
-	,SMBLIB_VERSION
+	,smb_lib_ver()
 	,__BORLANDC__>>8
 	,__BORLANDC__&0xff);
 center(str);

@@ -82,11 +82,12 @@ time_t juliantounix(ulong j)
 /****************************************************************************/
 void xtrndat(char *name, char *dropdir, uchar type, ulong tleft)
 {
-	char str[1024],tmp2[128],c,*p;
-	int i,file;
-	long l;
-	FILE *stream;
-	struct time lastcall;
+	char	str[1024],tmp2[128],c,*p;
+	int		i,file;
+	long	l;
+	ushort	w;
+	FILE *	stream;
+	struct	time lastcall;
 	stats_t stats;
 
 if(type==XTRN_SBBS) {	/* SBBS XTRN.DAT file */
@@ -315,7 +316,7 @@ else if(type==XTRN_GAP) {	/* Gap DOOR.SYS File */
 		,useron.min 						/* 42: Time credits in minutes */
 		,date.da_mon						/* 43: File new-scan date */
 		,date.da_day
-		,date.da_year-1900);
+		,TM_YEAR(date.da_year-1900));
 	write(file,str,strlen(str));
 
 	unixtodos(logontime,&date,&curtime);
@@ -385,7 +386,8 @@ else if(type==XTRN_RBBS || type==XTRN_RBBS1) {
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
         return; }
-	write(file,&(uint)dte_rate,sizeof(int));	  /* BaudRate */
+	w=dte_rate;
+	write(file,&w,sizeof(short));	  /* BaudRate */
 	/* SysInfo */
 	getstats(0,&stats);
 	write(file,&stats.logons,sizeof(long)); /* CallCount */
@@ -394,8 +396,8 @@ else if(type==XTRN_RBBS || type==XTRN_RBBS1) {
 	write(file,nulstr,92);					/* ExtraSpace */
 	/* TimeLogInfo */
 	write(file,nulstr,9);					/* StartDate */
-	write(file,nulstr,24*sizeof(int));		/* BusyPerHour */
-	write(file,nulstr,7*sizeof(int));		/* BusyPerDay */
+	write(file,nulstr,24*sizeof(short));		/* BusyPerHour */
+	write(file,nulstr,7*sizeof(short));		/* BusyPerDay */
 	/* UserInfo */
 	str2pas(name,str);				/* Name */
 	write(file,str,36);
@@ -422,27 +424,28 @@ else if(type==XTRN_RBBS || type==XTRN_RBBS1) {
 	write(file,&c,1);						/* Attrib */
 	write(file,&useron.flags1,4);			/* Flags */
 	i=0;
-	write(file,&i,sizeof(int)); 			/* Credit */
-	write(file,&i,sizeof(int)); 			/* Pending */
-	write(file,&useron.posts,sizeof(int));	/* TimesPosted */
-	write(file,&i,sizeof(int)); 			/* HighMsgRead */
-	i=useron.level;
-	write(file,&i,sizeof(int)); 			/* SecLvl */
-	i=0;
-	write(file,&i,sizeof(int)); 			/* Times */
-	write(file,&useron.uls,sizeof(int));	/* Ups */
-	write(file,&useron.dls,sizeof(int));	/* Downs */
-	i=useron.ulb/1024UL;
-	write(file,&i,sizeof(int)); 			/* UpK */
-	i=useron.dlb/1024UL;
-	write(file,&i,sizeof(int)); 			/* DownK */
-	i=logon_dlb/1024UL;
-	write(file,&i,sizeof(int)); 			/* TodayK */
-	i=0;
-	write(file,&i,sizeof(int)); 			/* Elapsed */
-	write(file,&i,sizeof(int)); 			/* Len */
-	write(file,&i,sizeof(int)); 			/* CombinedPtr */
-	write(file,&i,sizeof(int)); 			/* AliasPtr */
+	w=0;
+	write(file,&w,sizeof(short)); 			/* Credit */
+	write(file,&w,sizeof(short)); 			/* Pending */
+	write(file,&useron.posts,sizeof(short));	/* TimesPosted */
+	write(file,&w,sizeof(short)); 			/* HighMsgRead */
+	w=useron.level;
+	write(file,&w,sizeof(short)); 			/* SecLvl */
+	w=0;
+	write(file,&w,sizeof(short)); 			/* Times */
+	write(file,&useron.uls,sizeof(short));	/* Ups */
+	write(file,&useron.dls,sizeof(short));	/* Downs */
+	w=useron.ulb/1024UL;
+	write(file,&w,sizeof(short)); 			/* UpK */
+	w=useron.dlb/1024UL;
+	write(file,&w,sizeof(short)); 			/* DownK */
+	w=logon_dlb/1024UL;
+	write(file,&w,sizeof(short)); 			/* TodayK */
+	w=0;
+	write(file,&w,sizeof(short)); 			/* Elapsed */
+	write(file,&w,sizeof(short)); 			/* Len */
+	write(file,&w,sizeof(short)); 			/* CombinedPtr */
+	write(file,&w,sizeof(short)); 			/* AliasPtr */
 	l=0;
 	write(file,&l,sizeof(long));			/* Birthday (as a long?) */
 	/* EventInfo */
@@ -474,10 +477,10 @@ else if(type==XTRN_RBBS || type==XTRN_RBBS1) {
 	unixtodstr(logontime,tmp);
 	str2pas(tmp,str);
 	write(file,str,9);						/* LoginDate */
-	write(file,&level_timepercall[useron.level],sizeof(int));  /* TmLimit */
+	write(file,&level_timepercall[useron.level],sizeof(short));  /* TmLimit */
 	write(file,&logontime,sizeof(long));	/* LoginSec */
 	write(file,&useron.cdt,sizeof(long));	/* Credit */
-	write(file,&useron.number,sizeof(int)); /* UserRecNum */
+	write(file,&useron.number,sizeof(short)); /* UserRecNum */
 	write(file,&i,2);						/* ReadThru */
 	write(file,&i,2);						/* PageTimes */
 	write(file,&i,2);						/* DownLimit */
@@ -557,7 +560,7 @@ else if(type==XTRN_WILDCAT) { /* WildCat CALLINFO.BBS File */
 		,curtime.ti_hour,curtime.ti_min 	/* Current time HH:MM */
 		,curtime.ti_hour,curtime.ti_min 	/* Current time and date HH:MM */
 		,date.da_mon,date.da_day			/* MM/DD/YY */
-		,date.da_year-1900
+		,TM_YEAR(date.da_year-1900)
 		,nulstr);							/* Conferences with access */
 	write(file,str,strlen(str));
 
@@ -580,7 +583,7 @@ else if(type==XTRN_WILDCAT) { /* WildCat CALLINFO.BBS File */
 			? "EXPERT":"NOVICE"
 		,"All"                              /* Transfer Protocol */
 		,date.da_mon,date.da_day			/* File new-scan date */
-		,date.da_year-1900					/* in MM/DD/YY */
+		,TM_YEAR(date.da_year-1900)			/* in MM/DD/YY */
 		,useron.logons						/* Total logons */
 		,rows								/* Screen length */
 		,0									/* Highest message read */
@@ -600,7 +603,7 @@ else if(type==XTRN_WILDCAT) { /* WildCat CALLINFO.BBS File */
 
 	sprintf(str,"%02d/%02d/%02d %02d:%02d\r\n%u\r\n%u\r\n"
 		,date.da_mon,date.da_day			/* Current date MM/DD/YY */
-		,date.da_year-1900
+		,TM_YEAR(date.da_year-1900)
 		,curtime.ti_hour,curtime.ti_min 	/* Current time HH:MM */
 		,node_num							/* Node number */
 		,0);								/* Door number */
@@ -1431,6 +1434,9 @@ if(xtrn[xtrnnum]->misc&MODUSERDAT) {	/* Modify user data */
 	moduserdat(xtrnnum);
 	statusline(); }
 
+getnodedat(node_num,&thisnode,1);
+thisnode.aux=0; /* aux is 0, only if at menu */
+putnodedat(node_num,thisnode);
 }
 
 /****************************************************************************/

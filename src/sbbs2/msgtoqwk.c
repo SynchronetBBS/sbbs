@@ -6,6 +6,8 @@
 #include "qwk.h"
 #include "etext.h"
 
+#define MAX_MSGNUM	0x7FFFFFUL	// only 7 (decimal) digits allowed for msg num 
+
 /****************************************************************************/
 /* Converts message 'msg' to QWK format, writing to file 'qwk_fp'.          */
 /* mode determines how to handle Ctrl-A codes								*/
@@ -254,7 +256,7 @@ while(size%128L) {				 /* Pad with spaces */
 unixtodos(msg.hdr.when_written.time,&date,&curtime);
 
 sprintf(tmp,"%02u-%02u-%02u%02u:%02u"
-    ,date.da_mon,date.da_day,date.da_year-1900
+    ,date.da_mon,date.da_day,TM_YEAR(date.da_year-1900)
     ,curtime.ti_hour,curtime.ti_min);
 
 if(msg.hdr.attr&MSG_PRIVATE) {
@@ -273,13 +275,13 @@ sprintf(str,"%c%-7lu%-13.13s%-25.25s"
 	"%-25.25s%-25.25s%12s%-8lu%-6lu\xe1%c%c%c%c%c"
     ,ch                     /* message status flag */
 	,mode&REP ? (ulong)conf /* conference or */
-		: msg.hdr.number	/* message number */
+		: msg.hdr.number&MAX_MSGNUM	/* message number */
 	,tmp					/* date and time */
 	,to 					/* To: */
 	,from					/* From: */
     ,msg.subj               /* Subject */
     ,nulstr                 /* Password */
-    ,msg.hdr.thread_orig    /* Message Re: Number */
+    ,msg.hdr.thread_orig&MAX_MSGNUM    /* Message Re: Number */
 	,(size/128L)+1			/* Number of 128byte blocks */
     ,(char)conf&0xff        /* Conference number lo byte */
 	,(ushort)conf>>8		/*					 hi byte */

@@ -22,7 +22,7 @@ char qwktomsg(FILE *qwk_fp, uchar *hdrblk, char fromhub, uint subnum
 
 memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
 memcpy(msg.hdr.id,"SHD\x1a",4);
-msg.hdr.version=SMB_VERSION;
+msg.hdr.version=smb_ver();
 
 blocks=atol(hdrblk+116);
 if(blocks<2)
@@ -50,7 +50,10 @@ msg.hdr.attr=msg.idx.attr;
 
 date.da_mon=((hdrblk[8]&0xf)*10)+(hdrblk[9]&0xf);
 date.da_day=((hdrblk[11]&0xf)*10)+(hdrblk[12]&0xf);
-date.da_year=((hdrblk[14]&0xf)*10)+(hdrblk[15]&0xf)+1900;
+date.da_year=((hdrblk[14]&0xf)*10)+(hdrblk[15]&0xf);
+if(date.da_year<Y2K_2DIGIT_WINDOW)
+	date.da_year+=100;
+date.da_year+=1900;
 curtime.ti_hour=((hdrblk[16]&0xf)*10)+(hdrblk[17]&0xf);
 curtime.ti_min=((hdrblk[19]&0xf)*10)+(hdrblk[20]&0xf);
 curtime.ti_sec=0;
@@ -60,6 +63,7 @@ if(!(useron.rest&FLAG('Q')) && !fromhub)
 msg.hdr.when_imported.time=time(NULL);
 msg.hdr.when_imported.zone=sys_timezone;
 
+hdrblk[116]=0; /* don't bleed number-of-blocks and re-msg-num fields together */
 msg.hdr.thread_orig=atol(hdrblk+108);
 
 if((uint)subnum==INVALID_SUB) { 		/* E-mail */

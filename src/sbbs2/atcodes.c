@@ -38,6 +38,9 @@ else if(!strncmp(sp,"NAME-R",6))
 else if(!strcmp(sp,"HANDLE"))
     bputs(useron.handle);
 
+else if(!strcmp(sp,"CID") || !strcmp(sp,"IP"))
+    bputs(cid);
+
 else if(!strcmp(sp,"GRP"))
     bputs(usrgrps ? grp[usrgrp[curgrp]]->sname : nulstr);
 
@@ -229,17 +232,29 @@ sp=(str+1);
 if(!strcmp(sp,"VER"))
     bputs(VERSION);
 
+else if(!strcmp(sp,"REV"))
+	bprintf("%c",REVISION);
+
 else if(!strcmp(sp,"BBS") || !strcmp(sp,"BOARDNAME"))
     bputs(sys_name);
 
 else if(!strcmp(sp,"BAUD") || !strcmp(sp,"BPS"))
 	bprintf("%lu",cur_rate);
 
+else if(!strcmp(sp,"CONN"))
+	bputs(connection);
+
 else if(!strcmp(sp,"SYSOP"))
     bputs(sys_op);
 
+else if(!strcmp(sp,"LOCATION"))
+	bputs(sys_location);
+
 else if(!strcmp(sp,"NODE"))
     bprintf("%u",node_num);
+
+else if(!strcmp(sp,"TNODE"))
+    bprintf("%u",sys_nodes);
 
 else if(!strcmp(sp,"TIME") || !strcmp(sp,"SYSTIME")) {
     now=time(NULL);
@@ -345,7 +360,7 @@ else if(!strcmp(sp,"STATE")) {
             p++;
         bputs(p); } }
 
-else if(!strcmp(sp,"CPU"))
+else if(!strcmp(sp,"CPU") || !strcmp(sp,"HOST"))
     bputs(useron.comp);
 
 else if(!strcmp(sp,"BDATE"))

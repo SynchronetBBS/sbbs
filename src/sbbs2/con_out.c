@@ -302,7 +302,7 @@ void con_out_thread(void *unused)
 	ulong l;
 
 while(1) {
-	mswait(1);
+	/* mswait(1);	Removed 12/99 via Enigma */
 	if(conoutbot==conouttop) {
 		DosWaitEventSem(con_out_sem,10000);  /* every 10 seconds */
 		DosResetEventSem(con_out_sem,&l);

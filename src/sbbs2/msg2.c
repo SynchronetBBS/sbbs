@@ -1126,7 +1126,7 @@ else {
 msg.hdr.offset=offset;
 
 memcpy(msg.hdr.id,"SHD\x1a",4);
-msg.hdr.version=SMB_VERSION;
+msg.hdr.version=smb_ver();
 
 smb_unlocksmbhdr(&smb);
 

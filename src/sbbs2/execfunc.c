@@ -360,7 +360,7 @@ switch(*(csi->ip++)) {
             return(0);
         unixtodos(now,&date,&curtime);
         sprintf(str,"%sLOGS\\%2.2d%2.2d%2.2d.LOG",data_dir
-            ,date.da_mon,date.da_day,date.da_year-1900);
+            ,date.da_mon,date.da_day,TM_YEAR(date.da_year-1900));
         printfile(str,0);
         return(0);
     case CS_SYSTEM_YLOG:                /* Yesterday's log */
@@ -369,7 +369,7 @@ switch(*(csi->ip++)) {
         now-=(ulong)60L*24L*60L;
         unixtodos(now,&date,&curtime);
         sprintf(str,"%sLOGS\\%2.2d%2.2d%2.2d.LOG",data_dir
-            ,date.da_mon,date.da_day,date.da_year-1900);
+            ,date.da_mon,date.da_day,TM_YEAR(date.da_year-1900));
         printfile(str,0);
         return(0);
     case CS_SYSTEM_STATS:               /* System Statistics */

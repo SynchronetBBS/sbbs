@@ -623,9 +623,10 @@ lclatr(atr);
 /****************************************************************************/
 void pause()
 {
-	uchar tempattrs=curatr; /* was lclatr(-1) */
-    int i,j;
-	long l=K_UPPER;
+	char	ch;
+	uchar	tempattrs=curatr; /* was lclatr(-1) */
+	int 	i,j;
+	long	l=K_UPPER;
 
 RIOSYNC(0);
 if(sys_status&SS_ABORT)
@@ -637,8 +638,12 @@ bputs(text[Pause]);
 j=bstrlen(text[Pause]);
 if(sys_status&SS_USERON && !(useron.misc&NO_EXASCII) && !(useron.misc&WIP))
 	l|=K_SPIN;
-if(getkey(l)==text[YN][1])
+
+ch=getkey(l);
+if(ch==text[YN][1] || ch=='Q')
 	sys_status|=SS_ABORT;
+else if(ch==LF)
+	lncntr=rows-2;	/* down arrow == display one more line */
 if(text[Pause][0]!='@')
 	for(i=0;i<j;i++)
 		bputs("\b \b");

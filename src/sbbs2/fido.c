@@ -136,7 +136,7 @@ if(netmail_cost && !(useron.exempt&FLAG('S'))) {
 now=time(NULL);
 unixtodos(now,&date,&curtime);
 sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
-	,date.da_day,mon[date.da_mon-1],date.da_year-1900
+	,date.da_day,mon[date.da_mon-1],TM_YEAR(date.da_year-1900)
 	,curtime.ti_hour,curtime.ti_min,curtime.ti_sec);
 
 hdr.destzone	=addr.zone;
@@ -441,7 +441,7 @@ if(qnet || inet) {
 
 	memset(&msg,0,sizeof(smbmsg_t));
     memcpy(msg.hdr.id,"SHD\x1a",4);
-    msg.hdr.version=SMB_VERSION;
+    msg.hdr.version=smb_ver();
     msg.hdr.when_imported.time=time(NULL);
     msg.hdr.when_imported.zone=sys_timezone;
 
@@ -493,7 +493,10 @@ if(qnet || inet) {
 
     date.da_mon=((qwkbuf[8]&0xf)*10)+(qwkbuf[9]&0xf);
     date.da_day=((qwkbuf[11]&0xf)*10)+(qwkbuf[12]&0xf);
-    date.da_year=((qwkbuf[14]&0xf)*10)+(qwkbuf[15]&0xf)+1900;
+    date.da_year=((qwkbuf[14]&0xf)*10)+(qwkbuf[15]&0xf);
+	if(date.da_year<Y2K_2DIGIT_WINDOW)
+		date.da_year+=100;
+	date.da_year+=1900;
     curtime.ti_hour=((qwkbuf[16]&0xf)*10)+(qwkbuf[17]&0xf);
     curtime.ti_min=((qwkbuf[19]&0xf)*10)+(qwkbuf[20]&0xf);  /* From QWK time */
     curtime.ti_sec=0;
@@ -721,12 +724,15 @@ bprintf(text[NetMailing],hdr.to,faddrtoa(fidoaddr),hdr.from,str);
 
 date.da_mon=((qwkbuf[8]&0xf)*10)+(qwkbuf[9]&0xf);
 date.da_day=((qwkbuf[11]&0xf)*10)+(qwkbuf[12]&0xf);
-date.da_year=((qwkbuf[14]&0xf)*10)+(qwkbuf[15]&0xf)+1900;
+date.da_year=((qwkbuf[14]&0xf)*10)+(qwkbuf[15]&0xf);
+if(date.da_year<Y2K_2DIGIT_WINDOW)
+	date.da_year+=100;
+date.da_year+=1900;
 curtime.ti_hour=((qwkbuf[16]&0xf)*10)+(qwkbuf[17]&0xf);
 curtime.ti_min=((qwkbuf[19]&0xf)*10)+(qwkbuf[20]&0xf);		/* From QWK time */
 curtime.ti_sec=0;
 sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"          /* To FidoNet */
-	,date.da_day,mon[date.da_mon-1],date.da_year-1900
+	,date.da_day,mon[date.da_mon-1],TM_YEAR(date.da_year-1900)
 	,curtime.ti_hour,curtime.ti_min,curtime.ti_sec);
 
 hdr.attr=(FIDO_LOCAL|FIDO_PRIVATE);

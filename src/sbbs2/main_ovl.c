@@ -652,7 +652,7 @@ while(l>-1L && !msgabort()) {
     l-=4;
     unixtodos(timestamp-(24*60*60),&date,&curtime); /* 1 day less than stamp */
     bprintf(text[SlogFmt]
-        ,date.da_mon,date.da_day,date.da_year-1900,timeon,logons,posts,emails
+        ,date.da_mon,date.da_day,TM_YEAR(date.da_year-1900),timeon,logons,posts,emails
         ,fbacks,ulb/1024,uls,dlb/1024,dls); }
 FREE(buf);
 }
