@@ -902,7 +902,6 @@ int main(int argc, char** argv)
     char	error[256];
 	char	ini_file[MAX_PATH+1];
 	char	host_name[128]="";
-	BOOL	quit=FALSE;
 	FILE*	fp=NULL;
 	node_t	node;
 #ifdef __unix__
