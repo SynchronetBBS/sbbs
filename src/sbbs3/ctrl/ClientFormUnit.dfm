@@ -1,6 +1,6 @@
 object ClientForm: TClientForm
-  Left = 510
-  Top = 451
+  Left = 355
+  Top = 436
   Width = 631
   Height = 345
   Caption = 'Clients'
@@ -33,16 +33,16 @@ object ClientForm: TClientForm
         Width = 65
       end
       item
+        AutoSize = True
         Caption = 'User'
-        Width = 90
       end
       item
+        AutoSize = True
         Caption = 'Address'
-        Width = 100
       end
       item
+        AutoSize = True
         Caption = 'Host Name'
-        Width = 100
       end
       item
         Caption = 'Port'
