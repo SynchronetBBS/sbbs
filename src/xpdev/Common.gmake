@@ -17,8 +17,8 @@ endif
 CFLAGS	+=	-MMD
 CCPRE	?=	gcc
 ifdef BUILD_DEPENDS
- CC	=	$(XPDEV)../build/mkdep -a
- CXX	=	$(XPDEV)../build/mkdep -a
+ CC	=	$(XPDEV)/../build/mkdep -a
+ CXX	=	$(XPDEV)/../build/mkdep -a
  LD	=	echo
  COMPILE_MSG	:= Depending
 else
@@ -153,7 +153,7 @@ vpath %.c $(XPDEV)
 CFLAGS	+=	-I$(XPDEV)
 
 -include targets.mk
--include $(XPDEV)rules.mk
+-include $(XPDEV)/rules.mk
 -include objects.mk		# defines $(OBJS)
 ifdef XP_SEM
  PTHREAD_OBJS	+= $(LIBODIR)$(SLASH)xpsem.$(OFILE)
