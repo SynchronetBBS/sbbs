@@ -100,6 +100,7 @@ static DWORD	served=0;
 static BOOL		recycle_server=FALSE;
 static sem_t	sendmail_wakeup_sem;
 static char		revision[16];
+static time_t	uptime;
 
 typedef struct {
 	SOCKET			socket;
@@ -1176,13 +1177,13 @@ static ulong rblchk(SOCKET sock, DWORD mail_addr_n, const char* rbl_addr)
 		);
 
 	if(startup->options&MAIL_OPT_DNSBL_DEBUG)
-		lprintf(LOG_DEBUG,"%04d SMTP DNSBL query: %s",sock,name);
+		lprintf(LOG_DEBUG,"%04d SMTP DNSBL Query: %s",sock,name);
 
 	if((host=gethostbyname(name))==NULL)
 		return(0);
 
 	dnsbl_result.s_addr = *((ulong*)host->h_addr_list[0]);
-	lprintf(LOG_INFO,"%04d SMTP DNSBL query: %s resolved to: %s"
+	lprintf(LOG_INFO,"%04d SMTP DNSBL Query: %s resolved to: %s"
 		,sock,name,inet_ntoa(dnsbl_result));
 
 	return(dnsbl_result.s_addr);
@@ -1352,6 +1353,168 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
 
     return(cmd);
 }
+#ifdef JAVASCRIPT
+
+static void
+js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
+{
+	char	line[64];
+	char	file[MAX_PATH+1];
+	char*	warning;
+
+	if(report==NULL) {
+		lprintf(LOG_ERR,"!JavaScript: %s", message);
+		return;
+    }
+
+	if(report->filename)
+		sprintf(file," %s",report->filename);
+	else
+		file[0]=0;
+
+	if(report->lineno)
+		sprintf(line," line %u",report->lineno);
+	else
+		line[0]=0;
+
+	if(JSREPORT_IS_WARNING(report->flags)) {
+		if(JSREPORT_IS_STRICT(report->flags))
+			warning="strict warning";
+		else
+			warning="warning";
+	} else
+		warning="";
+
+	lprintf(LOG_ERR,"!JavaScript %s%s%s: %s",warning,file,line,message);
+}
+
+
+static BOOL
+js_mailproc(SOCKET sock, client_t* client, user_t* user
+			,char* fname, char* cmdline
+			,char* msgtxt_fname, char* rcptlst_fname, char* proc_err_fname)
+{
+	char*		p;
+	char		path[MAX_PATH+1];
+	char		arg[MAX_PATH+1];
+	BOOL		success=FALSE;
+	JSRuntime*	js_runtime=NULL;
+	JSContext*	js_cx=NULL;
+	JSObject*	js_glob;
+	JSObject*	argv;
+	jsuint		argc;
+	JSScript*	js_script;
+	js_branch_t	js_branch;
+	jsval		val;
+	jsval		rval=JSVAL_VOID;
+
+	do {
+
+		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes\n"
+			,sock, startup->js_max_bytes);
+
+		if((js_runtime = JS_NewRuntime(startup->js_max_bytes))==NULL)
+			break;
+
+		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)\n"
+			,sock, startup->js_cx_stack);
+
+		if((js_cx = JS_NewContext(js_runtime, startup->js_cx_stack))==NULL)
+			break;
+
+		JS_SetErrorReporter(js_cx, js_ErrorReporter);
+
+		/* Global Object */
+		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL /*js_global_functions*/))==NULL)
+			break;
+
+		/* Internal JS Object */
+		if(js_CreateInternalJsObject(js_cx, js_glob, &js_branch)==NULL)
+			break;
+
+		/* Client Object */
+		if(js_CreateClientObject(js_cx, js_glob, "client", client, sock)==NULL)
+			break;
+
+		/* System Object */
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL)
+			break;
+
+		/* Socket Class */
+		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
+			break;
+
+		/* MsgBase Class */
+		if(js_CreateMsgBaseClass(js_cx, js_glob, &scfg)==NULL)
+			break;
+
+		/* File Class */
+		if(js_CreateFileClass(js_cx, js_glob)==NULL)
+			break;
+
+		/* User class */
+		if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
+			break;
+
+		/* Area and "user" Objects */
+		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, user, NULL, NULL)) 
+			break;
+
+		/* Convert command-line to argv/argc */
+		argv=JS_NewArrayObject(js_cx, 0, NULL);
+		JS_DefineProperty(js_cx, js_glob, "argv", OBJECT_TO_JSVAL(argv)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+		p=cmdline;
+		FIND_WHITESPACE(p); 
+		SKIP_WHITESPACE(p);
+		for(argc=0;*p;argc++) {
+			SAFECOPY(arg,p);
+			truncstr(arg," \t");
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,arg));
+			if(!JS_SetElement(js_cx, argv, argc, &val))
+				break;
+			FIND_WHITESPACE(p);
+			SKIP_WHITESPACE(p);
+		}
+		JS_DefineProperty(js_cx, js_glob, "argc", INT_TO_JSVAL(argc)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+		/* Mailproc "API" filenames */
+		JS_DefineProperty(js_cx, js_glob, "message_text_filename"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,msgtxt_fname))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(js_cx, js_glob, "recipient_list_filename"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,rcptlst_fname))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(js_cx, js_glob, "processing_error_filename"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,proc_err_fname))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		if(getfext(fname)==NULL) /* No extension specified, assume '.js' */
+			strcat(fname,".js");
+
+		SAFECOPY(path,fname);
+		if(getfname(path)==path) /* No path specified, assume exec_dir */
+			sprintf(path,"%s%s",scfg.exec_dir,fname);
+
+		if((js_script=JS_CompileFile(js_cx, js_glob, path))==NULL)
+			break;
+
+		success=JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+
+	} while(0);
+
+	if(js_cx!=NULL)
+		JS_DestroyContext(js_cx);
+	if(js_runtime!=NULL)
+		JS_DestroyRuntime(js_runtime);
+
+	return(success);
+}
+#endif
 
 
 static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
@@ -1517,6 +1680,7 @@ static void smtp_thread(void* arg)
 	BOOL		auth_login;
 	BOOL		routed=FALSE;
 	BOOL		dnsbl_recvhdr;
+	BOOL		msg_rejected;
 	uint		subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
@@ -1526,6 +1690,7 @@ static void smtp_thread(void* arg)
 	FILE*		proc_cfg;
 	FILE*		proc_err;
 	char		proc_err_fname[MAX_PATH+1];
+	char		fname[MAX_PATH+1];
 	char		session_id[MAX_PATH+1];
 	FILE*		spy=NULL;
 	SOCKET		socket;
@@ -1590,7 +1755,7 @@ static void smtp_thread(void* arg)
 
 	SAFECOPY(host_ip,inet_ntoa(smtp.client_addr.sin_addr));
 
-	lprintf(LOG_INFO,"%04d SMTP connection accepted from: %s port %u"
+	lprintf(LOG_INFO,"%04d SMTP Connection accepted from: %s port %u"
 		, socket, host_ip, ntohs(smtp.client_addr.sin_port));
 
 	if(startup->options&MAIL_OPT_NO_HOST_LOOKUP)
@@ -1807,6 +1972,7 @@ static void smtp_thread(void* arg)
 				fclose(rcptlst), rcptlst=NULL;
 
 				/* External Mail Processing here */
+				msg_rejected=FALSE;
 				if(startup->proc_cfg_file[0] 
 					&& (proc_cfg=fopen(startup->proc_cfg_file,"r"))!=NULL) {
 					sprintf(proc_err_fname,"%sSMTP.%s.err", scfg.data_dir, session_id);
@@ -1821,12 +1987,21 @@ static void smtp_thread(void* arg)
 						if(*p==';' || *p==0)	/* comment or blank line */
 							continue;
 						mailcmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname
-											,host_name, host_ip, relay_user.number, str);
-						lprintf(LOG_DEBUG,"%04d SMTP executing external process: %s", socket, str);
-						i=system(str);
-						if(i!=0)
-							lprintf(LOG_WARNING,"%04d SMTP external process (%s) returned %d (errno: %d)"
-								,socket, str, i, errno);
+							,host_name, host_ip, relay_user.number, str);
+						lprintf(LOG_DEBUG,"%04d SMTP Executing external process: %s", socket, str);
+#ifdef JAVASCRIPT
+						if(*p=='?') {
+							/* JavaScript */
+							SAFECOPY(fname,str+1);
+							truncstr(fname," \t");
+							js_mailproc(socket, &client, &relay_user
+								,fname, p ,msgtxt_fname, rcptlst_fname, proc_err_fname);
+						} else									
+#endif
+							/* Native */
+							if((i=system(str))!=0)
+								lprintf(LOG_WARNING,"%04d !SMTP system(%s) returned %d (errno: %d)"
+									,socket, str, i, errno);
 						if(flength(proc_err_fname)>0)
 							break;
 						if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname))
@@ -1849,30 +2024,40 @@ static void smtp_thread(void* arg)
 									,str);
 						}
 						fclose(proc_err);
-						remove(proc_err_fname);
-						continue;
+						msg_rejected=TRUE;
 					}
-					remove(proc_err_fname);	/* Remove 0-byte error file here */
-					if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
-						lprintf(LOG_WARNING,"%04d SMTP external process removed %s"
+					remove(proc_err_fname);	/* Remove error file here */
+					if(!msg_rejected
+						&& (!fexist(msgtxt_fname) || !fexist(rcptlst_fname))) {
+						lprintf(LOG_WARNING,"%04d SMTP External process removed %s file"
 							,socket, fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
 						sockprintf(socket,ok_rsp);
-						continue;
+						msg_rejected=TRUE;
 					}
 				}
 
 				/* Re-open files */
+				/* We must do this before continuing for rejected msgs */
+				/* to prevent freopen(NULL) and orphaned temp files */
 				if((rcptlst=fopen(rcptlst_fname,"r"))==NULL) {
 					lprintf(LOG_ERR,"%04d !SMTP ERROR %d re-opening recipient list: %s"
 						,socket, errno, rcptlst_fname);
-					sockprintf(socket,sys_error);
+					if(!msg_rejected)
+						sockprintf(socket,sys_error);
 					continue;
 				}
 			
 				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
 					lprintf(LOG_ERR,"%04d !SMTP ERROR %d re-opening message file: %s"
 						,socket, errno, msgtxt_fname);
-					sockprintf(socket,sys_error);
+					if(!msg_rejected)
+						sockprintf(socket,sys_error);
+					continue;
+				}
+
+				if(msg_rejected) {
+					lprintf(LOG_NOTICE,"%04d SMTP Message rejected by external mail processor"
+						,socket);
 					continue;
 				}
 
@@ -2421,7 +2606,7 @@ static void smtp_thread(void* arg)
 
 			sockprintf(socket,ok_rsp);
 			badcmds=0;
-			lprintf(LOG_INFO,"%04d SMTP session reset",socket);
+			lprintf(LOG_INFO,"%04d SMTP Session reset",socket);
 			continue;
 		}
 		if(!strnicmp(buf,"MAIL FROM:",10)
@@ -2677,7 +2862,7 @@ static void smtp_thread(void* arg)
 				}
 				if(i<scfg.total_qhubs) {	/* found matching QWKnet Hub */
 
-					lprintf(LOG_INFO,"%04d SMTP routing mail for %s to QWKnet Hub: %s"
+					lprintf(LOG_INFO,"%04d SMTP Routing mail for %s to QWKnet Hub: %s"
 						,socket, rcpt_addr, scfg.qhub[i]->id);
 
 					fprintf(rcptlst,"[%u]\n",rcpt_count++);
@@ -3459,6 +3644,12 @@ void DLLCALL mail_server(void* arg)
 	if(startup->proc_cfg_file[0]==0)			
 		sprintf(startup->proc_cfg_file,"%smailproc.cfg",scfg.ctrl_dir);
 
+#ifdef JAVASCRIPT
+	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+#endif
+
+	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
@@ -3524,6 +3715,9 @@ void DLLCALL mail_server(void* arg)
 			}
 		}
 
+		if(uptime==0)
+			uptime=time(NULL);	/* this must be done *after* setting the timezone */
+
 		if(startup->max_clients==0) {
 			startup->max_clients=scfg.sys_nodes;
 			if(startup->max_clients<10)
@@ -3546,7 +3740,7 @@ void DLLCALL mail_server(void* arg)
 			return;
 		}
 
-		lprintf(LOG_DEBUG,"%04d SMTP socket opened",server_socket);
+		lprintf(LOG_DEBUG,"%04d SMTP Socket opened",server_socket);
 
 		/*****************************/
 		/* Listen for incoming calls */
@@ -3570,7 +3764,7 @@ void DLLCALL mail_server(void* arg)
 			return;
 		}
 
-		lprintf(LOG_DEBUG,"%04d SMTP socket bound to port %u"
+		lprintf(LOG_DEBUG,"%04d SMTP Socket bound to port %u"
 			,server_socket, startup->smtp_port);
 
 		result = listen (server_socket, 1);
