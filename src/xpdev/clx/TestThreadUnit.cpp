@@ -25,7 +25,6 @@ void __fastcall TTestThread::Execute()
 	}
 
 	printf("thread_test exit\n");
-	ChildEvent->SetEvent();
 }
 //---------------------------------------------------------------------------
  
