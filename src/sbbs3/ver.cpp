@@ -38,7 +38,7 @@
 #include "sbbs.h"
 
 #if defined(JAVASCRIPT) || defined(__unix__)
-	#define BETA	" Alpha"
+	#define BETA	" Beta"
 #else
 	#define BETA	" Beta"     /* Space if non-beta, " beta" otherwise */
 #endif
