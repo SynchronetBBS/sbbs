@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -54,13 +54,13 @@ char *utos(char *str)
 	static char out[128];
 	int i;
 
-for(i=0;str[i];i++)
-	if(str[i]=='_')
-		out[i]=SP;
-	else
-		out[i]=str[i];
-out[i]=0;
-return(out);
+	for(i=0;str[i] && i<sizeof(out)-1;i++)
+		if(str[i]=='_')
+			out[i]=' ';
+		else
+			out[i]=str[i];
+	out[i]=0;
+	return(out);
 }
 
 char *stou(char *str)
@@ -532,7 +532,7 @@ export the current message group into.
 				ported=0;
 				k=0;
 				strcpy(opt[k++],"SUBS.TXT    (Synchronet)");
-				strcpy(opt[k++],"AREAS.BBS   (MSG)");
+				strcpy(opt[k++],"AREAS.BBS   (Generic)");
 				strcpy(opt[k++],"AREAS.BBS   (SMB)");
 				strcpy(opt[k++],"AREAS.BBS   (SBBSECHO)");
 				strcpy(opt[k++],"FIDONET.NA  (Fido)");
@@ -578,24 +578,17 @@ import into the current message group.
 						memset(&tmpsub,0,sizeof(sub_t));
 						tmpsub.misc|=
 							(SUB_FIDO|SUB_NAME|SUB_TOUSER|SUB_QUOTE|SUB_HYPER);
-						if(k==1) {		/* AREAS.BBS *.MSG */
-							p=strrchr(str,'\\');
-                            if(p==NULL) p=strrchr(str,'/');
-                            if(p) *p=0;
-                            else p=str;
-							//sprintf(tmpsub.echopath,"%.*s",LEN_DIR,str);
-							p++;
-							sprintf(tmpsub.code_suffix,"%.8s",p);
-							while(*p && *p<=SP) p++;
-							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,p);
-							p=strchr(tmpsub.sname,SP);
-							if(p) *p=0;
-							strcpy(tmpsub.sname,utos(tmpsub.sname));
-							sprintf(tmpsub.lname,"%.*s",LEN_SLNAME
-								,tmpsub.sname);
-							sprintf(tmpsub.qwkname,"%.*s",10
-                                ,tmpsub.sname);
-							}
+						if(k==1) {		/* AREAS.BBS Generic/*.MSG */
+							p=str;
+							while(*p && *p<=' ') p++;	// Find path
+							while(*p && *p>' ') p++;	// Skip path
+							while(*p && *p<=' ') p++;	// Find tag
+							truncstr(p," \t");
+							SAFECOPY(tmpsub.code_suffix,p);
+							SAFECOPY(tmpsub.sname,utos(p));
+							SAFECOPY(tmpsub.lname,utos(p));
+							SAFECOPY(tmpsub.qwkname,utos(p));
+						}
 						if(k==2) {		/* AREAS.BBS SMB */
 							p=strrchr(str,'\\');
                             if(p==NULL) p=strrchr(str,'/');                            
