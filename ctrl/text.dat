@@ -66,7 +66,7 @@
 	"\r\n\r\nn"
 "-\r\ngReading Sent E-mail (h?ng=Menu) "\          061 ReadingSentMail
 	"(h%ung of h%ung): n"
-"hm\r\nSending Internet Mail To: w%sm\r\n"\		062 InternetMailing
+"hm\r\nSending Internet Mail To: w%sm\r\n"\         062 InternetMailing
 	"                    From: w%s\r\n"
 "n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "-\r\ngReading All E-mail (h%ung of h%ung): n" 064 ReadingAllMail
@@ -306,7 +306,7 @@
 "\r\nBulk Upload %s %s Directory:\r\n"                  265 BulkUpload
 "_yh%s %7ld:"                                        266 BulkUploadDescPrompt
 "\r\nrhiNo files in batch queue.n"\                 267 NoFilesInBatchQueue
-        "\r\n\r\nmUse hDnm or hUnm to add files to the queue.\r\n"
+	"\r\n\r\nmUse hDnm or hUnm to add files to the queue.\r\n"
 "_\r\nyhBatch: n"                                   268 BatchMenuPrompt
 "\r\nClear upload queue"                                269 ClearUploadQueueQ
 "\r\nUpload queue cleared.\r\n"                         270 UploadQueueCleared
@@ -391,16 +391,16 @@
 "whPassword changed.\r\n"                             335 PasswordChanged
 "Sorry, you have no more logons allowed today.\r\n"     336 NoMoreLogons
 "You can only logon once a day.\r\n"                    337 R_Logons
-"_yhEnter your full name or alias: w"               338 EnterYourAlias
-"_yhEnter your full real name: w"                   339 EnterYourRealName
-"_yhEnter your company name: w"                     340 EnterYourCompany
-"_yhEnter your chat handle: w"                      341 EnterYourHandle
-"_yhEnter your sex (M/F): w"                        342 EnterYourSex
-"_yhEnter your street address: w"                   343 EnterYourAddress
-"_yhEnter your voice phone number: w"               344 EnterYourPhoneNumber
-"_yhEnter your birthday (%s): w"                    345 EnterYourBirthday
-"_yhEnter your city, state: w"                      346 EnterYourCityState
-"_yhEnter your zip (or postal) code: w"             347 EnterYourZipCode
+"_bh[wþb] yEnter your full name or alias: w"     338 EnterYourAlias
+"_bh[wþb] yEnter your full real name: w"         339 EnterYourRealName
+"_bh[wþb] yEnter your company name: w"           340 EnterYourCompany
+"_bh[wþb] yEnter your chat handle: w"            341 EnterYourHandle
+"_bh[wþb] yEnter your sex (M/F): w"              342 EnterYourSex
+"_bh[wþb] yEnter your street address: w"         343 EnterYourAddress
+"_bh[wþb] yEnter your voice phone number: w"     344 EnterYourPhoneNumber
+"_bh[wþb] yEnter your birthday (%s): w"          345 EnterYourBirthday
+"_bh[wþb] yEnter your city, state: w"            346 EnterYourCityState
+"_bh[wþb] yEnter your zip (or postal) code: w"   347 EnterYourZipCode
 "_yhEnter a description of your computer: w"        348 EnterYourComputer
 "Are you calling from North America"                    349 CallingFromNAmericaQ
 "Is the above information correct"                      350 UserInfoCorrectQ
@@ -591,7 +591,7 @@
 	"[Auto Detect]: "
 "\r\n_yhCurrent Password: w"                        498 CurrentPassword
 "\r\nForward personal e-mail to network mail address"   499 ForwardMailQ
-"\r\n_yhNetwork mail address "\                      500 EnterNetMailAddress
+"\r\n_bh[wþb] yNetwork mail address "\            500 EnterNetMailAddress
 	"(Example: user@domain)\r\n: "
 "nlgSelect h%sng:\r\n\r\n"                        501 SelectItemHdr
 "gh%3d: ng%s\r\n"                                   502 SelectItemFmt
