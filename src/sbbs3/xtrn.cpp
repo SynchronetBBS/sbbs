@@ -725,9 +725,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[256];
 	char	fname[128];
+	char*	argv[30];
 	char*	p;
     bool	native=false;			// DOS program by default
 	int		i;
+	int		argc;
 		
 	if(cmdline[0]=='*') {   /* Baja module */
 		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
@@ -780,9 +782,18 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	if(startup_dir!=NULL && startup_dir[0])
 		chdir(startup_dir);
 
-//	system(cmdline);	/* This is going to be a lot of work for me... :-) */
+	argv[0]=cmdline;	/* point to the beginning of the string */
+	argc=1;
+	for(i=0;cmdlien[i];i++)	/* Break up command line */
+		if(cmdline[i]==SP) {
+			argv[i]=0;			/* insert nulls */
+			argv[argc++]=cmdline+i+1; /* point to the beginning of the next arg */
+		}
+	argv[argc]=0;
 
-	return(0);
+	i=execvp(argv[0],argv);
+
+	return(i);
 }
 
 #endif	/* !WIN32 */
