@@ -259,6 +259,8 @@ int main(int argc, char** argv)
     mail_startup.relay_port=IPPORT_SMTP;
     mail_startup.interface_addr=INADDR_ANY;
 	mail_startup.lputs=mail_lputs;
+    mail_startup.started=mail_started;
+    mail_startup.terminated=mail_terminated;
 	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
