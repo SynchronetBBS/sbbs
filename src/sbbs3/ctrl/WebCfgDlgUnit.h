@@ -55,6 +55,8 @@ __published:	// IDE-managed Components
     TEdit *LogBaseNameEdit;
     TLabel *LogBaseLabel;
     TOpenDialog *OpenDialog;
+    TLabel *IndexLabel;
+    TEdit *IndexFileEdit;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall AnswerSoundButtonClick(TObject *Sender);
     void __fastcall HangupSoundButtonClick(TObject *Sender);
