@@ -123,6 +123,9 @@ BOOL sbbs_t::newuser()
 	strcpy(useron.alias,"New");     /* just for status line */
 	strcpy(useron.modem,connection);
 	if(!lastuser(&cfg)) {	/* Automatic sysop access for first user */
+		bprintf("Creating sysop account... System password required.\r\n");
+		if(!chksyspass())
+			return(FALSE); 
 		useron.level=99;
 		useron.exempt=useron.flags1=useron.flags2=0xffffffffUL;
 		useron.flags3=useron.flags4=0xffffffffUL;
