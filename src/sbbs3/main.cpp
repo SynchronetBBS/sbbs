@@ -910,9 +910,13 @@ void output_thread(void* arg)
 		if(sbbs->cfg.node_num && !(sbbs->sys_status&SS_FILEXFER)) {
 			/* Spy on the user locally */
 			if(startup->node_spybuf!=NULL 
-				&& startup->node_spybuf[sbbs->cfg.node_num-1]!=NULL)
+				&& startup->node_spybuf[sbbs->cfg.node_num-1]!=NULL) {
 				RingBufWrite(startup->node_spybuf[sbbs->cfg.node_num-1],buf+bufbot,i);
-
+				/* Signal spy output semaphore? */
+				if(startup->node_spysem!=NULL 
+					&& startup->node_spysem[sbbs->cfg.node_num-1]!=NULL)
+					sem_post(&startup->node_spysem[sbbs->cfg.node_num-1]);
+			}
 			/* Spy on the user remotely */
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) 
 				sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
@@ -2130,8 +2134,13 @@ void sbbs_t::spymsg(char*msg)
 	sprintf(str,"\r\n\r\n*** Spy Message ***\r\nNode %d: %s [%s]\r\n*** %s ***\r\n\r\n"
 		,cfg.node_num,client_name,inet_ntoa(addr),msg);
 	if(startup->node_spybuf!=NULL 
-		&& startup->node_spybuf[cfg.node_num-1]!=NULL) 
+		&& startup->node_spybuf[cfg.node_num-1]!=NULL) {
 		RingBufWrite(startup->node_spybuf[cfg.node_num-1],(uchar*)str,strlen(str));
+		/* Signal spy output semaphore? */
+		if(startup->node_spysem!=NULL 
+			&& startup->node_spysem[sbbs->cfg.node_num-1]!=NULL)
+			sem_post(&startup->node_spysem[sbbs->cfg.node_num-1]);
+	}
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET) 
 		sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
