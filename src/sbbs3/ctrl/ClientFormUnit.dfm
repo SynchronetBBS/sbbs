@@ -68,7 +68,7 @@ object ClientForm: TClientForm
     Left = 344
     Top = 200
     object CloseSocketMenuItem: TMenuItem
-      Caption = '&Close'
+      Caption = '&Close Socket'
       OnClick = CloseSocketMenuItemClick
     end
     object FilterIpMenuItem: TMenuItem
