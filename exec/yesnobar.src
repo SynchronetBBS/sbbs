@@ -17,7 +17,7 @@ if_true
 	crlf
 	shift_str _question 2
 	end_if
-printf "nbh[wûb] y%s? " _question
+printf "nbh[cûb] y%s? " _question
 :top
 compare_str "Y"
 if_equal
