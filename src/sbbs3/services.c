@@ -673,11 +673,11 @@ js_client_add(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	client.user="<unknown>";
 	SAFECOPY(client.host,client.user);
 
-	if(!JSVAL_IS_OBJECT(argv[0])) /* no socket supplied? */
-		return(JS_TRUE);
-
-	if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
-		sock=*(SOCKET*)vp;
+	if(JSVAL_IS_OBJECT(argv[0])) {
+		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
+			sock=*(SOCKET*)vp;
+	} else
+		JS_ValueToInt32(cx,argv[0],(int32*)&sock);
 
 	addr_len = sizeof(addr);
 	if(getpeername(sock, (struct sockaddr *)&addr, &addr_len)==0) {
@@ -692,8 +692,9 @@ js_client_add(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		SAFECOPY(client.host,JS_GetStringBytes(JS_ValueToString(cx,argv[2])));
 
 	client_on(sock, &client, /* update? */ FALSE);
-
+#if 0
 	lprintf("client_add(%04u,%s,%s)",sock,client.user,client.host);
+#endif
 	return(JS_TRUE);
 }
 
@@ -716,11 +717,11 @@ js_client_update(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	client.user="<unknown>";
 	SAFECOPY(client.host,client.user);
 
-	if(!JSVAL_IS_OBJECT(argv[0])) /* no socket supplied? */
-		return(JS_TRUE);
-
-	if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
-		sock=*(SOCKET*)vp;
+	if(JSVAL_IS_OBJECT(argv[0])) {
+		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
+			sock=*(SOCKET*)vp;
+	} else
+		JS_ValueToInt32(cx,argv[0],(int32*)&sock);
 
 	addr_len = sizeof(addr);
 	if(getpeername(sock, (struct sockaddr *)&addr, &addr_len)==0) {
@@ -735,8 +736,9 @@ js_client_update(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		SAFECOPY(client.host,JS_GetStringBytes(JS_ValueToString(cx,argv[2])));
 
 	client_on(sock, &client, /* update? */ TRUE);
-
+#if 0
 	lprintf("client_update(%04u,%s,%s)",sock,client.user,client.host);
+#endif
 	return(JS_TRUE);
 }
 
@@ -744,19 +746,22 @@ js_client_update(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 static JSBool
 js_client_remove(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	void* vp;
+	void*	vp;
+	SOCKET	sock=INVALID_SOCKET;
 
 	if(active_clients)
 		active_clients--, update_clients();
 
-	if(!JSVAL_IS_OBJECT(argv[0])) /* no socket supplied? */
-		return(JS_TRUE);
+	if(JSVAL_IS_OBJECT(argv[0])) {
+		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
+			sock=*(SOCKET*)vp;
+	} else
+		JS_ValueToInt32(cx,argv[0],(int32*)&sock);
 
-	if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
-		client_off(*(SOCKET*)vp);
-	
-	lprintf("client_remove(%04u)",*(SOCKET*)vp);
-
+	client_off(sock);
+#if 0	
+	lprintf("client_remove(%04u)",sock);
+#endif
 	return(JS_TRUE);
 }
 
