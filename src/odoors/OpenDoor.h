@@ -96,7 +96,7 @@
 #define OD_DLL
 #endif /* !OD_WIN32_STATIC */
 #else /* !WIN32 */
-#if defined(__unix__) || defined(__NetBSD__)
+#if defined(__unix__) || defined(__NetBSD__) || defined(__APPLE__)
 #define ODPLAT_NIX
 #undef ODPLAT_DOS
 #undef DIRSEP
