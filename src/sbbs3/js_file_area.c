@@ -45,6 +45,7 @@ static char* lib_prop_desc[] = {
 	 "library number"
 	,"library name"
 	,"library description"
+	,"library access requirements"
 	,"library link (for HTML index)"
 	,NULL
 };
@@ -57,6 +58,11 @@ static char* dir_prop_desc[] = {
 	,"directory name"
 	,"directory description"
 	,"directory file storage location"
+	,"directory access requirements"
+	,"directory upload requirements"
+	,"directory download requirements"
+	,"directory exemption requirements"
+	,"directory operator requirements"
 	,"allowed file extensions (comma delimited)"
 	,"upload semaphore file"
 	,"directory data storage location"
@@ -108,11 +114,13 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(!JS_SetProperty(cx, areaobj, "dir", &val))
 		return(NULL);
 
-	JS_NewNumberValue(cx,cfg->min_dspace,&val);
+	if(!JS_NewNumberValue(cx,cfg->min_dspace,&val))
+		return(NULL);
 	if(!JS_SetProperty(cx, areaobj, "min_diskspace", &val)) 
 		return(NULL);
 
-	JS_NewNumberValue(cx,cfg->file_misc,&val);
+	if(!JS_NewNumberValue(cx,cfg->file_misc,&val))
+		return(NULL);
 	if(!JS_SetProperty(cx, areaobj, "settings", &val)) 
 		return(NULL);
 
@@ -163,6 +171,12 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			return(NULL);
 		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, libobj, "description", &val))
+			return(NULL);
+
+		if((js_str=JS_NewStringCopyZ(cx, cfg->lib[l]->arstr))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
+		if(!JS_SetProperty(cx, libobj, "ars", &val))
 			return(NULL);
 
 		sprintf(vpath,"/%s/%s",cfg->lib[l]->sname,html_index_file);
@@ -241,6 +255,36 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "path", &val))
 				return(NULL);
 
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->arstr))==NULL)
+				return(NULL);
+			if(!JS_DefineProperty(cx, dirobj, "ars", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return(NULL);
+
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->ul_arstr))==NULL)
+				return(NULL);
+			if(!JS_DefineProperty(cx, dirobj, "upload_ars", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return(NULL);
+
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->dl_arstr))==NULL)
+				return(NULL);
+			if(!JS_DefineProperty(cx, dirobj, "download_ars", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return(NULL);
+
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->ex_arstr))==NULL)
+				return(NULL);
+			if(!JS_DefineProperty(cx, dirobj, "exempt_ars", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return(NULL);
+
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->op_arstr))==NULL)
+				return(NULL);
+			if(!JS_DefineProperty(cx, dirobj, "operator_ars", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return(NULL);
+
 			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->exts))==NULL)
 				return(NULL);
 			val=STRING_TO_JSVAL(js_str);
@@ -259,7 +303,8 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "data_dir", &val))
 				return(NULL);
 
-			JS_NewNumberValue(cx,cfg->dir[d]->misc,&val);
+			if(!JS_NewNumberValue(cx,cfg->dir[d]->misc,&val))
+				return(NULL);
 			if(!JS_SetProperty(cx, dirobj, "settings", &val))
 				return(NULL);
 
