@@ -97,9 +97,7 @@ int sbbs_t::login(char *str, char *pw)
 		useron.number=0;
 		return(LOGIC_FALSE); }
 
-	if((online==ON_REMOTE || cfg.sys_misc&SM_REQ_PW || cfg.node_misc&NM_SYSPW)
-		&& (useron.pass[0] || REALSYSOP)
-		&& (!cfg.node_dollars_per_call || cfg.sys_misc&SM_REQ_PW)) {
+	if(useron.pass[0] || REALSYSOP) {
 		bputs(pw);
 		console|=CON_R_ECHOX;
 		if(!(cfg.sys_misc&SM_ECHO_PW))
