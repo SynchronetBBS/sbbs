@@ -27,7 +27,7 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name smblib
+    Project_Dep_Name xpdev
     End Project Dependency
 }}}
 
@@ -43,6 +43,9 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name smblib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev
     End Project Dependency
 }}}
 
@@ -73,6 +76,9 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name smblib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev
     End Project Dependency
 }}}
 
@@ -198,6 +204,9 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
+    Project_Dep_Name xpdev_mt
+    End Project Dependency
+    Begin Project Dependency
     Project_Dep_Name smblib_mt
     End Project Dependency
 }}}
@@ -242,6 +251,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name smblib
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -285,7 +297,7 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name smblib
+    Project_Dep_Name xpdev
     End Project Dependency
 }}}
 
@@ -299,9 +311,6 @@ Package=<5>
 
 Package=<4>
 {{{
-    Begin Project Dependency
-    Project_Dep_Name xpdev
-    End Project Dependency
 }}}
 
 ###############################################################################
@@ -314,9 +323,6 @@ Package=<5>
 
 Package=<4>
 {{{
-    Begin Project Dependency
-    Project_Dep_Name xpdev_mt
-    End Project Dependency
 }}}
 
 ###############################################################################
@@ -331,6 +337,9 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name smblib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev
     End Project Dependency
 }}}
 
