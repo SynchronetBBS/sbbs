@@ -4,6 +4,7 @@
 
 /* $Id$ */
 
+/* ToDo: Deal with UQ_NODEF */
 var required_str="*";
 var	optional_str="";
 
@@ -109,7 +110,8 @@ if(!(system.newuser_questions & UQ_ALIASES && system.newuser_questions & UQ_REAL
 }
 
 /* List of shells is on the ToDo list */
-http_request.query.shell=system.newuser_command_shell;
+http_request.query.shell=new Array();
+http_request.query.shell[0]=system.newuser_command_shell.toString();
 if(system.newuser_questions & UQ_CMDSHELL) {
 	required.push("shell");
 	template.shell_required=required_str;
@@ -130,8 +132,6 @@ else {
 	required.push("email");
 	template.email_required=required_str;
 }
-
-/* ToDo: Deal with UQ_DUPREAL, UQ_NOEXASC, UQ_NODEF, UQ_NOCOMMAS, UQ_NOUPRLWR */
 
 /* Plain GET with no query, just display the sign-up page */
 if(http_request.method=='GET') {
@@ -165,13 +165,36 @@ else {
 	/* POST request... should be a valid application */
 	for(field in fields) {
 		if(http_request.query[fields[field]]==undefined) {
-			template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
 			err=1;
 			template.errs[fields[field]]="MISSING";
 			template.err_message+="Some fields missing from POST data... possible browser issue.\r\n";
 		}
+		else {
+			if((system.newuser_questions & UQ_NOEXASC) && http_request.query[fields[field]].search(/[^\x20-\x7f]/)!=-1) {
+				err=1;
+				template.errs[fields[field]]="No Extended ASCII characters are allowed";
+				template.err_message+="Extended ASCII characters used.\r\n";
+			}
+			if(!(system.newuser_questions & UQ_NOUPRLWR)) {
+				http_request.query[fields[field]][0]=http_request.query[fields[field]][0].replace(/^(\s*)(.)/g,
+					function (matched, ws, ch, offset, s) {
+						return(ws+ch.toUpperCase());
+					});
+				http_request.query[fields[field]][0]=http_request.query[fields[field]][0].replace(/(\s)(.)/g,
+					function (matched, ws, ch, offset, s) {
+						return(ws+ch.toUpperCase());
+					});
+			}
+		}
 		if(err)
 			showform()
+	}
+	if(system.newuser_questions & UQ_LOCATION && !(system.newuser_questions & UQ_NOCOMMAS)) {
+		if(http_request.query["location"].search(/,./)==-1) {
+			err=1;
+			template.errs[fields[field]]='Format should be "City, State"';
+			template.err_message+="Bad location format.\r\n";
+		}
 	}
 
 	for(req in required) {
@@ -226,7 +249,7 @@ else {
 			}
 		}
 	}
-	if(system.newuser_questions & UQ_DUPHAND & system.matchuserdata(50,http_request.query["handle"])) {
+	if((system.newuser_questions & UQ_DUPHAND) && system.matchuserdata(50,http_request.query["handle"])) {
 		err=1;
 		template.err_message+="Please choose a different chat handle\r\n";
 		template.errs["handle"]="Duplicate handle";
@@ -236,10 +259,10 @@ else {
 		template.err_message+="Please choose a different alias.\r\n";
 		template.errs["alias"]="Duplicate alias";
 	}
-	if(system.matchuser(http_request.query["name"])) {
+	if((system.newuser_questions & UQ_DUPREAL) && system.matchuser(http_request.query["name"])) {
 		err=1;
-		template.err_message+="A user with that name already exists.\r\n";
-		template.errs["name"]="Duplicate name";
+		template.err_message+="A user "+(system.newuser_questions & UQ_COMPANY?"for that company":"with that name")+" already exists.\r\n";
+		template.errs["name"]="Duplicate "+(system.newuser_questions & UQ_COMPANY?"company":"name");
 	}
 	newpw=genpass();
 	if(err) {
