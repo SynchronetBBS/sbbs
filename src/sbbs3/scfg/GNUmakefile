@@ -20,12 +20,12 @@ ifndef NO_CURSES
  USE_UIFC32	=	1	# NEW curses version of uifc
 endif
 
-UIFC	=	../../uifc/
+UIFC_SRC	=	../../uifc/
 XPDEV	=	../../xpdev/
 SBBS_SRC =	../
 NEED_UIFC	:=	1
 include $(XPDEV)Common.gmake
-include $(UIFC)Common.gmake
+include $(UIFC_SRC)Common.gmake
 include $(SBBS_SRC)Common.gmake
 
 SCFG	:=	$(EXEODIR)$(SLASH)scfg$(EXEFILE)
