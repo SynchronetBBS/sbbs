@@ -1,28 +1,28 @@
 # Available Options:
 # NEED_CURSES       = Set flags suitable for building with the curses lib
 # XCURSES			= Use XCurses
-# NEED_CIOWRAP		= Set flage suitable for using with ciowrap lib
+# NEED_CIOLIB		= Set flage suitable for using with ciowrap lib
 # NO_X				= Don't use X version of ciowrap
 
 # You really should set this first.
 CONIO_SRC	?=	$(XPDEV)../conio/
 UIFC_SRC	?=	$(XPDEV)../uifc/
 
-CIOWRAP_CFLAGS	+=	-I$(CONIO_SRC)
+CIOLIB_CFLAGS	+=	-I$(CONIO_SRC)
 # ciowrap stuff
 ifndef NO_X
  X_DIR	?=	/usr/X11R6/
- CIOWRAP_CFLAGS	+=	-I${X_DIR}/include
- CIOWRAP_LDFLAGS	+=	-L${X_DIR}/lib -lX11
- CIOWRAP_OBJS	+=	$(LIBODIR)/console.o $(LIBODIR)/x_cio.o
+ CIOLIB_CFLAGS	+=	-I${X_DIR}/include
+ CIOLIB_LDFLAGS	+=	-L${X_DIR}/lib -lX11
+ CIOLIB_OBJS	+=	$(LIBODIR)/console.o $(LIBODIR)/x_cio.o
 else
- CIOWRAP_CFLAGS	+=	-DNO_X
+ CIOLIB_CFLAGS	+=	-DNO_X
 endif
-CIOWRAP_LDFLAGS	+=	${PTHREAD_LDFLAGS}
-CIOWRAP_CFLAGS	+=	$(PTHREAD_CFLAGS)
-CIOWRAP_OBJS	+=	$(LIBODIR)/ansi_cio.o $(LIBODIR)/threadwrap.o
-CIOWRAP_OBJS	+=	$(LIBODIR)/curs_cio.o $(LIBODIR)/conio.o
-CIOWRAP_CFLAGS	+=	-I$(UIFC_SRC)
+CIOLIB_LDFLAGS	+=	${PTHREAD_LDFLAGS}
+CIOLIB_CFLAGS	+=	$(PTHREAD_CFLAGS)
+CIOLIB_OBJS	+=	$(LIBODIR)/ansi_cio.o $(LIBODIR)/threadwrap.o
+CIOLIB_OBJS	+=	$(LIBODIR)/curs_cio.o $(LIBODIR)/ciolib.o
+CIOLIB_CFLAGS	+=	-I$(UIFC_SRC)
 
 # Curses Stuff
 ifdef XCURSES
@@ -38,18 +38,18 @@ else
  endif
 endif
 
-CIOWRAP_CFLAGS	+=	$(CURSES_CFLAGS)
-CIOWRAP_LDFLAGS	+=	$(CURSES_LDFLAGS)
+CIOLIB_CFLAGS	+=	$(CURSES_CFLAGS)
+CIOLIB_LDFLAGS	+=	$(CURSES_LDFLAGS)
 
-ifdef NEED_CIOWRAP
- CFLAGS +=	$(CIOWRAP_CFLAGS)
- LDFLAGS	+=	$(CIOWRAP_LDFLAGS)
- OBJS	+=	$(CIOWRAP_OBJS)
+ifdef NEED_CIOLIB
+ CFLAGS +=	$(CIOLIB_CFLAGS)
+ LDFLAGS	+=	$(CIOLIB_LDFLAGS)
+ OBJS	+=	$(CIOLIB_OBJS)
 endif
-ifdef UIFC_NEED_CIOWRAP
- UIFC_CFLAGS	+=	$(CIOWRAP_CFLAGS)
- UIFC_LDFLAGS	+=	$(CIOWRAP_LDFLAGS)
- UIFC_OBJS		+=	$(CIOWRAP_OBJS)
+ifdef UIFC_NEED_CIOLIB
+ UIFC_CFLAGS	+=	$(CIOLIB_CFLAGS)
+ UIFC_LDFLAGS	+=	$(CIOLIB_LDFLAGS)
+ UIFC_OBJS		+=	$(CIOLIB_OBJS)
 endif
 
 ifdef NEED_CURSES

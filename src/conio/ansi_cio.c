@@ -8,7 +8,7 @@
 #include <termios.h>
 #endif
 
-#include "conio.h"
+#include "ciolib.h"
 #include "ansi_cio.h"
 WORD	ansi_curr_attr=0x07<<8;
 

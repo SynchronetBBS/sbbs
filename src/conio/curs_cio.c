@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "conio.h"
+#include "ciolib.h"
 #include "curs_cio.h"
 
 static unsigned char curs_nextgetch=0;

@@ -1,7 +1,6 @@
 /* $Id$ */
 
-#ifdef __unix__
-#include "conio.h"
+#include "ciolib.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,4 +25,3 @@ void ansi_textmode(int mode);
 }
 #endif
 
-#endif

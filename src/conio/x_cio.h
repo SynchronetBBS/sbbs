@@ -1,7 +1,7 @@
 /* $Id$ */
 
 #ifdef __unix__
-#include "conio.h"
+#include "ciolib.h"
 
 #ifdef __cplusplus
 extern "C" {

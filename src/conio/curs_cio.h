@@ -1,7 +1,7 @@
 /* $Id$ */
 
 #ifdef __unix__
-#include "conio.h"
+#include "conlib.h"
 #undef getch
 #undef ungetch
 #include "curs_fix.h"
@@ -29,7 +29,5 @@ void curs_textmode(int mode);
 #ifdef __cplusplus
 }
 #endif
-
-#define UIFC_IBM	(1<<4)  /* Force use of IBM charset     */
 
 #endif
