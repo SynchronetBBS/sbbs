@@ -73,8 +73,8 @@ char *num_flags=
 
 void allocfail(uint size)
 {
-cprintf("\7Error allocating %u bytes of memory.\r\n",size);
-bail(1);
+    printf("\7Error allocating %u bytes of memory.\r\n",size);
+    bail(1);
 }
 
 time_t checktime(void)
@@ -231,7 +231,7 @@ sprintf(helpixbfile,"%s/scfghelp.ixb",str);
 
 sprintf(str,"Synchronet Configuration for %s v%s",PLATFORM_DESC,VERSION);
 if(uscrn(str)) {
-	cprintf(" USCRN (len=%d) failed!\r\n",scrn_len+1);
+	printf(" USCRN (len=%d) failed!\r\n",scrn_len+1);
 	bail(1);
 }
 i=0;
@@ -1797,26 +1797,26 @@ void bail(int code)
 	int 		i,x;
 	smbstatus_t status;
 
-if(code) {
-	cputs("\r\nHit a key...");
-	getch(); }
-else if(forcesave) {
-	upop("Loading Configs...");
-	read_main_cfg(&cfg,&txt);
-	read_msgs_cfg(&cfg,&txt);
-	read_file_cfg(&cfg,&txt);
-	read_chat_cfg(&cfg,&txt);
-	read_xtrn_cfg(&cfg,&txt);
-	upop(0);
-	write_main_cfg(&cfg,backup_level);
-	write_msgs_cfg(&cfg,backup_level);
-	write_file_cfg(&cfg,backup_level);
-	write_chat_cfg(&cfg,backup_level);
-	write_xtrn_cfg(&cfg,backup_level); }
+    if(code) {
+        puts("\nHit a key...");
+        getch(); }
+    else if(forcesave) {
+        upop("Loading Configs...");
+        read_main_cfg(&cfg,&txt);
+        read_msgs_cfg(&cfg,&txt);
+        read_file_cfg(&cfg,&txt);
+        read_chat_cfg(&cfg,&txt);
+        read_xtrn_cfg(&cfg,&txt);
+        upop(0);
+        write_main_cfg(&cfg,backup_level);
+        write_msgs_cfg(&cfg,backup_level);
+        write_file_cfg(&cfg,backup_level);
+        write_chat_cfg(&cfg,backup_level);
+        write_xtrn_cfg(&cfg,backup_level); }
 
-uifcbail();
+    uifcbail();
 
-exit(code);
+    exit(code);
 }
 
 /****************************************************************************/
@@ -1829,49 +1829,53 @@ void errormsg(int line, char *source,  char action, char *object, ulong access)
 	char scrn_buf[8000];
     char actstr[256];
 
-gettext(1,1,80,scrn_len,scrn_buf);
-clrscr();
-switch(action) {
-    case ERR_OPEN:
-        strcpy(actstr,"opening");
-        break;
-    case ERR_CLOSE:
-        strcpy(actstr,"closeing");
-        break;
-    case ERR_FDOPEN:
-        strcpy(actstr,"fdopen");
-        break;
-    case ERR_READ:
-        strcpy(actstr,"reading");
-        break;
-    case ERR_WRITE:
-        strcpy(actstr,"writing");
-        break;
-    case ERR_REMOVE:
-        strcpy(actstr,"removing");
-        break;
-    case ERR_ALLOC:
-        strcpy(actstr,"allocating memory");
-        break;
-    case ERR_CHK:
-        strcpy(actstr,"checking");
-        break;
-    case ERR_LEN:
-        strcpy(actstr,"checking length");
-        break;
-    case ERR_EXEC:
-        strcpy(actstr,"executing");
-        break;
-    default:
-        strcpy(actstr,"UNKNOWN"); }
-cprintf("ERROR -     line: %d\r\n",line);
-cprintf("            file: %s\r\n",source);
-cprintf("          action: %s\r\n",actstr);
-cprintf("          object: %s\r\n",object);
-cprintf("          access: %ld (%lx)\r\n",access,access);
-cputs("\r\n<Hit any key>");
-getch();
-puttext(1,1,80,scrn_len,scrn_buf);
+#if !defined(__unix__)
+    gettext(1,1,80,scrn_len,scrn_buf);
+    clrscr();
+#endif
+    switch(action) {
+        case ERR_OPEN:
+            strcpy(actstr,"opening");
+            break;
+        case ERR_CLOSE:
+            strcpy(actstr,"closeing");
+            break;
+        case ERR_FDOPEN:
+            strcpy(actstr,"fdopen");
+            break;
+        case ERR_READ:
+            strcpy(actstr,"reading");
+            break;
+        case ERR_WRITE:
+            strcpy(actstr,"writing");
+            break;
+        case ERR_REMOVE:
+            strcpy(actstr,"removing");
+            break;
+        case ERR_ALLOC:
+            strcpy(actstr,"allocating memory");
+            break;
+        case ERR_CHK:
+            strcpy(actstr,"checking");
+            break;
+        case ERR_LEN:
+            strcpy(actstr,"checking length");
+            break;
+        case ERR_EXEC:
+            strcpy(actstr,"executing");
+            break;
+        default:
+            strcpy(actstr,"UNKNOWN"); }
+    printf("ERROR -     line: %d\n",line);
+    printf("            file: %s\n",source);
+    printf("          action: %s\n",actstr);
+    printf("          object: %s\n",object);
+    printf("          access: %ld (%lx)\n",access,access);
+    puts("\r\n<Hit any key>");
+    getch();
+#if !defined(__unix__)
+    puttext(1,1,80,scrn_len,scrn_buf);
+#endif    
 }
 
 /* End of SCFG.C */
