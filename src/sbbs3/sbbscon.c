@@ -246,7 +246,7 @@ int main(int argc, char** argv)
 
 	bbs_terminate();
 	ftp_terminate();
-	mail_terminate();
+//	mail_terminate();
 
 	printf("\nWaiting for servers to terminate...");
 
