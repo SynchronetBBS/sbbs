@@ -44,6 +44,8 @@
 #ifdef __unix__
 	#include <sys/wait.h>	// WEXITSTATUS
 
+	#define TTYDEFCHARS		// needed for ttydefchars definition
+
 #if defined(__FreeBSD__)
 	#include <libutil.h>	// forkpty()
 #elif defined(__OpenBSD__)
@@ -56,23 +58,23 @@
 	#include <grp.h>
 	#endif
 
-	#define TTYDEFCHARS
 	#include <termios.h>
 
-#endif
-#define XTRN_IO_BUF_LEN 5000
-
-#ifdef __solaris__
-#   define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
-#   define TTYDEF_OFLAG    (OPOST | ONLCR)
-#   define TTYDEF_LFLAG    (ECHO | ICANON | ISIG | IEXTEN | ECHOE|ECHOKE|ECHOCTL)
-#	define TTYDEF_CFLAG    (CREAD | CS8 | HUPCL)
+#if defined(__solaris__)
+	#define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
+	#define TTYDEF_OFLAG    (OPOST | ONLCR)
+	#define TTYDEF_LFLAG    (ECHO | ICANON | ISIG | IEXTEN | ECHOE|ECHOKE|ECHOCTL)
+	#define TTYDEF_CFLAG    (CREAD | CS8 | HUPCL)
 	static cc_t     ttydefchars[NCCS] = {
         CEOF,   CEOL,   CEOL,   CERASE, CWERASE, CKILL, CREPRINT,
         CERASE2, CINTR, CQUIT,  CSUSP,  CDSUSP, CSTART, CSTOP,  CLNEXT,
         CDISCARD, CMIN, CTIME,  CSTATUS, _POSIX_VDISABLE
 	};
 #endif
+
+#endif	/* __unix__ */
+
+#define XTRN_IO_BUF_LEN 5000
 
 /*****************************************************************************/
 /* Interrupt routine to expand WWIV Ctrl-C# codes into ANSI escape sequences */
@@ -1170,7 +1172,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			term.c_oflag = TTYDEF_OFLAG;
 			term.c_lflag = TTYDEF_LFLAG;
 			term.c_cflag = TTYDEF_CFLAG;
-			term.c_cc = ttydefchars;
+			memcpy(term.c_cc,ttydefchars,sizeof(term.c_cc));
 		}
 		winsize.ws_row=rows;
 		// #warning Currently cols are forced to 80 apparently TODO
