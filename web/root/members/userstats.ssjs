@@ -21,7 +21,7 @@ i=i ? 100/i : user.stats.total_posts > user.stats.total_logons ? 100 : 0;
 template.pinfo=parseInt(i);
 
 write_template("header.inc");
-write_template("topnav.inc");
+load("../web/lib/topnav_html.ssjs");
 write_template("leftnav.inc");
 write_template("userstats.inc");
 write_template("footer.inc");

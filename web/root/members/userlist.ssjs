@@ -4,6 +4,7 @@
 
 // $Id$
 
+http_reply.fast=true;
 load("sbbsdefs.js");
 load("../web/lib/template.ssjs");
 
@@ -32,7 +33,7 @@ for(i=1;i<=lastuser;i++) {
 template.users.sort(alphasort);
 
 write_template("header.inc");
-write_template("topnav.inc");
+load("../web/lib/topnav_html.ssjs");
 write_template("leftnav.inc");
 write_template("userlist.inc");
 write_template("footer.inc");

@@ -56,7 +56,7 @@ for(s in msg_area.grp[grp].sub_list) {
 	template.subs.push(thissub);
 }
 
-write_template("topnav.inc");
+load("../web/lib/topnav_html.ssjs");
 write_template("leftnav.inc");
 write_template("msgs/subs.inc");
 write_template("footer.inc");

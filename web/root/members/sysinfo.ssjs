@@ -107,7 +107,7 @@ for(addr in system.fido_addr_list) {
 }
 
 write_template("header.inc");
-write_template("topnav.inc");
+load("../web/lib/topnav_html.ssjs");
 write_template("leftnav.inc");
 write_template("sysinfo.inc");
 write_template("footer.inc");
