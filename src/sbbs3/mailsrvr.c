@@ -2746,7 +2746,7 @@ void DLLCALL mail_server(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->relay_port==0)				startup->relay_port=IPPORT_SMTP;
 	if(startup->smtp_port==0)				startup->smtp_port=IPPORT_SMTP;
-	if(startup->pop3_port==0)				startup->pop3_port=110;
+	if(startup->pop3_port==0)				startup->pop3_port=IPPORT_POP3;
 	if(startup->rescan_frequency==0)		startup->rescan_frequency=3600;	/* 60 minutes */
 	if(startup->max_delivery_attempts==0)	startup->max_delivery_attempts=50;
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */

@@ -115,8 +115,15 @@ static  wsa_error;
 
 #ifndef IPPORT_FTP
 #define IPPORT_FTP		21
+#endif
+#ifndef IPPORT_TELNET
 #define IPPORT_TELNET	23
+#endif
+#ifndef IPPORT_SMTP
 #define IPPORT_SMTP		25
+#endif
+#ifndef IPPORT_POP3
+#define IPPORT_POP3		110
 #endif
 
 #endif	/* Don't add anything after this line */
