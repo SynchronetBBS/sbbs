@@ -9,20 +9,28 @@
 </head>
 
 <body>
+<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan -->
+
+<a href="http://www.synchro.net"><img border="0" src="images/synclogo_fancyred.gif" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+
+<hr>
+
+<!--webbot bot="Include" endspan i-checksum="23126" -->
+
 <h1> Synchronet's FidoNet Packet Tosser Documentation</h1>
-<pre><a name="TOC" href="#TOC"><b>Table of Contents</b></a>
+<pre><b>Table of Contents</b>
 
 <a href="#Introduction">Introduction</a>
 <a href="#Terminology">Terminology</a>
 <a href="#Installation">Installation</a>
-<a href="#AREAS.BBS Format">AREAS.BBS Format</a>
+<a href="#AREAS.BBS">AREAS.BBS Format</a>
 <a href="#Configuration">Configuration</a>
-<a href="#Running SBBSecho">Running SBBSecho</a>
-<a href="#Command Lines Switches">Command Line Switches</a>
-<a href="#AREAFIX Commands">Area Manager Remote Commands</a></pre>
+<a href="#RunningSBBSecho">Running SBBSecho</a>
+<a href="#CommandLineSwitches">Command Line Switches</a>
+<a href="#AREAFIXCommands">Area Manager Remote Commands</a></pre>
 <h2><a name="Introduction">
 <br>
-<u>Introduction</u></a></h2>
+Introduction</a></h2>
 <pre>SBBSecho is a full-blown FTN echomail program (tosser/scanner) for Synchronet
 BBS version 2.0 and higher. SBBSecho is level III implementation of the SMB
 v2.00 specification including support for HyperAllocated and LZH compressed
@@ -35,12 +43,12 @@ phase (consuming disk space and time).</pre>
 or any echomail programs after you have installed SBBSecho.
 
 <a href="#TOC">Back to Table of Contents</a></pre>
-<h2><a name="Terminology"><u>Terminology</u></a></h2>
-<pre><b><u>FTN</u></b>
+<h2><a name="Terminology">Terminology</a></h2>
+<pre><b>FTN</b>
 
 FidoNet Technology Network: Any network using FidoNet standards for addressing,
 mail packets, mail sessions, node lists, etc.</pre>
-<pre><b><u>Zones, Nets, Nodes, and Points?
+<pre><b>Zones, Nets, Nodes, and Points?<u>
 </u></b>
 FTN node addresses are like phone numbers, they are made up of multiple
 components (four to be exact). The components are: zone, net, node, and point.
@@ -72,7 +80,7 @@ net, node, and optional point numbers (i.e. 1:103/705.1).</pre>
 <pre>A 5D (5 dimensional) address refers to an FTN address consisting of a standard
 3D or 4D address with an appended &quot;@domain&quot; (i.e. 1:103/705@fidonet.org).
 
-<b><u>Attach or FLO Mailer?
+<b>Attach or FLO Mailer?<u>
 </u></b>
 If you are using FrontDoor, InterMail, D'bridge, SEAdog, Dutchie, or any other
 ArcMail *.MSG attach-style mailer, you are using what we will refer to as an
@@ -80,16 +88,16 @@ ArcMail *.MSG attach-style mailer, you are using what we will refer to as an
 <pre>If you are using BinkleyTerm, Portal of Power, or any other FLO/CLO/HLO/DLO
 style mailer, you are using what we will refer to as a &quot;FLO Mailer&quot;.</pre>
 <pre>Both types are supported equally by SBBSecho.</pre>
-<pre><b><u>NetMail
+<pre><b>NetMail<u>
 </u></b>
 Point-to-point (usually person-to-person) direct or routed messages.</pre>
-<pre><b><u>EchoMail
+<pre><b>EchoMail<u>
 </u></b>
 Group or conference messages of a particular subject matter. Usually
 distributed on a regional or continental (e.g. FidoNet Zone 1 backbone) scale.
 FTN style echomail areas have a unique area tag (name) associated with them to
 distinguish each area from the others.</pre>
-<pre><b><u>Packet
+<pre><b>Packet<u>
 </u></b>
 An FTN packet is a group of one or more messages contained in a single
 uncompressed file. Packets may contain echomail and/or netmail messages.
@@ -101,7 +109,7 @@ temporary outbound packet files with a .PK_ extension and then renames them to
 .PKT when they're completed. If you find any .PK_ files in your outbound
 directory, don't worry. SBBSecho will find them the next time it is run and
 continue packing them and sending them on their way.</pre>
-<pre><b><u>Bundle</u></b>
+<pre><b>Bundle</b>
 
 An FTN bundle is a single file archive of one or more (usually compressed)
 packets. Bundles will have file extensions where the first two characters
@@ -111,7 +119,7 @@ first eight characters of the filename may be anything, but are usually
 hexadecimal digits representing the FTN node address (or relative address) of
 the system that created the bundle. SBBSecho changes the file extension of bad
 inbound bundles to .MO_, .MO-, or .MO.</pre>
-<pre><b><u>Areafix/Area Manager</u></b>
+<pre><b>Areafix/Area Manager</b>
 
 Areafix is a synonym for area manager (the very first FTN area manager
 program was called AreaFix). Area manager capabilities (remote adding/removing
@@ -120,7 +128,7 @@ no external area manager program is required. If you are not an FTN hub, then
 the area manager portion of SBBSecho will probably not get any use on your
 system.</pre>
 <pre><a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><a name="Installation"><u>Installation</u></a></h2>
+<h2><a name="Installation">Installation</a></h2>
 <pre>To begin, copy the SBBSECHO.EXE, ECHOCFG.EXE, and AREAMGR.HLP files into your
 Synchronet EXEC directory (usually C:\SBBS\EXEC), copy the SBBSECHO.CFG file
 into your Synchronet CTRL directory (usually C:\SBBS\CTRL), and copy the
@@ -158,7 +166,7 @@ tag (as shown in your echo list), but this may not always be the case - unless
 you imported an AREAS.BBS or FIDONET.NA file into SCFG to begin with).
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><a name="AREAS.BBS Format"><u>AREAS.BBS Format</u></a></h2>
+<h2><a name="AREAS.BBS">AREAS.BBS Format</a></h2>
 <pre>Lines beginning with a semicolon (;) are considered comments, and are ignored.</pre>
 <pre>Each line is in the following format:</pre>
 <pre><b><i>CODE	TAG	UPLINKS</i></b></pre>
@@ -174,7 +182,7 @@ you imported an AREAS.BBS or FIDONET.NA file into SCFG to begin with).
 		here. Your address should NOT be listed here. If multiple
 		addresses are specified, you should specify the full 3D address
 		for each.</pre>
-<pre><b><u>AREAS.BBS Example:</u></b></pre>
+<pre><b>AREAS.BBS Example:</b></pre>
 <pre>SBBS		SYNCHRONET	1:3615/50
 SYNCDATA	SYNCDATA	1:3615/50
 SYNC_SYS	SYNC_SYSOPS	1:3615/50</pre>
@@ -185,7 +193,7 @@ line can be up to 1000 characters in length.</pre>
 <pre>It must be changed to match the example given above!
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><a name="Configuration"><u>Configuration</u></a>
+<h2><a name="Configuration">Configuration</a>
 </h2>
 <pre>In order to set up SBBSecho for your system you must run the included ECHOCFG
 program. It should already be located in your EXEC directory. You may want to
@@ -247,7 +255,7 @@ each of them.</pre>
 	will allow you to change this to a different address. Using
 	the &quot;ALL&quot; wildcard in place of one of the address components
 	will allow you to configure settings for all nodes that meet
-	that specication (e.g. all nodes in zone 1 can be specified
+	that specification (e.g. all nodes in zone 1 can be specified
 	as 1:ALL or all nodes in zone 1, net 103 can be specified
 	as 1:103/ALL).</pre>
   </blockquote>
@@ -419,7 +427,7 @@ each of them.</pre>
 	you to add a new archive program. Pressing the DELete key will remove
 	the currently highlighted archive program. And pressing ENTER on the
 	currently highlighted archive program will allow you to edit the
-	options for that particular prgram from a menu like the following (note
+	options for that particular program from a menu like the following (note
 	that the name of the archive program you are editing appears at the top
 	of the window):</pre>
 <blockquote>
@@ -451,7 +459,7 @@ each of them.</pre>
 		specifier will expand to the name of the file being compressed.</pre>
 <pre><b>	Unpack Command Line:
 </b>		This is the command line used by the archiving program for
-		UNcompressing files.  The '%f' command line specifier will
+		Uncompressing files.  The '%f' command line specifier will
 		expand to the name of the compressed file, the '%s' command
 		line specifier will expand to the path where the file is
 		being extracted to.
@@ -482,7 +490,7 @@ each of them.</pre>
 <pre><b>	Echo List Path/Name:
 </b>		This is the full path and filename of the echo list you are
 		defining.  This list should contain the areatag names of areas,
-		one per line, with any comments seperated from the areatag by
+		one per line, with any comments separated from the areatag by
 		at least one space.</pre>
 <pre><b>	Hub Address:
 </b>		This is the address of the hub of the conferences contained
@@ -498,7 +506,7 @@ each of them.</pre>
 		request to the Hub Address specified to turn on an area from
 		this list.  This happens when users remotely add areas using
 		Areafix and is not necessary if you are already receiving the
-		conferences in this list (ie: from Planet Connect).
+		conferences in this list (i.e.: from Planet Connect).
 </pre>
 <pre><b>	Echo List Flags:
 </b>		These are the flags required for a node to be able to gain
@@ -512,7 +520,7 @@ each of them.</pre>
   </blockquote>
 </blockquote>
 <pre><b><a href="#TOC">Back to Table of Contents</a></b></pre>
-<h2><a name="Running SBBSecho"><u>Running SBBSecho</u></a></h2>
+<h2><a name="RunningSBBSecho">Running SBBSecho</a></h2>
 <pre>The command line for executing SBBSECHO is very similar to SBBSFIDO, although
 some command line switches have been eliminated.</pre>
 <pre>We suggest you use the following command lines:</pre>
@@ -525,7 +533,7 @@ some command line switches have been eliminated.</pre>
 <pre>Remove all references to SBBSFIDO from your batch files (if you have any).
 See the included MAILER.BAT as an example.</pre>
 <pre><a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><a name="Command Lines Switches"><u>Command Lines Switches</u></a>
+<h2><a name="CommandLineSwitches">Command Line Switches</a>
 </h2>
 <pre><b>usage: sbbsecho [cfg_file] [/switches] [sub_code]</b></pre>
 <pre>where: cfg_file is the filename of config file (default is ctrl\sbbsecho.cfg)
@@ -547,7 +555,7 @@ M: Ignore echomail pointers (export all locally created echomail messages)
 U: Update echomail pointers only (export no echomail messages)
 T: Do not update echomail pointers (test export)
 H: Export all echomail messages (including messages imported from FidoNet)
-J: Ignore recieved bit on netmail (import even though flagged as received)
+J: Ignore received bit on netmail (import even though flagged as received)
 L: Create log file (data\sbbsecho.log)
 R: Create report of import totals (text\sbbsecho.msg)
 B: Import locally created netmail too (ignore the local flag)
@@ -560,7 +568,7 @@ S: Import private echomail override (strip private flag)
 =: Change existing tear lines to === when exporting
 !: Notify users via telegram of received echomail messages</pre>
 <pre><a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><a name="AREAFIX Commands"><u>AREAFIX Commands</u></a>
+<h2><a name="AREAFIXCommands">AREAFIX Commands</a>
 </h2>
 <pre>Remote area manager, or areafix, commands are used by uplinks to be able to
 turn echo areas off and on, list currently connected areas, and more.</pre>
@@ -587,8 +595,39 @@ Your Area Manager password goes on the subject line.</pre>
 %-ALL		      Disconnect all areas
 [---]                 Everything below the tear line is ignored</pre>
 <pre>NOTE: A compression type of NONE is also supported for uncompressed packets.</pre>
-<pre><b><a href="#TOC">Back to Table of Contents</a>
-</b></pre>
+<pre><b><a href="#TOC">Back to Table of Contents</a></b></pre>
+<!--webbot bot="Include" U-Include="_borders/bottom.htm" TAG="BODY" startspan -->
+
+<hr>
+<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2000 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
+</a>
+
+<a href="http://www.synchro.net"><font size="2"><br>
+Synchronet BBS Software</font></a>  <font size="2">  (Synchronet)
+Version 3 is comprised of several documentation,<br>
+library, executable, and <a href="http://www.synchro.net/source.html">source code</a> 
+files, all of which are covered by the<a href="http://www.fsf.org/copyleft/gpl.html">
+<br>
+GNU General Public License</a>  with the exception of the following portions
+covered by<br>
+the <a href="http://www.fsf.org/copyleft/lesser.html">GNU Lesser General Public License</a>:
+SMBLIB and XSDK.<br>
+<br>
+Synchronet Version 2 (for DOS and OS/2) and its source code was released to the<a href="http://www.fsf.org/philosophy/categories.html#PublicDomainSoftware">
+<br>
+Public Domain</a>  by <a href="ftp://vert.synchro.net/main/sbbs/manifest.txt">Digital Dynamics</a> 
+in 1997 and remains Public Domain software today.<br>
+Synchronet Version 3 is not Public Domain software.</font></p>
+<p align="left"><font size="2"><a href="http://www.synchro.net/author.html">Rob Swindell<br>
+</a>PO Box 501<br>Yorba Linda, CA 92885<a href="http://www.synchro.net"><br>
+http://www.synchro.net</a>
+
+</font></p>
+<p align="left"><font size="2">For the complete Copyright Information please
+read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
+.</font></p>
+
+<!--webbot bot="Include" endspan i-checksum="55766" -->
 </body>
 
 </html>
