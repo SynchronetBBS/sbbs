@@ -139,7 +139,6 @@ void ansi_sendch(char ch)
 		if(ch<' ')
 			force_move=1;
 	}
-	else
 }
 
 void ansi_sendstr(char *str,int len)
