@@ -318,7 +318,7 @@ int main(int argc, char **argv)
 		uifc.helpbuf=	"`Synchronet Installation:`\n"
 						"\nToDo: Add help.";
 		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT|WIN_ORG,0,0,70,&main_dflt,0
-			,"Synchronet Installation",mopt)) {
+			,str,mopt)) {
 			case 0:
 				i=choose_dist((char **)distlist);
 				if(i>=0)  {
