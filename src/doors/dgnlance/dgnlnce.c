@@ -58,12 +58,21 @@ enum {
     ,PLAYER
 };
 
+enum {
+    HE
+    ,HIS
+    ,HIM
+};
+
 struct playertype {
     char            name[31];	       /* Name from BBS drop file */
     char            pseudo[31];	       /* In-game pseudonym */
     char            killer[31];	       /* Person killed by (if status==DEAD) */
+    char            bcry[61];	       /* Battle Cry */
+    char            winmsg[61];	       /* What you say when you win a battle */
     char            gaspd[61];	       /* Dying curse */
     char            laston[11];	       /* Last date one */
+    char            sex;	       /* Characters sex */
     DWORD           status;	       /* Status alive or dead for player
 				        * records, PLAYER or MONSTER for
 				        * opponent record (record 0) */
@@ -367,6 +376,7 @@ writenextuser(struct playertype * plr, FILE * outfile)
 {
     fprintf(outfile, "%s\n", plr->name);
     fprintf(outfile, "%s\n", plr->pseudo);
+    fprintf(outfile, "%c\n", plr->sex);
     fprintf(outfile, "%s\n", plr->gaspd);
     fprintf(outfile, "%s\n", plr->laston);
     fprintf(outfile, "%u\n", plr->status);
@@ -484,7 +494,7 @@ findo(void)
     if (od_get_answer("YN") == 'Y') {
 	od_disp_str("Yes\r\n");
 	okea = xp_random(99) + 1;
-	if ((okea < 10) && (user.weapon >= 25)) {
+	if ((okea < 10) && (user.weapon <= 25)) {
 	    user.weapon++;
 	    od_printf("You have found a %s.\r\n", weapon[user.weapon].name);
 	}
@@ -501,59 +511,144 @@ findo(void)
 
 void            battle(void);
 
+char           *
+sexstrings(struct playertype * plr, int type, BOOL cap)
+{
+    static char     retbuf[16];
+    char            sex;
+    sex = plr->sex;
+    if (plr->charisma < 8)
+	sex = 'I';
+    switch (sex) {
+	case 'M':
+	    switch (type) {
+		case HIS:
+		    SAFECOPY(retbuf, "his");
+		    break;
+		case HE:
+		    SAFECOPY(retbuf, "he");
+		    break;
+		case HIM:
+		    SAFECOPY(retbuf, "him");
+		    break;
+	    }
+	case 'F':
+	    switch (type) {
+		case HIS:
+		    SAFECOPY(retbuf, "her");
+		    break;
+		case HE:
+		    SAFECOPY(retbuf, "she");
+		    break;
+		case HIM:
+		    SAFECOPY(retbuf, "her");
+		    break;
+	    }
+	case 'I':
+	    switch (type) {
+		case HIS:
+		    SAFECOPY(retbuf, "its");
+		    break;
+		case HE:
+		    SAFECOPY(retbuf, "it");
+		    break;
+		case HIM:
+		    SAFECOPY(retbuf, "it");
+		    break;
+	    }
+    }
+    if (cap)
+	retbuf[0] = toupper(retbuf[0]);
+    return (retbuf);
+}
+
 void
-mutantvictory(void)
+endofbattle(BOOL won)
 {
     int             bt;
     int             d;
     FILE           *outfile;
+    char            lstr[5];
+    char            wstr[5];
+    struct playertype *winner;
+    struct playertype *loser;
+    if (opp.status != MONSTER)
+	loaduser(opp.name, TRUE, &tmpuser);
+    if (won) {
+	winner = &user;
+	loser = &tmpuser;
+	SAFECOPY(lstr, sexstrings(loser, HIS, FALSE));
+	SAFECOPY(wstr, "You");
+    } else {
+	winner = &tmpuser;
+	loser = &user;
+	SAFECOPY(lstr, sexstrings(winner, HIS, FALSE));
+	SAFECOPY(lstr, "your");
+	opp.experience = user.experience / 10;
+    }
+
     if (opp.status == MONSTER)
 	opp.gold = opp.gold * supplant();
     nl();
-    od_printf("You take his %" QWORDFORMAT " Steel pieces.\r\n", opp.gold);
-    user.gold += opp.gold;
+    if (won)
+	od_printf("You take %s %" QWORDFORMAT " Steel pieces.\r\n", sexstrings(&opp, HIS, FALSE), opp.gold);
+    else {
+	if (opp.status != MONSTER)
+	    od_printf("%s takes your %" QWORDFORMAT " Steel pieces.\r\n", sexstrings(&opp, HE, TRUE), opp.gold);
+    }
+    winner->gold += opp.gold;
+    loser->gold = 0;
+
     if (opp.status != MONSTER) {
-	loaduser(opp.name, TRUE, &tmpuser);
 	nl();
 	od_set_color(D_GREEN, D_BLACK);
-	od_disp_str("The Last Words He Utters Are...\r\n");
-	nl();
-	od_printf("\"%s\"\r\n", opp.gaspd);
-	nl();
-	user.wins++;
-	tmpuser.loses++;
-	SAFECOPY(tmpuser.killer, user.pseudo);
-	tmpuser.status = DEAD;
-	tmpuser.gold = 0;
-	if (tmpuser.weapon > user.weapon) {
-	    d = user.weapon;
-	    user.weapon = tmpuser.weapon;
-	    tmpuser.weapon = d;
-	    bt = user.plus;
-	    user.plus = tmpuser.plus;
-	    tmpuser.plus = bt;
+	if (won) {
+	    od_printf("The Last Words %s Utters Are...\r\n", sexstrings(&tmpuser, HE, FALSE));
+	    nl();
+	    od_printf("\"%s\"\r\n", tmpuser.gaspd);
+	    nl();
+	} else {
+	    od_disp_str("The Last Words You Hear Are...\r\n");
+	    nl();
+	    od_printf("\"%s\"\r\n", tmpuser.winmsg);
+	    nl();
+	}
+	winner->wins++;
+	loser->loses++;
+	SAFECOPY(loser->killer, winner->pseudo);
+	loser->status = DEAD;
+	if (loser->weapon > winner->weapon) {
+	    d = winner->weapon;
+	    winner->weapon = loser->weapon;
+	    loser->weapon = d;
+	    bt = winner->plus;
+	    winner->plus = loser->plus;
+	    loser->plus = bt;
 	    od_set_color(D_GREEN, D_BLACK);
-	    od_disp_str("You Hath Taken His Weapon.\r\n");
+	    od_printf("%s Hath Taken %s Weapon.\r\n", wstr, lstr);
 	}
 	if (tmpuser.armour > user.armour) {
-	    d = user.armour;
-	    user.armour = tmpuser.armour;
-	    tmpuser.armour = d;
+	    d = winner->armour;
+	    winner->armour = loser->armour;
+	    loser->armour = d;
 	    od_set_color(L_YELLOW, D_BLACK);
-	    od_disp_str("You Hath Taken His Armour.\r\n");
+	    od_printf("%s Hath Taken %s Armour.\r\n", wstr, lstr);
 	}
 	user.attack = weapon[user.weapon].attack;
 	user.power = weapon[user.weapon].power;
 	tmpuser.attack = weapon[tmpuser.weapon].attack;
 	tmpuser.power = weapon[tmpuser.weapon].power;
 	outfile = fopen("data/record.lan", "ab");
-	fprintf(outfile, "%s conquered %s\r\n", user.pseudo, tmpuser.pseudo);
+	fprintf(outfile, "%s attacked %s and %s was victorious!\r\n", user.pseudo, tmpuser.pseudo, loser->pseudo);
 	fclose(outfile);
-	saveuser(&tmpuser);
     }
     opp.experience *= supplant();
-    user.experience += opp.experience;
-    od_printf("You obtain %" QWORDFORMAT " exp points.\r\n", opp.experience);
+    winner->experience += opp.experience;
+    if (won || opp.status != MONSTER)
+	od_printf("%s obtain %" QWORDFORMAT " exp points.\r\n", wstr, opp.experience);
+
+    if (opp.status != MONSTER)
+	saveuser(&tmpuser);
 }
 
 void
@@ -610,7 +705,7 @@ amode(void)
 		od_disp_str("Swish you missed!\r\n");
 		break;
 	    case 2:
-		od_disp_str("HA HA! He dodges your swing!\r\n");
+		od_printf("HA HA! %s dodges your swing!\r\n", sexstrings(&opp, HE, FALSE));
 		break;
 	    case 3:
 		od_disp_str("CLANG, The attack is blocked!\r\n");
@@ -629,13 +724,13 @@ amode(void)
 	tint = xp_random(2) + 1;
 	switch (tint) {
 	    case 1:
-		od_printf("You sliced him for %1.0f.\r\n", roll);
+		od_printf("You sliced %s for %1.0f.\r\n", sexstrings(&opp, HIM, FALSE), roll);
 		break;
 	    case 2:
-		od_printf("You made contact to his body for %1.0f.\r\n", roll);
+		od_printf("You made contact to %s body for %1.0f.\r\n", sexstrings(&opp, HIS, FALSE), roll);
 		break;
 	    case 3:
-		od_printf("You hacked him for %1.0f.", roll);
+		od_printf("You hacked %s for %1.0f.", sexstrings(&opp, HIM, FALSE), roll);
 		break;
 	}
 	if (opp.hps <= opp.damage) {
@@ -646,19 +741,19 @@ amode(void)
 		    od_disp_str("A Painless Death!\r\n");
 		    break;
 		case 2:
-		    od_disp_str("It Hath died!\r\n");
+		    od_printf("%s Hath died!\r\n", sexstrings(&opp, HE, TRUE));
 		    break;
 		case 3:
 		    od_disp_str("A Smooth killing!\r\n");
 		    break;
 		case 4:
-		    od_disp_str("It has gone to the Abyss!\r\n");
+		    od_printf("%s has gone to the Abyss!\r\n", sexstrings(&opp, HE, TRUE));
 		    break;
 	    }
 	    okea = xp_random(99) + 1;
 	    if (okea < 30)
 		findo();
-	    mutantvictory();
+	    endofbattle(TRUE);
 	}
     }
 }
@@ -674,7 +769,7 @@ bmode(void)
 	roll = opponentattack();
 	if (roll < 1.5) {
 	    od_set_color(D_GREEN, D_BLACK);
-	    od_disp_str("His attack tears your armour.\r\n");
+	    od_printf("%s attack tears your armour.\r\n", sexstrings(&opp, HIS, TRUE));
 	} else {
 	    roll = opponentattack2();
 	    if (roll > 5 * opp.power)
@@ -684,13 +779,13 @@ bmode(void)
 	    tint = xp_random(2) + 1;
 	    switch (tint) {
 		case 1:
-		    od_printf("He hammered you for %1.0f.\r\n", roll);
+		    od_printf("%s hammered you for %1.0f.\r\n", sexstrings(&opp, HE, TRUE), roll);
 		    break;
 		case 2:
-		    od_printf("He swung and hit for %1.0f.\r\n", roll);
+		    od_printf("%s swung and hit for %1.0f.\r\n", sexstrings(&opp, HE, TRUE), roll);
 		    break;
 		case 3:
-		    od_printf("You are surprised when he hits you for %1.0f.\r\n", roll);
+		    od_printf("You are surprised when %s hits you for %1.0f.\r\n", sexstrings(&opp, HE, FALSE), roll);
 		    break;
 	    }
 	    user.damage += roll;
@@ -711,17 +806,7 @@ bmode(void)
 			od_disp_str("May Palidine Be With You!!\r\n");
 			break;
 		}
-		if (opp.status != MONSTER) {
-		    player[opp.status].wins++;
-		    user.loses++;
-		    player[opp.status].gold += user.gold;
-		    user.gold = 0;
-		    outfile = fopen("data/record.lan", "ab");
-		    fprintf(outfile, "%s killed %s\r\n", user.pseudo, player[opp.status].pseudo);
-		    fclose(outfile);
-		}
-		user.status = DEAD;
-		SAFECOPY(user.killer, opp.pseudo);
+		endofbattle(FALSE);
 	    }
 	}
     }
@@ -1014,6 +1099,7 @@ searcher(void)
 	opp.gold = readnumb(0);
 	opp.experience = readnumb(0);
 	opp.status = MONSTER;
+	opp.sex = 'I';
 	endofline();
     }
     fclose(infile);
@@ -1106,6 +1192,10 @@ doggie(void)
 	opp.status = PLAYER;
 	user.battles--;
 	opp.experience /= 10;
+	nl();
+	od_disp_str("Your opponent screams out:\r\n");
+	od_printf("\"%s\" as battle is joined.\r\n", opp.bcry);
+	nl();
 	finder = FALSE;
 	battle();
     }
@@ -1193,7 +1283,7 @@ vic(void)
 	od_set_color(L_CYAN, D_BLACK);
 	od_disp_str("Enter your new Battle Cry.\r\n");
 	od_disp_str("> ");
-	od_input_str(temp, 60, ' ', '~');
+	od_input_str(user.bcry, 60, ' ', '~');
 	od_disp_str("Is this correct? ");
 	if (od_get_answer("YN") == 'Y') {
 	    ahuh = TRUE;
@@ -1203,7 +1293,38 @@ vic(void)
 	    od_disp_str("No\r\n");
 	}
     }
-    ahuh = TRUE;
+
+    for (ahuh = FALSE; !ahuh;) {
+	nl();
+	od_set_color(L_CYAN, D_BLACK);
+	od_disp_str("What will you say when you're mortally wounded?.\r\n");
+	od_disp_str("> ");
+	od_input_str(user.gaspd, 60, ' ', '~');
+	od_disp_str("Is this correct? ");
+	if (od_get_answer("YN") == 'Y') {
+	    ahuh = TRUE;
+	    od_disp_str("Yes\r\n");
+	} else {
+	    ahuh = FALSE;
+	    od_disp_str("No\r\n");
+	}
+    }
+
+    for (ahuh = FALSE; !ahuh;) {
+	nl();
+	od_set_color(L_CYAN, D_BLACK);
+	od_disp_str("What will you say when you win?\r\n");
+	od_disp_str("> ");
+	od_input_str(user.winmsg, 60, ' ', '~');
+	od_disp_str("Is this correct? ");
+	if (od_get_answer("YN") == 'Y') {
+	    ahuh = TRUE;
+	    od_disp_str("Yes\r\n");
+	} else {
+	    ahuh = FALSE;
+	    od_disp_str("No\r\n");
+	}
+    }
 }
 
 void
@@ -1229,8 +1350,11 @@ create(BOOL isnew)
     user.hps = (xp_random(4) + 1) + user.constitution;
     user.wins = 0;
     user.loses = 0;
-    user.gaspd[0]=0;
+    user.sex = 'M';
     if (isnew) {
+	user.bcry[0] = 0;
+	user.gaspd[0] = 0;
+	user.winmsg[0] = 0;
 	nl();
 	SAFECOPY(user.name, od_control.user_name);
 	SAFECOPY(user.pseudo, od_control.user_name);
@@ -1238,10 +1362,9 @@ create(BOOL isnew)
 	user.battles = BATTLES_PER_DAY;
 	user.fights = FIGHTS_PER_DAY;
 	user.flights = FLIGHTS_PER_DAY;
-    } else {
-	SAFECOPY(temp, user.gaspd);
     }
-    SAFECOPY(user.gaspd, temp);
+    od_printf("What sex would you like your character to be? (M/F) ");
+    user.sex = od_get_answer("MF");
     nl();
 }
 
@@ -1632,6 +1755,10 @@ loadnextuser(struct playertype * plr)
     readline(plr->pseudo, sizeof(plr->pseudo));
     if (feof(infile))
 	return (FALSE);
+    fread(&plr->sex, 1, 1, infile);
+    endofline();
+    if (feof(infile))
+	return (FALSE);
     readline(plr->gaspd, sizeof(plr->gaspd));
     if (feof(infile))
 	return (FALSE);
@@ -1931,7 +2058,6 @@ main(int argc, char **argv)
 	    case '#':
 		od_disp_str("Change Battle Cry\r\n");
 		vic();
-		SAFECOPY(user.gaspd, temp);
 		break;
 	}
     }
