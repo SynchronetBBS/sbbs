@@ -457,7 +457,7 @@ char * sbbs_t::temp_cmd(void)
 	int i;
 
 	if(!cfg.total_fcomps) {
-		errormsg(WHERE,ERR_CHK,"compressable file types",0);
+		errormsg(WHERE,ERR_CHK,"compressible file types",0);
 		return(nulstr); }
 	for(i=0;i<cfg.total_fcomps;i++)
 		if(!stricmp(useron.tmpext,cfg.fcomp[i]->ext)
