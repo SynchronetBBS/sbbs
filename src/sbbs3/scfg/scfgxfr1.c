@@ -1042,7 +1042,11 @@ multiple CD-ROMs or hard disks.
 						if((cfg.altpath[i]=(char *)MALLOC(LEN_DIR+1))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,LEN_DIR+1);
 							continue; }
-						memcpy(cfg.altpath[i],cfg.altpath[i+1],LEN_DIR+1); }
+						if(i>=cfg.altpaths)
+							j=i-1;
+						else
+							j=i+1;
+						memcpy(cfg.altpath[i],cfg.altpath[j],LEN_DIR+1); }
 					cfg.altpaths++;
 					uifc.changes=1;
 					continue; }
