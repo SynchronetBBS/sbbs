@@ -244,8 +244,8 @@ void ciolib_mouse_thread(void *data)
 			but=CIOLIB_BUTTON_NUMBER(in->event);
 			switch(CIOLIB_BUTTON_BASE(in->event)) {
 				case CIOLIB_MOUSE_MOVE:
-					if(in->x==state.button_x[but]
-							&& in->y==state.button_y[but])
+					if(in->x==state.curx
+							&& in->y==state.cury)
 						break;
 					add_outevent(CIOLIB_MOUSE_MOVE,in->x,in->y);
 					for(but=1;but<=3;but++) {
