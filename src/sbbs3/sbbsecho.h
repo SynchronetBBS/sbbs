@@ -221,17 +221,8 @@ struct  date    {
 /***********************/
 /* Function prototypes */
 /***********************/
-void read_echo_cfg();
+void read_echo_cfg(void);
 void bail(int code);
-char *ultoac(ulong l,char *str);
-int  bstrlen(char *str);
-int  nopen(char *str, int access);
-FILE *fnopen(int *file, char *str,int access);
-//char *sectostr(uint sec, char *str);
-void truncsp(char *str);
-ulong ahtoul(char *str);
-int  mv(char *src, char *dest, char copy); /* fast file move/copy function */
-void ucrc16(uchar ch, ushort *rcrc);
 faddr_t atofaddr(char *str);
 int  matchnode(faddr_t addr, int exact);
 void export_echomail(char *sub_code,faddr_t addr);
