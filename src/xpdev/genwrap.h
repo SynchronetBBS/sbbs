@@ -179,6 +179,8 @@ extern "C" {
 	#define	MAYBE_YIELD()	Sleep(0)
 	#define SLEEP(x)		Sleep(x)
 	#define BEEP(freq,dur)	Beep(freq,dur)
+	#define	popen			_popen
+	#define pclose			_pclose
 
 #elif defined(__OS2__)
 
