@@ -246,7 +246,7 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	p=fgets(buf,len+1,stdin);
 
 	if(p!=NULL)
-		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,p));
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncnl(p)));
 
 	free(buf);
     return(JS_TRUE);
