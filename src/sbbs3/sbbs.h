@@ -567,7 +567,6 @@ public:
 	char	sbbsfilename[128],sbbsfiledesc[128]; /* env vars */
 	bool	upload(uint dirnum);
     char	upload_lastdesc[LEN_FDESC+1];
-	void	update_uldate(file_t* f);
 	bool	bulkupload(uint dirnum);
 
 	/* download.cpp */
@@ -771,6 +770,7 @@ extern "C" {
 
 	DLLEXPORT ulong		DLLCALL	getposts(scfg_t* cfg, uint subnum);
 	DLLEXPORT long		DLLCALL getfiles(scfg_t* cfg, uint dirnum);
+	DLLEXPORT int		DLLCALL update_uldate(scfg_t* cfg, file_t* f);
 
 	/* str_util.c */
 	DLLEXPORT void		DLLCALL truncsp(char *str);		/* Truncates white spaces off end of str */

@@ -655,3 +655,50 @@ void DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 	write(file,ext,F_EXBSIZE);
 	close(file);
 }
+
+/****************************************************************************/
+/* Update the upload date for the file 'f'                                  */
+/****************************************************************************/
+int DLLCALL update_uldate(scfg_t* cfg, file_t* f)
+{
+	char str[256],fname[13];
+	int i,file;
+	long l,length;
+
+	/*******************/
+	/* Update IXB File */
+	/*******************/
+	sprintf(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	if((file=nopen(str,O_RDWR))==-1)
+		return(errno); 
+	length=filelength(file);
+	if(length%F_IXBSIZE) {
+		close(file);
+		return(-1); 
+	}
+	strcpy(fname,f->name);
+	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
+		fname[i]=fname[i+1];
+	for(l=0;l<length;l+=F_IXBSIZE) {
+		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
+		str[11]=0;
+		if(!strcmp(fname,str)) break; }
+	if(l>=length) {
+		close(file);
+		return(-2); 
+	}
+	lseek(file,l+14,SEEK_SET);
+	write(file,&f->dateuled,4);
+	close(file);
+
+	/*******************************************/
+	/* Update last upload date/time stamp file */
+	/*******************************************/
+	sprintf(str,"%s%s.dab",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
+		return(errno);
+
+	write(file,&f->dateuled,4);
+	close(file); 
+	return(0);
+}

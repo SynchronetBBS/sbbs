@@ -216,55 +216,6 @@ bool sbbs_t::uploadfile(file_t *f)
 	return(true);
 }
 
-
-/****************************************************************************/
-/* Update the upload date for the file 'f'                                  */
-/****************************************************************************/
-void sbbs_t::update_uldate(file_t* f)
-{
-	char str[256],fname[13];
-	int i,file;
-	long l,length;
-
-	/*******************/
-	/* Update IXB File */
-	/*******************/
-	sprintf(str,"%s%s.ixb",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
-	if((file=nopen(str,O_RDWR))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return; }
-	length=filelength(file);
-	if(length%F_IXBSIZE) {
-		close(file);
-		errormsg(WHERE,ERR_LEN,str,length);
-		return; }
-	strcpy(fname,f->name);
-	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[i]=fname[i+1];
-	for(l=0;l<length;l+=F_IXBSIZE) {
-		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
-		str[11]=0;
-		if(!strcmp(fname,str)) break; }
-	if(l>=length) {
-		close(file);
-		errormsg(WHERE,ERR_CHK,f->name,length);
-		return; }
-	lseek(file,l+14,SEEK_SET);
-	write(file,&f->dateuled,4);
-	close(file);
-
-	/*******************************************/
-	/* Update last upload date/time stamp file */
-	/*******************************************/
-	sprintf(str,"%s%s.dab",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
-	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
-		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT);
-	else {
-		write(file,&f->dateuled,4);
-		close(file); 
-	}
-}
-
 /****************************************************************************/
 /* Uploads files                                                            */
 /****************************************************************************/
