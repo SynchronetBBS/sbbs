@@ -41,7 +41,6 @@
 #include <ctype.h>
 
 /* Synchronet-specific headers */
-#include "sbbsdefs.h"	/* VERSION, REVISION, and COPYRIGHT_NOTICE */
 #include "conwrap.h"	/* kbhit/getch */
 #include "dirwrap.h"	/* BACKSLASH */
 #include "startup.h"	/* bbs_startup_t, bbs_thread */
@@ -50,6 +49,7 @@
 #include "services.h"	/* services_startup_t, services_thread */
 #include "ini_file.h"
 #include "sbbs_ini.h"
+#include "sbbsdefs.h"	/* VERSION, REVISION, and COPYRIGHT_NOTICE */
 
 #ifdef __unix__
 
