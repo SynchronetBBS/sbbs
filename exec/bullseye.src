@@ -1,0 +1,78 @@
+# bullseye.src
+
+# Bulletins written in Baja by Rob Swindell
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
+
+!include file_io.inc
+!include sbbsdefs.inc
+
+# Load the configuration file (SBBS\CTRL\BULLSEYE.CFG)
+
+int i
+int b
+int file
+int filepos
+int total
+int mode
+str fname
+
+printf "\r\nSynchronet BullsEye! Version 1.00 by Rob Swindell\r\n"
+pause_reset
+set str "%zBULLSEYE.CFG"
+fopen file O_RDONLY str
+if_false
+	printf "\r\n!ERROR %ld opening %s\r\n" _errno str
+	return
+	end_if
+fread_line file str
+copy mode str
+fget_pos file filepos
+
+set total 0
+#print "%l: %s" total str
+:count_bulls
+	fread_line file str
+	#print "%ld: %s" total str
+	if_true	# not end of file
+		add total 1
+		goto count_bulls
+	        end_if
+
+# Display menu, list bulletins, display prompt, etc.
+:menu
+printfile "%zBULLSEYE.ASC"
+print "\1n\r\n\1b\1hEnter number of bulletin to view or press (\1wENTER\1b) to continue: \1w"
+getnum b total
+compare b 1
+if_less
+	return
+	end_if
+fset_pos file filepos
+set i 0
+:next
+fread_line file str
+if_true	# not end of file
+	add i 1
+	compare i b
+	if_equal
+		print "\1n\1l"
+		truncsp str
+		copy fname str
+		compare_substr str ".htm"
+		if_true
+			exec_bin typehtml
+		else
+			printfile_str
+			end_if
+		sprintf str "Node %d %s viewed bulletin #%d: %s" _node_num _useron.alias i fname
+		print_local "%s"
+		clear_abort
+		goto menu
+		end_if
+	goto next
+	end_if
+printf "\r\nInvalid bulletin number: %d" b
+goto menu
