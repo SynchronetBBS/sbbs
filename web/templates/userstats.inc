@@ -35,8 +35,8 @@
   </td>
   <td>
     <table width="100%" border=0 cellpadding=0 cellspacing=0><tr>
-	  <td align="left">%%JS:user.stats.timeon_today%%</td>
-	  <td align="right">%%JS:user.limits.time_per_day;%%</td>
+	  <td align="left">%%JS:user.stats.timeon_today%%&nbsp;</td>
+	  <td align="right">&nbsp;%%JS:user.limits.time_per_day;%%</td>
 	</tr></table>
   </td>
   <td>
@@ -44,8 +44,8 @@
   </td>
   <td>
     <table width="100%" border=0 cellpadding=0 cellspacing=0><tr>
-	  <td align="left">%%JS:user.stats.timeon_last_logon%%</td>
-	  <td align="right">%%JS:user.limits.time_per_logon;%%</td>
+	  <td align="left">%%JS:user.stats.timeon_last_logon%%&nbsp;</td>
+	  <td align="right">&nbsp;%%JS:user.limits.time_per_logon;%%</td>
 	</tr></table>
   </td>
   <td>
@@ -67,8 +67,8 @@
   </td>
   <td>
     <table width="100%" border=0 cellpadding=0 cellspacing=0><tr>
-	  <td align="left">%%JS:user.stats.logons_today%%</td>
-	  <td align="right">%%JS:user.limits.logons_per_day%%</td>
+	  <td align="left">%%JS:user.stats.logons_today%%&nbsp;</td>
+	  <td align="right">&nbsp;%%JS:user.limits.logons_per_day%%</td>
 	</tr></table>
   </td>
   <td>
@@ -76,8 +76,8 @@
   </td>
   <td>
     <table width="100%" border=0 cellpadding=0 cellspacing=0><tr>
-	  <td align="left">%%JS:user.stats.total_posts%%</td>
-	  <td align="right">%%pinfo%%</td>
+	  <td align="left">%%JS:user.stats.total_posts%%&nbsp;</td>
+	  <td align="right">&nbsp;%%pinfo%%</td>
 	</tr></table>
   </td>
   <td>
@@ -104,7 +104,7 @@
     Waiting:
   </td>
   <td>
-    Not Imp.
+    %%JS:user.stats.mail_waiting%%
   </td>
   <td>
     Today:
