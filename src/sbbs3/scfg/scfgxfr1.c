@@ -211,7 +211,7 @@ considered a possible leech attempt.
 				opt[i][0]=0;
 				i=WIN_ACT|WIN_SAV;	/* save cause size can change */
 				if(cfg.total_fviews<MAX_OPTS)
-					i|=WIN_INS;
+					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_fviews)
 					i|=WIN_DEL|WIN_GET;
 				if(savfview.cmd[0])
@@ -315,7 +315,7 @@ command line examples for a few file types.
 				opt[i][0]=0;
 				i=WIN_ACT|WIN_SAV;	/* save cause size can change */
 				if(cfg.total_ftests<MAX_OPTS)
-					i|=WIN_INS;
+					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_ftests)
 					i|=WIN_DEL|WIN_GET;
 				if(savftest.cmd[0])
@@ -436,7 +436,7 @@ listed.
 				opt[i][0]=0;
 				i=WIN_ACT|WIN_SAV;	/* save cause size can change */
 				if(cfg.total_dlevents<MAX_OPTS)
-					i|=WIN_INS;
+					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_dlevents)
 					i|=WIN_DEL|WIN_GET;
 				if(savdlevent.cmd[0])
@@ -558,7 +558,7 @@ for each file type and command line listed.
 				opt[i][0]=0;
                 i=WIN_ACT|WIN_SAV;  /* save cause size can change */
 				if(cfg.total_fextrs<MAX_OPTS)
-                    i|=WIN_INS;
+                    i|=WIN_INS|WIN_XTR;
                 if(cfg.total_fextrs)
                     i|=WIN_DEL|WIN_GET;
 				if(savfextr.cmd[0])
@@ -664,7 +664,7 @@ extract the file(s).
 				opt[i][0]=0;
 				i=WIN_ACT|WIN_SAV;	/* save cause size can change */
 				if(cfg.total_fcomps<MAX_OPTS)
-					i|=WIN_INS;
+					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_fcomps)
 					i|=WIN_DEL|WIN_GET;
 				if(savfcomp.cmd[0])
@@ -769,7 +769,7 @@ files from the transfer section, and more.
 				opt[i][0]=0;
 				i=WIN_ACT|WIN_SAV;	/* save cause size can change */
 				if(cfg.total_prots<MAX_OPTS)
-					i|=WIN_INS;
+					i|=WIN_INS|WIN_XTR;
 				if(cfg.total_prots)
 					i|=WIN_DEL|WIN_GET;
 				if(savprot.mnemonic)
@@ -945,7 +945,7 @@ directory accordingly.
 				opt[i][0]=0;
 				i=WIN_ACT|WIN_SAV;	/* save cause size can change */
 				if((int)cfg.altpaths<MAX_OPTS)
-					i|=WIN_INS;
+					i|=WIN_INS|WIN_XTR;
 				if(cfg.altpaths)
 					i|=WIN_DEL|WIN_GET;
 				if(savaltpath[0])

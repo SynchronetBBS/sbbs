@@ -185,7 +185,7 @@ while(1) {
 	if(cfg.total_events)
 		j|=WIN_DEL|WIN_GET;
 	if(cfg.total_events<MAX_OPTS)
-		j|=WIN_INS|WIN_INSACT;
+		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savevent.code[0])
 		j|=WIN_PUT;
 	SETHELP(WHERE);
