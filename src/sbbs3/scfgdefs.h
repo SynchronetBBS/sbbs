@@ -55,7 +55,8 @@ typedef struct {                        /* Message sub board info */
 			data_dir[LEN_DIR+1],		/* Data file directory */
 			origline[51],				/* Optional EchoMail origin line */
 			echomail_sem[LEN_DIR+1],	/* EchoMail semaphore for this sub */
-			tagline[81];				/* Optional QWK net tag line */
+			tagline[81],				/* Optional QWK net tag line */
+			newsgroup[LEN_DIR+1];		/* Newsgroup name */
 	uchar	*ar,
 			*read_ar,
 			*post_ar,

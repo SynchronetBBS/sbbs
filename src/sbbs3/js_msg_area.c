@@ -178,10 +178,14 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "max_crcs", &val))
 				return(NULL);
 
-			sprintf(str,"%s.%s",cfg->grp[l]->sname,cfg->sub[d]->sname);
-			for(c=0;str[c];c++)
-				if(str[c]==' ')
-					str[c]='_';
+			if(cfg->sub[d]->newsgroup[0])
+				sprintf(str,"%.*s",sizeof(str)-1,cfg->sub[d]->newsgroup);
+			else {
+				sprintf(str,"%s.%s",cfg->grp[l]->sname,cfg->sub[d]->sname);
+				for(c=0;str[c];c++)
+					if(str[c]==' ')
+						str[c]='_';
+			}
 			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
 			if(!JS_SetProperty(cx, subobj, "newsgroup", &val))
 				return(NULL);

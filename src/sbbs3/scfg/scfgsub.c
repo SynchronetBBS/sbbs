@@ -237,6 +237,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 		sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.sub[i]->sname);
 		sprintf(opt[n++],"%-27.27s%s","QWK Name",cfg.sub[i]->qwkname);
 		sprintf(opt[n++],"%-27.27s%s","Internal Code",cfg.sub[i]->code);
+		sprintf(opt[n++],"%-27.27s%s","Newsgroup Name",cfg.sub[i]->newsgroup);
 		sprintf(opt[n++],"%-27.27s%.40s","Access Requirements"
 			,cfg.sub[i]->arstr);
 		sprintf(opt[n++],"%-27.27s%.40s","Reading Requirements"
@@ -332,31 +333,43 @@ topic, usually an abreviation of the sub-board's name.
                     uifc.helpbuf=0; }
                 break;
 			case 4:
+				SETHELP(WHERE);
+/*
+Newsgroup Name:
+
+This is the name of the sub-board used for newsgroup readers. If no name
+is configured here, a name will be automatically generated from the
+sub-board's name and group name.
+*/
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Newsgroup"
+					,cfg.sub[i]->newsgroup,50,K_EDIT);
+                break;
+			case 5:
 				uifc.savnum=2;
 				sprintf(str,"%s Access",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->arstr);
 				break;
-			case 5:
+			case 6:
 				uifc.savnum=2;
 				sprintf(str,"%s Reading",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->read_arstr);
                 break;
-			case 6:
+			case 7:
 				uifc.savnum=2;
 				sprintf(str,"%s Posting",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->post_arstr);
                 break;
-			case 7:
+			case 8:
 				uifc.savnum=2;
 				sprintf(str,"%s Operator",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->op_arstr);
                 break;
-			case 8:
+			case 9:
 				uifc.savnum=2;
 				sprintf(str,"%s Moderated Posting User",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->mod_arstr);
                 break;
-			case 9:
+			case 10:
 				sprintf(str,"%u",cfg.sub[i]->maxmsgs);
                 SETHELP(WHERE);
 /*
@@ -372,7 +385,7 @@ sufficient maximum.
                 cfg.sub[i]->maxmsgs=atoi(str);
                 cfg.sub[i]->misc|=SUB_HDRMOD;
 				break;
-			case 10:
+			case 11:
 				sprintf(str,"%u",cfg.sub[i]->maxage);
                 SETHELP(WHERE);
 /*
@@ -386,7 +399,7 @@ the sub-board.
                 cfg.sub[i]->maxage=atoi(str);
                 cfg.sub[i]->misc|=SUB_HDRMOD;
 				break;
-			case 11:
+			case 12:
 				sprintf(str,"%u",cfg.sub[i]->maxcrcs);
 				SETHELP(WHERE);
 /*
@@ -401,7 +414,7 @@ CRCs is reached, the oldest CRCs will be automatically purged.
 				cfg.sub[i]->maxcrcs=atol(str);
 				cfg.sub[i]->misc|=SUB_HDRMOD;
                 break;
-			case 12:
+			case 13:
 				while(1) {
 					n=0;
 					sprintf(opt[n++],"%-27.27s%s","Allow Private Posts"
@@ -791,7 +804,7 @@ compatible mail programs you use support the LZH translation.
 #endif
 							} }
 				break;
-			case 13:
+			case 14:
 				while(1) {
 					n=0;
 					sprintf(opt[n++],"%-27.27s%s","Append Tag/Origin Line"
@@ -1073,7 +1086,7 @@ should be re-scanned.
 								,cfg.sub[i]->echomail_sem,50,K_EDIT);
 							break; } }
 				break;
-			case 14:
+			case 15:
 				while(1) {
 					n=0;
 					if(cfg.sub[i]->qwkconf)
