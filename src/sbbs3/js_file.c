@@ -402,6 +402,46 @@ js_readall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
+static jsval get_value(JSContext *cx, char* value)
+{
+	char*	p;
+	BOOL	f=FALSE;
+	jsval	val;
+
+	if(value==NULL || *value==0)
+		return(JSVAL_VOID);
+
+	/* integer or float? */
+	for(p=value;*p;p++) {
+		if(*p=='.')
+			f=TRUE;
+		else if(!isdigit(*p))
+			break;
+	}
+	if(*p==0) {	
+		JS_NewNumberValue(cx, f ? atof(value) : strtoul(value,NULL,10), &val);
+		return(val);
+	}
+	/* hexadecimal number? */
+	if(!strncmp(value,"0x",2)) {	
+		for(p=value+2;*p;p++)
+			if(!isxdigit(*p))
+				break;
+		if(*p==0) {	
+			JS_NewNumberValue(cx,strtoul(value,NULL,0),&val);
+			return(val);
+		}
+	}
+	/* Boolean? */
+	if(!stricmp(value,"true"))
+		return(JSVAL_TRUE);
+	if(!stricmp(value,"false"))
+		return(JSVAL_FALSE);
+
+	/* String */
+	return(STRING_TO_JSVAL(JS_NewStringCopyZ(cx,value)));
+}
+
 static JSBool
 js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -424,6 +464,12 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
 	key=JS_GetStringBytes(JS_ValueToString(cx, argv[1]));
+
+	if(dflt==JSVAL_VOID) {	/* unspecified default value */
+		*rval=get_value(cx,iniGetString(p->fp,section,key,NULL,buf));
+		return(JS_TRUE);
+	}
+
 	switch(JSVAL_TAG(dflt)) {
 		case JSVAL_STRING:
 			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,
@@ -551,7 +597,7 @@ js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	list = iniGetNamedStringList(p->fp,section);
     for(i=0;list && list[i];i++) {
 		JS_DefineProperty(cx, object, list[i]->name
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]->value))
+			,get_value(cx,list[i]->value)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	}
@@ -605,7 +651,7 @@ js_iniGetAllObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		key_list = iniGetNamedStringList(p->fp,sec_list[i]);
 		for(k=0;key_list && key_list[k];k++)
 			JS_DefineProperty(cx, object, key_list[k]->name
-				,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,key_list[k]->value))
+				,get_value(cx,key_list[k]->value)
 				,NULL,NULL,JSPROP_ENUMERATE);
 		iniFreeNamedStringList(key_list);
 
@@ -1371,7 +1417,7 @@ static jsMethodSpec js_file_functions[] = {
 	,JSDOCSTR("parse all key names from the specified <i>section</i> in a <tt>.ini</tt> file "
 		"and return the key names as an <i>array of strings</i>")
 	},
-	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_STRING,	JSDOCSTR("section, key, default")
+	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_STRING,	JSDOCSTR("section, key [,default]")
 	,JSDOCSTR("parse a key from a <tt>.ini</tt> file and return its value (format = '<tt>key = value</tt>'). "
 		"returns the specified <i>default</i> value if the key or value is missing or invalid. "
 		"will return a <i>bool</i>, <i>number</i>, <i>string</i>, or an <i>array of strings</i> "
