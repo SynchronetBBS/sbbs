@@ -60,13 +60,17 @@
 #endif
 
 /* Unsigned type short-hands	*/
+#ifndef uchar
 #define uchar	unsigned char
+#endif
 #ifdef __GLIBC__
 	#include <sys/types.h>
 #else
+	#ifndef ushort
 	#define ushort  unsigned short
 	#define uint    unsigned int
 	#define ulong   unsigned long
+	#endif
 #endif
 
 /* Windows Types */
@@ -88,6 +92,31 @@
 #endif
 #ifndef HANDLE
 #define HANDLE	void*
+#endif
+
+/* Open flags */
+#ifdef _WIN32
+
+#ifndef O_DENYNONE
+#define O_DENYNONE	OF_SHARE_DENY_NONE
+#define O_DENYALL	OF_SHARE_EXCLUSIVE
+#endif
+
+#elif defined(__unix__)
+
+#define O_DENYNONE	0
+#define O_DENYALL	0
+#define O_BINARY	0
+#define SH_DENYNO	0
+#define SH_DENYRW	0
+#define SH_DENYWR	0
+
+#endif
+
+#ifdef _MSC_VER			/* Visual C++ */
+
+#define S_IWRITE	_S_IWRITE
+
 #endif
 
 /****************************************************************************/
