@@ -25,30 +25,31 @@
  *              Aug 10, 2003  6.23  SH   *nix support
  */
 
+#include <ctype.h>
 #include "OpenDoor.h"
 
 #ifdef ODPLAT_NIX
 #include <string.h>
 
-int
-strlwr(char *str)
+char *
+od_strlwr(char *str)
 {
-  size_t i;
-  for(i=0;i<strlen(str);i++)
-  {
-    if(str[i]>64 && str[i]<=91) str[i]=str[i]|32;
-  }
-  return 0;
+	char	*p;
+	
+	for(p=str;*p;p++) 
+		*p=tolower(*p);
+
+	return(str);
 }
 
-int
-strupr(char *str)
+char *
+od_strupr(char *str)
 {
-  size_t i;
-  for(i=0;i<strlen(str);i++)
-  {
-    if(str[i]>96 && str[i]<123) str[i] &= 223;
-  }
-  return 0;
+	char	*p;
+	
+	for(p=str;*p;p++) 
+		*p=toupper(*p);
+
+	return(str);
 }
 #endif
