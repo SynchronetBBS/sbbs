@@ -304,9 +304,11 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 					,ex_mode,cfg.node_dir); }
 
 		else {
+			CLS;
 			rioctl(IOCM|PAUSE|ABORT);
 			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,msgtmp,nulstr,NULL),ex_mode,cfg.node_dir);
-			rioctl(IOSM|PAUSE|ABORT); }
+			rioctl(IOSM|PAUSE|ABORT); 
+		}
 		checkline();
 		if(!fexist(msgtmp) || !online
 			|| (linesquoted && qlen==flength(msgtmp) && qtime==fdate(msgtmp))) {
@@ -801,9 +803,11 @@ void sbbs_t::editfile(char *str)
 		if(online==ON_LOCAL)
 			external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,str,nulstr,NULL),mode,cfg.node_dir);
 		else {
+			CLS;
 			rioctl(IOCM|PAUSE|ABORT);
 			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,str,nulstr,NULL),mode,cfg.node_dir);
-			rioctl(IOSM|PAUSE|ABORT); }
+			rioctl(IOSM|PAUSE|ABORT); 
+		}
 		return; }
 	if((buf=(char *)MALLOC(maxlines*MAX_LINE_LEN))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,maxlines*MAX_LINE_LEN);
