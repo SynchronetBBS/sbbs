@@ -41,7 +41,6 @@ function document_methods(name,obj)
 	//f.writeln(" [<a href=#" + name +"_methods>methods</a>]");
 
 	table_close();
-	writeln("<br>");
 	table_open(name);
 
 	
@@ -95,8 +94,13 @@ function object_header(name, obj)
 		writeln("<p>" + obj._constructor + "</p>");
 }
 
-function properties_header(name)
+function properties_header(name, obj)
 {
+
+	table_close();
+	if(obj._method_list != undefined)
+		writeln("<br>");
+
 	table_open(name);
 	writeln("<caption align=left><b><tt>" + name + "</tt> properties" + "</b></caption>");
 	writeln("<tr bgcolor=gray>");
@@ -126,7 +130,7 @@ function document_properties(name, obj)
 			continue;
 		} 
 		if(!prop_hdr) {
-			properties_header(name);
+			properties_header(name, obj);
 			prop_hdr=true;
 		}
 		write("<tr valign=top>");
@@ -140,10 +144,10 @@ function document_object(name, obj)
 {
 	
 	object_header(name,obj);
+	document_methods(name,obj);
 	f.writeln("<ul type=disc>");
 	document_properties(name,obj);
 	f.writeln("</ul>");
-	document_methods(name,obj);
 	table_close();
 }
 
@@ -169,12 +173,12 @@ f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
 f.writeln("<ul>");
 
 object_header("global"		,_global);
-properties_header("global");
+document_methods("global"	,_global);
+properties_header("global"	,_global);
 writeln("<tr><td>" + "argc".bold() + "<td>number<td>number of arguments passed to the script</td>");
 writeln("<tr><td>" + "argv".bold() + "<td>array<td>array of argument strings (argv.length == argc)</td>");
 writeln("<tr><td>" + "errno".bold() + "<td>number<td>last system error number</td>");
 writeln("<tr><td>" + "errno_str".bold() + "<td>string<td>description of last system error</td>");
-document_methods("global"	,_global);
 
 document_object("system"	,system);
 document_object("server"	,server);
