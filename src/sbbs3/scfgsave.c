@@ -393,7 +393,8 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 		put_int(cfg->shell[i]->misc,stream);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n,stream); 
+	}
 
 	fclose(stream);
 
@@ -451,7 +452,8 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			put_int(n,stream);
 		n=0xffff;
 		for(j=0;j<16;j++)
-			put_int(n,stream); }
+			put_int(n,stream); 
+	}
 
 	/* Message Sub-boards */
 
@@ -506,8 +508,11 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			else
 				SAFECOPY(smb.file,cfg->sub[i]->data_dir);
 			prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
-			strcat(smb.file,cfg->grp[cfg->sub[i]->grp]->code_prefix);
-			strcat(smb.file,cfg->sub[i]->code_suffix);
+			SAFEPRINTF2(str,"%s%s"
+				,cfg->grp[cfg->sub[i]->grp]->code_prefix
+				,cfg->sub[i]->code_suffix);
+			strlwr(str);
+			strcat(smb.file,str);
 			if(smb_open(&smb)!=0) {
 				/* errormsg(WHERE,ERR_OPEN,smb.file,x); */
 				continue; 
@@ -848,11 +853,15 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 #if 1
 				if(cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path,cfg->dir[i]->path);
-					if(!path[0])		/* no file storage path specified */
-						safe_snprintf(path,sizeof(path),"%sdirs/%s%s/"
-							,cfg->data_dir
+					if(!path[0]) {		/* no file storage path specified */
+						SAFEPRINTF2(str,"%s%s"
 							,cfg->lib[cfg->dir[i]->lib]->code_prefix
 							,cfg->dir[i]->code_suffix);
+						strlwr(str);
+						safe_snprintf(path,sizeof(path),"%sdirs/%s/"
+							,cfg->data_dir
+							,str);
+					}
 					else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
 						SAFECOPY(path,cfg->lib[cfg->dir[i]->lib]->parent_path);
 						prep_dir(cfg->ctrl_dir,path,sizeof(path));
@@ -891,15 +900,18 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->total_txtsecs,stream);
 	for(i=0;i<cfg->total_txtsecs;i++) {
 #if 1
-		safe_snprintf(str,sizeof(str),"%stext/%s",cfg->data_dir,cfg->txtsec[i]->code);
-		md(str);
+		SAFECOPY(str,cfg->txtsec[i]->code);
+		strlwr(str);
+		safe_snprintf(path,sizeof(path),"%stext/%s",cfg->data_dir,str);
+		md(path);
 #endif
 		put_str(cfg->txtsec[i]->name,stream);
 		put_str(cfg->txtsec[i]->code,stream);
 		put_str(cfg->txtsec[i]->arstr,stream);
 		n=0;
 		for(j=0;j<8;j++)
-			put_int(n,stream); }
+			put_int(n,stream); 
+	}
 
 	fclose(stream);
 
