@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <h1 id="siteName">@@JS:system.name@@</h1> 
+  <h1 id="siteName">@@system:name@@</h1> 
    <div id="Greeting"> 
         @@JS:template.user_greeting@@
    </div>
