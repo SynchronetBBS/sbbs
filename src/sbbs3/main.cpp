@@ -721,6 +721,14 @@ bool sbbs_t::js_init()
 		if(js_CreateFileClass(js_cx, js_glob)==NULL)
 			break;
 
+		/* User class */
+		if(js_CreateUserClass(js_cx, js_glob, &cfg)==NULL) 
+			break;
+
+		/* Area Objects */
+		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, NULL, NULL, NULL)) 
+			break;
+
 		/* Server Object */
 		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
 			,NULL,JSPROP_ENUMERATE))==NULL)
@@ -1204,12 +1212,6 @@ void event_thread(void* arg)
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
 			lprintf("!JavaScript Initialization FAILURE");
-	}
-
-	if(sbbs->js_cx!=NULL) {
-		/* User class */
-		if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &scfg)==NULL) 
-			lprintf("Node %d !JavaScript ERROR creating user class",sbbs->cfg.node_num);
 	}
 #endif
 
@@ -2903,12 +2905,6 @@ void node_thread(void* arg)
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
 			lprintf("Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
-	}
-
-	if(sbbs->js_cx!=NULL) {
-		/* User class */
-		if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &scfg)==NULL) 
-			lprintf("Node %d !JavaScript ERROR creating user class",sbbs->cfg.node_num);
 	}
 #endif
 
