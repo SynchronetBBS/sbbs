@@ -405,7 +405,7 @@ while(client.socket.is_connected) {
 				switch(line.toLowerCase()) {
 					case "to":
 					case "apparently-to":
-					case "x-comment-to"
+					case "x-comment-to":
 						hdr.to=data;
 						break;
 					case "from":
