@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -41,11 +41,15 @@
 /************************/
 /* byte-swapping macros */
 /************************/
-#define BYTE_SWAP_SHORT(x)	((((short)(x)&0xff00)>>8) | (((short)(x)&0x00ff)<<8))
-#define BYTE_SWAP_LONG(x)	((((long)(x)&0xff000000)>>24) | (((long)(x)&0x00ff0000)>>8) | (((long)(x)&0x0000ff00)<<8) | (((long)(x) & 0x000000ff)<<24))
+#define BYTE_SWAP_16(x)	((((short)(x)&0xff00)>>8) | (((short)(x)&0x00ff)<<8))
+#define BYTE_SWAP_32(x)	((((long)(x)&0xff000000)>>24) | (((long)(x)&0x00ff0000)>>8) | (((long)(x)&0x0000ff00)<<8) | (((long)(x)&0x000000ff)<<24))
+
+/* these may need to be updated for > 32-bit platforms */
+#define BYTE_SWAP_SHORT(x)	BYTE_SWAP_16(x)
+#define BYTE_SWAP_LONG(x)	BYTE_SWAP_32(x)
 
 /* auto-detect integer size */
-#define BYTE_SWAP_INT(x)	(sizeof(x)==sizeof(short) ? BYTE_SWAP_SHORT(x) : BYTE_SWAP_LONG(x))
+#define BYTE_SWAP_INT(x)	(sizeof(x)==sizeof(short) ? BYTE_SWAP_SHORT(x) : sizeof(x)==sizeof(long) ? BYTE_SWAP_LONG(x) : (x))
 
 /********************************/
 /* Architecture-specific macros */
