@@ -3,7 +3,7 @@
     <a class="navigation" href="index.ssjs">Groups</a> : @@JS:if(template.group.name!="E-Mail") '<a class="navigation" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a> :'; else '';@@
     <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">%%sub:description%%</a> -&#062;
     <a class="navigation" href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New Message</a><br /><span class="navigation">(@@show_choice@@)</p></span>
-<form name="myForm" action="management.ssjs" method="post">
+<form name="DeleteMsg" action="management.ssjs" method="post">
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
 <tr class="msglist">
@@ -39,8 +39,8 @@
     </table>
     <br />
     <div align="center">
-	<input type="button" onclick="SetAllCheckBoxes('myForm', 'number', true);" value="Select All">
-	<input type="button" onclick="SetAllCheckBoxes('myForm', 'number', false);" value="Deselect All">
+	<input type="button" onclick="SetAllCheckBoxes('DeleteMsg', 'number', true);" value="Select All">&nbsp;
+	<input type="button" onclick="SetAllCheckBoxes('DeleteMsg', 'number', false);" value="Deselect All">&nbsp;
 	<input class="msg" type="submit" name="Action" value="Delete Message(s)" /></div>
 </form>
 		
