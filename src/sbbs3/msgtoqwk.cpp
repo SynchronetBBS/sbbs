@@ -278,8 +278,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			strcpy(str,"\1n");
 		if(cfg.sub[subnum]->misc&SUB_ASCII) ch='*';
 		else ch='þ';
-		sprintf(tmp," %c \1g%s\1n %c %.127s\xe3"
-			,ch,"Synchronet",ch,cfg.sub[subnum]->tagline);
+		sprintf(tmp," %c \1g%.10s\1n %c %.127s\xe3"
+			,ch,VERSION_NOTICE,ch,cfg.sub[subnum]->tagline);
 		strcat(str,tmp);
 		if(!(mode&A_LEAVE))
 			remove_ctrl_a(str,NULL);
