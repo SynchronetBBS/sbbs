@@ -109,10 +109,9 @@ BOOL				is_daemon=FALSE;
 BOOL				std_facilities=FALSE;
 #endif
 
-static const char* prompt = 
-"[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
+static const char* prompt;
 
-static const char* usage  = "usage: %s [[setting] [...]]\n"
+static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
 							"\n"
 							"Telnet server settings:\n\n"
 							"\ttf<node>   set first Telnet node number\n"
@@ -199,7 +198,8 @@ static int lputs(char *str)
 	if(str!=NULL)
 		printf("%s\n",str);
 	/* re-display prompt with current stats */
-	prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
+	if(prompt!=NULL)
+		prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
 	fflush(stdout);
 	pthread_mutex_unlock(&mutex);
 
@@ -855,10 +855,10 @@ int main(int argc, char** argv)
 
 	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,BACKSLASH,host_name);
 #if defined(__unix__) && defined(PREFIX)
-	if(!fexist(ini_file))
+	if(!fexistcase(ini_file))
 		sprintf(ini_file,"%s/etc/sbbs.ini",PREFIX);
 #endif
-	if(!fexist(ini_file))
+	if(!fexistcase(ini_file))
 		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,BACKSLASH);
 
 	/* Initialize BBS startup structure */
@@ -967,7 +967,7 @@ int main(int argc, char** argv)
 		arg=argv[i];
 		while(*arg=='-')
 			arg++;
-		if(strchr(arg,BACKSLASH)) {
+		if(strcspn(arg,"\\/")!=strlen(arg)) {
 			strcpy(ini_file,arg);
 			continue;
 		}
@@ -982,6 +982,8 @@ int main(int argc, char** argv)
 		sprintf(str,"Reading %s",ini_file);
 		bbs_lputs(str);
 	}
+
+	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
 
 	/* We call this function to set defaults, even if there's no .ini file */
 	sbbs_read_ini(fp, 
@@ -1007,7 +1009,7 @@ int main(int argc, char** argv)
 		arg=argv[i];
 		while(*arg=='-')
 			arg++;
-		if(strchr(arg,BACKSLASH))	/* ini_file name */
+		if(strcspn(arg,"\\/")!=strlen(arg))	/* ini_file name */
 			continue;
 		if(!stricmp(arg,"defaults")) {
 			printf("Default settings:\n");
