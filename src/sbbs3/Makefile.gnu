@@ -4,12 +4,14 @@
 # @format.tab-size 4													#
 #########################################################################
 
+# $id$
+
 # Macros
 DEBUG	=	1		# Comment out for release (non-debug) version
 CC		=	gcc
-LD		=	ld
-CFLAGS	=	-Id:/cygwin/usr/include/mingw32
-LFLAGS  =	-L$(LIB)
+LD		=	dllwrap
+CFLAGS	=	-mno-cygwin
+LFLAGS  =	--target=i386-mingw32 -mno-cygwin
 
 #ifdef DEBUG
 #CFLAGS	=	$(CFLAGS) -g -O0 -D_DEBUG 
@@ -99,8 +101,10 @@ OBJS	=	ansiterm.o\
 			xtrn.o\
 			xtrn_sec.o 
 
-HEADERS =	sbbs.h sbbsdefs.h sbbswrap.h scfgdefs.h gen_defs.h nodedefs.h \
-			smblib.h smbdefs.h text.h
+LIBS	=	/usr/lib/libwsock32.a /usr/lib/libwinmm.a
+
+HEADERS =	sbbs.h sbbsdefs.h sbbswrap.h sbbsinet.h scfgdefs.h gen_defs.h \
+			nodedefs.h smblib.h smbdefs.h text.h
 
 SBBSDEFS=	-DSBBS -DSBBS_EXPORTS -DSMB_GETMSGTXT -DSMBDLL -DLZHDLL \
 			-DWRAPPER_DLL
@@ -117,16 +121,17 @@ ALL: $(SBBS) $(FTPSRVR) $(MAILSRVR)
 
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) ver.o
-		$(LD) $(LFLAGS) $(LIB)\c0d32.obj $(OBJS)
-			$(LIB)\import32.lib $(LIB)\cw32mt.lib $(LIB)\ws2_32.lib
+		$(LD) $(LFLAGS) -o $(SBBS) ver.o $(OBJS) $(LIBS) --output-lib sbbs.a
 
 # Mail Server DLL Link Rule
 $(MAILSRVR): mailsrvr.c mxlookup.c
-		$(CC) $(CFLAGS) -M -lGi -DMAILSRVR_EXPORTS mailsrvr.c mxlookup.c sbbs.lib
+		$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS mailsrvr.c mxlookup.c 
+		$(LD) $(LFLAGS) -o $(MAILSRVR) mailsrvr.o mxlookup.o $(LIBS) sbbs.a --output-lib mailsrvr.a
 
 # FTP Server DLL Link Rule
 $(FTPSRVR): ftpsrvr.c
-		$(CC) $(CFLAGS) -M -lGi -DFTPSRVR_EXPORTS ftpsrvr.c sbbs.lib
+		$(CC) $(CFLAGS) -c -DFTPSRVR_EXPORTS ftpsrvr.c
+		$(LD) $(LFLAGS) -o $(FTPSRVR) ftpsrvr.o $(LIBS) sbbs.a --output-lib ftpsrvr.a
 
 # Dependencies
 ansiterm.o:		$(HEADERS)
