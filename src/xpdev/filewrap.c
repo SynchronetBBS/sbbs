@@ -38,6 +38,7 @@
 /* OS-specific */
 #if defined(__unix__)
 
+#include <stdarg.h>		/* va_list */
 #include <string.h>     /* strlen() */
 #include <unistd.h>     /* getpid() */
 #include <fcntl.h>      /* fcntl() file/record locking */
