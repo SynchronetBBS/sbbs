@@ -98,7 +98,7 @@ if_true
 	lprintf "QNET-FTP: %s already exists!" qwk
 	set i 0
 	:check_qwk
-	sprintf qwk "%%j%s.QW%ld" hubid i
+	sprintf qwk "%%j%s.qw%ld" hubid i
 	chkfile qwk
 	if_true
 		lprintf "QNET-FTP: %s already exists!" qwk
