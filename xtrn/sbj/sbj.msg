@@ -1,6 +1,6 @@
                                   chSynchronet
-                                 n1k Blackjack! n
-c
+                                 r Blackjack! 
+w
         As you might have guessed, this is a blackjack game. But not just any
 blackjack game. With Synchronet Blackjack, you play against the house for
 credits and your friends can play along side you simultaneously from the same
@@ -13,10 +13,11 @@ ties (pushes) break even. You can double down if you have enough dough and even
 split pairs!
 
         If you choose to play, note that it is much more enjoyable with a
-friend at the table with you. While the dealer is fast and curtious, he doesn't
-make a very good conversation.
+friend at the table with you. While the dealer is fast and curteous, he doesn't
+make a very good conversationalist.
 
 	If you notice that you're not seeing the card symbols for 'clubs' you
 may have Compuserve Quick B transfers enabled or another answerback to Ctrl-E.
 This should be disabled, or you should toggle card symbols OFF.
+
 
