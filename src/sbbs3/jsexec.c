@@ -462,27 +462,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static JSBool
 js_BranchCallback(JSContext *cx, JSScript *script)
 {
-	branch.counter++;
-
-	/* Infinite loop? */
-	if(branch.limit && branch.counter > branch.limit) {
-		JS_ReportError(cx,"Infinite loop (%lu branches) detected",branch.counter);
-		branch.counter=0;
-		return(JS_FALSE);
-	}
-	/* Give up timeslices every once in a while */
-	if(branch.yield_interval && (branch.counter%branch.yield_interval)==0)
-		YIELD();
-
-	if(branch.gc_interval && (branch.counter%branch.gc_interval)==0)
-		JS_MaybeGC(cx), branch.gc_attempts++;
-
-	if(branch.auto_terminate && terminated) {
-		JS_ReportError(cx,"Terminated");
-		return(JS_FALSE);
-	}
-
-    return(JS_TRUE);
+    return(js_GenericBranchCallback(cx,&branch));
 }
 
 static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
