@@ -157,6 +157,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         sprintf(str,"%s /c ipconfig /all > %sipconfig.txt"
             ,getenv("COMSPEC"),scfg.ctrl_dir);
         WinExec(str,SW_HIDE);   /* there's got to be a better way! */
+        Sleep(1500);	/* give ipconfig time to run */
         sprintf(str,"%sipconfig.txt",scfg.ctrl_dir);
         FILE*   fp=fopen(str,"r");
         char*   p;
