@@ -67,12 +67,12 @@ ifdef DEBUG
 CFLAGS	:=	$(CFLAGS) -g -O0 -D_DEBUG 
 LIBODIR	:=	$(LIBODIR).debug
 EXEODIR	:=	$(EXEODIR).debug
-LIBS	:=	$(LIBS) ../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
+LIBS	:=	$(LIBS) -lm ../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
 else
 LFLAGS	:=	$(LFLAGS) -S
 LIBODIR	:=	$(LIBODIR).release
 EXEODIR	:=	$(EXEODIR).release
-LIBS	:=	$(LIBS) ../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
+LIBS	:=	$(LIBS) -lm ../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
 endif
 
 include targets.mak		# defines all targets
