@@ -465,7 +465,23 @@ int ciolib_getmouse(struct mouse_event *mevent)
 		mevent->endy=out->endy;
 		free(out);
 	}
-	else
+	else {
+		memset(mevent,0,sizeof(struct mouse_event));
 		retval=-1;
+	}
 	return(retval);
+}
+
+int ciolib_ungetmouse(struct mouse_event *mevent)
+{
+	int retval=0;
+	struct mouse_event *me;
+
+	if((me=(struct mouse_event *)malloc(sizeof(struct mouse_event)))==NULL)
+		return(-1);
+	memcpy(me,mevent,sizeof(struct mouse_event));
+	pthread_mutex_lock(&out_mutex);
+	listAddNode(state.output,me,FIRST_NODE);
+	pthread_mutex_unlock(&out_mutex);
+	return(0);
 }

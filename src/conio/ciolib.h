@@ -189,6 +189,7 @@ typedef struct {
 	void	(*textbackground)	(int);
 	void	(*textcolor)	(int);
 	int		(*getmouse)		(struct mouse_event *mevent);
+	int		(*ungetmouse)	(struct mouse_event *mevent);
 	int		(*hidemouse)	(void);
 	int		(*showmouse)	(void);
 	void	(*settitle)		(const char *);
@@ -281,6 +282,7 @@ void ciolib_settitle(const char *title);
 	#define insline()				ciolib_insline()
 	#define getpass(a)				ciolib_getpass(a)
 	#define getmouse(a)				ciolib_getmouse(a)
+	#define ungetmouse(a)			ciolib_ungetmouse(a)
 	#define	hidemouse()				ciolib_hidemouse()
 	#define showmouse()				ciolib_showmouse()
 	#define settitle(a)				ciolib_settitle(a)
