@@ -1840,7 +1840,7 @@ void DLLCALL services_thread(void* arg)
             		lprintf(LOG_NOTICE,"0000 Services sockets closed");
 				else
 					lprintf(LOG_WARNING,"0000 !ERROR %d selecting sockets",ERROR_VALUE);
-				break;
+				continue;
 			}
 
 			/* Determine who services this socket */

@@ -4241,7 +4241,7 @@ void DLLCALL mail_server(void* arg)
             		lprintf(LOG_NOTICE,"0000 Mail Server sockets closed");
 				else
 					lprintf(LOG_WARNING,"0000 !ERROR %d selecting sockets",ERROR_VALUE);
-				break;
+				continue;
 			}
 
 			if(server_socket!=INVALID_SOCKET && !terminate_server

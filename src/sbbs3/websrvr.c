@@ -3180,7 +3180,7 @@ void DLLCALL web_server(void* arg)
             		lprintf(LOG_INFO,"Web Server socket closed");
 				else
 					lprintf(LOG_WARNING,"!ERROR %d selecting socket",ERROR_VALUE);
-				break;
+				continue;
 			}
 
 			if(server_socket==INVALID_SOCKET)	/* terminated */

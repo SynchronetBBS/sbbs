@@ -4229,7 +4229,7 @@ void DLLCALL bbs_thread(void* arg)
             	lprintf(LOG_NOTICE,"Telnet Server sockets closed");
 			else
 				lprintf(LOG_WARNING,"!ERROR %d selecting sockets",ERROR_VALUE);
-			break;
+			continue;
 		}
 
 		if(terminate_server)	/* terminated */
