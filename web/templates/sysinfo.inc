@@ -92,5 +92,15 @@ Version %%JS:system.full_version%%</p>
 <p>%%JS:system.js_version%%</p>
 <p>%%JS:system.socket_lib%%</P>
 <p>%%JS:system.os_version%%</P>
-
+<table>
+<tr><td>
+<pre><font="courier new">@@sysinfo@@</font></pre>
+</td></tr>
+<tr><td>
+&nbsp;
+</td></tr>
+<tr><td>
+<pre><font="courier new">@@logon@@</font></pre>
+</td></tr>
+</table>
 </center>
