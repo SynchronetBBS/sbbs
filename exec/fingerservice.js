@@ -96,10 +96,15 @@ function xtrn_name(code)
 	if(this.xtrn_area==undefined)
 		return(code);
 
-	for(s in xtrn_area.sec_list)
-		for(p in xtrn_area.sec_list[s].prog_list)
-			if(xtrn_area.sec_list[s].prog_list[p].code.toLowerCase()==code.toLowerCase())
-				return(xtrn_area.sec_list[s].prog_list[p].name);
+	if(xtrn_area.prog!=undefined)
+		if(xtrn_area.prog[code]!=undefined)
+			return(xtrn_area.prog[code].name);
+	else {	/* old way */
+		for(s in xtrn_area.sec_list)
+			for(p in xtrn_area.sec_list[s].prog_list)
+				if(xtrn_area.sec_list[s].prog_list[p].code.toLowerCase()==code.toLowerCase())
+					return(xtrn_area.sec_list[s].prog_list[p].name);
+	}
 	return(code);
 }
 
