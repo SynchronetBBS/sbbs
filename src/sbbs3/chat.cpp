@@ -1653,7 +1653,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 	while((**ptrptr)!=')' && (**ptrptr)) {
 		if((**ptrptr)=='[') {
 			(*ptrptr)++;
-			sprintf(str,"%.128s",*ptrptr);
+			SAFECOPY(str,*ptrptr);
 			while(**ptrptr && (**ptrptr)!=']')
 				(*ptrptr)++;
 			(*ptrptr)++;

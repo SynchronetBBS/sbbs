@@ -3773,7 +3773,7 @@ int main(int argc, char **argv)
 	char	packet[MAX_PATH+1];
 	char	ch,str[1025],fname[256],path[512],sub_code[9]
 			,*p,*tp
-			,areatagstr[129],outbound[128]
+			,areatagstr[128],outbound[128]
 			,password[16];
 	uchar	HUGE16 *fmsgbuf=NULL;
 	ushort	attr;
@@ -4333,7 +4333,7 @@ int main(int argc, char **argv)
 			p+=5;								/* Skip "AREA:" */
 			while(*p && *p<=SP) p++;			/* Skip any white space */
 			printf("%21s: ",p);                 /* Show areaname: */
-			sprintf(areatagstr,"%.128s",p);
+			SAFECOPY(areatagstr,p);
 			strupr(p);
 			areatag=crc32(p,0);
 
