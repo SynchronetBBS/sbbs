@@ -132,6 +132,10 @@ bool sbbs_t::answer()
 	strcat(str,COPYRIGHT_NOTICE);
 	strip_ctrl(str);
 	center(str);
+	#if defined(_PTH_H_) /* Cooperative multitasking! */
+	 	pth_yield(NULL);
+	#endif
+
 	while(i++<50 && l<(int)sizeof(str)-1) { 	/* wait up to 5 seconds for response */
 		c=(incom()&0x7f);
 		if(!c) {

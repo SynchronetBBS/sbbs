@@ -49,13 +49,19 @@ CFLAGS	+=	-Wall -I$(UIFC) -I$(XPDEV) -I../  -D_THREAD_SAFE
 
 LFLAGS	:=	-L/usr/local/lib
 
+ifeq ($(os),qnx)
+CURSESLIB :=	-lncurses
+else
+CURSESLIB :=	-lcurses
+endif
+
 ifdef USE_DIALOG
- LFLAGS	+=	-L../../libdialog -ldialog -lcurses
+ LFLAGS	+=	-L../../libdialog -ldialog $(CURSESLIB)
  CFLAGS	+=	-I../../libdialog -DUSE_DIALOG
 endif
 
 ifdef USE_CURSES
- LFLAGS	+=	-lcurses
+ LFLAGS	+=	$(CURSESLIB)
  CFLAGS	+=	-DUSE_CURSES
 endif
 

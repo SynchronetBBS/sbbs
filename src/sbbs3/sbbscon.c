@@ -1427,16 +1427,16 @@ int main(int argc, char** argv)
 				|| (run_web && !(web_running || web_stopped)) 
 				|| (run_mail && !(mail_running || mail_stopped)) 
 				|| (run_services && !(services_running || services_stopped)))  {
-			mswait(1);
-			if(run_bbs && !bbs_running)
+			mswait(1000);
+			if(run_bbs && !(bbs_running || bbs_stopped))
 				bbs_lputs("Waiting for BBS thread");
-			if(run_web && !web_running)
+			if(run_web && !(web_running || web_stopped))
 				bbs_lputs("Waiting for Web thread");
-			if(run_ftp && !ftp_running)
+			if(run_ftp && !(ftp_running || ftp_stopped))
 				bbs_lputs("Waiting for FTP thread");
-			if(run_mail && !mail_running)
+			if(run_mail && !(mail_running || mail_stopped))
 				bbs_lputs("Waiting for Mail thread");
-			if(run_services && !services_running)
+			if(run_services && !(services_running || services_stopped))
 				bbs_lputs("Waiting for Services thread");
 		}
 

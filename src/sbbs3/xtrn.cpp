@@ -52,6 +52,8 @@
 	#include <util.h>
 #elif defined(__linux__)
 	#include <pty.h>
+#elif defined(__QNX__)
+	#include <unix.h>
 #endif
 
 	#ifdef NEEDS_FORKPTY
@@ -60,7 +62,37 @@
 
 	#include <termios.h>
 
-#if defined(__solaris__)
+#if defined(__QNX__)
+	/*
+	 * Control Character Defaults
+	 */
+	#define CTRL(x)	(x&037)
+	#define	CEOF		CTRL('d')
+	#define	CEOL		0xff		/* XXX avoid _POSIX_VDISABLE */
+	#define	CERASE		0177
+	#define	CERASE2		CTRL('h')
+	#define	CINTR		CTRL('c')
+	#define	CSTATUS		CTRL('t')
+	#define	CKILL		CTRL('u')
+	#define	CMIN		1
+	#define	CQUIT		034		/* FS, ^\ */
+	#define	CSUSP		CTRL('z')
+	#define	CTIME		0
+	#define	CDSUSP		CTRL('y')
+	#define	CSTART		CTRL('q')
+	#define	CSTOP		CTRL('s')
+	#define	CLNEXT		CTRL('v')
+	#define	CDISCARD 	CTRL('o')
+	#define	CWERASE 	CTRL('w')
+	#define	CREPRINT 	CTRL('r')
+	#define	CEOT		CEOF
+	/* compat */
+	#define	CBRK		CEOL
+	#define CRPRNT		CREPRINT
+	#define	CFLUSH		CDISCARD
+#endif
+
+#if defined(__solaris__) || defined(__QNX__)
 	#define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
 	#define TTYDEF_OFLAG    (OPOST | ONLCR)
 	#define TTYDEF_LFLAG    (ECHO | ICANON | ISIG | IEXTEN | ECHOE|ECHOKE|ECHOCTL)
@@ -1169,7 +1201,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		struct winsize winsize;
 		struct termios term;
 		memset(&term,0,sizeof(term));
-		cfsetspeed(&term,B19200);
+		cfsetispeed(&term,B19200);
+		cfsetospeed(&term,B19200);
 		if(mode&EX_BIN)
 			cfmakeraw(&term);
 		else {

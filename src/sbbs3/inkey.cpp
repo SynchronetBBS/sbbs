@@ -49,6 +49,10 @@ char sbbs_t::inkey(long mode)
 {
 	uchar	ch=0;
 
+	#if defined(_PTH_H_) /* Cooperative multitasking! */
+		pth_yield(NULL);
+	#endif
+
     if(keybuftop!=keybufbot) {
         ch=keybuf[keybufbot++];
         if(keybufbot==KEY_BUFSIZE)

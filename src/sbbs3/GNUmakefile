@@ -96,6 +96,15 @@ ifeq ($(os),sunos)    # Solaris
  LFLAGS := -lm -lpthread -lsocket -lnsl -lrt
 endif
 
+ifeq ($(os),netbsd)
+ CFLAGS += -D_REENTRANT -D_NEED_SEM -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
+ LFLAGS := -lm -lpthread -L/usr/pkg/lib
+endif
+
+ifeq ($(os),qnx)
+ LFLAGS := -lm -lsocket
+endif
+
 ifdef DEBUG
  ifdef bcc
   CFLAGS	+=	-y -v -Od
@@ -122,7 +131,11 @@ ifdef USE_FLTK
 endif
 ifdef USE_CURSES
  CFLAGS +=	-DUSE_CURSES
- UIFC_LFLAGS += -lcurses
+ ifeq ($(os),qnx)
+  UIFC_LFLAGS += -lncurses
+ else
+  UIFC_LFLAGS += -lcurses
+ endif
  UIFC_OBJS +=	$(EXEODIR)/uifcc.o
 endif
 
@@ -132,6 +145,10 @@ include sbbsdefs.mk		# defines $(SBBSDEFS)
 
 ifeq ($(os),gnu)
  CFLAGS += -D_NEED_SEM -DNEEDS_FORKPTY -D_POSIX_THREADS
+ OBJS	+= $(LIBODIR)$(SLASH)sem.$(OFILE)
+endif
+
+ifeq ($(os),netbsd)
  OBJS	+= $(LIBODIR)$(SLASH)sem.$(OFILE)
 endif
 
