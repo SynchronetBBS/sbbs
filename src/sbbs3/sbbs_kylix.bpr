@@ -38,8 +38,8 @@
     <USERDEFINES value="_DEBUG:__unix__:SBBS:JAVASCRIPT"/>
     <SYSDEFINES value="_NO_VCL"/>
     <MAINSOURCE value="sbbs_kylix.bpf"/>
-    <INCLUDEPATH value="../xpdev:/src/sbbs3:$(BCB)/include/stlport:$(BCB)/include:$(BCB)/include/vcl:/usr/include:../mozilla/js/src"/>
-    <LIBPATH value="../xpdev:/src/sbbs3:$(BCB)/lib/obj:$(BCB)/lib:/usr/lib:/lib:/usr/X11R6/lib:$(BCB)/bin:../mozilla/js/src/Linux_All_DBG.OBJ"/>
+    <INCLUDEPATH value="../xpdev:/src/sbbs3:$(BCB)/include/stlport:$(BCB)/include:$(BCB)/include/vcl:/usr/include:../../include/mozilla/js"/>
+    <LIBPATH value="../xpdev:/src/sbbs3:$(BCB)/lib/obj:$(BCB)/lib:/usr/lib:/lib:/usr/X11R6/lib:$(BCB)/bin:../../lib/mozilla/js/linux.debug"/>
     <WARNINGS value="-w-par"/>
     <OTHERFILES value=""/>
   </MACROS>
@@ -169,12 +169,12 @@
   <IDEOPTIONS>
 [HistoryLists\hlIncludePath]
 Count=2
-Item0=../xpdev:/src/sbbs3:$(BCB)/include/stlport:$(BCB)/include:$(BCB)/include/vcl:/usr/include:../mozilla/js/src
+Item0=../xpdev:/src/sbbs3:$(BCB)/include/stlport:$(BCB)/include:$(BCB)/include/vcl:/usr/include:../../include/mozilla/js
 Item1=../xpdev:/src/sbbs3:$(BCB)/include/stlport:$(BCB)/include:$(BCB)/include/vcl:/usr/include
 
 [HistoryLists\hlLibraryPath]
 Count=2
-Item0=../xpdev:/src/sbbs3:$(BCB)/lib/obj:$(BCB)/lib:/usr/lib:/lib:/usr/X11R6/lib:$(BCB)/bin:../mozilla/js/src/Linux_All_DBG.OBJ
+Item0=../xpdev:/src/sbbs3:$(BCB)/lib/obj:$(BCB)/lib:/usr/lib:/lib:/usr/X11R6/lib:$(BCB)/bin:../../lib/mozilla/js/linux.debug
 Item1=../xpdev:/src/sbbs3:$(BCB)/lib/obj:$(BCB)/lib:/usr/lib:/lib:/usr/X11R6/lib:$(BCB)/bin
 
 [HistoryLists\hlConditionals]
