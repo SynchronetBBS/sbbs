@@ -439,9 +439,10 @@ return(i);
 
 void rerun_nodes()
 {
-    int i;
-	int file;
-    node_t node;
+	char	str[MAX_PATH+1];
+    int		i;
+	int		file;
+    node_t	node;
     
     for(i=0;i<cfg.sys_nodes;i++) {
        	if(getnodedat(&cfg,i+1,&node,&file))
@@ -450,6 +451,16 @@ void rerun_nodes()
         if(putnodedat(&cfg,i+1,&node,file))
             break;
     }
+
+	sprintf(str,"%sftpsrvr.rec",cfg.ctrl_dir);
+	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
+		close(file);
+	sprintf(str,"%smailsrvr.rec",cfg.ctrl_dir);
+	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
+		close(file);
+	sprintf(str,"%sservices.rec",cfg.ctrl_dir);
+	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
+		close(file);
 }
 
 void txt_cfg()
