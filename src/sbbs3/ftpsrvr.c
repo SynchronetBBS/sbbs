@@ -3015,7 +3015,8 @@ void DLLCALL ftp_server(void* arg)
 	}
 
 	t=time(NULL);
-	lprintf("Initializing on %s",ctime(&t));
+	lprintf("Initializing on %s with options: %lx"
+		,ctime(&t),startup->options);
 
 #ifdef _WIN32
     if((socket_mutex=CreateMutex(NULL,FALSE,NULL))==NULL) {
