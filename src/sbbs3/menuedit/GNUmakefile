@@ -2,7 +2,7 @@
 
 #########################################################################
 # Makefile for Synchronet BBS Menu Editor (menuedit)
-# For use with Borland C++ Builder 5+ or Borland C++ 5.5 for Win32      #
+# For use with gcc and gmake for *nix      				#
 # @format.tab-size 4													#
 #########################################################################
 
