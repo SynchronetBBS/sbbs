@@ -335,151 +335,154 @@ enum {
 	,clr_external
 	,TOTAL_COLORS };
 
-enum {								/* Values for xtrn_t.type			*/
-	 XTRN_NONE						/* No data file needed				*/
-	,XTRN_SBBS						/* Synchronet external				*/
-	,XTRN_WWIV						/* WWIV external					*/
-	,XTRN_GAP						/* Gap door 						*/
-	,XTRN_RBBS						/* RBBS, QBBS, or Remote Access 	*/
-	,XTRN_WILDCAT					/* Wildcat							*/
-	,XTRN_PCBOARD					/* PCBoard							*/
-	,XTRN_SPITFIRE					/* SpitFire 						*/
-	,XTRN_UTI						/* UTI Doors - MegaMail 			*/
-	,XTRN_SR						/* Solar Realms 					*/
-	,XTRN_RBBS1 					/* DORINFO1.DEF always				*/
-	,XTRN_TRIBBS					/* TRIBBS.SYS						*/
-	,XTRN_DOOR32					/* DOOR32.SYS						*/
-	};
+enum {								/* Values for xtrn_t.type				*/
+	 XTRN_NONE						/* No data file needed					*/
+	,XTRN_SBBS						/* Synchronet external					*/
+	,XTRN_WWIV						/* WWIV external						*/
+	,XTRN_GAP						/* Gap door 							*/
+	,XTRN_RBBS						/* RBBS, QBBS, or Remote Access 		*/
+	,XTRN_WILDCAT					/* Wildcat								*/
+	,XTRN_PCBOARD					/* PCBoard								*/
+	,XTRN_SPITFIRE					/* SpitFire 							*/
+	,XTRN_UTI						/* UTI Doors - MegaMail 				*/
+	,XTRN_SR						/* Solar Realms 						*/
+	,XTRN_RBBS1 					/* DORINFO1.DEF always					*/
+	,XTRN_TRIBBS					/* TRIBBS.SYS							*/
+	,XTRN_DOOR32					/* DOOR32.SYS							*/
+	};																		
+																			
+typedef enum {						/* Values for xtrn_t.event				*/
+	 EVENT_NONE 					/* Only accessible by menu				*/
+	,EVENT_LOGON					/* Execute during logon sequence		*/
+	,EVENT_LOGOFF					/* Execute during logoff sequence		*/
+	,EVENT_NEWUSER					/* Execute during newuser app.			*/
+	,EVENT_BIRTHDAY 				/* Execute on birthday					*/
+} user_event_t;																
+																			
+									/* Misc bits for event_t.misc			*/
+#define EVENT_EXCL	(1L<<0) 		/* Exclusive							*/
+#define EVENT_FORCE (1L<<1) 		/* Force users off-line for event		*/
+																			
+									/* Mode bits for QWK stuff */			
+#define A_EXPAND	(1<<0)			/* Expand to ANSI sequences */			
+#define A_LEAVE 	(1<<1)			/* Leave in */							
+#define A_STRIP 	(1<<2)			/* Strip out */							
+																			
+									/* Bits in xtrn_t.misc					*/
+#define MULTIUSER	(1L<<0) 		/* allow multi simultaneous users		*/
+#define ANSI		(1L<<1) 		/* user must have ANSI, same as ^^^		*/
+#define IO_INTS 	(1L<<2) 		/* Intercept I/O interrupts 			*/
+#define MODUSERDAT	(1L<<3) 		/* Program can modify user data 		*/
+#define WWIVCOLOR	(1L<<4) 		/* Program uses WWIV color codes		*/
+#define EVENTONLY	(1L<<5) 		/* Program executes as event only		*/
+#define STARTUPDIR	(1L<<6) 		/* Create drop file in start-up dir		*/
+#define REALNAME	(1L<<7) 		/* Use real name in drop file			*/
+#define SWAP		(1L<<8) 		/* Swap for this door					*/
+#define FREETIME	(1L<<9) 		/* Free time while in this door 		*/
+#define QUICKBBS	(1L<<10)		/* QuickBBS style editor				*/
+#define EXPANDLF	(1L<<11)		/* Expand LF to CRLF editor 			*/
+#define QUOTEALL	(1L<<12)		/* Automatically quote all of msg		*/
+#define QUOTENONE	(1L<<13)		/* Automatically quote none of msg		*/
+#define XTRN_NATIVE	(1L<<14)		/* Native application (EX_NATIVE)		*/
+#define STRIPKLUDGE (1L<<15)		/* Strip FTN Kludge lines from msg		*/
+#define XTRN_CHKTIME (1<<16)		/* Check time online (EX_CHKTIME)		*/
 
-typedef enum {						/* Values for xtrn_t.event			*/
-	 EVENT_NONE 					/* Only accessible by menu			*/
-	,EVENT_LOGON					/* Execute during logon sequence	*/
-	,EVENT_LOGOFF					/* Execute during logoff sequence	*/
-	,EVENT_NEWUSER					/* Execute during newuser app.		*/
-	,EVENT_BIRTHDAY 				/* Execute on birthday				*/
-} user_event_t;
+									/* Bits in cfg.xtrn_misc				*/
+#define XTRN_NO_MUTEX	(1<<0)		/* Do not use exec_mutex for FOSSIL VXD	*/
 
-									/* Misc bits for event_t.misc		*/
-#define EVENT_EXCL	(1L<<0) 		/* Exclusive						*/
-#define EVENT_FORCE (1L<<1) 		/* Force users off-line for event	*/
-
-									/* Mode bits for QWK stuff */
-#define A_EXPAND	(1<<0)			/* Expand to ANSI sequences */
-#define A_LEAVE 	(1<<1)			/* Leave in */
-#define A_STRIP 	(1<<2)			/* Strip out */
-
-									/* Bits in xtrn_t.misc				*/
-#define MULTIUSER	(1L<<0) 		/* allow multi simultaneous users	*/
-#define ANSI		(1L<<1) 		/* user must have ANSI, same as ^^^ */
-#define IO_INTS 	(1L<<2) 		/* Intercept I/O interrupts 		*/
-#define MODUSERDAT	(1L<<3) 		/* Program can modify user data 	*/
-#define WWIVCOLOR	(1L<<4) 		/* Program uses WWIV color codes	*/
-#define EVENTONLY	(1L<<5) 		/* Program executes as event only	*/
-#define STARTUPDIR	(1L<<6) 		/* Create drop file in start-up dir */
-#define REALNAME	(1L<<7) 		/* Use real name in drop file		*/
-#define SWAP		(1L<<8) 		/* Swap for this door				*/
-#define FREETIME	(1L<<9) 		/* Free time while in this door 	*/
-#define QUICKBBS	(1L<<10)		/* QuickBBS style editor			*/
-#define EXPANDLF	(1L<<11)		/* Expand LF to CRLF editor 		*/
-#define QUOTEALL	(1L<<12)		/* Automatically quote all of msg	*/
-#define QUOTENONE	(1L<<13)		/* Automatically quote none of msg	*/
-#define XTRN_NATIVE	(1L<<14)		/* Native application (EX_NATIVE)	*/
-#define STRIPKLUDGE (1L<<15)		/* Strip FTN Kludge lines from msg  */
-#define XTRN_CHKTIME (1<<16)		/* Check time online (EX_CHKTIME)	*/
-
-									/* Bits in user.qwk 				*/
-#define QWK_FILES	(1L<<0) 		/* Include new files list			*/
-#define QWK_EMAIL	(1L<<1) 		/* Include unread e-mail			*/
-#define QWK_ALLMAIL (1L<<2) 		/* Include ALL e-mail				*/
-#define QWK_DELMAIL (1L<<3) 		/* Delete e-mail after download 	*/
-#define QWK_BYSELF	(1L<<4) 		/* Include messages from self		*/
-#define QWK_UNUSED	(1L<<5) 		/* Currently unused 				*/
-#define QWK_EXPCTLA (1L<<6) 		/* Expand ctrl-a codes to ascii 	*/
-#define QWK_RETCTLA (1L<<7) 		/* Retain ctrl-a codes				*/
-#define QWK_ATTACH	(1L<<8) 		/* Include file attachments 		*/
-#define QWK_NOINDEX (1L<<9) 		/* Do not create index files in QWK */
-#define QWK_TZ		(1L<<10)		/* Include "@TZ" time zone in msgs  */
-#define QWK_VIA 	(1L<<11)		/* Include "@VIA" seen-bys in msgs  */
-#define QWK_NOCTRL	(1L<<12)		/* No extraneous control files		*/
-#define QWK_EXT		(1L<<13)		/* QWK Extended (QWKE) format		*/
-
-							/* Bits in user.chat						*/
-#define CHAT_ECHO	(1<<0)	/* Multinode chat echo						*/
-#define CHAT_ACTION (1<<1)	/* Chat actions 							*/
-#define CHAT_NOPAGE (1<<2)	/* Can't be paged                           */
-#define CHAT_NOACT	(1<<3)	/* No activity alerts						*/
-#define CHAT_SPLITP (1<<4)	/* Split screen private chat				*/
-
-
-#define INVALID_DIR 0xffff	/* Invalid directory value					*/
-#define INVALID_SUB 0xffff	/* Invalid sub-board value					*/
-
-#define KEY_BUFSIZE 1024	/* Size of keyboard input buffer			*/
-#define SAVE_LINES	 4		/* Maximum number of lines to save			*/
-#define LINE_BUFSIZE 512	/* Size of line output buffer               */
-
-
-#define TABSIZE		4		/* Tab Size									*/
-
-#define SWAP_NONE	0x80	/* Allow no swapping for executables		*/
-
-#define DSTSDABLEN	50		/* Length of dsts.dab file					*/
-
-							/* Console I/O Bits	(console)				*/
-#define CON_R_ECHO	 (1<<0)	/* Echo remotely							*/
-#define CON_R_ECHOX	 (1<<1)	/* Echo X's to remote user					*/
-#define CON_R_INPUT  (1<<2)	/* Accept input remotely					*/
-#define CON_L_ECHO	 (1<<3)	/* Echo locally              				*/
-#define CON_L_ECHOX	 (1<<4) /* Echo X's locally							*/
-#define CON_L_INPUT  (1<<5)	/* Accept input locally						*/
-#define CON_RAW_IN   (1<<8) /* Raw input mode - no editing capabilities */
-#define CON_ECHO_OFF (1<<10)/* Remote & Local echo disabled for ML/MF	*/
-#define CON_UPARROW  (1<<11)/* Up arrow hit - move up one line			*/
-#define CON_NO_INACT (1<<13)/* Console inactivity detection disabled	*/
-
-							/* Number of milliseconds                   */
-#define DELAY_HANGUP 250    /* Delay before modem drops carrier         */
-#define DELAY_MDMTLD 500    /* Delay to give each ~ in modem strings    */
-#define DELAY_SPIN   10     /* Delay for the spinning cursor            */
-#define DELAY_AUTOHG 1500	/* Delay for auto-hangup (xfer) 			*/
-
-#define SEC_LOGON	1800	/* 30 minutes allowed to logon				*/
-#define SEC_BILLING   90	/* under 2 minutes per billing call 		*/
-#define SEC_OK		   5	/* Attempt to get an OK response from modem */
-#define SEC_ANSI	   5	/* Attempt to get a valid ANSI response 	*/
-#define SEC_ANSWER	  30	/* Retries to get an answer code from modem */
-#define SEC_CID 	  10	/* Ten second pause for caller ID			*/
-#define SEC_RING	   6	/* Maximum seconds between rings			*/
-
-#define LOOP_NOPEN	  50	/* Retries before file access denied		*/
-#define LOOP_NODEDAB  50	/* Retries on node.dab locking/unlocking	*/
-
-							/* String lengths							*/
-#define LEN_ALIAS		25	/* User alias								*/
-#define LEN_NAME		25	/* User name								*/
-#define LEN_HANDLE		8	/* User chat handle 						*/
-#define LEN_NOTE		30	/* User note								*/
-#define LEN_COMP		30	/* User computer description				*/
-#define LEN_COMMENT 	60	/* User comment 							*/
-#define LEN_NETMAIL 	60	/* NetMail forwarding address				*/
-#define LEN_PASS		 8	/* User password							*/
-#define LEN_PHONE		12	/* User phone number						*/
-#define LEN_BIRTH		 8	/* Birthday in MM/DD/YY format				*/
-#define LEN_ADDRESS 	30	/* User address 							*/
-#define LEN_LOCATION	30	/* Location (City, State)					*/
-#define LEN_ZIPCODE 	10	/* Zip/Postal code							*/
-#define LEN_MODEM		 8	/* User modem type description				*/
-#define LEN_FDESC		58	/* File description 						*/
-#define LEN_FCDT		 9	/* 9 digits for file credit values			*/
-#define LEN_TITLE		70	/* Message title							*/
-#define LEN_MAIN_CMD	34	/* Storage in user.dat for custom commands	*/
-#define LEN_XFER_CMD	40
-#define LEN_SCAN_CMD	40
-#define LEN_MAIL_CMD	40
-#define LEN_CID 		25	/* Caller ID (phone number) 				*/
-#define LEN_ARSTR		40	/* Max length of Access Requirement string	*/
-#define LEN_CHATACTCMD	 9	/* Chat action command						*/
-#define LEN_CHATACTOUT	65	/* Chat action output string				*/
+									/* Bits in user.qwk 					*/
+#define QWK_FILES	(1L<<0) 		/* Include new files list				*/
+#define QWK_EMAIL	(1L<<1) 		/* Include unread e-mail				*/
+#define QWK_ALLMAIL (1L<<2) 		/* Include ALL e-mail					*/
+#define QWK_DELMAIL (1L<<3) 		/* Delete e-mail after download 		*/
+#define QWK_BYSELF	(1L<<4) 		/* Include messages from self			*/
+#define QWK_UNUSED	(1L<<5) 		/* Currently unused 					*/
+#define QWK_EXPCTLA (1L<<6) 		/* Expand ctrl-a codes to ascii 		*/
+#define QWK_RETCTLA (1L<<7) 		/* Retain ctrl-a codes					*/
+#define QWK_ATTACH	(1L<<8) 		/* Include file attachments 			*/
+#define QWK_NOINDEX (1L<<9) 		/* Do not create index files in QWK		*/
+#define QWK_TZ		(1L<<10)		/* Include "@TZ" time zone in msgs		*/
+#define QWK_VIA 	(1L<<11)		/* Include "@VIA" seen-bys in msgs		*/
+#define QWK_NOCTRL	(1L<<12)		/* No extraneous control files			*/
+#define QWK_EXT		(1L<<13)		/* QWK Extended (QWKE) format			*/
+																			
+							/* Bits in user.chat							*/
+#define CHAT_ECHO	(1<<0)	/* Multinode chat echo							*/
+#define CHAT_ACTION (1<<1)	/* Chat actions 								*/
+#define CHAT_NOPAGE (1<<2)	/* Can't be paged								*/
+#define CHAT_NOACT	(1<<3)	/* No activity alerts							*/
+#define CHAT_SPLITP (1<<4)	/* Split screen private chat					*/
+																			
+																			
+#define INVALID_DIR 0xffff	/* Invalid directory value						*/
+#define INVALID_SUB 0xffff	/* Invalid sub-board value						*/
+																			
+#define KEY_BUFSIZE 1024	/* Size of keyboard input buffer				*/
+#define SAVE_LINES	 4		/* Maximum number of lines to save				*/
+#define LINE_BUFSIZE 512	/* Size of line output buffer					*/
+																			
+																			
+#define TABSIZE		4		/* Tab Size										*/
+																			
+#define SWAP_NONE	0x80	/* Allow no swapping for executables			*/
+																			
+#define DSTSDABLEN	50		/* Length of dsts.dab file						*/
+																			
+							/* Console I/O Bits	(console)					*/
+#define CON_R_ECHO	 (1<<0)	/* Echo remotely								*/
+#define CON_R_ECHOX	 (1<<1)	/* Echo X's to remote user						*/
+#define CON_R_INPUT  (1<<2)	/* Accept input remotely						*/
+#define CON_L_ECHO	 (1<<3)	/* Echo locally              					*/
+#define CON_L_ECHOX	 (1<<4) /* Echo X's locally								*/
+#define CON_L_INPUT  (1<<5)	/* Accept input locally							*/
+#define CON_RAW_IN   (1<<8) /* Raw input mode - no editing capabilities		*/
+#define CON_ECHO_OFF (1<<10)/* Remote & Local echo disabled for ML/MF		*/
+#define CON_UPARROW  (1<<11)/* Up arrow hit - move up one line				*/
+#define CON_NO_INACT (1<<13)/* Console inactivity detection disabled		*/
+																			
+							/* Number of milliseconds						*/
+#define DELAY_HANGUP 250    /* Delay before modem drops carrier				*/
+#define DELAY_MDMTLD 500    /* Delay to give each ~ in modem strings		*/
+#define DELAY_SPIN   10     /* Delay for the spinning cursor				*/
+#define DELAY_AUTOHG 1500	/* Delay for auto-hangup (xfer) 				*/
+																			
+#define SEC_LOGON	1800	/* 30 minutes allowed to logon					*/
+#define SEC_BILLING   90	/* under 2 minutes per billing call 			*/
+#define SEC_OK		   5	/* Attempt to get an OK response from modem		*/
+#define SEC_ANSI	   5	/* Attempt to get a valid ANSI response 		*/
+#define SEC_ANSWER	  30	/* Retries to get an answer code from modem		*/
+#define SEC_CID 	  10	/* Ten second pause for caller ID				*/
+#define SEC_RING	   6	/* Maximum seconds between rings				*/
+																			
+#define LOOP_NOPEN	  50	/* Retries before file access denied			*/
+#define LOOP_NODEDAB  50	/* Retries on node.dab locking/unlocking		*/
+																			
+							/* String lengths								*/
+#define LEN_ALIAS		25	/* User alias									*/
+#define LEN_NAME		25	/* User name									*/
+#define LEN_HANDLE		8	/* User chat handle 							*/
+#define LEN_NOTE		30	/* User note									*/
+#define LEN_COMP		30	/* User computer description					*/
+#define LEN_COMMENT 	60	/* User comment 								*/
+#define LEN_NETMAIL 	60	/* NetMail forwarding address					*/
+#define LEN_PASS		 8	/* User password								*/
+#define LEN_PHONE		12	/* User phone number							*/
+#define LEN_BIRTH		 8	/* Birthday in MM/DD/YY format					*/
+#define LEN_ADDRESS 	30	/* User address 								*/
+#define LEN_LOCATION	30	/* Location (City, State)						*/
+#define LEN_ZIPCODE 	10	/* Zip/Postal code								*/
+#define LEN_MODEM		 8	/* User modem type description					*/
+#define LEN_FDESC		58	/* File description 							*/
+#define LEN_FCDT		 9	/* 9 digits for file credit values				*/
+#define LEN_TITLE		70	/* Message title								*/
+#define LEN_MAIN_CMD	34	/* Storage in user.dat for custom commands		*/
+#define LEN_XFER_CMD	40													
+#define LEN_SCAN_CMD	40													
+#define LEN_MAIL_CMD	40													
+#define LEN_CID 		25	/* Caller ID (phone number) 					*/
+#define LEN_ARSTR		40	/* Max length of Access Requirement string		*/
+#define LEN_CHATACTCMD	 9	/* Chat action command							*/
+#define LEN_CHATACTOUT	65	/* Chat action output string					*/
 
 /****************************************************************************/
 /* This is a list of offsets into the USER.DAT file for different variables */
@@ -561,83 +564,83 @@ typedef enum {						/* Values for xtrn_t.event			*/
 /****************************************************************************/
 /* Offsets into DIR .DAT file for different fields for each file 			*/
 /****************************************************************************/
-#define F_CDT		0				/* Offset in DIR#.DAT file for cdts */
-#define F_DESC		(F_CDT+LEN_FCDT)/* Description						*/
-#define F_ULER		(F_DESC+LEN_FDESC+2)   /* Uploader					*/
-#define F_TIMESDLED (F_ULER+30+2) 	/* Number of times downloaded 		*/
-#define F_OPENCOUNT	(F_TIMESDLED+5+2)
-#define F_MISC		(F_OPENCOUNT+3+2)
-#define F_ALTPATH	(F_MISC+1)		/* Two hex digit alternate path */
-#define F_LEN		(F_ALTPATH+2+2) /* Total length of all fdat in file */
-
-#define F_IXBSIZE	22				/* Length of each index entry		*/
-
-#define F_EXBSIZE	512				/* Length of each ext-desc entry	*/
-
-
-#define SIF_MAXBUF  0x7000			/* Maximum buffer size of SIF data */
-
-/* NOTE: Do not change the values of the following block of defines!	*/
-
-#define DELETED 	(1L<<0) 		/* Bit values for user.misc 		*/
-#define ANSI		(1L<<1) 		/* Supports ANSI terminal emulation */
-#define COLOR		(1L<<2) 		/* Send color codes 				*/
-#define RIP 		(1L<<3) 		/* Supports RIP terminal emulation	*/
-#define UPAUSE		(1L<<4) 		/* Pause on every screen full		*/
-#define SPIN		(1L<<5) 		/* Spinning cursor - Same as K_SPIN */
-#define INACTIVE	(1L<<6) 		/* Inactive user slot				*/
-#define EXPERT		(1L<<7) 		/* Expert menu mode 				*/
-#define ANFSCAN 	(1L<<8) 		/* Auto New file scan				*/
-#define CLRSCRN 	(1L<<9) 		/* Clear screen before each message */
-#define QUIET		(1L<<10)		/* Quiet mode upon logon			*/
-#define BATCHFLAG	(1L<<11)		/* File list allow batch dl flags	*/
-#define NETMAIL 	(1L<<12)		/* Forward e-mail to fidonet addr	*/
-#define CURSUB		(1L<<13)		/* Remember current sub-board/dir	*/
-#define ASK_NSCAN	(1L<<14)		/* Ask for newscanning upon logon	*/
-#define NO_EXASCII	(1L<<15)		/* Don't send extended ASCII        */
-#define ASK_SSCAN	(1L<<16)		/* Ask for messages to you at logon */
-#define AUTOTERM	(1L<<17)		/* Autodetect terminal type 		*/
-#define COLDKEYS	(1L<<18)		/* No hot-keys						*/
-#define EXTDESC 	(1L<<19)		/* Extended file descriptions		*/
-#define AUTOHANG	(1L<<20)		/* Auto-hang-up after transfer		*/
-#define WIP 		(1L<<21)		/* Supports WIP terminal emulation	*/
-#define AUTOLOGON	(1L<<22)		/* AutoLogon via IP					*/
-
-#define CLREOL      256     /* Character to erase to end of line 		*/
-
-							/* Online status (online)					*/
-#define ON_LOCAL	1	 	/* Online locally							*/
-#define ON_REMOTE   2  		/* Online remotely							*/
-
-							/* Various SYSTEM parameters for sys_status	*/
-#define SS_UNUSED	(1L<<0)	/* Unused          							*/
-#define SS_INITIAL  (1L<<1)	/* The bbs data has been initialized.       */
-#define SS_TMPSYSOP (1L<<2)	/* Temporary Sysop Status					*/
-#define SS_USERON   (1L<<3)	/* A User is logged on to the BBS			*/
-#define SS_LCHAT    (1L<<4) /* Local chat in progress					*/
-#define SS_CAP		(1L<<5)	/* Capture is on							*/
-#define SS_ANSCAP	(1L<<6) /* Capture ANSI codes too					*/
-#define SS_FINPUT	(1L<<7) /* Using file for input 					*/
-#define SS_COMISR	(1L<<8) /* Com port ISR is installed				*/
-#define SS_DAILY	(1L<<9) /* Execute System Daily Event on logoff 	*/
-#define SS_INUEDIT	(1L<<10) /* Inside Alt-Useredit section 			*/
-#define SS_ABORT	(1L<<11) /* Global abort input or output flag		*/
-#define SS_SYSPAGE	(1L<<12) /* Paging sysop							*/
-#define SS_SYSALERT (1L<<13) /* Notify sysop when users hangs up		*/
-#define SS_GURUCHAT (1L<<14) /* Guru chat in progress					*/
-#define SS_UNUSED2	(1L<<15) /* not used in v3 (used to be SS_NODEDAB)	*/
-#define SS_EVENT	(1L<<16) /* Time shortened due to upcoming event	*/
-#define SS_PAUSEON	(1L<<17) /* Pause on, overriding user default		*/
-#define SS_PAUSEOFF (1L<<18) /* Pause off, overriding user default		*/
-#define SS_IN_CTRLP (1L<<19) /* Inside ctrl-p send node message func	*/
-#define SS_NEWUSER	(1L<<20) /* New User online 						*/
-#define SS_MDMDEBUG (1L<<21) /* Modem debug output						*/
-#define SS_NEST_PF	(1L<<22) /* Nested in printfile function			*/
-#define SS_DCDHIGH	(1L<<23) /* Assume DCD is high always				*/
-#define SS_SPLITP	(1L<<24) /* Split-screen private chat				*/
-#define SS_NEWDAY	(1L<<25) /* Date changed while online				*/
-#define SS_RLOGIN	(1L<<26) /* Current login via BSD RLogin			*/
-#define SS_FILEXFER	(1L<<27) /* File transfer in progress, halt spy		*/
+#define F_CDT		0				/* Offset in DIR#.DAT file for cdts		*/
+#define F_DESC		(F_CDT+LEN_FCDT)/* Description							*/
+#define F_ULER		(F_DESC+LEN_FDESC+2)   /* Uploader						*/
+#define F_TIMESDLED (F_ULER+30+2) 	/* Number of times downloaded 			*/
+#define F_OPENCOUNT	(F_TIMESDLED+5+2)										
+#define F_MISC		(F_OPENCOUNT+3+2)										
+#define F_ALTPATH	(F_MISC+1)		/* Two hex digit alternate path */		
+#define F_LEN		(F_ALTPATH+2+2) /* Total length of all fdat in file		*/
+																			
+#define F_IXBSIZE	22				/* Length of each index entry			*/
+																			
+#define F_EXBSIZE	512				/* Length of each ext-desc entry		*/
+																			
+																			
+#define SIF_MAXBUF  0x7000			/* Maximum buffer size of SIF data		*/
+																			
+/* NOTE: Do not change the values of the following block of defines!		*/
+																			
+#define DELETED 	(1L<<0) 		/* Bit values for user.misc 			*/
+#define ANSI		(1L<<1) 		/* Supports ANSI terminal emulation		*/
+#define COLOR		(1L<<2) 		/* Send color codes 					*/
+#define RIP 		(1L<<3) 		/* Supports RIP terminal emulation		*/
+#define UPAUSE		(1L<<4) 		/* Pause on every screen full			*/
+#define SPIN		(1L<<5) 		/* Spinning cursor - Same as K_SPIN		*/
+#define INACTIVE	(1L<<6) 		/* Inactive user slot					*/
+#define EXPERT		(1L<<7) 		/* Expert menu mode 					*/
+#define ANFSCAN 	(1L<<8) 		/* Auto New file scan					*/
+#define CLRSCRN 	(1L<<9) 		/* Clear screen before each message		*/
+#define QUIET		(1L<<10)		/* Quiet mode upon logon				*/
+#define BATCHFLAG	(1L<<11)		/* File list allow batch dl flags		*/
+#define NETMAIL 	(1L<<12)		/* Forward e-mail to fidonet addr		*/
+#define CURSUB		(1L<<13)		/* Remember current sub-board/dir		*/
+#define ASK_NSCAN	(1L<<14)		/* Ask for newscanning upon logon		*/
+#define NO_EXASCII	(1L<<15)		/* Don't send extended ASCII			*/
+#define ASK_SSCAN	(1L<<16)		/* Ask for messages to you at logon		*/
+#define AUTOTERM	(1L<<17)		/* Autodetect terminal type 			*/
+#define COLDKEYS	(1L<<18)		/* No hot-keys							*/
+#define EXTDESC 	(1L<<19)		/* Extended file descriptions			*/
+#define AUTOHANG	(1L<<20)		/* Auto-hang-up after transfer			*/
+#define WIP 		(1L<<21)		/* Supports WIP terminal emulation		*/
+#define AUTOLOGON	(1L<<22)		/* AutoLogon via IP						*/
+																			
+#define CLREOL      256     /* Character to erase to end of line 			*/
+																			
+							/* Online status (online)						*/
+#define ON_LOCAL	1	 	/* Online locally								*/
+#define ON_REMOTE   2  		/* Online remotely								*/
+																			
+							/* Various SYSTEM parameters for sys_status		*/
+#define SS_UNUSED	(1L<<0)	/* Unused          								*/
+#define SS_INITIAL  (1L<<1)	/* The bbs data has been initialized.			*/
+#define SS_TMPSYSOP (1L<<2)	/* Temporary Sysop Status						*/
+#define SS_USERON   (1L<<3)	/* A User is logged on to the BBS				*/
+#define SS_LCHAT    (1L<<4) /* Local chat in progress						*/
+#define SS_CAP		(1L<<5)	/* Capture is on								*/
+#define SS_ANSCAP	(1L<<6) /* Capture ANSI codes too						*/
+#define SS_FINPUT	(1L<<7) /* Using file for input 						*/
+#define SS_COMISR	(1L<<8) /* Com port ISR is installed					*/
+#define SS_DAILY	(1L<<9) /* Execute System Daily Event on logoff 		*/
+#define SS_INUEDIT	(1L<<10) /* Inside Alt-Useredit section 				*/
+#define SS_ABORT	(1L<<11) /* Global abort input or output flag			*/
+#define SS_SYSPAGE	(1L<<12) /* Paging sysop								*/
+#define SS_SYSALERT (1L<<13) /* Notify sysop when users hangs up			*/
+#define SS_GURUCHAT (1L<<14) /* Guru chat in progress						*/
+#define SS_UNUSED2	(1L<<15) /* not used in v3 (used to be SS_NODEDAB)		*/
+#define SS_EVENT	(1L<<16) /* Time shortened due to upcoming event		*/
+#define SS_PAUSEON	(1L<<17) /* Pause on, overriding user default			*/
+#define SS_PAUSEOFF (1L<<18) /* Pause off, overriding user default			*/
+#define SS_IN_CTRLP (1L<<19) /* Inside ctrl-p send node message func		*/
+#define SS_NEWUSER	(1L<<20) /* New User online 							*/
+#define SS_MDMDEBUG (1L<<21) /* Modem debug output							*/
+#define SS_NEST_PF	(1L<<22) /* Nested in printfile function				*/
+#define SS_DCDHIGH	(1L<<23) /* Assume DCD is high always					*/
+#define SS_SPLITP	(1L<<24) /* Split-screen private chat					*/
+#define SS_NEWDAY	(1L<<25) /* Date changed while online					*/
+#define SS_RLOGIN	(1L<<26) /* Current login via BSD RLogin				*/
+#define SS_FILEXFER	(1L<<27) /* File transfer in progress, halt spy			*/
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_UPPER 	(1L<<0) 	/* Converts all letters to upper case		*/
@@ -660,110 +663,110 @@ typedef enum {						/* Values for xtrn_t.event			*/
 #define K_NOECHO	(1L<<17)	/* Don't echo input                         */
 #define K_TAB		(1L<<18)	/* Treat TAB key as CR						*/
 
-							/* Bits in 'mode' for putmsg and printfile  */
-#define P_NOABORT  	(1<<0)  /* Disallows abortion of a message          */
-#define P_SAVEATR   (1<<1)  /* Save the new current attributres after	*/
-							/* msg has printed. */
-#define P_NOATCODES (1<<2)	/* Don't allow @ codes                      */
-#define P_OPENCLOSE (1<<3)	/* Open and close the file					*/
-
-							/* Bits in 'mode' for listfiles             */
-#define FL_ULTIME   (1<<0)  /* List files by upload time                */
-#define FL_DLTIME   (1<<1)  /* List files by download time              */
-#define FL_NO_HDR   (1<<2)  /* Don't list directory header              */
-#define FL_FINDDESC (1<<3)  /* Find text in description                 */
-#define FL_EXFIND   (1<<4)	/* Find text in description - extended info */
-#define FL_VIEW     (1<<5)	/* View ZIP/ARC/GIF etc. info               */
-
-							/* Bits in the mode of writemsg and email() */
-#define WM_EXTDESC	(1<<0)	/* Writing extended file description		*/
-#define WM_EMAIL	(1<<1)	/* Writing e-mail							*/
-#define WM_NETMAIL	(1<<2)	/* Writing NetMail							*/
-#define WM_ANON 	(1<<3)	/* Writing anonymous message				*/
-#define WM_FILE 	(1<<4)	/* Attaching a file to the message			*/
-#define WM_NOTOP	(1<<5)	/* Don't add top because we need top line   */
-#define WM_QUOTE	(1<<6)	/* Quote file available 					*/
-#define WM_QWKNET	(1<<7)	/* Writing QWK NetMail (25 char title)		*/
-#define WM_PRIVATE	(1<<8)	/* Private (for creating MSGINF file)		*/
-
-							/* Bits in the mode of loadposts()			*/
-#define LP_BYSELF	(1<<0)	/* Include messages sent by self			*/
-#define LP_OTHERS	(1<<1)	/* Include messages sent to others			*/
-#define LP_UNREAD	(1<<2)	/* Un-read messages only					*/
-#define LP_PRIVATE	(1<<3)	/* Include all private messages 			*/
-#define LP_REP		(1<<4)	/* Packing REP packet						*/
-
-							/* Bits in the mode of loadmail()			*/
-#define LM_UNREAD	(1<<0)	/* Include un-read mail only				*/
-#define LM_INCDEL	(1<<1)	/* Include deleted mail		 				*/
-
-enum {						/* readmail and delmailidx which types		*/
-	 MAIL_YOUR				/* mail sent to you */
-	,MAIL_SENT				/* mail you have sent */
-	,MAIL_ANY				/* mail sent to or from you */
-	,MAIL_ALL				/* all mail (ignores usernumber arg) */
-	};
-
-							/* Bits in the mode of external()           */
-#define EX_SH       (1<<0)	/* Use command shell to load other process  */
-#define EX_OUTR     (1<<1)  /* Copy DOS output to remote                */
-#define EX_OUTL 	(1<<2)	/* Use _lputc() for local DOS output		*/
-#define EX_INR		(1<<3)	/* Trap int 16h keyboard input requests     */
-#define EX_WWIV 	(1<<4)	/* Expand WWIV color codes to ANSI sequence */
-#define EX_SWAP 	(1<<5)	/* Swap out for this external				*/
-#define EX_POPEN	(1<<7)	/* Leave COM port open						*/
-#define EX_OFFLINE	(1<<8)	/* Run this program offline					*/
-#define EX_BG		(1<<10)	/* Back-ground/detached process				*/
-#define EX_BIN		(1<<11)	/* Binary mode (no Unix LF to CRLF)			*/
-#define EX_NATIVE	(1<<14)	/* Native 32-bit application (XTRN_NATIVE)	*/
-#define EX_CHKTIME	(1<<16)	/* Check time left (XTRN_CHKTIME)			*/
-
-#define OS2_POPEN	(1<<0)	/* Leave COM port open						*/
-
-#define TG_ECHO		(1<<0)	/* Turn on telnet echo						*/
-#define TG_CRLF		(1<<1)	/* Expand sole CR to CRLF					*/
-#define TG_LINEMODE	(1<<2)	/* Send entire lines only					*/
-#define TG_NODESYNC	(1<<3)	/* Call Nodesync, get msgs, etc.			*/
-#define TG_CTRLKEYS	(1<<4)	/* Interpret ^P ^U ^T, etc locally			*/
-#define TG_PASSTHRU	(1<<5)	/* Pass-through telnet commands/responses	*/
-#define TG_RLOGIN	(1<<6)	/* Use BSD RLogin protocol					*/
-
-enum {						/* Values for 'mode' in listfileinfo        */
-	 FI_INFO            	/* Just list file information               */
-	,FI_REMOVE           	/* Remove/Move/Edit file information        */
-	,FI_DOWNLOAD         	/* Download files                           */
-	,FI_OLD              	/* Search/Remove files not downloaded since */
-	,FI_OLDUL	 			/* Search/Remove files uploaded before      */
-	,FI_OFFLINE   			/* Search/Remove files not online			*/
-	,FI_USERXFER  			/* User Xfer Download                       */
-	,FI_CLOSE 	  			/* Close any open records					*/
-	};
-
-#define L_LOGON     1       /* Logon List maintenance                   */
-#define LOL_SIZE    81      /* Length of each logon list entry          */
-
-							/* Bits in mode of scanposts() function 	*/
-#define SCAN_CONST	(1<<0)	/* Continuous message scanning				*/
-#define SCAN_NEW	(1<<1)	/* New scanning								*/
-#define SCAN_BACK	(1<<2)	/* Scan the last message if no new			*/
-#define SCAN_TOYOU	(1<<3)	/* Scan for messages to you 				*/
-#define SCAN_FIND	(1<<4)	/* Scan for text in messages				*/
-#define SCAN_UNREAD (1<<5)	/* Find un-read messages to you 			*/
-
-							/* Bits in misc of chan_t					*/
-#define CHAN_PW 	(1<<0)	/* Can be password protected				*/
-#define CHAN_GURU	(1<<1)	/* Guru joins empty channel 				*/
-
-enum {						/* Values of mode for userlist function     */
-	 UL_ALL					/* List all users in userlist				*/
-	,UL_SUB      			/* List all users with access to cursub     */
-	,UL_DIR					/* List all users with access to curdir 	*/
-	};
-
-
-#define BO_LEN		16		/* backout.dab record length				*/
-
-#define BO_OPENFILE 0		/* Backout types */
+								/* Bits in 'mode' for putmsg and printfile  */
+#define P_NOABORT  	(1<<0)		/* Disallows abortion of a message          */
+#define P_SAVEATR   (1<<1)		/* Save the new current attributres after	*/
+								/* msg has printed. */
+#define P_NOATCODES (1<<2)		/* Don't allow @ codes                      */
+#define P_OPENCLOSE (1<<3)		/* Open and close the file					*/
+								
+								/* Bits in 'mode' for listfiles             */
+#define FL_ULTIME   (1<<0)		/* List files by upload time                */
+#define FL_DLTIME   (1<<1)		/* List files by download time              */
+#define FL_NO_HDR   (1<<2)		/* Don't list directory header              */
+#define FL_FINDDESC (1<<3)		/* Find text in description                 */
+#define FL_EXFIND   (1<<4)		/* Find text in description - extended info */
+#define FL_VIEW     (1<<5)		/* View ZIP/ARC/GIF etc. info               */
+								
+								/* Bits in the mode of writemsg and email() */
+#define WM_EXTDESC	(1<<0)		/* Writing extended file description		*/
+#define WM_EMAIL	(1<<1)		/* Writing e-mail							*/
+#define WM_NETMAIL	(1<<2)		/* Writing NetMail							*/
+#define WM_ANON 	(1<<3)		/* Writing anonymous message				*/
+#define WM_FILE 	(1<<4)		/* Attaching a file to the message			*/
+#define WM_NOTOP	(1<<5)		/* Don't add top because we need top line   */
+#define WM_QUOTE	(1<<6)		/* Quote file available 					*/
+#define WM_QWKNET	(1<<7)		/* Writing QWK NetMail (25 char title)		*/
+#define WM_PRIVATE	(1<<8)		/* Private (for creating MSGINF file)		*/
+								
+								/* Bits in the mode of loadposts()			*/
+#define LP_BYSELF	(1<<0)		/* Include messages sent by self			*/
+#define LP_OTHERS	(1<<1)		/* Include messages sent to others			*/
+#define LP_UNREAD	(1<<2)		/* Un-read messages only					*/
+#define LP_PRIVATE	(1<<3)		/* Include all private messages 			*/
+#define LP_REP		(1<<4)		/* Packing REP packet						*/
+								
+								/* Bits in the mode of loadmail()			*/
+#define LM_UNREAD	(1<<0)		/* Include un-read mail only				*/
+#define LM_INCDEL	(1<<1)		/* Include deleted mail		 				*/
+								
+enum {							/* readmail and delmailidx which types		*/
+	 MAIL_YOUR					/* mail sent to you							*/
+	,MAIL_SENT					/* mail you have sent						*/
+	,MAIL_ANY					/* mail sent to or from you					*/
+	,MAIL_ALL					/* all mail (ignores usernumber arg)		*/
+	};							
+								
+								/* Bits in the mode of external()           */
+#define EX_SH       (1<<0)		/* Use command shell to load other process  */
+#define EX_OUTR     (1<<1)		/* Copy DOS output to remote                */
+#define EX_OUTL 	(1<<2)		/* Use _lputc() for local DOS output		*/
+#define EX_INR		(1<<3)		/* Trap int 16h keyboard input requests     */
+#define EX_WWIV 	(1<<4)		/* Expand WWIV color codes to ANSI sequence */
+#define EX_SWAP 	(1<<5)		/* Swap out for this external				*/
+#define EX_POPEN	(1<<7)		/* Leave COM port open						*/
+#define EX_OFFLINE	(1<<8)		/* Run this program offline					*/
+#define EX_BG		(1<<10)		/* Back-ground/detached process				*/
+#define EX_BIN		(1<<11)		/* Binary mode (no Unix LF to CRLF)			*/
+#define EX_NATIVE	(1<<14)		/* Native 32-bit application (XTRN_NATIVE)	*/
+#define EX_CHKTIME	(1<<16)		/* Check time left (XTRN_CHKTIME)			*/
+								
+#define OS2_POPEN	(1<<0)		/* Leave COM port open						*/
+								
+#define TG_ECHO		(1<<0)		/* Turn on telnet echo						*/
+#define TG_CRLF		(1<<1)		/* Expand sole CR to CRLF					*/
+#define TG_LINEMODE	(1<<2)		/* Send entire lines only					*/
+#define TG_NODESYNC	(1<<3)		/* Call Nodesync, get msgs, etc.			*/
+#define TG_CTRLKEYS	(1<<4)		/* Interpret ^P ^U ^T, etc locally			*/
+#define TG_PASSTHRU	(1<<5)		/* Pass-through telnet commands/responses	*/
+#define TG_RLOGIN	(1<<6)		/* Use BSD RLogin protocol					*/
+								
+enum {							/* Values for 'mode' in listfileinfo        */
+	 FI_INFO            		/* Just list file information               */
+	,FI_REMOVE           		/* Remove/Move/Edit file information        */
+	,FI_DOWNLOAD         		/* Download files                           */
+	,FI_OLD              		/* Search/Remove files not downloaded since */
+	,FI_OLDUL	 				/* Search/Remove files uploaded before      */
+	,FI_OFFLINE   				/* Search/Remove files not online			*/
+	,FI_USERXFER  				/* User Xfer Download                       */
+	,FI_CLOSE 	  				/* Close any open records					*/
+	};							
+								
+#define L_LOGON     1			/* Logon List maintenance                   */
+#define LOL_SIZE    81			/* Length of each logon list entry          */
+								
+								/* Bits in mode of scanposts() function 	*/
+#define SCAN_CONST	(1<<0)		/* Continuous message scanning				*/
+#define SCAN_NEW	(1<<1)		/* New scanning								*/
+#define SCAN_BACK	(1<<2)		/* Scan the last message if no new			*/
+#define SCAN_TOYOU	(1<<3)		/* Scan for messages to you 				*/
+#define SCAN_FIND	(1<<4)		/* Scan for text in messages				*/
+#define SCAN_UNREAD (1<<5)		/* Find un-read messages to you 			*/
+								
+								/* Bits in misc of chan_t					*/
+#define CHAN_PW 	(1<<0)		/* Can be password protected				*/
+#define CHAN_GURU	(1<<1)		/* Guru joins empty channel 				*/
+								
+enum {							/* Values of mode for userlist function     */
+	 UL_ALL						/* List all users in userlist				*/
+	,UL_SUB      				/* List all users with access to cursub     */
+	,UL_DIR						/* List all users with access to curdir 	*/
+	};							
+								
+								
+#define BO_LEN		16			/* backout.dab record length				*/
+								
+#define BO_OPENFILE 0			/* Backout types */
 
 
 /**********/
