@@ -20,7 +20,6 @@ function mime_decode(hdr, body)
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
 		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
-write("CT: "+CT+" Match: "+bound[0]+" Bound: "+bound[1]);
 		re=new RegExp ("--"+bound[1]);
 		msgbits=body.split(re);
 		/* Search for attachments */
