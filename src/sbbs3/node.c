@@ -171,7 +171,7 @@ char* itoa(int val, char* str, int radix)
 /* from NODE.DAB															*/
 /* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
 /****************************************************************************/
-void getnodedat(uchar number, node_t *node, char lockit)
+void getnodedat(int number, node_t *node, int lockit)
 {
 	int count;
 
@@ -199,7 +199,7 @@ void getnodedat(uchar number, node_t *node, char lockit)
 /* getnodedat(num,&node,1); must have been called before calling this func  */
 /*          NOTE: ------^   the indicates the node record has been locked   */
 /****************************************************************************/
-void putnodedat(uchar number, node_t node)
+void putnodedat(int number, node_t node)
 {
 	number--;	/* make zero based */
 	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
@@ -235,7 +235,7 @@ char *unpackchatpass(char *pass, node_t node)
 /****************************************************************************/
 /* Displays the information for node number 'number' contained in 'node'    */
 /****************************************************************************/
-void printnodedat(uchar number, node_t node)
+void printnodedat(int number, node_t node)
 {
     char hour,mer[3];
 
@@ -578,25 +578,25 @@ int main(int argc, char **argv)
 								misc=NODE_AOFF;
 								break;
 							case MODE_STATUS:
-								node.status=value;
+								node.status=(uchar)value;
 								break;
 							case MODE_ERRORS:
-								node.errors=value;
+								node.errors=(uchar)value;
 								break;
 							case MODE_ACTION:
-								node.action=value;
+								node.action=(uchar)value;
 								break;
 							case MODE_USERON:
-								node.useron=value;
+								node.useron=(uchar)value;
 								break;
 							case MODE_MISC:
-								node.misc=value;
+								node.misc=(uchar)value;
 								break;
 							case MODE_CONN:
-								node.connection=value;
+								node.connection=(uchar)value;
 								break;
 							case MODE_AUX:
-								node.aux=value;
+								node.aux=(uchar)value;
 								break;
 							case MODE_EXTAUX:
 								node.extaux=value;
