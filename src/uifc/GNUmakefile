@@ -20,17 +20,17 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 CFLAGS += -DWRAPPER_IMPORTS -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS)
 
 # UIFC Library Link Rule
-$(UIFCLIB): $(OBJS)
+$(UIFCLIB_BUILD): $(OBJS)
 	@echo Creating $@ ...
 	$(QUIET)ar rc $@ $(OBJS)
 	$(QUIET)ranlib $@
 
 # MT-UIFC Library Link Rule
-$(UIFCLIB-MT): $(MT_OBJS)
+$(UIFCLIB-MT_BUILD): $(MT_OBJS)
 	@echo Creating $@ ...
 	$(QUIET)ar rc $@ $(MT_OBJS)
 	$(QUIET)ranlib $@
 
 $(UIFCTEST): $(MTOBJODIR)$(DIRSEP)uifctest$(OFILE)
 	@echo Creating $@ ...
-	$(QUIET)$(CC) $(MT_LDFLAGS) $(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(LDFLAGS) -o $@ $^ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CC) $(MT_LDFLAGS) $(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(LDFLAGS) -o $@ $(MTOBJODIR)$(DIRSEP)uifctest$(OFILE) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)

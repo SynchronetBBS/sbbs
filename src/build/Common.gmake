@@ -344,14 +344,14 @@ $(SMBLIB): smblib
 smblib:
 	$(MAKE) -C $(SMBLIB_SRC) lib
 
-$(CIOLIB-MT_LIB): ciolib-mt
+$(CIOLIB-MT): ciolib-mt
 ciolib-mt:
 	$(MAKE) -C $(CIOLIB_SRC) mtlib
 
-$(UIFC_LIB): uifc
+$(UIFCLIB): uifc
 uifc:
 	$(MAKE) -C $(UIFC_SRC) lib
 
-$(UIFC-MT_LIB): uifc-mt
-uifclib-mt:
+$(UIFCLIB-MT): uifc-mt
+uifc-mt:
 	$(MAKE) -C $(UIFC_SRC) mtlib

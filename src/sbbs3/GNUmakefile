@@ -109,32 +109,32 @@ LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(CIOLIB-MT_
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(MONO_OBJS) $(OBJS)
 	@echo Linking $@
-	$(QUIET)$(CXX) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CXX) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $(MONO_OBJS) $(OBJS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
 
 # Synchronet BBS library Link Rule
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $^ $(SHLIBOPTS)
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) $(SHLIBOPTS)
 
 # FTP Server Link Rule
 $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $^ $(SHLIBOPTS) -o $@
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MTOBJODIR)/ftpsrvr.o $(SHLIBOPTS) -o $@
 
 # Mail Server Link Rule
 $(MAILSRVR): $(MAIL_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $^ $(SHLIBOPTS) -o $@
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) -o $@
 
 # Mail Server Link Rule
 $(WEBSRVR): $(WEB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $^ $(SHLIBOPTS) -o $@
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) -o $@
 
 # Services Link Rule
 $(SERVICES): $(SERVICE_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $^ $(SHLIBOPTS) -o $@
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) -o $@
 
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
@@ -144,52 +144,52 @@ $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 # Baja Utility
 $(BAJA): $(BAJA_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(SMBLIB_LIBS) $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(BAJA_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # Node Utility
 $(NODE): $(NODE_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(NODE_OBJS) $(XPDEV_LIBS)
 
 # FIXSMB Utility
 $(FIXSMB): $(FIXSMB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(SMBLIB_LIBS) $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(FIXSMB_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # CHKSMB Utility
 $(CHKSMB): $(CHKSMB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(SMBLIB_LIBS) $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(CHKSMB_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # SMB Utility
 $(SMBUTIL): $(SMBUTIL_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(SMBLIB_LIBS) $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(SMBUTIL_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # SBBSecho (FidoNet Packet Tosser)
 $(SBBSECHO): $(SBBSECHO_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(SMBLIB_LIBS) $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(SBBSECHO_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # SBBSecho Configuration Program
 $(ECHOCFG): $(ECHOCFG_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) $(MT_LDFLAGS) -o $@ $^ $(UIFC-MT_LDFLAGS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) $(MT_LDFLAGS) -o $@ $(ECHOCFG_OBJS) $(UIFC-MT_LDFLAGS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
 # ADDFILES
 $(ADDFILES): $(ADDFILES_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(ADDFILES_OBJS) $(XPDEV_LIBS)
 
 # FILELIST
 $(FILELIST): $(FILELIST_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(FILELIST_OBJS) $(XPDEV_LIBS)
 
 # MAKEUSER
 $(MAKEUSER): $(MAKEUSER_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(MAKEUSER_OBJS) $(XPDEV_LIBS)
 
 # JSEXEC
 $(JSEXEC): $(JSEXEC_OBJS) $(SBBS)
@@ -199,9 +199,9 @@ $(JSEXEC): $(JSEXEC_OBJS) $(SBBS)
 # ANS2ASC
 $(ANS2ASC): $(OBJODIR)/ans2asc.o
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(OBJODIR)/ans2asc.o
 
 # ASC2ANS
 $(ASC2ANS): $(OBJODIR)/asc2ans.o
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(OBJODIR)/asc2ans.o

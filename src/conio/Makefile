@@ -21,7 +21,7 @@ CFLAGS = -DWRAPPER_IMPORTS $(CFLAGS) $(XPDEV-MT_CFLAGS) $(MT_CFLAGS) -I$(CIOLIB_
 OBJS = $(OBJS) $(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
 
 # SBBS DLL Link Rule
-$(CIOLIB-MT): $(OBJS)
+$(CIOLIB-MT_BUILD): $(OBJS)
 	@echo Creating $< ...
 	-$(QUIET)$(DELETE) $@
 	&$(QUIET)tlib $@ +$**

@@ -18,3 +18,5 @@ all:		xpdev-mt \
 		$(MTOBJODIR) \
 		$(LIBODIR) \
 		$(SCFG) $(SCFGHELP)
+
+$(SCFG):	$(XPDEV-MT_LIB) $(UIFCLIB-MT) $(CIOLIB-MT)

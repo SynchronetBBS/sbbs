@@ -8,6 +8,8 @@
 
 SBBSINST	=	$(EXEODIR)$(DIRSEP)sbbsinst$(EXEFILE) 
 
-all:	$(EXEODIR) \
+all:	xpdev-mt ciolib-mt uifc-mt $(EXEODIR) \
 		$(MTOBJODIR) \
 		$(SBBSINST)
+
+$(SBBSINST):	$(XPDEV-MT_LIB) $(CIOLIB-MT) $(UIFCLIB-MT)

@@ -17,7 +17,7 @@ ifeq ($(os),netbsd)
 endif
 
 # CIOLIB Library Link Rule
-$(CIOLIB-MT): $(MTOBJODIR) $(OBJS)
+$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS)
 	@echo Creating $@ ...
 	$(QUIET)ar rc $@ $(OBJS)
 	$(QUIET)ranlib $@

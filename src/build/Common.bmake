@@ -235,7 +235,7 @@ ciolib-mt:
 	exit
 |
 
-$(UIFC_LIB): uifc
+$(UIFCLIB): uifc
 uifc:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)
@@ -247,7 +247,7 @@ uifc:
 	exit
 |
 
-$(UIFC-MT_LIB): uifc-mt
+$(UIFCLIB-MT): uifc-mt
 uifc-mt:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)

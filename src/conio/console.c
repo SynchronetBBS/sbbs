@@ -1101,7 +1101,7 @@ int find_vmode(int mode)
     for (i = 0; i < NUMMODES; i++)
 	if (vmodelist[i].modenumber == mode)
 	    return i;
-	
+
     return -1;
 }
 
