@@ -1212,7 +1212,7 @@ int sbbs_t::exec(csi_t *csi)
 					return(0); }
 				switch(*(csi->ip++)) {
 					case USER_STRING_ALIAS:
-						if(!isalpha(csi->str[0]) || trashcan(csi->str,"NAME"))
+						if(!isalpha(csi->str[0]) || trashcan(csi->str,"name"))
 							break;
 						i=matchuser(&cfg,csi->str);
 						if(i && i!=useron.number)
@@ -1223,7 +1223,7 @@ int sbbs_t::exec(csi_t *csi)
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_REALNAME:
-						if(trashcan(csi->str,"NAME"))
+						if(trashcan(csi->str,"name"))
 							break;
 						if(cfg.uq&UQ_DUPREAL
 							&& userdatdupe(useron.number,U_NAME,LEN_NAME
@@ -1235,7 +1235,7 @@ int sbbs_t::exec(csi_t *csi)
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_HANDLE:
-						if(trashcan(csi->str,"NAME"))
+						if(trashcan(csi->str,"name"))
 							break;
 						if(cfg.uq&UQ_DUPHAND
 							&& userdatdupe(useron.number,U_HANDLE,LEN_HANDLE
@@ -1291,7 +1291,7 @@ int sbbs_t::exec(csi_t *csi)
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_PHONE:
-						if(trashcan(csi->str,"PHONE"))
+						if(trashcan(csi->str,"phone"))
 							break;
 						sprintf(useron.phone,"%.*s",LEN_PHONE,csi->str);
 						putuserrec(&cfg,useron.number,U_PHONE,LEN_PHONE

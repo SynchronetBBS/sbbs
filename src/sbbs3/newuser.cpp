@@ -171,7 +171,7 @@ void sbbs_t::newuser()
 				truncsp(useron.alias);
 				if(useron.alias[0]<=SP || !isalpha(useron.alias[0])
 					|| strchr(useron.alias,0xff)
-					|| matchuser(&cfg,useron.alias) || trashcan(useron.alias,"NAME")
+					|| matchuser(&cfg,useron.alias) || trashcan(useron.alias,"name")
 					|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,SP))) {
 					bputs(text[YouCantUseThatName]);
 					continue; }
@@ -183,7 +183,7 @@ void sbbs_t::newuser()
 				bputs(text[EnterYourRealName]);
 				if(!getstr(useron.name,LEN_NAME
 					,K_UPRLWR|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL)
-					|| trashcan(useron.name,"NAME")
+					|| trashcan(useron.name,"name")
 					|| strchr(useron.name,0xff)
 					|| !strchr(useron.name,SP)
 					|| (cfg.uq&UQ_DUPREAL
@@ -207,7 +207,7 @@ void sbbs_t::newuser()
 				|| strchr(useron.handle,0xff)
 				|| (cfg.uq&UQ_DUPHAND
 					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle,0))
-				|| trashcan(useron.handle,"NAME"))
+				|| trashcan(useron.handle,"name"))
 				bputs(text[YouCantUseThatName]);
 			else
 				break; }
@@ -255,7 +255,7 @@ void sbbs_t::newuser()
 					if(gettmplt(useron.phone,cfg.sys_phonefmt
 						,K_LINE|(cfg.uq&UQ_NOEXASC)|K_EDIT)<strlen(cfg.sys_phonefmt))
 						continue; }
-				if(!trashcan(useron.phone,"PHONE"))
+				if(!trashcan(useron.phone,"phone"))
 					break; } }
 		if(!online) return;
 		if(cfg.uq&UQ_SEX) {

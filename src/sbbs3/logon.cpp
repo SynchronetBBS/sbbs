@@ -295,7 +295,7 @@ bool sbbs_t::logon()
 						bputs(text[EnterYourCompany]);
 					getstr(useron.name,LEN_NAME,K_UPRLWR|(cfg.uq&UQ_NOEXASC));
 					if(cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME) {
-						if(trashcan(useron.name,"NAME") || !useron.name[0]
+						if(trashcan(useron.name,"name") || !useron.name[0]
 							|| !strchr(useron.name,SP)
 							|| strchr(useron.name,0xff)
 							|| (cfg.uq&UQ_DUPREAL
@@ -316,7 +316,7 @@ bool sbbs_t::logon()
 						|| (cfg.uq&UQ_DUPHAND
 							&& userdatdupe(useron.number,U_HANDLE,LEN_HANDLE
 							,useron.handle,0))
-						|| trashcan(useron.handle,"NAME"))
+						|| trashcan(useron.handle,"name"))
 						bputs(text[YouCantUseThatName]);
 					else
 						break; } }
@@ -347,7 +347,7 @@ bool sbbs_t::logon()
 						if(getstr(useron.phone,LEN_PHONE
 							,K_UPPER|(cfg.uq&UQ_NOEXASC))<5)
 							continue; }
-					if(!trashcan(useron.phone,"PHONE"))
+					if(!trashcan(useron.phone,"phone"))
 						break; } }
 			if(!(sys_status&SS_RLOGIN) 
 				&& /* cfg.uq&UQ_EMAIL && */ !useron.netmail[0]) {

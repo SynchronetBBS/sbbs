@@ -713,7 +713,7 @@ void sbbs_t::dirinfo(uint dirnum)
 }
 
 /****************************************************************************/
-/* Searches the file <name>.CAN in the TEXT directory for matches			*/
+/* Searches the file <name>.can in the TEXT directory for matches			*/
 /* Returns 1 if found in list, 0 if not.									*/
 /****************************************************************************/
 extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)

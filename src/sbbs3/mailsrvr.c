@@ -546,8 +546,8 @@ static void pop3_thread(void* arg)
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
 		lprintf("%04d POP3 client name: %s", socket, host_name);
 
-	if(trashcan(&scfg,host_ip,"IP")) {
-		lprintf("%04d !POP3 client blocked in IP.CAN: %s"
+	if(trashcan(&scfg,host_ip,"ip")) {
+		lprintf("%04d !POP3 client blocked in ip.can: %s"
 			,socket, host_ip);
 		sockprintf(socket,"-ERR Access denied.");
 		close_socket(socket);
@@ -555,8 +555,8 @@ static void pop3_thread(void* arg)
 		return;
 	}
 
-	if(trashcan(&scfg,host_name,"HOST")) {
-		lprintf("%04d !POP3 client blocked in HOST.CAN: %s"
+	if(trashcan(&scfg,host_name,"host")) {
+		lprintf("%04d !POP3 client blocked in host.can: %s"
 			,socket, host_name);
 		sockprintf(socket,"-ERR Access denied.");
 		close_socket(socket);
@@ -1098,8 +1098,8 @@ static void smtp_thread(void* arg)
 
 	strcpy(hello_name,host_name);
 
-	if(trashcan(&scfg,host_ip,"IP")) {
-		lprintf("%04d !SMTP server blocked in IP.CAN: %s"
+	if(trashcan(&scfg,host_ip,"ip")) {
+		lprintf("%04d !SMTP server blocked in ip.can: %s"
 			,socket, host_ip);
 		sockprintf(socket,"550 Access denied.");
 		close_socket(socket);
@@ -1107,8 +1107,8 @@ static void smtp_thread(void* arg)
 		return;
 	}
 
-	if(trashcan(&scfg,host_name,"HOST")) {
-		lprintf("%04d !SMTP server blocked in HOST.CAN: %s"
+	if(trashcan(&scfg,host_name,"host")) {
+		lprintf("%04d !SMTP server blocked in host.can: %s"
 			,socket, host_name);
 		sockprintf(socket,"550 Access denied.");
 		close_socket(socket);
@@ -1168,8 +1168,8 @@ static void smtp_thread(void* arg)
 		return;
 	}
 
-	if(trashcan(&scfg,host_name,"SMTPSPY") 
-		|| trashcan(&scfg,host_ip,"SMTPSPY")) {
+	if(trashcan(&scfg,host_name,"smtpspy") 
+		|| trashcan(&scfg,host_ip,"smtpspy")) {
 		sprintf(str,"%sSMTPSPY.TXT", scfg.data_dir);
 		spy=fopen(str,"a");
 	}
@@ -1615,7 +1615,7 @@ static void smtp_thread(void* arg)
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sender[0]=0;
 			sender_addr[0]=0;
-			if(spy==NULL && trashcan(&scfg,reverse_path,"SMTPSPY")) {
+			if(spy==NULL && trashcan(&scfg,reverse_path,"smtpspy")) {
 				sprintf(str,"%sSMTPSPY.TXT", scfg.data_dir);
 				spy=fopen(str,"a");
 			}
@@ -1658,8 +1658,8 @@ static void smtp_thread(void* arg)
 				if(stricmp(tp+1,scfg.sys_inetaddr) && 
 					resolve_ip(tp+1)!=server_addr.sin_addr.s_addr) {
 
-					if(!trashcan(&scfg,host_name,"RELAY") && 
-						!trashcan(&scfg,host_ip,"RELAY")) {
+					if(!trashcan(&scfg,host_name,"relay") && 
+						!trashcan(&scfg,host_ip,"relay")) {
 						lprintf("%04d !SMTP Illegal relay attempt from %s [%s] to %s"
 							,socket, host_name, host_ip, tp+1);
 						sockprintf(socket, "550 Relay not allowed.");

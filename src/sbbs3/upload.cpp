@@ -283,7 +283,7 @@ void sbbs_t::upload(uint dirnum)
 	f.altpath=altul;
 	bputs(text[Filename]);
 	if(!getstr(fname,12,K_UPPER) || strchr(fname,'?') || strchr(fname,'*')
-		|| !checkfname(fname) || (trashcan(fname,"FILE") && !dir_op(dirnum))) {
+		|| !checkfname(fname) || (trashcan(fname,"file") && !dir_op(dirnum))) {
 		if(fname[0])
 			bputs(text[BadFilename]);
 		return; }

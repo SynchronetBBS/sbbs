@@ -1265,16 +1265,16 @@ static void ctrl_thread(void* arg)
 
 	lprintf("%04d Host name: %s", sock, host_name);
 
-	if(trashcan(&scfg,host_ip,"IP")) {
-		lprintf("!Client blocked in IP.CAN: ", host_ip);
+	if(trashcan(&scfg,host_ip,"ip")) {
+		lprintf("!Client blocked in ip.can: ", host_ip);
 		sockprintf(sock,"550 Access denied.");
 		close_socket(&sock,__LINE__);
 		thread_down();
 		return;
 	}
 
-	if(trashcan(&scfg,host_name,"HOST")) {
-		lprintf("!Client blocked in HOST.CAN: %s", host_name);
+	if(trashcan(&scfg,host_name,"host")) {
+		lprintf("!Client blocked in host.can: %s", host_name);
 		sockprintf(sock,"550 Access denied.");
 		close_socket(&sock,__LINE__);
 		thread_down();
@@ -2670,7 +2670,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)
-					|| trashcan(&scfg,p,"FILE")) {
+					|| trashcan(&scfg,p,"file")) {
 					lprintf("%04d !%s illegal filename attempt: %s"
 						,sock,user.alias,p);
 					sockprintf(sock,"553 Illegal filename attempt");
