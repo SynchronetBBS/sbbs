@@ -106,7 +106,7 @@ uploads.
 */
 			uinput(WIN_MID,0,0
 				,"Minimum Kilobytes Free Disk Space to Allow Uploads"
-				,itoa(cfg.min_dspace,tmp,10),5,K_EDIT|K_NUMBER);
+				,ultoa(cfg.min_dspace,tmp,10),5,K_EDIT|K_NUMBER);
 			cfg.min_dspace=atoi(tmp);
 			break;
 		case 1:
@@ -118,7 +118,7 @@ This is the maximum number of files that can be placed in the batch
 upload queue.
 */
 			uinput(WIN_MID,0,0,"Maximum Files in Batch Upload Queue"
-				,itoa(cfg.max_batup,tmp,10),5,K_EDIT|K_NUMBER);
+				,ultoa(cfg.max_batup,tmp,10),5,K_EDIT|K_NUMBER);
 			cfg.max_batup=atoi(tmp);
             break;
 		case 2:
@@ -130,7 +130,7 @@ This is the maximum number of files that can be placed in the batch
 download queue.
 */
 			uinput(WIN_MID,0,0,"Maximum Files in Batch Download Queue"
-				,itoa(cfg.max_batdn,tmp,10),5,K_EDIT|K_NUMBER);
+				,ultoa(cfg.max_batdn,tmp,10),5,K_EDIT|K_NUMBER);
 			cfg.max_batdn=atoi(tmp);
             break;
 		case 3:
@@ -143,7 +143,7 @@ of a user to user upload.
 */
 			uinput(WIN_MID,0,0
 				,"Maximum Destination Users in User to User Transfers"
-				,itoa(cfg.max_userxfer,tmp,10),5,K_EDIT|K_NUMBER);
+				,ultoa(cfg.max_userxfer,tmp,10),5,K_EDIT|K_NUMBER);
 			cfg.max_userxfer=atoi(tmp);
 			break;
 		case 4:
@@ -156,7 +156,7 @@ directories are created.
 */
 			uinput(WIN_MID,0,0
 				,"Default Percentage of Credits to Credit Uploader on Upload"
-				,itoa(cfg.cdt_up_pct,tmp,10),4,K_EDIT|K_NUMBER);
+				,ultoa(cfg.cdt_up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 			cfg.cdt_up_pct=atoi(tmp);
 			break;
 		case 5:
@@ -169,7 +169,7 @@ directories are created.
 */
 			uinput(WIN_MID,0,0
 				,"Default Percentage of Credits to Credit Uploader on Download"
-				,itoa(cfg.cdt_dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
+				,ultoa(cfg.cdt_dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 			cfg.cdt_dn_pct=atoi(tmp);
 			break;
         case 6:
@@ -211,7 +211,7 @@ incremented. Setting this value to 0 disables leech protocol detection.
 			savnum=0;
 			uinput(WIN_MID|WIN_SAV,0,0
 				,"Leech Protocol Detection Percentage (0=Disabled)"
-				,itoa(cfg.leech_pct,tmp,10),3,K_EDIT|K_NUMBER);
+				,ultoa(cfg.leech_pct,tmp,10),3,K_EDIT|K_NUMBER);
 			cfg.leech_pct=atoi(tmp);
 			if(!cfg.leech_pct)
 				break;
@@ -226,7 +226,7 @@ considered a possible leech attempt.
 */
 			uinput(WIN_MID,0,0
 				,"Leech Protocol Minimum Time (in Seconds)"
-				,itoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
+				,ultoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
 			cfg.leech_sec=atoi(tmp);
 			break;
 		case 8: 	/* Viewable file types */

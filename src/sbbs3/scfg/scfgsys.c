@@ -62,7 +62,7 @@ while(1) {
 	sprintf(opt[i++],"%-33.33s%u","Days to Preserve Deleted Users"
 		,cfg.sys_deldays);
 	sprintf(opt[i++],"%-33.33s%s","Maximum Days of Inactivity"
-		,cfg.sys_autodel ? itoa(cfg.sys_autodel,tmp,10) : "Unlimited");
+		,cfg.sys_autodel ? ultoa(cfg.sys_autodel,tmp,10) : "Unlimited");
     sprintf(opt[i++],"%-33.33s%s","New User Password",cfg.new_pass);
 
 	strcpy(opt[i++],"Toggle Options...");
@@ -165,7 +165,7 @@ periodically, select Yes.
 			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Force Periodic Password Changes",opt);
 			if(!i) {
-				itoa(cfg.sys_pwdays,str,10);
+				ultoa(cfg.sys_pwdays,str,10);
 			SETHELP(WHERE);
 /*
 Maximum Days Between Password Changes:
@@ -574,7 +574,7 @@ time online, then set this option to Yes.
 				sprintf(opt[i++],"%-27.27s%s","Restrictions"
 					,ltoaf(cfg.new_rest,str));
 				sprintf(opt[i++],"%-27.27s%s","Expiration Days"
-					,itoa(cfg.new_expire,str,10));
+					,ultoa(cfg.new_expire,str,10));
 
 				ultoac(cfg.new_cdt,str);
 				sprintf(opt[i++],"%-27.27s%s","Credits",str);
@@ -604,7 +604,7 @@ This menu allows you to determine the default settings for new users.
 						done=1;
 						break;
 					case 0:
-						itoa(cfg.new_level,str,10);
+						ultoa(cfg.new_level,str,10);
 						SETHELP(WHERE);
 /*
 New User Security Level:
@@ -688,7 +688,7 @@ These are the restrictions that are automatically given to new users.
 						cfg.new_rest=aftol(str);
 						break;
 					case 7:
-						itoa(cfg.new_expire,str,10);
+						ultoa(cfg.new_expire,str,10);
 						SETHELP(WHERE);
 /*
 New User Expiration Days:
@@ -1029,7 +1029,7 @@ user.
 				sprintf(opt[i++],"%-27.27s%u","Minutes Per 100k Credits"
 					,cfg.cdt_min_value);
 				sprintf(opt[i++],"%-27.27s%s","Maximum Number of Minutes"
-					,cfg.max_minutes ? ltoa(cfg.max_minutes,tmp,10) : "Unlimited");
+					,cfg.max_minutes ? ultoa(cfg.max_minutes,tmp,10) : "Unlimited");
 				sprintf(opt[i++],"%-27.27s%u","Warning Days Till Expire"
 					,cfg.sys_exp_warn);
 				sprintf(opt[i++],"%-27.27s%u","Last Displayable Node"
@@ -1383,7 +1383,7 @@ security level from 0 to 99. The available options for each level are:
 						case 0:
 							uinput(WIN_MID|WIN_SAV,0,0
 								,"Total Time Allowed Per Day"
-								,itoa(cfg.level_timeperday[i],tmp,10),3
+								,ultoa(cfg.level_timeperday[i],tmp,10),3
 								,K_NUMBER|K_EDIT);
 							cfg.level_timeperday[i]=atoi(tmp);
 							if(cfg.level_timeperday[i]>500)
@@ -1392,7 +1392,7 @@ security level from 0 to 99. The available options for each level are:
 						case 1:
 							uinput(WIN_MID|WIN_SAV,0,0
 								,"Time Allowed Per Call"
-								,itoa(cfg.level_timepercall[i],tmp,10),3
+								,ultoa(cfg.level_timepercall[i],tmp,10),3
 								,K_NUMBER|K_EDIT);
 							cfg.level_timepercall[i]=atoi(tmp);
 							if(cfg.level_timepercall[i]>500)
@@ -1401,28 +1401,28 @@ security level from 0 to 99. The available options for each level are:
 						case 2:
 							uinput(WIN_MID|WIN_SAV,0,0
 								,"Calls Allowed Per Day"
-								,itoa(cfg.level_callsperday[i],tmp,10),4
+								,ultoa(cfg.level_callsperday[i],tmp,10),4
 								,K_NUMBER|K_EDIT);
 							cfg.level_callsperday[i]=atoi(tmp);
                             break;
 						case 3:
                             uinput(WIN_MID|WIN_SAV,0,0
                                 ,"Email Allowed Per Day"
-								,itoa(cfg.level_emailperday[i],tmp,10),4
+								,ultoa(cfg.level_emailperday[i],tmp,10),4
                                 ,K_NUMBER|K_EDIT);
                             cfg.level_emailperday[i]=atoi(tmp);
                             break;
 						case 4:
 							uinput(WIN_MID|WIN_SAV,0,0
 								,"Posts Allowed Per Day"
-								,itoa(cfg.level_postsperday[i],tmp,10),4
+								,ultoa(cfg.level_postsperday[i],tmp,10),4
 								,K_NUMBER|K_EDIT);
 							cfg.level_postsperday[i]=atoi(tmp);
                             break;
 						case 5:
 							uinput(WIN_MID|WIN_SAV,0,0
 								,"Lines Allowed Per Message (Post/E-mail)"
-								,itoa(cfg.level_linespermsg[i],tmp,10),4
+								,ultoa(cfg.level_linespermsg[i],tmp,10),4
 								,K_NUMBER|K_EDIT);
 							cfg.level_linespermsg[i]=atoi(tmp);
 							break;
@@ -1458,7 +1458,7 @@ security level from 0 to 99. The available options for each level are:
 								changes=1;
 								uinput(WIN_MID|WIN_SAV,0,0
 									,"Expired Level"
-									,itoa(cfg.level_expireto[i],tmp,10),2
+									,ultoa(cfg.level_expireto[i],tmp,10),2
 									,K_EDIT|K_NUMBER);
 								cfg.level_expireto[i]=atoi(tmp);
 								break; }
@@ -1466,7 +1466,7 @@ security level from 0 to 99. The available options for each level are:
 							cfg.level_misc[i]|=LEVEL_EXPTOVAL;
 							uinput(WIN_MID|WIN_SAV,0,0
 								,"Quick-Validation Set to Expire To"
-								,itoa(cfg.level_expireto[i],tmp,10),1
+								,ultoa(cfg.level_expireto[i],tmp,10),1
 								,K_EDIT|K_NUMBER);
 							cfg.level_expireto[i]=atoi(tmp);
 							break;
@@ -1508,7 +1508,7 @@ be added to the account.
 						done=1;
 						break;
 					case 0:
-						itoa(cfg.expired_level,str,10);
+						ultoa(cfg.expired_level,str,10);
 						SETHELP(WHERE);
 /*
 Expired Account Security Level:
@@ -1661,7 +1661,7 @@ user's security values with very few key-strokes.
 						case 0:
 							uinput(WIN_MID|WIN_SAV,0,0
 								,"Level"
-								,itoa(cfg.val_level[i],tmp,10),2
+								,ultoa(cfg.val_level[i],tmp,10),2
 								,K_NUMBER|K_EDIT);
 							cfg.val_level[i]=atoi(tmp);
 							break;
@@ -1710,7 +1710,7 @@ user's security values with very few key-strokes.
 						case 7:
 							uinput(WIN_MID|WIN_SAV,0,0
 								,"Days to Extend Expiration"
-								,itoa(cfg.val_expire[i],tmp,10),4
+								,ultoa(cfg.val_expire[i],tmp,10),4
 								,K_NUMBER|K_EDIT);
 							cfg.val_expire[i]=atoi(tmp);
                             break;

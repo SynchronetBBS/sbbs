@@ -388,7 +388,7 @@ this option to Yes.
 			while(!done) {
 				i=0;
 				sprintf(opt[i++],"%-27.27s%s","Validation User"
-					,cfg.node_valuser ? itoa(cfg.node_valuser,tmp,10) : "Nobody");
+					,cfg.node_valuser ? ultoa(cfg.node_valuser,tmp,10) : "Nobody");
 				sprintf(opt[i++],"%-27.27s%u seconds","Semaphore Frequency"
 					,cfg.node_sem_check);
 				sprintf(opt[i++],"%-27.27s%u seconds","Statistics Frequency"
@@ -417,7 +417,7 @@ are sure of the consequences and necessary preparation.
 						done=1;
                         break;
 					case 0:
-						itoa(cfg.node_valuser,str,10);
+						ultoa(cfg.node_valuser,str,10);
 SETHELP(WHERE);
 /*
 Validation User Number:
@@ -435,7 +435,7 @@ user number one.
 						cfg.node_valuser=atoi(str);
 						break;
 					case 1:
-						itoa(cfg.node_sem_check,str,10);
+						ultoa(cfg.node_sem_check,str,10);
 SETHELP(WHERE);
 /*
 Semaphore Check Frequency While Waiting for Call (in seconds):
@@ -449,7 +449,7 @@ is waiting for a caller. Default is 60 seconds.
 						cfg.node_sem_check=atoi(str);
                         break;
 					case 2:
-						itoa(cfg.node_stat_check,str,10);
+						ultoa(cfg.node_stat_check,str,10);
 SETHELP(WHERE);
 /*
 Statistics Check Frequency While Waiting for Call (in seconds):
@@ -463,7 +463,7 @@ is waiting for a caller. Default is 10 seconds.
 						cfg.node_stat_check=atoi(str);
                         break;
 					case 3:
-						itoa(cfg.sec_warn,str,10);
+						ultoa(cfg.sec_warn,str,10);
 SETHELP(WHERE);
 /*
 Seconds Before Inactivity Warning:
@@ -477,7 +477,7 @@ warning will be given. Default is 180 seconds.
 						cfg.sec_warn=atoi(str);
                         break;
 					case 4:
-						itoa(cfg.sec_hangup,str,10);
+						ultoa(cfg.sec_hangup,str,10);
 SETHELP(WHERE);
 /*
 Seconds Before Inactivity Disconnection:

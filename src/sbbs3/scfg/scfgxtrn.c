@@ -1049,7 +1049,7 @@ time users spend running this program.
 					savnum=5;
 					switch(k) {
 						case 0:
-							itoa(cfg.xtrn[i]->textra,str,10);
+							ultoa(cfg.xtrn[i]->textra,str,10);
 							SETHELP(WHERE);
 /*
 Extra Time to Give User in Program:
@@ -1064,7 +1064,7 @@ left online.
 							cfg.xtrn[i]->textra=atoi(str);
 							break;
 						case 1:
-							itoa(cfg.xtrn[i]->maxtime,str,10);
+							ultoa(cfg.xtrn[i]->maxtime,str,10);
 							SETHELP(WHERE);
 /*
 Maximum Time Allowed in Program:

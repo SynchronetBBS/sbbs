@@ -982,7 +982,7 @@ while(!done) {
 		for(i=0;i<n;i++) {
 			for(j=0;j<7;j++)
                 if(!strnicmp(ar+i,wday[j],3)) {
-                    strcat(str,itoa(j,tmp,10));
+                    strcat(str,ultoa(j,tmp,10));
 					i+=2;
 					break; }
 			if(j==7)
@@ -1238,7 +1238,7 @@ requirement evaluation. The valid range is A through Z.
                     strcat(ar," OR "); }
 			strcat(ar,"FLAG ");
 			if(i)
-				strcat(ar,itoa(i+1,tmp,10));
+				strcat(ar,ultoa(i+1,tmp,10));
 			strcat(ar,str);
 			break;
 		case 4:
