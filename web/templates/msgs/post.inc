@@ -11,7 +11,7 @@
       <td class="postmsg" colspan="2"><textarea class="postmsg" name=body rows="20" cols="80"></textarea></td>
       </tr>
     <tr>
-      <td align="center" class="postmsg" colspan="2"><button type="Submit">Post Message</button></td>
+      <td align="center" class="postmsg" colspan="2"><input type="submit" value="Post Message" /></td>
     </tr>
   </tbody>
 </table>

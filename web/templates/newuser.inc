@@ -46,7 +46,7 @@
             <tr>
             <td class="newuser">&nbsp;</td>
             <td class="newuser">
-                <button type="submit">Join!</button>
+                <input type="submit" value="Join!" />Join!
             </td>
             </tr>
 		</table>
