@@ -1,6 +1,6 @@
 object FtpCfgDlg: TFtpCfgDlg
-  Left = 754
-  Top = 408
+  Left = 600
+  Top = 428
   BorderStyle = bsDialog
   Caption = 'FTP Server Configuration'
   ClientHeight = 301
@@ -10,6 +10,9 @@ object FtpCfgDlg: TFtpCfgDlg
   OldCreateOrder = True
   Position = poScreenCenter
   OnShow = FormShow
+  DesignSize = (
+    352
+    301)
   PixelsPerInch = 120
   TextHeight = 16
   object PageControl: TPageControl
@@ -18,6 +21,7 @@ object FtpCfgDlg: TFtpCfgDlg
     Width = 342
     Height = 245
     ActivePage = SoundTabSheet
+    TabIndex = 3
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'

@@ -10,6 +10,9 @@ object MailCfgDlg: TMailCfgDlg
   OldCreateOrder = True
   Position = poScreenCenter
   OnShow = FormShow
+  DesignSize = (
+    352
+    303)
   PixelsPerInch = 120
   TextHeight = 16
   object OKBtn: TButton
@@ -50,7 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SMTPTabSheet
+    ActivePage = SendMailTabSheet
+    TabIndex = 3
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -123,7 +127,7 @@ object MailCfgDlg: TMailCfgDlg
           'lt=120)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 4
       end
       object HostnameCheckBox: TCheckBox
         Left = 185
@@ -145,7 +149,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log TX'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 5
       end
       object LogFileCheckBox: TCheckBox
         Left = 185
@@ -166,7 +170,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 9
         Top = 76
         Width = 75
-        Height = 24
+        Height = 16
         Caption = 'Spam Filters'
       end
       object TelnetPortLabel: TLabel
@@ -194,7 +198,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'RBL'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 3
       end
       object RSSCheckBox: TCheckBox
         Left = 185
@@ -205,7 +209,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'RSS'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 4
       end
       object DULCheckBox: TCheckBox
         Left = 256
@@ -216,7 +220,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'DUL'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 5
       end
       object SMTPPortEdit: TEdit
         Left = 113
@@ -250,7 +254,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log Headers'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 6
       end
       object DefaultUserEdit: TEdit
         Left = 113
@@ -262,7 +266,7 @@ object MailCfgDlg: TMailCfgDlg
           'ysop")'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 2
       end
     end
     object POP3TabSheet: TTabSheet
