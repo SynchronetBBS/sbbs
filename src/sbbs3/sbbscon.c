@@ -1541,7 +1541,7 @@ int main(int argc, char** argv)
 			/* ToDo: Something seems to be broken here on FreeBSD now */
 			/* ToDo: Now, they try to re-bind on FreeBSD */
 			/* ToDo: Seems like I switched problems with Linux */
-#if defined(DONT_BLAME_SYNCHRONET) || defined(_THREAD_SUID_BROKEN)
+#if !defined(DONT_BLAME_SYNCHRONET) && !defined(_THREAD_SUID_BROKEN)
  			if(bbs_startup.telnet_port < IPPORT_RESERVED
 				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
 					&& bbs_startup.rlogin_port < IPPORT_RESERVED))
