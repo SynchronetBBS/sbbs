@@ -464,8 +464,8 @@ When running Synchronet for OS/2, this option should be set to:
 					,cfg.node_misc&NM_NOBEEP ? "No":"Yes");
 				sprintf(opt[i++],"%-27.27s%s","Allow 8-bit Remote Logons"
 					,cfg.node_misc&NM_7BITONLY ? "No":"Yes");
-				sprintf(opt[i++],"%-27.27s%s","Reset Video Between Calls"
-					,cfg.node_misc&NM_RESETVID ? "Yes":"No");
+				sprintf(opt[i++],"%-27.27s%s","Spinning Pause Prompt"
+					,cfg.node_misc&NM_NOPAUSESPIN ? "No":"Yes");
 
 				opt[i][0]=0;
 				savnum=0;
@@ -1000,19 +1000,18 @@ to send IBM extended ASCII characters during the logon sequence.
 						savnum=1;
 						SETHELP(WHERE);
 /*
-Reset Video Mode Between Calls:
+Spinning Pause Prompt:
 
-If you wish to have SBBS reset the video mode between calls, set this
-option to Yes. This is to reverse the effects of some external programs
-that change the video mode without permission.
+If you want to have a spinning cursor at the [Hit a key] prompt, set this
+option to Yes.
 */
 						i=ulist(WIN_MID|WIN_SAV,0,10,0,&i,0
-							,"Reset Video Mode Beteween Calls",opt);
-						if(i==0 && !(cfg.node_misc&NM_RESETVID)) {
-							cfg.node_misc|=NM_RESETVID;
+							,"Spinning Cursor at Pause Prompt",opt);
+						if(i==0 && !(cfg.node_misc&NM_NOPAUSESPIN)) {
+							cfg.node_misc|=NM_NOPAUSESPIN;
 							changes=1; }
-						else if(i==1 && (cfg.node_misc&NM_RESETVID)) {
-							cfg.node_misc&=~NM_RESETVID;
+						else if(i==1 && (cfg.node_misc&NM_NOPAUSESPIN)) {
+							cfg.node_misc&=~NM_NOPAUSESPIN;
 							changes=1; }
                         break;
 						} }
@@ -1895,8 +1894,8 @@ SETHELP(WHERE);
 /*
 Modem Control Strings:
 
-This menu contains a list of available modem control strings. It is usually
-not necessary to modify these except under special circumstances.
+This menu contains a list of available modem control strings. It is
+usually not necessary to modify these except under special circumstances.
 */
                         j=0;
                         while(1) {
