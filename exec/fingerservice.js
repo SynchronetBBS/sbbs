@@ -6,10 +6,14 @@
 
 // Example configuration (in ctrl/services.cfg):
 
-// Finger		79	0-unlimited	0		fingerservice.js
+// Finger		79	0-unlimited	0		fingerservice.js [options]
 
-// Add -n to the configuration line to eliminate user age and gender
-// information from the query results.
+// Options:
+
+// -n	to the configuration line to eliminate user age and gender
+//		information from the query results.
+// -a	report aliases only (no real names)
+// -ff	enable the findfile feature (requires a "guest" account)
 
 // !WARNING!
 // Finger is an open protocol utilizing no forms of authorization
@@ -24,9 +28,11 @@ const REVISION = "$Revision$".split(' ')[1];
 
 var include_age_gender=true;
 var include_real_name=true;
+var findfile=true;
 
 load("nodedefs.js");
 load("sockdefs.js");
+load("sbbsdefs.js");
 
 for(i=0;i<argc;i++) {
 	switch(argv[i].toLowerCase()) {
@@ -35,6 +41,9 @@ for(i=0;i<argc;i++) {
 			break;
 		case "-a":	// aliases only
 			include_real_name = false;
+			break;
+		case "-ff":	// enable findfile (requires "guest" account)
+			findfile=true;
 			break;
 	}
 }
@@ -80,6 +89,12 @@ function test_port(port)
 	sock.close();
 
 	return(success);
+}
+
+function done()
+{
+	flush();
+	exit();
 }
 
 // Get Finger Request (the main entry point) 
@@ -136,9 +151,26 @@ if(request=="") {	// no specific user requested, give list of active users
 			,n+1
 			));
 	}
-	flush();
-	exit();
+	done();
 }
+
+// MODIFICATION BY MERLIN PART 1 STARTS HERE...
+
+if(findfile && 0) {	// What is this supposed to do?
+
+	if ((request.slice(0,9)) == "?findfile")  {
+		request=request.slice(9);
+		request="findfile?".concat(request);
+	}
+
+	if ((request.slice(0,9)) == "?filefind")  {
+		request=request.slice(9);
+		request="findfile?".concat(request);
+	}
+}
+
+// MODIFICATION BY MERLIN PART 1 ENDS HERE
+
 
 if(request.charAt(0)=='?') {	// Handle "special" requests
 	request=request.slice(1);
@@ -230,6 +262,8 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 				writeln("IDENT");
 			if(test_port(6667))
 				writeln("IRC");
+            if(test_port(8080))
+                writeln("HTTP Proxy");
 			break;
 
 		default:
@@ -240,14 +274,84 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			writeln("\tservices");
 			writeln("\tsockopts");
 			writeln("\tnodelist");
-			writeln("\tauto.msg");
+			if(findfile)
+				writeln("\tfindfile");
+            writeln("\tauto.msg");
 			writeln("\tlogon.lst");
 			log(format("!UNSUPPORTED SPECIAL REQUEST: '%s'",request));
 			break;
 	}
-	flush();
-	exit();
+	done();
 }
+
+// MODIFICATION BY MERLIN PART 3 STARTS HERE...
+
+if(findfile) {
+	request=request.toLowerCase();
+
+	if ((request.slice(0,9)) == "filefind?")  {
+		request=request.slice(9);
+		request="findfile?".concat(request);
+	}
+
+	if ((request == "filefind") || (request == "findfile") || (request == "")) {
+		request="findfile?";
+	}
+
+	if ((request.slice(0,9)) == "findfile?")  {
+		request=request.slice(9);
+		write(format("\r\nFinger FindFile at %s",system.inetaddr));
+
+		if (request.indexOf("?") != -1) {
+			writeln("");
+			writeln("");
+			writeln("Invalid: You can not use wildcards");
+			done();
+		}
+
+		if (request.indexOf("*") != -1) {
+			writeln("");
+			writeln("");
+			writeln("Invalid: You can not use wildcards");
+			done();
+		}
+
+		if (request == "") {
+			writeln("");
+			writeln("");
+			writeln(format("Invalid: You must use findfile?filename.ext@%s",system.inetaddr));
+			done();
+		}
+		if(!login("guest")) {
+			writeln("\r\n\r\nFailed to login as 'guest'");
+			done();
+		}
+
+		notfound = true;
+		writeln(format(" searching for '%s'...",request));
+		log(format("FindFile searching for: '%s'",request));
+		writeln("");        
+		for(l in file_area.lib_list) {
+			for(d in file_area.lib_list[l].dir_list) {
+				dirpath=file_area.lib_list[l].dir_list[d].path
+				dirpath=dirpath.concat(request);
+				if (file_exists(dirpath)) {
+					path="ftp://".concat(system.inetaddr,file_area.lib_list[l].dir_list[d].link,request);
+					path=path.toLowerCase();
+					writeln(format("Found at %s",path));
+					notfound=false;
+				}
+			}
+		}
+		if (notfound) {
+			writeln("Sorry, that file is not available here");
+		}
+	done();
+	}
+}
+
+// MODIFICATION BY MERLIN PART 3 ENDS HERE...
+
 
 // User info is handled here
 
@@ -291,6 +395,6 @@ write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
 	  ,user.host_name
 	  ,user.ip_address));
 
-flush();
+done();
 
 /* End of fingerservice.js */
