@@ -1,11 +1,11 @@
 /* $Id$ */
+#define NEED_CURSES_GETCH
 
 #include <sys/time.h>
 #include <stdarg.h>
 #include <unistd.h>
 
 #include "ciowrap.h"
-#undef getch			/* I'm going to need to use the real getch() in here */
 #undef beep				/* I'm going to need to use the real beep() in here */
 #include "curs_cio.h"
 #include "uifc.h"		/* UIFC_IBM */
@@ -65,7 +65,7 @@ int curs_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	int oldx, oldy;
 	struct text_info	ti;
 
-	curs_gettextinfo(&ti);
+	gettextinfo(&ti);
 
 	if(		   sx < 1
 			|| sy < 1
@@ -88,12 +88,12 @@ int curs_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 		{
 			fill_char=fill[fillpos++];
 			attr=fill[fillpos++];
-			curs_textattr(attr);
+			textattr(attr);
 			move(y, x);
 			_putch(fill_char,FALSE);
 		}
 	}
-	curs_textattr(orig_attr);
+	textattr(orig_attr);
 	move(oldy, oldx);
 	refresh();
 	return(1);
@@ -111,7 +111,7 @@ int curs_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	int	ext_char;
 	struct text_info	ti;
 
-	curs_gettextinfo(&ti);
+	gettextinfo(&ti);
 
 	if(		   sx < 1
 			|| sy < 1
@@ -397,7 +397,7 @@ void curs_textbackground(int colour)
 	attr=lastattr;
 	attr&=143;
 	attr|=(colour<<4);
-	curs_textattr(attr);
+	textattr(attr);
 }
 
 void curs_textcolor(int colour)
@@ -407,7 +407,7 @@ void curs_textcolor(int colour)
 	attr=lastattr;
 	attr&=240;
 	attr|=colour;
-	curs_textattr(attr);
+	textattr(attr);
 }
 
 int curs_kbhit(void)
@@ -625,7 +625,7 @@ int curs_cprintf(char *fmat, ...)
     ret=vsprintf(str,fmat,argptr);
     va_end(argptr);
 	if(ret>=0)
-		curs_cputs(str);
+		cputs(str);
 	else
 		ret=EOF;
     return(ret);
@@ -647,12 +647,6 @@ int curs_cputs(unsigned char *str)
 void curs_gotoxy(int x, int y)
 {
 	move(y-1,x-1);
-	refresh();
-}
-
-void curs_clrscr(void)
-{
-    clear();
 	refresh();
 }
 
@@ -691,6 +685,9 @@ void curs_gettextinfo(struct text_info *info)
 		info->currmode=COLOR_MODE;
 	else
 		info->currmode=MONO;
+	info->curx=wherex();
+	info->cury=wherey();
+	info->attribute=lastattr;
 }
 
 void curs_setcursortype(int type) {
@@ -711,11 +708,6 @@ void curs_setcursortype(int type) {
 	refresh();
 }
 
-void curs_clreol(void)
-{
-	clrtoeol();
-}
-
 int curs_putch(unsigned char c)
 {
 	struct text_info ti;
@@ -724,30 +716,51 @@ int curs_putch(unsigned char c)
 	ret=c;
 	switch(c) {
 		case '\r':
-			curs_gotoxy(1,curs_wherey());
+			gotoxy(1,wherey());
 			break;
 		case '\n':
-			curs_gettextinfo(&ti);
-			if(curs_wherey()==ti.screenheight) {
-				scrollok(stdscr,TRUE);
-				scroll(stdscr);
-				scrollok(stdscr,FALSE);
+			gettextinfo(&ti);
+			if(wherey()==ti.winbottom-ti.wintop+1) {
+				wscroll();
 			}
 			else {
-				curs_gotoxy(curs_wherex(),curs_wherey()+1);
+				gotoxy(wherex(),wherey()+1);
 			}
 			break;
 		case 0x07:
 			beep();
 			break;
 		case 0x08:
-			curs_gotoxy(curs_wherex()-1,curs_wherey());
+			gotoxy(wherex()-1,wherey());
 			_putch(' ',FALSE);
-			curs_gotoxy(curs_wherex()-1,curs_wherey());
+			gotoxy(wherex()-1,wherey());
 			break;
 		default:
-			if(_putch(c,TRUE)==ERR)
-				ret=EOF;
+			gettextinfo(&ti);
+			if(wherey()==ti.winbottom-ti.wintop+1
+					&& wherex()==ti.winright-ti.winleft+1) {
+				if(_putch(c,TRUE)==ERR)
+					ret=EOF;
+				else {
+					wscroll();
+					gotoxy(ti.winleft,ti.cury);
+				}
+			}
+			else {
+				if(wherex()==ti.winright-ti.winleft+1) {
+					if(_putch(c,TRUE)==ERR)
+						ret=EOF;
+					else
+						gotoxy(ti.winleft,ti.cury+1);
+				}
+				else {
+					if(_putch(c,TRUE)==ERR)
+						ret=EOF;
+					else
+						gotoxy(ti.curx+1,ti.cury);
+				}
+			}
+			break;
 	}
 }
 
@@ -761,7 +774,7 @@ int curs_getch(void)
 	}
 	else {
 		while((ch=getch())==ERR) {
-			curs_delay(1);
+			delay(1);
 		}
 		if(ch & KEY_CODE_YES) {
 			switch(ch) {
@@ -947,7 +960,7 @@ int curs_getche(void)
 		return(curs_getch());
 	ch=curs_getch();
 	if(ch)
-		curs_putch(ch);
+		putch(ch);
 	return(ch);
 }
 
@@ -957,7 +970,7 @@ void curs_highvideo(void)
 
 	attr=lastattr;
 	attr |= 8;
-	curs_textattr(attr);
+	textattr(attr);
 }
 
 void curs_lowvideo(void)
@@ -966,12 +979,12 @@ void curs_lowvideo(void)
 
 	attr=lastattr;
 	attr &= 0xf7;
-	curs_textattr(attr);
+	textattr(attr);
 }
 
 void curs_normvideo(void)
 {
-	curs_textattr(0x07);
+	textattr(0x07);
 }
 
 void curs_textmode(int mode)

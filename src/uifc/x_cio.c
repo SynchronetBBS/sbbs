@@ -5,23 +5,6 @@
 #include "console.h"
 WORD	x_curr_attr=0x0700;
 
-void x_scrollup(void)
-{
-	char *buf;
-	int i,j;
-
-	buf=(char *)malloc(DpyCols*DpyRows*2);
-	x_gettext(1,2,DpyCols,DpyRows+1,buf);
-	x_puttext(1,1,DpyCols,DpyRows,buf);
-	j=0;
-	for(i=0;i<DpyCols;i++) {
-		buf[j++]=' ';
-		buf[j++]=x_curr_attr>>8;
-	}
-	x_puttext(1,DpyRows+1,DpyCols,DpyRows+1,buf);
-	free(buf);
-}
-
 int x_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 {
 	int x,y;
@@ -29,7 +12,7 @@ int x_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	WORD	sch;
 	struct text_info	ti;
 
-	curs_gettextinfo(&ti);
+	gettextinfo(&ti);
 
 	if(		   sx < 1
 			|| sy < 1
@@ -61,7 +44,7 @@ int x_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	WORD	sch;
 	struct text_info	ti;
 
-	curs_gettextinfo(&ti);
+	gettextinfo(&ti);
 
 	if(		   sx < 1
 			|| sy < 1
@@ -117,6 +100,7 @@ int x_wherex(void)
  */
 int x_putch(unsigned char ch)
 {
+	struct text_info ti;
 	WORD sch;
 
 	sch=x_curr_attr|ch;
@@ -126,11 +110,11 @@ int x_putch(unsigned char ch)
 			CursCol0=0;
 			break;
 		case '\n':
-			CursRow0++;
-			while(CursRow0>DpyRows) {
-				x_scrollup();
-				CursRow0--;
-			}
+			gettextinfo(&ti);
+			if(wherey()==ti.winbottom-ti.wintop+1)
+				wscroll();
+			else
+				CursRow0++;
 			break;
 		case '\b':
 			sch=0x0700;
@@ -142,16 +126,24 @@ int x_putch(unsigned char ch)
 			tty_beep();
 			break;
 		default:
-			vmem[CursCol0+CursRow0*DpyCols]=sch;
-			CursCol0++;
-			if(CursCol0>=DpyCols) {
-				CursCol0=0;
-				CursRow0++;
-				while(CursRow0>DpyRows) {
-					x_scrollup();
-					CursRow0--;
+			gettextinfo(&ti);
+			if(wherey()==ti.winbottom-ti.wintop+1
+					&& wherex()==ti.winright-ti.winleft+1) {
+				vmem[CursCol0+CursRow0*DpyCols]=sch;
+				wscroll();
+				gotoxy(ti.winleft,wherey());
+			}
+			else {
+				if(wherex()==ti.winright-ti.winleft+1) {
+					vmem[CursCol0+CursRow0*DpyCols]=sch;
+					gotoxy(ti.winleft,ti.cury+1);
+				}
+				else {
+					vmem[CursCol0+CursRow0*DpyCols]=sch;
+					gotoxy(ti.curx+1,ti.cury);
 				}
 			}
+			break;
 	}
 
 	return(ch);
@@ -168,7 +160,7 @@ int x_cprintf(char *fmat, ...)
 	ret=vsprintf(str,fmat,argptr);
 	va_end(argptr);
 	if(ret>=0)
-		x_cputs(str);
+		cputs(str);
 	else
 		ret=EOF;
 	return(ret);
@@ -192,23 +184,14 @@ void x_gotoxy(int x, int y)
 	CursCol0=x-1;
 }
 
-void x_clrscr(void)
-{
-	int x,y;
-	struct text_info info;
-	x_gettextinfo(&info);
-	for(y=0;y<info.screenheight;y++) {
-		for(x=0;x<info.screenwidth;x++) {
-			vmem[x+y*DpyCols]=0x0700;
-		}
-	}
-}
-
 void x_gettextinfo(struct text_info *info)
 {
 	info->currmode=VideoMode;
 	info->screenheight=DpyRows+1;
 	info->screenwidth=DpyCols;
+	info->curx=wherex();
+	info->cury=wherey();
+	info->attribute=x_curr_attr>>8;
 }
 
 void x_setcursortype(int type)
@@ -243,14 +226,6 @@ void x_textcolor(int colour)
 	x_curr_attr |= (colour<<8);
 }
 
-void x_clreol(void)
-{
-	int x;
-
-	for(x=CursCol0;x<DpyCols;x++)
-		vmem[CursRow0*DpyCols+x]=x_curr_attr;
-}
-
 int x_getch(void)
 {
 	return(tty_read(TTYF_BLOCK));
@@ -264,7 +239,7 @@ int x_getche(void)
 		return(x_getch());
 	ch=x_getch();
 	if(ch)
-		x_putch(ch);
+		putch(ch);
 	return(ch);
 }
 
@@ -280,7 +255,7 @@ void x_highvideo(void)
 
 	attr=x_curr_attr>>8;
 	attr |= 8;
-	x_textattr(attr);
+	textattr(attr);
 }
 
 void x_lowvideo(void)
@@ -289,12 +264,12 @@ void x_lowvideo(void)
 
 	attr=x_curr_attr>>8;
 	attr &= 0xf7;
-	x_textattr(attr);
+	textattr(attr);
 }
 
 void x_normvideo(void)
 {
-	x_textattr(0x07);
+	textattr(0x07);
 }
 
 void x_textmode(int mode)
