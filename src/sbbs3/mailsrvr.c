@@ -2430,8 +2430,11 @@ static void sendmail_thread(void* arg)
 					bounce(&smb,&msg,err,TRUE);
 					continue;
 				}
-				if((dns=resolve_ip(startup->dns_server))==0) 
+				if((dns=resolve_ip(startup->dns_server))==0) {
+					lprintf("0000 !SEND INVALID DNS server address: %s"
+						,startup->dns_server);
 					continue;
+				}
 				p++;
 				lprintf("0000 SEND getting MX records for %s from %s",p,startup->dns_server);
 				if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
