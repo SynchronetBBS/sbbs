@@ -4,7 +4,7 @@
 #include "gen_defs.h"
 
 #if defined(_WIN32)
-	#if 1
+	#if 0
 	#define BEEP(freq,dur)	xpbeep((double)(freq),(DWORD)(dur))
 	#else
 	#define BEEP(freq,dur)	Beep((DWORD)(freq),(DWORD)(dur))
@@ -17,10 +17,22 @@
 	#error "Unsupported Target: Need some macros and/or function prototypes here."
 #endif
 
+enum WAVE_SHAPE {
+	 WAVE_SHAPE_SINE
+	,WAVE_SHAPE_SAWTOOTH
+	,WAVE_SHAPE_SQUARE
+	,WAVE_SHAPE_SINE_SAW
+	,WAVE_SHAPE_SINE_HARM
+	,WAVE_SHAPE_SINE_SAW_CHORD
+	,WAVE_SHAPE_SINE_SAW_HARM
+};
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 void xpbeep(double freq, DWORD duration);
+BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE);
 #ifdef __unix__
 void unix_beep(int freq, int dur);
 #endif
