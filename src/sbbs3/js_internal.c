@@ -178,6 +178,7 @@ static char* prop_desc[] = {
 };
 #endif
 
+#ifdef EVAL_BRANCH_CALLBACK
 static JSBool
 js_BranchCallback(JSContext *cx, JSScript *script)
 {
@@ -206,6 +207,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 
     return(JS_TRUE);
 }
+#endif
 
 /* Execute a string in its own context (away from Synchronet objects) */
 static JSBool
@@ -217,7 +219,9 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 	JSObject*		obj;
 	js_branch_t*	branch;
 	JSErrorReporter	reporter;
+#ifndef EVAL_BRANCH_CALLBACK
 	JSBranchCallback callback;
+#endif
 
 	*rval=JSVAL_VOID;
 
@@ -234,15 +238,18 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 		return(JS_FALSE);
 
 	/* Use the error reporter from the parent context */
-	JS_SetErrorReporter(parent_cx,(reporter=JS_SetErrorReporter(parent_cx,NULL)));
+	reporter=JS_SetErrorReporter(parent_cx,NULL);
+	JS_SetErrorReporter(parent_cx,reporter);
 	JS_SetErrorReporter(cx,reporter);
 
-#if 1
-	JS_SetContextPrivate(cx, JS_GetContextPrivate(parent_cx));
-	JS_SetBranchCallback(cx, (callback=JS_SetBranchCallback(parent_cx,NULL)));
-#else
-	JS_SetContextPrivate(cx,branch);
+#ifdef EVAL_BRANCH_CALLBACK
+	JS_SetContextPrivate(cx, branch);
 	JS_SetBranchCallback(cx, js_BranchCallback);
+#else	/* Use the branch callback from the parent context */
+	JS_SetContextPrivate(cx, JS_GetContextPrivate(parent_cx));
+	callback=JS_SetBranchCallback(parent_cx,NULL);
+	JS_SetBranchCallback(parent_cx, callback);
+	JS_SetBranchCallback(cx, callback);
 #endif
 
 	if((obj=JS_NewObject(cx, NULL, NULL, NULL))==NULL
