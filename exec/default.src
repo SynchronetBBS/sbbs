@@ -193,7 +193,7 @@ cmdkey B
 	end_cmd
 
 cmdkey C
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdkey D
@@ -686,7 +686,7 @@ cmdkey B
 	end_cmd
 
 cmdkey C
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdkey D
