@@ -483,6 +483,10 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 	idxrec_t idx;
 	ulong	 l,length,total,bot,top;
 
+	if(smb->sid_fp==NULL) {
+		sprintf(smb->last_error,"index not open");
+		return(1);
+	}
 	clearerr(smb->sid_fp);
 	if(!msg->hdr.number) {
 		fseek(smb->sid_fp,msg->offset*sizeof(idxrec_t),SEEK_SET);
