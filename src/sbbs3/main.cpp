@@ -936,10 +936,10 @@ void input_thread(void *arg)
 	fd_set		socket_set;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct timeval	tv;
-	int			curr_socket=INVALID_SOCKET;
+	SOCKET		sock=INVALID_SOCKET;
 #ifdef __unix__
-	int			spy_sock=INVALID_SOCKET;
-	int			spy_insock=INVALID_SOCKET;
+	SOCKET		spy_sock=INVALID_SOCKET;
+	SOCKET		spy_insock=INVALID_SOCKET;
 	struct sockaddr_un spy_name;
 	socklen_t	spy_len;
 	char		spy_path[sizeof(spy_name.sun_path)];
@@ -981,7 +981,7 @@ void input_thread(void *arg)
 	spy_len=sizeof(spy_name);
 #endif
 
-	curr_socket=sbbs->client_socket;
+	sock=sbbs->client_socket;
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
@@ -990,7 +990,7 @@ void input_thread(void *arg)
 
 #ifdef __unix__
 		if(spy_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)  {
-			curr_socket=sbbs->client_socket;
+			sock=sbbs->client_socket;
 			spy_socket[sbbs->cfg.node_num-1]=accept(spy_sock, (struct sockaddr *) &spy_name, &spy_len);
 			if(spy_socket[sbbs->cfg.node_num-1]>0)  {
 				sbbs->spymsg("Connected");
@@ -998,17 +998,17 @@ void input_thread(void *arg)
 			}
 		}
 		else  {
-			if(curr_socket==sbbs->client_socket && spy_socket[sbbs->cfg.node_num]==spy_insock)
-				curr_socket=spy_insock;
+			if(sock==sbbs->client_socket && spy_socket[sbbs->cfg.node_num]==spy_insock)
+				sock=spy_insock;
 			else
-				curr_socket=sbbs->client_socket;
+				sock=sbbs->client_socket;
 		}
 #endif
 
 		FD_ZERO(&socket_set);
-		FD_SET(curr_socket,&socket_set);
+		FD_SET(sock,&socket_set);
 
-		if(curr_socket==sbbs->client_socket)  {
+		if(sock==sbbs->client_socket)  {
 			tv.tv_sec=1;
 			tv.tv_usec=0;
 		}
@@ -1017,14 +1017,14 @@ void input_thread(void *arg)
 			tv.tv_usec=0;
 		}
 
-		if((i=select(curr_socket+1,&socket_set,NULL,NULL,&tv))<1) {
+		if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
 			pthread_mutex_unlock(&sbbs->input_thread_mutex);
-			if(i==0 && curr_socket==sbbs->client_socket) {
+			if(i==0 && sock==sbbs->client_socket) {
 				mswait(1);
 				continue;
 			}
 
-			if(curr_socket==sbbs->client_socket)  {
+			if(sock==sbbs->client_socket)  {
 	        	if(ERROR_VALUE == ENOTSOCK)
     	            lprintf("Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
 				else if(ERROR_VALUE==ESHUTDOWN)
@@ -1037,13 +1037,13 @@ void input_thread(void *arg)
 					lprintf("Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
 				else
 					lprintf("Node %d !ERROR %d input->select socket %d"
-                		,sbbs->cfg.node_num, ERROR_VALUE, curr_socket);
+                		,sbbs->cfg.node_num, ERROR_VALUE, sock);
 				break;
 			}
 			else  {
 #ifdef __unix__
 				if(ERROR_VALUE != EAGAIN)  {
-					lprintf("Node %d spy socket %d error on input->select (%d)", sbbs->cfg.node_num,curr_socket,errno);
+					lprintf("Node %d spy socket %d error on input->select (%d)", sbbs->cfg.node_num,sock,errno);
 					close_socket(spy_insock);
 					spy_insock=spy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
@@ -1073,13 +1073,13 @@ void input_thread(void *arg)
 	    if(rd > (int)sizeof(inbuf))
         	rd=sizeof(inbuf);
 
-    	rd = recv(curr_socket, (char*)inbuf, rd, 0);
+    	rd = recv(sock, (char*)inbuf, rd, 0);
 
 		pthread_mutex_unlock(&sbbs->input_thread_mutex);
 
 		if(rd == SOCKET_ERROR)
 		{
-			if(curr_socket==sbbs->client_socket)  {
+			if(sock==sbbs->client_socket)  {
 	        	if(ERROR_VALUE == ENOTSOCK)
     	            lprintf("Node %d socket closed by peer on receive", sbbs->cfg.node_num);
         	    else if(ERROR_VALUE==ECONNRESET) 
@@ -1090,13 +1090,13 @@ void input_thread(void *arg)
 					lprintf("Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
 				else
 					lprintf("Node %d !ERROR %d receiving from socket %d"
-        	        	,sbbs->cfg.node_num, ERROR_VALUE, curr_socket);
+        	        	,sbbs->cfg.node_num, ERROR_VALUE, sock);
 				break;
 			}
 			else  {
 #ifdef __unix__
 				if(ERROR_VALUE != EAGAIN)  {
-					lprintf("Node %d spy socket %d error on receive (%d)", sbbs->cfg.node_num,curr_socket,errno);
+					lprintf("Node %d spy socket %d error on receive (%d)", sbbs->cfg.node_num,sock,errno);
 					close_socket(spy_insock);
 					spy_insock=spy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
@@ -1104,7 +1104,7 @@ void input_thread(void *arg)
 			}
 		}
 
-		if(rd == 0 && curr_socket==sbbs->client_socket)
+		if(rd == 0 && sock==sbbs->client_socket)
 		{
 			lprintf("Node %d disconnected", sbbs->cfg.node_num);
 			break;
@@ -1115,7 +1115,7 @@ void input_thread(void *arg)
 
         // telbuf and wr are modified to reflect telnet escaped data
 #ifdef __unix__
-		if(curr_socket==spy_insock)  {
+		if(sock==spy_insock)  {
 			wr=rd;
 			wrbuf=inbuf;
 		}
