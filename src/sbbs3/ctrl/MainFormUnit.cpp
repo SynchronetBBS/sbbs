@@ -1275,6 +1275,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         	,sizeof(ftp_startup.hangup_sound)-1
         	,Registry->ReadString("FtpHangupSound").c_str());
 
+    if(Registry->ValueExists("FtpHackAttemptSound"))
+    	sprintf(ftp_startup.hack_sound,"%.*s"
+        	,sizeof(ftp_startup.hack_sound)-1
+        	,Registry->ReadString("FtpHackAttemptSound").c_str());
+
     if(Registry->ValueExists("FtpIndexFileName"))
     	sprintf(ftp_startup.index_file_name,"%.*s"
         	,sizeof(ftp_startup.index_file_name)-1
@@ -1538,6 +1543,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("FtpInterface",ftp_startup.interface_addr);
     Registry->WriteString("FtpAnswerSound",AnsiString(ftp_startup.answer_sound));
     Registry->WriteString("FtpHangupSound",AnsiString(ftp_startup.hangup_sound));
+    Registry->WriteString("FtpHackAttemptSound",AnsiString(ftp_startup.hack_sound));
+
     Registry->WriteString("FtpIndexFileName"
     	,AnsiString(ftp_startup.index_file_name));
     Registry->WriteString("FtpHtmlIndexFile"
