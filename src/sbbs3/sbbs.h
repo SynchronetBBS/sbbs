@@ -475,6 +475,7 @@ public:
 	size_t	getstr_offset;
 	size_t	getstr(char *str, size_t length, long mode);
 	long	getnum(ulong max);
+	void	insert_indicator(void);
 
 	/* getkey.cpp */
 	char	getkey(long mode); 		/* Waits for a key hit local or remote  */

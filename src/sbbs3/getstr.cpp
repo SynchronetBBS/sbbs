@@ -53,7 +53,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
     uchar	ch;
 	uchar	atr;
 
-	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE);
+	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE);
+	if(!(mode&K_WRAP))
+		console&=~CON_INSERT;
 	sys_status&=~SS_ABORT;
 	if(mode&K_LINE && useron.misc&ANSI && !(mode&K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
@@ -117,9 +119,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		}
 	}
 
+	if(console&CON_INSERT && useron.misc&ANSI && !(mode&K_NOECHO))
+		insert_indicator();
+
 	while(!(sys_status&SS_ABORT) && online && input_thread_running) {
 		if(mode&K_LEFTEXIT
-			&& console&(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE))
+			&& console&(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE))
 			break;
 		if((ch=getkey(mode|K_GETSTR))==CR)
 			break;
@@ -344,16 +349,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				if(!(useron.misc&ANSI) || mode&K_NOECHO)
 					break;
 				console^=CON_INSERT;
-				ANSI_SAVE();
-				GOTOXY(80,1);
-				z=curatr;                       /* and go to EOL */
-				attr(BLINK|HIGH|LIGHTGRAY);
-				if(console&CON_INSERT)
-					outchar('°');
-				else
-					outchar(' ');
-				attr(z);
-				ANSI_RESTORE();
+				insert_indicator();
 				break;
 			case CTRL_W:    /* Ctrl-W   Delete word left */
 				if(i<l) {
@@ -419,7 +415,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					}
 				}
 				i=0;
-				console|=CON_BACKSPACE;
+				console|=CON_DELETELINE;
 				break;
 			case CTRL_Z:	/* Undo */
 				SAFECOPY(str1,undo);
@@ -634,4 +630,20 @@ long sbbs_t::getnum(ulong max)
 		} 
 	}
 	return(0);
+}
+
+void sbbs_t::insert_indicator(void)
+{
+	ANSI_SAVE();
+	GOTOXY(80,1);
+	uchar z=curatr;                       /* and go to EOL */
+	if(console&CON_INSERT) {
+		attr(BLINK|BLACK|(LIGHTGRAY<<4));
+		outchar('I');
+	} else {
+		attr(LIGHTGRAY);
+		outchar(' ');
+	}
+	attr(z);
+	ANSI_RESTORE();
 }
