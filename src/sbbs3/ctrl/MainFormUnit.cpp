@@ -776,13 +776,13 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
         if(time(NULL)-start>30)
             break;
         Application->ProcessMessages();
-        Sleep(0);
+        YIELD();
     }
     /* Extra time for callbacks to be called by child threads */
     start=time(NULL);
     while(time(NULL)<start+2) {
         Application->ProcessMessages();
-        Sleep(0);
+        YIELD();
     }
 }
 //---------------------------------------------------------------------------
@@ -1453,6 +1453,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     if(Registry->ValueExists("ExternalYield"))
     	bbs_startup.xtrn_polls_before_yield=Registry->ReadInteger("ExternalYield");
+
+	if(Registry->ValueExists("OutbufHighwaterMark"))
+		bbs_startup.outbuf_highwater_mark=Registry->ReadInteger("OutbufHighwaterMark");
+	else
+		bbs_startup.outbuf_highwater_mark=1024;
+	if(Registry->ValueExists("OutbufDrainTimeout"))
+		bbs_startup.outbuf_drain_timeout=Registry->ReadInteger("OutbufDrainTimeout");
+	else
+		bbs_startup.outbuf_drain_timeout=10;
 
     if(Registry->ValueExists("AnswerSound"))
     	SAFECOPY(bbs_startup.answer_sound
