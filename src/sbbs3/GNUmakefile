@@ -150,7 +150,8 @@ $(LIBODIR)/services.o: services.c services.h
 	@$(CC) $(CFLAGS) -c -DSERVICES_EXPORTS $< -o $@
 
 # Baja Utility
-$(BAJA): $(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/filewrap.o $(EXEODIR)/crc32.o
+$(BAJA): $(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/crc32.o \
+	$(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
