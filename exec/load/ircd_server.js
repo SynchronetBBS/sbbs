@@ -203,10 +203,15 @@ function Server_Work() {
 		case "AWAY":
 			if (ThisOrigin.server)
 				break;
-			if (!cmd[1])
+			var send_away = "AWAY";
+			if (!cmd[1]) {
 				ThisOrigin.away = "";
-			else
-				ThisOrigin.away = IRC_string(cmdline);
+			} else {
+				var my_ircstr = IRC_string(cmdline);
+				ThisOrigin.away = my_ircstr;
+				send_away += " :" + my_ircstr;
+			}
+			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + send_away);
 			break;
 		case "CHATOPS":
 			if (!cmd[1])

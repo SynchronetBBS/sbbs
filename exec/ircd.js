@@ -2758,7 +2758,7 @@ function IRCClient_setusermode(modestr) {
 		bcast_modestr += "+" + bcast_addmodes;
 	if (bcast_delmodes)
 		bcast_modestr += "-" + bcast_delmodes;
-	if (this.local) {
+	if (this.local && !this.server) {
 		this.originatorout("MODE "+this.nick+" "+final_modestr,this);
 		if (bcast_addmodes || bcast_delmodes)
 			this.bcast_to_servers("MODE "+this.nick+" "+bcast_modestr,this);
