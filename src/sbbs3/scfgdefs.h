@@ -449,6 +449,7 @@ typedef struct
 	char	sys_chat_arstr[LEN_ARSTR+1];	/* chat override */
 	uchar * sys_chat_ar;
 
+	long	msg_misc;			/* Global Message-Related Settings */
 	long 	file_misc;			/* File Misc Settings */
 	long	xtrn_misc;			/* External Programs Misc Settings */
 
