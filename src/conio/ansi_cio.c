@@ -126,17 +126,29 @@ void ansi_sendch(char ch)
 	if(!ch)
 		ch=' ';
 	if(ansi_row<ansi_rows-1 || (ansi_row==ansi_rows-1 && ansi_col<ansi_cols-1)) {
+		ansi_col++;
+		if(ansi_col>=ansi_cols) {
+			ansi_col=0;
+			ansi_row++;
+			if(ansi_row>=ansi_rows) {
+				ansi_col=ansi_cols-1;
+				ansi_row=ansi_rows-1;
+			}
+		}
 		fwrite(&ch,1,1,stdout);
 		if(ch<' ')
 			force_move=1;
 	}
+	else
 }
 
 void ansi_sendstr(char *str,int len)
 {
 	if(len==-1)
 		len=strlen(str);
-	fwrite(str,len,1,stdout);
+	if(len) {
+		fwrite(str,len,1,stdout);
+	}
 }
 
 int ansi_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
@@ -164,8 +176,6 @@ int ansi_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 
 	out=fill;
 	attrib=ti.attribute;
-	if((ey-sy+1)*(ex-sx+1)>32)
-		force_move=1;
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
 			sch=*(out++);
@@ -183,20 +193,9 @@ int ansi_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 				attrib=sch>>8;
 			}
 			ansi_sendch(sch&0xff);
-			ansi_col++;
-			if(ansi_col>=ansi_cols) {
-				ansi_col=0;
-				ansi_row++;
-				if(ansi_row>=ansi_rows) {
-					ansi_col=ansi_cols-1;
-					ansi_row=ansi_rows-1;
-				}
-			}
 		}
 	}
 
-	if((ey-sy+1)*(ex-sx+1)>32)
-		force_move=1;
 	gotoxy(ti.curx,ti.cury);
 	if(attrib!=ti.attribute)
 		textattr(ti.attribute);
@@ -464,8 +463,8 @@ int ansi_putch(unsigned char ch)
 					puttext(ansi_col+1,ansi_row+1,ansi_col+1,ansi_row+1,buf);
 				}
 				else {
-					gotoxy(ti.curx+1,ti.cury);
 					puttext(ansi_col+1,ansi_row+1,ansi_col+1,ansi_row+1,buf);
+					gotoxy(ti.curx+1,ti.cury);
 				}
 			}
 			break;
@@ -491,6 +490,7 @@ void ansi_gotoxy(int x, int y)
 	else {
 		if(x==1 && ansi_col != 0 && ansi_row<ansi_row-1) {
 			ansi_sendch('\r');
+			force_move=0;
 			ansi_col=0;
 		}
 		if(x==ansi_col+1) {
@@ -601,7 +601,7 @@ void ansi_fixterm(void)
 void ansi_initciowrap(long inmode)
 {
 	int i;
-	char *init="\033[2J\033[1;1H\033[0m";
+	char *init="\033[0m\033[2J\033[1;1H";
 #ifdef _WIN32
 	_setmode(fileno(stdout),_O_BINARY);
 	_setmode(fileno(stdin),_O_BINARY);
