@@ -94,7 +94,9 @@ if(qnet) {
 if(ask_sysop 
 	&& !console.noyes("\r\n\1bAre you a sysop of a \1wSynchronet\1b BBS (unsure, hit '\1wN\1b')")) {
 	user.security.flags1|=UFLAG_S;
-	if(!qnet && console.yesno("\r\nDo you wish to access the Synchronet BBS List database"))
+	if(qnet)
+		user.qwk_settings=(QWK_RETCTLA|QWK_EMAIL|QWK_DELMAIL|QWK_NOINDEX|QWK_NOCTRL|QWK_VIA|QWK_TZ|QWK_MSGID);
+	else if(console.yesno("\r\nDo you wish to access the Synchronet BBS List database"))
 		bbs.exec_xtrn("SBL");
 }
 
