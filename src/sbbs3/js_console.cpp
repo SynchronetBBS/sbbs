@@ -316,7 +316,7 @@ js_handle_ctrlkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if(argc>1)
 		JS_ValueToInt32(cx, argv[1], &mode);
 
-	*rval = BOOLEAN_TO_JSVAL(sbbs->handle_ctrlkey(key,mode));
+	*rval = BOOLEAN_TO_JSVAL(sbbs->handle_ctrlkey(key,mode)==0);
     return(JS_TRUE);
 }
 
