@@ -25,6 +25,7 @@ OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
             $(LIBODIR)$(SLASH)nopen.$(OFILE)\
             $(LIBODIR)$(SLASH)crc16.$(OFILE)\
             $(LIBODIR)$(SLASH)crc32.$(OFILE)\
+            $(LIBODIR)$(SLASH)md5.$(OFILE)\
             $(LIBODIR)$(SLASH)dat_rec.$(OFILE)\
             $(LIBODIR)$(SLASH)userdat.$(OFILE)\
             $(LIBODIR)$(SLASH)date_str.$(OFILE)\
