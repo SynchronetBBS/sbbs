@@ -51,12 +51,13 @@ void quotestr(char *str);
 bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	,char *dest)
 {
-	char str[256],quote[128],msgtmp[32],c,HUGE16 *buf,ex_mode=0,*p,*tp
-		,useron_level;
-	int i,j,file,linesquoted=0;
-	long length,qlen,qtime;
-	ulong l;
-	FILE *stream;
+	char	str[256],quote[128],msgtmp[32],c,HUGE16 *buf,ex_mode=0,*p,*tp
+				,useron_level;
+	char 	tmp[512];
+	int		i,j,file,linesquoted=0;
+	long	length,qlen,qtime;
+	ulong	l;
+	FILE *	stream;
 
 	useron_level=useron.level;
 
@@ -493,9 +494,10 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 /*****************************************************************************/
 ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 {
-	int i,j,line,lines=0,maxlines;
-	char strin[256],**str,done=0;
-    ulong l,m;
+	int		i,j,line,lines=0,maxlines;
+	char	strin[256],**str,done=0;
+	char 	tmp[512];
+    ulong	l,m;
 
 	if(online==ON_REMOTE) {
 		rioctl(IOCM|ABORT);
@@ -844,8 +846,9 @@ void sbbs_t::copyfattach(uint to, uint from, char *title)
 /****************************************************************************/
 void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 {
-	char str[256],touser[128];
-	int i;
+	char		str[256],touser[128];
+	char 		tmp[512];
+	int			i;
 	node_t		node;
 	msghdr_t	hdr=msg->hdr;
 	idxrec_t	idx=msg->idx;
@@ -933,9 +936,10 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 /****************************************************************************/
 void sbbs_t::automsg()
 {
-    char str[256],buf[300],anon=0;
-	char automsg[MAX_PATH];
-    int file;
+    char	str[256],buf[300],anon=0;
+	char 	tmp[512];
+	char	automsg[MAX_PATH];
+    int		file;
 
 	sprintf(automsg,"%smsgs/auto.msg",cfg.data_dir);
 	while(online) {

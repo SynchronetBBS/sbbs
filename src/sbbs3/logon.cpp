@@ -47,6 +47,7 @@ extern "C" void client_on(SOCKET sock, client_t* client);
 bool sbbs_t::logon()
 {
 	char	str[256],c;
+	char 	tmp[512];
 	int 	file;
 	uint	i,j,mailw;
 	ulong	totallogons;

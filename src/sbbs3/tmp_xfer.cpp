@@ -43,13 +43,14 @@
 /*****************************************************************************/
 void sbbs_t::temp_xfer()
 {
-    char str[256],tmp2[256],done=0,ch;
-    uint i,dirnum=cfg.total_dirs,j,files;
-    ulong bytes;
-	ulong space;
-    time_t start,end,t;
-    file_t f;
-	glob_t g;
+    char	str[256],tmp2[256],done=0,ch;
+	char 	tmp[512];
+    uint	i,dirnum=cfg.total_dirs,j,files;
+    ulong	bytes;
+	ulong	space;
+    time_t	start,end,t;
+    file_t	f;
+	glob_t	g;
 	struct	tm * tm;
 
 	if(!usrlibs)

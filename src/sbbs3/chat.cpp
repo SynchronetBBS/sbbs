@@ -53,6 +53,7 @@ void sbbs_t::chatsection()
 			,usrs,preusrs,qusrs,*gurubuf=NULL,channel,savch,*p
 			,pgraph[400],buf[400]
 			,usr[MAX_NODES],preusr[MAX_NODES],qusr[MAX_NODES];
+	char 	tmp[512];
 	int 	file;
 	long	i,j,k,n;
 	node_t 	node;
@@ -662,7 +663,7 @@ void sbbs_t::privchat(bool local)
 				"\1rSplit-Screen \1cSysop\1r Chat          \1y"
 				"Time Left: \1g%-8s\1w"
 				" 쳐컴�[\1i\1b%c\1n\1h]컴컴�";
-
+	char 	tmp[512];
 	uchar	ch;
 	int 	in,out,i,n,echo=1,x,y,activity,remote_activity;
     int		local_y,remote_y;
@@ -1052,6 +1053,7 @@ void sbbs_t::privchat(bool local)
 int sbbs_t::getnodetopage(int all, int telegram)
 {
 	char	str[128];
+	char 	tmp[512];
 	uint 	i,j;
 	ulong	l;
 	node_t	node;
@@ -1153,6 +1155,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 void sbbs_t::nodemsg()
 {
 	char	str[256],line[256],buf[512],logbuf[512],ch;
+	char 	tmp[512];
 	int 	i,usernumber,done=0;
 	node_t	node,savenode;
 
@@ -1323,6 +1326,7 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 {
 	char	str[256],cstr[256],*ptr,*answer[100],answers,theanswer[769]
 			,mistakes=1,hu=0;
+	char 	tmp[512];
 	int		file;
 	uint 	c,i,j,k;
 	long 	len;

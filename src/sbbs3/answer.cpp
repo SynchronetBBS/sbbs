@@ -41,6 +41,7 @@
 bool sbbs_t::answer()
 {
 	char	str[256],str2[256],c;
+	char 	tmp[512];
 	int		i,l,in;
 	struct tm * tm;
 	struct in_addr addr;

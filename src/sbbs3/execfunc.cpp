@@ -44,6 +44,7 @@ extern RingBuf* node_inbuf[];
 int sbbs_t::exec_function(csi_t *csi)
 {
 	char	str[256],tmp2[128],ch;
+	char 	tmp[512];
 	uchar*	p;
 	char	ansi_seq[32];
 	int		ansi_len;

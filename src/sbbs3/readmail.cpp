@@ -44,6 +44,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 {
 	char	str[256],str2[256],str3[256],done=0,domsg=1
 			,*p,*tp,*sp,ch;
+	char 	tmp[512];
 	int		i,j;
 	int		mismatches=0,act;
 	ulong 	msgs,curmsg;

@@ -173,6 +173,7 @@ uint sbbs_t::gettotalfiles(uint dirnum)
 void sbbs_t::gettimeleft(void)
 {
     char    str[128];
+	char 	tmp[512];
     int     i;
     time_t  eventtime=0;
 	time_t	thisevent;

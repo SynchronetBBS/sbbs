@@ -97,10 +97,11 @@ bool sbbs_t::lookup_netuser(char *into)
 /****************************************************************************/
 bool sbbs_t::netmail(char *into, char *title, long mode)
 {
-	char str[256],subj[128],to[256],fname[128],*buf,*p,ch;
-	int file,fido,x,cc_found,cc_sent;
-	uint i;
-	long length,l;
+	char	str[256],subj[128],to[256],fname[128],*buf,*p,ch;
+	char 	tmp[512];
+	int		file,fido,x,cc_found,cc_sent;
+	uint	i;
+	long	length,l;
 	faddr_t addr;
 	fmsghdr_t hdr;
 	struct tm * tm;
@@ -391,7 +392,8 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 {
 	char	HUGE16 *qwkbuf,to[129],name[129],sender[129],senderaddr[129]
-		   ,str[256],*p,*cp,*addr,fulladdr[129],ch;
+			   ,str[256],*p,*cp,*addr,fulladdr[129],ch;
+	char 	tmp[512];
 	int 	i,fido,inet=0,qnet=0;
 	ushort	net,xlat;
 	long	l,offset,length,m,n;

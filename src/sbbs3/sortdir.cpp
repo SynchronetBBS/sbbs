@@ -42,12 +42,13 @@
 /****************************************************************************/
 void sbbs_t::resort(uint dirnum)
 {
-	char str[25],ixbfname[128],datfname[128],exbfname[128],txbfname[128]
-		,ext[512],nulbuf[512];
-	uchar HUGE16 *ixbbuf, HUGE16 *datbuf;
-	uchar HUGE16 *ixbptr[MAX_FILES];
-	int ixbfile,datfile,exbfile,txbfile,i,j;
-	long ixblen,datlen,offset,newoffset,l;
+	char	str[25],ixbfname[128],datfname[128],exbfname[128],txbfname[128]
+			,ext[512],nulbuf[512];
+	char 	tmp[512];
+	uchar*	ixbbuf, *datbuf;
+	uchar*	ixbptr[MAX_FILES];
+	int		ixbfile,datfile,exbfile,txbfile,i,j;
+	long	ixblen,datlen,offset,newoffset,l;
 
 	memset(nulbuf,0,512);
 	bprintf(text[ResortLineFmt],cfg.lib[cfg.dir[dirnum]->lib]->sname,cfg.dir[dirnum]->sname);

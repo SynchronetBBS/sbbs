@@ -46,6 +46,7 @@
 bool sbbs_t::pack_rep(uint hubnum)
 {
 	char	str[256],tmp2[256];
+	char 	tmp[512];
 	int 	file,mode;
 	uint	i,j,k;
 	long	l,msgcnt,submsgs,posts,packedmail,netfiles=0,deleted;

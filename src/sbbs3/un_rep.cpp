@@ -45,6 +45,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 {
 	char	str[256],fname[128]
 			,*AttemptedToUploadREPpacket="Attempted to upload REP packet";
+	char 	tmp[512];
 	char	block[128];
 	int 	file;
 	uint	i,j,k,lastsub=INVALID_SUB;

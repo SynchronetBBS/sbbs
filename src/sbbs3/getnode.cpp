@@ -330,8 +330,9 @@ int sbbs_t::whos_online(bool listself)
 /****************************************************************************/
 void sbbs_t::printnodedat(uint number, node_t* node)
 {
-    uint i;
-    char hour,mer[3];
+    uint	i;
+    char	hour,mer[3];
+	char 	tmp[512];
 
 	attr(cfg.color[clr_nodenum]);
 	bprintf("%3d  ",number);

@@ -40,7 +40,8 @@
 
 int sbbs_t::login(char *str, char *pw)
 {
-	long useron_misc=useron.misc;
+	char 	tmp[512];
+	long	useron_misc=useron.misc;
 
 	useron.number=0;
 	if(cfg.node_dollars_per_call && noyes(text[AreYouSureQ]))

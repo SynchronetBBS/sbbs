@@ -42,6 +42,7 @@ void sbbs_t::bulkmail(uchar *ar)
 {
 	char	str[256],str2[256],msgpath[256],title[LEN_TITLE+1]
 			,buf[SDT_BLOCK_LEN],found=0;
+	char 	tmp[512];
 	ushort	xlat=XLAT_NONE,msgattr=0;
 	int 	i,j,x,file;
 	long	msgs=0;
@@ -191,9 +192,10 @@ void sbbs_t::bulkmail(uchar *ar)
 int sbbs_t::bulkmailhdr(uint usernum, smbmsg_t *msg, ushort msgattr, ulong offset
     , ulong length, char *title)
 {
-    char str[256];
-    int i,j;
-    node_t node;
+    char	str[256];
+	char 	tmp[512];
+    int		i,j;
+    node_t	node;
 
 	memset(msg,0,sizeof(smbmsg_t));
 	memcpy(msg->hdr.id,"SHD\x1a",4);

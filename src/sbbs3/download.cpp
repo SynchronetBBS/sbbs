@@ -43,11 +43,12 @@
 /****************************************************************************/
 void sbbs_t::downloadfile(file_t* f)
 {
-    char str[256],fname[13];
-    int i,file;
-	long length,mod;
-    ulong l;
-	user_t uploader;
+    char	str[256],fname[13];
+	char 	tmp[512];
+    int		i,file;
+	long	length,mod;
+    ulong	l;
+	user_t	uploader;
 
 	getfiledat(&cfg,f); /* Get current data - right after download */
 	if((length=f->size)<0L)
@@ -144,7 +145,8 @@ void sbbs_t::downloadfile(file_t* f)
 /****************************************************************************/
 void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 {
-    char str[256],tmp2[256];
+    char	str[256],tmp2[256];
+	char 	tmp[512];
 
 	sprintf(str,"Estimated Time: %s  Transfer Time: %s"
 		,sectostr(cur_cps ? size/cur_cps : 0,tmp)
@@ -213,7 +215,8 @@ int sbbs_t::protocol(char *cmdline, int cd)
 /****************************************************************************/
 void sbbs_t::autohangup()
 {
-    char a,c,k;
+    char	a,c,k;
+	char 	tmp[512];
 
 	if(online!=ON_REMOTE)
 		return;
@@ -255,9 +258,10 @@ void sbbs_t::autohangup()
 /****************************************************************************/
 bool sbbs_t::checkprotlog(file_t* f)
 {
-	char str[256],size[128];
-    int file;
-    FILE *stream;
+	char	str[256],size[128];
+	char 	tmp[512];
+    int		file;
+    FILE *	stream;
 
 	sprintf(str,"%sPROTOCOL.LOG",cfg.node_dir);
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {

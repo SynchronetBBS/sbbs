@@ -42,8 +42,9 @@
 /****************************************************************************/
 void sbbs_t::scansubs(long mode)
 {
-	char ch,str[256];
-	uint i=0,found=0;
+	char	ch,str[256];
+	char 	tmp[512];
+	uint	i=0,found=0;
 
 	mnemonics(text[SubGroupOrAll]);
 	ch=(char)getkeys("SGA\r",0);
@@ -108,8 +109,9 @@ void sbbs_t::scansubs(long mode)
 /****************************************************************************/
 void sbbs_t::scanallsubs(long mode)
 {
-	char str[256];
-	uint i,j,found=0;
+	char	str[256];
+	char 	tmp[512];
+	uint	i,j,found=0;
 
 	if(/* action==NODE_MAIN && */ mode&(SCAN_FIND|SCAN_TOYOU)) {
 		i=yesno(text[DisplayTitlesOnlyQ]);

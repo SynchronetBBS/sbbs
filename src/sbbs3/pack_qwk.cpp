@@ -45,6 +45,7 @@
 bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 {
 	char	str[256],tmp2[256],ch,*p;
+	char 	tmp[512];
 	char*	fname;
 	int 	file,mode;
 	uint	i,j,k,conf;

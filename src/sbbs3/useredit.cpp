@@ -52,6 +52,7 @@
 void sbbs_t::useredit(int usernumber, int local)
 {
 	char	str[256],tmp2[256],tmp3[256],c,stype=SEARCH_TXT;
+	char 	tmp[512];
 	char	search[256]={""},artxt[128]={""};
 	uchar	*ar=NULL;
 	uint	i,j,k;
@@ -731,8 +732,9 @@ int sbbs_t::searchdn(char *search,int usernum)
 /****************************************************************************/
 void sbbs_t::maindflts(user_t* user)
 {
-	char str[256],ch;
-	int i;
+	char	str[256],ch;
+	char 	tmp[512];
+	int		i;
 
 	action=NODE_DFLT;
 	while(online) {

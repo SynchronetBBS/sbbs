@@ -42,11 +42,12 @@
 /****************************************************************************/
 void sbbs_t::batchmenu()
 {
-    char str[129],tmp2[250],done=0,ch;
-	uint i,n,xfrprot,xfrdir;
-    ulong totalcdt,totalsize,totaltime;
-    time_t start,end;
-    file_t f;
+    char	str[129],tmp2[250],done=0,ch;
+	char 	tmp[512];
+	uint	i,n,xfrprot,xfrdir;
+    ulong	totalcdt,totalsize,totaltime;
+    time_t	start,end;
+    file_t	f;
 
 	if(!batdn_total && !batup_total && cfg.upload_dir==INVALID_DIR) {
 		bputs(text[NoFilesInBatchQueue]);
@@ -334,13 +335,14 @@ void sbbs_t::batchmenu()
 /****************************************************************************/
 void sbbs_t::start_batch_download()
 {
-	char ch,str[256],tmp2[256],tmp3[128],fname[64];
-    int j;
-    uint i,xfrprot;
-    ulong totalcdt,totalsize,totaltime;
-    time_t start,end,t;
-	struct tm * tm;
-    file_t f;
+	char	ch,str[256],tmp2[256],tmp3[128],fname[64];
+	char 	tmp[512];
+    int		j;
+    uint	i,xfrprot;
+    ulong	totalcdt,totalsize,totaltime;
+    time_t	start,end,t;
+	struct	tm * tm;
+    file_t	f;
 
 	if(useron.rest&FLAG('D')) {     /* Download restriction */
 		bputs(text[R_Download]);
@@ -561,6 +563,7 @@ bool sbbs_t::create_batchup_lst()
 bool sbbs_t::create_bimodem_pth()
 {
     char	str[256],tmp2[512];
+	char 	tmp[512];
     int		file;
 	uint	i;
 
@@ -597,6 +600,7 @@ bool sbbs_t::create_bimodem_pth()
 void sbbs_t::batch_upload()
 {
     char	str1[256],str2[256];
+	char 	tmp[512];
 	uint	i,j,x,y;
     file_t	f;
 	DIR*	dir;
@@ -760,9 +764,10 @@ void sbbs_t::batch_add_list(char *list)
 /**************************************************************************/
 bool sbbs_t::addtobatdl(file_t* f)
 {
-    char str[256],tmp2[256];
-    uint i;
-	ulong totalcdt, totalsize, totaltime;
+    char	str[256],tmp2[256];
+	char 	tmp[512];
+    uint	i;
+	ulong	totalcdt, totalsize, totaltime;
 
 	if(useron.rest&FLAG('D')) {
 		bputs(text[R_Download]);

@@ -44,6 +44,7 @@
 void sbbs_t::logout()
 {
 	char	str[256];
+	char 	tmp[512];
 	int 	i,j;
 	ushort	ttoday;
 	node_t	node;

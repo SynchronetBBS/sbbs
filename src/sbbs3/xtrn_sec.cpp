@@ -247,7 +247,8 @@ time_t juliantounix(ulong j)
 void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 					,ulong misc)
 {
-	char str[1024],tmp2[128],c,*p;
+	char	str[1024],tmp2[128],c,*p;
+	char 	tmp[512];
 	int		i,file;
 	ushort	w;
 	long	l;
@@ -1133,11 +1134,12 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 /****************************************************************************/
 void sbbs_t::moduserdat(uint xtrnnum)
 {
-	char str[256],path[256],c,startup[128];
-	uint i;
-	long mod;
-    int file;
-    FILE *stream;
+	char	str[256],path[256],c,startup[128];
+	char 	tmp[512];
+	uint	i;
+	long	mod;
+    int		file;
+    FILE *	stream;
 
 	sprintf(startup,"%s/",cfg.xtrn[xtrnnum]->path);
 	if(cfg.xtrn[xtrnnum]->type==XTRN_RBBS) {

@@ -405,6 +405,7 @@ void sbbs_t::qwk_sec()
 {
 	char	str[256],tmp2[256],ch,bi=0
 			,*AttemptedToDownloadQWKpacket="Attempted to download QWK packet";
+	char 	tmp[512];
 	int 	s;
 	uint	i,j,k;
 	ulong	msgcnt;
@@ -809,6 +810,7 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 void sbbs_t::qwkcfgline(char *buf,uint subnum)
 {
 	char	str[128];
+	char 	tmp[512];
 	uint 	x,y;
 	long	l;
 	ulong	qwk=useron.qwk;

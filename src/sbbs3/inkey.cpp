@@ -48,6 +48,7 @@
 char sbbs_t::inkey(long mode)
 {
 	char	str[512];
+	char 	tmp[512];
 	uchar	ch=0;
 	uint	i,j;
 

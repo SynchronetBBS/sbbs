@@ -44,6 +44,7 @@
 bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 {
 	char	str[256],fname[128];
+	char 	tmp[512];
 	uchar	block[128];
 	int 	k,file;
 	uint	i,j,n,lastsub=INVALID_SUB;

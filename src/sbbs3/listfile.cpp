@@ -51,6 +51,7 @@ int extdesclines(char *str);
 int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 {
 	char	str[256],hdr[256],c,d,letter='A',*p,*datbuf,ext[513];
+	char 	tmp[512];
 	uchar*	ixbbuf;
 	uchar	flagprompt=0;
 	uint	i,j;
@@ -370,10 +371,11 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 	, char *search, char letter, ulong datoffset)
 {
-	char str[256],ext[513]="",*ptr,*cr,*lf,exist=1;
-    uchar alt;
-    int i,j;
-    ulong cdt;
+	char	str[256],ext[513]="",*ptr,*cr,*lf,exist=1;
+	char 	tmp[512];
+    uchar	alt;
+    int		i,j;
+    ulong	cdt;
 
 	if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC && useron.misc&EXTDESC) {
 		getextdesc(dirnum,datoffset,ext);
@@ -483,9 +485,10 @@ void sbbs_t::clearline(void)
 /****************************************************************************/
 bool sbbs_t::removefcdt(file_t* f)
 {
-	char str[128];
-	int u;
-	long cdt;
+	char	str[128];
+	char 	tmp[512];
+	int		u;
+	long	cdt;
 
 	if((u=matchuser(&cfg,f->uler))==0) {
 	   bputs(text[UnknownUser]);
@@ -561,9 +564,10 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 							,long totalfiles)
 {
-	char ch,c,d,str[256],fname[128],*p,remcdt,remfile;
-	uint i,j,ml,md,udir,ulib;
-	file_t f;
+	char	ch,c,d,str[256],fname[128],*p,remcdt,remfile;
+	char 	tmp[512];
+	uint	i,j,ml,md,udir,ulib;
+	file_t	f;
 
 	for(ulib=0;ulib<usrlibs;ulib++)
 		if(usrlib[ulib]==cfg.dir[dirnum]->lib)
@@ -817,7 +821,8 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 {
 	char	str[258],path[258],dirpath[256],done=0,ch,fname[13],ext[513];
-	uchar HUGE16 *ixbbuf,*usrxfrbuf=NULL,*p;
+	char 	tmp[512];
+	uchar	*ixbbuf,*usrxfrbuf=NULL,*p;
 	int		file;
 	int		found=0;
     uint	i,j;
@@ -1271,9 +1276,11 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 /****************************************************************************/
 void sbbs_t::listfiletofile(char *fname, char HUGE16 *buf, uint dirnum, int file)
 {
-    char str[256],exist=1;
-    uchar alt;
-    ulong cdt;
+    char	str[256];
+	char 	tmp[512];
+    uchar	alt;
+    ulong	cdt;
+	bool	exist=true;
 
 	strcpy(str,fname);
 	if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC)
@@ -1286,7 +1293,7 @@ void sbbs_t::listfiletofile(char *fname, char HUGE16 *buf, uint dirnum, int file
 	sprintf(str,"%s%s",alt>0 && alt<=cfg.altpaths ? cfg.altpath[alt-1]
 		: cfg.dir[dirnum]->path,unpadfname(fname,tmp));
 	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexist(str))
-		exist=0;
+		exist=false;
 	getrec((char *)buf,F_CDT,LEN_FCDT,str);
 	cdt=atol(str);
 	if(!cdt)

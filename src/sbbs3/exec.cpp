@@ -788,6 +788,7 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 int sbbs_t::exec(csi_t *csi)
 {
 	char	str[256],*path;
+	char 	tmp[512];
 	uchar	buf[1025],ch;
 	int 	i,j,file;
 	long	l;

@@ -45,10 +45,12 @@
 /****************************************************************************/
 void sbbs_t::newuser()
 {
-	char	c,str[512],usa;
+	char	c,str[512];
+	char 	tmp[512];
 	int 	file;
 	uint	i,j;
 	long	misc;
+	bool	usa;
 	FILE	*stream;
 
 	if(cur_rate<cfg.node_minbps) {

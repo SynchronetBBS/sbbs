@@ -46,10 +46,11 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 /****************************************************************************/
 void sbbs_t::userlist(char mode)
 {
-	char name[256],sort=0;
-	int i,j,k,users=0;
-	char *line[1000];
-	user_t user;
+	char	name[256],sort=0;
+	char 	tmp[512];
+	int		i,j,k,users=0;
+	char *	line[1000];
+	user_t	user;
 
 	if(lastuser(&cfg)<=1000)
 		sort=yesno(text[SortAlphaQ]);
@@ -800,8 +801,9 @@ bool sbbs_t::trashcan(char *insearch, char *name)
 void sbbs_t::errormsg(int line, char *source, char action, char *object
 					  ,ulong access, char *extinfo)
 {
-    char str[512];
-    char actstr[256];
+    char	str[512];
+	char 	tmp[512];
+    char	actstr[256];
 
 	if(errormsg_inside)
 		return;

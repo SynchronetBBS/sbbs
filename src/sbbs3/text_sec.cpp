@@ -49,6 +49,7 @@ int sbbs_t::text_sec()
 {
 	char	str[256],usemenu
 			,*file[MAX_TXTFILES],addpath[83],addstr[83],*buf,ch;
+	char 	tmp[512];
 	long	i,j,usrsec[MAX_TXTSECS],usrsecs,cursec;
     long    l,length;
     FILE    *stream;

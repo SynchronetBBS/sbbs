@@ -208,7 +208,6 @@ public:
 	int		lbuflen;		/* Number of characters in line buffer */
 	char 	latr;			/* Starting attribute of line buffer */
 	ulong	console;		/* Defines current Console settings */
-	char 	tmp[512];		/* Used all over as temp string */
 	char 	wordwrap[81];	/* Word wrap buffer */
 	time_t	now,			/* Used to store current time in Unix format */
 			answertime, 	/* Time call was answered */

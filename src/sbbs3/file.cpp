@@ -73,8 +73,9 @@ void sbbs_t::getextdesc(uint dirnum, ulong datoffset, char *ext)
 /****************************************************************************/
 void sbbs_t::fileinfo(file_t* f)
 {
-	char fname[13],ext[513];
-	uint i,j;
+	char	fname[13],ext[513];
+	char 	tmp[512];
+	uint	i,j;
 
 	for(i=0;i<usrlibs;i++)
 		if(usrlib[i]==cfg.dir[f->dir]->lib)

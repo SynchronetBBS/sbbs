@@ -252,6 +252,7 @@ void sbbs_t::upload(uint dirnum)
 {
 	char	str[256],src[256]={""},descbeg[25]={""},descend[25]={""},path[256]
 				,fname[13],keys[256],ch,*p;
+	char 	tmp[512];
     time_t	start,end;
     uint	i,j,k,destuser[MAX_USERXFER],destusers=0;
 	int		file;
