@@ -671,17 +671,17 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fdp)
 	int		count=0;
 	int		file;
 
+	if(fdp!=NULL)
+		*fdp=-1;
+
 	if(!VALID_CFG(cfg) 
 		|| node==NULL || number<1 || number>cfg->sys_nodes)
 		return(-1);
 
 	memset(node,0,sizeof(node_t));
 	sprintf(str,"%snode.dab",cfg->ctrl_dir);
-	if((file=nopen(str,O_RDWR|O_DENYNONE))==-1) {
-		if(fdp!=NULL)
-			*fdp=file;
+	if((file=nopen(str,O_RDWR|O_DENYNONE))==-1)
 		return(errno); 
-	}
 
 	if(filelength(file)>=(long)(number*sizeof(node_t))) {
 		number--;	/* make zero based */
@@ -700,7 +700,7 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fdp)
 		}
 	}
 
-	if(fdp==NULL)
+	if(fdp==NULL || count==LOOP_NODEDAB)
 		close(file);
 	else
 		*fdp=file;
