@@ -56,9 +56,6 @@ extern int all_msghdr;
 extern int no_msghdr;
 char **opt;
 char tmp[256];
-char **mdm_type;
-char **mdm_file;
-int  mdm_types;
 int  backup_level=5;
 
 read_cfg_text_t txt={
@@ -208,8 +205,6 @@ printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
 if(backup_level>10) backup_level=10;
 
 backslashcolon(cfg.ctrl_dir);
-
-init_mdms();
 
 scrn_len=uifcini();
 
@@ -1836,124 +1831,6 @@ int lprintf(char *fmt, ...)
     return(0);
 }
 
-/****************************************************************************/
-/*                          Functions from MISC.C                           */
-/****************************************************************************/
-#if 0
-/****************************************************************************/
-/* Network open function. Opens all files DENYALL and retries LOOP_NOPEN    */
-/* number of times if the attempted file is already open or denying access  */
-/* for some other reason.   All files are opened in BINARY mode.            */
-/****************************************************************************/
-int nopen(char *str, int access)
-{
-    int file,share,count=0;
-
-if(access==O_RDONLY) share=O_DENYWRITE;
-    else share=O_DENYALL;
-while(((file=open(str,O_BINARY|share|access,S_IWRITE))==-1)
-    && errno==EACCES && count++<LOOP_NOPEN);
-if(file==-1 && errno==EACCES)
-	cputs("\7\r\nNOPEN: ACCESS DENIED\r\n\7");
-return(file);
-}
-
-/****************************************************************************/
-/* This function performs an nopen, but returns a file stream with a buffer */
-/* allocated.																*/
-/****************************************************************************/
-FILE *fnopen(int *file, char *str, int access)
-{
-	char mode[128];
-	FILE *stream;
-
-if(((*file)=nopen(str,access))==-1)
-	return(NULL);
-
-if(access&O_APPEND) {
-	if(access&O_RDONLY)
-		strcpy(mode,"a+");
-	else
-		strcpy(mode,"a"); }
-else {
-	if(access&O_WRONLY)
-		strcpy(mode,"r+");
-	else
-		strcpy(mode,"r"); }
-stream=fdopen((*file),mode);
-if(stream==NULL) {
-	close(*file);
-	return(NULL); }
-setvbuf(stream,NULL,_IOFBF,16*1024);
-return(stream);
-}
-#endif
-#if 0
-/****************************************************************************/
-/* Converts an ASCII Hex string into an unsigned long                       */
-/****************************************************************************/
-unsigned long ahtoul(char *str)
-{
-    unsigned long l,val=0;
-
-while((l=(*str++)|0x20)!=0x20)
-    val=(l&0xf)+(l>>6&1)*9+val*16;
-return(val);
-}
-/****************************************************************************/
-/* Returns in 'string' a character representation of the number in l with   */
-/* commas. Maximum value of l is 4 gigabytes.                               */
-/****************************************************************************/
-char *ultoac(ulong l, char *string)
-{
-    char str[81];
-    char i,j;
-
-ultoa(l,str,10);
-if(!(strlen(str)%3)) i=(strlen(str)/3)-1;
-    else i=strlen(str)/3;
-j=strlen(str)+i;
-string[j--]=0;
-i=strlen(str)-1;
-while(i!=-1) {
-    if(!((strlen(str)-i)%3)) {
-        string[j--]=str[i--];
-        string[j--]=','; }
-    else string[j--]=str[i--]; }
-return(string);
-}
-/****************************************************************************/
-/* If the directory 'path' doesn't exist, create it.                      	*/
-/****************************************************************************/
-void md(char *inpath)
-{
-	char path[256],str[128];
-	struct ffblk ff;
-	int curdisk,disk;
-
-if(!inpath[0] || no_dirchk)
-	return;
-if(!strcmp(inpath+1,":\\")) {
-	curdisk=getdisk();
-	disk=toupper(inpath[0])-'A';
-	setdisk(disk);
-	if(getdisk()!=disk) {
-		sprintf(str,"Invalid drive %c:",toupper(inpath[0]));
-		umsg(str); }
-	setdisk(curdisk);
-	return; }
-strcpy(path,inpath);
-if(path[strlen(path)-1]=='\\')
-	path[strlen(path)-1]=0;
-if(!strcmp(path,"."))               /* Don't try to make '.' */
-	return;
-if(findfirst(path,&ff,FA_DIREC))
-	if(mkdir(path)) {
-		sprintf(str,"Failed to create %s",path);
-		umsg(str); }
-}
-#endif
-
 void bail(int code)
 {
 	char		str[256];
@@ -2036,33 +1913,5 @@ cputs("\r\n<Hit any key>");
 getch();
 puttext(1,1,80,scrn_len,scrn_buf);
 }
-#if 0
-/****************************************************************************/
-/* Puts a backslash on path strings 										*/
-/****************************************************************************/
-void backslash(char *str)
-{
-    int i;
-
-i=strlen(str);
-if(i && str[i-1]!='\\') {
-    str[i]='\\'; str[i+1]=0; }
-}
-#endif
-#if 0 /* defined in SMBWRAP.C */
-/****************************************************************************/
-/* Checks the disk drive for the existence of a file. Returns 1 if it       */
-/* exists, 0 if it doesn't.                                                 */
-/* Called from upload                                                       */
-/****************************************************************************/
-char fexist(char *filespec)
-{
-    struct ffblk f;
-
-if(findfirst(filespec,&f,0)==0)
-    return(1);
-return(0);
-}
-#endif
 
 /* End of SCFG.C */
