@@ -303,6 +303,8 @@ size_t iniAddSection(str_list_t* list, const char* section
 
 	i=find_section_index(*list, section);
 	if((*list)[i]==NULL) {
+		if(style==NULL)
+			style=&default_style;
 		if(style->section_separator!=NULL)
 			strListAppend(list, style->section_separator, i++);
 		SAFEPRINTF(str,"[%s]",section);
