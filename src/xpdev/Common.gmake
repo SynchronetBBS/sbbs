@@ -15,14 +15,16 @@ endif
 
 # Compiler-specific options
 CFLAGS	+=	-MMD
-CCPRE	?=	gcc
 ifdef BUILD_DEPENDS
+ CCPRE	:=	$(CC)
+ CCPRE	?=	gcc
  CC	=	$(XPDEV)/../build/mkdep -a
  CXX	=	$(XPDEV)/../build/mkdep -a
  LD	=	echo
  COMPILE_MSG	:= Depending
 else
  CC	?=	gcc
+ CCPRE	:=	$(CC)
  CXX	?=	g++
  LD	?=	ld
  COMPILE_MSG	:= Compiling
