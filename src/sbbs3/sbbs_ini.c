@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs_ini.h"
+#include "dirwrap.h"	/* backslash */
 
 static const char*	nulstr="";
 
@@ -164,6 +165,7 @@ void sbbs_read_ini(
 
 	ctrl_dir=iniGetString(fp,section,"CtrlDirectory",nulstr);
 	if(*ctrl_dir) {
+		backslash(ctrl_dir);
 		SAFECOPY(bbs->ctrl_dir,ctrl_dir);
 		SAFECOPY(ftp->ctrl_dir,ctrl_dir);
 		SAFECOPY(mail->ctrl_dir,ctrl_dir);
@@ -171,8 +173,9 @@ void sbbs_read_ini(
 	}
 	temp_dir=iniGetString(fp,section,"TempDirectory",nulstr);
 	if(*temp_dir) {
-		SAFECOPY(bbs->temp_dir,ctrl_dir);
-		SAFECOPY(ftp->temp_dir,ctrl_dir);
+		backslash(temp_dir);
+		SAFECOPY(bbs->temp_dir,temp_dir);
+		SAFECOPY(ftp->temp_dir,temp_dir);
 	}
 
 	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr));
