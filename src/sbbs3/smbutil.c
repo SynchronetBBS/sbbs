@@ -617,6 +617,8 @@ void dump_hashes(void)
 		if(hash.flags&SMB_HASH_MD5)
 			printf("%-10s: %s\n",	"MD5",		MD5_hex(tmp,hash.md5));
 	}
+
+	smb_close_hash(&smb);
 }
 
 /****************************************************************************/
