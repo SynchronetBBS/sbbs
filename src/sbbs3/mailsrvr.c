@@ -1406,7 +1406,7 @@ static void smtp_thread(void* arg)
 						sockprintf(socket, "452 ERROR %d (%s) saving message"
 							,i,smb.last_error);
 					} else {
-						lprintf("%04d SMTP %s posted a message on sub-board: %s"
+						lprintf("%04d SMTP %s posted a message on %s"
 							,socket, sender_addr, scfg.sub[subnum]->sname);
 						sockprintf(socket,SMTP_OK);
 					}
