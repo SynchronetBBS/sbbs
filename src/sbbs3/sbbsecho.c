@@ -1360,7 +1360,7 @@ char *process_areafix(faddr_t addr,char* inbuf,char *password)
 	p=(char *)inbuf;
 
 	while(*p==1) {				/* Skip kludge lines 11/05/95 */
-		FIND_CHAR(p,'\n');
+		FIND_CHAR(p,'\r');
 		if(*p)
 			p++; }				/* Skip CR */
 
