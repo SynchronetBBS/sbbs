@@ -2599,6 +2599,15 @@ static void smtp_thread(void* arg)
 			}
 
 			usernum=0;	/* unknown user at this point */
+
+			tp=strrchr(p,'@');	/* Double-@? Routed QWKnet mail? */
+			if(tp!=NULL) {
+				*tp=0;
+				SAFECOPY(rcpt_addr,p);
+				p=tp+1;
+				no_forward=TRUE;
+			}
+
 			if(startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER 
 				&& isdigit(*p)) {
 				usernum=atoi(p);			/* RX by user number */
