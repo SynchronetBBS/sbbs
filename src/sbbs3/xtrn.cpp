@@ -850,8 +850,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
-		if(native)
+		if(native) {
+			ulong l=0;
+			ioctlsocket(client_socket, FIONBIO, &l);
 			pthread_mutex_unlock(&input_thread_mutex);
+		}
 
 		curatr=0;	// Can't guarantee current attributes
 
