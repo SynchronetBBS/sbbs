@@ -198,17 +198,17 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 .SUFFIXES .c .cpp
 # Implicit C Compile Rule
 {.}.c{$(OBJODIR)}$(OFILE):
-	@$(CC) $(CFLAGS) $(CCFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
+	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
 
 # Implicit C++ Compile Rule
 {.}.cpp{$(OBJODIR)}$(OFILE):
-	@$(CC) $(CFLAGS) $(CXXFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
+	$(QUIET)$(CC) $(CFLAGS) $(CXXFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
 
 # Implicit MT C Compile Rule
 {.}.c{$(MTOBJODIR)}$(OFILE):
-	@$(CC) $(CFLAGS) $(CCFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
+	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
 
 # Implicit MT C++ Compile Rule
 {.}.cpp{$(MTOBJODIR)}$(OFILE):
-	@$(CC) $(CFLAGS) $(CXXFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
+	$(QUIET)$(CC) $(CFLAGS) $(CXXFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
 
