@@ -55,8 +55,8 @@ sem_trywait_block(sem_t *sem, unsigned long timeout)
 	abstime.tv_nsec=(currtime.tv_usec*1000 + timeout*1000000)%1000000000;
 
 	retval=sem_timedwait(sem, &abstime);
-	if(retval==ETIMEDOUT)
-		errno=EAGAIN;
+	if(retval && errno==ETIMEDOUT)
+		retval=EAGAIN;
 	return retval;
 }
 #endif
