@@ -2789,6 +2789,13 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
 	} while(0);
 
+	SAFECOPY(session->req.physical_path, path);
+	if(session->req.fp!=NULL) {
+		fclose(session->req.fp);
+		session->req.fp=NULL;
+	}
+
+
 	/* Read http_reply object */
 	if(!session->req.sent_headers) {
 		retval=ssjs_send_headers(session);
@@ -2798,12 +2805,6 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 
 	if(js_script!=NULL) 
 		JS_DestroyScript(session->js_cx, js_script);
-	if(session->req.fp!=NULL) {
-		fclose(session->req.fp);
-		session->req.fp=NULL;
-	}
-
-	SAFECOPY(session->req.physical_path, path);
 	session->req.dynamic=IS_SSJS;
 	
 	return(retval);
