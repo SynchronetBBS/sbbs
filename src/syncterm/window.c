@@ -15,6 +15,8 @@ int drawwin(void)
     gettextinfo(&txtinfo);
 	term.width=80;
 	term.height=txtinfo.screenheight-1;
+	if(term.height<24)
+		term.height=24;
 	term.x=(txtinfo.screenwidth-term.width)/2+2;
 	term.y=(txtinfo.screenheight-term.height)/2+2;
 	if((winbuf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2))==NULL) {
