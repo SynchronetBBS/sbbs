@@ -467,3 +467,51 @@ var   TELNET_MODE_BIN_RX=(1<<0) /* Binary receive (no CR to CRLF xlat)		*/
 var   TELNET_MODE_ECHO	=(1<<1)	/* Echo remotely							*/
 var   TELNET_MODE_GATE	=(1<<2)	/* Pass-through telnet commands/responses	*/
 					    		/********************************************/
+
+								/* Message attributes */
+var MSG_PRIVATE 		=(1<<0)
+var MSG_READ			=(1<<1)
+var MSG_PERMANENT		=(1<<2)
+var MSG_LOCKED			=(1<<3)
+var MSG_DELETE			=(1<<4)
+var MSG_ANONYMOUS		=(1<<5)
+var MSG_KILLREAD		=(1<<6)
+var MSG_MODERATED		=(1<<7)
+var MSG_VALIDATED		=(1<<8)
+var MSG_REPLIED			=(1<<9)	// User replied to this message
+
+								/* Auxillary header attributes */
+var MSG_FILEREQUEST 	=(1<<0)	// File request
+var MSG_FILEATTACH		=(1<<1)	// File(s) attached to Msg
+var MSG_TRUNCFILE		=(1<<2)	// Truncate file(s) when sent
+var MSG_KILLFILE		=(1<<3)	// Delete file(s) when sent
+var MSG_RECEIPTREQ		=(1<<4)	// Return receipt requested
+var MSG_CONFIRMREQ		=(1<<5)	// Confirmation receipt requested
+var MSG_NODISP			=(1<<6)	// Msg may not be displayed to user
+
+								/* Message network attributes */
+var MSG_LOCAL			=(1<<0)	// Msg created locally
+var MSG_INTRANSIT		=(1<<1)	// Msg is in-transit
+var MSG_SENT			=(1<<2)	// Sent to remote
+var MSG_KILLSENT		=(1<<3)	// Kill when sent
+var MSG_ARCHIVESENT 	=(1<<4)	// Archive when sent
+var MSG_HOLD			=(1<<5)	// Hold for pick-up
+var MSG_CRASH			=(1<<6)	// Crash
+var MSG_IMMEDIATE		=(1<<7)	// Send Msg now, ignore restrictions
+var MSG_DIRECT			=(1<<8)	// Send directly to destination
+var MSG_GATE			=(1<<9)	// Send via gateway
+var MSG_ORPHAN			=(1<<10)// Unknown destination
+var MSG_FPU 			=(1<<11)// Force pickup
+var MSG_TYPELOCAL		=(1<<12)// Msg is for local use only
+var MSG_TYPEECHO		=(1<<13)// Msg is for conference distribution
+var MSG_TYPENET 		=(1<<14)// Msg is direct network mail
+
+								/* Net types */
+var NET_NONE			=0		// Local message	
+var NET_UNKNOWN			=1		// Networked, but unknown type
+var NET_FIDO			=2		// FidoNet
+var NET_POSTLINK		=3		// PostLink
+var NET_QWK				=4		// QWK
+var NET_INTERNET		=5		// NNTP
+var NET_WWIV			=6		// WWIV
+var NET_MHS				=7		// MHS
