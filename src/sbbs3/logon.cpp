@@ -67,6 +67,22 @@ bool sbbs_t::logon()
 	client.user=useron.alias;
 	client_on(client_socket,&client);
 
+#ifdef JAVASCRIPT
+	if(js_cx!=NULL) {
+		/* user object */
+		if(js_CreateUserObject(js_cx, js_glob, &cfg, "user", useron.number)==NULL) 
+			lprintf("!JavaScript ERROR creating user object");
+
+		/* file_area object */
+		if(js_CreateFileAreaObject(js_cx, js_glob, &cfg, &useron, "")==NULL) 
+			lprintf("!JavaScript ERROR creating file_area object");
+
+		/* msg_area object */
+		if(js_CreateMsgAreaObject(js_cx, js_glob, &cfg, &useron)==NULL) 
+			lprintf("!JavaScript ERROR creating msg_area object");
+	}
+#endif
+
 	if(useron.rest&FLAG('Q'))
 		qwklogon=1;
 	if(SYSOP && ((online==ON_REMOTE && !(cfg.sys_misc&SM_R_SYSOP))

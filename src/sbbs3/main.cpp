@@ -141,9 +141,11 @@ int lprintf(char *fmt, ...)
     if(startup==NULL || startup->lputs==NULL)
         return(0);
 
-#if defined(_WIN32)
-	if(IsBadCodePtr((FARPROC)startup->lputs))
+#if defined(_WIN32) && defined(_DEBUG)
+	if(IsBadCodePtr((FARPROC)startup->lputs)) {
+		DebugBreak();
 		return(0);
+	}
 #endif
 
     va_start(argptr,fmt);
@@ -2625,22 +2627,6 @@ void node_thread(void* arg)
 #endif
 
 	if(sbbs->answer()) {
-
-#ifdef JAVASCRIPT
-	if(sbbs->js_cx!=NULL) {
-			/* user object */
-			if(js_CreateUserObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, "user", sbbs->useron.number)==NULL) 
-				lprintf("!JavaScript ERROR creating user object");
-
-			/* file_area object */
-			if(js_CreateFileAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron, "")==NULL) 
-				lprintf("!JavaScript ERROR creating file_area object");
-
-			/* msg_area object */
-			if(js_CreateMsgAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron)==NULL) 
-				lprintf("!JavaScript ERROR creating msg_area object");
-		}
-#endif
 
 		if(sbbs->qwklogon) {
 			sbbs->getsmsg(sbbs->useron.number);
