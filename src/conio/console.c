@@ -1206,17 +1206,25 @@ scale_bitmap(char *bitmap, int width, int height, int *multiplier)
 	char 	*ret;
 	char	*outbyte;
 	int		pos;
-	int		bmpsize;
-	int	bytesperline=1;
+	int		origbmpsize;
+	int		origbytesperline=1;
+	int		scaledbmpsize;
+	int		scaledbytesperline=1;
 
-	while(bytesperline*8<width)
-		bytesperline++;
+	while(origbytesperline*8<width)
+		origbytesperline++;
+
 	if(*multiplier>MAX_SCALE)
 		*multiplier=MAX_SCALE;
 	if(*multiplier < 1)
 		*multiplier=1;
-	bmpsize=bytesperline*height;
-	ret=(char *)malloc(bmpsize*(*multiplier)*(*multiplier));
+	while(scaledbytesperline*8<width*multiplier)
+		scaledbytesperline++;
+
+	origbmpsize=origbytesperline*height;
+	scaledbmpsize=scaledbytesperline*height*multiplier;
+
+	ret=(char *)malloc(scaledbmpsize);
 	if(ret==NULL)
 		return(NULL);
 	outbyte=ret;
