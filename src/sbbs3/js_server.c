@@ -68,6 +68,7 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SERVER_PROP_INTERFACE:
 			if(p->interface_addr!=NULL) {
 				in_addr.s_addr=*(p->interface_addr);
+				in_addr.s_addr=htonl(in_addr.s_addr);
 				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,inet_ntoa(in_addr)));
 			}
 			break;
