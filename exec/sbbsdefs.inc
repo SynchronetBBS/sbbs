@@ -142,6 +142,7 @@
 !define SS_NEST_PF	.22	# Nested in printfile function
 !define SS_DCDHIGH	.23	# Assume DCD is high always
 !define SS_SPLITP	.24	# Split-screen private chat
+!define SS_RLOGIN	.26	# RLogin session (not telnet)
 
 				# Bits in 'mode' for GETSTR function
 !define K_UPPER 	.0	# Converts all letters to upper case
@@ -186,6 +187,25 @@
 !define TG_CTRLKEYS	.4	# Interpret ^P ^U ^T, etc locally
 !define TG_PASSTHRU	.5	# Pass-through telnet commands/responses
 !define TG_RLOGIN	.6	# Use BSD RLogin protocol
+
+				# Bits for _FTP_MODE
+!define FTP_ECHO_CMD	.0	# Echo commands to user (debug)
+!define FTP_ECHO_RSP	.1	# Echo reply/response lines to user
+!define FTP_PASV	.2	# Use passive transfer mode
+!define FTP_ASCII	.3	# Use ASCII transfer mode
+!define FTP_HASH	.4	# Print hash marks during transfers
+
+!define BBS_OPT_KEEP_ALIVE	.0	# Send keep-alives					
+!define BBS_OPT_XTRN_MINIMIZED	.1	# Run externals minimized			
+!define BBS_OPT_AUTO_LOGON	.2	# Auto-logon via IP				
+!define BBS_OPT_DEBUG_TELNET	.3	# Debug telnet commands			
+!define BBS_OPT_SYSOP_AVAILABLE	.4	# Available for chat				
+!define BBS_OPT_ALLOW_RLOGIN	.5	# Allow logins via BSD RLogin		
+!define BBS_OPT_USE_2ND_RLOGIN	.6	# Use 2nd username in BSD RLogin	
+!define BBS_OPT_NO_QWK_EVENTS	.7	# Don't run QWK-related events		
+!define BBS_OPT_NO_HOST_LOOKUP	.11
+!define BBS_OPT_LOCAL_TIMEZONE	.30	# Don't force UCT/GMT				
+!define BBS_OPT_MUTE		.31	# Mute sounds						
 
 ################################
 # System Variable Declarations #
@@ -331,5 +351,9 @@
 !global _UQ
 !global _ERRORLEVEL
 !global _WORDWRAP
+!global _FTP_MODE
+!global _CLIENT_SOCKET
+!global _SOCKET_ERROR
+!global _STARTUP_OPTIONS
 
 # End of SBBSDEFS.INC
