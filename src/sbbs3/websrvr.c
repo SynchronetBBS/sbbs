@@ -1179,7 +1179,10 @@ static BOOL get_req(http_session_t * session)
 	char	req_line[MAX_REQUEST_LINE];
 	char *	p;
 	fd_set	sockset;
-	struct timeval tv={startup->max_inactivity,0};
+	struct timeval tv;
+	
+	tv.tv_sec=startup->max_inactivity;
+	tv.tv_usec=0;
 	
 	FD_ZERO(&sockset);
 	FD_SET(session->socket,&sockset);
