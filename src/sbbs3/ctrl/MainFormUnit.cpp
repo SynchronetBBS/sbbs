@@ -493,6 +493,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
     mail_startup.smtp_port=IPPORT_SMTP;
+    mail_startup.relay_port=IPPORT_SMTP;
     mail_startup.pop3_port=110;
     mail_startup.interface_addr=INADDR_ANY;
 	mail_startup.lputs=mail_lputs;
@@ -1552,20 +1553,6 @@ void __fastcall TMainForm::CtrlMenuItemEditClick(TObject *Sender)
 
 }
 
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::MailEditAliasListClick(TObject *Sender)
-{
-	char filename[MAX_PATH];
-
-    sprintf(filename,"%sALIAS.CFG"
-    	,MainForm->cfg.ctrl_dir);
-	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Mail Recipient Aliases (See MAILSRVR.DOC for help)";
-	TextFileEditForm->ShowModal();
-    delete TextFileEditForm;
-}
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::UpTimerTick(TObject *Sender)
