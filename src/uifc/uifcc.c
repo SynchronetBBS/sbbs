@@ -181,7 +181,9 @@ int uifcinic(uifcapi_t* uifcapi)
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
 	raw();
+	#ifdef NCURSES_VERSION_MAJOR
 	ESCDELAY=api->esc_delay;
+	#endif
 
 	// Set up color pairs
 	for(bg=0;bg<8;bg++)  {
@@ -2037,7 +2039,9 @@ static void textattr(unsigned char attr)
 	}
 	attrset(attrs);
 	colour = COLOR_PAIR( ((attr&7)|((attr>>1)&56))+1 );
+	#ifdef NCURSES_VERSION_MAJOR
 	color_set(colour,NULL);
+	#endif
 	bkgdset(colour);
 }
 
