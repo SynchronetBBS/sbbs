@@ -632,9 +632,6 @@ BOOL ODTimerElapsed(tODTimer *pTimer)
  */
 void ODTimerWaitForElapse(tODTimer *pTimer)
 {
-#ifdef ODPLAT_NIX
-   struct timeval tv;
-#endif
    ASSERT(pTimer != NULL);
 
 #ifdef ODPLAT_DOS
@@ -651,32 +648,12 @@ void ODTimerWaitForElapse(tODTimer *pTimer)
       od_sleep(0);
    }
 
-#elif defined(ODPLAT_NIX)
-   /* This is timing sensitive and *MUST* wait regardless of 100% CPU or signals */
-	od_sleep(ODTimerLeft(pTimer));
 #else /* !ODPLAT_DOS */
-   {
-      /* Under other platforms, timer resolution is high enough that we can */
-      /* ask the OS to block this thread for the amount of time required    */
-      /* for the timer to elapse.                                           */
+   /* Under other platforms, timer resolution is high enough that we can */
+   /* ask the OS to block this thread for the amount of time required    */
+   /* for the timer to elapse.                                           */
 
-      tODMilliSec CurrentTime;
-      tODMilliSec TimerElapseTime = pTimer->Start + pTimer->Duration;
-
-      /* Determine the current time. */
-#ifdef ODPLAT_WIN32
-      CurrentTime = GetCurrentTime();
-#endif /* ODPLAT_WIN32 */
-
-      if(TimerElapseTime <= CurrentTime)
-      {
-         /* Timer has already elapsed. */
-         return;
-      }
-
-      /* Sleep for the amount of time left until the timer should elapse. */
-      od_sleep(TimerElapseTime - CurrentTime);
-   }
+   od_sleep(ODTimerLeft(pTimer));
 #endif /* !ODPLAT_DOS */
 }
 
@@ -718,7 +695,7 @@ tODMilliSec ODTimerLeft(tODTimer *pTimer)
    }
 #elif defined(ODPLAT_NIX)
    gettimeofday(&tv,NULL);
-   left=(long long)tv.tv_sec*1000+tv.tv_usec/1000-pTimer->Start;
+   left=pTimer->Start+pTimer->Duration-(long long)tv.tv_sec*1000-tv.tv_usec/1000;
    if(left<0)
       left=0;
    return(left);

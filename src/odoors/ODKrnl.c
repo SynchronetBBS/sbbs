@@ -193,7 +193,7 @@ tODResult ODKrnlInitialize(void)
    sigemptyset(&(act.sa_mask));
    sigaction(SIGHUP,&act,NULL);
 
-   /* Run kernel on SIGALRM (Every 1 second) */
+   /* Run kernel on SIGALRM (Every .01 seconds) */
    act.sa_handler=sig_run_kernel;
    act.sa_flags=SA_RESTART;
    sigemptyset(&(act.sa_mask));

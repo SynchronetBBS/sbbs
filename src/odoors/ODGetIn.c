@@ -210,6 +210,7 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
    /* Loop until we have a valid input event, or until we should exit for */
    /* some other reason.                                                  */
    bGotEvent = FALSE;
+
    while(!bGotEvent)
    {
       /* If we aren't supposed to wait for input, then fail if there is */
@@ -371,7 +372,6 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
             ODTimerStart(&SequenceFailTimer, MAX_CHARACTER_LATENCY);
          }
          bTimerActive = TRUE;
-
          /* We only get here if we don't fully match a control sequence.   */
 
          /* If this was the first character of a control sequence, we only */

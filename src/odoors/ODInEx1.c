@@ -264,7 +264,7 @@ static char *apszDropFileNames[] =
 /* Array of door information (drop) file numbers 
  * (corresponding to apszDropFileNames) 
  */
-static enum {
+enum {
    FOUND_EXITINFO_BBS,
    FOUND_DORINFO1_DEF,
    FOUND_CHAIN_TXT,
@@ -2252,8 +2252,8 @@ malloc_error:
       od_control.baud=19200;
       gethostname(od_control.system_name,sizeof(od_control.system_name));
       od_control.system_name[sizeof(od_control.system_name)-1]=0;
-      if (isatty(STDOUT_FILENO))  {
-        tcgetattr(STDOUT_FILENO,&term);
+      if (isatty(STDIN_FILENO))  {
+        tcgetattr(STDIN_FILENO,&term);
    	  od_control.baud=cfgetispeed(&term);
         if(!od_control.baud)
    	    od_control.baud=cfgetispeed(&term);
