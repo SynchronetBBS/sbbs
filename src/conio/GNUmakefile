@@ -19,5 +19,5 @@ endif
 # CIOLIB Library Link Rule
 $(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS)
 	@echo Creating $@ ...
-	$(QUIET)ar rc $@ $(OBJS)
-	$(QUIET)ranlib $@
+	$(QUIET)$(AR) rc $@ $(OBJS)
+	$(QUIET)$(RANLIB) $@

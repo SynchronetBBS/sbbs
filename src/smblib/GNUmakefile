@@ -23,6 +23,6 @@ CFLAGS += -I$(XPDEV_SRC)
 # SMBLIB Library Link Rule
 $(SMBLIB_BUILD): $(OBJODIR) $(OBJS)
 	@echo Creating $@ ...
-	$(QUIET)ar rc $@ $(OBJS)
-	$(QUIET)ranlib $@
+	$(QUIET)$(AR) rc $@ $(OBJS)
+	$(QUIET)$(RANLIB) $@
 
