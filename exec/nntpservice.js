@@ -27,13 +27,13 @@ for(i=0;i<argc;i++)
 // Write a string to the client socket
 function write(str)
 {
-	if(debug)
-		log(format("rsp: %s",str));
 	client.socket.send(str);
 }
 
 function writeln(str)
 {
+	if(debug)
+		log(format("rsp: %s",str));
 	write(str + "\r\n");
 }
 
