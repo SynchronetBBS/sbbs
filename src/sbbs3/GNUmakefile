@@ -281,7 +281,6 @@ $(ECHOCFG): \
 	$(EXEODIR)/echocfg.o \
 	$(EXEODIR)/rechocfg.o \
 	$(EXEODIR)/uifcx.o \
-	$(EXEODIR)/uifcc.o \
 	$(UIFC_FLTK) \
 	$(UIFC_CURSES) \
 	$(EXEODIR)/nopen.o \
@@ -289,7 +288,7 @@ $(ECHOCFG): \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o
 	@echo Linking $@
-	$(CC) -o $@ $^ $(LFLAGS_FLTK) $(LFLAGS_CURSES)
+	@$(CC) -o $@ $^ $(LFLAGS_FLTK) $(LFLAGS_CURSES)
 
 # ADDFILES
 $(ADDFILES): \
