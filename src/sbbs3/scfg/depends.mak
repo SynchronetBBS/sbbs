@@ -1,6 +1,6 @@
 # depends.mak
 
-# Make 'include file' defining dependencies for Synchronet SBBS.DLL
+# Make 'include file' defining dependencies for Synchronet SCFG
 
 # $Id$
 
@@ -15,6 +15,5 @@ $(LIBODIR)$(SLASH)scfgsys.$(OFILE):		$(HEADERS)
 $(LIBODIR)$(SLASH)scfgxfr1.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)scfgxfr2.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)scfgchat.$(OFILE):	$(HEADERS)
-$(LIBODIR)$(SLASH)scfg.$(OFILE):		$(HEADERS) $(OBJS)
-$(LIBODIR)$(SLASH)scfg:					$(HEADERS) $(OBJS) $(LIBODIR)$(SLASH)scfg.$(OFILE)
+$(LIBODIR)$(SLASH)scfg.$(OFILE):		$(HEADERS)
 
