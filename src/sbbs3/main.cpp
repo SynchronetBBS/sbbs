@@ -1579,8 +1579,7 @@ void event_thread(void* arg)
 					sprintf(str,"%s%s.q%c%c",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id
 						,j>10 ? ((j-1)/10)+'0' : 'w'
 						,j ? ((j-1)%10)+'0' : 'k');
-					fexistcase(str);		/* fix wrong-case filenames on Unix */
-					if(flength(str)>0) {	/* silently ignore 0-byte QWK packets */
+					if(fexistcase(str) && flength(str)>0) {	/* silently ignore 0-byte QWK packets */
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->online=ON_LOCAL;
 						if(sbbs->unpack_qwk(str,i)==false) {
@@ -3436,6 +3435,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
 	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
 	if(startup->temp_dir[0])				backslash(startup->temp_dir);
 
 	uptime=0;
@@ -3892,7 +3892,7 @@ void DLLCALL bbs_thread(void* arg)
 #endif
 
 		struct timeval tv;
-		tv.tv_sec=2;
+		tv.tv_sec=startup->sem_chk_freq;
 		tv.tv_usec=0;
 
 		if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
