@@ -37,6 +37,10 @@
 
 #include "sbbs.h"
 
+const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
+const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
+            ,"Jul","Aug","Sep","Oct","Nov","Dec"};
+
 /****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
 /****************************************************************************/
