@@ -1383,6 +1383,10 @@ static void js_add_request_prop(http_session_t * session, char *key, char *value
 {
 	JSString*	js_str;
 
+	if(session->js_cx==NULL || session->js_request==NULL)
+		return;
+	if(key==NULL || value==NULL)
+		return;
 	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
 		return;
 	JS_DefineProperty(session->js_cx, session->js_request, key, STRING_TO_JSVAL(js_str)
@@ -2303,19 +2307,16 @@ JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx
 JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 											 ,JSObject* parent, http_session_t *session)
 {
-	JSObject*	request;
-	JSObject*	query;
 /*	JSObject*	cookie; */
-	JSObject*	headers;
 	JSString*	js_str;
 	jsval		val;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)  {
-		request = JSVAL_TO_OBJECT(val);
+		session->js_request=JSVAL_TO_OBJECT(val);
 	}
 	else
-		request = JS_DefineObject(cx, parent, "http_request", NULL
+		session->js_request = JS_DefineObject(cx, parent, "http_request", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	js_add_request_prop(session,"path_info",session->req.extra_path_info);
@@ -2323,28 +2324,25 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 	js_add_request_prop(session,"virtual_path",session->req.virtual_path);
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,request,"query",&val) && val!=JSVAL_VOID)  {
-		query = JSVAL_TO_OBJECT(val);
-		JS_ClearScope(cx,query);
+	if(JS_GetProperty(cx,session->js_request,"query",&val) && val!=JSVAL_VOID)  {
+		session->js_query = JSVAL_TO_OBJECT(val);
+		JS_ClearScope(cx,session->js_query);
 	}
 	else
-		query = JS_DefineObject(cx, request, "query", NULL
+		session->js_query = JS_DefineObject(cx, session->js_request, "query", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,request,"header",&val) && val!=JSVAL_VOID)  {
-		headers = JSVAL_TO_OBJECT(val);
-		JS_ClearScope(cx,headers);
+	if(JS_GetProperty(cx,session->js_request,"header",&val) && val!=JSVAL_VOID)  {
+		session->js_header = JSVAL_TO_OBJECT(val);
+		JS_ClearScope(cx,session->js_header);
 	}
 	else
-		headers = JS_DefineObject(cx, request, "header", NULL
+		session->js_header = JS_DefineObject(cx, session->js_request, "header", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	session->js_query=query;
-	session->js_header=headers;
-	session->js_request=request;
-	return(request);
+	return(session->js_request);
 }
 
 static void
