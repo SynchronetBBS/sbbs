@@ -404,14 +404,15 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 void __fastcall TNodeForm::InterruptNodeButtonClick(TObject *Sender)
 {
 	int i;
+    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,true))
+        	if(getnodedat(i+1,&node,&file))
                 break;
             node.misc^=NODE_INTR;
-            if(putnodedat(i+1,&node))
+            if(putnodedat(i+1,&node,file))
                 break;
         }
     TimerTick(Sender);
@@ -421,14 +422,15 @@ void __fastcall TNodeForm::InterruptNodeButtonClick(TObject *Sender)
 void __fastcall TNodeForm::LockNodeButtonClick(TObject *Sender)
 {
 	int i;
+    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,true))
+        	if(getnodedat(i+1,&node,&file))
                 break;
             node.misc^=NODE_LOCK;
-            if(putnodedat(i+1,&node))
+            if(putnodedat(i+1,&node,file))
                 break;
         }
     TimerTick(Sender);
@@ -438,14 +440,15 @@ void __fastcall TNodeForm::LockNodeButtonClick(TObject *Sender)
 void __fastcall TNodeForm::RerunNodeButtonClick(TObject *Sender)
 {
 	int i;
+    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,true))
+        	if(getnodedat(i+1,&node,&file))
                 break;
             node.misc^=NODE_RRUN;
-            if(putnodedat(i+1,&node))
+            if(putnodedat(i+1,&node,file))
                 break;
         }
     TimerTick(Sender);
@@ -467,11 +470,12 @@ void __fastcall TNodeForm::SelectAllMenuItemClick(TObject *Sender)
 void __fastcall TNodeForm::DownButtonClick(TObject *Sender)
 {
 	int i;
+    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,true))
+        	if(getnodedat(i+1,&node,&file))
                 break;
             if(node.status==NODE_WFC)
             	node.status=NODE_OFFLINE;
@@ -479,7 +483,7 @@ void __fastcall TNodeForm::DownButtonClick(TObject *Sender)
             	node.status=NODE_WFC;
             else
 	            node.misc^=NODE_DOWN;
-            if(putnodedat(i+1,&node))
+            if(putnodedat(i+1,&node,file))
                 break;
         }
     TimerTick(Sender);
@@ -489,14 +493,15 @@ void __fastcall TNodeForm::DownButtonClick(TObject *Sender)
 void __fastcall TNodeForm::ClearErrorButtonClick(TObject *Sender)
 {
 	int i;
+    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,true))
+        	if(getnodedat(i+1,&node,&file))
                 break;
             node.errors=0;
-            if(putnodedat(i+1,&node))
+            if(putnodedat(i+1,&node,file))
                 break;
         }
     TimerTick(Sender);
@@ -512,7 +517,7 @@ void __fastcall TNodeForm::ChatButtonClick(TObject *Sender)
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,false))
+        	if(getnodedat(i+1,&node,NULL))
                 break;
             if(node.status==NODE_WFC || node.status>NODE_QUIET)
                 continue;
@@ -555,7 +560,7 @@ void __fastcall TNodeForm::UserEditButtonClick(TObject *Sender)
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,false))
+        	if(getnodedat(i+1,&node,NULL))
                 break;
             if(node.useron==0)
                 continue;
@@ -581,7 +586,7 @@ void __fastcall TNodeForm::UserMsgButtonClick(TObject *Sender)
         UserMsgForm->Memo->Lines->Add("");
         for(i=0;i<ListBox->Items->Count;i++)
             if(ListBox->Selected[i]==true) {
-               	if(getnodedat(i+1,&node,false))
+               	if(getnodedat(i+1,&node,NULL))
                     break;
                 if(node.useron==0)
                     continue;

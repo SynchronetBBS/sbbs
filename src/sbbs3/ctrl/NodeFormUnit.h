@@ -98,8 +98,8 @@ private:	// User declarations
 public:		// User declarations
      __fastcall TNodeForm(TComponent* Owner);
      TMainForm* MainForm;
-    int __fastcall getnodedat(int node_num, node_t* node, bool lockit);
-    int __fastcall putnodedat(int node_num, node_t* node);
+    int __fastcall getnodedat(int node_num, node_t* node, int* file);
+    int __fastcall putnodedat(int node_num, node_t* node, int file);
 
 };
 //---------------------------------------------------------------------------
