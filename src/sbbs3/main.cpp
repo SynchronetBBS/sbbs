@@ -1025,8 +1025,8 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 						lprintf(LOG_DEBUG,"Node %d %s telnet window size: %ux%u"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
-							,sbbs->cols
-							,sbbs->rows);
+							,cols
+							,rows);
 						if(rows && !sbbs->useron.rows)	/* auto-detect rows */
 							sbbs->rows=rows;
 						if(cols)
