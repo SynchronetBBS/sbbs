@@ -665,14 +665,13 @@ get_distlist(void)
 				break;
 			case 's':
 				p=in_line+2;
-				tp=strchr(p,'\t');
-				if(tp!=NULL)
-					*tp=0;	/* truncate address at first tab */
-				else
-					tp=p;
+				tp=p;
+				while(*tp && *tp>' ') tp++;
+					*tp=0;	/* truncate address at first whitespace */
 				SAFECOPY(server[s]->addr,p);
-				if((p=strrchr(tp+1,'\t'))!=NULL)	/* description follows last tab */
-					SAFECOPY(server[s]->desc,++p);
+				p=tp+1;
+				while(*p && *p<=' ') p++;	/* desc follows whitepsace */
+				SAFECOPY(server[s]->desc,++p);
 				s++;
 				break;
 		}
