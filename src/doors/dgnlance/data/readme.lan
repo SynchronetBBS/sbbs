@@ -1,0 +1,29 @@
+                            Dragonlance 3.0
+
+Thank You For Choosing Dragonlance as one of your online games.
+I'm sure you'll find it fun.
+
+Installation is easy..
+
+Make a directory off of your BBS directory called DGNLNCE, and copy all
+*.lan files to it.  Then put DGNLNCE.com in your root directory.
+
+Install into your chains editor using the default settings for
+everything (or change as you see fit.) but leave dos interrupts as is.
+ansi is optional.  and the calling line for it is DGNLNCE %1
+
+I'm not going to do a version history this time cause since version 1.0
+I've made so many mistakes this file would turn out to be as large as
+webster's unabridged dictionary.
+
+Just Thanks go out to the Authors of Brazil, from where I got the basis
+code.  And To TSR and The Authors of Dragonlance for the character names
+I use in the game.
+
+If you need any kind of support for this game (ie. the PD compiler I
+used to compile it, or anyting else)  I can be reached at..
+
+717-696-2236  The Tower Of High Sorcery  1200-9600 Baud
+WWIVnet Raistlin Majere @ 7755
+
+Thanks a Lot!
