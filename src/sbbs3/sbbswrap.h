@@ -158,6 +158,7 @@ extern "C" {
 	DLLEXPORT void	DLLCALL sbbs_beep(int freq, int dur);
 	DLLEXPORT char*	DLLCALL strupr(char* str);
 	DLLEXPORT char*	DLLCALL strlwr(char* str);
+	DLLEXPORT char* DLLCALL strrev(char* str);
 
 #else	/* Unsupported OS */
 
