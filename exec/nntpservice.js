@@ -20,7 +20,7 @@ for(i=0;i<argc;i++)
 // Write a string to the client socket
 function write(str)
 {
-	if(debug && 0)
+	if(0 && debug)
 		log(format("rsp: %s",str));
 	client.socket.send(str);
 }
@@ -32,13 +32,15 @@ function writeln(str)
 
 var username='';
 var msgbase=null;
+var selected=null;
+var current_article=0;
 
 writeln(format("200 %s News (Synchronet NNTP Service v%s)",system.name,VERSION));
 
 while(client.socket.is_connected) {
 
 	// Get Request
-	cmdline = client.socket.recvline(512 /*maxlen*/, 30 /*timeout*/);
+	cmdline = client.socket.recvline(512 /*maxlen*/, 10 /*timeout*/);
 
 	if(cmdline==null) {
 		log("!TIMEOUT waiting for request");
@@ -93,6 +95,7 @@ while(client.socket.is_connected) {
 
 	/* These commands require login/authentication */
 	switch(cmd[0].toUpperCase()) {
+
 		case "LIST":
 			writeln("215 list of newsgroups follows");
 			for(g in msg_area.grp_list) 
@@ -100,14 +103,15 @@ while(client.socket.is_connected) {
 					msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 					writeln(format("%s %u %u %s"
 						,msg_area.grp_list[g].sub_list[s].newsgroup
-						,msgbase.total_msgs
-						,1
-						,"y"
+						,msgbase.last_msg
+						,msgbase.first_msg
+						,msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n"
 						));
 					msgbase.close();
 				}
 			writeln(".");	// end of list
 			break;
+
 		case "GROUP":
 			found=false;
 			for(g in msg_area.grp_list) 
@@ -115,18 +119,50 @@ while(client.socket.is_connected) {
 					if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==cmd[1].toLowerCase()) {
 						found=true;
 						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-						selected=msg_area.grp_list[g].sub_list[s].newsgroup;
+						selected=msg_area.grp_list[g].sub_list[s];
 					}
 			if(found)
 				writeln(format("211 %u %u %u %s group selected"
 					,msgbase.total_msgs	// articles in group
-					,1	// first
-					,msgbase.total_msgs	// last
-					,selected
+					,msgbase.first_msg
+					,msgbase.last_msg
+					,selected.newsgroup
 					));
 			else
 				writeln("411 no such news group");
 			break;
+
+		case "XOVER":
+			if(msgbase==null) {
+				writeln("412 no news group selected");
+				break;
+			}
+			writeln("224 Overview information follows");
+			var first, last;
+			if(cmd[1].indexOf('-')>=0)	{ /* range */
+				range=cmd[1].split('-');
+				first=Number(range[0]);
+				last=Number(range[1]);
+			} else
+				first=last=Number(cmd[1]);
+			for(i=first;i<=last;i++) {
+				hdr=msgbase.get_msg_header(false,i);
+				if(hdr==null)
+					continue;
+				writeln(format("%u\t%s\t%s\t%s\t%u\t%u\t%u\t%u"
+					,i
+					,hdr.subject
+					,hdr.from
+					,system.timestr(hdr.when_written_time)
+					,hdr.number			// message-id
+					,hdr.thread_orig	// references
+					,hdr.data_length	// byte count
+					,Math.round(hdr.data_length/79)	// line count
+					));
+			}
+			writeln(".");	// end of list
+			break;
+
 		case "XHDR":
 			if(msgbase==null) {
 				writeln("412 no news group selected");
@@ -141,7 +177,7 @@ while(client.socket.is_connected) {
 			} else
 				first=last=Number(cmd[2]);
 			for(i=first;i<=last;i++) {
-				hdr=msgbase.get_msg_header(true,i);
+				hdr=msgbase.get_msg_header(false,i);
 				if(hdr==null)
 					continue;
 				var field="";
@@ -173,29 +209,162 @@ while(client.socket.is_connected) {
 			}
 			writeln(".");	// end of list
 			break;
-		case "ARTICLE":
-			if(cmd[1].indexOf('<')>=0)	{ /* message-id */
-				hdr=msgbase.get_msg_header(false,Number(cmd[1].slice(1,-1)));
-				body=msgbase.get_msg_body(false,Number(cmd[1].slice(1,-1))
-					,true /* remove ctrl-a codes */);
-			} else {						/* offset */
-				hdr=msgbase.get_msg_header(true,Number(cmd[1]));
-				body=msgbase.get_msg_body(true,Number(cmd[1])
-					,true /* remove ctrl-a codes */);
-			}
-			
-			writeln(format("220 <%u> article retrieved - head and body follow",hdr.number));
 
-			writeln("From: " + hdr.from);
-			writeln("Subject: " + hdr.subject);
-			writeln("Message-ID: " + hdr.number);
-			writeln("Date: " + system.timestr(hdr.when_written_time));
-			writeln("References: " + hdr.thread_orig);
-			writeln("");
-			write(body);
+		case "ARTICLE":
+		case "HEAD":
+		case "BODY":
+			if(cmd[1]!='') {
+				if(cmd[1].indexOf('<')>=0)		/* message-id */
+					current_article=Number(cmd[1].slice(1,-1));
+				else 
+					current_article=Number(cmd[1]);
+			}
+			if(current_article<1) {
+				writeln("420 no current article has been selected");
+				break;
+			}
+
+			if(cmd[0].toUpperCase()!="BODY")
+				hdr=msgbase.get_msg_header(false,current_article);
+			if(cmd[0].toUpperCase()!="HEAD") 
+				body=msgbase.get_msg_body(false,current_article
+					,true /* remove ctrl-a codes */);
+			
+			switch(cmd[0].toUpperCase()) {
+				case "ARTICLE":
+					writeln(format("220 <%u> article retrieved - head and body follow",hdr.number));
+					break;
+				case "HEAD":
+					writeln(format("221 <%u> article retrieved - header follows",hdr.number));
+					break;
+				case "BODY":
+					writeln(format("222 <%u> article retrieved - body follows",hdr.number));
+					break;
+			}
+
+			if(cmd[0].toUpperCase()!="BODY") {
+				if(hdr.from_net_type)
+					writeln(format("From: \"%s\" <%s@%s>"
+						,hdr.from,hdr.from,hdr.from_net_addr));
+				else
+					writeln("From: " + hdr.from);
+				writeln("Subject: " + hdr.subject);
+				writeln("Message-ID: " + hdr.number);
+				writeln("Date: " + system.timestr(hdr.when_written_time));
+				writeln("References: " + hdr.thread_orig);
+				writeln("Newsgroups: " + selected.newsgroup);
+			}
+			if(cmd[0].toUpperCase()=="ARTICLE")	/* both, separate with blank line */
+				writeln("");
+			if(cmd[0].toUpperCase()!="HEAD") 
+				write(body);
 			writeln(".");
 			break;
-			
+
+		case "NEXT":
+		case "LAST":
+			if(msgbase==null) {
+				writeln("412 no news group selected");
+				break;
+			}
+			if(current_article<1) {
+				writeln("420 no current article has been selected");
+				break;
+			}
+			if(cmd[0].toUpperCase()=="NEXT")
+				current_article++;
+			else
+				current_article--;
+			writeln(format("223 %u %u article retrieved - request text separately"
+				,current_article
+				,current_article
+				));
+   			break;
+
+		case "POST":
+/**
+			if(!selected.can_post) {
+				writeln("440 posting not allowed");
+				break;
+			}
+**/
+			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
+
+			var hdr=new Object();
+			hdr.from=user.alias;
+			log(hdr);
+
+			var posted=false;
+			var header=true;
+			var body="";
+			var newsgroups="";
+			while(client.socket.is_connected) {
+
+				line = client.socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
+
+				if(line==null) {
+					log("!TIMEOUT waiting for text line");
+					break;
+				}
+
+				//log(format("msgtxt: %s",line));
+
+				if(line==".") {
+					log("End of message text");
+					break;
+				}
+				if(line=="" && header) {
+					header=false;
+					continue;
+				}
+
+				if(!header) {	/* Body text, append to 'body' */
+					if(line.charAt(0)=='.')
+						line=line.slice(1);		// Skip prepended dots
+					body += line;
+					body += "\r\n";
+					continue;
+				}
+
+				/* Parse header lines */
+				if(line.indexOf(':')==-1)
+					continue;
+				field=line.split(':');
+				while(field[1].charAt(0)==' ')	// skip prepended spaces
+					field[1]=field[1].slice(1);
+
+				switch(field[0].toLowerCase()) {
+					case "subject":
+						hdr.subject=field[1];
+						break;
+					case "newsgroups":
+						newsgroups=field[1];
+						break;
+				}
+			}
+
+			for(g in msg_area.grp_list) 
+				for(s in msg_area.grp_list[g].sub_list) 
+					if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==newsgroups.toLowerCase()) {
+
+						if(msgbase!=null) {
+							msgbase.close();
+							delete msgbase;
+						}
+
+						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
+						if(msgbase.save_msg(hdr,body)) {
+							log(format("%s posted a message on %s",user.alias,newsgroups));
+							writeln("240 article posted ok");
+							posted=true;
+						} else 
+							log(format("!ERROR saving mesage: %s",msgbase.last_error));
+					}
+			if(!posted) {
+				log("post failure");
+				writeln("441 posting failed");
+			}
+   			break;
 		default:
 			writeln("500 Syntax error or unknown command");
 			break;
