@@ -1253,6 +1253,7 @@ General
 o New NewsLink event module (exec/newslink.js)
   - used to link sub-boards with newsgroups (e.g. USENET)
   - requires ctrl/newslink.cfg
+  - create a timed event with command line of "?newslink"
 
 o Changed use of gmtime() to localtime() for systems using local/system
   time zone rather than GMT/UTC (the default)
@@ -1356,6 +1357,8 @@ o Fixed null pointer dereferences when accessing properites of unopen JS file
 
 o Fixed bug in File.writeAll() method (would stop writing prematurely)
 
+o File.readln() and readAll() methods no longer truncate trailing whitespace
+
 o Doesn't ask for new/your message scan if user has access to no message areas
 
 
@@ -1379,13 +1382,14 @@ o Fixed output_sem re-initialization bug that caused segfaults in Linux and
 o Mail maintenance/purge event no longer tries to delete msgs in an empty base
 
 o No longer clears useron number in node.dab when logging off
-  - Multinode chat users need this value to display the user name that left 
+  - multinode chat users need this value to display the user name that left 
     chat channel (disconnected)
 
 o New toggle option to check time left online while executing doors
+  - fix for doors that fail to check user's time left online
 
 o Switched back to using DOSXTRN for offline events
-  - Executing events without DOSXTRN caused too many problems
+  - executing events without DOSXTRN caused too many problems
 
 o Fixed Win32 resource leaks when executing external programs
 
@@ -1408,12 +1412,14 @@ o NNTP Service (exec/nntpservice.js)
   - Posted messages now use original date/time in header
   - Added support for SLAVE and IHAVE commands
   - Updated From: headers to include user name separate from address
-  - Added subject trashcan (text/subject.can) checking (spam filtering)
+  - Added subject trashcan (text/subject.can) checking (spam filtering/log)
 
 o Finger Service
   - Fixed negative time online values
 
 o Fixed buffer overflow bug in JavaScript global log() method
+
+o Support for unique host names per Synchronet instance (system.host_name)
 
 
 FTP Server
