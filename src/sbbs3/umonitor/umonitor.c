@@ -667,22 +667,26 @@ int recycle_servers(scfg_t *cfg)
 	return(0);
 }
 
+char *geteditor(char *edit)
+{
+	if(getenv("EDITOR")==NULL && (getenv("VISUAL")==NULL || getenv("DISPLAY")==NULL))
+		strcpy(edit,"vi");
+	else {
+		if(getenv("DISPLAY")!=NULL && getenv("VISUAL")!=NULL)
+			strcpy(edit,getenv("VISUAL"));
+		else
+			strcpy(edit,getenv("EDITOR"));
+	}
+	return(edit);
+}
+
+
 int edit_cfg(scfg_t *cfg)
 {
 	char**	opt;
 	int		i;
 	char	cmd[1024];
 	char	editcmd[1024];
-
-	if(getenv("EDITOR")==NULL && (getenv("VISUAL")==NULL || getenv("DISPLAY")==NULL)) {
-		uifc.msg("EDITOR/VISUAL environment variable(s) not found");
-		return(1);
-	}
-
-	if(getenv("DISPLAY")!=NULL && getenv("VISUAL")!=NULL)
-		strcpy(editcmd,getenv("VISUAL"));
-	else
-		strcpy(editcmd,getenv("EDITOR"));
 
 	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
@@ -715,7 +719,7 @@ int edit_cfg(scfg_t *cfg)
 				return(0);
 				break;
 			default:
-				sprintf(cmd,"%s %s%s",editcmd,cfg->ctrl_dir,opt[i]);
+				sprintf(cmd,"%s %s%s",geteditor(editcmd),cfg->ctrl_dir,opt[i]);
 				do_cmd(cmd);
 				break;
 		}
@@ -729,16 +733,6 @@ int edit_can(scfg_t *cfg)
 	int		i;
 	char	cmd[1024];
 	char	editcmd[1024];
-
-	if(getenv("EDITOR")==NULL && (getenv("VISUAL")==NULL || getenv("DISPLAY")==NULL)) {
-		uifc.msg("EDITOR/VISUAL environment variable(s) not found");
-		return(1);
-	}
-
-	if(getenv("DISPLAY")!=NULL && getenv("VISUAL")!=NULL)
-		strcpy(editcmd,getenv("VISUAL"));
-	else
-		strcpy(editcmd,getenv("EDITOR"));
 
 	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
@@ -765,7 +759,7 @@ int edit_can(scfg_t *cfg)
 				return(0);
 				break;
 			default:
-				sprintf(cmd,"%s %s%s",editcmd,cfg->text_dir,opt[i]);
+				sprintf(cmd,"%s %s%s",geteditor(editcmd),cfg->text_dir,opt[i]);
 				do_cmd(cmd);
 				break;
 		}
