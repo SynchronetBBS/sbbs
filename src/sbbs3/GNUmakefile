@@ -275,4 +275,22 @@ $(ADDFILES): \
 	@echo Linking $@
 	@$(CC) -o $@ $^
 
+# FILELIST
+$(FILELIST): \
+	$(EXEODIR)/filelist.o \
+	$(EXEODIR)/ars.o \
+	$(EXEODIR)/date_str.o \
+	$(EXEODIR)/load_cfg.o \
+	$(EXEODIR)/scfglib1.o \
+	$(EXEODIR)/scfglib2.o \
+	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/str_util.o \
+	$(EXEODIR)/dat_rec.o \
+	$(EXEODIR)/filedat.o \
+	$(EXEODIR)/filewrap.o \
+	$(EXEODIR)/dirwrap.o \
+	$(EXEODIR)/genwrap.o
+	@echo Linking $@
+	@$(CC) -o $@ $^
+
 include depends.mk

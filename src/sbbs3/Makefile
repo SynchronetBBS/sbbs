@@ -185,4 +185,21 @@ $(ADDFILES): addfiles.c \
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
+# FILELIST
+$(FILELIST): filelist.c \
+	$(LIBODIR)\ars.obj \
+	$(LIBODIR)\nopen.obj \
+	$(LIBODIR)\str_util.obj \
+	$(LIBODIR)\date_str.obj \
+	dat_rec.c \
+	filedat.c \
+	genwrap.c \
+	dirwrap.c \
+	$(LIBODIR)\load_cfg.obj \
+	$(LIBODIR)\scfglib1.obj \
+	$(LIBODIR)\scfglib2.obj
+	@echo Creating $@
+	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+
 !include depends.mk		# defines dependencies
