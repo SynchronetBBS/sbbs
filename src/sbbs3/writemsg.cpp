@@ -218,7 +218,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			bputs(text[Filename]); }
 		else {
 			c=LEN_TITLE;
-			bputs(text[TitlePrompt]); }
+			bputs(text[SubjectPrompt]); }
 		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && !(mode&WM_FILE)
 			&& cfg.sub[subnum]->misc&(SUB_QNET /* |SUB_PNET */ ))
 			c=25;
@@ -688,11 +688,11 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 					FREE(str[line]);
 				done=1;
 				continue;}
-			else if(!stricmp(strin,"/T")) { /* Edit title */
+			else if(!stricmp(strin,"/T")) { /* Edit title/subject */
 				if(line==lines)
 					FREE(str[line]);
 				if(title[0]) {
-					bputs(text[TitlePrompt]);
+					bputs(text[SubjectPrompt]);
 					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL);
 					SYNC;
 					CRLF; }

@@ -64,7 +64,7 @@ enum {
 	,Emailing
 	,Posting
 	,NewFile
-	,TitlePrompt
+	,SubjectPrompt
 	,EnterMsgNow
 	,EnterMsgNowRaw
 	,NoMoreLines
@@ -668,7 +668,7 @@ enum {
 	,DirLibOrAll
 	,EnterPath
 	,SearchExtendedQ
-	,DisplayTitlesOnlyQ
+	,DisplaySubjectsOnlyQ
 	,EchoIsNow
 	,WelcomeToPrivateChat
 	,UploadingREP

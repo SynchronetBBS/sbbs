@@ -53,7 +53,7 @@ void sbbs_t::scansubs(long mode)
 		return;
 
 	if(ch!='A' && mode&(SCAN_FIND|SCAN_TOYOU)) {
-		if(yesno(text[DisplayTitlesOnlyQ])) i=1;
+		if(yesno(text[DisplaySubjectsOnlyQ])) i=1;
 		if(mode&SCAN_FIND) {
 			bputs(text[SearchStringPrompt]);
 			if(!getstr(str,40,K_LINE|K_UPPER))
@@ -125,7 +125,7 @@ void sbbs_t::scanallsubs(long mode)
 	ulong	subs_scanned=0;
 
 	if(/* action==NODE_MAIN && */ mode&(SCAN_FIND|SCAN_TOYOU)) {
-		i=yesno(text[DisplayTitlesOnlyQ]);
+		i=yesno(text[DisplaySubjectsOnlyQ]);
 		if(mode&SCAN_FIND) {
 			bputs(text[SearchStringPrompt]);
 			if(!getstr(str,40,K_LINE|K_UPPER))
