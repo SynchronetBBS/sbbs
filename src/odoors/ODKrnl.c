@@ -114,6 +114,7 @@ static void ODKrnlChatMode(void);
 #ifdef ODPLAT_NIX
 static void sig_run_kernel(int sig);
 static void sig_get_char(int sig);
+static void sig_no_carrier(int sig);
 #endif
 
 /* Functions specific to the multithreaded implementation of the kernel. */
@@ -218,7 +219,7 @@ tODResult ODKrnlInitialize(void)
    /* Make sure SIGHUP, SIGALRM, and SIGIO are unblocked */
    sigemptyset(&block);
    sigaddset(&block,SIGHUP);
-   sigaddset(&block,SIGALRN);
+   sigaddset(&block,SIGALRM);
    sigaddset(&block,SIGIO);
    sigprocmask(SIG_UNBLOCK,&block,NULL);
 #endif
