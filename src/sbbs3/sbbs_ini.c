@@ -440,6 +440,8 @@ void sbbs_read_ini(
 			=iniReadStringList(fp,section,"CGIExtensions", "," ,".cgi");
 		SAFECOPY(web->ssjs_ext
 			,iniReadString(fp,section,"JavaScriptExtension",".ssjs",value));
+		SAFECOPY(web->js_ext
+			,iniReadString(fp,section,"EmbJavaScriptExtension",".bbs",value));
 
 		web->max_inactivity
 			=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
