@@ -355,7 +355,9 @@ static const char *js_type_str[] = {
     "string",
     "number",
     "boolean",
-	"array",		// JSTYPE_LIMIT
+	"array",
+	"alias",
+	"undefined"
 };
 
 JSBool

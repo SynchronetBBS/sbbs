@@ -923,8 +923,11 @@ extern "C" {
 		DWORD*		clients;
 	} js_server_props_t;
 
-	#define JSTYPE_ARRAY JSTYPE_LIMIT
-	#define JSTYPE_ALIAS JSTYPE_LIMIT+1
+	enum {
+		 JSTYPE_ARRAY=JSTYPE_LIMIT
+		,JSTYPE_ALIAS
+		,JSTYPE_UNDEF
+	};
 
 	#ifdef _DEBUG	/* String compiled into debug build only, for JS documentation generation */
 		#define	JSDOCSTR(s)	s
