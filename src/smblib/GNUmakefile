@@ -19,9 +19,18 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 
 CFLAGS += -I$(XPDEV_SRC)
 
+lib:	$(LIBODIR) $(SMBLIB)
+mtlib:	$(LIBODIR) $(SMBLIB-MT)
+
 # SMBLIB Library Link Rule
-$(SMBLIB): $(OBJS)
-	@echo Creating $< ...
-	$(QUIET)ar rc $@ $^
+$(SMBLIB): $(OBJODIR) $(OBJS)
+	@echo Creating $@ ...
+	$(QUIET)ar rc $@ $(OBJS)
+	$(QUIET)ranlib $@
+
+# SMBLIB Library Link Rule
+$(SMBLIB-MT): $(MTOBJODIR) $(MTOBJS)
+	@echo Creating $@ ...
+	$(QUIET)ar rc $@ $(MTOBJS)
 	$(QUIET)ranlib $@
 
