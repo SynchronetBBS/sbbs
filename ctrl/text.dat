@@ -88,8 +88,8 @@
 	"[h%unc] %s (h?nc=Menu) (h%lunc of h%lunc): n"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
 "\r\nDelete message #%lu '%s'"                          073 DeletePostQ
-"\1n\1hI\1n\1g) AutoLogon via IP address      : "\      074 UserDefaultsAutoLogon
-	"\1h%s\r\n"
+"nb[hwInb] hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
+	"nb: c%s\r\n"	 
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
 "_\r\nyhString to search for: "                      076 SearchStringPrompt
 "\1w\1h컴컴�[\1i\1r%c\1n\1h]컴컴� "\                    077 PrivateChatSeparator
@@ -570,7 +570,7 @@
 "_yhAdjust Minutes (- to subtract, H = Hours): n"   472 ModifyMinutes
 "\r\nDelete Questionaire"                               473 DeleteQuestionaireQ
 "hbDefault settings for w%s #%d\r\n\r\n"             474 UserDefaultsHdr
-"nb[hwTnb] hTerminal Mode                 nb: c%s\r\n"475 UserDefaultsTerminal
+"nb[hwTnb] hTerminal Mode                 nb: c%s\r\n"	 475 UserDefaultsTerminal
 "nb[hwEnb] hExternal Editor               nb: c%s\r\n"   476 UserDefaultsXeditor
 "nb[hwLnb] hScreen Length                 nb: c%s\r\n"   477 UserDefaultsRows
 "nb[hwXnb] hExpert Menu Mode              nb: c%s\r\n"   478 UserDefaultsMenuMode
