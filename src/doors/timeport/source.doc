@@ -1,0 +1,46 @@
+Here it is, the Time Port source code -- everything you should need to compile
+Time Port. You'll want to get the TPORT11A.ZIP file as well, which contains
+the original files (Ansi's, docs, and so forth). Then, you should be able
+to use this source code to re-compile new EXE's (I'd keep them in a separate
+directory from the original TPORT11A stuff) to replace the originals.
+
+NOTE: You also need QuickBASIC 4.5 and Jeff Sumberg's QBSerial library
+(although I included the necessary QBSER .OBJ file for compiling).
+
+I've released this source code in the hopes that other BBS door authors
+(or would-be authors) can find good use for it. I've received lots of
+email over the years asking for help -- I simply don't have time to be
+everybody's personal tutor, although I wish I did. Instead of providing
+small snippets of code (which I may also do in the future), I'm releasing
+source to a large, complete, working, RPG/Adventure door game! Time Port
+was based on the Lunatix source code -- so much of it is IDENTICAL to
+Lunatix 4.xx, including the player load/save, COLOR CODE routines, and
+so forth. And in case you're wondering, NO, I will *not* be releasing the
+source code to Lunatix... at least not for many many... MANY years. :)
+
+Even if you don't want to modify & re-compile Time Port, there should be
+a wealth of good routines here for creating your own BBS door game. If you
+use it (and ESPECIALLY if you use a lot of it) please give credit to me for
+the original program from which your work is based. I'd also appreciate
+a mention on any web pages that you display files for download that were
+based upon this source code. :)
+
+You'll notice that many of the source files duplicate the work of the others.
+This is because they're all "stand-alone" modules... or IGM's. Even though
+they're a necessary part of they game, the entire Time Port structure is
+strung together as a series of IGM's... Outside, Twenties, Stoneage, etc...
+each one is an IGM... you may even be able to use them as examples to create
+NEW time port IGM's!!!
+
+The "CREATE.BAT" file is used to compile all the Time Port QB files. You
+might need to alter it to show the path to your QuickBASIC compile/link
+files (LINK.EXE, BC.EXE, BCOM45.LIB). For my setup, BC.EXE and LINK.EXE
+are in the path, and BCOM45.LIB is in my C:\QB\ directory, so CREATE.BAT
+is set up this way.
+
+The "BAS.BAT" can be used to compile a single program. Pass it the BASIC
+program name to compile, such as "BAS TWENTIES" or "BAS STONEAGE" to
+compile/link a single Time Port file.
+
+2-27-98
+Mike Snyder
