@@ -172,7 +172,7 @@ int win32_keyboardio(int isgetch)
 
 				if(input.Event.KeyEvent.wVirtualScanCode==0x38 /* ALT */
 						|| input.Event.KeyEvent.wVirtualScanCode==0x36 /* SHIFT */
-						|| input.Event.KeyEvent.wVirtualScanCode==0x1D /* CTRL */
+						|| input.Event.KeyEvent.wVirtualScanCode==0x1D /* CTRL */ )
 					break;
 
 				if(input.Event.KeyEvent.dwControlKeyState & (LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED)) {
