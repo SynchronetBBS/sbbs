@@ -371,7 +371,7 @@ cmdkey ?
 
 cmdkey S
 	print "_\r\nbhE-mail (User name or number): w"
-	getname 25
+	getname 40
 	compare_str ""
 	if_true
 		end_cmd
