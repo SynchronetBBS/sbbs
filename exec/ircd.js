@@ -738,7 +738,7 @@ while (!server.terminated) {
 	// Check for pending DNS hostname resolutions.
 	for(this_unreg in Unregistered) {
 		if (Unregistered[this_unreg] &&
-		    Unregistered[this_unreg].pending_resolve)
+		    Unregistered[this_unreg].pending_resolve_time)
 			Unregistered[this_unreg].resolve_check();
 	}
 
