@@ -816,10 +816,10 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
    tv.tv_usec=(Milliseconds%1000)*1000;
    if(Milliseconds==0)  {
       tv.tv_usec=1000;
-      FD_SET(1,&in);
+      FD_SET(0,&in);
    }
 
-   if(select(2,Milliseconds?NULL:&in,NULL,NULL,&tv)>0)
+   if(select(1,Milliseconds?NULL:&in,NULL,NULL,&tv)>0)
       od_kernel();
 #endif
 

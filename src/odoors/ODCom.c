@@ -2786,7 +2786,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 			tv.tv_sec=0;
 			tv.tv_usec=0;
 
-			select_ret = select(2, &socket_set, NULL, NULL, bWait ? NULL : &tv);
+			select_ret = select(1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
 			if (select_ret == -1)
 				return (kODRCGeneralFailure);
 			if (select_ret == 0)
