@@ -1954,12 +1954,8 @@ ulong loadmsgs(post_t HUGE16 **post, ulong ptr)
 		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED))
 			break;
 
-		(*post)[l].offset=idx.offset;
-		(*post)[l].number=idx.number;
-		(*post)[l].to=idx.to;
-		(*post)[l].from=idx.from;
-		(*post)[l].subj=idx.subj;
-		l++; }
+		(*post)[l++]=idx;
+	}
 	smb_unlocksmbhdr(&smb[cur_smb]);
 	if(!l)
 		LFREE(*post);
