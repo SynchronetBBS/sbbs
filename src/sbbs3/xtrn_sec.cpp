@@ -351,10 +351,12 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,cfg.temp_dir
 			,cfg.sys_id
 			,cfg.node_misc
-	#if defined(__FLAT__) && defined(__OS2__)
+	#if defined(__OS2__)
 			,rio_handle
 	#elif defined(_WIN32)
 			,client_socket_dup
+	#elif defined(__unix__)
+			,client_socket
 	#else
 			,-1
 	#endif
