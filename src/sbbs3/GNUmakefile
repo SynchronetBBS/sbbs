@@ -104,12 +104,16 @@ ifeq ($(os),sunos)    # Solaris
 endif
 
 ifeq ($(os),netbsd)
- CFLAGS += -D_REENTRANT -DUSE_XP_SEMAPHORES -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
+ CFLAGS += -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
  LFLAGS := -lm -lpthread -L/usr/pkg/lib
 endif
 
+# So far, only QNX has sem_timedwait()
 ifeq ($(os),qnx)
  LFLAGS := -lm -lsocket
+else
+ CFLAGS	+=	-DUSE_XP_SEMAPHORES
+ USE_XP_SEMAPHORES	:=	1
 endif
 
 ifdef DEBUG
@@ -150,13 +154,8 @@ include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
 include sbbsdefs.mk		# defines $(SBBSDEFS)
 
-ifeq ($(os),gnu)
- CFLAGS += -DUSE_XP_SEMAPHORES -DNEEDS_FORKPTY -D_POSIX_THREADS
- OBJS	+= $(LIBODIR)$(SLASH)sem.$(OFILE)
-endif
-
-ifeq ($(os),netbsd)
- OBJS	+= $(LIBODIR)$(SLASH)xpsem.$(OFILE)
+ifeq ($(USE_XP_SEMAPHORES),1)
+ OBJS	+=	$(LIBODIR)$(SLASH)xpsem.$(OFILE)
 endif
 
 SBBSLIB	=	$(LIBODIR)/sbbs.a
