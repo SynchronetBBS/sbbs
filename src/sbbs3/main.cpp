@@ -884,7 +884,7 @@ bool sbbs_t::js_init()
 		JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
 
 		/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
-		if((js_glob=js_CreateGlobalObjects(js_cx, &scfg, js_global_functions
+		if((js_glob=js_CreateGlobalObjects(js_cx, &scfg, &cfg, js_global_functions
 					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
 					,&js_branch									/* js */
 					,&client, client_socket						/* client */

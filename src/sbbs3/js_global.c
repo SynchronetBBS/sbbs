@@ -192,7 +192,8 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			return(JS_FALSE);
 
 		if((bg->obj=js_CreateGlobalObjects(bg->cx
-				,cfg
+				,cfg			/* common config */
+				,NULL			/* node-specific config */
 				,NULL			/* additional global methods */
 				,0				/* uptime */
 				,""				/* hostname */
@@ -2754,6 +2755,7 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethod
 
 JSObject* DLLCALL js_CreateGlobalObjects(JSContext* js_cx
 										,scfg_t* cfg				/* common */
+										,scfg_t* node_cfg			/* node-specific */
 										,jsSyncMethodSpec* methods	/* global */
 										,time_t uptime				/* system */
 										,char* host_name			/* system */
@@ -2765,12 +2767,15 @@ JSObject* DLLCALL js_CreateGlobalObjects(JSContext* js_cx
 {
 	JSObject*	js_glob;
 
+	if(node_cfg==NULL)
+		node_cfg=cfg;
+
 	/* Global Object */
 	if((js_glob=js_CreateGlobalObject(js_cx, cfg, methods))==NULL)
 		return(NULL);
 
 	/* System Object */
-	if(js_CreateSystemObject(js_cx, js_glob, cfg, uptime, host_name, socklib_desc)==NULL)
+	if(js_CreateSystemObject(js_cx, js_glob, node_cfg, uptime, host_name, socklib_desc)==NULL)
 		return(NULL);
 
 	/* Internal JS Object */

@@ -949,6 +949,7 @@ extern "C" {
 	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods);
 	DLLEXPORT JSObject*	DLLCALL js_CreateGlobalObjects(JSContext* cx
 													,scfg_t* cfg				/* common */
+													,scfg_t* node_cfg			/* node-specific */
 													,jsSyncMethodSpec* methods	/* global */
 													,time_t uptime				/* system */
 													,char* host_name			/* system */
