@@ -2761,6 +2761,7 @@ static void sendmail_thread(void* arg)
 	ulong		dns;
 	ulong		lines;
 	BOOL		success;
+	BOOL		first_cycle=TRUE;
 	SOCKET		sock=INVALID_SOCKET;
 	SOCKADDR_IN	addr;
 	SOCKADDR_IN	server_addr;
@@ -2801,7 +2802,10 @@ static void sendmail_thread(void* arg)
 
 		smb_freemsgmem(&msg);
 
-		if(last_scan)
+		/* Don't delay on first loop */
+		if(first_cycle)
+			first_cycle=FALSE;
+		else
 			mswait(3000);
 
 		sprintf(smb.file,"%smail",scfg.data_dir);
