@@ -129,10 +129,6 @@ SOURCE=.\con_out.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\conobj.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\crc32.c
 # End Source File
 # Begin Source File
@@ -193,10 +189,6 @@ SOURCE=.\filedat.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\fileobj.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\getkey.cpp
 # End Source File
 # Begin Source File
@@ -213,11 +205,27 @@ SOURCE=.\getstr.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\globobj.c
+SOURCE=.\inkey.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\inkey.cpp
+SOURCE=.\js_console.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\js_file_area.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\js_global.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\js_system.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\js_user.c
 # End Source File
 # Begin Source File
 
@@ -357,10 +365,6 @@ SOURCE=.\str.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\sysobj.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\telgate.cpp
 # End Source File
 # Begin Source File
@@ -394,10 +398,6 @@ SOURCE=.\userdat.c
 # Begin Source File
 
 SOURCE=.\useredit.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\userobj.c
 # End Source File
 # Begin Source File
 
