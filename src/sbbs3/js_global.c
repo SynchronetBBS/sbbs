@@ -1270,6 +1270,29 @@ js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
+
+static JSBool
+js_resolve_ip(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	struct in_addr addr;
+	JSString*	str;
+
+	*rval = JSVAL_NULL;
+
+	if(argv[0]==JSVAL_VOID)
+		return(JS_TRUE);
+
+	if((addr.s_addr=resolve_ip(JS_GetStringBytes(JS_ValueToString(cx, argv[0]))))
+		==INADDR_NONE)
+		return(JS_TRUE);
+	
+	if((str=JS_NewStringCopyZ(cx, inet_ntoa(addr)))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(str);
+	return(JS_TRUE);
+}
+
 	
 static JSClass js_global_class = {
      "Global"				/* name			*/
@@ -1404,6 +1427,9 @@ static jsMethodSpec js_global_functions[] = {
 	},		
 	{"chksum_calc",		js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 32-bit checksum of text string")
+	},
+	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("string hostname")
+	,JSDOCSTR("resolve IP address of specified hostname")
 	},
 	{0}
 };
