@@ -53,16 +53,19 @@ void sbbs_t::redrwstr(char *strin, int i, int l, long mode)
 	else
 		rputs(str);
 	if(useron.misc&ANSI) {
-		bputs("\x1b[K");
+		cleartoeol();
 		if(i<l)
-			bprintf("\x1b[%dD",l-i); }
-	else {
-		while(c<79) { /* clear to end of line */
+			cursor_left(l-i); 
+	} else {
+		while(c<cols-1) { /* clear to end of line */
 			outchar(SP);
-			c++; }
+			c++; 
+		}
 		while(c>l) { /* back space to end of string */
 			outchar(BS);
-			c--; } }
+			c--; 
+		} 
+	}
 }
 
 
