@@ -86,6 +86,8 @@
 #  SMBLIB_SRC		- Path to smblib										#
 #  MT_CFLAGS		- CFLAGS for building MT objects						#
 #  MT_LDFLAGS		- LDFLAGS for linking MT targets						#
+#  UL_PRE           - Use Library prefix (*nix is -l)                       #
+#  UL_SUF           - Use Library siffix (bcc is .lib)                      #
 #																			#
 # Common Targets Defined:													#
 #  Implicit C and C++ targets												#
@@ -129,6 +131,8 @@ SOFILE	=	.dll
 LIBFILE	=	.lib
 DELETE	=	echo y | del 
 IFNOTEXIST = if not exist $@
+UL_PRE	=	
+UL_SUF	=	$(LIBFILE)
 
 # Compiler-specific
 !ifdef msc	# Microsoft Visual C++

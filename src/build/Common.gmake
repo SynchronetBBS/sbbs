@@ -87,6 +87,8 @@
 #  SMBLIB_SRC		- Path to smblib										#
 #  MT_CFLAGS		- CFLAGS for building MT objects						#
 #  MT_LDFLAGS		- LDFLAGS for linking MT targets						#
+#  UL_PRE			- Use Library prefix (*nix is -l)						#
+#  UL_SUF			- Use Library siffix (bcc is .lib)						#
 #																			#
 # Common Targets Defined:													#
 #  Implicit C and C++ targets												#
@@ -192,6 +194,8 @@ OFILE		:= .o
 EXEFILE		:=
 SOFILE		:= .so
 LIBFILE		:= .a
+UL_PRE		:=	-l
+UL_SUF		:=	
 
 OUTPUT		:=	-o
 LOUTPUT		:=	-o
