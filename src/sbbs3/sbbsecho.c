@@ -1739,18 +1739,22 @@ void pack_bundle(char *infile,faddr_t dest)
 		if(i==':')
 			i='A';
 		sprintf(str,"%s%c",fname,i);
-		if(flength(str)==0)
+		if(flength(str)==0) {
+			/* Feb-10-2003: Don't overwrite or delete 0-byte file less than 24hrs old */
+			if((time(NULL)-fdate(str))<24L*60L*60L)
+				continue;	
 			if(delfile(str))
 				logprintf("ERROR line %d removing %s %s",__LINE__,str
 					,strerror(errno));
+		}
 		if(fexist(str)) {
-			p=getfname(str);
 			if(flength(str)>=cfg.maxbdlsize)
 				continue;
 			file=sopen(str,O_WRONLY,SH_DENYRW);
 			if(file==-1)		/* Can't open?!? Probably being sent */
 				continue;
 			close(file);
+			p=getfname(str);
 			if(!attachment(p,dest,ATTACHMENT_CHECK))
 				attachment(p,dest,ATTACHMENT_ADD);
 			pack(infile,str,dest);
