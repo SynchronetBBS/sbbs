@@ -128,8 +128,6 @@ void newline(void)
 	fprintf(statfp,"\n");
 }
 
-#include "truncsp.c"
-
 /**************/
 /* Exit Point */
 /**************/

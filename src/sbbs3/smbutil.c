@@ -165,8 +165,6 @@ ulong lf_expand(BYTE* inbuf, BYTE* outbuf)
 	return(j);
 }
 
-#include "truncsp.c"
-
 /****************************************************************************/
 /* Adds a new message to the message base									*/
 /****************************************************************************/

@@ -233,20 +233,6 @@ char* DLLCALL ultoac(ulong l, char *string)
 }
 
 /****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
-/****************************************************************************/
-char* DLLCALL truncsp(char *str)
-{
-	size_t c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	if(str[c]!=0)
-		str[c]=0;
-	return(str);
-}
-
-/****************************************************************************/
 /* Truncate string at first occurance of char in specified character set	*/
 /****************************************************************************/
 char* DLLCALL truncstr(char* str, const char* set)

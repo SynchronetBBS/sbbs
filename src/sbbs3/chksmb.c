@@ -86,19 +86,6 @@ char *faddrtoa(fidoaddr_t addr)
 	return(str);
 }
 
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
-/****************************************************************************/
-void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	if(str[c]!=0)
-		str[c]=0;
-}
-
 char* DLLCALL strip_ctrl(char *str)
 {
 	char tmp[1024];
