@@ -82,7 +82,7 @@ unsigned long crc32(char *buf, unsigned long len)
 {
 	unsigned long l,crc=0xffffffff;
 
-	if(len==0) 
+	if(len==0 && buf!=NULL) 
 		len=strlen(buf);
 	for(l=0;l<len;l++)
 		crc=ucrc32(buf[l],crc);

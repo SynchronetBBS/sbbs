@@ -78,7 +78,7 @@ unsigned short crc16(char* data, unsigned long len)
 	unsigned short crc = 0;
 	unsigned long l;
 
-	if(len==0)
+	if(len==0 && buf!=NULL)
 		len=strlen(data);
 	for(l=0;l<len;l++)
 		crc = ucrc16(data[l],crc);
