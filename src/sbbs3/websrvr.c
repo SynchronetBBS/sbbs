@@ -35,6 +35,10 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#if defined(__unix__)
+	#include <sys/wait.h>		/* waitpid() */
+#endif
+
 #include "sbbs.h"
 #include "sockwrap.h"		/* sendfilesocket() */
 #include "threadwrap.h"		/* _beginthread() */
@@ -48,6 +52,8 @@ extern const uchar* nular;
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define MAX_MIME_TYPES			128
 #define MAX_REQUEST_LINE		1024
+#define CGI_ENVIRON_BLOCK_SIZE	10
+#define CGI_HEADS_BLOCK_SIZE	5
 
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
@@ -72,14 +78,25 @@ typedef struct  {
 	BOOL	keep_alive;
 	char	ars[256];
 	char    auth[128];				/* UserID:Password */
-	BOOL	send_location;
+	char	host[128];				/* The requested host. (virtual hosts) */
+	int		send_location;
+	char**	cgi_env;
+	DWORD	cgi_env_size;
+	DWORD	cgi_env_max_size;
+	char**	cgi_heads;
+	DWORD	cgi_heads_size;
+	DWORD	cgi_heads_max_size;
+	char	cgi_infile[128];
+	char	cgi_location[MAX_REQUEST_LINE];
+	char	cgi_status[MAX_REQUEST_LINE];
 } http_request_t;
 
 typedef struct  {
 	SOCKET			socket;
 	SOCKADDR_IN		addr;
 	http_request_t	req;
-	char			host[128];		/* What's this for? */
+	char			host_ip[64];
+	char			host_name[128];	/* Resolved remote host */
 	int				http_ver;       /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
 } http_session_t;
@@ -108,6 +125,7 @@ enum {
 static char* methods[] = {
 	 "HEAD"
 	,"GET"
+	,"POST"
 	,NULL	/* terminator */
 };
 
@@ -130,6 +148,7 @@ enum {
 	,HEAD_WWWAUTH
 	,HEAD_CONNECTION
 	,HEAD_HOST
+	,HEAD_STATUS
 };
 
 static struct {
@@ -154,7 +173,14 @@ static struct {
 	{ HEAD_WWWAUTH,		"WWW-Authenticate"		},
 	{ HEAD_CONNECTION,	"Connection"			},
 	{ HEAD_HOST,		"Host"					},
+	{ HEAD_STATUS,		"Status"				},
 	{ -1,				NULL /* terminator */	},
+};
+
+enum  {
+	NO_LOCATION
+	,MOVED_TEMP
+	,MOVED_PERM
 };
 
 static char	*days[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
@@ -164,6 +190,8 @@ static const char * base64alphabet =
  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
 static DWORD monthdays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+static void respond(http_session_t * session);
 
 static time_t time_gm( struct tm* ti )  {
 	time_t t;
@@ -180,7 +208,6 @@ static time_t time_gm( struct tm* ti )  {
 
 	return t;
 }
-
 
 static int lprintf(char *fmt, ...)
 {
@@ -259,6 +286,135 @@ static void thread_down(void)
 		thread_count--;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(FALSE, FALSE);
+}
+
+static void grow_enviro(http_session_t *session)  {
+	char **new_cgi_env;
+
+	new_cgi_env=session->req.cgi_env;
+	new_cgi_env=realloc(session->req.cgi_env,
+		sizeof(void*)*(CGI_ENVIRON_BLOCK_SIZE+session->req.cgi_env_max_size));
+	if(new_cgi_env != NULL)  {
+		session->req.cgi_env=new_cgi_env;
+		memset(session->req.cgi_env+sizeof(void*)*session->req.cgi_env_max_size,0,
+			sizeof(void*)*(CGI_ENVIRON_BLOCK_SIZE));
+		session->req.cgi_env_max_size+=CGI_ENVIRON_BLOCK_SIZE;
+	} else  {
+		lprintf("%04d Cannot enlarge environment",session->socket);
+	}
+	return;
+}
+
+static void add_env(http_session_t *session, const char *name,const char *value)  {
+	char	newname[128];
+	char	*p;
+	
+	if(name==NULL || value==NULL)  {
+		lprintf("%04d Attempt to set NULL env variable", session->socket);
+		return;
+	}
+	SAFECOPY(newname,name);
+
+	for(p=newname;*p;p++)  {
+		*p=toupper(*p);
+		if(*p=='-')
+			*p='_';
+	}
+	if(session->req.cgi_env_size==session->req.cgi_env_max_size-1)
+		grow_enviro(session);
+		
+	if(session->req.cgi_env_size<session->req.cgi_env_max_size)  {
+		session->req.cgi_env[session->req.cgi_env_size]=
+			malloc(sizeof(char)*(strlen(newname)+strlen(value)+2));
+		if(session->req.cgi_env[session->req.cgi_env_size] != NULL)  {
+			sprintf(session->req.cgi_env[session->req.cgi_env_size++],"%s=%s",
+				newname,value);
+			session->req.cgi_env[session->req.cgi_env_size]=NULL;
+			lprintf("%04d Set env: %s to %s",session->socket,newname,value);
+		}
+	}
+}
+
+static void init_enviro(http_session_t *session)  {
+	char	str[128];
+
+	session->req.cgi_env=malloc(sizeof(void*)*CGI_ENVIRON_BLOCK_SIZE);
+	if(session->req.cgi_env != NULL)  {
+		memset(session->req.cgi_env,0,sizeof(void*)*CGI_ENVIRON_BLOCK_SIZE);
+		session->req.cgi_env_max_size=CGI_ENVIRON_BLOCK_SIZE;
+	} else  {
+		lprintf("%04d Cannot create environment",session->socket);
+		session->req.cgi_env_max_size=0;
+	}
+	/* Need a better way of doing this! */
+	add_env(session,"SERVER_SOFTWARE",VERSION_NOTICE);
+	sprintf(str,"%d",startup->port);
+	add_env(session,"SERVER_PORT",str);
+	add_env(session,"GATEWAY_INTERFACE","CGI/1.1");
+	if(!strcmp(session->host_name,"<no name>"))
+		add_env(session,"REMOTE_HOST",session->host_name);
+	add_env(session,"REMOTE_ADDR",session->host_ip);
+	return;
+}
+
+static void grow_heads(http_session_t *session)  {
+	char **new_cgi_heads;
+
+	new_cgi_heads=session->req.cgi_heads;
+	new_cgi_heads=realloc(session->req.cgi_heads,
+		sizeof(void*)*(CGI_HEADS_BLOCK_SIZE+session->req.cgi_heads_max_size));
+	if(new_cgi_heads != NULL)  {
+		session->req.cgi_heads=new_cgi_heads;
+		memset(session->req.cgi_heads+sizeof(void*)*session->req.cgi_heads_max_size,0,
+			sizeof(void*)*(CGI_HEADS_BLOCK_SIZE));
+		session->req.cgi_heads_max_size+=CGI_HEADS_BLOCK_SIZE;
+	} else  {
+		lprintf("%04d Cannot enlarge headroom",session->socket);
+	}
+	return;
+}
+
+static void add_head(http_session_t *session, const char *value)  {
+	if(value==NULL)  {
+		lprintf("%04d Attempt to set NULL header", session->socket);
+		return;
+	}
+
+	if(session->req.cgi_heads_size==session->req.cgi_heads_max_size-1)
+		grow_heads(session);
+		
+	if(session->req.cgi_heads_size<session->req.cgi_heads_max_size)  {
+		session->req.cgi_heads[session->req.cgi_heads_size]=
+			malloc(sizeof(char)*(strlen(value)));
+		if(session->req.cgi_heads[session->req.cgi_heads_size] != NULL)  {
+			sprintf(session->req.cgi_heads[session->req.cgi_heads_size++],"%s",value);
+			session->req.cgi_heads[session->req.cgi_heads_size]=NULL;
+			lprintf("%04d Added header: %s",session->socket,value);
+		}
+	}
+}
+
+static void init_heads(http_session_t *session)  {
+	session->req.cgi_heads=malloc(sizeof(void*)*CGI_HEADS_BLOCK_SIZE);
+	if(session->req.cgi_heads != NULL)  {
+		memset(session->req.cgi_heads,0,sizeof(void*)*CGI_HEADS_BLOCK_SIZE);
+		session->req.cgi_heads_max_size=CGI_HEADS_BLOCK_SIZE;
+	} else  {
+		lprintf("%04d Cannot create headers",session->socket);
+		session->req.cgi_heads_max_size=0;
+	}
+	return;
+}
+
+static BOOL is_cgi(http_session_t *session)  {
+
+#ifdef __unix__
+	/* NOTE: (From the FreeBSD man page) 
+	   "Access() is a potential security hole and should never be used." */
+	if(!access(session->req.request,X_OK))
+		return(TRUE);
+#endif
+	return(FALSE);	
 }
 
 static int sockprintf(SOCKET sock, char *fmt, ...)
@@ -467,6 +623,29 @@ static int close_socket(SOCKET sock)
 
 static void close_request(http_session_t * session)
 {
+	int		i;
+	
+	
+	if(session->req.cgi_heads_size)  {
+		for(i=0;session->req.cgi_heads_size>i;i++)  {
+			lprintf("%04d Freeing header: %s",session->socket,session->req.cgi_heads[i]);
+			free(session->req.cgi_heads[i]);
+		}
+		lprintf("%04d Freeing header array",session->socket);
+		free(session->req.cgi_heads);
+		session->req.cgi_heads_size=0;
+	}
+	
+	if(session->req.cgi_env_size)  {
+		for(i=0;i<session->req.cgi_env_size;i++)  {
+			free(session->req.cgi_env[i]);
+			lprintf("%04d Freeing the environment %s",session->socket,session->req.cgi_env[i]);
+		}
+		lprintf("%04d Freeing the environment array",session->socket);
+		free(session->req.cgi_env);
+		session->req.cgi_env_size=0;
+	}
+
 	if(!session->req.keep_alive) {
 		close_socket(session->socket);
 		session->socket=INVALID_SOCKET;
@@ -532,11 +711,17 @@ BOOL send_headers(http_session_t *session, const char *status)
 		send_file=FALSE;
 		lprintf("%04d Not modified",session->socket);
 	}
-	if(session->req.send_location)  {
+	if(session->req.send_location==MOVED_PERM)  {
 		SAFECOPY(status_line,"301 Moved Permanently");
 		ret=-1;
 		send_file=FALSE;
 		lprintf("%04d Moved Permanently",session->socket);
+	}
+	if(session->req.send_location==MOVED_TEMP)  {
+		SAFECOPY(status_line,"302 Moved Temporarily");
+		ret=-1;
+		send_file=FALSE;
+		lprintf("%04d Moved Temporarily",session->socket);
 	}
 	/* Status-Line */
 	sockprintf(session->socket,"%s %s",http_vers[session->http_ver],status_line);
@@ -556,10 +741,13 @@ BOOL send_headers(http_session_t *session, const char *status)
 	/* Should be dynamic to allow POST for CGIs */
 	sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
 	if(session->req.send_location) {
-		location_offset=strlen(root_dir);
-		if(session->host[0])
-			location_offset+=strlen(session->host)+1;
-		sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),session->req.request+location_offset);
+		if(*session->req.request=='/')  {
+			location_offset=strlen(root_dir);
+			if(session->req.host[0])
+				location_offset+=strlen(session->req.host)+1;
+			sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),session->req.request+location_offset);
+		} else
+			sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),session->req.request);
 	}
 	if(!ret) {
 		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
@@ -599,7 +787,7 @@ static void send_error(http_session_t * session, char *message)
 	char	error_code[4];
 
 	lprintf("%04d !ERROR %s",session->socket,message);
-	session->req.send_location=FALSE;
+	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
 	sprintf(session->req.request,"%s%s.html",error_dir,error_code);
 	if(session->http_ver > HTTP_0_9)
@@ -654,8 +842,12 @@ static BOOL check_ars(http_session_t * session)
 	if(ar!=NULL && ar!=nular)
 		free(ar);
 
-	if(authorized)
+	if(authorized)  {
+		add_env(session,"AUTH_TYPE","Basic");
+		/* Should use name if set to do so somewhere ToDo */
+		add_env(session,"REMOTE_USER",user.alias);
 		return(TRUE);
+	}
 
 	/* Should go to the hack log? */
 	lprintf("%04d !AUTHORIZATION FAILURE for user %s, ARS: %s"
@@ -738,14 +930,16 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	start=time(NULL);
 	for(i=0;TRUE;) {
 		if(!socket_check(session->socket,&rd)) {
-			close_socket(session->socket);
+			session->req.keep_alive=FALSE;
+			close_request(session);
 			session->socket=INVALID_SOCKET;
 			return(-1);
 		}
 
 		if(!rd) {
 			if(time(NULL)-start>startup->max_inactivity) {
-				close_socket(session->socket);
+				session->req.keep_alive=FALSE;
+				close_request(session);
 				session->socket=INVALID_SOCKET;
 				return(-1);        /* time-out */
 			}
@@ -784,6 +978,10 @@ static BOOL parse_headers(http_session_t * session)
 	char	*value;
 	char	*p;
 	int		i;
+	int		content_len=0;
+	char	cgi_infilename[128];
+	char	env_name[128];
+	FILE*	fp;
 
 	lprintf("%04d Parsing headers",session->socket);
 	while(!sockreadline(session,req_line,sizeof(req_line))&&strlen(req_line)) {
@@ -811,10 +1009,11 @@ static BOOL parse_headers(http_session_t * session)
 					/* Not implemented  - POST */
 					break;
 				case HEAD_LENGTH:
-					/* Not implemented  - POST */
+					add_env(session,"CONTENT_LENGTH",value);
+					content_len=atoi(value);
 					break;
 				case HEAD_TYPE:
-					/* Not implemented  - POST */
+					add_env(session,"CONTENT_TYPE",value);
 					break;
 				case HEAD_DATE:
 					/* Not implemented  - Who really cares what time the client thinks it is? */
@@ -837,8 +1036,8 @@ static BOOL parse_headers(http_session_t * session)
 					}
 					break;
 				case HEAD_HOST:
-					if(session->host[0]==0) {
-						SAFECOPY(session->host,value);
+					if(session->req.host[0]==0) {
+						SAFECOPY(session->req.host,value);
 						lprintf("%04d Grabbing from virtual host: %s"
 							,session->socket,value);
 					}
@@ -846,8 +1045,29 @@ static BOOL parse_headers(http_session_t * session)
 					/* Should store for HTTP_* env variables in CGI */
 					break;
 			}
+			sprintf(env_name,"HTTP_%s",req_line);
+			add_env(session,env_name,value);
 		}
 	}
+	sprintf(cgi_infilename,"%s/SBBSCGI.%d",startup->cgi_temp_dir,session->socket);
+	lprintf("%04d Creating input file %s",session->socket,cgi_infilename);
+	if((fp=fopen(cgi_infilename,"w"))!=NULL)  {
+		lprintf("%04d Created input file %s",session->socket,cgi_infilename);
+		if(content_len)  {
+			p=malloc(content_len);
+			if(p!=NULL)  {
+				read(session->socket,p,content_len);
+				fwrite(p,content_len,1,fp);
+				lprintf("%04d Freeing input buffer");
+				free(p);
+			}
+		}
+		fclose(fp);
+		SAFECOPY(session->req.cgi_infile,cgi_infilename);
+	} else  {
+		lprintf("%04d FAILED! Creating input file",session->socket);
+	}
+	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
 	lprintf("%04d Done parsing headers",session->socket);
 	return TRUE;
 }
@@ -899,15 +1119,18 @@ static char *get_request(http_session_t * session, char *req_line)
 	SAFECOPY(session->req.request,req_line);
 	strtok(session->req.request," \t");
 	retval=strtok(NULL," \t");
+	strtok(session->req.request,"?");
+	p=strtok(NULL,"");
+	add_env(session,"QUERY_STRING",p);
 	unescape(session->req.request);
 	if(!strnicmp(session->req.request,"http://",7)) {
 		/* Set HOST value... ignore HOST header */
-		SAFECOPY(session->host,session->req.request+7);
+		SAFECOPY(session->req.host,session->req.request+7);
 		strtok(session->req.request,"/");
 		p=strtok(NULL,"/");
 		if(p==NULL) {
 			/* Do not allow host values larger than 128 bytes just to be anal */
-			session->host[0]=0;
+			session->req.host[0]=0;
 			p=session->req.request+7;
 		}
 		offset=p-session->req.request;
@@ -928,6 +1151,7 @@ static char *get_method(http_session_t * session, char *req_line)
 				send_error(session,"400 Bad Request");
 				return(NULL);
 			}
+			add_env(session,"REQUEST_METHOD",methods[i]);
 			return(req_line+strlen(methods[i])+1);
 		}
 	}
@@ -950,6 +1174,8 @@ static BOOL get_req(http_session_t * session)
 			lprintf("%04d Request: %s"
 				,session->socket,session->req.request);
 			session->http_ver=get_version(p);
+			add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
+				http_vers[session->http_ver] : "HTTP/0.9");
 			lprintf("%04d Version: %s"
 				,session->socket,http_vers[session->http_ver]);
 			return(TRUE);
@@ -965,16 +1191,17 @@ static BOOL check_request(http_session_t * session)
 	char	str[MAX_PATH+1];
 	char	last_ch;
 	char*	last_slash;
+	int		location_offset;
 	FILE*	file;
 	
 	lprintf("%04d Validating request: %s"
 		,session->socket,session->req.request);
 	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
-		session->host[0]=0;
-	if(session->host[0]) {
-		sprintf(path,"%s%s",root_dir,session->host);
+		session->req.host[0]=0;
+	if(session->req.host[0]) {
+		sprintf(path,"%s%s",root_dir,session->req.host);
 		if(isdir(path))
-			sprintf(path,"%s%s%s",root_dir,session->host,session->req.request);
+			sprintf(path,"%s%s%s",root_dir,session->req.host,session->req.request);
 	} else
 		sprintf(path,"%s%s",root_dir,session->req.request);
 	
@@ -988,7 +1215,7 @@ static BOOL check_request(http_session_t * session)
 		if(last_ch!='/' && last_ch!='\\')
 			strcat(path,"/");
 		strcat(path,startup->index_file_name);
-		session->req.send_location=TRUE;
+		session->req.send_location=MOVED_PERM;
 	}
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
 		lprintf("%04d path = '%s'",session->socket,path);
@@ -1002,6 +1229,10 @@ static BOOL check_request(http_session_t * session)
 		return(FALSE);
 	}
 	SAFECOPY(session->req.request,path);
+	add_env(session,"PATH_TRANSLATED",path);
+	location_offset=strlen(root_dir);
+	location_offset+=strlen(session->req.host);
+	add_env(session,"SCRIPT_NAME",session->req.request+location_offset);
 
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
@@ -1045,10 +1276,211 @@ static BOOL check_request(http_session_t * session)
 	return(TRUE);
 }
 
+static BOOL parse_cgi_headers(http_session_t *session,FILE *output)  {
+	char	str[MAX_REQUEST_LINE];
+	char	header[MAX_REQUEST_LINE];
+	char	*directive;
+	char	*value;
+	int		i;
+
+	if(fgets(str,MAX_REQUEST_LINE,output)==NULL)
+		str[0]=0;
+	truncsp(str);
+	while(str[0])  {
+		SAFECOPY(header,str);
+		directive=strtok(header,":");
+		if(directive != NULL)  {
+			value=strtok(NULL,"");
+			i=get_header_type(directive);
+			switch (i)  {
+				case HEAD_TYPE:
+					add_head(session,str);
+					break;
+				case HEAD_LOCATION:
+					SAFECOPY(session->req.cgi_location,value);
+					if(*value=='/')  {
+						unescape(value);
+						SAFECOPY(session->req.request,value);
+						if(check_request(session)) {
+							respond(session);
+						}
+					} else  {
+						SAFECOPY(session->req.request,value);
+						session->req.send_location=MOVED_TEMP;
+						send_headers(session,"302 Moved Temporarily");
+					}
+					return(FALSE);
+				case HEAD_STATUS:
+					SAFECOPY(session->req.cgi_status,value);
+					break;
+				default:
+					add_head(session,str);
+			}
+		}
+		if(fgets(str,MAX_REQUEST_LINE,output)==NULL)
+			str[0]=0;
+		truncsp(str);
+	}
+	lprintf("%04d Done with da headers",session->socket);
+	return(TRUE);
+}
+
+static void send_cgi_response(http_session_t *session,FILE *output)  {
+	int			i;
+	long		filepos;
+	char *		content;
+	struct stat	stats;
+	time_t		ti;
+	struct tm	*t;
+
+	init_heads(session);
+	/* Support nph-* scripts ToDo */
+	if(!parse_cgi_headers(session,output))
+		return;
+	
+	lprintf("%04d STILL with da headers",session->socket);
+	filepos=ftell(output);
+	fstat(fileno(output),&stats);
+	lprintf("%04d Sending CGI response",session->socket);
+	if(session->http_ver)  {
+		if(*session->req.cgi_status)
+			sockprintf(session->socket,"%s %s",http_vers[session->http_ver],session->req.cgi_status);
+		else
+			sockprintf(session->socket,"%s %s",http_vers[session->http_ver],"200 Ok");
+
+		/* General Headers */
+		ti=time(NULL);
+		t=gmtime(&ti);
+		sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_DATE),days[t->tm_wday],t->tm_mday,months[t->tm_mon],t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
+		if(session->req.keep_alive)
+			sockprintf(session->socket,"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
+
+		/* Response Headers */
+		sockprintf(session->socket,"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
+	
+		/* Entity Headers */
+		sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST");
+		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size-filepos+1);
+
+		/* CGI-generated headers */
+		for(i=0;session->req.cgi_heads[i]!=NULL;i++)  {
+			sockprintf(session->socket,"%s",session->req.cgi_heads[i]);
+			lprintf("%04d Sending header: %s",session->req.cgi_heads[i]);
+		}
+		
+		sendsocket(session->socket,newline,2);
+	}
+	for(i=0;session->req.cgi_heads_size>i;i++)  {
+		lprintf("%04d Freeing header: %s",session->socket,session->req.cgi_heads[i]);
+		free(session->req.cgi_heads[i]);
+	}
+	lprintf("%04d Freeing header array",session->socket);
+	free(session->req.cgi_heads);
+	session->req.cgi_heads_size=0;
+	
+	content=malloc(stats.st_size-filepos+1);
+	if(content!=NULL)  {
+		fread(content,stats.st_size-filepos+1,1,output);
+		write(session->socket,content,stats.st_size-filepos+1);
+		lprintf("%04d Freeing reply content",session->socket);
+		free(content);
+	}
+}
+
+static BOOL exec_cgi(http_session_t *session)  
+{
+	int		status;
+	char	cmdline[MAX_PATH+256];
+	char	*args[4];
+	int		i;
+	char	*comspec;
+	FILE	*output;
+#ifdef __unix__
+	pid_t	child;
+#endif
+
+	SAFECOPY(cmdline,session->req.request);
+	sprintf(cmdline,"%s < %s > %s.out",session->req.request,session->req.cgi_infile,session->req.cgi_infile);
+	sprintf(session->req.request,"%s.out",session->req.cgi_infile);
+	
+	comspec=getenv(  
+#ifdef __unix__
+		"SHELL"
+#else
+		"COMSPEC"
+#endif
+		);
+	if(comspec==NULL) {
+		lprintf("%04d Could not get comspec",session->socket);
+		return(FALSE);
+	}
+
+	args[0]=comspec;
+	args[1]="-c";
+	args[2]=cmdline;
+	args[3]=NULL;
+
+#ifdef __unix__
+
+	lprintf("Executing %s -c %s",comspec,cmdline);
+	session->req.cgi_env[session->req.cgi_env_size]=NULL;
+	if((child=fork())==0)  {
+		execve(comspec,args,session->req.cgi_env);
+		lprintf("FAILED! execve()");
+		exit(EXIT_FAILURE); /* Should never happen */
+	}
+	/* Free() the environment */
+	for(i=0;i<session->req.cgi_env_size;i++)  {
+		free(session->req.cgi_env[i]);
+		lprintf("%04d Freeing the environment %s",session->socket,session->req.cgi_env[i]);
+	}
+	lprintf("%04d Freeing the environment array",session->socket);
+	free(session->req.cgi_env);
+	session->req.cgi_env_size=0;
+	
+	if(child>0)  {
+		waitpid(child,&status,0);
+		lprintf("%04d Child exited",session->socket);
+		unlink(session->req.cgi_infile);
+		if(WIFEXITED(status))  {
+			/* Parse headers */
+			output=fopen(session->req.request,"r");
+			if(output!=NULL)  {
+				lprintf("%04d Opened response file: %s",session->socket,session->req.request);
+				send_cgi_response(session,output);
+				lprintf("%04d Sent response file.",session->socket);
+				fclose(output);
+				unlink(session->req.request);
+				return(WEXITSTATUS(status)==EXIT_SUCCESS);
+			}
+			else  {
+				lprintf("%04d FAILED! To open response file: %s",session->socket,session->req.request);
+				return(FALSE);
+			}
+		}
+		return(FALSE);
+	}
+	return(FALSE);
+#else
+	sprintf(cmdline,"%s /C %s < %s > %s",comspec,cmdline,session->req.cgi_infile,session->req.request);
+	system(cmdline);
+	return(TRUE);
+#endif
+}
+
 static void respond(http_session_t * session)
 {
 	BOOL	send_file=TRUE;
 
+	if(is_cgi(session))  {
+		if(!exec_cgi(session))  {
+			send_error(session,"500 Internal Server Error");
+			return;
+		}
+		close_request(session);
+		return;
+	}
+	
 	if(session->http_ver > HTTP_0_9)
 		send_file=send_headers(session,"200 OK");
 	if(send_file)
@@ -1058,7 +1490,6 @@ static void respond(http_session_t * session)
 
 void http_session_thread(void* arg)
 {
-	char			host_ip[64];
 	char*			host_name;
 	HOSTENT*		host;
 	SOCKET			socket;
@@ -1083,12 +1514,15 @@ void http_session_thread(void* arg)
 	else
 		host_name="<no name>";
 
-	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))
+	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))  {
 		lprintf("%04d Hostname: %s", session.socket, host_name);
+		SAFECOPY(session.host_name,host_name);
+	}
 
-	if(trashcan(&scfg,host_ip,"ip")) {
+	/* host_ip wasn't defined in http_session_thread */
+	if(trashcan(&scfg,session.host_ip,"ip")) {
 		close_socket(session.socket);
-		lprintf("%04d !CLIENT BLOCKED in ip.can: %s", session.socket, host_ip);
+		lprintf("%04d !CLIENT BLOCKED in ip.can: %s", session.socket, session.host_ip);
 		thread_down();
 		return;
 	}
@@ -1105,6 +1539,7 @@ void http_session_thread(void* arg)
 
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
+		init_enviro(&session);
 		if(get_req(&session)) {
 			lprintf("%04d Got request %s method %d version %d"
 				,session.socket
@@ -1199,7 +1634,6 @@ void DLLCALL web_server(void* arg)
 	time_t			t;
 	time_t			initialized=0;
 	char*			p;
-	char 			host_ip[32];
 	char			compiler[32];
 	http_session_t *	session;
 	struct timeval tv;
@@ -1421,12 +1855,11 @@ void DLLCALL web_server(void* arg)
 				break;
 			}
 
-			strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
 			host_port=ntohs(client_addr.sin_port);
 
 			lprintf("%04d HTTP connection accepted from: %s port %u"
 				,client_socket
-				,host_ip, host_port);
+				,inet_ntoa(client_addr.sin_addr), host_port);
 
 			if(startup->socket_open!=NULL)
 				startup->socket_open(TRUE);
@@ -1440,6 +1873,7 @@ void DLLCALL web_server(void* arg)
 			}
 
 			memset(session, 0, sizeof(http_session_t));
+			SAFECOPY(session->host_ip,inet_ntoa(client_addr.sin_addr));
 			session->addr=client_addr;
    			session->socket=client_socket;
 
