@@ -1,5 +1,5 @@
 CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
-#ifndef NO_X
+ifndef NO_X
  CIOLIB-MT_LIBS		+=  $(UL_PRE)X11$(UL_SUF)
  CIOLIB-MT_LDFLAGS	+=	-L/usr/X11R6/lib
-#endif
+endif
