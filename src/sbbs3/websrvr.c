@@ -784,6 +784,7 @@ static void sock_sendfile(SOCKET socket,char *path)
 static void send_error(http_session_t * session, char *message)
 {
 	char	error_code[4];
+	struct stat	sb;
 
 	lprintf("%04d !ERROR %s",session->socket,message);
 	session->req.keep_alive=FALSE;
@@ -794,7 +795,7 @@ static void send_error(http_session_t * session, char *message)
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_headers(session,message);
 	}
-	if(fexist(session->req.physical_path))
+	if(!stat(session->req.physical_path,&sb))
 		sock_sendfile(session->socket,session->req.physical_path);
 	else {
 		lprintf("%04d Error message file %s doesn't exist."
@@ -1401,6 +1402,7 @@ static BOOL check_request(http_session_t * session)
 	char*	last_slash;
 	FILE*	file;
 	int		i;
+	struct stat sb;
 	
 	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
 		session->req.host[0]=0;
@@ -1415,7 +1417,7 @@ static BOOL check_request(http_session_t * session)
 		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
-	if(!fexist(path)) {
+	if(!isdir(path)) {
 		last_ch=*lastchar(path);
 		if(last_ch!='/' && last_ch!='\\')  {
 			strcat(path,"/");
@@ -1429,7 +1431,7 @@ static BOOL check_request(http_session_t * session)
 		for(i=0; startup->index_file_name!=NULL && startup->index_file_name[i]!=NULL ;i++)  {
 			*last_slash=0;
 			strcat(path,startup->index_file_name[i]);
-			if(fexist(path))
+			if(!stat(path,&sb))
 				break;
 		}
 		strcat(session->req.virtual_path,startup->index_file_name[i]);
@@ -1440,7 +1442,7 @@ static BOOL check_request(http_session_t * session)
 		send_error(session,"400 Bad Request");
 		return(FALSE);
 	}
-	if(!fexist(path)) {
+	if(stat(path,&sb)) {
 		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
@@ -1466,7 +1468,7 @@ static BOOL check_request(http_session_t * session)
 		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
 		strcat(str,"access.ars");
-		if(fexist(str)) {
+		if(!stat(str,&sb)) {
 			if(!strcmp(path,str)) {
 				send_error(session,"403 Forbidden");
 				return(FALSE);
