@@ -69,6 +69,18 @@ if(msgbase.cfg.settings&SUB_KILL)
 if(msgbase.cfg.settings&SUB_KILLP && hdrs.attr&MSG_PRIVATE)
 	hdrs.attr|=MSG_KILLREAD;
 
+/* Sig stuff */
+if(!(msgbase.cfg.settings&SUB_NOUSERSIG) && ) {
+	sigfile=new File(format("%suser/%04u.sig",system.data_dir,user.number));
+	if(sigfile.exists) {
+		sigfile.open("r",true);
+		if(body.search(/\n$/)==-1)
+			body+='\r\n';
+		var sigf=sigfile.readAll();
+		body=body+sigf.join('\r\n');
+	}
+}
+
 if(!msgbase.save_msg(hdrs,body)) {
 	error(msgbase.last_error);
 }
