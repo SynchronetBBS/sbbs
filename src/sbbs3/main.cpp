@@ -948,7 +948,8 @@ void input_thread(void *arg)
     sbbs->input_thread_running = true;
 	sbbs->console|=CON_R_INPUT;
 
-	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET) {
+	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
+		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 
