@@ -204,6 +204,13 @@
 				programs. Use atexit() to add cleanup code.
 	3.01
 			Eliminated warnings in ctrl_a() when compiled with VC++ 6.0.
+			Added Linux/GCC support (xsdkwrap.c, xsdkwrap.h, and xsdkinet.h)
+	3.10	
+			Added COMPILER_DESC and PLATFORM_DESC macros to xsdkwrap.h
+			Added support for no local console (XSDK_MODE_NOCONSOLE)
+				- This is now the default mode when building 32-bit programs
+			Eliminated use of ungetch() in favor of ungetkey() - more secure
+	3.11	
 
 \****************************************************************************/
 
@@ -213,14 +220,8 @@
 WSADATA WSAData;		// WinSock data
 #endif
 
-char *xsdk_ver="3.10";
+char *xsdk_ver="3.11";
 ulong xsdk_mode=XSDK_MODE_NOCONSOLE;
-
-#ifndef __16BIT__	/* Sockets */
-
-SOCKET			client_socket=INVALID_SOCKET;
-
-#endif
 
 /****************************************************************************/
 /* This allows users to abort the listing of text by using Ctrl-C           */
@@ -559,7 +560,7 @@ char inkey(long mode)
 		ch=keybuf[keybufbot++];
 		if(keybufbot==KEY_BUFSIZE)
 			keybufbot=0; }
-	else if(kbhit()) {
+	else if(!(xsdk_mode&XSDK_MODE_NOCONSOLE) && kbhit()) {
 		i=getch();
 #ifdef __unix__
 		if(i==LF) i=CR;	/* Enter key returns Ctrl-J on Unix! (ohmygod) */
@@ -1151,7 +1152,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 				if(!(user_misc&ANSI))
 					break;
 				if((ch=getkey(0x8000))!='[') {
-					ungetch(ch);
+					ungetkey(ch);
 					break; 
 				}
 				if((ch=getkey(0x8000))=='C') {
@@ -1174,7 +1175,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 						}
 						ch=getkey(0); 
 					}
-					ungetch(ch); 
+					ungetkey(ch); 
 				}
 				break;
 			default:
@@ -1635,6 +1636,7 @@ void initdata(void)
 
 #ifdef _WINSOCKAPI_
     WSAStartup(MAKEWORD(1,1), &WSAData);
+	client_socket=INVALID_SOCKET;
 #endif
 
 #ifdef __WATCOMC__
