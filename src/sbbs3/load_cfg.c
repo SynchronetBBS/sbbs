@@ -425,14 +425,19 @@ char* DLLCALL prep_dir(char* base, char* path)
 #ifdef __unix__
 	char	*p;
 #endif
-	char	str[LEN_DIR*2];
+	char	str[MAX_PATH+1];
 	char	abspath[MAX_PATH+1];
+	char	ch;
 
 	if(!path[0])
 		return(path);
-	if(path[0]!='\\' && path[0]!='/' && path[1]!=':')           /* Relative to NODE directory */
-		sprintf(str,"%s/%s",base,path);
-	else
+	if(path[0]!='\\' && path[0]!='/' && path[1]!=':') {	/* Relative directory */
+		ch=*lastchar(base);
+		if(ch=='\\' || ch=='/')
+			sprintf(str,"%s%s",base,path);
+		else
+			sprintf(str,"%s%c%s",base,BACKSLASH,path);
+	} else
 		strcpy(str,path);
 
 #ifdef __unix__				/* Change backslashes to forward slashes on Unix */
