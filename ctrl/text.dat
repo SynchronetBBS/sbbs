@@ -310,7 +310,7 @@
 "\r\nwhNot enough time left to transfer.\r\n"         263 NotEnoughTimeToDl
 "\r\nProtocol, ~Batch, ~Quit, or [Next]: "              264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory:\r\n"                  265 BulkUpload
-"_yh%s %7ld:"                                        266 BulkUploadDescPrompt
+"_yh%sw%7lukb:"                                    266 BulkUploadDescPrompt
 "\r\nrhiNo files in batch queue.n"\                 267 NoFilesInBatchQueue
 	"\r\n\r\nmUse hDnm or hUnm to add files to the queue.\r\n"
 "_\r\nyhBatch: n"                                   268 BatchMenuPrompt
@@ -687,7 +687,7 @@
 "No"                                                    561 No
 "@EXEC:noyesbar@"                                       562 NoYesQuestion
 "_rh[Hit a key] "                                    563 Pause
-"_bh[WAIT]"                                          564 Wait
+"Continue"                                              564 ContinueQ
 "-g\r\nSystem Statistics Log:\r\n\r\nn"              565 SysStatsLogHdr
 "-g\r\nNode #%d Statistics Log:\r\n\r\nn"            566 NodeStatsLogHdr
 "_rhYour time has been reduced due to an "\          567 ReducedTime
