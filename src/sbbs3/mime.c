@@ -133,6 +133,7 @@ BOOL base64out(SOCKET socket, char * pathfile)
     if(i!=-1)   /* already printed the last line */
         sockprintf(socket,line);
     sockprintf(socket,"");
+	fclose(fp);
 	return(TRUE);
 }
 
