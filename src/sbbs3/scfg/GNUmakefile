@@ -72,6 +72,11 @@ endif
 include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
 
+ifeq ($(os),gnu)
+ OBJS	+=	$(ODIR)$(SLASH)sem.$(OFILE)
+ CFLAGS	+=	-D_NEED_SEM
+endif
+
 ifdef USE_DIALOG		
  OBJS += $(ODIR)$(SLASH)uifcd.$(OFILE)
 endif
