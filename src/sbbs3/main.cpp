@@ -315,7 +315,7 @@ static const char *js_type_str[] = {
 };
 
 JSBool 
-DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
+DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL append)
 {
 	int			i;
 	jsuint		len=0;
@@ -331,8 +331,9 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 		if((method_array=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 			return(JS_FALSE);
 
-	if(!JS_GetArrayLength(cx, method_array, &len))
-		return(JS_FALSE);
+	if(append)
+		if(!JS_GetArrayLength(cx, method_array, &len))
+			return(JS_FALSE);
 
 	for(i=0;funcs[i].name;i++) {
 
@@ -391,7 +392,7 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 #else // NON-DEBUG
 
 JSBool 
-DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
+DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL append)
 {
 	int			i;
 
@@ -688,7 +689,7 @@ bool sbbs_t::js_init()
 		if((js_glob=js_CreateGlobalObject(js_cx, &cfg))==NULL)
 			break;
 
-		if(!js_DefineMethods(js_cx, js_glob, js_global_functions))
+		if(!js_DefineMethods(js_cx, js_glob, js_global_functions, TRUE))
 			break;
 
 #ifdef _DEBUG

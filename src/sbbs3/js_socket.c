@@ -242,7 +242,7 @@ static JSBool
 js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int			result;
-	long		val;
+	ulong		val;
 	ulong		ip_addr;
 	ushort		port;
 	JSString*	str;
@@ -1197,7 +1197,7 @@ static jsMethodSpec js_socket_functions[] = {
 	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[port]")
 	,JSDOCSTR("bind socket to a port (number or service name)")
 	},
-	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout")
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout]")
 	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)"
 	", default <i>timeout</i> value is <i>10</i> (seconds)")
 	},
@@ -1288,7 +1288,7 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineMethods(cx, obj, js_socket_functions)) {
+	if(!js_DefineMethods(cx, obj, js_socket_functions, FALSE)) {
 		JS_ReportError(cx,"js_DefineMethods failed");
 		return(JS_FALSE);
 	}
@@ -1346,7 +1346,7 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 		return(NULL);
 	}
 
-	if (!js_DefineMethods(cx, obj, js_socket_functions)) 
+	if (!js_DefineMethods(cx, obj, js_socket_functions, FALSE)) 
 		return(NULL);
 
 	dbprintf(FALSE, p, "object created");

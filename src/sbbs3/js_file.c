@@ -1008,7 +1008,7 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineMethods(cx, obj, js_file_functions)) {
+	if(!js_DefineMethods(cx, obj, js_file_functions, FALSE)) {
 		dbprintf(TRUE, p, "js_DefineMethods failed");
 		return(JS_FALSE);
 	}
@@ -1051,7 +1051,7 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 	if(!JS_DefineProperties(cx, obj, js_file_properties))
 		return(NULL);
 
-	if (!js_DefineMethods(cx, obj, js_file_functions)) 
+	if (!js_DefineMethods(cx, obj, js_file_functions, FALSE)) 
 		return(NULL);
 
 	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL)

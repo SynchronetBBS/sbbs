@@ -2753,7 +2753,7 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 	if(!JS_DefineProperties(cx, obj, js_bbs_properties))
 		return(NULL);
 
-	if (!js_DefineMethods(cx, obj, js_bbs_functions)) 
+	if (!js_DefineMethods(cx, obj, js_bbs_functions, FALSE)) 
 		return(NULL);
 
 #ifdef _DEBUG

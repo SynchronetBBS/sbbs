@@ -1492,7 +1492,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		}
 	}
 
-	if(!js_DefineMethods(cx, obj, js_msgbase_functions)) {
+	if(!js_DefineMethods(cx, obj, js_msgbase_functions, FALSE)) {
 		JS_ReportError(cx,"js_DefineMethods failed");
 		return(JS_FALSE);
 	}

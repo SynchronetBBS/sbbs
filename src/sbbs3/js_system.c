@@ -1398,7 +1398,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_DefineProperties(cx, sysobj, js_system_properties))
 		return(NULL);
 
-	if (!js_DefineMethods(cx, sysobj, js_system_functions)) 
+	if (!js_DefineMethods(cx, sysobj, js_system_functions, FALSE)) 
 		return(NULL);
 
 #ifdef _DEBUG

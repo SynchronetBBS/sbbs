@@ -1205,7 +1205,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	if(!JS_DefineProperties(cx, obj, js_console_properties))
 		return(NULL);
 
-	if (!js_DefineMethods(cx, obj, js_console_functions)) 
+	if (!js_DefineMethods(cx, obj, js_console_functions, FALSE)) 
 		return(NULL);
 
 	/* Create an array of pre-defined colors */
