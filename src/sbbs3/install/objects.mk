@@ -11,5 +11,6 @@ OBJS	=	$(ODIR)$(SLASH)sbbsinst.$(OFILE)\
 			$(ODIR)$(SLASH)conwrap.$(OFILE)\
 			$(ODIR)$(SLASH)genwrap.$(OFILE)\
 			$(ODIR)$(SLASH)dirwrap.$(OFILE)\
-			$(ODIR)$(SLASH)uifcx.$(OFILE)\
+			$(ODIR)$(SLASH)ftpio.$(OFILE)\
+			$(ODIR)$(SLASH)uifcx.$(OFILE)
 
