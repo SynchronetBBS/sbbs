@@ -134,6 +134,7 @@ extern "C" {
 	#define mswait(x)			usleep(x*1000)
 	#define _mkdir(dir)			mkdir(dir,0777)
 	#define _rmdir(dir)			rmdir(dir)
+	#define tell(fd)			lseek(fd,0,SEEK_CUR)
 
 	DLLEXPORT void	DLLCALL sbbs_beep(int freq, int dur);
 	DLLEXPORT char*	DLLCALL strupr(char* str);
