@@ -12,6 +12,9 @@ else
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)console$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)x_cio$(OFILE)
 endif
+ifeq ($(os),netbsd)
+ CFLAGS	+=	-DN_CURSES_LIB
+endif
 
 # CIOLIB Library Link Rule
 $(CIOLIB-MT): $(MTOBJODIR) $(OBJS)
