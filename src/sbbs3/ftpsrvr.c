@@ -2061,7 +2061,7 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, int* curdir)
 
 	sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
 	if((fp=fopen(aliasfile,"r"))==NULL) 
-		return(result);
+		return(FALSE);
 
 	SAFECOPY(alias,fullalias);
 	p=strrchr(alias+1,'/');
@@ -2069,6 +2069,9 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, int* curdir)
 		*p=0;
 		fname=p+1;
 	}
+
+	if(filename==NULL /* directory */ && *fname /* filename specified */)
+		return(FALSE);
 
 	while(!feof(fp)) {
 		if(!fgets(line,sizeof(line)-1,fp))
@@ -4117,8 +4120,8 @@ static void ctrl_thread(void* arg)
 			if((!success && curdir<0) || (success && tp && *(tp+1))) {
 				if(tp)
 					p=tp+1;
-				tp=strchr(p,'/');
-				if(tp) *tp=0;
+				tp=lastchar(p);
+				if(tp && *tp=='/') *tp=0;
 				for(i=0;i<scfg.total_dirs;i++) {
 					if(scfg.dir[i]->lib!=curlib)
 						continue;
