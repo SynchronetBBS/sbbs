@@ -1,15 +1,14 @@
-NEED_UIFC	:=	1
-USE_UIFC32	:=	1
-UIFC_SRC	:=	../uifc/
-XPDEV		:=	../xpdev/
-include ${XPDEV}Common.gmake
-include ${UIFC_SRC}Common.gmake
+SRC_ROOT	:=	..
+include ${SRC_ROOT}/build/Common.gmake
 
 ifeq ($(os),sunos)    # Solaris
  LDFLAGS += -lsocket -lnsl -lrt -lncurses
  CFLAGS	+=	-DNEED_CFMAKERAW
 endif
 
-$(EXEODIR)/syncterm: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
+CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
+LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
+
+$(EXEODIR)/syncterm: xpdev-mt ciolib-mt uifc-mt $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) $(OBJS) -o $@
+	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
