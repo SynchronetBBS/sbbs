@@ -195,13 +195,16 @@ var WHO_CHANNEL			=(1<<1);	// c
 var WHO_REALNAME		=(1<<2);	// g
 var WHO_HOST			=(1<<3);	// h
 var WHO_IP			=(1<<4);	// i
-var WHO_UMODE			=(1<<5);	// m
-var WHO_NICK			=(1<<6);	// n
-var WHO_OPER			=(1<<7);	// o
-var WHO_SERVER			=(1<<8);	// s
-var WHO_USER			=(1<<9);	// u
-var WHO_FIRST_CHANNEL		=(1<<10);	// C
-var WHO_MEMBER_CHANNEL		=(1<<11);	// M
+var WHO_CLASS			=(1<<5);	// l
+var WHO_UMODE			=(1<<6);	// m
+var WHO_NICK			=(1<<7);	// n
+var WHO_OPER			=(1<<8);	// o
+var WHO_SERVER			=(1<<9);	// s
+var WHO_TIME			=(1<<10);	// t
+var WHO_USER			=(1<<11);	// u
+var WHO_FIRST_CHANNEL		=(1<<12);	// C
+var WHO_MEMBER_CHANNEL		=(1<<13);	// M
+var WHO_SHOW_IPS_ONLY		=(1<<14);	// I
 
 ////////// Functions not linked to an object //////////
 function ip_to_int(ip) {
@@ -1023,7 +1026,7 @@ while (!server.terminated) {
 		}
 	}
 	if(poll_clients.length && this.socket_select!=undefined) {
-		readme=socket_select(poll_clients, 1 /* seconds */);
+		var readme=socket_select(poll_clients, 1 /* seconds */);
 		for(thisPolled in readme) {
 			Clients[poll_client_map[readme[thisPolled]]].work();
 		}
@@ -1524,9 +1527,10 @@ function IRCClient_numeric351() {
 	this.numeric(351, VERSION + " " + servername + " :" + VERSION_STR);
 }
 
-function IRCClient_numeric352(user,chan) {
+function IRCClient_numeric352(user,show_ips_only,chan) {
 	var who_mode="";
 	var disp;
+	var disphost;
 
 	if (!chan)
 		disp = "*";
@@ -1545,7 +1549,13 @@ function IRCClient_numeric352(user,chan) {
 	}
 	if (user.mode&USERMODE_OPER)
 		who_mode += "*";
-	this.numeric(352, disp + " " + user.uprefix + " " + user.hostname + " " + user.servername + " " + user.nick + " " + who_mode + " :" + user.hops + " " + user.realname);
+
+	if (show_ips_only)
+		disphost = user.ip;
+	else
+		disphost = user.hostname;
+
+	this.numeric(352, disp + " " + user.uprefix + " " + disphost + " " + user.servername + " " + user.nick + " " + who_mode + " :" + user.hops + " " + user.realname);
 }
 
 function IRCClient_numeric353(chan, str) {
@@ -2385,6 +2395,12 @@ function IRCClient_do_complex_who(cmd) {
 					who.IP = cmd[arg];
 				}
 				break;
+			case "l":
+				arg++;
+				if (cmd[arg]) {
+					who.tweak_mode(WHO_CLASS,add);
+					who.Class = parseInt(cmd[arg]);
+				}
 			case "m": // we never set -m
 				arg++;
 				if (cmd[arg]) {
@@ -2419,6 +2435,13 @@ function IRCClient_do_complex_who(cmd) {
 					who.tweak_mode(WHO_SERVER,add);
 				}
 				break;
+			case "t":
+				arg++;
+				if (cmd[arg]) {
+					who.Time = parseInt(cmd[arg]);
+					who.tweak_mode(WHO_TIME,add);
+				}
+				break;
 			case "u":
 				arg++;
 				if (cmd[arg]) {
@@ -2431,6 +2454,9 @@ function IRCClient_do_complex_who(cmd) {
 				break;
 			case "M":
 				who.tweak_mode(WHO_MEMBER_CHANNEL,add);
+				break;
+			case "I":
+				who.tweak_mode(WHO_SHOW_IPS_ONLY,add);
 				break;
 			default:
 				break;
@@ -2445,6 +2471,30 @@ function IRCClient_do_complex_who(cmd) {
 	// allow +c/-c to override.
 	if (!who.Channel && ((whomask[0] == "#") || (whomask[0] == "&")))
 		who.Channel = whomask;
+
+	// Strip off any @ or + in front of a channel and set the flags.
+	var sf_op = false;
+	var sf_voice = false;
+	var sf_done = false;
+	var tmp_wc = who.Channel;
+	for (cc in tmp_wc) {
+		switch(tmp_wc[cc]) {
+			case "@":
+				sf_op = true;
+				who.Channel = who.Channel.slice(1);
+				break;
+			case "+":
+				sf_voice = true;
+				who.Channel = who.Channel.slice(1);
+				break;
+			default: // assume we're done
+				sf_done = true;
+				break;
+		}
+		if (sf_done)
+			break;
+	}
+	delete tmp_wc; // don't need this anymore.
 
 	// Now we traverse everything and apply the criteria the user passed.
 	var who_count = 0;
@@ -2467,12 +2517,29 @@ function IRCClient_do_complex_who(cmd) {
 				continue;
 			else if ((who.del_flags&WHO_AWAY) && wc.away)
 				continue;
-			if ((who.add_flags&WHO_CHANNEL) &&
-			    !wc.onchannel(who.Channel.toUpperCase()))
-				continue;
-			else if ((who.del_flags&WHO_CHANNEL) &&
-			    wc.onchannel(who.Channel.toUpperCase()))
-				continue;
+			if (who.add_flags&WHO_CHANNEL) {
+				if (!wc.onchannel(who.Channel.toUpperCase()))
+					continue;
+				if (sf_op && Channels[who.Channel.toUpperCase()]&&
+				    !Channels[who.Channel.toUpperCase()].ismode(
+				     wc.id,CHANLIST_OP))
+					continue;
+				if(sf_voice&&Channels[who.Channel.toUpperCase()]&&
+				    !Channels[who.Channel.toUpperCase()].ismode(
+				     wc.id,CHANLIST_VOICE))
+					continue;
+			} else if (who.del_flags&WHO_CHANNEL) {	
+				if (wc.onchannel(who.Channel.toUpperCase()))
+					continue;
+				if (sf_op && Channels[who.Channel.toUpperCase()]&&
+				    Channels[who.Channel.toUpperCase()].ismode(
+				     wc.id,CHANLIST_OP))
+					continue;
+				if(sf_voice&&Channels[who.Channel.toUpperCase()]&&
+				    Channels[who.Channel.toUpperCase()].ismode(
+				     wc.id,CHANLIST_VOICE))
+					continue;
+			}
 			if ((who.add_flags&WHO_REALNAME) &&
 			    !match_irc_mask(wc.realname,who.RealName))
 				continue;
@@ -2559,6 +2626,18 @@ function IRCClient_do_complex_who(cmd) {
 				continue;
 			else if ((who.del_flags&WHO_MEMBER_CHANNEL) && flag_M)
 				continue;
+			if ((who.add_flags&WHO_TIME) &&
+			    ((time() - wc.connecttime) < who.Time) )
+				continue;
+			else if ((who.del_flags&WHO_TIME) &&
+			    ((time() - wc.connecttime) > who.Time) )
+				continue;
+			if ((who.add_flags&WHO_CLASS) &&
+			    (wc.ircclass != who.Class))
+				continue;
+			else if ((who.del_flags&WHO_CLASS) &&
+			    (wc.ircclass == who.Class))
+				continue;
 
 			if (whomask && !wc.match_who_mask(whomask))
 				continue;       
@@ -2584,11 +2663,17 @@ function IRCClient_do_complex_who(cmd) {
 			if (who.Channel)
 				chan = who.Channel;
 
+			var show_ips_only;
+			if (who.add_flags&WHO_SHOW_IPS_ONLY)
+				show_ips_only = true;
+			else
+				show_ips_only = false;
+
 			// If we made it this far, we're good.
 			if (chan && Channels[chan.toUpperCase()])
-				this.numeric352(wc,Channels[chan.toUpperCase()]);
+				this.numeric352(wc,show_ips_only,Channels[chan.toUpperCase()]);
 			else
-				this.numeric352(wc);
+				this.numeric352(wc,show_ips_only);
 			who_count++;
 		}
 		if (!(this.mode&USERMODE_OPER) && (who_count >= max_who))
@@ -2616,6 +2701,8 @@ function Who() {
 	this.Nick = "";
 	this.Server = "";
 	this.User = "";
+	this.Time = 0;
+	this.Class = 0;
 }
 
 function Who_tweak_mode(bit,add) {
@@ -2663,16 +2750,19 @@ function IRCClient_do_who_usage() {
 	this.numeric(334,":i.e. '/WHO +a *.ca' would match all away users from *.ca");
 	this.numeric(334,":No args/mask matches to everything by default.");
 	this.numeric(334,":a       : User is away.");
-	this.numeric(334,":c <chan>: User is on <channel>, no wildcards.");
+	this.numeric(334,":c <chan>: User is on <@+><#channel>, no wildcards. Can check +o/+v.");
 	this.numeric(334,":g <rnam>: Check against realname field, wildcards allowed.");
 	this.numeric(334,":h <host>: Check user's hostname, wildcards allowed.");
 	this.numeric(334,":i <ip>  : Check against IP address, wildcards allowed.");
+	this.numeric(334,":l <clas>: User is a member of <clas> irc class as defined on a Y:Line.");
 	this.numeric(334,":m <umde>: User has <umodes> set, -+ allowed.");
 	this.numeric(334,":n <nick>: User's nickname matches <nick>, wildcards allowed.");
 	this.numeric(334,":o       : User is an IRC Operator.");
 	this.numeric(334,":s <srvr>: User is on <server>, wildcards allowed.");
+	this.numeric(334,":t <time>: User has been on for more than (+) or less than (-) <time> secs.");
 	this.numeric(334,":u <user>: User's username field matches, wildcards allowed.");
 	this.numeric(334,":C       : Only display first channel that the user matches.");
+	this.numeric(334,":I       : Only return IP addresses (as opposed to hostnames.)");
 	this.numeric(334,":M       : Only check against channels you're a member of.");
 	this.numeric(315,"? :End of /WHO list. (Usage)");
 }
