@@ -2073,10 +2073,18 @@ object MainForm: TMainForm
         ImageIndex = 45
         OnClick = FileOpenMenuItemClick
       end
-      object SaveSettingsMenuOption: TMenuItem
+      object SaveSettingsMenuItem: TMenuItem
         Caption = 'Save Settings'
         ImageIndex = 41
         OnClick = SaveSettings
+      end
+      object ImportSettingsMenuItem: TMenuItem
+        Caption = 'Import Settings'
+        OnClick = ImportSettings
+      end
+      object ExportSettingsMenuItem: TMenuItem
+        Caption = 'Export Settings'
+        OnClick = ExportSettings
       end
       object N4: TMenuItem
         Caption = '-'
@@ -2419,6 +2427,11 @@ object MainForm: TMainForm
         object DnsBlacklists: TMenuItem
           Caption = 'DNS-based Blacklists'
           Hint = 'DNS_BLACKLIST.CFG'
+          OnClick = CtrlMenuItemEditClick
+        end
+        object DNSBLExemptions: TMenuItem
+          Caption = 'DNS-blacklist Exempt IPs'
+          Hint = 'DNSBL_EXEMPT.CFG'
           OnClick = CtrlMenuItemEditClick
         end
       end

@@ -69,6 +69,7 @@
 #include "ConfigWizardUnit.h"
 
 #include "sbbs.h"           // unixtodstr()
+#include "sbbs_ini.h"		// sbbs_read_ini()
 #include "userdat.h"		// lastuser()
 
 //---------------------------------------------------------------------------
@@ -84,7 +85,7 @@ TMainForm *MainForm;
 
 int     threads=1;
 
-static void thread_up(BOOL up)
+static void thread_up(BOOL up, BOOL setuid)
 {
 	char str[128];
 	static HANDLE mutex;
@@ -635,6 +636,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     mail_startup.socket_open=socket_open;
     mail_startup.max_delivery_attempts=50;
     mail_startup.rescan_frequency=3600;  /* 60 minutes */
+    mail_startup.lines_per_yield=100;
 
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
@@ -1448,6 +1450,14 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	mail_startup.rescan_frequency
             =Registry->ReadInteger("MailRescanFrequency");
 
+    if(Registry->ValueExists("MailLinesPerYield"))
+    	mail_startup.lines_per_yield
+            =Registry->ReadInteger("MailLinesPerYield");
+
+    if(Registry->ValueExists("MailMaxRecipients"))
+    	mail_startup.max_recipients
+            =Registry->ReadInteger("MailMaxRecipients");
+
     if(Registry->ValueExists("MailSMTPPort"))
     	mail_startup.smtp_port=Registry->ReadInteger("MailSMTPPort");
 
@@ -1465,11 +1475,17 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         SAFECOPY(mail_startup.default_user
             ,Registry->ReadString("MailDefaultUser").c_str());
 
-    if(Registry->ValueExists("MailDNSBlacklistFlag"))
-        SAFECOPY(mail_startup.dnsbl_flag
-            ,Registry->ReadString("MailDNSBlacklistFlag").c_str());
+    if(Registry->ValueExists("MailDNSBlacklistSubject"))
+        SAFECOPY(mail_startup.dnsbl_tag
+            ,Registry->ReadString("MailDNSBlacklistSubject").c_str());
     else
-		SAFECOPY(mail_startup.dnsbl_flag,"SPAM");
+		SAFECOPY(mail_startup.dnsbl_tag,"SPAM");
+
+    if(Registry->ValueExists("MailDNSBlacklistHeader"))
+        SAFECOPY(mail_startup.dnsbl_hdr
+            ,Registry->ReadString("MailDNSBlacklistHeader").c_str());
+    else
+		SAFECOPY(mail_startup.dnsbl_hdr,"X-DNSBL");
 
     if(Registry->ValueExists("MailDNSServer"))
         SAFECOPY(mail_startup.dns_server
@@ -1830,13 +1846,18 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
         ,mail_startup.max_delivery_attempts);
     Registry->WriteInteger("MailRescanFrequency"
         ,mail_startup.rescan_frequency);
+    Registry->WriteInteger("MailMaxRecipients"
+        ,mail_startup.max_recipients);
+    Registry->WriteInteger("MailLinesPerYield"
+        ,mail_startup.lines_per_yield);
 
     Registry->WriteInteger("MailSMTPPort",mail_startup.smtp_port);
     Registry->WriteInteger("MailPOP3Port",mail_startup.pop3_port);
 
     Registry->WriteString("MailDefaultUser",mail_startup.default_user);
-	Registry->WriteString("MailDNSBlacklistFlag",mail_startup.dnsbl_flag);
-    
+	Registry->WriteString("MailDNSBlacklistHeader",mail_startup.dnsbl_hdr);
+	Registry->WriteString("MailDNSBlacklistSubject",mail_startup.dnsbl_tag);
+
     Registry->WriteString("MailRelayServer",mail_startup.relay_server);
     Registry->WriteInteger("MailRelayPort",mail_startup.relay_port);
     Registry->WriteString("MailDNSServer",mail_startup.dns_server);
@@ -1887,6 +1908,424 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 
     Registry->CloseKey();
     delete Registry;
+
+}
+
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ImportSettings(TObject* Sender)
+{
+    // Read Registry keys
+	TMemIniFile* IniFile=new TMemIniFile("sbbs.ini");
+
+    const char* section = "sbbsctrl";
+
+   	TopPanel->Height
+    	=IniFile->ReadInteger(section,"TopPanelHeight"
+    		,TopPanel->Height);
+   	UpperLeftPageControl->Width
+       	=IniFile->ReadInteger(section,"UpperLeftPageControlWidth"
+        	,UpperLeftPageControl->Width);
+   	LowerLeftPageControl->Width
+       	=IniFile->ReadInteger(section,"LowerLeftPageControlWidth"
+        	,LowerLeftPageControl->Width);
+    UndockableForms=IniFile->ReadBool(section,"UndockableForms"
+    	,UndockableForms);
+#if 0
+    if(UndockableForms) {
+        TelnetFormFloating=IniFile->ReadBool(section,"TelnetFormFloating",false);
+        EventsFormFloating=IniFile->ReadBool(section,"EventsFormFloating",false);
+        ServicesFormFloating=IniFile->ReadBool(section,"ServicesFormFloating",false);
+        NodeFormFloating=IniFile->ReadBool(section,"NodeFormFloating",false);
+        StatsFormFloating=IniFile->ReadBool(section,"StatsFormFloating",false);
+        ClientFormFloating=IniFile->ReadBool(section,"ClientFormFloating",false);
+        MailFormFloating=IniFile->ReadBool(section,"MailFormFloating",false);
+        FtpFormFloating=IniFile->ReadBool(section,"FtpFormFloating",false);
+    }
+#endif
+
+#if 0
+  	TelnetFormPage=IniFile->ReadInteger(section,"TelnetFormPage",TelnetFormPage);
+  	EventsFormPage=IniFile->ReadInteger(section,"EventsFormPage",EventsFormPage);
+   	ServicesFormPage=IniFile->ReadInteger(section,"ServicesFormPage",ServicesFormPage);
+   	NodeFormPage=IniFile->ReadInteger(section,"NodeFormPage",NodeFormPage);
+   	StatsFormPage=IniFile->ReadInteger(section,"StatsFormPage",StatsFormPage);
+  	ClientFormPage=IniFile->ReadInteger(section,"ClientFormPage",ClientFormPage);
+   	MailFormPage=IniFile->ReadInteger(section,"MailFormPage",MailFormPage);
+   	FtpFormPage=IniFile->ReadInteger(section,"FtpFormPage",FtpFormPage);
+
+#endif
+    
+#if 0
+    TelnetForm->Log->Color=ReadColor(IniFile,"TelnetLog");
+    ReadFont("TelnetLog",TelnetForm->Log->Font);
+    EventsForm->Log->Color=ReadColor(IniFile,"EventsLog");
+    ReadFont("EventsLog",EventsForm->Log->Font);
+    ServicesForm->Log->Color=ReadColor(IniFile,"ServicesLog");
+    ReadFont("ServicesLog",ServicesForm->Log->Font);
+    MailForm->Log->Color=ReadColor(IniFile,"MailLog");
+    ReadFont("MailLog",MailForm->Log->Font);
+    FtpForm->Log->Color=ReadColor(IniFile,"FtpLog");
+    ReadFont("FtpLog",FtpForm->Log->Font);
+    NodeForm->ListBox->Color=ReadColor(IniFile,"NodeList");
+    ReadFont("NodeList",NodeForm->ListBox->Font);
+    ClientForm->ListView->Color=ReadColor(IniFile,"ClientList");
+    ReadFont("ClientList",ClientForm->ListView->Font);
+#endif
+
+   	TelnetForm->Top=IniFile->ReadInteger(section,"TelnetFormTop"
+    	,TelnetForm->Top);
+   	TelnetForm->Left=IniFile->ReadInteger(section,"TelnetFormLeft"
+    	,TelnetForm->Left);
+   	TelnetForm->Width=IniFile->ReadInteger(section,"TelnetFormWidth"
+    	,TelnetForm->Width);
+   	TelnetForm->Height=IniFile->ReadInteger(section,"TelnetFormHeight"
+    	,TelnetForm->Height);
+
+   	EventsForm->Top=IniFile->ReadInteger(section,"EventsFormTop"
+    	,EventsForm->Top);
+   	EventsForm->Left=IniFile->ReadInteger(section,"EventsFormLeft"
+    	,EventsForm->Left);
+   	EventsForm->Width=IniFile->ReadInteger(section,"EventsFormWidth"
+    	,EventsForm->Width);
+   	EventsForm->Height=IniFile->ReadInteger(section,"EventsFormHeight"
+    	,EventsForm->Height);
+
+   	ServicesForm->Top=IniFile->ReadInteger(section,"ServicesFormTop"
+    	,ServicesForm->Top);
+   	ServicesForm->Left=IniFile->ReadInteger(section,"ServicesFormLeft"
+    	,ServicesForm->Left);
+   	ServicesForm->Width=IniFile->ReadInteger(section,"ServicesFormWidth"
+    	,ServicesForm->Width);
+   	ServicesForm->Height=IniFile->ReadInteger(section,"ServicesFormHeight"
+    	,ServicesForm->Height);
+
+   	FtpForm->Top=IniFile->ReadInteger(section,"FtpFormTop"
+    	,FtpForm->Top);
+   	FtpForm->Left=IniFile->ReadInteger(section,"FtpFormLeft"
+    	,FtpForm->Left);
+   	FtpForm->Width=IniFile->ReadInteger(section,"FtpFormWidth"
+    	,FtpForm->Width);
+   	FtpForm->Height=IniFile->ReadInteger(section,"FtpFormHeight"
+    	,FtpForm->Height);
+
+   	MailForm->Top=IniFile->ReadInteger(section,"MailFormTop"
+    	,MailForm->Top);
+   	MailForm->Left=IniFile->ReadInteger(section,"MailFormLeft"
+    	,MailForm->Left);
+   	MailForm->Width=IniFile->ReadInteger(section,"MailFormWidth"
+    	,MailForm->Width);
+   	MailForm->Height=IniFile->ReadInteger(section,"MailFormHeight"
+    	,MailForm->Height);
+
+   	NodeForm->Top=IniFile->ReadInteger(section,"NodeFormTop"
+    	,NodeForm->Top);
+   	NodeForm->Left=IniFile->ReadInteger(section,"NodeFormLeft"
+    	,NodeForm->Left);
+   	NodeForm->Width=IniFile->ReadInteger(section,"NodeFormWidth"
+    	,NodeForm->Width);
+   	NodeForm->Height=IniFile->ReadInteger(section,"NodeFormHeight"
+    	,NodeForm->Height);
+
+   	StatsForm->Top=IniFile->ReadInteger(section,"StatsFormTop"
+    	,StatsForm->Top);
+   	StatsForm->Left=IniFile->ReadInteger(section,"StatsFormLeft"
+    	,StatsForm->Left);
+   	StatsForm->Width=IniFile->ReadInteger(section,"StatsFormWidth"
+    	,StatsForm->Width);
+   	StatsForm->Height=IniFile->ReadInteger(section,"StatsFormHeight"
+    	,StatsForm->Height);
+
+   	ClientForm->Top=IniFile->ReadInteger(section,"ClientFormTop"
+    	,ClientForm->Top);
+   	ClientForm->Left=IniFile->ReadInteger(section,"ClientFormLeft"
+    	,ClientForm->Left);
+   	ClientForm->Width=IniFile->ReadInteger(section,"ClientFormWidth"
+    	,ClientForm->Width);
+   	ClientForm->Height=IniFile->ReadInteger(section,"ClientFormHeight"
+    	,ClientForm->Height);
+
+    for(int i=0;i<ClientForm->ListView->Columns->Count;i++) {
+        char str[128];
+        sprintf(str,"ClientListColumn%dWidth",i);
+        if(IniFile->ValueExists(section,str))
+            ClientForm->ListView->Columns->Items[i]->Width
+                =IniFile->ReadInteger(section,str,0);
+    }
+
+   	Toolbar->Visible=IniFile->ReadBool(section,"ToolbarVisible"
+    	,Toolbar->Visible);
+    ViewToolbarMenuItem->Checked=Toolbar->Visible;
+    ViewStatusBarMenuItem->Checked=StatusBar->Visible;
+
+   	LoginCommand=IniFile->ReadString(section,"LoginCommand"
+    	,LoginCommand);
+   	ConfigCommand=IniFile->ReadString(section,"ConfigCommand"
+    	,ConfigCommand);
+   	Password=IniFile->ReadString(section,"Password"
+    	,Password);
+   	MinimizeToSysTray=IniFile->ReadBool(section,"MinimizeToSysTray"
+    	,MinimizeToSysTray);
+   	NodeDisplayInterval=IniFile->ReadInteger(section,"NodeDisplayInterval"
+    	,NodeDisplayInterval);
+   	ClientDisplayInterval=IniFile->ReadInteger(section,"ClientDisplayInterval"
+    	,ClientDisplayInterval);
+
+   	MailLogFile=IniFile->ReadInteger(section,"MailLogFile",true);
+   	FtpLogFile=IniFile->ReadInteger(section,"FtpLogFile",true);
+
+    delete IniFile;
+
+    FILE* fp;
+
+    if((fp=fopen("sbbs.ini","r"))==NULL)
+    	return;
+
+    sbbs_read_ini(fp
+    	,(BOOL*)&SysAutoStart   		,&bbs_startup
+    	,(BOOL*)&FtpAutoStart 			,&ftp_startup
+    	,(BOOL*)&MailAutoStart 	    	,&mail_startup
+    	,(BOOL*)&ServicesAutoStart     	,&services_startup
+        );
+    fclose(fp);
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ExportSettings(TObject* Sender)
+{
+	char str[128];
+
+	StatusBar->Panels->Items[4]->Text="Exporting Settings...";
+
+    NodeForm->Timer->Interval=NodeDisplayInterval*1000;
+    ClientForm->Timer->Interval=ClientDisplayInterval*1000;
+
+    // Write Registry keys
+	TMemIniFile* IniFile=new TMemIniFile("sbbs.ini");
+
+    const char* section = "SBBSCTRL::Settings";
+
+    IniFile->WriteString(section,"LoginCommand",LoginCommand);
+    IniFile->WriteString(section,"ConfigCommand",ConfigCommand);
+    IniFile->WriteString(section,"Password",Password);
+    IniFile->WriteBool(section,"MinimizeToSysTray",MinimizeToSysTray);
+    IniFile->WriteBool(section,"UndockableForms",UndockableForms);
+
+    section = "SBBSCTRL::MainForm";
+    IniFile->WriteInteger(section,"Top",Top);
+    IniFile->WriteInteger(section,"Left",Left);
+    IniFile->WriteInteger(section,"Height",Height);
+    IniFile->WriteInteger(section,"Width",Width);
+
+    IniFile->WriteInteger(section,"TopPanelHeight",TopPanel->Height);
+ 	IniFile->WriteInteger(section,"UpperLeftPageControlWidth"
+    	,UpperLeftPageControl->Width);
+    IniFile->WriteInteger(section,"LowerLeftPageControlWidth"
+    	,LowerLeftPageControl->Width);
+    IniFile->WriteBool(section,"ToolBarVisible",Toolbar->Visible);
+    IniFile->WriteBool(section,"StatusBarVisible",StatusBar->Visible);
+
+    section = "SBBSCTRL::NodeForm";
+    IniFile->WriteInteger(section,"Top",NodeForm->Top);
+    IniFile->WriteInteger(section,"Left",NodeForm->Left);
+    IniFile->WriteInteger(section,"Height",NodeForm->Height);
+    IniFile->WriteInteger(section,"Width",NodeForm->Width);
+    IniFile->WriteInteger(section,"Page"
+    	,PageNum((TPageControl*)NodeForm->HostDockSite));
+    IniFile->WriteBool(section,"Floating",NodeForm->Floating);
+    IniFile->WriteInteger(section,"DisplayInterval",NodeDisplayInterval);
+
+    section = "SBBSCTRL::StatsForm";
+    IniFile->WriteInteger(section,"Top",StatsForm->Top);
+    IniFile->WriteInteger(section,"Left",StatsForm->Left);
+    IniFile->WriteInteger(section,"Height",StatsForm->Height);
+    IniFile->WriteInteger(section,"Width",StatsForm->Width);
+    IniFile->WriteInteger(section,"Page"
+    	,PageNum((TPageControl*)StatsForm->HostDockSite));
+    IniFile->WriteBool(section,"Floating",StatsForm->Floating);
+
+    section = "SBBSCTRL::ClientForm";
+    IniFile->WriteInteger(section,"Top",ClientForm->Top);
+    IniFile->WriteInteger(section,"Left",ClientForm->Left);
+    IniFile->WriteInteger(section,"Height",ClientForm->Height);
+    IniFile->WriteInteger(section,"Width",ClientForm->Width);
+    IniFile->WriteInteger(section,"Page"
+    	,PageNum((TPageControl*)ClientForm->HostDockSite));
+    IniFile->WriteBool(section,"Floating",ClientForm->Floating);
+    IniFile->WriteInteger(section,"DisplayInterval",ClientDisplayInterval);
+
+    for(int i=0;i<ClientForm->ListView->Columns->Count;i++) {
+        char str[128];
+        sprintf(str,"Column%dWidth",i);
+        IniFile->WriteInteger(section,str
+            ,ClientForm->ListView->Columns->Items[i]->Width);
+    }
+
+    section = "SBBSCTRL::TelnetForm";
+    IniFile->WriteInteger(section,"Top",TelnetForm->Top);
+    IniFile->WriteInteger(section,"Left",TelnetForm->Left);
+    IniFile->WriteInteger(section,"Height",TelnetForm->Height);
+    IniFile->WriteInteger(section,"Width",TelnetForm->Width);
+    IniFile->WriteInteger(section,"Page"
+	    ,PageNum((TPageControl*)TelnetForm->HostDockSite));
+    IniFile->WriteBool(section,"Floating",TelnetForm->Floating);
+
+    section = "SBBSCTRL::EventForm";
+    IniFile->WriteInteger(section,"Top",EventsForm->Top);
+    IniFile->WriteInteger(section,"Left",EventsForm->Left);
+    IniFile->WriteInteger(section,"Height",EventsForm->Height);
+    IniFile->WriteInteger(section,"Width",EventsForm->Width);
+    IniFile->WriteInteger(section,"Page"
+	    ,PageNum((TPageControl*)EventsForm->HostDockSite));
+    IniFile->WriteBool(section,"Floating",EventsForm->Floating);
+
+    section = "SBBSCTRL::ServicesForm";
+    IniFile->WriteInteger(section,"Top",ServicesForm->Top);
+    IniFile->WriteInteger(section,"Left",ServicesForm->Left);
+    IniFile->WriteInteger(section,"Height",ServicesForm->Height);
+    IniFile->WriteInteger(section,"Width",ServicesForm->Width);
+    IniFile->WriteInteger(section,"Page"
+	    ,PageNum((TPageControl*)ServicesForm->HostDockSite));
+    IniFile->WriteBool(section,"Floating",ServicesForm->Floating);
+
+    section = "SBBSCTRL::FtpForm";
+    IniFile->WriteInteger(section,"Top",FtpForm->Top);
+    IniFile->WriteInteger(section,"Left",FtpForm->Left);
+    IniFile->WriteInteger(section,"Height",FtpForm->Height);
+    IniFile->WriteInteger(section,"Width",FtpForm->Width);
+    IniFile->WriteInteger(section,"Page"
+    	,PageNum((TPageControl*)FtpForm->HostDockSite));
+    IniFile->WriteBool(section,"Floating",FtpForm->Floating);
+
+    section = "SBBSCTRL::MailForm";
+    IniFile->WriteInteger(section,"Top",MailForm->Top);
+    IniFile->WriteInteger(section,"Left",MailForm->Left);
+    IniFile->WriteInteger(section,"Height",MailForm->Height);
+    IniFile->WriteInteger(section,"Width",MailForm->Width);
+    IniFile->WriteInteger(section,"Page"
+    	,PageNum((TPageControl*)MailForm->HostDockSite));
+    IniFile->WriteBool(section,"Floating",MailForm->Floating);
+
+    section = "SBBSCTRL::SpyTerminal";
+	IniFile->WriteInteger(section, "Width"
+                            ,SpyTerminalWidth);
+	IniFile->WriteInteger(section, "Height"
+                            ,SpyTerminalHeight);
+   	IniFile->WriteString(section,  "FontName"
+                            ,SpyTerminalFont->Name);
+	IniFile->WriteInteger(section, "FontSize"
+                            ,SpyTerminalFont->Size);
+	IniFile->WriteBool(section,    "KeyboardActive"
+                            ,SpyTerminalKeyboardActive);
+
+#if 0
+    WriteColor(Registry,"TelnetLog",TelnetForm->Log->Color);
+    WriteFont("TelnetLog",TelnetForm->Log->Font);
+    WriteColor(Registry,"EventsLog",EventsForm->Log->Color);
+    WriteFont("EventsLog",EventsForm->Log->Font);
+    WriteColor(Registry,"ServicesLog",ServicesForm->Log->Color);
+    WriteFont("ServicesLog",ServicesForm->Log->Font);
+    WriteColor(Registry,"MailLog",MailForm->Log->Color);
+    WriteFont("MailLog",MailForm->Log->Font);
+    WriteColor(Registry,"FtpLog",FtpForm->Log->Color);
+    WriteFont("FtpLog",FtpForm->Log->Font);
+    WriteColor(Registry,"NodeList",NodeForm->ListBox->Color);
+    WriteFont("NodeList",NodeForm->ListBox->Font);
+    WriteColor(Registry,"ClientList",ClientForm->ListView->Color);
+    WriteFont("ClientList",ClientForm->ListView->Font);
+#endif
+
+	/***********************************************************************/
+    section = "Global";
+    IniFile->WriteString(section,"Hostname",Hostname);
+    IniFile->WriteString(section,"CtrlDirectory",CtrlDirectory);
+
+    /***********************************************************************/
+	section = "BBS";
+    IniFile->WriteInteger(section,"AutoStart",SysAutoStart);
+    IniFile->WriteInteger(section,"TelnetInterface",bbs_startup.telnet_interface);
+    IniFile->WriteInteger(section,"RLoginInterface",bbs_startup.rlogin_interface);
+
+	IniFile->WriteInteger(section,"TelnetPort",bbs_startup.telnet_port);
+	IniFile->WriteInteger(section,"RLoginPort",bbs_startup.rlogin_port);
+    IniFile->WriteInteger(section,"FirstNode",bbs_startup.first_node);
+    IniFile->WriteInteger(section,"LastNode",bbs_startup.last_node);
+
+    IniFile->WriteInteger(section,"ExternalYield",bbs_startup.xtrn_polls_before_yield);
+    IniFile->WriteString(section,"AnswerSound",bbs_startup.answer_sound);
+    IniFile->WriteString(section,"HangupSound",bbs_startup.hangup_sound);
+
+    sprintf(str,"0x%x",bbs_startup.options);
+    IniFile->WriteString(section,"Options",str);
+
+    /***********************************************************************/
+    section = "Mail";
+    IniFile->WriteInteger(section,"AutoStart",MailAutoStart);
+    IniFile->WriteInteger(section,"LogFile",MailLogFile);
+    IniFile->WriteInteger(section,"MaxClients",mail_startup.max_clients);
+    IniFile->WriteInteger(section,"MaxInactivity",mail_startup.max_inactivity);
+    IniFile->WriteInteger(section,"Interface",mail_startup.interface_addr);
+    IniFile->WriteInteger(section,"MaxDeliveryAttempts"
+        ,mail_startup.max_delivery_attempts);
+    IniFile->WriteInteger(section,"RescanFrequency"
+        ,mail_startup.rescan_frequency);
+    IniFile->WriteInteger(section,"LinesPerYield"
+        ,mail_startup.lines_per_yield);
+    IniFile->WriteInteger(section,"MaxRecipients"
+        ,mail_startup.max_recipients);
+
+    IniFile->WriteInteger(section,"SMTPPort",mail_startup.smtp_port);
+    IniFile->WriteInteger(section,"POP3Port",mail_startup.pop3_port);
+
+    IniFile->WriteString(section,"DefaultUser",mail_startup.default_user);
+	IniFile->WriteString(section,"DNSBlacklistHeader"
+    	,mail_startup.dnsbl_hdr);
+	IniFile->WriteString(section,"DNSBlacklistSubject"
+    	,mail_startup.dnsbl_tag);
+
+    IniFile->WriteString(section,"RelayServer",mail_startup.relay_server);
+    IniFile->WriteInteger(section,"RelayPort",mail_startup.relay_port);
+    IniFile->WriteString(section,"DNSServer",mail_startup.dns_server);
+
+    IniFile->WriteString(section,"POP3Sound",mail_startup.pop3_sound);
+    IniFile->WriteString(section,"InboundSound",mail_startup.inbound_sound);
+    IniFile->WriteString(section,"OutboundSound",mail_startup.outbound_sound);
+
+	sprintf(str,"0x%x",mail_startup.options);
+    IniFile->WriteString(section,"Options",str);
+
+    /***********************************************************************/
+	section = "FTP";
+    IniFile->WriteInteger(section,"AutoStart",FtpAutoStart);
+    IniFile->WriteInteger(section,"LogFile",FtpLogFile);
+	IniFile->WriteInteger(section,"Port",ftp_startup.port);
+    IniFile->WriteInteger(section,"MaxClients",ftp_startup.max_clients);
+    IniFile->WriteInteger(section,"MaxInactivity",ftp_startup.max_inactivity);
+    IniFile->WriteInteger(section,"QwkTimeout",ftp_startup.qwk_timeout);
+    IniFile->WriteInteger(section,"Interface",ftp_startup.interface_addr);
+    IniFile->WriteString(section,"AnswerSound",ftp_startup.answer_sound);
+    IniFile->WriteString(section,"HangupSound",ftp_startup.hangup_sound);
+    IniFile->WriteString(section,"HackAttemptSound",ftp_startup.hack_sound);
+
+    IniFile->WriteString(section,"IndexFileName",ftp_startup.index_file_name);
+    IniFile->WriteString(section,"HtmlIndexFile",ftp_startup.html_index_file);
+    IniFile->WriteString(section,"HtmlIndexScript",ftp_startup.html_index_script);
+
+    sprintf(str,"0x%x",ftp_startup.options);
+    IniFile->WriteString(section,"Options",str);
+
+    /***********************************************************************/
+    section = "Services";
+    IniFile->WriteInteger(section,"AutoStart",ServicesAutoStart);
+    IniFile->WriteInteger(section,"Interface",services_startup.interface_addr);
+
+    IniFile->WriteString(section,"AnswerSound",services_startup.answer_sound);
+    IniFile->WriteString(section,"HangupSound",services_startup.hangup_sound);
+
+    sprintf(str,"0x%x",services_startup.options);
+    IniFile->WriteString(section,"Options",str);
+
+    IniFile->UpdateFile();
+
+    delete IniFile;
 
 }
 //---------------------------------------------------------------------------
