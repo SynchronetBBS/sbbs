@@ -376,35 +376,36 @@ typedef enum {						/* Values for xtrn_t.event				*/
 } user_event_t;																
 																			
 									/* Misc bits for event_t.misc			*/
-#define EVENT_EXCL	(1<<0) 			/* Exclusive							*/
-#define EVENT_FORCE (1<<1) 			/* Force users off-line for event		*/
-#define EVENT_INIT	(1<<2)			/* Always run event after init			*/
+#define EVENT_EXCL		(1<<0) 		/* Exclusive							*/
+#define EVENT_FORCE		(1<<1) 		/* Force users off-line for event		*/
+#define EVENT_INIT		(1<<2)		/* Always run event after init			*/
+#define EVENT_DISABLED	(1<<3)		/* Disabled								*/
 																			
 									/* Mode bits for QWK stuff */			
-#define A_EXPAND	(1<<0)			/* Expand to ANSI sequences */			
-#define A_LEAVE 	(1<<1)			/* Leave in */							
-#define A_STRIP 	(1<<2)			/* Strip out */							
+#define A_EXPAND		(1<<0)		/* Expand to ANSI sequences */			
+#define A_LEAVE 		(1<<1)		/* Leave in */							
+#define A_STRIP 		(1<<2)		/* Strip out */							
 																			
 									/* Bits in xtrn_t.misc					*/
-#define MULTIUSER	(1L<<0) 		/* allow multi simultaneous users		*/
-#define ANSI		(1L<<1) 		/* user must have ANSI, same as ^^^		*/
-#define IO_INTS 	(1L<<2) 		/* Intercept I/O interrupts 			*/
-#define MODUSERDAT	(1L<<3) 		/* Program can modify user data 		*/
-#define WWIVCOLOR	(1L<<4) 		/* Program uses WWIV color codes		*/
-#define EVENTONLY	(1L<<5) 		/* Program executes as event only		*/
-#define STARTUPDIR	(1L<<6) 		/* Create drop file in start-up dir		*/
-#define REALNAME	(1L<<7) 		/* Use real name in drop file			*/
-#define SWAP		(1L<<8) 		/* Swap for this door					*/
-#define FREETIME	(1L<<9) 		/* Free time while in this door 		*/
-#define QUICKBBS	(1L<<10)		/* QuickBBS style editor				*/
-#define EXPANDLF	(1L<<11)		/* Expand LF to CRLF editor 			*/
-#define QUOTEALL	(1L<<12)		/* Automatically quote all of msg		*/
-#define QUOTENONE	(1L<<13)		/* Automatically quote none of msg		*/
-#define XTRN_NATIVE	(1L<<14)		/* Native application (EX_NATIVE)		*/
-#define STRIPKLUDGE (1L<<15)		/* Strip FTN Kludge lines from msg		*/
-#define XTRN_CHKTIME (1<<16)		/* Check time online (EX_CHKTIME)		*/
-#define XTRN_LWRCASE (1<<17)		/* Use lowercase drop-file names		*/
-#define XTRN_SH		 (1<<18)		/* Use command shell to execute			*/
+#define MULTIUSER		(1<<0) 		/* allow multi simultaneous users		*/
+#define ANSI			(1<<1) 		/* user must have ANSI, same as ^^^		*/
+#define IO_INTS 		(1<<2) 		/* Intercept I/O interrupts 			*/
+#define MODUSERDAT		(1<<3) 		/* Program can modify user data 		*/
+#define WWIVCOLOR		(1<<4) 		/* Program uses WWIV color codes		*/
+#define EVENTONLY		(1<<5) 		/* Program executes as event only		*/
+#define STARTUPDIR		(1<<6) 		/* Create drop file in start-up dir		*/
+#define REALNAME		(1<<7) 		/* Use real name in drop file			*/
+#define SWAP			(1<<8) 		/* Swap for this door					*/
+#define FREETIME		(1<<9) 		/* Free time while in this door 		*/
+#define QUICKBBS		(1<<10)		/* QuickBBS style editor				*/
+#define EXPANDLF		(1<<11)		/* Expand LF to CRLF editor 			*/
+#define QUOTEALL		(1<<12)		/* Automatically quote all of msg		*/
+#define QUOTENONE		(1<<13)		/* Automatically quote none of msg		*/
+#define XTRN_NATIVE		(1<<14)		/* Native application (EX_NATIVE)		*/
+#define STRIPKLUDGE		(1<<15)		/* Strip FTN Kludge lines from msg		*/
+#define XTRN_CHKTIME	(1<<16)		/* Check time online (EX_CHKTIME)		*/
+#define XTRN_LWRCASE	(1<<17)		/* Use lowercase drop-file names		*/
+#define XTRN_SH			(1<<18)		/* Use command shell to execute			*/
 
 									/* Bits in cfg.xtrn_misc				*/
 #define XTRN_NO_MUTEX	(1<<0)		/* Do not use exec_mutex for FOSSIL VXD	*/
