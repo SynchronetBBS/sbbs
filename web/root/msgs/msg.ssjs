@@ -56,6 +56,24 @@ if(template.hdr != null)  {
 }
 
 var tmp=find_np_message(get_msg_offset(template.hdr.number),true);
+template.replyto=undefined;
+if(template.hdr.thread_orig!=0) {
+	template.replyto=msgbase.get_msg_header(false,template.hdr.thread_orig);
+	if(template.replyto==null)
+		template.replyto=undefined;
+}
+template.replies=new Array;
+if(template.hdr.thread_first!=0) {
+	/* Fill replies array */
+	var next_reply;
+	var rhdr=new Object;
+	rhdr.thread_next=template.hdr.thread_first;
+	for(;(next_reply=rhdr.thread_next)!=0 && (rhdr=msgbase.get_msg_header(false,next_reply))!=null;) {
+		if(rhdr==null)
+			break;
+		template.replies.push(rhdr);
+	}
+}
 if(tmp!=undefined)
 	template.nextlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+next_msg_html+'</a>';
 tmp=find_np_message(get_msg_offset(template.hdr.number),false);
