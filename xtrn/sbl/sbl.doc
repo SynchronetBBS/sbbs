@@ -1,5 +1,5 @@
-Synchronet BBS List v1.36
-=========================
+Synchronet BBS List v3.11 for Win32
+===================================
 
 Create the directory: SBL off of your Synchronet XTRN directory.
 (Example: C:\SBBS\XTRN\SBL) 
@@ -12,17 +12,24 @@ your liking.
 Under SCFG->External Programs->Online Programs->Main, hit INS and add 
 Synchronet BBS List with the following configuration:
 
-Name				Synchronet BBS List
-Internal Code			SBL
-Start-up Directory		..\XTRN\SBL
-Command Line			SBL
+Name                       Synchronet BBS List
+Internal Code              SBL
+Start-up Directory         ..\XTRN\SBL
+Command Line               sbl
 Clean-up Command Line
-Multiuser			Yes
-Intercept I/O Interrupts	Yes
-Shrink BBS			No
-Modify User Data		No
-BBS Data File Type		Synchronet    XTRN.DAT
-Place Drop File In		Node Directory
+Execution Cost             None
+Access Requirements
+Execution Requirements
+Multiple Concurrent Users  Yes
+Intercept I/O Interrupts   No
+Swap BBS out of Memory     Yes
+Modify User Data           No
+Execute on Event           No
+BBS Drop File Type         Synchronet      XTRN.DAT
+Place Drop File In         Node Directory
+
+Since SBL v3 is a 32-bit program, you MUST add it ("SBL") to your native
+(OS/2) program list under SCFG->External Programs->OS/2 Program List.
 
 SBL Utilities
 =============
@@ -48,7 +55,7 @@ Force Users Off-line for Event	No
 
 Internal Code			SBL2SMB
 Start-up Directory		..\XTRN\SBL
-Command Line			SBL2SMB SBL.DAB %jSUBS\SYNCDATA /S:SYN
+Command Line			SBL2SMB SBL.DAB %jSUBS\SYNCDATA
 Execution Node			1
 Execution Days			Sun Mon Tue Wed Thu Fri Sat
 Execution Time			04:31
