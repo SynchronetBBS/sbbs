@@ -88,7 +88,7 @@ function find_np_message(offset,next)
 
 	if(!next)
 		step=1;
-	for(last_offset=parseInt(offset)+step;last_offset>0 && (idx=msgbase.get_msg_index(true,last_offset))!=null;last_offset+=step) {
+	for(last_offset=parseInt(offset)+step;last_offset>=0 && (idx=msgbase.get_msg_index(true,last_offset))!=null;last_offset+=step) {
 		if(idx.attr&MSG_DELETE)
 			continue;
 		if(idx.attr&MSG_PRIVATE && !idx_to_user(idx))
