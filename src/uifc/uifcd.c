@@ -222,7 +222,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 			scrollpos=0;
 			if(i>height)
 				scrollpos=i-height;
-            ret=dialog_menu(app_title, title, 22, width, height, cnt, it, str, &i, &scrollpos);
+            ret=dialog_menu(app_title, title, height+8, width, height, cnt, it, str, &i, &scrollpos);
             if(ret==1)  {
 				ret = -1;
 				*cur = -1;
@@ -241,7 +241,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(ret==-2)  {
             dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Insert Where?", 22, width, height, freecnt-4, it, str, 0, 0);
+	        	ret=dialog_menu(title, "Insert Where?", height+8, width, height, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
 					*cur=atoi(str)-1;
 					ret=*cur|MSK_INS;
@@ -255,7 +255,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(ret==-3)  {
             dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Delete Which?", 22, width, height, freecnt-4, it, str, 0, 0);
+	        	ret=dialog_menu(title, "Delete Which?", height+8, width, height, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
 					*cur=atoi(str)-1;
 					ret=*cur|MSK_DEL;
@@ -269,7 +269,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(ret==-4)  {
             dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Copy Which?", 22, width, height, freecnt-4, it, str, 0, 0);
+	        	ret=dialog_menu(title, "Copy Which?", height+8, width, height, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
 					*cur=atoi(str)-1;
 					ret=*cur|MSK_GET;
@@ -283,7 +283,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(ret==-5)  {
             dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Paste Where?", 22, width, height, freecnt-4, it, str, 0, 0);
+	        	ret=dialog_menu(title, "Paste Where?", height+8, width, height, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
 					*cur=atoi(str)-1;
 					ret=*cur|MSK_PUT;
