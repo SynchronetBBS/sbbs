@@ -2,6 +2,57 @@
 
 /* $id$ */
 
+DELETED 	=(1<<0) 		/* Bit values for user.misc 		*/
+ANSI		=(1<<1) 		/* Supports ANSI terminal emulation */
+COLOR		=(1<<2) 		/* Send color codes 				*/
+RIP 		=(1<<3) 		/* Supports RIP terminal emulation	*/
+UPAUSE		=(1<<4) 		/* Pause on every screen full		*/
+SPIN		=(1<<5) 		/* Spinning cursor - Same as K_SPIN */
+INACTIVE	=(1<<6) 		/* Inactive user slot				*/
+EXPERT		=(1<<7) 		/* Expert menu mode 				*/
+ANFSCAN 	=(1<<8) 		/* Auto New file scan				*/
+CLRSCRN 	=(1<<9) 		/* Clear screen before each message */
+QUIET		=(1<<10)		/* Quiet mode upon logon			*/
+BATCHFLAG	=(1<<11)		/* File list allow batch dl flags	*/
+NETMAIL 	=(1<<12)		/* Forward e-mail to fidonet addr	*/
+CURSUB		=(1<<13)		/* Remember current sub-board/dir	*/
+ASK_NSCAN	=(1<<14)		/* Ask for newscanning upon logon	*/
+NO_EXASCII	=(1<<15)		/* Don't send extended ASCII        */
+ASK_SSCAN	=(1<<16)		/* Ask for messages to you at logon */
+AUTOTERM	=(1<<17)		/* Autodetect terminal type 		*/
+COLDKEYS	=(1<<18)		/* No hot-keys						*/
+EXTDESC 	=(1<<19)		/* Extended file descriptions		*/
+AUTOHANG	=(1<<20)		/* Auto-hang-up after transfer		*/
+WIP 		=(1<<21)		/* Supports WIP terminal emulation	*/
+AUTOLOGON	=(1<<22)		/* AutoLogon via IP					*/
+
+UFLAG_A		=(1<<0)
+UFLAG_B		=(1<<1)
+UFLAG_C		=(1<<2)
+UFLAG_D		=(1<<3)
+UFLAG_E		=(1<<4)
+UFLAG_F		=(1<<5)
+UFLAG_G		=(1<<6)
+UFLAG_H		=(1<<7)
+UFLAG_I		=(1<<8)
+UFLAG_J		=(1<<9)
+UFLAG_K		=(1<<10)
+UFLAG_L		=(1<<11)
+UFLAG_M		=(1<<12)
+UFLAG_N		=(1<<13)
+UFLAG_O		=(1<<14)
+UFLAG_P		=(1<<15)
+UFLAG_Q		=(1<<16)
+UFLAG_R		=(1<<17)
+UFLAG_S		=(1<<18)
+UFLAG_T		=(1<<19)
+UFLAG_U		=(1<<20)
+UFLAG_V		=(1<<21)
+UFLAG_W		=(1<<22)
+UFLAG_X		=(1<<23)
+UFLAG_Y		=(1<<24)
+UFLAG_Z		=(1<<25)
+
 									/* User Questions						*/
 UQ_ALIASES		=(1<<0) 	/* Ask for alias						*/
 UQ_LOCATION		=(1<<1) 	/* Ask for location 					*/
