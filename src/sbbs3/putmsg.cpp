@@ -239,7 +239,7 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 				if(i)					/* if valid string, go to top */
 					continue; 
 			}
-			if(str[l]!=26)
+			if(str[l]!=CTRL_Z)
 				outchar(str[l]);
 			l++; 
 		} 
@@ -258,19 +258,3 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 	return(str[l]);
 }
 
-/****************************************************************************/
-/* Displays a text file to the screen										*/
-/****************************************************************************/
-void sbbs_t::putmsg_fp(FILE *fp, long length, long mode)
-{
-	char*	buf;
-
-	if((buf=(char*)MALLOC(length+1))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,"fp",length+1);
-		return; 
-	}
-	memset(buf,0,length+1);
-	fread(buf,sizeof(char),length,fp);
-	putmsg(buf,mode);
-	FREE(buf); 
-}

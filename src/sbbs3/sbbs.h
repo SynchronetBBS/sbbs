@@ -452,7 +452,6 @@ public:
 	void	show_msg(smbmsg_t* msg, long mode);
 	void	msgtotxt(smbmsg_t* msg, char *str, int header, int tails);
 	void	quotemsg(smbmsg_t* msg, int tails);
-	void	putmsg_fp(FILE *fp, long length, long mode);
 	void	editmsg(smbmsg_t* msg, uint subnum);
 	void	editor_inf(int xeditnum,char *dest, char *title, long mode
 				,uint subnum);
