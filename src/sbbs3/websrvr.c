@@ -754,7 +754,8 @@ static void close_request(http_session_t * session)
 		putmsgptrs(&scfg, session->user.number, session->subscan);
 
 	if(session->req.cleanup_file!=NULL) {
-		unlink(session->req.cleanup_file);
+		if(!(startup->options&WEB_OPT_DEBUG_SSJS))
+			remove(session->req.cleanup_file);
 		free(session->req.cleanup_file);
 	}
 
