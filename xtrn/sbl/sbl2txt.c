@@ -42,7 +42,7 @@ else {
         hour=gm->tm_hour;
     strcpy(mer,"am"); }
 sprintf(str,"%s %s %02d %4d %02d:%02d %s"
-    ,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
+    ,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,gm->tm_year%100
     ,hour,gm->tm_min,mer);
 return(str);
 }
