@@ -84,14 +84,14 @@
 "\r\nDelete message #%lu '%s'"                          073 DeletePostQ
 "\1n\1hI\1n\1g) AutoLogon via IP address      : "\      074 UserDefaultsAutoLogon
 	"\1h%s\r\n"
-"\1n\r\n\1m%s sent to \1h%s #%u\r\n"               	  075 MsgSentToUser
+"\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
 "_\r\nyhString to search for: "                      076 SearchStringPrompt
-"\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\			  077 PrivateChatSeparator
+"\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\                    077 PrivateChatSeparator
 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
 	"Time Left: \1g%-8s\1w"\
 	" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
 "gh%4lu:ng %-22.22s %-22.22s h%cng %.25s\r\n"    078 SubMsgLstFmt
-"\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\			  079 SysopChatSeparator
+"\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\                    079 SysopChatSeparator
 	"\1rSplit-Screen \1cSysop\1r Chat          \1y"\
 	"Time Left: \1g%-8s\1w"\
 	" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
@@ -182,7 +182,7 @@
 "\r\nNo error log exists.\r\n"                          159 NoErrorLogExists
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
-"\1n\r\n\1mSending telegram to \1h%s #%u\1n\1m "\	  162 SendingTelegramToUser
+"\1n\r\n\1mSending telegram to \1h%s #%u\1n\1m "\       162 SendingTelegramToUser
 	"(Max 5 lines, Blank line ends):\r\n\r\n\1g\1h"  
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
@@ -198,7 +198,7 @@
 "\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
 "\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
 "_\r\n\r\nyhFilespec: n"                            175 FileSpec
-"SY: "                                           	  176 SysopPassword
+"SY: "                                                  176 SysopPassword
 "\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
 "\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
 "-gDirectories of h%-40.40s     "\                   179 DirLstHdr
