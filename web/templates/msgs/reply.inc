@@ -2,6 +2,7 @@
 <table class="replymsg" border="0" cellspacing="2" cellpadding="0">
 <input type="hidden" name="msg_grp" value="%%group:number%%" />
 <input type="hidden" name="msg_sub" value="%%sub:code%%" />
+<input type="hidden" name="reply_to" value="%%number%%" />
   <tbody>
     <tr>
       <td class="replymsg">Subject: <input class="replymsg" type="text" name="subject" value="%%subject%%" /></td>
