@@ -178,6 +178,22 @@ for(displayed=0;displayed<max_messages && last_offset >= 0;last_offset--) {
 	displayed++;
 }
 
+if(sub=='mail' && user.alias!='Guest') {
+	template.can_post=true;
+	}
+	else {		
+	if(msg_area.sub[sub].can_post)  {
+		template.can_post=true;
+	}
+}
+
+if(sub=='mail') {
+	template.post_button="Create New E-Mail";
+}	
+	else {
+	template.post_button="Create New Message";
+}				
+
 write_template("msgs/msgs.inc");
 write_template("footer.inc");
 msgs_done();
