@@ -88,7 +88,7 @@ static int add_char(char *pos, char ch, int done, char *end)
 	if(done)
 		*pos=base64alphabet[64];
 	else
-		*pos=base64alphabet[ch];
+		*pos=base64alphabet[(int)ch];
 	return(0);
 }
 
