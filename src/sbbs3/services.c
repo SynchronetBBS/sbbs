@@ -656,8 +656,8 @@ static void js_service_thread(void* arg)
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
 		lprintf("%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
-		close_socket(socket);
 		client_off(socket);
+		close_socket(socket);
 		active_clients--;
 		update_clients();
 		if(service->clients)
@@ -726,6 +726,8 @@ static void js_service_thread(void* arg)
 
 	if(service->clients)
 		service->clients--;
+	active_clients--;
+	update_clients();
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)
@@ -733,15 +735,12 @@ static void js_service_thread(void* arg)
 		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	lprintf("%04d %s JavaScript service thread terminated (%u clients remain)"
-		, socket, service->protocol, service->clients);
+	thread_down();
+	lprintf("%04d %s JavaScript service thread terminated (%u clients remain, %u total)"
+		, socket, service->protocol, service->clients, active_clients);
 
-	active_clients--;
-	update_clients();
 	client_off(socket);
 	close_socket(socket);
-
-	thread_down();
 }
 
 static void native_service_thread(void* arg)
@@ -847,11 +846,10 @@ static void native_service_thread(void* arg)
 
 	system(fullcmd);
 
-	close_socket(socket);
-	closesocket(socket_dup);	/* close duplicate handle */
-
 	if(service->clients)
 		service->clients--;
+	active_clients--;
+	update_clients();
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)
@@ -859,14 +857,13 @@ static void native_service_thread(void* arg)
 		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	lprintf("%04d %s service thread terminated (%u clients remain)"
-		,socket, service->protocol, service->clients);
-
-	active_clients--;
-	update_clients();
-	client_off(socket);
-
 	thread_down();
+	lprintf("%04d %s service thread terminated (%u clients remain, %u total)"
+		,socket, service->protocol, service->clients, active_clients);
+
+	client_off(socket);
+	close_socket(socket);
+	closesocket(socket_dup);	/* close duplicate handle */
 }
 
 
@@ -940,11 +937,11 @@ static void cleanup(int code)
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
+	thread_down();
     lprintf("#### Services thread terminated");
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
-	thread_down();
 }
 
 const char* DLLCALL services_ver(void)
