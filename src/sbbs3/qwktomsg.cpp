@@ -351,7 +351,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 		j=smb_addcrc(&smb,crc);
 		if(j) {
-			if(j==1) {
+			if(j==SMB_DUPE_MSG) {
 				bprintf("\r\nDuplicate message\r\n");
 				if(!fromhub) {
 					if(subnum==INVALID_SUB) {

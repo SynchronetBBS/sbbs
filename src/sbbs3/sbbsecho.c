@@ -2600,7 +2600,7 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		crc=~crc;
 		i=smb_addcrc(&smb[cur_smb],crc);
 		if(i) {
-			if(i==1)
+			if(i==SMB_DUPE_MSG)
 				printf("Duplicate ");
 			else
 				printf("smb_addcrc returned %d ",i);
