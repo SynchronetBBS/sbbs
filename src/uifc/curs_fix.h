@@ -1,6 +1,6 @@
 /* $Id$ */
 
-#include <curses.h>
+#include <ncurses.h>
 
 #ifndef	ACS_SBSD
 #define ACS_SBSD	ACS_SBSS

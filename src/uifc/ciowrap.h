@@ -16,6 +16,25 @@
 #endif
 #endif
 
+enum {
+	 BLACK
+	,BLUE	
+	,GREEN	
+	,CYAN
+	,RED
+	,MAGENTA
+	,BROWN	
+	,LIGHTGRAY	
+	,DARKGRAY
+	,LIGHTBLUE	
+	,LIGHTGREEN	
+	,LIGHTCYAN
+	,LIGHTRED
+	,LIGHTMAGENTA
+	,YELLOW
+	,WHITE
+};
+
 enum
 {
 	_NOCURSOR,
