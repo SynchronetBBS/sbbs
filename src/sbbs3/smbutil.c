@@ -461,6 +461,8 @@ void listmsgs(ulong start, ulong count)
 
 	if(!start)
 		start=1;
+	if(!count)
+		count=~0;
 	fseek(smb.sid_fp,(start-1L)*sizeof(idxrec_t),SEEK_SET);
 	while(l<count) {
 		if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
@@ -555,6 +557,8 @@ void viewmsgs(ulong start, ulong count)
 
 	if(!start)
 		start=1;
+	if(!count)
+		count=~0;
 	fseek(smb.sid_fp,(start-1L)*sizeof(idxrec_t),SEEK_SET);
 	while(l<count) {
 		if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
