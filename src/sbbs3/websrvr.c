@@ -662,7 +662,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	char	status_line[MAX_REQUEST_LINE];
 	struct stat	stats;
 	struct tm	*t;
-	void	*p;
+	linked_list	*p;
 
 	SAFECOPY(status_line,status);
 	ret=stat(session->req.physical_path,&stats);
@@ -728,13 +728,12 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	if(session->req.was_cgi)  {
 		/* CGI-generated headers */
 		/* Set up environment */
-		p=session->req.cgi_env;
-		while(session->req.cgi_heads != NULL)  {
-			sockprintf(session->socket,"%s",session->req.cgi_heads->val);
-			lprintf("%04d Sending header: %s",session->socket,session->req.cgi_heads->val);
-			session->req.cgi_heads=session->req.cgi_heads->next;
+		p=session->req.cgi_heads;
+		while(p != NULL)  {
+			sockprintf(session->socket,"%s",p->val);
+			lprintf("%04d Sending header: %s",session->socket,p->val);
+			p=p->next;
 		}
-		session->req.cgi_heads=0;
 	}
 
 	sendsocket(session->socket,newline,2);
