@@ -66,7 +66,7 @@ __published:
     TLabel *AnswerSoundLabel;
     TEdit *AnswerSoundEdit;
     TButton *AnswerSoundButton;
-    TLabel *HnagupSoundLabel;
+    TLabel *HangupSoundLabel;
     TEdit *HangupSoundEdit;
     TButton *HangupSoundButton;
     TLabel *MaxClientesLabel;
@@ -93,6 +93,9 @@ __published:
     TEdit *HtmlJavaScriptEdit;
     TLabel *QwkTimeoutLabel;
     TEdit *QwkTimeoutEdit;
+    TLabel *HackAttemptSoundLabel;
+    TEdit *HackAttemptSoundEdit;
+    TButton *HackAttemptSoundButton;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);
@@ -100,6 +103,7 @@ __published:
 	void __fastcall AutoIndexCheckBoxClick(TObject *Sender);
     void __fastcall HtmlJavaScriptButtonClick(TObject *Sender);
     void __fastcall HtmlIndexCheckBoxClick(TObject *Sender);
+    void __fastcall HackAttemptSoundButtonClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TFtpCfgDlg(TComponent* AOwner);

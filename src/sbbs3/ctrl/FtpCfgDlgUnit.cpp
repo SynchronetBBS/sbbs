@@ -78,6 +78,7 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     HtmlJavaScriptEdit->Text=AnsiString(MainForm->ftp_startup.html_index_script);
     AnswerSoundEdit->Text=AnsiString(MainForm->ftp_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->ftp_startup.hangup_sound);
+    HackAttemptSoundEdit->Text=AnsiString(MainForm->ftp_startup.hack_sound);    
     CmdLogCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_RX;
 	DebugTxCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_TX;
 	DebugDataCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_DATA;
@@ -144,6 +145,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     sprintf(MainForm->ftp_startup.hangup_sound,"%.*s"
 	    ,sizeof(MainForm->ftp_startup.hangup_sound)-1
         ,HangupSoundEdit->Text.c_str());
+    sprintf(MainForm->ftp_startup.hack_sound,"%.*s"
+	    ,sizeof(MainForm->ftp_startup.hack_sound)-1
+        ,HackAttemptSoundEdit->Text.c_str());
+
 	if(DebugTxCheckBox->Checked==true)
     	MainForm->ftp_startup.options|=FTP_OPT_DEBUG_TX;
     else
@@ -204,6 +209,15 @@ void __fastcall TFtpCfgDlg::HangupSoundButtonClick(TObject *Sender)
 	}
 }
 //---------------------------------------------------------------------------
+void __fastcall TFtpCfgDlg::HackAttemptSoundButtonClick(TObject *Sender)
+{
+	OpenDialog->FileName=HackAttemptSoundEdit->Text;
+	if(OpenDialog->Execute()==true) {
+    	HackAttemptSoundEdit->Text=OpenDialog->FileName;
+        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
+	}
+}
+//---------------------------------------------------------------------------
 
 void __fastcall TFtpCfgDlg::AutoIndexCheckBoxClick(TObject *Sender)
 {
@@ -228,4 +242,5 @@ void __fastcall TFtpCfgDlg::HtmlIndexCheckBoxClick(TObject *Sender)
     HtmlJavaScriptLabel->Enabled=HtmlIndexCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
+
 

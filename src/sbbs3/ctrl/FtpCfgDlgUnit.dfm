@@ -17,7 +17,7 @@ object FtpCfgDlg: TFtpCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = IndexTabSheet
+    ActivePage = SoundTabSheet
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -296,13 +296,21 @@ object FtpCfgDlg: TFtpCfgDlg
         AutoSize = False
         Caption = 'Connect'
       end
-      object HnagupSoundLabel: TLabel
+      object HangupSoundLabel: TLabel
         Left = 9
         Top = 44
         Width = 80
         Height = 25
         AutoSize = False
         Caption = 'Disconnect'
+      end
+      object HackAttemptSoundLabel: TLabel
+        Left = 9
+        Top = 76
+        Width = 80
+        Height = 25
+        AutoSize = False
+        Caption = 'Hack Attempt'
       end
       object AnswerSoundEdit: TEdit
         Left = 105
@@ -341,6 +349,25 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = '...'
         TabOrder = 3
         OnClick = HangupSoundButtonClick
+      end
+      object HackAttemptSoundEdit: TEdit
+        Left = 105
+        Top = 76
+        Width = 192
+        Height = 24
+        Hint = 'Sound file to play when users disconnect'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
+      end
+      object HackAttemptSoundButton: TButton
+        Left = 304
+        Top = 76
+        Width = 25
+        Height = 26
+        Caption = '...'
+        TabOrder = 5
+        OnClick = HackAttemptSoundButtonClick
       end
     end
   end
