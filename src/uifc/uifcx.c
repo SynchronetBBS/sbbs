@@ -200,7 +200,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
     int lines;
 
     for(opts=0;opts<MAX_OPTS;opts++)
-    	if(option[opts][0]==0)
+    	if(option[opts]==NULL || option[opts][0]==0)
     		break;
 
     if((*cur)>=opts)

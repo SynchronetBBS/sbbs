@@ -135,7 +135,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 	/* Count number of menu options */
     for(cnt=0;cnt<MAX_OPTS;cnt++)
-		if(option[cnt][0]==0)
+		if(option[cnt]==NULL || option[cnt][0]==0)
 	   		break;
 	options=cnt;
 	freecnt=cnt+5;	/* Add, Delete, Copy, Paste, At End */

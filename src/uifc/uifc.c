@@ -374,7 +374,7 @@ if(mode&WIN_GET) bline|=BL_GET;
 if(mode&WIN_PUT) bline|=BL_PUT;
 bottomline(bline);
 while(opts<max_opts && opts<MAX_OPTS)
-	if(option[opts][0]==0)
+	if(option[opts]==NULL || option[opts][0]==0)
 		break;
 	else opts++;
 if(mode&WIN_XTR && opts<max_opts && opts<MAX_OPTS)

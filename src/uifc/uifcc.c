@@ -422,7 +422,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_PUT) bline|=BL_PUT;
 	bottomline(bline);
 	while(opts<max_opts && opts<MAX_OPTS)
-		if(option[opts][0]==0)
+		if(option[opts]==NULL || option[opts][0]==0)
 			break;
 		else opts++;
 	if(mode&WIN_XTR && opts<max_opts && opts<MAX_OPTS)
