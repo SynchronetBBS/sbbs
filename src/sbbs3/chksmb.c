@@ -276,7 +276,7 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%sHeader length mismatch\n",beep);
 			msgerr=1;
 			if(extinfo)
-				printf("MSGERR: Header length (%hu) does not match calculcated length (%u)\n"
+				printf("MSGERR: Header length (%hu) does not match calculcated length (%lu)\n"
 					,msg.hdr.length,smb_getmsghdrlen(&msg));
 			hdrlenerr++; 
 		}
@@ -456,7 +456,7 @@ int main(int argc, char **argv)
 				,msg.hdr.version);
 			printf("%-20s: %u\n","Length"
 				,msg.hdr.length);
-			printf("%-20s: %u\n","Calculated Length"
+			printf("%-20s: %lu\n","Calculated Length"
 				,smb_getmsghdrlen(&msg));
 			printf("%-20s: %04hXh\n","Attributes"
 				,msg.hdr.attr);
