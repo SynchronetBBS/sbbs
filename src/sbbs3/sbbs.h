@@ -121,6 +121,7 @@
 #include "client.h"		/* client_t definition */
 #include "crc16.h"
 #include "crc32.h"
+#include "telnet.h"
 
 /* Synchronet Node Instance class definition */
 #ifdef __cplusplus
@@ -169,10 +170,11 @@ public:
 
 
 	void	send_telnet_cmd(uchar cmd, uchar opt);
-    uchar	telnet_cmd[10];
+    uchar	telnet_cmd[64];
     int		telnet_cmdlen;
 	ulong	telnet_mode;
 	uchar	telnet_last_rxch;
+	char	terminal[TELNET_TERM_MAXLEN+1];
 
 	time_t	event_time;				// Time of next exclusive event
 	char*	event_code;				// Internal code of next exclusive event
