@@ -197,6 +197,7 @@ function terminate_everything(terminate_reason) {
 		if (Client.local)
 			Client.quit(terminate_reason,false)
 	}
+	exit();
 }
 
 function searchbynick(nick) {
@@ -393,7 +394,7 @@ function parse_oline_flags(flags) {
 
 function oper_notice(ntype,nmessage) {
 	for(thisoper in Clients) {
-		oper=Clients[thisoper];
+		var oper=Clients[thisoper];
 		if ((oper.mode&USERMODE_OPER) && !oper.parent)
 			oper.rawout(":" + servername + " NOTICE " + oper.nick + " :*** " + ntype + " -- " + nmessage);
 	}
@@ -683,13 +684,14 @@ function read_config_file() {
 	KLines = new Array();
 	NLines = new Array();
 	OLines = new Array();
+	PLines = new Array();
 	QLines = new Array();
 	ULines = new Array();
 	diepass = "";
 	restartpass = "";
 	YLines = new Array();
 	ZLines = new Array();
-	fname="";
+	var fname="";
 	if (config_filename && config_filename.length)
 		fname=system.ctrl_dir + config_filename;
 	else {
@@ -699,7 +701,7 @@ function read_config_file() {
 		if(!file_exists(fname))
 			fname=system.ctrl_dir + "ircd.conf";
 	}
-	conf = new File(fname);
+	var conf = new File(fname);
 	if (conf.open("r")) {
 		log("Reading Config: " + fname);
 		while (!conf.eof) {
@@ -749,6 +751,7 @@ function read_config_file() {
 							break;
 						servername = arg[1];
 						serverdesc = arg[3];
+						mline_port = parseInt(arg[4]);
 						break;
 					case "N":
 						if (!arg[5])
@@ -759,6 +762,9 @@ function read_config_file() {
 						if (!arg[5])
 							break;
 						OLines.push(new OLine(arg[1],arg[2],arg[3],parse_oline_flags(arg[4]),parseInt(arg[5])));
+						break;
+					case "P":
+						PLines.push(parseInt(arg[4]));
 						break;
 					case "Q":
 						if (!arg[3])
@@ -799,6 +805,24 @@ function read_config_file() {
 	YLines[0] = new YLine(120,600,1,5050000); // default irc class
 }
 
+function create_new_socket(port) {
+	log("Creating new socket object on port " + port);
+	var newsock = { socket: new Socket(), terminated: false };
+	if(!newsock.socket.bind(port)) {
+		log("!Error " + newsock.socket.error + " binding socket to TCP port " + port);
+		return 0;
+	}
+	log(format("%04u ",newsock.socket.descriptor)
+		+ "IRC server socket bound to TCP port " + port);
+	if(!newsock.socket.listen(5 /* backlog */)) {
+		log("!Error " + newsock.socket.error + " setting up socket for listening");
+		return 0;
+	}
+	newsock.socket.nonblocking = true;	// REQUIRED!
+	newsock.socket.debug = false;	// Will spam your log if true :)
+	return newsock;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////   End of functions.  Start main() program here.   //////////////
@@ -830,7 +854,7 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 			config_filename = argv[++cmdarg];
 			break;
 		case "-p":
-			default_port = argv[++cmdarg];
+			cmdline_port = parseInt(argv[++cmdarg]);
 			break;
 	}
 }
@@ -838,22 +862,25 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 read_config_file();
 
 if(this.server==undefined) {	// Running from JSexec?
-	log("Creating server object");
-	server = { socket: new Socket(), terminated: false };
-	if(!server.socket.bind(default_port)) {
-		log("!Error " + server.socket.error + " binding socket to TCP port " + default_port);
+	if (cmdline_port)
+		default_port = cmdline_port;
+	else if (mline_port)
+		default_port = mline_port;
+
+	server = create_new_socket(default_port)
+	if (!server)
 		exit();
-	}
-	log(format("%04u ",server.socket.descriptor)
-		+ "IRC server socket bound to TCP port " + default_port);
-	if(!server.socket.listen(5 /* backlog */)) {
-		log("!Error " + server.socket.error + " setting up socket for listening");
-		exit();
-	}
 }
 
-server.socket.nonblocking = true;	// REQUIRED!
-server.socket.debug = false;		// Will spam your log if true :)
+// Now open additional listening sockets as defined on the P:Line in ircd.conf
+open_plines = new Array();
+// Make our 'server' object the first open P:Line
+open_plines[0] = server;
+for (pl in PLines) {
+	var new_pl_sock = create_new_socket(PLines[pl]);
+	if (new_pl_sock)
+		open_plines.push(new_pl_sock);
+}
 
 if(this.branch!=undefined)
 	branch.limit=0; // we're not an infinite loop.
@@ -867,17 +894,19 @@ while (!server.terminated) {
 		break;
 
 	// Setup a new socket if a connection is accepted.
-	if (server.socket.poll()) {
-		client_sock=server.socket.accept();
-		if(client_sock) {
-			if (iszlined(client_sock.remote_ip_address)) {
-				client_sock.send(":" + servername + " 465 * :You've been Z:Lined from this server.\r\n");
-				client_sock.close();
-			} else {
-				new_id = get_next_clientid();
-				Clients[new_id]=new IRCClient(client_sock,new_id,true,true);
-				if(server.client_add != undefined)
-					server.client_add(client_sock);
+	for (pl in open_plines) {
+		if (open_plines[pl].socket.poll()) {
+			var client_sock=open_plines[pl].socket.accept();
+			if(client_sock) {
+				if (iszlined(client_sock.remote_ip_address)) {
+					client_sock.send(":" + servername + " 465 * :You've been Z:Lined from this server.\r\n");
+					client_sock.close();
+				} else {
+					new_id = get_next_clientid();
+					Clients[new_id]=new IRCClient(client_sock,new_id,true,true);
+					if(server.client_add != undefined)
+						server.client_add(client_sock);
+				}
 			}
 		}
 	}
@@ -2933,7 +2962,6 @@ function IRCClient_registered_commands(command, cmdline) {
 			oper_notice("Notice",rs_str);
 			log("!WARNING " + rs_str + " per " + this.ircnuh);
 			terminate_everything(rs_str);
-			exit();
 			break;
 		case "SQUIT":
 			if (!(this.mode&USERMODE_OPER)) {
