@@ -69,6 +69,7 @@
 #include <stdlib.h>		/* rand */
 #include <errno.h>		/* ENOENT definitions */
 
+#include "genwrap.h"	/* strupr/strlwr */
 #include "dirwrap.h"	/* DLLCALL */
 
 /****************************************************************************/
