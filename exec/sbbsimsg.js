@@ -48,6 +48,7 @@ for(i in list) {
 	word = list[i].split(/\s+/);
 
 	if(word[0].charAt(0)==';' ||		// comment? 
+		word[0] == system.host_name ||
 		word[0] == system.inetaddr)		// local system?
 		continue;						// ignore
 
@@ -79,7 +80,7 @@ function save_sys_list()
 		if(sys[i].ip == undefined)
 			f.writeln(sys[i].addr);
 		else
-			f.writeln(format("%-63s %s", sys[i].addr, sys[i].ip));
+			f.writeln(format("%-63s ", sys[i].addr) +  sys[i].ip);
 	}
 	f.close();
 }
@@ -134,6 +135,7 @@ function list_users(show)
 {
 	imsg_user = new Array();
 	var udp_req=0;
+	var udp_replies=0;
 	var replies=0;
 
 	users = 0;
@@ -156,7 +158,8 @@ function list_users(show)
 	}
 
 	begin = new Date();
-	while(replies<udp_req && new Date().valueOf()-begin.valueOf() < UDP_RESPONSE_TIMEOUT)
+	while(replies<udp_req && new Date().valueOf()-begin.valueOf() < UDP_RESPONSE_TIMEOUT 
+		&& !(bbs.sys_status&SS_ABORT))
 	{
 
 		if(!sock.poll(1))
@@ -169,6 +172,7 @@ function list_users(show)
 		if(i==-1)
 			continue;
 		replies++;
+		udp_replies++;
 		sys[i].udp=true;
 		sys[i].reply=new Date().valueOf()-start.valueOf();
 
@@ -240,8 +244,8 @@ function list_users(show)
 	
 	
 	t = new Date().valueOf()-start.valueOf();
-	printf("\1m\1h%lu systems and %lu users listed in %d seconds.\r\n"
-		,replies, users, t/1000);
+	printf("\1m\1h%lu systems (%lu UDP) and %lu users listed in %d seconds.\r\n"
+		,replies, udp_replies, users, t/1000);
 	save_sys_list();
 }
 
