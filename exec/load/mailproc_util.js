@@ -51,7 +51,7 @@ function get_msg_body(msgtxt)
 	var hdr = true;
 
 	for(i in msgtxt) {
-		if(msgtxt[i].length==0)	{ // Header terminator
+		if(hdr && msgtxt[i].length==0)	{ // Header terminator
 			hdr = false;
 			continue;
 		}
