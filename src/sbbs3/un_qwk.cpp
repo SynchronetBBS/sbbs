@@ -57,6 +57,10 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	DIR*	dir;
 	DIRENT*	dirent;
 	FILE*	qwk;
+	BOOL	twit_list;
+
+	sprintf(fname,"%stwitlist.cfg",cfg.ctrl_dir);
+	twit_list=fexist(fname);
 
 	start=time(NULL);
 	if((l=flength(packet))<1) {
@@ -193,15 +197,18 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		j=cfg.qhub[hubnum]->sub[j];
 
 		/* TWIT FILTER */
-		sprintf(fname,"%stwitlist.cfg",cfg.ctrl_dir);
-		sprintf(str,"%25.25s",block+46);  /* From user */
-		truncsp(str);
+		if(twit_list) {
+			sprintf(fname,"%stwitlist.cfg",cfg.ctrl_dir);
 
-		if(findstr(str,fname)) {
-			eprintf("!Filtering post from twit (%s) on %s %s"
-				,str
-				,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
-			continue; 
+			sprintf(str,"%25.25s",block+46);  /* From user */
+			truncsp(str);
+
+			if(findstr(str,fname)) {
+				eprintf("!Filtering post from twit (%s) on %s %s"
+					,str
+					,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
+				continue; 
+			}
 		}
 
 		if(j!=lastsub) {
