@@ -72,6 +72,85 @@
 #endif
 
 /****************************************************************************/
+/* POSIX.2 directory pattern matching function								*/
+/****************************************************************************/
+#ifndef __unix__
+int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
+{
+    struct	_finddata_t ff;
+	long	ff_handle;
+	size_t	found=0;
+	char	path[MAX_PATH];
+	char*	p;
+	char**	new_pathv;
+
+	if(!(flags&GLOB_APPEND)) {
+		glob->gl_pathc=0;
+		glob->gl_pathv=NULL;
+	}
+
+	ff_handle=_findfirst(pattern,&ff);
+	while(ff_handle!=-1) {
+		if(!(flags&GLOB_ONLYDIR) || ff.attrib&_A_SUBDIR) {
+			if((new_pathv=realloc(glob->gl_pathv
+				,(glob->gl_pathc+1)*sizeof(char*)))==NULL) {
+				globfree(glob);
+				return(GLOB_NOSPACE);
+			}
+			glob->gl_pathv=new_pathv;
+
+			/* build the full pathname */
+			strcpy(path,pattern);
+			p=strrchr(path,'\\');
+			if(!p) p=strrchr(path,'/');
+			if(p) p++;
+			else p=path;
+			*p=0;
+			strcat(path,ff.name);
+
+			if((glob->gl_pathv[glob->gl_pathc]=malloc(strlen(path)+2))==NULL) {
+				globfree(glob);
+				return(GLOB_NOSPACE);
+			}
+			strcpy(glob->gl_pathv[glob->gl_pathc],path);
+			if(flags&GLOB_MARK && ff.attrib&_A_SUBDIR)
+				strcat(glob->gl_pathv[glob->gl_pathc],"/");
+
+			glob->gl_pathc++;
+			found++;
+		}
+		if(_findnext(ff_handle, &ff)!=0) {
+			_findclose(ff_handle);
+			ff_handle=-1; 
+		} 
+	}
+
+	if(found==0)
+		return(GLOB_NOMATCH);
+
+	return(0);	/* success */
+}
+
+void DLLCALL globfree(glob_t* glob)
+{
+	size_t i;
+
+	if(glob==NULL)
+		return;
+
+	if(glob->gl_pathv!=NULL) {
+		for(i=0;i<glob->gl_pathc;i++)
+			if(glob->gl_pathv[i]!=NULL)
+				free(glob->gl_pathv[i]);
+
+		free(glob->gl_pathv);
+		glob->gl_pathv=NULL;
+	}
+	glob->gl_pathc=0;
+}
+#endif
+
+/****************************************************************************/
 /* Returns the time/date of the file in 'filename' in time_t (unix) format  */
 /****************************************************************************/
 long DLLCALL fdate(char *filename)
@@ -83,6 +162,20 @@ long DLLCALL fdate(char *filename)
 
 	return(st.st_mtime);
 }
+
+/****************************************************************************/
+/* Returns TRUE if the filename specified is a directory					*/
+/****************************************************************************/
+BOOL DLLCALL isdir(char *filename)
+{
+	STAT st;
+
+	if(stat(filename, &st)!=0)
+		return(FALSE);
+
+	return((st.st_mode&S_IFDIR) ? TRUE : FALSE);
+}
+
 
 /****************************************************************************/
 /* Returns the attributes (mode) for specified 'filename'					*/
@@ -225,12 +318,13 @@ ulong DLLCALL getfreediskspace(char* path)
 	if ((hK32 = LoadLibrary("KERNEL32")) == NULL)
 		return(0);
 
-	GetDiskFreeSpaceEx = (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
+	GetDiskFreeSpaceEx 
+		= (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
  
 	if (GetDiskFreeSpaceEx!=NULL) {	/* Windows 95-OSR2 or later */
 		if(!GetDiskFreeSpaceEx(
 			path,		// pointer to the directory name
-			&avail,		// receives the number of bytes on disk available to the caller
+			&avail,		// receives the number of bytes on disk avail to the caller
 			&size,		// receives the number of bytes on disk
 			NULL))		// receives the free bytes on disk
 			return(0);
