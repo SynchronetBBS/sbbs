@@ -64,13 +64,11 @@
 #define BIND_FAILURE_HELP	"!Another application or service may be using this port"
 #define UNKNOWN_LOAD_ERROR	"Unknown load error - Library mismatch?"
 
-#ifdef JAVASCRIPT
-	#define	JAVASCRIPT_MAX_BYTES		(4*1024*1024)
-	#define JAVASCRIPT_CONTEXT_STACK	(16*1024)
-	#define JAVASCRIPT_BRANCH_LIMIT		99999999
-	#define JAVASCRIPT_YIELD_FREQUENCY	10000
-	#define JAVASCRIPT_GC_FREQUENCY		100 
-#endif
+#define	JAVASCRIPT_MAX_BYTES		(8*1024*1024)
+#define JAVASCRIPT_CONTEXT_STACK	(16*1024)
+#define JAVASCRIPT_BRANCH_LIMIT		99999999
+#define JAVASCRIPT_YIELD_FREQUENCY	10000
+#define JAVASCRIPT_GC_FREQUENCY		100 
 
 #ifndef __FLAT__
 #define __FLAT__	/* 32-bit "flat" memory model */
