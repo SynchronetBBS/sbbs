@@ -57,8 +57,8 @@ msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
 	q->owner_thread_id = GetCurrentThreadId();
 
 	if(q->flags&MSG_QUEUE_BIDIR)
-		listInit(&q->in,LINK_LIST_DONT_FREE|LINK_LIST_SEMAPHORE);
-	listInit(&q->out,LINK_LIST_DONT_FREE|LINK_LIST_SEMAPHORE);
+		listInit(&q->in,LINK_LIST_SEMAPHORE);
+	listInit(&q->out,LINK_LIST_SEMAPHORE);
 
 	return(q);
 }
@@ -181,7 +181,7 @@ void* msgQueueRead(msg_queue_t* q, long timeout)
 	if(!list_wait(msgQueueReadList(q),timeout))
 		return(NULL);
 
-	return listPopFirstNode(msgQueueReadList(q));
+	return listShiftNode(msgQueueReadList(q));
 }
 
 void* msgQueuePeek(msg_queue_t* q, long timeout)
@@ -199,7 +199,7 @@ void* msgQueueFind(msg_queue_t* q, const void* data, size_t length)
 
 	if((node=listFindNode(list,data,length))==NULL)
 		return(NULL);
-	return listRemoveNode(list,node);
+	return listRemoveNode(list,node,/* Free Data? */FALSE);
 }
 
 list_node_t* msgQueueFirstNode(msg_queue_t* q)

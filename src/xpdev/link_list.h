@@ -54,13 +54,12 @@ extern "C" {
 
 /* Valid link_list_t.flags bits */
 #define LINK_LIST_MALLOC		(1<<0)	/* List/node allocated with malloc() */
-#define LINK_LIST_DONT_FREE		(1<<1)	/* Don't free node data when removing */
-#define LINK_LIST_ALWAYS_FREE	(1<<2)	/* ALWAYS free node data when removing */
-#define LINK_LIST_NEVER_FREE	(1<<3)	/* NEVER free node data (careful of memory leaks!) */
-#define LINK_LIST_MUTEX			(1<<4)	/* Mutex-protected linked-list */
-#define LINK_LIST_SEMAPHORE		(1<<5)	/* Semaphore attached to linked-list */
-#define LINK_LIST_NODE_LOCKED	(1<<6)	/* Node is locked */
-#define LINK_LIST_ATTACH		(1<<7)	/* Attach during init */
+#define LINK_LIST_ALWAYS_FREE	(1<<1)	/* ALWAYS free node data in listFreeNodes() */
+#define LINK_LIST_NEVER_FREE	(1<<2)	/* NEVER free node data (careful of memory leaks!) */
+#define LINK_LIST_MUTEX			(1<<3)	/* Mutex-protected linked-list */
+#define LINK_LIST_SEMAPHORE		(1<<4)	/* Semaphore attached to linked-list */
+#define LINK_LIST_NODE_LOCKED	(1<<5)	/* Node is locked */
+#define LINK_LIST_ATTACH		(1<<6)	/* Attach during init */
 
 typedef struct list_node {
 	void*				data;			/* pointer to some kind of data */
@@ -172,14 +171,14 @@ BOOL			listSwapNodes(list_node_t* node1, list_node_t* node2);
 #define listInsertNodeString(list, str)			listAddNodeString(list, str, FIRST_NODE)
 #define	listPushStringList(list, str_list)		listAddStringList(list, str_list, listLastNode(list))
 #define listInsertStringList(list, str_list)	listAddStringList(list, str_list, FIRST_NODE)
-#define listPopNode(list)						listRemoveNode(list, listLastNode(list))
-#define listPopFirstNode(list)					listRemoveNode(list, FIRST_NODE)
+#define listPopNode(list)						listRemoveNode(list, listLastNode(list), FALSE)
+#define listShiftNode(list)						listRemoveNode(list, FIRST_NODE, FALSE)
 
 /* Remove node from list, returning the node's data (if not free'd) */
-void*			listRemoveNode(link_list_t*, list_node_t* /* NULL=first */);
+void*			listRemoveNode(link_list_t*, list_node_t* /* NULL=first */, BOOL free_data);
 
 /* Remove multiple nodes from list, returning the number of nodes removed */
-long			listRemoveNodes(link_list_t*, list_node_t* /* NULL=first */, long count);
+long			listRemoveNodes(link_list_t*, list_node_t* /* NULL=first */, long count, BOOL free_data);
 
 #if defined(__cplusplus)
 }
