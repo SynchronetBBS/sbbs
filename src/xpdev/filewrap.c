@@ -83,26 +83,10 @@ long DLLCALL filelength(int fd)
 
 /* Sets a lock on a portion of a file */
 #ifdef __QNX__
-int DLLCALL lock(int file, long offset, long len)
-{    
-#if 0
-	int		i;
-	long	pos;
-
-    pos=tell(file);
-    if(offset!=pos)
-        lseek(file, offset, SEEK_SET);
-    i=lockf(file,F_TLOCK,len);
-    if(offset!=pos)
-        lseek(file, pos, SEEK_SET);
-
-    return(i);
-#else
-	return(0);
-#endif
-}
+int DLLCALL lock(int fd, long pos, long len)
 #else	/* Not QNX */
 int DLLCALL lock(int fd, long pos, int len)
+#endif
 {
 	#if defined(F_SANERDLCKNO) || !defined(BSD)
  		struct flock alock;
@@ -135,30 +119,13 @@ int DLLCALL lock(int fd, long pos, int len)
 
 		return(0);
 }
-#endif /* !QNX */
 
 /* Removes a lock from a file record */
 #ifdef __QNX__
-int DLLCALL unlock(int file, long offset, long len)
-{
-#if 0
-    int		i;
-    long	pos;
-   
-	pos=tell(file);
-	if(offset!=pos)
-		lseek(file, offset, SEEK_SET);
-	i=lockf(file,F_ULOCK,len);
-	if(offset!=pos)
-		lseek(file, pos, SEEK_SET);
-
-	return(i);
-#else
-	return(0);
-#endif
-}
+int DLLCALL unlock(int fd, long pos, long len)
 #else
 int DLLCALL unlock(int fd, long pos, int len)
+#endif
 {
 
 #if defined(F_SANEUNLCK) || !defined(BSD)
@@ -183,10 +150,16 @@ int DLLCALL unlock(int fd, long pos, int len)
 
 	return(0);
 }
-#endif /* !QNX */
 
-#ifndef __QNX__
 /* Opens a file in specified sharing (file-locking) mode */
+#ifdef __QNX__
+int DLLCALL qnx_sopen(char *fn, int access, int share)
+{
+#undef sopen		/* Stupid macro trick */
+	return(sopen(fn, access, share, S_IREAD|S_IWRITE));
+#define sopen(x,y,z)	qnx_sopen(x,y,z)
+}
+#else
 int DLLCALL sopen(char *fn, int access, int share)
 {
 	int fd;
@@ -202,7 +175,6 @@ int DLLCALL sopen(char *fn, int access, int share)
 
 	if (share == SH_DENYNO) /* no lock needed */
 		return fd;
-
 #if defined(F_SANEWRLCKNO) || !defined(BSD)
 	/* use fcntl (doesn't work correctly with threads) */
 	alock.l_type = share;
@@ -210,7 +182,7 @@ int DLLCALL sopen(char *fn, int access, int share)
 	alock.l_start = 0;
 	alock.l_len = 0;       /* lock to EOF */
 
-	if(fcntl(fd, F_SETLK, &alock)==-1) {
+	if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL) {	/* EINVAL means the file does not support locking */
 		close(fd);
 		return -1;
 	}
@@ -222,7 +194,7 @@ int DLLCALL sopen(char *fn, int access, int share)
 		flock_op|=LOCK_EX;
 	else   /* SH_DENYWR */
 		flock_op|=LOCK_SH;
-	if(flock(fd,flock_op)!=0) {
+	if(flock(fd,flock_op)!=0 && errno != EOPNOTSUPP) { /* That object doesn't do locks */
 		if(errno==EWOULDBLOCK) 
 			errno=EAGAIN;
 		close(fd);
@@ -232,7 +204,7 @@ int DLLCALL sopen(char *fn, int access, int share)
 
 	return fd;
 }
-#endif
+#endif /* !QNX */
 
 #elif defined _MSC_VER || defined __MINGW32__
 
