@@ -368,6 +368,9 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 {
 	DWORD	i;
 	char*	arg;
+	char	name[256];
+	SECURITY_ATTRIBUTES secattr;
+	SECURITY_DESCRIPTOR secdesc;
 
 	for(i=0;i<argc;i++) {
 		arg=argv[i];
@@ -380,13 +383,18 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 	svc_lputs(svc,"Starting service");
 
     if((svc->status_handle = RegisterServiceCtrlHandler(svc->name, svc->ctrl_handler))==0) {
-		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
+		svc_lputs(NULL,"!ERROR registering service control handler");
 		return;
 	}
 
-	if(svc->recycle_sem!=NULL 
-		&& ((*svc->recycle_sem)=CreateSemaphore(NULL,0,1,svc->name))==NULL)
-		svc_lputs(svc,"!Error creating recycle semaphore");
+	if(svc->recycle_sem!=NULL) {
+		InitializeSecurityDescriptor(&secdesc,SECURITY_DESCRIPTOR_REVISION);
+		secattr.nLength=sizeof(secattr);
+		secattr.lpSecurityDescriptor=&secdesc;
+		sprintf(name,"%sRecycle",svc->name);
+		if(((*svc->recycle_sem)=CreateSemaphore(&secattr,0,1,name))==NULL)
+			svc_lputs(NULL,"!ERROR creating recycle semaphore");
+	}
 
 	memset(&svc->status,0,sizeof(SERVICE_STATUS));
 	svc->status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
