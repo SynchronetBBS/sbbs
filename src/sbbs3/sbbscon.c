@@ -1586,7 +1586,7 @@ int main(int argc, char** argv)
 
 			/* Can't recycle servers (re-bind ports) as non-root user */
 			/* If DONT_BLAME_SYNCHRONET is set, keeps root credentials laying around */
-#if !defined(DONT_BLAME_SYNCHRONET) && !defined(_THREAD_SUID_BROKEN)
+#if !defined(DONT_BLAME_SYNCHRONET)
  			if(bbs_startup.telnet_port < IPPORT_RESERVED
 				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
 					&& bbs_startup.rlogin_port < IPPORT_RESERVED))
