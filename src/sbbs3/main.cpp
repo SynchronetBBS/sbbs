@@ -235,6 +235,29 @@ u_long resolve_ip(char *addr)
 
 #ifdef JAVASCRIPT
 
+JSBool	
+DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, char* str[],uintN flags)
+{
+	JSObject*	array;
+	JSString*	js_str;
+	jsval		val;
+	size_t		i;
+		
+	if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)
+		return(JS_FALSE);
+
+	for(i=0;str[i]!=NULL;i++) {
+		if((js_str = JS_NewStringCopyZ(cx, str[i]))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
+		if(!JS_SetElement(cx, array, i, &val))
+			break;
+	}
+
+	return(JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(array)
+		,NULL,NULL,flags));
+}
+
 static JSClass js_method_class = {
      "Method"				/* name			*/
     ,0						/* flags		*/
