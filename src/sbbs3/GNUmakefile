@@ -36,6 +36,12 @@ ifdef DEBUG
 else
  BUILD	=	release
 endif
+BUILDPATH	:=	$(BUILD)
+
+ifeq ($(shell hostname),dmjunk.kingcole.local)
+ THREADS_ACTUALLY_WORK=1
+ BUILDPATH	:=	redhat
+endif
 
 ifdef bcc
  CC		=	bc++ -q
@@ -94,8 +100,8 @@ else
  endif
 endif
 
-LIBODIR :=	$(CCPRE).$(os).lib.$(BUILD)
-EXEODIR :=	$(CCPRE).$(os).exe.$(BUILD)
+LIBODIR :=	$(CCPRE).$(os).lib.$(BUILDPATH)
+EXEODIR :=	$(CCPRE).$(os).exe.$(BUILDPATH)
 
 DELETE	=	rm -f
 
@@ -196,7 +202,11 @@ ifdef USE_CURSES
  ifeq ($(os),qnx)
   UIFC_LFLAGS += -lncurses
  else
-  UIFC_LFLAGS += -lcurses
+  ifeq ($(os),netbsd)
+   UIFC_LFLAGS += -lncurses
+  else
+   UIFC_LFLAGS += -lcurses
+  endif
  endif
  UIFC_OBJS +=	$(LIBODIR)/uifcc.o
 endif
@@ -206,7 +216,11 @@ ifdef USE_UIFC32
  ifeq ($(os),qnx)
   UIFC_LFLAGS += -lncurses
  else
-  UIFC_LFLAGS += -lcurses
+  ifeq ($(os),netbsd)
+   UIFC_LFLAGS += -lncurses
+  else
+   UIFC_LFLAGS += -lcurses
+  endif
  endif
  UIFC_OBJS +=	$(LIBODIR)/uifc32.o
  UIFC_OBJS +=	$(LIBODIR)/ciowrap.o
