@@ -52,7 +52,7 @@
 	#ifndef VTOOLSD
 
 	/* FreeBSD uses <stdlib.h> instead of <malloc.h> */
-	#ifdef __FreeBSD__
+	#ifdef __unix__
 		#include <stdlib.h>
 	#else
 		#include <malloc.h>		/* malloc prototype */

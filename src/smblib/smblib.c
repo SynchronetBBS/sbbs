@@ -49,7 +49,7 @@
 
 /* ANSI C Library headers */
 
-#ifndef __FreeBSD__
+#ifndef __unix__
 	#include <malloc.h>
 #endif
 

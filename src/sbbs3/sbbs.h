@@ -86,7 +86,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef __FreeBSD__
+#ifndef __unix__
 
 	#include <malloc.h>
 

@@ -37,7 +37,7 @@
 
 /* ANSI */
 
-#ifdef __FreeBSD__
+#ifdef __unix__
 	#include <stdlib.h>		/* malloc/realloc/free is defined here */
 #else
 	#include <malloc.h>

@@ -55,7 +55,7 @@
 	#include <mem.h>
 #endif
 
-#ifndef __FreeBSD__
+#ifndef __unix__
 	#include <malloc.h>
 #endif
 
