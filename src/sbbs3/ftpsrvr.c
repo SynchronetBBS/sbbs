@@ -437,7 +437,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		fprintf(fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
-JSContext* js_initcx(JSObject** glob)
+JSContext* js_initcx(SOCKET sock, JSObject** glob)
 {
 	char		ver[256];
 	JSContext*	js_cx;
@@ -445,6 +445,8 @@ JSContext* js_initcx(JSObject** glob)
 	JSObject*	sysobj;
 	jsval		val;
 	BOOL		success=FALSE;
+
+	lprintf("%04d JavaScript: Initializing context",sock);
 
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
@@ -455,12 +457,14 @@ JSContext* js_initcx(JSObject** glob)
 
 	do {
 
+		lprintf("%04d JavaScript: Initializing Global object",sock);
 		if((js_glob=js_CreateGlobalObject(&scfg, js_cx))==NULL) 
 			break;
 
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
 			break;
 
+		lprintf("%04d JavaScript: Initializing System object",sock);
 		if((sysobj=js_CreateSystemObject(&scfg, js_cx, js_glob))==NULL) 
 			break;
 
@@ -1935,8 +1939,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
-	lprintf("%04d JavaScript: Initializing context",sock);
-	if(((js_cx=js_initcx(&js_glob))==NULL)) {
+	if(((js_cx=js_initcx(sock,&js_glob))==NULL)) {
 		lprintf("%04d !ERROR initializing JavaScript context",sock);
 		sockprintf(sock,"425 Error initializing JavaScript context");
 		close_socket(&sock,__LINE__);
