@@ -1339,11 +1339,14 @@ void event_thread(void* arg)
 			if(!sbbs->cfg.event[i]->node || sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes)
 				continue;
 			tm=gmtime(&sbbs->cfg.event[i]->last);
-			if(tm==NULL || sbbs->cfg.event[i]->last==-1
-				|| ((now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
-				&& (now_tm.tm_mday!=tm->tm_mday || now_tm.tm_mon!=tm->tm_mon)
-				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday))) {
-
+			if(tm==NULL)
+				continue;
+			if(sbbs->cfg.event[i]->last==-1 ||
+				(((sbbs->cfg.event[i]->freq && (now-sbbs->cfg.event[i]->last)/60>sbbs->cfg.event[i]->freq)
+				|| 	(!sbbs->cfg.event[i]->freq && (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
+				&& (now_tm.tm_mday!=tm->tm_mday || now_tm.tm_mon!=tm->tm_mon)))
+				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday))) 
+			{
 				if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
 
 					if(sbbs->cfg.event[i]->node<first_node
