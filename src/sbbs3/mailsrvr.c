@@ -1066,13 +1066,14 @@ static void smtp_thread(void* arg)
 	char		month[16];
 	char		rcpt_name[128];
 	char		rcpt_addr[128];
-	char		sender[128]={0};
-	char		sender_addr[128]={0};
+	char		sender[128];
+	char		sender_addr[128];
 	char		hello_name[128];
 	char		relay_list[MAX_PATH+1];
 	char		domain_list[MAX_PATH+1];
 	char		host_name[128];
 	char		host_ip[64];
+	char*		telegram_buf;
 	int			addr_len;
 	ushort		xlat;
 	ushort		nettype=NET_NONE;
@@ -1081,6 +1082,7 @@ static void smtp_thread(void* arg)
 	ulong		length;
 	ulong		offset;
 	BOOL		esmtp=FALSE;
+	BOOL		telegram=FALSE;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
 	FILE*		rcptlst;
@@ -1092,6 +1094,7 @@ static void smtp_thread(void* arg)
 	smbmsg_t	msg;
 	smbmsg_t	newmsg;
 	user_t		user;
+	node_t		node;
 	client_t	client;
 	struct tm	tm;
 	smtp_t		smtp=*(smtp_t*)arg;
@@ -1099,8 +1102,11 @@ static void smtp_thread(void* arg)
 	enum {
 			 SMTP_STATE_INITIAL
 			,SMTP_STATE_HELO
-			,SMTP_STATE_MAIL_FROM
-			,SMTP_STATE_RCPT_TO
+			,SMTP_STATE_MAIL
+			,SMTP_STATE_SEND
+			,SMTP_STATE_SOML
+			,SMTP_STATE_SAML
+			,SMTP_STATE_RCPT
 			,SMTP_STATE_DATA_HEADER
 			,SMTP_STATE_DATA_BODY
 
@@ -1261,178 +1267,231 @@ static void smtp_thread(void* arg)
 			fprintf(spy,"%s\n",buf);
 		if(state>=SMTP_STATE_DATA_HEADER) {
 			if(!strcmp(buf,".")) {
-				lprintf("%04d SMTP End of message (%lu bytes)", socket, ftell(msgtxt));
 
-				if(sender[0]==0) {
-					lprintf("%04d !SMTP MISSING mail header 'FROM' field", socket);
-					sockprintf(socket, "554 Mail header missing 'FROM' field");
-					state=SMTP_STATE_HELO;
+				state=SMTP_STATE_HELO;	/* RESET state machine here in case of error */
+
+				if(msgtxt==NULL) {
+					lprintf("%04d !SMTP NO MESSAGE TEXT FILE POINTER?", socket);
+					sockprintf(socket,SMTP_OK);
 					continue;
 				}
 
-				if(msgtxt!=NULL) {
+				lprintf("%04d SMTP End of message (%lu bytes)", socket, ftell(msgtxt));
+
+				if(telegram==TRUE) {
 					rewind(msgtxt);
-					sprintf(smb.file,"%smail", scfg.data_dir);
-					smb.retry_time=scfg.smb_retry_time;
-					if((i=smb_open(&smb))!=0) {
-						lprintf("%04d !SMTP ERROR %d (%s) opening %s"
-							,socket, i, smb.last_error, smb.file);
+					length=filelength(fileno(msgtxt));
+					sprintf(str,"\1n\1h%s\1n: ",sender_addr);
+					/* Append real IP and hostname if different */
+					if((telegram_buf=(char*)malloc(length+strlen(str)+1))==NULL) {
+						lprintf("%04d !SMTP ERROR allocating %lu bytes of memory for telegram from %s"
+							,socket,length+strlen(str)+1,sender_addr);
 						sockprintf(socket, "452 Insufficient system storage");
-						continue;
+						continue; 
 					}
-
-					if(smb_fgetlength(smb.shd_fp)<1) {	 /* Create it if it doesn't exist */
-						smb.status.max_crcs=scfg.mail_maxcrcs;
-						smb.status.max_age=scfg.mail_maxage;
-						smb.status.max_msgs=MAX_SYSMAIL;
-						smb.status.attr=SMB_EMAIL;
-						if((i=smb_create(&smb))!=0) {
-							smb_close(&smb);
-							lprintf("%04d !SMTP ERROR %d creating %s"
-								,socket, i, smb.file);
-							sockprintf(socket, "452 Insufficient system storage");
-							continue;
-						} 
-					}
-
-					if((i=smb_locksmbhdr(&smb))!=0) {
-						smb_close(&smb);
-						lprintf("%04d !SMTP ERROR %d locking %s"
-							,socket, i, smb.file);
+					strcpy(telegram_buf,str);
+					if(fread(telegram_buf+strlen(str),1,length,msgtxt)!=length) {
+						lprintf("%04d !SMTP ERROR reading %lu bytes from telegram file"
+							,socket,length);
 						sockprintf(socket, "452 Insufficient system storage");
-						continue; }
-
-					length=filelength(fileno(msgtxt))+2;	 /* +2 for translation string */
-
-					if((i=smb_open_da(&smb))!=0) {
-						smb_unlocksmbhdr(&smb);
-						smb_close(&smb);
-						lprintf("%04d !SMTP ERROR %d (%s) opening %s.sda"
-							,socket, i, smb.last_error, smb.file);
-						sockprintf(socket, "452 Insufficient system storage");
-						continue; }
-
-					if(scfg.sys_misc&SM_FASTMAIL)
-						offset=smb_fallocdat(&smb,length,1);
-					else
-						offset=smb_allocdat(&smb,length,1);
-					smb_close_da(&smb);
-
-					smb_fseek(smb.sdt_fp,offset,SEEK_SET);
-					xlat=XLAT_NONE;
-					smb_fwrite(&xlat,2,smb.sdt_fp);
-					x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
-					while(!feof(msgtxt)) {
-						memset(buf,0,x);
-						j=fread(buf,1,x,msgtxt);
-						if(j<1)
-							break;
-						if((j!=x || feof(msgtxt)) && buf[j-1]=='\n' && buf[j-2]=='\r')
-							buf[j-1]=buf[j-2]=0;
-						if(scfg.mail_maxcrcs) {
-							for(i=0;i<j;i++)
-								crc=ucrc32(buf[i],crc); 
-						}
-						smb_fwrite(buf,j,smb.sdt_fp);
-						x=SDT_BLOCK_LEN; 
+						free(telegram_buf);
+						continue; 
 					}
-					smb_fflush(smb.sdt_fp);
-					crc=~crc;
+					telegram_buf[length+strlen(str)]=0;	/* Need ASCIIZ */
 
-					if(scfg.mail_maxcrcs) {
-						i=smb_addcrc(&smb,crc);
-						if(i) {
-							smb_freemsgdat(&smb,offset,length,1);
-							smb_unlocksmbhdr(&smb);
-							smb_close(&smb);
-							lprintf("%04d !SMTP DUPLICATE MESSAGE", socket);
-							sockprintf(socket, "554 Duplicate Message");
-							continue; 
-						} 
-					}
-
-					msg.hdr.offset=offset;
-
-					smb_dfield(&msg,TEXT_BODY,length);
-
-					smb_unlocksmbhdr(&smb);
-					if(msg.idx.subj==0) {
-						p="";
-						smb_hfield(&msg, SUBJECT, 0, p);
-						msg.idx.subj=crc16(p);
-					}
+					/* Send telegram to users */
 					rewind(rcptlst);
 					while(!feof(rcptlst)) {
-						if((i=smb_copymsgmem(&newmsg,&msg))!=0) {
-							lprintf("%04d !SMTP ERROR %d copying message"
-								,socket, i);
-							break;
-						}
 						if(fgets(str,sizeof(str)-1,rcptlst)==NULL)
 							break;
 						usernum=atoi(str);
 						fgets(rcpt_name,sizeof(rcpt_name)-1,rcptlst);
-						if(fgets(rcpt_addr,sizeof(rcpt_addr)-1,rcptlst)==NULL)
-							break;
 						truncsp(rcpt_name);
+						fgets(rcpt_addr,sizeof(rcpt_addr)-1,rcptlst);
 						truncsp(rcpt_addr);
-
-						snprintf(hdrfield,sizeof(hdrfield),
-							"Received: from %s (%s [%s])\r\n"
-							"          by %s [%s] (Synchronet Mail Server for %s v%s) with %s\r\n"
-							"          for %s; %s"
-							,host_name,hello_name,host_ip
-							,scfg.sys_inetaddr,inet_ntoa(server_addr.sin_addr)
-							,PLATFORM_DESC,MAIL_VERSION
-							,esmtp ? "ESMTP" : "SMTP"
-							,rcpt_addr,msgdate(msg.hdr.when_imported,date));
-						smb_hfield(&newmsg, RFC822HEADER, (ushort)strlen(hdrfield), hdrfield);
-
-						smb_hfield(&newmsg, RECIPIENT, (ushort)strlen(rcpt_name), rcpt_name);
-
-						if(rcpt_addr[0]=='#') {	/* Local destination */
-							newmsg.idx.to=atoi(rcpt_addr+1);
-							smb_hfield(&newmsg, RECIPIENTEXT
-								,(ushort)strlen(rcpt_addr+1), rcpt_addr+1);
-						} else {
-							newmsg.idx.to=0;
-							nettype=NET_INTERNET;
-							smb_hfield(&newmsg, RECIPIENTNETTYPE, nettype, &nettype);
-							smb_hfield(&newmsg, RECIPIENTNETADDR
-								,(ushort)strlen(rcpt_addr), rcpt_addr);
-						}
-
-						i=smb_addmsghdr(&smb,&newmsg,SMB_SELFPACK);
-						smb_freemsgmem(&newmsg);
-						if(i!=0) {
-							lprintf("%04d !SMTP ERROR %d adding message header"
-								,socket, i);
-							break;
-						}
-						lprintf("%04d SMTP Created message #%ld from %s to %s <%s>"
-							,socket, newmsg.hdr.number, sender, rcpt_name, rcpt_addr);
-						if(usernum) {
-							sprintf(str,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you e-mail from: "
-								"\1h%s\1n\r\n"
-								,ctime((const time_t*)&newmsg.hdr.when_imported.time)
-								,sender,sender_addr);
-							if(!newmsg.idx.to) {	/* Forwarding */
-								strcat(str,"\1mand it was automatically forwaded to: \1h");
-								strcat(str,user.netmail);
-								strcat(str,"\1n\r\n");
-							}
-							putsmsg(&scfg, usernum, str);
-						}
+						putsmsg(&scfg,usernum,telegram_buf);
+						lprintf("%04d SMTP Created telegram from %s to %s <%s>"
+							,socket, sender_addr, rcpt_name, rcpt_addr);
 					}
-					smb_close(&smb);
-					if(i) {
-						smb_freemsgdat(&smb,offset,length,1);
+					free(telegram_buf);
+					sockprintf(socket,SMTP_OK);
+					telegram=FALSE;
+					continue;
+				}
+				telegram=FALSE;
+
+				if(sender[0]==0) {
+					lprintf("%04d !SMTP MISSING mail header 'FROM' field", socket);
+					sockprintf(socket, "554 Mail header missing 'FROM' field");
+					continue;
+				}
+				nettype=NET_INTERNET;
+				smb_hfield(&msg, SENDER, (ushort)strlen(sender), sender);
+				smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
+				smb_hfield(&msg, SENDERNETADDR, (ushort)strlen(sender_addr), sender_addr);
+
+				rewind(msgtxt);
+				sprintf(smb.file,"%smail", scfg.data_dir);
+				smb.retry_time=scfg.smb_retry_time;
+				if((i=smb_open(&smb))!=0) {
+					lprintf("%04d !SMTP ERROR %d (%s) opening %s"
+						,socket, i, smb.last_error, smb.file);
+					sockprintf(socket, "452 Insufficient system storage");
+					continue;
+				}
+
+				if(smb_fgetlength(smb.shd_fp)<1) {	 /* Create it if it doesn't exist */
+					smb.status.max_crcs=scfg.mail_maxcrcs;
+					smb.status.max_age=scfg.mail_maxage;
+					smb.status.max_msgs=MAX_SYSMAIL;
+					smb.status.attr=SMB_EMAIL;
+					if((i=smb_create(&smb))!=0) {
+						smb_close(&smb);
+						lprintf("%04d !SMTP ERROR %d creating %s"
+							,socket, i, smb.file);
 						sockprintf(socket, "452 Insufficient system storage");
 						continue;
+					} 
+				}
+
+				if((i=smb_locksmbhdr(&smb))!=0) {
+					smb_close(&smb);
+					lprintf("%04d !SMTP ERROR %d locking %s"
+						,socket, i, smb.file);
+					sockprintf(socket, "452 Insufficient system storage");
+					continue; 
+				}
+
+				length=filelength(fileno(msgtxt))+2;	 /* +2 for translation string */
+
+				if((i=smb_open_da(&smb))!=0) {
+					smb_unlocksmbhdr(&smb);
+					smb_close(&smb);
+					lprintf("%04d !SMTP ERROR %d (%s) opening %s.sda"
+						,socket, i, smb.last_error, smb.file);
+					sockprintf(socket, "452 Insufficient system storage");
+					continue; 
+				}
+
+				if(scfg.sys_misc&SM_FASTMAIL)
+					offset=smb_fallocdat(&smb,length,1);
+				else
+					offset=smb_allocdat(&smb,length,1);
+				smb_close_da(&smb);
+
+				smb_fseek(smb.sdt_fp,offset,SEEK_SET);
+				xlat=XLAT_NONE;
+				smb_fwrite(&xlat,2,smb.sdt_fp);
+				x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
+				while(!feof(msgtxt)) {
+					memset(buf,0,x);
+					j=fread(buf,1,x,msgtxt);
+					if(j<1)
+						break;
+					if((j!=x || feof(msgtxt)) && buf[j-1]=='\n' && buf[j-2]=='\r')
+						buf[j-1]=buf[j-2]=0;
+					if(scfg.mail_maxcrcs) {
+						for(i=0;i<j;i++)
+							crc=ucrc32(buf[i],crc); 
+					}
+					smb_fwrite(buf,j,smb.sdt_fp);
+					x=SDT_BLOCK_LEN; 
+				}
+				smb_fflush(smb.sdt_fp);
+				crc=~crc;
+
+				if(scfg.mail_maxcrcs) {
+					i=smb_addcrc(&smb,crc);
+					if(i) {
+						smb_freemsgdat(&smb,offset,length,1);
+						smb_unlocksmbhdr(&smb);
+						smb_close(&smb);
+						lprintf("%04d !SMTP DUPLICATE MESSAGE", socket);
+						sockprintf(socket, "554 Duplicate Message");
+						continue; 
+					} 
+				}
+
+				msg.hdr.offset=offset;
+
+				smb_dfield(&msg,TEXT_BODY,length);
+
+				smb_unlocksmbhdr(&smb);
+				if(msg.idx.subj==0) {
+					p="";
+					smb_hfield(&msg, SUBJECT, 0, p);
+					msg.idx.subj=crc16(p);
+				}
+				rewind(rcptlst);
+				while(!feof(rcptlst)) {
+					if((i=smb_copymsgmem(&newmsg,&msg))!=0) {
+						lprintf("%04d !SMTP ERROR %d copying message"
+							,socket, i);
+						break;
+					}
+					if(fgets(str,sizeof(str)-1,rcptlst)==NULL)
+						break;
+					usernum=atoi(str);
+					fgets(rcpt_name,sizeof(rcpt_name)-1,rcptlst);
+					if(fgets(rcpt_addr,sizeof(rcpt_addr)-1,rcptlst)==NULL)
+						break;
+					truncsp(rcpt_name);
+					truncsp(rcpt_addr);
+
+					snprintf(hdrfield,sizeof(hdrfield),
+						"Received: from %s (%s [%s])\r\n"
+						"          by %s [%s] (Synchronet Mail Server for %s v%s) with %s\r\n"
+						"          for %s; %s"
+						,host_name,hello_name,host_ip
+						,scfg.sys_inetaddr,inet_ntoa(server_addr.sin_addr)
+						,PLATFORM_DESC,MAIL_VERSION
+						,esmtp ? "ESMTP" : "SMTP"
+						,rcpt_addr,msgdate(msg.hdr.when_imported,date));
+					smb_hfield(&newmsg, RFC822HEADER, (ushort)strlen(hdrfield), hdrfield);
+
+					smb_hfield(&newmsg, RECIPIENT, (ushort)strlen(rcpt_name), rcpt_name);
+
+					if(rcpt_addr[0]=='#') {	/* Local destination */
+						newmsg.idx.to=atoi(rcpt_addr+1);
+						smb_hfield(&newmsg, RECIPIENTEXT
+							,(ushort)strlen(rcpt_addr+1), rcpt_addr+1);
+					} else {
+						newmsg.idx.to=0;
+						nettype=NET_INTERNET;
+						smb_hfield(&newmsg, RECIPIENTNETTYPE, nettype, &nettype);
+						smb_hfield(&newmsg, RECIPIENTNETADDR
+							,(ushort)strlen(rcpt_addr), rcpt_addr);
+					}
+
+					i=smb_addmsghdr(&smb,&newmsg,SMB_SELFPACK);
+					smb_freemsgmem(&newmsg);
+					if(i!=0) {
+						lprintf("%04d !SMTP ERROR %d adding message header"
+							,socket, i);
+						break;
+					}
+					lprintf("%04d SMTP Created message #%ld from %s to %s <%s>"
+						,socket, newmsg.hdr.number, sender, rcpt_name, rcpt_addr);
+					if(usernum) {
+						sprintf(str,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you e-mail from: "
+							"\1h%s\1n\r\n"
+							,ctime((const time_t*)&newmsg.hdr.when_imported.time)
+							,sender,sender_addr);
+						if(!newmsg.idx.to) {	/* Forwarding */
+							strcat(str,"\1mand it was automatically forwaded to: \1h");
+							strcat(str,user.netmail);
+							strcat(str,"\1n\r\n");
+						}
+						putsmsg(&scfg, usernum, str);
 					}
 				}
+				smb_close(&smb);
+				if(i) {
+					smb_freemsgdat(&smb,offset,length,1);
+					sockprintf(socket, "452 Insufficient system storage");
+					continue;
+				}
 				sockprintf(socket,SMTP_OK);
-				state=SMTP_STATE_HELO;
 				continue;
 			}
 			if(buf[0]==0 && state==SMTP_STATE_DATA_HEADER) {	
@@ -1493,9 +1552,6 @@ static void smtp_thread(void* arg)
 					while(*p && *p<=' ') p++;
 					sprintf(sender_addr,"%.*s",(int)sizeof(sender_addr)-1,p);
 				}
-				nettype=NET_INTERNET;
-				smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
-				smb_hfield(&msg, SENDERNETADDR, (ushort)strlen(sender_addr), sender_addr);
 			
 				p=buf+5;
 				while(*p && *p<=' ') p++;
@@ -1510,7 +1566,6 @@ static void smtp_thread(void* arg)
 				if(tp) *tp=0;
 				truncsp(p);
 				sprintf(sender,"%.*s",(int)sizeof(sender)-1,p);
-				smb_hfield(&msg, SENDER, (ushort)strlen(sender), sender);
 				continue;
 			}
 			if(!strnicmp(buf, "DATE:",5)) {
@@ -1618,6 +1673,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
 			esmtp=FALSE;
 			state=SMTP_STATE_HELO;
+			telegram=FALSE;
 			continue;
 		}
 		if(!strnicmp(buf,"EHLO",4)) {
@@ -1627,6 +1683,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
+			telegram=FALSE;
 			continue;
 		}
 		if(!stricmp(buf,"QUIT")) {
@@ -1651,12 +1708,11 @@ static void smtp_thread(void* arg)
 			smb_freemsgmem(&msg);
 			memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
 			reverse_path[0]=0;
-			sender[0]=0;
-			sender_addr[0]=0;
 			sockprintf(socket,SMTP_OK);
 			rewind(rcptlst);
 			chsize(fileno(rcptlst),0);
 			state=SMTP_STATE_HELO;
+			telegram=FALSE;
 			continue;
 		}
 		if(!strnicmp(buf,"MAIL FROM:",10)) {
@@ -1669,16 +1725,39 @@ static void smtp_thread(void* arg)
 			p=buf+10;
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
-			sender[0]=0;
-			sender_addr[0]=0;
-			if(spy==NULL && trashcan(&scfg,reverse_path,"smtpspy")) {
-				sprintf(str,"%sSMTPSPY.TXT", scfg.data_dir);
-				spy=fopen(str,"a");
-			}
 			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_MAIL_FROM;
+			state=SMTP_STATE_MAIL;
 			continue;
 		}
+
+		/* Send a Message (Telegram) to a local ONLINE user */
+		if(!strnicmp(buf,"SEND FROM:",10)) {
+			p=buf+10;
+			while(*p && *p<=' ') p++;
+			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
+			sockprintf(socket,SMTP_OK);
+			state=SMTP_STATE_SEND;
+			continue;
+		}
+		/* Send OR Mail a Message to a local user */
+		if(!strnicmp(buf,"SOML FROM:",10)) {
+			p=buf+10;
+			while(*p && *p<=' ') p++;
+			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
+			sockprintf(socket,SMTP_OK);
+			state=SMTP_STATE_SOML;
+			continue;
+		}
+		/* Send AND Mail a Message to a local user */
+		if(!strnicmp(buf,"SAML FROM:",10)) {
+			p=buf+10;
+			while(*p && *p<=' ') p++;
+			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
+			sockprintf(socket,SMTP_OK);
+			state=SMTP_STATE_SAML;
+			continue;
+		}
+
 #if 0	/* No one uses this command */
 		if(!strnicmp(buf,"VRFY",4)) {
 			p=buf+4;
@@ -1693,10 +1772,15 @@ static void smtp_thread(void* arg)
 
 		if(!strnicmp(buf,"RCPT TO:",8)) {
 
-			if(state<SMTP_STATE_MAIL_FROM) {
+			if(state<SMTP_STATE_MAIL) {
 				lprintf("%04d !SMTP MISSING 'MAIL' command",socket);
 				sockprintf(socket, SMTP_BADSEQ);
 				continue;
+			}
+
+			if(spy==NULL && trashcan(&scfg,reverse_path,"smtpspy")) {
+				sprintf(str,"%sSMTPSPY.TXT", scfg.data_dir);
+				spy=fopen(str,"a");
 			}
 
 			sprintf(str,"%.*s",(int)sizeof(str)-1,buf+8);
@@ -1708,7 +1792,7 @@ static void smtp_thread(void* arg)
 			if(tp!=NULL) *tp=0;
 
 			tp=strrchr(str,'@');
-			if(tp!=NULL) {
+			if(state==SMTP_STATE_MAIL && tp!=NULL) {
 				
 				/* RELAY */
 				sprintf(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
@@ -1733,7 +1817,7 @@ static void smtp_thread(void* arg)
 						,(int)sizeof(rcpt_addr)-1,p);
 					
 					sockprintf(socket,SMTP_OK);
-					state=SMTP_STATE_RCPT_TO;
+					state=SMTP_STATE_RCPT;
 					continue;
 				}
 				*tp=0;	/* truncate at '@' */
@@ -1794,18 +1878,38 @@ static void smtp_thread(void* arg)
 				sockprintf(socket, "550 Unknown User: %s", buf+8);
 				continue;
 			}
+			if(state==SMTP_STATE_SEND) { /* Check if user online */
+				for(i=0;i<scfg.sys_nodes;i++) {
+					getnodedat(&scfg, i+1, &node, 0);
+					if(node.status==NODE_INUSE && node.useron==user.number
+						&& !(node.misc&NODE_POFF))
+						break;
+				}
+				if(i>=scfg.sys_nodes) {
+					lprintf("%04d !Attempt to send telegram to unavailable user #%u (%s)"
+						,socket, user.number, user.alias);
+					sockprintf(socket,"450 User unavailable");
+					continue;
+				}
+			}
+			if(state==SMTP_STATE_MAIL) {
 #if 0	/* implement later */
-			if(useron.etoday>=cfg.level_emailperday[useron.level]
-				&& !(useron.rest&FLAG('Q'))) {
-				bputs(text[TooManyEmailsToday]);
-				continue; }
+				if(useron.etoday>=cfg.level_emailperday[useron.level]
+					&& !(useron.rest&FLAG('Q'))) {
+					bputs(text[TooManyEmailsToday]);
+					continue; 
+				}
 #endif
+			} else
+				telegram=TRUE;
 
 			fprintf(rcptlst,"%u\n%.*s\n",user.number,(int)sizeof(rcpt_name)-1,p);
 
 			/* Forward to Internet */
 			tp=strrchr(user.netmail,'@');
-			if(scfg.sys_misc&SM_FWDTONET && user.misc&NETMAIL 
+			if(!telegram
+				&& scfg.sys_misc&SM_FWDTONET 
+				&& user.misc&NETMAIL 
 				&& tp && strchr(tp,'.') && !strchr(tp,'/') 
 				&& !strstr(tp,scfg.sys_inetaddr)) {
 				lprintf("%04d SMTP Forwarding to: %s"
@@ -1816,11 +1920,11 @@ static void smtp_thread(void* arg)
 				fprintf(rcptlst,"#%u\n",usernum);
 				sockprintf(socket,SMTP_OK);
 			}
-			state=SMTP_STATE_RCPT_TO;
+			state=SMTP_STATE_RCPT;
 			continue;
 		}
 		if(!strnicmp(buf,"DATA",4)) {
-			if(state<SMTP_STATE_RCPT_TO) {
+			if(state<SMTP_STATE_RCPT) {
 				lprintf("%04d !SMTP MISSING 'RCPT TO' command", socket);
 				sockprintf(socket, SMTP_BADSEQ);
 				continue;
@@ -1834,8 +1938,30 @@ static void smtp_thread(void* arg)
 				sockprintf(socket, "452 Insufficient system storage");
 				continue;
 			}
+			/* These vars are potentially over-written by parsing an RFC822 header */
+			/* get sender_addr */
+			p=strchr(reverse_path,'<');
+			if(p==NULL)	
+				p=reverse_path;
+			else 
+				p++;
+			strcpy(sender_addr,p);
+			p=strchr(sender_addr,'>');
+			if(p!=NULL)
+				*p=0;
+			/* get sender */
+			strcpy(sender,sender_addr);
+			p=strchr(sender,'@');
+			if(p!=NULL)
+				*p=0;
+			else
+				sender[0]=0;
+
 			sockprintf(socket, "354 send the mail data, end with <CRLF>.<CRLF>");
-			state=SMTP_STATE_DATA_HEADER;
+			if(telegram)
+				state=SMTP_STATE_DATA_BODY;	/* No RFC headers in Telegrams */
+			else
+				state=SMTP_STATE_DATA_HEADER;
 			continue;
 		}
 		sockprintf(socket,"500 Syntax error");
