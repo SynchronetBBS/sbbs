@@ -334,22 +334,27 @@ while(client.socket.is_connected) {
 				log(line);
 
 				/* Parse header lines */
-				if(line.indexOf(':')==-1)
+				if((sp=line.indexOf(':'))==-1)
 					continue;
-				field=line.split(':');
-				while(field[1].charAt(0)==' ')	// skip prepended spaces
-					field[1]=field[1].slice(1);
 
-				switch(field[0].toLowerCase()) {
+				data=line.slice(sp+1);
+				while(data.charAt(0)==' ')	// skip prepended spaces
+					data=data.slice(1);
+
+				line=line.substr(0,sp);
+				while(line.charAt(0)==' ')	// skip prepended spaces
+					line=line.slice(1);
+
+				switch(line.toLowerCase()) {
 					case "from":
 						if(user.security.restrictions&UFLAG_G) 	// Guest
-							hdr.from=field[1];
+							hdr.from=data;
 						break;
 					case "subject":
-						hdr.subject=field[1];
+						hdr.subject=data;
 						break;
 					case "newsgroups":
-						newsgroups=field[1];
+						newsgroups=data;
 						break;
 				}
 			}
@@ -376,6 +381,7 @@ while(client.socket.is_connected) {
 				writeln("441 posting failed");
 			}
    			break;
+
 		default:
 			writeln("500 Syntax error or unknown command");
 			break;
