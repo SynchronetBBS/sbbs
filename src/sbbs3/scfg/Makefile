@@ -11,6 +11,7 @@
 # Macros
 #DEBUG	=	1				# Comment out for release (non-debug) version
 USE_FLTK=	1
+USE_UIFC32= 1
 CC		=	bcc32
 LD		=	ilink32
 SLASH	=	\\
@@ -48,7 +49,12 @@ ODIR	=	$(ODIR).release
 !include targets.mk	# defines all targets
 !include objects.mk	# defines $(OBJS)
 
+!ifdef USE_UIFC32
+OBJS = $(OBJS) $(ODIR)\uifc32.$(OFILE)
+CFLAGS  =   $(CFLAGS) -DUSE_UIFC32
+!else
 OBJS = $(OBJS) $(ODIR)\uifc.$(OFILE)
+!endif
 
 !ifdef USE_FLTK
 CFLAGS 	= $(CFLAGS) -DUSE_FLTK -I$(INCLUDE)\fltk

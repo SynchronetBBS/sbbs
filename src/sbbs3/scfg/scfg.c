@@ -210,11 +210,15 @@ else
 if(!door_mode)
     i=uifcinid(&uifc);  /* dialog */
 else
+#elif defined(USE_UIFC32)
+if(!door_mode)
+    i=uifcini32(&uifc);  /* curses/conio */
+else
 #elif defined(USE_CURSES)
 if(!door_mode)
     i=uifcinic(&uifc);  /* curses */
 else
-#elif !defined(__unix__) && !defined(_MSC_VER)
+#elif !defined(__unix__) && !defined(_MSC_VER) && !defined(USE_UIFC32)
 if(!door_mode)
     i=uifcini(&uifc);   /* conio */
 else
