@@ -94,6 +94,7 @@
 		#define XP_UNIX
 	#else
 		#define XP_PC
+		#define XP_WIN
 	#endif
 	#include <jsapi.h>
 	#include <jsprf.h>		/* JS-safe sprintf functions */
