@@ -284,6 +284,8 @@ function send_msg(dest, msg)
 			alert("Invalid SOML response: " + rsp);
 			break;
 		}
+		if(dest.indexOf('<')<0)
+			dest = '<' + dest + '>';
 		sock.send("RCPT TO: "+dest+"\r\n");
 		if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
 			alert("Invalid RCPT TO response: " + rsp);
