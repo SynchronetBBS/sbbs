@@ -237,7 +237,7 @@ while(client.socket.is_connected && !quit) {
 				writeln("References:");
 				writeln("Bytes:");
 				writeln("Lines:");
-				writeln("Xref:");
+				writeln("Xref:full");
 			}
 			else {
 				writeln("215 list of newsgroups follows");
@@ -344,7 +344,7 @@ while(client.socket.is_connected && !quit) {
 					continue;
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
 					continue;
-				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\t%s"
+				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\tXref:%s"
 					,i
 					,hdr.subject
 					,hdr.from
