@@ -384,6 +384,38 @@ BOOL DLLCALL fexist(char *filespec)
 }
 
 /****************************************************************************/
+/* Fixes upper/lowercase filename for Unix file systems						*/
+/****************************************************************************/
+BOOL DLLCALL fexistcase(char *path)
+{
+#if defined(__unix__)
+	char tmp[MAX_PATH+1];
+
+	if(fexist(path))
+		return(TRUE);
+
+	SAFECOPY(tmp,path);
+
+	/* check for uppercase filename */
+	strupr(getfname(tmp));
+	if(fexist(path)) {
+		strcpy(path,tmp);
+		return(TRUE);
+	}
+
+	/* check for lowercase filename */
+	strlwr(getfname(tmp));
+	if(fexist(path)) {
+		strcpy(path,tmp);
+		return(TRUE);
+	}
+	return(FALSE);
+#else
+	return(fexist(path));
+#endif
+}
+
+/****************************************************************************/
 /* Returns TRUE if the filename specified is a directory					*/
 /****************************************************************************/
 BOOL DLLCALL isdir(char *filename)

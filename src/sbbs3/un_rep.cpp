@@ -83,7 +83,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		return(false); 
 	}
 	sprintf(str,"%s%s.msg",cfg.temp_dir,cfg.sys_id);
-	if(!fexist(str)) {
+	if(!fexistcase(str)) {
 		bputs(text[QWKReplyNotReceived]);
 		logline("U!",AttemptedToUploadREPpacket);
 		logline(nulstr,"MSG file not received");
@@ -407,9 +407,11 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 	if(useron.rest&FLAG('Q')) {             /* QWK Net Node */
 		sprintf(str,"%s%s.msg",cfg.temp_dir,cfg.sys_id);
-		remove(str);
+		if(fexistcase(str))
+			remove(str);
 		sprintf(str,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
-		remove(str);
+		if(fexistcase(str))
+			remove(str);
 
 		dir=opendir(cfg.temp_dir);
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {				/* Extra files */

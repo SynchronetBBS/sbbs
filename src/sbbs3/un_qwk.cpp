@@ -64,7 +64,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		return(false); 
 	}
 	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
-	if(!fexist(str)) {
+	if(!fexistcase(str)) {
 		sprintf(str,"%s doesn't contain MESSAGES.DAT",packet);
 		errorlog(str);
 		return(false); 

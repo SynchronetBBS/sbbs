@@ -550,7 +550,7 @@ void sbbs_t::qwk_sec()
 
 		if(ch=='B') {   /* Bidirectional QWK and REP packet transfer */
 			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
-			if(!fexist(str) && !pack_qwk(str,&msgcnt,0)) {
+			if(!fexistcase(str) && !pack_qwk(str,&msgcnt,0)) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];
 				remove(str);

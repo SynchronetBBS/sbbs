@@ -72,7 +72,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 	delfiles(cfg.temp_dir,ALLFILES);
 	sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
-	if(fexist(str)) {
+	if(fexistcase(str)) {
 		for(k=0;k<cfg.total_fextrs;k++)
 			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
 				&& chk_ar(cfg.fextr[k]->ar,&useron))

@@ -163,6 +163,7 @@ extern "C" {
 
 /* General file system wrappers for all platforms and compilers */
 DLLEXPORT BOOL		DLLCALL fexist(char *filespec);
+DLLEXPORT BOOL		DLLCALL fexistcase(char *filespec);	/* fixes upr/lwr case fname */
 DLLEXPORT long		DLLCALL flength(char *filename);
 DLLEXPORT time_t	DLLCALL fdate(char *filename);
 DLLEXPORT BOOL		DLLCALL	isdir(char *filename);
