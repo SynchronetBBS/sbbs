@@ -1188,7 +1188,7 @@ void command(char *instr,faddr_t addr)
 			return; 
 		}
 		l=filelength(file);
-		if((buf=(char *)LMALLOC(l+1L))==NULL) {
+		if((buf=(char *)malloc(l+1L))==NULL) {
 			printf("ERROR line %d allocating %lu bytes for %s\n",__LINE__,l,str);
 			return; 
 		}
@@ -1196,7 +1196,7 @@ void command(char *instr,faddr_t addr)
 		fclose(stream);
 		buf[l]=0;
 		create_netmail(NULL,"Area Manager Help",buf,addr,FALSE);
-		LFREE(buf);
+		free(buf);
 		return; 
 	}
 
@@ -1234,7 +1234,6 @@ void command(char *instr,faddr_t addr)
 				fprintf(tmpf,"                     %s\r\n",cfg.arcdef[i].name);
 			file_to_netmail(tmpf,"Compression Type Change",addr,0);
 			fclose(tmpf);
-			//LFREE(buf);
 			return; 
 		}
 		alter_config(addr,cfg.arcdef[cfg.nodecfg[node].arctype].name
@@ -1308,7 +1307,7 @@ void command(char *instr,faddr_t addr)
 			logprintf("ERROR line %d allocating memory for add area tag #%u"
 				,__LINE__,add_area.tags+1);
 			bail(1); }
-		if((add_area.tag[add_area.tags]=(char *)LMALLOC(strlen(instr)+1))==NULL) {
+		if((add_area.tag[add_area.tags]=(char *)malloc(strlen(instr)+1))==NULL) {
 			printf("ERROR allocating memory for add area tag #%u.\n"
 				,add_area.tags+1);
 			logprintf("ERROR line %d allocating memory for add area tag #%u"
@@ -1318,8 +1317,8 @@ void command(char *instr,faddr_t addr)
 		add_area.tags++;
 		alter_areas(add_area,del_area,addr);
 		for(i=0;i<add_area.tags;i++)
-			LFREE(add_area.tag[i]);
-		FREE(add_area.tag);
+			free(add_area.tag[i]);
+		FREE_AND_NULL(add_area.tag);
 		return; 
 	}
 
@@ -1331,7 +1330,7 @@ void command(char *instr,faddr_t addr)
 			logprintf("ERROR line %d allocating memory for del area tag #%u"
 				,__LINE__,del_area.tags+1);
 			bail(1); }
-		if((del_area.tag[del_area.tags]=(char *)LMALLOC(strlen(instr)+1))==NULL) {
+		if((del_area.tag[del_area.tags]=(char *)malloc(strlen(instr)+1))==NULL) {
 			printf("ERROR allocating memory for del area tag #%u.\n"
 				,del_area.tags+1);
 			logprintf("ERROR line %d allocating memory for del area tag #%u"
@@ -1341,8 +1340,8 @@ void command(char *instr,faddr_t addr)
 		del_area.tags++;
 		alter_areas(add_area,del_area,addr);
 		for(i=0;i<del_area.tags;i++)
-			LFREE(del_area.tag[i]);
-		FREE(del_area.tag);
+			free(del_area.tag[i]);
+		FREE_AND_NULL(del_area.tag);
 		return; 
 	}
 }
@@ -1350,7 +1349,7 @@ void command(char *instr,faddr_t addr)
  This is where we're gonna process any netmail that comes in for areafix.
  Returns text for message body for the local sysop if necessary.
 ******************************************************************************/
-char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
+char *process_areafix(faddr_t addr,char* inbuf,char *password)
 {
 	static char body[512],str[81];
 	char *p,*tp,action,percent=0;
@@ -1421,7 +1420,7 @@ char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
 					logprintf("ERROR line %d allocating memory for add area "
 						"tag #%u",__LINE__,add_area.tags+1);
 					bail(1); }
-				if((add_area.tag[add_area.tags]=(char *)LMALLOC(strlen(str)+1))
+				if((add_area.tag[add_area.tags]=(char *)malloc(strlen(str)+1))
 					==NULL) {
 					printf("ERROR allocating memory for add area tag #%u.\n"
 						,add_area.tags+1);
@@ -1439,7 +1438,7 @@ char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
 					logprintf("ERROR line %d allocating memory for del area "
 						"tag #%u",__LINE__,del_area.tags+1);
 					bail(1); }
-				if((del_area.tag[del_area.tags]=(char *)LMALLOC(strlen(str)+1))
+				if((del_area.tag[del_area.tags]=(char *)malloc(strlen(str)+1))
 					==NULL) {
 					printf("ERROR allocating memory for del area tag #%u.\n"
 						,del_area.tags+1);
@@ -1465,12 +1464,12 @@ char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
 		alter_areas(add_area,del_area,addr);
 	if(add_area.tags) {
 		for(i=0;i<add_area.tags;i++)
-			LFREE(add_area.tag[i]);
-		FREE(add_area.tag); }
+			free(add_area.tag[i]);
+		FREE_AND_NULL(add_area.tag); }
 	if(del_area.tags) {
 		for(i=0;i<del_area.tags;i++)
-			LFREE(del_area.tag[i]);
-		FREE(del_area.tag); }
+			free(del_area.tag[i]);
+		FREE_AND_NULL(del_area.tag); }
 	return(0);
 }
 /******************************************************************************
@@ -1982,36 +1981,39 @@ ulong getlastmsg(uint subnum, ulong *ptr, time_t *t)
 }
 
 
-ulong loadmsgs(post_t HUGE16 **post, ulong ptr)
+ulong loadmsgs(post_t** post, ulong ptr)
 {
 	int i;
-	long l=0,total;
+	long l,total;
 	idxrec_t idx;
 
 
 	if((i=smb_locksmbhdr(&smb[cur_smb]))!=0) {
 		printf("ERROR %d locking %s\n",i,smb[cur_smb].file);
 		logprintf("ERROR %d line %d locking %s",i,__LINE__,smb[cur_smb].file);
-		return(0L); }
+		return(0); 
+	}
 
 	/* total msgs in sub */
 	total=filelength(fileno(smb[cur_smb].sid_fp))/sizeof(idxrec_t);
 
 	if(!total) {			/* empty */
 		smb_unlocksmbhdr(&smb[cur_smb]);
-		return(0); }
+		return(0); 
+	}
 
-	if(((*post)=(post_t HUGE16 *)LMALLOC(sizeof(post_t)*total))    /* alloc for max */
+	if(((*post)=(post_t*)malloc(sizeof(post_t)*total))    /* alloc for max */
 		==NULL) {
 		smb_unlocksmbhdr(&smb[cur_smb]);
 		printf("ERROR allocating %lu bytes for %s\n",sizeof(post_t *)*total
 			,smb[cur_smb].file);
 		logprintf("ERROR line %d allocating %lu bytes for %s",__LINE__
 			,sizeof(post_t *)*total,smb[cur_smb].file);
-		return(0); }
+		return(0); 
+	}
 
 	fseek(smb[cur_smb].sid_fp,0L,SEEK_SET);
-	while(!feof(smb[cur_smb].sid_fp)) {
+	for(l=0;l<total && !feof(smb[cur_smb].sid_fp); l++) {
 		if(smb_fread(&smb[cur_smb], &idx,sizeof(idx),smb[cur_smb].sid_fp) != sizeof(idx))
 			break;
 
@@ -2024,11 +2026,11 @@ ulong loadmsgs(post_t HUGE16 **post, ulong ptr)
 		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED))
 			break;
 
-		(*post)[l++]=idx;
+		(*post)[l]=idx;
 	}
 	smb_unlocksmbhdr(&smb[cur_smb]);
 	if(!l)
-		LFREE(*post);
+		FREE_AND_NULL(*post);
 	return(l);
 }
 
@@ -2244,9 +2246,9 @@ static short fmsgzone(char* p)
 
 #if 1		/* Old way */
 
-char HUGE16 *getfmsg(FILE *stream, ulong *outlen)
+char* getfmsg(FILE *stream, ulong *outlen)
 {
-	uchar HUGE16 *fbuf;
+	uchar* fbuf;
 	int ch;
 	ulong l,length,start;
 
@@ -2258,7 +2260,7 @@ char HUGE16 *getfmsg(FILE *stream, ulong *outlen)
 			break;
 		length++; } 							/* Increment the Length */
 
-	if((fbuf=(char *)LMALLOC(length+1))==NULL) {
+	if((fbuf=(char *)malloc(length+1))==NULL) {
 		printf("Unable to allocate %lu bytes for message.\n",length+1);
 		logprintf("ERROR line %d allocating %lu bytes of memory",__LINE__,length+1);
 		bail(1); }
@@ -2285,7 +2287,7 @@ char *getfmsg(FILE *stream)
 
 	length=0L;
 	start=ftell(stream);						/* Beginning of Message */
-	if((fbuf=LMALLOC(FBUF_BLOCK))==NULL)
+	if((fbuf=malloc(FBUF_BLOCK))==NULL)
 		return(fbuf);
 	while(!feof(stream)) {
 		l=fread(fbuf+length,1,FBUF_BLOCK,stream);
@@ -2302,7 +2304,7 @@ char *getfmsg(FILE *stream)
 			break;
 		printf("<");
 		if((p=REALLOC(fbuf,length+FBUF_BLOCK+1))==NULL) {
-			LFREE(fbuf);
+			free(fbuf);
 			printf("!");
 			fseek(stream,-l,SEEK_CUR);
 			return(NULL); }
@@ -2323,9 +2325,9 @@ char *getfmsg(FILE *stream)
 /* Coverts a FidoNet message into a Synchronet message						*/
 /* Returns 1 on success, 0 on failure, -1 on dupe.							*/
 /****************************************************************************/
-int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
+int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 {
-	uchar	ch,HUGE16 *sbody,HUGE16 *stail,HUGE16 *outbuf
+	uchar	ch,*sbody,*stail,*outbuf
 				,*p,str[128];
 	BOOL	done,esc,cr;
 	int 	i,chunk,lzh=0,storage;
@@ -2394,17 +2396,17 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		smb_freemsgmem(&msg);
 		return(0); }
 	length=strlen((char *)fbuf);
-	if((sbody=(char HUGE16 *)LMALLOC((length+1)*2))==NULL) {
+	if((sbody=(char*)malloc((length+1)*2))==NULL) {
 		printf("ERROR allocating %lu bytes for body",(length+1)*2L);
 		logprintf("ERROR line %d allocating %lu bytes for body",__LINE__
 			,(length+1)*2L);
 		smb_freemsgmem(&msg);
 		return(0); }
-	if((stail=(char HUGE16 *)LMALLOC(MAX_TAILLEN))==NULL) {
+	if((stail=(char*)malloc(MAX_TAILLEN))==NULL) {
 		printf("ERROR allocating %u bytes\n",MAX_TAILLEN);
 		logprintf("ERROR line %d allocating %u bytes for tail",__LINE__
 			,MAX_TAILLEN);
-		LFREE(sbody);
+		free(sbody);
 		smb_freemsgmem(&msg);
 		return(0); }
 
@@ -2591,8 +2593,8 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			else
 				printf("smb_addcrc returned %d ",i);
 			smb_freemsgmem(&msg);
-			LFREE(sbody);
-			LFREE(stail);
+			free(sbody);
+			free(stail);
 			if(i==1)
 				return(-1);
 			return(0); } }
@@ -2619,13 +2621,13 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 	if(subnum!=INVALID_SUB && scfg.sub[subnum]->misc&SUB_LZH
 		&& bodylen+2L+taillen+2L>=SDT_BLOCK_LEN && bodylen) {
-		if((outbuf=(char *)LMALLOC(bodylen*2L))==NULL) {
+		if((outbuf=(char *)malloc(bodylen*2L))==NULL) {
 			printf("ERROR allocating %lu bytes for lzh\n",bodylen*2);
 			logprintf("ERROR line %d allocating %lu bytes for lzh",__LINE__
 				,bodylen*2);
 			smb_freemsgmem(&msg);
-			LFREE(sbody);
-			LFREE(stail);
+			free(sbody);
+			free(stail);
 			return(0); }
 		lzhlen=lzh_encode((uchar *)sbody,bodylen,(uchar *)outbuf);
 		if(lzhlen>1 &&
@@ -2633,12 +2635,12 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			smb_datblocks(bodylen+2L+taillen+2L)) {
 			bodylen=lzhlen; 	/* Compressable */
 			l=bodylen+4;
-			LFREE(sbody);
+			free(sbody);
 			lzh=1;
 			sbody=outbuf; }
 		else {					/* Uncompressable */
 			l=bodylen+2;
-			LFREE(outbuf); } }
+			free(outbuf); } }
 	else
 		l=bodylen+2;
 
@@ -2649,8 +2651,8 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		printf("ERROR checking msg len %lu\n",l);
 		logprintf("ERROR line %d checking msg len %lu",__LINE__,l);
 		smb_freemsgmem(&msg);
-		LFREE(sbody);
-		LFREE(stail);
+		free(sbody);
+		free(stail);
 		return(0); }
 
 	if(smbfile->status.attr&SMB_HYPERALLOC) {
@@ -2658,8 +2660,8 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			printf("ERROR %d locking %s\n",i,smbfile->file);
 			logprintf("ERROR %d line %d locking %s",i,__LINE__,smbfile->file);
 			smb_freemsgmem(&msg);
-			LFREE(sbody);
-			LFREE(stail);
+			free(sbody);
+			free(stail);
 			return(0); }
 		msg.hdr.offset=smb_hallocdat(smbfile);
 		storage=SMB_HYPERALLOC; }
@@ -2669,8 +2671,8 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			printf("ERROR %d opening %s.sda\n",i,smbfile->file);
 			logprintf("ERROR %d line %d opening %s.sda",i,__LINE__
 				,smbfile->file);
-			LFREE(sbody);
-			LFREE(stail);
+			free(sbody);
+			free(stail);
 			return(0); }
 		if(subnum!=INVALID_SUB && scfg.sub[subnum]->misc&SUB_FAST) {
 			msg.hdr.offset=smb_fallocdat(smbfile,l,1);
@@ -2684,8 +2686,8 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		if(smbfile->status.attr&SMB_HYPERALLOC)
 			smb_unlocksmbhdr(smbfile);
 		smb_freemsgmem(&msg);
-		LFREE(sbody);
-		LFREE(stail);
+		free(sbody);
+		free(stail);
 		printf("ERROR %ld allocating records\n",msg.hdr.offset);
 		logprintf("ERROR line %d %ld allocating records",__LINE__,msg.hdr.offset);
 		return(0); }
@@ -2703,8 +2705,8 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	if(taillen) {
 		fwrite(&xlat,2,1,smbfile->sdt_fp);
 		fwrite(stail,1,taillen,smbfile->sdt_fp); }
-	LFREE(sbody);
-	LFREE(stail);
+	free(sbody);
+	free(stail);
 	fflush(smbfile->sdt_fp);
 	if(smbfile->status.attr&SMB_HYPERALLOC)
 		smb_unlocksmbhdr(smbfile);
@@ -2803,7 +2805,7 @@ char *pktname(void)
  This function puts a message into a Fido packet, writing both the header
  information and the message body
 ******************************************************************************/
-void putfmsg(FILE *stream,uchar HUGE16 *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
+void putfmsg(FILE *stream,uchar *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 	,addrlist_t seenbys,addrlist_t paths)
 {
 	char str[256],seenby[256];
@@ -2979,10 +2981,10 @@ void putfmsg(FILE *stream,uchar HUGE16 *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
  This function creates a binary list of the message seen-bys and path from
  inbuf.
 ******************************************************************************/
-void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char HUGE16 *inbuf
+void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char *inbuf
 	,ushort zone)
 {
-	char str[128],seenby[256],*p,*p1,*p2,HUGE16 *fbuf;
+	char str[128],seenby[256],*p,*p1,*p2,*fbuf;
 	int i,j,len;
 	faddr_t addr;
 
@@ -3125,9 +3127,9 @@ int check_psb(addrlist_t* addrlist,faddr_t inaddr)
 /******************************************************************************
  This function strips the message seen-bys and path from inbuf.
 ******************************************************************************/
-void strip_psb(char HUGE16 *inbuf)
+void strip_psb(char *inbuf)
 {
-	char *p,HUGE16 *fbuf;
+	char *p,*fbuf;
 
 	if(!inbuf)
 		return;
@@ -3208,7 +3210,7 @@ void attach_bundles(void)
  parameter to 1 to force all the remaining packets closed and stuff them into
  a bundle.
 ******************************************************************************/
-void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
+void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 	,fmsghdr_t fmsghdr,addrlist_t seenbys,addrlist_t paths, int cleanup)
 {
 	int i,j,k,file;
@@ -3407,7 +3409,7 @@ void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
 int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 {
 	uchar info[512],str[256],tmp[256],subj[256]
-		,HUGE16 *fmsgbuf=NULL,*p,*tp,*sp;
+		,*fmsgbuf=NULL,*p,*tp,*sp;
 	int i,match,usernumber;
 	ulong l;
 	faddr_t addr;
@@ -3670,7 +3672,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 	fmsghdr_t hdr;
 	struct	tm *tm;
 	faddr_t pkt_faddr;
-	post_t HUGE16 *post;
+	post_t *post;
 	areasbbs_t fakearea;
 	addrlist_t msg_seen,msg_path;
     clock_t start_tick=0,export_ticks=0;
@@ -3739,9 +3741,9 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 			if(!posts)	{ /* no new messages */
 				smb_close(&smb[cur_smb]);
-				if(post)
-					LFREE(post);
-				continue; }
+				FREE_AND_NULL(post);
+				continue; 
+			}
 
 			if(start_tick)
 				export_ticks+=msclock()-start_tick;
@@ -3911,7 +3913,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 					fmsgbuf[f++]=buf[l]; }
 
-				FREE(buf);
+				FREE_AND_NULL(buf);
 				fmsgbuf[f]=0;
 
 				if(!(scfg.sub[i]->misc&SUB_NOTAG)) {
@@ -3932,7 +3934,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 							,(addr.zone) ? addr:pkt_faddr,hdr,msg_seen
 							,msg_path,(addr.zone) ? 2:0);
 						break; }
-				FREE(fmsgbuf);
+				FREE_AND_NULL(fmsgbuf);
 				exported++;
 				exp++;
 				printf("Exp: %lu ",exp);
@@ -3940,7 +3942,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 				smb_freemsgmem(&msg); }
 
 			smb_close(&smb[cur_smb]);
-			LFREE(post);
+			FREE_AND_NULL(post);
 
 			/***********************/
 			/* Update FIDO_PTR.DAB */
@@ -4011,7 +4013,7 @@ int main(int argc, char **argv)
 			,*p,*tp
 			,areatagstr[128],outbound[128]
 			,password[16];
-	uchar	HUGE16 *fmsgbuf=NULL;
+	uchar	*fmsgbuf=NULL;
 	ushort	attr;
 	int 	i,j,k,file,fmsg, grp;
 	BOOL	grunged;
