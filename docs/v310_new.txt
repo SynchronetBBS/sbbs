@@ -2228,6 +2228,8 @@ o New cross-platform graphical user interface (based on FLTK) for SCFG and
 o New Unix installer - installs and builds source code from CVS or tgz files
   - thank Deuce for this neat-o program
 
+o New IRC client module (exec/irc.js) - again, thank Deuce
+
 o All TCP servers individually track and log the number of clients served
 
 o All TCP servers now detect and log client hostname aliases (canonical names)
