@@ -3011,7 +3011,7 @@ void attach_bundles(void)
 		packet=g.gl_pathv[f];
 
 		printf("%21s: %s ","Outbound Packet",packet);
-		if((fmsg=sopen(packet,O_RDWR,SH_DENYRW))==-1) {
+		if((fmsg=sopen(packet,O_RDWR|O_BINARY,SH_DENYRW))==-1) {
 			printf("ERROR %d line %d opening.\n",errno,__LINE__);
 			logprintf("ERROR %d line %d opening %s",errno,__LINE__,packet);
 			continue; }
@@ -4220,7 +4220,7 @@ int main(int argc, char **argv)
 		strcpy(packet,(char*)g.gl_pathv[f]);
 
 		printf("%21s: %s ","Outbound Packet",packet);
-		if((fmsg=sopen(packet,O_RDWR,SH_DENYRW))==-1) {
+		if((fmsg=sopen(packet,O_RDWR|O_BINARY,SH_DENYRW))==-1) {
 			printf("ERROR line %d opening.\n",__LINE__);
 			logprintf("ERROR line %d opening %s",__LINE__,packet);
 			continue; }
