@@ -647,6 +647,12 @@ void doterm(void)
 				case KEY_F(4):
 					rlogin_send("\033Ox",3,100);
 					break;
+#ifdef __unix__
+				case 128|'S':	/* Under curses, ALT sets the high bit of the char */
+				case 128|'s':	/* Under curses, ALT sets the high bit of the char */
+					viewscroll();
+					break;
+#endif
 				case KEY_BACKSPACE:
 				case '\b':
 					key='\b';
@@ -656,6 +662,7 @@ void doterm(void)
 						ch[0]=key;
 						rlogin_send(ch,1,100);
 					}
+					
 			}
 		}
 	}
