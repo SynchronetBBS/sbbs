@@ -46,7 +46,7 @@ enum {	/* msg_area Object Properties */
 #ifdef _DEBUG
 
 static char* msg_grp_prop_desc[] = {
-	 "index into grp_list array (or -1 if not in array)"
+	 "index into grp_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
 	,"unique number for this message group"
 	,"group name"
 	,"group description"
@@ -56,11 +56,11 @@ static char* msg_grp_prop_desc[] = {
 
 static char* msg_area_prop_desc[] = {
 
-	 "index into sub_list array (or -1 if not in array)"
-	,"group's index into grp_list array"
+	 "index into sub_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
+	,"group's index into grp_list array <i>(introduced in v3.12)</i>"
 	,"unique number for this sub-board"
 	,"group number"
-	,"group name"
+	,"group name <i>(introduced in v3.12)</i>"
 	,"sub-board internal code"
 	,"sub-board name"
 	,"sub-board description"

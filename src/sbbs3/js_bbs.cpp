@@ -845,7 +845,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"msg_number"		,BBS_PROP_MSG_NUMBER		,PROP_READONLY	,310},
 	{	"msg_expiration"	,BBS_PROP_MSG_EXPIRATION	,PROP_READONLY	,310},
 	{	"msg_forwarded"		,BBS_PROP_MSG_FORWARDED		,PROP_READONLY	,310},
-	{	"msg_thread_back"	,BBS_PROP_MSG_THREAD_BACK	,PROP_READONLY	,311},
+	{	"msg_thread_back"	,BBS_PROP_MSG_THREAD_BACK	,PROP_READONLY	,312},
 	{	"msg_thread_orig"	,BBS_PROP_MSG_THREAD_BACK	,JSPROP_READONLY,310},	/* alias */
 	{	"msg_thread_next"	,BBS_PROP_MSG_THREAD_NEXT	,PROP_READONLY	,310},
 	{	"msg_thread_first"	,BBS_PROP_MSG_THREAD_FIRST	,PROP_READONLY	,310},
@@ -2870,7 +2870,7 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 		return(NULL);
 
 #ifdef _DEBUG
-	js_DescribeSyncObject(cx,mods,"Global repository for 3rd party modifications",311);
+	js_DescribeSyncObject(cx,mods,"Global repository for 3rd party modifications",312);
 	js_DescribeSyncObject(cx,obj,"Controls the Telnet/RLogin BBS experience",310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", bbs_prop_desc, JSPROP_READONLY);
 #endif

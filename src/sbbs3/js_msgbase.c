@@ -1642,9 +1642,9 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	},
 	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean expand_fields]")
 	,JSDOCSTR("returns a specific message header, <i>null</i> on failure. "
-	"Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) "
+	"<br><i>New in v3.12:</i> Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) "
 	"if you will be re-writing the header later with <i>put_msg_header()</i>")
-	,310
+	,312
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[boolean by_offset,] number, object header")
 	,JSDOCSTR("write a message header")
@@ -1731,16 +1731,16 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>field_list[].type</tt><td>Other SMB header fields (type)"
 	"<tr><td align=top><tt>field_list[].data</tt><td>Other SMB header fields (data)"
 	"</table>"
-	"<br>"
+	"<br><i>New in v3.12:</i> "
 	"The optional <i>client</i> argument is an instance of the <i>Client</i> class to be used for the "
 	"security log header fields (e.g. sender IP address, hostname, protocol, and port). "
-	"<br><br>"
+	"<br><br><i>New in v3.12:</i> "
 	"The optional <i>rcpt_list</i> is an array of objects that specifies multiple recipients "
 	"for a single message (e.g. bulk e-mail). Each object in the array may include the following header properties "
 	"(described above): <br>"
 	"<i>to</i>, <i>to_ext</i>, <i>to_org</i>, <i>to_net_type</i>, <i>to_net_addr</i>, and <i>to_agent</i>"
 	)
-	,310
+	,312
 	},
 	{0}
 };

@@ -391,7 +391,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 
 	/* filenames */
 	{	"devnull",					SYS_PROP_DEVNULL		,SYSOBJ_FLAGS,	311  },
-	{	"temp_path",				SYS_PROP_TEMP_PATH		,SYSOBJ_FLAGS,	311	 },
+	{	"temp_path",				SYS_PROP_TEMP_PATH		,SYSOBJ_FLAGS,	312	 },
 
 	/* clock access */
 	{	"clock_ticks",				SYS_PROP_CLOCK			,SYSOBJ_FLAGS,	311  },

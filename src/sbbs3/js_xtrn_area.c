@@ -43,7 +43,7 @@
 
 static char* xtrn_sec_prop_desc[] = {
 
-	 "index into sec_list array (or -1 if not in index)"
+	 "index into sec_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
 	,"unique number for this external program section"
 	,"external program section internal code"
 	,"external program section name"
@@ -53,11 +53,11 @@ static char* xtrn_sec_prop_desc[] = {
 
 static char* xtrn_prog_prop_desc[] = {
 
-	 "index into prog_list array (or -1 if not in index)"
+	 "index into prog_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
 	,"program number"
-	,"progarm section index"
+	,"progarm section index <i>(introduced in v3.12)</i>"
 	,"program section number"
-	,"program section internal code"
+	,"program section internal code <i>(introduced in v3.12)</i>"
 	,"internal code"
 	,"name"
 	,"command-line"

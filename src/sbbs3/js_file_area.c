@@ -42,7 +42,7 @@
 #ifdef _DEBUG
 
 static char* lib_prop_desc[] = {
-	 "index into lib_list array (or -1 if not in array)"
+	 "index into lib_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
 	,"unique number for this library"
 	,"library name"
 	,"library description"
@@ -53,11 +53,11 @@ static char* lib_prop_desc[] = {
 
 static char* dir_prop_desc[] = {
 
-	 "index into dir_list array (or -1 if not in array)"
+	 "index into dir_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
 	,"unique number for this directory"
-	,"library index"
+	,"library index <i>(introduced in v3.12)</i>"
 	,"library number"
-	,"library name"
+	,"library name <i>(introduced in v3.12)</i>"
 	,"directory internal code"
 	,"directory name"
 	,"directory description"

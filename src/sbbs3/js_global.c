@@ -2424,7 +2424,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"The result (last executed statement) of the executed script will also be automatically "
 		"written to the <i>parent_queue</i> "
 		"which may be read later by the parent script.")
-	,311
+	,312
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	JSDOCSTR("[number milliseconds]")
@@ -2489,7 +2489,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"backslash",		js_backslash,		1,	JSTYPE_STRING,	JSDOCSTR("string path")
 	,JSDOCSTR("returns directory path with trailing (platform-specific) path delimeter "
 		"(i.e. \"slash\" or \"backslash\")")
-	,311
+	,312
 	},
 	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("string path")
 	,JSDOCSTR("returns filename portion of passed path string")
@@ -2564,7 +2564,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"file_mutex",		js_fmutex,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,text]")
 	,JSDOCSTR("attempts to create an exclusive (e.g. lock) file, "
 		"optionally with the contents of <i>text</i>")
-	,311
+	,312
 	},
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("string pattern [,flags]")
 	,JSDOCSTR("returns an array of directory entries, "
