@@ -838,7 +838,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 
 	safecat(headers,"",MAX_HEADERS_SIZE);
 	send_file = (sockprint(session->socket,headers) && send_file);
-	free(headers);
+	FREE_AND_NULL(headers);
 	return(send_file);
 }
 
@@ -949,7 +949,7 @@ static BOOL check_ars(http_session_t * session)
 	ar = arstr(NULL,session->req.ars,&scfg);
 	authorized=chk_ar(&scfg,ar,&session->user);
 	if(ar!=NULL && ar!=nular)
-		free(ar);
+		FREE_AND_NULL(ar);
 
 	if(session->req.dynamic==IS_SSJS)  {
 		if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
@@ -2467,7 +2467,7 @@ void http_session_thread(void* arg)
 	http_session_t	session=*(http_session_t*)arg;	/* copies arg BEFORE it's freed */
 	int				loop_count;
 
-	free(arg);
+	FREE_AND_NULL(arg);
 
 	socket=session.socket;
 	lprintf(LOG_DEBUG,"%04d Session thread started", session.socket);
@@ -2649,7 +2649,7 @@ void http_logging_thread(void* arg)
 	SAFECOPY(base,arg);
 	if(!base[0])
 		return;
-	free(arg);
+	FREE_AND_NULL(arg);
 	filename[0]=0;
 	newfilename[0]=0;
 
@@ -2694,20 +2694,13 @@ void http_logging_thread(void* arg)
 					,ld->referrer?(ld->referrer[0]?ld->referrer:"-"):"-"
 					,ld->agent?(ld->agent[0]?ld->agent:"-"):"-");
 			fflush(logfile);
-			if(ld->hostname!=NULL)
-				free(ld->hostname);
-			if(ld->ident!=NULL)
-				free(ld->ident);
-			if(ld->user!=NULL)
-				free(ld->user);
-			if(ld->request!=NULL)
-				free(ld->request);
-			if(ld->referrer!=NULL)
-				free(ld->referrer);
-			if(ld->agent!=NULL)
-				free(ld->agent);
-			if(ld!=NULL)
-				free(ld);
+			FREE_AND_NULL(ld->hostname);
+			FREE_AND_NULL(ld->ident);
+			FREE_AND_NULL(ld->user);
+			FREE_AND_NULL(ld->request);
+			FREE_AND_NULL(ld->referrer);
+			FREE_AND_NULL(ld->agent);
+			FREE_AND_NULL(ld);
 		}
 		else {
 			logfile=fopen(filename,"ab");
