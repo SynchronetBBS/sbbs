@@ -59,13 +59,17 @@ function document_methods(name,obj)
 	writeln("Description".fontcolor("white"));
 
 	for(method in obj._method_list) {
-		write("<tr>");
+		write("<tr valign=top>");
 
-		write(format("<td>%s<td>%s<td><tt>%s.%s(%s)\n"
+		if(obj==_global)
+			func=obj._method_list[method].name;
+		else
+			func=name + '.' + obj._method_list[method].name;
+
+		write(format("<td>%s<td>%s<td><tt>%s(%s)\n"
 			,obj._method_list[method].name.bold()
 			,obj._method_list[method].type
-			,name
-			,obj._method_list[method].name
+			,func
 			,obj._method_list[method].args
 			));
 		writeln("<td>" + obj._method_list[method].desc);
@@ -77,10 +81,8 @@ function document_methods(name,obj)
 	}
 }
 
-function document_object(name, obj)
+function object_header(name, obj)
 {
-	var prop_name;
-
 	f.writeln("<li><a href=#" + name +">" + name + "</a>");
 
 	if(table_depth)
@@ -91,6 +93,10 @@ function document_object(name, obj)
 	writeln("</h2>");
 	if(obj._constructor!=undefined)
 		writeln("<p>" + obj._constructor + "</p>");
+}
+
+function properties_header(name)
+{
 	table_open(name);
 	writeln("<caption align=left><b>" + name.italics() + " properties" + "</b></caption>");
 	writeln("<tr bgcolor=gray>");
@@ -100,6 +106,13 @@ function document_object(name, obj)
 	writeln("Type".fontcolor("white"));
 	writeln("<th align=left>");
 	writeln("Description".fontcolor("white"));
+}
+
+function document_properties(name, obj)
+{
+	var prop_name;
+
+	properties_header(name);
 
 	p=0;
 	for(prop in obj) {
@@ -112,12 +125,18 @@ function document_object(name, obj)
 				document_object(prop_name,obj[prop]);
 			continue;
 		} 
-		write("<tr>");
+		write("<tr valign=top>");
 		writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
 		if(obj._property_desc_list!=undefined)
 			writeln("<td>" + obj._property_desc_list[p++] + "</td>");
 	}
+}
 
+function document_object(name, obj)
+{
+	
+	object_header(name,obj);
+	document_properties(name,obj);
 	document_methods(name,obj);
 	table_close();
 }
@@ -138,10 +157,18 @@ f.writeln("<body>");
 f.writeln("<font face=arial,helvetica>");
 
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
-f.printf("Generated with Synchronet v%s compiled %s\n"
+f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
 		 ,system.full_version,system.compiled_when);
 
 f.writeln("<ul>");
+
+object_header("global"		,_global);
+properties_header("global");
+writeln("<tr><td>" + "argc".bold() + "<td>number<td>number of arguments passed to the script</td>");
+writeln("<tr><td>" + "argv".bold() + "<td>array<td>array of argument strings (argv.length == argc)</td>");
+writeln("<tr><td>" + "errno".bold() + "<td>number<td>last system error number</td>");
+writeln("<tr><td>" + "errno_str".bold() + "<td>string<td>description of last system error</td>");
+document_methods("global"	,_global);
 
 document_object("system"	,system);
 document_object("server"	,server);
