@@ -1,0 +1,102 @@
+Installing Synchronet BBS for Win32 v3.0
+========================================
+
+This version has been succesfully tested with the 
+following operating systems: Windows 95, Windows 98, 
+Windows NT4, and Windows 2000.
+
+If you are upgrading an existing installation of 
+Synchronet (v2.3 or v3.0a), it is advised that you 
+choose "Custom" Setup and disable the following
+installation components:
+
+	o Configuration Files
+	o Text and Menu Files
+	o External Programs
+
+It is recommended that you install Synchronet into
+the default installation directory (C:\SBBS). 
+Installing into a location other than C:\SBBS will 
+require  modification of the following files for full 
+operation:
+
+	o EXEC\VERT.BAT
+	o EXEC\VERT.FTP
+	o EXEC\TIMED.BAT
+	o TEXT\BULLSEYE.CFG
+
+
+SBBSCTRL
+~~~~~~~~
+SBBSCTRL is the Sysop's console for SBBS v3. You still 
+must use SCFG to configure the BBS options shared between 
+the new and old versions (this will be replaced with a GUI 
+Configuration program at some point in the future).
+
+The installation program will create a short-cut to 
+SBBSCTRL.EXE on your desktop and in your startup folder 
+(so Synchronet will start automatically during boot-up).
+
+Auto-logon by IP is enabled in SBBSCTRL->Telnet->Configure 
+and only users with the 'V' exemption can use this feature.
+
+
+Known Issues
+~~~~~~~~~~~~
+o DOSKEY must be loaded in your autoexec.bat for the DOS 
+  shell to work right (Windows 95/98)
+o Backspace doesn't work right in DOS shell (Windows 95/98)
+o Can't ;RERUN v3 nodes
+o First node (set in SBBSCTRL) configuration is used for all 
+  nodes (this is actually intentional, i.e. not a bug)
+o First node's temp directory must be set to "TEMP\"
+
+
+Documentation
+~~~~~~~~~~~~~
+ASCII exported versions of the Synchronet documentation are 
+available in the DOCS directory. See CONTENTS.TXT for 
+description of each file. To print the sysop manual type:
+COPY \SBBS\DOCS\SYSOP.DOC PRN
+
+
+Ordering/Registering Synchronet
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Synchronet (as of April 1997) is FREEWARE - no registration or 
+licensing fee is required.
+
+
+For More Information
+~~~~~~~~~~~~~~~~~~~~
+See DOCS\NTREADME.TXT for instructions on running 
+    Synchronet v3.0 on Windows NT or Windows 2000.
+
+See DOCS\V300_NEW.TXT for list of new features in 
+    Synchronet v3.0.
+
+See DOCS\SBBS3FAQ.TXT for answers to frequently asked
+    questions regarding Synchronet v3.0.
+
+See DOCS\V3CFGFAQ.TXT for answers to frequently asked
+    questions about configuring Synchronet v3.0.
+
+See DOCS\SBBSTODO.TXT for the current "to do" list for
+    Synchronet.
+
+See DOCS\FTPSRVR.DOC for details on setting up the
+    integrated FTP server.
+
+See DOCS\MAILSRVR.DOC for details on setting up the
+    integrated mail server.
+
+See DOCS\TELGATE.DOC for details on setting up the
+    MUD/Telnet gateway module.
+
+See DOCS\@CODES.TXT for a complete list of message 
+    variables (@-codes) supported in Synchronet.
+
+Thanks for your interest in Synchronet BBS Software
+(www.synchro.net).
+
+Rob Swindell
+(rob@synchro.net)
