@@ -162,55 +162,55 @@ void sbbs_read_ini(
 
 	section = "Global";
 
-	ctrl_dir=iniReadString(fp,section,"CtrlDirectory",nulstr);
+	ctrl_dir=iniGetString(fp,section,"CtrlDirectory",nulstr);
 	if(*ctrl_dir) {
 		SAFECOPY(bbs->ctrl_dir,ctrl_dir);
 		SAFECOPY(ftp->ctrl_dir,ctrl_dir);
 		SAFECOPY(mail->ctrl_dir,ctrl_dir);
 		SAFECOPY(services->ctrl_dir,ctrl_dir);
 	}
-	temp_dir=iniReadString(fp,section,"TempDirectory",nulstr);
+	temp_dir=iniGetString(fp,section,"TempDirectory",nulstr);
 	if(*temp_dir) {
 		SAFECOPY(bbs->temp_dir,ctrl_dir);
 		SAFECOPY(ftp->temp_dir,ctrl_dir);
 	}
 
-	SAFECOPY(host_name,iniReadString(fp,section,"HostName",nulstr));
-	js_max_bytes=iniReadInteger(fp,section,"JavaScriptMaxBytes",0);
+	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr));
+	js_max_bytes=iniGetInteger(fp,section,"JavaScriptMaxBytes",0);
 																		
 	/***********************************************************************/
 	section = "BBS";
 
 	*run_bbs
-		=iniReadBool(fp,section,"AutoStart",TRUE);
+		=iniGetBool(fp,section,"AutoStart",TRUE);
 
 	bbs->telnet_interface
-		=iniReadIpAddress(fp,section,"TelnetInterface",INADDR_ANY);
+		=iniGetIpAddress(fp,section,"TelnetInterface",INADDR_ANY);
 	bbs->telnet_port
-		=iniReadShortInt(fp,section,"TelnetPort",IPPORT_TELNET);
+		=iniGetShortInt(fp,section,"TelnetPort",IPPORT_TELNET);
 
 	bbs->rlogin_interface
-		=iniReadIpAddress(fp,section,"RLoginInterface",INADDR_ANY);
+		=iniGetIpAddress(fp,section,"RLoginInterface",INADDR_ANY);
 	bbs->rlogin_port
-		=iniReadShortInt(fp,section,"RLoginPort",513);
+		=iniGetShortInt(fp,section,"RLoginPort",513);
 
 	bbs->first_node
-		=iniReadShortInt(fp,section,"FirstNode",1);
+		=iniGetShortInt(fp,section,"FirstNode",1);
 	bbs->last_node
-		=iniReadShortInt(fp,section,"LastNode",4);
+		=iniGetShortInt(fp,section,"LastNode",4);
 
 	bbs->outbuf_highwater_mark
-		=iniReadShortInt(fp,section,"OutbufHighwaterMark",1024);
+		=iniGetShortInt(fp,section,"OutbufHighwaterMark",1024);
 	bbs->outbuf_drain_timeout
-		=iniReadShortInt(fp,section,"OutbufDrainTimeout",10);
+		=iniGetShortInt(fp,section,"OutbufDrainTimeout",10);
 
 	bbs->xtrn_polls_before_yield
-		=iniReadInteger(fp,section,"ExternalYield",10);
+		=iniGetInteger(fp,section,"ExternalYield",10);
 	bbs->js_max_bytes
-		=iniReadInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+		=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 	SAFECOPY(bbs->host_name
-		,iniReadString(fp,section,"HostName",host_name));
+		,iniGetString(fp,section,"HostName",host_name));
 
 	/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
 #if defined(__FreeBSD__)
@@ -220,9 +220,9 @@ void sbbs_read_ini(
 #endif
 
 	SAFECOPY(bbs->xtrn_term_ansi
-		,iniReadString(fp,section,"ExternalTermANSI",default_term_ansi));
+		,iniGetString(fp,section,"ExternalTermANSI",default_term_ansi));
 	SAFECOPY(bbs->xtrn_term_dumb
-		,iniReadString(fp,section,"ExternalTermDumb","dumb"));
+		,iniGetString(fp,section,"ExternalTermDumb","dumb"));
 
 #if defined(__FreeBSD__)
 	default_dosemu_path="/usr/bin/doscmd";
@@ -231,177 +231,177 @@ void sbbs_read_ini(
 #endif
 
 	SAFECOPY(bbs->dosemu_path
-		,iniReadString(fp,section,"DOSemuPath",default_dosemu_path));
+		,iniGetString(fp,section,"DOSemuPath",default_dosemu_path));
 
 	SAFECOPY(bbs->answer_sound
-		,iniReadString(fp,section,"AnswerSound",nulstr));
+		,iniGetString(fp,section,"AnswerSound",nulstr));
 	SAFECOPY(bbs->hangup_sound
-		,iniReadString(fp,section,"HangupSound",nulstr));
+		,iniGetString(fp,section,"HangupSound",nulstr));
 
 	bbs->options
-		=iniReadBitField(fp,section,"Options",bbs_options
+		=iniGetBitField(fp,section,"Options",bbs_options
 			,BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE);
 
 	/***********************************************************************/
 	section = "FTP";
 
 	*run_ftp
-		=iniReadBool(fp,section,"AutoStart",TRUE);
+		=iniGetBool(fp,section,"AutoStart",TRUE);
 
 	ftp->interface_addr
-		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
+		=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
 	ftp->port
-		=iniReadShortInt(fp,section,"Port",ftp->port);
+		=iniGetShortInt(fp,section,"Port",ftp->port);
 	ftp->max_clients
-		=iniReadShortInt(fp,section,"MaxClients",10);
+		=iniGetShortInt(fp,section,"MaxClients",10);
 	ftp->max_inactivity
-		=iniReadShortInt(fp,section,"MaxInactivity",300);	/* seconds */
+		=iniGetShortInt(fp,section,"MaxInactivity",300);	/* seconds */
 	ftp->qwk_timeout
-		=iniReadShortInt(fp,section,"QwkTimeout",600);		/* seconds */
+		=iniGetShortInt(fp,section,"QwkTimeout",600);		/* seconds */
 	ftp->js_max_bytes
-		=iniReadInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+		=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 	SAFECOPY(ftp->host_name
-		,iniReadString(fp,section,"HostName",host_name));
+		,iniGetString(fp,section,"HostName",host_name));
 
 	SAFECOPY(ftp->index_file_name
-		,iniReadString(fp,section,"IndexFileName","00index"));
+		,iniGetString(fp,section,"IndexFileName","00index"));
 	SAFECOPY(ftp->html_index_file
-		,iniReadString(fp,section,"HtmlIndexFile","00index.html"));
+		,iniGetString(fp,section,"HtmlIndexFile","00index.html"));
 	SAFECOPY(ftp->html_index_script
-		,iniReadString(fp,section,"HtmlIndexScript","ftp-html.js"));
+		,iniGetString(fp,section,"HtmlIndexScript","ftp-html.js"));
 
 	SAFECOPY(ftp->answer_sound
-		,iniReadString(fp,section,"AnswerSound",nulstr));
+		,iniGetString(fp,section,"AnswerSound",nulstr));
 	SAFECOPY(ftp->hangup_sound
-		,iniReadString(fp,section,"HangupSound",nulstr));
+		,iniGetString(fp,section,"HangupSound",nulstr));
 	SAFECOPY(ftp->hack_sound
-		,iniReadString(fp,section,"HackAttemptSound",nulstr));
+		,iniGetString(fp,section,"HackAttemptSound",nulstr));
 
 	ftp->options
-		=iniReadBitField(fp,section,"Options",ftp_options
+		=iniGetBitField(fp,section,"Options",ftp_options
 			,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
 
 	/***********************************************************************/
 	section = "Mail";
 
 	*run_mail
-		=iniReadBool(fp,section,"AutoStart",TRUE);
+		=iniGetBool(fp,section,"AutoStart",TRUE);
 
 	mail->interface_addr
-		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
+		=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
 	mail->smtp_port
-		=iniReadShortInt(fp,section,"SMTPPort",IPPORT_SMTP);
+		=iniGetShortInt(fp,section,"SMTPPort",IPPORT_SMTP);
 	mail->pop3_port
-		=iniReadShortInt(fp,section,"POP3Port",IPPORT_POP3);
+		=iniGetShortInt(fp,section,"POP3Port",IPPORT_POP3);
 	mail->relay_port
-		=iniReadShortInt(fp,section,"RelayPort",IPPORT_SMTP);
+		=iniGetShortInt(fp,section,"RelayPort",IPPORT_SMTP);
 	mail->max_clients
-		=iniReadShortInt(fp,section,"MaxClients",10);
+		=iniGetShortInt(fp,section,"MaxClients",10);
 	mail->max_inactivity
-		=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
+		=iniGetShortInt(fp,section,"MaxInactivity",120);		/* seconds */
 	mail->max_delivery_attempts
-		=iniReadShortInt(fp,section,"MaxDeliveryAttempts",50);
+		=iniGetShortInt(fp,section,"MaxDeliveryAttempts",50);
 	mail->rescan_frequency
-		=iniReadShortInt(fp,section,"RescanFrequency",3600);	/* 60 minutes */
+		=iniGetShortInt(fp,section,"RescanFrequency",3600);	/* 60 minutes */
 	mail->lines_per_yield
-		=iniReadShortInt(fp,section,"LinesPerYield",10);
+		=iniGetShortInt(fp,section,"LinesPerYield",10);
 	mail->max_recipients
-		=iniReadShortInt(fp,section,"MaxRecipients",100);
+		=iniGetShortInt(fp,section,"MaxRecipients",100);
 	mail->max_msg_size
-		=iniReadInteger(fp,section,"MaxMsgSize",10*1024*1024);	/* 10MB */
+		=iniGetInteger(fp,section,"MaxMsgSize",10*1024*1024);	/* 10MB */
 
 	SAFECOPY(mail->host_name
-		,iniReadString(fp,section,"HostName",host_name));
+		,iniGetString(fp,section,"HostName",host_name));
 
 	SAFECOPY(mail->relay_server
-		,iniReadString(fp,section,"RelayServer",mail->relay_server));
+		,iniGetString(fp,section,"RelayServer",mail->relay_server));
 	SAFECOPY(mail->dns_server
-		,iniReadString(fp,section,"DNSServer",mail->dns_server));
+		,iniGetString(fp,section,"DNSServer",mail->dns_server));
 
 	SAFECOPY(mail->default_user
-		,iniReadString(fp,section,"DefaultUser",nulstr));
+		,iniGetString(fp,section,"DefaultUser",nulstr));
 
 	SAFECOPY(mail->dnsbl_hdr
-		,iniReadString(fp,section,"DNSBlacklistHeader","X-DNSBL"));
+		,iniGetString(fp,section,"DNSBlacklistHeader","X-DNSBL"));
 	SAFECOPY(mail->dnsbl_tag
-		,iniReadString(fp,section,"DNSBlacklistSubject","SPAM"));
+		,iniGetString(fp,section,"DNSBlacklistSubject","SPAM"));
 
 	SAFECOPY(mail->pop3_sound
-		,iniReadString(fp,section,"POP3Sound",nulstr));
+		,iniGetString(fp,section,"POP3Sound",nulstr));
 	SAFECOPY(mail->inbound_sound
-		,iniReadString(fp,section,"InboundSound",nulstr));
+		,iniGetString(fp,section,"InboundSound",nulstr));
 	SAFECOPY(mail->outbound_sound
-		,iniReadString(fp,section,"OutboundSound",nulstr));
+		,iniGetString(fp,section,"OutboundSound",nulstr));
 
 	SAFECOPY(mail->proc_cfg_file
-		,iniReadString(fp,section,"ProcessConfigFile","mailproc.cfg"));
+		,iniGetString(fp,section,"ProcessConfigFile","mailproc.cfg"));
 
 	mail->options
-		=iniReadBitField(fp,section,"Options",mail_options
+		=iniGetBitField(fp,section,"Options",mail_options
 			,MAIL_OPT_ALLOW_POP3);
 
 	/***********************************************************************/
 	section = "Services";
 
 	*run_services
-		=iniReadBool(fp,section,"AutoStart",TRUE);
+		=iniGetBool(fp,section,"AutoStart",TRUE);
 
 	services->interface_addr
-		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
+		=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
 
 	services->js_max_bytes
-		=iniReadInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+		=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 	SAFECOPY(services->host_name
-		,iniReadString(fp,section,"HostName",host_name));
+		,iniGetString(fp,section,"HostName",host_name));
 
 	SAFECOPY(services->cfg_file
-		,iniReadString(fp,section,"ConfigFile","services.cfg"));
+		,iniGetString(fp,section,"ConfigFile","services.cfg"));
 
 	SAFECOPY(services->answer_sound
-		,iniReadString(fp,section,"AnswerSound",nulstr));
+		,iniGetString(fp,section,"AnswerSound",nulstr));
 	SAFECOPY(services->hangup_sound
-		,iniReadString(fp,section,"HangupSound",nulstr));
+		,iniGetString(fp,section,"HangupSound",nulstr));
 
 	services->options
-		=iniReadBitField(fp,section,"Options",service_options
+		=iniGetBitField(fp,section,"Options",service_options
 			,BBS_OPT_NO_HOST_LOOKUP);
 
 	/***********************************************************************/
 	section = "Web";
 
 	*run_web
-		=iniReadBool(fp,section,"AutoStart",FALSE);
+		=iniGetBool(fp,section,"AutoStart",FALSE);
 
 	web->interface_addr
-		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
+		=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
 	web->port
-		=iniReadShortInt(fp,section,"Port",IPPORT_HTTP);
+		=iniGetShortInt(fp,section,"Port",IPPORT_HTTP);
 	web->js_max_bytes
-		=iniReadInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+		=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
 
 	SAFECOPY(web->host_name
-		,iniReadString(fp,section,"HostName",host_name));
+		,iniGetString(fp,section,"HostName",host_name));
 
 	SAFECOPY(web->root_dir
-		,iniReadString(fp,section,"RootDirectory","../html"));
+		,iniGetString(fp,section,"RootDirectory","../html"));
 	SAFECOPY(web->error_dir
-		,iniReadString(fp,section,"ErrorDirectory","../html/error"));
+		,iniGetString(fp,section,"ErrorDirectory","../html/error"));
 
 	iniFreeStringList(web->index_file_name);
 	web->index_file_name
-		=iniReadStringList(fp,section,"IndexFileNames", "," ,"index.html,index.ssjs");
+		=iniGetStringList(fp,section,"IndexFileNames", "," ,"index.html,index.ssjs");
 	iniFreeStringList(web->cgi_ext);
 	web->cgi_ext
-		=iniReadStringList(fp,section,"CGIExtensions", "," ,".cgi");
+		=iniGetStringList(fp,section,"CGIExtensions", "," ,".cgi");
 	SAFECOPY(web->ssjs_ext
-		,iniReadString(fp,section,"JavaScriptExtension",".ssjs"));
+		,iniGetString(fp,section,"JavaScriptExtension",".ssjs"));
 
 	web->max_inactivity
-		=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
+		=iniGetShortInt(fp,section,"MaxInactivity",120);		/* seconds */
 	web->max_cgi_inactivity
-		=iniReadShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
+		=iniGetShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
 
 
 #ifdef __unix__
@@ -411,9 +411,9 @@ void sbbs_read_ini(
 		default_cgi_temp = nulstr;
 #endif
 	SAFECOPY(web->cgi_temp_dir
-		,iniReadString(fp,section,"CGITempDirectory",default_cgi_temp));
+		,iniGetString(fp,section,"CGITempDirectory",default_cgi_temp));
 
 	web->options
-		=iniReadBitField(fp,section,"Options",web_options
+		=iniGetBitField(fp,section,"Options",web_options
 			,BBS_OPT_NO_HOST_LOOKUP);
 }

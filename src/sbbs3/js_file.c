@@ -422,20 +422,20 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	switch(JSVAL_TAG(dflt)) {
 		case JSVAL_STRING:
 			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,
-				iniReadString(p->fp,section,key
+				iniGetString(p->fp,section,key
 					,JS_GetStringBytes(JS_ValueToString(cx,dflt)))));
 			break;
 		case JSVAL_BOOLEAN:
 			*rval = BOOLEAN_TO_JSVAL(
-				iniReadBool(p->fp,section,key,JSVAL_TO_BOOLEAN(dflt)));
+				iniGetBool(p->fp,section,key,JSVAL_TO_BOOLEAN(dflt)));
 			break;
 		case JSVAL_DOUBLE:
 			JS_NewNumberValue(cx
-				,iniReadFloat(p->fp,section,key,*JSVAL_TO_DOUBLE(dflt)),rval);
+				,iniGetFloat(p->fp,section,key,*JSVAL_TO_DOUBLE(dflt)),rval);
 			break;
 		case JSVAL_OBJECT:
 		    array = JS_NewArrayObject(cx, 0, NULL);
-			list=iniReadStringList(p->fp,section,key,",",JS_GetStringBytes(JS_ValueToString(cx,dflt)));
+			list=iniGetStringList(p->fp,section,key,",",JS_GetStringBytes(JS_ValueToString(cx,dflt)));
 			for(i=0;list && list[i];i++) {
 				val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]));
 				if(!JS_SetElement(cx, array, i, &val))
@@ -447,7 +447,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		default:
 			if(JSVAL_IS_INT(dflt)) {
 				*rval = INT_TO_JSVAL(
-					iniReadInteger(p->fp,section,key,JSVAL_TO_INT(dflt)));
+					iniGetInteger(p->fp,section,key,JSVAL_TO_INT(dflt)));
 				break;
 			}
 			break;
@@ -474,7 +474,7 @@ js_iniGetSections(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
     array = JS_NewArrayObject(cx, 0, NULL);
 
-	list = iniReadSectionList(p->fp);
+	list = iniGetSectionList(p->fp);
     for(i=0;list && list[i];i++) {
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]));
         if(!JS_SetElement(cx, array, i, &val))
@@ -507,7 +507,7 @@ js_iniGetKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
     array = JS_NewArrayObject(cx, 0, NULL);
 
-	list = iniReadKeyList(p->fp,section);
+	list = iniGetKeyList(p->fp,section);
     for(i=0;list && list[i];i++) {
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]));
         if(!JS_SetElement(cx, array, i, &val))
@@ -524,11 +524,10 @@ static JSBool
 js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		section;
-	char*		val;
-	char**		list;
     jsint       i;
     JSObject*	object;
 	private_t*	p;
+	named_string_t** list;
 
 	*rval = JSVAL_NULL;
 
@@ -540,15 +539,14 @@ js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
     object = JS_NewObject(cx, NULL, NULL, obj);
 
-	list = iniReadKeyList(p->fp,section);
+	list = iniGetNamedStringList(p->fp,section);
     for(i=0;list && list[i];i++) {
-		if((val=iniReadString(p->fp,section,list[i],NULL))==NULL)
-			continue;
-		JS_DefineProperty(cx, object, list[i], STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+		JS_DefineProperty(cx, object, list[i]->name
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]->value))
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	}
-	iniFreeStringList(list);
+	iniFreeNamedStringList(list);
 
     *rval = OBJECT_TO_JSVAL(object);
 

@@ -122,7 +122,7 @@ static char* get_value(FILE* fp, const char* section, const char* key)
 	return(NULL);
 }
 
-char* iniReadString(FILE* fp, const char* section, const char* key, const char* deflt)
+char* iniGetString(FILE* fp, const char* section, const char* key, const char* deflt)
 {
 	char* value;
 
@@ -135,7 +135,7 @@ char* iniReadString(FILE* fp, const char* section, const char* key, const char* 
 	return(value);
 }
 
-char** iniReadStringList(FILE* fp, const char* section, const char* key
+char** iniGetStringList(FILE* fp, const char* section, const char* key
 						 ,const char* sep, const char* deflt)
 {
 	char*	value;
@@ -203,7 +203,7 @@ void* iniFreeNamedStringList(named_string_t** list)
 	return(NULL);
 }
 
-char** iniReadSectionList(FILE* fp)
+char** iniGetSectionList(FILE* fp)
 {
 	char*	p;
 	char*	tp;
@@ -247,7 +247,7 @@ char** iniReadSectionList(FILE* fp)
 	return(lp);
 }
 
-char** iniReadKeyList(FILE* fp, const char* section)
+char** iniGetKeyList(FILE* fp, const char* section)
 {
 	char*	p;
 	char*	tp;
@@ -297,7 +297,7 @@ char** iniReadKeyList(FILE* fp, const char* section)
 }
 
 named_string_t**
-iniReadNamedStringList(FILE* fp, const char* section)
+iniGetNamedStringList(FILE* fp, const char* section)
 {
 	char*	p;
 	char*	name;
@@ -361,7 +361,7 @@ iniReadNamedStringList(FILE* fp, const char* section)
 
 /* These functions read a single key of the specified type */
 
-long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
+long iniGetInteger(FILE* fp, const char* section, const char* key, long deflt)
 {
 	char* value;
 
@@ -374,12 +374,12 @@ long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 	return(strtol(value,NULL,0));
 }
 
-ushort iniReadShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
+ushort iniGetShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
 {
-	return((ushort)iniReadInteger(fp, section, key, deflt));
+	return((ushort)iniGetInteger(fp, section, key, deflt));
 }
 
-ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
+ulong iniGetIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
 {
 	char* value;
 
@@ -395,7 +395,7 @@ ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong def
 	return(ntohl(inet_addr(value)));
 }
 
-double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt)
+double iniGetFloat(FILE* fp, const char* section, const char* key, double deflt)
 {
 	char* value;
 
@@ -408,7 +408,7 @@ double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt
 	return(atof(value));
 }
 
-BOOL iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
+BOOL iniGetBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 {
 	char* value;
 
@@ -426,7 +426,7 @@ BOOL iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 	return(strtol(value,NULL,0));
 }
 
-ulong iniReadBitField(FILE* fp, const char* section, const char* key, 
+ulong iniGetBitField(FILE* fp, const char* section, const char* key, 
 						ini_bitdesc_t* bitdesc, ulong deflt)
 {
 	int		b,i;

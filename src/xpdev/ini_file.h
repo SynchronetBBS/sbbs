@@ -50,35 +50,35 @@ extern "C" {
 #endif
 
 /* Read all section names and return as a string list */
-char**		iniReadSectionList		(FILE* fp);
+char**		iniGetSectionList		(FILE* fp);
 /* Read all key names and return as a string list */
-char**		iniReadKeyList			(FILE* fp, const char* section);
+char**		iniGetKeyList			(FILE* fp, const char* section);
 /* Read all key and value pairs and return as a named string list */
 named_string_t**
-			iniReadNamedStringList	(FILE* fp, const char* section);
+			iniGetNamedStringList	(FILE* fp, const char* section);
 
 /* These functions read a single key of the specified type */
-char*		iniReadString	(FILE* fp, const char* section, const char* key, 
+char*		iniGetString	(FILE* fp, const char* section, const char* key, 
 							 const char* deflt);
-char**		iniReadStringList(FILE* fp, const char* section, const char* key
+char**		iniGetStringList(FILE* fp, const char* section, const char* key
 							,const char* sep, const char* deflt);
-long		iniReadInteger	(FILE* fp, const char* section, const char* key, 
+long		iniGetInteger	(FILE* fp, const char* section, const char* key, 
 							 long deflt);
-ushort		iniReadShortInt	(FILE* fp, const char* section, const char* key, 
+ushort		iniGetShortInt	(FILE* fp, const char* section, const char* key, 
 							 ushort deflt);
-ulong		iniReadIpAddress(FILE* fp, const char* section, const char* key, 
+ulong		iniGetIpAddress(FILE* fp, const char* section, const char* key, 
 							 ulong deflt);
-double		iniReadFloat	(FILE* fp, const char* section, const char* key, 
+double		iniGetFloat	(FILE* fp, const char* section, const char* key, 
 							 double deflt);
-BOOL		iniReadBool		(FILE* fp, const char* section, const char* key, 
+BOOL		iniGetBool		(FILE* fp, const char* section, const char* key, 
 							 BOOL deflt);
-ulong		iniReadBitField	(FILE* fp, const char* section, const char* key, 
+ulong		iniGetBitField	(FILE* fp, const char* section, const char* key, 
 							 ini_bitdesc_t* bitdesc, ulong deflt);
 
-/* Free string list returned from iniRead*List functions */
+/* Free string list returned from iniGet*List functions */
 void*		iniFreeStringList(char** list);
 
-/* Free named string list returned from iniReadNamedStringList */
+/* Free named string list returned from iniGetNamedStringList */
 void*		iniFreeNamedStringList(named_string_t** list);
 
 #if defined(__cplusplus)
