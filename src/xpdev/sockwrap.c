@@ -66,7 +66,6 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 		count=len;
 
 	rd=read(file,buf,count);
-	close(file);
 	if(rd!=count) {
 		free(buf);
 		return(-1);
