@@ -75,7 +75,6 @@ extern int	backup_level;
 
 void bail(int code);
 void errormsg(int line, char *source,  char action, char *object, ulong access);
-int	 delfiles(char *inpath, char *spec);
 void clearptrs(int subnum);
 int  save_changes(int mode);
 void rerun_nodes(void);
