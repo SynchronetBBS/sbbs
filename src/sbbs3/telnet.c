@@ -39,7 +39,7 @@
 #include "gen_defs.h"
 #include "telnet.h"
 
-const char *telnet_cmd_desc(uchar cmd)
+const char* DLLCALL telnet_cmd_desc(uchar cmd)
 {
 	static char unknown[32];
 
@@ -112,7 +112,7 @@ char* telnet_option_descriptions[]={
 	,"TN3270E"
 };
 
-const char *telnet_opt_desc(uchar opt)
+const char* DLLCALL telnet_opt_desc(uchar opt)
 {
 	static char unknown[32];
 
