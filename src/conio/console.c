@@ -82,7 +82,7 @@ TextLine *lines = NULL;
 Display *dpy=NULL;
 Window win;
 XImage *xi = 0;
-Pixmap pfnt=NULL;
+Pixmap pfnt=0;
 Visual *visual;
 unsigned int depth;
 unsigned long black;
@@ -957,7 +957,7 @@ load_font(char *filename, int width, int height)
 	FW = width;
     FH = height;
 
-	if(pfnt!=NULL)
+	if(pfnt!=0)
 		XFreePixmap(dpy,pfnt);
 	pfnt=XCreateBitmapFromData(dpy, win, font, FW, FH*256);
 
