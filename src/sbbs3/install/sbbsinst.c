@@ -419,8 +419,8 @@ endif
 
 	fprintf(makefile,"baja:");
 	if(params.cvs)
-		fprintf(makefile,"\t$(SBBSDIR)/exec");
-	fprintf(makefile,"binaries\n");
+		fprintf(makefile," $(SBBSDIR)/exec");
+	fprintf(makefile," binaries\n");
 	fprintf(makefile,"\tgmake -C $(SBBSDIR)/exec $(MKFLAGS)\n\n");
 
 	fprintf(makefile,"sbj:");
