@@ -271,6 +271,7 @@ __published:	// IDE-managed Components
 	TMenuItem *BBSEditBajaMenuItem;
 	TMenuItem *BBSEditFile;
 	TMenuItem *N10;
+	TMenuItem *SpamBaitList;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
