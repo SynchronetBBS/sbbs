@@ -1,0 +1,88 @@
+############################################
+# Makefile for Synchronet SBBSFIDO Utility #
+# For use with Borland C++ for DOS or OS/2 #
+############################################
+
+# Macros
+CC	= bcc
+LD	= tlink
+!ifdef __OS2__
+OS	= OS2
+INCLUDE = c:\bcos2\include;..;..\smb;..\rio
+LIB	= c:\bcos2\lib
+CFLAGS  = -d -C -I$(INCLUDE)
+LFLAGS  = -c
+!else
+OS      = DOS
+INCLUDE = \bc31\include;..;..\smb;..\rio
+LIB	= \bc31\lib
+MODEL	= l
+CFLAGS	= -d -N -C -m$(MODEL) -I$(INCLUDE)
+LFLAGS	= -n -c
+!endif
+MAIN	= $(OS)\sbbsfido.exe
+OBJS	= $(OS)\sbbsfido.obj $(OS)\scfgvars.obj $(OS)\scfglib1.obj\
+	  $(OS)\scfglib2.obj\
+	  $(OS)\smblib.obj $(OS)\smbvars.obj $(OS)\ars.obj $(OS)\lzh.obj
+HEADERS = ..\sbbs.h ..\sbbsdefs.h ..\scfgvars.c \
+          ..\smb\smbdefs.h ..\smb\smblib.h ..\smb\smbvars.c
+
+# Implicit C Compile Rule
+{.}.c.obj:
+	@echo Compiling (I) $< to $@ ...
+        $(CC) $(CFLAGS) -n$(OS) -c $<
+
+# Main EXE Link Rule
+$(MAIN): $(OBJS) 
+    	@echo Linking $< ...
+!ifdef __OS2__
+	$(LD) $(LFLAGS) @&&+
+$(LIB)\c02.obj $(OBJS)
++, $*, $*, $(LIB)\os2.lib $(LIB)\c2.lib
+!else
+	$(LD) $(LFLAGS) @&&+
+$(LIB)\c0$(MODEL) $(OBJS)   
++, $*, $*, $(LIB)\c$(MODEL).lib $(LIB)\math$(MODEL).lib $(LIB)\emu.lib
+!endif
+
+# Global Variables
+$(OS)\scfgvars.obj: ..\scfgvars.c ..\sbbsdefs.h
+	@echo Compiling ..\$&.c to $< ...
+	$(CC) $(CFLAGS) -c -n$(OS) ..\$&.c
+
+# Shared Functions
+$(OS)\scfglib1.obj: ..\sbbs.h ..\sbbsdefs.h ..\scfglib1.c ..\scfgvars.c
+        @echo Compiling ..\$&.c to $< ...
+        $(CC) $(CFLAGS) -c -n$(OS) @&&!
+-DNO_FILE_CFG
+-DNO_XTRN_CFG
+-DNO_CMDS_CFG
+-DNO_CHAT_CFG
+! ..\$&.c
+
+# Shared Functions
+$(OS)\scfglib2.obj: ..\sbbs.h ..\sbbsdefs.h ..\scfglib2.c ..\scfgvars.c
+        @echo Compiling ..\$&.c to $< ...
+        $(CC) $(CFLAGS) -c -n$(OS) @&&!
+-DNO_FILE_CFG
+-DNO_XTRN_CFG
+-DNO_CMDS_CFG
+-DNO_CHAT_CFG
+! ..\$&.c
+
+#$(OS)\smblib.obj: ..\smb\smblib.c ..\smb\smblib.h ..\smb\smbdefs.h
+#	@echo Compiling SMBLIB ...
+#	$(CC) $(CFLAGS) -n$(OS) -c ..\smb\smblib.c
+
+#$(OS)\smbvars.obj: ..\smb\smbvars.c ..\smb\smblib.h ..\smb\smbdefs.h
+#	@echo Compiling SMBVARS ...
+#	$(CC) $(CFLAGS) -n$(OS) -c ..\smb\smbvars.c
+
+#$(OS)\lzh.obj: ..\smb\lzh.c ..\smb\lzh.h
+#        @echo Compiling LZH ...
+#	$(CC) $(CFLAGS) -n$(OS) -c ..\smb\lzh.c
+
+$(OS)\ars.obj: ..\ars.c ..\ars_defs.h 
+        @echo Compiling ..\$&.c to $< ...
+	$(CC) $(CFLAGS) -n$(OS) -c ..\ars.c
+
