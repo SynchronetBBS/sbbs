@@ -659,6 +659,7 @@ int main(int argc, char** argv)
 	char*	ctrl_dir;
 	char	str[MAX_PATH+1];
 	char	ini_file[MAX_PATH+1];
+	char	host_name[128];
 	BOOL	quit=FALSE;
 	FILE*	fp=NULL;
 #ifdef __unix__
@@ -674,7 +675,11 @@ int main(int argc, char** argv)
 	if(ctrl_dir==NULL)
 		ctrl_dir="/sbbs/ctrl";		/* Not set? Use default */
 
-	sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,BACKSLASH);
+	gethostname(host_name,sizeof(host_name)-1);
+
+	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,BACKSLASH,host_name);
+	if(!fexist(ini_file))
+		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,BACKSLASH);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
@@ -1014,14 +1019,10 @@ int main(int argc, char** argv)
 							SAFECOPY(mail_startup.host_name,arg);
 							SAFECOPY(services_startup.host_name,arg);
 						} else {
-							gethostname(bbs_startup.host_name
-								,sizeof(bbs_startup.host_name)-1);
-							gethostname(ftp_startup.host_name
-								,sizeof(ftp_startup.host_name)-1);
-							gethostname(mail_startup.host_name
-								,sizeof(mail_startup.host_name)-1);
-							gethostname(services_startup.host_name
-								,sizeof(services_startup.host_name)-1);
+							SAFECOPY(bbs_startup.host_name,host_name);
+							SAFECOPY(ftp_startup.host_name,host_name);
+							SAFECOPY(mail_startup.host_name,host_name);
+							SAFECOPY(services_startup.host_name,host_name);
 						}
 						printf("Setting hostname: %s\n",bbs_startup.host_name);
 						break;
