@@ -900,7 +900,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 					tmpbuf[j++]=inbuf[i];
 				else if(inbuf[i]<' ') /* unknown control chars */
 				{
-					if(ansi && inbuf[i]=='\e')
+					if(ansi && inbuf[i]==ESC)
 					{
 						esccount++;
 						tmpbuf[j++]=inbuf[i];
@@ -948,7 +948,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				}
 				outbuf=param;
 			}
-			if(tmpbuf[i]=='\e' && tmpbuf[i+1]=='[')
+			if(tmpbuf[i]==ESC && tmpbuf[i+1]=='[')
 			{
 				if(nodisplay)
 					continue;
@@ -1344,7 +1344,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 							lastcolor=(blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | fg;
 							j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[lastcolor],HTML_COLOR_SUFFIX);
 						}
-						if(hpos>=79 && tmpbuf[i+1] != '\r' && tmpbuf[i+1] != '\n' && tmpbuf[i+1] != '\e')
+						if(hpos>=79 && tmpbuf[i+1] != '\r' && tmpbuf[i+1] != '\n' && tmpbuf[i+1] != ESC)
 						{
 							hpos=0;
 							currrow++;
@@ -1937,6 +1937,26 @@ js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_freediskspace(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int32		unit=0;
+	char*		p;
+
+	*rval = JSVAL_VOID;
+
+	if((p=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_TRUE);
+
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&unit);
+
+	JS_NewNumberValue(cx,getfreediskspace(p,unit),rval);
+
+    return(JS_TRUE);
+}
+
+
+static JSBool
 js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	JSObject*	inarray=NULL;
@@ -1994,7 +2014,7 @@ js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 				continue;
 			sock=*psock;
 		} else 
-			JS_ValueToInt32(cx,val,&sock);
+			JS_ValueToInt32(cx,val,(int32*)&sock);
 		FD_SET(sock,&socket_set);
 		if(sock>maxsock)
 			maxsock=sock;
@@ -2245,7 +2265,12 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("returns an array of directory entries, "
 		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
 		"<i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)")
-	},		
+	},
+	{"dir_freespace",	js_freediskspace,	2,	JSTYPE_NUMBER,	JSDOCSTR("string directory [,unit_size]")
+	,JSDOCSTR("returns the amount of available disk space in the specified <i>directory</i> "
+		"using the specified <i>unit_size</i> in bytes (default: 1), "
+		"specify a <i>unit_size</i> of <tt>1024</tt> to return the available space in <i>kilobytes</i>.")
+	},
 	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,number timeout] [,bool write]")
 	,JSDOCSTR("checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
 		"default timeout value is 0.0 seconds (immediate timeout), "
