@@ -11,7 +11,7 @@ var path=http_request.path_info.split(/\//);
 if(path==undefined) {
         error("No path info!");
 }
-var group=path[1];
+var group=parseInt(path[1]);
 var sub=path[2];
 var id=parseInt(path[3]);
 
@@ -23,7 +23,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 
 if(sub=='mail') {
 	template.group=new Object;
-	template.group.code='mail';
+	template.group.number=-1;
 }
 else {
 	template.group=msg_area.grp_list[g];

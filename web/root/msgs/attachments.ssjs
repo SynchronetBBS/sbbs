@@ -11,7 +11,7 @@ var path=http_request.path_info.split(/\//);
 if(path==undefined) {
 	error("No path info!");
 }
-var group=path[1];
+var group=parseInt(path[1]);
 var sub=path[2];
 var id=parseInt(path[3]);
 var filename=path[4];

@@ -8,8 +8,8 @@
 <TR><TD COLSPAN=2><HR></TD></TR>
 <TR>
 <TD COLSPAN=2>
-<!-- <OBJECT TYPE="text/html" DATA="msgframe.ssjs/^^group:code^^/^^sub:code^^/^^hdr:number^^" STANDBY="Loading Message..." WIDTH="95%" HEIGHT="500"> -->
-<IFRAME SRC="msgframe.ssjs/^^group:code^^/^^sub:code^^/^^hdr:number^^" WIDTH="95%" HEIGHT="75%" SCROLLING="auto">
+<!-- <OBJECT TYPE="text/html" DATA="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" STANDBY="Loading Message..." WIDTH="95%" HEIGHT="500"> -->
+<IFRAME SRC="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" WIDTH="95%" HEIGHT="75%" SCROLLING="auto">
 @@JS:if(msg.type!="html") ''; else '<!--';@@
 <PRE><FONT FACE="Courier New">
 @@JS:if(msg.type!="html") ''; else '-->';@@
@@ -25,7 +25,7 @@
 @@JS:if(template.attachments==undefined) '<!--'; else '';@@
 <b>Attachments:</b><br>
 <<REPEAT attachments>>
-<a href="attachments.ssjs/^^group:code^^/^^sub:code^^/^^hdr:number^^/^^attachments:name^^">%%attachments:name%%</a><br>
+<a href="attachments.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^/^^attachments:name^^">%%attachments:name%%</a><br>
 <<END REPEAT attachments>>
 @@JS:if(template.attachments==undefined) '-->'; else '';@@
 <A HREF="reply.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^&reply_to=^^hdr:number^^">Reply</A>

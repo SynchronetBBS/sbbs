@@ -7,7 +7,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 
 if(sub=='mail') {
 	template.group=new Object;
-	template.group.code='mail';
+	template.group.number=-1;
 }
 else {
 	template.group=msg_area.grp_list[g];
