@@ -70,6 +70,8 @@ void prep_dir(char* base, char* path)
 void prep_path(char* path)
 {
 #ifdef __unix__				/* Change backslashes to forward slashes on Unix */
+	char	*p;
+
 	for(p=path;*p;p++)
 		if(*p=='\\') 
 			*p='/';
