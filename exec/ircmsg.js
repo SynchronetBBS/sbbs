@@ -1,5 +1,7 @@
 /* ircmsg.js */
 
+/* Send a message (from stdin or the command-line) to an IRC channel */
+
 /* $Id$ */
 
 load("irclib.js");	// Thanks Cyan!
@@ -12,7 +14,6 @@ var port=6667;
 var nick="nick";
 var msg;
 var join=false;
-var passedmsg=0;
 
 for(i=0;i<argc;i++) {
 	switch(argv[i]) {
@@ -33,14 +34,12 @@ for(i=0;i<argc;i++) {
 			break;
 		case "-m":
 			msg=argv[++i];
-			passedmsg=1;
+			if(msg==undefined || msg.search(/^[\r\n]*$/)!=-1) {
+				log("-m specified with blank message... aborting");
+				exit();
+			}
 			break;
 	}
-}
-
-if(passedmsg && (msg==undefined || msg.search(/^[\r\n]*$/)!=-1)) {
-	log("-m specified with blank message... aborting");
-	exit();
 }
 
 log("Using nick: " + nick);
@@ -58,12 +57,16 @@ while(!done) {
 		if(resp[1]=='433') {
 			/* Nick in use... */
 			nick+='_';
+			log("Using nick: " + nick);
 			my_server.send("NICK " + nick + "\r\n");
-			
 		}
 		if(resp[1]=='422' || resp[1]=='376')
 			done=1;
 		log(response);
+	}
+	if(!my_server.is_connected) {
+		alert("Disconnected");
+		exit();
 	}
 }
 
@@ -74,14 +77,10 @@ if(join) {
 		log(response);
 }
 
-if(msg) {
-	msg=expand_tabs(msg);
+if(msg)
 	send(msg);
-}
-else while(msg=readln()) {
+else while(msg=readln())	/* read from stdin */
 	msg=expand_tabs(msg);
-	send(msg);
-}
 
 while(my_server.poll(0) && (response=my_server.recvline()))
 	log(response);
@@ -95,7 +94,7 @@ function send(msg)
 		return;
 	}
 	log("Sending: " + msg);
-	if(!my_server.send("PRIVMSG "+channel+" :"+msg+"\r\n"))
+	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
 		alert("send failure");
 }
 
