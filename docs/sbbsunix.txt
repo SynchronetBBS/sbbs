@@ -8,11 +8,9 @@ $Id$
 
 The information in this file is current as of the date above. The answers and
 instructions in this file may change over time, so be sure to get the current
-version of this file at ftp://vert.synchro.net/Synchronet/sbbsunix.txt
-or via CVSweb at 
-http://cvs.synchro.net/cgi-bin/cvsweb.cgi/~checkout~/docs/sbbsunix.txt
+version of this file at ftp://ftp.synchro.net/sbbsunix.txt
 or ViewCVS at
-http://cvs.synchro.net/cgi-bin/viewcvs.cgi/~checkout~/docs/sbbsunix.txt
+http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/docs/sbbsunix.txt
 
 
 Answers to Frequently Asked Questions
@@ -26,14 +24,17 @@ A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake,
    Debian, Slackware, etc.).
 
 Q. Linking error: undefined reference: '__ctype_b'
-A: This is an issue linking the provided Mozilla libraries for Linux
-   (libjs.a and libnspr4.lib) on RedHat Linux 9 and Mandrake Linux 9 using
-   glibc v2.3.2-11+.
+A: This is an issue linking the JavaScript library for Linux (libjs.a) on
+   RedHat Linux 9 and Mandrake Linux 9 using glibc v2.3.2-11+.
  
    This issue has been resolved with the addition of libjs.so and libnspr4.so
    to the CVS repository (in the lib/mozilla directory). If you're having this
    problem, run "cvs update" in your lib and src/sbbs3 directories and
    rebuild.
+
+   Another solution is to use the lib[moz]js.so file included with your Linux 
+   distribution (if it is). See installation steps 1.E and 1.F for more
+   details.
 
 Q. Are non-x86 (Alpha, SPARC, 68k, PowerPC, etc) processors supported?
 A. Not currently. Synchronet assumes a little-endian processor. It *may* work
@@ -106,7 +107,16 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       cvs co ctrl text docs exec xtrn node1 node2 node3 node4
 
    D. Get the required source code modules from the CVS repository:
-      cvs co src/sbbs3 src/uifc src/xpdev include
+      cvs co src/build src/sbbs3 src/uifc src/xpdev include
+
+   *> Optional Shortcut (existing JavaScript library):
+   *> If your Unix distribution includes the file /usr/lib/libjs.so or
+   *> /usr/lib/libmozjs.so, you can save a lot of time by using this
+   *> library instead of the one supplied in the Synchronet CVS repository.
+   *> If you have /usr/lib/libmozjs.so (instead of libjs.so), you can either:
+   *> Create a symlink or copy of this file with the name /usr/lib/libjs.so
+   *> or specify "JSLIB=mozjs" on the "gmake" command-line mentioned later.
+   *> If your system already has the JavaScript library, skip ahead to step 2.
 
    E. Get the required JavaScript library for your platform and build type:
       cvs co lib/mozilla/js/linux.debug
@@ -127,6 +137,8 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       or:
       cvs co lib/mozilla/nspr/freebsd.debug
       etc.
+	  Note: This step is not necessary if your system already has the file
+	        /usr/lib/libnspr4.so
 
 
 2. Build Synchronet:
@@ -145,6 +157,10 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       gmake
       (please report build errors to rob@synchro.net)
       Note: Warnings (if any) can be safely ignored
+      Note: If you're linking with /usr/lib/libmozjs.so, don't forget to add
+            "JSLIB=mozjs" to the gmake command-line
+      Note: To debug compile/link command-line problems, adding "VERBOSE=1"
+            to the gmake command-line can be very helpful
 
    C. Change to this directory:
       cd /sbbs/src/sbbs3/scfg
@@ -167,6 +183,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       /sbbs/src/sbbs3/gcc.linux.exe.debug/node
       /sbbs/src/sbbs3/gcc.linux.exe.debug/chksmb
       /sbbs/src/sbbs3/gcc.linux.exe.debug/fixsmb
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/jsexec
       /sbbs/src/sbbs3/gcc.linux.exe.debug/makeuser
       /sbbs/src/sbbs3/gcc.linux.exe.debug/addfiles
       /sbbs/src/sbbs3/gcc.linux.exe.debug/filelist
@@ -179,7 +196,20 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.dat
       (the paths will be different for other platforms or release builds)
 
-   C. Build the required Baja {tm} modules:
+   C. Copy (or create symbolic links to) the following shared libraries:
+      /sbbs/src/sbbs3/gcc.linux.lib.debug/libsbbs.so
+      /sbbs/src/sbbs3/gcc.linux.lib.debug/libftpsrvr.so
+      /sbbs/src/sbbs3/gcc.linux.lib.debug/libmailsrvr.so
+      /sbbs/src/sbbs3/gcc.linux.lib.debug/libservices.so
+      /sbbs/src/sbbs3/gcc.linux.lib.debug/libwebsrvr.so
+      (the paths will be different for other platforms or release builds)
+
+      Note: Another option is to create the symbolic links in your /usr/lib
+            directory or set the LD_LIBRARY_PATH environment variable to
+            point to your gcc.<os>.lib.<build> directory:
+            export LD_LIBRARY_PATH=/sbbs/src/sbbs3/gcc.linux.lib.debug
+
+   D. Build the required Baja {tm} modules:
       gmake
 
 
@@ -213,6 +243,9 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       Unpack Command Line             unzip -o -j %f %s -d %g
       Call-out Command Line           *qnet-ftp VERT vert.synchro.net YOURPASS
       (see docs/dove-net.txt for more details)
+
+   C. You should also consider configuring important details about your BBS
+      (like the name) in SCFG->System.
 
 
 6. Running Synchronet:
@@ -338,6 +371,7 @@ Default Configuration (SCFG) Screen-shots
  8: zip
  9: unzip
 10: pkzip25
+11: jsexec
 
 [Pico (Pine Composer) Editor]
  1: Name                            Pico (Pine Composer)
