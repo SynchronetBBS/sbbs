@@ -2293,7 +2293,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	}
 
 	memset(&msg,0,sizeof(smbmsg_t));
-	msg.hdr.version=smb_ver();
 	if(fmsghdr.attr&FIDO_PRIVATE)
 		msg.idx.attr|=MSG_PRIVATE;
 	msg.hdr.attr=msg.idx.attr;
