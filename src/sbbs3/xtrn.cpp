@@ -1816,8 +1816,8 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,ultoa(client_socket_dup,str,10));
 #endif
                     break;
-                case 'I':   /* UART IRQ Line */
-                    strcat(cmd,ultoa(cfg.com_irq,str,10));
+                case 'I':   /* IP address */
+                    strcat(cmd,cid);
                     break;
                 case 'J':
                     strcat(cmd,cfg.data_dir);
@@ -1971,8 +1971,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                     break;
                 case 'H':   /* Port Handle or Hardware Flow Control */
                     break;
-                case 'I':   /* UART IRQ Line */
-                    strcat(cmd,ultoa(cfg->com_irq,str,10));
+                case 'I':   /* IP address */
                     break;
                 case 'J':
                     strcat(cmd,cfg->data_dir);
