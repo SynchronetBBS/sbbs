@@ -227,7 +227,7 @@ u_long resolve_ip(char *addr)
 	if(!(*p))
 		return(inet_addr(addr));
 	if((host=gethostbyname(addr))==NULL) 
-		return(0);
+		return(INADDR_NONE);
 	return(*((ulong*)host->h_addr_list[0]));
 }
 

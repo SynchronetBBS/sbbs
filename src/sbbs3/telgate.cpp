@@ -64,7 +64,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	}
 
 	ip_addr=resolve_ip(destaddr);
-	if(!ip_addr) {
+	if(ip_addr==INADDR_NONE) {
 		lprintf("!Failed to resolve address: %s",destaddr);
 		bprintf("!Failed to resolve address: %s\r\n",destaddr);
 		return;

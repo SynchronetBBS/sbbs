@@ -606,7 +606,7 @@ static u_long resolve_ip(char *addr)
 
 	if((host=gethostbyname(addr))==NULL) {
 		lprintf("0000 !ERROR resolving hostname: %s",addr);
-		return(0);
+		return(INADDR_NONE);
 	}
 	return(*((ulong*)host->h_addr_list[0]));
 }
@@ -2675,7 +2675,7 @@ static void sendmail_thread(void* arg)
 					bounce(&smb,&msg,err,TRUE);
 					continue;
 				}
-				if((dns=resolve_ip(startup->dns_server))==0) {
+				if((dns=resolve_ip(startup->dns_server))==INADDR_NONE) {
 					lprintf("0000 !SEND INVALID DNS server address: %s"
 						,startup->dns_server);
 					continue;
@@ -2727,7 +2727,7 @@ static void sendmail_thread(void* arg)
 				
 				lprintf("%04d SEND resolving SMTP hostname: %s", sock, server);
 				ip_addr=resolve_ip(server);
-				if(!ip_addr)  {
+				if(ip_addr==INADDR_NONE) {
 					sprintf(err,"Failed to resolve SMTP hostname: %s",server);
 					continue;
 				}

@@ -253,7 +253,7 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	str = JS_ValueToString(cx, argv[0]);
 	dbprintf(FALSE, p, "resolving hostname: %s", JS_GetStringBytes(str));
-	if((ip_addr=resolve_ip(JS_GetStringBytes(str)))==0) {
+	if((ip_addr=resolve_ip(JS_GetStringBytes(str)))==INADDR_NONE) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "resolve_ip failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -340,7 +340,7 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	/* address */
 	ip_str = JS_ValueToString(cx, argv[1]);
 	dbprintf(FALSE, p, "resolving hostname: %s", JS_GetStringBytes(ip_str));
-	if((ip_addr=resolve_ip(JS_GetStringBytes(ip_str)))==0) {
+	if((ip_addr=resolve_ip(JS_GetStringBytes(ip_str)))==INADDR_NONE) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "resolve_ip failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);

@@ -135,7 +135,7 @@ int sbbs_t::exec_net(csi_t* csi)
 
 			ulong ip_addr;
 
-			if((ip_addr=resolve_ip(*pp))==0)
+			if((ip_addr=resolve_ip(*pp))==INADDR_NONE)
 				return(0);
 
 			SOCKADDR_IN	addr;
