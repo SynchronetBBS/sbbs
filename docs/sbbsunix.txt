@@ -83,6 +83,10 @@ Q. Does Synchronet for Unix require X-Windows?
 A. No, Synchronet for Unix is currently a console-based application.
    However, it does have an X console now.  To build without X support,
    you'll need to add NO_X=1 to the make/gmake lines below.
+   Further, if your X headers are not installed in /usr/X11R6/include,
+   You must define either X_PATH (Path to root of X11 install ie: /usr/X11R6)
+   or X_HEADERS (Path to X11 include files ie: /usr/X11R6/include) on the make
+   command lines below.  ie: "gmake X_PATH=/usr/X11"
 
 Q. Are there any plans to make an X-Windows front-end for Synchronet?
 A. Yes, but it will be optional.
