@@ -114,6 +114,8 @@ f.writeln("<body>");
 f.writeln("<font face=arial,helvetica>");
 
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
+f.printf("Generated with Synchronet v%s%s compiled %s\r\n"
+		 ,system.version,system.revision,system.compiled_when);
 
 document_object("client"	,client);
 document_object("system"	,system);
