@@ -43,7 +43,7 @@ CFLAGS	:=
 LFLAGS  :=	
 DELETE	=	rm -f -v
 OUTLIB	=	-o
-LIBS	=	$(LIBDIR)/libc.a $(LIBDIR)/libpthread.a
+LIBS	=	$(LIBDIR)/libpthread.a
 
 endif
 
