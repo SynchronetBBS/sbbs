@@ -872,41 +872,38 @@ js_replace_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	JSString*	js_str;
 	sbbs_t*		sbbs;
 
+	*rval = JSVAL_FALSE;
+
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	i=JSVAL_TO_INT(argv[0]);
 	i--;
 
-	if(i<0 || i>=TOTAL_TEXT) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	if(i<0 || i>=TOTAL_TEXT)
 		return(JS_TRUE);
-	}
 
 	if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
 		FREE(sbbs->text[i]);
 
-	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	if((js_str=JS_ValueToString(cx, argv[1]))==NULL)
 		return(JS_TRUE);
-	}
 
-	if((p=JS_GetStringBytes(js_str))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	if((p=JS_GetStringBytes(js_str))==NULL)
 		return(JS_TRUE);
-	}
 
 	len=strlen(p);
-	if(!len)
+	if(!len) {
 		sbbs->text[i]=nulstr;
-	else
-		sbbs->text[i]=(char *)MALLOC(len+1);
-	if(sbbs->text[i]==NULL) {
-		sbbs->text[i]=sbbs->text_sav[i];
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-	} else {
-		strcpy(sbbs->text[i],p);
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	} else {
+		sbbs->text[i]=(char *)MALLOC(len+1);
+		if(sbbs->text[i]==NULL) {
+			sbbs->text[i]=sbbs->text_sav[i];
+		} else {
+			strcpy(sbbs->text[i],p);
+			*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		}
 	}
 
 	return(JS_TRUE);
