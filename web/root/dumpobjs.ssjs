@@ -20,6 +20,7 @@ function dump(obj, name)
 	}
 }
 
+dump(server, "server"),             writeln("<br>");
 dump(client, "client"),             writeln("<br>");
 dump(http_request,"http_request"),  writeln("<br>");
 dump(http_reply,"http_reply"),      writeln("<br>");
