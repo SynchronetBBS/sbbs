@@ -1006,7 +1006,7 @@ while (!server.terminated) {
              poll_client_map.push(thisClient);
 		}
     }
-	readme=sockselect(poll_clients,1000000);
+	readme=socket_select(poll_clients,1000000);
 	for(thisPolled in readme)
 	{
 		Clients[poll_client_map[thisPolled]].work();
