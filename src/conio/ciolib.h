@@ -12,12 +12,11 @@ enum {
 	,CIOLIB_MODE_CONIO
 };
 
-#if defined(__BORLANDC__)	/* presumably, Win32 */
+#if defined(_WIN32)	/* presumably, Win32 */
 
-	#include <conio.h>
 	#include <io.h>			/* isatty */
 
-#else
+#endif
 
 #ifndef BOOL
 #define BOOL    int
@@ -81,8 +80,6 @@ struct text_info {
 	unsigned char curx;           /* x-coordinate in current window */
 	unsigned char cury;           /* y-coordinate in current window */
 };
-
-#endif
 
 struct cio_mouse_event {
 	int	x;
