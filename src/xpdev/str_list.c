@@ -38,6 +38,17 @@
 #include <stdlib.h>		/* malloc */
 #include "str_list.h"
 
+char** strListAlloc()
+{
+	char** list;
+
+	if((list=malloc(sizeof(char*)))==NULL)
+		return(NULL);
+
+	list[0]=NULL;	/* terminated by default */
+	return(list);
+}
+
 size_t strListCount(char** list)
 {
 	size_t i;
@@ -51,12 +62,9 @@ size_t strListCount(char** list)
 	return(i);
 }
 
-char** strListAdd(char*** list, char* str, size_t count)
+char** strListAddAt(char*** list, char* str, size_t count)
 {
 	char**	lp;
-
-	if(!count)
-		count=strListCount(*list);
 
 	if((lp=realloc(*list,sizeof(char*)*(count+2)))==NULL)
 		return(NULL);
@@ -69,6 +77,12 @@ char** strListAdd(char*** list, char* str, size_t count)
 	lp[count]=NULL;	/* terminate list */
 
 	return(lp);
+}
+
+
+char** strListAdd(char*** list, char* str)
+{
+	return strListAddAt(list,str,strListCount(*list));
 }
 
 void strListFree(char*** list)

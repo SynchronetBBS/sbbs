@@ -147,17 +147,16 @@ char** iniGetStringList(FILE* fp, const char* section, const char* key
 
 	SAFECOPY(list,value);
 
-	if((lp=malloc(sizeof(char*)))==NULL)
+	if((lp=strListAlloc())==NULL)
 		return(NULL);
 
 	token=strtok(list,sep);
 	while(token!=NULL) {
 		truncsp(token);
-		if(strListAdd(&lp,token,items++)==NULL)
+		if(strListAddAt(&lp,token,items++)==NULL)
 			break;
 		token=strtok(NULL,sep);
 	}
-
 	return(lp);
 }
 
@@ -194,10 +193,8 @@ char** iniGetSectionList(FILE* fp, const char* prefix)
 	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
 
-	if((lp=malloc(sizeof(char*)))==NULL)
+	if((lp=strListAlloc())==NULL)
 		return(NULL);
-
-	*lp=NULL;
 
 	if(fp==NULL)
 		return(lp);
@@ -219,7 +216,7 @@ char** iniGetSectionList(FILE* fp, const char* prefix)
 		if(prefix!=NULL)
 			if(strnicmp(p,prefix,strlen(prefix))!=0)
 				continue;
-		if(strListAdd(&lp,p,items++)==NULL)
+		if(strListAddAt(&lp,p,items++)==NULL)
 			break;
 	}
 
@@ -234,10 +231,8 @@ char** iniGetKeyList(FILE* fp, const char* section)
 	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
 
-	if((lp=malloc(sizeof(char*)))==NULL)
+	if((lp=strListAlloc())==NULL)
 		return(NULL);
-
-	*lp=NULL;
 
 	if(fp==NULL)
 		return(lp);
@@ -261,7 +256,7 @@ char** iniGetKeyList(FILE* fp, const char* section)
 			continue;
 		*tp=0;
 		truncsp(p);
-		if(strListAdd(&lp,p,items++)==NULL)
+		if(strListAddAt(&lp,p,items++)==NULL)
 			break;
 	}
 
