@@ -23,11 +23,20 @@ var make = (platform=="win32" ? "make":"gmake");
 var msdev = '"C:\\Program Files\\Microsoft Visual Studio\\Common\\MSDev98\\Bin\\msdev"';
 var build_output = "build_output.txt";
 
+if(platform=="win32") {
+	archive="sbbs_src.zip";
+	archive_cmd="pkzip25 -add -dir -excl=*.txt " + archive;
+} else {
+	archive="sbbs_src.tgz";
+	archive_cmd="tar czvf " + archive;
+}
+
 var builds
 	=	[/* sub-dir */		/* cmd-line */
 		["",				"cvs co src-sbbs3"],
 		["",				"cvs co lib-" + platform + ".debug"],
 		["",				"cvs co lib-" + platform + ".release"],
+		["",				archive_cmd],
 		["src/sbbs3",		make + " DEBUG=1"],
 		["src/sbbs3",		make + " RELEASE=1"],
 		["src/sbbs3/scfg",	make + " DEBUG=1"],
@@ -70,8 +79,9 @@ for(i in builds) {
 	log(LOG_INFO, "Executing: " + cmd_line);
 	var retval=system.exec(cmd_line);
 	if(retval) {
-		log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line + "' in " + sub_dir);
-		send_email(subject, file_contents(build_output));
+		send_email(subject, 
+			log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line + "' in " + sub_dir) 
+			+ "\n\n" + file_contents(build_output));
 		exit(1);
 	}
 
@@ -90,6 +100,13 @@ body += "-----\n";
 body += elapsed_time(time()-start) + " - total\n";
 
 send_email(system.platform + " builds successful", lfexpand(body));
+
+chdir(temp_dir);
+var dest = file_area.dir["sbbs"].path+archive;
+if(!file_copy(archive,dest))
+	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
+
+/* end */
 
 function elapsed_time(t)
 {
