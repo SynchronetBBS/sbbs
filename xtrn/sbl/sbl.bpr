@@ -4,7 +4,7 @@
   <MACROS>
     <VERSION value="BCB.05.03"/>
     <PROJECT value="sbl.exe"/>
-    <OBJFILES value="Sbl.obj ..\SDK\Xsdkvars.obj ..\SDK\Xsdk.obj"/>
+    <OBJFILES value="Sbl.obj ..\SDK\Xsdkvars.obj ..\SDK\Xsdk.obj ..\sdk\xsdkwrap.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>

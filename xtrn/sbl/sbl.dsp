@@ -97,5 +97,9 @@ SOURCE=..\Sdk\xsdk.c
 
 SOURCE=..\Sdk\xsdkvars.c
 # End Source File
+# Begin Source File
+
+SOURCE=..\sdk\xsdkwrap.c
+# End Source File
 # End Target
 # End Project
