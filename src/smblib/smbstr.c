@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <genwrap.h> 		/* stricmp */
 #include "smblib.h"
 
 char* SMBCALL smb_hfieldtype(ushort type)
