@@ -290,7 +290,8 @@ typedef struct {						/* Generic Timed Event */
 			dir[LEN_DIR+1], 			/* Start-up directory */
 			cmd[LEN_CMD+1]; 			/* Command line */
 	ushort	node,						/* Node to execute event */
-			time;						/* Time to run event */
+			time,						/* Time to run event */
+			freq;						/* Frequency to run event */
 	ulong	misc;						/* Misc bits */
 	time_t	last;						/* Last time event ran */
 

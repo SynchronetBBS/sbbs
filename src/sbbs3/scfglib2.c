@@ -594,8 +594,9 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_int(cfg->event[i]->node,instream);
 		get_int(cfg->event[i]->misc,instream);
 		get_str(cfg->event[i]->dir,instream);
+		get_int(cfg->event[i]->freq,instream);
 
-		for(j=0;j<8;j++)
+		for(j=0;j<7;j++)
 			get_int(n,instream);
 		}
 	cfg->total_events=i;
