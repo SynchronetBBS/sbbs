@@ -386,6 +386,7 @@ list_node_t* listAddNode(link_list_t* list, void* data, list_node_t* after)
 		return(NULL);
 
 	memset(node,0,sizeof(list_node_t));
+	node->data = data;
 
 	return(list_add_node(list,node,after));
 }
