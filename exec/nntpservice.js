@@ -4,9 +4,22 @@
 
 // $Id$
 
-// Example configuration (in ctrl/services.cfg):
+// Example configuration (in ctrl/services.ini):
 
-// NNTP		119	0-unlimited	0		nntpservice.js
+// [NNTP]
+// Port = 119
+// MaxClients = 10
+// Options = 0
+// Command = nntpservice.js -f
+
+// Available Command-line options:
+//
+// -d        debug output
+// -f        filter bogus client IP addresses
+// -na       no anonymous logins (requires user authentication)
+// -mail     expose entire mail database as newsgroup to Sysops
+// -auto     automatic login based on IP address (no password necessary)
+// -nolimit  unlimited message lengths
 
 // Tested clients:
 //					Microsoft Outlook Express 6
@@ -33,7 +46,9 @@ var slave = false;
 var bogus_cmd_counter = 0;
 var max_bogus_cmds = 10;
 var filter_bogus_clients = false;
-var include_mail = true;
+var include_mail = false;
+var impose_limit = true;
+var sysop_login = false;
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -45,6 +60,8 @@ for(i=0;i<argc;i++) {
 		no_anonymous = true;
 	else if(argv[i].toLowerCase()=="-mail")
 		include_mail = true;
+	else if(argv[i].toLowerCase()=="-nolimit")
+		impose_limit = false;
 	else if(argv[i].toLowerCase()=="-auto") {
 		no_anonymous = true;
 		auto_login = true;
@@ -614,7 +631,7 @@ while(client.socket.is_connected && !quit) {
 				parse_news_header(hdr,line);	// from newsutil.js
 			}
 
-			if(user.limits!=undefined
+			if(impose_limit && user.limits!=undefined
 				&& lines > user.limits.lines_per_message) {
 				log(format("!Message of %u lines exceeds user limit (%u lines)"
 					,lines,user.limits.lines_per_message));
