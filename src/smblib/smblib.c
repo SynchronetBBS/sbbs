@@ -758,6 +758,25 @@ ulong SMBCALL smb_getmsgdatlen(smbmsg_t* msg)
 	return(length);
 }
 
+/****************************************************************************/
+/* Figures out the total length of the text buffer for 'msg'                */
+/* Returns length															*/
+/****************************************************************************/
+ulong SMBCALL smb_getmsgtxtlen(smbmsg_t* msg)
+{
+	int i;
+	ulong length=0L;
+
+	for(i=0;i<msg->total_hfields;i++)
+		if(msg->hfield[i].type==SMB_COMMENT || msg->hfield[i].type==SMTPSYSMSG)
+			length+=msg->hfield[i].length+2;
+	for(i=0;i<msg->hdr.total_dfields;i++)
+		if(msg->dfield[i].type==TEXT_BODY || msg->dfield[i].type==TEXT_TAIL)
+			length+=msg->dfield[i].length;
+	return(length);
+}
+
+
 static void set_convenience_ptr(smbmsg_t* msg, ushort hfield_type, void* hfield_dat)
 {
 	switch(hfield_type) {	/* convenience variables */

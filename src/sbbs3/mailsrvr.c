@@ -513,6 +513,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 
 	/* MESSAGE BODY */
 	lines=0;
+#if 0	/* This is now handled in smb_getmsgtxt() */
     for(i=0;i<msg->total_hfields;i++) {			/* delivery failure notification? */
 		if(msg->hfield[i].type==SMTPSYSMSG || msg->hfield[i].type==SMB_COMMENT) { 
 			if(!sockprintf(socket,"%s",(char*)msg->hfield_dat[i]))
@@ -520,6 +521,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 			lines++;
 		}
     }
+#endif
 	p=msgtxt;
 	while(*p && lines<maxlines) {
 		tp=strchr(p,'\n');
@@ -603,7 +605,7 @@ static void pop3_thread(void* arg)
 	ulong		l;
 	ulong		lines;
 	ulong		lines_sent;
-	ulong		msgs,bytes,msgnum,msgbytes;
+	ulong		msgs,bytes,msgnum;
 	SOCKET		socket;
 	HOSTENT*	host;
 	smb_t		smb;
@@ -935,11 +937,7 @@ static void pop3_thread(void* arg)
 						continue;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						msgbytes=0;
-						for(i=0;i<msg.hdr.total_dfields;i++)
-							if(msg.dfield[i].type==TEXT_BODY || msg.dfield[i].type==TEXT_TAIL)
-								msgbytes+=msg.dfield[i].length;
-						sockprintf(socket,"+OK %lu %lu",msgnum,msgbytes);
+						sockprintf(socket,"+OK %lu %lu",msgnum,smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
 						sockprintf(socket,"+OK %lu %lu",msgnum,msg.hdr.number);
 
@@ -971,11 +969,7 @@ static void pop3_thread(void* arg)
 						break;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						msgbytes=0;
-						for(i=0;i<msg.hdr.total_dfields;i++)
-							if(msg.dfield[i].type==TEXT_BODY || msg.dfield[i].type==TEXT_TAIL)
-								msgbytes+=msg.dfield[i].length;
-						sockprintf(socket,"%lu %lu",l+1,msgbytes);
+						sockprintf(socket,"%lu %lu",l+1,smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
 						sockprintf(socket,"%lu %lu",l+1,msg.hdr.number);
 
