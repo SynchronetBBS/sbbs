@@ -58,8 +58,8 @@ typedef struct {
     DWORD	rlogin_interface;
     DWORD	reserved_dword7;
     DWORD	reserved_dword6;
-    RingBuf** spybuf;
-    DWORD	reserved_dword4;
+    RingBuf** node_spybuf;		// Spy output buffer (each node)
+    RingBuf** node_inbuf;		// User input buffer (each node)
     DWORD	reserved_dword3;
     DWORD	reserved_dword2;
     DWORD	reserved_dword1;
