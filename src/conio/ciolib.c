@@ -746,7 +746,7 @@ void ciolib_textcolor(int colour)
 	ciolib_gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr&=240;
-	attr|=colour;
+	attr|=(colour*0x0f);
 	ciolib_textattr(attr);
 }
 
