@@ -134,6 +134,12 @@ extern "C" {
 	#endif
 #endif
 
+#if defined(__unix__)
+	#define STRERROR(x)		strerror(x)
+#else
+	#define STRERROR(x)		truncsp(strerror(x))
+#endif
+
 /****************************/
 /* Common Utility Functions */
 /****************************/
