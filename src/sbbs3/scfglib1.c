@@ -390,6 +390,9 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	}
 	cfg->total_shells=i;
 
+	if(cfg->new_shell>=cfg->total_shells)
+		cfg->new_shell=0;
+
 	fclose(instream);
 	return(TRUE);
 }
