@@ -66,7 +66,7 @@
 #define FLO_MAILER		(1L<<24)		/* Binkley .FLO style mailer */
 #define PACK_NETMAIL	(1L<<25)		/* Pack *.MSG NetMail into packets */
 #define FUZZY_ZONE		(1L<<26)
-#define FAST_OPEN		(1L<<27)
+#define TRUNC_BUNDLES	(1L<<27)		/* Truncate bundles after sent (set TFS flag) */
 #define SECURE			(1L<<28)		/* Secure operation */
 #define ELIST_ONLY		(1L<<29)		/* Allow adding from AREAS.BBS */
 #define GEN_NOTIFY_LIST (1L<<30)		/* Generate Notify Lists */

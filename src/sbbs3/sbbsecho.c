@@ -519,12 +519,19 @@ int create_netmail(char *to, char *subject, char *body, faddr_t dest, BOOL file_
 			,hdr.destzone,hdr.destnet,hdr.destnode
 			,hdr.origzone,hdr.orignet,hdr.orignode);
 		fwrite(str,strlen(str),1,fstream);
-		if(attr&ATTR_DIRECT) {
-			fwrite("\1FLAGS DIR",10,1,fstream);
-			if(file_attached)
-				fwrite(" KFS\r",5,1,fstream);
+
+		/* Add FSC-53 FLAGS kludge */
+		fprintf(fstream,"\1FLAGS");
+		if(attr&ATTR_DIRECT)
+			fprintf(fstream," DIR");
+		if(file_attached) {
+			if(misc&TRUNC_BUNDLES)
+				fprintf(fstream," TFS");
 			else
-				fwrite("\r",1,1,fstream); }
+				fprintf(fstream," KFS");
+		}
+		fprintf(fstream,"\r");
+
 		if(hdr.destpoint) {
 			sprintf(str,"\1TOPT %hu\r",hdr.destpoint);
 			fwrite(str,strlen(str),1,fstream); }
@@ -1660,7 +1667,9 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 				if(mfncrc[crcidx]==fncrc)
 					break;
 			if(crcidx==num_mfncrc)
-				if(create_netmail(NULL,str,"\1FLAGS KFS\r",attach.dest,TRUE))
+				if(create_netmail(NULL,str
+					,misc&TRUNC_BUNDLES ? "\1FLAGS TFS\r" : "\1FLAGS KFS\r"
+					,attach.dest,TRUE))
 					error=1; 
 		}
 		fclose(stream);
@@ -1747,7 +1756,9 @@ void pack_bundle(char *infile,faddr_t dest)
 			if(misc&FLO_MAILER)
 				i=write_flofile(infile,dest);
 			else
-				i=create_netmail(NULL,infile,"\1FLAGS KFS\r",dest,TRUE);
+				i=create_netmail(NULL,infile
+					,misc&TRUNC_BUNDLES ? "\1FLAGS TFS\r" : "\1FLAGS KFS\r"
+					,dest,TRUE);
 			if(i) bail(1);
 			return; }
 

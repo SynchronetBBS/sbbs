@@ -306,7 +306,8 @@ void read_echo_cfg()
 			misc|=FUZZY_ZONE;
 			continue; }
 
-		if(!stricmp(tmp,"FAST_OPEN")) {
+		if(!stricmp(tmp,"TRUNC_BUNDLES")) {
+			misc|=TRUNC_BUNDLES;
 			continue; }
 
 		if(!stricmp(tmp,"FLO_MAILER")) {
