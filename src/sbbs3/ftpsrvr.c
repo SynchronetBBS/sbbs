@@ -186,7 +186,7 @@ static void thread_down(void)
 		startup->thread_up(FALSE);
 }
 
-SOCKET open_socket(int type)
+static SOCKET open_socket(int type)
 {
 	SOCKET sock;
 
@@ -205,7 +205,7 @@ SOCKET open_socket(int type)
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-int close_socket(SOCKET* sock, int line)
+static int close_socket(SOCKET* sock, int line)
 {
 	int		result;
 	ulong	l=0;
