@@ -117,6 +117,7 @@ void msgs_cfg()
 	static int dflt,msgs_dflt,bar;
 	char str[256],str2[256],done=0,*p;
     char tmp[128];
+	char tmp_code[16];
 	int j,k,q,s;
 	int i,file,ptridx,n;
 	long ported;
@@ -570,7 +571,7 @@ import into the current message group.
 							while(*p && *p>' ') p++;	// Skip path
 							while(*p && *p<=' ') p++;	// Find tag
 							truncstr(p," \t");
-							SAFECOPY(tmpsub.code_suffix,p);
+							SAFECOPY(tmp_code,p);
 							SAFECOPY(tmpsub.sname,utos(p));
 							SAFECOPY(tmpsub.lname,utos(p));
 							SAFECOPY(tmpsub.qwkname,utos(p));
@@ -582,7 +583,7 @@ import into the current message group.
                             else p=str;
 							sprintf(tmpsub.data_dir,"%.*s",LEN_DIR,str);
 							p++;
-							sprintf(tmpsub.code_suffix,"%.8s",p);
+							SAFECOPY(tmp_code,p);
 							while(*p && *p<=SP) p++;
 							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,p);
 							p=strchr(tmpsub.sname,SP);
@@ -597,7 +598,7 @@ import into the current message group.
 							p=str;
 							while(*p && *p>SP) p++;
 							*p=0;
-							sprintf(tmpsub.code_suffix,"%.8s",str);
+							SAFECOPY(tmp_code,str);
 							p++;
 							while(*p && *p<=SP) p++;
 							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,p);
@@ -613,7 +614,7 @@ import into the current message group.
                             p=str;
 							while(*p && *p>SP) p++;
 							*p=0;
-							sprintf(tmpsub.code_suffix,"%.8s",str);
+							SAFECOPY(tmp_code,str);
 							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,utos(str));
 							sprintf(tmpsub.qwkname,"%.10s",tmpsub.sname);
 							p++;
@@ -633,7 +634,7 @@ import into the current message group.
 						sprintf(tmpsub.qwkname,"%.*s",10,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
-						sprintf(tmpsub.code_suffix,"%.*s",8,str);
+						SAFECOPY(tmp_code,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
 						sprintf(tmpsub.data_dir,"%.*s",LEN_DIR,str);
@@ -689,7 +690,9 @@ import into the current message group.
 							if(!fgets(str,128,stream)) break;
 							truncsp(str); } }
 
-                    prep_code(tmpsub.code_suffix);
+                    prep_code(tmp_code);						/* Strip invalid chars */
+					SAFECOPY(tmpsub.code_suffix,tmp_code);		/* THEN truncate to valid length */
+
 					truncsp(tmpsub.sname);
 					truncsp(tmpsub.lname);
 					truncsp(tmpsub.qwkname);

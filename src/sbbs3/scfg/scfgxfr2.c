@@ -41,6 +41,7 @@ void xfer_cfg()
 {
 	static int libs_dflt,libs_bar,dflt;
 	char str[256],str2[81],done=0,*p;
+	char tmp_code[16];
 	int file,j,k,q;
 	uint i;
 	long ported;
@@ -459,7 +460,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 					while(*p && *p<=SP) p++;
 
 					if(k==2) { /* raw */
-						SAFECOPY(tmpdir.code_suffix,p);
+						SAFECOPY(tmp_code,p);
 						SAFECOPY(tmpdir.lname,p);
 						SAFECOPY(tmpdir.sname,p);
 						SAFECOPY(tmpdir.path,p);
@@ -470,8 +471,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 							continue;
 						p+=5;
 						while(*p && *p<=SP) p++;
-						sprintf(tmpdir.code_suffix,"%.8s",p);
-						truncsp(tmpdir.code_suffix);
+						SAFECOPY(tmp_code,p);
 						while(*p>SP) p++;			/* Skip areaname */
 						while(*p && *p<=SP) p++;	/* Skip space */
 						while(*p>SP) p++;			/* Skip level */
@@ -489,7 +489,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 						sprintf(tmpdir.sname,"%.*s",LEN_SSNAME,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
-						sprintf(tmpdir.code_suffix,"%.*s",8,str);
+						SAFECOPY(tmp_code,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
 						sprintf(tmpdir.data_dir,"%.*s",LEN_DIR,str);
@@ -547,7 +547,8 @@ command: DIR /ON /AD /B > DIRS.RAW
 						} 
 					}
 
-					prep_code(tmpdir.code_suffix);
+					prep_code(tmp_code);						/* Strip invalid chars */
+					SAFECOPY(tmpdir.code_suffix,tmp_code);		/* THEN truncate to valid length */
 
 					for(j=0;j<cfg.total_dirs;j++) {
 						if(cfg.dir[j]->lib!=i)
