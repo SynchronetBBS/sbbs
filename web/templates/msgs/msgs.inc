@@ -1,7 +1,7 @@
 <p class="navigation">
     <a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/">Members</a> : 
-    <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp=^^group:name^^">%%group:description%%</a> : %%sub:description%%
-    <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^">[?]</a> -&#062;
+    <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp=^^group:name^^">%%group:description%%</a> : 
+    <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">%%sub:description%%</a> -&#062;
     <a class="navigation" href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New Message</a></p>
 <form action="management.ssjs" method="post">
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
