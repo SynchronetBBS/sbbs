@@ -79,6 +79,7 @@ static int		active_clients=0;
 static DWORD	sockets=0;
 static BOOL		terminated=FALSE;
 static time_t	uptime=0;
+static DWORD	served=0;
 static char		revision[16];
 
 typedef struct {
@@ -90,6 +91,7 @@ typedef struct {
 	DWORD	options;
 	/* These are run-time state and stat vars */
 	DWORD	clients;
+	DWORD	served;
 	SOCKET	socket;
 	BOOL	running;
 	BOOL	terminated;
@@ -873,8 +875,8 @@ static void js_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf("%04d %s JavaScript service thread terminated (%u clients remain, %u total)"
-		, socket, service->protocol, service->clients, active_clients);
+	lprintf("%04d %s JavaScript service thread terminated (%u clients remain, %u total, %lu served)"
+		, socket, service->protocol, service->clients, active_clients, service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -938,8 +940,8 @@ static void js_static_service_thread(void* arg)
 	JS_DestroyRuntime(js_runtime);
 
 	thread_down();
-	lprintf("%04d %s static JavaScript service thread terminated"
-		,socket, service->protocol);
+	lprintf("%04d %s static JavaScript service thread terminated (%lu clients served)"
+		,socket, service->protocol, service->served);
 
 	close_socket(service->socket);
 	service->socket=INVALID_SOCKET;
@@ -993,8 +995,8 @@ static void native_static_service_thread(void* arg)
 	system(fullcmd);
 
 	thread_down();
-	lprintf("%04d %s static service thread terminated"
-		,socket, service->protocol);
+	lprintf("%04d %s static service thread terminated (%lu clients served)"
+		,socket, service->protocol, service->served);
 
 	close_socket(service->socket);
 	service->socket=INVALID_SOCKET;
@@ -1118,8 +1120,8 @@ static void native_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf("%04d %s service thread terminated (%u clients remain, %u total)"
-		,socket, service->protocol, service->clients, active_clients);
+	lprintf("%04d %s service thread terminated (%u clients remain, %u total, %lu served)"
+		,socket, service->protocol, service->clients, active_clients, service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -1197,7 +1199,7 @@ static void cleanup(int code)
 #endif
 
 	thread_down();
-    lprintf("#### Services thread terminated");
+    lprintf("#### Services thread terminated (%lu clients served)",served);
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
@@ -1275,6 +1277,8 @@ void DLLCALL services_thread(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 
+	uptime=0;
+	served=0;
 	startup->recycle_now=FALSE;
 	do {
 
@@ -1337,7 +1341,7 @@ void DLLCALL services_thread(void* arg)
 		}
 
 		if(uptime==0)
-			uptime=time(NULL);
+			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
 		active_clients=0;
 		update_clients();
@@ -1676,6 +1680,8 @@ void DLLCALL services_thread(void* arg)
 					_beginthread(js_service_thread, 0, client);
 				else					/* Native */
 					_beginthread(native_service_thread, 0, client);
+				service[i].served++;
+				served++;
 			}
 		}
 
