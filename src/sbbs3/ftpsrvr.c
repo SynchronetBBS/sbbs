@@ -104,6 +104,11 @@ BOOL direxist(char *dir)
 		return(FALSE);
 }
 
+BOOL dir_op(scfg_t* cfg, user_t* user, uint dirnum)
+{
+	return(user->level>=90 || user->exempt&FLAG('R')
+		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user)));
+}
 
 static ftp_startup_t* startup=NULL;
 static scfg_t	scfg;
@@ -1178,6 +1183,7 @@ static void ctrl_thread(void* arg)
 	BOOL		success;
 	BOOL		getdate;
 	BOOL		getsize;
+	BOOL		delecmd;
 	BOOL		delfile;
 	BOOL		tmpfile;
 	BOOL		credits;
@@ -2235,14 +2241,19 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
-		if(!strnicmp(cmd, "RETR ", 5) || !strnicmp(cmd,"SIZE ",5) 
-			|| !strnicmp(cmd, "MDTM ",5)) {
+		if(!strnicmp(cmd, "RETR ", 5) 
+			|| !strnicmp(cmd, "SIZE ",5) 
+			|| !strnicmp(cmd, "MDTM ",5)
+			|| !strnicmp(cmd, "DELE ",5)) {
 			getdate=FALSE;
 			getsize=FALSE;
+			delecmd=FALSE;
 			if(!strnicmp(cmd,"SIZE ",5))
 				getsize=TRUE;
 			else if(!strnicmp(cmd,"MDTM ",5))
 				getdate=TRUE;
+			else if(!strnicmp(cmd,"DELE ",5))
+				delecmd=TRUE;
 
 			if(!getsize && !getdate && user.rest&FLAG('D')) {
 				sockprintf(sock,"550 Insufficient access.");
@@ -2311,7 +2322,7 @@ static void ctrl_thread(void* arg)
 
 			sprintf(str,"%s.qwk",scfg.sys_id);
 			if(lib<0 && startup->options&FTP_OPT_ALLOW_QWK 
-				&& !stricmp(p,str)) {
+				&& !stricmp(p,str) && !delecmd) {
 				lprintf("%04d %s creating/updating QWK packet...",sock,user.alias);
 				sprintf(str,"%sPACK%04u.NOW",scfg.data_dir,user.number);
 				if((file=open(str,O_WRONLY|O_CREAT,_S_IWRITE))==-1) {
@@ -2347,7 +2358,8 @@ static void ctrl_thread(void* arg)
 				lprintf("%04d %s downloading QWK packet (%ld bytes)"
 					,sock,user.alias,flength(fname));
 			} else if(startup->options&FTP_OPT_INDEX_FILE 
-				&& !stricmp(p,startup->index_file_name)) {
+				&& !stricmp(p,startup->index_file_name)
+				&& !delecmd) {
 				sprintf(fname,"%sFTP%d.TX", scfg.data_dir, sock);
 				if((fp=fopen(fname,"w+b"))==NULL) {
 					lprintf("%04d !ERROR %d opening %s",sock,errno,fname);
@@ -2457,9 +2469,17 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 
-				if(!getsize && !getdate
+				if(!getsize && !getdate && !delecmd
 					&& !chk_ar(&scfg,scfg.dir[dir]->dl_ar,&user)) {
 					lprintf("%04d !%s has insufficient access to download from /%s/%s"
+						,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code);
+					sockprintf(sock,"550 Insufficient access.");
+					filepos=0;
+					continue;
+				}
+
+				if(delecmd && !dir_op(&scfg,&user,dir)) {
+					lprintf("%04d !%s has insufficient access to delete files in /%s/%s"
 						,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code);
 					sockprintf(sock,"550 Insufficient access.");
 					filepos=0;
@@ -2485,7 +2505,10 @@ static void ctrl_thread(void* arg)
 					filepos=0;
 					continue;
 				}
-				if(!(scfg.dir[dir]->misc&DIR_FREE) && !(user.exempt&FLAG('D'))) {
+
+				/* Verify credits */
+				if(!getsize && !getdate && !delecmd
+					&& !(scfg.dir[dir]->misc&DIR_FREE) && !(user.exempt&FLAG('D'))) {
 					if(filedat)
 						getfiledat(&scfg,&f);
 					else
@@ -2509,14 +2532,10 @@ static void ctrl_thread(void* arg)
 				} else {
 					if(fexist(fname)) {
 						success=TRUE;
-						if(!getsize && !getdate)
+						if(!getsize && !getdate && !delecmd)
 							lprintf("%04d %s downloading: %s (%ld bytes)"
 								,sock,user.alias,fname,flength(fname));
 					} 
-#if 0
-					else
-						lprintf("%04d %s file not found: %s",sock,user.alias,fname);
-#endif
 				}
 			}
 			if(getsize && success) 
@@ -2531,6 +2550,17 @@ static void ctrl_thread(void* arg)
 				sockprintf(sock,"213 %u%02u%02u%02u%02u%02u"
 					,1900+tm.tm_year,tm.tm_mon+1,tm.tm_mday
 					,tm.tm_hour,tm.tm_min,tm.tm_sec);
+			} else if(delecmd && success) {
+				if(remove(fname)!=0) {
+					lprintf("%04d !ERROR %d deleting %s",sock,errno,fname);
+					sockprintf(sock,"450 %s could not be deleted (error: %d)"
+						,fname,errno);
+				} else {
+					lprintf("%04d %s deleted %s",sock,user.alias,fname);
+					if(filedat) 
+						removefiledat(&scfg,&f);
+					sockprintf(sock,"250 %s deleted.",fname);
+				}
 			} else if(success) {
 				sockprintf(sock,"150 Opening BINARY mode data connection for file transfer.");
 				filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,filepos
@@ -2539,7 +2569,7 @@ static void ctrl_thread(void* arg)
 			}
 			else {
 				sockprintf(sock,"550 File not found: %s",p);
-				lprintf("!%04d File not found (%s) for %.4s command",sock,p,cmd);
+				lprintf("%04d !File not found (%s) for %.4s command",sock,p,cmd);
 			}
 			filepos=0;
 			continue;
