@@ -587,9 +587,11 @@ BOOL listSwapNodes(list_node_t* node1, list_node_t* node2)
 	if(node1->list==NULL || node2->list==NULL)
 		return(FALSE);
 
+#if defined(LINK_LIST_THREADSAFE)
 	MUTEX_LOCK(node1->list);
 	if(node1->list != node2->list)
 		MUTEX_LOCK(node2->list);
+#endif
 
 	tmp=*node1;
 	node1->data=node2->data;
@@ -597,9 +599,11 @@ BOOL listSwapNodes(list_node_t* node1, list_node_t* node2)
 	node2->data=tmp.data;
 	node2->flags=tmp.flags;
 
+#if defined(LINK_LIST_THREADSAFE)
 	MUTEX_UNLOCK(node1->list);
 	if(node1->list != node2->list)
 		MUTEX_UNLOCK(node2->list);
+#endif
 
 	return(TRUE);
 }
