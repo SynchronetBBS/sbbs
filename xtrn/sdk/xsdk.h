@@ -47,11 +47,11 @@
 	#include <dos.h>
 	#include <share.h>
 	#include <windows.h>
+	#include <conio.h>
 #endif
 #include <time.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <conio.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
@@ -63,7 +63,8 @@
 
 #define GLOBAL extern	/* turns XSDKVAR.C into a header file */
 #include "xsdkvars.c"
-#include "sbbsinet.h"
+#include "xsdkinet.h"
+#include "xsdkwrap.h"
 
 #ifdef __cplusplus
 	extern "C" {
@@ -118,7 +119,7 @@ void mnemonics(char *str);
 
 /* Pause prompt
 	- Displays [Hit a key] and waits for the user to hit a key */
-void pause(void);
+int pause(void);
 
 /* Yes/no Question
 	- Displays a string with (Y/n) ? appended and waits for the user to hit
@@ -213,12 +214,6 @@ char *username(uint usernumber);
 
 /* Returns the number of the user name passed */
 uint usernumber(char *username);
-
-/* Returns 1 if the file exists, 0 otherwise */
-char fexist(char *filespec);
-
-/* Returns the length of the file */
-long flength(char *filespec);
 
 /* Convert unsigned long to an ASCII string with commas */
 char *ultoac(ulong l, char *string);

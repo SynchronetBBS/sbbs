@@ -433,7 +433,7 @@ void outchar(char ch)
 /****************************************************************************/
 /* Prints PAUSE message and waits for a key stoke							*/
 /****************************************************************************/
-void pause(void)
+int pause(void)
 {
 	char	ch;
 	uchar	tempattrs=curatr,*msg="\1_\1r\1h[Hit a key] ";
@@ -448,6 +448,8 @@ void pause(void)
 	attr(tempattrs);
 	if(ch=='N' || ch=='Q')
 		aborted=1;
+
+	return(0);
 }
 
 /****************************************************************************/
@@ -1586,7 +1588,7 @@ int nopen(char *str, int access)
 	if(access&SH_DENYNO) share=SH_DENYNO;
 	else if(access==O_RDONLY) share=SH_DENYWR;
 	else share=SH_DENYRW;
-	while(((file=sopen(str,O_BINARY|access,share,S_IWRITE))==-1)
+	while(((file=sopen(str,O_BINARY|access,share))==-1)
 		&& errno==EACCES && count++<LOOP_NOPEN)
 		if(count>10)
 			mswait(50);
@@ -1879,7 +1881,7 @@ void initdata(void)
 	timeleft_warn=0;				/* Running out of time warning */
 
 	sprintf(str,"%s%s",ctrl_dir,"NODE.DAB");
-	if((nodefile=sopen(str,O_BINARY|O_RDWR,SH_DENYNO,S_IREAD))==-1) {
+	if((nodefile=sopen(str,O_BINARY|O_RDWR,SH_DENYNO))==-1) {
 		bprintf("\r\n\7Error opening %s\r\n",str);
 		exit(1); }
 

@@ -41,5 +41,5 @@ CFLAGS	:=	$(CFLAGS) -I../sdk
 
 SBL: sbl$(EXEFILE)
 
-sbl$(EXEFILE) : sbl.c ../sdk/xsdk.c ../sdk/xsdkvars.c ../sdk/smbwrap.c
+sbl$(EXEFILE) : sbl.c ../sdk/xsdk.c ../sdk/xsdkvars.c ../sdk/xsdkwrap.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
