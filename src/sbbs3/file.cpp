@@ -244,7 +244,7 @@ BOOL filematch(char *filename, char *filespec)
 /****************************************************************************/
 uint sbbs_t::delfiles(char *inpath, char *spec)
 {
-	char	path[MAX_PATH];
+	char	path[MAX_PATH+1];
     uint	i,files=0;
 	glob_t	g;
 

@@ -240,7 +240,7 @@ void __fastcall TTelnetCfgDlg::RLoginEnabledCheckBoxClick(TObject *Sender)
 
 void __fastcall TTelnetCfgDlg::RLoginIPallowButtonClick(TObject *Sender)
 {
-	char filename[MAX_PATH];
+	char filename[MAX_PATH+1];
 
     sprintf(filename,"%sRLOGIN.CAN"
     	,MainForm->cfg.text_dir);

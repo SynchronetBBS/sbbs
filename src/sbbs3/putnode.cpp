@@ -134,7 +134,7 @@ void sbbs_t::putnmsg(int num, char *strin)
 
 void sbbs_t::putnodeext(uint number, char *ext)
 {
-    char	str[MAX_PATH];
+    char	str[MAX_PATH+1];
     int		count;
 
 	if(!number || number>cfg.sys_nodes) {

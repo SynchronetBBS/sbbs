@@ -586,7 +586,7 @@ char DLLCALL getage(scfg_t* cfg, char *birth)
 /****************************************************************************/
 int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 {
-	char	str[MAX_PATH];
+	char	str[MAX_PATH+1];
 	int		count;
 	int		file;
 
@@ -625,7 +625,7 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 /****************************************************************************/
 int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 {
-	char	str[MAX_PATH];
+	char	str[MAX_PATH+1];
 	size_t	wr;
 	int		wrerr;
 	int		file;
@@ -661,7 +661,7 @@ int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
     ,BOOL del)
 {
-    char	str[MAX_PATH];
+    char	str[MAX_PATH+1];
     uint	i;
 	int		file;
     long	l,length;

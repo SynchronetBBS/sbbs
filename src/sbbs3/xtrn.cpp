@@ -983,7 +983,7 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     break;
 				case '~':	/* DOS-compatible (8.3) filename */
 #ifdef _WIN32
-					char sfpath[MAX_PATH];
+					char sfpath[MAX_PATH+1];
 					strcpy(sfpath,fpath);
 					GetShortPathName(fpath,sfpath,sizeof(sfpath));
 					strcat(cmd,sfpath);

@@ -1151,7 +1151,7 @@ char * cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *cmd)
 	char	str[256];
     int		i,j,len;
 #ifdef _WIN32
-	char sfpath[MAX_PATH];
+	char sfpath[MAX_PATH+1];
 #endif
 
     len=strlen(instr);

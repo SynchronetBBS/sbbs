@@ -938,7 +938,7 @@ void sbbs_t::automsg()
 {
     char	str[256],buf[300],anon=0;
 	char 	tmp[512];
-	char	automsg[MAX_PATH];
+	char	automsg[MAX_PATH+1];
     int		file;
 
 	sprintf(automsg,"%smsgs/auto.msg",cfg.data_dir);

@@ -338,7 +338,7 @@ static char* alias(char* name, char* alias)
 	char*	p=name;
 	char*	np;
 	char*	tp;
-	char	fname[MAX_PATH];
+	char	fname[MAX_PATH+1];
 	FILE*	fp;
 
 	sprintf(fname,"%salias.cfg",scfg.ctrl_dir);

@@ -508,9 +508,9 @@ void sbbs_t::upload(uint dirnum)
 /****************************************************************************/
 bool sbbs_t::bulkupload(uint dirnum)
 {
-    char	str[MAX_PATH];
-	char	path[MAX_PATH];
-	char	spath[MAX_PATH];
+    char	str[MAX_PATH+1];
+	char	path[MAX_PATH+1];
+	char	spath[MAX_PATH+1];
     file_t	f;
 	DIR*	dir;
 	DIRENT*	dirent;

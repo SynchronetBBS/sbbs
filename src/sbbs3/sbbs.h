@@ -293,9 +293,9 @@ public:
 	uint	cursubnum;		/* For ARS */
 	uint	curdirnum;		/* For ARS */
 	ulong 	timeleft;		/* Number of seconds user has left online */
-	char	sbbsnode[MAX_PATH];	/* Environment var to contain node dir path */
-	char	sbbsnnum[MAX_PATH];	/* Environment var to contain node num */
-	char	sbbsctrl[MAX_PATH];	/* Environmetn var to contain ctrl dir path */
+	char	sbbsnode[MAX_PATH+1];	/* Environment var to contain node dir path */
+	char	sbbsnnum[MAX_PATH+1];	/* Environment var to contain node num */
+	char	sbbsctrl[MAX_PATH+1];	/* Environmetn var to contain ctrl dir path */
 	char 	*comspec;		/* Pointer to environment variable COMSPEC */
 	ushort	altul;			/* Upload to alternate path flag */
 	char 	cid[LEN_CID+1]; /* Caller ID (IP Address) of current caller */

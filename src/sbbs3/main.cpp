@@ -1579,7 +1579,8 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 //****************************************************************************
 bool sbbs_t::init()
 {
-	char		str[MAX_PATH];
+	char		str[MAX_PATH+1];
+	char		tmp[128];
 	int			result;
 	uint		i,j,k,l;
 	node_t		node;
@@ -1690,10 +1691,10 @@ bool sbbs_t::init()
 			now=time(NULL);
 			struct tm * tm=localtime(&now);
 			if(tm!=NULL)
-			sprintf(str,"%02d:%02d%c  %s %s %02d %u  "
+			sprintf(str,"%s  %s %s %02d %u  "
 				"End of preexisting log entry (possible crash)"
-				,tm->tm_hour>12 ? tm->tm_hour-12 : tm->tm_hour==0 ? 12 : tm->tm_hour
-				,tm->tm_min,tm->tm_hour>=12 ? 'p' : 'a',wday[tm->tm_wday]
+				,hhmmtostr(&cfg,tm,tmp)
+				,wday[tm->tm_wday]
 				,mon[tm->tm_mon],tm->tm_mday,tm->tm_year+1900);
 			logline("L!",str);
 			log(crlf);
