@@ -39,6 +39,12 @@
 
 #ifdef JAVASCRIPT
 
+enum {	/* file_area Object Properties */
+	 PROP_MIN_DSPACE
+	,PROP_MIN_LEECH_PCT
+	,PROP_MIN_LEECH_SEC
+};
+
 static JSClass js_file_area_class = {
      "FileArea"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/

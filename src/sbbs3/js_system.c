@@ -59,6 +59,32 @@ enum {
 	,SYS_PROP_NODES
 	,SYS_PROP_LASTNODE
 
+	,SYS_PROP_NEW_PASS
+	,SYS_PROP_NEW_MAGIC
+	,SYS_PROP_NEW_LEVEL
+	,SYS_PROP_NEW_FLAGS1
+	,SYS_PROP_NEW_FLAGS2
+	,SYS_PROP_NEW_FLAGS3
+	,SYS_PROP_NEW_FLAGS4
+	,SYS_PROP_NEW_REST
+	,SYS_PROP_NEW_EXEMPT
+	,SYS_PROP_NEW_CDT
+	,SYS_PROP_NEW_MIN
+	,SYS_PROP_NEW_SHELL
+	,SYS_PROP_NEW_XEDIT
+	,SYS_PROP_NEW_MISC
+	,SYS_PROP_NEW_PROT
+	,SYS_PROP_NEW_EXPIRE
+	,SYS_PROP_NEW_UQ
+
+	,SYS_PROP_EXPIRED_LEVEL
+	,SYS_PROP_EXPIRED_FLAGS1
+	,SYS_PROP_EXPIRED_FLAGS2
+	,SYS_PROP_EXPIRED_FLAGS3
+	,SYS_PROP_EXPIRED_FLAGS4
+	,SYS_PROP_EXPIRED_REST
+	,SYS_PROP_EXPIRED_EXEMPT
+
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -404,7 +430,7 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool js_node_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	uint		node_num;
-	uint		val;
+	uint		val=0;
     jsint       tiny;
 	node_t		node;
 	scfg_t*		cfg;
@@ -426,7 +452,8 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	if(getnodedat(cfg, node_num, &node, 1)) 
 		return(JS_TRUE);
 
-	JS_ValueToInt32(cx, *vp, &val);
+	if(JSVAL_IS_INT(*vp))
+		JS_ValueToInt32(cx, *vp, &val);
 
 	tiny = JSVAL_TO_INT(id);
 	
