@@ -65,7 +65,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 		}
 	}
 	/* Fade out */
-	for(k=4;k>0;k--) {
+	for(k=8;k>0;k--) {
 		for(;i>midpoint;i--) {
 			if(!endhigh && wave[i]<128)
 				break;
@@ -104,7 +104,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 		}
 	}
 	/* Fade in */
-	for(k=4;k>0;k--) {
+	for(k=8;k>0;k--) {
 		for(;i<midpoint;i++) {
 			if(!starthigh && wave[i]<128)
 				break;
