@@ -53,6 +53,23 @@ print("\1hproperties of \1yuser.security \1wobject\1n");
 for(i in user.security)
 	print("user.security." + i + " = " + user.security[i]);
 
+// msg_area
+console.clear();
+print("\1hproperties of \1ymsg_area \1wobject\1n");
+for(i in msg_area)
+	print("msg_area." + i + " = " + msg_area[i]);
+
+// msg_area.grp_list[]
+print("\1helements of \1ymsg_area.grp_list \1warray\1n");
+for(n in msg_area.grp_list) {
+	for(i in msg_area.grp_list[n])
+		print("msg_area.grp_list[" + n + "]." + i + " = " + msg_area.grp_list[n][i]);
+	for(d in msg_area.grp_list[n].sub_list)
+		for(i in msg_area.grp_list[n].sub_list[d])
+			print("msg_area.grp_list[" + n + "].sub_list[" + d + "]." + i + " = " + 
+				msg_area.grp_list[n].sub_list[d][i]);
+}
+
 // file_area
 console.clear();
 print("\1hproperties of \1yfile_area \1wobject\1n");
