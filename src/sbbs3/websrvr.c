@@ -1225,6 +1225,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	char	ch;
 	DWORD	i;
 	BOOL	rd;
+	DWORD	chucked=0;
+
 	for(i=0;TRUE;) {
 		if(!socket_check(session->socket,&rd,NULL,startup->max_inactivity*1000) 
 			|| !rd || recv(session->socket, &ch, 1, 0)!=1)  {
@@ -1239,6 +1241,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 
 		if(i<length)
 			buf[i++]=ch;
+		else
+			chucked++;
 	}
 
 	/* Terminate at length if longer */
@@ -1250,8 +1254,11 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	else
 		buf[i]=0;
 
-	if(startup->options&WEB_OPT_DEBUG_RX)
+	if(startup->options&WEB_OPT_DEBUG_RX) {
 		lprintf(LOG_DEBUG,"%04d RX: %s",session->socket,buf);
+		if(chucked)
+			lprintf(LOG_DEBUG,"%04d Long header, chucked %d bytes",session->socket,buf,chucked);
+	}
 	return(i);
 }
 
@@ -1398,7 +1405,7 @@ static void js_add_header(http_session_t * session, char *key, char *value)
 static BOOL parse_headers(http_session_t * session)
 {
 	char	req_line[MAX_REQUEST_LINE+1];
-	char	next_char[2];
+	char	next_char;
 	char	*value;
 	char	*p;
 	int		i;
@@ -1407,13 +1414,17 @@ static BOOL parse_headers(http_session_t * session)
 
 	while(sockreadline(session,req_line,sizeof(req_line)-1)>0) {
 		/* Multi-line headers */
-		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) 
-			&& (next_char[0]=='\t' || next_char[0]==' ')) {
+		while((recvfrom(session->socket,&next_char,1,MSG_PEEK,NULL,0)>0) 
+			&& (next_char=='\t' || next_char==' ')) {
 			i=strlen(req_line);
+			if(i>sizeof(req_line)-1) {
+				lprintf(LOG_ERR,"%04d !ERROR long multi-line header. The web server is broken!", session->socket);
+				i=sizeof(req_line)/2;
+				break;
+			}
 			sockreadline(session,req_line+i,sizeof(req_line)-i-1);
 		}
-		strtok(req_line,":");
-		if((value=strtok(NULL,""))!=NULL) {
+		if((strtok(req_line,":"))!=NULL && (value=strtok(NULL,""))!=NULL) {
 			i=get_header_type(req_line);
 			while(*value && *value<=' ') value++;
 			if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)
