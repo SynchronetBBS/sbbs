@@ -2686,10 +2686,12 @@ void http_logging_thread(void* arg)
 		pthread_mutex_lock(&log_mutex);
 		ld=listRemoveNode(log_list, FIRST_NODE);
 		pthread_mutex_unlock(&log_mutex);
-		if(ld==NULL || ld->status==0) {
+		if(ld==NULL) {
 			lprintf(LOG_ERR,"Received NULL linked list log entry",filename);
 			continue;
 		}
+		if(ld==NULL)
+			continue;
 		SAFECOPY(newfilename,base);
 		strftime(strchr(newfilename,0),15,"%G-%m-%d.log",&ld->completed);
 		if(strcmp(newfilename,filename)) {
