@@ -61,6 +61,10 @@ else
  machine	:=	$(os).$(machine)
 endif
 
+ifeq ($(machine),sun4u)
+ CFLAGS +=      -D__BIG_ENDIAN__
+endif
+
 LIBODIR :=	$(CCPRE).$(machine).lib.$(BUILDPATH)
 EXEODIR :=	$(CCPRE).$(machine).exe.$(BUILDPATH)
 LDFLAGS	+=	-L$(LIBODIR)
