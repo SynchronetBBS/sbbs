@@ -54,7 +54,7 @@ extern "C" {
 		#define 	sem_wait(x)			xp_sem_wait(x)
 		#define 	sem_trywait(x)		xp_sem_trywait(x)
 		#define 	sem_post(x)			xp_sem_post(x)
-		#define 	sem_getvalue(x)		xp_sem_getvalue(x)
+		#define 	sem_getvalue(x,y)		xp_sem_getvalue(x,y)
 		#define		sem_timedwait(x,y)	xp_sem_timedwait(x,y)
 		#define		sem_t				xp_sem_t
 	#else
