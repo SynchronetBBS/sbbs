@@ -392,10 +392,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 						smb_unlockmsghdr(&smb,&msg); }
 				}
 
-				if(msg.hdr.attr&MSG_DELETE)	/* already marked for deletion */
-					break;
-
-				if(!yesno(str2)) {
+				if(msg.hdr.attr&MSG_DELETE || !yesno(str2)) {
 					if(curmsg<msgs-1) curmsg++;
 					else done=1;
 					break;	}
