@@ -62,6 +62,10 @@
 
 #endif /* __unix__ */
 
+#if defined(__WATCOMC__)
+	#include <dos.h>
+#endif
+	
 #include <sys/types.h>	/* _dev_t */
 #include <sys/stat.h>	/* struct stat */
 
@@ -136,6 +140,65 @@ static int glob_compare( const void *arg1, const void *arg2 )
 	#pragma argsused
 #endif
 
+#if defined(__WATCOMC__)
+
+int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
+{
+    struct	find_t ff;
+	size_t	found=0;
+	char	path[MAX_PATH+1];
+	char*	p;
+	char**	new_pathv;
+
+	if(!(flags&GLOB_APPEND)) {
+		glob->gl_pathc=0;
+		glob->gl_pathv=NULL;
+	}
+
+	if(_dos_findfirst((char*)pattern,_A_NORMAL,&ff)!=0)
+		return(GLOB_NOMATCH);
+
+	do {
+		if(!(flags&GLOB_ONLYDIR) || ff.attrib&_A_SUBDIR) {
+			if((new_pathv=realloc(glob->gl_pathv
+				,(glob->gl_pathc+1)*sizeof(char*)))==NULL) {
+				globfree(glob);
+				return(GLOB_NOSPACE);
+			}
+			glob->gl_pathv=new_pathv;
+
+			/* build the full pathname */
+			SAFECOPY(path,pattern);
+			p=getfname(path);
+			*p=0;
+			strcat(path,ff.name);
+
+			if((glob->gl_pathv[glob->gl_pathc]=malloc(strlen(path)+2))==NULL) {
+				globfree(glob);
+				return(GLOB_NOSPACE);
+			}
+			strcpy(glob->gl_pathv[glob->gl_pathc],path);
+			if(flags&GLOB_MARK && ff.attrib&_A_SUBDIR)
+				strcat(glob->gl_pathv[glob->gl_pathc],"/");
+
+			glob->gl_pathc++;
+			found++;
+		}
+	} while(_dos_findnext(&ff)==0);
+	_dos_findclose(&ff);
+
+	if(found==0)
+		return(GLOB_NOMATCH);
+
+	if(!(flags&GLOB_NOSORT)) {
+		qsort(glob->gl_pathv,found,sizeof(char*),glob_compare);
+	}
+
+	return(0);	/* success */
+}
+
+#else
+
 int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 {
     struct	_finddata_t ff;
@@ -192,6 +255,8 @@ int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 
 	return(0);	/* success */
 }
+
+#endif
 
 void DLLCALL globfree(glob_t* glob)
 {
@@ -344,7 +409,9 @@ BOOL DLLCALL fexist(const char *filespec)
 
 	return(TRUE);
 
-#elif defined(__unix__)	/* portion by cmartin */
+#else /* Unix or OS/2 */
+	
+	/* portion by cmartin */
 
 	glob_t g;
     int c;
@@ -372,12 +439,6 @@ BOOL DLLCALL fexist(const char *filespec)
         
     globfree(&g);
     return FALSE;
-
-#else
-
-#warning "fexist() port needs to support wildcards!"
-
-	return(FALSE);
 
 #endif
 }
@@ -555,7 +616,7 @@ ulong DLLCALL getfreediskspace(const char* path)
     
 #else
 
-	#warning OS-specific code needed here
+	fprintf(stderr,"\n*** !Missing getfreediskspace implementation ***\n");
 	return(0);
 
 #endif
