@@ -657,13 +657,69 @@ js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+
+// Returns a mm/dd/yy or dd/mm/yy formated string
+static JSBool
+js_datestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		str[128];
+	time_t		t;
+	JSString*	js_str;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(argc<1)
+		t=time(NULL);	/* use current time */
+	else {
+		if(JSVAL_IS_STRING(argv[0])) {	/* convert from string to time_t? */
+			*rval = INT_TO_JSVAL(
+				dstrtounix(cfg,JS_GetStringBytes(JS_ValueToString(cx, argv[0]))));
+			return(JS_TRUE);
+		}
+		t=JSVAL_TO_INT(argv[0]);
+	}
+	unixtodstr(cfg,t,str);
+	js_str = JS_NewStringCopyZ(cx, str);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+// Returns a mm/dd/yy or dd/mm/yy formated string
+static JSBool
+js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		str[128];
+	time_t		t;
+	JSString*	js_str;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(argc<1)
+		t=time(NULL);	/* use current time */
+	else
+		t=JSVAL_TO_INT(argv[0]);
+	sectostr(t,str);
+	js_str = JS_NewStringCopyZ(cx, str);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+
 static JSFunctionSpec js_system_functions[] = {
 	{"alias",			js_alias,			1},		// return user name for alias
 	{"matchuser",		js_matchuser,		1},		// exact user name matching
 	{"trashcan",		js_trashcan,		2},		// search file for pseudo-regexp
 	{"findstr",			js_findstr,			2},		// search file for pseudo-regexp
 	{"zonestr",			js_zonestr,			0},		// convert zone int to string
-	{"timestr",			js_timestr,			0},		// convert a time_t into a string
+	{"timestr",			js_timestr,			0},		// convert a time_t into a time string
+	{"datestr",			js_datestr,			0},		// convert a time_t into a date string
+	{"secondstr",		js_secondstr,		1},		// convert a time_t into a hh:mm:ss string
 	{0}
 };
 
