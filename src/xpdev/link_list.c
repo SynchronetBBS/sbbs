@@ -135,8 +135,8 @@ void listUnlock(const link_list_t* list)
 
 long listCountNodes(const link_list_t* list)
 {
-	long count=0;
-	list_node_t* node;
+	long			count=0;
+	list_node_t*	node;
 
 	if(list==NULL)
 		return(-1);
@@ -176,6 +176,7 @@ str_list_t listStringList(const link_list_t* list)
 {
 	list_node_t*	node;
 	str_list_t		str_list;
+	size_t			count=0;
 
 	if(list==NULL)
 		return(NULL);
@@ -187,7 +188,7 @@ str_list_t listStringList(const link_list_t* list)
 
 	for(node=list->first; node!=NULL; node=node->next) {
 		if(node->data!=NULL)
-			strListAppend(&str_list, node->data, STR_LIST_APPEND);
+			strListAppend(&str_list, node->data, count++);
 	}
 
 	MUTEX_UNLOCK(list);
@@ -209,10 +210,8 @@ str_list_t listSubStringList(const list_node_t* node, long max)
 	MUTEX_LOCK(list);
 
 	for(count=0; count<max && node!=NULL; node=node->next) {
-		if(node->data!=NULL) {
-			strListAppend(&str_list, node->data, STR_LIST_APPEND);
-			count++;
-		}
+		if(node->data!=NULL)
+			strListAppend(&str_list, node->data, count++);
 	}
 
 	MUTEX_UNLOCK(list);
