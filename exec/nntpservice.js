@@ -105,6 +105,10 @@ while(client.socket.is_connected) {
 	/* These commands require login/authentication */
 	switch(cmd[0].toUpperCase()) {
 
+		case "SLAVE":
+			writeln("202 slave status noted");
+			break;
+
 		case "LIST":
 			writeln("215 list of newsgroups follows");
 			for(g in msg_area.grp_list) 
@@ -328,6 +332,11 @@ while(client.socket.is_connected) {
 				));
    			break;
 
+		case "IHAVE":
+			if(cmd[1].indexOf('@' + system.inetaddr)!=-1) {	// avoid dupe loop
+				writeln("435 that article came from here. Don't send.");
+				continue;
+			}
 		case "POST":
 			if(user.security.restrictions&UFLAG_P) {
 				writeln("440 posting not allowed");
