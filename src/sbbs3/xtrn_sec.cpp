@@ -273,6 +273,29 @@ time_t juliantounix(ulong j)
 #endif
 }
 
+#ifdef __unix__
+static void lfexpand(char *str, ulong misc)
+{
+	char *p;
+	char len=0;
+	char newstr[1024];
+
+	if(misc&XTRN_NATIVE)
+		return;
+
+	for(p=str;*p && len < sizeof(newstr)-1;p++) {
+		if(*p=='\n')
+			newstr[len++]='\r';
+		newstr[len++]=*p;
+	}
+
+	newstr[len]=0;
+	strcpy(str,newstr);
+}
+#else
+	#define lfexpand(str, misc)
+#endif
+
 /****************************************************************************/
 /* Creates various types of xtrn (Doors, Chains, etc.) data (drop) files.	*/
 /****************************************************************************/
@@ -289,7 +312,10 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 	stats_t stats;
 
 	if(type==XTRN_SBBS) {	/* SBBS XTRN.DAT file */
-		sprintf(str,"%sXTRN.DAT",dropdir);
+		strcpy(tmp,"XTRN.DAT");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -300,6 +326,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,cfg.sys_name						/* System name */
 			,cfg.sys_op 						/* Sysop name */
 			,cfg.sys_guru); 					/* Guru name */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%s\n%s\n%u\n%u\n%lu\n%s\n%lu\n%lu\n"
@@ -313,6 +340,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 				? "Yes":"Mono":"No"
 			,rows								/* User Screen lines */
 			,useron.cdt+useron.freecdt);		/* User Credits */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%u\n%u\n%s\n%c\n%u\n%s\n"
@@ -322,6 +350,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.sex 						/* User sex (M/F) */
 			,useron.number						/* User number */
 			,useron.phone); 					/* User phone number */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%u\n%u\n%x\n%lu\n%s\n%s\n"
@@ -344,9 +373,11 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,0L
 	#endif
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%u\n",cfg.total_xtrns);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));			/* Total external programs */
 
 		for(i=0;i<cfg.total_xtrns;i++) {		/* Each program's name */
@@ -354,7 +385,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 				strcpy(str,cfg.xtrn[i]->name);
 			else
 				str[0]=0;						/* Blank if no access */
-			strcat(str,crlf);
+			strcat(str,"\n");
+			lfexpand(str,misc);
 			write(file,str,strlen(str)); 
 		}
 
@@ -362,6 +394,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,ltoaf(useron.flags1,tmp)			/* Main flags */
 			,ltoaf(useron.flags2,tmp2)			/* Transfer flags */
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%s\n%s\n%lx\n%s\n%s\n%s\n"
@@ -372,6 +405,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.location					/* City/State */
 			,useron.zipcode 					/* Zip/Postal code */
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%s\n%s\n%d\n%s\n%lu\n%s\n%s\n%s\n%s\n"
@@ -396,13 +430,17 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,-1
 	#endif
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		close(file); 
 	}
 
 	else if(type==XTRN_WWIV) {	/*	WWIV CHAIN.TXT File */
-		sprintf(str,"%sCHAIN.TXT",dropdir);
+		strcpy(tmp,"CHAIN.TXT");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -416,6 +454,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,getage(&cfg,useron.birth)			/* User age */
 			,useron.sex);						/* User sex (M/F) */
 		strupr(str);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%lu\n%s\n%u\n%lu\n%u\n%u\n%u\n%u\n%u\n"
@@ -428,6 +467,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,SYSOP								/* Sysop? (1/0) */
 			,(useron.misc&ANSI) ? 1:0			/* ANSI ? (1/0) */
 			,online==ON_REMOTE);				/* Remote (1/0) */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%lu\n%s\n%s\n%s\n%lu\n%d\n%s\n%s\n"
@@ -447,13 +487,17 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.dlb/1024UL					/* User downloaded kbytes */
 			,useron.dls 						/* User downloaded files */
 			,"8N1");                            /* Data, parity, stop bits */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		close(file); 
 	}
 
 	else if(type==XTRN_GAP) {	/* Gap DOOR.SYS File */
-		sprintf(str,"%sDOOR.SYS",dropdir);
+		strcpy(tmp,"DOOR.SYS");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -469,6 +513,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,'Y'                                /* 07: Printer toggle */
 			,'Y'                                /* 08: Page bell */
 			,'Y');                              /* 09: Caller alarm */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%s\n%s\n%s\n%s\n%s\n"
@@ -477,6 +522,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.phone						/* 12: User home phone */
 			,useron.phone						/* 13: User work/data phone */
 			,useron.pass);						/* 14: User password */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%u\n%u\n%s\n%lu\n%lu\n%s\n"
@@ -487,6 +533,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tleft/60							/* 19: User time left in min */
 			,useron.misc&NO_EXASCII 			/* 20: GR if COLOR ANSI */
 				? "7E" : (useron.misc&(ANSI|COLOR))==(ANSI|COLOR) ? "GR" : "NG");
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%lu\n%c\n%s\n%u\n%s\n%u\n%c\n%u\n%u\n"
@@ -499,6 +546,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,'Y'                                /* 27: Default protocol */
 			,useron.uls 						/* 28: User total uploads */
 			,useron.dls);						/* 29: User total downloads */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%u\n%lu\n%s\n%s\n%s\n%s"
@@ -513,6 +561,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,0 // sys_eventtime/60				/* 37: Event time HH:MM */
 			,0 // sys_eventtime%60
 			,'Y');                              /* 38: Error correcting connection */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		tm=localtime(&ns_time);
@@ -526,6 +575,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tm->tm_mon+1						/* 43: File new-scan date */
 			,tm->tm_mday
 			,TM_YEAR(tm->tm_year));
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		tm=localtime(&logontime);
@@ -544,6 +594,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.comment 					/* 50: User comment */
 			,0									/* 51: Total doors opened */
 			,useron.posts); 					/* 52: User message left */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		close(file); 
@@ -551,9 +602,12 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 
 	else if(type==XTRN_RBBS || type==XTRN_RBBS1) {
 		if(type==XTRN_RBBS)
-			sprintf(str,"%sDORINFO%X.DEF",dropdir,cfg.node_num);   /* support 1-F */
+			sprintf(tmp,"DORINFO%X.DEF",cfg.node_num);   /* support 1-F */
 		else
-			sprintf(str,"%sDORINFO1.DEF",dropdir);
+			sprintf(tmp,"DORINFO1.DEF");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -574,6 +628,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,dte_rate							/* DTE rate */
 			,0);								/* Network type */
 		strupr(str);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		strcpy(tmp,name);
@@ -590,11 +645,15 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.level						/* Security level */
 			,tleft/60); 						/* Time left in minutes */
 		strupr(str);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		close(file);
 
-		sprintf(str,"%sEXITINFO.BBS",dropdir);
+		strcpy(tmp,"EXITINFO.BBS");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -728,7 +787,10 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 	}
 
 	else if(type==XTRN_WILDCAT) { /* WildCat CALLINFO.BBS File */
-		sprintf(str,"%sCALLINFO.BBS",dropdir);
+		strcpy(tmp,"CALLINFO.BBS");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -768,6 +830,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.misc&ANSI ? "COLOR":"MONO"  /* ANSI ??? */
 			,useron.pass						/* Password */
 			,useron.number);					/* User number */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		tm=localtime(&now);
@@ -779,6 +842,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tm->tm_mon+1,tm->tm_mday			/* MM/DD/YY */
 			,TM_YEAR(tm->tm_year)
 			,nulstr);							/* Conferences with access */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		tm=localtime(&useron.laston);
@@ -792,6 +856,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,unixtodstr(&cfg,useron.laston,tmp)	/* Last on date and time */
 			,tm->tm_hour						/* MM/DD/YY  HH:MM */
 			,tm->tm_min);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		tm=localtime(&ns_time);
@@ -808,6 +873,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,0									/* Highest message read */
 			,useron.uls 						/* Total files uploaded */
 			,useron.dls);						/* Total files downloaded */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%u\n%s\nCOM%u\n%s\n%lu\n%s\n%s\n"
@@ -818,6 +884,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,dte_rate							/* DTE rate */
 			,"FALSE"                            /* Already connected? */
 			,"Normal Connection");              /* Normal or ARQ connect */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		tm=localtime(&now);
@@ -828,13 +895,17 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tm->tm_hour,tm->tm_min 			/* Current time HH:MM */
 			,cfg.node_num						/* Node number */
 			,0);								/* Door number */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		close(file); 
 	}
 
 	else if(type==XTRN_PCBOARD) { /* PCBoard Files */
-		sprintf(str,"%sPCBOARD.SYS",dropdir);
+		strcpy(tmp,"PCBOARD.SYS");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -931,7 +1002,10 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 
 		close(file);			/* End of PCBOARD.SYS creation */
 
-		sprintf(str,"%sUSERS.SYS",dropdir);
+		strcpy(tmp,"USERS.SYS");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -1030,7 +1104,10 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 	}
 
 	else if(type==XTRN_SPITFIRE) {	 /* SpitFire SFDOORS.DAT File */
-		sprintf(str,"%sSFDOORS.DAT",dropdir);
+		strcpy(tmp,"SFDOORS.DAT");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1058,6 +1135,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tleft/60							/* Time left in minutes */
 			,l									/* Seconds since midnight (now) */
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		tm=localtime(&logontime);
@@ -1095,13 +1173,17 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.phone						/* Phone Number */
 			,useron.location					/* City, State */
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		close(file); 
 	}
 
 	else if(type==XTRN_UTI) { /* UTI v2.1 - UTIDOOR.TXT */
-		sprintf(str,"%sUTIDOOR.TXT",dropdir);
+		strcpy(tmp,"UTIDOOR.TXT");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1115,13 +1197,17 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,online==ON_LOCAL ? 0: cfg.com_port /* COM Port */
 			,dte_rate							/* DTE rate */
 			,tleft);							/* Time left in sec */
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		close(file); 
 	}
 
 	else if(type==XTRN_SR) { /* Solar Realms DOORFILE.SR */
-		sprintf(str,"%sDOORFILE.SR",dropdir);
+		strcpy(tmp,"DOORFILE.SR");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1136,12 +1222,16 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,online==ON_LOCAL ? 0:cfg.com_port	/* COM port */
 			,tleft/60							/* Time left (in minutes) */
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 		close(file); 
 	}
 
 	else if(type==XTRN_TRIBBS) { /* TRIBBS.SYS */
-		sprintf(str,"%sTRIBBS.SYS",dropdir);
+		strcpy(tmp,"TRIBBS.SYS");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1159,6 +1249,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.location					/* User's city and state */
 			,useron.birth						/* User's birth date */
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
 		sprintf(str,"%u\n%u\n%lu\n%lu\n%c\n%c\n%s\n%s\n%s\n"
@@ -1172,12 +1263,16 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,cfg.sys_op 						/* Sysop's name */
 			,useron.handle						/* User's alias */
 			);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 		close(file); 
 	}
 
 	else if(type==XTRN_DOOR32) { /* DOOR32.SYS */
-		sprintf(str,"%sDOOR32.SYS",dropdir);
+		strcpy(tmp,"DOOR32.SYS");
+		if(misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",dropdir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
@@ -1199,6 +1294,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,timeleft/60
 			,useron.misc&ANSI ? 1 : 0
 			,cfg.node_num);
+		lfexpand(str,misc);
 		write(file,str,strlen(str));
 		close(file);
 	}
@@ -1225,6 +1321,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 	if(cfg.xtrn[xtrnnum]->type==XTRN_RBBS || cfg.xtrn[xtrnnum]->type==XTRN_RBBS1) {
 		sprintf(path,"%sEXITINFO.BBS"
 			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
+		fexistcase(path);
 		if((file=nopen(path,O_RDONLY))!=-1) {
 			lseek(file,361,SEEK_SET);
 			read(file,&useron.flags1,4); /* Flags */
@@ -1243,6 +1340,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 	else if(cfg.xtrn[xtrnnum]->type==XTRN_GAP) {
 		sprintf(path,"%sDOOR.SYS"
 			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
+		fexistcase(path);
 		if((stream=fopen(path,"rb"))!=NULL) {
 			for(i=0;i<15;i++)			/* skip first 14 lines */
 				if(!fgets(str,128,stream))
@@ -1310,6 +1408,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 	else if(cfg.xtrn[xtrnnum]->type==XTRN_PCBOARD) {
 		sprintf(path,"%sUSERS.SYS"
 			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
+		fexistcase(path);
 		if((file=nopen(path,O_RDONLY))!=-1) {
 			lseek(file,39,SEEK_SET);
 			read(file,&c,1);
@@ -1332,6 +1431,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 
 	sprintf(path,"%sMODUSER.DAT"
 			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
+	fexistcase(path);
 	if((stream=fopen(path,"rb"))!=NULL) {			/* File exists */
 		if(fgets(str,81,stream) && (mod=atol(str))!=0) {
 			ultoac(mod>0L ? mod : -mod,tmp);		/* put commas in the # */
@@ -1451,7 +1551,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 /****************************************************************************/
 bool sbbs_t::exec_xtrn(uint xtrnnum)
 {
-	char str[256],path[256],dropdir[128],name[32],c;
+	char str[256],path[MAX_PATH+1],dropdir[MAX_PATH+1],name[32],c;
     int file;
 	uint i;
 	long tleft,mode;
@@ -1503,40 +1603,43 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 
 	switch(cfg.xtrn[xtrnnum]->type) {
 		case XTRN_WWIV:
-			strcat(path,"CHAIN.TXT");
+			strcpy(name,"CHAIN.TXT");
 			break;
 		case XTRN_GAP:
-			strcat(path,"DOOR.SYS");
+			strcpy(name,"DOOR.SYS");
 			break;
 		case XTRN_RBBS:
 			sprintf(str,"DORINFO%X.DEF",cfg.node_num);
-			strcat(path,str);
+			strcpy(name,str);
 			break;
 		case XTRN_RBBS1:
-			strcat(path,"DORINFO1.DEF");
+			strcpy(name,"DORINFO1.DEF");
 			break;
 		case XTRN_WILDCAT:
-			strcat(path,"CALLINFO.BBS");
+			strcpy(name,"CALLINFO.BBS");
 			break;
 		case XTRN_PCBOARD:
-			strcat(path,"PCBOARD.SYS");
+			strcpy(name,"PCBOARD.SYS");
 			break;
 		case XTRN_UTI:
-			strcat(path,"UTIDOOR.TXT");
+			strcpy(name,"UTIDOOR.TXT");
 			break;
 		case XTRN_SR:
-			strcat(path,"DOORFILE.SR");
+			strcpy(name,"DOORFILE.SR");
 			break;
 		case XTRN_TRIBBS:
-			strcat(path,"TRIBBS.SYS");
+			strcpy(name,"TRIBBS.SYS");
 			break;
 		case XTRN_DOOR32:
-			strcat(path,"DOOR32.SYS");
+			strcpy(name,"DOOR32.SYS");
 			break;
 		default:
-			strcat(path,"XTRN.DAT");
+			strcpy(name,"XTRN.DAT");
 			break; 
 	}
+	if(cfg.xtrn[xtrnnum]->misc&XTRN_LWRCASE)
+		strlwr(name);
+	strcat(path,name);
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.aux=xtrnnum+1;
 	thisnode.action=NODE_XTRN;
