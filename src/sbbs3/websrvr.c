@@ -100,7 +100,7 @@
 #undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "sockwrap.h"		/* sendfilesocket() */
-#include "threadwrap.h"		/* pthread_mutex_t */
+#include "threadwrap.h"
 #include "semwrap.h"
 #include "websrvr.h"
 #include "base64.h"
@@ -146,7 +146,6 @@ static named_string_t** mime_types;
 
 /* Logging stuff */
 sem_t	log_sem;
-pthread_mutex_t	log_mutex;
 link_list_t	log_list;
 struct log_data {
 	char	*hostname;
@@ -731,9 +730,7 @@ static void close_request(http_session_t * session)
 	if(session->req.ld!=NULL) {
 		now=time(NULL);
 		localtime_r(&now,&session->req.ld->completed);
-		pthread_mutex_lock(&log_mutex);
 		listPushNode(&log_list,session->req.ld);
-		pthread_mutex_unlock(&log_mutex);
 		sem_post(&log_sem);
 		session->req.ld=NULL;
 	}
@@ -2913,9 +2910,7 @@ void http_logging_thread(void* arg)
 		if(terminate_http_logging_thread)
 			break;
 
-		pthread_mutex_lock(&log_mutex);
 		ld=listShiftNode(&log_list);
-		pthread_mutex_unlock(&log_mutex);
 		if(ld==NULL) {
 			lprintf(LOG_ERR,"%04d http logging thread received NULL linked list log entry"
 				,server_socket);
@@ -3185,7 +3180,6 @@ void DLLCALL web_server(void* arg)
 			/* Start log thread */
 			/********************/
 			sem_init(&log_sem,0,0);
-			pthread_mutex_init(&log_mutex,NULL);
 			_beginthread(http_logging_thread, 0, startup->logfile_base);
 		}
 
