@@ -80,6 +80,42 @@ long DLLCALL filelength(int fd)
 	return(st.st_size);
 }
 
+#ifdef USE_LOCKF
+
+/* Sets a lock on a portion of a file */
+int DLLCALL lock(int file, long offset, int len)
+{
+	int		i;
+	long	pos;
+   
+	pos=tell(file);
+	if(offset!=pos)
+		lseek(file, offset, SEEK_SET);
+	i=lockf(file,F_TLOCK,len);
+	if(offset!=pos)
+		lseek(file, pos, SEEK_SET);
+
+	return(i);
+}
+
+/* Removes a lock from a file record */
+int DLLCALL unlock(int file, long pos, int len)
+{
+	int		i;
+	long	pos;
+   
+	pos=tell(file);
+	if(offset!=pos)
+		lseek(file, offset, SEEK_SET);
+	i=lockf(file,F_ULOCK,len);
+	if(offset!=pos)
+		lseek(file, pos, SEEK_SET);
+
+	return(i);
+}
+
+#else	/* use fcntl */
+
 /* Sets a lock on a portion of a file */
 int DLLCALL lock(int fd, long pos, int len)
 {
@@ -115,6 +151,8 @@ int DLLCALL unlock(int fd, long pos, int len)
 		return(-1);
 	return(0);
 }
+
+#endif
 
 /* Opens a file in specified sharing (file-locking) mode */
 int DLLCALL sopen(char *fn, int access, int share)
