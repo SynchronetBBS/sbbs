@@ -2407,7 +2407,7 @@ void http_session_thread(void* arg)
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
 					if(check_request(&session)) {
-						if(session.req.send_location < MOVED_TEMP)
+						if(session.req.send_location < MOVED_TEMP || session.req.virtual_path[0]!='/')
 							respond(&session);
 						else {
 							snprintf(redir_req,MAX_REQUEST_LINE,"%s %s%s%s",methods[session.req.method]
