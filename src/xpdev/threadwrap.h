@@ -47,6 +47,7 @@ extern "C" {
 
 #if defined(__unix__)
 
+	#include <sys/param.h>
 	#include <pthread.h>	/* POSIX threads and mutexes */
 #if defined(_NEED_SEM)
 	#include "sem.h"
