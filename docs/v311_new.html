@@ -416,6 +416,11 @@ based on the platform ARS (e.g. pkunzip for DOS/Win32 and unzip for Unix)
 	<li>BBS enhancement: socket options (configured in <code>ctrl/sockopts.cfg</code>) are 
 	re-applied to client sockets when returning from external programs (which 
 	could have modified them)</li>
+	<li>JS bug-fix: <code>user.limits</code> object wasn't be created for dynamically-created user objects
+        - users created with <code>new User()</code> constructor</li>
+	<li>JS bug-fix: <code>user.limits</code> properties were indexed by user number rather than level
+        - causing errorneous values (e.g. <code>user.limits.lines_per_message</code> as witnessed when posting via
+        <tt>nntpservice.js</tt>)</li>
 	<li>JS bug-fix: <code>system.new_user()</code> 
 	method no longer creates <code>system.user</code> object (harmless bug</li>
 	<li>JS bug-fix: <code>msg_area.sub</code> object (associative array) contained 
