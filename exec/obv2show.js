@@ -84,7 +84,7 @@ for(i in text) {
 		t=t.replace(/%VD/g,system.compiled_when);	// Version Date
 
 		t=t.replace(/%TF/g,system.stats.total_files);		// Total Files
-		t=t.replace(/%TP/g,system.stats.total_messsages);	// Total Posts
+		t=t.replace(/%TP/g,system.stats.total_messages);	// Total Posts
 
 		t=t.replace(/%CF/g,bbs.curlib);				// Current File Conference
 		t=t.replace(/%CM/g,bbs.curgrp);				// Current Message Conference
