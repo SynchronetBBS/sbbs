@@ -109,6 +109,7 @@ static const char*	http_scheme="http://";
 static const size_t	http_scheme_len=7;
 static const char*	error_404="404 Not Found";
 static const char*	error_500="500 Internal Server Error";
+static const char*	unknown="<unknown>";
 
 extern const uchar* nular;
 
@@ -196,6 +197,7 @@ typedef struct  {
 	int				http_ver;       /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
 	user_t			user;	
+	char			username[LEN_NAME+1];
 
 	/* JavaScript parameters */
 	JSRuntime*		js_runtime;
@@ -204,6 +206,9 @@ typedef struct  {
 	JSObject*		js_query;
 	JSObject*		js_header;
 	JSObject*		js_request;
+
+	/* Client info */
+	client_t		client;
 } http_session_t;
 
 typedef struct {
@@ -379,19 +384,17 @@ static void update_clients(void)
 		startup->clients(startup->cbdata,active_clients);
 }
 
-#if 0	/* These will be used later ToDo */
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(TRUE,sock,client,update);
+		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(FALSE,sock,NULL,FALSE);
+		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
-#endif
 
 static void thread_up(BOOL setuid)
 {
@@ -921,6 +924,7 @@ static BOOL check_ars(http_session_t * session)
 		password="";
 	session->user.number=matchuser(&scfg, username, FALSE);
 	if(session->user.number==0) {
+		SAFECOPY(session->username,unknown);
 		if(scfg.sys_misc&SM_ECHO_PW)
 			lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: %s, Password: %s"
 				,session->socket,username,password);
@@ -931,6 +935,7 @@ static BOOL check_ars(http_session_t * session)
 	}
 	getuserdat(&scfg, &session->user);
 	if(session->user.pass[0] && stricmp(session->user.pass,password)) {
+		SAFECOPY(session->username,unknown);
 		/* Should go to the hack log? */
 		if(scfg.sys_misc&SM_ECHO_PW)
 			lprintf(LOG_WARNING,"%04d !PASSWORD FAILURE for user %s: '%s' expected '%s'"
@@ -960,8 +965,11 @@ static BOOL check_ars(http_session_t * session)
 		}
 		session->req.ld->user=strdup(username);
 
+		SAFECOPY(session->username,username);
 		return(TRUE);
 	}
+
+	SAFECOPY(session->username,unknown);
 
 	/* Should go to the hack log? */
 	lprintf(LOG_WARNING,"%04d !AUTHORIZATION FAILURE for user %s, ARS: %s"
@@ -1692,13 +1700,17 @@ static BOOL check_request(http_session_t * session)
 		SAFECOPY(str,path);
 	}
 	
-	if(session->req.ars[0] && (!check_ars(session))) {
+	if(session->req.ars[0]) {
+		if(!check_ars(session)) {
 			/* No authentication provided */
 			sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
 				,newline,get_header(HEAD_WWWAUTH),scfg.sys_name);
 			send_error(session,str);
 			return(FALSE);
+		}
 	}
+	else
+		SAFECOPY(session->username,unknown);
 	return(TRUE);
 }
 
@@ -2501,6 +2513,18 @@ void http_session_thread(void* arg)
 
 	active_clients++;
 	update_clients();
+	SAFECOPY(session.username,unknown);
+
+	SAFECOPY(session.client.addr,session.host_ip);
+	SAFECOPY(session.client.host,session.host_name);
+	session.client.port=ntohs(session.addr.sin_port);
+	session.client.time=time(NULL);
+	session.client.protocol="http";
+	session.client.user=session.username;
+	session.client.size=sizeof(session.client);
+	client_on(session.socket, &session.client, TRUE);
+	if(session.socket!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL)
+		startup->socket_open(startup->cbdata,TRUE);
 
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
@@ -2551,7 +2575,9 @@ void http_session_thread(void* arg)
 
 	active_clients--;
 	update_clients();
-	/* client_off(session.socket); */
+	client_off(session.socket);
+	if(startup!=NULL && startup->socket_open!=NULL)
+		startup->socket_open(startup->cbdata,FALSE);
 
 	thread_down();
 	lprintf(LOG_INFO,"%04d Session thread terminated (%u clients, %u threads remain, %lu served)"
