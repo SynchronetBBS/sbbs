@@ -756,17 +756,8 @@ void sbbs_t::js_create_user_objects(void)
 	if(js_cx==NULL)
 		return;
 
-	/* user object */
-	if(js_CreateUserObject(js_cx, js_glob, &cfg, "user", useron.number)==NULL) 
-		lprintf("!JavaScript ERROR creating user object");
-
-	/* file_area object */
-	if(js_CreateFileAreaObject(js_cx, js_glob, &cfg, &useron, "")==NULL) 
-		lprintf("!JavaScript ERROR creating file_area object");
-
-	/* msg_area object */
-	if(js_CreateMsgAreaObject(js_cx, js_glob, &cfg, &useron, subscan)==NULL) 
-		lprintf("!JavaScript ERROR creating msg_area object");
+	if(js_CreateUserObjects(js_cx, js_glob, &cfg, &useron, NULL, subscan)==NULL) 
+		lprintf("!JavaScript ERROR creating user objects");
 }
 
 #endif	/* JAVASCRIPT */
