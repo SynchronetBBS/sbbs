@@ -110,7 +110,7 @@ js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char		tmp[1024];
+	char*		p;
     uintN		i;
 	JSString *	fmt;
     JSString *	str;
@@ -136,8 +136,11 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			arglist[i-1]=NULL;
 	}
 	
-	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
-	sbbs->bputs(tmp);
+	if((p=JS_vsmprintf(JS_GetStringBytes(fmt),(char*)arglist))==NULL)
+		return JS_FALSE;
+
+	sbbs->bputs(p);
+	JS_smprintf_free(p);
 
     return JS_TRUE;
 }
