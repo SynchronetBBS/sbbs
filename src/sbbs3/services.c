@@ -573,7 +573,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 		JS_SetContextPrivate(js_cx, service_client);
 
-		if((js_glob=js_CreateGlobalObject(js_cx, &scfg))==NULL) 
+		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL))==NULL) 
 			break;
 
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))

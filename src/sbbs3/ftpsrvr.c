@@ -473,7 +473,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 	do {
 
 		lprintf("%04d JavaScript: Initializing Global object",sock);
-		if((js_glob=js_CreateGlobalObject(js_cx, &scfg))==NULL) 
+		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL))==NULL) 
 			break;
 
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
