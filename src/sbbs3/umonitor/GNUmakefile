@@ -29,6 +29,11 @@ ifeq ($(os),sunos)
  LDFLAGS	+=	-lsocket -lnsl
 endif
 
+ifeq ($(os),netbsd)
+ CFLAGS		+=	$(PTHREAD_CFLAGS)
+ LDFLAGS	+=	$(PTHREAD_LDFLAGS)
+endif
+
 FORCE$(EXEODIR)/umonitor: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 
 $(EXEODIR)/umonitor: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
