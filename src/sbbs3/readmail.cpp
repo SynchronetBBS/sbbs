@@ -56,6 +56,11 @@ void sbbs_t::readmail(uint usernumber, int which)
 	mail_t	*mail;
 	smbmsg_t msg;
 
+	if(which==MAIL_SENT && useron.rest&FLAG('K')) {
+		bputs(text[R_ReadSentMail]);
+		return;
+	}
+
 	msg.total_hfields=0;			/* init to NULL, cause not allocated yet */
 
 	fd.dir=cfg.total_dirs+1;			/* temp dir for file attachments */
