@@ -76,6 +76,7 @@
 #include "filewrap.h"
 #define	BACKSLASH	PATH_DELIM
 #define mswait(x)	SLEEP(x)
+#define COMPILER_DESC(x)	DESCRIBE_COMPILER(x)
 #endif
 
 #define GLOBAL extern	/* turns XSDKVARS.C into a header file */
