@@ -928,8 +928,6 @@ resize_window()
 
 	sh->base_width = FW * DpyCols + 4;
 	sh->base_height = FH * (DpyRows+1) + 4;
-	sh->base_width += 4;
-	sh->base_height += 4;
 
     sh->min_width = sh->max_width = sh->base_width;
     sh->min_height = sh->max_height = sh->base_height;
