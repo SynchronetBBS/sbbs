@@ -54,6 +54,10 @@ function getReferenceTo(reference) {
 	if (reference=="")
 		return to;
 
+	//if this didn't originate from this bbs.
+	if (reference.indexOf(system.inet_addr) < 0)
+		return to;
+
 	//Load the msgbase the original post was from
 	if (!reference.match(re))
 		return to;
