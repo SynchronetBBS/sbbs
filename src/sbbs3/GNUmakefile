@@ -5,7 +5,7 @@
 # For use with GNU make and GNU C Compiler								#
 # @format.tab-size 4, @format.use-tabs true								#
 #																		#
-# Linux: gmake															#
+# Linux: gmake [bcc=1]													#
 # FreeBSD: gmake os=FreeBSD												#
 #																		#
 # Optional build targets: dlls, utils, mono, all (default)				#
@@ -15,11 +15,18 @@
 
 # Macros
 DEBUG	=	1		# Comment out for release (non-debug) version
+ifdef bcc
+CC		=	bc++ -q
+LD		=	ilink -q
+CFLAGS 	=	-D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -O2
+else
 CC		=	gcc
+LD		=	ld
+CFLAGS	=	-Wall -O
+endif
 SLASH	=	/
 OFILE	=	o
 
-LD		=	ld
 LIBFILE	=	.a
 XPDEV	=	../xpdev/
 
@@ -32,13 +39,18 @@ ifeq ($(os),FreeBSD)	# FreeBSD
 LIBODIR	:=	gcc.freebsd.lib
 EXEODIR	:=	gcc.freebsd.exe
 else                    # Linux
+ifdef bcc
+LIBODIR	:=	bcc.linux.lib
+EXEODIR	:=	bcc.linux.exe
+else
 LIBODIR	:=	gcc.linux.lib
 EXEODIR	:=	gcc.linux.exe
+endif
 endif
 
 DELETE	=	rm -fv
 
-CFLAGS	=	-Wall -DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV)
+CFLAGS	+=	-DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV)
 
 ifeq ($(os),FreeBSD)	# FreeBSD
 CFLAGS	+= -D_THREAD_SAFE
@@ -46,12 +58,20 @@ CFLAGS	+= -D_THREAD_SAFE
 LFLAGS	:=	-lm -pthread
 else			# Linux / Other UNIX
 # Math and pthread libraries needed
+ifdef bcc
+LFLAGS	:=	libm.a libpthread.a
+else
 LFLAGS	:=	-lm -lpthread
 endif
-
+endif
 
 ifdef DEBUG
-CFLAGS	+=	-g -O0 -D_DEBUG 
+ifdef bcc
+CFLAGS	+=	-y -v
+else
+CFLAGS	+=	-g
+endif
+CFLAGS  +=	-D_DEBUG
 LIBODIR	:=	$(LIBODIR).debug
 EXEODIR	:=	$(EXEODIR).debug
 ifeq ($(os),FreeBSD)	# FreeBSD
@@ -80,18 +100,24 @@ vpath %.c $(XPDEV)
 
 # Implicit C Compile Rule for utils
 $(EXEODIR)/%.o : %.c
+ifndef bcc
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c $< -o $@
+endif
+	@$(CC) $(CFLAGS) -o $@ -c $<
 
 # Implicit C Compile Rule for SBBS
 $(LIBODIR)/%.o : %.c
+ifndef bcc
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
+endif
+	@$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 # Implicit C++ Compile Rule for SBBS
 $(LIBODIR)/%.o : %.cpp
+ifndef bcc
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
+endif
+	@$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 # Create output directories
 $(LIBODIR):
@@ -110,7 +136,7 @@ MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(MAIL_OBJS) $(SERVICE_OBJS)
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o 
 	@echo Linking $@
-	@$(CC) $(LFLAGS) $^ -o $@
+	@$(CC) -o $@ $(LFLAGS) $^
 
 # Synchronet BBS library Link Rule
 $(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o
@@ -131,52 +157,52 @@ $(SBBSCON): $(CON_OBJS) $(SBBSLIB)
 # Specifc Compile Rules
 $(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c -DFTPSRVR_EXPORTS $< -o $@
+	@$(CC) $(CFLAGS) -DFTPSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@
+	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mxlookup.o: mxlookup.c
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@		
+	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mime.o: mime.c
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@		
+	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<		
 
 $(LIBODIR)/services.o: services.c services.h
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c -DSERVICES_EXPORTS $< -o $@
+	@$(CC) $(CFLAGS) -DSERVICES_EXPORTS -o $@ -c $<
 
 # Baja Utility
 $(BAJA): $(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/crc32.o \
 	$(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 	@echo Linking $@
-	@$(CC) $^ -o $@
+	@$(CC) -o $@ $^
 
 # Node Utility
 $(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 	@echo Linking $@
-	@$(CC) $^ -o $@ 
+	@$(CC) -o $@ $^ 
 
 SMBLIB = $(EXEODIR)/smblib.o $(EXEODIR)/filewrap.o
 
 # FIXSMB Utility
 $(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o
 	@echo Linking $@
-	@$(CC) $^ -o $@
+	@$(CC) -o $@ $^
 
 # CHKSMB Utility
 $(CHKSMB): $(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o
 	@echo Linking $@
-	@$(CC) $^ -o $@
+	@$(CC) -o $@ $^
 
 # SMB Utility
 $(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/genwrap.o $(EXEODIR)/smbtxt.o $(EXEODIR)/crc32.o $(EXEODIR)/lzh.o 
 	@echo Linking $@
-	@$(CC) $^ -o $@
+	@$(CC) -o $@ $^
 
 # SBBSecho (FidoNet Packet Tosser)
 $(SBBSECHO): \
@@ -198,6 +224,6 @@ $(SBBSECHO): \
 	$(EXEODIR)/smbtxt.o \
 	$(EXEODIR)/lzh.o
 	@echo Linking $@
-	@$(CC) $^ -o $@
+	@$(CC) -o $@ $^
 
 include depends.mk
