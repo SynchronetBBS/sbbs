@@ -129,7 +129,7 @@ int SMBCALL smb_open(smb_t* smb)
 
 	if(filelength(file)>=sizeof(smbhdr_t)) {
 		setvbuf(smb->shd_fp,smb->shd_buf,_IONBF,SHD_BLOCK_LEN);
-		if(smb_locksmbhdr(smb)!=0) {
+		if(smb_locksmbhdr(smb)!=SMB_SUCCESS) {
 			smb_close(smb);
 			/* smb_lockmsghdr set last_error */
 			return(SMB_ERR_LOCK); 
@@ -1435,27 +1435,35 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	long	l;
 	ulong	hdrlen;
 
+	if(smb->shd_fp==NULL) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
+
+	if(!smb->locked && smb_locksmbhdr(smb)!=SMB_SUCCESS)
+		return(SMB_ERR_LOCK);
+
 	hdrlen=smb_getmsghdrlen(msg);
 	if(hdrlen>SMB_MAX_HDR_LEN) { /* headers are limited to 64k in size */
+		smb_unlocksmbhdr(smb);
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"illegal message header length (%lu > %u)"
 			,hdrlen,SMB_MAX_HDR_LEN);
 		return(SMB_ERR_HDR_LEN);
 	}
 
-	if(smb->shd_fp==NULL) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
-		return(SMB_ERR_NOT_OPEN);
+	if(!(msg->flags&MSG_FLAG_HASHED) /* not already hashed */
+		&& (i=smb_hashmsg(smb,msg,NULL,FALSE))!=SMB_SUCCESS) {
+		smb_unlocksmbhdr(smb);
+		return(i);	/* Duplicate message? */
 	}
 
-	if(!smb->locked && smb_locksmbhdr(smb))
-		return(SMB_ERR_LOCK);
-	if((i=smb_getstatus(smb))!=0) {
+	if((i=smb_getstatus(smb))!=SMB_SUCCESS) {
 		smb_unlocksmbhdr(smb);
 		return(i);
 	}
 
-	if(storage!=SMB_HYPERALLOC && (i=smb_open_ha(smb))!=0) {
+	if(storage!=SMB_HYPERALLOC && (i=smb_open_ha(smb))!=SMB_SUCCESS) {
 		smb_unlocksmbhdr(smb);
 		return(i);
 	}
@@ -1484,7 +1492,6 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		smb->status.last_msg++;
 		smb->status.total_msgs++;
 		smb_putstatus(smb);
-		smb_hashmsg(smb,msg,NULL,/* update? */TRUE);
 	}
 	smb_unlocksmbhdr(smb);
 	return(i);
@@ -1818,7 +1825,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 	blocks=smb_datblocks(length);
 
 	if(smb->sda_fp==NULL) {
-		if((i=smb_open_da(smb))!=0)
+		if((i=smb_open_da(smb))!=SMB_SUCCESS)
 			return(i);
 		da_opened=1;
 	}
@@ -1925,14 +1932,14 @@ int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
 		return(SMB_SUCCESS);
 
 	if(smb->sda_fp==NULL) {
-		if((i=smb_open_da(smb))!=0)
+		if((i=smb_open_da(smb))!=SMB_SUCCESS)
 			return(i);
 		da_opened=1;
 	}
 
 	for(x=0;x<msg->hdr.total_dfields;x++) {
 		if((i=smb_incdat(smb,msg->hdr.offset+msg->dfield[x].offset
-			,msg->dfield[x].length,refs))!=0)
+			,msg->dfield[x].length,refs))!=SMB_SUCCESS)
 			break; 
 	}
 
@@ -1978,7 +1985,7 @@ int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
 
 	for(x=0;x<msg->hdr.total_dfields;x++) {
 		if((i=smb_freemsgdat(smb,msg->hdr.offset+msg->dfield[x].offset
-			,msg->dfield[x].length,refs))!=0)
+			,msg->dfield[x].length,refs))!=SMB_SUCCESS)
 			return(i); 
 	}
 	return(0);
@@ -1994,7 +2001,7 @@ int SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg)
 	if(smb->status.attr&SMB_HYPERALLOC)  /* Nothing to do */
 		return(SMB_SUCCESS);
 
-	if((i=smb_freemsg_dfields(smb,msg,1))!=0)
+	if((i=smb_freemsg_dfields(smb,msg,1))!=SMB_SUCCESS)
 		return(i);
 
 	return(smb_freemsghdr(smb,msg->idx.offset-smb->status.header_offset
@@ -2588,14 +2595,19 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 {
 	size_t		n;
 	int			retval=SMB_SUCCESS;
+	hash_t		found;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 
 	hashes=smb_msghashes(smb,msg,text);
 
-	if(smb_findhash(smb, hashes, NULL, update)==SMB_SUCCESS && !update)
+	if(smb_findhash(smb, hashes, &found, update)==SMB_SUCCESS && !update) {
 		retval=SMB_DUPE_MSG;
-	else
-		retval=smb_addhashes(smb,hashes);
+		safe_snprintf(smb->last_error,sizeof(smb->last_error)
+			,"Duplicate type %u hash found for message #%lu"
+			,found.source, found.number);
+	} else
+		if((retval=smb_addhashes(smb,hashes))==SMB_SUCCESS)
+			msg->flags|=MSG_FLAG_HASHED;
 
 	FREE_LIST(hashes,n);
 
