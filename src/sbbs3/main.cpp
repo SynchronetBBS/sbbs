@@ -1262,8 +1262,10 @@ void event_thread(void* arg)
 				file=sbbs->nopen(str,O_RDONLY);
 				for(j=0;j<sbbs->cfg.qhub[i]->subs;j++) {
 					sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr=0;
-					lseek(file,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long),SEEK_SET);
-					read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(long)); 
+					if(file!=-1) {
+						lseek(file,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long),SEEK_SET);
+						read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(long)); 
+					}
 				}
 				if(file!=-1)
 					close(file);
