@@ -518,7 +518,7 @@ typedef struct {			// Message base
     FILE    *sda_fp;        // File pointer for data allocation (.sda) file
     FILE    *sha_fp;        // File pointer for header allocation (.sha) file
 	ulong	retry_time; 	// Maximum number of seconds to retry opens/locks
-	ulong	retry_delay;	// Time-slice yield delay while retrying
+	ulong	retry_delay;	// Time-slice yield (milliseconds) while retrying
 	smbstatus_t status; 	// Status header record
 	char	shd_buf[SHD_BLOCK_LEN]; 	// File I/O buffer for header file
 	char	last_error[128];			// Last error message

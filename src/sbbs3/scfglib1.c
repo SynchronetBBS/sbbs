@@ -656,7 +656,9 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	for(j=0;j<32;j++)
 		get_int(n,instream);
 
+	/************/
 	/* Internet */
+	/************/
 
 	get_str(cfg->sys_inetaddr,instream); /* Internet address */
 	get_str(cfg->inetmail_sem,instream);
