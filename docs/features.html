@@ -13,292 +13,258 @@
 
 <h2>Synchronet Features</h2>
 
-<h3><b>What's New in Synchronet Version 3.00 Revision B (official release)</b></h3>
-<h4><b><u>General</u></b></h4>
-<pre>o Windows Version Information display:
-  - Windows NT/2000 indicated by &quot;NT&quot;
-  - Windows 95/98 build number corrected in version information
-  - Service pack information now displayed along with version info</pre>
-<pre>o Block FOSSIL transfers (from DOS externals) now correctly escape Telent IAC
-  character (255) - fixed SBBSEXEC.VXD - does not effect FDSZ</pre>
-<pre>o Windows NT/2000 FOSSIL/DOS Interrupt driver (DOSXTRN.EXE) created and VDD
-  (SBBSEXEC.DLL) created to complete Windows NT/2000 support</pre>
-<pre>o Changed insert text command from Ctrl-&lt;minus&gt; to Ctrl-V</pre>
-<pre>o Changed center text command from Ctrl-V to Ctrl-L</pre>
-<pre>o Filename searches are no longer case sensitive</pre>
-<pre>o Fixed problem viewing extended file description if longer than screen length</pre>
-<pre>o Ability to easily switch A and R commands on the reading mail/msgs prompts
-  for some or all command shells (see RA_EMU.BIN)
-  - New @-codes to represent correct command keys in menus 
-    (MSGREPLY and MSGREREAD)</pre>
-<pre>o New @-codes: 
-	LOCAL-IP 	displays current local IP address
-	CRLF		carriage return/line-feed pair
-	UP		Move cursor up one row			(ANSI)
-	UP:n		Move cursor up n rows			(ANSI)
-	DOWN		Move cursor down one row		(ANSI)
-	DOWN:n		Move cursor down n rows			(ANSI)
-	RIGHT		Move cursor right one column		(ANSI)
-	RIGHT:n		Move cursor right n columns		(ANSI)	
-	LEFT		Move cursor left one column 		(ANSI)
-	LEFT:n		Move cursor left n columns		(ANSI)
-	GOTOXY:x,y	Move cursor to x/y (1-based)		(ANSI)
-	PUSHXY		Save current cursor position		(ANSI)
-	POPXY		Restore saved cursor position		(ANSI)
-	STATS.LOGONS	Total logons during history of system
-	STATS.LTODAY	Total logons today
-	STATS.TIMEON	Total time used during history of system (in minutes)
-	STATS.TTODAY	Total time used today (in minutes)
-	STATS.ULS	Total uploads today				
-	STATS.ULB	Total bytes uploaded today
-	STATS.DLS	Total download today
-	STATS.DLB	Total bytes downloaded today
-	STATS.PTODAY	Total posts today
-	STATS.ETODAY	Total e-mails sent today
-	STATS.FTODAY	Total feedbacks sent today
-	STATS.NUSERS	Total number of new users today
-	MSGREPLY	Command key to reply to last message	
-	MSGREREAD	Command key used to re-read last message</pre>
-<pre>o Ability to disable hostname lookups for Telnet, FTP, and Mail servers</pre>
-<pre>o Ability to disable the spinning cursor for one or all nodes via Baja:
-	OR _node_misc NM_NOPAUSESPIN</pre>
-<h4><b><u>Control Panel</u></b></h4>
-<pre>o New Clients window shows all connected client details (username, IP address,
-  hostname, time connected, etc.)
-  - Allows sysop to disconnect any client by right clicking socket number and 
-    selecting &quot;Close&quot;</pre>
-<pre>o New GUI User Editor (USEREDIT.EXE)
-  - Launched from SBBSCTRL-&gt;User-&gt;Editor
-  - Create new user records
-  - Edit all user fields, statistics, and settings</pre>
-<pre>o New Sysop Availability toggle button (replaces v2.3 Scroll-Lock function)</pre>
-<h4><u>FTP Server</u>
-</h4>
-<pre>o FTP server now times out and closes data connection if user runs out of time
-  - Helps eliminate stranded transfer threads/sockets</pre>
-<pre>o File aliases supported
-  - Put links in your FTP root directory to often access files
-  - Link to files on your local hard disk or your BBS filebase
-  - Use general alias names to point to often-changing versioned filenames</pre>
-<pre>o Credits now checked before allowing file download</pre>
-<pre>o QWK packet creation time-out bug fix (wasn't timing-out ever)</pre>
-<pre>o Special logon sequence to receive sysop access (users with level &gt;= 90)</pre>
-<pre>o Complete access to local file systems for remote sysops</pre>
-<pre>o Ability to disable QWK packet transfers
-</pre>
-<h4><u>Mail Server</u></h4>
-<p>o Attempts delivery a configurable number o ftimes before bouncing message<br>
-&nbsp; - Uses new SMB message field: delivery_attempts</p>
-<pre>o Automatically re-scans mail database every configurable number of seconds</pre>
-<pre>o Fixed rare Access Violation in MAILSRVR.DLL during shutdown
-</pre>
-<h4><u>Online Programs</u></h4>
-<pre>o 32-bit door support
-  - Duplicate socket handle passed in DOOR32.SYS drop file (new standard)
-  - Duplicate socket handle passed on command line via %H specifier
-  - Support for external programs written with 32-bit XSDK (v3.0)</pre>
+<h3>General</h3>
+
+<ul>
+  <li>Designed from the ground up as a reliable and feature rich multi-node BBS</li>
+  <li>Up to 250 simultaneous nodes with multi-node chat and external program
+    (door) support</li>
+  <li>Sysop inter-node control (remote or local):<br>
+    &nbsp;&nbsp;&nbsp; Interrupting - hang up on any node<br>
+    &nbsp;&nbsp;&nbsp; Locking - only sysops can logon a locked node until the
+    lock is removed<br>
+    &nbsp;&nbsp;&nbsp; Rerunning - re-executes BBS, reinitializing
+    configuration, etc.<br>
+    &nbsp;&nbsp;&nbsp; Downing - shutdown a node from another remote node or
+    local console</li>
+  <li>Real-time user database:<br>
+    &nbsp;&nbsp;&nbsp; Amazingly complete user edit function<br>
+    &nbsp;&nbsp;&nbsp; Remote changes to online-user data are immediately
+    effective<br>
+    &nbsp;&nbsp;&nbsp; Disk image is always current for enhanced system fault
+    tolerance<br>
+    &nbsp;&nbsp;&nbsp; Linked free-form data file for every user<br>
+    &nbsp;&nbsp;&nbsp; International address and phone number support</li>
+  <li><i><b>RIPscrip</b></i> and <i><b>WIP</b></i> graphical user interfaces and
+    mouse support!</li>
+  <li>Online, sysop configurable, chatting artificial intelligence engine<br>
+    Multiple personalities available for your users to experience</li>
+  <li>Pay BBS features:<br>
+    Time credits, user expiration dates, credits, and 900/976 billing</li>
+</ul>
+<h3>Security</h3>
+<ul>
+  <li><i><b>ARS</b></i> (<i>Access Requirement String</i>) security provides the
+    most flexible, comprehensive, and user friendly security available in the
+    BBS software industry</li>
+  <li>Post/Call ratio, connect rates, time of day, and other user data fields
+    can be elements of any <i>ARS</i> security field</li>
+  <li>Impenetrable to remote hackers</li>
+  <li>100 security levels with 104 sysop configurable flags per user</li>
+  <li>Sysop can allow or disallow users to choose their own passwords</li>
+  <li>Sysop can force periodic password changes (uniqueness is also forced)</li>
+</ul>
+<h3>Customization</h3>
+<ul>
+  <li>
+<p>Programmable Command and Menu Structure:<br>
+Includes free Baja shell/module compiler<br>
+Users can select a shell of their choice including emulations of other BBS
+packages<br>
+Several shells included with Baja source code</p>
+  </li>
+  <li><p>The most configurable BBS available today:<br>
+    Powerful object oriented menu driven configuration program<br>
+    All menus, text, and colors are sysop configurable without source code<br>
+    New User Questionnaire is available and customizable<br>
+    All standard new user questions can be disabled individually<br>
+    Over 120 <a href="http://customization.html#MessageVariables">message
+    variables</a> (@-Codes) supported</p>
+  </li>
+</ul>
+<h3>Messaging</h3>
+<ul>
+  <li><p>Hierarchical bi-level message areas with an unlimited number of
+    messages groups and an unlimited number of sub-boards within each group</p>
+  </li>
+  <li>
+<p>QWK message off-line reader and networking support built-in<br>
+Off-line file requests<br>
+Off-line new message scan configuration and pointer adjustment<br>
+Send <i>FidoNet</i> or Internet NetMail from QWK REP packet<br>
+32-bit CRC duplicate message checking<br>
+Multiple compression formats supported<br>
+File attachments optionally automatically included</p>
+  </li>
+  <li>
+<p>Inter-node message services:<br>
+Current node status - user online, action, connect rate, and more<br>
+User activity - credited downloads, mail activity, logons, and logoffs<br>
+Users can list active nodes and send private messages from any prompt<br>
+&nbsp;&nbsp;&nbsp; (even between external programs and the BBS)<br>
+Multi-channel multi-node chat with optional channel password protection<br>
+Private real-time node to node character by character chat with remote split
+screen support<br>
+Users can send telegrams, single line messages, or enter private chat from any
+prompt<br>
+User information (gender, age, location, etc) can be included in node status
+display</p>
+  </li>
+  <li><p>Extensive networking capabilities:<br>
+    Internal QWK network hub and node support with file transfer ability<br>
+    <i>FidoNet</i> EchoMail and NetMail support<br>
+    Send/Receive File Requests from within Synchronet<br>
+    UTI drivers for <i>PostLink</i> Networks (RIME, ILink, etc)<br>
+    Sub-boards can force real names<br>
+    Allow/disallow/force private posts and anonymous posts per sub-board<br>
+    Supports color codes for <i>WWIV</i>, <i>PCBoard</i>, <i>Wildcat</i>, and <i>Celerity</i><br>
+    Support for multiple networks of the same or different network technologies
+    with different addresses and tag/origin lines<br>
+    Duplicate message checking using 32-bit CRC for QWK and <i>Fido</i> Networks</p>
+  </li>
+</ul>
+<h3>File Transfers</h3>
+<ul>
+  <li>Unlimited external transfer protocols with optional DSZLOG support</li>
+  <li>Batch uploads, downloads, and bidirectional file transfers</li>
+  <li>Transfer credit system is completely configurable</li>
+  <li>File viewing, extraction, and partial downloading of archives</li>
+  <li>Content rating, multi-disk numberings, and file upload dates can
+    automatically be added to file descriptions</li>
+  <li><i><b>FILE_ID.DIZ </b></i>and <i><b>DESC.SDI</b></i> files can be
+    automatically imported into extended file descriptions</li>
+  <li>Personal user to user file transfers</li>
+  <li>Optional batch download file flagging for user convenience</li>
+  <li>Support for offline directories</li>
+  <li>Multiple sysop file removal/move/edit search criteria</li>
+  <li>Directories can be sorted by filename or date, ascending or descending</li>
+  <li>Complete CD-ROM (single and multi-disk changer) support</li>
+  <li>Optional forced upload directory can be invisible to users</li>
+  <li>Optional allowance of blind (unsolicited) batch uploads with automatic DIZ
+    importation</li>
+  <li>Download events available for adding files/comments just before download
+    (i.e. CD-ROM)</li>
+</ul>
+<h3>External Programs/Doors</h3>
+<ul>
+  <li>Unlimited number of external programs</li>
+  <li>Multi-user or single user programs</li>
+  <li>Programs that use DOS I/O (don't use COM port directly) supported</li>
+  <li>12 door file formats supported for an incredible level of compatibility
+    including:&nbsp;<b><i>&nbsp;&nbsp;&nbsp;</i></b>&nbsp;<b><i><br>
+    DOOR.SYS</i></b>, <i><b>PCBOARD.SYS</b></i>, <i><b>USERS.SYS</b></i>, <i><b>CHAIN.TXT</b></i>,
+    <b><i>DORINFO#.DEF</i></b>, <i><b>EXITINFO.BBS</b></i>, <i><b>SFDOORS.DAT</b></i>,
+    <i><b>TRIBBS.SYS</b>,</i> <b><i>CALLINFO.BBS</i></b>, <i><b>DOORFILE.SR</b></i>,
+    and <i><b>UTIDOOR.TXT</b></i></li>
+  <li>Supports native <i><b>WWIV</b></i> color code expansion</li>
+  <li>Free Software Development Kit (SDK) available for program development</li>
+  <li>Comes with multiplayer Synchronet Blackjack game (with C source code)</li>
+  <li>No batch file editing/programming necessary!</li>
+  <li>Configurable credit cost on a per program basis</li>
+  <li>Separate access requirements to see the program and execute</li>
+  <li>Multiple Timed and Fixed Events:<br>
+    &nbsp;&nbsp;&nbsp; Logon and logoff events<br>
+    &nbsp;&nbsp;&nbsp; New user events<br>
+    &nbsp;&nbsp;&nbsp; Upload events (integrity testing, adding of comments,
+    virus scan, etc.)<br>
+    &nbsp;&nbsp;&nbsp; Node and system daily events<br>
+    &nbsp;&nbsp;&nbsp; Timed events with support for forced exclusive execution</li>
+</ul>
+<h2><b><font color="#FF0000">Version 3 (for Win32) Features</font></b>
+</h2>
+<p><b>General</b>
+
+</p>
+<ul>
+  <li>All &quot;nodes&quot; run in a single multi-threaded process<br>
+    &nbsp; - Minimal resource requirements and improved performance<br>
+    &nbsp; - DOS Windows are automatically opened/closed for external DOS
+    programs/doors<br>
+    &nbsp; - It's never been easier to run a 10+ node system (with DOS door
+    support) on one computer</li>
+  <li>Professional GUI <i>Synchronet Control Panel</i> (SBBSCTRL) to monitor all
+    clients and servers simultaneously<br>
+    &nbsp; - Replaces old &quot;<i>Waiting for call</i>&quot; screen<br>
+    &nbsp; - Launch configuration and editor dialogs directly<br>
+    &nbsp; - New Sysop Availability toggle button (replaces v2.3 Scroll-Lock
+    function)</li>
+  <li>GUI User Editor</li>
+  <li>Local and Remote Node Control/Spying</li>
+  <li>Optionally plays sysop's choice of <i><b>.WAV</b></i> file on user
+    connect/disconnect</li>
+</ul>
 <h3>
-<br>
-What's New in Synchronet Version 3.00 for Win32</h3>
-<pre><b><u>General</u></b>
-
-o All &quot;nodes&quot; run in a single multi-threaded process
-  - Minimal resource requirements and improved performance
-  - DOS Windows are automatically opened/closed for external DOS programs/doors
-  - It's never been easier to run a 10+ node system (with DOS door support) on
-    one computer</pre>
-<pre>o Professional GUI Control Panel to monitor all clients and servers 
-  simultaneously
-  - Replaces old &quot;Waiting for call&quot; screen
-  - Launch configuration and editor dialogs directly</pre>
-<pre>o Optionally plays sysop's choice of .WAV file on user connect/disconnect
-</pre>
-<pre><b><u>Internet</u></b>
-
-o Supports Telnet logins only (no more direct-dial user support)
-  - No third-party FOSSIL/Telnet driver (SIO/VMODEM, NetModem, COM/IP) required
-  - Full FOSSIL/DOS/WWIV/XSDK program/door support (easy setup!)
-  - Outbound Telnet module included for external MUDs/BBSs
-  - Automatically detects and logs client IP and hostname
-  - Optional auto-logon via IP address (requires V exemption)</pre>
-<pre>o Includes integrated FTP server
-  - Supports Anonymous (Guest) logins
-  - Virtual directory structure mimics BBS filebase hierarchy
-  - User security settings enforced
-  - Supports long/mixed-case filenames
-  - Dynamically generates index (description) files
-  - Supports blind upload and sysop directories
-  - QWK/QWKnet packet uploads and downloads
-  - Upload description support
-  - Transfers included in BBS and user upload/download statistics
-  - Time/Credit system enforced
-  - Custom login/hello/goodbye messages
-  - Optional connect/disconnect sounds (.WAV files)</pre>
-<pre>o Includes integrated Mail (POP3/SMTP) server
-  - Check BBS mailbox using standard Internet mail clients (Eudora, Outlook)
-  - SPAM Filters supported: RBL, RSS, DUL
-  - Configurable alias list
-  - Optionally receive mail by user number (1@yourbbs.com)
-  - Optional inbound/outbound sounds (.WAV files)
-  - Optional DNS/MX record lookup (no SMTP Relay Server required)</pre>
-<pre>o IP/hostname filter/trashcan file (IP.CAN) for all Internet servers/services
-</pre>
-<pre><b><u>Configuration</u></b>
-
-o New @-codes:
-	REV             :Synchronet revision
-        CONN            :current connection type
-        LOCATION        :system location
-        TNODES          :total nodes on system
-        HOST            :user's hostname
-        CID and IP      :user's IP address
-        QWKID           :System QWK-ID
-        INETADDR        :System's Internet Address
-        FIDOADDR        :System's primary FidoNet address</pre>
-<pre>o The following environment variables are now initialized for DOS externals
-  (specifically for event batch file convenience):
-	YEAR		:Current year (2000)
-	MONTH		:Month (1-12)
-	DAY		:Day of Month (1-31)
-	WEEKDAY		:Three letter weekday abbreviation (Mon, Tue, etc.)
-  - Example: if %DAY%==1 call maintain.bat /reroll
-  - Example: if %WEEKDAY%==Tue chksmb /q %sbbs%\data\mail.shd
-</pre>
-<pre><b><u>Message Base</u></b>
-
-o New SMB REPLIED attribute to indicate a message has been replied-to
-  - Requires TEXT.DAT update (additional %s in MsgAttr line)
-</pre>
-<pre><b><u>External Programs/Doors</u></b>
-
-o Most popular DOS doors fully supported
-  - Includes native 32-bit FOSSIL driver that requires NO configuration/setup
-  - Users can be ;INTERrupted while running ANY external program
-  - Non-exclusive events do not take any nodes off-line
-  - No more hassling with baud rates and initialization strings
-  - DCDWATCH no longer necessary to support WWIV/DOS extrernals</pre>
-<pre>o New TELNET_GATE Baja function/module to run external MUDs and BBSs
-  - Includes any-time ^] menu to see who is on the BBS, send messages, etc.
-  - See TELGATE.DOC for details</pre>
-<h3>Synchronet BBS Software v2.3 Feature Listing</h3>
-<pre>Designed from the ground up as a reliable and feature rich Multinode BBS
-Up to 250 simultaneous nodes with multinode chat and online program support
-RIPscrip and WIP graphical user interfaces and mouse support!
-Enhanced DESQview, Windows, and OS/2 operation modes
-Runs under DOS 3.0 or higher on any 80x86 compatible computer with 450k free
-	RAM - BBS can shrink to 288 bytes to execute external programs
-Pay BBS features:
-	Time credits, user expiration dates, credits, and 900/976 billing
-Interrupt driven COM I/O for the fastest through-put possible
-	- even with multiple nodes per CPU via a DOS multitasker
-Any COM port configuration supported (Intelligent and Non-Intelligent Boards)
-Direct UART support as well as DigiBoard, FOSSIL, and PC BIOS int 14h drivers
-Automatic modem configuration for most modem brands and types including the
-	latest 28.8k modems
-DTE rates up to 115,200 baud
-The most advanced BBS security ever:
-	ARS {tm} security provides the most flexible, comprehensive, and
-		user friendly security available in the BBS software industry
-	Post/Call ratio, connect rates, time of day, and other user data
-		fields can be elements of any ARS security field
-	Caller-ID support with optional trash-can file
-        Impenetrable to remote hackers
-	100 security levels with 104 sysop configurable flags per user
-        Sysop can allow or disallow users to choose their own passwords
-	Sysop can force periodic password changes (uniqueness is also forced)
-Programmable Command and Menu Structure:
-	Includes free Baja shell/module compiler
-	Users can select a shell of their choice including emulations of other
-		BBS packages
-	Several shells included free with source code
-QWK message off-line reader and networking support built-in
-	Off-line file requests
-	Off-line new message scan configuration and pointer adjustment
-	Send FidoNet or Internet NetMail from QWK REP packet
-	32-bit CRC duplicate message checking
-	Multiple compression formats supported
-	File attachments optionally automatically included
-Extensive File Transfer Section:
-	Unlimited external transfer protocols with optional DSZLOG support
-        Batch uploads, downloads, and bidirectional file transfers
-	Transfer credit system is completely configurable
-        File viewing, extraction, and partial downloading of archives
-	Content rating, multi-disk numberings, and file upload dates can
-		automatically be added to file descriptions
-	FILE_ID.DIZ and DESC.SDI files can be automatically imported into
-		extended file descriptions
-        Personal user to user(s) file transfers
-        Optional batch download file flagging for user convenience
-        Internal support for offline directories
-        Multiple sysop file removal/move/edit search criteria
-        Directories can be sorted by filename or date, ascending or descending
-	Complete CD-ROM (single and multidisk changer) support
-	Optional forced upload directory can be invisible to users
-	Optional allowance of blind (unsolicited) batch uploads with automatic
-		DIZ importation
-	Download events available for adding files/comments just before
-		download (i.e. CD-ROM)
-Sysop inter-node control (remote or local):
-	Interrupting - hang up on any node
-	Locking - only sysops can logon a locked node until the lock is removed
-	Rerunning - re-executes BBS, reinitializing configuration, etc.
-	Downing - shutdown a node from another remote node or local console
-Inter-node message services:
-        Current node status - user online, action, connect rate, and more
-        User activity - credited downloads, mail activity, logons, and logoffs
-	Users can list active nodes and send private messages from any prompt
-		(even between external programs and the BBS)
-	Multichannel multinode chat with optional channel password protection
-	Private real-time node to node character by character chat with remote
-		split screen support
-	Users can send telegrams, single line messages, or enter private chat
-		from any prompt
-	User information (gender, age, location, etc) can be included in node
-		status display
-48 Local macros and sysop function hot-keys
-Real-time user database:
-        Amazingly complete user edit function
-        Remote changes to online-user data are immediately effective
-        Disk image is always current for enhanced system fault tolerance
-        Linked free-form data file for every user
-	International address and phone number support
-Online, sysop configurable, chatting artificial intelligence engine
-	Multiple personalities available for your usersO&#08;+ Up to 500 online external programs:
-	Multiuser or single user programs
-        Programs that use DOS I/O (don't use COM port directly) supported
-	12 door file formats supported for an incredible level of compatibility
-		including: DOOR.SYS, PCBOARD.SYS, USERS.SYS, CHAIN.TXT,
-			   DORINFO#.DEF, EXITINFO.BBS, SFDOORS.DAT, TRIBBS.SYS
-			   CALLINFO.BBS, DOORFILE.SR, and UTIDOOR.TXT
-	Supports native WWIV color code expansion
-	Free Software Development Kit (SDK) available for program development
-	Comes with multiplayer Synchronet Blackjack game FREE!
-	No batch file editing/programming necessary!
-	Configurable credit cost on a per program basis
-	Separate access requirements to see the program and execute
-Multiple Events:
-        Logon and logoff events
-	New user events
-	Upload events (integrity testing, adding of comments, virii scan, etc.)
-        Node and system daily events
-	Timed events with support for forced exclusive execution
-The most configurable BBS available today:
-        Powerful object oriented menu driven configuration program
-        All menus, text, and colors are sysop configurable without source code
-	New User Questionnaire is available and customizable
-	All standard new user questions can be disabled individually
-	Over 120 message variables (@-Codes) supported
-Extensive networking capabilities:
-	Internal QWK network hub and node support with file transfer ability
-	FidoNet EchoMail and NetMail support
-	Send/Receive File Requests from within Synchronet
-	UTI drivers for PostLink Networks (RIME, ILink, etc)
-	Sub-boards can force real names
-	Allow/disallow/force private posts and anonymous posts per sub-board
-	Supports color codes for WWIV, PCBoard, Wildcat, and Celerity
-	Support for multiple networks of the same or different network
-		technologies with different addresses and tag/origin lines
-	Duplicate message checking using 32-bit CRC for QWK and Fido Networks</pre>
+<b>Internet</b></h3>
+<ul>
+  <li>Supports Telnet logins only (no more direct-dial user support)<br>
+    &nbsp; - No third-party FOSSIL/Telnet driver (SIO/VMODEM, NetModem, COM/IP)
+    required<br>
+    &nbsp; - Full FOSSIL/DOS/WWIV/XSDK program/door support (easy setup!)<br>
+    &nbsp; - Outbound Telnet module included for external MUDs/BBSs<br>
+    &nbsp; - Automatically detects and logs client IP and hostname<br>
+    &nbsp; - Optional auto-logon via IP address (requires V exemption)</li>
+  <li>Integrated FTP server<br>
+    &nbsp; - Supports Anonymous (Guest) logins<br>
+    &nbsp; - Virtual directory structure mimics BBS filebase hierarchy<br>
+    &nbsp; - User security settings enforced<br>
+    &nbsp; - Supports long/mixed-case filenames<br>
+    &nbsp; - Dynamically generates index (description) files<br>
+    &nbsp; - Supports blind upload and sysop directories<br>
+    &nbsp; - QWK/QWKnet packet uploads and downloads<br>
+    &nbsp; - Upload description support<br>
+    &nbsp; - Transfers included in BBS and user upload/download statistics<br>
+    &nbsp; - Time/Credit system enforced<br>
+    &nbsp; - Custom login/hello/goodbye messages<br>
+    &nbsp; - Optional connect/disconnect sounds (.WAV files)<br>
+    &nbsp; - File aliases supported<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Put links in your FTP root
+    directory to often access files<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Link to files on your local hard
+    disk or your BBS filebase<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Use general alias names to point
+    to often-changing versioned filenames<br>
+    &nbsp; - Complete access to local file systems for remote sysops</li>
+  <li>Integrated Mail (POP3/SMTP) server<br>
+    &nbsp; - Check BBS mailbox using standard Internet mail clients (Eudora,
+    Outlook)<br>
+    &nbsp; - SPAM Filters supported: RBL, RSS, DUL<br>
+    &nbsp; - Configurable alias list<br>
+    &nbsp; - Optionally receive mail by user number (1@yourbbs.com)<br>
+    &nbsp; - Optional inbound/outbound sounds (.WAV files)<br>
+    &nbsp; - Optional DNS/MX record lookup (no SMTP Relay Server required)</li>
+  <li>Outbound Telnet/RLogin gateway function to run external MUDs, BBSs, and
+    TWGS<br>
+    &nbsp; - Includes any-time ^] menu to see who is on the BBS, send messages,
+    etc.</li>
+  <li>IP/hostname filter/trashcan files (ip.can/host.can) for all Internet
+    servers/services</li>
+</ul>
+<h3>Online Programs</h3>
+<ul>
+  <li>16-bit DOS Door Support<br>
+    &nbsp; - Windows 95/98/ME FOSSIL/DOS Interrupt driver (sbbsexec.vxd)<br>
+    &nbsp; - Windows NT/2000 FOSSIL/DOS Interrupt driver (sbbsexec.dll)</li>
+  <li>32-bit/WinSock Door Support<br>
+    &nbsp; - Duplicate socket handle passed in <b><i>DOOR32.SYS</i></b> drop
+    file (new standard)<br>
+    &nbsp; - Duplicate socket handle passed on command line via %H specifier<br>
+    &nbsp; - Support for external programs written with 32-bit XSDK (v3+)</li>
+  <li><p>Most popular DOS doors fully supported<br>
+    &nbsp; - Users can be ;INTERrupted while running ANY external program<br>
+    &nbsp; - Non-exclusive events do not take any nodes off-line<br>
+    &nbsp; - No more hassling with baud rates and initialization strings<br>
+    &nbsp; - DCDWATCH no longer necessary to support WWIV/DOS externals</p>
+  </li>
+</ul>
+<h2>
+<b><font color="#FF0000">Version 2 (for DOS) Features</font></b>
+</h2>
+<ul>
+  <li>Enhanced <i>DESQview</i>, <i>Windows</i>, and <i>OS/2</i> operation modes</li>
+  <li>Runs under DOS 3.0 or higher on any 80x86 compatible computer with 450k
+    free RAM&nbsp;<br>
+    &nbsp; - BBS can shrink to 288 bytes to execute external programs</li>
+  <li>Interrupt driven COM I/O for the fastest through-put possible<br>
+    - even with multiple nodes per CPU via a DOS multi-tasker</li>
+  <li>Any COM port configuration supported (Intelligent and Non-Intelligent
+    Boards)<br>
+    &nbsp; - Direct UART support as well as DigiBoard, FOSSIL, and PC BIOS int
+    14h drivers<br>
+    &nbsp; - Automatic modem configuration for most modem brands and types</li>
+  <li>DTE rates up to 115,200 baud</li>
+  <li>Caller-ID support with optional trash-can file</li>
+  <li>48 Local macros and sysop function hot-keys</li>
+</ul>
 <p><a href="#top"><b>Back to Top</b></a></p>
 
 </body>
