@@ -71,3 +71,25 @@ function msgs_done()
 	if(msgbase!=undefined)
 		msgbase.close();
 }
+
+function find_np_message(offset,next)
+{
+	/* "Next" actually means the one before this one as msgs reverses everything */
+	var step=-1;
+	var hdr=null;
+	var	idx;
+
+	if(!next)
+		step=1;
+
+	for(last_offset=offset+step;(hdr=msgbase.get_msg_header(true,last_offset))!=null;last_offset+=step) {
+		if(hdr.attr&MSG_DELETE)
+			continue;
+		if(sub!=mail)
+			return(last_offset);
+		if((idx=msgbase.get_msg_index(true,last_offset))==null || idx.to!=user.number)
+			continue;
+		return(last_offset);
+	}
+	return(undefined);
+}
