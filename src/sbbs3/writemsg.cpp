@@ -896,7 +896,9 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 		copyfattach(usernumber,useron.number,msg->subj);
 
 	bprintf(text[Forwarded],username(&cfg,usernumber,str),usernumber);
-	sprintf(str,"Forwarded mail to %s #%d",username(&cfg,usernumber,tmp)
+	sprintf(str,"%s forwarded mail to %s #%d"
+		,useron.alias
+		,username(&cfg,usernumber,tmp)
 		,usernumber);
 	logline("E",str);
 	msg->idx=idx;
@@ -1186,7 +1188,8 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 
 	bprintf("\r\nMoved to %s %s\r\n\r\n"
 		,cfg.grp[usrgrp[newgrp]]->sname,cfg.sub[newsub]->lname);
-	sprintf(str,"Moved message from %s %s to %s %s"
+	sprintf(str,"%s moved message from %s %s to %s %s"
+		,useron.alias
 		,cfg.grp[newgrp]->sname,cfg.sub[newsub]->sname
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
 	logline("M+",str);

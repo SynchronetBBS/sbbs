@@ -64,7 +64,9 @@ bool sbbs_t::uploadfile(file_t *f)
 		: cfg.dir[f->dir]->path,unpadfname(f->name,fname));
 	if(!fexist(path)) {
 		bprintf(text[FileNotReceived],f->name);
-		sprintf(str,"Attempted to upload %s to %s %s (Not received)",f->name
+		sprintf(str,"%s attempted to upload %s to %s %s (Not received)"
+			,useron.alias
+			,f->name
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline("U!",str);
 		return(0); }
@@ -94,7 +96,9 @@ bool sbbs_t::uploadfile(file_t *f)
 				if(SYSOP) {
 					if(!yesno(text[DeleteFileQ])) return(0); }
 				remove(path);
-				sprintf(str,"Attempted to upload %s to %s %s (%s Errors)",f->name
+				sprintf(str,"%s attempted to upload %s to %s %s (%s Errors)"
+					,useron.alias
+					,f->name
 					,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname,cfg.ftest[i]->ext);
 				logline("U!",str);
 				return(0); }
@@ -123,7 +127,9 @@ bool sbbs_t::uploadfile(file_t *f)
 	if((length=flength(path))<=0L) {
 		bprintf(text[FileZeroLength],f->name);
 		remove(path);
-		sprintf(str,"Attempted to upload %s to %s %s (Zero length)",f->name
+		sprintf(str,"%s attempted to upload %s to %s %s (Zero length)"
+			,useron.alias
+			,f->name
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline("U!",str);
 		return(0); }
@@ -177,7 +183,9 @@ bool sbbs_t::uploadfile(file_t *f)
 	if(f->misc&FM_EXTDESC)
 		putextdesc(&cfg,f->dir,f->datoffset,ext);
 
-	sprintf(str,"Uploaded %s to %s %s",f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
+	sprintf(str,"%s uploaded %s to %s %s"
+		,useron.alias
+		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	if(cfg.dir[f->dir]->upload_sem[0])
 		if((file=nopen(cmdstr(cfg.dir[f->dir]->upload_sem,nulstr,nulstr,NULL)

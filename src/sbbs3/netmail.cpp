@@ -275,7 +275,9 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
-	sprintf(str,"Sent Internet Mail to %s (%s)",name,addr);
+	sprintf(str,"%s sent Internet Mail to %s (%s)"
+		,useron.alias
+		,name,addr);
 	logline("EN",str);
 	return(true);
 }
@@ -453,7 +455,9 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
-	sprintf(str,"Sent QWK NetMail to %s (%s)",to,fulladdr);
+	sprintf(str,"%s sent QWK NetMail to %s (%s)"
+		,useron.alias
+		,to,fulladdr);
 	logline("EN",str);
 	return(true);
 }

@@ -221,7 +221,8 @@ int sbbs_t::text_sec()
 				strcpy(str,file[i]);
 			attr(LIGHTGRAY);
 			printfile(str,0);
-			sprintf(str,"Read Text File: %s",file[i]);
+			sprintf(str,"%s read text file: %s"
+				,useron.alias,file[i]);
 			logline("T-",str);
 			pause();
 			sys_status&=~SS_ABORT;

@@ -56,7 +56,9 @@ void sbbs_t::downloadfile(file_t* f)
 	logon_dlb+=length;  /* Update 'this call' stats */
 	logon_dls++;
 	bprintf(text[FileNBytesSent],f->name,ultoac(length,tmp));
-	sprintf(str,"Downloaded %s from %s %s",f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
+	sprintf(str,"%s downloaded %s from %s %s"
+		,useron.alias
+		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	logline("D-",str);
 	/****************************/
@@ -274,13 +276,16 @@ bool sbbs_t::checkprotlog(file_t* f)
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 		bprintf(text[FileNotSent],f->name);
 		if(f->dir<cfg.total_dirs)
-			sprintf(str,"Attempted to download %s (%s) from %s %s"
+			sprintf(str,"%s attempted to download %s (%s) from %s %s"
+				,useron.alias
 				,f->name,ultoac(f->size,size)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
-			strcpy(str,"Attempted to download QWK packet");
+			sprintf(str,"%s attempted to download QWK packet"
+				,useron.alias);
 		else if(f->dir==cfg.total_dirs+1)
-			sprintf(str,"Attempted to download attached file: %s",f->name);
+			sprintf(str,"%s attempted to download attached file: %s"
+				,useron.alias,f->name);
 		logline("D!",str);
 		return(0); }
 	unpadfname(f->name,tmp);
@@ -302,10 +307,11 @@ bool sbbs_t::checkprotlog(file_t* f)
 	fclose(stream);
 	bprintf(text[FileNotSent],f->name);
 	if(f->dir<cfg.total_dirs)
-		sprintf(str,"Attempted to download %s (%s) from %s %s",f->name
+		sprintf(str,"%s attempted to download %s (%s) from %s %s",f->name
+			,useron.alias
 			,ultoac(f->size,tmp),cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 	else
-		strcpy(str,"Attempted to download QWK packet");
+		sprintf(str,"%s attempted to download QWK packet",useron.alias);
 	logline("D!",str);
 	return(false);
 }

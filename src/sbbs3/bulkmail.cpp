@@ -236,8 +236,9 @@ int sbbs_t::bulkmailhdr(uint usernum, smbmsg_t *msg, ushort msgattr, ulong offse
 
 	// smb_incdat(&smb,offset,length,1); Remove 04/15/96
 	lncntr=0;
-	bprintf("Bulk Mailed %s #%d\r\n",username(&cfg, usernum,tmp),usernum);
-	sprintf(str,"Bulk Mailed %s #%d",username(&cfg, usernum,tmp),usernum);
+	bprintf("Bulk-mailed %s #%d\r\n",username(&cfg, usernum,tmp),usernum);
+	sprintf(str,"%s bulk-mailed %s #%d"
+		,useron.alias,username(&cfg, usernum,tmp),usernum);
 	logline("E+",str);
 	useron.emails++;
 	logon_emails++;

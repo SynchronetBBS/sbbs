@@ -544,7 +544,8 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 	addfiledat(&cfg,f);
 	bprintf(text[MovedFile],f->name
 		,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-	sprintf(str,"Moved %s to %s %s",f->name
+	sprintf(str,"%s moved %s to %s %s",f->name
+		,useron.alias
 		,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 	logline(nulstr,str);
 	if(!f->altpath) {	/* move actual file */
@@ -1029,14 +1030,21 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							if(remove(str))
 								bprintf(text[CouldntRemoveFile],str);
 							else {
-								sprintf(tmp,"Deleted %s",str);
-								logline(nulstr,tmp); } } }
+								sprintf(tmp,"%s deleted %s"
+									,useron.alias
+									,str);
+								logline(nulstr,tmp); 
+							} 
+						} 
+					}
 					break;
 				case 'R':   /* remove file from database */
 					if(noyes(text[AreYouSureQ]))
 						break;
 					removefiledat(&cfg,&f);
-					sprintf(str,"Removed %s from %s %s",f.name
+					sprintf(str,"%s removed %s from %s %s"
+						,useron.alias
+						,f.name
 						,cfg.lib[cfg.dir[f.dir]->lib]->sname,cfg.dir[f.dir]->sname);
 					logline("U-",str);
 					sprintf(str,"%s%s",dirpath,fname);
@@ -1046,8 +1054,13 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 								if(remove(str))
 									bprintf(text[CouldntRemoveFile],str);
 								else {
-									sprintf(tmp,"Deleted %s",str);
-									logline(nulstr,tmp); } } }
+									sprintf(tmp,"%s deleted %s"
+										,useron.alias
+										,str);
+									logline(nulstr,tmp); 
+								} 
+							} 
+						}
 						else if(remove(str))    /* always remove if not sysop */
 							bprintf(text[CouldntRemoveFile],str); }
 					if(dir_op(dirnum) || useron.exempt&FLAG('R')) {
@@ -1126,7 +1139,9 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					addfiledat(&cfg,&f);
 					bprintf(text[MovedFile],f.name
 						,cfg.lib[cfg.dir[f.dir]->lib]->sname,cfg.dir[f.dir]->sname);
-					sprintf(str,"Moved %s to %s %s",f.name
+					sprintf(str,"%s moved %s to %s %s"
+						,useron.alias
+						,f.name
 						,cfg.lib[cfg.dir[f.dir]->lib]->sname,cfg.dir[f.dir]->sname);
 					logline(nulstr,str);
 					if(!f.altpath) {    /* move actual file */

@@ -983,7 +983,8 @@ void sbbs_t::maindflts(user_t* user)
 				now=time(NULL);
 				putuserrec(&cfg,user->number,U_PWMOD,8,ultoa(now,tmp,16));
 				bputs(text[PasswordChanged]);
-				logline(nulstr,"Changed password");
+				sprintf(str,"%s changed password",useron.alias);
+				logline(nulstr,str);
 				pause();
 				break;
 			case 'Z':

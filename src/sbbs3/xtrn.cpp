@@ -528,7 +528,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     while(!(mode&EX_BG)) {
         if(!online && !(mode&EX_OFFLINE)) { // Tell VXD/VDD and external that user hung-up
         	if(was_online) {
-				logline("X!","Hung-up in external program");
+				sprintf(str,"%s hung-up in external program",useron.alias);
+				logline("X!",str);
             	hungup=time(NULL);
 				if(!native) {
 					if(nt)

@@ -135,12 +135,16 @@ void sbbs_t::readmail(uint usernumber, int which)
 		curmsg=0;
 		if(which==MAIL_ALL)
 			domsg=0; }
-	if(which==MAIL_SENT)
-		logline("E","Read sent mail");
-	else if(which==MAIL_ALL)
-		logline("S+","Read all mail");
-	else
-		logline("E","Read mail");
+	if(which==MAIL_SENT) {
+		sprintf(str,"%s read sent mail",useron.alias);
+		logline("E",str);
+	} else if(which==MAIL_ALL) {
+		sprintf(str,"%s read all mail",useron.alias);
+		logline("S+",str);
+	} else {
+		sprintf(str,"%s read mail",useron.alias);
+		logline("E",str);
+	}
 	if(useron.misc&RIP) {
 		strcpy(str,which==MAIL_YOUR ? "MAILREAD" : which==MAIL_ALL ?
 			"ALLMAIL" : "SENTMAIL");
@@ -273,7 +277,8 @@ void sbbs_t::readmail(uint usernumber, int which)
 											bprintf(text[FileNBytesSent]
 												,fd.name,ultoac(length,tmp));
 											sprintf(str3
-												,"Downloaded attached file: %s"
+												,"%s downloaded attached file: %s"
+												,useron.alias
 												,fd.name);
 											logline("D-",str3); }
 									autohangup(); } } } }

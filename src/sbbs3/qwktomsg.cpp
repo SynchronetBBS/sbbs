@@ -275,10 +275,12 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		if(j) {
 			if(j==1) {
 				bprintf("\r\nDuplicate message\r\n");
-				if(subnum==INVALID_SUB)
-					logline("E!","Duplicate e-mail attempt"); 
-				else {
-					sprintf(str,"Duplicate message attempt in %s/%s"
+				if(subnum==INVALID_SUB) {
+					sprintf(str,"%s duplicate e-mail attempt",useron.alias);
+					logline("E!",str); 
+				} else {
+					sprintf(str,"%s duplicate message attempt in %s %s"
+						,useron.alias
 						,cfg.grp[cfg.sub[subnum]->grp]->sname
 						,cfg.sub[subnum]->lname);
 					logline("P!",str); 

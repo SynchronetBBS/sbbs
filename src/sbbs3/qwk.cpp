@@ -306,7 +306,8 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 	}
 
 	if(!prepack) {
-		logline("D-","Downloaded QWK packet");
+		sprintf(str,"%s downloaded QWK packet",useron.alias);
+		logline("D-",str);
 		posts_read+=msgcnt;
 
 		sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);

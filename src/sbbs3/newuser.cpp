@@ -346,10 +346,12 @@ void sbbs_t::newuser()
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
 			if(!strcmp(str,useron.pass)) break;
 			if(cfg.sys_misc&SM_ECHO_PW) 
-				sprintf(tmp,"FAILED Password verification: '%s' instead of '%s'",str
+				sprintf(tmp,"%s FAILED Password verification: '%s' instead of '%s'",str
+					,useron.alias
 					,useron.pass);
 			else
-				sprintf(tmp,"FAILED Password verification");
+				sprintf(tmp,"%s FAILED Password verification"
+					,useron.alias);
 			logline(nulstr,tmp);
 			if(++c==4) {
 				logline("N!","Couldn't figure out password.");
@@ -365,7 +367,7 @@ void sbbs_t::newuser()
 		getstr(str,50,K_UPPER);
 		if(strcmp(str,cfg.new_magic)) {
 			bputs(text[FailedMagicWord]);
-			sprintf(tmp,"Failed magic word: '%s'",str);
+			sprintf(tmp,"%s failed magic word: '%s'",useron.alias,str);
 			logline("N!",tmp);
 			hangup(); }
 		if(!online) return; }

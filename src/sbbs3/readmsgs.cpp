@@ -598,7 +598,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 						errormsg(WHERE,ERR_WRITE,smb.file,i);
 					smb_unlockmsghdr(&smb,&msg);
 					if(i==0 && msg.idx.attr&MSG_DELETE) {
-						sprintf(str,"Removed post from %s %s"
+						sprintf(str,"%s removed post from %s %s"
+							,useron.alias
 							,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 						logline("P-",str);
 						if(!stricmp(cfg.sub[subnum]->misc&SUB_NAME

@@ -224,7 +224,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			putuserrec(&cfg,useron.number,U_ETODAY,5
 				,ultoa(useron.etoday,tmp,10));
 			bprintf(text[Emailed],username(&cfg,j,tmp),j);
-			sprintf(str,"E-mailed %s #%d",username(&cfg,j,tmp),j);
+			sprintf(str,"%s sent e-mail to %s #%d"
+				,useron.alias,username(&cfg,j,tmp),j);
 			logline("E+",str);
 			if(useron.rest&FLAG('Q')) {
 				sprintf(tmp,"%-25.25s",block+46);
@@ -266,7 +267,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				k--;	/* k is sub */
 				if(j>=usrgrps || k>=usrsubs[j] || cfg.sub[usrsub[j][k]]->qwkconf) {
 					bprintf(text[QWKInvalidConferenceN],n);
-					sprintf(str,"Invalid conference number %d",n);
+					sprintf(str,"%s: Invalid conference number %d",useron.alias,n);
 					logline("P!",str);
 					continue; } }
 
@@ -393,8 +394,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			putuserrec(&cfg,useron.number,U_PTODAY,5,ultoa(useron.ptoday,str,10));
 			bprintf(text[Posted],cfg.grp[cfg.sub[n]->grp]->sname
 				,cfg.sub[n]->lname);
-			sprintf(str,"Posted on %s/%s",cfg.grp[cfg.sub[n]->grp]->sname
-				,cfg.sub[n]->lname);
+			sprintf(str,"%s posted on %s %s"
+				,useron.alias,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
 			if(cfg.sub[n]->misc&SUB_FIDO && cfg.sub[n]->echomail_sem[0])  /* semaphore */
 				if((file=nopen(cmdstr(cfg.sub[n]->echomail_sem,nulstr,nulstr,NULL)
 					,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
