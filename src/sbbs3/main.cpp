@@ -188,6 +188,18 @@ SOCKET open_socket(int type)
 	return(sock);
 }
 
+SOCKET accept_socket(SOCKET s, SOCKADDR* addr, socklen_t* addrlen)
+{
+	SOCKET	sock;
+	char	error[256];
+
+	sock=accept(s,addr,addrlen);
+	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
+		startup->socket_open(TRUE);
+
+	return(sock);
+}
+
 int close_socket(SOCKET sock)
 {
 	int		result;
@@ -3562,10 +3574,10 @@ void DLLCALL bbs_thread(void* arg)
 		bool rlogin = false;
 
 		if(FD_ISSET(telnet_socket,&socket_set)) 
-			client_socket = accept(telnet_socket, (struct sockaddr *)&client_addr
+			client_socket = accept_socket(telnet_socket, (struct sockaddr *)&client_addr
 	        	,&client_addr_len);
 		else if(FD_ISSET(rlogin_socket,&socket_set)) {
-			client_socket = accept(rlogin_socket, (struct sockaddr *)&client_addr
+			client_socket = accept_socket(rlogin_socket, (struct sockaddr *)&client_addr
 	        	,&client_addr_len);
 			rlogin = true;
 		} else {
@@ -3588,9 +3600,6 @@ void DLLCALL bbs_thread(void* arg)
 		lprintf("%04d %s connection accepted from: %s port %u"
 			,client_socket
 			,rlogin ? "RLogin" : "Telnet", host_ip, ntohs(client_addr.sin_port));
-
-		if(startup->socket_open!=NULL)
-			startup->socket_open(TRUE);
 
 #ifdef _WIN32
 		if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)) 

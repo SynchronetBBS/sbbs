@@ -686,15 +686,12 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 		SOCKET accept_sock;
 
 		addr_len=sizeof(addr);
-		if((accept_sock=accept(data_sock,(struct sockaddr*)&addr,&addr_len))
+		if((accept_sock=accept_socket(data_sock,(struct sockaddr*)&addr,&addr_len))
 			==INVALID_SOCKET) {
 			csi->socket_error=ERROR_VALUE;
 			closesocket(data_sock);
 			return(false);
 		}
-
-		if(startup->socket_open!=NULL)
-			startup->socket_open(TRUE);
 
 		close_socket(data_sock);
 		data_sock=accept_sock;
@@ -815,15 +812,12 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 		SOCKET accept_sock;
 
 		addr_len=sizeof(addr);
-		if((accept_sock=accept(data_sock,(struct sockaddr*)&addr,&addr_len))
+		if((accept_sock=accept_socket(data_sock,(struct sockaddr*)&addr,&addr_len))
 			==INVALID_SOCKET) {
 			csi->socket_error=ERROR_VALUE;
 			closesocket(data_sock);
 			return(false);
 		}
-
-		if(startup->socket_open!=NULL)
-			startup->socket_open(TRUE);
 
 		close_socket(data_sock);
 		data_sock=accept_sock;

@@ -233,7 +233,7 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if((new_socket=accept(p->sock,NULL,NULL))==INVALID_SOCKET) {
+	if((new_socket=accept_socket(p->sock,NULL,NULL))==INVALID_SOCKET) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
 		*rval = JSVAL_VOID;
@@ -750,6 +750,7 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	fd_set*	rd_set=NULL;
 	fd_set*	wr_set=NULL;
 	uintN	argn;
+	int		result;
 	struct	timeval tv = {0, 0};
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -775,9 +776,14 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	else
 		rd_set=&socket_set;
 
-	*rval = INT_TO_JSVAL(select(p->sock+1,rd_set,wr_set,NULL,&tv));
+	result = select(p->sock+1,rd_set,wr_set,NULL,&tv);
 
 	p->last_error=ERROR_VALUE;
+
+	dbprintf(FALSE, p, "poll: select returned %d (errno %d)"
+		,result,p->last_error);
+
+	*rval = INT_TO_JSVAL(result);
 
 	return(JS_TRUE);
 }
