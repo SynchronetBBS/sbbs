@@ -901,12 +901,14 @@ function User_Work() {
 				if(((cmd[1].toUpperCase() ==
 				    OLines[ol].nick.toUpperCase()) &&
 				   (IRC_match(this.uprefix + "@" +
-				    this.hostname,OLines[ol].hostmask)) &&
-				   (cmd[2] == OLines[ol].password) &&
-				   !(OLines[ol].flags&OLINE_CHECK_SYSPASSWD))
-				||
-				   ((OLines[ol].flags&OLINE_CHECK_SYSPASSWD) &&
-				    system.check_syspass(cmd[2]) )
+				   this.hostname,OLines[ol].hostmask)) &&
+				   (
+				     (cmd[2] == OLines[ol].password) &&
+				     !(OLines[ol].flags&OLINE_CHECK_SYSPASSWD)
+				   ) || (
+				    (OLines[ol].flags&OLINE_CHECK_SYSPASSWD) &&
+				    system.check_syspass(cmd[2])
+				   )
 				) {
 					oper_success=true;
 					this.ircclass = OLines[ol].ircclass;
