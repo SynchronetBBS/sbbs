@@ -114,6 +114,8 @@ SMBEXPORT int 	SMBCALL smb_addcrc(smb_t* smb, ulong crc);
 SMBEXPORT int 	SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data);
 SMBEXPORT int 	SMBCALL smb_dfield(smbmsg_t* msg, ushort type, ulong length);
 SMBEXPORT void* SMBCALL smb_get_hfield(smbmsg_t* msg, ushort type, hfield_t* hfield);
+SMBEXPORT char* SMBCALL smb_hfieldtype(ushort type);
+SMBEXPORT char* SMBCALL smb_dfieldtype(ushort type);
 SMBEXPORT int 	SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg,int storage);
 SMBEXPORT int 	SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 	SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg);
