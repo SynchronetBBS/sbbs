@@ -1,5 +1,8 @@
-    <p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> :  <a class="navigation" href="/members/">Members</a> : <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</a> : %%sub:description%%
-    <a class="navigation" href="subinfo.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^">[?]</a> -&#062; <a class="navigation" href="post.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^&amp;post=new">Post New Message</a></p>
+<p class="navigation">
+    <a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/">Members</a> : 
+    <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</a> : %%sub:description%%
+    <a class="navigation" href="subinfo.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^">[?]</a> -&#062;
+    <a class="navigation" href="post.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^&amp;post=new">Post New Message</a></p>
 <form action="management.ssjs" method="post">
 <input type="hidden" name="msg_grp" value="^^group:number^^" />
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
