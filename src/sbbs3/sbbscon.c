@@ -1600,7 +1600,7 @@ int main(int argc, char** argv)
 	else								/* interactive */
 #endif
 		while(!terminated) {
-			if(!kbhit()) {
+			if(!isatty(fileno(stdin)) || !kbhit()) {
 				YIELD();
 				continue;
 			}
