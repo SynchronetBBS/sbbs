@@ -470,11 +470,13 @@ static int uifc_getmouse(struct uifc_mouse_event *mevent)
 			else
 				return(-1);
 		#endif
+
+		if(mevent->button==2)
+			return(ESC);
 		if(mevent->y==api->buttony) {
-			if((mevent->x>=api->exitstart
+			if(mevent->x>=api->exitstart
 					&& mevent->x<=api->exitend
-					&& mevent->button==1)
-					|| mevent->button==2) {
+					&& mevent->button==1) {
 				return(ESC);
 			}
 			if(mevent->x>=api->helpstart
