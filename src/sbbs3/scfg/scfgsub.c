@@ -1189,6 +1189,7 @@ If this option is blank, the default origin line is used.
 						strcpy(str,cfg.sub[i]->data_dir);
 					sprintf(opt[n++],"%-27.27s%.40s","Storage Directory",str);
 					sprintf(opt[n++],"%-27.27s%.40s","Semaphore File",cfg.sub[i]->post_sem);
+					sprintf(opt[n++],"%-27.27s%u","Pointer File Index",cfg.sub[i]->ptridx);
 					opt[n][0]=0;
 					uifc.savnum=2;
 					SETHELP(WHERE);
@@ -1309,7 +1310,7 @@ another drive or in another directory besides the default setting.
 								,cfg.sub[i]->data_dir,sizeof(cfg.sub[i]->data_dir)-1,K_EDIT);
 							break; 
 						case 3:
-SETHELP(WHERE);
+							SETHELP(WHERE);
 /*
 `Sub-board Semaphore File:`
 
@@ -1319,6 +1320,22 @@ external program or event whenever a message is posted in this sub-board.
 							uifc.input(WIN_MID|WIN_SAV,0,17,"Semaphore File"
 								,cfg.sub[i]->post_sem,sizeof(cfg.sub[i]->post_sem)-1,K_EDIT);
 							break; 
+						case 4:
+							SETHELP(WHERE);
+/*
+`Sub-board Pointer Index:`
+
+You should normally have no reason to modify this value. If you get
+crossed-up or duplicate ptridx values, then you may want to adjust
+this value, but do so with great care and trepidation.
+*/
+							sprintf(str,"%u",cfg.sub[i]->ptridx);
+							if(uifc.input(WIN_MID|WIN_SAV,0,17
+								,"Pointer File Index (Danger!)"
+								,str,5,K_EDIT|K_NUMBER)>=0)
+								cfg.sub[i]->ptridx=atoi(str);
+							break;
+
 					} 
 				}
 				break;
