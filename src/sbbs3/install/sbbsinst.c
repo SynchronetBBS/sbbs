@@ -298,7 +298,6 @@ int main(int argc, char **argv)
 
 	while(1) {
 		i=0;
-		sprintf(mopt[i++],"%-27.27s%s","List Revision",distlist_rev);
 		sprintf(mopt[i++],"%-27.27s%s","Distribution",distlist[dist]->version);
 		sprintf(mopt[i++],"%-27.27s%s","Server"
 			,(distlist[dist]->type==LOCAL_FILE?"Local Files":distlist[dist]->servers[server]->desc));
@@ -315,30 +314,31 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
+		sprintf(str,"Synchronet Installation (Distribution List %s)",distlist_rev);
 		uifc.helpbuf=	"`Synchronet Installation:`\n"
 						"\nToDo: Add help.";
 		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT|WIN_ORG,0,0,70,&main_dflt,0
 			,"Synchronet Installation",mopt)) {
-			case 1:
+			case 0:
 				i=choose_dist((char **)distlist);
 				if(i>=0)  {
 					server=0;
 					dist=i;
 				}
 				break;
-			case 2:
+			case 1:
 				if(distlist[dist]->type != LOCAL_FILE)  {
 					i=choose_server((char **)distlist[dist]->servers);
 					if(i>=0)
 						server=i;
 				}
 				break;
-			case 3:
+			case 2:
 				uifc.helpbuf=	"`System Type`\n"
 								"\nToDo: Add help.";
 				uifc.input(WIN_MID,0,0,"System Type",params.sys_desc,40,K_EDIT);
 				break;
-			case 4:
+			case 3:
 				uifc.helpbuf=	"`Install Path`\n"
 								"\n"
 								"\nPath to install the Synchronet BBS system into."
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
 								"\n	/home/bbs/sbbs";
 				uifc.input(WIN_MID,0,0,"",params.install_path,50,K_EDIT);
 				break;
-			case 5:
+			case 4:
 				strcpy(opt[0],"Borland");
 				strcpy(opt[1],"GNU");
 				opt[2][0]=0;
@@ -364,12 +364,12 @@ int main(int argc, char **argv)
 					params.usebcc=FALSE;
 				i=0;
 				break;
-			case 6:
+			case 5:
 				uifc.helpbuf=	"`Compiler Flags`\n"
 								"\nToDo: Add help.";
 				uifc.input(WIN_MID,0,0,"Additional Compiler Flags",params.cflags,40,K_EDIT);
 				break;
-			case 7:
+			case 6:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -384,7 +384,7 @@ int main(int argc, char **argv)
 					params.debug=FALSE;
 				i=0;
 				break;
-			case 8:
+			case 7:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -401,22 +401,22 @@ int main(int argc, char **argv)
 					params.symlink=FALSE;
 				i=0;
 				break;
-			case 9:
+			case 8:
 				uifc.helpbuf=	"`Make Command-line`\n"
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.make_cmdline,65,K_EDIT);
 				break;
-			case 10:
+			case 9:
 				uifc.helpbuf=	"`File Owner`\n"
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.sbbsuser,8,K_EDIT);
 				break;
-			case 11:
+			case 10:
 				uifc.helpbuf=	"`File Group`\n"
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.sbbsgroup,32,K_EDIT);
 				break;
-			case 12:
+			case 11:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -431,7 +431,7 @@ int main(int argc, char **argv)
 					params.useX=FALSE;
 				i=0;
 				break;
-			case 13:
+			case 12:
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
 				bail(0);
 				break;
