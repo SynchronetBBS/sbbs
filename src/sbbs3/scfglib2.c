@@ -962,7 +962,7 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 #endif
 
 /****************************************************************************/
-/* Read one line of up two 256 characters from the file pointed to by       */
+/* Read one line of up to 256 characters from the file pointed to by		*/
 /* 'stream' and put upto 'maxlen' number of character into 'outstr' and     */
 /* truncate spaces off end of 'outstr'.                                     */
 /****************************************************************************/
