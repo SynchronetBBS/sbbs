@@ -112,7 +112,7 @@ int uscrn(char *str)
 /**************************************************************************/
 /* General menu display function. see uifc.h for details                  */
 /**************************************************************************/
-int ulist(int mode, char left, int top, char width, int *cur, int *bar
+int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *title, char **option)
 {
 
