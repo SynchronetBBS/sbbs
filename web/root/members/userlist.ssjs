@@ -12,7 +12,6 @@ if(system.lastuser==undefined)	/* v3.10 */
 else							/* v3.11 */
 	lastuser=system.lastuser;
 var u = new User(1);
-template = new Object;
 template.users = new Array;
 template.title = system.name+ " - User List";
 
