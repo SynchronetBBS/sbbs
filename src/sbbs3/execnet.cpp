@@ -598,13 +598,21 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 			return(INVALID_SOCKET);
 		} 
 
+		SOCKADDR_IN ctrl_addr;
+		addr_len=sizeof(ctrl_addr);
+		if(getsockname(ctrl_sock, (struct sockaddr *)&ctrl_addr,&addr_len)!=0) {
+			csi->socket_error=ERROR_VALUE;
+			close_socket(data_sock);
+			return(INVALID_SOCKET);
+		} 
+
 		if(listen(data_sock, 1)!= 0) {
 			csi->socket_error=ERROR_VALUE;
 			close_socket(data_sock);
 			return(INVALID_SOCKET);
 		}
 
-		ip_addr.dw=ntohl(addr->sin_addr.s_addr);
+		ip_addr.dw=ntohl(ctrl_addr.sin_addr.s_addr);
 		port.w=ntohs(addr->sin_port);
 		sprintf(cmd,"PORT %u,%u,%u,%u,%hu,%hu"
 			,ip_addr.b[3]
