@@ -1152,13 +1152,11 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 {
 	char	addr[64];
 	char	tmp[128];
-	char*	tp;
 
 	while(*p && *p<=' ') p++;
 	if(*p=='<') p++;		/* Skip '<' */
 	SAFECOPY(addr,p);
-	tp=strchr(addr,'>');
-	if(tp!=NULL) *tp=0;
+	truncate(addr,">( ");
 
 	if(!trashcan(&scfg,addr,"email"))
 		return(TRUE);
@@ -1758,8 +1756,7 @@ static void smtp_thread(void* arg)
 				while(*p && *p<=' ') p++;
 				if(*p=='<')  {
 					p++;
-					tp=strrchr(p,'>');
-					if(tp) *tp=0;
+					truncate(p,">");
 					SAFECOPY(rcpt_name,p);
 				}
 				smb_hfield(&msg, RFC822TO, (ushort)strlen(p), p);
@@ -1770,8 +1767,7 @@ static void smtp_thread(void* arg)
 				while(*p && *p<=' ') p++;
 				if(*p=='<')  {
 					p++;
-					tp=strchr(p,'>');
-					if(tp) *tp=0;
+					truncate(p,">");
 				}
 				nettype=NET_INTERNET;
 				smb_hfield(&msg, REPLYTONETTYPE, nettype, &nettype);
@@ -1781,27 +1777,29 @@ static void smtp_thread(void* arg)
 			if(!strnicmp(buf, "FROM:", 5)) {
 				if(!chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr))
 					break;
-				p=strchr(buf+5,'<');
-				if(p) {
+
+				/* Get the sender's address */
+				if((p=strchr(buf+5,'<'))!=NULL)
 					p++;
-					tp=strchr(p,'>');
-					if(tp) *tp=0;
-					SAFECOPY(sender_addr,p);
-				} else {
+				else
 					p=buf+5;
-					while(*p && *p<=' ') p++;
-					SAFECOPY(sender_addr,p);
-				}
-			
+				while(*p && *p<=' ') p++;
+				SAFECOPY(sender_addr,p);
+				truncate(sender_addr,">( ");
+
+				/* Get the sender's "name" (if possible) */
 				p=buf+5;
 				while(*p && *p<=' ') p++;
-				if(*p=='"') { 
-					p++;
+				if((tp=strchr(p,'('))!=NULL) {			/* name in parenthesis? */
+					p=tp+1;
+					tp=strchr(p,')');
+				} else if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
+					p=tp+1;
 					tp=strchr(p,'"');
-				} else if(*p=='<') {
+				} else if(*p=='<') {					/* address in brackets? */
 					p++;
 					tp=strchr(p,'>');
-				} else
+				} else									/* name, then address in brackets */
 					tp=strchr(p,'<');
 				if(tp) *tp=0;
 				truncsp(p);
@@ -1968,8 +1966,7 @@ static void smtp_thread(void* arg)
 			else
 				p++;
 
-			tp=strchr(str,'>');		/* Truncate at '>' */
-			if(tp!=NULL) *tp=0;
+			truncate(str,"> ");
 
 			forward=FALSE;
 			no_forward=FALSE;
@@ -2085,8 +2082,7 @@ static void smtp_thread(void* arg)
 				*tp=0;	/* truncate at '@' */
 
 			while(*p && !isalnum(*p)) p++;	/* Skip '<' or '"' */
-			tp=strrchr(p,'"');	
-			if(tp!=NULL) *tp=0;	/* truncate at '"' */
+			truncate(p,"\"");	
 
 			p=alias(&scfg,p,name_alias_buf);
 			if(p==name_alias_buf) 
@@ -2239,15 +2235,10 @@ static void smtp_thread(void* arg)
 			else 
 				p++;
 			strcpy(sender_addr,p);
-			p=strchr(sender_addr,'>');
-			if(p!=NULL)
-				*p=0;
+			truncate(sender_addr,">");
 			/* get sender */
 			strcpy(sender,sender_addr);
-			p=strchr(sender,'@');
-			if(p!=NULL)
-				*p=0;
-			else
+			if(truncate(sender,"@")==NULL)
 				sender[0]=0;
 
 			sockprintf(socket, "354 send the mail data, end with <CRLF>.<CRLF>");
@@ -2541,14 +2532,8 @@ static void sendmail_thread(void* arg)
 					*p=0;
 					port=atoi(p+1);
 				}
-				sprintf(to,"%.*s",(int)sizeof(to)-1,(char*)msg.to_net.addr);
-				p=strrchr(to,'>');	/* Truncate '>' */
-				if(p!=NULL) *p=0;
-
-				/* truncate at first white-space char */
-				p=to;
-				while(*p && *p>' ') p++;
-				*p=0;
+				SAFECOPY(to,(char*)msg.to_net.addr);
+				truncate(to,"> ");
 
 				p=strrchr(to,'@');
 				if(p==NULL) {
@@ -2657,6 +2642,7 @@ static void sendmail_thread(void* arg)
 				strcpy(fromaddr,msg.from_net.addr);
 			else 
 				usermailaddr(&scfg,fromaddr,msg.from);
+			truncate(fromaddr," ");
 			if(fromaddr[0]=='<')
 				sockprintf(sock,"MAIL FROM: %s",fromaddr);
 			else
@@ -2667,15 +2653,12 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 			/* RCPT */
-			p=strrchr((char*)msg.to_net.addr,'<');
-			if(p==NULL)
-				p=(char*)msg.to_net.addr;
-			else
+			if((p=strrchr((char*)msg.to_net.addr,'<'))!=NULL)
 				p++;
+			else
+				p=(char*)msg.to_net.addr;
 			SAFECOPY(toaddr,p);
-			p=strchr(toaddr,'>');
-			if(p!=NULL)
-				*p=0;
+			truncate(toaddr,"> ");
 			sockprintf(sock,"RCPT TO: <%s>", toaddr);
 			if(!sockgetrsp(sock,"25", buf, sizeof(buf))) {
 				sprintf(err,"%s replied with '%s' instead of 25*",server,buf);
