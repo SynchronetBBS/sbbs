@@ -79,7 +79,21 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 	int		option;
 	int		value;
 	int		result=0;
+	LINGER	linger;
 
+	/* Set linger socket option ON by default */
+	linger.l_onoff=TRUE;
+	linger.l_linger=5;	/* seconds */
+
+	result = setsockopt(sock, SOL_SOCKET, SO_LINGER
+    	,(char *)&linger, sizeof(linger));
+
+	if(result != 0) {
+		sprintf(error,"%d (%d) setting LINGER socket options", result, ERROR_VALUE);
+		return(result);
+	}
+
+	/* Set user defined socket options */
 	sprintf(cfgfile,"%ssockopts.cfg",cfg->ctrl_dir);
 	if((fp=fopen(cfgfile,"r"))==NULL)
 		return(0);
