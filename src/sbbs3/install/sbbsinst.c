@@ -128,6 +128,7 @@ char revision[16];
 
 int  backup_level=5;
 BOOL keep_makefile=FALSE;
+BOOL ftp_distlist=TRUE;
 
 /*************/
 /* Constants */
@@ -156,7 +157,7 @@ void bail(int code)
 
 void allocfail(uint size)
 {
-    printf("\7Error allocating %u bytes of memory.\r\n",size);
+    printf("\7Error allocating %u bytes of memory.\n",size);
     bail(1);
 }
 
@@ -192,8 +193,8 @@ int main(int argc, char **argv)
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-    printf("\r\nSynchronet Installation %s-%s  Copyright 2003 "
-        "Rob Swindell\r\n",revision,PLATFORM_DESC);
+    printf("\nSynchronet Installation %s-%s  Copyright 2003 "
+        "Rob Swindell\n",revision,PLATFORM_DESC);
 
     memset(&uifc,0,sizeof(uifc));
 
@@ -218,6 +219,9 @@ int main(int argc, char **argv)
                 case 'E':
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
+				case 'F':
+					ftp_distlist=FALSE;
+					break;
 				case 'I':
 					uifc.mode|=UIFC_IBM;
 					break;
@@ -229,16 +233,17 @@ int main(int argc, char **argv)
                 default:
                     printf("\nusage: %s [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
-                        "-d  =  run in standard input/output/door mode\r\n"
-                        "-c  =  force color mode\r\n"
+						"-f  =  do not FTP distribution list\n"
+                        "-d  =  run in standard input/output/door mode\n"
+                        "-c  =  force color mode\n"
 #ifdef USE_CURSES
-                        "-e# =  set escape delay to #msec\r\n"
-						"-i  =  force IBM charset\r\n"
+                        "-e# =  set escape delay to #msec\n"
+						"-i  =  force IBM charset\n"
 #endif
 #if !defined(__unix__)
-                        "-v# =  set video mode to #\r\n"
+                        "-v# =  set video mode to #\n"
 #endif
-                        "-l# =  set screen lines to #\r\n"
+                        "-l# =  set screen lines to #\n"
 						,argv[0]
                         );
         			exit(0);
@@ -292,7 +297,7 @@ int main(int argc, char **argv)
 
 	sprintf(str,"Synchronet Installation %s-%s",revision,PLATFORM_DESC);
 	if(uifc.scrn(str)) {
-		printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
+		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
 
@@ -651,7 +656,7 @@ get_distlist(void)
 	int		s=0;
 	char*	p;
 	char*	tp;
-	ftp_FILE	*list;
+	ftp_FILE	*list=NULL;
 	char	sep[2]={'\t',0};
 	char	str[1024];
 
@@ -687,31 +692,33 @@ get_distlist(void)
 		strcpy(file[f++],str);
 	}
 
-	uifc.pop("Getting distributions");
-	if((list=ftpGetURL(DIST_LIST_URL1,ftp_user,ftp_pass,&ret1))==NULL
-			&& (list=ftpGetURL(DIST_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
-			&& (list=ftpGetURL(DIST_LIST_URL3,ftp_user,ftp_pass,&ret3))==NULL
-			&& (list=ftpGetURL(DIST_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL
-			&& (list=ftpGetURL(DIST_LIST_URL5,ftp_user,ftp_pass,&ret5))==NULL
-			&& r==0)  {
-		uifc.pop(NULL);
-		uifc.bail();
-		printf("Cannot get distribution list!\n"
-			"%s\n- %s\n"
-			"%s\n- %s\n"
-			"%s\n- %s\n"
-			"%s\n- %s\n"
-			"%s\n- %s\n"
-			,DIST_LIST_URL1,ftpErrString(ret1)
-			,DIST_LIST_URL2,ftpErrString(ret2)
-			,DIST_LIST_URL3,ftpErrString(ret3)
-			,DIST_LIST_URL4,ftpErrString(ret4)
-			,DIST_LIST_URL5,ftpErrString(ret5)
-			);
-		exit(EXIT_FAILURE);
+	if(ftp_distlist) {
+		uifc.pop("Getting distributions");
+		if((list=ftpGetURL(DIST_LIST_URL1,ftp_user,ftp_pass,&ret1))==NULL
+				&& (list=ftpGetURL(DIST_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
+				&& (list=ftpGetURL(DIST_LIST_URL3,ftp_user,ftp_pass,&ret3))==NULL
+				&& (list=ftpGetURL(DIST_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL
+				&& (list=ftpGetURL(DIST_LIST_URL5,ftp_user,ftp_pass,&ret5))==NULL
+				&& r==0)  {
+			uifc.pop(NULL);
+			uifc.bail();
+			printf("Cannot get distribution list!\n"
+				"%s\n- %s\n"
+				"%s\n- %s\n"
+				"%s\n- %s\n"
+				"%s\n- %s\n"
+				"%s\n- %s\n"
+				,DIST_LIST_URL1,ftpErrString(ret1)
+				,DIST_LIST_URL2,ftpErrString(ret2)
+				,DIST_LIST_URL3,ftpErrString(ret3)
+				,DIST_LIST_URL4,ftpErrString(ret4)
+				,DIST_LIST_URL5,ftpErrString(ret5)
+				);
+			exit(EXIT_FAILURE);
+		}
 	}
 
-	while((list->gets(in_line,sizeof(in_line),list))!=NULL)  {
+	while(list!=NULL && (list->gets(in_line,sizeof(in_line),list))!=NULL)  {
 		i=strlen(in_line);
 		while(i>0 && in_line[i]<=' ')
 			in_line[i--]=0;
