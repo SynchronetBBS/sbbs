@@ -106,6 +106,13 @@ static int *last_menu_bar=NULL;
 static int save_menu_cur=-1;
 static int save_menu_bar=-1;
 
+/* Internal Structs */
+struct uifc_mouse_event {
+	int	x;
+	int	y;
+	int	button;
+};
+
 static void reset_dynamic(void) {
 	last_menu_cur=NULL;
 	last_menu_bar=NULL;
@@ -203,11 +210,23 @@ int uifcini32(uifcapi_t* uifcapi)
 	if(api->esc_delay < 10)
 		api->esc_delay=25;
 
+#ifdef PDCURSES
+	if(mouse_set(BUTTON1_CLICKED|BUTTON3_CLICKED)==0)
+		api->mode|=UIFC_MOUSE;
+	else
+		mouse_set(0);
+#endif
 #ifdef __unix__
 	initciowrap(api->mode);
 	#ifdef NCURSES_VERSION_MAJOR
 		ESCDELAY=api->esc_delay;
+		
+		if(mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL)==BUTTON1_CLICKED|BUTTON3_CLICKED)
+			api->mode|=UIFC_MOUSE;
+		else
+			mousemask(0,NULL);
 	#endif
+	
 #else
     if(api->scrn_len!=0) {
         switch(api->scrn_len) {
@@ -318,10 +337,89 @@ int uifcini32(uifcapi_t* uifcapi)
     return(0);
 }
 
+static void hidemouse(void)
+{
+	if(api->mode&UIFC_MOUSE) {
+		#ifdef XCURSES
+			mouse_set(0);
+		#endif
+		#ifdef NCURSES_VERSION_MAJOR
+			mousemask(0,NULL);
+		#endif
+	}
+}
+
+static void showmouse(void)
+{
+	if(api->mode&UIFC_MOUSE) {
+		#ifdef XCURSES
+			mouse_set(BUTTON1_CLICKED|BUTTON3_CLICKED);
+		#endif
+		#ifdef NCURSES_VERSION_MAJOR
+			mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL);
+		#endif
+	}
+}
+
+static int uifc_getmouse(struct uifc_mouse_event *mevent)
+{
+	mevent->x=0;
+	mevent->y=0;
+	mevent->button=0;
+	if(api->mode&UIFC_MOUSE) {
+		#ifdef NCURSES_VERSION_MAJOR
+			MEVENT	mevnt;
+
+			if(getmouse(&mevnt)==OK) {
+				mevent->x=mevnt.x;
+				mevent->y=mevnt.y;
+				switch(mevnt.bstate) {
+					case BUTTON1_CLICKED:
+						mevent->button=1;
+						break;
+					case BUTTON3_CLICKED:
+						mevent->button=2;
+						break;
+				}
+			}
+			else
+				return(-1);
+		#endif
+		#ifdef XCURSES
+			if(getmouse()==0) {
+				mevent->x=Mouse_status.x;
+				mevent->y=Mouse_status.y;
+				if(Mouse_status.button[1]==BUTTON_CLICKED)
+					mevent->button=1;
+				if(Mouse_status.button[3]==BUTTON_CLICKED)
+					mevent->button=3;
+			}
+			else
+				return(-1);
+		#endif
+		if(mevent->y==api->buttony) {
+			if((mevent->x>=api->exitstart
+					&& mevent->x<=api->exitend
+					&& mevent->button==1)
+					|| mevent->button==2) {
+				return(ESC);
+			}
+			if(mevent->x>=api->helpstart
+					&& mevent->x<=api->helpend
+					&& mevent->button==1) {
+				return(KEY_F(1));
+			}
+		}
+		return(0);
+	}
+	return(-1);
+}
+
 void uifcbail(void)
 {
 	_setcursortype(_NORMALCURSOR);
 	textattr(LIGHTGRAY);
+	hidemouse();
 	clrscr();
 #ifdef __unix__
 	nl();
@@ -329,6 +427,9 @@ void uifcbail(void)
 	noraw();
 	refresh();
 	endwin();
+#ifdef XCURSES
+	XCursesExit();
+#endif
 #endif
 	FREE(blk_scrn);
 	FREE(tmp_buffer);
@@ -401,7 +502,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *title, char **option)
 {
 	uchar line[256],shade[256],*ptr,a,b,c,longopt
-		,search[MAX_OPLN],bline=0;
+		,search[MAX_OPLN],bline=0,*win;
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
 	int	is_redraw=0;
@@ -409,6 +510,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	uint s_left=SCRN_LEFT;
 	uint s_right=SCRN_RIGHT;
 	uint s_bottom=api->scrn_len-3;
+	uint title_len;
+	struct uifc_mouse_event mevnt;
+
+	hidemouse();
+
+	title_len=strlen(title);
 
 	if(mode&WIN_FAT) {
 		s_top=1;
@@ -432,8 +539,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	height=opts+4;
 	if(top+height>s_bottom)
 		height=(s_bottom)-top;
-	if(!width || width<strlen(title)+6) {
-		width=strlen(title)+6;
+	if(!width || width<title_len+6) {
+		width=title_len+6;
 		for(i=0;i<opts;i++) {
 			truncsp(option[i]);
 			if((j=strlen(option[i])+5)>width)
@@ -442,7 +549,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	}
 	if(width>(s_right+1)-s_left) {
 		width=(s_right+1)-s_left;
-		if(strlen(title)>(width-4)) {
+		if(title_len>(width-4)) {
 			*(title+width-7)='.';
 			*(title+width-6)='.';
 			*(title+width-5)='.';
@@ -530,7 +637,30 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		*(ptr++)='É';
 		*(ptr++)=hclr|(bclr<<4);
 
-		i=0;
+		if(api->mode&UIFC_MOUSE) {
+			*(ptr++)='[';
+			*(ptr++)=hclr|(bclr<<4);
+			/* *(ptr++)='þ'; */
+			*(ptr++)='X';
+			*(ptr++)=lclr|(bclr<<4);
+			*(ptr++)=']';
+			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)='[';
+			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)='?';
+			*(ptr++)=lclr|(bclr<<4);
+			*(ptr++)=']';
+			*(ptr++)=hclr|(bclr<<4);
+			i=6;
+			api->buttony=s_top+top-1;
+			api->exitstart=s_left+left;
+			api->exitend=s_left+left+2;
+			api->helpstart=s_left+left+3;
+			api->helpend=s_left+left+5;
+		}
+		else
+			i=0;
+
 		for(;i<width-2;i++) {
 			*(ptr++)='Í';
 			*(ptr++)=hclr|(bclr<<4);
@@ -539,7 +669,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		*(ptr++)=hclr|(bclr<<4);
 		*(ptr++)='º';
 		*(ptr++)=hclr|(bclr<<4);
-		a=strlen(title);
+		a=title_len;
 		b=(width-a-1)/2;
 		for(i=0;i<b;i++) {
 			*(ptr++)=' ';
@@ -709,6 +839,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	last_menu_bar=bar;
 	if(mode&WIN_IMM)
 		return(-2);
+
+	showmouse();
+
 	while(1) {
 	#if 0					/* debug */
 		gotoxy(30,1);
@@ -721,6 +854,120 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			i=inkey();
 			if(i==KEY_BACKSPACE || i==BS)
 				i=ESC;
+#ifdef KEY_MOUSE
+			if(i==KEY_MOUSE) {
+#else
+			if(0) {
+#endif
+				if((i=uifc_getmouse(&mevnt))==0) {
+					/* Clicked in menu */
+					if(mevnt.x>=s_left+left+2
+							&& mevnt.x<=s_left+left+width
+							&& mevnt.y>=s_top+top+2
+							&& mevnt.y<=(s_top+top+height)-3
+							&& mevnt.button==1) {
+
+						(*cur)=(mevnt.y)-(s_top+top+2);
+						if(bar)
+							(*bar)=(*cur);
+						y=top+3+((mevnt.y)-(s_top+top+2));
+
+						if(!opts || (mode&WIN_XTR && (*cur)==opts-1))
+							continue;
+
+						if(mode&WIN_ACT) {
+							hidemouse();
+							if((win=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+								cprintf("UIFC line %d: error allocating %u bytes."
+									,__LINE__,(width+3)*(height+2)*2);
+								return(-1);
+							}
+							gettext(s_left+left,s_top+top,s_left
+								+left+width-1,s_top+top+height-1,win);
+							for(i=1;i<(width*height*2);i+=2)
+								win[i]=lclr|(cclr<<4);
+							j=(((y-top)*width)*2)+7+((width-4)*2);
+							for(i=(((y-top)*width)*2)+7;i<j;i+=2)
+								win[i]=hclr|(cclr<<4);
+
+							puttext(s_left+left,s_top+top,s_left
+								+left+width-1,s_top+top+height-1,win);
+							free(win);
+							showmouse();
+						}
+						else if(mode&WIN_SAV) {
+							hidemouse();
+							puttext(sav[api->savnum].left,sav[api->savnum].top
+								,sav[api->savnum].right,sav[api->savnum].bot
+								,sav[api->savnum].buf);
+							showmouse();
+							free(sav[api->savnum].buf);
+							api->savdepth--;
+						}
+						return(*cur);
+					}
+					/* Clicked Scroll Up */
+					if(mevnt.x==s_left+left
+							&& mevnt.y==s_top+top+2
+							&& mevnt.button==1) {
+						if(!opts)
+							continue;
+						*cur -= (height-5);
+						if(*cur<0)
+							*cur = 0;
+						if(bar)
+							*bar=0;
+						y=s_top+top;
+						gotoxy(s_left+left+1,s_top+top+3);
+						textattr(lclr|(bclr<<4));
+						if(*cur && opts>height-3)  /* Scroll mode */
+							putch(30);	   /* put the up arrow */
+						else
+							putch(' ');    /* delete the up arrow */
+						gotoxy(s_left+left+1,s_top+top+height-2);
+						if(opts > height-3 && *cur + height - 4 < opts)
+							putch(31);	   /* put the down arrow */
+						else
+							putch(' ');    /* delete the down arrow */
+						for(i=*cur,j=0;i<=*cur-5+height;i++,j++)
+							uprintf(s_left+left+3,s_top+top+3+j
+								,i==*cur ? lbclr
+									: lclr|(bclr<<4)
+								,"%-*.*s",width-4,width-4,option[i]);
+						continue;
+					}
+					/* Clicked Scroll Down */
+					if(mevnt.x=s_left+left
+							&& mevnt.y==(s_top+top+height)-3
+							&& mevnt.button==1) {
+						if(!opts)
+							continue;
+						*cur += (height-5);
+						if(*cur>opts-1)
+							*cur = opts-1;
+						if(bar)
+							*bar = height-5;
+						y=height-5+s_top+top;
+						gotoxy(s_left+left+1,s_top+top+3);
+						textattr(lclr|(bclr<<4));
+						if(*cur>height-5)  /* Scroll mode */
+							putch(30);	   /* put the up arrow */
+						else
+							putch(' ');    /* delete the up arrow */
+						gotoxy(s_left+left+1,s_top+top+height-2);
+						if(*cur < opts-1)
+							putch(31);	   /* put the down arrow */
+						else
+							putch(' ');    /* delete the down arrow */
+						for(i=*cur+5-height,j=0;i<=*cur;i++,j++)
+							uprintf(s_left+left+3,s_top+top+3+j
+								,i==*cur ? lbclr
+									: lclr|(bclr<<4)
+								,"%-*.*s",width-4,width-4,option[i]);
+						continue;
+					}
+				}
+			}
 			if(i>255) {
 				s=0;
 				switch(i) {
@@ -1235,8 +1482,29 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	in_win[i++]=hclr|(bclr<<4);
 	for(c=1;c<width-1;c++) {
 		in_win[i++]='Í';
-		in_win[i++]=hclr|(bclr<<4); 
+		in_win[i++]=hclr|(bclr<<4);
 	}
+	if(api->mode&UIFC_MOUSE && width>6) {
+		in_win[2]='[';
+		in_win[3]=hclr|(bclr<<4);
+		/* in_win[4]='þ'; */
+		in_win[4]='X';
+		in_win[5]=lclr|(bclr<<4);
+		in_win[6]=']';
+		in_win[7]=hclr|(bclr<<4);
+		in_win[8]='[';
+		in_win[9]=hclr|(bclr<<4);
+		in_win[10]='?';
+		in_win[11]=lclr|(bclr<<4);
+		in_win[12]=']';
+		in_win[13]=hclr|(bclr<<4);
+		api->buttony=SCRN_TOP+top-1;
+		api->exitstart=SCRN_LEFT+left;
+		api->exitend=SCRN_LEFT+left+2;
+		api->helpstart=SCRN_LEFT+left+3;
+		api->helpend=SCRN_LEFT+left+5;
+	}
+
 	in_win[i++]='»';
 	in_win[i++]=hclr|(bclr<<4);
 	in_win[i++]='º';
@@ -1345,6 +1613,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	int     i,j,k,f=0;	/* i=offset, j=length */
 	BOOL	gotdecimal=FALSE;
 	int	soffset=0;
+	struct uifc_mouse_event	mevnt;
 
 	if((str=(uchar *)malloc(max+1))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
@@ -1378,11 +1647,27 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		}
 #endif
 		f=inkey();
+#ifdef KEY_MOUSE
+		if(f==KEY_MOUSE) {
+#else
+		if(0) {
+#endif
+			if((f=uifc_getmouse(&mevnt))==0) {
+				if(mevnt.x>=left-1
+						&& mevnt.x<=left+width-1
+						&& mevnt.button==1) {
+					i=mevnt.x-left+soffset+1;
+					if(i>j)
+						i=j;
+				}
+			}
+		}
 
 		if(f == CR 
 				|| (f >= 0xff && f != KEY_DC) 
 				|| (f == '\t' && mode&K_TABEXIT) 
-				|| (f == '%' && mode&K_SCANNING))
+				|| (f == '%' && mode&K_SCANNING)
+				|| f==0)
 		{
 			getstrupd(left, top, width, str, i, &soffset);
 		}
@@ -1405,8 +1690,24 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		{
 			if(f)
 				ch=f;
-			else
+			else {
 				ch=inkey();
+#ifdef KEY_MOUSE
+				if(ch==KEY_MOUSE) {
+#else
+				if(0) {
+#endif
+					if((ch=uifc_getmouse(&mevnt))==0) {
+						if(mevnt.x>=left-1
+								&& mevnt.x<=left+width-1
+								&& mevnt.button==1) {
+							i=mevnt.x-left+soffset+1;
+							if(i>j)
+								i=j;
+						}
+					}
+				}
+			}
 			if(lastkey != NULL)
 				*lastkey=ch;
 			f=0;
@@ -1783,13 +2084,19 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	int	 lines;
 	int pad=1;
 	int	is_redraw=0;
+	uint title_len=0;
+	struct uifc_mouse_event	mevnt;
 
 	_setcursortype(_NOCURSOR);
+	
+	title_len=strlen(title);
+	if(api->mode&UIFC_MOUSE)
+		title_len+=6;
 
 	if(top+height>api->scrn_len-3)
 		height=(api->scrn_len-3)-top;
-	if(!width || width<strlen(title)+6)
-		width=strlen(title)+6;
+	if(!width || width<title_len+6)
+		width=title_len+6;
 	if(width>api->scrn_width)
 		width=api->scrn_width;
 	if(mode&WIN_L2R)
@@ -1829,11 +2136,21 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		for(i=1;i<width*height*2;i+=2)
 			tmp_buffer2[i]=(hclr|(bclr<<4));
 	    tmp_buffer2[0]='Ú';
-		j=strlen(title);
+		j=title_len;
 		if(j>width-6)
 			*(title+width-6)=0;
 		for(i=2;i<((width-6)/2-(j/2))*2;i+=2)
    		      tmp_buffer2[i]='Ä';
+		if(api->mode&UIFC_MOUSE && !mode&WIN_DYN) {
+			tmp_buffer2[2]='[';
+			tmp_buffer2[3]=hclr|(bclr<<4);
+			/* tmp_buffer2[4]='þ'; */
+			tmp_buffer2[4]='X';
+			tmp_buffer2[5]=lclr|(bclr<<4);
+			tmp_buffer2[6]=']';
+			tmp_buffer2[7]=hclr|(bclr<<4);
+			/* Buttons are ignored - leave it this way to not confuse stuff from help() */
+		}
 	    tmp_buffer2[i]='´'; i+=4;
 		for(p=title;*p;p++) {
 			tmp_buffer2[i]=*p;
@@ -1912,8 +2229,10 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	memset(textbuf,' ',(width-2-pad-pad)*lines*2);
 	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
 		textbuf[i]=(hclr|(bclr<<4));
+
 	i=0;
-	for(j=0;j<len;j++,i+=2) {
+
+	for(j=i;j<len;j++,i+=2) {
 		if(hbuf[j]==LF) {
 			i+=2;
 			while(i%((width-2-pad-pad)*2)) i++; i-=2; 
@@ -1930,7 +2249,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			textbuf[i]=hbuf[j];
 			textbuf[i+1]=inverse ? (bclr|(cclr<<4))
 				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); 
-		} 
+		}
 	}
 	i=0;
 	p=textbuf;
@@ -1941,7 +2260,43 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		while(i==0) {
 			puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
 			if(kbwait()) {
-				switch(inkey()) {
+				j=inkey();
+#ifdef KEY_MOUSE
+				if(j==KEY_MOUSE) {
+#else
+				if(0) {
+#endif
+					/* Ignores return value to avoid hitting help/exit hotspots */
+					if(uifc_getmouse(&mevnt)>=0) {
+						/* Clicked Scroll Up */
+						if(mevnt.x>=left+pad-1
+								&& mevnt.x<=left+pad+width-4
+								&& mevnt.y>=top+pad
+								&& mevnt.y<=top+pad+(height/2)-3
+								&& mevnt.button==1) {
+							p = p-((width-4)*2*(height-5));
+							if(p<textbuf)
+								p=textbuf;
+							continue;
+						}
+						/* Clicked Scroll Down */
+						if(mevnt.x>=left+pad-1
+								&& mevnt.x<=left+pad+width-1
+								&& mevnt.y<=top+pad+height-3
+								&& mevnt.y>=top+pad+height-(height/2+1)-3
+								&& mevnt.button==1) {
+							p=p+(width-4)*2*(height-5);
+							if(p > textbuf+(lines-height+1)*(width-4)*2)
+								p=textbuf+(lines-height+1)*(width-4)*2;
+							if(p<textbuf)
+								p=textbuf;
+							continue;
+						}
+						i=1;
+					}
+					continue;
+				}
+				switch(j) {
 					case KEY_HOME:	/* home */
 						p=textbuf;
 						break;
@@ -2046,7 +2401,7 @@ static void help(void)
 					fseek(fp,l,SEEK_SET);
 					fread(hbuf,HELPBUF_SIZE,1,fp);
 					fclose(fp); 
-				} 
+				}
 			}
 		}
 	}

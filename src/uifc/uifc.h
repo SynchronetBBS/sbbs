@@ -304,6 +304,14 @@ typedef struct {
     char    helpdatfile[MAX_PATH+1];
     char    helpixbfile[MAX_PATH+1];
 /****************************************************************************/
+/* Help and exit button locations for current/last window					*/
+/****************************************************************************/
+	int		buttony;
+	int		exitstart;
+	int		exitend;
+	int		helpstart;
+	int		helpend;
+/****************************************************************************/
 /* Exit/uninitialize function.												*/
 /****************************************************************************/
     void    (*bail) (void);
