@@ -534,35 +534,24 @@ Remember: The %! command line specifier is an abreviation for your
 							,cfg.node_daily,50,K_EDIT);
 						break;
 					case 6:
-						strcpy(str,cfg.ctrl_dir);
-						if(strstr(str,"/ctrl/")!=NULL)
-							*strstr(str,"/ctrl/")=0;
 SETHELP(WHERE);
 /*
-Control Directory Parent:
+Control Directory:
 
 Your control directory contains important configuration and data files
 that ALL nodes share. This directory MUST NOT be located on a RAM disk
 or other volatile media.
 
-This option allows you to change the parent of your control directory.
+This option allows you to change the location of your control directory.
 The \CTRL\ suffix (sub-directory) cannot be changed or removed.
 */
-						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Control Dir Parent"
-							,str,50,K_EDIT)>0) {
-							if(str[strlen(str)-1]!='\\'
-                                && str[strlen(str)-1]!='/')
-								strcat(str,"/");
-							strcat(str,"ctrl/");
-							strcpy(cfg.ctrl_dir,str); }
+						uifc.input(WIN_MID|WIN_SAV,0,9,"Control Directory"
+							,cfg.ctrl_dir,50,K_EDIT);
 						break;
 					case 7:
-						strcpy(str,cfg.text_dir);
-						if(strstr(str,"/text/")!=NULL)
-							*strstr(str,"/text/")=0;
 SETHELP(WHERE);
 /*
-Text Directory Parent:
+Text Directory:
 
 Your text directory contains read-only text files. Synchronet never
 writes to any files in this directory so it CAN be placed on a RAM
@@ -570,18 +559,15 @@ disk or other volatile media. This directory contains the system's menus
 and other important text files, so be sure the files and directories are
 moved to this directory if you decide to change it.
 
-This option allows you to change the parent of your control directory.
+This option allows you to change the location of your control directory.
 The \TEXT\ suffix (sub-directory) cannot be changed or removed.
 */
-						if(uifc.input(WIN_MID|WIN_SAV,0,10,"Text Dir Parent"
-							,str,50,K_EDIT)>0) {
-							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
-								strcat(str,"/");
-							strcat(str,"text/");
-							strcpy(cfg.text_dir,str); }
-						break; } }
+						uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
+							,cfg.text_dir,50,K_EDIT);
+						break; 
+				} 
+			}
 			break;
-						} }
+		} 
+	}
 }
-
-
