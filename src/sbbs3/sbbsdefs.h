@@ -70,6 +70,13 @@
 #define JAVASCRIPT_YIELD_FREQUENCY	10000
 #define JAVASCRIPT_GC_FREQUENCY		100 
 
+typedef struct {
+	ulong	counter;
+	ulong	limit;
+	ulong	yield_freq;
+	ulong	gc_freq;
+} js_branch_t;
+
 #ifndef __FLAT__
 #define __FLAT__	/* 32-bit "flat" memory model */
 #endif

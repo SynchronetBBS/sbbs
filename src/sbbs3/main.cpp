@@ -604,19 +604,6 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
-static JSBool
-js_reset_loop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	sbbs_t*		sbbs;
-
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	sbbs->js_loop=0;
-	*rval = JSVAL_VOID;
-	return(JS_TRUE);
-}
-
 static jsMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("value [,value]")
 	,JSDOCSTR("add a line of text to the server and/or system log, "
@@ -642,9 +629,6 @@ static jsMethodSpec js_global_functions[] = {
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
 	,JSDOCSTR("displays a Yes/No prompt and returns <i>true</i> or <i>false</i> "
 		"based on users confirmation (ala client-side JS)")
-	},
-	{"reset_loop",		js_reset_loop,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("reset internal loop counter, defeating infinite loop detection mechanism")
 	},
     {0}
 };
@@ -716,7 +700,10 @@ bool sbbs_t::js_init()
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(false);
 
-	js_loop = 0;	/* loop counter */
+	js_branch.limit = JAVASCRIPT_BRANCH_LIMIT;
+	js_branch.gc_freq = JAVASCRIPT_GC_FREQUENCY;
+	js_branch.yield_freq = JAVASCRIPT_YIELD_FREQUENCY;
+	js_branch.counter = 0;	/* loop counter */
 
 	bool success=false;
 
@@ -737,6 +724,10 @@ bool sbbs_t::js_init()
 
 		/* System Object */
 		if(js_CreateSystemObject(js_cx, js_glob, &cfg, uptime, startup->host_name)==NULL)
+			break;
+
+		/* Branch Object */
+		if(js_CreateBranchObject(js_cx, js_glob, &js_branch)==NULL)
 			break;
 
 		/* Client Object */

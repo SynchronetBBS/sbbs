@@ -44,13 +44,10 @@
 JSRuntime*	js_runtime;
 JSContext*	js_cx;
 JSObject*	js_glob;
-ulong		js_loop=0;
+js_branch_t	branch;
 scfg_t		scfg;
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
 ulong		js_context_stack=JAVASCRIPT_CONTEXT_STACK;
-ulong		js_branch_limit=JAVASCRIPT_BRANCH_LIMIT;
-ulong		js_yield_frequency=JAVASCRIPT_YIELD_FREQUENCY;
-ulong		js_gc_frequency=JAVASCRIPT_GC_FREQUENCY;
 FILE*		confp;
 FILE*		errfp;
 char		revision[16];
@@ -241,14 +238,6 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
-static JSBool
-js_reset_loop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	js_loop=0;
-	*rval = JSVAL_VOID;
-	return(JS_TRUE);
-}
-
 static jsMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1},
     {"write",           js_write,           0},
@@ -258,7 +247,6 @@ static jsMethodSpec js_global_functions[] = {
 	{"alert",			js_alert,			1},
 	{"prompt",			js_prompt,			1},
 	{"confirm",			js_confirm,			1},
-	{"reset_loop",		js_reset_loop,		0},
     {0}
 };
 
@@ -298,27 +286,19 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static JSBool
 js_BranchCallback(JSContext *cx, JSScript *script)
 {
-	js_loop++;
+	branch.counter++;
 
-#if 0 
-	/* Terminated? */
-	if(sbbs->terminated) {
-		JS_ReportError(cx,"Terminated");
-		sbbs->js_loop=0;
-		return(JS_FALSE);
-	}
-#endif
 	/* Infinite loop? */
-	if(js_branch_limit && js_loop>js_branch_limit) {
-		JS_ReportError(cx,"Infinite loop (%lu branches) detected",js_loop);
-		js_loop=0;
+	if(branch.limit && branch.counter > branch.limit) {
+		JS_ReportError(cx,"Infinite loop (%lu branches) detected",branch.counter);
+		branch.counter=0;
 		return(JS_FALSE);
 	}
 	/* Give up timeslices every once in a while */
-	if(js_yield_frequency && !(js_loop%js_yield_frequency))
+	if(branch.yield_freq && (branch.counter%branch.yield_freq)==0)
 		YIELD();
 
-	if(js_gc_frequency && !(js_loop%js_gc_frequency))
+	if(branch.gc_freq && (branch.counter%branch.gc_freq)==0)
 		JS_MaybeGC(cx);
 
     return(JS_TRUE);
@@ -372,6 +352,10 @@ static BOOL js_init(char** environ)
 
 	/* Global Object */
 	if((js_glob=js_CreateGlobalObject(js_cx, &scfg, js_global_functions))==NULL)
+		return(FALSE);
+
+	/* Branch Object */
+	if(js_CreateBranchObject(js_cx, js_glob, &branch)==NULL)
 		return(FALSE);
 
 	/* System Object */
@@ -484,6 +468,10 @@ int main(int argc, char **argv, char** environ)
 	confp=stdout;
 	errfp=stderr;
 
+	branch.limit=JAVASCRIPT_BRANCH_LIMIT;
+	branch.yield_freq=JAVASCRIPT_YIELD_FREQUENCY;
+	branch.gc_freq=JAVASCRIPT_GC_FREQUENCY;
+
 	sscanf("$Revision$", "%*s %s", revision);
 
 	p=getenv("SBBSCTRL");
@@ -507,13 +495,13 @@ int main(int argc, char **argv, char** environ)
 					js_context_stack=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'b':
-					js_branch_limit=strtoul(argv[++argn],NULL,0);
+					branch.limit=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'y':
-					js_yield_frequency=strtoul(argv[++argn],NULL,0);
+					branch.yield_freq=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'g':
-					js_gc_frequency=strtoul(argv[++argn],NULL,0);
+					branch.gc_freq=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'e':
 					errfp=confp;

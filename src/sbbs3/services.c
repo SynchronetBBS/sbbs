@@ -104,7 +104,7 @@ typedef struct {
 	user_t			user;
 	client_t*		client;
 	service_t*		service;
-	ulong			js_loop;
+	js_branch_t		branch;
 	/* Initial UDP datagram */
 	BYTE*			udp_buf;
 	int				udp_len;
@@ -445,19 +445,6 @@ js_logout(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-static JSBool
-js_reset_loop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	service_client_t* client;
-
-	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	client->js_loop=0;
-	*rval = JSVAL_VOID;
-	return(JS_TRUE);
-}
-
 static JSFunctionSpec js_global_functions[] = {
 	{"write",			js_write,			0},		/* write to client socket */
 	{"writeln",			js_writeln,			0},		/* write line to client socket */
@@ -465,7 +452,6 @@ static JSFunctionSpec js_global_functions[] = {
 	{"log",				js_log,				0},		/* Log a string */
  	{"login",			js_login,			2},		/* Login specified username and password */
 	{"logout",			js_logout,			0},		/* Logout user */
-	{"reset_loop",		js_reset_loop,		0},		/* reset loop counter */
     {0}
 };
 
@@ -587,6 +573,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
 			break;
 
+		/* Branch Object */
+		if(js_CreateBranchObject(js_cx, js_glob, &service_client->branch)==NULL)
+			break;
+
 		/* Client Object */
 		if(service_client->client!=NULL)
 			if(js_CreateClientObject(js_cx, js_glob, "client", service_client->client, sock)==NULL)
@@ -664,25 +654,25 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	client->js_loop++;
+	client->branch.counter++;
 
 	/* Terminated? */ 
 	if(terminated) {
 		JS_ReportError(cx,"Terminated");
-		client->js_loop=0;
+		client->branch.counter=0;
 		return(JS_FALSE);
 	}
 	/* Infinite loop? */
-	if(client->js_loop>JAVASCRIPT_BRANCH_LIMIT) {
-		JS_ReportError(cx,"Infinite loop (%lu branches) detected",client->js_loop);
-		client->js_loop=0;
+	if(client->branch.limit && client->branch.counter > client->branch.limit) {
+		JS_ReportError(cx,"Infinite loop (%lu branches) detected",client->branch.counter);
+		client->branch.counter=0;
 		return(JS_FALSE);
 	}
 	/* Give up timeslices every once in a while */
-	if(!(client->js_loop%JAVASCRIPT_YIELD_FREQUENCY))
+	if(client->branch.yield_freq && (client->branch.counter%client->branch.yield_freq)==0)
 		YIELD();
 
-	if(!(client->js_loop%JAVASCRIPT_GC_FREQUENCY))
+	if(client->branch.gc_freq && (client->branch.counter%client->branch.gc_freq)==0)
 		JS_MaybeGC(cx);
 
     return(JS_TRUE);
@@ -928,6 +918,9 @@ static void js_static_service_thread(void* arg)
 	memset(&service_client,0,sizeof(service_client));
 	service_client.socket = service->socket;
 	service_client.service = service;
+	service_client.branch.limit = JAVASCRIPT_BRANCH_LIMIT;
+	service_client.branch.gc_freq = JAVASCRIPT_GC_FREQUENCY;
+	service_client.branch.yield_freq = JAVASCRIPT_YIELD_FREQUENCY;
 
 	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL
 		|| (js_cx=js_initcx(js_runtime,service->socket,&service_client,&js_glob))==NULL) {
@@ -1726,6 +1719,9 @@ void DLLCALL services_thread(void* arg)
 				client->service->clients++;		/* this should be mutually exclusive */
 				client->udp_buf=udp_buf;
 				client->udp_len=udp_len;
+				client->branch.limit=JAVASCRIPT_BRANCH_LIMIT;
+				client->branch.gc_freq=JAVASCRIPT_GC_FREQUENCY;
+				client->branch.yield_freq=JAVASCRIPT_YIELD_FREQUENCY;
 
 				udp_buf = NULL;
 

@@ -532,25 +532,25 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	sbbs->js_loop++;
+	sbbs->js_branch.counter++;
 
 	/* Terminated? */
 	if(sbbs->terminated) {
 		JS_ReportError(cx,"Terminated");
-		sbbs->js_loop=0;
+		sbbs->js_branch.counter=0;
 		return(JS_FALSE);
 	}
 	/* Infinite loop? */
-	if(sbbs->js_loop>JAVASCRIPT_BRANCH_LIMIT) {
-		JS_ReportError(cx,"Infinite loop (%lu branches) detected",sbbs->js_loop);
-		sbbs->js_loop=0;
+	if(sbbs->js_branch.limit && sbbs->js_branch.counter>sbbs->js_branch.limit) {
+		JS_ReportError(cx,"Infinite loop (%lu branches) detected",sbbs->js_branch.counter);
+		sbbs->js_branch.counter=0;
 		return(JS_FALSE);
 	}
 	/* Give up timeslices every once in a while */
-	if(!(sbbs->js_loop%JAVASCRIPT_YIELD_FREQUENCY))
+	if(sbbs->js_branch.yield_freq && (sbbs->js_branch.counter%sbbs->js_branch.yield_freq)==0)
 		YIELD();
 
-	if(!(sbbs->js_loop%JAVASCRIPT_GC_FREQUENCY))
+	if(sbbs->js_branch.gc_freq && (sbbs->js_branch.counter%sbbs->js_branch.gc_freq)==0)
 		JS_MaybeGC(cx);
 
     return(JS_TRUE);
@@ -636,7 +636,7 @@ long sbbs_t::js_execfile(const char *cmd)
 		return(-1);
 	}
 
-	js_loop=0;	// Reset loop counter
+	js_branch.counter=0;	// Reset loop counter
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
