@@ -617,6 +617,7 @@ int main(int argc, char** argv)
 {
 	int		i;
 	char	ch;
+	char*	p;
 	char*	arg;
 	char*	ctrl_dir;
 	BOOL	quit=FALSE;
