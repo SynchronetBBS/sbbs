@@ -228,7 +228,7 @@ switch(field[0]) {
 			writeln("From : " + hdr.from);
 			writeln("Date : " + system.timestr(hdr.when_written_time));
 			writeln("");
-			body=msgbase.get_msg_body(false,Number(field[2]),true)
+			body=msgbase.get_msg_body(false,Number(field[2]),true,true)
 			writeln(body);
 			msgbase.close();
 			break;
