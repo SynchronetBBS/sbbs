@@ -9,6 +9,8 @@
 
 cioapi_t	cio_api;
 
+static int ungotch;
+
 void initciowrap(int mode)
 {
 #ifndef NO_X
@@ -66,6 +68,46 @@ void initciowrap(int mode)
 	cio_api.highvideo=curs_highvideo;
 	cio_api.lowvideo=curs_lowvideo;
 	cio_api.normvideo=curs_normvideo;
+}
+
+int kbhit(void)
+{
+	if(ungotch)
+		return(1);
+	return(cio_api.kbhit());
+}
+
+int getch(void)
+{
+	int ch;
+
+	if(ungotch) {
+		ch=ungotch;
+		ungotch=0;
+		return(ch);
+	}
+	return(cio_api.getch());
+}
+
+int getche(void)
+{
+	int ch;
+
+	if(ungotch) {
+		ch=ungotch;
+		ungotch=0;
+		putch(ch);
+		return(ch);
+	}
+	return(cio_api.getche());
+}
+
+int ungetch(int ch)
+{
+	if(ungotch)
+		return(EOF);
+	ungotch=ch;
+	return(ch);
 }
 
 int movetext(int sx, int sy, int ex, int ey, int dx, int dy)
