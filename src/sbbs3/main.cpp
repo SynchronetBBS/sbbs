@@ -1575,6 +1575,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	online = 0;
 	outchar_esc = 0;
 	nodemsg_inside = 0;	/* allows single nest */
+	hotkey_inside = 0;	/* allows single nest */
 	nodesync_inside = false;
 	errorlog_inside = false;
 	errormsg_inside = false;
