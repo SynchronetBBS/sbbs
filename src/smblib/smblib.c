@@ -166,7 +166,6 @@ void SMBCALL smb_close(smb_t* smb)
 		smb_unlocksmbhdr(smb);		   /* In case it's been locked */
 		smb_close_fp(&smb->shd_fp); 
 	}
-	smb_close_fp(&smb->sid_fp);
 	smb_close_fp(&smb->sdt_fp);
 	smb_close_fp(&smb->sid_fp);
 	smb_close_fp(&smb->sda_fp);
