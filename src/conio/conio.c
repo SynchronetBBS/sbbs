@@ -11,8 +11,8 @@
  #undef getch
 #endif
 
-#ifdef INCLUDE_OPENDOOR
- #include "od_cio.h"
+#ifdef USE_ANSI
+ #include "ansi_cio.h"
 #endif
 
 cioapi_t	cio_api;
@@ -50,25 +50,24 @@ void initciowrap(int mode)
 		fprintf(stderr,"X init failed\n");
  #endif /* NO_X */
 #endif /* !(_WIN32) */
-
-#ifdef INCLUDE_OPENDOOR
-		OD_initciowrap(mode);
-		cio_api.mode=OPENDOOR_MODE;
-		cio_api.puttext=OD_puttext;
-		cio_api.gettext=OD_gettext;
-		cio_api.textattr=OD_textattr;
-		cio_api.kbhit=OD_kbhit;
-		cio_api.delay=OD_delay;
-		cio_api.wherey=OD_wherey;
-		cio_api.wherex=OD_wherex;
-		cio_api.putch=OD_putch;
-		cio_api.gotoxy=OD_gotoxy;
-		cio_api.gettextinfo=OD_gettextinfo;
-		cio_api.setcursortype=OD_setcursortype;
-		cio_api.getch=OD_getch;
-		cio_api.getche=OD_getche;
-		cio_api.beep=OD_beep;
-		cio_api.textmode=OD_textmode;
+#ifdef USE_ANSI
+		ansi_initciowrap(mode);
+		cio_api.mode=ANSI_MODE;
+		cio_api.puttext=ansi_puttext;
+		cio_api.gettext=ansi_gettext;
+		cio_api.textattr=ansi_textattr;
+		cio_api.kbhit=ansi_kbhit;
+		cio_api.delay=ansi_delay;
+		cio_api.wherey=ansi_wherey;
+		cio_api.wherex=ansi_wherex;
+		cio_api.putch=ansi_putch;
+		cio_api.gotoxy=ansi_gotoxy;
+		cio_api.gettextinfo=ansi_gettextinfo;
+		cio_api.setcursortype=ansi_setcursortype;
+		cio_api.getch=ansi_getch;
+		cio_api.getche=ansi_getche;
+		cio_api.beep=ansi_beep;
+		cio_api.textmode=ansi_textmode;
 #else
  #ifndef _WIN32
 		curs_initciowrap(mode);
@@ -89,7 +88,7 @@ void initciowrap(int mode)
 		cio_api.beep=beep;
 		cio_api.textmode=curs_textmode;
  #endif /* !(_WIN32) */
-#endif
+#endif /* ANSI */
 #ifndef _WIN32
  #ifndef NO_X
 	}

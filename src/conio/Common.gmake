@@ -3,12 +3,10 @@
 # XCURSES			= Use XCurses
 # NEED_CIOWRAP		= Set flage suitable for using with ciowrap lib
 # NO_X				= Don't use X version of ciowrap
-# INCLUDE_OPENDOOR	= Include support for OpenDoors library
 
 # You really should set this first.
 CONIO_SRC	?=	$(XPDEV)../conio/
 UIFC_SRC	?=	$(XPDEV)../uifc/
-OPENDOOR_SRC	?=	$(XPDEV)../odoors/
 
 CIOWRAP_CFLAGS	+=	-I$(CONIO_SRC)
 # ciowrap stuff
@@ -20,11 +18,11 @@ ifndef NO_X
 else
  CIOWRAP_CFLAGS	+=	-DNO_X
 endif
-#ifdef INCLUDE_OPENDOOR
- CIOWRAP_OBJS	+=	$(LIBODIR)/od_cio.o
- CIOWRAP_CFLAGS	+=	-I$(OPENDOOR_SRC) -DINCLUDE_OPENDOOR
- CIOWRAP_LDFLAGS	+=	-L$(OPENDOOR_SRC) -lODoors
-#endif
+ifdef USE_ANSI
+ CIOWRAP_CFLAGS	+=	-DUSE_ANSI
+ CIOWRAP_LDFLAGS	+=	-pthread
+ CIOWRAP_OBJS	+=	$(LIBODIR)/ansi_cio.o $(LIBODIR)/threadwrap.o
+endif
 CIOWRAP_OBJS	+=	$(LIBODIR)/curs_cio.o $(LIBODIR)/conio.o
 CIOWRAP_CFLAGS	+=	-I$(UIFC_SRC)
 

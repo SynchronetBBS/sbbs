@@ -59,7 +59,7 @@ enum
 {
 	 X_MODE
 	,CURSES_MODE
-	,OPENDOOR_MODE
+	,ANSI_MODE
 };
 
 struct text_info {
