@@ -97,10 +97,14 @@ write("checking: "+last_offset+"<BR>");
 
 function get_msg_offset(number)
 {
-	for(last_offset=0; (hdr=msgbase.get_msg_header(true,last_offset)) != null;last_offset++) {
+	var idx;
+	var last_offset
+
+	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
 		if((idx=msgbase.get_msg_index(true,last_offset))==null)
 			continue;
-		return(idx.number);
+		if(idx.number==number)
+			return(last_offset);
 	}
 	return(undefined);
 }
