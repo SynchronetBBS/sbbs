@@ -88,14 +88,13 @@ static char* helpfile=0;
 static uint  helpline=0;
 static char  blk_scrn[MAX_BFLN];
 static win_t sav[MAX_BUFS];
-static uint  max_opts=MAX_OPTS;
 static uifcapi_t* api;
 
 /* Prototypes */
 static int   uprintf(int x, int y, unsigned char attr, char *fmt,...);
 static void  bottomline(int line);
 static char  *utimestr(time_t *intime);
-static void  help();
+static void  help(void);
 static int   ugetstr(int left, int top, char *outstr, int max, long mode, int *lastkey);
 static void  timedisplay(void);
 
@@ -130,7 +129,7 @@ static void reset_dynamic(void) {
 /* Returns 0 on success.													*/
 /****************************************************************************/
 
-int kbwait() {
+int kbwait(void) {
 	int timeout=0;
 	while(timeout++<500) {
 		if(kbhit)
@@ -359,10 +358,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
 	int	is_redraw=0;
-	int s_top=SCRN_TOP;
-	int	s_left=SCRN_LEFT;
-	int	s_right=SCRN_RIGHT;
-	int	s_bottom=api->scrn_len-3;
+	uint s_top=SCRN_TOP;
+	uint s_left=SCRN_LEFT;
+	uint s_right=SCRN_RIGHT;
+	uint s_bottom=api->scrn_len-3;
 
 	if(mode&WIN_FAT) {
 		s_top=1;
@@ -372,17 +371,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	}
 	if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1)
 		putch(7);
-	i=0;
 	if(mode&WIN_INS) bline|=BL_INS;
 	if(mode&WIN_DEL) bline|=BL_DEL;
 	if(mode&WIN_GET) bline|=BL_GET;
 	if(mode&WIN_PUT) bline|=BL_PUT;
 	bottomline(bline);
-	while(opts<max_opts && opts<MAX_OPTS)
+	while(opts<MAX_OPTS)
 		if(option[opts][0]==0)
 			break;
 		else opts++;
-	if(mode&WIN_XTR && opts<max_opts && opts<MAX_OPTS)
+	if(mode&WIN_XTR && opts<MAX_OPTS)
 		opts++;
 	height=opts+4;
 	if(top+height>s_bottom)
@@ -579,7 +577,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				*(ptr++)=hclr|(bclr<<4); 
 			}
 			*(ptr++)='¼';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr)=hclr|(bclr<<4);	/* Not incremented to shut ot BCC */
 			puttext(s_left+left,s_top+top,s_left+left+width-1
 				,s_top+top+height-1,win);
 			if(bar)
@@ -1174,7 +1172,6 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	if(plen) {
 		in_win[i++]=':';
 		in_win[i++]=lclr|(bclr<<4);
-		c++; 
 	}
 
 	for(c=0;c<max+2;c++) {
@@ -1191,7 +1188,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		in_win[i++]=hclr|(bclr<<4); 
 	}
 	in_win[i++]='¼';
-	in_win[i++]=hclr|(bclr<<4);
+	in_win[i]=hclr|(bclr<<4);	/* I is not incremented to shut up BCC */
 	puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
 		,SCRN_TOP+top+height-1,in_win);
 
@@ -1679,7 +1676,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	char *buf;
 	char *textbuf;
     char *p;
-	uint i,j,k,len;
+	int i,j,k,len;
 	int	 lines;
 	int pad=1;
 	int	is_redraw=0;
@@ -1794,7 +1791,6 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	}
 	len=strlen(hbuf);
 
-	i=0;
 	lines=1;		/* The first one is free */
 	k=0;
 	for(j=0;j<len;j++) {
@@ -1907,11 +1903,11 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 /************************************************************/
 /* Help (F1) key function. Uses helpbuf as the help input.	*/
 /************************************************************/
-void help()
+static void help(void)
 {
 	char hbuf[HELPBUF_SIZE],str[256];
     char *p;
-	unsigned short line;
+	unsigned int line;
 	long l;
 	FILE *fp;
 
