@@ -233,17 +233,17 @@ typedef DWORD tODMilliSec;
 /* Editor text formats. */
 typedef enum
 {
-   FORMAT_PARAGRAPH_BREAKS,
-   FORMAT_LINE_BREAKS,
-   FORMAT_FTSC_MESSAGE,
-   FORMAT_NO_WORDWRAP,
+    FORMAT_PARAGRAPH_BREAKS
+   ,FORMAT_LINE_BREAKS
+   ,FORMAT_FTSC_MESSAGE
+   ,FORMAT_NO_WORDWRAP
 } tODEditTextFormat;
 
 /* Menu callback function return values. */
 typedef enum
 {
-   EDIT_MENU_DO_NOTHING,
-   EDIT_MENU_EXIT_EDITOR,
+    EDIT_MENU_DO_NOTHING
+   ,EDIT_MENU_EXIT_EDITOR
 } tODEditMenuResult;
 
 /* Editor flags. */
@@ -274,8 +274,8 @@ typedef struct
 /* Input event types. */
 typedef enum
 {
-   EVENT_CHARACTER,
-   EVENT_EXTENDED_KEY,
+    EVENT_CHARACTER
+   ,EVENT_EXTENDED_KEY
 } tODInputEventType;
 
 /* Extended key codes. */
