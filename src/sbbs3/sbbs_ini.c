@@ -107,12 +107,6 @@ void sbbs_read_ini(
 	}
 
 	host_name=iniReadString(fp,section,"HostName",nulstr);
-	if(*host_name) {
-		SAFECOPY(bbs->host_name,host_name);
-		SAFECOPY(ftp->host_name,host_name);
-		SAFECOPY(mail->host_name,host_name);
-		SAFECOPY(services->host_name,host_name);
-	}
 																		
 	/***********************************************************************/
 	section = "BBS";
@@ -147,6 +141,9 @@ void sbbs_read_ini(
 	default_term="pc3";
 #endif
 
+	SAFECOPY(bbs->host_name
+		,iniReadString(fp,section,"HostName",host_name));
+
 	SAFECOPY(bbs->xtrn_term
 		,iniReadString(fp,section,"ExternalTerm",default_term));
 
@@ -177,6 +174,9 @@ void sbbs_read_ini(
 		=iniReadShortInt(fp,section,"QwkTimeout",600);		/* seconds */
 	ftp->js_max_bytes
 		=iniReadInteger(fp,section,"JavaScriptMaxBytes",0);
+
+	SAFECOPY(ftp->host_name
+		,iniReadString(fp,section,"HostName",host_name));
 
 	SAFECOPY(ftp->index_file_name
 		,iniReadString(fp,section,"IndexFileName","00index"));
@@ -223,6 +223,9 @@ void sbbs_read_ini(
 	mail->max_recipients
 		=iniReadShortInt(fp,section,"MaxRecipients",100);
 
+	SAFECOPY(mail->host_name
+		,iniReadString(fp,section,"HostName",host_name));
+
 	SAFECOPY(mail->relay_server
 		,iniReadString(fp,section,"RelayServer",mail->relay_server));
 	SAFECOPY(mail->dns_server
@@ -258,6 +261,9 @@ void sbbs_read_ini(
 
 	services->js_max_bytes
 		=iniReadInteger(fp,section,"JavaScriptMaxBytes",0);
+
+	SAFECOPY(services->host_name
+		,iniReadString(fp,section,"HostName",host_name));
 
 	SAFECOPY(services->cfg_file
 		,iniReadString(fp,section,"ConfigFile",nulstr));
