@@ -78,6 +78,7 @@ typedef struct {
     char    ctrl_dir[128];
     char	root_dir[128];
     char	error_dir[128];
+    char	cgi_temp_dir[128];
     char	reserved_path7[128];
     char	reserved_path6[128];
     char	reserved_path5[128];

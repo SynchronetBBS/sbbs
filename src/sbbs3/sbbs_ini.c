@@ -113,6 +113,7 @@ void sbbs_read_ini(
 {
 	const char*	section;
 	const char* default_term;
+	const char*	default_cgi_temp;
 	char*		ctrl_dir;
 	char*		host_name;
 
@@ -315,6 +316,15 @@ void sbbs_read_ini(
 		,iniReadString(fp,section,"RootDirectory","../html"));
 	SAFECOPY(web->error_dir
 		,iniReadString(fp,section,"ErrorDirectory","../html/error"));
+
+#ifdef __unix__
+	default_cgi_temp = "/tmp";
+#else
+	if((default_cgi_temp = getenv("TEMP")) == NULL)
+		default_cgi_temp = "";
+#endif
+	SAFECOPY(web->cgi_temp_dir
+		,iniReadString(fp,section,"CGITempDirectory",default_cgi_temp));
 
 	web->options
 		=iniReadBitField(fp,section,"Options",web_options
