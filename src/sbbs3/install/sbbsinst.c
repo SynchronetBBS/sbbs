@@ -406,8 +406,7 @@ endif
 		fprintf(makefile,"\t$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc \\\n");
 		fprintf(makefile,"\t$(SBBSDIR)/src/xpdev $(SBBSDIR)/src/mozilla \\\n");
 	}
-	fprintf(makefile,"\n");
-	fprintf(makefile,"\t$(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/%s.%s\n\n",platform,build);
+	fprintf(makefile,"\t$(SBBSDIR)/lib/mozilla/js/%s.%s\n",platform,build);
 	fprintf(makefile,"\tgmake -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)\n");
 
 	/* what's this doing *here* ? */
