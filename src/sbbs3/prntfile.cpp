@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -48,7 +48,7 @@ void sbbs_t::printfile(char *str, long mode)
 	char* p;
 	int file;
 	BOOL wip=FALSE,rip=FALSE,html=FALSE;
-	long length,savcon=console;
+	long l,length,savcon=console;
 	FILE *stream;
 
 	p=strrchr(str,'.');
@@ -88,16 +88,25 @@ void sbbs_t::printfile(char *str, long mode)
 
 	if(mode&P_OPENCLOSE) {
 		length=filelength(file);
+		if(length<0) {
+			close(file);
+			errormsg(WHERE,ERR_CHK,str,length);
+			return;
+		}
 		if((buf=(char*)MALLOC(length+1L))==NULL) {
 			close(file);
-			console=savcon;
 			errormsg(WHERE,ERR_ALLOC,str,length+1L);
 			return; 
 		}
-		buf[lread(file,buf,length)]=0;
+		l=lread(file,buf,length);
 		fclose(stream);
-		putmsg(buf,mode);
-		FREE((char *)buf); 
+		if(l!=length)
+			errormsg(WHERE,ERR_READ,str,length);
+		else {
+			buf[l]=0;
+			putmsg(buf,mode);
+		}
+		FREE(buf); 
 	}
 	else {
 		putmsg_fp(stream,filelength(file),mode);
@@ -114,9 +123,10 @@ void sbbs_t::printfile(char *str, long mode)
 
 void sbbs_t::printtail(char *str, int lines, long mode)
 {
-	char HUGE16 *buf,HUGE16 *p;
-	int file,cur=0;
-	ulong length,l;
+	char*	buf;
+	char*	p;
+	int		file,cur=0;
+	long	length,l;
 
 	if(mode&P_NOABORT) {
 		if(online==ON_REMOTE) {
@@ -136,31 +146,40 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 		return; 
 	}
 	length=filelength(file);
+	if(length<0) {
+		close(file);
+		errormsg(WHERE,ERR_CHK,str,length);
+		return;
+	}
 	if((buf=(char*)MALLOC(length+1L))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1L);
 		return; 
 	}
 	l=lread(file,buf,length);
-	buf[l]=0;
 	close(file);
-	p=(buf+l)-1;
-	if(*p==LF) p--;
-	while(*p && p>buf) {
-		if(*p==LF)
-			cur++;
-		if(cur>=lines) {
-			p++;
-			break; 
+	if(l!=length)
+		errormsg(WHERE,ERR_READ,str,length);
+	else {
+		buf[l]=0;
+		p=(buf+l)-1;
+		if(*p==LF) p--;
+		while(*p && p>buf) {
+			if(*p==LF)
+				cur++;
+			if(cur>=lines) {
+				p++;
+				break; 
+			}
+			p--; 
 		}
-		p--; 
+		putmsg(p,mode);
 	}
-	putmsg(p,mode);
 	if(mode&P_NOABORT && online==ON_REMOTE) {
 		SYNC;
 		rioctl(IOSM|ABORT); 
 	}
-	FREE((char *)buf);
+	FREE(buf);
 }
 
 /****************************************************************************/
