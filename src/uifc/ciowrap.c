@@ -239,17 +239,18 @@ void wscroll(void)
 {
 	char *buf;
 	int os;
+	struct text_info ti;
 
-	gettextinfo(&cio_textinfo);
+	gettextinfo(&ti);
 	if(!_wscroll)
 		return;
-	movetext(cio_textinfo.winleft,cio_textinfo.wintop+1,cio_textinfo.winright,cio_textinfo.winbottom,cio_textinfo.winleft,cio_textinfo.wintop);
-	gotoxy(1,cio_textinfo.winbottom-cio_textinfo.winleft+1);
+	movetext(ti.winleft,ti.wintop+1,ti.winright,ti.winbottom,ti.winleft,ti.wintop);
+	gotoxy(1,ti.winbottom-ti.winleft+1);
 	os=_wscroll;
 	_wscroll=0;
-	cprintf("%*s",cio_textinfo.winright-cio_textinfo.winleft+1,"");
+	cprintf("%*s",ti.winright-ti.winleft+1,"");
 	_wscroll=os;
-	gotoxy(cio_textinfo.curx,cio_textinfo.cury);
+	gotoxy(ti.curx,ti.cury);
 }
 
 int wherex(void)
@@ -274,15 +275,16 @@ void gotoxy(int x, int y)
 {
 	int nx;
 	int ny;
+	struct text_info ti;
 
-	gettextinfo(&cio_textinfo);
+	gettextinfo(&ti);
 	if(		x<1
-			|| x > cio_textinfo.winright-cio_textinfo.winleft+1
+			|| x > ti.winright-ti.winleft+1
 			|| y < 1
-			|| x > cio_textinfo.winbottom-cio_textinfo.wintop+1)
+			|| x > ti.winbottom-ti.wintop+1)
 		return;
-	nx=x+cio_textinfo.winleft-1;
-	ny=y+cio_textinfo.wintop-1;
+	nx=x+ti.winleft-1;
+	ny=y+ti.wintop-1;
 	cio_api.gotoxy(nx,ny);
 }
 
@@ -329,54 +331,61 @@ void window(int sx, int sy, int ex, int ey)
 void clreol(void)
 {
 	int os;
+	struct text_info	ti;
 
-	gettextinfo(&cio_textinfo);
+	gettextinfo(&ti);
 	os=_wscroll;
 	_wscroll=0;
-	cprintf("%*s",cio_textinfo.winright-cio_textinfo.curx+1,"");
+	cprintf("%*s",ti.winright-ti.curx+1,"");
 	_wscroll=os;
-	gotoxy(cio_textinfo.curx,cio_textinfo.cury);
+	gotoxy(ti.curx,ti.cury);
 }
 
 void clrscr(void)
 {
 	char *buf;
 	int i;
-	gettextinfo(&cio_textinfo);
+	struct text_info ti;
 
-	buf=(char *)malloc(cio_textinfo.screenheight*cio_textinfo.screenwidth*2);
-	for(i=0;i<cio_textinfo.screenheight*cio_textinfo.screenwidth*2;) {
+	gettextinfo(&ti);
+
+	buf=(char *)malloc(ti.screenheight*ti.screenwidth*2);
+	for(i=0;i<ti.screenheight*ti.screenwidth*2;) {
 		buf[i++]=' ';
-		buf[i++]=cio_textinfo.attribute;
+		buf[i++]=ti.attribute;
 	}
-	puttext(1,1,cio_textinfo.screenwidth,cio_textinfo.screenheight,buf);
+	puttext(1,1,ti.screenwidth,ti.screenheight,buf);
 	free(buf);
 }
 
 void delline(void)
 {
-	gettextinfo(&cio_textinfo);
+	struct text_info ti;
 
-	movetext(cio_textinfo.winleft,cio_textinfo.cury+1,cio_textinfo.winright,cio_textinfo.winbottom,cio_textinfo.winleft,cio_textinfo.cury);
-	gotoxy(1,cio_textinfo.winbottom-cio_textinfo.wintop+1);
+	gettextinfo(&ti);
+
+	movetext(ti.winleft,ti.cury+1,ti.winright,ti.winbottom,ti.winleft,ti.cury);
+	gotoxy(1,ti.winbottom-ti.wintop+1);
 	clreol();
-	gotoxy(cio_textinfo.curx,cio_textinfo.cury);
+	gotoxy(ti.curx,ti.cury);
 }
 
 void insline(void)
 {
-	gettextinfo(&cio_textinfo);
+	struct text_info ti;
 
-	movetext(cio_textinfo.winleft,cio_textinfo.cury,cio_textinfo.winright,cio_textinfo.winbottom,cio_textinfo.winleft,cio_textinfo.cury+1);
-	gotoxy(1,cio_textinfo.cury);
+	gettextinfo(&ti);
+
+	movetext(ti.winleft,ti.cury,ti.winright,ti.winbottom,ti.winleft,ti.cury+1);
+	gotoxy(1,ti.cury);
 	clreol();
-	gotoxy(cio_textinfo.curx,cio_textinfo.cury);
+	gotoxy(ti.curx,ti.cury);
 }
 
 int cprintf(char *fmat, ...)
 {
     va_list argptr;
-	unsigned char	str[4097];
+	char	str[4097];
 	int		pos;
 	int		ret;
 
@@ -449,4 +458,3 @@ void normvideo(void)
 {
 	textattr(0x07);
 }
-
