@@ -16,8 +16,12 @@
 CC		=	gcc
 LD		=	ld
 XSDK		=	../sdk
-XPDEV		=	/src/xpdev
-SBBS_SRC	=	/src/sbbs3
+ifndef XPDEV
+ XPDEV		=	/src/xpdev
+endif
+ifndef SBBS_SRC
+ SBBS_SRC	=	/src/sbbs3
+endif
 
 ifndef os
  os              =       $(shell uname)
