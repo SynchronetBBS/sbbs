@@ -58,7 +58,6 @@ enum {
 	,SYS_PROP_LASTUSERON
 	,SYS_PROP_FREEDISKSPACE
 
-	,SYS_PROP_PLATFORM
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -119,9 +118,6 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(getfreediskspace(cfg->temp_dir));
 			break;
 
-		case SYS_PROP_PLATFORM:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, PLATFORM_DESC));
-			break;
 	}
 
 	return(TRUE);
@@ -165,7 +161,6 @@ static struct JSPropertySpec js_system_properties[] = {
 	{	"lastnode",	SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"pwdays",	SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"deldays",	SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"platform",	SYS_PROP_PLATFORM,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"freediskspace", SYS_PROP_FREEDISKSPACE,	SYSOBJ_FLAGS,	NULL,	NULL },
 	{0}
 };
@@ -324,9 +319,12 @@ static JSClass js_sysstats_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
+extern const char* beta_version;
 
 JSObject* DLLCALL js_CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent)
 {
+	char		str[256];
+	jsval		val;
 	JSObject*	sysobj;
 	JSObject*	statsobj;
 
@@ -337,6 +335,68 @@ JSObject* DLLCALL js_CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* pa
 
 	if(!JS_SetPrivate(cx, sysobj, cfg))	/* Store a pointer to scfg_t */
 		return(NULL);
+
+	/****************************/
+	/* static string properties */
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, VERSION));
+	if(!JS_SetProperty(cx, sysobj, "version", &val))
+		return(NULL);
+
+	sprintf(str,"%c",REVISION);
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if(!JS_SetProperty(cx, sysobj, "revision", &val))
+		return(NULL);
+
+	sprintf(str,"%s%c%s",VERSION,REVISION,beta_version);
+	truncsp(str);
+#if defined(_DEBUG)
+	strcat(str," Debug");
+#endif
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if(!JS_SetProperty(cx, sysobj, "full_version", &val))
+		return(NULL);
+
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, VERSION_NOTICE));
+	if(!JS_SetProperty(cx, sysobj, "version_notice", &val))
+		return(NULL);
+
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, PLATFORM_DESC));
+	if(!JS_SetProperty(cx, sysobj, "platform", &val))
+		return(NULL);
+
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, socklib_version(str)));
+	if(!JS_SetProperty(cx, sysobj, "socket_lib", &val))
+		return(NULL);
+
+	sprintf(str,"SMBLIB %s",smb_lib_ver());
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if(!JS_SetProperty(cx, sysobj, "msgbase_lib", &val))
+		return(NULL);
+
+	COMPILER_DESC(str);
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if(!JS_SetProperty(cx, sysobj, "compiled_with", &val))
+		return(NULL);
+
+	sprintf(str,"%s %.5s",__DATE__,__TIME__);
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if(!JS_SetProperty(cx, sysobj, "compiled_when", &val))
+		return(NULL);
+
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, COPYRIGHT_NOTICE));
+	if(!JS_SetProperty(cx, sysobj, "copyright", &val))
+		return(NULL);
+
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx
+			,(char *)JS_GetImplementationVersion()));
+	if(!JS_SetProperty(cx, sysobj, "js_version", &val))
+		return(NULL);
+
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,os_version(str)));
+	if(!JS_SetProperty(cx, sysobj, "os_version", &val))
+		return(NULL);
+
+	/***********************/
 
 	if(!JS_DefineProperties(cx, sysobj, js_system_properties))
 		return(NULL);
