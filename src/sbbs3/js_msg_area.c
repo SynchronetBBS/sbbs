@@ -59,19 +59,19 @@ static JSClass js_msg_area_class = {
 #ifdef _DEBUG
 static char* msg_area_prop_desc[] = {
 
-	 "sub-board internal code - <small>READ ONLY</small>"
-	,"sub-board name - <small>READ ONLY</small>"
-	,"sub-board description - <small>READ ONLY</small>"
-	,"sub-board QWK name - <small>READ ONLY</small>"
-	,"sub-board data storage location - <small>READ ONLY</small>"
-	,"FidoNet origin line - <small>READ ONLY</small>"
-	,"QWK Network tagline - <small>READ ONLY</small>"
-	,"toggle options (bitfield) - <small>READ ONLY</small>"
-	,"index into message scan configuration/pointer file - <small>READ ONLY</small>"
-	,"QWK conference number - <small>READ ONLY</small>"
-	,"configured maximum number of message CRCs to store (for dupe checking) - <small>READ ONLY</small>"
-	,"configured maximum number of messages before purging - <small>READ ONLY</small>"
-	,"configured maximum age (in days) of messages before expiration - <small>READ ONLY</small>"
+	 "sub-board internal code"
+	,"sub-board name"
+	,"sub-board description"
+	,"sub-board QWK name"
+	,"sub-board data storage location"
+	,"FidoNet origin line"
+	,"QWK Network tagline"
+	,"toggle options (bitfield)"
+	,"index into message scan configuration/pointer file"
+	,"QWK conference number"
+	,"configured maximum number of message CRCs to store (for dupe checking)"
+	,"configured maximum number of messages before purging"
+	,"configured maximum age (in days) of messages before expiration"
 	,NULL
 };
 #endif
@@ -109,13 +109,13 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, JSObject* subobj, sub_t* 
 	JS_DefineProperty(cx, subobj, "qwk_conf", INT_TO_JSVAL(sub->qwkconf)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "cfg_max_crcs", INT_TO_JSVAL(sub->maxcrcs)
+	JS_DefineProperty(cx, subobj, "max_crcs", INT_TO_JSVAL(sub->maxcrcs)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "cfg_max_msgs", INT_TO_JSVAL(sub->maxmsgs)
+	JS_DefineProperty(cx, subobj, "max_msgs", INT_TO_JSVAL(sub->maxmsgs)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "cfg_max_age", INT_TO_JSVAL(sub->maxage)
+	JS_DefineProperty(cx, subobj, "max_age", INT_TO_JSVAL(sub->maxage)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 #ifdef _DEBUG
