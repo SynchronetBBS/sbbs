@@ -113,6 +113,13 @@ enum {
 	,USER_PROP_NS_TIME	
 	,USER_PROP_PROT		
 	,USER_PROP_LOGONTIME
+	,USER_PROP_TIMEPERCALL
+	,USER_PROP_TIMEPERDAY
+	,USER_PROP_CALLSPERDAY
+	,USER_PROP_LINESPERMSG
+	,USER_PROP_EMAILPERDAY
+	,USER_PROP_POSTSPERDAY
+	,USER_PROP_FREECDTPERDAY
 };
 
 
@@ -326,6 +333,27 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case USER_PROP_LOGONTIME:
 			val=user.logontime;
+			break;
+		case USER_PROP_TIMEPERCALL:
+			val=p->cfg->level_timepercall[user.number];
+			break;
+		case USER_PROP_TIMEPERDAY:
+			val=p->cfg->level_timeperday[user.number];
+			break;
+		case USER_PROP_CALLSPERDAY:
+			val=p->cfg->level_callsperday[user.number];
+			break;
+		case USER_PROP_LINESPERMSG:
+			val=p->cfg->level_linespermsg[user.number];
+			break;
+		case USER_PROP_POSTSPERDAY:
+			val=p->cfg->level_postsperday[user.number];
+			break;
+		case USER_PROP_EMAILPERDAY:
+			val=p->cfg->level_emailperday[user.number];
+			break;
+		case USER_PROP_FREECDTPERDAY:
+			val=p->cfg->level_freecdtperday[user.number];
 			break;
 
 		default:	
@@ -646,6 +674,38 @@ static char* user_security_prop_desc[] = {
 };
 #endif
 
+#undef  USER_PROP_FLAGS
+#define USER_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
+
+/* user.limits: These should be READ ONLY by nature */
+static struct JSPropertySpec js_user_limits_properties[] = {
+/*		 name				,tinyid					,flags,				getter,	setter	*/
+
+	{	"time_per_logon"		,USER_PROP_TIMEPERCALL	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"time_per_day"			,USER_PROP_TIMEPERDAY	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"logons_per_day"		,USER_PROP_CALLSPERDAY	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"lines_per_message"		,USER_PROP_LINESPERMSG	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"email_per_day"			,USER_PROP_EMAILPERDAY	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"posts_per_day"			,USER_PROP_POSTSPERDAY	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"free_credits_per_day"	,USER_PROP_FREECDTPERDAY,USER_PROP_FLAGS,		NULL,NULL},
+	{0}
+};
+
+
+#ifdef _DEBUG
+static char* user_limits_prop_desc[] = {
+
+	 "time (in minutes) per logon"
+	,"time (in minutes) per day"
+	,"logons per day"
+	,"lines per message (post or email)"
+	,"email sent per day"
+	,"messages posted per day"
+	,"free credits given per day"
+	,NULL
+};
+#endif
+
 
 #undef  USER_PROP_FLAGS
 #define USER_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
@@ -855,6 +915,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 {
 	JSObject*	userobj;
 	JSObject*	statsobj;
+	JSObject*	limitsobj;
 	JSObject*	securityobj;
 	private_t*	p;
 	jsval		val;
@@ -906,6 +967,25 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	js_DescribeObject(cx,statsobj,"User statistics (all <small>READ ONLY</small>)");
 	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", user_stats_prop_desc, JSPROP_READONLY);
 #endif
+
+	/* user.limits */
+	limitsobj = JS_DefineObject(cx, userobj, "limits"
+		,&js_user_stats_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if(limitsobj==NULL) {
+		free(p);
+		return(NULL);
+	}
+
+	JS_SetPrivate(cx, limitsobj, p);
+
+	JS_DefineProperties(cx, limitsobj, js_user_limits_properties);
+
+#ifdef _DEBUG
+	js_DescribeObject(cx,limitsobj,"User limitations based on security level (all <small>READ ONLY</small>)");
+	js_CreateArrayOfStrings(cx, limitsobj, "_property_desc_list", user_limits_prop_desc, JSPROP_READONLY);
+#endif
+
 
 	/* user.security */
 	securityobj = JS_DefineObject(cx, userobj, "security"
