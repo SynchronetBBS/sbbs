@@ -75,5 +75,5 @@ $(ODIR):
 # Executable Build Rule
 $(WRAPTEST): $(ODIR)/wraptest.o $(OBJS)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) -o $@ $^
+	@$(CC) -o $@ $(LFLAGS) $^
 
