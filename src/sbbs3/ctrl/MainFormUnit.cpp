@@ -1465,6 +1465,12 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         SAFECOPY(mail_startup.default_user
             ,Registry->ReadString("MailDefaultUser").c_str());
 
+    if(Registry->ValueExists("MailDNSBlacklistFlag"))
+        SAFECOPY(mail_startup.dnsbl_flag
+            ,Registry->ReadString("MailDNSBlacklistFlag").c_str());
+    else
+		SAFECOPY(mail_startup.dnsbl_flag,"SPAM");
+
     if(Registry->ValueExists("MailDNSServer"))
         SAFECOPY(mail_startup.dns_server
             ,Registry->ReadString("MailDNSServer").c_str());
@@ -1829,6 +1835,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("MailPOP3Port",mail_startup.pop3_port);
 
     Registry->WriteString("MailDefaultUser",mail_startup.default_user);
+	Registry->WriteString("MailDNSBlacklistFlag",mail_startup.dnsbl_flag);
     
     Registry->WriteString("MailRelayServer",mail_startup.relay_server);
     Registry->WriteInteger("MailRelayPort",mail_startup.relay_port);
