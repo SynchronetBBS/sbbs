@@ -157,196 +157,7 @@ the level you've given the account.
 
 Be sure to give all node accounts sufficient access to read and write messages
 on the sub-boards networked between the node and your BBS.</pre>
-<h2><a name="JoiningDoveNet">[9.2] - Step-by-step
-Instructions for Joining DOVE-Net</a></h2>
-<pre>DOVE-Net is a message base network connecting numerous BBSs and users on
-those BBSs together through QWK and Fido network technologies. DOVE-Net
-consists of primarily Synchronet BBSs. This is due to the fact that the
-co-founders of DOVE-Net are also the developers of Synchronet BBS software.
-DOVE-Net is not limited to one specific BBS package and welcomes any QWK or
-Fido network compatible BBS to join as long as their software of choice does
-not interfere with the operation of the network in any way.
-
-For more information on DOVE-Net, download DOVE-NET.ZIP from the Digital
-Dynamics' support BBS.
-
-To join DOVE-Net:
-
-1.      Run SCFG (type SCFG from a NODE directory or hit 'C' at the Waiting For
-        Call screen).
-
-2.	Select &quot;Message Areas&quot; and hit ENTER. If a DOVE-Net message group is
-	already configured, hit ESC and skip to step 25.
-
-3.      Hit the END key to move the lightbar to the end of your group list.
-
-4.      Hit the INS key to add a new message group.
-
-5.      Enter &quot;DOVE-Net&quot; for both the long and short group names.
-
-6.      Hit ENTER on the new &quot;DOVE-Net&quot; message group.
-
-7.      Hit the END key to move the lightbar to the last option (&quot;Message
-        Sub-boards...&quot;) and hit ENTER.
-
-8.      Hit the INS key to add a sub-board.
-
-9.      Enter &quot;General&quot; for both the long and short names.
-
-10.     Enter &quot;DOVE-Net&quot; for the QWK name.
-
-11.     Enter &quot;DOVE-GEN&quot; for the internal code.
-
-12.     Hit the END key to move the lightbar to the bottom of the sub-board
-        listing.
-
-13.     Repeat steps 8 through 12 for the following sub-boards:
-
-        <b>Long and Short Name             QWK Name        Internal Code</b>
-        -------------------------       ----------      --------
-        Advertisements                  Ads             DOVE-ADS
-        Entertainment                   Entertain       DOVE-ENT
-        Debate                          Debate          DOVE-DEB
-        Hardware/Software Help          Technical       DOVE-HLP
-        Programming                     Program'n       DOVE-PRG
-	Synchronet Notices		SBBS Notes	SYNCNOTE
-	Synchronet Discussion		Synchronet	SYNCMAIN
-	Synchronet Sysops Only		SBBS Sysop	SYNC_SYS
-	Synchronet Programming		SBBS Prog	SYNCPROG
-	Synchronet Data 		Sync Data	SYNCDATA
-	Domain Product Info		Domain Q&amp;A	DOMAIN
-
-14.     Hit HOME then ENTER to edit the first sub-board in the list.
-
-15.     Hit END then ENTER to edit the sub-boards Network Options.
-
-16.     Hit 'Q' then ENTER to modify the &quot;QWK Networked&quot; option.
-
-17.     Hit 'Y' then ENTER to change this option to &quot;Yes&quot;.
-
-18.     Hit ESC to move back to the sub-board config option menu.
-
-19.     Hit the UP ARROW key then ENTER to modify the &quot;Toggle Options&quot;.
-
-20.	Hit HOME, ENTER, 'Y', then ENTER to set &quot;Allow Private Posts&quot; to &quot;Yes&quot;.
-
-21.	Hit 'Q', ENTER, 'Y', then ENTER to set &quot;Allow Message Quoting&quot; to
-        &quot;Yes&quot;.
-
-22.     Hit ESC three times till you're back at the &quot;DOVE-Net Group&quot; menu.
-
-23.     Hit UP ARROW, ENTER, 'Y', then ENTER to clone the options of the first
-        sub-board into the rest of the group.
-
-24.     Hit ESC twice and answer &quot;Yes&quot; to the &quot;Save Changes&quot; menu.
-
-25.	Hit 'W' to select &quot;Networks&quot; and hit ENTER.
-
-26.     Hit ENTER to select &quot;QWK Packet Networks&quot;.
-
-27.     Hit DOWN ARROW, then ENTER to edit your &quot;Default Tagline&quot;.
-
-28.     Enter the name and phone number of your BBS.
-
-29.     Hit UP ARROW, then ENTER to edit your &quot;Network Hubs...&quot;.
-
-30.     Hit INS to create a new hub entry.
-
-31.     Enter the QWK System ID of the hub BBS. If you are using Vertrauen for
-        your hub, enter &quot;VERT&quot;.</pre>
-<pre>32.     Now hit ENTER to edit the new hub. The window should look like this:
-	(replace YOURPASS with the password you want to use for your account)
-
-        Hub System ID           VERT (or whoever your hub is)
-        Pack Command Line       %!pkzip %f %s
-        Unpack Command Line     %!pkunzip -o %f %g %s
-	Call-out Command Line	*qnet VERT 1-714-529-9721 YOURPASS 100
-        Call-out Node           1
-        Call-out Days           Sun Mon Tue Wed Thu Fri Sat
-        Call-out Time           00:00
-        Networked Sub-boards...
-
-33.     Hit END, then ENTER to edit the configured &quot;Networked Sub-boards&quot;.
-
-34.     Hit INS to add sub-board.
-
-35.     Hit END, then ENTER to select the &quot;DOVE-Net&quot; group.
-
-36.     Hit ENTER with the &quot;General&quot; sub-board highlighted.
-
-37.	Enter &quot;2001&quot; for the Conference Number on Hub.
-
-38.     Select &quot;Leave in&quot; for the &quot;Ctrl-A&quot; menu.
-
-39.     Hit END to move the lightbar to the bottom of the sub-board list.
-
-40.     Repeat steps 34 through 39 for the following sub-boards:
-
-       <b> Name                            Conference Number</b>
-	-------------------------	----
-	General 			2001
-	Advertisements			2002
-	Entertainment			2003
-	Debate				2004
-	Hardware/Software Help		2005
-	Programming			2006
-	Synchronet Notices		2012 *
-	Synchronet Discussion		2007
-	Synchronet Sysops Only		2008 **
-	Synchronet Programming		2013
-	Synchronet Data 		2010 ***
-	Domain Product Info		2009
-
-       * Posting Requirements for the Synchronet Notices sub-board must be set
-         to 'REST Q'.
-
-      ** Access Requirements for the Synchronet Sysops Only sub-board must be
-	 set to 'LEVEL 90 OR REST Q'.
-
-     *** Access Requirements for the Synchronet Data sub-board must be set to
-	 'REST Q'.
-
-41.     Hit ESC four times and answer &quot;Yes&quot; to the &quot;Save Changes&quot; menu.
-
-42.     Hit ESC to go back to the main &quot;Configure&quot; menu.
-
-43.	Move the lightbar down to &quot;Message Options...&quot; and hit ENTER.
-
-44.	Set your &quot;BBS ID for QWK Packets&quot; to an abbreviation of your BBS name
-        (must start with an alphabetic character). Remember your QWK BBS ID;
-        you'll need it later.
-
-45.	Hit ESC twice and answer &quot;Yes&quot; to the &quot;Save Changes&quot; menu.
-
-46.	Now hit ESC to exit SCFG.
-
-47.	Call your hub system. Logon as NEW and enter your BBS QWK ID as your
-        user name and let your hub's sysop know that the account is for a
-        DOVE-Net node (usually in new user validation feedback). Make sure you
-        use the SAME password for the hub BBS that you entered into your
-        QNET.SLT file. Do not perform a QWK net call-out to this hub until
-        you are sure the sysop has made the necessary modifications to your
-        QWK node account or the script will not work correctly. DO NOT download
-        a QWK packet without the proper settings on your QWK node account. If
-        you don't immediately get a QWK: prompt when logging on to the hub,
-        your QWK node account has not yet been setup and you must wait until
-        it is properly configured on the hub BBS before sending or receiving
-        packets.
-
-48.	You will need to post a &quot;start-up&quot; message in each DOVE-Net sub-board
-	to guarantee that it is added to your new message scan on your DOVE-Net
-	host BBS. Post the message to &quot;SBBS&quot; with a title of &quot;CTRL-A KEEP&quot;
-	to tell the hub system to retain Ctrl-A codes in messages when creating
-	your QWK packets.
-
-*** End of DOVE-Net Step-by-step instructions ***
-
-It is important that you DO NOT call more than one DOVE-Net hub, unless you
-and the hub sysop are very experienced with QWK networking. It is also
-important that if you SWITCH hubs in the future, that you delete all the
-messages in the DOVE-Net sub-boards before your first call-out to the new
-hub BBS. Otherwise, you may flood the network with duplicate messages.</pre>
-<h2><a name="TransferringFilesThroughQWK">[9.3] - Transferring Files
+<h2><a name="TransferringFilesThroughQWK">[9.2] - Transferring Files
 Through QWK Network</a></h2>
 <pre>Synchronet allows the transferring of files between a QWK network node and hub
 with great simplicity. If you wish to send a file to a QWK network hub (your
@@ -370,7 +181,7 @@ The transferring of files can be made automated for other programs to share
 data over the network. One popular use for this is Online Games that support
 inter-BBS play. One such game is Barren Realms Elite (BRE), see the external
 programs section for more information on this.</pre>
-<h2><a name="PostLinkNetworking">[9.4] - PostLink Networking</a></h2>
+<h2><a name="PostLinkNetworking">[9.3] - PostLink Networking</a></h2>
 <pre>PostLink is a message networking program written by Kip Compton and available
 for purchase from Bonnie Anthony (see Contacts Appendix). It is a derivation
 from PCRelay software. RelayNet (AKA RIME), headed by Bonnie Anthony, ILink
@@ -422,7 +233,7 @@ more information on the Synchronet UTI Driver.
 
 Be sure to set the &quot;PostLink Networked&quot; Network Option to 'Yes' for each of
 your PostLink networked sub-boards.</pre>
-<h2><a name="FidoNetNetworking">[9.5] - FidoNet Networking</a>
+<h2><a name="FidoNetNetworking">[9.4] - FidoNet Networking</a>
 </h2>
 <pre>FidoNet is both a network technology (referred to as FTN) and an actual message
 network. The technology was developed specifically for FidoNet, but is used
@@ -462,8 +273,9 @@ Networks configuration in SCFG. EchoMail will be imported to and exported from
 the EchoMail path specified for that sub-board, or off the base EchoMail
 directory specified in SCFG Network options in a subdirectory named after the
 internal code of the sub-board.</pre>
-<h3><a name="FidoNetUsingSBBSECHOandInterMail">[9.5.1] - Step-by-Step
-instructions for setting up FidoNet using SBBSecho and InterMail</a>
+<h3><a name="FidoNetUsingSBBSECHOandInterMail">[9.4.1] - Step-by-Step
+instructions for setting up FidoNet using SBBSecho and InterMail</a>&nbsp;<b><i><font color="#FF0000">
+(v2 Only)</font></i></b>
 </h3>
 <pre>One of the most difficult tasks that the novice sysop will encounter is the
 setting up of FidoNet.	These instructions will take you step by step through
@@ -871,7 +683,7 @@ Example: &quot;CR:Hello&quot; or &quot;CR: Hello&quot;
 Becomes: &quot;Hello&quot; before it is sent out by Synchronet.</pre>
   </blockquote>
 </blockquote>
-<h2>    <a name="InternetNetworking">[9.6] - Internet Networking</a></h2>
+<h2>    <a name="InternetNetworking">[9.5] - Internet Networking</a></h2>
 <pre><img border="0" src="images/scfg_networks_internet.gif" width="572" height="331">
 
 <b>System Address:
@@ -895,7 +707,8 @@ Becomes: &quot;Hello&quot; before it is sent out by Synchronet.</pre>
 <b>Cost to Send NetMail:
 </b>	This is the cost (in credits) that a user will be charged when sending
 	Internet netmail.
-
+</pre>
+<pre><b><i><font color="#FF0000">(v2 Only)</font></i></b>
 In order for your BBS to support Internet networking (including such things as
 sending/receiving Internet netmail and newsgroups, FTP, Telnet, etc.) it is
 required that you obtain a third party program such as NetXpress or BBSNet.  It
