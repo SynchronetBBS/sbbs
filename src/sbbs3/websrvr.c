@@ -2919,35 +2919,37 @@ void http_logging_thread(void* arg)
 			lprintf(LOG_INFO,"%04d http logfile is now: %s",server_socket,filename);
 		}
 		if(logfile!=NULL) {
-			sprintf(sizestr,"%d",ld->size);
-			strftime(timestr,sizeof(timestr),"%d/%b/%Y:%H:%M:%S %z",&ld->completed);
-			while(lock(fileno(logfile),0,1) && !terminate_http_logging_thread) {
-				SLEEP(10);
+			if(ld->status) {
+				sprintf(sizestr,"%d",ld->size);
+				strftime(timestr,sizeof(timestr),"%d/%b/%Y:%H:%M:%S %z",&ld->completed);
+				while(lock(fileno(logfile),0,1) && !terminate_http_logging_thread) {
+					SLEEP(10);
+				}
+				fprintf(logfile,"%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
+						,ld->hostname?(ld->hostname[0]?ld->hostname:"-"):"-"
+						,ld->ident?(ld->ident[0]?ld->ident:"-"):"-"
+						,ld->user?(ld->user[0]?ld->user:"-"):"-"
+						,timestr
+						,ld->request?(ld->request[0]?ld->request:"-"):"-"
+						,ld->status
+						,ld->size?sizestr:"-"
+						,ld->referrer?(ld->referrer[0]?ld->referrer:"-"):"-"
+						,ld->agent?(ld->agent[0]?ld->agent:"-"):"-");
+				fflush(logfile);
+				unlock(fileno(logfile),0,1);
 			}
-			fprintf(logfile,"%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
-					,ld->hostname?(ld->hostname[0]?ld->hostname:"-"):"-"
-					,ld->ident?(ld->ident[0]?ld->ident:"-"):"-"
-					,ld->user?(ld->user[0]?ld->user:"-"):"-"
-					,timestr
-					,ld->request?(ld->request[0]?ld->request:"-"):"-"
-					,ld->status
-					,ld->size?sizestr:"-"
-					,ld->referrer?(ld->referrer[0]?ld->referrer:"-"):"-"
-					,ld->agent?(ld->agent[0]?ld->agent:"-"):"-");
-			fflush(logfile);
-			unlock(fileno(logfile),0,1);
-			FREE_AND_NULL(ld->hostname);
-			FREE_AND_NULL(ld->ident);
-			FREE_AND_NULL(ld->user);
-			FREE_AND_NULL(ld->request);
-			FREE_AND_NULL(ld->referrer);
-			FREE_AND_NULL(ld->agent);
-			FREE_AND_NULL(ld);
 		}
 		else {
 			logfile=fopen(filename,"ab");
 			lprintf(LOG_ERR,"%04d http logfile %s was not open!",server_socket,filename);
 		}
+		FREE_AND_NULL(ld->hostname);
+		FREE_AND_NULL(ld->ident);
+		FREE_AND_NULL(ld->user);
+		FREE_AND_NULL(ld->request);
+		FREE_AND_NULL(ld->referrer);
+		FREE_AND_NULL(ld->agent);
+		FREE_AND_NULL(ld);
 	}
 	if(logfile!=NULL) {
 		fclose(logfile);
