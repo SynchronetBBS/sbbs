@@ -119,7 +119,7 @@ void sbbs_t::logout()
 	#endif
 		sys_status&=~SS_SYSALERT;
 		if(cfg.sys_logout[0])		/* execute system logoff event */
-			external(cmdstr(cfg.sys_logout,nulstr,nulstr,NULL),EX_OUTL);	/* EX_CC */
+			external(cmdstr(cfg.sys_logout,nulstr,nulstr,NULL),EX_OUTL|EX_OFFLINE);
 		}
 
 	if(cfg.logout_mod[0])
