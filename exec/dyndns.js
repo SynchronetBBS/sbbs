@@ -4,19 +4,25 @@
 
 // $Id$
 
-// usage: ?dyndns <password>
+// usage: ?dyndns <password> [ip_address] [-mx address]
 
 const REVISION = "$Revision$".split(' ')[1];
 
 printf("Synchronet Dynamic DNS Client %s\r\n", REVISION);
 
-host_list=["vert.synchro.net", "rob.synchro.net", "bbs.synchro.net", "cvs.synchro.net"];
+host_list=["dyndns.synchro.net", "rob.synchro.net", "bbs.synchro.net", "cvs.synchro.net"];
 
 function writeln(str)
 {
 	sock.send(str + "\r\n");
 	print(str);
 }
+
+var mx_record;
+
+for(i=0;i<argc;i++)
+	if(argv[i].toLowerCase()=="-mx")
+		mx_record = argv[i+1];
 
 for(h in host_list) {
 	sock = new Socket();
@@ -44,6 +50,12 @@ for(h in host_list) {
 			case "ip?":
 				if(argv[1])
 					writeln(argv[1]);
+				else
+					writeln("");
+				break;
+			case "mx?":
+				if(mx_record)
+					writeln(mx_record);
 				else
 					writeln("");
 				break;
