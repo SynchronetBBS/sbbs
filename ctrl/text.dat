@@ -198,7 +198,7 @@
 "\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
 "\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
 "_\r\n\r\nyhFilespec: n"                            175 FileSpec
-"SY: "                                                  176 SysopPassword
+"SY: "                                                  176 SystemPassword
 "\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
 "\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
 "-gDirectories of h%-40.40s     "\                   179 DirLstHdr
