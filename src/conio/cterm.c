@@ -45,7 +45,7 @@
 struct cterminal cterm;
 
 /* const int tabs[11]={1,8,16,24,32,40,48,56,64,72,80}; */
-const int tabs[11]={9,17,25,33,41,49,57,65,73,80,80.1};
+const int cterm_tabs[11]={9,17,25,33,41,49,57,65,73,80,80.1};
 
 void play_music(void)
 {
@@ -333,8 +333,8 @@ void do_ansi(char *retbuf, int retsize)
 					break;
 				case 'Z':
 					for(j=10;j>=0;j--) {
-						if(tabs[j]<wherex()) {
-							gotoxy(tabs[j],wherey());
+						if(cterm_tabs[j]<wherex()) {
+							gotoxy(cterm_tabs[j],wherey());
 							break;
 						}
 					}
@@ -570,8 +570,8 @@ void ctputs(char *buf)
 				break;
 			case '\t':
 				for(i=0;i<10;i++) {
-					if(tabs[i]>cx) {
-						while(cx<tabs[i]) {
+					if(cterm_tabs[i]>cx) {
+						while(cx<cterm_tabs[i]) {
 							cx++;
 						}
 						break;
@@ -680,8 +680,8 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 							ctputs(prn);
 							prn[0]=0;
 							for(k=0;k<11;k++) {
-								if(tabs[k]>wherex()) {
-									gotoxy(tabs[k],wherey());
+								if(cterm_tabs[k]>wherex()) {
+									gotoxy(cterm_tabs[k],wherey());
 									break;
 								}
 							}
