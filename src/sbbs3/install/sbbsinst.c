@@ -89,7 +89,7 @@ struct {
 	char install_path[256];
 	BOOL usebcc;
 	char cflags[256];
-	BOOL release;
+	BOOL debug;
 	BOOL symlink;
 	BOOL cvs;
 	char cvstag[256];
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 	strcpy(params.install_path,"/usr/local/sbbs");
 	params.usebcc=FALSE;
 	strcpy(params.cflags,"");
-	params.release=TRUE;
+	params.debug=FALSE;
 	params.symlink=TRUE;
 	params.cvs=TRUE;
 	strcpy(params.cvstag,"HEAD");
@@ -289,7 +289,7 @@ while(1) {
 		sprintf(mopt[i++],"%-33.33s%s","Install Path",params.install_path);
 		sprintf(mopt[i++],"%-33.33s%s","Compiler",params.usebcc?"BCC":"GCC");
 		sprintf(mopt[i++],"%-33.33s%s","Compiler Flags",params.cflags);
-		sprintf(mopt[i++],"%-33.33s%s","Release Version",params.release?"Yes":"No");
+		sprintf(mopt[i++],"%-33.33s%s","Debug Build",params.debug?"Yes":"No");
 		sprintf(mopt[i++],"%-33.33s%s","Symlink Binaries",params.symlink?"Yes":"No");
 		sprintf(mopt[i++],"%-33.33s","Start Installation");
 		mopt[i][0]=0;
@@ -333,15 +333,15 @@ while(1) {
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				i=params.release?0:1;
-				uifc.helpbuf=	"`Build Release Version`\n"
+				i=params.debug?0:1;
+				uifc.helpbuf=	"`Debug Build`\n"
 								"\nToDo: Add help.";
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Build a release version",opt);
+					,"Build a debug version",opt);
 				if(!i)
-					params.release=TRUE;
+					params.debug=TRUE;
 				else if(i==1)
-					params.release=FALSE;
+					params.debug=FALSE;
 				i=0;
 				break;
 			case 4:
@@ -391,10 +391,10 @@ void install_sbbs(struct dist_t *release,struct server_ent_t *server)  {
 	int		fout,ret1,ret2;
 	ftp_FILE	*remote;
 
-	if(params.release)
-		putenv("RELEASE=1");
-	else
+	if(params.debug)
 		putenv("DEBUG=1");
+	else
+		putenv("RELEASE=1");
 	
 	if(params.symlink)
 		putenv("SYMLINK=1");
