@@ -136,6 +136,9 @@ int sbbs_t::atcodes(char *instr)
 			bputs(faddrtoa(cfg.faddr[0]));
 	}
 
+	else if(!strcmp(sp,"MAILADDR")) 
+		bputs(usermailaddr(&cfg, str, useron.zipcode));
+
 	else if(!strcmp(sp,"QWKID"))
 		bputs(cfg.sys_id);
 
