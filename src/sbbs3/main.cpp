@@ -268,19 +268,6 @@ DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* nam
 		,NULL,NULL,flags));
 }
 
-static JSClass js_method_class = {
-     "Method"				/* name			*/
-    ,0						/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,JS_PropertyStub		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
-};
-
 /* Convert from Synchronet-specific jsMethodSpec to JSAPI's JSFunctionSpec */
 
 JSBool
@@ -353,7 +340,7 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 		if(funcs[i].type==JSTYPE_ALIAS)
 			continue;
 
-		method = JS_NewObject(cx, &js_method_class, NULL, method_array);
+		method = JS_NewObject(cx, NULL, NULL, method_array);
 
 		if(method==NULL)
 			return(JS_FALSE);
