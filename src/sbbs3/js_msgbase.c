@@ -528,7 +528,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	/* USENET Fields */
 	if(msg.path!=NULL)
-		sprintf(path, "%s!%.*s", scfg->sys_inetaddr, sizeof(path)/2, msg.path);
+		sprintf(path, "%s!%.*s", scfg->sys_inetaddr, (int)sizeof(path)/2, msg.path);
 	else
 		sprintf(path, "%s!not-for-mail", scfg->sys_inetaddr);
 	JS_DefineProperty(cx, hdrobj, "path", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,path))
