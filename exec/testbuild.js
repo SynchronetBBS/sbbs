@@ -57,8 +57,12 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/uedit",		"gmake"]);
 }
 
+var body = "System: " + system.local_host_name + " - " + system.os_version + "\n\n";
+
 var file = new File("README.TXT");
 if(file.open("wt")) {
+	file.writeln(format("Synchronet-%s C/C++ Source Code Archive (%s)\n"
+		,system.platform, system.datestr()));
 	file.writeln("This archive contains a successful " + system.platform + " build");
 	file.writeln("of the following Synchronet projects as of " + system.timestr());
 	file.writeln("using the command-lines shown:");
@@ -68,7 +72,16 @@ if(file.open("wt")) {
 			file.printf("%-40s %s", builds[i][0], builds[i][1]);
 	}
 	file.writeln();
+	file.write(body);
 	file.writeln("For more details, goto http://synchro.net/docs/source.html");
+	file.close();
+}
+
+var file = new File("FILE_ID.DIZ");
+if(file.open("wt")) {
+	file.writeln(format("Synchronet-%s C/C++ source code archive (%s)",system.platform,system.datestr()));
+	file.writeln(format("successfully built on %s (%s)",system.local_host_name,system.os_version));
+	file.writeln(format("on %s",system.timestr()));
 	file.close();
 }
 
@@ -102,8 +115,6 @@ for(i in builds) {
 
 	builds[i].end = time();
 }
-
-var body = "System: " + system.local_host_name + " - " + system.os_version + "\n\n";
 
 for(i in builds) {
 	body += elapsed_time(builds[i].end-builds[i].start) + " - ";
