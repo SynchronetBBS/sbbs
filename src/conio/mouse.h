@@ -101,6 +101,7 @@ extern "C" {
 void ciomouse_gotevent(int event, int x, int y);
 int mouse_pending(void);
 int ciolib_getmouse(struct mouse_event *mevent);
+int ciolib_ungetmouse(struct mouse_event *mevent);
 void ciolib_mouse_thread(void *data);
 int ciomouse_setevents(int events);
 int ciomouse_addevents(int events);
