@@ -1,3 +1,3 @@
 # smblib/targets.mk
-SMBLIB	=	$(LIBODIR)$(DIRSEP)smb$(LIBFILE)
-default: $(LIBODIR) $(SMBLIB)
+SMBLIB	=	$(LIBODIR)$(DIRSEP)$(LIBPREFIX)smb$(LIBFILE)
+default: $(OBJODIR) $(LIBODIR) $(SMBLIB)

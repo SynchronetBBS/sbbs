@@ -1,6 +1,27 @@
-XPDEV	:=	../xpdev/
+# smblib/Makefile
 
-include $(XPDEV)Common.gmake
-include Common.gmake
+#########################################################################
+# Makefile for Synchronet Message Base Library (SMBLIB)					#
+# For use with Borland C++ Builder 5+ or Borland C++ 5.5 for Win32      #
+# @format.tab-size 4													#
+#																		#
+# usage: make															#
+#########################################################################
 
-library: $(SMBLIB_TARGET)
+# $Id$
+
+# Macros
+#DEBUG	=	1				# Comment out for release (non-debug) version
+
+SRC_ROOT = ..
+# Cross platform/compiler definitions
+include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
+
+CFLAGS += -I$(XPDEV_SRC)
+
+# SMBLIB Library Link Rule
+$(SMBLIB): $(OBJS)
+	@echo Creating $< ...
+	$(QUIET)ar rc $@ $^
+	$(QUIET)ranlib $@
+

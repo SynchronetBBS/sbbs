@@ -4,17 +4,17 @@
 
 # $Id$
 
-# LIBODIR, DIRSEP, and OFILE must be pre-defined
+# OBJODIR, DIRSEP, and OFILE must be pre-defined
 
-OBJS	=	$(LIBODIR)$(DIRSEP)smbadd$(OFILE)\
-			$(LIBODIR)$(DIRSEP)smballoc$(OFILE)\
-			$(LIBODIR)$(DIRSEP)smbdump$(OFILE)\
-			$(LIBODIR)$(DIRSEP)smbfile$(OFILE)\
-			$(LIBODIR)$(DIRSEP)smbhash$(OFILE)\
-			$(LIBODIR)$(DIRSEP)smblib$(OFILE)\
-			$(LIBODIR)$(DIRSEP)smbstr$(OFILE)\
-			$(LIBODIR)$(DIRSEP)smbtxt$(OFILE)\
-			$(LIBODIR)$(DIRSEP)crc16$(OFILE)\
-			$(LIBODIR)$(DIRSEP)crc32$(OFILE)\
-			$(LIBODIR)$(DIRSEP)md5$(OFILE)\
-			$(LIBODIR)$(DIRSEP)lzh$(OFILE)
+OBJS	=	$(OBJODIR)$(DIRSEP)smbadd$(OFILE)\
+			$(OBJODIR)$(DIRSEP)smballoc$(OFILE)\
+			$(OBJODIR)$(DIRSEP)smbdump$(OFILE)\
+			$(OBJODIR)$(DIRSEP)smbfile$(OFILE)\
+			$(OBJODIR)$(DIRSEP)smbhash$(OFILE)\
+			$(OBJODIR)$(DIRSEP)smblib$(OFILE)\
+			$(OBJODIR)$(DIRSEP)smbstr$(OFILE)\
+			$(OBJODIR)$(DIRSEP)smbtxt$(OFILE)\
+			$(OBJODIR)$(DIRSEP)crc16$(OFILE)\
+			$(OBJODIR)$(DIRSEP)crc32$(OFILE)\
+			$(OBJODIR)$(DIRSEP)md5$(OFILE)\
+			$(OBJODIR)$(DIRSEP)lzh$(OFILE)
