@@ -145,10 +145,12 @@ int	force_return=0;
 	struct sigaction oact;
 #endif
 
+#ifdef USE_SIGNALS
 void handle_alarm(int sig)  {
 	sigaction(SIGALRM,&oact,NULL);
 	force_return=1;
 }
+#endif
 
 int inkey(int mode)
 {
