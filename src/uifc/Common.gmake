@@ -58,5 +58,11 @@ ifdef UIFC_NEED_CURSES
  UIFC_LDFLAGS	+=	$(CURSES_LDFLAGS)
 endif
 
+ifdef NEED_UIFC
+ CFLAGS	+=	$(UIFC_CFLAGS)
+ LDFLAGS +=	$(UIFC_LDFLAGS)
+ OBJS +=	$(UIFC_OBJS)
+endif
+
 vpath %.c $(UIFC_SRC)
 vpath %.cpp $(UIFC_SRC)
