@@ -537,7 +537,7 @@ void doterm(void)
 								cprintf(prn);
 								prn[0]=0;
 								#ifdef __unix__
-									beep();
+									putch(7);
 								#else
 									MessageBeep(MB_OK);
 								#endif
