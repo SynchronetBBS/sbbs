@@ -47,7 +47,7 @@ for(i in recipient)			// For each recipient object...
 // Dump header field strings
 msgtxt.writeln("\r\nArray of RFC822 header fields:\r\n");
 for(i in header)
-	msgtxt.writeln("header." +i+ " = " + header[i]);
+	msgtxt.writeln("header[" +i+ "] = " + header[i]);
 
 // If there were any processing errors... reject the message
 if(!success)
