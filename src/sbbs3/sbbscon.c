@@ -60,8 +60,9 @@ services_startup_t	services_startup;
 uint				services_client_count=0;
 uint				thread_count=1;
 uint				socket_count=0;
+int					prompt_len=0;
 
-static const char* prompt = "[Threads: %3d  Sockets: %3d  Clients: %3d] (?=Help): ";
+static const char* prompt = "[Threads: %d  Sockets: %d  Clients: %d] (?=Help): ";
 
 static const char* usage  = "\nusage: %s [[option] [...]]\n"
 							"\noptions:\n\n"
@@ -88,8 +89,8 @@ static void lputs(char *str)
 	}
 
 	pthread_mutex_lock(&mutex);
-	printf("\r%*s\r%s\n",strlen(prompt),"",str);
-	printf(prompt, thread_count, socket_count
+	printf("\r%*s\r%s\n",prompt_len,"",str);
+	prompt_len = printf(prompt, thread_count, socket_count
 		,bbs_client_count + ftp_client_count + mail_client_count + services_client_count);
 	fflush(stdout);
 	pthread_mutex_unlock(&mutex);
@@ -620,7 +621,7 @@ int main(int argc, char** argv)
 		mswait(1);
 
 	/* erase the prompt */
-	printf("\r%*s\r",strlen(prompt),"");
+	printf("\r%*s\r",prompt_len,"");
 
 	return(0);
 }
