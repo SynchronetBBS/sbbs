@@ -206,6 +206,15 @@ var WHO_FIRST_CHANNEL		=(1<<12);	// C
 var WHO_MEMBER_CHANNEL		=(1<<13);	// M
 var WHO_SHOW_IPS_ONLY		=(1<<14);	// I
 
+// Bits used for walking complex LIST flags.
+var LIST_CHANMASK		=(1<<0);	// a
+var LIST_CREATED		=(1<<1);	// c
+var LIST_MODES			=(1<<2);	// m
+var LIST_TOPIC			=(1<<3);	// o
+var LIST_PEOPLE			=(1<<4);	// p
+var LIST_TOPICAGE		=(1<<5);	// t
+var LIST_DISPLAY_CHAN_MODES	=(1<<6);	// M
+
 ////////// Functions not linked to an object //////////
 function ip_to_int(ip) {
 	var quads = ip.split(".");
@@ -1110,6 +1119,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.numeric206=IRCClient_numeric206;
 	this.numeric208=IRCClient_numeric208;
 	this.numeric261=IRCClient_numeric261;
+	this.numeric321=IRCClient_numeric321;
 	this.numeric322=IRCClient_numeric322;
 	this.numeric331=IRCClient_numeric331;
 	this.numeric332=IRCClient_numeric332;
@@ -1165,6 +1175,9 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.do_complex_who=IRCClient_do_complex_who;
 	this.do_who_usage=IRCClient_do_who_usage;
 	this.match_who_mask=IRCClient_match_who_mask;
+	this.do_basic_list=IRCClient_do_basic_list;
+	this.do_complex_list=IRCClient_do_complex_list;
+	this.do_list_usage=IRCClient_do_list_usage;
 	this.global=IRCClient_global;
 	this.services_msg=IRCClient_services_msg;
 	this.part_all=IRCClient_part_all;
@@ -1497,18 +1510,31 @@ function IRCClient_numeric261(file) {
 	this.numeric(261, "File " + file + " " + debug);
 }
 
-function IRCClient_numeric322(chan) {
+function IRCClient_numeric321() {
+	this.numeric("321", "Channel :Users  Name");
+}
+
+function IRCClient_numeric322(chan,show_modes) {
 	var channel_name;
+	var disp_topic = "";
+
+	if (show_modes) {
+		var chanm = chan.chanmode()
+		disp_topic += "[" + chanm.slice(0,chanm.length-1) + "]"
+	}
 
 	if ((chan.mode&CHANMODE_PRIVATE) && !(this.mode&USERMODE_OPER) &&
-	    !this.onchannel(chan.nam.toUpperCase) )
+	    !this.onchannel(chan.nam.toUpperCase) ) {
 		channel_name = "Priv";
-	else
+	} else {
 		channel_name = chan.nam;
-
+		if (disp_topic)
+			disp_topic += " ";
+		disp_topic += chan.topic;
+	}
 	if (!(chan.mode&CHANMODE_SECRET) || (this.mode&USERMODE_OPER) ||
 	    this.onchannel(chan.nam.toUpperCase()) )
-		this.numeric(322, channel_name + " " + chan.count_users() + " :" + chan.topic);
+		this.numeric(322, channel_name + " " + chan.count_users() + " :" + disp_topic);
 }
 
 function IRCClient_numeric331(chan) {
@@ -2322,7 +2348,7 @@ function IRCClient_do_basic_who(whomask) {
 			var channel=Channels[chan].nam;
 			for(i in Channels[chan].users) {
 				if (Channels[chan].users[i])
-					this.numeric352(Clients[Channels[chan].users[i]],Channels[chan]);
+					this.numeric352(Clients[Channels[chan].users[i]],false,Channels[chan]);
 			}
 			eow = Channels[chan].nam;
 		}
@@ -2594,6 +2620,8 @@ function IRCClient_do_complex_who(cmd) {
 						default:
 							break;
 					}
+					if (sic)
+						break;
 				}
 				if (sic)
 					continue;
@@ -2744,7 +2772,7 @@ function IRCClient_match_who_mask(mask) {
 }
 
 function IRCClient_do_who_usage() {
-	this.numeric(334,":/WHO [+|-][acghimnosuCM] <args> <mask>");
+	this.numeric(334,":/WHO [+|-][acghilmnostuCIM] <args> <mask>");
 	this.numeric(334,":The modes as above work exactly like channel modes.");
 	this.numeric(334,":<mask> may be '*' or in nick!user@host notation.");
 	this.numeric(334,":i.e. '/WHO +a *.ca' would match all away users from *.ca");
@@ -2765,6 +2793,343 @@ function IRCClient_do_who_usage() {
 	this.numeric(334,":I       : Only return IP addresses (as opposed to hostnames.)");
 	this.numeric(334,":M       : Only check against channels you're a member of.");
 	this.numeric(315,"? :End of /WHO list. (Usage)");
+}
+
+function IRCClient_do_basic_list(mask) {
+	this.numeric321();
+	// Only allow commas if we're not doing wildcards, otherwise strip
+	// off anything past the first comma and pass to the generic parser
+	// to see if it can make heads or tails out of it.
+	if (mask.match(/[,]/)) {
+		if (mask.match(/[*?]/)) {
+			mask = mask.slice(0,mask.indexOf(","))
+		} else { // parse it out, but junk anything that's not a chan
+			var my_split = mask.split(",");
+			for (myChan in my_split) {
+				if (Channels[my_split[myChan].toUpperCase()])
+					this.numeric322(Channels[my_split[myChan].toUpperCase()]);
+			}
+			// our adventure ends here.
+			this.numeric(323, ":End of /LIST. (Basic: Comma-list)");
+			return;
+		}
+	}
+	for (chan in Channels) {
+		if (Channels[chan] && Channels[chan].match_list_mask(mask))
+			this.numeric322(Channels[chan]);
+	}
+	this.numeric(323, ":End of /LIST. (Basic)");
+	return;
+}
+
+// So, the user wants to go the hard way...
+function IRCClient_do_complex_list(cmd) {
+	var add = true;
+	var arg = 1;
+	var list = new List();
+	var listmask;
+
+	for (lc in cmd[1]) {
+		switch(cmd[1][lc]) {
+			case "+":
+				if (!add)
+					add = true;
+				break;
+			case "-":
+				if (add)
+					add = false;
+				break;
+			case "a":
+				arg++;
+				if (cmd[arg]) {
+					list.tweak_mode(LIST_CHANMASK,add);
+					list.Mask = cmd[arg];
+				}
+				break;
+			case "c":
+				arg++;
+				if (cmd[arg]) {
+					list.tweak_mode(LIST_CREATED,add);
+					list.Created = parseInt(cmd[arg])*60;
+				}
+				break;
+			case "m": // we never set -m, inverse.
+				arg++;
+				if (cmd[arg]) {
+					list.tweak_mode(LIST_MODES,true);
+					if (!add) {
+						var tmp_mode = "";
+						if((cmd[arg][0] != "+") ||
+						   (cmd[arg][0] != "-") )
+							tmp_mode += "+";
+						tmp_mode += cmd[arg].replace(/[-]/g," ");
+						tmp_mode = tmp_mode.replace(/[+]/g,"-");
+						list.Modes = tmp_mode.replace(/[ ]/g,"+");
+					} else {
+						list.Modes = cmd[arg];
+					}
+				}
+				break;
+			case "o":
+				arg++;
+				if (cmd[arg]) {
+					list.tweak_mode(LIST_TOPIC,add);
+					list.Topic = cmd[arg];
+				}
+				break;
+			case "p":
+				arg++;
+				if (cmd[arg]) {
+					list.tweak_mode(LIST_PEOPLE,add);
+					list.People = parseInt(cmd[arg]);
+				}
+				break;
+			case "t":
+				arg++;
+				if (cmd[arg]) {
+					list.tweak_mode(LIST_TOPICAGE,add);
+					list.TopicTime = parseInt(cmd[arg])*60;
+				}
+				break;
+			case "M":
+				list.tweak_mode(LIST_DISPLAY_CHAN_MODES,add);
+				break;
+			default:
+				break;
+		}
+	}
+
+	// Generic mask atop all this crap?
+	arg++;
+	if (cmd[arg])
+		listmask = cmd[arg];
+
+	// Here we go...
+	for (aChan in Channels) {
+		// Is the user allowed to see this channel, for starters?
+		if (!(Channels[aChan].mode&CHANMODE_SECRET) ||
+		     (this.mode&USERMODE_OPER) || this.onchannel(aChan)) {
+			
+			if ((list.add_flags&LIST_CHANMASK) &&
+			    !match_irc_mask(aChan,list.Mask.toUpperCase()))
+				continue;
+			else if ((list.del_flags&LIST_CHANMASK) &&
+			    match_irc_mask(aChan,list.Mask.toUpperCase()))
+				continue;
+			if ((list.add_flags&LIST_CREATED) &&
+			   (Channels[aChan].created < (time() - list.Created)))
+				continue;
+			else if ((list.del_flags&LIST_CREATED) &&
+			   (Channels[aChan].created > (time() - list.Created)))
+				continue;
+			if ((list.add_flags&LIST_TOPIC) &&
+			   (!match_irc_mask(Channels[aChan].topic,list.Topic)))
+				continue;
+			else if ((list.del_flags&LIST_TOPIC) &&
+			   (match_irc_mask(Channels[aChan].topic,list.Topic)))
+				continue;
+			if ((list.add_flags&LIST_PEOPLE) &&
+			    (Channels[aChan].count_users() < list.People) )
+				continue;
+			else if ((list.del_flags&LIST_PEOPLE) &&
+			    (Channels[aChan].count_users() >= list.People) )
+				continue;
+			if ((list.add_flags&LIST_TOPICAGE) && list.TopicTime &&
+			  (Channels[aChan].topictime > (time()-list.TopicTime)))
+				continue;
+			else if((list.del_flags&LIST_TOPICAGE)&&list.TopicTime&&
+			  (Channels[aChan].topictime < (time()-list.TopicTime)))
+				continue;
+			if (list.add_flags&LIST_MODES) { // there's no -m
+				var sic = false;
+				var madd = true;
+				var c = Channels[aChan];
+				for (mm in list.Modes) {
+					switch(list.Modes[mm]) {
+						case "+":
+							if (!madd)
+								madd = true;
+							break;
+						case "-":
+							if (madd)
+								madd = false;
+							break;
+						case "i":
+							if (
+							   (!madd && (c.mode&
+							   CHANMODE_INVITE))
+							||
+							   (madd && !(c.mode&
+							   CHANMODE_INVITE))
+							   )
+								sic = true;
+							break;
+						case "k":
+							if (
+							   (!madd && (c.mode&
+							   CHANMODE_KEY))
+							||
+							   (madd && !(c.mode&
+							   CHANMODE_KEY))
+							   )
+								sic = true;
+							break;
+						case "l":
+							if (
+							   (!madd && (c.mode&
+							   CHANMODE_LIMIT))
+							||
+							   (madd && !(c.mode&
+							   CHANMODE_LIMIT))
+							   )
+								sic = true;
+							break;
+						case "m":
+							if (
+							   (!madd && (c.mode&
+							   CHANMODE_MODERATED))
+							||
+							   (madd && !(c.mode&
+							   CHANMODE_MODERATED))
+							   )
+								sic = true;
+							break;
+						case "n":
+							if (
+							   (!madd && (c.mode&
+							   CHANMODE_NOOUTSIDE))
+							||
+							   (madd && !(c.mode&
+							   CHANMODE_NOOUTSIDE))
+							   )
+								sic = true;
+							break;
+						case "p":
+							if (
+							   (!madd && (c.mode&
+							   CHANMODE_PRIVATE))
+							||
+							   (madd && !(c.mode&
+							   CHANMODE_PRIVATE))
+							   )
+								sic = true;
+							break;
+						case "s":
+							if (
+							   (!madd && (c.mode&
+							   CHANMODE_SECRET))
+							||
+							   (madd && !(c.mode&
+							   CHANMODE_SECRET))
+							   )
+								sic = true;
+							break;
+						case "t":
+							if (
+							   (!madd && (c.mode&
+							   CHANMODE_TOPIC))
+							||
+							   (madd && !(c.mode&
+							   CHANMODE_TOPIC))
+							   )
+								sic = true;
+							break;
+						default:
+							break;
+					}
+					if (sic)
+						break;
+				}
+				if (sic)
+					continue;
+			}
+
+			if (listmask &&
+			    !Channels[aChan].match_list_mask(listmask))
+				continue;
+
+			// We made it.
+			if (list.add_flags&LIST_DISPLAY_CHAN_MODES)
+				this.numeric322(Channels[aChan],true);
+			else
+				this.numeric322(Channels[aChan]);
+		}
+	}
+
+	this.numeric(323, ":End of /LIST. (Complex)");
+}
+		
+// Object which stores LIST bits and arguments.
+function List() {
+	this.add_flags = 0;
+	this.del_flags = 0;
+	this.tweak_mode = List_tweak_mode;
+	this.People = 0;
+	this.Created = 0;
+	this.TopicTime = 0;
+	this.Mask = "";
+	this.Modes = "";
+	this.Topic = "";
+}       
+
+function List_tweak_mode(bit,add) {
+	if (add) {
+		this.add_flags |= bit;
+		this.del_flags &= ~bit;
+	} else {
+		this.add_flags &= ~bit;
+		this.del_flags |= bit;
+	}
+}
+
+function IRCClient_do_list_usage() {
+	this.numeric(334,":/LIST [+|-][acmoptM] <args> <mask|channel{,channel}>");
+	this.numeric(334,":The modes as above work exactly like channel modes.");
+	this.numeric(334,":<mask> may be just like Bahamut notation.");
+	this.numeric(334,":(Bahamut Notation = >num,<num,C>num,C<num,T>num,T<num,*mask*,!*mask*)");
+	this.numeric(334,":i.e. '/LIST +p 50 #*irc*' lists chans w/ irc in the name and 50+ users.");
+	this.numeric(334,":No args/mask matches to everything by default.");
+	this.numeric(334,":a <mask>: List channels whose names match the mask.  Wildcards allowed.");
+	this.numeric(334,":c <time>: Chans created less than (-) or more than (+) <time> mins ago.");
+	this.numeric(334,":m <mods>: Channel has <modes> set.  -+ allowed.");
+	this.numeric(334,":o <topc>: Match against channel's <topic>, wildcards allowed.");
+	this.numeric(334,":p <num> : Chans with more or equal to (+) members, or (-) less than.");
+	this.numeric(334,":t <time>: Only channels whose topics were created <time> mins ago.");
+	this.numeric(334,":M       : Show channel's mode in front of the list topic.");
+	// No "end of" numeric for this.
+}
+
+// does 'this' (channel) match the 'mask' passed to us?  Use 'complex'
+// Bahamut parsing to determine that.
+function Channel_match_list_mask(mask) {
+	if (mask[0] == ">") { // Chan has more than X people?
+		if (this.count_users() < parseInt(mask.slice(1)))
+			return 0;
+	} else if (mask[0] == "<") { // Chan has less than X people?
+		if (this.count_users() >= parseInt(mask.slice(1)))
+			return 0;
+	} else if (mask[0].toUpperCase() == "C") { //created X mins ago?
+		if ((mask[1] == ">") && (this.created <
+		    (time() - (parseInt(mask.slice(2)) * 60)) ) )
+			return 0;
+		else if ((mask[1] == "<") && (this.created >
+		         (time() - (parseInt(mask.slice(2)) * 60)) ) )
+			return 0;
+	} else if (mask[0].toUpperCase() == "T") { //topics older than X mins?
+		if ((mask[1] == ">") && (this.topictime <
+		    (time() - (parseInt(mask.slice(2)) * 60)) ) )
+			return 0;
+		else if ((mask[1] == "<") && (this.topictime >
+		         (time() - (parseInt(mask.slice(2)) * 60)) ) )
+			return 0;
+	} else if (mask[0] == "!") { // doesn't match mask X
+		if (match_irc_mask(this.nam,mask.slice(1).toUpperCase()))
+			return 0;
+	} else { // if all else fails, we're matching a generic channel mask.
+		if (!match_irc_mask(this.nam,mask))
+			return 0;
+	}
+	return 1; // if we made it here, we matched something.
 }
 
 function IRCClient_do_join(chan_name,join_key) {
@@ -3796,23 +4161,19 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			break;
 		case "LIST":
-			var split_chans;
-
-			this.numeric("321", "Channel :Users  Name");
-
-			if (cmd[1]) {
-				split_chans = cmd[1].split(',');
-				for(chan in split_chans) {
-					if (Channels[split_chans[chan].toUpperCase()])
-						this.numeric322(Channels[split_chans[chan].toUpperCase()]);
-				}
-			} else {
-				for(chan in Channels) {
-					this.numeric322(Channels[chan]);
-				}
+			if (!cmd[1]) {
+				this.do_basic_list("*");
+				break;
 			}
-
-			this.numeric("323", "End of /LIST.");
+			if (cmd[1] == "?") {
+				this.do_list_usage();
+				break;
+			}
+			if (!cmd[2] && (cmd[1][0]!="+") && (cmd[1][0]!="-")) {
+				this.do_basic_list(cmd[1]);
+				break;
+			}
+			this.do_complex_list(cmd);
 			break;
 		case "LUSERS":
 			this.lusers();
@@ -5393,6 +5754,7 @@ function Channel(nam)  {
 	this.isbanned=Channel_isbanned;
 	this.count_modelist=Channel_count_modelist;
 	this.occupants=Channel_occupants;
+	this.match_list_mask=Channel_match_list_mask;
 }
 
 function Channel_ismode(tmp_str,mode_bit) {
@@ -5423,13 +5785,13 @@ function Channel_add_modelist(tmp_nickid,list_bit) {
 function Channel_del_modelist(tmp_nickid,list_bit) {
 	if (!this.ismode(tmp_nickid,list_bit))
 		return 0;
-	delete_index = this.locate_on_list(tmp_nickid,list_bit);
+	var delete_index = this.locate_on_list(tmp_nickid,list_bit);
 	delete this.modelist[list_bit][delete_index];
 	return delete_index;
 }
 
 function Channel_count_users() {
-	tmp_counter=0;
+	var tmp_counter=0;
 	for (tmp_count in this.users) {
 		if (this.users[tmp_count])
 			tmp_counter++;
@@ -5438,7 +5800,7 @@ function Channel_count_users() {
 }
 
 function Channel_count_modelist(list_bit) {
-	tmp_counter=0;
+	var tmp_counter=0;
 	for (tmp_count in this.modelist[list_bit]) {
 		if (this.modelist[list_bit][tmp_count])
 			tmp_counter++;
@@ -5447,8 +5809,8 @@ function Channel_count_modelist(list_bit) {
 }
 
 function Channel_chanmode(show_args) {
-	tmp_mode = "+";
-	tmp_extras = "";
+	var tmp_mode = "+";
+	var tmp_extras = "";
 	if (this.mode&CHANMODE_INVITE)
 		tmp_mode += "i";
 	if (this.mode&CHANMODE_KEY) {
@@ -5477,7 +5839,7 @@ function Channel_chanmode(show_args) {
 }
 
 function inverse_chanmode(bitlist) {
-	tmp_mode = "-";
+	var tmp_mode = "-";
 	if (bitlist&CHANMODE_INVITE)
 		tmp_mode += "i";
 	if (bitlist&CHANMODE_KEY)
@@ -5506,7 +5868,7 @@ function Channel_isbanned(banned_nuh) {
 }
 
 function Channel_occupants() {
-	chan_occupants="";
+	var chan_occupants="";
 	for(thisChannel_user in this.users) {
 		Channel_user=Clients[this.users[thisChannel_user]];
 		if (Channel_user.nick &&
