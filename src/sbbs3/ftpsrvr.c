@@ -711,7 +711,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			break;
 		}
 
-		strcpy(vpath,"/");
+		SAFECOPY(vpath,"/");
 
 		if(lib>=0) { /* root */
 
@@ -823,7 +823,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 							continue;
 						sprintf(vpath,"/%s/%s",p,startup->html_index_file);
 					} else
-						strcpy(vpath,p);
+						SAFECOPY(vpath,p);
 					js_add_file(js_cx
 						,alias_dir ? dir_array : file_array
 						,p				/* filename */
@@ -914,7 +914,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 	#ifdef _WIN32
 				GetShortPathName(g.gl_pathv[i], str, sizeof(str));
 	#else
-				strcpy(str,g.gl_pathv[i]);
+				SAFECOPY(str,g.gl_pathv[i]);
 	#endif
 				padfname(getfname(str),f.name);
 				strupr(f.name);
@@ -1234,7 +1234,7 @@ char * cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *cmd)
                     break;
 				case '~':	/* DOS-compatible (8.3) filename */
 #ifdef _WIN32
-					strcpy(sfpath,fpath);
+					SAFECOPY(sfpath,fpath);
 					GetShortPathName(fpath,sfpath,sizeof(sfpath));
 					strcat(cmd,sfpath);
 #else
@@ -1260,9 +1260,9 @@ char * cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *cmd)
                     break;
 				case '?':	/* Platform */
 #ifdef __OS2__
-					strcpy(str,"OS2");
+					SAFECOPY(str,"OS2");
 #else
-					strcpy(str,PLATFORM_DESC);
+					SAFECOPY(str,PLATFORM_DESC);
 #endif
 					strlwr(str);
 					strcat(cmd,str);
@@ -1474,7 +1474,7 @@ static void send_thread(void* arg)
 #ifdef _WIN32
 			GetShortPathName(xfer.filename,fname,sizeof(fname));
 #else
-			strcpy(fname,xfer.filename);
+			SAFECOPY(fname,xfer.filename);
 #endif
 			padfname(getfname(fname),f.name);
 			strupr(f.name);
@@ -1684,7 +1684,7 @@ static void receive_thread(void* arg)
 #ifdef _WIN32
 			GetShortPathName(xfer.filename,fname,sizeof(fname));
 #else
-			strcpy(fname,xfer.filename);
+			SAFECOPY(fname,xfer.filename);
 #endif
 			padfname(getfname(fname),f.name);
 			strupr(f.name);
@@ -1728,7 +1728,7 @@ static void receive_thread(void* arg)
 								break;
 						ext[i]=0;
 						if(!f.desc[0]) {			/* use for normal description */
-							strcpy(desc,ext);
+							SAFECOPY(desc,ext);
 							strip_exascii(desc);	/* strip extended ASCII chars */
 							prep_file_desc(desc);	/* strip control chars and dupe chars */
 							for(i=0;desc[i];i++)	/* find approprate first char */
@@ -1746,7 +1746,7 @@ static void receive_thread(void* arg)
 			if(f.desc[0]==0) 	/* no description given, use (long) filename */
 				SAFECOPY(f.desc,getfname(xfer.filename));
 
-			strcpy(f.uler,xfer.user->alias);
+			SAFECOPY(f.uler,xfer.user->alias);
 			if(!addfiledat(&scfg,&f))
 				lprintf("%04d !ERROR adding file (%s) to database",xfer.ctrl_sock,f.name);
 
@@ -2290,7 +2290,7 @@ static void ctrl_thread(void* arg)
 
 	memset(&user,0,sizeof(user));
 
-	strcpy(host_ip,inet_ntoa(ftp.client_addr.sin_addr));
+	SAFECOPY(host_ip,inet_ntoa(ftp.client_addr.sin_addr));
 
 	lprintf ("%04d CTRL connection accepted from: %s port %u"
 		,sock, host_ip, ntohs(ftp.client_addr.sin_port));
@@ -2920,7 +2920,7 @@ static void ctrl_thread(void* arg)
 				}
 
 				if(p[1]==':' || !strncmp(p,"\\\\",2))
-					strcpy(path,p);
+					SAFECOPY(path,p);
 				else if(*p=='/' || *p=='\\')
 					sprintf(path,"%s%s",root_dir(local_dir),p);
 				else {
@@ -2933,7 +2933,7 @@ static void ctrl_thread(void* arg)
 					lprintf("%04d !%s attempted to change to an invalid directory: %s"
 						,sock, user.alias, path);
 				} else {
-					strcpy(local_dir,path);
+					SAFECOPY(local_dir,path);
 					sockprintf(sock,"250 CWD command successful (%s).", local_dir);
 				}
 				continue;
@@ -3040,7 +3040,7 @@ static void ctrl_thread(void* arg)
 					p+=strlen(LOCAL_FSYS_DIR);	/* already mounted */
 
 				if(p[1]==':')		/* drive specified */
-					strcpy(fname,p);
+					SAFECOPY(fname,p);
 				else if(*p=='/')	/* absolute, current drive */
 					sprintf(fname,"%s%s",root_dir(local_dir),p+1);
 				else		/* relative */
@@ -3096,7 +3096,7 @@ static void ctrl_thread(void* arg)
 					p+=strlen(LOCAL_FSYS_DIR);	/* already mounted */
 
 				if(p[1]==':')		/* drive specified */
-					strcpy(fname,p);
+					SAFECOPY(fname,p);
 				else if(*p=='/')	/* absolute, current drive */
 					sprintf(fname,"%s%s",root_dir(local_dir),p+1);
 				else				/* relative */
@@ -3342,7 +3342,7 @@ static void ctrl_thread(void* arg)
 #ifdef _WIN32
 					GetShortPathName(g.gl_pathv[i], str, sizeof(str));
 #else
-					strcpy(str,g.gl_pathv[i]);
+					SAFECOPY(str,g.gl_pathv[i]);
 #endif
 					padfname(getfname(str),f.name);
 					strupr(f.name);
@@ -3361,11 +3361,11 @@ static void ctrl_thread(void* arg)
 							tm=*tm_p;
 						if(filedat) {
 							if(f.misc&FM_ANON)
-								strcpy(str,ANONYMOUS);
+								SAFECOPY(str,ANONYMOUS);
 							else
 								dotname(f.uler,str);
 						} else
-							strcpy(str,scfg.sys_id);
+							SAFECOPY(str,scfg.sys_id);
 						fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d "
 							,NAME_LEN
 							,str
@@ -3508,7 +3508,7 @@ static void ctrl_thread(void* arg)
 					filepos=0;
 					continue;
 				}
-				strcpy(fname,qwkfile);
+				SAFECOPY(fname,qwkfile);
 				success=TRUE;
 				delfile=TRUE;
 				credits=FALSE;
@@ -3608,7 +3608,7 @@ static void ctrl_thread(void* arg)
 #ifdef _WIN32
 						GetShortPathName(g.gl_pathv[i], str, sizeof(str));
 #else
-						strcpy(str,g.gl_pathv[i]);
+						SAFECOPY(str,g.gl_pathv[i]);
 #endif
 						padfname(getfname(str),f.name);
 						strupr(f.name);
@@ -3758,7 +3758,7 @@ static void ctrl_thread(void* arg)
 #ifdef _WIN32
 				GetShortPathName(fname, str, sizeof(str));
 #else
-				strcpy(str,fname);
+				SAFECOPY(str,fname);
 #endif
 				padfname(getfname(str),f.name);
 				strupr(f.name);
@@ -4320,9 +4320,9 @@ void DLLCALL ftp_server(void* arg)
 	if(startup->port==0)					startup->port=IPPORT_FTP;
 	if(startup->qwk_timeout==0)				startup->qwk_timeout=600;		/* seconds */
 	if(startup->max_inactivity==0)			startup->max_inactivity=300;	/* seconds */
-	if(startup->index_file_name[0]==0)		strcpy(startup->index_file_name,"00index");
-	if(startup->html_index_file[0]==0)		strcpy(startup->html_index_file,"00index.html");
-	if(startup->html_index_script[0]==0) {	strcpy(startup->html_index_script,"ftp-html.js");
+	if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"00index");
+	if(startup->html_index_file[0]==0)		SAFECOPY(startup->html_index_file,"00index.html");
+	if(startup->html_index_script[0]==0) {	SAFECOPY(startup->html_index_script,"ftp-html.js");
 											startup->options|=FTP_OPT_HTML_INDEX_FILE;
 	}
 	if(startup->options&FTP_OPT_HTML_INDEX_FILE)
