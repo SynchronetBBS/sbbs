@@ -523,14 +523,17 @@ get_lines()
 
 	if (lines == NULL) {
 		lines = (TextLine *)malloc(sizeof(TextLine) * (CONSOLE_MAX_ROWS+1));
-		if (lines == NULL)
-			err(1, "Could not allocate data structure for text lines\n");
-
+		if (lines == NULL) {
+			fprintf(stderr, "Could not allocate data structure for text lines\n");
+			exit(1);
+		}
 		for (i = 0; i < (CONSOLE_MAX_ROWS+1); ++i) {
 			lines[i].max_length = DpyCols;
 			lines[i].data = (WORD *)malloc(CONSOLE_MAX_COLS * sizeof(WORD));
-			if (lines[i].data == NULL)
-				err(1, "Could not allocate data structure for text lines\n");
+			if (lines[i].data == NULL) {
+				fprintf(stderr, "Could not allocate data structure for text lines\n");
+				exit(1);
+			}
 			lines[i].changed = 1;
 		}
 	}
@@ -1082,8 +1085,10 @@ resize_window()
     XSizeHints *sh;
 
     sh = x11.XAllocSizeHints();
-    if (sh == NULL)
-		err(1, "Could not get XSizeHints structure");
+    if (sh == NULL) {
+		fprintf(stderr, "Could not get XSizeHints structure");
+		exit(1);
+	}
 
 	sh->base_width = FW * DpyCols + 4;
 	sh->base_height = FH * (DpyRows+1) + 4;

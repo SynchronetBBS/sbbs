@@ -732,7 +732,12 @@ int ansi_initciolib(long inmode)
 	if (isatty(STDIN_FILENO))  {
 		tcgetattr(STDIN_FILENO,&tio_default);
 		tio_raw = tio_default;
-		cfmakeraw(&tio_raw);
+		/* cfmakeraw(&tio_raw); */
+		tio_raw.c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+		tio_raw.c_oflag &= ~OPOST;
+		tio_raw.c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+		tio_raw.c_cflag &= ~(CSIZE|PARENB);
+		tio_raw.c_cflag |= CS8;
 		tcsetattr(STDIN_FILENO,TCSANOW,&tio_raw);
 		setvbuf(stdout, NULL, _IONBF, 0);
 		atexit(ansi_fixterm);
