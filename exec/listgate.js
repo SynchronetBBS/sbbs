@@ -23,7 +23,7 @@ var tearline = format("--- Synchronet %s%s-%s ListGate %s\r\n"
 var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
 					  ,system.name,system.location,system.inetaddr);
 
-var ini_fname = system.ctrl_dir + "listgate.ini";
+var ini_fname = file_cfgname(system.ctrl_dir, "listgate.ini");
 
 var debug		= false;
 var reset_ptrs	= false;

@@ -30,7 +30,7 @@ remove_msg=true;
 remove_non_bin_msgs=true;
 sub = new Array();
 
-var ini_fname = system.ctrl_dir + "binarydecoder.ini";
+var ini_fname = file_cfgname(system.ctrl_dir, "binarydecoder.ini");
 file = new File(ini_fname);
 file.open("r");
 

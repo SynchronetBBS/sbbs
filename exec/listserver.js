@@ -13,7 +13,7 @@ log(LOG_INFO,"ListServer " + REVISION);
 
 js.auto_terminate=false;
 
-var ini_fname = system.ctrl_dir + "listserver.ini";
+var ini_fname = file_cfgname(system.ctrl_dir, "listserver.ini");
 
 ini_file = new File(ini_fname);
 if(!ini_file.open("r")) {
