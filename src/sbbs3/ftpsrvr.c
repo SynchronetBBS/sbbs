@@ -45,9 +45,11 @@
 
 /* ANSI C Library headers */
 #include <stdio.h>
+#include <stdlib.h>		/* ltoa in GNU C lib */
 #include <stdarg.h>		/* va_list, varargs */
 #include <fcntl.h>		/* O_WRONLY, O_RDONLY, etc. */
 #include <errno.h>		/* EACCES */
+#include <ctype.h>		/* toupper */
 #include <sys/stat.h>	/* S_IWRITE */
 
 /* Synchronet-specific headers */
@@ -56,6 +58,14 @@
 #include "ftpsrvr.h"
 #include "userdat.h"
 #include "telnet.h"
+
+#if defined(__GNUC__)	/* GNU CC */
+
+#warning "ultoa needs to be defined or replaced"
+#define ultoa	ltoa
+
+#endif	/* __GNUC__ */
+
 
 /* Constants */
 
@@ -323,21 +333,6 @@ while(c && (uchar)str[c-1]<=' ') c--;
 str[c]=0;
 }
 
-#ifdef _WIN32
-
-#define O_DENYNONE	OF_SHARE_DENY_NONE
-#define O_DENYALL	OF_SHARE_EXCLUSIVE
-
-#elif defined(__unix__)
-
-#define O_DENYNONE	0
-#define O_DENYALL	0
-#define O_BINARY	0
-#define SH_DENYNO	0
-#define SH_DENYRW	0
-#define SH_DENYWR	0
-
-#endif
 
 int nopen(char *str, int access)
 {
@@ -787,10 +782,10 @@ static void receive_thread(void* arg)
 				if(!p) p=strrchr(xfer.filename,'/');
 				if(!p) p=xfer.filename;
 				if(p!=xfer.filename) p++;
-				sprintf(f.desc,"%.*s",sizeof(f.desc)-1,p);
+				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,p);
 /* old way		strcpy(f.desc,"Received via FTP: No description given"); */
 			} else
-				sprintf(f.desc,"%.*s",sizeof(f.desc)-1,xfer.desc);
+				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,xfer.desc);
 			strcpy(f.uler,xfer.user->alias);
 			if(!addfiledat(&scfg,&f))
 				lprintf("%04d !ERROR adding file (%s) to database",xfer.ctrl_sock,f.name);
@@ -934,7 +929,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	xfer.user=user;
 	xfer.dir=dir;
 	xfer.desc=desc;
-	sprintf(xfer.filename,"%.*s",sizeof(xfer.filename)-1,filename);
+	sprintf(xfer.filename,"%.*s",(int)sizeof(xfer.filename)-1,filename);
 	if(receiving)
 		_beginthread(receive_thread,0,(void*)&xfer);
 	else
@@ -963,7 +958,7 @@ int getdir(char* p, user_t* user)
 	int		dir;
 	int		lib;
 
-	sprintf(path,"%.*s",sizeof(path)-1,p);
+	sprintf(path,"%.*s",(int)sizeof(path)-1,p);
 	p=path;
 
 	if(*p=='/') 
@@ -1010,7 +1005,7 @@ void parsepath(char** pp, user_t* user, int* curlib, int* curdir)
 	int		dir=*curdir;
 	int		lib=*curlib;
 
-	sprintf(path,"%.*s",sizeof(path)-1,*pp);
+	sprintf(path,"%.*s",(int)sizeof(path)-1,*pp);
 	p=path;
 
 	if(*p=='/') {
@@ -1099,7 +1094,7 @@ BOOL alias(char* fullalias, char* filename, user_t* user, int* curdir)
 	if((fp=fopen(aliasfile,"r"))==NULL) 
 		return(result);
 
-	sprintf(alias,"%.*s",sizeof(alias)-1,fullalias);
+	sprintf(alias,"%.*s",(int)sizeof(alias)-1,fullalias);
 	p=strrchr(alias+1,'/');
 	if(p) {
 		*p=0;
@@ -1160,7 +1155,7 @@ char* root_dir(char* path)
 	char*	p;
 	static char	root[MAX_PATH];
 
-	sprintf(root,"%.*s",sizeof(root)-1,path);
+	sprintf(root,"%.*s",(int)sizeof(root)-1,path);
 
 	if(!strncmp(root,"\\\\",2)) {	/* network path */
 		p=strchr(root+2,'\\');
@@ -1334,8 +1329,8 @@ static void ctrl_thread(void* arg)
 	/* Initialize client display */
 	client.size=sizeof(client);
 	client.time=time(NULL);
-	sprintf(client.addr,"%.*s",sizeof(client.addr)-1,host_ip);
-	sprintf(client.host,"%.*s",sizeof(client.host)-1,host_name);
+	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,host_ip);
+	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
 	client.port=ntohs(ftp.client_addr.sin_port);
 	client.protocol="FTP";
 	client.user="<unknown>";
@@ -1436,7 +1431,7 @@ static void ctrl_thread(void* arg)
 			p=cmd+5;
 			while(*p && *p<=' ') p++;
 			truncsp(p);
-			sprintf(user.alias,"%.*s",sizeof(user.alias)-1,p);
+			sprintf(user.alias,"%.*s",(int)sizeof(user.alias)-1,p);
 			if(!stricmp(user.alias,"anonymous"))
 				strcpy(user.alias,"guest");
 			if(!stricmp(user.alias,"guest"))
@@ -1450,7 +1445,7 @@ static void ctrl_thread(void* arg)
 			p=cmd+5;
 			while(*p && *p<=' ') p++;
 
-			sprintf(password,"%.*s",sizeof(password)-1,p);
+			sprintf(password,"%.*s",(int)sizeof(password)-1,p);
 			user.number=matchuser(&scfg,user.alias);
 			if(!user.number) {
 				for(i=0;user.alias[i];i++)
@@ -1595,7 +1590,7 @@ static void ctrl_thread(void* arg)
 		if(!strnicmp(cmd, "PORT ",5)) {
 			p=cmd+5;
 			while(*p && *p<=' ') p++;
-			sscanf(p,"%d,%d,%d,%d,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
+			sscanf(p,"%ld,%ld,%ld,%ld,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
 			data_addr.sin_addr.S_un.S_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
 			data_addr.sin_port=htons((u_short)((p1<<8)|p2));
 			sockprintf(sock,"200 PORT Command successful.");
@@ -1736,7 +1731,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				local_fsys=TRUE;
-				sprintf(local_dir,"%.*s",sizeof(local_dir)-1,p);
+				sprintf(local_dir,"%.*s",(int)sizeof(local_dir)-1,p);
 			}
 			sockprintf(sock,"250 %s file system mounted."
 				,local_fsys ? "Local" : "BBS");
@@ -2071,7 +2066,7 @@ static void ctrl_thread(void* arg)
 						,scfg.sys_id
 						,lib<0 ? scfg.sys_id : dir<0 
 							? scfg.lib[lib]->sname : scfg.dir[dir]->code
-						,512
+						,512L
 						,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 						,startup->index_file_name);
 				else
@@ -2159,7 +2154,7 @@ static void ctrl_thread(void* arg)
 									,NAME_LEN
 									,scfg.sys_id
 									,scfg.lib[scfg.dir[dir]->lib]->sname
-									,512
+									,512L
 									,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 									,p);
 							}
@@ -2195,7 +2190,7 @@ static void ctrl_thread(void* arg)
 							,NAME_LEN
 							,scfg.sys_id
 							,scfg.sys_id
-							,512
+							,512L
 							,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 							,scfg.lib[i]->sname);
 					else
@@ -2214,7 +2209,7 @@ static void ctrl_thread(void* arg)
 							,NAME_LEN
 							,scfg.sys_id
 							,scfg.lib[lib]->sname
-							,512
+							,512L
 							,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 							,scfg.dir[i]->code);
 					else
@@ -2625,7 +2620,7 @@ static void ctrl_thread(void* arg)
 			if(*p==0) 
 				sockprintf(sock,"501 No file description given.");
 			else {
-				sprintf(desc,"%.*s",sizeof(desc)-1,p);
+				sprintf(desc,"%.*s",(int)sizeof(desc)-1,p);
 				sockprintf(sock,"200 File description set. Ready to STOR file.");
 			}
 			continue;
@@ -2769,7 +2764,7 @@ static void ctrl_thread(void* arg)
 						,sock, user.alias, p);
 					continue;
 				}
-				sprintf(local_dir,"%.*s",sizeof(local_dir)-1,p);
+				sprintf(local_dir,"%.*s",(int)sizeof(local_dir)-1,p);
 				local_fsys=TRUE;
 				sockprintf(sock,"250 CWD command successful (local file system mounted).");
 				lprintf("%04d %s mounted local file system", sock, user.alias);
@@ -3047,7 +3042,7 @@ void ftp_server(void* arg)
 
 	/* Initial configuration and load from CNF files */
     memset(&scfg, 0, sizeof(scfg));
-    sprintf(scfg.ctrl_dir, "%.*s", sizeof(scfg.ctrl_dir)-1
+    sprintf(scfg.ctrl_dir, "%.*s",(int)sizeof(scfg.ctrl_dir)-1
     	,startup->ctrl_dir);
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 	if(!load_cfg(&scfg, NULL)) {

@@ -37,13 +37,19 @@
 
 /* Platform-specific headers */
 #ifdef _WIN32
+#include <io.h>			/* open/close */
+#include <share.h>		/* share open flags */
 #include <windows.h>
 #include <process.h>	/* _beginthread */
 #endif
 
 /* ANSI C Library headers */
 #include <stdio.h>
+#include <stdlib.h>		/* ltoa in GNU C lib */
 #include <stdarg.h>		/* va_list */
+#include <ctype.h>		/* isdigit */
+#include <fcntl.h>		/* Open flags */
+#include <errno.h>		/* errno */
 
 /* Synchronet-specific headers */
 #include "scfgdefs.h"
@@ -52,6 +58,13 @@
 #include "smblib.h"
 #include "crc32.h"
 #include "sbbsinet.h"
+
+#if defined(__GNUC__)	/* GNU CC */
+
+#warning "ultoa needs to be defined or replaced"
+#define ultoa	ltoa
+
+#endif	/* __GNUC__ */
 
 /* Constants */
 #define MAIL_VERSION "1.10"
@@ -535,8 +548,10 @@ static void pop3_thread(void* arg)
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
 		lprintf("%04d POP3 session thread started", socket);
 
+#ifdef _WIN32
 	if(startup->pop3_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
 		PlaySound(startup->pop3_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 	strcpy(host_ip,inet_ntoa(pop3.client_addr.sin_addr));
 
@@ -551,7 +566,7 @@ static void pop3_thread(void* arg)
 			,sizeof(pop3.client_addr.sin_addr),AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
-		sprintf(host_name,"%.*s",sizeof(host_name)-1,host->h_name);
+		sprintf(host_name,"%.*s",(int)sizeof(host_name)-1,host->h_name);
 	else
 		strcpy(host_name,"<no name>");
 
@@ -582,8 +597,8 @@ static void pop3_thread(void* arg)
 	/* Initialize client display */
 	client.size=sizeof(client);
 	client.time=time(NULL);
-	sprintf(client.addr,"%.*s",sizeof(client.addr)-1,host_ip);
-	sprintf(client.host,"%.*s",sizeof(client.host)-1,host_name);
+	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,host_ip);
+	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
 	client.port=ntohs(pop3.client_addr.sin_port);
 	client.protocol="POP3";
 	client.user="<unknown>";
@@ -613,7 +628,7 @@ static void pop3_thread(void* arg)
 		}
 		p=buf+5;
 		while(*p && *p<=' ') p++;
-		sprintf(username,"%.*s",sizeof(username)-1,p);
+		sprintf(username,"%.*s",(int)sizeof(username)-1,p);
 		sockprintf(socket,"+OK");
 		if(!sockgetrsp(socket,"PASS ",buf,sizeof(buf))) {
 			sockprintf(socket,"-ERR PASS command expected");
@@ -621,7 +636,7 @@ static void pop3_thread(void* arg)
 		}
 		p=buf+5;
 		while(*p && *p<=' ') p++;
-		sprintf(password,"%.*s",sizeof(password)-1,p);
+		sprintf(password,"%.*s",(int)sizeof(password)-1,p);
 		user.number=matchuser(&scfg,username);
 		if(!user.number) {
 			for(i=0;username[i];i++)
@@ -895,7 +910,7 @@ static void pop3_thread(void* arg)
 					strcpy(fromaddr,msg.from_net.addr);
 				else if(msg.from_net.type==NET_QWK)
 					sprintf(fromaddr,"\"%s@%s\"@%s"
-						,msg.from,msg.from_net.addr,scfg.sys_inetaddr);
+						,msg.from,(char*)msg.from_net.addr,scfg.sys_inetaddr);
 				else 
 					usermailaddr(fromaddr,msg.from);
 				sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
@@ -1003,7 +1018,7 @@ BOOL rblchk(DWORD mail_addr_n, char* rbl_addr)
 	DWORD		mail_addr;
 
 	mail_addr=ntohl(mail_addr_n);
-	sprintf(name,"%d.%d.%d.%d.%s"
+	sprintf(name,"%ld.%ld.%ld.%ld.%s"
 		,mail_addr&0xff
 		,(mail_addr>>8)&0xff
 		,(mail_addr>>16)&0xff
@@ -1077,8 +1092,10 @@ static void smtp_thread(void* arg)
 
 	lprintf("%04d SMTP RX Session thread started", socket);
 
+#ifdef _WIN32
 	if(startup->inbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
 		PlaySound(startup->inbound_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 	addr_len=sizeof(server_addr);
 	if((i=getsockname(socket, (struct sockaddr *)&server_addr,&addr_len))!=0) {
@@ -1100,7 +1117,7 @@ static void smtp_thread(void* arg)
 			,sizeof(smtp.client_addr.sin_addr),AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
-		sprintf(host_name,"%.*s",sizeof(host_name)-1,host->h_name);
+		sprintf(host_name,"%.*s",(int)sizeof(host_name)-1,host->h_name);
 	else
 		strcpy(host_name,"<no name>");
 
@@ -1190,8 +1207,8 @@ static void smtp_thread(void* arg)
 	/* Initialize client display */
 	client.size=sizeof(client);
 	client.time=time(NULL);
-	sprintf(client.addr,"%.*s",sizeof(client.addr)-1,host_ip);
-	sprintf(client.host,"%.*s",sizeof(client.host)-1,host_name);
+	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,host_ip);
+	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
 	client.port=ntohs(smtp.client_addr.sin_port);
 	client.protocol="SMTP";
 	client.user="<unknown>";
@@ -1441,11 +1458,11 @@ static void smtp_thread(void* arg)
 					p++;
 					tp=strchr(p,'>');
 					if(tp) *tp=0;
-					sprintf(sender_addr,"%.*s",sizeof(sender_addr)-1,p);
+					sprintf(sender_addr,"%.*s",(int)sizeof(sender_addr)-1,p);
 				} else {
 					p=buf+5;
 					while(*p && *p<=' ') p++;
-					sprintf(sender_addr,"%.*s",sizeof(sender_addr)-1,p);
+					sprintf(sender_addr,"%.*s",(int)sizeof(sender_addr)-1,p);
 				}
 				nettype=NET_INTERNET;
 				smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
@@ -1463,7 +1480,7 @@ static void smtp_thread(void* arg)
 					tp=strchr(p,'<');
 				if(tp) *tp=0;
 				truncsp(p);
-				sprintf(sender,"%.*s",sizeof(sender)-1,p);
+				sprintf(sender,"%.*s",(int)sizeof(sender)-1,p);
 				smb_hfield(&msg, SENDER, (ushort)strlen(sender), sender);
 				continue;
 			}
@@ -1568,7 +1585,7 @@ static void smtp_thread(void* arg)
 		if(!strnicmp(buf,"HELO",4)) {
 			p=buf+4;
 			while(*p && *p<=' ') p++;
-			sprintf(hello_name,"%.*s",sizeof(hello_name)-1,p);
+			sprintf(hello_name,"%.*s",(int)sizeof(hello_name)-1,p);
 			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
 			esmtp=FALSE;
 			state=SMTP_STATE_HELO;
@@ -1577,7 +1594,7 @@ static void smtp_thread(void* arg)
 		if(!strnicmp(buf,"EHLO",4)) {
 			p=buf+4;
 			while(*p && *p<=' ') p++;
-			sprintf(hello_name,"%.*s",sizeof(hello_name)-1,p);
+			sprintf(hello_name,"%.*s",(int)sizeof(hello_name)-1,p);
 			sockprintf(socket,"250 %s",scfg.sys_inetaddr);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
@@ -1622,7 +1639,7 @@ static void smtp_thread(void* arg)
 			msg.hdr.when_imported.zone=scfg.sys_timezone;
 			p=buf+10;
 			while(*p && *p<=' ') p++;
-			sprintf(reverse_path,"%.*s",sizeof(reverse_path)-1,p);
+			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sender[0]=0;
 			sender_addr[0]=0;
 			if(spy==NULL && trashcan(&scfg,reverse_path,"SMTPSPY")) {
@@ -1653,7 +1670,7 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 
-			sprintf(str,"%.*s",sizeof(str)-1,buf+8);
+			sprintf(str,"%.*s",(int)sizeof(str)-1,buf+8);
 			p=str;
 			while(*p && *p<=' ') p++;
 
@@ -1680,8 +1697,8 @@ static void smtp_thread(void* arg)
 						,socket, tp+1);
 
 					fprintf(rcptlst,"0\n%.*s\n%.*s\n"
-						,sizeof(rcpt_name)-1,p
-						,sizeof(rcpt_addr)-1,p);
+						,(int)sizeof(rcpt_name)-1,p
+						,(int)sizeof(rcpt_addr)-1,p);
 					
 					sockprintf(socket,SMTP_OK);
 					state=SMTP_STATE_RCPT_TO;
@@ -1747,7 +1764,7 @@ static void smtp_thread(void* arg)
 				continue; }
 #endif
 
-			fprintf(rcptlst,"%u\n%.*s\n",user.number,sizeof(rcpt_name)-1,p);
+			fprintf(rcptlst,"%u\n%.*s\n",user.number,(int)sizeof(rcpt_name)-1,p);
 
 			/* Forward to Internet */
 			tp=strrchr(user.netmail,'@');
@@ -1880,7 +1897,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	
 	/* Put error message in subject for now */
 	sprintf(full_err,"Delivery failure of message to %s after %u attempts: %s"
-		,msg->to_net.addr, msg->hdr.delivery_attempts, err);
+		,(char*)msg->to_net.addr, msg->hdr.delivery_attempts, err);
 	smb_hfield(&newmsg, SUBJECT, (ushort)strlen(full_err), full_err);
 
 	if((i=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK))!=0)
@@ -2019,8 +2036,10 @@ static void sendmail_thread(void* arg)
 			lprintf("SendMail: Message #%lu from %s to %s"
 				,msg.hdr.number, msg.from, msg.to_net.addr);
 			status("SendMail");
+#ifdef _WIN32
 			if(startup->outbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
 				PlaySound(startup->outbound_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 			lprintf("SendMail: getting message text");
 			if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS))==NULL) {
@@ -2031,7 +2050,7 @@ static void sendmail_thread(void* arg)
 			if(startup->options&MAIL_OPT_RELAY_TX)  
 				server=startup->relay_server;
 			else {
-				sprintf(to,"%.*s",sizeof(to)-1,msg.to_net.addr);
+				sprintf(to,"%.*s",(int)sizeof(to)-1,(char*)msg.to_net.addr);
 				p=strrchr(to,'>');	/* Truncate '>' */
 				if(p!=NULL) *p=0;
 
@@ -2102,7 +2121,7 @@ static void sendmail_thread(void* arg)
 				if((i=connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)))!=0) {
 					lprintf("!SendMail: ERROR %d (%d) connecting to SMTP server: %s"
 						,i,ERROR_VALUE, server);
-					sprintf(err,"Error %d connecting to SMTP server: %s"
+					sprintf(err,"Error %ld connecting to SMTP server: %s"
 						,ERROR_VALUE,server);
 					continue;
 				}
@@ -2342,7 +2361,7 @@ void mail_server(void* arg)
 
 	/* Initial configuration and load from CNF files */
     memset(&scfg, 0, sizeof(scfg));
-    sprintf(scfg.ctrl_dir, "%.*s", sizeof(scfg.ctrl_dir)-1
+    sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
     	,startup->ctrl_dir);
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 	if(!load_cfg(&scfg, NULL)) {
