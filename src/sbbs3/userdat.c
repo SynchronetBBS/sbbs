@@ -467,12 +467,12 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	for(i=1;i<=cfg->sys_nodes;i++) { /* instant user data update */
 		if(i==cfg->node_num)
 			continue;
-		getnodedat(cfg, i,&node,0);
+		getnodedat(cfg, i,&node,NULL);
 		if(node.useron==user->number && (node.status==NODE_INUSE
 			|| node.status==NODE_QUIET)) {
-			getnodedat(cfg, i,&node,1);
+			getnodedat(cfg, i,&node,&file);
 			node.misc|=NODE_UDAT;
-			putnodedat(cfg, i,&node);
+			putnodedat(cfg, i,&node,file);
 			break; 
 		} 
 	}
@@ -639,7 +639,7 @@ char DLLCALL getage(scfg_t* cfg, char *birth)
 /* from node.dab															*/
 /* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
 /****************************************************************************/
-int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
+int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fp)
 {
 	char	str[MAX_PATH+1];
 	int		count;
@@ -651,6 +651,8 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 	sprintf(str,"%snode.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
 		memset(node,0,sizeof(node_t));
+		if(fp!=NULL)
+			*fp=file;
 		return(errno); 
 	}
 
@@ -659,14 +661,18 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 		if(count)
 			mswait(100);
 		lseek(file,(long)number*sizeof(node_t),SEEK_SET);
-		if(lockit
+		if(fp!=NULL
 			&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
 			continue; 
 		if(read(file,node,sizeof(node_t))==sizeof(node_t))
 			break;
 	}
 
-	close(file);
+	if(fp==NULL)
+		close(file);
+	else
+		*fp=file;
+
 	if(count==LOOP_NODEDAB) 
 		return(-2); 
 	
@@ -675,25 +681,15 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 
 /****************************************************************************/
 /* Write the data from the structure 'node' into node.dab  					*/
-/* getnodedat(num,&node,1); must have been called before calling this func  */
-/*          NOTE: ------^   the indicates the node record has been locked   */
 /****************************************************************************/
-int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
+int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node, int file)
 {
-	char	str[MAX_PATH+1];
 	size_t	wr;
 	int		wrerr;
-	int		file;
 	int		attempts;
 
 	if(!number || number>cfg->sys_nodes) 
 		return(-1);
-
-	sprintf(str,"%snode.dab",cfg->ctrl_dir);
-	if((file=nopen(str,O_RDWR|O_CREAT|O_DENYNONE))==-1) {
-		memset(node,0,sizeof(node_t));
-		return(errno); 
-	}
 
 	number--;	/* make zero based */
 	for(attempts=0;attempts<10;attempts++) {
@@ -784,13 +780,13 @@ int DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin)
 	}
 	close(file);
 	for(i=1;i<=cfg->sys_nodes;i++) {     /* flag node if user on that msg waiting */
-		getnodedat(cfg,i,&node,0);
+		getnodedat(cfg,i,&node,NULL);
 		if(node.useron==usernumber
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 			&& !(node.misc&NODE_MSGW)) {
-			getnodedat(cfg,i,&node,1);
+			getnodedat(cfg,i,&node,&file);
 			node.misc|=NODE_MSGW;
-			putnodedat(cfg,i,&node); 
+			putnodedat(cfg,i,&node,file); 
 		} 
 	}
 	return(0);
@@ -1247,12 +1243,12 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char 
 	for(i=1;i<=cfg->sys_nodes;i++) {	/* instant user data update */
 		if(i==cfg->node_num)
 			continue;
-		getnodedat(cfg, i,&node,0);
+		getnodedat(cfg, i,&node,NULL);
 		if(node.useron==usernumber && (node.status==NODE_INUSE
 			|| node.status==NODE_QUIET)) {
-			getnodedat(cfg, i,&node,1);
+			getnodedat(cfg, i,&node,&file);
 			node.misc|=NODE_UDAT;
-			putnodedat(cfg, i,&node);
+			putnodedat(cfg, i,&node,file);
 			break; 
 		} 
 	}
@@ -1323,12 +1319,12 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	for(i=1;i<=cfg->sys_nodes;i++) { /* instant user data update */
 		if(i==cfg->node_num)
 			continue;
-		getnodedat(cfg, i,&node,0);
+		getnodedat(cfg, i,&node,NULL);
 		if(node.useron==usernumber && (node.status==NODE_INUSE
 			|| node.status==NODE_QUIET)) {
-			getnodedat(cfg, i,&node,1);
+			getnodedat(cfg, i,&node,&file);
 			node.misc|=NODE_UDAT;
-			putnodedat(cfg, i,&node);
+			putnodedat(cfg, i,&node,file);
 			break; 
 		} 
 	}
