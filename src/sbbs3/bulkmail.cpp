@@ -100,6 +100,10 @@ bool sbbs_t::bulkmail(uchar *ar)
 	smb_hfield_str(&msg,SENDEREXT,str);
 	msg.idx.from=useron.number;
 
+	/* Security logging */
+	smb_hfield_str(&msg,SENDERIPADDR,client.addr);
+	smb_hfield_str(&msg,SENDERHOSTNAME,client.host);
+
 	smb_hfield_str(&msg,SUBJECT,title);
 	msg.idx.subj=subject_crc(title);
 

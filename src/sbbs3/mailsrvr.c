@@ -2204,6 +2204,10 @@ static void smtp_thread(void* arg)
 					msg.idx.subj=subject_crc(p);
 				}
 
+				/* Security logging */
+				smb_hfield_str(&msg,SENDERIPADDR,host_ip);
+				smb_hfield_str(&msg,SENDERHOSTNAME,host_name);
+
 				length=filelength(fileno(msgtxt))-ftell(msgtxt);
 
 				if(startup->max_msg_size && length>startup->max_msg_size) {
