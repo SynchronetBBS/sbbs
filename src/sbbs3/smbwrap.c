@@ -53,13 +53,6 @@
 #include "smblib.h"		/* SMBCALL */
 #include "smbwrap.h"	/* Verify prototypes */
 
-#ifdef _WIN32
-#define stat(f,s)	_stat(f,s)
-#define STAT		struct _stat
-#else
-#define STAT		struct stat
-#endif
-
 /****************************************************************************/
 /* Convert ASCIIZ string to upper case										*/
 /****************************************************************************/
@@ -111,7 +104,7 @@ long SMBCALL flength(char *filename)
 
 #else 
 
-	STAT st;
+	struct stat st;
 
 	if(access(filename,0)==-1)
 		return(-1L);
@@ -196,7 +189,7 @@ BOOL SMBCALL fexist(char *filespec)
 /****************************************************************************/
 long SMBCALL filelength(int fd)
 {
-	STAT st;
+	struct stat st;
 
 	if(fstat(fd, &st)!=0)
 		return(-1L);
