@@ -156,6 +156,9 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
+	if(!SMB_IS_OPEN(&(p->smb)))
+		return(JS_TRUE);
+
 	memset(&msg,0,sizeof(msg));
 
 	if(JSVAL_TO_BOOLEAN(argv[0])==JS_TRUE)	/* Get by offset */
@@ -271,6 +274,9 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
+
+	if(!SMB_IS_OPEN(&(p->smb)))
+		return(JS_TRUE);
 
 	memset(&msg,0,sizeof(msg));
 
@@ -436,6 +442,7 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	msg.hdr.when_written.time=time(NULL);
 	msg.hdr.when_written.zone=scfg->sys_timezone;
 
+	truncsp(body);
 	if(savemsg(scfg, &(p->smb), p->subnum, &msg, body)==0)
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 
