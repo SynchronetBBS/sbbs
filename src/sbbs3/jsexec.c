@@ -68,6 +68,9 @@ BOOL		terminated=FALSE;
 BOOL		recycled;
 DWORD		log_mask=DEFAULT_LOG_MASK;
 int  		err_level=DEFAULT_ERR_LOG_LVL;
+#if defined(__unix__)
+BOOL		daemonize=FALSE;
+#endif
 
 void banner(FILE* fp)
 {
@@ -86,6 +89,9 @@ void usage(FILE* fp)
 	fprintf(fp,"\nusage: jsexec [-opts] [path]module[.js] [args]\n"
 		"\navailable opts:\n\n"
 		"\t-c<ctrl_dir>   specify path to Synchronet CTRL directory\n"
+#if defined(__unix__)
+		"\t-d             run in background (daemonize)\n"
+#endif
 		"\t-m<bytes>      set maximum heap size (default=%u bytes)\n"
 		"\t-s<bytes>      set context stack size (default=%u bytes)\n"
 		"\t-b<limit>      set branch limit (default=%u, 0=unlimited)\n"
@@ -126,15 +132,56 @@ int lprintf(int level, char *fmt, ...)
 		return(0);
 
     va_start(argptr,fmt);
-    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+    ret=vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
+#if defined(__unix__)
+	if(daemonize) {
+		syslog(level,sbuf);
+		return(ret);
+	}
+#endif
 	if(level<=err_level)
 		ret=fprintf(errfp,"%s",sbuf);
 	if(level>err_level || (errfp!=stderr && errfp!=confp))
 		ret=fprintf(confp,"%s",sbuf);
     return(ret);
 }
+
+#if defined(__unix__) && defined(NEEDS_DAEMON)
+/****************************************************************************/
+/* Daemonizes the process                                                   */
+/****************************************************************************/
+int
+daemon(int nochdir, int noclose)
+{
+    int fd;
+
+    switch (fork()) {
+    case -1:
+        return (-1);
+    case 0:
+        break;
+    default:
+        _exit(0);
+    }
+
+    if (setsid() == -1)
+        return (-1);
+
+    if (!nochdir)
+        (void)chdir("/");
+
+    if (!noclose && (fd = open(_PATH_DEVNULL, O_RDWR, 0)) != -1) {
+        (void)dup2(fd, STDIN_FILENO);
+        (void)dup2(fd, STDOUT_FILENO);
+        (void)dup2(fd, STDERR_FILENO);
+        if (fd > 2)
+            (void)close(fd);
+    }
+    return (0);
+}
+#endif
 
 #if defined(_WINSOCKAPI_)
 
@@ -832,7 +879,7 @@ int main(int argc, char **argv, char** environ)
 	banner(statfp);
 
 	if(chdir(scfg.ctrl_dir)!=0)
-		lprintf(LOG_ERR,"!ERROR changing directory to: %s", scfg.ctrl_dir);
+		lprintf(LOG_ERR,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
@@ -846,6 +893,16 @@ int main(int argc, char **argv, char** environ)
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
+
+#if defined(__unix__)
+	if(daemonize) {
+		lprintf(LOG_INFO,"Running as daemon\n");
+		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
+			lprintf(LOG_ERR,"!ERROR %d running as daemon\n",errno);
+			daemonize=FALSE;
+		}
+	}
+#endif
 
 	/* Don't cache error log */
 	setvbuf(errfp,NULL,_IONBF,0);
