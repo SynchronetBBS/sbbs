@@ -3,7 +3,6 @@
 #define MONO	1
 #define	BW80	MONO
 #define COLOR_MODE	2
-#define kbhit()		_kbhit()
 
 #ifndef BOOL
 #define BOOL    int
@@ -28,12 +27,11 @@ struct text_info {
 	unsigned char screenwidth;
 };
 
-int inkey(int mode);
 short curses_color(short color);
 int puttext(int sx, int sy, int ex, int ey, unsigned char *fill);
 int gettext(int sx, int sy, int ex, int ey, unsigned char *fill);
 void textattr(unsigned char attr);
-int _kbhit(void);
+int kbhit(void);
 #ifndef __QNX__
 void delay(long msec);
 #endif

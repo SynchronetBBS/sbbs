@@ -66,7 +66,7 @@ enum {
 	,BLUE	
 	,GREEN	
 	,CYAN
-	,RED		
+	,RED
 	,MAGENTA
 	,BROWN	
 	,LIGHTGRAY	
@@ -131,19 +131,28 @@ static void reset_dynamic(void) {
 /* Returns 0 on success.													*/
 /****************************************************************************/
 
-#ifdef _WIN32    /* ToDo Merge with __unix__ */
+int kbwait() {
+	int timeout=0;
+	while(timeout++<500) {
+		if(kbhit)
+			return(TRUE);
+	}
+	return(FALSE);
+}
+
 int inkey(int mode)
 {
 	int c;
 
-if(mode)
-	return(kbhit());
-c=getch();
-if(!c)
-	c=(getch()<<8);
-return(c);
-}
+	if(mode)
+		return(kbwait());
+	c=getch();
+#ifdef _WIN32
+	if(!c)
+		c=(getch()<<8);
 #endif
+	return(c);
+}
 
 int uifcini32(uifcapi_t* uifcapi)
 {
@@ -1571,33 +1580,32 @@ void upop(char *str)
 	char buf[26*3*2];
 	int i,j,k;
 
-	reset_dynamic();
 	if(!str) {
 		puttext(28,12,53,14,sav);
-		return; 
+		return;
 	}
 	gettext(28,12,53,14,sav);
 	memset(buf,SP,25*3*2);
 	for(i=1;i<26*3*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
-		buf[0]='Ú';
+	buf[0]='Ú';
 	for(i=2;i<25*2;i+=2)
-        buf[i]='Ä';
-		buf[i]='¿'; i+=2;
-        buf[i]='³'; i+=2;
+		buf[i]='Ä';
+	buf[i]='¿'; i+=2;
+	buf[i]='³'; i+=2;
 	i+=2;
 	k=strlen(str);
 	i+=(((23-k)/2)*2);
 	for(j=0;j<k;j++,i+=2) {
 		buf[i]=str[j];
-		buf[i+1]|=BLINK; 
+		buf[i+1]|=BLINK;
 	}
 	i=((25*2)+1)*2;
-        buf[i]='³'; i+=2;
-        buf[i]='À'; i+=2;
+	buf[i]='³'; i+=2;
+	buf[i]='À'; i+=2;
 	for(;i<((26*3)-1)*2;i+=2)
-        buf[i]='Ä';
-    buf[i]='Ù';
+		buf[i]='Ä';
+	buf[i]='Ù';
 
 	puttext(28,12,53,14,buf);
 }

@@ -7,13 +7,6 @@
 static int lastattr=0;
 static long mode;
 
-int inkey(int mode)
-{
-	if(mode)
-		return(kbhit());
-	return(getch());
-}
-
 short curses_color(short color)
 {
 	switch(color)
@@ -335,12 +328,12 @@ void textattr(unsigned char attr)
 	bkgdset(colour);
 }
 
-int _kbhit(void)
+int kbhit(void)
 {
 	struct timeval timeout;
 	fd_set	rfds;
-	
-	timeout.tv_sec=1;
+
+	timeout.tv_sec=0;
 	timeout.tv_usec=0;
 	FD_ZERO(&rfds);
 	FD_SET(fileno(stdin),&rfds);
@@ -623,7 +616,7 @@ void _setcursortype(int type) {
 		default:	/* Normal cursor */
 			curs_set(1);
 			break;
-			
+
 	}
 	refresh();
 }
