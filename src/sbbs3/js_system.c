@@ -928,6 +928,72 @@ js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	return(JS_TRUE);
 }
 
+static JSBool
+js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		alias;
+	int			i;
+	scfg_t*		cfg;
+	user_t		user;
+	JSObject*	userobj;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	alias=JS_GetStringBytes(JS_ValueToString(cx,argv[0]));
+
+	memset(&user,0,sizeof(user));
+
+	user.sex=SP;
+	SAFECOPY(user.alias,alias);
+
+	/* statistics */
+	user.firston=user.laston=user.pwmod=time(NULL);
+
+	/* security */
+	user.level=cfg->new_level;
+	user.flags1=cfg->new_flags1;
+	user.flags2=cfg->new_flags2;
+	user.flags3=cfg->new_flags3;
+	user.flags4=cfg->new_flags4;
+	user.rest=cfg->new_rest;
+	user.exempt=cfg->new_exempt;
+
+	user.cdt=cfg->new_cdt;
+	user.min=cfg->new_min;
+	user.freecdt=cfg->level_freecdtperday[user.level];
+	if(cfg->new_expire)
+		user.expire=user.firston+((long)cfg->new_expire*24L*60L*60L);
+	else
+		user.expire=0;
+
+	/* settings */
+	if(cfg->total_fcomps)
+		strcpy(user.tmpext,cfg->fcomp[0]->ext);
+	else
+		strcpy(user.tmpext,"ZIP");
+	for(i=0;i<cfg->total_xedits;i++)
+		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar,&user))
+			break;
+	if(i<cfg->total_xedits)
+		user.xedit=i+1;
+
+	user.shell=cfg->new_shell;
+	user.misc=cfg->new_misc|(AUTOTERM|COLOR);
+	user.prot=cfg->new_prot;
+	user.qwk=(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL);
+
+	i=newuserdat(cfg,&user);
+
+	if(i==0) {
+		userobj=js_CreateUserObject(cx, obj, cfg, "user", user.number);
+		*rval = OBJECT_TO_JSVAL(userobj);
+	} else
+		*rval = INT_TO_JSVAL(i);
+
+	return(JS_TRUE);
+}
+
 
 static jsMethodSpec js_system_functions[] = {
 	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("string alias")
@@ -966,6 +1032,9 @@ static jsMethodSpec js_system_functions[] = {
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("number user, string message")
 	,JSDOCSTR("send a user a short text message, delivered immediately or next during next logon")
 	},		
+	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias")
+	,JSDOCSTR("Create a new user record, returns a User object")
+	},
 	{0}
 };
 
