@@ -52,15 +52,16 @@
 #define _WINSOCKAPI_	
 #endif
 
-#elif defined __unix__	/* Unix-variant */
-
-#include <netdb.h>		/* gethostbyname */
-#include <sys/types.h>  /* For u_int32_t on FreeBSD */
-#include <netinet/in.h>	/* IPPROTO_IP */
-#include <sys/socket.h>	/* socket/bind/etc. */
-#include <sys/time.h>	/* struct timeval */
-#include <arpa/inet.h>	/* inet_ntoa */
-#include <unistd.h>		/* close */
+#elif defined __unix__		/* Unix-variant */
+							
+#include <netdb.h>			/* gethostbyname */
+#include <sys/types.h>		/* For u_int32_t on FreeBSD */
+#include <netinet/in.h>		/* IPPROTO_IP */
+#include <sys/socket.h>		/* socket/bind/etc. */
+#include <sys/time.h>		/* struct timeval */
+#include <arpa/inet.h>		/* inet_ntoa */
+#include <netinet/tcp.h>	/* TCP_NODELAY */
+#include <unistd.h>			/* close */
 #if defined(__solaris__)
 	#include <sys/filio.h>  /* FIONBIO */
 #else
