@@ -366,6 +366,7 @@ int sem_getvalue(sem_t* psem, int* val)
 }
 #endif
 
+#ifdef SBBS
 /****************************************************************************/
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
 /****************************************************************************/
@@ -441,3 +442,4 @@ ulong DLLCALL getfreediskspace(char* path)
 
 #endif
 }
+#endif /* SBBS */
