@@ -1,9 +1,9 @@
 object PropertiesDlg: TPropertiesDlg
-  Left = 620
-  Top = 340
+  Left = 624
+  Top = 358
   BorderStyle = bsDialog
   Caption = 'Control Panel Properties'
-  ClientHeight = 321
+  ClientHeight = 288
   ClientWidth = 433
   Color = clBtnFace
   ParentFont = True
@@ -13,7 +13,7 @@ object PropertiesDlg: TPropertiesDlg
   OnShow = FormShow
   DesignSize = (
     433
-    321)
+    288)
   PixelsPerInch = 120
   TextHeight = 16
   object OKBtn: TButton
@@ -42,10 +42,10 @@ object PropertiesDlg: TPropertiesDlg
     Left = 8
     Top = 8
     Width = 313
-    Height = 306
-    ActivePage = SettingsTabSheet
+    Height = 273
+    ActivePage = AdvancedTabSheet
     Anchors = [akLeft, akTop, akBottom]
-    TabIndex = 0
+    TabIndex = 2
     TabOrder = 2
     object SettingsTabSheet: TTabSheet
       Caption = 'Settings'
@@ -65,17 +65,9 @@ object PropertiesDlg: TPropertiesDlg
         AutoSize = False
         Caption = 'Config Command'
       end
-      object Label1: TLabel
-        Left = 8
-        Top = 76
-        Width = 110
-        Height = 24
-        AutoSize = False
-        Caption = 'Control Directory'
-      end
       object Label4: TLabel
         Left = 8
-        Top = 108
+        Top = 76
         Width = 225
         Height = 24
         AutoSize = False
@@ -83,7 +75,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object Label5: TLabel
         Left = 8
-        Top = 140
+        Top = 108
         Width = 225
         Height = 24
         AutoSize = False
@@ -91,7 +83,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object PasswordLabel: TLabel
         Left = 8
-        Top = 238
+        Top = 206
         Width = 110
         Height = 24
         AutoSize = False
@@ -117,95 +109,85 @@ object PropertiesDlg: TPropertiesDlg
         ShowHint = True
         TabOrder = 1
       end
-      object CtrlDirEdit: TEdit
-        Left = 120
-        Top = 76
-        Width = 169
-        Height = 24
-        Hint = 'Control directory (e.g. c:\sbbs\ctrl)'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 2
-      end
       object NodeIntEdit: TEdit
         Left = 240
-        Top = 108
+        Top = 76
         Width = 25
         Height = 24
         Hint = 'Frequency of updates to Node window'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 2
         Text = '1'
       end
       object NodeIntUpDown: TUpDown
         Left = 265
-        Top = 108
+        Top = 76
         Width = 19
         Height = 24
         Associate = NodeIntEdit
         Min = 1
         Max = 99
         Position = 1
-        TabOrder = 4
+        TabOrder = 3
         Wrap = False
       end
       object ClientIntEdit: TEdit
         Left = 240
-        Top = 140
+        Top = 108
         Width = 25
         Height = 24
         Hint = 'Frequency of updates to clients window'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 4
         Text = '1'
       end
       object ClientIntUpDown: TUpDown
         Left = 265
-        Top = 140
+        Top = 108
         Width = 19
         Height = 24
         Associate = ClientIntEdit
         Min = 1
         Max = 99
         Position = 1
-        TabOrder = 6
+        TabOrder = 5
         Wrap = False
       end
       object UndockableCheckBox: TCheckBox
         Left = 8
-        Top = 170
+        Top = 138
         Width = 281
         Height = 24
         Hint = 'Allow child windows to be "un-docked" from main window'
         Caption = 'Undockable Windows'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 6
       end
       object TrayIconCheckBox: TCheckBox
         Left = 8
-        Top = 202
+        Top = 170
         Width = 281
         Height = 24
         Hint = 'Create tray icon when minimized'
         Caption = 'Minimize to System Tray'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 7
         OnClick = TrayIconCheckBoxClick
       end
       object PasswordEdit: TEdit
         Left = 120
-        Top = 238
+        Top = 206
         Width = 169
         Height = 24
         Hint = 'Required password for restoring from system tray icon'
         ParentShowHint = False
         PasswordChar = '*'
         ShowHint = True
-        TabOrder = 9
+        TabOrder = 8
       end
     end
     object CustomizeTabSheet: TTabSheet
@@ -281,6 +263,46 @@ object PropertiesDlg: TPropertiesDlg
           'Mail Server Log'
           'Services Log'
           'All  Windows')
+      end
+    end
+    object AdvancedTabSheet: TTabSheet
+      Caption = 'Advanced'
+      ImageIndex = 2
+      object Label1: TLabel
+        Left = 8
+        Top = 12
+        Width = 110
+        Height = 24
+        AutoSize = False
+        Caption = 'Control Directory'
+      end
+      object Label6: TLabel
+        Left = 8
+        Top = 44
+        Width = 110
+        Height = 24
+        AutoSize = False
+        Caption = 'Hostname'
+      end
+      object CtrlDirEdit: TEdit
+        Left = 120
+        Top = 12
+        Width = 169
+        Height = 24
+        Hint = 'Control directory (e.g. c:\sbbs\ctrl)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 0
+      end
+      object HostnameEdit: TEdit
+        Left = 120
+        Top = 44
+        Width = 169
+        Height = 24
+        Hint = 'Control directory (e.g. c:\sbbs\ctrl)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
       end
     end
   end

@@ -333,6 +333,7 @@ public:		// User declarations
     bool			FtpLogFile;
     bool            FirstRun;
     AnsiString		CtrlDirectory;
+    AnsiString      Hostname;
     AnsiString      LoginCommand;
     AnsiString      ConfigCommand;
     AnsiString		Password;

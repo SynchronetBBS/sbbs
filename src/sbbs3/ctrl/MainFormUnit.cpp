@@ -271,9 +271,11 @@ static void bbs_start(void)
 {
 	Screen->Cursor=crAppStart;
     bbs_status("Starting");
-    strcpy(MainForm->bbs_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->bbs_startup.ctrl_dir
+        ,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->bbs_startup.host_name
+        ,MainForm->Hostname.c_str());
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
-
     Application->ProcessMessages();
 }
 
@@ -446,7 +448,10 @@ static void mail_start(void)
 {
 	Screen->Cursor=crAppStart;
     mail_status("Starting");
-    strcpy(MainForm->mail_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->mail_startup.ctrl_dir
+        ,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->mail_startup.host_name
+        ,MainForm->Hostname.c_str());
 	_beginthread((void(*)(void*))mail_server,0,&MainForm->mail_startup);
     Application->ProcessMessages();
 }
@@ -566,7 +571,10 @@ static void ftp_start(void)
 {
 	Screen->Cursor=crAppStart;
     ftp_status("Starting");
-    strcpy(MainForm->ftp_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->ftp_startup.ctrl_dir
+        ,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->ftp_startup.host_name
+        ,MainForm->Hostname.c_str());
 	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
     Application->ProcessMessages();
 }
@@ -806,9 +814,11 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 	Screen->Cursor=crAppStart;
     services_status("Starting");
 
-    strcpy(MainForm->services_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->services_startup.ctrl_dir
+        ,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(MainForm->services_startup.host_name
+        ,MainForm->Hostname.c_str());
 	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
-
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
@@ -1362,6 +1372,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     ViewToolbarMenuItem->Checked=Toolbar->Visible;
     ViewStatusBarMenuItem->Checked=StatusBar->Visible;
 
+    if(Registry->ValueExists("Hostname"))
+    	Hostname=Registry->ReadString("Hostname");
     if(Registry->ValueExists("CtrlDirectory"))
     	CtrlDirectory=Registry->ReadString("CtrlDirectory");
     if(Registry->ValueExists("LoginCommand"))
@@ -1407,15 +1419,13 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	bbs_startup.xtrn_polls_before_yield=Registry->ReadInteger("ExternalYield");
 
     if(Registry->ValueExists("AnswerSound"))
-    	sprintf(bbs_startup.answer_sound,"%.*s"
-        	,sizeof(bbs_startup.answer_sound)-1
+    	SAFECOPY(bbs_startup.answer_sound
         	,Registry->ReadString("AnswerSound").c_str());
     else
         FirstRun=true;
 
     if(Registry->ValueExists("HangupSound"))
-    	sprintf(bbs_startup.hangup_sound,"%.*s"
-        	,sizeof(bbs_startup.hangup_sound)-1
+    	SAFECOPY(bbs_startup.hangup_sound
         	,Registry->ReadString("HangupSound").c_str());
 
     if(Registry->ValueExists("StartupOptions"))
@@ -1445,36 +1455,30 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	mail_startup.pop3_port=Registry->ReadInteger("MailPOP3Port");
 
     if(Registry->ValueExists("MailRelayServer"))
-        sprintf(mail_startup.relay_server,"%.*s"
-            ,sizeof(mail_startup.relay_server)-1
+        SAFECOPY(mail_startup.relay_server
             ,Registry->ReadString("MailRelayServer").c_str());
 
     if(Registry->ValueExists("MailRelayPort"))
     	mail_startup.relay_port=Registry->ReadInteger("MailRelayPort");
 
     if(Registry->ValueExists("MailDefaultUser"))
-        sprintf(mail_startup.default_user,"%.*s"
-            ,sizeof(mail_startup.default_user)-1
+        SAFECOPY(mail_startup.default_user
             ,Registry->ReadString("MailDefaultUser").c_str());
 
     if(Registry->ValueExists("MailDNSServer"))
-        sprintf(mail_startup.dns_server,"%.*s"
-            ,sizeof(mail_startup.dns_server)-1
+        SAFECOPY(mail_startup.dns_server
             ,Registry->ReadString("MailDNSServer").c_str());
 
     if(Registry->ValueExists("MailInboundSound"))
-    	sprintf(mail_startup.inbound_sound,"%.*s"
-        	,sizeof(mail_startup.inbound_sound)-1
+    	SAFECOPY(mail_startup.inbound_sound
         	,Registry->ReadString("MailInboundSound").c_str());
 
     if(Registry->ValueExists("MailOutboundSound"))
-    	sprintf(mail_startup.outbound_sound,"%.*s"
-        	,sizeof(mail_startup.outbound_sound)-1
+    	SAFECOPY(mail_startup.outbound_sound
         	,Registry->ReadString("MailOutboundSound").c_str());
 
     if(Registry->ValueExists("MailPOP3Sound"))
-    	sprintf(mail_startup.pop3_sound,"%.*s"
-        	,sizeof(mail_startup.pop3_sound)-1
+    	SAFECOPY(mail_startup.pop3_sound
         	,Registry->ReadString("MailPOP3Sound").c_str());
 
     if(Registry->ValueExists("MailOptions"))
@@ -1496,33 +1500,27 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	ftp_startup.port=Registry->ReadInteger("FtpPort");
 
     if(Registry->ValueExists("FtpAnswerSound"))
-    	sprintf(ftp_startup.answer_sound,"%.*s"
-        	,sizeof(ftp_startup.answer_sound)-1
+    	SAFECOPY(ftp_startup.answer_sound
         	,Registry->ReadString("FtpAnswerSound").c_str());
 
     if(Registry->ValueExists("FtpHangupSound"))
-    	sprintf(ftp_startup.hangup_sound,"%.*s"
-        	,sizeof(ftp_startup.hangup_sound)-1
+    	SAFECOPY(ftp_startup.hangup_sound
         	,Registry->ReadString("FtpHangupSound").c_str());
 
     if(Registry->ValueExists("FtpHackAttemptSound"))
-    	sprintf(ftp_startup.hack_sound,"%.*s"
-        	,sizeof(ftp_startup.hack_sound)-1
+    	SAFECOPY(ftp_startup.hack_sound
         	,Registry->ReadString("FtpHackAttemptSound").c_str());
 
     if(Registry->ValueExists("FtpIndexFileName"))
-    	sprintf(ftp_startup.index_file_name,"%.*s"
-        	,sizeof(ftp_startup.index_file_name)-1
+    	SAFECOPY(ftp_startup.index_file_name
         	,Registry->ReadString("FtpIndexFileName").c_str());
 
     if(Registry->ValueExists("FtpHtmlIndexFile"))
-    	sprintf(ftp_startup.html_index_file,"%.*s"
-        	,sizeof(ftp_startup.html_index_file)-1
+    	SAFECOPY(ftp_startup.html_index_file
         	,Registry->ReadString("FtpHtmlIndexFile").c_str());
 
     if(Registry->ValueExists("FtpHtmlIndexScript"))
-    	sprintf(ftp_startup.html_index_script,"%.*s"
-        	,sizeof(ftp_startup.html_index_script)-1
+    	SAFECOPY(ftp_startup.html_index_script
         	,Registry->ReadString("FtpHtmlIndexScript").c_str());
 
     if(Registry->ValueExists("FtpOptions"))
@@ -1533,13 +1531,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
             =Registry->ReadInteger("ServicesInterface");
 
     if(Registry->ValueExists("ServicesAnswerSound"))
-    	sprintf(services_startup.answer_sound,"%.*s"
-        	,sizeof(services_startup.answer_sound)-1
+    	SAFECOPY(services_startup.answer_sound
         	,Registry->ReadString("ServicesAnswerSound").c_str());
 
     if(Registry->ValueExists("ServicesHangupSound"))
-    	sprintf(services_startup.hangup_sound,"%.*s"
-        	,sizeof(services_startup.hangup_sound)-1
+    	SAFECOPY(services_startup.hangup_sound
         	,Registry->ReadString("ServicesHangupSound").c_str());
 
     if(Registry->ValueExists("ServicesOptions"))
@@ -1788,6 +1784,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteBool("ToolBarVisible",Toolbar->Visible);
     Registry->WriteBool("StatusBarVisible",StatusBar->Visible);
 
+    Registry->WriteString("Hostname",Hostname);
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
     Registry->WriteString("LoginCommand",LoginCommand);
     Registry->WriteString("ConfigCommand",ConfigCommand);
@@ -2256,6 +2253,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     Application->CreateForm(__classid(TPropertiesDlg), &PropertiesDlg);
     PropertiesDlg->LoginCmdEdit->Text=LoginCommand;
     PropertiesDlg->ConfigCmdEdit->Text=ConfigCommand;
+    PropertiesDlg->HostnameEdit->Text=Hostname;
     PropertiesDlg->CtrlDirEdit->Text=CtrlDirectory;
     PropertiesDlg->NodeIntUpDown->Position=NodeDisplayInterval;
     PropertiesDlg->ClientIntUpDown->Position=ClientDisplayInterval;
@@ -2265,6 +2263,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
+        Hostname=PropertiesDlg->HostnameEdit->Text;
         CtrlDirectory=PropertiesDlg->CtrlDirEdit->Text;
         Password=PropertiesDlg->PasswordEdit->Text;
         NodeDisplayInterval=PropertiesDlg->NodeIntUpDown->Position;
@@ -2274,7 +2273,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         SaveSettings(Sender);
     }
     delete PropertiesDlg;
-    
+
     inside=false;
 }
 //---------------------------------------------------------------------------

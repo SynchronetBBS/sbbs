@@ -26,8 +26,6 @@ __published:
 	TEdit *LoginCmdEdit;
 	TLabel *Label2;
 	TEdit *ConfigCmdEdit;
-	TLabel *Label1;
-	TEdit *CtrlDirEdit;
 	TLabel *Label4;
 	TEdit *NodeIntEdit;
 	TUpDown *NodeIntUpDown;
@@ -47,6 +45,11 @@ __published:
 	TButton *ApplyButton;
 	TComboBox *TargetComboBox;
 	TColorDialog *ColorDialog1;
+        TTabSheet *AdvancedTabSheet;
+        TLabel *Label1;
+        TEdit *CtrlDirEdit;
+        TLabel *Label6;
+        TEdit *HostnameEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);
