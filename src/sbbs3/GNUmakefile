@@ -516,23 +516,23 @@ $(MSG2ANS): $(LIBODIR)/msg2ans.o
 
 # "Single servers"
 $(SBBSWEB): $(SBBSCON)
-	@echo Copying $@ for no good reason
+	@echo Copying $(SBBSCON) to $@ for no good reason
 	$(QUIET)cp $(SBBSCON) $@
 
 $(SBBSFTP): $(SBBSCON)
-	@echo Copying $@ for no good reason
+	@echo Copying $(SBBSCON) to $@ for no good reason
 	$(QUIET)cp $(SBBSCON) $@
 
 $(SBBSMAIL): $(SBBSCON)
-	@echo Copying $@ for no good reason
+	@echo Copying $(SBBSCON) to $@ for no good reason
 	$(QUIET)cp $(SBBSCON) $@
 
 $(SBBSSRVC): $(SBBSCON)
-	@echo Copying $@ for no good reason
+	@echo Copying $(SBBSCON) to $@ for no good reason
 	$(QUIET)cp $(SBBSCON) $@
 
 $(SBBS_BBS): $(SBBSCON)
-	@echo Copying $@ for no good reason
+	@echo Copying $(SBBSCON) to $@ for no good reason
 	$(QUIET)cp $(SBBSCON) $@
 
 
