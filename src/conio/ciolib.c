@@ -281,13 +281,13 @@ int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 {
 	int width;
 	int height;
-	char *buf;
+	unsigned char *buf;
 
 	CIOLIB_INIT();
 	
 	width=ex-sx;
 	height=ey-sy;
-	buf=(char *)malloc((width+1)*(height+1)*2);
+	buf=(unsigned char *)malloc((width+1)*(height+1)*2);
 	if(buf==NULL)
 		return(0);
 	if(!ciolib_gettext(sx,sy,ex,ey,buf)) {
@@ -538,7 +538,7 @@ void ciolib_clreol(void)
 
 void ciolib_clrscr(void)
 {
-	char *buf;
+	unsigned char *buf;
 	int i;
 	int width,height;
 	struct text_info ti;
@@ -549,7 +549,7 @@ void ciolib_clrscr(void)
 
 	width=ti.winright-ti.winleft+1;
 	height=ti.winbottom-ti.wintop+1;
-	buf=(char *)malloc(width*height*2);
+	buf=(unsigned char *)malloc(width*height*2);
 	for(i=0;i<width*height*2;) {
 		buf[i++]=' ';
 		buf[i++]=ti.attribute;
@@ -749,6 +749,7 @@ int ciolib_showmouse(void) {
 
 	if(cio_api.showmouse!=NULL)
 		return(cio_api.showmouse());
+	return(-1);
 }
 
 int ciolib_hidemouse(void) {
@@ -756,4 +757,5 @@ int ciolib_hidemouse(void) {
 
 	if(cio_api.hidemouse!=NULL)
 		return(cio_api.hidemouse());
+	return(-1);
 }
