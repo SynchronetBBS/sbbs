@@ -6,10 +6,12 @@ if(argc>0 && argv[0].indexOf('@')!=-1)
 	dest = argv[0];
 else if((dest = prompt("User (user@hostname)"))==null)
 	exit();
+
 if((hp = dest.indexOf('@'))==-1) {
-	alert("Invalid user");
-	exit();
+        dest += "@" + system.host_name;
+	hp = dest.indexOf('@')
 }
+
 host = dest.slice(hp+1);
 sock = new Socket();
 //sock.debug = true;
