@@ -737,9 +737,11 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 
     if(TrayIcon->Visible)           /* minimized to tray? */
         TrayIcon->Visible=false;    /* restore to avoid crash */
-
+        
+#if 0   /* This shouldn't be necessary any longer */
     if(Initialized) /* Don't overwrite registry settings with defaults */
         SaveSettings(Sender);
+#endif
 
 	StatusBar->Panels->Items[4]->Text="Closing...";
     time_t start=time(NULL);
