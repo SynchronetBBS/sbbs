@@ -382,8 +382,9 @@ typedef enum {						/* Values for xtrn_t.event			*/
 #define EXPANDLF	(1L<<11)		/* Expand LF to CRLF editor 		*/
 #define QUOTEALL	(1L<<12)		/* Automatically quote all of msg	*/
 #define QUOTENONE	(1L<<13)		/* Automatically quote none of msg	*/
-#define XTRN_NATIVE	(1L<<14)		/* Native application				*/
+#define XTRN_NATIVE	(1L<<14)		/* Native application (EX_NATIVE)	*/
 #define STRIPKLUDGE (1L<<15)		/* Strip FTN Kludge lines from msg  */
+#define XTRN_CHKTIME (1<<16)		/* Check time online (EX_CHKTIME)	*/
 
 									/* Bits in user.qwk 				*/
 #define QWK_FILES	(1L<<0) 		/* Include new files list			*/
@@ -714,6 +715,7 @@ enum {						/* readmail and delmailidx which types		*/
 #define EX_BG		(1<<10)	/* Back-ground/detached process				*/
 #define EX_BIN		(1<<11)	/* Binary mode (no Unix LF to CRLF)			*/
 #define EX_NATIVE	(1<<14)	/* Native 32-bit application (XTRN_NATIVE)	*/
+#define EX_CHKTIME	(1<<16)	/* Check time left (XTRN_CHKTIME)			*/
 
 #define OS2_POPEN	(1<<0)	/* Leave COM port open						*/
 
