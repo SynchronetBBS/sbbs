@@ -1751,7 +1751,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_CONNECT;
 
 		if(result!=0) {
-			lprintf("%04d !DATA ERROR %d (%d) connecting to client %s port %d on socket %d"
+			lprintf("%04d !DATA ERROR %d (%d) connecting to client %s port %u on socket %d"
 					,ctrl_sock,result,ERROR_VALUE
 					,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port),*data_sock);
 			sockprintf(ctrl_sock,"425 Error %d connecting to socket",ERROR_VALUE);
@@ -1762,13 +1762,13 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			return;
 		}
 		if(startup->options&FTP_OPT_DEBUG_DATA)
-			lprintf("%04d DATA socket %d connected to %s port %d"
+			lprintf("%04d DATA socket %d connected to %s port %u"
 				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
 
 	} else {	/* PASV */
 
 		if(startup->options&FTP_OPT_DEBUG_DATA)
-			lprintf("%04d PASV DATA socket %d listening on %s port %d"
+			lprintf("%04d PASV DATA socket %d listening on %s port %u"
 					,ctrl_sock,pasv_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
 
 		/* Setup for select() */
@@ -1808,7 +1808,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			startup->socket_open(TRUE);
 		sockets++;
 		if(startup->options&FTP_OPT_DEBUG_DATA)
-			lprintf("%04d PASV DATA socket %d connected to %s port %d"
+			lprintf("%04d PASV DATA socket %d connected to %s port %u"
 				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
 	}
 
@@ -2042,6 +2042,12 @@ char* vpath(int lib, int dir, char* str)
 	return(str);
 }
 
+void badpassword(SOCKET sock)
+{
+	sockprintf(sock,"530 Password not accepted.");
+	mswait(5000);	/* As recommended by RFC2577 */
+}
+
 static void ctrl_thread(void* arg)
 {
 	char		buf[512];
@@ -2194,7 +2200,7 @@ static void ctrl_thread(void* arg)
 	lprintf("%04d Host name: %s", sock, host_name);
 
 	if(trashcan(&scfg,host_ip,"ip")) {
-		lprintf("%04d !Client blocked in ip.can: %s", sock, host_ip);
+		lprintf("%04d !CLIENT BLOCKED in ip.can: %s", sock, host_ip);
 		sockprintf(sock,"550 Access denied.");
 		ftp_close_socket(&sock,__LINE__);
 		thread_down();
@@ -2202,7 +2208,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf("%04d !Client blocked in host.can: %s", sock, host_name);
+		lprintf("%04d !CLIENT BLOCKED in host.can: %s", sock, host_name);
 		sockprintf(sock,"550 Access denied.");
 		ftp_close_socket(&sock,__LINE__);
 		thread_down();
@@ -2350,42 +2356,42 @@ static void ctrl_thread(void* arg)
 			sprintf(password,"%.*s",(int)sizeof(password)-1,p);
 			user.number=matchuser(&scfg,user.alias);
 			if(!user.number) {
-				lprintf("%04d !FTP: UNKNOWN USER: %s",sock,user.alias);
-				sockprintf(sock,"530 Password not accepted.");
+				lprintf("%04d !UNKNOWN USER: %s",sock,user.alias);
+				badpassword(sock);
 				continue;
 			}
 			if((i=getuserdat(&scfg, &user))!=0) {
-				lprintf("%04d !FTP: ERROR %d getting data on user #%d (%s)"
+				lprintf("%04d !ERROR %d getting data for user #%d (%s)"
 					,sock,i,user.number,user.alias);
 				sockprintf(sock,"530 Database error %d",i);
 				user.number=0;
 				continue;
 			}
 			if(user.misc&(DELETED|INACTIVE)) {
-				lprintf("%04d !FTP: DELETED or INACTIVE user #%d (%s)"
+				lprintf("%04d !DELETED or INACTIVE user #%d (%s)"
 					,sock,user.number,user.alias);
-				sockprintf(sock,"530 Password not accepted.");
+				badpassword(sock);
 				user.number=0;
 				continue;
 			}
 			if(user.rest&FLAG('T')) {
-				lprintf("%04d !FTP: 'T' RESTRICTED user #%d (%s)"
+				lprintf("%04d !T RESTRICTED user #%d (%s)"
 					,sock,user.number,user.alias);
-				sockprintf(sock,"530 Password not accepted.");
+				badpassword(sock);
 				user.number=0;
 				continue;
 			}
 			if(user.ltoday>scfg.level_callsperday[user.level]
 				&& !(user.exempt&FLAG('L'))) {
-				lprintf("%04d !FTP: Max logons (%d) reached"
-					,sock,scfg.level_callsperday[user.level]);
+				lprintf("%04d !MAXIMUM LOGONS (%d) reached for %s"
+					,sock,scfg.level_callsperday[user.level],user.alias);
 				sockprintf(sock,"530 Maximum logons reached.");
 				user.number=0;
 				continue;
 			}
 			if(user.rest&FLAG('L') && user.ltoday>1) {
-				lprintf("%04d !FTP: L Restricted user already on today"
-					,sock);
+				lprintf("%04d !L RESTRICTED user #%d (%s) already on today"
+					,sock,user.number,user.alias);
 				sockprintf(sock,"530 Maximum logons reached.");
 				user.number=0;
 				continue;
@@ -2394,8 +2400,8 @@ static void ctrl_thread(void* arg)
 			sprintf(sys_pass,"%s:%s",user.pass,scfg.sys_pass);
 			if(!user.pass[0]) {	/* Guest/Anonymous */
 				if(trashcan(&scfg,password,"email")) {
-					lprintf("%04d Blocked e-mail address: %s",sock,password);
-					sockprintf(sock,"530 Password not accepted.");
+					lprintf("%04d !BLOCKED e-mail address: %s",sock,password);
+					badpassword(sock);
 					user.number=0;
 					continue;
 				}
@@ -2408,13 +2414,13 @@ static void ctrl_thread(void* arg)
 			}
 			else if(stricmp(password,user.pass)) {
 				if(scfg.sys_misc&SM_ECHO_PW)
-					lprintf("%04d !FTP: FAILED Password attempt for user %s: '%s' expected '%s'"
+					lprintf("%04d !FAILED Password attempt for user %s: '%s' expected '%s'"
 						,sock, user.alias, password, user.pass);
 				else
-					lprintf("%04d !FTP: FAILED Password attempt for user %s"
+					lprintf("%04d !FAILED Password attempt for user %s"
 						,sock, user.alias);
-				sockprintf(sock,"530 Password not accepted.");
 				user.number=0;
+				badpassword(sock);
 				continue;
 			}
 
@@ -2538,7 +2544,20 @@ static void ctrl_thread(void* arg)
 			while(*p && *p<=' ') p++;
 			sscanf(p,"%ld,%ld,%ld,%ld,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
 			data_addr.sin_addr.s_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
-			data_addr.sin_port=htons((u_short)((p1<<8)|p2));
+			data_addr.sin_port=(u_short)((p1<<8)|p2);
+			if(data_addr.sin_port<1024) {	
+				lprintf("%04d !SUSPECTED BOUNCE ATTACK ATTEMPT by %s to %s port %u"
+					,sock,user.alias
+					,inet_ntoa(data_addr.sin_addr),data_addr.sin_port);
+				hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
+				sockprintf(sock,"504 Bad port number.");	
+#ifdef _WIN32
+				if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
+					PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+				continue; /* As recommended by RFC2577 */
+			}
+			data_addr.sin_port=htons(data_addr.sin_port);
 			sockprintf(sock,"200 PORT Command successful.");
 			continue;
 		}
@@ -3643,7 +3662,7 @@ static void ctrl_thread(void* arg)
 
 				if(strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)) {
 					success=FALSE;
-					lprintf("%04d !%s illegal filename attempt: %s"
+					lprintf("%04d !ILLEGAL FILENAME ATTEMPT by %s: %s"
 						,sock,user.alias,p);
 					hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
 #ifdef _WIN32
@@ -3799,7 +3818,7 @@ static void ctrl_thread(void* arg)
 				}
 				if(strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)
 					|| trashcan(&scfg,p,"file")) {
-					lprintf("%04d !%s illegal filename attempt: %s"
+					lprintf("%04d !ILLEGAL FILENAME ATTEMPT by %s: %s"
 						,sock,user.alias,p);
 					sockprintf(sock,"553 Illegal filename attempt");
 					hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
@@ -3971,6 +3990,8 @@ static void ctrl_thread(void* arg)
 		if(!strnicmp(cmd, "MKD", 3) || 
 			!strnicmp(cmd,"XMKD",4) || 
 			!strnicmp(cmd,"SITE EXEC",9)) {
+			lprintf("%04d !SUSPECTED HACK ATTEMPT by %s: '%s'"
+				,sock,user.alias,cmd);
 			hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
 #ifdef _WIN32
 			if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
@@ -3978,7 +3999,8 @@ static void ctrl_thread(void* arg)
 #endif
 		}		
 		sockprintf(sock,"500 Syntax error: '%s'",cmd);
-		lprintf("%04d !FTP: UNSUPPORTED COMMAND: '%s'",sock,cmd);
+		lprintf("%04d !UNSUPPORTED COMMAND from %s: '%s'"
+			,sock,user.alias,cmd);
 	} /* while(1) */
 
 	if(transfer_inprogress==TRUE) {
@@ -4282,7 +4304,7 @@ void DLLCALL ftp_server(void* arg)
 
     if((result=bind(server_socket, (struct sockaddr *) &server_addr
     	,sizeof(server_addr)))!=0) {
-		lprintf("%04d !ERROR %d (%d) binding socket to port %d"
+		lprintf("%04d !ERROR %d (%d) binding socket to port %u"
 			,server_socket, result, ERROR_VALUE,startup->port);
 		cleanup(1);
 		return;
