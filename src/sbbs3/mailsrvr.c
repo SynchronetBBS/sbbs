@@ -1481,8 +1481,7 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result)
 			break;
 		strncpy(ip,p,16);
 		ip[15]=0;
-		if(!inet_aton(ip,&check_addr))
-			break;
+		check_addr.s_addr = inet_addr(ip);
 		if(startup->options&MAIL_OPT_DNSBL_DEBUG)
 			lprintf("%04d DEBUG checking %s (%s)",socket,host_name,ip);
 		if((dnsbl_result->s_addr=dns_blacklisted(socket,check_addr,host_name,dnsbl)))
