@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -42,6 +42,9 @@ extern long crc32tbl[];
 
 #define ucrc32(ch,crc) (crc32tbl[(crc^ch)&0xff]^(crc>>8))
 
+#ifdef __cplusplus
+extern "C"
+#endif
 unsigned long crc32(char *buf, unsigned long len);
 
 #endif
