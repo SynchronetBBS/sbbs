@@ -49,8 +49,6 @@ char sbbs_t::inkey(long mode)
 {
 	uchar	ch=0;
 
-	YIELD();
-
     if(keybuftop!=keybufbot) {
         ch=keybuf[keybufbot++];
         if(keybufbot==KEY_BUFSIZE)
