@@ -443,8 +443,9 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	}
 	length=strlen(msgbuf)+sizeof(xlat);	 /* +2 for translation string */
 
-	if(length&0xfff00000UL) {
+	if(length&0x80000000) {
 		smb_unlocksmbhdr(smb);
+		sprintf(smb->last_error,"message length: 0x%lX",length);
 		return(-1);
 	}
 
