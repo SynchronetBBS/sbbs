@@ -335,25 +335,25 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			val=user.logontime;
 			break;
 		case USER_PROP_TIMEPERCALL:
-			val=p->cfg->level_timepercall[user.number];
+			val=p->cfg->level_timepercall[user.level];
 			break;
 		case USER_PROP_TIMEPERDAY:
-			val=p->cfg->level_timeperday[user.number];
+			val=p->cfg->level_timeperday[user.level];
 			break;
 		case USER_PROP_CALLSPERDAY:
-			val=p->cfg->level_callsperday[user.number];
+			val=p->cfg->level_callsperday[user.level];
 			break;
 		case USER_PROP_LINESPERMSG:
-			val=p->cfg->level_linespermsg[user.number];
+			val=p->cfg->level_linespermsg[user.level];
 			break;
 		case USER_PROP_POSTSPERDAY:
-			val=p->cfg->level_postsperday[user.number];
+			val=p->cfg->level_postsperday[user.level];
 			break;
 		case USER_PROP_EMAILPERDAY:
-			val=p->cfg->level_emailperday[user.number];
+			val=p->cfg->level_emailperday[user.level];
 			break;
 		case USER_PROP_FREECDTPERDAY:
-			val=p->cfg->level_freecdtperday[user.number];
+			val=p->cfg->level_freecdtperday[user.level];
 			break;
 
 		default:	
@@ -822,33 +822,6 @@ static JSClass js_user_class = {
 	,js_user_finalize		/* finalize		*/
 };
 
-static JSClass js_user_stats_class = {
-     "UserStats"			/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,js_user_get			/* getProperty	*/
-	,js_user_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
-};
-
-
-static JSClass js_user_security_class = {
-     "UserSecurity"			/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,js_user_get			/* getProperty	*/
-	,js_user_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
-};
-
 /* User Constructor (creates instance of user class) */
 
 static JSBool
@@ -870,7 +843,7 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	/* user.stats */
 	if((statsobj=JS_DefineObject(cx, obj, "stats"
-		,&js_user_stats_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY))==NULL) 
+		,&js_user_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY))==NULL) 
 		return(JS_FALSE);
 
 	if(!js_DefineSyncProperties(cx, statsobj, js_user_stats_properties))
@@ -878,7 +851,7 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	/* user.security */
 	if((securityobj=JS_DefineObject(cx, obj, "security"
-		,&js_user_security_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY))==NULL) 
+		,&js_user_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY))==NULL) 
 		return(JS_FALSE);
 
 	if(!js_DefineSyncProperties(cx, securityobj, js_user_security_properties))
@@ -969,7 +942,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	/* user.stats */
 	statsobj = JS_DefineObject(cx, userobj, "stats"
-		,&js_user_stats_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+		,&js_user_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(statsobj==NULL) {
 		free(p);
@@ -990,7 +963,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	/* user.limits */
 	limitsobj = JS_DefineObject(cx, userobj, "limits"
-		,&js_user_stats_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+		,&js_user_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(limitsobj==NULL) {
 		free(p);
@@ -1012,7 +985,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	/* user.security */
 	securityobj = JS_DefineObject(cx, userobj, "security"
-		,&js_user_security_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+		,&js_user_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(securityobj==NULL) {
 		free(p);
