@@ -147,7 +147,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 	static int nodedab;
     char	str[128],tmp[128];
     char*   mer;
-    int		i,n,hour;
+    int		i,n,rd,rderr,hour;
     node_t	node;
 
     if(nodedab<1) {
@@ -155,7 +155,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
         	,O_RDONLY|O_BINARY|O_CREAT, SH_DENYNONE, S_IREAD|S_IWRITE);
 		if(nodedab==-1) {
 		    ListBox->Items->Clear();
-        	ListBox->Items->Add("Error opening NODE.DAB");
+        	ListBox->Items->Add("Error "+AnsiString(errno)+" opening NODE.DAB");
             return;
         }
     }
@@ -164,14 +164,20 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
         if(eof(nodedab))
         	break;
     	i=locking(nodedab, LK_LOCK, sizeof(node_t));
-        if(i) {
-        	ListBox->Items->Add("Error "+AnsiString(i)+" reading record for"
+        if(i!=0) {
+        	ListBox->Items->Add("Error "+AnsiString(i)+" locking record for"
 	            " node "+AnsiString(n+1));
-            continue;
+            break; /* was continue */
         }
-        read(nodedab,&node, sizeof(node_t));
+        rd=read(nodedab,&node, sizeof(node_t));
+        rderr=errno;
         lseek(nodedab, n*sizeof(node_t), SEEK_SET);
         locking(nodedab, LK_UNLCK, sizeof(node_t));
+        if(rd!=sizeof(node_t)) {
+        	ListBox->Items->Add("Error "+AnsiString(rderr)+" reading record for"
+	            " node "+AnsiString(n+1));
+            break;
+        }
 		sprintf(str,"%3d ",n+1);
         switch(node.status) {
             case NODE_WFC:
