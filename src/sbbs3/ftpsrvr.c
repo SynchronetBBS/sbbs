@@ -4372,12 +4372,14 @@ static void ctrl_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d Done waiting for transfer to complete",sock);
 	}
 
-	/* Update User Statistics */
-	if(user.number) 
+	if(user.number) {
+		/* Update User Statistics */
 		logoutuserdat(&scfg, &user, time(NULL), logintime);
-
-	if(user.number)
+		/* Remove QWK-pack semaphore file (if left behind) */
+		sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
+		remove(str);
 		lprintf(LOG_INFO,"%04d %s logged off",sock,user.alias);
+	}
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
