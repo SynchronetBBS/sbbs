@@ -42,9 +42,13 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t m
 {
 	char		req[128];
 	char*		identity=NULL;
+	int			i;
 	int			rd;
 	SOCKET		sock=INVALID_SOCKET;
 	SOCKADDR_IN	addr;
+	struct timeval	tv;
+	fd_set			socket_set;
+
 
 	do {
 		if((sock = open_socket(SOCK_STREAM)) == INVALID_SOCKET) {
@@ -65,6 +69,19 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t m
 			sprintf(buf,"ERROR %d sending request",ERROR_VALUE);
 			break;
 		}
+
+		tv.tv_sec=10;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(sock,&socket_set);
+
+		i=select(sock+1,&socket_set,NULL,NULL,&tv);
+		if(i<1) {
+			sprintf(buf,"ERROR %d detecting response",ERROR_VALUE);
+			break;
+		}
+
 		rd=recv(sock,buf,maxlen,0);
 		if(rd<1) {
 			sprintf(buf,"ERROR %d receiving response",ERROR_VALUE);
