@@ -132,4 +132,18 @@ $(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
+# SBBSecho (FidoNet Packet Tosser)
+$(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
+	$(LIBODIR)\ars.obj \
+	$(LIBODIR)\misc.obj \
+	$(LIBODIR)\date_str.obj \
+	userdat.c \
+	genwrap.c \
+	dirwrap.c \
+	$(LIBODIR)\load_cfg.obj \
+	$(LIBODIR)\scfglib1.obj \
+	$(LIBODIR)\scfglib2.obj
+	@echo Creating $@
+	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
 !include depends.mk		# defines dependencies

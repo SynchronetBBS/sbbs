@@ -178,4 +178,25 @@ $(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwr
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
+# SBBSecho (FidoNet Packet Tosser)
+$(SBBSECHO): \
+	$(EXEODIR)/sbbsecho.o \
+	$(EXEODIR)/ars.o \
+	$(EXEODIR)/crc32.o \
+	$(EXEODIR)/date_str.o \
+	$(EXEODIR)/load_cfg.o \
+	$(EXEODIR)/scfglib1.o \
+	$(EXEODIR)/scfglib2.o \
+	$(EXEODIR)/misc.o \
+	$(EXEODIR)/userdat.o \
+	$(EXEODIR)/rechocfg.o \
+	$(EXEODIR)/conwrap.o \ 
+	$(EXEODIR)/dirwrap.o \
+	$(EXEODIR)/genwrap.o \
+	$(SMBLIB) \
+	$(EXEODIR)/smbtxt.o \
+	$(EXEODIR)/lzh.o 
+	@echo Linking $@
+	@$(CC) $^ -o $@
+
 include depends.mk
