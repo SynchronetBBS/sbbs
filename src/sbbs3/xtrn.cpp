@@ -137,7 +137,7 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);		\
 		p=strchr(str,SP);									\
 		if(p) {												\
-			SAFECOPY(main_csi.str,p+1);						\
+			strcpy(main_csi.str,p+1);						\
 			*p=0; 											\
 		} else												\
 			main_csi.str[0]=0;								\
