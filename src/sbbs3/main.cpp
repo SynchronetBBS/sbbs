@@ -2950,7 +2950,7 @@ static void cleanup(int code)
 
 	status("Down");
 	thread_down();
-    lputs("BBS System thread terminated (%u threads remain)", thread_count);
+    lprintf("BBS System thread terminated (%u threads remain)", thread_count);
 	if(startup->terminated!=NULL)
 		startup->terminated(code);
 }
