@@ -399,7 +399,7 @@ int UIFC_Button::handle(int event)  {
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
-		if(key==FL_HOME)  {
+		if(key==FL_Home)  {
 			i=0;
 			Fl::focus(parent()->child(i));
 			parent()->child(i)->handle(FL_FOCUS);
