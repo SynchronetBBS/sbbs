@@ -482,6 +482,7 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 	}
     if(msg->hdr.auxattr&MSG_FILEATTACH) { 
 	    sockprintf(socket,"");
+		lprintf("%04u MIME Encoding %s",socket,filepath);
         if(!mimeattach(socket,boundary,filepath))
 			lprintf("%04u !ERROR opening/encoding %s",socket,filepath);
         endmime(socket,boundary);
@@ -516,7 +517,6 @@ static void pop3_thread(void* arg)
 	char		buf[512];
 	char		host_name[128];
 	char		host_ip[64];
-	char		alias_buf[80];
 	char		username[LEN_ALIAS+1];
 	char		password[LEN_PASS+1];
 	char		fromaddr[256];
@@ -637,7 +637,7 @@ static void pop3_thread(void* arg)
 		p=buf+5;
 		while(*p && *p<=' ') p++;
 		sprintf(password,"%.*s",(int)sizeof(password)-1,p);
-		user.number=matchuser(&scfg,alias(&scfg,username,alias_buf));
+		user.number=matchuser(&scfg,username,FALSE /*sysop_alias*/);
 		if(!user.number) {
 			if(scfg.sys_misc&SM_ECHO_PW)
 				lprintf("%04d !POP3 UNKNOWN USER: %s (password: %s)"
@@ -1071,6 +1071,17 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	return(FALSE);
 }
 
+static void signal_smtp_sem()
+{
+	int file;
+
+	if(startup->smtp_sem_path[0]==0) 
+		return; /* do nothing */
+
+	if((file=open(startup->smtp_sem_path,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
+		close(file);
+}
+
 static void smtp_thread(void* arg)
 {
 	int			i,j,x;
@@ -1412,6 +1423,7 @@ static void smtp_thread(void* arg)
 						lprintf("%04d SMTP %s posted a message on %s"
 							,socket, sender_addr, scfg.sub[subnum]->sname);
 						sockprintf(socket,SMTP_OK);
+						signal_smtp_sem();
 					}
 					free(msgbuf);
 					smb_close(&smb);
@@ -1579,6 +1591,7 @@ static void smtp_thread(void* arg)
 					if(rcpt_count>1)
 						smb_incdat(&smb,offset,length,(ushort)(rcpt_count-1));
 					sockprintf(socket,SMTP_OK);
+					signal_smtp_sem();
 				}
 				smb_close_da(&smb);
 				smb_close(&smb);
@@ -2000,7 +2013,8 @@ static void smtp_thread(void* arg)
 					usernum=0;
 				p=str;
 			} else {
-				usernum=matchuser(&scfg,p);	/* RX by "user alias", "user.alias" or "user_alias" */
+				/* RX by "user alias", "user.alias" or "user_alias" */
+				usernum=matchuser(&scfg,p,TRUE /* sysop_alias */);	
 
 				if(!usernum) { /* RX by "real name", "real.name", or "sysop.alias" */
 					
@@ -2020,7 +2034,7 @@ static void smtp_thread(void* arg)
 				}
 			}
 			if(!usernum && startup->default_user[0]) {
-				usernum=matchuser(&scfg,startup->default_user);
+				usernum=matchuser(&scfg,startup->default_user,TRUE /* sysop_alias */);
 				if(usernum)
 					lprintf("%04d SMTP Forwarding mail for UNKNOWN USER to default user: %s"
 						,socket,startup->default_user);
