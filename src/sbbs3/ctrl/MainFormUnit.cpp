@@ -532,6 +532,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     SpyTerminalFont->Pitch=fpFixed;
     SpyTerminalWidth=434;
     SpyTerminalHeight=364;
+    SpyTerminalKeyboardActive=true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FileExitMenuItemClick(TObject *Sender)
@@ -576,6 +577,9 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
 	   	SpyTerminalFont->Name=Registry->ReadString("SpyTerminalFontName");
    	if(Registry->ValueExists("SpyTerminalFontSize"))
 	   	SpyTerminalFont->Size=Registry->ReadInteger("SpyTerminalFontSize");
+   	if(Registry->ValueExists("SpyTerminalKeyboardActive"))
+	   	SpyTerminalKeyboardActive
+            =Registry->ReadBool("SpyTerminalKeyboardActive");
 
     Registry->CloseKey();
     delete Registry;
@@ -734,11 +738,17 @@ void __fastcall TMainForm::SaveSettings(void)
     	,AnsiString(ftp_startup.index_file_name));
     Registry->WriteInteger("FtpOptions",ftp_startup.options);
 
-	Registry->WriteInteger("SpyTerminalWidth",SpyTerminalWidth);
-	Registry->WriteInteger("SpyTerminalHeight",SpyTerminalHeight);
-   	Registry->WriteString("SpyTerminalFontName",SpyTerminalFont->Name);
-	Registry->WriteInteger("SpyTerminalFontSize",SpyTerminalFont->Size);
-    
+	Registry->WriteInteger( "SpyTerminalWidth"
+                            ,SpyTerminalWidth);
+	Registry->WriteInteger( "SpyTerminalHeight"
+                            ,SpyTerminalHeight);
+   	Registry->WriteString(  "SpyTerminalFontName"
+                            ,SpyTerminalFont->Name);
+	Registry->WriteInteger( "SpyTerminalFontSize"
+                            ,SpyTerminalFont->Size);
+	Registry->WriteBool(    "SpyTerminalKeyboardActive"
+                            ,SpyTerminalKeyboardActive);
+
     Registry->CloseKey();
     delete Registry;
 

@@ -41,6 +41,8 @@ object SpyForm: TSpyForm
   OldCreateOrder = False
   Position = poDefaultPosOnly
   OnClose = FormClose
+  OnKeyPress = FormKeyPress
+  OnMouseUp = FormMouseUp
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
@@ -197,9 +199,36 @@ object SpyForm: TSpyForm
   object SpyMenu: TMainMenu
     Left = 288
     Top = 24
-    object FontMenuItem: TMenuItem
-      Caption = 'Font'
-      OnClick = FontMenuItemClick
+    object SettingsMenuItem: TMenuItem
+      Caption = 'Settings'
+      object KeyboardActiveMenuItem: TMenuItem
+        Action = KeyboardActive
+      end
+      object FontMenuItem: TMenuItem
+        Action = ChangeFont
+      end
+    end
+  end
+  object PopupMenu: TPopupMenu
+    Left = 80
+    Top = 104
+    object KeyboardActivePopupMenuItem: TMenuItem
+      Action = KeyboardActive
+    end
+    object FontPopupMenuItem: TMenuItem
+      Action = ChangeFont
+    end
+  end
+  object ActionList: TActionList
+    Left = 328
+    Top = 24
+    object KeyboardActive: TAction
+      Caption = 'Keyboard Active'
+      OnExecute = KeyboardActiveClick
+    end
+    object ChangeFont: TAction
+      Caption = 'Font...'
+      OnExecute = ChangeFontClick
     end
   end
 end

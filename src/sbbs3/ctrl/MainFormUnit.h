@@ -239,6 +239,7 @@ public:		// User declarations
     int             SpyTerminalWidth;
     int             SpyTerminalHeight;
     TFont*          SpyTerminalFont;
+    bool            SpyTerminalKeyboardActive;
 	TPageControl* __fastcall PageControl(int num);
 	int __fastcall  PageNum(TPageControl* obj);
     void __fastcall SaveSettings(void);

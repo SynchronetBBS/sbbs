@@ -19,9 +19,12 @@ __fastcall TSpyForm::TSpyForm(TComponent* Owner)
 {
     Width=MainForm->SpyTerminalWidth;
     Height=MainForm->SpyTerminalHeight;
+    KeyboardActive->Checked=MainForm->SpyTerminalKeyboardActive;
     Terminal = new TEmulVT(this);
     Terminal->Parent=this;
     Terminal->Align=alClient;
+    Terminal->OnKeyPress=FormKeyPress;
+    Terminal->OnMouseUp=FormMouseUp;
 }
 bool strip_ansi(char* str)
 {
@@ -83,10 +86,10 @@ void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
     char    buf[1024];
     int     rd;
 
-    if(*spybuf==NULL)
+    if(*outbuf==NULL)
         return;
 
-    rd=RingBufRead(*spybuf,buf,sizeof(buf)-1);
+    rd=RingBufRead(*outbuf,buf,sizeof(buf)-1);
     if(rd) {
 #if 0
         buf[rd]=0;
@@ -105,13 +108,15 @@ void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TSpyForm::FormShow(TObject *Sender)
 {
-    Terminal->Font=MainForm->SpyTerminalFont;
-    if((*spybuf=(RingBuf*)malloc(sizeof(RingBuf)))==NULL) {
+    if((*outbuf=(RingBuf*)malloc(sizeof(RingBuf)))==NULL) {
         Terminal->WriteStr("Malloc failure!");
         return;
     }
-    RingBufInit(*spybuf,SPYBUF_LEN);
+    RingBufInit(*outbuf,SPYBUF_LEN);
+
     Timer->Enabled=true;
+
+    Terminal->Font=MainForm->SpyTerminalFont;
     Terminal->Clear();
     Terminal->WriteStr("*** Synchronet Local Spy ***\r\n\r\n");
     Terminal->WriteStr("ANSI Terminal Emulation:"+CopyRight+"\r\n\r\n");
@@ -121,17 +126,18 @@ void __fastcall TSpyForm::FormShow(TObject *Sender)
 void __fastcall TSpyForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
     Timer->Enabled=false;
-    if(*spybuf!=NULL) {
-        RingBufDispose(*spybuf);
-        free(*spybuf);
-        *spybuf=NULL;
+    if(*outbuf!=NULL) {
+        RingBufDispose(*outbuf);
+        free(*outbuf);
+        *outbuf=NULL;
     }
     MainForm->SpyTerminalWidth=Width;
     MainForm->SpyTerminalHeight=Height;
+    MainForm->SpyTerminalKeyboardActive=KeyboardActive->Checked;
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TSpyForm::FontMenuItemClick(TObject *Sender)
+void __fastcall TSpyForm::ChangeFontClick(TObject *Sender)
 {
 	TFontDialog *FontDialog=new TFontDialog(this);
 
@@ -140,8 +146,29 @@ void __fastcall TSpyForm::FontMenuItemClick(TObject *Sender)
     MainForm->SpyTerminalFont->Assign(FontDialog->Font);
     Terminal->Font=MainForm->SpyTerminalFont;
     delete FontDialog;
-//    Terminal->Clear();
     Terminal->UpdateScreen();
 }
 //---------------------------------------------------------------------------
+
+void __fastcall TSpyForm::FormKeyPress(TObject *Sender, char &Key)
+{
+    if(KeyboardActive->Checked && inbuf!=NULL && *inbuf!=NULL)
+        RingBufWrite(*inbuf,&Key,1);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TSpyForm::KeyboardActiveClick(TObject *Sender)
+{
+    KeyboardActive->Checked=!KeyboardActive->Checked;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TSpyForm::FormMouseUp(TObject *Sender, TMouseButton Button,
+      TShiftState Shift, int X, int Y)
+{
+    if(Button==mbRight)
+        PopupMenu->Popup(ClientOrigin.x+X,ClientOrigin.y+Y);
+}
+//---------------------------------------------------------------------------
+
 

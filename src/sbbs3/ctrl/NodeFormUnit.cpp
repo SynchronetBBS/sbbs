@@ -57,7 +57,7 @@ __fastcall TNodeForm::TNodeForm(TComponent* Owner)
 {
 //    OutputDebugString("NodeForm constructor\n");
 	MainForm=(TMainForm*)Application->MainForm;
-    MainForm->bbs_startup.spybuf
+    MainForm->bbs_startup.node_spybuf
         =(RingBuf**)calloc(1,sizeof(RingBuf*)*MAX_NODES);
 }
 //---------------------------------------------------------------------------
@@ -470,8 +470,9 @@ void __fastcall TNodeForm::SpyButtonClick(TObject *Sender)
     	if(ListBox->Selected[i]==true) {
             if(SpyForms[i]==NULL) {
                 Application->CreateForm(__classid(TSpyForm), &SpyForms[i]);
-                SpyForms[i]->spybuf=&MainForm->bbs_startup.spybuf[i];
-                SpyForms[i]->Caption="Spying on Node "+AnsiString(i+1);
+                SpyForms[i]->inbuf=&MainForm->bbs_startup.node_inbuf[i];
+                SpyForms[i]->outbuf=&MainForm->bbs_startup.node_spybuf[i];
+                SpyForms[i]->Caption="Node "+AnsiString(i+1);
             }
             SpyForms[i]->Show();
         }
