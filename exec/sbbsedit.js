@@ -6,7 +6,7 @@
 
 const REVISION = "$Revision$".split(' ')[1];
 
-const debug=false;
+const debug=true;
 
 // Message header display format
 var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.60s\1>\r\n";
@@ -28,6 +28,7 @@ var row = 0;
 var rows = console.screen_rows;
 var fname = argv[0];
 var line = new Array();
+var console_status=console.status;
 var ctrlkey_passthru=console.ctrlkey_passthru;
 console.ctrlkey_passthru|=(1<<3);	// Ctrl-C
 console.ctrlkey_passthru|=(1<<11);	// Ctrl-K
@@ -68,6 +69,7 @@ if(line.length)
 update_status();
 
 console.getstr_offset=0;
+console.status|=CON_INSERT;	/* Default to insert mode */
 
 var getstr_mode = K_EDIT|K_MSG|K_WRAP|K_NOCRLF|K_LEFTEXIT;
 
@@ -128,7 +130,13 @@ while(bbs.online) {
 
 	line[l]=str;
 
-	if(console.status&(CON_UPARROW|CON_BACKSPACE|CON_LEFTARROW)) {
+	if(console.status&(CON_UPARROW|CON_BACKSPACE|CON_LEFTARROW|CON_DELETELINE)) {
+		if(console.status&CON_DELETELINE) {
+			/* Delete line */
+			line.splice(l,1);
+			show_text(0);	/* should be optimized */
+			continue;
+		}
 		if(console.status&CON_BACKSPACE && str.length==0) {
 			/* Delete line */
 			line.splice(l,1);
@@ -137,6 +145,7 @@ while(bbs.online) {
 				console.up();
 				row--;
 			}
+			show_text(0);
 			continue;
 		}
 		if(l) {
@@ -149,7 +158,13 @@ while(bbs.online) {
 		}
 		console.write("\r");
 	} else {
+		if(console.status&CON_DOWNARROW && l+1>=line.length)
+			continue;	/* Down allow arrow down past EOF */
 		l++;
+		if(console.status&CON_INSERT && !(console.status&CON_DOWNARROW)) {
+			line.splice(l,0,"");	/* Insert a blank line */
+			show_text(0);
+		}
 		if(row+1>=rows)
 			l=show_text(first_line(l,row));
 		else {
@@ -164,7 +179,8 @@ bail();
 function bail()
 {
 	console.clear();
-	console.ctrlkey_passthru|=(1<<19);	// Ctrl-T
+	console.ctrlkey_passthru=ctrlkey_passthru;
+	console.status=console_status;
 	exit();
 }
 
