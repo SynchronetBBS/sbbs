@@ -124,6 +124,7 @@ endif
 ifeq ($(os),netbsd)
  CFLAGS += -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
  LFLAGS := -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
+ UTIL_LFLAGS	+=	-lpth -L/usr/pkg/lib
 endif
 
 # So far, only QNX has sem_timedwait()
@@ -353,7 +354,7 @@ FORCE$(BAJA): $(BAJA_OBJS)
 
 $(BAJA): $(BAJA_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # Node Utility
 NODE_OBJS = \
@@ -364,7 +365,7 @@ FORCE$(NODE): $(NODE_OBJS)
 
 $(NODE): $(NODE_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^ 
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^ 
 
 # FIXSMB Utility
 FIXSMB_OBJS = \
@@ -376,7 +377,7 @@ FORCE$(FIXSMB): $(FIXSMB_OBJS)
 	
 $(FIXSMB): $(FIXSMB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # CHKSMB Utility
 CHKSMB_OBJS = \
@@ -389,7 +390,7 @@ FORCE$(CHKSMB): $(CHKSMB_OBJS)
 
 $(CHKSMB): $(CHKSMB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # SMB Utility
 SMBUTIL_OBJS = \
@@ -407,7 +408,7 @@ FORCE$(SMBUTIL): $(SMBUTIL_OBJS)
 	
 $(SMBUTIL): $(SMBUTIL_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # SBBSecho (FidoNet Packet Tosser)
 SBBSECHO_OBJS = \
@@ -434,7 +435,7 @@ FORCE$(SBBSECHO): $(SBBSECHO_OBJS)
 
 $(SBBSECHO): $(SBBSECHO_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # SBBSecho Configuration Program
 ECHOCFG_OBJS = \
@@ -452,7 +453,7 @@ FORCE$(ECHOCFG): $(ECHOCFG_OBJS)
 
 $(ECHOCFG): $(ECHOCFG_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^ $(UIFC_LFLAGS)
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^ $(UIFC_LFLAGS)
 
 # ADDFILES
 ADDFILES_OBJS = \
@@ -475,7 +476,7 @@ FORCE$(ADDFILES): $(ADDFILES_OBJS)
 
 $(ADDFILES): $(ADDFILES_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # FILELIST
 FILELIST_OBJS = \
@@ -497,7 +498,7 @@ FORCE$(FILELIST): $(FILELIST_OBJS)
 
 $(FILELIST): $(FILELIST_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # MAKEUSER
 MAKEUSER_OBJS = \
@@ -519,7 +520,7 @@ FORCE$(MAKEUSER): $(MAKEUSER_OBJS)
 
 $(MAKEUSER): $(MAKEUSER_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # JSEXEC
 JSEXEC_OBJS = \
@@ -530,17 +531,17 @@ FORCE$(JSEXEC): $(JSEXEC_OBJS)
 
 $(JSEXEC): $(JSEXEC_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) -o $@ $^ $(LFLAGS)
+	$(QUIET)$(CCPP) $(UTIL_LFLAGS) -o $@ $^ $(LFLAGS)
 	
 # ANS2MSG
 $(ANS2MSG): $(LIBODIR)/ans2msg.o
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 # MSG2ANS
 $(MSG2ANS): $(LIBODIR)/msg2ans.o
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $^
+	$(QUIET)$(CC) $(UTIL_LFLAGS) -o $@ $^
 
 depend:
 	$(QUIET)$(DELETE) $(LIBODIR)/.depend
