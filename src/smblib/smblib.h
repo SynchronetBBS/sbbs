@@ -75,6 +75,9 @@
 #	define EXPORT32	_export
 #else
 #	define SMBCALL
+#	if defined (EXPORT32)
+#		undef EXPORT32
+#	endif
 #	define EXPORT32
 #endif
 

@@ -46,6 +46,9 @@
 	#endif
 #else	/* !_WIN32 */
 	#define LZHCALL
+	#ifdef EXPORT32
+		#undef EXPORT32
+	#endif
 	#define EXPORT32
 #endif
 
