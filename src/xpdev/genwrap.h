@@ -76,40 +76,40 @@ extern "C" {
 /* Compiler Description */
 #if defined(__BORLANDC__)
 
-	#define DESCRIBE_COMPILER(str) sprintf(str,"BCC %X.%02X" \
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF2(str,"BCC %X.%02X" \
 		,__BORLANDC__>>8,__BORLANDC__&0xff);	
 
 #elif defined(_MSC_VER)
 
-	#define DESCRIBE_COMPILER(str) sprintf(str,"MSC %u", _MSC_VER);
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF(str,"MSC %u", _MSC_VER);
 
 #elif defined(__GNUC__) && defined(__VERSION__)
 
-	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %s", __VERSION__);
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF(str,"GCC %s", __VERSION__);
 
 #elif defined(__GNUC__) && defined(__GNUC_PATCHLEVEL__)
 
-	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %u.%u.%u" \
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF3(str,"GCC %u.%u.%u" \
 		,__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__);
 
 #elif defined(__GNUC__) && defined(__GNUC_MINOR__)
 
-	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %u.%u" \
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF2(str,"GCC %u.%u" \
 		,__GNUC__,__GNUC_MINOR__);
 
 #elif defined(__WATCOMC__)
 
-	#define DESCRIBE_COMPILER(str) sprintf(str,"WATC %d" \
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF(str,"WATC %d" \
 		,__WATCOMC__);
 
 #elif defined(__DMC__)	/* Digital Mars C/C++ */
 
-	#define DESCRIBE_COMPILER(str) sprintf(str,"DMC %X.%02X" \
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF(str,"DMC %X.%02X" \
 		,__DMC__>>8,__DMC__&0xff);	
 
 #else /* Unknown compiler */
 
-	#define DESCRIBE_COMPILER(str) strcpy(str,"UNKNOWN COMPILER");
+	#define DESCRIBE_COMPILER(str) SAFECOPY(str,"UNKNOWN COMPILER");
 
 #endif
 
