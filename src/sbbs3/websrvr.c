@@ -746,7 +746,6 @@ static void close_request(http_session_t * session)
 		session->finished=TRUE;
 
 	if(session->js_cx!=NULL && (session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)) {
-		JS_ClearScope(session->js_cx,session->js_glob);
 		JS_GC(session->js_cx);
 	}
 
