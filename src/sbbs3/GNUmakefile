@@ -38,23 +38,23 @@ else
 endif
 
 ifdef bcc
- CC		=	bc++ -q
+ CC		?=	bc++ -q
  CCPRE	:=	bcc
- CCPP	=	bc++ -q
+ CCPP	?=	bc++ -q
  LD		=	ilink -q
  CFLAGS +=	-mm -md -D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
 else
  CFLAGS	+=	-MMD -Wall
- CCPRE	:=	gcc
+ CCPRE	?=	gcc
  ifdef BUILD_DEPENDS
   CC		=	../build/mkdep -a
   CCPP	=	../build/mkdep -a
   LD		=	echo
   COMPILE_MSG	:= Depending
  else
-  CC		=	gcc
-  CCPP	=	g++
-  LD		=	ld
+  CC		?=	gcc
+  CCPP	?=	g++
+  LD		?=	ld
   COMPILE_MSG	:= Compiling
  endif
 endif
@@ -99,7 +99,7 @@ EXEODIR :=	$(CCPRE).$(os).exe.$(BUILD)
 
 DELETE	=	rm -f
 
-CFLAGS  +=  -I$(XPDEV) -I$(UIFC) -DJAVASCRIPT
+CFLAGS  +=  -I$(XPDEV) -I$(UIFC) -DJAVASCRIPT -D_THREAD_SAFE -D_REENTRANT
 ifdef JSINCLUDE
  CFLAGS += -I$(JSINCLUDE)
 else
@@ -126,18 +126,18 @@ ifeq ($(os),linux)    # Linux
 endif
 
 ifeq ($(os),sunos)    # Solaris
- CFLAGS	:= -D_REENTRANT -D__solaris__ -DNEEDS_DAEMON -D_POSIX_PTHREAD_SEMANTICS -DNEEDS_FORKPTY
+ CFLAGS	:= -D__solaris__ -DNEEDS_DAEMON -D_POSIX_PTHREAD_SEMANTICS -DNEEDS_FORKPTY
  LFLAGS := -lm -lpthread -lsocket -lnsl -lrt
 endif
 
 ifeq ($(os),netbsd)
- CFLAGS += -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
+ CFLAGS += -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
  LFLAGS := -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
  UTIL_LFLAGS	+=	-lpth -L/usr/pkg/lib
 endif
 
 ifeq ($(os),darwin)
- CFLAGS +=  -D_REENTRANT -D__unix__ -fno-common -D__DARWIN__
+ CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
  LFLAGS :=  -lm -lpthread
 endif
 
