@@ -60,8 +60,8 @@ struct mouse_state {
 	int	click_timeout;			/* Timeout between press and release events for a click (ms) */
 	int	multi_timeout;			/* Timeout after a click for detection of multi clicks (ms) */
 	int	click_drift;			/* Allowed "drift" during a click event */
-	static link_list_t	*input;
-	static link_list_t	*output;
+	link_list_t	*input;
+	link_list_t	*output;
 };
 
 
