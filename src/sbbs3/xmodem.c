@@ -120,10 +120,13 @@ void xmodem_cancel(xmodem_t* xm)
 {
 	int i;
 
-	for(i=0;i<8;i++)
-		putcom(CAN);
-	for(i=0;i<10;i++)
-		putcom('\b');
+	if(!xm->cancelled) {
+		for(i=0;i<8;i++)
+			putcom(CAN);
+		for(i=0;i<10;i++)
+			putcom('\b');
+		xm->cancelled=TRUE;
+	}
 }
 
 /****************************************************************************/
@@ -302,7 +305,6 @@ BOOL xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			return(TRUE);
 		if(i==CAN) {
 			if(can) {
-				xm->cancelled=TRUE;
 				lprintf(xm,LOG_WARNING,"Block %u: !Cancelled remotely", block_num);
 				xmodem_cancel(xm);
 				return(FALSE); 
@@ -347,7 +349,7 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 				return(TRUE); 
 			case CAN:
 				if(can) {
-					lprintf(xm,LOG_WARNING,"Receiver cancelled");
+					lprintf(xm,LOG_WARNING,"Cancelled remotely");
 					return(FALSE); 
 				}
 				can=1; 
@@ -369,6 +371,7 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 {
 	int ch;
 	unsigned errors;
+	unsigned cans=0;
 
 	for(errors=0;errors<xm->max_errors;errors++) {
 
@@ -380,9 +383,11 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 		putcom(EOT);
 		if((ch=getcom(xm->recv_timeout))==NOINP)
 			continue;
-		lprintf(xm,LOG_INFO,"Received %s ",chr((uchar)ch)); 
+		lprintf(xm,LOG_INFO,"Received %s",chr((uchar)ch)); 
 		if(ch==ACK)
 			return(TRUE);
+		if(ch==CAN && ++cans>1)
+			break;
 		if(ch==NAK && errors==0 && (*(xm->mode)&(YMODEM|GMODE))==YMODEM) {
 			continue;  /* chuck's double EOT trick so don't complain */
 		}
@@ -418,77 +423,81 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	if(xm->total_bytes==0)
 		xm->total_bytes=st.st_size;
 
-	if(*(xm->mode)&YMODEM) {
+	do {
+	/* try */
+		if(*(xm->mode)&YMODEM) {
 
-		if(!xmodem_get_mode(xm)) {
-			xmodem_cancel(xm);
-			return(0);
+			if(!xmodem_get_mode(xm))
+				break;
+
+			memset(block,0,sizeof(block));
+			SAFECOPY(block,getfname(fname));
+			i=sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %ld"
+				,st.st_size
+				,st.st_mtime
+				,xm->total_files-xm->sent_files
+				,xm->total_bytes-xm->sent_bytes);
+			
+			lprintf(xm,LOG_INFO,"Sending Ymodem header block: '%s'",block+strlen(block)+1);
+			
+			block_len=strlen(block)+1+i;
+			for(errors=0;errors<xm->max_errors && !xm->cancelled;errors++) {
+				xmodem_put_block(xm, block, block_len <=128 ? 128:1024, 0  /* block_num */);
+				if(xmodem_get_ack(xm,1,0))
+					break; 
+			}
+			if(errors>=xm->max_errors || xm->cancelled) {
+				lprintf(xm,LOG_ERR,"Failed to send header block");
+				break;
+			}
 		}
 
-		memset(block,0,sizeof(block));
-		SAFECOPY(block,getfname(fname));
-		i=sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %ld"
-			,st.st_size
-			,st.st_mtime
-			,xm->total_files-xm->sent_files
-			,xm->total_bytes-xm->sent_bytes);
-		
-		lprintf(xm,LOG_INFO,"Sending Ymodem header block: '%s'",block+strlen(block)+1);
-		
-		block_len=strlen(block)+1+i;
-		for(errors=0;errors<xm->max_errors;errors++) {
-			xmodem_put_block(xm, block, block_len <=128 ? 128:1024, 0  /* block_num */);
-			if(xmodem_get_ack(xm,1,0))
-				break; 
-		}
-		if(errors==xm->max_errors) {
-			lprintf(xm,LOG_ERR,"Failed to send header block");
-			xmodem_cancel(xm);
-			return(0); 
-		}
-		if(!xmodem_get_mode(xm)) {
-			xmodem_cancel(xm);
-			return(0);
-		}
-	}
-	startfile=time(NULL);	/* reset time, don't count header block */
-	if(start!=NULL)
-		*start=startfile;
+		if(!xmodem_get_mode(xm))
+			break;
 
-	block_num=1;
-	errors=0;
-	while(sent_bytes < (ulong)st.st_size && errors<xm->max_errors && !xm->cancelled) {
-		fseek(fp,sent_bytes,SEEK_SET);
-		memset(block,CPMEOF,xm->block_size);
-		if((rd=fread(block,1,xm->block_size,fp))!=xm->block_size 
-			&& (long)(block_num*xm->block_size) < st.st_size) {
-			lprintf(xm,LOG_ERR,"READ ERROR %d instead of %d at offset %lu"
-				,rd,xm->block_size,(block_num-1)*(long)xm->block_size);
-			errors++;
-			continue;
-		}
-		if(xm->progress!=NULL)
-			xm->progress(xm->cbdata,block_num,ftell(fp),st.st_size,startfile);
-		xmodem_put_block(xm, block, xm->block_size, block_num);
-		if(!xmodem_get_ack(xm,5,block_num)) {
-			errors++;
-			lprintf(xm,LOG_WARNING,"Error #%d at offset %ld"
-				,errors,ftell(fp)-xm->block_size);
-		} else {
-			block_num++; 
-			sent_bytes+=rd;
-		}
-	}
-	if(sent_bytes >= (ulong)st.st_size && !xm->cancelled) {
+		startfile=time(NULL);	/* reset time, don't count header block */
+		if(start!=NULL)
+			*start=startfile;
 
-#if 0 /* !SINGLE_THREADED */
-		lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
-		if(WaitForEvent(outbuf_empty,5000)!=WAIT_OBJECT_0)
-			lprintf(xm,LOG_WARNING,"FAILURE");
-#endif
-		if(xmodem_put_eot(xm))	/* end-of-text, wait for ACK */
-			success=TRUE;
-	}
+		block_num=1;
+		errors=0;
+		while(sent_bytes < (ulong)st.st_size && errors<xm->max_errors && !xm->cancelled) {
+			fseek(fp,sent_bytes,SEEK_SET);
+			memset(block,CPMEOF,xm->block_size);
+			if((rd=fread(block,1,xm->block_size,fp))!=xm->block_size 
+				&& (long)(block_num*xm->block_size) < st.st_size) {
+				lprintf(xm,LOG_ERR,"READ ERROR %d instead of %d at offset %lu"
+					,rd,xm->block_size,(block_num-1)*(long)xm->block_size);
+				errors++;
+				continue;
+			}
+			if(xm->progress!=NULL)
+				xm->progress(xm->cbdata,block_num,ftell(fp),st.st_size,startfile);
+			xmodem_put_block(xm, block, xm->block_size, block_num);
+			if(!xmodem_get_ack(xm,5,block_num)) {
+				errors++;
+				lprintf(xm,LOG_WARNING,"Error #%d at offset %ld"
+					,errors,ftell(fp)-xm->block_size);
+			} else {
+				block_num++; 
+				sent_bytes+=rd;
+			}
+		}
+		if(sent_bytes >= (ulong)st.st_size && !xm->cancelled) {
+
+	#if 0 /* !SINGLE_THREADED */
+			lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
+			if(WaitForEvent(outbuf_empty,5000)!=WAIT_OBJECT_0)
+				lprintf(xm,LOG_WARNING,"FAILURE");
+	#endif
+			if(xmodem_put_eot(xm))	/* end-of-text, wait for ACK */
+				success=TRUE;
+		}
+	} while(0);
+	/* finally */
+
+	if(!success)
+		xmodem_cancel(xm);
 
 	if(sent!=NULL)
 		*sent=sent_bytes;
