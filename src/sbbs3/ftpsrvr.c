@@ -2457,8 +2457,7 @@ static void ctrl_thread(void* arg)
 		return;
 	} 
 
-	active_clients++;
-	update_clients();
+	active_clients++, update_clients();
 
 	/* Initialize client display */
 	client.size=sizeof(client);
@@ -4416,12 +4415,11 @@ static void ctrl_thread(void* arg)
 	tmp_sock=sock;
 	ftp_close_socket(&tmp_sock,__LINE__);
 
-	if(active_clients>0)
-		active_clients--;
-	update_clients();
+	if(active_clients)
+		active_clients--, update_clients();
 
 	thread_down();
-	lprintf("%04d CTRL thread terminated (%u clients, %u threads remain, %lu served)"
+	lprintf("%04d CTRL thread terminated (%d clients, %u threads remain, %lu served)"
 		,sock, active_clients, thread_count, served);
 }
 
@@ -4611,8 +4609,7 @@ void DLLCALL ftp_server(void* arg)
 
 		lprintf("Maximum inactivity: %d seconds",startup->max_inactivity);
 
-		active_clients=0;
-		update_clients();
+		active_clients=0, update_clients();
 
 		strlwr(scfg.sys_id); /* Use lower-case unix-looking System ID for group name */
 
@@ -4768,7 +4765,7 @@ void DLLCALL ftp_server(void* arg)
 			start=time(NULL);
 			while(active_clients) {
 				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf("0000 !TIMEOUT waiting for %d active clients",active_clients);
+					lprintf("0000 !TIMEOUT waiting for %d active clients", active_clients);
 					break;
 				}
 				mswait(100);
