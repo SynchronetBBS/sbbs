@@ -223,7 +223,7 @@ char *chr(uchar ch)
 
 void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 {
-	uchar buf[3];
+	uchar	buf[3];
 	
 	buf[0]=TELNET_IAC;
 	buf[1]=cmd;
@@ -232,11 +232,8 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 	if(debug_telnet)
 		lprintf(LOG_DEBUG,"Sending telnet command: %s %s"
 			,telnet_cmd_desc(buf[1]),telnet_opt_desc(buf[2]));
-#ifdef __unix__
-	if((stdio?write(STDOUT_FILENO,buf,sizeof(buf)):send(sock,buf,sizeof(buf),0))!=sizeof(buf) && debug_telnet)
-#else
-	if(send(sock,buf,sizeof(buf),0)!=sizeof(buf) && debug_telnet)
-#endif
+
+	if(sendsocket(sock,buf,sizeof(buf))!=sizeof(buf) && debug_telnet)
 		lprintf(LOG_ERR,"FAILED");
 }
 
@@ -265,7 +262,7 @@ int recv_byte(void* unused, unsigned timeout)
 			FD_SET(STDIN_FILENO,&socket_set);
 		else
 #endif
-		FD_SET(sock,&socket_set);
+			FD_SET(sock,&socket_set);
 		if((t=end-msclock())<0) t=0;
 		tv.tv_sec=t/MSCLOCKS_PER_SEC;
 		tv.tv_usec=0;
@@ -282,9 +279,8 @@ int recv_byte(void* unused, unsigned timeout)
 		if(stdio)
 			i=read(STDIN_FILENO,&ch,sizeof(ch));
 		else
-			i=recv(sock,&ch,sizeof(ch),0);
 #else
-		i=recv(sock,&ch,sizeof(ch),0);
+			i=recv(sock,&ch,sizeof(ch),0);
 #endif
 
 		if(i!=sizeof(ch)) {
@@ -396,7 +392,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		FD_SET(STDOUT_FILENO,&socket_set);
 	else
 #endif
-	FD_SET(sock,&socket_set);
+		FD_SET(sock,&socket_set);
 	tv.tv_sec=timeout;
 	tv.tv_usec=0;
 
@@ -413,7 +409,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		i=write(STDOUT_FILENO,buf,len);
 	else
 #endif
-	i=send(sock,buf,len,0);
+		i=sendsocket(sock,buf,len);
 	
 	if(i==len) {
 		if(debug_tx)
@@ -470,7 +466,7 @@ void output_thread(void* arg)
 			FD_SET(STDOUT_FILENO,&socket_set);
 		else
 #endif
-		FD_SET(sock,&socket_set);
+			FD_SET(sock,&socket_set);
 
 		i=select(sock+1,NULL,&socket_set,NULL,&tv);
 		if(i==SOCKET_ERROR) {
@@ -497,7 +493,7 @@ void output_thread(void* arg)
 			i=write(STDOUT_FILENO, (char*)buf+bufbot, buftop-bufbot);
 		else
 #endif
-		i=sendsocket(sock, (char*)buf+bufbot, buftop-bufbot);
+			i=sendsocket(sock, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
                 lprintf(LOG_ERR,"client socket closed on send");
