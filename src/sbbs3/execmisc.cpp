@@ -965,7 +965,11 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					if(i<cfg.total_prots)
 						if(external(cmdstr(j==SEND_FILE_VIA
 							? cfg.prot[i]->dlcmd : cfg.prot[i]->ulcmd,str,str,buf)
-							,EX_OUTL)==0)
+							,EX_OUTL
+#ifdef __unix__		/* file xfer progs use stdio on Unix */
+							|EX_INR|EX_OUTR
+#endif
+							)==0)
 							csi->logic=LOGIC_TRUE;
 					return(0);
 				case SEND_FILE_VIA_VAR:
@@ -983,7 +987,11 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					if(i<cfg.total_prots)
 						if(external(cmdstr(j==SEND_FILE_VIA_VAR
 							 ? cfg.prot[i]->dlcmd : cfg.prot[i]->ulcmd,*pp,*pp,buf)
-							,EX_OUTL)==0)
+							,EX_OUTL
+#ifdef __unix__		/* file xfer progs use stdio on Unix */
+							|EX_INR|EX_OUTR
+#endif
+							)==0)
 							csi->logic=LOGIC_TRUE;
 					return(0);
 

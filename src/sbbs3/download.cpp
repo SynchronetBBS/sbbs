@@ -191,7 +191,12 @@ int sbbs_t::protocol(char *cmdline, int cd)
 	sprintf(msg,"Transferring %s",cmdline);
 	spymsg(msg);
 	sys_status|=SS_FILEXFER;
-	i=external(cmdline,EX_OUTL,p);
+	i=external(cmdline
+		,EX_OUTL
+#ifdef __unix__		/* file xfer progs use stdio on Unix */
+		|EX_INR|EX_OUTR
+#endif
+		,p);
 	sys_status&=~SS_FILEXFER;
 	if(online==ON_REMOTE)
 		rioctl(IOFB);
