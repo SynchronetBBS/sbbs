@@ -1,0 +1,209 @@
+Complete List of Supported Message Variables (@-Codes) in Synchronet BBS
+========================================================================
+See the "Using Message Variables" chapter in the sysop manual 
+(DOCS\SYSOP.DOC) for details on use.
+
+System Information
+~~~~~~~~~~~~~~~~~~		
+Code		Description						Ver
+---------------------------------------------------------------------------
+BBS		Name of BBS					
+BOARDNAME	Name of BBS					
+CONF		Name of current Group and Sub-board		
+CONFNUM 	Number of current Group and Sub-board		
+CONN		Connection description (modem type, "Telnet", "Local")	2.3c
+DATE		Current system date				
+DIR	        Current file directory short description	
+DIR-L[...]      " " padded and left justified                   
+DIR-R[...]      " " padded and right justified                  
+DIRL	        Current file directory long description 	
+DIRL-L[...]     " " padded and left justified                   
+DIRL-R[...]     " " padded and right justified                  
+DN	        Number of current file directory		
+DL	        " " padded and left justified (4 chars wide)    
+DR	        " " padded and right justified (4 chars wide)   
+FIDOADDR	System's primary FidoNet address			2.3c
+FREESPACE	Free disk space available for uploads		
+GRP	        Current message group short description 	
+GRP-L[...]      " " padded and left justified                   
+GRP-R[...]      " " padded and right justified                  
+GRPL	        Current message group long description		
+GRPL-L[...]     " " padded and left justified                   
+GRPL-R[...]     " " padded and right justified                  
+GN	        Number of current message group 		
+GL	        " " padded and left justified (4 chars wide)    
+GR	        " " padded and right justified (4 chars wide)   
+INETADDR	System's Internet Address (as configured in SCFG)	2.3c
+LASTCALLERNODE	Name of user last on this node			
+LASTCALLERSYSTEM <same as LASTCALLERNODE>
+LIB	        Current file library short description		
+LIB-L[...]      " " padded and left justified                   
+LIB-R[...]      " " padded and right justified                  
+LIBL	        Current file library long description		
+LIBL-L[...]     " " padded and left justified                   
+LIBL-R[...]     " " padded and right justified                  
+LN	        Number of current file library			
+LL	        " " padded and left justified (4 chars wide)    
+LR	        " " padded and right justified (4 chars wide)   
+LOCAL-IP	System's IP address					3.0b
+LOCATION	System location (city, state)				2.3c
+NOACCESS        Why user was denied access (last false ARS)	
+NODE		Number of current node				
+NODE### 	Status of node number ###			
+NUMCALLS	<same as STATS.LOGONS>				
+NUMDIR		Number of current library and directory 	
+PREVON		<same as LASTCALLERNODE>			
+QUESTION        Current Yes/No question (for TEXT\MENU\YESNO.*) 
+QWKID		System's QWK BBS-ID					2.3c
+REV		Software revision (single letter)
+STATS.LOGONS	Total logons during history of system			3.0b
+STATS.LTODAY	Total logons today					3.0b
+STATS.TIMEON	Total time used during history of system (in minutes)	3.0b
+STATS.TTODAY	Total time used today (in minutes)			3.0b
+STATS.ULS	Total uploads today					3.0b
+STATS.ULB	Total bytes uploaded today				3.0b
+STATS.DLS	Total download today					3.0b
+STATS.DLB	Total bytes downloaded today				3.0b
+STATS.PTODAY	Total posts today					3.0b
+STATS.ETODAY	Total e-mails sent today				3.0b
+STATS.FTODAY	Total feedbacks sent today				3.0b
+STATS.NUSERS	Total number of new users today				3.0b
+SUB	        Current message sub-board short description	
+SUB-L[...]      " " padded and left justified                   
+SUB-R[...]      " " padded and right justified                  
+SUBL	        Current message sub-board long description	
+SUBL-L[...]     " " padded and left justified                   
+SUBL-R[...]     " " padded and right justified                  
+SN	        Number of current message sub-board		
+SL	        " " padded and left justified (4 chars wide)    
+SR	        " " padded and right justified (4 chars wide)   
+SYSDATE 	Current system date
+SYSOP		Name of System Operator 			
+SYSTIME 	Current system time					
+TCALLS		Total number of logons for system		
+TFILE		Total number of files on system
+TIME		Current system time
+TMSG		Total number of messages on system
+TNODE		Total number of nodes on system
+TUSER		Total number of user slots on system
+VER		BBS version number
+WHO		Display status of all active nodes
+
+User Information
+~~~~~~~~~~~~~~~~
+Code		Description						Ver
+---------------------------------------------------------------------------
+ADDR1		User's street address                 	        
+ALIAS		User's name or alias                            
+BAUD		User's connect rate (DCE) in bps                
+BDATE		User's birthdate (MM/DD/YY)                     
+BPS		<same as BAUD>					
+BYTELIMIT	User's free credits per day                     
+BYTESLEFT	User's total credits                            
+CALLS		Total number of logons for user 		
+CID		Caller's Caller-ID info or IP address			2.3c
+CITY		User's city                                     
+COMPANY 	User's company name or real name                
+CPU		User's computer type (v2.x) or hostname (v3.x)
+DATA		<same as PHONE> 				
+DATAPHONE	<same as PHONE> 				
+DAYBYTES	Number of free credits used today by user	
+DLBYTES 	Total bytes downloaded by user			
+DLFILES 	Total files downloaded by user			
+DLKLIMIT	User's total credits (in kilobytes)             
+DOWNK		Total kilobytes downloaded by user		
+DOWNS		<same as DLFILES>				
+EXDATE		User's expiration date (MM/DD/YY)               
+EXPDATE 	<same as EXDATE>				
+EXPDAYS 	Days left before user expires
+FIRST		User's first name/alias                         
+FIRSTREAL       User's first real/company name                  
+FROM		User's location (City, State)                   
+HANDLE	        User's chat handle                              
+HOMEPHONE	<same as PHONE> 				
+HOST		<same as CPU>						2.3c
+IP		<same as CID>						2.3c
+KBLEFT		User's total credits (in kilobytes)             
+KBLIMIT 	User's free credits per day (in kilobytes)      
+LAST	        User's last name (alias)                        
+LASTDATEON	Date of user's last logon (MM/DD/YY)            
+LASTNEW 	Date of user's last new file scan (MM/DD/YY)    
+LASTON		Date and time of user's last logon              
+LASTTIMEON	Time of user's last logon (HH:MM am)
+LASTREAL        User's last real/company name                   
+LEFT		<same as MINLEFT>
+MAILW	        Number of mail messages waiting for current user
+MAILW:x	        Number of mail messages waiting for current user #x
+MAILP	        Number of pending mail messages sent by current user
+MAILP:x	        Number of pending mail messages sent by current user #x
+MAXDK		<same as KBLIMIT>				
+MEMO		Date of user's last password modification       
+MEMO1		User's note                                     
+MEMO2		<same as COMPANY>				
+MINLEFT 	User's time left in minutes				
+MSGLEFT 	Total number of messages posted by user 	
+MSGREAD 	Number of messages read by user this call	
+MSGSLEFT	<same as MSGLEFT>					
+NAME	        User's name or alias                            
+NAME-L[...]     User's name (padded and left justified)         
+NAME-R[...]     User's name (padded and right justified)        
+NEWFILETIME 	Date and time of user's last new file scan
+NUMTIMESON	<same as CALLS> 				
+PHONE		User's phone number (###-###-####)              
+REAL	        User's real first name                          
+SEC		User's security level                           
+SECURITY	<same as SEC>					
+SINCE		Date of user's first call (MM/DD/YY)            
+STATE		User's state (from location)                    
+TIMELEFT	<same as MINLEFT>				
+TIMELIMIT	Maximum time per call in minutes		
+TIMEON		Time used this call in minutes			
+TIMEUSED	<same as TIMEON>				
+TLEFT	        Time left (H:MM:SS)				
+TPERC	        Time allowed per call (H:MM:SS) 		
+TPERD	        Time allowed per day (H:MM:SS)			
+TUSED	        Time used this call (H:MM:SS)			
+UPBYTES 	Total bytes uploaded by user			
+UPFILES 	Total files uploaded by user			
+UPK		Total kilobytes uploaded by user		
+UPS		<same as UPFILES>				
+USER		User's name or alias (same as ALIAS)            
+ZIP             User's zip/postal code                          
+
+Display
+~~~~~~~
+Code		Description						Ver
+---------------------------------------------------------------------------
+AUTOMORE	Toggle automatic pausing			
+BEEP		Generate a beep 				
+BELL		<same as BEEP>					
+CLS		Clear screen					
+CRLF		carriage return/line-feed pair				3.0b
+MENU:filename	Display a menu file (from TEXT\MENU directory)
+MSGREPLY	Command key to reply to last message			3.0b
+MSGREREAD	Command key used to re-read last message		3.0b
+NOPAUSE		<Same as POFF>
+MORE		<same as PAUSE> 				
+PAUSE		Immediately produces a [Hit a key] prompt	
+PON		Toggles automatic screen pause for everyone
+POFF		Toggles automatic screen pause for everyone
+TYPE:filename	Display a specific filename
+UP		Move cursor up one row			(ANSI)		3.0b
+UP:n		Move cursor up n rows			(ANSI)		3.0b
+DOWN		Move cursor down one row		(ANSI)		3.0b
+DOWN:n		Move cursor down n rows			(ANSI)		3.0b
+RIGHT		Move cursor right one column		(ANSI)		3.0b
+RIGHT:n		Move cursor right n columns		(ANSI)		3.0b
+LEFT		Move cursor left one column 		(ANSI)		3.0b
+LEFT:n		Move cursor left n columns		(ANSI)		3.0b
+GOTOXY:x,y	Move cursor to x/y (1-based)		(ANSI)		3.0b
+PUSHXY		Save current cursor position		(ANSI)		3.0b
+POPXY		Restore saved cursor position		(ANSI)		3.0b
+
+Miscellaneous
+~~~~~~~~~~~~~
+Code		Description						Ver
+---------------------------------------------------------------------------
+EXEC:modname	Execute a loadable (Baja) module, EXEC\modname.BIN
+HANGUP		Immediately disconnect user			
+SETSTR:str	Sets the current Baja command string to str
