@@ -22,8 +22,7 @@ OBJS = $(OBJS) $(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
 
 # SBBS DLL Link Rule
 $(CIOLIB-MT): $(OBJS)
-    @echo Creating $<
+	@echo Creating $< ...
 	-$(QUIET)$(DELETE) $@
-	$(QUIET)for %f in ($(OBJS)) do $(QUIET)tlib $@ +%f
-
+	&$(QUIET)tlib $@ +$**
 

@@ -1,5 +1,5 @@
-#ifndef _TERM_H_
-#define _TERM_H_
+#ifndef _CTERM_H_
+#define _CTERM_H_
 
 #ifdef __cplusplus
 extern "C" {

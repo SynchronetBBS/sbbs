@@ -1,4 +1,5 @@
 #include <windows.h>	/* INPUT_RECORD, etc. */
+#include <genwrap.h>
 #include <stdio.h>		/* stdin */
 #include "ciolib.h"
 #include "keys.h"
