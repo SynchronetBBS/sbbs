@@ -16,6 +16,7 @@
 static void getkey(void);
 static void sem_test_thread(void* arg);
 static void sleep_test_thread(void* arg);
+static void lock_test_thread(void* arg);
 
 typedef struct {
 	sem_t parent_sem;
@@ -37,6 +38,7 @@ int main()
 	DIR*	dir;
 	DIRENT*	dirent;
 	thread_data_t thread_data;
+	int	fd1;
 
 	/* Show platform details */
 	DESCRIBE_COMPILER(compiler);
@@ -44,6 +46,28 @@ int main()
 	printf("%-15s: %s\n","Version",os_version(str));
 	printf("%-15s: %s\n","Compiler"	,compiler);
 	printf("%-15s: %d\n","Random Number",xp_random(1000));
+
+	/* sopen()/lock test */
+	printf("\nsopen()/lock() test\n");
+	fd1=sopen("test.fil",O_RDWR|O_CREAT,SH_DENYNO);
+	write(fd1,"lock testing\n",4);
+	if(lock(fd1,0,4))
+		printf("!FAIL lock() non-functional (or file already locked)\n");
+	else
+		printf("lock() succeeds\n");
+	if(_beginthread(
+		  lock_test_thread	/* entry point */
+		 ,0					/* stack size (0=auto) */
+		 ,&i				/* data */
+		 )==(unsigned long)-1)
+		printf("_beginthread failed\n");
+	else
+		SLEEP(1000);
+	if(lock(fd1,3,7))
+		printf("Locks in first thread survive open()/close() in other thread\n");
+	else
+		printf("!FAIL lock() in first thread lost by open()/close() in other thread\n");
+	close(fd1);
 
 	/* getch test */
 	printf("\ngetch() test (ESC to continue)\n");
@@ -194,4 +218,22 @@ static void sem_test_thread(void* arg)
 
 	printf("sem_test_thread exit\n");
 	sem_post(&data->child_sem);		/* signal parent: we're done */
+}
+
+static void lock_test_thread(void* arg)
+{
+	int	fd;
+
+	fd=sopen("test.fil",O_RDWR,SH_DENYNO);
+	if(lock(fd,2,3))
+		printf("!FAIL Lock not effective between threads\n");
+	else
+		printf("Locks effective between threads\n");
+	close(fd);
+	fd=sopen("test.fil",O_RDWR,SH_DENYNO);
+	if(lock(fd,2,3))
+		printf("Locks survive file open()/close() in other thread\n");
+	else
+		printf("!FAIL Locks do not survive file open()/close() in other thread\n");
+	close(fd);
 }
