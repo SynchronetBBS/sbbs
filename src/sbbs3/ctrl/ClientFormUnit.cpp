@@ -129,7 +129,7 @@ void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
     		break;
     	if(res==IDYES)
 			filter_ip(&MainForm->cfg,prot.c_str(),"abuse",hostname.c_str()
-				,ip_addr.c_str(),username.c_str());
+				,ip_addr.c_str(),username.c_str(),NULL);
         if(ListView->Selected == NULL)
         	break;
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);
