@@ -62,8 +62,9 @@ int uudecode(char *target, size_t tlen, const char *source, size_t slen)
 			break;
 		block=0;
 		while(block<len && wr<tlen && rd<slen) {
+			memset(cell,0,sizeof(cell));
 			/* Remove space bias */
-			for(i=0;i<sizeof(cell);i++) {
+			for(i=0;i<sizeof(cell) && rd<slen;i++) {
 				cell[i]=source[rd++];
 				if(cell[i]>=' ') cell[i]-=' ';
 			}
