@@ -186,9 +186,14 @@ bool sbbs_t::chksyspass()
 	console=orgcon;
 	CRLF;
 	if(strcmp(cfg.sys_pass,str)) {
-		sprintf(str2,"%s #%u System password attempt: '%s'"
-			,useron.alias,useron.number,str);
+		if(cfg.sys_misc&SM_ECHO_PW) 
+			sprintf(str2,"%s #%u System password attempt: '%s'"
+				,useron.alias,useron.number,str);
+		else
+			sprintf(str2,"%s #%u System password verification failure"
+				,useron.alias,useron.number);
 		logline("S!",str2);
-		return(false); }
+		return(false); 
+	}
 	return(true);
 }

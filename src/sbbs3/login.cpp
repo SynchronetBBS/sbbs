@@ -78,11 +78,15 @@ int sbbs_t::login(char *str, char *pw)
 				console|=CON_L_ECHOX;
 			getstr(str,LEN_PASS,K_UPPER|K_LOWPRIO|K_TAB);
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
-			bputs(text[InvalidLogon]);
-			sprintf(tmp,"(%04u)  %-25s  Password: '%s'"
-				,0,useron.alias,str);
-			logline("+!",tmp); }
-		else {
+			bputs(text[InvalidLogon]);	/* why does this always fail? */
+			if(cfg.sys_misc&SM_ECHO_PW) 
+				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt: '%s'"
+					,0,useron.alias,str);
+			else
+				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt"
+					,0,useron.alias);
+			logline("+!",tmp); 
+		} else {
 			bputs(text[UnknownUser]);
 			sprintf(tmp,"Unknown User '%s'",str);
 			logline("+!",tmp); }
@@ -107,8 +111,12 @@ int sbbs_t::login(char *str, char *pw)
 			return(LOGIC_FALSE); }
 		if(stricmp(useron.pass,str)) {
 			bputs(text[InvalidLogon]);
-			sprintf(tmp,"(%04u)  %-25s  Password: '%s' Attempt: '%s'"
-				,useron.number,useron.alias,useron.pass,str);
+			if(cfg.sys_misc&SM_ECHO_PW) 
+				sprintf(tmp,"(%04u)  %-25s  FAILED Password: '%s' Attempt: '%s'"
+					,useron.number,useron.alias,useron.pass,str);
+			else
+				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt"
+					,useron.number,useron.alias);
 			logline("+!",tmp);
 			useron.number=0;
 			useron.misc=useron_misc;

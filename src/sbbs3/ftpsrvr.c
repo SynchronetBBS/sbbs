@@ -2375,8 +2375,12 @@ static void ctrl_thread(void* arg)
 				sysop=TRUE;
 			}
 			else if(stricmp(password,user.pass)) {
-				lprintf("%04d !FTP: WRONG PASSWORD for user %s: '%s' expected '%s'"
-					,sock,user.alias,password,user.pass);
+				if(scfg.sys_misc&SM_ECHO_PW)
+					lprintf("%04d !FTP: FAILED Password attempt for user %s: '%s' expected '%s'"
+						,sock, user.alias, password, user.pass);
+				else
+					lprintf("%04d !FTP: FAILED Password attempt for user %s"
+						,sock, user.alias);
 				sockprintf(sock,"530 Password not accepted.");
 				user.number=0;
 				continue;

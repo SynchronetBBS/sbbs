@@ -625,8 +625,12 @@ static void pop3_thread(void* arg)
 		sprintf(password,"%.*s",(int)sizeof(password)-1,p);
 		user.number=matchuser(&scfg,username);
 		if(!user.number) {
-			lprintf("%04d !POP3 UNKNOWN USER: %s (password: %s)"
-				, socket, username, password);
+			if(scfg.sys_misc&SM_ECHO_PW)
+				lprintf("%04d !POP3 UNKNOWN USER: %s (password: %s)"
+					,socket, username, password);
+			else
+				lprintf("%04d !POP3 UNKNOWN USER: %s"
+					,socket, username);
 			sockprintf(socket,"-ERR");
 			break;
 		}
@@ -643,8 +647,12 @@ static void pop3_thread(void* arg)
 			break;
 		}
 		if(stricmp(password,user.pass)) {
-			lprintf("%04d !POP3 WRONG PASSWORD for user %s: '%s' expected '%s'"
-				,socket, username, password, user.pass);
+			if(scfg.sys_misc&SM_ECHO_PW)
+				lprintf("%04d !POP3 FAILED Password attempt for user %s: '%s' expected '%s'"
+					,socket, username, password, user.pass);
+			else
+				lprintf("%04d !POP3 FAILED Password attempt for user %s"
+					,socket, username);
 			sockprintf(socket, "-ERR");
 			break;
 		}

@@ -343,8 +343,11 @@ void sbbs_t::newuser()
 			getstr(str,LEN_PASS,K_UPPER);
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
 			if(!strcmp(str,useron.pass)) break;
-			sprintf(tmp,"Failed PW verification: '%s' instead of '%s'",str
-				,useron.pass);
+			if(cfg.sys_misc&SM_ECHO_PW) 
+				sprintf(tmp,"FAILED Password verification: '%s' instead of '%s'",str
+					,useron.pass);
+			else
+				sprintf(tmp,"FAILED Password verification");
 			logline(nulstr,tmp);
 			if(++c==4) {
 				logline("N!","Couldn't figure out password.");
