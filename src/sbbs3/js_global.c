@@ -1391,69 +1391,91 @@ js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	JSObject*	array;
-	JSObject*	inarray;
-	fd_set		rfds;
-	SOCKET		fd;
-	int32		tout;
-	int			i;
-	int			maxfd=0;
-	struct timeval timeout;
+	JSObject*	inarray=NULL;
+	JSObject*	rarray;
+	BOOL		poll_for_write=FALSE;
+	fd_set		socket_set;
+	fd_set*		rd_set=NULL;
+	fd_set*		wr_set=NULL;
+	uintN		argn;
+	SOCKET		sock;
+	SOCKET		maxsock=0;
+	struct		timeval tv = {0, 0};
+	jsuint		i;
     jsuint      limit;
-	SOCKET		*index;
+	SOCKET*		index;
+	SOCKET*		psock;
 	jsval		val;
-	jsval		elemval;
 	int			len=0;
+	jsdouble	jsd;
 
 	*rval = JSVAL_NULL;
 
-    inarray = JSVAL_TO_OBJECT(argv[0]);
+	for(argn=0;argn<argc;argn++) {
+		if(JSVAL_IS_BOOLEAN(argv[argn]))
+			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
+		else if(JSVAL_IS_OBJECT(argv[argn]))
+			inarray = JSVAL_TO_OBJECT(argv[argn]);
+		else if(JSVAL_IS_INT(argv[argn]))
+			tv.tv_sec = JSVAL_TO_INT(argv[argn]);
+		else if(JSVAL_IS_DOUBLE(argv[argn])) {
+			JS_ValueToNumber(cx,argv[argn],&jsd);
+			tv.tv_sec = (int)jsd;
+			tv.tv_usec = (int)(jsd*1000.0);
+		}
+	}
 
-    if(!JS_IsArrayObject(cx, inarray))
-		return(JS_FALSE);
+    if(inarray==NULL || !JS_IsArrayObject(cx, inarray))
+		return(JS_TRUE);	/* This not a fatal error */
 
     if(!JS_GetArrayLength(cx, inarray, &limit))
 		return(JS_TRUE);
 
-    if((array = JS_NewArrayObject(cx, 0, NULL))==NULL)
+	/* Return array */
+    if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
 		return(JS_FALSE);
 
 	if((index=(SOCKET *)MALLOC(sizeof(SOCKET)*limit))==NULL)
 		return(JS_FALSE);
 
-	FD_ZERO(&rfds);
+	FD_ZERO(&socket_set);
+	if(poll_for_write)
+		wr_set=&socket_set;
+	else
+		rd_set=&socket_set;
+
     for(i=0;i<limit;i++) {
-        if(!JS_GetElement(cx, inarray, i, &elemval))
+        if(!JS_GetElement(cx, inarray, i, &val))
 			break;
-		JS_ValueToInt32(cx,elemval,&fd);
-		FD_SET(fd,&rfds);
-		if(fd>maxfd)
-			maxfd=fd;
-		index[i]=fd;
+		if(JSVAL_IS_OBJECT(val)) {	/* Socket object? */
+			if((psock=(SOCKET*)JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)))==NULL)
+				continue;
+			sock=*psock;
+		} else 
+			JS_ValueToInt32(cx,val,&sock);
+		FD_SET(sock,&socket_set);
+		if(sock>maxsock)
+			maxsock=sock;
+		index[i]=sock;
     }
 
-	JS_ValueToInt32(cx,argv[1],&tout);
-	
-	timeout.tv_sec=tout/1000000;
-	timeout.tv_usec=tout%1000000;
-
-	if(select(maxfd+1,&rfds,NULL,NULL,&timeout)<0)
+	if(select(maxsock+1,rd_set,wr_set,NULL,&tv)<0)
 	{
 		lprintf("Error in socket_select()  %s (%d)",strerror(errno),errno);
 	}
 
 	for(i=0;i<limit;i++)
 	{
-		if(FD_ISSET(index[i],&rfds))
+		if(FD_ISSET(index[i],&socket_set))
 		{
 			val=INT_TO_JSVAL(i);
-    	    if(!JS_SetElement(cx, array, len++, &val))
+    	    if(!JS_SetElement(cx, rarray, len++, &val))
 				break;
 		}
 	}
 	free(index);
 
-    *rval = OBJECT_TO_JSVAL(array);
+    *rval = OBJECT_TO_JSVAL(rarray);
 
     return(JS_TRUE);
 }
@@ -1679,8 +1701,10 @@ static jsMethodSpec js_global_functions[] = {
 		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
 		"<i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)")
 	},		
-	{"socket_select",		js_socket_select,			2,	JSTYPE_ARRAY,	JSDOCSTR("array of socket descriptors, timeout (usec)")
-	,JSDOCSTR("select()s a set of socket descriptors for read, ")
+	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,number timeout] [,bool write]")
+	,JSDOCSTR("checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
+		"default timeout value is 0.0 seconds (immediate timeout), "
+		"returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing")
 	},
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string directory")
 	,JSDOCSTR("make a directory")
