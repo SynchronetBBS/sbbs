@@ -2072,7 +2072,7 @@ int main(int argc, char** argv)  {
 			/* New User */
 			    createdefaults();
 			    lprintf("Please edit defaults using next screen.");
-			    getuser(&cfg,&user,"New User";);
+			    getuser(&cfg,&user,"New User");
 		}
 		if(j==1) {
 		    /* Find User */
