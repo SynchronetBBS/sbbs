@@ -89,7 +89,7 @@ while(1) {
 	for(i=0;i<cfg.total_grps && i<MAX_OPTS;i++)
 		sprintf(opt[i],"%-25s",cfg.grp[i]->lname);
 	opt[i][0]=0;
-	i=ulist(WIN_SAV|WIN_RHT|WIN_BOT,0,0,45,&grp_dflt,&grp_bar
+	i=uifc.list(WIN_SAV|WIN_RHT|WIN_BOT,0,0,45,&grp_dflt,&grp_bar
 		,"Message Groups"
 		,opt);
 	if(i==-1)
@@ -100,7 +100,7 @@ while(1) {
 			subnum[k++]=j; }
 	opt[k][0]=0;
 	sprintf(str,"%s Sub-boards",cfg.grp[i]->sname);
-	j=ulist(WIN_RHT|WIN_BOT|WIN_SAV,0,0,45,&sub_dflt,&sub_bar,str,opt);
+	j=uifc.list(WIN_RHT|WIN_BOT|WIN_SAV,0,0,45,&sub_dflt,&sub_bar,str,opt);
 	if(j==-1)
 		continue;
 	return(subnum[j]); }
@@ -128,7 +128,7 @@ while(1) {
 This is the network configuration menu. Select the type of network
 technology that you want to configure.
 */
-	i=ulist(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&net_dflt,0,"Networks",opt);
+	i=uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&net_dflt,0,"Networks",opt);
 	if(i==1) {	/* QWK net stuff */
 		done=0;
 		while(!done) {
@@ -145,9 +145,9 @@ outgoing messages on QWK networked sub-boards, or you can select
 Network Hubs... to add, delete, or configure QWK hubs that your system
 calls to exchange packets with.
 */
-			i=ulist(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&qnet_dflt,0
+			i=uifc.list(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&qnet_dflt,0
 				,"QWK Packet Networks",opt);
-			savnum=0;
+			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
 					done=1;
@@ -161,7 +161,7 @@ This is the default tagline to use for outgoing messages on QWK
 networked sub-boards. This default can be overridden on a per sub-board
 basis with the sub-board configuration Network Options....
 */
-					uinput(WIN_MID|WIN_SAV,0,0,nulstr
+					uifc.input(WIN_MID|WIN_SAV,0,0,nulstr
 						,cfg.qnet_tagline,70,K_MSG|K_EDIT);
 					break;
 				case 0:
@@ -174,7 +174,7 @@ basis with the sub-board configuration Network Options....
 							i|=WIN_INS|WIN_INSACT|WIN_XTR;
 						if(cfg.total_qhubs)
 							i|=WIN_DEL;
-						savnum=0;
+						uifc.savnum=0;
 						SETHELP(WHERE);
 /*
 QWK Network Hubs:
@@ -189,7 +189,7 @@ To delete a hub, select it and hit  DEL .
 
 To configure a hub, select it and hit  ENTER .
 */
-						i=ulist(i,0,0,0,&qhub_dflt,0
+						i=uifc.list(i,0,0,0,&qhub_dflt,0
 							,"QWK Network Hubs",opt);
 						if(i==-1)
 							break;
@@ -203,7 +203,7 @@ To configure a hub, select it and hit  ENTER .
 								bail(1);
                                 continue; }
 
-							savnum=1;
+							uifc.savnum=1;
 							SETHELP(WHERE);
 /*
 QWK Network Hub System ID:
@@ -211,7 +211,7 @@ To configure a hub, select it and hit  ENTER .
 This is the QWK System ID of this hub. It is used for incoming and
 outgoing network packets and must be accurate.
 */
-							if(uinput(WIN_MID|WIN_SAV,0,0
+							if(uifc.input(WIN_MID|WIN_SAV,0,0
 								,"System ID",str,8,K_UPPER)<1)
 								continue;
 
@@ -230,7 +230,7 @@ outgoing network packets and must be accurate.
 							cfg.qhub[i]->node=1;
 							cfg.qhub[i]->days=0xff; /* all days */
 							cfg.total_qhubs++;
-							changes=1;
+							uifc.changes=1;
 							continue; }
 						if((i&MSK_ON)==MSK_DEL) {
 							i&=MSK_OFF;
@@ -242,7 +242,7 @@ outgoing network packets and must be accurate.
 							while(i<cfg.total_qhubs) {
 								cfg.qhub[i]=cfg.qhub[i+1];
 								i++; }
-							changes=1;
+							uifc.changes=1;
 							continue; }
 						qhub_edit(i); }
 					break; } } }
@@ -301,9 +301,9 @@ This menu contains configuration options that pertain specifically to
 networking E-mail (NetMail) and sub-boards (EchoMail) through networks
 using FidoNet technology.
 */
-			i=ulist(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&fnet_dflt,0
+			i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&fnet_dflt,0
 				,"FidoNet EchoMail and NetMail",opt);
-			savnum=0;
+			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
 					done=1;
@@ -332,7 +332,7 @@ Format: Zone:Net/Node[.Point]
 							j|=WIN_INS|WIN_XTR;
 						if(cfg.total_faddrs)
 							j|=WIN_DEL;
-						i=ulist(j,0,0,0,&k,&l
+						i=uifc.list(j,0,0,0,&k,&l
 							,"System Addresses",opt);
 						if(i==-1)
 							break;
@@ -343,7 +343,7 @@ Format: Zone:Net/Node[.Point]
 								strcpy(str,"1:1/0");
 							else
 								strcpy(str,faddrtoa(cfg.faddr[0]));
-							if(!uinput(WIN_MID|WIN_SAV,0,0,"Address"
+							if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Address"
 								,str,25,K_EDIT|K_UPPER))
 								continue;
 
@@ -360,7 +360,7 @@ Format: Zone:Net/Node[.Point]
 
 							cfg.faddr[i]=atofaddr(str);
 							cfg.total_faddrs++;
-							changes=1;
+							uifc.changes=1;
 							continue; }
 						if((i&MSK_ON)==MSK_DEL) {
 							i&=MSK_OFF;
@@ -368,10 +368,10 @@ Format: Zone:Net/Node[.Point]
 							while(i<cfg.total_faddrs) {
 								cfg.faddr[i]=cfg.faddr[i+1];
 								i++; }
-							changes=1;
+							uifc.changes=1;
 							continue; }
 						strcpy(str,faddrtoa(cfg.faddr[i]));
-						uinput(WIN_MID|WIN_SAV,0,0,"Address"
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Address"
 							,str,25,K_EDIT);
 						cfg.faddr[i]=atofaddr(str); }
                     break;
@@ -388,18 +388,18 @@ If you would like to have a default FidoNet address adding to outbound
 NetMail mail messages that do not have an address specified, select
 Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Use Default Outbound NetMail Address",opt);
 					if(i==1) {
 						if(cfg.dflt_faddr.zone)
-							changes=1;
+							uifc.changes=1;
 						cfg.dflt_faddr.zone=0;
 						break; }
 					if(i==-1)
 						break;
 					if(!cfg.dflt_faddr.zone) {
 						cfg.dflt_faddr.zone=1;
-						changes=1; }
+						uifc.changes=1; }
 					strcpy(str,faddrtoa(cfg.dflt_faddr));
 					SETHELP(WHERE);
 /*
@@ -410,10 +410,10 @@ NetMail that does not have an address specified, set this option
 to that address. This is useful for Fido/UUCP gateway mail.
 Format: Zone:Net/Node[.Point]
 */
-					if(uinput(WIN_MID|WIN_SAV,0,0,"Outbound Address"
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound Address"
 						,str,25,K_EDIT)) {
 						cfg.dflt_faddr=atofaddr(str);
-						changes=1; }
+						uifc.changes=1; }
                     break;
 				case 2:
 					SETHELP(WHERE);
@@ -424,7 +424,7 @@ This is the default origin line used for sub-boards networked via
 EchoMail. This origin line can be overridden on a per sub-board basis
 with the sub-board configuration Network Options....
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"* Origin"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"* Origin"
 						,cfg.origline,50,K_EDIT);
                     break;
 				case 3:
@@ -436,7 +436,7 @@ This is a filename that will be used as a semaphore (signal) to your
 FidoNet front-end that new NetMail has been created and the messages
 should be re-scanned.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"NetMail Semaphore"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail Semaphore"
 						,cfg.netmail_sem,50,K_EDIT);
                     break;
 				case 4:
@@ -448,7 +448,7 @@ This is a filename that will be used as a semaphore (signal) to your
 FidoNet front-end that new EchoMail has been created and the messages
 should be re-scanned.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"EchoMail Semaphore"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Semaphore"
 						,cfg.echomail_sem,50,K_EDIT);
                     break;
 				case 5:
@@ -459,7 +459,7 @@ should be re-scanned.
 This directory is where inbound files are placed. This directory is
 only used when an incoming message has a file attached.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"Inbound Files"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Files"
 						,cfg.fidofile_dir,50,K_EDIT);
                     break;
 				case 6:
@@ -477,7 +477,7 @@ sub-directory is the same as the internal code for the sub-directory.
 If all EchoMail sub-boards have specified EchoMail storage directories,
 this option is not used at all.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"EchoMail Base"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Base"
 						,cfg.echomail_dir,50,K_EDIT);
                     break;
 				case 7:
@@ -488,7 +488,7 @@ this option is not used at all.
 This is the directory where NetMail will be imported from and exported
 to.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"NetMail"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail"
 						,cfg.netmail_dir,50,K_EDIT);
                     break;
 				case 8:
@@ -503,13 +503,13 @@ to.
 If you are on a FidoNet style network and want your users to be allowed
 to send NetMail, set this option to Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send NetMail",opt);
 					if(!i && !(cfg.netmail_misc&NMAIL_ALLOW)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc|=NMAIL_ALLOW; }
 					else if(i==1 && cfg.netmail_misc&NMAIL_ALLOW) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc&=~NMAIL_ALLOW; }
 					break;
 				case 9:
@@ -524,13 +524,13 @@ to send NetMail, set this option to Yes.
 If you are on a FidoNet style network and want your users to be allowed
 to send NetMail file attachments, set this option to Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send NetMail File Attachments",opt);
 					if(!i && !(cfg.netmail_misc&NMAIL_FILE)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc|=NMAIL_FILE; }
 					else if(i==1 && cfg.netmail_misc&NMAIL_FILE) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc&=~NMAIL_FILE; }
                     break;
 				case 10:
@@ -547,13 +547,13 @@ contain their alias as the From User, set this option to Yes. If you
 want all NetMail to be sent using users' real names, set this option to
 No.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Use Aliases in NetMail",opt);
 					if(!i && !(cfg.netmail_misc&NMAIL_ALIAS)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc|=NMAIL_ALIAS; }
 					else if(i==1 && cfg.netmail_misc&NMAIL_ALIAS) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc&=~NMAIL_ALIAS; }
                     break;
 				case 11:
@@ -568,13 +568,13 @@ want all NetMail to be sent using users' real names, set this option to
 If you want all NetMail to default to crash (send immediately) status,
 set this option to Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"NetMail Defaults to Crash Status",opt);
 					if(!i && !(cfg.netmail_misc&NMAIL_CRASH)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc|=NMAIL_CRASH; }
 					else if(i==1 && cfg.netmail_misc&NMAIL_CRASH) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc&=~NMAIL_CRASH; }
                     break;
 				case 12:
@@ -589,13 +589,13 @@ set this option to Yes.
 If you want all NetMail to default to direct (send directly) status,
 set this option to Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"NetMail Defaults to Direct Status",opt);
 					if(!i && !(cfg.netmail_misc&NMAIL_DIRECT)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc|=NMAIL_DIRECT; }
 					else if(i==1 && cfg.netmail_misc&NMAIL_DIRECT) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc&=~NMAIL_DIRECT; }
                     break;
 				case 13:
@@ -610,13 +610,13 @@ set this option to Yes.
 If you want all NetMail to default to hold status, set this option to
 Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"NetMail Defaults to Hold Status",opt);
 					if(!i && !(cfg.netmail_misc&NMAIL_HOLD)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc|=NMAIL_HOLD; }
 					else if(i==1 && cfg.netmail_misc&NMAIL_HOLD) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc&=~NMAIL_HOLD; }
                     break;
 				case 14:
@@ -631,13 +631,13 @@ If you want all NetMail to default to hold status, set this option to
 If you want NetMail messages to be deleted after they are successfully
 sent, set this option to Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Kill NetMail After it is Sent",opt);
 					if(!i && !(cfg.netmail_misc&NMAIL_KILL)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc|=NMAIL_KILL; }
 					else if(i==1 && cfg.netmail_misc&NMAIL_KILL) {
-						changes=1;
+						uifc.changes=1;
 						cfg.netmail_misc&=~NMAIL_KILL; }
                     break;
 				case 15:
@@ -649,7 +649,7 @@ sent, set this option to Yes.
 This is the number of credits it will cost your users to send NetMail.
 If you want the sending of NetMail to be free, set this value to 0.
 */
-					uinput(WIN_MID|WIN_SAV,0,0
+					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Cost in Credits to Send NetMail"
 						,str,10,K_EDIT|K_NUMBER);
 					cfg.netmail_cost=atol(str);
@@ -668,9 +668,9 @@ If you want the sending of NetMail to be free, set this value to 0.
 
 From this menu you can configure PostLink or PCRelay Networks.
 */
-			i=ulist(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&pnet_dflt,0
+			i=uifc.list(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&pnet_dflt,0
 				,"PostLink Networks",opt);
-			savnum=0;
+			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
 					done=1;
@@ -683,7 +683,7 @@ From this menu you can configure PostLink or PCRelay Networks.
 If your system is networked via PostLink or PCRelay, this should be the
 Site Name for your BBS.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"Site Name"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"Site Name"
 						,cfg.sys_psname,12,K_UPPER|K_EDIT);
 					break;
 				case 2:
@@ -695,7 +695,7 @@ If your system is networked via PostLink or PCRelay, this should be the
 Site Number for your BBS.
 */
 					ultoa(cfg.sys_psnum,str,10);
-					uinput(WIN_MID|WIN_SAV,0,0,"Site Number"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"Site Number"
 						,str,10,K_NUMBER|K_EDIT);
 					cfg.sys_psnum=atol(str);
                     break;
@@ -709,7 +709,7 @@ Site Number for your BBS.
 							i|=WIN_INS|WIN_INSACT|WIN_XTR;
 						if(cfg.total_phubs)
 							i|=WIN_DEL;
-						savnum=0;
+						uifc.savnum=0;
 						SETHELP(WHERE);
 /*
 PostLink Network Hubs:
@@ -724,7 +724,7 @@ To delete a hub, select it and hit  DEL .
 
 To configure a hub, select it and hit  ENTER .
 */
-						i=ulist(i,0,0,0,&phub_dflt,0
+						i=uifc.list(i,0,0,0,&phub_dflt,0
 							,"PostLink Hubs",opt);
 						if(i==-1)
 							break;
@@ -738,14 +738,14 @@ To configure a hub, select it and hit  ENTER .
 								bail(1);
                                 continue; }
 
-							savnum=1;
+							uifc.savnum=1;
 							SETHELP(WHERE);
 /*
 Network Hub Site Name:
 
 This is the Site Name of this hub. It is used for only for reference.
 */
-							if(uinput(WIN_MID|WIN_SAV,0,0
+							if(uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Site Name",str,10,K_UPPER)<1)
 								continue;
 
@@ -763,7 +763,7 @@ This is the Site Name of this hub. It is used for only for reference.
 							cfg.phub[i]->node=1;
 							cfg.phub[i]->days=0xff; /* all days */
 							cfg.total_phubs++;
-							changes=1;
+							uifc.changes=1;
 							continue; }
 						if((i&MSK_ON)==MSK_DEL) {
 							i&=MSK_OFF;
@@ -772,7 +772,7 @@ This is the Site Name of this hub. It is used for only for reference.
 							while(i<cfg.total_phubs) {
 								cfg.phub[i]=cfg.phub[i+1];
 								i++; }
-							changes=1;
+							uifc.changes=1;
 							continue; }
 						phub_edit(i); }
                     break; } } }
@@ -806,9 +806,9 @@ This is the Site Name of this hub. It is used for only for reference.
 This menu contains configuration options that pertain specifically to
 Internet E-mail.
 */
-			i=ulist(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&inet_dflt,0
+			i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&inet_dflt,0
 				,"Internet",opt);
-			savnum=0;
+			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
 					done=1;
@@ -821,7 +821,7 @@ Internet E-mail.
 Enter your system's Internet address (hostname or IP address) here
 (e.g. joesbbs.com).
 */
-					uinput(WIN_MID|WIN_SAV,0,0,""
+					uifc.input(WIN_MID|WIN_SAV,0,0,""
 						,cfg.sys_inetaddr,60,K_EDIT);
                     break;
 				case 1:
@@ -833,7 +833,7 @@ This is a filename that will be used as a semaphore (signal) to any
 external Internet e-mail processors that new mail has been received
 and the message base should be re-scanned.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"Inbound Semaphore"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Semaphore"
 						,cfg.smtpmail_sem,50,K_EDIT);
                     break;
 				case 2:
@@ -845,7 +845,7 @@ This is a filename that will be used as a semaphore (signal) to any
 external Internet gateways (if supported) that new mail has been created
 and the message base should be re-scanned.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"Outbound Semaphore"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound Semaphore"
 						,cfg.inetmail_sem,50,K_EDIT);
                     break;
 				case 3:
@@ -860,13 +860,13 @@ and the message base should be re-scanned.
 If you want your users to be allowed to send Internet E-mail, set this
 option to Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send E-mail",opt);
 					if(!i && !(cfg.inetmail_misc&NMAIL_ALLOW)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.inetmail_misc|=NMAIL_ALLOW; }
 					else if(i==1 && cfg.inetmail_misc&NMAIL_ALLOW) {
-						changes=1;
+						uifc.changes=1;
 						cfg.inetmail_misc&=~NMAIL_ALLOW; }
 					break;
 				case 4:
@@ -881,13 +881,13 @@ option to Yes.
 If you want your users to be allowed to send Internet E-mail with file
 attachments, set this option to Yes.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send E-mail with File Attachments",opt);
 					if(!i && !(cfg.inetmail_misc&NMAIL_FILE)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.inetmail_misc|=NMAIL_FILE; }
 					else if(i==1 && cfg.inetmail_misc&NMAIL_FILE) {
-						changes=1;
+						uifc.changes=1;
 						cfg.inetmail_misc&=~NMAIL_FILE; }
                     break;
 				case 5:
@@ -904,13 +904,13 @@ Internet E-mail contain their alias as the From User, set this option to
 Yes. If you want all E-mail to be sent using users' real names, set this
 option to No.
 */
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Use Aliases in Internet E-mail",opt);
 					if(!i && !(cfg.inetmail_misc&NMAIL_ALIAS)) {
-						changes=1;
+						uifc.changes=1;
 						cfg.inetmail_misc|=NMAIL_ALIAS; }
 					else if(i==1 && cfg.inetmail_misc&NMAIL_ALIAS) {
-						changes=1;
+						uifc.changes=1;
 						cfg.inetmail_misc&=~NMAIL_ALIAS; }
 					break;
 				case 6:
@@ -923,7 +923,7 @@ This is the number of credits it will cost your users to send Internet
 E-mail. If you want the sending of Internet E-mail to be free, set this
 value to 0.
 */
-					uinput(WIN_MID|WIN_SAV,0,0
+					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Cost in Credits to Send Internet E-mail"
 						,str,10,K_EDIT|K_NUMBER);
 					cfg.inetmail_cost=atol(str);
@@ -965,7 +965,7 @@ while(!done) {
 	strcpy(opt[i++],"Networked Sub-boards...");
 	opt[i][0]=0;
 	sprintf(str,"%s Network Hub",cfg.qhub[num]->id);
-	savnum=1;
+	uifc.savnum=1;
 	SETHELP(WHERE);
 /*
 QWK Network Hub Configuration:
@@ -973,7 +973,7 @@ while(!done) {
 This menu allows you to configure options specific to this QWK network
 hub.
 */
-	switch(ulist(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&qhub_dflt,0
+	switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&qhub_dflt,0
 		,str,opt)) {
 		case -1:
 			done=1;
@@ -987,7 +987,7 @@ This is the QWK System ID of this hub. It is used for incoming and
 outgoing network packets and must be accurate.
 */
 			strcpy(str,cfg.qhub[num]->id);	/* save */
-			if(!uinput(WIN_MID|WIN_SAV,0,0,"QWK Network Hub System ID"
+			if(!uifc.input(WIN_MID|WIN_SAV,0,0,"QWK Network Hub System ID"
 				,cfg.qhub[num]->id,8,K_UPPER|K_EDIT))
 				strcpy(cfg.qhub[num]->id,str);
 			break;
@@ -999,7 +999,7 @@ outgoing network packets and must be accurate.
 This is the command line to use to create (compress) REP packets for
 this QWK network hub.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Packet Creation"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Packet Creation"
 				,cfg.qhub[num]->pack,50,K_EDIT);
 			break;
 		case 2:
@@ -1010,7 +1010,7 @@ this QWK network hub.
 This is the command line to use to extract (decompress) QWK packets from
 this QWK network hub.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Packet Extraction"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Packet Extraction"
 				,cfg.qhub[num]->unpack,50,K_EDIT);
 			break;
 		case 3:
@@ -1021,7 +1021,7 @@ this QWK network hub.
 This is the command line to use to initiate a call-out to this QWK
 network hub.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Call-out Command"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Call-out Command"
 				,cfg.qhub[num]->call,50,K_EDIT);
 			break;
 		case 4:
@@ -1033,7 +1033,7 @@ network hub.
 This is the number of the node to perform the call-out for this QWK
 network hub.
 */
-			uinput(WIN_MID|WIN_SAV,0,0
+			uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Node to Perform Call-out",str,3,K_EDIT|K_NUMBER);
 			cfg.qhub[num]->node=atoi(str);
 			break;
@@ -1044,7 +1044,7 @@ network hub.
 					sprintf(opt[i],"%s        %s"
 						,wday[i],(cfg.qhub[num]->days&(1<<i)) ? "Yes":"No");
 				opt[i][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Days to Perform Call-out:
@@ -1052,19 +1052,19 @@ network hub.
 These are the days that a call-out will be performed for this QWK
 network hub.
 */
-				i=ulist(WIN_MID,0,0,0,&j,0
+				i=uifc.list(WIN_MID,0,0,0,&j,0
 					,"Days to Perform Call-out",opt);
 				if(i==-1)
 					break;
 				cfg.qhub[num]->days^=(1<<i);
-				changes=1; }
+				uifc.changes=1; }
 			break;
 		case 6:
 			i=1;
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
-			savnum=2;
+			uifc.savnum=2;
 			SETHELP(WHERE);
 /*
 Perform Call-out at a Specific Time:
@@ -1074,7 +1074,7 @@ set this option to Yes. If you want the system to call this network
 hub more than once a day at predetermined intervals, set this option to
 No.
 */
-			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Perform Call-out at a Specific Time",opt);
 			if(i==0) {
 				sprintf(str,"%2.2u:%2.2u",cfg.qhub[num]->time/60
@@ -1086,7 +1086,7 @@ hub more than once a day at predetermined intervals, set this option to
 This is the time (in 24 hour HH:MM format) to perform the call-out to
 this QWK network hub.
 */
-				if(uinput(WIN_MID|WIN_SAV,0,0
+				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Time to Perform Call-out (HH:MM)"
 					,str,5,K_UPPER|K_EDIT)>0) {
 					cfg.qhub[num]->freq=0;
@@ -1106,7 +1106,7 @@ Synchronet into minutes between call-outs and when the BBS is idle
 and this number of minutes since the last call-out is reached, it will
 perform a call-out.
 */
-				if(uinput(WIN_MID|WIN_SAV,0,0
+				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Number of Call-outs Per Day"
 					,str,4,K_NUMBER|K_EDIT)>0) {
 					cfg.qhub[num]->time=0;
@@ -1135,7 +1135,7 @@ while(1) {
 			,LEN_SSNAME,LEN_SSNAME
 			,cfg.sub[cfg.qhub[num]->sub[j]]->sname);
 	opt[j][0]=0;
-	savnum=2;
+	uifc.savnum=2;
 	j=WIN_BOT|WIN_SAV|WIN_ACT;
 	if(cfg.qhub[num]->subs<MAX_OPTS)
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
@@ -1155,16 +1155,16 @@ To remove a sub-board, select it and hit  DEL .
 To configure a sub-board for this QWK network hub, select it and hit
  ENTER .
 */
-	j=ulist(j,0,0,0,&k,&bar
+	j=uifc.list(j,0,0,0,&k,&bar
 		,"Networked Sub-boards",opt);
 	if(j==-1)
 		break;
 	if((j&MSK_ON)==MSK_INS) {
 		j&=MSK_OFF;
-		savnum=3;
+		uifc.savnum=3;
 		if((l=getsub())==-1)
 			continue;
-		savnum=3;
+		uifc.savnum=3;
 		SETHELP(WHERE);
 /*
 Conference Number on Hub:
@@ -1178,7 +1178,7 @@ It is important to understand that this is NOT the conference number of
 this sub-board on your system. It is the number of the conference this
 sub-board is networked with on this QWK network hub.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0
+		if(uifc.input(WIN_MID|WIN_SAV,0,0
 			,"Conference Number on Hub"
 			,str,5,K_NUMBER)<1)
 			continue;
@@ -1199,7 +1199,7 @@ BBS, but allows ANSI escape sequences in messages, set this option to
 not support ANSI escape sequences in messages (or you're not sure), set
 this option to Strip out.
 */
-		if((m=ulist(WIN_MID|WIN_SAV,0,0,0,&m,0
+		if((m=uifc.list(WIN_MID|WIN_SAV,0,0,0,&m,0
 			,"Ctrl-A Codes",opt))==-1)
 			continue;
 		if((cfg.qhub[num]->sub=(ushort *)REALLOC(cfg.qhub[num]->sub
@@ -1224,7 +1224,7 @@ this option to Strip out.
 		cfg.qhub[num]->sub[j]=l;
 		cfg.qhub[num]->conf[j]=atoi(str);
 		cfg.qhub[num]->subs++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((j&MSK_ON)==MSK_DEL) {
 		j&=MSK_OFF;
@@ -1234,7 +1234,7 @@ this option to Strip out.
 			cfg.qhub[num]->mode[j]=cfg.qhub[num]->mode[j+1];
 			cfg.qhub[num]->conf[j]=cfg.qhub[num]->conf[j+1];
 			j++; }
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	l=0;
 	while(1) {
@@ -1252,7 +1252,7 @@ this option to Strip out.
 			"Strip out" : cfg.qhub[num]->mode[j]==A_LEAVE ?
 			"Leave in" : "Expand to ANSI");
 		opt[n][0]=0;
-		savnum=3;
+		uifc.savnum=3;
 		SETHELP(WHERE);
 /*
 QWK Netted Sub-board:
@@ -1260,19 +1260,19 @@ this option to Strip out.
 You are configuring the options for this sub-board for this QWK network
 hub.
 */
-		l=ulist(WIN_MID|WIN_SAV|WIN_ACT,0,0,
+		l=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,
 			22+LEN_GSNAME+LEN_SSNAME,&l,0
 			,"Netted Sub-board",opt);
 		if(l==-1)
 			break;
 		if(!l) {
-			savnum=4;
+			uifc.savnum=4;
 			m=getsub();
 			if(m!=-1) {
 				cfg.qhub[num]->sub[j]=m;
-				changes=1; } }
+				uifc.changes=1; } }
 		else if(l==1) {
-			savnum=4;
+			uifc.savnum=4;
 			SETHELP(WHERE);
 /*
 Conference Number on Hub:
@@ -1286,7 +1286,7 @@ It is important to understand that this is NOT the conference number of
 this sub-board on your system. It is the number of the conference this
 sub-board is networked with on this QWK network hub.
 */
-			if(uinput(WIN_MID|WIN_SAV,0,0
+			if(uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Conference Number on Hub"
 				,str,5,K_NUMBER)>0)
 				cfg.qhub[num]->conf[j]=atoi(str); }
@@ -1296,7 +1296,7 @@ sub-board is networked with on this QWK network hub.
 			strcpy(opt[2],"Expand to ANSI");
 			opt[3][0]=0;
 			m=0;
-			savnum=4;
+			uifc.savnum=4;
 			SETHELP(WHERE);
 /*
 Ctrl-A Codes:
@@ -1309,9 +1309,9 @@ BBS, but allows ANSI escape sequences in messages, set this option to
 not support ANSI escape sequences in messages (or you're not sure), set
 this option to Strip out.
 */
-			m=ulist(WIN_MID|WIN_SAV,0,0,0,&m,0
+			m=uifc.list(WIN_MID|WIN_SAV,0,0,0,&m,0
 				,"Ctrl-A Codes",opt);
-			changes=1;
+			uifc.changes=1;
 			if(!m)
 				cfg.qhub[num]->mode[j]=A_STRIP;
 			else if(m==1)
@@ -1341,14 +1341,14 @@ while(!done) {
 		sprintf(opt[i++],"%-27.27s%s","Call-out Time",str); }
 	opt[i][0]=0;
 	sprintf(str,"%s Network Hub",cfg.phub[num]->name);
-	savnum=1;
+	uifc.savnum=1;
 	SETHELP(WHERE);
 /*
 PostLink Network Hub Configuration:
 
 This menu allows you to configure options specific to this network hub.
 */
-	switch(ulist(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&phub_dflt,0
+	switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&phub_dflt,0
 		,str,opt)) {
 		case -1:
 			done=1;
@@ -1361,7 +1361,7 @@ This menu allows you to configure options specific to this network hub.
 This is the Site Name of this hub. It is used for only for reference.
 */
 			strcpy(str,cfg.phub[num]->name);	/* save */
-			if(!uinput(WIN_MID|WIN_SAV,0,0,"Hub Site Name"
+			if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Hub Site Name"
 				,cfg.phub[num]->name,10,K_UPPER|K_EDIT))
 				strcpy(cfg.phub[num]->name,str);	/* restore */
 			break;
@@ -1373,7 +1373,7 @@ This is the Site Name of this hub. It is used for only for reference.
 This is the command line to use to initiate a call-out to this network
 hub.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Call-out Command"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Call-out Command"
 				,cfg.phub[num]->call,50,K_EDIT);
 			break;
 		case 2:
@@ -1385,7 +1385,7 @@ hub.
 This is the number of the node to perform the call-out for this network
 hub.
 */
-			uinput(WIN_MID|WIN_SAV,0,0
+			uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Node to Perform Call-out",str,3,K_EDIT|K_NUMBER);
 			cfg.phub[num]->node=atoi(str);
 			break;
@@ -1396,7 +1396,7 @@ hub.
 					sprintf(opt[i],"%s        %s"
 						,wday[i],(cfg.phub[num]->days&(1<<i)) ? "Yes":"No");
 				opt[i][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Days to Perform Call-out:
@@ -1404,19 +1404,19 @@ hub.
 These are the days that a call-out will be performed for this network
 hub.
 */
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&j,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 					,"Days to Perform Call-out",opt);
 				if(i==-1)
 					break;
 				cfg.phub[num]->days^=(1<<i);
-				changes=1; }
+				uifc.changes=1; }
 			break;
 		case 4:
 			i=1;
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
-			savnum=2;
+			uifc.savnum=2;
 			SETHELP(WHERE);
 /*
 Perform Call-out at a Specific Time:
@@ -1425,7 +1425,7 @@ If you want the system call this network hub at a specific time, set
 this option to Yes. If you want the system to call this hub more than
 once a day at predetermined intervals, set this option to No.
 */
-			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Perform Call-out at a Specific Time",opt);
 			if(i==0) {
 				sprintf(str,"%2.2u:%2.2u",cfg.phub[num]->time/60
@@ -1437,7 +1437,7 @@ once a day at predetermined intervals, set this option to No.
 This is the time (in 24 hour HH:MM format) to perform the call-out to
 this network hub.
 */
-				if(uinput(WIN_MID|WIN_SAV,0,0
+				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Time to Perform Call-out (HH:MM)"
 					,str,5,K_UPPER|K_EDIT)>0) {
 					cfg.phub[num]->freq=0;
@@ -1457,7 +1457,7 @@ Synchronet into minutes between call-outs and when the BBS is idle
 and this number of minutes since the last call-out is reached, it will
 perform a call-out.
 */
-				if(uinput(WIN_MID|WIN_SAV,0,0
+				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Number of Call-outs Per Day"
 					,str,4,K_NUMBER|K_EDIT)>0) {
 					cfg.phub[num]->time=0;

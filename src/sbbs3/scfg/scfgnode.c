@@ -69,7 +69,7 @@ node with the arrow keys and hit  F5 . Then select the destination
 node and hit  F6 .
 */
 
-	i=ulist(j,0,0,13,&node_menu_dflt,&node_bar,"Nodes",opt);
+	i=uifc.list(j,0,0,13,&node_menu_dflt,&node_bar,"Nodes",opt);
 	if(i==-1) {
 		if(savnode) {
 			free_node_cfg(&cfg);
@@ -89,7 +89,7 @@ SETHELP(WHERE);
 If you are positive you want to delete this node, select Yes. Otherwise,
 select No or hit  ESC .
 */
-		i=ulist(WIN_MID,0,0,0,&i,0,str,opt);
+		i=uifc.list(WIN_MID,0,0,0,&i,0,str,opt);
 		if(!i) {
 			--cfg.sys_nodes;
 /*			FREE(cfg.node_path[cfg.sys_nodes]); */
@@ -100,9 +100,9 @@ select No or hit  ESC .
 	if((i&MSK_ON)==MSK_INS) {
 		strcpy(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 		i=cfg.sys_nodes+1;
-		upop("Reading NODE.CNF...");
+		uifc.pop("Reading NODE.CNF...");
 		read_node_cfg(&cfg,&txt);
-		upop(0);
+		uifc.pop(0);
 		sprintf(str,"../node%d/",i);
 		sprintf(tmp,"Node %d Path",i);
 SETHELP(WHERE);
@@ -118,8 +118,8 @@ or other volatile media.
 
 If you want to abort the creation of this new node, hit  ESC .
 */
-		j=uinput(WIN_MID,0,0,tmp,str,50,K_EDIT);
-		changes=0;
+		j=uifc.input(WIN_MID,0,0,tmp,str,50,K_EDIT);
+		uifc.changes=0;
 		if(j<2)
 			continue;
 		truncsp(str);
@@ -140,9 +140,9 @@ If you want to abort the creation of this new node, hit  ESC .
 			free_node_cfg(&cfg);
 		i&=MSK_OFF;
 		strcpy(cfg.node_dir,cfg.node_path[i]);
-		upop("Reading NODE.CNF...");
+		uifc.pop("Reading NODE.CNF...");
 		read_node_cfg(&cfg,&txt);
-		upop(0);
+		uifc.pop(0);
 		savnode=1;
 		continue; }
 	if((i&MSK_ON)==MSK_PUT) {
@@ -151,7 +151,7 @@ If you want to abort the creation of this new node, hit  ESC .
 		cfg.node_num=i+1;
 		write_node_cfg(&cfg,backup_level);
         rerun_nodes();
-		changes=1;
+		uifc.changes=1;
 		continue;
     }
 
@@ -161,9 +161,9 @@ If you want to abort the creation of this new node, hit  ESC .
 	strcpy(cfg.node_dir,cfg.node_path[i]);
 	prep_dir(cfg.ctrl_dir, cfg.node_dir);
 
-	upop("Reading NODE.CNF...");
+	uifc.pop("Reading NODE.CNF...");
 	read_node_cfg(&cfg,&txt);
-	upop(0);
+	uifc.pop(0);
 	if(cfg.node_num!=i+1) { 	/* Node number isn't right? */
 		cfg.node_num=i+1;		/* so fix it */
 		write_node_cfg(&cfg,backup_level); } /* and write it back */
@@ -195,7 +195,7 @@ menu will only affect the selected node's configuration.
 
 Options with a trailing ... will produce a sub-menu of more options.
 */
-	switch(ulist(WIN_ACT|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&node_dflt,0
+	switch(uifc.list(WIN_ACT|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&node_dflt,0
 		,str,opt)) {
 		case -1:
 			i=save_changes(WIN_MID);
@@ -228,7 +228,7 @@ Options with a trailing ... will produce a sub-menu of more options.
 					,cfg.node_misc&NM_NOPAUSESPIN ? "No":"Yes");
 
 				opt[i][0]=0;
-				savnum=0;
+				uifc.savnum=0;
 SETHELP(WHERE);
 /*
 Node Toggle Options:
@@ -238,7 +238,7 @@ This is the toggle options menu for the selected node's configuration.
 The available options from this menu can all be toggled between two or
 more states, such as Yes and No.
 */
-				switch(ulist(WIN_BOT|WIN_RHT|WIN_ACT|WIN_SAV,3,2,35,&tog_dflt
+				switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT|WIN_SAV,3,2,35,&tog_dflt
 					,&tog_bar,"Toggle Options",opt)) {
 					case -1:
 						done=1;
@@ -248,7 +248,7 @@ more states, such as Yes and No.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						savnum=1;
+						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Low Priority String Input:
@@ -261,21 +261,21 @@ Setting this option to Yes will force Synchronet to give up time slices
 during string input, possibly causing jerky keyboard input from the
 user, but improving aggregate system performance under multitaskers.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,10,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Low Priority String Input",opt);
 						if(i==0 && !(cfg.node_misc&NM_LOWPRIO)) {
 							cfg.node_misc|=NM_LOWPRIO;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && (cfg.node_misc&NM_LOWPRIO)) {
 							cfg.node_misc&=~NM_LOWPRIO;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 1:
 						i=0;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						savnum=1;
+						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Allow Login by User Number:
@@ -283,21 +283,21 @@ user, but improving aggregate system performance under multitaskers.
 If you want users to be able login using their user number at the NN:
 set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,10,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Allow Login by User Number",opt);
 						if(i==0 && cfg.node_misc&NM_NO_NUM) {
 							cfg.node_misc&=~NM_NO_NUM;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && !(cfg.node_misc&NM_NO_NUM)) {
 							cfg.node_misc|=NM_NO_NUM;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 2:
 						i=1;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						savnum=1;
+						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Allow Login by Real Name:
@@ -305,21 +305,21 @@ set this option to Yes.
 If you want users to be able login using their real name as well as
 their alias, set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,10,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Allow Login by Real Name",opt);
 						if(i==0 && !(cfg.node_misc&NM_LOGON_R)) {
 							cfg.node_misc|=NM_LOGON_R;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && (cfg.node_misc&NM_LOGON_R)) {
 							cfg.node_misc&=~NM_LOGON_R;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 3:
 						i=1;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						savnum=1;
+						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Always Prompt for Password:
@@ -327,21 +327,21 @@ their alias, set this option to Yes.
 If you want to have attempted logins using an unknown user name still
 prompt for a password, set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,10,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Always Prompt for Password",opt);
 						if(i==0 && !(cfg.node_misc&NM_LOGON_P)) {
 							cfg.node_misc|=NM_LOGON_P;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && (cfg.node_misc&NM_LOGON_P)) {
 							cfg.node_misc&=~NM_LOGON_P;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 4:
 						i=0;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						savnum=1;
+						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Allow 8-bit Remote Input During Login:
@@ -350,21 +350,21 @@ If you wish to allow E-7-1 terminals to use this node, you must set this
 option to No. This will also eliminate the ability of 8-bit remote users
 to send IBM extended ASCII characters during the login sequence.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,10,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Allow 8-bit Remote Input During Login",opt);
 						if(i==1 && !(cfg.node_misc&NM_7BITONLY)) {
 							cfg.node_misc|=NM_7BITONLY;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==0 && (cfg.node_misc&NM_7BITONLY)) {
 							cfg.node_misc&=~NM_7BITONLY;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 5:
 						i=0;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						savnum=1;
+						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Spinning Pause Prompt:
@@ -372,14 +372,14 @@ to send IBM extended ASCII characters during the login sequence.
 If you want to have a spinning cursor at the [Hit a key] prompt, set
 this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,10,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Spinning Cursor at Pause Prompt",opt);
 						if(i==0 && !(cfg.node_misc&NM_NOPAUSESPIN)) {
 							cfg.node_misc|=NM_NOPAUSESPIN;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && (cfg.node_misc&NM_NOPAUSESPIN)) {
 							cfg.node_misc&=~NM_NOPAUSESPIN;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 						} }
 			break;
@@ -402,7 +402,7 @@ this option to Yes.
 				sprintf(opt[i++],"%-27.27s%.40s","Control Directory",cfg.ctrl_dir);
 				sprintf(opt[i++],"%-27.27s%.40s","Text Directory",cfg.text_dir);
 				opt[i][0]=0;
-				savnum=0;
+				uifc.savnum=0;
 SETHELP(WHERE);
 /*
 Node Advanced Options:
@@ -411,7 +411,7 @@ This is the advanced options menu for the selected node. The available
 options are of an advanced nature and should not be modified unless you
 are sure of the consequences and necessary preparation.
 */
-				switch(ulist(WIN_T2B|WIN_RHT|WIN_ACT|WIN_SAV,2,0,60,&adv_dflt,0
+				switch(uifc.list(WIN_T2B|WIN_RHT|WIN_ACT|WIN_SAV,2,0,60,&adv_dflt,0
 					,"Advanced Options",opt)) {
                     case -1:
 						done=1;
@@ -430,7 +430,7 @@ send validation feedback, set this value to the number of the user to
 whom the feedback is sent. The normal value of this option is 1 for
 user number one.
 */
-						uinput(WIN_MID,0,13,"Validation User Number (0=Nobody)"
+						uifc.input(WIN_MID,0,13,"Validation User Number (0=Nobody)"
 							,str,4,K_NUMBER|K_EDIT);
 						cfg.node_valuser=atoi(str);
 						break;
@@ -443,7 +443,7 @@ SETHELP(WHERE);
 This is the number of seconds between semaphore checks while this node
 is waiting for a caller. Default is 60 seconds.
 */
-						uinput(WIN_MID|WIN_SAV,0,14
+						uifc.input(WIN_MID|WIN_SAV,0,14
 							,"Seconds Between Semaphore Checks"
 							,str,3,K_NUMBER|K_EDIT);
 						cfg.node_sem_check=atoi(str);
@@ -457,7 +457,7 @@ SETHELP(WHERE);
 This is the number of seconds between static checks while this node
 is waiting for a caller. Default is 10 seconds.
 */
-						uinput(WIN_MID|WIN_SAV,0,14
+						uifc.input(WIN_MID|WIN_SAV,0,14
 							,"Seconds Between Statistic Checks"
 							,str,3,K_NUMBER|K_EDIT);
 						cfg.node_stat_check=atoi(str);
@@ -471,7 +471,7 @@ SETHELP(WHERE);
 This is the number of seconds the user must be inactive before a
 warning will be given. Default is 180 seconds.
 */
-						uinput(WIN_MID|WIN_SAV,0,14
+						uifc.input(WIN_MID|WIN_SAV,0,14
 							,"Seconds Before Inactivity Warning"
 							,str,4,K_NUMBER|K_EDIT);
 						cfg.sec_warn=atoi(str);
@@ -485,7 +485,7 @@ SETHELP(WHERE);
 This is the number of seconds the user must be inactive before they
 will be automatically disconnected. Default is 300 seconds.
 */
-						uinput(WIN_MID|WIN_SAV,0,14
+						uifc.input(WIN_MID|WIN_SAV,0,14
 							,"Seconds Before Inactivity Disconnection"
 							,str,4,K_NUMBER|K_EDIT);
 						cfg.sec_hangup=atoi(str);
@@ -504,7 +504,7 @@ commands are required, use a batch file.
 Remember: The %! command line specifier is an abreviation for your
 		  configured EXEC directory path.
 */
-						uinput(WIN_MID|WIN_SAV,0,10,"Daily Event"
+						uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
 							,cfg.node_daily,50,K_EDIT);
 						break;
 					case 6:
@@ -522,7 +522,7 @@ or other volatile media.
 This option allows you to change the parent of your control directory.
 The \CTRL\ suffix (sub-directory) cannot be changed or removed.
 */
-						if(uinput(WIN_MID|WIN_SAV,0,9,"Control Dir Parent"
+						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Control Dir Parent"
 							,str,50,K_EDIT)>0) {
 							if(str[strlen(str)-1]!='\\'
                                 && str[strlen(str)-1]!='/')
@@ -547,7 +547,7 @@ moved to this directory if you decide to change it.
 This option allows you to change the parent of your control directory.
 The \TEXT\ suffix (sub-directory) cannot be changed or removed.
 */
-						if(uinput(WIN_MID|WIN_SAV,0,10,"Text Dir Parent"
+						if(uifc.input(WIN_MID|WIN_SAV,0,10,"Text Dir Parent"
 							,str,50,K_EDIT)>0) {
 							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
 								strcat(str,"/");

@@ -62,7 +62,7 @@ while(1) {
 From this menu, you can configure external events, external editors, or
 online external programs (doors).
 */
-	switch(ulist(WIN_ORG|WIN_CHE|WIN_ACT,0,0,0,&xprogs_dflt,0
+	switch(uifc.list(WIN_ORG|WIN_CHE|WIN_ACT,0,0,0,&xprogs_dflt,0
 		,"External Programs",opt)) {
 		case -1:
 			i=save_changes(WIN_MID);
@@ -103,7 +103,7 @@ while(1) {
 	sprintf(opt[i++],"%-32.32s%.40s","Logout Event",cfg.sys_logout);
 	sprintf(opt[i++],"%-32.32s%.40s","Daily Event",cfg.sys_daily);
 	opt[i][0]=0;
-	savnum=0;
+	uifc.savnum=0;
 	SETHELP(WHERE);
 /*
 External Events:
@@ -111,7 +111,7 @@ while(1) {
 From this menu, you can configure the logon and logout events, and the
 system daily event.
 */
-	switch(ulist(WIN_ACT|WIN_SAV|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&event_dflt,0
+	switch(uifc.list(WIN_ACT|WIN_SAV|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&event_dflt,0
 		,"Fixed Events",opt)) {
 		case -1:
 			return;
@@ -128,7 +128,7 @@ in the logon sequence of users that includes interaction or requires
 account information, you probably want to use an online external
 program configured to run as a logon event.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Logon Event"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Event"
 				,cfg.sys_logon,50,K_EDIT);
 			break;
 		case 1:
@@ -143,7 +143,7 @@ wish to have a program execute before carrier is dropped, you probably
 want to use an Online External Program configured to run as a logoff
 event.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Logout Event"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Logout Event"
 				,cfg.sys_logout,50,K_EDIT);
 			break;
 		case 2:
@@ -154,7 +154,7 @@ event.
 This is the command line for a program that will run after the first
 user that logs on after midnight, logs off (regardless of what node).
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Daily Event"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Daily Event"
 				,cfg.sys_daily,50,K_EDIT);
 
 			break; } }
@@ -173,7 +173,7 @@ while(1) {
 		sprintf(opt[i],"%-8.8s      %.50s",cfg.event[i]->code,cfg.event[i]->cmd);
 	opt[i][0]=0;
 	j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
-	savnum=0;
+	uifc.savnum=0;
 	if(cfg.total_events)
 		j|=WIN_DEL|WIN_GET;
 	if(cfg.total_events<MAX_OPTS)
@@ -192,7 +192,7 @@ To delete an event, select it and hit  DEL .
 
 To configure an event, select it and hit  ENTER .
 */
-	i=ulist(j,0,0,45,&dflt,&bar,"Timed Events",opt);
+	i=uifc.list(j,0,0,45,&dflt,&bar,"Timed Events",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -203,7 +203,7 @@ To configure an event, select it and hit  ENTER .
 
 This is the internal code for the timed event.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Event Internal Code",str,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Event Internal Code",str,8
 			,K_UPPER)<1)
             continue;
 		if((cfg.event=(event_t **)REALLOC(cfg.event
@@ -220,7 +220,7 @@ This is the internal code for the timed event.
 		cfg.event[i]->node=1;
 		cfg.event[i]->days=0xff;
 		cfg.total_events++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -228,7 +228,7 @@ This is the internal code for the timed event.
 		cfg.total_events--;
 		for(j=i;j<cfg.total_events;j++)
 			cfg.event[j]=cfg.event[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -237,7 +237,7 @@ This is the internal code for the timed event.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.event[i]=savevent;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	done=0;
 	while(!done) {
@@ -273,9 +273,9 @@ If you need the BBS to swap out of memory for this event (to make more
 available memory), add the program name (first word of the command line)
 to Global Swap List from the External Programs menu.
 */
-		savnum=1;
+		uifc.savnum=1;
 		sprintf(str,"%s Timed Event",cfg.event[i]->code);
-		switch(ulist(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,70,&dfltopt,0
+		switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,70,&dfltopt,0
 			,str,opt)) {
 			case -1:
 				done=1;
@@ -290,14 +290,14 @@ Every timed event must have its own unique internal code for Synchronet
 to reference it by. It is helpful if this code is an abreviation of the
 command line.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 					,str,8,K_EDIT|K_UPPER);
 				if(code_ok(str))
 					strcpy(cfg.event[i]->code,str);
 				else {
-					helpbuf=invalid_code;
-					umsg("Invalid Code");
-					helpbuf=0; }
+					uifc.helpbuf=invalid_code;
+					uifc.msg("Invalid Code");
+					uifc.helpbuf=0; }
                 break;
 			case 1:
 				SETHELP(WHERE);
@@ -313,7 +313,7 @@ executing the event.
 If this option is not used, the current NODE's directory will be the
 current DOS drive/directory before the command line is executed.
 */
-				uinput(WIN_MID|WIN_SAV,0,10,"Directory"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Directory"
 					,cfg.event[i]->dir,50,K_EDIT);
                 break;
 			case 2:
@@ -323,7 +323,7 @@ current DOS drive/directory before the command line is executed.
 
 This is the command line to execute upon this timed event.
 */
-				uinput(WIN_MID|WIN_SAV,0,10,"Command"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
 					,cfg.event[i]->cmd,50,K_EDIT);
 				break;
 			case 3:
@@ -334,7 +334,7 @@ This is the command line to execute upon this timed event.
 This is the node number to execute the timed event.
 */
 				sprintf(str,"%u",cfg.event[i]->node);
-				uinput(WIN_MID|WIN_SAV,0,0,"Node Number"
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Node Number"
 					,str,3,K_EDIT|K_NUMBER);
 				cfg.event[i]->node=atoi(str);
 				break;
@@ -345,19 +345,19 @@ This is the node number to execute the timed event.
 						sprintf(opt[k],"%s        %s"
 							,wday[k],(cfg.event[i]->days&(1<<k)) ? "Yes":"No");
 					opt[k][0]=0;
-					savnum=2;
+					uifc.savnum=2;
 					SETHELP(WHERE);
 /*
 Days to Execute Event:
 
 These are the days of the week that this event will be executed.
 */
-					k=ulist(WIN_MID|WIN_SAV,0,0,0,&j,0
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 						,"Days to Execute Event",opt);
 					if(k==-1)
 						break;
 					cfg.event[i]->days^=(1<<k);
-					changes=1; }
+					uifc.changes=1; }
 				break;
 			case 5:
                 if(cfg.event[i]->freq==0)
@@ -367,7 +367,7 @@ These are the days of the week that this event will be executed.
                 strcpy(opt[0],"Yes");
                 strcpy(opt[1],"No");
                 opt[2][0]=0;
-                savnum=2;
+                uifc.savnum=2;
                 SETHELP(WHERE);
 /*
 Execute Event at a Specific Time:
@@ -376,7 +376,7 @@ If you want the system execute this event at a specific time, set
 this option to Yes. If you want the system to execute this event more
 than once a day at predetermined intervals, set this option to No.
 */
-                k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+                k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
                     ,"Execute Event at a Specific Time",opt);
                 if(k==0) {
                     sprintf(str,"%2.2u:%2.2u",cfg.event[i]->time/60
@@ -387,7 +387,7 @@ than once a day at predetermined intervals, set this option to No.
 
 This is the time (in 24 hour HH:MM format) to execute the event.
 */
-                    if(uinput(WIN_MID|WIN_SAV,0,0
+                    if(uifc.input(WIN_MID|WIN_SAV,0,0
                         ,"Time to Execute Event (HH:MM)"
                         ,str,5,K_UPPER|K_EDIT)>0) {
                         cfg.event[i]->freq=0;
@@ -405,7 +405,7 @@ This is the time (in 24 hour HH:MM format) to execute the event.
 This is the maximum number of times the system will execute this event
 per day.
 */
-                    if(uinput(WIN_MID|WIN_SAV,0,0
+                    if(uifc.input(WIN_MID|WIN_SAV,0,0
                         ,"Number of Executions Per Day"
                         ,str,4,K_NUMBER|K_EDIT)>0) {
                         cfg.event[i]->time=0;
@@ -422,7 +422,7 @@ per day.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Exclusive Event Execution:
@@ -430,21 +430,21 @@ per day.
 If this event must be run exclusively (all nodes inactive), set this
 option to Yes.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Exclusive Execution"
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Exclusive Execution"
 					,opt);
 				if(!k && !(cfg.event[i]->misc&EVENT_EXCL)) {
 					cfg.event[i]->misc|=EVENT_EXCL;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.event[i]->misc&EVENT_EXCL) {
 					cfg.event[i]->misc&=~EVENT_EXCL;
-					changes=1; }
+					uifc.changes=1; }
                 break;
 			case 7:
 				k=1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Force Users Off-line for Event:
@@ -452,14 +452,14 @@ option to Yes.
 If you want to have your users' on-line time reduced so the event can
 execute precisely on time, set this option to Yes.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Force Users Off-line for Event",opt);
 				if(!k && !(cfg.event[i]->misc&EVENT_FORCE)) {
 					cfg.event[i]->misc|=EVENT_FORCE;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.event[i]->misc&EVENT_FORCE) {
 					cfg.event[i]->misc&=~EVENT_FORCE;
-                    changes=1; }
+                    uifc.changes=1; }
                 break;
 
 				} } }
@@ -481,7 +481,7 @@ while(1) {
 			xtrnnum[j++]=i; }
 	xtrnnum[j]=cfg.total_xtrns;
 	opt[j][0]=0;
-	savnum=2;
+	uifc.savnum=2;
 	i=WIN_ACT|WIN_CHE|WIN_SAV|WIN_RHT;
 	if(j)
 		i|=WIN_DEL|WIN_GET;
@@ -503,7 +503,7 @@ To delete a program, select it with the arrow keys and hit  DEL .
 To configure a program, select it with the arrow keys and hit  ENTER .
 */
 	sprintf(str,"%s Online Programs",cfg.xtrnsec[section]->name);
-	i=ulist(i,0,0,45,&ext_dflt,&ext_bar,str,opt);
+	i=uifc.list(i,0,0,45,&ext_dflt,&ext_bar,str,opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -514,7 +514,7 @@ To configure a program, select it with the arrow keys and hit  ENTER .
 
 This is the name or description of the online program (door).
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Online Program Name",str,25
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Name",str,25
 			,0)<1)
             continue;
 		sprintf(code,"%.8s",str);
@@ -529,13 +529,13 @@ Every online program must have its own unique code for Synchronet to
 refer to it internally. This code is usually an abreviation of the
 online program name.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Internal Code"
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
 			,code,8,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
-			helpbuf=invalid_code;
-			umsg("Invalid Code");
-			helpbuf=0;
+			uifc.helpbuf=invalid_code;
+			uifc.msg("Invalid Code");
+			uifc.helpbuf=0;
             continue; }
 		if((cfg.xtrn=(xtrn_t **)REALLOC(cfg.xtrn,sizeof(xtrn_t *)*(cfg.total_xtrns+1)))
             ==NULL) {
@@ -554,7 +554,7 @@ online program name.
 		strcpy(cfg.xtrn[xtrnnum[i]]->code,code);
 		cfg.xtrn[xtrnnum[i]]->sec=section;
 		cfg.total_xtrns++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -562,7 +562,7 @@ online program name.
 		cfg.total_xtrns--;
 		for(j=xtrnnum[i];j<cfg.total_xtrns;j++)
 			cfg.xtrn[j]=cfg.xtrn[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -572,7 +572,7 @@ online program name.
 		i&=MSK_OFF;
 		*cfg.xtrn[xtrnnum[i]]=savxtrn;
 		cfg.xtrn[xtrnnum[i]]->sec=section;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	done=0;
 	i=xtrnnum[i];
@@ -665,14 +665,14 @@ online program name.
 			,cfg.xtrn[i]->misc&STARTUPDIR ? "Start-Up Directory":"Node Directory");
 		sprintf(opt[k++],"Time Options...");
 		opt[k][0]=0;
-		savnum=3;
+		uifc.savnum=3;
 		SETHELP(WHERE);
 /*
 Online Program Configuration:
 
 This menu is for configuring the selected online program.
 */
-		switch(ulist(WIN_SAV|WIN_ACT|WIN_MID,0,0,60,&opt_dflt,0,cfg.xtrn[i]->name
+		switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID,0,0,60,&opt_dflt,0,cfg.xtrn[i]->name
 			,opt)) {
 			case -1:
 				done=1;
@@ -685,7 +685,7 @@ This menu is for configuring the selected online program.
 This is the name or description of the online program (door).
 */
 				strcpy(str,cfg.xtrn[i]->name);
-				if(!uinput(WIN_MID|WIN_SAV,0,10,"Online Program Name"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Online Program Name"
 					,cfg.xtrn[i]->name,25,K_EDIT))
 					strcpy(cfg.xtrn[i]->name,str);
 				break;
@@ -699,14 +699,14 @@ refer to it internally. This code is usually an abreviation of the
 online program name.
 */
 				strcpy(str,cfg.xtrn[i]->code);
-				uinput(WIN_MID|WIN_SAV,0,10,"Internal Code"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
 					,str,8,K_UPPER|K_EDIT);
 				if(code_ok(str))
 					strcpy(cfg.xtrn[i]->code,str);
 				else {
-					helpbuf=invalid_code;
-					umsg("Invalid Code");
-                    helpbuf=0; }
+					uifc.helpbuf=invalid_code;
+					uifc.msg("Invalid Code");
+                    uifc.helpbuf=0; }
                 break;
 			case 2:
                 SETHELP(WHERE);
@@ -722,7 +722,7 @@ executing the program.
 If this option is not used, the current NODE's directory will be the
 current DOS drive/directory before the command line is executed.
 */
-				uinput(WIN_MID|WIN_SAV,0,10,"Directory"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Directory"
 					,cfg.xtrn[i]->path,50,K_EDIT);
                 break;
 			case 3:
@@ -732,7 +732,7 @@ current DOS drive/directory before the command line is executed.
 
 This is the command line to execute to run the online program.
 */
-				uinput(WIN_MID|WIN_SAV,0,10,"Command"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
 					,cfg.xtrn[i]->cmd,50,K_EDIT);
 				break;
 			case 4:
@@ -743,7 +743,7 @@ This is the command line to execute to run the online program.
 This is the command line to execute after the main command line. This
 option is usually only used for multiuser online programs.
 */
-				uinput(WIN_MID|WIN_SAV,0,10,"Clean-up"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Clean-up"
 					,cfg.xtrn[i]->clean,50,K_EDIT);
                 break;
 			case 5:
@@ -756,17 +756,17 @@ If you want users to be charged credits to run this online program,
 set this value to the number of credits to charge. If you want this
 online program to be free, set this value to 0.
 */
-                uinput(WIN_MID|WIN_SAV,0,0,"Cost to Run (in Credits)"
+                uifc.input(WIN_MID|WIN_SAV,0,0,"Cost to Run (in Credits)"
                     ,str,10,K_EDIT|K_NUMBER);
                 cfg.xtrn[i]->cost=atol(str);
                 break;
 			case 6:
-				savnum=4;
+				uifc.savnum=4;
 				sprintf(str,"%s Access",cfg.xtrn[i]->name);
 				getar(str,cfg.xtrn[i]->arstr);
                 break;
 			case 7:
-				savnum=4;
+				uifc.savnum=4;
 				sprintf(str,"%s Execution",cfg.xtrn[i]->name);
 				getar(str,cfg.xtrn[i]->run_arstr);
                 break;
@@ -782,15 +782,15 @@ online program to be free, set this value to 0.
 If this online program supports multiple simultaneous users (nodes),
 set this option to Yes.
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Supports Multiple Users"
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Supports Multiple Users"
 					,opt);
 				if(!k && !(cfg.xtrn[i]->misc&MULTIUSER)) {
 					cfg.xtrn[i]->misc|=MULTIUSER;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xtrn[i]->misc&MULTIUSER) {
 					cfg.xtrn[i]->misc&=~MULTIUSER;
-					changes=1; }
+					uifc.changes=1; }
                 break;
 			case 9:
 				k=cfg.xtrn[i]->misc&IO_INTS ? 0:1;
@@ -804,15 +804,15 @@ set this option to Yes.
 If this online program uses a FOSSIL driver or SOCKET communications,
 set this option to No.
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept Standard I/O"
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept Standard I/O"
 					,opt);
 				if(!k && !(cfg.xtrn[i]->misc&IO_INTS)) {
 					cfg.xtrn[i]->misc|=IO_INTS;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xtrn[i]->misc&IO_INTS) {
 					cfg.xtrn[i]->misc&=~(IO_INTS|WWIVCOLOR);
-					changes=1; }
+					uifc.changes=1; }
                 else if(k==-1)
                     break;
 				if(!(cfg.xtrn[i]->misc&IO_INTS))
@@ -828,16 +828,16 @@ set this option to No.
 If this program was written for use exclusively under WWIV, set this
 option to Yes.
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Program Uses WWIV Color Codes"
 					,opt);
 				if(!k && !(cfg.xtrn[i]->misc&WWIVCOLOR)) {
 					cfg.xtrn[i]->misc|=WWIVCOLOR;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xtrn[i]->misc&WWIVCOLOR) {
 					cfg.xtrn[i]->misc&=~WWIVCOLOR;
-                    changes=1; }
+                    uifc.changes=1; }
                 break;
 			case 10:
 				k=cfg.xtrn[i]->misc&XTRN_NATIVE ? 0:1;
@@ -851,15 +851,15 @@ option to Yes.
 If this online program is a native 32-bit executable,
 set this option to Yes.
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Native (32-bit)",opt);
 				if(!k && !(cfg.xtrn[i]->misc&XTRN_NATIVE)) {
 					cfg.xtrn[i]->misc|=XTRN_NATIVE;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xtrn[i]->misc&XTRN_NATIVE) {
 					cfg.xtrn[i]->misc&=~XTRN_NATIVE;
-					changes=1; }
+					uifc.changes=1; }
 				break;
 			case 11:
 				k=cfg.xtrn[i]->misc&MODUSERDAT ? 0:1;
@@ -874,15 +874,15 @@ If this online programs recognizes the Synchronet MODUSER.DAT format
 or the RBBS/QuickBBS EXITINFO.BBS format and you want it to be able to
 modify the data of users who run the program, set this option to Yes.
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Program Can Modify User Data",opt);
 				if(!k && !(cfg.xtrn[i]->misc&MODUSERDAT)) {
 					cfg.xtrn[i]->misc|=MODUSERDAT;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xtrn[i]->misc&MODUSERDAT) {
 					cfg.xtrn[i]->misc&=~MODUSERDAT;
-					changes=1; }
+					uifc.changes=1; }
                 break;
 			case 12:
 				k=0;
@@ -915,14 +915,14 @@ modify the data of users who run the program, set this option to Yes.
 If you would like this online program to automatically execute on a
 specific user event, select the event. Otherwise, select No.
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Execute on Event",opt);
 				if(k==-1)
 					break;
 				if(cfg.xtrn[i]->event!=k) {
 					cfg.xtrn[i]->event=k;
-					changes=1; }
+					uifc.changes=1; }
 				if(!cfg.xtrn[i]->event)
 					break;
 				k=cfg.xtrn[i]->misc&EVENTONLY ? 0:1;
@@ -937,16 +937,16 @@ If you would like this online program to execute as an event only
 (not available to users on the online program menu), set this option
 to Yes.
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k
 					,0,"Execute as Event Only"
                     ,opt);
                 if(!k && !(cfg.xtrn[i]->misc&EVENTONLY)) {
                     cfg.xtrn[i]->misc|=EVENTONLY;
-                    changes=1; }
+                    uifc.changes=1; }
                 else if(k==1 && cfg.xtrn[i]->misc&EVENTONLY) {
                     cfg.xtrn[i]->misc&=~EVENTONLY;
-                    changes=1; }
+                    uifc.changes=1; }
                 break;
 			case 13:
 				k=0;
@@ -972,8 +972,8 @@ to Yes.
 If this online program requires a specific BBS data (drop) file
 format, select the file format from the list.
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"BBS Drop File Type",opt);
 				if(k==-1)
 					break;
@@ -981,19 +981,19 @@ format, select the file format from the list.
 					cfg.xtrn[i]->type=k;
                     if(cfg.xtrn[i]->type==XTRN_DOOR32)
                         cfg.xtrn[i]->misc|=XTRN_NATIVE;
-					changes=1; }
+					uifc.changes=1; }
 				if(cfg.xtrn[i]->type && cfg.uq&UQ_ALIASES) {
 					strcpy(opt[0],"Yes");
 					strcpy(opt[1],"No");
 					opt[2][0]=0;
 					k=cfg.xtrn[i]->misc&REALNAME ? 0:1;
-					k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Use Real Names",opt);
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Use Real Names",opt);
 					if(k==0 && !(cfg.xtrn[i]->misc&REALNAME)) {
 						cfg.xtrn[i]->misc|=REALNAME;
-						changes=1; }
+						uifc.changes=1; }
 					else if(k==1 && cfg.xtrn[i]->misc&REALNAME) {
 						cfg.xtrn[i]->misc&=~REALNAME;
-						changes=1; } }
+						uifc.changes=1; } }
 				break;
 			case 14:
 				k=0;
@@ -1007,15 +1007,15 @@ format, select the file format from the list.
 You can have the data file created in the current Node Directory or the
 Start-up Directory (if one is specified).
 */
-				savnum=4;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Create Drop File In"
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Create Drop File In"
                     ,opt);
 				if(!k && cfg.xtrn[i]->misc&STARTUPDIR) {
 					cfg.xtrn[i]->misc&=~STARTUPDIR;
-                    changes=1; }
+                    uifc.changes=1; }
 				else if(k==1 && !(cfg.xtrn[i]->misc&STARTUPDIR)) {
 					cfg.xtrn[i]->misc|=STARTUPDIR;
-                    changes=1; }
+                    uifc.changes=1; }
 				break;
 			case 15:
 				while(1) {
@@ -1040,13 +1040,13 @@ You can have the data file created in the current Node Directory or the
 This sub-menu allows you to define specific preferences regarding the
 time users spend running this program.
 */
-					savnum=4;
-					k=ulist(WIN_SAV|WIN_ACT|WIN_RHT|WIN_BOT,0,0,40
+					uifc.savnum=4;
+					k=uifc.list(WIN_SAV|WIN_ACT|WIN_RHT|WIN_BOT,0,0,40
 						,&time_dflt,0
 						,"Online Program Time Options",opt);
 					if(k==-1)
 						break;
-					savnum=5;
+					uifc.savnum=5;
 					switch(k) {
 						case 0:
 							ultoa(cfg.xtrn[i]->textra,str,10);
@@ -1058,7 +1058,7 @@ If you want to give users extra time while in this online program,
 set this value to the number of minutes to add to their current time
 left online.
 */
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Extra Time to Give User (in minutes)"
 								,str,2,K_EDIT|K_NUMBER);
 							cfg.xtrn[i]->textra=atoi(str);
@@ -1075,7 +1075,7 @@ the maximum number of minutes that will be allowed in the drop file.
 
 Setting this option to 0, disables this feature.
 */
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Maximum Time (in minutes, 0=disabled)"
 								,str,2,K_EDIT|K_NUMBER);
 							cfg.xtrn[i]->maxtime=atoi(str);
@@ -1092,14 +1092,14 @@ Setting this option to 0, disables this feature.
 If you want the user's time online to be suspended while running this
 online program (e.g. Free Time), set this option to Yes.
 */
-							k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+							k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Suspended (Free) Time",opt);
 							if(!k && !(cfg.xtrn[i]->misc&FREETIME)) {
 								cfg.xtrn[i]->misc|=FREETIME;
-								changes=1; }
+								uifc.changes=1; }
 							else if(k==1 && cfg.xtrn[i]->misc&FREETIME) {
 								cfg.xtrn[i]->misc&=~FREETIME;
-								changes=1; }
+								uifc.changes=1; }
 							break; } }
 					break;
 
@@ -1119,7 +1119,7 @@ while(1) {
 		sprintf(opt[i],"%-8.8s    %.40s",cfg.xedit[i]->code,cfg.xedit[i]->rcmd);
 	opt[i][0]=0;
 	j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
-	savnum=0;
+	uifc.savnum=0;
 	if(cfg.total_xedits)
 		j|=WIN_DEL|WIN_GET;
 	if(cfg.total_xedits<MAX_OPTS)
@@ -1138,7 +1138,7 @@ To delete an editor, select it and hit  DEL .
 
 To configure an editor, select it and hit  ENTER .
 */
-	i=ulist(j,0,0,45,&dflt,&bar,"External Editors",opt);
+	i=uifc.list(j,0,0,45,&dflt,&bar,"External Editors",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -1149,7 +1149,7 @@ To configure an editor, select it and hit  ENTER .
 
 This is the name or description of the external editor.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"External Editor Name",str,40
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"External Editor Name",str,40
 			,0)<1)
             continue;
 		sprintf(code,"%.8s",str);
@@ -1162,13 +1162,13 @@ This is the name or description of the external editor.
 
 This is the internal code for the external editor.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"External Editor Internal Code",code,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"External Editor Internal Code",code,8
 			,K_UPPER|K_EDIT)<1)
             continue;
 		if(!code_ok(code)) {
-			helpbuf=invalid_code;
-			umsg("Invalid Code");
-			helpbuf=0;
+			uifc.helpbuf=invalid_code;
+			uifc.msg("Invalid Code");
+			uifc.helpbuf=0;
             continue; }
 
 		if((cfg.xedit=(xedit_t **)REALLOC(cfg.xedit
@@ -1187,7 +1187,7 @@ This is the internal code for the external editor.
 		strcpy(cfg.xedit[i]->name,str);
 		strcpy(cfg.xedit[i]->code,code);
 		cfg.total_xedits++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -1195,7 +1195,7 @@ This is the internal code for the external editor.
 		cfg.total_xedits--;
 		for(j=i;j<cfg.total_xedits;j++)
 			cfg.xedit[j]=cfg.xedit[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -1204,7 +1204,7 @@ This is the internal code for the external editor.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.xedit[i]=savxedit;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	done=0;
 	while(!done) {
@@ -1277,9 +1277,9 @@ popular editors include SyncEdit, WWIVedit, FEdit, GEdit, IceEdit,
 and many others.
 */
 
-		savnum=1;
+		uifc.savnum=1;
 		sprintf(str,"%s Editor",cfg.xedit[i]->name);
-		switch(ulist(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,70,&dfltopt,0
+		switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,70,&dfltopt,0
 			,str,opt)) {
 			case -1:
 				done=1;
@@ -1292,7 +1292,7 @@ and many others.
 This is the name or description of the external editor.
 */
 				strcpy(str,cfg.xedit[i]->name);
-				if(!uinput(WIN_MID|WIN_SAV,0,10,"External Editor Name"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"External Editor Name"
 					,cfg.xedit[i]->name,40,K_EDIT))
 					strcpy(cfg.xedit[i]->name,str);
 				break;
@@ -1306,14 +1306,14 @@ Every external editor must have its own unique internal code for
 Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 					,str,8,K_EDIT|K_UPPER);
 				if(code_ok(str))
 					strcpy(cfg.xedit[i]->code,str);
 				else {
-					helpbuf=invalid_code;
-					umsg("Invalid Code");
-					helpbuf=0; }
+					uifc.helpbuf=invalid_code;
+					uifc.msg("Invalid Code");
+					uifc.helpbuf=0; }
                 break;
 		   case 2:
 				SETHELP(WHERE);
@@ -1322,11 +1322,11 @@ abreviation of the name.
 
 This is the command line to execute when using this editor remotely.
 */
-				uinput(WIN_MID|WIN_SAV,0,10,"Remote"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Remote"
 					,cfg.xedit[i]->rcmd,50,K_EDIT);
 				break;
 			case 3:
-				savnum=2;
+				uifc.savnum=2;
 				sprintf(str,"%s External Editor",cfg.xedit[i]->name);
 				getar(str,cfg.xedit[i]->arstr);
 				break;
@@ -1335,7 +1335,7 @@ This is the command line to execute when using this editor remotely.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Intercept Standard I/O:
@@ -1343,21 +1343,21 @@ This is the command line to execute when using this editor remotely.
 If this external editor uses a FOSSIL driver or SOCKET communications,
 set this option to No.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept Standard I/O"
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept Standard I/O"
 					,opt);
 				if(!k && !(cfg.xedit[i]->misc&IO_INTS)) {
 					cfg.xedit[i]->misc|=IO_INTS;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xedit[i]->misc&IO_INTS) {
 					cfg.xedit[i]->misc&=~(IO_INTS|WWIVCOLOR);
-					changes=1; }
+					uifc.changes=1; }
 				if(!(cfg.xedit[i]->misc&IO_INTS))
 					break;
 				k=cfg.xedit[i]->misc&WWIVCOLOR ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Editor Uses WWIV Color Codes:
@@ -1365,14 +1365,14 @@ set this option to No.
 If this editor was written for use exclusively under WWIV, set this
 option to Yes.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Editor Uses WWIV Color Codes",opt);
 				if(!k && !(cfg.xedit[i]->misc&WWIVCOLOR)) {
 					cfg.xedit[i]->misc|=WWIVCOLOR;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xedit[i]->misc&WWIVCOLOR) {
 					cfg.xedit[i]->misc&=~WWIVCOLOR;
-                    changes=1; }
+                    uifc.changes=1; }
                 break;
 			case 5:
 				k=cfg.xedit[i]->misc&XTRN_NATIVE ? 0:1;
@@ -1386,15 +1386,15 @@ option to Yes.
 If this online program is a native 32-bit executable,
 set this option to Yes.
 */
-				savnum=2;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				uifc.savnum=2;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Native (32-bit)",opt);
 				if(!k && !(cfg.xedit[i]->misc&XTRN_NATIVE)) {
 					cfg.xedit[i]->misc|=XTRN_NATIVE;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xedit[i]->misc&XTRN_NATIVE) {
 					cfg.xedit[i]->misc&=~XTRN_NATIVE;
-					changes=1; }
+					uifc.changes=1; }
 				break;
 
 			case 6:
@@ -1403,7 +1403,7 @@ set this option to Yes.
 				strcpy(opt[1],"None");
 				strcpy(opt[2],"Prompt User");
 				opt[3][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Quoted Text:
@@ -1418,26 +1418,26 @@ If you want none of the lines to be automatically quoted, select None.
 This option is mainly for use with editors that support the QUOTES.TXT
 drop file (like SyncEdit v2.x).
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Quoted Text"
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Quoted Text"
 					,opt);
 				if(!k && !(cfg.xedit[i]->misc&QUOTEALL)) {
 					cfg.xedit[i]->misc|=QUOTEALL;
 					cfg.xedit[i]->misc&=~QUOTENONE;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && !(cfg.xedit[i]->misc&QUOTENONE)) {
 					cfg.xedit[i]->misc|=QUOTENONE;
 					cfg.xedit[i]->misc&=~QUOTEALL;
-                    changes=1; }
+                    uifc.changes=1; }
 				else if(k==2 && cfg.xedit[i]->misc&(QUOTENONE|QUOTEALL)) {
 					cfg.xedit[i]->misc&=~(QUOTENONE|QUOTEALL);
-					changes=1; }
+					uifc.changes=1; }
                 break;
 			case 7:
 				k=cfg.xedit[i]->misc&QUICKBBS ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 QuickBBS Style (MSGTMP):
@@ -1445,21 +1445,21 @@ drop file (like SyncEdit v2.x).
 If this external editor uses the QuickBBS style MSGTMP interface, set
 this option to Yes.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"QuickBBS Style (MSGTMP)"
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"QuickBBS Style (MSGTMP)"
 					,opt);
 				if(!k && !(cfg.xedit[i]->misc&QUICKBBS)) {
 					cfg.xedit[i]->misc|=QUICKBBS;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xedit[i]->misc&QUICKBBS) {
 					cfg.xedit[i]->misc&=~QUICKBBS;
-                    changes=1; }
+                    uifc.changes=1; }
 				break;
 			case 8:
 				k=cfg.xedit[i]->misc&EXPANDLF ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Expand Line Feeds to Carriage Return/Line Feed Pairs:
@@ -1467,14 +1467,14 @@ this option to Yes.
 If this external editor saves new lines as a single line feed character
 instead of a carriage return/line feed pair, set this option to Yes.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Expand LF to CRLF"
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Expand LF to CRLF"
 					,opt);
 				if(!k && !(cfg.xedit[i]->misc&EXPANDLF)) {
 					cfg.xedit[i]->misc|=EXPANDLF;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.xedit[i]->misc&EXPANDLF) {
 					cfg.xedit[i]->misc&=~EXPANDLF;
-                    changes=1; }
+                    uifc.changes=1; }
 				break;
 			case 9:
 				k=0;
@@ -1500,8 +1500,8 @@ instead of a carriage return/line feed pair, set this option to Yes.
 If this external editor requires a specific BBS data (drop) file
 format, select the file format from the list.
 */
-				savnum=2;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				uifc.savnum=2;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"BBS Drop File Type",opt);
 				if(k==-1)
 					break;
@@ -1509,7 +1509,7 @@ format, select the file format from the list.
 					cfg.xedit[i]->type=k;
                     if(cfg.xedit[i]->type==XTRN_DOOR32)
                         cfg.xedit[i]->misc|=XTRN_NATIVE;
-					changes=1; }
+					uifc.changes=1; }
 				break;
 
 				} } }
@@ -1528,7 +1528,7 @@ while(1) {
 		sprintf(opt[i],"%-25s",cfg.swap[i]->cmd);
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_CHE|WIN_L2R|WIN_SAV;
-	savnum=0;
+	uifc.savnum=0;
 	if(cfg.total_swaps)
 		j|=WIN_DEL;
 	if(cfg.total_swaps<MAX_OPTS)
@@ -1550,7 +1550,7 @@ To swap whenever PKZIP is run, add PKZIP to the list.
 
 To swap for all DOS Shells, add COMMAND.COM to the list.
 */
-	i=ulist(j,0,0,17,&dflt,&bar,"Global Swap List",opt);
+	i=uifc.list(j,0,0,17,&dflt,&bar,"Global Swap List",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -1561,7 +1561,7 @@ To swap for all DOS Shells, add COMMAND.COM to the list.
 
 This is the executable filename of the external program.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Program Name",str,12
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Program Name",str,12
 			,0)<1)
             continue;
 		if((cfg.swap=(swap_t **)REALLOC(cfg.swap
@@ -1579,7 +1579,7 @@ This is the executable filename of the external program.
 		memset((swap_t *)cfg.swap[i],0,sizeof(swap_t));
 		strcpy(cfg.swap[i]->cmd,str);
 		cfg.total_swaps++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -1587,7 +1587,7 @@ This is the executable filename of the external program.
 		cfg.total_swaps--;
 		for(j=i;j<cfg.total_swaps;j++)
 			cfg.swap[j]=cfg.swap[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	SETHELP(WHERE);
 /*
@@ -1596,7 +1596,7 @@ This is the executable filename of the external program.
 This is the executable filename of the external program.
 */
 	strcpy(str,cfg.swap[i]->cmd);
-	if(uinput(WIN_MID|WIN_SAV,0,5,"Program Name",str,12
+	if(uifc.input(WIN_MID|WIN_SAV,0,5,"Program Name",str,12
 		,K_EDIT)>0)
 		strcpy(cfg.swap[i]->cmd,str); }
 }
@@ -1614,7 +1614,7 @@ while(1) {
 			,cfg.natvpgm[i]->misc&OS2_POPEN ? "(port open)":nulstr);
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_CHE|WIN_L2R|WIN_SAV;
-	savnum=0;
+	uifc.savnum=0;
 	if(cfg.total_natvpgms)
 		j|=WIN_DEL;
 	if(cfg.total_natvpgms<MAX_OPTS)
@@ -1632,7 +1632,7 @@ Use  INS  and  DELETE  to add and remove native program names.
 
 To change the filename of a program, hit  ENTER .
 */
-	i=ulist(j,0,0,30,&dflt,&bar,"Native (32-bit) Program List",opt);
+	i=uifc.list(j,0,0,30,&dflt,&bar,"Native (32-bit) Program List",opt);
 	if((signed)i==-1)
 		break;
 	if((i&MSK_ON)==MSK_INS) {
@@ -1643,7 +1643,7 @@ To change the filename of a program, hit  ENTER .
 
 This is the executable filename of the native external program.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Native Program Name",str,12
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Native Program Name",str,12
 			,0)<1)
             continue;
 		if((cfg.natvpgm=(natvpgm_t **)REALLOC(cfg.natvpgm
@@ -1661,7 +1661,7 @@ This is the executable filename of the native external program.
 		memset((natvpgm_t *)cfg.natvpgm[i],0,sizeof(natvpgm_t));
 		strcpy(cfg.natvpgm[i]->name,str);
 		cfg.total_natvpgms++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -1669,7 +1669,7 @@ This is the executable filename of the native external program.
 		cfg.total_natvpgms--;
 		for(j=i;j<cfg.total_natvpgms;j++)
 			cfg.natvpgm[j]=cfg.natvpgm[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	SETHELP(WHERE);
 /*
@@ -1678,7 +1678,7 @@ This is the executable filename of the native external program.
 This is the executable filename of the Native external program.
 */
 	strcpy(str,cfg.natvpgm[i]->name);
-	if(uinput(WIN_MID|WIN_SAV,0,5,"Native (32-bit) Program Name",str,12
+	if(uifc.input(WIN_MID|WIN_SAV,0,5,"Native (32-bit) Program Name",str,12
 		,K_EDIT)>0)
 		strcpy(cfg.natvpgm[i]->name,str);
 	}
@@ -1699,7 +1699,7 @@ while(1) {
 		sprintf(opt[i],"%-25s",cfg.xtrnsec[i]->name);
 	opt[i][0]=0;
 	j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_BOT;
-	savnum=0;
+	uifc.savnum=0;
 	if(cfg.total_xtrnsecs)
 		j|=WIN_DEL|WIN_GET;
 	if(cfg.total_xtrnsecs<MAX_OPTS)
@@ -1719,7 +1719,7 @@ To delete an online program section, select it and hit  DEL .
 
 To configure an online program section, select it and hit  ENTER .
 */
-	i=ulist(j,0,0,45,&xtrnsec_dflt,0,"Online Program Sections",opt);
+	i=uifc.list(j,0,0,45,&xtrnsec_dflt,0,"Online Program Sections",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -1730,7 +1730,7 @@ To configure an online program section, select it and hit  ENTER .
 
 This is the name of this section.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Online Program Section Name",str,40
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Section Name",str,40
 			,0)<1)
             continue;
 		sprintf(code,"%.8s",str);
@@ -1745,13 +1745,13 @@ Every online program section must have its own unique internal code
 for Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Online Program Section Internal Code"
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Section Internal Code"
 			,code,8,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
-			helpbuf=invalid_code;
-			umsg("Invalid Code");
-			helpbuf=0;
+			uifc.helpbuf=invalid_code;
+			uifc.msg("Invalid Code");
+			uifc.helpbuf=0;
             continue; }
 		if((cfg.xtrnsec=(xtrnsec_t **)REALLOC(cfg.xtrnsec
 			,sizeof(xtrnsec_t *)*(cfg.total_xtrnsecs+1)))==NULL) {
@@ -1774,7 +1774,7 @@ abreviation of the name.
 		strcpy(cfg.xtrnsec[i]->name,str);
 		strcpy(cfg.xtrnsec[i]->code,code);
 		cfg.total_xtrnsecs++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -1795,7 +1795,7 @@ abreviation of the name.
 		while(i<cfg.total_xtrnsecs) {
 			cfg.xtrnsec[i]=cfg.xtrnsec[i+1];
             i++; }
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -1804,7 +1804,7 @@ abreviation of the name.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.xtrnsec[i]=savxtrnsec;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	done=0;
 	while(!done) {
@@ -1815,9 +1815,9 @@ abreviation of the name.
 			,cfg.xtrnsec[i]->arstr);
 		sprintf(opt[k++],"%s","Available Online Programs...");
 		opt[k][0]=0;
-		savnum=1;
+		uifc.savnum=1;
 		sprintf(str,"%s Program Section",cfg.xtrnsec[i]->name);
-		switch(ulist(WIN_SAV|WIN_ACT|WIN_MID,0,0,60,&xtrnsec_opt,0,str
+		switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID,0,0,60,&xtrnsec_opt,0,str
 			,opt)) {
 			case -1:
 				done=1;
@@ -1830,7 +1830,7 @@ abreviation of the name.
 This is the name of this section.
 */
 				strcpy(str,cfg.xtrnsec[i]->name);	 /* save */
-				if(!uinput(WIN_MID|WIN_SAV,0,10
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10
 					,"Online Program Section Name"
 					,cfg.xtrnsec[i]->name,40,K_EDIT))
 					strcpy(cfg.xtrnsec[i]->name,str);
@@ -1845,14 +1845,14 @@ Every online program section must have its own unique internal code
 for Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 					,str,8,K_EDIT|K_UPPER);
 				if(code_ok(str))
 					strcpy(cfg.xtrnsec[i]->code,str);
 				else {
-					helpbuf=invalid_code;
-					umsg("Invalid Code");
-					helpbuf=0; }
+					uifc.helpbuf=invalid_code;
+					uifc.msg("Invalid Code");
+					uifc.helpbuf=0; }
 				break;
 			case 2:
 				getar(cfg.xtrnsec[i]->name,cfg.xtrnsec[i]->arstr);

@@ -85,7 +85,7 @@ while(1) {
 This menu has options and sub-menus that pertain specifically to the
 file transfer section of the BBS.
 */
-	switch(ulist(WIN_ORG|WIN_ACT|WIN_CHE,0,0,72,&xfr_dflt,0
+	switch(uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,72,&xfr_dflt,0
 		,"File Transfer Configuration",opt)) {
 		case -1:
 			i=save_changes(WIN_MID);
@@ -104,7 +104,7 @@ file transfer section of the BBS.
 This is the minimum free space in a file directory to allow user
 uploads.
 */
-			uinput(WIN_MID,0,0
+			uifc.input(WIN_MID,0,0
 				,"Minimum Kilobytes Free Disk Space to Allow Uploads"
 				,ultoa(cfg.min_dspace,tmp,10),5,K_EDIT|K_NUMBER);
 			cfg.min_dspace=atoi(tmp);
@@ -117,7 +117,7 @@ uploads.
 This is the maximum number of files that can be placed in the batch
 upload queue.
 */
-			uinput(WIN_MID,0,0,"Maximum Files in Batch Upload Queue"
+			uifc.input(WIN_MID,0,0,"Maximum Files in Batch Upload Queue"
 				,ultoa(cfg.max_batup,tmp,10),5,K_EDIT|K_NUMBER);
 			cfg.max_batup=atoi(tmp);
             break;
@@ -129,7 +129,7 @@ upload queue.
 This is the maximum number of files that can be placed in the batch
 download queue.
 */
-			uinput(WIN_MID,0,0,"Maximum Files in Batch Download Queue"
+			uifc.input(WIN_MID,0,0,"Maximum Files in Batch Download Queue"
 				,ultoa(cfg.max_batdn,tmp,10),5,K_EDIT|K_NUMBER);
 			cfg.max_batdn=atoi(tmp);
             break;
@@ -141,7 +141,7 @@ download queue.
 This is the maximum number of users allowed in the destination user list
 of a user to user upload.
 */
-			uinput(WIN_MID,0,0
+			uifc.input(WIN_MID,0,0
 				,"Maximum Destination Users in User to User Transfers"
 				,ultoa(cfg.max_userxfer,tmp,10),5,K_EDIT|K_NUMBER);
 			cfg.max_userxfer=atoi(tmp);
@@ -154,7 +154,7 @@ SETHELP(WHERE);
 This is the default setting that will be used when new file
 directories are created.
 */
-			uinput(WIN_MID,0,0
+			uifc.input(WIN_MID,0,0
 				,"Default Percentage of Credits to Credit Uploader on Upload"
 				,ultoa(cfg.cdt_up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 			cfg.cdt_up_pct=atoi(tmp);
@@ -167,7 +167,7 @@ SETHELP(WHERE);
 This is the default setting that will be used when new file
 directories are created.
 */
-			uinput(WIN_MID,0,0
+			uifc.input(WIN_MID,0,0
 				,"Default Percentage of Credits to Credit Uploader on Download"
 				,ultoa(cfg.cdt_dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 			cfg.cdt_dn_pct=atoi(tmp);
@@ -185,14 +185,14 @@ If you want long filenames to be displayed in the BBS file listings, set
 this option to Yes. Note: This feature requires Windows 98, Windows 2000
 or later.
 */
-            i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+            i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
                 ,"Long Filenames in Listings (Win98/Win2K)",opt);
             if(!i && cfg.file_misc&FM_NO_LFN) {
                 cfg.file_misc&=~FM_NO_LFN;
-                changes=1;
+                uifc.changes=1;
             } else if(i==1 && !(cfg.file_misc&FM_NO_LFN)) {
                 cfg.file_misc|=FM_NO_LFN;
-                changes=1;
+                uifc.changes=1;
             }
             break;
 
@@ -208,8 +208,8 @@ on the estimated CPS of the connection result code), then a leech
 protocol error is issued and the user's leech download counter is
 incremented. Setting this value to 0 disables leech protocol detection.
 */
-			savnum=0;
-			uinput(WIN_MID|WIN_SAV,0,0
+			uifc.savnum=0;
+			uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Leech Protocol Detection Percentage (0=Disabled)"
 				,ultoa(cfg.leech_pct,tmp,10),3,K_EDIT|K_NUMBER);
 			cfg.leech_pct=atoi(tmp);
@@ -224,7 +224,7 @@ detection feature. This value is the minimum length of transfer time
 (in seconds) that must elapse before an aborted tranfser will be
 considered a possible leech attempt.
 */
-			uinput(WIN_MID,0,0
+			uifc.input(WIN_MID,0,0
 				,"Leech Protocol Minimum Time (in Seconds)"
 				,ultoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
 			cfg.leech_sec=atoi(tmp);
@@ -242,7 +242,7 @@ considered a possible leech attempt.
 					i|=WIN_DEL|WIN_GET;
 				if(savfview.cmd[0])
 					i|=WIN_PUT;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 Viewable File Types:
@@ -251,7 +251,7 @@ This is a list of file types that have content information that can be
 viewed through the execution of an external program. Here are a couple of
 command line examples for a few file types.
 */
-				i=ulist(i,0,0,50,&dflt,&bar,"Viewable File Types",opt);
+				i=uifc.list(i,0,0,50,&dflt,&bar,"Viewable File Types",opt);
 				if(i==-1)
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
@@ -261,7 +261,7 @@ command line examples for a few file types.
 					while(i<cfg.total_fviews) {
 						cfg.fview[i]=cfg.fview[i+1];
 						i++; }
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
@@ -288,7 +288,7 @@ command line examples for a few file types.
 							continue; }
 						*cfg.fview[i]=*cfg.fview[i+1]; }
 					cfg.total_fviews++;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_GET) {
 					i&=MSK_OFF;
@@ -297,7 +297,7 @@ command line examples for a few file types.
 				if((i&MSK_ON)==MSK_PUT) {
 					i&=MSK_OFF;
 					*cfg.fview[i]=savfview;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				k=0;
 				done=0;
@@ -310,24 +310,24 @@ command line examples for a few file types.
 					sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 						,cfg.fview[i]->arstr);
 					opt[j][0]=0;
-					savnum=1;
-					switch(ulist(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
+					uifc.savnum=1;
+					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
 						,"Viewable File Type",opt)) {
 						case -1:
 							done=1;
 							break;
 						case 0:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Viewable File Type Extension"
 								,cfg.fview[i]->ext,3,K_EDIT);
 							break;
 						case 1:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Command Line"
 								,cfg.fview[i]->cmd,50,K_EDIT);
 							break;
 						case 2:
-							savnum=2;
+							uifc.savnum=2;
 							sprintf(str,"Viewable File Type %s"
 								,cfg.fview[i]->ext);
 							getar(str,cfg.fview[i]->arstr);
@@ -346,7 +346,7 @@ command line examples for a few file types.
 					i|=WIN_DEL|WIN_GET;
 				if(savftest.cmd[0])
 					i|=WIN_PUT;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 Testable File Types:
@@ -364,7 +364,7 @@ external program is executing, a text string is displayed to the user.
 This working string can be set for each file type and command line
 listed.
 */
-				i=ulist(i,0,0,50,&dflt,&bar,"Testable File Types",opt);
+				i=uifc.list(i,0,0,50,&dflt,&bar,"Testable File Types",opt);
 				if(i==-1)
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
@@ -374,7 +374,7 @@ listed.
 					while(i<cfg.total_ftests) {
 						cfg.ftest[i]=cfg.ftest[i+1];
 						i++; }
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
@@ -403,7 +403,7 @@ listed.
 							continue; }
 						*cfg.ftest[i]=*cfg.ftest[i+1]; }
 					cfg.total_ftests++;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_GET) {
 					i&=MSK_OFF;
@@ -412,7 +412,7 @@ listed.
 				if((i&MSK_ON)==MSK_PUT) {
 					i&=MSK_OFF;
 					*cfg.ftest[i]=savftest;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				done=0;
 				k=0;
@@ -427,29 +427,29 @@ listed.
 					sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 						,cfg.ftest[i]->arstr);
 					opt[j][0]=0;
-					savnum=1;
-					switch(ulist(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
+					uifc.savnum=1;
+					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
 						,"Testable File Type",opt)) {
 						case -1:
 							done=1;
 							break;
 						case 0:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Testable File Type Extension"
 								,cfg.ftest[i]->ext,3,K_EDIT);
 							break;
 						case 1:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Command Line"
 								,cfg.ftest[i]->cmd,50,K_EDIT);
 							break;
 						case 2:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Working String"
 								,cfg.ftest[i]->workstr,40,K_EDIT|K_MSG);
 							break;
 						case 3:
-							savnum=2;
+							uifc.savnum=2;
 							sprintf(str,"Testable File Type %s",cfg.ftest[i]->ext);
 							getar(str,cfg.ftest[i]->arstr);
 							break; } } }
@@ -467,7 +467,7 @@ listed.
 					i|=WIN_DEL|WIN_GET;
 				if(savdlevent.cmd[0])
 					i|=WIN_PUT;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 Download Events:
@@ -484,7 +484,7 @@ and performing a virus scan. While the external program is executing,
 a text string is displayed to the user. This working string can be set
 for each file type and command line listed.
 */
-				i=ulist(i,0,0,50,&dflt,&bar,"Download Events",opt);
+				i=uifc.list(i,0,0,50,&dflt,&bar,"Download Events",opt);
 				if(i==-1)
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
@@ -494,7 +494,7 @@ for each file type and command line listed.
 					while(i<cfg.total_dlevents) {
 						cfg.dlevent[i]=cfg.dlevent[i+1];
 						i++; }
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
@@ -524,7 +524,7 @@ for each file type and command line listed.
 							continue; }
 						*cfg.dlevent[i]=*cfg.dlevent[i+1]; }
 					cfg.total_dlevents++;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_GET) {
 					i&=MSK_OFF;
@@ -533,7 +533,7 @@ for each file type and command line listed.
 				if((i&MSK_ON)==MSK_PUT) {
 					i&=MSK_OFF;
 					*cfg.dlevent[i]=savdlevent;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				done=0;
 				k=0;
@@ -548,29 +548,29 @@ for each file type and command line listed.
 					sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 						,cfg.dlevent[i]->arstr);
 					opt[j][0]=0;
-					savnum=1;
-					switch(ulist(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
+					uifc.savnum=1;
+					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
 						,"Download Event",opt)) {
 						case -1:
 							done=1;
 							break;
 						case 0:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Download Event Extension"
 								,cfg.dlevent[i]->ext,3,K_EDIT);
 							break;
 						case 1:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Command Line"
 								,cfg.dlevent[i]->cmd,50,K_EDIT);
 							break;
 						case 2:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Working String"
 								,cfg.dlevent[i]->workstr,40,K_EDIT|K_MSG);
 							break;
 						case 3:
-							savnum=2;
+							uifc.savnum=2;
 							sprintf(str,"Download Event %s",cfg.dlevent[i]->ext);
 							getar(str,cfg.dlevent[i]->arstr);
 							break; } } }
@@ -589,7 +589,7 @@ for each file type and command line listed.
                     i|=WIN_DEL|WIN_GET;
 				if(savfextr.cmd[0])
                     i|=WIN_PUT;
-                savnum=0;
+                uifc.savnum=0;
                 SETHELP(WHERE);
 /*
 Extractable File Types:
@@ -599,7 +599,7 @@ directory by an external program. The file types are specified by their
 extension. For each file type you must specify the command line used to
 extract the file(s).
 */
-				i=ulist(i,0,0,50,&dflt,&bar,"Extractable File Types",opt);
+				i=uifc.list(i,0,0,50,&dflt,&bar,"Extractable File Types",opt);
                 if(i==-1)
                     break;
 				if((i&MSK_ON)==MSK_DEL) {
@@ -609,7 +609,7 @@ extract the file(s).
                     while(i<cfg.total_fextrs) {
                         cfg.fextr[i]=cfg.fextr[i+1];
                         i++; }
-                    changes=1;
+                    uifc.changes=1;
                     continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
@@ -637,7 +637,7 @@ extract the file(s).
                             continue; }
                         *cfg.fextr[i]=*cfg.fextr[i+1]; }
                     cfg.total_fextrs++;
-                    changes=1;
+                    uifc.changes=1;
                     continue; }
 				if((i&MSK_ON)==MSK_GET) {
 					i&=MSK_OFF;
@@ -646,7 +646,7 @@ extract the file(s).
 				if((i&MSK_ON)==MSK_PUT) {
 					i&=MSK_OFF;
                     *cfg.fextr[i]=savfextr;
-                    changes=1;
+                    uifc.changes=1;
                     continue; }
 				k=0;
 				done=0;
@@ -659,24 +659,24 @@ extract the file(s).
 					sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 						,cfg.fextr[i]->arstr);
 					opt[j][0]=0;
-					savnum=1;
-					switch(ulist(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
+					uifc.savnum=1;
+					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
 						,"Extractable File Type",opt)) {
 						case -1:
 							done=1;
 							break;
 						case 0:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Extractable File Type Extension"
 								,cfg.fextr[i]->ext,3,K_EDIT);
 							break;
 						case 1:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Command Line"
 								,cfg.fextr[i]->cmd,50,K_EDIT);
 							break;
 						case 2:
-							savnum=2;
+							uifc.savnum=2;
 							sprintf(str,"Extractable File Type %s"
 								,cfg.fextr[i]->ext);
 							getar(str,cfg.fextr[i]->arstr);
@@ -695,7 +695,7 @@ extract the file(s).
 					i|=WIN_DEL|WIN_GET;
 				if(savfcomp.cmd[0])
 					i|=WIN_PUT;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 Compressable File Types:
@@ -704,7 +704,7 @@ This is a list of compression methods available for different file types.
 These will be used for items such as creating QWK packets, temporary
 files from the transfer section, and more.
 */
-				i=ulist(i,0,0,50,&dflt,&bar,"Compressable File Types",opt);
+				i=uifc.list(i,0,0,50,&dflt,&bar,"Compressable File Types",opt);
 				if(i==-1)
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
@@ -714,7 +714,7 @@ files from the transfer section, and more.
 					while(i<cfg.total_fcomps) {
 						cfg.fcomp[i]=cfg.fcomp[i+1];
 						i++; }
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
@@ -741,7 +741,7 @@ files from the transfer section, and more.
 							continue; }
 						*cfg.fcomp[i]=*cfg.fcomp[i+1]; }
 					cfg.total_fcomps++;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_GET) {
 					i&=MSK_OFF;
@@ -750,7 +750,7 @@ files from the transfer section, and more.
 				if((i&MSK_ON)==MSK_PUT) {
 					i&=MSK_OFF;
 					*cfg.fcomp[i]=savfcomp;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				k=0;
 				done=0;
@@ -763,24 +763,24 @@ files from the transfer section, and more.
 					sprintf(opt[j++],"%-22.22s%s","Access Requirements"
 						,cfg.fcomp[i]->arstr);
 					opt[j][0]=0;
-					savnum=1;
-					switch(ulist(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
+					uifc.savnum=1;
+					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
 						,"Compressable File Type",opt)) {
 						case -1:
 							done=1;
 							break;
 						case 0:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Compressable File Type Extension"
 								,cfg.fcomp[i]->ext,3,K_EDIT);
 							break;
 						case 1:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Command Line"
 								,cfg.fcomp[i]->cmd,50,K_EDIT);
 							break;
 						case 2:
-							savnum=2;
+							uifc.savnum=2;
 							sprintf(str,"Compressable File Type %s"
 								,cfg.fcomp[i]->ext);
 							getar(str,cfg.fcomp[i]->arstr);
@@ -800,7 +800,7 @@ files from the transfer section, and more.
 					i|=WIN_DEL|WIN_GET;
 				if(savprot.mnemonic)
 					i|=WIN_PUT;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 File Transfer Protocols:
@@ -817,7 +817,7 @@ remove any transfer protocols, you will need to edit the protocol menus
 (ULPROT, DLPROT, BATUPROT, BATDPROT, and BIPROT) in the TEXT\MENU
 directory accordingly.
 */
-				i=ulist(i,0,0,50,&dflt,&bar,"File Transfer Protocols",opt);
+				i=uifc.list(i,0,0,50,&dflt,&bar,"File Transfer Protocols",opt);
 				if(i==-1)
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
@@ -827,7 +827,7 @@ directory accordingly.
 					while(i<cfg.total_prots) {
 						cfg.prot[i]=cfg.prot[i+1];
 						i++; }
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
@@ -863,7 +863,7 @@ directory accordingly.
 							continue; }
 						*cfg.prot[i]=*cfg.prot[i+1]; }
 					cfg.total_prots++;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_GET) {
 					i&=MSK_OFF;
@@ -872,7 +872,7 @@ directory accordingly.
 				if((i&MSK_ON)==MSK_PUT) {
 					i&=MSK_OFF;
 					*cfg.prot[i]=savprot;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				done=0;
 				k=0;
@@ -897,8 +897,8 @@ directory accordingly.
 					sprintf(opt[j++],"%-25.25s%s","Uses DSZLOG"
 						,cfg.prot[i]->misc&PROT_DSZLOG ? "Yes":"No");
 					opt[j][0]=0;
-					savnum=1;
-					switch(ulist(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
+					uifc.savnum=1;
+					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&k,0
 						,"File Transfer Protocol",opt)) {
 						case -1:
 							done=1;
@@ -906,44 +906,44 @@ directory accordingly.
 						case 0:
 							str[0]=cfg.prot[i]->mnemonic;
 							str[1]=0;
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Mnemonic (Command Key)"
 								,str,1,K_UPPER|K_EDIT);
 							if(str[0])
 								cfg.prot[i]->mnemonic=str[0];
 							break;
 						case 1:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Protocol Name"
 								,cfg.prot[i]->name,25,K_EDIT);
                             break;
 						case 2:
-							savnum=2;
+							uifc.savnum=2;
 							sprintf(str,"Protocol %s",cfg.prot[i]->name);
 							getar(str,cfg.prot[i]->arstr);
 							break;
 						case 3:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Upload Command"
 								,cfg.prot[i]->ulcmd,50,K_EDIT);
 							break;
 						case 4:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Download Command"
 								,cfg.prot[i]->dlcmd,50,K_EDIT);
                             break;
 						case 5:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Batch UL Command"
 								,cfg.prot[i]->batulcmd,50,K_EDIT);
                             break;
 						case 6:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Batch DL Command"
 								,cfg.prot[i]->batdlcmd,50,K_EDIT);
                             break;
 						case 7:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Bi-dir Command"
 								,cfg.prot[i]->bicmd,50,K_EDIT);
                             break;
@@ -952,15 +952,15 @@ directory accordingly.
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
 							l=0;
-							savnum=2;
-							l=ulist(WIN_MID|WIN_SAV,0,0,0,&l,0
+							uifc.savnum=2;
+							l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
 								,"Uses DSZLOG",opt);
 							if(!l && !(cfg.prot[i]->misc&PROT_DSZLOG)) {
 								cfg.prot[i]->misc|=PROT_DSZLOG;
-								changes=1; }
+								uifc.changes=1; }
 							else if(l==1 && cfg.prot[i]->misc&PROT_DSZLOG) {
 								cfg.prot[i]->misc&=~PROT_DSZLOG;
-								changes=1; }
+								uifc.changes=1; }
 							break; } } }
 			break;
 		case 14:	/* Alternate file paths */
@@ -976,7 +976,7 @@ directory accordingly.
 					i|=WIN_DEL|WIN_GET;
 				if(savaltpath[0])
 					i|=WIN_PUT;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 Alternate File Paths:
@@ -987,7 +987,7 @@ storage path for a file directory. This command is useful for those who
 have file directories where they wish to have files listed from
 multiple CD-ROMs or hard disks.
 */
-				i=ulist(i,0,0,50,&dflt,&bar,"Alternate File Paths",opt);
+				i=uifc.list(i,0,0,50,&dflt,&bar,"Alternate File Paths",opt);
 				if(i==-1)
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
@@ -997,7 +997,7 @@ multiple CD-ROMs or hard disks.
 					while(i<cfg.altpaths) {
 						cfg.altpath[i]=cfg.altpath[i+1];
 						i++; }
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
@@ -1020,7 +1020,7 @@ multiple CD-ROMs or hard disks.
 							continue; }
 						memcpy(cfg.altpath[i],cfg.altpath[i+1],LEN_DIR+1); }
 					cfg.altpaths++;
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				if((i&MSK_ON)==MSK_GET) {
 					i&=MSK_OFF;
@@ -1029,10 +1029,10 @@ multiple CD-ROMs or hard disks.
 				if((i&MSK_ON)==MSK_PUT) {
 					i&=MSK_OFF;
 					memcpy(cfg.altpath[i],savaltpath,LEN_DIR+1);
-					changes=1;
+					uifc.changes=1;
 					continue; }
 				sprintf(str,"Path %d",i+1);
-				uinput(WIN_MID|WIN_SAV,0,0,str,cfg.altpath[i],50,K_EDIT); }
+				uifc.input(WIN_MID|WIN_SAV,0,0,str,cfg.altpath[i],50,K_EDIT); }
 			break; } }
 }
 

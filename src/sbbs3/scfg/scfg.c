@@ -37,8 +37,6 @@
 
 #include "scfg.h"
 
-extern char uifc_status;
-
 /********************/
 /* Global Variables */
 /********************/
@@ -50,6 +48,7 @@ extern int no_msghdr;
 char **opt;
 char tmp[256];
 int  backup_level=5;
+uifcapi_t uifc;
 
 read_cfg_text_t txt={
 	"\7\r\nError opening %s for read.\r\n",
@@ -91,10 +90,10 @@ int main(int argc, char **argv)
 {
 	char	**mopt,*p;
 	int 	i,j,main_dflt=0,chat_dflt=0;
-    int     scrn_len;
 	uint	u;
 	long	l;
 	char 	str[129];
+    BOOL    door_mode=FALSE;
 	FILE	*instream;
 
 printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
@@ -119,7 +118,10 @@ printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
         			/* do nothing */
                     continue;
                 case 'C':
-        			uifc_status|=UIFC_COLOR;
+        			uifc.mode|=UIFC_COLOR;
+                    break;
+                case 'D':
+                    door_mode=TRUE;
                     break;
                 case 'B':
         			backup_level=atoi(argv[i]+2);
@@ -177,10 +179,11 @@ printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
                         "-u  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
 #if !defined(__unix__)
+                        "-d  =  run in standard input/output/door mode\r\n"
                         "-c  =  force color mode\r\n"
                         "-v# =  set video mode to #\r\n"
                         "-l# =  set screen lines to #\r\n"
-#endif                        
+#endif
                         "-b# =  set automatic back-up level (default=3 max=10)\r\n"
                         );
         			exit(0);
@@ -193,14 +196,24 @@ if(backup_level>10) backup_level=10;
 
 backslashcolon(cfg.ctrl_dir);
 
-scrn_len=uifcini();
+uifc.size=sizeof(uifc);
+#if !defined(__unix__)
+if(!door_mode)
+    i=uifcini(&uifc);
+else
+#endif
+    i=uifcinix(&uifc);
+if(i!=0) {
+    printf("uifcini returned error %d\n",i);
+    exit(1);
+}
 
-    if(putenv("TZ=UTC0"))
-        printf("putenv() failed!\n");
-    tzset();
+if(putenv("TZ=UTC0"))
+    printf("putenv() failed!\n");
+tzset();
 
 if((l=checktime())!=0) {   /* Check binary time */
-	printf("Time problem (%08lx)\n",l);
+    printf("Time problem (%08lx)\n",l);
     exit(1); }
 
 if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
@@ -218,7 +231,7 @@ for(i=0;i<14;i++)
 txt.reading=nulstr;
 txt.readit=nulstr;
 
-sprintf(str,"%.*s",sizeof(str)-1,cfg.ctrl_dir);
+sprintf(str,"%.*s",sizeof(str)-1,argv[0]);
 p=strrchr(str,'/');
 if(p==NULL)
     p=strrchr(str,'\\');
@@ -226,12 +239,12 @@ if(p!=NULL)
     *p=0;
 else
     strcpy(str,"../exec");
-sprintf(helpdatfile,"%s/scfghelp.dat",str);
-sprintf(helpixbfile,"%s/scfghelp.ixb",str);
+sprintf(uifc.helpdatfile,"%s/scfghelp.dat",str);
+sprintf(uifc.helpixbfile,"%s/scfghelp.ixb",str);
 
 sprintf(str,"Synchronet Configuration for %s v%s",PLATFORM_DESC,VERSION);
-if(uscrn(str)) {
-	printf(" USCRN (len=%d) failed!\r\n",scrn_len+1);
+if(uifc.scrn(str)) {
+	printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
 	bail(1);
 }
 i=0;
@@ -268,59 +281,59 @@ From this menu, you have the following choices:
 
 Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
 */
-	switch(ulist(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,30,&main_dflt,0
+	switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,30,&main_dflt,0
 		,"Configure",mopt)) {
 		case 0:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
 			read_main_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
 			node_menu();
 			free_main_cfg(&cfg);
 			break;
 		case 1:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
 			read_main_cfg(&cfg,&txt);
-			upop("Reading XTRN.CNF...");
+			uifc.pop("Reading XTRN.CNF...");
 			read_xtrn_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
 			sys_cfg();
 			free_xtrn_cfg(&cfg);
 			free_main_cfg(&cfg);
 			break;
 		case 2:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
             read_main_cfg(&cfg,&txt);
-			upop("Reading MSGS.CNF...");
+			uifc.pop("Reading MSGS.CNF...");
 			read_msgs_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
 			net_cfg();
 			free_msgs_cfg(&cfg);
 			free_main_cfg(&cfg);
 			break;
 		case 3:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
             read_main_cfg(&cfg,&txt);
-            upop("Reading FILE.CNF...");
+            uifc.pop("Reading FILE.CNF...");
             read_file_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
             xfer_cfg();
             free_file_cfg(&cfg);
 			free_main_cfg(&cfg);
             break;
 		case 4:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
             read_main_cfg(&cfg,&txt);
-            upop("Reading FILE.CNF...");
+            uifc.pop("Reading FILE.CNF...");
             read_file_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
 			xfer_opts();
             free_file_cfg(&cfg);
 			free_main_cfg(&cfg);
             break;
 		case 5:
-            upop("Reading CHAT.CNF...");
+            uifc.pop("Reading CHAT.CNF...");
             read_chat_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
             while(1) {
                 i=0;
                 strcpy(opt[i++],"Artificial Gurus");
@@ -328,7 +341,7 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
                 strcpy(opt[i++],"Multinode Chat Channels");
                 strcpy(opt[i++],"External Sysop Chat Pagers");
 				opt[i][0]=0;
-                j=ulist(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&chat_dflt,0
+                j=uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&chat_dflt,0
                     ,"Chat Features",opt);
                 if(j==-1) {
                     j=save_changes(WIN_MID);
@@ -356,48 +369,48 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
             free_chat_cfg(&cfg);
             break;
 		case 6:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
             read_main_cfg(&cfg,&txt);
-			upop("Reading MSGS.CNF...");
+			uifc.pop("Reading MSGS.CNF...");
 			read_msgs_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
 			msgs_cfg();
 			free_msgs_cfg(&cfg);
 			free_main_cfg(&cfg);
 			break;
 		case 7:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
             read_main_cfg(&cfg,&txt);
-			upop("Reading MSGS.CNF...");
+			uifc.pop("Reading MSGS.CNF...");
             read_msgs_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
 			msg_opts();
 			free_msgs_cfg(&cfg);
 			free_main_cfg(&cfg);
 			break;
 		case 8:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
 			read_main_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
 			shell_cfg();
 			free_main_cfg(&cfg);
             break;
 		case 9:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
             read_main_cfg(&cfg,&txt);
-			upop("Reading XTRN.CNF...");
+			uifc.pop("Reading XTRN.CNF...");
 			read_xtrn_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
 			xprogs_cfg();
 			free_xtrn_cfg(&cfg);
 			free_main_cfg(&cfg);
 			break;
 		case 10:
-			upop("Reading MAIN.CNF...");
+			uifc.pop("Reading MAIN.CNF...");
             read_main_cfg(&cfg,&txt);
-            upop("Reading FILE.CNF...");
+            uifc.pop("Reading FILE.CNF...");
             read_file_cfg(&cfg,&txt);
-			upop(0);
+			uifc.pop(0);
             txt_cfg();
             free_file_cfg(&cfg);
 			free_main_cfg(&cfg);
@@ -414,42 +427,42 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
 If you want to exit the Synchronet configuration utility, select Yes.
 Otherwise, select No or hit  ESC .
 */
-			i=ulist(WIN_MID,0,0,0,&i,0,"Exit SCFG",opt);
+			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SCFG",opt);
 			if(!i)
 				bail(0);
 			break; } }
 }
 
 /****************************************************************************/
-/* Checks the changes variable. If there have been no changes, returns 2.	*/
-/* If there have been changes, it prompts the user to change or not. If the */
+/* Checks the uifc.changes variable. If there have been no uifc.changes, returns 2.	*/
+/* If there have been uifc.changes, it prompts the user to change or not. If the */
 /* user escapes the menu, returns -1, selects Yes, 0, and selects no, 1 	*/
 /****************************************************************************/
 int save_changes(int mode)
 {
 	int i=0;
 
-if(!changes)
+if(!uifc.changes)
 	return(2);
 strcpy(opt[0],"Yes");
 strcpy(opt[1],"No");
 opt[2][0]=0;
-if(mode&WIN_SAV && savdepth)
-	savnum++;
+if(mode&WIN_SAV && uifc.savdepth)
+	uifc.savnum++;
 SETHELP(WHERE);
 /*
-Save Changes:
+Save uifc.changes:
 
-You have made some changes to the configuration. If you want to save
-these changes, select Yes. If you are positive you DO NOT want to save
-these changes, select No. If you are not sure and want to review the
+You have made some uifc.changes to the configuration. If you want to save
+these uifc.changes, select Yes. If you are positive you DO NOT want to save
+these uifc.changes, select No. If you are not sure and want to review the
 configuration before deciding, hit  ESC .
 */
-i=ulist(mode|WIN_ACT,0,0,0,&i,0,"Save Changes",opt);
-if(mode&WIN_SAV && savdepth)
-	savnum--;
+i=uifc.list(mode|WIN_ACT,0,0,0,&i,0,"Save uifc.changes",opt);
+if(mode&WIN_SAV && uifc.savdepth)
+	uifc.savnum--;
 if(i!=-1)
-	changes=0;
+	uifc.changes=0;
 return(i);
 }
 
@@ -503,7 +516,7 @@ To delete a text file section, select it and hit  DEL .
 
 To configure a text file, select it and hit  ENTER .
 */
-	i=ulist(j,0,0,45,&txt_dflt,&bar,"Text File Sections",opt);
+	i=uifc.list(j,0,0,45,&txt_dflt,&bar,"Text File Sections",opt);
 	if((signed)i==-1) {
 		j=save_changes(WIN_MID);
 		if(j==-1)
@@ -523,7 +536,7 @@ To configure a text file, select it and hit  ENTER .
 
 This is the name of this text section.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Text Section Name",str,40
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Name",str,40
             ,K_EDIT)<1)
             continue;
 		sprintf(code,"%.8s",str);
@@ -538,13 +551,13 @@ Every text file section must have its own unique internal code for
 Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,8
 			,K_EDIT)<1)
 			continue;
 		if(!code_ok(code)) {
-			helpbuf=invalid_code;
-			umsg("Invalid Code");
-			helpbuf=0;
+			uifc.helpbuf=invalid_code;
+			uifc.msg("Invalid Code");
+			uifc.helpbuf=0;
             continue; }
 		if((cfg.txtsec=(txtsec_t **)REALLOC(cfg.txtsec
 			,sizeof(txtsec_t *)*(cfg.total_txtsecs+1)))==NULL) {
@@ -562,7 +575,7 @@ abreviation of the name.
 		strcpy(cfg.txtsec[i]->name,str);
 		strcpy(cfg.txtsec[i]->code,code);
 		cfg.total_txtsecs++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -570,7 +583,7 @@ abreviation of the name.
 		cfg.total_txtsecs--;
 		for(j=i;j<cfg.total_txtsecs;j++)
 			cfg.txtsec[j]=cfg.txtsec[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -579,7 +592,7 @@ abreviation of the name.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.txtsec[i]=savtxtsec;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	i=txt_dflt;
 	j=0;
@@ -591,7 +604,7 @@ abreviation of the name.
 			,cfg.txtsec[i]->arstr);
 		sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.txtsec[i]->code);
 		opt[k][0]=0;
-		switch(ulist(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.txtsec[i]->name
+		switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.txtsec[i]->name
 			,opt)) {
 			case -1:
 				done=1;
@@ -604,7 +617,7 @@ abreviation of the name.
 This is the name of this text section.
 */
 				strcpy(str,cfg.txtsec[i]->name);	/* save */
-				if(!uinput(WIN_MID|WIN_SAV,0,10
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10
 					,"Text File Section Name"
 					,cfg.txtsec[i]->name,40,K_EDIT))
 					strcpy(cfg.txtsec[i]->name,str);
@@ -623,14 +636,14 @@ Every text file section must have its own unique internal code for
 Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 					,str,8,K_EDIT);
 				if(code_ok(str))
 					strcpy(cfg.txtsec[i]->code,str);
 				else {
-					helpbuf=invalid_code;
-					umsg("Invalid Code");
-					helpbuf=0; }
+					uifc.helpbuf=invalid_code;
+					uifc.msg("Invalid Code");
+					uifc.helpbuf=0; }
 				break; } } }
 }
 
@@ -668,7 +681,7 @@ To delete a command shell, select it and hit  DEL .
 
 To configure a command shell, select it and hit  ENTER .
 */
-	i=ulist(j,0,0,45,&shell_dflt,&shell_bar,"Command Shells",opt);
+	i=uifc.list(j,0,0,45,&shell_dflt,&shell_bar,"Command Shells",opt);
 	if((signed)i==-1) {
 		j=save_changes(WIN_MID);
 		if(j==-1)
@@ -688,7 +701,7 @@ To configure a command shell, select it and hit  ENTER .
 
 This is the descriptive name of this command shell.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Command Shell Name",str,40
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Name",str,40
             ,K_EDIT)<1)
             continue;
 		sprintf(code,"%.8s",str);
@@ -707,13 +720,13 @@ This code will be the base filename used to load the shell from your
 EXEC directory. e.g. A shell with an internal code of MYBBS would
 indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,8
 			,K_EDIT)<1)
 			continue;
 		if(!code_ok(code)) {
-			helpbuf=invalid_code;
-			umsg("Invalid Code");
-			helpbuf=0;
+			uifc.helpbuf=invalid_code;
+			uifc.msg("Invalid Code");
+			uifc.helpbuf=0;
             continue; }
 		if((cfg.shell=(shell_t **)REALLOC(cfg.shell
 			,sizeof(shell_t *)*(cfg.total_shells+1)))==NULL) {
@@ -731,7 +744,7 @@ indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 		strcpy(cfg.shell[i]->name,str);
 		strcpy(cfg.shell[i]->code,code);
 		cfg.total_shells++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -739,7 +752,7 @@ indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 		cfg.total_shells--;
 		for(j=i;j<cfg.total_shells;j++)
 			cfg.shell[j]=cfg.shell[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -748,7 +761,7 @@ indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.shell[i]=savshell;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	i=shell_dflt;
 	j=0;
@@ -774,7 +787,7 @@ to turn Baja source code (.SRC) files into binary files (.BIN) for
 Synchronet to interpret. See the example .SRC files in the TEXT
 directory and the documentation for the Baja compiler for more details.
 */
-		switch(ulist(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.shell[i]->name
+		switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.shell[i]->name
 			,opt)) {
 			case -1:
 				done=1;
@@ -787,7 +800,7 @@ directory and the documentation for the Baja compiler for more details.
 This is the descriptive name of this command shell.
 */
 				strcpy(str,cfg.shell[i]->name);    /* save */
-				if(!uinput(WIN_MID|WIN_SAV,0,10
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10
 					,"Command Shell Name"
 					,cfg.shell[i]->name,40,K_EDIT))
 					strcpy(cfg.shell[i]->name,str);
@@ -810,14 +823,14 @@ This code will be the base filename used to load the shell from your
 EXEC directory. e.g. A shell with an internal code of MYBBS would
 indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 					,str,8,K_EDIT);
 				if(code_ok(str))
 					strcpy(cfg.shell[i]->code,str);
 				else {
-					helpbuf=invalid_code;
-					umsg("Invalid Code");
-					helpbuf=0; }
+					uifc.helpbuf=invalid_code;
+					uifc.msg("Invalid Code");
+					uifc.helpbuf=0; }
 				break; } } }
 }
 
@@ -856,8 +869,8 @@ strcpy(opt[1],"Equal");
 strcpy(opt[2],"Not Equal");
 strcpy(opt[3],"Less than");
 opt[4][0]=0;
-if(savdepth)
-	savnum++;
+if(uifc.savdepth)
+	uifc.savnum++;
 SETHELP(WHERE);
 /*
 Select Logic for Requirement:
@@ -872,9 +885,9 @@ this menu and set the required level to 50, the user must have level
 must have any level BUT 50. And if you select Less than from this
 menu and level 50, the user must have a level below 50.
 */
-i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Logic",opt);
-if(savdepth)
-	savnum--;
+i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Logic",opt);
+if(uifc.savdepth)
+	uifc.savnum--;
 return(i);
 }
 
@@ -886,8 +899,8 @@ i=0;
 strcpy(opt[0],"AND (Both/All)");
 strcpy(opt[1],"OR  (Either/Any)");
 opt[2][0]=0;
-if(savdepth)
-	savnum++;
+if(uifc.savdepth)
+	uifc.savnum++;
 SETHELP(WHERE);
 /*
 Select Logic for Multiple Requirements:
@@ -900,9 +913,9 @@ If you wish this new parameter to only be required if the other
 parameter requirements aren't met, select OR to specify that either
 or any of the parameter requirements must be met.
 */
-i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0,"Multiple Requirement Logic",opt);
-if(savdepth)
-	savnum--;
+i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Multiple Requirement Logic",opt);
+if(uifc.savdepth)
+	uifc.savnum--;
 return(i);
 }
 
@@ -1112,7 +1125,7 @@ directly (see documentation for details) or use the Set Required...
 options from this menu to automatically fill in the string for you.
 */
 	sprintf(str,"%s Requirements",desc);
-	switch(ulist(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&curar,0,str,opt)) {
+	switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&curar,0,str,opt)) {
 		case -1:
 			done=1;
 			break;
@@ -1137,7 +1150,7 @@ TLEFT		  $R		User's time left online (minutes, 0-255)
 TUSED		  $O		User's time online this call (minutes, 0-255)
 USER		  $U		User's number (1-xxxx)
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Requirement String",ar,LEN_ARSTR
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Requirement String",ar,LEN_ARSTR
                 ,K_EDIT|K_UPPER);
 			break;
 		case 1:
@@ -1145,8 +1158,8 @@ USER		  $U		User's number (1-xxxx)
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
-			if(savdepth)
-				savnum++;
+			if(uifc.savdepth)
+				uifc.savnum++;
 			SETHELP(WHERE);
 /*
 Clear Requirements:
@@ -1154,16 +1167,16 @@ USER		  $U		User's number (1-xxxx)
 If you wish to clear the current requirement string, select Yes.
 Otherwise, select No.
 */
-			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0,"Are You Sure",opt);
-			if(savdepth)
-                savnum--;
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Are You Sure",opt);
+			if(uifc.savdepth)
+                uifc.savnum--;
 			if(!i) {
 				ar[0]=0;
-				changes=1; }
+				uifc.changes=1; }
 			break;
 		case 2:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1176,7 +1189,7 @@ Otherwise, select No.
 You are being prompted to enter the security level to be used in this
 requirement evaluation. The valid range is 0 (zero) through 99.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Level",str,2,K_NUMBER);
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Level",str,2,K_NUMBER);
 			if(!str[0])
 				break;
 			if(ar[0]) {
@@ -1202,18 +1215,18 @@ requirement evaluation. The valid range is 0 (zero) through 99.
 			break;
 		case 3:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 
 			for(i=0;i<4;i++)
 				sprintf(opt[i],"Flag Set #%d",i+1);
 			opt[i][0]=0;
 			i=0;
-			if(savdepth)
-				savnum++;
-			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Flag Set",opt);
-			if(savdepth)
-				savnum--;
+			if(uifc.savdepth)
+				uifc.savnum++;
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Flag Set",opt);
+			if(uifc.savdepth)
+				uifc.savnum--;
 			if(i==-1)
                 break;
 			str[0]=0;
@@ -1224,7 +1237,7 @@ requirement evaluation. The valid range is 0 (zero) through 99.
 You are being prompted to enter the security flag to be used in this
 requirement evaluation. The valid range is A through Z.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Flag (A-Z)",str,1
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Flag (A-Z)",str,1
 				,K_UPPER|K_ALPHA);
 			if(!str[0])
 				break;
@@ -1243,7 +1256,7 @@ requirement evaluation. The valid range is A through Z.
 			break;
 		case 4:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1256,7 +1269,7 @@ requirement evaluation. The valid range is A through Z.
 You are being prompted to enter the user's age to be used in this
 requirement evaluation. The valid range is 0 through 255.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Age",str,3,K_NUMBER);
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Age",str,3,K_NUMBER);
 			if(!str[0])
 				break;
 			if(ar[0]) {
@@ -1282,7 +1295,7 @@ requirement evaluation. The valid range is 0 through 255.
             break;
 		case 5:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			str[0]=0;
 			SETHELP(WHERE);
@@ -1293,7 +1306,7 @@ You are being prompted to enter the user's gender to be used in this
 requirement evaluation. The valid values are M or F (for male or
 female).
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Sex (M or F)",str,1
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Sex (M or F)",str,1
 				,K_UPPER|K_ALPHA);
 			if(!str[0])
 				break;
@@ -1310,7 +1323,7 @@ female).
 			break;
 		case 6:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1323,7 +1336,7 @@ female).
 You are being prompted to enter the connect rate to be used in this
 requirement evaluation. The valid range is 300 through 57600.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Connect Rate (BPS)",str,5,K_NUMBER);
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Connect Rate (BPS)",str,5,K_NUMBER);
 			if(!str[0])
 				break;
 			j=atoi(str);
@@ -1353,7 +1366,7 @@ requirement evaluation. The valid range is 300 through 57600.
             break;
 		case 7:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1366,7 +1379,7 @@ requirement evaluation. The valid range is 300 through 57600.
 You are being prompted to enter the post/call ratio to be used in this
 requirement evaluation (percentage). The valid range is 0 through 100.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Post/Call Ratio (Percentage)"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Post/Call Ratio (Percentage)"
 				,str,3,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1393,7 +1406,7 @@ requirement evaluation (percentage). The valid range is 0 through 100.
             break;
 		case 8:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1407,7 +1420,7 @@ You are being prompted to enter the number of credits (in kilobytes) to
 be used in this requirement evaluation. The valid range is 0 through
 65535.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Required Credits",str,5,K_NUMBER);
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Required Credits",str,5,K_NUMBER);
 			if(!str[0])
 				break;
 			if(ar[0]) {
@@ -1433,7 +1446,7 @@ be used in this requirement evaluation. The valid range is 0 through
             break;
 		case 9:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1448,7 +1461,7 @@ this requirement evaluation (percentage). The valid range is 0 through
 100. This ratio is based on the number of bytes uploaded by the user
 divided by the number of bytes downloaded.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Upload/Download Ratio (Percentage)"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Upload/Download Ratio (Percentage)"
 				,str,3,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1475,7 +1488,7 @@ divided by the number of bytes downloaded.
             break;
 		case 10:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1490,7 +1503,7 @@ this requirement evaluation (percentage). The valid range is 0 through
 100. This ratio is based on the number of files uploaded by the user
 divided by the number of files downloaded.
 */
-			uinput(WIN_MID|WIN_SAV,0,0
+			uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Upload/Download File Ratio (Percentage)"
 				,str,3,K_NUMBER);
 			if(!str[0])
@@ -1518,17 +1531,17 @@ divided by the number of files downloaded.
             break;
 		case 11:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=0;
 			strcpy(opt[0],"Before");
 			strcpy(opt[1],"After");
 			opt[2][0]=0;
-			if(savdepth)
-				savnum++;
-			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0,"Time Relationship",opt);
-			if(savdepth)
-				savnum--;
+			if(uifc.savdepth)
+				uifc.savnum++;
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Time Relationship",opt);
+			if(uifc.savdepth)
+				uifc.savnum--;
 			if(i==-1)
 				break;
 			str[0]=0;
@@ -1540,7 +1553,7 @@ You are being prompted to enter the time of day to be used in this
 requirement evaluation (24 hour HH:MM format). The valid range is 0
 through 23:59.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Time of Day (HH:MM)",str,5,K_UPPER);
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Time of Day (HH:MM)",str,5,K_UPPER);
 			if(!str[0])
 				break;
 			if(ar[0]) {
@@ -1558,7 +1571,7 @@ through 23:59.
 			break;
 		case 12:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1574,11 +1587,11 @@ requirement value.
 				strcpy(opt[n],wday[n]);
 			opt[n][0]=0;
 			n=0;
-			if(savdepth)
-				savnum++;
-			n=ulist(WIN_MID|WIN_SAV,0,0,0,&n,0,"Select Day of Week",opt);
-			if(savdepth)
-				savnum--;
+			if(uifc.savdepth)
+				uifc.savnum++;
+			n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0,"Select Day of Week",opt);
+			if(uifc.savdepth)
+				uifc.savnum--;
 			if(n==-1)
                 break;
 			strcpy(str,wday[n]);
@@ -1606,7 +1619,7 @@ requirement value.
             break;
 		case 13:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1619,7 +1632,7 @@ requirement value.
 You are being prompted to enter the number of a node to be used in this
 requirement evaluation. The valid range is 1 through 250.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Node Number",str,3,K_NUMBER);
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Node Number",str,3,K_NUMBER);
 			if(!str[0])
 				break;
 			if(ar[0]) {
@@ -1645,7 +1658,7 @@ requirement evaluation. The valid range is 1 through 250.
             break;
 		case 14:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1658,7 +1671,7 @@ requirement evaluation. The valid range is 1 through 250.
 You are being prompted to enter the user's number to be used in this
 requirement evaluation.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"User Number",str,5,K_NUMBER);
+			uifc.input(WIN_MID|WIN_SAV,0,0,"User Number",str,5,K_NUMBER);
 			if(!str[0])
 				break;
 			if(ar[0]) {
@@ -1685,7 +1698,7 @@ requirement evaluation.
 
 		case 15:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1698,7 +1711,7 @@ requirement evaluation.
 You are being prompted to enter the time remaining to be used in this
 requirement evaluation (in minutes). The valid range is 0 through 255.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Time Remaining (minutes)"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Time Remaining (minutes)"
 				,str,3,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1726,7 +1739,7 @@ requirement evaluation (in minutes). The valid range is 0 through 255.
 
 		case 16:
 			if(strlen(ar)>=30) {
-				umsg("Maximum string length reached");
+				uifc.msg("Maximum string length reached");
                 break; }
 			i=whichlogic();
 			if(i==-1)
@@ -1739,7 +1752,7 @@ requirement evaluation (in minutes). The valid range is 0 through 255.
 You are being prompted to enter the required number of days till the
 user's account will expire.
 */
-			uinput(WIN_MID|WIN_SAV,0,0,"Days Till Expiration"
+			uifc.input(WIN_MID|WIN_SAV,0,0,"Days Till Expiration"
 				,str,5,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1787,7 +1800,7 @@ int lprintf(char *fmt, ...)
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
     strip_ctrl(sbuf);
-    umsg(sbuf);
+    uifc.msg(sbuf);
     return(0);
 }
 
@@ -1801,20 +1814,20 @@ void bail(int code)
         puts("\nHit a key...");
         getch(); }
     else if(forcesave) {
-        upop("Loading Configs...");
+        uifc.pop("Loading Configs...");
         read_main_cfg(&cfg,&txt);
         read_msgs_cfg(&cfg,&txt);
         read_file_cfg(&cfg,&txt);
         read_chat_cfg(&cfg,&txt);
         read_xtrn_cfg(&cfg,&txt);
-        upop(0);
+        uifc.pop(0);
         write_main_cfg(&cfg,backup_level);
         write_msgs_cfg(&cfg,backup_level);
         write_file_cfg(&cfg,backup_level);
         write_chat_cfg(&cfg,backup_level);
         write_xtrn_cfg(&cfg,backup_level); }
 
-    uifcbail();
+    uifc.bail();
 
     exit(code);
 }
@@ -1826,11 +1839,11 @@ void bail(int code)
 /****************************************************************************/
 void errormsg(int line, char *source,  char action, char *object, ulong access)
 {
-	char scrn_buf[8000];
+	char scrn_buf[MAX_BFLN];
     char actstr[256];
 
 #if !defined(__unix__)
-    gettext(1,1,80,scrn_len,scrn_buf);
+    gettext(1,1,80,uifc.scrn_len,scrn_buf);
     clrscr();
 #endif
     switch(action) {
@@ -1874,7 +1887,7 @@ void errormsg(int line, char *source,  char action, char *object, ulong access)
     puts("\r\n<Hit any key>");
     getch();
 #if !defined(__unix__)
-    puttext(1,1,80,scrn_len,scrn_buf);
+    puttext(1,1,80,uifc.scrn_len,scrn_buf);
 #endif    
 }
 

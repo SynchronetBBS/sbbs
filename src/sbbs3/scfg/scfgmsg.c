@@ -87,7 +87,7 @@ void clearptrs(int subnum)
 	long l=0L;
 	struct ffblk ff;
 
-upop("Clearing Pointers...");
+uifc.pop("Clearing Pointers...");
 sprintf(str,"%suser/ptrs/*.ixb",cfg.data_dir);
 last=findfirst(str,&ff,0);
 while(!last) {
@@ -122,7 +122,7 @@ while(!last) {
 		write(file,&ch,2);
 		close(file); }
 	last=findnext(&ff); }
-upop(0);
+uifc.pop(0);
 }
 
 void msgs_cfg()
@@ -165,8 +165,8 @@ Some sysops separate sub-boards into more specific areas such as Main,
 subject denominator, you may want to have a separate message group for
 those sub-boards for a more organized message structure.
 */
-	i=ulist(j,0,0,45,&msgs_dflt,&bar,"Message Groups",opt);
-	savnum=0;
+	i=uifc.list(j,0,0,45,&msgs_dflt,&bar,"Message Groups",opt);
+	uifc.savnum=0;
 	if(i==-1) {
 		j=save_changes(WIN_MID);
 		if(j==-1)
@@ -187,7 +187,7 @@ This is a description of the message group which is displayed when a
 user of the system uses the /* command from the main menu.
 */
 		strcpy(str,"Main");
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Group Long Name",str,LEN_GLNAME
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Group Long Name",str,LEN_GLNAME
 			,K_EDIT)<1)
 			continue;
 		SETHELP(WHERE);
@@ -198,7 +198,7 @@ This is a short description of the message group which is used for the
 main menu and reading message prompts.
 */
 		sprintf(str2,"%.*s",LEN_GSNAME,str);
-		if(uinput(WIN_MID,0,0,"Group Short Name",str2,LEN_GSNAME,K_EDIT)<1)
+		if(uifc.input(WIN_MID,0,0,"Group Short Name",str2,LEN_GSNAME,K_EDIT)<1)
 			continue;
 		if((cfg.grp=(grp_t **)REALLOC(cfg.grp,sizeof(grp_t *)*(cfg.total_grps+1)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_grps+1);
@@ -220,7 +220,7 @@ main menu and reading message prompts.
 		strcpy(cfg.grp[i]->lname,str);
 		strcpy(cfg.grp[i]->sname,str2);
 		cfg.total_grps++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -235,7 +235,7 @@ select Yes.
 		strcpy(opt[0],"Yes");
 		strcpy(opt[1],"No");
 		opt[2][0]=0;
-		j=ulist(WIN_MID|WIN_SAV,0,0,0,&j,0,"Delete All Data in Group",opt);
+		j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Delete All Data in Group",opt);
 		if(j==-1)
 			continue;
 		if(j==0)
@@ -269,7 +269,7 @@ select Yes.
 		while(i<cfg.total_grps) {
 			cfg.grp[i]=cfg.grp[i+1];
 			i++; }
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -278,7 +278,7 @@ select Yes.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.grp[i]=savgrp;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	done=0;
 	while(!done) {
@@ -293,7 +293,7 @@ select Yes.
 		strcpy(opt[j++],"Message Sub-boards...");
 		opt[j][0]=0;
 		sprintf(str,"%s Group",cfg.grp[i]->sname);
-		savnum=0;
+		uifc.savnum=0;
 		SETHELP(WHERE);
 /*
 Message Group Configuration:
@@ -302,7 +302,7 @@ This menu allows you to configure the security requirements for access
 to this message group. You can also add, delete, and configure the
 sub-boards of this group by selecting the Messages Sub-boards... option.
 */
-		switch(ulist(WIN_ACT,6,4,60,&dflt,0,str,opt)) {
+		switch(uifc.list(WIN_ACT,6,4,60,&dflt,0,str,opt)) {
 			case -1:
 				done=1;
 				break;
@@ -315,7 +315,7 @@ This is a description of the message group which is displayed when a
 user of the system uses the /* command from the main menu.
 */
 				strcpy(str,cfg.grp[i]->lname);	/* save incase setting to null */
-				if(!uinput(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
 					,cfg.grp[i]->lname,LEN_GLNAME,K_EDIT))
 					strcpy(cfg.grp[i]->lname,str);
 				break;
@@ -327,7 +327,7 @@ user of the system uses the /* command from the main menu.
 This is a short description of the message group which is used for
 main menu and reading messages prompts.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
 					,cfg.grp[i]->sname,LEN_GSNAME,K_EDIT);
 				break;
 			case 2:
@@ -352,7 +352,7 @@ network options (including EchoMail origin line, EchoMail address,
 and QWK Network tagline), maximum number of messages, maximum number
 of CRCs, maximum age of messages, storage method, and data directory.
 */
-				j=ulist(WIN_MID|WIN_SAV,0,0,0,&j,0
+				j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 					,"Clone Options of First Sub-board into All of Group",opt);
 				if(j==0) {
 					k=-1;
@@ -361,7 +361,7 @@ of CRCs, maximum age of messages, storage method, and data directory.
 							if(k==-1)
 								k=j;
 							else {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[j]->misc=(cfg.sub[k]->misc|SUB_HDRMOD);
 								strcpy(cfg.sub[j]->post_arstr,cfg.sub[k]->post_arstr);
 								strcpy(cfg.sub[j]->read_arstr,cfg.sub[k]->read_arstr);
@@ -381,7 +381,7 @@ of CRCs, maximum age of messages, storage method, and data directory.
 			case 4:
 				k=0;
 				ported=0;
-				q=changes;
+				q=uifc.changes;
 				strcpy(opt[k++],"SUBS.TXT    (Synchronet)");
 				strcpy(opt[k++],"AREAS.BBS   (MSG)");
 				strcpy(opt[k++],"AREAS.BBS   (SMB)");
@@ -396,7 +396,7 @@ This menu allows you to choose the format of the area file you wish to
 export the current message group into.
 */
 				k=0;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Export Area File Format",opt);
 				if(k==-1)
 					break;
@@ -410,20 +410,20 @@ export the current message group into.
 					sprintf(str,"FIDONET.NA");
 				strupr(str);
 				if(k && k<4)
-					if(uinput(WIN_MID|WIN_SAV,0,0,"Uplinks"
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Uplinks"
 						,str2,40,0)<=0) {
-						changes=q;
+						uifc.changes=q;
 						break; }
-				if(uinput(WIN_MID|WIN_SAV,0,0,"Filename"
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 					,str,40,K_EDIT)<=0) {
-					changes=q;
+					uifc.changes=q;
 					break; }
 				if(fexist(str)) {
 					strcpy(opt[0],"Overwrite");
 					strcpy(opt[1],"Append");
 					opt[2][0]=0;
 					j=0;
-					j=ulist(WIN_MID|WIN_SAV,0,0,0,&j,0
+					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 						,"File Exists",opt);
 					if(j==-1)
 						break;
@@ -432,9 +432,9 @@ export the current message group into.
 				else
 					j=O_WRONLY|O_CREAT;
 				if((stream=fnopen(&file,str,j))==NULL) {
-					umsg("Open Failure");
+					uifc.msg("Open Failure");
 					break; }
-				upop("Exporting Areas...");
+				uifc.pop("Exporting Areas...");
 				for(j=0;j<cfg.total_subs;j++) {
 					if(cfg.sub[j]->grp!=i)
 						continue;
@@ -489,10 +489,10 @@ export the current message group into.
 						);
 					fprintf(stream,"***END-OF-SUB***\r\n\r\n"); }
 				fclose(stream);
-				upop(0);
+				uifc.pop(0);
 				sprintf(str,"%lu Message Areas Exported Successfully",ported);
-				umsg(str);
-				changes=q;
+				uifc.msg(str);
+				uifc.changes=q;
 				break;
 			case 5:
 				ported=0;
@@ -511,7 +511,7 @@ This menu allows you to choose the format of the area file you wish to
 import into the current message group.
 */
 				k=0;
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Import Area File Format",opt);
 				if(k==-1)
 					break;
@@ -524,13 +524,13 @@ import into the current message group.
 				else if(k==4)
 					sprintf(str,"FIDONET.NA");
 				strupr(str);
-				if(uinput(WIN_MID|WIN_SAV,0,0,"Filename"
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 					,str,40,K_EDIT)<=0)
                     break;
 				if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
-					umsg("Open Failure");
+					uifc.msg("Open Failure");
                     break; }
-				upop("Importing Areas...");
+				uifc.pop("Importing Areas...");
 				while(!feof(stream)) {
 					if(!fgets(str,128,stream)) break;
 					truncsp(str);
@@ -726,11 +726,11 @@ import into the current message group.
 						cfg.sub[j]->ptridx=ptridx;
 						cfg.sub[j]->misc=tmpsub.misc;
 						cfg.total_subs++; }
-					changes=1; }
+					uifc.changes=1; }
 				fclose(stream);
-				upop(0);
+				uifc.pop(0);
 				sprintf(str,"%lu Message Areas Imported Successfully",ported);
-                umsg(str);
+                uifc.msg(str);
 				break;
 
 			case 6:
@@ -790,7 +790,7 @@ void msg_opts()
 				? "Sysops Only":"No");
 		strcpy(opt[i++],"Extra Attribute Codes...");
 		opt[i][0]=0;
-		savnum=0;
+		uifc.savnum=0;
 		SETHELP(WHERE);
 /*
 Message Options:
@@ -799,7 +799,7 @@ This is a menu of system-wide message related options. Messages include
 E-mail and public posts (on sub-boards).
 */
 
-		switch(ulist(WIN_ORG|WIN_ACT|WIN_MID|WIN_CHE,0,0,72,&msg_dflt,0
+		switch(uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_CHE,0,0,72,&msg_dflt,0
 			,"Message Options",opt)) {
 			case -1:
 				i=save_changes(WIN_MID);
@@ -827,12 +827,12 @@ filename characters. In a QWK packet network, each system must have
 a unique QWK system ID.
 */
 
-				uinput(WIN_MID|WIN_SAV,0,0,"BBS ID for QWK Packets"
+				uifc.input(WIN_MID|WIN_SAV,0,0,"BBS ID for QWK Packets"
 					,str,8,K_EDIT|K_UPPER);
 				if(code_ok(str))
 					strcpy(cfg.sys_id,str);
 				else
-					umsg("Invalid ID");
+					uifc.msg("Invalid ID");
 				break;
 			case 1:
 				strcpy(opt[0],"Yes");
@@ -846,7 +846,7 @@ a unique QWK system ID.
 If your local time zone is the United States, select Yes.
 */
 
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"United States Time Zone",opt);
 				if(i==-1)
 					break;
@@ -861,11 +861,11 @@ If your local time zone is the United States, select Yes.
 					strcpy(opt[i++],"Bering");
 					opt[i][0]=0;
 					i=0;
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Time Zone",opt);
 					if(i==-1)
 						break;
-					changes=1;
+					uifc.changes=1;
 					switch(i) {
 						case 0:
 							cfg.sys_timezone=AST;
@@ -895,7 +895,7 @@ If your local time zone is the United States, select Yes.
 					strcpy(opt[1],"No");
 					opt[2][0]=0;
 					i=1;
-					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Daylight Savings",opt);
 					if(i==-1)
                         break;
@@ -931,11 +931,11 @@ If your local time zone is the United States, select Yes.
 				strcpy(opt[i++],"Other...");
 				opt[i][0]=0;
 				i=0;
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Time Zone",opt);
 				if(i==-1)
 					break;
-				changes=1;
+				uifc.changes=1;
 				switch(i) {
 					case 0:
 						cfg.sys_timezone=MID;
@@ -1018,7 +1018,7 @@ If your local time zone is the United States, select Yes.
 						sprintf(str,"%02d:%02d"
 							,cfg.sys_timezone/60,cfg.sys_timezone<0
 							? (-cfg.sys_timezone)%60 : cfg.sys_timezone%60);
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Time (HH:MM) East (+) or West (-) of Universal "
 								"Time"
 							,str,6,K_EDIT|K_UPPER);
@@ -1042,7 +1042,7 @@ or lock a message base (a value in the range of 10 to 45 seconds should
 be fine).
 */
 				ultoa(cfg.smb_retry_time,str,10);
-				uinput(WIN_MID|WIN_SAV,0,0
+				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Maximum Message Base Retry Time (in seconds)"
 					,str,2,K_NUMBER|K_EDIT);
 				cfg.smb_retry_time=atoi(str);
@@ -1058,7 +1058,7 @@ QWK network nodes (Q restriction). If set to 0, no limit is imposed.
 */
 
 				ultoa(cfg.max_qwkmsgs,str,10);
-				uinput(WIN_MID|WIN_SAV,0,0
+				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Maximum Messages Per QWK Packet (0=No Limit)"
 					,str,6,K_NUMBER|K_EDIT);
 				cfg.max_qwkmsgs=atol(str);
@@ -1087,7 +1087,7 @@ system (in the DATA\FILE directory).
 
 This value is the maximum number of days that mail will be kept.
 */
-                uinput(WIN_MID|WIN_SAV,0,17,"Maximum Age of Mail "
+                uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Mail "
                     "(in days)",str,5,K_EDIT|K_NUMBER);
                 cfg.mail_maxage=atoi(str);
                 break;
@@ -1110,14 +1110,14 @@ Your system maintenance will automatically purge deleted e-mail once a
 day.
 */
 
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Purge Deleted E-mail",opt);
 				if(!i && cfg.sys_misc&SM_DELEMAIL) {
 					cfg.sys_misc&=~SM_DELEMAIL;
-					changes=1; }
+					uifc.changes=1; }
 				else if(i==1 && !(cfg.sys_misc&SM_DELEMAIL)) {
 					cfg.sys_misc|=SM_DELEMAIL;
-					changes=1; }
+					uifc.changes=1; }
                 break;
 			case 7:
 				sprintf(str,"%lu",cfg.mail_maxcrcs);
@@ -1129,7 +1129,7 @@ This value is the maximum number of CRCs that will be kept for duplicate
 mail checking. Once this maximum number of CRCs is reached, the oldest
 CRCs will be automatically purged.
 */
-                uinput(WIN_MID|WIN_SAV,0,17,"Maximum Number of Mail "
+                uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Mail "
                     "CRCs",str,5,K_EDIT|K_NUMBER);
                 cfg.mail_maxcrcs=atol(str);
                 break;
@@ -1146,14 +1146,14 @@ If you want users with the A exemption to be able to send E-mail
 anonymously, set this option to Yes.
 */
 
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow Anonymous E-mail",opt);
 				if(!i && !(cfg.sys_misc&SM_ANON_EM)) {
 					cfg.sys_misc|=SM_ANON_EM;
-					changes=1; }
+					uifc.changes=1; }
 				else if(i==1 && cfg.sys_misc&SM_ANON_EM) {
 					cfg.sys_misc&=~SM_ANON_EM;
-					changes=1; }
+					uifc.changes=1; }
 				break;
 			case 9:
 				strcpy(opt[0],"Yes");
@@ -1168,14 +1168,14 @@ If you want your users to be allowed to use message quoting when
 responding in E-mail, set this option to Yes.
 */
 
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow Quoting in E-mail",opt);
 				if(!i && !(cfg.sys_misc&SM_QUOTE_EM)) {
 					cfg.sys_misc|=SM_QUOTE_EM;
-					changes=1; }
+					uifc.changes=1; }
 				else if(i==1 && cfg.sys_misc&SM_QUOTE_EM) {
 					cfg.sys_misc&=~SM_QUOTE_EM;
-					changes=1; }
+					uifc.changes=1; }
 				break;
 			case 10:
 				strcpy(opt[0],"Yes");
@@ -1190,14 +1190,14 @@ If you want your users to be allowed to attach an uploaded file to
 an E-mail message, set this option to Yes.
 */
 
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow File Attachment Uploads in E-mail",opt);
 				if(!i && !(cfg.sys_misc&SM_FILE_EM)) {
 					cfg.sys_misc|=SM_FILE_EM;
-					changes=1; }
+					uifc.changes=1; }
 				else if(i==1 && cfg.sys_misc&SM_FILE_EM) {
 					cfg.sys_misc&=~SM_FILE_EM;
-					changes=1; }
+					uifc.changes=1; }
 				break;
 			case 11:
 				strcpy(opt[0],"Yes");
@@ -1213,14 +1213,14 @@ optionally (at the sender's discretion) forwarded to a NetMail address,
 set this option to Yes.
 */
 
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow Forwarding of E-mail to NetMail",opt);
 				if(!i && !(cfg.sys_misc&SM_FWDTONET)) {
 					cfg.sys_misc|=SM_FWDTONET;
-					changes=1; }
+					uifc.changes=1; }
 				else if(i==1 && cfg.sys_misc&SM_FWDTONET) {
 					cfg.sys_misc&=~SM_FWDTONET;
-					changes=1; }
+					uifc.changes=1; }
                 break;
 			case 12:
 				strcpy(opt[0],"Yes");
@@ -1235,14 +1235,14 @@ If this option is set to Yes, e-mail that has been read will be
 automatically deleted when message base maintenance is run.
 */
 
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Kill Read E-mail Automatically",opt);
 				if(!i && !(cfg.sys_misc&SM_DELREADM)) {
 					cfg.sys_misc|=SM_DELREADM;
-					changes=1; }
+					uifc.changes=1; }
 				else if(i==1 && cfg.sys_misc&SM_DELREADM) {
 					cfg.sys_misc&=~SM_DELREADM;
-					changes=1; }
+					uifc.changes=1; }
                 break;
 			case 13:
 				strcpy(opt[0],"Yes");
@@ -1266,20 +1266,20 @@ If this option is set to Sysops Only, then only sysops and sub-ops (when
 appropriate) can view deleted messages.
 */
 
-				i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Users Can View Deleted Messages",opt);
 				if(!i && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
 					!=(SM_USRVDELM|SM_SYSVDELM)) {
 					cfg.sys_misc|=(SM_USRVDELM|SM_SYSVDELM);
-					changes=1; }
+					uifc.changes=1; }
 				else if(i==1 && cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM)) {
 					cfg.sys_misc&=~(SM_USRVDELM|SM_SYSVDELM);
-					changes=1; }
+					uifc.changes=1; }
 				else if(i==2 && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
 					!=SM_SYSVDELM) {
 					cfg.sys_misc|=SM_SYSVDELM;
 					cfg.sys_misc&=~SM_USRVDELM;
-					changes=1; }
+					uifc.changes=1; }
                 break;
 			case 14:
 				SETHELP(WHERE);
@@ -1306,12 +1306,12 @@ to Yes.
 					sprintf(opt[i++],"%-15.15s %-3.3s","Renegade"
 						,cfg.sys_misc&SM_RENEGADE ? "Yes":"No");
 					opt[i][0]=0;
-					j=ulist(WIN_BOT|WIN_RHT|WIN_SAV,2,2,0,&j,0
+					j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,2,0,&j,0
 						,"Extra Attribute Codes",opt);
 					if(j==-1)
 						break;
 
-					changes=1;
+					uifc.changes=1;
 					switch(j) {
 						case 0:
 							cfg.sys_misc^=SM_WWIV;

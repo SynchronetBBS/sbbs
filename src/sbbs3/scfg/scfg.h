@@ -34,7 +34,6 @@
  ****************************************************************************/
 
 #include "uifc.h"
-#include <dos.h>
 #include <dir.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +44,8 @@
 /**********/
 /* Macros */
 /**********/
+
+#define SETHELP(where)  uifc.sethelp(where)
 
 /*************/
 /* Constants */
@@ -60,14 +61,11 @@
 /* Global Variables */
 /********************/
 extern scfg_t cfg;
-extern long freedosmem;
+extern uifcapi_t uifc;
 extern char item;
 extern char **opt;
 extern char tmp[256];
 extern char *nulstr;
-extern char **mdm_type;
-extern char **mdm_file;
-extern int	mdm_types;
 extern char *invalid_code,*num_flags;
 extern int	backup_level;
 

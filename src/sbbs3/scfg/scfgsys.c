@@ -80,7 +80,7 @@ while(1) {
 This menu contains options and sub-menus of options that affect the
 entire system.
 */
-	switch(ulist(WIN_ORG|WIN_ACT|WIN_CHE,0,0,72,&sys_dflt,0
+	switch(uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,72,&sys_dflt,0
 		,"System Configuration",opt)) {
 		case -1:
 			i=save_changes(WIN_MID);
@@ -98,7 +98,7 @@ entire system.
 
 This is the name of the BBS.
 */
-			uinput(WIN_MID,0,0,"BBS Name",cfg.sys_name,40,K_EDIT);
+			uifc.input(WIN_MID,0,0,"BBS Name",cfg.sys_name,40,K_EDIT);
 			break;
 		case 1:
 			SETHELP(WHERE);
@@ -108,7 +108,7 @@ This is the name of the BBS.
 This is the location of the BBS. The format is flexible, but it is
 suggested you use the City, State format for clarity.
 */
-			uinput(WIN_MID,0,0,"Location",cfg.sys_location,40,K_EDIT);
+			uifc.input(WIN_MID,0,0,"Location",cfg.sys_location,40,K_EDIT);
             break;
 		case 2:
 			SETHELP(WHERE);
@@ -119,7 +119,7 @@ This is the name or alias of the system operator. This does not have to
 be the same as user #1. This field is used for documentary purposes
 only.
 */
-			uinput(WIN_MID,0,0,"System Operator",cfg.sys_op,40,K_EDIT);
+			uifc.input(WIN_MID,0,0,"System Operator",cfg.sys_op,40,K_EDIT);
 			break;
 		case 3:
 			SETHELP(WHERE);
@@ -131,7 +131,7 @@ sysop functions. This password should be something not easily guessed
 and should be kept absolutely confidential. This password must be
 entered at the SY: prompt.
 */
-			uinput(WIN_MID,0,0,"System Password",cfg.sys_pass,40,K_EDIT|K_UPPER);
+			uifc.input(WIN_MID,0,0,"System Password",cfg.sys_pass,40,K_EDIT|K_UPPER);
 			break;
 		case 4:
 			strcpy(opt[0],"Yes");
@@ -146,41 +146,41 @@ If you want the users of your system to have the option of changing
 their password to a string of their choice, set this option to Yes.
 For the highest level of security, set this option to No.
 */
-			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Allow Users to Change Their Password",opt);
 			if(!i && !(cfg.sys_misc&SM_PWEDIT)) {
 				cfg.sys_misc|=SM_PWEDIT;
-				changes=1; }
+				uifc.changes=1; }
 			else if(i==1 && cfg.sys_misc&SM_PWEDIT) {
                 cfg.sys_misc&=~SM_PWEDIT;
-                changes=1; }
+                uifc.changes=1; }
 			i=0;
 			SETHELP(WHERE);
 /*
-Force Periodic Password Changes:
+Force Periodic Password uifc.changes:
 
 If you want your users to be forced to change their passwords
 periodically, select Yes.
 */
-			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Force Periodic Password Changes",opt);
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+				,"Force Periodic Password uifc.changes",opt);
 			if(!i) {
 				ultoa(cfg.sys_pwdays,str,10);
 			SETHELP(WHERE);
 /*
-Maximum Days Between Password Changes:
+Maximum Days Between Password uifc.changes:
 
-Enter the maximum number of days allowed between password changes.
+Enter the maximum number of days allowed between password uifc.changes.
 If a user has not voluntarily changed his or her password in this
 many days, he or she will be forced to change their password upon
 logon.
 */
-				uinput(WIN_MID,0,0,"Maximum Days Between Password Changes"
+				uifc.input(WIN_MID,0,0,"Maximum Days Between Password uifc.changes"
 					,str,5,K_NUMBER|K_EDIT);
 				cfg.sys_pwdays=atoi(str); }
 			else if(i==1 && cfg.sys_pwdays) {
 				cfg.sys_pwdays=0;
-				changes=1; }
+				uifc.changes=1; }
 			
 			break;
 		case 5:
@@ -194,7 +194,7 @@ by a new user. If you want deleted user slots to be preserved for period
 of time since their last logon, set this value to the number of days to
 keep new users from taking over a deleted user's slot.
 */
-			uinput(WIN_MID,0,0,"Days Since Last Logon to Preserve Deleted Users"
+			uifc.input(WIN_MID,0,0,"Days Since Last Logon to Preserve Deleted Users"
 				,str,5,K_EDIT|K_NUMBER);
 			cfg.sys_deldays=atoi(str);
 			break;
@@ -211,7 +211,7 @@ disables this feature.
 
 Users with the P exemption will not be deleted due to inactivity.
 */
-			uinput(WIN_MID,0,0,"Maximum Days of Inactivity Before Auto-Deletion"
+			uifc.input(WIN_MID,0,0,"Maximum Days of Inactivity Before Auto-Deletion"
 				,str,5,K_EDIT|K_NUMBER);
 			cfg.sys_autodel=atoi(str);
             break;
@@ -224,7 +224,7 @@ If you want callers to only be able to logon as New if they know a
 certain password, enter that password here. If you want any caller to
 be able to logon as New, leave this option blank.
 */
-			uinput(WIN_MID,0,0,"New User Password",cfg.new_pass,40
+			uifc.input(WIN_MID,0,0,"New User Password",cfg.new_pass,40
 				,K_EDIT|K_UPPER);
 			break;
 		case 8:    /* Toggle Options */
@@ -258,7 +258,7 @@ be able to logon as New, leave this option blank.
 				sprintf(opt[i++],"%-33.33s%s","User Expires When Out-of-time"
 					,cfg.sys_misc&SM_TIME_EXP ? "Yes" : "No");
 				opt[i][0]=0;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 System Toggle Options:
@@ -266,7 +266,7 @@ be able to logon as New, leave this option blank.
 This is a menu of system related options that can be toggled between
 two or more states, such as Yes and No.
 */
-				switch(ulist(WIN_ACT|WIN_BOT|WIN_RHT,0,0,41,&tog_dflt,0
+				switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,41,&tog_dflt,0
                     ,"Toggle Options",opt)) {
                     case -1:
                         done=1;
@@ -284,14 +284,14 @@ If you want the users of your system to be allowed to be known by a
 false name, handle, or alias, set this option to Yes. If you want all
 users on your system to be known only by their real names, select No.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Allow Users to Use Aliases",opt);
 						if(!i && !(cfg.uq&UQ_ALIASES)) {
 							cfg.uq|=UQ_ALIASES;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && cfg.uq&UQ_ALIASES) {
 							cfg.uq&=~UQ_ALIASES;
-							changes=1; }
+							uifc.changes=1; }
 						break;
 					case 1:
 						strcpy(opt[0],"Yes");
@@ -308,14 +308,14 @@ set this option to Yes. If this option is set to No, then the only
 way a user may get minutes in their minute bank is to purchase them
 with credits.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Allow Users to Depost Time in Minute Bank",opt);
 						if(!i && !(cfg.sys_misc&SM_TIMEBANK)) {
 							cfg.sys_misc|=SM_TIMEBANK;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && cfg.sys_misc&SM_TIMEBANK) {
 							cfg.sys_misc&=~SM_TIMEBANK;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 2:
 						strcpy(opt[0],"Yes");
@@ -330,15 +330,15 @@ If you want the users of your system to be allowed to be convert
 any credits they may have into minutes for their minute bank,
 set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Allow Users to Convert Credits into Minutes"
 							,opt);
 						if(!i && cfg.sys_misc&SM_NOCDTCVT) {
 							cfg.sys_misc&=~SM_NOCDTCVT;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && !(cfg.sys_misc&SM_NOCDTCVT)) {
 							cfg.sys_misc|=SM_NOCDTCVT;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 3:
 						strcpy(opt[0],"Yes");
@@ -351,14 +351,14 @@ set this option to Yes.
 
 If you want to be able to login with sysop access, set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Allow Sysop Logins",opt);
 						if(!i && !(cfg.sys_misc&SM_R_SYSOP)) {
 							cfg.sys_misc|=SM_R_SYSOP;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && cfg.sys_misc&SM_R_SYSOP) {
 							cfg.sys_misc&=~SM_R_SYSOP;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 4:
 						strcpy(opt[0],"Yes");
@@ -372,14 +372,14 @@ If you want to be able to login with sysop access, set this option to Yes.
 If you want to passwords to be displayed locally, set this option to
 Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Echo Passwords Locally",opt);
 						if(!i && !(cfg.sys_misc&SM_ECHO_PW)) {
 							cfg.sys_misc|=SM_ECHO_PW;
-							changes=1; }
+							uifc.changes=1; }
 						else if(i==1 && cfg.sys_misc&SM_ECHO_PW) {
 							cfg.sys_misc&=~SM_ECHO_PW;
-							changes=1; }
+							uifc.changes=1; }
                         break;
 					case 5:
                         strcpy(opt[0],"Yes");
@@ -393,14 +393,14 @@ If you want to passwords to be displayed locally, set this option to
 If you would like the sysop page to be a short series of beeps rather
 than continuous random tones, set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0,"Short Sysop Page"
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Short Sysop Page"
 							,opt);
 						if(i==1 && cfg.sys_misc&SM_SHRTPAGE) {
 							cfg.sys_misc&=~SM_SHRTPAGE;
-                            changes=1; }
+                            uifc.changes=1; }
 						else if(!i && !(cfg.sys_misc&SM_SHRTPAGE)) {
 							cfg.sys_misc|=SM_SHRTPAGE;
-                            changes=1; }
+                            uifc.changes=1; }
 						break;
 					case 6:
                         strcpy(opt[0],"Yes");
@@ -414,14 +414,14 @@ than continuous random tones, set this option to Yes.
 If you would like to have an alarm sounded locally when a critical
 system error has occured, set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Sound Alarm on Error",opt);
 						if(i==1 && cfg.sys_misc&SM_ERRALARM) {
 							cfg.sys_misc&=~SM_ERRALARM;
-                            changes=1; }
+                            uifc.changes=1; }
 						else if(!i && !(cfg.sys_misc&SM_ERRALARM)) {
 							cfg.sys_misc|=SM_ERRALARM;
-                            changes=1; }
+                            uifc.changes=1; }
                         break;
 					case 7:
                         strcpy(opt[0],"Yes");
@@ -437,15 +437,15 @@ set this option to Yes. The suggested setting for this option is
 No so that statistical data will only reflect user usage and not
 include sysop maintenance activity.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Include Sysop Activity in System Statistics"
 							,opt);
                         if(!i && !(cfg.sys_misc&SM_SYSSTAT)) {
                             cfg.sys_misc|=SM_SYSSTAT;
-                            changes=1; }
+                            uifc.changes=1; }
                         else if(i==1 && cfg.sys_misc&SM_SYSSTAT) {
                             cfg.sys_misc&=~SM_SYSSTAT;
-                            changes=1; }
+                            uifc.changes=1; }
                         break;
 					case 8:
                         strcpy(opt[0],"Yes");
@@ -458,14 +458,14 @@ include sysop maintenance activity.
 
 If you want callers to be able to logon as New, set this option to No.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Closed to New Users",opt);
                         if(!i && !(cfg.sys_misc&SM_CLOSED)) {
                             cfg.sys_misc|=SM_CLOSED;
-                            changes=1; }
+                            uifc.changes=1; }
                         else if(i==1 && cfg.sys_misc&SM_CLOSED) {
                             cfg.sys_misc&=~SM_CLOSED;
-                            changes=1; }
+                            uifc.changes=1; }
                         break;
 					case 9:
                         strcpy(opt[0],"Yes");
@@ -480,15 +480,15 @@ If you want user locations (city, state) displayed in the user lists,
 set this option to Yes. If this option is set to No, the user notes
 (if they exist) are displayed in the user lists.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
                             ,"User Location (Instead of Note) in User Lists"
                             ,opt);
 						if(!i && !(cfg.sys_misc&SM_LISTLOC)) {
 							cfg.sys_misc|=SM_LISTLOC;
-                            changes=1; }
+                            uifc.changes=1; }
 						else if(i==1 && cfg.sys_misc&SM_LISTLOC) {
 							cfg.sys_misc&=~SM_LISTLOC;
-                            changes=1; }
+                            uifc.changes=1; }
                         break;
 					case 10:
                         strcpy(opt[0],"Yes");
@@ -502,14 +502,14 @@ set this option to Yes. If this option is set to No, the user notes
 If you would like the time-of-day to be displayed and entered in 24 hour
 format always, set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Use Military Time Format",opt);
 						if(!i && !(cfg.sys_misc&SM_MILITARY)) {
 							cfg.sys_misc|=SM_MILITARY;
-                            changes=1; }
+                            uifc.changes=1; }
 						else if(i==1 && cfg.sys_misc&SM_MILITARY) {
 							cfg.sys_misc&=~SM_MILITARY;
-                            changes=1; }
+                            uifc.changes=1; }
                         break;
 					case 11:
                         strcpy(opt[0],"Yes");
@@ -523,14 +523,14 @@ format always, set this option to Yes.
 If you would like dates to be displayed and entered in DD/MM/YY format
 instead of MM/DD/YY format, set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"European Date Format",opt);
 						if(!i && !(cfg.sys_misc&SM_EURODATE)) {
 							cfg.sys_misc|=SM_EURODATE;
-                            changes=1; }
+                            uifc.changes=1; }
 						else if(i==1 && cfg.sys_misc&SM_EURODATE) {
 							cfg.sys_misc&=~SM_EURODATE;
-                            changes=1; }
+                            uifc.changes=1; }
                         break;
 
 					case 12:
@@ -545,14 +545,14 @@ instead of MM/DD/YY format, set this option to Yes.
 If you want users to be set to Expired User Values if they run out of
 time online, then set this option to Yes.
 */
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"User Expires When Out-of-time",opt);
 						if(!i && !(cfg.sys_misc&SM_TIME_EXP)) {
 							cfg.sys_misc|=SM_TIME_EXP;
-                            changes=1; }
+                            uifc.changes=1; }
 						else if(i==1 && cfg.sys_misc&SM_TIME_EXP) {
 							cfg.sys_misc&=~SM_TIME_EXP;
-                            changes=1; }
+                            uifc.changes=1; }
                         break;
 						} }
             break;
@@ -598,7 +598,7 @@ time online, then set this option to Yes.
 
 This menu allows you to determine the default settings for new users.
 */
-				switch(ulist(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&new_dflt,0
+				switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&new_dflt,0
 					,"New User Values",opt)) {
 					case -1:
 						done=1;
@@ -611,7 +611,7 @@ This menu allows you to determine the default settings for new users.
 
 This is the security level automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Security Level"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Security Level"
 							,str,2,K_EDIT|K_NUMBER);
 						cfg.new_level=atoi(str);
 						break;
@@ -623,7 +623,7 @@ This is the security level automatically given to new users.
 
 These are the security flags automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Flag Set #1"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Flag Set #1"
 							,str,26,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.new_flags1=aftol(str);
 						break;
@@ -635,7 +635,7 @@ These are the security flags automatically given to new users.
 
 These are the security flags automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Flag Set #2"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Flag Set #2"
 							,str,26,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.new_flags2=aftol(str);
                         break;
@@ -647,7 +647,7 @@ These are the security flags automatically given to new users.
 
 These are the security flags automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Flag Set #3"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Flag Set #3"
 							,str,26,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.new_flags3=aftol(str);
                         break;
@@ -659,7 +659,7 @@ These are the security flags automatically given to new users.
 
 These are the security flags automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Flag Set #4"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Flag Set #4"
 							,str,26,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.new_flags4=aftol(str);
                         break;
@@ -671,7 +671,7 @@ These are the security flags automatically given to new users.
 
 These are the exemptions that are automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
 							,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.new_exempt=aftol(str);
 						break;
@@ -683,7 +683,7 @@ These are the exemptions that are automatically given to new users.
 
 These are the restrictions that are automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
 							,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.new_rest=aftol(str);
 						break;
@@ -697,7 +697,7 @@ If you wish new users to have an automatic expiration date, set this
 value to the number of days before the user will expire. To disable
 New User expiration, set this value to 0.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Expiration Days",str,4
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Expiration Days",str,4
 							,K_EDIT|K_NUMBER);
 						cfg.new_expire=atoi(str);
 						break;
@@ -709,7 +709,7 @@ New User expiration, set this value to 0.
 
 This is the amount of credits that are automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Credits",str,10
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Credits",str,10
 							,K_EDIT|K_NUMBER);
 						cfg.new_cdt=atol(str);
                         break;
@@ -721,30 +721,30 @@ This is the amount of credits that are automatically given to new users.
 
 This is the number of extra minutes automatically given to new users.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Minutes (Time Credit)"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Minutes (Time Credit)"
 							,str,10,K_EDIT|K_NUMBER);
 						cfg.new_min=atol(str);
 						break;
 					case 10:
 						if(!cfg.total_xedits) {
-							umsg("No External Editors Configured");
+							uifc.msg("No External Editors Configured");
 							break; }
 						strcpy(opt[0],"Internal");
 						for(i=1;i<=cfg.total_xedits;i++)
 							strcpy(opt[i],cfg.xedit[i-1]->code);
 						opt[i][0]=0;
 						i=0;
-						savnum=0;
+						uifc.savnum=0;
 						SETHELP(WHERE);
 /*
 New User Editor:
 
 You can use this option to select the default editor for new users.
 */
-						i=ulist(WIN_SAV|WIN_RHT,2,1,13,&i,0,"Editors",opt);
+						i=uifc.list(WIN_SAV|WIN_RHT,2,1,13,&i,0,"Editors",opt);
 						if(i==-1)
 							break;
-						changes=1;
+						uifc.changes=1;
 						if(i && i<=cfg.total_xedits)
 							sprintf(cfg.new_xedit,"%-.8s",cfg.xedit[i-1]->code);
 						else
@@ -755,7 +755,7 @@ You can use this option to select the default editor for new users.
 							sprintf(opt[i],"%-.8s",cfg.shell[i]->code);
 						opt[i][0]=0;
 						i=0;
-						savnum=0;
+						uifc.savnum=0;
 						SETHELP(WHERE);
 /*
 New User Command Shell:
@@ -763,12 +763,12 @@ You can use this option to select the default editor for new users.
 You can use this option to select the default command shell for new
 users.
 */
-						i=ulist(WIN_SAV|WIN_RHT,2,1,13,&i,0
+						i=uifc.list(WIN_SAV|WIN_RHT,2,1,13,&i,0
 							,"Command Shells",opt);
 						if(i==-1)
 							break;
 						cfg.new_shell=i;
-						changes=1;
+						uifc.changes=1;
 						break;
 					case 12:
 						SETHELP(WHERE);
@@ -779,7 +779,7 @@ This option allows you to set the default download protocol of new users
 (protocol command key or BLANK for no default).
 */
 						sprintf(str,"%c",cfg.new_prot);
-						uinput(WIN_SAV|WIN_MID,0,0
+						uifc.input(WIN_SAV|WIN_MID,0,0
 							,"Default Download Protocol (SPACE=Disabled)"
 							,str,1,K_EDIT|K_UPPER);
 						cfg.new_prot=str[0];
@@ -839,11 +839,11 @@ options available.
 								,"Auto Hang-up After Xfer"
 								,cfg.new_misc&AUTOHANG ? "Yes":"No");
 							opt[i][0]=0;
-							j=ulist(WIN_BOT|WIN_RHT,2,1,0,&j,0
+							j=uifc.list(WIN_BOT|WIN_RHT,2,1,0,&j,0
 								,"Default Toggle Options",opt);
                             if(j==-1)
                                 break;
-                            changes=1;
+                            uifc.changes=1;
                             switch(j) {
                                 case 0:
 									cfg.new_misc^=EXPERT;
@@ -949,11 +949,11 @@ user.
 								,"Default Settings"
 								,cfg.uq&UQ_NODEF ? "No":"Yes");
 							opt[i][0]=0;
-							j=ulist(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0,&j,0
+							j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0,&j,0
 								,"New User Questions",opt);
                             if(j==-1)
                                 break;
-                            changes=1;
+                            uifc.changes=1;
                             switch(j) {
                                 case 0:
 									cfg.uq^=UQ_REALNAME;
@@ -1039,14 +1039,14 @@ user.
 				sprintf(opt[i++],"%-27.27s%.40s","Sysop Chat Requirements"
 					,cfg.sys_chat_arstr);
 				opt[i][0]=0;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 System Advanced Options:
 
 Care should be taken when modifying any of the options listed here.
 */
-				switch(ulist(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&adv_dflt,0
+				switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&adv_dflt,0
 					,"Advanced Options",opt)) {
 					case -1:
 						done=1;
@@ -1066,7 +1066,7 @@ new user information displayed to them and they are disconnected.
 Think of it as a password to guarantee that new users read the text
 displayed to them.
 */
-						uinput(WIN_MID,0,0,"New User Magic Word",cfg.new_magic,20
+						uifc.input(WIN_MID,0,0,"New User Magic Word",cfg.new_magic,20
 							,K_EDIT|K_UPPER);
 						break;
 					case 1:
@@ -1084,7 +1084,7 @@ The \DATA\ suffix (sub-directory) cannot be changed or removed.
 						strcpy(str,cfg.data_dir);
 						if(strstr(str,"/data/")!=NULL)
 							*strstr(str,"/data/")=0;
-						if(uinput(WIN_MID|WIN_SAV,0,9,"Data Dir Parent"
+						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Data Dir Parent"
 							,str,50,K_EDIT)>0) {
 							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
 								strcat(str,"/");
@@ -1108,7 +1108,7 @@ The \EXEC\ suffix (sub-directory) cannot be changed or removed.
 						strcpy(str,cfg.exec_dir);
 						if(strstr(str,"/exec/")!=NULL)
 							*strstr(str,"/exec/")=0;
-						if(uinput(WIN_MID|WIN_SAV,0,9,"Exec Dir Parent"
+						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Exec Dir Parent"
 							,str,50,K_EDIT)>0) {
 							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
 								strcat(str,"/");
@@ -1124,13 +1124,13 @@ The \EXEC\ suffix (sub-directory) cannot be changed or removed.
 This is the name of a SIF questionnaire file that resides your text
 directory that all users will be prompted to answer.
 */
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"SIF Questionnaire for User Input"
 							,str,8,K_UPPER|K_EDIT);
 						if(!str[0] || code_ok(str))
 							strcpy(cfg.new_sif,str);
 						else
-							umsg("Invalid SIF Name");
+							uifc.msg("Invalid SIF Name");
 						break;
 					case 4:
 						strcpy(str,cfg.new_sof);
@@ -1141,13 +1141,13 @@ directory that all users will be prompted to answer.
 This is the SIF file used to review the input of users from the user
 edit function.
 */
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"SIF Questionnaire for Reviewing User Input"
 							,str,8,K_EDIT);
 						if(!str[0] || code_ok(str))
 							strcpy(cfg.new_sof,str);
 						else
-							umsg("Invalid SIF Name");
+							uifc.msg("Invalid SIF Name");
 						break;
 					case 5:
 						SETHELP(WHERE);
@@ -1161,7 +1161,7 @@ To make a dollar worth two megabytes of credits, set this value to
 2,097,152 (a megabyte is 1024*1024 or 1048576).
 */
 						ultoa(cfg.cdt_per_dollar,str,10);
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Credits Per Dollar",str,10,K_NUMBER|K_EDIT);
 						cfg.cdt_per_dollar=atol(str);
 						break;
@@ -1174,7 +1174,7 @@ This is the value of a minute of time online. This field is the number
 of minutes to give the user in exchange for each 100K credit block.
 */
 						sprintf(str,"%u",cfg.cdt_min_value);
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Minutes Per 100K Credits",str,5,K_NUMBER|K_EDIT);
 						cfg.cdt_min_value=atoi(str);
 						break;
@@ -1190,7 +1190,7 @@ account regardless of this maximum. If this value is set to 0, users
 will have no limit on the total number of minutes they can have.
 */
 						sprintf(str,"%lu",cfg.max_minutes);
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Maximum Number of Minutes a User Can Have "
 							"(0=No Limit)"
 							,str,10,K_NUMBER|K_EDIT);
@@ -1206,7 +1206,7 @@ be notified at logon. Setting this value to 0 disables the warning
 completely.
 */
 						sprintf(str,"%u",cfg.sys_exp_warn);
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Warning Days Till Expire",str,5,K_NUMBER|K_EDIT);
 						cfg.sys_exp_warn=atoi(str);
                         break;
@@ -1220,7 +1220,7 @@ This allows the sysop to define the higher numbered nodes as invisible
 to users.
 */
 						sprintf(str,"%u",cfg.sys_lastnode);
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Last Displayed Node",str,5,K_NUMBER|K_EDIT);
 						cfg.sys_lastnode=atoi(str);
                         break;
@@ -1234,7 +1234,7 @@ area. Use N for number positions, A for alphabetic, or ! for any
 character. All other characters will be static in the phone number
 format. An example for North American phone numbers is NNN-NNN-NNNN.
 */
-						uinput(WIN_MID|WIN_SAV,0,0
+						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Phone Number Format",cfg.sys_phonefmt
 							,LEN_PHONE,K_UPPER|K_EDIT);
                         break;
@@ -1256,7 +1256,7 @@ format. An example for North American phone numbers is NNN-NNN-NNNN.
 				sprintf(opt[i++],"%-16.16s%s","New User Event",cfg.newuser_mod);
 				sprintf(opt[i++],"%-16.16s%s","Expired User",cfg.expire_mod);
 				opt[i][0]=0;
-				savnum=0;
+				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 Loadable Modules:
@@ -1273,7 +1273,7 @@ for each of the available triggers listed here.
 New User		Executed at end of new user procedure (online)
 Expired User	Executed during daily event when user expires (offline)
 */
-				switch(ulist(WIN_ACT|WIN_T2B|WIN_RHT,0,0,32,&k,0
+				switch(uifc.list(WIN_ACT|WIN_T2B|WIN_RHT,0,0,32,&k,0
 					,"Loadable Modules",opt)) {
 
 					case -1:
@@ -1281,31 +1281,31 @@ for each of the available triggers listed here.
                         break;
 
 					case 0:
-						uinput(WIN_MID|WIN_SAV,0,0,"Login Module",cfg.login_mod,8
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Login Module",cfg.login_mod,8
 							,K_EDIT);
                         break;
 					case 1:
-						uinput(WIN_MID|WIN_SAV,0,0,"Logon Module",cfg.logon_mod,8
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Module",cfg.logon_mod,8
 							,K_EDIT);
                         break;
 					case 2:
-						uinput(WIN_MID|WIN_SAV,0,0,"Synchronize Module"
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Synchronize Module"
 							,cfg.sync_mod,8,K_EDIT);
                         break;
 					case 3:
-						uinput(WIN_MID|WIN_SAV,0,0,"Logoff Module",cfg.logoff_mod,8
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Logoff Module",cfg.logoff_mod,8
 							,K_EDIT);
                         break;
 					case 4:
-						uinput(WIN_MID|WIN_SAV,0,0,"Logout Module",cfg.logout_mod,8
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Logout Module",cfg.logout_mod,8
 							,K_EDIT);
                         break;
 					case 5:
-						uinput(WIN_MID|WIN_SAV,0,0,"New User Module"
+						uifc.input(WIN_MID|WIN_SAV,0,0,"New User Module"
 							,cfg.newuser_mod,8,K_EDIT);
                         break;
 					case 6:
-						uinput(WIN_MID|WIN_SAV,0,0,"Expired User Module"
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Expired User Module"
 							,cfg.expire_mod,8,K_EDIT);
                         break;
 
@@ -1345,7 +1345,7 @@ security level from 0 to 99. The available options for each level are:
 	Free Credits Per Day :	Number of free credits per day
 	Expire To			 :	Level or validation set to Expire to
 */
-				i=ulist(WIN_RHT|WIN_ACT,0,3,0,&dflt,&bar
+				i=uifc.list(WIN_RHT|WIN_ACT,0,3,0,&dflt,&bar
 					,"Level   T/D   T/C   C/D   E/D   P/D   L/M   F/D   "
 						"Expire To",opt);
 				if(i==-1)
@@ -1374,14 +1374,14 @@ security level from 0 to 99. The available options for each level are:
 						,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
 							cfg.level_expireto[i] : cfg.expired_level);
 					opt[j][0]=0;
-					savnum=0;
-					j=ulist(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0
+					uifc.savnum=0;
+					j=uifc.list(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0
 						,str,opt);
 					if(j==-1)
 						break;
 					switch(j) {
 						case 0:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Total Time Allowed Per Day"
 								,ultoa(cfg.level_timeperday[i],tmp,10),3
 								,K_NUMBER|K_EDIT);
@@ -1390,7 +1390,7 @@ security level from 0 to 99. The available options for each level are:
 								cfg.level_timeperday[i]=500;
 							break;
 						case 1:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Time Allowed Per Call"
 								,ultoa(cfg.level_timepercall[i],tmp,10),3
 								,K_NUMBER|K_EDIT);
@@ -1399,35 +1399,35 @@ security level from 0 to 99. The available options for each level are:
 								cfg.level_timepercall[i]=500;
                             break;
 						case 2:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Calls Allowed Per Day"
 								,ultoa(cfg.level_callsperday[i],tmp,10),4
 								,K_NUMBER|K_EDIT);
 							cfg.level_callsperday[i]=atoi(tmp);
                             break;
 						case 3:
-                            uinput(WIN_MID|WIN_SAV,0,0
+                            uifc.input(WIN_MID|WIN_SAV,0,0
                                 ,"Email Allowed Per Day"
 								,ultoa(cfg.level_emailperday[i],tmp,10),4
                                 ,K_NUMBER|K_EDIT);
                             cfg.level_emailperday[i]=atoi(tmp);
                             break;
 						case 4:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Posts Allowed Per Day"
 								,ultoa(cfg.level_postsperday[i],tmp,10),4
 								,K_NUMBER|K_EDIT);
 							cfg.level_postsperday[i]=atoi(tmp);
                             break;
 						case 5:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Lines Allowed Per Message (Post/E-mail)"
 								,ultoa(cfg.level_linespermsg[i],tmp,10),4
 								,K_NUMBER|K_EDIT);
 							cfg.level_linespermsg[i]=atoi(tmp);
 							break;
 						case 6:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Free Credits Per Day (in Kilobytes)"
 								,ultoa(cfg.level_freecdtperday[i]/1024L,tmp,10),8
 								,K_EDIT|K_UPPER);
@@ -1442,21 +1442,21 @@ security level from 0 to 99. The available options for each level are:
 							opt[j][0]=0;
 							j=0;
 							sprintf(str,"Level %u Expires To",i);
-							savnum=1;
-							j=ulist(WIN_SAV,2,1,0,&j,0
+							uifc.savnum=1;
+							j=uifc.list(WIN_SAV,2,1,0,&j,0
 								,str,opt);
 							if(j==-1)
 								break;
 							if(j==0) {
 								cfg.level_misc[i]&=
 									~(LEVEL_EXPTOLVL|LEVEL_EXPTOVAL);
-								changes=1;
+								uifc.changes=1;
 								break; }
 							if(j==1) {
 								cfg.level_misc[i]&=~LEVEL_EXPTOVAL;
 								cfg.level_misc[i]|=LEVEL_EXPTOLVL;
-								changes=1;
-								uinput(WIN_MID|WIN_SAV,0,0
+								uifc.changes=1;
+								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Expired Level"
 									,ultoa(cfg.level_expireto[i],tmp,10),2
 									,K_EDIT|K_NUMBER);
@@ -1464,7 +1464,7 @@ security level from 0 to 99. The available options for each level are:
 								break; }
 							cfg.level_misc[i]&=~LEVEL_EXPTOLVL;
 							cfg.level_misc[i]|=LEVEL_EXPTOVAL;
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Quick-Validation Set to Expire To"
 								,ultoa(cfg.level_expireto[i],tmp,10),1
 								,K_EDIT|K_NUMBER);
@@ -1502,7 +1502,7 @@ Flags, Transfer Flags, and Exemptions listed on this menu will be
 removed from the account if they are set. The Restrictions listed will
 be added to the account.
 */
-				switch(ulist(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&dflt,0
+				switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&dflt,0
 					,"Expired Account Values",opt)) {
 					case -1:
 						done=1;
@@ -1515,7 +1515,7 @@ be added to the account.
 
 This is the security level automatically given to expired user accounts.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Security Level"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Security Level"
 							,str,2,K_EDIT|K_NUMBER);
 						cfg.expired_level=atoi(str);
 						break;
@@ -1528,7 +1528,7 @@ This is the security level automatically given to expired user accounts.
 These are the security flags automatically removed when a user account
 has expired.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Flags Set #1"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #1"
 							,str,26,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.expired_flags1=aftol(str);
 						break;
@@ -1541,7 +1541,7 @@ has expired.
 These are the security flags automatically removed when a user account
 has expired.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Flags Set #2"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #2"
 							,str,26,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.expired_flags2=aftol(str);
                         break;
@@ -1554,7 +1554,7 @@ has expired.
 These are the security flags automatically removed when a user account
 has expired.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Flags Set #3"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #3"
 							,str,26,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.expired_flags3=aftol(str);
                         break;
@@ -1567,7 +1567,7 @@ has expired.
 These are the security flags automatically removed when a user account
 has expired.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Flags Set #4"
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #4"
 							,str,26,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.expired_flags4=aftol(str);
                         break;
@@ -1580,7 +1580,7 @@ has expired.
 These are the exemptions that are automatically removed from a user
 account if it expires.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
 							,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.expired_exempt=aftol(str);
 						break;
@@ -1593,7 +1593,7 @@ account if it expires.
 These are the restrictions that are automatically added to a user
 account if it expires.
 */
-						uinput(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
+						uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
 							,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.expired_rest=aftol(str);
 						break; } }
@@ -1625,13 +1625,13 @@ From within the User Edit function, a sysop can use the Validate
 User command and select from this quick-validation list to change a
 user's security values with very few key-strokes.
 */
-				savnum=0;
-				i=ulist(WIN_RHT|WIN_BOT|WIN_ACT|WIN_SAV,0,0,0,&dflt,0
+				uifc.savnum=0;
+				i=uifc.list(WIN_RHT|WIN_BOT|WIN_ACT|WIN_SAV,0,0,0,&dflt,0
 					,"Quick-Validation Values",opt);
 				if(i==-1)
                     break;
 				sprintf(str,"Quick-Validation Set %d",i);
-				savnum=0;
+				uifc.savnum=0;
 				while(1) {
 					j=0;
 					sprintf(opt[j++],"%-22.22s%u","Level",cfg.val_level[i]);
@@ -1652,70 +1652,70 @@ user's security values with very few key-strokes.
 					sprintf(opt[j++],"%-22.22s%lu","Additional Credits"
 						,cfg.val_cdt[i]);
 					opt[j][0]=0;
-					savnum=1;
-					j=ulist(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0
+					uifc.savnum=1;
+					j=uifc.list(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0
 						,str,opt);
 					if(j==-1)
 						break;
 					switch(j) {
 						case 0:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Level"
 								,ultoa(cfg.val_level[i],tmp,10),2
 								,K_NUMBER|K_EDIT);
 							cfg.val_level[i]=atoi(tmp);
 							break;
 						case 1:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Flag Set #1"
 								,ltoaf(cfg.val_flags1[i],tmp),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_flags1[i]=aftol(tmp);
                             break;
 						case 2:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Flag Set #2"
 								,ltoaf(cfg.val_flags2[i],tmp),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_flags2[i]=aftol(tmp);
                             break;
 						case 3:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Flag Set #3"
 								,ltoaf(cfg.val_flags3[i],tmp),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_flags3[i]=aftol(tmp);
                             break;
 						case 4:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Flag Set #4"
 								,ltoaf(cfg.val_flags4[i],tmp),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_flags4[i]=aftol(tmp);
                             break;
 						case 5:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Exemption Flags"
 								,ltoaf(cfg.val_exempt[i],tmp),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_exempt[i]=aftol(tmp);
                             break;
 						case 6:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Restriction Flags"
 								,ltoaf(cfg.val_rest[i],tmp),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_rest[i]=aftol(tmp);
 							break;
 						case 7:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Days to Extend Expiration"
 								,ultoa(cfg.val_expire[i],tmp,10),4
 								,K_NUMBER|K_EDIT);
 							cfg.val_expire[i]=atoi(tmp);
                             break;
 						case 8:
-							uinput(WIN_MID|WIN_SAV,0,0
+							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Additional Credits"
 								,ultoa(cfg.val_cdt[i],tmp,10),10
 								,K_NUMBER|K_EDIT);

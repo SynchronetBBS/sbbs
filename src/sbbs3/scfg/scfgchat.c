@@ -47,7 +47,7 @@ while(1) {
 	for(i=0;i<cfg.total_pages && i<MAX_OPTS;i++)
 		sprintf(opt[i],"%-40.40s %.-20s",cfg.page[i]->cmd,cfg.page[i]->arstr);
 	opt[i][0]=0;
-	savnum=0;
+	uifc.savnum=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 	if(cfg.total_pages)
 		j|=WIN_DEL|WIN_GET;
@@ -67,7 +67,7 @@ To delete a pager, select it and hit  DEL .
 
 To configure a pager, select it and hit  ENTER .
 */
-	i=ulist(j,0,0,45,&dflt,&bar,"External Sysop Chat Pagers",opt);
+	i=uifc.list(j,0,0,45,&dflt,&bar,"External Sysop Chat Pagers",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -79,7 +79,7 @@ To configure a pager, select it and hit  ENTER .
 
 This is the command line to execute for this external chat pager.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Command Line",str,50
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Line",str,50
 			,K_EDIT)<1)
             continue;
 		if((cfg.page=(page_t **)REALLOC(cfg.page,sizeof(page_t *)*(cfg.total_pages+1)))
@@ -97,7 +97,7 @@ This is the command line to execute for this external chat pager.
 		memset((page_t *)cfg.page[i],0,sizeof(page_t));
 		strcpy(cfg.page[i]->cmd,str);
 		cfg.total_pages++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -105,7 +105,7 @@ This is the command line to execute for this external chat pager.
 		cfg.total_pages--;
 		for(j=i;j<cfg.total_pages;j++)
 			cfg.page[j]=cfg.page[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -114,7 +114,7 @@ This is the command line to execute for this external chat pager.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.page[i]=savpage;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	j=0;
 	done=0;
@@ -126,8 +126,8 @@ This is the command line to execute for this external chat pager.
 			,cfg.page[i]->misc&IO_INTS ? "Yes":"No");
 		opt[k][0]=0;
 		sprintf(str,"Sysop Chat Pager #%d",i+1);
-		savnum=1;
-		switch(ulist(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&j,0,str,opt)) {
+		uifc.savnum=1;
+		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&j,0,str,opt)) {
 			case -1:
 				done=1;
 				break;
@@ -139,12 +139,12 @@ This is the command line to execute for this external chat pager.
 This is the command line to execute for this external chat pager.
 */
 				strcpy(str,cfg.page[i]->cmd);
-				if(!uinput(WIN_MID|WIN_SAV,0,10,"Command Line"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Command Line"
 					,cfg.page[i]->cmd,50,K_EDIT))
 					strcpy(cfg.page[i]->cmd,str);
 				break;
 			case 1:
-				savnum=2;
+				uifc.savnum=2;
 				getar(str,cfg.page[i]->arstr);
 				break;
 			case 2:
@@ -152,7 +152,7 @@ This is the command line to execute for this external chat pager.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Intercept I/O Interrupts:
@@ -160,14 +160,14 @@ This is the command line to execute for this external chat pager.
 If you wish the DOS screen output and keyboard input to be intercepted
 when running this chat pager, set this option to Yes.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O Interrupts"
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O Interrupts"
 					,opt);
 				if(!k && !(cfg.page[i]->misc&IO_INTS)) {
 					cfg.page[i]->misc|=IO_INTS;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.page[i]->misc&IO_INTS) {
 					cfg.page[i]->misc&=~IO_INTS;
-					changes=1; }
+					uifc.changes=1; }
                 break;
 
 				} } }
@@ -186,7 +186,7 @@ while(1) {
 		sprintf(opt[i],"%-25s",cfg.chan[i]->name);
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_SAV|WIN_BOT|WIN_RHT;
-	savnum=0;
+	uifc.savnum=0;
 	if(cfg.total_chans)
 		j|=WIN_DEL|WIN_GET;
 	if(cfg.total_chans<MAX_OPTS)
@@ -206,7 +206,7 @@ To delete a channel, select it with the arrow keys and hit  DEL .
 
 To configure a channel, select it with the arrow keys and hit  ENTER .
 */
-	i=ulist(j,0,0,45,&chan_dflt,&chan_bar,"Multinode Chat Channels",opt);
+	i=uifc.list(j,0,0,45,&chan_dflt,&chan_bar,"Multinode Chat Channels",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -218,7 +218,7 @@ To configure a channel, select it with the arrow keys and hit  ENTER .
 
 This is the name or description of the chat channel.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Chat Channel Name",str,25
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Chat Channel Name",str,25
 			,K_EDIT)<1)
             continue;
 		sprintf(code,"%.8s",str);
@@ -233,13 +233,13 @@ Every chat channel must have its own unique code for Synchronet to refer
 to it internally. This code is usually an abreviation of the chat
 channel name.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Internal Code"
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
 			,code,8,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
-			helpbuf=invalid_code;
-			umsg("Invalid Code");
-			helpbuf=0;
+			uifc.helpbuf=invalid_code;
+			uifc.msg("Invalid Code");
+			uifc.helpbuf=0;
             continue; }
 		if((cfg.chan=(chan_t **)REALLOC(cfg.chan,sizeof(chan_t *)*(cfg.total_chans+1)))
             ==NULL) {
@@ -257,7 +257,7 @@ channel name.
 		strcpy(cfg.chan[i]->name,str);
 		strcpy(cfg.chan[i]->code,code);
 		cfg.total_chans++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -265,7 +265,7 @@ channel name.
 		cfg.total_chans--;
 		for(j=i;j<cfg.total_chans;j++)
 			cfg.chan[j]=cfg.chan[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -274,7 +274,7 @@ channel name.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.chan[i]=savchan;
-		changes=1;
+		uifc.changes=1;
         continue; }
     j=0;
 	done=0;
@@ -300,9 +300,9 @@ channel name.
 
 This menu is for configuring the selected chat channel.
 */
-		savnum=1;
+		uifc.savnum=1;
 		sprintf(str,"%s Chat Channel",cfg.chan[i]->name);
-		switch(ulist(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str,opt)) {
+		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str,opt)) {
 			case -1:
 				done=1;
 				break;
@@ -314,7 +314,7 @@ This menu is for configuring the selected chat channel.
 This is the name or description of the chat channel.
 */
 				strcpy(str,cfg.chan[i]->name);
-				if(!uinput(WIN_MID|WIN_SAV,0,10,"Chat Channel Name"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Chat Channel Name"
 					,cfg.chan[i]->name,25,K_EDIT))
 					strcpy(cfg.chan[i]->name,str);
 				break;
@@ -328,15 +328,15 @@ to it internally. This code is usually an abreviation of the chat
 channel name.
 */
 				strcpy(str,cfg.chan[i]->code);
-				if(!uinput(WIN_MID|WIN_SAV,0,10,"Internal Code"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
 					,str,8,K_UPPER|K_EDIT))
 					break;
 				if(code_ok(str))
 					strcpy(cfg.chan[i]->code,str);
 				else {
-					helpbuf=invalid_code;
-					umsg("Invalid Code");
-                    helpbuf=0; }
+					uifc.helpbuf=invalid_code;
+					uifc.msg("Invalid Code");
+                    uifc.helpbuf=0; }
                 break;
 			case 2:
 				ultoa(cfg.chan[i]->cost,str,10);
@@ -348,12 +348,12 @@ If you want users to be charged credits to join this chat channel, set
 this value to the number of credits to charge. If you want this channel
 to be free, set this value to 0.
 */
-				uinput(WIN_MID|WIN_SAV,0,0,"Cost to Join (in Credits)"
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Cost to Join (in Credits)"
                     ,str,10,K_EDIT|K_NUMBER);
 				cfg.chan[i]->cost=atol(str);
                 break;
 			case 3:
-				savnum=2;
+				uifc.savnum=2;
 				sprintf(str,"%s Chat Channel",cfg.chan[i]->name);
 				getar(str,cfg.chan[i]->arstr);
 				break;
@@ -362,7 +362,7 @@ to be free, set this value to 0.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Allow Channel to be Password Protected:
@@ -370,22 +370,22 @@ to be free, set this value to 0.
 If you want to allow the first user to join this channel to password
 protect it, set this option to Yes.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Allow Channel to be Password Protected"
 					,opt);
 				if(!k && !(cfg.chan[i]->misc&CHAN_PW)) {
 					cfg.chan[i]->misc|=CHAN_PW;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.chan[i]->misc&CHAN_PW) {
 					cfg.chan[i]->misc&=~CHAN_PW;
-					changes=1; }
+					uifc.changes=1; }
 				break;
 			case 5:
 				k=1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				savnum=2;
+				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Guru Joins This Channel When Empty:
@@ -393,15 +393,15 @@ protect it, set this option to Yes.
 If you want the system guru to join this chat channel when there is
 only one user, set this option to Yes.
 */
-				k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Guru Joins This Channel When Empty"
 					,opt);
 				if(!k && !(cfg.chan[i]->misc&CHAN_GURU)) {
 					cfg.chan[i]->misc|=CHAN_GURU;
-					changes=1; }
+					uifc.changes=1; }
 				else if(k==1 && cfg.chan[i]->misc&CHAN_GURU) {
 					cfg.chan[i]->misc&=~CHAN_GURU;
-					changes=1; }
+					uifc.changes=1; }
 				break;
 			case 6:
 SETHELP(WHERE);
@@ -415,8 +415,8 @@ to have available in this channel.
 				for(j=0;j<cfg.total_gurus && j<MAX_OPTS;j++)
 					sprintf(opt[j],"%-25s",cfg.guru[j]->name);
 				opt[j][0]=0;
-				savnum=2;
-				k=ulist(WIN_SAV|WIN_RHT,0,0,25,&j,0
+				uifc.savnum=2;
+				k=uifc.list(WIN_SAV|WIN_RHT,0,0,25,&j,0
 					,"Available Chat Gurus",opt);
 				if(k==-1)
 					break;
@@ -434,12 +434,12 @@ wish to have available in this channel.
 				for(j=0;j<cfg.total_actsets && j<MAX_OPTS;j++)
 					sprintf(opt[j],"%-25s",cfg.actset[j]->name);
 				opt[j][0]=0;
-				savnum=2;
-				k=ulist(WIN_SAV|WIN_RHT,0,0,25,&j,0
+				uifc.savnum=2;
+				k=uifc.list(WIN_SAV|WIN_RHT,0,0,25,&j,0
 					,"Available Chat Action Sets",opt);
 				if(k==-1)
 					break;
-				changes=1;
+				uifc.changes=1;
 				cfg.chan[i]->actset=k;
 				break; } } }
 }
@@ -460,7 +460,7 @@ while(1) {
 			chatnum[j++]=i; }
 	chatnum[j]=cfg.total_chatacts;
 	opt[j][0]=0;
-	savnum=2;
+	uifc.savnum=2;
 	i=WIN_ACT|WIN_SAV;
 	if(j)
 		i|=WIN_DEL|WIN_GET;
@@ -488,8 +488,8 @@ To delete an action, select it with the arrow keys and hit  DEL .
 To configure an action, select it with the arrow keys and hit  ENTER .
 */
 	sprintf(str,"%s Chat Actions",cfg.actset[setnum]->name);
-	i=ulist(i,0,0,70,&chatact_dflt,&chatact_bar,str,opt);
-	savnum=3;
+	i=uifc.list(i,0,0,70,&chatact_dflt,&chatact_bar,str,opt);
+	uifc.savnum=3;
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -500,7 +500,7 @@ To configure an action, select it with the arrow keys and hit  ENTER .
 
 This is the command word (normally a verb) to trigger the action output.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Action Command",cmd,LEN_CHATACTCMD
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Action Command",cmd,LEN_CHATACTCMD
 			,K_UPPER)<1)
             continue;
 		SETHELP(WHERE);
@@ -509,7 +509,7 @@ This is the command word (normally a verb) to trigger the action output.
 
 This is the output string displayed with this action output.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"",out,LEN_CHATACTOUT
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"",out,LEN_CHATACTOUT
 			,K_MSG)<1)
             continue;
 		if((cfg.chatact=(chatact_t **)REALLOC(cfg.chatact
@@ -529,7 +529,7 @@ This is the output string displayed with this action output.
 		strcpy(cfg.chatact[chatnum[i]]->out,out);
 		cfg.chatact[chatnum[i]]->actset=setnum;
 		cfg.total_chatacts++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -537,7 +537,7 @@ This is the output string displayed with this action output.
 		cfg.total_chatacts--;
 		for(j=chatnum[i];j<cfg.total_chatacts && j<MAX_OPTS;j++)
 			cfg.chatact[j]=cfg.chatact[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -547,7 +547,7 @@ This is the output string displayed with this action output.
 		i&=MSK_OFF;
 		*cfg.chatact[chatnum[i]]=savchatact;
 		cfg.chatact[chatnum[i]]->actset=setnum;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	SETHELP(WHERE);
 /*
@@ -556,7 +556,7 @@ This is the output string displayed with this action output.
 This is the command that triggers this chat action.
 */
 	strcpy(str,cfg.chatact[chatnum[i]]->cmd);
-	if(!uinput(WIN_MID|WIN_SAV,0,10,"Chat Action Command"
+	if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Chat Action Command"
 		,cfg.chatact[chatnum[i]]->cmd,LEN_CHATACTCMD,K_EDIT|K_UPPER)) {
 		strcpy(cfg.chatact[chatnum[i]]->cmd,str);
 		continue; }
@@ -567,7 +567,7 @@ This is the command that triggers this chat action.
 This is the output string that results from this chat action.
 */
 	strcpy(str,cfg.chatact[chatnum[i]]->out);
-	if(!uinput(WIN_MID|WIN_SAV,0,10,""
+	if(!uifc.input(WIN_MID|WIN_SAV,0,10,""
 		,cfg.chatact[chatnum[i]]->out,LEN_CHATACTOUT,K_EDIT|K_MSG))
 		strcpy(cfg.chatact[chatnum[i]]->out,str); }
 }
@@ -584,7 +584,7 @@ while(1) {
 	for(i=0;i<cfg.total_gurus && i<MAX_OPTS;i++)
 		sprintf(opt[i],"%-25s",cfg.guru[i]->name);
 	opt[i][0]=0;
-	savnum=0;
+	uifc.savnum=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 	if(cfg.total_gurus)
 		j|=WIN_DEL|WIN_GET;
@@ -605,7 +605,7 @@ To delete a Guru, select it with the arrow keys and hit  DEL .
 
 To configure a Guru, select it with the arrow keys and hit  ENTER .
 */
-	i=ulist(j,0,0,45,&guru_dflt,&guru_bar,"Artificial Gurus",opt);
+	i=uifc.list(j,0,0,45,&guru_dflt,&guru_bar,"Artificial Gurus",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -616,7 +616,7 @@ To configure a Guru, select it with the arrow keys and hit  ENTER .
 
 This is the name of the selected Guru.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Guru Name",str,25
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Guru Name",str,25
 			,0)<1)
             continue;
 		sprintf(code,"%.8s",str);
@@ -630,13 +630,13 @@ This is the name of the selected Guru.
 Every Guru must have its own unique code for Synchronet to refer to
 it internally. This code is usually an abreviation of the Guru name.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Internal Code"
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
 			,code,8,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
-			helpbuf=invalid_code;
-			umsg("Invalid Code");
-			helpbuf=0;
+			uifc.helpbuf=invalid_code;
+			uifc.msg("Invalid Code");
+			uifc.helpbuf=0;
             continue; }
 		if((cfg.guru=(guru_t **)REALLOC(cfg.guru,sizeof(guru_t *)*(cfg.total_gurus+1)))
             ==NULL) {
@@ -654,7 +654,7 @@ it internally. This code is usually an abreviation of the Guru name.
 		strcpy(cfg.guru[i]->name,str);
 		strcpy(cfg.guru[i]->code,code);
 		cfg.total_gurus++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -662,7 +662,7 @@ it internally. This code is usually an abreviation of the Guru name.
 		cfg.total_gurus--;
 		for(j=i;j<cfg.total_gurus;j++)
 			cfg.guru[j]=cfg.guru[j+1];
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -671,7 +671,7 @@ it internally. This code is usually an abreviation of the Guru name.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.guru[i]=savguru;
-		changes=1;
+		uifc.changes=1;
         continue; }
     j=0;
 	done=0;
@@ -681,14 +681,14 @@ it internally. This code is usually an abreviation of the Guru name.
 		sprintf(opt[k++],"%-27.27s%s","Guru Internal Code",cfg.guru[i]->code);
 		sprintf(opt[k++],"%-27.27s%.40s","Access Requirements",cfg.guru[i]->arstr);
 		opt[k][0]=0;
-		savnum=1;
+		uifc.savnum=1;
 		SETHELP(WHERE);
 /*
 Guru Configuration:
 
 This menu is for configuring the selected Guru.
 */
-		switch(ulist(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,cfg.guru[i]->name
+		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,cfg.guru[i]->name
 			,opt)) {
 			case -1:
 				done=1;
@@ -701,7 +701,7 @@ This menu is for configuring the selected Guru.
 This is the name of the selected Guru.
 */
 				strcpy(str,cfg.guru[i]->name);
-				if(!uinput(WIN_MID|WIN_SAV,0,10,"Guru Name"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Guru Name"
 					,cfg.guru[i]->name,25,K_EDIT))
 					strcpy(cfg.guru[i]->name,str);
 				break;
@@ -714,18 +714,18 @@ Every Guru must have its own unique code for Synchronet to refer to
 it internally. This code is usually an abreviation of the Guru name.
 */
 				strcpy(str,cfg.guru[i]->code);
-				if(!uinput(WIN_MID|WIN_SAV,0,0,"Guru Internal Code"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Guru Internal Code"
 					,str,8,K_EDIT|K_UPPER))
 					break;
 				if(code_ok(str))
 					strcpy(cfg.guru[i]->code,str);
 				else {
-					helpbuf=invalid_code;
-					umsg("Invalid Code");
-                    helpbuf=0; }
+					uifc.helpbuf=invalid_code;
+					uifc.msg("Invalid Code");
+                    uifc.helpbuf=0; }
 				break;
 			case 2:
-				savnum=2;
+				uifc.savnum=2;
 				getar(cfg.guru[i]->name,cfg.guru[i]->arstr);
 				break; } } }
 }
@@ -743,7 +743,7 @@ while(1) {
 		sprintf(opt[i],"%-25s",cfg.actset[i]->name);
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_RHT|WIN_BOT|WIN_SAV;
-	savnum=0;
+	uifc.savnum=0;
     if(cfg.total_actsets)
         j|=WIN_DEL|WIN_GET;
 	if(cfg.total_actsets<MAX_OPTS)
@@ -764,7 +764,7 @@ To delete an action set, select it with the arrow keys and hit  DEL .
 To configure an action set, select it with the arrow keys and hit
  ENTER .
 */
-	i=ulist(j,0,0,45,&actset_dflt,&actset_bar,"Chat Action Sets",opt);
+	i=uifc.list(j,0,0,45,&actset_dflt,&actset_bar,"Chat Action Sets",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -775,7 +775,7 @@ To configure an action set, select it with the arrow keys and hit
 
 This is the name of the selected chat action set.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Chat Action Set Name",str,25
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Chat Action Set Name",str,25
 			,0)<1)
             continue;
         if((cfg.actset=(actset_t **)REALLOC(cfg.actset,sizeof(actset_t *)*(cfg.total_actsets+1)))
@@ -793,7 +793,7 @@ This is the name of the selected chat action set.
 		memset((actset_t *)cfg.actset[i],0,sizeof(actset_t));
         strcpy(cfg.actset[i]->name,str);
         cfg.total_actsets++;
-        changes=1;
+        uifc.changes=1;
         continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -801,7 +801,7 @@ This is the name of the selected chat action set.
         cfg.total_actsets--;
         for(j=i;j<cfg.total_actsets;j++)
             cfg.actset[j]=cfg.actset[j+1];
-        changes=1;
+        uifc.changes=1;
         continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -810,7 +810,7 @@ This is the name of the selected chat action set.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
         *cfg.actset[i]=savactset;
-        changes=1;
+        uifc.changes=1;
         continue; }
     j=0;
     done=0;
@@ -826,8 +826,8 @@ This is the name of the selected chat action set.
 This menu is for configuring the selected chat action set.
 */
 		sprintf(str,"%s Chat Action Set",cfg.actset[i]->name);
-		savnum=1;
-		switch(ulist(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str
+		uifc.savnum=1;
+		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str
             ,opt)) {
             case -1:
                 done=1;
@@ -840,7 +840,7 @@ This menu is for configuring the selected chat action set.
 This is the name of the selected action set.
 */
                 strcpy(str,cfg.actset[i]->name);
-				if(!uinput(WIN_MID|WIN_SAV,0,10,"Action Set Name"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Action Set Name"
                     ,cfg.actset[i]->name,25,K_EDIT))
                     strcpy(cfg.actset[i]->name,str);
                 break;

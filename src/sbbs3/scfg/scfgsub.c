@@ -57,7 +57,7 @@ while(1) {
 	subnum[j]=cfg.total_subs;
 	opt[j][0]=0;
 	sprintf(str,"%s Sub-boards",cfg.grp[grpnum]->sname);
-	savnum=0;
+	uifc.savnum=0;
 	i=WIN_SAV|WIN_ACT;
 	if(j)
 		i|=WIN_DEL|WIN_GET|WIN_DELACT;
@@ -79,8 +79,8 @@ To delete a sub-board, select it with the arrow keys and hit  DEL .
 
 To configure a sub-board, select it with the arrow keys and hit  ENTER .
 */
-	i=ulist(i,24,1,LEN_SLNAME+5,&dflt,&bar,str,opt);
-	savnum=1;
+	i=uifc.list(i,24,1,LEN_SLNAME+5,&dflt,&bar,str,opt);
+	uifc.savnum=1;
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -93,7 +93,7 @@ To configure a sub-board, select it with the arrow keys and hit  ENTER .
 This is a description of the message sub-board which is displayed in all
 sub-board listings.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Sub-board Long Name",str,LEN_SLNAME
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Long Name",str,LEN_SLNAME
 			,K_EDIT)<1)
 			continue;
 		sprintf(str2,"%.*s",LEN_SSNAME,str);
@@ -104,7 +104,7 @@ sub-board listings.
 This is a short description of the message sub-board which is displayed
 at the main and reading messages prompts.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Sub-board Short Name",str2,LEN_SSNAME
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Short Name",str2,LEN_SSNAME
 			,K_EDIT)<1)
 			continue;
 		sprintf(str3,"%.10s",str2);
@@ -114,7 +114,7 @@ at the main and reading messages prompts.
 
 This is the name of the sub-board used for QWK off-line readers.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Sub-board QWK Name",str3,10
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board QWK Name",str3,10
             ,K_EDIT)<1)
             continue;
 		sprintf(code,"%.8s",str3);
@@ -129,14 +129,14 @@ Every sub-board must have its own unique code for Synchronet to refer to
 it internally. This code should be descriptive of the sub-board's topic,
 usually an abreviation of the sub-board's name.
 */
-		if(uinput(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code",code,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code",code,8
 			,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
-			helpbuf=invalid_code;
-			savnum=0;
-			umsg("Invalid Code");
-			helpbuf=0;
+			uifc.helpbuf=invalid_code;
+			uifc.savnum=0;
+			uifc.msg("Invalid Code");
+			uifc.helpbuf=0;
 			continue; }
 
 		if((cfg.sub=(sub_t **)REALLOC(cfg.sub,sizeof(sub_t *)*(cfg.total_subs+1)))==NULL) {
@@ -178,7 +178,7 @@ usually an abreviation of the sub-board's name.
 			|SUB_HDRMOD|SUB_FAST);
 		cfg.sub[subnum[i]]->ptridx=ptridx;
 		cfg.total_subs++;
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -192,7 +192,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 		strcpy(opt[0],"Yes");
 		strcpy(opt[1],"No");
 		opt[2][0]=0;
-		j=ulist(WIN_MID|WIN_SAV,0,0,0,&j,0
+		j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 			,"Delete Data in Sub-board",opt);
 		if(j==-1)
 			continue;
@@ -214,7 +214,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 					cfg.qhub[q]->sub[s]=INVALID_SUB;
 				else if(cfg.qhub[q]->sub[s]>subnum[i])
 					cfg.qhub[q]->sub[s]--; }
-		changes=1;
+		uifc.changes=1;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -226,7 +226,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 		*cfg.sub[subnum[i]]=savsub;
 		cfg.sub[subnum[i]]->ptridx=ptridx;
 		cfg.sub[subnum[i]]->grp=grpnum;
-		changes=1;
+		uifc.changes=1;
         continue; }
 	i=subnum[i];
 	j=0;
@@ -265,7 +265,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 		strcpy(opt[n++],"Advanced Options...");
 		opt[n][0]=0;
 		sprintf(str,"%s Sub-board",cfg.sub[i]->sname);
-		savnum=1;
+		uifc.savnum=1;
 		SETHELP(WHERE);
 /*
 Sub-board Configuration:
@@ -273,7 +273,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 This menu allows you to configure the individual selected sub-board.
 Options with a trailing ... provide a sub-menu of more options.
 */
-		switch(ulist(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT
+		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT
 			,0,0,60,&opt_dflt,0,str,opt)) {
 			case -1:
 				done=1;
@@ -287,7 +287,7 @@ This is a description of the message sub-board which is displayed in all
 sub-board listings.
 */
 				strcpy(str,cfg.sub[i]->lname);	/* save */
-				if(!uinput(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
+				if(!uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
 					,cfg.sub[i]->lname,LEN_SLNAME,K_EDIT))
 					strcpy(cfg.sub[i]->lname,str);	/* restore */
 				break;
@@ -299,7 +299,7 @@ sub-board listings.
 This is a short description of the message sub-board which is displayed
 at the main and reading messages prompts.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
 					,cfg.sub[i]->sname,LEN_SSNAME,K_EDIT);
 				break;
 			case 2:
@@ -309,7 +309,7 @@ at the main and reading messages prompts.
 
 This is the name of the sub-board used for QWK off-line readers.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Name to use for QWK Packets"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for QWK Packets"
 					,cfg.sub[i]->qwkname,10,K_EDIT);
                 break;
 			case 3:
@@ -322,37 +322,37 @@ to it internally. This code should be descriptive of the sub-board's
 topic, usually an abreviation of the sub-board's name.
 */
                 strcpy(str,cfg.sub[i]->code);
-                uinput(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
+                uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
                     ,str,8,K_EDIT|K_UPPER);
                 if(code_ok(str))
                     strcpy(cfg.sub[i]->code,str);
                 else {
-                    helpbuf=invalid_code;
-                    umsg("Invalid Code");
-                    helpbuf=0; }
+                    uifc.helpbuf=invalid_code;
+                    uifc.msg("Invalid Code");
+                    uifc.helpbuf=0; }
                 break;
 			case 4:
-				savnum=2;
+				uifc.savnum=2;
 				sprintf(str,"%s Access",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->arstr);
 				break;
 			case 5:
-				savnum=2;
+				uifc.savnum=2;
 				sprintf(str,"%s Reading",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->read_arstr);
                 break;
 			case 6:
-				savnum=2;
+				uifc.savnum=2;
 				sprintf(str,"%s Posting",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->post_arstr);
                 break;
 			case 7:
-				savnum=2;
+				uifc.savnum=2;
 				sprintf(str,"%s Operator",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->op_arstr);
                 break;
 			case 8:
-				savnum=2;
+				uifc.savnum=2;
 				sprintf(str,"%s Moderated Posting User",cfg.sub[i]->sname);
 				getar(str,cfg.sub[i]->mod_arstr);
                 break;
@@ -367,7 +367,7 @@ sub-board. Once this maximum number of messages is reached, the oldest
 messages will be automatically purged. Usually, 100 messages is a
 sufficient maximum.
 */
-                uinput(WIN_MID|WIN_SAV,0,17,"Maximum Number of Messages"
+                uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Messages"
                     ,str,5,K_EDIT|K_NUMBER);
                 cfg.sub[i]->maxmsgs=atoi(str);
                 cfg.sub[i]->misc|=SUB_HDRMOD;
@@ -381,7 +381,7 @@ sufficient maximum.
 This value is the maximum number of days that messages will be kept in
 the sub-board.
 */
-                uinput(WIN_MID|WIN_SAV,0,17,"Maximum Age of Messages (in days)"
+                uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Messages (in days)"
                     ,str,5,K_EDIT|K_NUMBER);
                 cfg.sub[i]->maxage=atoi(str);
                 cfg.sub[i]->misc|=SUB_HDRMOD;
@@ -396,7 +396,7 @@ This value is the maximum number of CRCs that will be kept in the
 sub-board for duplicate message checking. Once this maximum number of
 CRCs is reached, the oldest CRCs will be automatically purged.
 */
-				uinput(WIN_MID|WIN_SAV,0,17,"Maximum Number of CRCs"
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of CRCs"
 					,str,5,K_EDIT|K_NUMBER);
 				cfg.sub[i]->maxcrcs=atol(str);
 				cfg.sub[i]->misc|=SUB_HDRMOD;
@@ -435,7 +435,7 @@ CRCs is reached, the oldest CRCs will be automatically purged.
 						,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
 #endif
 					opt[n][0]=0;
-					savnum=2;
+					uifc.savnum=2;
 					SETHELP(WHERE);
 /*
 Sub-board Toggle Options:
@@ -443,11 +443,11 @@ CRCs is reached, the oldest CRCs will be automatically purged.
 This menu allows you to toggle certain options for the selected
 sub-board between two or more settings, such as Yes and No.
 */
-					n=ulist(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,36,&tog_dflt,0
+					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,36,&tog_dflt,0
 						,"Toggle Options",opt);
 					if(n==-1)
 						break;
-					savnum=3;
+					uifc.savnum=3;
 					switch(n) {
 						case 0:
 							n=1;
@@ -464,23 +464,23 @@ on this sub-board, set this value to Yes. Usually, E-mail is the
 preferred method of private communication. If you want users to be able
 to post private messages only on this sub-board, select Only.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Private Posts",opt);
 							if(n==-1)
 								break;
 							if(!n && (cfg.sub[i]->misc&(SUB_PRIV|SUB_PONLY))
 								!=SUB_PRIV) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_PONLY;
 								cfg.sub[i]->misc|=SUB_PRIV;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_PRIV) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_PRIV;
 								break; }
 							if(n==2 && (cfg.sub[i]->misc&(SUB_PRIV|SUB_PONLY))
 								!=(SUB_PRIV|SUB_PONLY)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=(SUB_PRIV|SUB_PONLY); }
 							break;
 						case 1:
@@ -498,23 +498,23 @@ this sub-board, select Yes. If you want all posts on this sub-board to be
 forced anonymous, select Only. If you do not want anonymous posts allowed
 on this sub-board at all, select No.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Anonymous Posts",opt);
 							if(n==-1)
 								break;
 							if(!n && (cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY))
 								!=SUB_ANON) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_AONLY;
 								cfg.sub[i]->misc|=SUB_ANON;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~(SUB_ANON|SUB_AONLY);
 								break; }
 							if(n==2 && (cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY))
 								!=(SUB_ANON|SUB_AONLY)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=(SUB_ANON|SUB_AONLY); }
                             break;
 						case 2:
@@ -530,16 +530,16 @@ If you allow aliases on your system, you can have messages on this
 sub-board automatically use the real name of the posting user by setting
 this option to Yes.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Use Real Names in Posts",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_NAME)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_NAME;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_NAME) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_NAME; }
 							break;
 						case 3:
@@ -558,23 +558,23 @@ ability to delete their message only if it is the last message on the
 sub-board, select Last Post Only. If you want to disallow users from
 deleting any of their posts, set this option to No.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Users Can Delete Posts",opt);
 							if(n==-1)
 								break;
 							if(!n && (cfg.sub[i]->misc&(SUB_DEL|SUB_DELLAST))
 								!=SUB_DEL) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_DELLAST;
 								cfg.sub[i]->misc|=SUB_DEL;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_DEL) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_DEL;
 								break; }
 							if(n==2 && (cfg.sub[i]->misc&(SUB_DEL|SUB_DELLAST))
 								!=(SUB_DEL|SUB_DELLAST)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=(SUB_DEL|SUB_DELLAST); }
                             break;
 						case 4:
@@ -589,16 +589,16 @@ deleting any of their posts, set this option to No.
 If you want this sub-board to be included in all user new message scans
 by default, set this option to Yes.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Default On for New Scan",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_NSDEF)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_NSDEF;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_NSDEF) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_NSDEF; }
                             break;
 						case 5:
@@ -614,16 +614,16 @@ If you want this sub-board to be included in all user new message scans
 even if the user has removed it from their new scan configuration, set
 this option to Yes.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Forced New Scan",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_FORCED)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_FORCED;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_FORCED) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_FORCED; }
                             break;
 						case 6:
@@ -638,16 +638,16 @@ this option to Yes.
 If you want this sub-board to be included in all user personal message
 scans by default, set this option to Yes.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Default On for Your Scan",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_SSDEF)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_SSDEF;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_SSDEF) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_SSDEF; }
                             break;
 						case 7:
@@ -663,16 +663,16 @@ If you want all posts on this sub-board to be prompted for a 'To' user,
 set this option to Yes. This is a useful option for sub-boards that
 are on a network that does not allow private posts.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Prompt for 'To' User on Public Posts",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_TOUSER)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_TOUSER;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_TOUSER) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_TOUSER; }
 							break;
 						case 8:
@@ -687,16 +687,16 @@ are on a network that does not allow private posts.
 If you want users to be allowed to quote messages on this sub-board, set
 this option to Yes.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Message Quoting",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_QUOTE)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_QUOTE;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_QUOTE) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_QUOTE; }
                             break;
 						case 9:
@@ -712,16 +712,16 @@ If you want messages posted by System and Sub-board Operators to be
 automatically permanent (non-purgable) for this sub-board, set this
 option to Yes.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Permanent Operator Messages",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_SYSPERM)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_SYSPERM;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_SYSPERM) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_SYSPERM; }
                             break;
 						case 10:
@@ -738,20 +738,20 @@ If you want messages that have been read by the intended recipient to
 be automatically deleted by SMBUTIL, set this option to Yes or
 Private if you want only private messages to be automatically deleted.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Kill Read Messages",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_KILL)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_KILL;
 								cfg.sub[i]->misc&=~SUB_KILLP;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&(SUB_KILL|SUB_KILLP)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~(SUB_KILL|SUB_KILLP); }
 							if(n==2 && !(cfg.sub[i]->misc&SUB_KILLP)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_KILLP;
 								cfg.sub[i]->misc&=~SUB_KILL;
                                 break; }
@@ -776,16 +776,16 @@ but the storage space saved can be as much as 50 percent.
 Before setting this option to Yes, make sure that all of the SMB
 compatible mail programs you use support the LZH translation.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Compress Messages (LZH)",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_LZH)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_LZH;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_LZH) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_LZH; }
                             break;
 #endif
@@ -819,7 +819,7 @@ compatible mail programs you use support the LZH translation.
 					sprintf(opt[n++],"%-27.27s%.40s","EchoMail Semaphore File"
 						,str);
 					opt[n][0]=0;
-					savnum=2;
+					uifc.savnum=2;
 					SETHELP(WHERE);
 /*
 Sub-board Network Options:
@@ -827,11 +827,11 @@ compatible mail programs you use support the LZH translation.
 This menu contains options for the selected sub-board that pertain
 specifically to message networking.
 */
-					n=ulist(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,60,&net_dflt,0
+					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,60,&net_dflt,0
 						,"Network Options",opt);
 					if(n==-1)
 						break;
-					savnum=3;
+					uifc.savnum=3;
                     switch(n) {
 						case 0:
 							n=0;
@@ -846,16 +846,16 @@ If you want to disable the automatic addition of a network tagline or
 origin line to the bottom of outgoing networked posts from this
 sub-board, set this option to No.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Append Tag/Origin Line to Posts",opt);
 							if(n==-1)
                                 break;
 							if(!n && cfg.sub[i]->misc&SUB_NOTAG) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_NOTAG;
 								break; }
 							if(n==1 && !(cfg.sub[i]->misc&SUB_NOTAG)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_NOTAG; }
                             break;
 						case 1:
@@ -871,16 +871,16 @@ If the network that this sub-board is echoed on does not allow extended
 ASCII (>127) or control codes (<20, not including CR), set this option
 to Yes.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Export ASCII Characters Only",opt);
 							if(n==-1)
                                 break;
 							if(n && cfg.sub[i]->misc&SUB_ASCII) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_ASCII;
 								break; }
 							if(!n && !(cfg.sub[i]->misc&SUB_ASCII)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_ASCII; }
                             break;
 						case 2:
@@ -905,16 +905,16 @@ messages loops and cross-posted messages.
 This option does not affect the exporting of messages created on your
 BBS.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Gate Between Net Types",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_GATE)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_GATE;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_GATE) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_GATE; }
                             break;
 						case 3:
@@ -932,16 +932,16 @@ posts on this sub-board will be limited to the QWK packet limitation of
 25 characters. It also allows the Network restriction to function
 properly.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via QWK Packets",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_QNET)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_QNET;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_QNET) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_QNET; }
                             break;
 						case 4:
@@ -953,7 +953,7 @@ If you want to use a different QWK tagline than the configured default
 tagline in the Networks configuration, you should enter that tagline
 here. If this option is left blank, the default tagline is used.
 */
-							uinput(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->tagline
+							uifc.input(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->tagline
 								,63,K_MSG|K_EDIT);
 							break;
 						case 5:
@@ -970,16 +970,16 @@ should be set to Yes.
 
 It will allow the Network restriction to function properly.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via Internet",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_INET)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_INET;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_INET) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_INET; }
                             break;
 						case 6:
@@ -997,16 +997,16 @@ titles of posts on this sub-board will be limited to the UTI
 specification limitation of 25 characters. It also allows the Network
 restriction to function properly.
 */
-                            n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+                            n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
                                 ,"Networked via PostLink or PCRelay",opt);
                             if(n==-1)
                                 break;
                             if(!n && !(cfg.sub[i]->misc&SUB_PNET)) {
-                                changes=1;
+                                uifc.changes=1;
                                 cfg.sub[i]->misc|=SUB_PNET;
                                 break; }
                             if(n==1 && cfg.sub[i]->misc&SUB_PNET) {
-                                changes=1;
+                                uifc.changes=1;
                                 cfg.sub[i]->misc&=~SUB_PNET; }
                             break;
 						case 7:
@@ -1021,16 +1021,16 @@ restriction to function properly.
 If this sub-board is part of a FidoNet EchoMail conference, set this
 option to Yes.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via FidoNet EchoMail",opt);
 							if(n==-1)
                                 break;
 							if(!n && !(cfg.sub[i]->misc&SUB_FIDO)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_FIDO;
 								break; }
 							if(n==1 && cfg.sub[i]->misc&SUB_FIDO) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_FIDO; }
                             break;
 						case 8:
@@ -1042,7 +1042,7 @@ option to Yes.
 If this sub-board is part of a FidoNet EchoMail conference, this is
 the address used for this sub-board. Format: Zone:Net/Node[.Point]
 */
-							uinput(WIN_MID|WIN_SAV,0,0,"FidoNet Address"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"FidoNet Address"
 								,str,20,K_EDIT);
 							cfg.sub[i]->faddr=atofaddr(str);
 							break;
@@ -1057,7 +1057,7 @@ want to use an origin line other than the default origin line in the
 
 If this option is blank, the default origin line is used.
 */
-							uinput(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->origline
+							uifc.input(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->origline
 								,50,K_EDIT);
                             break;
 						case 10:
@@ -1069,7 +1069,7 @@ This is a filename that will be used as a semaphore (signal) to your
 FidoNet front-end that new EchoMail has been created and the messages
 should be re-scanned.
 */
-							uinput(WIN_MID|WIN_SAV,0,17,"EchoMail Semaphore"
+							uifc.input(WIN_MID|WIN_SAV,0,17,"EchoMail Semaphore"
 								,cfg.sub[i]->echomail_sem,50,K_EDIT);
 							break; } }
 				break;
@@ -1092,7 +1092,7 @@ should be re-scanned.
 						strcpy(str,cfg.sub[i]->data_dir);
 					sprintf(opt[n++],"%-27.27s%.40s","Storage Directory",str);
 					opt[n][0]=0;
-					savnum=2;
+					uifc.savnum=2;
 					SETHELP(WHERE);
 /*
 Sub-board Advanced Options:
@@ -1100,11 +1100,11 @@ should be re-scanned.
 This menu contains options for the selected sub-board that are advanced
 in nature.
 */
-					n=ulist(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,60,&adv_dflt,0
+					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,60,&adv_dflt,0
 						,"Advanced Options",opt);
 					if(n==-1)
 						break;
-					savnum=3;
+					uifc.savnum=3;
                     switch(n) {
                         case 0:
 							SETHELP(WHERE);
@@ -1123,7 +1123,7 @@ by entering the conference number you want to use.
 								sprintf(str,"%u",cfg.sub[i]->qwkconf);
 							else
 								str[0]=0;
-							if(uinput(WIN_MID|WIN_SAV,0,17
+							if(uifc.input(WIN_MID|WIN_SAV,0,17
 								,"QWK Conference Number (0=Dynamic)"
 								,str,5,K_EDIT|K_NUMBER)>=0)
 								cfg.sub[i]->qwkconf=atoi(str);
@@ -1154,12 +1154,12 @@ by entering the conference number you want to use.
   the message base data files in your DATA\DIRS\SUBS directory for this
   sub-board. You must use SMBUTIL P as with the fast allocation method.
 */
-							n=ulist(WIN_SAV|WIN_MID,0,0,0,&n,0
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Storage Method",opt);
 							if(n==-1)
 								break;
 							if(!n && !(cfg.sub[i]->misc&SUB_HYPER)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_HYPER;
 								cfg.sub[i]->misc&=~SUB_FAST;
 								cfg.sub[i]->misc|=SUB_HDRMOD;
@@ -1171,7 +1171,7 @@ by entering the conference number you want to use.
 								strcpy(opt[1],"No, I want to use Hyper Allocation");
 								opt[2][0]=0;
 								m=0;
-								if(ulist(WIN_SAV|WIN_MID,0,0,0,&m,0
+								if(uifc.list(WIN_SAV|WIN_MID,0,0,0,&m,0
 									,"Delete all messages in this sub-board?",opt)!=0)
 									break;
 								if(cfg.sub[i]->data_dir[0])
@@ -1184,12 +1184,12 @@ by entering the conference number you want to use.
 							if(cfg.sub[i]->misc&SUB_HYPER)
 								cfg.sub[i]->misc|=SUB_HDRMOD;
 							if(n==1 && !(cfg.sub[i]->misc&SUB_FAST)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_FAST;
 								cfg.sub[i]->misc&=~SUB_HYPER;
 								break; }
 							if(n==2 && cfg.sub[i]->misc&(SUB_FAST|SUB_HYPER)) {
-								changes=1;
+								uifc.changes=1;
 								cfg.sub[i]->misc&=~(SUB_FAST|SUB_HYPER);
 								break; }
 							break;
@@ -1201,7 +1201,7 @@ by entering the conference number you want to use.
 Use this if you wish to place the data directory for this sub-board on
 another drive or in another directory besides the default setting.
 */
-							uinput(WIN_MID|WIN_SAV,0,17,"Directory"
+							uifc.input(WIN_MID|WIN_SAV,0,17,"Directory"
 								,cfg.sub[i]->data_dir,50,K_EDIT);
 							break; } }
 				break;
