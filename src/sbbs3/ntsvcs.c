@@ -56,42 +56,13 @@
 	#define	NO_SERVICES
 #endif
 
-#define SBBS_NTSVC_BBS_NAME		"SynchronetBBS"
-#define SBBS_NTSVC_BBS_DISP		"Synchronet Telnet/RLogin Server"
-#define SBBS_NTSVC_BBS_DESC		"Provides support for Telnet and RLogin clients and executes timed events. " \
-								"This service provides the critical functions of your Synchronet BBS."
+static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode);
+static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode);
+static void WINAPI web_ctrl_handler(DWORD dwCtrlCode);
+static void WINAPI mail_ctrl_handler(DWORD dwCtrlCode);
+static void WINAPI services_ctrl_handler(DWORD dwCtrlCode);
 
-#define SBBS_NTSVC_FTP_NAME		"SynchronetFTP"
-#define SBBS_NTSVC_FTP_DISP		"Synchronet FTP Server"
-#define SBBS_NTSVC_FTP_DESC		"Provides support for FTP clients (including web browsers) for file transfers."
-
-#define SBBS_NTSVC_WEB_NAME		"SynchronetWeb"
-#define SBBS_NTSVC_WEB_DISP		"Synchronet Web Server"
-#define SBBS_NTSVC_WEB_DESC		"Provides support for Web (HTML/HTTP) clients (browsers)."
-
-#define SBBS_NTSVC_MAIL_NAME	"SynchronetMail"
-#define SBBS_NTSVC_MAIL_DISP	"Synchronet SMTP/POP3 Mail Server"
-#define SBBS_NTSVC_MAIL_DESC	"Sends and receives Internet e-mail (using SMTP) and allows users to remotely " \
-								"access their e-mail using an Internet mail client (using POP3)."
-
-#define SBBS_NTSVC_SERV_NAME	"SynchronetServices"
-#define SBBS_NTSVC_SERV_DISP	"Synchronet Services"
-#define SBBS_NTSVC_SERV_DESC	"Plugin servers (usually in JavaScript) for any TCP/UDP protocol. " \
-								"Stock services include Finger, Gopher, NNTP, and IRC. Edit your ctrl/services.ini " \
-								"file for configuration of individual Synchronet Services."
-							
 /* Global variables */
-
-SERVICE_STATUS			bbs_status;
-SERVICE_STATUS_HANDLE	bbs_status_handle;
-SERVICE_STATUS			ftp_status;
-SERVICE_STATUS_HANDLE	ftp_status_handle;
-SERVICE_STATUS			web_status;
-SERVICE_STATUS_HANDLE	web_status_handle;
-SERVICE_STATUS			mail_status;
-SERVICE_STATUS_HANDLE	mail_status_handle;
-SERVICE_STATUS			services_status;
-SERVICE_STATUS_HANDLE	services_status_handle;
 
 bbs_startup_t		bbs_startup;
 ftp_startup_t		ftp_startup;
@@ -99,8 +70,83 @@ mail_startup_t		mail_startup;
 services_startup_t	services_startup;
 web_startup_t		web_startup;
 
-#ifdef _WINSOCKAPI_
+typedef struct {
+	char*					name;
+	char*					display_name;
+	char*					description;
+	void*					startup;
+	void					(*thread)(void* arg);
+	void					(WINAPI *ctrl_handler)(DWORD);
+	SERVICE_STATUS			status;
+	SERVICE_STATUS_HANDLE	status_handle;
+} sbbs_ntsvc_t;
 
+sbbs_ntsvc_t bbs ={	
+	"SynchronetBBS",
+	"Synchronet Telnet/RLogin Server",
+	"Provides support for Telnet and RLogin clients and executes timed events. " \
+		"This service provides the critical functions of your Synchronet BBS.",
+	&bbs_startup,
+	bbs_thread,
+	bbs_ctrl_handler
+};
+
+sbbs_ntsvc_t ftp = {
+	"SynchronetFTP",
+	"Synchronet FTP Server",
+	"Provides support for FTP clients (including web browsers) for file transfers.",
+	&ftp_startup,
+	ftp_server,
+	ftp_ctrl_handler
+};
+
+#if !defined(NO_WEB_SERVER)
+sbbs_ntsvc_t web = {
+	"SynchronetWeb",
+	"Synchronet Web Server",
+	"Provides support for Web (HTML/HTTP) clients (browsers).",
+	&web_startup,
+	web_server,
+	web_ctrl_handler
+};
+#endif
+
+sbbs_ntsvc_t mail = {
+	"SynchronetMail",
+	"Synchronet SMTP/POP3 Mail Server",
+	"Sends and receives Internet e-mail (using SMTP) and allows users to remotely " \
+		"access their e-mail using an Internet mail client (using POP3).",
+	&mail_startup,
+	mail_server,
+	mail_ctrl_handler
+};
+
+#if !defined(NO_SERVICES)
+sbbs_ntsvc_t services = {
+	"SynchronetServices",
+	"Synchronet Services",
+	"Plugin servers (usually in JavaScript) for any TCP/UDP protocol. " \
+		"Stock services include Finger, Gopher, NNTP, and IRC. Edit your ctrl/services.ini " \
+		"file for configuration of individual Synchronet Services.",
+	&services_startup,
+	services_thread,
+	services_ctrl_handler
+};
+#endif
+
+sbbs_ntsvc_t* ntsvc_list[] = {
+	&bbs,
+	&ftp,
+#if !defined(NO_WEB_SERVER)
+	&web,
+#endif
+	&mail,
+#if !defined(NO_SERVICES)
+	&services,
+#endif
+	NULL
+};
+							
 static WSADATA WSAData;
 
 static BOOL winsock_startup(void)
@@ -123,17 +169,76 @@ static BOOL winsock_cleanup(void)
 	return(FALSE);
 }
 
-#else /* No WINSOCK */
+/* Service Control Handlers (Callbacks) */
 
-#define winsock_startup()	(TRUE)	
-#define winsock_cleanup()	(TRUE)
+static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode)
+{
+	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_STOP:
+		case SERVICE_CONTROL_SHUTDOWN:
+			bbs_terminate();
+			bbs.status.dwCurrentState=SERVICE_STOP_PENDING;
+			break;
+	}
+	SetServiceStatus(bbs.status_handle, &bbs.status);
+}
 
+static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
+{
+	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_STOP:
+		case SERVICE_CONTROL_SHUTDOWN:
+			ftp_terminate();
+			ftp.status.dwCurrentState=SERVICE_STOP_PENDING;
+			break;
+	}
+	SetServiceStatus(ftp.status_handle, &ftp.status);
+}
+
+#if !defined(NO_WEB_SERVER)
+static void WINAPI web_ctrl_handler(DWORD dwCtrlCode)
+{
+	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_STOP:
+		case SERVICE_CONTROL_SHUTDOWN:
+			web_terminate();
+			web.status.dwCurrentState=SERVICE_STOP_PENDING;
+			break;
+	}
+	SetServiceStatus(web.status_handle, &web.status);
+}
+#endif
+
+static void WINAPI mail_ctrl_handler(DWORD dwCtrlCode)
+{
+	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_STOP:
+		case SERVICE_CONTROL_SHUTDOWN:
+			mail_terminate();
+			mail.status.dwCurrentState=SERVICE_STOP_PENDING;
+			break;
+	}
+	SetServiceStatus(mail.status_handle, &mail.status);
+}
+
+#if !defined(NO_SERVICES)
+static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
+{
+	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_STOP:
+		case SERVICE_CONTROL_SHUTDOWN:
+			services_terminate();
+			services.status.dwCurrentState=SERVICE_STOP_PENDING;
+			break;
+	}
+	SetServiceStatus(services.status_handle, &services.status);
+}
 #endif
 
 /****************************************************************************/
 /* BBS local/log print routine												*/
 /****************************************************************************/
-static int bbs_lputs(char *str)
+static int svc_lputs(void* p, char* str)
 {
     return(0);
 }
@@ -146,285 +251,80 @@ static int event_lputs(char *str)
     return 0;
 }
 
-static void bbs_started(void)
+/************************************/
+/* Shared Service Callback Routines */
+/************************************/
+static void svc_started(void* p)
 {
-	bbs_status.dwCurrentState=SERVICE_RUNNING;
-	bbs_status.dwControlsAccepted=SERVICE_ACCEPT_STOP;
-	SetServiceStatus(bbs_status_handle, &bbs_status);
+	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
+
+	svc->status.dwCurrentState=SERVICE_RUNNING;
+	svc->status.dwControlsAccepted=SERVICE_ACCEPT_STOP;
+	SetServiceStatus(svc->status_handle, &svc->status);
 }
 
-static void bbs_terminated(int code)
+static void svc_terminated(void* p, int code)
 {
+	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
+
 	if(code) {
-		bbs_status.dwWin32ExitCode=ERROR_SERVICE_SPECIFIC_ERROR;
-		bbs_status.dwServiceSpecificExitCode=code;
-		SetServiceStatus(bbs_status_handle, &bbs_status);
+		svc->status.dwWin32ExitCode=ERROR_SERVICE_SPECIFIC_ERROR;
+		svc->status.dwServiceSpecificExitCode=code;
+		SetServiceStatus(svc->status_handle, &svc->status);
 	}
 }
 
-static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode)
+/* Generic ServiceMain function */
+static void WINAPI svc_start(sbbs_ntsvc_t* svc)
 {
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			bbs_terminate();
-			bbs_status.dwCurrentState=SERVICE_STOP_PENDING;
-			break;
+    if((svc->status_handle = RegisterServiceCtrlHandler(svc->name, svc->ctrl_handler))==0) {
+		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
+		return;
 	}
-	SetServiceStatus(bbs_status_handle, &bbs_status);
+
+	memset(&svc->status,0,sizeof(SERVICE_STATUS));
+	svc->status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
+	svc->status.dwWaitHint=30000;	/* milliseconds */
+
+	svc->status.dwCurrentState=SERVICE_START_PENDING;
+	SetServiceStatus(svc->status_handle, &svc->status);
+
+	svc->thread(&svc->startup);
+
+	svc->status.dwCurrentState=SERVICE_STOPPED;
+	SetServiceStatus(svc->status_handle, &svc->status);
 }
+
+/* These are the actual ServiceMain stub functions */
 
 static void WINAPI bbs_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-    if((bbs_status_handle = RegisterServiceCtrlHandler(SBBS_NTSVC_BBS_NAME, bbs_ctrl_handler))==0) {
-		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
-		return;
-	}
-
-	memset(&bbs_status,0,sizeof(bbs_status));
-	bbs_status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
-	bbs_status.dwWaitHint=30000;	/* milliseconds */
-
-	bbs_status.dwCurrentState=SERVICE_START_PENDING;
-	SetServiceStatus(bbs_status_handle, &bbs_status);
-
-	bbs_thread(&bbs_startup);
-
-	bbs_status.dwCurrentState=SERVICE_STOPPED;
-	SetServiceStatus(bbs_status_handle, &bbs_status);
+	svc_start(&bbs);
 }
 
-
-/****************************************************************************/
-/* FTP local/log print routine												*/
-/****************************************************************************/
-static int ftp_lputs(char *str)
+static void WINAPI ftp_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	return 0;
+	svc_start(&ftp);
 }
-
-static void ftp_started(void)
-{
-	ftp_status.dwCurrentState=SERVICE_RUNNING;
-	ftp_status.dwControlsAccepted=SERVICE_ACCEPT_STOP;
-	SetServiceStatus(ftp_status_handle, &ftp_status);
-}
-
-static void ftp_terminated(int code)
-{
-	if(code) {
-		ftp_status.dwWin32ExitCode=ERROR_SERVICE_SPECIFIC_ERROR;
-		ftp_status.dwServiceSpecificExitCode=code;
-		SetServiceStatus(ftp_status_handle, &ftp_status);
-	}
-}
-
-static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
-{
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			ftp_terminate();
-			ftp_status.dwCurrentState=SERVICE_STOP_PENDING;
-			break;
-	}
-	SetServiceStatus(ftp_status_handle, &ftp_status);
-}
-
-static void WINAPI
-ftp_start(DWORD dwArgc, LPTSTR *lpszArgv)
-{
-    if((ftp_status_handle = RegisterServiceCtrlHandler(SBBS_NTSVC_FTP_NAME, ftp_ctrl_handler))==0) {
-		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
-		return;
-	}
-
-	memset(&ftp_status,0,sizeof(ftp_status));
-	ftp_status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
-	ftp_status.dwWaitHint=30000;	/* milliseconds */
-
-	ftp_status.dwCurrentState=SERVICE_START_PENDING;
-	SetServiceStatus(ftp_status_handle, &ftp_status);
-
-	ftp_server(&ftp_startup);
-
-	ftp_status.dwCurrentState=SERVICE_STOPPED;
-	SetServiceStatus(ftp_status_handle, &ftp_status);
-}
-
-/****************************************************************************/
-/* Web local/log print routine												*/
-/****************************************************************************/
-static int web_lputs(char *str)
-{
-    return 0;
-}
-
-static void web_started(void)
-{
-	web_status.dwCurrentState=SERVICE_RUNNING;
-	web_status.dwControlsAccepted=SERVICE_ACCEPT_STOP;
-	SetServiceStatus(web_status_handle, &web_status);
-}
-
-static void web_terminated(int code)
-{
-	if(code) {
-		web_status.dwWin32ExitCode=ERROR_SERVICE_SPECIFIC_ERROR;
-		web_status.dwServiceSpecificExitCode=code;
-		SetServiceStatus(web_status_handle, &web_status);
-	}
-}
-
-static void WINAPI web_ctrl_handler(DWORD dwCtrlCode)
-{
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			web_terminate();
-			web_status.dwCurrentState=SERVICE_STOP_PENDING;
-			break;
-	}
-	SetServiceStatus(web_status_handle, &web_status);
-}
-
-static void WINAPI
-web_start(DWORD dwArgc, LPTSTR *lpszArgv)
-{
-    if((web_status_handle = RegisterServiceCtrlHandler(SBBS_NTSVC_WEB_NAME, web_ctrl_handler))==0) {
-		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
-		return;
-	}
-
-	memset(&web_status,0,sizeof(web_status));
-	web_status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
-	web_status.dwWaitHint=30000;	/* milliseconds */
-
-	web_status.dwCurrentState=SERVICE_START_PENDING;
-	SetServiceStatus(web_status_handle, &web_status);
 
 #if !defined(NO_WEB_SERVER)
-	web_server(&web_startup);
+static void WINAPI web_start(DWORD dwArgc, LPTSTR *lpszArgv)
+{
+	svc_start(&web);
+}
 #endif
 
-	web_status.dwCurrentState=SERVICE_STOPPED;
-	SetServiceStatus(web_status_handle, &web_status);
-}
-
-/****************************************************************************/
-/* Mail Server local/log print routine										*/
-/****************************************************************************/
-static int mail_lputs(char *str)
+static void WINAPI mail_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	return 0;
+	svc_start(&mail);
 }
 
-static void mail_started(void)
+#if !defined(NO_SERVICES)
+static void WINAPI services_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	mail_status.dwCurrentState=SERVICE_RUNNING;
-	mail_status.dwControlsAccepted=SERVICE_ACCEPT_STOP;
-	SetServiceStatus(mail_status_handle, &mail_status);
+	svc_start(&services);
 }
-
-static void mail_terminated(int code)
-{
-	if(code) {
-		mail_status.dwWin32ExitCode=ERROR_SERVICE_SPECIFIC_ERROR;
-		mail_status.dwServiceSpecificExitCode=code;
-		SetServiceStatus(mail_status_handle, &mail_status);
-	}
-}
-
-static void WINAPI mail_ctrl_handler(DWORD dwCtrlCode)
-{
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			mail_terminate();
-			mail_status.dwCurrentState=SERVICE_STOP_PENDING;
-			break;
-	}
-	SetServiceStatus(mail_status_handle, &mail_status);
-}
-
-static void WINAPI
-mail_start(DWORD dwArgc, LPTSTR *lpszArgv)
-{
-    if((mail_status_handle = RegisterServiceCtrlHandler(SBBS_NTSVC_MAIL_NAME, mail_ctrl_handler))==0) {
-		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
-		return;
-	}
-
-	memset(&mail_status,0,sizeof(mail_status));
-	mail_status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
-	mail_status.dwWaitHint=30000;	/* milliseconds */
-
-	mail_status.dwCurrentState=SERVICE_START_PENDING;
-	SetServiceStatus(mail_status_handle, &mail_status);
-
-	mail_server(&mail_startup);
-
-	mail_status.dwCurrentState=SERVICE_STOPPED;
-	SetServiceStatus(mail_status_handle, &mail_status);
-}
-
-
-/****************************************************************************/
-/* Services local/log print routine											*/
-/****************************************************************************/
-static int services_lputs(char *str)
-{
-	return 0;
-}
-
-static void services_started(void)
-{
-	services_status.dwCurrentState=SERVICE_RUNNING;
-	services_status.dwControlsAccepted=SERVICE_ACCEPT_STOP;
-	SetServiceStatus(services_status_handle, &services_status);
-}
-
-static void services_terminated(int code)
-{
-	if(code) {
-		services_status.dwWin32ExitCode=ERROR_SERVICE_SPECIFIC_ERROR;
-		services_status.dwServiceSpecificExitCode=code;
-		SetServiceStatus(services_status_handle, &services_status);
-	}
-}
-
-static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
-{
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			services_terminate();
-			services_status.dwCurrentState=SERVICE_STOP_PENDING;
-			break;
-	}
-	SetServiceStatus(services_status_handle, &services_status);
-}
-
-static void WINAPI 
-services_start(DWORD dwArgc, LPTSTR *lpszArgv)
-{
-    if((services_status_handle = RegisterServiceCtrlHandler(SBBS_NTSVC_SERV_NAME, services_ctrl_handler))==0) {
-		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
-		return;
-	}
-
-	memset(&services_status,0,sizeof(services_status));
-	services_status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
-	services_status.dwWaitHint=30000;	/* milliseconds */
-
-	services_status.dwCurrentState=SERVICE_START_PENDING;
-	SetServiceStatus(services_status_handle, &services_status);
-
-	services_thread(&services_startup);
-
-	services_status.dwCurrentState=SERVICE_STOPPED;
-	SetServiceStatus(services_status_handle, &services_status);
-}
+#endif
 
 /******************************************/
 /* NT Serivce Install/Uninstall Functions */
@@ -483,6 +383,7 @@ static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 
 static int install(void)
 {
+	int			i;
 	HANDLE		hSCMlib;
     SC_HANDLE   hSCManager;
     char		path[MAX_PATH+1];
@@ -507,13 +408,13 @@ static int install(void)
 		return(-1);
 	}
 
-	create_service(hSCMlib, hSCManager, SBBS_NTSVC_BBS_NAME,	SBBS_NTSVC_BBS_DISP,	SBBS_NTSVC_BBS_DESC, path);
-	create_service(hSCMlib, hSCManager, SBBS_NTSVC_FTP_NAME,	SBBS_NTSVC_FTP_DISP,	SBBS_NTSVC_FTP_DESC, path);
-#if !defined(NO_WEB_SERVER)
-	create_service(hSCMlib, hSCManager, SBBS_NTSVC_WEB_NAME,	SBBS_NTSVC_WEB_DISP,	SBBS_NTSVC_WEB_DESC, path);
-#endif
-	create_service(hSCMlib, hSCManager, SBBS_NTSVC_MAIL_NAME,	SBBS_NTSVC_MAIL_DISP,	SBBS_NTSVC_MAIL_DESC, path);
-	create_service(hSCMlib, hSCManager, SBBS_NTSVC_SERV_NAME,	SBBS_NTSVC_SERV_DISP,	SBBS_NTSVC_SERV_DESC, path);
+	for(i=0;ntsvc_list[i]!=NULL;i++)
+		create_service(hSCMlib
+			,hSCManager
+			,ntsvc_list[i]->name
+			,ntsvc_list[i]->display_name
+			,ntsvc_list[i]->description
+			,path);
 
 	if(hSCMlib!=NULL)
 		FreeLibrary(hSCMlib);
@@ -562,6 +463,7 @@ static void remove_service(SC_HANDLE hSCManager, char* name, char* DISP_name)
 
 static int uninstall(void)
 {
+	int			i;
     SC_HANDLE   hSCManager;
 
     hSCManager = OpenSCManager(
@@ -574,13 +476,10 @@ static int uninstall(void)
 		return(-1);
 	}
 
-	remove_service(hSCManager, SBBS_NTSVC_BBS_NAME,		SBBS_NTSVC_BBS_DISP);
-	remove_service(hSCManager, SBBS_NTSVC_FTP_NAME,		SBBS_NTSVC_FTP_DISP);
-#if !defined(NO_WEB_SERVER)
-	remove_service(hSCManager, SBBS_NTSVC_WEB_NAME,		SBBS_NTSVC_WEB_DISP);
-#endif
-	remove_service(hSCManager, SBBS_NTSVC_MAIL_NAME,	SBBS_NTSVC_MAIL_DISP);
-	remove_service(hSCManager, SBBS_NTSVC_SERV_NAME,	SBBS_NTSVC_SERV_DISP);
+	for(i=0;ntsvc_list[i]!=NULL;i++)
+		remove_service(hSCManager
+			,ntsvc_list[i]->name
+			,ntsvc_list[i]->display_name);
 
 	CloseServiceHandle(hSCManager);
 
@@ -601,14 +500,16 @@ int main(int argc, char** argv)
 
 	SERVICE_TABLE_ENTRY  ServiceDispatchTable[] = 
     { 
-        { SBBS_NTSVC_BBS_NAME,	bbs_start		}, 
-		{ SBBS_NTSVC_FTP_NAME,	ftp_start		},
+        { bbs.name,			bbs_start		}, 
+		{ ftp.name,			ftp_start		},
 #if !defined(NO_WEB_SERVER)
-		{ SBBS_NTSVC_WEB_NAME,	web_start		},
+		{ web.name,			web_start		},
 #endif
-		{ SBBS_NTSVC_MAIL_NAME,	mail_start		},
-		{ SBBS_NTSVC_SERV_NAME,	services_start	},
-        { NULL,					NULL			}	/* Terminator */
+		{ mail.name,		mail_start		},
+#if !defined(NO_SERVICES)
+		{ services.name,	services_start	},
+#endif
+        { NULL,				NULL			}	/* Terminator */
     }; 
 
 	printf("\nSynchronet NT Services  Version %s%c  %s\n\n"
@@ -645,49 +546,57 @@ int main(int argc, char** argv)
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
-
-	bbs_startup.lputs=bbs_lputs;
+	bbs_startup.private_data=&bbs;
+	bbs_startup.lputs=svc_lputs;
 	bbs_startup.event_log=event_lputs;
-    bbs_startup.started=bbs_started;
-    bbs_startup.terminated=bbs_terminated;
+    bbs_startup.started=svc_started;
+    bbs_startup.terminated=svc_terminated;
     strcpy(bbs_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize FTP startup structure */
     memset(&ftp_startup,0,sizeof(ftp_startup));
+	ftp_startup.private_data=&ftp;
     ftp_startup.size=sizeof(ftp_startup);
-	ftp_startup.lputs=ftp_lputs;
-    ftp_startup.started=ftp_started;
-    ftp_startup.terminated=ftp_terminated;
+	ftp_startup.lputs=svc_lputs;
+    ftp_startup.started=svc_started;
+    ftp_startup.terminated=svc_terminated;
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
 
+#if !defined(NO_WEB_SERVER)
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
+	web_startup.private_data=&web;
     web_startup.size=sizeof(web_startup);
-	web_startup.lputs=web_lputs;
-    web_startup.started=web_started;
-    web_startup.terminated=web_terminated;
+	web_startup.lputs=svc_lputs;
+    web_startup.started=svc_started;
+    web_startup.terminated=svc_terminated;
     strcpy(web_startup.ctrl_dir,ctrl_dir);
+#endif
 
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
+	mail_startup.private_data=&mail;
     mail_startup.size=sizeof(mail_startup);
-	mail_startup.lputs=mail_lputs;
-    mail_startup.started=mail_started;
-    mail_startup.terminated=mail_terminated;
+	mail_startup.lputs=svc_lputs;
+    mail_startup.started=svc_started;
+    mail_startup.terminated=svc_terminated;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
+#if !defined(NO_SERVICES)
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
+	services_startup.private_data=&services;
     services_startup.size=sizeof(services_startup);
-	services_startup.lputs=services_lputs;
-    services_startup.started=services_started;
-    services_startup.terminated=services_terminated;
+	services_startup.lputs=svc_lputs;
+    services_startup.started=svc_started;
+    services_startup.terminated=svc_terminated;
     strcpy(services_startup.ctrl_dir,ctrl_dir);
+#endif
 
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
 		sprintf(str,"Reading %s",ini_file);
-		bbs_lputs(str);
+		svc_lputs(&bbs, str);
 	}
 
 	/* We call this function to set defaults, even if there's no .ini file */

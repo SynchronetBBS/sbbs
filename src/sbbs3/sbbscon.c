@@ -334,7 +334,7 @@ static BOOL winsock_cleanup(void)
 
 #endif
 
-static void thread_up(BOOL up, BOOL setuid)
+static void thread_up(void* p, BOOL up, BOOL setuid)
 {
    	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
@@ -360,7 +360,7 @@ static void thread_up(BOOL up, BOOL setuid)
 	lputs(NULL); /* update displayed stats */
 }
 
-static void socket_open(BOOL open)
+static void socket_open(void* p, BOOL open)
 {
    	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
@@ -379,7 +379,7 @@ static void socket_open(BOOL open)
 	lputs(NULL); /* update displayed stats */
 }
 
-static void client_on(BOOL on, int sock, client_t* client, BOOL update)
+static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 {
    	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
@@ -402,7 +402,7 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 /****************************************************************************/
 /* BBS local/log print routine												*/
 /****************************************************************************/
-static int bbs_lputs(char *str)
+static int bbs_lputs(void* p, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -436,7 +436,7 @@ static int bbs_lputs(char *str)
     return(strlen(logline)+1);
 }
 
-static void bbs_started(void)
+static void bbs_started(void* p)
 {
 	bbs_running=TRUE;
 	bbs_stopped=FALSE;
@@ -446,7 +446,7 @@ static void bbs_started(void)
 	#endif
 }
 
-static void bbs_terminated(int code)
+static void bbs_terminated(void* p, int code)
 {
 	bbs_running=FALSE;
 	bbs_stopped=TRUE;
@@ -455,7 +455,7 @@ static void bbs_terminated(int code)
 /****************************************************************************/
 /* FTP local/log print routine												*/
 /****************************************************************************/
-static int ftp_lputs(char *str)
+static int ftp_lputs(void* p, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -493,7 +493,7 @@ static int ftp_lputs(char *str)
     return(strlen(logline)+1);
 }
 
-static void ftp_started(void)
+static void ftp_started(void* p)
 {
 	ftp_running=TRUE;
 	ftp_stopped=FALSE;
@@ -503,7 +503,7 @@ static void ftp_started(void)
 	#endif
 }
 
-static void ftp_terminated(int code)
+static void ftp_terminated(void* p, int code)
 {
 	ftp_running=FALSE;
 	ftp_stopped=TRUE;
@@ -512,7 +512,7 @@ static void ftp_terminated(int code)
 /****************************************************************************/
 /* Mail Server local/log print routine										*/
 /****************************************************************************/
-static int mail_lputs(char *str)
+static int mail_lputs(void* p, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -546,7 +546,7 @@ static int mail_lputs(char *str)
     return(strlen(logline)+1);
 }
 
-static void mail_started(void)
+static void mail_started(void* p)
 {
 	mail_running=TRUE;
 	mail_stopped=FALSE;
@@ -556,7 +556,7 @@ static void mail_started(void)
 	#endif
 }
 
-static void mail_terminated(int code)
+static void mail_terminated(void* p, int code)
 {
 	mail_running=FALSE;
 	mail_stopped=TRUE;
@@ -565,7 +565,7 @@ static void mail_terminated(int code)
 /****************************************************************************/
 /* Services local/log print routine											*/
 /****************************************************************************/
-static int services_lputs(char *str)
+static int services_lputs(void* p, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -599,7 +599,7 @@ static int services_lputs(char *str)
     return(strlen(logline)+1);
 }
 
-static void services_started(void)
+static void services_started(void* p)
 {
 	services_running=TRUE;
 	services_stopped=FALSE;
@@ -609,7 +609,7 @@ static void services_started(void)
 	#endif
 }
 
-static void services_terminated(int code)
+static void services_terminated(void* p, int code)
 {
 	services_running=FALSE;
 	services_stopped=TRUE;
@@ -655,7 +655,7 @@ static int event_lputs(char *str)
 /****************************************************************************/
 /* web local/log print routine											*/
 /****************************************************************************/
-static int web_lputs(char *str)
+static int web_lputs(void* p, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -689,7 +689,7 @@ static int web_lputs(char *str)
     return(strlen(logline)+1);
 }
 
-static void web_started(void)
+static void web_started(void* p)
 {
 	web_running=TRUE;
 	web_stopped=FALSE;
@@ -699,7 +699,7 @@ static void web_started(void)
 	#endif
 }
 
-static void web_terminated(int code)
+static void web_terminated(void* p, int code)
 {
 	web_running=FALSE;
 	web_stopped=TRUE;
@@ -722,15 +722,15 @@ static void terminate(void)
 	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
 		if(count && (count%10)==0) {
 			if(bbs_running)
-				bbs_lputs("BBS System thread still running");
+				bbs_lputs(NULL,"BBS System thread still running");
 			if(ftp_running)
-				ftp_lputs("FTP Server thread still running");
+				ftp_lputs(NULL,"FTP Server thread still running");
 			if(web_running)
-				web_lputs("Web Server thread still running");
+				web_lputs(NULL,"Web Server thread still running");
 			if(mail_running)
-				mail_lputs("Mail Server thread still running");
+				mail_lputs(NULL,"Mail Server thread still running");
 			if(services_running)
-				services_lputs("Services thread still running");
+				services_lputs(NULL,"Services thread still running");
 		}
 		count++;
 		SLEEP(1000);
@@ -1076,7 +1076,7 @@ int main(int argc, char** argv)
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
 		sprintf(str,"Reading %s",ini_file);
-		bbs_lputs(str);
+		bbs_lputs(NULL,str);
 	}
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
@@ -1462,7 +1462,7 @@ int main(int argc, char** argv)
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
-	bbs_lputs(str);
+	bbs_lputs(NULL,str);
 	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
 		fprintf(stderr,"\n!ERROR Loading Configuration Files: %s\n", error);
         return(-1);

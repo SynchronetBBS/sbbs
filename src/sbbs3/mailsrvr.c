@@ -125,7 +125,7 @@ static int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(startup->lputs(sbuf));
+    return(startup->lputs(startup->cbdata,sbuf));
 }
 
 #ifdef _WINSOCKAPI_
@@ -162,7 +162,7 @@ static void update_clients(void)
 			return;
 		}
 #endif
-		startup->clients(active_clients+active_sendmail);
+		startup->clients(startup->cbdata,active_clients+active_sendmail);
 	}
 }
 
@@ -175,7 +175,7 @@ static void client_on(SOCKET sock, client_t* client, BOOL update)
 			return;
 		}
 #endif
-		startup->client_on(TRUE,sock,client,update);
+		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 	}
 }
 
@@ -188,7 +188,7 @@ static void client_off(SOCKET sock)
 			return;
 		}
 #endif
-		startup->client_on(FALSE,sock,NULL,FALSE);
+		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 	}
 }
 
@@ -196,7 +196,7 @@ static void thread_up(BOOL setuid)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(TRUE,setuid);
+		startup->thread_up(startup->cbdata,TRUE,setuid);
 }
 
 static void thread_down(void)
@@ -210,7 +210,7 @@ static void thread_down(void)
 			return;
 		}
 #endif
-		startup->thread_up(FALSE,FALSE);
+		startup->thread_up(startup->cbdata,FALSE,FALSE);
 	}
 }
 
@@ -221,7 +221,7 @@ SOCKET mail_open_socket(int type)
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(TRUE);
+		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
 		if(set_socket_options(&scfg, sock,error))
 			lprintf("%04d !ERROR %s",sock,error);
@@ -250,7 +250,7 @@ int mail_close_socket(SOCKET sock)
 			return(-1);
 		}
 #endif
-		startup->socket_open(FALSE);
+		startup->socket_open(startup->cbdata,FALSE);
 	}
 	sockets--;
 	if(result!=0) {
@@ -274,7 +274,7 @@ static void status(char* str)
 			return;
 		}
 #endif
-	    startup->status(str);
+	    startup->status(startup->cbdata,str);
 	}
 }
 
@@ -3420,7 +3420,7 @@ static void cleanup(int code)
     lprintf("#### Mail Server thread terminated (%u threads remain, %lu clients served)"
 		,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
-		startup->terminated(code);
+		startup->terminated(startup->cbdata,code);
 }
 
 const char* DLLCALL mail_ver(void)
@@ -3693,7 +3693,7 @@ void DLLCALL mail_server(void* arg)
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
-    		startup->started();
+    		startup->started(startup->cbdata);
 
 		while(server_socket!=INVALID_SOCKET) {
 
@@ -3754,7 +3754,7 @@ void DLLCALL mail_server(void* arg)
 					break;
 				}
 				if(startup->socket_open!=NULL)
-					startup->socket_open(TRUE);
+					startup->socket_open(startup->cbdata,TRUE);
 				sockets++;
 
 				if(trashcan(&scfg,inet_ntoa(client_addr.sin_addr),"ip-silent")) {
@@ -3809,7 +3809,7 @@ void DLLCALL mail_server(void* arg)
 					break;
 				}
 				if(startup->socket_open!=NULL)
-					startup->socket_open(TRUE);
+					startup->socket_open(startup->cbdata,TRUE);
 				sockets++;
 
 				if(trashcan(&scfg,inet_ntoa(client_addr.sin_addr),"ip-silent")) {

@@ -85,7 +85,7 @@ TMainForm *MainForm;
 DWORD	MaxLogLen=20000;
 int     threads=1;
 
-static void thread_up(BOOL up, BOOL setuid)
+static void thread_up(void* p, BOOL up, BOOL setuid)
 {
 	char str[128];
 	static HANDLE mutex;
@@ -106,7 +106,7 @@ static void thread_up(BOOL up, BOOL setuid)
 
 int sockets=0;
 
-void socket_open(BOOL open)
+void socket_open(void* p, BOOL open)
 {
 	char 	str[128];
 	static HANDLE mutex;
@@ -128,7 +128,7 @@ void socket_open(BOOL open)
 int clients=0;
 int total_clients=0;
 
-static void client_add(BOOL add)
+static void client_add(void* p, BOOL add)
 {
 	char 	str[128];
 
@@ -148,7 +148,7 @@ static void client_add(BOOL add)
 		MainForm->StatusBar->Panels->Items[3]->Text=Str;
 }
 
-static void client_on(BOOL on, int sock, client_t* client, BOOL update)
+static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 {
     char    str[128];
     int     i,j;
@@ -177,9 +177,9 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 
     if(on) {
 	    if(!update)
-	        client_add(TRUE);
+	        client_add(NULL, TRUE);
     } else { // Off
-        client_add(FALSE);
+        client_add(NULL, FALSE);
         if(i>=0)
             ClientForm->ListView->Items->Delete(i);
         ReleaseMutex(mutex);
@@ -208,7 +208,7 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
     ReleaseMutex(ClientForm->ListMutex);
 }
 
-static int bbs_lputs(char *str)
+static int bbs_lputs(void* p, char *str)
 {
 	static HANDLE mutex;
 
@@ -226,7 +226,7 @@ static int bbs_lputs(char *str)
     return(Line.Length());
 }
 
-static void bbs_status(char *str)
+static void bbs_status(void* p, char *str)
 {
 	static HANDLE mutex;
 
@@ -239,7 +239,7 @@ static void bbs_status(char *str)
     ReleaseMutex(mutex);
 }
 
-static void bbs_clients(int clients)
+static void bbs_clients(void* p, int clients)
 {
 	static HANDLE mutex;
     static save_clients;
@@ -258,7 +258,7 @@ static void bbs_clients(int clients)
     ReleaseMutex(mutex);
 }
 
-static void bbs_terminated(int code)
+static void bbs_terminated(void* p, int code)
 {
 	Screen->Cursor=crDefault;
 	MainForm->TelnetStart->Enabled=true;
@@ -266,7 +266,7 @@ static void bbs_terminated(int code)
 	MainForm->TelnetRecycle->Enabled=false;    
     Application->ProcessMessages();
 }
-static void bbs_started(void)
+static void bbs_started(void* p)
 {
 	Screen->Cursor=crDefault;
 	MainForm->TelnetStart->Enabled=false;
@@ -277,7 +277,7 @@ static void bbs_started(void)
 static void bbs_start(void)
 {
 	Screen->Cursor=crAppStart;
-    bbs_status("Starting");
+    bbs_status(NULL,"Starting");
     SAFECOPY(MainForm->bbs_startup.ctrl_dir
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->bbs_startup.temp_dir
@@ -315,7 +315,7 @@ static int event_log(char *str)
     return(Line.Length());
 }
 
-static int service_log(char *str)
+static int service_log(void* p, char *str)
 {
 	static HANDLE mutex;
 
@@ -333,7 +333,7 @@ static int service_log(char *str)
     return(Line.Length());
 }
 
-static void services_status(char *str)
+static void services_status(void* p, char *str)
 {
 	static HANDLE mutex;
 
@@ -346,7 +346,7 @@ static void services_status(char *str)
     ReleaseMutex(mutex);
 }
 
-static void services_terminated(int code)
+static void services_terminated(void* p, int code)
 {
 	Screen->Cursor=crDefault;
 	MainForm->ServicesStart->Enabled=true;
@@ -354,7 +354,7 @@ static void services_terminated(int code)
     MainForm->ServicesRecycle->Enabled=false;
     Application->ProcessMessages();
 }
-static void services_started(void)
+static void services_started(void* p)
 {
 	Screen->Cursor=crDefault;
 	MainForm->ServicesStart->Enabled=false;
@@ -363,11 +363,11 @@ static void services_started(void)
     Application->ProcessMessages();
 }
 
-static void services_clients(int clients)
+static void services_clients(void* p, int clients)
 {
 }
 
-static int mail_lputs(char *str)
+static int mail_lputs(void* p, char *str)
 {
 	static HANDLE mutex;
 	static FILE* LogStream;
@@ -419,7 +419,7 @@ static int mail_lputs(char *str)
     return(Line.Length());
 }
 
-static void mail_status(char *str)
+static void mail_status(void* p, char *str)
 {
 	static HANDLE mutex;
 
@@ -432,7 +432,7 @@ static void mail_status(char *str)
     ReleaseMutex(mutex);
 }
 
-static void mail_clients(int clients)
+static void mail_clients(void* p, int clients)
 {
 	static HANDLE mutex;
 
@@ -446,7 +446,7 @@ static void mail_clients(int clients)
     ReleaseMutex(mutex);
 }
 
-static void mail_terminated(int code)
+static void mail_terminated(void* p, int code)
 {
 	Screen->Cursor=crDefault;
 	MainForm->MailStart->Enabled=true;
@@ -454,7 +454,7 @@ static void mail_terminated(int code)
     MainForm->MailRecycle->Enabled=false;
     Application->ProcessMessages();
 }
-static void mail_started(void)
+static void mail_started(void* p)
 {
 	Screen->Cursor=crDefault;
 	MainForm->MailStart->Enabled=false;
@@ -465,7 +465,7 @@ static void mail_started(void)
 static void mail_start(void)
 {
 	Screen->Cursor=crAppStart;
-    mail_status("Starting");
+    mail_status(NULL, "Starting");
     SAFECOPY(MainForm->mail_startup.ctrl_dir
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->mail_startup.host_name
@@ -475,7 +475,7 @@ static void mail_start(void)
     Application->ProcessMessages();
 }
 
-static int ftp_lputs(char *str)
+static int ftp_lputs(void* p, char *str)
 {
 	static HANDLE mutex;
 	static FILE* LogStream;
@@ -543,7 +543,7 @@ static int ftp_lputs(char *str)
     return(Line.Length());
 }
 
-static void ftp_status(char *str)
+static void ftp_status(void* p, char *str)
 {
 	static HANDLE mutex;
 
@@ -556,7 +556,7 @@ static void ftp_status(char *str)
     ReleaseMutex(mutex);
 }
 
-static void ftp_clients(int clients)
+static void ftp_clients(void* p, int clients)
 {
 	static HANDLE mutex;
 
@@ -570,7 +570,7 @@ static void ftp_clients(int clients)
     ReleaseMutex(mutex);
 }
 
-static void ftp_terminated(int code)
+static void ftp_terminated(void* p, int code)
 {
 	Screen->Cursor=crDefault;
 	MainForm->FtpStart->Enabled=true;
@@ -578,7 +578,7 @@ static void ftp_terminated(int code)
     MainForm->FtpRecycle->Enabled=false;
     Application->ProcessMessages();
 }
-static void ftp_started(void)
+static void ftp_started(void* p)
 {
 	Screen->Cursor=crDefault;
 	MainForm->FtpStart->Enabled=false;
@@ -589,7 +589,7 @@ static void ftp_started(void)
 static void ftp_start(void)
 {
 	Screen->Cursor=crAppStart;
-    ftp_status("Starting");
+    ftp_status(NULL, "Starting");
     SAFECOPY(MainForm->ftp_startup.ctrl_dir
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->ftp_startup.temp_dir
@@ -854,7 +854,7 @@ void __fastcall TMainForm::TelnetStartExecute(TObject *Sender)
 void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 {
 	Screen->Cursor=crAppStart;
-    services_status("Starting");
+    services_status(NULL, "Starting");
 
     SAFECOPY(MainForm->services_startup.ctrl_dir
         ,MainForm->CtrlDirectory.c_str());
@@ -877,7 +877,7 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 void __fastcall TMainForm::ServicesStopExecute(TObject *Sender)
 {
 	Screen->Cursor=crAppStart;
-    services_status("Terminating");
+    services_status(NULL, "Terminating");
 	services_terminate();
     Application->ProcessMessages();
 }
@@ -886,7 +886,7 @@ void __fastcall TMainForm::ServicesStopExecute(TObject *Sender)
 void __fastcall TMainForm::TelnetStopExecute(TObject *Sender)
 {
 	Screen->Cursor=crAppStart;
-    bbs_status("Terminating");
+    bbs_status(NULL, "Terminating");
 	bbs_terminate();
     Application->ProcessMessages();
 }
@@ -947,7 +947,7 @@ void __fastcall TMainForm::MailStartExecute(TObject *Sender)
 void __fastcall TMainForm::MailStopExecute(TObject *Sender)
 {
 	Screen->Cursor=crAppStart;
-    mail_status("Terminating");
+    mail_status(NULL, "Terminating");
 	mail_terminate();
     Application->ProcessMessages();
 }
@@ -996,7 +996,7 @@ void __fastcall TMainForm::FtpStartExecute(TObject *Sender)
 void __fastcall TMainForm::FtpStopExecute(TObject *Sender)
 {
 	Screen->Cursor=crAppStart;
-    ftp_status("Terminating");
+    ftp_status(NULL, "Terminating");
 	ftp_terminate();
     Application->ProcessMessages();
 }
@@ -2773,8 +2773,8 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
         return;
 
     /* Close Mail/FTP logs */
-    mail_lputs(NULL);
-    ftp_lputs(NULL);
+    mail_lputs(NULL,NULL);
+    ftp_lputs(NULL,NULL);
 
     sprintf(filename,"%sLOGS\\%s%02d%02d%02d.LOG"
     	,MainForm->cfg.logs_dir

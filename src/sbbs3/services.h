@@ -54,22 +54,30 @@ typedef struct {
 	DWORD	js_branch_limit;
 	DWORD	js_yield_interval;
 	DWORD	js_gc_interval;
-	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
-	int 	(*lputs)(char*);		/* Log - put string */
-	void	(*status)(char*);
-    void	(*started)(void);
-    void	(*terminated)(int code);
-    void	(*clients)(int active);
-    void	(*thread_up)(BOOL up, BOOL setuid);
-	void	(*socket_open)(BOOL open);
-    void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
+	WORD	sem_chk_freq;			/* semaphore file checking frequency (in seconds) */
+
+	void*	cbdata;					/* Private data passed to callbacks */ 
+
+	/* Callbacks (NULL if unused) */
+	int 	(*lputs)(void*, char*);		/* Log - put string */
+	void	(*status)(void*, char*);
+    void	(*started)(void*);
+    void	(*terminated)(void*, int code);
+    void	(*clients)(void*, int active);
+    void	(*thread_up)(void*, BOOL up, BOOL setuid);
+	void	(*socket_open)(void*, BOOL open);
+    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);
 	BOOL	(*setuid)(BOOL force);
+
+	/* Paths */
     char    ctrl_dir[128];
     char	cfg_file[128];
 	char	ini_file[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
+
+	/* Misc */
     char	host_name[128];
 	BOOL	recycle_now;
 

@@ -275,7 +275,7 @@ static int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(startup->lputs(sbuf));
+    return(startup->lputs(startup->cbdata,sbuf));
 }
 
 #ifdef _WINSOCKAPI_
@@ -306,13 +306,13 @@ static BOOL winsock_startup(void)
 static void status(char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(str);
+	    startup->status(startup->cbdata,str);
 }
 
 static void update_clients(void)
 {
 	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(active_clients);
+		startup->clients(startup->cbdata,active_clients);
 }
 
 #if 0	/* These will be used later ToDo */
@@ -333,7 +333,7 @@ static void thread_up(BOOL setuid)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(TRUE, setuid);
+		startup->thread_up(startup->cbdata,TRUE, setuid);
 }
 
 static void thread_down(void)
@@ -341,7 +341,7 @@ static void thread_down(void)
 	if(thread_count>0)
 		thread_count--;
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(FALSE, FALSE);
+		startup->thread_up(startup->cbdata,FALSE, FALSE);
 }
 
 static linked_list *add_list(linked_list *list,const char *value)  {
@@ -540,7 +540,7 @@ static SOCKET open_socket(int type)
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(TRUE);
+		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
 		if(set_socket_options(&scfg, sock,error))
 			lprintf("%04d !ERROR %s",sock,error);
@@ -561,7 +561,7 @@ static int close_socket(SOCKET sock)
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
 	if(startup!=NULL && startup->socket_open!=NULL) {
-		startup->socket_open(FALSE);
+		startup->socket_open(startup->cbdata,FALSE);
 	}
 	sockets--;
 	if(result!=0) {
@@ -2374,7 +2374,7 @@ static void cleanup(int code)
     lprintf("#### Web Server thread terminated (%u threads remain, %lu clients served)"
 		,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
-		startup->terminated(code);
+		startup->terminated(startup->cbdata,code);
 }
 
 const char* DLLCALL web_ver(void)
@@ -2597,7 +2597,7 @@ void DLLCALL web_server(void* arg)
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
-    		startup->started();
+    		startup->started(startup->cbdata);
 
 		while(server_socket!=INVALID_SOCKET) {
 
@@ -2675,7 +2675,7 @@ void DLLCALL web_server(void* arg)
 				,host_ip, host_port);
 
 			if(startup->socket_open!=NULL)
-				startup->socket_open(TRUE);
+				startup->socket_open(startup->cbdata,TRUE);
 	
 			if((session=malloc(sizeof(http_session_t)))==NULL) {
 				lprintf("%04d !ERROR allocating %u bytes of memory for service_client"

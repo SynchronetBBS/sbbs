@@ -152,7 +152,7 @@ static int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    result=startup->lputs(sbuf);
+    result=startup->lputs(startup->cbdata,sbuf);
 
 	return(result);
 }
@@ -185,32 +185,32 @@ static BOOL winsock_startup(void)
 static void status(char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(str);
+	    startup->status(startup->cbdata,str);
 }
 
 static void update_clients(void)
 {
 	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(active_clients);
+		startup->clients(startup->cbdata,active_clients);
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(TRUE,sock,client,update);
+		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(FALSE,sock,NULL,FALSE);
+		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
 
 static void thread_up(BOOL setuid)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(TRUE, setuid);
+		startup->thread_up(startup->cbdata,TRUE, setuid);
 }
 
 static void thread_down(void)
@@ -218,7 +218,7 @@ static void thread_down(void)
 	if(thread_count>0)
 		thread_count--;
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(FALSE, FALSE);
+		startup->thread_up(startup->cbdata,FALSE, FALSE);
 }
 
 static SOCKET ftp_open_socket(int type)
@@ -228,7 +228,7 @@ static SOCKET ftp_open_socket(int type)
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(TRUE);
+		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
 		if(set_socket_options(&scfg, sock, error))
 			lprintf("%04d !ERROR %s",sock, error);
@@ -256,7 +256,7 @@ static int ftp_close_socket(SOCKET* sock, int line)
 
 	result=closesocket(*sock);
 	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(FALSE);
+		startup->socket_open(startup->cbdata,FALSE);
 
 	sockets--;
 
@@ -1907,7 +1907,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			return;
 		}
 		if(startup->socket_open!=NULL)
-			startup->socket_open(TRUE);
+			startup->socket_open(startup->cbdata,TRUE);
 		sockets++;
 		if(startup->options&FTP_OPT_DEBUG_DATA)
 			lprintf("%04d DATA socket %d opened",ctrl_sock,*data_sock);
@@ -2001,7 +2001,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			return;
 		}
 		if(startup->socket_open!=NULL)
-			startup->socket_open(TRUE);
+			startup->socket_open(startup->cbdata,TRUE);
 		sockets++;
 		if(startup->options&FTP_OPT_DEBUG_DATA)
 			lprintf("%04d PASV DATA socket %d connected to %s port %u"
@@ -4446,7 +4446,7 @@ static void cleanup(int code, int line)
 		lprintf("#### FTP Server thread terminated (%u threads remain, %lu clients served)"
 			,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
-		startup->terminated(code);
+		startup->terminated(startup->cbdata,code);
 }
 
 const char* DLLCALL ftp_ver(void)
@@ -4679,7 +4679,7 @@ void DLLCALL ftp_server(void* arg)
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
-    		startup->started();
+    		startup->started(startup->cbdata);
 
 		while(server_socket!=INVALID_SOCKET) {
 
@@ -4733,7 +4733,7 @@ void DLLCALL ftp_server(void* arg)
 				break;
 			}
 			if(startup->socket_open!=NULL)
-				startup->socket_open(TRUE);
+				startup->socket_open(startup->cbdata,TRUE);
 			sockets++;
 
 			if(trashcan(&scfg,inet_ntoa(client_addr.sin_addr),"ip-silent")) {

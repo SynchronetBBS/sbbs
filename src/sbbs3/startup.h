@@ -65,28 +65,36 @@ typedef struct {
 	DWORD	js_branch_limit;
 	DWORD	js_yield_interval;
 	DWORD	js_gc_interval;
-    RingBuf** node_spybuf;		// Spy output buffer (each node)
-    RingBuf** node_inbuf;		// User input buffer (each node)
-    sem_t**	node_spysem;		// Spy output semaphore (each node)
-    int 	(*event_log)(char*);	// Event log - put string
-	int 	(*lputs)(char*);		// Log - put string
-	void	(*status)(char*);
-    void	(*started)(void);
-    void	(*terminated)(int code);
-    void	(*clients)(int active);
-    void	(*thread_up)(BOOL up, BOOL setuid);
-	void	(*socket_open)(BOOL open);
-    void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
+    RingBuf** node_spybuf;			/* Spy output buffer (each node)	*/
+    RingBuf** node_inbuf;			/* User input buffer (each node)	*/
+    sem_t**	node_spysem;			/* Spy output semaphore (each node)	*/
+
+	void*	cbdata;					/* Private data passed to callbacks */ 
+
+	/* Callbacks (NULL if unused) */
+    int 	(*event_log)(char*);	/* Event log - put string			*/
+	int 	(*lputs)(void*, char*);	/* Log - put string					*/
+	void	(*status)(void*, char*);
+    void	(*started)(void*);
+    void	(*terminated)(void*, int code);
+    void	(*clients)(void*, int active);
+    void	(*thread_up)(void*, BOOL up, BOOL setuid);
+	void	(*socket_open)(void*, BOOL open);
+    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);	// Set Unix uid for thread (bind)
 	BOOL	(*setuid)(BOOL force);
+
+	/* Paths */
     char    ctrl_dir[128];
     char	dosemu_path[128];
     char	temp_dir[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
+
+	/* Miscellaneous */
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
-    char	host_name[128];
+	char	host_name[128];
 	BOOL	recycle_now;
 
 } bbs_startup_t;

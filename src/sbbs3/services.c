@@ -153,7 +153,7 @@ static int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(startup->lputs(sbuf));
+    return(startup->lputs(startup->cbdata,sbuf));
 }
 
 #ifdef _WINSOCKAPI_
@@ -184,31 +184,31 @@ static BOOL winsock_startup(void)
 static void update_clients(void)
 {
 	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(active_clients);
+		startup->clients(startup->cbdata,active_clients);
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(TRUE,sock,client,update);
+		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(FALSE,sock,NULL,FALSE);
+		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
 
 static void thread_up(BOOL setuid)
 {
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(TRUE,setuid);
+		startup->thread_up(startup->cbdata,TRUE,setuid);
 }
 
 static void thread_down(void)
 {
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(FALSE,FALSE);
+		startup->thread_up(startup->cbdata,FALSE,FALSE);
 }
 
 static SOCKET open_socket(int type)
@@ -218,7 +218,7 @@ static SOCKET open_socket(int type)
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(TRUE);
+		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
 		sockets++;
 		if(set_socket_options(&scfg, sock, error))
@@ -241,7 +241,7 @@ static int close_socket(SOCKET sock)
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
 	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(FALSE);
+		startup->socket_open(startup->cbdata,FALSE);
 	sockets--;
 	if(result!=0)
 		lprintf("%04d !ERROR %d closing socket",sock, ERROR_VALUE);
@@ -256,7 +256,7 @@ static int close_socket(SOCKET sock)
 static void status(char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(str);
+	    startup->status(startup->cbdata,str);
 }
 
 static time_t checktime(void)
@@ -1547,7 +1547,7 @@ static void cleanup(int code)
     lprintf("#### Services thread terminated (%lu clients served)",served);
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
-		startup->terminated(code);
+		startup->terminated(startup->cbdata,code);
 }
 
 const char* DLLCALL services_ver(void)
@@ -1816,7 +1816,7 @@ void DLLCALL services_thread(void* arg)
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
-    		startup->started();
+    		startup->started(startup->cbdata);
 
 		/* Main Server Loop */
 		while(!terminated) {
@@ -1985,8 +1985,8 @@ void DLLCALL services_thread(void* arg)
 #if 0 /*def _DEBUG */
 					lprintf("%04d Socket opened (%d sockets in use)",client_socket,sockets);
 #endif
-					if(startup->socket_open!=NULL)
-						startup->socket_open(TRUE);	/* Callback, increments socket counter */
+					if(startup->socket_open!=NULL)	/* Callback, increments socket counter */
+						startup->socket_open(startup->cbdata,TRUE);	
 				}
 				SAFECOPY(host_ip,inet_ntoa(client_addr.sin_addr));
 

@@ -99,32 +99,32 @@ static bbs_startup_t* startup=NULL;
 static void status(char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(str);
+	    startup->status(startup->cbdata,str);
 }
 
 static void update_clients()
 {
 	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(node_threads_running);
+		startup->clients(startup->cbdata,node_threads_running);
 }
 
 void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(TRUE,sock,client,update);
+		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(FALSE,sock,NULL,FALSE);
+		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
 
 static void thread_up(BOOL setuid)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(TRUE,setuid);
+		startup->thread_up(startup->cbdata,TRUE,setuid);
 }
 
 static void thread_down()
@@ -132,7 +132,7 @@ static void thread_down()
 	if(thread_count>0)
 		thread_count--;
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(FALSE,FALSE);
+		startup->thread_up(startup->cbdata,FALSE,FALSE);
 }
 
 int lputs(char* str)
@@ -147,7 +147,7 @@ int lputs(char* str)
 	}
 #endif
 
-    return(startup->lputs(str));
+    return(startup->lputs(startup->cbdata,str));
 }
 
 int lprintf(char *fmt, ...)
@@ -162,7 +162,7 @@ int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(startup->lputs(sbuf));
+    return(startup->lputs(startup->cbdata,sbuf));
 }
 
 int eprintf(char *fmt, ...)
@@ -188,7 +188,7 @@ SOCKET open_socket(int type)
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(TRUE);
+		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, error))
 		lprintf("%04d !ERROR %s",sock,error);
 
@@ -201,7 +201,7 @@ SOCKET accept_socket(SOCKET s, SOCKADDR* addr, socklen_t* addrlen)
 
 	sock=accept(s,addr,addrlen);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(TRUE);
+		startup->socket_open(startup->cbdata,TRUE);
 
 	return(sock);
 }
@@ -216,7 +216,7 @@ int close_socket(SOCKET sock)
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
 	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
-		startup->socket_open(FALSE);
+		startup->socket_open(startup->cbdata,FALSE);
 	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
 		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
 	return(result);
@@ -3494,7 +3494,7 @@ static void cleanup(int code)
     lprintf("BBS System thread terminated (%u threads remain, %lu clients served)"
 		,thread_count, served);
 	if(startup->terminated!=NULL)
-		startup->terminated(code);
+		startup->terminated(startup->cbdata,code);
 }
 
 void DLLCALL bbs_thread(void* arg)
@@ -3934,7 +3934,7 @@ void DLLCALL bbs_thread(void* arg)
 
 	/* signal caller that we've started up successfully */
     if(startup->started!=NULL)
-    	startup->started();
+    	startup->started(startup->cbdata);
 
 
 	while(telnet_socket!=INVALID_SOCKET) {

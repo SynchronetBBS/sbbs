@@ -51,16 +51,22 @@ typedef struct {
     DWORD	options;
     DWORD	js_max_bytes;
 	DWORD	js_cx_stack;
-	int 	(*lputs)(char*);
-	void	(*status)(char*);
-    void	(*started)(void);
-    void	(*terminated)(int code);
-    void	(*clients)(int active);
-    void	(*thread_up)(BOOL up, BOOL setuid);
-	void	(*socket_open)(BOOL open);
-    void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
+
+	void*	cbdata;				/* Private data passed to callbacks */ 
+
+	/* Callbacks (NULL if unused) */
+	int 	(*lputs)(void*, char*);
+	void	(*status)(void*, char*);
+    void	(*started)(void*);
+    void	(*terminated)(void*, int code);
+    void	(*clients)(void*, int active);
+    void	(*thread_up)(void*, BOOL up, BOOL setuid);
+	void	(*socket_open)(void*, BOOL open);
+    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);
 	BOOL	(*setuid)(BOOL);
+
+	/* Paths */
 	char	ssjs_ext[16];			/* Server-Side JavaScript file extension */
 	char**	cgi_ext;				/* CGI Extensions */
     char    ctrl_dir[128];
@@ -68,6 +74,8 @@ typedef struct {
     char	error_dir[128];
     char	cgi_temp_dir[128];
     char**	index_file_name;		/* Index filenames */
+
+	/* Misc */
     char	host_name[128];
 	BOOL	recycle_now;
 } web_startup_t;
