@@ -49,7 +49,7 @@
 /* than or equal to the current user's Main Security Level					*/
 /* Called from functions waitforcall, main_sec, xfer_sec and inkey			*/
 /****************************************************************************/
-void sbbs_t::useredit(int usernumber, int local)
+void sbbs_t::useredit(int usernumber)
 {
 	char	str[256],tmp2[256],tmp3[256],c,stype=SEARCH_TXT;
 	char 	tmp[512];
@@ -60,12 +60,12 @@ void sbbs_t::useredit(int usernumber, int local)
 	user_t	user;
 	struct	tm * tm;
 
-	if(online==ON_REMOTE && console&(CON_R_ECHO|CON_R_INPUT) && !chksyspass(local))
+	if(online==ON_REMOTE && console&(CON_R_ECHO|CON_R_INPUT) && !chksyspass())
 		return;
 	if(online==ON_LOCAL) {
 		if(!(cfg.sys_misc&SM_L_SYSOP))
 			return;
-		if(cfg.node_misc&NM_SYSPW && !chksyspass(local))
+		if(cfg.node_misc&NM_SYSPW && !chksyspass())
 			return; }
 	if(usernumber)
 		user.number=usernumber;

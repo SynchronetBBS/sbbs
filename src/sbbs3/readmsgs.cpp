@@ -806,7 +806,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 						case 'U':   /* User edit */
 							useredit(cfg.sub[subnum]->misc&SUB_NAME
 								? userdatdupe(0,U_NAME,LEN_NAME,msg.from,0)
-								: matchuser(&cfg,msg.from),0);
+								: matchuser(&cfg,msg.from));
 							break;
 						case 'V':   /* Validate message */
 							if(msg.total_hfields)

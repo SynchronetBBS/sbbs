@@ -639,7 +639,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 			case 'U':   /* user edit */
 				msg.hdr.number=msg.idx.number;
 				smb_getmsgidx(&smb,&msg);
-				useredit(which==MAIL_SENT ? msg.idx.to : msg.idx.from,0);
+				useredit(which==MAIL_SENT ? msg.idx.to : msg.idx.from);
 				break;
 			case 'P':   /* Purge author and all mail to/from */
 				if(noyes(text[AreYouSureQ]))

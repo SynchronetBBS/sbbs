@@ -401,7 +401,7 @@ int sbbs_t::exec_function(csi_t *csi)
 	/* Sysop Functions */
 	/*******************/
 		case CS_USER_EDIT:
-			useredit(csi->str[0] ? finduser(csi->str) : 0,0);
+			useredit(csi->str[0] ? finduser(csi->str) : 0);
 			return(0);
 
 
@@ -479,7 +479,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			return(0);
 
 		case CS_SYSTEM_LOG:                 /* System log */
-			if(!chksyspass(0))
+			if(!chksyspass())
 				return(0);
 			tm=gmtime(&now);
 			if(tm==NULL)
@@ -489,7 +489,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			printfile(str,0);
 			return(0);
 		case CS_SYSTEM_YLOG:                /* Yesterday's log */
-			if(!chksyspass(0))
+			if(!chksyspass())
 				return(0);
 			now-=(ulong)60L*24L*60L;
 			tm=gmtime(&now);
@@ -535,7 +535,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			bprintf(text[StatsFeedbacksToday],ultoac(stats.ftoday,tmp));
 			return(0);
 		case CS_CHANGE_USER:                 /* Change to another user */
-			if(!chksyspass(0))
+			if(!chksyspass())
 				return(0);
 			bputs(text[ChUserPrompt]);
 			if(!getstr(str,LEN_ALIAS,K_UPPER))
@@ -602,14 +602,14 @@ int sbbs_t::exec_function(csi_t *csi)
 				,sys_status&SS_ANSCAP ? text[ON] : text[OFF]);
 			return(0);
 		case CS_LIST_TEXT_FILE:              /* View ASCII/ANSI/Ctrl-A file */
-			if(!chksyspass(0))
+			if(!chksyspass())
 				return(0);
 			bputs(text[Filename]);
 			if(getstr(str,60,0))
 				printfile(str,0);
 			return(0);
 		case CS_EDIT_TEXT_FILE:              /* Edit ASCII/Ctrl-A file */
-			if(!chksyspass(0))
+			if(!chksyspass())
 				return(0);
 			bputs(text[Filename]);
 			if(getstr(str,60,0))
@@ -657,7 +657,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			if(!fexist(csi->str)) {
 				bputs(text[FileNotFound]);
 				return(0); }
-			if(!chksyspass(0))
+			if(!chksyspass())
 				return(0);
 
 		case CS_FILE_SEND:
@@ -681,7 +681,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			return(0);
 
 		case CS_FILE_PUT:
-			if(!chksyspass(0))
+			if(!chksyspass())
 				return(0);
 
 		case CS_FILE_RECEIVE:

@@ -530,7 +530,7 @@ public:
 	void	errormsg(int line, char *file, char action, char *object
 				,ulong access, char *extinfo=NULL);
 	int		mv(char *src, char *dest, char copy); /* fast file move/copy function */
-	bool	chksyspass(int local);
+	bool	chksyspass(void);
 	bool	chk_ar(uchar * str, user_t * user); /* checks access requirements */
 	bool	ar_exp(uchar ** ptrptr, user_t * user);
 
@@ -658,7 +658,7 @@ public:
 	bool	qnetmail(char *into, char *subj, long mode);
 
 	/* useredit.cpp */
-	void	useredit(int usernumber, int local);
+	void	useredit(int usernumber);
 	int		searchup(char *search,int usernum);
 	int		searchdn(char *search,int usernum);
 	void	maindflts(user_t* user);
