@@ -310,12 +310,12 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 
 	strcpy(listpath,inpath);
 	fexistcase(listpath);
-	if((stream=fnopen(&file,listpath,O_RDONLY))==NULL) {
+	if((stream=fopen(listpath,"r"))==NULL) {
 		fprintf(stderr,"Error %d (%s) opening %s\n"
 			,errno,strerror(errno),listpath);
 		sprintf(listpath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 				: scfg.dir[f.dir]->path,inpath);
-		if((stream=fnopen(&file,listpath,O_RDONLY))==NULL) {
+		if((stream=fopen(listpath,"r"))==NULL) {
 			printf("Can't open: %s\n"
 				   "        or: %s\n",inpath,listpath);
 			return; } }
@@ -523,10 +523,10 @@ void synclist(char *inpath, int dirnum)
 	close(file);
 
 	strcpy(listpath,inpath);
-	if((stream=fnopen(&file,listpath,O_RDONLY))==NULL) {
+	if((stream=fopen(listpath,"r"))==NULL) {
 		sprintf(listpath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 				: scfg.dir[dirnum]->path,inpath);
-		if((stream=fnopen(&file,listpath,O_RDONLY))==NULL) {
+		if((stream=fopen(listpath,"r"))==NULL) {
 			printf("Can't open: %s\n"
 				   "        or: %s\n",inpath,listpath);
 			return; } }
