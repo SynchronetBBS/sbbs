@@ -71,11 +71,14 @@ DELETE	=	rm -f
 CFLAGS	+=	-I../../include/mozilla/js -I$(XPDEV) -I$(UIFC) -I$(SBBS3)
 LFLAGS	+=	-lcurses
 
+ifeq ($(os),netbsd)
+ CFLAGS	+=	-D__unix__
+endif
+
 vpath %.c $(UIFC) $(XPDEV)
 
 OBJS	:=	$(LIBODIR)/filewrap.o \
 			$(LIBODIR)/uifcc.o \
-			$(LIBODIR)/uifcx.o \
 			$(LIBODIR)/sockwrap.o \
 			$(LIBODIR)/dirwrap.o \
 			$(LIBODIR)/genwrap.o \
