@@ -1454,6 +1454,10 @@ void DLLCALL services_thread(void* arg)
 
 			/* Determine who services this socket */
 			for(i=0;i<(int)services;i++) {
+
+				if(service[i].socket==INVALID_SOCKET)
+					continue;
+
 				if(!FD_ISSET(service[i].socket,&socket_set))
 					continue;
 
