@@ -45,6 +45,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 {
 	char	str[MAX_PATH+1],fname[MAX_PATH+1];
 	char 	tmp[512];
+	char	from[26];
+	char	to[26];
 	char	inbox[MAX_PATH+1];
 	uchar	block[QWK_BLOCK_LEN];
 	int 	k,file;
@@ -200,12 +202,15 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		if(twit_list) {
 			sprintf(fname,"%stwitlist.cfg",cfg.ctrl_dir);
 
-			sprintf(str,"%25.25s",block+46);  /* From user */
-			truncsp(str);
+			sprintf(from,"%25.25s",block+46);  /* From user */
+			truncsp(from);
+			sprintf(to,"%25.25s",block+21);		/* To user */
+			truncsp(to);
 
-			if(findstr(str,fname)) {
-				eprintf(LOG_NOTICE,"!Filtering post from twit (%s) on %s %s"
-					,str
+			if(findstr(from,fname) || findstr(to,fname)) {
+				eprintf(LOG_NOTICE,"!Filtering post from %s to %s on %s %s"
+					,from
+					,to
 					,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
 				continue; 
 			}

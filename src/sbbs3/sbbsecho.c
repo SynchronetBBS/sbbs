@@ -2340,8 +2340,8 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 	if(twit_list) {
 		sprintf(fname,"%stwitlist.cfg",scfg.ctrl_dir);
-		if(findstr(fmsghdr.from,fname)) {
-			printf("Filtering message from twit: %s",fmsghdr.from);
+		if(findstr(fmsghdr.from,fname) || findstr(fmsghdr.to,fname)) {
+			printf("Filtering message from %s to %s",fmsghdr.from,fmsghdr.to);
 			return(0);
 		}
 	}
