@@ -115,7 +115,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
 	return(TRUE);
 }
 
-void free_cfg(scfg_t* cfg)
+void DLLCALL free_cfg(scfg_t* cfg)
 {
 	free_node_cfg(cfg);
 	free_main_cfg(cfg);
@@ -125,7 +125,7 @@ void free_cfg(scfg_t* cfg)
 	free_xtrn_cfg(cfg);
 }
 
-void free_text(char* text[])
+void DLLCALL free_text(char* text[])
 {
 	int i;
 
