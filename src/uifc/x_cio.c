@@ -43,7 +43,6 @@ int x_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	int x,y;
 	unsigned char *out;
 	WORD	sch;
-printf("gettext\n");
 
 	out=fill;
 	for(y=sy-1;y<ey;y++) {
@@ -209,4 +208,9 @@ void x_clreol(void)
 
 	for(x=CursCol0;x<DpyCols;x++)
 		vmem[CursRow0*DpyCols+x]=x_curr_attr;
+}
+
+int x_getch(void)
+{
+	return(tty_read(0));
 }

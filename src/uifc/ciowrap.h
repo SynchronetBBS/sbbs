@@ -74,6 +74,7 @@ typedef struct {
 	void	(*setcursortype)(int);
 	void	(*textbackground)	(int);
 	void	(*textcolor)	(int);
+	int	(*getch)	(void);
 } cioapi_t;
 
 extern cioapi_t cio_api;
@@ -95,6 +96,8 @@ extern cioapi_t cio_api;
 #define _setcursortype(a)	cio_api.setcursortype(a)
 #define textbackground(a)	cio_api.textbackground(a)
 #define textcolor(a)		cio_api.textcolor(a)
+#undef getch
+#define getch()			cio_api.getch()
 
 #endif
 

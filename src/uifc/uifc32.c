@@ -237,7 +237,78 @@ int inkey()
 
 #else 
 
-	#define inkey() getch()
+int inkey()
+{
+	int c;
+
+	c=getch();
+	if(!c)
+		c=(getch()<<8);
+
+	switch(c) {
+		case CIO_KEY_HOME:
+			c=KEY_HOME;
+			break;
+		case CIO_KEY_UP:
+			c=KEY_UP;
+			break;
+		case CIO_KEY_END:
+			c=KEY_END;
+			break;
+		case CIO_KEY_DOWN:
+			c=KEY_DOWN;
+			break;
+		case CIO_KEY_F(1):
+			c=KEY_F(1);
+			break;
+		case CIO_KEY_F(2):
+			c=KEY_F(2);
+			break;
+		case CIO_KEY_F(3):
+			c=KEY_F(3);
+			break;
+		case CIO_KEY_F(4):
+			c=KEY_F(4);
+			break;
+		case CIO_KEY_F(5):
+			c=KEY_F(5);
+			break;
+		case CIO_KEY_F(6):
+			c=KEY_F(6);
+			break;
+		case CIO_KEY_F(7):
+			c=KEY_F(7);
+			break;
+		case CIO_KEY_F(8):
+			c=KEY_F(8);
+			break;
+		case CIO_KEY_F(9):
+			c=KEY_F(9);
+			break;
+		case CIO_KEY_F(10):
+			c=KEY_F(10);
+			break;
+		case CIO_KEY_IC:
+			c=KEY_IC;
+			break;
+		case CIO_KEY_DC:
+			c=KEY_DC;
+			break;
+		case CIO_KEY_LEFT:
+			c=KEY_LEFT;
+			break;
+		case CIO_KEY_RIGHT:
+			c=KEY_RIGHT;
+			break;
+		case CIO_KEY_PPAGE:
+			c=KEY_PPAGE;
+			break;
+		case CIO_KEY_NPAGE:
+			c=KEY_NPAGE;
+			break;
+	}
+	return(c);
+}
 
 #endif
 

@@ -24,6 +24,7 @@ void x_setcursortype(int type);
 void x_textbackground(int colour);
 void x_textcolor(int colour);
 void x_clreol(void);
+int x_getch(void);
 #ifdef __cplusplus
 }
 #endif

@@ -346,12 +346,14 @@ mouse_t		mouse_status;
 
 void tty_pause()
 {
+#ifdef DISABLED
     sigset_t set;
 
     sigprocmask(0, 0, &set);
     sigdelset(&set, SIGIO);
     sigdelset(&set, SIGALRM);
     sigsuspend(&set);
+#endif
 }
 
 volatile int	poll_cnt = 0;
@@ -958,7 +960,9 @@ video_async_event(int sig)
 {
     	int int9 = 0;
 
+#ifdef DISABLED
 	for (;;) {
+#endif
                 int x;
                 fd_set fdset;
                 XEvent ev;  
@@ -1005,7 +1009,9 @@ video_async_event(int sig)
                         }
                         break;
                 }
+#ifdef DISABLED
         }
+#endif
 }
 
 /* Resize the window, using information from 'vga_status[]'. This function is
@@ -1354,6 +1360,9 @@ console_init()
     if(timer_init())
 		return(-1);
 
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGIO);
+    sigaddset(&sigset, SIGALRM);
     sigprocmask(SIG_UNBLOCK, &sigset, 0);
 	return(0);
 }
@@ -1456,6 +1465,8 @@ tty_peek(int flag)
 int
 tty_kbhit(void)
 {
+	video_async_event(0);
+
 	if(!nextchar && KbdEmpty())
 		return(0);
 	return(1);
