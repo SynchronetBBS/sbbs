@@ -201,6 +201,9 @@ static int log_puts(int level, char *str)
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
 
+	if(!(bbs_startup.log_mask&(1<<level)))
+		return(0);
+
 #ifdef __unix__
 
 	if (is_daemon)  {
@@ -463,6 +466,9 @@ static int ftp_lputs(void* p, int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
+	if(!(ftp_startup.log_mask&(1<<level)))
+		return(0);
+
 #ifdef __unix__
 	if (is_daemon)  {
 		if(str==NULL)
@@ -520,6 +526,9 @@ static int mail_lputs(void* p, int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
+	if(!(mail_startup.log_mask&(1<<level)))
+		return(0);
+
 #ifdef __unix__
 	if (is_daemon)  {
 		if(str==NULL)
@@ -572,6 +581,9 @@ static int services_lputs(void* p, int level, char *str)
 	char		tstr[64];
 	time_t		t;
 	struct tm	tm;
+
+	if(!(services_startup.log_mask&(1<<level)))
+		return(0);
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -626,6 +638,9 @@ static int event_lputs(int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
+	if(!(bbs_startup.log_mask&(1<<level)))
+		return(0);
+
 #ifdef __unix__
 	if (is_daemon)  {
 		if(str==NULL)
@@ -662,6 +677,9 @@ static int web_lputs(void* p, int level, char *str)
 	char		tstr[64];
 	time_t		t;
 	struct tm	tm;
+
+	if(!(web_startup.log_mask&(1<<level)))
+		return(0);
 
 #ifdef __unix__
 	if (is_daemon)  {
