@@ -442,7 +442,7 @@ str_list_t iniReadFile(FILE* fp)
 	
 	rewind(fp);
 
-	list = strListReadFile(fp, NULL, INI_MAX_VALUE_LEN);
+	list = strListReadFile(fp, NULL, INI_MAX_VALUE_LEN, TRUE /* pad */);
 	if(list!=NULL) {
 		/* truncate the white-space off end of strings */
 		for(i=0; list[i]!=NULL; i++)
