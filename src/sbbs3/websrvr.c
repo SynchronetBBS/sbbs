@@ -584,10 +584,12 @@ static void sock_sendfile(SOCKET socket,char *path)
 	int		file;
 
 	lprintf("%04d Sending %s",socket,path);
-	if((file=open(path,O_RDONLY|O_RDONLY))==-1)
+	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf("%04d !ERROR %d opening %s",socket,errno,path);
 	else {
-		sendfilesocket(socket, file, 0, 0);
+		if(sendfilesocket(socket, file, 0, 0) < 1)
+			lprintf("%04d !ERROR %d sending %s"
+				, socket, errno, path);
 		close(file);
 	}
 }
@@ -946,7 +948,8 @@ static BOOL check_request(http_session_t * session)
 {
 	char	path[MAX_PATH+1];
 	char	str[MAX_PATH+1];
-	char	*last_slash;
+	char	last_ch;
+	char*	last_slash;
 	FILE*	file;
 	
 	lprintf("%04d Validating request: %s"
@@ -965,7 +968,9 @@ static BOOL check_request(http_session_t * session)
 		return(FALSE);
 	}
 	if(!fexist(path)) {
-		if(*lastchar(path)!='/')
+		lprintf("%04d Requested file doesn't exist: %s", session->socket, path);
+		last_ch=*lastchar(path);
+		if(last_ch!='/' && last_ch!='\\')
 			strcat(path,"/");
 		strcat(path,startup->index_file_name);
 		session->req.send_location=TRUE;
@@ -1178,6 +1183,7 @@ void DLLCALL web_server(void* arg)
 	fd_set			socket_set;
 	time_t			t;
 	time_t			initialized=0;
+	char*			p;
 	char 			host_ip[32];
 	char			compiler[32];
 	http_session_t *	session;
@@ -1212,8 +1218,12 @@ void DLLCALL web_server(void* arg)
 	SAFECOPY(error_dir,startup->error_dir);
 
 	/* Change to absolute path */
-	prep_dir(scfg.ctrl_dir, root_dir);
-	prep_dir(scfg.ctrl_dir, error_dir);
+	prep_dir(startup->ctrl_dir, root_dir);
+	prep_dir(startup->ctrl_dir, error_dir);
+
+	/* Trim off trailing slash/backslash */
+	if(*(p=lastchar(root_dir))==BACKSLASH)	*p=0;
+	if(*(p=lastchar(error_dir))==BACKSLASH)	*p=0;
 
 	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
@@ -1250,6 +1260,9 @@ void DLLCALL web_server(void* arg)
 		t=time(NULL);
 		lprintf("Initializing on %.24s with options: %lx"
 			,ctime(&t),startup->options);
+
+		lprintf("Root HTML directory: %s", root_dir);
+		lprintf("Error HTML directory: %s", error_dir);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
@@ -1331,7 +1344,7 @@ void DLLCALL web_server(void* arg)
 		if(startup->started!=NULL)
     		startup->started();
 
-		lprintf("Web Server thread started.");
+		lprintf("Web Server thread started");
 
 		while(server_socket!=INVALID_SOCKET) {
 
