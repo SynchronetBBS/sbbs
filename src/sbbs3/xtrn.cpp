@@ -919,12 +919,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 		// Current environment passed to child process
 		sprintf(dszlog,"DSZLOG=%sPROTOCOL.LOG",cfg.node_dir);
-		if(putenv(dszlog)) 		/* Makes the DSZ LOG active */
-        	errormsg(WHERE,ERR_WRITE,"environment",0);
 		sprintf(sbbsnode,"SBBSNODE=%s",cfg.node_dir);
-		putenv(sbbsnode);		/* create environment var to contain node num */
 		sprintf(sbbsnnum,"SBBSNNUM=%d",cfg.node_num);
-		putenv(sbbsnnum);	   /* create environment var to contain node num */
+		sprintf(sbbsctrl,"SBBSCTRL=%s",cfg.ctrl_dir);
+		putenv(dszlog); 		/* Makes the DSZ LOG active */
+		putenv(sbbsnode);
+		putenv(sbbsnnum);
+		if(putenv(sbbsctrl))
+        	errormsg(WHERE,ERR_WRITE,"environment",0);
 
 	} else {
 		/* setup DOSemu env here */
