@@ -291,6 +291,7 @@ static void update_clients(void)
 		startup->clients(active_clients);
 }
 
+#if 0	/* These will be used later */
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
@@ -302,6 +303,7 @@ static void client_off(SOCKET sock)
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(FALSE,sock,NULL,FALSE);
 }
+#endif
 
 static void thread_up(BOOL setuid)
 {
