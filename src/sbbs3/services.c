@@ -66,7 +66,7 @@
 #include "sbbs.h"
 #include "services.h"
 #include "ident.h"	/* identify() */
-#include "ini_file.h"
+#include "sbbs_ini.h"
 
 /* Constants */
 
@@ -92,6 +92,11 @@ typedef struct {
 	DWORD	max_clients;
 	DWORD	options;
 	int		listen_backlog;
+    DWORD	js_max_bytes;
+	DWORD	js_cx_stack;
+	DWORD	js_branch_limit;
+	DWORD	js_yield_interval;
+	DWORD	js_gc_interval;
 	/* These are run-time state and stat vars */
 	DWORD	clients;
 	DWORD	served;
@@ -766,7 +771,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	jsval		val;
 	BOOL		success=FALSE;
 
-    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, service_client->service->js_cx_stack))==NULL)
 		return(NULL);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -1025,7 +1030,7 @@ static void js_service_thread(void* arg)
 	/* Initialize client display */
 	client_on(socket,&client,FALSE /* update */);
 
-	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL
+	if((js_runtime=JS_NewRuntime(service->js_max_bytes))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
 		lprintf("%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
@@ -1132,12 +1137,12 @@ static void js_static_service_thread(void* arg)
 	memset(&service_client,0,sizeof(service_client));
 	service_client.socket = service->socket;
 	service_client.service = service;
-	service_client.branch.limit = JAVASCRIPT_BRANCH_LIMIT;
-	service_client.branch.gc_interval = JAVASCRIPT_GC_INTERVAL;
-	service_client.branch.yield_interval = JAVASCRIPT_YIELD_INTERVAL;
+	service_client.branch.limit = service->js_branch_limit;
+	service_client.branch.gc_interval = service->js_gc_interval;
+	service_client.branch.yield_interval = service->js_yield_interval;
 	service_client.branch.terminated = &service->terminated;
 
-	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL) {
+	if((js_runtime=JS_NewRuntime(service->js_max_bytes))==NULL) {
 		lprintf("%04d !%s ERROR initializing JavaScript runtime"
 			,service->socket,service->protocol);
 		close_socket(service->socket);
@@ -1398,7 +1403,7 @@ void DLLCALL services_terminate(void)
 	}
 }
 
-#define NEXT_FIELD(p)	while(*p && *p>' ') p++; while(*p && *p<=' ') p++;
+#define NEXT_FIELD(p)	FIND_WHITESPACE(p); SKIP_WHITESPACE(p)
 
 static service_t* read_services_cfg(service_t* service, char* services_cfg, DWORD* services)
 {
@@ -1407,6 +1412,7 @@ static service_t* read_services_cfg(service_t* service, char* services_cfg, DWOR
 	char	line[1024];
 	FILE*	fp;
 	service_t*	np;
+	service_t*	serv;
 	
 	if((fp=fopen(services_cfg,"r"))==NULL)
 		return(service);
@@ -1416,7 +1422,7 @@ static service_t* read_services_cfg(service_t* service, char* services_cfg, DWOR
 		if(!fgets(line,sizeof(line),fp))
 			break;
 		p=line;
-		while(*p && *p<=' ') p++;
+		SKIP_WHITESPACE(p);
 		if(*p==0 || *p==';')	/* ignore blank lines or comments */
 			continue;
 		
@@ -1425,25 +1431,33 @@ static service_t* read_services_cfg(service_t* service, char* services_cfg, DWOR
 			return(service);
 		}
 		service=np;
-		memset(&service[*services],0,sizeof(service_t));
-		service[*services].socket=INVALID_SOCKET;
-		service[*services].listen_backlog=DEFAULT_LISTEN_BACKLOG;
+		serv=&service[*services];
+		memset(serv,0,sizeof(service_t));
+		serv->socket=INVALID_SOCKET;
+		serv->listen_backlog=DEFAULT_LISTEN_BACKLOG;
+
+		/* These are not configurable per service when using services.cfg */
+		serv->js_max_bytes=startup->js_max_bytes;
+		serv->js_cx_stack=startup->js_cx_stack;
+		serv->js_branch_limit=startup->js_branch_limit;
+		serv->js_gc_interval=startup->js_gc_interval;
+		serv->js_yield_interval=startup->js_yield_interval;
 
 		tp=p; 
-		while(*tp && *tp>' ') tp++; 
+		FIND_WHITESPACE(p);
 		*tp=0;
-		sprintf(service[*services].protocol,"%.*s",(int)sizeof(service[0].protocol)-1,p);
+		sprintf(serv->protocol,"%.*s",(int)sizeof(service[0].protocol)-1,p);
 		p=tp+1;
-		while(*p && *p<=' ') p++;
-		service[*services].port=atoi(p);
+		SKIP_WHITESPACE(p);
+		serv->port=atoi(p);
 		NEXT_FIELD(p);
-		service[*services].max_clients=strtol(p,NULL,10);
+		serv->max_clients=strtol(p,NULL,10);
 		NEXT_FIELD(p);
-		service[*services].options=strtol(p,NULL,16);
+		serv->options=strtol(p,NULL,16);
 		NEXT_FIELD(p);
 
-		sprintf(service[*services].cmd,"%.*s",(int)sizeof(service[0].cmd)-1,p);
-		truncsp(service[*services].cmd);
+		sprintf(serv->cmd,"%.*s",(int)sizeof(service[0].cmd)-1,p);
+		truncsp(serv->cmd);
 
 		(*services)++;
 	}
@@ -1476,6 +1490,13 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 		serv.listen_backlog=iniGetInteger(fp,sec_list[i],"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
 		serv.options=iniGetBitField(fp,sec_list[i],"Options",service_options,0);
 		SAFECOPY(serv.cmd,iniGetString(fp,sec_list[i],"Command","",cmd));
+
+		/* JavaScript operating parameters */
+		serv.js_max_bytes=iniGetInteger(fp,sec_list[i]		,strJavaScriptMaxBytes		,startup->js_max_bytes);
+		serv.js_cx_stack=iniGetInteger(fp,sec_list[i]		,strJavaScriptContextStack	,startup->js_cx_stack);
+		serv.js_branch_limit=iniGetInteger(fp,sec_list[i]	,strJavaScriptBranchLimit	,startup->js_branch_limit);
+		serv.js_gc_interval=iniGetInteger(fp,sec_list[i]	,strJavaScriptGcInterval	,startup->js_gc_interval);
+		serv.js_yield_interval=iniGetInteger(fp,sec_list[i]	,strJavaScriptYieldInterval	,startup->js_yield_interval);
 
 		for(j=0;j<*services;j++)
 			if(service[j].port==serv.port && service[j].options==serv.options)
@@ -1599,6 +1620,7 @@ void DLLCALL services_thread(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 	uptime=0;
 	served=0;
@@ -2012,10 +2034,10 @@ void DLLCALL services_thread(void* arg)
 				client->service->clients++;		/* this should be mutually exclusive */
 				client->udp_buf=udp_buf;
 				client->udp_len=udp_len;
-				client->branch.limit=JAVASCRIPT_BRANCH_LIMIT;
-				client->branch.gc_interval=JAVASCRIPT_GC_INTERVAL;
-				client->branch.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
-				client->branch.terminated=&client->service->terminated;
+				client->branch.limit			= service[i].js_branch_limit;
+				client->branch.gc_interval		= service[i].js_gc_interval;
+				client->branch.yield_interval	= service[i].js_yield_interval;
+				client->branch.terminated		= &client->service->terminated;
 
 				udp_buf = NULL;
 
