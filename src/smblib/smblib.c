@@ -1621,31 +1621,74 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
 		smb_fseek(smb->sdt_fp,offset,SEEK_SET);
 
 		if(bodylen) {
-			smb_dfield(msg,TEXT_BODY,bodylen);
+			if((retval=smb_dfield(msg,TEXT_BODY,bodylen))!=SMB_SUCCESS)
+				break;
 
 			xlatlen=0;
 			if(xlat!=XLAT_NONE) {	/* e.g. XLAT_LZH */
-				smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
+				if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
+					safe_snprintf(smb->last_error,sizeof(smb->last_error)
+						,"%d (%s) writing body xlat string"
+						,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp)));
+					retval=SMB_ERR_WRITE;
+					break;
+				}
 				xlatlen+=sizeof(xlat);
 			}
 			xlat=XLAT_NONE;	/* xlat string terminator */
-			smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
+			if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
+				safe_snprintf(smb->last_error,sizeof(smb->last_error)
+					,"%d (%s) writing body xlat terminator"
+					,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp)));
+				retval=SMB_ERR_WRITE;
+				break;
+			}
 			xlatlen+=sizeof(xlat);
 
-			smb_fwrite(smb,body,bodylen-xlatlen,smb->sdt_fp);
+			if(smb_fwrite(smb,body,bodylen-xlatlen,smb->sdt_fp)!=bodylen-xlatlen) {
+				safe_snprintf(smb->last_error,sizeof(smb->last_error)
+					,"%d (%s) writing body (%ld bytes)"
+					,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp))
+					,bodylen-xlatlen);
+				retval=SMB_ERR_WRITE;
+				break;
+			}
 		}
 
 		if(taillen) {
-			smb_dfield(msg,TEXT_TAIL,taillen);
+			if((retval=smb_dfield(msg,TEXT_TAIL,taillen))!=SMB_SUCCESS)
+				break;
 
 			xlat=XLAT_NONE;	/* xlat string terminator */
-			smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
+			if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
+				safe_snprintf(smb->last_error,sizeof(smb->last_error)
+					,"%d (%s) writing tail xlat terminator"
+					,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp)));
+				retval=SMB_ERR_WRITE;
+				break;
+			}
 
-			smb_fwrite(smb,tail,taillen-sizeof(xlat),smb->sdt_fp);
+			if(smb_fwrite(smb,tail,taillen-sizeof(xlat),smb->sdt_fp)!=taillen-sizeof(xlat)) {
+				safe_snprintf(smb->last_error,sizeof(smb->last_error)
+					,"%d (%s) writing tail (%ld bytes)"
+					,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp))
+					,taillen-sizeof(xlat));
+				retval=SMB_ERR_WRITE;
+				break;
+			}
 		}
 
-		for(l=length;l%SDT_BLOCK_LEN;l++)
-			smb_fputc(0,smb->sdt_fp);
+		for(l=length;l%SDT_BLOCK_LEN;l++) {
+			if(smb_fputc(0,smb->sdt_fp)!=0)
+				break;
+		}
+		if(l%SDT_BLOCK_LEN) {
+			safe_snprintf(smb->last_error,sizeof(smb->last_error)
+				,"%d (%s) writing data padding"
+				,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp)));
+			retval=SMB_ERR_WRITE;
+			break;
+		}
 
 		fflush(smb->sdt_fp);
 
@@ -1683,12 +1726,14 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
 			}
 
 			/* Add RFC-822 Reply-ID if original message has RFC Message-ID */
-			if(msg->reply_id==NULL && remsg.id!=NULL)
-				smb_hfield_str(msg,RFC822REPLYID,remsg.id);
+			if(msg->reply_id==NULL && remsg.id!=NULL
+				&& (retval=smb_hfield_str(msg,RFC822REPLYID,remsg.id))!=SMB_SUCCESS)
+				break;
 
 			/* Add FidoNet Reply if original message has FidoNet MSGID */
-			if(msg->ftn_reply==NULL && remsg.ftn_msgid!=NULL)
-				smb_hfield_str(msg,FIDOREPLYID,remsg.ftn_msgid);
+			if(msg->ftn_reply==NULL && remsg.ftn_msgid!=NULL
+				&& (retval=smb_hfield_str(msg,FIDOREPLYID,remsg.ftn_msgid))!=SMB_SUCCESS)
+				break;
 
 			retval=smb_updatethread(smb, &remsg, msg->hdr.number);
 			smb_unlockmsghdr(smb, &remsg);
