@@ -77,7 +77,7 @@
 
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
-static int		active_clients=0;
+static DWORD	active_clients=0;
 static DWORD	sockets=0;
 static BOOL		terminated=FALSE;
 static time_t	uptime=0;
@@ -884,8 +884,7 @@ static void js_service_thread(void* arg)
 	client.user="<unknown>";
 	service_client.client=&client;
 
-	active_clients++;
-	update_clients();
+	active_clients++, update_clients();
 
 	/* Initialize client display */
 	client_on(socket,&client,FALSE /* update */);
@@ -896,8 +895,8 @@ static void js_service_thread(void* arg)
 			,socket,service->protocol);
 		client_off(socket);
 		close_socket(socket);
-		active_clients--;
-		update_clients();
+		if(active_clients)
+			active_clients--, update_clients();
 		if(service->clients)
 			service->clients--;
 		thread_down();
@@ -950,8 +949,8 @@ static void js_service_thread(void* arg)
 
 	if(service->clients)
 		service->clients--;
-	active_clients--;
-	update_clients();
+	if(active_clients)
+		active_clients--, update_clients();
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)
@@ -960,7 +959,7 @@ static void js_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf("%04d %s JavaScript service thread terminated (%u clients remain, %u total, %lu served)"
+	lprintf("%04d %s JavaScript service thread terminated (%u clients remain, %d total, %lu served)"
 		, socket, service->protocol, service->clients, active_clients, service->served);
 
 	client_off(socket);
@@ -1207,8 +1206,7 @@ static void native_service_thread(void* arg)
 	socket_dup = dup(socket);
 #endif
 
-	active_clients++;
-	update_clients();
+	active_clients++, update_clients();
 
 	/* Initialize client display */
 	client_on(socket,&client,FALSE /* update */);
@@ -1224,8 +1222,8 @@ static void native_service_thread(void* arg)
 
 	if(service->clients)
 		service->clients--;
-	active_clients--;
-	update_clients();
+	if(active_clients)
+		active_clients--, update_clients();
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)
@@ -1234,7 +1232,7 @@ static void native_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf("%04d %s service thread terminated (%u clients remain, %u total, %lu served)"
+	lprintf("%04d %s service thread terminated (%u clients remain, %d total, %lu served)"
 		,socket, service->protocol, service->clients, active_clients, service->served);
 
 	client_off(socket);
@@ -1515,8 +1513,7 @@ void DLLCALL services_thread(void* arg)
 		if(uptime==0)
 			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
-		active_clients=0;
-		update_clients();
+		active_clients=0, update_clients();
 
 		if(startup->cfg_file[0]==0)			
 			sprintf(startup->cfg_file,"%sservices.cfg",scfg.ctrl_dir);
