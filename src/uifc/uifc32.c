@@ -285,11 +285,12 @@ int uifcini32(uifcapi_t* uifcapi)
 	initciowrap(api->mode);
 	#ifdef NCURSES_VERSION_MAJOR
 		ESCDELAY=api->esc_delay;
-		
+#ifdef DISABLED
 		if(mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL)==BUTTON1_CLICKED|BUTTON3_CLICKED)
 			api->mode|=UIFC_MOUSE;
 		else
 			mousemask(0,NULL);
+#endif
 	#endif
 	
 #else

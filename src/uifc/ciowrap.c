@@ -29,6 +29,7 @@ void initciowrap(int mode)
 		cio_api.clreol=x_clreol;
 		return;
 	}
+	fprintf(stderr,"X init failed\n");
 #endif
 	curs_initciowrap(mode);
 	cio_api.puttext=curs_puttext;

@@ -31,7 +31,8 @@ int x_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	out=fill;
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
-			sch=(*(out++))|(*(out++)<<8);
+			sch=*(out++);
+			sch |= (*(out++))<<8;
 			vmem[y*DpyCols+x]=sch;
 		}
 	}
@@ -42,6 +43,7 @@ int x_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	int x,y;
 	unsigned char *out;
 	WORD	sch;
+printf("gettext\n");
 
 	out=fill;
 	for(y=sy-1;y<ey;y++) {
@@ -142,7 +144,6 @@ void x_cputs(unsigned char *str)
 	for(pos=0;str[pos];pos++) {
 		putch(str[pos]);
 	}
-	refresh();
 }
 
 void x_gotoxy(int x, int y)
