@@ -469,7 +469,7 @@ int main(int argc, char** argv)  {
 				uifc.msg("Error reading node data!");
 				continue;
 			}
-			if((node.status&NODE_INUSE) && node.useron)
+			if((node.status==NODE_INUSE) && node.useron)
 				chat(&cfg,main_dflt+1,&node,&boxch,uifc.timedisplay);
 			continue;
 		}
@@ -553,10 +553,11 @@ int main(int argc, char** argv)  {
 			strcpy(opt[i++],"Spy on node");
 			strcpy(opt[i++],"Node toggles");
 			strcpy(opt[i++],"Clear Errors");
-			getnodedat(&cfg,j+1,&node,NULL);
-			if((node.status&NODE_INUSE) && node.useron) {
-				strcpy(opt[i++],"Send message to user");
-				strcpy(opt[i++],"Chat with user");
+			if(!getnodedat(&cfg,j+1,&node,NULL)) {
+				if((node.status==NODE_INUSE) && node.useron) {
+					strcpy(opt[i++],"Send message to user");
+					strcpy(opt[i++],"Chat with user");
+				}
 			}
 			opt[i][0]=0;
 			i=0;
