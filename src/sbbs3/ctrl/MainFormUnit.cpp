@@ -2589,7 +2589,7 @@ void __fastcall TMainForm::BBSViewErrorLogMenuItemClick(TObject *Sender)
 	char filename[MAX_PATH+1];
 
     sprintf(filename,"%sERROR.LOG"
-    	,MainForm->cfg.data_dir);
+    	,MainForm->cfg.logs_dir);
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
     TextFileEditForm->Filename=AnsiString(filename);
     TextFileEditForm->Caption="Error Log";
@@ -2695,7 +2695,7 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
     ftp_lputs(NULL);
 
     sprintf(filename,"%sLOGS\\%s%02d%02d%02d.LOG"
-    	,MainForm->cfg.data_dir
+    	,MainForm->cfg.logs_dir
         ,((TMenuItem*)Sender)->Hint.c_str()
         ,tm->tm_mon+1
         ,tm->tm_mday
