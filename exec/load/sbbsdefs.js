@@ -214,19 +214,19 @@ var   USER_AUTOLOGON=(1<<22)	/* AutoLogon via IP							*/
 					    		/********************************************/
 								/* user.qwk_settings 						*/
 					    		/********************************************/
-var   QWK_FILES		=(1L<<0) 	/* Include new files list					*/
-var   QWK_EMAIL		=(1L<<1) 	/* Include unread e-mail					*/
-var   QWK_ALLMAIL	=(1L<<2) 	/* Include ALL e-mail						*/
-var   QWK_DELMAIL	=(1L<<3) 	/* Delete e-mail after download 			*/
-var   QWK_BYSELF	=(1L<<4) 	/* Include messages from self				*/
-var   QWK_UNUSED	=(1L<<5) 	/* Currently unused 						*/
-var   QWK_EXPCTLA	=(1L<<6) 	/* Expand ctrl-a codes to ascii 			*/
-var   QWK_RETCTLA	=(1L<<7) 	/* Retain ctrl-a codes						*/
-var   QWK_ATTACH	=(1L<<8) 	/* Include file attachments 				*/
-var   QWK_NOINDEX	=(1L<<9) 	/* Do not create index files in QWK			*/
-var   QWK_TZ		=(1L<<10)	/* Include "@TZ" time zone in msgs			*/
-var   QWK_VIA 		=(1L<<11)	/* Include "@VIA" seen-bys in msgs			*/
-var   QWK_NOCTRL	=(1L<<12)	/* No extraneous control files				*/
+var   QWK_FILES		=(1<<0) 	/* Include new files list					*/
+var   QWK_EMAIL		=(1<<1) 	/* Include unread e-mail					*/
+var   QWK_ALLMAIL	=(1<<2) 	/* Include ALL e-mail						*/
+var   QWK_DELMAIL	=(1<<3) 	/* Delete e-mail after download 			*/
+var   QWK_BYSELF	=(1<<4) 	/* Include messages from self				*/
+var   QWK_UNUSED	=(1<<5) 	/* Currently unused 						*/
+var   QWK_EXPCTLA	=(1<<6) 	/* Expand ctrl-a codes to ascii 			*/
+var   QWK_RETCTLA	=(1<<7) 	/* Retain ctrl-a codes						*/
+var   QWK_ATTACH	=(1<<8) 	/* Include file attachments 				*/
+var   QWK_NOINDEX	=(1<<9) 	/* Do not create index files in QWK			*/
+var   QWK_TZ		=(1<<10)	/* Include "@TZ" time zone in msgs			*/
+var   QWK_VIA 		=(1<<11)	/* Include "@VIA" seen-bys in msgs			*/
+var   QWK_NOCTRL	=(1<<12)	/* No extraneous control files				*/
 					    		/********************************************/
 
 					    		/********************************************/
