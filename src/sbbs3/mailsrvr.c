@@ -70,6 +70,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
 
 static char* ok_rsp		=	"250 OK";
+static char* sys_error	=	"421 System error";
 static char* badseq_rsp	=	"503 Bad sequence of commands";
 static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
 							"instead of the expected reply:\r\n\"%s ...\"";
@@ -1477,7 +1478,7 @@ static void smtp_thread(void* arg)
 	if((i=getsockname(socket, (struct sockaddr *)&server_addr,&addr_len))!=0) {
 		lprintf("%04d !SMTP ERROR %d (%d) getting address/port"
 			,socket, i, ERROR_VALUE);
-		sockprintf(socket,"421 System error");
+		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
 		thread_down();
 		return;
@@ -1551,16 +1552,14 @@ static void smtp_thread(void* arg)
 		}
 	}
 
-	srand(time(NULL));	/* Seed random number generator */
-	xp_random(10);		/* Throw away first number */
-	sprintf(session_id,"%d.%lx.%x",socket,clock()&0xffff,xp_random(0x10000));
+	sprintf(session_id,"%d.%lx",socket,clock()&0xffff);
 
 	sprintf(rcptlst_fname,"%sSMTP.%s.lst", scfg.data_dir, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
 	if(rcptlst==NULL) {
 		lprintf("%04d !SMTP ERROR %d creating recipient list: %s"
 			,socket, errno, rcptlst_fname);
-		sockprintf(socket,"421 System error");
+		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
 		thread_down();
 		active_clients--,update_clients();
@@ -1727,14 +1726,14 @@ static void smtp_thread(void* arg)
 				if((rcptlst=fopen(rcptlst_fname,"r"))==NULL) {
 					lprintf("%04d !SMTP ERROR %d re-opening recipient list: %s"
 						,socket, errno, rcptlst_fname);
-					sockprintf(socket,"421 Error %d opening %s", errno, rcptlst_fname);
+					sockprintf(socket,sys_error);
 					continue;
 				}
 			
 				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
 					lprintf("%04d !SMTP ERROR %d re-opening message file: %s"
 						,socket, errno, msgtxt_fname);
-					sockprintf(socket, "421 Error %d opening %s", errno, msgtxt_fname);
+					sockprintf(socket,sys_error);
 					continue;
 				}
 
@@ -2210,12 +2209,17 @@ static void smtp_thread(void* arg)
 			subnum=INVALID_SUB;
 
 			/* reset recipient list */
-			rewind(rcptlst);
-			chsize(fileno(rcptlst),0);
+			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
+				lprintf("%04d !SMTP ERROR %d re-opening %s"
+					,socket, errno, rcptlst_fname);
+				sockprintf(socket,sys_error);
+				break;
+			}
 			rcpt_count=0;
 
 			sockprintf(socket,ok_rsp);
 			badcmds=0;
+			lprintf("%04d SMTP session reset",socket);
 			continue;
 		}
 		if(!strnicmp(buf,"MAIL FROM:",10)
@@ -2245,8 +2249,13 @@ static void smtp_thread(void* arg)
 				cmd=SMTP_CMD_SAML;
 
 			/* reset recipient list */
-			rewind(rcptlst);
-			chsize(fileno(rcptlst),0);
+			/* reset recipient list */
+			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
+				lprintf("%04d !SMTP ERROR %d re-opening %s"
+					,socket, errno, rcptlst_fname);
+				sockprintf(socket,sys_error);
+				break;
+			}
 			rcpt_count=0;
 
 #if 0 /* moved */
