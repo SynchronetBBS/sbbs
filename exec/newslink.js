@@ -209,6 +209,8 @@ for(i in area) {
 		printf("!ERROR opening msgbase: %s\r\n",sub);
 		continue;
 	}
+	msgbase.get_msg_area_info();
+
 	/*********************/
 	/* Read Pointer File */
 	/*********************/
@@ -257,6 +259,9 @@ for(i in area) {
 		if(hdr.attr&MSG_PRIVATE)/* no private messages on NNTP */
 			continue;
 		if(hdr.from_net_type==NET_INTERNET)	/* no dupe loop */
+			continue;
+		if(hdr.from_net_type	/* don't gate messages between net types */
+			&& msgbase.settings!=null && !(msgbase.settings&SUB_GATE))
 			continue;
 
 		body = msgbase.get_msg_body(false, ptr
@@ -508,7 +513,7 @@ for(i in area) {
 		if(system.trashcan("subject",hdr.subject)) {
 			printf("!BLOCKED subject: %s\r\n",hdr.subject);
 			var reason = format("Blocked subject (%s)",hdr.subject);
-			system.spamlog("NNTP",reason,hdr.from,server,hdr.to);
+			system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,server,hdr.to);
 			continue;
 		}
 
