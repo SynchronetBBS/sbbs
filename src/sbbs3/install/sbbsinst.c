@@ -310,7 +310,9 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s%s","Make Command-line",params.make_cmdline);
 		sprintf(mopt[i++],"%-27.27s%s","File Owner",params.sbbsuser);
 		sprintf(mopt[i++],"%-27.27s%s","File Group",params.sbbsgroup);
+#if 0 /* this won't work until we get the FTLK source in CVS */
 		sprintf(mopt[i++],"%-27.27s%s","Include X/FLTK Support",params.useX?"Yes":"No");
+#endif
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
@@ -416,6 +418,7 @@ int main(int argc, char **argv)
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.sbbsgroup,32,K_EDIT);
 				break;
+#if 0
 			case 11:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -431,7 +434,8 @@ int main(int argc, char **argv)
 					params.useX=FALSE;
 				i=0;
 				break;
-			case 12:
+#endif
+			case 11:
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
 				bail(0);
 				break;
