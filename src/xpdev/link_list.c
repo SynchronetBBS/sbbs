@@ -249,19 +249,11 @@ void* listNodeData(const list_node_t* node)
 	return(node->data);
 }
 
-list_node_t* listAddNode(link_list_t* list, void* data, list_node_t* after)
+static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_node_t* after)
 {
-	list_node_t* node;
-
 	if(list==NULL)
 		return(NULL);
 
-	if((node=(list_node_t*)malloc(sizeof(list_node_t)))==NULL)
-		return(NULL);
-
-	memset(node,0,sizeof(list_node_t));
-
-	node->data = data;
 	node->prev = after;
 
 	if(after==list->last)					/* append to list */
@@ -280,6 +272,34 @@ list_node_t* listAddNode(link_list_t* list, void* data, list_node_t* after)
 	}
 
 	list->count++;
+
+	return(node);
+}
+
+list_node_t* listAddNode(link_list_t* list, void* data, list_node_t* after)
+{
+	list_node_t* node;
+
+	if(list==NULL)
+		return(NULL);
+
+	if((node=(list_node_t*)malloc(sizeof(list_node_t)))==NULL)
+		return(NULL);
+
+	return(list_add_node(list,node,after));
+}
+
+list_node_t* listAddNodes(link_list_t* list, void** data, list_node_t* after)
+{
+	size_t			i;
+	list_node_t*	node=NULL;
+
+	if(data==NULL)
+		return(NULL);
+
+	for(i=0;data[i];i++)
+		if((node=listAddNode(list,data[i],node==NULL ? after:node))==NULL)
+			return(NULL);
 
 	return(node);
 }
@@ -326,18 +346,70 @@ list_node_t* listAddNodeString(link_list_t* list, const char* str, list_node_t* 
 	return(node);
 }
 
-list_node_t* listAddStringList(link_list_t* list, str_list_t str_list, list_node_t* node)
+list_node_t* listAddStringList(link_list_t* list, str_list_t str_list, list_node_t* after)
 {
 	size_t	i;
+	list_node_t*	node=NULL;
 
 	if(str_list==NULL)
 		return(NULL);
 
 	for(i=0;str_list[i];i++)
-		if((node=listAddNodeString(list,str_list[i],node))==NULL)
+		if((node=listAddNodeString(list,str_list[i],node==NULL ? after:node))==NULL)
 			return(NULL);
 
 	return(node);
+}
+
+list_node_t* listAddNodeList(link_list_t* list, const link_list_t* src, list_node_t* after)
+{
+	list_node_t*	node=NULL;
+	list_node_t*	src_node;
+
+	if(src==NULL)
+		return(NULL);
+
+	for(src_node=src->first; src_node!=NULL; src_node=src_node->next) {
+		if((node=listAddNode(list, src_node->data, node==NULL ? after:node))==NULL)
+			return(NULL);
+		node->flags = src_node->flags;
+	}
+
+	return(node);
+}
+
+list_node_t* listMerge(link_list_t* list, const link_list_t* src, list_node_t* after)
+{
+	list_node_t*	node=NULL;
+	list_node_t*	src_node;
+
+	if(src==NULL)
+		return(NULL);
+
+	for(src_node=src->first; src_node!=NULL; src_node=src_node->next)
+		if((node=list_add_node(list, src_node, node==NULL ? after:node))==NULL)
+			return(NULL);
+
+	return(node);
+}
+
+link_list_t* listExtract(link_list_t* dest_list, const list_node_t* node, long max)
+{
+	long			count=0;
+	link_list_t*	list;
+
+	if(node==NULL)
+		return(NULL);
+
+	if((list=listInit(dest_list))==NULL)
+		return(NULL);
+
+	for(count=0; count<max && node!=NULL; node=node->next) {
+		listAddNode(list, node->data, list->last);
+		count++;
+	}
+
+	return(list);
 }
 
 void* listRemoveNode(link_list_t* list, list_node_t* node)
