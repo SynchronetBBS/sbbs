@@ -87,7 +87,7 @@ void wsetcolor(WINDOW *win, int fg, int bg)  {
 	wbkgdset(win, colour);
 }
 
-void drawchatwin(WINDOW **uwin, WINDOW **swin, box_t *boxch, const char* topnmae, const char* botname) {
+void drawchatwin(WINDOW **uwin, WINDOW **swin, box_t *boxch, const char* topname, const char* botname) {
 	int maxy,maxx;
 
 	endwin();
