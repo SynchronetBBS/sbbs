@@ -67,6 +67,8 @@ while(1) {
 			,cfg.leech_pct,cfg.leech_sec);
 	else
 		strcpy(str,"Disabled");
+    sprintf(opt[i++],"%-33.33s%s","Long Filenames in Listings"
+        ,cfg.file_misc&FM_NO_LFN ? "No":"Yes");
 	sprintf(opt[i++],"%-33.33s%s","Leech Protocol Detection",str);
 	strcpy(opt[i++],"Viewable Files...");
 	strcpy(opt[i++],"Testable Files...");
@@ -170,7 +172,31 @@ directories are created.
 				,itoa(cfg.cdt_dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 			cfg.cdt_dn_pct=atoi(tmp);
 			break;
-		case 6:
+        case 6:
+            strcpy(opt[0],"Yes");
+            strcpy(opt[1],"No");
+            opt[2][0]=0;
+            i=0;
+            SETHELP(WHERE);
+/*
+Long Filenames in File Listings:
+
+If you want long filenames to be displayed in the BBS file listings, set
+this option to Yes. Note: This feature requires Windows 98, Windows 2000
+or later.
+*/
+            i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
+                ,"Long Filenames in Listings (Win98/Win2K)",opt);
+            if(!i && cfg.file_misc&FM_NO_LFN) {
+                cfg.file_misc&=~FM_NO_LFN;
+                changes=1;
+            } else if(i==1 && !(cfg.file_misc&FM_NO_LFN)) {
+                cfg.file_misc|=FM_NO_LFN;
+                changes=1;
+            }
+            break;
+
+		case 7:
 			SETHELP(WHERE);
 /*
 Leech Protocol Detection Percentage:
@@ -203,7 +229,7 @@ considered a possible leech attempt.
 				,itoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
 			cfg.leech_sec=atoi(tmp);
 			break;
-		case 7: 	/* Viewable file types */
+		case 8: 	/* Viewable file types */
 			dflt=bar=0;
 			while(1) {
 				for(i=0;i<cfg.total_fviews && i<MAX_OPTS;i++)
@@ -307,7 +333,7 @@ command line examples for a few file types.
 							getar(str,cfg.fview[i]->arstr);
                             break; } } }
             break;
-		case 8:    /* Testable file types */
+		case 9:    /* Testable file types */
 			dflt=bar=0;
 			while(1) {
 				for(i=0;i<cfg.total_ftests && i<MAX_OPTS;i++)
@@ -428,7 +454,7 @@ listed.
 							getar(str,cfg.ftest[i]->arstr);
 							break; } } }
 			break;
-		case 9:    /* Download Events */
+		case 10:    /* Download Events */
 			dflt=bar=0;
 			while(1) {
 				for(i=0;i<cfg.total_dlevents && i<MAX_OPTS;i++)
@@ -549,7 +575,7 @@ for each file type and command line listed.
 							getar(str,cfg.dlevent[i]->arstr);
 							break; } } }
             break;
-		case 10:	 /* Extractable file types */
+		case 11:	 /* Extractable file types */
 			dflt=bar=0;
             while(1) {
 				for(i=0;i<cfg.total_fextrs && i<MAX_OPTS;i++)
@@ -656,7 +682,7 @@ extract the file(s).
 							getar(str,cfg.fextr[i]->arstr);
                             break; } } }
             break;
-		case 11:	 /* Compressable file types */
+		case 12:	 /* Compressable file types */
 			dflt=bar=0;
 			while(1) {
 				for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
@@ -760,7 +786,7 @@ files from the transfer section, and more.
 							getar(str,cfg.fcomp[i]->arstr);
                             break; } } }
             break;
-		case 12:	/* Transfer protocols */
+		case 13:	/* Transfer protocols */
 			dflt=bar=0;
 			while(1) {
 				for(i=0;i<cfg.total_prots && i<MAX_OPTS;i++)
@@ -937,7 +963,7 @@ directory accordingly.
 								changes=1; }
 							break; } } }
 			break;
-		case 13:	/* Alternate file paths */
+		case 14:	/* Alternate file paths */
 			dflt=bar=0;
 			while(1) {
 				for(i=0;i<cfg.altpaths;i++)
