@@ -1735,6 +1735,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	thisnode.aux=0;
 	putnodedat(cfg.node_num,&thisnode);
 
+	lncntr=1;	/* force a pause before CLS */
+
 	return(true);
 }
 
