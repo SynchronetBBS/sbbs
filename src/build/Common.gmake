@@ -50,6 +50,7 @@
 #  DONT_CLOBBER_CC	- Do not change the default setting of CC				#
 #  OBJPATH_SUFFIX	- Suffix appended to OBJPATH usefull for compiling 		#
 #					  different options of the same source file				#
+#  STATIC			- Create a statically linked build if possible			#
 #																			#
 # Common Build Macros Defined:												#
 #  DELETE			- Delete files (Preferrably verbose)					#
@@ -203,6 +204,11 @@ UL_SUF		:=
 
 OUTPUT		:=	-o
 LOUTPUT		:=	-o
+
+ifdef STATIC
+ LDFLAGS	+=	-static
+ CFLAGS		+=	-DSTATIC_LINK
+endif
 
 ifeq ($(os),openbsd)
  SOFILE	:=	$(SOFILE).$(VERSION)

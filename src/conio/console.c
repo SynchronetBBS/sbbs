@@ -93,7 +93,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#ifndef STATIC_LINK
 #include <dlfcn.h>
+#endif
 #include <fcntl.h>
 #include <limits.h>
 #include <paths.h>
@@ -1286,6 +1288,34 @@ console_init()
 	if(dpy!=NULL)
 		return(0);
 
+#ifdef STATIC_LINK
+	x11.XChangeGC=XChangeGC;
+	x11.XCopyPlane=XCopyPlane;
+	x11.XFillRectangle=XFillRectangle;
+	x11.XFlush=XFlush;
+	x11.XBell=XBell;
+	x11.XLookupString=XLookupString;
+	x11.XNextEvent=XNextEvent;
+	x11.XAllocSizeHints=XAllocSizeHints;
+	x11.XSetWMNormalHints=XSetWMNormalHints;
+	x11.XResizeWindow=XResizeWindow;
+	x11.XMapWindow=XMapWindow;
+	x11.XFree=XFree;
+	x11.XFreePixmap=XFreePixmap;
+	x11.XCreateBitmapFromData=XCreateBitmapFromData;
+	x11.XAllocColor=XAllocColor;
+	x11.XOpenDisplay=XOpenDisplay;
+	x11.XCreateSimpleWindow=XCreateSimpleWindow;
+	x11.XCreateGC=dlsym(dl,"XCreateGC");
+	x11.XSelectInput=XSelectInput;
+	x11.XStoreName=XStoreName;
+	x11.XGetSelectionOwner=XGetSelectionOwner;
+	x11.XConvertSelection=XConvertSelection;
+	x11.XGetWindowProperty=XGetWindowProperty;
+	x11.XChangeProperty=XChangeProperty;
+	x11.XSendEvent=XSendEvent;
+	x11.XSetSelectionOwner=XSetSelectionOwner;
+#else
 	if((dl=dlopen("libX11.so",RTLD_LAZY))==NULL)
 		return(-1);
 	if((x11.XChangeGC=dlsym(dl,"XChangeGC"))==NULL) {
@@ -1392,6 +1422,7 @@ console_init()
 		dlclose(dl);
 		return(-1);
 	}
+#endif
 
 	sem_init(&console_mode_changed,0,0);
 	sem_init(&copybuf_set,0,0);

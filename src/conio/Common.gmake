@@ -1,9 +1,13 @@
 CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
 ifndef NO_X
- ifeq ($(os),linux)
-  CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
- endif
- ifeq ($(os),sunos)
-  CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+ ifdef STATIC
+  CIOLIB-MT_LIBS		+=	-lXlib
+ else
+  ifeq ($(os),linux)
+   CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+  endif
+  ifeq ($(os),sunos)
+   CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+  endif
  endif
 endif
