@@ -4,21 +4,22 @@ Synchronet NT Services
 $Id$
 
 If you're running Synchronet on a Microsoft Windows NT based operating system
-(e.g. Windows NT, Windows 2000, Windows XP, or Windows 2003), you can now run
-Synchronet as a set of NT services using the exectuable sbbsNTsvcs.exe.
+(e.g. Windows NT, Windows 2000, Windows XP, or Windows 2003), you can run
+Synchronet as a set of NT services using the exectuable exec\sbbsNTsvcs.exe.
 
-This single executable includes 4 NT services that handle all the functionality
-of Synchronet v3.11-Win32:
+This single executable includes five (5) NT services that handle all the
+functionality of Synchronet v3.12-Win32:
 
 Name                 Description
 ----                 -----------
 SynchronetBBS        Synchronet Telnet/RLogin Server
 SynchronetFTP        Synchronet FTP Server
+SynchronetWeb        Synchronet Web Server
 SynchronetMail       Synchronet SMTP/POP3 Mail Server
-SynchronetServices   Synchronet Services
+SynchronetServices   Synchronet Services (e.g. NNTP, IRC, Finger, etc.)
 
 You may install, disable, or remove each NT service independantly, or all at
-once. To install on the Synchronet NT services at once, run:
+once. To install all the Synchronet NT services at once, run:
 
 	sbbsNTsvcs install
 
@@ -31,7 +32,9 @@ SBBSCTRL environment variable and the initialization file (sbbs.ini).
 If you are using the Synchronet Control Panel (for Win32) and want to use
 your current settings for the Synchronet Console or NT Services, you can
 export your settings to your ctrl/sbbs.ini file using the File->Export
-Settings menu option.
+Settings menu option. If you are using Synchronet v3.12 or later, the
+relevant settings are automatically stored in this file (no exporting is
+necessary).
 
 Once installed, the Synchronet NT services may be started from the NT Services
 dialog (under the Control Panel), by running the Synchronet Control Panel, or 
@@ -41,26 +44,36 @@ To remove the Synchronet NT services, run:
 
 	sbbsNTsvcs remove
 
+You may also enable and disable the Synchronet NT services with the sbbsNTsvcs
+command-line options. Run "sbbsNTsvcs" from a command prompt to see the 
+available command-line options.
+
 Synchronet Control Panel
 ------------------------
 You should shutdown the Synchronet Control Panel (GUI) before installing the
 Synchronet NT services. The Synchronet Control Panel can be used to start,
-stop, and monitor the NT services once installed, but it is not required for
-operation. If the Synchronet Control Panel is not running, the BBS servers 
-will still function, even if no user is logged onto Windows.
+stop, configure, recycle, and monitor the NT services once installed, but it
+is not required for operation. If the Synchronet Control Panel is not running,
+the BBS servers will still function, even if no user is logged into Windows.
+
+You cannot "spy" on a BBS node running as an NT service and the "Clients"
+window and the optional "Tray icon" in the Synchronet Control Panel will not
+reflect active clients connected to Synchronet NT services. There are plans to
+integrate these features with the Synchronet NT services in the future.
 
 NT Event Log
 ------------
 Error messages (determined by the LogMask in your sbbs.ini file) will be
-logged as NT application event log messages (viewable in your NT Event Viewer).
-The event log messages are currently stored in an undefined format, though
-you can view the text.
+logged as NT application event log messages (viewable in your NT Event
+Viewer). The event log messages are currently stored in an undefined format,
+though you can view the text.
 
-Beta
-----
-This feature (NT services) is brand new to Synchronet and it may not be as
-reliable as running sbbs.exe or sbbsctrl.exe. Please report any problems
-as soon as possible (see http://synchro.net/docs/support.html for contact
-points of support), or e-mail rob@synchro.net.
+Debug Output
+------------
+If you wish to use a Windows debug output viewer (such as DebugView from
+http://www.sysinternals.com/ntw2k/freeware/debugview.shtml) to view the log
+output of one or more of the Synchronet NT Services, set the "Start
+parameters" of one or more of the services (under the Windows Control Panel)
+to "-debug".
 
 /* End of file */
