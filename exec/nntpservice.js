@@ -312,14 +312,11 @@ while(client.socket.is_connected) {
 				if(hdr.from_net_type)
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from,hdr.from,hdr.from_net_addr));
-				else if(hdr.from.indexOf(' ')>0)
-					writeln(format("From: \"%s\" <\"%s\"@%s>"
-						,hdr.from
-						,hdr.from,system.inetaddr));
 				else
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
-						,hdr.from,system.inetaddr));
+						,hdr.from.replace(/ /g,"_")
+						,system.inetaddr));
 				writeln("To: " + hdr.to);
 				writeln("X-Comment-To: " + hdr.to);
 				writeln("Subject: " + hdr.subject);
