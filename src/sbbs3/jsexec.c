@@ -763,6 +763,9 @@ int main(int argc, char **argv, char** environ)
 	signal(SIGQUIT,break_handler);
 	signal(SIGINT,break_handler);
 	signal(SIGTERM,break_handler);
+
+	/* Don't die on SIGPIPE */
+	signal(SIGPIPE,SIG_IGN);
 #endif
 
 	do {
