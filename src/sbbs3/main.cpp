@@ -1142,6 +1142,7 @@ void input_thread(void *arg)
 			sbbs->sys_status|=SS_ABORT;
 			RingBufReInit(&sbbs->inbuf);	/* Purge input buffer */
     		RingBufReInit(&sbbs->outbuf);	/* Purge output buffer */
+			sem_post(&sbbs->inbuf.sem);
 			continue;	// Ignore the entire buffer
 		}
 
@@ -1209,12 +1210,7 @@ void output_thread(void* arg)
         	avail=buftop-bufbot;
 
 		if(!avail) {
-/** 
-    This caused occasional segfaults on Linux and *could* have been the cause
-    of blocked output on Win32 (what was I thinking?)
-			sem_init(&sbbs->output_sem,0,0);
-**/
-			sem_wait(&sbbs->output_sem);
+			sem_wait(&sbbs->outbuf.sem);
 			continue; 
 		}
 
@@ -2075,7 +2071,6 @@ bool sbbs_t::init()
 	}
 
     RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
-	sem_init(&output_sem,0,0);
 
 	if(cfg.node_num && client_socket!=INVALID_SOCKET) {
 
@@ -2372,9 +2367,6 @@ sbbs_t::~sbbs_t()
 
 	if(client_socket_dup!=INVALID_SOCKET)
 		closesocket(client_socket_dup);	/* close duplicate handle */
-
-	sem_post(&output_sem);		/* just incase someone's waiting */
-	sem_destroy(&output_sem);
 
 	if(cfg.node_num>0)
 		node_inbuf[cfg.node_num-1]=NULL;
@@ -2699,21 +2691,20 @@ void sbbs_t::hangup(void)
 		closesocket(client_socket_dup);
 		client_socket_dup=INVALID_SOCKET;
 	}
-	sem_post(&output_sem);
+	sem_post(&outbuf.sem);
 	online=0;
 }
 
-int sbbs_t::incom(void)
+int sbbs_t::incom(unsigned long timeout)
 {
 	uchar	ch;
 
-	if(!RingBufRead(&inbuf, &ch, 1))
-		return(NOINP);
-#if 0 // removed Jan-2003
-	if(!(cfg.ctrlkey_passthru&(1<<CTRL_C))	
-		&& rio_abortable && ch==CTRL_C)
-		return(NOINP); /* this should never happen since input_thread eats Ctrl-C chars */
-#endif
+	if(!RingBufRead(&inbuf, &ch, 1)) {
+		if(sem_trywait_block(&inbuf.sem,timeout)!=0)
+			return(NOINP);
+		if(!RingBufRead(&inbuf, &ch, 1))
+			return(NOINP);
+	}
 	return(ch);
 }
 
@@ -2723,7 +2714,6 @@ int sbbs_t::outcom(uchar ch)
 		return(TXBOF);
     if(!RingBufWrite(&outbuf, &ch, 1))
 		return(TXBOF);
-	sem_post(&output_sem);
 	return(0);
 }
 
@@ -4084,7 +4074,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(events!=NULL)
 		events->terminated=true;
     // Wake-up BBS output thread so it can terminate
-    sem_post(&sbbs->output_sem);
+    sem_post(&sbbs->outbuf.sem);
 
     // Wait for all node threads to terminate
 	if(node_threads_running) {
