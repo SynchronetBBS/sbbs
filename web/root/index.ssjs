@@ -1,16 +1,29 @@
 load("../web/lib/template.ssjs");
+load("sbbsdefs.js");
 
 template.title=system.name+" Home Page";
 write_template("header.inc");
-writeln('<p class="navigation">Home</p>');
+writeln('<br>');
 writeln('<table class="main" cellspacing="2" cellpadding="2">');
 writeln('<tbody>');
 writeln('<tr>');
 writeln('<td class="main">');
-writeln('<a href="nodelist.ssjs">See who is currently online</a><br />');
-writeln('<a href="newuser.ssjs">Sign up as a new user</a><br />');
-writeln('<a href="login/">Login as an existing user</a><br />');
-writeln('<a href="msgs">Access message groups</a><br /><br />');
+writeln('<a href="nodelist.ssjs">Who Is Online</a><br />');
+if(user.number==0 || user.security.restrictions&UFLAG_G) {
+	writeln('<a href="newuser.ssjs">Sign up as a New User</a><br />');
+	writeln('<a href="login/">Login with an Existing User Account</a><br />');
+} else {
+	writeln('<a href="members/userlist.ssjs">User Listing</a><br />');
+	writeln('<a href="members/info.ssjs">Information Menu</a><br />');
+	writeln('<a href="members/themes.ssjs">Change Your HTML Theme</a><br />');
+}
+writeln('<a href="msgs">Message Groups</a><br />');
+// FTP link
+write('<a href=ftp://');
+if(user.number && !(user.security.restrictions&UFLAG_G))
+	write(escape(user.alias) + ':' + escape(user.security.password) + '@');
+writeln(system.inet_addr + '/00index.html>File Libraries</a>');
+writeln('<br />');
 writeln('</td>');
 writeln('</tr>');
 writeln('</tbody>');
