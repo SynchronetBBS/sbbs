@@ -489,6 +489,9 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		} 
 	}
 
+	if(msg==NULL)	/* don't create message header */
+		return(smb_unlocksmbhdr(smb));
+
 	msg->hdr.version=smb_ver();
 	msg->hdr.when_imported.time=time(NULL);
 	msg->hdr.when_imported.zone=cfg->sys_timezone;
@@ -519,6 +522,9 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		SAFECOPY(msg_id,ftn_msgid(cfg->sub[smb->subnum],msg));
 		smb_hfield(msg,FIDOMSGID,strlen(msg_id),msg_id);
 	}
+
+	if(msg->to==NULL)	/* no recipient, don't add header */
+		return(smb_unlocksmbhdr(smb));
 
 	if((i=smb_addmsghdr(smb,msg,storage))!=0) // calls smb_unlocksmbhdr() 
 		smb_freemsgdat(smb,offset,length,1);
