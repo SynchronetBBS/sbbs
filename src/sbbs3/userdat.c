@@ -258,8 +258,8 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	getrec(userdat,U_LEECH,2,str);
 	user->leech=(uchar)ahtoul(str);
-	getrec(userdat,U_CURSUB,8,user->cursub);
-	getrec(userdat,U_CURDIR,8,user->curdir);
+	getrec(userdat,U_CURSUB,sizeof(user->cursub)-1,user->cursub);
+	getrec(userdat,U_CURDIR,sizeof(user->curdir)-1,user->curdir);
 	getrec(userdat,U_CURXTRN,8,user->curxtrn);
 
 	getrec(userdat,U_FREECDT,10,str);
@@ -401,8 +401,8 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_MISC,8,ultoa(user->misc,str,16));
 	putrec(userdat,U_LEECH,2,ultoa(user->leech,str,16));
 
-	putrec(userdat,U_CURSUB,8,user->cursub);
-	putrec(userdat,U_CURDIR,8,user->curdir);
+	putrec(userdat,U_CURSUB,sizeof(user->cursub)-1,user->cursub);
+	putrec(userdat,U_CURDIR,sizeof(user->curdir)-1,user->curdir);
 	putrec(userdat,U_CURXTRN,8,user->curxtrn);
 	putrec(userdat,U_CURXTRN+8,2,crlf);
 
@@ -1407,6 +1407,9 @@ int DLLCALL getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *
 	}
 	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 
+	if(length==0)	/* auto-length */
+		length=user_rec_len(start);
+
 	i=0;
 	while(i<LOOP_NODEDAB
 		&& lock(file,(long)((long)(usernumber-1)*U_LEN)+start,length)==-1) {
@@ -1457,6 +1460,9 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char 
 		close(file);
 		return(-4);
 	}
+
+	if(length==0)	/* auto-length */
+		length=user_rec_len(start);
 
 	strcpy(str2,str);
 	if(strlen(str2)<length) {
@@ -1521,6 +1527,9 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	}
 
 	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
+
+	if(length==0)	/* auto-length */
+		length=user_rec_len(start);
 
 	i=0;
 	while(i<LOOP_NODEDAB
@@ -1853,6 +1862,11 @@ int DLLCALL user_rec_len(int offset)
 		case U_BIRTH:		return(LEN_BIRTH);
 		case U_MODEM:		return(LEN_MODEM);
 
+		/* Internal codes (16 chars) */
+		case U_CURSUB:
+		case U_CURDIR:
+			return (16);
+
 		/* Dates in time_t format (8 hex digits) */
 		case U_LASTON:
 		case U_FIRSTON:
@@ -1873,12 +1887,9 @@ int DLLCALL user_rec_len(int offset)
 		case U_CHAT:
 
 		/* Internal codes (8 chars) */
-		case U_CURSUB:
-		case U_CURDIR:
 		case U_CURXTRN:
 		case U_XEDIT:
 		case U_SHELL:
-
 			return(8);
 
 		/* 16-bit integers (5 decimal digits) */
