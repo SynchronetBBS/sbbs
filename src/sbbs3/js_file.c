@@ -117,6 +117,42 @@ static void js_finalize_file(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx, obj, NULL);
 }
 
+/* Converts fopen() style 'mode' string into open() style 'flags' integer */
+
+static int fopenflags(char *mode)
+{
+	int flags=0;
+
+	if(strchr(mode,'b'))
+		flags|=O_BINARY;
+
+	if(strchr(mode,'w')) {
+		flags|=O_CREAT|O_TRUNC;
+		if(strchr(mode,'+'))
+			flags|=O_RDWR;
+		else
+			flags|=O_WRONLY;
+		return(flags);
+	}
+
+	if(strchr(mode,'a')) {
+		flags|=O_CREAT|O_APPEND;
+		if(strchr(mode,'+'))
+			flags|=O_RDWR;
+		else
+			flags|=O_WRONLY;
+		return(flags);
+	}
+
+	if(strchr(mode,'r')) {
+		if(strchr(mode,'+'))
+			flags|=O_RDWR;
+		else
+			flags|=O_RDONLY;
+	}
+
+	return(flags);
+}
 
 /* File Object Methods */
 
@@ -124,6 +160,8 @@ static JSBool
 js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		mode="w+";	/* default mode */
+	BOOL		shareable=FALSE;
+	int			file;
 	uintN		i;
 	jsint		bufsize=2*1024;
 	JSString*	str;
@@ -136,7 +174,6 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(p->fp!=NULL)  
 		return(JS_TRUE);
-		
 
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_STRING(argv[i])) {	/* mode */
@@ -145,12 +182,22 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				return(JS_FALSE);
 			}
 			mode=JS_GetStringBytes(str);
-		} else
+		} else if(JSVAL_IS_BOOLEAN(argv[i]))	/* shareable */
+			shareable=JSVAL_TO_BOOLEAN(argv[i]);
+		else	/* bufsize */
 			JS_ValueToInt32(cx,argv[i],&bufsize);
 	}
 	SAFECOPY(p->mode,mode);
 
-	if((p->fp=fopen(p->name,p->mode))==NULL)
+	if(shareable)
+		p->fp=fopen(p->name,p->mode);
+	else {
+		if((file=nopen(p->name,fopenflags(p->mode)))!=-1) {
+			if((p->fp=fdopen(file,p->mode))==NULL)
+				close(file);
+		}
+	}
+	if(p->fp==NULL)
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 	else {
 		dbprintf(FALSE, p, "opened: %s",p->name);
