@@ -590,7 +590,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     /* Defaults */
     CtrlDirectory="c:\\sbbs\\ctrl\\";
     LoginCommand="telnet://localhost";
-    ConfigCommand="%sSCFG %s /T2";
+    ConfigCommand="%sscfg.exe %s -l25";
     JS_MaxBytes=JAVASCRIPT_MAX_BYTES;
     MinimizeToSysTray=false;
     UndockableForms=false;
