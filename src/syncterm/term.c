@@ -70,10 +70,6 @@ void mousedrag(unsigned char *scrollback)
 								copybuf[outpos++]='\n';
 							}
 						}
-						if((pos+1)%term.width!=0) {
-							copybuf[outpos++]='\r';
-							copybuf[outpos++]='\n';
-						}
 						copybuf[outpos]=0;
 						copytext(copybuf, strlen(copybuf));
 						puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
