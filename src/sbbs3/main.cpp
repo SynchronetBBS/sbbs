@@ -1042,9 +1042,10 @@ void input_thread(void *arg)
 			lprintf("!TELBUF OVERFLOW (%d>%d)",wr,sizeof(telbuf));
 
 		/* First level Ctrl-C checking */
-		if(sbbs->rio_abortable 
+		if(!(sbbs->cfg.ctrlkey_passthru&(1<<CTRL_C))
+			&& sbbs->rio_abortable 
 			&& !(sbbs->telnet_mode&(TELNET_MODE_BIN_RX|TELNET_MODE_GATE))
-			&& memchr(wrbuf, 3, wr)) {	
+			&& memchr(wrbuf, CTRL_C, wr)) {	
 			if(RingBufFull(&sbbs->outbuf))
     			lprintf("Node %d Ctrl-C hit with %lu bytes in output buffer"
 					,sbbs->cfg.node_num,RingBufFull(&sbbs->outbuf));
