@@ -122,7 +122,7 @@ str_list_t strListRemove(str_list_t* list, size_t index)
 	return(lp);
 }
 
-str_list_t strListAdd(str_list_t* list, const char* str, size_t index)
+str_list_t strListAppend(str_list_t* list, const char* str, size_t index)
 {
 	char* buf;
 
@@ -131,20 +131,20 @@ str_list_t strListAdd(str_list_t* list, const char* str, size_t index)
 
 	strcpy(buf,str);
 
-	if(index==0)
+	if(index==STR_LIST_APPEND)
 		index=strListCount(*list);
 
 	return(str_list_append(list,buf,index));
 }
 
-str_list_t	strListAddList(str_list_t* list, const str_list_t add_list)
+str_list_t	strListAppendList(str_list_t* list, const str_list_t add_list)
 {
 	size_t	i;
 	size_t	count;
 
 	count=strListCount(*list);
 	for(i=0; add_list[i]!=NULL; i++)
-		strListAdd(list,add_list[i],count++);
+		strListAppend(list,add_list[i],count++);
 
 	return(*list);
 }
@@ -181,7 +181,7 @@ str_list_t strListSplit(str_list_t* list, char* str, const char* delimit)
 	}
 
 	for(token = strtok(str, delimit); token!=NULL; token=strtok(NULL, delimit))
-		strListAdd(list, token, 0);
+		strListAppend(list, token, STR_LIST_APPEND);
 
 	return(*list);
 }
@@ -272,9 +272,9 @@ void strListFree(str_list_t* list)
 	}
 }
 
-str_list_t strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len)
+str_list_t strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len, BOOL pad)
 {
-	char*		buf;
+	char*		buf=NULL;
 	size_t		count;
 
 	if(max_line_len<1)
@@ -285,17 +285,22 @@ str_list_t strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len)
 			return(NULL);
 	}
 
-	if((buf=malloc(max_line_len+1))==NULL)
-		return(NULL);
-
 	count = strListCount(*list);
 	while(!feof(fp)) {
+		if(buf==NULL && (buf=malloc(max_line_len+1))==NULL)
+			return(NULL);
+		
 		if(fgets(buf,max_line_len+1,fp)==NULL)
 			break;
-		strListAdd(list, buf, count++);
+		if(pad) {
+			str_list_append(list, buf, count++);
+			buf=NULL;
+		} else
+			strListAppend(list, buf, count++);
 	}
 
-	free(buf);
+	if(buf)
+		free(buf);
 
 	return(*list);
 }

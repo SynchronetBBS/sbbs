@@ -38,11 +38,14 @@
 #ifndef _STR_LIST_H
 #define _STR_LIST_H
 
+#include <stdio.h>			/* FILE */
 #include "gen_defs.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+#define STR_LIST_APPEND		(~0)
 
 typedef char** str_list_t;
 
@@ -57,10 +60,10 @@ void		strListFreeStrings(str_list_t list);
 
 /* Pass a pointer to a string list, the string to add (append) */
 /* Returns the updated list or NULL on error */
-str_list_t	strListAdd(str_list_t* list, const char* str, size_t index);
+str_list_t	strListAppend(str_list_t* list, const char* str, size_t index);
 
 /* Append a string list onto another string list */
-str_list_t	strListAddList(str_list_t* list, const str_list_t append_list);
+str_list_t	strListAppendList(str_list_t* list, const str_list_t append_list);
 
 /* Inserts a string into the list at a specific index */
 str_list_t	strListInsert(str_list_t* list, const char* str, size_t index);
@@ -98,7 +101,7 @@ void		strListSortAlphaCaseReverse(str_list_t list);
 
 /* Read lines from file appending each line to string list */
 /* Pass NULL list to have list allocated for you */
-str_list_t	strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len);
+str_list_t	strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len, BOOL pad);
 
 /* Write to file (fp) each string in the list, optionally separated by separator (e.g. "\n") */
 size_t		strListWriteFile(FILE* fp, const str_list_t list, const char* separator);

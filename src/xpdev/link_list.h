@@ -49,6 +49,8 @@
 extern "C" {
 #endif
 
+#define FIRST_NODE				NULL	/* Special value to specify first node in list */
+
 /* Valid link_list_t.flags bits */
 #define LINK_LIST_MALLOC		(1<<0)	/* List/node allocated with malloc() */
 #define LINK_LIST_ALWAYS_FREE	(1<<1)	/* Always free node data when removing */
@@ -137,13 +139,13 @@ long			listMerge(link_list_t* dest, const link_list_t* src, list_node_t* after);
 
 /* Convenience macros for pushing, popping, and inserting nodes */
 #define	listPushNode(list, data)				listAddNode(list, data, listLastNode(list))
-#define listInsertNode(link, data)				listAddNode(list, data, NULL)
+#define listInsertNode(link, data)				listAddNode(list, data, FIRST_NODE)
 #define listPushNodeData(list, data, length)	listAddNodeData(list, data, length, listLastNode(list))
-#define	listInsertNodeData(list, data, length)	listAddNodeData(list, data, length, NULL)
+#define	listInsertNodeData(list, data, length)	listAddNodeData(list, data, length, FIRST_NODE)
 #define	listPushNodeString(list, str)			listAddNodeString(list, str, listLastNode(list))
-#define listInsertNodeString(list, str)			listAddNodeString(list, str, NULL)
+#define listInsertNodeString(list, str)			listAddNodeString(list, str, FIRST_NODE)
 #define	listPushStringList(list, str_list)		listAddStringList(list, str_list, listLastNode(list))
-#define listInsertStringList(list, str_list)	listAddStringList(list, str_list, NULL)
+#define listInsertStringList(list, str_list)	listAddStringList(list, str_list, FIRST_NODE)
 #define listPopNode(list)						listRemoveNode(list, listLastNode(list))
 
 /* Remove node from list, returning the node's data (if not free'd) */

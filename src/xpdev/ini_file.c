@@ -153,7 +153,7 @@ str_list_t iniGetStringList(FILE* fp, const char* section, const char* key
 	token=strtok(list,sep);
 	while(token!=NULL) {
 		truncsp(token);
-		if(strListAdd(&lp,token,items++)==NULL)
+		if(strListAppend(&lp,token,items++)==NULL)
 			break;
 		token=strtok(NULL,sep);
 	}
@@ -216,7 +216,7 @@ str_list_t iniGetSectionList(FILE* fp, const char* prefix)
 		if(prefix!=NULL)
 			if(strnicmp(p,prefix,strlen(prefix))!=0)
 				continue;
-		if(strListAdd(&lp,p,items++)==NULL)
+		if(strListAppend(&lp,p,items++)==NULL)
 			break;
 	}
 
@@ -256,7 +256,7 @@ str_list_t iniGetKeyList(FILE* fp, const char* section)
 			continue;
 		*tp=0;
 		truncsp(p);
-		if(strListAdd(&lp,p,items++)==NULL)
+		if(strListAppend(&lp,p,items++)==NULL)
 			break;
 	}
 
