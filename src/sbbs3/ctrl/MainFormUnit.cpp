@@ -79,10 +79,9 @@
 #pragma resource "*.dfm"
 TMainForm *MainForm;
 
-#define MAX_LOGLEN 20000
-
 #define LOG_TIME_FMT "  m/d  hh:mm:ssa/p"
 
+DWORD	MaxLogLen=20000;
 int     threads=1;
 
 static void thread_up(BOOL up, BOOL setuid)
@@ -210,7 +209,7 @@ static int bbs_lputs(char *str)
     	mutex=CreateMutex(NULL,false,NULL);
 	WaitForSingleObject(mutex,INFINITE);
 
-    while(TelnetForm->Log->Text.Length()>=MAX_LOGLEN)
+    while(MaxLogLen && TelnetForm->Log->Text.Length()>=MaxLogLen)
         TelnetForm->Log->Lines->Delete(0);
 
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
@@ -289,7 +288,7 @@ static int event_log(char *str)
     	mutex=CreateMutex(NULL,false,NULL);
 	WaitForSingleObject(mutex,INFINITE);
 
-    while(EventsForm->Log->Text.Length()>=MAX_LOGLEN)
+    while(MaxLogLen && EventsForm->Log->Text.Length()>=MaxLogLen)
         EventsForm->Log->Lines->Delete(0);
 
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
@@ -307,7 +306,7 @@ static int service_log(char *str)
     	mutex=CreateMutex(NULL,false,NULL);
 	WaitForSingleObject(mutex,INFINITE);
 
-    while(ServicesForm->Log->Text.Length()>=MAX_LOGLEN)
+    while(MaxLogLen && ServicesForm->Log->Text.Length()>=MaxLogLen)
         ServicesForm->Log->Lines->Delete(0);
 
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
@@ -368,7 +367,7 @@ static int mail_lputs(char *str)
         return(0);
     }
 
-    while(MailForm->Log->Text.Length()>=MAX_LOGLEN)
+    while(MaxLogLen && MailForm->Log->Text.Length()>=MaxLogLen)
         MailForm->Log->Lines->Delete(0);
 
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
@@ -490,7 +489,7 @@ static int ftp_lputs(char *str)
     }
 #endif
 
-    while(FtpForm->Log->Text.Length()>=MAX_LOGLEN)
+    while(MaxLogLen && FtpForm->Log->Text.Length()>=MaxLogLen)
         FtpForm->Log->Lines->Delete(0);
 
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
@@ -702,7 +701,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
 
     // Verify SBBS.DLL version
     long bbs_ver = bbs_ver_num();
-    if(bbs_ver < (0x31000 | 'F'-'A') || bbs_ver > (0x399<<8)) {
+    if(bbs_ver < (0x31000 | 'M'-'A') || bbs_ver > (0x399<<8)) {
         char str[128];
         sprintf(str,"Incorrect SBBS.DLL Version (%lX)",bbs_ver);
     	Application->MessageBox(str,"ERROR",MB_OK|MB_ICONEXCLAMATION);
@@ -1403,6 +1402,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	Hostname=Registry->ReadString("Hostname");
     if(Registry->ValueExists("CtrlDirectory"))
     	CtrlDirectory=Registry->ReadString("CtrlDirectory");
+    if(Registry->ValueExists("MaxLogLen"))
+    	MaxLogLen=Registry->ReadInteger("MaxLogLen");
     if(Registry->ValueExists("JS_MaxBytes"))
     	JS_MaxBytes=Registry->ReadInteger("JS_MaxBytes");
     if(JS_MaxBytes==0)
@@ -1849,6 +1850,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 
     Registry->WriteString("Hostname",Hostname);
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
+    Registry->WriteInteger("MaxLogLen",MaxLogLen);
     Registry->WriteInteger("JS_MaxBytes",JS_MaxBytes);
     Registry->WriteString("LoginCommand",LoginCommand);
     Registry->WriteString("ConfigCommand",ConfigCommand);
@@ -2778,6 +2780,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
     PropertiesDlg->PasswordEdit->Text=Password;
     PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(JS_MaxBytes);
+    PropertiesDlg->MaxLogLenEdit->Text=IntToStr(MaxLogLen);
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
@@ -2790,6 +2793,8 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         UndockableForms=PropertiesDlg->UndockableCheckBox->Checked;
         JS_MaxBytes
         	=PropertiesDlg->JS_MaxBytesEdit->Text.ToIntDef(JAVASCRIPT_MAX_BYTES);
+        MaxLogLen
+        	=PropertiesDlg->MaxLogLenEdit->Text.ToIntDef(0);
         SaveSettings(Sender);
     }
     delete PropertiesDlg;
