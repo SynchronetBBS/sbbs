@@ -329,12 +329,10 @@ while(client.socket.is_connected) {
    			break;
 
 		case "POST":
-/**
-			if(!selected.can_post) {
+			if(user.security.restrictions&UFLAG_P) {
 				writeln("440 posting not allowed");
 				break;
 			}
-**/
 			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
 
 			var hdr=new Object();
@@ -399,6 +397,7 @@ while(client.socket.is_connected) {
 					case "newsgroups":
 						newsgroups=data.split(',');
 						break;
+					/* TODO: Parse date field */
 				}
 			}
 
