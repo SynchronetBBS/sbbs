@@ -22,13 +22,18 @@ var platform = system.platform.toLowerCase();
 var make = (platform=="win32" ? "make":"gmake");
 var msdev = '"C:\\Program Files\\Microsoft Visual Studio\\Common\\MSDev98\\Bin\\msdev"';
 var build_output = "build_output.txt";
+var archive;
+var archive_cmd;
+var cleanup;
 
 if(platform=="win32") {
 	archive="sbbs_src.zip";
-	archive_cmd="pkzip25 -exclude=*output.txt -add -dir " + archive;
+	archive_cmd="pkzip25 -exclude=*output.txt -add -dir -max " + archive;
+	cleanup="rmdir /s /q ";
 } else {
 	archive="sbbs_src.tgz";
 	archive_cmd="tar --exclude=*output.txt -czvf " + archive + " *";
+	cleanup="rm -r -f "
 }
 
 var builds
@@ -65,9 +70,10 @@ var file = new File("README.TXT");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s C/C++ Source Code Archive (%s)\n"
 		,system.platform, system.datestr()));
-	file.writeln("This archive contains a snap-shot of all the source code and library files"
-	file.writeln("necessary for a successful " + system.platform + " build of the following"
-	file.writeln("Synchronet projects as of " + system.datestr() + ":");
+	file.writeln("This archive contains a snap-shot of all the source code and library files");
+	file.writeln("necessary for a successful " + system.platform 
+		+ " build of the following Synchronet projects");
+	file.writeln("as of " + system.datestr() + ":");
 	file.writeln();
 	file.writeln(format("%-20s %s", "Project Directory", "Build Command"));
 	for(i in builds) {
@@ -75,7 +81,8 @@ if(file.open("wt")) {
 			file.writeln(format("%-20s %s", builds[i][0], builds[i][1]));
 	}
 	file.writeln();
-	file.writeln(format("Builds verified on %s by %s", system.timestr(), system_description));
+	file.writeln("Builds verified on " + system.timestr());
+	file.writeln(system_description);
 	file.writeln();
 	file.writeln("For more details, see http://synchro.net/docs/source.html");
 	if(platform!="win32")
@@ -85,8 +92,11 @@ if(file.open("wt")) {
 
 var file = new File("FILE_ID.DIZ");
 if(file.open("wt")) {
-	file.writeln(format("Synchronet-%s C/C++ source code archive",system.platform));
-	file.writeln(format("(%s)",system.datestr()));
+	file.writeln(format("Synchronet-%s BBS Software",system.platform));
+	file.writeln(format("C/C++ source code archive (%s)",system.datestr()));
+	if(platform=="win32")
+		file.writeln("Unzip *with* directories!");
+	file.writeln("http://www.synchro.net");
 	file.close();
 }
 
@@ -101,7 +111,7 @@ for(i in builds) {
 		log(LOG_INFO, "Build sub-directory: " + sub_dir);
 	if(!chdir(build_dir)) {
 		semd_email(subject, log(LOG_ERR,"!FAILED to chdir to: " + build_dir));
-		exit(1);
+		bail(1);
 	}
 
 	builds[i].start = time();
@@ -115,7 +125,7 @@ for(i in builds) {
 		send_email(subject, 
 			log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line + "' in " + sub_dir) 
 			+ "\n\n" + file_contents(build_output));
-		exit(1);
+		bail(1);
 	}
 
 	builds[i].end = time();
@@ -140,7 +150,20 @@ log(LOG_INFO,format("Copying %s to %s",archive,dest));
 if(!file_copy(archive,dest))
 	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
 
+bail(0);
 /* end */
+
+function bail(code)
+{
+	if(cleanup) {
+		chdir(temp_dir + "/..");
+		log(LOG_INFO, "Executing: " + cleanup + temp_dir);
+		var retval=system.exec(cleanup + temp_dir);
+		if(retval)
+			log(LOG_ERR,format("!ERROR %d executing %s", retval, cleanup + temp_dir));
+	}
+	exit(code);
+}
 
 function elapsed_time(t)
 {
