@@ -219,13 +219,14 @@ void SMBCALL smb_close(smb_t* smb)
 {
 	if(smb->shd_fp!=NULL) {
 		smb_unlocksmbhdr(smb);		   /* In case it's been locked */
-		fclose(smb->shd_fp); 
+		smb_close_fp(&smb->shd_fp); 
 	}
-	if(smb->sid_fp!=NULL)
-		fclose(smb->sid_fp);
-	if(smb->sdt_fp!=NULL)
-		fclose(smb->sdt_fp);
-	smb->sid_fp=smb->shd_fp=smb->sdt_fp=NULL;
+	smb_close_fp(&smb->sid_fp);
+	smb_close_fp(&smb->sdt_fp);
+	smb_close_fp(&smb->sid_fp);
+	smb_close_fp(&smb->sda_fp);
+	smb_close_fp(&smb->sha_fp);
+	smb_close_fp(&smb->hash_fp);
 }
 
 /****************************************************************************/
