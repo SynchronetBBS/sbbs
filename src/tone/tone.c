@@ -1,130 +1,98 @@
-/* TONE.C */
+/* tone.c */
 
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* Tone Generation Utility (using PC speaker, not sound card) */
 
-/* Linux modifications by Casey Martin 2000.
-
-   Note:  Permissions on /dev/console must be at least 006 for this
-   to work properly
-*/
+/* $Id$ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
-
-/* Test sound freqs and durations from command line */
-
-#ifdef __OS2__
-	#define INCL_DOS
-	#include <os2.h>
-#endif
-
-#ifndef __unix__
-	#include <io.h>
-	#include <dos.h>
-#else
-	#include <unistd.h>
-	#include <math.h>
-	#include <time.h>
-	#include <sys/ioctl.h>
-	#include <sys/kd.h>
-	#include <sys/time.h>
-	#include <sys/types.h>
-	#include <termios.h>
-	#include <signal.h>
-#endif
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <fcntl.h>
+#include <ctype.h>
 
-#ifdef __OS2__
-	#define mswait(x) DosSleep(x)
-	#define delay(x) DosSleep(x)
-	#define sound(x) DosBeep(x,0)
-	#define nosound() DosBeep(0,0)
-#endif
+#include "genwrap.h"	/* BEEP */
+#include "dirwrap.h"	/* getfname */
+#include "conwrap.h"	/* kbhit */
 
 #define NOT_ABORTABLE	(1<<0)
 #define SHOW_DOT		(1<<1)
 #define SHOW_FREQ		(1<<2)
 #define NO_VISUAL		(1<<3)
-#define USE_MSWAIT		(1<<4)
 
-#ifdef __unix__
-	#define nosound() ioctl(fd, KIOCSOUND, 0)
-	#define sound(f)  ioctl(fd, KIOCSOUND, (int) (1193180 / f))
-	#define mswait(x) delay(x)
-	#define kbhit()   select(1, &inp, NULL, NULL, &timeout)
-	#define delay(ms) usleep(ms * 1000)
-	#define OPENARGS O_RDONLY
-#else
-	#define OPENARGS (O_RDONLY | O_BINARY | O_DENYNONE)
-#endif
-
-
-#if defined __OS2__ || defined __unix__
-	int mswtyp;
-#else
-	extern mswtyp;
-#endif
-
-int aborted=0;	/* Ctrl-C hit? */
 int mode=0; 	/* Optional modes */
 int t=1;		/* Timing */
 int s=0;		/* Stacato */
 int octave=4;	/* Default octave */
 
-
-#ifdef __unix__
-	int fd = 0;              // file descriptor for the console
-	struct termios stored;   // for storing old term settings
-	struct timeval timeout = {0, 0}; // passed in select() call
-	fd_set inp;              // passes in select() call
-#endif
-
 double pitch=523.50/32.0;	 /* low 'C' */
-
-
 
 void play(char *freq, char *dur)
 {
-	char *notes="c d ef g a b";
-	char *sharp="BC D EF G A ";
-	int i,n,d,o=octave;
-	double f;
+	char*	notes="c d ef g a b";
+	char*	sharp="BC D EF G A ";
+	int		i,n,o,d;
+	int		len;
+	double	f;
+
+	if(dur==NULL)
+		dur="0";
 
 	d=atoi(dur);
-	if(isdigit(freq[0]))
+	if(isdigit(*freq))
 		f=atoi(freq);
   
 	else
-		switch(toupper(freq[0])) {
+		switch(toupper(*freq)) {
 			case 'O':               /* default octave */
-				if(isdigit(dur[0]))
+				if(isdigit(*dur))
 					octave=d;
 				else
 					octave+=d;
 				return;
 			case 'P':               /* pitch variation */
-				if(isdigit(dur[0]))
+				if(isdigit(*dur))
 					pitch=atof(dur)/32.0;
 				else
 					pitch+=atof(dur);
 				return;
 			case 'Q':               /* quit */
-				nosound();
 				exit(0);
 			case 'R':               /* rest */
 				f=0;
 				break;
 			case 'S':               /* stacato */
-				if(isdigit(dur[0]))
+				if(isdigit(*dur))
 					s=d;
 				else
 					s+=d;
@@ -141,60 +109,51 @@ void play(char *freq, char *dur)
 				dur[n+1]=0;
 				if(dur[n]=='\\') {
 					dur[n]=0;
-					printf("%s",dur); }
-				else
+					printf("%s",dur); 
+				} else
 					printf("%s\r\n",dur);
 				return;
 			case 'X':               /* exit */
 				exit(1);
 			default:
 				for(n=0;notes[n];n++)
-					if(freq[0]==notes[n] || freq[0]==sharp[n])
+					if(*freq==notes[n] || *freq==sharp[n])
 						break;
 				if(isdigit(freq[1]))
 					o=(freq[1]&0xf);
 				else
 					o=octave;
 				f=pitch*pow(2,o+(double)n/12);
-				break; }
-	if(!f)
-		nosound();
-	else
-		sound(f);
+				break; 
+	}
+
 	if(f && mode&SHOW_FREQ) {
 		for(i=0;freq[i]>' ';i++)
 			;
 		freq[i]=0;
-		printf("%-4.4s",freq); }
+		printf("%-4.4s",freq); 
+	}
 	if(mode&SHOW_DOT)
 		printf(".");
-	if(t>10) {
-		if(mode&USE_MSWAIT)
-			mswait((d*t)-(d*s));
-		else
-			delay((d*t)-(d*s)); }
-	else {
-		if(mode&USE_MSWAIT)
-			mswait(d*t);
-		else
-			delay(d*t); }
+	if(t>10)
+		len=(d*t)-(d*s);
+	else
+		len=(d*t);
+	if(f)
+		BEEP(f,len);
+	else
+		SLEEP(len);
 	if(s) {
-		nosound();
-		if(t>10) {
-			if(mode&USE_MSWAIT)
-				mswait(d*s);
-			else
-				delay(d*s); }
-		else {
-			if(mode&USE_MSWAIT)
-				mswait(s);
-			else
-				delay(s); } }
+		if(t>10)
+			SLEEP(d*s);
+		else
+			SLEEP(s);
+	}
 }
 
 void usage(void)
 {
-	printf("usage: tone [/opts] [(note[oct]|freq) dur | (cmd val) [...]] "
+	printf("usage: tone [-opts] [(note[oct]|freq) dur | (cmd val) [...]] "
 		"[+filename]\n\n");
 	printf("where: note  = a,b,c,d,e,f, or g (naturals) or A,B,C,D,E,F, or "
 		"G (sharps)\n");
@@ -217,76 +176,26 @@ void usage(void)
 	printf("               f display frequency or note value\n");
 	printf("               n not abortable with key-stroke\n");
 	printf("               v disable visual text commands\n");
-	printf("               t use time-slice aware delays\n");
 	exit(0);
 }
-
-#ifdef __unix__
-
-void cbreakh(int sig)
-{
-	nosound();
-	exit(0);
-}
-
-#else /* !unix */
-
-int cbreakh()	/* ctrl-break handler */
-{
-	aborted=1;
-	return(1);		/* 1 to continue, 0 to abort */
-}
-
-#endif
 
 int main(int argc, char **argv)
 {
-	char *p,str[128];
-	int i,j,file;
-	FILE *stream;
+	char*	p;
+	char	str[128];
+	char	revision[16];
+	int		i,j;
+	FILE*	stream;
 
-#ifdef __unix__
+	sscanf("$Revision$", "%*s %s", revision);
 
-	// sets up the terminal for one key entry (to cancel playback)
-	struct termios newterm;
-	tcgetattr(0,&stored);
-  
-	memcpy(&newterm,&stored,sizeof(struct termios));
-	newterm.c_lflag &= (~ICANON);
-	newterm.c_cc[VTIME] = 0;
-	newterm.c_cc[VMIN] = 1;
-	tcsetattr(0,TCSANOW,&newterm);
-
-	// set up select() args
-	FD_ZERO(&inp);
-	FD_SET(0, &inp);
-
-	// install Ctrl-C handler...
-	signal(SIGINT, cbreakh);
-
-#endif
-  
-#ifndef __OS2__
-	#ifndef __unix__
-		ctrlbrk(cbreakh);
-	#else
-  		fd = open("/dev/console", O_NOCTTY);
-		if (fd < 0) {
-    		perror("open(\"/dev/console\"");
-    		exit(-1);
-		}
-	#endif
-#endif
-
-	printf("\nTone Generation Utility  v1.01  Developed 1993 Rob Swindell\n\n");
+	printf("\nTone Generation Utility  %s  Copyright 2003 Rob Swindell\n\n", revision);
 
 	if(argc<2)
 		usage();
 
-	mswtyp=0;
-	delay(0);
 	for(i=1;i<argc;i++) {
-		if(argv[i][0]=='/') {
+		if(argv[i][0]=='-') {
 			for(j=1;argv[i][j];j++)
 				switch(toupper(argv[i][j])) {
 					case 'D':
@@ -301,49 +210,39 @@ int main(int argc, char **argv)
 					case 'V':
 						mode^=NO_VISUAL;
 						break;
-					case 'T':
-						mode^=USE_MSWAIT;
-						mswtyp=atoi(argv[i]+j+1);
-						while(isdigit(argv[i][j+1]))
-							j++;
-						break;
 					default:
-						usage(); }
-			continue; }
+						usage();
+						break;
+			}
+			continue; 
+		}
 		if(argv[i][0]=='+') {
-			if((file=open(argv[i]+1, OPENARGS))==-1 || (stream=fdopen(file,"rb"))==NULL) {
+			if((stream=fopen(argv[i]+1,"rb"))==NULL) {
+				/* Check directory of executable if file/path not found */
 				strcpy(str,argv[0]);
-				p=strrchr(str,'\\');
-				if(p)
-					*(p+1)=0;
+				*getfname(str)=0;
 				strcat(str,argv[i]+1);
-				if((file=open(str, OPENARGS))==-1
-					|| (stream=fdopen(file,"rb"))==NULL) {
+				if((stream=fopen(str,"rb"))==NULL) {
 					printf("\7Error opening %s\n",argv[i]+1);
-					exit(1); } }
+					continue; 
+				} 
+			}
 			while(mode&NOT_ABORTABLE || !kbhit()) {
-				if(!fgets(str,81,stream))
+				if(!fgets(str,sizeof(str),stream))
 					break;
-				if(!isalnum(str[0]))
+				if(!isalnum(*str))
 					continue;
 				p=str;
-				while(*p>' ')
-					p++;
-				while(*p && *p<=' ')
-					p++;
-				play(str,p); }
+				FIND_WHITESPACE(p);
+				SKIP_WHITESPACE(p);
+				play(str,p); 
+			}
 			fclose(stream);
-			continue; }
-		play(argv[i],argv[i+1]);
-		i++;
-		if(aborted)
-			break; }
-	nosound();
+			continue; 
+		}
+		play(argv[i],argv[i++]);
+	}
 
-#ifdef __unix__
-	close(fd);                      // close /dev/console
-	tcsetattr(0,TCSANOW,&stored);   // reset terminal to previous state
-#endif
-
-return(0);
+	return(0);
 }
+
