@@ -96,8 +96,8 @@
 #define JAVASCRIPT
 #endif
 
-#include "link_list.h"
 #include "sbbs.h"
+#include "link_list.h"
 #include "sockwrap.h"		/* sendfilesocket() */
 #include "semwrap.h"
 #include "websrvr.h"
