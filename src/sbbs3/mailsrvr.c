@@ -2536,6 +2536,11 @@ static void sendmail_thread(void* arg)
 				p=strrchr(to,'>');	/* Truncate '>' */
 				if(p!=NULL) *p=0;
 
+				/* truncate at first white-space char */
+				p=to;
+				while(*p && *p>' ') p++;
+				*p=0;
+
 				p=strrchr(to,'@');
 				if(p==NULL) {
 					lprintf("0000 !SEND INVALID destination address: %s", to);
