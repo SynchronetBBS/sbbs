@@ -49,6 +49,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	char			str[512];
 	char			buf[5000];
 	DWORD			count;
+	DWORD			msgs;
 	int				retval;
 	int				node_num;
 	BYTE*			p;
@@ -250,7 +251,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				rdslot,					// mailslot handle 
  				&status->inbuf_size,	// address of maximum message size 
 				&status->inbuf_full,	// address of size of next message 
-				NULL,					// address of number of messages 
+				&msgs,					// address of number of messages 
  				NULL					// address of read time-out 
 				)) {
 				status->inbuf_full=0;
@@ -259,6 +260,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			if(status->inbuf_full==MAILSLOT_NO_MESSAGE)
 				status->inbuf_full=0;
 			status->inbuf_full+=RingBufFull(&rdbuf);
+			if(msgs)
+				status->inbuf_full+=(msgs-1);
 			
 
 			/* OUTBUF FULL/SIZE */
@@ -266,7 +269,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				wrslot,					// mailslot handle 
  				&status->outbuf_size,	// address of maximum message size 
 				&status->outbuf_full,	// address of size of next message 
-				NULL,					// address of number of messages 
+				&msgs,					// address of number of messages 
  				NULL					// address of read time-out 
 				)) {
 				status->outbuf_full=0;
@@ -274,7 +277,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			}
 			if(status->outbuf_full==MAILSLOT_NO_MESSAGE)
 				status->outbuf_full=0;
-
+			if(msgs)
+				status->outbuf_full+=(msgs-1);
 			
 			/* ONLINE */
 			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
@@ -303,13 +307,15 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				rdslot,		// mailslot handle 
  				NULL,		// address of maximum message size 
 				&retval,	// address of size of next message 
-				NULL,		// address of number of messages 
+				&msgs,		// address of number of messages 
  				NULL		// address of read time-out 
 				))
 				retval=0;
 			if(retval==MAILSLOT_NO_MESSAGE)
 				retval=0;
 			retval+=RingBufFull(&rdbuf);
+			if(msgs)
+				retval+=(msgs-1);
 			inbuf_poll++;
 			break;
 
@@ -329,12 +335,14 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				wrslot,		// mailslot handle 
  				NULL,		// address of maximum message size 
 				&retval,	// address of size of next message 
-				NULL,		// address of number of messages 
+				&msgs,		// address of number of messages 
  				NULL		// address of read time-out 
 				))
 				retval=0;
 			if(retval==MAILSLOT_NO_MESSAGE)
 				retval=0;
+			if(msgs)
+				retval+=(msgs-1);
 			break;
 
 		case VDD_OUTBUF_SIZE:
