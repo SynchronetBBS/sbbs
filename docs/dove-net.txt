@@ -1,4 +1,4 @@
-DOVE-Net Introduction and Instructions 12/08/00, Updated 03/06/02
+DOVE-Net Introduction and Instructions 12/08/00, Updated 11/14/02
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 Q. What is DOVE-Net?
@@ -47,6 +47,47 @@ A. Connecting BBS sysops and users without a lot of politics and red tape.
 Instructions
 ============
 
+Step 1: Choose a QWK-ID
+-----------------------
+If you're using Synchronet BBS Software, your BBS's QWK-ID is configured 
+in SCFG->Message Options->BBS ID for QWK Packets. SCFG is the Synchronet 
+Configuration Utility accessible by running exec/scfg or using the
+BBS->Configure menu option in the Synchronet Control Panel (Win32 only).
+
+Your QWK-ID should be an abbreviation of your BBS name or have some other
+personal significance, and must be unique among others on DOVE-Net (see 
+NODES.DAT included in DOVE-NET.ZIP to verify the uniqueness of your QWK-ID).
+
+QWK-IDs are limited to a maximum of eight characters in length, may only
+contain valid DOS filename characters, and MUST begin with an alphabetic 
+character. QWK-IDs are not case sensitive. 
+
+
+Step 2: Create a QWKnet Account
+-------------------------------
+Assuming you will be using Vertrauen BBS as your hub, you will need to logon
+as "New" at telnet://vert.synchro.net and create your QWKnet account using
+your BBS's QWK-ID as the user name (even if you already have a regular user
+account there). 
+
+You must answer (Y)es to the following new user question:
+"Is this account to be used for QWK Networking (DOVE-Net)?"
+
+Remember the password you used to create this account, you'll need it later.
+
+It is important that you do NOT use a regular user account for QWK packet
+transfers.
+
+Note: You can optionally use one of the other Vertrauen servers
+(rob.synchro.net or cvs.synchro.net) if you wish. They all share the same
+BBS databases.
+
+
+Step 3: Configure Your BBS Software
+-----------------------------------
+If you are using Synchronet BBS Software Version 3.1 or later, skip ahead
+to "Using the Baja FTP Client...".
+
 Synchronet BBS Software for Win32 v3.00 comes pre-configured for DOVE-Net 
 using the Windows command-line FTP client application to transfer packets 
 with Vetrauen (vert.synchro.net). All you need to do is follow the 
@@ -67,16 +108,6 @@ the step-by-step instructions in the QWK networking chapter of your sysop
 manual, but use the updated conference numbers at the end of this document. 
 Additionally, if you're going to use Vertrauen (VERT) as your hub, then 
 you'll need to connect using a scripted Telnet or FTP client (details follow).
-
-*** IMPORTANT ***
-When you create your QWKnet account on your hub BBS, you MUST use your BBS's
-QWK ID for the user name. QWK IDs are a maximum of eight characters, may
-only contain valid DOS filename characters, and MUST begin with an alphabetic
-character. QWK IDs are not case sensitive. Your QWK ID should be an 
-abbreviation of your BBS name or something relevant to you or your BBS and it 
-must be unique among the names in the enclosed NODES.DAT file. Note: If you're 
-using Vertrauen as a hub, you must login (to vert.synchro.net) with a Telnet 
-client to create your account.
 
 
 Using a Scripted Telnet Client for QWKnet Transfers
@@ -116,28 +147,28 @@ This is the preferred method of QWKnet packet transfers.
 
 2. Change the QWKnet call-out command line (in SCFG->Networks->QWK->Hubs->VERT)
    to "*QNET-FTP VERT vert.synchro.net YOURPASS" but replace YOURPASS with the
-   password you used when creating your QWKnet user account on Vertrauen.
+   password you used when creating your QWKnet account on Vertrauen.
 
 
 Terminology (as used in this document)
 --------------------------------------
 
-Hub:		A BBS that feeds another BBS messages for a message network
-Node:		A BBS that calls another BBS to exchange messages for a network
-		A BBS can be (and most often is) either "both a node and a hub"
-		or "only a node", if you're joining DOVE-Net for the first time,
+Hub:            A BBS that feeds another BBS messages for a message network
+Node:           A BBS that calls another BBS to exchange messages for a network
+                A BBS can be (and most often is) either "both a node and a hub"
+                or "only a node", if you're joining DOVE-Net for the first time,
                 then your system will be "only a node".
-QWK:		Message packet format used for off-line mail readers
-QWKnet: 	Message networking technology using QWK packets
-Fido:		Message networking technology based on Fido BBS software
-FidoNet:	The single largest amateur message network on earth
-Echo:		Message area that is connected to multiple BBSes via message
-		network
-NetMail:	Private message between one user and another not stored in a
-		topical message area (echo), similar in princicple to Internet 
-		e-mail
-SMB:		Synchronet Message Base format, download SMB_*.ZIP from Vertrauen
-		for technical specification and C library
+QWK:            Message packet format used for off-line mail readers
+QWKnet:         Message networking technology using QWK packets
+Fido:           Message networking technology based on Fido BBS software
+FidoNet:        The single largest amateur message network on Earth {tm}
+Echo:           Message area that is connected to multiple BBSes via message
+                network
+NetMail:        Private message between one user and another not stored in a
+                topical message area (echo), similar in princicple to Internet 
+                e-mail
+SMB:            Synchronet Message Base format, download SMB_*.ZIP from
+                Vertrauen for technical specification and C library
 
 
 QWK Technical Notes
@@ -194,6 +225,9 @@ Note: Include time-zone (@TZ) lines in exported messages
 Subj: VIA [ON | OFF]
 Note: Include path (@VIA) lines in exported messages
 
+Subj: MSGID [ON | OFF]
+Note: Include @MSGID and @REPLY lines in exported messages
+
 Subj: NDX [ON | OFF]
 Note: Include index (.NDX) files
 
@@ -211,27 +245,38 @@ Conf  Name					Access Requirements
 2004  Debate
 2005  Hardware/Software Help
 2006  Programming
-2009  UNIX Discussion (Linux, FreeBSD, etc)
+2009  Unix Discussion
 2015  HAM Radio Operators
 2016  Internet Discussion
 2017  Pro-Audio Discussion
 2018  Firearms Discussion
 2019  Sports Discussion
 2007  Synchronet Discussion
-      * Gated with USENET: alt.bbs.synchronet
 2008  Synchronet Sysops Only			LEVEL 90 OR REST Q
-      * Gated with FidoNet: SYNC_SYSOPS
 2011  Synchronet Programming (Baja)
 2014  Synchronet Programming (non-Baja)
-2012  Synchronet Beta Testing			LEVEL 90
 2013  Synchronet Data				LEVEL 90 OR REST Q
-      * Gated with FidoNet: SYNCDATA
 2010  DOVE-Net Sysops Only			LEVEL 90 OR REST Q
+
+
+Gateways
+--------
+You *must* not gate DOVE-Net conferences to any other network without explicit,
+prior permission. 
+
+The following DOVE-Net conferences are already gated to other networks:
+
+Synchronet Discussion  <=> alt.bbs.synchronet USENET newsgroup
+Synchronet Discussion  <=> SYNCHRONET echo on the FidoNet Zone 1 Backbone
+Synchronet Sysops Only <=> SYNC_SYSOPS echo on the FidoNet Zone 1 Backbone
+Synchronet Programming <=> SYNC_PROGRAMMING echo on the FidoNet Zone 1 Backbone
+Synchronet Data        <=> SYNCDATA echo on the FidoNet Zone 1 Backbone
 
 
 Contact Information
 -------------------
-Vertrauen: 	telnet://vert.synchro.net
-Co-founder:	rob@synchro.net
+Vertrauen:      telnet/ftp/nntp/gopher/finger: vert.synchro.net
+                backup servers: rob.synchro.net and cvs.synchro.net
+Co-founder:     rob@synchro.net
 
 /* End of DOVE-NET.TXT */

@@ -2,7 +2,7 @@ Synchronet for Unix
 -=-=-=-=-=-=-=-=-=-
 
 Created: Mar 15, 2002
-Updated: Apr 12, 2002
+Updated: Dec 07, 2002
 
 By: Rob Swindell
 http://www.synchro.net
@@ -18,16 +18,19 @@ Answers to Frequently Asked Questions
 =====================================
 
 Q. What flavors of Unix (and Unix-like operating systems) are supported?
-A. Currently, Linux-x86 and FreeBSD-x86.
+A. Currently, Linux-x86, FreeBSD-x86, OpenBSD-x86, and Solaris-x86.
 
 Q. What distributions of Linux are supported?
-A. Should work with any GNU/Linux-x86 distribution.
+A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake, 
+   Debian, Slackware, etc.).
 
 Q. Are non-x86 (Alpha, SPARC, 68k, PowerPC, etc) processors supported?
-A. No, Synchronet assumes a little-endian processor.
+A. No, Synchronet assumes a little-endian processor. It *may* work on other
+   little-endian processors (e.g. Alpha), but hasn't been tested. Big-endian
+   support is currently being developed for the v3.20 time-frame.
 
 Q. Will Synchronet ever support big-endian and/or 64-bit processors?
-A. Probably.
+A. Yes.
 
 Q. Where do I get Synchronet for Unix?
 A. There are no binary distributions at this time, so you must get the source
@@ -44,7 +47,8 @@ A. Yes. As long as all the nodes can access the same live data files (via LAN)
    as you wish.
 
 Q. Does Synchronet for Unix support external DOS programs/doors?
-A. Not currently. DOSemu integration is on the "to do" list.
+A. Currently, only the FreeBSD build has doscmd support "built-in". Other
+   platforms can use DOSEMU or whatever is available for running DOS programs.
 
 Q. What external programs/doors does Synchronet for Unix support?
 A. Currently, only native programs are supported. These programs can either
@@ -71,6 +75,12 @@ Note: These instructions assume you are already logged in as 'root'.
    B. Change to this directory:
       cd /sbbs
 
+   * Optional Shortcut *
+     At this point you can copy the file from this url: 
+     http://cvs.synchro.net/cgi-bin/cvsweb.cgi/~checkout~/install/GNUmakefile
+     into the /sbbs directory, run "gmake install", and then skip ahead to 
+     step 4.
+
    C. Get the required modules from the CVS repository:
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login
       (no password - just hit enter)
@@ -81,8 +91,7 @@ Note: These instructions assume you are already logged in as 'root'.
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co xtrn
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/sbbs3
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/uifc
-	  cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/xpdev
-      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/libdialog
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/xpdev
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/mozilla
       (this last one may take a while as it includes pre-compiled libraries)
 
@@ -112,8 +121,11 @@ Note: These instructions assume you are already logged in as 'root'.
       /sbbs/src/sbbs3/gcc.linux.exe.debug/node
       /sbbs/src/sbbs3/gcc.linux.exe.debug/chksmb
       /sbbs/src/sbbs3/gcc.linux.exe.debug/fixsmb
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/addfiles
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/filelist
       /sbbs/src/sbbs3/gcc.linux.exe.debug/smbutil
       /sbbs/src/sbbs3/gcc.linux.exe.debug/sbbs
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/sbbsecho
       /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfg
       /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.ixb
       /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.dat
@@ -129,20 +141,20 @@ Note: These instructions assume you are already logged in as 'root'.
       cd /sbbs/xtrn/sbj
 
    B. Build Synchronet Blackjack:
-      gmake -f Makefile.gnu
+      gmake
 
    C. Change to this dircectory:
       cd /sbbs/xtrn/sbl
 
    D. Build Synchronet BBS List:
-      gmake -f Makefile.gnu
+      gmake
 
 
 4. Configure the BBS:
 
    A. Run SCFG:
       /sbbs/exec/scfg /sbbs/ctrl
-      (if you have problems with the libdialog interface, try running
+      (if you have problems with the curses interface, try running
        "scfg -d" instead)
       Tip: Set the SBBSCTRL environment variable and you won't have to specify
            the path to the "ctrl" directory on the command-line:
@@ -174,7 +186,7 @@ Note: These instructions assume you are already logged in as 'root'.
       Name                            Synchronet Configuration
       Internal Code                   SCFG
       Start-up Directory
-      Command Line                    %!scfg -d -l%r
+      Command Line                    %!scfg -l%r
       Clean-up Command Line
       Execution Cost                  None
       Access Requirements             SYSOP
@@ -192,7 +204,7 @@ Note: These instructions assume you are already logged in as 'root'.
       Name                            Synchronet BBS List
       Internal Code                   SBL
       Start-up Directory              ../xtrn/sbl
-      Command Line                    sbl%.
+      Command Line                    ./sbl%.
       Clean-up Command Line
       Execution Cost                  None
       Access Requirements
@@ -210,8 +222,8 @@ Note: These instructions assume you are already logged in as 'root'.
       Name                            Synchronet Blackjack!
       Internal Code                   SBJ
       Start-up Directory              ../xtrn/sbj
-      Command Line                    sbj%. /l
-      Clean-up Command Line
+      Command Line                    ./sbj%. /l
+      Clean-up Command Line           ./sbjclean
       Execution Cost                  None
       Access Requirements
       Execution Requirements
@@ -315,19 +327,11 @@ Note: These instructions assume you are already logged in as 'root'.
    4. To view default settings (node and port numbers), run:
       /sbbs/exec/sbbs defaults
 
-
-6. Known Problems
-
-   A. Set username ("un") command-line option not working 100%.
-
-   B. Can't run "vi" as external editor (requires tty) - how about "elvis"?
-
-   C. No DOSemu integration (yet), so no support for DOS programs/doors.
-
-   D. Occasional unresolved segfault (see below).
+   5. To edit the default settings, edit the file:
+      /sbbs/ctrl/sbbs.ini
 
 
-7. Debugging
+6. Debugging
 
    A. Run the GNU debugger:
       gdb /sbbs/exec/sbbs

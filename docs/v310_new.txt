@@ -1313,7 +1313,7 @@ o New File->Properties->Advanced tab to set control directory and host name
 
 JavaScript (http://synchro.net/docs/js.html)
 ~~~~~~~~~~
-o Added BranchCallback for detecting infinite loops and releasing timeslices
+o Added BranchCallback for detecting infinite loops and releasing time-slices
   while executing scripts
 
 o New MsgBase.subnum (0-based sub-board number) property
@@ -1504,6 +1504,830 @@ o Improved tracking of number of recipients and enforcement of maximum
 o Logs maximum recipients reached error in spam.log
 
 o SMTP MAIL command now resets recipient list per RFC 821
+
+
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision J (Beta) *
+***********************************************************
+
+General
+~~~~~~~
+o Better JavaScript reliability
+
+o Much improved anti-SPAM measures in SMTP Mail server
+
+o More detailed spam.log entries
+
+o Sysop-configurable socket options (applied to all opened sockets)
+  - socket options set in ctrl/sockopts.cfg
+  - socket option values can be queried using "finger ?sockopts"
+
+o Servers are automatically recycled on an "accept" failure
+
+o Improved message base error handling (SMBLIB v2.15)
+
+o Automated daily backups of user and mail databases
+
+o SBBSCTRL can export/import sbbs.ini file (registry settings)
+
+o Console mode version (sbbs.exe) can read in sbbs.ini file for instance
+  settings - no more ugly command-lines required
+
+o Console mode version now includes node listing/control commands
+
+o Services on UDP (datagram) sockets are now supported
+
+o Tons of improvements to both newslink.js and nntpservice.js
+  - Better dupe message detection/prevention
+  - Better retainment of message-ids across gated message networks
+  - Better prevention of inadvertent gating (must have gate-between-net-types)
+
+
+SCFG
+~~~~
+
+o Now creates data and storage directories (again)
+
+o Bugfix: wasn't saving sub-board's newsgroup name
+
+o Backed-up .cnf files are now named *.cnf.# instead of *.cn#
+  - no longer limited to 10 backups
+
+o Number of daily user and mail database backups to keep, configured in
+  SCFG->System->Advanced Options
+
+o Removed unused new user question toggles: computer type and multiple choice
+  computer questions
+
+
+NewsLink (newslink.js)
+~~~~~~~~
+o Better dupe message detection/prevention using X-Gateway header field
+
+o Better retainment of message-ids across gated message networks
+
+o Better prevention of inadvertent gating (must have gate-between-net-types)
+
+o Creates default (blank) properties for message header object:
+  eliminates script errors when importing malformed message headers
+
+o Uses newsgroup name as default "to" header field value of imported msgs
+
+o Added optional flags field to area lines in newslink.cfg
+  Supported flags:
+	n - don't add "from newsgroup" tag to imported message text
+	t - don't add tear lines to imported message text
+	x - don't add tear and tag lines to exported message text
+
+o Improved debug/status output
+
+o Added support for Tracker1's -ix option (import fixed number of messages)
+
+o Added support for parsing and sending of FidoNet-extension headers
+  (e.g. X-FTN-MSGID)
+
+o Only includes references/reply_id field if it exists in the header (!undefined)
+
+o print statements are now crlf-terminated for easier debugging with ;EXEC
+
+
+nntpservice.js
+~~~~~~~~~~~~~~
+o Many of the improvements made to newslink.js, also made in nntpservice.js
+
+o Added support for the DATE command (RFC 2980)
+
+o Uses message-id of posted msgs if sender is a slave server (not a client)
+
+o Tracker1's modification to set the "to" field of posted messages based on
+  the from field of the message referenced in "references" header field
+  (if present)
+
+o Tracker1's modification to replace spaces with underscores in e-mail 
+  addresses
+
+o Added support for missing argument to ARTICLE, HEAD, BODY, and STAT cmds
+
+o Added support for the STAT command
+
+o Added read/posted messages stats after logoff
+
+o Writes original newsgroups header to outbound msgs
+
+
+JavaScript
+~~~~~~~~~~
+o printf() and format() now convert floating point numbers to long (%ld)
+
+o BBS timed events can now use User class
+
+o Branch callbacks now collect garbage (free-up memory) every 100 calls
+  - this fixes the problem of every created object living in memory during
+    the life of a script causing a long-running script to eventually run 
+    out of memory
+
+o Fixed the following global methods (were corrupting passed string buffer):
+  ascii_str(), strip_ctrl(), strip_exascii(), and truncsp()
+
+o UDP (datagram) sockets are now supported by the Socket class
+
+o New Socket class properties: local_ip_address, local_port,
+  remote_ip_address, and remote_port
+
+o Socket getoption() and setoption() methods no longer have the option "level"
+  as an argument and the option name is now specified as a string (the numeric
+  values defined in sockdefs.js are not cross-platform)
+
+o Fixed Socket is_connected property value (was true before connect)
+
+o Created Socket poll() method - with optional timeout argument (in seconds)
+
+o Changed Socket recv, recvline, and peek methods to support unlimited buffer
+  lengths
+
+o Fixed bug in bbs.replace_text() method when called with empty string ("")
+
+o New bbs properties: msg_id, msg_reply_id, smb_msgs, and smb_curmsg
+
+o New console method: ansi_getxy() to get terminal's current cursor location
+
+o New console method: lock_input() to lock/unlock the input_thread allowing
+  direct client.socket read calls from scripts
+
+o system.spamlog() now takes an "action" parameter
+  - usage: spamlog(prot, action, reason, host, ip_addr, to);
+
+o Fixed memory leaks in MsgBase class
+
+o MsgBase save_msg() and put_msg_header() methods now parse the header 
+  object's id and reply_id properties and place them in the appropriate SMB 
+  header fields
+
+o MsgBase get_msg_header() method defines only the following properties as 
+  read only: number, id, and reply_id 
+  - the rest are now read/write
+
+o MsgBase get_msg_body and get_msg_tail methods now take additional bool
+  parameter indicating whether the message is to be rfc822-encoded or not
+  (defaults to false)
+  - this solves the problem of the nntp service and newslink module sending
+    messages with dots in the first character of a line incorrectly
+
+o Added MsgBase ftn_msgid, ftn_reply, ftn_pid, ftn_area, and ftn_flags
+  FidoNet msg header properties
+
+o MsgBase msg hdr reply_id based on time and number of original message
+  - reply_id property is not created if it doesn't exist in the msg header
+  - msg.id is based on the time the message was imported rather than written
+
+o Fixed MsgBase subject, to, and from CRCs in message base index
+  - threading on author, to, or subject didn't work on imported msgs
+
+o Added support for MsgBase msg hdr USENET Path and Newsgroups header fields
+
+
+Telnet Server
+~~~~~~~~~~~~~
+
+o PostLink and QWK call-out events now run in foreground (to avoid packet
+  open conflicts) and use the command-shell (for shell scripts on Unix)
+
+o An "riosync timeout" is no longer logged as an error
+
+o Non-exclusive timed events can now run *while* the event node is "in use"
+
+o Fixed bug with multiple instances and non-exclusive events, was setting node
+  status to WFC even if user was online
+
+o IDENT lookup no longer assumes server is running on port 23
+
+o getkey now releases time-slices while waiting for "cold key" input
+
+o ansi_getxy releases time-slices while waiting for terminal response
+
+o ansi_getlines releases time-slices while waiting for terminal response
+
+o Timed events that use Baja or JavaScript output routines will now print to
+  the event log
+
+o "To users" are now supported on Internet-networked message areas
+
+o New user question toggle (SCFG->System->New User Values->Question Toggles)
+  to disable the upper/lower case conversion of new-user-supplied strings
+
+o New system toggle options (SCFG->System->Toggle Options) to suppress
+  hard-coded displays (system info and active node list) during logon
+
+o New MSGID and REPLY kludge lines in QWK networked messages
+  - allows cross-network threading based on message-id
+
+o Added new command (E) to allow users to edit their posted messages on a
+  specific sub-board (sysop configurable in SCFG)
+
+o Implemented support for SUB_DELLAST toggle option
+  - allows deleting of last message only
+  - option has been in SCFG for a long time, but never implemented
+
+o Fixed chat channel 0 (sysop broadcast channel) bugs related to chat actions
+
+o Auto-initializes SBBSDATA and SBBSEXEC convenience environment variables
+  for use in external programs/batch files/shell scripts
+
+o Sets socket mode back to blocking after running external programs
+  - fix for external programs that change the socket's blocking mode
+
+o If the menu file text/menu/xtrn/code.* exists (where code is the external
+  program's internal code), the file will be displayed to the user before the
+  door is run
+
+o New @-codes: MSG_NUM, MSG_ID, MSG_REPLY_ID, SMB_MSGS, SMB_CURMSG, 
+  SMB_LAST_MSG, SMB_MAX_MSGS, SMB_MAX_CRCS, SMB_MAX_AGE, and SMB_TOTAL_MSGS
+
+o Updated old msg group and sub-board name/number @-codes to use currently
+  open message base details, if applicable
+
+
+SBBSecho
+~~~~~~~~
+o New option (in ECHOCFG) to strip linefeeds from exported messages
+  - Previously, it *always* stripped linefeeds causing formatting problems
+    with some non-comforming echomail programs (defaults to "Off")
+
+
+Mail Server
+~~~~~~~~~~~
+o Added support to SMTP server for "forward:" and "local:" address prefixes,
+  allowing sender-control of forwarding to external mail addresses
+
+o Created generic DNS blacklist support via optional configuration file:
+  ctrl/dns_blacklist.cfg - allows multipe RBL-style DNS blacklists
+
+o The hardcoded RBL functionality has been replaced with dns_blacklist.cfg
+
+o Added support for ctrl/dnsbl_exempt.cfg to exempt a list of IPs 
+  (or IP masks) from DNSBL testing
+
+o Three new options on handling of mail from DNSBL-listed servers:
+  A. refuse sesion (used to be only choice)
+  B. refuse mail (e.g. report "bad address")
+  C. ignore mail (e.g. pretend to receive)
+  D. receive mail, but tag msg subject and header with configurable tags
+
+o Now logs DNS query result (e.g. 127.0.0.2) from DNS-based Blacklist servers
+
+o Changed DNS blacklist reject error code from 571 to 550
+
+o POP3 server allows up to three non-USER commands in authentication state
+  i.e. ignores "CAPA" command (RFC 2449)
+
+o Better support for outbound addresses with both "name" and <addr> portions
+
+o sendmail_thread sends properly formatted RCPT TO command even if address
+  is not properly formatted ("name" <addr> for example)
+
+o sendmail_thread can now send mail to addresses that have text after hostname
+
+o Made "msg text lines per yield" value configurable (default: 100)
+
+o Made "max recipients" value configurable (default: 100)
+
+o Undeliverable messages from local user #0 can't be bounced
+  (e.g. telval/smbutil)
+
+
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision K (Beta) *
+***********************************************************
+
+General
+~~~~~~~
+o New IP filter file: text/ip-silent.can
+  - connections from IP addresses in this file are silently refused
+    (same format as other text/*.can files)
+
+o More consistent message threading-by-subject
+
+o Non-standard timezones are now represented as UTC+/-hh:mm
+
+o All messages created are assigned both Internet (RFC822) and FidoNet (FTS-9)
+  compliant message-IDs
+
+o All messages created are assigned a FidoNet (FSC-46) compliant program ID
+
+o SBBSCTRL (Win32) now saves and restores customized font styles 
+  (bold, italic, underline, etc.)
+
+o Fixed handling of invalid Ctrl-A sequences in FILE_ID.DIZ
+
+o Web server included in console-mode version (sbbs.exe) Unix build
+  - very preliminary
+
+o Synchronet ported to OpenBSD (thanks Deuce!), so Synchronet for Unix now
+  builds and runs on Linux-x86, FreeBSD-x86, and OpenBSD-x86.
+
+
+JavaScript
+~~~~~~~~~~
+o New documentation in the works
+  http://synchro.net/docs/js.html
+
+o Dynamically-generated Object Model Reference (more complete and accurate)
+  http://synchro.net/docs/jsobjs.html
+
+o Better error reporting of internal errors that cause script termination
+
+o User class constructor can be called with no arguments
+  - creates a User object representing no existing user
+  - number property must be set before any changes can be saved
+
+o Global load() method can now (optionally) take additional arguments which
+  are then used to change the values of the global argv and argc properties
+  Example: load("myscript.js", arg1, arg2);
+
+o New global truncstr(str,set) method, truncates a given string at the first
+  occurance of any char in set (ala strpbrk), returns the truncated string
+
+o New methods: system.put_node_message() and system.put_telegram()
+  - same as bbs methods by the same name but can be called from other servers
+
+o New method: system.new_user(alias)
+  - returns User object representing a new user record
+
+o New method: system.matchuserdata(field, data, [usernumber]) 
+  - searches for an exact string match of any user record data field and
+    returns the number of the first matching user
+  - the field is specified by offset into user.dat record
+  - usernumber is an optional user to skip in the search
+
+o Fixed system.freediskspace property, returns up to 4GB (instead of -1)
+
+o bbs.scan_dirs() and scan_subs() methods ignored first parameter
+
+o bbs.get_newscantime() returns new scan pointer date/time
+
+o bbs.get_telegram() was expecting too many parameters
+
+o Fixed console.question property (was dupe of console.wordwrap property)
+
+o Made console.question property writeable
+
+o New console.strlen() method returns length of string excluding Ctrl-A codes
+
+o File.open() method now accepts an additional, optional bool argument:
+  shareable (defaults to false)
+  - if a file is opened as 'shareable', then simultaneous opens will be
+    allowed (no file locking), otherwise, the file is locked according the
+    open 'mode'
+
+o File.open() method now opens file in text mode (on Win32) unless 'b'
+  (binary) mode is not specified
+
+o New File.printf() method (works like the C fprintf function)
+
+o File.lock() and unlock() methods:
+  - act on the entire file if called with no arguments
+  - offset defaults 0, and length defaults to the file length - offset
+
+o New xtrn_area object that represents the configured external programs
+  - currently only includes online external programs (doors)
+  - will add timed events, external editors, etc. later
+  - sorry Rocko, couldn't wait for your version :-)
+
+o MsgBase class:
+  Fixed case sensitivity problem with opening message bases on Unix
+  Added support for hdr.from_org (Organization) header field
+  Imports and exports SMTP reverse_path header field (hdr.reverse_path)
+
+o New MsgBase.open() method - now required to access a message base, allows
+  better error handling than opening in the constructor
+
+o New MsgBase.is_open property (boolean), reflects msgbase open state
+
+o MsgBase.save_msg() method will open the message base if necessary
+
+o MsgBase.put_msg_header() method now updates the index record too
+
+o MsgBase.get_msg_header() now exports the following header fields:
+  summary, priority, cost, times_downloaded, and last_downloaded
+
+o MsgBase.get_msg_header() method truncates trailing whitespace characters
+  from all header fields
+
+o Repeating and generic ASCII header fields (e.g. RFC822HEADER) are accessed
+  with the new hdr.field_list array
+
+o New MsgBase.cfg property contains all sub-board configuration settings
+  - doesn't exist for "mail" message base
+
+o MsgBase.save_msg():
+  USENETPATH headers are no longer *always* added to newly saved messages
+  It's up to another application (e.g. nntpservice.js) to add the local system
+  to the path
+  Added support for importing message headers with replyto header fields
+
+o Fixed bug in Socket.poll() - timeout value only worked as first argument
+
+o Fixed memory leak in Socket.sendfile() if file read failed
+
+o New Socket.recvfrom() method that returns an object with 3 properties:
+  data, ip_address, and port (for UDP responses to broadcasted requests)
+
+o New Socket.sendto() method - usage: sendto(data,ip_addr,port) for UDP
+
+o Socket.connect() call is no longer needed for UDP sockets
+
+o Socket.local_port and remote_port properties are now numbers
+  (instead of strings)
+
+o New property Socket.type, set to SOCK_STREAM (TCP) or SOCK_DGRAM (UDP)
+  when the socket is created (read-only)
+  - SOCK_STREAM and SOCK_DGRAM are defined in exec/sockdefs.js
+
+o Fixed bug in Socket.bind() if port number specified (byte-order fix)
+
+o Port arguments in Socket.bind(), connect() and sendto() can now be
+  specified as a service name (e.g. "telnet", "http", "finger", etc).
+
+o New Socket.listen() method, puts socket in 'listening' state,
+  accepts optional 'backlog' argument (defaults to 1)
+
+o New Socket.accept() method, accepts an inbound TCP connection,
+  returns a newly created socket object
+
+o Socket.poll() method now accepts an additional, optional argument: 
+  bool poll_for_write, defaults to false (poll for read)
+
+
+SCFG (Configuration Utility)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o Added optional parent directory to file library configuration
+  - used to specify a physical parent directory for all logical directories
+    in a file library (convenient for importing CD-ROM directories)
+  - requires v3 of ADDFILES and FILELIST utilities
+
+o Support for importing "raw" directory listings (containing just dir names)
+  - for use in conjunction with the new "parent directory" option
+
+o User signatures can now be disabled on a per sub-board basis
+
+o New option to create lowercase drop file names for external programs
+  (for better Unix file system compatibility)
+
+o Exports and imports newsgroup name as part of subs.txt format
+
+o Fixed bug that could occur if new user command shell was set to last
+  configured command shell, and that shell was later deleted
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o All ctrl-keys (built-ins and hot-key events) use same the recursion 
+  protection mechanism now limiting them to a total maximum depth of 2
+  - solves re-entrancy issues for hot-key events
+
+o DEL (ASCII 127) is treated the same as backspace (ASCII 8) in string
+  input routines
+
+o When importing QWK and REP network packets, the corresponding
+  data/qnet/<id>.in is only created when necessary
+
+o Improved message header display with sysop message scan 'OH' command
+
+o New sysop mail read command, 'H', used to display mail message headers
+
+o Converted SMB_CURMSG @-code to 1-based (cosmetic bugfix)
+
+o Added new @-code HOSTNAME, used to display current host name
+  - may not always be the same as the INETADDR
+
+o New log entry created when the user pages the sysop to chat
+
+o Added Continue? questions during new user procedure to give user an opt-out
+
+o Creates user, msg_area, and file_area JavaScript objects during user logon
+  and new user creation
+
+o Checks for node interruption during an outbound telnet gateway session
+
+o Unix-build creates external program (door) drop-files with CRLF-deliminated
+  lines if not configured as 32-bit native
+  - for DOSEMU/DOSCMD compatibility
+
+o trashcan() now delays 500 milliseconds after displaying the optional
+  text/bad*.msg file 
+  - gives time for transmit buffer to clear before disconnecting
+
+o Fixed exception during termination of bbs_thread if subs/dirs were added in
+  SCFG and the confg files were re-loaded (node(s) recycled) before shutdown
+
+o Baja FTP function fixes:
+  - Removed extra crlf sent with FTP PASS command
+  - Fixed bug causing intermittent bind failures on FreeBSD
+  - Fixed active (non-PASV) mode file transfers
+
+o FOSSIL driver for NT-based operating systems (sbbsexec.dll) now reports
+  I/O buffer fullness more accurately
+  - fixes problem with FDSZ sending entire file then timing out while waiting
+    for acknowledgement from client
+
+o One-byte-at-time external programs (e.g. LORD) should preform better on
+  NT-based operating systems due to better interprocess communication
+
+o When debugging (logging) received telnet commands, sent commands are now
+  logged too
+
+o QWKnet kludge line lengths up to 500 chars now supported
+  - previously limited to 128 chars
+
+o Fixed bug that would change user #1's QWK settings when importing QWKnet
+  packets
+
+o Removed log output during the packing/unpacking of messages for QWK nodes
+
+
+ADDFILES
+~~~~~~~~
+o Several bugs fixed since last 3.00 beta releases
+
+
+FILELIST
+~~~~~~~~
+o New version 3.00 port (for Win32 and Unix)
+
+
+SMBUTIL
+~~~~~~~
+o Messages posted via SMBUTIL now have the SENDERAGENT field set to
+  AGENT_SMBUTIL to prevent the Synchronet mail server (or other programs)
+  from bouncing undeliverable messages back to a "process"
+
+o Improved packmsgs() handling of failed deletion/renaming of temp files
+  (occurs if the msgbase is open by another process at the time of packing)
+  - the msgbase should no longer be left in a corrupted state if this occurs
+
+o Cosmetic changes to header dump routine
+
+o Creates a FIDOPID (program identifier) header field when storing messages
+
+o New command-line option (-d) to set default values for header fields
+  (to, from, from_number, and subject) when importing messages
+
+
+CHKSMB
+~~~~~~
+o Now verifies header lengths match calculated header lengths
+
+o Displays more detail regarding corrupted data field offsets when used 
+  with the -e switch
+
+
+SBBSecho
+~~~~~~~~
+o Bugfix: FLO files were being truncated rather than appended
+
+o No longer writes the same (duplicate) bundle name to the FLO file if it's
+  already listed
+
+o Now deletes BUNDLES.SBE when no longer needed (rather than truncate it)
+  - hopefully eliminates FAQs about this file
+
+o OS/2 builds now available again (thanks Watcom!)
+
+o Now imports and exports TZUTC, MSGID, REPLYID, PID, and TID control fields
+
+o Sets "when written" time zone on imported messages based on TZUTC or
+  TZUTCINFO kludge lines, if present
+
+o Tosser ID (TID) fields are created if it doesn't already exist
+
+o Fixed the creation of inter-zone outbound point directories for FLO mailers
+
+o Fixed importation of FLAGS ctrl line (was looking for "FLAGS:" not "FLAGS")
+
+o FLAGS and unrecognized kludge lines are now added to exported messages
+
+o Line feeds are ignored when converting non-ASCII chars for ASCII-only subs
+
+o Fixed case of mail message base (for Unix file systems)
+
+
+Services
+~~~~~~~~
+o Support for new "static" services
+  - services that listen on a socket and accept their own connections/clients
+  - requires option bit 1 (0x2) set in ctrl/services.cfg file
+
+o New global write() and writeln() methods to make it consistent with FTP and
+  Web server global methods used to generate html (e.g. nodelist-html.js)
+
+
+Mail Server
+~~~~~~~~~~~
+o Uses hostname instead of inetaddr (usually the same) in SMTP cmds/responses
+  and SMTP "Received" headers
+
+o Support for sender addresses that include comments (in parenthesis)
+
+o Increased read timeout from from 1 to 5 minutes
+
+o POP3 server actually checks the number of lines sent successfully and only
+  marks the message as 'read' if all lines requested were sent successfully
+
+o Now stores original, unmodified RFC822: to, from, and reply-to header fields
+
+o Bounce-messages are now flagged as from AGENT_SMTPSYSMSG and messages from
+  processes aren't bounced (preventing bounced message loops)
+
+o Reduced mail server cycle time from 5 to 2 seconds (frequency at which
+  recycle semaphores are checked)
+
+o Added option to toggle logging of received responses (DEBUG_RX_RSP)
+
+o Much improved message bouncing:
+  - delivery failure (bounce) messages now includes error details
+  - error message text is no longer crammed into the bounce-message subject
+  - the original subject is retained
+  - fixed bug that could cause corruption after original message deletion
+  - use of original reverse-path for bounced message delivery
+
+
+FTP Server
+~~~~~~~~~~
+o Improved string bounds checking
+
+o Fixed bug with continuous recycling
+
+o Now (optionally) echoes password attempt for unknown users
+
+o Increased select timeouts (from 1 to 5 minutes)
+
+o Increased recycle semaphore check frequency (from 5 to 2 seconds)
+
+o The reported "unix" file and directory modes more closely reflect
+  the actual read/write permissions (FTP clients should ignore them anyway)
+
+o Added support for resumed uploads (using APPE or REST commands)
+
+o Fixed time display of files in local directory listings
+
+o CWD's to paths with trailing filenames now fail (as they should) 
+  - when IE fails to download a file, it attempts to CWD to the path, and if 
+    the CWD succeeds the subsequent requested paths were all wrong
+
+
+****************************************************
+* What's New in Synchronet Version 3.10 Revision L *
+****************************************************
+
+General
+~~~~~~~
+o Timed events can be configured to run only on specific days of the month
+  (example: the 1st and 15th of every month)
+
+o Eliminated harmless accept/select errors when shutting down servers
+
+o Win32 build now uses Critical Sections in place of Mutexes (slower)
+
+o Now using thread-safe time functions in Unix builds
+
+o Now using thread-safe "real path" function in OpenBSD build
+
+o New command-line utility (makeuser) to add a user to the user database
+
+o Node window in SBBSCTRL no longer unnecessarily locks node.dab
+  - eliminates locking/reading errors
+
+o QWK Bugfix: was always truncating MESSAGES.DAT, so appending to an existing
+  QWK packet (pre-packed or aborted download) did not work at all (ever)
+  - this also resulted in a side-effect of corrupted indexes (if enabled)
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o Fixed problem detecting number of rows for Windows 2K/XP telnet client 
+  (was reporting 105 lines when used in a scrollable window)
+  - fixed by Deuce
+
+o Ctrl-C now purges both input and output buffers (when appropriate)
+
+o Built-in ctrl key handling (Ctrl-C, Ctrl-T, Ctrl-U, etc) can be disabled
+  with SCFG->System->Advanced->Control Key Pass-through
+  - any keys specified in this bit-map will not be handled internally or by
+    global hot key events
+
+o New toggle option for external programs, events, and message editors:
+  - use Shell to Execute, forces command-line to be executed via system
+    command shell (e.g. cmd.exe, bash/sh, etc.)
+
+o ctrl/attr.cfg now support lower-case attribute character codes
+
+o Improved server shutdown detection in node threads
+
+o Short (single line) error log entry now includes last Win32 error value
+
+o Displays external netmail address before prompting to forward local mail
+
+o The 'F'ind text command while reading messages can now either show message
+  headers only or entire text
+
+
+JavaScript
+~~~~~~~~~~
+o Increased the default JavaScript heap size to 8MB
+
+o JavaScript heap size is configurable
+  - JavaScriptMaxBytes key in the [Global] section of the sbbs.ini file
+  - SBBSCTRL:File->Properties->Advanced->JavaScript Heap
+
+o console.attributes can now be set with an attribute string
+  (Ctrl-A codes without the Ctrl-A escape characters)
+
+o New property: console.ctrlkey_passthru, bit-map specifying which control
+  keys will not be handled internally or by global hot key events
+
+o New array, console.color_list[] contains sysop-configured attributes from
+  ctrl/attr.cfg (which can now be extended with additional color definitions)
+
+o Timed events now have access to user objects (msg_area, file_area, etc)
+
+o Fixed msgbase.put_msg_header() - no longer creates duplicate header fields
+
+o system.spamlog() now takes additional 'from' parameter (typically the SMTP
+  reverse-path)
+
+o Socket poll() method accepts a floating point timeout for fractional timeout
+  values
+
+o bbs.sub_info() and dir_info methods now accept optional sub/dir argument
+
+o All bbs methods that accept sub/dir argument will now default to current sub
+  or dir if not specified
+
+o New properties: bbs.batch_upload_total and bbs.batch_dnload_total
+
+o bbs.batch_download() now checks if download queue is empty, now returns BOOL
+  instead of VOID
+
+o Fixed msg_area.grp_list[].sub_list[].is_operator and is_moderated properties
+  - were true if configured as blank in SCFG (should be false)
+
+o file_area.lib_list[].dir_list[].link property returns (as in v3.10j)
+
+o New properties: file_area.min_diskspace, user_dir, sysop_dir, and upload_dir
+
+o Renamed the File.delete() method to File.remove() - can't use JavaScript 
+  keyword as method name
+
+o New property: console.aborted (bool), true if user hit Ctrl-C to abort I/O
+
+o Renamed property: console.rio_abortable to console.abortable (no local I/O)
+
+o Services now have access to user objects (e.g. msg_area, file_area, etc.),
+  without requiring a false login() call
+
+
+SBBSecho
+~~~~~~~~
+o The TID (Tosser ID) kludge line is only added when exporting messages
+
+
+ADDFILES
+~~~~~~~~
+o Ignores ex-ASCII chars in filenames only when run in ASCII-only mode
+  - support for foreign language chars in filenames
+
+
+Mail Server
+~~~~~~~~~~~
+o Added support for external (native) mail processing commands that can modify
+  a message's header, body, or recipient list, or reject the message with a
+  specific error message based on its contents (SPAM filter, virus scan, etc)
+  - may also be used for mailing lists, file requests, etc
+  - see ctrl/mailproc.cfg for details
+
+o The current hostname is now also used in determing if a received e-mail is
+  addressed to a local or external user
+
+o Better handling of misconfigured/missing DNS server address (for MX-lookups)
+
+o SPAM log now includes the SMTP reverse-path (address) as specified by client
+
+o Added option to enable DNSBL debug log output (MAIL_OPT_DNSBL_DEBUG)
+
+o Active client counter is incremented before (potentially lengthy) DNSBL 
+  lookups
+
+o dnsbl_exempt.cfg is now checked against the IP address and the hostname
+  of the sending server (if either matches, the server is exempt)
+
+o No longer adds the Organization header field to messages received via SMTP
+
+o Now deletes attached file if MSG_KILLFILE aux attribute set
+
+o New log entry when a delivery failure notification message is created
+
+o Fixed failure to create delivery failure notification message:
+  !BOUNCE ERROR -100 (msgbase not open) incrementing data allocation units
 
 
 /* End of V310_NEW.TXT */
