@@ -283,7 +283,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     for(i=0;i<argc && strlen(str)<(sizeof(str)/2);i++) {
 		if((js_str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
-		strcat(str,JS_GetStringBytes(js_str));
+		strncat(str,JS_GetStringBytes(js_str),sizeof(str)/2);
 		strcat(str," ");
 	}
 
