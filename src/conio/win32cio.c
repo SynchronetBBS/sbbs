@@ -110,7 +110,7 @@ int win32_kbhit(void)
 				if(input.Event.MouseEvent.dwEventFlags==MOUSE_MOVED) {
 					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
 				}
-				if(!input.Event.MouseEvent.dwEventFlags) {
+				if(last_state != input.Event.MouseEvent.dwButtonState) {
 					switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
 						case FROM_LEFT_1ST_BUTTON_PRESSED:
 							if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
@@ -202,7 +202,7 @@ int win32_getch(void)
 						if(input.Event.MouseEvent.dwEventFlags==MOUSE_MOVED) {
 							ciomouse_gotevent(CIOLIB_MOUSE_MOVE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
 						}
-						if(!input.Event.MouseEvent.dwEventFlags) {
+						if(last_state != input.Event.MouseEvent.dwButtonState) {
 							switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
 								case FROM_LEFT_1ST_BUTTON_PRESSED:
 									if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
