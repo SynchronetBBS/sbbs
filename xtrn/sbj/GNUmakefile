@@ -17,7 +17,7 @@ CC		=	gcc
 LD		=	ld
 XSDK		=	../sdk
 
-vpath %.c $(XSDK)
+vpath %.c $(XPDEV) $(XSDK)
 
 ifndef os
  os              =       $(shell uname)
@@ -53,7 +53,7 @@ CFLAGS	+=	-I$(XSDK)
 
 OBJS		= xsdk.o xsdkvars.o xsdkwrap.o
 ifeq ($(os),netbsd)
- OBJS	+=	../../src/xpdev/sem.o
+ OBJS	+=	sem.o
 endif
 
 all: sbj sbjclean
@@ -65,4 +65,4 @@ sbjclean: sbjclean.o $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 
 clean:
-	rm -f *.o
+	rm -f sbj sbjclean *.o
