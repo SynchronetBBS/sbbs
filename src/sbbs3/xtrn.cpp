@@ -1123,7 +1123,10 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
         if(instr[i]=='%') {
             i++;
             cmd[j]=0;
-            switch(toupper(instr[i])) {
+			char ch=instr[i];
+			if(isalpha(ch))
+				ch=toupper(ch);
+            switch(ch) {
                 case 'A':   /* User alias */
                     strcat(cmd,useron.alias);
                     break;
