@@ -436,8 +436,10 @@ endif
 	fprintf(makefile,"\tgmake -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS)\n\n");
 
 	fprintf(makefile,"install: all");
-	if(params.cvs)
-		fprintf(makefile," ctrl text node1 node2 node3 node4");
+	if(params.cvs) {
+		fprintf(makefile," $(SBBSDIR)/ctrl $(SBBSDIR)/text \\\n");
+		fprintf(makefile,"\t$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4");
+	}
 	fprintf(makefile,"\n");
 	fprintf(makefile,"\techo Installing to $(SBBSDIR)\n");
 	if(params.release)  {
