@@ -175,9 +175,15 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		bg->parent_cx = cx;
 
-		if(JS_GetProperty(cx, obj,"js",&val))	/* copy branch settings */
+		/* Setup default values for branch settings */
+		bg->branch.limit=JAVASCRIPT_BRANCH_LIMIT;
+		bg->branch.gc_interval=JAVASCRIPT_GC_INTERVAL;
+		bg->branch.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
+		if(JS_GetProperty(cx, obj,"js",&val))	/* copy branch settings from parent */
 			memcpy(&bg->branch,JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)),sizeof(bg->branch));
 		bg->branch.terminated=NULL;	/* could be bad pointer at any time */
+		bg->branch.counter=0;
+		bg->branch.gc_attempts=0;
 
 		if((bg->runtime = JS_NewRuntime(JAVASCRIPT_MAX_BYTES))==NULL)
 			return(JS_FALSE);
