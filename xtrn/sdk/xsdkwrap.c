@@ -418,10 +418,12 @@ long filelength(int fd)
 	return(st.st_size);
 }
 
+#include <stdio.h>
+#include <errno.h>
 /* Sets a lock on a portion of a file */
 int lock(int fd, long pos, long len)
 {
-	#if defined(F_SANERDLCKNO) || !defined(BSD)
+	#if defined(F_SANERDLCKNO) || !(defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
  		struct flock alock;
 
 	#ifndef F_SANEWRLCKNO
@@ -446,7 +448,7 @@ int lock(int fd, long pos, long len)
 
 	#if !defined(F_SANEWRLCKNO) && !defined(__QNX__) && !defined(__solaris__)
 		/* use flock (doesn't work over NFS) */
-		if(flock(fd,LOCK_EX|LOCK_NB)!=0 && errno != EOPNOTSUPP)
+		if(flock(fd,LOCK_EX|LOCK_NB)!=0 && errno == EWOULDBLOCK)
 			return(-1);
 	#endif
 
@@ -457,7 +459,7 @@ int lock(int fd, long pos, long len)
 int unlock(int fd, long pos, long len)
 {
 
-#if defined(F_SANEUNLCK) || !defined(BSD)
+#if defined(F_SANEUNLCK) || !(defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
 	struct flock alock;
 #ifdef F_SANEUNLCK
 	alock.l_type = F_SANEUNLCK;   /* remove the lock */
@@ -489,7 +491,7 @@ int sopen(const char *fn, int access, int share, ...)
 #ifndef F_SANEWRLCKNO
 	int	flock_op=LOCK_NB;	/* non-blocking */
 #endif
-#if defined(F_SANEWRLCKNO) || !defined(BSD)
+#if defined(F_SANEWRLCKNO) || !(defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
 	struct flock alock;
 #endif
     va_list ap;
@@ -505,7 +507,7 @@ int sopen(const char *fn, int access, int share, ...)
 
 	if (share == SH_DENYNO) /* no lock needed */
 		return fd;
-#if defined(F_SANEWRLCKNO) || !defined(BSD)
+#if defined(F_SANEWRLCKNO) || !(defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
 	/* use fcntl (doesn't work correctly with threads) */
 	alock.l_type = share;
 	alock.l_whence = L_SET;
