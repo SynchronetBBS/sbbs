@@ -1440,6 +1440,7 @@ static void send_thread(void* arg)
 			continue;
 		}
 
+		fseek(fp,xfer.filepos+total,SEEK_SET);
 		rd=fread(buf,sizeof(char),sizeof(buf),fp);
 		if(rd<1) /* EOF or READ error */
 			break;
@@ -1453,7 +1454,12 @@ static void send_thread(void* arg)
 #endif
 		if(wr!=rd) {
 			if(wr==SOCKET_ERROR) {
-				if(ERROR_VALUE==ECONNRESET) 
+				if(ERROR_VALUE==EWOULDBLOCK) {
+					lprintf("%04d DATA send would block, retrying",xfer.ctrl_sock);
+					mswait(1);
+					continue;
+				}
+				else if(ERROR_VALUE==ECONNRESET) 
 					lprintf("%04d DATA Connection reset by peer, sending on socket %d"
 						,xfer.ctrl_sock,*xfer.data_sock);
 				else if(ERROR_VALUE==ECONNABORTED) 
@@ -1462,7 +1468,9 @@ static void send_thread(void* arg)
 				else
 					lprintf("%04d !DATA ERROR %d sending on data socket %d"
 						,xfer.ctrl_sock,ERROR_VALUE,*xfer.data_sock);
-				sockprintf(xfer.ctrl_sock,"426 Error %d sending on DATA channel",ERROR_VALUE);
+				/* Send NAK */
+				sockprintf(xfer.ctrl_sock,"426 Error %d sending on DATA channel"
+					,ERROR_VALUE);
 				error=TRUE;
 				break;
 			}
@@ -1632,8 +1640,8 @@ static void receive_thread(void* arg)
 
 	*xfer.aborted=FALSE;
 	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
-		lprintf("%04d DATA socket %d receiving from offset %lu"
-			,xfer.ctrl_sock,*xfer.data_sock,xfer.filepos);
+		lprintf("%04d DATA socket %d receiving %s from offset %lu"
+			,xfer.ctrl_sock,*xfer.data_sock,xfer.filename,xfer.filepos);
 
 	fseek(fp,xfer.filepos,SEEK_SET);
 	last_report=start=time(NULL);
@@ -1704,11 +1712,16 @@ static void receive_thread(void* arg)
 				break;
 			}
 			if(rd==SOCKET_ERROR) {
-				if(ERROR_VALUE==ECONNRESET) 
-					lprintf("%04d Connection reset by peer, receiving on socket %d"
+				if(ERROR_VALUE==EWOULDBLOCK) {
+					lprintf("%04d DATA recv would block, retrying",xfer.ctrl_sock);
+					mswait(1);
+					continue;
+				}
+				else if(ERROR_VALUE==ECONNRESET) 
+					lprintf("%04d DATA Connection reset by peer, receiving on socket %d"
 						,xfer.ctrl_sock,*xfer.data_sock);
 				else if(ERROR_VALUE==ECONNABORTED) 
-					lprintf("%04d Connection aborted by peer, receiving on socket %d"
+					lprintf("%04d DATA Connection aborted by peer, receiving on socket %d"
 						,xfer.ctrl_sock,*xfer.data_sock);
 				else
 					lprintf("%04d !DATA ERROR %d receiving on data socket %d"
@@ -1865,6 +1878,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 					,char* desc)
 {
 	int			result;
+	ulong		l;
 	socklen_t	addr_len;
 	SOCKADDR_IN	server_addr;
 	BOOL		reuseaddr;
@@ -1994,41 +2008,52 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
 	}
 
-	if((xfer=malloc(sizeof(xfer_t)))==NULL) {
-		lprintf("%04d !MALLOC FAILURE LINE %d",ctrl_sock,__LINE__);
-		sockprintf(ctrl_sock,"425 MALLOC FAILURE");
-		if(tmpfile)
-			remove(filename);
-		*inprogress=FALSE;
-		return;
-	}
-	memset(xfer,0,sizeof(xfer_t));
-	xfer->ctrl_sock=ctrl_sock;
-	xfer->data_sock=data_sock;
-	xfer->inprogress=inprogress;
-	xfer->aborted=aborted;
-	xfer->delfile=delfile;
-	xfer->tmpfile=tmpfile;
-	xfer->append=append;
-	xfer->filepos=filepos;
-	xfer->credits=credits;
-	xfer->lastactive=lastactive;
-	xfer->user=user;
-	xfer->dir=dir;
-	xfer->desc=desc;
-	SAFECOPY(xfer->filename,filename);
-	if(receiving)
-		result=_beginthread(receive_thread,0,(void*)xfer);
-	else
-		result=_beginthread(send_thread,0,(void*)xfer);
+	do {
 
-	if(result==-1) {
-		lprintf("%04d !ERROR %d creating transfer thread",ctrl_sock,errno);
-		sockprintf(ctrl_sock,"425 Error %d creating transfer thread",errno);
-		if(tmpfile)
-			remove(filename);
-		*inprogress=FALSE;
-	}
+		l=1;
+
+		if(ioctlsocket(*data_sock, FIONBIO, &l)!=0) {
+			lprintf("%04d !DATA ERROR %d disabling socket blocking"
+				,ctrl_sock, ERROR_VALUE);
+			sockprintf(ctrl_sock,"425 Error %d disabling socket blocking"
+				,ERROR_VALUE);
+			break;
+		}
+
+		if((xfer=malloc(sizeof(xfer_t)))==NULL) {
+			lprintf("%04d !MALLOC FAILURE LINE %d",ctrl_sock,__LINE__);
+			sockprintf(ctrl_sock,"425 MALLOC FAILURE");
+			break;
+		}
+		memset(xfer,0,sizeof(xfer_t));
+		xfer->ctrl_sock=ctrl_sock;
+		xfer->data_sock=data_sock;
+		xfer->inprogress=inprogress;
+		xfer->aborted=aborted;
+		xfer->delfile=delfile;
+		xfer->tmpfile=tmpfile;
+		xfer->append=append;
+		xfer->filepos=filepos;
+		xfer->credits=credits;
+		xfer->lastactive=lastactive;
+		xfer->user=user;
+		xfer->dir=dir;
+		xfer->desc=desc;
+		SAFECOPY(xfer->filename,filename);
+		if(receiving)
+			result=_beginthread(receive_thread,0,(void*)xfer);
+		else
+			result=_beginthread(send_thread,0,(void*)xfer);
+
+		if(result!=-1)
+			return;	/* success */
+
+	} while(0);
+
+	/* failure */
+	if(tmpfile)
+		remove(filename);
+	*inprogress=FALSE;
 }
 
 /* convert "user name" to "user.name" or "mr. user" to "mr._user" */
@@ -2782,7 +2807,7 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock,"211-Debug");
 			for(i=0;i<sizeof(socket_debug);i++) 
 				if(socket_debug[i]!=0)
-					sockprintf(sock,"211-socket %d = %X",i,socket_debug[i]);
+					sockprintf(sock,"211-socket %d = 0x%X",i,socket_debug[i]);
 			sockprintf(sock,"211 End");
 			continue;
 		}
