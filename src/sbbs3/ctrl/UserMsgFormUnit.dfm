@@ -1,6 +1,6 @@
 object UserMsgForm: TUserMsgForm
-  Left = 701
-  Top = 500
+  Left = 472
+  Top = 459
   Width = 466
   Height = 264
   Caption = 'Sending Message To User'
@@ -36,6 +36,7 @@ object UserMsgForm: TUserMsgForm
     00018000000180000001FC00001FFC00001FFE00001FFC00000FF800000FF800
     001FF800003FFC180C7FFE380EFFFFF80FFFFFF80FFFFFF80FFFFFFFFFFF}
   OldCreateOrder = False
+  Position = poDefaultPosOnly
   PixelsPerInch = 96
   TextHeight = 13
   object Memo: TMemo
