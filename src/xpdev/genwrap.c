@@ -265,25 +265,25 @@ struct tm* DLLCALL localtime_r(const time_t* t, struct tm* tm)
 	return(tm);
 }
 
-char* DLLCALL ctime_r(const time_t *t, char *buf, int buflen)
+char* DLLCALL ctime_r(const time_t *t, char *buf)
 {
 	char* p = ctime(t);
 
 	if(p==NULL)
 		return(NULL);
 
-	strncpy(buf,p,buflen);
+	strcpy(buf,p);
 	return(buf);
 }
 
-char* DLLCALL asctime_r(const struct tm *tm, char *buf, int buflen)
+char* DLLCALL asctime_r(const struct tm *tm, char *buf)
 {
 	char* p = asctime(tm);
 
 	if(p==NULL)
 		return(NULL);
 
-	strncpy(buf,p,buflen);
+	strcpy(buf,p);
 	return(buf);
 }
 

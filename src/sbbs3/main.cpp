@@ -3428,7 +3428,7 @@ void DLLCALL bbs_thread(void* arg)
 
 	t=time(NULL);
 	lprintf("Initializing on %.24s with options: %lx"
-		,ctime_r(&t,str,sizeof(str)),startup->options);
+		,ctime_r(&t,str),startup->options);
 
 	if(chdir(startup->ctrl_dir)!=0)
 		lprintf("!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);

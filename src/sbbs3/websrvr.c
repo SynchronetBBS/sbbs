@@ -2062,7 +2062,7 @@ void DLLCALL web_server(void* arg)
 
 		t=time(NULL);
 		lprintf("Initializing on %.24s with options: %lx"
-			,ctime_r(&t,logstr,sizeof(logstr)),startup->options);
+			,ctime_r(&t,logstr),startup->options);
 
 		lprintf("Root HTML directory: %s", root_dir);
 		lprintf("Error HTML directory: %s", error_dir);

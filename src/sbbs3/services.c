@@ -1295,7 +1295,7 @@ void DLLCALL services_thread(void* arg)
 
 		t=time(NULL);
 		lprintf("Initializing on %.24s with options: %lx"
-			,ctime_r(&t,str,sizeof(str)),startup->options);
+			,ctime_r(&t,str),startup->options);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);
