@@ -1,6 +1,6 @@
 /* SBBSECHO.C */
 
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885	*/
+/* Developed 1990-2000 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885	*/
 
 /* Portions written by Allen Christiansen 1994-1996 						*/
 
@@ -151,7 +151,7 @@ now=time(NULL);
 gm=localtime(&now);
 fseek(fidologfile,0L,SEEK_END);
 fprintf(fidologfile,"%02u/%02u/%02u %02u:%02u:%02u %s\r\n"
-    ,gm->tm_mon+1,gm->tm_mday,gm->tm_year,gm->tm_hour,gm->tm_min,gm->tm_sec
+    ,gm->tm_mon+1,gm->tm_mday,TM_YEAR(gm->tm_year),gm->tm_hour,gm->tm_min,gm->tm_sec
     ,buf);
 fflush(fidologfile);
 }
@@ -427,7 +427,7 @@ do {
 	t=time(NULL);
 	tm=gmtime(&t);
 	sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
-		,tm->tm_mday,mon[tm->tm_mon],tm->tm_year
+		,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
 		,tm->tm_hour,tm->tm_min,tm->tm_sec);
 
 	if(to)
@@ -2235,6 +2235,8 @@ if(isdigit(str[1])) {	/* Regular format: "01 Jan 86  02:34:56" */
 	else
 		tm.tm_mon=11;
 	tm.tm_year=atoi(str+7);
+	if(tm.tm_year<Y2K_2DIGIT_WINDOW)
+		tm.tm_year+=100;
 	tm.tm_hour=atoi(str+11);
 	tm.tm_min=atoi(str+14);
 	tm.tm_sec=atoi(str+17); }
@@ -2267,6 +2269,8 @@ else {					/* SEAdog  format: "Mon  1 Jan 86 02:34" */
 	else
 		tm.tm_mon=11;
 	tm.tm_year=atoi(str+11);
+	if(tm.tm_year<Y2K_2DIGIT_WINDOW)
+		tm.tm_year+=100;
 	tm.tm_hour=atoi(str+14);
 	tm.tm_min=atoi(str+17);
 	tm.tm_sec=0; }
@@ -2367,7 +2371,7 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 memset(&msg,0,sizeof(smbmsg_t));
 memcpy(msg.hdr.id,"SHD\x1a",4);
-msg.hdr.version=SMB_VERSION;
+msg.hdr.version=smb_ver();
 if(fmsghdr.attr&FIDO_PRIVATE)
 	msg.idx.attr|=MSG_PRIVATE;
 msg.hdr.attr=msg.idx.attr;
@@ -3191,6 +3195,11 @@ void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
 
 if(cleanup==1) {
 	for(i=0;i<totalpkts;i++) {
+		if(i>=MAX_TOTAL_PKTS) {
+			printf("MAX_TOTAL_PKTS (%d) REACHED!\n",MAX_TOTAL_PKTS);
+			logprintf("MAX_TOTAL_PKTS (%d) REACHED!\n",MAX_TOTAL_PKTS);
+			break;
+		}
 		if(outpkt[i].curopen) {
 			fputc(0,outpkt[i].stream);
 			fputc(0,outpkt[i].stream);
@@ -3232,6 +3241,11 @@ for(j=0;j<area.uplinks;j++) {
 	sysaddr=getsysfaddr(area.uplink[j].zone);
 	printf("%s ",faddrtoa(area.uplink[j]));
 	for(i=0;i<totalpkts;i++) {
+		if(i>=MAX_TOTAL_PKTS) {
+			printf("MAX_TOTAL_PKTS (%d) REACHED!\n",MAX_TOTAL_PKTS);
+			logprintf("MAX_TOTAL_PKTS (%d) REACHED!\n",MAX_TOTAL_PKTS);
+			break;
+        }
 		if(!memcmp(&area.uplink[j],&outpkt[i].uplink,sizeof(faddr_t))) {
 			if(!outpkt[i].curopen) {
 				if(openpkts==DFLT_OPEN_PKTS)
@@ -3295,7 +3309,7 @@ for(j=0;j<area.uplinks;j++) {
 				pkthdr.sec=0;
 				pkthdr.baud=0x0002; }
 			else {
-				pkthdr.year=tm->tm_year;
+				pkthdr.year=tm->tm_year+1900;
 				pkthdr.month=tm->tm_mon;
 				pkthdr.day=tm->tm_mday;
 				pkthdr.hour=tm->tm_hour;
@@ -3773,7 +3787,7 @@ for(i=0;i<total_subs;i++)
 
 			tm=gmtime((time_t *)&msg.hdr.when_written.time);
 			sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
-				,tm->tm_mday,mon[tm->tm_mon],tm->tm_year
+				,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
 				,tm->tm_hour,tm->tm_min,tm->tm_sec);
 
 			sprintf(hdr.to,"%.35s",msg.to);
@@ -3902,7 +3916,8 @@ int main(int argc, char **argv)
 	FILE	*fidomsg;
 	char	ch,str[1025],fname[256],path[512],sub_code[9]
 			,*p,*tp,*sp,*buf,cr,tear,lzh
-			,areatagstr[129],packet[128],outbound[128];
+			,areatagstr[129],packet[128],outbound[128]
+			,password[16];
 	uchar	HUGE16 *fmsgbuf=NULL;
 	ushort	xlat,attr;
 	int 	i,j,k,n,x,y,z,last,file,fmsg,g,grunged;
@@ -3971,7 +3986,7 @@ printf("\nSBBSecho Version %s (%s) SMBLIB %s ú Synchronet FidoNet Packet "
 #else
 	,"DOS16"
 #endif
-	,SMBLIB_VERSION
+	,smb_lib_ver()
 	);
 
 putenv("TZ=UCT0");
@@ -4138,7 +4153,6 @@ if(misc&LOGFILE)
 	if((fidologfile=_fsopen(cfg.logfile,"ab",SH_DENYNO))==NULL) {
 		printf("\7ERROR opening %s\n",cfg.logfile);
         exit(1); }
-
 
 if(exec_dir[0]!='\\' && exec_dir[1]!=':') {
 	strcpy(path,node_dir);
@@ -4391,12 +4405,13 @@ for(l=_dos_findfirst(path,0,&ff);!l && !kbhit();l=_dos_findnext(&ff)) {
 
 	if(misc&SECURE) {
 		k=matchnode(pkt_faddr,1);
+		sprintf(password,"%.8s",pkthdr.password);
 		if(k<cfg.nodecfgs && cfg.nodecfg[k].pktpwd[0] &&
-			stricmp(pkthdr.password,cfg.nodecfg[k].pktpwd)) {
+			stricmp(password,cfg.nodecfg[k].pktpwd)) {
 			sprintf(str,"Packet %s from %s - "
 				"Incorrect password ('%s' instead of '%s')"
 				,ff.name,faddrtoa(pkt_faddr)
-				,pkthdr.password,cfg.nodecfg[k].pktpwd);
+				,password,cfg.nodecfg[k].pktpwd);
 			printf("Security Violation (Incorrect Password)\n");
 			if(cfg.log&LOG_SECURITY)
 				logprintf(str);
@@ -4714,6 +4729,7 @@ for(l=_dos_findfirst(path,0,&ff);!l && !kbhit();l=_dos_findnext(&ff)) {
 		printf("\n");
 		}
 	fclose(fidomsg);
+
 	if(misc&DELETE_PACKETS)
 		if(delfile(packet))
 			logprintf("ERROR line %d removing %s %s",__LINE__,packet
@@ -4821,7 +4837,8 @@ for(last=_dos_findfirst(str,0,&ff);!last;last=_dos_findnext(&ff)) {
 			fclose(fidomsg); } }
 	else if(i!=-2)
 		fclose(fidomsg);
-    printf("\n"); }
+    printf("\n"); 
+	}
 #ifdef __WATCOMC__
 _dos_findclose(&ff);
 #endif
@@ -4873,8 +4890,10 @@ for(last=_dos_findfirst(str,0,&ff);!last;last=_dos_findnext(&ff)) {
 	for(i=0;i<total_faddrs;i++)
 		if(!memcmp(&addr,&faddr[i],sizeof(faddr_t)))
 			break;
-	if(i<total_faddrs)					  /* In-bound, so ignore */
+	if(i<total_faddrs)	{				  /* In-bound, so ignore */
+		fclose(fidomsg);
 		continue;
+	}
 	printf("\n%s to %s ",path,faddrtoa(addr));
 	if(cfg.log&LOG_PACKING)
 		logprintf("Packing %s (%s)",path,faddrtoa(addr));
@@ -4941,7 +4960,7 @@ for(last=_dos_findfirst(str,0,&ff);!last;last=_dos_findnext(&ff)) {
 	if(!filelength(file)) {
 		pkthdr.orignode=hdr.orignode;
 		pkthdr.destnode=hdr.destnode;
-		pkthdr.year=tm->tm_year;
+		pkthdr.year=tm->tm_year+1900;
 		pkthdr.month=tm->tm_mon;
 		pkthdr.day=tm->tm_mday;
 		pkthdr.hour=tm->tm_hour;
@@ -4997,7 +5016,8 @@ for(i=0;i<total_subs;i++)
 			logprintf("ERROR line %d opening/creating %s",__LINE__,str); }
 		else {
 			write(file,&l,sizeof(time_t));
-			close(file); } } }
+			close(file); } } 
+}
 
 if(misc&(IMPORT_NETMAIL|IMPORT_ECHOMAIL) && misc&REPORT) {
 	now=time(NULL);
@@ -5026,6 +5046,7 @@ if(misc&(IMPORT_NETMAIL|IMPORT_ECHOMAIL) && misc&REPORT) {
 pkt_to_pkt(buf,fakearea,pkt_faddr,hdr,msg_seen,msg_path,1);
 if(email->shd_fp)
 	smb_close(email);
+
 FREE(smb);
 FREE(email);
 return(0);
