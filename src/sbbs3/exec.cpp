@@ -556,13 +556,6 @@ js_BranchCallback(JSContext *cx, JSScript *script)
     return(JS_TRUE);
 }
 
-static JSClass js_scope_class ={
-        "Scope",
-		0,			/* flags */
-        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
-        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
-    }; 
-
 long sbbs_t::js_execfile(const char *cmd)
 {
 	char*		p;
@@ -604,7 +597,7 @@ long sbbs_t::js_execfile(const char *cmd)
 		return(-1); 
 	}
 
-	js_scope=JS_NewObject(js_cx, &js_scope_class, NULL, js_glob);
+	js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob);
 
 	if(js_scope!=NULL) {
 
