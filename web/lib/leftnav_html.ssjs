@@ -17,7 +17,7 @@ if( sub != 'mail' && (http_request.virtual_path == '/msgs/msg.ssjs' || http_requ
   template.leftnav.push({ html: '</span>' });
 }
 
-if( sub != 'mail' && (http_request.virtual_path == '/msgs/choosesubs.ssjs' || http_request.virtual_path == '/msgs/msg.ssjs' || http_request.virtual_path == '/msgs/updatesubs.ssjs')) {
+if( sub != 'mail' && (http_request.virtual_path == '/msgs/choosesubs.ssjs' || http_request.virtual_path == '/msgs/updatesubs.ssjs')) {
     template.leftnav.push({ html: '<span id="sectionSubLinks">' });
     for(s in msg_area.grp_list)
             template.leftnav.push({html: '<a href="/msgs/choosesubs.ssjs?msg_grp=' + msg_area.grp_list[s].description + '">' + msg_area.grp_list[s].description + '</a>' });
