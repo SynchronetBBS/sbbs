@@ -775,13 +775,15 @@ extern "C" {
 
 #ifdef JAVASCRIPT
 
+	/* globobj.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(scfg_t* cfg, JSContext* cx);
+
 	/* sysobj.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent);
 
 	/* userobj.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateUserObject(scfg_t* cfg, JSContext* cx, JSObject* parent
 													,char* name, user_t* user);
-
 	/* fileobj.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(scfg_t* cfg, JSContext* cx, JSObject* parent
 													,user_t* user, char* html_index_file);
