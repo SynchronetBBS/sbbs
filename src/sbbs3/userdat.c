@@ -315,7 +315,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 			getusrsubs();
 	#endif
 			if(user->misc&AUTOTERM) {			// was useron.misc (01/19/00)
-				user->misc&=~(ANSI|RIP|WIP);
+				user->misc&=~(ANSI|RIP|WIP|HTML);
 				user->misc|=autoterm; }
 		} }
 #endif

@@ -177,7 +177,7 @@ BOOL sbbs_t::newuser()
 
 		if(useron.misc&ANSI) {
 			useron.rows=0;	/* Auto-rows */
-			if(useron.misc&(RIP|WIP) || yesno(text[ColorTerminalQ]))
+			if(useron.misc&(RIP|WIP|HTML) || yesno(text[ColorTerminalQ]))
 				useron.misc|=COLOR; 
 			else
 				useron.misc&=~COLOR;

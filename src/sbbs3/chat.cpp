@@ -67,7 +67,7 @@ void sbbs_t::multinodechat(int channel)
 
 	if(!chan_access(channel-1))
 		return;
-	if(useron.misc&(RIP|WIP) ||!(useron.misc&EXPERT))
+	if(useron.misc&(RIP|WIP|HTML) ||!(useron.misc&EXPERT))
 		menu("multchat");
 	getnodedat(cfg.node_num,&thisnode,1);
 	bputs(text[WelcomeToMultiChat]);
@@ -556,7 +556,7 @@ void sbbs_t::chatsection()
 	}
 
 	action=NODE_CHAT;
-	if(useron.misc&(RIP|WIP) || !(useron.misc&EXPERT))
+	if(useron.misc&(RIP|WIP|HTML) || !(useron.misc&EXPERT))
 		menu("chat");
 	ASYNC;
 	bputs(text[ChatPrompt]);
@@ -626,7 +626,7 @@ void sbbs_t::chatsection()
 //					FREE(gurubuf);
 				return; }
 		action=NODE_CHAT;
-		if(!(useron.misc&EXPERT) || useron.misc&WIP
+		if(!(useron.misc&EXPERT) || useron.misc&(WIP|HTML)
 			|| (useron.misc&RIP && !no_rip_menu)) {
 			menu("chat"); 
 		}

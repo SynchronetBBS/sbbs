@@ -84,11 +84,11 @@ void sbbs_t::temp_xfer()
 	strcpy(f.desc,"Temp File");
 	f.dir=dirnum;
 
-	if(useron.misc&(RIP|WIP) && !(useron.misc&EXPERT))
+	if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT))
 		menu("tempxfer");
 	lncntr=0;
 	while(online && !done) {
-		if(!(useron.misc&(EXPERT|RIP|WIP))) {
+		if(!(useron.misc&(EXPERT|RIP|WIP|HTML))) {
 			sys_status&=~SS_ABORT;
 			if(lncntr) {
 				SYNC;
@@ -263,7 +263,7 @@ void sbbs_t::temp_xfer()
 				sys_status&=~SS_ABORT;
 				break;
 			case '?':   /* menu */
-				if(useron.misc&(EXPERT|RIP|WIP))
+				if(useron.misc&(EXPERT|RIP|WIP|HTML))
 					menu("tempxfer");
 				break; }
 		if(sys_status&SS_ABORT)

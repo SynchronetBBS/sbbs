@@ -2587,7 +2587,7 @@ void sbbs_t::putcom(char *str, int len)
 
 void sbbs_t::riosync(char abortable)
 {
-	if(useron.misc&(RIP|WIP))	/* don't allow abort with RIP or WIP */
+	if(useron.misc&(RIP|WIP|HTML))	/* don't allow abort with RIP or WIP */
 		abortable=0;			/* mainly because of ANSI cursor position response */
 	if(sys_status&SS_ABORT)		/* no need to sync if already aborting */
 		return;

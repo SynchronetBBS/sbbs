@@ -611,6 +611,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define AUTOHANG	(1L<<20)		/* Auto-hang-up after transfer			*/
 #define WIP 		(1L<<21)		/* Supports WIP terminal emulation		*/
 #define AUTOLOGON	(1L<<22)		/* AutoLogon via IP						*/
+#define HTML		(1L<<23)		/* Using Deuce's HTML terminal			*/
 																			
 #define CLREOL      256     /* Character to erase to end of line 			*/
 																			

@@ -53,12 +53,12 @@ void sbbs_t::batchmenu()
 		bputs(text[NoFilesInBatchQueue]);
 		return; 
 	}
-	if(useron.misc&(RIP|WIP) && !(useron.misc&EXPERT))
+	if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT))
 		menu("batchxfer");
 	lncntr=0;
 	while(online && !done && (batdn_total || batup_total
 		|| cfg.upload_dir!=INVALID_DIR)) {
-		if(!(useron.misc&(EXPERT|RIP|WIP))) {
+		if(!(useron.misc&(EXPERT|RIP|WIP|HTML))) {
 			sys_status&=~SS_ABORT;
 			if(lncntr) {
 				SYNC;
@@ -75,7 +75,7 @@ void sbbs_t::batchmenu()
 			logch(ch,0);
 		switch(ch) {
 			case '?':
-				if(useron.misc&(EXPERT|RIP|WIP))
+				if(useron.misc&(EXPERT|RIP|WIP|HTML))
 					menu("batchxfr");
 				break;
 			case CR:

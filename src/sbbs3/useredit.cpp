@@ -757,7 +757,7 @@ void sbbs_t::maindflts(user_t* user)
 							,user->misc&ANSI ? "ANSI ":"TTY "
 							,user->misc&COLOR ? "(Color) ":"(Mono) "
 							,user->misc&WIP	? "WIP" : user->misc&RIP ? "RIP "
-								:nulstr
+								: user->misc&HTML ? "HTML " : nulstr
 							,user->misc&NO_EXASCII ? "ASCII Only":nulstr);
 		bprintf(text[UserDefaultsTerminal],str);
 		if(cfg.total_xedits)
@@ -835,7 +835,7 @@ void sbbs_t::maindflts(user_t* user)
 			case 'T':
 				if(yesno(text[AutoTerminalQ])) {
 					user->misc|=AUTOTERM;
-					user->misc&=~(ANSI|RIP|WIP);
+					user->misc&=~(ANSI|RIP|WIP|HTML);
 					user->misc|=autoterm; }
 				else
 					user->misc&=~AUTOTERM;

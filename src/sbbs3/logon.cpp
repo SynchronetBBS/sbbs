@@ -90,11 +90,11 @@ bool sbbs_t::logon()
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
 		useron.rows=0;
-		useron.misc&=~(ANSI|RIP|WIP|NO_EXASCII|COLOR);
+		useron.misc&=~(ANSI|RIP|WIP|NO_EXASCII|COLOR|HTML);
 		useron.misc|=autoterm;
 		if(!(useron.misc&ANSI) && yesno(text[AnsiTerminalQ]))
 			useron.misc|=ANSI;
-		if(useron.misc&(RIP|WIP)
+		if(useron.misc&(RIP|WIP|HTML)
 			|| (useron.misc&ANSI && yesno(text[ColorTerminalQ])))
 			useron.misc|=COLOR;
 		if(!yesno(text[ExAsciiTerminalQ]))
@@ -194,7 +194,7 @@ bool sbbs_t::logon()
 
 
 	if(useron.misc&AUTOTERM) {
-		useron.misc&=~(ANSI|RIP|WIP);
+		useron.misc&=~(ANSI|RIP|WIP|HTML);
 		useron.misc|=autoterm; 
 	}
 

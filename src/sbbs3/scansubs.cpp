@@ -84,7 +84,7 @@ void sbbs_t::scansubs(long mode)
 			return; } }
 
 	if(ch=='S') {
-		if(useron.misc&(RIP|WIP) && !(useron.misc&EXPERT)) {
+		if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
 			menu("msgscan"); }
 		i=scanposts(usrsub[curgrp][cursub[curgrp]],mode,str);
 		subs_scanned++;
@@ -93,7 +93,7 @@ void sbbs_t::scansubs(long mode)
 		else bprintf(text[MessageScanComplete],subs_scanned);
 		return; }
 	if(ch=='G') {
-		if(useron.misc&(RIP|WIP) && !(useron.misc&EXPERT)) {
+		if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
 			menu("msgscan"); }
 		for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
 			if(((mode&SCAN_NEW &&
@@ -158,7 +158,7 @@ void sbbs_t::scanallsubs(long mode)
 		} 
 	}
 
-	if(useron.misc&(RIP|WIP) && !(useron.misc&EXPERT)) {
+	if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
 		menu("msgscan"); }
 	for(i=0;i<usrgrps;i++) {
 		for(j=0;j<usrsubs[i] && !msgabort();j++) {

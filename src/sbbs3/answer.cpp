@@ -40,8 +40,9 @@
 
 bool sbbs_t::answer()
 {
-	char	str[256],str2[256],c;
-	char 	tmp[512];
+	char	str[MAX_PATH+1],str2[MAX_PATH+1],c;
+	char 	tmp[MAX_PATH+1];
+	char 	tmp2[MAX_PATH+1];
 	int		i,l,in;
 	struct tm * tm;
 	struct in_addr addr;
@@ -120,6 +121,7 @@ bool sbbs_t::answer()
 			"\x1b[u"	/* restore cursor position */
 			"\x1b[!_"	/* RIP? */
 			"\x1b[0t_"	/* WIP? */
+			"\2\2?HTML?"/* HTML? */
 			"\x1b[0m_"	/* "Normal" colors */
 			"\x1b[2J"	/* clear screen */
 			"\x1b[H"	/* home cursor */
@@ -143,7 +145,7 @@ bool sbbs_t::answer()
 		if(l==0 && c!=ESC)	// response must begin with escape char
 			continue;
 		str[l++]=c;
-		if(c=='R') {   /* break immediately if response */
+		if(c=='R') {   /* break immediately if ANSI response */
 			mswait(500);
 			break; 
 		}
@@ -170,7 +172,12 @@ bool sbbs_t::answer()
 		else if(strstr(str,"DC-TERM")
 			&& toupper(*(strstr(str,"DC-TERM")+12))=='W') {
 			logline("@W",strstr(str,"DC-TERM"));
-			autoterm|=(WIP|COLOR|ANSI); } }
+			autoterm|=(WIP|COLOR|ANSI); }
+		else if(strstr(str,"!HTML!"))  {
+			logline("@H",strstr(str,"!HTML!"));
+			autoterm|=HTML;
+		} 
+	}
 	rioctl(IOFI); /* flush left-over or late response chars */
 
 	if(!autoterm && str[0]) {
@@ -214,9 +221,12 @@ bool sbbs_t::answer()
 		/* Display ANSWER screen */
 		sprintf(str,"%sanswer",cfg.text_dir);
 		sprintf(tmp,"%s.%s",str,autoterm&WIP ? "wip":"rip");
+		sprintf(tmp2,"%s.html",str);
 		sprintf(str2,"%s.ans",str);
 		if(autoterm&(RIP|WIP) && fexist(tmp))
 			strcat(str,autoterm&WIP ? ".wip":".rip");
+		else if(autoterm&HTML && fexist(tmp2))
+			strcat(str,".html");
 		else if(autoterm&ANSI && fexist(str2))
 			strcat(str,".ans");
 		else
