@@ -43,16 +43,24 @@
 /* from NODE.DAB															*/
 /* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
 /****************************************************************************/
-void sbbs_t::getnodedat(uint number, node_t *node, char lockit)
+void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 {
 	char str[256];
 	int count=0;
 
-	if(!(sys_status&SS_NODEDAB))
-		return;
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
 		return; }
+
+	if(nodefile==-1) {
+		sprintf(str,"%snode.dab",cfg.ctrl_dir);
+		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
+			memset(node,0,sizeof(node_t));
+			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
+			return; 
+		}
+	}
+
 	number--;	/* make zero based */
 	while(count<LOOP_NODEDAB) {
 		if(count>10)
@@ -64,13 +72,20 @@ void sbbs_t::getnodedat(uint number, node_t *node, char lockit)
 			continue; }
 		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
 			break;
-		count++; }
+		count++; 
+	}
+	if(!lockit) {
+		close(nodefile);
+		nodefile=-1;
+	}
+
 	if(count>(LOOP_NODEDAB/2) && count!=LOOP_NODEDAB) {
 		sprintf(str,"NODE.DAB COLLISION - Count: %d",count);
 		logline("!!",str); }
 	if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,ERR_READ,"node.dab",number+1);
-		return; }
+		return; 
+	}
 }
 
 /****************************************************************************/
@@ -205,11 +220,17 @@ void sbbs_t::getnodeext(uint number, char *ext)
     char str[256];
     int count=0;
 
-	if(!(sys_status&SS_NODEDAB))
-		return;
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
 		return; }
+
+	sprintf(str,"%snode.exb",cfg.ctrl_dir);
+	if((node_ext=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
+		memset(ext,0,128);
+		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_DENYNONE);
+		return; 
+	}
+
 	number--;   /* make zero based */
 	while(count<LOOP_NODEDAB) {
 		if(count>10)
@@ -222,12 +243,17 @@ void sbbs_t::getnodeext(uint number, char *ext)
 			break;
 		count++; }
 	unlock(node_ext,(long)number*128L,128);
+	close(node_ext);
+	node_ext=-1;
+
 	if(count>(LOOP_NODEDAB/2) && count!=LOOP_NODEDAB) {
 		sprintf(str,"NODE.EXB COLLISION - Count: %d",count);
-		logline("!!",str); }
+		logline("!!",str); 
+	}
 	if(count==LOOP_NODEDAB) {
-		errormsg(WHERE,ERR_READ,"NODE.EXB",number+1);
-		return; }
+		errormsg(WHERE,ERR_READ,"node.exb",number+1);
+		return; 
+	}
 }
 
 

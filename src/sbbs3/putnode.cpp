@@ -46,8 +46,6 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 {
 	char str[256],firston[25];
 
-	if(!(sys_status&SS_NODEDAB))
-		return;
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
 		return; }
@@ -71,13 +69,25 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 			putnodeext(number,str); }
 		else
 			node->misc&=~NODE_EXT; }
+
+	if(nodefile==-1) {
+		sprintf(str,"%snode.dab",cfg.ctrl_dir);
+		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
+			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
+			return; 
+		}
+	}
+
 	number--;	/* make zero based */
 	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 	if(write(nodefile,node,sizeof(node_t))!=sizeof(node_t)) {
 		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 		errormsg(WHERE,ERR_WRITE,"nodefile",number+1);
-		return; }
+		return; 
+	}
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
+	close(nodefile);
+	nodefile=-1;
 }
 
 /****************************************************************************/
@@ -113,12 +123,16 @@ void sbbs_t::putnodeext(uint number, char *ext)
     char str[256];
     int count=0;
 
-	if(!(sys_status&SS_NODEDAB))
-		return;
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
 		return; }
 	number--;   /* make zero based */
+
+	sprintf(str,"%snode.exb",cfg.ctrl_dir);
+	if((node_ext=nopen(str,O_RDWR|O_DENYNONE))==-1) {
+		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
+		return; 
+	}
 	while(count<LOOP_NODEDAB) {
 		if(count>10)
 			mswait(55);
@@ -130,12 +144,17 @@ void sbbs_t::putnodeext(uint number, char *ext)
 			break;
 		count++; }
 	unlock(node_ext,(long)number*128L,128);
+	close(node_ext);
+	node_ext=-1;
+
 	if(count>(LOOP_NODEDAB/2) && count!=LOOP_NODEDAB) {
 		sprintf(str,"NODE.EXB COLLISION - Count: %d",count);
-		logline("!!",str); }
+		logline("!!",str); 
+	}
 	if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,ERR_WRITE,"NODE.EXB",number+1);
-		return; }
+		return; 
+	}
 }
 
 
