@@ -2687,11 +2687,11 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	i=smb_addmsghdr(smbfile,&msg,storage);	// calls smb_unlocksmbhdr() 
 
 	if(i!=SMB_SUCCESS) {
-		smb_freemsg_dfields(smbfile,&msg,1);
 		printf("ERROR smb_addmsghdr returned %d: %s\n"
 			,i,smbfile->last_error);
 		logprintf("ERROR smb_addmsghdr returned %d: %s"
 			,i,smbfile->last_error);
+		smb_freemsg_dfields(smbfile,&msg,1);
 	}
 	smb_freemsgmem(&msg);
 
