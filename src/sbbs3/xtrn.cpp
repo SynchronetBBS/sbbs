@@ -278,6 +278,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(tm_p!=NULL) {
 			fprintf(fp, "DAY=%u\n", tm_p->tm_mday);
 			fprintf(fp, "WEEKDAY=%s\n",wday[tm_p->tm_wday]);
+			fprintf(fp, "MONTHNAME=%s\n",mon[tm_p->tm_mon]);
 			fprintf(fp, "MONTH=%u\n",tm_p->tm_mon+1);
 			fprintf(fp, "YEAR=%u\n",1900+tm_p->tm_year);
 		}
