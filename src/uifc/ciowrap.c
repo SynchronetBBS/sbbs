@@ -588,7 +588,6 @@ void initciowrap(long inmode)
 	nonl();
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
-	idcok(stdscr,FALSE);
 	raw();
 
 	/* Set up color pairs */
