@@ -1218,9 +1218,6 @@ void DLLCALL services_thread(void* arg)
 					,client_socket
 					,service[i].protocol, host_ip, ntohs(client_addr.sin_port));
 
-				if(set_socket_options(&scfg, client_socket, error))
-					lprintf("%04d !ERROR %s",client_socket, error);
-
 				if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
 					lprintf("%04d !%s MAXMIMUM CLIENTS (%u) reached, access denied"
 						,client_socket, service[i].protocol, service[i].max_clients);
