@@ -211,18 +211,21 @@ Conf  Name					Access Requirements
 2004  Debate
 2005  Hardware/Software Help
 2006  Programming
-2009  Linux Discussion
+2009  UNIX Discussion (Linux, FreeBSD, etc)
 2015  HAM Radio Operators
 2016  Internet Discussion
 2017  Pro-Audio Discussion
 2018  Firearms Discussion
 2019  Sports Discussion
 2007  Synchronet Discussion
+      * Gated with USENET: alt.bbs.synchronet
 2008  Synchronet Sysops Only			LEVEL 90 OR REST Q
+      * Gated with FidoNet: SYNC_SYSOPS
 2011  Synchronet Programming (Baja)
 2014  Synchronet Programming (non-Baja)
 2012  Synchronet Beta Testing			LEVEL 90
 2013  Synchronet Data				LEVEL 90 OR REST Q
+      * Gated with FidoNet: SYNCDATA
 2010  DOVE-Net Sysops Only			LEVEL 90 OR REST Q
 
 
