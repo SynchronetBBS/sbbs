@@ -414,7 +414,7 @@ static void js_service_thread(void* arg)
 	socket=service_client.socket;
 	service=service_client.service;
 
-	lprintf("%04d %s service thread started", socket, service->protocol);
+	lprintf("%04d %s JavaScript service thread started", socket, service->protocol);
 
 
 	thread_up();
@@ -529,6 +529,121 @@ static void js_service_thread(void* arg)
 //	lprintf("%04d JavaScript: Destroying context",socket);
 	JS_DestroyContext(js_cx);	/* Free Context */
 
+	lprintf("%04d %s JavaScript service thread terminated", socket, service->protocol);
+	if(service->clients)
+		service->clients--;
+
+	active_clients--;
+	update_clients();
+	client_off(socket);
+
+	thread_down();
+}
+
+static void native_service_thread(void* arg)
+{
+	char					cmd[MAX_PATH];
+	char					fullcmd[MAX_PATH*2];
+	char*					host_name;
+	HOSTENT*				host;
+	SOCKET					socket;
+	SOCKET					socket_dup;
+	client_t				client;
+	service_t*				service;
+	service_client_t		service_client=*(service_client_t*)arg;
+
+	free(arg);
+
+	socket=service_client.socket;
+	service=service_client.service;
+
+	lprintf("%04d %s service thread started", socket, service->protocol);
+
+	thread_up();
+
+	/* Host name lookup and filtering */
+	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
+		|| startup->options&BBS_OPT_NO_HOST_LOOKUP)
+		host=NULL;
+	else
+		host=gethostbyaddr((char *)&service_client.addr.sin_addr
+			,sizeof(service_client.addr.sin_addr),AF_INET);
+
+	if(host!=NULL && host->h_name!=NULL)
+		host_name=host->h_name;
+	else
+		host_name="<no name>";
+
+	lprintf("%04d %s client name: %s", socket, service->protocol, host_name);
+
+	if(trashcan(&scfg,host_name,"host")) {
+		lprintf("%04d !%s CLIENT BLOCKED in host.can: %s"
+			,socket, service->protocol, host_name);
+		close_socket(socket);
+		thread_down();
+		return;
+	}
+
+
+#if 0	/* Need to export from SBBS.DLL */
+	identity=NULL;
+	if(service->options&BBS_OPT_GET_IDENT 
+		&& startup->options&BBS_OPT_GET_IDENT) {
+		identify(&service_client.addr, service->port, str, sizeof(str)-1);
+		identity=strrchr(str,':');
+		if(identity!=NULL) {
+			identity++;	/* skip colon */
+			while(*identity && *identity<=SP) /* point to user name */
+				identity++;
+			lprintf("%04d Identity: %s",socket, identity);
+		}
+	}
+#endif
+
+	client.size=sizeof(client);
+	client.time=time(NULL);
+	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,inet_ntoa(service_client.addr.sin_addr));
+	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
+	client.port=ntohs(service_client.addr.sin_port);
+	client.protocol=service->protocol;
+	client.user="<unknown>";
+
+#ifdef _WIN32
+	if(!DuplicateHandle(GetCurrentProcess(),
+		(HANDLE)socket,
+		GetCurrentProcess(),
+		(HANDLE*)&socket_dup,
+		0,
+		TRUE, // Inheritable
+		DUPLICATE_SAME_ACCESS)) {
+		lprintf("%04d !%s ERROR %d duplicating socket descriptor"
+			,socket,service->protocol,GetLastError());
+		close_socket(socket);
+		thread_down();
+		return;
+	}
+#else
+	socket_dup = dup(socket);
+#endif
+
+	active_clients++;
+	update_clients();
+
+	/* Initialize client display */
+	client_on(socket,&client);
+
+	/* RUN SCRIPT */
+	if(!strchr(service->cmd,BACKSLASH))
+		sprintf(cmd,"%s%s",scfg.exec_dir,service->cmd);
+	else
+		strcpy(cmd,service->cmd);
+	sprintf(fullcmd,cmd,socket_dup);
+
+	system(fullcmd);
+
+	close_socket(socket);
+	closesocket(socket_dup);	/* close duplicate handle */
+
 	lprintf("%04d %s service thread terminated", socket, service->protocol);
 	if(service->clients)
 		service->clients--;
@@ -539,6 +654,7 @@ static void js_service_thread(void* arg)
 
 	thread_down();
 }
+
 
 void DLLCALL services_terminate(void)
 {
@@ -648,6 +764,7 @@ void DLLCALL services_thread(void* arg)
 {
 	char			host_ip[32];
 	char			compiler[32];
+	char			cmd[128];
 	SOCKADDR_IN		addr;
 	SOCKADDR_IN		client_addr;
 	int				client_addr_len;
@@ -887,7 +1004,12 @@ void DLLCALL services_thread(void* arg)
 			client->service=&service[i];
 			client->service->clients++;		/* this should be mutually exclusive */
 
-			_beginthread(js_service_thread, 0, client);
+			sprintf(cmd,"%.*s",sizeof(cmd)-1,service[i].cmd);
+			strlwr(cmd);
+			if(strstr(cmd,".js"))	/* JavaScript */
+				_beginthread(js_service_thread, 0, client);
+			else					/* Native */
+				_beginthread(native_service_thread, 0, client);
 		}
 	}
 
