@@ -42,13 +42,9 @@ endif
 INSTALL	?=	CLASSIC		# Can be CLASSIC or UNIX
 CVSTAG	?=	HEAD		# CVS tag to pull... HEAD means current.
 
-ifndef SBBSOWNER
- SBBSCHOWN	:= $(USER)
-endif
-
-ifdef SBBSGROUP
- SBBSCHOWN	:= $(SBBSCHOWN):$(SBBSGROUP)
-endif
+SBBSOWNER	?= $(USER)
+SBBSGROUP	?= $(GROUP)
+SBBSCHOWN	:= $(SBBSOWNER):$(SBBSGROUP)
 
 ifeq ($(INSTALL),UNIX)
  PREFIX	?=	/usr/local
