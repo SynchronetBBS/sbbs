@@ -158,7 +158,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     for (i = 0; i < argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
-		fprintf(errfp,JS_GetStringBytes(str));
+		fprintf(errfp,"%s",JS_GetStringBytes(str));
 	}
 	if(argc)
 		fprintf(errfp,"\n");
