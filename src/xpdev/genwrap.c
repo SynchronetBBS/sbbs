@@ -43,7 +43,7 @@
 /* Convert ASCIIZ string to upper case										*/
 /****************************************************************************/
 #ifdef __unix__
-char* SMBCALL strupr(char* str)
+char* DLLCALL strupr(char* str)
 {
 	char*	p=str;
 
@@ -56,7 +56,7 @@ char* SMBCALL strupr(char* str)
 /****************************************************************************/
 /* Convert ASCIIZ string to lower case										*/
 /****************************************************************************/
-char* SMBCALL strlwr(char* str)
+char* DLLCALL strlwr(char* str)
 {
 	char*	p=str;
 
