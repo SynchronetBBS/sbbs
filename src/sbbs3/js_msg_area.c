@@ -58,59 +58,45 @@ static JSClass js_msg_area_class = {
 
 BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, JSObject* subobj, sub_t* sub)
 {
-	jsval		val;
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->code));
-	if(!JS_SetProperty(cx, subobj, "code", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "code", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->code))
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->sname));
-	if(!JS_SetProperty(cx, subobj, "name", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "name", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->sname))
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->lname));
-	if(!JS_SetProperty(cx, subobj, "description", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "description", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->lname))
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->qwkname));
-	if(!JS_SetProperty(cx, subobj, "qwk_name", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->qwkname))
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->data_dir));
-	if(!JS_SetProperty(cx, subobj, "data_dir", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "data_dir", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->data_dir))
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->origline));
-	if(!JS_SetProperty(cx, subobj, "fidonet_origin", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "fidonet_origin", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->origline))
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->tagline));
-	if(!JS_SetProperty(cx, subobj, "qwknet_tagline", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "qwknet_tagline", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->tagline))
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=INT_TO_JSVAL(sub->misc);
-	if(!JS_SetProperty(cx, subobj, "settings", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "settings", INT_TO_JSVAL(sub->misc)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=INT_TO_JSVAL(sub->ptridx);
-	if(!JS_SetProperty(cx, subobj, "ptridx", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "ptridx", INT_TO_JSVAL(sub->ptridx)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=INT_TO_JSVAL(sub->qwkconf);
-	if(!JS_SetProperty(cx, subobj, "qwk_conf", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "qwk_conf", INT_TO_JSVAL(sub->qwkconf)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=INT_TO_JSVAL(sub->maxage);
-	if(!JS_SetProperty(cx, subobj, "max_age", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "max_age", INT_TO_JSVAL(sub->maxage)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=INT_TO_JSVAL(sub->maxmsgs);
-	if(!JS_SetProperty(cx, subobj, "max_msgs", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "max_msgs", INT_TO_JSVAL(sub->maxmsgs)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	val=INT_TO_JSVAL(sub->maxcrcs);
-	if(!JS_SetProperty(cx, subobj, "max_crcs", &val))
-		return(FALSE);
+	JS_DefineProperty(cx, subobj, "max_crcs", INT_TO_JSVAL(sub->maxcrcs)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	return(TRUE);
 }
