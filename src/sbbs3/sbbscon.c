@@ -61,6 +61,11 @@
 
 #endif
 
+/* Do not include web server in 3.10-Win32 release build */
+#if defined(__unix__) || defined(_DEBUG)
+	#define WEB_SERVER
+#endif
+
 /* Constants */
 #define SBBS_PID_FILE	"/var/run/sbbs.pid"
 #define SBBS_LOG_NAME	"synchronet"
@@ -670,7 +675,9 @@ static void terminate(void)
 
 	bbs_terminate();
 	ftp_terminate();
+#ifdef WEB_SERVER
 	web_terminate();
+#endif
 	mail_terminate();
 #ifdef JAVASCRIPT
 	services_terminate();
@@ -1373,8 +1380,10 @@ int main(int argc, char** argv)
 	if(run_services)
 		_beginthread((void(*)(void*))services_thread,0,&services_startup);
 #endif
+#ifdef WEB_SERVER
 	if(run_web)
 		_beginthread((void(*)(void*))web_server,0,&web_startup);
+#endif
 
 #ifdef __unix__
 	if(getuid())  /*  are we running as a normal user?  */
