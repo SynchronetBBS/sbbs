@@ -65,8 +65,10 @@ bool sbbs_t::answer()
 	sprintf(str,"%s  %s [%s]", connection, client_name, cid);
 	logline("@+:",str);
 
-	if(client_ident[0])
-		logline("@*",client_ident);
+	if(client_ident[0]) {
+		sprintf(str,"Identity: %s",client_ident);
+		logline("@*",str);
+	}
 
 	online=ON_REMOTE;
 
