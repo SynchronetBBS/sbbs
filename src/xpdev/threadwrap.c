@@ -62,6 +62,12 @@ ulong _beginthread(void( *start_address )( void * )
 	/* set thread attributes to PTHREAD_CREATE_DETACHED which will ensure
 	   that thread resources are freed on exit() */
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+#ifdef __FreeBSD__
+	/* Default stack size in FreeBSD is too small for JS stuff */
+	pthread_attr_setstacksize(&attr, (1<<17));
+#endif
+
 	if(pthread_create(&thread
 #if defined(__BORLANDC__) /* a (hopefully temporary) work-around */
 		,NULL
