@@ -126,6 +126,7 @@ static const char* usage  = "usage: %s [[setting] [...]]\n"
 							"\tmr<addr>   set SMTP relay server (and enable SMTP relay)\n"
 							"\tmd<addr>   set DNS server address for MX-record lookups\n"
 							"\tmo<value>  set Mail server options value (advanced)\n"
+							"\tma         allow SMTP relays from authenticated users\n"
 							"\tm-         disable Mail server (entirely)\n"
 							"\tmp-        disable POP3 server\n"
 							"\tms-        disable SendMail thread\n"
@@ -893,6 +894,9 @@ int main(int argc, char** argv)
 						break;
 					case 'D':	/* DNS Server */
 						SAFECOPY(mail_startup.dns_server,arg);
+						break;
+					case 'A':
+						mail_startup.options|=MAIL_OPT_ALLOW_RELAY;
 						break;
 					default:
 						printf(usage,argv[0]);
