@@ -2274,6 +2274,7 @@ void DLLCALL mail_server(void* arg)
 	SOCKET			high_socket_set;
 	pop3_t*			pop3;
 	smtp_t*			smtp;
+	struct timeval	tv;
 
 	startup=(mail_startup_t*)arg;
 
@@ -2488,10 +2489,13 @@ void DLLCALL mail_server(void* arg)
 				high_socket_set=pop3_socket+1;
 		}
 
-		if((i=select(high_socket_set,&socket_set,NULL,NULL,NULL))<1) {
-			if(!i) {
-				lprintf("0000 !select returned zero");
-				break;
+		tv.tv_sec=2;
+		tv.tv_usec=0;
+
+		if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
+			if(i==0) {
+				mswait(1);
+				continue;
 			}
 			if(ERROR_VALUE==EINTR)
 				lprintf("0000 Mail Server listening interrupted");
