@@ -717,21 +717,19 @@ int sbbs_t::syncatcodes(char *sp, int len)
 		bputs(current_msg->to_net.type==NET_FIDO
 			? faddrtoa(*(faddr_t *)current_msg->to_net.addr) 
 			: (char*)current_msg->to_net.addr);
-	if(current_msg!=NULL && (!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)) {	
-		if(!strcmp(sp,"MSG_FROM")) {
+	else if(!strcmp(sp,"MSG_FROM") && current_msg!=NULL) {
+		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
 			bputs(current_msg->from);
-			return(0);
-		}
-		if(!strcmp(sp,"MSG_FROM_EXT")) {
+	}
+	else if(!strcmp(sp,"MSG_FROM_EXT") && current_msg!=NULL) {
+		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
 			bputs(current_msg->from_ext);
-			return(0);
-		}
-		if(!strcmp(sp,"MSG_FROM_NET")) {
+	}
+	else if(!strcmp(sp,"MSG_FROM_NET") && current_msg!=NULL) {
+		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
 			bputs(current_msg->from_net.type==NET_FIDO
 				? faddrtoa(*(faddr_t *)current_msg->from_net.addr) 
 				: (char*)current_msg->from_net.addr);
-			return(0);
-		}
 	}
 	else if(!strcmp(sp,"MSG_SUBJECT") && current_msg!=NULL)
 		bputs(current_msg->subj);
