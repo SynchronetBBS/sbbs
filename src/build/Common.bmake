@@ -215,3 +215,44 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 {.}.cpp{$(MTOBJODIR)}$(OFILE):
 	$(QUIET)$(CC) $(CFLAGS) $(CXXFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
 
+xpdev:
+	$(COMSPEC) <<|
+	cd $(XPDEV_SRC)
+	$(MAKE) lib
+	exit
+|
+
+xpdev-mt:
+	$(COMSPEC) <<|
+	cd $(XPDEV_SRC)
+	$(MAKE) mtlib
+	exit
+|
+
+smblib:
+	$(COMSPEC) <<|
+	cd $(SMBLIB_SRC)
+	$(MAKE) lib
+	exit
+|
+
+ciolib-mt:
+	$(COMSPEC) <<|
+	cd $(CIOLIB_SRC)
+	$(MAKE) mtlib
+	exit
+|
+
+uifc:
+	$(COMSPEC) <<|
+	cd $(UIFC_SRC)
+	$(MAKE) lib
+	exit
+|
+
+uifc-mt:
+	$(COMSPEC) <<|
+	cd $(UIFC_SRC)
+	$(MAKE) mtlib
+	exit
+|
