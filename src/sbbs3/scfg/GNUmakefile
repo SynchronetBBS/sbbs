@@ -31,7 +31,7 @@ LIBDIR	:=	/usr/lib
 DELETE	=	rm -f -v
 OUTLIB	=	-o
 
-CFLAGS	:=	-I../../uifc -I/usr/local/include -I../  -D_THREAD_SAFE
+CFLAGS	:=	-I../../uifc -I../../xpdev -I/usr/local/include -I../  -D_THREAD_SAFE
 
 LFLAGS	:=	-L/usr/local/lib
 
@@ -84,7 +84,7 @@ ifdef USE_DIALOG
 	@$(MAKE) -C ../../libdialog
 endif
 	@echo Linking $@
-	@$(CC) $(LFLAGS) -o $@ $(OBJS)
+	@$(CC) -o $@ $(OBJS) $(LFLAGS)
 
 include depends.mk	# defines dependencies
 
