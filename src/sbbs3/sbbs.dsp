@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\mozilla\js\src" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "WRAPPER_DLL" /D "SMBDLL" /D "SMB_EXPORTS" /D "JAVASCRIPT" /FR /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\mozilla\js\src" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "WRAPPER_DLL" /D "SMBDLL" /D "SMB_EXPORTS" /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -209,6 +209,10 @@ SOURCE=.\getstr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\globobj.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\inkey.cpp
 # End Source File
 # Begin Source File
@@ -358,6 +362,10 @@ SOURCE=.\telgate.cpp
 # Begin Source File
 
 SOURCE=.\telnet.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\termobj.cpp
 # End Source File
 # Begin Source File
 
