@@ -2159,6 +2159,7 @@ static void ctrl_thread(void* arg)
 	char		qwkfile[MAX_PATH+1];
 	char		aliasfile[MAX_PATH+1];
 	char		aliasline[512];
+	char		alias_buf[80];
 	char		desc[501]="";
 	char		sys_pass[128];
 	char*		host_name;
@@ -2431,9 +2432,11 @@ static void ctrl_thread(void* arg)
 			p=cmd+5;
 			while(*p && *p<=' ') p++;
 			truncsp(p);
+			p=alias(&scfg,p,alias_buf);
 			sprintf(user.alias,"%.*s",(int)sizeof(user.alias)-1,p);
-			if(!stricmp(user.alias,"anonymous"))
-				strcpy(user.alias,"guest");
+			/* This alias is too common to leave up to the sysop to configure in alias.cfg */
+			if(!stricmp(user.alias,"anonymous"))	
+				strcpy(user.alias,"guest"); 
 			user.number=matchuser(&scfg,user.alias);
 			if(user.number && getuserdat(&scfg, &user)==0 && user.pass[0]==0) 
 				sockprintf(sock,"331 User name okay, give your full e-mail address as password.");

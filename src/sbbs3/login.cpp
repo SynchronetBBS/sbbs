@@ -41,6 +41,7 @@
 int sbbs_t::login(char *str, char *pw)
 {
 	char 	tmp[512];
+	char	alias_buf[80];
 	long	useron_misc=useron.misc;
 
 	useron.number=0;
@@ -60,7 +61,7 @@ int sbbs_t::login(char *str, char *pw)
 			useron.number=0; }
 
 	if(!useron.number) {
-		useron.number=matchuser(&cfg,str);
+		useron.number=matchuser(&cfg,alias(&cfg,str,alias_buf));
 		if(!useron.number && (uchar)str[0]<0x7f && str[1]
 			&& isalpha(str[0]) && strchr(str,SP) && cfg.node_misc&NM_LOGON_R)
 			useron.number=userdatdupe(0,U_NAME,LEN_NAME,str,0);

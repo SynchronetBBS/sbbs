@@ -487,6 +487,7 @@ static void pop3_thread(void* arg)
 	char		buf[512];
 	char		host_name[128];
 	char		host_ip[64];
+	char		alias_buf[80];
 	char		username[LEN_ALIAS+1];
 	char		password[LEN_PASS+1];
 	char		fromaddr[256];
@@ -607,7 +608,7 @@ static void pop3_thread(void* arg)
 		p=buf+5;
 		while(*p && *p<=' ') p++;
 		sprintf(password,"%.*s",(int)sizeof(password)-1,p);
-		user.number=matchuser(&scfg,username);
+		user.number=matchuser(&scfg,alias(&scfg,username,alias_buf));
 		if(!user.number) {
 			if(scfg.sys_misc&SM_ECHO_PW)
 				lprintf("%04d !POP3 UNKNOWN USER: %s (password: %s)"
