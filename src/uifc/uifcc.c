@@ -665,6 +665,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			j++; 
 			puttext(SCRN_LEFT+left+3,SCRN_TOP+top+j,SCRN_LEFT+left+width-2
 				,SCRN_TOP+top+j,win); }
+		if(bar)
+			y=top+3+(*bar);
+		else
+			y=top+3+(*cur);
 	}
 
 	#ifdef __unix__
@@ -685,6 +689,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		}
 	#endif
 
+		i=0;
 		if(inkey(1)) {
 			i=inkey(0);
 			if(i==KEY_BACKSPACE || i==BS)
@@ -1136,7 +1141,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(mode&WIN_DYN) {
 			save_menu_cur=*cur;
 			save_menu_bar=*bar;
-			return(-2);
+			return(-2-i);
 		}
 #endif
 
