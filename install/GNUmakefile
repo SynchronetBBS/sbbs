@@ -133,6 +133,11 @@ ifndef NOCVS
 	$(CVS_CO) -r $(CVSTAG) text
 endif
 
+$(SBBSDIR)/docs: cvslogin
+ifndef NOCVS
+	$(CVS_CO) -r $(CVSTAG) docs
+endif
+
 $(SBBSDIR)/exec: cvslogin
 ifndef NOCVS
 	$(CVS_CO) -r $(CVSTAG) exec
