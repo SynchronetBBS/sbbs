@@ -1186,7 +1186,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(p->fp)	/* open? */
 				*vp = JSVAL_TRUE;
 			else
-				*vp = BOOLEAN_TO_JSVAL(fexist(p->name));
+				*vp = BOOLEAN_TO_JSVAL(fexistcase(p->name));
 			break;
 		case FILE_PROP_DATE:
 			JS_NewNumberValue(cx,fdate(p->name),vp);
