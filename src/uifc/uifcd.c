@@ -329,6 +329,8 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 	sprintf(str,"%.*s",sizeof(str)-1,outstr);
     while(dialog_inputbox((char*)NULL, prompt, 9, max+4, outstr)==-2)
 		help();
+    if(kmode&K_UPPER)	/* convert to uppercase? */
+    	strupr(str);
 	if(strcmp(str,outstr))
 		api->changes=TRUE;
     return strlen(outstr);
