@@ -2871,6 +2871,13 @@ static void ctrl_thread(void* arg)
 				sprintf(path,"%s%s",local_dir, *p ? p : "*");
 				lprintf("%04d %s listing: %s", sock, user.alias, path);
 				sockprintf(sock, "150 Directory of %s%s", local_dir, p);
+
+				now=time(NULL);
+				tm_p=localtime(&now);
+				if(tm_p==NULL) 
+					memset(&cur_tm,0,sizeof(cur_tm));
+				else
+					cur_tm=*tm_p;
 			
 				glob(path,0,NULL,&g);
 				for(i=0;i<(int)g.gl_pathc;i++) {
