@@ -2649,12 +2649,6 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	if(taillen)
 		smb_dfield(&msg,TEXT_TAIL,taillen+2);
 
-	if(smb_get_hfield(&msg,FIDOTID,NULL)==NULL) { /* generate TID */
-		sprintf(str,"SBBSecho %s-%s r%s %s %s"
-			,SBBSECHO_VER,PLATFORM_DESC,revision,__DATE__,compiler);
-		smb_hfield(&msg,FIDOTID,(ushort)strlen(str),str);
-	}
-
 	i=smb_addmsghdr(smbfile,&msg,storage);
 	smb_freemsgmem(&msg);
 	if(i) {
