@@ -128,7 +128,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
             return;
         }
     }
-    for(n=0;;n++) {
+    for(n=0;n<MainForm->cfg.sys_nodes;n++) {
 	    lseek(nodedab, n*sizeof(node_t), SEEK_SET);
         if(eof(nodedab))
         	break;
@@ -343,6 +343,8 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
                 strcat(str,"E");
             if(node.misc&NODE_DOWN)
                 strcat(str,"D");
+            if(node.misc&NODE_LCHAT)
+                strcat(str,"C");
             strcat(str,"]"); }
         if(node.errors) {
             sprintf(tmp, " %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
