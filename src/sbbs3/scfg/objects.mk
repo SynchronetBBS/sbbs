@@ -27,7 +27,6 @@ OBJS	=	$(ODIR)$(SLASH)scfg.$(OFILE)\
             $(ODIR)$(SLASH)crc32.$(OFILE)\
             $(ODIR)$(SLASH)userdat.$(OFILE)\
             $(ODIR)$(SLASH)date_str.$(OFILE)\
-			$(ODIR)$(SLASH)scfgchat.$(OFILE)\
 			$(ODIR)$(SLASH)genwrap.$(OFILE)\
 			$(ODIR)$(SLASH)dirwrap.$(OFILE)\
 			$(ODIR)$(SLASH)filewrap.$(OFILE)\
