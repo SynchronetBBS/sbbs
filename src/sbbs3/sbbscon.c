@@ -915,7 +915,7 @@ int main(int argc, char** argv)
 
 		if((fp=fopen("/etc/resolv.conf","r"))!=NULL) {
 			while(!feof(fp)) {
-				if(fgets(str,sizeof(str)-1,fp)==NULL)
+				if(fgets(str,sizeof(str),fp)==NULL)
 					break;
 				truncsp(str);
 				p=str;
@@ -1440,7 +1440,7 @@ int main(int argc, char** argv)
 				case 'd':	/* down node */
 				case 'i':	/* interrupt node */
 					printf("\nNode number: ");
-					if((n=atoi(fgets(str,sizeof(str)-1,stdin)))<1)
+					if((n=atoi(fgets(str,sizeof(str),stdin)))<1)
 						break;
 					fflush(stdin);
 					printf("\n");

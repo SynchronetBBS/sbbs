@@ -1148,7 +1148,7 @@ static service_t* read_services_cfg(char* services_cfg, DWORD* services)
 	}
 
 	for((*services)=0;!feof(fp) && (*services)<MAX_SERVICES;) {
-		if(!fgets(line,sizeof(line)-1,fp))
+		if(!fgets(line,sizeof(line),fp))
 			break;
 		p=line;
 		while(*p && *p<=' ') p++;

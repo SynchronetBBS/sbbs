@@ -206,7 +206,7 @@ int sbbs_t::protocol(char *cmdline, bool cd)
 	// Save DSZLOG to logfile
 	if((stream=fnopen(NULL,protlog,O_RDONLY))!=NULL) {
 		while(!feof(stream) && !ferror(stream)) {
-			if(!fgets(protlog,sizeof(protlog)-1,stream))
+			if(!fgets(protlog,sizeof(protlog),stream))
 				break;
 			truncsp(protlog);
 			logline(nulstr,protlog);

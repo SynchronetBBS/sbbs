@@ -73,7 +73,7 @@ char	compiler[32];
 #endif
 
 /* gets is dangerous */
-#define gets(str)  fgets((str), sizeof(str) - 1, stdin)
+#define gets(str)  fgets((str), sizeof(str), stdin)
 
 /********************/
 /* Global variables */
@@ -216,7 +216,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 
 	if(to==NULL) {
 		printf("To User Name: ");
-		fgets(str,sizeof(str)-1,stdin); 
+		fgets(str,sizeof(str),stdin); 
 	} else
 		SAFECOPY(str,to);
 

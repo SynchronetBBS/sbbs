@@ -409,7 +409,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		FILE* sig;
 		if(fexist(str) && (sig=fopen(str,"rb"))!=NULL) {
 			while(!feof(sig)) {
-				if(!fgets(str,sizeof(str)-1,sig))
+				if(!fgets(str,sizeof(str),sig))
 					break;
 				fputs(str,stream);
 				l+=strlen(str);	/* byte counter */

@@ -102,7 +102,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 	}
 
 	while(!feof(fp)) {
-		if(!fgets(str,sizeof(str)-1,fp))
+		if(!fgets(str,sizeof(str),fp))
 			break;
 		if(str[0]==';')
 			continue;
