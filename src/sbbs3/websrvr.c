@@ -594,12 +594,6 @@ static void close_request(http_session_t * session)
 		session->finished=TRUE;
 	}
 
-	if(session->js_cx!=NULL) {
-		lprintf("%04d JavaScript: Destroying context",socket);
-		JS_DestroyContext(session->js_cx);	/* Free Context */
-		session->js_cx=NULL;
-	}
-
 }
 
 static int get_header_type(char *header)
@@ -1616,8 +1610,11 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 	char		*p;
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)
+	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)  {
 		request = JSVAL_TO_OBJECT(val);
+		/* Delete query object if re-using http_request object */
+		JS_DeleteProperty(cx,request,"query");
+	}
 	else
 		request = JS_DefineObject(cx, parent, "http_request", NULL
 									, NULL, JSPROP_ENUMERATE);
@@ -1819,10 +1816,6 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
 			break;
 
-		lprintf("%04d JavaScript: Initializing HttpRequest object",sock);
-		if(js_CreateHttpRequestObject(js_cx, js_glob, session)==NULL) 
-			break;
-
 		lprintf("%04d JavaScript: Initializing System object",sock);
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
 			break;
@@ -1908,6 +1901,13 @@ BOOL js_setup(http_session_t* session)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 		JS_DefineProperty(session->js_cx, session->js_glob, "argc", INT_TO_JSVAL(0)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	}
+
+	lprintf("     JavaScript: Initializing HttpRequest object");
+	if(js_CreateHttpRequestObject(session->js_cx, session->js_glob, session)==NULL) {
+		lprintf("%04d !ERROR initializing JavaScript HttpRequest object",session->socket);
+		send_error(session,"500 Error initializing JavaScript HttpRequest object");
+		return(FALSE);
 	}
 
 	JS_SetContextPrivate(session->js_cx, session);
