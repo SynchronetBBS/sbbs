@@ -173,13 +173,16 @@ bool sbbs_t::chksyspass()
 	char	str[256],str2[256];
 	int 	orgcon=console;
 
-	if(online==ON_REMOTE && !(cfg.sys_misc&SM_R_SYSOP))
+	if(online==ON_REMOTE && !(cfg.sys_misc&SM_R_SYSOP)) {
+		logline("S!","Remote sysop access disabled");
 		return(false);
+	}
 	if(online==ON_LOCAL) {
 		if(!(cfg.sys_misc&SM_L_SYSOP))
 			return(false);
 		if(!(cfg.node_misc&NM_SYSPW) && !(cfg.sys_misc&SM_REQ_PW))
-			return(false); }
+			return(false); 
+	}
 	bputs("SY: ");
 	console&=~(CON_R_ECHO|CON_L_ECHO);
 	getstr(str,40,K_UPPER);
