@@ -133,14 +133,14 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 		if(option[cnt][0]==0)
 	   		break;
 	options=cnt;
-	freecnt=cnt+4;
+	freecnt=cnt+5;	/* Help, Add, Delete, Copy, Paste */
 
     // Allocate and fill **it
     it=(char **)MALLOC(sizeof(char *)*2*(freecnt));
 	if(it==NULL)
 		return(-1);
 
-    for(i=0;i<(cnt+4)*2;i++)  {
+    for(i=0;i<freecnt*2;i++)  {
         it[i]=(char *)MALLOC(MAX_OPLN+1);
 		if(it[i]==NULL)
 			return(-1);
@@ -164,6 +164,10 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 		i /= 10;
 		width+=1;
 	}
+
+	strcpy(it[cnt2++],"H");
+	strcpy(it[cnt2++],"Help");
+	cnt++;
 
     if(mode&WIN_INS)  {
 		strcpy(it[cnt2++],"A");	/* Changed from "I" */
@@ -224,7 +228,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 		}
 		if(ret==-1)		/* ESC */
 			break;
-		if(ret==-2)	{	/* Help */
+		if(ret==-2 || str[0]=='H')	{	/* Help */
 			help();
 			continue;
 		}
