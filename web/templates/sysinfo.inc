@@ -94,13 +94,13 @@ Version %%JS:system.full_version%%</p>
 <p>%%JS:system.os_version%%</P>
 <table>
 <tr><td>
-<pre class="preleft">@@sysinfo@@</pre>
+<pre class="leftalign">@@sysinfo@@</pre>
 </td></tr>
 <tr><td>
 &nbsp;
 </td></tr>
 <tr><td>
-<pre class="preleft">@@logon@@</pre>
+<pre class="leftalign">@@logon@@</pre>
 </td></tr>
 </table>
 </div>
