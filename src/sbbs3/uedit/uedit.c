@@ -1967,6 +1967,7 @@ int main(int argc, char** argv)  {
 	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 
     memset(&uifc,0,sizeof(uifc));
+	uifc.mode|=UIFC_NOCTRL;
 
 	uifc.esc_delay=500;
 
