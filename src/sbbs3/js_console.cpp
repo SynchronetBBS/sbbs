@@ -1034,13 +1034,13 @@ static jsMethodSpec js_console_functions[] = {
 	,JSDOCSTR("display pause prompt and wait for key hit")
 	},		
 	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("string text")
-	,JSDOCSTR("display a string (supports ^A and @-codes)")
+	,JSDOCSTR("display a string (supports Ctrl-A codes)")
 	},		
 	{"write",			js_write,			1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("display a raw string")
 	},		
 	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("string text [,number mode]")
-	,JSDOCSTR("display message text (^A, @-codes, etc) with mode")
+	,JSDOCSTR("display message text (Ctrl-A codes, @-codes, pipe codes, etc), see P_* in sbbsdefs.js for mode bits")
 	},		
 	{"center",			js_center,			1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("display a string centered on the screen")
@@ -1049,7 +1049,7 @@ static jsMethodSpec js_console_functions[] = {
 	,JSDOCSTR("returns the number of characters in text, excluding Ctrl-A codes")
 	},
 	{"printfile",		js_printfile,		1, JSTYPE_VOID,		JSDOCSTR("string text [,number mode]")
-	,JSDOCSTR("print a file with optional mode")
+	,JSDOCSTR("print a message text file with optional mode")
 	},		
 	{"printtail",		js_printtail,		2, JSTYPE_VOID,		JSDOCSTR("string text, number lines [,number mode]")
 	,JSDOCSTR("print last x lines of file with optional mode")
