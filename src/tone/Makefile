@@ -1,4 +1,4 @@
-# tome/Makefile
+# tone/Makefile
 #
 # $Id$
 #
@@ -34,12 +34,12 @@
 #############################################################################
 
 SRC_ROOT	=	..
-include $(SRC_ROOT)/build/Common.gmake
+!include $(SRC_ROOT)/build/Common.bmake
 LDFLAGS 	=	$(LDFLAGS) $(XPDEV_LDFLAGS)
 CFLAGS		=	$(CFLAGS) $(XPDEV_CFLAGS)
 LDLIBS		=	$(LDLIBS) -lm -lxpdev
 
 $(TONE):	$(OBJODIR)$(DIRSEP)tone$(OFILE)
 	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(LDFLAGS) $(OUTPUT)$@ $^ $(LDLIBS)
+	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(LDFLAGS) -e$@ $** $(LDLIBS)
 
