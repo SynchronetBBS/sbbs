@@ -1,298 +1,180 @@
 # Makefile
 
 #########################################################################
-# Makefile for Synchronet BBS 											#
-# For use with Borland C++ Builder 5+ or Borland C++ 5.5 for Win32      #
-# @format.tab-size 4													#
+# Makefile for Synchronet BBS for Unix									#
+# For use with GNU make and GNU C Compiler or Borland Kylix C++			#
+# @format.tab-size 4, @format.use-tabs true								#
 #																		#
-# usage: make															#
+# gcc: gmake															#
+# Borland (still in testing/debuging stage): gmake bcc=1				#
 #																		#
 # Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
 
 # $Id$
 
-# Macros
-#DEBUG	=	1				# Comment out for release (non-debug) version
-JS		=	1				# Comment out for non-JavaScript (v3.00) build
-CC		=	bcc32
-LD		=	ilink32
-SLASH	=	\\
-OFILE	=	obj
-LIBFILE	=	.dll
-EXEFILE	=	.exe
-LIBODIR	=	bcc.win32.dll	# Library output directory
-EXEODIR =	bcc.win32.exe	# Executable output directory
-UIFC	=	..\uifc\		# Path to User Interfce library
-CIOLIB	=	..\conio\		# Path to Console I/O library
-XPDEV	=	..\xpdev\		# Path to Cross-platform wrappers
-SMBDIR	=	..\smblib\		# Path to Synchronet Message Base Library
-CFLAGS	=	-M -I$(SMBDIR) -I$(XPDEV) -I$(UIFC) -I$(CIOLIB)
-LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
-DELETE	=	echo y | del 
-WILDARGS=	$(MAKEDIR)\..\lib\wildargs.obj
+SRC_ROOT	=	..
+!include $(SRC_ROOT)\build\Common.bmake
 
-# Enable auto-dependency checking
-.autodepend
-.cacheautodepend	
+UTIL_LDFLAGS	=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS)
+CFLAGS	=	$(CFLAGS) -w-csu -w-par 
+MKSHLIB	=	$(CC) -WD
 
-# Optional compile flags (disable banner, warnings and such)
-CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-8004
-CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS
-
-# Debug or release build?
-!ifdef DEBUG
-CFLAGS	=	$(CFLAGS) -v -Od -D_DEBUG 
-LFLAGS	=	$(LFLAGS) -v
-BUILD	=	debug
+# JS and NSPR setup stuff...
+CFLAGS = $(CFLAGS) -DJAVASCRIPT
+!ifdef JSINCLUDE
+CFLAGS = $(CFLAGS) -I$(JSINCLUDE)
 !else
-CFLAGS	=	$(CFLAGS)
-BUILD	=	release
+CFLAGS = $(CFLAGS) -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)js
 !endif
-
-LIBODIR	=	$(LIBODIR).$(BUILD)
-EXEODIR	=	$(EXEODIR).$(BUILD)
-
-# JavaScript Support
-!ifdef JS
-CFLAGS	= 	$(CFLAGS) -DJAVASCRIPT -I../../include/mozilla/js
-LIBS	=	..\..\lib\mozilla\js\win32.$(BUILD)\js32omf.lib
+!ifndef JSLIBDIR
+JSLIBDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)js$(DIRSEP)win32.$(BUILDPATH)
 !endif
-
-!ifndef VERBOSE
-QUIET	=	@
+!ifndef JSLIB
+JSLIB	=	js32omf
 !endif
+!ifndef NSPRDIR
+# There *IS* no debug build in CVS
+# That's ok, looks like it doesn't need NSPR4
+#NSPRDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)win32.$(BUILDPATH)
+#NSPRDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)win32.release
+!endif
+JS_LDFLAGS = $(JS_LDFLAGS) $(JSLIBDIR)$(DIRSEP)$(UL_PRE)$(JSLIB)$(UL_SUF)
+# Looks like it doesn't need NSPR4
+#JS_LDFLAGS = $(JS_LDFLAGS) -L$(NSPRDIR) $(UL_PRE)nspr4$(UL_SUF)
 
-default: dlls mono utils
+CFLAGS	=	$(CFLAGS) $(JS_CFLAGS)
+LDFLAGS	=	$(LDFLAGS) $(JS_LDFLAGS)
 
-IFNOTEXIST = if not exist $@
+!include sbbsdefs.mk
+CFLAGS	=	$(CFLAGS) $(SBBSDEFS)
 
-# Cross platform/compiler definitions
-!include targets.mk			# defines all targets
-!include objects.mk			# defines $(OBJS)
-!include sbbsdefs.mk		# defines $(SBBSDEFS)
-!include $(XPDEV)rules.mk	# defines clean and output directory rules
+CON_LIBS	= $(UL_PRE)sbbs$(UL_SUF) $(UL_PRE)ftpsrvr$(UL_SUF) $(UL_PRE)websrvr$(UL_SUF) $(UL_PRE)mailsrvr$(UL_SUF) $(UL_PRE)services$(UL_SUF)
 
-SBBSLIB	=	$(LIBODIR)\sbbs.lib
-
-$(SBBSLIB):	$(SBBS)
-
-.path.c = .;$(XPDEV);$(UIFC);$(CIOLIB);$(SMBDIR)
-.path.cpp = .;$(XPDEV);$(UIFC);$(CIOLIB);$(SMBDIR)
-
-# Implicit C Compile Rule for SBBS.DLL
-.c.obj:
-	$(QUIET)$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
-
-# Implicit C++ Compile Rule for SBBS.DLL
-.cpp.obj:
-	$(QUIET)$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
+CFLAGS	=	$(CFLAGS) $(UIFC-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) $(CIOLIB-MT_CFLAGS)
+LDFLAGS =	$(LDFLAGS) $(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(CIOLIB-MT_LDFLAGS)
 
 # Monolithic Synchronet executable Build Rule
-$(SBBSMONO): $(OBJS) \
-	$(LIBODIR)\sbbscon.obj \
-	$(LIBODIR)\sbbs_ini.obj \
-	$(LIBODIR)\ftpsrvr.obj \
-	$(LIBODIR)\websrvr.obj \
-	$(LIBODIR)\mailsrvr.obj $(LIBODIR)\mxlookup.obj $(LIBODIR)\mime.obj $(LIBODIR)\base64.obj \
-	$(LIBODIR)\services.obj
-	$(QUIET)$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $(LIBS) @&&|
+$(SBBSMONO): $(MONO_OBJS) $(OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) $(SMBLIB) $(XPDEV-MT_LIB)  @&&|
+	$** 
+|
+
+# Synchronet BBS library Link Rule
+$(SBBS): $(OBJS) $(LIBS)
+	@echo Linking $@
+	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) $(SMBLIB) $(XPDEV-MT_LIB) @&&|
 	$**
 |
 
-# SBBS DLL Link Rule
-$(SBBS): $(OBJS)
-    @echo Linking $< ...
-	$(QUIET)$(LD) $(LFLAGS) c0d32.obj $(LIBS) $(OBJS), $*, $*, \
-		import32.lib cw32mt.lib ws2_32.lib
+# FTP Server Link Rule
+$(FTPSRVR): $(FTP_OBJS)
+	@echo Linking $@
+	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) $(SMBLIB) $(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib @&&|
+	$**
+|
 
-# Mail Server DLL Link Rule
-$(MAILSRVR): mailsrvr.c \
-	$(LIBODIR)\mxlookup.obj \
-	$(LIBODIR)\mime.obj \
-	$(LIBODIR)\base64.obj \
-	$(LIBODIR)\md5.obj \
-	$(LIBODIR)\crc32.obj \
-	$(LIBODIR)\ini_file.obj \
-	$(LIBODIR)\str_list.obj \
-	$(SBBSLIB)
-    @echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
-		-DMAILSRVR_EXPORTS -DSMB_IMPORTS -DWRAPPER_IMPORTS $** $(LIBS)
+# Mail Server Link Rule
+$(MAILSRVR): $(MAIL_OBJS)
+	@echo Linking $@
+	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) $(SMBLIB) $(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib @&&|
+	$**
+|
 
-# FTP Server DLL Link Rule
-$(FTPSRVR): ftpsrvr.c \
-	$(LIBODIR)\nopen.obj \
-	$(SBBSLIB)
-    @echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
-		-DFTPSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
+# Mail Server Link Rule
+$(WEBSRVR): $(WEB_OBJS)
+	@echo Linking $@
+	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) $(SMBLIB) $(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib @&&|
+	$**
+|
 
-# FTP Server DLL Link Rule
-$(WEBSRVR): wesrvr.c \
-	$(LIBODIR)\sockwrap.obj \
-	$(LIBODIR)\base64.obj
-    @echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
-		-DWEBSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
-
-# Services DLL Link Rule
-$(SERVICES): services.c \
-	$(LIBODIR)\ini_file.obj \
-	$(LIBODIR)\str_list.obj \
-	$(SBBSLIB)
-    @echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
-		-DSERVICES_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
+# Services Link Rule
+$(SERVICES): $(SERVICE_OBJS)
+	@echo Linking $@
+	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) $(SMBLIB) $(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib @&&|
+	$**
+|
 
 # Synchronet Console Build Rule
-$(SBBSCON): sbbscon.c $(SBBSLIB)
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
+$(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
+	@echo Linking $@
+	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) $(CON_OBJS) $(CON_LIB) $(SMBLIB) $(XPDEV-MT_LIB) -L$(LIBODIR) $(LIBODIR)$(DIRSEP)sbbs.lib $(LIBODIR)$(DIRSEP)ftpsrvr.lib $(LIBODIR)$(DIRSEP)mailsrvr.lib $(LIBODIR)$(DIRSEP)websrvr.lib $(LIBODIR)$(DIRSEP)services.lib
 
 # Baja Utility
-$(BAJA): baja.c \
-	$(LIBODIR)\ars.obj \
-	$(LIBODIR)\crc32.obj \
-	$(LIBODIR)\genwrap.obj \
-	$(LIBODIR)\dirwrap.obj
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+$(BAJA): $(BAJA_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # Node Utility
-$(NODE): node.c 
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
-
-SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\smbdump.obj $(LIBODIR)\smbtxt.obj \
-	 $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj $(LIBODIR)\lzh.obj \
-	 $(LIBODIR)\crc16.obj $(LIBODIR)\crc32.obj $(LIBODIR)\md5.obj
+$(NODE): $(NODE_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
 
 # FIXSMB Utility
-$(FIXSMB): fixsmb.c \
-	$(SMBLIB) \
-	$(LIBODIR)\str_list.obj \
-	$(LIBODIR)\str_util.obj \
-	$(LIBODIR)\dirwrap.obj
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
+$(FIXSMB): $(FIXSMB_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # CHKSMB Utility
-$(CHKSMB): chksmb.c \
-	$(SMBLIB) \
-	$(LIBODIR)\dirwrap.obj
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
+$(CHKSMB): $(CHKSMB_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # SMB Utility
-$(SMBUTIL): smbutil.c \
-	$(LIBODIR)\date_str.obj \
-	$(LIBODIR)\str_util.obj \
-	$(LIBODIR)\dirwrap.obj \
-	$(SMBLIB) 
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
+$(SMBUTIL): $(SMBUTIL_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # SBBSecho (FidoNet Packet Tosser)
-$(SBBSECHO): sbbsecho.c \
-	$(LIBODIR)\rechocfg.obj \
-	$(LIBODIR)\smbtxt.obj \
-	$(LIBODIR)\ars.obj \
-	$(LIBODIR)\nopen.obj \
-	$(LIBODIR)\str_util.obj \
-	$(LIBODIR)\date_str.obj \
-	$(LIBODIR)\userdat.obj \
-	$(LIBODIR)\dat_rec.obj \
-	$(LIBODIR)\dirwrap.obj \
-	$(LIBODIR)\load_cfg.obj \
-	$(LIBODIR)\scfglib1.obj \
-	$(LIBODIR)\scfglib2.obj \
-	$(SMBLIB)
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+$(SBBSECHO): $(SBBSECHO_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
 # SBBSecho Configuration Program
-$(ECHOCFG): echocfg.c \
-	$(LIBODIR)\rechocfg.obj \
-	$(LIBODIR)\uifc32.obj \
-	$(LIBODIR)\ciolib.obj \
-	$(LIBODIR)\win32cio.obj \
-	$(LIBODIR)\ansi_cio.obj \
-	$(LIBODIR)\uifcx.obj \
-	$(LIBODIR)\genwrap.obj \
-	$(LIBODIR)\dirwrap.obj \
-	$(LIBODIR)\nopen.obj \
-	$(LIBODIR)\crc16.obj \
-	$(LIBODIR)\str_util.obj
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -WM -n$(EXEODIR) $** 
+$(ECHOCFG): $(ECHOCFG_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) $(MT_LDFLAGS) -e$@ $** $(UIFC-MT_LDFLAGS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
 # ADDFILES
-$(ADDFILES): addfiles.c \
-	$(LIBODIR)\ars.obj \
-	$(LIBODIR)\nopen.obj \
-	$(LIBODIR)\crc16.obj \
-	$(LIBODIR)\str_util.obj \
-	$(LIBODIR)\date_str.obj \
-	$(LIBODIR)\userdat.obj \
-	$(LIBODIR)\dat_rec.obj \
-	$(LIBODIR)\filedat.obj \
-	$(LIBODIR)\genwrap.obj \
-	$(LIBODIR)\dirwrap.obj \
-	$(LIBODIR)\load_cfg.obj \
-	$(LIBODIR)\scfglib1.obj \
-	$(LIBODIR)\scfglib2.obj
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+$(ADDFILES): $(ADDFILES_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
 
 # FILELIST
-$(FILELIST): filelist.c \
-	$(LIBODIR)\ars.obj \
-	$(LIBODIR)\nopen.obj \
-	$(LIBODIR)\crc16.obj \
-	$(LIBODIR)\str_util.obj \
-	$(LIBODIR)\date_str.obj \
-	$(LIBODIR)\dat_rec.obj \
-	$(LIBODIR)\filedat.obj \
-	$(LIBODIR)\genwrap.obj \
-	$(LIBODIR)\dirwrap.obj \
-	$(LIBODIR)\load_cfg.obj \
-	$(LIBODIR)\scfglib1.obj \
-	$(LIBODIR)\scfglib2.obj
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+$(FILELIST): $(FILELIST_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
 
 # MAKEUSER
-$(MAKEUSER): makeuser.c \
-	$(LIBODIR)\ars.obj \
-	$(LIBODIR)\nopen.obj \
-	$(LIBODIR)\crc16.obj \
-	$(LIBODIR)\str_util.obj \
-	$(LIBODIR)\date_str.obj \
-	$(LIBODIR)\dat_rec.obj \
-	$(LIBODIR)\userdat.obj \
-	$(LIBODIR)\genwrap.obj \
-	$(LIBODIR)\dirwrap.obj \
-	$(LIBODIR)\load_cfg.obj \
-	$(LIBODIR)\scfglib1.obj \
-	$(LIBODIR)\scfglib2.obj
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+$(MAKEUSER): $(MAKEUSER_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
 
 # JSEXEC
-$(JSEXEC): jsexec.c \
-	$(LIBS) \
-	$(SBBSLIB)
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
+$(JSEXEC): $(JSEXEC_OBJS) $(SBBS)
+	@echo Linking $@
+	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -e$@ $(JSEXEC_OBJS) $(UL_PRE)sbbs$(UL_SUF) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
 
 # ANS2ASC
-$(ANS2ASC): ans2asc.c
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+$(ANS2ASC): $(OBJODIR)$(DIRSEP)ans2asc$(OFILE)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $**
 
 # ASC2ANS
-$(ASC2ANS): asc2ans.c
-	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+$(ASC2ANS): $(OBJODIR)$(DIRSEP)asc2ans$(OFILE)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $**
 
-SMBLIB:
+$(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE): ftpsrvr.c
+        $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DFTPSRVR_EXPORTS -USBBS_EXPORTS -n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
+
+$(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE): mailsrvr.c
+        $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DMAILSRVR_EXPORTS -USBBS_EXPORTS -n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
+
+$(MTOBJODIR)$(DIRSEP)websrvr$(OFILE): websrvr.c
+        $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DWEBSRVR_EXPORTS -USBBS_EXPORTS -n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
+
+$(MTOBJODIR)$(DIRSEP)services$(OFILE): services.c
+        $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DSERVICES_EXPORTS -USBBS_EXPORTS -n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
+

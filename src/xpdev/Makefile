@@ -1,5 +1,6 @@
 SRC_ROOT	=	..
 !include $(SRC_ROOT)/build/Common.bmake
+CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS
 
 $(XPDEV_LIB): $(OBJS)
 	@echo Creating $< ...

@@ -6,7 +6,7 @@
 
 # OBJODIR, SLASH, and OFILE must be pre-defined
 
-OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE)\
+OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)answer$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ars$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)atcodes$(OFILE)\
@@ -108,7 +108,8 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE)\
 CON_OBJS	= $(MTOBJODIR)$(DIRSEP)sbbscon$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE)
 
-FTP_OBJS	= $(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE)
+FTP_OBJS	= $(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE)
 
 MAIL_OBJS	= $(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)mxlookup$(OFILE) \
@@ -116,7 +117,9 @@ MAIL_OBJS	= $(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)base64$(OFILE)
 
 WEB_OBJS	= $(MTOBJODIR)$(DIRSEP)websrvr$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)base64$(OFILE)
+			$(MTOBJODIR)$(DIRSEP)base64$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)ars$(OFILE)
+			
 
 SERVICE_OBJS	= $(MTOBJODIR)$(DIRSEP)services$(OFILE)
 

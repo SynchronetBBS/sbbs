@@ -31,19 +31,17 @@ UTILS		= $(BUILD_DEPENDS)$(FIXSMB) $(BUILD_DEPENDS)$(CHKSMB) \
 			  $(BUILD_DEPENDS)$(SMBUTIL) $(BUILD_DEPENDS)$(BAJA) $(BUILD_DEPENDS)$(NODE) \
 			  $(BUILD_DEPENDS)$(SBBSECHO) $(BUILD_DEPENDS)$(ECHOCFG) $(BUILD_DEPENDS) \
 			  $(BUILD_DEPENDS)$(ADDFILES) $(BUILD_DEPENDS)$(FILELIST) $(BUILD_DEPENDS)$(MAKEUSER) \
-			  $(BUILD_DEPENDS)$(ANS2ASC) $(BUILD_DEPENDS)$(ASC2ANS) \
-			  $(BUILD_DEPENDS)$(JSEXEC)
+			  $(BUILD_DEPENDS)$(ANS2ASC) $(BUILD_DEPENDS)$(ASC2ANS) 
 
 all:	dlls utils console mono
 
 console:	xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
 		dlls \
-		$(SBBSCON)
+		$(SBBSCON) $(JSEXEC)
 
 utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 		$(LIBODIR) $(OBJODIR) $(MTOBJODIR) $(EXEODIR) \
-		$(SBBS) \
 		$(UTILS)
 
 dlls:	smblib xpdev-mt \
