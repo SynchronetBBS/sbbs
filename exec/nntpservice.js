@@ -372,7 +372,7 @@ while(client.socket.is_connected) {
 				if(!hdr.from_net_type)	/* local message */
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
-						,hdr.from.replace(/ /g,"_")
+						,hdr.from.replace(/ /g,".").toLowerCase()
 						,system.inetaddr));
 				else if(!hdr.from_net_addr.length)
 					writeln(format("From: %s",hdr.from));
@@ -383,7 +383,7 @@ while(client.socket.is_connected) {
 				else
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
-						,hdr.from.replace(/ /g,"_")
+						,hdr.from.replace(/ /g,".").toLowerCase()
 						,hdr.from_net_addr));
 				writeln("To: " + hdr.to);
 				writeln("X-Comment-To: " + hdr.to);

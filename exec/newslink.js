@@ -275,13 +275,13 @@ for(i in area) {
 			else
 				writeln(format("From: \"%s\" <%s@%s%s>"
 					,hdr.from
-					,hdr.from.replace(/ /g,"_")
+					,hdr.from.replace(/ /g,".").toLowerCase()
 					,antispam,hdr.from_net_addr));
 		}
 		else
 			writeln(format("From: \"%s\" <%s@%s%s>"
 				,hdr.from
-				,hdr.from.replace(/ /g,"_")
+				,hdr.from.replace(/ /g,".").toLowerCase()
 				,antispam,system.inetaddr));
 		writeln("To: " + hdr.to);
 		writeln("X-Comment-To: " + hdr.to);
