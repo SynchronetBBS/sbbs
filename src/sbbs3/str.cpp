@@ -68,7 +68,7 @@ char* DLLCALL strip_ctrl(char *str)
 	char tmp[1024];
 	int i,j;
 
-	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++)
+	for(i=j=0;str[i] && j<(int)sizeof(tmp)-1;i++)
 		if(str[i]==CTRL_A && str[i+1]!=0)
 			i++;
 		else if((uchar)str[i]>=SP)
@@ -83,7 +83,7 @@ char* DLLCALL strip_exascii(char *str)
 	char tmp[1024];
 	int i,j;
 
-	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++)
+	for(i=j=0;str[i] && j<(int)sizeof(tmp)-1;i++)
 		if(!(str[i]&0x80))
 			tmp[j++]=str[i];
 	tmp[j]=0;
