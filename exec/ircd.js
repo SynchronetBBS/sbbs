@@ -923,10 +923,7 @@ for (pl in PLines) {
 	}
 }
 
-if(this.branch!=undefined)
-	branch.limit=0; // we're not an infinite loop.
-else if (this.js!=undefined)
-	js.branch_limit=0; // new style branch limit definition
+js.branch_limit=0; // we're not an infinite loop.
 
 ///// Main Loop /////
 while (!server.terminated) {
