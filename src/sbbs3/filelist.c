@@ -296,7 +296,7 @@ int main(int argc, char **argv)
 		if(misc&AUTO && scfg.dir[i]->seqdev) 	/* CD-ROM */
 			continue;
 		printf("\n%-*s %s",LEN_GSNAME,scfg.lib[scfg.dir[i]->lib]->sname,scfg.dir[i]->lname);
-		sprintf(str,"%s%s.IXB",scfg.dir[i]->data_dir,scfg.dir[i]->code);
+		sprintf(str,"%s%s.ixb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
 		if((file=nopen(str,O_RDONLY))==-1)
 			continue;
 		l=filelength(file);
@@ -329,7 +329,7 @@ int main(int argc, char **argv)
 			FREE((char *)ixbbuf);
 			continue; }
 		close(file);
-		sprintf(str,"%s%s.DAT",scfg.dir[i]->data_dir,scfg.dir[i]->code);
+		sprintf(str,"%s%s.dat",scfg.dir[i]->data_dir,scfg.dir[i]->code);
 		if((file=nopen(str,O_RDONLY))==-1) {
 			printf("\7ERR_OPEN %s %u\n",str,O_RDONLY);
 			FREE((char *)ixbbuf);
@@ -435,7 +435,7 @@ int main(int argc, char **argv)
 
 			if(misc&EXT && ext) {							/* Print ext desc */
 
-				sprintf(str,"%s%s.EXB",scfg.dir[i]->data_dir,scfg.dir[i]->code);
+				sprintf(str,"%s%s.exb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
 				if(!fexist(str))
 					continue;
 				if((j=nopen(str,O_RDONLY))==-1) {
