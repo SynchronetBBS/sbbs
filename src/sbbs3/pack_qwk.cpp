@@ -69,7 +69,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	if(prepack)
 		ex|=EX_OFFLINE;
 
-	delfiles(cfg.temp_dir,"*");
+	delfiles(cfg.temp_dir,ALLFILES);
 	sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexist(str)) {
 		for(k=0;k<cfg.total_fextrs;k++)
@@ -78,7 +78,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				break;
 		if(k>=cfg.total_fextrs)
 			k=0;
-		i=external(cmdstr(cfg.fextr[k]->cmd,str,"*",NULL),ex);
+		i=external(cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL),ex);
 		if(!i)
 			preqwk=1; }
 

@@ -312,7 +312,7 @@ void sbbs_t::batchmenu()
 					action=NODE_ULNG;
 					SYNC;
 					if(online==ON_REMOTE) {
-						delfiles(cfg.temp_dir,"*");
+						delfiles(cfg.temp_dir,ALLFILES);
 						start=time(NULL);
 						protocol(cmdstr(cfg.prot[xfrprot]->batulcmd,str,nulstr,NULL),1);
 						end=time(NULL);
@@ -320,13 +320,13 @@ void sbbs_t::batchmenu()
 							starttime+=end-start; 
 					}
 					batch_upload();
-					delfiles(cfg.temp_dir,"*");
+					delfiles(cfg.temp_dir,ALLFILES);
 					autohangup(); 
 				}
 				break; 
 		} 
 	}
-	delfiles(cfg.temp_dir,"*");
+	delfiles(cfg.temp_dir,ALLFILES);
 }
 
 /****************************************************************************/

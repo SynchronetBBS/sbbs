@@ -80,7 +80,8 @@ extern "C" {
 
 #ifdef __unix__
 
-	#include <glob.h>	/* POSIX.2 directory pattern matching function */
+	#include <glob.h>		/* POSIX.2 directory pattern matching function */
+	#define ALLFILES "*"	/* matches all files in a directory */
 
 #else	/* glob-compatible findfirst/findnext wrapper */
 
@@ -116,6 +117,8 @@ extern "C" {
 
 	DLLEXPORT int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t*);
 	DLLEXPORT void	DLLCALL globfree(glob_t*);
+
+	#define ALLFILES "*.*"	/* matches all files in a directory */
 
 #endif
 

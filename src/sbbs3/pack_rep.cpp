@@ -59,11 +59,11 @@ bool sbbs_t::pack_rep(uint hubnum)
 	smbmsg_t msg;
 
 	msgcnt=0L;
-	delfiles(cfg.temp_dir,"*");
+	delfiles(cfg.temp_dir,ALLFILES);
 	sprintf(str,"%s%s.rep",cfg.data_dir,cfg.qhub[hubnum]->id);
 	if(fexist(str)) {
 		lprintf("Updating %s", str);
-		external(cmdstr(cfg.qhub[hubnum]->unpack,str,"*",NULL),EX_OFFLINE);
+		external(cmdstr(cfg.qhub[hubnum]->unpack,str,ALLFILES,NULL),EX_OFFLINE);
 	} else
 		lprintf("Creating %s", str);
 	/*************************************************/
@@ -229,7 +229,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		return(false); }
 	sprintf(str,"%sqnet/%s.out/",cfg.data_dir,cfg.qhub[hubnum]->id);
 	strlwr(str);
-	delfiles(str,"*");
+	delfiles(str,ALLFILES);
 
 	if(packedmail) {						/* Delete NetMail */
 		sprintf(smb.file,"%smail",cfg.data_dir);

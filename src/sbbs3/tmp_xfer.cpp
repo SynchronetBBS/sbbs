@@ -197,7 +197,7 @@ void sbbs_t::temp_xfer()
 				sys_status&=~SS_ABORT;
 				break;
 			case 'F':   /* Create a file list */
-				delfiles(cfg.temp_dir,"*");
+				delfiles(cfg.temp_dir,ALLFILES);
 				create_filelist("FILELIST.TXT",0);
 				if(!(sys_status&SS_ABORT))
 					logline(nulstr,"Created list of all files");
@@ -231,7 +231,7 @@ void sbbs_t::temp_xfer()
 					bprintf(text[TempDirTotal],ultoac(bytes,tmp),files);
 				break;
 			case 'N':   /* Create a list of new files */
-				delfiles(cfg.temp_dir,"*");
+				delfiles(cfg.temp_dir,ALLFILES);
 				create_filelist("NEWFILES.TXT",FL_ULTIME);
 				if(!(sys_status&SS_ABORT))
 					logline(nulstr,"Created list of new files");

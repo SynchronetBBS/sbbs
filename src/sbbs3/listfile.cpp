@@ -1211,7 +1211,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 									CRLF; }
 								} }
 					else {
-						delfiles(cfg.temp_dir,"*");
+						delfiles(cfg.temp_dir,ALLFILES);
 						if(cfg.dir[f.dir]->seqdev) {
 							lncntr=0;
 							seqwait(cfg.dir[f.dir]->seqdev);
@@ -1254,7 +1254,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							else {
 								bprintf(text[FileNotSent],f.name);
 								notdownloaded(f.size,start,end); } }
-						delfiles(cfg.temp_dir,"*");
+						delfiles(cfg.temp_dir,ALLFILES);
 						autohangup(); } } }
 			closefile(&f); }
 		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?')) 
