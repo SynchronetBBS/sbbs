@@ -1,0 +1,168 @@
+Experience has shown that problems with DESQview usually have nothing to do
+with DESQview and everything to do with QEMM.
+
+The default QEMM config.sys line is "DEVICE=QEMM386.SYS RAM". If you are using
+this config.sys line, you are playing with fire. On every system configuration
+tested at Digital Dynamics, DESQview (or even just plain DOS) will eventually
+crash using this config.sys line.
+
+The problem is that QEMM is using memory regions that other components of your
+systems are also trying to use. This is bad. QEMM may also not be using memory
+regions that are not in use and therefore you may not be getting all the
+available upper memory possible. This is important if you need to load TSRs,
+device drivers, or network drivers into high memory to leave as much DOS base
+memory as possible.
+
+An example config.sys:
+
+ 1: shell=c:\dos\command.com /e:1024 /p
+ 2: stacks=0,0
+ 3: buffers=5
+ 4: files=50
+ 5: lastdrive=m
+ 6: device=c:\dev\qemm386.sys ram x=b800-c7ff i=f000-f7ff i=fd00-fdff
+ 7: device=c:\dev\loadhi.sys c:\dev\smartdrv.sys 1024
+ 8: device=c:\dev\loadhi.sys c:\dev\ramdrive.sys 4096 256 512 /e
+ 9: device=c:\dev\loadhi.sys c:\dev\ansi.sys
+
+Remember, this example config.sys will probably NOT work in your system. It
+does however work in one specific system. The right config.sys line for your
+system will need to be determined by you. Keep reading to find out how to make
+that determination.
+
+Note line 6, where QEMM386.SYS is loaded. The extra parameters after "ram"
+are specifying that QEMM exclude (not use) the memory region B800h through
+C7FFh and that QEMM should include (use) the memory regions F200h through F2FFh
+and F400h through F6FFh.
+
+The "x=b800-c7ff" part of the line is VERY IMPORTANT. Without this parameter,
+this particular system will eventually crash under DESQview or even DOS alone
+under some circumstances. The crash will manifest itself differently with
+different system configurations. It may give you a "QEMM protection violation"
+or "Invalid instruction", or "NO ROM BASIC - SYSTEM HALTED", or it just may
+suddenly freeze.
+
+The "i=nnnn-nnnn" parameters in the line tell QEMM to include (use) these
+memory regions for more available high memory. You should NOT use the inclusion
+parameter unless you are positive that no component of your system will try
+to use that memory region (including your system BIOS).
+
+So how do you figure what to include and exclude? By using the QEMM.COM utility
+with the "analysis" parameter. The first time you run "qemm analysis", you'll
+see something like this:
+
+ษอออออออออออออออออออออออออออออออออออป
+บ     Area      Size      Status    บ
+บ 0000 - C2FF   780K   OK           บ
+บ C300 - C7FF    20K   Include      บ
+บ C800 - EFFF   160K   OK           บ
+บ F000 - F1FF     8K   Include      บ
+บ F200 - F2FF     4K   OK           บ
+บ F300 - F3FF     4K   Include      บ
+บ F400 - F6FF    12K   OK           บ
+บ F700 - F8FF     8K   Include      บ
+บ F900 - FAFF     8K   OK           บ
+บ FB00 - FBFF     4K   Include      บ
+บ FC00 - FCFF     4K   OK           บ
+บ FD00 - FDFF     4K   Include      บ
+บ FE00 - FFFF     8K   OK           บ
+ศอออออออออออออออออออออออออออออออออออผ
+
+The regions with the status "OK" mean that QEMM is dealing with it correctly.
+It is either NOT using the region because another resource is using it or it
+is using the region and no other resource has tried to use it since you booted.
+
+The regions with the status of "Include" mean that QEMM is not using the region
+and no other resource has tried to use it since you booted.
+
+The regions with the status of "Exclude" (none listed above) mean that QEMM is
+using the region and another resource has tried to use that region at the same
+time. This region must be manually excluded with the "x=nnnn-nnnn" parameter
+on your config.sys line.
+
+Now don't be fooled by all the "Include" regions above in that box. As you use
+the system, those regions will shrink, split, or disappear altogether. After
+executing "qemm analysis" (producing the above output) and then accessing a
+floppy drive, the "Include" regions already begin to disappear:
+
+ษอออออออออออออออออออออออออออออออออออป
+บ     Area      Size      Status    บ
+บ 0000 - C2FF   780K   OK           บ
+บ C300 - C7FF    20K   Include      บ
+บ C800 - EFFF   160K   OK           บ
+บ F000 - F1FF     8K   Include      บ
+บ F200 - F2FF     4K   OK           บ
+บ F300 - F3FF     4K   Include      บ
+บ F400 - F6FF    12K   OK           บ
+บ F700 - F8FF     8K   Include      บ
+บ F900 - FCFF    16K   OK           บ
+บ FD00 - FDFF     4K   Include      บ
+บ FE00 - FFFF     8K   OK           บ
+ศอออออออออออออออออออออออออออออออออออผ
+
+After switching into every available video mode and running "qemm analysis"
+again:
+
+ษอออออออออออออออออออออออออออออออออออป
+บ     Area      Size      Status    บ
+บ 0000 - C5FF   792K   OK           บ
+บ C600 - C6FF     4K   Include      บ
+บ C700 - EFFF   164K   OK           บ
+บ F000 - F1FF     8K   Include      บ
+บ F200 - F2FF     4K   OK           บ
+บ F300 - F3FF     4K   Include      บ
+บ F400 - F6FF    12K   OK           บ
+บ F700 - F8FF     8K   Include      บ
+บ F900 - FCFF    16K   OK           บ
+บ FD00 - FDFF     4K   Include      บ
+บ FE00 - FFFF     8K   OK           บ
+ศอออออออออออออออออออออออออออออออออออผ
+
+After typing "echo ^g" at the DOS prompt (^g stands for Ctrl-G) and then
+running "qemm analysis" again:
+
+ษอออออออออออออออออออออออออออออออออออป
+บ     Area      Size      Status    บ
+บ 0000 - C5FF   792K   OK           บ
+บ C600 - C6FF     4K   Include      บ
+บ C700 - EFFF   164K   OK           บ
+บ F000 - F1FF     8K   Include      บ
+บ F200 - F2FF     4K   OK           บ
+บ F300 - F3FF     4K   Include      บ
+บ F400 - F6FF    12K   OK           บ
+บ F700 - F7FF     4K   Include      บ
+บ F800 - FCFF    20K   OK           บ
+บ FD00 - FDFF     4K   Include      บ
+บ FE00 - FFFF     8K   OK           บ
+ศอออออออออออออออออออออออออออออออออออผ
+
+As you can see, just about every system function will effect the regions that
+QEMM thinks you can safely include. It is a good idea to run just above every
+application you can and access every device on your system before deciding
+that the information provided by "qemm analysis" may be accurate and usable.
+
+If "qemm analysis" every reports a region with the status of "Exclude", do not
+question it. Immediately edit your config.sys excluding that region and reboot.
+
+If, for example, "qemm analysis" reports:
+
+ษอออออออออออออออออออออออออออออออออออป
+บ     Area      Size      Status    บ
+บ 0000 - C5FF   792K   OK           บ
+บ C600 - C6FF     4K   Include      บ
+บ C700 - EFFF   164K   OK           บ
+บ F000 - F1FF	  8K   Exclude	    บ
+บ F200 - F2FF     4K   OK           บ
+บ F300 - F3FF     4K   Include      บ
+บ F400 - F6FF    12K   OK           บ
+บ F700 - F7FF     4K   Include      บ
+บ F800 - FCFF    20K   OK           บ
+บ FD00 - FDFF     4K   Include      บ
+บ FE00 - FFFF     8K   OK           บ
+ศอออออออออออออออออออออออออออออออออออผ
+
+Edit your config.sys file addding "x=f000-f1ff" at the end of your
+"device=qemm386.sys" line. Then reboot your system.
+
+
+
