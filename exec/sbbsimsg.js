@@ -133,7 +133,7 @@ function parse_response(response, show)
 function list_users(show)
 {
 	imsg_user = new Array();
-	var systems=0;
+	var udp_req=0;
 	var replies=0;
 
 	users = 0;
@@ -141,6 +141,8 @@ function list_users(show)
 	print("\1m\1hListing Systems and Users (Ctrl-C to Abort)...");
 
 	/* UDP systems */
+	for(i=0;sys[i]!=undefined;i++)
+		sys[i].udp=false;	// Reset the udp flag
 	sock = new Socket(SOCK_DGRAM);
 	//sock.debug=true;
 	sock.bind();
@@ -150,11 +152,11 @@ function list_users(show)
 		if(!sock.sendto("\r\n",sys[i].ip,79))	// Get list of active users
 			//printf("FAILED! (%d) Sending to %s\r\n",sock.last_error,sys[i].addr);
 			continue;
-		systems++;
+		udp_req++;
 	}
 
 	begin = new Date();
-	while(replies<systems && new Date().valueOf()-begin.valueOf() < UDP_RESPONSE_TIMEOUT)
+	while(replies<udp_req && new Date().valueOf()-begin.valueOf() < UDP_RESPONSE_TIMEOUT)
 	{
 
 		if(!sock.poll(1))
