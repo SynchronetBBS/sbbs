@@ -90,6 +90,7 @@
 
 static  wsa_error;
 #define ERROR_VALUE		((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
+#define sendsocket(s,b,l)	send(s,b,l,0)
 
 #else	/* BSD sockets */
 
@@ -103,6 +104,7 @@ static  wsa_error;
 #define closesocket		close
 #define ioctlsocket		ioctl
 #define ERROR_VALUE		errno
+#define sendsocket		write		// FreeBSD send() is broken
 
 #endif	/* __unix__ */
 
