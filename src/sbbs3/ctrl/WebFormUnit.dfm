@@ -76,7 +76,7 @@ object WebForm: TWebForm
       Top = 0
       Width = 150
       Height = 22
-      Hint = 'Telnet Server Status'
+      Hint = 'Web Server Status'
       Align = alClient
       AutoSize = False
       BorderStyle = sbsSunken
@@ -96,7 +96,7 @@ object WebForm: TWebForm
       Top = 0
       Width = 75
       Height = 22
-      Hint = 'Telnet Server Utilization'
+      Hint = 'Web Server Utilization'
       Min = 0
       Max = 100
       Smooth = True
