@@ -75,6 +75,8 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	va_start(argptr,fmt);
 	numchars= vsnprintf(dst,size,fmt,argptr);
 	va_end(argptr);
+	if(numchars>=size && numchars>0)
+		numchars=size-1;
 	dst[size-1]=0;
 	return(numchars);
 }
