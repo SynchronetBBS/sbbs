@@ -644,6 +644,117 @@ static JSClass js_server_class = {
 		,JS_FinalizeStub	/* finalize		*/
 }; 
 
+/* Server Methods */
+
+static JSBool
+js_client_add(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	client_t	client;
+	void*		vp;
+	SOCKET		sock=INVALID_SOCKET;
+	socklen_t	addr_len;
+	SOCKADDR_IN	addr;
+	service_client_t* service_client;
+
+	active_clients++, update_clients();
+
+	if((service_client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	memset(&client,0,sizeof(client));
+	client.size=sizeof(client);
+	client.protocol=service_client->service->protocol;
+	client.time=time(NULL);
+	client.user="<unknown>";
+	SAFECOPY(client.host,client.user);
+
+	if(!JSVAL_IS_OBJECT(argv[0])) /* no socket supplied? */
+		return(JS_TRUE);
+
+	if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
+		sock=*(SOCKET*)vp;
+
+	addr_len = sizeof(addr);
+	if(getpeername(sock, (struct sockaddr *)&addr, &addr_len)==0) {
+		SAFECOPY(client.addr,inet_ntoa(addr.sin_addr));
+		client.port=ntohs(addr.sin_port);
+	}
+
+	if(argc>1)
+		client.user=JS_GetStringBytes(JS_ValueToString(cx,argv[1]));
+
+	if(argc>2)
+		SAFECOPY(client.host,JS_GetStringBytes(JS_ValueToString(cx,argv[2])));
+
+	client_on(sock, &client, /* update? */ FALSE);
+
+	lprintf("client_add(%04u,%s,%s)",sock,client.user,client.host);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_client_update(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	client_t	client;
+	void*		vp;
+	SOCKET		sock=INVALID_SOCKET;
+	socklen_t	addr_len;
+	SOCKADDR_IN	addr;
+	service_client_t* service_client;
+
+	if((service_client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	memset(&client,0,sizeof(client));
+	client.size=sizeof(client);
+	client.protocol=service_client->service->protocol;
+	client.user="<unknown>";
+	SAFECOPY(client.host,client.user);
+
+	if(!JSVAL_IS_OBJECT(argv[0])) /* no socket supplied? */
+		return(JS_TRUE);
+
+	if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
+		sock=*(SOCKET*)vp;
+
+	addr_len = sizeof(addr);
+	if(getpeername(sock, (struct sockaddr *)&addr, &addr_len)==0) {
+		SAFECOPY(client.addr,inet_ntoa(addr.sin_addr));
+		client.port=ntohs(addr.sin_port);
+	}
+
+	if(argc>1)
+		client.user=JS_GetStringBytes(JS_ValueToString(cx,argv[1]));
+
+	if(argc>2)
+		SAFECOPY(client.host,JS_GetStringBytes(JS_ValueToString(cx,argv[2])));
+
+	client_on(sock, &client, /* update? */ TRUE);
+
+	lprintf("client_update(%04u,%s,%s)",sock,client.user,client.host);
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_client_remove(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	void* vp;
+
+	if(active_clients)
+		active_clients--, update_clients();
+
+	if(!JSVAL_IS_OBJECT(argv[0])) /* no socket supplied? */
+		return(JS_TRUE);
+
+	if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
+		client_off(*(SOCKET*)vp);
+	
+	lprintf("client_remove(%04u)",*(SOCKET*)vp);
+
+	return(JS_TRUE);
+}
+
 static JSContext* 
 js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, JSObject** glob)
 {
@@ -713,6 +824,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(service_client->client==NULL)	/* static service */
 			if(js_CreateSocketObject(js_cx, server, "socket", service_client->socket)==NULL)
 				break;
+
+		JS_DefineFunction(js_cx, server, "client_add"	, js_client_add,	1, 0);
+		JS_DefineFunction(js_cx, server, "client_update", js_client_update,	1, 0);
+		JS_DefineFunction(js_cx, server, "client_remove", js_client_remove, 1, 0);
 
 		sprintf(ver,"Synchronet Services %s",revision);
 		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
