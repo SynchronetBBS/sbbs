@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -61,53 +61,57 @@ BOOL DLLCALL semfile_check(time_t* t, const char* fname)
 /* updating the time stamp to the latest dated semaphore file and returning	*/
 /* a pointer to the filename if any where newer than the initial timestamp.	*/
 /****************************************************************************/
-char* DLLCALL semfile_list_check(time_t* t, link_list_t* filelist)
+char* DLLCALL semfile_list_check(time_t* t, str_list_t filelist)
 {
 	char*	signaled=NULL;
-	list_node_t* node;
+	size_t		i;
 
-	for(node=listFirstNode(filelist);node!=NULL;node=listNextNode(node))
-		if(semfile_check(t, node->data))
-			signaled = node->data;
+	for(i=0;filelist[i]!=NULL;i++)
+		if(semfile_check(t, filelist[i]))
+			signaled = filelist[i];
 
 	return(signaled);
 }
 
-void DLLCALL semfile_list_init(link_list_t* filelist, const char* parent, 
+str_list_t DLLCALL semfile_list_init(const char* parent, 
 							   const char* action, const char* service)
 {
 	char	path[MAX_PATH+1];
 	char	hostname[128];
 	char*	p;
+	str_list_t	list;
 
-	listInit(filelist,0);
+	if((list=strListInit())==NULL)
+		return(NULL);
 	SAFEPRINTF2(path,"%s%s",parent,action);
-	listPushNodeString(filelist,path);
+	strListPush(&list,path);
 	SAFEPRINTF3(path,"%s%s.%s",parent,action,service);
-	listPushNodeString(filelist,path);
+	strListPush(&list,path);
 	if(gethostname(hostname,sizeof(hostname))==0) {
 		SAFEPRINTF3(path,"%s%s.%s",parent,action,hostname);
-		listPushNodeString(filelist,path);
+		strListPush(&list,path);
 		SAFEPRINTF4(path,"%s%s.%s.%s",parent,action,hostname,service);
-		listPushNodeString(filelist,path);
+		strListPush(&list,path);
 		if((p=strchr(hostname,'.'))!=NULL) {
 			*p=0;
 			SAFEPRINTF3(path,"%s%s.%s",parent,action,hostname);
-			listPushNodeString(filelist,path);
+			strListPush(&list,path);
 			SAFEPRINTF4(path,"%s%s.%s.%s",parent,action,hostname,service);
-			listPushNodeString(filelist,path);
+			strListPush(&list,path);
 		}
 	}
+
+	return(list);
 }
 
-void DLLCALL semfile_list_add(link_list_t* filelist, const char* path)
+void DLLCALL semfile_list_add(str_list_t* filelist, const char* path)
 {
-	listPushNodeString(filelist, path);
+	strListPush(filelist, path);
 }
 
-void DLLCALL semfile_list_free(link_list_t* filelist)
+void DLLCALL semfile_list_free(str_list_t* filelist)
 {
-	listFree(filelist);
+	strListFree(filelist);
 }
 
 BOOL DLLCALL semfile_signal(const char* fname, const char* text)
@@ -121,6 +125,7 @@ BOOL DLLCALL semfile_signal(const char* fname, const char* text)
 		text=hostname;
 	if(text!=NULL)
 		write(file,text,strlen(text));
+	/* use utime() for force the time-stamp to that of the local system? */
 	close(file);
 	return(TRUE);
 }

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -892,11 +892,12 @@ extern "C" {
 	/* semfile.c */
 	DLLEXPORT BOOL		DLLCALL semfile_signal(const char* fname, const char* text);
 	DLLEXPORT BOOL		DLLCALL semfile_check(time_t* t, const char* fname);
-	DLLEXPORT char*		DLLCALL semfile_list_check(time_t* t, link_list_t* filelist);
-	DLLEXPORT void		DLLCALL semfile_list_init(link_list_t* filelist, const char* parent, 
-												   const char* action, const char* service);
-	DLLEXPORT void		DLLCALL semfile_list_add(link_list_t* filelist, const char* fname);
-	DLLEXPORT void		DLLCALL semfile_list_free(link_list_t* filelist);
+	DLLEXPORT char*		DLLCALL semfile_list_check(time_t* t, str_list_t filelist);
+	DLLEXPORT str_list_t	
+						DLLCALL semfile_list_init(const char* parent, const char* action
+													,const char* service);
+	DLLEXPORT void		DLLCALL semfile_list_add(str_list_t* filelist, const char* fname);
+	DLLEXPORT void		DLLCALL semfile_list_free(str_list_t* filelist);
 
 
 #ifdef JAVASCRIPT

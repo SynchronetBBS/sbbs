@@ -92,8 +92,8 @@ static	char *	text[TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
 static	bool	terminate_server=false;
-static	link_list_t recycle_semfiles;
-static	link_list_t shutdown_semfiles;
+static	str_list_t recycle_semfiles;
+static	str_list_t shutdown_semfiles;
 
 extern "C" {
 
@@ -4075,13 +4075,13 @@ void DLLCALL bbs_thread(void* arg)
 #endif // _WIN32 && _DEBUG && _MSC_VER
 
 	/* Setup recycle/shutdown semaphore file lists */
-	semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown","telnet");
-	semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle","telnet");
+	shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","telnet");
+	recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","telnet");
 	SAFEPRINTF(str,"%stelnet.rec",scfg.ctrl_dir);	/* legacy */
 	semfile_list_add(&recycle_semfiles,str);
 	if(!initialized) {
-		semfile_list_check(&initialized,&recycle_semfiles);
-		semfile_list_check(&initialized,&shutdown_semfiles);
+		semfile_list_check(&initialized,recycle_semfiles);
+		semfile_list_check(&initialized,shutdown_semfiles);
 	}
 
 #ifdef __unix__	//	unix-domain spy sockets
@@ -4151,7 +4151,7 @@ void DLLCALL bbs_thread(void* arg)
 			if(rerun)
 				break;
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-				if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
+				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"%04d Recycle semaphore file (%s) detected"
 						,telnet_socket,p);
 					break;
@@ -4166,7 +4166,7 @@ void DLLCALL bbs_thread(void* arg)
 					break;
 				}
 			}
-			if(((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL
+			if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
 					&& lprintf(LOG_INFO,"%04d Shutdown semaphore file (%s) detected"
 						,telnet_socket,p))
 				|| (startup->shutdown_now==TRUE

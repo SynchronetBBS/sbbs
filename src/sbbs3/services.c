@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -84,8 +84,8 @@ static BOOL		terminated=FALSE;
 static time_t	uptime=0;
 static DWORD	served=0;
 static char		revision[16];
-static link_list_t recycle_semfiles;
-static link_list_t shutdown_semfiles;
+static str_list_t recycle_semfiles;
+static str_list_t shutdown_semfiles;
 
 typedef struct {
 	/* These are sysop-configurable */
@@ -1775,14 +1775,14 @@ void DLLCALL services_thread(void* arg)
 		status("Listening");
 
 		/* Setup recycle/shutdown semaphore file lists */
-		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown","services");
-		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle","services");
+		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","services");
+		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","services");
 		SAFEPRINTF(path,"%sservices.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
 		if(!initialized) {
 			initialized=time(NULL);
-			semfile_list_check(&initialized,&recycle_semfiles);
-			semfile_list_check(&initialized,&shutdown_semfiles);
+			semfile_list_check(&initialized,recycle_semfiles);
+			semfile_list_check(&initialized,shutdown_semfiles);
 		}
 
 		terminated=FALSE;
@@ -1796,7 +1796,7 @@ void DLLCALL services_thread(void* arg)
 
 			if(active_clients()==0) {
 				if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-					if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
+					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
 						break;
 					}
@@ -1810,7 +1810,7 @@ void DLLCALL services_thread(void* arg)
 						break;
 					}
 				}
-				if(((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL
+				if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
 						&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
 					|| (startup->shutdown_now==TRUE
 						&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
