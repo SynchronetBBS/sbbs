@@ -1899,13 +1899,14 @@ int main(int argc, char** argv)  {
 	int		last, newlast;
 	user_t	user;
 	int		edtuser=0;
+	int		ciolib_mode=CIOLIB_MODE_AUTO;
+
 	/******************/
 	/* Ini file stuff */
 	/******************/
 	char	ini_file[MAX_PATH+1];
 	FILE*				fp;
 	bbs_startup_t		bbs_startup;
-	int		ciolib_mode=CIOLIB_MODE_AUTO;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
@@ -2017,7 +2018,6 @@ int main(int argc, char** argv)  {
 						"       W = Win32 native mode\r\n"
 #endif
 						"       A = ANSI mode\r\n"
-						"       D = standard input/output/door mode\r\n"
                         "-l# =  set screen lines to #\n"
 						,argv[0]
                         );
