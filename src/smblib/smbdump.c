@@ -35,8 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "smblib.h"
 #include <time.h>		/* ctime */
+#include "smblib.h"
 
 static char *binstr(uchar *buf, ushort length)
 {
