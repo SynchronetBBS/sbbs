@@ -189,55 +189,10 @@ void sbbs_t::putmsgptrs()
 uint sbbs_t::userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
     , char del)
 {
-    char	str[256];
-    uint	i;
-	int		file;
-    long	l,length;
-
-	truncsp(dat);
-	sprintf(str,"%suser/user.dat", cfg.data_dir);
-	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1)
-		return(0);
-	length=filelength(file);
 	bputs(text[SearchingForDupes]);
-	for(l=0;l<length && online;l+=U_LEN) {
-		checkline();
-		if(usernumber && l/U_LEN==(long)usernumber-1)
-			continue;
-		lseek(file,l+offset,SEEK_SET);
-		i=0;
-		while(i<LOOP_NODEDAB && lock(file,l,U_LEN)==-1) {
-			if(i>10)
-				mswait(55);
-			i++; }
-
-		if(i>=LOOP_NODEDAB) {
-			close(file);
-			errormsg(WHERE,ERR_LOCK,"user.dat",l);
-			return(0); }
-
-		read(file,str,datlen);
-		for(i=0;i<datlen;i++)
-			if(str[i]==ETX) break;
-		str[i]=0;
-		truncsp(str);
-		if(!stricmp(str,dat)) {
-			if(!del) {      /* Don't include deleted users in search */
-				lseek(file,l+U_MISC,SEEK_SET);
-				read(file,str,8);
-				getrec(str,0,8,str);
-				if(ahtoul(str)&(DELETED|INACTIVE)) {
-					unlock(file,l,U_LEN);
-					continue; } }
-			unlock(file,l,U_LEN);
-			close(file);
-			bputs(text[SearchedForDupes]);
-			return((l/U_LEN)+1); }
-		else
-			unlock(file,l,U_LEN); }
-	close(file);
+	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del);
 	bputs(text[SearchedForDupes]);
-	return(0);
+	return(i);
 }
 
 
