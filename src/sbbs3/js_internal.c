@@ -264,6 +264,24 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
     return(JS_TRUE);
 }
 
+static JSBool
+js_gc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	JSBool forced=JS_TRUE;
+
+	*rval=JSVAL_VOID;
+
+	if(argc)
+		JS_ValueToBoolean(cx,argv[0],&forced);
+
+	if(forced)
+		JS_GC(cx);
+	else
+		JS_MaybeGC(cx);
+
+	return(JS_TRUE);
+}
+
 
 static JSClass js_internal_class = {
      "JsInternal"				/* name			*/
@@ -281,6 +299,11 @@ static JSClass js_internal_class = {
 static jsMethodSpec js_functions[] = {
 	{"eval",            js_eval,            0,	JSTYPE_STRING,	JSDOCSTR("string script")
 	,JSDOCSTR("evaluate a JavaScript string in its own (secure) context, returning the result")
+	},		
+	{"gc",				js_gc,				0,	JSTYPE_VOID,	JSDOCSTR("bool forced")
+	,JSDOCSTR("perform a garbage collection operation (freeing memory for unused allocated objects), "
+		"if <i>forced</i> is <i>true</i> (the default) a garbage collection is always performed, "
+		"otherwise it is only performed if deemed appropriate by the JavaScript engine")
 	},		
 	{0}
 };
