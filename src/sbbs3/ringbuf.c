@@ -84,14 +84,14 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
 #endif
 	)
 {
-	if((rb->pStart=(BYTE *)os_malloc(size))==NULL)
+	if((rb->pStart=(BYTE *)os_malloc(size+1))==NULL)
 		return(-1);
 #ifndef RINGBUF_USE_STD_RTL
 	rb_free=os_free;
 	rb_memcpy=os_memcpy;
 #endif
 	rb->pHead=rb->pTail=rb->pStart;
-	rb->pEnd=rb->pStart+size-1;
+	rb->pEnd=rb->pStart+size;
     rb->size=size;
 	return(0);
 }
@@ -122,7 +122,7 @@ DWORD RINGBUFCALL RingBufFree( RingBuf* rb )
 {
 	DWORD retval;
 
-	retval = (rb->size - RingBufFull( rb ))-1;
+	retval = (rb->size - RingBufFull( rb ));
 
 	return(retval);
 }
