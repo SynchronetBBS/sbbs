@@ -80,42 +80,6 @@ long DLLCALL filelength(int fd)
 	return(st.st_size);
 }
 
-#ifdef USE_LOCKF
-
-/* Sets a lock on a portion of a file */
-int DLLCALL lock(int file, long offset, int len)
-{
-	int		i;
-	long	pos;
-   
-	pos=tell(file);
-	if(offset!=pos)
-		lseek(file, offset, SEEK_SET);
-	i=lockf(file,F_TLOCK,len);
-	if(offset!=pos)
-		lseek(file, pos, SEEK_SET);
-
-	return(i);
-}
-
-/* Removes a lock from a file record */
-int DLLCALL unlock(int file, long offset, int len)
-{
-	int		i;
-	long	pos;
-   
-	pos=tell(file);
-	if(offset!=pos)
-		lseek(file, offset, SEEK_SET);
-	i=lockf(file,F_ULOCK,len);
-	if(offset!=pos)
-		lseek(file, pos, SEEK_SET);
-
-	return(i);
-}
-
-#else	/* use fcntl */
-
 /* Sets a lock on a portion of a file */
 int DLLCALL lock(int fd, long pos, int len)
 {
@@ -126,15 +90,20 @@ int DLLCALL lock(int fd, long pos, int len)
 		return -1;
 
 	if(flags==O_RDONLY)
-		alock.l_type = F_RDLCK; // set read lock to prevent writes
+		alock.l_type = F_RDLCK; /* set read lock to prevent writes */
 	else
-		alock.l_type = F_WRLCK; // set write lock to prevent all access
-	alock.l_whence = L_SET;	  // SEEK_SET
+		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
+	alock.l_whence = L_SET;		/* SEEK_SET */
 	alock.l_start = pos;
 	alock.l_len = len;
 
 	if(fcntl(fd, F_SETLK, &alock)==-1)
 		return(-1);
+
+	/* use flock (doesn't work over NFS) */
+	if(flock(fd,LOCK_EX|LOCK_NB)!=0)
+		return(-1);
+
 	return(0);
 }
 
@@ -143,35 +112,34 @@ int DLLCALL unlock(int fd, long pos, int len)
 {
 	struct flock alock;
 
-	alock.l_type = F_UNLCK;   // remove the lock
+	alock.l_type = F_UNLCK;   /* remove the lock */
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
 	alock.l_len = len;
 	if(fcntl(fd, F_SETLK, &alock)==-1)
 		return(-1);
+
+	/* use flock (doesn't work over NFS) */
+	if(flock(fd,LOCK_UN|LOCK_NB)!=0)
+		return(-1);
+
 	return(0);
 }
-
-#endif
 
 /* Opens a file in specified sharing (file-locking) mode */
 int DLLCALL sopen(char *fn, int access, int share)
 {
 	int fd;
-#ifdef USE_FLOCK			/* use flock */
 	int	flock_op=LOCK_NB;	/* non-blocking */
-#else
 	struct flock alock;
-#endif
 
 	if ((fd = open(fn, access, S_IREAD|S_IWRITE)) < 0)
 		return -1;
 
-	if (share == SH_DENYNO)
-		// no lock needed
+	if (share == SH_DENYNO) /* no lock needed */
 		return fd;
 
-#ifdef USE_FLOCK	/* use flock */
+	/* use flock (doesn't work over NFS) */
 	if(share==SH_DENYRW)
 		flock_op|=LOCK_EX;
 	else   /* SH_DENYWR */
@@ -183,18 +151,16 @@ int DLLCALL sopen(char *fn, int access, int share)
 		return(-1);
 	}
 
-#else /* use fcntl */
-
+	/* use fcntl (doesn't work correctly with threads) */
 	alock.l_type = share;
 	alock.l_whence = L_SET;
 	alock.l_start = 0;
-	alock.l_len = 0;       // lock to EOF
+	alock.l_len = 0;       /* lock to EOF */
 
-	if (fcntl(fd, F_SETLK, &alock) == -1) {
+	if(fcntl(fd, F_SETLK, &alock)==-1) {
 		close(fd);
 		return -1;
 	}
-#endif
 
 	return fd;
 }
