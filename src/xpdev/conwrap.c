@@ -10,6 +10,7 @@
 #if defined(__unix__)
 
 #include <stdlib.h>
+#include <string.h>	/* memcpy */
 #include <unistd.h>
 #include <termios.h>
 
