@@ -611,12 +611,12 @@ int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
 
 /****************************************************************************/
 /* Figures out the total length of the header record for 'msg'              */
-/* Returns length															*/
+/* Returns length 															*/
 /****************************************************************************/
 uint SMBCALL smb_getmsghdrlen(smbmsg_t* msg)
 {
 	int i;
-	int	length;
+	int length;
 
 	/* fixed portion */
 	length=sizeof(msghdr_t);
@@ -1155,8 +1155,9 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 /****************************************************************************/
 int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 {
-	int i;
-	long l;
+	int		i;
+	long	l;
+	ulong	hdrlen;
 
 	if(!smb->locked && smb_locksmbhdr(smb))
 		return(1);
@@ -1170,7 +1171,14 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		return(i);
 	}
 
-	msg->hdr.length=smb_getmsghdrlen(msg);
+	hdrlen=smb_getmsghdrlen(msg);
+	if(hdrlen>SMB_MAX_HDR_LEN) { /* headers are limited to 64k in size */
+		sprintf(smb->last_error
+			,"illegal message header length (%lu > %ld)"
+			,hdrlen,SMB_MAX_HDR_LEN);
+		return(SMB_BAD_HDR_LEN);
+	}
+	msg->hdr.length=(ushort)hdrlen;
 	if(storage==SMB_HYPERALLOC)
 		l=smb_hallochdr(smb);
 	else if(storage==SMB_FASTALLOC)
@@ -1264,6 +1272,12 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	/* Verify that the number of blocks required to stored the actual 
 	   (calculated) header length does not exceed the number allocated. */
 	hdrlen=smb_getmsghdrlen(msg);
+	if(hdrlen>SMB_MAX_HDR_LEN) { /* headers are limited to 64k in size */
+		sprintf(smb->last_error
+			,"illegal message header length (%lu > %ld)"
+			,hdrlen,SMB_MAX_HDR_LEN);
+		return(SMB_BAD_HDR_LEN);
+	}
 	if(smb_hdrblocks(hdrlen) > smb_hdrblocks(msg->hdr.length)) {
 		sprintf(smb->last_error,"illegal header length increase: "
 			"%lu (%lu blocks) vs %hu (%lu blocks)"
