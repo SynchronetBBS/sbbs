@@ -42,7 +42,7 @@
 #ifdef _DEBUG
 
 static char* lib_prop_desc[] = {
-	 "index into lib_list array"
+	 "index into lib_list array (or -1 if not in array)"
 	,"unique number for this library"
 	,"library name"
 	,"library description"
@@ -53,7 +53,7 @@ static char* lib_prop_desc[] = {
 
 static char* dir_prop_desc[] = {
 
-	 "index into dir_list array"
+	 "index into dir_list array (or -1 if not in array)"
 	,"unique number for this directory"
 	,"library index"
 	,"library number"
@@ -156,22 +156,20 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		return(NULL);
 
 	for(l=0;l<cfg->total_libs;l++) {
-#if 0
-		if(user==NULL && (*cfg->lib[l]->ar)!=AR_NULL)
-			continue;
-#endif
-		if(user!=NULL && !chk_ar(cfg,cfg->lib[l]->ar,user))
-			continue;
 
 		if((libobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
-		if(!JS_GetArrayLength(cx, lib_list, &lib_index))
-			return(NULL);
+		lib_index=-1;
+		if(user==NULL || chk_ar(cfg,cfg->lib[l]->ar,user)) {
 
-		val=OBJECT_TO_JSVAL(libobj);
-		if(!JS_SetElement(cx, lib_list, lib_index, &val))
-			return(NULL);
+			if(!JS_GetArrayLength(cx, lib_list, &lib_index))
+				return(NULL);
+
+			val=OBJECT_TO_JSVAL(libobj);
+			if(!JS_SetElement(cx, lib_list, lib_index, &val))
+				return(NULL);
+		}
 
 		/* Add as property (associative array element) */
 		if(!JS_DefineProperty(cx, alllibs, cfg->lib[l]->sname, val
@@ -212,7 +210,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			return(NULL);
 
 #ifdef _DEBUG
-		js_DescribeSyncObject(cx,libobj,"File Transfer Libraries",310);
+		js_DescribeSyncObject(cx,libobj,"File Transfer Libraries (current user has access to)",310);
 #endif
 
 		/* dir_list[] */
@@ -226,22 +224,20 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		for(d=0;d<cfg->total_dirs;d++) {
 			if(cfg->dir[d]->lib!=l)
 				continue;
-#if 0
-			if(user==NULL && (*cfg->dir[d]->ar)!=AR_NULL)
-				continue;
-#endif
-			if(user!=NULL && !chk_ar(cfg,cfg->dir[d]->ar,user))
-				continue;
 
 			if((dirobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return(NULL);
 
-			if(!JS_GetArrayLength(cx, dir_list, &dir_index))
-				return(NULL);								
+			dir_index=-1;
+			if(user==NULL || chk_ar(cfg,cfg->dir[d]->ar,user)) {
 
-			val=OBJECT_TO_JSVAL(dirobj);
-			if(!JS_SetElement(cx, dir_list, dir_index, &val))
-				return(NULL);
+				if(!JS_GetArrayLength(cx, dir_list, &dir_index))
+					return(NULL);								
+
+				val=OBJECT_TO_JSVAL(dirobj);
+				if(!JS_SetElement(cx, dir_list, dir_index, &val))
+					return(NULL);
+			}
 
 			/* Add as property (associative array element) */
 			if(!JS_DefineProperty(cx, alldirs, cfg->dir[d]->code, val
@@ -414,7 +410,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 #ifdef _DEBUG
 			js_CreateArrayOfStrings(cx, dirobj, "_property_desc_list", dir_prop_desc, JSPROP_READONLY);
-			js_DescribeSyncObject(cx,dirobj,"File Transfer Directories",310);
+			js_DescribeSyncObject(cx,dirobj,"File Transfer Directories  (current user has access to)",310);
 #endif
 		}
 

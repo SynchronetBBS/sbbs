@@ -46,7 +46,7 @@ enum {	/* msg_area Object Properties */
 #ifdef _DEBUG
 
 static char* msg_grp_prop_desc[] = {
-	 "index into grp_list array"
+	 "index into grp_list array (or -1 if not in array)"
 	,"unique number for this message group"
 	,"group name"
 	,"group description"
@@ -56,7 +56,7 @@ static char* msg_grp_prop_desc[] = {
 
 static char* msg_area_prop_desc[] = {
 
-	 "index into sub_list array"
+	 "index into sub_list array (or -1 if not in array)"
 	,"group's index into grp_list array"
 	,"unique number for this sub-board"
 	,"group number"
@@ -379,22 +379,19 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 
 	for(l=0;l<cfg->total_grps;l++) {
 
-#if 0
-		if(user==NULL && (*cfg->grp[l]->ar)!=AR_NULL)
-			continue;
-#endif
-		if(user!=NULL && !chk_ar(cfg,cfg->grp[l]->ar,user))
-			continue;
-
 		if((grpobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
-		if(!JS_GetArrayLength(cx, grp_list, &grp_index))
-			return(NULL);
+		grp_index=-1;
+		if(user==NULL || chk_ar(cfg,cfg->grp[l]->ar,user)) {
 
-		val=OBJECT_TO_JSVAL(grpobj);
-		if(!JS_SetElement(cx, grp_list, grp_index, &val))
-			return(NULL);
+			if(!JS_GetArrayLength(cx, grp_list, &grp_index))
+				return(NULL);
+
+			val=OBJECT_TO_JSVAL(grpobj);
+			if(!JS_SetElement(cx, grp_list, grp_index, &val))
+				return(NULL);
+		}
 
 		/* Add as property (associative array element) */
 		if(!JS_DefineProperty(cx, allgrps, cfg->grp[l]->sname, val
@@ -428,7 +425,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			return(NULL);
 
 #ifdef _DEBUG
-		js_DescribeSyncObject(cx,grpobj,"Message Groups",310);
+		js_DescribeSyncObject(cx,grpobj,"Message Groups (current user has access to)",310);
 #endif
 
 		/* sub_list[] */
@@ -442,12 +439,6 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		for(d=0;d<cfg->total_subs;d++) {
 			if(cfg->sub[d]->grp!=l)
 				continue;
-#if 0
-			if(user==NULL && (*cfg->sub[d]->ar)!=AR_NULL)
-				continue;
-#endif
-			if(user!=NULL && !chk_ar(cfg,cfg->sub[d]->ar,user))
-				continue;
 
 			if((subobj=JS_NewObject(cx, &js_sub_class, NULL, NULL))==NULL)
 				return(NULL);
@@ -455,12 +446,17 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(subscan!=NULL)
 				JS_SetPrivate(cx,subobj,&subscan[d]);
 
-			if(!JS_GetArrayLength(cx, sub_list, &sub_index))
-				return(NULL);							
+			sub_index=-1;
 
-			val=OBJECT_TO_JSVAL(subobj);
-			if(!JS_SetElement(cx, sub_list, sub_index, &val))
-				return(NULL);
+			if(user==NULL || chk_ar(cfg,cfg->sub[d]->ar,user)) {
+
+				if(!JS_GetArrayLength(cx, sub_list, &sub_index))
+					return(NULL);							
+
+				val=OBJECT_TO_JSVAL(subobj);
+				if(!JS_SetElement(cx, sub_list, sub_index, &val))
+					return(NULL);
+			}
 
 			/* Add as property (associative array element) */
 			if(!JS_DefineProperty(cx, allsubs, cfg->sub[d]->code, val
@@ -519,7 +515,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				return(NULL);
 
 #ifdef _DEBUG
-			js_DescribeSyncObject(cx,subobj,"Message Sub-boards</h2>"
+			js_DescribeSyncObject(cx,subobj,"Message Sub-boards (current user has access to)</h2>"
 				"(all properties are <small>READ ONLY</small> except for "
 				"<i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)"
 				,310);
