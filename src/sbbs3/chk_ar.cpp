@@ -521,12 +521,16 @@ void sbbs_t::getusrsubs()
 			if(cfg.sub[l]->grp!=i) continue;
 			if(!chk_ar(cfg.sub[l]->ar,&useron))
 				continue;
-			usrsub[j][k++]=l; }
+			usrsub[j][k++]=l; 
+		}
 		usrsubs[j]=k;
 		if(!k)          /* No subs accessible in group */
 			continue;
-		usrgrp[j++]=i; }
+		usrgrp[j++]=i; 
+	}
 	usrgrps=j;
+	if(usrgrps==0)
+		return;
 	while((curgrp>=usrgrps || !usrsubs[curgrp]) && curgrp) curgrp--;
 	while(cursub[curgrp]>=usrsubs[curgrp] && cursub[curgrp]) cursub[curgrp]--;
 }
@@ -541,7 +545,8 @@ void sbbs_t::getusrdirs()
 
 	if(useron.rest&FLAG('T')) {
 		usrlibs=0;
-		return; }
+		return; 
+	}
 	for(j=0,i=0;i<cfg.total_libs;i++) {
 		if(!chk_ar(cfg.lib[i]->ar,&useron))
 			continue;
@@ -553,8 +558,11 @@ void sbbs_t::getusrdirs()
 		usrdirs[j]=k;
 		if(!k)          /* No dirs accessible in lib */
 			continue;
-		usrlib[j++]=i; }
+		usrlib[j++]=i; 
+	}
 	usrlibs=j;
+	if(usrlibs==0)
+		return;
 	while((curlib>=usrlibs || !usrdirs[curlib]) && curlib) curlib--;
 	while(curdir[curlib]>=usrdirs[curlib] && curdir[curlib]) curdir[curlib]--;
 }
