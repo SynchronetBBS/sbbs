@@ -40,7 +40,7 @@
 /****************************************************************************/
 static char* truncsp(char* str)
 {
-	size_t c;
+	unsigned c;
 
 	c=strlen(str);
 	while(c && (str[c-1]==' ' || str[c-1]=='\t' || str[c-1]=='\r' || str[c-1]=='\n') c--;
@@ -54,7 +54,7 @@ static char* truncsp(char* str)
 /****************************************************************************/
 static char* truncnl(char* str)
 {
-	size_t c;
+	unsigned c;
 
 	c=strlen(str);
 	while(c && (str[c-1]=='\r' || str[c-1]=='\n')) c--;
