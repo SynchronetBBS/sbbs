@@ -61,6 +61,6 @@ int main(int argc, char **argv)
 	}
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
-		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
+		fprintf(stderr,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 }
