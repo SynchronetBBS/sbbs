@@ -210,7 +210,7 @@ if(server==undefined || !server.length) {
 printf("Connecting to %s port %d ...\r\n",server,port);
 socket = new Socket();
 //socket.debug=true;
-sock.bind(0,server.interface_ip_address);
+socket.bind(0,server.interface_ip_address);
 if(!socket.connect(server,port)) {
 	printf("!Error %d connecting to %s port %d\r\n"
 		,socket.last_error,server,port);
