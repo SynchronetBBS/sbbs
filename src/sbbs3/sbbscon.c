@@ -60,6 +60,7 @@ BOOL				ftp_running=FALSE;
 ftp_startup_t		ftp_startup;
 BOOL				mail_running=FALSE;
 mail_startup_t		mail_startup;
+BOOL				run_services=TRUE;
 BOOL				services_running=FALSE;
 services_startup_t	services_startup;
 uint				thread_count=1;
@@ -79,11 +80,12 @@ static const char* usage  = "\nusage: %s [[option] [...]]\n"
 							"tl<node>   set Last Telnet Node Number\n"
 							"tp<port>   set Telnet Server Port\n"
 							"rp<port>   set RLogin Server Port (and enable RLogin Server)\n"
-							"fp<port>   set FTP Server Port\n"
-							"sp<port>   set SMTP Server Port\n"
+							"fp<port>   set FTP Server Port (0 to disable FTP Server)\n"
+							"sp<port>   set SMTP Server Port (0 to disable Mail Server)\n"
 							"sr<port>   set SMTP Relay Port\n"
 							"pp<port>   set POP3 Server Port\n"
 							"u<user>    set username for BBS to run as\n"
+							"ns         run without services (no services module)\n"
 							"\n"
 							;
 
@@ -121,7 +123,7 @@ BOOL do_setuid()
 		return TRUE;
 	if((pw_entry=getpwnam(new_uid_name)) && (new_uid=pw_entry->pw_uid))
 		if(!setuid(new_uid)) {
-			lputs("setuid SUCCESSFUL");
+/*			lputs("setuid SUCCESSFUL"); */
 			return TRUE;
 		}
 
@@ -394,7 +396,6 @@ int main(int argc, char** argv)
 {
 	int		i;
 	char	ch;
-	char	str[256];
 	char*	arg;
 	char*	ctrl_dir;
 	BOOL	quit=FALSE;
@@ -514,7 +515,10 @@ int main(int argc, char** argv)
 		if(*arg=='-')/* ignore prepended slashes */
 			arg++;
 		if(!stricmp(arg,"defaults")) {
-			printf("default settings\n");
+			printf("default settings:\n\n");
+			printf("telnet port:\t%u",bbs_startup.telnet_port);
+			printf("telnet first_node:\t%u",bbs_startup.first_node);
+			printf("telnet last_node:\t%u",bbs_startup.last_node);
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
@@ -578,11 +582,21 @@ int main(int argc, char** argv)
 						return(0);
 				}
 				break;
-#ifdef __unix__
 			case 'U':	/* runtime UID */
+#ifdef __unix__
 				if (strlen(arg) > 1) new_uid_name=arg;
-				break;
 #endif			
+				break;
+			case 'N':	/* No */
+				switch(toupper(*(arg++))) {
+					case 'S':	/* Services */
+						run_services=FALSE;
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
 			default:
 				printf(usage,argv[0]);
 				return(0);
@@ -590,9 +604,12 @@ int main(int argc, char** argv)
 	}
 
 	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
-	_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
-	_beginthread((void(*)(void*))mail_server,0,&mail_startup);
-	_beginthread((void(*)(void*))services_thread,0,&services_startup);
+	if(ftp_startup.port)
+		_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
+	if(mail_startup.smtp_port)
+		_beginthread((void(*)(void*))mail_server,0,&mail_startup);
+	if(run_services)
+		_beginthread((void(*)(void*))services_thread,0,&services_startup);
 
 #ifdef __unix__
 	// Set up QUIT-type signals so they clean up properly.
@@ -603,18 +620,19 @@ int main(int argc, char** argv)
 	signal(SIGTERM, _sighandler_quit);
 
 	if(getuid())  /*  are we running as a normal user?  */
-		lputs("*** Started as non-root user.  Cannot bind() to ports below 1024.\n");
+		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
 	
 	else if(!new_uid_name)   /*  check the user arg, if we have uid 0 */
-		lputs("*** No user account specified and started as root.  HAZARDOUS!\n");
+		bbs_lputs("Warning: No user account specified, running as root.");
 	
 	else if (!do_setuid())
 			/* actually try to change the uid of this process */
-		lputs("*** Setting new uid failed!  (Does the user exist?)\n");
+		bbs_lputs("!Setting new user_id failed!  (Does the user exist?)");
 	
 	else {
-		sprintf(str,"*** Successfully changed to user %s.\n", new_uid_name);
-		lputs(str);
+		char str[256];
+		sprintf(str,"Successfully changed user_id to %s", new_uid_name);
+		bbs_lputs(str);
 	}
 
 	if(!isatty(fileno(stdin)))			/* redirected */
