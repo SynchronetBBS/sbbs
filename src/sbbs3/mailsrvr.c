@@ -1462,6 +1462,7 @@ static void smtp_thread(void* arg)
 	char		user_pass[LEN_PASS+1];
 	char		relay_list[MAX_PATH+1];
 	char		domain_list[MAX_PATH+1];
+	char		spam_bait[MAX_PATH+1];
 	char		host_name[128];
 	char		host_ip[64];
 	char		dnsbl[256];
@@ -2458,8 +2459,8 @@ static void smtp_thread(void* arg)
 			}
 
 			/* Check for SPAM bait recipient */
-			sprintf(str,"%sspambait.cfg",scfg.ctrl_dir);
-			if(findstr(rcpt_addr,str)) {
+			sprintf(spam_bait,"%sspambait.cfg",scfg.ctrl_dir);
+			if(findstr(rcpt_addr,spam_bait)) {
 				sprintf(str,"SPAM BAIT (%s) taken", rcpt_addr);
 				lprintf("%04d !SMTP %s by: %s"
 					,socket, str, reverse_path);
