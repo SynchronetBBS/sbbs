@@ -46,7 +46,7 @@ function getsizestr(size, bytes)
 		outstr=format("%ldK",size);
 		return(outstr);
 	}
-	if(size<999999) { /* KB With comma */
+	if(size<100000) { /* KB With comma */
 		outstr=format("%ld,%03ldK",(size/1000),(size%1000));
 		return(outstr);
 	}
@@ -55,7 +55,7 @@ function getsizestr(size, bytes)
 		outstr=format("%ldM",size);
 		return(outstr);
 	}
-	if(size<999999) { /* MB With comma */
+	if(size<100000) { /* MB With comma */
 		outstr=format("%ld,%03ldM",(size/1000),(size%1000));
 		return(outstr);
 	}
@@ -64,7 +64,7 @@ function getsizestr(size, bytes)
 		outstr=format("%ldG",size);
 		return(outstr);
 	}
-	if(size<999999) { /* GB With comma */
+	if(size<100000) { /* GB With comma */
 		outstr=format("%ld,%03ldG",(size/1000),(size%1000));
 		return(outstr);
 	}
@@ -73,7 +73,7 @@ function getsizestr(size, bytes)
 		outstr=format("%ldT",size);
 		return(outstr);
 	}
-	if(size<999999) { /* TB With comma (Whee!) */
+	if(size<100000) { /* TB With comma (Whee!) */
 		outstr=format("%ld,%03ldT",(size/1000),(size%1000));
 		return(outstr);
 	}
@@ -82,7 +82,7 @@ function getsizestr(size, bytes)
 		outstr=format("%ldP",size);
 		return(outstr);
 	}
-	if(size<999999) { /* PB With comma (Cough!) */
+	if(size<100000) { /* PB With comma (Cough!) */
 		outstr=format("%ld,%03ldP",(size/1000),(size%1000));
 		return(outstr);
 	}
@@ -92,7 +92,7 @@ function getsizestr(size, bytes)
 		outstr=format("%ldE",size);
 		return(outstr);
 	}
-	if(size<999999) { /* EB With comma */
+	if(size<100000) { /* EB With comma */
 		outstr=format("%ld,%03ldE",(size/1000),(size%1000));
 		return(outstr);
 	}
@@ -101,7 +101,7 @@ function getsizestr(size, bytes)
 		outstr=format("%ldZ",size);
 		return(outstr);
 	}
-	if(size<999999) { /* ZB With comma */
+	if(size<100000) { /* ZB With comma */
 		outstr=format("%ld,%03ldZ",(size/1000),(size%1000));
 		return(outstr);
 	}
@@ -110,11 +110,11 @@ function getsizestr(size, bytes)
 		outstr=format("%ldY",size);
 		return(outstr);
 	}
-	if(size<999999) { /* YB With comma */
+	if(size<1000000) { /* YB With comma */
 		outstr=format("%ld,%03ldY",(size/1000),(size%1000));
 		return(outstr);
 	}
-	
+
 	outstr="Too damn big to download.";
 	return(outstr);
 }
