@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "text.h"	/* TOTAL_TEXT */
 
 static void prep_cfg(scfg_t* cfg);
 static void free_attr_cfg(scfg_t* cfg);
