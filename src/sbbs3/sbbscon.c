@@ -191,7 +191,7 @@ static void lputs(char *str)
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
-static BOOL do_setuid() 
+static BOOL do_setuid(void) 
 {
 	BOOL	result=FALSE;
 
@@ -985,7 +985,7 @@ int main(int argc, char** argv)
 						{
 							new_gid_name=arg;
 							old_gid = getgid();
-							if((gr_entry=getgrnam(new_gid_name)) && (new_gid=gr_entry->gr_gid))
+							if((gr_entry=getgrnam(new_gid_name))!=0 && (new_gid=gr_entry->gr_gid)!=0)
 								do_seteuid(TRUE);
 						}
 #endif			
