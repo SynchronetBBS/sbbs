@@ -498,7 +498,7 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	return(JS_TRUE);
 }
 
-static char* get_msg_text(smb_t* smb, smbmsg_t* msg, BOOL strip_ctrl_a, ulong mode)
+static char* get_msg_text(smb_t* smb, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL rfc822, ulong mode)
 {
 	char*		buf;
 
@@ -536,6 +536,22 @@ static char* get_msg_text(smb_t* smb, smbmsg_t* msg, BOOL strip_ctrl_a, ulong mo
 			free(newbuf);
 		}
 	}
+
+	if(rfc822) {	/* must escape lines starting with dot ('.') */
+		char* newbuf;
+		if((newbuf=malloc((strlen(buf)*2)+1))!=NULL) {
+			int i,j;
+			for(i=j=0;buf[i];i++) {
+				if((i==0 || buf[i-1]=='\n') && buf[i]=='.')
+					newbuf[j++]='.';
+				newbuf[j++]=buf[i]; 
+			}
+			newbuf[j]=0;
+			free(buf);
+			buf = newbuf;
+		}
+	}
+
 	return(buf);
 }
 
@@ -546,6 +562,7 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	smbmsg_t	msg;
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		tails=JS_TRUE;
+	JSBool		rfc822=JS_FALSE;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -567,10 +584,12 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[2]);
 
 	if(argc>3)
-		tails=JSVAL_TO_BOOLEAN(argv[3]);
+		rfc822=JSVAL_TO_BOOLEAN(argv[3]);
 
+	if(argc>4)
+		tails=JSVAL_TO_BOOLEAN(argv[4]);
 
-	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, tails ? GETMSGTXT_TAILS : 0);
+	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, rfc822, tails ? GETMSGTXT_TAILS : 0);
 	if(buf==NULL)
 		return(JS_TRUE);
 
@@ -587,6 +606,7 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	char*		buf;
 	smbmsg_t	msg;
 	JSBool		strip_ctrl_a=JS_FALSE;
+	JSBool		rfc822=JS_FALSE;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -607,7 +627,10 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if(argc>2)
 		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[2]);
 
-	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, GETMSGTXT_TAILS|GETMSGTXT_NO_BODY);
+	if(argc>3)
+		rfc822=JSVAL_TO_BOOLEAN(argv[3]);
+
+	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, rfc822, GETMSGTXT_TAILS|GETMSGTXT_NO_BODY);
 	if(buf==NULL)
 		return(JS_TRUE);
 
