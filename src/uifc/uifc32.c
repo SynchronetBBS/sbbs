@@ -278,10 +278,14 @@ int uifcini32(uifcapi_t* uifcapi)
 		api->esc_delay=25;
 
 #ifdef PDCURSES
-	if(mouse_set(BUTTON1_CLICKED|BUTTON3_CLICKED)==0)
-		api->mode|=UIFC_MOUSE;
-	else
-		mouse_set(0);
+/*	
+ * "ALL  DESCRIPTIONS  ARE  GUESSES.  I DON'T KNOW ANYONE WHO KNOWS EXACTLY WHAT THESE FUNCTIONS DO!"
+ *
+ * 	if(mouse_set(BUTTON1_CLICKED|BUTTON3_CLICKED)==0)
+ *		api->mode|=UIFC_MOUSE;
+ *	else
+ *		mouse_set(0);
+ */
 #endif
 #ifdef __unix__
 	initciowrap(api->mode);
