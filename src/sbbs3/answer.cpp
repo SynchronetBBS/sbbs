@@ -74,17 +74,16 @@ bool sbbs_t::answer()
 
 	rlogin_name[0]=0;
 	if(sys_status&SS_RLOGIN) {
-		mswait(1000);	/* Give input_thread time to start */
-		if(incom()==0) {
+		if(incom(1000)==0) {
 			for(i=0;i<LEN_ALIAS;i++) {
-				in=incom();
+				in=incom(1000);
 				if(in==0 || in==NOINP)
 					break;
 				str[i]=in;
 			}
 			str[i]=0;
 			for(i=0;i<LEN_ALIAS;i++) {
-				in=incom();
+				in=incom(1000);
 				if(in==0 || in==NOINP)
 					break;
 				str2[i]=in;
@@ -135,11 +134,9 @@ bool sbbs_t::answer()
 	YIELD();
 
 	while(i++<50 && l<(int)sizeof(str)-1) { 	/* wait up to 5 seconds for response */
-		c=(incom()&0x7f);
-		if(!c) {
-			mswait(100);
+		c=incom(100)&0x7f;
+		if(c==0)
 			continue;
-		}
 		i=0;
 		if(l==0 && c!=ESC)	// response must begin with escape char
 			continue;
@@ -150,10 +147,8 @@ bool sbbs_t::answer()
 		}
 	}
 
-	while((c=(incom()&0x7f))!=0 && l<(int)sizeof(str)-1) {
+	while((c=(incom(100)&0x7f))!=0 && l<(int)sizeof(str)-1)
 		str[l++]=c;
-		YIELD();
-	}
 	str[l]=0;
 
     if(l) {

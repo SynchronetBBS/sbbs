@@ -922,10 +922,9 @@ bool sbbs_t::spy(uint i /* node_num */)
 		&& client_socket!=INVALID_SOCKET 
 		&& spy_socket[i-1]!=INVALID_SOCKET 
 		&& !msgabort()) {
-		in=incom();
+		in=incom(1000);
 		if(in==NOINP) {
 			gettimeleft();
-			YIELD();
 			continue;
 		}
 		ch=in;

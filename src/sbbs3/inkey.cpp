@@ -265,46 +265,45 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,str,16)); 
 			}
 			while(i<10 && j<30) {		/* up to 3 seconds */
-				if(rioctl(RXBC)) {
-					ch=incom();
-					if(ch!=';' && !isdigit(ch) && ch!='R') {    /* other ANSI */
-						switch(ch) {
-							case 'A':
-								return(0x1e);	/* ctrl-^ (up arrow) */
-							case 'B':
-								return(LF); 	/* ctrl-j (dn arrow) */
-							case 'C':
-								return(CTRL_F);	/* ctrl-f (rt arrow) */
-							case 'D':
-								return(0x1d);	/* ctrl-] (lf arrow) */
-							case 'H':	/* ANSI:  home cursor */
-								return(CTRL_B);	/* ctrl-b (beg line) */
-							case 'F':	/* Xterm: cursor preceding line */
-							case 'K':	/* ANSI:  clear-to-end-of-line */
-								return(CTRL_E);	/* ctrl-e (end line) */
-						}
-						ungetkey(ESC);
-						ungetkey('[');
-						for(j=0;j<i;j++)
-							ungetkey(str[j]);
-						ungetkey(ch);
-						return(0); 
+				ch=incom(100);
+				if(ch==(NOINP&0xff)) {
+					j++;
+					continue;
+				}
+				if(ch!=';' && !isdigit(ch) && ch!='R') {    /* other ANSI */
+					switch(ch) {
+						case 'A':
+							return(0x1e);	/* ctrl-^ (up arrow) */
+						case 'B':
+							return(LF); 	/* ctrl-j (dn arrow) */
+						case 'C':
+							return(CTRL_F);	/* ctrl-f (rt arrow) */
+						case 'D':
+							return(0x1d);	/* ctrl-] (lf arrow) */
+						case 'H':	/* ANSI:  home cursor */
+							return(CTRL_B);	/* ctrl-b (beg line) */
+						case 'F':	/* Xterm: cursor preceding line */
+						case 'K':	/* ANSI:  clear-to-end-of-line */
+							return(CTRL_E);	/* ctrl-e (end line) */
 					}
-					if(ch=='R') {       /* cursor position report */
-						if(i && !(useron.rows)) {	/* auto-detect rows */
-							str[i]=0;
-							rows=atoi(str);
-							lprintf("Node %d ANSI cursor position report: %u rows"
-								,cfg.node_num, rows);
-							if(rows<10 || rows>99) rows=24; 
-						}
-						return(0); 
+					ungetkey(ESC);
+					ungetkey('[');
+					for(j=0;j<i;j++)
+						ungetkey(str[j]);
+					ungetkey(ch);
+					return(0); 
+				}
+				if(ch=='R') {       /* cursor position report */
+					if(i && !(useron.rows)) {	/* auto-detect rows */
+						str[i]=0;
+						rows=atoi(str);
+						lprintf("Node %d ANSI cursor position report: %u rows"
+							,cfg.node_num, rows);
+						if(rows<10 || rows>99) rows=24; 
 					}
-					str[i++]=ch; 
-				} else {
-					mswait(100);
-					j++; 
-				} 
+					return(0); 
+				}
+				str[i++]=ch; 
 			}
 
 			ungetkey(ESC);		/* should only get here if time-out */

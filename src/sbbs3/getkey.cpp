@@ -250,7 +250,7 @@ char sbbs_t::getkey(long mode)
 			}
 			else
 				bputs("\7\7");
-			while(!inkey(0) && online && now-timeout>=cfg.sec_warn) {
+			while(!inkey(100) && online && now-timeout>=cfg.sec_warn) {
 				now=time(NULL);
 				if(now-timeout>=cfg.sec_hangup) {
 					if(online==ON_REMOTE) {
@@ -262,7 +262,6 @@ char sbbs_t::getkey(long mode)
 					hangup();
 					return(0); 
 				}
-				mswait(100); 
 			}
 			if(sys_status&SS_USERON && cfg.sec_warn!=cfg.sec_hangup) {
 				bputs("\r\1n\1>");
