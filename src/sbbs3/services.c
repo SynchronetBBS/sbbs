@@ -79,7 +79,7 @@ static scfg_t	scfg;
 static int		active_clients=0;
 static DWORD	sockets=0;
 static BOOL		terminated=FALSE;
-static time_t	uptime;
+static time_t	uptime=0;
 
 typedef struct {
 	/* These are sysop-configurable */
@@ -968,6 +968,7 @@ const char* DLLCALL services_ver(void)
 
 void DLLCALL services_thread(void* arg)
 {
+	char			path[MAX_PATH+1];
 	char			error[256];
 	char			host_ip[32];
 	char			compiler[32];
@@ -981,6 +982,7 @@ void DLLCALL services_thread(void* arg)
 	int				result;
 	ulong			total_clients;
 	time_t			t;
+	time_t			initialized;
 	fd_set			socket_set;
 	SOCKET			high_socket;
 	struct timeval	tv;
@@ -1005,253 +1007,268 @@ void DLLCALL services_thread(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 
-	thread_up(FALSE /* setuid */);
+	do {
 
-	status("Initializing");
+		thread_up(FALSE /* setuid */);
 
-    memset(&scfg, 0, sizeof(scfg));
+		status("Initializing");
+
+		memset(&scfg, 0, sizeof(scfg));
 
 #ifdef __unix__		/* Ignore "Broken Pipe" signal */
-	signal(SIGPIPE,SIG_IGN);
+		signal(SIGPIPE,SIG_IGN);
 #endif
 
-	lprintf("Synchronet Services Version %s%s"
-		,SERVICES_VERSION
+		lprintf("Synchronet Services Version %s%s"
+			,SERVICES_VERSION
 #ifdef _DEBUG
-		," Debug"
+			," Debug"
 #else
-		,""
+			,""
 #endif
-		);
+			);
 
-	COMPILER_DESC(compiler);
+		COMPILER_DESC(compiler);
 
-	lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 
-	srand(clock());		/* Seed random number generator */
-	sbbs_random(10);	/* Throw away first number */
+		srand(clock());		/* Seed random number generator */
+		sbbs_random(10);	/* Throw away first number */
 
-	if(!(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
-		if(PUTENV("TZ=UTC0"))
-			lprintf("!putenv() FAILED");
-		tzset();
+		if(!(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
+			if(PUTENV("TZ=UTC0"))
+				lprintf("!putenv() FAILED");
+			tzset();
 
-		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf("!TIME PROBLEM (%ld)",t);
+			if((t=checktime())!=0) {   /* Check binary time */
+				lprintf("!TIME PROBLEM (%ld)",t);
+				cleanup(1);
+				return;
+			}
+		}
+
+		if(uptime==0)
+			uptime=time(NULL);
+
+		if(!winsock_startup()) {
 			cleanup(1);
 			return;
 		}
-	}
 
-	uptime=time(NULL);
+		t=time(NULL);
+		lprintf("Initializing on %.24s with options: %lx"
+			,ctime(&t),startup->options);
 
-	if(!winsock_startup()) {
-		cleanup(1);
-		return;
-	}
-
-	t=time(NULL);
-	lprintf("Initializing on %.24s with options: %lx"
-		,ctime(&t),startup->options);
-
-	/* Initial configuration and load from CNF files */
-    sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
-    	,startup->ctrl_dir);
-    lprintf("Loading configuration files from %s", scfg.ctrl_dir);
-	scfg.size=sizeof(scfg);
-	if(!load_cfg(&scfg, NULL, TRUE, error)) {
-		lprintf("!ERROR %s",error);
-		lprintf("!Failed to load configuration files");
-		cleanup(1);
-		return;
-	}
-
-	active_clients=0;
-	update_clients();
-
-	if(startup->services_cfg[0]==0)			
-		sprintf(startup->services_cfg,"%sservices.cfg",scfg.ctrl_dir);
-	if((service=read_services_cfg(startup->services_cfg, &services))==NULL) {
-		lprintf("!Failure reading configuration file");
-		cleanup(1);
-		return;
-	}
-
-	/* Open and Bind Listening Sockets */
-	for(i=0;i<(int)services;i++) {
-
-		service[i].socket=INVALID_SOCKET;
-
-		if((socket = open_socket(SOCK_STREAM))==INVALID_SOCKET) {
-			lprintf("!ERROR %d opening socket", ERROR_VALUE);
+		/* Initial configuration and load from CNF files */
+		sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
+    		,startup->ctrl_dir);
+		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
+		scfg.size=sizeof(scfg);
+		if(!load_cfg(&scfg, NULL, TRUE, error)) {
+			lprintf("!ERROR %s",error);
+			lprintf("!Failed to load configuration files");
 			cleanup(1);
 			return;
 		}
-		memset(&addr, 0, sizeof(addr));
 
-		addr.sin_addr.s_addr = htonl(startup->interface_addr);
-		addr.sin_family = AF_INET;
-		addr.sin_port   = htons(service[i].port);
+		active_clients=0;
+		update_clients();
 
-		if(bind(socket, (struct sockaddr *) &addr, sizeof(addr))!=0) {
-			lprintf("%04d !ERROR %d binding %s socket to port %u"
-				,socket, ERROR_VALUE, service[i].protocol, service[i].port);
-			lprintf("%04d %s",socket,BIND_FAILURE_HELP);
-			close_socket(socket);
-			continue;
+		if(startup->services_cfg[0]==0)			
+			sprintf(startup->services_cfg,"%sservices.cfg",scfg.ctrl_dir);
+		if((service=read_services_cfg(startup->services_cfg, &services))==NULL) {
+			lprintf("!Failure reading configuration file");
+			cleanup(1);
+			return;
 		}
 
-	    lprintf("%04d %s socket bound to port %u"
-			,socket, service[i].protocol, service[i].port);
-
-		if(listen(socket,10)!=0) {
-			lprintf("%04d !ERROR %d listening on %s socket"
-				,socket, ERROR_VALUE, service[i].protocol);
-			close_socket(socket);
-			continue;
-		}
-		service[i].socket=socket;
-	}
-
-	if(startup->setuid!=NULL)
-		startup->setuid();
-
-	/* signal caller that we've started up successfully */
-    if(startup->started!=NULL)
-    	startup->started();
-
-	status("Listening");
-		
-	terminated=FALSE;
-
-	/* Main Server Loop */
-	while(!terminated) {
-
-		/* Setup select() parms */
-		FD_ZERO(&socket_set);	
-		high_socket=0;
+		/* Open and Bind Listening Sockets */
 		for(i=0;i<(int)services;i++) {
-			if(service[i].socket==INVALID_SOCKET)
-				continue;
-			FD_SET(service[i].socket,&socket_set);
-			if(service[i].socket>high_socket)
-				high_socket=service[i].socket;
-		}
-		tv.tv_sec=2;
-		tv.tv_usec=0;
-		if((result=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {
-			if(result==0) {
-				mswait(1);
+
+			service[i].socket=INVALID_SOCKET;
+
+			if((socket = open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+				lprintf("!ERROR %d opening socket", ERROR_VALUE);
+				cleanup(1);
+				return;
+			}
+			memset(&addr, 0, sizeof(addr));
+
+			addr.sin_addr.s_addr = htonl(startup->interface_addr);
+			addr.sin_family = AF_INET;
+			addr.sin_port   = htons(service[i].port);
+
+			if(bind(socket, (struct sockaddr *) &addr, sizeof(addr))!=0) {
+				lprintf("%04d !ERROR %d binding %s socket to port %u"
+					,socket, ERROR_VALUE, service[i].protocol, service[i].port);
+				lprintf("%04d %s",socket,BIND_FAILURE_HELP);
+				close_socket(socket);
 				continue;
 			}
 
-			if(ERROR_VALUE==EINTR)
-				lprintf("0000 Services listening interrupted");
-			else if(ERROR_VALUE == ENOTSOCK)
-            	lprintf("0000 Services sockets closed");
-			else
-				lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
-			break;
+			lprintf("%04d %s socket bound to port %u"
+				,socket, service[i].protocol, service[i].port);
+
+			if(listen(socket,10)!=0) {
+				lprintf("%04d !ERROR %d listening on %s socket"
+					,socket, ERROR_VALUE, service[i].protocol);
+				close_socket(socket);
+				continue;
+			}
+			service[i].socket=socket;
 		}
 
-		/* Determine who services this socket */
-		for(i=0;i<(int)services;i++) {
-			if(!FD_ISSET(service[i].socket,&socket_set))
-				continue;
+		if(startup->setuid!=NULL)
+			startup->setuid();
 
-			client_addr_len = sizeof(client_addr);
-			if((client_socket=accept(service[i].socket,
-				(struct sockaddr *)&client_addr,&client_addr_len))==INVALID_SOCKET) {
-				if(ERROR_VALUE == ENOTSOCK)
-            		lprintf("%04d %s socket closed while listening"
-						,service[i].socket, service[i].protocol);
-				else
-					lprintf("%04d %s !ERROR %d accept failed", 
-						service[i].socket, service[i].protocol, ERROR_VALUE);
+		/* signal caller that we've started up successfully */
+		if(startup->started!=NULL)
+    		startup->started();
+
+		status("Listening");
+
+		initialized=time(NULL);
+			
+		terminated=FALSE;
+
+		/* Main Server Loop */
+		while(!terminated) {
+
+			sprintf(path,"%sservices.rec",scfg.ctrl_dir);
+			if(fdate(path)>initialized) {
+				lprintf("0000 Recycle semaphore detected");
 				break;
 			}
-			strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
 
-			lprintf("%04d %s connection accepted from: %s port %u"
-				,client_socket
-				,service[i].protocol, host_ip, ntohs(client_addr.sin_port));
-
-			if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
-				lprintf("%04d !%s MAXMIMUM CLIENTS (%u) reached, access denied"
-					,client_socket, service[i].protocol, service[i].max_clients);
-				mswait(3000);
-				close_socket(client_socket);
-				continue;
+			/* Setup select() parms */
+			FD_ZERO(&socket_set);	
+			high_socket=0;
+			for(i=0;i<(int)services;i++) {
+				if(service[i].socket==INVALID_SOCKET)
+					continue;
+				FD_SET(service[i].socket,&socket_set);
+				if(service[i].socket>high_socket)
+					high_socket=service[i].socket;
 			}
+			tv.tv_sec=2;
+			tv.tv_usec=0;
+			if((result=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {
+				if(result==0) {
+					mswait(1);
+					continue;
+				}
+
+				if(ERROR_VALUE==EINTR)
+					lprintf("0000 Services listening interrupted");
+				else if(ERROR_VALUE == ENOTSOCK)
+            		lprintf("0000 Services sockets closed");
+				else
+					lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
+				break;
+			}
+
+			/* Determine who services this socket */
+			for(i=0;i<(int)services;i++) {
+				if(!FD_ISSET(service[i].socket,&socket_set))
+					continue;
+
+				client_addr_len = sizeof(client_addr);
+				if((client_socket=accept(service[i].socket,
+					(struct sockaddr *)&client_addr,&client_addr_len))==INVALID_SOCKET) {
+					if(ERROR_VALUE == ENOTSOCK)
+            			lprintf("%04d %s socket closed while listening"
+							,service[i].socket, service[i].protocol);
+					else
+						lprintf("%04d %s !ERROR %d accept failed", 
+							service[i].socket, service[i].protocol, ERROR_VALUE);
+					break;
+				}
+				strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
+
+				lprintf("%04d %s connection accepted from: %s port %u"
+					,client_socket
+					,service[i].protocol, host_ip, ntohs(client_addr.sin_port));
+
+				if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
+					lprintf("%04d !%s MAXMIMUM CLIENTS (%u) reached, access denied"
+						,client_socket, service[i].protocol, service[i].max_clients);
+					mswait(3000);
+					close_socket(client_socket);
+					continue;
+				}
 
 #ifdef _WIN32
-			if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)
-				&& !(service[i].options&BBS_OPT_MUTE))
-				PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+				if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)
+					&& !(service[i].options&BBS_OPT_MUTE))
+					PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-			if(trashcan(&scfg,host_ip,"ip")) {
-				lprintf("%04d !%s CLIENT BLOCKED in ip.can: %s"
-					,client_socket, service[i].protocol, host_ip);
-				mswait(3000);
-				close_socket(client_socket);
-				continue;
+				if(trashcan(&scfg,host_ip,"ip")) {
+					lprintf("%04d !%s CLIENT BLOCKED in ip.can: %s"
+						,client_socket, service[i].protocol, host_ip);
+					mswait(3000);
+					close_socket(client_socket);
+					continue;
+				}
+
+				if((client=malloc(sizeof(service_client_t)))==NULL) {
+					lprintf("%04d !%s ERROR allocating %u bytes of memory for service_client"
+						,client_socket, service[i].protocol, sizeof(service_client_t));
+					mswait(3000);
+					close_socket(client_socket);
+					continue;
+				}
+
+				if(startup->socket_open!=NULL)
+					startup->socket_open(TRUE);	/* Callback */
+
+				memset(client,0,sizeof(service_client_t));
+				client->socket=client_socket;
+				client->addr=client_addr;
+				client->service=&service[i];
+				client->service->clients++;		/* this should be mutually exclusive */
+
+				sprintf(cmd,"%.*s",sizeof(cmd)-1,service[i].cmd);
+				strlwr(cmd);
+				if(strstr(cmd,".js"))	/* JavaScript */
+					_beginthread(js_service_thread, 0, client);
+				else					/* Native */
+					_beginthread(native_service_thread, 0, client);
 			}
+		}
 
-			if((client=malloc(sizeof(service_client_t)))==NULL) {
-				lprintf("%04d !%s ERROR allocating %u bytes of memory for service_client"
-					,client_socket, service[i].protocol, sizeof(service_client_t));
-				mswait(3000);
-				close_socket(client_socket);
-				continue;
+		/* Close Service Sockets */
+		for(i=0;i<(int)services;i++) {
+			if(service[i].socket!=INVALID_SOCKET)
+				close_socket(service[i].socket);
+			service[i].socket=INVALID_SOCKET;
+		}
+
+		/* Wait for Service Threads to terminate */
+		total_clients=0;
+		for(i=0;i<(int)services;i++) 
+			total_clients+=service[i].clients;
+		if(total_clients) {
+			lprintf("0000 Waiting for %d clients to disconnect",total_clients);
+			while(1) {
+				total_clients=0;
+				for(i=0;i<(int)services;i++) 
+					total_clients+=service[i].clients;
+				if(!total_clients)
+					break;
+				mswait(500);
 			}
-
-			if(startup->socket_open!=NULL)
-				startup->socket_open(TRUE);	/* Callback */
-
-			memset(client,0,sizeof(service_client_t));
-			client->socket=client_socket;
-			client->addr=client_addr;
-			client->service=&service[i];
-			client->service->clients++;		/* this should be mutually exclusive */
-
-			sprintf(cmd,"%.*s",sizeof(cmd)-1,service[i].cmd);
-			strlwr(cmd);
-			if(strstr(cmd,".js"))	/* JavaScript */
-				_beginthread(js_service_thread, 0, client);
-			else					/* Native */
-				_beginthread(native_service_thread, 0, client);
+			lprintf("0000 Finished waiting");
 		}
-	}
 
-	/* Close Service Sockets */
-	for(i=0;i<(int)services;i++) {
-		if(service[i].socket!=INVALID_SOCKET)
-			close_socket(service[i].socket);
-		service[i].socket=INVALID_SOCKET;
-	}
+		/* Free Service Data */
+		services=0;
+		free(service);
+		service=NULL;
 
-	/* Wait for Service Threads to terminate */
-	total_clients=0;
-	for(i=0;i<(int)services;i++) 
-		total_clients+=service[i].clients;
-	if(total_clients) {
-		lprintf("0000 Waiting for %d clients to disconnect",total_clients);
-		while(1) {
-			total_clients=0;
-			for(i=0;i<(int)services;i++) 
-				total_clients+=service[i].clients;
-			if(!total_clients)
-				break;
-			mswait(500);
-		}
-		lprintf("0000 Finished waiting");
-	}
+		cleanup(0);
+		if(!terminated)
+			lprintf("Recycling server...");
 
-	/* Free Service Data */
-	services=0;
-	free(service);
-	service=NULL;
-
-	cleanup(0);
+	} while(!terminated);
 }
