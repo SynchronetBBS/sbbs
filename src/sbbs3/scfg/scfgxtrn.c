@@ -259,6 +259,11 @@ This is the internal code for the timed event.
 			,cfg.event[i]->misc&EVENT_EXCL ? "Yes":"No");
 		sprintf(opt[k++],"%-32.32s%s","Force Users Off-line For Event"
 			,cfg.event[i]->misc&EVENT_FORCE ? "Yes":"No");
+		sprintf(opt[k++],"%-32.32s%s","Native (32-bit) Executable"
+			,cfg.event[i]->misc&EX_NATIVE ? "Yes" : "No");
+		sprintf(opt[k++],"%-32.32s%s","Background Execution"
+			,cfg.event[i]->misc&EX_BG ? "Yes" : "No");
+
 		opt[k][0]=0;
 		SETHELP(WHERE);
 /*
@@ -418,7 +423,7 @@ per day.
                     }
                 break;
 			case 6:
-				k=1;
+				k=cfg.event[i]->misc&EVENT_EXCL ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -440,7 +445,7 @@ option to Yes.
 					uifc.changes=1; }
                 break;
 			case 7:
-				k=1;
+				k=cfg.event[i]->misc&EVENT_FORCE ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -460,6 +465,57 @@ execute precisely on time, set this option to Yes.
 				else if(k==1 && cfg.event[i]->misc&EVENT_FORCE) {
 					cfg.event[i]->misc&=~EVENT_FORCE;
                     uifc.changes=1; }
+                break;
+
+			case 8:
+				k=cfg.event[i]->misc&EX_NATIVE ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				uifc.savnum=2;
+				SETHELP(WHERE);
+/*
+Native (32-bit) Executable:
+
+If this event program is a native 32-bit executable,
+set this option to Yes.
+*/
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Native (32-bit)",opt);
+				if(!k && !(cfg.event[i]->misc&EX_NATIVE)) {
+					cfg.event[i]->misc|=EX_NATIVE;
+					uifc.changes=TRUE;
+                }
+				else if(k==1 && cfg.event[i]->misc&EX_NATIVE) {
+					cfg.event[i]->misc&=~EX_NATIVE;
+					uifc.changes=TRUE;
+                }
+                break;
+
+			case 9:
+				k=cfg.event[i]->misc&EX_BG ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				uifc.savnum=2;
+				SETHELP(WHERE);
+/*
+Execute Event in Background (Asynchronously):
+
+If you would like this event to run simultaneously with other events,
+set this option to Yes. Exclusive events will not run in the background.
+*/
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Background (Asynchronous) Execution",opt);
+				if(!k && !(cfg.event[i]->misc&EX_BG)) {
+					cfg.event[i]->misc|=EX_BG;
+					uifc.changes=TRUE;
+                }
+				else if(k==1 && cfg.event[i]->misc&EX_BG) {
+					cfg.event[i]->misc&=~EX_BG;
+                    uifc.changes=TRUE;
+                }
                 break;
 
 				} } }
@@ -554,7 +610,7 @@ online program name.
 		strcpy(cfg.xtrn[xtrnnum[i]]->code,code);
 		cfg.xtrn[xtrnnum[i]]->sec=section;
 		cfg.total_xtrns++;
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -562,7 +618,7 @@ online program name.
 		cfg.total_xtrns--;
 		for(j=xtrnnum[i];j<cfg.total_xtrns;j++)
 			cfg.xtrn[j]=cfg.xtrn[j+1];
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -572,7 +628,7 @@ online program name.
 		i&=MSK_OFF;
 		*cfg.xtrn[xtrnnum[i]]=savxtrn;
 		cfg.xtrn[xtrnnum[i]]->sec=section;
-		uifc.changes=1;
+		uifc.changes=TRUE;
         continue; }
 	done=0;
 	i=xtrnnum[i];
@@ -787,10 +843,10 @@ set this option to Yes.
 					,opt);
 				if(!k && !(cfg.xtrn[i]->misc&MULTIUSER)) {
 					cfg.xtrn[i]->misc|=MULTIUSER;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xtrn[i]->misc&MULTIUSER) {
 					cfg.xtrn[i]->misc&=~MULTIUSER;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
                 break;
 			case 9:
 				k=cfg.xtrn[i]->misc&IO_INTS ? 0:1;
@@ -809,10 +865,10 @@ set this option to No.
 					,opt);
 				if(!k && !(cfg.xtrn[i]->misc&IO_INTS)) {
 					cfg.xtrn[i]->misc|=IO_INTS;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xtrn[i]->misc&IO_INTS) {
 					cfg.xtrn[i]->misc&=~(IO_INTS|WWIVCOLOR);
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
                 else if(k==-1)
                     break;
 				if(!(cfg.xtrn[i]->misc&IO_INTS))
@@ -834,10 +890,10 @@ option to Yes.
 					,opt);
 				if(!k && !(cfg.xtrn[i]->misc&WWIVCOLOR)) {
 					cfg.xtrn[i]->misc|=WWIVCOLOR;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xtrn[i]->misc&WWIVCOLOR) {
 					cfg.xtrn[i]->misc&=~WWIVCOLOR;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
                 break;
 			case 10:
 				k=cfg.xtrn[i]->misc&XTRN_NATIVE ? 0:1;
@@ -856,10 +912,10 @@ set this option to Yes.
 					,"Native (32-bit)",opt);
 				if(!k && !(cfg.xtrn[i]->misc&XTRN_NATIVE)) {
 					cfg.xtrn[i]->misc|=XTRN_NATIVE;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xtrn[i]->misc&XTRN_NATIVE) {
 					cfg.xtrn[i]->misc&=~XTRN_NATIVE;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				break;
 			case 11:
 				k=cfg.xtrn[i]->misc&MODUSERDAT ? 0:1;
@@ -879,10 +935,10 @@ modify the data of users who run the program, set this option to Yes.
 					,"Program Can Modify User Data",opt);
 				if(!k && !(cfg.xtrn[i]->misc&MODUSERDAT)) {
 					cfg.xtrn[i]->misc|=MODUSERDAT;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xtrn[i]->misc&MODUSERDAT) {
 					cfg.xtrn[i]->misc&=~MODUSERDAT;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
                 break;
 			case 12:
 				k=0;
@@ -922,7 +978,7 @@ specific user event, select the event. Otherwise, select No.
 					break;
 				if(cfg.xtrn[i]->event!=k) {
 					cfg.xtrn[i]->event=k;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				if(!cfg.xtrn[i]->event)
 					break;
 				k=cfg.xtrn[i]->misc&EVENTONLY ? 0:1;
@@ -943,10 +999,10 @@ to Yes.
                     ,opt);
                 if(!k && !(cfg.xtrn[i]->misc&EVENTONLY)) {
                     cfg.xtrn[i]->misc|=EVENTONLY;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
                 else if(k==1 && cfg.xtrn[i]->misc&EVENTONLY) {
                     cfg.xtrn[i]->misc&=~EVENTONLY;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
                 break;
 			case 13:
 				k=0;
@@ -981,7 +1037,7 @@ format, select the file format from the list.
 					cfg.xtrn[i]->type=k;
                     if(cfg.xtrn[i]->type==XTRN_DOOR32)
                         cfg.xtrn[i]->misc|=XTRN_NATIVE;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				if(cfg.xtrn[i]->type && cfg.uq&UQ_ALIASES) {
 					strcpy(opt[0],"Yes");
 					strcpy(opt[1],"No");
@@ -990,10 +1046,10 @@ format, select the file format from the list.
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Use Real Names",opt);
 					if(k==0 && !(cfg.xtrn[i]->misc&REALNAME)) {
 						cfg.xtrn[i]->misc|=REALNAME;
-						uifc.changes=1; }
+						uifc.changes=TRUE; }
 					else if(k==1 && cfg.xtrn[i]->misc&REALNAME) {
 						cfg.xtrn[i]->misc&=~REALNAME;
-						uifc.changes=1; } }
+						uifc.changes=TRUE; } }
 				break;
 			case 14:
 				k=0;
@@ -1012,10 +1068,10 @@ You can have the data file created in the current Node Directory or the
                     ,opt);
 				if(!k && cfg.xtrn[i]->misc&STARTUPDIR) {
 					cfg.xtrn[i]->misc&=~STARTUPDIR;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
 				else if(k==1 && !(cfg.xtrn[i]->misc&STARTUPDIR)) {
 					cfg.xtrn[i]->misc|=STARTUPDIR;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
 				break;
 			case 15:
 				while(1) {
@@ -1096,10 +1152,10 @@ online program (e.g. Free Time), set this option to Yes.
 								,"Suspended (Free) Time",opt);
 							if(!k && !(cfg.xtrn[i]->misc&FREETIME)) {
 								cfg.xtrn[i]->misc|=FREETIME;
-								uifc.changes=1; }
+								uifc.changes=TRUE; }
 							else if(k==1 && cfg.xtrn[i]->misc&FREETIME) {
 								cfg.xtrn[i]->misc&=~FREETIME;
-								uifc.changes=1; }
+								uifc.changes=TRUE; }
 							break; } }
 					break;
 
@@ -1187,7 +1243,7 @@ This is the internal code for the external editor.
 		strcpy(cfg.xedit[i]->name,str);
 		strcpy(cfg.xedit[i]->code,code);
 		cfg.total_xedits++;
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -1195,7 +1251,7 @@ This is the internal code for the external editor.
 		cfg.total_xedits--;
 		for(j=i;j<cfg.total_xedits;j++)
 			cfg.xedit[j]=cfg.xedit[j+1];
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -1204,7 +1260,7 @@ This is the internal code for the external editor.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.xedit[i]=savxedit;
-		uifc.changes=1;
+		uifc.changes=TRUE;
         continue; }
 	done=0;
 	while(!done) {
@@ -1347,10 +1403,10 @@ set this option to No.
 					,opt);
 				if(!k && !(cfg.xedit[i]->misc&IO_INTS)) {
 					cfg.xedit[i]->misc|=IO_INTS;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xedit[i]->misc&IO_INTS) {
 					cfg.xedit[i]->misc&=~(IO_INTS|WWIVCOLOR);
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				if(!(cfg.xedit[i]->misc&IO_INTS))
 					break;
 				k=cfg.xedit[i]->misc&WWIVCOLOR ? 0:1;
@@ -1369,10 +1425,10 @@ option to Yes.
 					,"Editor Uses WWIV Color Codes",opt);
 				if(!k && !(cfg.xedit[i]->misc&WWIVCOLOR)) {
 					cfg.xedit[i]->misc|=WWIVCOLOR;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xedit[i]->misc&WWIVCOLOR) {
 					cfg.xedit[i]->misc&=~WWIVCOLOR;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
                 break;
 			case 5:
 				k=cfg.xedit[i]->misc&XTRN_NATIVE ? 0:1;
@@ -1391,10 +1447,10 @@ set this option to Yes.
 					,"Native (32-bit)",opt);
 				if(!k && !(cfg.xedit[i]->misc&XTRN_NATIVE)) {
 					cfg.xedit[i]->misc|=XTRN_NATIVE;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xedit[i]->misc&XTRN_NATIVE) {
 					cfg.xedit[i]->misc&=~XTRN_NATIVE;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				break;
 
 			case 6:
@@ -1423,14 +1479,14 @@ drop file (like SyncEdit v2.x).
 				if(!k && !(cfg.xedit[i]->misc&QUOTEALL)) {
 					cfg.xedit[i]->misc|=QUOTEALL;
 					cfg.xedit[i]->misc&=~QUOTENONE;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && !(cfg.xedit[i]->misc&QUOTENONE)) {
 					cfg.xedit[i]->misc|=QUOTENONE;
 					cfg.xedit[i]->misc&=~QUOTEALL;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
 				else if(k==2 && cfg.xedit[i]->misc&(QUOTENONE|QUOTEALL)) {
 					cfg.xedit[i]->misc&=~(QUOTENONE|QUOTEALL);
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
                 break;
 			case 7:
 				k=cfg.xedit[i]->misc&QUICKBBS ? 0:1;
@@ -1449,10 +1505,10 @@ this option to Yes.
 					,opt);
 				if(!k && !(cfg.xedit[i]->misc&QUICKBBS)) {
 					cfg.xedit[i]->misc|=QUICKBBS;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xedit[i]->misc&QUICKBBS) {
 					cfg.xedit[i]->misc&=~QUICKBBS;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
 				break;
 			case 8:
 				k=cfg.xedit[i]->misc&EXPANDLF ? 0:1;
@@ -1471,10 +1527,10 @@ instead of a carriage return/line feed pair, set this option to Yes.
 					,opt);
 				if(!k && !(cfg.xedit[i]->misc&EXPANDLF)) {
 					cfg.xedit[i]->misc|=EXPANDLF;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				else if(k==1 && cfg.xedit[i]->misc&EXPANDLF) {
 					cfg.xedit[i]->misc&=~EXPANDLF;
-                    uifc.changes=1; }
+                    uifc.changes=TRUE; }
 				break;
 			case 9:
 				k=0;
@@ -1509,7 +1565,7 @@ format, select the file format from the list.
 					cfg.xedit[i]->type=k;
                     if(cfg.xedit[i]->type==XTRN_DOOR32)
                         cfg.xedit[i]->misc|=XTRN_NATIVE;
-					uifc.changes=1; }
+					uifc.changes=TRUE; }
 				break;
 
 				} } }
@@ -1579,7 +1635,7 @@ This is the executable filename of the external program.
 		memset((swap_t *)cfg.swap[i],0,sizeof(swap_t));
 		strcpy(cfg.swap[i]->cmd,str);
 		cfg.total_swaps++;
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -1587,7 +1643,7 @@ This is the executable filename of the external program.
 		cfg.total_swaps--;
 		for(j=i;j<cfg.total_swaps;j++)
 			cfg.swap[j]=cfg.swap[j+1];
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	SETHELP(WHERE);
 /*
@@ -1661,7 +1717,7 @@ This is the executable filename of the native external program.
 		memset((natvpgm_t *)cfg.natvpgm[i],0,sizeof(natvpgm_t));
 		strcpy(cfg.natvpgm[i]->name,str);
 		cfg.total_natvpgms++;
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -1669,7 +1725,7 @@ This is the executable filename of the native external program.
 		cfg.total_natvpgms--;
 		for(j=i;j<cfg.total_natvpgms;j++)
 			cfg.natvpgm[j]=cfg.natvpgm[j+1];
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	SETHELP(WHERE);
 /*
@@ -1774,7 +1830,7 @@ abreviation of the name.
 		strcpy(cfg.xtrnsec[i]->name,str);
 		strcpy(cfg.xtrnsec[i]->code,code);
 		cfg.total_xtrnsecs++;
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
@@ -1795,7 +1851,7 @@ abreviation of the name.
 		while(i<cfg.total_xtrnsecs) {
 			cfg.xtrnsec[i]=cfg.xtrnsec[i+1];
             i++; }
-		uifc.changes=1;
+		uifc.changes=TRUE;
 		continue; }
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
@@ -1804,7 +1860,7 @@ abreviation of the name.
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.xtrnsec[i]=savxtrnsec;
-		uifc.changes=1;
+		uifc.changes=TRUE;
         continue; }
 	done=0;
 	while(!done) {
