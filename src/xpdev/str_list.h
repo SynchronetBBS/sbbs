@@ -54,13 +54,20 @@ void		strListFree(str_list_t* list);
 
 /* Pass a pointer to a string list, the string to add */
 /* Returns the updated list or NULL on error */
-str_list_t	strListAdd(str_list_t* list, char* str);
+str_list_t	strListAdd(str_list_t* list, const char* str);
 
 /* Adds a string into the list at a specific index */
-str_list_t	strListAddAt(str_list_t* list, char* str, size_t index);
+str_list_t	strListAddAt(str_list_t* list, const char* str, size_t index);
+
+/* Add to an exiting or new string list by splitting specified string (str) */
+/* into multiple strings, separated by one of the delimit characters */
+str_list_t	strListSplit(str_list_t* list, char* str, const char* delimit);
+
+/* Same as above, but copies str to temporary heap buffer first */
+str_list_t	strListSplitCopy(str_list_t* list, const char* str, const char* delimit);
 
 /* Count the number of strings in the list and returns the count */
-size_t		strListCount(str_list_t list);
+size_t		strListCount(const str_list_t list);
 
 void		strListSortAlpha(str_list_t list);
 void		strListSortAlphaReverse(str_list_t list);
