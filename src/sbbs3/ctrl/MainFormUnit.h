@@ -290,7 +290,6 @@ __published:	// IDE-managed Components
 	void __fastcall FtpStartExecute(TObject *Sender);
 	void __fastcall FtpStopExecute(TObject *Sender);
 	void __fastcall FtpConfigureExecute(TObject *Sender);
-	void __fastcall CloseTimerTimer(TObject *Sender);
 	void __fastcall BBSConfigureMenuItemClick(TObject *Sender);
 	void __fastcall FormCreate(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);

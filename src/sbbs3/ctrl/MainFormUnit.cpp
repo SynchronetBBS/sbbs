@@ -983,12 +983,6 @@ void __fastcall TMainForm::FtpConfigureExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::CloseTimerTimer(TObject *Sender)
-{
-	if(!TelnetStop->Enabled && !MailStop->Enabled && !FtpStop->Enabled)
-   	    Close();
-}
-//---------------------------------------------------------------------------
 
 void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
 {
