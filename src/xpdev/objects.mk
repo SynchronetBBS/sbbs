@@ -25,6 +25,7 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)genwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)ini_file$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)link_list$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)msg_queue$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)semwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)sockwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)str_list$(OFILE) \
