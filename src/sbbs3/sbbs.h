@@ -175,6 +175,7 @@ public:
 	ulong	telnet_mode;
 	uchar	telnet_last_rxch;
 
+	time_t	event_time;				// Time of next exclusive event
 	bool	event_thread_running;
     bool	output_thread_running;
     bool	input_thread_running;
