@@ -57,24 +57,34 @@ char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 	long	l=0,lzhlen,length;
 
 	for(i=0;i<msg->hdr.total_dfields;i++) {
-		if(!(msg->dfield[i].type==TEXT_BODY
-			|| (mode&GETMSGTXT_TAILS && msg->dfield[i].type==TEXT_TAIL))
-			|| msg->dfield[i].length<=2L)
+		if(msg->dfield[i].length<=sizeof(xlat))
 			continue;
+		switch(msg->dfield[i].type) {
+			case TEXT_BODY:
+				if(mode&GETMSGTXT_NO_BODY)
+					continue;
+				break;
+			case TEXT_TAIL:
+				if(!(mode&GETMSGTXT_TAILS))
+					continue;
+				break;
+			default:	/* ignore other data types */
+				continue;
+		}
 		fseek(smb->sdt_fp,msg->hdr.offset+msg->dfield[i].offset
 			,SEEK_SET);
-		fread(&xlat,2,1,smb->sdt_fp);
+		fread(&xlat,sizeof(xlat),1,smb->sdt_fp);
 		lzh=0;
 		if(xlat==XLAT_LZH) {
 			lzh=1;
-			fread(&xlat,2,1,smb->sdt_fp); 
+			fread(&xlat,sizeof(xlat),1,smb->sdt_fp); 
 		}
 		if(xlat!=XLAT_NONE) 	/* no other translations currently supported */
 			continue;
 
-		length=msg->dfield[i].length-2L;
+		length=msg->dfield[i].length-sizeof(xlat);
 		if(lzh) {
-			length-=2;
+			length-=sizeof(xlat);
 			if(length<1)
 				continue;
 			if((lzhbuf=(char HUGE16*)LMALLOC(length))==NULL) {
