@@ -807,6 +807,9 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			case RFC822REPLYID:
 				msg->reply_id=msg->hfield_dat[i];
 				break;
+			case SMTPREVERSEPATH:
+				msg->reverse_path=msg->hfield_dat[i];
+				break;
 			case USENETPATH:
 				msg->path=msg->hfield_dat[i];
 				break;
@@ -838,6 +841,11 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		smb_freemsgmem(msg);
 		return(-7); 
 	}
+
+	/* If no reverse path specified, use sender's address */
+	if(msg->reverse_path == NULL)
+		msg->reverse_path = msg->from_net.addr;
+
 	return(0);
 }
 
