@@ -122,7 +122,10 @@ BOOL base64out(SOCKET socket, char * pathfile)
         else
             strcat(line,out);
         if(i==18) {
-            sockprintf(socket,line);
+            if(!sockprintf(socket,line)) {
+				fclose(fp);
+				return(FALSE);
+			}
             i=-1;
         }
         if(bytesread!=3 || feof(fp))
@@ -130,10 +133,10 @@ BOOL base64out(SOCKET socket, char * pathfile)
         i++;
         memset(in,0,3);
     }
+	fclose(fp);
     if(i!=-1)   /* already printed the last line */
         sockprintf(socket,line);
     sockprintf(socket,"");
-	fclose(fp);
 	return(TRUE);
 }
 
@@ -170,7 +173,7 @@ BOOL mimeattach(SOCKET socket, char * boundary, char * pathfile)
 
 void endmime(SOCKET socket, char * boundary)
 {
-    char bndline[41];
+    char bndline[128];
 
     strcpy(bndline,"--");
     strcat(bndline,boundary);
