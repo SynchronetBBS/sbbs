@@ -137,6 +137,8 @@ static char* key_name(char* p, char** vp)
 	char* equal;
 	char* colon;
 
+    *vp=NULL;
+    
 	if(p==NULL)
 		return(NULL);
 
@@ -262,13 +264,12 @@ BOOL iniRemoveValue(str_list_t* list, const char* section, const char* key)
 {
 	char	val[INI_MAX_VALUE_LEN];
 	size_t	i;
-    char*   p;
-	char*	vp;
+	char*	vp=NULL;
 
 	i=find_value_index(*list, section, key, val);
 
-    p=key_name((*list)[i], &vp);
-	if(p===NULL || p==INI_NEW_SECTION)
+    key_name((*list)[i], &vp);
+	if(vp==NULL)
 		return(FALSE);
 
 	*vp=0;	/* Terminate string at beginning of value */
