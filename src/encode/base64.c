@@ -97,7 +97,7 @@ char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 	char	*write;
 	char	*tend;
 	const char	*send;
-	char	*tmpbuf;
+	char	*tmpbuf=NULL;
 	int		done=0;
 	char	enc;
 	int		buf=0;
