@@ -27,3 +27,4 @@
 src src
 lib lib
 include include
+src_sbbs3 -a src/sbbs3 src/xpdev src/uifc
