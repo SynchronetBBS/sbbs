@@ -2110,6 +2110,7 @@ static void smtp_thread(void* arg)
 				}
 				sprintf(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 				if((stricmp(dest_host,scfg.sys_inetaddr)!=0
+						&& stricmp(dest_host,startup->host_name)!=0
 						&& resolve_ip(dest_host)!=server_addr.sin_addr.s_addr
 						&& findstr(dest_host,domain_list)==FALSE)
 					|| dest_port!=server_addr.sin_port) {
