@@ -501,10 +501,14 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	}
 	if(!s)
 		return(0);
-	if((p=smb_get_hfield(msg,RFC822REPLYTO,NULL))!=NULL)
+	if((p=smb_get_hfield(msg,RFC822REPLYTO,NULL))==NULL) {
+		if(msg->replyto_net.type==NET_INTERNET)
+			p=msg->replyto_net.addr);
+		else if(msg->replyto!=NULL)
+			p=msg->replyto;
+	}
+	if(p!=NULL)
 		s=sockprintf(socket,"Reply-To: %s",p);	/* use original RFC822 header field */
-	else if(msg->replyto_net.type==NET_INTERNET)
-		s=sockprintf(socket,"Reply-To: %s",msg->replyto_net.addr);
 	if(!s)
 		return(0);
 	if(!sockprintf(socket,"Message-ID: %s",get_msgid(&scfg,INVALID_SUB,msg)))
