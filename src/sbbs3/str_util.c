@@ -393,7 +393,7 @@ ushort DLLCALL crc16(char *str)
 /****************************************************************************/
 /* Returns 1 if a is a valid ctrl-a code, 0 if it isn't.                    */
 /****************************************************************************/
-BOOL validattr(char a)
+BOOL DLLCALL validattr(char a)
 {
 
 	switch(toupper(a)) {
@@ -429,7 +429,7 @@ BOOL validattr(char a)
 /* Strips invalid Ctrl-Ax sequences from str                                */
 /* Returns number of ^A's in line                                           */
 /****************************************************************************/
-size_t strip_invalid_attr(char *strin)
+size_t DLLCALL strip_invalid_attr(char *strin)
 {
     char str[1024];
     size_t a,c,d;
