@@ -329,9 +329,9 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 /****************************************************************************/
 int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 {
-    int i,file;
-    char userdat[U_LEN+1],str[U_LEN+1];
-    node_t node;
+    int		i,file;
+    char	userdat[U_LEN+1],str[U_LEN+1];
+    node_t	node;
 
 	if(!user->number) 
 		return(-1); 
@@ -435,6 +435,11 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	sprintf(str,"%suser/user.dat", cfg->data_dir);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_DENYNONE))==-1) {
 		return(errno);
+	}
+
+	if(filelength(file)<((long)user->number-1)*U_LEN) {
+		close(file);
+		return(-4);
 	}
 
 	lseek(file,(long)((long)((long)user->number-1)*U_LEN),SEEK_SET);
@@ -1205,6 +1210,11 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char 
 	if((file=nopen(str2,O_WRONLY|O_DENYNONE))==-1)
 		return(errno);
 
+	if(filelength(file)<((long)usernumber-1)*U_LEN) {
+		close(file);
+		return(-4);
+	}
+
 	strcpy(str2,str);
 	if(strlen(str2)<length) {
 		for(c=strlen(str2);c<length;c++)
@@ -1261,6 +1271,11 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	sprintf(path,"%suser/user.dat",cfg->data_dir);
 	if((file=nopen(path,O_RDWR|O_DENYNONE))==-1)
 		return(0UL); 
+
+	if(filelength(file)<((long)usernumber-1)*U_LEN) {
+		close(file);
+		return(0);
+	}
 
 	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 
