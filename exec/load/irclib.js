@@ -23,7 +23,7 @@
 //
 
 const IRCLIB_REVISION = "$Revision$".split(' ')[1];
-const IRCLIB_VERSION = "irclib.js-0.1(" + IRCLIB_REVISION + ")";
+const IRCLIB_VERSION = "irclib.js-" + IRCLIB_REVISION;
 
 // Connect to a server as a client.
 //	hostname	Hostname to connect to
@@ -89,7 +89,7 @@ function IRC_string(str,arg) {
 	var cindex;
 
 	if (arg) {
-		for(sw_counter=0;sw_counter<startword;sw_counter++) {
+		for(sw_counter=0;sw_counter<arg;sw_counter++) {
 			str=str.slice(str.indexOf(" ")+1);
 		}
 	}
