@@ -1,9 +1,9 @@
 SRC_ROOT	= ..
-!include ${SRC_ROOT}/build/Common.bmake
+!include ${SRC_ROOT}\build\Common.bmake
 
 CFLAGS	=	$(CFLAGS) $(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 LDFLAGS	=	$(LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
 
-$(EXEODIR)/syncterm: $(OBJS)
+$(EXEODIR)$(DIRSEP)syncterm$(EXEFILE): $(OBJS)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+        ${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -e$@ $(OBJS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)

@@ -1,7 +1,7 @@
-OBJS    =      $(MTOBJODIR)/syncterm$(OFILE) \
-                        $(MTOBJODIR)/bbslist$(OFILE) \
-                        $(MTOBJODIR)/uifcinit$(OFILE) \
-                        $(MTOBJODIR)/rlogin$(OFILE) \
-                        $(MTOBJODIR)/term$(OFILE) \
-                        $(MTOBJODIR)/window$(OFILE) \
-                        $(MTOBJODIR)/menu$(OFILE)
+OBJS    =      $(MTOBJODIR)$(DIRSEP)syncterm$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)bbslist$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)uifcinit$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)rlogin$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)term$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)window$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)menu$(OFILE)

@@ -1,3 +1,4 @@
+#include <gen_defs.h>
 #include <stdio.h>
 
 #include <ciolib.h>
