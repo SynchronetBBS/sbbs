@@ -832,8 +832,8 @@ js_uselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uintN		i;
 	int32		num=0;
-	char*		title="";
-	char*		item="";
+	char*		title=NULL;
+	char*		item=NULL;
 	char*		ar_str;
 	uchar*		ar=NULL;
 	sbbs_t*		sbbs;
