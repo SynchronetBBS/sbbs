@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 635
-  Top = 312
+  Left = 619
+  Top = 465
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 303
@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SMTPTabSheet
-    TabIndex = 1
+    ActivePage = DNSBLTabSheet
+    TabIndex = 5
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -83,6 +83,14 @@ object MailCfgDlg: TMailCfgDlg
         Height = 24
         AutoSize = False
         Caption = 'Max Inactivity'
+      end
+      object LinesPerYieldLabel: TLabel
+        Left = 9
+        Top = 140
+        Width = 104
+        Height = 24
+        AutoSize = False
+        Caption = 'Lines Per Yield'
       end
       object AutoStartCheckBox: TCheckBox
         Left = 9
@@ -144,36 +152,40 @@ object MailCfgDlg: TMailCfgDlg
         Left = 185
         Top = 76
         Width = 146
-        Height = 26
+        Height = 24
         Hint = 'Log all transmitted mail commands and responses (for debugging)'
         Caption = 'Log TX'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 6
       end
       object LogFileCheckBox: TCheckBox
         Left = 185
         Top = 108
         Width = 146
-        Height = 26
+        Height = 24
         Hint = 'Save log entries to a file (in your DATA directory)'
         Caption = 'Log to Disk'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 7
+      end
+      object LinesPerYieldEdit: TEdit
+        Left = 113
+        Top = 140
+        Width = 48
+        Height = 24
+        Hint = 
+          'Number of lines of message text sent/received between time-slice' +
+          ' yields'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 5
       end
     end
     object SMTPTabSheet: TTabSheet
       Caption = 'SMTP'
       ImageIndex = 1
-      object BlacklistedMailLabel: TLabel
-        Left = 9
-        Top = 76
-        Width = 104
-        Height = 24
-        AutoSize = False
-        Caption = 'Blacklisted Mail'
-      end
       object TelnetPortLabel: TLabel
         Left = 9
         Top = 12
@@ -184,11 +196,19 @@ object MailCfgDlg: TMailCfgDlg
       end
       object DefaultUserLabel: TLabel
         Left = 9
-        Top = 44
+        Top = 76
         Width = 104
         Height = 24
         AutoSize = False
         Caption = 'Default User'
+      end
+      object MaxRecipientsLabel: TLabel
+        Left = 9
+        Top = 44
+        Width = 104
+        Height = 24
+        AutoSize = False
+        Caption = 'Max Recipients'
       end
       object SMTPPortEdit: TEdit
         Left = 113
@@ -202,7 +222,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object UserNumberCheckBox: TCheckBox
         Left = 9
-        Top = 130
+        Top = 108
         Width = 288
         Height = 24
         Hint = 
@@ -211,22 +231,22 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Allow Mail Addressed by User Number'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 4
       end
       object DebugHeadersCheckBox: TCheckBox
         Left = 185
         Top = 12
         Width = 146
-        Height = 26
+        Height = 24
         Hint = 'Log all received mail headers (for debugging)'
         Caption = 'Log Headers'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 1
       end
       object DefaultUserEdit: TEdit
         Left = 113
-        Top = 44
+        Top = 76
         Width = 185
         Height = 24
         Hint = 
@@ -234,64 +254,28 @@ object MailCfgDlg: TMailCfgDlg
           'ysop")'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 3
       end
       object AllowRelayCheckBox: TCheckBox
         Left = 9
-        Top = 162
+        Top = 140
         Width = 288
         Height = 24
         Hint = 'Allow mail to be relayed for authenticated users'
         Caption = 'Allow Authenticated Users to Relay Mail'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
-      end
-      object BLMailFlagRadioButton: TRadioButton
-        Left = 112
-        Top = 76
-        Width = 57
-        Height = 24
-        Hint = 'Flag DNS-blacklisted mail with an X-RBL header'
-        Caption = 'Flag'
-        ParentShowHint = False
-        ShowHint = True
         TabOrder = 5
-        OnClick = BLMailFlagRadioButtonClick
       end
-      object BLMailIgnoreRadioButton: TRadioButton
-        Left = 176
-        Top = 76
-        Width = 57
-        Height = 24
-        Hint = 'Pretend to receive DNS-blacklisted mail '
-        Caption = 'Ignore'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 6
-        OnClick = BLMailFlagRadioButtonClick
-      end
-      object BLMailRefuseRadioButton: TRadioButton
-        Left = 248
-        Top = 76
-        Width = 73
-        Height = 24
-        Hint = 'Refuse mail session with DNS-blacklisted servers'
-        Caption = 'Refuse'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 7
-        OnClick = BLMailFlagRadioButtonClick
-      end
-      object BLMailFlagEdit: TEdit
+      object MaxRecipientsEdit: TEdit
         Left = 113
-        Top = 100
-        Width = 185
+        Top = 44
+        Width = 48
         Height = 24
-        Hint = 'Flag to add to subject of DNS-blacklisted mail'
+        Hint = 'Maximum number of recipients for a single message'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 2
       end
     end
     object POP3TabSheet: TTabSheet
@@ -399,7 +383,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 250
         Top = 108
         Width = 65
-        Height = 26
+        Height = 24
         Hint = 'Use TCP packets (instead of UDP) for DNS queries'
         Caption = 'TCP'
         ParentShowHint = False
@@ -556,6 +540,131 @@ object MailCfgDlg: TMailCfgDlg
         Caption = '...'
         TabOrder = 3
         OnClick = OutboundSoundButtonClick
+      end
+    end
+    object DNSBLTabSheet: TTabSheet
+      Caption = 'DNSBL'
+      ImageIndex = 5
+      ParentShowHint = False
+      ShowHint = True
+      object Label1: TLabel
+        Left = 128
+        Top = 104
+        Width = 41
+        Height = 16
+        Caption = 'Label1'
+      end
+      object DNSBLServersButton: TButton
+        Left = 8
+        Top = 8
+        Width = 113
+        Height = 26
+        Hint = 'DNS-based Blacklists'
+        Caption = 'Blacklists'
+        TabOrder = 0
+        OnClick = DNSBLServersButtonClick
+      end
+      object DNSBLGroupBox: TGroupBox
+        Left = 8
+        Top = 40
+        Width = 321
+        Height = 161
+        Caption = 'Mail from Blacklisted Servers:'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+        object BLSubjectLabel: TLabel
+          Left = 16
+          Top = 92
+          Width = 80
+          Height = 26
+          AutoSize = False
+          Caption = 'Subject'
+        end
+        object BLHeaderLabel: TLabel
+          Left = 16
+          Top = 121
+          Width = 80
+          Height = 26
+          AutoSize = False
+          Caption = 'Header'
+        end
+        object BLRefuseRadioButton: TRadioButton
+          Left = 16
+          Top = 28
+          Width = 153
+          Height = 24
+          Hint = 'Refuse mail session with blacklisted servers'
+          Caption = 'Refuse Session'
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 0
+          OnClick = DNSBLRadioButtonClick
+        end
+        object BLIgnoreRadioButton: TRadioButton
+          Left = 16
+          Top = 57
+          Width = 161
+          Height = 24
+          Hint = 'Pretend to receive blacklisted mail'
+          Caption = 'Silently Ignore'
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 2
+          OnClick = DNSBLRadioButtonClick
+        end
+        object BLBadUserRadioButton: TRadioButton
+          Left = 168
+          Top = 28
+          Width = 129
+          Height = 24
+          Hint = 'Refuse mail address from blacklisted servers'
+          Caption = 'Refuse Mail'
+          TabOrder = 1
+          OnClick = DNSBLRadioButtonClick
+        end
+        object BLTagRadioButton: TRadioButton
+          Left = 168
+          Top = 57
+          Width = 97
+          Height = 24
+          Hint = 'Tag blacklisted mail with header and/or subject'
+          Caption = 'Tag with:'
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 3
+          OnClick = DNSBLRadioButtonClick
+        end
+        object BLSubjectEdit: TEdit
+          Left = 105
+          Top = 92
+          Width = 185
+          Height = 24
+          Hint = 'Flag to add to subject of DNS-blacklisted mail'
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 4
+        end
+        object BLHeaderEdit: TEdit
+          Left = 105
+          Top = 121
+          Width = 185
+          Height = 24
+          Hint = 'Flag to add to subject of DNS-blacklisted mail'
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 5
+        end
+      end
+      object DNSBLExemptionsButton: TButton
+        Left = 128
+        Top = 8
+        Width = 113
+        Height = 26
+        Hint = 'Blacklist Exempted IP addresses'
+        Caption = 'Exempt IPs'
+        TabOrder = 2
+        OnClick = DNSBLExemptionsButtonClick
       end
     end
   end

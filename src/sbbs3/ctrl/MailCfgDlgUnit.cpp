@@ -39,6 +39,7 @@
 
 #include "MainFormUnit.h"
 #include "MailCfgDlgUnit.h"
+#include "TextFileEditUnit.h"
 #include <stdio.h>			// sprintf()
 #include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------
@@ -87,6 +88,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     }
     MaxClientsEdit->Text=AnsiString(MainForm->mail_startup.max_clients);
     MaxInactivityEdit->Text=AnsiString(MainForm->mail_startup.max_inactivity);
+	MaxRecipientsEdit->Text=AnsiString(MainForm->mail_startup.max_recipients);
+    LinesPerYieldEdit->Text=AnsiString(MainForm->mail_startup.lines_per_yield);
 
     AutoStartCheckBox->Checked=MainForm->MailAutoStart;
     LogFileCheckBox->Checked=MainForm->MailLogFile;
@@ -105,8 +108,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         =AnsiString(MainForm->mail_startup.max_delivery_attempts);
     RescanFreqEdit->Text=AnsiString(MainForm->mail_startup.rescan_frequency);
     DefaultUserEdit->Text=AnsiString(MainForm->mail_startup.default_user);
-    BLMailFlagEdit->Text=AnsiString(MainForm->mail_startup.dnsbl_flag);
-    BLMailFlagEdit->Enabled=false;
+    BLSubjectEdit->Text=AnsiString(MainForm->mail_startup.dnsbl_tag);
+    BLHeaderEdit->Text=AnsiString(MainForm->mail_startup.dnsbl_hdr);
 
     DebugTXCheckBox->Checked=MainForm->mail_startup.options
         &MAIL_OPT_DEBUG_TX;
@@ -123,18 +126,20 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     AllowRelayCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_ALLOW_RELAY;
     if(MainForm->mail_startup.options&MAIL_OPT_DNSBL_REFUSE)
-	    BLMailRefuseRadioButton->Checked=true;
+	    BLRefuseRadioButton->Checked=true;
+    else if(MainForm->mail_startup.options&MAIL_OPT_DNSBL_BADUSER)
+	    BLBadUserRadioButton->Checked=true;
     else if(MainForm->mail_startup.options&MAIL_OPT_DNSBL_IGNORE)
-	    BLMailIgnoreRadioButton->Checked=true;
-	else {
-	    BLMailFlagRadioButton->Checked=true;
-	    BLMailFlagEdit->Enabled=true;
-    }        
+	    BLIgnoreRadioButton->Checked=true;
+	else
+	    BLTagRadioButton->Checked=true;
+
     TcpDnsCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_USE_TCP_DNS;
     SendMailCheckBox->Checked=
         !(MainForm->mail_startup.options&MAIL_OPT_NO_SENDMAIL);
 
+    DNSBLRadioButtonClick(Sender);
     DNSRadioButtonClick(Sender);
 	POP3EnabledCheckBoxClick(Sender);
     SendMailCheckBoxClick(Sender);
@@ -170,9 +175,11 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->mail_startup.relay_port=RelayPortEdit->Text.ToIntDef(25);
     MainForm->mail_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
     MainForm->mail_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(120);
+    MainForm->mail_startup.max_recipients=MaxRecipientsEdit->Text.ToIntDef(100);
     MainForm->mail_startup.max_delivery_attempts
         =DeliveryAttemptsEdit->Text.ToIntDef(10);
     MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(300);
+    MainForm->mail_startup.lines_per_yield=LinesPerYieldEdit->Text.ToIntDef(100);
 
     SAFECOPY(MainForm->mail_startup.default_user
         ,DefaultUserEdit->Text.c_str());
@@ -186,8 +193,10 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         ,OutboundSoundEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.pop3_sound
         ,POP3SoundEdit->Text.c_str());
-    SAFECOPY(MainForm->mail_startup.dnsbl_flag
-    	,BLMailFlagEdit->Text.c_str());
+    SAFECOPY(MainForm->mail_startup.dnsbl_tag
+    	,BLSubjectEdit->Text.c_str());
+    SAFECOPY(MainForm->mail_startup.dnsbl_hdr
+    	,BLHeaderEdit->Text.c_str());
 
 	if(RelayRadioButton->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_RELAY_TX;
@@ -218,11 +227,13 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_ALLOW_RELAY;
 	MainForm->mail_startup.options&=
-    	~(MAIL_OPT_DNSBL_IGNORE|MAIL_OPT_DNSBL_REFUSE);
-	if(BLMailIgnoreRadioButton->Checked==true)
+    	~(MAIL_OPT_DNSBL_IGNORE|MAIL_OPT_DNSBL_REFUSE|MAIL_OPT_DNSBL_BADUSER);
+	if(BLIgnoreRadioButton->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_IGNORE;
-    else if(BLMailRefuseRadioButton->Checked==true)
+    else if(BLRefuseRadioButton->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_REFUSE;
+    else if(BLBadUserRadioButton->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_BADUSER;
 	if(HostnameCheckBox->Checked==false)
     	MainForm->mail_startup.options|=MAIL_OPT_NO_HOST_LOOKUP;
     else
@@ -301,9 +312,39 @@ void __fastcall TMailCfgDlg::SendMailCheckBoxClick(TObject *Sender)
 //---------------------------------------------------------------------------
 
 
-void __fastcall TMailCfgDlg::BLMailFlagRadioButtonClick(TObject *Sender)
+void __fastcall TMailCfgDlg::DNSBLRadioButtonClick(TObject *Sender)
 {
-   	BLMailFlagEdit->Enabled=BLMailFlagRadioButton->Checked;
+   	BLSubjectEdit->Enabled=BLTagRadioButton->Checked;
+   	BLHeaderEdit->Enabled=BLTagRadioButton->Checked;
+    BLSubjectLabel->Enabled=BLTagRadioButton->Checked;
+   	BLHeaderLabel->Enabled=BLTagRadioButton->Checked;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMailCfgDlg::DNSBLServersButtonClick(TObject *Sender)
+{
+	char filename[MAX_PATH+1];
+
+    sprintf(filename,"%sdns_blacklist.cfg",MainForm->cfg.ctrl_dir);
+	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+	TextFileEditForm->Filename=AnsiString(filename);
+    TextFileEditForm->Caption="Services Configuration";
+	TextFileEditForm->ShowModal();
+    delete TextFileEditForm;
+}
+//---------------------------------------------------------------------------
+
+
+void __fastcall TMailCfgDlg::DNSBLExemptionsButtonClick(TObject *Sender)
+{
+	char filename[MAX_PATH+1];
+
+    sprintf(filename,"%sdnsbl_exempt.cfg",MainForm->cfg.ctrl_dir);
+	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+	TextFileEditForm->Filename=AnsiString(filename);
+    TextFileEditForm->Caption="Services Configuration";
+	TextFileEditForm->ShowModal();
+    delete TextFileEditForm;
 }
 //---------------------------------------------------------------------------
 

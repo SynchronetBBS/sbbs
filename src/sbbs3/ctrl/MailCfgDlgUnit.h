@@ -67,7 +67,6 @@ __published:
     TLabel *MaxInactivityLabel;
     TEdit *MaxInactivityEdit;
     TTabSheet *SMTPTabSheet;
-	TLabel *BlacklistedMailLabel;
     TLabel *TelnetPortLabel;
     TEdit *SMTPPortEdit;
     TCheckBox *UserNumberCheckBox;
@@ -106,10 +105,23 @@ __published:
     TLabel *DefaultUserLabel;
     TEdit *DefaultUserEdit;
 	TCheckBox *AllowRelayCheckBox;
-	TRadioButton *BLMailFlagRadioButton;
-	TRadioButton *BLMailIgnoreRadioButton;
-	TRadioButton *BLMailRefuseRadioButton;
-	TEdit *BLMailFlagEdit;
+	TTabSheet *DNSBLTabSheet;
+	TButton *DNSBLServersButton;
+	TLabel *Label1;
+	TGroupBox *DNSBLGroupBox;
+	TRadioButton *BLRefuseRadioButton;
+	TRadioButton *BLIgnoreRadioButton;
+	TRadioButton *BLBadUserRadioButton;
+	TRadioButton *BLTagRadioButton;
+	TEdit *BLSubjectEdit;
+	TEdit *BLHeaderEdit;
+	TLabel *BLSubjectLabel;
+	TLabel *BLHeaderLabel;
+	TEdit *LinesPerYieldEdit;
+	TLabel *LinesPerYieldLabel;
+	TLabel *MaxRecipientsLabel;
+	TEdit *MaxRecipientsEdit;
+	TButton *DNSBLExemptionsButton;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
@@ -118,7 +130,9 @@ __published:
 	void __fastcall DNSRadioButtonClick(TObject *Sender);
 	void __fastcall POP3EnabledCheckBoxClick(TObject *Sender);
     void __fastcall SendMailCheckBoxClick(TObject *Sender);
-	void __fastcall BLMailFlagRadioButtonClick(TObject *Sender);
+	void __fastcall DNSBLRadioButtonClick(TObject *Sender);
+	void __fastcall DNSBLServersButtonClick(TObject *Sender);
+	void __fastcall DNSBLExemptionsButtonClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TMailCfgDlg(TComponent* AOwner);
