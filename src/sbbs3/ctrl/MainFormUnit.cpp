@@ -60,6 +60,7 @@
 #include "AboutBoxFormUnit.h"
 #include "CodeInputFormUnit.h"
 #include "TextFileEditUnit.h"
+#include "UserListFormUnit.h"
 
 #include "userdat.h"		// lastuser()
 
@@ -474,7 +475,8 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         : TForm(Owner)
 {
     CtrlDirectory="c:\\sbbs\\ctrl\\";
-    
+    LoginCommand="start telnet://localhost";
+
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
     bbs_startup.first_node=1;
@@ -522,7 +524,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     ftp_startup.thread_up=thread_up;
     ftp_startup.client_on=client_on;
     ftp_startup.socket_open=socket_open;
-	ftp_startup.options=FTP_OPT_INDEX_FILE;
+	ftp_startup.options=FTP_OPT_INDEX_FILE|FTP_OPT_ALLOW_QWK;
     strcpy(ftp_startup.index_file_name,"00index");
 
     /* Default local "Spy Terminal" settings */
@@ -677,6 +679,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteBool("StatusBarVisible",StatusBar->Visible);
 
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
+    Registry->WriteString("LoginCommand",LoginCommand);
+
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
     Registry->WriteInteger("FtpAutoStart",FtpAutoStart);
@@ -1237,6 +1241,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     if(Registry->ValueExists("CtrlDirectory"))
     	CtrlDirectory=Registry->ReadString("CtrlDirectory");
+    if(Registry->ValueExists("LoginCommand"))
+    	LoginCommand=Registry->ReadString("LoginCommand");
 
     if(Registry->ValueExists("MailLogFile"))
     	MailLogFile=Registry->ReadInteger("MailLogFile");
@@ -1506,7 +1512,7 @@ void __fastcall TMainForm::ForceTimedEventMenuItemClick(TObject *Sender)
        	&& CodeInputForm->Edit->Text.Length()) {
         for(i=0;i<cfg.total_events;i++) {
 			if(!stricmp(CodeInputForm->Edit->Text.c_str(),cfg.event[i]->code)) {
-				sprintf(str,"%s%s.NOW",cfg.data_dir,cfg.event[i]->code);
+				sprintf(str,"%s%s.now",cfg.data_dir,cfg.event[i]->code);
             	if((file=_sopen(str,O_CREAT|O_TRUNC|O_WRONLY
 	                ,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
 	                close(file);
@@ -1535,7 +1541,7 @@ void __fastcall TMainForm::ForceNetworkCalloutMenuItemClick(
     	&& CodeInputForm->Edit->Text.Length()) {
         for(i=0;i<cfg.total_qhubs;i++) {
 			if(!stricmp(CodeInputForm->Edit->Text.c_str(),cfg.qhub[i]->id)) {
-				sprintf(str,"%sQNET\\%s.NOW",cfg.data_dir,cfg.qhub[i]->id);
+				sprintf(str,"%sqnet/%s.now",cfg.data_dir,cfg.qhub[i]->id);
             	if((file=_sopen(str,O_CREAT|O_TRUNC|O_WRONLY
                 	,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
 	                close(file);
@@ -1675,4 +1681,20 @@ void __fastcall TMainForm::FileOpenMenuItemClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+
+void __fastcall TMainForm::BBSLoginMenuItemClick(TObject *Sender)
+{
+    if(!strnicmp(LoginCommand.c_str(),"start ",6))
+        WinExec(LoginCommand.c_str(),SW_SHOWMINNOACTIVE);
+    else
+        WinExec(LoginCommand.c_str(),SW_SHOWNORMAL);
+
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::UserListMenuItemClick(TObject *Sender)
+{
+    UserListForm->Show();    
+}
+//---------------------------------------------------------------------------
 
