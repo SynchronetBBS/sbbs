@@ -49,12 +49,13 @@
 /* Definitions */
 /***************/
 #define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
-#define DIST_LIST_URL1		"ftp://vert.synchro.net/Synchronet/sbbsdist.lst"
-#define DIST_LIST_URL2		"ftp://rob.synchro.net/Synchronet/sbbsdist.lst"
-#define DIST_LIST_URL3		"ftp://cvs.synchro.net/Synchronet/sbbsdist.lst"
-#define DIST_LIST_URL4		"ftp://freebsd.synchro.net/Synchronet/sbbsdist.lst"
-#define DEFAULT_DISTFILE	"sbbs-src.tgz"
-#define DEFAULT_LIBFILE		"libs-%s.tgz"	/* MUST HAVE ONE %s */
+#define DIST_LIST_URL1		"ftp://ftp.synchro.net/sbbsdist.lst"
+#define DIST_LIST_URL2		"ftp://rob.synchro.net/sbbsdist.lst"
+#define DIST_LIST_URL3		"ftp://cvs.synchro.net/sbbsdist.lst"
+#define DIST_LIST_URL4		"ftp://vert.synchro.net/sbbsdist.lst"
+#define DEFAULT_DISTFILE	"sbbs_src.tgz"
+#define DEFAULT_LIBFILE		"lib-%s.tgz"	/* MUST HAVE ONE %s for system type (os-machine or just os) */
+#define DEFAULT_SYSTYPE		"unix"			/* If no other system type available, use this one */
 #define MAX_DISTRIBUTIONS	50
 #define	MAX_DIST_FILES		10
 #define MAX_SERVERS			100
@@ -485,8 +486,8 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 					sprintf(url,"%s%s",server->addr,fname);
 					if(stricmp(str,fname)==0	/* no change in name? */
 						|| (remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
-						/* retry using "all" for system name */
-						sprintf(fname,dist->files[i],"all");
+						/* retry using default system-type for system name */
+						sprintf(fname,dist->files[i],DEFAULT_SYSTYPE);
 						if((remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
 							printf("Cannot get distribution file %s!\n",fname);
 							printf("%s\n- %s\n",url,ftpErrString(ret1));
@@ -570,8 +571,8 @@ get_distlist(void)
 	sprintf(str,DEFAULT_LIBFILE,params.sys_desc);
 	if(!fexistcase(str))	/* use lib-linux.tgz if lib-linux-i686.tgz doesn't exist */
 		sprintf(str,DEFAULT_LIBFILE,params.name.sysname);
-	if(!fexistcase(str))	/* use lib-all.tgz if all else fails */
-		sprintf(str,DEFAULT_LIBFILE,"all");
+	if(!fexistcase(str))	/* use lib-unix.tgz if all else fails */
+		sprintf(str,DEFAULT_LIBFILE,DEFAULT_SYSTYPE);
 	if(fexist(DEFAULT_DISTFILE) && fexistcase(str))  {
 		if((file=(char **)MALLOC(sizeof(char *)*MAX_DIST_FILES))==NULL)
 			allocfail(sizeof(char *)*MAX_DIST_FILES);
@@ -602,9 +603,9 @@ get_distlist(void)
 		uifc.bail();
 		printf("Cannot get distribution list!\n%s\n- %s\n%s\n- %s\n%s\n- %s\n%s\n- %s\n",
 				DIST_LIST_URL1,ftpErrString(ret1),
-				DIST_LIST_URL2,ftpErrString(ret1),
-				DIST_LIST_URL3,ftpErrString(ret1),
-				DIST_LIST_URL4,ftpErrString(ret1));
+				DIST_LIST_URL2,ftpErrString(ret2),
+				DIST_LIST_URL3,ftpErrString(ret3),
+				DIST_LIST_URL4,ftpErrString(ret4));
 		exit(EXIT_FAILURE);
 	}
 
