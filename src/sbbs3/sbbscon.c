@@ -259,11 +259,12 @@ int main(int argc, char** argv)
     mail_startup.relay_port=IPPORT_SMTP;
     mail_startup.interface_addr=INADDR_ANY;
 	mail_startup.lputs=mail_lputs;
+	mail_startup.options|=MAIL_OPT_ALLOW_POP3
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
 	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
 	_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
-//	_beginthread((void(*)(void*))mail_server,0,&mail_startup);
+	_beginthread((void(*)(void*))mail_server,0,&mail_startup);
 
 	while(!quit) {
 		ch=getch();
@@ -291,7 +292,7 @@ int main(int argc, char** argv)
 
 	bbs_terminate();
 	ftp_terminate();
-//	mail_terminate();
+	mail_terminate();
 
 	while(bbs_running || ftp_running || mail_running)
 		mswait(1);
