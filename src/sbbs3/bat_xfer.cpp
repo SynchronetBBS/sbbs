@@ -50,7 +50,8 @@ void sbbs_t::batchmenu()
 
 	if(!batdn_total && !batup_total && cfg.upload_dir==INVALID_DIR) {
 		bputs(text[NoFilesInBatchQueue]);
-		return; }
+		return; 
+	}
 	if(useron.misc&(RIP|WIP) && !(useron.misc&EXPERT))
 		menu("batchxfer");
 	lncntr=0;
@@ -62,8 +63,10 @@ void sbbs_t::batchmenu()
 				SYNC;
 				CRLF;
 				if(lncntr)          /* CRLF or SYNC can cause pause */
-					pause(); }
-			menu("batchxfr"); }
+					pause(); 
+			}
+			menu("batchxfr"); 
+		}
 		ASYNC;
 		bputs(text[BatchMenuPrompt]);
 		ch=(char)getkeys("BCDLQRU?\r",0);
@@ -82,30 +85,37 @@ void sbbs_t::batchmenu()
 			case 'B':   /* Bi-directional transfers */
 				if(useron.rest&FLAG('D')) {
 					bputs(text[R_Download]);
-					break; }
+					break; 
+				}
 				if(useron.rest&FLAG('U')) {
 					bputs(text[R_Upload]);
-					break; }
+					break; 
+				}
 				if(!batdn_total) {
 					bputs(text[DownloadQueueIsEmpty]);
-					break; }
+					break; 
+				}
 				if(!batup_total && cfg.upload_dir==INVALID_DIR) {
 					bputs(text[UploadQueueIsEmpty]);
-					break; }
+					break; 
+				}
 				for(i=0,totalcdt=0;i<batdn_total;i++)
 						totalcdt+=batdn_cdt[i];
 				if(!(useron.exempt&FLAG('D'))
 					&& totalcdt>useron.cdt+useron.freecdt) {
 					bprintf(text[YouOnlyHaveNCredits]
 						,ultoac(useron.cdt+useron.freecdt,tmp));
-					break; }
+					break; 
+				}
 				for(i=0,totalsize=totaltime=0;i<batdn_total;i++) {
 					totalsize+=batdn_size[i];
 					if(!(cfg.dir[batdn_dir[i]]->misc&DIR_TFREE) && cur_cps)
-						totaltime+=batdn_size[i]/(ulong)cur_cps; }
+						totaltime+=batdn_size[i]/(ulong)cur_cps; 
+				}
 				if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime>timeleft) {
 					bputs(text[NotEnoughTimeToDl]);
-					break; }
+					break; 
+				}
 				menu("biprot");
 				if(!create_batchdn_lst())
 					break;
@@ -149,7 +159,9 @@ void sbbs_t::batchmenu()
 								getnodedat(cfg.node_num,&thisnode,1);
 								thisnode.aux=0xff;
 								putnodedat(cfg.node_num,&thisnode);
-								CRLF; } }
+								CRLF; 
+							} 
+						}
 					sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
 					sprintf(tmp2,"%sBATCHUP.LST",cfg.node_dir);
 					start=time(NULL);
@@ -164,13 +176,16 @@ void sbbs_t::batchmenu()
 					batch_download(xfrprot);
 					if(batdn_total)     /* files still in queue, not xfered */
 						notdownloaded(totalsize,start,end);
-					autohangup(); }
+					autohangup(); 
+				}
 				break;
 			case 'C':
 				if(batup_total) {
 					if(!noyes(text[ClearUploadQueueQ])) {
 						batup_total=0;
-						bputs(text[UploadQueueCleared]); } }
+						bputs(text[UploadQueueCleared]); 
+					} 
+				}
 				if(batdn_total) {
 					if(!noyes(text[ClearDownloadQueueQ])) {
 						for(i=0;i<batdn_total;i++) {
@@ -180,7 +195,9 @@ void sbbs_t::batchmenu()
 							strcpy(f.name,batdn_name[i]);
 							closefile(&f); }
 						batdn_total=0;
-						bputs(text[DownloadQueueCleared]); } }
+						bputs(text[DownloadQueueCleared]); 
+					} 
+				}
 				break;
 			case 'D':
 				if(useron.rest&FLAG('D')) {
@@ -228,8 +245,10 @@ void sbbs_t::batchmenu()
 							strcpy(batup_desc[n],batup_desc[n+1]);
 							n++; }
 						if(!batup_total)
-							bputs(text[UploadQueueCleared]); } }
-				 if(batdn_total) {
+							bputs(text[UploadQueueCleared]); 
+					} 
+				}
+				if(batdn_total) {
 					bprintf(text[RemoveWhichFromDlQueue],batdn_total);
 					n=getnum(batdn_total);
 					if(n>=1) {
@@ -247,17 +266,22 @@ void sbbs_t::batchmenu()
 							batdn_alt[n]=batdn_alt[n+1];
 							batdn_size[n]=batdn_size[n+1];
 							batdn_offset[n]=batdn_offset[n+1];
-							n++; }
+							n++; 
+						}
 						if(!batdn_total)
-							bputs(text[DownloadQueueCleared]); } }
+							bputs(text[DownloadQueueCleared]); 
+					} 
+				}
 				break;
 		   case 'U':
 				if(useron.rest&FLAG('U')) {
 					bputs(text[R_Upload]);
-					break; }
+					break; 
+				}
 				if(!batup_total && cfg.upload_dir==INVALID_DIR) {
 					bputs(text[UploadQueueIsEmpty]);
-					break; }
+					break; 
+				}
 				menu("batuprot");
 				if(!create_batchup_lst())
 					break;
@@ -269,7 +293,8 @@ void sbbs_t::batchmenu()
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-						strcat(str,tmp); }
+						strcat(str,tmp); 
+					}
 				ch=(char)getkeys(str,0);
 				if(ch=='Q')
 					break;
@@ -287,17 +312,21 @@ void sbbs_t::batchmenu()
 					action=NODE_ULNG;
 					SYNC;
 					if(online==ON_REMOTE) {
-						delfiles(cfg.temp_dir,"*.*");
+						delfiles(cfg.temp_dir,"*");
 						start=time(NULL);
 						protocol(cmdstr(cfg.prot[xfrprot]->batulcmd,str,nulstr,NULL),1);
 						end=time(NULL);
 						if(!(cfg.dir[xfrdir]->misc&DIR_ULTIME))
-							starttime+=end-start; }
+							starttime+=end-start; 
+					}
 					batch_upload();
-					delfiles(cfg.temp_dir,"*.*");
-					autohangup(); }
-				break; } }
-	delfiles(cfg.temp_dir,"*.*");
+					delfiles(cfg.temp_dir,"*");
+					autohangup(); 
+				}
+				break; 
+		} 
+	}
+	delfiles(cfg.temp_dir,"*");
 }
 
 /****************************************************************************/
@@ -322,7 +351,8 @@ void sbbs_t::start_batch_download()
 		&& totalcdt>useron.cdt+useron.freecdt) {
 		bprintf(text[YouOnlyHaveNCredits]
 			,ultoac(useron.cdt+useron.freecdt,tmp));
-		return; }
+		return; 
+	}
 
 	if(online==ON_LOCAL) {          /* Local download */
 		bputs(text[EnterPath]);
@@ -353,7 +383,8 @@ void sbbs_t::start_batch_download()
 					&& chk_ar(cfg.dlevent[j]->ar,&useron)) {
 					bputs(cfg.dlevent[j]->workstr);
 					external(cmdstr(cfg.dlevent[j]->cmd,tmp2,nulstr,NULL),EX_OUTL);
-					CRLF; }
+					CRLF; 
+				}
 			}
 		for(i=0;i<batdn_total;i++) {
 			curdirnum=batdn_dir[i]; 		/* for ARS */
@@ -363,17 +394,21 @@ void sbbs_t::start_batch_download()
 			f.size=batdn_size[i];
 			f.altpath=batdn_alt[i];
 			downloadfile(&f);
-			closefile(&f); }
+			closefile(&f); 
+		}
 		batdn_total=0;
-		return; }
+		return; 
+	}
 
 	for(i=0,totalsize=totaltime=0;i<batdn_total;i++) {
 		totalsize+=batdn_size[i];
 		if(!(cfg.dir[batdn_dir[i]]->misc&DIR_TFREE) && cur_cps)
-			totaltime+=batdn_size[i]/(ulong)cur_cps; }
+			totaltime+=batdn_size[i]/(ulong)cur_cps; 
+	}
 	if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime>timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
-		return; }
+		return; 
+	}
 	menu("batdprot");
 	if(!create_batchdn_lst())
 		return;
@@ -385,7 +420,8 @@ void sbbs_t::start_batch_download()
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
 			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-			strcat(tmp2,tmp); }
+			strcat(tmp2,tmp); 
+		}
 	ungetkey(useron.prot);
 	ch=(char)getkeys(tmp2,0);
 	if(ch=='Q' || sys_status&SS_ABORT)
@@ -414,7 +450,9 @@ void sbbs_t::start_batch_download()
 					getnodedat(cfg.node_num,&thisnode,1);
 					thisnode.aux=40; /* clear the seq dev # */
 					putnodedat(cfg.node_num,&thisnode);
-					CRLF; } }
+					CRLF; 
+				} 
+			}
 			else
 				sprintf(tmp2,"%s%s"
 					,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
@@ -429,8 +467,9 @@ void sbbs_t::start_batch_download()
 					continue;
 				bputs(cfg.dlevent[j]->workstr);
 				external(cmdstr(cfg.dlevent[j]->cmd,tmp2,nulstr,NULL),EX_OUTL);
-				CRLF; }
+				CRLF; 
 			}
+		}
 
 		sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
 		getnodedat(cfg.node_num,&thisnode,1);
@@ -450,8 +489,9 @@ void sbbs_t::start_batch_download()
 		batch_download(xfrprot);
 		if(batdn_total)
 			notdownloaded(totalsize,start,end);
-		autohangup(); }
+		autohangup(); 
 	}
+}
 
 /****************************************************************************/
 /* Creates the file BATCHDN.LST in the node directory. Returns true if      */
@@ -466,7 +506,8 @@ bool sbbs_t::create_batchdn_lst()
 	sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-		return(false); }
+		return(false); 
+	}
 	for(i=0;i<batdn_total;i++) {
 		if(batdn_dir[i]>=cfg.total_dirs || cfg.dir[batdn_dir[i]]->seqdev)
 			strcpy(str,cfg.temp_dir);
@@ -476,7 +517,8 @@ bool sbbs_t::create_batchdn_lst()
 		write(file,str,strlen(str));
 		unpadfname(batdn_name[i],str);
 		strcat(str,crlf);
-		write(file,str,strlen(str)); }
+		write(file,str,strlen(str)); 
+	}
 	close(file);
 	return(true);
 }
@@ -495,7 +537,8 @@ bool sbbs_t::create_batchup_lst()
 	sprintf(str,"%sBATCHUP.LST",cfg.node_dir);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-		return(false); }
+		return(false); 
+	}
 	for(i=0;i<batup_total;i++) {
 		if(batup_dir[i]>=cfg.total_dirs)
 			strcpy(str,cfg.temp_dir);
@@ -505,7 +548,8 @@ bool sbbs_t::create_batchup_lst()
 		write(file,str,strlen(str));
 		unpadfname(batup_name[i],str);
 		strcat(str,crlf);
-		write(file,str,strlen(str)); }
+		write(file,str,strlen(str)); 
+	}
 	close(file);
 	return(true);
 }
@@ -523,7 +567,8 @@ bool sbbs_t::create_bimodem_pth()
 	sprintf(str,"%sBIMODEM.PTH",cfg.node_dir);  /* Create bimodem file */
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-		return(false); }
+		return(false); 
+	}
 	for(i=0;i<batup_total;i++) {
 		sprintf(str,"%s%s",batup_dir[i]>=cfg.total_dirs ? cfg.temp_dir
 			: batup_alt[i]>0 && batup_alt[i]<=cfg.altpaths
@@ -531,7 +576,8 @@ bool sbbs_t::create_bimodem_pth()
 			,unpadfname(batup_name[i],tmp));
 		sprintf(tmp2,"D       %-80.80s%-160.160s"
 			,unpadfname(batup_name[i],tmp),str);
-		write(file,tmp2,248); }
+		write(file,tmp2,248); 
+	}
 	for(i=0;i<batdn_total;i++) {
 		sprintf(str,"%s%s"
 			,(batdn_dir[i]>=cfg.total_dirs || cfg.dir[batdn_dir[i]]->seqdev)
@@ -539,7 +585,8 @@ bool sbbs_t::create_bimodem_pth()
 				? cfg.altpath[batdn_alt[i]-1] : cfg.dir[batdn_dir[i]]->path
 				,unpadfname(batdn_name[i],tmp));
 		sprintf(tmp2,"U       %-240.240s",str);
-		write(file,tmp2,248); }
+		write(file,tmp2,248); 
+	}
 	close(file);
 	return(true);
 }
@@ -565,7 +612,8 @@ void sbbs_t::batch_upload()
 			bprintf(text[FileAlreadyThere],batup_name[i]);
 			remove(str1);    /* this is the one received */
 			i++;
-			continue; }
+			continue; 
+		}
 		if(fexist(str1))
 			mv(str1,str2,0);
 		strcpy(f.name,batup_name[i]);
@@ -580,8 +628,11 @@ void sbbs_t::batch_upload()
 				batup_alt[j]=batup_alt[j+1];
 				batup_misc[j]=batup_misc[j+1];
 				strcpy(batup_name[j],batup_name[j+1]);
-				strcpy(batup_desc[j],batup_desc[j+1]); } }
-		else i++; }
+				strcpy(batup_desc[j],batup_desc[j+1]); 
+			} 
+		}
+		else i++; 
+	}
 	if(cfg.upload_dir==INVALID_DIR)
 		return;
 	dir=opendir(cfg.temp_dir);
@@ -646,8 +697,11 @@ void sbbs_t::batch_download(int xfrprot)
 				batdn_cdt[j]=batdn_cdt[j+1];
 				batdn_alt[j]=batdn_alt[j+1];
 				batdn_size[j]=batdn_size[j+1];
-				batdn_offset[j]=batdn_offset[j+1]; } }
-		else i++; }
+				batdn_offset[j]=batdn_offset[j+1]; 
+			} 
+		}
+		else i++; 
+	}
 }
 
 /****************************************************************************/
@@ -679,9 +733,11 @@ void sbbs_t::batch_add_list(char *list)
 					if(k && !(k%5))
 						bputs("\b\b\b\b\b     \b\b\b\b\b");
 					if(findfile(&cfg,usrdir[i][j],f.name))
-						break; }
+						break; 
+				}
 				if(j<usrdirs[i])
-					break; }
+					break; 
+			}
 			if(i<usrlibs) {
 				f.dir=usrdir[i][j];
 				getfileixb(&cfg,&f);
@@ -690,10 +746,13 @@ void sbbs_t::batch_add_list(char *list)
 				if(f.size==-1L)
 					bprintf(text[FileIsNotOnline],f.name);
 				else
-					addtobatdl(&f); } }
+					addtobatdl(&f); 
+			} 
+		}
 		fclose(stream);
 		remove(list);
-		CRLF; }
+		CRLF; 
+	}
 }
 
 /**************************************************************************/
@@ -707,7 +766,8 @@ bool sbbs_t::addtobatdl(file_t* f)
 
 	if(useron.rest&FLAG('D')) {
 		bputs(text[R_Download]);
-		return(false); }
+		return(false); 
+	}
 	/***
 	sprintf(str,"%s%s",f->altpath>0 && f->altpath<=altpaths ? altpath[f->altpath-1]
 		: cfg.dir[f->dir]->path,unpadfname(f->name,tmp));
@@ -715,15 +775,19 @@ bool sbbs_t::addtobatdl(file_t* f)
 	for(i=0;i<batdn_total;i++) {
 		if(!strcmp(batdn_name[i],f->name) && f->dir==batdn_dir[i]) {
 			bprintf(text[FileAlreadyInQueue],f->name);
-			return(false); } }
+			return(false); 
+		} 
+	}
 	if(f->size<=0 /* !fexist(str) */) {
 		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[FileIsNotOnline]);
-		return(false); }
+		return(false); 
+	}
 	if(batdn_total>=cfg.max_batdn) {
 		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[BatchDlQueueIsFull]);
-		return(false); }
+		return(false); 
+	}
 	for(i=0,totalcdt=0;i<batdn_total;i++)
 		totalcdt+=batdn_cdt[i];
 	if(cfg.dir[f->dir]->misc&DIR_FREE) f->cdt=0L;
@@ -731,22 +795,26 @@ bool sbbs_t::addtobatdl(file_t* f)
 	if(!(useron.exempt&FLAG('D')) && totalcdt>useron.cdt+useron.freecdt) {
 		bprintf(text[CantAddToQueue],f->name);
 		bprintf(text[YouOnlyHaveNCredits],ultoac(useron.cdt+useron.freecdt,tmp));
-		return(false); }
+		return(false); 
+	}
 	if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron)) {
 		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[CantDownloadFromDir]);
-		return(false); }
+		return(false); 
+	}
 	for(i=0,totalsize=totaltime=0;i<batdn_total;i++) {
 		totalsize+=batdn_size[i];
 		if(!(cfg.dir[batdn_dir[i]]->misc&DIR_TFREE) && cur_cps)
-			totaltime+=batdn_size[i]/(ulong)cur_cps; }
+			totaltime+=batdn_size[i]/(ulong)cur_cps; 
+	}
 	totalsize+=f->size;
 	if(!(cfg.dir[f->dir]->misc&DIR_TFREE) && cur_cps)
 		totaltime+=f->size/(ulong)cur_cps;
 	if(!(useron.exempt&FLAG('T')) && totaltime>timeleft) {
 		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[NotEnoughTimeToDl]);
-		return(false); }
+		return(false); 
+	}
 	strcpy(batdn_name[batdn_total],f->name);
 	batdn_dir[batdn_total]=f->dir;
 	batdn_cdt[batdn_total]=f->cdt;

@@ -325,7 +325,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 	if(useron.rest&FLAG('Q')) {	// Was if(!prepack) only
 		sprintf(str,"%sqnet/%.8s.out/",cfg.data_dir,useron.alias);
 		strlwr(str);
-		delfiles(str,"*.*"); 
+		delfiles(str,"*"); 
 	}
 
 	if(!prepack) {
@@ -337,7 +337,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 
 		if(!bi) {
 			batch_download(-1);
-			delfiles(cfg.temp_dir,"*.*"); } }
+			delfiles(cfg.temp_dir,"*"); } }
 
 	if(useron.rest&FLAG('Q'))
 		useron.qwk|=(QWK_EMAIL|QWK_ALLMAIL|QWK_DELMAIL);
@@ -423,7 +423,7 @@ void sbbs_t::qwk_sec()
 			bi++;				/* number of bidirectional protocols configured */
 	if(useron.rest&FLAG('Q'))
 		getusrsubs();
-	delfiles(cfg.temp_dir,"*.*");
+	delfiles(cfg.temp_dir,"*");
 	while(online) {
 		if((useron.misc&(WIP|RIP) || !(useron.misc&EXPERT))
 			&& (useron.logons<2 || !(useron.rest&FLAG('Q'))))
@@ -447,13 +447,13 @@ void sbbs_t::qwk_sec()
 			continue; }
 		if(ch=='S') {
 			new_scan_cfg(SUB_CFG_NSCAN);
-			delfiles(cfg.temp_dir,"*.*");
+			delfiles(cfg.temp_dir,"*");
 			continue; }
 		if(ch=='P') {
 			new_scan_ptr_cfg();
 			for(i=0;i<cfg.total_subs;i++)
 				sav_ptr[i]=sub_ptr[i];
-			delfiles(cfg.temp_dir,"*.*");
+			delfiles(cfg.temp_dir,"*");
 			continue; }
 		if(ch=='C') {
 			while(online) {
@@ -552,7 +552,7 @@ void sbbs_t::qwk_sec()
 						useron.qwk^=QWK_BYSELF;
 						break; }
 				putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16)); }
-			delfiles(cfg.temp_dir,"*.*");
+			delfiles(cfg.temp_dir,"*");
 			continue; }
 
 
@@ -622,7 +622,7 @@ void sbbs_t::qwk_sec()
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				remove(str);
 				unpack_rep();
-				delfiles(cfg.temp_dir,"*.*");
+				delfiles(cfg.temp_dir,"*");
 				//autohangup();
 				}
 			else {
@@ -727,7 +727,7 @@ void sbbs_t::qwk_sec()
 				continue; }
 	*/
 
-			delfiles(cfg.temp_dir,"*.*");
+			delfiles(cfg.temp_dir,"*");
 			bprintf(text[UploadingREP],cfg.sys_id);
 			for(k=0;k<cfg.total_fextrs;k++)
 				if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
@@ -748,7 +748,7 @@ void sbbs_t::qwk_sec()
 				sprintf(tmp,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 				if(!mv(str,tmp,0))
 					unpack_rep();
-				delfiles(cfg.temp_dir,"*.*");
+				delfiles(cfg.temp_dir,"*");
 				continue; }
 
 			/******************/
@@ -773,10 +773,10 @@ void sbbs_t::qwk_sec()
 			sprintf(str,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 			protocol(cmdstr(cfg.prot[i]->ulcmd,str,nulstr,NULL),0);
 			unpack_rep();
-			delfiles(cfg.temp_dir,"*.*");
+			delfiles(cfg.temp_dir,"*");
 			//autohangup();
 			} }
-	delfiles(cfg.temp_dir,"*.*");
+	delfiles(cfg.temp_dir,"*");
 	FREE(sav_ptr);
 }
 

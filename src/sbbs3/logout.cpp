@@ -134,7 +134,7 @@ void sbbs_t::logout()
 	if(!flength(str))		/* remove any 0 byte message files */
 		remove(str);
 
-	delfiles(cfg.temp_dir,"*.*");
+	delfiles(cfg.temp_dir,"*");
 	putmsgptrs();
 	if(!REALSYSOP)
 		logofflist();

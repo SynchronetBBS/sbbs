@@ -57,9 +57,9 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		errormsg(WHERE,ERR_LEN,packet,l);
 		return(false);
 	}
-	i=external(cmdstr(cfg.qhub[hubnum]->unpack,packet,"*.*",NULL),EX_OFFLINE);
+	i=external(cmdstr(cfg.qhub[hubnum]->unpack,packet,"*",NULL),EX_OFFLINE);
 	if(i) {
-		errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->unpack,packet,"*.*",NULL),i);
+		errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->unpack,packet,"*",NULL),i);
 		return(false); 
 	}
 	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
@@ -271,6 +271,6 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	closedir(dir);
 
 	lprintf("Finished Importing QWK Network Packet: %s",packet);
-	delfiles(cfg.temp_dir,"*.*");
+	delfiles(cfg.temp_dir,"*");
 	return(true);
 }

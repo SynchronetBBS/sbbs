@@ -69,7 +69,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	if(prepack)
 		ex|=EX_OFFLINE;
 
-	delfiles(cfg.temp_dir,"*.*");
+	delfiles(cfg.temp_dir,"*");
 	sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexist(str)) {
 		for(k=0;k<cfg.total_fextrs;k++)
@@ -78,7 +78,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				break;
 		if(k>=cfg.total_fextrs)
 			k=0;
-		i=external(cmdstr(cfg.fextr[k]->cmd,str,"*.*",NULL),ex);
+		i=external(cmdstr(cfg.fextr[k]->cmd,str,"*",NULL),ex);
 		if(!i)
 			preqwk=1; }
 
@@ -513,7 +513,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		if(fexist(str)) {
 			sprintf(tmp2,"%sGOODBYE",cfg.temp_dir);
 			mv(str,tmp2,1); }
-		sprintf(str,"%sQWK/BLT-*.*",cfg.text_dir);
+		sprintf(str,"%sQWK/BLT-*",cfg.text_dir);
 		glob(str,0,NULL,&g);
 		for(i=0;i<g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
@@ -539,7 +539,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*******************/
 	/* Compress Packet */
 	/*******************/
-	sprintf(tmp2,"%s*.*",cfg.temp_dir);
+	sprintf(tmp2,"%s*",cfg.temp_dir);
 	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL),ex);
 	if(!fexist(packet)) {
 		bputs(text[QWKCompressionFailed]);

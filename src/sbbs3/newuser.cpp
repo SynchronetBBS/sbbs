@@ -428,7 +428,7 @@ void sbbs_t::newuser()
 				return; } } }
 
 	sprintf(str,"%sfile/%04u.IN",cfg.data_dir,useron.number);  /* delete any files */
-	delfiles(str,"*.*");                                    /* waiting for user */
+	delfiles(str,"*");                                    /* waiting for user */
 	rmdir(str);
 	sprintf(tmp,"%04u.*",useron.number);
 	sprintf(str,"%sfile",cfg.data_dir);
