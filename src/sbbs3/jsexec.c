@@ -492,6 +492,7 @@ long js_exec(const char *fname, char** args)
 	uint		line_no;
 	char		path[MAX_PATH+1];
 	char		line[1024];
+	size_t		len;
 	char*		js_buf=NULL;
 	size_t		js_buflen;
 	JSObject*	js_scope=NULL;
@@ -561,13 +562,14 @@ long js_exec(const char *fname, char** args)
 		if(line_no==1 && strncmp(line,"#!",2)==0)
 			strcpy(line,"\n");	/* To keep line count correct */
 #endif
-		if((js_buf=realloc(js_buf,js_buflen+strlen(line)))==NULL) {
+		len=strlen(line);
+		if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
 			fprintf(errfp,"!Error allocating %u bytes of memory\n"
-				,js_buflen+strlen(line));
+				,js_buflen+len);
 			return(-1);
 		}
-		memcpy(js_buf+js_buflen,line,strlen(line));
-		js_buflen+=strlen(line);
+		memcpy(js_buf+js_buflen,line,len);
+		js_buflen+=len;
 	}
 	if((js_script=JS_CompileScript(js_cx, js_scope, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
 		fprintf(errfp,"!Error compiling script from %s\n",path);
