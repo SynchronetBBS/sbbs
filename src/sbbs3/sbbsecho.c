@@ -1876,33 +1876,43 @@ int mv(char *src, char *dest, BOOL copy)
 		return(0);
 	if(!fexistcase(src)) {
 		logprintf("MV ERROR: Source doesn't exist '%s",src);
-		return(-1); }
+		return(-1); 
+	}
 	if(!copy && fexistcase(dest)) {
 		logprintf("MV ERROR: Destination already exists '%s'",dest);
-		return(-1); }
-	if(!copy && ((src[1]!=':' && dest[1]!=':')
-		|| (src[1]==':' && dest[1]==':' && toupper(src[0])==toupper(dest[0])))) {
-		if(rename(src,dest)) {						/* same drive, so move */
-			logprintf("MV ERROR: Error renaming %s to %s",src,dest);
-			return(-1); }
-		return(0); }
+		return(-1); 
+	}
+	if(!copy
+#ifndef __unix__
+		&& ((src[1]!=':' && dest[1]!=':')
+		|| (src[1]==':' && dest[1]==':' && toupper(src[0])==toupper(dest[0])))
+#endif
+		) {
+		if(rename(src,dest)==0)		/* same drive, so move */
+			return(0); 
+		/* rename failed, so attempt copy */
+	}
 	if((ind=nopen(src,O_RDONLY))==-1) {
 		logprintf("MV ERROR: ERR_OPEN %s",src);
-		return(-1); }
+		return(-1); 
+	}
 	if((inp=fdopen(ind,"rb"))==NULL) {
 		close(ind);
 		logprintf("MV ERROR: ERR_FDOPEN %s",str);
-		return(-1); }
+		return(-1); 
+	}
 	setvbuf(inp,NULL,_IOFBF,8*1024);
 	if((outd=nopen(dest,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 		fclose(inp);
 		logprintf("MV ERROR: ERR_OPEN %s",dest);
-		return(-1); }
+		return(-1); 
+	}
 	if((outp=fdopen(outd,"wb"))==NULL) {
 		close(outd);
 		fclose(inp);
 		logprintf("MV ERROR: ERR_FDOPEN %s",str);
-		return(-1); }
+		return(-1); 
+	}
 	setvbuf(outp,NULL,_IOFBF,8*1024);
 	length=filelength(ind);
 	l=0L;
@@ -1911,12 +1921,14 @@ int mv(char *src, char *dest, BOOL copy)
 			chunk=length-l;
 		fread(buf,chunk,1,inp);
 		fwrite(buf,chunk,1,outp);
-		l+=chunk; }
+		l+=chunk; 
+	}
 	fclose(inp);
 	fclose(outp);
 	if(!copy && delfile(src)) {
 		logprintf("ERROR line %d removing %s %s",__LINE__,src,strerror(errno));
-		return(-1); }
+		return(-1); 
+	}
 	return(0);
 }
 
