@@ -75,7 +75,6 @@ BOOL read_attr_cfg(scfg_t* cfg, read_cfg_text_t* txt);
 void prep_path(char* base, char* path);
 void make_data_dirs(scfg_t* cfg);
 
-void free_cfg(scfg_t* cfg);
 void free_node_cfg(scfg_t* cfg);
 void free_main_cfg(scfg_t* cfg);
 void free_xtrn_cfg(scfg_t* cfg);

@@ -879,16 +879,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 #endif
 
-void free_cfg(scfg_t* cfg)
-{
-	free_node_cfg(cfg);
-	free_main_cfg(cfg);
-	free_msgs_cfg(cfg);
-	free_file_cfg(cfg);
-	free_chat_cfg(cfg);
-	free_xtrn_cfg(cfg);
-}
-
 void free_node_cfg(scfg_t* cfg)
 {
 	FREE_AND_NULL(cfg->mdm_result);
