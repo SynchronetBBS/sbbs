@@ -44,15 +44,18 @@
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 
+#include <genwrap.h>
+
 #include "console.h"
 #include "vparams.h"
 
 #include "keys.h"
 #include "mouse.h"
+#include "vgafont.h"
 
 /* Console definition variables */
 BYTE VideoMode;
-int FW, FH, FD;
+int FW, FH;
 WORD DpyCols;
 BYTE DpyRows;
 BYTE *palette;
@@ -88,13 +91,12 @@ TextLine *lines = NULL;
 /* X Variables */
 Display *dpy=NULL;
 Window win;
-XFontStruct *font;
 XImage *xi = 0;
+Pixmap pfnt;
 Visual *visual;
 unsigned int depth;
 unsigned long black;
 unsigned long white;
-int FW, FH, FD;
 GC gc;
 GC cgc;
 int xfd;
@@ -104,9 +106,6 @@ BYTE lut[4][256][8];
 
 /* X pixel values for the RGB triples */
 DWORD pixels[16];
-
-const char *xfont;
-
 
 /* Table of supported video modes. */
 vmode_t vmodelist[] = {
@@ -401,9 +400,8 @@ video_update_text()
 
 	wakeup_poll();	/* Wake up anyone waiting on kbd poll */
 
-/*	show ^= 1; */
-
 	setgc(attr);
+
 
 	for (r = 0; r < (DpyRows+1); ++r) {
 	    int cc = 0;
@@ -433,28 +431,11 @@ video_update_text()
 		memcpy(lines[r].data,
 			&vmem[r * DpyCols], sizeof(u_short) * DpyCols);
 
-	    for (c = 0; c < DpyCols; ++c) {
-			int cv = vmem[r * DpyCols + c];
-			if ((cv & 0xff00) != attr) {
-				if (cc < c)
-					XDrawImageString(dpy, win, gc,
-						2 + cc * FW,
-						2 + (r + 1) * FH,
-						buf + cc, c - cc);
-					cc = c;
-					attr = cv  & 0xff00;
-					setgc(attr);
-			}
-			buf[c] = (cv & 0xff) ? cv & 0xff : ' ';
-	    }
-	    if (cc < c) {
-			XDrawImageString(dpy, win, gc,
-				2 + cc * FW,
-				2 + (r + 1) * FH,
-				buf + cc, c - cc);
-	    }
+		for (c = 0; c < DpyCols; ++c) {
+			setgc(vmem[r * DpyCols + c]  & 0xff00);
+			XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
+		}
 	}
-
 
 	if (CursStart <= CursEnd && CursEnd <= FH &&
 	    (show != os) && CursRow0 < (DpyRows+1) &&CursCol0 < DpyCols) {
@@ -471,7 +452,7 @@ video_update_text()
 	    XChangeGC(dpy, cgc, GCForeground | GCFunction, &v);
 	    XFillRectangle(dpy, win, cgc,
 			   2 +CursCol0 * FW,
-			   2 + CursRow0 * FH + CursStart + FD,
+			   2 + CursRow0 * FH + CursStart,
 			   FW, CursEnd + 1 - CursStart);
 	}
 
@@ -485,16 +466,22 @@ video_update_text()
 void
 video_update()
 {
-	static int icnt = 3;
+	static clock_t	lastupd=-1;
+	static clock_started=0;
+	clock_t upd;
 
-    	if (--icnt == 0) {
-	    icnt = 6;
-	show ^= 1;
-
+	upd=msclock();
+	if(!clock_started) {
+		lastupd=upd;
+		clock_started=1;
 	}
-	    /* quick and dirty */
-		video_update_text();
+	if(upd-lastupd>(MSCLOCKS_PER_SEC/2)) {
+		show ^= 1;
+		lastupd=upd;
+	}
 
+	/* quick and dirty */
+	video_update_text();
 }
 
 /* Get memory for the text line buffer. */
@@ -1013,30 +1000,19 @@ resize_window()
     return;
 }
 
+/* No longer uses X fonts - pass NULL to use VGA 8x16 font */
 int
-load_font()
+load_font(char *filename, int width, int height)
 {
     XGCValues gcv;
-    
-    if (!xfont)
-	xfont = FONTVGA;
 
-    font = XLoadQueryFont(dpy, xfont);
-
-    if (font == NULL)
-	font = XLoadQueryFont(dpy, FONTVGA);
-
-    if (font == NULL) {
-		return(-1);
-	err(1, "Could not open font ``%s''\n", xfont);
-    }
-
-    gcv.font = font->fid;
-    XChangeGC(dpy, gc, GCFont, &gcv);
-    
-    FW = font->max_bounds.width;
-    FH = font->max_bounds.ascent + font->max_bounds.descent;
-    FD = font->max_bounds.descent;
+	/* I don't actually do this yet! */
+	if(filename != NULL || height != 16 || width != 8) {
+		return(1);
+	}
+	FW = 8;
+    FH = 16;
+	pfnt=XCreateBitmapFromData(dpy, win, vga_font_bitmap, FW, FH*256);
 
     return(0);
 }
@@ -1143,9 +1119,8 @@ init_mode(int mode)
     update_pixels();
 
     /* Update font. */
-    xfont = vmode.fontname;
-    if(load_font()) {
-		fprintf(stderr,"Cannot load ``%s'' font\n",xfont);
+    if(load_font(NULL,8,16)) {
+		fprintf(stderr,"Cannot load font\n");
 		return(-1);
 	}
 
