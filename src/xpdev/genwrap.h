@@ -89,6 +89,7 @@ extern "C" {
 /* Macros */
 /**********/
 
+#define FORK()	fork()
 /* Target Platform Description */
 #if defined(_WIN64)
 	#define PLATFORM_DESC	"Win64"
@@ -116,6 +117,8 @@ extern "C" {
 	#define PLATFORM_DESC	"GNU/Hurd"
 #elif defined(__QNX__)
 	#define PLATFORM_DESC	"QNX"
+	#undef FORK
+	#define FORK()	vfork()
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else
@@ -172,8 +175,12 @@ extern "C" {
 #elif defined(__unix__)
 
 #ifndef SLEEP
+	#ifndef SBBS
+	#define	pthread_yield()
+	#endif
 	#define SLEEP(x)		({	int y=x; struct timeval tv; \
 								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
+								pthread_yield(); \
 								select(0,NULL,NULL,NULL,&tv); })
 #endif
 	#define BEEP(freq,dur)	unix_beep(freq,dur)
