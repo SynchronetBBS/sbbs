@@ -488,6 +488,8 @@ typedef struct {				// Message
 				*from_ext,		// From extension
 				*replyto,		// Reply-to name
 				*replyto_ext,	// Reply-to extension */
+				*id,			// RFC822 Message-ID
+				*reply_id,		// RFC822 Reply-ID
 				*subj;			// Subject
 	ushort		to_agent,		// Type of agent message is to
 				from_agent, 	// Type of agent message is from
