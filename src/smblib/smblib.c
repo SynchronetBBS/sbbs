@@ -91,8 +91,11 @@ int SMBCALL smb_open(smb_t* smb)
     char str[128];
 	smbhdr_t hdr;
 
+	/* Set default values, if uninitialized */
 	if(!smb->retry_time)
 		smb->retry_time=10;
+	if(!smb->retry_delay)
+		smb->retry_delay=250;
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
 	smb->last_error[0]=0;
 	sprintf(str,"%s.shd",smb->file);
@@ -220,7 +223,7 @@ int SMBCALL smb_open_da(smb_t* smb)
 					,str,smb->retry_time);
 				return(-2); 
 			}
-		mswait(1);
+		mswait(smb->retry_delay);
 	}
 	if((smb->sda_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
@@ -265,7 +268,7 @@ int SMBCALL smb_open_ha(smb_t* smb)
 					,str,smb->retry_time);
 				return(-2); 
 			}
-		mswait(1);
+		mswait(smb->retry_delay);
 	}
 	if((smb->sha_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
@@ -359,7 +362,7 @@ int SMBCALL smb_trunchdr(smb_t* smb)
 					,smb->retry_time);
 				return(-2); 
 			}
-		mswait(1);
+		mswait(smb->retry_delay);
 	}
 	return(0);
 }
@@ -385,7 +388,7 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 				break;						
 		/* In case we've already locked it */
 		unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t)); 
-		mswait(1);
+		mswait(smb->retry_delay);
 	}
 	sprintf(smb->last_error,"timeout locking header");
 	return(-1);
@@ -455,7 +458,7 @@ int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 				break;
 		/* In case we've already locked it */
 		unlock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)); 
-		mswait(1);
+		mswait(smb->retry_delay);
 	}
 	sprintf(smb->last_error,"timeout locking header");
 	return(-1);
@@ -922,7 +925,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 					,str,smb->retry_time);
 				return(-2); 
 			}
-		mswait(1);
+		mswait(smb->retry_delay);
 	}
 
 	length=filelength(file);
