@@ -137,6 +137,9 @@ static char* key_name(char* p, char** vp)
 	char* equal;
 	char* colon;
 
+	if(p==NULL)
+		return(NULL);
+
 	/* Parse value name */
 	SKIP_WHITESPACE(p);
 	if(*p==INI_COMMENT_CHAR)
@@ -253,6 +256,21 @@ BOOL iniRemoveKey(str_list_t* list, const char* section, const char* key)
 		return(FALSE);
 
 	return(strListDelete(list,i));
+}
+
+BOOL iniRemoveValue(str_list_t* list, const char* section, const char* key)
+{
+	char	val[INI_MAX_VALUE_LEN];
+	size_t	i;
+	char*	vp;
+
+	i=find_value_index(*list, section, key, val);
+
+	if(key_name((*list)[i], &vp)==NULL)
+		return(FALSE);
+
+	*vp=0;	/* Terminate string at beginning of value */
+	return(TRUE);
 }
 
 size_t iniAddSection(str_list_t* list, const char* section
