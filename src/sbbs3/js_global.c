@@ -177,7 +177,15 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_yield(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	YIELD();
+	BOOL forced=TRUE;
+
+	if(argc)
+		JS_ValueToBoolean(cx, argv[0], &forced);
+	if(forced) {
+		YIELD();
+	} else {
+		MAYBE_YIELD();
+	}
 
 	*rval = JSVAL_VOID;
 	return(JS_TRUE);
@@ -1347,8 +1355,11 @@ static jsMethodSpec js_global_functions[] = {
 	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	JSDOCSTR("[number milliseconds]")
 	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep)")
 	},
-	{"yield",			js_yield,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("release current process time-slice")
+	{"yield",			js_yield,			0,	JSTYPE_VOID,	JSDOCSTR("[bool forced]")
+	,JSDOCSTR("release current thread time-slice, "
+		"a <i>forced</i> yield will yield to all other pending tasks (lowering CPU utilization), "
+		"a non-<i>forced</i> yield will yield only to pending tasks of equal or higher priority. "
+		"<i>forced</i> defaults to <i>true</i>")
 	},
 	{"random",			js_random,			1,	JSTYPE_NUMBER,	JSDOCSTR("number max")
 	,JSDOCSTR("return random integer between 0 and max-1")
