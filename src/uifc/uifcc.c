@@ -33,10 +33,11 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "uifc.h"
-#include <curses.h>
+#include <stdio.h>
+#include <curs_fix.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include "uifc.h"
 
 #if defined(__OS2__)
 
@@ -61,22 +62,25 @@ DosSleep(msec ? msec : 1);
 #define BL_GET      (1<<2)  /* Get key */
 #define BL_PUT      (1<<3)  /* Put key */
 
-#define BLACK	0
-#define BLUE	1
-#define GREEN	2
-#define	CYAN	3
-#define	RED		4
-#define MAGENTA	5
-#define BROWN	6
-#define	LIGHTGRAY	7
-#define DARKGRAY	8
-#define LIGHTBLUE	9
-#define LIGHTGREEN	10
-#define	LIGHTCYAN	11
-#define	LIGHTRED		12
-#define LIGHTMAGENTA	13
-#define YELLOW	14
-#define	WHITE	15
+enum {
+	 BLACK
+	,BLUE	
+	,GREEN	
+	,CYAN	
+	,RED		
+	,MAGENTA	
+	,BROWN	
+	,LIGHTGRAY	
+	,DARKGRAY	
+	,LIGHTBLUE	
+	,LIGHTGREEN	
+	,LIGHTCYAN	
+	,LIGHTRED	
+	,LIGHTMAGENTA
+	,YELLOW
+	,WHITE
+};
+
 #define BLINK	128
 #define SH_DENYWR	1
 #define SH_DENYRW	2
@@ -90,6 +94,7 @@ static win_t sav[MAX_BUFS];
 static uint max_opts=MAX_OPTS;
 static uifcapi_t* api;
 static int lastattr=0;
+static int scrn_width;
 
 /* Prototypes */
 static int  uprintf(int x, int y, unsigned char attr, char *fmt,...);
@@ -107,9 +112,10 @@ static int wherey(void);
 static int wherex(void);
 static FILE * _fsopen(char *pathname, char *mode, int flags);
 static int cprintf(char *fmat, ...);
-static void putch(unsigned char ch);
 static void cputs(char *str);
 static void gotoxy(int x, int y);
+static void _putch(unsigned char ch, BOOL refresh);
+#define putch(x)	_putch(x,TRUE)
 
 /* API routines */
 static void uifcbail(void);
@@ -156,6 +162,10 @@ int uifcinic(uifcapi_t* uifcapi)
     api->input=uinput;
     api->sethelp=sethelp;
 
+#if defined(LOCALE)
+  (void) setlocale(LC_ALL, "");
+#endif
+
 	initscr();
 	start_color();
 	cbreak();
@@ -173,6 +183,7 @@ int uifcinic(uifcapi_t* uifcapi)
 	}
 //	resizeterm(25,80);		/* set mode to 80x25 if possible */
     clear();
+	refresh();
 	getmaxyx(stdscr,height,width);
     /* unsupported mode? */
     if(height<MIN_LINES
@@ -186,7 +197,14 @@ int uifcinic(uifcapi_t* uifcapi)
             ,api->scrn_len,MIN_LINES,MAX_LINES);
         return(-2);
     }
+    if(width*height*2>MAX_BFLN) {
+        cprintf("\7UIFC: Screen size (%u x %u) must be smaller than %u\r\n"
+            ,api->scrn_len,width,height,(uchar)(MAX_BFLN/2));
+        return(-2);
+    }
     api->scrn_len--; /* account for status line */
+	scrn_width=width;
+	
 
     if(width<80) {
         cprintf("\7UIFC: Screen width (%u) must be at least 80 characters\r\n"
@@ -274,7 +292,10 @@ void uifcbail(void)
 {
 curs_set(1);
 clear();
+nl();
+nocbreak();
 refresh();
+endwin();
 }
 
 /****************************************************************************/
@@ -288,7 +309,7 @@ int uscrn(char *str)
     clrtoeol();
     gotoxy(3,1);
 	cputs(str);
-    if(!puttext(1,2,80,api->scrn_len,blk_scrn))
+    if(!puttext(1,2,scrn_width,api->scrn_len,blk_scrn))
         return(-1);
     gotoxy(1,api->scrn_len+1);
     clrtoeol();
@@ -1523,11 +1544,11 @@ void upop(char *str)
 	memset(buf,SP,25*3*2);
 	for(i=1;i<26*3*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
-	buf[0]='Ú';
+		buf[0]='Ú';
 	for(i=2;i<25*2;i+=2)
-		buf[i]='Ä';
-	buf[i]='¿'; i+=2;
-	buf[i]='³'; i+=2;
+        buf[i]='Ä';
+		buf[i]='¿'; i+=2;
+        buf[i]='³'; i+=2;
 	i+=2;
 	k=strlen(str);
 	i+=(((23-k)/2)*2);
@@ -1535,11 +1556,11 @@ void upop(char *str)
 		buf[i]=str[j];
 		buf[i+1]|=BLINK; }
 	i=((25*2)+1)*2;
-	buf[i]='³'; i+=2;
-	buf[i]='À'; i+=2;
+        buf[i]='³'; i+=2;
+        buf[i]='À'; i+=2;
 	for(;i<((26*3)-1)*2;i+=2)
-		buf[i]='Ä';
-	buf[i]='Ù';
+        buf[i]='Ä';
+    buf[i]='Ù';
 
 	puttext(28,12,53,14,buf);
 	showmouse();
@@ -1572,9 +1593,9 @@ void help()
 
 	curs_set(0);
 
-	if((savscrn=(char *)MALLOC(80*25*2))==NULL) {
+	if((savscrn=(char *)MALLOC(scrn_width*25*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
-			,__LINE__,80*25*2);
+			,__LINE__,scrn_width*25*2);
 		curs_set(1);
 		return; }
 	if((buf=(char *)MALLOC(76*21*2))==NULL) {
@@ -1584,14 +1605,14 @@ void help()
 		curs_set(1);
 		return; }
 	hidemouse();
-	gettext(1,1,80,25,savscrn);
+	gettext(1,1,scrn_width,25,savscrn);
 	memset(buf,SP,76*21*2);
 	for(i=1;i<76*21*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
-	buf[0]='Ú';
+        buf[0]='Ú';
 	for(i=2;i<30*2;i+=2)
-		buf[i]='Ä';
-	buf[i]='´'; i+=4;
+          buf[i]='Ä';
+    buf[i]='´'; i+=4;
 	buf[i]='O'; i+=2;
 	buf[i]='n'; i+=2;
 	buf[i]='l'; i+=2;
@@ -1602,20 +1623,20 @@ void help()
 	buf[i]='e'; i+=2;
 	buf[i]='l'; i+=2;
 	buf[i]='p'; i+=4;
-	buf[i]='Ã'; i+=2;
+    buf[i]='Ã'; i+=2;
 	for(j=i;j<i+(30*2);j+=2)
-		buf[j]='Ä';
+        buf[j]='Ä';
 	i=j;
-	buf[i]='¿'; i+=2;
+    buf[i]='¿'; i+=2;
 	j=i;	/* leave i alone */
 	for(k=0;k<19;k++) { 		/* the sides of the box */
-		buf[j]='³'; j+=2;
+        buf[j]='³'; j+=2;
 		j+=(74*2);
-		buf[j]='³'; j+=2; }
-	buf[j]='À'; j+=2;
+        buf[j]='³'; j+=2; }
+    buf[j]='À'; j+=2;
 	for(k=j;k<j+(23*2);k+=2)
-		buf[k]='Ä';
-	buf[k]='´'; k+=4;
+        buf[k]='Ä';
+    buf[k]='´'; k+=4;
 	buf[k]='H'; k+=2;
 	buf[k]='i'; k+=2;
 	buf[k]='t'; k+=4;
@@ -1635,10 +1656,10 @@ void help()
 	buf[k]='n'; k+=2;
 	buf[k]='u'; k+=2;
 	buf[k]='e'; k+=4;
-	buf[k]='Ã'; k+=2;
+    buf[k]='Ã'; k+=2;
 	for(j=k;j<k+(24*2);j+=2)
-		buf[j]='Ä';
-	buf[j]='Ù';
+        buf[j]='Ä';
+    buf[j]='Ù';
 
 	if(!api->helpbuf) {
 		if((fp=_fsopen(api->helpixbfile,"rb",SH_DENYWR))==NULL)
@@ -1710,7 +1731,7 @@ void help()
 		}
 
 	hidemouse();
-	puttext(1,1,80,25,savscrn);
+	puttext(1,1,scrn_width,25,savscrn);
 	showmouse();
 	FREE(savscrn);
 	FREE(buf);
@@ -1735,7 +1756,8 @@ static int puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 			fill_char=fill[fillpos++];
 			attr=fill[fillpos++];
 			textattr(attr);
-			mvaddch(y, x, fill_char);
+			move(y, x);
+			_putch(fill_char,FALSE);
 		}
 	}
 	textattr(orig_attr);
@@ -1752,6 +1774,8 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	unsigned char attrib;
 	unsigned char colour;
 	int oldx, oldy;
+	unsigned char thischar;
+	int	ext_char;
 
 	getyx(stdscr,oldy,oldx);	
 	for(y=sy-1;y<=ey-1;y++)
@@ -1759,7 +1783,191 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 		for(x=sx-1;x<=ex-1;x++)
 		{
 			attr=mvinch(y, x);
-			fill[fillpos++]=(unsigned char)(attr&255);
+			if(attr&A_ALTCHARSET){
+				ext_char=A_ALTCHARSET|(attr&255);
+				/* likely ones */
+				if (ext_char == ACS_CKBOARD)
+				{
+					thischar=176;
+				}
+				else if (ext_char == ACS_BOARD)
+				{
+					thischar=177;
+				}
+				else if (ext_char == ACS_BSSB)
+				{
+					thischar=218;
+				}
+				else if (ext_char == ACS_SSBB)
+				{
+					thischar=192;
+				}
+				else if (ext_char == ACS_BBSS)
+				{
+					thischar=191;
+				}
+				else if (ext_char == ACS_SBBS)
+				{
+					thischar=217;
+				}
+				else if (ext_char == ACS_SBSS)
+				{
+					thischar=180;
+				}
+				else if (ext_char == ACS_SSSB)
+				{
+					thischar=195;
+				}
+				else if (ext_char == ACS_SSBS)
+				{
+					thischar=193;
+				}
+				else if (ext_char == ACS_BSSS)
+				{
+					thischar=194;
+				}
+				else if (ext_char == ACS_BSBS)
+				{
+					thischar=196;
+				}
+				else if (ext_char == ACS_SBSB)
+				{
+					thischar=179;
+				}
+				else if (ext_char == ACS_SSSS)
+				{
+					thischar=197;
+				}
+				else if (ext_char == ACS_BLOCK)
+				{
+					thischar=219;
+				
+				/* unlikely */
+				}
+				else if (ext_char == ACS_SBSD)
+				{
+					thischar=181;
+				}
+				else if (ext_char == ACS_DBDS)
+				{
+					thischar=182;
+				}
+				else if (ext_char == ACS_BBDS)
+				{
+					thischar=183;
+				}
+				else if (ext_char == ACS_BBSD)
+				{
+					thischar=184;
+				}
+				else if (ext_char == ACS_DBDD)
+				{
+					thischar=185;
+				}
+				else if (ext_char == ACS_DBDB)
+				{
+					thischar=186;
+				}
+				else if (ext_char == ACS_BBDD)
+				{
+					thischar=187;
+				}
+				else if (ext_char == ACS_DBBD)
+				{
+					thischar=188;
+				}
+				else if (ext_char == ACS_DBBS)
+				{
+					thischar=189;
+				}
+				else if (ext_char == ACS_SBBD)
+				{
+					thischar=190;
+				}
+				else if (ext_char == ACS_SDSB)
+				{
+					thischar=198;
+				}
+				else if (ext_char == ACS_DSDB)
+				{
+					thischar=199;
+				}
+				else if (ext_char == ACS_DDBB)
+				{
+					thischar=200;
+				}
+				else if (ext_char == ACS_BDDB)
+				{
+					thischar=201;
+				}
+				else if (ext_char == ACS_DDBD)
+				{
+					thischar=202;
+				}
+				else if (ext_char == ACS_BDDD)
+				{
+					thischar=203;
+				}
+				else if (ext_char == ACS_DDDB)
+				{
+					thischar=204;
+				}
+				else if (ext_char == ACS_BDBD)
+				{
+					thischar=205;
+				}
+				else if (ext_char == ACS_DDDD)
+				{
+					thischar=206;
+				}
+				else if (ext_char == ACS_SDBD)
+				{
+					thischar=207;
+				}
+				else if (ext_char == ACS_DSBS)
+				{
+					thischar=208;
+				}
+				else if (ext_char == ACS_BDSD)
+				{
+					thischar=209;
+				}
+				else if (ext_char == ACS_BSDS)
+				{
+					thischar=210;
+				}
+				else if (ext_char == ACS_DSBB)
+				{
+					thischar=211;
+				}
+				else if (ext_char == ACS_SDBB)
+				{
+					thischar=212;
+				}
+				else if (ext_char == ACS_BDSB)
+				{
+					thischar=213;
+				}
+				else if (ext_char == ACS_BSDB)
+				{
+					thischar=214;
+				}
+				else if (ext_char == ACS_DSDS)
+				{
+					thischar=215;
+				}
+				else if (ext_char == ACS_SDSD)
+				{
+					thischar=216;
+				}
+				else
+				{
+					thischar=attr&255;
+				}
+			}
+			else
+				thischar=attr;
+			fill[fillpos++]=(unsigned char)(thischar);
 			attrib=0;
 			if (attr & A_BOLD)  
 			{
@@ -1851,26 +2059,179 @@ static FILE * _fsopen(char *pathname, char *mode, int flags)
 	return(thefile);
 }
 
-static void putch(unsigned char ch)
+static void _putch(unsigned char ch, BOOL refresh_now)
 {
-	addch(ch);
-	refresh();
+	int	cha;
+
+	switch(ch)
+	{
+		case 176:
+			cha=ACS_CKBOARD;
+			break;
+		case 177:
+			cha=ACS_BOARD;
+			break;
+		case 178:
+			cha=ACS_BOARD;
+			break;
+		case 179:
+			cha=ACS_SBSB;
+			break;
+		case 180:
+			cha=ACS_SBSS;
+			break;
+		case 181:
+			cha=ACS_SBSD;
+			break;
+		case 182:
+			cha=ACS_DBDS;
+			break;
+		case 183:
+			cha=ACS_BBDS;
+			break;
+		case 184:
+			cha=ACS_BBSD;
+			break;
+		case 185:
+			cha=ACS_DBDD;
+			break;
+		case 186:
+			cha=ACS_DBDB;
+			break;
+		case 187:
+			cha=ACS_BBDD;
+			break;
+		case 188:
+			cha=ACS_DBBD;
+			break;
+		case 189:
+			cha=ACS_DBBS;
+			break;
+		case 190:
+			cha=ACS_SBBD;
+			break;
+		case 191:
+			cha=ACS_BBSS;
+			break;
+		case 192:
+			cha=ACS_SSBB;
+			break;
+		case 193:
+			cha=ACS_SSBS;
+			break;
+		case 194:
+			cha=ACS_BSSS;
+			break;
+		case 195:
+			cha=ACS_SSSB;
+			break;
+		case 196:
+			cha=ACS_BSBS;
+			break;
+		case 197:
+			cha=ACS_SSSS;
+			break;
+		case 198:
+			cha=ACS_SDSB;
+			break;
+		case 199:
+			cha=ACS_DSDB;
+			break;
+		case 200:
+			cha=ACS_DDBB;
+			break;
+		case 201:
+			cha=ACS_BDDB;
+			break;
+		case 202:
+			cha=ACS_DDBD;
+			break;
+		case 203:
+			cha=ACS_BDDD;
+			break;
+		case 204:
+			cha=ACS_DDDB;
+			break;
+		case 205:
+			cha=ACS_BDBD;
+			break;
+		case 206:
+			cha=ACS_DDDD;
+			break;
+		case 207:
+			cha=ACS_SDBD;
+			break;
+		case 208:
+			cha=ACS_DSBS;
+			break;
+		case 209:
+			cha=ACS_BDSD;
+			break;
+		case 210:
+			cha=ACS_BSDS;
+			break;
+		case 211:
+			cha=ACS_DSBB;
+			break;
+		case 212:
+			cha=ACS_SDBB;
+			break;
+		case 213:
+			cha=ACS_BDSB;
+			break;
+		case 214:
+			cha=ACS_BSDB;
+			break;
+		case 215:
+			cha=ACS_DSDS;
+			break;
+		case 216:
+			cha=ACS_SDSD;
+			break;
+		case 217:
+			cha=ACS_SBBS;
+			break;
+		case 218:
+			cha=ACS_BSSB;
+			break;
+		case 219:
+			cha=ACS_BLOCK;
+			break;
+		default:
+			cha=ch;
+	}
+			
+
+	addch(cha);
+	if(refresh_now)
+		refresh();
 }
 
 static int cprintf(char *fmat, ...)
 {
     va_list argptr;
+	char	str[MAX_BFLN];
+	int		pos;
 
     va_start(argptr,fmat);
-    vwprintw(stdscr,fmat,argptr);
+    vsprintf(str,fmat,argptr);
     va_end(argptr);
-    refresh();
+	for(pos=0;str[pos];pos++)
+	{
+		_putch(str[pos],FALSE);
+	}
+	refresh();
     return(1);
 }
 
 static void cputs(char *str)
 {
-	addstr(str);
+	int		pos;
+
+	for(pos=0;str[pos];pos++)
+	{
+		_putch(str[pos],FALSE);
+	}
 	refresh();
 }
 
