@@ -192,6 +192,8 @@ typedef struct  {
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE*	fp;
 	char		*cleanup_file;
+	BOOL	sent_headers;
+	BOOL	prev_write;
 } http_request_t;
 
 typedef struct  {
@@ -313,6 +315,7 @@ static BOOL js_setup(http_session_t* session);
 static char *find_last_slash(char *str);
 static BOOL check_extra_path(http_session_t * session);
 static BOOL exec_ssjs(http_session_t* session, char *script);
+static BOOL ssjs_send_headers(http_session_t* session);
 
 static time_t
 sub_mkgmt(struct tm *tm)
@@ -998,7 +1001,7 @@ static void send_error(http_session_t * session, const char* message)
 			lprintf(LOG_INFO,"%04d Using SSJS error page",session->socket);
 			if(js_setup(session)) {
 				sent_ssjs=exec_ssjs(session,sbuf);
-				if(sent_ssjs && send_headers(session,session->req.status)) {
+				if(sent_ssjs) {
 					int	snt=0;
 
 					lprintf(LOG_INFO,"%04d Sending generated error page",session->socket);
@@ -2450,16 +2453,29 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(session->req.fp==NULL)
 		return(JS_FALSE);
 
+	if((!session->req.prev_write) && (!session->req.sent_headers)) {
+		/* "Fast Mode" requested? */
+		jsval		val;
+		JSObject*	reply;
+
+		JS_GetProperty(cx, session->js_glob, "http_reply", &val);
+		reply=JSVAL_TO_OBJECT(val);
+		JS_GetProperty(cx, reply, "fast", &val);
+		if(JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
+			if(!ssjs_send_headers(session))
+				return(JS_FALSE);
+		}
+	}
+
+	session->req.prev_write=TRUE;
+
     for(i=0; i<argc; i++) {
-#if 0
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
-		fprintf(session->req.fp,"%s",JS_GetStringBytes(str));
-#else
-		if((str=JS_ValueToString(cx, argv[i]))==NULL)
-			continue;
-		fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
-#endif
+		if(session->req.sent_headers)
+			sendsocket(session->socket, JS_GetStringBytes(str), JS_GetStringLength(str));
+		else
+			fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
 	}
 
 	return(JS_TRUE);
@@ -2468,29 +2484,18 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    uintN		i;
-    JSString *	str;
 	http_session_t* session;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(session->req.fp==NULL)
-		return(JS_FALSE);
+	js_write(cx, obj, argc, argv, rval);
 
-    for (i=0; i<argc;i++) {
-#if 0
-		if((str=JS_ValueToString(cx, argv[i]))==NULL)
-			continue;
-		fprintf(session->req.fp,"%s",JS_GetStringBytes(str));
-#else
-		if((str=JS_ValueToString(cx, argv[i]))==NULL)
-			continue;
-		fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
-#endif
-	}
-
-	fprintf(session->req.fp,"\n");
+	/* Should this do the whole \r\n thing for Win32 *shudder* */
+	if(session->req.sent_headers)
+		sendsocket(session->socket, "\n", 1);
+	else
+		fprintf(session->req.fp,"\n");
 
 	return(JS_TRUE);
 }
@@ -2714,17 +2719,42 @@ static BOOL js_setup(http_session_t* session)
 	return(TRUE);
 }
 
-static BOOL exec_ssjs(http_session_t* session, char *script)  {
-	JSString*	js_str;
-	JSScript*	js_script;
-	jsval		rval;
+static BOOL ssjs_send_headers(http_session_t* session)
+{
 	jsval		val;
 	JSObject*	reply;
 	JSIdArray*	heads;
 	JSObject*	headers;
-	char		path[MAX_PATH+1];
-	char		str[MAX_REQUEST_LINE+1];
 	int			i;
+	JSString*	js_str;
+	char		str[MAX_REQUEST_LINE+1];
+
+	JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val);
+	reply = JSVAL_TO_OBJECT(val);
+	JS_GetProperty(session->js_cx,reply,"status",&val);
+	SAFECOPY(session->req.status,JS_GetStringBytes(JSVAL_TO_STRING(val)));
+	JS_GetProperty(session->js_cx,reply,"header",&val);
+	headers = JSVAL_TO_OBJECT(val);
+	heads=JS_Enumerate(session->js_cx,headers);
+	for(i=0;i<heads->length;i++)  {
+		JS_IdToValue(session->js_cx,heads->vector[i],&val);
+		js_str=JSVAL_TO_STRING(val);
+		JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
+		safe_snprintf(str,sizeof(str),"%s: %s"
+			,JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
+		listPushNodeString(&session->req.dynamic_heads,str);
+	}
+	JS_DestroyIdArray(session->js_cx, heads);
+	session->req.sent_headers=TRUE;
+	return(send_headers(session,session->req.status));
+}
+
+static BOOL exec_ssjs(http_session_t* session, char *script)  {
+	JSScript*	js_script;
+	jsval		rval;
+	jsval		val;
+	char		path[MAX_PATH+1];
+	BOOL		retval=TRUE;
 
 	sprintf(path,"%sSBBS_SSJS.%u.%u.html",temp_dir,getpid(),session->socket);
 	if((session->req.fp=fopen(path,"wb"))==NULL) {
@@ -2756,26 +2786,12 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 		}
 
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
-
 	} while(0);
 
 	/* Read http_reply object */
-	JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val);
-	reply = JSVAL_TO_OBJECT(val);
-	JS_GetProperty(session->js_cx,reply,"status",&val);
-	SAFECOPY(session->req.status,JS_GetStringBytes(JSVAL_TO_STRING(val)));
-	JS_GetProperty(session->js_cx,reply,"header",&val);
-	headers = JSVAL_TO_OBJECT(val);
-	heads=JS_Enumerate(session->js_cx,headers);
-	for(i=0;i<heads->length;i++)  {
-		JS_IdToValue(session->js_cx,heads->vector[i],&val);
-		js_str=JSVAL_TO_STRING(val);
-		JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
-		safe_snprintf(str,sizeof(str),"%s: %s"
-			,JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
-		listPushNodeString(&session->req.dynamic_heads,str);
+	if(!session->req.sent_headers) {
+		retval=ssjs_send_headers(session);
 	}
-	JS_DestroyIdArray(session->js_cx, heads);
 
 	/* Free up temporary resources here */
 
@@ -2789,7 +2805,7 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 	SAFECOPY(session->req.physical_path, path);
 	session->req.dynamic=IS_SSJS;
 	
-	return(TRUE);
+	return(retval);
 }
 
 static void respond(http_session_t * session)
