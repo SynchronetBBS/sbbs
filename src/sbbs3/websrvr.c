@@ -44,8 +44,10 @@
 #include "threadwrap.h"		/* _beginthread() */
 #include "websrvr.h"
 
-static const char* server_name="Synchronet Web Server";
-static const char* newline="\r\n";
+static const char*	server_name="Synchronet Web Server";
+static const char*	newline="\r\n";
+static const char*	http_scheme="http://"
+static const size_t http_scheme_len=7;
 
 extern const uchar* nular;
 
@@ -734,7 +736,7 @@ BOOL send_headers(http_session_t *session, const char *status)
 	/* Should be dynamic to allow POST for CGIs */
 	sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
 	if(session->req.send_location) {
-		if(!strnicmp(session->req.request,"http://",7))  {
+		if(!strnicmp(session->req.request,http_scheme,http_scheme_len))  {
 			location_offset=strlen(root_dir);
 			if(session->req.host[0])
 				location_offset+=(strlen(session->req.host)+1);
@@ -826,7 +828,7 @@ static BOOL check_ars(http_session_t * session)
 	}
 	lprintf("%04d User number: %d",session->socket,user.number);
 	getuserdat(&scfg, &user);
-	if(user.pass[0] && strnicmp(user.pass,password,LEN_PASS)) {
+	if(user.pass[0] && stricmp(user.pass,password)) {
 		/* Should go to the hack log? */
 		if(scfg.sys_misc&SM_ECHO_PW)
 			lprintf("%04d !PASSWORD FAILURE for user %s: '%s' expected '%s'"
@@ -1113,15 +1115,15 @@ static char *get_request(http_session_t * session, char *req_line)
 	p=strtok(NULL,"");
 	add_env(session,"QUERY_STRING",p);
 	unescape(session->req.request);
-	if(!strnicmp(session->req.request,"http://",7)) {
+	if(!strnicmp(session->req.request,http_scheme,http_scheme_len)) {
 		/* Set HOST value... ignore HOST header */
-		SAFECOPY(session->req.host,session->req.request+7);
+		SAFECOPY(session->req.host,session->req.request+http_scheme_len);
 		strtok(session->req.request,"/");
 		p=strtok(NULL,"/");
 		if(p==NULL) {
 			/* Do not allow host values larger than 128 bytes just to be anal */
 			session->req.host[0]=0;
-			p=session->req.request+7;
+			p=session->req.request+http_scheme_len;
 		}
 		offset=p-session->req.request;
 		p=session->req.request;
