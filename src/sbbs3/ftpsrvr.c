@@ -4155,7 +4155,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	if(js_runtime!=NULL) {
-		lprintf("%04d JavaScript: Destroying runtime");
+		lprintf("%04d JavaScript: Destroying runtime",sock);
 		JS_DestroyRuntime(js_runtime);
 	}
 
