@@ -1,5 +1,7 @@
 # rlogin.src
 
+# Telnet Gateway using RLogin protocol - Requires v3.00c
+
 # $id$
 
 # @format.tab-size 8, @format.use-tabs true

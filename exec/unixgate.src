@@ -1,5 +1,7 @@
 # unixgate.src
 
+# Telnet Gateway for Unix servers - Requires v3.00c
+
 # $id$
 
 # @format.tab-size 8, @format.use-tabs true
