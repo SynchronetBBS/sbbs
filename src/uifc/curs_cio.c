@@ -345,7 +345,7 @@ int curs_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 				thischar=attr;
 			fill[fillpos++]=(unsigned char)(thischar);
 			attrib=0;
-			if (attr & A_BOLD)  
+			if (attr & A_BOLD)
 			{
 				attrib |= 8;
 			}
@@ -598,7 +598,9 @@ int _putch(unsigned char ch, BOOL refresh_now)
 	else
 		cha=ch;
 
-	if(ch == ' ')
+	if(!cha)
+		cha=' ';
+	if(cha == ' ')
 		ret=addch(A_BOLD|' ');
 	else if (cha<' ') {
  		attron(A_REVERSE);
