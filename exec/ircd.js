@@ -986,7 +986,8 @@ if(this.server==undefined) {		// Running from JSexec?
 	else if (mline_port)
 		default_port = mline_port;
 
-	server = { socket: false, terminated: false };
+	server = { socket: false, terminated: false,
+		version_detail: "JSexec " + jsexec_revision };
 	server.socket = create_new_socket(default_port)
 	if (!server.socket)
 		exit();
@@ -5662,7 +5663,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				// Detect if this is a TSMODE.  If so, handle.
 				if (parseInt(cmd[2]) == cmd[2]) {
 					// desynchronized MODE command.
-					if (parseInt(cmd[2]) < chan.created)
+					if (parseInt(cmd[2]) > chan.created)
 						break;
 					cmd.shift();
 				}
