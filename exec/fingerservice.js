@@ -220,7 +220,7 @@ if(!usernum) {
 	if(at>0)
 		request = request.substr(0,at-1);
 
-	usernum = system.matchuser(system.alias(request));
+	usernum = system.matchuser(request);
 	if(!usernum) {
 		log(format("!UNKNOWN USER: '%s'",request));
 		exit();
