@@ -35,6 +35,28 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+/*
+ * General notes: (ToDo stuff)
+ * strtok() is used a LOT in here... notice that there is a strtok_r() for reentrant...
+ * this may imply that strtok() is NOT thread-safe... if in fact it isn't this HAS
+ * to be fixed before any real production-level quality is achieved with this web server
+ * however, strtok_r() may not be a standard function.
+ *
+ * RE: not sending the headers if an nph scrpit is detected.  (The headers buffer could
+ * just be free()ed and NULLed)
+ *
+ * Currently, all SSJS requests for a session are ran in the same context without clearing the context in
+ * any way.  This behaviour should not be relied on as it may disappear in the future... this will require
+ * some thought as it COULD be handy in some circumstances and COULD cause weird bugs in others.
+ *
+ * Dynamic content is always resent on an If-Modified-Since request... this may not be optimal behaviour
+ * for GET requests...
+ *
+ * Should support RFC2617 Digest auth.
+ *
+ * Fix up all the logging stuff.
+ */
+
 #if defined(__unix__)
 	#include <sys/wait.h>		/* waitpid() */
 	#include <sys/types.h>
@@ -60,6 +82,14 @@ extern const uchar* nular;
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define MAX_MIME_TYPES			128
 #define MAX_REQUEST_LINE		1024
+#define MAX_HEADERS_SIZE		16384	/* Maximum total size of all headers */
+
+/* These probobly exists somewhere else to... ToDo */
+#ifdef _WIN32
+	#define is_slash(x)			((x)=='/' || (x)=='\\')
+#else
+	#define is_slash(x)		(x=='/')
+#endif
 
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
@@ -292,7 +322,7 @@ static void update_clients(void)
 		startup->clients(active_clients);
 }
 
-#if 0	/* These will be used later */
+#if 0	/* These will be used later ToDo */
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
@@ -373,6 +403,12 @@ static void init_enviro(http_session_t *session)  {
 	add_env(session,"REMOTE_ADDR",session->host_ip);
 }
 
+/*
+ * Sets string str to socket sock... returns number of bytes written, or 0 on an error
+ * (Should it be -1 on an error?)
+ * Can not close the socket since it can not set it to INVALID_SOCKET
+ * ToDo - Decide error behaviour, should a SOCKET * be passed around rather than a socket?
+ */
 static int sockprint(SOCKET sock, const char *str)
 {
 	int len;
@@ -406,45 +442,6 @@ static int sockprint(SOCKET sock, const char *str)
 	return(len);
 }
 
-static int sockprintvalue(SOCKET sock, const char *head, const char *value, BOOL colon)  
-{
-	int total=0;
-
-	total+=sockprint(sock,head);
-	if(colon)
-		total+=sockprint(sock,": ");
-	else
-		total+=sockprint(sock," ");
-	
-	total+=sockprint(sock,value);
-	total+=sockprint(sock,newline);
-
-	return(total);
-}
-
-static int sockprintf(SOCKET sock, char *fmt, ...)
-{
-	int		len;
-	va_list argptr;
-	char	sbuf[1024];
-
-    va_start(argptr,fmt);
-    len=vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;
-	if(startup->options&WEB_OPT_DEBUG_TX)
-		lprintf("%04d TX: %s", sock, sbuf);
-	strcat(sbuf,newline);
-	len+=2;
-    va_end(argptr);
-
-	if(sock==INVALID_SOCKET) {
-		lprintf("!INVALID SOCKET in call to sockprintf");
-		return(0);
-	}
-
-	return(sockprint(sock,sbuf));
-}
-
 static int getmonth(char *mon)
 {
 	int	i;
@@ -475,11 +472,15 @@ static time_t decode_date(char *date)
 #endif
 
 	token=strtok(date,",");
+	if(token==NULL)
+		return(0);
 	/* This probobly only needs to be 9, but the extra one is for luck. */
 	if(strlen(date)>15) {
 		/* asctime() */
 		/* Toss away week day */
 		token=strtok(date," ");
+		if(token==NULL)
+			return(0);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
@@ -578,31 +579,6 @@ static int close_socket(SOCKET sock)
 	return(result);
 }
 
-void free_request(void* arg)
-{
-	http_session_t	session=*(http_session_t*)arg;	/* copies arg BEFORE it's freed */
-	linked_list	*p;
-
-	while(session.req.dynamic_heads != NULL)  {
-		FREE_AND_NULL(session.req.dynamic_heads->val);
-		p=session.req.dynamic_heads->next;
-		FREE_AND_NULL(session.req.dynamic_heads);
-		session.req.dynamic_heads=p;
-	}
-	while(session.req.cgi_env != NULL)  {
-		FREE_AND_NULL(session.req.cgi_env->val);
-		p=session.req.cgi_env->next;
-		FREE_AND_NULL(session.req.cgi_env);
-		session.req.cgi_env=p;
-	}
-	FREE_AND_NULL(session.req.post_data);
-	if(!session.req.keep_alive || session.socket==INVALID_SOCKET) {
-		close_socket(session.socket);
-		session.socket=INVALID_SOCKET;
-		session.finished=TRUE;
-	}
-}
-
 static void close_request(http_session_t * session)
 {
 	linked_list	*p;
@@ -667,85 +643,118 @@ static const char* get_mime_type(char *ext)
 	return(unknown_mime_type);
 }
 
+/* This function appends append plus a newline IF the final dst string would have a length less than maxlen */
+static void safecat(char *dst, const char *append, size_t maxlen) {
+	int dstlen,appendlen;
+	dstlen=strlen(dst);
+	appendlen=strlen(append);
+	if(dstlen+appendlen+2 < maxlen) {
+		strcat(dst,append);
+		strcat(dst,newline);
+	}
+}
+
 static BOOL send_headers(http_session_t *session, const char *status)
 {
 	int		ret;
 	BOOL	send_file=TRUE;
 	time_t	ti;
-	char	status_line[MAX_REQUEST_LINE];
+	const char	*status_line;
 	struct stat	stats;
 	struct tm	tm;
 	linked_list	*p;
+	char	*headers;
+	char	header[MAX_REQUEST_LINE];
 
-	SAFECOPY(status_line,status);
+	status_line=status;
 	ret=stat(session->req.physical_path,&stats);
+	/*
+	 * ToDo this always resends dynamic content... although this makes complete sense to me,
+	 * I can't help but feel that this may not be required for GET requests.
+	 * Look into this and revisit this section - ToDo
+	 */
 	if(!ret && (stats.st_mtime < session->req.if_modified_since) && !session->req.dynamic) {
-		SAFECOPY(status_line,"304 Not Modified");
+		status_line="304 Not Modified";
 		ret=-1;
 		send_file=FALSE;
 	}
 	if(session->req.send_location==MOVED_PERM)  {
-		SAFECOPY(status_line,"301 Moved Permanently");
+		status_line="301 Moved Permanently";
 		ret=-1;
 		send_file=FALSE;
 	}
 	if(session->req.send_location==MOVED_TEMP)  {
-		SAFECOPY(status_line,"302 Moved Temporarily");
+		status_line="302 Moved Temporarily";
 		ret=-1;
 		send_file=FALSE;
 	}
+
+	headers=malloc(MAX_HEADERS_SIZE);
+	if(headers==NULL)  {
+		lprintf("Could not allocate memory for response headers.");
+		return(FALSE);
+	}
+	*headers=0;
 	/* Status-Line */
-	sockprintvalue(session->socket,http_vers[session->http_ver],status_line,FALSE);
+	snprintf(header,MAX_REQUEST_LINE,"%s %s",http_vers[session->http_ver],status_line);
+	safecat(headers,header,MAX_HEADERS_SIZE);
 
 	/* General Headers */
 	ti=time(NULL);
 	if(gmtime_r(&ti,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
-	sprintf(status_line,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+	snprintf(header,MAX_REQUEST_LINE,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
 		,get_header(HEAD_DATE)
 		,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 		,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
-	sockprint(session->socket,status_line);
-	sockprint(session->socket,newline);
-	if(session->req.keep_alive)
-		sockprintvalue(session->socket,get_header(HEAD_CONNECTION),"Keep-Alive",TRUE);
-	else
-		sockprintvalue(session->socket,get_header(HEAD_CONNECTION),"Close",TRUE);
+	safecat(headers,header,MAX_HEADERS_SIZE);
+	if(session->req.keep_alive) {
+		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
+	else {
+		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_CONNECTION),"Close");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
 
 	/* Response Headers */
-	sockprintvalue(session->socket,get_header(HEAD_SERVER),VERSION_NOTICE,TRUE);
+	snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
+	safecat(headers,header,MAX_HEADERS_SIZE);
 	
 	/* Entity Headers */
-	if(session->req.dynamic)
-		sockprintvalue(session->socket,get_header(HEAD_ALLOW),"GET, HEAD, POST",TRUE);
-	else
-		sockprintvalue(session->socket,get_header(HEAD_ALLOW),"GET, HEAD",TRUE);
+	if(session->req.dynamic) {
+		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
+	else {
+		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
 
 	if(session->req.send_location) {
-		sockprintvalue(session->socket,get_header(HEAD_LOCATION),(session->req.virtual_path),TRUE);
+		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
+		safecat(headers,header,MAX_HEADERS_SIZE);
 	}
 	if(session->req.keep_alive) {
 		if(ret)  {
-			sockprintvalue(session->socket,get_header(HEAD_LENGTH),"0",TRUE);
+			snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_LENGTH),"0");
+			safecat(headers,header,MAX_HEADERS_SIZE);
 		}
 		else  {
-			sprintf(status_line,"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
-			sockprint(session->socket,status_line);
-			sockprint(session->socket,newline);
+			snprintf(header,MAX_REQUEST_LINE,"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
+			safecat(headers,header,MAX_HEADERS_SIZE);
 		}
 	}
 
 	if(!ret && !session->req.dynamic)  {
-		send_file=sockprintvalue(session->socket,get_header(HEAD_TYPE)
-			,session->req.mime_type,TRUE);
-
+		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
+		safecat(headers,header,MAX_HEADERS_SIZE);
 		gmtime_r(&stats.st_mtime,&tm);
-		sprintf(status_line,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+		snprintf(header,MAX_REQUEST_LINE,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
 			,get_header(HEAD_LASTMODIFIED)
 			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
-		sockprint(session->socket,status_line);
-		sockprint(session->socket,newline);
+		safecat(headers,header,MAX_HEADERS_SIZE);
 	} 
 
 	if(session->req.dynamic)  {
@@ -753,13 +762,14 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		/* Set up environment */
 		p=session->req.dynamic_heads;
 		while(p != NULL)  {
-			sockprint(session->socket,p->val);
-			sockprint(session->socket,newline);
+			safecat(headers,p->val,MAX_HEADERS_SIZE);
 			p=p->next;
 		}
 	}
 
-	sockprint(session->socket,newline);
+	safecat(headers,newline,MAX_HEADERS_SIZE);
+	send_file = (sockprint(session->socket,headers) && send_file);
+	free(headers);
 	return(send_file);
 }
 
@@ -784,6 +794,7 @@ static void send_error(http_session_t * session, char *message)
 {
 	char	error_code[4];
 	struct stat	sb;
+	char	sbuf[1024];
 
 	lprintf("%04d !ERROR %s",session->socket,message);
 	session->req.keep_alive=FALSE;
@@ -799,13 +810,14 @@ static void send_error(http_session_t * session, char *message)
 	else {
 		lprintf("%04d Error message file %s doesn't exist."
 			,session->socket,session->req.physical_path);
-		sockprintf(session->socket
+		snprintf(sbuf,1024
 			,"<HTML><HEAD><TITLE>%s Error</TITLE></HEAD>"
 			"<BODY><H1>%s Error</H1><BR><H3>In addition, "
 			"I can't seem to find the %s error file</H3><br>"
 			"please notify <a href=\"mailto:SysOp@%s\">"
 			"The SysOp</a></BODY></HTML>"
 			,error_code,error_code,error_code,scfg.sys_inetaddr);
+		sockprint(session->socket,sbuf);
 	}
 	close_request(session);
 }
@@ -918,8 +930,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 {
 	char	ch;
 	DWORD	i;
-#if 0
 	BOOL	rd;
+#if 0
 	time_t	start;
 
 	start=time(NULL);
@@ -952,7 +964,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	}
 #else
 	for(i=0;TRUE;) {
-		if(recv(session->socket, &ch, 1, 0)!=1)  {
+		if(!socket_check(session->socket,&rd,NULL,60000) || !rd || recv(session->socket, &ch, 1, 0)!=1)  {
 			session->req.keep_alive=FALSE;
 			close_request(session);
 			session->socket=INVALID_SOCKET;
@@ -1027,8 +1039,7 @@ int recvbufsocket(int sock, char *buf, long count)
 		return(0);
 	}
 
-	/* ToDo Timeout here too? */
-	while(rd<count && socket_check(sock,NULL,NULL,100))  {
+	while(rd<count && socket_check(sock,NULL,NULL,60000))  {
 		i=recv(sock,buf,count-rd,0);
 		if(i<=0)  {
 			*buf=0;
@@ -1047,6 +1058,7 @@ int recvbufsocket(int sock, char *buf, long count)
 	return(0);
 }
 
+/* Wasn't this done up as a JS thing too?  ToDo */
 static void unescape(char *p)
 {
 	char *	dst;
@@ -1366,6 +1378,46 @@ static BOOL get_req(http_session_t * session)
 	return FALSE;
 }
 
+/* This may exist somewhere else - ToDo */
+static char *find_last_slash(char *str)
+{
+#ifdef _WIN32
+	char * LastFSlash,LastBSlash;
+
+	LastFSlash=strrchr(y,'/');
+	LastBSlash=strrchr(y,'\\');
+	if(LastFSlash==NULL)
+		return(LastBSlash);
+	if(LastBSlash==NULL)
+		return(LastFSlash);
+	if(LastBSlash < LastFSlash)
+		return(LastFSlash);
+	return(LastBSlash);
+#else
+	return(strrchr(str,'/'));
+#endif
+}
+
+/* This may exist somewhere else - ToDo */
+static char *find_first_slash(char *str)
+{
+#ifdef _WIN32
+	char * FirstFSlash,FirstBSlash;
+
+	FirstFSlash=strchr(y,'/');
+	FirstBSlash=strchr(y,'\\');
+	if(FirstFSlash==NULL)
+		return(FirstBSlash);
+	if(FirstBSlash==NULL)
+		return(FirstFSlash);
+	if(FirstBSlash > FirstFSlash)
+		return(FirstFSlash);
+	return(FirstBSlash);
+#else
+	return(strchr(str,'/'));
+#endif
+}
+
 static BOOL check_request(http_session_t * session)
 {
 	char	path[MAX_PATH+1];
@@ -1394,16 +1446,14 @@ static BOOL check_request(http_session_t * session)
 		lprintf("Path is: %s",path);
 	if(isdir(path)) {
 		last_ch=*lastchar(path);
-		if(last_ch!='/' && last_ch!='\\')  {
+		if(!is_slash(last_ch))  {
 			strcat(path,"/");
 		}
 		last_ch=*lastchar(session->req.virtual_path);
-		if(last_ch!='/' && last_ch!='\\')  {
+		if(!is_slash(last_ch))  {
 			strcat(session->req.virtual_path,"/");
 		}
-		last_slash=strrchr(path,'/');
-		if(last_slash==NULL)
-			last_slash=strrchr(path,'\\');
+		last_slash=find_last_slash(path);
 		if(last_slash==NULL) {
 			send_error(session,"404 Not Found");
 			return(FALSE);
@@ -1442,7 +1492,7 @@ static BOOL check_request(http_session_t * session)
 		add_env(session,"SCRIPT_NAME",session->req.virtual_path);
 	}
 	SAFECOPY(str,session->req.virtual_path);
-	last_slash=strrchr(str,'/');
+	last_slash=find_last_slash(str);
 	if(last_slash!=NULL)
 		*(last_slash+1)=0;
 	if(session->req.dynamic==IS_CGI)
@@ -1456,8 +1506,7 @@ static BOOL check_request(http_session_t * session)
 	/* Loop while there's more /s in path*/
 	p=last_slash;
 
-	/* This is bad... fix it.  ToDo */
-	while(((last_slash=strchr(p+1,'/'))!=NULL) || ((last_slash=strchr(p+1,'\\'))!=NULL)) {
+	while((last_slash=find_first_slash(p+1))!=NULL) {
 		p=last_slash;
 		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
