@@ -5,7 +5,7 @@
 
 #define LIST_NAME_MAX	30
 #define LIST_ADDR_MAX	30
-#define MAX_USER_LEN	16
+#define MAX_USER_LEN	30
 #define MAX_PASSWD_LEN	16
 
 enum {
