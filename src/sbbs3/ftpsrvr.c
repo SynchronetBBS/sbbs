@@ -98,6 +98,7 @@ static SOCKET	server_socket=INVALID_SOCKET;
 static DWORD	active_clients=0;
 static DWORD	sockets=0;
 static HANDLE	socket_mutex=NULL;
+static time_t	uptime;
 #ifdef _DEBUG
 	static BYTE 	socket_debug[20000]={0};
 
@@ -498,7 +499,7 @@ JSContext* js_initcx(SOCKET sock, JSObject** glob, JSObject** ftp)
 			break;
 
 		lprintf("%04d JavaScript: Initializing System object",sock);
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg)==NULL) 
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime)==NULL) 
 			break;
 
 		if((*ftp=JS_DefineObject(js_cx, js_glob, "ftp", &js_ftp_class
@@ -1497,7 +1498,8 @@ static void send_thread(void* arg)
 	}
 
 	fclose(fp);
-	*xfer.inprogress=FALSE;
+	if(server_socket!=INVALID_SOCKET)
+		*xfer.inprogress=FALSE;
 	if(xfer.tmpfile) {
 		if(!(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 			remove(xfer.filename);
@@ -1616,7 +1618,8 @@ static void receive_thread(void* arg)
 		mswait(1);
 	}
 
-	*xfer.inprogress=FALSE;
+	if(server_socket!=INVALID_SOCKET)
+		*xfer.inprogress=FALSE;
 	fclose(fp);
 
 	ftp_close_socket(xfer.data_sock,__LINE__);
@@ -4083,9 +4086,11 @@ static void ctrl_thread(void* arg)
 
 	if(transfer_inprogress==TRUE) {
 		lprintf("%04d Waiting for transfer to complete...",sock);
-		while(/* data_sock!=INVALID_SOCKET && removed SEP-16-2001 */
-			transfer_inprogress==TRUE && server_socket!=INVALID_SOCKET) {
-			mswait(500);
+		while(transfer_inprogress==TRUE) {
+			if(server_socket==INVALID_SOCKET) {
+				mswait(2000);	/* allow xfer threads to terminate */
+				break;
+			}
 			if(!transfer_aborted) {
 				if(gettimeleft(&scfg,&user,logintime)<1) {
 					lprintf("%04d Out of time, disconnecting",sock);
@@ -4101,6 +4106,7 @@ static void ctrl_thread(void* arg)
 					transfer_aborted=TRUE;
 				}
 			}
+			mswait(500);
 		}
 		lprintf("%04d Done waiting for transfer to complete",sock);
 	}
@@ -4250,6 +4256,8 @@ void DLLCALL ftp_server(void* arg)
 		startup->options|=FTP_OPT_NO_JAVASCRIPT;
 
 	thread_up();
+
+	uptime=time(NULL);
 
 	status("Initializing");
 
