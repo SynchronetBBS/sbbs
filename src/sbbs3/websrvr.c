@@ -948,7 +948,7 @@ static int sock_sendfile(SOCKET socket,char *path)
 	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf(LOG_WARNING,"%04d !ERROR %d opening %s",socket,errno,path);
 	else {
-		if((ret=sendfilesocket(socket, file, &offset, 0)) < 1) {
+		if((ret=sendfilesocket(socket, file, &offset, 0)) < 0) {
 			lprintf(LOG_DEBUG,"%04d !ERROR %d sending %s"
 				, socket, errno, path);
 			ret=0;
