@@ -117,6 +117,7 @@ FTP_OBJS	= $(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE) \
 MAIL_OBJS	= $(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)mxlookup$(OFILE) \
  		  	$(MTOBJODIR)$(DIRSEP)mime$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)md5$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)base64$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
