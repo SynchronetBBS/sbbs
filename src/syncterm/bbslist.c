@@ -343,7 +343,7 @@ struct bbslist *show_bbslist(int mode, char *path)
 										"~ RLogin:~ Auto-login with RLogin protocol\n"
 										"~ Telnet:~ Use more common Telnet protocol (experimental)\n"
 										"~ Raw:   ~ Make a raw socket connection (experimental)\n";
-						list[listcount-1]->conn_type=CONN_TYPE_RLOGIN;
+						list[listcount-1]->conn_type=CONN_TYPE_RLOGIN-1;
 						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->conn_type,NULL,"Connection Type",&conn_types[1]);
 						list[listcount-1]->conn_type++;
 						if(list[listcount-1]->conn_type==CONN_TYPE_RLOGIN) {
