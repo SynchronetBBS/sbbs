@@ -37,6 +37,9 @@ enum {
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 char tmp[256];
 int nodefile;
+const char *YesStr="Yes";
+const char *NoStr="No";
+
 
 void bail(int code)
 {
@@ -425,6 +428,93 @@ void getnodedat(int number, node_t *node, int lockit)
 		uifc.msg(msg); }
 }
 
+/****************************************************************************/
+/* Write the data from the structure 'node' into NODE.DAB  					*/
+/* getnodedat(num,&node,1); must have been called before calling this func  */
+/*          NOTE: ------^   the indicates the node record has been locked   */
+/****************************************************************************/
+void putnodedat(int number, node_t node)
+{
+	number--;	/* make zero based */
+	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
+	if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
+		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
+		printf("Error writing to nodefile for node %d\n",number+1);
+		return; }
+	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
+}
+
+void node_toggles(int nodenum)  {
+	char**	opt;
+	int		i,j;
+	node_t	node;
+	char	buf[80];
+	int		save=0;
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	getnodedat(nodenum,&node,0);
+	i=0;
+	uifc.helpbuf=	"`Node Toggles:`\n"
+					"\nToDo: Add help (Mention that changes take effect"
+					"\non menu exit not immediately)";
+	while(save==0) {
+		j=0;
+		sprintf(opt[j++],"%-30s%3s","Locked for SysOps only",node.misc&NODE_LOCK ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Interrupt (Hangup)",node.misc&NODE_INTR ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Page disabled",node.misc&NODE_POFF ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Activity alert disabled",node.misc&NODE_AOFF ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Re-run on logoff",node.misc&NODE_RRUN ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Down node after logoff",node.misc&NODE_DOWN ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Reset private chat",node.misc&NODE_RPCHT ? YesStr : NoStr);
+		opt[j][0]=0;
+
+		switch(uifc.list(WIN_MID,0,0,0,&i,0,"Node Toggles",opt)) {
+			case 0:	/* Locked */
+				node.misc ^= NODE_LOCK;
+				break;
+
+			case 1:	/* Interrupt */
+				node.misc ^= NODE_INTR;
+				break;
+
+			case 2:	/* Page disabled */
+				node.misc ^= NODE_POFF;
+				break;
+
+			case 3:	/* Activity alert */
+				node.misc ^= NODE_AOFF;
+				break;
+
+			case 4:	/* Re-run */
+				node.misc ^= NODE_RRUN;
+				break;
+
+			case 5:	/* Down */
+				node.misc ^= NODE_DOWN;
+				break;
+
+			case 6:	/* Reset chat */
+				node.misc ^= NODE_RPCHT;
+				break;
+				
+			case -1:
+				save=1;
+				break;
+				
+			default:
+				uifc.msg("Option not implemented");
+				continue;
+		}
+	}
+	lock(nodefile,(long)(nodenum-1)*sizeof(node_t),sizeof(node_t));
+	putnodedat(nodenum,node);
+}
+
 int main(int argc, char** argv)  {
 	char**	opt;
 	char**	mopt;
@@ -546,8 +636,8 @@ int main(int argc, char** argv)  {
 
 		if(j==-1) {
 			i=0;
-			strcpy(opt[0],"Yes");
-			strcpy(opt[1],"No");
+			strcpy(opt[0],YesStr);
+			strcpy(opt[1],NoStr);
 			opt[2][0]=0;
 			uifc.helpbuf=	"`Exit Synchronet UNIX Monitor:`\n"
 							"\n"
@@ -559,10 +649,39 @@ int main(int argc, char** argv)  {
 			continue;
 		}
 		if(j<sys_nodes && j>=0) {
-			snprintf(str,sizeof(str),"%slocalspy%d.sock", ctrl_dir, j+1);
-			endwin();
-			spyon(str);
-			refresh();
+			i=0;
+			strcpy(opt[i++],"Spy on node");
+			strcpy(opt[i++],"Node toggles");
+			strcpy(opt[i++],"Clear Errors");
+			opt[i][0]=0;
+			i=0;
+			uifc.helpbuf=	"`Node Options:`\n"
+							"\nToDo: Add help";
+			switch(uifc.list(WIN_MID,0,0,0,&i,0,"Node Options",opt))  {
+				case 0:	/* Spy */
+					snprintf(str,sizeof(str),"%slocalspy%d.sock", ctrl_dir, j+1);
+					endwin();
+					spyon(str);
+					refresh();
+					break;
+
+				case 1: /* Node Toggles */
+					node_toggles(j+1);
+					break;
+
+				case 2:
+					getnodedat(j+1,&node,1);
+					node.errors=0;
+					putnodedat(j+1,node);
+					break;
+
+				case -1:
+					break;
+					
+				default:
+					uifc.msg("Option not implemented");
+					break;
+			}
 		}
 	}
 }
