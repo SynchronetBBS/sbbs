@@ -73,6 +73,7 @@
 
 	#define O_TEXT		0		/* all files in binary mode on Unix */
 	#define O_BINARY	0		/* all files in binary mode on Unix */
+	#undef	O_DENYNONE
 	#define O_DENYNONE  (1<<31)	/* req'd for Baja/nopen compatibility */
 
 	#define SH_DENYNO	2          // no locks
