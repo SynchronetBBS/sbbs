@@ -110,5 +110,8 @@ int code_ok(char *str);
 int  bits(long l);
 void getar(char *desc, char *ar);
 
+/* Prepare a string to be used as an internal code */
+char* prep_code(char *str);
+
 /* scfgnet.h */
 faddr_t atofaddr(char *str);

@@ -547,6 +547,8 @@ command: DIR /ON /AD /B > DIRS.RAW
 						} 
 					}
 
+					prep_code(tmpdir.code_suffix);
+
 					for(j=0;j<cfg.total_dirs;j++) {
 						if(cfg.dir[j]->lib!=i)
 							continue;
