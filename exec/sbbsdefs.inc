@@ -1,23 +1,21 @@
-# SBBSDEFS.INC
-
-# Copyright 1995 Digital Dynamics, All rights reserved.
+# sbbsdefs.inc
 
 # Baja include file defining various Synchronet related constants
 
-# You man include use this file in your source (!include sbbsdefs.inc),
-# but you may not distribute modified versions of this file. It is not
-# suggested that you modify this file AT ALL, but rather create your own
-# include file(s) for your own constant definitions.
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include nodedefs.inc
 !include userdefs.inc
+!include errno.inc
 
 				# System toggle options (_SYS_MISC)
 !define SM_CLOSED	.0	# System is clsoed to New Users
 !define SM_SYSSTAT	.1	# Sysops activity included in statistics
 !define SM_NOBEEP	.2	# No beep sound locally
 !define SM_PWEDIT	.3	# Allow users to change their passwords
-!define SM_TIMED_EX	.4	# Timed event must run exclusively
+!define SM_RA_EMU	.4	# Reverse R/A read message/mail command keys
 !define SM_ANON_EM	.5	# Allow anonymous e-mail
 !define SM_LISTLOC	.6	# Use location of caller in user lists
 !define SM_WILDCAT	.7	# Expand Wildcat color codes in messages
@@ -61,6 +59,7 @@
 !define NM_NOBEEP	.14	# Don't beep locally
 !define NM_LOWPRIO	.15	# Always use low priority input
 !define NM_7BITONLY	.16	# Except 7-bit input only (E71 terminals
+!define NM_NOPAUSESPIN	.17	# No spinning cursor at pause prompt
 
 				# New user question toggles (_UQ)
 !define UQ_ALIASES      .0      # Ask for alias
@@ -163,6 +162,7 @@
 !define K_AUTODEL	.15	# Auto-delete text (used with K_EDIT
 !define K_COLD		.16	# Possible cold key mode
 !define K_NOECHO	.17	# Don't echo input
+!define K_TAB		.18	# Treat TAB as CR
 
 				# Bits in 'mode' for PRINTFILE function
 !define P_NOABORT	.0	# Disallows abortion of a message
@@ -178,6 +178,14 @@
 !define EVENT_NEWUSER	2	# Execute during newuser app.
 !define EVENT_BIRTHDAY	3	# Execute on birthday
 !define EVENT_LOGOFF	4	# Execute during normal logoff
+
+!define TG_ECHO		.0	# Turn on telnet echo
+!define TG_CRLF		.1	# Expand sole CR to CRLF
+!define TG_LINEMODE	.2	# Send entire lines only
+!define TG_NODESYNC	.3	# Call Nodesync, get msgs, etc.		
+!define TG_CTRLKEYS	.4	# Interpret ^P ^U ^T, etc locally
+!define TG_PASSTHRU	.5	# Pass-through telnet commands/responses
+!define TG_RLOGIN	.6	# Use BSD RLogin protocol
 
 ################################
 # System Variable Declarations #
@@ -322,7 +330,6 @@
 !global _MAX_QWKMSGS
 !global _UQ
 !global _ERRORLEVEL
-!global _ERRNO
 !global _WORDWRAP
 
 # End of SBBSDEFS.INC
