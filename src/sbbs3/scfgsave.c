@@ -295,7 +295,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->new_min,stream);
 	put_str(cfg->new_xedit,stream);
 	put_int(cfg->new_expire,stream);
-	if(cfg->new_shell>cfg->total_shells)
+	if(cfg->new_shell>=cfg->total_shells)
 		cfg->new_shell=0;
 	put_int(cfg->new_shell,stream);
 	put_int(cfg->new_misc,stream);
