@@ -170,9 +170,9 @@ A: Set SBBSCTRL:BBS->Configure->Nodes->Node X->Toggle Options->Low Priority
 Q: How do I allow anonymous logins to the Synchronet FTP Server?
 A: You need to create a Guest account on your BBS. Create a new user (login
    as "New" or use the User Editor included with v3.00b) with a user name of
-   "Guest". Give this user the 'G' exemption and the 'G' restriction and
-   delete the password for the account. You may also want to give the Guest
-   account additional exemptions (e.g. L, P, T, etc).
+   "Guest". Give this user the 'G' exemption and the 'G', 'M', and 'F'
+   restrictions and delete the password for the account. You may also want
+   to give the Guest account additional exemptions (e.g. L, P, T, etc).
 
 Q: How can I get door X to work?
 A: If the door wasn't specifically written to run on Synchronet (XSDK) or
