@@ -919,13 +919,14 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 	if(errno) {
 		sprintf(tmp,"\r\n     errno: %d",errno);
 		strcat(str,tmp); 
+		errno=0;
 	}
-#if defined(__MSDOS__) || defined(_WIN32)
+#if defined(__MSDOS__)
 	if(_doserrno && _doserrno!=(ulong)errno) {
 		sprintf(tmp,"\r\n  doserrno: %d",_doserrno);
 		strcat(str,tmp); 
 	}
-	errno=_doserrno=0;
+	_doserrno=0;
 #endif
 #if defined(_WIN32)
 	if(GetLastError()!=0) {
