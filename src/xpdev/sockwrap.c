@@ -242,7 +242,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen, uint re
 			if(lprintf!=NULL) {
 				if(addr->sa_family==AF_INET) {
 					lprintf(LOG_WARNING,"%04d !WARNING %d (%d) error binding socket to port %d"
-						,s, result, ERROR_VALUE,((SOCKADDR_IN *)(addr))->sin_port);
+						,s, result, ERROR_VALUE,htons(((SOCKADDR_IN *)(addr))->sin_port));
 				}
 				else {
 					lprintf(LOG_WARNING,"%04d !WARNING %d (%d) error binding socket"
