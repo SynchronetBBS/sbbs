@@ -57,7 +57,8 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 			list[*i]->dumb=iniGetBool(listfile,bbsname,"BeDumb",0);
 			list[*i]->reversed=iniGetBool(listfile,bbsname,"Reversed",0);
 			list[*i]->type=type;
-			list[*i]->id=(*i)++;
+			list[*i]->id=*i;
+			(*i)++;
 		}
 		fclose(listfile);
 		strListFreeStrings(bbses);
