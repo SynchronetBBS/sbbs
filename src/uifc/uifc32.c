@@ -1490,7 +1490,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 	int lbrdrwidth=1;
 	int rbrdrwidth=1;
 	int vbrdrsize=4;
-	int tbrdrwidth=3;
+	int tbrdrwidth=1;
 	int bbrdrwidth=1;
 
 	reset_dynamic();
