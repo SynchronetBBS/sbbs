@@ -210,7 +210,9 @@
 			Added support for no local console (XSDK_MODE_NOCONSOLE)
 				- This is now the default mode when building 32-bit programs
 			Eliminated use of ungetch() in favor of ungetkey() - more secure
-	3.11	
+	3.11
+			Added support for stdio (non-socket) communications in 32-bit builds.
+	3.20
 
 \****************************************************************************/
 
@@ -220,7 +222,7 @@
 WSADATA WSAData;		// WinSock data
 #endif
 
-char *xsdk_ver="3.11";
+char *xsdk_ver="3.20";
 ulong xsdk_mode=XSDK_MODE_NOCONSOLE;
 
 /****************************************************************************/
@@ -522,15 +524,38 @@ void mnemonics(char *str)
 	attr(LIGHTGRAY);
 }
 
+#ifdef _WIN32
+int stdin_kbhit(void)
+{
+	int ch;
+
+	ch=getc(stdin);
+	if(ch==EOF)
+		return(0);
+	ungetc(ch,stdin);
+	return(ch);
+}
+int stdin_getch(void)
+{
+	return(getc(stdin));
+}
+#else
+	#define stdin_kbhit kbhit
+	#define stdin_getch getch
+#endif
+
 int keyhit()
 {
 #ifndef __16BIT__
-	int cnt=0;
-	if(ioctlsocket(client_socket,FIONREAD,&cnt))
-    	return(0);
-    return(cnt);
+	ulong cnt=0;
+	if(client_socket!=INVALID_SOCKET) {
+		if(ioctlsocket(client_socket,FIONREAD,&cnt))
+	    	return(0);
+	    return(cnt);
+	}
+	return(0);
 #else
-	return(kbhit());
+	return(stdin_kbhit());
 #endif
 }
 
@@ -572,13 +597,13 @@ char inkey(long mode)
 		ch=keybuf[keybufbot++];
 		if(keybufbot==KEY_BUFSIZE)
 			keybufbot=0; }
-	else if(!(xsdk_mode&XSDK_MODE_NOCONSOLE) && kbhit()) {
-		i=getch();
+	else if(!(xsdk_mode&XSDK_MODE_NOCONSOLE) && stdin_kbhit()) {
+		i=stdin_getch();
 #ifdef __unix__
 		if(i==LF) i=CR;	/* Enter key returns Ctrl-J on Unix! (ohmygod) */
 #endif
 		if(i==0 || i==0xE0) {			/* Local Alt or Function key hit */
-			i=getch();
+			i=stdin_getch();
 			switch(i) {
 				case 0x47:	/* Home - Same as Ctrl-B */
 					return(2);	/* ctrl-b beginning of line */
@@ -1963,6 +1988,9 @@ void initdata(void)
 #ifdef __unix__
 	_termios_setup();
 #endif
+
+	if(client_socket==INVALID_SOCKET)
+		xsdk_mode&=~XSDK_MODE_NOCONSOLE;
 
 	if(xsdk_mode&XSDK_MODE_NOCONSOLE) {
 		con_fp=NULL;
