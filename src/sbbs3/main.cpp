@@ -1858,6 +1858,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	event_thread_running = false;
     input_thread_running = false;
     output_thread_running = false;
+	input_thread_mutex_locked = false;
 
 	if(client_info==NULL)
 		memset(&client,0,sizeof(client));

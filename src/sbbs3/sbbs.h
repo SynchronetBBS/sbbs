@@ -161,6 +161,7 @@ public:
 	sem_t	output_sem;
 	HANDLE	input_thread;
 	pthread_mutex_t	input_thread_mutex;
+	bool	input_thread_mutex_locked;	// by someone other than the input_thread
 
 	int 	outcom(uchar ch); 	   // send character
 	int 	incom(void);		   // receive character
