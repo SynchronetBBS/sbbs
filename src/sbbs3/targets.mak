@@ -31,5 +31,5 @@ mono:	$(LIBDIR) $(EXEODIR) \
 		$(SBBSMONO)
 
 clean:
-	$(DELETE) $(LIBODIR)
-	$(DELETE) $(EXEODIR)
+	$(DELETE) $(LIBODIR)/*
+	$(DELETE) $(EXEODIR)/*
