@@ -458,10 +458,15 @@ typedef struct _PACK {		/* Index record */
 #define SMB_HASH_CRC16		(1<<0)	/* CRC-16 hash is valid				*/
 #define SMB_HASH_CRC32		(1<<1)	/* CRC-32 hash is valid				*/
 #define SMB_HASH_MD5		(1<<2)	/* MD5 digest is valid				*/
-#define SMB_HASH_MASK		0x0f	/* which hashes are valid			*/
-#define SMB_HASH_UPPERCASE	(1<<4)	/* Convert a-z to A-Z first			*/
-#define SMB_HASH_LOWERCASE	(1<<5)	/* Convert A-Z to a-z first			*/
+#define SMB_HASH_MASK		(SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5)
+
+#define SMB_HASH_MARK		(1<<3)	/* Used by smb_findhash()			*/
+#define SMB_HASH_MARKED		(1<<4)	/* Used by smb_findhash()			*/
+#define SMB_HASH_MARK_MASK	(SMB_HASH_MARK|SMB_HASH_MARKED)
+
 #define SMB_HASH_STRIP_WSP	(1<<6)	/* Strip white-space chars first	*/
+#define SMB_HASH_LOWERCASE	(1<<7)	/* Convert A-Z to a-z first			*/
+#define SMB_HASH_PROC_MASK	(SMB_HASH_STRIP_WSP|SMB_HASH_LOWERCASE)
 
 typedef struct _PACK {
 

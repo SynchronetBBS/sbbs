@@ -2363,14 +2363,15 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 /**************************/
 
 /* If return value is SMB_ERROR_NOT_FOUND, hash file is left open */
-int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found)
+int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash)
 {
 	int		retval;
+	BOOL	found=FALSE;
 	size_t	c;
 	hash_t	hash;
 
-	if(found!=NULL)
-		memset(found,0,sizeof(hash_t));
+	if(found_hash!=NULL)
+		memset(found_hash,0,sizeof(hash_t));
 
 	if((retval=smb_open_hash(smb))!=SMB_SUCCESS)
 		return(retval);
@@ -2390,10 +2391,10 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found)
 
 				if(compare[c]->source!=hash.source)	
 					continue;	/* wrong source */
+				if((compare[c]->flags&SMB_HASH_PROC_MASK)!=(hash.flags&SMB_HASH_PROC_MASK))
+					continue;	/* wrong pre-process flags */
 				if((compare[c]->flags&hash.flags&SMB_HASH_MASK)==0)	
 					continue;	/* no matching hashes */
-				if((compare[c]->flags&~SMB_HASH_MASK)!=(hash.flags&~SMB_HASH_MASK))
-					continue;	/* wrong pre-process flags */
 				if(compare[c]->flags&hash.flags&SMB_HASH_CRC16 
 					&& compare[c]->crc16!=hash.crc16)
 					continue;	/* wrong crc-16 */
@@ -2403,15 +2404,27 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found)
 				if(compare[c]->flags&hash.flags&SMB_HASH_MD5 
 					&& memcmp(compare[c]->md5,hash.md5,sizeof(hash.md5)))
 					continue;	/* wrong crc-16 */
-
+				
 				/* successful match! */
-				if(found!=NULL)
-					memcpy(found,&hash,sizeof(hash));
-
-				smb_close_hash(smb);
-
-				return(SMB_SUCCESS);
+				break;	/* can't match more than one, so stop comparing */
 			}
+
+			if(compare[c]==NULL)
+				continue;	/* no match */
+
+			found=TRUE;
+
+			if(found_hash!=NULL)
+				memcpy(found_hash,&hash,sizeof(hash));
+
+			if(!(compare[c]->flags&SMB_HASH_MARK))
+				break;
+
+			compare[c]->flags|=SMB_HASH_MARKED;
+		}
+		if(found) {
+			smb_close_hash(smb);
+			return(SMB_SUCCESS);
 		}
 	}
 
@@ -2421,8 +2434,8 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found)
 
 int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes)
 {
-	int			retval;
-	size_t		h;
+	int		retval;
+	size_t	h;
 
 	if((retval=smb_open_hash(smb))!=SMB_SUCCESS)
 		return(retval);
@@ -2430,7 +2443,13 @@ int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes)
 	if(hashes!=NULL) {
 
 		fseek(smb->hash_fp,0,SEEK_END);
+
 		for(h=0;hashes[h]!=NULL;h++) {
+
+			/* skip hashes marked by smb_findhash() */
+			if(hashes[h]->flags&SMB_HASH_MARKED)	
+				continue;	
+		
 			if(smb_fwrite(smb,hashes[h],sizeof(hash_t),smb->hash_fp)!=sizeof(hash_t))
 				return(SMB_ERR_WRITE);
 		}
@@ -2489,11 +2508,9 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned fla
 	uchar*	p=str;
 	hash_t*	hash;
 
-	if(flags&~SMB_HASH_MASK) {	/* string pre-processing */
+	if(flags&SMB_HASH_PROC_MASK) {	/* string pre-processing */
 		if((p=strdup(str))==NULL)
 			return(NULL);
-		if(flags&SMB_HASH_UPPERCASE)
-			strupr(p);
 		if(flags&SMB_HASH_LOWERCASE)
 			strlwr(p);
 		if(flags&SMB_HASH_STRIP_WSP)
@@ -2542,7 +2559,7 @@ hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, uchar* text)
 }
 
 /* Calculates and stores the hashes for a single message					*/
-int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text)
+int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text, BOOL update)
 {
 	size_t		n;
 	int			retval=SMB_SUCCESS;
@@ -2550,7 +2567,12 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text)
 
 	hashes=smb_msghashes(smb,msg,text);
 
-	if(smb_findhash(smb, hashes, NULL)==SMB_SUCCESS)
+	if(update) {
+		for(n=0;hashes[n]!=NULL;n++)
+			hashes[n]->flags|=SMB_HASH_MARK;
+	}
+
+	if(smb_findhash(smb, hashes, NULL)==SMB_SUCCESS && !update)
 		retval=SMB_DUPE_MSG;
 	else
 		retval=smb_addhashes(smb,hashes);

@@ -213,8 +213,8 @@ int main(int argc, char **argv)
 			text=NULL;
 		else
 			text=smb_getmsgtxt(&smb,&msg,GETMSGTXT_BODY_ONLY);
-		i=smb_hashmsg(&smb,&msg,text);
-		if(i!=SMB_SUCCESS && i!=SMB_DUPE_MSG)
+		i=smb_hashmsg(&smb,&msg,text,TRUE /* update */);
+		if(i!=SMB_SUCCESS)
 			printf("!ERROR %d hashing message\n", i);
 		if(text!=NULL)
 			free(text);
