@@ -95,6 +95,7 @@ if(this.recipient_list_filename!=undefined) {
 	load("mailproc_util.js");	// import parse_msg_header() and get_msg_body()
 
 	var header = parse_msg_header(msgtxt);
+	header = convert_msg_header(header);
 	var body = get_msg_body(msgtxt);
 
 	var r;
@@ -123,14 +124,14 @@ if(this.recipient_list_filename!=undefined) {
 		var resp_hdr = {};
 
 		resp_hdr.subject		= "Synchronet ListServer Results";
-		resp_hdr.to				= sender_name;
-		resp_hdr.to_net_addr	= sender_address;
+		resp_hdr.to				= header.from;
+		resp_hdr.to_net_addr	= header.from_net_addr;
 		resp_hdr.to_net_type	= NET_INTERNET;
 		resp_hdr.from			= listserver_name;
 		resp_hdr.from_net_addr	= listserver_address;
 		resp_hdr.from_net_type	= NET_INTERNET;
 		resp_hdr.from_agent		= AGENT_PROCESS;
-		resp_hdr.reply_id		= header["message-id"];
+		resp_hdr.reply_id		= header.id;
 
 		/* Write response to message */
 		if(mailbase.save_msg(resp_hdr, response.body.join('\r\n')))
@@ -188,15 +189,11 @@ for(var l in list_array) {
 	}
 
 	/* Get subscriber list */
-	var user_fname = list_array[l].msgbase_file + user_list_ext;
-	user_file = new File(user_fname);
-	if(!user_file.open("r")) {
-		log(LOG_ERR,format("%s !ERROR %d opening file: %s"
-			,list_name, user_file.error, user_fname));
+	var user_list = get_user_list(list_array[l]);
+	if(!user_list.length) {
 		delete msgbase;
 		continue;
 	}
-	user_list = user_file.iniGetAllObjects();
 
 /***
 	if(!user_list.length) {
@@ -359,6 +356,21 @@ function process_control_msg(cmd_list)
 	return(response);
 }
 
+function get_user_list(list)
+{
+	var user_list = new Array();
+	var user_fname = list.msgbase_file + user_list_ext;
+	var user_file = new File(user_fname);
+	if(!user_file.open("r")) {
+		log(LOG_ERR,format("%s !ERROR %d opening file: %s"
+			,list.name, user_file.error, user_fname));
+	} else {
+		user_list = user_file.iniGetAllObjects();
+		user_file.close();
+	}
+	return user_list;
+}
+
 function find_user(user_list, address)
 {
 	for(var u in user_list)
@@ -377,6 +389,7 @@ function remove_user(user_list, address)
 
 function write_user_list(user_list, user_file)
 {
+	user_file.rewind();
 	user_file.length = 0;
 	for(var u in user_list) {
 		user_file.writeln("[" + user_list[u].name + "]");
@@ -411,8 +424,15 @@ function subscription_control(cmd, list, address)
 			return("!subscriber not found: " + address);
 		case "subscribe":
 			if(find_user(user_list, address)!=-1)
-				return log(address + " already subscribed");
-			user_list.push({ name: sender_name, address: address });
+				return log(address + " is already subscribed");
+			var now=time();
+			user_list.push({ 
+				 name:					sender_name 
+				,address:				address
+				,created:				system.timestr(now)
+				,last_activity:			system.timestr(now)
+				,last_activity_time:	format("%08lxh",now)
+			});
 			write_user_list(user_list, user_file);
 			return log(address + " subscription successful");
 	}
@@ -423,19 +443,25 @@ function process_contribution(header, body, list)
 {
 	// ToDo: apply filtering here?
 
+	var user_list = get_user_list(list);
+
+	// verify author/sender is a list subscriber here
+
+	if(find_user(user_list, sender_address)==-1) {
+		error_file.writeln(log(LOG_WARNING,format("%s !ERROR %s is not a subscriber"
+			,list.name, sender_address)));
+		return(false);
+	}
+
 	var msgbase=new MsgBase(list.sub);
-
-	// ToDo: verify author/sender is a list subscriber here
-
 	if(!msgbase.open()) {
 		error_file.writeln(log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
 			,list.name, msgbase.error, list.sub)));
 		return(false);
 	}
 
-	// ToDo: Split header.from into separate name/address fields here
-
-	header.id = header["message-id"]; // Convert to Synchronet-compatible
+	// Convert from RFC822 to Synchronet-compatible
+	header = convert_msg_header(header);
 
 	if(!user.compare_ars(msgbase.cfg.moderated_ars))
 		header.attr |= MSG_MODERATED;
