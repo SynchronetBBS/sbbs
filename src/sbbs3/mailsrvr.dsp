@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MAILSRVR_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\..\include\mozilla\js" /I "..\xpdev" /D "NDEBUG" /D "SMB_IMPORTS" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MAILSRVR_EXPORTS" /D "JAVASCRIPT" /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\..\include\mozilla\js" /I "..\xpdev" /I "..\smblib" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MAILSRVR_EXPORTS" /D "JAVASCRIPT" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MAILSRVR_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\..\include\mozilla\js" /I "..\xpdev" /D "_DEBUG" /D "SMB_IMPORTS" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MAILSRVR_EXPORTS" /D "JAVASCRIPT" /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\..\include\mozilla\js" /I "..\xpdev" /I "..\smblib" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MAILSRVR_EXPORTS" /D "JAVASCRIPT" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -93,19 +93,7 @@ SOURCE=.\base64.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\crc32.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\ini_file.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\mailsrvr.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\md5.c
 # End Source File
 # Begin Source File
 
@@ -114,10 +102,6 @@ SOURCE=.\mime.c
 # Begin Source File
 
 SOURCE=.\mxlookup.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\str_list.c
 # End Source File
 # End Target
 # End Project

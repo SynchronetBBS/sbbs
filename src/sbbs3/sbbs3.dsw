@@ -11,6 +11,9 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name xpdev
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -23,11 +26,14 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name smblib
+    End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "chksmb"=.\chksmb.dsp - Package Owner=<4>
+Project: "chksmb"=..\smblib\chksmb.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -35,6 +41,9 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name smblib
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -47,11 +56,14 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name xpdev
+    End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "fixsmb"=.\fixsmb.dsp - Package Owner=<4>
+Project: "fixsmb"=..\smblib\fixsmb.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -59,6 +71,9 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name smblib
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -73,6 +88,9 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name sbbs
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev_mt
     End Project Dependency
 }}}
 
@@ -89,6 +107,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name sbbs
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -104,6 +125,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name sbbs
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name smblib_mt
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -116,6 +140,9 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name xpdev
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -128,6 +155,9 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name xpdev
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -152,6 +182,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name services
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev_mt
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -164,6 +197,9 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name smblib_mt
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -188,6 +224,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name services
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev_mt
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -200,6 +239,9 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name smblib
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -227,6 +269,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name sbbs
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev_mt
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -239,11 +284,14 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name smblib
+    End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "smbutil"=.\smbutil.dsp - Package Owner=<4>
+Project: "smblib"=..\smblib\smblib.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -251,6 +299,39 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name xpdev
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "smblib_mt"=..\smblib\smblib_mt.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xpdev_mt
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "smbutil"=..\smblib\smbutil.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name smblib
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -266,6 +347,33 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name sbbs
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev_mt
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "xpdev"=..\xpdev\xpdev.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "xpdev_mt"=..\xpdev\xpdev_mt.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################

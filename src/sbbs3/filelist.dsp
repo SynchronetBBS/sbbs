@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "msvc.win32.exe.release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "../xpdev" /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /D "WRAPPER_EXPORTS" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "../xpdev" /I "../smblib" /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /D "WRAPPER_EXPORTS" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LINK32=link.exe
 # PROP Intermediate_Dir "msvc.win32.exe.debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../xpdev" /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /D "WRAPPER_EXPORTS" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../xpdev" /I "../smblib" /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /D "WRAPPER_EXPORTS" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -86,10 +86,6 @@ SOURCE=.\ars.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\crc16.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\dat_rec.c
 # End Source File
 # Begin Source File
@@ -98,23 +94,11 @@ SOURCE=.\date_str.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\xpdev\dirwrap.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\filedat.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\filelist.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\filewrap.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\genwrap.c
 # End Source File
 # Begin Source File
 

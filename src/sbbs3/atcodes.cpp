@@ -206,7 +206,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 
 	if(!strcmp(sp,"FIDOADDR")) {
 		if(cfg.total_faddrs)
-			return(faddrtoa(&cfg.faddr[0],str));
+			return(smb_faddrtoa(&cfg.faddr[0],str));
 		return(nulstr);
 	}
 
@@ -908,7 +908,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 			sprintf(str,"%s #%s",current_msg->to,current_msg->to_ext);
 		else if(current_msg->to_net.type!=NET_NONE)
 			sprintf(str,"%s (%s)",current_msg->to
-				,net_addr(&current_msg->to_net));
+				,smb_netaddr(&current_msg->to_net));
 		else
 			strcpy(str,current_msg->to);
 		return(str);
@@ -921,7 +921,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(current_msg->to_ext);
 	}
 	if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL)
-		return(net_addr(&current_msg->to_net));
+		return(smb_netaddr(&current_msg->to_net));
 	if(!strcmp(sp,"MSG_FROM") && current_msg!=NULL) {
 		if(current_msg->from==NULL)
 			return(nulstr);
@@ -931,7 +931,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 			sprintf(str,"%s #%s",current_msg->from,current_msg->from_ext);
 		else if(current_msg->from_net.type!=NET_NONE)
 			sprintf(str,"%s (%s)",current_msg->from
-				,net_addr(&current_msg->from_net));
+				,smb_netaddr(&current_msg->from_net));
 		else
 			strcpy(str,current_msg->from);
 		return(str);
@@ -952,7 +952,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 	if(!strcmp(sp,"MSG_FROM_NET") && current_msg!=NULL) {
 		if(current_msg->from_net.type!=NET_NONE
 			&& (!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP))
-			return(net_addr(&current_msg->from_net));
+			return(smb_netaddr(&current_msg->from_net));
 		return(nulstr);
 	}
 	if(!strcmp(sp,"MSG_SUBJECT") && current_msg!=NULL)
@@ -960,7 +960,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 	if(!strcmp(sp,"MSG_DATE") && current_msg!=NULL)
 		return(timestr((time_t *)&current_msg->hdr.when_written.time));
 	if(!strcmp(sp,"MSG_TIMEZONE") && current_msg!=NULL)
-		return(zonestr(current_msg->hdr.when_written.zone));
+		return(smb_zonestr(current_msg->hdr.when_written.zone,NULL));
 	if(!strcmp(sp,"MSG_ATTR") && current_msg!=NULL) {
 		sprintf(str,"%s%s%s%s%s%s%s%s%s%s"
 			,current_msg->hdr.attr&MSG_PRIVATE		? "Private  "   :nulstr

@@ -84,19 +84,11 @@ LINK32=link.exe
 # Name "ntsvcs - Win32 Debug"
 # Begin Source File
 
-SOURCE=..\xpdev\ini_file.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\ntsvcs.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\sbbs_ini.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\str_list.c
 # End Source File
 # End Target
 # End Project

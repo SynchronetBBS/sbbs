@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\..\include\mozilla\js" /I "..\xpdev" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "WRAPPER_EXPORTS" /D "SMB_EXPORTS" /D "JAVASCRIPT" /D "RINGBUF_SEM" /FR /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\..\include\mozilla\js" /I "..\xpdev" /I "..\smblib" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "SMB_EXPORTS" /D "JAVASCRIPT" /D "RINGBUF_SEM" /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\..\include\mozilla\js" /I "..\xpdev" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "WRAPPER_EXPORTS" /D "SMB_EXPORTS" /D "JAVASCRIPT" /D "RINGBUF_SEM" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\..\include\mozilla\js" /I "..\xpdev" /I "..\smblib" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "SMB_EXPORTS" /D "JAVASCRIPT" /D "RINGBUF_SEM" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -134,14 +134,6 @@ SOURCE=.\con_out.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\crc16.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\crc32.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\dat_rec.c
 # End Source File
 # Begin Source File
@@ -155,10 +147,6 @@ SOURCE=.\data_ovl.cpp
 # Begin Source File
 
 SOURCE=.\date_str.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\dirwrap.c
 # End Source File
 # Begin Source File
 
@@ -206,14 +194,6 @@ SOURCE=.\filedat.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\xpdev\filewrap.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\genwrap.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\getkey.cpp
 # End Source File
 # Begin Source File
@@ -239,10 +219,6 @@ SOURCE=.\getstr.cpp
 # Begin Source File
 
 SOURCE=.\ident.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\ini_file.c
 # End Source File
 # Begin Source File
 
@@ -330,10 +306,6 @@ SOURCE=.\logout.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\lzh.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\mail.cpp
 # End Source File
 # Begin Source File
@@ -342,7 +314,7 @@ SOURCE=.\main.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\md5.c
+SOURCE=.\msg_id.c
 # End Source File
 # Begin Source File
 
@@ -430,14 +402,6 @@ SOURCE=.\scfgsave.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\smblib.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\smbtxt.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\sockopts.c
 # End Source File
 # Begin Source File
@@ -451,10 +415,6 @@ SOURCE=.\sortdir.cpp
 # Begin Source File
 
 SOURCE=.\str.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\str_list.c
 # End Source File
 # Begin Source File
 

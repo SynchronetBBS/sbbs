@@ -90,7 +90,7 @@ SOURCE=.\baja.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\crc32.c
+SOURCE=..\smblib\crc32.c
 # End Source File
 # Begin Source File
 
