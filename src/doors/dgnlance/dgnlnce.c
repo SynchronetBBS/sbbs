@@ -94,17 +94,21 @@ struct playertype {
     double          vary;
 };
 
+struct weapon {
+    char            name[31];
+    WORD            attack;
+    WORD            power;
+};
+
 struct playertype player[31];
 #define user	player[player_num]
-/* player[0] is the current enemy */
+/* player[0] is the current enemy/temp player */
 #define opp	player[0]
 
 const char      dots[] = "...............................................";
 /* In these arrays, 0 isn't actually used */
 QWORD           required[29];	       /* Experience required for each level */
-char            wname[26][31];	       /* Array of weapon names */
-DWORD           w2[26];		       /* Weapon "attack" values */
-DWORD           w3[26];		       /* Weapon "power" values */
+struct weapon   weapon[26];
 char            sname[26][31];	       /* Array of shield names */
 char            temp[81];
 DWORD           cost[26];	       /* Array of weapon/shield costs */
@@ -374,7 +378,7 @@ findo(void)
 	okea = xp_random(99) + 1;
 	if ((okea < 10) && (user.weapon >= 25)) {
 	    user.weapon++;
-	    od_printf("You have found a %s.\r\n", wname[user.weapon]);
+	    od_printf("You have found a %s.\r\n", weapon[user.weapon].name);
 	}
 	if ((okea > 11) && (okea < 40)) {
 	    user.gold = user.gold + 40;
@@ -429,8 +433,8 @@ mutantvictory(void)
 	    od_set_color(L_YELLOW, D_BLACK);
 	    od_disp_str("You Hath Taken His Armour.\r\n");
 	}
-	user.attack = w2[user.weapon];
-	user.power = w3[user.weapon];
+	user.attack = weapon[user.weapon].attack;
+	user.power = weapon[user.weapon].power;
 	outfile = fopen("data/record.lan", "ab");
 	fprintf(outfile, "%s conquered %s\r\n", user.pseudo, player[opp.status].pseudo);
 	fclose(outfile);
@@ -627,7 +631,7 @@ statshow(void)
     od_printf("Battles: %u   Retreats: %u    Fights: %u   Hps: %u(%u)\r\n", user.battles, user.flights, user.fights, user.hps - user.damage, user.hps);
     nl();
     od_set_color(L_CYAN, D_BLACK);
-    od_printf("Weapon: %s     Armor: %s\r\n", wname[user.weapon], sname[user.armour]);
+    od_printf("Weapon: %s     Armor: %s\r\n", weapon[user.weapon].name, sname[user.armour]);
 }
 BOOL
 incre(void)
@@ -986,8 +990,8 @@ doggie(void)
 	opp.damage = player[opp.status].hps;
 	opp.vary = player[opp.status].vary;
 	user.battles--;
-	opp.attack = w2[player[opp.status].weapon];
-	opp.power = w3[player[opp.status].weapon];
+	opp.attack = weapon[player[opp.status].weapon].attack;
+	opp.power = weapon[player[opp.status].weapon].power;
 	opp.armour = player[opp.status].armour;
 	opp.luck = player[opp.status].luck;
 	opp.strength = player[opp.status].strength;
@@ -1142,7 +1146,7 @@ weaponlist(void)
     od_disp_str("(-------------------------------------------------------------------------)\r\n");
     od_set_color(L_YELLOW, D_BLACK);
     for (i = 1; i <= 25; i++)
-	od_printf("  %2d>  %-25.25s   %-25.25s   %9u\r\n", i, wname[i], sname[i], cost[i]);
+	od_printf("  %2d>  %-25.25s   %-25.25s   %9u\r\n", i, weapon[i].name, sname[i], cost[i]);
 }
 
 void
@@ -1190,9 +1194,9 @@ weaponshop(void)
 				user.weapon = buy;
 				nl();
 				od_set_color(D_MAGENTA, D_BLACK);
-				od_printf("You've bought a %s\r\n", wname[buy]);
-				user.attack = w2[user.weapon];
-				user.power = w3[user.weapon];
+				od_printf("You've bought a %s\r\n", weapon[buy].name);
+				user.attack = weapon[user.weapon].attack;
+				user.power = weapon[user.weapon].power;
 			    } else
 				od_disp_str("No\r\n");
 			    break;
@@ -1296,7 +1300,7 @@ spy(void)
 		od_printf("Hps    : %u(%u)\r\n", player[a].hps - player[a].damage, player[a].hps);
 		nl();
 		od_set_color(D_MAGENTA, D_BLACK);
-		od_printf("Weapon : %s\r\n", wname[player[a].weapon]);
+		od_printf("Weapon : %s\r\n", weapon[player[a].weapon].name);
 		od_printf("Armour : %s\r\n", sname[player[a].armour]);
 		nl();
 		od_set_color(L_YELLOW, D_BLACK);
@@ -1603,9 +1607,9 @@ main(int argc, char **argv)
     infile = fopen("data/weapons.lan", "rb");
     od_set_color(L_BLUE, D_BLACK);
     for (i = 1; i <= 25; i++) {
-	readline(wname[i], sizeof(wname[i]));
-	w2[i] = readnumb(1);
-	w3[i] = readnumb(1);
+	readline(weapon[i].name, sizeof(weapon[i].name));
+	weapon[i].attack = readnumb(1);
+	weapon[i].power = readnumb(1);
 	endofline();
     }
     fclose(infile);
@@ -1620,8 +1624,8 @@ main(int argc, char **argv)
 	endofline();
     }
     fclose(infile);
-    user.attack = w2[user.weapon];
-    user.power = w3[user.weapon];
+    user.attack = weapon[user.weapon].attack;
+    user.power = weapon[user.weapon].power;
     infile = fopen("data/experience.lan", "rb");
     for (i = 1; i <= 28; i++) {
 	required[i] = readnumb(100000000);
