@@ -2457,6 +2457,18 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 
+			/* Check for SPAM bait recipient */
+			if(trashcan(&scfg,rcpt_addr,"spambait")) {
+				sprintf(str,"SPAM BAIT (%s) taken", rcpt_addr);
+				lprintf("%04d !SMTP %s by: %s"
+					,socket, str, reverse_path);
+				spamlog(&scfg, "SMTP", "REFUSED and FILTERED", str
+					,host_name, host_ip, rcpt_addr, reverse_path);
+				filter_ip(&scfg, "SMTP", str, host_ip, reverse_path);
+				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				continue;
+			}
+
 			/* Check for blocked recipients */
 			if(trashcan(&scfg,rcpt_addr,"email")) {
 				lprintf("%04d !SMTP BLOCKED RECIPIENT (%s) from: %s"
