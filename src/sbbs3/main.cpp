@@ -1507,6 +1507,7 @@ void event_thread(void* arg)
 					fexistcase(str);		/* fix wrong-case filenames on Unix */
 					if(flength(str)>0) {	/* silently ignore 0-byte QWK packets */
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
+						sbbs->online=ON_LOCAL;
 						if(sbbs->unpack_qwk(str,i)==false) {
 							char newname[MAX_PATH+1];
 							sprintf(newname,"%s.%lx.bad",str,(long)now);
@@ -1517,6 +1518,7 @@ void event_thread(void* arg)
 								sbbs->logline("Q!",logmsg);
 							}
 						}
+						sbbs->online=0;
 						remove(str);
 					} 
 				}
