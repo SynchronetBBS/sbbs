@@ -2,7 +2,7 @@
 
 <!-- Main Content -->  
     
-    <td class="main" valign="top"><br />
+<td class="main" valign="top"><br />
 
 <table class="userlist" cellpadding="2" cellspacing="2">
 <tr>
@@ -20,4 +20,4 @@
 </tr>
 <<END REPEAT users>>
 </table>
-
+<br />
