@@ -340,7 +340,12 @@ __published:	// IDE-managed Components
     void __fastcall ViewClientsExecute(TObject *Sender);
     void __fastcall UserEditExecute(TObject *Sender);
     void __fastcall SaveSettings(TObject *Sender);
+    void __fastcall SaveRegistrySettings(TObject* Sender);    
     void __fastcall ImportSettings(TObject *Sender);
+    void __fastcall ImportFormSettings(TMemIniFile* IniFile, const char* section, TForm* form);
+    void __fastcall ExportFormSettings(TMemIniFile* IniFile, const char* section, TForm* form);
+    void __fastcall ImportFont(TMemIniFile* IniFile, const char* section, AnsiString prefix, TFont* Font);
+    void __fastcall ExportFont(TMemIniFile* IniFile, const char* section, AnsiString prefix, TFont* Font);
     void __fastcall ExportSettings(TObject *Sender);
     void __fastcall BBSLoginMenuItemClick(TObject *Sender);
     void __fastcall ViewLogClick(TObject *Sender);
