@@ -95,7 +95,7 @@ ushort crc16(char *str)
 
 int main(int argc, char **argv)
 {
-	char		str[128],c;
+	char		str[512],c;
 	int 		i,w,mode=0;
 	ulong		l,length,size,n;
 	smb_t		smb;
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 					printf(usage);
 					exit(1); }
 		else
-			strcpy(smb.file,argv[i]);
+			SAFECOPY(smb.file,argv[i]);
 
 	if(!smb.file[0]) {
 		printf(usage);
@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 			msg.idx.number=n;
 			msg.idx.attr=msg.hdr.attr;
 			msg.idx.time=msg.hdr.when_imported.time;
-			strcpy(str,msg.subj);
+			SAFECOPY(str,msg.subj);
 			strlwr(str);
 			remove_re(str);
 			msg.idx.subj=crc16(str);
@@ -214,10 +214,10 @@ int main(int argc, char **argv)
 				else
 					msg.idx.from=0; }
 			else {
-				strcpy(str,msg.to);
+				SAFECOPY(str,msg.to);
 				strlwr(str);
 				msg.idx.to=crc16(str);
-				strcpy(str,msg.from);
+				SAFECOPY(str,msg.from);
 				strlwr(str);
 				msg.idx.from=crc16(str); }
 			if((i=smb_putmsg(&smb,&msg))!=0) {
@@ -250,11 +250,13 @@ int main(int argc, char **argv)
 			}
 
 		smb_freemsgmem(&msg); }
-	printf("\nDone.\n");
 	smb.status.total_msgs=smb.status.last_msg=n-1;
+	printf("\nSaving message base status.\n");
 	if((i=smb_putstatus(&smb))!=0)
 		printf("\nsmb_putstatus returned %d\n",i);
 	smb_unlocksmbhdr(&smb);
+	printf("\nClosing message base.\n");
 	smb_close(&smb);
+	printf("\nDone.\n");
 	return(0);
 }
