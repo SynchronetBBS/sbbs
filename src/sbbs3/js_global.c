@@ -364,6 +364,41 @@ js_flength(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+		
+static JSBool
+js_play_sound(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if(!argc) {	/* Stop playing sound */
+#ifdef _WIN32
+		PlaySound(NULL,NULL,0);
+#endif
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		return(JS_TRUE);
+	}
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+#ifdef _WIN32
+	*rval = BOOLEAN_TO_JSVAL(PlaySound(p, NULL, SND_ASYNC|SND_FILENAME));
+#else
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+#endif
+
+	return(JS_TRUE);
+}
+
+
 static JSClass js_global_class ={
         "Global",
 		JSCLASS_HAS_PRIVATE, /* needed for scfg_t ptr */
@@ -390,6 +425,7 @@ static JSFunctionSpec js_global_functions[] = {
 	{"file_attrib",		js_fattr,			1},		/* get file mode/attributes */
 	{"file_date",		js_fdate,			1},		/* get file last modified date/time */
 	{"file_size",		js_flength,			1},		/* get file length (in bytes) */
+	{"play_sound",		js_play_sound,		0},		/* play sound file */
 	{0}
 };
 
