@@ -787,6 +787,9 @@ void make_data_dirs(scfg_t* cfg)
 	sprintf(str,"%slogs",cfg->logs_dir);
 	md(str);
 
+	if(cfg->mods_dir[0])
+		md(cfg->mods_dir);
+
 #if 0
 	int		i;
 
