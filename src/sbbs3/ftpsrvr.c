@@ -75,8 +75,6 @@
 #define FTP_VERSION				"1.05"
 #endif
 
-#define ILLEGAL_FILENAME_CHARS	"\\/|<>+[]:=\";,%"
-
 #define STATUS_WFC				"Listening"
 
 #define BBS_VIRTUAL_PATH		"bbs:/""/"	/* this is actually bbs:<slash><slash> */

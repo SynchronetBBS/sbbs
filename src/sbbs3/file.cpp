@@ -273,7 +273,7 @@ bool sbbs_t::checkfname(char *fname)
 	char 	str[256];
     int		c=0,d;
 
-	if(strcspn(fname,"\\/|<>+[]:=\";,%")!=strlen(fname)) {
+	if(strcspn(fname,ILLEGAL_FILENAME_CHARS)!=strlen(fname)) {
 		sprintf(str,"Suspicious filename attempt: '%s'",fname);
 		errorlog(str);
 		return(false); }

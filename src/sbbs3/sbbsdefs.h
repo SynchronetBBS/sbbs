@@ -64,6 +64,8 @@
 
 #define FNOPEN_BUF_SIZE		(2*1024)
 
+#define ILLEGAL_FILENAME_CHARS	"\\/|<>+[]:=\";,%"
+
 #ifndef __FLAT__
 #define __FLAT__	/* 32-bit "flat" memory model */
 #endif
