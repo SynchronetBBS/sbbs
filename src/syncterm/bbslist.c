@@ -339,7 +339,6 @@ struct bbslist *show_bbslist(int mode)
 					}
 					break;
 				case MSK_DEL:
-					uifc.msg("Huh?");
 					if(!list[opt]->name[0]) {
 						uifc.helpbuf=	"`Calming down`\n\n";
 										"~ Some handy tips on calming down ~\n"
@@ -364,6 +363,7 @@ struct bbslist *show_bbslist(int mode)
 						list[i]->id=i;
 					}
 					write_list(list);
+					listcount--;
 					break;
 			}
 		}
