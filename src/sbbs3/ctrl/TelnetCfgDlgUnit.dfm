@@ -17,8 +17,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 4
     Width = 342
     Height = 229
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = TelnetTabSheet
+    TabIndex = 1
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -169,8 +169,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 108
         Width = 208
         Height = 26
-        Hint = 'Log (debug) all received Telnet commands'
-        Caption = 'Log Received Commands'
+        Hint = 'Log (debug) all transmitted and received Telnet commands'
+        Caption = 'Log Telnet Commands'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
