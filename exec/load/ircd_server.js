@@ -473,7 +473,8 @@ function Server_Work() {
 			}
 			break;
 		case "NOTICE":
-			if (!cmd[1])
+			// FIXME: servers should be able to send notices.
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			var my_ircstr = IRC_string(cmdline);
 			if ( !cmd[2] || ( !cmd[3] && (
@@ -802,7 +803,7 @@ function Server_Work() {
 				break;
 			}
 			// message from our uplink telling us a server is gone
-			if (this.id == sq_server.parent) {
+			if (this.nick == sq_server.parent) {
 				sq_server.quit(reason,false,false,ThisOrigin);
 				break;
 			}
