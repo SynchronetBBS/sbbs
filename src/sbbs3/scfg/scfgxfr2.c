@@ -344,7 +344,7 @@ export to.
 				else if(k==1)
 					sprintf(str,"FILEBONE.NA");
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
-					,str,40,K_EDIT)<=0) {
+					,str,sizeof(str)-1,K_EDIT)<=0) {
 					uifc.changes=q;
 					break; }
 				if(fexist(str)) {
@@ -439,7 +439,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 					strcat(str,"dirs.raw");
 				}
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
-					,str,40,K_EDIT)<=0)
+					,str,sizeof(str)-1,K_EDIT)<=0)
                     break;
 				if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 					uifc.msg("Open Failure");
@@ -897,7 +897,7 @@ This path can be overridden on a per file basis using Alternate File
 Paths.
 */
 				uifc.input(WIN_L2R|WIN_SAV,0,17,"File Path"
-					,cfg.dir[i]->path,50,K_EDIT);
+					,cfg.dir[i]->path,sizeof(cfg.dir[i]->path)-1,K_EDIT);
 				break;
 			case 9:
 				SETHELP(WHERE);
@@ -1544,7 +1544,7 @@ blank, all file extensions will be allowed to be uploaded.
 */
 							uifc.input(WIN_L2R|WIN_SAV,0,17
 								,"File Extensions Allowed"
-								,cfg.dir[i]->exts,40,K_EDIT);
+								,cfg.dir[i]->exts,sizeof(cfg.dir[i]->exts)-1,K_EDIT);
 							break;
 						case 1:
 SETHELP(WHERE);
@@ -1555,7 +1555,7 @@ Use this if you wish to place the data directory for this directory
 on another drive or in another directory besides the default setting.
 */
 							uifc.input(WIN_MID|WIN_SAV,0,17,"Data"
-								,cfg.dir[i]->data_dir,50,K_EDIT);
+								,cfg.dir[i]->data_dir,sizeof(cfg.dir[i]->data_dir)-1,K_EDIT);
 							break;
 						case 2:
 SETHELP(WHERE);
@@ -1566,7 +1566,7 @@ This is a filename that will be used as a semaphore (signal) to your
 FidoNet front-end that new files are ready to be hatched for export.
 */
 							uifc.input(WIN_MID|WIN_SAV,0,17,"Upload Semaphore"
-								,cfg.dir[i]->upload_sem,50,K_EDIT);
+								,cfg.dir[i]->upload_sem,sizeof(cfg.dir[i]->upload_sem)-1,K_EDIT);
 							break;
 						case 3:
 							n=0;

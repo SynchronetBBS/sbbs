@@ -245,7 +245,7 @@ account information, you probably want to use an online external
 program configured to run as a logon event.
 */
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Event"
-				,cfg.sys_logon,50,K_EDIT);
+				,cfg.sys_logon,sizeof(cfg.sys_logon)-1,K_EDIT);
 			break;
 		case 1:
 			SETHELP(WHERE);
@@ -260,7 +260,7 @@ want to use an Online External Program configured to run as a logoff
 event.
 */
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Logout Event"
-				,cfg.sys_logout,50,K_EDIT);
+				,cfg.sys_logout,sizeof(cfg.sys_logout)-1,K_EDIT);
 			break;
 		case 2:
 			SETHELP(WHERE);
@@ -271,7 +271,7 @@ This is the command line for a program that will run after the first
 user that logs on after midnight, logs off (regardless of what node).
 */
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Daily Event"
-				,cfg.sys_daily,50,K_EDIT);
+				,cfg.sys_daily,sizeof(cfg.sys_daily)-1,K_EDIT);
 
 			break; } }
 }
@@ -319,7 +319,7 @@ To configure an event, select it and hit  ENTER .
 
 This is the internal code for the timed event.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Event Internal Code",str,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Event Internal Code",str,LEN_CODE
 			,K_UPPER)<1)
             continue;
 		if((cfg.event=(event_t **)REALLOC(cfg.event
@@ -420,7 +420,7 @@ to reference it by. It is helpful if this code is an abreviation of the
 command line.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-					,str,8,K_EDIT|K_UPPER);
+					,str,LEN_CODE,K_EDIT|K_UPPER);
 				if(code_ok(str))
 					strcpy(cfg.event[i]->code,str);
 				else {
@@ -443,7 +443,7 @@ If this option is not used, the current NODE's directory will be the
 current DOS drive/directory before the command line is executed.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Directory"
-					,cfg.event[i]->dir,50,K_EDIT);
+					,cfg.event[i]->dir,sizeof(cfg.event[i]->dir)-1,K_EDIT);
                 break;
 			case 2:
 				SETHELP(WHERE);
@@ -453,7 +453,7 @@ current DOS drive/directory before the command line is executed.
 This is the command line to execute upon this timed event.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
-					,cfg.event[i]->cmd,50,K_EDIT);
+					,cfg.event[i]->cmd,sizeof(cfg.event[i]->cmd)-1,K_EDIT);
 				break;
 
 			case 3:
@@ -811,7 +811,7 @@ refer to it internally. This code is usually an abreviation of the
 online program name.
 */
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
-			,code,8,K_EDIT|K_UPPER)<1)
+			,code,LEN_CODE,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
 			uifc.helpbuf=invalid_code;
@@ -1594,7 +1594,7 @@ This is the name or description of the external editor.
 */
 				strcpy(str,cfg.xedit[i]->name);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"External Editor Name"
-					,cfg.xedit[i]->name,40,K_EDIT))
+					,cfg.xedit[i]->name,sizeof(cfg.xedit[i]->name)-1,K_EDIT))
 					strcpy(cfg.xedit[i]->name,str);
 				break;
 			case 1:
@@ -1608,7 +1608,7 @@ Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-					,str,8,K_EDIT|K_UPPER);
+					,str,LEN_CODE,K_EDIT|K_UPPER);
 				if(code_ok(str))
 					strcpy(cfg.xedit[i]->code,str);
 				else {
@@ -1624,7 +1624,7 @@ abreviation of the name.
 This is the command line to execute when using this editor remotely.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Remote"
-					,cfg.xedit[i]->rcmd,50,K_EDIT);
+					,cfg.xedit[i]->rcmd,sizeof(cfg.xedit[i]->rcmd)-1,K_EDIT);
 				break;
 			case 3:
 				uifc.savnum=2;
@@ -2020,7 +2020,7 @@ for Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Section Internal Code"
-			,code,8,K_EDIT|K_UPPER)<1)
+			,code,LEN_CODE,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
 			uifc.helpbuf=invalid_code;
@@ -2267,7 +2267,7 @@ This is the global control key used to execute this event.
 This is the command line to execute when this hot key is pressed.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Command Line"
-					,cfg.hotkey[i]->cmd,50,K_EDIT);
+					,cfg.hotkey[i]->cmd,sizeof(cfg.hotkey[i]->cmd)-1,K_EDIT);
 				break;
 				} } }
 

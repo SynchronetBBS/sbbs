@@ -156,7 +156,7 @@ networked sub-boards. This default can be overridden on a per sub-board
 basis with the sub-board configuration Network Options....
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,nulstr
-						,cfg.qnet_tagline,70,K_MSG|K_EDIT);
+						,cfg.qnet_tagline,sizeof(cfg.qnet_tagline)-1,K_MSG|K_EDIT);
 					break;
 				case 0:
 					while(1) {
@@ -206,7 +206,7 @@ This is the QWK System ID of this hub. It is used for incoming and
 outgoing network packets and must be accurate.
 */
 							if(uifc.input(WIN_MID|WIN_SAV,0,0
-								,"System ID",str,8,K_UPPER)<1)
+								,"System ID",str,LEN_QWKID,K_UPPER)<1)
 								continue;
 
 							for(j=cfg.total_qhubs;j>i;j--)
@@ -420,7 +420,7 @@ EchoMail. This origin line can be overridden on a per sub-board basis
 with the sub-board configuration Network Options....
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"* Origin"
-						,cfg.origline,50,K_EDIT);
+						,cfg.origline,sizeof(cfg.origline)-1,K_EDIT);
                     break;
 				case 3:
 					SETHELP(WHERE);
@@ -432,7 +432,7 @@ FidoNet front-end that new NetMail has been created and the messages
 should be re-scanned.
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail Semaphore"
-						,cfg.netmail_sem,50,K_EDIT);
+						,cfg.netmail_sem,sizeof(cfg.netmail_sem)-1,K_EDIT);
                     break;
 				case 4:
 					SETHELP(WHERE);
@@ -444,7 +444,7 @@ FidoNet front-end that new EchoMail has been created and the messages
 should be re-scanned.
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Semaphore"
-						,cfg.echomail_sem,50,K_EDIT);
+						,cfg.echomail_sem,sizeof(cfg.echomail_sem)-1,K_EDIT);
                     break;
 				case 5:
 					SETHELP(WHERE);
@@ -455,7 +455,7 @@ This directory is where inbound files are placed. This directory is
 only used when an incoming message has a file attached.
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Files"
-						,cfg.fidofile_dir,50,K_EDIT);
+						,cfg.fidofile_dir,sizeof(cfg.fidofile_dir)-1,K_EDIT);
                     break;
 				case 6:
 					SETHELP(WHERE);
@@ -473,7 +473,7 @@ If all EchoMail sub-boards have specified EchoMail storage directories,
 this option is not used at all.
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Base"
-						,cfg.echomail_dir,50,K_EDIT);
+						,cfg.echomail_dir,sizeof(cfg.echomail_dir)-1,K_EDIT);
                     break;
 				case 7:
 					SETHELP(WHERE);
@@ -484,7 +484,7 @@ This is the directory where NetMail will be imported from and exported
 to.
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail"
-						,cfg.netmail_dir,50,K_EDIT);
+						,cfg.netmail_dir,sizeof(cfg.netmail_dir)-1,K_EDIT);
                     break;
 				case 8:
 					i=0;
@@ -679,7 +679,7 @@ If your system is networked via PostLink or PCRelay, this should be the
 Site Name for your BBS.
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Site Name"
-						,cfg.sys_psname,12,K_UPPER|K_EDIT);
+						,cfg.sys_psname,sizeof(cfg.sys_psname)-1,K_UPPER|K_EDIT);
 					break;
 				case 2:
 					SETHELP(WHERE);
@@ -817,7 +817,7 @@ Enter your system's Internet address (hostname or IP address) here
 (e.g. joesbbs.com).
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,""
-						,cfg.sys_inetaddr,60,K_EDIT);
+						,cfg.sys_inetaddr,sizeof(cfg.sys_inetaddr)-1,K_EDIT);
                     break;
 				case 1:
 					SETHELP(WHERE);
@@ -829,7 +829,7 @@ external Internet e-mail processors that new mail has been received
 and the message base should be re-scanned.
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Semaphore"
-						,cfg.smtpmail_sem,50,K_EDIT);
+						,cfg.smtpmail_sem,sizeof(cfg.smtpmail_sem)-1,K_EDIT);
                     break;
 				case 2:
 					SETHELP(WHERE);
@@ -841,7 +841,7 @@ external Internet gateways (if supported) that new mail has been created
 and the message base should be re-scanned.
 */
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound Semaphore"
-						,cfg.inetmail_sem,50,K_EDIT);
+						,cfg.inetmail_sem,sizeof(cfg.inetmail_sem)-1,K_EDIT);
                     break;
 				case 3:
 					i=0;
@@ -983,7 +983,7 @@ outgoing network packets and must be accurate.
 */
 			strcpy(str,cfg.qhub[num]->id);	/* save */
 			if(!uifc.input(WIN_MID|WIN_SAV,0,0,"QWK Network Hub System ID"
-				,cfg.qhub[num]->id,8,K_UPPER|K_EDIT))
+				,cfg.qhub[num]->id,LEN_QWKID,K_UPPER|K_EDIT))
 				strcpy(cfg.qhub[num]->id,str);
 			break;
 		case 1:
@@ -1358,7 +1358,7 @@ This is the Site Name of this hub. It is used for only for reference.
 */
 			strcpy(str,cfg.phub[num]->name);	/* save */
 			if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Hub Site Name"
-				,cfg.phub[num]->name,10,K_UPPER|K_EDIT))
+				,cfg.phub[num]->name,sizeof(cfg.phub[num]->name)-1,K_UPPER|K_EDIT))
 				strcpy(cfg.phub[num]->name,str);	/* restore */
 			break;
 		case 1:
@@ -1370,7 +1370,7 @@ This is the command line to use to initiate a call-out to this network
 hub.
 */
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Call-out Command"
-				,cfg.phub[num]->call,50,K_EDIT);
+				,cfg.phub[num]->call,sizeof(cfg.phub[num]->call)-1,K_EDIT);
 			break;
 		case 2:
 			sprintf(str,"%u",cfg.phub[num]->node);

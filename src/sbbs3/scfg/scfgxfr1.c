@@ -334,7 +334,7 @@ command line examples for a few file types.
 						case 0:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Viewable File Type Extension"
-								,cfg.fview[i]->ext,3,K_EDIT);
+								,cfg.fview[i]->ext,sizeof(cfg.fview[i]->ext)-1,K_EDIT);
 							break;
 						case 1:
 							uifc.input(WIN_MID|WIN_SAV,0,0
@@ -453,7 +453,7 @@ listed.
 						case 0:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Testable File Type Extension"
-								,cfg.ftest[i]->ext,3,K_EDIT);
+								,cfg.ftest[i]->ext,sizeof(cfg.ftest[i]->ext)-1,K_EDIT);
 							break;
 						case 1:
 							uifc.input(WIN_MID|WIN_SAV,0,0
@@ -463,7 +463,7 @@ listed.
 						case 2:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Working String"
-								,cfg.ftest[i]->workstr,40,K_EDIT|K_MSG);
+								,cfg.ftest[i]->workstr,sizeof(cfg.ftest[i]->workstr)-1,K_EDIT|K_MSG);
 							break;
 						case 3:
 							uifc.savnum=2;
@@ -576,7 +576,7 @@ for each file type and command line listed.
 						case 0:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Download Event Extension"
-								,cfg.dlevent[i]->ext,3,K_EDIT);
+								,cfg.dlevent[i]->ext,sizeof(cfg.dlevent[i]->ext)-1,K_EDIT);
 							break;
 						case 1:
 							uifc.input(WIN_MID|WIN_SAV,0,0
@@ -586,7 +586,7 @@ for each file type and command line listed.
 						case 2:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Working String"
-								,cfg.dlevent[i]->workstr,40,K_EDIT|K_MSG);
+								,cfg.dlevent[i]->workstr,sizeof(cfg.dlevent[i]->workstr)-1,K_EDIT|K_MSG);
 							break;
 						case 3:
 							uifc.savnum=2;
@@ -689,7 +689,7 @@ extract the file(s).
 						case 0:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Extractable File Type Extension"
-								,cfg.fextr[i]->ext,3,K_EDIT);
+								,cfg.fextr[i]->ext,sizeof(cfg.fextr[i]->ext)-1,K_EDIT);
 							break;
 						case 1:
 							uifc.input(WIN_MID|WIN_SAV,0,0
@@ -795,7 +795,7 @@ files from the transfer section, and more.
 						case 0:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Compressable File Type Extension"
-								,cfg.fcomp[i]->ext,3,K_EDIT);
+								,cfg.fcomp[i]->ext,sizeof(cfg.fcomp[i]->ext)-1,K_EDIT);
 							break;
 						case 1:
 							uifc.input(WIN_MID|WIN_SAV,0,0
@@ -929,7 +929,7 @@ command line for that method blank.
 						case 1:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Protocol Name"
-								,cfg.prot[i]->name,25,K_EDIT);
+								,cfg.prot[i]->name,sizeof(cfg.prot[i]->name)-1,K_EDIT);
                             break;
 						case 2:
 							uifc.savnum=2;

@@ -140,7 +140,7 @@ This is the command line to execute for this external chat pager.
 */
 				strcpy(str,cfg.page[i]->cmd);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Command Line"
-					,cfg.page[i]->cmd,50,K_EDIT))
+					,cfg.page[i]->cmd,sizeof(cfg.page[i]->cmd)-1,K_EDIT))
 					strcpy(cfg.page[i]->cmd,str);
 				break;
 			case 1:
@@ -234,7 +234,7 @@ to it internally. This code is usually an abreviation of the chat
 channel name.
 */
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
-			,code,8,K_EDIT|K_UPPER)<1)
+			,code,LEN_CODE,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
 			uifc.helpbuf=invalid_code;
@@ -315,7 +315,7 @@ This is the name or description of the chat channel.
 */
 				strcpy(str,cfg.chan[i]->name);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Chat Channel Name"
-					,cfg.chan[i]->name,25,K_EDIT))
+					,cfg.chan[i]->name,sizeof(cfg.chan[i]->name)-1,K_EDIT))
 					strcpy(cfg.chan[i]->name,str);
 				break;
 			case 1:
@@ -329,7 +329,7 @@ channel name.
 */
 				strcpy(str,cfg.chan[i]->code);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
-					,str,8,K_UPPER|K_EDIT))
+					,str,LEN_CODE,K_UPPER|K_EDIT))
 					break;
 				if(code_ok(str))
 					strcpy(cfg.chan[i]->code,str);
@@ -631,7 +631,7 @@ Every Guru must have its own unique code for Synchronet to refer to
 it internally. This code is usually an abreviation of the Guru name.
 */
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
-			,code,8,K_EDIT|K_UPPER)<1)
+			,code,LEN_CODE,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
 			uifc.helpbuf=invalid_code;
@@ -702,7 +702,7 @@ This is the name of the selected Guru.
 */
 				strcpy(str,cfg.guru[i]->name);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Guru Name"
-					,cfg.guru[i]->name,25,K_EDIT))
+					,cfg.guru[i]->name,sizeof(cfg.guru[i]->name)-1,K_EDIT))
 					strcpy(cfg.guru[i]->name,str);
 				break;
 			case 1:
@@ -715,7 +715,7 @@ it internally. This code is usually an abreviation of the Guru name.
 */
 				strcpy(str,cfg.guru[i]->code);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Guru Internal Code"
-					,str,8,K_EDIT|K_UPPER))
+					,str,LEN_CODE,K_EDIT|K_UPPER))
 					break;
 				if(code_ok(str))
 					strcpy(cfg.guru[i]->code,str);
@@ -841,7 +841,7 @@ This is the name of the selected action set.
 */
                 strcpy(str,cfg.actset[i]->name);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Action Set Name"
-                    ,cfg.actset[i]->name,25,K_EDIT))
+                    ,cfg.actset[i]->name,sizeof(cfg.actset[i]->name)-1,K_EDIT))
                     strcpy(cfg.actset[i]->name,str);
                 break;
             case 1:

@@ -532,7 +532,7 @@ Remember: The %! command line specifier is an abreviation for your
 		  configured EXEC directory path.
 */
 						uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
-							,cfg.node_daily,50,K_EDIT);
+							,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
 						break;
 					case 6:
 SETHELP(WHERE);
@@ -549,7 +549,7 @@ This option allows you to change the location of your control directory.
 The \TEXT\ suffix (sub-directory) cannot be changed or removed.
 */
 						uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
-							,cfg.text_dir,50,K_EDIT);
+							,cfg.text_dir,sizeof(cfg.text_dir)-1,K_EDIT);
 						break; 
 				} 
 			}

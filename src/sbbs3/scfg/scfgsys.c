@@ -99,7 +99,7 @@ entire system.
 
 This is the name of the BBS.
 */
-			uifc.input(WIN_MID,0,0,"BBS Name",cfg.sys_name,40,K_EDIT);
+			uifc.input(WIN_MID,0,0,"BBS Name",cfg.sys_name,sizeof(cfg.sys_name)-1,K_EDIT);
 			break;
 		case 1:
 			SETHELP(WHERE);
@@ -109,7 +109,7 @@ This is the name of the BBS.
 This is the location of the BBS. The format is flexible, but it is
 suggested you use the City, State format for clarity.
 */
-			uifc.input(WIN_MID,0,0,"Location",cfg.sys_location,40,K_EDIT);
+			uifc.input(WIN_MID,0,0,"Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
             break;
 		case 2:
 			SETHELP(WHERE);
@@ -120,7 +120,7 @@ This is the name or alias of the system operator. This does not have to
 be the same as user #1. This field is used for documentary purposes
 only.
 */
-			uifc.input(WIN_MID,0,0,"System Operator",cfg.sys_op,40,K_EDIT);
+			uifc.input(WIN_MID,0,0,"System Operator",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
 			break;
 		case 3:
 			SETHELP(WHERE);
@@ -132,7 +132,7 @@ sysop functions. This password should be something not easily guessed
 and should be kept absolutely confidential. This password must be
 entered at the SY: prompt.
 */
-			uifc.input(WIN_MID,0,0,"System Password",cfg.sys_pass,40,K_EDIT|K_UPPER);
+			uifc.input(WIN_MID,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
 			break;
 		case 4:
 			strcpy(opt[0],"Yes");
@@ -225,7 +225,7 @@ If you want callers to only be able to logon as New if they know a
 certain password, enter that password here. If you want any caller to
 be able to logon as New, leave this option blank.
 */
-			uifc.input(WIN_MID,0,0,"New User Password",cfg.new_pass,40
+			uifc.input(WIN_MID,0,0,"New User Password",cfg.new_pass,sizeof(cfg.new_pass)-1
 				,K_EDIT|K_UPPER);
 			break;
 		case 8:    /* Toggle Options */
@@ -1176,7 +1176,7 @@ new user information displayed to them and they are disconnected.
 Think of it as a password to guarantee that new users read the text
 displayed to them.
 */
-						uifc.input(WIN_MID,0,0,"New User Magic Word",cfg.new_magic,20
+						uifc.input(WIN_MID,0,0,"New User Magic Word",cfg.new_magic,sizeof(cfg.new_magic)-1
 							,K_EDIT|K_UPPER);
 						break;
 					case 1:
@@ -1192,7 +1192,7 @@ This option allows you to change the location of your data directory.
 */
 						strcpy(str,cfg.data_dir);
 						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Data Directory"
-							,str,50,K_EDIT)>0) {
+							,str,sizeof(cfg.data_dir)-1,K_EDIT)>0) {
 							backslash(str);
 							SAFECOPY(cfg.data_dir,str); 
 						}
@@ -1206,7 +1206,7 @@ Log files will be stored in this directory.
 */
 						strcpy(str,cfg.logs_dir);
 						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Logs Directory"
-							,str,50,K_EDIT)>0) {
+							,str,sizeof(cfg.logs_dir)-1,K_EDIT)>0) {
 							backslash(str);
 							SAFECOPY(cfg.logs_dir,str); 
 						}
@@ -1226,7 +1226,7 @@ This option allows you to change the location of your exec directory.
 */
 						strcpy(str,cfg.exec_dir);
 						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Exec Directory"
-							,str,50,K_EDIT)>0) {
+							,str,sizeof(cfg.exec_dir)-1,K_EDIT)>0) {
 							backslash(str);
 							SAFECOPY(cfg.exec_dir,str); 
 						}
@@ -1246,7 +1246,7 @@ are assumed to be located in the `exec` directory.
 */
 						strcpy(str,cfg.mods_dir);
 						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Mods Directory"
-							,str,50,K_EDIT)>0) {
+							,str,sizeof(cfg.mods_dir)-1,K_EDIT)>0) {
 							backslash(str);
 							SAFECOPY(cfg.mods_dir,str); 
 						}
@@ -1262,7 +1262,7 @@ directory that all users will be prompted to answer.
 */
 						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"SIF Questionnaire for User Input"
-							,str,8,K_UPPER|K_EDIT);
+							,str,LEN_CODE,K_UPPER|K_EDIT);
 						if(!str[0] || code_ok(str))
 							strcpy(cfg.new_sif,str);
 						else
@@ -1279,7 +1279,7 @@ edit function.
 */
 						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"SIF Questionnaire for Reviewing User Input"
-							,str,8,K_EDIT);
+							,str,LEN_CODE,K_EDIT);
 						if(!str[0] || code_ok(str))
 							strcpy(cfg.new_sof,str);
 						else
@@ -1473,32 +1473,32 @@ for each of the available triggers listed here.
                         break;
 
 					case 0:
-						uifc.input(WIN_MID|WIN_SAV,0,0,"Login Module",cfg.login_mod,8
-							,K_EDIT);
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Login Module"
+							,cfg.login_mod,sizeof(cfg.login_mod)-1,K_EDIT);
                         break;
 					case 1:
-						uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Module",cfg.logon_mod,8
-							,K_EDIT);
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Module"
+							,cfg.logon_mod,sizeof(cfg.logon_mod)-1,K_EDIT);
                         break;
 					case 2:
 						uifc.input(WIN_MID|WIN_SAV,0,0,"Synchronize Module"
-							,cfg.sync_mod,8,K_EDIT);
+							,cfg.sync_mod,sizeof(cfg.sync_mod)-1,K_EDIT);
                         break;
 					case 3:
-						uifc.input(WIN_MID|WIN_SAV,0,0,"Logoff Module",cfg.logoff_mod,8
-							,K_EDIT);
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Logoff Module"
+							,cfg.logoff_mod,sizeof(cfg.logoff_mod)-1,K_EDIT);
                         break;
 					case 4:
-						uifc.input(WIN_MID|WIN_SAV,0,0,"Logout Module",cfg.logout_mod,8
-							,K_EDIT);
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Logout Module"
+							,cfg.logout_mod,sizeof(cfg.logout_mod)-1,K_EDIT);
                         break;
 					case 5:
 						uifc.input(WIN_MID|WIN_SAV,0,0,"New User Module"
-							,cfg.newuser_mod,8,K_EDIT);
+							,cfg.newuser_mod,sizeof(cfg.newuser_mod)-1,K_EDIT);
                         break;
 					case 6:
 						uifc.input(WIN_MID|WIN_SAV,0,0,"Expired User Module"
-							,cfg.expire_mod,8,K_EDIT);
+							,cfg.expire_mod,sizeof(cfg.expire_mod)-1,K_EDIT);
                         break;
 
 					} }
@@ -1614,7 +1614,7 @@ security level from 0 to 99. The available options for each level are:
 						case 5:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Lines Allowed Per Message (Post/E-mail)"
-								,ultoa(cfg.level_linespermsg[i],tmp,10),4
+								,ultoa(cfg.level_linespermsg[i],tmp,10),5
 								,K_NUMBER|K_EDIT);
 							cfg.level_linespermsg[i]=atoi(tmp);
 							break;

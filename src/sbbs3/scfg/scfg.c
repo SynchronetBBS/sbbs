@@ -670,7 +670,7 @@ Every text file section must have its own unique internal code for
 Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,LEN_CODE
 			,K_EDIT)<1)
 			continue;
 		if(!code_ok(code)) {
@@ -738,7 +738,7 @@ This is the name of this text section.
 				strcpy(str,cfg.txtsec[i]->name);	/* save */
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10
 					,"Text File Section Name"
-					,cfg.txtsec[i]->name,40,K_EDIT))
+					,cfg.txtsec[i]->name,sizeof(cfg.txtsec[i]->name)-1,K_EDIT))
 					strcpy(cfg.txtsec[i]->name,str);
 				break;
 			case 1:
@@ -756,7 +756,7 @@ Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-					,str,8,K_EDIT);
+					,str,LEN_CODE,K_EDIT);
 				if(code_ok(str))
 					strcpy(cfg.txtsec[i]->code,str);
 				else {
@@ -840,7 +840,7 @@ This code will be the base filename used to load the shell from your
 EXEC directory. e.g. A shell with an internal code of MYBBS would
 indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,LEN_CODE
 			,K_EDIT)<1)
 			continue;
 		if(!code_ok(code)) {
@@ -922,7 +922,7 @@ This is the descriptive name of this command shell.
 				strcpy(str,cfg.shell[i]->name);    /* save */
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10
 					,"Command Shell Name"
-					,cfg.shell[i]->name,40,K_EDIT))
+					,cfg.shell[i]->name,sizeof(cfg.shell[i]->name)-1,K_EDIT))
 					strcpy(cfg.shell[i]->name,str);
 				break;
 			case 1:
@@ -944,7 +944,7 @@ EXEC directory. e.g. A shell with an internal code of MYBBS would
 indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-					,str,8,K_EDIT);
+					,str,LEN_CODE,K_EDIT);
 				if(code_ok(str))
 					strcpy(cfg.shell[i]->code,str);
 				else {
