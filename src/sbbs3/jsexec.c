@@ -104,12 +104,12 @@ static BOOL winsock_startup(void)
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
-		fprintf(statfp,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		fprintf(statfp,"%s %s\n",WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized=TRUE;
 		return(TRUE);
 	}
 
-    fprintf(errfp,"!WinSock startup ERROR %d", status);
+    fprintf(errfp,"!WinSock startup ERROR %d\n", status);
 	return(FALSE);
 }
 
@@ -541,7 +541,7 @@ long js_exec(const char *fname, char** args)
 
 	JS_GC(js_cx);
 
-	if(result==0)	/* No error? Use script result */
+	if(result==0 && rval!=JSVAL_VOID)	/* No error? Use script result */
 		JS_ValueToInt32(js_cx,rval,&result);
 
 	return(result);
