@@ -37,7 +37,9 @@
 
 #include <stdlib.h>		/* malloc/free on FreeBSD */
 #include <errno.h>		/* ENOMEM */
+#include <stdio.h>		/* SEEK_SET */
 
+#include "gen_defs.h"	/* BOOL */
 #include "sockwrap.h"	/* sendsocket */
 #include "filewrap.h"	/* filelength */
 
@@ -75,5 +77,43 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 		(*offset)+=wr;
 
 	return(wr);
+}
+
+/* Return true if connected, optionally sets *rd_p to true if read data available */
+BOOL socket_check(SOCKET sock, BOOL* rd_p)
+{
+	char	ch;
+	int		i,rd;
+	fd_set	socket_set;
+	struct	timeval tv;
+
+	if(rd_p!=NULL)
+		*rd_p=FALSE;
+
+	if(sock==INVALID_SOCKET)
+		return(FALSE);
+
+	FD_ZERO(&socket_set);
+	FD_SET(sock,&socket_set);
+
+	tv.tv_sec=0;
+	tv.tv_usec=0;
+
+	i=select(sock+1,&socket_set,NULL,NULL,&tv);
+	if(i==SOCKET_ERROR)
+		return(FALSE);
+
+	if(i==0) 
+		return(TRUE);
+
+	rd=recv(sock,&ch,1,MSG_PEEK);
+	if(rd==1 
+		|| (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
+		if(rd_p!=NULL)
+			*rd_p=TRUE;
+		return(TRUE);
+	}
+
+	return(FALSE);
 }
 
