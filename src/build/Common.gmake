@@ -102,6 +102,10 @@ ifndef VERSION
  VERSION	:=	3.12
 endif
 
+# Put local (optional) macro definitions in localdefs.mk
+-include localdefs.mk
+-include $(SRC_ROOT)/build/localdefs.mk
+
 # Set DEBUG
 ifdef DEBUG
  ifdef RELEASE
