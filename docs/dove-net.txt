@@ -124,6 +124,7 @@ as "New" at telnet://vert.synchro.net and create your QWKnet account using
 your BBS's QWK-ID as the user name (even if you already have a regular user
 account there). 
 
+*** IMPORTANT ***
 You must answer (Y)es to the following new user question:
 "Is this account to be used for QWK Networking (DOVE-Net)?"
 
@@ -131,10 +132,6 @@ Remember the password you used to create this account, you'll need it later.
 
 It is important that you do NOT use a regular user account for QWK packet
 transfers.
-
-Note: You can optionally use one of the other Vertrauen servers
-(rob.synchro.net or cvs.synchro.net) if you wish. They all share the same
-BBS databases.
 
 
 Step 3: Configure Your BBS Software
@@ -144,7 +141,7 @@ to "Using the Baja FTP Client...".
 
 Synchronet BBS Software for Win32 v3.00 comes pre-configured for DOVE-Net 
 using the Windows command-line FTP client application to transfer packets 
-with Vetrauen (vert.synchro.net). All you need to do is follow the 
+with Vetrauen (dove.synchro.net). All you need to do is follow the 
 instructions in the pre-installed file: EXEC\VERT.BAT.
 
 *** FTP Caveat ***
@@ -176,7 +173,7 @@ Using a Scripted FTP Client for QWKnet Transfers
 ------------------------------------------------
 Your hub must be running a Synchronet v3 FTP Server for you to use FTP for
 QWKnet transfers. If you're using Vertrauen as your hub, the FTP address is
-ftp://vert.synchro.net. To use the command-line FTP client that comes with
+ftp://dove.synchro.net. To use the command-line FTP client that comes with
 Windows, follow these steps (ignore these instructions if you've installed 
 Synchronet v3.00b or later):
 
@@ -200,8 +197,9 @@ This is the preferred method of QWKnet packet transfers.
 1. Make sure you have the file QNET-FTP.BIN in your EXEC directory.
 
 2. Change the QWKnet call-out command line (in SCFG->Networks->QWK->Hubs->VERT)
-   to "*QNET-FTP VERT vert.synchro.net YOURPASS" but replace YOURPASS with the
-   password you used when creating your QWKnet account on Vertrauen.
+   to "*QNET-FTP VERT dove.synchro.net YOURPASS" but replace YOURPASS with the
+   password you used when creating your QWKnet account on Vertrauen. The rest
+   of the command line must be exactly as shown above.
 
 
 Terminology (as used in this document)
@@ -305,32 +303,48 @@ Conf  Name					Access Requirements
 2017  Pro-Audio Discussion
 2018  Firearms Discussion
 2019  Sports Discussion
+2020 *Religious Discussion/Debate/Evangelism
+2021 *Hobby Corner (RC/modeling/etc)
+2030 *Synchronet Announcements
 2007  Synchronet Discussion
 2008  Synchronet Sysops Only			LEVEL 90 OR REST Q
 2011  Synchronet Programming (Baja)
-2014  Synchronet Programming (non-Baja)
+2012 *Synchronet Programming (JavaScript)
+2014  Synchronet Programming (C/C++ and CVS)
 2013  Synchronet Data				LEVEL 90 OR REST Q
 2010  DOVE-Net Sysops Only			LEVEL 90 OR REST Q
 
+* - Added in April, 2004
 
 Access Requirements
 -------------------
-The "DOVE-Net Sysops Only" conference MUST NOT be publicly accessible. This
-message area is for discussion among DOVE-Net Sysops ONLY. This is the
-correct message area to use for "test messages".
+The "Synchronet Announcements" conference is a publicly accessible
+*read-only* conference for announcements from authorized Synchronet
+developers (currently only myself). No-one on your BBS may be allowed
+to post messages in this message area. This can be accomplished in 
+Synchronet by setting the "Posting Requirements" to "USER NOT 0".
+
+The messsages posted in this conference are also distributed as
+anInternet mailing-list. You can subscribe to this mailing-list by
+sending an Internet e-mail to listserv@synchro.net with
+"subscribe announce" in the message body.
+
+The "Synchronet Sysops Only" conference should not be publicly accessible,
+except for users that claim to be Synchronet Sysops.
 
 The "Synchronet Data" conference contains messages not intended for human
 consumption (the messages are used to synchronize the global BBS List and
 Match Maker databases), so this message area should not be publicly
 accessible.
 
-The "Synchronet Sysops Only" conference should not be publicly accessible,
-except for users that claim to be Synchronet Sysops.
+The "DOVE-Net Sysops Only" conference MUST NOT be publicly accessible. This
+message area is for discussion among DOVE-Net Sysops ONLY. This is the
+correct message area to use for "test messages".
 
 
 Gateways
 --------
-You *must* not gate DOVE-Net conferences to any other network without
+You *must not* gate DOVE-Net conferences to any other network without
 explicit, prior permission. 
 
 The following DOVE-Net conferences are already gated to other networks:
@@ -345,7 +359,6 @@ Synchronet Data        <=> SYNCDATA echo on the FidoNet Zone 1 Backbone
 Contact Information
 -------------------
 Vertrauen:      telnet/ftp/nntp/gopher/finger: vert.synchro.net
-                backup servers: rob.synchro.net and cvs.synchro.net
-Co-founder:     rob@synchro.net
+Co-founder:     rob [at] synchro.net
 
 /* End of DOVE-NET.TXT */
