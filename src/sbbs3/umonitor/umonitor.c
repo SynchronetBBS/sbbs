@@ -9,6 +9,7 @@
 #include "sbbsdefs.h"
 #include "genwrap.h"	/* stricmp */
 #include "filewrap.h"	/* lock/unlock/sopen */
+#include "sockwrap.h"
 
 enum {
 	 MODE_LIST
@@ -64,6 +65,7 @@ void spyon(char *sockname)  {
 	struct	termios	tio;
 	struct	termios	old_tio;
 	struct pollfd pset[2];
+	BOOL	b;
 
 	/* ToDo Test for it actually being a socket! */
 	/* Well, it will fail to connect won't it?   */
@@ -95,11 +97,18 @@ void spyon(char *sockname)  {
 		if((poll(pset,2,INFTIM))<0)  {
 			close(spy_sock);
 			spy_sock=INVALID_SOCKET;
+			break;
+		}
+		if(!socket_check(spy_sock,NULL,&b,0)) {
+			close(spy_sock);
+			spy_sock=INVALID_SOCKET;
+			break;
 		}
 		if(pset[0].revents)  {
 			if(pset[0].revents&(POLLNVAL|POLLHUP|POLLERR))  {
 				close(spy_sock);
 				spy_sock=INVALID_SOCKET;
+				break;
 			}
 			else  {
 				if((i=read(STDIN_FILENO,&key,1))==1)  {
@@ -108,7 +117,7 @@ void spyon(char *sockname)  {
 						case CTRL('c'):
 							close(spy_sock);
 							spy_sock=INVALID_SOCKET;
-							return;
+							break;
 						default:
 							write(spy_sock,&key,1);
 					}
@@ -116,6 +125,7 @@ void spyon(char *sockname)  {
 				else if(i<0) {
 					close(spy_sock);
 					spy_sock=INVALID_SOCKET;
+					break;
 				}
 			}
 		}
@@ -123,6 +133,7 @@ void spyon(char *sockname)  {
 			if(pset[1].revents&(POLLNVAL|POLLHUP|POLLERR))  {
 				close(spy_sock);
 				spy_sock=INVALID_SOCKET;
+				break;
 			}
 			else  {
 				if((i=read(spy_sock,&buf,1))==1)  {
@@ -131,6 +142,7 @@ void spyon(char *sockname)  {
 				else if(i<0) {
 					close(spy_sock);
 					spy_sock=INVALID_SOCKET;
+					break;
 				}
 			}
 		}

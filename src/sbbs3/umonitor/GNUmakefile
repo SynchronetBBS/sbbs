@@ -5,8 +5,10 @@ LD	?=	gcc
 
 vpath %.c ../../xpdev ../../uifc
 
-umonitor: filewrap.o uifcc.o uifcx.o  umonitor.o
-	$(CC) $(LFLAGS) filewrap.o uifcc.o uifcx.o  umonitor.o -o umonitor
+OBJS	:=	filewrap.o uifcc.o uifcx.o umonitor.o sockwrap.o
+
+umonitor: $(OBJS)
+	$(CC) $(LFLAGS) $(OBJS) -o umonitor
 
 # Implicit C Compile Rule for utils
 $(EXEODIR)/%.o : %.c $(BUILD_DEPENDS)
