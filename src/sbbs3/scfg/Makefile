@@ -17,7 +17,7 @@ LD		=	ilink32
 SLASH	=	\\
 OFILE	=	obj
 EXEFILE	=	.exe
-ODIR	=	bcc.win32	# Executable output directory
+EXEODIR	=	bcc.win32	# Executable output directory
 XPDEV	=   	..\..\xpdev
 UIFC	=	..\..\uifc
 LIB	=	..\..\..\lib
@@ -40,43 +40,44 @@ CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-pro -w-800
 !ifdef DEBUG
 CFLAGS	=	$(CFLAGS) -v -Od -D_DEBUG 
 LFLAGS	=	$(LFLAGS) -v
-ODIR	=	$(ODIR).debug
+EXEODIR	=	$(EXEODIR).debug
 !else
-ODIR	=	$(ODIR).release
+EXEODIR	=	$(EXEODIR).release
 !endif
+LIBODIR = 	$(EXEODIR)
 
 # Cross platform/compiler definitions
 !include targets.mk	# defines all targets
 !include objects.mk	# defines $(OBJS)
 
 !ifdef USE_UIFC32
-OBJS = $(OBJS) $(ODIR)\uifc32.$(OFILE)
+OBJS = $(OBJS) $(EXEODIR)\uifc32.$(OFILE)
 CFLAGS  =   $(CFLAGS) -DUSE_UIFC32
 !else
-OBJS = $(OBJS) $(ODIR)\uifc.$(OFILE)
+OBJS = $(OBJS) $(EXEODIR)\uifc.$(OFILE)
 !endif
 
 !ifdef USE_FLTK
 CFLAGS 	= $(CFLAGS) -DUSE_FLTK -I$(INCLUDE)\fltk
-OBJS 	= $(OBJS) $(ODIR)\uifcfltk.$(OFILE) $(LIB)/fltk/win32/fltk.lib
+OBJS 	= $(OBJS) $(EXEODIR)\uifcfltk.$(OFILE) $(LIB)/fltk/win32/fltk.lib
 !endif
 
 # Implicit C Compile Rule for SCFG
 .c.$(OFILE):
-	@$(CC) $(CFLAGS) -n$(ODIR) -c $<
+	@$(CC) $(CFLAGS) -n$(EXEODIR) -c $<
 
 .cpp.$(OFILE):
-	@$(CC) $(CFLAGS) -n$(ODIR) -c $<
+	@$(CC) $(CFLAGS) -n$(EXEODIR) -c $<
 
 # Create output directories if they don't exist
-$(ODIR):
-	@if not exist $(ODIR) mkdir $(ODIR)
+$(EXEODIR):
+	@if not exist $(EXEODIR) mkdir $(EXEODIR)
 
 $(MAKEHELP): makehelp.c
-	@$(CC) -q -n$(ODIR) $?
+	@$(CC) -q -n$(EXEODIR) $?
 
 $(SCFGHELP): $(OBJS) $(MAKEHELP)
-	@$(MAKEHELP) $(ODIR)
+	@$(MAKEHELP) $(EXEODIR)
 
 # Monolithic SCFG executable Build Rule
 $(SCFG): $(OBJS)
