@@ -2325,6 +2325,7 @@ static BOOL exec_cgi(http_session_t *session)
 	BOOL	done_parsing_headers=FALSE;
 	BOOL	got_valid_headers=FALSE;
 	char	cgi_status[MAX_REQUEST_LINE+1];
+	char	content_type[MAX_REQUEST_LINE+1];
 	char	header[MAX_REQUEST_LINE+1];
 	char	*directive=NULL;
 	char	*value=NULL;
@@ -2410,7 +2411,8 @@ static BOOL exec_cgi(http_session_t *session)
 
 	start=time(NULL);
 
-	cgi_status[0]=0;
+	SAFECOPY(cgi_status,session->req.status);
+	SAFEPRINTF(content_type,"%s: text/plain",get_header(HEAD_TYPE));
 	while(server_socket!=INVALID_SOCKET) {
 
 		if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
@@ -2428,82 +2430,77 @@ static BOOL exec_cgi(http_session_t *session)
 			NULL				// pointer to unread bytes in this message
 			);
 		if(waiting) {
-			if(done_parsing_headers && got_valid_headers)  {
-				msglen=0;
+
+			/* reset inactivity timer */
+			start=time(NULL);	
+
+			msglen=0;
+			if(done_parsing_headers) {
 				if(ReadFile(rdpipe,buf,sizeof(buf),&msglen,NULL)==FALSE) {
 					lprintf(LOG_ERR,"%04d !ERROR %d reading from pipe"
 						,session->socket,GetLastError());
 					break;
 				}
-				if(msglen) {
-					lprintf(LOG_DEBUG,"%04d Sending %d bytes"
-						,session->socket,msglen);
-					wr=sendsocket(session->socket,buf,msglen);
-					/* log actual bytes sent */
-					if(session->req.ld!=NULL && wr>0)
-						session->req.ld->size+=wr;	
-					/* reset inactivity timer */
-					start=time(NULL);	
-					continue;
-				}
-			} else  {
+			}
+			else  {
 				/* This is the tricky part */
+				buf[0];
 				i=pipereadline(rdpipe,buf,sizeof(buf));
 				if(i<0)  {
 					got_valid_headers=FALSE;
 					break;
 				}
-				start=time(NULL);
-
-				if(!done_parsing_headers && *buf)  {
-					SAFECOPY(header,buf);
-					directive=strtok(header,":");
-					if(directive != NULL)  {
-						value=strtok(NULL,"");
-						i=get_header_type(directive);
-						switch (i)  {
-							case HEAD_LOCATION:
-								got_valid_headers=TRUE;
-								if(*value=='/')  {
-									unescape(value);
-									SAFECOPY(session->req.virtual_path,value);
-									session->req.send_location=MOVED_STAT;
-									if(cgi_status[0]==0)
-										SAFECOPY(cgi_status,error_302);
-								} else  {
-									SAFECOPY(session->req.virtual_path,value);
-									session->req.send_location=MOVED_STAT;
-									if(cgi_status[0]==0)
-										SAFECOPY(cgi_status,error_302);
-								}
-								break;
-							case HEAD_STATUS:
-								SAFECOPY(cgi_status,value);
-								break;
-							case HEAD_LENGTH:
-								session->req.keep_alive=orig_keep;
-								listPushNodeString(&session->req.dynamic_heads,buf);
-								break;
-							case HEAD_TYPE:
-								got_valid_headers=TRUE;
-								listPushNodeString(&session->req.dynamic_heads,buf);
-								break;
-							default:
-								listPushNodeString(&session->req.dynamic_heads,buf);
-						}
+				SAFECOPY(header,buf);
+				if((directive=strtok(header,":"))!=NULL) {
+					value=strtok(NULL,"");
+					i=get_header_type(directive);
+					switch (i)  {
+						case HEAD_LOCATION:
+							got_valid_headers=TRUE;
+							if(*value=='/')  {
+								unescape(value);
+								SAFECOPY(session->req.virtual_path,value);
+								session->req.send_location=MOVED_STAT;
+								if(cgi_status[0]==0)
+									SAFECOPY(cgi_status,error_302);
+							} else  {
+								SAFECOPY(session->req.virtual_path,value);
+								session->req.send_location=MOVED_STAT;
+								if(cgi_status[0]==0)
+									SAFECOPY(cgi_status,error_302);
+							}
+							break;
+						case HEAD_STATUS:
+							SAFECOPY(cgi_status,value);
+							break;
+						case HEAD_LENGTH:
+							session->req.keep_alive=orig_keep;
+							listPushNodeString(&session->req.dynamic_heads,buf);
+							break;
+						case HEAD_TYPE:
+							got_valid_headers=TRUE;
+							SAFECOPY(content_type,buf);
+							break;
+						default:
+							listPushNodeString(&session->req.dynamic_heads,buf);
 					}
+					continue;
 				}
-				else  {
-					if(got_valid_headers)  {
-						session->req.dynamic=IS_CGI;
-						if(cgi_status[0]==0)
-							SAFECOPY(cgi_status,session->req.status);
-						send_headers(session,cgi_status);
-					}
-					done_parsing_headers=TRUE;
-				}
-				continue;
+				msglen=i;	/* we may send this text later */
+				done_parsing_headers = TRUE;	/* invalid header */
+				session->req.dynamic=IS_CGI;
+				listPushNodeString(&session->req.dynamic_heads,content_type);
+				send_headers(session,cgi_status);
 			}
+			if(msglen) {
+				lprintf(LOG_DEBUG,"%04d Sending %d bytes"
+					,session->socket,msglen);
+				wr=sendsocket(session->socket,buf,msglen);
+				/* log actual bytes sent */
+				if(session->req.ld!=NULL && wr>0)
+					session->req.ld->size+=wr;	
+			}
+			continue;
 		}
 		Sleep(1);
 
@@ -2526,15 +2523,11 @@ static BOOL exec_cgi(http_session_t *session)
 		CloseHandle(wrpipe);
 	CloseHandle(process_info.hProcess);
 
-	if(!got_valid_headers) {
-		lprintf(LOG_ERR,"%04d CGI Process %s did not generate valid headers",session->socket,cmdline);
-		return(FALSE);
-	}
-
-	if(!done_parsing_headers) {
-		lprintf(LOG_ERR,"%04d CGI Process %s did not send data header termination",session->socket,cmdline);
-		return(FALSE);
-	}
+	if(!got_valid_headers)
+		lprintf(LOG_WARNING,"%04d !CGI Process %s did not generate valid headers",session->socket,cmdline);
+	
+	if(!done_parsing_headers)
+		lprintf(LOG_WARNING,"%04d !CGI Process %s did not send data header termination",session->socket,cmdline);
 
 	return(TRUE);
 #endif
