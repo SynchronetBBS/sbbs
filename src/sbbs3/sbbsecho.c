@@ -4523,7 +4523,7 @@ int main(int argc, char **argv)
 						,packet+offset,faddrtoa(&pkt_faddr,NULL)
 						,password,cfg.nodecfg[k].pktpwd);
 					printf("Security Violation (Incorrect Password)\n");
-					if(cfg.log&LOG_SECURITY)
+					if(cfg.log&LOG_SECURE)
 						logprintf(str);
 					fclose(fidomsg);
 					continue; 
@@ -4691,7 +4691,7 @@ int main(int argc, char **argv)
 						if(!memcmp(&cfg.area[i].uplink[j],&pkt_faddr,sizeof(faddr_t)))
 							break;
 					if(j==cfg.area[i].uplinks) {
-						if(cfg.log&LOG_SECURITY)
+						if(cfg.log&LOG_SECURE)
 							logprintf("%s: Security violation - %s not in AREAS.BBS"
 								,areatagstr,faddrtoa(&pkt_faddr,NULL));
 						printf("Security Violation (Not in AREAS.BBS)\n");

@@ -82,7 +82,7 @@
 #define LOG_AREAFIX 	(1L<<0) 		/* Log areafix messages */
 #define LOG_IMPORTED	(1L<<1) 		/* Log imported netmail messages */
 #define LOG_PACKETS 	(1L<<2) 		/* Log imported packet names/types */
-#define LOG_SECURITY	(1L<<3) 		/* Log security violations */
+#define LOG_SECURE		(1L<<3) 		/* Log security violations */
 #define LOG_GRUNGED 	(1L<<4) 		/* Log grunged messages */
 #define LOG_PRIVATE 	(1L<<5) 		/* Log disallowed private msgs */
 #define LOG_AREA_TOTALS (1L<<6) 		/* Log totals for each area */

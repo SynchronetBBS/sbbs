@@ -1450,17 +1450,14 @@ static BOOL check_extra_path(http_session_t * session, char *path)
 		while((p=find_last_slash(vpath))!=NULL)
 		{
 			*p=0;
-			if((p=find_last_slash(rpath))!=NULL)
-			{
-				*p=0;
-			}
-			else
-			{
+			if(p==vpath)
 				return(FALSE);
-			}
+			if((p=find_last_slash(rpath))==NULL)
+				return(FALSE);
+			*p=0;
 			SAFECOPY(str,epath);
 			sprintf(epath,"/%s%s",(p+1),str);
-			if(stat(rpath,&sb)!=-1)
+			if(stat(rpath,&sb)!=-1 && (!(sb.st_mode&S_IFDIR)))
 			{
 				SAFECOPY(session->req.extra_path_info,epath);
 				SAFECOPY(session->req.virtual_path,vpath);
