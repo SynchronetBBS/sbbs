@@ -388,6 +388,9 @@ void sbbs_read_ini(
 		SAFECOPY(services->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));
 
+		SAFECOPY(services->ini_file
+			,iniGetString(fp,section,"iniFile","services.ini",value));
+
 		SAFECOPY(services->cfg_file
 			,iniGetString(fp,section,"ConfigFile","services.cfg",value));
 
