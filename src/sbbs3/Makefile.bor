@@ -73,7 +73,8 @@ $(EXEODIR):
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): sbbscon.c $(OBJS) $(LIBODIR)\ver.$(OFILE) $(LIBODIR)\ftpsrvr.$(OFILE) \
-	$(LIBODIR)\mailsrvr.$(OFILE) $(LIBODIR)\mxlookup.$(OFILE) $(LIBODIR)\mime.$(OFILE)
+	$(LIBODIR)\mailsrvr.$(OFILE) $(LIBODIR)\mxlookup.$(OFILE) $(LIBODIR)\mime.$(OFILE) \
+	$(LIBODIR)\services.$(OFILE)
 	$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $** $(LIBS)
 
 # SBBS DLL Link Rule
