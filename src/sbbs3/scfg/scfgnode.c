@@ -226,6 +226,8 @@ Options with a trailing ... will produce a sub-menu of more options.
 					,cfg.node_misc&NM_7BITONLY ? "No":"Yes");
 				sprintf(opt[i++],"%-27.27s%s","Spinning Pause Prompt"
 					,cfg.node_misc&NM_NOPAUSESPIN ? "No":"Yes");
+				sprintf(opt[i++],"%-27.27s%s","Keep Node File Open"
+					,cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
 
 				opt[i][0]=0;
 				uifc.savnum=0;
@@ -244,7 +246,7 @@ more states, such as Yes and No.
 						done=1;
 						break;
 					case 0:
-						i=1;
+						i=cfg.node_misc&NM_LOWPRIO ? 0:1;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -271,7 +273,7 @@ user, but improving aggregate system performance under multitaskers.
 							uifc.changes=1; }
                         break;
 					case 1:
-						i=0;
+						i=cfg.node_misc&NM_NO_NUM ? 1:0;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -293,7 +295,7 @@ set this option to Yes.
 							uifc.changes=1; }
                         break;
 					case 2:
-						i=1;
+						i=cfg.node_misc&NM_LOGON_R ? 0:1;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -315,7 +317,7 @@ their alias, set this option to Yes.
 							uifc.changes=1; }
                         break;
 					case 3:
-						i=1;
+						i=cfg.node_misc&NM_LOGON_P ? 0:1;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -337,7 +339,7 @@ prompt for a password, set this option to Yes.
 							uifc.changes=1; }
                         break;
 					case 4:
-						i=0;
+						i=cfg.node_misc&NM_7BITONLY ? 0:1;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -360,7 +362,7 @@ to send IBM extended ASCII characters during the login sequence.
 							uifc.changes=1; }
                         break;
 					case 5:
-						i=0;
+						i=cfg.node_misc&NM_NOPAUSESPIN ? 1:0;
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -374,11 +376,35 @@ this option to Yes.
 */
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Spinning Cursor at Pause Prompt",opt);
-						if(i==0 && !(cfg.node_misc&NM_NOPAUSESPIN)) {
+						if(i==0 && cfg.node_misc&NM_NOPAUSESPIN) {
+							cfg.node_misc&=~NM_NOPAUSESPIN;
+							uifc.changes=1; }
+						else if(i==1 && !(cfg.node_misc&NM_NOPAUSESPIN)) {
 							cfg.node_misc|=NM_NOPAUSESPIN;
 							uifc.changes=1; }
-						else if(i==1 && (cfg.node_misc&NM_NOPAUSESPIN)) {
-							cfg.node_misc&=~NM_NOPAUSESPIN;
+                        break;
+					case 6:
+						i=cfg.node_misc&NM_CLOSENODEDAB ? 1:0;
+						strcpy(opt[0],"Yes");
+						strcpy(opt[1],"No");
+						opt[2][0]=0;
+						uifc.savnum=1;
+						SETHELP(WHERE);
+/*
+Keep Node File Open:
+
+If you want to keep the shared node file (ctrl/node.dab) open,
+(for better performance and reliability) set this option to Yes.
+If want to keep the file closed (for Samba compatiblity), set this
+option to No.
+*/
+						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+							,"Keep Node File Open",opt);
+						if(i==0 && cfg.node_misc&NM_CLOSENODEDAB) {
+							cfg.node_misc&=~NM_CLOSENODEDAB;
+							uifc.changes=1; }
+						else if(i==1 && !(cfg.node_misc&NM_CLOSENODEDAB)) {
+							cfg.node_misc|=NM_CLOSENODEDAB;
 							uifc.changes=1; }
                         break;
 						} }
