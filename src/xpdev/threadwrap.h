@@ -50,7 +50,7 @@ extern "C" {
 	#include <sys/param.h>
 	#include <pthread.h>	/* POSIX threads and mutexes */
 	#undef YIELD
-	#if defined(__linux__)
+	#if defined(__linux__) || defined(__QNX__)
 		#define YIELD()		sched_yield()
 	#elif defined(_PTH_PTHREAD_H_)
 		#define YIELD()		pth_yield(NULL)

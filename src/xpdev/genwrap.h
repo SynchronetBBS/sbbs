@@ -177,7 +177,11 @@ extern "C" {
 
 #ifndef SLEEP
 	#ifndef YIELD
-	#define	YIELD()			sched_yield()
+	#if defined(__OpenBSD__) || defined(__NetBSD__)
+		#define YIELD()
+	#else
+		#define	YIELD()			sched_yield()
+	#endif
 	#endif
 	#define SLEEP(x)		({	int y=x; struct timeval tv; \
 								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
