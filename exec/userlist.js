@@ -6,7 +6,10 @@
 
 load("sbbsdefs.js");
 
-var lastuser=system.lastuser;
+if(system.lastuser==undefined)	/* v3.10 */
+	lastuser=system.stats.total_users;
+else							/* v3.11 */
+	lastuser=system.lastuser;
 var u = new User(1);
 
 for(i=1;i<=lastuser;i++) {
