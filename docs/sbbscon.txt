@@ -77,6 +77,23 @@ The server/host-specific configuration options are set with sbbs command-line
 options (run "sbbs help" for a list), or by editing the Synchronet
 Initialization file (e.g. ctrl/sbbs.ini).
 
+
+Initialization File
+-------------------
+The default initalization file is ctrl/sbbs.ini. A different initialization 
+(.ini) filename may be used by specifying the path and filename on the sbbs
+command-line. Example:
+
+	sbbs /sbbs/ctrl/mybbs.ini
+
+If the path and filename of the initialization file is not passed on the
+command-line, sbbs will use the SBBSCTRL environment variable to determine
+the location of your Synchronet ctrl directory, where it expects to find
+either <HOSTNAME>.ini or sbbs.ini.
+
+
+For Unix Sysops
+---------------
 You will particularily want to pay attention to the [UNIX] section of sbbs.ini
 if you do not want to run Synchronet (and all doors!) as root (You don't), you
 will have to set the User= and Group= lines.
@@ -97,23 +114,9 @@ of Synchronet as appropriate.  Specifically, S will use:
     LOG_CRON
 
 
-Initialization File
--------------------
-The default initalization file is ctrl/sbbs.ini. A different initialization 
-(.ini) filename may be used by specifying the path and filename on the sbbs
-command-line. Example:
-
-	sbbs /sbbs/ctrl/mybbs.ini
-
-If the path and filename of the initialization file is not passed on the
-command-line, sbbs will use the SBBSCTRL environment variable to determine
-the location of your Synchronet ctrl directory, where it expects to find
-either <HOSTNAME>.ini or sbbs.ini.
-
-
 Terminal Capabilities
 ---------------------
-As you have probobly noticed by now, most telnet programs designed for BBSs
+As you have probobly noticed by now, most telnet programs designed for BBSes
 do not display screens in *nix programs correctly.  Included with Synchronet
 is a pair of files to enable you to run native *nix programs and have the
 output be useable in standard BBS terminals.  These files are termcap and
@@ -131,7 +134,8 @@ Installing the termcap:
 2) Enter the command ``cat termcap >> /etc/termcap''
 3) *** FreeBSD Only *** run the command:
 	``cap_mkdb -f /usr/share/misc/termcap.db /etc/termcap''
-Once the are installed, edit the ExternalTerm line in your *.ini file to read:
+
+Once they are installed, edit the ExternalTerm line in your *.ini file to read:
     ExternalTerm=ansi-bbs
 
 
