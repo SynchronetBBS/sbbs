@@ -2763,7 +2763,7 @@ function IRCClient_setusermode(modestr) {
 		if (bcast_addmodes || bcast_delmodes)
 			this.bcast_to_servers("MODE "+this.nick+" "+bcast_modestr,this);
 	}
-	return 1;
+	return bcast_modestr;
 }
 
 function IRCClient_check_timeout() {

@@ -170,7 +170,7 @@ function Server_Work() {
 				this.ircout("PONG " + cmd[2] + " :" + cmd[1]);
 			break;
 		case "ADMIN":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
@@ -201,6 +201,8 @@ function Server_Work() {
 			scan_for_klined_clients();
 			break;
 		case "AWAY":
+			if (ThisOrigin.server)
+				break;
 			if (!cmd[1])
 				ThisOrigin.away = "";
 			else
@@ -216,7 +218,7 @@ function Server_Work() {
 				"CHATOPS :" + my_ircstr);
 			break;
 		case "CONNECT":
-			if (!cmd[3] || !this.hub)
+			if (!cmd[3] || !this.hub || ThisOrigin.server)
 				break;
 			if (IRC_match(servername, cmd[3])) {
 				ThisOrigin.do_connect(cmd[1],cmd[2]);
@@ -249,7 +251,7 @@ function Server_Work() {
 			ThisOrigin.quit(my_ircstr);
 			break;
 		case "INFO":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
@@ -263,7 +265,7 @@ function Server_Work() {
 			}
 			break;
 		case "INVITE":
-			if (!cmd[2])
+			if (!cmd[2] || ThisOrigin.server)
 				break;
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
@@ -282,7 +284,7 @@ function Server_Work() {
 			nick.invited = chan.nam.toUpperCase();
 			break;
 		case "JOIN":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1]=cmd[1].slice(1);
@@ -345,7 +347,7 @@ function Server_Work() {
 			}
 			break;
 		case "LINKS":
-			if (!cmd[1] || !cmd[2])
+			if (!cmd[1] || !cmd[2] || ThisOrigin.server)
 				break;
 			if (match_irc_mask(servername, cmd[1])) {
 				ThisOrigin.do_links(cmd[2]);
@@ -376,12 +378,12 @@ function Server_Work() {
 				var modeline = cmd.join(" ");
 				ThisOrigin.set_chanmode(chan,modeline,false);
 			} else { // assume it's for a user
-				ThisOrigin.setusermode(cmd[2]);
-				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " MODE " + ThisOrigin.nick + " " + cmd[2]);
+				var my_bcastmodes = ThisOrigin.setusermode(cmd[2]);
+				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " MODE " + ThisOrigin.nick + " " + my_bcastmodes);
 			}
 			break;
 		case "MOTD":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
@@ -400,7 +402,7 @@ function Server_Work() {
 			}
 			break;
 		case "NICK":
-			if (!cmd[2] || (!cmd[8] && (cmd[2][0] != ":")) )
+			if (!cmd[2] || ThisOrigin.server || (!cmd[8] && (cmd[2][0] != ":")) )
 				break;
 			var collide = Users[cmd[1].toUpperCase()];
 			if ((collide) && (parseInt(collide.created) >
@@ -490,7 +492,7 @@ function Server_Work() {
 			}
 			break;
 		case "PART":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			var the_channels = cmd[1].split(",");
 			for(pchan in the_channels) {
@@ -583,10 +585,8 @@ function Server_Work() {
 			this.pinged = false;
 			break;
 		case "PRIVMSG":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
-			if (ThisOrigin.server)
-				break; // Servers aren't allowed to PRIVMSG.
 			var my_ircstr = IRC_string(cmdline);
 			if ( !cmd[2] || ( !cmd[3] && (
 			     (cmd[2] == ":") && (my_ircstr == "")
@@ -828,7 +828,7 @@ function Server_Work() {
 			sq_server.quit(reason);
 			break;
 		case "STATS":
-			if (!cmd[2])
+			if (!cmd[2] || ThisOrigin.server)
 				break;
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
@@ -842,7 +842,7 @@ function Server_Work() {
 			}
 			break;
 		case "SUMMON":
-			if (!cmd[2])
+			if (!cmd[2] || ThisOrigin.server)
 				break;
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
@@ -861,7 +861,7 @@ function Server_Work() {
 			}
 			break;
 		case "TIME":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
@@ -875,7 +875,7 @@ function Server_Work() {
 			}
 			break;
 		case "TOPIC":
-			if (!cmd[4])
+			if (!cmd[4] || ThisOrigin.server)
 				break;
 			var chan = Channels[cmd[1].toUpperCase()];
 			if (!chan)
@@ -894,12 +894,12 @@ function Server_Work() {
 			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " TOPIC " + chan.nam + " " + ThisOrigin.nick + " " + chan.topictime + " :" + chan.topic);
 			break;
 		case "TRACE":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			ThisOrigin.do_trace(cmd[1]);
 			break;
 		case "USERS":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
@@ -914,7 +914,7 @@ function Server_Work() {
 			}
 			break;
 		case "VERSION":
-			if (!cmd[1])
+			if (!cmd[1] || ThisOrigin.server)
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
@@ -938,7 +938,7 @@ function Server_Work() {
 			this.bcast_to_servers_raw(str);
 			break;
 		case "WHOIS":
-			if (!cmd[2])
+			if (!cmd[2] || ThisOrigin.server)
 				break;
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
