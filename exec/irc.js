@@ -1281,6 +1281,14 @@ function Screen_handle_key(key)  {
 			}
 			this.update_input_line();
 			break;
+		case "\x02":		// Home
+			this.input_pos=0;
+			this.update_input_line()
+			break;
+		case "\x05":		// End
+			this.input_pos=this.input_buffer.length;
+			this.update_input_line()
+			break;
 		case "\x06":		// right arrow
 			if(this.input_pos < (this.input_buffer.length))  {
 				this.input_pos++;
