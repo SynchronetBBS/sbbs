@@ -94,9 +94,9 @@ web_startup_t		web_startup;
 uint				thread_count=1;
 uint				socket_count=0;
 uint				client_count=0;
-ulong				served=0;
 int					prompt_len=0;
-static scfg_t				scfg;					/* To allow rerun */
+static scfg_t		scfg;					/* To allow rerun */
+static ulong		served=0;
 
 #ifdef __unix__
 char				new_uid_name[32];
