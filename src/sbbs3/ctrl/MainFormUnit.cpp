@@ -580,8 +580,11 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     ftp_startup.thread_up=thread_up;
     ftp_startup.client_on=client_on;
     ftp_startup.socket_open=socket_open;
-	ftp_startup.options=FTP_OPT_INDEX_FILE|FTP_OPT_ALLOW_QWK;
+	ftp_startup.options
+        =FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK;
     strcpy(ftp_startup.index_file_name,"00index");
+    strcpy(ftp_startup.html_index_file,"00index.html");
+    strcpy(ftp_startup.html_index_script,"ftp-html.js");
 
     /* Default local "Spy Terminal" settings */
     SpyTerminalFont=new TFont;
