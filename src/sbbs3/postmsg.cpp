@@ -604,6 +604,8 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	msg->hdr.version=smb_ver();
 	msg->hdr.when_imported.time=time(NULL);
 	msg->hdr.when_imported.zone=sys_timezone(cfg);
+	if(msg->hdr.when_written.time==0)	/* Uninitialized */
+		msg->hdr.when_written = msg->hdr.when_imported;
 	msg->hdr.offset=offset;
 	msg->idx.time=msg->hdr.when_imported.time;
 	msg->idx.number=smb->status.last_msg+1; /* this *should* be the new message number */
