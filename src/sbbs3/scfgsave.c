@@ -128,10 +128,10 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 			if(remove(newname)!=0)
 				return(FALSE);
 		if(i==1) {
-			if(ren == TRUE)
+			if(ren == TRUE) {
 				if(rename(fname,newname)!=0)
 					return(FALSE);
-			else
+			} else 
 				if(!fcopy(fname,newname))
 					return(FALSE);
 			continue; 
