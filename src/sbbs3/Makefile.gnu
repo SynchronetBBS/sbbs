@@ -104,7 +104,7 @@ $(LIBODIR)/mxlookup.o: mxlookup.c
 	$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@		
 
 # Baja Utility
-$(BAJA): baja.c ars.c
+$(BAJA): baja.c ars.c smbwrap.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 # FIXSMB Utility
