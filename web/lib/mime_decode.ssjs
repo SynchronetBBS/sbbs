@@ -76,7 +76,6 @@ function mime_decode(hdr, body)
 				if(Message.attachments==undefined)
 					Message.attachments=new Array;
 				Message.attachments.push(disp[1]);
-				continue;
 			}
 			disp=pieces[0].match(/content-id:\s+\<?([^\<\>;\r\n]*)\>?/i);
 			if(disp!=undefined) {
@@ -84,7 +83,6 @@ function mime_decode(hdr, body)
 				if(Message.inlines==undefined)
 					Message.inlines=new Array;
 				Message.inlines.push(disp[1]);
-				continue;
 			}
 		}
 		/* Search for HTML encoded bit */
