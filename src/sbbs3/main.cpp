@@ -42,7 +42,6 @@
 #include "sbbs.h"
 #include "ident.h"
 #include "telnet.h" 
-#include "bbs_thrd.h"
 
 //---------------------------------------------------------------------------
 

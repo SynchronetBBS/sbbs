@@ -38,7 +38,6 @@
 /* Synchronet-specific headers */
 #include "conwrap.h"	/* kbhit/getch */
 #include "sbbs.h"
-#include "bbs_thrd.h"	/* bbs_thread */
 #include "ftpsrvr.h"	/* ftp_startup_t, ftp_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 
