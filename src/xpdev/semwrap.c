@@ -54,7 +54,7 @@ sem_trywait_block(sem_t *sem, unsigned long timeout)
 	
 	gettimeofday(&currtime,NULL);
 	abstime.tv_sec=currtime.tv_sec+(timeout/1000)+((currtime.tv_usec+timeout)/1000);
-	abstime.tv_nsec=currtime.tv_usec+((timeout%1000)*1000000);
+	abstime.tv_nsec=(currtime.tv_usec*1000)+((timeout%1000)*1000000);
 
 	if((retval=sem_timedwait(sem, &abstime)) && errno==ETIMEDOUT)
 		errno=EAGAIN;
