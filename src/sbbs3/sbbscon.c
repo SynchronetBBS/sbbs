@@ -666,6 +666,8 @@ static void web_terminated(int code)
 
 static void terminate(void)
 {
+	ulong count=0;
+
 	bbs_terminate();
 	ftp_terminate();
 	web_terminate();
@@ -675,17 +677,20 @@ static void terminate(void)
 #endif
 
 	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
-		if(bbs_running)
-			lputs("BBS Thread Still Running");
-		if(ftp_running)
-			lputs("FTP Thread Still Running");
-		if(web_running)
-			lputs("WEB Thread Still Running");
-		if(mail_running)
-			lputs("MAIL Thread Still Running");
-		if(services_running)
-			lputs("SERVICES Thread Still Running");
-		SLEEP(10000);
+		if(count && (count%10)==0) {
+			if(bbs_running)
+				bbs_lputs("BBS System thread still running");
+			if(ftp_running)
+				ftp_lputs("FTP Server thread still running");
+			if(web_running)
+				web_lputs("Web Server thread still running");
+			if(mail_running)
+				mail_lputs("Mail Server thread still running");
+			if(services_running)
+				services_lputs("Services thread still running");
+		}
+		count++;
+		SLEEP(1000);
 	}
 }
 
