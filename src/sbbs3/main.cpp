@@ -883,8 +883,12 @@ bool sbbs_t::js_init()
 
 		JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
 
-		/* Global Object */
-		if((js_glob=js_CreateGlobalObject(js_cx, &cfg, js_global_functions))==NULL)
+		/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
+		if((js_glob=js_CreateGlobalObjects(js_cx, &cfg, js_global_functions
+					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
+					,&js_branch									/* js */
+					,&client, client_socket						/* client */
+			))==NULL)
 			break;
 
 #ifdef _DEBUG
@@ -892,17 +896,6 @@ bool sbbs_t::js_init()
 			,NULL,NULL,JSPROP_READONLY);
 #endif
 
-		/* System Object */
-		if(js_CreateSystemObject(js_cx, js_glob, &cfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL)
-			break;
-
-		/* Internal JS Object */
-		if(js_CreateInternalJsObject(js_cx, js_glob, &js_branch)==NULL)
-			break;
-
-		/* Client Object */
-		if(js_CreateClientObject(js_cx, js_glob, "client", &client, client_socket)==NULL)
-			break;
 
 		/* BBS Object */
 		if(js_CreateBbsObject(js_cx, js_glob)==NULL)
@@ -912,59 +905,8 @@ bool sbbs_t::js_init()
 		if(js_CreateConsoleObject(js_cx, js_glob)==NULL)
 			break;
 
-		/* Socket Class */
-		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
-			break;
-
-		/* MsgBase Class */
-		if(js_CreateMsgBaseClass(js_cx, js_glob, &scfg)==NULL)
-			break;
-
-		/* File Class */
-		if(js_CreateFileClass(js_cx, js_glob)==NULL)
-			break;
-
-		/* User class */
-		if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
-			break;
-
-		/* Area Objects */
-		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, NULL, NULL, NULL)) 
-			break;
-
-#if 0
-		char		ver[256];
-		jsval		val;
-		JSObject*	server;
-		JSString*	js_str;
-
-		/* Server Object */
-		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL
-			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
-			break;
-
-		sprintf(ver,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
-		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
-			break;
-		val = STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(js_cx, server, "version", &val))
-			break;
-
-		if((js_str=JS_NewStringCopyZ(js_cx, bbs_ver()))==NULL)
-			break;
-		val = STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
-			break;
-
-#ifdef _DEBUG
-		js_DescribeSyncObject(js_cx,server,"Server-specifc properties",310);
-		js_CreateArrayOfStrings(js_cx, server, "_property_desc_list", server_prop_desc, JSPROP_READONLY);
-#endif
-
-#else
 		if(js_CreateServerObject(js_cx,js_glob,&js_server_props)==NULL)
 			break;
-#endif
 
 		success=true;
 
