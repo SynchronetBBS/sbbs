@@ -1497,7 +1497,13 @@ void pack(char *srcfile,char *destfile,faddr_t dest)
 			,j,errno,__LINE__,cmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile)); }
 }
 
-int attachment(char *bundlename,faddr_t dest,char cleanup)
+enum {
+	 ATTACHMENT_ADD
+	,ATTACHMENT_NETMAIL
+	,ATTACHMENT_CHECK
+};
+
+int attachment(char *bundlename,faddr_t dest, int mode)
 {
 	FILE *fidomsg,*stream;
 	char str[1025],*path,fname[129],*p;
@@ -1508,7 +1514,7 @@ int attachment(char *bundlename,faddr_t dest,char cleanup)
 	size_t		f;
 	glob_t		g;
 
-	if(bundlename==NULL && cleanup!=1) {
+	if(bundlename==NULL && mode!=ATTACHMENT_NETMAIL) {
 		logprintf("ERROR line %d NULL bundlename",__LINE__);
 		return(1);
 	}
@@ -1516,19 +1522,23 @@ int attachment(char *bundlename,faddr_t dest,char cleanup)
 	if((stream=fnopen(&file,fname,O_RDWR|O_CREAT))==NULL) {
 		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
 		logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
-		return(1); }
+		return(1); 
+	}
 
-	if(cleanup==2) {				/* Check for existance in BUNDLES.SBE */
+	if(mode==ATTACHMENT_CHECK) {				/* Check for existance in BUNDLES.SBE */
 		while(!feof(stream)) {
 			if(!fread(&attach,1,sizeof(attach_t),stream))
 				break;
 			if(!stricmp(attach.fname,bundlename)) {
 				fclose(stream);
-				return(1); } }
+				return(1); 
+			} 
+		}
 		fclose(stream);
-		return(0); }
+		return(0); 
+	}
 
-	if(cleanup==1) {				/* Create netmail attaches */
+	if(mode=ATTACHMENT_NETMAIL) {				/* Create netmail attaches */
 
 		if(!filelength(file)) {
 			fclose(stream);
@@ -1602,9 +1612,9 @@ int attachment(char *bundlename,faddr_t dest,char cleanup)
 				if(create_netmail(0,str,"\1FLAGS KFS\r",attach.dest,1))
 					error=1; 
 		}
-		if(!error)				/* don't truncate if an error occured */
-			chsize(file,0L);
 		fclose(stream);
+		if(!error)			/* remove bundles.sbe if no error occurred */		
+			remove(fname);	/* used to truncate here, August-20-2002 */
 		if(num_mfncrc)
 			FREE(mfncrc);
 		return(0); 
@@ -1615,7 +1625,9 @@ int attachment(char *bundlename,faddr_t dest,char cleanup)
 			break;
 		if(!stricmp(attach.fname,bundlename)) {
 			fclose(stream);
-			return(0); } }
+			return(0); 
+		} 
+	}
 
 	memcpy(&attach.dest,&dest,sizeof(faddr_t));
 	strcpy(attach.fname,bundlename);
@@ -1708,8 +1720,8 @@ void pack_bundle(char *infile,faddr_t dest)
 			if(file==-1)		/* Can't open?!? Probably being sent */
 				continue;
 			close(file);
-			if(!attachment(p,dest,2))
-				attachment(p,dest,0);
+			if(!attachment(p,dest,ATTACHMENT_CHECK))
+				attachment(p,dest,ATTACHMENT_ADD);
 			pack(infile,str,dest);
 			if(delfile(infile))
 				logprintf("ERROR line %d removing %s %s",__LINE__,infile
@@ -1726,7 +1738,7 @@ void pack_bundle(char *infile,faddr_t dest)
 					p++;
 				else
 					p=str;
-				j=attachment(p,dest,0); }
+				j=attachment(p,dest,ATTACHMENT_ADD); }
 			if(j)
 				bail(1);
 			pack(infile,str,dest);
@@ -3068,7 +3080,7 @@ if(cleanup==1) {
 		memset(&outpkt[i],0,sizeof(outpkt_t)); }
 	totalpkts=openpkts=0;
 	attach_bundles();
-	attachment(0,faddr,1);
+	attachment(0,faddr,ATTACHMENT_NETMAIL);
 	return; }
 
 if(fbuf==NULL) {
