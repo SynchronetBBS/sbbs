@@ -1133,6 +1133,42 @@ js_rename(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_fcopy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		src;
+	char*		dest;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	if((src=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL)
+		return(JS_TRUE);
+	if((dest=JS_GetStringBytes(JS_ValueToString(cx, argv[1])))==NULL)
+		return(JS_TRUE);
+
+	*rval = BOOLEAN_TO_JSVAL(fcopy(src,dest));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_backup(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		fname;
+	int32		level=5;
+	BOOL		ren=FALSE;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	if((fname=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL)
+		return(JS_TRUE);
+
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&level);
+	if(argc>2)
+		JS_ValueToBoolean(cx,argv[2],&ren);
+
+	*rval = BOOLEAN_TO_JSVAL(backup(fname,level,ren));
+	return(JS_TRUE);
+}
+
+static JSBool
 js_isdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -1406,8 +1442,16 @@ static jsMethodSpec js_global_functions[] = {
 	{"file_remove",		js_remove,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("delete a file")
 	},		
-	{"file_rename",		js_rename,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("oldname newname")
+	{"file_rename",		js_rename,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("oldname, newname")
 	,JSDOCSTR("rename a file")
+	},
+	{"file_copy",		js_fcopy,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("source, destination")
+	,JSDOCSTR("copy a file")
+	},
+	{"file_backup",		js_backup,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,number level] [,bool rename]")
+	,JSDOCSTR("backup the specified <i>filename</i>, saving up to <i>level</i> versions of the file "
+		"(as <tt>filename.<i>number</i>.extension</tt> - default backup level is 5) "
+		"and copying the file unlesss <i>rename</i> is specified as <i>true</i>")
 	},
 	{"file_isdir",		js_isdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("check if directory")
