@@ -159,7 +159,7 @@ __published:	// IDE-managed Components
     TMenuItem *UserMenuItem;
     TMenuItem *UserEditMenuItem;
     TToolButton *EditUserButton;
-    TAction *UserEditor;
+    TAction *UserEdit;
     TToolButton *ToolButton1;
     TMenuItem *N3;
     TMenuItem *FtpEditMenuItem;
@@ -195,6 +195,8 @@ __published:	// IDE-managed Components
     TMenuItem *BBSViewTodaysLog;
     TMenuItem *ViewErrorLog1;
     TMenuItem *ViewStatisticsLog1;
+    TAction *UserList;
+    TToolButton *UserListButton;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -238,12 +240,12 @@ __published:	// IDE-managed Components
     void __fastcall BBSViewErrorLogMenuItemClick(TObject *Sender);
     void __fastcall ChatToggleExecute(TObject *Sender);
     void __fastcall ViewClientsExecute(TObject *Sender);
-    void __fastcall UserEditorExecute(TObject *Sender);
+    void __fastcall UserEditExecute(TObject *Sender);
     void __fastcall FileOpenMenuItemClick(TObject *Sender);
     void __fastcall SaveSettings(TObject *Sender);
     void __fastcall BBSLoginMenuItemClick(TObject *Sender);
-    void __fastcall UserListMenuItemClick(TObject *Sender);
     void __fastcall ViewLogClick(TObject *Sender);
+    void __fastcall UserListExecute(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
