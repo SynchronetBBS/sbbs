@@ -1615,7 +1615,6 @@ static BOOL check_request(http_session_t * session)
 				,newline,get_header(HEAD_WWWAUTH),scfg.sys_name);
 			send_error(session,str);
 			return(FALSE);
-		}
 	}
 	return(TRUE);
 }
