@@ -769,6 +769,9 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
+	if(!SMB_IS_OPEN(&(p->smb)))
+		return(JS_TRUE);
+
 	memset(&msg,0,sizeof(msg));
 
 	if(!JSVAL_IS_OBJECT(argv[0]))
