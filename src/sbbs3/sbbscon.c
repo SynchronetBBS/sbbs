@@ -831,7 +831,7 @@ static void handle_sigs(void)  {
 	sigset_t			sigs;
 	char		str[1024];
 
-	thread_up(TRUE,TRUE);
+	thread_up(NULL,TRUE,TRUE);
 
 	if (is_daemon) {
 		if(pidfile!=NULL) {
@@ -1541,15 +1541,15 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	if(getuid())  { /*  are we running as a normal user?  */
 		sprintf(str,"!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
-		bbs_lputs(str);
+		bbs_lputs(NULL,str);
 	}
 	
 	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
-		bbs_lputs("Warning: No user account specified, running as root.");
+		bbs_lputs(NULL,"Warning: No user account specified, running as root.");
 	
 	else 
 	{
-		bbs_lputs("Waiting for child threads to bind ports...");
+		bbs_lputs(NULL,"Waiting for child threads to bind ports...");
 		while((run_bbs && !(bbs_running || bbs_stopped)) 
 				|| (run_ftp && !(ftp_running || ftp_stopped)) 
 				|| (run_web && !(web_running || web_stopped)) 
@@ -1557,25 +1557,25 @@ int main(int argc, char** argv)
 				|| (run_services && !(services_running || services_stopped)))  {
 			mswait(1000);
 			if(run_bbs && !(bbs_running || bbs_stopped))
-				bbs_lputs("Waiting for BBS thread");
+				bbs_lputs(NULL,"Waiting for BBS thread");
 			if(run_web && !(web_running || web_stopped))
-				bbs_lputs("Waiting for Web thread");
+				bbs_lputs(NULL,"Waiting for Web thread");
 			if(run_ftp && !(ftp_running || ftp_stopped))
-				bbs_lputs("Waiting for FTP thread");
+				bbs_lputs(NULL,"Waiting for FTP thread");
 			if(run_mail && !(mail_running || mail_stopped))
-				bbs_lputs("Waiting for Mail thread");
+				bbs_lputs(NULL,"Waiting for Mail thread");
 			if(run_services && !(services_running || services_stopped))
-				bbs_lputs("Waiting for Services thread");
+				bbs_lputs(NULL,"Waiting for Services thread");
 		}
 
 		if(!do_setuid(FALSE))
 				/* actually try to change the uid of this process */
-			bbs_lputs("!Setting new user_id failed!  (Does the user exist?)");
+			bbs_lputs(NULL,"!Setting new user_id failed!  (Does the user exist?)");
 	
 		else {
 			char str[256];
 			sprintf(str,"Successfully changed user_id to %s", new_uid_name);
-			bbs_lputs(str);
+			bbs_lputs(NULL,str);
 
 			/* Can't recycle servers (re-bind ports) as non-root user */
 			/* ToDo: Something seems to be broken here on FreeBSD now */
