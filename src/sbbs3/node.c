@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -422,7 +422,11 @@ int main(int argc, char **argv)
 	long value=0;
 	node_t node;
 
-	printf("\nSynchronet Node Display/Control Utility v1.10  Copyright 2003 Rob Swindell\n\n");
+	char		revision[16];
+
+	sscanf("$Revision$", "%*s %s", revision);
+
+	printf("\nSynchronet Node Display/Control Utility v%s\n\n", revision);
 
 	if(sizeof(node_t)!=SIZEOF_NODE_T) {
 		printf("COMPILER ERROR: sizeof(node_t)=%d instead of %d\n"
@@ -599,11 +603,6 @@ int main(int argc, char **argv)
 								node.misc|=misc;
 							else if(onoff==2)
 								node.misc&=~misc; }
-						if(pause) {
-							printf("Hit enter...");
-							getchar();
-							printf("\n");
-						}
 						if(modify)
 							putnodedat(j,node);
 						printnodedat(j,node);
@@ -617,6 +616,13 @@ int main(int argc, char **argv)
 							printf("aux=%u\n",node.aux);
 							printf("extaux=%lu\n",node.extaux); 
 						}  /* debug */
+
+						if(pause) {
+							printf("Hit enter...");
+							getchar();
+							printf("\n");
+						}
+
 					} /* if(!node_num) */
 
 				if(!loop)
