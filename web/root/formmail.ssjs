@@ -99,6 +99,27 @@ if(http_request.query.required) {
 if(referers.length && !find(http_request.header.referer,referers))
 	results(LOG_ERR,"Invalid referer value: " + http_request.header.referer);
 
+// Dump an object to file
+function dump(obj, name, file)
+{
+	var i;
+
+	for(i in obj) {
+		if(typeof(obj[i])=="object")
+			dump(obj[i], name +'.'+ i, file);
+		else {
+			if(!obj[i].length)
+				continue;
+			file.write('\t');
+			if(obj.length!=undefined)
+				file.write(name +'['+ i +'] = ');
+			else
+				file.write(name +'.'+ i +' = ');
+			file.writeln(obj[i]);
+		}
+	}
+}
+
 // Send HTTP/HTML results here
 function results(level, text, missing)
 {
@@ -116,13 +137,8 @@ function results(level, text, missing)
 		var file = new File(fname);
 		if(file.open("a")) {
 			file.printf("%s  %s\n",strftime("%b-%d-%y %H:%M"),plain_text);
-			if(log_request) {
-				file.writeln("\thttp_request:");
-				var f;
-				for(f in http_request)
-					if(http_request[f].length)
-						file.writeln("\t" + f + " = " + http_request[f]);
-			}
+			if(log_request)
+				dump(http_request,"http_request",file);
 			file.close();
 		}
 	}
