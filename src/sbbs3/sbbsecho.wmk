@@ -46,6 +46,7 @@ MAIN	= $(OS)\sbbsecho.exe
 OBJS	= $(OS)\ars.obj &
 	  $(OS)\crc16.obj &
 	  $(OS)\crc32.obj &
+	  $(OS)\md5.obj &
 	  $(OS)\dat_rec.obj &
 	  $(OS)\date_str.obj &
 	  $(OS)\dirwrap.obj &
