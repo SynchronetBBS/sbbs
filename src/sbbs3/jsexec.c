@@ -185,7 +185,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i=0;
 	int32		level=LOG_INFO;
-    JSString*	str;
+    JSString*	str=NULL;
 
 	if(JSVAL_IS_NUMBER(argv[i]))
 		JS_ValueToInt32(cx,argv[i++],&level);
@@ -198,7 +198,11 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		lprintf(level,"\n");
 
-	*rval = JSVAL_VOID;
+	if(str==NULL)
+		*rval = JSVAL_VOID;
+	else
+		*rval = STRING_TO_JSVAL(str);
+
     return(JS_TRUE);
 }
 
