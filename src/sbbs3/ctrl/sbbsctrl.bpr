@@ -11,8 +11,8 @@
       emulvt.obj UserListFormUnit.obj UserMsgFormUnit.obj PropertiesDlgUnit.obj 
       EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
       TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
-      ServicesCfgDlgUnit.obj ..\sbbs_ini.obj ..\..\xpdev\ini_file.obj ..\..\xpdev\str_list.obj 
-      PreviewFormUnit.obj"/>
+      ServicesCfgDlgUnit.obj ..\sbbs_ini.obj ..\..\xpdev\ini_file.obj 
+      ..\..\xpdev\str_list.obj PreviewFormUnit.obj ..\..\xpdev\genwrap.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -39,7 +39,7 @@
     <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi vcljpg.bpi bcbsmp.bpi dsnap.bpi dbrtl.bpi 
       vcldb.bpi bdertl.bpi inet.bpi inetdb.bpi vcldbx.bpi qrpt.bpi teeui.bpi 
       teedb.bpi tee.bpi dss.bpi nmfast.bpi dclocx.bpi"/>
-    <PATHCPP value=".;..;..;..\..\xpdev"/>
+    <PATHCPP value=".;..;..;..\..\xpdev;..\..\xpdev;..\..\xpdev"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -110,6 +110,7 @@
       <FILE FILENAME="..\..\xpdev\ini_file.c" FORMNAME="" UNITNAME="ini_file" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\..\xpdev\str_list.c" FORMNAME="" UNITNAME="str_list" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="PreviewFormUnit.cpp" FORMNAME="PreviewForm" UNITNAME="PreviewFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\xpdev\genwrap.c" FORMNAME="" UNITNAME="genwrap" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
