@@ -38,9 +38,7 @@
 #ifndef _CLIENT_H
 #define _CLIENT_H
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include "gen_defs.h"	/* WORD, DWORD */
 #include <time.h>		/* time_t */
 
 /* Used for sbbsctrl->client window */
