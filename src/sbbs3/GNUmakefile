@@ -52,7 +52,6 @@ XPDEV	=	../xpdev/
 
 ifndef os
  os		:=	$(shell uname)
- $(warning OS not specified on command line, setting to '$(os)'.)
 endif
 # this line wont work with solaris unless awk in path is actually gawk 
 os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
