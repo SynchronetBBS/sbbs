@@ -278,8 +278,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 			return(0);
 		case CS_MSG_PTRS_REINIT:
 			for(i=0;i<cfg.total_subs;i++) {
-				sub_ptr[i]=sav_sub_ptr[i];
-				sub_last[i]=sav_sub_last[i]; 
+				subscan[i].ptr=subscan[i].sav_ptr;
+				subscan[i].last=subscan[i].sav_last; 
 			}
 			bputs(text[MsgPtrsInitialized]);
 			return(0);

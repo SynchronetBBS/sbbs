@@ -44,59 +44,67 @@
 /****************************************************************************/
 void sbbs_t::getmsgptrs()
 {
+	if(!useron.number)
+		return;
+	bputs(text[LoadingMsgPtrs]);
+	::getmsgptrs(&cfg,useron.number,subscan);
+	bputs(text[LoadedMsgPtrs]);
+}
+
+extern "C" BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
+{
 	char	str[256];
 	uint	i;
 	int 	file;
 	long	length;
 	FILE	*stream;
 
-	now=time(NULL);
-	if(!useron.number)
-		return;
-	bputs(text[LoadingMsgPtrs]);
-	sprintf(str,"%suser/ptrs/%4.4u.ixb", cfg.data_dir,useron.number);
+	if(!usernumber)
+		return(FALSE);
+	sprintf(str,"%suser/ptrs/%4.4u.ixb", cfg->data_dir,usernumber);
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
-		for(i=0;i<cfg.total_subs;i++) {
-			sub_ptr[i]=sav_sub_ptr[i]=0;
-			sub_last[i]=sav_sub_last[i]=0;
-			sub_cfg[i]=0;
-			if(cfg.sub[i]->misc&SUB_NSDEF)
-				sub_cfg[i]|=SUB_CFG_NSCAN;
-			if(cfg.sub[i]->misc&SUB_SSDEF)
-				sub_cfg[i]|=SUB_CFG_SSCAN;
-			sav_sub_cfg[i]=sub_cfg[i]; 
+		for(i=0;i<cfg->total_subs;i++) {
+			subscan[i].ptr=subscan[i].sav_ptr=0;
+			subscan[i].last=subscan[i].sav_last=0;
+			subscan[i].cfg=0;
+			if(cfg->sub[i]->misc&SUB_NSDEF)
+				subscan[i].cfg|=SUB_CFG_NSCAN;
+			if(cfg->sub[i]->misc&SUB_SSDEF)
+				subscan[i].cfg|=SUB_CFG_SSCAN;
+			subscan[i].sav_cfg=subscan[i].cfg; 
 		}
-		bputs(text[LoadedMsgPtrs]);
-		return; }
+		return(TRUE); 
+	}
 	length=filelength(file);
-	for(i=0;i<cfg.total_subs;i++) {
-		if(length<(cfg.sub[i]->ptridx+1)*10L) {
-			sub_ptr[i]=sub_last[i]=0L;
-			sub_cfg[i]=0;
-			if(cfg.sub[i]->misc&SUB_NSDEF)
-				sub_cfg[i]|=SUB_CFG_NSCAN;
-			if(cfg.sub[i]->misc&SUB_SSDEF)
-				sub_cfg[i]|=SUB_CFG_SSCAN; 
+	for(i=0;i<cfg->total_subs;i++) {
+		if(length<(cfg->sub[i]->ptridx+1)*10L) {
+			subscan[i].ptr=subscan[i].last=0L;
+			subscan[i].cfg=0;
+			if(cfg->sub[i]->misc&SUB_NSDEF)
+				subscan[i].cfg|=SUB_CFG_NSCAN;
+			if(cfg->sub[i]->misc&SUB_SSDEF)
+				subscan[i].cfg|=SUB_CFG_SSCAN; 
 		}
 		else {
-			fseek(stream,(long)cfg.sub[i]->ptridx*10L,SEEK_SET);
-			fread(&sub_ptr[i],4,1,stream);
-			fread(&sub_last[i],4,1,stream);
-			fread(&sub_cfg[i],2,1,stream);
+			fseek(stream,(long)cfg->sub[i]->ptridx*10L,SEEK_SET);
+			fread(&subscan[i].ptr,sizeof(long),1,stream);
+			fread(&subscan[i].last,sizeof(long),1,stream);
+			fread(&subscan[i].cfg,sizeof(short),1,stream);
 		}
-		sav_sub_ptr[i]=sub_ptr[i];
-		sav_sub_last[i]=sub_last[i];
-		sav_sub_cfg[i]=sub_cfg[i]; 
+		subscan[i].sav_ptr=subscan[i].ptr;
+		subscan[i].sav_last=subscan[i].last;
+		subscan[i].sav_cfg=subscan[i].cfg; 
 	}
 	fclose(stream);
-	bputs(text[LoadedMsgPtrs]);
+	return(TRUE);
 }
+
 
 /****************************************************************************/
 /* Writes to DATA\USER\PTRS\xxxx.DAB the msgptr array for the current user	*/
 /* Called from functions main and newuser                                   */
 /****************************************************************************/
-void sbbs_t::putmsgptrs()
+extern "C" BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 {
 	char	str[256];
 	ushort	idx,ch;
@@ -104,43 +112,46 @@ void sbbs_t::putmsgptrs()
 	int 	file;
 	ulong	l=0L,length;
 
-	if(!useron.number)
-		return;
-	sprintf(str,"%suser/ptrs/%4.4u.ixb", cfg.data_dir,useron.number);
+	if(!usernumber)
+		return(FALSE);
+	sprintf(str,"%suser/ptrs/%4.4u.ixb", cfg->data_dir,usernumber);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT);
-		return; }
+		return(FALSE); 
+	}
 	length=filelength(file);
-	for(i=0;i<cfg.total_subs;i++) {
-		if(sav_sub_ptr[i]==sub_ptr[i] && sav_sub_last[i]==sub_last[i]
-			&& length>=((cfg.sub[i]->ptridx+1)*10UL)
-			&& sav_sub_cfg[i]==sub_cfg[i])
+	for(i=0;i<cfg->total_subs;i++) {
+		if(subscan[i].sav_ptr==subscan[i].ptr 
+			&& subscan[i].sav_last==subscan[i].last
+			&& length>=((cfg->sub[i]->ptridx+1)*10UL)
+			&& subscan[i].sav_cfg==subscan[i].cfg)
 			continue;
-		while(filelength(file)<(long)(cfg.sub[i]->ptridx)*10) {
+		while(filelength(file)<(long)(cfg->sub[i]->ptridx)*10) {
 			lseek(file,0L,SEEK_END);
 			idx=tell(file)/10;
-			for(j=0;j<cfg.total_subs;j++)
-				if(cfg.sub[j]->ptridx==idx)
+			for(j=0;j<cfg->total_subs;j++)
+				if(cfg->sub[j]->ptridx==idx)
 					break;
-			write(file,&l,4);
-			write(file,&l,4);
+			write(file,&l,sizeof(long));
+			write(file,&l,sizeof(long));
 			ch=0xff;					/* default to scan ON for new sub */
-			if(j<cfg.total_subs) {
-				if(!(cfg.sub[j]->misc&SUB_NSDEF))
+			if(j<cfg->total_subs) {
+				if(!(cfg->sub[j]->misc&SUB_NSDEF))
 					ch&=~SUB_CFG_NSCAN;
-				if(!(cfg.sub[j]->misc&SUB_SSDEF))
+				if(!(cfg->sub[j]->misc&SUB_SSDEF))
 					ch&=~SUB_CFG_SSCAN; 
 			}
-			write(file,&ch,2); 
+			write(file,&ch,sizeof(short)); 
 		}
-		lseek(file,(long)((long)(cfg.sub[i]->ptridx)*10),SEEK_SET);
-		write(file,&(sub_ptr[i]),4);
-		write(file,&(sub_last[i]),4);
-		write(file,&(sub_cfg[i]),2);
+		lseek(file,(long)((long)(cfg->sub[i]->ptridx)*10),SEEK_SET);
+		write(file,&(subscan[i].ptr),sizeof(long));
+		write(file,&(subscan[i].last),sizeof(long));
+		write(file,&(subscan[i].cfg),sizeof(short));
 	}
 	close(file);
 	if(!flength(str))				/* Don't leave 0 byte files */
 		remove(str);
+
+	return(TRUE);
 }
 
 /****************************************************************************/

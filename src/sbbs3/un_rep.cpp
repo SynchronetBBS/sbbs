@@ -270,7 +270,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			/* if posting, add to new-scan config for QWKnet nodes automatically */
 			if(useron.rest&FLAG('Q'))
-				sub_cfg[n]|=SUB_CFG_NSCAN;
+				subscan[n].cfg|=SUB_CFG_NSCAN;
 
 			sprintf(str,"%-25.25s","SBBS");
 			if(!strnicmp((char *)block+21,str,25)) {	/* to SBBS, config stuff */

@@ -388,16 +388,16 @@ void sbbs_t::qwk_sec()
 	int 	s;
 	uint	i,k;
 	ulong	msgcnt;
-	time_t	*sav_ptr;
+	ulong	*sav_ptr;
 	file_t	fd;
 
 	getusrdirs();
 	fd.dir=cfg.total_dirs;
-	if((sav_ptr=(time_t *)MALLOC(sizeof(time_t)*cfg.total_subs))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(time_t)*cfg.total_subs);
+	if((sav_ptr=(ulong *)MALLOC(sizeof(ulong)*cfg.total_subs))==NULL) {
+		errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ulong)*cfg.total_subs);
 		return; }
 	for(i=0;i<cfg.total_subs;i++)
-		sav_ptr[i]=sub_ptr[i];
+		sav_ptr[i]=subscan[i].ptr;
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron))
 			bi++;				/* number of bidirectional protocols configured */
@@ -432,7 +432,7 @@ void sbbs_t::qwk_sec()
 		if(ch=='P') {
 			new_scan_ptr_cfg();
 			for(i=0;i<cfg.total_subs;i++)
-				sav_ptr[i]=sub_ptr[i];
+				sav_ptr[i]=subscan[i].ptr;
 			delfiles(cfg.temp_dir,ALLFILES);
 			continue; }
 		if(ch=='C') {
@@ -539,7 +539,7 @@ void sbbs_t::qwk_sec()
 			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 			if(!fexist(str) && !pack_qwk(str,&msgcnt,0)) {
 				for(i=0;i<cfg.total_subs;i++)
-					sub_ptr[i]=sav_ptr[i];
+					subscan[i].ptr=sav_ptr[i];
 				remove(str);
 				last_ns_time=ns_time;
 				continue; }
@@ -554,7 +554,7 @@ void sbbs_t::qwk_sec()
 			ch=(char)getkeys(tmp2,0);
 			if(ch=='Q' || sys_status&SS_ABORT) {
 				for(i=0;i<cfg.total_subs;i++)
-					sub_ptr[i]=sav_ptr[i];   /* re-load saved pointers */
+					subscan[i].ptr=sav_ptr[i];	/* re-load saved pointers */
 				last_ns_time=ns_time;
 				continue; }
 			for(i=0;i<cfg.total_prots;i++)
@@ -584,20 +584,20 @@ void sbbs_t::qwk_sec()
 						logline("D!",AttemptedToDownloadQWKpacket);
 						last_ns_time=ns_time;
 						for(i=0;i<cfg.total_subs;i++)
-							sub_ptr[i]=sav_ptr[i]; } /* re-load saved pointers */
+							subscan[i].ptr=sav_ptr[i]; } /* re-load saved pointers */
 					else {
 						qwk_success(msgcnt,1,0);
 						for(i=0;i<cfg.total_subs;i++)
-							sav_ptr[i]=sub_ptr[i]; } }
+							sav_ptr[i]=subscan[i].ptr; } }
 				else if(error) {
 					logline("D!",AttemptedToDownloadQWKpacket);
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)
-						sub_ptr[i]=sav_ptr[i]; }
+						subscan[i].ptr=sav_ptr[i]; }
 				else {
 					qwk_success(msgcnt,1,0);
 					for(i=0;i<cfg.total_subs;i++)
-						sav_ptr[i]=sub_ptr[i]; }
+						sav_ptr[i]=subscan[i].ptr; }
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				remove(str);
 				unpack_rep();
@@ -607,13 +607,13 @@ void sbbs_t::qwk_sec()
 			else {
 				last_ns_time=ns_time;
 				for(i=0;i<cfg.total_subs;i++)
-					sub_ptr[i]=sav_ptr[i]; } }
+					subscan[i].ptr=sav_ptr[i]; } }
 
 		else if(ch=='D') {   /* Download QWK Packet of new messages */
 			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 			if(!fexist(str) && !pack_qwk(str,&msgcnt,0)) {
 				for(i=0;i<cfg.total_subs;i++)
-					sub_ptr[i]=sav_ptr[i];
+					subscan[i].ptr=sav_ptr[i];
 				last_ns_time=ns_time;
 				remove(str);
 				continue; }
@@ -621,7 +621,7 @@ void sbbs_t::qwk_sec()
 				bputs(text[EnterPath]);
 				if(!getstr(str,60,K_LINE|K_UPPER)) {
 					for(i=0;i<cfg.total_subs;i++)
-						sub_ptr[i]=sav_ptr[i];   /* re-load saved pointers */
+						subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
 					last_ns_time=ns_time;
 					continue; }
 				backslashcolon(str);
@@ -635,18 +635,18 @@ void sbbs_t::qwk_sec()
 						bputs(text[FileAlreadyThere]);
 						last_ns_time=ns_time;
 						for(i=0;i<cfg.total_subs;i++)
-							sub_ptr[i]=sav_ptr[i];
+							subscan[i].ptr=sav_ptr[i];
 						continue; } }
 				sprintf(tmp,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				if(mv(tmp,tmp2,0)) { /* unsuccessful */
 					for(i=0;i<cfg.total_subs;i++)
-						sub_ptr[i]=sav_ptr[i];
+						subscan[i].ptr=sav_ptr[i];
 					last_ns_time=ns_time; }
 				else {
 					bprintf(text[FileNBytesSent],tmp2,ultoac(flength(tmp2),tmp));
 					qwk_success(msgcnt,0,0);
 					for(i=0;i<cfg.total_subs;i++)
-						sav_ptr[i]=sub_ptr[i]; }
+						sav_ptr[i]=subscan[i].ptr; }
 				continue; }
 
 			/***************/
@@ -663,7 +663,7 @@ void sbbs_t::qwk_sec()
 			ch=(char)getkeys(tmp2,0);
 			if(ch=='Q' || sys_status&SS_ABORT) {
 				for(i=0;i<cfg.total_subs;i++)
-					sub_ptr[i]=sav_ptr[i];   /* re-load saved pointers */
+					subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
 				last_ns_time=ns_time;
 				continue; }
 			for(i=0;i<cfg.total_prots;i++)
@@ -679,24 +679,24 @@ void sbbs_t::qwk_sec()
 					if(!checkprotlog(&fd)) {
 						last_ns_time=ns_time;
 						for(i=0;i<cfg.total_subs;i++)
-							sub_ptr[i]=sav_ptr[i]; } /* re-load saved pointers */
+							subscan[i].ptr=sav_ptr[i]; } /* re-load saved pointers */
 					else {
 						qwk_success(msgcnt,0,0);
 						for(i=0;i<cfg.total_subs;i++)
-							sav_ptr[i]=sub_ptr[i]; } }
+							sav_ptr[i]=subscan[i].ptr; } }
 				else if(error) {
 					logline("D!",AttemptedToDownloadQWKpacket);
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)
-						sub_ptr[i]=sav_ptr[i]; }
+						subscan[i].ptr=sav_ptr[i]; }
 				else {
 					qwk_success(msgcnt,0,0);
 					for(i=0;i<cfg.total_subs;i++)
-						sav_ptr[i]=sub_ptr[i]; }
+						sav_ptr[i]=subscan[i].ptr; }
 				autohangup(); }
 			else {	 /* if not valid protocol (hungup?) */
 				for(i=0;i<cfg.total_subs;i++)
-					sub_ptr[i]=sav_ptr[i];
+					subscan[i].ptr=sav_ptr[i];
 				last_ns_time=ns_time; } }
 
 		else if(ch=='U') { /* Upload REP Packet */
@@ -766,19 +766,19 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 
 	if(buf[2]=='/' && buf[5]=='/') {    /* date specified */
 		l=dstrtounix(&cfg,buf);
-		sub_ptr[subnum]=getmsgnum(subnum,l);
+		subscan[subnum].ptr=getmsgnum(subnum,l);
 		return; }
 	l=atol(buf);
 	if(l>=0)							  /* ptr specified */
-		sub_ptr[subnum]=l;
+		subscan[subnum].ptr=l;
 	else if(l) {						  /* relative ptr specified */
 		getlastmsg(subnum,&last,0);
 		if(-l>(long)last)
-			sub_ptr[subnum]=0;
+			subscan[subnum].ptr=0;
 		else
-			sub_ptr[subnum]=last+l; }
+			subscan[subnum].ptr=last+l; }
 	else if(reset)
-		getlastmsg(subnum,&sub_ptr[subnum],0);
+		getlastmsg(subnum,&(subscan[subnum].ptr),0);
 }
 
 
@@ -804,7 +804,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 		if(!strncmp(str,"DROP ",5)) {              /* Drop from new-scan */
 			l=atol(str+5);
 			if(!l)
-				sub_cfg[subnum]&=~SUB_CFG_NSCAN;
+				subscan[subnum].cfg&=~SUB_CFG_NSCAN;
 			else {
 				x=l/1000;
 				y=l-(x*1000);
@@ -813,22 +813,22 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 					sprintf(str,"Invalid conference number %lu",l);
 					logline("Q!",str); }
 				else
-					sub_cfg[usrsub[x][y]]&=~SUB_CFG_NSCAN; }
+					subscan[usrsub[x][y]].cfg&=~SUB_CFG_NSCAN; }
 			return; }
 
 		if(!strncmp(str,"ADD YOURS ",10)) {               /* Add to new-scan */
-			sub_cfg[subnum]|=(SUB_CFG_NSCAN|SUB_CFG_YSCAN);
+			subscan[subnum].cfg|=(SUB_CFG_NSCAN|SUB_CFG_YSCAN);
 			qwksetptr(subnum,str+10,0);
 			return; }
 
 		else if(!strncmp(str,"YOURS ",6)) {
-			sub_cfg[subnum]|=(SUB_CFG_NSCAN|SUB_CFG_YSCAN);
+			subscan[subnum].cfg|=(SUB_CFG_NSCAN|SUB_CFG_YSCAN);
 			qwksetptr(subnum,str+6,0);
 			return; }
 
 		else if(!strncmp(str,"ADD ",4)) {               /* Add to new-scan */
-			sub_cfg[subnum]|=SUB_CFG_NSCAN;
-			sub_cfg[subnum]&=~SUB_CFG_YSCAN;
+			subscan[subnum].cfg|=SUB_CFG_NSCAN;
+			subscan[subnum].cfg&=~SUB_CFG_YSCAN;
 			qwksetptr(subnum,str+4,0);
 			return; }
 
@@ -844,13 +844,13 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	if(!strncmp(str,"RESETALL ",9)) {              /* set all ptrs */
 		for(x=0;x<usrgrps;x++)
 			for(y=0;y<usrsubs[x];y++)
-				if(sub_cfg[usrsub[x][y]]&SUB_CFG_NSCAN)
+				if(subscan[usrsub[x][y]].cfg&SUB_CFG_NSCAN)
 					qwksetptr(usrsub[x][y],str+9,1); }
 
 	else if(!strncmp(str,"ALLPTR ",7)) {              /* set all ptrs */
 		for(x=0;x<usrgrps;x++)
 			for(y=0;y<usrsubs[x];y++)
-				if(sub_cfg[usrsub[x][y]]&SUB_CFG_NSCAN)
+				if(subscan[usrsub[x][y]].cfg&SUB_CFG_NSCAN)
 					qwksetptr(usrsub[x][y],str+7,1); }
 
 	else if(!strncmp(str,"FILES ",6)) {                 /* files list */

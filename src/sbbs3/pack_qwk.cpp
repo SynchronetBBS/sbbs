@@ -304,7 +304,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*********************/
 	for(i=0;i<usrgrps;i++) {
 		for(j=0;j<usrsubs[i] && !msgabort();j++) {
-			if(sub_cfg[usrsub[i][j]]&SUB_CFG_NSCAN
+			if(subscan[usrsub[i][j]].cfg&SUB_CFG_NSCAN
 				|| (!(useron.rest&FLAG('Q'))
 				&& cfg.sub[usrsub[i][j]]->misc&SUB_FORCED)) {
 				if(!chk_ar(cfg.sub[usrsub[i][j]]->read_ar,&useron))
@@ -315,11 +315,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 				subs_scanned++;
 				msgs=getlastmsg(usrsub[i][j],&lastmsg,0);
-				if(!msgs || lastmsg<=sub_ptr[usrsub[i][j]]) { /* no msgs */
-					if(sub_ptr[usrsub[i][j]]>lastmsg)	{ /* corrupted ptr */
+				if(!msgs || lastmsg<=subscan[usrsub[i][j]].ptr) { /* no msgs */
+					if(subscan[usrsub[i][j]].ptr>lastmsg)	{ /* corrupted ptr */
 						outchar('*');
-						sub_ptr[usrsub[i][j]]=lastmsg; /* so fix automatically */
-						sub_last[usrsub[i][j]]=lastmsg; }
+						subscan[usrsub[i][j]].ptr=lastmsg; /* so fix automatically */
+						subscan[usrsub[i][j]].last=lastmsg; }
 					bprintf(text[NScanStatusFmt]
 						,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
 						,cfg.sub[usrsub[i][j]]->lname,0L,msgs);
@@ -335,9 +335,9 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				k=0;
 				if(useron.qwk&QWK_BYSELF)
 					k|=LP_BYSELF;
-				if(!(sub_cfg[usrsub[i][j]]&SUB_CFG_YSCAN))
+				if(!(subscan[usrsub[i][j]].cfg&SUB_CFG_YSCAN))
 					k|=LP_OTHERS;
-				post=loadposts(&posts,usrsub[i][j],sub_ptr[usrsub[i][j]],k);
+				post=loadposts(&posts,usrsub[i][j],subscan[usrsub[i][j]].ptr,k);
 
 				bprintf(text[NScanStatusFmt]
 					,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
@@ -368,8 +368,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				for(l=0;l<posts && !msgabort();l++) {
 					bprintf("\b\b\b\b\b%-5lu",l+1);
 
-					sub_ptr[usrsub[i][j]]=post[l].number;	/* set ptr */
-					sub_last[usrsub[i][j]]=post[l].number; /* set last read */
+					subscan[usrsub[i][j]].ptr=post[l].number;	/* set ptr */
+					subscan[usrsub[i][j]].last=post[l].number; /* set last read */
 
 					msg.idx.offset=post[l].offset;
 					if(!loadmsg(&msg,post[l].number))

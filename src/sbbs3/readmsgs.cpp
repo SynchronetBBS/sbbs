@@ -65,7 +65,7 @@ void sbbs_t::listmsgs(int subnum, post_t HUGE16 *post, long i, long posts)
 		else if((!stricmp(msg.to,useron.alias) || !stricmp(msg.to,useron.name))
 			&& !(msg.hdr.attr&MSG_READ))
 			ch='!';
-		else if(msg.hdr.number>sub_ptr[subnum])
+		else if(msg.hdr.number>subscan[subnum].ptr)
 			ch='*';
 		else
 			ch=' ';
@@ -286,9 +286,9 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			bprintf(text[NoMsgsOnSub]
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
 		return(0); }
-	if(mode&SCAN_NEW && sub_ptr[subnum]>=last && !(mode&SCAN_BACK)) {
-		if(sub_ptr[subnum]>last)
-			sub_ptr[subnum]=sub_last[subnum]=last;
+	if(mode&SCAN_NEW && subscan[subnum].ptr>=last && !(mode&SCAN_BACK)) {
+		if(subscan[subnum].ptr>last)
+			subscan[subnum].ptr=subscan[subnum].last=last;
 		bprintf(text[NScanStatusFmt]
 			,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,0L,msgs);
 		return(0); }
@@ -304,14 +304,14 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		return(0); }
 
 	if(!(mode&SCAN_TOYOU)
-		&& (!mode || mode&SCAN_FIND || !(sub_cfg[subnum]&SUB_CFG_YSCAN)))
+		&& (!mode || mode&SCAN_FIND || !(subscan[subnum].cfg&SUB_CFG_YSCAN)))
 		lp=LP_BYSELF|LP_OTHERS;
 	if(mode&SCAN_TOYOU)
 		lp|=LP_UNREAD;
 	post=loadposts(&posts,subnum,0,lp);
 	if(mode&SCAN_NEW) { 		  /* Scanning for new messages */
 		for(curpost=0;curpost<posts;curpost++)
-			if(sub_ptr[subnum]<post[curpost].number)
+			if(subscan[subnum].ptr<post[curpost].number)
 				break;
 		bprintf(text[NScanStatusFmt]
 			,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,posts-curpost,msgs);
@@ -347,7 +347,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			curpost=0;
 		else {
 			for(curpost=0;curpost<posts;curpost++)
-				if(post[curpost].number>=sub_last[subnum])
+				if(post[curpost].number>=subscan[subnum].last)
 					break;
 			if(curpost==posts)
 				curpost=posts-1;
@@ -499,11 +499,11 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					domsg=0;
 					continue; } }
 
-			sub_last[subnum]=post[curpost].number;
+			subscan[subnum].last=post[curpost].number;
 
-			if(sub_ptr[subnum]<post[curpost].number && !(mode&SCAN_TOYOU)) {
+			if(subscan[subnum].ptr<post[curpost].number && !(mode&SCAN_TOYOU)) {
 				posts_read++;
-				sub_ptr[subnum]=post[curpost].number; } }
+				subscan[subnum].ptr=post[curpost].number; } }
 		else domsg=1;
 		if(mode&SCAN_CONST) {
 			if(curpost<posts-1) curpost++;
@@ -554,7 +554,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				break;
 			case 'B':   /* Skip sub-board */
 				if(mode&SCAN_NEW && !noyes(text[RemoveFromNewScanQ]))
-					sub_cfg[subnum]&=~SUB_CFG_NSCAN;
+					subscan[subnum].cfg&=~SUB_CFG_NSCAN;
 				if(msg.total_hfields)
 					smb_freemsgmem(&msg);
 				if(post)
@@ -720,8 +720,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					i=posts;
 				listmsgs(subnum,post,curpost+1,i);
 				curpost=i-1;
-				if(sub_ptr[subnum]<post[curpost].number)
-					sub_ptr[subnum]=post[curpost].number;
+				if(subscan[subnum].ptr<post[curpost].number)
+					subscan[subnum].ptr=post[curpost].number;
 				break;
 			case 'Y':   /* Your messages */
 				domsg=0;
@@ -998,7 +998,7 @@ int sbbs_t::searchposts(uint subnum, post_t HUGE16 *post, long start, long posts
 			else if((!stricmp(msg.to,useron.alias) || !stricmp(msg.to,useron.name))
 				&& !(msg.hdr.attr&MSG_READ))
 				ch='!';
-			else if(msg.hdr.number>sub_ptr[subnum])
+			else if(msg.hdr.number>subscan[subnum].ptr)
 				ch='*';
 			else
 				ch=' ';

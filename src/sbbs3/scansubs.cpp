@@ -97,9 +97,9 @@ void sbbs_t::scansubs(long mode)
 			menu("msgscan"); }
 		for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
 			if(((mode&SCAN_NEW &&
-				(sub_cfg[usrsub[curgrp][i]]&SUB_CFG_NSCAN
+				(subscan[usrsub[curgrp][i]].cfg&SUB_CFG_NSCAN
 					|| cfg.sub[usrsub[curgrp][i]]->misc&SUB_FORCED))
-				|| (mode&SCAN_TOYOU && sub_cfg[usrsub[curgrp][i]]&SUB_CFG_SSCAN)
+				|| (mode&SCAN_TOYOU && subscan[usrsub[curgrp][i]].cfg&SUB_CFG_SSCAN)
 				|| mode&SCAN_FIND)) {
 				if(scanposts(usrsub[curgrp][i],mode,str)) 
 					break;
@@ -162,10 +162,10 @@ void sbbs_t::scanallsubs(long mode)
 		menu("msgscan"); }
 	for(i=0;i<usrgrps;i++) {
 		for(j=0;j<usrsubs[i] && !msgabort();j++) {
-			if(((mode&SCAN_NEW && sub_cfg[usrsub[i][j]]&SUB_CFG_NSCAN)
+			if(((mode&SCAN_NEW && subscan[usrsub[i][j]].cfg&SUB_CFG_NSCAN)
 				|| cfg.sub[usrsub[i][j]]->misc&SUB_FORCED
 				|| mode&SCAN_FIND
-				|| (mode&SCAN_TOYOU && sub_cfg[usrsub[i][j]]&SUB_CFG_SSCAN))) {
+				|| (mode&SCAN_TOYOU && subscan[usrsub[i][j]].cfg&SUB_CFG_SSCAN))) {
 				if(scanposts(usrsub[i][j],mode,str)) 
 					break;
 				subs_scanned++;
@@ -219,7 +219,7 @@ void sbbs_t::new_scan_ptr_cfg()
 					for(i=0;i<usrgrps && online;i++)
 						for(j=0;j<usrsubs[i] && online;j++) {
 							checkline();
-							sub_ptr[usrsub[i][j]]=getmsgnum(usrsub[i][j],t); } }
+							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); } }
 				continue; }
 			if(s=='L')
 				s=0;
@@ -231,9 +231,9 @@ void sbbs_t::new_scan_ptr_cfg()
 					checkline();
 					getlastmsg(usrsub[i][j],&l,0);
 					if(s>(long)l)
-						sub_ptr[usrsub[i][j]]=0;
+						subscan[usrsub[i][j]].ptr=0;
 					else
-						sub_ptr[usrsub[i][j]]=l-s; }
+						subscan[usrsub[i][j]].ptr=l-s; }
 			continue; }
 		i=(s&~0x80000000L)-1;
 		while(online) {
@@ -243,7 +243,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				checkline();
 				if(j<9) outchar(SP);
 				if(j<99) outchar(SP);
-				t=getmsgtime(usrsub[i][j],sub_ptr[usrsub[i][j]]);
+				t=getmsgtime(usrsub[i][j],subscan[usrsub[i][j]].ptr);
 				if(t>(long)l)
 					l=t;
 				bprintf(text[SubPtrLstFmt],j+1,cfg.sub[usrsub[i][j]]->lname
@@ -268,7 +268,7 @@ void sbbs_t::new_scan_ptr_cfg()
 						bputs(text[LoadingMsgPtrs]);
 						for(j=0;j<usrsubs[i] && online;j++) {
 							checkline();
-							sub_ptr[usrsub[i][j]]=getmsgnum(usrsub[i][j],t); } }
+							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); } }
 					continue; }
 				if(s=='L')
 					s=0;
@@ -279,9 +279,9 @@ void sbbs_t::new_scan_ptr_cfg()
 					checkline();
 					getlastmsg(usrsub[i][j],&l,0);
 					if(s>(long)l)
-						sub_ptr[usrsub[i][j]]=0;
+						subscan[usrsub[i][j]].ptr=0;
 					else
-						sub_ptr[usrsub[i][j]]=l-s; }
+						subscan[usrsub[i][j]].ptr=l-s; }
 				continue; }
 			else {
 				j=(s&~0x80000000L)-1;
@@ -291,10 +291,10 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(s==-1 || s=='Q')
 					continue;
 				if(s=='D') {
-					t=getmsgtime(usrsub[i][j],sub_ptr[usrsub[i][j]]);
+					t=getmsgtime(usrsub[i][j],subscan[usrsub[i][j]].ptr);
 					if(inputnstime(&t) && !(sys_status&SS_ABORT)) {
 						bputs(text[LoadingMsgPtrs]);
-						sub_ptr[usrsub[i][j]]=getmsgnum(usrsub[i][j],t); }
+						subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); }
 					continue; }
 				if(s=='L')
 					s=0;
@@ -302,9 +302,9 @@ void sbbs_t::new_scan_ptr_cfg()
 					s&=~0x80000000L;
 				getlastmsg(usrsub[i][j],&l,0);
 				if(s>(long)l)
-					sub_ptr[usrsub[i][j]]=0;
+					subscan[usrsub[i][j]].ptr=0;
 				else
-					sub_ptr[usrsub[i][j]]=l-s; }
+					subscan[usrsub[i][j]].ptr=l-s; }
 				} }
 }
 
@@ -340,8 +340,8 @@ void sbbs_t::new_scan_cfg(ulong misc)
 				if(j<99) outchar(SP);
 				bprintf(text[CfgSubLstFmt],j+1
 					,cfg.sub[usrsub[i][j]]->lname
-					,sub_cfg[usrsub[i][j]]&misc ?
-						(misc&SUB_CFG_NSCAN && sub_cfg[usrsub[i][j]]&SUB_CFG_YSCAN) ?
+					,subscan[usrsub[i][j]].cfg&misc ?
+						(misc&SUB_CFG_NSCAN && subscan[usrsub[i][j]].cfg&SUB_CFG_YSCAN) ?
 						"To You Only" : text[On] : text[Off]);
 					}
 			SYNC;
@@ -356,24 +356,24 @@ void sbbs_t::new_scan_cfg(ulong misc)
 			if(!s || s==-1 || s=='Q')
 				break;
 			if(s=='A') {
-				t=sub_cfg[usrsub[i][0]]&misc;
+				t=subscan[usrsub[i][0]].cfg&misc;
 				if(misc&SUB_CFG_NSCAN && !t && !(useron.misc&FLAG('Q')))
 					if(!noyes("Messages to you only"))
 						misc|=SUB_CFG_YSCAN;
 				for(j=0;j<usrsubs[i] && online;j++) {
 					checkline();
-					if(t) sub_cfg[usrsub[i][j]]&=~misc;
+					if(t) subscan[usrsub[i][j]].cfg&=~misc;
 					else  {
 						if(misc&SUB_CFG_NSCAN)
-							sub_cfg[usrsub[i][j]]&=~SUB_CFG_YSCAN;
-						sub_cfg[usrsub[i][j]]|=misc; } }
+							subscan[usrsub[i][j]].cfg&=~SUB_CFG_YSCAN;
+						subscan[usrsub[i][j]].cfg|=misc; } }
 				continue; }
 			j=(s&~0x80000000L)-1;
-			if(misc&SUB_CFG_NSCAN && !(sub_cfg[usrsub[i][j]]&misc)) {
+			if(misc&SUB_CFG_NSCAN && !(subscan[usrsub[i][j]].cfg&misc)) {
 				if(!(useron.misc&FLAG('Q')) && !noyes("Messages to you only"))
-					sub_cfg[usrsub[i][j]]|=SUB_CFG_YSCAN;
+					subscan[usrsub[i][j]].cfg|=SUB_CFG_YSCAN;
 				else
-					sub_cfg[usrsub[i][j]]&=~SUB_CFG_YSCAN; }
-			sub_cfg[usrsub[i][j]]^=misc; } }
+					subscan[usrsub[i][j]].cfg&=~SUB_CFG_YSCAN; }
+			subscan[usrsub[i][j]].cfg^=misc; } }
 }
 

@@ -1261,9 +1261,9 @@ void event_thread(void* arg)
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				file=sbbs->nopen(str,O_RDONLY);
 				for(j=0;j<sbbs->cfg.qhub[i]->subs;j++) {
-					sbbs->sub_ptr[sbbs->cfg.qhub[i]->sub[j]]=0;
-					lseek(file,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*4L,SEEK_SET);
-					read(file,&sbbs->sub_ptr[sbbs->cfg.qhub[i]->sub[j]],4); 
+					sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr=0;
+					lseek(file,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long),SEEK_SET);
+					read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(long)); 
 				}
 				if(file!=-1)
 					close(file);
@@ -1275,8 +1275,10 @@ void event_thread(void* arg)
 							while(filelength(file)<
 								sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*4L)
 								write(file,&l,4);		/* initialize ptrs to null */
-							lseek(file,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*4L,SEEK_SET);
-							write(file,&sbbs->sub_ptr[sbbs->cfg.qhub[i]->sub[j]],4); }
+							lseek(file
+								,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long)
+								,SEEK_SET);
+							write(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(long)); }
 						close(file); } }
 				sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 
@@ -1625,13 +1627,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	usrsubs=NULL;
 	usrsub=NULL;
 
-	sub_cfg=NULL;
-	sub_ptr=NULL;
-	sub_last=NULL;
-	sav_sub_cfg=NULL;
-	sav_sub_ptr=NULL;
-	sav_sub_last=NULL;
-
+	subscan=NULL;
 
 	curdir=NULL;
 	usrlib=NULL;
@@ -1824,36 +1820,10 @@ bool sbbs_t::init()
 			return(false);
 		}
  
-		if((sub_cfg=(ushort *)MALLOC(sizeof(ushort)*cfg.total_subs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "sub_cfg", sizeof(ushort)*cfg.total_subs);
+		if((subscan=(subscan_t *)MALLOC(sizeof(subscan_t)*cfg.total_subs))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "subscan", sizeof(subscan_t)*cfg.total_subs);
 			return(false);
 		}
-
-		if((sub_ptr=(ulong *)MALLOC(sizeof(ulong)*cfg.total_subs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "sub_ptr", sizeof(ulong)*cfg.total_subs);
-			return(false);
-		}
-
-		if((sub_last=(ulong *)MALLOC(sizeof(ulong)*cfg.total_subs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "sub_last", sizeof(ulong)*cfg.total_subs);
-			return(false); 
-		}
-
-		if((sav_sub_cfg=(ushort *)MALLOC(sizeof(ushort)*cfg.total_subs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "sav_sub_cfg", sizeof(ushort)*cfg.total_subs);
-			return(false);
-		}
-
-		if((sav_sub_ptr=(ulong *)MALLOC(sizeof(ulong)*cfg.total_subs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "sav_sub_ptr", sizeof(ulong)*cfg.total_subs);
-			return(false);
-		}
-
-		if((sav_sub_last=(ulong *)MALLOC(sizeof(ulong)*cfg.total_subs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "sav_sub_last", sizeof(ulong)*cfg.total_subs);
-			return(false); 
-		}
-
 	}
 
 
@@ -2075,13 +2045,7 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(usrgrp);
 	FREE_AND_NULL(usrsubs);
 	FREE_AND_NULL(usrsub);
-	FREE_AND_NULL(sub_cfg);
-	FREE_AND_NULL(sub_ptr);
-	FREE_AND_NULL(sub_last);
-	FREE_AND_NULL(sav_sub_cfg);
-	FREE_AND_NULL(sav_sub_ptr);
-	FREE_AND_NULL(sav_sub_last);
-
+	FREE_AND_NULL(subscan);
 
 	/* File Directory variables */
 	for(i=0;i<cfg.total_libs && usrdir!=NULL;i++)

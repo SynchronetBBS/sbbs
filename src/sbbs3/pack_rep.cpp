@@ -129,10 +129,10 @@ bool sbbs_t::pack_rep(uint hubnum)
 		j=cfg.qhub[hubnum]->sub[i]; 			/* j now equals the real sub num */
 		msgs=getlastmsg(j,&last,0);
 		lncntr=0;						/* defeat pause */
-		if(!msgs || last<=sub_ptr[j]) {
-			if(sub_ptr[j]>last) {
-				sub_ptr[j]=last;
-				sub_last[j]=last; }
+		if(!msgs || last<=subscan[j].ptr) {
+			if(subscan[j].ptr>last) {
+				subscan[j].ptr=last;
+				subscan[j].ptr=last; }
 			eprintf(remove_ctrl_a(text[NScanStatusFmt],tmp)
 				,cfg.grp[cfg.sub[j]->grp]->sname
 				,cfg.sub[j]->lname,0L,msgs);
@@ -145,7 +145,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
 			continue; }
 
-		post=loadposts(&posts,j,sub_ptr[j],LP_BYSELF|LP_OTHERS|LP_PRIVATE|LP_REP);
+		post=loadposts(&posts,j,subscan[j].ptr,LP_BYSELF|LP_OTHERS|LP_PRIVATE|LP_REP);
 		eprintf(remove_ctrl_a(text[NScanStatusFmt],tmp)
 			,cfg.grp[cfg.sub[j]->grp]->sname
 			,cfg.sub[j]->lname,posts,msgs);
@@ -153,7 +153,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			smb_close(&smb);
 			continue; }
 
-		sub_ptr[j]=last;                   /* set pointer */
+		subscan[j].ptr=last;                   /* set pointer */
 		eprintf("%s",remove_ctrl_a(text[QWKPackingSubboard],tmp));	/* ptr to last msg	*/
 		submsgs=0;
 		for(l=0;l<posts;l++) {
