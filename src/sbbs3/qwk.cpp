@@ -896,10 +896,16 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 			useron.qwk&=~QWK_NOCTRL; }
 
 	else if(!strncmp(str,"VIA ",4)) {                   /* include @VIA: */
-		if(!strncmp(str+4,"ON  ",3))
+		if(!strncmp(str+4,"ON ",3))
 			useron.qwk|=QWK_VIA;
 		else
 			useron.qwk&=~QWK_VIA; }
+
+	else if(!strncmp(str,"MSGID ",6)) {                 /* include @MSGID: */
+		if(!strncmp(str+6,"ON ",3))
+			useron.qwk|=QWK_MSGID;
+		else
+			useron.qwk&=~QWK_MSGID; }
 
 	else if(!strncmp(str,"TZ ",3)) {                    /* include @TZ: */
 		if(!strncmp(str+3,"ON ",3))
