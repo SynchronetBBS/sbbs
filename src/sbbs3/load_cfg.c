@@ -429,6 +429,12 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 		return(FALSE); 
 	}
 	FREE_AND_NULL(cfg->color);
+	if((cfg->color=malloc(MIN_COLORS))==NULL) {
+		sprintf(error,"Error allocating memory (%u bytes) for colors"
+			,MIN_COLORS);
+		return(FALSE);
+	}
+	memset(cfg->color,LIGHTGRAY|HIGH,MIN_COLORS);	
 	for(cfg->total_colors=0;!feof(instream) && !ferror(instream);cfg->total_colors++) {
 		if(readline(&offset,str,4,instream)==NULL)
 			break;
@@ -437,11 +443,13 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 		cfg->color=p;
 		cfg->color[cfg->total_colors]=attrstr(str); 
 	}
+#if	0 /* Need to support v2.x attr.cfg with fewer colors */
 	if(cfg->total_colors<MIN_COLORS) {
 		sprintf(error,"Less than MIN_COLORS (%lu<%u) defined in %s"
 			,cfg->total_colors,MIN_COLORS,fname);
 		return(FALSE); 
 	}
+#endif
 	fclose(instream);
 	return(TRUE);
 }
