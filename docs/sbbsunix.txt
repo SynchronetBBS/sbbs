@@ -79,6 +79,8 @@ A. External programs can either use standard I/O (e.g. bash, pico, Lord/X,
 
 Q. Does Synchronet for Unix require X-Windows?
 A. No, Synchronet for Unix is currently a console-based application.
+   However, it does have an X console now.  To build without X support,
+   you'll need to add NO_X=1 to the make/gmake lines below.
 
 Q. Are there any plans to make an X-Windows front-end for Synchronet?
 A. Yes, but it will be optional.
@@ -183,6 +185,9 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    D. Build the Synchronet configuration utility (SCFG):
       gmake
       (please report build errors to rob@synchro.net)
+	  Note: For those building for *nix systems that do not have X installed,
+            use: gmake NO_X=1
+      Note: If X is not installed in /usr/X11R6, use: gname X_DIR=/path/to/X
       Note: Warnings (if any) can be safely ignored
 
    E. Congratulate yourself on a job well-done.
