@@ -67,6 +67,7 @@ char tmp[256];
 char error[256];
 char cflags[MAX_PATH+1];
 int  backup_level=5;
+BOOL keep_makefile=FALSE;
 
 void write_makefile(void);
 void install_sbbs(void);
@@ -136,6 +137,9 @@ int main(int argc, char **argv)
 				case 'I':
 					uifc.mode|=UIFC_IBM;
 					break;
+				case 'K':
+					keep_makefile=TRUE;
+					break;
                 case 'V':
 #if !defined(__unix__)
                     textmode(atoi(argv[i]+2));
@@ -146,6 +150,7 @@ int main(int argc, char **argv)
                         "\n\noptions:\n\n"
                         "-d  =  run in standard input/output/door mode\r\n"
                         "-c  =  force color mode\r\n"
+						"-k  =  keep temporary makefile: " MAKEFILE "\r\n"
 #ifdef USE_CURSES
                         "-e# =  set escape delay to #msec\r\n"
 						"-i  =  force IBM charset\r\n"
@@ -257,7 +262,7 @@ while(1) {
 			uifc.helpbuf=	"`Build Release Version`\n"
 							"\nToDo: Add help.";
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Build a release version?",opt);
+				,"Build a release version",opt);
 			if(!i)
 				params.release=TRUE;
 			else if(i==1)
@@ -274,7 +279,7 @@ while(1) {
 							"\nShould the installer create symlinks to the binaries or copy them from"
 							"\nthe compiled location?";
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Symlink Binaries?",opt);
+				,"Symlink Binaries",opt);
 			if(!i)
 				params.symlink=TRUE;
 			else if(i==1)
@@ -292,7 +297,7 @@ while(1) {
 							"\n"
 							"\nIf this is the first time you have ran SBBSINST, you `MUST` enable this.";
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Pull from CVS?",opt);
+				,"Pull from CVS",opt);
 			if(!i)
 				params.cvs=TRUE;
 			else if(i==1)
@@ -346,11 +351,11 @@ void write_makefile(void)
 		fprintf(makefile,"DEBUG    :=  1\n");
 
 	if(params.symlink) {
-		fprintf(makefile,"INSBIN   :=	-ln -s\n");
-		fprintf(makefile,"INSDAT   :=	-ln -s\n");
+		fprintf(makefile,"INSBIN   :=	-@ln -s\n");
+		fprintf(makefile,"INSDAT   :=	-@ln -s\n");
 	} else {
-		fprintf(makefile,"INSBIN   :=	install -c -s\n");
-		fprintf(makefile,"INSDAT   :=	install -c \n");
+		fprintf(makefile,"INSBIN   :=	@install -c -s\n");
+		fprintf(makefile,"INSDAT   :=	@install -c \n");
 	}
 
 	if(params.usebcc)  {
@@ -522,6 +527,7 @@ fprintf(makefile,"\t 	chown -R $(SBBSCHOWN) $(SBBSDIR)");
 void install_sbbs(void)  {
 	uifc.bail();
 	system("gmake -f " MAKEFILE " install");
-	unlink(MAKEFILE);
+	if(!keep_makefile)
+		unlink(MAKEFILE);
 }
 /* End of SBBSINST.C */
