@@ -127,6 +127,7 @@ enum {
 #define HANDLE	void*
 #endif
 
+#define SAFECOPY(dst,src)	sprintf(dst,"%.*s",sizeof(dst)-1,src)
 
 /****************************************************************************/
 /* MALLOC/FREE Macros for various compilers and environments				*/
