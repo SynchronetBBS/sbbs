@@ -21,6 +21,8 @@ XPDEV	=	../../xpdev/
 SBBS_SRC	=   ../
 
 NEED_UIFC	:=	1
+NEED_CTERM	:=	1
+
 include $(XPDEV)Common.gmake
 include $(SBBS_SRC)Common.gmake
 include $(UIFC)Common.gmake

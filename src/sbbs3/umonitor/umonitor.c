@@ -186,9 +186,7 @@ int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
     	snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup->temp_dir, nodenum);
 	else
 		snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup->ctrl_dir, nodenum);
-	endwin();
 	i=spyon(str);
-	refresh();
 	switch(i) {
 		case SPY_NOSOCKET:
 			uifc.msg("Could not create socket");
@@ -525,20 +523,12 @@ int do_cmd(char *cmd)
 	struct text_info ti;
 	char *p;
 
-#if 0
-	endwin();
-#else
 	gettextinfo(&ti);
 	p=malloc(ti.screenheight*ti.screenwidth*2);
 	gettext(1,1,ti.screenwidth,ti.screenheight,p);
-#endif
 	i=system(cmd);
-#if 0
-	refresh();
-#else
 	puttext(1,1,ti.screenwidth,ti.screenheight,p);
 	free(p);
-#endif
 	return(i);
 }
 

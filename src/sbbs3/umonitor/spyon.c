@@ -35,7 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <termios.h>
 #include <unistd.h>
 #include "sockwrap.h"	/* Must go before <sys/un.h> */
 #include <sys/un.h>
@@ -43,22 +42,24 @@
 #include <string.h>
 #include "sockwrap.h"
 #include "spyon.h"
+#include "cterm.h"
+#include "ciolib.h"
 
 int spyon(char *sockname)  {
 	SOCKET		spy_sock=INVALID_SOCKET;
 	struct sockaddr_un spy_name;
 	socklen_t	spy_len;
-	char		key;
-	char		buf;
+	unsigned char		key;
+	unsigned char		buf;
 	int		i;
-	struct	termios	tio;
-	struct	termios	old_tio;
 	fd_set	rd;
 	BOOL	b;
 	int		retval=0;
 	char	ANSIbuf[32];
 	int		parsing=0;
 	int		telnet_strip=0;
+	struct text_info ti;
+	char *scrn;
 
 	/* ToDo Test for it actually being a socket! */
 	/* Well, it will fail to connect won't it?   */
@@ -76,18 +77,26 @@ int spyon(char *sockname)  {
 	}
 	i=1;
 
-	tcgetattr(STDIN_FILENO,&old_tio);
-	tcgetattr(STDIN_FILENO,&tio);
-	cfmakeraw(&tio);
-	tcsetattr(STDIN_FILENO,TCSANOW,&tio);
-	printf("\r\n\r\nLocal spy mode... press CTRL-C to return to monitor\r\n\r\n");
+	gettextinfo(&ti);
+	scrn=(char *)malloc(ti.screenwidth*ti.screenheight*2);
+	gettext(1,1,ti.screenwidth,ti.screenheight,scrn);
+	textcolor(YELLOW);
+	textbackground(BLUE);
+	clrscr();
+	gotoxy(1,ti.screenheight);
+	cputs("Local spy mode... press CTRL-C to return to monitor");
+	clreol();
+	cterm_init(ti.screenheight-1,ti.screenwidth,1,1,0,NULL);
 	while(spy_sock!=INVALID_SOCKET)  {
+		struct timeval tv;
+		tv.tv_sec=0;
+		tv.tv_usec=100;
 		FD_ZERO(&rd);
-		FD_SET(STDIN_FILENO,&rd);
 		FD_SET(spy_sock,&rd);
-		if((select(spy_sock > STDIN_FILENO ? spy_sock+1 : STDIN_FILENO+1,&rd,NULL,NULL,NULL))<0)  {
+		if((select(spy_sock+1,&rd,NULL,NULL,&tv))<0)  {
 			close(spy_sock);
 			spy_sock=INVALID_SOCKET;
+			retval=SPY_SELECTFAILED;
 			break;
 		}
 		if(!socket_check(spy_sock,NULL,&b,0)) {
@@ -96,80 +105,22 @@ int spyon(char *sockname)  {
 			retval=SPY_SOCKETLOST;
 			break;
 		}
-		if(FD_ISSET(STDIN_FILENO,&rd))  {
-			if((i=read(STDIN_FILENO,&key,1))==1)  {
-				/* Check for control keys */
-				switch(key)  {
-					case 3:	/* CTRL-C */
-						close(spy_sock);
-						spy_sock=INVALID_SOCKET;
-						retval=SPY_CLOSED;
-						break;
-					default:
-						if(parsing || key==27) { 	/* Escape */
-							switch (key) {
-								case 27:
-									if(parsing) {
-										ANSIbuf[parsing++]=key;
-										write(spy_sock,ANSIbuf,parsing);
-										parsing=0;
-									}
-									else
-										ANSIbuf[parsing++]=key;
-									break;
-								case '[':
-									if(parsing==1) {
-										ANSIbuf[parsing++]=key;
-										write(spy_sock,ANSIbuf,parsing);
-										parsing=0;
-									}
-									else
-										ANSIbuf[parsing++]=key;
-									break;
-								case '?':
-								case ';':
-								case '0'-'9':
-									ANSIbuf[parsing++]=key;
-									break;
-								case 'R':			/* Cursor report... eat it. */
-								case 'c':			/* VT-100 thing... eat it. */
-								case 'n':			/* VT-100 thing... eat it. */
-									parsing=0;
-									break;
-								default:
-									ANSIbuf[parsing++]=key;
-									write(spy_sock,ANSIbuf,parsing);
-									parsing=0;
-									break;
-							}
-						}
-						else
-							write(spy_sock,&key,1);
-				}
-			}
-			else if(i<0) {
-				close(spy_sock);
-				spy_sock=INVALID_SOCKET;
-				retval=SPY_STDINLOST;
-				break;
-			}
-		}
 		if(spy_sock != INVALID_SOCKET && FD_ISSET(spy_sock,&rd))  {
 			if((i=read(spy_sock,&buf,1))==1)  {
 				if(telnet_strip) {
 					telnet_strip++;
-					if(buf=='\xff' && telnet_strip==2) {
+					if(buf==255 && telnet_strip==2) {
 						telnet_strip=0;
-						write(STDOUT_FILENO,&buf,1);
+						cterm_write(&buf,1,NULL,0);
 					}
 					if(telnet_strip==3)
 						telnet_strip=0;
 				}
 				else
-					if(buf=='\xff')
+					if(buf==255)
 						telnet_strip=1;
 					else
-						write(STDOUT_FILENO,&buf,1);
+						cterm_write(&buf,1,NULL,0);
 			}
 			else if(i<0) {
 				close(spy_sock);
@@ -178,8 +129,28 @@ int spyon(char *sockname)  {
 				break;
 			}
 		}
+		if(kbhit())  {
+			key=getch();
+			/* Check for control keys */
+			switch(key)  {
+				case 0:		/* Extended keys */
+				case 0xff:
+					getch();
+					break;
+				case 3:	/* CTRL-C */
+					close(spy_sock);
+					spy_sock=INVALID_SOCKET;
+					retval=SPY_CLOSED;
+					break;
+				default:
+					write(spy_sock,&key,1);
+			}
+		}
 	}
-	tcsetattr(STDIN_FILENO,TCSANOW,&old_tio);
+	puttext(1,1,ti.screenwidth,ti.screenheight,scrn);
+	window(ti.winleft,ti.wintop,ti.winright,ti.winbottom);
+	textattr(ti.attribute);
+	gotoxy(ti.curx,ti.cury);
 	return(retval);
 }
 
