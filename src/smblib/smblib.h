@@ -76,11 +76,12 @@
 #include "smbdefs.h"
 
 #define SMB_STACK_LEN		4			/* Max msg bases in smb_stack() 	*/
-#define SMB_STACK_POP       0           /* Pop a msg base off of smb_stack() */
+#define SMB_STACK_POP       0           /* Pop a msg base off of smb_stack()*/
 #define SMB_STACK_PUSH      1           /* Push a msg base onto smb_stack() */
-#define SMB_STACK_XCHNG     2           /* Exchange msg base w/last pushed */
+#define SMB_STACK_XCHNG     2           /* Exchange msg base w/last pushed	*/
 
-#define GETMSGTXT_TAILS 	1			/* Get message tail(s) too */
+#define GETMSGTXT_TAILS 	(1<<0)		/* Get message tail(s)				*/
+#define GETMSGTXT_NO_BODY	(1<<1)		/* Do not retrieve message body		*/
 
 #define SMB_IS_OPEN(smb)	((smb)->shd_fp!=NULL)
 
