@@ -432,6 +432,11 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetElement(cx, sub_list, index, &val))
 				return(NULL);
 
+			/* Add as property (associative array element) */
+			if(!JS_DefineProperty(cx, allsubs, cfg->sub[d]->code, val
+				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				return(NULL);
+
 			if(!js_CreateMsgAreaProperties(cx, cfg, subobj, d))
 				return(NULL);
 			
@@ -473,11 +478,6 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				return(NULL);
 
 			if(!JS_DefineProperties(cx, subobj, js_sub_properties))
-				return(NULL);
-
-			/* Add as property (associative array element) */
-			if(!JS_DefineProperty(cx, allsubs, cfg->sub[d]->code, val
-				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
 #ifdef _DEBUG
