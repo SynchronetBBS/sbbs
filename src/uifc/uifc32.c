@@ -1944,7 +1944,7 @@ static void help(void)
 {
 	char hbuf[HELPBUF_SIZE],str[256];
     char *p;
-	unsigned int line;
+	unsigned short line;	/* This must be 16-bits */
 	long l;
 	FILE *fp;
 
@@ -1968,12 +1968,12 @@ static void help(void)
 				if(!fread(str,12,1,fp))
 					break;
 				str[12]=0;
-				fread(&line,2,1,fp);
+				fread(&line,sizeof(line),1,fp);
 				if(stricmp(str,p) || line!=helpline) {
-					fseek(fp,4,SEEK_CUR);
+					fseek(fp,sizeof(l),SEEK_CUR);
 					continue; 
 				}
-				fread(&l,4,1,fp);
+				fread(&l,sizeof(l),1,fp);
 				break;
 			}
 			fclose(fp);
