@@ -5,6 +5,11 @@ function mime_decode(hdr, body)
 	var TE;
 	var undef;
 
+	if(hdr==undefined || body==undefined || hdr.field_list==undefined) {
+		Message.type="plain";
+		Message.body=decode_body(TE,undef,body);
+		return(Message);
+	}
 	for(head in hdr.field_list) {
 		if(hdr.field_list[head].data.search(/content-type:/i)!=-1) {
 			CT=hdr.field_list[head].data;
@@ -22,15 +27,25 @@ function mime_decode(hdr, body)
 		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
 		re=new RegExp ("--"+bound[1]+"-{0,2}");
 		msgbits=body.split(re);
-		/* Search for attachments */
+		/* Search for attachments/inlined */
 		for(bit in msgbits) {
 			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
 			var disp=pieces[0].match(/content-disposition:\s+attachment[;\s]*filename="?([^";\r\n]*)"?/i);
-			if(disp==undefined)
+			if(disp!=undefined) {
+				/* Attachment */
+				if(Message.attachments==undefined)
+					Message.attachments=new Array;
+				Message.attachments.push(disp[1]);
 				continue;
-			if(Message.attachments==undefined)
-				Message.attachments=new Array;
-			Message.attachments.push(disp[1]);
+			}
+			disp=pieces[0].match(/content-id:\s+\<?([^\<\>;\r\n]*)\>?/i);
+			if(disp!=undefined) {
+				/* Inline Attachment */
+				if(Message.inlines==undefined)
+					Message.inlines=new Array;
+				Message.inlines.push(disp[1]);
+				continue;
+			}
 		}
 		/* Search for HTML encoded bit */
 		for(bit in msgbits) {
@@ -43,6 +58,14 @@ function mime_decode(hdr, body)
 				continue;
 			if(pheads.search(/content-type: text\/html/i)!=-1) {
 				Message.body=decode_body(TE,pheads,content);
+				if(Message.inlines!=undefined) {
+					for(il in Message.inlines) {
+						var path=http_request.virtual_path;
+						var basepath=path.match(/^(.*\/)[^\/]*$/);
+						re=new RegExp("cid:("+Message.inlines[il]+")","ig");
+						Message.body=Message.body.replace(re,basepath[1]+"inline.ssjs/"+template.group.number+"/"+template.sub.code+"/"+hdr.number+"/$1");
+					}
+				}
 				Message.type="html";
 				return(Message);
 			}
@@ -162,3 +185,43 @@ function mime_get_attach(hdr, body, filename)
 	return(undefined);
 }
 
+function mime_get_cid_attach(hdr, body, cid)
+{
+	var Message=new Array;
+	var CT;
+	var TE;
+	var undef;
+
+	for(head in hdr.field_list) {
+		if(hdr.field_list[head].data.search(/content-type:/i)!=-1) {
+			CT=hdr.field_list[head].data;
+		}
+		else if(hdr.field_list[head].data.search(/content-transfer-encoding:/i)!=-1) {
+			TE=hdr.field_list[head].data;
+		}
+	}
+	if(CT==undefined) {
+		return(undefined);
+	}
+	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
+		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
+		re=new RegExp ("--"+bound[1]+"-{0,2}");
+		msgbits=body.split(re);
+		/* Search for attachments */
+		for(bit in msgbits) {
+			var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
+			var disp=pieces[0].match(/content-id:\s+<?([^\<\>;\r\n]*)>?/i);
+			if(disp==undefined)
+				continue;
+			if(disp[1]==cid) {
+				var contyp=pieces[0].match(/content-type:\s*([^\r\n]*)/i);
+				var content=pieces.slice(2).join('');
+				if(contyp!=undefined && contyp[0]!=undefined)
+					Message.content_type=contyp[1];
+				Message.body=decode_body(undefined,pieces[0],content);
+				return(Message);
+			}
+		}
+	}
+	return(undefined);
+}
