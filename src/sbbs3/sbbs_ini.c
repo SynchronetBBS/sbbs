@@ -377,34 +377,10 @@ void sbbs_read_ini(
 	SAFECOPY(web->error_dir
 		,iniReadString(fp,section,"ErrorDirectory","../html/error"));
 
-	SAFECOPY(web->index_file_name[0]
-		,iniReadString(fp,section,"IndexFileName1","index.html"));
-	SAFECOPY(web->index_file_name[1]
-		,iniReadString(fp,section,"IndexFileName2","index.ssjs"));
-	SAFECOPY(web->index_file_name[2]
-		,iniReadString(fp,section,"IndexFileName3",""));
-	SAFECOPY(web->index_file_name[3]
-		,iniReadString(fp,section,"IndexFileName4",""));
-	SAFECOPY(web->cgi_ext[0]
-		,iniReadString(fp,section,"CGIScriptExtension1",".cgi"));
-	SAFECOPY(web->cgi_ext[1]
-		,iniReadString(fp,section,"CGIScriptExtension2",""));
-	SAFECOPY(web->cgi_ext[2]
-		,iniReadString(fp,section,"CGIScriptExtension3",""));
-	SAFECOPY(web->cgi_ext[3]
-		,iniReadString(fp,section,"CGIScriptExtension4",""));
-	SAFECOPY(web->cgi_ext[4]
-		,iniReadString(fp,section,"CGIScriptExtension5",""));
-	SAFECOPY(web->cgi_ext[5]
-		,iniReadString(fp,section,"CGIScriptExtension6",""));
-	SAFECOPY(web->cgi_ext[6]
-		,iniReadString(fp,section,"CGIScriptExtension7",""));
-	SAFECOPY(web->cgi_ext[7]
-		,iniReadString(fp,section,"CGIScriptExtension8",""));
-	SAFECOPY(web->cgi_ext[8]
-		,iniReadString(fp,section,"CGIScriptExtension9",""));
-	SAFECOPY(web->cgi_ext[9]
-		,iniReadString(fp,section,"CGIScriptExtension10",""));
+	web->index_file_name
+		=iniReadStringList(fp,section,"IndexFileNames",",","index.html,index.ssjs");
+	web->cgi_ext
+		=iniReadStringList(fp,section,"CGIExtensions",",",".cgi");
 	SAFECOPY(web->ssjs_ext
 		,iniReadString(fp,section,"JavaScriptExtension",".ssjs"));
 
