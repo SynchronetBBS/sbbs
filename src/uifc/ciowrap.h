@@ -104,6 +104,9 @@ typedef struct {
 	void	(*textmode)		(int);
 } cioapi_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 int movetext(int sx, int sy, int ex, int ey, int dx, int dy);
 char *cgets(char *str);
 int cscanf (char *format , ...);
@@ -133,6 +136,9 @@ void textattr(unsigned char a);
 void delay(long a);
 int putch(unsigned char a);
 void _setcursortype(int a);
+#ifdef __cplusplus
+}
+#endif
 
 extern cioapi_t cio_api;
 extern int _wscroll;
