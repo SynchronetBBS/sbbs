@@ -247,24 +247,30 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 			close(in);
 			in=-1;
 		}
-		switch(read(in,&ch,1)) {
-			case -1:
-				close(in);
-				in=-1;
-				break;
-				
-			case 0:
-				lseek(in,0,SEEK_SET);	/* Wrapped */
-				continue;
-				
-			case 1:
-				lseek(in,-1L,SEEK_CUR);
-				if(ch) {
-					chatchar(uwin,ch,boxch,usrname);
-					ch=0;
-					write(in,&ch,1);
-				}
+		while(1) {
+			switch(read(in,&ch,1)) {
+				case -1:
+					close(in);
+					in=-1;
+					break;
+					
+				case 0:
+					lseek(in,0,SEEK_SET);	/* Wrapped */
+					continue;
+					
+				case 1:
+					lseek(in,-1L,SEEK_CUR);
+					if(ch) {
+						chatchar(uwin,ch,boxch,usrname);
+						ch=0;
+						write(in,&ch,1);
+						continue;
+					}
+					break;
+			}
+			break;
 		}
+
 		if((ch=wgetch(swin))) {
 			switch(ch)  {
 				case 0:
