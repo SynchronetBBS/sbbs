@@ -708,9 +708,9 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 		while(*out=='/')  {
 			if(*(out+1)=='/')
 				memmove(out,out+1,strlen(out));
-			else if(*(out+1)=='.' && *(out+2)=='/')
+			else if(*(out+1)=='.' && (*(out+2)=='/' || *(out+2)==0))
 				memmove(out,out+2,strlen(out)-1);
-			else if(*(out+1)=='.' && *(out+2)=='.' && *(out+3)=='/')  {
+			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)==0))  {
 				*out=0;
 				p=strrchr(target,'/');
 				memmove(p,out+3,strlen(out+3)+1);
