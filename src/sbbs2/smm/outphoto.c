@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 	smbmsg_t msg;
 	FILE	*stream;
 
-fprintf(stderr,"\nOUTPHOTO %s - Write SMM photos to SMB - Developed 1995-1997 "
+fprintf(stderr,"\nOUTPHOTO %s - Write SMM photos to SMB - Copyright 2002 "
 	"Rob Swindell\n\n",__DATE__);
 
 if(checktime()) {
@@ -170,7 +170,7 @@ while(!feof(stream)) {
 	if(!fread(&user,sizeof(user_t),1,stream))
 		break;
 
-	if(user.misc&USER_DELETED || !(user.misc&USER_PHOTO))
+	if(user.misc&(USER_DELETED|USER_FROMSMB) || !(user.misc&USER_PHOTO))
 		continue;
 
 	printf("Photo: %-25.25s  %.24s  "
@@ -291,7 +291,7 @@ while(!feof(stream)) {
 
 	memset(&msg,0,sizeof(smbmsg_t));
 	memcpy(msg.hdr.id,"SHD\x1a",4);
-	msg.hdr.version=SMB_VERSION;
+	msg.hdr.version=smb_ver();
 	msg.hdr.when_written.time=time(NULL);
     
 	msg.hdr.offset=offset;
