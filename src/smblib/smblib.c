@@ -745,7 +745,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 				msg->subj=msg->hfield_dat[i];
 				break;
 			case RFC822MSGID:
-				msg->msg_id=msg->hfield_dat[i];
+				msg->id=msg->hfield_dat[i];
 				break;
 			case RFC822REPLYID:
 				msg->reply_id=msg->hfield_dat[i];
