@@ -419,7 +419,10 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 		else {
 			if(cdt<1024)    /* 1k is smallest size */
 				cdt=1024;
-			bprintf("%5luk",cdt/1024L); } }
+			if(cdt>(99999*1024))
+				bprintf("%5luM",cdt/(1024*1024));
+			else
+				bprintf("%5luk",cdt/1024L); } }
 	else {
 		if(!cdt) {  /* FREE file */
 			attr(curatr^(HIGH|BLINK));
