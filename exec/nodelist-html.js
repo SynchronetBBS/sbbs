@@ -66,7 +66,7 @@ writeln("</td>");
 writeln("<td align=right>");
 writeln("<form>");
 writeln("<input type=button value='Login' onClick='location=\"telnet://"
-        + system.inetaddr + "\";'>");
+        + system.host_name + "\";'>");
 writeln("</form>");
 writeln("</td>");
 writeln("</tr>");
