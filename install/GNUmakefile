@@ -99,7 +99,7 @@ ifeq ($(INSTALL),UNIX)
 	@echo ERROR: UNIX Install type not yet supported.
 	fail
 else
-	echo Installing to $(SBBSDIR)
+	@echo Installing to $(SBBSDIR)
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja $(SBBSDIR)/exec/baja
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/node $(SBBSDIR)/exec/node
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/chksmb $(SBBSDIR)/exec/chksmb
