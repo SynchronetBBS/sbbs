@@ -833,6 +833,13 @@ void recycle(void* cbdata)
 	read_startup_ini(bbs,ftp,web,mail,services);
 }
 
+void cleanup(void)
+{
+#ifdef __unix__
+	unlink(SBBS_PID_FILE);
+#endif
+}
+
 #if defined(_WIN32)
 BOOL WINAPI ControlHandler(DWORD CtrlType)
 {
@@ -859,9 +866,6 @@ void _sighandler_quit(int sig)
 	sprintf(str,"     Got quit signal (%d)",sig);
 	lputs(LOG_NOTICE,str);
 	terminate();
-
-	if(is_daemon)
-		unlink(SBBS_PID_FILE);
 
     exit(0);
 }
@@ -985,6 +989,8 @@ int main(int argc, char** argv)
 #endif
 	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
+
+	atexit(cleanup);
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
 	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
@@ -1500,9 +1506,9 @@ int main(int argc, char** argv)
 	}
 	if(is_daemon) {
 
-		printf("Running as daemon\n");
+		lprintf(LOG_INFO,"Running as daemon");
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
-			printf("!ERROR %d running as daemon",errno);
+			lprintf(LOG_ERR,"!ERROR %d running as daemon",errno);
 			is_daemon=FALSE;
 		}
 
@@ -1530,14 +1536,14 @@ int main(int argc, char** argv)
     SAFECOPY(scfg.ctrl_dir,bbs_startup.ctrl_dir);
 
 	if(chdir(scfg.ctrl_dir)!=0)
-		lprintf(LOG_ERR,"\n!ERROR %d changing directory to: %s\n", errno, scfg.ctrl_dir);
+		lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, scfg.ctrl_dir);
 
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
 	bbs_lputs(NULL,LOG_INFO,str);
 	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
-		lprintf(LOG_ERR,"\n!ERROR Loading Configuration Files: %s\n", error);
+		lprintf(LOG_ERR,"!ERROR Loading Configuration Files: %s", error);
         return(-1);
     }
 
