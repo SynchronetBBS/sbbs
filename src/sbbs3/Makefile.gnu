@@ -81,7 +81,7 @@ $(EXEODIR):
 	mkdir $(EXEODIR)
 
 
-# SBBS Link Rule
+# Synchronet BBS library Link Rule
 $(SBBS): $(OBJS) $(LIBODIR)/ver.o
 	$(LD) $(LFLAGS) -o $(SBBS) $^ $(LIBS) $(OUTLIB) $(SBBSLIB)
 
@@ -92,6 +92,10 @@ $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 # Mail Server Link Rule
 $(MAILSRVR): $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o $(SBBSLIB)
 	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) $(OUTLIB) $(LIBODIR)/mailsrvr.a
+
+# Synchronet Control Panel Build Rule
+$(SBBSCTRL): sbbsctrl.c $(SBBSLIB)
+	$(CC) $(CFLAGS) -o $@ $^
 
 # Specifc Compile Rules
 $(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h
