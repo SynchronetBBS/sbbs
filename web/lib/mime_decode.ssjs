@@ -20,11 +20,11 @@ function mime_decode(hdr, body)
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
 		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
-		re=new RegExp ("--"+bound[1]);
+		re=new RegExp ("--"+bound[1]+"-{0,2}");
 		msgbits=body.split(re);
 		/* Search for attachments */
 		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/\r?\n\r?\n/,2);
+			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
 			var disp=pieces[0].match(/content-disposition:\s+attachment[;\s]*filename=([^;\r\n]*)/i);
 			if(disp==undefined)
 				continue;
@@ -34,18 +34,28 @@ function mime_decode(hdr, body)
 		}
 		/* Search for HTML encoded bit */
 		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/\r?\n\r?\n/,2);
-			if(pieces[0].search(/content-type: text\/html/i)!=-1) {
-				Message.body=decode_body(TE,pieces[0],pieces[1]);
+			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
+			var pheads=pieces[0];
+			if(pheads==undefined)
+				continue;
+			var content=pieces.slice(1).join('');
+			if(content==undefined)
+				continue;
+			if(pheads.search(/content-type: text\/html/i)!=-1) {
+				Message.body=decode_body(TE,pheads,content);
 				Message.type="html";
 				return(Message);
 			}
 		}
 		/* Search for plaintext bit */
 		for(bit in msgbits) {
-			pieces=msgbits[bit].split(/\r?\n\r?\n/,2);
-			if(pieces[0].search(/content-type: text\/plain/i)!=-1) {
-				Message.body=decode_body(TE,pieces[0],pieces[1]);
+			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
+			var pheads=pieces[0];
+			var content=pieces.slice(1).join('');
+			if(content==undefined)
+				continue;
+			if(pheads.search(/content-type: text\/plain/i)!=-1) {
+				Message.body=decode_body(TE,pheads,content);
 				Message.type="plain";
 				return(Message);
 			}
@@ -92,10 +102,13 @@ function decode_body(TE, heads, body)
 	if(tmp==undefined)
 		tmp="";
 	if(tmp.search(/quoted-printable/i)!=-1) {
-		body=body.replace(/=(\r?\n)/g,"$1");
-		body=body.replace(/=([A-Z0-9]{2})/ig,function (str,p1,offset,s)
+		body=body.replace(/\=(\r{0,1}\n)/g,"$1");
+		body=body.replace(/\=([A-F0-9]{2})/ig,function (str,p1,offset,s)
 			{
-				return ascii(parseInt(p1,16));
+				var i=parseInt(p1,16);
+				if(i==NaN || i==undefined)
+					return('='+p1);
+				return ascii(i);
 			}
 		);
 		return body;
