@@ -142,7 +142,7 @@
 
 	#include <pthread.h>	/* POSIX threads and mutexes */
 	#include <semaphore.h>	/* POSIX semaphores */
-	ulong _beginthread(void( *start_address )( void * )
+	unsigned long _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist);
 
 #elif defined(_WIN32)	
