@@ -209,6 +209,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	bool	nt=false;				// WinNT/2K? 
     bool	was_online=true;
 	bool	rio_abortable_save;
+	bool	use_pipes=false;	// NT-compatible console redirection
 	uint	i;
     time_t	hungup=0;
 	HANDLE	vxd=INVALID_HANDLE_VALUE;
@@ -216,6 +217,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	HANDLE	wrslot=INVALID_HANDLE_VALUE;
 	HANDLE  start_event=NULL;
 	HANDLE	hungup_event=NULL;
+	HANDLE	rdoutpipe;
+	HANDLE	wrinpipe;
     PROCESS_INFORMATION process_info;
 	DWORD	hVM;
 	DWORD	rd;
@@ -276,6 +279,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		return(GetLastError());
 	}
 
+	OpenVxDHandle=GetAddressOfOpenVxDHandle();
+
+	if(OpenVxDHandle==NULL) 
+		nt=true;	// Windows NT/2000
+
+	if(native && mode&EX_OUTR && !(mode&EX_OFFLINE))
+		use_pipes=true;
+
  	if(native) { // Native (32-bit) external
 
 		// Current environment passed to child process
@@ -318,10 +329,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
         sprintf(fullcmdline, "%sDOSXTRN.EXE %s", cfg.exec_dir, str);
 
-		OpenVxDHandle=GetAddressOfOpenVxDHandle();
-
-		if(!(mode&EX_OFFLINE) && OpenVxDHandle==NULL) {	// Windows NT/2000
-			nt=true;
+		if(!(mode&EX_OFFLINE) && nt) {	// Windows NT/2000
 			i=SBBSEXEC_MODE_FOSSIL;
 			if(mode&EX_INR)
            		i|=SBBSEXEC_MODE_DOS_IN;
@@ -430,7 +438,41 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     	startup_info.wShowWindow=SW_SHOWMINNOACTIVE;
         startup_info.dwFlags|=STARTF_USESHOWWINDOW;
     }
+	if(use_pipes) {
+		// Set up the security attributes struct.
+		SECURITY_ATTRIBUTES sa;
+		memset(&sa,0,sizeof(sa));
+		sa.nLength= sizeof(SECURITY_ATTRIBUTES);
+		sa.lpSecurityDescriptor = NULL;
+		sa.bInheritHandle = TRUE;
 
+		// Create the child output pipe.
+		if (!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,0)) {
+			errormsg(WHERE,ERR_CREATE,"stdout pipe",0);
+			return(GetLastError());
+		}
+		startup_info.hStdError=startup_info.hStdOutput;
+
+		// Create the child input pipe.
+		if (!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,0)) {
+			errormsg(WHERE,ERR_CREATE,"stdin pipe",0);
+			return(GetLastError());
+		}
+
+		DuplicateHandle(
+			GetCurrentProcess(), rdoutpipe,
+			GetCurrentProcess(), &rdslot, 0, FALSE, DUPLICATE_SAME_ACCESS);
+
+		DuplicateHandle(
+			GetCurrentProcess(), wrinpipe,
+			GetCurrentProcess(), &wrslot, 0, FALSE, DUPLICATE_SAME_ACCESS);
+
+		CloseHandle(rdoutpipe);
+		CloseHandle(wrinpipe);
+
+		startup_info.dwFlags|=STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
+    	startup_info.wShowWindow=SW_HIDE;
+	}
 	if(native && !(mode&EX_OFFLINE)) {
 		/* temporary */
 		FILE* fp;
@@ -450,7 +492,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		fclose(fp);
 
 		/* not temporary */
-		pthread_mutex_lock(&input_thread_mutex);
+		if(!(mode&EX_INR)) 
+			pthread_mutex_lock(&input_thread_mutex);
 	}
 
     if(!CreateProcess(
@@ -553,7 +596,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
             if(hungup && time(NULL)-hungup>5) 
                 TerminateProcess(process_info.hProcess, 2112);
         }
-		if(native || mode&EX_OFFLINE) {
+		if((native && !use_pipes) || mode&EX_OFFLINE) {	
+			/* Monitor for process termination only */
             if(GetExitCodeProcess(process_info.hProcess, &retval)==FALSE) {
                 errormsg(WHERE, ERR_CHK, "ExitCodeProcess"
                    ,(DWORD)process_info.hProcess);
@@ -570,7 +614,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 				wr=RingBufPeek(&inbuf,buf,sizeof(buf));
 				if(wr) {
-					if(wrslot==INVALID_HANDLE_VALUE) {
+					if(!use_pipes && wrslot==INVALID_HANDLE_VALUE) {
 						sprintf(str,"\\\\.\\mailslot\\sbbsexec\\wr%d"
 							,cfg.node_num);
 						wrslot=CreateFile(str
@@ -587,10 +631,20 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 						}
 #endif
 					}
+					
+					/* LF expansion */
+					if(use_pipes && wr==1 && buf[0]=='\r') 
+						buf[wr++]='\n';
+
 					if(wrslot!=INVALID_HANDLE_VALUE
 						&& WriteFile(wrslot,buf,wr,&len,NULL)==TRUE) {
 						RingBufRead(&inbuf, NULL, len);
 						wr=len;
+						if(use_pipes) {
+							/* echo */
+							RingBufWrite(&outbuf, buf, wr);
+							sem_post(&output_sem);
+						}
 					} else		// VDD not loaded yet
 						wr=0;
 				}
@@ -604,7 +658,20 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 						,cfg.node_num,RingBufFull(&outbuf));
 				if(len>avail)
             		len=avail;
-				if(avail>=RingBufFull(&outbuf)
+				rd=0;
+				DWORD waiting=1;
+
+				if(use_pipes)
+					PeekNamedPipe(
+						rdslot,             // handle to pipe to copy from
+						NULL,               // pointer to data buffer
+						0,					// size, in bytes, of data buffer
+						NULL,				// pointer to number of bytes read
+						&waiting,			// pointer to total number of bytes available
+						NULL // pointer to unread bytes in this message
+						);
+ 
+				if(avail>=RingBufFull(&outbuf) && waiting 
 					&& ReadFile(rdslot,buf,len,&rd,NULL)==TRUE && rd>0) {
 					if(mode&EX_WWIV) {
                 		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
