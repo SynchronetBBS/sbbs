@@ -305,8 +305,8 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char		buf[513];
-	int			len;
+	char*		buf;
+	int			len=512;
 	JSString*	str;
 
 	private_t*	p;
@@ -316,13 +316,15 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc)
 		len = JSVAL_TO_INT(argv[0]);
-	else
-		len = sizeof(buf)-1;
 
-	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
+	if((buf=(char*)malloc(len+1))==NULL) {
+		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
+		return(JS_FALSE);
+	}
 
 	len = recv(p->sock,buf,len,0);
 	if(len<0) {
+		free(buf);
 		p->last_error=ERROR_VALUE;
 		*rval = JSVAL_NULL;
 		return(JS_TRUE);
@@ -330,7 +332,7 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	buf[len]=0;
 
 	str = JS_NewStringCopyZ(cx, buf);
-
+	free(buf);
 	*rval = STRING_TO_JSVAL(str);
 
 	dbprintf(FALSE, p, "received %u bytes",len);
@@ -341,7 +343,7 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char		buf[513];
+	char*		buf;
 	int			len;
 	JSString*	str;
 
@@ -352,13 +354,14 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc)
 		len = JSVAL_TO_INT(argv[0]);
-	else
-		len = sizeof(buf)-1;
 
-	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
-
+	if((buf=(char*)malloc(len+1))==NULL) {
+		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
+		return(JS_FALSE);
+	}
 	len = recv(p->sock,buf,len,MSG_PEEK);
 	if(len<0) {
+		free(buf);
 		p->last_error=ERROR_VALUE;	
 		*rval = JSVAL_NULL;
 		return(JS_TRUE);
@@ -366,7 +369,7 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	buf[len]=0;
 
 	str = JS_NewStringCopyZ(cx, buf);
-
+	free(buf);
 	*rval = STRING_TO_JSVAL(str);
 
 	dbprintf(FALSE, p, "received %u bytes, lasterror=%d"
@@ -379,9 +382,9 @@ static JSBool
 js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		ch;
-	char		buf[513];
+	char*		buf;
 	int			i;
-	int			len;
+	int			len=512;
 	BOOL		rd;
 	time_t		start;
 	time_t		timeout=30;	/* seconds */
@@ -393,10 +396,11 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc)
 		len = JSVAL_TO_INT(argv[0]);
-	else
-		len = sizeof(buf)-1;
 
-	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
+	if((buf=(char*)malloc(len+1))==NULL) {
+		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
+		return(JS_FALSE);
+	}
 
 	if(argc>1)
 		timeout = JSVAL_TO_INT(argv[1]);
@@ -411,6 +415,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		if(!rd) {
 			if(time(NULL)-start>timeout) {
+				free(buf);
 				dbprintf(FALSE, p, "recvline timeout (received: %d)",i);
 				*rval = JSVAL_NULL;
 				return(JS_TRUE);	/* time-out */
@@ -435,7 +440,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		buf[i]=0;
 
 	str = JS_NewStringCopyZ(cx, buf);
-
+	free(buf);
 	*rval = STRING_TO_JSVAL(str);
 
 	dbprintf(FALSE, p, "received %u bytes (recvline) lasterror=%d"
