@@ -50,6 +50,7 @@ void sbbs_t::newuser()
 	int 	file;
 	uint	i,j;
 	long	misc;
+	long	kmode;
 	bool	usa;
 	FILE	*stream;
 
@@ -148,6 +149,11 @@ void sbbs_t::newuser()
 	useron.shell=cfg.new_shell;
 
 	useron.alias[0]=0;
+
+	kmode=(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL;
+	if(!(cfg.uq&UQ_NOUPRLWR))
+		kmode|=K_UPRLWR;
+
 	while(online) {
 
 		if(autoterm || yesno(text[AutoTerminalQ])) {
@@ -185,8 +191,7 @@ void sbbs_t::newuser()
 					bputs(text[EnterYourAlias]);
 				else
 					bputs(text[EnterYourRealName]);
-				getstr(useron.alias,LEN_ALIAS
-					,K_UPRLWR|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL);
+				getstr(useron.alias,LEN_ALIAS,kmode);
 				truncsp(useron.alias);
 				if(useron.alias[0]<=SP || !isalpha(useron.alias[0])
 					|| !stricmp(useron.alias,cfg.sys_id)
@@ -202,8 +207,7 @@ void sbbs_t::newuser()
 		if(cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME) {
 			while(online) {
 				bputs(text[EnterYourRealName]);
-				if(!getstr(useron.name,LEN_NAME
-					,K_UPRLWR|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL)
+				if(!getstr(useron.name,LEN_NAME,kmode)
 					|| trashcan(useron.name,"name")
 					|| strchr(useron.name,0xff)
 					|| !strchr(useron.name,SP)
@@ -236,14 +240,12 @@ void sbbs_t::newuser()
 		if(cfg.uq&UQ_ADDRESS)
 			while(online) { 	   /* Get address and zip code */
 				bputs(text[EnterYourAddress]);
-				if(getstr(useron.address,LEN_ADDRESS
-					,K_UPRLWR|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL))
+				if(getstr(useron.address,LEN_ADDRESS,kmode))
 					break; }
 		if(!online) return;
 		while(cfg.uq&UQ_LOCATION && online) {
 			bputs(text[EnterYourCityState]);
-			if(getstr(useron.location,LEN_LOCATION
-				,K_UPRLWR|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL)
+			if(getstr(useron.location,LEN_LOCATION,kmode)
 				&& (cfg.uq&UQ_NOCOMMAS || strchr(useron.location,',')))
 				break;
 			bputs("\r\nYou must include a comma between the city and state.\r\n");
