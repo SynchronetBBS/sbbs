@@ -132,7 +132,7 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 				if(rename(fname,newname)!=0)
 					return(FALSE);
 			else
-				if(!fcopy(fname,newname)
+				if(!fcopy(fname,newname))
 					return(FALSE);
 			continue; 
 		}
