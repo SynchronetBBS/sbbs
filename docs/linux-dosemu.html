@@ -133,9 +133,9 @@ that works for mostly everything else.
 
 <p>make sure you are using a dosemu.conf from the DOSEMU distribution of the
 particular version you are using.  (e.g. if using 1.1.4 release, don't use a dosemu.conf from
-1.0.2)
+1.0.2).  If you want to customize a config, start from your distro's release dosemu.conf.
 
-<p>The most up-to-date freedos distribution can be found <A href="http://www.fdos.org/ripcord/dosemu/">here</a> -- this is known to fix problems with Tradewars 2002.  You might consider trying DR-DOS if you have problems with FreeDOS.  However, be certain that you use the autoexec.bat from the FreeDOS distribution, as the Synchronet integration depends on it.  Also remember to copy the DOSEMU support files into
+<p>The most up-to-date freedos distribution can be found <A href="http://www.fdos.org/ripcord/dosemu/">here</a> -- this is known to fix problems with Tradewars 2002.  You might consider trying DR-DOS if you have problems with FreeDOS.  However, be certain that you use the autoexec.bat from the FreeDOS distribution, as the Synchronet integration depends on it (specifically, it depends on the DOSDRIVE_D and unix -e behavior from it).  Also remember to copy the DOSEMU support files into
 c:\dosemu in the DR-DOS hdimage.
 
 <hr>
