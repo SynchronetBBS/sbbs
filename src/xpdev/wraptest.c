@@ -47,6 +47,7 @@ int main()
 	thread_data_t thread_data;
 	int	fd;
 	int	fd2;
+	int	canrelock=0;
 
 	/* Show platform details */
 	DESCRIBE_COMPILER(compiler);
@@ -94,11 +95,13 @@ int main()
 	}
 	write(fd,"lock testing\n",LOCK_LEN);
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)
-		printf("lock() succeeds\n");
+		printf("SUCCESS: lock() succeeds\n");
 	else
-		printf("!FAILURE lock() non-functional (or file already locked)\n");
-	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)
-		printf("!FAILURE: Subsequent lock of region was allowed\n");
+		printf("!FAILURE: lock() non-functional (or file already locked)\n");
+	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)  {
+		printf("!FAILURE: Subsequent lock of region was allowed (will skip some tests)\n");
+		canrelock=1;
+	}
 		
 	if(_beginthread(
 		  lock_test_thread	/* entry point */
@@ -108,29 +111,33 @@ int main()
 		printf("_beginthread failed\n");
 	else
 		SLEEP(1000);
-	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
-		printf("Locks in first thread survive open()/close() in other thread\n");
-	else
-		printf("!FAILURE lock() in first thread lost by open()/close() in other thread\n");
-	if(lock(fd,LOCK_OFFSET+LOCK_LEN+1,LOCK_LEN))
-		printf("!FAILURE file locking\n");
-	else
-		printf("SUCCESS!  Record locking\n");
+	if(canrelock)
+		printf("?? Skipping some tests due to inability to detect own locks\n");
+	else  {
+		if(lock(fd,LOCK_OFFSET,LOCK_LEN))
+			printf("SUCCESS: Locks in first thread survive open()/close() in other thread\n");
+		else
+			printf("!FAILURE: lock() in first thread lost by open()/close() in other thread\n");
+		if(lock(fd,LOCK_OFFSET+LOCK_LEN+1,LOCK_LEN))
+			printf("!FAILURE: file locking\n");
+		else
+			printf("SUCCESS: Record locking\n");
+	}
 	if((fd2=sopen(LOCK_FNAME,O_RDWR,SH_DENYRW))==-1) {
-		printf("SUCCESS!  Cannot reopen SH_DENYRW while lock is held\n");
+		printf("SUCCESS: Cannot reopen SH_DENYRW while lock is held\n");
 		close(fd2);
 	}
 	else  {
-		printf("!FAILURE can reopen SH_DENYRW while lock is held\n");
+		printf("!FAILURE: can reopen SH_DENYRW while lock is held\n");
 	}
 	if(unlock(fd,LOCK_OFFSET,LOCK_LEN))
-		printf("!FAILURE unlock() non-functional\n");
+		printf("!FAILURE: unlock() non-functional\n");
 	if(lock(fd,LOCK_OFFSET+LOCK_LEN+1,LOCK_LEN))
-		printf("SUCCESS! Cannot re-lock after non-overlapping unlock()\n");
+		printf("SUCCESS: Cannot re-lock after non-overlapping unlock()\n");
 	else
-		printf("!FAILURE can re-lock after non-overlappping unlock()\n");
+		printf("!FAILURE: can re-lock after non-overlappping unlock()\n");
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
-		printf("!FAILURE cannot re-lock unlocked area\n");
+		printf("!FAILURE: cannot re-lock unlocked area\n");
 	close(fd);
 
 	/* getch test */
@@ -292,11 +299,11 @@ static void lock_test_thread(void* arg)
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)
 		printf("!FAILURE: Lock not effective between threads\n");
 	else
-		printf("Locks effective between threads\n");
+		printf("SUCCESS: Locks effective between threads\n");
 	close(fd);
 	fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYNO);
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
-		printf("Locks survive file open()/close() in other thread\n");
+		printf("SUCCESS: Locks survive file open()/close() in other thread\n");
 	else
 		printf("!FAILURE: Locks do not survive file open()/close() in other thread\n");
 	close(fd);
