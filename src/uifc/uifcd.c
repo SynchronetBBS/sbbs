@@ -38,6 +38,7 @@
 #include "uifc.h"
 #include "dialog.h"
 
+static char app_title[81]="";
 static char *helpfile=0;
 static uint helpline=0;
 static uifcapi_t* api;
@@ -99,6 +100,7 @@ void uifcbail(void)
 /****************************************************************************/
 int uscrn(char *str)
 {
+	sprintf(app_title,"%.*s",sizeof(app_title)-1,str);
 	/**********************************************************************/
     /* ToDo - Does not display application title... mostly 'cause I clear */
 	/* the screen so often                                                */
@@ -191,17 +193,17 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(i<0) i=0;
 		if(strcmp(option[0],"Yes")==0 && strcmp(option[1],"No")==0 && cnt==2)  {
 		    if(i==0)
-				ret=dialog_yesno((char *)NULL,title,5,width);
+				ret=dialog_yesno(app_title,title,5,width);
 	    	else
-				ret=dialog_noyes((char *)NULL,title,5,width);
+				ret=dialog_noyes(app_title,title,5,width);
 	
 	    	if(ret) ret=1; else ret=0;
 		}
 		else if(strcmp(option[0],"No")==0 && strcmp(option[1],"Yes")==0 && cnt==2)  {
 	    	if(i==1)
-				ret=dialog_yesno((char *)NULL,title,5,width);
+				ret=dialog_yesno(app_title,title,5,width);
 	    	else
-				ret=dialog_noyes((char *)NULL,title,5,width);
+				ret=dialog_noyes(app_title,title,5,width);
 	    	if(ret) ret=0; else ret=1;
 		}
 		else  {
@@ -209,7 +211,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 			scrollpos=0;
 			if(i>14)
 				scrollpos=i-14;
-            ret=dialog_menu((char *)NULL, title, 22, width, 14, cnt, it, str, &i, &scrollpos);
+            ret=dialog_menu(app_title, title, 22, width, 14, cnt, it, str, &i, &scrollpos);
             if(ret==1)  {
 				ret = -1;
 				*cur = -1;
@@ -285,7 +287,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 
     // free() the strings!
     for(i=0;i<(freecnt)*2;i++)
-	free(it[i]);
+		free(it[i]);
     free(it);
     
     return(ret);
@@ -300,7 +302,7 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 {
 	char str[256];
 	sprintf(str,"%.*s",sizeof(str)-1,outstr);
-    dialog_inputbox((char *)NULL, prompt, 9, max+4, outstr);
+    dialog_inputbox(app_title, prompt, 9, max+4, outstr);
 	if(strcmp(str,outstr))
 		api.changes=TRUE;
     return strlen(outstr);
@@ -311,7 +313,7 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 /****************************************************************************/
 void umsg(char *str)
 {
-    dialog_mesgbox((char *)NULL, str, 7, strlen(str)+4);
+    dialog_mesgbox(app_title, str, 7, strlen(str)+4);
 }
 
 /****************************************************************************/
@@ -320,7 +322,7 @@ void umsg(char *str)
 void upop(char *str)
 {
 	// Pop-down doesn't do much... the mext item should over-write this.
-    dialog_gauge((char *)NULL,str,8,20,7,40,0);
+    dialog_gauge(app_title,str,8,20,7,40,0);
 }
 
 /****************************************************************************/
