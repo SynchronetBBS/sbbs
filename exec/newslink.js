@@ -217,7 +217,7 @@ for(i in area) {
 	/* Read Pointer File */
 	/*********************/
 	export_ptr = 0;
-	import_ptr = 0;
+	import_ptr = ~0;	// Set to highest possible message number
 	ptr_fname = msgbase.file + ".snl";
 	ptr_file = new File(ptr_fname);
 	if(ptr_file.open("rb")) {
