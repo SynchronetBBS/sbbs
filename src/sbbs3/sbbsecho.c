@@ -3795,7 +3795,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 					else
 						cr=0;
 					if(scfg.sub[i]->misc&SUB_ASCII || misc&ASCII_ONLY) {
-						if(buf[l]<SP && buf[l]!=CR) /* Ctrl ascii */
+						if(buf[l]<SP && buf[l]!=CR
+							&& buf[l]!=LF)			/* Ctrl ascii */
 							buf[l]='.';             /* converted to '.' */
 						if((uchar)buf[l]>0x7f)		/* extended ASCII */
 							buf[l]='*'; }           /* converted to '*' */
