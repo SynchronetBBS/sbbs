@@ -36,6 +36,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)getnode.$(OFILE)\
 			$(LIBODIR)$(SLASH)getstr.$(OFILE)\
 			$(LIBODIR)$(SLASH)inkey.$(OFILE)\
+			$(LIBODIR)$(SLASH)ident.$(OFILE)\
 			$(LIBODIR)$(SLASH)listfile.$(OFILE)\
 			$(LIBODIR)$(SLASH)load_cfg.$(OFILE)\
 			$(LIBODIR)$(SLASH)logfile.$(OFILE)\
