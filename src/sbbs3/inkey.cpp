@@ -97,7 +97,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			bputs("\b \b");
 		return(0); 
 	}
-	if(ch==CTRL_Z && action!=NODE_PCHT) {	 /* Ctrl-Z toggle raw input mode */
+	if(ch==CTRL_Z && !(mode&K_MSG)
+		&& action!=NODE_PCHT) {	 /* Ctrl-Z toggle raw input mode */
 		if(hotkey_inside>1)	/* only allow so much recursion */
 			return(0);
 		hotkey_inside++;
