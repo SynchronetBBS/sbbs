@@ -29,7 +29,7 @@ lib-linux.debug   -a lib/mozilla/js/linux.debug   lib/mozilla/nspr/linux.debug
 lib-linux            lib-linux.release
 lib-win32.release -a lib/mozilla/js/win32.release lib/mozilla/nspr/win32.release
 lib-win32.debug   -a lib/mozilla/js/win32.debug   lib/mozilla/nspr/win32.debug
-lib.win32            lib-win32.release
+lib-win32            lib-win32.release
 src-sbbs3         -a src/build src/sbbs3 src/xpdev src/uifc include/mozilla
 run-sbbs3         -a ctrl text exec xtrn node1 node2 node3 node4 docs
 install install
