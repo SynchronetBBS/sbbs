@@ -85,6 +85,10 @@
 
 #define SMB_IS_OPEN(smb)	((smb)->shd_fp!=NULL)
 
+/* Legacy API functions */
+#define smb_incmsg(smb,msg)	smb_incmsg_dfields(smb,msg,1)
+#define smb_incdat			smb_incmsgdat
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -133,8 +137,8 @@ SMBEXPORT long	SMBCALL smb_hallochdr(smb_t* smb);
 SMBEXPORT long	SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort refs);
 SMBEXPORT long	SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort refs);
 SMBEXPORT long	SMBCALL smb_hallocdat(smb_t* smb);
-SMBEXPORT int	SMBCALL smb_incmsg(smb_t* smb, smbmsg_t* msg);
-SMBEXPORT int 	SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs);
+SMBEXPORT int	SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs);
+SMBEXPORT int 	SMBCALL smb_incmsgdat(smb_t* smb, ulong offset, ulong length, ushort refs);
 SMBEXPORT int 	SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int	SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs);
 SMBEXPORT int 	SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs);

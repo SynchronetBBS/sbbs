@@ -1780,10 +1780,10 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 
 /****************************************************************************/
 /* Increments data allocation records (message references) by number of		*/
-/* headers specified (usually 1)											*/
+/* header references specified (usually 1)									*/
 /* The opposite function of smb_freemsg()									*/
 /****************************************************************************/
-int SMBCALL smb_incmsg(smb_t* smb, smbmsg_t* msg)
+int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
 {
 	int		i=0;
 	int		da_opened=0;
@@ -1800,7 +1800,7 @@ int SMBCALL smb_incmsg(smb_t* smb, smbmsg_t* msg)
 
 	for(x=0;x<msg->hdr.total_dfields;x++) {
 		if((i=smb_incdat(smb,msg->hdr.offset+msg->dfield[x].offset
-			,msg->dfield[x].length,1))!=0)
+			,msg->dfield[x].length,refs))!=0)
 			break; 
 	}
 
