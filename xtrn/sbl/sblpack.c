@@ -41,8 +41,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include "filewrap.h"	/* sopen() */
-#include "xsdkwrap.h"	/* PLATFORM_DESC */
-#include "xsdkdefs.h"
+#include "genwrap.h"	/* PLATFORM_DESC */
 #include "sbldefs.h"
 
 int main(void)

@@ -57,6 +57,14 @@
 #pragma pack(1)
 #endif
 
+#ifndef _PACK
+	#ifdef __GNUC__
+		#define _PACK __attribute__ ((packed))
+	#else
+		#define _PACK
+	#endif
+#endif
+
 typedef union _PACK {
 
 		struct {
