@@ -48,8 +48,14 @@ var done=0;
 while(!done) {
 	while(!done && (response=my_server.recvline())) {
 		var resp=response.split(/\s+/);
+		if(resp[1]=='433') {
+			/* Nick in use... */
+			nick+='_';
+			my_server.send("NICK " + nick + "\r\n");
+			
+		}
 log(resp[1]);
-		if(resp[1]=='433' || resp[1]=='422' || resp[1]=='376')
+		if(resp[1]=='422' || resp[1]=='376')
 			done=1;
 		log(response);
 	}
