@@ -2082,7 +2082,7 @@ long SMBCALL smb_allochdr(smb_t* smb, ulong length)
 
 /****************************************************************************/
 /* Allocates space for index, but doesn't search for unused blocks          */
-/* Returns negative value on error 												*/
+/* Returns negative value on error 											*/
 /****************************************************************************/
 long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
 {
@@ -2117,7 +2117,7 @@ long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
 /************************************************************************/
 long SMBCALL smb_hallochdr(smb_t* smb)
 {
-	ulong l;
+	ulong offset;
 
 	if(smb->shd_fp==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
@@ -2126,12 +2126,16 @@ long SMBCALL smb_hallochdr(smb_t* smb)
 	fflush(smb->shd_fp);
 	if(fseek(smb->shd_fp,0L,SEEK_END))
 		return(SMB_ERR_SEEK);
-	l=ftell(smb->shd_fp);
-	if(l<smb->status.header_offset) 			 /* Header file truncated?!? */
+	offset=ftell(smb->shd_fp);
+	if(offset<smb->status.header_offset) 	/* Header file truncated?!? */
 		return(smb->status.header_offset);
-	while((l-smb->status.header_offset)%SHD_BLOCK_LEN)	/* Even block boundry */
-		l++;
-	return(l-smb->status.header_offset);
+
+	offset-=smb->status.header_offset;		/* SMB headers not included */
+
+	/* Even block boundry */
+	offset+=PAD_LENGTH_FOR_ALIGNMENT(offset,SHD_BLOCK_LEN);
+
+	return(offset);
 }
 
 /************************************************************************/
@@ -2142,32 +2146,34 @@ long SMBCALL smb_hallochdr(smb_t* smb)
 /************************************************************************/
 long SMBCALL smb_hallocdat(smb_t* smb)
 {
-	long l;
+	long offset;
 
 	if(smb->sdt_fp==NULL) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
+		safe_snprintf(smb->last_error,sizeof(smb->last_error)
+			,"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
 	fflush(smb->sdt_fp);
-	l=filelength(fileno(smb->sdt_fp));
-	if(l<0) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"invalid file length: %lu",(ulong)l);
+	offset=filelength(fileno(smb->sdt_fp));
+	if(offset<0) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error)
+			,"invalid file length: %lu",(ulong)offset);
 		return(SMB_ERR_FILE_LEN);
 	}
 	if(fseek(smb->sdt_fp,0L,SEEK_END))
 		return(SMB_ERR_SEEK);
-	l=ftell(smb->sdt_fp);
-	if(l<0) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"invalid file offset: %ld",l);
+	offset=ftell(smb->sdt_fp);
+	if(offset<0) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error)
+			,"invalid file offset: %ld",offset);
 		return(SMB_ERR_DAT_OFFSET);
 	}
-	if(l==0)
-		return(0);
-	while(l%SDT_BLOCK_LEN)					/* Make sure even block boundry */
-		l++;
-	return(l);
-}
 
+	/* Make sure even block boundry */
+	offset+=PAD_LENGTH_FOR_ALIGNMENT(offset,SDT_BLOCK_LEN);
+
+	return(offset);
+}
 
 int SMBCALL smb_feof(FILE* fp)
 {
