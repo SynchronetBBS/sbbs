@@ -45,7 +45,9 @@ typedef struct
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
 	BOOL	nonblocking;
+	BOOL	is_connected;
 	int		last_error;
+	SOCKADDR_IN	addr;
 
 } private_t;
 
@@ -137,11 +139,12 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	close_socket(p->sock);
 
-	p->last_error=ERROR_VALUE;
+	p->last_error = ERROR_VALUE;
 
 	dbprintf(FALSE, p, "closed");
 
-	p->sock=INVALID_SOCKET; 
+	p->sock = INVALID_SOCKET; 
+	p->is_connected = FALSE;
 
 	return(JS_TRUE);
 }
@@ -179,7 +182,6 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	ulong		ip_addr;
 	ushort		port;
 	JSString*	str;
-	SOCKADDR_IN	addr;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -201,18 +203,19 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	dbprintf(FALSE, p, "connecting to port %u at %s", port, JS_GetStringBytes(str));
 
-	memset(&addr,0,sizeof(addr));
-	addr.sin_addr.s_addr = ip_addr;
-	addr.sin_family = AF_INET;
-	addr.sin_port   = htons(port);
+	memset(&p->addr,0,sizeof(p->addr));
+	p->addr.sin_addr.s_addr = ip_addr;
+	p->addr.sin_family = AF_INET;
+	p->addr.sin_port   = htons(port);
 
-	if(connect(p->sock, (struct sockaddr *)&addr, sizeof(addr))!=0) {
+	if(connect(p->sock, (struct sockaddr *)&p->addr, sizeof(p->addr))!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "connect failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return(JS_TRUE);
 	}
 
+	p->is_connected = TRUE;
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 	dbprintf(FALSE, p, "connected to port %u at %s", port, JS_GetStringBytes(str));
 
@@ -519,6 +522,7 @@ enum {
 	,SOCK_PROP_DEBUG
 	,SOCK_PROP_DESCRIPTOR
 	,SOCK_PROP_NONBLOCKING
+	,SOCK_PROP_IP_ADDRESS
 };
 
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -573,7 +577,10 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->last_error);
 			break;
 		case SOCK_PROP_IS_CONNECTED:
-			*vp = BOOLEAN_TO_JSVAL(socket_check(p->sock,NULL));
+			if(!p->is_connected)
+				*vp = JSVAL_FALSE;
+			else
+				*vp = BOOLEAN_TO_JSVAL(socket_check(p->sock,NULL));
 			break;
 		case SOCK_PROP_DATA_WAITING:
 			socket_check(p->sock,&rd);
@@ -595,6 +602,9 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_NONBLOCKING:
 			*vp = BOOLEAN_TO_JSVAL(p->nonblocking);
 			break;
+		case SOCK_PROP_IP_ADDRESS:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,inet_ntoa(p->addr.sin_addr)));
+			break;
 	}
 
 	return(TRUE);
@@ -612,6 +622,7 @@ static struct JSPropertySpec js_socket_properties[] = {
 	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"descriptor"		,SOCK_PROP_DESCRIPTOR	,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"nonblocking"		,SOCK_PROP_NONBLOCKING	,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"ip_address"		,SOCK_PROP_IP_ADDRESS	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{0}
 };
 
