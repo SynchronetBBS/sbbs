@@ -1267,7 +1267,7 @@ void DLLCALL services_thread(void* arg)
 					break;
 				mswait(500);
 			}
-			lprintf("0000 Finished waiting");
+			lprintf("0000 Done waiting");
 		}
 
 		/* Free Service Data */
