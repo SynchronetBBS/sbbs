@@ -180,6 +180,9 @@ long DLLCALL fdate(char *filename)
 {
 	STAT st;
 
+	if(access(filename,0)==-1)
+		return(-1L);
+
 	if(stat(filename, &st)!=0)
 		return(-1L);
 
