@@ -52,12 +52,20 @@ int main()
 	DESCRIBE_COMPILER(compiler);
 	printf("Platform: %s\n",PLATFORM_DESC);
 	printf("Compiler: %s\n",compiler);
+	printf("Random #: %d\n",xp_random(1000));
 
 	printf("\ngetch() test (ESC to continue)\n");
 	do {
 		ch=getch();
 		printf("getch() returned %d\n",ch);
 	} while(ch!=ESC);
+
+	printf("\nkbhit() test (any key to continue)\n");
+	while(!kbhit()) {
+		printf(".");
+		SLEEP(1000);
+	}
+	getch();	/* remove character from keyboard buffer */
 
 #if 1
 	/* BEEP test */
@@ -104,8 +112,10 @@ int main()
 	}
 	if(dir!=NULL)
 		closedir(dir);
+	printf("\nFree disk space: %lu bytes\n",getfreediskspace("."));
 #endif
 
+#if 1
 	/* Thread (and inter-process communication) test */
 	printf("\nThread test\n");
 	getkey();
@@ -121,7 +131,7 @@ int main()
 		  thread_test	/* entry point */
 		 ,0				/* stack size (0=auto) */
 		 ,&thread_data	/* data */
-		 )==-1)
+		 )==(unsigned long)-1)
 		printf("_beginthread failed\n");
 	else {
 		sem_wait(&thread_data.child_sem);	/* wait for thread to begin */
@@ -134,7 +144,7 @@ int main()
 	}
 	sem_destroy(&thread_data.parent_sem);
 	sem_destroy(&thread_data.child_sem);
-
+#endif
 	return 0;
 }
 
