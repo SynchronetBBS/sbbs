@@ -1097,6 +1097,29 @@ js_getfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_getfext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	char*		p;
+	JSString*	js_str;
+
+	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	*rval = JSVAL_VOID;
+
+	if((p=getfext(str))==NULL)
+		return(JS_TRUE);
+
+	js_str = JS_NewStringCopyZ(cx, p);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+static JSBool
 js_getfcase(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		str;
@@ -1533,6 +1556,10 @@ static jsMethodSpec js_global_functions[] = {
 	},		
 	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("string path")
 	,JSDOCSTR("returns filename portion of passed path string")
+	},
+	{"file_getext",		js_getfext,			1,	JSTYPE_STRING,	JSDOCSTR("string path")
+	,JSDOCSTR("returns file extension portion of passed path/filename string (including '.') "
+		"or <i>undefined</i> if no extension is found")
 	},
 	{"file_getcase",	js_getfcase,		1,	JSTYPE_STRING,	JSDOCSTR("string filename")
 	,JSDOCSTR("returns correct case of filename (long version of filename on Win32) "
