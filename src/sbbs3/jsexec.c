@@ -45,6 +45,8 @@
 
 #include "sbbs.h"
 
+#define DEFAULT_LOG_MASK	0xff	/* Display all LOG levels */
+
 JSRuntime*	js_runtime;
 JSContext*	js_cx;
 JSObject*	js_glob;
@@ -63,6 +65,7 @@ BOOL		pause_on_exit=FALSE;
 BOOL		pause_on_error=FALSE;
 BOOL		terminated=FALSE;
 BOOL		terminate_immediately=FALSE;
+DWORD		log_mask=DEFAULT_LOG_MASK;
 
 void banner(FILE* fp)
 {
@@ -88,6 +91,7 @@ void usage(FILE* fp)
 		"\t-g <interval>   set garbage collection interval (default=%u, 0=never)\n"
 		"\t-H              use local host name (instead of SCFG value)\n"
 		"\t-h <hostname>   use specified host name (instead of SCFG value)\n"
+		"\t-L <mask>       set log mask (default=0x%x)\n"
 		"\t-t <filename>   send console output to stdout and filename\n"
 		"\t-e              send error messages to console instead of stderr\n"
 		"\t-n              send status messages to %s instead of stdout\n"
@@ -101,6 +105,7 @@ void usage(FILE* fp)
 		,JAVASCRIPT_BRANCH_LIMIT
 		,JAVASCRIPT_YIELD_INTERVAL
 		,JAVASCRIPT_GC_INTERVAL
+		,DEFAULT_LOG_MASK
 		,_PATH_DEVNULL
 		,_PATH_DEVNULL
 		);
@@ -152,16 +157,22 @@ void bail(int code)
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    uintN		i;
+    uintN		i=0;
+	int32		level=LOG_INFO;
     JSString*	str;
 
-    for (i = 0; i < argc; i++) {
-		if((str=JS_ValueToString(cx, argv[i]))==NULL)
-		    return(JS_FALSE);
-		fprintf(errfp,"%s",JS_GetStringBytes(str));
+	if(JSVAL_IS_NUMBER(argv[i]))
+		JS_ValueToInt32(cx,argv[i++],&level);
+
+	if(log_mask&(1<<level)) {
+		for(; i<argc; i++) {
+			if((str=JS_ValueToString(cx, argv[i]))==NULL)
+				return(JS_FALSE);
+			fprintf(errfp,"%s",JS_GetStringBytes(str));
+		}
+		if(argc)
+			fprintf(errfp,"\n");
 	}
-	if(argc)
-		fprintf(errfp,"\n");
 
 	*rval = JSVAL_VOID;
     return(JS_TRUE);
@@ -678,6 +689,9 @@ int main(int argc, char **argv, char** environ)
 					break;
 				case 'H':
 					gethostname(host_name=host_name_buf,sizeof(host_name_buf));
+					break;
+				case 'L':
+					log_mask=strtol(argv[++argn],NULL,0);
 					break;
 				case 'e':
 					errfp=confp;

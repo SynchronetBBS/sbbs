@@ -431,22 +431,26 @@ DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* int
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    uintN		i;
+    uintN		i=0;
+	int32		level=LOG_INFO;
     JSString*	str=NULL;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-    for (i = 0; i < argc; i++) {
+	if(JSVAL_IS_NUMBER(argv[i]))
+		JS_ValueToInt32(cx,argv[i++],&level);
+
+    for(; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
 		if(sbbs->online==ON_LOCAL) {
 			if(startup!=NULL && startup->event_lputs!=NULL)
-				startup->event_lputs(LOG_INFO,JS_GetStringBytes(str));
+				startup->event_lputs(level,JS_GetStringBytes(str));
 		} else
 			lputs(JS_GetStringBytes(str));
-		}
+	}
 
 	if(str==NULL)
 		*rval = JSVAL_VOID;
@@ -670,9 +674,10 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static jsMethodSpec js_global_functions[] = {
-	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("value [,value]")
+	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("[level,] value [,value]")
 	,JSDOCSTR("add a line of text to the server and/or system log, "
-		"<i>values</i> are typically string constants or variables")
+		"<i>values</i> are typically string constants or variables, "
+		"<i>level</i> is the debug level/priority (default: <tt>LOG_INFO</tt>)")
 	},
 	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
 	,JSDOCSTR("read up to count characters from input stream")
