@@ -99,8 +99,6 @@ int sem_trywait_block(sem_t* psem, unsigned long timeout);
 #define	sem_reset(psem)					xp_sem_setvalue((psem), 0)
 #else
 #define sem_reset(psem)					while(sem_trywait(psem)==0)
-#else
-
 #endif
 
 #if defined(__cplusplus)
