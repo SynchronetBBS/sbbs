@@ -38,6 +38,7 @@
 #include "sbbs.h"
 #include "conwrap.h"	/* this has to go BEFORE curses.h so getkey() can be macroed around */
 #include <curses.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #ifdef __QNX__
@@ -381,6 +382,8 @@ int main(int argc, char** argv)  {
         			exit(0);
            }
     }
+
+	signal(SIGPIPE, SIG_IGN);   
 
 	uifc.size=sizeof(uifc);
 	i=uifcinic(&uifc);  /* curses */
