@@ -110,7 +110,11 @@ $(WRAPTEST): $(ODIR)/wraptest.o $(OBJS)
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ $(LFLAGS) $^
 
-lib: $(ODIR)/libxpdev.so
+lib: $(ODIR)/libxpdev.so $(ODIR)/libxpdev.a
 
 $(ODIR)/libxpdev.so: $(OBJS)
 	gcc -shared $(OBJS) -o $(ODIR)/libxpdev.so
+
+$(ODIR)/libxpdev.a: $(OBJS)
+	ar -r $(ODIR)/libxpdev.a $(OBJS)
+	ranlib $(ODIR)/libxpdev.a
