@@ -1826,7 +1826,7 @@ static void smtp_thread(void* arg)
 						i=system(str);
 						if(i!=0)
 							lprintf(LOG_WARNING,"%04d SMTP external process (%s) returned %d (errno: %d)"
-								,str, i, errno);
+								,socket, str, i, errno);
 						if(flength(proc_err_fname)>0)
 							break;
 						if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname))
