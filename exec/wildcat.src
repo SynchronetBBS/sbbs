@@ -609,7 +609,12 @@ cmdkey F
 cmdkey D
 	chksyspass
 	if_true
-		exec_int command
+		compare_ars "UNIX"
+		if_true
+			exec_int "%y -i"	
+		else
+			exec_int "%y"	
+			end_if
 		end_if
 	end_cmd
 
@@ -637,7 +642,7 @@ cmdkey 2
 	end_cmd
 
 cmdkey A
-	exec_int command /c %!SLOG
+	exec_int %!slog
 	end_cmd
 
 end_cmd
