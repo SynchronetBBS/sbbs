@@ -46,13 +46,8 @@
 /* Constants */
 /*************/
 
-#ifdef JAVASCRIPT
-	#define VERSION 	"3.10"  /* Version: Major.minor  */
-	#define REVISION	'g'
-#else
-	#define VERSION 	"3.00"  /* Version: Major.minor  */
-	#define REVISION	'h'
-#endif
+#define VERSION 	"3.10"  /* Version: Major.minor  */
+#define REVISION	'g'     /* Revision: lowercase letter */
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version " VERSION
