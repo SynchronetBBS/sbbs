@@ -47,6 +47,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <sys/stat.h>
+#ifdef __unix__
+#include <termios.h>
+#endif
 
 /* xpdev */
 #include "conwrap.h"
@@ -92,6 +95,10 @@ char	revision[16];
 SOCKET	sock=INVALID_SOCKET;
 
 BOOL	telnet=TRUE;
+#ifdef __unix__
+BOOL	stdio=FALSE;
+struct termios origterm;
+#endif
 BOOL	terminate=FALSE;
 BOOL	debug_tx=FALSE;
 BOOL	debug_rx=FALSE;
@@ -114,6 +121,13 @@ unsigned	select_errors=0;
 
 #define getcom(t)	recv_byte(NULL,t)
 #define putcom(ch)	send_byte(NULL,ch,10)
+
+#ifdef __unix__
+void resetterm(void)
+{
+	tcsetattr(STDOUT_FILENO, TCSADRAIN, &origterm);
+}
+#endif
 
 #ifdef _WINSOCKAPI_
 
@@ -218,7 +232,11 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 	if(debug_telnet)
 		lprintf(LOG_DEBUG,"Sending telnet command: %s %s"
 			,telnet_cmd_desc(buf[1]),telnet_opt_desc(buf[2]));
+#ifdef __unix__
+	if((stdio?write(STDOUT_FILENO,buf,sizeof(buf)):send(sock,buf,sizeof(buf),0))!=sizeof(buf) && debug_telnet)
+#else
 	if(send(sock,buf,sizeof(buf),0)!=sizeof(buf) && debug_telnet)
+#endif
 		lprintf(LOG_ERR,"FAILED");
 }
 
@@ -242,6 +260,11 @@ int recv_byte(void* unused, unsigned timeout)
 	while(!terminate) {
 
 		FD_ZERO(&socket_set);
+#ifdef __unix__
+		if(stdio)
+			FD_SET(STDIN_FILENO,&socket_set);
+		else
+#endif
 		FD_SET(sock,&socket_set);
 		if((t=end-msclock())<0) t=0;
 		tv.tv_sec=t/MSCLOCKS_PER_SEC;
@@ -255,7 +278,14 @@ int recv_byte(void* unused, unsigned timeout)
 			return(NOINP);
 		}
 		
+#ifdef __unix__
+		if(stdio)
+			i=read(STDIN_FILENO,&ch,sizeof(ch));
+		else
+			i=recv(sock,&ch,sizeof(ch),0);
+#else
 		i=recv(sock,&ch,sizeof(ch),0);
+#endif
 
 		if(i!=sizeof(ch)) {
 			if(i==0)
@@ -361,6 +391,11 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 	struct timeval	tv;
 
 	FD_ZERO(&socket_set);
+#ifdef __unix__
+	if(stdio)
+		FD_SET(STDOUT_FILENO,&socket_set);
+	else
+#endif
 	FD_SET(sock,&socket_set);
 	tv.tv_sec=timeout;
 	tv.tv_usec=0;
@@ -373,6 +408,11 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 	else
 		buf[0]=ch;
 
+#ifdef __unix__
+	if(stdio)
+		i=write(STDOUT_FILENO,buf,len);
+	else
+#endif
 	i=send(sock,buf,len,0);
 	
 	if(i==len) {
@@ -425,6 +465,11 @@ void output_thread(void* arg)
 		tv.tv_usec=1000;
 
 		FD_ZERO(&socket_set);
+#ifdef __unix__
+		if(stdio)
+			FD_SET(STDOUT_FILENO,&socket_set);
+		else
+#endif
 		FD_SET(sock,&socket_set);
 
 		i=select(sock+1,NULL,&socket_set,NULL,&tv);
@@ -447,6 +492,11 @@ void output_thread(void* arg)
             buftop=RingBufRead(&outbuf, buf, avail);
             bufbot=0;
         }
+#ifdef __unix__
+		if(stdio)
+			i=write(STDOUT_FILENO, (char*)buf+bufbot, buftop-bufbot);
+		else
+#endif
 		i=sendsocket(sock, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
@@ -1168,7 +1218,11 @@ void exiting(void)
 static const char* usage=
 	"usage: sexyz <socket> [-opts] <cmd> [file | path | +list]\n"
 	"\n"
+#ifdef __unix__
+	"socket = TCP socket descriptor (leave blank for stdio mode)\n"
+#else
 	"socket = TCP socket descriptor\n"
+#endif
 	"\n"
 	"opts   = -o  to overwrite files when receiving\n"
 	"         -a  to sound alarm at start and stop of transfer\n"
@@ -1210,7 +1264,11 @@ int main(int argc, char **argv)
 	DESCRIBE_COMPILER(compiler);
 
 	errfp=stderr;
+#ifdef __unix__
+	statfp=stderr;
+#else
 	statfp=stdout;
+#endif
 
 	sscanf("$Revision$", "%*s %s", revision);
 
@@ -1416,10 +1474,25 @@ int main(int argc, char **argv)
 	}
 
 	if(sock==INVALID_SOCKET || sock<1) {
+#ifdef __unix__
+		if(STDOUT_FILENO > STDIN_FILENO)
+			sock=STDOUT_FILENO;
+		else
+			sock=STDIN_FILENO;
+		stdio=TRUE;
+		
+		fprintf(statfp,"No socket descriptor specified, using STDIO\n");
+		telnet=FALSE;
+#else
 		fprintf(statfp,"!No socket descriptor specified\n\n");
 		fprintf(errfp,usage);
 		exit(1);
+#endif
 	}
+#ifdef __unix__
+	else
+		statfp=stdout;
+#endif
 
 	if(!(mode&(SEND|RECV))) {
 		fprintf(statfp,"!No command specified\n\n");
@@ -1433,6 +1506,22 @@ int main(int argc, char **argv)
 		exit(1); 
 	}
 
+#ifdef __unix__
+	if(stdio) {
+		struct termios term;
+		memset(&term,0,sizeof(term));
+		cfsetispeed(&term,B19200);
+		cfsetospeed(&term,B19200);
+		term.c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+		term.c_oflag &= ~OPOST;
+		term.c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+		term.c_cflag &= ~(CSIZE|PARENB);
+		term.c_cflag |= CS8;
+		atexit(resetterm);
+		tcgetattr(STDOUT_FILENO, &origterm);
+		tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
+	}
+#endif
 
 //	if(mode&DIR)
 //		backslash(fname[0]);
@@ -1446,8 +1535,14 @@ int main(int argc, char **argv)
 		return(-1);
 
 	/* Enable the Nagle Algorithm */
-	lprintf(LOG_DEBUG,"Setting TCP_NODELAY to %d",tcp_nodelay);
-	setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&tcp_nodelay,sizeof(tcp_nodelay));
+#ifdef __unix__
+	if(!stdio) {
+#endif
+		lprintf(LOG_DEBUG,"Setting TCP_NODELAY to %d",tcp_nodelay);
+		setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&tcp_nodelay,sizeof(tcp_nodelay));
+#ifdef __unix__
+	}
+#endif
 
 	if(!socket_check(sock, NULL, NULL, 0)) {
 		fprintf(statfp,"!No socket connection\n");
