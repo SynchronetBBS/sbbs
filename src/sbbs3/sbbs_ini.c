@@ -280,7 +280,7 @@ void sbbs_read_ini(
 	mail->rescan_frequency
 		=iniReadShortInt(fp,section,"RescanFrequency",3600);	/* 60 minutes */
 	mail->lines_per_yield
-		=iniReadShortInt(fp,section,"LinesPerYield",100);
+		=iniReadShortInt(fp,section,"LinesPerYield",10);
 	mail->max_recipients
 		=iniReadShortInt(fp,section,"MaxRecipients",100);
 

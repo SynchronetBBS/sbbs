@@ -183,7 +183,7 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->mail_startup.max_delivery_attempts
         =DeliveryAttemptsEdit->Text.ToIntDef(10);
     MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(300);
-    MainForm->mail_startup.lines_per_yield=LinesPerYieldEdit->Text.ToIntDef(100);
+    MainForm->mail_startup.lines_per_yield=LinesPerYieldEdit->Text.ToIntDef(10);
 
     SAFECOPY(MainForm->mail_startup.default_user
         ,DefaultUserEdit->Text.c_str());

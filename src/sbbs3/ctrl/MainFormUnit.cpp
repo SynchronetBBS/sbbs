@@ -642,7 +642,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     mail_startup.socket_open=socket_open;
     mail_startup.max_delivery_attempts=50;
     mail_startup.rescan_frequency=3600;  /* 60 minutes */
-    mail_startup.lines_per_yield=100;
+    mail_startup.lines_per_yield=10;
     mail_startup.max_clients=10;
 
     memset(&ftp_startup,0,sizeof(ftp_startup));
