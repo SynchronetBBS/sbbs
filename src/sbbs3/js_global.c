@@ -2390,18 +2390,21 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"optionally setting the global property <tt>exit_code</tt> to the specified numeric value")
 	,311
 	},		
-	{"load",            js_load,            1,	JSTYPE_VOID
+	{"load",            js_load,            1,	JSTYPE_UNDEF
 	,JSDOCSTR("[<i>bool</i> background or <i>object</i> scope,] <i>string</i> filename [,args]")
 	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
 		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
-		"and a list of arguments to pass to the module (as <i>argv</i>), "
-		"returns the result of the script execution "
-		"or a newly created <i>Queue</i> object if <i>background</i> is <i>true</i>)<br>"
-		"<b>Background</b>:<br>"
-		"If <i>background</i> is <i>true</i>, the loaded script can communicate with the parent "
-		"script by writing to the <i>parent_queue</i> or the result of last executed statemement "
-		"of the script will automatically be written to the <i>Queue</i> to be read later by the "
-		"parent script.")
+		"and a list of arguments to pass to the module (as <i>argv</i>). "
+		"Returns the result (last executed statement) of the executed script "
+		"or a newly created <i>Queue</i> object if <i>background</i> is <i>true</i>).<br><br>"
+		"<b>Background</b> (added in v3.12):<br>"
+		"If <i>background</i> is <i>true</i>, the loaded script runs in the background "
+		"(in a child thread) but may communicate with the parent "
+		"script/thread by reading from and/or writing to the <i>parent_queue</i> "
+		"(an automatically created <i>Queue</i> object). " 
+		"The result (last executed statement) of the executed script will also be automatically "
+		"written to the <i>parent_queue</i> "
+		"which may be read later by the parent script.")
 	,311
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
@@ -2429,14 +2432,14 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"sound",			js_sound,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("[string filename]")
-	,JSDOCSTR("play a waveform (.wav) sound file")
+	,JSDOCSTR("play a waveform (.wav) sound file (currently, on Windows platforms only)")
 	,310
 	},		
 	{"ctrl",			js_ctrl,			1,	JSTYPE_STRING,	JSDOCSTR("number or string")
 	,JSDOCSTR("return ASCII control character representing character passed - Example: <tt>ctrl('C') returns '\3'</tt>")
 	,311
 	},
-	{"ascii",			js_ascii,			1,	JSTYPE_NUMBER,	JSDOCSTR("[string text] or [number value]")
+	{"ascii",			js_ascii,			1,	JSTYPE_UNDEF,	JSDOCSTR("[string text] or [number value]")
 	,JSDOCSTR("convert string to ASCII value or vice-versa (returns number OR string)")
 	,310
 	},		
@@ -2535,7 +2538,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"file_mutex",		js_fmutex,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,text]")
 	,JSDOCSTR("attempts to create an exclusive (e.g. lock) file, "
-		"optinally with the contents of <i>text</i>")
+		"optionally with the contents of <i>text</i>")
 	,311
 	},
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("string pattern [,flags]")
@@ -2587,7 +2590,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length] [,prefix]")
-	,JSDOCSTR("returns a quoted version of the message text string argumnet, <i>line_length</i> defaults to <i>79</i>, "
+	,JSDOCSTR("returns a quoted version of the message text string argument, <i>line_length</i> defaults to <i>79</i>, "
 		"<i>prefix</i> defaults to <tt>\" > \"</tt>")
 	,311
 	},
@@ -2600,7 +2603,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("returns base64-decoded text string or <i>null</i> on error (not useful for binary data)")
+	,JSDOCSTR("returns base64-decoded text string or <i>null</i> on error")
 	,311
 	},
 	{"crc16_calc",		js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
@@ -2630,12 +2633,12 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"netaddr_type",	js_netaddr_type,	1,	JSTYPE_NUMBER,	JSDOCSTR("string email_address")
-	,JSDOCSTR("returns the proper message <i>net_type<i> for the specified <i>email_address</i>, "
+	,JSDOCSTR("returns the proper message <i>net_type</i> for the specified <i>email_address</i>, "
 		"(e.g. <tt>NET_INTERNET</tt> for Internet e-mail or <tt>NET_NONE</tt> for local e-mail)")
 	,312
 	},
 	{"list_named_queues",js_list_named_queues,0,JSTYPE_ARRAY,	JSDOCSTR("")
-	,JSDOCSTR("returns an array of <i>named queues<i> (created with the <i>Queue</i> constructor)")
+	,JSDOCSTR("returns an array of <i>named queues</i> (created with the <i>Queue</i> constructor)")
 	,312
 	},
 
