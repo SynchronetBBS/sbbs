@@ -416,13 +416,13 @@ BOOL DLLCALL fexistcase(char *path)
 	if(glob(globme,GLOB_MARK|GLOB_NOSORT,NULL,&glb))
 		return(FALSE);
 	
-	if(glb.gl_matchc>0)  {
+	if(glb.gl_pathc>0)  {
 		/**********************************************************
 		 * If multiple matches are found, return TRUE only if one *
 		 * EXACTLY matches path or all but one are directories	  *
 		 **********************************************************/
 		j=-1;
-		for(i=0;i<glb.gl_matchc;i++)  {
+		for(i=0;i<glb.gl_pathc;i++)  {
 			if(!strcmp(path,glb.gl_pathv[i]))  {
 				globfree(&glb);
 				return TRUE;
