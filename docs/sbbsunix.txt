@@ -104,10 +104,10 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
       cvs login
       (no password - just hit enter)
-      cvs co ctrl text docs exec xtrn node1 node2 node3 node4
+      cvs co run-sbbs3
 
    D. Get the required source code modules from the CVS repository:
-      cvs co src/build src/sbbs3 src/uifc src/xpdev include
+      cvs co src-sbbs3
 
    *> Optional Shortcut (existing JavaScript library):
    *> If your Unix distribution includes the file /usr/lib/libjs.so or
@@ -137,8 +137,15 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       or:
       cvs co lib/mozilla/nspr/freebsd.debug
       etc.
-	  Note: This step is not necessary if your system already has the file
-	        /usr/lib/libnspr4.so
+      Note: This step is not necessary if your system already has the file
+            /usr/lib/libnspr4.so
+
+   G. Create symbolic links to the Mozilla Libraries (JavaScript and NSPR) in 
+      your /usr/lib directory:
+      cd /usr/lib; ln -s /sbbs/lib/mozilla/*/linux.debug/*.so .
+
+      or: Add these two directories to your LD_LIBRARY_PATH environment 
+          variable.
 
 
 2. Build Synchronet:
@@ -205,8 +212,11 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       (the paths will be different for other platforms or release builds)
 
       Note: Another option is to create the symbolic links in your /usr/lib
-            directory or set the LD_LIBRARY_PATH environment variable to
-            point to your gcc.<os>.lib.<build> directory:
+            directory:
+            cd /usr/lib; ln -s /sbbs/src/sbbs3/gcc.linux.lib.debug/*.so .
+
+        OR: set the LD_LIBRARY_PATH environment variable to point to your 
+            gcc.<os>.lib.<build> directory:
             export LD_LIBRARY_PATH=/sbbs/src/sbbs3/gcc.linux.lib.debug
 
    D. Build the required Baja {tm} modules:
@@ -360,6 +370,17 @@ Default Configuration (SCFG) Screen-shots
 8: Bidir Command Line
 9: Uses DSZLOG              No
 
+[File Transfer Protocol]
+1: Mnemonic (Command Key)   K
+2: Protocol Name            Kermit (G-Kermit)
+3: Access Requirements      UNIX
+4: Upload Command Line      gkermit -q -P -r -a %f
+5: Download Command Line    gkermit -q -P -s %f
+6: Batch UL Command Line
+7: Batch DL Command Line    gkermit -q -P -s %s
+8: Bidir Command Line
+9: Uses DSZLOG              No
+
 [Native (32-bit) Program List]
  1: cmd.exe
  2: sh
@@ -368,10 +389,11 @@ Default Configuration (SCFG) Screen-shots
  5: node
  6: sz
  7: rz
- 8: zip
- 9: unzip
-10: pkzip25
-11: jsexec
+ 8: gkermit
+ 9: zip
+10: unzip
+11: pkzip25
+12: jsexec
 
 [Pico (Pine Composer) Editor]
  1: Name                            Pico (Pine Composer)
