@@ -27,18 +27,24 @@ var cfg_fname = system.ctrl_dir + "newslink.cfg";
 load("sbbsdefs.js");
 
 var debug = false;
-var reset_ptrs = false;		// Reset export pointers, export all messages
-var update_ptrs = false;	// Update export pointers, don't export anything
-var email_addresses = true;	// Include e-mail addresses in headers
+var reset_import_ptrs = false;		// Reset import pointers, import all messages
+var update_import_ptrs = false;		// Update import pointers, don't import anything
+var reset_export_ptrs = false;		// Reset export pointers, export all messages
+var update_export_ptrs = false;		// Update export pointers, don't export anything
+var email_addresses = true;			// Include e-mail addresses in headers
 
 // Parse arguments
 for(i=0;i<argc;i++) {
 	if(argv[i].toLowerCase()=="-d")			// debug
 		debug = true;
-	else if(argv[i].toLowerCase()=="-r")	// reset export pointers (export all)
-		reset_ptrs = true;
-	else if(argv[i].toLowerCase()=="-u")	// update export pointers (export none)
-		update_ptrs = true;
+	else if(argv[i].toLowerCase()=="-ri")	// reset import pointers (import all)
+		reset_import_ptrs = true;
+	else if(argv[i].toLowerCase()=="-ui")	// update import pointers (import none)
+		update_import_ptrs = true;
+	else if(argv[i].toLowerCase()=="-re")	// reset export pointers (export all)
+		reset_export_ptrs = true;
+	else if(argv[i].toLowerCase()=="-ue")	// update export pointers (export none)
+		update_export_ptrs = true;
 	else if(argv[i].toLowerCase()=="-ne")	// no e-mail addresses
 		email_addresses = false;
 	else if(argv[i].toLowerCase()=="-nm")	// no mangling of e-mail addresses
@@ -194,9 +200,9 @@ for(i in area) {
 	}
 	ptr_file.close();
 
-	if(reset_ptrs)
+	if(reset_export_ptrs)
 		ptr = 0;
-	else if(update_ptrs)
+	else if(update_export_ptrs)
 		ptr = msgbase.last_msg;
 	else 
 		ptr = export_ptr;
@@ -298,8 +304,6 @@ for(i in area) {
 	/* IMPORT Network Messages */
 	/***************************/	
 
-	ptr = import_ptr;
-
 	writeln(format("GROUP %s",newsgroup));
 	rsp = readln();
 	if(rsp==null || rsp[0]!='2') {
@@ -312,6 +316,13 @@ for(i in area) {
 
 	first_msg = Number(str[2]);
 	last_msg = Number(str[3]);
+
+	if(reset_import_ptrs)
+		ptr = 0;
+	else if(update_import_ptrs)
+		ptr = last_msg;
+	else
+		ptr = import_ptr;
 
 	printf("%s import ptr: %ld, last_msg: %ld",newsgroup,ptr,last_msg);
 
