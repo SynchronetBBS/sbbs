@@ -132,6 +132,30 @@ Package=<4>
 
 ###############################################################################
 
+Project: "ntsvcs"=.\ntsvcs.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ftpsrvr
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name mailsrvr
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sbbs
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name services
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "sbbs"=.\sbbs.dsp - Package Owner=<4>
 
 Package=<5>
