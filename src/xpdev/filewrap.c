@@ -107,13 +107,13 @@ int DLLCALL lock(int fd, long pos, int len)
 		alock.l_start = pos;
 		alock.l_len = (int)len;
 
-		if(fcntl(fd, F_SETLK, &alock)==-1)
+		if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL)
 			return(-1);
 	#endif
 
-	#if !defined(F_SANEWRLCKNO)
+	#if !defined(F_SANEWRLCKNO) && !defined(__QNX__)
 		/* use flock (doesn't work over NFS) */
-		if(flock(fd,LOCK_EX|LOCK_NB)!=0)
+		if(flock(fd,LOCK_EX|LOCK_NB)!=0 && errno != EOPNOTSUPP)
 			return(-1);
 	#endif
 
@@ -138,13 +138,13 @@ int DLLCALL unlock(int fd, long pos, int len)
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
 	alock.l_len = (int)len;
-	if(fcntl(fd, F_SETLK, &alock)==-1)
+	if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL)
 		return(-1);
 #endif
 
-#if !defined(F_SANEUNLCK)
+#if !defined(F_SANEUNLCK) && !defined(__QNX__)
 	/* use flock (doesn't work over NFS) */
-	if(flock(fd,LOCK_UN|LOCK_NB)!=0)
+	if(flock(fd,LOCK_UN|LOCK_NB)!=0 && errno != EOPNOTSUPP)
 		return(-1);
 #endif
 
