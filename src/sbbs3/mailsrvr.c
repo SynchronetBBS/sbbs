@@ -1160,7 +1160,7 @@ static ulong rblchk(DWORD mail_addr_n, const char* rbl_addr)
 	return(*((ulong*)host->h_addr_list[0]));
 }
 
-static ulong dns_blacklisted(IN_ADDR addr, char* list)
+static ulong dns_blacklisted(IN_ADDR addr, char* host_name, char* list)
 {
 	char	fname[MAX_PATH+1];
 	char	str[256];
@@ -1171,6 +1171,8 @@ static ulong dns_blacklisted(IN_ADDR addr, char* list)
 
 	sprintf(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
 	if(findstr(inet_ntoa(addr),fname))
+		return(FALSE);
+	if(findstr(host_name,fname))
 		return(FALSE);
 
 	sprintf(fname,"%sdns_blacklist.cfg", scfg.ctrl_dir);
@@ -1385,7 +1387,7 @@ static void smtp_thread(void* arg)
 	}
 
 	/*  SPAM Filters (mail-abuse.org) */
-	dnsbl_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr,dnsbl);
+	dnsbl_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr,host_name,dnsbl);
 	if(dnsbl_result.s_addr) {
 		lprintf("%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 			,socket, dnsbl, host_name, host_ip, inet_ntoa(dnsbl_result));
