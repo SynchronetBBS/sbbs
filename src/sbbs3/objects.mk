@@ -79,6 +79,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfgsave.$(OFILE)\
 			$(LIBODIR)$(SLASH)smblib.$(OFILE)\
 			$(LIBODIR)$(SLASH)smbtxt.$(OFILE)\
+			$(LIBODIR)$(SLASH)sockopts.$(OFILE)\
 			$(LIBODIR)$(SLASH)sortdir.$(OFILE)\
 			$(LIBODIR)$(SLASH)str.$(OFILE)\
 			$(LIBODIR)$(SLASH)str_util.$(OFILE)\
