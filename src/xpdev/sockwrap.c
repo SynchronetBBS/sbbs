@@ -48,51 +48,38 @@
 
 int sendfilesocket(int sock, int file, long *offset, long count)
 {
-/* sendfile() on Linux may or may not work with non-blocking sockets ToDo */
-#if defined(__FreeBSD__) && 0
-#warning FreeBSD sendfile may cause problems!
-	off_t	total=0;
-	off_t	wr=0;
-	int		i;
+	char	buf[1024*16];
 	long	len;
+	int		rd;
+	int		wr=0;
+	int		total=0;
+	int		i;
 
+/* sendfile() on Linux may or may not work with non-blocking sockets ToDo */
 	len=filelength(file);
+
+	if(offset!=NULL)
+		if(lseek(file,*offset,SEEK_SET)<0)
+			return(-1);
+
 	if(count<1 || count>len) {
 		count=len;
-		count-=offset==NULL?0:*offset;
+		count-=tell(file);		/* don't try to read beyond EOF */
 	}
+#if USE_SENDFILE
 	while((i=sendfile(file,sock,(offset==NULL?0:*offset)+total,count-total,NULL,&wr,0))==-1 && errno==EAGAIN)  {
 		total+=wr;
 		SLEEP(1);
 	}
 	if(i==0)
 		return((int)count);
-	return(i);
-#else
-	char	buf[1024*16];
-	long	len;
-	int		rd;
-	int		wr;
-	int		total;
-	int		i;
-
-	if(offset!=NULL)
-		if(lseek(file,*offset,SEEK_SET)<0)
-			return(-1);
-
-	len=filelength(file);
-
-	if(count<1 || count>len) {
-		count=len;
-		count-=tell(file);		/* don't try to read beyond EOF */
-	}
+#endif
 
 	if(count<0) {
 		errno=EINVAL;
 		return(-1);
 	}
 
-	total=0;
 	while(total<count) {
 		rd=read(file,buf,sizeof(buf));
 		if(rd==-1)
@@ -119,7 +106,6 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 		(*offset)+=total;
 
 	return(total);
-#endif
 }
 
 int recvfilesocket(int sock, int file, long *offset, long count)
