@@ -111,13 +111,13 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		sprintf(to,"%.128s",msg->to);
 
 	if(msg->from_net.type==NET_QWK && mode&VIA && !msg->forwarded) {
-		sprintf(str,"@VIA: %.128s%c",(char*)msg->from_net.addr,QWK_NEWLINE);
+		sprintf(str,"@VIA: %.*s%c",sizeof(str)-12,(char*)msg->from_net.addr,QWK_NEWLINE);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); }
 	
 	if(mode&MSGID && (uint)subnum!=INVALID_SUB) {
 		if(msg->id)
-			sprintf(str,"@MSGID: %.128s%c",msg->id,QWK_NEWLINE);
+			sprintf(str,"@MSGID: %.*s%c",sizeof(str)-12,msg->id,QWK_NEWLINE);
 		else
 			sprintf(str,"@MSGID: <%08lX.%lu.%s@%s>%c"
 				,msg->idx.time,msg->idx.number
@@ -129,7 +129,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 
 		str[0]=0;
 		if(msg->reply_id)
-			sprintf(str,"@REPLY: %.128s%c",msg->reply_id,QWK_NEWLINE);
+			sprintf(str,"@REPLY: %.*s%c",sizeof(str)-12,msg->reply_id,QWK_NEWLINE);
 		else if(msg->hdr.thread_orig) {
 			memset(&orig_msg,0,sizeof(orig_msg));
 			orig_msg.hdr.number=msg->hdr.thread_orig;
