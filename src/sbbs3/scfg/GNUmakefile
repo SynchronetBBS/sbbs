@@ -40,6 +40,7 @@ LIBDIR	:=	/usr/lib
 DELETE	=	rm -f -v
 OUTLIB	=	-o
 
+CFLAGS	+=	-MMD
 CFLAGS	+=	-Wall -I$(UIFC) -I$(XPDEV) -I/usr/local/include -I../  -D_THREAD_SAFE
 
 LFLAGS	:=	-L/usr/local/lib
@@ -103,5 +104,5 @@ $(SCFG): $(OBJS)
 	@echo Linking $@
 	@$(CC) -o $@ $(OBJS) $(LFLAGS)
 
-include depends.mk	# defines dependencies
-
+# Auto-dependency files
+-include $(ODIR)/*.d
