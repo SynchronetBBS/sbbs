@@ -13,6 +13,10 @@
 #include "sockwrap.h"
 #include "threadwrap.h"
 
+#define LOCK_FNAME	"test.fil"
+#define LOCK_OFFSET	0
+#define LOCK_LEN	4
+
 static void getkey(void);
 static void sem_test_thread(void* arg);
 static void sleep_test_thread(void* arg);
@@ -49,21 +53,21 @@ int main()
 
 	/* sopen()/lock test */
 	printf("\nsopen()/lock() test\n");
-	fd1=sopen("test.fil",O_RDWR|O_CREAT,SH_DENYNO);
-	write(fd1,"lock testing\n",4);
-	if(lock(fd1,0,4))
+	fd1=sopen(LOCK_FNAME,O_RDWR|O_CREAT,SH_DENYNO);
+	write(fd1,"lock testing\n",LOCK_LEN);
+	if(lock(fd1,LOCK_OFFSET,LOCK_LEN))
 		printf("!FAIL lock() non-functional (or file already locked)\n");
 	else
 		printf("lock() succeeds\n");
 	if(_beginthread(
 		  lock_test_thread	/* entry point */
-		 ,0					/* stack size (0=auto) */
-		 ,&i				/* data */
+		 ,0  				/* stack size (0=auto) */
+		 ,NULL				/* data */
 		 )==(unsigned long)-1)
 		printf("_beginthread failed\n");
 	else
 		SLEEP(1000);
-	if(lock(fd1,3,7))
+	if(lock(fd1,LOCK_OFFSET,LOCK_LEN))
 		printf("Locks in first thread survive open()/close() in other thread\n");
 	else
 		printf("!FAIL lock() in first thread lost by open()/close() in other thread\n");
@@ -224,16 +228,18 @@ static void lock_test_thread(void* arg)
 {
 	int	fd;
 
-	fd=sopen("test.fil",O_RDWR,SH_DENYNO);
-	if(lock(fd,2,3))
+	fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYNO);
+	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)
 		printf("!FAIL Lock not effective between threads\n");
 	else
 		printf("Locks effective between threads\n");
+#if 1
 	close(fd);
-	fd=sopen("test.fil",O_RDWR,SH_DENYNO);
-	if(lock(fd,2,3))
+	fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYNO);
+	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
 		printf("Locks survive file open()/close() in other thread\n");
 	else
 		printf("!FAIL Locks do not survive file open()/close() in other thread\n");
 	close(fd);
+#endif
 }
