@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "telnet.h"	// TELNET_IAC/NOP
 
 /****************************************************************************/
 /* Waits for remote or local user to hit a key. Inactivity timer is checked */
@@ -45,7 +46,9 @@
 /****************************************************************************/
 char sbbs_t::getkey(long mode)
 {
-	char ch,coldkey,c=0,spin=sbbs_random(5);
+	char	ch,coldkey,c=0,spin=sbbs_random(5);
+	char	telnet_cmd[16];
+	time_t	last_telnet_cmd=0;
 
 	if(!online || !input_thread_running)
 		return(0);
@@ -253,9 +256,16 @@ char sbbs_t::getkey(long mode)
 				,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr);
 			RESTORELINE; }
 
-		if((online==ON_LOCAL && cfg.node_misc&NM_NO_INACT) || console&CON_NO_INACT)
-			timeout=now;
-		else if(now-timeout>=cfg.sec_warn) { 					/* warning */
+		if(now!=last_telnet_cmd && now-timeout>=60 && !((now-timeout)%60)) {
+			// Let's make sure the socket is up
+			// Sending will trigger a socket d/c detection
+			sprintf(telnet_cmd,"%c%c",TELNET_IAC,TELNET_GA);
+			putcom(telnet_cmd,2);
+			last_telnet_cmd=now;
+		}
+			
+		if(online==ON_REMOTE && !(cfg.node_misc&NM_NO_INACT) && !(console&CON_NO_INACT)
+			&& now-timeout>=cfg.sec_warn) { 					/* warning */
 			if(sys_status&SS_USERON) {
 				SAVELINE;
 				bputs(text[AreYouThere]); }
