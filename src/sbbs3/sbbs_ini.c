@@ -116,22 +116,22 @@ void sbbs_read_ini(
 		=iniReadBool(fp,section,"AutoStart",TRUE);
 
 	bbs->telnet_interface
-		=iniReadIpAddress(fp,section,"TelnetInterface",0);
+		=iniReadIpAddress(fp,section,"TelnetInterface",INADDR_ANY);
 	bbs->telnet_port
-		=iniReadShortInt(fp,section,"TelnetPort",bbs->telnet_port);
+		=iniReadShortInt(fp,section,"TelnetPort",IPPORT_TELNET);
 
 	bbs->rlogin_interface
-		=iniReadIpAddress(fp,section,"RLoginInterface",0);
+		=iniReadIpAddress(fp,section,"RLoginInterface",INADDR_ANY);
 	bbs->rlogin_port
-		=iniReadShortInt(fp,section,"RloginPort",bbs->rlogin_port);
+		=iniReadShortInt(fp,section,"RloginPort",513);
 
 	bbs->first_node
-		=iniReadShortInt(fp,section,"FirstNode",bbs->first_node);
+		=iniReadShortInt(fp,section,"FirstNode",1);
 	bbs->last_node
-		=iniReadShortInt(fp,section,"FirstNode",bbs->last_node);
+		=iniReadShortInt(fp,section,"FirstNode",4);
 
 	bbs->xtrn_polls_before_yield
-		=iniReadInteger(fp,section,"ExternalYield",bbs->xtrn_polls_before_yield);
+		=iniReadInteger(fp,section,"ExternalYield",10);
 	bbs->js_max_bytes
 		=iniReadInteger(fp,section,"JS_MaxBytes",0);
 
@@ -141,7 +141,8 @@ void sbbs_read_ini(
 		,iniReadString(fp,section,"HangupSound",nulstr));
 
 	bbs->options
-		=iniReadBitField(fp,section,"Options",bbs_options,bbs->options);
+		=iniReadBitField(fp,section,"Options",bbs_options
+			,BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE);
 
 	/***********************************************************************/
 	section = "FTP";
@@ -150,15 +151,15 @@ void sbbs_read_ini(
 		=iniReadBool(fp,section,"AutoStart",TRUE);
 
 	ftp->interface_addr
-		=iniReadIpAddress(fp,section,"Interface",0);
+		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
 	ftp->port
 		=iniReadShortInt(fp,section,"Port",ftp->port);
 	ftp->max_clients
-		=iniReadShortInt(fp,section,"MaxClients",ftp->max_clients);
+		=iniReadShortInt(fp,section,"MaxClients",10);
 	ftp->max_inactivity
-		=iniReadShortInt(fp,section,"MaxInactivity",ftp->max_inactivity);
+		=iniReadShortInt(fp,section,"MaxInactivity",300);	/* seconds */
 	ftp->qwk_timeout
-		=iniReadShortInt(fp,section,"QwkTimeout",ftp->qwk_timeout);
+		=iniReadShortInt(fp,section,"QwkTimeout",600);		/* seconds */
 
 	SAFECOPY(ftp->index_file_name
 		,iniReadString(fp,section,"IndexFileName","00index"));
@@ -175,7 +176,8 @@ void sbbs_read_ini(
 		,iniReadString(fp,section,"HackAttemptSound",nulstr));
 
 	ftp->options
-		=iniReadBitField(fp,section,"Options",ftp_options,ftp->options);
+		=iniReadBitField(fp,section,"Options",ftp_options
+			,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
 
 	/***********************************************************************/
 	section = "Mail";
@@ -184,21 +186,21 @@ void sbbs_read_ini(
 		=iniReadBool(fp,section,"AutoStart",TRUE);
 
 	mail->interface_addr
-		=iniReadIpAddress(fp,section,"Interface",0);
+		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
 	mail->smtp_port
-		=iniReadShortInt(fp,section,"SMTPPort",mail->smtp_port);
+		=iniReadShortInt(fp,section,"SMTPPort",IPPORT_SMTP);
 	mail->pop3_port
-		=iniReadShortInt(fp,section,"POP3Port",mail->pop3_port);
+		=iniReadShortInt(fp,section,"POP3Port",IPPORT_POP3);
 	mail->relay_port
-		=iniReadShortInt(fp,section,"RelayPort",mail->relay_port);
+		=iniReadShortInt(fp,section,"RelayPort",IPPORT_SMTP);
 	mail->max_clients
-		=iniReadShortInt(fp,section,"MaxClients",mail->max_clients);
+		=iniReadShortInt(fp,section,"MaxClients",10);
 	mail->max_inactivity
-		=iniReadShortInt(fp,section,"MaxInactivity",mail->max_inactivity);
+		=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
 	mail->max_delivery_attempts
-		=iniReadShortInt(fp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts);
+		=iniReadShortInt(fp,section,"MaxDeliveryAttempts",50);
 	mail->rescan_frequency
-		=iniReadShortInt(fp,section,"RescanFrequency",mail->rescan_frequency);
+		=iniReadShortInt(fp,section,"RescanFrequency",3600);	/* 60 minutes */
 	mail->lines_per_yield
 		=iniReadShortInt(fp,section,"LinesPerYield",100);
 	mail->max_recipients
@@ -210,12 +212,12 @@ void sbbs_read_ini(
 		,iniReadString(fp,section,"DNSServer",mail->dns_server));
 
 	SAFECOPY(mail->default_user
-		,iniReadString(fp,section,"DefaultUser",mail->dns_server));
+		,iniReadString(fp,section,"DefaultUser",nulstr));
 
 	SAFECOPY(mail->dnsbl_hdr
-		,iniReadString(fp,section,"DNSBlacklistHeader",mail->dnsbl_hdr));
+		,iniReadString(fp,section,"DNSBlacklistHeader","X-DNSBL"));
 	SAFECOPY(mail->dnsbl_tag
-		,iniReadString(fp,section,"DNSBlacklistSubject",mail->dnsbl_tag));
+		,iniReadString(fp,section,"DNSBlacklistSubject","SPAM"));
 
 	SAFECOPY(mail->pop3_sound
 		,iniReadString(fp,section,"POP3Sound",nulstr));
@@ -225,7 +227,8 @@ void sbbs_read_ini(
 		,iniReadString(fp,section,"OutboundSound",nulstr));
 
 	mail->options
-		=iniReadBitField(fp,section,"Options",mail_options,mail->options);
+		=iniReadBitField(fp,section,"Options",mail_options
+			,MAIL_OPT_ALLOW_POP3);
 
 	/***********************************************************************/
 	section = "Services";
@@ -234,7 +237,7 @@ void sbbs_read_ini(
 		=iniReadBool(fp,section,"AutoStart",TRUE);
 
 	services->interface_addr
-		=iniReadIpAddress(fp,section,"Interface",0);
+		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
 
 	SAFECOPY(services->answer_sound
 		,iniReadString(fp,section,"AnswerSound",nulstr));
@@ -242,6 +245,7 @@ void sbbs_read_ini(
 		,iniReadString(fp,section,"HangupSound",nulstr));
 
 	services->options
-		=iniReadBitField(fp,section,"Options",service_options,services->options);
+		=iniReadBitField(fp,section,"Options",service_options
+			,BBS_OPT_NO_HOST_LOOKUP);
 
 }
