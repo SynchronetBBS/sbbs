@@ -23,7 +23,3 @@ include ${UIFC_SRC}Common.gmake
 $(MENUEDIT): $(OBJS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(OBJS) -o $@
-
-clean:
-	@echo Deleting $(EXEODIR)
-	$(QUIET)$(DELETE) $(EXEODIR)\*
