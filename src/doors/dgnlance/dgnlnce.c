@@ -89,7 +89,6 @@ struct playertype {
      * player is feeling. Is set at start and not modified */
     double          vary;
 };
-
 /* player[0] is the current enemy */
 #define opp	player[0]
 
@@ -110,7 +109,6 @@ DWORD           number_of_players;
 BOOL            doga;		       /* The current fight is a Battle
 				        * between players */
 struct playertype player[31];
-
 /**********************************************************/
 /* These variables are used for the stat adjustment stuff */
 /**********************************************************/
@@ -494,7 +492,7 @@ amode(void)
 {
     double          roll;	       /* Used for To Hit and damage rolls */
     int             okea;
-int             tint;
+    int             tint;
     roll = playerattack();
     if (roll < 1.5) {
 	tint = xp_random(3) + 1;
@@ -562,7 +560,7 @@ bmode(void)
     double          roll;	       /* Used for To Hit and damage rolls */
     FILE           *outfile;
     int             okea;
-int             tint;
+    int             tint;
     if ((opp.hps > opp.damage) && player[player_num].damage < player[player_num].hps) {
 	roll = opponentattack();
 	if (roll < 1.5) {
@@ -1074,7 +1072,7 @@ battle(void)
 		    od_set_color(D_GREEN, D_BLACK);
 		    od_disp_str("You Ride away on a Silver Dragon.\r\n");
 		    doga = FALSE;
-			return;
+		    return;
 		}
 		break;
 	}
@@ -1393,16 +1391,16 @@ void
 afight(int lev)
 {
     char            fname[32];
-	if (player[player_num].fights == 0) {
-	    nl();
-	    od_set_color(D_MAGENTA, D_BLACK);
-	    od_disp_str("It's Getting Dark Out!\r\n");
-	    od_disp_str("Return to the Nearest Inn!\r\n");
-	} else {
-	    od_clr_scr();
-	    sprintf(fname, "data/junkm%d.lan", lev);
-	    fight(fname);
-	}
+    if (player[player_num].fights == 0) {
+	nl();
+	od_set_color(D_MAGENTA, D_BLACK);
+	od_disp_str("It's Getting Dark Out!\r\n");
+	od_disp_str("Return to the Nearest Inn!\r\n");
+    } else {
+	od_clr_scr();
+	sprintf(fname, "data/junkm%d.lan", lev);
+	fight(fname);
+    }
 }
 
 void
@@ -1667,7 +1665,7 @@ main(int argc, char **argv)
     od_set_color(L_YELLOW, D_BLACK);
     player[player_num].status = ALIVE;
     statshow();
-    while(player[player_num].damage < player[player_num].hps) {
+    while (player[player_num].damage < player[player_num].hps) {
 	levelupdate();
 	if (((player[player_num].wins + 1) * 4) < (player[player_num].loses)) {
 	    nl();
@@ -1692,7 +1690,7 @@ main(int argc, char **argv)
 		od_disp_str("LEAVE KRYNN? Are you sure? ");
 		if (od_get_answer("YN") == 'Y') {
 		    od_disp_str("Yes\r\n");
-		    return(0);
+		    return (0);
 		} else
 		    od_disp_str("No\r\n");
 		break;
