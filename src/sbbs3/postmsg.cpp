@@ -346,7 +346,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	return(true);
 }
 
-extern "C" int savemsg(scfg_t* cfg, smb_t* smb, uint subnum, smbmsg_t* msg, char* msgbuf)
+extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, uint subnum, smbmsg_t* msg, char* msgbuf)
 {
 	char	pad=0;
 	ushort	xlat;
