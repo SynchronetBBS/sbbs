@@ -3003,7 +3003,7 @@ keep_going:
 			}
 		}
 
-	    if(write(STDOUT_FILENO, &btToSend, 1)!=1)
+	    if(fwrite(&btToSend,1,1,stdout)!=1)
 		   return(kODRCGeneralFailure);
 		break;
 		}
@@ -3487,7 +3487,7 @@ try_again:
 					return(kODRCGeneralFailure);
 				}
 
-				retval=write(STDOUT_FILENO, pbtBuffer+pos,1);
+				retval=fwrite(pbtBuffer+pos,1,nSize-pos,stdout);
 				if(retval!=nSize-pos) {
 					od_sleep(1);
 				}
