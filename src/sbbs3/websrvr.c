@@ -1254,7 +1254,9 @@ static void unescape(char *p)
 
 static void js_parse_post(http_session_t * session)
 {
-	char		*p;
+	size_t		key_len;
+	size_t		value_len;
+	char		*lp;
 	char		*key;
 	char		*value;
 	JSString*	js_str;
@@ -1262,15 +1264,16 @@ static void js_parse_post(http_session_t * session)
 	if(session->req.post_data == NULL)
 		return;
 
-	p=session->req.post_data;
-	while((key=strtok(p,"="))!=NULL)  {
-		p=NULL;
-		if(key == NULL)
-			continue;
-		value=strtok(NULL,"&");
-		if(value == NULL)
-			continue;
+	lp=session->req.post_data;
 
+	while(key_len=strcspn(lp,"="))  {
+		lp[key_len]=0;
+		key=lp;
+		lp+=key_len;
+		lp++;
+		value_len=strcspn(lp,"&");
+		value=lp;
+		lp[value_len]=0;
 		unescape(value);
 		unescape(key);
 		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
@@ -1406,23 +1409,32 @@ static int get_version(char *p)
 }
 
 static void js_parse_query(http_session_t * session, char *p)  {
-	char	*key;
-	char	*value;
+	size_t		key_len;
+	size_t		value_len;
+	char		*lp;
+	char		*key;
+	char		*value;
 	JSString*	js_str;
-	
-	while((key=strtok(p,"="))!=NULL)  {
-		p=NULL;
-		if(key != NULL)  {
-			value=strtok(NULL,"&");
-			if(value != NULL)  {
-				unescape(value);
-				unescape(key);
-				if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
-					return;
-				JS_DefineProperty(session->js_cx, session->js_query, key, STRING_TO_JSVAL(js_str)
-					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-			}
-		}
+
+	if(p == NULL)
+		return;
+
+	lp=p;
+
+	while(key_len=strcspn(lp,"="))  {
+		lp[key_len]=0;
+		key=lp;
+		lp+=key_len;
+		lp++;
+		value_len=strcspn(lp,"&");
+		value=lp;
+		lp[value_len]=0;
+		unescape(value);
+		unescape(key);
+		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
+			return;
+		JS_DefineProperty(session->js_cx, session->js_query, key, STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
 }
 
