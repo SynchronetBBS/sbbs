@@ -49,6 +49,7 @@
 #include "MainFormUnit.h"
 #include "TelnetFormUnit.h"
 #include "EventsFormUnit.h"
+#include "ServicesFormUnit.h"
 #include "FtpFormUnit.h"
 #include "MailFormUnit.h"
 #include "NodeFormUnit.h"
@@ -272,6 +273,10 @@ static void bbs_start(void)
     bbs_status("Starting");
     strcpy(MainForm->bbs_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
+
+    strcpy(MainForm->services_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
+	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
+
     Application->ProcessMessages();
 }
 
@@ -289,6 +294,24 @@ static int event_log(char *str)
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
     Line+=AnsiString(str).Trim();
 	EventsForm->Log->Lines->Add(Line);
+    ReleaseMutex(mutex);
+    return(Line.Length());
+}
+
+static int service_log(char *str)
+{
+	static HANDLE mutex;
+
+    if(!mutex)
+    	mutex=CreateMutex(NULL,false,NULL);
+	WaitForSingleObject(mutex,INFINITE);
+
+    while(ServicesForm->Log->Text.Length()>=MAX_LOGLEN)
+        ServicesForm->Log->Lines->Delete(0);
+
+    AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
+    Line+=AnsiString(str).Trim();
+	ServicesForm->Log->Lines->Add(Line);
     ReleaseMutex(mutex);
     return(Line.Length());
 }
@@ -586,6 +609,14 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     strcpy(ftp_startup.index_file_name,"00index");
     strcpy(ftp_startup.html_index_file,"00index.html");
     strcpy(ftp_startup.html_index_script,"ftp-html.js");
+
+    memset(&services_startup,0,sizeof(services_startup));
+    services_startup.size=sizeof(services_startup);
+    services_startup.interface_addr=INADDR_ANY;
+    services_startup.lputs=service_log;
+    services_startup.thread_up=thread_up;
+    services_startup.client_on=client_on;
+    services_startup.socket_open=socket_open;
 
     /* Default local "Spy Terminal" settings */
     SpyTerminalFont=new TFont;
@@ -1042,6 +1073,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 {
     bool	TelnetFormFloating=false;
     bool	EventsFormFloating=false;
+    bool	ServicesFormFloating=false;
     bool 	NodeFormFloating=false;
     bool	StatsFormFloating=false;
     bool	ClientFormFloating=false;
@@ -1054,6 +1086,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     int		EventsFormPage=PAGE_LOWERLEFT;
     int		MailFormPage=PAGE_UPPERRIGHT;
     int		FtpFormPage=PAGE_LOWERRIGHT;
+    int     ServicesFormPage=PAGE_LOWERRIGHT;
 
     AnsiString	Str;
 
@@ -1088,6 +1121,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
             TelnetFormFloating=Registry->ReadBool("TelnetFormFloating");
         if(Registry->ValueExists("EventsFormFloating"))
             EventsFormFloating=Registry->ReadBool("EventsFormFloating");
+        if(Registry->ValueExists("ServicesFormFloating"))
+            ServicesFormFloating=Registry->ReadBool("ServicesFormFloating");
         if(Registry->ValueExists("NodeFormFloating"))
             NodeFormFloating=Registry->ReadBool("NodeFormFloating");
         if(Registry->ValueExists("StatsFormFloating"))
@@ -1104,6 +1139,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	TelnetFormPage=Registry->ReadInteger("TelnetFormPage");
     if(Registry->ValueExists("EventsFormPage"))
     	EventsFormPage=Registry->ReadInteger("EventsFormPage");
+    if(Registry->ValueExists("ServicesFormPage"))
+    	ServicesFormPage=Registry->ReadInteger("ServicesFormPage");
     if(Registry->ValueExists("NodeFormPage"))
     	NodeFormPage=Registry->ReadInteger("NodeFormPage");
     if(Registry->ValueExists("StatsFormPage"))
@@ -1119,6 +1156,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     ReadFont("TelnetLog",TelnetForm->Log->Font);
     ReadColor(Registry,"EventsLog",EventsForm->Log->Color);
     ReadFont("EventsLog",EventsForm->Log->Font);
+    ReadColor(Registry,"ServicesLog",ServicesForm->Log->Color);
+    ReadFont("ServicesLog",ServicesForm->Log->Font);
     ReadColor(Registry,"MailLog",MailForm->Log->Color);
     ReadFont("MailLog",MailForm->Log->Font);
     ReadColor(Registry,"FtpLog",FtpForm->Log->Color);
@@ -1145,6 +1184,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	EventsForm->Width=Registry->ReadInteger("EventsFormWidth");
 	if(Registry->ValueExists("EventsFormHeight"))
     	EventsForm->Height=Registry->ReadInteger("EventsFormHeight");
+
+	if(Registry->ValueExists("ServicesFormTop"))
+    	ServicesForm->Top=Registry->ReadInteger("ServicesFormTop");
+	if(Registry->ValueExists("ServicesFormLeft"))
+    	ServicesForm->Left=Registry->ReadInteger("ServicesFormLeft");
+	if(Registry->ValueExists("ServicesFormWidth"))
+    	ServicesForm->Width=Registry->ReadInteger("ServicesFormWidth");
+	if(Registry->ValueExists("ServicesFormHeight"))
+    	ServicesForm->Height=Registry->ReadInteger("ServicesFormHeight");
 
 	if(Registry->ValueExists("FtpFormTop"))
     	FtpForm->Top=Registry->ReadInteger("FtpFormTop");
@@ -1424,6 +1472,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	TelnetForm->ManualDock(PageControl(TelnetFormPage),NULL,alClient);
 	if(!EventsFormFloating)
     	EventsForm->ManualDock(PageControl(EventsFormPage),NULL,alClient);
+	if(!ServicesFormFloating)
+    	ServicesForm->ManualDock(PageControl(ServicesFormPage),NULL,alClient);
 	if(!FtpFormFloating)
     	FtpForm->ManualDock(PageControl(FtpFormPage),NULL,alClient);
 
@@ -1433,6 +1483,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     TelnetForm->Show();
     EventsForm->Show();
     FtpForm->Show();
+    ServicesForm->Show();
     MailForm->Show();
 
 	UpperLeftPageControl->Visible=true;
@@ -1527,6 +1578,11 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("EventsFormHeight",EventsForm->Height);
     Registry->WriteInteger("EventsFormWidth",EventsForm->Width);
 
+    Registry->WriteInteger("ServicesFormTop",ServicesForm->Top);
+    Registry->WriteInteger("ServicesFormLeft",ServicesForm->Left);
+    Registry->WriteInteger("ServicesFormHeight",ServicesForm->Height);
+    Registry->WriteInteger("ServicesFormWidth",ServicesForm->Width);
+
     Registry->WriteInteger("FtpFormTop",FtpForm->Top);
     Registry->WriteInteger("FtpFormLeft",FtpForm->Left);
     Registry->WriteInteger("FtpFormHeight",FtpForm->Height);
@@ -1547,6 +1603,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 
     Registry->WriteBool("TelnetFormFloating",TelnetForm->Floating);
     Registry->WriteBool("EventsFormFloating",EventsForm->Floating);
+    Registry->WriteBool("ServicesFormFloating",ServicesForm->Floating);
     Registry->WriteBool("NodeFormFloating",NodeForm->Floating);
     Registry->WriteBool("StatsFormFloating",StatsForm->Floating);
     Registry->WriteBool("ClientFormFloating",ClientForm->Floating);
@@ -1557,6 +1614,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 	    ,PageNum((TPageControl*)TelnetForm->HostDockSite));
     Registry->WriteInteger("EventsFormPage"
 	    ,PageNum((TPageControl*)EventsForm->HostDockSite));
+    Registry->WriteInteger("ServicesFormPage"
+	    ,PageNum((TPageControl*)ServicesForm->HostDockSite));
     Registry->WriteInteger("NodeFormPage"
     	,PageNum((TPageControl*)NodeForm->HostDockSite));
     Registry->WriteInteger("MailFormPage"
@@ -1572,6 +1631,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     WriteFont("TelnetLog",TelnetForm->Log->Font);
     WriteColor(Registry,"EventsLog",EventsForm->Log->Color);
     WriteFont("EventsLog",EventsForm->Log->Font);
+    WriteColor(Registry,"ServicesLog",ServicesForm->Log->Color);
+    WriteFont("ServicesLog",ServicesForm->Log->Font);
     WriteColor(Registry,"MailLog",MailForm->Log->Color);
     WriteFont("MailLog",MailForm->Log->Font);
     WriteColor(Registry,"FtpLog",FtpForm->Log->Color);

@@ -10,7 +10,8 @@
       NodeFormUnit.obj StatsFormUnit.obj AboutBoxFormUnit.obj 
       StatsLogFormUnit.obj CodeInputFormUnit.obj ClientFormUnit.obj 
       SpyFormUnit.obj ..\ringbuf.obj UserListFormUnit.obj UserMsgFormUnit.obj 
-      PropertiesDlgUnit.obj EventsFormUnit.obj ConfigWizardUnit.obj"/>
+      PropertiesDlgUnit.obj EventsFormUnit.obj ConfigWizardUnit.obj 
+      ServicesFormUnit.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -21,8 +22,8 @@
       StatsFormUnit.dfm AboutBoxFormUnit.dfm StatsLogFormUnit.dfm 
       CodeInputFormUnit.dfm ClientFormUnit.dfm SpyFormUnit.dfm 
       UserListFormUnit.dfm UserMsgFormUnit.dfm PropertiesDlgUnit.dfm 
-      EventsFormUnit.dfm ConfigWizardUnit.dfm"/>
-    <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib"/>
+      EventsFormUnit.dfm ConfigWizardUnit.dfm ServicesFormUnit.dfm"/>
+    <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib services.lib"/>
     <LIBRARIES value="VCLX50.lib bcbsmp50.lib vcl50.lib"/>
     <SPARELIBS value="vcl50.lib bcbsmp50.lib VCLX50.lib"/>
     <PACKAGES value="vcl50.bpi vclx50.bpi vcljpg50.bpi bcbsmp50.bpi vclmid50.bpi vcldb50.bpi 

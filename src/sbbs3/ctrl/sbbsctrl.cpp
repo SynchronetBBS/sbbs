@@ -43,6 +43,7 @@ USEFORM("TelnetCfgDlgUnit.cpp", TelnetCfgDlg);
 USELIB("sbbs.lib");
 USELIB("mailsrvr.lib");
 USELIB("ftpsrvr.lib");
+USELIB("services.lib");
 USEFORM("MailCfgDlgUnit.cpp", MailCfgDlg);
 USEFORM("FtpCfgDlgUnit.cpp", FtpCfgDlg);
 USEFORM("TextFileEditUnit.cpp", TextFileEditForm);
@@ -63,6 +64,7 @@ USEFORM("UserMsgFormUnit.cpp", UserMsgForm);
 USEFORM("PropertiesDlgUnit.cpp", PropertiesDlg);
 USEFORM("EventsFormUnit.cpp", EventsForm);
 USEFORM("ConfigWizardUnit.cpp", ConfigWizardForm);
+USEFORM("ServicesFormUnit.cpp", ServicesForm);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
@@ -85,6 +87,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
          Application->CreateForm(__classid(TClientForm), &ClientForm);
          Application->CreateForm(__classid(TUserListForm), &UserListForm);
          Application->CreateForm(__classid(TEventsForm), &EventsForm);
+         Application->CreateForm(__classid(TServicesForm), &ServicesForm);
          Application->Run();
     }
     catch (Exception &exception)
