@@ -112,6 +112,7 @@ enum {
 	,CS_NODE_STATUS
 	,CS_CMDCHAR
 	,CS_COMPARE_CHAR
+	,CS_MULTINODE_CHAT
 	,CS_TWO_MORE_BYTES=0x3f
 
 /* Three byte instructions */

@@ -1278,6 +1278,9 @@ int sbbs_t::exec(csi_t *csi)
 				thisnode.status=*csi->ip++;
 				putnodedat(cfg.node_num,&thisnode);
 				return(0);
+			case CS_MULTINODE_CHAT:
+				multinodechat(*csi->ip++);
+				return(0);
 			case CS_GETSTR:
 				csi->logic=LOGIC_TRUE;
 				getstr(csi->str,*csi->ip++,0);

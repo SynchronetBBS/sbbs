@@ -505,6 +505,7 @@ public:
 
 	/* chat.cpp */
 	void	chatsection(void);
+	void	multinodechat(int channel=1);
 	void	nodepage(void);
 	void	nodemsg(void);
 	int		nodemsg_inside;
@@ -513,7 +514,8 @@ public:
 	void	guruchat(char *line, char *guru, int gurunum);
 	bool	guruexp(char **ptrptr, char *line);
 	void	localguru(char *guru, int gurunum);
-	void	sysop_page(void);
+	bool	sysop_page(void);
+	bool	guru_page(void);
 	void	privchat(bool local=false);
 	bool	chan_access(uint cnum);
 	int		getnodetopage(int all, int telegram);

@@ -3058,6 +3058,23 @@ void compile(char *src)
 			fprintf(out,"%c",CS_PRIVATE_MESSAGE);
 			continue; }
 
+		if(!stricmp(p,"MULTINODE_CHAT")) {
+			if(!(*arg)) 
+				ch=1;
+			else {
+				if((l=isvar(arg))!=0) {
+					fputc(CS_USE_INT_VAR,out);
+					fwrite(&l,4,1,out); // variable
+					fputc(1,out);		// int offset
+					fputc(1,out);       // int length
+					ch=0; } 			// place holder
+				else
+					ch=val(src,arg);
+			}
+
+			fprintf(out,"%c%c",CS_MULTINODE_CHAT,ch);
+			continue; }
+
 		if(!stricmp(p,"MAIL_READ")) {
 			fprintf(out,"%c",CS_MAIL_READ);
 			continue; }
