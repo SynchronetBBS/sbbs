@@ -53,10 +53,14 @@
 	#else
 		#define SMBCALL
 	#endif
-	#ifdef SMBDLL
-		#define SMBEXPORT __declspec( dllexport )
-	#else
-		#define SMBEXPORT __declspec( dllimport )
+	#ifdef SMBDLL	/* SMBLIB contained in DLL */
+		#ifdef SMB_EXPORTS
+			#define SMBEXPORT __declspec( dllexport )
+		#else
+			#define SMBEXPORT __declspec( dllimport )
+		#endif
+	#else	/* self-contained executable */
+		#define SMBEXPORT
 	#endif
 #elif defined __unix__
 	#define SMBCALL
