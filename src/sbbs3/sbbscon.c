@@ -896,7 +896,7 @@ int main(int argc, char** argv)
 	node_t	node;
 #ifdef __unix__
 	char	daemon_type[2];
-	char	value[MAX_VALUE_LEN];
+	char	value[INI_MAX_VALUE_LEN];
 	struct passwd* pw_entry;
 	struct group*  gr_entry;
 	sigset_t			sigs;
