@@ -5,7 +5,13 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
 
-template.group=msg_area.grp_list[g];
+if(sub=='mail') {
+	template.group=new Object;
+	template.group.code='mail';
+}
+else {
+	template.group=msg_area.grp_list[g];
+}
 
 if(sub=='mail') {
 	template.sub=new Object;
@@ -30,6 +36,13 @@ if(msg.type=="plain") {
 	else {
 		template.body=word_wrap(template.body,79);
 		template.body=html_encode(template.body,true,false,false,false);
+	}
+}
+if(msg.attachments!=undefined) {
+	template.attachments=new Object;
+	for(att in msg.attachments) {
+		template.attachments[att]=new Object;
+		template.attachments[att].name=msg.attachments[att];
 	}
 }
 
