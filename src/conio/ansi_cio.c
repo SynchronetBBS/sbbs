@@ -318,6 +318,7 @@ static void ansi_keyparse(void *par)
 	char	*p;
 	int		timeout=0;
 
+	seq[0]=0;
 	for(;;) {
 		if(timeout) {
 			if(sem_trywait_block(&got_key,timeout)) {
