@@ -614,6 +614,7 @@ ftp_login_session(FTP_t ftp, char *host,
 		return FAILURE;
 	}
 
+	ftp->addrtype = addr.sin_family;
     ftp->fd_ctrl = s;
     ftp->con_state = isopen;
     ftp->is_verbose = verbose;
