@@ -2782,6 +2782,8 @@ void putfmsg(FILE *stream,uchar HUGE16 *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 	char str[256],seenby[256];
 	short i,j,lastlen=0,net_exists=0;
 	faddr_t addr,sysaddr;
+	time_t t;
+	struct tm* tm;
 
 	addr=getsysfaddr(fmsghdr.destzone);
 
@@ -2804,6 +2806,22 @@ void putfmsg(FILE *stream,uchar HUGE16 *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 	lastlen=9;
 	if(fbuf[strlen((char *)fbuf)-1]!=CR)
 		fputc(CR,stream);
+
+	if(area.name==NULL)	{ /* NetMail, so add FSP-1010 Via kludge line */
+		t=time(NULL);
+		tm=gmtime(&t);
+		fprintf(stream,"\1Via: %s @%04u%02u%02u.%02u%02u%02u.UTC "
+			"SBBSecho %s-%s r%s %s %s\r"
+			,faddrtoa(&addr,NULL)
+			,tm->tm_year+1900
+			,tm->tm_mon+1
+			,tm->tm_mday
+			,tm->tm_hour
+			,tm->tm_min
+			,tm->tm_sec
+			,SBBSECHO_VER,PLATFORM_DESC,revision,__DATE__,compiler);
+	}
+			
 
 	if(area.name && addr.zone!=fmsghdr.destzone)	/* Zone Gate */
 		fprintf(stream,"SEEN-BY: %d/%d\r",fmsghdr.destnet,fmsghdr.destnode);
