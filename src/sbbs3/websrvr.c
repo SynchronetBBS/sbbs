@@ -2732,7 +2732,7 @@ void http_logging_thread(void* arg)
 
 	SAFECOPY(base,arg);
 	if(!base[0])
-		SAFEPRINTF(base,"%slogs/http-",scfg.data_dir);
+		SAFEPRINTF(base,"%slogs/http-",scfg.logs_dir);
 
 	filename[0]=0;
 	newfilename[0]=0;
