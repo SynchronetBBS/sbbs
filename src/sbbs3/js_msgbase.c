@@ -132,6 +132,8 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	char		from[256];
 	ushort		nettype;
 	ushort		type;
+	ushort		agent;
+	int32		i32;
 	jsval		val;
 	JSObject*	array;
 	JSObject*	field;
@@ -141,16 +143,16 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		return(FALSE);
 
 	/* Required Header Fields */
-	if(JS_GetProperty(cx, hdr, "subject", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "subject", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 	} else
 		cp="";
 	smb_hfield(msg, SUBJECT, (ushort)strlen(cp), cp);
 	msg->idx.subj=subject_crc(cp);
 
-	if(JS_GetProperty(cx, hdr, "to", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "to", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 	} else {
 		if(p->smb.status.attr&SMB_EMAIL)	/* e-mail */
@@ -164,8 +166,8 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->idx.to=crc16(to);
 	}
 
-	if(JS_GetProperty(cx, hdr, "from", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "from", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 	} else
 		return(FALSE);	/* "from" property required */
@@ -177,176 +179,228 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	/* Optional Header Fields */
-	if(JS_GetProperty(cx, hdr, "from_ext", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "from_ext", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, SENDEREXT, (ushort)strlen(cp), cp);
 		if(p->smb.status.attr&SMB_EMAIL)
 			msg->idx.from=atoi(cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "from_org", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "from_org", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, SENDERORG, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "from_net_type", &val) && JSVAL_IS_INT(val)) {
-		nettype=(ushort)JSVAL_TO_INT(val);
+	if(JS_GetProperty(cx, hdr, "from_net_type", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		nettype=(ushort)i32;
 		smb_hfield(msg, SENDERNETTYPE, sizeof(nettype), &nettype);
 		if(p->smb.status.attr&SMB_EMAIL && nettype!=NET_NONE)
 			msg->idx.from=0;
 	}
 
-	if(JS_GetProperty(cx, hdr, "from_net_addr", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "from_net_addr", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, SENDERNETADDR, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_ext", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "from_agent", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		agent=(ushort)i32;
+		smb_hfield(msg, SENDERAGENT, sizeof(agent), &agent);
+	}
+
+	if(JS_GetProperty(cx, hdr, "to_ext", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RECIPIENTEXT, (ushort)strlen(cp), cp);
 		if(p->smb.status.attr&SMB_EMAIL)
 			msg->idx.to=atoi(cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_net_type", &val) && JSVAL_IS_INT(val)) {
-		nettype=(ushort)JSVAL_TO_INT(val);
+	if(JS_GetProperty(cx, hdr, "to_org", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
+			return(FALSE);
+		smb_hfield(msg, RECIPIENTORG, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "to_net_type", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		nettype=(ushort)i32;
 		smb_hfield(msg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
 		if(p->smb.status.attr&SMB_EMAIL && nettype!=NET_NONE)
 			msg->idx.to=0;
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_net_addr", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "to_net_addr", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RECIPIENTNETADDR, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "to_agent", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		agent=(ushort)i32;
+		smb_hfield(msg, RECIPIENTAGENT, sizeof(agent), &agent);
+	}
+
+	if(JS_GetProperty(cx, hdr, "replyto", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, REPLYTO, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_ext", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "replyto_ext", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, REPLYTOEXT, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_net_type", &val) && JSVAL_IS_INT(val)) {
-		nettype=(ushort)JSVAL_TO_INT(val);
+	if(JS_GetProperty(cx, hdr, "replyto_org", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
+			return(FALSE);
+		smb_hfield(msg, REPLYTOORG, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "replyto_net_type", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		nettype=(ushort)i32;
 		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_net_addr", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "replyto_net_addr", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, REPLYTONETADDR, (ushort)strlen(cp), cp);
 	}
 
+	if(JS_GetProperty(cx, hdr, "replyto_agent", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		agent=(ushort)i32;
+		smb_hfield(msg, REPLYTOAGENT, sizeof(agent), &agent);
+	}
+
 	/* RFC822 headers */
-	if(JS_GetProperty(cx, hdr, "id", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "id", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RFC822MSGID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "reply_id", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "reply_id", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RFC822REPLYID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "reverse_path", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "reverse_path", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, SMTPREVERSEPATH, (ushort)strlen(cp), cp);
 	}
 
 	/* USENET headers */
-	if(JS_GetProperty(cx, hdr, "path", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "path", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, USENETPATH, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "newsgroups", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "newsgroups", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, USENETNEWSGROUPS, (ushort)strlen(cp), cp);
 	}
 
 	/* FTN headers */
-	if(JS_GetProperty(cx, hdr, "ftn_msgid", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "ftn_msgid", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOMSGID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_reply", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "ftn_reply", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOREPLYID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_area", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "ftn_area", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOAREA, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_flags", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "ftn_flags", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOFLAGS, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_pid", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "ftn_pid", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOPID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_tid", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "ftn_tid", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOTID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "date", &val) && JSVAL_IS_STRING(val)) {
-		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+	if(JS_GetProperty(cx, hdr, "date", &val)) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		msg->hdr.when_written=rfc822date(cp);
 	}
 	
 	/* Numeric Header Fields */
-	if(JS_GetProperty(cx, hdr, "attr", &val) && JSVAL_IS_INT(val)) {
-		msg->hdr.attr=(ushort)JSVAL_TO_INT(val);
+	if(JS_GetProperty(cx, hdr, "attr", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.attr=(ushort)i32;
 		msg->idx.attr=msg->hdr.attr;
 	}
-	if(JS_GetProperty(cx, hdr, "auxattr", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.auxattr=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "netattr", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.netattr=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "when_written_time", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.when_written.time=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "when_written_zone", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.when_written.zone=(short)JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "when_imported_time", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.when_imported.time=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.when_imported.zone=(short)JSVAL_TO_INT(val);
+	if(JS_GetProperty(cx, hdr, "auxattr", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.auxattr=i32;
+	}
+	if(JS_GetProperty(cx, hdr, "netattr", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.netattr=i32;
+	}
+	if(JS_GetProperty(cx, hdr, "when_written_time", &val))  {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.when_written.time=i32;
+	}
+	if(JS_GetProperty(cx, hdr, "when_written_zone", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.when_written.zone=(short)i32;
+	}
+	if(JS_GetProperty(cx, hdr, "when_imported_time", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.when_imported.time=i32;
+	}
+	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.when_imported.zone=(short)i32;
+	}
 
-	if(JS_GetProperty(cx, hdr, "thread_orig", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.thread_orig=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "thread_next", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.thread_next=JSVAL_TO_INT(val);
-	if(JS_GetProperty(cx, hdr, "thread_first", &val) && JSVAL_IS_INT(val)) 
-		msg->hdr.thread_first=JSVAL_TO_INT(val);
+	if(JS_GetProperty(cx, hdr, "thread_orig", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.thread_orig=i32;
+	}
+	if(JS_GetProperty(cx, hdr, "thread_next", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.thread_next=i32;
+	}
+	if(JS_GetProperty(cx, hdr, "thread_first", &val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.thread_first=i32;
+	}
 
 	if(JS_GetProperty(cx, hdr, "field_list", &val) && JSVAL_IS_OBJECT(val)) {
 		array=JSVAL_TO_OBJECT(val);
@@ -360,12 +414,13 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			if(!JSVAL_IS_OBJECT(val))
 				continue;
 			field=JSVAL_TO_OBJECT(val);
-			if(!JS_GetProperty(cx, field, "type", &val) || !JSVAL_IS_INT(val))
+			if(!JS_GetProperty(cx, field, "type", &val))
 				continue;
-			type=(ushort)JSVAL_TO_INT(val);
-			if(!JS_GetProperty(cx, field, "data", &val) || !JSVAL_IS_STRING(val))
+			JS_ValueToInt32(cx,val,&i32);
+			type=(ushort)i32;
+			if(!JS_GetProperty(cx, field, "data", &val))
 				continue;
-			if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+			if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 				return(FALSE);
 			smb_hfield(msg, type, (ushort)strlen(cp), cp);
 		}
@@ -1244,7 +1299,51 @@ static jsMethodSpec js_msgbase_functions[] = {
 	,JSDOCSTR("returns the tail text of a specific message, <i>null</i> on failure")
 	},
 	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header, string body_text")
-	,JSDOCSTR("create a new message in message base")
+	,JSDOCSTR("create a new message in message base, the header object may contain the following properties:<br>"
+	"<table>"
+	"<tr><td><tt>subject</tt><td>Message subject <i>(required)</i>"
+	"<tr><td><tt>to</tt><td>Recipient's name <i>(required)</i>"
+	"<tr><td><tt>to_ext</tt><td>Recipient's user number (for local e-mail)"
+	"<tr><td><tt>to_org</tt><td>Recipient's organization"
+	"<tr><td><tt>to_net_type</tt><td>Recipient's network type (default: 0 for local)"
+	"<tr><td><tt>to_net_addr</tt><td>Recipient's network address"
+	"<tr><td><tt>to_agent</tt><td>Recipient's agent type"
+	"<tr><td><tt>from</tt><td>Sender's name <i>(required)</i>"
+	"<tr><td><tt>from_ext</tt><td>Sender's user number"
+	"<tr><td><tt>from_org</tt><td>Sender's organization"
+	"<tr><td><tt>from_net_type</tt><td>Sender's network type (default: 0 for local)"
+	"<tr><td><tt>from_net_addr</tt><td>Sender's network address"
+	"<tr><td><tt>replyto</tt><td>Replies should be sent to this name"
+	"<tr><td><tt>replyto_ext</tt><td>Replies should be sent to this user number"
+	"<tr><td><tt>replyto_org</tt><td>Replies should be sent to organization"
+	"<tr><td><tt>replyto_net_type</tt><td>Replies should be sent to this network type"
+	"<tr><td><tt>replyto_net_addr</tt><td>Replies should be sent to this network address"
+	"<tr><td><tt>replyto_agent</tt><td>Replies should be sent to this agent type"
+	"<tr><td><tt>id</tt><td>Message's RFC-822 compliant Message-ID"
+	"<tr><td><tt>reply_id</tt><td>Message's RFC-822 compliant Reply-ID"
+	"<tr><td><tt>reverse_path</tt><td>Message's SMTP sender address"
+	"<tr><td><tt>path</tt><td>Messages's NNTP path"
+	"<tr><td><tt>newsgroups</tt><td>Message's NNTP newsgroups header"
+	"<tr><td><tt>ftn_msgid</tt><td>FidoNet FTS-9 Message-ID"
+	"<tr><td><tt>ftn_reply</tt><td>FidoNet FTS-9 Reply-ID"
+	"<tr><td><tt>ftn_area</tt><td>FidoNet FTS-4 echomail AREA tag"
+	"<tr><td><tt>ftn_flags</tt><td>FidoNet FSC-53 FLAGS"
+	"<tr><td><tt>ftn_pid</tt><td>FidoNet FSC-46 Program Identifier"
+	"<tr><td><tt>ftn_tid</tt><td>FidoNet FSC-46 Tosser Identifier"
+	"<tr><td><tt>date</tt><td>RFC-822 formatted date/time"
+	"<tr><td><tt>attr</tt><td>Attribute bit-field"
+	"<tr><td><tt>auxattr</tt><td>Auxillary attribute bit-field"
+	"<tr><td><tt>netattr</tt><td>Network attribute bit-field"
+	"<tr><td><tt>when_written_time</tt><td>Date/time (in time_t format)"
+	"<tr><td><tt>when_written_zone</tt><td>Time zone"
+	"<tr><td><tt>when_imported_time</tt><td>Date/time message was imported"
+	"<tr><td><tt>when_imported_zone</tt><td>Time zone"
+	"<tr><td><tt>thread_orig</tt><td>Replying to this message number"
+	"<tr><td><tt>thread_next</tt><td>Number of next message in this thread"
+	"<tr><td><tt>thread_first</tt><td>Number of first reply to this message"
+	"<tr><td><tt>field_list[].type</tt><td>Other SMB header fields (type)"
+	"<tr><td><tt>field_list[].data</tt><td>Other SMB header fields (data)"
+	"</table>")
 	},
 	{0}
 };
