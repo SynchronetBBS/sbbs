@@ -33,7 +33,7 @@ if(user.number || system.matchuser("Guest")) {
         write(host.slice(0,port));
     else
         write(host);
-    writeln('/00index.html">File Libraries</a>');
+    writeln('/00index.html?$' + new Date().valueOf().toString(36) + '">File Libraries</a>');
     writeln('<br />');
 }
 writeln('</td>');
