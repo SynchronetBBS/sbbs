@@ -851,8 +851,12 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	char	*headers;
 	char	header[MAX_REQUEST_LINE+1];
 
-	if(session->http_ver <= HTTP_0_9)
+	lprintf(LOG_DEBUG,"%04d Request resolved to: %s"
+		,session->socket,session->req.physical_path);
+	if(session->http_ver <= HTTP_0_9) {
+		session->req.ld->status=atoi(status);
 		return(TRUE);
+	}
 
 	status_line=status;
 	ret=stat(session->req.physical_path,&stats);
@@ -872,6 +876,9 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		send_file=FALSE;
 	}
 
+	if(session->req.ld!=NULL)
+		session->req.ld->status=atoi(status_line);
+
 	headers=malloc(MAX_HEADERS_SIZE);
 	if(headers==NULL)  {
 		lprintf(LOG_CRIT,"Could not allocate memory for response headers.");
@@ -880,6 +887,9 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	*headers=0;
 	/* Status-Line */
 	safe_snprintf(header,sizeof(header),"%s %s",http_vers[session->http_ver],status_line);
+
+	lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
+
 	safecat(headers,header,MAX_HEADERS_SIZE);
 
 	/* General Headers */
@@ -992,8 +1002,6 @@ static void send_error(http_session_t * session, const char* message)
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
 	sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
-	if(session->req.ld!=NULL)
-		session->req.ld->status=atoi(message);
 	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 	send_headers(session,message);
 	if(!stat(session->req.physical_path,&sb)) {
@@ -2026,8 +2034,6 @@ static BOOL exec_cgi(http_session_t *session)
 							session->req.dynamic=IS_CGI;
 							if(cgi_status[0]==0)
 								SAFECOPY(cgi_status,"200 OK");
-							if(session->req.ld!=NULL)
-								session->req.ld->status=200;
 							send_headers(session,cgi_status);
 						}
 						done_parsing_headers=TRUE;
@@ -2506,8 +2512,6 @@ static void respond(http_session_t * session)
 			,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
 	}
 
-	if(session->req.ld!=NULL)
-		session->req.ld->status=atoi(session->req.status);
 	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 	send_file=send_headers(session,session->req.status);
 	if(session->req.method==HTTP_HEAD)
