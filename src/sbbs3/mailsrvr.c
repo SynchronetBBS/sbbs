@@ -79,6 +79,8 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 #define MAX_RECIPIENTS			1000	/* 0xffff = abs max */
 
+#define LINES_PER_YIELD			100		/* Yield every this many lines of text */
+
 #define STATUS_WFC	"Listening"
 
 static const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
@@ -407,7 +409,7 @@ static char *msgdate(when_t when, char* buf)
 
 #define MAX_LINE_LEN	1000
 
-static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromaddr
+static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromaddr
 						,ulong maxlines)
 {
 	char		toaddr[256];
@@ -417,7 +419,7 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 	char*		tp;
 	char*		boundary=NULL;
 	int			i;
-	ulong		line;
+	ulong		lines;
 
 	/* HEADERS */
 	sockprintf(socket,"Date: %s",msgdate(msg->hdr.when_written,date));
@@ -465,9 +467,9 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 	}
 	sockprintf(socket,"");	/* Header Terminator */
 	/* MESSAGE BODY */
-	line=0;
+	lines=0;
 	p=msgtxt;
-	while(*p && line<maxlines) {
+	while(*p && lines<maxlines) {
 		tp=strchr(p,'\n');
 		if(tp) {
 			if(tp-p>MAX_LINE_LEN)
@@ -484,8 +486,9 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 		if(tp==NULL)
 			break;
 		p=tp+1;
-		line++;
-		mswait(1);
+		lines++;
+		if(!(lines%LINES_PER_YIELD))	/* release time-slices every x lines */
+			mswait(1);
 	}
     if(msg->hdr.auxattr&MSG_FILEATTACH) { 
 	    sockprintf(socket,"");
@@ -496,6 +499,7 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
     }
     sockprintf(socket,".");	/* End of text */
     if(boundary) FREE(boundary);
+	return(lines);
 }
 
 static u_long resolve_ip(char *addr)
@@ -927,9 +931,9 @@ static void pop3_thread(void* arg)
 					usermailaddr(&scfg,fromaddr,msg.from);	/* unresolved exception here Nov-06-2000 */
 				lprintf("%04d POP3 sending message text (%u bytes)"
 					,socket,strlen(msgtxt));
-				sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
+				lines=sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
-				lprintf("%04d POP3 message transfer complete",socket);
+				lprintf("%04d POP3 message transfer complete (%lu lines)",socket,lines);
 
 				msg.hdr.attr|=MSG_READ;
 				msg.idx.attr=msg.hdr.attr;
@@ -1120,6 +1124,7 @@ static void smtp_thread(void* arg)
 	ushort		nettype=NET_NONE;
 	uint		usernum;
 	ulong		crc;
+	ulong		lines=0;
 	ulong		length;
 	ulong		offset;
 	BOOL		esmtp=FALSE;
@@ -1334,7 +1339,8 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 
-				lprintf("%04d SMTP End of message (%lu bytes)", socket, ftell(msgtxt));
+				lprintf("%04d SMTP End of message (%lu lines, %lu bytes)"
+					, socket, lines, ftell(msgtxt));
 
 				if(telegram==TRUE) {		/* Telegram */
 					const char* head="\1n\1h\1cInstant Message\1n from \1h\1y";
@@ -1606,6 +1612,7 @@ static void smtp_thread(void* arg)
 			}
 			if(buf[0]==0 && state==SMTP_STATE_DATA_HEADER) {	
 				state=SMTP_STATE_DATA_BODY;	/* Null line separates header and body */
+				lines=0;
 				continue;
 			}
 			if(state==SMTP_STATE_DATA_BODY) {
@@ -1613,7 +1620,9 @@ static void smtp_thread(void* arg)
 				if(*p=='.') p++;	/* Transparency (RFC821 4.5.2) */
 				if(msgtxt!=NULL) 
 					fprintf(msgtxt, "%s\r\n", p);
-				mswait(1);
+				lines++;
+				if(!(lines%LINES_PER_YIELD))		/* release time-slices every x lines */
+					mswait(1);
 				continue;
 			}
 			/* RFC822 Header parsing */
@@ -1850,6 +1859,11 @@ static void smtp_thread(void* arg)
 				break;
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
+
+			/* Update client display */
+			client.user=reverse_path;
+			client_on(socket,&client);
+
 			sockprintf(socket,SMTP_OK);
 			state=SMTP_STATE_MAIL_FROM;
 			cmd=SMTP_CMD_MAIL;
@@ -2298,6 +2312,7 @@ static void sendmail_thread(void* arg)
 	ulong		total_msgs;
 	ulong		ip_addr;
 	ulong		dns;
+	ulong		lines;
 	BOOL		success;
 	SOCKET		sock=INVALID_SOCKET;
 	SOCKADDR_IN	addr;
@@ -2564,13 +2579,13 @@ static void sendmail_thread(void* arg)
 			}
 			lprintf("%04d SEND sending message text (%u bytes)"
 				,sock, strlen(msgtxt));
-			sockmsgtxt(sock,&msg,msgtxt,fromaddr,-1);
+			lines=sockmsgtxt(sock,&msg,msgtxt,fromaddr,-1);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				sprintf(err,"%s replied with '%s' instead of 250",server,buf);
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			lprintf("%04d SEND message transfer complete", sock);
+			lprintf("%04d SEND message transfer complete (%lu lines)", sock, lines);
 
 			msg.hdr.attr|=MSG_DELETE;
 			msg.idx.attr=msg.hdr.attr;
