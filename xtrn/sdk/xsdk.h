@@ -59,11 +59,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <malloc.h>
+#ifndef __FreeBSD__		/* FreeBSD uses stdlib.h for malloc() */
+	#include <malloc.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define GLOBAL extern	/* turns XSDKVAR.C into a header file */
+#define GLOBAL extern	/* turns XSDKVARS.C into a header file */
 #include "xsdkinet.h"
 #include "xsdkwrap.h"
 #include "xsdkvars.c"
