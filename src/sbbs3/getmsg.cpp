@@ -309,7 +309,7 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 /****************************************************************************/
 /* Returns total number of posts in a sub-board 							*/
 /****************************************************************************/
-ulong getposts(scfg_t* cfg, uint subnum)
+ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
 {
 	char str[128];
 	ulong l;
