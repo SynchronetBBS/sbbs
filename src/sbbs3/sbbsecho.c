@@ -4170,11 +4170,13 @@ int main(int argc, char **argv)
 			printf("\7ERROR line %d opening %s\n",__LINE__,packet);
 			logprintf("ERROR line %d opening %s %s",__LINE__,packet
 				,sys_errlist[errno]);
-			continue; }
+			continue; 
+		}
 		if(filelength(fmsg)<sizeof(pkthdr_t)) {
 			printf("\7Invalid length of %lu bytes\n",filelength(fmsg));
 			fclose(fidomsg);
-			continue; }
+			continue; 
+		}
 
 		fseek(fidomsg,-2L,SEEK_END);
 		fread(str,2,1,fidomsg);
@@ -4184,14 +4186,16 @@ int main(int argc, char **argv)
 			printf("\7ERROR packet %s not terminated correctly\n",packet);
 			logprintf("ERROR line %d packet %s not terminated correctly",__LINE__
 				,packet);
-			continue; }
+			continue; 
+		}
 		fseek(fidomsg,0L,SEEK_SET);
 		if(fread(&pkthdr,sizeof(pkthdr_t),1,fidomsg)!=1) {
 			fclose(fidomsg);
 			printf("\7ERROR reading %u bytes\n",sizeof(pkthdr_t));
 			logprintf("ERROR line %d reading %u bytes from %s",__LINE__
 				,sizeof(pkthdr_t),packet);
-			continue; }
+			continue; 
+		}
 
 		pkt_faddr.zone=pkthdr.origzone ? pkthdr.origzone:sys_faddr.zone;
 		pkt_faddr.net=pkthdr.orignet;
@@ -4210,7 +4214,8 @@ int main(int argc, char **argv)
 			printf("(Type 2+)");
 			if(cfg.log&LOG_PACKETS)
 				logprintf("Importing %s%s (Type 2+) from %s"
-					,secure ? "(secure) ":"",packet+offset,faddrtoa(&pkt_faddr,NULL)); }
+					,secure ? "(secure) ":"",packet+offset,faddrtoa(&pkt_faddr,NULL)); 
+		}
 		else if(pkthdr.baud==2) {				/* Type 2.2 Packet Header */
 			pkt_type=PKT_TWO_TWO;
 			memcpy(&two_two,&pkthdr.empty,20);
@@ -4218,13 +4223,15 @@ int main(int argc, char **argv)
 			printf("(Type 2.2)");
 			if(cfg.log&LOG_PACKETS)
 				logprintf("Importing %s%s (Type 2.2) from %s"
-					,secure ? "(secure) ":"",packet+offset,faddrtoa(&pkt_faddr,NULL)); }
+					,secure ? "(secure) ":"",packet+offset,faddrtoa(&pkt_faddr,NULL)); 
+		}
 		else {
 			pkt_type=PKT_TWO;
 			printf("(Type 2)");
 			if(cfg.log&LOG_PACKETS)
 				logprintf("Importing %s%s (Type 2) from %s"
-					,secure ? "(secure) ":"",packet+offset,faddrtoa(&pkt_faddr,NULL)); }
+					,secure ? "(secure) ":"",packet+offset,faddrtoa(&pkt_faddr,NULL)); 
+		}
 
 		printf(" from %s\n",faddrtoa(&pkt_faddr,NULL));
 
@@ -4241,7 +4248,9 @@ int main(int argc, char **argv)
 				if(cfg.log&LOG_SECURITY)
 					logprintf(str);
 				fclose(fidomsg);
-				continue; } }
+				continue; 
+			} 
+		}
 
 		while(!feof(fidomsg)) {
 
@@ -4253,7 +4262,8 @@ int main(int argc, char **argv)
 
 			if(fmsgbuf) {
 				FREE(fmsgbuf);
-				fmsgbuf=0; }
+				fmsgbuf=0; 
+			}
 			if(!fread(&ch,1,1,fidomsg)) 		 /* Message type (0200h) */
 				break;
 			if(ch!=02)
@@ -4306,7 +4316,8 @@ int main(int argc, char **argv)
 					logprintf("Grunged message");
 				seektonull(fidomsg);
 				printf("Grunged message!\n");
-				continue; }
+				continue; 
+			}
 
 			if(i)
 				fseek(fidomsg,(long)-(i+1),SEEK_CUR);
@@ -4320,14 +4331,16 @@ int main(int argc, char **argv)
 				if(import_netmail("",hdr,fidomsg))
 					seektonull(fidomsg);
 				printf("\n");
-				continue; }
+				continue; 
+			}
 
 			if(!(misc&IMPORT_ECHOMAIL)) {
 				start_tick=0;
 				printf("EchoMail Ignored");
 				seektonull(fidomsg);
 				printf("\n");
-				continue; }
+				continue; 
+			}
 
 			p+=5;								/* Skip "AREA:" */
 			while(*p && *p<=SP) p++;			/* Skip any white space */
@@ -4344,7 +4357,8 @@ int main(int argc, char **argv)
 						printf("(Passthru) ");
 					fmsgbuf=getfmsg(fidomsg,NULL);
 					gen_psb(&msg_seen,&msg_path,fmsgbuf,pkthdr.destzone);
-					break; }
+					break; 
+				}
 
 			if(i==cfg.areas) {
 				printf("(Unknown) ");
@@ -4355,12 +4369,15 @@ int main(int argc, char **argv)
 					else
 						printf("(Passthru) ");
 					fmsgbuf=getfmsg(fidomsg,NULL);
-					gen_psb(&msg_seen,&msg_path,fmsgbuf,pkthdr.destzone); }
+					gen_psb(&msg_seen,&msg_path,fmsgbuf,pkthdr.destzone); 
+				}
 				else {
 					start_tick=0;
 					printf("Skipped\n");
 					seektonull(fidomsg);
-					continue; } }
+					continue; 
+				} 
+			}
 
 			if(misc&SECURE && cfg.area[i].sub!=INVALID_SUB) {
 				for(j=0;j<cfg.area[i].uplinks;j++)
@@ -4372,7 +4389,9 @@ int main(int argc, char **argv)
 							,areatagstr,faddrtoa(&pkt_faddr,NULL));
 					printf("Security Violation (Not in AREAS.BBS)\n");
 					seektonull(fidomsg);
-					continue; } }
+					continue; 
+				} 
+			}
 
 			/* From here on out, i = area number and area[i].sub = sub number */
 
@@ -4384,7 +4403,8 @@ int main(int argc, char **argv)
 				strip_psb(fmsgbuf);
 				pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen,msg_path,0);
 				printf("\n");
-				continue; } 						/* On to the next message */
+				continue; 
+			} 						/* On to the next message */
 
 
 			for(j=0;j<scfg.total_faddrs;j++)
@@ -4400,7 +4420,8 @@ int main(int argc, char **argv)
 				strip_psb(fmsgbuf);
 				pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen,msg_path,0);
 				printf("\n");
-				continue; }
+				continue; 
+			}
 
 			for(j=0;j<MAX_OPEN_SMBS;j++)
 				if(subnum[j]==cfg.area[i].sub)
@@ -4411,7 +4432,8 @@ int main(int argc, char **argv)
 				if(smb[cur_smb].shd_fp) 		/* If open */
 					cur_smb=!cur_smb;			/* toggle between 0 and 1 */
 				smb_close(&smb[cur_smb]);		/* close, if open */
-				subnum[cur_smb]=INVALID_SUB; }	/* reset subnum (just incase) */
+				subnum[cur_smb]=INVALID_SUB; 	/* reset subnum (just incase) */
+			}
 
 			if(smb[cur_smb].shd_fp==NULL) { 	/* Currently closed */
 				sprintf(smb[cur_smb].file,"%s%s",scfg.sub[cfg.area[i].sub]->data_dir
@@ -4426,7 +4448,8 @@ int main(int argc, char **argv)
 					pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen
 						,msg_path,0);
 					printf("\n");
-					continue; }
+					continue; 
+				}
 				if(!filelength(fileno(smb[cur_smb].shd_fp))) {
 					smb[cur_smb].status.max_crcs=scfg.sub[cfg.area[i].sub]->maxcrcs;
 					smb[cur_smb].status.max_msgs=scfg.sub[cfg.area[i].sub]->maxmsgs;
@@ -4442,10 +4465,12 @@ int main(int argc, char **argv)
 						pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen
 							,msg_path,0);
 						printf("\n");
-						continue; } }
+						continue; 
+					} 
+				}
 
 				subnum[cur_smb]=cfg.area[i].sub;
-				}
+			}
 
 			if(hdr.attr&FIDO_PRIVATE && !(scfg.sub[cfg.area[i].sub]->misc&SUB_PRIV)) {
 				if(misc&IMPORT_PRIVATE)
@@ -4460,7 +4485,9 @@ int main(int argc, char **argv)
 					pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen
 						,msg_path,0);
 					printf("\n");
-					continue; } }
+					continue; 
+				} 
+			}
 
 			if(!(hdr.attr&FIDO_PRIVATE) && scfg.sub[cfg.area[i].sub]->misc&SUB_PONLY)
 				hdr.attr|=MSG_PRIVATE;
@@ -4472,16 +4499,19 @@ int main(int argc, char **argv)
 
 			if(start_tick) {
 				import_ticks+=clock()-start_tick;
-				start_tick=0; }
+				start_tick=0; 
+			}
 
 			if(j==-1) {
 				if(cfg.log&LOG_DUPES)
 					logprintf("%s Duplicate message",areatagstr);
-				cfg.area[i].dupes++; }
+				cfg.area[i].dupes++; 
+			}
 			else {	   /* Not a dupe */
 				strip_psb(fmsgbuf);
 				pkt_to_pkt(fmsgbuf,curarea,pkt_faddr
-					,hdr,msg_seen,msg_path,0); }
+					,hdr,msg_seen,msg_path,0); 
+			}
 
 			if(j==1) {		/* Successful import */
 				echomail++;
@@ -4493,9 +4523,11 @@ int main(int argc, char **argv)
 						,hdr.from
 						,scfg.grp[scfg.sub[cfg.area[i].sub]->grp]->sname
 						,scfg.sub[cfg.area[i].sub]->sname);
-					putsmsg(&scfg,m,str); } }
-			printf("\n");
+					putsmsg(&scfg,m,str); 
+				} 
 			}
+			printf("\n");
+		}
 		fclose(fidomsg);
 
 		if(misc&DELETE_PACKETS)
@@ -4507,7 +4539,8 @@ int main(int argc, char **argv)
 
 	if(start_tick) {
 		import_ticks+=clock()-start_tick;
-		start_tick=0; }
+		start_tick=0; 
+	}
 
 	} while(!kbhit() && unpack_bundle());
 
