@@ -1286,7 +1286,7 @@ void DLLCALL subtract_cdt(scfg_t* cfg, user_t* user, long amt)
 		user->cdt=adjustuserrec(cfg, user->number,U_CDT,10,-amt);
 }
 
-BOOL DLLCALL logoffuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
+BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 {
 	char str[128];
 	struct tm* tm, tm_now;

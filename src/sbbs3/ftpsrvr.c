@@ -4004,7 +4004,7 @@ static void ctrl_thread(void* arg)
 
 	/* Update User Statistics */
 	if(user.number) 
-		logoffuserdat(&scfg, &user, time(NULL), logintime);
+		logoutuserdat(&scfg, &user, time(NULL), logintime);
 
 	if(user.number)
 		lprintf("%04d %s logged off.",sock,user.alias);
