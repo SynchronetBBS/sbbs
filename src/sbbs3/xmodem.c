@@ -238,7 +238,7 @@ void xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned 
 /* Gets an acknowledgement - usually after sending a block	*/
 /* Returns 1 if ack received, 0 otherwise.					*/
 /************************************************************/
-int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
+BOOL xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 {
 	int i,can=0;
 	unsigned errors;
@@ -246,20 +246,20 @@ int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 	for(errors=0;errors<tries;errors++) {
 
 		if((*xm->mode)&GMODE) {		/* Don't wait for ACK on Ymodem-G */
-			YIELD();
+			SLEEP(xm->g_delay);
 			if(getcom(0)==CAN) {
 				lprintf(xm,LOG_WARNING,"\nBlock %u: !Cancelled remotely", block_num);
 				xmodem_cancel(xm);
 				bail(1); 
 			}
-			return(1); 
+			return(TRUE); 
 		}
 
 		i=getcom(xm->ack_timeout);
 		if(can && i!=CAN)
 			can=0;
 		if(i==ACK)
-			return(1);
+			return(TRUE);
 		if(i==CAN) {
 			if(can) {
 				lprintf(xm,LOG_WARNING,"\nBlock %u: !Cancelled remotely", block_num);
@@ -272,11 +272,11 @@ int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			lprintf(xm,LOG_WARNING,"\nBlock %u: !Received %s  Expected ACK"
 				,block_num, chr((uchar)i));
 			if(i!=CAN)
-				return(0); 
+				return(FALSE); 
 		} 
 	}
 
-	return(0);
+	return(FALSE);
 }
 
 const char* xmodem_source(void)
@@ -304,6 +304,7 @@ void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 	xm->ack_timeout=10;		/* seconds */
 	xm->block_size=1024;
 	xm->max_errors=10;
+	xm->g_delay=1;
 
 	xm->cbdata=cbdata;
 	xm->mode=mode;
