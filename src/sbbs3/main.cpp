@@ -1549,24 +1549,19 @@ void event_thread(void* arg)
 			for(i=0;i<sbbs->cfg.total_events;i++) {
 				sbbs->cfg.event[i]->last=0;
 				if(filelength(file)<(long)(sizeof(time_t)*(i+1))) {
-					eprintf(LOG_WARNING,"Initializing last run time for event: %s (to 0x%08lx)"
-						,sbbs->cfg.event[i]->code
-						,sbbs->cfg.event[i]->last);
+					eprintf(LOG_WARNING,"Initializing last run time for event: %s"
+						,sbbs->cfg.event[i]->code);
 					write(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
 				} else {
 					if(read(file,&sbbs->cfg.event[i]->last,sizeof(time_t))!=sizeof(time_t))
 						sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time_t));
-					else
-						eprintf(LOG_DEBUG,"%s event last run: %s (0x%08lx)"
-								,sbbs->cfg.event[i]->code
-								,timestr(&sbbs->cfg, &sbbs->cfg.event[i]->last, str)
-								,sbbs->cfg.event[i]->last);
 				}
 				/* Event always runs after initialization? */
 				if(sbbs->cfg.event[i]->misc&EVENT_INIT)
 					sbbs->cfg.event[i]->last=-1;
 			}
-			read(file,&lastprepack,sizeof(time_t));
+			if(read(file,&lastprepack,sizeof(time_t))!=sizeof(time_t))
+				sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time_t));
 			close(file);
 
 			// Read QNET.DAB
@@ -1577,10 +1572,14 @@ void event_thread(void* arg)
 			}
 			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
 				sbbs->cfg.qhub[i]->last=0;
-				if(filelength(file)<(long)(sizeof(time_t)*(i+1)))
+				if(filelength(file)<(long)(sizeof(time_t)*(i+1))) {
+					eprintf(LOG_WARNING,"Initializing last call-out time for QWKnet hub: %s"
+						,sbbs->cfg.qhub[i]->id);
 					write(file,&sbbs->cfg.qhub[i]->last,sizeof(time_t));
-				else
-					read(file,&sbbs->cfg.qhub[i]->last,sizeof(time_t)); 
+				} else {
+					if(read(file,&sbbs->cfg.qhub[i]->last,sizeof(time_t))!=sizeof(time_t))
+						sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time_t));
+				}
 			}
 			close(file);
 
