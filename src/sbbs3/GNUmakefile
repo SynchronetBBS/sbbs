@@ -122,6 +122,13 @@ $(EXEODIR)/%.o : %.c
    endif
 	@$(CC) $(CFLAGS) -o $@ -c $<
 
+# Implicit C++ Compile Rule for utils
+$(EXEODIR)/%.o : %.cpp
+   ifndef bcc
+	@echo Compiling $<
+   endif
+	@$(CC) $(CFLAGS) -o $@ -c $<
+
 # Implicit C Compile Rule for SBBS
 $(LIBODIR)/%.o : %.c
    ifndef bcc
