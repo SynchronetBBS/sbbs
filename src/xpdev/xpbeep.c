@@ -33,10 +33,12 @@ void makesine(double freq, unsigned char *wave, int samples)
 	int	i;
 	int j;
 	int k;
+	int midpoint;
 	double inc;
 	BOOL endhigh;
 	BOOL starthigh;
 
+	midpoint=samples/2;
 	inc=8.0*atan(1.0);
 	inc *= ((double)freq / (double)S_RATE);
 
@@ -47,74 +49,80 @@ void makesine(double freq, unsigned char *wave, int samples)
 	/* Now we have a "perfect" sine wave... 
 	 * we must clean it up now to avoid click/pop
 	 */
-	if(wave[samples-1]>127)
+	if(wave[samples-1]>128)
 		endhigh=TRUE;
 	else
 		endhigh=FALSE;
 	/* Completely remove the last wave fragment */
-	for(i=samples-1;i>0;i--) {
-		if(endhigh && wave[i]<=127)
-			break;
-		if(!endhigh && wave[i]>=127)
-			break;
-		wave[i]=127;
+	i=samples-1;
+	if(wave[i]!=128) {
+		for(;i>midpoint;i--) {
+			if(endhigh && wave[i]<128)
+				break;
+			if(!endhigh && wave[i]>128)
+				break;
+			wave[i]=128;
+		}
 	}
 	/* Fade out */
-	for(k=10;k>1;k--) {
-		for(;i>0;i--) {
-			if(!endhigh && wave[i]<=127)
+	for(k=4;k>0;k--) {
+		for(;i>midpoint;i--) {
+			if(!endhigh && wave[i]<128)
 				break;
-			if(endhigh && wave[i]>=127)
+			if(endhigh && wave[i]>128)
 				break;
 			j=wave[i];
 			j-=128;
-			j/=k;
+			j/=1<<k;
 			wave[i]=j+128;
 		}
-		for(;i>0;i--) {
-			if(endhigh && wave[i]<=127)
+		for(;i>midpoint;i--) {
+			if(endhigh && wave[i]<128)
 				break;
-			if(!endhigh && wave[i]>=127)
+			if(!endhigh && wave[i]>128)
 				break;
 			j=wave[i];
 			j-=128;
-			j/=k;
+			j/=1<<k;
 			wave[i]=j+128;
 		}
 	}
 
-	if(wave[0]>127)
+	if(wave[0]>128)
 		starthigh=TRUE;
 	else
 		starthigh=FALSE;
 	/* Completely remove the first wave fragment */
-	for(i=0;i<samples;i++) {
-		if(starthigh && wave[i]<=127)
-			break;
-		if(!starthigh && wave[i]>=127)
-			break;
-		wave[i]=127;
+	i=0;
+	if(wave[i]!=128) {
+		for(;i<midpoint;i++) {
+			if(starthigh && wave[i]<128)
+				break;
+			if(!starthigh && wave[i]>128)
+				break;
+			wave[i]=128;
+		}
 	}
 	/* Fade in */
-	for(k=10;k>1;k--) {
-		for(;i<samples;i--) {
-			if(!starthigh && wave[i]<=127)
+	for(k=4;k>0;k--) {
+		for(;i<midpoint;i++) {
+			if(!starthigh && wave[i]<128)
 				break;
-			if(starthigh && wave[i]>=127)
+			if(starthigh && wave[i]>128)
 				break;
 			j=wave[i];
 			j-=128;
-			j/=k;
+			j/=1<<k;
 			wave[i]=j+128;
 		}
-		for(;i<samples;i--) {
-			if(starthigh && wave[i]<=127)
+		for(;i<midpoint;i++) {
+			if(starthigh && wave[i]<=128)
 				break;
-			if(!starthigh && wave[i]>=127)
+			if(!starthigh && wave[i]>=128)
 				break;
 			j=wave[i];
 			j-=128;
-			j/=k;
+			j/=1<<k;
 			wave[i]=j+128;
 		}
 	}
