@@ -425,7 +425,6 @@ option to No.
 					,cfg.sec_hangup);
 				sprintf(tmp,"$%d.00",cfg.node_dollars_per_call);
 				sprintf(opt[i++],"%-27.27s%.40s","Daily Event",cfg.node_daily);
-				sprintf(opt[i++],"%-27.27s%.40s","Control Directory",cfg.ctrl_dir);
 				sprintf(opt[i++],"%-27.27s%.40s","Text Directory",cfg.text_dir);
 				opt[i][0]=0;
 				uifc.savnum=0;
@@ -534,21 +533,6 @@ Remember: The %! command line specifier is an abreviation for your
 							,cfg.node_daily,50,K_EDIT);
 						break;
 					case 6:
-SETHELP(WHERE);
-/*
-Control Directory:
-
-Your control directory contains important configuration and data files
-that ALL nodes share. This directory MUST NOT be located on a RAM disk
-or other volatile media.
-
-This option allows you to change the location of your control directory.
-The \CTRL\ suffix (sub-directory) cannot be changed or removed.
-*/
-						uifc.input(WIN_MID|WIN_SAV,0,9,"Control Directory"
-							,cfg.ctrl_dir,50,K_EDIT);
-						break;
-					case 7:
 SETHELP(WHERE);
 /*
 Text Directory:
