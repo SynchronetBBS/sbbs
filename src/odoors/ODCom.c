@@ -69,6 +69,7 @@
 #include <termios.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/socket.h>
 #endif
 #include "ODCore.h"
 #include "ODGen.h"
@@ -111,6 +112,15 @@
 /* Serial I/O mechanisms supported inder *nix version */
 #ifdef ODPLAT_NIX
 #define INCLUDE_STDIO_COM
+#define INCLUDE_SOCKET_COM                          /* TCP/IP socket I/O.    */
+
+/* Win32 Compat. Stuff */
+#define SOCKET	int
+#define WSAEWOULDBLOCK	EAGAIN
+#define SOCKET_ERROR -1
+#define WSAGetLastError() errno
+#define ioctlsocket	ioctl
+#define closesocket	close
 #endif /* ODPLAT_NIX */
 
 /* Include "windows.h" for Win32-API based serial I/O. */
@@ -2767,7 +2777,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 					break;
 				if(WSAGetLastError() != WSAEWOULDBLOCK)
 					return (kODRCGeneralFailure);
-				Sleep(50);
+				od_sleep(50);
 			} while (bWait);
 
 			if (recv_ret == 0)
@@ -2951,7 +2961,7 @@ keep_going:
 			do {
 				send_ret = send(pPortInfo->socket, &btToSend, 1, 0);
 				if (send_ret != 1)
-					Sleep(50);
+					od_sleep(50);
 			} while ((send_ret == SOCKET_ERROR) && (WSAGetLastError() == WSAEWOULDBLOCK));
 
 			if (send_ret == SOCKET_ERROR)
@@ -3436,7 +3446,7 @@ try_again:
 				send_ret = send(pPortInfo->socket, pbtBuffer, nSize, 0);
 				if (send_ret != SOCKET_ERROR)
 					break;
-				Sleep(25);
+				od_sleep(25);
 			} while (WSAGetLastError() == WSAEWOULDBLOCK);
 
 			if (send_ret != nSize)
