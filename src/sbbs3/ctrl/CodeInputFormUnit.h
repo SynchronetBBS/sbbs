@@ -55,7 +55,7 @@ __published:
 	TButton *CancelBtn;
 	TBevel *Bevel1;
 	TLabel *Label;
-	TEdit *Edit;
+    TComboBox *ComboBox;
 	void __fastcall FormShow(TObject *Sender);
 private:
 public:

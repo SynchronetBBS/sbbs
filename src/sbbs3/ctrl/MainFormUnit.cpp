@@ -1867,12 +1867,15 @@ void __fastcall TMainForm::ForceTimedEventMenuItemClick(TObject *Sender)
 
 	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
 	CodeInputForm->Label->Caption="Event Internal Code";
-    if(cfg.total_events)
-    	CodeInputForm->Edit->Text=AnsiString(cfg.event[0]->code);
+    CodeInputForm->ComboBox->Items->Clear();
+    for(i=0;i<cfg.total_events;i++)
+    	CodeInputForm->ComboBox->Items->Add(
+            AnsiString(cfg.event[i]->code).UpperCase());
+    CodeInputForm->ComboBox->ItemIndex=0;
     if(CodeInputForm->ShowModal()==mrOk
-       	&& CodeInputForm->Edit->Text.Length()) {
+       	&& CodeInputForm->ComboBox->Text.Length()) {
         for(i=0;i<cfg.total_events;i++) {
-			if(!stricmp(CodeInputForm->Edit->Text.c_str(),cfg.event[i]->code)) {
+			if(!stricmp(CodeInputForm->ComboBox->Text.c_str(),cfg.event[i]->code)) {
 				sprintf(str,"%s%s.now",cfg.data_dir,cfg.event[i]->code);
             	if((file=_sopen(str,O_CREAT|O_TRUNC|O_WRONLY
 	                ,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
@@ -1881,8 +1884,8 @@ void __fastcall TMainForm::ForceTimedEventMenuItemClick(TObject *Sender)
 	   		}
         }
         if(i>=cfg.total_events)
-	    	Application->MessageBox("Event Code Not Found"
-	        	,CodeInputForm->Edit->Text.c_str(),MB_OK|MB_ICONEXCLAMATION);
+	    	Application->MessageBox(CodeInputForm->ComboBox->Text.c_str()
+                ,"Event Code Not Found",MB_OK|MB_ICONEXCLAMATION);
     }
     delete CodeInputForm;
 }
@@ -1896,12 +1899,15 @@ void __fastcall TMainForm::ForceNetworkCalloutMenuItemClick(
 
 	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
 	CodeInputForm->Label->Caption="Hub QWK-ID";
-    if(cfg.total_qhubs)
-    	CodeInputForm->Edit->Text=AnsiString(cfg.qhub[0]->id);
+    CodeInputForm->ComboBox->Items->Clear();
+    for(i=0;i<cfg.total_qhubs;i++)
+    	CodeInputForm->ComboBox->Items->Add(
+            AnsiString(cfg.qhub[i]->id).UpperCase());
+    CodeInputForm->ComboBox->ItemIndex=0;            
     if(CodeInputForm->ShowModal()==mrOk
-    	&& CodeInputForm->Edit->Text.Length()) {
+    	&& CodeInputForm->ComboBox->Text.Length()) {
         for(i=0;i<cfg.total_qhubs;i++) {
-			if(!stricmp(CodeInputForm->Edit->Text.c_str(),cfg.qhub[i]->id)) {
+			if(!stricmp(CodeInputForm->ComboBox->Text.c_str(),cfg.qhub[i]->id)) {
 				sprintf(str,"%sqnet/%s.now",cfg.data_dir,cfg.qhub[i]->id);
             	if((file=_sopen(str,O_CREAT|O_TRUNC|O_WRONLY
                 	,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
@@ -1910,8 +1916,8 @@ void __fastcall TMainForm::ForceNetworkCalloutMenuItemClick(
 	   		}
         }
         if(i>=cfg.total_qhubs)
-	    	Application->MessageBox("QWKnet Hub ID Not Found"
-	        	,CodeInputForm->Edit->Text.c_str(),MB_OK|MB_ICONEXCLAMATION);
+	    	Application->MessageBox(CodeInputForm->ComboBox->Text.c_str()
+                ,"QWKnet Hub ID Not Found",MB_OK|MB_ICONEXCLAMATION);
     }
     delete CodeInputForm;
 }
@@ -2102,9 +2108,10 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
     if(((TMenuItem*)Sender)->Tag==-1) {
     	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
     	CodeInputForm->Label->Caption="Date";
-       	CodeInputForm->Edit->Text=AnsiString(unixtodstr(&cfg,time(NULL),str));
+        CodeInputForm->ComboBox->Items->Clear();
+       	CodeInputForm->ComboBox->Text=AnsiString(unixtodstr(&cfg,time(NULL),str));
         mr=CodeInputForm->ShowModal();
-        t=dstrtounix(&cfg,CodeInputForm->Edit->Text.c_str());
+        t=dstrtounix(&cfg,CodeInputForm->ComboBox->Text.c_str());
         delete CodeInputForm;
         if(mr!=mrOk)
             return;

@@ -51,12 +51,12 @@ object CodeInputForm: TCodeInputForm
     ModalResult = 2
     TabOrder = 1
   end
-  object Edit: TEdit
-    Left = 153
+  object ComboBox: TComboBox
+    Left = 152
     Top = 32
-    Width = 120
+    Width = 121
     Height = 24
-    CharCase = ecUpperCase
+    ItemHeight = 16
     TabOrder = 2
   end
 end
