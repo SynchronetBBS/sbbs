@@ -279,9 +279,8 @@ int recv_byte(void* unused, unsigned timeout)
 		if(stdio)
 			i=read(STDIN_FILENO,&ch,sizeof(ch));
 		else
-#else
-			i=recv(sock,&ch,sizeof(ch),0);
 #endif
+			i=recv(sock,&ch,sizeof(ch),0);
 
 		if(i!=sizeof(ch)) {
 			if(i==0)
