@@ -827,7 +827,7 @@ int main(int argc, char** argv)
 		switch(toupper(*(arg++))) {
 #ifdef __unix__
 				case 'D': /* Run as daemon */
-					is_daemon=true;
+					is_daemon=TRUE;
 					SAFECOPY(daemon_type,arg++);
 				break;
 #endif
