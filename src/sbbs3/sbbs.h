@@ -711,6 +711,8 @@ extern "C" {
 	/* load_cfg.C */
 
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[]);
+	DLLEXPORT void		DLLCALL free_cfg(scfg_t* cfg);
+	DLLEXPORT void		DLLCALL free_text(char* text[]);
 
 	/* date_str.c */
 
