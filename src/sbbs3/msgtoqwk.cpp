@@ -179,7 +179,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		if((uchar)ch==0xE3)					/* funky char */
 			ch='*';
 
-		if(ch==1) {  /* ctrl-a */
+		if(ch==CTRL_A) {
 			ch=buf[++l];
 			if(!ch)
 				break;
