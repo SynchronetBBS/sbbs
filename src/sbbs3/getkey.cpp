@@ -270,9 +270,10 @@ char sbbs_t::getkey(long mode)
 			
 		if(online==ON_REMOTE && !(console&CON_NO_INACT)
 			&& now-timeout>=cfg.sec_warn) { 					/* warning */
-			if(sys_status&SS_USERON) {
+			if(sys_status&SS_USERON && cfg.sec_warn!=cfg.sec_hangup) {
 				SAVELINE;
-				bputs(text[AreYouThere]); }
+				bputs(text[AreYouThere]); 
+			}
 			else
 				bputs("\7\7");
 			while(!inkey(0) && online && now-timeout>=cfg.sec_warn) {
@@ -280,16 +281,21 @@ char sbbs_t::getkey(long mode)
 				if(now-timeout>=cfg.sec_hangup) {
 					if(online==ON_REMOTE) {
 						console|=CON_R_ECHO;
-						console&=~CON_R_ECHOX; }
+						console&=~CON_R_ECHOX; 
+					}
 					bputs(text[CallBackWhenYoureThere]);
 					logline(nulstr,"Inactive");
 					hangup();
-					return(0); }
-				mswait(100); }
-			if(sys_status&SS_USERON) {
+					return(0); 
+				}
+				mswait(100); 
+			}
+			if(sys_status&SS_USERON && cfg.sec_warn!=cfg.sec_hangup) {
 				bputs("\r\1n\1>");
-				RESTORELINE; }
-			timeout=now; }
+				RESTORELINE; 
+			}
+			timeout=now; 
+		}
 
 		} while(online);
 	return(0);
