@@ -21,7 +21,9 @@ static void getkey(void);
 static void sem_test_thread(void* arg);
 static void sleep_test_thread(void* arg);
 static void sopen_test_thread(void* arg);
+static void sopen_child_thread(void* arg);
 static void lock_test_thread(void* arg);
+
 
 typedef struct {
 	sem_t parent_sem;
@@ -51,6 +53,17 @@ int main()
 	printf("%-15s: %s\n","Version",os_version(str));
 	printf("%-15s: %s\n","Compiler"	,compiler);
 	printf("%-15s: %d\n","Random Number",xp_random(1000));
+
+	for(i=0;i<3;i++) {
+		if(_beginthread(
+			  sopen_child_thread	/* entry point */
+			 ,0  					/* stack size (0=auto) */
+			 ,(void*)i				/* data */
+			 )==(unsigned long)-1)
+			printf("_beginthread failed\n");
+		else
+			SLEEP(1);
+	}
 
 	/* Exclusive sopen test */
 	printf("\nsopen() test\n");
@@ -277,4 +290,19 @@ static void sopen_test_thread(void* arg)
 
 	if(fd!=-1)
 		close(fd);
+}
+
+static void sopen_child_thread(void* arg)
+{
+	int fd;
+
+	if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYWR))!=-1) {
+		if(arg)
+			printf("!FAILURE: was able to reopen in child thread\n");
+		else {
+			SLEEP(5000);
+			close(fd);
+		}
+	} else if(arg==0)
+		perror(LOCK_FNAME);
 }
