@@ -78,6 +78,12 @@
 #  DIRSEP			- The directory seperator this system likes most		#
 #  VERSION			- Synchronet version number in MAJOR.MINOR format		#
 #					  (Numeric ONLY)										#
+#  OUTPUT			- Compiler flag specifying output filename				#
+#  LOUTPUT			- Linker flag specifying output filename				#
+#  XPDEV_SRC		- Path to xpdev											#
+#  UIFC_SRC			- Path to uifc											#
+#  CIOLIB_SRC		- Path to ciolib										#
+#  SMBLIB_SRC		- Path to smblib										#
 #																			#
 # Common Targets Defined:													#
 #  Implicit C and C++ targets												#
@@ -158,9 +164,15 @@ BUILDPATH	=	debug
 BUILDPATH	=	release
 !endif
 
-LIBODIR :=	$(CCPRE).win32.lib.$(BUILDPATH)
-OBJODIR :=	$(CCPRE).win32.obj.$(BUILDPATH)$(OBJPATH_SUFFIX)
-EXEODIR :=	$(CCPRE).win32.exe.$(BUILDPATH)
+LIBODIR =	$(CCPRE).win32.lib.$(BUILDPATH)
+OBJODIR =	$(CCPRE).win32.obj.$(BUILDPATH)$(OBJPATH_SUFFIX)
+EXEODIR =	$(CCPRE).win32.exe.$(BUILDPATH)
+
+# Paths
+XPDEV_SRC	=	$(SRC_ROOT)$(DIRSEP)xpdev
+CIOLIB_SRC	=	$(SRC_ROOT)$(DIRSEP)conio
+SMBLIB_SRC	=	$(SRC_ROOT)$(DIRSEP)smblib
+UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
 !include targets.mk
 !include $(SRC_ROOT)/build/rules.mk

@@ -80,6 +80,10 @@
 #					  (Numeric ONLY)										#
 #  OUTPUT			- Compiler flag specifying output filename				#
 #  LOUTPUT			- Linker flag specifying output filename				#
+#  XPDEV_SRC		- Path to xpdev											#
+#  UIFC_SRC			- Path to uifc											#
+#  CIOLIB_SRC		- Path to ciolib										#
+#  SMBLIB_SRC		- Path to smblib										#
 #																			#
 # Common Targets Defined:													#
 #  Implicit C and C++ targets												#
@@ -207,6 +211,12 @@ ifeq ($(os),darwin)
  CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
  LDFLAGS +=  -lm
 endif
+
+# Paths
+XPDEV_SRC	:=	$(SRC_ROOT)$(DIRSEP)xpdev
+CIOLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)conio
+SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
+UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
 
 ifdef DEBUG
  CFLAGS	+=	-ggdb
