@@ -35,6 +35,36 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+/* Compiler-specific headers */
+#if defined __WATCOMC__ || defined __TURBOC__ || defined _MSC_VER
+	#include <io.h>
+	#include <share.h>
+#endif
+
+#if defined __WATCOMC__ || defined __TURBOC__
+	#include <mem.h>
+#else
+	#include <memory.h>
+#endif
+
+#ifdef __WATCOMC__
+	#include <dos.h>
+#elif defined __TURBOC__
+	#include <dir.h>
+#endif
+
+/* ANSI C Library headers */
+#include <malloc.h>
+#include <time.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+/* SMB-specific headers */
 #include "smblib.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
