@@ -135,7 +135,7 @@ for(l=0;l<posts;l++) {
 		"%s\r\n%c\r\n%c\r\nTEXT:\r\n"
 		,msg.hdr.number
 		,msg.hdr.thread_orig
-		,date.da_mon,date.da_day,date.da_year-1900
+		,date.da_mon,date.da_day,TM_YEAR(date.da_year-1900)
 		,curtime.ti_hour,curtime.ti_min
 		,msg.hdr.attr&MSG_PRIVATE ? "PRIVATE" : "PUBLIC"
 		,msg.hdr.attr&MSG_READ ? 'Y':'N'

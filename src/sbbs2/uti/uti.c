@@ -219,8 +219,8 @@ if(!code) {
 	gotoxy(txtinfo.curx,txtinfo.cury); }
 t=time(NULL);
 unixtodos(t,&date,&curtime);
-sprintf(str,"%02u/%02u/%02u %02u:%02u:%02u    Exiting (%d)\r\n\r\n"
-	,date.da_mon,date.da_day,date.da_year-1900
+sprintf(str,"%02u/%02u/%u %02u:%02u:%02u    Exiting (%d)\r\n\r\n"
+	,date.da_mon,date.da_day,date.da_year
 	,curtime.ti_hour,curtime.ti_min,curtime.ti_sec
 	,code);
 write(logfile,str,strlen(str));
@@ -282,7 +282,7 @@ if((logfile=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 t=time(NULL);
 tm=gmtime(&t);
 sprintf(str,"%02u/%02u/%02u %02u:%02u:%02u    %-8s %s \""
-	,tm->tm_mon+1,tm->tm_mday,tm->tm_year
+	,tm->tm_mon+1,tm->tm_mday,TM_YEAR(tm->tm_year)
 	,tm->tm_hour,tm->tm_min,tm->tm_sec
 	,name,VER);
 printf("\n\n");

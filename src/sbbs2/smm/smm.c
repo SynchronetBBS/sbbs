@@ -589,6 +589,8 @@ if(birth[0]<=SP)
 	return(0);
 getdate(&date);
 age=(date.da_year-1900)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
+if(age>90)
+	age-=90;
 if(atoi(birth)>12 || atoi(birth+3)>31)
 	return(0);
 if(((birth[0]&0xf)*10)+(birth[1]&0xf)>date.da_mon ||

@@ -71,7 +71,10 @@ printf("\rdstrtounix           ");
 #endif
 
 curtime.ti_hour=curtime.ti_min=curtime.ti_sec=0;
-date.da_year=1900+((str[6]&0xf)*10)+(str[7]&0xf);
+date.da_year=((str[6]&0xf)*10)+(str[7]&0xf);
+if(date.da_year<Y2K_2DIGIT_WINDOW)
+	date.da_year+=100;
+date.da_year+=1900;
 date.da_mon=((str[0]&0xf)*10)+(str[1]&0xf);
 date.da_day=((str[3]&0xf)*10)+(str[4]&0xf);
 return(dostounix(&date,&curtime));

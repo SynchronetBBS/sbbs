@@ -125,7 +125,7 @@ time_t dstrtounix(char *str)
 if(!strncmp(str,"00/00/00",8))
 	return(0);
 curtime.ti_hour=curtime.ti_min=curtime.ti_sec=0;
-if(str[6]<7)
+if(str[6]<'7')
 	date.da_year=2000+((str[6]&0xf)*10)+(str[7]&0xf);
 else
 	date.da_year=1900+((str[6]&0xf)*10)+(str[7]&0xf);
@@ -161,6 +161,8 @@ if(birth[0]<=SP)
 	return(0);
 getdate(&date);
 age=(date.da_year-1900)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
+if(age>90)
+	age-=90;
 if(atoi(birth)>12 || atoi(birth+3)>31)
 	return(0);
 if(((birth[0]&0xf)*10)+(birth[1]&0xf)>date.da_mon ||
