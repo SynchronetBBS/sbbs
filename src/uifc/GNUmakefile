@@ -19,9 +19,6 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 
 CFLAGS += -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS)
 
-lib: $(LIBODIR) $(UIFCLIB)
-mtlib: $(LIBODIR) $(UIFCLIB-MT)
-
 # UIFC Library Link Rule
 $(UIFCLIB): $(OBJODIR) $(OBJS)
 	@echo Creating $@ ...
