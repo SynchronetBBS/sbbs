@@ -878,12 +878,11 @@ void output_thread(void* arg)
 		if(i==SOCKET_ERROR) {
 			lprintf("!%s: ERROR %d selecting socket %u for send"
 				,node,ERROR_VALUE,sbbs->client_socket);
-#if 0	// This was causing continuous error loop on blocked IPs (on some systems)
+			if(sbbs->cfg.node_num)	/* Only break if node output (not server) */
+				break;
+			RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
 			mswait(1);
 			continue;
-#else
-			break;
-#endif
 		}
 		if(i<1) {
 			mswait(1);
@@ -914,7 +913,7 @@ void output_thread(void* arg)
 			i=buftop-bufbot;	// Pretend we sent it all
 		}
 
-		if(sbbs->cfg.node_num && !(sbbs->sys_status&SS_FILEXFER)) {
+		if(sbbs->cfg.node_num>0 && !(sbbs->sys_status&SS_FILEXFER)) {
 			/* Spy on the user locally */
 			if(startup->node_spybuf!=NULL 
 				&& startup->node_spybuf[sbbs->cfg.node_num-1]!=NULL) {
@@ -1306,6 +1305,8 @@ void event_thread(void* arg)
 
 				if(sbbs->cfg.qhub[i]->call[0]) {
 					sbbs->cfg.node_num=sbbs->cfg.qhub[i]->node;
+					if(sbbs->cfg.node_num<1) 
+						sbbs->cfg.node_num=1;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
 #if 0
 					sbbs->getnodedat(sbbs->cfg.qhub[i]->node,&node,1);
@@ -1347,6 +1348,8 @@ void event_thread(void* arg)
 
 				if(sbbs->cfg.phub[i]->call[0]) {
 					sbbs->cfg.node_num=sbbs->cfg.phub[i]->node;
+					if(sbbs->cfg.node_num<1) 
+						sbbs->cfg.node_num=1;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
 #if 0
 					sbbs->getnodedat(sbbs->cfg.phub[i]->node,&node,1);
@@ -1486,6 +1489,8 @@ void event_thread(void* arg)
 				}
 				else {
 					sbbs->cfg.node_num=sbbs->cfg.event[i]->node;
+					if(sbbs->cfg.node_num<1) 
+						sbbs->cfg.node_num=1;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
 				
 					sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
@@ -1558,7 +1563,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	memcpy(&cfg, global_cfg, sizeof(cfg));
 
 	cfg.node_num=node_num;
-	if(node_num) {
+	if(node_num>0) {
 		strcpy(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir);
 	} else
@@ -1672,7 +1677,7 @@ bool sbbs_t::init()
 	socklen_t	addr_len;
 	SOCKADDR_IN	addr;
 
-	if(cfg.node_num) {
+	if(cfg.node_num>0) {
 		RingBufInit(&inbuf, IO_THREAD_BUF_SIZE);
 		node_inbuf[cfg.node_num-1]=&inbuf;
 	}
@@ -1749,7 +1754,7 @@ bool sbbs_t::init()
 		lseek(nodefile,0L,SEEK_END);
 		write(nodefile,&node,sizeof(node_t)); 
 	}
-	for(i=0; cfg.node_num && i<LOOP_NODEDAB; i++) {
+	for(i=0; cfg.node_num>0 && i<LOOP_NODEDAB; i++) {
 		if(lock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t))==0) {
 			unlock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t));
 			break;
@@ -1982,7 +1987,7 @@ sbbs_t::~sbbs_t()
 	sem_post(&output_sem);		/* just incase someone's waiting */
 	sem_destroy(&output_sem);
 
-	if(cfg.node_num)
+	if(cfg.node_num>0)
 		node_inbuf[cfg.node_num-1]=NULL;
 	if(!input_thread_running)
 		RingBufDispose(&inbuf);
@@ -2131,7 +2136,7 @@ void sbbs_t::spymsg(char*msg)
 	char str[512];
 	struct in_addr addr;
 
-	if(!cfg.node_num)
+	if(cfg.node_num<1)
 		return;
 
 	addr.s_addr=client_addr;
