@@ -1367,24 +1367,24 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define SMB_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
-static struct JSPropertySpec js_msgbase_properties[] = {
-/*		 name				,tinyid					,flags,				getter,	setter	*/
+static jsSyncPropertySpec js_msgbase_properties[] = {
+/*		 name				,tinyid					,flags,				ver	*/
 
-	{	"error"				,SMB_PROP_LAST_ERROR	,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"last_error"		,SMB_PROP_LAST_ERROR	,JSPROP_READONLY,	NULL,NULL},		/* alias */
-	{	"file"				,SMB_PROP_FILE			,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"debug"				,SMB_PROP_DEBUG			,0,					NULL,NULL},
-	{	"retry_time"		,SMB_PROP_RETRY_TIME	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"retry_delay"		,SMB_PROP_RETRY_DELAY	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"first_msg"			,SMB_PROP_FIRST_MSG		,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"last_msg"			,SMB_PROP_LAST_MSG		,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"total_msgs"		,SMB_PROP_TOTAL_MSGS	,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"max_crcs"			,SMB_PROP_MAX_CRCS		,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"max_msgs"			,SMB_PROP_MAX_MSGS  	,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"max_age"			,SMB_PROP_MAX_AGE   	,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"attributes"		,SMB_PROP_ATTR			,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"subnum"			,SMB_PROP_SUBNUM		,SMB_PROP_FLAGS,	NULL,NULL},
-	{	"is_open"			,SMB_PROP_IS_OPEN		,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"error"				,SMB_PROP_LAST_ERROR	,SMB_PROP_FLAGS,	310 },
+	{	"last_error"		,SMB_PROP_LAST_ERROR	,JSPROP_READONLY,	311 },	/* alias */
+	{	"file"				,SMB_PROP_FILE			,SMB_PROP_FLAGS,	310 },
+	{	"debug"				,SMB_PROP_DEBUG			,0,					310 },
+	{	"retry_time"		,SMB_PROP_RETRY_TIME	,JSPROP_ENUMERATE,	310 },
+	{	"retry_delay"		,SMB_PROP_RETRY_DELAY	,JSPROP_ENUMERATE,	311 },
+	{	"first_msg"			,SMB_PROP_FIRST_MSG		,SMB_PROP_FLAGS,	310 },
+	{	"last_msg"			,SMB_PROP_LAST_MSG		,SMB_PROP_FLAGS,	310 },
+	{	"total_msgs"		,SMB_PROP_TOTAL_MSGS	,SMB_PROP_FLAGS,	310 },
+	{	"max_crcs"			,SMB_PROP_MAX_CRCS		,SMB_PROP_FLAGS,	310 },
+	{	"max_msgs"			,SMB_PROP_MAX_MSGS  	,SMB_PROP_FLAGS,	310 },
+	{	"max_age"			,SMB_PROP_MAX_AGE   	,SMB_PROP_FLAGS,	310 },
+	{	"attributes"		,SMB_PROP_ATTR			,SMB_PROP_FLAGS,	310 },
+	{	"subnum"			,SMB_PROP_SUBNUM		,SMB_PROP_FLAGS,	310 },
+	{	"is_open"			,SMB_PROP_IS_OPEN		,SMB_PROP_FLAGS,	310 },
 	{0}
 };
 
@@ -1422,24 +1422,30 @@ static JSClass js_msgbase_class = {
 	,js_finalize_msgbase	/* finalize		*/
 };
 
-static jsMethodSpec js_msgbase_functions[] = {
+static jsSyncMethodSpec js_msgbase_functions[] = {
 	{"open",			js_open,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("open message base")
+	,310
 	},
 	{"close",			js_close,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("close message base (if open)")
+	,310
 	},
 	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("[boolean by_offset,] number_or_id")
 	,JSDOCSTR("returns a specific message header, <i>null</i> on failure")
+	,310
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[boolean by_offset,] number, object header")
 	,JSDOCSTR("write a message header")
+	,310
 	},
 	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean strip_ctrl_a]")
 	,JSDOCSTR("returns the body text of a specific message, <i>null</i> on failure")
+	,310
 	},
 	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean strip_ctrl_a]")
 	,JSDOCSTR("returns the tail text of a specific message, <i>null</i> on failure")
+	,310
 	},
 	{"get_msg_index",	js_get_msg_index,	2, JSTYPE_OBJECT,	JSDOCSTR("[boolean by_offset,] number")
 	,JSDOCSTR("returns a specific message index, <i>null</i> on failure. "
@@ -1453,9 +1459,11 @@ static jsMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>number</tt><td>Message number"
 	"<tr><td><tt>offset</tt><td>Byte-offset into header file"
 	"</table>")
+	,311
 	},
 	{"remove_msg",		js_remove_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("[boolean by_offset,] number_or_id")
 	,JSDOCSTR("mark message as deleted")
+	,311
 	},
 	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header, string body_text")
 	,JSDOCSTR("create a new message in message base, the <i>header</i> object may contain the following properties:<br>"
@@ -1503,6 +1511,7 @@ static jsMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>field_list[].type</tt><td>Other SMB header fields (type)"
 	"<tr><td><tt>field_list[].data</tt><td>Other SMB header fields (data)"
 	"</table>")
+	,310
 	},
 	{0}
 };
@@ -1536,11 +1545,14 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		return(JS_FALSE);
 	}
 
-	JS_DefineProperties(cx,obj,js_msgbase_properties);
+	if(!js_DefineSyncProperties(cx,obj,js_msgbase_properties)) {
+		free(p);
+		return(JS_FALSE);
+	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Class used for accessing message bases");
-	js_DescribeConstructor(cx,obj,"To create a new MsgBase object: "
+	js_DescribeSyncObject(cx,obj,"Class used for accessing message bases",310);
+	js_DescribeSyncConstructor(cx,obj,"To create a new MsgBase object: "
 		"<tt>var msgbase = new MsgBase('<i>code</i>')</tt><br>"
 		"where <i>code</i> is a sub-board internal code, or <tt>mail</tt> for the e-mail message base");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", msgbase_prop_desc, JSPROP_READONLY);
@@ -1558,9 +1570,10 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 			cfgobj=JS_NewObject(cx,NULL,NULL,obj);
 			js_CreateMsgAreaProperties(cx, scfg, cfgobj, p->smb.subnum);
 #ifdef _DEBUG
-			js_DescribeObject(cx,cfgobj
+			js_DescribeSyncObject(cx,cfgobj
 				,"Configuration parameters for this message area (<i>sub-boards only</i>) "
-				"- <small>READ ONLY</small>");
+				"- <small>READ ONLY</small>"
+				,310);
 #endif
 			JS_DefineProperty(cx,obj,"cfg",OBJECT_TO_JSVAL(cfgobj)
 				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -1572,8 +1585,8 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		}
 	}
 
-	if(!js_DefineMethods(cx, obj, js_msgbase_functions, FALSE)) {
-		JS_ReportError(cx,"js_DefineMethods failed");
+	if(!js_DefineSyncMethods(cx, obj, js_msgbase_functions, FALSE)) {
+		JS_ReportError(cx,"js_DefineSyncMethods failed");
 		return(JS_FALSE);
 	}
 

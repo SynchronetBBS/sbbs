@@ -115,15 +115,15 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define CLIENT_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
-static struct JSPropertySpec js_client_properties[] = {
-/*		 name				,tinyid					,flags,				getter,	setter	*/
+static jsSyncPropertySpec js_client_properties[] = {
+/*		 name				,tinyid					,flags,					ver	*/
 
-	{	"ip_address"		,CLIENT_PROP_ADDR 		,CLIENT_PROP_FLAGS,		NULL,NULL},
-	{	"host_name"			,CLIENT_PROP_HOST		,CLIENT_PROP_FLAGS,		NULL,NULL},
-	{	"port"				,CLIENT_PROP_PORT	 	,CLIENT_PROP_FLAGS,		NULL,NULL},
-	{	"connect_time"		,CLIENT_PROP_TIME	 	,CLIENT_PROP_FLAGS,		NULL,NULL},
-	{	"protocol"			,CLIENT_PROP_PROTOCOL 	,CLIENT_PROP_FLAGS,		NULL,NULL},
-	{	"user_name"			,CLIENT_PROP_USER	 	,CLIENT_PROP_FLAGS,		NULL,NULL},
+	{	"ip_address"		,CLIENT_PROP_ADDR 		,CLIENT_PROP_FLAGS,		310},
+	{	"host_name"			,CLIENT_PROP_HOST		,CLIENT_PROP_FLAGS,		310},
+	{	"port"				,CLIENT_PROP_PORT	 	,CLIENT_PROP_FLAGS,		310},
+	{	"connect_time"		,CLIENT_PROP_TIME	 	,CLIENT_PROP_FLAGS,		310},
+	{	"protocol"			,CLIENT_PROP_PROTOCOL 	,CLIENT_PROP_FLAGS,		310},
+	{	"user_name"			,CLIENT_PROP_USER	 	,CLIENT_PROP_FLAGS,		310},
 	{0}
 };
 
@@ -153,12 +153,12 @@ JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 
 	JS_SetPrivate(cx, obj, client);	/* Store a pointer to client_t */
 
-	JS_DefineProperties(cx, obj, js_client_properties);
+	js_DefineSyncProperties(cx, obj, js_client_properties);
 
 	js_CreateSocketObject(cx, obj, "socket", sock);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Represents a TCP/IP client session");
+	js_DescribeSyncObject(cx,obj,"Represents a TCP/IP client session",310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", client_prop_desc, JSPROP_READONLY);
 #endif
 

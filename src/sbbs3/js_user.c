@@ -552,43 +552,43 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define USER_PROP_FLAGS JSPROP_ENUMERATE
 
-static struct JSPropertySpec js_user_properties[] = {
-/*		 name				,tinyid					,flags,				getter,	setter	*/
+static jsSyncPropertySpec js_user_properties[] = {
+/*		 name				,tinyid					,flags,					ver	*/
 
-	{	"number"			,USER_PROP_NUMBER		,USER_PROP_FLAGS,		NULL,NULL},
-	{	"alias"				,USER_PROP_ALIAS 		,USER_PROP_FLAGS,		NULL,NULL},
-	{	"name"				,USER_PROP_NAME		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"handle"			,USER_PROP_HANDLE	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"ip_address"		,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"note"				,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"host_name"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"computer"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"comment"			,USER_PROP_COMMENT	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"netmail"			,USER_PROP_NETMAIL	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"email"				,USER_PROP_EMAIL	 	,USER_PROP_FLAGS|JSPROP_READONLY,		NULL,NULL},
-	{	"address"			,USER_PROP_ADDRESS	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"location"			,USER_PROP_LOCATION	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"zipcode"			,USER_PROP_ZIPCODE	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"phone"				,USER_PROP_PHONE  	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"birthdate"			,USER_PROP_BIRTH  	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"age"				,USER_PROP_AGE			,USER_PROP_FLAGS|JSPROP_READONLY,		NULL,NULL},
-	{	"connection"		,USER_PROP_MODEM      	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"modem"				,USER_PROP_MODEM      	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"screen_rows"		,USER_PROP_ROWS		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"gender"			,USER_PROP_SEX		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"cursub"			,USER_PROP_CURSUB	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"curdir"			,USER_PROP_CURDIR	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"curxtrn"			,USER_PROP_CURXTRN	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"editor"			,USER_PROP_XEDIT 	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"command_shell"		,USER_PROP_SHELL 	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"settings"			,USER_PROP_MISC		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"qwk_settings"		,USER_PROP_QWK		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"chat_settings"		,USER_PROP_CHAT		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"temp_file_ext"		,USER_PROP_TMPEXT	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"new_file_time"		,USER_PROP_NS_TIME	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"newscan_date"		,USER_PROP_NS_TIME	 	,0, /* Alias */			NULL,NULL},
-	{	"download_protocol"	,USER_PROP_PROT		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"logontime"			,USER_PROP_LOGONTIME 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"number"			,USER_PROP_NUMBER		,USER_PROP_FLAGS,		310},
+	{	"alias"				,USER_PROP_ALIAS 		,USER_PROP_FLAGS,		310},
+	{	"name"				,USER_PROP_NAME		 	,USER_PROP_FLAGS,		310},
+	{	"handle"			,USER_PROP_HANDLE	 	,USER_PROP_FLAGS,		310},
+	{	"ip_address"		,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		310},
+	{	"note"				,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		310},
+	{	"host_name"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		310},
+	{	"computer"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		310},
+	{	"comment"			,USER_PROP_COMMENT	 	,USER_PROP_FLAGS,		310},
+	{	"netmail"			,USER_PROP_NETMAIL	 	,USER_PROP_FLAGS,		310},
+	{	"email"				,USER_PROP_EMAIL	 	,USER_PROP_FLAGS|JSPROP_READONLY,		310},
+	{	"address"			,USER_PROP_ADDRESS	 	,USER_PROP_FLAGS,		310},
+	{	"location"			,USER_PROP_LOCATION	 	,USER_PROP_FLAGS,		310},
+	{	"zipcode"			,USER_PROP_ZIPCODE	 	,USER_PROP_FLAGS,		310},
+	{	"phone"				,USER_PROP_PHONE  	 	,USER_PROP_FLAGS,		310},
+	{	"birthdate"			,USER_PROP_BIRTH  	 	,USER_PROP_FLAGS,		310},
+	{	"age"				,USER_PROP_AGE			,USER_PROP_FLAGS|JSPROP_READONLY,		310},
+	{	"connection"		,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
+	{	"modem"				,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
+	{	"screen_rows"		,USER_PROP_ROWS		 	,USER_PROP_FLAGS,		310},
+	{	"gender"			,USER_PROP_SEX		 	,USER_PROP_FLAGS,		310},
+	{	"cursub"			,USER_PROP_CURSUB	 	,USER_PROP_FLAGS,		310},
+	{	"curdir"			,USER_PROP_CURDIR	 	,USER_PROP_FLAGS,		310},
+	{	"curxtrn"			,USER_PROP_CURXTRN	 	,USER_PROP_FLAGS,		310},
+	{	"editor"			,USER_PROP_XEDIT 	 	,USER_PROP_FLAGS,		310},
+	{	"command_shell"		,USER_PROP_SHELL 	 	,USER_PROP_FLAGS,		310},
+	{	"settings"			,USER_PROP_MISC		 	,USER_PROP_FLAGS,		310},
+	{	"qwk_settings"		,USER_PROP_QWK		 	,USER_PROP_FLAGS,		310},
+	{	"chat_settings"		,USER_PROP_CHAT		 	,USER_PROP_FLAGS,		310},
+	{	"temp_file_ext"		,USER_PROP_TMPEXT	 	,USER_PROP_FLAGS,		310},
+	{	"new_file_time"		,USER_PROP_NS_TIME	 	,USER_PROP_FLAGS,		311},
+	{	"newscan_date"		,USER_PROP_NS_TIME	 	,0, /* Alias */			310},
+	{	"download_protocol"	,USER_PROP_PROT		 	,USER_PROP_FLAGS,		310},
+	{	"logontime"			,USER_PROP_LOGONTIME 	,USER_PROP_FLAGS,		310},
 	{0}
 };
 
@@ -634,23 +634,23 @@ static char* user_prop_desc[] = {
 
 
 /* user.security */
-static struct JSPropertySpec js_user_security_properties[] = {
-/*		 name				,tinyid					,flags,				getter,	setter	*/
+static jsSyncPropertySpec js_user_security_properties[] = {
+/*		 name				,tinyid					,flags,				ver	*/
 
-	{	"password"			,USER_PROP_PASS		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"password_date"		,USER_PROP_PWMOD      	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"level"				,USER_PROP_LEVEL 	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"flags1"			,USER_PROP_FLAGS1	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"flags2"			,USER_PROP_FLAGS2	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"flags3"			,USER_PROP_FLAGS3	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"flags4"			,USER_PROP_FLAGS4	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"exemptions"		,USER_PROP_EXEMPT	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"restrictions"		,USER_PROP_REST		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"credits"			,USER_PROP_CDT		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"free_credits"		,USER_PROP_FREECDT	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"minutes"			,USER_PROP_MIN		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"extra_time"		,USER_PROP_TEXTRA  	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"expiration_date"	,USER_PROP_EXPIRE     	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"password"			,USER_PROP_PASS		 	,USER_PROP_FLAGS,	310 },
+	{	"password_date"		,USER_PROP_PWMOD      	,USER_PROP_FLAGS,	310 },
+	{	"level"				,USER_PROP_LEVEL 	 	,USER_PROP_FLAGS,	310 },
+	{	"flags1"			,USER_PROP_FLAGS1	 	,USER_PROP_FLAGS,	310 },
+	{	"flags2"			,USER_PROP_FLAGS2	 	,USER_PROP_FLAGS,	310 },
+	{	"flags3"			,USER_PROP_FLAGS3	 	,USER_PROP_FLAGS,	310 },
+	{	"flags4"			,USER_PROP_FLAGS4	 	,USER_PROP_FLAGS,	310 },
+	{	"exemptions"		,USER_PROP_EXEMPT	 	,USER_PROP_FLAGS,	310 },
+	{	"restrictions"		,USER_PROP_REST		 	,USER_PROP_FLAGS,	310 },
+	{	"credits"			,USER_PROP_CDT		 	,USER_PROP_FLAGS,	310 },
+	{	"free_credits"		,USER_PROP_FREECDT	 	,USER_PROP_FLAGS,	310 },
+	{	"minutes"			,USER_PROP_MIN		 	,USER_PROP_FLAGS,	310 },
+	{	"extra_time"		,USER_PROP_TEXTRA  	 	,USER_PROP_FLAGS,	310 },
+	{	"expiration_date"	,USER_PROP_EXPIRE     	,USER_PROP_FLAGS,	310 },
 	{0}
 };
 
@@ -679,16 +679,16 @@ static char* user_security_prop_desc[] = {
 #define USER_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
 /* user.limits: These should be READ ONLY by nature */
-static struct JSPropertySpec js_user_limits_properties[] = {
-/*		 name				,tinyid					,flags,				getter,	setter	*/
+static jsSyncPropertySpec js_user_limits_properties[] = {
+/*		 name					,tinyid					,flags,				ver	*/
 
-	{	"time_per_logon"		,USER_PROP_TIMEPERCALL	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"time_per_day"			,USER_PROP_TIMEPERDAY	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"logons_per_day"		,USER_PROP_CALLSPERDAY	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"lines_per_message"		,USER_PROP_LINESPERMSG	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"email_per_day"			,USER_PROP_EMAILPERDAY	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"posts_per_day"			,USER_PROP_POSTSPERDAY	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"free_credits_per_day"	,USER_PROP_FREECDTPERDAY,USER_PROP_FLAGS,		NULL,NULL},
+	{	"time_per_logon"		,USER_PROP_TIMEPERCALL	,USER_PROP_FLAGS,	311 },
+	{	"time_per_day"			,USER_PROP_TIMEPERDAY	,USER_PROP_FLAGS,	311 },
+	{	"logons_per_day"		,USER_PROP_CALLSPERDAY	,USER_PROP_FLAGS,	311 },
+	{	"lines_per_message"		,USER_PROP_LINESPERMSG	,USER_PROP_FLAGS,	311 },
+	{	"email_per_day"			,USER_PROP_EMAILPERDAY	,USER_PROP_FLAGS,	311 },
+	{	"posts_per_day"			,USER_PROP_POSTSPERDAY	,USER_PROP_FLAGS,	311 },
+	{	"free_credits_per_day"	,USER_PROP_FREECDTPERDAY,USER_PROP_FLAGS,	311 },
 	{0}
 };
 
@@ -712,26 +712,26 @@ static char* user_limits_prop_desc[] = {
 #define USER_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
 /* user.stats: These should be READ ONLY by nature */
-static struct JSPropertySpec js_user_stats_properties[] = {
-/*		 name				,tinyid					,flags,				getter,	setter	*/
+static jsSyncPropertySpec js_user_stats_properties[] = {
+/*		 name				,tinyid					,flags,					ver	*/
 
-	{	"laston_date"		,USER_PROP_LASTON	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"firston_date"		,USER_PROP_FIRSTON	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"total_logons"		,USER_PROP_LOGONS     	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"logons_today"		,USER_PROP_LTODAY     	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"total_timeon"		,USER_PROP_TIMEON     	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"timeon_today"		,USER_PROP_TTODAY     	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"timeon_last_logon"	,USER_PROP_TLAST      	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"total_posts"		,USER_PROP_POSTS      	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"total_emails"		,USER_PROP_EMAILS     	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"total_feedbacks"	,USER_PROP_FBACKS     	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"email_today"		,USER_PROP_ETODAY	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"posts_today"		,USER_PROP_PTODAY	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"bytes_uploaded"	,USER_PROP_ULB        	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"files_uploaded"	,USER_PROP_ULS        	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"bytes_downloaded"	,USER_PROP_DLB        	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"files_downloaded"	,USER_PROP_DLS        	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"laston_date"		,USER_PROP_LASTON	 	,USER_PROP_FLAGS,		310 },
+	{	"firston_date"		,USER_PROP_FIRSTON	 	,USER_PROP_FLAGS,		310 },
+	{	"total_logons"		,USER_PROP_LOGONS     	,USER_PROP_FLAGS,		310 },
+	{	"logons_today"		,USER_PROP_LTODAY     	,USER_PROP_FLAGS,		310 },
+	{	"total_timeon"		,USER_PROP_TIMEON     	,USER_PROP_FLAGS,		310 },
+	{	"timeon_today"		,USER_PROP_TTODAY     	,USER_PROP_FLAGS,		310 },
+	{	"timeon_last_logon"	,USER_PROP_TLAST      	,USER_PROP_FLAGS,		310 },
+	{	"total_posts"		,USER_PROP_POSTS      	,USER_PROP_FLAGS,		310 },
+	{	"total_emails"		,USER_PROP_EMAILS     	,USER_PROP_FLAGS,		310 },
+	{	"total_feedbacks"	,USER_PROP_FBACKS     	,USER_PROP_FLAGS,		310 },
+	{	"email_today"		,USER_PROP_ETODAY	 	,USER_PROP_FLAGS,		310 },
+	{	"posts_today"		,USER_PROP_PTODAY	 	,USER_PROP_FLAGS,		310 },
+	{	"bytes_uploaded"	,USER_PROP_ULB        	,USER_PROP_FLAGS,		310 },
+	{	"files_uploaded"	,USER_PROP_ULS        	,USER_PROP_FLAGS,		310 },
+	{	"bytes_downloaded"	,USER_PROP_DLB        	,USER_PROP_FLAGS,		310 },
+	{	"files_downloaded"	,USER_PROP_DLS        	,USER_PROP_FLAGS,		310 },
+	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USER_PROP_FLAGS,		310 },
 	{0}
 };
 
@@ -801,9 +801,10 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 
-static jsMethodSpec js_user_functions[] = {
+static jsSyncMethodSpec js_user_functions[] = {
 	{"compare_ars",	js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
 	,JSDOCSTR("Verify user meets access requirements string")
+	,310
 	},		
 	{0}
 };
@@ -871,14 +872,22 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		,&js_user_stats_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY))==NULL) 
 		return(JS_FALSE);
 
-	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
+	if(!js_DefineSyncProperties(cx, statsobj, js_user_stats_properties))
+		return(JS_FALSE);
 
 	/* user.security */
 	if((securityobj=JS_DefineObject(cx, obj, "security"
 		,&js_user_security_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY))==NULL) 
 		return(JS_FALSE);
 
-	JS_DefineProperties(cx, securityobj, js_user_security_properties);
+	if(!js_DefineSyncProperties(cx, securityobj, js_user_security_properties))
+		return(JS_FALSE);
+
+	if(!js_DefineSyncProperties(cx, obj, js_user_properties))
+		return(JS_FALSE);
+
+	if(!js_DefineSyncMethods(cx, obj, js_user_functions, FALSE))
+		return(JS_FALSE);
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
 		return(JS_FALSE);
@@ -889,8 +898,6 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	JS_SetPrivate(cx, obj, p);
 	JS_SetPrivate(cx, statsobj, p);
 	JS_SetPrivate(cx, securityobj, p);
-
-	js_DefineMethods(cx, obj, js_user_functions, FALSE);
 
 	return(JS_TRUE);
 }
@@ -904,7 +911,7 @@ JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cf
 		,&js_user_class
 		,js_user_constructor
 		,1	/* number of constructor args */
-		,js_user_properties
+		,NULL /* props, defined in constructor */
 		,NULL /* funcs, defined in constructor */
 		,NULL,NULL);
 
@@ -938,18 +945,22 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	JS_SetPrivate(cx, userobj, p);	
 
-	JS_DefineProperties(cx, userobj, js_user_properties);
+	if(!js_DefineSyncProperties(cx, userobj, js_user_properties)) {
+		free(p);
+		return(NULL);
+	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,userobj
-		,"Instance of <i>User</i> class, representing current user online");
-	js_DescribeConstructor(cx,userobj
+	js_DescribeSyncObject(cx,userobj
+		,"Instance of <i>User</i> class, representing current user online"
+		,310);
+	js_DescribeSyncConstructor(cx,userobj
 		,"To create a new user object: <tt>var u = new User(number)</tt>");
 	js_CreateArrayOfStrings(cx, userobj
 		,"_property_desc_list", user_prop_desc, JSPROP_READONLY);
 #endif
 
-	js_DefineMethods(cx, userobj, js_user_functions, FALSE);
+	js_DefineSyncMethods(cx, userobj, js_user_functions, FALSE);
 
 	/* user.stats */
 	statsobj = JS_DefineObject(cx, userobj, "stats"
@@ -962,10 +973,13 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	JS_SetPrivate(cx, statsobj, p);
 
-	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
+	if(!js_DefineSyncProperties(cx, statsobj, js_user_stats_properties)) {
+		free(p);
+		return(NULL);
+	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,statsobj,"User statistics (all <small>READ ONLY</small>)");
+	js_DescribeSyncObject(cx,statsobj,"User statistics (all <small>READ ONLY</small>)",310);
 	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", user_stats_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -980,10 +994,13 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	JS_SetPrivate(cx, limitsobj, p);
 
-	JS_DefineProperties(cx, limitsobj, js_user_limits_properties);
+	if(!js_DefineSyncProperties(cx, limitsobj, js_user_limits_properties)) {
+		free(p);
+		return(NULL);
+	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,limitsobj,"User limitations based on security level (all <small>READ ONLY</small>)");
+	js_DescribeSyncObject(cx,limitsobj,"User limitations based on security level (all <small>READ ONLY</small>)",311);
 	js_CreateArrayOfStrings(cx, limitsobj, "_property_desc_list", user_limits_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -999,10 +1016,13 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	JS_SetPrivate(cx, securityobj, p);
 
-	JS_DefineProperties(cx, securityobj, js_user_security_properties);
+	if(!js_DefineSyncProperties(cx, securityobj, js_user_security_properties)) {
+		free(p);
+		return(NULL);
+	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,securityobj,"User security settings");
+	js_DescribeSyncObject(cx,securityobj,"User security settings",310);
 	js_CreateArrayOfStrings(cx, securityobj, "_property_desc_list", user_security_prop_desc, JSPROP_READONLY);
 #endif
 

@@ -877,7 +877,16 @@ extern "C" {
 		int				type;		/* return type */
 		const char*		args;		/* arguments */
 		const char*		desc;		/* description */
-	} jsMethodSpec;
+		int				ver;		/* version added/modified */
+	} jsSyncMethodSpec;
+
+	typedef struct {
+		const char      *name;
+		int8            tinyid;
+		uint8           flags;
+		int				ver;		/* version added/modified */
+	} jsSyncPropertySpec;
+
 
 	typedef struct {
 		const char*		name;
@@ -894,15 +903,16 @@ extern "C" {
 	#endif
 
 	/* main.cpp */
-	DLLEXPORT JSBool	DLLCALL js_DescribeObject(JSContext* cx, JSObject* obj, const char*);
-	DLLEXPORT JSBool	DLLCALL js_DescribeConstructor(JSContext* cx, JSObject* obj, const char*);
-	DLLEXPORT JSBool	DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec*, BOOL append);
+	DLLEXPORT JSBool	DLLCALL js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char*, int ver);
+	DLLEXPORT JSBool	DLLCALL js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char*);
+	DLLEXPORT JSBool	DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec*, BOOL append);
+	DLLEXPORT JSBool	DLLCALL js_DefineSyncProperties(JSContext* cx, JSObject* obj, jsSyncPropertySpec*);
 	DLLEXPORT JSBool	DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
 	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
 														,const char* name, char* str[], uintN flags);
 
 	/* js_global.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsMethodSpec* methods);
+	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods);
 
 	/* js_internal.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_branch_t* branch);

@@ -1310,33 +1310,33 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define FILE_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
-static struct JSPropertySpec js_file_properties[] = {
-/*		 name				,tinyid					,flags,				getter,	setter	*/
-	{	"name"				,FILE_PROP_NAME			,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"mode"				,FILE_PROP_MODE			,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"exists"			,FILE_PROP_EXISTS		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"is_open"			,FILE_PROP_IS_OPEN		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"eof"				,FILE_PROP_EOF			,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"error"				,FILE_PROP_ERROR		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"descriptor"		,FILE_PROP_DESCRIPTOR	,FILE_PROP_FLAGS,	NULL,NULL},
+static jsSyncPropertySpec js_file_properties[] = {
+/*		 name				,tinyid					,flags,				ver	*/
+	{	"name"				,FILE_PROP_NAME			,FILE_PROP_FLAGS,	310},
+	{	"mode"				,FILE_PROP_MODE			,FILE_PROP_FLAGS,	310},
+	{	"exists"			,FILE_PROP_EXISTS		,FILE_PROP_FLAGS,	310},
+	{	"is_open"			,FILE_PROP_IS_OPEN		,FILE_PROP_FLAGS,	310},
+	{	"eof"				,FILE_PROP_EOF			,FILE_PROP_FLAGS,	310},
+	{	"error"				,FILE_PROP_ERROR		,FILE_PROP_FLAGS,	310},
+	{	"descriptor"		,FILE_PROP_DESCRIPTOR	,FILE_PROP_FLAGS,	310},
 	/* writeable */
-	{	"etx"				,FILE_PROP_ETX			,JSPROP_ENUMERATE,  NULL,NULL},
-	{	"debug"				,FILE_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"position"			,FILE_PROP_POSITION		,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"date"				,FILE_PROP_DATE			,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"length"			,FILE_PROP_LENGTH		,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"attributes"		,FILE_PROP_ATTRIBUTES	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"network_byte_order",FILE_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"rot13"				,FILE_PROP_ROT13		,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"uue"				,FILE_PROP_UUENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"yenc"				,FILE_PROP_YENCODED		,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"base64"			,FILE_PROP_B64ENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"etx"				,FILE_PROP_ETX			,JSPROP_ENUMERATE,  310},
+	{	"debug"				,FILE_PROP_DEBUG		,JSPROP_ENUMERATE,	310},
+	{	"position"			,FILE_PROP_POSITION		,JSPROP_ENUMERATE,	310},
+	{	"date"				,FILE_PROP_DATE			,JSPROP_ENUMERATE,	311},
+	{	"length"			,FILE_PROP_LENGTH		,JSPROP_ENUMERATE,	310},
+	{	"attributes"		,FILE_PROP_ATTRIBUTES	,JSPROP_ENUMERATE,	310},
+	{	"network_byte_order",FILE_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	311},
+	{	"rot13"				,FILE_PROP_ROT13		,JSPROP_ENUMERATE,	311},
+	{	"uue"				,FILE_PROP_UUENCODED	,JSPROP_ENUMERATE,	311},
+	{	"yenc"				,FILE_PROP_YENCODED		,JSPROP_ENUMERATE,	311},
+	{	"base64"			,FILE_PROP_B64ENCODED	,JSPROP_ENUMERATE,	311},
 	/* dynamically calculated */
-	{	"crc16"				,FILE_PROP_CRC16		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"crc32"				,FILE_PROP_CRC32		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"chksum"			,FILE_PROP_CHKSUM		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"md5_hex"			,FILE_PROP_MD5_HEX		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"md5_base64"		,FILE_PROP_MD5_B64		,FILE_PROP_FLAGS,	NULL,NULL},
+	{	"crc16"				,FILE_PROP_CRC16		,FILE_PROP_FLAGS,	311},
+	{	"crc32"				,FILE_PROP_CRC32		,FILE_PROP_FLAGS,	311},
+	{	"chksum"			,FILE_PROP_CHKSUM		,FILE_PROP_FLAGS,	311},
+	{	"md5_hex"			,FILE_PROP_MD5_HEX		,FILE_PROP_FLAGS,	311},
+	{	"md5_base64"		,FILE_PROP_MD5_B64		,FILE_PROP_FLAGS,	311},
 	{0}
 };
 
@@ -1370,7 +1370,7 @@ static char* file_prop_desc[] = {
 #endif
 
 
-static jsMethodSpec js_file_functions[] = {
+static jsSyncMethodSpec js_file_functions[] = {
 	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[string mode, boolean shareable, number buflen]")
 	,JSDOCSTR("open file, <i>shareable</i> defaults to <i>false</i>, <i>buflen</i> defaults to 2048 bytes, "
 		"mode (default: <tt>w+</tt>) specifies the type of access requested for the file, as follows:<br>"
@@ -1382,77 +1382,98 @@ static jsMethodSpec js_file_functions[] = {
 		"<tt>a+</tt> open for reading and appending<br>"
 		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br>"
 		)
+	,310
 	},		
 	{"close",			js_close,			0,	JSTYPE_VOID,	""
 	,JSDOCSTR("close file")
+	,310
 	},		
 	{"remove",			js_delete,			0,	JSTYPE_BOOLEAN, ""
 	,JSDOCSTR("remove the file from the disk")
+	,310
 	},
 	{"clearError",		js_clear_error,		0,	JSTYPE_ALIAS },
 	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, ""
 	,JSDOCSTR("clears the current error value (AKA clearError)")
+	,310
 	},
 	{"flush",			js_flush,			0,	JSTYPE_BOOLEAN,	""
 	,JSDOCSTR("flush/commit buffers to disk")
+	,310
 	},
 	{"rewind",			js_rewind,			0,	JSTYPE_BOOLEAN,	""
 	,JSDOCSTR("repositions the file pointer (<i>position</i>) to the beginning of a file "
 		"and clears error and end-of-file indicators")
+	,311
 	},
 	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
 	,JSDOCSTR("lock file record for exclusive access (file must be opened <i>shareable</i>)")
+	,310
 	},		
 	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
 	,JSDOCSTR("unlock file record for exclusive access")
+	,310
 	},		
 	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("read a string from file (optionally unix-to-unix or base64 decoding in the process), "
 		"<i>maxlen</i> defaults to the current length of the file minus the current file position")
+	,310
 	},
 	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters")
+	,310
 	},		
 	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes]")
 	,JSDOCSTR("read a binary integer from the file, default number of <i>bytes</i> is 4 (32-bits)")
+	,310
 	},
 	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	""
 	,JSDOCSTR("read all lines into an array of strings")
+	,310
 	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text [,len]")
 	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process)")
+	,310
 	},
 	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, JSDOCSTR("[string text]")
 	,JSDOCSTR("write a line-feed terminated string to the file")
+	,310
 	},
 	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes]")
 	,JSDOCSTR("write a binary integer to the file, default number of <i>bytes</i> is 4 (32-bits)")
+	,310
 	},
 	{"writeAll",		js_writeall,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("array lines")
 	,JSDOCSTR("write an array of strings to file")
+	,310
 	},		
 	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	JSDOCSTR("string format [,args]")
 	,JSDOCSTR("write a formatted string to the file (ala fprintf) - "
 		"<small>CAUTION: for experienced C programmers ONLY</small>")
+	,310
 	},
 	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	JSDOCSTR("[prefix]")
 	,JSDOCSTR("parse all section names from a <tt>.ini</tt> file (format = '<tt>[section]</tt>') "
 		"and return the section names as an <i>array of strings</i>, "
 		"optionally, only those section names that begin with the specified <i>prefix</i>")
+	,311
 	},
 	{"iniGetKeys",		js_iniGetKeys,		0,	JSTYPE_ARRAY,	JSDOCSTR("section")
 	,JSDOCSTR("parse all key names from the specified <i>section</i> in a <tt>.ini</tt> file "
 		"and return the key names as an <i>array of strings</i>")
+	,311
 	},
 	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_STRING,	JSDOCSTR("section, key [,default]")
 	,JSDOCSTR("parse a key from a <tt>.ini</tt> file and return its value (format = '<tt>key = value</tt>'). "
 		"returns the specified <i>default</i> value if the key or value is missing or invalid. "
 		"will return a <i>bool</i>, <i>number</i>, <i>string</i>, or an <i>array of strings</i> "
 		"determined by the type of <i>default</i> value specified")
+	,311
 	},
 	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("section")
 	,JSDOCSTR("parse an entire section from a .ini file "
 		"and return all of its keys and values as properties of an object")
+	,311
 	},
 	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix]")
 	,JSDOCSTR("parse all sections from a .ini file and return all sections and keys "
@@ -1461,6 +1482,7 @@ static jsMethodSpec js_file_functions[] = {
 		"(default is <tt>\"name\"</tt>), "
 		"the optional <i>prefix</i> has the same use as in the <tt>iniGetSections</tt> method, "
 		"if a <i>prefix</i> is specified, it is removed from each section's name" )
+	,311
 	},
 	{0}
 };
@@ -1524,13 +1546,18 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineMethods(cx, obj, js_file_functions, FALSE)) {
-		dbprintf(TRUE, p, "js_DefineMethods failed");
+	if(!js_DefineSyncProperties(cx, obj, js_file_properties)) {
+		dbprintf(TRUE, p, "js_DefineSyncProperties failed");
+		return(JS_FALSE);
+	}
+
+	if(!js_DefineSyncMethods(cx, obj, js_file_functions, FALSE)) {
+		dbprintf(TRUE, p, "js_DefineSyncMethods failed");
 		return(JS_FALSE);
 	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Class used for opening, creating, reading, or writing files on the local file system<p>"
+	js_DescribeSyncObject(cx,obj,"Class used for opening, creating, reading, or writing files on the local file system<p>"
 		"Special features include:</h2><ol type=disc>"
 			"<li>Exclusive-access files (default) or shared files<ol type=circle>"
 				"<li>optional record-locking"
@@ -1554,8 +1581,9 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 				"</ol>"
 			"<li>Dynamically-calculated industry standard checksums (e.g. CRC-16, CRC-32, MD5)"
 			"</ol>"
+			,310
 			);
-	js_DescribeConstructor(cx,obj,"To create a new File object: <tt>var f = new File(filename)</tt>");
+	js_DescribeSyncConstructor(cx,obj,"To create a new File object: <tt>var f = new File(filename)</tt>");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", file_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -1571,7 +1599,7 @@ JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
 		,&js_file_class
 		,js_file_constructor
 		,1		/* number of constructor args */
-		,js_file_properties
+		,NULL	/* props, set in constructor */
 		,NULL	/* funcs, set in constructor */
 		,NULL,NULL);
 
@@ -1589,10 +1617,10 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 	if(obj==NULL)
 		return(NULL);
 
-	if(!JS_DefineProperties(cx, obj, js_file_properties))
+	if(!js_DefineSyncProperties(cx, obj, js_file_properties))
 		return(NULL);
 
-	if (!js_DefineMethods(cx, obj, js_file_functions, FALSE)) 
+	if (!js_DefineSyncMethods(cx, obj, js_file_functions, FALSE)) 
 		return(NULL);
 
 	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL)

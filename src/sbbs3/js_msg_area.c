@@ -291,11 +291,11 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 }
 
 static struct JSPropertySpec js_sub_properties[] = {
-/*		 name				,tinyid		,flags				,getter,setter	*/
+/*		 name				,tinyid		,flags	*/
 
-	{	"scan_ptr"	,SUB_PROP_SCAN_PTR	,JSPROP_ENUMERATE	,NULL,NULL},
-	{	"scan_cfg"	,SUB_PROP_SCAN_CFG	,JSPROP_ENUMERATE	,NULL,NULL},
-	{	"lead_read"	,SUB_PROP_LAST_READ	,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"scan_ptr"	,SUB_PROP_SCAN_PTR	,JSPROP_ENUMERATE },
+	{	"scan_cfg"	,SUB_PROP_SCAN_CFG	,JSPROP_ENUMERATE },
+	{	"lead_read"	,SUB_PROP_LAST_READ	,JSPROP_ENUMERATE },
 	{0}
 };
 
@@ -338,7 +338,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		return(NULL);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,areaobj,"Message Areas");
+	js_DescribeSyncObject(cx,areaobj,"Message Areas",310);
 #endif
 
 	if((allsubs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
@@ -398,7 +398,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			return(NULL);
 
 #ifdef _DEBUG
-		js_DescribeObject(cx,grpobj,"Message Groups");
+		js_DescribeSyncObject(cx,grpobj,"Message Groups",310);
 #endif
 
 		/* sub_list[] */
@@ -471,34 +471,20 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				val=BOOLEAN_TO_JSVAL(JS_FALSE);
 			if(!JS_SetProperty(cx, subobj, "is_moderated", &val))
 				return(NULL);
-#if 0	/* Old way */
-			if(subscan!=NULL) {
-				if(!JS_NewNumberValue(cx,subscan[d].ptr,&val))
-					return(NULL);
-				if(!JS_SetProperty(cx, subobj, "scan_ptr", &val))
-					return(NULL);
-				if(!JS_NewNumberValue(cx,subscan[d].cfg,&val))
-					return(NULL);
-				if(!JS_SetProperty(cx, subobj, "scan_cfg", &val))
-					return(NULL);
-				if(!JS_NewNumberValue(cx,subscan[d].last,&val))
-					return(NULL);
-				if(!JS_SetProperty(cx, subobj, "last_read", &val))
-					return(NULL);
-			}
-#else
+
 			if(!JS_DefineProperties(cx, subobj, js_sub_properties))
 				return(NULL);
-#endif
+
 			/* Add as property (associative array element) */
 			if(!JS_DefineProperty(cx, allsubs, cfg->sub[d]->code, val
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
 #ifdef _DEBUG
-			js_DescribeObject(cx,subobj,"Message Sub-boards</h2>"
+			js_DescribeSyncObject(cx,subobj,"Message Sub-boards</h2>"
 				"(all properties are <small>READ ONLY</small> except for "
-				"<i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)");
+				"<i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)"
+				,310);
 #endif
 
 		}
@@ -510,7 +496,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,allsubs,"Associative array of all sub-boards (use internal code as index)");
+	js_DescribeSyncObject(cx,allsubs,"Associative array of all sub-boards (use internal code as index)",311);
 	JS_DefineProperty(cx,allsubs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 

@@ -74,10 +74,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 #define GLOBOBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
 static struct JSPropertySpec js_global_properties[] = {
-/*		 name,		tinyid,				flags,				getter,	setter	*/
+/*		 name,		tinyid,				flags */
 
-	{	"errno",	GLOB_PROP_ERRNO,	GLOBOBJ_FLAGS,		NULL,	NULL },
-	{	"errno_str",GLOB_PROP_ERRNO_STR,GLOBOBJ_FLAGS,		NULL,	NULL },
+	{	"errno",	GLOB_PROP_ERRNO,	GLOBOBJ_FLAGS },
+	{	"errno_str",GLOB_PROP_ERRNO_STR,GLOBOBJ_FLAGS },
 	{0}
 };
 
@@ -2146,85 +2146,108 @@ static JSClass js_global_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-static jsMethodSpec js_global_functions[] = {
+static jsSyncMethodSpec js_global_functions[] = {
 	{"exit",			js_exit,			0,	JSTYPE_VOID,	"[number exit_code]"
 	,JSDOCSTR("stop script execution, "
 		"optionally setting the global property <tt>exit_code</tt> to the specified numeric value")
+	,311
 	},		
 	{"load",            js_load,            1,	JSTYPE_BOOLEAN,	JSDOCSTR("[object scope,] string filename [,args]")
 	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
 		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
 		"and a list of arguments to pass to the module (as <i>argv</i>), "
 		"returns <i>true</i> if the execution was successful")
+	,311
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	JSDOCSTR("[number milliseconds]")
 	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep)")
+	,310
 	},
 	{"yield",			js_yield,			0,	JSTYPE_VOID,	JSDOCSTR("[bool forced]")
 	,JSDOCSTR("release current thread time-slice, "
 		"a <i>forced</i> yield will yield to all other pending tasks (lowering CPU utilization), "
 		"a non-<i>forced</i> yield will yield only to pending tasks of equal or higher priority. "
 		"<i>forced</i> defaults to <i>true</i>")
+	,311
 	},
 	{"random",			js_random,			1,	JSTYPE_NUMBER,	JSDOCSTR("number max")
 	,JSDOCSTR("return random integer between 0 and max-1")
+	,310
 	},		
 	{"time",			js_time,			0,	JSTYPE_NUMBER,	""
 	,JSDOCSTR("return current time in Unix (time_t) format (number of seconds since Jan-01-1970)")
+	,310
 	},		
 	{"beep",			js_beep,			0,	JSTYPE_VOID,	JSDOCSTR("[number freq, duration]")
 	,JSDOCSTR("produce a tone on the local speaker at specified frequency for specified duration (in milliseconds)")
+	,310
 	},		
 	{"sound",			js_sound,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("[string filename]")
 	,JSDOCSTR("play a waveform (.wav) sound file")
+	,310
 	},		
 	{"ctrl",			js_ctrl,			1,	JSTYPE_STRING,	JSDOCSTR("number or string")
 	,JSDOCSTR("return ASCII control character representing character passed - Example: <tt>ctrl('C') returns '\3'</tt>")
+	,311
 	},
 	{"ascii",			js_ascii,			1,	JSTYPE_NUMBER,	JSDOCSTR("[string text] or [number value]")
 	,JSDOCSTR("convert string to ASCII value or vice-versa (returns number OR string)")
+	,310
 	},		
 	{"ascii_str",		js_ascii_str,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("convert extended-ASCII in string to plain ASCII")
+	,310
 	},		
 	{"strip_ctrl",		js_strip_ctrl,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("strip control characters from string")
+	,310
 	},		
 	{"strip_exascii",	js_strip_exascii,	1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("strip extended-ASCII characters from string")
+	,310
 	},		
 	{"truncsp",			js_truncsp,			1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("truncate white-space characters off end of string")
+	,310
 	},		
 	{"truncstr",		js_truncstr,		2,	JSTYPE_STRING,	JSDOCSTR("string text, charset")
 	,JSDOCSTR("truncate string at first char in <i>charset</i>")
+	,310
 	},		
 	{"lfexpand",		js_lfexpand,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("expand line-feeds (LF) to carriage-return/line-feeds (CRLF)")
+	,310
 	},		
 	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("string path")
 	,JSDOCSTR("returns filename portion of passed path string")
+	,311
 	},
 	{"file_getext",		js_getfext,			1,	JSTYPE_STRING,	JSDOCSTR("string path")
 	,JSDOCSTR("returns file extension portion of passed path/filename string (including '.') "
 		"or <i>undefined</i> if no extension is found")
+	,311
 	},
 	{"file_getcase",	js_getfcase,		1,	JSTYPE_STRING,	JSDOCSTR("string filename")
 	,JSDOCSTR("returns correct case of filename (long version of filename on Win32) "
 		"or <i>undefined</i> if the file doesn't exist")
+	,311
 	},
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("verify a file's existence")
+	,310
 	},		
 	{"file_remove",		js_remove,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("delete a file")
+	,310
 	},		
 	{"file_rename",		js_rename,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("oldname, newname")
 	,JSDOCSTR("rename a file, possibly moving it to another directory in the process")
+	,311
 	},
 	{"file_copy",		js_fcopy,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("source, destination")
 	,JSDOCSTR("copy a file from one directory or filename to another")
+	,311
 	},
 	{"file_backup",		js_backup,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,number level] [,bool rename]")
 	,JSDOCSTR("backup the specified <i>filename</i> as <tt>filename.<i>number</i>.extension</tt> "
@@ -2232,97 +2255,124 @@ static jsMethodSpec js_global_functions[] = {
 		"(default backup <i>level</i> is 5), "
 		"if <i>rename</i> is <i>true</i>, the original file is renamed instead of copied "
 		"(default is <i>false</i>)")
+	,311
 	},
 	{"file_isdir",		js_isdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("check if specified <i>filename</i> is a directory")
+	,310
 	},		
 	{"file_attrib",		js_fattr,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
 	,JSDOCSTR("get a file's permissions/attributes")
+	,310
 	},		
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
 	,JSDOCSTR("get a file's last modified date/time (in time_t format)")
+	,310
 	},
 	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
 	,JSDOCSTR("get a file's length (in bytes)")
+	,310
 	},
 	{"file_utime",		js_utime,			3,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,access_time] [,mod_time]")
 	,JSDOCSTR("change a file's last accessed and modification date/time (in time_t format), "
 		"or change to current time")
+	,311
 	},
 	{"file_touch",		js_touch,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("updates a file's last modification date/time to current time, "
 		"creating an empty file if it doesn't already exist")
+	,311
 	},
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("string pattern [,flags]")
 	,JSDOCSTR("returns an array of directory entries, "
 		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
 		"<i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)")
+	,310
 	},
 	{"dir_freespace",	js_freediskspace,	2,	JSTYPE_NUMBER,	JSDOCSTR("string directory [,unit_size]")
 	,JSDOCSTR("returns the amount of available disk space in the specified <i>directory</i> "
 		"using the specified <i>unit_size</i> in bytes (default: 1), "
 		"specify a <i>unit_size</i> of <tt>1024</tt> to return the available space in <i>kilobytes</i>.")
+	,311
 	},
 	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,number timeout] [,bool write]")
 	,JSDOCSTR("checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
 		"default timeout value is 0.0 seconds (immediate timeout), "
 		"returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing")
+	,311
 	},
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string directory")
 	,JSDOCSTR("make a directory")
+	,310
 	},		
 	{"rmdir",			js_rmdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string directory")
 	,JSDOCSTR("remove a directory")
+	,310
 	},		
 	{"strftime",		js_strftime,		1,	JSTYPE_STRING,	JSDOCSTR("string format [,number time]")
 	,JSDOCSTR("return a formatted time string (ala C strftime)")
+	,310
 	},		
 	{"format",			js_format,			1,	JSTYPE_STRING,	JSDOCSTR("string format [,args]")
 	,JSDOCSTR("return a formatted string (ala sprintf) - "
 		"<small>CAUTION: for experienced C programmers ONLY</small>")
+	,310
 	},
 	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool ex_ascii] [,bool white_space] [,bool ansi] [,bool ctrl_a]")
 	,JSDOCSTR("return an HTML-encoded text string (using standard HTML character entities), "
 		"escaping IBM extended-ASCII, white-space characters, ANSI codes, and CTRL-A codes by default")
+	,311
 	},
 	{"html_decode",		js_html_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("return a decoded HTML-encoded text string")
+	,311
 	},
 	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length]")
 	,JSDOCSTR("returns a word-wrapped version of the text string argument, <i>line_length</i> defaults to <i>79</i>")
+	,311
 	},
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length] [,prefix]")
 	,JSDOCSTR("returns a quoted version of the message text string argumnet, <i>line_length</i> defaults to <i>79</i>, "
 		"<i>prefix</i> defaults to <tt>\" > \"</tt>")
+	,311
 	},
 	{"rot13_translate",	js_rot13,			1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns ROT13-translated version of text string (will encode or decode text)")
+	,311
 	},
 	{"base64_encode",	js_b64_encode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns base64-encoded version of text string or <i>null</i> on error")
+	,311
 	},
 	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns base64-decoded text string or <i>null</i> on error (not useful for binary data)")
+	,311
 	},
 	{"crc16_calc",		js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 16-bit CRC of text string")
+	,311
 	},		
 	{"crc32_calc",		js_crc32,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 32-bit CRC of text string")
+	,311
 	},		
 	{"chksum_calc",		js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 32-bit checksum of text string")
+	,311
 	},
 	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
 	,JSDOCSTR("calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal")
+	,311
 	},
 	{"gethostbyname",	js_resolve_ip,		1,	JSTYPE_ALIAS },
 	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("string hostname")
 	,JSDOCSTR("resolve IP address of specified hostname (AKA gethostbyname)")
+	,311
 	},
 	{"gethostbyaddr",	js_resolve_host,	1,	JSTYPE_ALIAS },
 	{"resolve_host",	js_resolve_host,	1,	JSTYPE_STRING,	JSDOCSTR("string ip_address")
 	,JSDOCSTR("resolve hostname of specified IP address (AKA gethostbyaddr)")
+	,311
 	},
 	{0}
 };
@@ -2382,7 +2432,7 @@ static jsConstIntSpec js_global_const_ints[] = {
 	{0}
 };
 
-JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsMethodSpec* methods)
+JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods)
 {
 	JSObject*	glob;
 
@@ -2392,10 +2442,10 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsMethodSpec
 	if (!JS_InitStandardClasses(cx, glob))
 		return(NULL);
 
-	if(methods!=NULL && !js_DefineMethods(cx, glob, methods, TRUE)) 
+	if(methods!=NULL && !js_DefineSyncMethods(cx, glob, methods, TRUE)) 
 		return(NULL);
 
-	if (!js_DefineMethods(cx, glob, js_global_functions, TRUE)) 
+	if(!js_DefineSyncMethods(cx, glob, js_global_functions, TRUE)) 
 		return(NULL);
 
 	if(!JS_DefineProperties(cx, glob, js_global_properties))
@@ -2405,7 +2455,8 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsMethodSpec
 		return(NULL);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,glob,"Top-level functions and properties (common to all servers and services)");
+	js_DescribeSyncObject(cx,glob
+		,"Top-level functions and properties (common to all servers and services)",310);
 #endif
 
 	if(!js_DefineConstIntegers(cx, glob, js_global_const_ints, JSPROP_READONLY))

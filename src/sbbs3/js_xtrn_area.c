@@ -205,7 +205,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		return(NULL);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,areaobj,"External Program Areas");
+	js_DescribeSyncObject(cx,areaobj,"External Program Areas",310);
 #endif
 
 	if((allprog=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
@@ -272,7 +272,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			return(NULL);
 
 #ifdef _DEBUG
-		js_DescribeObject(cx,secobj,"Online Program (door) Sections");
+		js_DescribeSyncObject(cx,secobj,"Online Program (door) Sections",310);
 #endif
 
 		for(d=0;d<cfg->total_xtrns;d++) {
@@ -319,7 +319,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 				return(NULL);
 
 #ifdef _DEBUG
-			js_DescribeObject(cx,progobj,"Online External Programs (doors)");
+			js_DescribeSyncObject(cx,progobj,"Online External Programs (doors)",310);
 #endif
 		}
 
@@ -330,7 +330,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,allprog,"Associative array of all external programs (use internal code as index)");
+	js_DescribeSyncObject(cx,allprog,"Associative array of all external programs (use internal code as index)",311);
 	JS_DefineProperty(cx,allprog,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 
@@ -397,7 +397,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,event_array,"Associative array of all timed events (use internal code as index)");
+	js_DescribeSyncObject(cx,event_array,"Associative array of all timed events (use internal code as index)",311);
 	JS_DefineProperty(cx,event_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 
@@ -456,7 +456,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,xedit_array,"Associative array of all external editors (use internal code as index)");
+	js_DescribeSyncObject(cx,xedit_array,"Associative array of all external editors (use internal code as index)",311);
 	JS_DefineProperty(cx,xedit_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 

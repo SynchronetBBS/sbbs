@@ -352,7 +352,7 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
-static jsMethodSpec js_global_functions[] = {
+static jsSyncMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1},
 	{"read",			js_read,            1},
 	{"readln",			js_readln,          1},

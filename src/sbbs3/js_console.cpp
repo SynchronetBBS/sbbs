@@ -227,26 +227,26 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define CON_PROP_FLAGS JSPROP_ENUMERATE
 
-static struct JSPropertySpec js_console_properties[] = {
-/*		 name				,tinyid						,flags			,getter,setter	*/
+static jsSyncPropertySpec js_console_properties[] = {
+/*		 name				,tinyid						,flags			,ver	*/
 
-	{	"status"			,CON_PROP_STATUS			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"line_counter"		,CON_PROP_LNCNTR 			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"attributes"		,CON_PROP_ATTR				,CON_PROP_FLAGS	,NULL,NULL},
-	{	"top_of_screen"		,CON_PROP_TOS				,CON_PROP_FLAGS	,NULL,NULL},
-	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,NULL,NULL},
-	{	"screen_columns"	,CON_PROP_COLUMNS			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"autoterm"			,CON_PROP_AUTOTERM			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"terminal"			,CON_PROP_TERMINAL			,CON_PROP_FLAGS ,NULL,NULL},
-	{	"timeout"			,CON_PROP_TIMEOUT			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN		,CON_PROP_FLAGS	,NULL,NULL},
-	{	"aborted"			,CON_PROP_ABORTED			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"abortable"			,CON_PROP_ABORTABLE			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"telnet_mode"		,CON_PROP_TELNET_MODE		,CON_PROP_FLAGS	,NULL,NULL},
-	{	"wordwrap"			,CON_PROP_WORDWRAP			,JSPROP_ENUMERATE|JSPROP_READONLY ,NULL,NULL},
-	{	"question"			,CON_PROP_QUESTION			,CON_PROP_FLAGS ,NULL,NULL},
-	{	"getstr_offset"		,CON_PROP_GETSTR_OFFSET		,CON_PROP_FLAGS ,NULL,NULL},
-	{	"ctrlkey_passthru"	,CON_PROP_CTRLKEY_PASSTHRU	,CON_PROP_FLAGS	,NULL,NULL},
+	{	"status"			,CON_PROP_STATUS			,CON_PROP_FLAGS	,310},
+	{	"line_counter"		,CON_PROP_LNCNTR 			,CON_PROP_FLAGS	,310},
+	{	"attributes"		,CON_PROP_ATTR				,CON_PROP_FLAGS	,310},
+	{	"top_of_screen"		,CON_PROP_TOS				,CON_PROP_FLAGS	,310},
+	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,310},
+	{	"screen_columns"	,CON_PROP_COLUMNS			,CON_PROP_FLAGS	,311},
+	{	"autoterm"			,CON_PROP_AUTOTERM			,CON_PROP_FLAGS	,310},
+	{	"terminal"			,CON_PROP_TERMINAL			,CON_PROP_FLAGS ,311},
+	{	"timeout"			,CON_PROP_TIMEOUT			,CON_PROP_FLAGS	,310},
+	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN		,CON_PROP_FLAGS	,310},
+	{	"aborted"			,CON_PROP_ABORTED			,CON_PROP_FLAGS	,310},
+	{	"abortable"			,CON_PROP_ABORTABLE			,CON_PROP_FLAGS	,310},
+	{	"telnet_mode"		,CON_PROP_TELNET_MODE		,CON_PROP_FLAGS	,310},
+	{	"wordwrap"			,CON_PROP_WORDWRAP			,JSPROP_ENUMERATE|JSPROP_READONLY ,310},
+	{	"question"			,CON_PROP_QUESTION			,CON_PROP_FLAGS ,310},
+	{	"getstr_offset"		,CON_PROP_GETSTR_OFFSET		,CON_PROP_FLAGS ,311},
+	{	"ctrlkey_passthru"	,CON_PROP_CTRLKEY_PASSTHRU	,CON_PROP_FLAGS	,310},
 	{0}
 };
 
@@ -1122,147 +1122,188 @@ js_telnet_cmd(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 }
 
 
-static jsMethodSpec js_console_functions[] = {
+static jsSyncMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[number mode] [,number timeout]")
 	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait), "
 		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
+	,311
 	},		
 	{"getkey",			js_getkey,			0, JSTYPE_STRING,	JSDOCSTR("[number mode]")
 	,JSDOCSTR("get a single key, with wait, "
 		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
+	,310
 	},		
 	{"getstr",			js_getstr,			0, JSTYPE_STRING,	JSDOCSTR("[string][,maxlen][,mode]")
 	,JSDOCSTR("get a text string from the user, "
 		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
+	,310
 	},		
 	{"getnum",			js_getnum,			0, JSTYPE_NUMBER,	JSDOCSTR("[maxnum]")
 	,JSDOCSTR("get a number between 1 and <i>maxnum</i> from the user")
+	,310
 	},		
 	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("string keys [,maxnum]")
 	,JSDOCSTR("get one key from of a list of valid command <i>keys</i>, "
 		"or a number between 1 and <i>maxnum</i>")
+	,310
 	},		
 	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	JSDOCSTR("format [,string] [,mode]")
 	,JSDOCSTR("get a string based on template")
+	,310
 	},		
 	{"ungetstr",		js_ungetstr,		1, JSTYPE_VOID,		""
 	,JSDOCSTR("put a string in the keyboard buffer")
+	,310
 	},		
 	{"yesno",			js_yesno,			1, JSTYPE_BOOLEAN,	JSDOCSTR("string question")
 	,JSDOCSTR("YES/no question")
+	,310
 	},		
 	{"noyes",			js_noyes,			1, JSTYPE_BOOLEAN,	JSDOCSTR("string question")
 	,JSDOCSTR("NO/yes question")
+	,310
 	},		
 	{"mnemonics",		js_mnemonics,		1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("print a mnemonics string")
+	,310
 	},		
 	{"clear",           js_clear,			0, JSTYPE_VOID,		""
 	,JSDOCSTR("clear screen and home cursor")
+	,310
 	},
 	{"home",            js_cursor_home,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("send cursor to home position (x,y:1,1)")
+	,311
 	},
 	{"clearline",       js_clearline,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("clear current line")
+	,310
 	},		
 	{"cleartoeol",      js_cleartoeol,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("clear to end-of-line (ANSI)")
+	,311
 	},		
 	{"crlf",            js_crlf,			0, JSTYPE_VOID,		""
 	,JSDOCSTR("output a carriage-return/line-feed pair (new-line)")
+	,310
 	},		
 	{"pause",			js_pause,			0, JSTYPE_VOID,		""
 	,JSDOCSTR("display pause prompt and wait for key hit")
+	,310
 	},
 	{"beep",			js_beep,			1, JSTYPE_VOID,		JSDOCSTR("[number count]")
 	,JSDOCSTR("beep for count number of times (default count is 1)")
+	,311
 	},
 	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("display a string (supports Ctrl-A codes)")
+	,310
 	},		
 	{"write",			js_write,			1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("display a raw string")
+	,310
 	},		
 	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("string text [,number mode]")
 	,JSDOCSTR("display message text (Ctrl-A codes, @-codes, pipe codes, etc), "
 		"see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
+	,310
 	},		
 	{"center",			js_center,			1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("display a string centered on the screen")
+	,310
 	},
 	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("returns the number of characters in text, excluding Ctrl-A codes")
+	,310
 	},
 	{"printfile",		js_printfile,		1, JSTYPE_VOID,		JSDOCSTR("string text [,number mode]")
 	,JSDOCSTR("print a message text file with optional mode")
+	,310
 	},		
 	{"printtail",		js_printtail,		2, JSTYPE_VOID,		JSDOCSTR("string text, number lines [,number mode]")
 	,JSDOCSTR("print last x lines of file with optional mode")
+	,310
 	},		
 	{"editfile",		js_editfile,		1, JSTYPE_VOID,		JSDOCSTR("string filename")
 	,JSDOCSTR("edit/create a text file using the user's preferred message editor")
+	,310
 	},		
 	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	JSDOCSTR("[number, string title, string item, string ars]")
 	,JSDOCSTR("user selection menu, call for each item, then with no args to display select menu")
+	,310
 	},		
 	{"saveline",		js_saveline,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("save last output line")
+	,310
 	},		
 	{"restoreline",		js_restoreline,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("restore last output line")
+	,310
 	},		
 	{"ansi",			js_ansi,			1, JSTYPE_STRING,	JSDOCSTR("number attribute")
 	,JSDOCSTR("returns ANSI encoding of specified attribute")
+	,310
 	},		
 	{"ansi_save",		js_pushxy,			0, JSTYPE_ALIAS	},
 	{"ansi_pushxy",		js_pushxy,			0, JSTYPE_ALIAS	},
 	{"pushxy",			js_pushxy,			0, JSTYPE_VOID,		""
 	,JSDOCSTR("save current cursor position (AKA ansi_save)")
+	,311
 	},
 	{"ansi_restore",	js_popxy,			0, JSTYPE_ALIAS },
 	{"ansi_popxy",		js_popxy,			0, JSTYPE_ALIAS },
 	{"popxy",			js_popxy,			0, JSTYPE_VOID,		""
 	,JSDOCSTR("restore saved cursor position (AKA ansi_restore)")
+	,311
 	},
 	{"ansi_gotoxy",		js_gotoxy,			1, JSTYPE_ALIAS },
 	{"gotoxy",			js_gotoxy,			1, JSTYPE_VOID,		JSDOCSTR("number x,y")
 	,JSDOCSTR("Move cursor to a specific screen coordinate (ANSI), "
 	"arguments can be separate x and y cooridinates or an object with x and y properites "
 	"(like that returned from <tt>console.getxy()</tt>)")
+	,311
 	},
 	{"ansi_up",			js_cursor_up,		0, JSTYPE_ALIAS },
 	{"up",				js_cursor_up,		0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
 	,JSDOCSTR("Move cursor up one or more rows (ANSI)")
+	,311
 	},
 	{"ansi_down",		js_cursor_down,		0, JSTYPE_ALIAS },
 	{"down",			js_cursor_down,		0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
 	,JSDOCSTR("Move cursor down one or more rows (ANSI)")
+	,311
 	},
 	{"ansi_right",		js_cursor_right,	0, JSTYPE_ALIAS },
 	{"right",			js_cursor_right,	0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
 	,JSDOCSTR("Move cursor right one or more columns (ANSI)")
+	,311
 	},
 	{"ansi_left",		js_cursor_left,		0, JSTYPE_ALIAS },
 	{"left",			js_cursor_left,		0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
 	,JSDOCSTR("Move cursor left one or more columns (ANSI)")
+	,311
 	},
 	{"ansi_getlines",	js_getlines,		0, JSTYPE_ALIAS },
 	{"getlines",		js_getlines,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("Auto-detect the number of rows/lines on the user's terminal (ANSI)")
+	,311
 	},
 	{"ansi_getxy",		js_getxy,			0, JSTYPE_ALIAS },
 	{"getxy",			js_getxy,			0, JSTYPE_OBJECT,	""
 	,JSDOCSTR("Returns the current cursor position as an object (with x and y properties)")
+	,311
 	},
 	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		JSDOCSTR("[boolean lock]")
 	,JSDOCSTR("Lock the user input thread (allowing direct client socket access)")
+	,310
 	},
 	{"telnet_cmd",		js_telnet_cmd,		2, JSTYPE_VOID,		JSDOCSTR("number cmd [,number option]")
 	,JSDOCSTR("Send telnet command (with optional command option) to remote client")
+	,310
 	},
 	{"handle_ctrlkey",	js_handle_ctrlkey,	1, JSTYPE_BOOLEAN,	JSDOCSTR("string key [,number mode]")
 	,JSDOCSTR("Call internal control key handler for specified control key, returns true if handled")
+	,311
 	},
 	{0}
 };
@@ -1293,10 +1334,10 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 		,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 		return(NULL);
 
-	if(!JS_DefineProperties(cx, obj, js_console_properties))
+	if(!js_DefineSyncProperties(cx, obj, js_console_properties))
 		return(NULL);
 
-	if (!js_DefineMethods(cx, obj, js_console_functions, FALSE)) 
+	if (!js_DefineSyncMethods(cx, obj, js_console_functions, FALSE)) 
 		return(NULL);
 
 	/* Create an array of pre-defined colors */
@@ -1318,7 +1359,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	}	
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Controls the user's Telnet/RLogin terminal");
+	js_DescribeSyncObject(cx,obj,"Controls the user's Telnet/RLogin terminal",310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", con_prop_desc, JSPROP_READONLY);
 #endif
 

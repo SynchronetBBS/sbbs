@@ -327,75 +327,75 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define SYSOBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
-static struct JSPropertySpec js_system_properties[] = {
-/*		 name,		tinyid,				flags,				getter,	setter	*/
+static jsSyncPropertySpec js_system_properties[] = {
+/*		 name,						tinyid,				flags,				ver	*/
 
-	{	"name",		SYS_PROP_NAME,		SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"operator",	SYS_PROP_OP,		SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"qwk_id",	SYS_PROP_ID,		SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"settings",	SYS_PROP_MISC,		JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"psname",	SYS_PROP_PSNAME,	SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"psnum",	SYS_PROP_PSNUM,		SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"inetaddr",	SYS_PROP_INETADDR,	JSPROP_READONLY,	NULL,	NULL },	/* alias */
-	{	"inet_addr",SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"location",	SYS_PROP_LOCATION,	SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"timezone",	SYS_PROP_TIMEZONE,	SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"pwdays",	SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"deldays",	SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
+	{	"name",						SYS_PROP_NAME,		SYSOBJ_FLAGS,		310  },
+	{	"operator",					SYS_PROP_OP,		SYSOBJ_FLAGS,		310  },
+	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310  },
+	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310  },
+	{	"psname",					SYS_PROP_PSNAME,	SYSOBJ_FLAGS,		310  },
+	{	"psnum",					SYS_PROP_PSNUM,		SYSOBJ_FLAGS,		310  },
+	{	"inetaddr",					SYS_PROP_INETADDR,	JSPROP_READONLY,	310  },	/* alias */
+	{	"inet_addr",				SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		311  },
+	{	"location",					SYS_PROP_LOCATION,	SYSOBJ_FLAGS,		310  },
+	{	"timezone",					SYS_PROP_TIMEZONE,	SYSOBJ_FLAGS,		310  },
+	{	"pwdays",					SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		310  },
+	{	"deldays",					SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		310  },
 
-	{	"lastuser",					SYS_PROP_LASTUSER		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"lastuseron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"freediskspacek",			SYS_PROP_FREEDISKSPACEK	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"lastuser",					SYS_PROP_LASTUSER		,SYSOBJ_FLAGS,	311  },
+	{	"lastuseron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	310  },
+	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	310  },
+	{	"freediskspacek",			SYS_PROP_FREEDISKSPACEK	,SYSOBJ_FLAGS,	310  },
 
-	{	"nodes",					SYS_PROP_NODES,		SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"lastnode",					SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		NULL,	NULL },
+	{	"nodes",					SYS_PROP_NODES,		SYSOBJ_FLAGS,		310  },
+	{	"lastnode",					SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		310  },
 
-	{	"newuser_password",			SYS_PROP_NEW_PASS		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_magic_word",		SYS_PROP_NEW_MAGIC		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_level",			SYS_PROP_NEW_LEVEL		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_flags1",			SYS_PROP_NEW_FLAGS1		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_flags2",			SYS_PROP_NEW_FLAGS2		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_flags3",			SYS_PROP_NEW_FLAGS3		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_flags4",			SYS_PROP_NEW_FLAGS4		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_restrictions",		SYS_PROP_NEW_REST		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_exemptions",		SYS_PROP_NEW_EXEMPT		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_credits",			SYS_PROP_NEW_CDT		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_minutes",			SYS_PROP_NEW_MIN		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_command_shell",	SYS_PROP_NEW_SHELL		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_editor",			SYS_PROP_NEW_XEDIT		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_settings",			SYS_PROP_NEW_MISC		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_download_protocol",SYS_PROP_NEW_PROT		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_expiration_days",	SYS_PROP_NEW_EXPIRE		,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"newuser_questions",		SYS_PROP_NEW_UQ			,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_password",			SYS_PROP_NEW_PASS		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_magic_word",		SYS_PROP_NEW_MAGIC		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_level",			SYS_PROP_NEW_LEVEL		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_flags1",			SYS_PROP_NEW_FLAGS1		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_flags2",			SYS_PROP_NEW_FLAGS2		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_flags3",			SYS_PROP_NEW_FLAGS3		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_flags4",			SYS_PROP_NEW_FLAGS4		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_restrictions",		SYS_PROP_NEW_REST		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_exemptions",		SYS_PROP_NEW_EXEMPT		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_credits",			SYS_PROP_NEW_CDT		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_minutes",			SYS_PROP_NEW_MIN		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_command_shell",	SYS_PROP_NEW_SHELL		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_editor",			SYS_PROP_NEW_XEDIT		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_settings",			SYS_PROP_NEW_MISC		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_download_protocol",SYS_PROP_NEW_PROT		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_expiration_days",	SYS_PROP_NEW_EXPIRE		,SYSOBJ_FLAGS,	310  },
+	{	"newuser_questions",		SYS_PROP_NEW_UQ			,SYSOBJ_FLAGS,	310  },
 
-	{	"expired_level",			SYS_PROP_EXPIRED_LEVEL	,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"expired_flags1",			SYS_PROP_EXPIRED_FLAGS1	,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"expired_flags2",			SYS_PROP_EXPIRED_FLAGS2	,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"expired_flags3",			SYS_PROP_EXPIRED_FLAGS3	,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"expired_flags4",			SYS_PROP_EXPIRED_FLAGS4	,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"expired_restrictions",		SYS_PROP_EXPIRED_REST	,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"expired_exemptions",		SYS_PROP_EXPIRED_EXEMPT	,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"expired_level",			SYS_PROP_EXPIRED_LEVEL	,SYSOBJ_FLAGS,	310  },
+	{	"expired_flags1",			SYS_PROP_EXPIRED_FLAGS1	,SYSOBJ_FLAGS,	310  },
+	{	"expired_flags2",			SYS_PROP_EXPIRED_FLAGS2	,SYSOBJ_FLAGS,	310  },
+	{	"expired_flags3",			SYS_PROP_EXPIRED_FLAGS3	,SYSOBJ_FLAGS,	310  },
+	{	"expired_flags4",			SYS_PROP_EXPIRED_FLAGS4	,SYSOBJ_FLAGS,	310  },
+	{	"expired_restrictions",		SYS_PROP_EXPIRED_REST	,SYSOBJ_FLAGS,	310  },
+	{	"expired_exemptions",		SYS_PROP_EXPIRED_EXEMPT	,SYSOBJ_FLAGS,	310  },	
 
 	/* directories */
-	{	"node_dir",					SYS_PROP_NODE_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
-	{	"ctrl_dir",					SYS_PROP_CTRL_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
-	{	"data_dir",					SYS_PROP_DATA_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
-	{	"text_dir",					SYS_PROP_TEXT_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
-	{	"temp_dir",					SYS_PROP_TEMP_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
-	{	"exec_dir",					SYS_PROP_EXEC_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
-	{	"mods_dir",					SYS_PROP_MODS_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
-	{	"logs_dir",					SYS_PROP_LOGS_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"node_dir",					SYS_PROP_NODE_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"ctrl_dir",					SYS_PROP_CTRL_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"data_dir",					SYS_PROP_DATA_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"text_dir",					SYS_PROP_TEXT_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"temp_dir",					SYS_PROP_TEMP_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"exec_dir",					SYS_PROP_EXEC_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"mods_dir",					SYS_PROP_MODS_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"logs_dir",					SYS_PROP_LOGS_DIR		,SYSOBJ_FLAGS,	310  },	
 
 	/* filenames */
-	{	"devnull",					SYS_PROP_DEVNULL		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"devnull",					SYS_PROP_DEVNULL		,SYSOBJ_FLAGS,	311  },
 
 	/* clock access */
-	{	"clock_ticks",				SYS_PROP_CLOCK			,SYSOBJ_FLAGS,	NULL,	NULL },
-	{	"clock_ticks_per_second",	SYS_PROP_CLOCK_PER_SEC	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"clock_ticks",				SYS_PROP_CLOCK			,SYSOBJ_FLAGS,	311  },
+	{	"clock_ticks_per_second",	SYS_PROP_CLOCK_PER_SEC	,SYSOBJ_FLAGS,	311  },
 
 	/* last */
-	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME,SYSOBJ_FLAGS,	311  },
 	{0}
 };
 
@@ -606,26 +606,26 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define SYSSTAT_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
-static struct JSPropertySpec js_sysstats_properties[] = {
-/*		 name,						tinyid,						flags,			getter,	setter	*/
+static jsSyncPropertySpec js_sysstats_properties[] = {
+/*		 name,						tinyid,						flags,			ver	*/
 
-	{	"total_logons",				SYSSTAT_PROP_LOGONS,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"logons_today",				SYSSTAT_PROP_LTODAY,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"total_timeon",				SYSSTAT_PROP_TIMEON,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"timeon_today",				SYSSTAT_PROP_TTODAY,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"total_files",				SYSSTAT_PROP_TOTALFILES,	SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"files_uploaded_today",		SYSSTAT_PROP_ULS,			SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"bytes_uploaded_today",		SYSSTAT_PROP_ULB,			SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"files_downloaded_today",	SYSSTAT_PROP_DLS,			SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"bytes_downloaded_today",	SYSSTAT_PROP_DLB,			SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"total_messages",			SYSSTAT_PROP_TOTALMSGS,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"messages_posted_today",	SYSSTAT_PROP_PTODAY,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"total_email",				SYSSTAT_PROP_TOTALMAIL,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"email_sent_today",			SYSSTAT_PROP_ETODAY,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"total_feedback",			SYSSTAT_PROP_FEEDBACK,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"feedback_sent_today",		SYSSTAT_PROP_FTODAY,		SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"total_users",				SYSSTAT_PROP_TOTALUSERS,	SYSSTAT_FLAGS,	NULL,	NULL },
-	{	"new_users_today",			SYSSTAT_PROP_NUSERS,		SYSSTAT_FLAGS,	NULL,	NULL },
+	{	"total_logons",				SYSSTAT_PROP_LOGONS,		SYSSTAT_FLAGS,	310 },
+	{	"logons_today",				SYSSTAT_PROP_LTODAY,		SYSSTAT_FLAGS,	310 },
+	{	"total_timeon",				SYSSTAT_PROP_TIMEON,		SYSSTAT_FLAGS,	310 },
+	{	"timeon_today",				SYSSTAT_PROP_TTODAY,		SYSSTAT_FLAGS,	310 },
+	{	"total_files",				SYSSTAT_PROP_TOTALFILES,	SYSSTAT_FLAGS,	310 },
+	{	"files_uploaded_today",		SYSSTAT_PROP_ULS,			SYSSTAT_FLAGS,	310 },
+	{	"bytes_uploaded_today",		SYSSTAT_PROP_ULB,			SYSSTAT_FLAGS,	310 },
+	{	"files_downloaded_today",	SYSSTAT_PROP_DLS,			SYSSTAT_FLAGS,	310 },
+	{	"bytes_downloaded_today",	SYSSTAT_PROP_DLB,			SYSSTAT_FLAGS,	310 },
+	{	"total_messages",			SYSSTAT_PROP_TOTALMSGS,		SYSSTAT_FLAGS,	310 },
+	{	"messages_posted_today",	SYSSTAT_PROP_PTODAY,		SYSSTAT_FLAGS,	310 },
+	{	"total_email",				SYSSTAT_PROP_TOTALMAIL,		SYSSTAT_FLAGS,	310 },
+	{	"email_sent_today",			SYSSTAT_PROP_ETODAY,		SYSSTAT_FLAGS,	310 },
+	{	"total_feedback",			SYSSTAT_PROP_FEEDBACK,		SYSSTAT_FLAGS,	310 },
+	{	"feedback_sent_today",		SYSSTAT_PROP_FTODAY,		SYSSTAT_FLAGS,	310 },
+	{	"total_users",				SYSSTAT_PROP_TOTALUSERS,	SYSSTAT_FLAGS,	310 },
+	{	"new_users_today",			SYSSTAT_PROP_NUSERS,		SYSSTAT_FLAGS,	310 },
 	{0}
 };
 
@@ -1315,75 +1315,96 @@ js_chksyspass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 
 
 
-static jsMethodSpec js_system_functions[] = {
+static jsSyncMethodSpec js_system_functions[] = {
 	{"username",		js_username,		1,	JSTYPE_STRING,	JSDOCSTR("number")
 	,JSDOCSTR("returns name of user in specified user record <i>number</i>, or empty string if not found")
+	,311
 	},
 	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("string alias")
 	,JSDOCSTR("returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
+	,310
 	},		
 	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("string username [,bool sysop_alias]")
 	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i> "
 		" or 0 if not found, matches well-known sysop aliases by default")
+	,310
 	},		
 	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,usernumber]")
 	,JSDOCSTR("search user database for data in a specific field (specified by offset), "
 		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip")
+	,310
 	},
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
 	,JSDOCSTR("search text/filename.can for pseudo-regexp")
+	,310
 	},		
 	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
 	,JSDOCSTR("search any file for pseudo-regexp")
+	,310
 	},		
 	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone]")
 	,JSDOCSTR("convert time zone integer to string, defaults to system timezone if <i>timezone</i> not specified")
+	,310
 	},		
 	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time]")
 	,JSDOCSTR("convert time_t integer into a time string, "
 		"defaults to current time if <i>time</i> not specified")
+	,310
 	},		
 	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time]")
 	,JSDOCSTR("convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), "
 		"defaults to current date if <i>time</i> not specified")
+	,310
 	},		
 	{"secondstr",		js_secondstr,		0,	JSTYPE_STRING,	JSDOCSTR("seconds")
 	,JSDOCSTR("convert elapsed time in seconds into a string in <tt>hh:mm:ss</tt> format")
+	,310
 	},		
 	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, action, reason, host, ip, to, from]")
 	,JSDOCSTR("log a suspected SPAM attempt")
+	,310
 	},		
 	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, user, text, host, ip, port]")
 	,JSDOCSTR("log a suspected hack attempt")
+	,310
 	},
 	{"filter_ip",		js_filter_ip,		4,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, reason, host, ip, username]")
 	,JSDOCSTR("add an IP address (with comment) to the system's IP filter file")
+	,311
 	},		
 	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("number node")
 	,JSDOCSTR("read any messages waiting for the specified node and return in a single string")
+	,311
 	},		
 	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("number node, string message")
 	,JSDOCSTR("send a node a short text message, delivered immediately")
+	,310
 	},		
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_STRING,	JSDOCSTR("number user")
 	,JSDOCSTR("returns any short text messages waiting for the specified user")
+	,311
 	},		
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number user, string message")
 	,JSDOCSTR("sends a user a short text message, delivered immediately or during next logon")
+	,310
 	},		
 	{"newuser",			js_new_user,		1,	JSTYPE_ALIAS },
 	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias")
 	,JSDOCSTR("creates a new user record, returns a new <a href=#User>User</a> object representing the new user account")
+	,310
 	},
 	{"exec",			js_exec,			1,	JSTYPE_NUMBER,	JSDOCSTR("command-line")
 	,JSDOCSTR("executes a native system/shell command-line, returns <i>0</i> on success")
+	,311
 	},
 	{"popen",			js_popen,			0,	JSTYPE_ARRAY,	JSDOCSTR("command-line")
 	,JSDOCSTR("executes a native system/shell command-line, returns array of captured output lines on success "
 		"(<b>only functional on UNIX systems</b>)")
+	,311
 	},
 	{"check_syspass",	js_chksyspass,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string password")
 	,JSDOCSTR("compares the supplied <i>password</i> against the system password and return's <i>true</i> if it matches")
+	,311
 	},
 	{0}
 };
@@ -1534,18 +1555,18 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-static struct JSPropertySpec js_node_properties[] = {
-/*		 name,						tinyid,					flags,				getter,	setter	*/
+static jsSyncPropertySpec js_node_properties[] = {
+/*		 name,						tinyid,					flags,				ver	*/
 
 /* raw node_t fields */
-	{	"status",					NODE_PROP_STATUS,		JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"errors",					NODE_PROP_ERRORS,		JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"action",					NODE_PROP_ACTION,		JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"useron",					NODE_PROP_USERON,		JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"connection",				NODE_PROP_CONNECTION,	JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"misc",						NODE_PROP_MISC,			JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"aux",						NODE_PROP_AUX,			JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"extaux",					NODE_PROP_EXTAUX,		JSPROP_ENUMERATE,	NULL,	NULL },
+	{	"status",					NODE_PROP_STATUS,		JSPROP_ENUMERATE,	310 },
+	{	"errors",					NODE_PROP_ERRORS,		JSPROP_ENUMERATE,	310 },
+	{	"action",					NODE_PROP_ACTION,		JSPROP_ENUMERATE,	310 },
+	{	"useron",					NODE_PROP_USERON,		JSPROP_ENUMERATE,	310 },
+	{	"connection",				NODE_PROP_CONNECTION,	JSPROP_ENUMERATE,	310 },
+	{	"misc",						NODE_PROP_MISC,			JSPROP_ENUMERATE,	310 },
+	{	"aux",						NODE_PROP_AUX,			JSPROP_ENUMERATE,	310 },
+	{	"extaux",					NODE_PROP_EXTAUX,		JSPROP_ENUMERATE,	310 },
 	{0}
 };
 
@@ -1583,14 +1604,14 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetPrivate(cx, sysobj, cfg))	/* Store a pointer to scfg_t */
 		return(NULL);
 
-	if(!JS_DefineProperties(cx, sysobj, js_system_properties))
+	if(!js_DefineSyncProperties(cx, sysobj, js_system_properties))
 		return(NULL);
 
-	if (!js_DefineMethods(cx, sysobj, js_system_functions, FALSE)) 
+	if (!js_DefineSyncMethods(cx, sysobj, js_system_functions, FALSE)) 
 		return(NULL);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,sysobj,"Global system-related properties and methods");
+	js_DescribeSyncObject(cx,sysobj,"Global system-related properties and methods",310);
 	js_CreateArrayOfStrings(cx, sysobj, "_property_desc_list", sys_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -1707,11 +1728,11 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 
 	JS_SetPrivate(cx, statsobj, cfg);	/* Store a pointer to scfg_t */
 
-	if(!JS_DefineProperties(cx, statsobj, js_sysstats_properties))
+	if(!js_DefineSyncProperties(cx, statsobj, js_sysstats_properties))
 		return(NULL);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,statsobj,"System statistics");
+	js_DescribeSyncObject(cx,statsobj,"System statistics",310);
 	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", sysstat_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -1736,11 +1757,11 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 		if(!JS_SetPrivate(cx, nodeobj, (char*)((i+1)<<1)))	
 			return(NULL);
 
-		if(!JS_DefineProperties(cx, nodeobj, js_node_properties))
+		if(!js_DefineSyncProperties(cx, nodeobj, js_node_properties))
 			return(NULL);
 
 #ifdef _DEBUG
-		js_DescribeObject(cx,nodeobj,"BBS node listing");
+		js_DescribeSyncObject(cx,nodeobj,"BBS node listing",310);
 		js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
 #endif
 

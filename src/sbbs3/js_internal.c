@@ -142,20 +142,20 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define RT_PROP_FLAGS	JSPROP_ENUMERATE|JSPROP_READONLY
 
-static struct JSPropertySpec js_properties[] = {
-/*		 name,				tinyid,						flags,				getter,	setter	*/
+static jsSyncPropertySpec js_properties[] = {
+/*		 name,				tinyid,						flags,		ver	*/
 
-	{	"terminated",		PROP_TERMINATED,	JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"branch_counter",	PROP_BRANCH_COUNTER,JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"branch_limit",		PROP_BRANCH_LIMIT,	JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"yield_interval",	PROP_YIELD_INTERVAL,JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"gc_interval",		PROP_GC_INTERVAL,	JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"gc_attempts",		PROP_GC_ATTEMPTS,	RT_PROP_FLAGS,		NULL,	NULL },
+	{	"terminated",		PROP_TERMINATED,	JSPROP_ENUMERATE,	311 },
+	{	"branch_counter",	PROP_BRANCH_COUNTER,JSPROP_ENUMERATE,	311 },
+	{	"branch_limit",		PROP_BRANCH_LIMIT,	JSPROP_ENUMERATE,	311 },
+	{	"yield_interval",	PROP_YIELD_INTERVAL,JSPROP_ENUMERATE,	311 },
+	{	"gc_interval",		PROP_GC_INTERVAL,	JSPROP_ENUMERATE,	311 },
+	{	"gc_attempts",		PROP_GC_ATTEMPTS,	RT_PROP_FLAGS,		311 },
 #ifdef jscntxt_h___
-	{	"gc_counter",		PROP_GC_COUNTER,	RT_PROP_FLAGS,		NULL,	NULL },
-	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	RT_PROP_FLAGS,		NULL,	NULL },
-	{	"bytes",			PROP_BYTES,			RT_PROP_FLAGS,		NULL,	NULL },
-	{	"max_bytes",		PROP_MAXBYTES,		JSPROP_ENUMERATE,	NULL,	NULL },
+	{	"gc_counter",		PROP_GC_COUNTER,	RT_PROP_FLAGS,		311 },
+	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	RT_PROP_FLAGS,		311 },
+	{	"bytes",			PROP_BYTES,			RT_PROP_FLAGS,		311 },
+	{	"max_bytes",		PROP_MAXBYTES,		JSPROP_ENUMERATE,	311 },
 #endif
 	{0}
 };
@@ -302,14 +302,16 @@ static JSClass js_internal_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-static jsMethodSpec js_functions[] = {
+static jsSyncMethodSpec js_functions[] = {
 	{"eval",            js_eval,            0,	JSTYPE_STRING,	JSDOCSTR("string script")
 	,JSDOCSTR("evaluate a JavaScript string in its own (secure) context, returning the result")
+	,311
 	},		
 	{"gc",				js_gc,				0,	JSTYPE_VOID,	JSDOCSTR("bool forced")
 	,JSDOCSTR("perform a garbage collection operation (freeing memory for unused allocated objects), "
 		"if <i>forced</i> is <i>true</i> (the default) a garbage collection is always performed, "
 		"otherwise it is only performed if deemed appropriate by the JavaScript engine")
+	,311
 	},		
 	{0}
 };
@@ -325,14 +327,14 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 	if(!JS_SetPrivate(cx, obj, branch))	/* Store a pointer to js_branch_t */
 		return(NULL);
 
-	if(!JS_DefineProperties(cx, obj, js_properties))	/* expose them */
+	if(!js_DefineSyncProperties(cx, obj, js_properties))	/* expose them */
 		return(NULL);
 
-	if (!js_DefineMethods(cx, obj, js_functions, /* append? */ FALSE)) 
+	if(!js_DefineSyncMethods(cx, obj, js_functions, /* append? */ FALSE)) 
 		return(NULL);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"JavaScript execution and garbage collection control object");
+	js_DescribeSyncObject(cx,obj,"JavaScript execution and garbage collection control object",311);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", prop_desc, JSPROP_READONLY);
 #endif
 

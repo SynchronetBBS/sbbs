@@ -1172,24 +1172,24 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 #define SOCK_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
-static struct JSPropertySpec js_socket_properties[] = {
-/*		 name				,tinyid					,flags,				getter,	setter	*/
+static jsSyncPropertySpec js_socket_properties[] = {
+/*		 name				,tinyid					,flags,				ver	*/
 
-	{	"error"				,SOCK_PROP_LAST_ERROR	,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"last_error"		,SOCK_PROP_LAST_ERROR	,JSPROP_READONLY,	NULL,NULL},	/* alias */
-	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"is_writeable"		,SOCK_PROP_IS_WRITEABLE	,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"nread"				,SOCK_PROP_NREAD		,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"descriptor"		,SOCK_PROP_DESCRIPTOR	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"nonblocking"		,SOCK_PROP_NONBLOCKING	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"local_ip_address"	,SOCK_PROP_LOCAL_IP		,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"local_port"		,SOCK_PROP_LOCAL_PORT	,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"type"				,SOCK_PROP_TYPE			,SOCK_PROP_FLAGS,	NULL,NULL},
-	{	"network_byte_order",SOCK_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"error"				,SOCK_PROP_LAST_ERROR	,SOCK_PROP_FLAGS,	311 },
+	{	"last_error"		,SOCK_PROP_LAST_ERROR	,JSPROP_READONLY,	310 },	/* alias */
+	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,SOCK_PROP_FLAGS,	310 },
+	{	"is_writeable"		,SOCK_PROP_IS_WRITEABLE	,SOCK_PROP_FLAGS,	311 },
+	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,SOCK_PROP_FLAGS,	310 },
+	{	"nread"				,SOCK_PROP_NREAD		,SOCK_PROP_FLAGS,	310 },
+	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	310 },
+	{	"descriptor"		,SOCK_PROP_DESCRIPTOR	,JSPROP_ENUMERATE,	310 },
+	{	"nonblocking"		,SOCK_PROP_NONBLOCKING	,JSPROP_ENUMERATE,	310 },
+	{	"local_ip_address"	,SOCK_PROP_LOCAL_IP		,SOCK_PROP_FLAGS,	310 },
+	{	"local_port"		,SOCK_PROP_LOCAL_PORT	,SOCK_PROP_FLAGS,	310 },
+	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	310 },
+	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	310 },
+	{	"type"				,SOCK_PROP_TYPE			,SOCK_PROP_FLAGS,	310 },
+	{	"network_byte_order",SOCK_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	311 },
 	{0}
 };
 
@@ -1206,72 +1206,90 @@ static JSClass js_socket_class = {
 	,js_finalize_socket		/* finalize		*/
 };
 
-static jsMethodSpec js_socket_functions[] = {
+static jsSyncMethodSpec js_socket_functions[] = {
 	{"close",		js_close,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("close (shutdown) the socket immediately")
+	,310
 	},
 	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[port]")
 	,JSDOCSTR("bind socket to a port (number or service name)")
+	,310
 	},
 	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout]")
 	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)"
 	", default <i>timeout</i> value is <i>10.0</i> (seconds)")
+	,311
 	},
 	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	""					
 	,JSDOCSTR("place socket in a state to listen for incoming connections (use before an accept)")
+	,310
 	},
 	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	""					
 	,JSDOCSTR("accept an incoming connection, returns a new <i>Socket</i> object representing the new connection")
+	,310
 	},
 	{"write",		js_send,		1,	JSTYPE_ALIAS },
 	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("data")
 	,JSDOCSTR("send a string (AKA write)")
+	,310
 	},
 	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("data, address, port")
 	,JSDOCSTR("send data to a specific host (IP address or host name) and port (number or service name), for UDP sockets")
+	,310
 	},
 	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
 	,JSDOCSTR("send an entire file over the socket")
+	,310
 	},
 	{"writeBin",	js_sendbin,		1,	JSTYPE_ALIAS },
 	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number value [,number bytes]")
 	,JSDOCSTR("send a binary integer over the socket, default number of bytes is 4 (32-bits)")
+	,311
 	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
 	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters (AKA read)")
+	,310
 	},
 	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters, leaves string in receive buffer")
+	,310
 	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
 	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
 	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen] [,timeout]")
 	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
+	,310
 	},
 	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[bool binary] [,maxlen or int_size]")
 	,JSDOCSTR("receive data (string or integer) from a socket (typically UDP)"
 	"<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i>"
 	"<p><i>binary</i> defaults to <i>false</i>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)")
+	,311
 	},
 	{"readBin",		js_recvbin,		0,	JSTYPE_ALIAS },
 	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[number bytes]")
 	,JSDOCSTR("receive a binary integer from the socket, default number of bytes is 4 (32-bits)")
+	,311
 	},
 	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	JSDOCSTR("option")
 	,JSDOCSTR("get socket option value, option may be socket option name "
 	"(see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number")
+	,310
 	},
 	{"setoption",	js_setsockopt,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("option, value")
 	,JSDOCSTR("set socket option value, option may be socket option name "
 	"(see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number")
+	,310
 	},
 	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("command [,argument]")
 	,JSDOCSTR("send socket IOCTL (advanced)")					
+	,310
 	},
 	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[number timeout] [,bool write]")
 	,JSDOCSTR("poll socket for read or write ability (default is <i>read</i>), "
 	"default timeout value is 0.0 seconds (immediate timeout)")
+	,310
 	},
 	{0}
 };
@@ -1307,14 +1325,19 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineMethods(cx, obj, js_socket_functions, FALSE)) {
-		JS_ReportError(cx,"js_DefineMethods failed");
+	if(!js_DefineSyncProperties(cx, obj, js_socket_properties)) {
+		JS_ReportError(cx,"js_DefineSyncProperties failed");
+		return(JS_FALSE);
+	}
+
+	if(!js_DefineSyncMethods(cx, obj, js_socket_functions, FALSE)) {
+		JS_ReportError(cx,"js_DefineSyncMethods failed");
 		return(JS_FALSE);
 	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Class used for TCP/IP socket communications");
-	js_DescribeConstructor(cx,obj,"To create a new Socket object: "
+	js_DescribeSyncObject(cx,obj,"Class used for TCP/IP socket communications",310);
+	js_DescribeSyncConstructor(cx,obj,"To create a new Socket object: "
 		"<tt>load('sockdefs.js'); var s = new Socket(<i>type</i>)</tt><br>"
 		"where <i>type</i> = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
@@ -1332,7 +1355,7 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		,&js_socket_class
 		,js_socket_constructor
 		,0	/* number of constructor args */
-		,js_socket_properties
+		,NULL /* props, specified in constructor */
 		,NULL /* funcs, specified in constructor */
 		,NULL,NULL);
 
@@ -1350,7 +1373,7 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	if(obj==NULL)
 		return(NULL);
 
-	if(!JS_DefineProperties(cx, obj, js_socket_properties))
+	if(!js_DefineSyncProperties(cx, obj, js_socket_properties))
 		return(NULL);
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
@@ -1366,7 +1389,7 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 		return(NULL);
 	}
 
-	if (!js_DefineMethods(cx, obj, js_socket_functions, FALSE)) 
+	if (!js_DefineSyncMethods(cx, obj, js_socket_functions, FALSE)) 
 		return(NULL);
 
 	dbprintf(FALSE, p, "object created");
