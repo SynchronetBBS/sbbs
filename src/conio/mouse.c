@@ -150,6 +150,24 @@ void add_outevent(int event, int x, int y)
 	pthread_mutex_unlock(&out_mutex);
 }
 
+int more_multies(int button, int clicks)
+{
+	int i;
+
+	switch(clicks) {
+		case 1:
+			if(mouse_events & (1<<CIOLIB_BUTTON_DBL_CLICK(button)))
+				return(1);
+		case 2:
+			if(mouse_events & (1<<CIOLIB_BUTTON_TRPL_CLICK(button)))
+				return(1);
+		case 3:
+			if(mouse_events & (1<<CIOLIB_BUTTON_QUAD_CLICK(button)))
+				return(1);
+	}
+	return(0);
+}
+
 void ciolib_mouse_thread(void *data)
 {
 	struct in_mouse_event *old_in_event;
@@ -315,15 +333,15 @@ void ciolib_mouse_thread(void *data)
 							break;
 						case MOUSE_SINGLEPRESSED:
 							state.button_state[but-1]=MOUSE_CLICKED;
-							state.timeout[but-1]=MSEC_CLOCK()+state.multi_timeout;
+							state.timeout[but-1]=more_multies(but,1)?MSEC_CLOCK()+state.multi_timeout:MSEC_CLOCK();
 							break;
 						case MOUSE_DOUBLEPRESSED:
 							state.button_state[but-1]=MOUSE_DOUBLECLICKED;
-							state.timeout[but-1]=MSEC_CLOCK()+state.multi_timeout;
+							state.timeout[but-1]=more_multies(but,2)?MSEC_CLOCK()+state.multi_timeout:MSEC_CLOCK();
 							break;
 						case MOUSE_TRIPLEPRESSED:
 							state.button_state[but-1]=MOUSE_TRIPLECLICKED;
-							state.timeout[but-1]=MSEC_CLOCK()+state.multi_timeout;
+							state.timeout[but-1]=more_multies(but,3)?MSEC_CLOCK()+state.multi_timeout:MSEC_CLOCK();
 							break;
 						case MOUSE_QUADPRESSED:
 							state.button_state[but-1]=MOUSE_NOSTATE;
