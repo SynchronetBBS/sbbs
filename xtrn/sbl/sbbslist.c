@@ -266,6 +266,143 @@ int telnet_negotiate(SOCKET sock, uchar* buf, int rd, int max_rd)
 
 }
 
+int sockreadline(SOCKET socket, char* buf, int len, int timeout)
+{
+	char	ch;
+	int		i,rd=0;
+	time_t	start;
+	fd_set	socket_set;
+	struct timeval	tv;
+	
+	start=time(NULL);
+	while(rd<len-1) {
+
+		tv.tv_sec=0;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(socket,&socket_set);
+
+		i=select(socket+1,&socket_set,NULL,NULL,&tv);
+
+		if(i<1) {
+			if(i==0) {
+				if((time(NULL)-start)>=timeout) 
+					return(0);
+				mswait(1);
+				continue;
+			}
+			return(0);
+		}
+		i=recv(socket, &ch, 1, 0);
+		if(i<1) 
+			return(0);
+		if(ch=='\n' && rd>=1) {
+			break;
+		}	
+		buf[rd++]=ch;
+	}
+	buf[rd-1]=0;
+	
+	return(rd);
+}
+
+
+BOOL check_imsg_support(ulong ip_addr)
+{
+	char	buf[128];
+	BOOL	success=FALSE;
+	int		rd;
+	SOCKET	sock;
+	SOCKADDR_IN	addr;
+
+	printf("\r\nFinger: ");
+	if((sock = socket(AF_INET,SOCK_STREAM,IPPROTO_IP)) == INVALID_SOCKET) {
+		printf("!Error %d opening socket\n",ERROR_VALUE);
+		return(FALSE);
+	}
+
+	memset(&addr,0,sizeof(addr));
+	addr.sin_family = AF_INET;
+
+	if(bind(sock, (struct sockaddr *) &addr, sizeof (addr))!=0) {
+		printf("!bind error %d\n",ERROR_VALUE);
+		closesocket(sock);
+		return(FALSE);
+	}
+
+	memset(&addr,0,sizeof(addr));
+	addr.sin_addr.S_un.S_addr = ip_addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port   = htons(79);	/* finger */
+
+	if(connect(sock, (struct sockaddr *)&addr, sizeof(addr))!=0)  {
+		printf("!connect error %d\n",ERROR_VALUE);
+		closesocket(sock);
+		return(FALSE);
+	}
+
+	/* Send query */
+	strcpy(buf,"?ver\r\n");
+	send(sock,buf,strlen(buf),0);
+
+	/* Get response */
+	while((rd=sockreadline(sock,buf,sizeof(buf),30))>0) {
+		printf("%s\n",buf);
+		if(strstr(buf,"Synchronet")) {
+			success=TRUE;
+			break;
+		}
+	}
+
+	closesocket(sock);
+
+	if(success==FALSE)
+		return(FALSE);
+
+	/* Check SMTP server */
+	printf("SMTP: ");
+	success=FALSE;
+
+	if((sock = socket(AF_INET,SOCK_STREAM,IPPROTO_IP)) == INVALID_SOCKET) {
+		printf("!Error %d opening socket\n",ERROR_VALUE);
+		return(FALSE);
+	}
+
+	memset(&addr,0,sizeof(addr));
+	addr.sin_family = AF_INET;
+
+	if(bind(sock, (struct sockaddr *) &addr, sizeof (addr))!=0) {
+		printf("!bind error %d\n",ERROR_VALUE);
+		closesocket(sock);
+		return(FALSE);
+	}
+
+	memset(&addr,0,sizeof(addr));
+	addr.sin_addr.S_un.S_addr = ip_addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port   = htons(25);	/* SMTP */
+
+	if(connect(sock, (struct sockaddr *)&addr, sizeof(addr))!=0)  {
+		printf("!connect error %d\n",ERROR_VALUE);
+		closesocket(sock);
+		return(FALSE);
+	}
+
+	/* Get response */
+	while((rd=sockreadline(sock,buf,sizeof(buf),10))>0) {
+		printf("%s\r\n",buf);
+		if(strstr(buf,"Synchronet")) {
+			success=TRUE;
+			break;
+		}
+	}
+
+	closesocket(sock);
+
+	return(success);
+}
+
 int main(int argc, char **argv)
 {
 	char	str[128],name[128],*location,nodes[32],*sysop;
@@ -282,6 +419,7 @@ int main(int argc, char **argv)
 	char*	telnet_addr;
 	char	telnet_portstr[32];
 	ushort	telnet_port;
+	BOOL	fingered;
 	BOOL	verified;
 	ushort	index;
 	int		i,j,file,ff,rd;
@@ -291,6 +429,10 @@ int main(int argc, char **argv)
 	ulong	total_attempts=0;
 	ulong	total_verified=0;
 	FILE	*in,*shrt,*lng,*html;
+	FILE*	ibbs;
+	ulong	ip_list[1000];
+	ulong	ip_total=0;
+	ulong	ip;
 	bbs_t	bbs;
 	sort_t **sort=NULL;
 	time_t	now;
@@ -330,6 +472,10 @@ int main(int argc, char **argv)
 
 	if((html=fopen("sbbslist.html","w"))==NULL) {
 		printf("error opening/creating sbbslist.html\n");
+		return(1); }
+
+	if((ibbs=fopen("sbbsimsg.lst","w"))==NULL) {
+		printf("error opening/creating sbbsimsg.lst\n");
 		return(1); }
 
 	fprintf(shrt,"Synchronet BBS List exported from Vertrauen on %s\r\n"
@@ -428,6 +574,7 @@ int main(int argc, char **argv)
 				"----------------------------------\r\n\r\n");
 		ff=!ff;
 		verified=FALSE;
+		fingered=FALSE;
 		total_attempts++;
 		for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
 			if(!i) {
@@ -536,11 +683,13 @@ int main(int argc, char **argv)
 								if(p==NULL)
 									version[0]=0;
 								else {
-									p+=8;
+									p+=8;	/* skip "version" */
 									tp=strchr(p,'\r');
 									if(tp!=NULL) *tp=0;
 									truncsp(p);
-									for_os[11]=0;
+									for_os[12]=0;
+									tp=strchr(for_os+5,' ');
+									if(tp!=NULL) *tp=0;
 									truncsp(for_os);
 									sprintf(version,"v%s%s",p,for_os);
 								}
@@ -549,6 +698,19 @@ int main(int argc, char **argv)
 							} else {
 								printf("rd=%d buf='%s' sp='%s'\n",rd,buf,sp);
 								sprintf(verify_result,"non-Synchronet");
+							}
+							/* Check Finger */
+							for(ip=0;ip<ip_total;ip++)
+								if(ip_addr==ip_list[ip])
+									break;
+							if(ip>=ip_total && !fingered) {	/* not already checked */
+								ip_list[ip_total++]=ip_addr;
+								if(check_imsg_support(ip_addr)) {
+									fingered=TRUE;
+									printf("[IM]");
+									fprintf(ibbs,"%-63s %s\n"
+										,telnet_addr, inet_ntoa(addr.sin_addr));
+								}
 							}
 						}
 					}
