@@ -394,6 +394,10 @@ SOURCE=.\smbtxt.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\sockopts.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\sortdir.cpp
 # End Source File
 # Begin Source File

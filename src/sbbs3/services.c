@@ -183,13 +183,17 @@ static void thread_down(void)
 
 static SOCKET open_socket(int type)
 {
-	SOCKET sock;
+	char	error[256];
+	SOCKET	sock;
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(TRUE);
 	if(sock!=INVALID_SOCKET) {
 		sockets++;
+		if(set_socket_options(&scfg, sock, error))
+			lprintf("%04d !ERROR %s",sock, error);
+
 #if 0 /*def _DEBUG */
 		lprintf("%04d Socket opened (%d sockets in use)",sock,sockets);
 #endif
@@ -1213,6 +1217,9 @@ void DLLCALL services_thread(void* arg)
 				lprintf("%04d %s connection accepted from: %s port %u"
 					,client_socket
 					,service[i].protocol, host_ip, ntohs(client_addr.sin_port));
+
+				if(set_socket_options(&scfg, client_socket, error))
+					lprintf("%04d !ERROR %s",client_socket, error);
 
 				if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
 					lprintf("%04d !%s MAXMIMUM CLIENTS (%u) reached, access denied"

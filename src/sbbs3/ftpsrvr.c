@@ -229,12 +229,15 @@ static void thread_down(void)
 
 static SOCKET ftp_open_socket(int type)
 {
-	SOCKET sock;
+	SOCKET	sock;
+	char	error[256];
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(TRUE);
 	if(sock!=INVALID_SOCKET) {
+		if(set_socket_options(&scfg, sock, error))
+			lprintf("%04d !ERROR %s",sock, error);
 		sockets++;
 #ifdef _DEBUG
 		lprintf("%04d Socket opened (%u sockets in use)",sock,sockets);
@@ -1778,6 +1781,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 					,BOOL append
 					,char* desc)
 {
+	char		error[256];
 	int			result;
 	socklen_t	addr_len;
 	SOCKADDR_IN	server_addr;
@@ -1906,6 +1910,9 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		if(startup->options&FTP_OPT_DEBUG_DATA)
 			lprintf("%04d PASV DATA socket %d connected to %s port %u"
 				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
+		if(set_socket_options(&scfg, *data_sock, error))
+			lprintf("%04d !PASV DATA ERROR %s for socket %d"
+				,ctrl_sock,error,*data_sock);
 	}
 
 	if((xfer=malloc(sizeof(xfer_t)))==NULL) {
@@ -4541,6 +4548,9 @@ void DLLCALL ftp_server(void* arg)
 			if(startup->socket_open!=NULL)
 				startup->socket_open(TRUE);
 			sockets++;
+
+			if(set_socket_options(&scfg, client_socket, error))
+				lprintf("%04d !ERROR %s",client_socket, error);
 
 			if(active_clients>=startup->max_clients) {
 				lprintf("%04d !MAXMIMUM CLIENTS (%d) reached, access denied"

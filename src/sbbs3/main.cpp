@@ -175,11 +175,15 @@ int eprintf(char *fmt, ...)
 
 SOCKET open_socket(int type)
 {
-	SOCKET sock;
+	SOCKET	sock;
+	char	error[256];
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(TRUE);
+	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, error))
+		lprintf("%04d !ERROR %s",sock,error);
+
 	return(sock);
 }
 
@@ -3550,6 +3554,9 @@ void DLLCALL bbs_thread(void* arg)
 			close_socket(client_socket);
 			continue;
 		}
+
+		if(set_socket_options(&scfg, client_socket, logstr))
+			lprintf("%04d !ERROR %s",client_socket, logstr);
 
    		sbbs->client_socket=client_socket;	// required for output to the user
         sbbs->online=ON_REMOTE;

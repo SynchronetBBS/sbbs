@@ -211,12 +211,16 @@ static void thread_down(void)
 
 SOCKET mail_open_socket(int type)
 {
-	SOCKET sock;
+	char	error[256];
+	SOCKET	sock;
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(TRUE);
 	if(sock!=INVALID_SOCKET) {
+		if(set_socket_options(&scfg, sock,error))
+			lprintf("%04d !ERROR %s",sock,error);
+
 		sockets++;
 #if 0 /*def _DEBUG */
 		lprintf("%04d Socket opened (%d sockets in use)",sock,sockets);
@@ -3017,6 +3021,9 @@ void DLLCALL mail_server(void* arg)
 					startup->socket_open(TRUE);
 				sockets++;
 
+				if(set_socket_options(&scfg, client_socket, error))
+					lprintf("%04d !ERROR %s",client_socket, error);
+
 				if(active_clients>=startup->max_clients) {
 					lprintf("%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
 						,client_socket, startup->max_clients);
@@ -3064,6 +3071,9 @@ void DLLCALL mail_server(void* arg)
 				if(startup->socket_open!=NULL)
 					startup->socket_open(TRUE);
 				sockets++;
+
+				if(set_socket_options(&scfg, client_socket, error))
+					lprintf("%04d !ERROR %s",client_socket, error);
 
 				if(active_clients>=startup->max_clients) {
 					lprintf("%04d !MAXMIMUM CLIENTS (%u) reached, access denied"

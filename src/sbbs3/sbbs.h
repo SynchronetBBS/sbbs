@@ -815,6 +815,9 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan);
 	DLLEXPORT BOOL		DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan);
 
+	/* sockopt.c */
+	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error);
+
 #ifdef JAVASCRIPT
 
 	/* js_global.c */
