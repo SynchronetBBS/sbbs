@@ -115,15 +115,17 @@ void clearptrs(int subnum)
 void msgs_cfg()
 {
 	static int dflt,msgs_dflt,bar;
-	char str[256],str2[256],done=0,*p;
-    char tmp[128];
-	char tmp_code[16];
-	int j,k,q,s;
-	int i,file,ptridx,n;
-	long ported;
-	sub_t tmpsub;
+	char	str[256],str2[256],done=0;
+	char*	p;
+	char*	tp;
+    char	tmp[128];
+	char	tmp_code[16];
+	int		j,k,l,q,s;
+	int		i,file,ptridx,n;
+	long	ported;
+	sub_t	tmpsub;
 	static grp_t savgrp;
-	FILE *stream;
+	FILE*	stream;
 
 while(1) {
 	for(i=0;i<cfg.total_grps && i<MAX_OPTS;i++)
@@ -389,8 +391,7 @@ of CRCs, maximum age of messages, storage method, and data directory.
 				q=uifc.changes;
 				strcpy(opt[k++],"SUBS.TXT    (Synchronet)");
 				strcpy(opt[k++],"AREAS.BBS   (MSG)");
-				strcpy(opt[k++],"AREAS.BBS   (SMB)");
-				strcpy(opt[k++],"AREAS.BBS   (SBBSECHO)");
+				strcpy(opt[k++],"AREAS.BBS   (SBBSecho)");
 				strcpy(opt[k++],"FIDONET.NA  (Fido)");
 				opt[k][0]=0;
 				SETHELP(WHERE);
@@ -407,14 +408,13 @@ export the current message group into.
 					break;
 				if(k==0)
 					sprintf(str,"%sSUBS.TXT",cfg.ctrl_dir);
-				else if(k==1 || k==2)
+				else if(k==1)
 					sprintf(str,"AREAS.BBS");
-				else if(k==3)
+				else if(k==2)
 					sprintf(str,"%sAREAS.BBS",cfg.data_dir);
-				else if(k==4)
+				else if(k==3)
 					sprintf(str,"FIDONET.NA");
-				strupr(str);
-				if(k && k<4)
+				if(k && k<3)
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Uplinks"
 						,str2,40,0)<=0) {
 						uifc.changes=q;
@@ -456,28 +456,14 @@ export the current message group into.
 						fprintf(stream,"%-30s %-20s %s\r\n"
 							,str,stou(cfg.sub[j]->sname),str2);
 						continue; }
-					if(k==2) {		/* AREAS.BBS SMB */
-						if(!cfg.sub[j]->data_dir[0])
-							sprintf(str,"%ssubs/%s%s"
-								,cfg.data_dir
-								,cfg.grp[cfg.sub[j]->grp]->code_prefix
-								,cfg.sub[j]->code_suffix);
-						else
-							sprintf(str,"%s%s%s"
-								,cfg.sub[j]->data_dir
-								,cfg.grp[cfg.sub[j]->grp]->code_prefix
-								,cfg.sub[j]->code_suffix);
-						fprintf(stream,"%-30s %-20s %s\r\n"
-							,str,stou(cfg.sub[j]->sname),str2);
-                        continue; }
-					if(k==3) {		/* AREAS.BBS SBBSECHO */
+					if(k==2) {		/* AREAS.BBS SBBSecho */
 						fprintf(stream,"%s%-30s %-20s %s\r\n"
 							,cfg.grp[cfg.sub[j]->grp]->code_prefix
 							,cfg.sub[j]->code_suffix
 							,stou(cfg.sub[j]->sname)
 							,str2);
 						continue; }
-					if(k==4) {		/* FIDONET.NA */
+					if(k==3) {		/* FIDONET.NA */
 						fprintf(stream,"%-20s %s\r\n"
 							,stou(cfg.sub[j]->sname),cfg.sub[j]->lname);
 						continue; }
@@ -520,8 +506,7 @@ export the current message group into.
 				k=0;
 				strcpy(opt[k++],"SUBS.TXT    (Synchronet)");
 				strcpy(opt[k++],"AREAS.BBS   (Generic)");
-				strcpy(opt[k++],"AREAS.BBS   (SMB)");
-				strcpy(opt[k++],"AREAS.BBS   (SBBSECHO)");
+				strcpy(opt[k++],"AREAS.BBS   (SBBSecho)");
 				strcpy(opt[k++],"FIDONET.NA  (Fido)");
 				opt[k][0]=0;
 				SETHELP(WHERE);
@@ -538,13 +523,12 @@ import into the current message group.
 					break;
 				if(k==0)
 					sprintf(str,"%sSUBS.TXT",cfg.ctrl_dir);
-				else if(k==1 || k==2)
+				else if(k==1)
 					sprintf(str,"AREAS.BBS");
-				else if(k==3)
+				else if(k==2)
 					sprintf(str,"%sAREAS.BBS",cfg.data_dir);
-				else if(k==4)
+				else if(k==3)
 					sprintf(str,"FIDONET.NA");
-				strupr(str);
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 					,str,40,K_EDIT)<=0)
                     break;
@@ -567,61 +551,43 @@ import into the current message group.
 							(SUB_FIDO|SUB_NAME|SUB_TOUSER|SUB_QUOTE|SUB_HYPER);
 						if(k==1) {		/* AREAS.BBS Generic/*.MSG */
 							p=str;
-							while(*p && *p<=' ') p++;	// Find path
-							while(*p && *p>' ') p++;	// Skip path
-							while(*p && *p<=' ') p++;	// Find tag
-							truncstr(p," \t");
-							SAFECOPY(tmp_code,p);
-							SAFECOPY(tmpsub.sname,utos(p));
+							SKIP_WHITESPACE(p);			/* Find path	*/
+							FIND_WHITESPACE(p);			/* Skip path	*/
+							SKIP_WHITESPACE(p);			/* Find tag		*/
+							truncstr(p," \t");			/* Truncate tag */
+							SAFECOPY(tmp_code,p);		/* Copy tag to internal code */
 							SAFECOPY(tmpsub.lname,utos(p));
-							SAFECOPY(tmpsub.qwkname,utos(p));
+							SAFECOPY(tmpsub.sname,tmpsub.lname);
+							SAFECOPY(tmpsub.qwkname,tmpsub.qwkname);
 						}
-						if(k==2) {		/* AREAS.BBS SMB */
-							p=strrchr(str,'\\');
-                            if(p==NULL) p=strrchr(str,'/');                            
-                            if(p) *p=0;
-                            else p=str;
-							sprintf(tmpsub.data_dir,"%.*s",LEN_DIR,str);
-							p++;
-							SAFECOPY(tmp_code,p);
-							while(*p && *p<=SP) p++;
-							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,p);
-							p=strchr(tmpsub.sname,SP);
-							if(p) *p=0;
-							strcpy(tmpsub.sname,utos(tmpsub.sname));
-							sprintf(tmpsub.lname,"%.*s",LEN_SLNAME
-								,tmpsub.sname);
-							sprintf(tmpsub.qwkname,"%.*s",10
-                                ,tmpsub.sname);
-                            }
-						else if(k==3) { /* AREAS.BBS SBBSECHO */
+						else if(k==2) { /* AREAS.BBS SBBSecho */
 							p=str;
-							while(*p && *p>SP) p++;
-							*p=0;
-							SAFECOPY(tmp_code,str);
-							p++;
-							while(*p && *p<=SP) p++;
-							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,p);
-							p=strchr(tmpsub.sname,SP);
-							if(p) *p=0;
-							strcpy(tmpsub.sname,utos(tmpsub.sname));
-							sprintf(tmpsub.lname,"%.*s",LEN_SLNAME
-								,tmpsub.sname);
-							sprintf(tmpsub.qwkname,"%.*s",10
-                                ,tmpsub.sname);
-							}
-						else if(k==4) { /* FIDONET.NA */
+							SKIP_WHITESPACE(p);			/* Find internal code */
+							tp=p;
+							FIND_WHITESPACE(tp);
+							*tp=0;						/* Truncate internal code */
+							SAFECOPY(tmp_code,p);		/* Copy internal code suffix */
+							p=tp+1;
+							SKIP_WHITESPACE(p);			/* Find echo tag */
+							SAFECOPY(tmpsub.lname,truncstr(utos(p)," \t"));
+							SAFECOPY(tmpsub.sname,tmpsub.lname);
+							SAFECOPY(tmpsub.qwkname,tmpsub.sname);
+						}
+						else if(k==3) { /* FIDONET.NA */
                             p=str;
-							while(*p && *p>SP) p++;
-							*p=0;
-							SAFECOPY(tmp_code,str);
-							sprintf(tmpsub.sname,"%.*s",LEN_SSNAME,utos(str));
-							sprintf(tmpsub.qwkname,"%.10s",tmpsub.sname);
-							p++;
-							while(*p && *p<=SP) p++;
-							sprintf(tmpsub.lname,"%.*s",LEN_SLNAME,p);
-							}
-						ported++; }
+							SKIP_WHITESPACE(p);			/* Find echo tag */
+							tp=p;
+							FIND_WHITESPACE(tp);		/* Find end of tag */
+							*tp=0;						/* Truncate echo tag */
+							SAFECOPY(tmp_code,p);		/* Copy tag to internal code suffix */
+							SAFECOPY(tmpsub.sname,utos(p));	/* ... to short name, converting underscores to spaces */
+							SAFECOPY(tmpsub.qwkname,tmpsub.sname);	/* ... to QWK name .... */
+							p=tp+1;
+							SKIP_WHITESPACE(p);			/* Find description */
+							SAFECOPY(tmpsub.lname,p);	/* Copy description to long name */
+						}
+						ported++; 
+					}
 					else {
 						memset(&tmpsub,0,sizeof(sub_t));
 						tmpsub.grp=i;
@@ -688,10 +654,16 @@ import into the current message group.
 						while(!feof(stream)
 							&& strcmp(str,"***END-OF-SUB***")) {
 							if(!fgets(str,128,stream)) break;
-							truncsp(str); } }
+							truncsp(str); 
+						} 
+					}
 
-                    prep_code(tmp_code);						/* Strip invalid chars */
-					SAFECOPY(tmpsub.code_suffix,tmp_code);		/* THEN truncate to valid length */
+					p=tmp_code;
+					l=strlen(cfg.grp[i]->code_prefix);
+					if(l && strnicmp(p,cfg.grp[i]->code_prefix,l)==0 && strlen(p)!=l)
+						p+=l;									/* Skip code prefix, if supplied */
+                    prep_code(p);								/* Strip invalid chars */
+					SAFECOPY(tmpsub.code_suffix,p);				/* THEN truncate to valid length */
 
 					truncsp(tmpsub.sname);
 					truncsp(tmpsub.lname);
