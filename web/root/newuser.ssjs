@@ -144,7 +144,7 @@ else {
 	
 	write('<HTML><HEAD><TITLE>User Created!</TITLE></HEAD>');
 	write("<BODY>");
-	write("Your accound has been created and the password has been mailed to: "+http_request.query.netmail);
+	write("Your account has been created and the password has been mailed to: "+http_request.query.netmail);
 	write('<br><br><a href="http://www.synchro.net/"><img src="graphics/sync_pb.gif" border=0></a>');
 	write("</BODY></HTML>");
 }
