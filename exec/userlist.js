@@ -22,6 +22,6 @@ for(i=1;i<=lastuser;i++) {
 		,u.location
 		,u.connection
 		);
-	if(bbs.sys_status&SS_ABORT)
+	if(this.bbs!=undefined && bbs.sys_status&SS_ABORT)
 		break;
 }	
