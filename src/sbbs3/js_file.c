@@ -41,10 +41,10 @@
 
 typedef struct
 {
+	FILE*	fp;
 	char	name[MAX_PATH+1];
 	char	mode[4];
 	uchar	etx;
-	FILE*	fp;
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
 
