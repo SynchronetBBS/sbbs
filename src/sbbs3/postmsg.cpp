@@ -602,8 +602,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	}
 	smb_dfield(msg,TEXT_BODY,length);
 
-	pid=program_id();
-	smb_hfield(msg,FIDOPID,strlen(pid),pid);
+	if(smb_get_hfield(msg,FIDOPID,NULL)==NULL) {	/* Don't create duplicate PIDs */
+		pid=program_id();
+		smb_hfield(msg,FIDOPID,strlen(pid),pid);
+	}
 
 	/* Generate default (RFC822) message-id  */
 	if(smb_get_hfield(msg,RFC822MSGID,NULL)==NULL) {
