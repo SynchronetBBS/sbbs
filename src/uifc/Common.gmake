@@ -16,6 +16,7 @@ ifndef NO_X
  CIOWRAP_OBJS	+=	$(LIBODIR)/console.o $(LIBODIR)/x_cio.o
 endif
 CIOWRAP_OBJS	+=	$(LIBODIR)/curs_cio.o $(LIBODIR)/ciowrap.o
+CIOWRAP_CFLAGS	+=	-I$(UIFC_SRC)
 
 # UIFC Related stuff
 UIFC_CFLAGS	+=	-I$(UIFC_SRC)

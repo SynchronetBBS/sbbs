@@ -6,11 +6,11 @@
 #include <unistd.h>
 
 #include "ciowrap.h"
-#undef beep				/* I'm going to need to use the real beep() in here */
 #include "curs_cio.h"
 #include "uifc.h"		/* UIFC_IBM */
 
 static unsigned char curs_nextgetch=0;
+const int curs_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
 static int lastattr=0;
 static long mode;
@@ -664,6 +664,7 @@ int curs_putch(unsigned char c)
 {
 	struct text_info ti;
 	int		ret;
+	int		i;
 
 	ret=c;
 	switch(c) {
@@ -680,12 +681,26 @@ int curs_putch(unsigned char c)
 			}
 			break;
 		case 0x07:
-			beep();
+			cio_api.beep();
 			break;
 		case 0x08:
 			gotoxy(wherex()-1,wherey());
 			_putch(' ',FALSE);
 			gotoxy(wherex()-1,wherey());
+			break;
+		case '\t':
+			for(i=0;i<10;i++) {
+				if(curs_tabs[i]>wherex()) {
+					while(wherex()<curs_tabs[i]) {
+						putch(' ');
+					}
+					break;
+				}
+			}
+			if(i==10) {
+				putch('\r');
+				putch('\n');
+			}
 			break;
 		default:
 			gettextinfo(&ti);

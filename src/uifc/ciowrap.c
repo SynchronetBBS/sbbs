@@ -14,6 +14,7 @@ static struct text_info cio_textinfo;
 static int lastmode=3;
 int _wscroll=1;
 int directvideo=0;
+static int initialized=0;
 
 void initciowrap(int mode)
 {
@@ -65,10 +66,13 @@ void initciowrap(int mode)
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
 	cio_textinfo.normattr=7;
+	initialized=1;
 }
 
 int kbhit(void)
 {
+	if(!initialized)
+		initciowrap(3);
 	if(ungotch)
 		return(1);
 	return(cio_api.kbhit());
@@ -78,6 +82,8 @@ int getch(void)
 {
 	int ch;
 
+	if(!initialized)
+		initciowrap(3);
 	if(ungotch) {
 		ch=ungotch;
 		ungotch=0;
@@ -90,6 +96,8 @@ int getche(void)
 {
 	int ch;
 
+	if(!initialized)
+		initciowrap(3);
 	if(ungotch) {
 		ch=ungotch;
 		ungotch=0;
@@ -101,6 +109,8 @@ int getche(void)
 
 int ungetch(int ch)
 {
+	if(!initialized)
+		initciowrap(3);
 	if(ungotch)
 		return(EOF);
 	ungotch=ch;
@@ -113,6 +123,8 @@ int movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 	int height;
 	char *buf;
 
+	if(!initialized)
+		initciowrap(3);
 	width=ex-sx;
 	height=ey-sy;
 	buf=(char *)malloc((width+1)*(height+1)*2);
@@ -137,6 +149,8 @@ char *cgets(char *str)
 	int chars;
 	int ch;
 
+	if(!initialized)
+		initciowrap(3);
 	maxlen=*(unsigned char *)str;
 	while((ch=getche())!='\n') {
 		switch(ch) {
@@ -151,7 +165,7 @@ char *cgets(char *str)
 				break;
 			case '\b':
 				if(len==0) {
-					beep();
+					cio_api.beep();
 					break;
 				}
 				putch('\b');
@@ -175,6 +189,8 @@ int cscanf (char *format , ...)
     va_list argptr;
 	int ret;
 
+	if(!initialized)
+		initciowrap(3);
 	str[0]=-1;
 	va_start(argptr,format);
 	ret=vsscanf(cgets(str),format,argptr);
@@ -189,6 +205,8 @@ char *getpass(const char *prompt)
 	int chars;
 	int ch;
 
+	if(!initialized)
+		initciowrap(3);
 	while((ch=getch())!='\n') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
@@ -201,14 +219,14 @@ char *getpass(const char *prompt)
 				break;
 			case '\b':
 				if(len==0) {
-					beep();
+					cio_api.beep();
 					break;
 				}
 				len--;
 				break;
 			default:
 				if(len==8)
-					beep();
+					cio_api.beep();
 				else
 					pass[len++]=ch;
 				break;
@@ -218,6 +236,8 @@ char *getpass(const char *prompt)
 
 void gettextinfo(struct text_info *info)
 {
+	if(!initialized)
+		initciowrap(3);
 	cio_api.gettextinfo(&cio_textinfo);
 	if(info!=&cio_textinfo) {
 		info->winleft=cio_textinfo.winleft;        /* left window coordinate */
@@ -241,6 +261,8 @@ void wscroll(void)
 	int os;
 	struct text_info ti;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&ti);
 	if(!_wscroll)
 		return;
@@ -257,6 +279,8 @@ int wherex(void)
 {
 	int x;
 
+	if(!initialized)
+		initciowrap(3);
 	x=cio_api.wherex();
 	x=x-cio_textinfo.winleft+1;
 	return(x);
@@ -266,6 +290,8 @@ int wherey(void)
 {
 	int y;
 
+	if(!initialized)
+		initciowrap(3);
 	y=cio_api.wherey();
 	y=y-cio_textinfo.wintop+1;
 	return(y);
@@ -277,6 +303,8 @@ void gotoxy(int x, int y)
 	int ny;
 	struct text_info ti;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&ti);
 	if(		x < 1
 			|| x > ti.winright-ti.winleft+1
@@ -290,6 +318,8 @@ void gotoxy(int x, int y)
 
 void textmode(mode)
 {
+	if(!initialized)
+		initciowrap(3);
 	if(mode==-1) {
 		gettextinfo(&cio_textinfo);
 		cio_api.textmode(lastmode);
@@ -309,6 +339,8 @@ void textmode(mode)
 
 void window(int sx, int sy, int ex, int ey)
 {
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&cio_textinfo);
 	if(		   sx < 1
 			|| sy < 1
@@ -333,6 +365,8 @@ void clreol(void)
 	int os;
 	struct text_info	ti;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&ti);
 	os=_wscroll;
 	_wscroll=0;
@@ -347,6 +381,8 @@ void clrscr(void)
 	int i;
 	struct text_info ti;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&ti);
 
 	buf=(char *)malloc(ti.screenheight*ti.screenwidth*2);
@@ -362,6 +398,8 @@ void delline(void)
 {
 	struct text_info ti;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&ti);
 
 	movetext(ti.winleft,ti.cury+1,ti.winright,ti.winbottom,ti.winleft,ti.cury);
@@ -374,6 +412,8 @@ void insline(void)
 {
 	struct text_info ti;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&ti);
 
 	movetext(ti.winleft,ti.cury,ti.winright,ti.winbottom,ti.winleft,ti.cury+1);
@@ -389,6 +429,8 @@ int cprintf(char *fmat, ...)
 	int		pos;
 	int		ret;
 
+	if(!initialized)
+		initciowrap(3);
     va_start(argptr,fmat);
     ret=vsprintf(str,fmat,argptr);
     va_end(argptr);
@@ -404,9 +446,13 @@ int cputs(char *str)
 	int		pos;
 	int		ret=0;
 
+	if(!initialized)
+		initciowrap(3);
 	for(pos=0;str[pos];pos++)
 	{
 		ret=str[pos];
+		if(str[pos]=='\n')
+			putch('\r');
 		putch(str[pos]);
 	}
 	return(ret);
@@ -416,6 +462,8 @@ void textbackground(int colour)
 {
 	unsigned char attr;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr&=143;
@@ -427,6 +475,8 @@ void textcolor(int colour)
 {
 	unsigned char attr;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr&=240;
@@ -438,6 +488,8 @@ void highvideo(void)
 {
 	int attr;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr |= 8;
@@ -448,6 +500,8 @@ void lowvideo(void)
 {
 	int attr;
 
+	if(!initialized)
+		initciowrap(3);
 	gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr &= 0xf7;
@@ -456,5 +510,49 @@ void lowvideo(void)
 
 void normvideo(void)
 {
+	if(!initialized)
+		initciowrap(3);
 	textattr(0x07);
+}
+
+int puttext(int a,int b,int c,int d,char *e)
+{
+	if(!initialized)
+		initciowrap(3);
+	return(cio_api.puttext(a,b,c,d,e));
+}
+
+int gettext(int a,int b,int c,int d,char *e)
+{
+	if(!initialized)
+		initciowrap(3);
+	return(cio_api.gettext(a,b,c,d,e));
+}
+
+void textattr(unsigned char a)
+{
+	if(!initialized)
+		initciowrap(3);
+	cio_api.textattr(a);
+}
+
+void delay(long a)
+{
+	if(!initialized)
+		initciowrap(3);
+	cio_api.delay(a);
+}
+
+int putch(unsigned char a)
+{
+	if(!initialized)
+		initciowrap(3);
+	return(cio_api.putch(a));
+}
+
+void _setcursortype(int a)
+{
+	if(!initialized)
+		initciowrap(3);
+	cio_api.setcursortype(a);
 }

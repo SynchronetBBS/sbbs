@@ -127,19 +127,18 @@ void textcolor(int colour);
 void highvideo(void);
 void lowvideo(void);
 void normvideo(void);
+int puttext(int a,int b,int c,int d,char *e);
+int gettext(int a,int b,int c,int d,char *e);
+void textattr(unsigned char a);
+void delay(long a);
+int putch(unsigned char a);
+void _setcursortype(int a);
 
 extern cioapi_t cio_api;
 extern int _wscroll;
 extern int directvideo;
 
 #define _conio_kbhit()		kbhit()
-#define puttext(a,b,c,d,e)	cio_api.puttext(a,b,c,d,e)
-#define gettext(a,b,c,d,e)	cio_api.gettext(a,b,c,d,e)
-#define textattr(a)			cio_api.textattr(a)
-#define delay(a)			cio_api.delay(a)
-#define putch(a)			cio_api.putch(a)
-#define _setcursortype(a)	cio_api.setcursortype(a)
-#define beep()				cio_api.beep()
 
 #endif
 

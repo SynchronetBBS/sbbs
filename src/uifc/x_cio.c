@@ -5,6 +5,8 @@
 #include "console.h"
 WORD	x_curr_attr=0x0700;
 
+const int x_tabs[10]={9,17,25,33,41,49,57,65,73,80};
+
 int x_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 {
 	int x,y;
@@ -102,6 +104,7 @@ int x_putch(unsigned char ch)
 {
 	struct text_info ti;
 	WORD sch;
+	int i;
 
 	sch=x_curr_attr|ch;
 
@@ -124,6 +127,20 @@ int x_putch(unsigned char ch)
 			break;
 		case 7:		/* Bell */
 			tty_beep();
+			break;
+		case '\t':
+			for(i=0;i<10;i++) {
+				if(x_tabs[i]>wherex()) {
+					while(wherex()<x_tabs[i]) {
+						putch(' ');
+					}
+					break;
+				}
+			}
+			if(i==10) {
+				putch('\r');
+				putch('\n');
+			}
 			break;
 		default:
 			gettextinfo(&ti);
