@@ -284,7 +284,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/************************************************/
 		if(cfg->dir[f->dir]->sort==SORT_NAME_A || cfg->dir[f->dir]->sort==SORT_NAME_D) {
 			for(l=0;l<length;l+=F_IXBSIZE) {
-				for(i=0;i<12 && fname[i]==ixbbuf[l+i];i++);
+				for(i=0;i<12 && toupper(fname[i])==toupper(ixbbuf[l+i]);i++);
 				if(i==12) {     /* file already in directory index */
 					close(file);
 //					errormsg(WHERE,ERR_CHK,str,0);
@@ -513,7 +513,7 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 	close(file);
 	for(l=0;l<length;l+=F_IXBSIZE) {
 		for(i=0;i<11;i++)
-			if(fname[i]!=toupper(ixbbuf[l+i])) break;
+			if(toupper(fname[i])!=toupper(ixbbuf[l+i])) break;
 		if(i==11) break; }
 	FREE((char *)ixbbuf);
 	if(l!=length)
