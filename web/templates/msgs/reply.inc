@@ -5,6 +5,6 @@
 Subject: <input type="text" name="subject" value="%%subject%%"><br>
 To: <input type="text" name="to" value="%%from%%"><BR>
 <textarea name=body rows=20 cols=80>%%body%%</textarea><br>
-<input type="Submit">
+<button type="Submit">Post Reply</button>
 </FORM>
 </CENTER>

@@ -5,6 +5,6 @@
 Subject: <input type="text" name="subject" value=""><br>
 To: <input type="text" name="to" value="All"><BR>
 <textarea name=body rows=20 cols=80></textarea><br>
-<input type="Submit">
+<button type="Submit">Post Message</button>
 </FORM>
 </CENTER>
