@@ -3,8 +3,8 @@ Synchronet Console Documentation
 
 $Id$
 
-Introduction
-------------
+1. Introduction
+---------------
 The Synchronet Console is the console-mode sysop interface to Synchronet v3.
 On Win32 operating systems, this interface (sbbs.exe) is an alternative to 
 the graphical Synchronet Control Panel (sbbsctrl.exe). On Unix, this interface
@@ -18,8 +18,8 @@ sysops that wish to conserve system resources, this may be the preferred
 interface.
 
 
-BBS Configuration
------------------
+2. BBS Configuration
+--------------------
 The system-wide configuration files (ctrl/*.cnf) are edited using the
 Synchronet configuration utility (SCFG). The executable filename is 
 exec/scfg.exe on Win32 and exec/scfg on Unix.
@@ -42,22 +42,7 @@ verify your shell by typing ``echo $SHELL'' at a command line.
 
 Many of the Synchronet utilities require this environment variable, so it is
 suggested you initialize this environment variable in your system startup 
-and/or login scripts.
-
-bash/sh:
-In the home directory of the user the BBS will be running as, edit the file
-name either .profile or .bash_profile depending on if you're running bash or
-sh and add the line:
-
-    SBBSCTRL=/sbbs/ctrl && export SBBSCTRL
-    (replace /sbbs/ctrl with the full path to your ctrl directory)
-
-csh/tcsh:
-Again, in the home directory of the user the BBS will be running as, in the file
-named .tcshrc (for tcsh) or .cshrc (for csh) add the line:
-
-    setenv SBBSCTRL /sbbs/ctrl
-    (replace /sbbs/ctrl with the full path to your ctrl directory)
+and/or login scripts. See section 3 for details.
 
 The SCFG application supports multiple forms of user interface. The default
 interface is currently curses/conio (full-screen colored text). To use a
@@ -71,15 +56,42 @@ edited using any ASCII text editor: ctrl/*.cfg and text/*.can. Each of
 these files should contain a description of its purpose and usage.
 
 
-Server Configuration
---------------------
+3. Initializing the SBBSCTRL Environment Variable
+-------------------------------------------------
+For Windows NT-based operating systems, goto the Windows Control Panel->
+System->Advanced->Environment Variables->System Variables->New...
+	Variable:		SBBSCTRL
+	Variable Value:		c:\sbbs\ctrl (or wherever is correct)
+
+For Windows 9x-based operating systems, edit your C:\AUTOEXEC.BAT file
+and add the line:
+	SET SBBSCTRL=c:\sbbs\ctrl (or wherever is correct)
+
+For Unix bash/sh:
+In the home directory of the user the BBS will be running as, edit the file
+name either .profile or .bash_profile depending on if you're running bash or
+sh and add the line:
+
+    SBBSCTRL=/sbbs/ctrl && export SBBSCTRL
+    (replace /sbbs/ctrl with the full path to your ctrl directory)
+
+For Unix csh/tcsh:
+Again, in the home directory of the user the BBS will be running as, in the file
+named .tcshrc (for tcsh) or .cshrc (for csh) add the line:
+
+    setenv SBBSCTRL /sbbs/ctrl
+    (replace /sbbs/ctrl with the full path to your ctrl directory)
+
+
+4. Server Configuration
+-----------------------
 The server/host-specific configuration options are set with sbbs command-line
 options (run "sbbs help" for a list), or by editing the Synchronet
 Initialization file (e.g. ctrl/sbbs.ini).
 
 
-Initialization File
--------------------
+4.1 Initialization File
+-----------------------
 The default initalization file is ctrl/sbbs.ini. A different initialization 
 (.ini) filename may be used by specifying the path and filename on the sbbs
 command-line. Example:
@@ -92,8 +104,8 @@ the location of your Synchronet ctrl directory, where it expects to find
 either <HOSTNAME>.ini or sbbs.ini.
 
 
-For Unix Sysops
----------------
+4.2 For Unix Sysops
+--------------------
 You will particularily want to pay attention to the [UNIX] section of sbbs.ini
 if you do not want to run Synchronet (and all doors!) as root (You don't), you
 will have to set the User= and Group= lines.
@@ -114,8 +126,8 @@ of Synchronet as appropriate.  Specifically, S will use:
     LOG_CRON
 
 
-Terminal Capabilities
----------------------
+4.3 Terminal Capabilities
+-------------------------
 As you have probobly noticed by now, most telnet programs designed for BBSes
 do not display screens in *nix programs correctly.  Included with Synchronet
 is a pair of files to enable you to run native *nix programs and have the
@@ -139,8 +151,8 @@ Once they are installed, edit the ExternalTerm line in your *.ini file to read:
     ExternalTerm=ansi-bbs
 
 
-Running Synchronet
-------------------
+5. Running Synchronet
+---------------------
 If you've initialized the SBBSCTRL environment variable and edited your BBS
 and server configuration, you are now ready to run Synchronet. You can do
 this by simply running exec/sbbs (off of the installation directory).
@@ -152,13 +164,13 @@ FreeBSD:
 --------
 1) Set up your BBS to run as a daemon, make SURE it works.
 
-2) Create the following file as /usr/local/etc/rc.d/synchronet.sh owned by root,
-   and chmod 555:
+2) Create the following file as /usr/local/etc/rc.d/synchronet.sh owned by
+   root, and chmod 555:
 
 --- CUT --- /usr/local/etc/rc.d/synchronet.sh --- CUT ---
 #!/bin/sh
 
-# Replace the path in the following line with your sbbs instll DIR
+# Replace the path in the following line with your sbbs install DIR
 SBBSDIR=/sbbs
 
 case "$1" in
