@@ -5,11 +5,12 @@
 /* Makes SCFG.HLP for Synchronet configuration program */
 
 #include <stdio.h>
-#include <alloc.h>
 #include <string.h>
-#include <io.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#if !defined(__unix__)
+	#include <io.h>	/* open */
+#endif
 
 void main(void)
 {
