@@ -214,6 +214,9 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p)
 	if(rd_p!=NULL)
 		*rd_p=FALSE;
 
+	if(sock==INVALID_SOCKET)
+		return(FALSE);
+
 	FD_ZERO(&socket_set);
 	FD_SET(sock,&socket_set);
 
