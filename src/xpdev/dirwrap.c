@@ -812,3 +812,25 @@ char* DLLCALL backslash(char* path)
 	}
 	return(path);
 }
+
+/****************************************************************************/
+/* Returns true if the specified filename an aboslute pathname				*/
+/****************************************************************************/
+BOOL DLLCALL isabspath(const char *filename)
+{
+	char path[MAX_PATH+1];
+
+	return(stricmp(filename,FULLPATH(path,filename,sizeof(path)))==0);
+}
+
+/****************************************************************************/
+/* Returns true if the specified filename is a full ("rooted") path			*/
+/****************************************************************************/
+BOOL DLLCALL isfullpath(const char* filename)
+{
+	return(filename[0]=='/' 
+#ifdef WIN32
+		|| filename[0]=='\\' || filename[1]==':'
+#endif
+		);
+}
