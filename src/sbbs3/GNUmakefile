@@ -87,22 +87,8 @@ SBBSLIB	=	-lsbbs
 $(SBBSLIB) : $(SBBS)
 	$(QUIET)touch -- '$(SBBSLIB)'
 
-ifneq ($(os),darwin)
-ifneq ($(os),sunos)
-SBBSLDFLAGS	:=	$(LDFLAGS) -rpath-link ./$(LIBODIR) -rpath ./ 
-#LDFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
-LDFLAGS		+=	-Xlinker -rpath
-LDFLAGS		+=	-Xlinker .
-ifneq ($(os),openbsd)
-LDFLAGS		+=	-Xlinker -rpath-link
-LDFLAGS		+=	-Xlinker ./$(LIBODIR)
-LDFLAGS		+=	-Xlinker -rpath-link
-LDFLAGS		+=	-Xlinker $(JSLIBDIR)
-LDFLAGS		+=	-Xlinker -rpath-link
-LDFLAGS		+=	-Xlinker $(NSPRDIR)
-endif
-endif
-endif
+LD_RUN_PATH	:=	.;./$(LIBODIR);$(JSLIBDIR);$(NSPRDIR)
+export LD_RUN_PATH
 
 CON_OBJS	= $(LIBODIR)/sbbscon.o $(LIBODIR)/conwrap.o \
 		  $(LIBODIR)/sbbs_ini.o
