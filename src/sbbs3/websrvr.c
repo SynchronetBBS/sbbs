@@ -506,6 +506,7 @@ static char *cleanpath(char *target, char *path, size_t size)  {
 				if(p2>p)
 					p=p2;
 				memmove(p,out+3,strlen(out+3)+1);
+				out=p;
 			}
 			else  {
 				out++;
@@ -827,6 +828,7 @@ static void send_error(http_session_t * session, char *message)
 	char	error_code[4];
 
 	lprintf("%04d !ERROR %s",session->socket,message);
+	session->req.keep_alive=FALSE;
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
 	sprintf(session->req.physical_path,"%s/%s.html",error_dir,error_code);
@@ -1462,8 +1464,8 @@ static BOOL check_request(http_session_t * session)
 		session->req.send_location=MOVED_PERM;
 	}
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
-		send_error(session,"400 Bad Request");
 		session->req.keep_alive=FALSE;
+		send_error(session,"400 Bad Request");
 		return(FALSE);
 	}
 	if(!fexist(path)) {
@@ -2524,7 +2526,7 @@ void DLLCALL web_server(void* arg)
 			cleanup(1);
 			return;
 		}
-
+		
 		lprintf("Web Server socket %d opened",server_socket);
 
 		/*****************************/
@@ -2549,7 +2551,7 @@ void DLLCALL web_server(void* arg)
 			return;
 		}
 
-		result = listen(server_socket, 0);
+		result = listen(server_socket, 64);
 
 		if(result != 0) {
 			lprintf("!ERROR %d (%d) listening on HTTP socket", result, ERROR_VALUE);
@@ -2565,11 +2567,12 @@ void DLLCALL web_server(void* arg)
 
 		lprintf("Web Server thread started");
 
+		sprintf(path,"%swebsrvr.rec",scfg.ctrl_dir);
+
 		while(server_socket!=INVALID_SOCKET) {
 
 			/* check for re-cycle semaphores */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-				sprintf(path,"%swebsrvr.rec",scfg.ctrl_dir);
 				t=fdate(path);
 				if(!active_clients && t!=-1 && t>initialized) {
 					lprintf("0000 Recycle semaphore file (%s) detected",path);
@@ -2612,9 +2615,10 @@ void DLLCALL web_server(void* arg)
 			client_addr_len = sizeof(client_addr);
 
 			if(server_socket!=INVALID_SOCKET
-				&& FD_ISSET(server_socket,&socket_set)) 
+				&& FD_ISSET(server_socket,&socket_set)) {
 				client_socket = accept(server_socket, (struct sockaddr *)&client_addr
 	        		,&client_addr_len);
+			}
 			else {
 				lprintf("!NO SOCKETS set by select");
 				continue;
