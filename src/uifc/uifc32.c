@@ -461,14 +461,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(!is_redraw) {
 		if(mode&WIN_ORG) { /* Clear around menu */
 			if(top)
-				puttext(s_left,s_top,s_right+2,s_top+top-1,blk_scrn);
+				puttext(1,s_top,api->scrn_width,s_top+top-1,blk_scrn);
 			if(s_top+height+top<=api->scrn_len)
-				puttext(s_left,s_top+height+top,s_right+2,api->scrn_len,blk_scrn);
+				puttext(1,s_top+height+top,api->scrn_width,api->scrn_len,blk_scrn);
 			if(left)
-				puttext(s_left,s_top+top,s_left+left-1,s_top+height+top
+				puttext(1,s_top+top,s_left+left-1,s_top+height+top
 					,blk_scrn);
 			if(s_left+left+width<=s_right)
-				puttext(s_left+left+width,s_top+top,s_right+2
+				puttext(s_left+left+width,s_top+top,/* s_right+2 */api->scrn_width
 					,s_top+height+top,blk_scrn);
 		}
 		ptr=win;
