@@ -1,0 +1,311 @@
+# ftp.src
+
+# FTP Client for Synchronet
+
+# Requires Baja v2.30 and Synchronet v3.00d or later
+
+!include sbbsdefs.inc # _ftp_mode and _socket_error
+
+!define ON	"\1gON"
+!define OFF	"\1rOFF"
+
+int sock port i
+str addr user pass src dest fname
+str pasv_mode hash_mode ascii_mode
+
+set _ftp_mode FTP_ECHO_RSP|FTP_HASH|FTP_PASV
+
+print "\r\n\1h\1ySynchronet \1wFTP Client v1.00 \1y- Copyright 2001 Rob Swindell\1n\r\n\r\n"
+
+compare str ""
+if_false
+	compare_word "*"
+	if_false
+		call socket_connect
+		end_if
+	end_if
+
+loop
+
+print "\1n\1hftp\1n> "
+getstr
+compare str ""
+if_equal
+	continue
+	end_if
+
+compare_word "?"
+if_true
+	compare_all_bits _ftp_mode FTP_HASH
+	if_true
+		set hash_mode ON
+	else
+		set hash_mode OFF
+		end_if
+
+	compare_all_bits _ftp_mode FTP_PASV
+	if_true
+		set pasv_mode ON
+	else
+		set pasv_mode OFF
+		end_if
+
+	compare_all_bits _ftp_mode FTP_ASCII
+	if_true
+		set ascii_mode ON
+	else
+		set ascii_mode OFF
+		end_if
+
+	print  "\r\n\1hCommands are\1n:\r\n\r\n"
+	print  "\1h\1yopen   \1w: \1cstart an FTP session\r\n"
+	print  "\1h\1yclose  \1w: \1cclose an FTP session\r\n"
+	print  "\1h\1ydir    \1w: \1cprint a directory listing\r\n"
+	print  "\1h\1ypwd    \1w: \1cprint working directory\r\n"
+	print  "\1h\1ycd     \1w: \1cchange working directory\r\n"
+	printf "\1h\1yhash   \1w: \1ctoggle hash printing during transfer (currently %s\1c)\r\n" hash_mode
+	printf "\1h\1ypasv   \1w: \1ctoggle passive mode transfers (currently %s\1c)\r\n" pasv_mode
+	printf "\1h\1yascii  \1w: \1ctoggle ASCII (CR/LF) mode transfers (currently %s\1c)\r\n" ascii_mode
+	print  "\1h\1yget    \1w: \1cretrieve (download) file\r\n"
+	print  "\1h\1yput    \1w: \1csend (upload) file\r\n"
+	print  "\1h\1ydelete \1w: \1cdelete (erase) file\r\n"
+	print  "\1h\1yquit   \1w: \1cexit FTP\r\n"
+	crlf
+	continue
+	end_if
+
+compare_word "open"
+if_true
+	shift_str 5
+
+	socket_close sock	# In case there's already a socket open
+
+	call socket_connect
+	continue
+	end_if
+
+compare_str "pasv"
+if_true
+	xor _ftp_mode FTP_PASV
+	compare_all_bits _ftp_mode FTP_PASV
+	print "\1h\1cPassive file transfer mode: "
+	if_true
+		print ON
+	else
+		print OFF
+		end_if
+	crlf
+	continue
+	end_if
+
+compare_str "hash"
+if_true
+	xor _ftp_mode FTP_HASH
+	compare_all_bits _ftp_mode FTP_HASH
+	print "\1h\1cHash mark printing: "
+	if_true
+		print ON
+	else
+		print OFF
+		end_if
+	crlf
+	continue
+	end_if
+
+compare_str "ascii"
+if_true
+	xor _ftp_mode FTP_ASCII
+	compare_all_bits _ftp_mode FTP_ASCII
+	print "\1h\1cASCII file transfer mode: "
+	if_true
+		print ON
+	else
+		print OFF
+		end_if
+	crlf
+	continue
+	end_if
+
+compare_str "quit"
+if_true
+	ftp_logout sock
+	socket_close sock
+	return
+	end_if
+
+compare sock 0
+if_true
+	print "Not connected (use '\1i?\1n' for menu).\r\n"
+	continue
+	end_if
+
+# ALL commands from here on require connection
+
+compare_str "close"
+if_true
+	ftp_logout sock
+	if_false
+		printf "!ftp_logout failed socket_error=%d\r\n" _socket_error
+		end_if
+	socket_close sock
+	continue
+	end_if
+
+compare_word "dir"
+if_true
+	shift_str 4
+	ftp_dir sock str
+	if_false
+		printf "!ftp_dir failed socket_error=%d\r\n" _socket_error
+		end_if
+	continue
+	end_if
+
+compare_str "pwd"
+if_true
+	ftp_pwd sock
+	if_false
+		printf "!ftp_pwd failed socket_error=%d\r\n" _socket_error
+		end_if
+	continue
+	end_if
+
+compare_word "cd"
+if_true
+	shift_str 3
+	compare_str ""
+	if_true
+		print "Directory: "
+		getstr
+		end_if
+	ftp_cwd sock str
+	if_false
+		printf "!ftp_cwd failed socket_error=%d\r\n" _socket_error
+		end_if
+	continue
+	end_if
+
+compare_word "delete"
+if_true
+	shift_str 6
+	compare_str ""
+	if_true
+		print "File: "
+		getstr
+		end_if
+	ftp_delete sock str
+	if_false
+		printf "!ftp_delete failed socket_error=%d\r\n" _socket_error
+		end_if
+	continue
+	end_if
+
+
+compare_word "get"
+if_true
+	shift_str 4
+	compare_str ""
+	if_true
+		print "File: "
+		getstr
+		end_if
+	copy fname str
+	# skip path
+	shift_to_last_char fname '/'
+	if_true
+		shift_str fname 1
+		end_if
+	shift_to_last_char fname '\\'
+	if_true
+		shift_str fname 1
+		end_if
+	set dest "%g"	# temp directory
+	strcat dest fname
+	ftp_get sock str dest
+	if_false
+		printf "!ftp_get failed socket_error=%d\r\n" _socket_error
+		continue
+		end_if
+	copy str dest
+	file_send
+	remove_file dest
+	continue
+	end_if
+
+compare_word "put"
+if_true
+	shift_str 4
+	compare_str ""
+	if_true
+		print "File: "
+		getstr
+		end_if
+	copy dest str
+	copy fname str
+	# skip path
+	shift_to_last_char fname '/'
+	if_true
+		shift_str fname 1
+		end_if
+	shift_to_last_char fname '\\'
+	if_true
+		shift_str fname 1
+		end_if
+	set src "%g"	# temp directory
+	strcat src fname
+	copy str src
+	file_receive	# uses str
+	chkfile src
+	if_false
+		continue
+		end_if
+	printf "ftp: sending %s\r\n" fname
+	ftp_put sock src dest
+	if_false
+		remove_file src
+		printf "!ftp_put failed socket_error=%d\r\n" _socket_error
+		continue
+		end_if
+	remove_file src
+	continue
+	end_if
+
+printf "Invalid command (use '\1i?\1n' for menu).\r\n" str
+
+end_loop
+
+########################################
+# Socket create/open/connect sub-routine
+:socket_connect
+
+socket_open sock
+if_false
+	printf "!socket_open failure socket_error=%d\r\n" _socket_error
+	continue
+	end_if
+
+copy addr str
+compare addr ""
+if_true
+	print "address: "
+	getstr addr
+	end_if
+
+set port 21	# default FTP port
+printf "Connecting to %s ... " addr
+socket_connect sock addr port 
+crlf
+if_false
+	printf "!socket_connect failed socket_error=%d\r\n" _socket_error
+	return
+	end_if
+print "login: "
+getstr user
+print "password: "
+getstr pass 60 K_NOECHO
+crlf
+ftp_login sock user pass
+if_false
+	printf "!ftp_login failed socket_error=%d\r\n" _socket_error
+	end_if
+return
