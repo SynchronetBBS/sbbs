@@ -90,11 +90,7 @@ void viewscroll(void)
 int syncmenu(void)
 {
 	char	*opts[3]={
-#ifdef __unix__
 						 "Scrollback (ALT-S)"
-#else
-						 "Scrollback"
-#endif
 						,"Disconnect (CTRL-Q)"
 						,""};
 	int		opt=0;
