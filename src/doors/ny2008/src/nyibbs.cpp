@@ -56,59 +56,63 @@ void            AddBestPlayerInIB(char *name, DWORD points, char location[]) {
 	//ch_game_d();
 	if (fexist(IBBS_BESTTEN_FILENAME)) {
 		justfile = ShareFileOpen(IBBS_BESTTEN_FILENAME, "r+b");
-		len_of_list = filelength(fileno(justfile)) / sizeof(ibbs_best_rec_type) + 1;
-		if (len_of_list > 10)
-			len_of_list = 10;
+		if(justfile != NULL) {
+			len_of_list = filelength(fileno(justfile)) / sizeof(ibbs_best_rec_type) + 1;
+			if (len_of_list > 10)
+				len_of_list = 10;
 
-		/* check if the same record exists */
-		while (cnt < 10 && ny_fread(&best_rec, sizeof(ibbs_best_rec_type), 1, justfile) == 1) {
-			//printf("[%ld=%ld],", best_rec.points, points);
-			//printf("[%s=%s],", best_rec.location, location);
-			//printf("[%s=%s]\n", best_rec.name, name);
-			if (points == best_rec.points &&
-			        strcmp(best_rec.location, location) == 0 &&
-			        strcmp(best_rec.name, name) == 0) {
-				/* if it already exists quit this function */
-				fclose(justfile);
-				return;
+			/* check if the same record exists */
+			while (cnt < 10 && ny_fread(&best_rec, sizeof(ibbs_best_rec_type), 1, justfile) == 1) {
+				//printf("[%ld=%ld],", best_rec.points, points);
+				//printf("[%s=%s],", best_rec.location, location);
+				//printf("[%s=%s]\n", best_rec.name, name);
+				if (points == best_rec.points &&
+			        	strcmp(best_rec.location, location) == 0 &&
+			        	strcmp(best_rec.name, name) == 0) {
+					/* if it already exists quit this function */
+					fclose(justfile);
+					return;
+				}
 			}
-		}
 
-		/* rewind the file to beginning */
-		fseek(justfile, 0, SEEK_SET);
+			/* rewind the file to beginning */
+			fseek(justfile, 0, SEEK_SET);
 
-		while (cnt < 10 && ny_fread(&best_rec, sizeof(ibbs_best_rec_type), 1, justfile) == 1) {
+			while (cnt < 10 && ny_fread(&best_rec, sizeof(ibbs_best_rec_type), 1, justfile) == 1) {
 
-			if (points >= best_rec.points) {
-				//fseek(justfile, (INT32)cnt * sizeof(ibbs_best_rec_type), SEEK_SET);
-				//ny_fwrite(&best_rec2, sizeof(ibbs_best_rec_type), 1, justfile);
-				strcpy(best_rec.name, best_rec2.name);
-				strcpy(best_rec.location, best_rec2.location);
-				best_rec.points = best_rec2.points;
-				//cnt++;
-				while (cnt < len_of_list) {
-					fseek(justfile, (INT32)cnt * sizeof(ibbs_best_rec_type), SEEK_SET);
-					ny_fread(&best_rec2, sizeof(ibbs_best_rec_type), 1, justfile);
-					fseek(justfile, (INT32)cnt * sizeof(ibbs_best_rec_type), SEEK_SET);
-					ny_fwrite(&best_rec, sizeof(ibbs_best_rec_type), 1, justfile);
+				if (points >= best_rec.points) {
+					//fseek(justfile, (INT32)cnt * sizeof(ibbs_best_rec_type), SEEK_SET);
+					//ny_fwrite(&best_rec2, sizeof(ibbs_best_rec_type), 1, justfile);
 					strcpy(best_rec.name, best_rec2.name);
 					strcpy(best_rec.location, best_rec2.location);
 					best_rec.points = best_rec2.points;
-					cnt++;
+					//cnt++;
+					while (cnt < len_of_list) {
+						fseek(justfile, (INT32)cnt * sizeof(ibbs_best_rec_type), SEEK_SET);
+						ny_fread(&best_rec2, sizeof(ibbs_best_rec_type), 1, justfile);
+						fseek(justfile, (INT32)cnt * sizeof(ibbs_best_rec_type), SEEK_SET);
+						ny_fwrite(&best_rec, sizeof(ibbs_best_rec_type), 1, justfile);
+						strcpy(best_rec.name, best_rec2.name);
+						strcpy(best_rec.location, best_rec2.location);
+						best_rec.points = best_rec2.points;
+						cnt++;
+					}
+					fclose(justfile);
+					//od_control.od_ker_exec = NULL;
+					return;
 				}
-				fclose(justfile);
-				//od_control.od_ker_exec = NULL;
-				return;
+				cnt++;
+
 			}
-			cnt++;
 
+			fclose(justfile);
 		}
-
-		fclose(justfile);
 		if (cnt < 10) {
 			justfile = ShareFileOpen(IBBS_BESTTEN_FILENAME, "a+b");
-			ny_fwrite(&best_rec2, sizeof(ibbs_best_rec_type), 1, justfile);
-			fclose(justfile);
+			if(justfile != NULL) {
+				ny_fwrite(&best_rec2, sizeof(ibbs_best_rec_type), 1, justfile);
+				fclose(justfile);
+			}
 			//od_control.od_ker_exec = NULL;
 			return;
 		} else {
@@ -117,8 +121,10 @@ void            AddBestPlayerInIB(char *name, DWORD points, char location[]) {
 		}
 	}
 	justfile = ShareFileOpen(IBBS_BESTTEN_FILENAME, "wb");
-	ny_fwrite(&best_rec2, sizeof(ibbs_best_rec_type), 1, justfile);
-	fclose(justfile);
+	if(justfile != NULL) {
+		ny_fwrite(&best_rec2, sizeof(ibbs_best_rec_type), 1, justfile);
+		fclose(justfile);
+	}
 	//od_control.od_ker_exec = NULL;
 	return;
 }
@@ -591,10 +597,12 @@ void            RefreshBest(void) {
 	if (fexist(BESTTEN_FILENAME)) {
 		/* open for reading */
 		justfile = ShareFileOpen(BESTTEN_FILENAME, "rb");
-		while (ny_fread(&best_rec, sizeof(best_rec), 1, justfile) == 1) {
-			AddBestPlayerInIB(best_rec.name, best_rec.points, IBBSInfo.szThisNodeAddress);
+		if(justfile != NULL) {
+			while (ny_fread(&best_rec, sizeof(best_rec), 1, justfile) == 1) {
+				AddBestPlayerInIB(best_rec.name, best_rec.points, IBBSInfo.szThisNodeAddress);
+			}
+			fclose(justfile);
 		}
-		fclose(justfile);
 	}
 }
 
@@ -771,27 +779,29 @@ INT16             main(INT16 argc, char *argv[]) {
 			sprintf(IBBSInfo.szProgName, "#@NYG#%05d MAIL", ibbsi_game_num);
 
 			justfile = ShareFileOpen(IBBS_MAIL_INDEX, "a+b");
-			//while (IBGet(&IBBSInfo, &ibmail, sizeof(ibbs_mail_type)) == eSuccess) {
-
-			/*
-			   for(x=0;x<(sizeof(ibbs_mail_type));x++) (((char
-			   *)&ibmail)+x)=0;
-			*/
-			while (IBGetMail(&IBBSInfo, &ibmail) == eSuccess) {
+			if(justfile != NULL) {
+				//while (IBGet(&IBBSInfo, &ibmail, sizeof(ibbs_mail_type)) == eSuccess) {
 
 				/*
-				   printf(">>>(%s|",ibmail.sender);
-				   printf("%s|",ibmail.senderI);
-				   printf("%s|",ibmail.node_s);
-				   printf("%s|",ibmail.node_r);
-				   printf("%s|",ibmail.recver);
-				   printf("%s)<<<\n\n",ibmail.recverI);
+				   for(x=0;x<(sizeof(ibbs_mail_type));x++) (((char
+				   *)&ibmail)+x)=0;
 				*/
+				while (IBGetMail(&IBBSInfo, &ibmail) == eSuccess) {
 
-				if (strcmp(ibmail.node_r, IBBSInfo.szThisNodeAddress) == 0)
-					ny_fwrite(&ibmail, sizeof(ibbs_mail_type), 1, justfile);
+					/*
+					   printf(">>>(%s|",ibmail.sender);
+					   printf("%s|",ibmail.senderI);
+					   printf("%s|",ibmail.node_s);
+					   printf("%s|",ibmail.node_r);
+					   printf("%s|",ibmail.recver);
+					   printf("%s)<<<\n\n",ibmail.recverI);
+					*/
+
+					if (strcmp(ibmail.node_r, IBBSInfo.szThisNodeAddress) == 0)
+						ny_fwrite(&ibmail, sizeof(ibbs_mail_type), 1, justfile);
+				}
+				fclose(justfile);
 			}
-			fclose(justfile);
 		}
 
 		if (ibbs_send_nodelist && ibbsi_operator) {
@@ -835,13 +845,15 @@ INT16             main(INT16 argc, char *argv[]) {
 					memcpy((char *)IBBSInfo.paOtherSystem, InComing, sizeof(tOtherNode) * IBBSInfo.nTotalSystems);
 					//free(InComing);
 					justfile = ShareFileOpenAR(NODELIST_FILENAME, "wt");
-					fprintf(justfile, ";Only the central system operator should change this node list!\n");
-					for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
-						fprintf(justfile, "LinkWith        %s\n", ((tOtherNode *) InComing)[x].szAddress);
-						fprintf(justfile, "LinkName        %s\n", ((tOtherNode *) InComing)[x].szSystemName);
-						fprintf(justfile, "LinkLocation    %s\n\n", ((tOtherNode *) InComing)[x].szLocation);
+					if(justfile != NULL) {
+						fprintf(justfile, ";Only the central system operator should change this node list!\n");
+						for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
+							fprintf(justfile, "LinkWith        %s\n", ((tOtherNode *) InComing)[x].szAddress);
+							fprintf(justfile, "LinkName        %s\n", ((tOtherNode *) InComing)[x].szSystemName);
+							fprintf(justfile, "LinkLocation    %s\n\n", ((tOtherNode *) InComing)[x].szLocation);
+						}
+						fclose(justfile);
 					}
-					fclose(justfile);
 					InComing--;
 				}
 				free(InComing);
@@ -857,26 +869,28 @@ INT16             main(INT16 argc, char *argv[]) {
 				if (strcmp(InComing, IBBSInfo.szThisNodeAddress) != 0) {
 					sprintf(IBBSInfo.szProgName, "#@NYG#%05d NAMELIST", ibbsi_game_num);
 					justfile = ShareFileOpen(USER_FILENAME, "rb");
-					cnt = filelength(fileno(justfile)) / sizeof(user_rec);
-					OutGoing = (char *)malloc(((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 4);
-					OutGoing += 2;
-					x = 0;
-					while (ny_fread(&urec_i, sizeof(user_rec), 1, justfile) == 1) {
-						strcpy(OutGoing + 1 + ((25 + 36 + 1) * x), urec_i.name);
-						strcpy(OutGoing + 1 + ((25 + 36 + 1) * x) + 25, urec_i.bbsname);
-						*(OutGoing + (25 + 36 + 1) * (x + 1)) = (char)urec_i.sex;
-						x++;
+					if(justfile != NULL) {
+						cnt = filelength(fileno(justfile)) / sizeof(user_rec);
+						OutGoing = (char *)malloc(((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 4);
+						OutGoing += 2;
+						x = 0;
+						while (ny_fread(&urec_i, sizeof(user_rec), 1, justfile) == 1) {
+							strcpy(OutGoing + 1 + ((25 + 36 + 1) * x), urec_i.name);
+							strcpy(OutGoing + 1 + ((25 + 36 + 1) * x) + 25, urec_i.bbsname);
+							*(OutGoing + (25 + 36 + 1) * (x + 1)) = (char)urec_i.sex;
+							x++;
+						}
+						strcpy(OutGoing + 1 + ((25 + 36 + 1) * cnt), IBBSInfo.szThisNodeAddress);
+						if (x > 0) {
+							*OutGoing = cnt;
+							OutGoing -= 2;
+							*(INT16 *)OutGoing = ((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 2;
+							IBSend(&IBBSInfo, InComing, OutGoing, ((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 4);
+						} else {
+							OutGoing -= 2;
+						}
+						fclose(justfile);
 					}
-					strcpy(OutGoing + 1 + ((25 + 36 + 1) * cnt), IBBSInfo.szThisNodeAddress);
-					if (x > 0) {
-						*OutGoing = cnt;
-						OutGoing -= 2;
-						*(INT16 *)OutGoing = ((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 2;
-						IBSend(&IBBSInfo, InComing, OutGoing, ((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 4);
-					} else {
-						OutGoing -= 2;
-					}
-					fclose(justfile);
 					free(OutGoing);
 					sprintf(IBBSInfo.szProgName, "#@NYG#%05d LISTREQ", ibbsi_game_num);
 				}
@@ -894,8 +908,10 @@ INT16             main(INT16 argc, char *argv[]) {
 			while (IBGet(&IBBSInfo, (char *)&newzfile, sizeof(newzfile)) == eSuccess) {
 				//ch_game_d();
 				justfile = ShareFileOpen(TODNEWS_FILENAME, "a+b");
-				ny_fwrite(&newzfile, sizeof(newzfile), 1, justfile);
-				fclose(justfile);
+				if(justfile != NULL) {
+					ny_fwrite(&newzfile, sizeof(newzfile), 1, justfile);
+					fclose(justfile);
+				}
 			}
 
 			sprintf(IBBSInfo.szProgName, "#@NYG#%05d BBSINFO", ibbsi_game_num);
@@ -938,8 +954,10 @@ INT16             main(INT16 argc, char *argv[]) {
 						bbs_spy_rec.players = 0;
 						strcpy(bbs_spy_rec.node, bbs_rec.node);
 						bbs_spy_rec.hi_points = bbs_rec.hi_points;
-						ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
-						fclose(justfile);
+						if(justfile != NULL) {
+							ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
+							fclose(justfile);
+						}
 					}
 				}
 			}
@@ -959,72 +977,79 @@ INT16             main(INT16 argc, char *argv[]) {
 				//printf("\nPlayers in the list: |%d|\n", cnt);
 				//od_get_answer("1");
 				justfile = ShareFileOpen(IBBSSPY_FILENAME, "r+b");
-				//fseek(justfile, 0, SEEK_SET);
-				//printf("3");
-				xx = 0;
-				//printf("4");
+				if(justfile != NULL) {
+					//fseek(justfile, 0, SEEK_SET);
+					//printf("3");
+					xx = 0;
+					//printf("4");
 
-				//printf("\n*|N#%s|\n", InComing + 1);
-				//+((25 + 36 + 1) * cnt));
-				//printf("*|N#%s|\n", InComing + 26);
-				//+((25 + 36 + 1) * (cnt - 1)));
-				//od_get_answer("1");
+					//printf("\n*|N#%s|\n", InComing + 1);
+					//+((25 + 36 + 1) * cnt));
+					//printf("*|N#%s|\n", InComing + 26);
+					//+((25 + 36 + 1) * (cnt - 1)));
+					//od_get_answer("1");
 
-				while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
-					//printf("5");
-					if (strcmp(InComing + 1 + ((25 + 36 + 1) * cnt), bbs_spy_rec.node) == 0) {
-						//printf("6");
-						if (bbs_spy_rec.player_list != 0) {
-							//printf("7");
-							sprintf(numstr, SBYDBT_PREFIX".%03d", bbs_spy_rec.player_list);
-							njustfile = ShareFileOpen(numstr, "wb");
-							for (x = 0; x < cnt; x++) {
-								strcpy(ibscr_rec.name, InComing + 1 + ((25 + 36 + 1) * x));
-								strcpy(ibscr_rec.nameI, InComing + 1 + ((25 + 36 + 1) * x) + 25);
-								ibscr_rec.sex = *(sex_type *) (InComing + (25 + 36 + 1) * (x + 1));
-								//printf("\n+|%s|%s|%d|\n", ibscr_rec.name, ibscr_rec.nameI, (INT16)ibscr_rec.sex);
-								//od_get_answer("1");
+					while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
+						//printf("5");
+						if (strcmp(InComing + 1 + ((25 + 36 + 1) * cnt), bbs_spy_rec.node) == 0) {
+							//printf("6");
+							if (bbs_spy_rec.player_list != 0) {
+								//printf("7");
+								sprintf(numstr, SBYDBT_PREFIX".%03d", bbs_spy_rec.player_list);
+								njustfile = ShareFileOpen(numstr, "wb");
+								if(njustfile != NULL) {
+									for (x = 0; x < cnt; x++) {
+										strcpy(ibscr_rec.name, InComing + 1 + ((25 + 36 + 1) * x));
+										strcpy(ibscr_rec.nameI, InComing + 1 + ((25 + 36 + 1) * x) + 25);
+										ibscr_rec.sex = *(sex_type *) (InComing + (25 + 36 + 1) * (x + 1));
+										//printf("\n+|%s|%s|%d|\n", ibscr_rec.name, ibscr_rec.nameI, (INT16)ibscr_rec.sex);
+										//od_get_answer("1");
 
-								ibscr_rec.level = -1;
-								ny_fwrite(&ibscr_rec, sizeof(ibbs_scr_rec), 1, njustfile);
+										ibscr_rec.level = -1;
+										ny_fwrite(&ibscr_rec, sizeof(ibbs_scr_rec), 1, njustfile);
+									}
+									//printf("8");
+									fclose(njustfile);
+									//printf("9");
+								}
+							} else {
+								bbs_spy_rec.player_list = 0;
+								do {
+									bbs_spy_rec.player_list++;
+									sprintf(numstr, SBYDB_PREFIX".%03d", bbs_spy_rec.player_list);
+								} while (fexist(numstr));
+								njustfile = ShareFileOpen(numstr, "wb");
+								if(njustfile != NULL)
+									fclose(njustfile);
+								sprintf(numstr, SBYDBT_PREFIX".%03d", bbs_spy_rec.player_list);
+								njustfile = ShareFileOpen(numstr, "wb");
+								if(njustfile != NULL) {
+									for (x = 0; x < *InComing; x++) {
+										strcpy(ibscr_rec.name, InComing + 1 + ((25 + 36 + 1) * x));
+										strcpy(ibscr_rec.nameI, InComing + 1 + ((25 + 36 + 1) * x) + 25);
+										ibscr_rec.level = -1;
+										ibscr_rec.sex = *(sex_type *) (InComing + (25 + 36 + 1) * (x + 1));
+										//od_printf("++|%s|%s|%d|", ibscr_rec.name, ibscr_rec.nameI, (INT16)ibscr_rec.sex);
+										//od_get_answer("1");
+
+										ny_fwrite(&ibscr_rec, sizeof(ibbs_scr_rec), 1, njustfile);
+									}
+									//printf("A");
+									fclose(njustfile);
+								}
+								//printf("B");
+								fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
+								//printf("C");
+								ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
 							}
-							//printf("8");
-							fclose(njustfile);
-							//printf("9");
-						} else {
-							bbs_spy_rec.player_list = 0;
-							do {
-								bbs_spy_rec.player_list++;
-								sprintf(numstr, SBYDB_PREFIX".%03d", bbs_spy_rec.player_list);
-							} while (fexist(numstr));
-							njustfile = ShareFileOpen(numstr, "wb");
-							fclose(njustfile);
-							sprintf(numstr, SBYDBT_PREFIX".%03d", bbs_spy_rec.player_list);
-							njustfile = ShareFileOpen(numstr, "wb");
-							for (x = 0; x < *InComing; x++) {
-								strcpy(ibscr_rec.name, InComing + 1 + ((25 + 36 + 1) * x));
-								strcpy(ibscr_rec.nameI, InComing + 1 + ((25 + 36 + 1) * x) + 25);
-								ibscr_rec.level = -1;
-								ibscr_rec.sex = *(sex_type *) (InComing + (25 + 36 + 1) * (x + 1));
-								//od_printf("++|%s|%s|%d|", ibscr_rec.name, ibscr_rec.nameI, (INT16)ibscr_rec.sex);
-								//od_get_answer("1");
-
-								ny_fwrite(&ibscr_rec, sizeof(ibbs_scr_rec), 1, njustfile);
-							}
-							//printf("A");
-							fclose(njustfile);
-							//printf("B");
-							fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
-							//printf("C");
-							ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
+							break;
 						}
-						break;
+						xx++;
+						fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
+						//printf("D");
 					}
-					xx++;
-					fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
-					//printf("D");
+					fclose(justfile);
 				}
-				fclose(justfile);
 				//printf("E");
 				free(InComing);
 				//printf("\nKKK\n");
@@ -1050,68 +1075,74 @@ INT16             main(INT16 argc, char *argv[]) {
 					//printf("J");
 					jfile = ShareFileOpen(*fname, "rb");
 					//printf("K");
+					if(jfile != NULL) {
 
-					while (ny_fread(&ibscr_rec, sizeof(ibbs_scr_rec), 1, jfile) == 1) {
-						//printf("L");
+						while (ny_fread(&ibscr_rec, sizeof(ibbs_scr_rec), 1, jfile) == 1) {
+							//printf("L");
 
-						njustfile = ShareFileOpen(SBYDB_PREFIX""TEMP_EXTENSION, "r+b");
-						justfile = ShareFileOpen(numstr, "a+b");
-						found = FALSE;
-						//printf("M");
-						x = 0;
+							njustfile = ShareFileOpen(SBYDB_PREFIX""TEMP_EXTENSION, "r+b");
+							justfile = ShareFileOpen(numstr, "a+b");
+							found = FALSE;
+							//printf("M");
+							x = 0;
 
-						while (ny_fread(&ibscr_rec2, sizeof(ibbs_scr_rec), 1, njustfile) == 1) {
+							if(justfile!=NULL && njustfile != NULL) {
+								while (ny_fread(&ibscr_rec2, sizeof(ibbs_scr_rec), 1, njustfile) == 1) {
 
-							//printf("N");
-							if (strcmp(ibscr_rec.nameI, ibscr_rec2.nameI) == 0) {
-								if (ibscr_rec2.level != -66) {
-									strcpy(ibscr_rec2.name, ibscr_rec.name);
-									ibscr_rec2.sex = ibscr_rec.sex;
-									ny_fwrite(&ibscr_rec, sizeof(ibbs_scr_rec), 1, justfile);
+									//printf("N");
+									if (strcmp(ibscr_rec.nameI, ibscr_rec2.nameI) == 0) {
+										if (ibscr_rec2.level != -66) {
+											strcpy(ibscr_rec2.name, ibscr_rec.name);
+											ibscr_rec2.sex = ibscr_rec.sex;
+											ny_fwrite(&ibscr_rec, sizeof(ibbs_scr_rec), 1, justfile);
+											fseek(njustfile, (INT32)x * sizeof(ibbs_scr_rec), SEEK_SET);
+											ibscr_rec2.level = -66;
+											ny_fwrite(&ibscr_rec2, sizeof(ibbs_scr_rec), 1, njustfile);
+										}
+										found = TRUE;
+										break;
+									}
+									//printf("O");
+									x++;
 									fseek(njustfile, (INT32)x * sizeof(ibbs_scr_rec), SEEK_SET);
-									ibscr_rec2.level = -66;
-									ny_fwrite(&ibscr_rec2, sizeof(ibbs_scr_rec), 1, njustfile);
 								}
-								found = TRUE;
-								break;
+								//printf("P");
+								if (found == FALSE)
+									ny_fwrite(&ibscr_rec, sizeof(ibbs_scr_rec), 1, justfile);
+								fclose(njustfile);
+								fclose(justfile);
 							}
-							//printf("O");
-							x++;
-							fseek(njustfile, (INT32)x * sizeof(ibbs_scr_rec), SEEK_SET);
+							//printf("Q");
+
 						}
-						//printf("P");
-						if (found == FALSE)
-							ny_fwrite(&ibscr_rec, sizeof(ibbs_scr_rec), 1, justfile);
-						fclose(njustfile);
-						fclose(justfile);
-
-						//printf("Q");
-
+						//printf("R");
+						fclose(jfile);
 					}
-					//printf("R");
-					fclose(jfile);
-
 					ny_remove(*fname);
 					ny_remove(SBYDB_PREFIX""TEMP_EXTENSION);
 					//printf("S");
 					justfile = ShareFileOpen(IBBSSPY_FILENAME, "r+b");
 					//fseek(justfile, 0, SEEK_SET);
 					xx = 0;
-					while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
-						if (bbs_spy_rec.player_list == cnt && cnt != 0) {
-							sprintf(numstr, SBYDB_PREFIX".%03d", bbs_spy_rec.player_list);
-							njustfile = ShareFileOpen(numstr, "rb");
-							bbs_spy_rec.players = filelength(fileno(njustfile)) / sizeof(ibbs_scr_rec);
-							fclose(njustfile);
+					if(justfile != NULL) {
+						while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
+							if (bbs_spy_rec.player_list == cnt && cnt != 0) {
+								sprintf(numstr, SBYDB_PREFIX".%03d", bbs_spy_rec.player_list);
+								njustfile = ShareFileOpen(numstr, "rb");
+								if(njustfile != NULL) {
+									bbs_spy_rec.players = filelength(fileno(njustfile)) / sizeof(ibbs_scr_rec);
+									fclose(njustfile);
+								}
 
+								fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
+								ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
+								break;
+							}
+							xx++;
 							fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
-							ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
-							break;
 						}
-						xx++;
-						fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
+						fclose(justfile);
 					}
-					fclose(justfile);
 					//printf("T");
 				}
 				globfree(&ff);
@@ -1156,7 +1187,7 @@ INT16             main(INT16 argc, char *argv[]) {
 				if (act_rec.action == 0) {
 					justfile = ShareFileOpen(IBBSSPY_FILENAME, "rb");
 					if (justfile != NULL) {
-						while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
+						while (justfile != NULL && ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
 							if (strcmp(bbs_spy_rec.node, act_rec.node_s) == 0) {
 								if (bbs_spy_rec.player_list == 0) {
 									if (strcmp(act_rec.node_s, IBBSInfo.szThisNodeAddress) != 0) {
@@ -1170,7 +1201,7 @@ INT16             main(INT16 argc, char *argv[]) {
 									fclose(justfile);
 									justfile = ShareFileOpen(numstr, "r+b");
 									x = 0;
-									while (ny_fread(&ibscr_rec, sizeof(ibbs_scr_rec), 1, justfile) == 1) {
+									while (justfile != NULL && ny_fread(&ibscr_rec, sizeof(ibbs_scr_rec), 1, justfile) == 1) {
 										if (strcmp(ibscr_rec.nameI, act_rec.name_sI) == 0) {
 											strcpy(ibscr_rec.name, act_rec.name_s);
 											fseek(justfile, (INT32)x * sizeof(ibbs_scr_rec), SEEK_SET);
@@ -1181,11 +1212,11 @@ INT16             main(INT16 argc, char *argv[]) {
 										fseek(justfile, (INT32)x * sizeof(ibbs_scr_rec), SEEK_SET);
 									}
 									break;
-
 								}
 							}
 						}
-						fclose(justfile);
+						if(justfile != NULL)
+							fclose(justfile);
 					} else {
 						if (strcmp(act_rec.node_s, IBBSInfo.szThisNodeAddress) != 0) {
 							sprintf(IBBSInfo.szProgName, "#@NYG#%05d LISTREQ", ibbsi_game_num);
@@ -1196,19 +1227,21 @@ INT16             main(INT16 argc, char *argv[]) {
 				} else if (act_rec.action == 1) {
 					justfile = ShareFileOpen(USER_FILENAME, "rb");
 					scr_spy_rec.nameI[0] = 0;
-					while (ny_fread(&urec_i, sizeof(user_rec), 1, justfile) == 1) {
-						if (strcmp(urec_i.bbsname, act_rec.name_rI) == 0) {
-							strcpy(scr_spy_rec.name, urec_i.name);
-							strcpy(scr_spy_rec.nameI, urec_i.bbsname);
-							scr_spy_rec.nation = urec_i.nation;
-							scr_spy_rec.level = urec_i.level;
-							scr_spy_rec.points = urec_i.points;
-							scr_spy_rec.sex = urec_i.sex;
-							strcpy(scr_spy_rec.node, IBBSInfo.szThisNodeAddress);
-							break;
+					if(justfile != NULL) {
+						while (ny_fread(&urec_i, sizeof(user_rec), 1, justfile) == 1) {
+							if (strcmp(urec_i.bbsname, act_rec.name_rI) == 0) {
+								strcpy(scr_spy_rec.name, urec_i.name);
+								strcpy(scr_spy_rec.nameI, urec_i.bbsname);
+								scr_spy_rec.nation = urec_i.nation;
+								scr_spy_rec.level = urec_i.level;
+								scr_spy_rec.points = urec_i.points;
+								scr_spy_rec.sex = urec_i.sex;
+								strcpy(scr_spy_rec.node, IBBSInfo.szThisNodeAddress);
+								break;
+							}
 						}
+						fclose(justfile);
 					}
-					fclose(justfile);
 					if (scr_spy_rec.nameI[0] != 0) {
 						sprintf(IBBSInfo.szProgName, "#@NYG#%05d SPYINFO", ibbsi_game_num);
 						IBSend(&IBBSInfo, act_rec.node_s, (char *)&scr_spy_rec, sizeof(ibbs_scr_spy_rec));
@@ -1227,13 +1260,13 @@ INT16             main(INT16 argc, char *argv[]) {
 
 				justfile = ShareFileOpen(IBBSSPY_FILENAME, "rb");
 				if (justfile != NULL) {
-					while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
+					while (justfile != NULL && ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
 						if (strcmp(bbs_spy_rec.node, scr_spy_rec.node) == 0 && bbs_spy_rec.player_list != 0) {
 							sprintf(numstr, SBYDB_PREFIX".%03d", bbs_spy_rec.player_list);
 							fclose(justfile);
 							justfile = ShareFileOpen(numstr, "r+b");
 							x = 0;
-							while (ny_fread(&ibscr_rec, sizeof(ibbs_scr_rec), 1, justfile) == 1) {
+							while (justfile != NULL && ny_fread(&ibscr_rec, sizeof(ibbs_scr_rec), 1, justfile) == 1) {
 								if (strcmp(ibscr_rec.nameI, scr_spy_rec.nameI) == 0) {
 									strcpy(ibscr_rec.name, scr_spy_rec.name);
 									ibscr_rec.nation = scr_spy_rec.nation;
@@ -1245,12 +1278,14 @@ INT16             main(INT16 argc, char *argv[]) {
 									break;
 								}
 								x++;
-								fseek(justfile, (INT32)x * sizeof(ibbs_scr_rec), SEEK_SET);
+								if(justfile != NULL)
+									fseek(justfile, (INT32)x * sizeof(ibbs_scr_rec), SEEK_SET);
 							}
 							break;
 						}
 					}
-					fclose(justfile);
+					if(justfile != NULL)
+						fclose(justfile);
 				}
 			}
 			//printf("~~~");
@@ -1266,13 +1301,15 @@ INT16             main(INT16 argc, char *argv[]) {
 			strcpy(bbs_rec.node, IBBSInfo.szThisNodeAddress);
 
 			justfile = ShareFileOpen(USER_FILENAME, "rb");
-			bbs_rec.hi_points = 0;
-			cnt = 0;
-			while (ny_fread(&urec_i, sizeof(user_rec), 1, justfile) == 1) {
-				if (urec_i.points > bbs_rec.hi_points)
-					bbs_rec.hi_points = urec_i.points;
+			if(justfile != NULL) {
+				bbs_rec.hi_points = 0;
+				cnt = 0;
+				while (ny_fread(&urec_i, sizeof(user_rec), 1, justfile) == 1) {
+					if (urec_i.points > bbs_rec.hi_points)
+						bbs_rec.hi_points = urec_i.points;
+				}
+				fclose(justfile);
 			}
-			fclose(justfile);
 
 			if (IBSendAll(&IBBSInfo, (char *)&bbs_rec, sizeof(ibbs_bbs_rec)) != eSuccess) {
 				printf("\n\nINTERBBS ERROR:Can't send the BBSINFO!!!\n\n");
@@ -1284,35 +1321,38 @@ INT16             main(INT16 argc, char *argv[]) {
 
 				sprintf(IBBSInfo.szProgName, "#@NYG#%05d NAMELIST", ibbsi_game_num);
 				justfile = ShareFileOpen(USER_FILENAME, "rb");
-				cnt = filelength(fileno(justfile)) / sizeof(user_rec);
-				//printf("\n& Len of file: %ld  len of user_rec : %ld", (INT32)filelength(fileno(justfile)), (INT32)sizeof(user_rec));
-				OutGoing = (char *)malloc(((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 4);
-				OutGoing += 2;
-				x = 0;
-				//strcpy(OutGoing + 1 + ((25 + 36 + 1) * cnt), IBBSInfo.szThisNodeAddress);
-				while (ny_fread(&urec_i, sizeof(user_rec), 1, justfile) == 1) {
-					strcpy((OutGoing + 1 + ((25 + 36 + 1) * x)), urec_i.name);
-					//printf("\n[%d] - {%s} - |%s|", x, (OutGoing + 1 + ((25 + 36 + 1) * x)), urec_i.name);
-					strcpy(OutGoing + 1 + ((25 + 36 + 1) * x) + 25, urec_i.bbsname);
-					//printf("\n[%d] - {%s} - |%s|", x, (OutGoing + 1 + ((25 + 36 + 1) * x) + 25), urec_i.bbsname);
-					*(OutGoing + (25 + 36 + 1) * (x + 1)) = (char)urec_i.sex;
-					//printf("\n[%d] - {%s} - |%s|", x, (OutGoing + 1 + ((25 + 36 + 1) * x)), urec_i.name);
-					x++;
+				if(justfile != NULL) {
+					cnt = filelength(fileno(justfile)) / sizeof(user_rec);
+					//printf("\n& Len of file: %ld  len of user_rec : %ld", (INT32)filelength(fileno(justfile)), (INT32)sizeof(user_rec));
+					OutGoing = (char *)malloc(((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 4);
+					OutGoing += 2;
+					x = 0;
+					//strcpy(OutGoing + 1 + ((25 + 36 + 1) * cnt), IBBSInfo.szThisNodeAddress);
+					while (ny_fread(&urec_i, sizeof(user_rec), 1, justfile) == 1) {
+						strcpy((OutGoing + 1 + ((25 + 36 + 1) * x)), urec_i.name);
+						//printf("\n[%d] - {%s} - |%s|", x, (OutGoing + 1 + ((25 + 36 + 1) * x)), urec_i.name);
+						strcpy(OutGoing + 1 + ((25 + 36 + 1) * x) + 25, urec_i.bbsname);
+						//printf("\n[%d] - {%s} - |%s|", x, (OutGoing + 1 + ((25 + 36 + 1) * x) + 25), urec_i.bbsname);
+						*(OutGoing + (25 + 36 + 1) * (x + 1)) = (char)urec_i.sex;
+						//printf("\n[%d] - {%s} - |%s|", x, (OutGoing + 1 + ((25 + 36 + 1) * x)), urec_i.name);
+						x++;
+					}
+					strcpy(OutGoing + 1 + ((25 + 36 + 1) * cnt), IBBSInfo.szThisNodeAddress);
+					if (x > 0) {
+						*OutGoing = cnt;
+						//printf("\nPlayers on the list: {%d}\n", cnt);
+						OutGoing -= 2;
+						*(INT16 *)OutGoing = ((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 2;
+						IBSendAll(&IBBSInfo, OutGoing, ((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 4);
+					} else {
+						OutGoing -= 2;
+					}
+					fclose(justfile);
+					free(OutGoing);
 				}
-				strcpy(OutGoing + 1 + ((25 + 36 + 1) * cnt), IBBSInfo.szThisNodeAddress);
-				if (x > 0) {
-					*OutGoing = cnt;
-					//printf("\nPlayers on the list: {%d}\n", cnt);
-					OutGoing -= 2;
-					*(INT16 *)OutGoing = ((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 2;
-					IBSendAll(&IBBSInfo, OutGoing, ((25 + 36 + 1) * cnt) + NODE_ADDRESS_CHARS + 4);
-				} else {
-					OutGoing -= 2;
-				}
-				fclose(justfile);
-				free(OutGoing);
 				justfile = ShareFileOpen(SENTLIST_FILENAME, "wb");
-				fclose(justfile);
+				if(justfile != NULL)
+					fclose(justfile);
 			}
 
 			if (!fexist(SENTBESTTEN_FILENAME)) {
@@ -1339,7 +1379,8 @@ INT16             main(INT16 argc, char *argv[]) {
 					}
 					free(OutGoing);
 					justfile = ShareFileOpen(SENTBESTTEN_FILENAME, "wb");
-					fclose(justfile);
+					if(justfile != NULL)
+						fclose(justfile);
 				}
 			}
 			sprintf(IBBSInfo.szProgName, "#@NYG#%05d LISTREQ", ibbsi_game_num);
@@ -1347,79 +1388,89 @@ INT16             main(INT16 argc, char *argv[]) {
 			if (!fexist(IBBSSPY_FILENAME)) {
 				IBSendAll(&IBBSInfo, IBBSInfo.szThisNodeAddress, NODE_ADDRESS_CHARS + 1);
 				justfile = ShareFileOpen(IBBSSPY_FILENAME, "wb");
-				for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
-					if (strcmp(IBBSInfo.paOtherSystem[x].szAddress, IBBSInfo.szThisNodeAddress) != 0) {
-						strcpy(bbs_spy_rec.node, IBBSInfo.paOtherSystem[x].szAddress);
-						bbs_spy_rec.hi_points = 0;
-						bbs_spy_rec.players = 0;
-						bbs_spy_rec.player_list = 0;
-						ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
+				if(justfile != NULL) {
+					for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
+						if (strcmp(IBBSInfo.paOtherSystem[x].szAddress, IBBSInfo.szThisNodeAddress) != 0) {
+							strcpy(bbs_spy_rec.node, IBBSInfo.paOtherSystem[x].szAddress);
+							bbs_spy_rec.hi_points = 0;
+							bbs_spy_rec.players = 0;
+							bbs_spy_rec.player_list = 0;
+							ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
+						}
 					}
+					fclose(justfile);
 				}
-				fclose(justfile);
 			} else {
 				justfile = ShareFileOpen(IBBSSPY_FILENAME, "r+b");
 				//fseek(justfile, 0, SEEK_SET);
 
 				pack_spy = FALSE;
 				xx = 0;
-				while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
-					found = FALSE;
-					for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
-						if (strcmp(IBBSInfo.paOtherSystem[x].szAddress, bbs_spy_rec.node) == 0) {
-							found = TRUE;
-							break;
+				if(justfile != NULL) {
+					while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
+						found = FALSE;
+						for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
+							if (strcmp(IBBSInfo.paOtherSystem[x].szAddress, bbs_spy_rec.node) == 0) {
+								found = TRUE;
+								break;
+							}
 						}
-					}
-					if (found == FALSE) {
-						bbs_spy_rec.node[0] = 0;
-						fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
-						ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
+						if (found == FALSE) {
+							bbs_spy_rec.node[0] = 0;
+							fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
+							ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
 
-						pack_spy = TRUE;
+							pack_spy = TRUE;
+						}
+						xx++;
+						fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
 					}
-					xx++;
-					fseek(justfile, (INT32)xx * sizeof(ibbs_bbs_spy_rec), SEEK_SET);
+					fclose(justfile);
 				}
-				fclose(justfile);
 
 				if (pack_spy == TRUE) {
 					copyfile(IBBSSPY_FILENAME, IBBSSPY_TEMPFILENAME);
 					justfile = ShareFileOpen(IBBSSPY_TEMPFILENAME, "rb");
 					njustfile = ShareFileOpen(IBBSSPY_FILENAME, "wb");
-					while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
-						if (bbs_spy_rec.node[0] != 0) {
-							ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, njustfile);
-						} else if (bbs_spy_rec.player_list != 0) {
-							sprintf(numstr, SBYDB_PREFIX".%03d", bbs_spy_rec.player_list);
-							ny_remove(numstr);
+					if(justfile != NULL && njustfile != NULL) {
+						while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
+							if (bbs_spy_rec.node[0] != 0) {
+								ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, njustfile);
+							} else if (bbs_spy_rec.player_list != 0) {
+								sprintf(numstr, SBYDB_PREFIX".%03d", bbs_spy_rec.player_list);
+								ny_remove(numstr);
+							}
 						}
+						fclose(justfile);
+						fclose(njustfile);
 					}
-					fclose(justfile);
-					fclose(njustfile);
 					ny_remove(IBBSSPY_TEMPFILENAME);
 				}
 
 				for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
 					found = FALSE;
 					justfile = ShareFileOpen(IBBSSPY_FILENAME, "rb");
-					while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
-						if (strcmp(bbs_spy_rec.node, IBBSInfo.paOtherSystem[x].szAddress) == 0) {
-							found = TRUE;
-							if (bbs_spy_rec.player_list == 0 && strcmp(bbs_spy_rec.node, IBBSInfo.szThisNodeAddress) != 0)
-								IBSend(&IBBSInfo, bbs_spy_rec.node, IBBSInfo.szThisNodeAddress, NODE_ADDRESS_CHARS + 1);
-							break;
+					if(justfile != NULL) {
+						while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
+							if (strcmp(bbs_spy_rec.node, IBBSInfo.paOtherSystem[x].szAddress) == 0) {
+								found = TRUE;
+								if (bbs_spy_rec.player_list == 0 && strcmp(bbs_spy_rec.node, IBBSInfo.szThisNodeAddress) != 0)
+									IBSend(&IBBSInfo, bbs_spy_rec.node, IBBSInfo.szThisNodeAddress, NODE_ADDRESS_CHARS + 1);
+								break;
+							}
 						}
+						fclose(justfile);
 					}
-					fclose(justfile);
 					if (found == FALSE) {
 						justfile = ShareFileOpen(IBBSSPY_FILENAME, "a+b");
 						strcpy(bbs_spy_rec.node, IBBSInfo.paOtherSystem[x].szAddress);
 						bbs_spy_rec.hi_points = 0;
 						bbs_spy_rec.players = 0;
 						bbs_spy_rec.player_list = 0;
-						ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
-						fclose(justfile);
+						if(justfile != NULL) {
+							ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile);
+							fclose(justfile);
+						}
 						if (strcmp(bbs_spy_rec.node, IBBSInfo.szThisNodeAddress) != 0)
 							IBSend(&IBBSInfo, bbs_spy_rec.node, IBBSInfo.szThisNodeAddress, NODE_ADDRESS_CHARS + 1);
 					}
@@ -1428,16 +1479,18 @@ INT16             main(INT16 argc, char *argv[]) {
 			copyfile(IBBSSPY_FILENAME, IBBSSPY_TEMPFILENAME);
 			justfile = ShareFileOpen(IBBSSPY_TEMPFILENAME, "rb");
 			njustfile = ShareFileOpen(IBBSSPY_FILENAME, "wb");
-			while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
-				for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
-					if (strcmp(bbs_spy_rec.node, IBBSInfo.paOtherSystem[x].szAddress) == 0) {
-						ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, njustfile);
-						break;
+			if(justfile != NULL && njustfile != NULL) {
+				while (ny_fread(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, justfile) == 1) {
+					for (x = 0; x < IBBSInfo.nTotalSystems; x++) {
+						if (strcmp(bbs_spy_rec.node, IBBSInfo.paOtherSystem[x].szAddress) == 0) {
+							ny_fwrite(&bbs_spy_rec, sizeof(ibbs_bbs_spy_rec), 1, njustfile);
+							break;
+						}
 					}
 				}
+				fclose(njustfile);
+				fclose(justfile);
 			}
-			fclose(njustfile);
-			fclose(justfile);
 			ny_remove(IBBSSPY_TEMPFILENAME);
 		}
 	}
@@ -1533,9 +1586,6 @@ FILE           *ShareFileOpen(char *pszFileName, char *pszMode) {
 		fpFile = fopen(pszFileName, pszMode);
 	}
 
-	if(fpFile==NULL)
-		fpFile=fopen("cruft.tmp","w+");
-
 	/* Return FILE pointer for opened file, if any. */
 	return (fpFile);
 }
@@ -1581,9 +1631,6 @@ FILE           *ShareFileOpenAR(char *pszFileName, char *pszMode) {
 		fpFile = fopen(pszFileName, pszMode);
 
 	}
-
-	if(fpFile==NULL)
-		fpFile=fopen("cruft.tmp","w+");
 
 	/* Return FILE pointer for opened file, if any. */
 	return (fpFile);

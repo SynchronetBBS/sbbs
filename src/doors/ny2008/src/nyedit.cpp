@@ -1264,92 +1264,97 @@ SortScrFile(INT16 usr) // pebble sorting of scorefile
 	ch_game_d();
 	scr_file=ShareFileOpen(SCR_FILENAME,"r+b");
 	fpUserFile=ShareFileOpen(USER_FILENAME,"r+b");
-	if (usr==user_num) {
-		cnt=cur_user.rank;
-	} else {
-		fseek(fpUserFile, (INT32)usr * sizeof(user_rec), SEEK_SET);
-		ny_fread(&urec, sizeof(user_rec), 1, fpUserFile);
-		cnt=urec.rank;
-	}
+	if(scr_file != NULL && fpUserFile != NULL) {
+		if (usr==user_num) {
+			cnt=cur_user.rank;
+		} else {
+			fseek(fpUserFile, (INT32)usr * sizeof(user_rec), SEEK_SET);
+			ny_fread(&urec, sizeof(user_rec), 1, fpUserFile);
+			cnt=urec.rank;
+		}
 
-	//od_printf("\n\r\n\r%d\n\r\n\r",cnt);
+		//od_printf("\n\r\n\r%d\n\r\n\r",cnt);
 
-	crnt1=0;
-	crnt2=1;
+		crnt1=0;
+		crnt2=1;
 
-	strcpy(rec[crnt1].name,cur_user.name);
-	rec[crnt1].nation=cur_user.nation;
-	rec[crnt1].level=cur_user.level;
-	rec[crnt1].points=cur_user.points;
-	rec[crnt1].alive=cur_user.alive;
-	rec[crnt1].sex=cur_user.sex;
-	rec[crnt1].user_num=user_num;
-	rec[crnt1].online=TRUE;
+		strcpy(rec[crnt1].name,cur_user.name);
+		rec[crnt1].nation=cur_user.nation;
+		rec[crnt1].level=cur_user.level;
+		rec[crnt1].points=cur_user.points;
+		rec[crnt1].alive=cur_user.alive;
+		rec[crnt1].sex=cur_user.sex;
+		rec[crnt1].user_num=user_num;
+		rec[crnt1].online=TRUE;
 
 
-	fseek(scr_file, (INT32)cur_user.rank * sizeof(scr_rec), SEEK_SET);
-	ny_fwrite(&rec[crnt1], sizeof(scr_rec), 1, scr_file);
+		fseek(scr_file, (INT32)cur_user.rank * sizeof(scr_rec), SEEK_SET);
+		ny_fwrite(&rec[crnt1], sizeof(scr_rec), 1, scr_file);
 
-	if (cnt>0) {
-		ch_flag_d();
-		do {
-			sorted=TRUE;
-
-			fseek(scr_file, (INT32)(cnt-1) * sizeof(scr_rec), SEEK_SET);
-			ny_fread(&rec[crnt1], sizeof(scr_rec), 1, scr_file);
-
-			fseek(scr_file, (INT32)cnt * sizeof(scr_rec), SEEK_SET);
-			ny_fread(&rec[crnt2], sizeof(scr_rec), 1, scr_file);
-			if (rec[crnt1].points<rec[crnt2].points) { // switch records
-
-				sorted=FALSE; // run another round
-
-				sprintf(numstr,"u%07d.on",rec[crnt1].user_num);
-				if (single_node==FALSE && fexist(numstr)) {
-					sprintf(numstr,"u%07d.rnk",rec[crnt1].user_num);
-					njustfile = ShareFileOpen(numstr, "wb");
-					ny_fwrite(&cnt,2,1,njustfile);
-					fclose(njustfile);
-				} else {
-					fseek(fpUserFile, (INT32)rec[crnt1].user_num * sizeof(user_rec), SEEK_SET);
-					ny_fread(&urec,sizeof(user_rec),1,fpUserFile);
-					urec.rank=cnt;
-					fseek(fpUserFile, (INT32)rec[crnt1].user_num * sizeof(user_rec), SEEK_SET);
-					ny_fwrite(&urec,sizeof(user_rec),1,fpUserFile);
-				}
-
-				if (usr==user_num) {
-					cur_user.rank=cnt-1;
-				} else {
-					sprintf(numstr,"u%07d.on",rec[crnt2].user_num);
-					if (single_node==FALSE && fexist(numstr)) {
-						sprintf(numstr,"u%07d.rnk",rec[crnt2].user_num);
-						njustfile = ShareFileOpen(numstr, "wb");
-						cnt--;
-						ny_fwrite(&cnt,2,1,njustfile);
-						cnt++;
-						fclose(njustfile);
-					} else {
-						fseek(fpUserFile, (INT32)rec[crnt2].user_num * sizeof(user_rec), SEEK_SET);
-						ny_fread(&urec,sizeof(user_rec),1,fpUserFile);
-						urec.rank=cnt-1;
-						fseek(fpUserFile, (INT32)rec[crnt2].user_num * sizeof(user_rec), SEEK_SET);
-						ny_fwrite(&urec,sizeof(user_rec),1,fpUserFile);
-					}
-				}
+		if (cnt>0) {
+			ch_flag_d();
+			do {
+				sorted=TRUE;
 
 				fseek(scr_file, (INT32)(cnt-1) * sizeof(scr_rec), SEEK_SET);
-				ny_fwrite(&rec[crnt2],sizeof(scr_rec),1,scr_file);
+				ny_fread(&rec[crnt1], sizeof(scr_rec), 1, scr_file);
+
 				fseek(scr_file, (INT32)cnt * sizeof(scr_rec), SEEK_SET);
-				ny_fwrite(&rec[crnt1],sizeof(scr_rec),1,scr_file);
+				ny_fread(&rec[crnt2], sizeof(scr_rec), 1, scr_file);
+				if (rec[crnt1].points<rec[crnt2].points) { // switch records
 
-			}
-			cnt--;
-		} while (sorted==FALSE && cnt>0);
+					sorted=FALSE; // run another round
+
+					sprintf(numstr,"u%07d.on",rec[crnt1].user_num);
+					if (single_node==FALSE && fexist(numstr)) {
+						sprintf(numstr,"u%07d.rnk",rec[crnt1].user_num);
+						njustfile = ShareFileOpen(numstr, "wb");
+						if(njustfile != NULL) {
+							ny_fwrite(&cnt,2,1,njustfile);
+							fclose(njustfile);
+						}
+					} else {
+						fseek(fpUserFile, (INT32)rec[crnt1].user_num * sizeof(user_rec), SEEK_SET);
+						ny_fread(&urec,sizeof(user_rec),1,fpUserFile);
+						urec.rank=cnt;
+						fseek(fpUserFile, (INT32)rec[crnt1].user_num * sizeof(user_rec), SEEK_SET);
+						ny_fwrite(&urec,sizeof(user_rec),1,fpUserFile);
+					}
+
+					if (usr==user_num) {
+						cur_user.rank=cnt-1;
+					} else {
+						sprintf(numstr,"u%07d.on",rec[crnt2].user_num);
+						if (single_node==FALSE && fexist(numstr)) {
+							sprintf(numstr,"u%07d.rnk",rec[crnt2].user_num);
+							njustfile = ShareFileOpen(numstr, "wb");
+							if(njustfile != NULL) {
+								cnt--;
+								ny_fwrite(&cnt,2,1,njustfile);
+								cnt++;
+								fclose(njustfile);
+							}
+						} else {
+							fseek(fpUserFile, (INT32)rec[crnt2].user_num * sizeof(user_rec), SEEK_SET);
+							ny_fread(&urec,sizeof(user_rec),1,fpUserFile);
+							urec.rank=cnt-1;
+							fseek(fpUserFile, (INT32)rec[crnt2].user_num * sizeof(user_rec), SEEK_SET);
+							ny_fwrite(&urec,sizeof(user_rec),1,fpUserFile);
+						}
+					}
+
+					fseek(scr_file, (INT32)(cnt-1) * sizeof(scr_rec), SEEK_SET);
+					ny_fwrite(&rec[crnt2],sizeof(scr_rec),1,scr_file);
+					fseek(scr_file, (INT32)cnt * sizeof(scr_rec), SEEK_SET);
+					ny_fwrite(&rec[crnt1],sizeof(scr_rec),1,scr_file);
+
+				}
+				cnt--;
+			} while (sorted==FALSE && cnt>0);
+		}
+		fclose(scr_file);
+		fclose(fpUserFile);
 	}
-	fclose(scr_file);
-	fclose(fpUserFile);
-
 }
 
 
@@ -1370,92 +1375,97 @@ SortScrFileB(INT16 usr) // pebble sorting of scorefile
 	ch_game_d();
 	scr_file=ShareFileOpen(SCR_FILENAME,"r+b");
 	fpUserFile=ShareFileOpen(USER_FILENAME,"r+b");
-	if (usr==user_num) {
-		cnt=cur_user.rank;
-	} else {
-		fseek(fpUserFile, (INT32)usr * sizeof(user_rec), SEEK_SET);
-		ny_fread(&urec, sizeof(user_rec), 1, fpUserFile);
-		cnt=urec.rank;
-	}
-	//od_printf("\n\r\n\r%d\n\r\n\r",cnt);
+	if(scr_file != NULL && fpUserFile != NULL) {
+		if (usr==user_num) {
+			cnt=cur_user.rank;
+		} else {
+			fseek(fpUserFile, (INT32)usr * sizeof(user_rec), SEEK_SET);
+			ny_fread(&urec, sizeof(user_rec), 1, fpUserFile);
+			cnt=urec.rank;
+		}
+		//od_printf("\n\r\n\r%d\n\r\n\r",cnt);
 
-	crnt1=0;
-	crnt2=1;
+		crnt1=0;
+		crnt2=1;
 
-	strcpy(rec[crnt1].name,cur_user.name);
-	rec[crnt1].nation=cur_user.nation;
-	rec[crnt1].level=cur_user.level;
-	rec[crnt1].points=cur_user.points;
-	rec[crnt1].alive=cur_user.alive;
-	rec[crnt1].sex=cur_user.sex;
-	rec[crnt1].user_num=user_num;
-	rec[crnt1].online=TRUE;
+		strcpy(rec[crnt1].name,cur_user.name);
+		rec[crnt1].nation=cur_user.nation;
+		rec[crnt1].level=cur_user.level;
+		rec[crnt1].points=cur_user.points;
+		rec[crnt1].alive=cur_user.alive;
+		rec[crnt1].sex=cur_user.sex;
+		rec[crnt1].user_num=user_num;
+		rec[crnt1].online=TRUE;
 
 
-	fseek(scr_file, (INT32)cur_user.rank * sizeof(scr_rec), SEEK_SET);
-	ny_fwrite(&rec[crnt1], sizeof(scr_rec), 1, scr_file);
-	cont=filelength(fileno(scr_file))/sizeof(scr_rec);
+		fseek(scr_file, (INT32)cur_user.rank * sizeof(scr_rec), SEEK_SET);
+		ny_fwrite(&rec[crnt1], sizeof(scr_rec), 1, scr_file);
+		cont=filelength(fileno(scr_file))/sizeof(scr_rec);
 
-	if (cnt<(cont-1)) {
-		ch_flag_d();
-		do {
-			sorted=TRUE;
-
-			fseek(scr_file, (INT32)(cnt+1) * sizeof(scr_rec), SEEK_SET);
-			ny_fread(&rec[crnt1], sizeof(scr_rec), 1, scr_file);
-
-			fseek(scr_file, (INT32)cnt * sizeof(scr_rec), SEEK_SET);
-			ny_fread(&rec[crnt2], sizeof(scr_rec), 1, scr_file);
-			if (rec[crnt1].points>rec[crnt2].points) { // switch records
-
-				sorted=FALSE; // run another round
-
-				sprintf(numstr,"u%07d.on",rec[crnt1].user_num);
-				if (single_node==FALSE && fexist(numstr)) {
-					sprintf(numstr,"u%07d.rnk",rec[crnt1].user_num);
-					njustfile = ShareFileOpen(numstr, "wb");
-					ny_fwrite(&cnt,2,1,njustfile);
-					fclose(njustfile);
-				} else {
-					fseek(fpUserFile, (INT32)rec[crnt1].user_num * sizeof(user_rec), SEEK_SET);
-					ny_fread(&urec,sizeof(user_rec),1,fpUserFile);
-					urec.rank=cnt;
-					fseek(fpUserFile, (INT32)rec[crnt1].user_num * sizeof(user_rec), SEEK_SET);
-					ny_fwrite(&urec,sizeof(user_rec),1,fpUserFile);
-				}
-
-				if (usr==user_num) {
-					cur_user.rank=cnt+1;
-				} else {
-					sprintf(numstr,"u%07d.on",rec[crnt2].user_num);
-					if (single_node==FALSE && fexist(numstr)) {
-						sprintf(numstr,"u%07d.rnk",rec[crnt2].user_num);
-						njustfile = ShareFileOpen(numstr, "wb");
-						cnt++;
-						ny_fwrite(&cnt,2,1,njustfile);
-						cnt--;
-						fclose(njustfile);
-					} else {
-						fseek(fpUserFile, (INT32)rec[crnt2].user_num * sizeof(user_rec), SEEK_SET);
-						ny_fread(&urec,sizeof(user_rec),1,fpUserFile);
-						urec.rank=cnt+1;
-						fseek(fpUserFile, (INT32)rec[crnt2].user_num * sizeof(user_rec), SEEK_SET);
-						ny_fwrite(&urec,sizeof(user_rec),1,fpUserFile);
-					}
-				}
+		if (cnt<(cont-1)) {
+			ch_flag_d();
+			do {
+				sorted=TRUE;
 
 				fseek(scr_file, (INT32)(cnt+1) * sizeof(scr_rec), SEEK_SET);
-				ny_fwrite(&rec[crnt2],sizeof(scr_rec),1,scr_file);
+				ny_fread(&rec[crnt1], sizeof(scr_rec), 1, scr_file);
+
 				fseek(scr_file, (INT32)cnt * sizeof(scr_rec), SEEK_SET);
-				ny_fwrite(&rec[crnt1],sizeof(scr_rec),1,scr_file);
+				ny_fread(&rec[crnt2], sizeof(scr_rec), 1, scr_file);
+				if (rec[crnt1].points>rec[crnt2].points) { // switch records
 
-			}
-			cnt++;
-		} while (sorted==FALSE && cnt<(cont-1));
+					sorted=FALSE; // run another round
+
+					sprintf(numstr,"u%07d.on",rec[crnt1].user_num);
+					if (single_node==FALSE && fexist(numstr)) {
+						sprintf(numstr,"u%07d.rnk",rec[crnt1].user_num);
+						njustfile = ShareFileOpen(numstr, "wb");
+						if(njustfile != NULL) {
+							ny_fwrite(&cnt,2,1,njustfile);
+							fclose(njustfile);
+						}
+					} else {
+						fseek(fpUserFile, (INT32)rec[crnt1].user_num * sizeof(user_rec), SEEK_SET);
+						ny_fread(&urec,sizeof(user_rec),1,fpUserFile);
+						urec.rank=cnt;
+						fseek(fpUserFile, (INT32)rec[crnt1].user_num * sizeof(user_rec), SEEK_SET);
+						ny_fwrite(&urec,sizeof(user_rec),1,fpUserFile);
+					}
+
+					if (usr==user_num) {
+						cur_user.rank=cnt+1;
+					} else {
+						sprintf(numstr,"u%07d.on",rec[crnt2].user_num);
+						if (single_node==FALSE && fexist(numstr)) {
+							sprintf(numstr,"u%07d.rnk",rec[crnt2].user_num);
+							njustfile = ShareFileOpen(numstr, "wb");
+							if(njustfile != NULL) {
+								cnt++;
+								ny_fwrite(&cnt,2,1,njustfile);
+								cnt--;
+								fclose(njustfile);
+							}
+						} else {
+							fseek(fpUserFile, (INT32)rec[crnt2].user_num * sizeof(user_rec), SEEK_SET);
+							ny_fread(&urec,sizeof(user_rec),1,fpUserFile);
+							urec.rank=cnt+1;
+							fseek(fpUserFile, (INT32)rec[crnt2].user_num * sizeof(user_rec), SEEK_SET);
+							ny_fwrite(&urec,sizeof(user_rec),1,fpUserFile);
+						}
+					}
+
+					fseek(scr_file, (INT32)(cnt+1) * sizeof(scr_rec), SEEK_SET);
+					ny_fwrite(&rec[crnt2],sizeof(scr_rec),1,scr_file);
+					fseek(scr_file, (INT32)cnt * sizeof(scr_rec), SEEK_SET);
+					ny_fwrite(&rec[crnt1],sizeof(scr_rec),1,scr_file);
+
+				}
+				cnt++;
+			} while (sorted==FALSE && cnt<(cont-1));
+		}
+		fclose(scr_file);
+		fclose(fpUserFile);
 	}
-	fclose(scr_file);
-	fclose(fpUserFile);
-
 }
 
 void
@@ -1820,9 +1830,6 @@ FILE *ShareFileOpen(char *pszFileName, char *pszMode) {
 	} else {
 		fpFile = fopen(pszFileName, pszMode);
 	}
-
-	if(fpFile==NULL)
-		fpFile=fopen("cruft.tmp","w+");
 
 	/* Return FILE pointer for opened file, if any. */
 	return(fpFile);

@@ -217,9 +217,11 @@ newz_ops(void) {
 	ch_game_d();
 	if (!fexist(YESNEWS_FILENAME) || !fexist(TODNEWS_FILENAME)) {
 		justfile=ShareFileOpen(TODNEWS_FILENAME,"r+b");
-		fclose(justfile);
+		if(justfile != NULL)
+			fclose(justfile);
 		justfile=ShareFileOpen(YESNEWS_FILENAME,"r+b");
-		fclose(justfile);
+		if(justfile != NULL)
+			fclose(justfile);
 	}
 
 	if(rip==TRUE && oneframe==FALSE) {
@@ -248,18 +250,22 @@ newz_ops(void) {
 		else
 			justfile=ShareFileOpen(YESNEWS_FILENAME,"rb");
 
-		if(filelength(fileno(justfile))<sizeof(newzfile) && key=='T') {
+		if((justfile==NULL || filelength(fileno(justfile))<sizeof(newzfile)) && key=='T') {
 			ny_line(413,1,1);
-			fclose(justfile);
+			if(justfile != NULL)
+				fclose(justfile);
 			justfile=ShareFileOpen(TODNEWS_FILENAME,"wb");
-			fclose(justfile);
-		} else if(filelength(fileno(justfile))<sizeof(newzfile)) {
+			if(justfile != NULL)
+				fclose(justfile);
+		} else if(justfile == NULL || filelength(fileno(justfile))<sizeof(newzfile)) {
 			ny_line(414,1,1);
-			fclose(justfile);
+			if(justfile != NULL)
+				fclose(justfile);
 			justfile=ShareFileOpen(YESNEWS_FILENAME,"wb");
-			fclose(justfile);
+			if(justfile != NULL)
+				fclose(justfile);
 		} else {
-			while (ny_fread(&newzfile,sizeof(newzfile),1,justfile)==1) {
+			while (justfile != NULL && ny_fread(&newzfile,sizeof(newzfile),1,justfile)==1) {
 				cnt+=2;
 				if (newzfile.flag==0) {
 					ny_disp_emu("\n\r`@");
@@ -339,11 +345,13 @@ newz_ops(void) {
 						justfile=ShareFileOpen(TODNEWS_FILENAME,"rb");
 					else
 						justfile=ShareFileOpen(YESNEWS_FILENAME,"rb");
-					fseek(justfile,filepos,SEEK_SET);
+					if(justfile != NULL)
+						fseek(justfile,filepos,SEEK_SET);
 
 				}
 			}
-			fclose(justfile);
+			if(justfile != NULL)
+				fclose(justfile);
 		}
 		if(rip)
 			od_send_file("frame2.rip");
@@ -371,11 +379,13 @@ news_post(char line[], char name1[], char name2[], INT16 flag) {
 
 	ch_game_d();
 	justfile=ShareFileOpen(TODNEWS_FILENAME,"a+b");
-	ny_fwrite(line,80,1,justfile);
-	ny_fwrite(name1,25,1,justfile);
-	ny_fwrite(name2,36,1,justfile);
-	ny_fwrite(&flag,2,1,justfile);
-	fclose(justfile);
+	if(justfile != NULL) {
+		ny_fwrite(line,80,1,justfile);
+		ny_fwrite(name1,25,1,justfile);
+		ny_fwrite(name2,36,1,justfile);
+		ny_fwrite(&flag,2,1,justfile);
+		fclose(justfile);
+	}
 
 	if(c_dir==1)
 		ch_flag_d();
@@ -1330,13 +1340,15 @@ get_laid_ops(void) {
 					do {
 						ch_game_d();
 						justfile=ShareFileOpen(SCR_FILENAME,"rb");
-						fseek(justfile,sizeof(scr_rec) * (INT32)unum,SEEK_SET);
-						do {
-							ret=ny_fread(&urec,sizeof(scr_rec),1,justfile);
-							unum++;
-							//time_slice();
-						} while ((strzcmp(hand,ny_un_emu(urec.name,numstr)) || urec.sex==cur_user.sex) && ret==1);
-						fclose(justfile);
+						if(justfile != NULL) {
+							fseek(justfile,sizeof(scr_rec) * (INT32)unum,SEEK_SET);
+							do {
+								ret=ny_fread(&urec,sizeof(scr_rec),1,justfile);
+								unum++;
+								//time_slice();
+							} while ((strzcmp(hand,ny_un_emu(urec.name,numstr)) || urec.sex==cur_user.sex) && ret==1);
+							fclose(justfile);
+						}
 					} while (ret==1 && askifuser(urec.name)==FALSE);
 				}
 				if (ret!=1) {
@@ -1354,9 +1366,11 @@ get_laid_ops(void) {
 
 					ch_game_d();
 					justfile=ShareFileOpen(USER_FILENAME,"rb");
-					fseek(justfile,sizeof(user_rec) * (INT32)urec.user_num,SEEK_SET);
-					ny_fread(&u2rec,sizeof(user_rec),1,justfile);
-					fclose(justfile);
+					if(justfile != NULL) {
+						fseek(justfile,sizeof(user_rec) * (INT32)urec.user_num,SEEK_SET);
+						ny_fread(&u2rec,sizeof(user_rec),1,justfile);
+						fclose(justfile);
+					}
 
 					ny_line(134,1,1);
 					//		      od_printf("\n\r`bright red`H`red`ow you gonna ask? (`bright red`/s`red`=save `bright red`/a`red`=abort):\n\r");
@@ -1364,14 +1378,16 @@ get_laid_ops(void) {
 					ch_flag_d();
 					sprintf(numstr,"u%07d.tmg",nCurrentUserNumber);
 					justfile=ShareFileOpen(numstr,"wb");
-					cnt= -1;
-					ovr[0]=0;
-					do {
-						cnt++;
-						get_line(ovr,line,ovr,TRUE);
-						ny_fwrite(&line,80,1,justfile);
-					} while ((line[0]!='/' && (line[1]!='s' || line[1]!='S')) && (line[0]!='/' && (line[1]!='a' || line[1]!='A')));
-					fclose(justfile);
+					if(justfile != NULL) {
+						cnt= -1;
+						ovr[0]=0;
+						do {
+							cnt++;
+							get_line(ovr,line,ovr,TRUE);
+							ny_fwrite(&line,80,1,justfile);
+						} while ((line[0]!='/' && (line[1]!='s' || line[1]!='S')) && (line[0]!='/' && (line[1]!='a' || line[1]!='A')));
+						fclose(justfile);
+					}
 					if (line[1]=='s' || line[1]=='S') {
 						ny_line(135,0,1);
 						//			od_printf("`bright red`S`red`aving...\n\r");
@@ -1390,24 +1406,28 @@ get_laid_ops(void) {
 						justfile=ShareFileOpen(numstr,"rb");
 						ch_game_d();
 						msg_file=ShareFileOpen(MAIL_FILENAME,"a+b");
-						fillen=filelength(fileno(msg_file));
-						fillen/=80;
-						mail_idx.location=fillen;
-						while ((cnt--)>0) {
-							ny_fread(&line,80,1,justfile);
-							ny_fwrite(&line,80,1,msg_file);
-							//time_slice();
+						if(justfile != NULL && msg_file != NULL) {
+							fillen=filelength(fileno(msg_file));
+							fillen/=80;
+							mail_idx.location=fillen;
+							while ((cnt--)>0) {
+								ny_fread(&line,80,1,justfile);
+								ny_fwrite(&line,80,1,msg_file);
+								//time_slice();
+							}
+							fclose(msg_file);
+							fclose(justfile);
 						}
-						fclose(msg_file);
-						fclose(justfile);
 						ch_flag_d();
 						ny_remove(numstr);
 						//			sprintf(numstr,"del u%07d.tmg");
 						//			system(numstr);
 						ch_game_d();
 						msg_file=ShareFileOpen(MAIL_INDEX,"a+b");
-						ny_fwrite(&mail_idx,sizeof(mail_idx_type),1,msg_file);
-						fclose(msg_file);
+						if(msg_file != NULL) {
+							ny_fwrite(&mail_idx,sizeof(mail_idx_type),1,msg_file);
+							fclose(msg_file);
+						}
 						cur_user.sex_today--;
 						if(single_node==FALSE && urec.online==TRUE) {
 							ch_flag_d();
@@ -1416,9 +1436,11 @@ get_laid_ops(void) {
 							omg[0]=27;
 							omg[1]=0;
 							justfile=ShareFileOpen(numstr,"a+b");
-							ny_fwrite(&omg,51,1,justfile);
-							ny_fwrite(&cur_user.name,25,1,justfile);
-							fclose(justfile);
+							if(justfile != NULL) {
+								ny_fwrite(&omg,51,1,justfile);
+								ny_fwrite(&cur_user.name,25,1,justfile);
+								fclose(justfile);
+							}
 						}
 						if(rip)
 							od_get_answer("\n\r");
@@ -1675,13 +1697,15 @@ money_ops(void) {
 				do {
 					ch_game_d();
 					justfile=ShareFileOpen(SCR_FILENAME,"rb");
-					fseek(justfile,sizeof(scr_rec) * (INT32)unum,SEEK_SET);
-					do {
-						ret=ny_fread(&urec,sizeof(scr_rec),1,justfile);
-						unum++;
-						//time_slice();
-					} while ((strzcmp(hand,ny_un_emu(urec.name,numstr)) || urec.user_num==nCurrentUserNumber) && ret==1);
-					fclose(justfile);
+					if(justfile != NULL) {
+						fseek(justfile,sizeof(scr_rec) * (INT32)unum,SEEK_SET);
+						do {
+							ret=ny_fread(&urec,sizeof(scr_rec),1,justfile);
+							unum++;
+							//time_slice();
+						} while ((strzcmp(hand,ny_un_emu(urec.name,numstr)) || urec.user_num==nCurrentUserNumber) && ret==1);
+						fclose(justfile);
+					}
 				} while (ret==1 && askifuser(urec.name)==FALSE);
 			}
 			if (ret!=1) {
@@ -1693,9 +1717,11 @@ money_ops(void) {
 			} else if (hand[0]!=0) {
 				ch_game_d();
 				justfile=ShareFileOpen(USER_FILENAME,"rb");
-				fseek(justfile,sizeof(user_rec) * (INT32)urec.user_num,SEEK_SET);
-				ny_fread(&u2rec,sizeof(user_rec),1,justfile);
-				fclose(justfile);
+				if(justfile != NULL) {
+					fseek(justfile,sizeof(user_rec) * (INT32)urec.user_num,SEEK_SET);
+					ny_fread(&u2rec,sizeof(user_rec),1,justfile);
+					fclose(justfile);
+				}
 				if(rip) {
 					od_send_file("input.rip");
 				}
@@ -1720,23 +1746,29 @@ money_ops(void) {
 					mail_idx.inf=cur_user.std_percent;
 					ch_game_d();
 					msg_file=ShareFileOpen(MAIL_FILENAME,"a+b");
-					fillen=filelength(fileno(msg_file));
-					fillen/=80;
-					mail_idx.location=fillen;
-					ny_fwrite(&intval,80,1,msg_file);
-					fclose(msg_file);
+					if(msg_file != NULL) {
+						fillen=filelength(fileno(msg_file));
+						fillen/=80;
+						mail_idx.location=fillen;
+						ny_fwrite(&intval,80,1,msg_file);
+						fclose(msg_file);
+					}
 					msg_file=ShareFileOpen(MAIL_INDEX,"a+b");
-					ny_fwrite(&mail_idx,sizeof(mail_idx_type),1,msg_file);
-					fclose(msg_file);
+					if(msg_file != NULL) {
+						ny_fwrite(&mail_idx,sizeof(mail_idx_type),1,msg_file);
+						fclose(msg_file);
+					}
 					if(single_node==FALSE && urec.online==TRUE) {
 						ch_flag_d();
 						sprintf(numstr,"u%07d.omg",urec.user_num);
 						omg[0]=27;
 						omg[1]=0;
 						justfile=ShareFileOpen(numstr,"a+b");
-						ny_fwrite(&omg,51,1,justfile);
-						ny_fwrite(&cur_user.name,25,1,justfile);
-						fclose(justfile);
+						if(justfile != NULL) {
+							ny_fwrite(&omg,51,1,justfile);
+							ny_fwrite(&cur_user.name,25,1,justfile);
+							fclose(justfile);
+						}
 					}
 					if(!rip)
 						WaitForEnter();
@@ -2826,15 +2858,17 @@ AskAgain:
 		scr_file = ShareFileOpen(SCR_FILENAME, "a+b");
 
 
+		if(fpUserFile != NULL && scr_file != NULL) {
 
-		/* Write the new record to the file. */
-		if(ny_fwrite(&cur_user, sizeof(user_rec), 1, fpUserFile) == 1) {
-			/* If write succeeded, record that we now have a valid user record. */
-			bGotUser = TRUE;
+			/* Write the new record to the file. */
+			if(ny_fwrite(&cur_user, sizeof(user_rec), 1, fpUserFile) == 1) {
+				/* If write succeeded, record that we now have a valid user record. */
+				bGotUser = TRUE;
+			}
+			ny_fwrite(&scr_user, sizeof(scr_rec), 1, scr_file);
+			fclose(scr_file);
+			fclose(fpUserFile);
 		}
-		ny_fwrite(&scr_user, sizeof(scr_rec), 1, scr_file);
-		fclose(scr_file);
-		fclose(fpUserFile);
 		ny_remove(SENTLIST_FILENAME);
 	}
 
@@ -2968,9 +3002,6 @@ FILE *ShareFileOpen(char *pszFileName, char *pszMode) {
 		fpFile = fopen(pszFileName, pszMode);
 	}
 
-	if(fpFile==NULL)
-		fpFile=fopen("cruft.tmp","w+");
-
 	/* Return FILE pointer for opened file, if any. */
 	return fpFile;
 }
@@ -3014,9 +3045,6 @@ FILE *ShareFileOpenAR(char *pszFileName, char *pszMode) {
 		fpFile = fopen(pszFileName, pszMode);
 
 	}
-
-	if(fpFile==NULL)
-		fpFile=fopen("cruft.tmp","w+");
 
 	/* Return FILE pointer for opened file, if any. */
 	return fpFile;
@@ -3277,8 +3305,10 @@ nyr_disp_emu(char line[]) {
 			} else if(line[cnt]=='d') {
 				ch_game_d();
 				justfile=ShareFileOpen(GAMEDAY_FILENAME,"rb");
-				ny_fread(&intval,2,1,justfile);
-				fclose(justfile);
+				if(justfile != NULL) {
+					ny_fread(&intval,2,1,justfile);
+					fclose(justfile);
+				}
 				od_printf("%d",intval);
 			} else if(line[cnt]=='h')
 				od_printf("%s",D_Num(cur_user.hitpoints));
@@ -3843,8 +3873,10 @@ ibbs_bbs_scores(void) {
 			if(strcmp(bbs_spy_rec.node,IBBSInfo.paOtherSystem[cnt].szAddress)==0) {
 				if(strcmp(bbs_spy_rec.node,IBBSInfo.szThisNodeAddress)==0) {
 					jfile=ShareFileOpen(SCR_FILENAME,"rb");
-					ny_fread(&srec,sizeof(scr_rec),1,jfile);
-					fclose(jfile);
+					if(justfile != NULL) {
+						ny_fread(&srec,sizeof(scr_rec),1,jfile);
+						fclose(jfile);
+					}
 					od_printf("`bright green`%-40s `dark green`%s\n\r",IBBSInfo.paOtherSystem[cnt].szSystemName,D_Num(srec.points));
 				} else {
 					od_printf("`bright green`%-40s `dark green`%s\n\r",IBBSInfo.paOtherSystem[cnt].szSystemName,D_Num(bbs_spy_rec.hi_points));
@@ -3861,6 +3893,11 @@ ibbs_bbs_scores(void) {
 			od_printf("\r            \r");
 			cnt2=1;
 			justfile=ShareFileOpen(IBBSSPY_FILENAME,"rb");
+			if(justfile == NULL) {
+				ny_line(450,2,1);
+				WaitForEnter();
+				return;
+			}
 			fseek(justfile,filepos,SEEK_SET);
 			if(key=='N')
 				break;
@@ -3925,6 +3962,11 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 	fclose(justfile);
 
 	justfile=ShareFileOpen(numstr,"rb");
+	if(justfile==NULL) {
+		ny_line(450,0,1);
+		WaitForEnter();
+		return;
+	}
 	cnt2=4;
 
 	if(nochoice) {
@@ -3984,6 +4026,11 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 				od_printf("\r            \r");
 				cnt2=2;
 				justfile=ShareFileOpen(numstr,"rb");
+				if(justfile==NULL) {
+					ny_line(450,0,1);
+					WaitForEnter();
+					return;
+				}
 				fseek(justfile,filepos,SEEK_SET);
 				if(key=='N')
 					break;
@@ -4007,6 +4054,11 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 			od_disp_str("\n\r");
 			if(sex>0 && cnt<bbs_spy_rec.players) {
 				justfile=ShareFileOpen(numstr,"rb");
+				if(justfile==NULL) {
+					ny_line(450,0,1);
+					WaitForEnter();
+					return;
+				}
 				fseek(justfile,cnt*sizeof(ibbs_scr_rec),SEEK_SET);
 				ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
 				strcpy(nameI,ibscr_rec.nameI);
@@ -4018,6 +4070,11 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 			}
 		} while(cnt>=bbs_spy_rec.players);
 		justfile=ShareFileOpen(numstr,"rb");
+		if(justfile==NULL) {
+			ny_line(450,0,1);
+			WaitForEnter();
+			return;
+		}
 		fseek(justfile,cnt*sizeof(ibbs_scr_rec),SEEK_SET);
 		ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
 		strcpy(nameI,ibscr_rec.nameI);
@@ -4080,9 +4137,11 @@ ibbs_ops(void) {
 						cur_user.InterBBSMoves--;
 						sprintf(numstr,SBYDB_PREFIX".%03d",dbn);
 						justfile=ShareFileOpen(numstr,"rb");
-						fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
-						ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
-						fclose(justfile);
+						if(justfile!=NULL) {
+							fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
+							ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
+							fclose(justfile);
+						}
 
 						strcpy(act_rec.name_rI,ibscr_rec.nameI);
 						strcpy(act_rec.name_sI,cur_user.bbsname);
@@ -4110,9 +4169,11 @@ ibbs_ops(void) {
 				if(hand[0]!=0) {
 					sprintf(numstr,SBYDB_PREFIX".%03d",dbn);
 					justfile=ShareFileOpen(numstr,"rb");
-					fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
-					ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
-					fclose(justfile);
+					if(justfile!=NULL) {
+						fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
+						ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
+						fclose(justfile);
+					}
 
 					ibmail.flirt=0;
 					if (ibscr_rec.sex!=cur_user.sex && cur_user.sex_today>0) {
@@ -4223,9 +4284,11 @@ ibbs_ops(void) {
 				if(hand[0]!=0) {
 					sprintf(numstr,SBYDB_PREFIX".%03d",dbn);
 					justfile=ShareFileOpen(numstr,"rb");
-					fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
-					ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
-					fclose(justfile);
+					if(justfile!=NULL) {
+						fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
+						ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
+						fclose(justfile);
+					}
 
 					ibmail.flirt=0;
 					if (ibscr_rec.sex!=cur_user.sex && cur_user.sex_today>0) {
@@ -4303,9 +4366,11 @@ ibbs_ops(void) {
 						cur_user.InterBBSMoves--;
 						sprintf(numstr,SBYDB_PREFIX".%03d",dbn);
 						justfile=ShareFileOpen(numstr,"rb");
-						fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
-						ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
-						fclose(justfile);
+						if(justfile!=NULL) {
+							fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
+							ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
+							fclose(justfile);
+						}
 
 						ibmail.flirt=1002;
 						ibmail.quote_length=0;
@@ -4411,9 +4476,11 @@ ibbs_ops(void) {
 								money_minus(money);
 								sprintf(numstr,SBYDB_PREFIX".%03d",dbn);
 								justfile=ShareFileOpen(numstr,"rb");
-								fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
-								ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
-								fclose(justfile);
+								if(justfile!=NULL) {
+									fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
+									ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
+									fclose(justfile);
+								}
 
 								ibmail.flirt=1005;
 								ibmail.quote_length=0;
@@ -4504,9 +4571,11 @@ ibbs_ops(void) {
 								money_minus(money);
 								sprintf(numstr,SBYDB_PREFIX".%03d",dbn);
 								justfile=ShareFileOpen(numstr,"rb");
-								fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
-								ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
-								fclose(justfile);
+								if(justfile!=NULL) {
+									fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
+									ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
+									fclose(justfile);
+								}
 
 								ibmail.flirt=1004;
 								ibmail.quote_length=0;
@@ -4570,9 +4639,11 @@ ibbs_ops(void) {
 								money_minus(money);
 								sprintf(numstr,SBYDB_PREFIX".%03d",dbn);
 								justfile=ShareFileOpen(numstr,"rb");
-								fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
-								ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
-								fclose(justfile);
+								if(justfile!=NULL) {
+									fseek(justfile,pn*sizeof(ibbs_scr_rec),SEEK_SET);
+									ny_fread(&ibscr_rec,sizeof(ibbs_scr_rec),1,justfile);
+									fclose(justfile);
+								}
 
 								ibmail.flirt=1003;
 								ibmail.quote_length=0;

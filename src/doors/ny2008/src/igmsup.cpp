@@ -85,6 +85,8 @@ read_IGMs(void) {
 	ch_flag_d();
 	sprintf(numstr,"mnu%d.dat",od_control.od_node);
 	menuthing=ShareFileOpen(numstr,"wb");
+	if(menuthing==NULL)
+		return;
 	ch_game_d();
 
 	ok=0;
@@ -175,6 +177,8 @@ read_fight_IGMs(void) {
 	ch_flag_d();
 	sprintf(numstr,"fev%d.dat",od_control.od_node);
 	menuthing=ShareFileOpen(numstr,"wb");
+	if(menuthing==NULL)
+		return;
 	ch_game_d();
 
 	ok=0;
@@ -275,6 +279,8 @@ all_over_igm:
 		ch_flag_d();
 		sprintf(numstr,"mnu%d.dat",od_control.od_node);
 		menuthing=ShareFileOpen(numstr,"rb");
+		if(menuthing==NULL)
+			return;
 		if((where+(282*20))>=filelength(fileno(menuthing))) {
 			maxnum=(filelength(fileno(menuthing))-where)/(INT32)282;
 		} else {
@@ -300,6 +306,8 @@ list_igm:
 		ch_flag_d();
 		sprintf(numstr,"mnu%d.dat",od_control.od_node);
 		menuthing=ShareFileOpen(numstr,"rb");
+		if(menuthing==NULL)
+			return;
 		ch_game_d();
 
 		if(found_file==FALSE) {
@@ -418,6 +426,8 @@ list_igm:
 	ch_flag_d();
 	sprintf(numstr,"mnu%d.dat",od_control.od_node);
 	menuthing=ShareFileOpen(numstr,"rb");
+	if(menuthing==NULL)
+		return;
 	ch_game_d();
 
 	fseek(menuthing,where+((intval-1)*282)+31,SEEK_SET);
@@ -447,6 +457,8 @@ forrest_IGM() {
 	ch_flag_d();
 	sprintf(numstr,"fev%d.dat",od_control.od_node);
 	menuthing=ShareFileOpen(numstr,"rb");
+	if(menuthing==NULL)
+		return;
 	maxnum=filelength(fileno(menuthing))/(INT32)282;
 	intval=xp_random((INT16)maxnum);
 	fseek(menuthing,intval*282,SEEK_SET);
@@ -508,6 +520,8 @@ CreateDropFile(INT16 all) {
 	else
 		strcpy(numstr,TRDMAINT_LIST_FILENAME);
 	justfile=ShareFileOpen(numstr,"w+t");
+	if(justfile==NULL)
+		return;
 	fprintf(justfile,"%s\n",od_control.info_path);
 	fprintf(justfile,"%d\n",od_control.caller_timelimit);
 	fprintf(justfile,"%d\n",od_control.port);
@@ -539,109 +553,112 @@ CreateDropFile(INT16 all) {
 	if(all==TRUE) {
 		sprintf(numstr,"n%07d.sts",od_control.od_node);
 		justfile=ShareFileOpen(numstr,"wb");
-		ny_fwrite(&cur_user,sizeof(user_rec),1,justfile);
-		fclose(justfile);
+		if(justfile != NULL) {
+			ny_fwrite(&cur_user,sizeof(user_rec),1,justfile);
+			fclose(justfile);
+		}
 
 		sprintf(numstr,"n%07d.stt",od_control.od_node);
 		justfile=ShareFileOpen(numstr,"wt");
+		if(justfile != NULL) {
+			fprintf(justfile,"%s\n",cur_user.bbsname);     //the BBS name of the user
+			fprintf(justfile,"%s\n",cur_user.name);        //the name of the character
+			fprintf(justfile,"%s\n",cur_user.say_win);     //what the user says when he wins
+			fprintf(justfile,"%s\n",cur_user.say_loose);   // "    "    "   "    "   "  looses
+			fprintf(justfile,"%d\n",cur_user.rank);	         //user rank
+			fprintf(justfile,"%d\n",cur_user.days_not_on);     //days the user has been inactive
+			fprintf(justfile,"%d\n",cur_user.strength);        //attacking strenght of the user
+			fprintf(justfile,"%d\n",cur_user.defense);         //defensive strenght
+			fprintf(justfile,"%d\n",cur_user.condoms);         //condoms user has
+			fprintf(justfile,"%d\n",cur_user.since_got_laid);  //days since the user last got laid
+			fprintf(justfile,"%d\n",cur_user.drug_hits);       //the hist that the user has
+			fprintf(justfile,"%d\n",cur_user.drug_days_since); //if addicted how long the user
+			//has not used the drug
+			fprintf(justfile,"%ld\n",cur_user.hitpoints);       //users hitpoints
+			fprintf(justfile,"%ld\n",cur_user.maxhitpoints);    //maximum of the users hitpoints
+			fprintf(justfile,"%lu\n",cur_user.points);          //users points
+			fprintf(justfile,"%lu\n",cur_user.money);           //money in hand
+			fprintf(justfile,"%lu\n",cur_user.bank);            //money in bank
+			fprintf(justfile,"%d\n",(INT16)cur_user.level);           //user level
+			fprintf(justfile,"%d\n",(INT16)cur_user.turns);           //fight the user has left today
+			fprintf(justfile,"%d\n",(INT16)cur_user.hunger);          // % of hunger
+			fprintf(justfile,"%d\n",(INT16)cur_user.sex_today);       //sex turns left today
+			fprintf(justfile,"%d\n",(INT16)cur_user.std_percent);     // % of current std
+			fprintf(justfile,"%d\n",(INT16)cur_user.drug_addiction);  // % of drug addiction
+			fprintf(justfile,"%d\n",(INT16)cur_user.drug_high);       // % of how "high" the player is
+			fprintf(justfile,"%d\n",(INT16)cur_user.hotel_paid_fer);  //for how many more days the hotel
+			//is paid for
+			fprintf(justfile,"%d\n",(INT16)cur_user.days_in_hospital);//how many days has the use been
+			//in hospital
 
-		fprintf(justfile,"%s\n",cur_user.bbsname);     //the BBS name of the user
-		fprintf(justfile,"%s\n",cur_user.name);        //the name of the character
-		fprintf(justfile,"%s\n",cur_user.say_win);     //what the user says when he wins
-		fprintf(justfile,"%s\n",cur_user.say_loose);   // "    "    "   "    "   "  looses
-		fprintf(justfile,"%d\n",cur_user.rank);	         //user rank
-		fprintf(justfile,"%d\n",cur_user.days_not_on);     //days the user has been inactive
-		fprintf(justfile,"%d\n",cur_user.strength);        //attacking strenght of the user
-		fprintf(justfile,"%d\n",cur_user.defense);         //defensive strenght
-		fprintf(justfile,"%d\n",cur_user.condoms);         //condoms user has
-		fprintf(justfile,"%d\n",cur_user.since_got_laid);  //days since the user last got laid
-		fprintf(justfile,"%d\n",cur_user.drug_hits);       //the hist that the user has
-		fprintf(justfile,"%d\n",cur_user.drug_days_since); //if addicted how long the user
-		//has not used the drug
-		fprintf(justfile,"%ld\n",cur_user.hitpoints);       //users hitpoints
-		fprintf(justfile,"%ld\n",cur_user.maxhitpoints);    //maximum of the users hitpoints
-		fprintf(justfile,"%lu\n",cur_user.points);          //users points
-		fprintf(justfile,"%lu\n",cur_user.money);           //money in hand
-		fprintf(justfile,"%lu\n",cur_user.bank);            //money in bank
-		fprintf(justfile,"%d\n",(INT16)cur_user.level);           //user level
-		fprintf(justfile,"%d\n",(INT16)cur_user.turns);           //fight the user has left today
-		fprintf(justfile,"%d\n",(INT16)cur_user.hunger);          // % of hunger
-		fprintf(justfile,"%d\n",(INT16)cur_user.sex_today);       //sex turns left today
-		fprintf(justfile,"%d\n",(INT16)cur_user.std_percent);     // % of current std
-		fprintf(justfile,"%d\n",(INT16)cur_user.drug_addiction);  // % of drug addiction
-		fprintf(justfile,"%d\n",(INT16)cur_user.drug_high);       // % of how "high" the player is
-		fprintf(justfile,"%d\n",(INT16)cur_user.hotel_paid_fer);  //for how many more days the hotel
-		//is paid for
-		fprintf(justfile,"%d\n",(INT16)cur_user.days_in_hospital);//how many days has the use been
-		//in hospital
+			if(cur_user.alive==ALIVE)
+				fprintf(justfile,"ALIVE\n");
+			else
+				fprintf(justfile,"UNCONSIOUS\n");
+			if(cur_user.sex==MALE)
+				fprintf(justfile,"M\n");
+			else
+				fprintf(justfile,"F\n");
 
-		if(cur_user.alive==ALIVE)
-			fprintf(justfile,"ALIVE\n");
-		else
-			fprintf(justfile,"UNCONSIOUS\n");
-		if(cur_user.sex==MALE)
-			fprintf(justfile,"M\n");
-		else
-			fprintf(justfile,"F\n");
+			if(cur_user.nation==PUNK)
+				fprintf(justfile,"PUNK\n");
+			else if(cur_user.nation==HEADBANGER)
+				fprintf(justfile,"HEADBANGER\n");
+			else if(cur_user.nation==BIG_FAT_DUDE)
+				fprintf(justfile,"BIG FAT DUDE\n");
+			else if(cur_user.nation==CRACK_ADDICT)
+				fprintf(justfile,"CRACK ADDICT\n");
+			else
+				fprintf(justfile,"HIPPIE\n");
+			fprintf(justfile,"%d\n",(INT16)cur_user.arm);
+			if(cur_user.std==CRAPS)
+				fprintf(justfile,"CRAPS\n");
+			else if(cur_user.std==HERPES)
+				fprintf(justfile,"HERPES\n");
+			else if(cur_user.std==SYPHILIS)
+				fprintf(justfile,"SYPHILIS\n");
+			else if(cur_user.std==AIDS)
+				fprintf(justfile,"AIDS\n");
+			else
+				fprintf(justfile,"NONE\n");
 
-		if(cur_user.nation==PUNK)
-			fprintf(justfile,"PUNK\n");
-		else if(cur_user.nation==HEADBANGER)
-			fprintf(justfile,"HEADBANGER\n");
-		else if(cur_user.nation==BIG_FAT_DUDE)
-			fprintf(justfile,"BIG FAT DUDE\n");
-		else if(cur_user.nation==CRACK_ADDICT)
-			fprintf(justfile,"CRACK ADDICT\n");
-		else
-			fprintf(justfile,"HIPPIE\n");
-		fprintf(justfile,"%d\n",(INT16)cur_user.arm);
-		if(cur_user.std==CRAPS)
-			fprintf(justfile,"CRAPS\n");
-		else if(cur_user.std==HERPES)
-			fprintf(justfile,"HERPES\n");
-		else if(cur_user.std==SYPHILIS)
-			fprintf(justfile,"SYPHILIS\n");
-		else if(cur_user.std==AIDS)
-			fprintf(justfile,"AIDS\n");
-		else
-			fprintf(justfile,"NONE\n");
-
-		if(cur_user.drug==POT)
-			fprintf(justfile,"POT\n");
-		else if(cur_user.drug==HASH)
-			fprintf(justfile,"HASH\n");
-		else if(cur_user.drug==LSD)
-			fprintf(justfile,"LSD\n");
-		else if(cur_user.drug==COKE)
-			fprintf(justfile,"COKE\n");
-		else if(cur_user.drug==PCP)
-			fprintf(justfile,"PCP\n");
-		else
-			fprintf(justfile,"HEROIN\n");
+			if(cur_user.drug==POT)
+				fprintf(justfile,"POT\n");
+			else if(cur_user.drug==HASH)
+				fprintf(justfile,"HASH\n");
+			else if(cur_user.drug==LSD)
+				fprintf(justfile,"LSD\n");
+			else if(cur_user.drug==COKE)
+				fprintf(justfile,"COKE\n");
+			else if(cur_user.drug==PCP)
+				fprintf(justfile,"PCP\n");
+			else
+				fprintf(justfile,"HEROIN\n");
 
 
-		if(cur_user.rest_where==NOWHERE)
-			fprintf(justfile,"NOWHERE\n");
-		else if(cur_user.rest_where==MOTEL)
-			fprintf(justfile,"MOTEL\n");
-		else if(cur_user.rest_where==REG_HOTEL)
-			fprintf(justfile,"REGULAR HOTEL\n");
-		else
-			fprintf(justfile,"EXPENSIVE HOTEL\n");
+			if(cur_user.rest_where==NOWHERE)
+				fprintf(justfile,"NOWHERE\n");
+			else if(cur_user.rest_where==MOTEL)
+				fprintf(justfile,"MOTEL\n");
+			else if(cur_user.rest_where==REG_HOTEL)
+				fprintf(justfile,"REGULAR HOTEL\n");
+			else
+				fprintf(justfile,"EXPENSIVE HOTEL\n");
 
-		fprintf(justfile,"%d\n",(INT16)cur_user.unhq);
-		fprintf(justfile,"%d\n",(INT16)cur_user.poison);
-		fprintf(justfile,"%d\n",(INT16)cur_user.rocks);
-		fprintf(justfile,"%d\n",(INT16)cur_user.throwing_ability);
-		fprintf(justfile,"%d\n",(INT16)cur_user.punch_ability);
-		fprintf(justfile,"%d\n",(INT16)cur_user.kick_ability);
-		fprintf(justfile,"%d\n",(INT16)cur_user.InterBBSMoves);
+			fprintf(justfile,"%d\n",(INT16)cur_user.unhq);
+			fprintf(justfile,"%d\n",(INT16)cur_user.poison);
+			fprintf(justfile,"%d\n",(INT16)cur_user.rocks);
+			fprintf(justfile,"%d\n",(INT16)cur_user.throwing_ability);
+			fprintf(justfile,"%d\n",(INT16)cur_user.punch_ability);
+			fprintf(justfile,"%d\n",(INT16)cur_user.kick_ability);
+			fprintf(justfile,"%d\n",(INT16)cur_user.InterBBSMoves);
 
-		/*reserved for future use 3 bytes reset to 0
-			char		res1;
-			INT16		res2;*/
+			/*reserved for future use 3 bytes reset to 0
+				char		res1;
+				INT16		res2;*/
 
-		fclose(justfile);
+			fclose(justfile);
+		}
 	}
 }
 
@@ -710,8 +727,10 @@ call_IGM(char exenam[]) {
 
 	if(fexist(numstr)) {
 		justfile=ShareFileOpen(numstr,"rb");
-		ny_fread(&cur_user,sizeof(user_rec),1,justfile);
-		fclose(justfile);
+		if(justfile != NULL) {
+			ny_fread(&cur_user,sizeof(user_rec),1,justfile);
+			fclose(justfile);
+		}
 		ny_remove(numstr);
 		cur_user.rank=rankt;
 		cur_user.days_not_on=inact;
@@ -721,198 +740,199 @@ call_IGM(char exenam[]) {
 		sprintf(numstr,"n%07d.stt",od_control.od_node);
 		if(fexist(numstr)) {
 			justfile=ShareFileOpen(numstr,"rb");
+			if(justfile != NULL) {
 
-			/*	  fgets(cur_user.bbsname,36,justfile);     //the BBS name of the user
-			  cur_user.bbsname[35]=0;
-			  if((key=strchr(cur_user.bbsname,'\n'))!=NULL)
-			    *key=0;
-			  if((key=strchr(cur_user.bbsname,'\r'))!=NULL)
-			    *key=0;*/
+				/*	  fgets(cur_user.bbsname,36,justfile);     //the BBS name of the user
+				  cur_user.bbsname[35]=0;
+				  if((key=strchr(cur_user.bbsname,'\n'))!=NULL)
+				    *key=0;
+				  if((key=strchr(cur_user.bbsname,'\r'))!=NULL)
+				    *key=0;*/
 
-			fgets(bbs_name,36,justfile); /*BBS name not read in no more*/
+				fgets(bbs_name,36,justfile); /*BBS name not read in no more*/
 
-			fgets(cur_user.name,25,justfile);     //the BBS name of the user
-			cur_user.name[24]=0;
-			if((key=strchr(cur_user.name,'\n'))!=NULL)
-				*key=0;
-			if((key=strchr(cur_user.name,'\r'))!=NULL)
-				*key=0;
-
-
-			fgets(cur_user.say_win,41,justfile);     //the BBS name of the user
-			cur_user.say_win[40]=0;
-			if((key=strchr(cur_user.say_win,'\n'))!=NULL)
-				*key=0;
-			if((key=strchr(cur_user.say_win,'\r'))!=NULL)
-				*key=0;
+				fgets(cur_user.name,25,justfile);     //the BBS name of the user
+				cur_user.name[24]=0;
+				if((key=strchr(cur_user.name,'\n'))!=NULL)
+					*key=0;
+				if((key=strchr(cur_user.name,'\r'))!=NULL)
+					*key=0;
 
 
-			fgets(cur_user.say_loose,41,justfile);     //the BBS name of the user
-			cur_user.say_loose[40]=0;
-			if((key=strchr(cur_user.say_loose,'\n'))!=NULL)
-				*key=0;
-			if((key=strchr(cur_user.say_loose,'\r'))!=NULL)
-				*key=0;
+				fgets(cur_user.say_win,41,justfile);     //the BBS name of the user
+				cur_user.say_win[40]=0;
+				if((key=strchr(cur_user.say_win,'\n'))!=NULL)
+					*key=0;
+				if((key=strchr(cur_user.say_win,'\r'))!=NULL)
+					*key=0;
 
 
-			fgets(numstr,30,justfile);
-			//sscanf(numstr,"%d",&cur_user.rank);	         //user rank
-			fgets(numstr,30,justfile);
-			//sscanf(numstr,"%d",&cur_user.days_not_on);     //days the user has been inactive
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&cur_user.strength);        //attacking strenght of the user
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&cur_user.defense);         //defensive strenght
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&cur_user.condoms);         //condoms user has
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&cur_user.since_got_laid);  //days since the user last got laid
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&cur_user.drug_hits);       //the hist that the user has
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&cur_user.drug_days_since); //if addicted how long the user
-			//has not used the drug
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%ld",&cur_user.hitpoints);       //users hitpoints
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%ld",&cur_user.maxhitpoints);    //maximum of the users hitpoints
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%lu",&cur_user.points);          //users points
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%lu",&cur_user.money);           //money in hand
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%lu",&cur_user.bank);            //money in bank
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.level=intval;           //user level
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.turns=intval;           //fight the user has left today
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.hunger=intval;          // % of hunger
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.sex_today=intval;       //sex turns left today
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.std_percent=intval;     // % of current std
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.drug_addiction=intval;  // % of drug addiction
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.drug_high=intval;       // % of how "high" the player is
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.hotel_paid_fer=intval;  //for how many more days the hotel
-			//is paid for
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.days_in_hospital=intval;//how many days has the use been
-			//in hospital
-
-			fgets(numstr,30,justfile);
-			if(strzcmp("ALIVE",numstr)==0)
-				cur_user.alive=ALIVE;
-			else if(strzcmp("DEAD",numstr)==0)
-				cur_user.alive=DEAD;
-			else if(strzcmp("UNCONSIOUS",numstr)==0)
-				cur_user.alive=UNCONCIOUS;
+				fgets(cur_user.say_loose,41,justfile);     //the BBS name of the user
+				cur_user.say_loose[40]=0;
+				if((key=strchr(cur_user.say_loose,'\n'))!=NULL)
+					*key=0;
+				if((key=strchr(cur_user.say_loose,'\r'))!=NULL)
+					*key=0;
 
 
-			fgets(numstr,30,justfile);
-			if(strzcmp("M",numstr)==0)
-				cur_user.sex=MALE;
-			else if(strzcmp("F",numstr)==0)
-				cur_user.sex=FEMALE;
+				fgets(numstr,30,justfile);
+				//sscanf(numstr,"%d",&cur_user.rank);	         //user rank
+				fgets(numstr,30,justfile);
+				//sscanf(numstr,"%d",&cur_user.days_not_on);     //days the user has been inactive
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&cur_user.strength);        //attacking strenght of the user
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&cur_user.defense);         //defensive strenght
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&cur_user.condoms);         //condoms user has
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&cur_user.since_got_laid);  //days since the user last got laid
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&cur_user.drug_hits);       //the hist that the user has
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&cur_user.drug_days_since); //if addicted how long the user
+				//has not used the drug
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%ld",&cur_user.hitpoints);       //users hitpoints
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%ld",&cur_user.maxhitpoints);    //maximum of the users hitpoints
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%lu",&cur_user.points);          //users points
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%lu",&cur_user.money);           //money in hand
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%lu",&cur_user.bank);            //money in bank
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.level=intval;           //user level
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.turns=intval;           //fight the user has left today
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.hunger=intval;          // % of hunger
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.sex_today=intval;       //sex turns left today
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.std_percent=intval;     // % of current std
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.drug_addiction=intval;  // % of drug addiction
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.drug_high=intval;       // % of how "high" the player is
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.hotel_paid_fer=intval;  //for how many more days the hotel
+				//is paid for
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.days_in_hospital=intval;//how many days has the use been
+				//in hospital
+
+				fgets(numstr,30,justfile);
+				if(strzcmp("ALIVE",numstr)==0)
+					cur_user.alive=ALIVE;
+				else if(strzcmp("DEAD",numstr)==0)
+					cur_user.alive=DEAD;
+				else if(strzcmp("UNCONSIOUS",numstr)==0)
+					cur_user.alive=UNCONCIOUS;
 
 
-			fgets(numstr,30,justfile);
-			if(strzcmp("PUNK",numstr)==0)
-				cur_user.nation=PUNK;
-			else if(strzcmp("HEADBANGER",numstr)==0)
-				cur_user.nation=HEADBANGER;
-			else if(strzcmp("BIG FAT DUDE",numstr)==0)
-				cur_user.nation=BIG_FAT_DUDE;
-			else if(strzcmp("CRACK ADDICT",numstr)==0)
-				cur_user.nation=CRACK_ADDICT;
-			else if(strzcmp("HIPPIE",numstr)==0)
-				cur_user.nation=HIPPIE;
-
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.arm=(weapon)intval;
+				fgets(numstr,30,justfile);
+				if(strzcmp("M",numstr)==0)
+					cur_user.sex=MALE;
+				else if(strzcmp("F",numstr)==0)
+					cur_user.sex=FEMALE;
 
 
-			fgets(numstr,30,justfile);
-			if(strzcmp("CRAPS",numstr)==0)
-				cur_user.std=CRAPS;
-			else if(strzcmp("HERPES",numstr)==0)
-				cur_user.std=HERPES;
-			else if(strzcmp("SYPHILIS",numstr)==0)
-				cur_user.std=SYPHILIS;
-			else if(strzcmp("AIDS",numstr)==0)
-				cur_user.std=AIDS;
-			else if(strzcmp("NONE",numstr)==0)
-				cur_user.std=NONE;
+				fgets(numstr,30,justfile);
+				if(strzcmp("PUNK",numstr)==0)
+					cur_user.nation=PUNK;
+				else if(strzcmp("HEADBANGER",numstr)==0)
+					cur_user.nation=HEADBANGER;
+				else if(strzcmp("BIG FAT DUDE",numstr)==0)
+					cur_user.nation=BIG_FAT_DUDE;
+				else if(strzcmp("CRACK ADDICT",numstr)==0)
+					cur_user.nation=CRACK_ADDICT;
+				else if(strzcmp("HIPPIE",numstr)==0)
+					cur_user.nation=HIPPIE;
+
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.arm=(weapon)intval;
 
 
-			fgets(numstr,30,justfile);
-			if(strzcmp("POT",numstr)==0)
-				cur_user.drug=POT;
-			else if(strzcmp("HASH",numstr)==0)
-				cur_user.drug=HASH;
-			else if(strzcmp("LSD",numstr)==0)
-				cur_user.drug=LSD;
-			else if(strzcmp("COKE",numstr)==0)
-				cur_user.drug=COKE;
-			else if(strzcmp("PCP",numstr)==0)
-				cur_user.drug=PCP;
-			else if(strzcmp("HEROIN",numstr)==0)
-				cur_user.drug=HEROIN;
+				fgets(numstr,30,justfile);
+				if(strzcmp("CRAPS",numstr)==0)
+					cur_user.std=CRAPS;
+				else if(strzcmp("HERPES",numstr)==0)
+					cur_user.std=HERPES;
+				else if(strzcmp("SYPHILIS",numstr)==0)
+					cur_user.std=SYPHILIS;
+				else if(strzcmp("AIDS",numstr)==0)
+					cur_user.std=AIDS;
+				else if(strzcmp("NONE",numstr)==0)
+					cur_user.std=NONE;
+
+
+				fgets(numstr,30,justfile);
+				if(strzcmp("POT",numstr)==0)
+					cur_user.drug=POT;
+				else if(strzcmp("HASH",numstr)==0)
+					cur_user.drug=HASH;
+				else if(strzcmp("LSD",numstr)==0)
+					cur_user.drug=LSD;
+				else if(strzcmp("COKE",numstr)==0)
+					cur_user.drug=COKE;
+				else if(strzcmp("PCP",numstr)==0)
+					cur_user.drug=PCP;
+				else if(strzcmp("HEROIN",numstr)==0)
+					cur_user.drug=HEROIN;
 
 
 
-			fgets(numstr,30,justfile);
-			if(strzcmp("MOTEL",numstr)==0)
-				cur_user.rest_where=MOTEL;
-			else if(strzcmp("REGULAR HOTEL",numstr)==0)
-				cur_user.rest_where=REG_HOTEL;
-			else if(strzcmp("EXPENSIVE HOTEL",numstr)==0)
-				cur_user.rest_where=EXP_HOTEL;
-			else if(strzcmp("NOWHERE",numstr)==0)
-				cur_user.rest_where=NOWHERE;
+				fgets(numstr,30,justfile);
+				if(strzcmp("MOTEL",numstr)==0)
+					cur_user.rest_where=MOTEL;
+				else if(strzcmp("REGULAR HOTEL",numstr)==0)
+					cur_user.rest_where=REG_HOTEL;
+				else if(strzcmp("EXPENSIVE HOTEL",numstr)==0)
+					cur_user.rest_where=EXP_HOTEL;
+				else if(strzcmp("NOWHERE",numstr)==0)
+					cur_user.rest_where=NOWHERE;
 
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.unhq=intval;
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.poison=intval;
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.unhq=intval;
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.poison=intval;
 
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.rocks=intval;
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.rocks=intval;
 
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.throwing_ability=intval;
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.throwing_ability=intval;
 
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.punch_ability=intval;
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.punch_ability=intval;
 
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.kick_ability=intval;
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.kick_ability=intval;
 
-			fgets(numstr,30,justfile);
-			sscanf(numstr,"%d",&intval);
-			cur_user.InterBBSMoves=intval;
+				fgets(numstr,30,justfile);
+				sscanf(numstr,"%d",&intval);
+				cur_user.InterBBSMoves=intval;
 
-			fclose(justfile);
-
+				fclose(justfile);
+			}
 			sprintf(numstr,"n%07d.stt",od_control.od_node);
 			ny_remove(numstr);
 		}
