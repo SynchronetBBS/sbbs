@@ -49,7 +49,7 @@ static uint helpline=0;
 static uifcapi_t* api;
 
 /* Prototypes */
-static void help();
+static void help(void);
 
 /* API routines */
 static void uifcbail(void);
