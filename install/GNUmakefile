@@ -19,6 +19,8 @@
 # NOCVS	= do not do CVS update
 # JSLIB = Full path and filename to JavaScript library.
 # CVSTAG = CVS tag to pull
+# NO_X = Don't include build conio library (ciolib) for X
+# X_DIR = /path/to/X (if not /usr/X11R6)
 
 ifndef DEBUG
  ifndef RELEASE
@@ -78,6 +80,14 @@ endif
 
 ifdef JSLIB
  MKFLAGS	+=	JSLIB=$(JSLIB)
+endif
+
+ifdef NO_X
+ MKFLAGS	+=	NO_X=$(NO_X)
+endif
+
+ifdef X_DIR
+ MKFLAGS	+=	X_DIR=$(X_DIR)
 endif
 
 all: binaries baja externals
