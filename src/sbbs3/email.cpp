@@ -171,7 +171,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	if(smb_fgetlength(smb.shd_fp)<1) {	 /* Create it if it doesn't exist */
 		smb.status.max_crcs=cfg.mail_maxcrcs;
 		smb.status.max_age=cfg.mail_maxage;
-		smb.status.max_msgs=MAX_SYSMAIL;
+		smb.status.max_msgs=0;
 		smb.status.attr=SMB_EMAIL;
 		if((i=smb_create(&smb))!=0) {
 			smb_close(&smb);

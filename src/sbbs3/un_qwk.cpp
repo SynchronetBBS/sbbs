@@ -153,7 +153,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			}
 			if(!filelength(fileno(smb.shd_fp))) {
 				smb.status.max_crcs=cfg.mail_maxcrcs;
-				smb.status.max_msgs=MAX_SYSMAIL;
+				smb.status.max_msgs=0;
 				smb.status.max_age=cfg.mail_maxage;
 				smb.status.attr=SMB_EMAIL;
 				if((k=smb_create(&smb))!=0) {

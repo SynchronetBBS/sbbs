@@ -3386,7 +3386,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 
 	if(!filelength(fileno(email->shd_fp))) {
 		email->status.max_crcs=scfg.mail_maxcrcs;
-		email->status.max_msgs=MAX_SYSMAIL;
+		email->status.max_msgs=0;
 		email->status.max_age=scfg.mail_maxage;
 		email->status.attr=SMB_EMAIL;
 		if((i=smb_create(email))!=SMB_SUCCESS) {

@@ -157,7 +157,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	if(filelength(fileno(smb.shd_fp))<1) {	 /* Create it if it doesn't exist */
 		smb.status.max_crcs=cfg.mail_maxcrcs;
 		smb.status.max_age=cfg.mail_maxage;
-		smb.status.max_msgs=MAX_SYSMAIL;
+		smb.status.max_msgs=0;
 		smb.status.attr=SMB_EMAIL;
 		if((i=smb_create(&smb))!=SMB_SUCCESS) {
 			smb_close(&smb);
@@ -352,7 +352,7 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 
 	if(filelength(fileno(smb.shd_fp))<1) {	 /* Create it if it doesn't exist */
 		smb.status.max_crcs=cfg.mail_maxcrcs;
-		smb.status.max_msgs=MAX_SYSMAIL;
+		smb.status.max_msgs=0;
 		smb.status.max_age=cfg.mail_maxage;
 		smb.status.attr=SMB_EMAIL;
 		if((i=smb_create(&smb))!=SMB_SUCCESS) {

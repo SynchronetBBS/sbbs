@@ -466,7 +466,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		if(smb->subnum==INVALID_SUB) {
 			smb->status.max_crcs=cfg->mail_maxcrcs;
 			smb->status.max_age=cfg->mail_maxage;
-			smb->status.max_msgs=MAX_SYSMAIL;
+			smb->status.max_msgs=0;
 			smb->status.attr=SMB_EMAIL;
 		} else {
 			smb->status.max_crcs=cfg->sub[smb->subnum]->maxcrcs;

@@ -95,7 +95,6 @@ typedef struct {
 #define MAX_NODES		250
 
 #define MAX_FILES	  10000 /* Maximum number of files per dir			*/
-#define MAX_SYSMAIL   50000 /* Maximum number of total emails in system */
 #define MAX_USERXFER	500 /* Maximum number of dest. users of usrxfer */
 
 
