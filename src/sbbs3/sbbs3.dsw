@@ -125,6 +125,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name services
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name websrvr
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -169,6 +172,18 @@ Package=<4>
 ###############################################################################
 
 Project: "smbutil"=.\smbutil.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "websrvr"=.\websrvr.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
