@@ -2,52 +2,76 @@
 
 #########################################################################
 # Makefile for cross-platform development "wrappers" test				#
-# For use with Borland C++ Builder 5+ or Borland C++ 5.5 for Win32      #
+# For use with Borland or Microsoft C++ Compilers for Win32				#
 # @format.tab-size 4													#
 #																		#
-# usage: make															#
+# usage: make [msc=1]													#
 #########################################################################
 
 # $Id$
 
 # Macros
 DEBUG	=	1				# Comment out for release (non-debug) version
-CC		=	bcc32
-LD		=	ilink32
-SLASH	=	\\
+
+# OS-specific
+SLASH	=	\	# This comment is necessary
 OFILE	=	obj
 LIBFILE	=	.dll
 EXEFILE	=	.exe
-ODIR	=	bcc.win32		# Output directory
-CFLAGS	=	-M
-LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 
-# Optional compile flags (disable banner, warnings and such)
-CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par
+# Compiler-specific
+!ifdef msc	# Microsoft Visual C++
+CC		=	cl
+LD		=	link
+ODIR	=	msvc.win32
+OUTPUT	=	-Fo
+LOUTPUT	=	-Fe
+CFLAGS  =	-nologo -MTd
+LFLAGS	=	$(CFLAGS)
+!ifdef DEBUG
+CFLAGS	=	$(CFLAGS) -Yd
+!endif
+
+!else		# Borland C++
+
+CC		=	bcc32
+LD		=	ilink32
+ODIR	=	bcc.win32		# Output directory
+OUTPUT	=	-o
+LOUTPUT	=	$(OUTPUT)
+CFLAGS	=	-n$(ODIR) -WM -q 
+LFLAGS	=	$(CFLAGS)
+CLFAGS  =	$(CFLAGS) -M -WD -WM -X-
+!ifdef DEBUG
+CFLAGS	=	$(CFLAGS) -v
+!endif
+!endif
+
+# Common compiler flags
+!ifdef DEBUG
+CFLAGS	=	$(CFLAGS) -Od -D_DEBUG 
+!endif
 
 # Debug or release build?
 !ifdef DEBUG
-CFLAGS	=	$(CFLAGS) -v -Od -D_DEBUG 
-LFLAGS	=	$(LFLAGS) -v
 ODIR	=	$(ODIR).debug
 !else
-CFLAGS	=	$(CFLAGS) -g1
 ODIR	=	$(ODIR).release
 !endif
 
 !include objects.mk		# defines $(OBJS)
-
-all: $(ODIR) $(ODIR)/wraptest.exe
+!include targets.mk
 
 # Implicit C Compile Rule
 {.}.c.$(OFILE):
-	@$(CC) $(CFLAGS) -WD -WM -n$(ODIR) -c $<
+	@$(CC) $(CFLAGS) -c $< $(OUTPUT)$@
 
 # Create output directories if they don't exist
 $(ODIR):
 	@if not exist $(ODIR) mkdir $(ODIR)
 
 # Executable Build Rule
-$(ODIR)/wraptest.exe: $(ODIR)\wraptest.obj $(OBJS)
-	@$(CC) $(CFLAGS) -WM -n$(ODIR) $**
+$(WRAPTEST): $(ODIR)\wraptest.obj $(OBJS)
+	@echo Linking $@
+	@$(CC) $(LFLAGS) $** $(LOUTPUT)$@
