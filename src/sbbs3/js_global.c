@@ -617,15 +617,18 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				j+=sprintf(outbuf+j,"&sect;");
 				break;
 			default:
-				if(inbuf[i]>=' ' && inbuf[i]<DEL)
-					outbuf[j++]=inbuf[i];
-				else if(exascii && inbuf[i]&0x80) {
-					ch=inbuf[i]^0x80;
-					if(exasctbl[ch].name!=NULL)
-						j+=sprintf(outbuf+j,"&%s;",exasctbl[ch].name);
-					else
-						j+=sprintf(outbuf+j,"&#%u;",exasctbl[ch].value);
+				if(inbuf[i]&0x80) {
+					if(exascii) {
+						ch=inbuf[i]^0x80;
+						if(exasctbl[ch].name!=NULL)
+							j+=sprintf(outbuf+j,"&%s;",exasctbl[ch].name);
+						else
+							j+=sprintf(outbuf+j,"&#%u;",exasctbl[ch].value);
+					} else
+						outbuf[j++]=inbuf[i];
 				}
+				else if(inbuf[i]>=' ' && inbuf[i]<DEL)
+					outbuf[j++]=inbuf[i];
 				else if(inbuf[i]>' ') /* strip unknown control chars */
 					j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
 				break;
