@@ -32,6 +32,8 @@ http_reply.fast=true;
 load("../web/lib/leftnav_nodelist.ssjs"); // Left Side Navigation Node Listing
 
 template.Theme_CSS_File=Themes[CurrTheme].css;
+template.server=server;
+template.system=system;
 
 function write_template(filename)  {
 	var fname='../web/templates/'+Themes[CurrTheme].dir+'/'+filename;
