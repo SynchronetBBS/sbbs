@@ -474,7 +474,7 @@ for(i in area) {
 				case "from":
 					hdr.from=data;
 					break;
-				case "reply-to"
+				case "reply-to":
 					hdr.replyto_net_type=NET_INTERNET;
 					hdr.replyto=data;
 					break;
