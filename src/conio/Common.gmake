@@ -1,7 +1,7 @@
 CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
 ifndef NO_X
  ifdef STATIC
-  CIOLIB-MT_LIBS		+=	-lXlib
+  CIOLIB-MT_LIBS		+=	-L/usr/X11R6/lib -lX11
  else
   ifeq ($(os),linux)
    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
