@@ -77,13 +77,13 @@ function parse_news_header(hdr, line)
 		return;
 
 	data=line.slice(sp+1);
-	while(data.charAt(0)==' ')	// trim prepended spaces
+	while(data.charAt(0)==' '	// trim prepended spaces
+		|| data.charAt(0)=='\t')	
 		data=data.slice(1);
 	data=truncsp(data);			// trim trailing spaces
 
 	line=line.substr(0,sp);
-	while(line.charAt(0)==' ')	// trim prepended spaces
-		line=line.slice(1);
+	line=truncsp(line);			// trim trailing spaces (support "field : data" syntax)
 
 	switch(line.toLowerCase()) {
 		case "to":
