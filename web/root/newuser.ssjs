@@ -175,7 +175,7 @@ else {
 				template.errs[fields[field]]="No Extended ASCII characters are allowed";
 				template.err_message+="Extended ASCII characters used.\r\n";
 			}
-			if(!(system.newuser_questions & UQ_NOUPRLWR)) {
+			if((!(system.newuser_questions & UQ_NOUPRLWR)) && fields[field] != "netmail") {
 				http_request.query[fields[field]][0]=http_request.query[fields[field]][0].replace(/^(\s*)(.)/g,
 					function (matched, ws, ch, offset, s) {
 						return(ws+ch.toUpperCase());
