@@ -303,12 +303,8 @@ void sbbs_read_ini(
 		SAFECOPY(ftp->hack_sound
 			,iniReadString(fp,section,"HackAttemptSound",nulstr,value));
 
-		if(ftp->temp_dir[0])
-			p=ftp->temp_dir;
-		else
-			p=_PATH_TMP;
 		SAFECOPY(ftp->temp_dir
-			,iniReadString(fp,section,strTempDirectory,p,value));
+			,iniReadString(fp,section,strTempDirectory,ftp->temp_dir,value));
 
 		ftp->log_mask
 			=iniReadBitField(fp,section,strLogMask,log_mask_bits,global->log_mask);
