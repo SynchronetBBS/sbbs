@@ -64,17 +64,19 @@ int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 		if(i==NULL) {
 			return(-1);
 		}
-		if(*i!='=')  { /* pad char */
-			working |= (i-base64alphabet);
-			bits+=6;
-			if(bits>8) {
-				*(outp++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
-				bits-=8;
-			}
+		if(*i=='=')  { /* pad char */
+			i=(char *)base64alphabet;
+			if(working&0xFF != 0)
+				return(-1);
+			break;
+		}
+		bits+=6;
+		working |= (i-base64alphabet);
+		if(bits>=8) {
+			*(outp++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
+			bits-=8;
 		}
 	}
-	if(bits)
-		*(outp++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
 	if(outp == outend)  {
 		*(--outp)=0;
 		return(-1);
