@@ -1630,9 +1630,10 @@ int nopen(char *str, int access)
 /****************************************************************************/
 void initdata(void)
 {
-	char str[256],tmp[256];
-	int i;
-	FILE *stream;
+	char	str[256],tmp[256];
+	char*	p;
+	int		i;
+	FILE*	stream;
 
 #ifdef _WINSOCKAPI_
     WSAStartup(MAKEWORD(1,1), &WSAData);
@@ -1662,6 +1663,10 @@ void initdata(void)
 		printf("Can't set console output to BINARY\n");
 		exit(1); }
 #endif
+
+	/* Sets node_dir to node directory environment variable defined by synchronet. */
+	if(node_dir[0]==0 && (p=getenv("SBBSNODE"))!=NULL)
+		sprintf(node_dir,"%.*s",sizeof(node_dir)-1,p); 
 
 	sprintf(str,"%sXTRN.DAT",node_dir);
 	if((stream=fopen(str,"rt"))==NULL) {
