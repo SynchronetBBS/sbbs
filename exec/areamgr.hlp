@@ -1,0 +1,22 @@
+Address all requests to 'SBBSecho' or 'AreaFix' (without quotes).
+Your Area Manager password goes on the subject line.
+
+In the body of the message to Area Manager:
+
+[+]<areaname>         Connect an area
+-<areaname>           Disconnect an area
+%HELP                 Request this message
+%LIST                 Request a list of areas available to you
+%QUERY                Request a list of areas to which you are connected
+%UNLINKED             Request a list of areas to which you are not connected
+%COMPRESSION <type>   Change the compression type (ARC/ARJ/LZH/PAK/SQZ/ZIP/ZOO)
+%PASSWORD <password>  Change your AreaMgr password
+%RESCAN 	      Request a rescan of newly added areas
+%ACTIVE 	      Reconnect all temporarily disconnected areas
+%PASSIVE	      Temporarily disconnect all connected areas
+%FROM <address>       Remote maintenance, must be the first command
+%+ALL		      Connect all available areas
+%-ALL		      Disconnect all areas
+[---]                 Everything below the tear line is ignored
+
+NOTE: A compression type of NONE is also supported for uncompressed packets.
