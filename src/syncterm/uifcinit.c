@@ -15,7 +15,7 @@ int	init_uifc(void) {
 	if(uifc_initialized)
 		return(0);
 	uifc.size=sizeof(uifc);
-	uifc.mode=UIFC_IBM|UIFC_COLOR;
+	uifc.mode=UIFC_IBM|UIFC_COLOR|UIFC_NOCTRL;
 	if(uifc.scrn_len)
 		uifc.scrn_len++;
 	if((i=uifcini32(&uifc))!=0) {
