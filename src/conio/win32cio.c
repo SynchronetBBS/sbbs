@@ -247,13 +247,21 @@ int win32_initciolib(long inmode)
 
 	if(!isatty(fileno(stdin)))
 		return(0);
-	win32_textmode(inmode);
 	if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
 		return(0);
 	conmode&=~ENABLE_PROCESSED_INPUT;
 	conmode|=ENABLE_MOUSE_INPUT;
 	if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode))
 		return(0);
+
+	if(!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode))
+		return(0);
+	conmode&=~ENABLE_PROCESSED_OUTPUT;
+	conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
+	if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode))
+		return(0);
+
+	win32_textmode(inmode);
 	cio_api.mouse=1;
 	return(1);
 }
@@ -384,7 +392,7 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
 	for(y=0;y<bs.Y;y++) {
 		for(x=0;x<bs.X;x++) {
-			ci[(y*bs.X)+x].Char.AsciiChar=bu[((y*bs.X)+x)*2];
+			ci[(y*bs.X)+x].Char.AsciiChar=ch;
 			ci[(y*bs.X)+x].Attributes=DOStoWinAttr(bu[(((y*bs.X)+x)*2)+1]);
 		}
 	}
