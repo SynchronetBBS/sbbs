@@ -94,7 +94,7 @@ select No or hit  ESC .
 			--cfg.sys_nodes;
 /*			FREE(cfg.node_path[cfg.sys_nodes]); */
 			write_main_cfg(&cfg,backup_level);
-            rerun_nodes();
+            refresh_cfg(&cfg);
         }
 		continue; }
 	if((i&MSK_ON)==MSK_INS) {
@@ -132,7 +132,7 @@ If you want to abort the creation of this new node, hit  ESC .
 		write_node_cfg(&cfg,backup_level);
 		write_main_cfg(&cfg,backup_level);
 		free_node_cfg(&cfg);
-        rerun_nodes();
+        refresh_cfg(&cfg);
 		continue;
     }
 	if((i&MSK_ON)==MSK_GET) {
@@ -150,7 +150,7 @@ If you want to abort the creation of this new node, hit  ESC .
 		strcpy(cfg.node_dir,cfg.node_path[i]);
 		cfg.node_num=i+1;
 		write_node_cfg(&cfg,backup_level);
-        rerun_nodes();
+        refresh_cfg(&cfg);
 		uifc.changes=1;
 		continue;
     }
@@ -201,7 +201,7 @@ Options with a trailing ... will produce a sub-menu of more options.
 			i=save_changes(WIN_MID|WIN_SAV);
 			if(!i) {
 				write_node_cfg(&cfg,backup_level);
-                rerun_nodes();
+                refresh_cfg(&cfg);
             }
 			if(i!=-1)
 				return;

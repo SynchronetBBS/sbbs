@@ -93,7 +93,7 @@ file transfer section of the BBS.
 				break;
 			if(!i) {
 				write_file_cfg(&cfg,backup_level);
-                rerun_nodes();
+                refresh_cfg(&cfg);
             }
             return;
 		case 0:

@@ -184,7 +184,7 @@ online external programs (doors).
 			if(!i) {
                 write_xtrn_cfg(&cfg,backup_level);
 				write_main_cfg(&cfg,backup_level);
-                rerun_nodes();
+                refresh_cfg(&cfg);
             }
 			return;
 		case 0:

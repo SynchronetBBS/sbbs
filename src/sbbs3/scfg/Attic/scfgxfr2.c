@@ -83,7 +83,7 @@ directories for a more organized file structure.
 			continue;
 		if(!j) {
 			write_file_cfg(&cfg,backup_level);
-            rerun_nodes();
+            refresh_cfg(&cfg);
         }
 		return; }
 	if((i&MSK_ON)==MSK_INS) {

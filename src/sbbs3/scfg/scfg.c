@@ -394,7 +394,7 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
                         continue;
                     if(!j) {
                         write_chat_cfg(&cfg,backup_level);
-                        rerun_nodes();
+                        refresh_cfg(&cfg);
                     }
                     break;
                 }
@@ -556,32 +556,6 @@ if(i!=-1)
 return(i);
 }
 
-void rerun_nodes()
-{
-	char	str[MAX_PATH+1];
-    int		i;
-	int		file;
-    node_t	node;
-    
-    for(i=0;i<cfg.sys_nodes;i++) {
-       	if(getnodedat(&cfg,i+1,&node,&file))
-            break;
-        node.misc|=NODE_RRUN;
-        if(putnodedat(&cfg,i+1,&node,file))
-            break;
-    }
-
-	sprintf(str,"%sftpsrvr.rec",cfg.ctrl_dir);
-	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
-		close(file);
-	sprintf(str,"%smailsrvr.rec",cfg.ctrl_dir);
-	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
-		close(file);
-	sprintf(str,"%sservices.rec",cfg.ctrl_dir);
-	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
-		close(file);
-}
-
 void txt_cfg()
 {
 	static int txt_dflt,bar;
@@ -625,7 +599,7 @@ To configure a text file, select it and hit  ENTER .
 			continue;
 		if(!j) {
 			write_file_cfg(&cfg,backup_level);
-            rerun_nodes();
+            refresh_cfg(&cfg);
         }
 		return;
     }
@@ -790,7 +764,7 @@ To configure a command shell, select it and hit  ENTER .
 			continue;
 		if(!j) {
 			write_main_cfg(&cfg,backup_level);
-            rerun_nodes();
+            refresh_cfg(&cfg);
         }
 		return;
     }

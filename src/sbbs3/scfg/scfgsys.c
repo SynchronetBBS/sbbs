@@ -88,7 +88,7 @@ entire system.
 				break;
 			if(!i) {
 				write_main_cfg(&cfg,backup_level);
-                rerun_nodes();
+                refresh_cfg(&cfg);
             }
 			return;
 		case 0:

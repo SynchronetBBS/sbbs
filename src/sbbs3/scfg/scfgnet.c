@@ -930,7 +930,7 @@ value to 0.
 			continue;
 		if(!i) {
 			write_msgs_cfg(&cfg,backup_level);
-            rerun_nodes();
+            refresh_cfg(&cfg);
         }
 		break;
         }

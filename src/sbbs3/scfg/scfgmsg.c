@@ -175,7 +175,7 @@ those sub-boards for a more organized message structure.
 		   continue;
 		if(!j) {
 			write_msgs_cfg(&cfg,backup_level);
-            rerun_nodes();
+            refresh_cfg(&cfg);
         }
 		return;
     }
@@ -816,7 +816,7 @@ E-mail and public posts (on sub-boards).
 				if(!i) {
 					write_msgs_cfg(&cfg,backup_level);
 					write_main_cfg(&cfg,backup_level);
-                    rerun_nodes();
+                    refresh_cfg(&cfg);
                 }
 				return;
 			case 0:

@@ -77,7 +77,6 @@ void bail(int code);
 void errormsg(int line, char *source,  char action, char *object, ulong access);
 void clearptrs(int subnum);
 int  save_changes(int mode);
-void rerun_nodes(void);
 void node_menu(void);
 void node_cfg(void);
 void results(int i);
