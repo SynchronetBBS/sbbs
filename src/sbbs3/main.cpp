@@ -2283,9 +2283,10 @@ void sbbs_t::hangup(void)
 	mswait(1000);	/* Give socket output buffer time to flush */
 	riosync(0);
 	if(client_socket!=INVALID_SOCKET) {
-//    	lprintf("Hangup: closing socket %d",client_socket);
 		close_socket(client_socket);
 		client_socket=INVALID_SOCKET;
+	}
+	if(client_socket_dup!=INVALID_SOCKET) {
 		closesocket(client_socket_dup);
 		client_socket_dup=INVALID_SOCKET;
 	}
