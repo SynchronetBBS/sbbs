@@ -19,7 +19,7 @@
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
 
-<h2>[4.1] - <a name="Using UART Serial Cards/Internal Modems">Using UART Serial
+<h2><a name="UART_Serial/Modem">[4.1] - Using UART Serial
 Cards/Internal Modems</a>
 
 <b> <i><font color="#FF0000">(v2 Only)</font></i></b></h2>
@@ -96,7 +96,7 @@ UARTs DO NOT have buffers and are usually insufficient for high-speed modems.
 with high-speed modems, particularly necessary when multi-tasking. Almost
 all internal high-speed modems come with a built-in 16550 UART.</pre>
 
-<h2>[4.2] - <a name="Using a Shared IRQ or Non-UART Serial Card">Using a Shared IRQ
+<h2><a name="Shared IRQ_Non-UART">[4.2] - Using a Shared IRQ
 or Non-UART Serial Card</a></h2>
 
 <pre>If you are using a serial card which allows the use of shared IRQ's or has a
@@ -146,7 +146,7 @@ PS/2 BIOS interfaces.
 
 You should only select &quot;PC BIOS&quot; in a last case scenario (i.e. Your card's
 device driver does not support any other Int 14h interface). The PC BIOS
-inteface does not support DTR, so if you use such a limited driver, you must
+interface does not support DTR, so if you use such a limited driver, you must
 set &quot;Drop DTR to Hang Up&quot; to &quot;No&quot; under &quot;Modem Toggle Options&quot;, set the
 &quot;Hang Up String&quot; to &quot;~~~\1\1\1~~~ATH&quot; and change &quot;S2=128&quot; to &quot;S2=1&quot; in your
 &quot;Initialization String&quot;.
@@ -154,7 +154,7 @@ set &quot;Drop DTR to Hang Up&quot; to &quot;No&quot; under &quot;Modem Toggle O
 Int 14h drivers can also be used to communicate with non-UART serial devices
 such as Packet Assembler/Disassemblers (PADs), Network Redirectors, HAM Radio
 Packet Servers, etc.</pre>
-<h2>[4.3] - <a name="Dumb (NULL) Modem Connection">Dumb (NULL) Modem Connection</a></h2>
+<h2><a name="DumbModemConnection">[4.3] - Dumb (NULL) Modem Connection</a></h2>
 <pre>If you are connecting a Synchronet node to another computer or terminal through
 a serial port WITHOUT the use of a modem, you must set SCFG-&gt;Nodes-&gt;Node #
 -&gt;Modem Configuration-&gt;Toggle Options-&gt;Dumb Modem Connection to &quot;Yes&quot;. This
@@ -165,7 +165,7 @@ If your serial connection or terminal does not support the correct use of the
 DCD line, then you must run SBBS with the 'D' command line switch to force
 Synchronet to assume that DCD is always high. If this is the case, then there
 is no way to &quot;hang up&quot; on the BBS.</pre>
-<h2>[4.4] - <a name="Modem Configuration">Modem Configuration</a></h2>
+<h2><a name="ModemConfiguration">[4.4] - Modem Configuration</a></h2>
 <pre>Now that you've set up your serial card, the easiest way to finish setting up
 the rest of the options for your modem is to run the SCFG program and go to the
 Nodes-&gt;Node #-&gt;Modem Configuration-&gt;Auto-Configuration, and select your modem
@@ -209,7 +209,7 @@ functions incorrectly, you may wish to use this feature.  Setting this value to
 
 Example (for Generic 28.8k Modem on COM 2):</pre>
 <pre><img border="0" src="images/scfg_modem_config.gif" width="572" height="331"></pre>
-<h2>[4.5] - <a name="Result Codes">Result Codes</a></h2>
+<h2><a name="ResultCodes">[4.5] - Result Codes</a></h2>
 <pre>Result Codes is a list of numeric result codes (connect codes) supported by
 your modem. If you have set &quot;Use Verbal Result Codes&quot; to 'Yes' in your
 the SCFG modem toggle options for this node, this list is not used.
@@ -241,7 +241,7 @@ result code list and enter &quot;IGNORE&quot; for the result description, thus c
 Synchronet to ignore this result code and wait for another result code to
 determine the actual connection type. This step is only necessary for modems
 that insist on returning multiple result codes during a connection.</pre>
-<h2>[4.6] - <a name="Toggle Options">Toggle Options</a></h2>
+<h2><a name="ToggleOptions">[4.6] - Toggle Options</a></h2>
 <pre>Selecting this option gives a menu of available modem toggle options:</pre>
 <pre><img border="0" src="images/scfg_modem_toggles.gif" width="572" height="331">
 
@@ -281,7 +281,7 @@ that insist on returning multiple result codes during a connection.</pre>
 	'Yes', then the connection information (DCE rate, estimated CPS rate,
 	etc) is taken from the last configured result code and an error message
 	is still logged for the sysop's attention.</pre>
-<h2>[4.7] - <a name="Control Strings">Control Strings</a></h2>
+<h2><a name="ControlStrings">[4.7] - Control Strings</a></h2>
 <pre>Modem Control Strings are the strings which are sent to your modem at various
 times during BBS operation.  Normally the default strings are sufficient for
 proper operation, but occasionally you may wish to modify one or more of these
@@ -317,7 +317,7 @@ Synchronet.
 
 Hang Up String is the command sent to the modem to hang up the phone and is
 only used if Drop DTR To Hang Up modem toggle option is set to No.</pre>
-<h2>[4.8] - <a name="Auto-Configuration">Auto-Configuration</a></h2>
+<h2><a name="AutoConfiguration">[4.8] - Auto-Configuration</a></h2>
 <pre>The auto-configuration contains a very long list of modem types.  Using this
 list is the EASIEST way to configure your modem to work with Synchronet.  All
 you need to do is select your modem from this list and most everything will be
@@ -332,7 +332,7 @@ from the menu and typing in the name of the .MDM file.
 If you create a new configuration you would like to make available to people,
 you can export the configuration information into an .MDM file by selecting the
 'Export Configuration' option from the menu.</pre>
-<h2>[4.9] - <a name="Caller Identification">Caller Identification</a></h2>
+<h2><a name="CallerIdentification">[4.9] - Caller Identification</a></h2>
 <pre>If your modem supports one of the Caller-ID formats listed below and you have
 Caller-ID service enabled on your phone line, you can have Synchronet log
 Caller-ID information and disallow specific numbers. First, add the appropriate
@@ -371,7 +371,7 @@ Supported formats:
 		TIME =
 		NMBR =
 		NAME =</pre>
-<h2>[4.10] - <a name="FAX/Modem Setup for Receiving FAXes">FAX/Modem Setup for
+<h2><a name="FAX/ModemSetup">[4.10] - FAX/Modem Setup for
 Receiving FAXes</a></h2>
 <pre>In order for Synchronet to be able to receive incoming FAXes, there are a few
 requirements that must be met, these are:
