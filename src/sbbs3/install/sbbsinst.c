@@ -616,7 +616,7 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 				}
 				printf("Downloading %s           ",url);
 				offset=0;
-				while((ret1=read(remote,buf,sizeof(buf)))>=0)  {
+				while((ret1=read(remote,buf,sizeof(buf)))>0)  {
 					ret2=write(fout,buf,ret1);
 					if(ret2!=ret1)  {
 						printf("\n!ERROR %d writing to %s\n",errno,dstfname);
