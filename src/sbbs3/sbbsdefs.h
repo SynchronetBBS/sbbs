@@ -228,11 +228,6 @@
 #define SUB_CFG_YSCAN	0x0100		/* bit 9 (bits 9-15 default to OFF)			*/
 
 									/* Bit values for sub[x].misc */
-#if 0	// Used to be stored with cfg info
-#define SUB_NSCAN	(1L<<0) 		/* Scan this sub-board for new msgs */
-#define SUB_YSCAN	(1L<<1) 		/* Scan for new messages to you only */
-#define SUB_SSCAN	(1L<<2) 		/* Scan this sub-board for msgs to you */
-#endif
 #define SUB_QNET	(1L<<3) 		/* Sub-board is netted via QWK network */
 #define SUB_PNET	(1L<<4) 		/* Sub-board is netted via PostLink */
 #define SUB_FIDO	(1L<<5) 		/* Sub-board is netted via FidoNet */
@@ -695,17 +690,6 @@ enum {						/* readmail and delmailidx which types		*/
 	,MAIL_ANY				/* mail sent to or from you */
 	,MAIL_ALL				/* all mail (ignores usernumber arg) */
 	};
-
-#if 0
-							/* Message mode bits						*/
-#define MSG_PERM	1		/* Permanent - non-purgable message (post)  */
-#define MSG_FORWARD 1       /* Forwarded message (mail)                 */
-#define MSG_ANON	2		/* Anonymous message						*/
-#define MSG_PRIVATE 4		/* Private posted message					*/
-#define MSG_READ	8		/* Private post has been read				*/
-#define MSG_FILE	16		/* File attached							*/
-
-#endif
 
 							/* Bits in the mode of external()           */
 #define EX_SH       (1<<0)	/* Use command shell to load other process  */
