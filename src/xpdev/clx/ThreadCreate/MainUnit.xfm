@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 536
   Top = 314
   Width = 211
-  Height = 283
-  VertScrollBar.Range = 273
+  Height = 303
+  VertScrollBar.Range = 292
   HorzScrollBar.Range = 203
   ActiveControl = ListBox
   Caption = 'Form1'
@@ -44,5 +44,18 @@ object Form1: TForm1
     ReadOnly = True
     ScrollBars = ssAutoBoth
     TabOrder = 3
+  end
+  object StatusBar: TStatusBar
+    Left = 0
+    Top = 284
+    Width = 211
+    Height = 19
+    Panels = <>
+    SimplePanel = True
+  end
+  object Timer: TTimer
+    OnTimer = TimerTick
+    Left = 96
+    Top = 144
   end
 end

@@ -25,14 +25,19 @@ __fastcall TMyThread::TMyThread(bool CreateSuspended)
 	: TThread(CreateSuspended)
 {
 }
+void __fastcall TMyThread::AddToLog()
+{
+    	Log->Lines->Add(ThreadID);
+}
 //---------------------------------------------------------------------------
 void __fastcall TMyThread::Execute()
 {
 	while(!Terminated) {
-    	CriticalSection->Enter();
-    	Log->Lines->Add(ThreadID);
+    	Synchronize(AddToLog);
+		CriticalSection->Enter();
+		List->Add(new AnsiString(ThreadID));
         CriticalSection->Leave();
-	    Sleep(1000);
+ 	    Sleep(1);
     }
 }
 //---------------------------------------------------------------------------

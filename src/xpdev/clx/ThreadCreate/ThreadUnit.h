@@ -14,8 +14,10 @@ protected:
 	void __fastcall Execute();
 public:
 	TMemo*	Log;
+    TList*	List;
     TCriticalSection* CriticalSection;
 	__fastcall TMyThread(bool CreateSuspended);
+    void __fastcall AddToLog(void);
 };
 //---------------------------------------------------------------------------
 #endif
