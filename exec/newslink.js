@@ -148,6 +148,10 @@ while(!cfg_file.eof) {
 		case "slave":
 			slave=true;
 			break;
+		case "tagline":
+			str.shift();				// Remove first element (keyword)
+			tagline=str.join(' ');		// Combine remaining elements (tagline)
+			break;
 		default:
 			printf("!UNRECOGNIZED configuration keyword: %s\r\n",str[0]);
 			break;
