@@ -964,8 +964,9 @@ typedef struct {						/* File (transfers) Data */
 
 } file_t;
 
-typedef idxrec_t post_t;
-typedef idxrec_t mail_t;
+typedef idxrec_t post_t;				/* defined in smbdefs.h */
+typedef idxrec_t mail_t;				/* defined in smbdefs.h */
+typedef fidoaddr_t faddr_t;				/* defined in smbdefs.h */
 
 typedef struct {						/* System/Node Statistics */
 	ulong 	logons,						/* Total Logons on System */
@@ -982,14 +983,6 @@ typedef struct {						/* System/Node Statistics */
 	ushort	nusers; 					/* Total New Users Today */
 
 } stats_t;
-
-typedef struct {						/* FidoNet address */
-	ushort	zone,						/* Zone */
-			net,						/* Network */
-			node,						/* Node */
-			point;						/* Point */
-
-} faddr_t;
 
 typedef struct {						/* FidoNet msg header */
 	char	from[36],					/* From user */
