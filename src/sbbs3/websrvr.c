@@ -1020,7 +1020,7 @@ void http_logon(http_session_t * session, user_t *usr)
 	if(session->user.number==session->last_user_num)
 		return;
 
-	lprintf(LOG_DEBUG,"%04d HTTP Logon (%d)",session->socket,session->user.number);
+	lprintf(LOG_DEBUG,"%04d HTTP Logon (user #%d)",session->socket,session->user.number);
 
 	if(session->subscan!=NULL)
 		getmsgptrs(&scfg,session->user.number,session->subscan);
@@ -1042,12 +1042,13 @@ void http_logon(http_session_t * session, user_t *usr)
 	session->last_user_num=session->user.number;
 }
 
-void http_logoff(http_session_t * session)
+void http_logoff(http_session_t * session, int line)
 {
 	if(session->last_user_num<=0)
 		return;
 
-	lprintf(LOG_DEBUG,"%04d HTTP Logoff (%d)",session->socket,session->user.number);
+	lprintf(LOG_DEBUG,"%04d HTTP Logoff (user #%d) from line %d"
+		,session->socket,session->user.number, line);
 
 	SAFECOPY(session->username,unknown);
 	logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time);
@@ -1096,7 +1097,7 @@ static BOOL check_ars(http_session_t * session)
 		/* No authentication information... */
 		if(session->last_user_num!=0) {
 			if(session->last_user_num>0)
-				http_logoff(session);
+				http_logoff(session,__LINE__);
 			session->user.number=0;
 			http_logon(session,NULL);
 		}
@@ -1124,7 +1125,7 @@ static BOOL check_ars(http_session_t * session)
 	if(i==0) {
 		if(session->last_user_num!=0) {
 			if(session->last_user_num>0)
-				http_logoff(session);
+				http_logoff(session,__LINE__);
 			session->user.number=0;
 			http_logon(session,NULL);
 		}
@@ -1143,7 +1144,7 @@ static BOOL check_ars(http_session_t * session)
 	if(thisuser.pass[0] && stricmp(thisuser.pass,password)) {
 		if(session->last_user_num!=0) {
 			if(session->last_user_num>0)
-				http_logoff(session);
+				http_logoff(session,__LINE__);
 			session->user.number=0;
 			http_logon(session,NULL);
 		}
@@ -1164,7 +1165,7 @@ static BOOL check_ars(http_session_t * session)
 	}
 
 	if(i != session->last_user_num) {
-		http_logoff(session);
+		http_logoff(session,__LINE__);
 		session->user.number=i;
 		http_logon(session,&thisuser);
 	}
@@ -2920,7 +2921,7 @@ void http_session_thread(void* arg)
 		}
 	}
 
-	http_logoff(&session);
+	http_logoff(&session,__LINE__);
 
 	if(session.js_cx!=NULL) {
 		lprintf(LOG_INFO,"%04d JavaScript: Destroying context",socket);
