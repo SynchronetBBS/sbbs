@@ -257,6 +257,7 @@ void __fastcall TMainForm::TimerTick(TObject *Sender)
         Local->ReadOnly=false;
     }
     else if(!node.status || node.status>NODE_QUIET || node.action!=NODE_PCHT) {
+        Beep();
         OutputDebugString("CHAT: User Disconnected\r\n");
         MainForm->Caption=MainForm->Caption+" - Disconnected!";
         Timer->Enabled=false;
