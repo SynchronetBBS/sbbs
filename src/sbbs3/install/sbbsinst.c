@@ -43,9 +43,12 @@
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 params_t params; /* Build parameters */
 
+#define MAKEFILE = "/tmp/SBBSmakefile";
+
 char **opt;
 char tmp[256];
 char error[256];
+char cflags[MAX_PATH+1];
 int  backup_level=5;
 
 void allocfail(uint size)
@@ -125,48 +128,48 @@ int main(int argc, char **argv)
            }
     }
 
-uifc.size=sizeof(uifc);
+	uifc.size=sizeof(uifc);
 #if defined(USE_FLTK)
-if(!door_mode&&(getenv("DISPLAY")!=NULL))
-    i=uifcinifltk(&uifc);  /* fltk */
-else
+	if(!door_mode&&(getenv("DISPLAY")!=NULL))
+		i=uifcinifltk(&uifc);  /* fltk */
+	else
 #endif
 #if defined(USE_DIALOG)
-if(!door_mode)
-    i=uifcinid(&uifc);  /* dialog */
-else
+	if(!door_mode)
+		i=uifcinid(&uifc);  /* dialog */
+	else
 #elif defined(USE_CURSES)
-if(!door_mode)
-    i=uifcinic(&uifc);  /* curses */
-else
+	if(!door_mode)
+		i=uifcinic(&uifc);  /* curses */
+	else
 #elif !defined(__unix__)
-if(!door_mode)
-    i=uifcini(&uifc);   /* conio */
-else
+	if(!door_mode)
+		i=uifcini(&uifc);   /* conio */
+	else
 #endif
-    i=uifcinix(&uifc);  /* stdio */
-if(i!=0) {
-    printf("uifc library init returned error %d\n",i);
-    exit(1);
-}
+		i=uifcinix(&uifc);  /* stdio */
+	if(i!=0) {
+		printf("uifc library init returned error %d\n",i);
+		exit(1);
+	}
 
-if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-	allocfail(sizeof(char *)*(MAX_OPTS+1));
-for(i=0;i<(MAX_OPTS+1);i++)
-	if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
-		allocfail(MAX_OPLN);
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
 
-if((mopt=(char **)MALLOC(sizeof(char *)*14))==NULL)
-	allocfail(sizeof(char *)*14);
-for(i=0;i<14;i++)
-	if((mopt[i]=(char *)MALLOC(64))==NULL)
-		allocfail(64);
+	if((mopt=(char **)MALLOC(sizeof(char *)*14))==NULL)
+		allocfail(sizeof(char *)*14);
+	for(i=0;i<14;i++)
+		if((mopt[i]=(char *)MALLOC(64))==NULL)
+			allocfail(64);
 
-sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
-if(uifc.scrn(str)) {
-	printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
-	bail(1);
-}
+	sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
+	if(uifc.scrn(str)) {
+		printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
+		bail(1);
+	}
 
 while(1) {
 	i=0;
@@ -288,15 +291,17 @@ while(1) {
 			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SBBSINST",opt);
 			if(!i)
 				bail(0);
-			break; } }
+			break; 
+		} 
+	}
 }
 
 void bail(int code)
 {
     if(code) {
         puts("\nHit a key...");
-        getch(); }
-
+        getch(); 
+	}
     uifc.bail();
 
     exit(code);
@@ -305,9 +310,9 @@ void bail(int code)
 void write_makefile(void)  {
 	FILE *makefile;
 
-	makefile=fopen("/tmp/SBBSmakefile","w");
+	makefile=fopen(MAKEFILE,"w");
 	if(makefile==NULL)  {
-	    uifc.msg("Cannot create /tmp/SBBSmakefile!");
+	    uifc.msg("Cannot create " MAKEFILE);
 		return;
 	}
 	if(!params.release)
@@ -357,8 +362,10 @@ endif
 		fputs("SUFFIX  :=  debug\n",makefile);
 		fputs("MKFLAGS	+=	DEBUG=1\n",makefile);
 	}
-	if(params.cflags[0])
-		fprintf(makefile,"MKFLAGS	+=	CFLAGS=%s\n",params.cflags);
+	if(params.cflags[0]) {
+		sprintf(cflags,"CFLAGS=%s",params.cflags);
+		putenv(cflags);
+	}
 	fputs("SBBSDIR := ",makefile);
 	fputs(params.install_path,makefile);
 	fputs("\n",makefile);
@@ -372,7 +379,7 @@ endif
 	if(params.cvs)
 		fputs("CVSCOMMAND	:=	cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs\n",makefile);
 
-	fputs("all: externals binaries baja\n\n",makefile);
+	fputs("all: binaries baja externals\n\n",makefile);
 	fputs("externals:	sbj sbl\n\n",makefile);
 	fputs("fbinaries:	sbbs3 scfg\n\n",makefile);
 
@@ -480,7 +487,7 @@ fputs("	chown -R $(SBBSCHOWN) $(SBBSDIR)",makefile);
 
 void install_sbbs(void)  {
 	uifc.bail();
-	system("gmake -f /tmp/SBBSmakefile all");
-	unlink("/tmp/SBBSmakefile");
+	system("gmake -f " MAKEFILE " all");
+	unlink(MAKEFILE);
 }
 /* End of SBBSINST.C */
