@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs_ini.h"
+#include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
 #include "dirwrap.h"	/* backslash */
 
 static const char*	nulstr="";
@@ -159,14 +160,16 @@ void sbbs_read_ini(
 	const char*	default_cgi_temp;
 	const char*	default_dosemu_path;
 	const char* strInterface="Interface";
-	const char* strJavaScriptMaxBytes="JavaScriptMaxBytes";
-	const char* strSemFileCheckFrequency="SemFileCheckFrequency";
 	char*		ctrl_dir;
 	char*		temp_dir;
 	char		host_name[128];
 	char		value[INI_MAX_VALUE_LEN];
 	ulong		interface_addr;
 	ulong		js_max_bytes;
+	ulong		js_cx_stack;
+	ulong		js_branch_limit;
+	ulong		js_gc_interval;
+	ulong		js_yield_interval;
 	ushort		sem_chk_freq;
 
 	section = "Global";
@@ -187,9 +190,15 @@ void sbbs_read_ini(
 	}
 
 	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr,value));
-	js_max_bytes=iniGetInteger(fp,section,strJavaScriptMaxBytes,0);
 	sem_chk_freq=iniGetShortInt(fp,section,strSemFileCheckFrequency,0);
 	interface_addr=iniGetIpAddress(fp,section,strInterface,INADDR_ANY);
+
+	/* Global JavaScript defaults */
+	js_max_bytes		= iniGetInteger(fp,section,strJavaScriptMaxBytes		,JAVASCRIPT_MAX_BYTES);
+	js_cx_stack			= iniGetInteger(fp,section,strJavaScriptContextStack	,JAVASCRIPT_CONTEXT_STACK);
+	js_branch_limit		= iniGetInteger(fp,section,strJavaScriptBranchLimit		,JAVASCRIPT_BRANCH_LIMIT);
+	js_gc_interval		= iniGetInteger(fp,section,strJavaScriptGcInterval		,JAVASCRIPT_GC_INTERVAL);
+	js_yield_interval	= iniGetInteger(fp,section,strJavaScriptYieldInterval	,JAVASCRIPT_YIELD_INTERVAL);
 																		
 	/***********************************************************************/
 	if(bbs!=NULL) {
@@ -224,8 +233,18 @@ void sbbs_read_ini(
 
 		bbs->xtrn_polls_before_yield
 			=iniGetInteger(fp,section,"ExternalYield",10);
+
+		/* JavaScript operating parameters */
 		bbs->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+		bbs->js_cx_stack
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
+		bbs->js_branch_limit
+			=iniGetInteger(fp,section,strJavaScriptBranchLimit	,js_branch_limit);
+		bbs->js_gc_interval
+			=iniGetInteger(fp,section,strJavaScriptGcInterval	,js_gc_interval);
+		bbs->js_yield_interval
+			=iniGetInteger(fp,section,strJavaScriptYieldInterval,js_yield_interval);
 
 		SAFECOPY(bbs->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));
@@ -281,8 +300,12 @@ void sbbs_read_ini(
 			=iniGetShortInt(fp,section,"QwkTimeout",600);		/* seconds */
 		ftp->sem_chk_freq
 			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
+
+		/* JavaScript Operating Parameters */
 		ftp->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+		ftp->js_cx_stack
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
 
 		SAFECOPY(ftp->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));
@@ -384,8 +407,17 @@ void sbbs_read_ini(
 		services->sem_chk_freq
 			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
 
+		/* Configurable JavaScript default parameters */
 		services->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+		services->js_cx_stack
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
+		services->js_branch_limit
+			=iniGetInteger(fp,section,strJavaScriptBranchLimit	,js_branch_limit);
+		services->js_gc_interval
+			=iniGetInteger(fp,section,strJavaScriptGcInterval	,js_gc_interval);
+		services->js_yield_interval
+			=iniGetInteger(fp,section,strJavaScriptYieldInterval,js_yield_interval);
 
 		SAFECOPY(services->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));
@@ -420,8 +452,12 @@ void sbbs_read_ini(
 			=iniGetShortInt(fp,section,"Port",IPPORT_HTTP);
 		web->sem_chk_freq
 			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
+
+		/* JavaScript Operating Parameters */
 		web->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+		web->js_cx_stack
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
 
 		SAFECOPY(web->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));
