@@ -102,6 +102,8 @@ static void read_ini_globals(FILE* fp, global_startup_t* global)
 	global->sem_chk_freq=iniReadShortInt(fp,section,strSemFileCheckFrequency,0);
 	global->interface_addr=iniReadIpAddress(fp,section,strInterface,INADDR_ANY);
 	global->log_mask=iniReadBitField(fp,section,strLogMask,log_mask_bits,DEFAULT_LOG_MASK);
+	global->bind_retry_count=iniReadInteger(fp,section,"BindRetryCount",10);
+	global->bind_retry_delay=iniReadInteger(fp,section,"BindRetryDelay",15);
 
 	global->js.max_bytes		= iniReadInteger(fp,section,strJavaScriptMaxBytes		,JAVASCRIPT_MAX_BYTES);
 	global->js.cx_stack			= iniReadInteger(fp,section,strJavaScriptContextStack	,JAVASCRIPT_CONTEXT_STACK);
@@ -231,6 +233,9 @@ void sbbs_read_ini(
 		bbs->options
 			=iniReadBitField(fp,section,strOptions,bbs_options
 				,BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE);
+
+		bbs->bind_retry_count=iniReadInteger(fp,section,"BindRetryCount",global->bind_retry_count);
+		bbs->bind_retry_delay=iniReadInteger(fp,section,"BindRetryDelay",global->bind_retry_delay);
 	}
 
 	/***********************************************************************/
@@ -282,6 +287,9 @@ void sbbs_read_ini(
 		ftp->options
 			=iniReadBitField(fp,section,strOptions,ftp_options
 				,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
+
+		ftp->bind_retry_count=iniReadInteger(fp,section,"BindRetryCount",global->bind_retry_count);
+		ftp->bind_retry_delay=iniReadInteger(fp,section,"BindRetryDelay",global->bind_retry_delay);
 	}
 
 	/***********************************************************************/
@@ -356,6 +364,9 @@ void sbbs_read_ini(
 		mail->options
 			=iniReadBitField(fp,section,strOptions,mail_options
 				,MAIL_OPT_ALLOW_POP3);
+
+		mail->bind_retry_count=iniReadInteger(fp,section,"BindRetryCount",global->bind_retry_count);
+		mail->bind_retry_delay=iniReadInteger(fp,section,"BindRetryDelay",global->bind_retry_delay);
 	}
 
 	/***********************************************************************/
@@ -397,6 +408,9 @@ void sbbs_read_ini(
 		services->options
 			=iniReadBitField(fp,section,strOptions,service_options
 				,BBS_OPT_NO_HOST_LOOKUP);
+
+		services->bind_retry_count=iniReadInteger(fp,section,"BindRetryCount",global->bind_retry_count);
+		services->bind_retry_delay=iniReadInteger(fp,section,"BindRetryDelay",global->bind_retry_delay);
 	}
 
 	/***********************************************************************/
@@ -458,6 +472,9 @@ void sbbs_read_ini(
 		web->options
 			=iniReadBitField(fp,section,strOptions,web_options
 				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING);
+
+		web->bind_retry_count=iniReadInteger(fp,section,"BindRetryCount",global->bind_retry_count);
+		web->bind_retry_delay=iniReadInteger(fp,section,"BindRetryDelay",global->bind_retry_delay);
 	}
 }
 
@@ -592,6 +609,11 @@ BOOL sbbs_write_ini(
 
 		if(!iniSetBitField(lp,section,strOptions,bbs_options,bbs->options,&style))
 			break;
+
+		if(!iniSetInteger(lp,section,"BindRetryCount",bbs->bind_retry_count,&style))
+			break;
+		if(!iniSetInteger(lp,section,"BindRetryDelay",bbs->bind_retry_delay,&style))
+			break;
 	}
 	/***********************************************************************/
 	if(ftp!=NULL) {
@@ -658,6 +680,11 @@ BOOL sbbs_write_ini(
 			break;
 	
 		if(!iniSetBitField(lp,section,strOptions,ftp_options,ftp->options,&style))
+			break;
+
+		if(!iniSetInteger(lp,section,"BindRetryCount",ftp->bind_retry_count,&style))
+			break;
+		if(!iniSetInteger(lp,section,"BindRetryDelay",ftp->bind_retry_delay,&style))
 			break;
 	}
 
@@ -749,6 +776,11 @@ BOOL sbbs_write_ini(
 
 		if(!iniSetBitField(lp,section,strOptions,mail_options,mail->options,&style))
 			break;
+
+		if(!iniSetInteger(lp,section,"BindRetryCount",mail->bind_retry_count,&style))
+			break;
+		if(!iniSetInteger(lp,section,"BindRetryDelay",mail->bind_retry_delay,&style))
+			break;
 	}
 
 	/***********************************************************************/
@@ -812,6 +844,11 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,service_options,services->options,&style))
+			break;
+
+		if(!iniSetInteger(lp,section,"BindRetryCount",services->bind_retry_count,&style))
+			break;
+		if(!iniSetInteger(lp,section,"BindRetryDelay",services->bind_retry_delay,&style))
 			break;
 	}
 
@@ -882,6 +919,11 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,web_options,web->options,&style))
+			break;
+
+		if(!iniSetInteger(lp,section,"BindRetryCount",web->bind_retry_count,&style))
+			break;
+		if(!iniSetInteger(lp,section,"BindRetryDelay",web->bind_retry_delay,&style))
 			break;
 	}
 

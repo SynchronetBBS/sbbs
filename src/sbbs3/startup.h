@@ -62,6 +62,8 @@ typedef struct {
 	ulong	interface_addr;
 	ulong	log_mask;
 	js_startup_t js;
+	uint	bind_retry_count;		/* Number of times to retry bind() calls */
+	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 
 } global_startup_t;
 
@@ -118,6 +120,8 @@ typedef struct {
 	BOOL	recycle_now;
 	sem_t	recycle_sem;
 	DWORD	log_mask;
+	uint	bind_retry_count;		/* Number of times to retry bind() calls */
+	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 
 } bbs_startup_t;
 

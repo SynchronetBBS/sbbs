@@ -90,6 +90,8 @@ typedef struct {
 	BOOL	recycle_now;
 	sem_t	recycle_sem;
 	DWORD	log_mask;
+	uint	bind_retry_count;		/* Number of times to retry bind() calls */
+	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 
 	/* Relay Server */
     char	relay_server[128];
