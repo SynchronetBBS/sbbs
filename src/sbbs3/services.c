@@ -1502,6 +1502,7 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 	FILE*		fp;
 	char		cmd[INI_MAX_VALUE_LEN];
 	char		host[INI_MAX_VALUE_LEN];
+	char		prot[INI_MAX_VALUE_LEN];
 	char**		sec_list;
 	service_t*	np;
 	service_t	serv;
@@ -1513,7 +1514,7 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 	sec_list = iniGetSectionList(fp,"");
     for(i=0; sec_list!=NULL && sec_list[i]!=NULL; i++) {
 		memset(&serv,0,sizeof(service_t));
-		SAFECOPY(serv.protocol,sec_list[i]);
+		SAFECOPY(serv.protocol,iniGetString(fp,sec_list[i],"Protocol",sec_list[i],prot));
 		serv.socket=INVALID_SOCKET;
 		serv.interface_addr=iniGetIpAddress(fp,sec_list[i],"Interface",startup->interface_addr);
 		serv.port=iniGetShortInt(fp,sec_list[i],"Port",0);
