@@ -403,8 +403,12 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			field=JSVAL_TO_OBJECT(val);
 			if(!JS_GetProperty(cx, field, "type", &val))
 				continue;
-			JS_ValueToInt32(cx,val,&i32);
-			type=(ushort)i32;
+			if(JSVAL_IS_STRING(val))
+				type=smb_hfieldtypelookup(JS_GetStringBytes(JS_ValueToString(cx,val)));
+			else {
+				JS_ValueToInt32(cx,val,&i32);
+				type=(ushort)i32;
+			}
 			if(!JS_GetProperty(cx, field, "data", &val))
 				continue;
 			if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)

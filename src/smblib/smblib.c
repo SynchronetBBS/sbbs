@@ -2171,58 +2171,58 @@ char* SMBCALL smb_hfieldtype(ushort type)
 	static char str[8];
 
 	switch(type) {
-		case SENDER:			return("SENDER");
-		case SENDERAGENT:		return("SENDERAGENT");
-		case SENDERNETTYPE:		return("SENDERNETTYPE");
-		case SENDERNETADDR:		return("SENDERNETADDR");
-		case SENDEREXT:			return("SENDEREXT");
-		case SENDERORG:			return("SENDERORG");
+		case SENDER:			return("Sender");
+		case SENDERAGENT:		return("SenderAgent");
+		case SENDERNETTYPE:		return("SenderNetType");
+		case SENDERNETADDR:		return("SenderNetAddr");
+		case SENDEREXT:			return("SenderExt");
+		case SENDERORG:			return("SenderOrg");
 
-		case REPLYTO:			return("REPLYTO");
-		case REPLYTOAGENT:		return("REPLYTOAGENT");
-		case REPLYTONETTYPE:	return("REPLYTONETTYPE");
-		case REPLYTONETADDR:	return("REPLYTONETADDR");
-		case REPLYTOEXT:		return("REPLYTOEXT");
+		case REPLYTO:			return("ReplyTo");
+		case REPLYTOAGENT:		return("ReplyToAgent");
+		case REPLYTONETTYPE:	return("ReplyToNetType");
+		case REPLYTONETADDR:	return("ReplyToNetAddr");
+		case REPLYTOEXT:		return("ReplyToExt");
 								
-		case RECIPIENT:			return("RECIPIENT");
-		case RECIPIENTAGENT:	return("RECIPIENTAGENT");
-		case RECIPIENTNETTYPE:	return("RECIPIENTNETTYPE");
-		case RECIPIENTNETADDR:	return("RECIPIENTNETADDR");
-		case RECIPIENTEXT:		return("RECIPIENTEXT");
+		case RECIPIENT:			return("Recipient");
+		case RECIPIENTAGENT:	return("RecipientAgent");
+		case RECIPIENTNETTYPE:	return("RecipientNetType");
+		case RECIPIENTNETADDR:	return("RecipientNetAddr");
+		case RECIPIENTEXT:		return("RecipientExt");
 
-		case SUBJECT:			return("SUBJECT");
-		case SMB_SUMMARY:		return("SUMMARY");
-		case SMB_COMMENT:		return("COMMENT");
-		case SMB_CARBONCOPY:	return("CARBONCOPY");
-		case SMB_GROUP:			return("GROUP");
-		case SMB_EXPIRATION:	return("EXPIRATION");
-		case SMB_PRIORITY:		return("PRIORITY");
-		case SMB_COST:			return("COST");
+		case SUBJECT:			return("Subject");
+		case SMB_SUMMARY:		return("Summary");
+		case SMB_COMMENT:		return("Comment");
+		case SMB_CARBONCOPY:	return("CarbonCopy");
+		case SMB_GROUP:			return("Group");
+		case SMB_EXPIRATION:	return("Expiration");
+		case SMB_PRIORITY:		return("Priority");
+		case SMB_COST:			return("Cost");
 
-		case FIDOCTRL:			return("FIDOCTRL");
-		case FIDOAREA:			return("FIDOAREA");
-		case FIDOSEENBY:		return("FIDOSEENBY");
-		case FIDOPATH:			return("FIDOPATH");
-		case FIDOMSGID:			return("FIDOMSGID");
-		case FIDOREPLYID:		return("FIDOREPLYID");
-		case FIDOPID:			return("FIDOPID");
-		case FIDOFLAGS:			return("FIDOFLAGS");
-		case FIDOTID:			return("FIDOTID");
+		case FIDOCTRL:			return("FidoCtrl");
+		case FIDOAREA:			return("FidoArea");
+		case FIDOSEENBY:		return("FidoSeenBy");
+		case FIDOPATH:			return("FidoPath");
+		case FIDOMSGID:			return("FidoMsgID");
+		case FIDOREPLYID:		return("FidoReplyID");
+		case FIDOPID:			return("FidoPID");
+		case FIDOFLAGS:			return("FidoFlags");
+		case FIDOTID:			return("FidoTID");
 
-		case RFC822HEADER:		return("RFC822HEADER");
-		case RFC822MSGID:		return("RFC822MSGID");
-		case RFC822REPLYID:		return("RFC822REPLYID");
-		case RFC822TO:			return("RFC822TO");
-		case RFC822FROM:		return("RFC822FROM");
-		case RFC822REPLYTO:		return("RFC822REPLYTO");
+		case RFC822HEADER:		return("RFC822Header");
+		case RFC822MSGID:		return("RFC822MsgID");
+		case RFC822REPLYID:		return("RFC822ReplyID");
+		case RFC822TO:			return("RFC822To");
+		case RFC822FROM:		return("RFC822From");
+		case RFC822REPLYTO:		return("RFC822ReplyTo");
 
-		case USENETPATH:		return("USENETPATH");
-		case USENETNEWSGROUPS:	return("USENETNEWSGROUPS");
+		case USENETPATH:		return("UsenetPath");
+		case USENETNEWSGROUPS:	return("UsenetNewsgroups");
 
-		case SMTPCOMMAND:		return("SMTPCOMMAND");
-		case SMTPREVERSEPATH:	return("SMTPREVERSEPATH");
+		case SMTPCOMMAND:		return("SMTPCommand");
+		case SMTPREVERSEPATH:	return("SMTPReversePath");
 
-		case SMTPSYSMSG:		return("SMTPSYSMSG");
+		case SMTPSYSMSG:		return("SMTPSysMsg");
 
 		case UNKNOWN:			return("UNKNOWN");
 		case UNKNOWNASCII:		return("UNKNOWNASCII");
@@ -2230,6 +2230,20 @@ char* SMBCALL smb_hfieldtype(ushort type)
 	}
 	sprintf(str,"%02Xh",type);
 	return(str);
+}
+
+ushort SMBCALL smb_hfieldtypelookup(const char* str)
+{
+	ushort type;
+
+	if(isdigit(*str))
+		return(strtol(str,NULL,0));
+
+	for(type=0;type<=UNUSED;type++)
+		if(stricmp(str,smb_hfieldtype(type))==0)
+			return(type);
+
+	return(UNKNOWN);
 }
 
 char* SMBCALL smb_dfieldtype(ushort type)
