@@ -2790,6 +2790,7 @@ JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		&& js_CreateClientObject(js_cx, js_glob, "client", client, client_socket)==NULL)
 		return(NULL);
 
+	/* Server */
 	if(props!=NULL
 		&& js_CreateServerObject(js_cx, js_glob, props)==NULL)
 		return(NULL);
