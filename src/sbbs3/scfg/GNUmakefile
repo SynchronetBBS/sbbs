@@ -21,7 +21,7 @@ ifndef DEBUG
 endif
 
 #USE_DIALOG =	1	# Dialog vesrion of UIFC
-#USE_FLTK =	1	# Use Windowed version
+USE_FLTK =	1	# Use Windowed version
 USE_CURSES	=	1	# Curses version of UIFC
 CC		=	gcc
 CCPP		=	gcc
@@ -58,8 +58,8 @@ ifdef USE_CURSES
 endif
 
 ifdef USE_FLTK
- LFLAGS +=	-L/usr/X11R6/lib -lfltk -lX11
- CFLAGS +=	-I/usr/X11R6/include -DUSE_FLTK
+ LFLAGS +=	-L../../../lib/fltk/$(os) -L/usr/X11R6/lib -lfltk -lX11
+ CFLAGS +=	-I../../../include/fltk -I/usr/X11R6/include -DUSE_FLTK
 endif
 
 # Math library needed
