@@ -13,36 +13,18 @@
 
 # $Id$
 
-#USE_CURSES	:=	1	#Use old curses UIFC implementation
-USE_UIFC32	:=	1	# Use new uifc32 implementation
-
-UIFC	=	../../uifc/
-XPDEV	=	../../xpdev/
-SBBS_SRC	=   ../
-
-NEED_UIFC	:=	1
-NEED_CTERM	:=	1
-
-include $(XPDEV)Common.gmake
-include $(SBBS_SRC)Common.gmake
-include $(UIFC)Common.gmake
+SRC_ROOT	=	../..
+include $(SRC_ROOT)/build/Common.gmake
 
 ifeq ($(os),sunos)
  LDFLAGS	+=	-lsocket -lnsl
 endif
 
-ifeq ($(os),netbsd)
- CFLAGS		+=	$(PTHREAD_CFLAGS)
- LDFLAGS	+=	$(PTHREAD_LDFLAGS)
-endif
+vpath %.c ..
 
-FORCE$(EXEODIR)/umonitor: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
+CFLAGS	+=	-I.. $(SMBLIB_CFLAGS) $(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) 
+LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS)
 
-$(EXEODIR)/umonitor: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
+$(UMONITOR): $(OBJS)
 	@echo Linking $@
-	@$(CC) $(LDFLAGS) $(OBJS) -o $@
-
--include $(LIBODIR)/.depend
--include $(EXEODIR)/.depend
--include $(LIBODIR)/*.d
--include $(EXEODIR)/*.d
+	@$(CC) $(LDFLAGS) $(OBJS) -o $@ $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
