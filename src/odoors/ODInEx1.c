@@ -2151,6 +2151,9 @@ malloc_error:
 			case kComMethodSocket:
 				od_control.od_com_method = COM_SOCKET;	/* Why are using doubling up constants here? */
 				break;
+		 case kComMethodStdIO:
+		    od_control.od_com_method = COM_STDIO;
+			break;
          default:
             ODInitError("No method of accessing serial port, cannot continue.\n");
             exit(od_control.od_errorlevel[1]);

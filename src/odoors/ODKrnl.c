@@ -343,7 +343,6 @@ ODAPIDEF void ODCALL od_kernel(void)
          ODKrnlHandleReceivedChar(ch, TRUE);
       }
    }
-#endif
 
 #ifdef ODPLAT_DOS
 check_keyboard_again:
@@ -648,6 +647,7 @@ statup:
          ODScrnEnableCaret(TRUE);
       }
    }
+#endif
 
    ODKrnlTimeUpdate();
 

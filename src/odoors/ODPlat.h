@@ -49,6 +49,10 @@
 #include "ODTypes.h"
 #include "ODGen.h"
 
+#ifdef ODPLAT_NIX
+#include <sys/time.h>
+#endif
+
 #ifdef ODPLAT_WIN32
 #include "windows.h"
 #endif /* ODPLAT_WIN32 */

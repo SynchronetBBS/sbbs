@@ -466,6 +466,7 @@ typedef struct
 #define COM_WIN32             3
 #define COM_DOOR32            4
 #define COM_SOCKET				5
+#define COM_STDIO			  6
 
 /* Flow control method (od_control.od_com_flow_control). */
 #define COM_DEFAULT_FLOW      0

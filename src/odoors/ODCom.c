@@ -63,8 +63,9 @@
 
 #include "OpenDoor.h"
 #ifdef ODPLAT_NIX
-#include <signal.h>
 #include <sys/ioctl.h>
+#include <signal.h>
+#include <termios.h>
 #endif
 #include "ODCore.h"
 #include "ODGen.h"
@@ -113,6 +114,12 @@
 #ifdef INCLUDE_WIN32_COM
 #include "windows.h"
 #endif /* INCLUDE_WIN32_COM */
+
+/* terminal variables */
+#ifdef INCLUDE_STDIO_COM
+struct termios tio_default;				/* Initial term settings */
+#endif
+
 
 #if defined(_WIN32) && defined(INCLUDE_SOCKET_COM)
 	#include <winsock.h>
@@ -167,7 +174,6 @@ typedef struct
 	SOCKET	socket;
 #endif
 } tPortInfo;
-
 
 /* ========================================================================= */
 /* Internal interrupt-driven serial I/O specific defintions & functions.     */
@@ -315,7 +321,6 @@ static int nRXHighWaterMark;            /* High water mark for queue size. */
 static int nRXLowWaterMark;             /* Low water mark for queue size. */
 static BYTE btFlowControl;              /* Flow control method. */
 static BOOL bStopTrans;                 /* Flag set to stop transmitting. */
-
 
 /* ----------------------------------------------------------------------------
  * ODComSetVect()                                      *** PRIVATE FUNCTION ***
@@ -1197,6 +1202,9 @@ tODResult ODComOpen(tPortHandle hPort)
    unsigned long ulQuotient, ulRemainder;
    BYTE btTemp;
 #endif /* INCLUDE_FOSSIL_COM || INCLUDE_UART_COM */
+#ifdef INCLUDE_STDIO_COM
+	struct termios tio_raw;
+#endif
    tPortInfo *pPortInfo = ODHANDLE2PTR(hPort, tPortInfo);
    int nPort;
 
@@ -1760,6 +1768,13 @@ no_fossil:
    if(pPortInfo->Method == kComMethodStdIO ||
       pPortInfo->Method == kComMethodUnspecified)
    {
+		if (isatty(fileno(stdin)))  {
+			tcgetattr(fileno(stdin),&tio_default);
+			tio_raw = tio_default;
+			cfmakeraw(&tio_raw);
+			tcsetattr(fileno(stdin),TCSANOW,&tio_raw);
+		}
+
       /* Set port state as open. */
       pPortInfo->bIsOpen = TRUE;
 
@@ -2767,7 +2782,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 			tv.tv_sec=0;
 			tv.tv_usec=0;
 
-			select_ret = select(1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
+			select_ret = select(2, &socket_set, NULL, NULL, bWait ? NULL : &tv);
 			if (select_ret == -1)
 				return (kODRCGeneralFailure);
 			if (select_ret == 0)

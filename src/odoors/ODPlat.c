@@ -806,7 +806,7 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 #ifdef ODPLAT_NIX
    tv.tv_sec=Milliseconds/1000;
    tv.tv_usec=(Milliseconds%1000)*1000;
-   select(0,NULL,NULL,NULL,tv);
+   select(0,NULL,NULL,NULL,&tv);
 #endif
 
    OD_API_EXIT();
