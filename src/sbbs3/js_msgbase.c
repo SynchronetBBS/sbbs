@@ -236,6 +236,22 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 		smb_hfield(msg, RECIPIENTNETADDR, (ushort)strlen(cp), cp);
 	}
 
+	if(JS_GetProperty(cx, hdr, "id", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, RFC822MSGID, (ushort)strlen(cp), cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "reply_id", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, RFC822REPLYID, (ushort)strlen(cp), cp);
+	}
+
 	if(JS_GetProperty(cx, hdr, "date", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)
 			return(FALSE);
@@ -311,88 +327,88 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_DefineProperty(cx, hdrobj, "number", INT_TO_JSVAL(msg.hdr.number)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "to",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.to))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "from",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.from))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "subject",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.subj))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "to_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.to_ext))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "from_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.from_ext))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "replyto",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.replyto))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "replyto_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.replyto_ext))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "to_agent",INT_TO_JSVAL(msg.to_agent)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "from_agent",INT_TO_JSVAL(msg.from_agent)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "replyto_agent",INT_TO_JSVAL(msg.replyto_agent)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "to_net_type",INT_TO_JSVAL(msg.to_net.type)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "to_net_addr"
 		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,net_addr(&msg.to_net)))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "from_net_type",INT_TO_JSVAL(msg.from_net.type)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "from_net_addr"
 		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,net_addr(&msg.from_net)))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "replyto_net_type",INT_TO_JSVAL(msg.replyto_net.type)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "replyto_net_addr"
 		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,net_addr(&msg.replyto_net)))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "forwarded",INT_TO_JSVAL(msg.forwarded)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "expiration_time",INT_TO_JSVAL(msg.expiration.time)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "expiration_zone",INT_TO_JSVAL(msg.expiration.zone)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "type", INT_TO_JSVAL(msg.hdr.type)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "version", INT_TO_JSVAL(msg.hdr.version)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "attr", INT_TO_JSVAL(msg.hdr.attr)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "auxattr", INT_TO_JSVAL(msg.hdr.auxattr)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "netattr", INT_TO_JSVAL(msg.hdr.netattr)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "when_written_time", INT_TO_JSVAL(msg.hdr.when_written.time)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "when_written_zone", INT_TO_JSVAL(msg.hdr.when_written.zone)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "when_imported_time", INT_TO_JSVAL(msg.hdr.when_imported.time)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "when_imported_zone", INT_TO_JSVAL(msg.hdr.when_imported.zone)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "thread_orig", INT_TO_JSVAL(msg.hdr.thread_orig)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "thread_next", INT_TO_JSVAL(msg.hdr.thread_next)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "thread_first", INT_TO_JSVAL(msg.hdr.thread_first)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "delivery_attempts", INT_TO_JSVAL(msg.hdr.delivery_attempts)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	l=smb_getmsgdatlen(&msg);
 	JS_DefineProperty(cx, hdrobj, "data_length", INT_TO_JSVAL(l)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "date"
 		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msgdate(msg.hdr.when_written,date)))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		,NULL,NULL,JSPROP_ENUMERATE);
 
 	/* Reply-ID (References) */
 	if(msg.reply_id!=NULL)
