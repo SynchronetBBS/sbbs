@@ -14,8 +14,9 @@
 	#include <io.h>	/* open */
 #endif
 
-int main(void)
+int main(int argc, char **argv)
 {
+	char *dir=".";
 	char *files[]={
                  "scfg.c"
 				,"scfgsys.c"
@@ -34,17 +35,22 @@ int main(void)
 	long l;
 	FILE *stream,*out;
 
-	if((out=fopen("scfghelp.dat","wb"))==NULL) {
-		printf("error opening scfghelp.dat\r\n");
+	if(argc>1)
+		dir=argv[1];
+
+	sprintf(str,"%s/scfghelp.dat",dir);
+	if((out=fopen(str,"wb"))==NULL) {
+		fprintf(stderr,"!error opening %s\n",str);
 		return(-1); }
 
-	if((ixb=open("scfghelp.ixb",O_WRONLY|O_CREAT|O_BINARY,S_IWRITE|S_IREAD))==-1) {
-		printf("error opening scfghelp.ixb\r\n");
+	sprintf(str,"%s/scfghelp.ixb",dir);
+	if((ixb=open(str,O_WRONLY|O_CREAT|O_BINARY,S_IWRITE|S_IREAD))==-1) {
+		fprintf(stderr,"!error opening %s\n",str);
 		return(-1); }
 
 	for(i=0;files[i];i++) {
 		if((stream=fopen(files[i],"rb"))==NULL) {
-			printf("error opening %s\r\n",files[i]);
+			fprintf(stderr,"!error opening %s\r\n",files[i]);
 			return(-3); }
 		printf("\r\n%s ",files[i]);
 		line=0;
