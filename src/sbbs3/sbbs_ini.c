@@ -156,12 +156,14 @@ void sbbs_read_ini(
 	const char* default_term_ansi;
 	const char*	default_cgi_temp;
 	const char*	default_dosemu_path;
+	const char* strInterface="Interface";
 	const char* strJavaScriptMaxBytes="JavaScriptMaxBytes";
 	const char* strSemFileCheckFrequency="SemFileCheckFrequency";
 	char*		ctrl_dir;
 	char*		temp_dir;
 	char		host_name[128];
 	char		value[MAX_VALUE_LEN];
+	ulong		interface_addr;
 	ulong		js_max_bytes;
 	ushort		sem_chk_freq;
 
@@ -185,6 +187,7 @@ void sbbs_read_ini(
 	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr,value));
 	js_max_bytes=iniGetInteger(fp,section,strJavaScriptMaxBytes,0);
 	sem_chk_freq=iniGetShortInt(fp,section,strSemFileCheckFrequency,0);
+	interface_addr=iniGetIpAddress(fp,section,strInterface,INADDR_ANY);
 																		
 	/***********************************************************************/
 	if(bbs!=NULL) {
@@ -195,12 +198,12 @@ void sbbs_read_ini(
 			*run_bbs=iniGetBool(fp,section,"AutoStart",TRUE);
 
 		bbs->telnet_interface
-			=iniGetIpAddress(fp,section,"TelnetInterface",INADDR_ANY);
+			=iniGetIpAddress(fp,section,"TelnetInterface",interface_addr);
 		bbs->telnet_port
 			=iniGetShortInt(fp,section,"TelnetPort",IPPORT_TELNET);
 
 		bbs->rlogin_interface
-			=iniGetIpAddress(fp,section,"RLoginInterface",INADDR_ANY);
+			=iniGetIpAddress(fp,section,"RLoginInterface",interface_addr);
 		bbs->rlogin_port
 			=iniGetShortInt(fp,section,"RLoginPort",513);
 
@@ -265,7 +268,7 @@ void sbbs_read_ini(
 			*run_ftp=iniGetBool(fp,section,"AutoStart",TRUE);
 
 		ftp->interface_addr
-			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
+			=iniGetIpAddress(fp,section,strInterface,interface_addr);
 		ftp->port
 			=iniGetShortInt(fp,section,"Port",ftp->port);
 		ftp->max_clients
@@ -310,7 +313,7 @@ void sbbs_read_ini(
 			*run_mail=iniGetBool(fp,section,"AutoStart",TRUE);
 
 		mail->interface_addr
-			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
+			=iniGetIpAddress(fp,section,strInterface,interface_addr);
 		mail->smtp_port
 			=iniGetShortInt(fp,section,"SMTPPort",IPPORT_SMTP);
 		mail->pop3_port
@@ -374,7 +377,7 @@ void sbbs_read_ini(
 			*run_services=iniGetBool(fp,section,"AutoStart",TRUE);
 
 		services->interface_addr
-			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
+			=iniGetIpAddress(fp,section,strInterface,interface_addr);
 
 		services->sem_chk_freq
 			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
@@ -407,7 +410,7 @@ void sbbs_read_ini(
 			*run_web=iniGetBool(fp,section,"AutoStart",FALSE);
 
 		web->interface_addr
-			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
+			=iniGetIpAddress(fp,section,strInterface,interface_addr);
 		web->port
 			=iniGetShortInt(fp,section,"Port",IPPORT_HTTP);
 		web->sem_chk_freq
