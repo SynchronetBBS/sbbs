@@ -141,25 +141,6 @@ unsigned _rotr (
 }
 #endif
 
-/******************************************************************************
- Displays characters locally
-******************************************************************************/
-static int lputs(int level, char *str)
-{
-    char tmp[256];
-    int i,j,k;
-
-
-	j=strlen(str);
-	for(i=k=0;i<j;i++)      /* remove CRs */
-		if(str[i]==CR && str[i+1]==LF)
-			continue;
-		else
-			tmp[k++]=str[i];
-	tmp[k]=0;
-	return(fputs(tmp,stdout));
-}
-
 /****************************************************************************/
 /* This is needed by load_cfg.c												*/
 /****************************************************************************/
@@ -173,7 +154,8 @@ int lprintf(int level, char *fmat, ...)
 	chcount=vsnprintf(sbuf,sizeof(sbuf),fmat,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
 	va_end(argptr);
-	lputs(level, sbuf);
+	truncsp(sbuf);
+	printf("%s\n",sbuf);
 	return(chcount);
 }
 

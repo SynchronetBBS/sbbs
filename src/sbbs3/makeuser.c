@@ -40,10 +40,9 @@
 scfg_t scfg;
 
 /****************************************************************************/
-/* Performs printf() through local assembly routines                        */
-/* Called from everywhere                                                   */
+/* This is needed by load_cfg.c												*/
 /****************************************************************************/
-int lprintf(char *fmat, ...)
+int lprintf(int level, char *fmat, ...)
 {
 	va_list argptr;
 	char sbuf[512];
@@ -52,10 +51,10 @@ int lprintf(char *fmat, ...)
 	va_start(argptr,fmat);
 	chcount=vsprintf(sbuf,fmat,argptr);
 	va_end(argptr);
-	printf("%s",sbuf);
+	truncsp(sbuf);
+	printf("%s\n",sbuf);
 	return(chcount);
 }
-
 
 char *usage="\nusage: makeuser [ctrl_dir] name [-param value] [...]\n"
 	"\nparams:\n"

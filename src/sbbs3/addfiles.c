@@ -63,26 +63,10 @@ char lib[LEN_GSNAME+1];
 #define SYNC_LIST	(1L<<13)
 #define KEEP_SPACE	(1L<<14)
 
-int lputs(char* str)
-{
-    char tmp[512];
-    int i,j,k;
-
-	j=strlen(str);
-	for(i=k=0;i<j;i++)      /* remove CRs */
-		if(str[i]==CR && str[i+1]==LF)
-			continue;
-		else
-			tmp[k++]=str[i];
-	tmp[k]=0;
-	return(fputs(tmp,stdout));
-}
-
 /****************************************************************************/
-/* Performs printf() through local assembly routines                        */
-/* Called from everywhere                                                   */
+/* This is needed by load_cfg.c												*/
 /****************************************************************************/
-int lprintf(char *fmat, ...)
+int lprintf(int level, char *fmat, ...)
 {
 	va_list argptr;
 	char sbuf[512];
@@ -91,7 +75,8 @@ int lprintf(char *fmat, ...)
 	va_start(argptr,fmat);
 	chcount=vsprintf(sbuf,fmat,argptr);
 	va_end(argptr);
-	lputs(sbuf);
+	truncsp(sbuf);
+	printf("%s\n",sbuf);
 	return(chcount);
 }
 
