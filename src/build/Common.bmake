@@ -223,7 +223,7 @@ smblib:
 	exit
 |
 
-$(CIOLIB-MT_LIB): ciolib-mt
+$(CIOLIB-MT): ciolib-mt
 ciolib-mt:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)
