@@ -442,17 +442,20 @@ typedef enum {						/* Values for xtrn_t.event				*/
 																			
 #define DSTSDABLEN	50		/* Length of dsts.dab file						*/
 																			
-							/* Console I/O Bits	(console)					*/
-#define CON_R_ECHO	 (1<<0)	/* Echo remotely								*/
-#define CON_R_ECHOX	 (1<<1)	/* Echo X's to remote user						*/
-#define CON_R_INPUT  (1<<2)	/* Accept input remotely						*/
-#define CON_L_ECHO	 (1<<3)	/* Echo locally              					*/
-#define CON_L_ECHOX	 (1<<4) /* Echo X's locally								*/
-#define CON_L_INPUT  (1<<5)	/* Accept input locally							*/
-#define CON_RAW_IN   (1<<8) /* Raw input mode - no editing capabilities		*/
-#define CON_ECHO_OFF (1<<10)/* Remote & Local echo disabled for ML/MF		*/
-#define CON_UPARROW  (1<<11)/* Up arrow hit - move up one line				*/
-#define CON_NO_INACT (1<<13)/* Console inactivity detection disabled		*/
+								/* Console I/O Bits	(console)				*/
+#define CON_R_ECHO		(1<<0)	/* Echo remotely							*/
+#define CON_R_ECHOX		(1<<1)	/* Echo X's to remote user					*/
+#define CON_R_INPUT		(1<<2)	/* Accept input remotely					*/
+#define CON_L_ECHO		(1<<3)	/* Echo locally              				*/
+#define CON_L_ECHOX		(1<<4)	/* Echo X's locally							*/
+#define CON_L_INPUT		(1<<5)	/* Accept input locally						*/
+#define CON_RAW_IN		(1<<8)	/* Raw input mode - no editing capabilities	*/
+#define CON_ECHO_OFF	(1<<10)	/* Remote & Local echo disabled for ML/MF	*/
+#define CON_UPARROW		(1<<11)	/* Up arrow hit - move up one line			*/
+#define CON_DOWNARROW	(1<<12)	/* Down arrow hit, exiting from getstr()	*/
+#define CON_NO_INACT	(1<<13)	/* Console inactivity detection disabled	*/
+#define CON_BACKSPACE	(1<<14)	/* Backspace hit, exiting from getstr()		*/
+#define CON_LEFTARROW	(1<<15)	/* Left arrow hit, exiting from getstr()	*/
 																			
 							/* Number of milliseconds						*/
 #define DELAY_HANGUP 250    /* Delay before modem drops carrier				*/
@@ -678,6 +681,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_COLD		(1L<<16)	/* Possible cold key mode					*/
 #define K_NOECHO	(1L<<17)	/* Don't echo input                         */
 #define K_TAB		(1L<<18)	/* Treat TAB key as CR						*/
+#define K_LEFTEXIT	(1L<<19)	/* Allow exit by backspacing/arrowing left	*/
+#define K_USEOFFSET	(1L<<20)	/* Use getstr_offset for cursor	position	*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NOABORT  	(1<<0)		/* Disallows abortion of a message          */
