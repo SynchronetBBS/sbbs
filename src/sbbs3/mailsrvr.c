@@ -2859,6 +2859,13 @@ static void smtp_thread(void* arg)
 				p+=strlen(NO_FORWARD);
 			}
 
+			if(*p==0) {
+				lprintf(LOG_WARNING,"%04d !SMTP NO RECIPIENT SPECIFIED"
+					,socket);
+				sockprintf(socket, "500 No recipient specified");
+				continue;
+			}
+
 			rcpt_name[0]=0;
 			SAFECOPY(rcpt_addr,p);
 
