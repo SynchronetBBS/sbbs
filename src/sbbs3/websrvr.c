@@ -1353,15 +1353,19 @@ static void js_parse_post(http_session_t * session)
 	lp=session->req.post_data;
 
 	while(key_len=strcspn(lp,"="))  {
-		lp[key_len]=0;
 		key=lp;
 		lp+=key_len;
-		lp++;
+		if(*lp) {
+			*lp=0;
+			lp++;
+		}
 		value_len=strcspn(lp,"&");
 		value=lp;
-		lp[value_len]=0;
 		lp+=value_len;
-		lp++;
+		if(*lp) {
+			*lp=0;
+			lp++;
+		}
 		unescape(value);
 		unescape(key);
 		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
@@ -1510,15 +1514,19 @@ static void js_parse_query(http_session_t * session, char *p)  {
 	lp=p;
 
 	while(key_len=strcspn(lp,"="))  {
-		lp[key_len]=0;
 		key=lp;
 		lp+=key_len;
-		lp++;
+		if(*lp) {
+			*lp=0;
+			lp++;
+		}
 		value_len=strcspn(lp,"&");
 		value=lp;
-		lp[value_len]=0;
 		lp+=value_len;
-		lp++;
+		if(*lp) {
+			*lp=0;
+			lp++;
+		}
 		unescape(value);
 		unescape(key);
 		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
