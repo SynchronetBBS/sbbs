@@ -180,20 +180,6 @@ LFLAGS		+=	-L./$(LIBODIR)
 SBBSLDFLAGS	:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./
 LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
 
-# Implicit C Compile Rule for utils
-$(EXEODIR)/%.o : %.c $(BUILD_DEPENDS)
-   ifndef bcc
-	@echo $(COMPILE_MSG) $<
-   endif
-	@$(CC) $(CFLAGS) -o $@ -c $<
-
-# Implicit C++ Compile Rule for utils
-$(EXEODIR)/%.o : %.cpp $(BUILD_DEPENDS)
-   ifndef bcc
-	@echo $(COMPILE_MSG) $<
-   endif
-	@$(CCPP) $(CFLAGS) -o $@ -c $<
-
 # Implicit C Compile Rule for SBBS
 $(LIBODIR)/%.o : %.c $(BUILD_DEPENDS)
    ifndef bcc
