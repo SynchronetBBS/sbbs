@@ -141,21 +141,21 @@ write(format("<th align=center width=10%>%sTime\r\n",font_color));
 writeln("</thead>");
 
 writeln("<tbody>");
-var user = new User(1);
+var u = new User(1);
 for(n=0;n<system.node_list.length;n++) {
 	write("<tr>");
 	write(format("<td align=right><font size=-1>%d",n+1));
 	if(system.node_list[n].status==NODE_INUSE) {
-		user.number=system.node_list[n].useron;
+		u.number=system.node_list[n].useron;
 		if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-			action=format("running %s",xtrn_name(user.curxtrn));
+			action=format("running %s",xtrn_name(u.curxtrn));
 		else
 			action=format(NodeAction[system.node_list[n].action]
 				,system.node_list[n].aux);
 		write(format(
 			"<td align=center><a href=mailto:%s>%s</a>"
-			,user.email
-			,user.alias
+			,u.email
+			,u.alias
 			));
 		write(format(
 			"<td><font color=yellow>%s"
@@ -164,15 +164,15 @@ for(n=0;n<system.node_list.length;n++) {
 		if(include_location)
 			write(format(
 				"<td align=left>%s"
-				,user.location
+				,u.location
 				));
 		if(include_age_gender) 
 			write(format(
 				"<td align=center>%d<td align=center>%s"
-				,user.age
-				,user.gender
+				,u.age
+				,u.gender
 				));
-		t=time()-user.logontime;
+		t=time()-u.logontime;
         if(t&0x80000000) t=0;
 		write(format(
 			"<td align=center>%u:%02u:%02u"

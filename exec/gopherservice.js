@@ -122,15 +122,15 @@ if(request=="" || request=='/') { /* "root" */
 
 switch(request) {
 	case "nodelist":
-		var user = new User(1);
+		var u = new User(1);
 		for(n=0;n<system.node_list.length;n++) {
 			write(format("Node %2d ",n+1));
 			if(system.node_list[n].status==NODE_INUSE) {
-				user.number=system.node_list[n].useron;
-				//write(format("%s (%u %s) ", user.alias, user.age, user.gender));
-				write(user.alias + " (" + user.age + " " + user.gender +") ");
+				u.number=system.node_list[n].useron;
+				//write(format("%s (%u %s) ", u.alias, u.age, u.gender));
+				write(u.alias + " (" + u.age + " " + u.gender +") ");
 				if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-					write("running %s" + user.curxtrn);
+					write("running %s" + u.curxtrn);
 				else
 					write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
 			} else

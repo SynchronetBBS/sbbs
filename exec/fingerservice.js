@@ -140,26 +140,26 @@ if(request=="") {	// no specific user requested, give list of active users
 		,include_age_gender ? dashes : ""
 		,include_age_gender ? dashes : ""
 		,dashes));
-	var user = new User(1);
+	var u = new User(1);
 	for(n=0;n<system.node_list.length;n++) {
 		if(system.node_list[n].status!=NODE_INUSE)
 			continue;
-		user.number=system.node_list[n].useron;
+		u.number=system.node_list[n].useron;
 		if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-			action=format("running %s",xtrn_name(user.curxtrn));
+			action=format("running %s",xtrn_name(u.curxtrn));
 		else
 			action=format(NodeAction[system.node_list[n].action]
 							,system.node_list[n].aux);
-		t=time()-user.logontime;
+		t=time()-u.logontime;
 		if(t&0x80000000) t=0;
 		write(format("%-25.25s %-31.31s%3u:%02u:%02u %3s %3s %4d\r\n"
-			,user.alias
+			,u.alias
 			,action
 			,Math.floor(t/(60*60))
 			,Math.floor(t/60)%60
 			,t%60
-			,include_age_gender ? user.age.toString() : ""
-			,include_age_gender ? user.gender : ""
+			,include_age_gender ? u.age.toString() : ""
+			,include_age_gender ? u.gender : ""
 			,n+1
 			));
 	}
@@ -233,17 +233,17 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			break;
 
 		case "nodelist":
-			var user = new User(1);
+			var u = new User(1);
 			for(n=0;n<system.node_list.length;n++) {
 				write(format("Node %2d ",n+1));
 				if(system.node_list[n].status==NODE_INUSE) {
-					user.number=system.node_list[n].useron;
-					write(format("%s (%u %s) ", user.alias, user.age, user.gender));
+					u.number=system.node_list[n].useron;
+					write(format("%s (%u %s) ", u.alias, u.age, u.gender));
 					if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-						write(format("running %s",xtrn_name(user.curxtrn)));
+						write(format("running %s",xtrn_name(u.curxtrn)));
 					else
 						write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
-					t=time()-user.logontime;
+					t=time()-u.logontime;
 					if(t&0x80000000) t=0;
 					write(format(" for %u minutes",Math.floor(t/60)));
 				} else
@@ -379,33 +379,33 @@ if(!usernum) {
 		exit();
 	}
 }
-var user = new User(usernum);
-if(user == null) {
+var u = new User(usernum);
+if(u == null) {
 	log(format("!INVALID USER NUMBER: %d",usernum));
 	exit();
 }
 
-uname = format("%s #%d", user.alias, user.number);
+uname = format("%s #%d", u.alias, u.number);
 write(format("User: %-30s", uname));
 if(include_real_name)
-	write(format(" In real life: %s", user.name));
+	write(format(" In real life: %s", u.name));
 write("\r\n");
 
-write(format("From: %s\r\n",user.location));
+write(format("From: %s\r\n",u.location));
 if(include_age_gender) {
 	birth=format("Birth: %s (Age: %u years)"
-		  ,user.birthdate,user.age);
+		  ,u.birthdate,u.age);
 	write(format("%-42s Gender: %s\r\n"
-		  ,birth,user.gender));
+		  ,birth,u.gender));
 }
 write(format("Shell: %-34s  Editor: %s\r\n"
-	  ,user.command_shell,user.editor));
+	  ,u.command_shell,u.editor));
 write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
-	  ,system.timestr(user.stats.laston_date)
+	  ,system.timestr(u.stats.laston_date)
 	  ,system.zonestr()
-	  ,user.connection
-	  ,user.host_name
-	  ,user.ip_address));
+	  ,u.connection
+	  ,u.host_name
+	  ,u.ip_address));
 
 done();
 
