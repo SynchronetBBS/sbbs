@@ -427,7 +427,7 @@ void sbbs_t::start_batch_download()
 			list_len=0;
 		else
 			list_len=strlen(list)+1;	/* add one for ' ' */
-		if((list=(char*)realloc(list,list_len+strlen(path)))==NULL) {
+		if((list=(char*)realloc(list,list_len+strlen(path)+1	/* add one for '\0'*/))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,"list",list_len+strlen(path));
 			return;
 		}
