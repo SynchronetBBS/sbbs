@@ -473,7 +473,10 @@ int main(int argc, char **argv, char** environ)
 	confp=stdout;
 	errfp=stderr;
 	nulfp=fopen(_PATH_DEVNULL,"w+");
-	statfp=stderr;
+	if(isatty(fileno(stderr)))
+		statfp=stderr;
+	else	/* if redirected, don't send status messages to stderr */
+		statfp=nulfp;
 
 	branch.limit=JAVASCRIPT_BRANCH_LIMIT;
 	branch.yield_freq=JAVASCRIPT_YIELD_FREQUENCY;
