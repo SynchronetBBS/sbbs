@@ -165,7 +165,6 @@ void sbbs_t::gettimeleft(void)
     char    str[128];
 	char 	tmp[512];
     int     i;
-    time_t  eventtime=0;
 	time_t	thisevent;
     long    tleft;
     struct  tm tm, last_tm;
@@ -177,8 +176,8 @@ void sbbs_t::gettimeleft(void)
 	if(useron.exempt&FLAG('T')) {   /* Time online exemption */
 		timeleft=cfg.level_timepercall[useron.level]*60;
 		if(timeleft<10)             /* never get below 10 for exempt users */
-			timeleft=10; }
-	else {
+			timeleft=10; 
+	} else {
 		tleft=(((long)cfg.level_timeperday[useron.level]-useron.ttoday)
 			+useron.textra)*60L;
 		if(tleft<0) tleft=0;
@@ -189,16 +188,19 @@ void sbbs_t::gettimeleft(void)
 		if(tleft>0x7fffL)
 			timeleft=0x7fff;
 		else
-			timeleft=tleft; }
+			timeleft=tleft; 
+	}
 
 	/* Timed event time reduction handler */
 
+	event_time=0;
 	for(i=0;i<cfg.total_events;i++) {
 		if(!cfg.event[i]->node || cfg.event[i]->node>cfg.sys_nodes)
 			continue;
 		if(!(cfg.event[i]->misc&EVENT_FORCE)
 			|| (!(cfg.event[i]->misc&EVENT_EXCL) && cfg.event[i]->node!=cfg.node_num)
-			|| !(cfg.event[i]->days&(1<<tm.tm_wday)))
+			|| !(cfg.event[i]->days&(1<<tm.tm_wday))
+			|| (cfg.event[i]->mdays!=0 && !(cfg.event[i]->mdays&(1<<tm.tm_mday)))) 
 			continue;
 
 		if(localtime_r(&cfg.event[i]->last,&last_tm)==NULL)
@@ -209,26 +211,25 @@ void sbbs_t::gettimeleft(void)
 		thisevent=mktime(&tm);
 		if(tm.tm_mday==last_tm.tm_mday && tm.tm_mon==last_tm.tm_mon)
 			thisevent+=24L*60L*60L;     /* already ran today, so add 24hrs */
-		if(!eventtime || thisevent<eventtime)
-			eventtime=thisevent; 
+		if(!event_time || thisevent<event_time)
+			event_time=thisevent; 
 	}
-	if(eventtime && now+(time_t)timeleft>eventtime) {    /* less time, set flag */
-		sys_status|=SS_EVENT;
-		timeleft=eventtime-now; }
-
-#if 0	// We don't support front-end mailers anymore
-	/* Event time passed by front-end */
-	if(next_event && (next_event<now || next_event-now<(time_t)timeleft)) {
-		timeleft=next_event-now;
-		sys_status|=SS_EVENT; }
-#endif
+	if(event_time && now+(time_t)timeleft>event_time) {    /* less time, set flag */
+		timeleft=event_time-now; 
+		if(!(sys_status&SS_EVENT)) {
+			lprintf("Node %d Time reduced (to %s) due to upcoming event on %s"
+				,cfg.node_num,sectostr(timeleft,tmp),timestr(&event_time));
+			sys_status|=SS_EVENT;
+		}
+	}
 
 	if((long)timeleft<0)  /* timeleft can't go negative */
 		timeleft=0;
 	if(thisnode.status==NODE_NEWUSER) {
 		timeleft=cfg.level_timepercall[cfg.new_level];
 		if(timeleft<10*60L)
-			timeleft=10*60L; }
+			timeleft=10*60L; 
+	}
 
 	if(gettimeleft_inside)			/* The following code is not recursive */
 		return;
@@ -238,7 +239,7 @@ void sbbs_t::gettimeleft(void)
 		logline(nulstr,"Ran out of time");
 		SAVELINE;
 		if(sys_status&SS_EVENT)
-			bputs(text[ReducedTime]);
+			bprintf(text[ReducedTime],timestr(&event_time));
 		bputs(text[TimesUp]);
 		if(!(sys_status&(SS_EVENT|SS_USERON)) && useron.cdt>=100L*1024L
 			&& !(cfg.sys_misc&SM_NOCDTCVT)) {
@@ -254,7 +255,9 @@ void sbbs_t::gettimeleft(void)
 				RESTORELINE;
 				gettimeleft();
 				gettimeleft_inside=0;
-				return; } }
+				return; 
+			} 
+		}
 		if(cfg.sys_misc&SM_TIME_EXP && !(sys_status&SS_EVENT)
 			&& !(useron.exempt&FLAG('E'))) {
 											/* set to expired values */
@@ -286,7 +289,8 @@ void sbbs_t::gettimeleft(void)
 				useron.flags4&=~cfg.expired_flags4; /* expired status */
 				useron.exempt&=~cfg.expired_exempt;
 				useron.rest|=cfg.expired_rest;
-				useron.expire=0; }
+				useron.expire=0; 
+			}
 			putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,str,10));
 			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,str,16));
 			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,str,16));
@@ -300,8 +304,10 @@ void sbbs_t::gettimeleft(void)
 			RESTORELINE;
 			gettimeleft();
 			gettimeleft_inside=0;
-			return; }
+			return; 
+		}
 		SYNC;
-		hangup(); }
+		hangup(); 
+	}
 	gettimeleft_inside=0;
 }
