@@ -64,7 +64,7 @@ void __fastcall TTextFileEditForm::FormShow(TObject *Sender)
         EditReplaceMenuItem->Enabled=false;
         ReplacePopupMenuItem->Enabled=false;
     }
-    Caption=Caption+AnsiString(" - ")+Filename.UpperCase();
+    Caption=Caption+AnsiString(" - ")+Filename;
     try {
         Memo->Lines->LoadFromFile(Filename);
     } catch(...) { }
