@@ -77,7 +77,7 @@ typedef struct {
     char    ctrl_dir[128];
     char	relay_server[128];
     char	dns_server[128];
-    char	reserved_path8[128];
+    char	default_user[128];
     char	reserved_path7[128];
     char	reserved_path6[128];
     char	reserved_path5[128];
