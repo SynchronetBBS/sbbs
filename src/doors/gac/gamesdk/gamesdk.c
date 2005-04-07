@@ -1232,14 +1232,12 @@ void command_line( void )
 		printf( "  -D - Specifiy dropfile path if different from %s.cfg\n", ibbsgametitle);
 		printf( "  -? - View all other optional parameters\n\n");
 		printf( "%s\n", od_control.od_prog_copyright);
-		printf( "         12235 China Lake Dr\n");
-		printf( "           Dallas, TX 75253\n\n");
-		printf( "(972) 286-1682 (Voice)\n");
-		printf( "(972) 557-6762 (Pegasus Flight BBS)\n");
+		printf( "(972) 226-0485 (Voice)\n");
 		printf( "Fidonet:  Bryan Turner@1:124/7013)\n");
+		printf( "Telnet:   telnet://pegasus.bbs.us (Pegasus Flight BBS)\n");
 		printf( "Internet: v@vbsoft.org\n");
-		printf( "WWW:      http://vagabond.virtualave.net\n");
-		printf( "This program is now POSTCARDWARE!");
+		printf( "WWW:      http://www.vbsoft.org\n");
+		printf( "This program is now FREEWARE!");
 
 		exit(1);
 
