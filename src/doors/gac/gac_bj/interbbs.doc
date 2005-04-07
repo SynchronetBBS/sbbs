@@ -1,0 +1,86 @@
+; INTERBBS.DOC - Sample Inter-BBS configuration file
+;
+; If you wish to use this file, rename it to INTERBBS.CFG and edit it.
+;
+; Any text following a semi-colon (;), and blank lines, are ignored.
+;
+; The league coordinator should gather the list of BBS's participating
+; in this Tournament and the needed information ( e.g. node number, 
+; location, name), choose a league ID (two letter), create/edit this file, 
+; and use the SENDCONFIG command line parameter to pass the INTERBBS.CFG
+; file to all systems listed in the League.  Those systems will automatically
+; recognize the incoming message and update the INTERBBS.CFG file on the 
+; remote system, as long as that system is configured for the correct league
+; ID.
+;
+; You may even list the configuration options in this file, and the settings
+; given here will override the local systems configuration.  This will insure
+; that all of the BBS's in the league are setup identically.
+;
+;------------------------------------------------------------------------------
+;
+; This section is to allow the League Coodinator to override all of the 
+; local configuration options for this League.  This will insure that every
+; BBS is setup identically.  If you do not want to override local options,
+; comment these lines out with a semi-colon (;).
+;
+; Total number of decks in the card shoe
+;
+Total_Decks 10
+;
+; The minimum bet in dollars
+;
+Min_Bet 100
+;
+; The maximum bet in dollars
+;
+Max_Bet 10000
+;
+; The default bet in dollars
+;
+Default_Bet 200
+;
+; The player's starting money in dollars
+;
+Start_money 10000
+;
+; The player's daily bonus for playing in dollars
+;
+Daily_money 1000
+;
+; The length of the Tournament (use a 0 to disable automatic resets)
+;
+Length 30
+;
+;------------------------------------------------------------------------------
+;
+; List of other systems running the door, which the door should be linked to.
+; For each system, the LinkWith, LinkNumber, LinkName and LinkLocation lines 
+; should be grouped together in order. The LinkWith line should specify the 
+; system's node address, the LinkNumber line is the number for this system
+; in the current league, the LinkName line should specify the system's name, 
+; and the LinkLocation line should specify the location of the system.
+;
+; The following is an example.
+;
+LinkWith     121:2110/510
+LinkNumber   1
+LinkName     The DogHouse BBS
+LinkLocation Plano, TX
+
+LinkWith     121:2110/101
+LinkNumber   2
+LinkName     RabbitLand II
+LinkLocation Dallas, Texas
+
+LinkWith     121:2110/301
+LinkNumber   3
+LinkName     Apollo
+LinkLocation Grand Prarie, TX
+
+LinkWith     121:2110/310
+LinkNumber   4
+LinkName     Chalkboard Village
+LinkLocation Dallas, TX
+;
+;------------------------------------------------------------------------------

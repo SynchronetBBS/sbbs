@@ -1,0 +1,28 @@
+Verison 2.10 To 2.30
+        - Remove the read-only attribute from the GAC_BJ*.EXE
+            attrib -r *.exe
+        - Unpack the contents of the archive into your GAC_BJ directory.
+        - If you want to use the NEW 32 bit Win95/NT version, unpack
+            WIN95NT.ZIP and read the WIN95NT.DOC file.
+
+Version 2.00 - Major re-Write with Major Changes
+    To upgrade, follow these instructions.        
+        - Unpack the contents of the archive into your GAC_BJ directory to
+          update the local game.
+        - Change your Batch files or BBS to support the new parameters:
+            /N x      - x is node number (required)
+            /D <path> - Path to drop file
+        - Start a league if you are not in one!  It's easy and fast, see 
+          the INTERBBS.DOC for details
+    If you are running this game as part of a league, do the following:
+        - Do the above local stuff.
+        - Run GAC_BJ INBOUND when you want to force processing of inbound
+          packets.
+        - Run GAC_BJ OUTBOUND when you want to force processing of outbound
+          packets (this will only send message information, not player data).
+        - Run GAC_BJ MAINTAIN in your nightly maintenance, or allow the auto-
+          maintenance to process all inbound packets, run maintenance and 
+          send all outbound packets with player data at once.
+        - Fill out the top part of the LEAGUES.DOC file and send it to us, so
+          we can list your league for others to join!
+
