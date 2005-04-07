@@ -24,7 +24,7 @@ void command_line(void)
 }
 
 // ***THE MAIN EXECUTABLE FOR THE LORD IGM
-void main(int argc, char *argv[], char *envp[] )
+int main(int argc, char *argv[])
 {
     char inFile[13], outFile[13], line[261], test[261];
     char *p, *curp;
@@ -49,7 +49,7 @@ void main(int argc, char *argv[], char *envp[] )
     else
     {
         command_line();
-        return;
+        return(1);
     }
 
     // open the file and search for the string #@file then display everything
@@ -58,7 +58,7 @@ void main(int argc, char *argv[], char *envp[] )
     if (access(inFile, 00) != 0)
     {
         printf("ERROR: %s does not exist!\n", inFile);
-        return;
+        return(1);
     }
 
     printf("Encrypting %s to %s\n\n", inFile, outFile);
@@ -67,13 +67,13 @@ void main(int argc, char *argv[], char *envp[] )
     if (in == NULL) 
     {
         printf("ERROR: Opening %s\n", inFile);
-        return;
+        return(1);
     }
     out = fopen(outFile, "wt");
     if (out == NULL) 
     {
         printf("ERROR: Opening %s\n", outFile);
-        return;
+        return(1);
     }
 
     fseek(in, 0, SEEK_SET);
@@ -105,7 +105,7 @@ void main(int argc, char *argv[], char *envp[] )
     fclose(in);
     fclose(out);
     printf("All done!\n");
-    return;
+    return(0);
 }
 
 void HelpEncrypt( char *line)
