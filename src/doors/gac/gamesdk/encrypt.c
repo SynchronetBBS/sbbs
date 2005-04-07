@@ -2,6 +2,7 @@
 data file using reverse string and swab.  Not the best encryption scheme,
 but it is very fast and fairly hard to recognize. */
 void command_line(void);
+void HelpDecrypt( char *line);
 void HelpEncrypt( char *line);
 
 #include <stdio.h>
@@ -17,9 +18,9 @@ void command_line(void)
 {
 
     printf("Copyright 1996, G.A.C. Computer Services\n");
-    printf("Give the filename without extension as parameter 1 or give\nboth FULL filenames as parameters 1 and 2.\n");
-    printf("e.g. ENCRYPT SHEPHELP  will read SHEPHELP.TXT and write SHEPHELP.DAT\n");
-    printf("e.g. ENCRYPT DISTASC.TMP DISTASC.ART  will read DISTASC.TMP and write DISTASC.ART\n");
+    printf("Give the filename without extension as parameter 1 or give\nboth FULL filenames as parameters 1 and 2.\nIf you add on a parameter 3 of -d, it will decrpyt\n");
+    printf("e.g. encrypt shephelp  will read shephelp.txt and write shephelp.dat\n");
+    printf("e.g. encrypt distasc.tmp distasc.art  will read distasc.tmp and write distasc.art\n");
 
     return;
 }
@@ -38,12 +39,17 @@ int main(int argc, char *argv[])
     if (argc == 2)
     {
     
-        sprintf(inFile, "%s.TXT", argv[1]);
-        sprintf(outFile, "%s.DAT", argv[1]);
+        sprintf(inFile, "%s.txt", argv[1]);
+        sprintf(outFile, "%s.dat", argv[1]);
     }
     else if (argc == 3)
     {
     
+        sprintf(inFile, "%s", argv[1]);
+        sprintf(outFile, "%s", argv[2]);
+    }
+    else if (argc == 4)
+    {
         sprintf(inFile, "%s", argv[1]);
         sprintf(outFile, "%s", argv[2]);
     }
@@ -64,13 +70,13 @@ int main(int argc, char *argv[])
 
     printf("Encrypting %s to %s\n\n", inFile, outFile);
 
-    in = fopen(inFile, "rt");
+    in = fopen(inFile, "rb");
     if (in == NULL) 
     {
         printf("ERROR: Opening %s\n", inFile);
         return(1);
     }
-    out = fopen(outFile, "wt");
+    out = fopen(outFile, "wb");
     if (out == NULL) 
     {
         printf("ERROR: Opening %s\n", outFile);
@@ -80,7 +86,7 @@ int main(int argc, char *argv[])
     fseek(in, 0, SEEK_SET);
     fseek(out, 0, SEEK_SET);
 
-    while (fscanf( in, "%[^\n]\n", line) == 1)
+    while (fscanf( in, "%[^\r\n]\r\n", line) == 1)
     {
         // make sure the string is an even number
         if (strlen(line)%2 != 0)
@@ -91,14 +97,20 @@ int main(int argc, char *argv[])
         {
             p = &line[2];
             // encrypt the line
-            HelpEncrypt(p);            
-            fprintf(out, "@#%s\n", p);
+            if(argc<4)
+            	HelpEncrypt(p);
+            else
+                HelpDecrypt(p);
+            fprintf(out, "@#%s\r\n", p);
         }
         else
         {
             
-            HelpEncrypt(line);            
-            fprintf(out, "%s\n", line);
+            if(argc<4)
+            	HelpEncrypt(p);
+            else
+                HelpDecrypt(p);
+            fprintf(out, "%s\r\n", line);
         }
 
     }
@@ -127,5 +139,24 @@ void HelpEncrypt( char *line)
     }
 
     return;
+}
+
+void HelpDecrypt( char *line)
+{
+	char *curp;
+
+	curp = &line[0];
+	while (curp[0] != '\0') {
+		if (curp[0] > 0 )
+			curp[0] -= 128;
+		else
+			curp[0] += 128; //should be 127
+		curp++;
+	}
+
+	swab(line, line, sizeof(line));
+	strcpy(line, strrev(line));
+
+	return;
 }
 
