@@ -1744,9 +1744,9 @@ static BOOL get_request_headers(http_session_t * session)
 	}
 
 	if(!(session->req.vhost[0]))
-		SAFECOPY(session->req.vhost, scfg.sys_inetaddr);
+		SAFECOPY(session->req.vhost, startup->host_name);
 	if(!(session->req.host[0]))
-		SAFECOPY(session->req.host, scfg.sys_inetaddr);
+		SAFECOPY(session->req.host, startup->host_name);
 	return TRUE;
 }
 
