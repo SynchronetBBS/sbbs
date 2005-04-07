@@ -1,0 +1,378 @@
+Using the Windows 95/NT 32 bit versions of this software should almost be 
+the same as using the 16 bit versions.  Both versions support all of the
+same command line parameters and use the same data files.  It is possible
+to use both the 16bit and 32bit versions on different nodes of your system.
+
+The standard documentation for this door will be the same for the 32bit and 
+16bit versions.  Just replease the EXENAME with EXENAME32 (or batch file 
+name).  However, there are a few things you MUST consider in order for the
+32bit version to function properly.  Please read over the following sections
+from the Open Doors Manual (by Brian Pirie) and the door should work well.
+
+You will find the 32bit executable, ODOORS60.DLL and DTRON.EXE in the
+archive WIN95NT.ZIP.
+
+Gregory Campbell
+
+RUNNING WINDOWS 95/NT DOOR PROGRAMS
+===============================================================================
+OpenDoors 6.00 Manual                                           End of Page 26
+
+-------------------------------------------------------------------------------
+
+               This section provides information specific to running door
+               programs that are compiled with the Win32 version of OpenDoors.
+               Please feel free to include this information in your program's
+               manual.
+
+               Since the Win32 version of OpenDoors resides in a DLL,
+               ODOORS60.DLL, this file must be present on any system where your
+               program will be run. Although Windows 95/NT will find this file
+               if it is located in the same directory as your program's
+               executable file, it is a good idea to install this DLL into the
+               Windows system directory. This way, all programs using the Win32
+               version of OpenDoors can share the same copy of the DLL,
+               reducing the amount of disk space that is used.
+
+               The required setup for a Windows 95/NT door will depend upon
+               what BBS system it is being run under. If you the program is
+               being run under a native Windows 95/NT BBS system, then ideally
+               that BBS system will provide the ability to pass a live serial
+               port handle to the door program, on the program's command line.
+               Otherwise, you should run the door from a batch file, following
+               the instructions provided below for running the program under a
+               DOS-based BBS system. If the BBS system is able to pass a live
+               Window communications handle on the door's command line, and you
+               are using the OpenDoors standard command-line processing
+               function (od_parse_cmd_line()), then you can just setup the BBS
+               to run the program directly, using the command line:
+
+                    YourProgramName.exe -handle xxxxxxxxxx
+
+               where xxxxxxxxx is the serial port handle, in decimal format.
+               You do not need to use the start command, nor the DTRON utility,
+               and you do not have to change the COM<n>AutoAssign setting in
+               the system.ini file.
+
+               If you are running the Win32 door program under a DOS-based BBS
+               system, or a Windows-based BBS system that is unable to pass a
+               live serial port handle to the door program, then follow these
+               steps:
+
+               1.Add a line of the form "COM<n>AutoAssign=<x>" to the [386Enh]
+                 section of your system.ini file. Here, <n> specifies the
+                 serial port number that the BBS's modem is connected to, and
+                 <x> will usually be 0. For example, if your modem is
+                 connected to COM1, you would add a line such as
+                 "COM1AutoAssign=0" (sans quotes). You will then have to re-
+                 start your computer for this change to take effect. If you do
+                 not do this, the Windows-based door program will not be able
+                 to access the modem.
+
+
+===============================================================================
+OpenDoors 6.00 Manual                                           End of Page 27
+
+
+NOTE: If you need to use this series of steps, make your own batch file and
+      call the door program (or batch file) from your batch file.  This way
+      when new releases are sent out, your startup batch file will not be
+      overwritten.  - Gregory
+
+               2.Setup the BBS software to run the Windows-based door program
+                 just as you would any other door program. You will probably
+                 want to do this from a batch file. The command line that runs
+                 the Windows program should be of the form:
+
+                    start /w /m ProgramName.exe [any command line
+                 parameters]
+
+                 This will cause the Windows-based door program to start in
+                 minimized mode, and cause the calling MS-DOS session to wait
+                 until the Windows program exits before continuing. If you do
+                 not wish the program to be started in minimized mode, remove
+                 the /m from the command line. If you attempt to start the
+                 door program by calling it directly, rather than using the
+                 "start /w" command, the BBS software will immediately start
+                 again, cause it to attempt to run simultaneously with the
+                 door program.
+
+               3.After running the start command, use DTRON.EXE or a similar
+                 utility to re-enable DTR detection by the modem. Normally,
+                 this command line will be of the form:
+
+                    dtron /port x /bps y
+
+                 Where x is the serial port number (0 for COM1, 1 for COM2,
+                 etc.) and y is the locked bps rate. For example, if your
+                 serial port is locked at 38400 bps and is connected to COM2,
+                 you would use:
+
+                    dtron /port 1 /bps 38400
+
+                 For full information on the DTRON utility, simply type the
+                 command line:
+
+                    dtron /help
+
+                 You may freely redistribute the DTRON utility that is
+                 included in this package with your program.
+
+               Additional information on the Win32 version of OpenDoors, and
+               further explanation of some of these steps, is provided in
+               chapter 6.
+
+
+NOTE: Much of the following information is probably not needed to run this
+      program.  However, I included it here for your reference. -Gregory
+
+CHAPTER 6 - SPECIAL TOPICS
+
+ADDITIONAL INFORMATION ON THE WIN32 VERSION
+-------------------------------------------------------------------------------
+
+               This section provides additional information on the Win32
+               version of OpenDoors that isn't found elsewhere in this manual.
+               If you are working with the Win32 version of OpenDoors, you
+               should take the time to read this entire section. You should
+               also read the sections in chapter 3 that describe how to compile
+               and run Win32 programs that use OpenDoors.
+
+               The Win32 version of OpenDoors has been designed to be as
+               similar as possible to the DOS version of OpenDoors. This means
+               that where possible, you can compile the same source code to
+               produce both a DOS and a Windows program. However, if you are
+               porting an existing DOS OpenDoors-based program to the Win32
+               platform, there are some important things to keep in mind.
+
+               The first thing to note is that under DOS, the program's
+               execution begins in the main() function, whereas under Windows,
+               it begins in the WinMain() function. To allow the same source
+               file to build both DOS and Windows versions you can use
+               conditional compilation. OpenDoor.h defines a constant of the
+               form ODPLAT_xxx, indicating which version of OpenDoors is being
+               used. Currently, this will be either ODPLAT_DOS, or
+               ODPLAT_WIN32. However, if a OS/2 or Unix version of OpenDoors
+               were created, they would use definitions such as ODPLAT_OS2, or
+               ODPLAT_UNIX. Under the Win32 version, you should pass the
+               nCmdShow parameter that is passed to WinMain into OpenDoors,
+               through od_control.od_cmd_show. If you do not do this, the
+               program will always start with the main window maximized,
+               regardless of what the user has requested. Also, you will
+               probably want to use the new od_parse_cmd_line() function in
+               both DOS and Windows programs, to allow standard command-line
+               options to be processed. The od_parse_cmd_line() function
+               accepts command line information in the same format as it is
+               passed to the main or WinMain() function. So, the general
+               structure of an OpenDoors program that can be compiled under
+               either DOS or Win32 now becomes:
+
+===============================================================================
+OpenDoors 6.00 Manual                                          End of Page 220
+
+               /* Add your own #includes here. */
+
+               #include "opendoor.h"
+
+               #ifdef ODPLAT_WIN32
+               int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                  LPSTR lpszCmdLine, int nCmdShow)
+               #else
+               int main(int argc, char *argv[])
+               #endif
+               {
+                    /* Add local variables here. */
+
+               #ifdef ODPLAT_WIN32
+                  od_control.od_cmd_show = nCmdShow;
+
+                  od_parse_cmd_line(lpszCmdLine);
+               #else
+                  od_parse_cmd_line(argc, argv);
+               #endif
+
+                    /* Add the rest of your program after this point. */
+               }
+
+               If you are porting existing OpenDoors programs over to the Win32
+               version of OpenDoors, another issue that you will have to pay
+               careful attention to is the fact that you are now working in the
+               32-bit world. While 32-bit programming under a flat memory model
+               has many advantages (no more 64K segments and related
+               limitations, for example), you must be aware that the size of
+               basic data types that you are used to using may have changed.
+               For example, an int is now 32-bits wide instead of 16-bits wide.
+               One of the places where this difference becomes very important
+               is if you are performing file-I/O by directly dumping a
+               structure to or from disk using functions such as fread() and
+               fwrite(). In this case, you must declare your structures using
+               types that are of the same size between the 16-bit and 32-bit
+               worlds, in order for your file formats to be compatible between
+               the DOS and Win32 versions of your program. For example, the
+               EX_VOTE.C example program declares its structure using fixed-
+               sized types that are always available to any program including
+               "opendoor.h". These types are the following size, regardless of
+               what platform you are compiling under:
+
+               INT8     - 8-bit signed integer.
+               INT16    - 16-bit signed integer.
+               INT32    - 32-bit signed integer.
+               BYTE     - 8-bit unsigned integer.
+               WORD     - 16-bit unsigned integer.
+               DWORD    - 32-bit unsigned integer.
+
+
+===============================================================================
+OpenDoors 6.00 Manual                                          End of Page 221
+
+               (NOTE: Obviously, the many details of 32-bit programming and
+               Windows programming are beyond the scope of this document. For
+               more information on the issues discussed here, you will probably
+               wish to consult other sources of information on Win32
+               programming.)
+
+               As you are probably aware, the Win32 edition of OpenDoors makes
+               extensive use of multithreading. The number of threads will
+               depend on what mode OpenDoors is operating in. In some
+               situations, all of the following threads may exist:
+
+               - The client thread(s), which executes the code that you write
+                 in your program, along with the OpenDoors API functions.
+               - The local screen thread, which is responsible for drawing
+                 your program's output on the screen, and receiving input from
+                 the local keyboard.
+               - The frame window thread, which handles the OpenDoors menus,
+                 toolbar, status bar and sysop function keys.
+               - The remote input thread, which receives input from the serial
+                 port and adds it to OpenDoors common local/remote input
+                 queue.
+               - The carrier detection thread, which blocks and only executes
+                 if the carrier detect signal goes low.
+               - The time update thread, which updates the user's time
+                 remaining online, and monitors user timeouts.
+
+               Since most of these threads only execute when the operating
+               system determines that there is actually something for them to
+               do, the Win32 version of OpenDoors provides very high
+               performance and responsiveness.
+
+               You may also want to make use of multithreading directly within
+               your program. If you do this, please note that while you may use
+               threads to perform background processing, OpenDoors requires
+               that you only call OpenDoors API functions from one thread.
+
+               If you wish to customize the information that is displayed in
+               the Help|About dialog box (including your program's name and
+               copyright information), provide your own application icon, or
+               add online help to the help menu, refer to the sections in the
+               manual on the following od_control variables:
+
+                    od_control.od_app_icon
+                    od_control.od_help_callback
+                    od_control.od_prog_name
+                    od_control.od_prog_version
+                    od_control.od_prog_copyright
+
+               The section that describes how to run Windows based door
+               programs under DOS-based BBS package indicates that
+               COM<n>AutoAssign=0 should be set in the system.ini file. The
+               explanation for this is as follows: The default value for this
+===============================================================================
+OpenDoors 6.00 Manual                                          End of Page 222
+
+               setting in Windows 95 is -1, which prevents any Windows-based
+               program from accessing a serial port which has previously been
+               used by a non-Windows-based program, until the window that
+               program was running in is closed. By setting this value to 0,
+               you are allowing the Windows-based door program to immediately
+               use the modem, even while the MS-DOS session (VM) is still
+               active. A value of <x> greater than 0 will allow Windows-based
+               programs to access the serial port, only if the DOS-based
+               program has not accessed the serial port for at least <x>
+               seconds. For example, the default setting in Windows 3.1 was
+               COM1AutoAssign=2, which allowed Windows-based programs to access
+               the serial port if no DOS program had used it for at least 2
+               seconds.
+
+               The section that describes how to run Windows based door
+               programs under DOS-based BBS package also indicates that the
+               DTRON utility should be run after the start command returns. The
+               reason for this is that when a Windows program exits and closes
+               the serial port (by calling the CloseHandle() function), Windows
+               95 lowers the DTR line on the serial port. Most modems are
+               configured to respond to this by hanging up on the remote user.
+               From talking to other people, it seems that this "feature" (or
+               fundamental design flaw, depending on how you want to look at
+               it) is unique to Windows 95, and won't effect OpenDoors when
+               running under Windows NT. However, the majority of people will
+               undoubtedly be using the Win32 version of OpenDoors under
+               Windows 95. This is unfortunate, since the Win32 communications
+               facilities are otherwise _very_ well designed. There is a rumor
+               that Microsoft's next upgrade to Windows 95 will fix this
+               problem. However, I must stress that this is only a rumor, and
+               that I haven't received any confirmation about this from
+               Microsoft.
+
+               OpenDoors currently provides two solutions to this problem.
+
+               First of all, OpenDoors has the ability to use an already open
+               serial port handle, if that information is supplied to it.
+               Hopefully, all Windows 95-based BBS software will provide the
+               option of running a door program with the serial port still
+               open, and allow you to pass that serial port handle on the door
+               program's command line. OpenDoors allows the serial port handle
+               to be passed on the command line, or set directly in the
+               od_control structure, as is described later in this manual. On
+               BBS systems where this form of hot sharing of the serial port is
+               supported, the serial port can remain open at all times, and so
+               the CloseHandle() problem is avoided.
+
+               This means that the only situation where the CloseHandle()
+               problem still has to be dealt with is when OpenDoors is running
+               on a Windows 95 system and OpenDoors has to open the serial port
+               itself (and so must close the serial port before exiting). This
+               would be the case for most MS-DOS based BBS systems running
+===============================================================================
+OpenDoors 6.00 Manual                                          End of Page 223
+
+               under Windows 95, unless some intermediate layer is provided. By
+               default, in this situation OpenDoors will disable DTR response
+               by the modem just before it closes the serial port, by sending
+               the AT&D0 command to the modem. The exact sequence of commands
+               used by OpenDoors to do this is specified by the
+               od_control.od_disable_dtr string. This DTR response disabling
+               may be turned off by setting the DIS_DTR_DISABLE
+               od_control.od_disable flag. Since many programs (OpenDoors
+               included) assume that they can hangup the modem by lowering the
+               DTR signal, a small utility will usually be run after the door,
+               which first raises the DTR signal again, and then re-enables DTR
+               response by the modem. Such a utility is included in this
+               package, named DTRON.EXE. I wrote the DTRON utility so that you
+               can freely redistributed it with your programs.
+
+               So, to summarize, the DTR disabling by OpenDoors and subsequent
+               reenabling by DTRON is only required for the Win32 version of
+               OpenDoors running under Windows 95 when the modem is configured
+               to hangup if the DTR signal is lowered, and the BBS software
+               does not have the ability to pass a live serial port handle to a
+               door program. Setting COM<n>AutoAssign in system.ini is only
+               required for the Win32 version of OpenDoors when it is being
+               called from an MS-DOS session that has previously accessed the
+               serial port.
+
+               Note that the Win32 version of OpenDoors requires Windows 95 or
+               Windows NT. It will not run under Windows 3.x, even with Win32s.
+               This is because OpenDoors makes use of the Windows 95/NT
+               multitasking and multithreading services that are not available
+               under Win32s.
+
+
+
+
+
+
+
+
+
+
+
