@@ -1,0 +1,126 @@
+; INTERBBS.DOC - Sample Inter-BBS configuration file for GAC_CD games.
+;
+; In this file CD refers to the two letter code for the particular game.
+; e.g.  if the executable name is GAC_FC.EXE then CD in this file is really
+;       FC.  
+;
+; Be sure to look at the INTERBBS.DOC file for the game you are configuring.  
+; All GAC_CD games use the same Inter-BBS routines and setup, but some may 
+; have added options.
+;
+; Outbound files have the format "CDxxyyyy.zzz" where xx is the "to bbs"
+; number (two digits), yyyy is a time stamp, and zzz is the league tag.
+; e.g.  CD014558.GSC would be a file for BBS 1 in league GSC (4558 is the
+;       time stamp)
+;
+; If you wish to use this file, rename it to INTERBBS.CFG and edit it.
+;
+; Any text following a semi-colon (;), and blank lines, are ignored.
+;
+; The league coordinator should gather the list of BBS's participating
+; in this Tournament and the needed information ( e.g. node number, 
+; location, name), choose a league ID (three letter), create/edit this file, 
+; and send it (as a file attache) to each member.  The members should place
+; it in their GAC_CD directory.  It is only necessary to manually send the 
+; INTERBBS.CFG file to NEW members once, this is a security precaution to 
+; make sure a system will not receive an INTERBBS.CFG from an invalid source.
+;
+; Anytime you add a league member, send that member the INTERBBS.CFG file 
+; manually.  All the other systems will receive the file during maintenance.
+;
+; NEW! You may now automatically update all of the systems in your league
+; by copying the new files to the OUT directory under your game directory
+; (create it if it does not exist).  These files will be archived up 
+; during outbound or maintenance along with any other outbound information.  
+; For this to work, everyone must be using the GAC_CD.BAT file (it will 
+; handle the read only attributes on the GAC_CD.EXE).
+;
+; You may even list the configuration options in this file, and the settings
+; given here will override the local systems configuration.  This will insure
+; that all of the BBS's in the league are setup identically.
+;
+;------------------------------------------------------------------------------
+;
+; This section is to allow the League Coodinator to override all of the 
+; local configuration options for this League.  This will insure that every
+; BBS is setup identically.  If you do not want to override local options,
+; comment these lines out with a semi-colon (;).
+;
+; Maximum Number of games/day
+;
+Max_Games 5
+;
+; The length of the Tournament (use a 0 to disable automatic resets)
+;
+Length 30
+;
+; If you want a simple routing system set UseWagonWheel to TRUE.  This will
+; cause ALL BBSs to send information to the first system listed below (the 
+; hub of the wheel).  This is called a wagon wheel since all members call
+; the hub directly and resemble spokes on a wheel (use your imagination :)
+Use_Wagon_Wheel FALSE
+;------------------------------------------------------------------------------
+;
+; List of other systems running the door, which the door should be linked to.
+; For each system, the LinkWith, LinkNumber, LinkName, LinkLocation, and 
+; LinkHost lines should be grouped together in order. 
+; LinkWith     - the system's node address
+; LinkNumber   - a unique Inter-BBS number for this system
+; LinkName     - The name of the BBS
+; LinkLocation - Where the BBS is located
+; LinkHost     - The LinkNumbers for the systems this BBS should Hub for
+;
+; The LinkHost is very powerfull and allows the LC to control routing easily
+; and effectively.  If a BBS is not going to be hubbing for any other BBSs,
+; enter a 0 on the LinkHost line.  Otherwise, enter the numbers of the BBSs
+; the system should hub for with a space between each (e.g. LinkHost 2 3 to
+; route information to system numbers 2 and 3).  
+;
+; The routing system below is an example of a larger league.
+;                                  1
+;                                 / \
+;                               4     3
+;                            / | | \    \
+;                          6   8 9  11    5
+;
+; BBS Numbers 6,8,9,11, and 5 would have:
+; LinkHost 0
+; BBS Number 1 would have:
+; LinkHost 4 3
+; BBS Number 4 would have:
+; LinkHost 6 8 9 11
+; and BBS Number 3 would have:
+; LinkHost 5
+;
+; The following example has a routing structure like this:
+;                              BBS 1
+;                             /      \
+;                         BBS 2      BBS 3
+;                        /
+;                     BBS 4
+;
+LinkWith     121:2110/510
+LinkNumber   1
+LinkName     The DogHouse BBS
+LinkLocation Plano, TX
+LinkHost     2 3
+
+LinkWith     121:2110/101
+LinkNumber   2
+LinkName     RabbitLand II
+LinkLocation Dallas, Texas
+LinkHost     4
+
+LinkWith     121:2110/301
+LinkNumber   3
+LinkName     Apollo
+LinkLocation Grand Prarie, TX
+LinkHost     0
+
+LinkWith     121:2110/310
+LinkNumber   4
+LinkName     Chalkboard Village
+LinkLocation Dallas, TX
+LinkHost     0
+;
+;------------------------------------------------------------------------------

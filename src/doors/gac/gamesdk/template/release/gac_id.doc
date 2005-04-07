@@ -1,0 +1,358 @@
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿ 
+³                          Tournament GAMENAME (tm)                         ³ 
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+   Please read these doc files before attempting to install this program.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿ 
+³                              Description                                  ³ 
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   
+   Includes both 16 bit DOS and 32 bit WIN95/NT versions (GAC_BJ32.EXE)!
+
+   Tournament GAMENAME is an impressive addition to any BBS.  This game is
+   especially well suited to multinode BBS systems, since it allows players
+   on multiple nodes to participate in the game at the same time.  
+
+   
+   
+   This BBS game also supports Inter-BBS playing through the fidonet
+   technology.  This game uses a routing system identical to Inter-LORD and
+   very similiar to BREs HOST routing system.  All routing is handled by
+   the League Coordinator.
+
+   For quick installation, see the INSTALLATION section.  
+
+   BBS SUPPORT:
+
+	The following BBS Systems are automatically supported.  If your
+	system is not listed, please notify me, and send me the format of
+	your dropfile (or find a converter)
+
+	- Remote Access                 - Renegade
+	- QuickBBS                      - PC-Board
+	- Maximus                       - Opus
+	- Wildcat!                      - WWIV
+	- Spitfire                      - SuperBBS
+	- Telegard                      - RBBS-PC
+	- TriTel                        - GAP
+	- Synchronet (Use DORINFOx.DEF)   
+	
+   COMMUNICATIONS:
+	 
+	- Support for FOSSILS, internal communications to 115,200, and 
+	  non-standard communication ports.  
+	- Monitors carrier detect signal and returns to BBS
+	- Correctly detects a keyboard timeout and returns to BBS
+	- Monitors the time remaining, and returns to BBS
+	- Function keys for sysops to alter user time, chat, etc...
+
+   MULTINODE SUPPORT
+
+	- File locking and sharing using SHARE.EXE for ALL critical files
+	  including the data and log files.
+	- Gives up time slices for popular multitaskers including Desqview, 
+	  OS/2 and Windows
+	- Individual logfiles for each node.
+	
+   INTER-BBS SUPPORT
+
+	- Extremely simple for Sysops to set up, and extremely simple for 
+	  the League Coodinator to maintain the league.
+	- The League Coordinator handles all of the routing in the INTERBBS.CFG
+	  file (see INTERBBS.DOC for info).  All other sysops simply sit back
+	  and enjoy the game.
+	- The league coordinator can automatically update all other systems by
+	  placing the files that have changed into the OUT directory under the
+	  GAC_ID directory.
+	- Automatically does maintenance when the first player enters the game
+	  or when the GAC_ID MAINTAIN parameter is used (only does it once/day)
+	- Anyone in the league can develop a routing bulletin by using the 
+	  GAC_ID ROUTE command.  This will list version numbers, route times, and
+	  more about each BBS in the league.
+	- All player data is shared among the BBS systems, and users may send
+	  telegrams to each other from within the game using colors and a
+	  ANSI editor (if they have ANSI).
+	- All BBSs in the League can be forced to use the same configuration
+	  parameters, thus insuring all BBSs are running identical games.
+	- Checks for duplicate players, and only allows a given user name 
+	  (their real name) to be used on one system at a time.
+	- Will not import information from BBS not listed in the current
+	  INTERBBS.CFG file.
+	- The league coordinator can cause a reset of the game at any time
+	  by simply using a command line switch (GAC_ID RESET)
+	- Any SysOp in the League can use the SENDALL command line paramter
+	  to send a personal NetMail to all of the other SysOps in a League.
+	  Excellent for coordinators to keep members informed
+	- A BBS can particpate in multiple leagues, as long as each league
+	  has a unique three letter League ID.
+
+   MISCELANEOUS:
+
+	- An easy to use configuration program built in, eliminating the need
+	  to edit configuration files by hand (GAC_ID CONFIG)
+	- Creates bulletins showing high scores (GAC_ID BULLETINS)
+	- Support for ANSI, AVATAR, ASCII and RIP (currently only uses RIP to
+	  set a 23x80 screen font, thus insuring that the user does not have a
+	  squashed screen effect.)
+	- All artwork is now in .ART files to save disk space!
+	- Written in C/C++ for the fastest, smallest code possible
+	- Extensively tested both internally and through betas.
+	- Reasonable prices
+
+
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿ 
+³                  Copyright Notice and Program Disclaimer                  ³ 
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ This software is Copyright 1995 and owned by G.A.C. Computer Services.  
+ G.A.C. Computer Services grants to the user a nonexclusive license to use 
+ this software solely for its internal business purposes.  The user may not 
+ commercially distribute, sublicense, resell, or otherwise transfer for any 
+ consideration, or reproduce for any such purposes, the software or any 
+ modification or derivation thereof, either alone or in conjunction with any 
+ other product or program.  Further, the user may not modify the software or 
+ its support files for any purpose.
+
+
+ THIS SOFTWARE IS PROVIDED TO THE USER ''AS IS.''  G.A.C. COMPUTER SERVICES 
+ MAKES NO WARRANTIES, EITHER EXPRESS OR IMPLIED, WITH RESPECT TO THIS  
+ SOFTWARE AND/OR ASSOCIATED MATERIALS PROVIDED TO THE USER, INCLUDING 
+ BUT NOT LIMITED TO ANY WARRANTY OF MERCHANTABILITY, FITNESS FOR A 
+ PARTICULAR PURPOSE OR AGAINST INFRINGEMENT. G.A.C. COMPUTER SERVICES DOES 
+ NOT WARRANT THAT THE FUNCTIONS CONTAINED IN THE SOFTWARE WILL MEET YOUR 
+ REQUIREMENTS, OR THAT THE OPERATION OF THE SOFTWARE WILL BE 
+ UNINTERRUPTED OR ERROR-FREE, OR THAT DEFECTS IN THE SOFTWARE WILL BE 
+ CORRECTED.  FURTHERMORE, G.A.C. COMPUTER SERVICES DOES NOT WARRANT OR MAKE 
+ ANY REPRESENTATIONS REGARDING THE USE OR THE RESULTS OF THE USE OF THE 
+ SOFTWARE OR ANY DOCUMENTATION PROVIDED HEREWITH IN TERMS OF THEIR 
+ CORRECTNESS, ACCURACY, RELIABILITY, OR OTHERWISE.  NO ORAL OR WRITTEN 
+ INFORMATION OR ADVICE GIVEN BY G.A.C. COMPUTER SERVICES OR A G.A.C. COMPUTER 
+ SERVICES AUTHORIZED REPRESENTATIVE SHALL CREATE A WARRANTY OR IN ANY WAY 
+ INCREASE THE SCOPE OF THIS WARRANTY.
+
+ LIMITATION OF LIABILITY -- G.A.C. COMPUTER SERVICES AND ITS LICENSORS ARE 
+ NOT LIABLE FOR ANY CLAIMS OR DAMAGES WHATSOEVER, INCLUDING PROPERTY DAMAGE, 
+ PERSONAL INJURY, INTELLECTUAL PROPERTY INFRINGEMENT, LOSS OF PROFITS, OR 
+ INTERRUPTION OF BUSINESS, OR FOR ANY SPECIAL, CONSEQUENTIAL OR 
+ INCIDENTAL DAMAGES, HOWEVER CAUSED, WHETHER ARISING OUT OF BREACH OF 
+ WARRANTY, CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY, OR 
+ OTHERWISE.
+
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿ 
+³                  List of included files in the Archive                    ³ 
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	GAC_ID.EXE   - The Main executable
+	GAC_ID.DOC   - This Documentation file
+	FILE_ID.DIZ  - A short description of this program
+        WIN95NT.DOC  - Information on the Windows 32 bit version
+        WIN95NT.ZIP  - Windows 32bit specific files
+	REGISTER.DOC - A Registration form for G.A.C. Computer Services 
+			   Products.
+	INTERBBS.DOC - A Sample INTERBBS.CFG file for your viewing, also
+			   contains all of the documentation for listing the
+			   BBS's in a league.
+	HISTORY.DOC  - Details about the corrections in official releases
+	*.ART        - Artwork files (ASCII, ANSI, and RIP files)
+
+	NOTE: Other data files may be created in support of the software,
+		  please install the program in it's own directory.
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿ 
+³                          Installation Instructions                        ³ 
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	NOTE: SHARE.EXE should be loaded if you want to run this program.
+
+	A Windows 95/NT versions has been included in the archive.  To use
+	the 32bit version unpack the WIN95NT.ZIP file and read the file 
+        WIN95NT.DOC.
+		
+	1 - Unpack all of these files into their own directory, a good name 
+		is GAC_ID.
+
+		e.g. md c:\GAC_ID
+		
+
+	2 - change to the directory where the files were placed and execute
+		GAC_ID with the CONFIG option.
+
+		e.g. GAC_ID CONFIG
+
+	3 - Answer the questions about your system, and then exit.  Be sure
+		to save the information
+
+	4 - Setup your BBS program to run GAC_ID.BAT and pass the current node
+		number to the program as the first parameter.  If needed the path 
+		to your drop file should be the second parameter if you can not 
+		specify it in the configuration program (e.g. each node has a 
+		different path).
+
+		e.g.  GAC_ID.BAT %#     is placed on the EXEC line in Synchronet
+
+		NOTE: The batch file must be used so auto-updating of your GAC_ID.EXE
+		file can take place during maintenance.  Please call the batch file
+		anytime you access Tournament GAMENAME.
+
+		If you need batch files to run the program, pass the node number
+		to the RUN.BAT file.  The RUN.BAT file should contain the 
+		following lines of code.
+
+		@Echo off
+		REM RUN.BAT for GAC_ID
+		REM
+		REM Change to the GAC_ID directory
+		c:
+		cd\GAC_ID
+		REM Run GAC_ID passing the node number
+		call GAC_ID %1
+		REM
+		REM Change back to your bbs directory
+		cd\bbs
+
+	5 - If you want to make sure that maintenance occurs at midnight (good
+		for sending long distance IBBS packets at night) then use the 
+		MAINTAIN parameter.  Otherwise maintenance will take place the first
+		time a user logs into the game.
+
+		e.g.   c:
+		   cd\GAC_ID
+		   GAC_ID MAINTAIN
+	
+	6 - Test the game locally and remotely.  If you encounter a problem,
+		please notify us, so we may help.
+
+		e.g. GAC_ID 3 local     will cause local playing on node 3
+
+	NOTE: For Inter-BBS play, see the next section
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³                              Inter-BBS Setup                              ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	First thing you need to do is find a Tournament GAMENAME league to
+	join and apply or find some boards who want to start a new league.
+	
+	If you are starting a new league, then someone must be the League 
+	Coordinator (BBS #1).  This person is responsible for creating the 
+	INTERBBS.CFG file that you will be using, deciding which values will 
+	be used for the game options, and sending the INTERBBS.CFG file to 
+	all particpating systems manually the first time or by using the 
+	SENDCONFIG command line parameter anytime after the first time.
+
+	Remember, everyone participating must be running a fidonet compatible
+	mailer, or find some way to pass the files to each other.
+
+	NOTE: If you are the league coodinator, see the INTERBBS.DOC file for
+	information on its format.
+
+	Everyone in the league will have to perform the following steps.
+
+	1 - Notify the coordinator that you want to join his/her league.
+
+	2 - Fill in the extra Inter-BBS options in the configuration file
+		using the CONFIG command line option.  This information includes  
+		your league tag, netmail address, inbound file directory and
+		netmail directory.
+
+	3 - Get the INTERBBS.CFG file from your league coordinator, it will
+		have to be file attached to you the first time and you will place
+		it in your GAC_ID directory.  All future updates to that file will
+		be handled automatically by the league coordinator.
+
+	4 - You can have your mailer run GAC_ID INBOUND whenever 
+		mail is received to immediately import the incoming Inter-BBS 
+		files.  Otherwise, the inbound files will be processed during the
+		automaintenance.
+		
+		e.g.  c:
+		  cd\GAC_ID
+		  call GAC_ID.bat INBOUND
+		  call GAC_ID.bat OUTBOUND
+
+	5 - Enjoy your Inter-BBS game!
+
+
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³                          Command Line Parameters                          ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	This door responds to the following command line parameters:
+
+   Parameter 1:
+
+	[Node #]  - The current node number should be passed to the program
+			when it is being run as a door or in local mode.
+	
+	CONFIG    - Invoke the internal configuration program for specifying
+			sysop configurable options.
+
+	MAINTAIN  - Perform the nightly maintenance.  This includes updating
+			the Tournamnet day, processing inbound Inter-BBS messages,
+			and creating outbound Inter-BBS messages.  This can only be
+			used once per day.  No effect if automaintenance occured.
+
+	BULLETINS - Creates ANSI and ASC score bulletins for your use
+
+	SENDALL   - Send a NetMail message to each SysOp in the League.        
+
+	RESET     - Used by the League Coodinator (BBS #1) to immediately
+			reset all BBS's in the League.  May also be used to 
+			reset a local game.
+	
+	INBOUND   - Process inbound Inter-BBS packages immediately
+
+	OUTBOUND  - Send outbound Inter-BBS packages immediately
+
+	ROUTE     - Create a report showing routing times, versions, etc...
+
+	DELETE    - Remove a player from the database
+
+	Parameter 2:
+
+	LOCAL     - Forces the door to run in local mode, you will be prompted
+			for the name to use in the game.
+
+	BINKLEY   - Used to make sure Binkley Terminal sysops have the outbound
+				files deleted correctly.
+
+	[Path]    - The path to your drop file may be passed as the second 
+			parameter.  This will override anything in the config
+			file.
+
+
+
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³                    Registration and technical support                     ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	See the enclosed REGISTER.DOC file for instructions on how to 
+	register and obtain technical support.  We now accept VISA/MC/AMEX!
+
+  More Inter-BBS card games, board games and skill games are coming in 1997!
+
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³                              Acknowledgements                             ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	Special thanks go to all those people that helped with the alpha
+	and beta testing of this product.  Specifically the following people
+	need to be acknowledged:
+
+	Bryan Turner - for being the best beta tester around, and for
+		supporting BBS Gaming through Linear-Net.  For more information
+		about Linear-Net send him a note at 1:124/7013.
+
+	Brian Pirie - For creating the Open Doors library of functions,
+		distributing and selling it as shareware.
+
+
+
+Tournament GAMENAME is a trademark of G.A.C. Computer Services and may
+not be used for any reason without prior written permission.
+
