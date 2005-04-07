@@ -39,6 +39,8 @@ load("../web/lib/leftnav_html.ssjs");
 
     if((host = http_request.vhost)==undefined)
         host = http_request.host;
+    if(host==undefined || !host.length)
+        host = system.host_name;
 
     template.additional_services ='[' + ("telnet".link("telnet://"+host)) + '] ';
     template.additional_services+='[' + ("rlogin".link("rlogin://"+host)) + '] ';
