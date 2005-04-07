@@ -11,6 +11,7 @@ void HelpEncrypt( char *line);
 #define FALSE 0
 #define TRUE 1
 #include "genwrap.h"
+#include "filewrap.h"
 
 void command_line(void)
 {
