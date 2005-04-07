@@ -1742,6 +1742,11 @@ static BOOL get_request_headers(http_session_t * session)
 			}
 		}
 	}
+
+	if(!(session->req.vhost[0]))
+		SAFECOPY(session->req.vhost, scfg.sys_inetaddr);
+	if(!(session->req.host[0]))
+		SAFECOPY(session->req.host, scfg.sys_inetaddr);
 	return TRUE;
 }
 
@@ -1749,9 +1754,7 @@ static BOOL get_fullpath(http_session_t * session)
 {
 	char	str[MAX_PATH+1];
 
-	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
-		session->req.vhost[0]=0;
-	if(session->req.vhost[0]) {
+	if(session->req.vhost[0] && startup->options&WEB_OPT_VIRTUAL_HOSTS) {
 		safe_snprintf(str,sizeof(str),"%s/%s",root_dir,session->req.vhost);
 		if(isdir(str))
 			safe_snprintf(str,sizeof(str),"%s/%s%s",root_dir,session->req.vhost,session->req.physical_path);
