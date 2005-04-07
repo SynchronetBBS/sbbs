@@ -41,6 +41,8 @@
 
 #if defined(_WIN32)
 	#include <windows.h>	/* SYSTEMTIME and GetLocalTime() */
+#else
+	#include <sys/time.h>	/* stuct timeval, gettimeofday() */
 #endif
 
 #include "datewrap.h"	/* struct defs, verify prototypes */
