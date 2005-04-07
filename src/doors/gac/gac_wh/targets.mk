@@ -1,4 +1,4 @@
-GAC_WH	=	$(EXEODIR)$(DIRSEP)gac_wh$(EXEFILE)
+GAC_WH	=	$(EXEODIR)$(DIRSEP)gac_wh$(EXE_SUFFIX)$(EXEFILE)
 
 all: xpdev-mt ciolib-mt $(MTOBJODIR) $(EXEODIR) $(GAC_WH)
 
