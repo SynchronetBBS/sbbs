@@ -1237,7 +1237,7 @@ void command_line( void )
 		printf( "(972) 286-1682 (Voice)\n");
 		printf( "(972) 557-6762 (Pegasus Flight BBS)\n");
 		printf( "Fidonet:  Bryan Turner@1:124/7013)\n");
-		printf( "Internet: vagabond@darktech.org\n");
+		printf( "Internet: v@vbsoft.org\n");
 		printf( "WWW:      http://vagabond.virtualave.net\n");
 		printf( "This program is now POSTCARDWARE!");
 
