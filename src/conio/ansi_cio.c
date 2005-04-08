@@ -362,7 +362,6 @@ static void ansi_keyparse(void *par)
 	char	*p;
 	int		timeout=0;
 	int		timedout=0;
-	int		sval;
 	int		unknown=0;
 
 	seq[0]=0;
