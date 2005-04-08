@@ -2363,6 +2363,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			if((i+2)%((width-2-pad-pad)*2)==0 && (hbuf[j+1]==LF) || (hbuf[j+1]==CR && hbuf[j+1]==LF))
 				i-=2;
 		}
+		else
+			i-=2;
 	}
 	i=0;
 	p=textbuf;
