@@ -2320,7 +2320,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	lines=0;
 	k=0;
 	for(j=0;j<len;j++) {
-		k++;
+		if(hbuf[j]!=CR)
+			k++;
 		if((hbuf[j]==LF) || (k>width-2-pad-pad && (hbuf[j+1]!='\n' && hbuf[j+1]!='\r'))) {
 			k=0;
 			lines++;
