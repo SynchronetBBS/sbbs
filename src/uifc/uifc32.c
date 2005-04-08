@@ -2364,7 +2364,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			textbuf[i]=hbuf[j];
 			textbuf[i+1]=inverse ? (bclr|(cclr<<4))
 				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4));
-			if((i+2)%((width-2-pad-pad)*2)==0 && (hbuf[j+1]==LF) || (hbuf[j+1]==CR && hbuf[j+1]==LF))
+			if((i+2)%((width-2-pad-pad)*2)==0 && (hbuf[j+1]==LF) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
 				i-=2;
 		}
 		else
