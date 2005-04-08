@@ -3640,7 +3640,7 @@ INT16 SendArchive(char *file, INT16 type)
 
 		char archive[128], line[261], keyword[15];
 	FILE *arcfile;
-	INT16 found=FALSE, done=FALSE;
+	INT16 found=FALSE, done=FALSE, encrypted=FALSE;
 	char *p;
 
 	if (type == RIP_FILE)
@@ -3684,6 +3684,10 @@ INT16 SendArchive(char *file, INT16 type)
 		p = &line[2];
 		if (strnicmp(line, "@#", 2) == 0)
 		{
+			if (strnicmp(p, keyword, strlen(keyword)) == 0) {
+				found = TRUE;
+				break;
+			}
 			HelpDecrypt(p);
 
 			// if there are blanks on the end remove them...
@@ -3695,8 +3699,10 @@ INT16 SendArchive(char *file, INT16 type)
 */
 			if (p[0] == '\0')
 				found = FALSE;
-			else if (stricmp(p , keyword) == 0 ) 
+			else if (stricmp(p , keyword) == 0 ) {
 				found = TRUE;
+				encrypted = TRUE;
+			}
 			
 		}
 	}
@@ -3717,7 +3723,8 @@ INT16 SendArchive(char *file, INT16 type)
 			{
 				// display the line
 				// od_disp_emu(line, TRUE);
-				HelpDecrypt(line);
+				if(encrypted)
+					HelpDecrypt(line);
 				od_disp_emu(line, TRUE);
 				//if (type == ASC_FILE)
 					od_printf("\r\n");
