@@ -2320,11 +2320,11 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	lines=0;
 	k=0;
 	for(j=0;j<len;j++) {
-		k++;
 		if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~' || hbuf[j]==1 || hbuf[j]=='`'))
-			k--;
+			continue;
 		if(hbuf[j]==CR)
-			k--;
+			continue;
+		k++;
 		if((hbuf[j]==LF) || (k>width-2-pad-pad && (hbuf[j+1]!='\n' && hbuf[j+1]!='\r'))) {
 			k=0;
 			lines++;
