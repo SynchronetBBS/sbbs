@@ -21,7 +21,7 @@ load("../web/lib/leftnav_html.ssjs");
     hours  = Math.floor(total/(60*60));
     min     =(Math.floor(total/60))%60;
     sec=total%60;
-
+    
     template.uptime = format("%u days, %u:%02u:%02u",days,hours,min,sec);
     template.logons_today = system.stats.logons_today;
     template.posted_today = system.stats.messages_posted_today;
@@ -30,12 +30,12 @@ load("../web/lib/leftnav_html.ssjs");
     template.new_users_today = system.stats.new_users_today;
     template.email_sent_today = system.stats.email_sent_today;
     template.downloaded_today = format("%lu bytes in %lu files" ,system.stats.bytes_downloaded_today ,system.stats.files_downloaded_today);
-    template.total_timeon = system.stats.total_timeon;
-    template.total_logons = system.stats.total_logons;
-    template.total_messages = system.stats.total_messages;
-    template.total_users = system.stats.total_users;
-    template.total_email = system.stats.total_email;
-    template.total_files = system.stats.total_files;
+    template.total_timeon = addcommas(system.stats.total_timeon);
+    template.total_logons = addcommas(system.stats.total_logons);
+    template.total_messages = addcommas(system.stats.total_messages);
+    template.total_users = addcommas(system.stats.total_users);
+    template.total_email = addcommas(system.stats.total_email);
+    template.total_files = addcommas(system.stats.total_files);
 
     if((host = http_request.vhost)==undefined)
         host = http_request.host;
@@ -51,3 +51,21 @@ load("../web/lib/leftnav_html.ssjs");
 
 write_template("main.inc");
 write_template("footer.inc");
+
+function addcommas(num)
+{
+    num = '' + num;
+    if (num.length > 3) {
+        var mod = num.length % 3;
+        var output = (mod > 0 ? (num.substring(0,mod)) : '');
+        for (i=0 ; i < Math.floor(num.length / 3); i++) {
+            if ((mod == 0) && (i == 0))
+                output += num.substring(mod+ 3 * i, mod + 3 * i + 3);
+            else
+                output+= ',' + num.substring(mod + 3 * i, mod + 3 * i + 3);
+        }
+        return (output);
+    }
+    else
+        return num;
+}
