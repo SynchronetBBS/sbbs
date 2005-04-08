@@ -381,17 +381,11 @@ void clear2bol(void)
 
 void clear2eol(void)
 {
-	char *buf;
-	int i,j;
-
 	clreol();
 }
 
 void clearscreen(char attr)
 {
-	char *buf;
-	int x,y,j;
-
 	if(cterm.scrollback!=NULL) {
 		cterm.backpos+=cterm.height;
 		if(cterm.backpos>cterm.backlines) {
@@ -811,7 +805,6 @@ void ctputs(char *buf)
 {
 	char *outp;
 	char *p;
-	char outline[80];
 	int		oldscroll;
 	int		cx;
 	int		cy;
@@ -893,9 +886,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 {
 	unsigned char ch[2];
 	unsigned char prn[BUFSIZE];
-	int	key;
-	int i,j,k;
-	char	*ret;
+	int j,k;
 	struct text_info	ti;
 	int	olddmc;
 
