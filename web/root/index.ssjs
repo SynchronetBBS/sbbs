@@ -1,6 +1,7 @@
 /* $Id$ */
 
 load("../web/lib/template.ssjs");
+load("../web/lib/siteutils.ssjs");
 
 var sub='';
 
@@ -41,13 +42,38 @@ load("../web/lib/leftnav_html.ssjs");
         host = http_request.host;
     if(host==undefined || !host.length)
         host = system.host_name;
-
-    template.additional_services ='[' + ("telnet".link("telnet://"+host)) + '] ';
-    template.additional_services+='[' + ("rlogin".link("rlogin://"+host)) + '] ';
-    template.additional_services+='[' + ("ftp".link("ftp://"+host)) + '] ';
-    template.additional_services+='[' + ("irc".link("irc://"+host)) + '] ';
-    template.additional_services+='[' + ("news".link("news://"+host)) + '] ';
-    template.additional_services+='[' + ("gopher".link("gopher://"+host)) + '] ';
+    
+    if(telnet_port=="23")
+      telnet_port="";
+    else 
+      telnet_port = ":" + telnet_port;
+    if(rlogin_port=="513")
+      rlogin_port="";
+    else 
+      rlogin_port = ":" + rlogin_port;
+    if(ftp_port=="21")
+      ftp_port="";
+    else 
+      ftp_port = ":" + ftp_port;
+    if(irc_port=="6667")
+      irc_port="";
+    else 
+      irc_port = ":" + irc_port;
+    if(nntp_port=="119")
+      nntp_port="";
+    else
+      nntp_port = ":" + nntp_port;
+    if(gopher_port=="70")
+      gopher_port='';
+    else 
+      gopher_port = ":" + gopher_port;        
+        
+    template.additional_services ='[' + ("telnet".link("telnet://"+host +telnet_port)) + '] ';
+    template.additional_services+='[' + ("rlogin".link("rlogin://"+host +rlogin_port)) + '] ';
+    template.additional_services+='[' + ("ftp".link("ftp://"+host +ftp_port)) + '] ';
+    template.additional_services+='[' + ("irc".link("irc://"+host +irc_port)) + '] ';
+    template.additional_services+='[' + ("news".link("news://"+host +nntp_port)) + '] ';
+    template.additional_services+='[' + ("gopher".link("gopher://"+host +gopher_port)) + '] ';
 
 write_template("main.inc");
 write_template("footer.inc");
