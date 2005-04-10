@@ -3,7 +3,7 @@
 <head>
 <title>%%title%%</title>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
-<link rel="stylesheet" href="/synchronet.css" type="text/css" />
+<link rel="stylesheet" href="@@Theme_CSS_File@@" type="text/css" />
 </head>
 <body class="msg">
 <pre>@@body@@</pre>
