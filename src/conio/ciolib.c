@@ -698,7 +698,7 @@ int ciolib_cprintf(char *fmat, ...)
 		ciolib_cputs(str);
 	else
 		ret=EOF;
-#ifndef _WIN32
+#ifndef _MSC_VER
 	free(str);
 #endif
     return(ret);
