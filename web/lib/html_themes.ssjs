@@ -16,5 +16,3 @@ if(http_request.query.force_ssjs_theme != undefined) {
 	if(http_request.query.force_ssjs_theme[0] != undefined && Themes[http_request.query.force_ssjs_theme[0]] != undefined)
 		CurrTheme=http_request.query.force_ssjs_theme[0];
 }
-
-writeln("Theme: "+CurrTheme);
