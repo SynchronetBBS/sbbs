@@ -31,17 +31,18 @@
 <td colspan="4">
 <table class="msg2" width="100%">
 <tr>
-    <td class="msgnavleft">@@prevlink@@</td>
-    <td class="msgnavmid">@@JS:template.can_post?'<a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a>':'Reply'@@</td>
-    @@JS:template.can_delete?'<td class="msgnavmid"><a href="management.ssjs?Action=Delete+Selected+Message%28s%29&amp;msg_sub='+template.sub.code+'&amp;number='+template.hdr.number+'">Delete</a></td>':'<td class="msgnavmid">Delete</td>'@@
-    <td class="msgnavright">@@nextlink@@</td>
+    <td width="1%" class="msgnavleft" nowrap="nowrap">@@prevlink@@</td>
+    <td width="1%" class="msgnavmid">@@JS:template.can_post?'<a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a>':'Reply'@@</td>
+    <td width="1%"class="msgnavmid">@@JS:template.can_post?'<a href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New</a>':'Post New'@@</td>
+    @@JS:template.can_delete?'<td width="1%" class="msgnavmid"><a href="management.ssjs?Action=Delete+Selected+Message%28s%29&amp;msg_sub='+template.sub.code+'&amp;number='+template.hdr.number+'">Delete</a>':'Delete'@@</td>
+    <td width="1%" class="msgnavright" nowrap="nowrap">@@nextlink@@</td>
 </tr>
-@@JS:if(template.replyto!=undefined && sub!='mail') '<tr class="msg"><td class="msg" colspan="4"><b>In Reply To: </b><a href="msg.ssjs?msg_sub='+sub+'&amp;message='+template.replyto.number+'">'+template.replyto.subject+'</a> ('+template.replyto.from+')</td></tr>'; else '';@@
+@@JS:if(template.replyto!=undefined && sub!='mail') '<tr class="msg"><td class="msg" colspan="5"><b>In Reply To: </b><a href="msg.ssjs?msg_sub='+sub+'&amp;message='+template.replyto.number+'">'+template.replyto.subject+'</a> ('+template.replyto.from+')</td></tr>'; else '';@@
 @@JS:if(template.replies==undefined || template.replies.length<=0) '<!--'; else '';@@
-<tr class="msg"><td class="msg" colspan="4"><b>Replies: </b><<REPEAT replies>><a href="msg.ssjs?msg_sub=^^sub:code^^&amp;message=^^replies:number^^">%%replies:subject%%</a> (%%replies:from%%)<<END REPEAT replies>></td></tr>
+<tr class="msg"><td class="msg" colspan="5"><b>Replies: </b><<REPEAT replies>><a href="msg.ssjs?msg_sub=^^sub:code^^&amp;message=^^replies:number^^">%%replies:subject%%</a> (%%replies:from%%)<<END REPEAT replies>></td></tr>
 @@JS:if(template.replies==undefined || template.replies.length<=0) '-->'; else '';@@
 @@JS:if(template.attachments==undefined) '<!--'; else '';@@
-<tr class="msg"><td colspan="4"><b>Attachments:</b><br />
+<tr class="msg"><td colspan="5"><b>Attachments:</b><br />
 <<REPEAT attachments>>
 <a href="attachments.ssjs/^^sub:code^^/^^hdr:number^^/^^attachments:name^^">%%attachments:name%%</a><br />
 <<END REPEAT attachments>>
