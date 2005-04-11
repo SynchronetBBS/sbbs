@@ -1,7 +1,11 @@
 /* CSS Document */
 /* $Id$ */
 
-body{ font-family: Arial,sans-serif; color: #333333; line-height: 1; margin: 0px; padding: 0px; background: #cccccc url("/graphics/bg_grad.jpg") fixed; }
+body{ font-size:10pt; font-family: Arial,sans-serif; color: #333333; line-height: 1; margin: 0px; padding: 0px; background: #cccccc url("/graphics/bg_grad.jpg") fixed; }
+
+a { color: #000099; font-size: normal; font-weight: bold; text-decoration:none; }
+a:visited{ color: #336699; font-size: normal; font-weight: bold; text-decoration:none; }
+a:hover{ text-decoration: underline; }
 
 h2 { text-align:left; padding-top: 5px; }
 
@@ -25,11 +29,11 @@ td.rtn{ text-align:right; width:1%; background-color: #CCCCCC; background-image:
 
 #Top_Link{ position: absolute; }
 
-.tlink { font-size: small; color: #7788FF; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; }
+.tlink { font-size: smaller; color: #7788FF; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; }
 
 .terror { font-size: small; color: #FF0000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; }
 
-a.tlink, a.tlink:visited{ font-size: small; color: #000000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; border-right: 1px solid #8FB8BC; text-decoration:none; }
+a.tlink, a.tlink:visited{ font-size: smaller; color: #000000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; border-right: 1px solid #8FB8BC; text-decoration:none; }
 
 a.tlink2, a.tlink2:visited{ color: #000000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; text-decoration:none; }
 
@@ -54,27 +58,36 @@ td.main { width:100%; background-color: #DDDDDD; border-left: 3px solid #ccd2d2;
 table.welcome_main { margin-left:auto; margin-right: auto; border-width: 0px; }
 
 table.main_nodelist { margin-left: auto; margin-right: auto; width: 95%; background-color: #CCCCCC; }
-th.main_nodelist { padding: 2px; background-color: #AABBCC; text-align: left; font-size: 14px; }
-td.main_nodelist { padding: 2px; background-color: #CCCCCC; font-size: 12px; }
+th.main_nodelist { padding: 2px; background-color: #AABBCC; text-align: left; font-size: 12pt; }
+td.main_nodelist { padding: 2px; background-color: #CCCCCC; font-size: 10pt; }
 
 table.left_nodelist { width: 95%; }
 
-td.left_nodelist { font-size:9px; }
+td.left_nodelist { font-size:8pt; }
 
-table.main_stats { font-size:medium; margin-left: auto; margin-right: auto; border-style:solid; border-width:thin; border-color: #cccccc; }
+table.main_stats { font-size: 10pt; margin-left: auto; margin-right: auto; border-style:solid; border-width:thin; border-color: #cccccc; }
+table.main_stats_left { text-align:left; font-size:medium; border-style:solid; border-width:thin; border-color: #cccccc; }
+
 td.main_stats { text-align: right; padding: 2px; background-color:#CCCCCC; }
 td.main_stats_bold { text-align: right; color: #7788FF; font-weight:bold; padding: 2px; background-color:#CCCCCC; }
 
+table.ftp_stats { text-align:left; font-size:medium; border-style:solid; border-width:thin; border-color: #cccccc; }
+th.ftp_stats { text-align: right; padding: 2px; background-color:#777777; }
+
+table.ftpdirlist { color:white; text-align:left; font-weight: normal; font-size: small; background-color: #888888; }
+th.ftpdirlist { color: white; }
+pre.ftpdesc { background-color: #888888; color:white;}
+
 #sectionLinks{ margin: 0px; padding: 0px 10px 0px 0px; }
-#sectionLinks a:link, #sectionLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; background-image:  url("/graphics/bg_nav.jpg"); font-weight: bold; padding: 3px 0px 3px 10px; color: #21536A; text-decoration:none; }
+#sectionLinks a:link, #sectionLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; background-image:  url("/graphics/bg_nav.jpg"); font-size:smaller; font-weight: bold; padding: 3px 0px 3px 10px; color: #21536A; text-decoration:none; }
 #sectionLinks a:hover{ border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;  background-color: #DDEEFF; background-image: none; font-weight: bold; text-decoration: underline; }
 
 #sectionSubLinks{ margin: 0px; padding: 0px 20px 0px 10px; }
-#sectionSubLinks a:link, #sectionSubLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; font-weight: bold; font-size:9px; padding: 3px 30px 3px 10px; color: #7788FF; text-decoration:none; }
+#sectionSubLinks a:link, #sectionSubLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; font-weight: bold; font-size:8pt; padding: 3px 30px 3px 10px; color: #7788FF; text-decoration:none; }
 #sectionSubLinks a:hover{ border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;  background-color: #DDEEFF; background-image: none; font-weight: bold; text-decoration: underline; }
 
 
-table.msglist { font-weight: normal; font-size: smaller; margin-left: auto; margin-right: auto; background-color: #888888; }
+table.msglist { font-weight: normal; font-size: small; margin-left: auto; margin-right: auto; background-color: #888888; }
 tr.msglist1 { background-color: #AAAAAA; }
 tr.msglist2 {  background-color: #CCCCCC; }
 th.msglist { background-color: #CCCCCC; color: black; }
@@ -91,8 +104,8 @@ td.userstats { background-color: #DDDDDD; }
 table.sysinfo { margin-left: auto; margin-right: auto; background-color: #CCCCCC; }
 td.sysinfo { background-color: #DDDDDD; } 
 
-pre { background-color: black; color: #aaaaaa; font-family: monospace; padding: 3px; }
-pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; padding: 3px; }
+pre { background-color: black; color: #aaaaaa; font-family: monospace; padding: 3px; font-size:10pt; }
+pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; padding: 3px; font-size:10pt; }
 
 table.userlist { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
 th.userlist { background-color: #DDDDDD; color: black; }
@@ -105,11 +118,11 @@ table.theme { width: 45%; margin-left: auto; margin-right: auto; background-colo
 td.theme { text-align: center; background-color: #DDDDDD; }
 input.theme { text-align: center; background-color: black; color: #aaaaaa; }
 
-table.grouplist { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+table.grouplist { font-size: small; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
 th.grouplist { background-color: #DDDDDD; color: black; }
 td.grouplist { background-color: #DDDDDD; }
 
-table.sublist { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+table.sublist { font-size: small; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
 th.sublist { background-color: #DDDDDD; color: black; }
 th.sublistlft { text-align: left; background-color: #DDDDDD; color: black; }
 td.sublist { background-color: #DDDDDD; }
@@ -132,7 +145,7 @@ p.msgcenter { text-align: center; }
 
 table.msg2 { color: black; margin-left: auto; margin-right: auto; padding: 0px; margin: 0px; }
 
-table.postmsg { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+table.postmsg { margin-left: auto; margin-right: auto; background-color: #BBBBBB; font-size:10pt; }
 td.postmsg { background-color: #DDDDDD; }
 textarea.postmsg { background-color: black; color: #aaaaaa; }
 input.postmsg { background-color: black; color: #aaaaaa; }
@@ -141,9 +154,12 @@ table.posted { width: 50%; margin-left: auto; margin-right: auto; background-col
 td.posted { background-color: #DDDDDD; }
 p.posted { text-align: center; }
 
-table.replymsg { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+table.replymsg { margin-left: auto; margin-right: auto; background-color: #BBBBBB; font-size:10pt;}
 td.replymsg { background-color: #DDDDDD; }
 textarea.replymsg { background-color: black; color: #aaaaaa; }
 input.replymsg { background-color: black; color: #aaaaaa; }
 
 .footer { width: 90%; }
+a.footer { font: size 8pt weight normal; text-decoration: none; }
+a.footer:hover {text-decoration: underline; }
+
