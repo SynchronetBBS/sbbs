@@ -104,8 +104,8 @@ td.userstats { background-color: #DDDDDD; }
 table.sysinfo { margin-left: auto; margin-right: auto; background-color: #CCCCCC; }
 td.sysinfo { background-color: #DDDDDD; } 
 
-pre { background-color: black; color: #aaaaaa; font-family: monospace; padding: 3px; font-size:10pt; }
-pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; padding: 3px; font-size:10pt; }
+pre { background-color: black; color: #aaaaaa; font-family: monospace; padding: 3px; font-size:9pt; }
+pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; padding: 3px; font-size:9pt; }
 
 table.userlist { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
 th.userlist { background-color: #DDDDDD; color: black; }
