@@ -15,8 +15,8 @@
           <div align="left">
          <!-- <a href="http://www.synchro.net/"><img src="/graphics/sync_pbgj1_grey_bg.gif" title="Powered by: Synchronet" alt="Powered by: Synchronet" width="175" height="85" border="0" /></a></div> -->
           <font size="-3">
-            <a href="http://www.synchro.net/" style="text-decoration: none">@@server:version@@</a><br />
-            <a href="http://www.synchro.net/" style="text-decoration: none">@@system:version_notice@@</a>
+            <a class="footer" href="http://www.synchro.net/">@@server:version@@</a><br />
+            <a class="footer" href="http://www.synchro.net/">@@system:version_notice@@</a>
           </font>
         </div>    
         </td>
