@@ -1,165 +1,711 @@
-/* CSS Document */
 /* $Id$ */
 
-body{ font-size:10pt; font-family: Arial,sans-serif; color: #333333; line-height: 1; margin: 0px; padding: 0px; background: #cccccc url("/graphics/bg_grad.jpg") fixed; }
+body { 
+    font-size:10pt; 
+    font-family: Arial,sans-serif; 
+    color: #333333; 
+    line-height: 1; 
+    margin: 0px; 
+    padding: 0px; 
+    background: #cccccc url("/graphics/bg_grad.jpg") fixed; 
+}
 
-a { color: #000099; font-size: normal; font-weight: bold; text-decoration:none; }
-a:visited{ color: #336699; font-size: normal; font-weight: bold; text-decoration:none; }
-a:hover{ text-decoration: underline; }
+/* Main Anchor Style */
 
-h2 { text-align:left; padding-top: 5px; }
+a { 
+    color: #000099;  
+    font-weight: bold; 
+    text-decoration:none; 
+}
+a:visited { 
+    color: #336699;  
+    font-weight: bold; 
+    text-decoration:none; 
+}
 
-#siteName{ margin: 0px; padding: 14px 0px 8px 30px; color: #ffffff; font-weight: normal; font-size: x-large; }
+a:hover { 
+    text-decoration: underline; 
+}
 
-#Greeting{ font: 75% Verdana,sans-serif; position: absolute; top: 8px; right: 30px; color: #FFFFFF; }
+h2 { 
+    text-align:left; 
+    padding-top: 5px; 
+}
 
-#Top_Nav{ position: relative; width: 90%; min-width: 640px; height: 32px; color: #cccccc; padding: 0px; margin-left: auto; margin-right: auto; background-image:  url("/graphics/glbnav_background.gif"); }
+/* Site/BBS Name */
 
-td.ltn{ text-align:left; width:1%; background-color: #CCCCCC; background-image: url(graphics/tnav_bg.gif); }
+#siteName { 
+    margin: 0px; 
+    padding: 14px 0px 8px 30px; 
+    color: #ffffff; 
+    font-weight: normal; 
+    font-size: x-large; 
+}
 
-td.tn{ background-color: #CCCCCC; background-image: url(graphics/tnav_bg.gif); }
+/* User Greeting */
 
-td.rtn{ text-align:right; width:1%; background-color: #CCCCCC; background-image: url(graphics/tnav_bg.gif); }
+#Greeting { 
+    font: 75% Verdana,sans-serif; 
+    position: absolute; 
+    top: 8px; 
+    right: 30px; 
+    color: #FFFFFF; 
+}
 
-#Top_Nav img{ margin-bottom: -4px; }
+/* Top Navigation (Breadcrumbs) */
 
-#tnl { position: absolute; top: 0px; left:0px; }
+#Top_Nav { 
+    position: relative; 
+    width: 90%; 
+    min-width: 640px; 
+    height: 32px; 
+    color: #cccccc; 
+    padding: 0px; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-image:  url("/graphics/glbnav_background.gif"); 
+}
 
-#tnr { position: absolute; top: 0px; right:0px; }
+td.ltn { 
+    text-align:left; 
+    width:1%; 
+    background-color: #cccccc; 
+    background-image: url(graphics/tnav_bg.gif); 
+}
 
-#Top_Link{ position: absolute; }
+td.tn { 
+    background-color: #cccccc; 
+    background-image: url(graphics/tnav_bg.gif); 
+}
 
-.tlink { font-size: smaller; color: #7788FF; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; }
+td.rtn { 
+    text-align:right; 
+    width:1%; 
+    background-color: #cccccc; 
+    background-image: url(graphics/tnav_bg.gif); 
+}
 
-.terror { font-size: small; color: #FF0000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; }
+#Top_Nav img { 
+    margin-bottom: -4px; 
+}
 
-a.tlink, a.tlink:visited{ font-size: smaller; color: #000000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; border-right: 1px solid #8FB8BC; text-decoration:none; }
+#tnl { 
+    position: absolute; 
+    top: 0px; 
+    left:0px; 
+}
 
-a.tlink2, a.tlink2:visited{ color: #000000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; text-decoration:none; }
+#tnr { 
+    position: absolute; 
+    top: 0px; 
+    right:0px; 
+}
 
-a.tlink:hover{ background-image:  url("/graphics/tnav_selected.gif"); text-decoration: underline; }
+#Top_Link { 
+    position: absolute; 
+}
 
-a.tlink2:hover{ text-decoration: underline; }
+.tlink { 
+    font-size: smaller; 
+    color: #7788ff; 
+    font-weight: bold; 
+    margin: 0px; 
+    padding: 2px 5px 4px 5px; 
+}
 
-#MastHead{ position: absolute; top: 0px; left: 2%; right: 2%; width:95.6%; }
+.terror { 
+    font-size: small; 
+    color: #FF0000; 
+    font-weight: bold; 
+    margin: 0px; 
+    padding: 2px 5px 4px 5px; 
+}
 
-#pageName{ padding: 0px 0px 0px 0px; margin: 0px; border-bottom:1px solid #ccd2d2; }
+a.tlink, a.tlink:visited { 
+    font-size: smaller; 
+    color: #000000; 
+    font-weight: bold; 
+    margin: 0px; 
+    padding: 2px 5px 4px 5px; 
+    border-right: 1px solid #8fb8bc; 
+    text-decoration:none; 
+}
 
-#pageTitle { text-align:center; }
+a.tlink2, a.tlink2:visited { 
+    color: #000000; 
+    font-weight: bold; 
+    margin: 0px; 
+    padding: 2px 5px 4px 5px; 
+    text-decoration:none; 
+}
 
-#tl { position:absolute; top: -1px; left: -1px; margin: 0px; padding: 0px; z-index: 100; }
+a.tlink:hover { 
+    background-image:  url("/graphics/tnav_selected.gif"); 
+    text-decoration: underline; 
+}
 
-#tr { position:absolute; top: -1px; right: -1px; margin: 0px; padding: 0px; z-index: 100; }
+a.tlink2:hover { 
+    text-decoration: underline; 
+}
 
-#pageNav{ background-image:url(graphics/sync_pbgj1_grey_bg.gif); background-position: bottom left; background-repeat:no-repeat; width:180px; padding-bottom: 90px; padding-top:10px; background-color: #EEEEEE; font: small Verdana,sans-serif;  }
+#MastHead { 
+    position: absolute; 
+    top: 0px; 
+    left: 2%; 
+    right: 2%; 
+    width:95.6%; 
+}
 
-td.main { width:100%; background-color: #DDDDDD; border-left: 3px solid #ccd2d2; padding-left: 15px; padding-right: 15px; border-right: 3px solid #ccd2d2; }
+#pageName { 
+    padding: 0px 0px 0px 0px; 
+    margin: 0px; 
+    border-bottom:1px solid #ccd2d2; 
+}
 
-table.welcome_main { margin-left:auto; margin-right: auto; border-width: 0px; }
+#pageTitle { 
+    text-align:center; 
+}
 
-table.main_nodelist { margin-left: auto; margin-right: auto; width: 95%; background-color: #CCCCCC; }
-th.main_nodelist { padding: 2px; background-color: #AABBCC; text-align: left; font-size: 12pt; }
-td.main_nodelist { padding: 2px; background-color: #CCCCCC; font-size: 10pt; }
+#tl { 
+    position:absolute; 
+    top: -1px; 
+    left: -1px; 
+    margin: 0px; 
+    padding: 0px; 
+    z-index: 100; 
+}
 
-table.left_nodelist { width: 95%; }
+#tr { 
+    position:absolute; 
+    top: -1px; 
+    right: -1px; 
+    margin: 0px; 
+    padding: 0px; 
+    z-index: 100; 
+}
 
-td.left_nodelist { font-size:8pt; }
+/* Site Navigation (Left Nav) */
 
-table.main_stats { font-size: 10pt; margin-left: auto; margin-right: auto; border-style:solid; border-width:thin; border-color: #cccccc; }
-table.main_stats_left { text-align:left; font-size:medium; border-style:solid; border-width:thin; border-color: #cccccc; }
+#pageNav { 
+    background-image:url(graphics/sync_pbgj1_grey_bg.gif); 
+    background-position: bottom left; 
+    background-repeat:no-repeat; 
+    width:180px; 
+    padding-bottom: 90px; 
+    padding-top:10px; 
+    background-color: #eeeeee; 
+    font: small Verdana,sans-serif;  
+}
 
-td.main_stats { text-align: right; padding: 2px; background-color:#CCCCCC; }
-td.main_stats_bold { text-align: right; color: #7788FF; font-weight:bold; padding: 2px; background-color:#CCCCCC; }
+#sectionLinks { 
+    margin: 0px; 
+    padding: 0px 10px 0px 0px; 
+}
 
-table.ftp_stats { text-align:left; font-size:medium; border-style:solid; border-width:thin; border-color: #cccccc; }
-th.ftp_stats { text-align: right; padding: 2px; background-color:#777777; }
+#sectionLinks a:link, #sectionLinks a:visited { 
+    display: block; 
+    border-top: 1px solid #ffffff; 
+    border-left: 1px solid #ffffff; 
+    border-bottom: 1px solid #000000; 
+    border-right: 1px solid #000000; 
+    background-image:  url("/graphics/bg_nav.jpg"); 
+    font-size:small; 
+    font-weight: bold; 
+    padding: 3px 0px 3px 10px; 
+    color: #21536A; 
+    text-decoration:none; 
+}
 
-table.ftpdirlist { color:white; text-align:left; font-weight: normal; font-size: small; background-color: #888888; }
-th.ftpdirlist { color: white; }
-pre.ftpdesc { background-color: #888888; color:white;}
+#sectionLinks a:hover{ 
+    border-top: 1px solid #000000; 
+    border-left: 1px solid #000000; 
+    border-right: 1px solid #ffffff; 
+    border-bottom: 1px solid #ffffff;  
+    background-color: #ddeeff; 
+    background-image: none; 
+    font-weight: bold; 
+    text-decoration: underline; 
+}
 
-#sectionLinks{ margin: 0px; padding: 0px 10px 0px 0px; }
-#sectionLinks a:link, #sectionLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; background-image:  url("/graphics/bg_nav.jpg"); font-size:smaller; font-weight: bold; padding: 3px 0px 3px 10px; color: #21536A; text-decoration:none; }
-#sectionLinks a:hover{ border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;  background-color: #DDEEFF; background-image: none; font-weight: bold; text-decoration: underline; }
+#sectionSubLinks {
+    margin: 0px; 
+    padding: 0px 20px 0px 10px; 
+}
 
-#sectionSubLinks{ margin: 0px; padding: 0px 20px 0px 10px; }
-#sectionSubLinks a:link, #sectionSubLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; font-weight: bold; font-size:8pt; padding: 3px 30px 3px 10px; color: #7788FF; text-decoration:none; }
-#sectionSubLinks a:hover{ border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;  background-color: #DDEEFF; background-image: none; font-weight: bold; text-decoration: underline; }
+#sectionSubLinks a:link, #sectionSubLinks a:visited { 
+    display: block; 
+    border-top: 1px solid #ffffff; 
+    border-left: 1px solid #ffffff; 
+    border-bottom: 1px solid #000000; 
+    border-right: 1px solid #000000; 
+    font-weight: bold; 
+    font-size:smaller; 
+    padding: 3px 30px 3px 10px; 
+    color: #7788ff; 
+    text-decoration: none; 
+}
 
+#sectionSubLinks a:hover { 
+    border-top: 1px solid #000000; 
+    border-left: 1px solid #000000; 
+    border-right: 1px solid #ffffff; 
+    border-bottom: 1px solid #ffffff;  
+    background-color: #ddeeff; 
+    background-image: none; 
+    font-weight: bold; 
+    text-decoration: underline; 
+}
 
-table.msglist { font-weight: normal; font-size: small; margin-left: auto; margin-right: auto; background-color: #888888; }
-tr.msglist1 { background-color: #AAAAAA; }
-tr.msglist2 {  background-color: #CCCCCC; }
-th.msglist { background-color: #CCCCCC; color: black; }
-a.msglist { color: #6600FF; text-decoration: none; }
-a.msglist:hover { text-decoration: underline; }
-a.msglist:visited { color: #660099; }
+/* Left Nav Nodelist */
 
-a.msglistnu { color:#000099; text-decoration: none; }
-a.msglistnu:hover { color:#000099; text-decoration: underline; }
+table.left_nodelist { 
+    width: 95%; 
+}
 
-table.userstats { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
-td.userstats { background-color: #DDDDDD; } 
+td.left_nodelist { 
+    font-size:8pt; 
+}
 
-table.sysinfo { margin-left: auto; margin-right: auto; background-color: #CCCCCC; }
-td.sysinfo { background-color: #DDDDDD; } 
+/* Home Page */
 
-pre { background-color: black; color: #aaaaaa; font-family: monospace; padding: 3px; font-size:9pt; }
-pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; padding: 3px; font-size:9pt; }
+table.welcome_main { 
+    margin-left:auto; 
+    margin-right: auto; 
+    border-width: 0px; 
+}
 
-table.userlist { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
-th.userlist { background-color: #DDDDDD; color: black; }
-td.userlist { background-color: #DDDDDD; }
-td.userlistright { text-align: right; background-color: #DDDDDD; }
-a.userlist { text-decoration: none; color: black; }
-a.userlist:hover { text-decoration: underline; }
+td.main { 
+    width:100%; 
+    background-color: #dddddd; 
+    border-left: 3px solid #ccd2d2; 
+    padding-left: 15px; 
+    padding-right: 15px; 
+    border-right: 3px solid #ccd2d2; 
+}
 
-table.theme { width: 45%; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
-td.theme { text-align: center; background-color: #DDDDDD; }
-input.theme { text-align: center; background-color: black; color: #aaaaaa; }
+table.main_stats { 
+    font-size: 10pt; 
+    margin-left: auto; 
+    margin-right: auto; 
+    border-style:solid; 
+    border-width:thin; 
+    border-color: #cccccc; 
+}
 
-table.grouplist { font-size: small; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
-th.grouplist { background-color: #DDDDDD; color: black; }
-td.grouplist { background-color: #DDDDDD; }
+table.main_stats_left { 
+    text-align:left; 
+    font-size:medium; 
+    border-style:solid; 
+    border-width:thin; 
+    border-color: #cccccc; 
+}
 
-table.sublist { font-size: small; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
-th.sublist { background-color: #DDDDDD; color: black; }
-th.sublistlft { text-align: left; background-color: #DDDDDD; color: black; }
-td.sublist { background-color: #DDDDDD; }
-td.sublistright { text-align: right; background-color: #DDDDDD; }
+td.main_stats { 
+    text-align: right; 
+    padding: 2px; 
+    background-color:#cccccc; 
+}
 
-table.subinfo { width: 45%; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
-tr.subinfo { white-space: nowrap;  background-color: #DDDDDD; }
-td.subinfbold { width: 1%; font-weight: bold; }
-td.subinfo { white-space: nowrap; font-weight: bold; }
-td.subinfonwr { white-space: nowrap; }
+td.main_stats_bold { 
+    text-align: right; 
+    color: #7788FF; 
+    font-weight:bold; 
+    padding: 2px; 
+    background-color:#cccccc; 
+}
 
-table.msg { color: black; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
-tr.msg {  background-color: #DDDDDD; }
-td.msg { padding: 4.px; }
-td.msgnavleft { width: 25%;  background-color: #DDDDDD; text-align: left; padding: 4px; }
-td.msgnavmid { width: 25%; text-align: center;  background-color: #DDDDDD; padding: 4px;}
-td.msgnavright { width: 25%;  background-color: #DDDDDD; text-align: right; padding: 4px; }
-td.msgheader { font-weight: bold; }
-p.msgcenter { text-align: center; }
+/*  Who's Online */
 
-table.msg2 { color: black; margin-left: auto; margin-right: auto; padding: 0px; margin: 0px; }
+table.main_nodelist { 
+    margin-left: auto; 
+    margin-right: auto; 
+    width: 95%; 
+    background-color: #cccccc; 
+}
 
-table.postmsg { margin-left: auto; margin-right: auto; background-color: #BBBBBB; font-size:10pt; }
-td.postmsg { background-color: #DDDDDD; }
-textarea.postmsg { background-color: black; color: #aaaaaa; }
-input.postmsg { background-color: black; color: #aaaaaa; }
+th.main_nodelist { 
+    padding: 2px; 
+    background-color: #aabbcc; 
+    text-align: left; 
+    font-size: 12pt; 
+}
 
-table.posted { width: 50%; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
-td.posted { background-color: #DDDDDD; }
-p.posted { text-align: center; }
+td.main_nodelist { 
+    padding: 2px; 
+    background-color: #cccccc; 
+    font-size: 10pt; 
+}
 
-table.replymsg { margin-left: auto; margin-right: auto; background-color: #BBBBBB; font-size:10pt;}
-td.replymsg { background-color: #DDDDDD; }
-textarea.replymsg { background-color: black; color: #aaaaaa; }
-input.replymsg { background-color: black; color: #aaaaaa; }
+/* System/User Info */
 
-.footer { width: 90%; }
-a.footer { font: size 8pt weight normal; text-decoration: none; }
-a.footer:hover {text-decoration: underline; }
+table.userstats { 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+}
+
+td.userstats { 
+    background-color: #dddddd; 
+} 
+
+table.sysinfo { 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #cccccc; 
+}
+
+td.sysinfo { 
+    background-color: #dddddd; 
+} 
+
+/* User Listing */
+
+table.userlist { 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+}
+
+th.userlist { 
+    background-color: #dddddd; 
+    color: black; 
+}
+
+td.userlist { 
+    background-color: #dddddd; 
+}
+
+td.userlistright { 
+    text-align: right; 
+    background-color: #dddddd; 
+}
+
+a.userlist { 
+    text-decoration: none; 
+    color: black; 
+}
+
+a.userlist:hover { 
+    text-decoration: underline; 
+}
+
+/* Change Theme */
+
+table.theme { 
+    width: 45%; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+}
+
+td.theme { 
+    text-align: center; 
+    background-color: #dddddd; 
+}
+
+input.theme { 
+    text-align: center; 
+    background-color: black; 
+    color: #aaaaaa; 
+}
+
+/* Message Styles */
+
+/* Group Listing */
+
+table.grouplist { 
+    font-size: small; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+}
+
+th.grouplist { 
+    background-color: #dddddd; 
+    color: black; 
+}
+
+td.grouplist { 
+    background-color: #dddddd; 
+}
+
+/* Subs Listing */
+
+table.sublist { 
+    font-size: small; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+}
+
+th.sublist { 
+    background-color: #dddddd; 
+    color: black; 
+}
+
+th.sublistlft { 
+    text-align: left; 
+    background-color: #dddddd; 
+    color: black; 
+}
+
+td.sublist { 
+    background-color: #dddddd; 
+}
+
+td.sublistright { 
+    text-align: right; 
+    background-color: #dddddd; }
+
+/* Sub Information */
+
+table.subinfo { 
+    width: 45%; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+}
+
+tr.subinfo { 
+    white-space: nowrap;  
+    background-color: #dddddd; 
+}
+
+td.subinfbold { 
+    width: 1%; 
+    font-weight: bold; 
+}
+
+td.subinfo { 
+    white-space: nowrap; 
+    font-weight: bold; 
+}
+td.subinfonwr { 
+    white-space: nowrap; 
+}
+
+/* Messages Listing */
+
+table.msglist { 
+    font-weight: normal; 
+    font-size: small; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #888888; 
+}
+
+tr.msglist1 { 
+    background-color: #aaaaaa; 
+}
+
+tr.msglist2 {  
+    background-color: #cccccc; 
+}
+
+th.msglist { 
+    background-color: #cccccc; 
+    color: black; 
+}
+
+a.msglist { 
+    color: #6600ff; 
+    text-decoration: none; 
+}
+
+a.msglist:hover { 
+    text-decoration: underline; 
+}
+
+a.msglist:visited { 
+    color: #660099; 
+}
+
+a.msglistnu { 
+    color:#000099; 
+    text-decoration: none; 
+}
+
+a.msglistnu:hover { 
+    color:#000099; 
+    text-decoration: underline; 
+}
+
+/* Read Messages */
+
+table.msg { 
+    color: black; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+}
+
+tr.msg {  
+    background-color: #dddddd; 
+}
+
+td.msg { 
+    padding: 4px; 
+}
+
+td.msgnavleft { 
+    width: 25%;  
+    background-color: #dddddd; 
+    text-align: left; 
+    padding: 4px; 
+}
+
+td.msgnavmid { 
+    width: 25%; 
+    text-align: center;  
+    background-color: #dddddd;
+    padding: 4px;
+}
+
+td.msgnavright { 
+    width: 25%;  
+    background-color: #dddddd; 
+    text-align: right; 
+    padding: 4px; 
+}
+
+td.msgheader { 
+    font-weight: bold; 
+}
+
+p.msgcenter { 
+    text-align: center; 
+}
+
+table.msg2 { 
+    color: black; 
+    margin-left: auto; 
+    margin-right: auto; 
+    padding: 0px; 
+    margin: 0px; 
+}
+
+/* Message Posting */
+
+table.postmsg { 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+    font-size:10pt; 
+}
+
+td.postmsg { 
+    background-color: #dddddd; 
+}
+
+textarea.postmsg { 
+    background-color: black; 
+    color: #aaaaaa; 
+}
+
+input.postmsg { 
+    background-color: black; 
+    color: #aaaaaa; 
+}
+
+table.posted { 
+    width: 50%; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; 
+}
+
+td.posted { 
+    background-color: #dddddd; 
+}
+
+p.posted { 
+    text-align: center; 
+}
+
+/* Message Replying */
+
+table.replymsg { 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #bbbbbb; font-size:10pt;
+}
+
+td.replymsg { 
+    background-color: #dddddd; 
+}
+
+textarea.replymsg { 
+    background-color: black; 
+    color: #aaaaaa; 
+}
+
+input.replymsg { 
+    background-color: black; 
+    color: #aaaaaa; 
+}
+
+pre { 
+    background-color: black; 
+    color: #aaaaaa; 
+    font-family: monospace; 
+    padding: 3px; 
+    font-size:9pt; 
+}
+
+pre.leftalign { 
+    background-color: black; 
+    color: #aaaaaa; 
+    text-align: left; 
+    padding: 3px; 
+    font-size:9pt; 
+}
+
+/* Footer */
+
+.footer { 
+    width: 90%; 
+}
+
+a.footer { 
+font-size: 8pt;
+font-weight: normal; 
+text-decoration: none; 
+}
+
+a.footer:hover {
+text-decoration: underline; 
+}
+
+/* FPT (ftp_html.js) Styles */
+
+table.ftp_stats { 
+    text-align:left; 
+    font-size:medium; 
+    border-style:solid; 
+    border-width:thin; 
+    border-color: #cccccc; 
+}
+
+th.ftp_stats { 
+    text-align: right; 
+    padding: 2px; 
+    background-color:#777777; 
+}
+
+table.ftpdirlist { 
+    color:white; 
+    text-align:left; 
+    font-weight: normal; 
+    font-size: small; 
+    background-color: #888888; 
+}
+
+th.ftpdirlist { 
+    color: white; 
+}
+
+pre.ftpdesc { 
+    background-color: #888888; 
+    color:white; 
+}
 
