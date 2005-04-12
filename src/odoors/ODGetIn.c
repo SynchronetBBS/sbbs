@@ -36,6 +36,7 @@
  *              Feb 27, 1996  6.00  BP   Added od_max_key_latency.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Aug 10, 2003  6.23  SH   *nix support
+ *              Apr 11, 2005  6.23  SH   Fix hang forver on ESC press and latency timeout.
  */
 
 #define BUILDING_OPENDOORS
@@ -211,6 +212,9 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
    /* some other reason.                                                  */
    bGotEvent = FALSE;
 
+   if(szCurrentSequence[0])
+      goto FunctionExit;
+
    while(!bGotEvent)
    {
       /* If we aren't supposed to wait for input, then fail if there is */
@@ -250,7 +254,7 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
             (bTimerActive && ODTimerElapsed(&SequenceFailTimer)
             /* 04/05 You can't expect ESC to be pressed and nothing else to follow */
             /* && szCurrentSequence[0] == 27 && strlen(szCurrentSequence) == 1)) */
-            && szCurrentSequence[0] == 27))
+            && szCurrentSequence[0]))
          {
             /* If no input event could be obtained within the specified */
             /* then return with failure.                                */
@@ -264,6 +268,7 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
       {
          bGotEvent = TRUE;
          memcpy(pInputEvent, &LastInputEvent, sizeof(tODInputEvent));
+         ODGetInResetSequence();
       }
       else
       {
@@ -277,6 +282,7 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
             pInputEvent->chKeyPress = LastInputEvent.chKeyPress;
             pInputEvent->EventType = EVENT_EXTENDED_KEY;
             bGotEvent = TRUE;
+            ODGetInResetSequence();
             break;
          }
          else if(LastInputEvent.chKeyPress == '\0')
@@ -360,6 +366,7 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
                aKeySequences[nMatchedSequence].chExtendedKey;
             pInputEvent->EventType = EVENT_EXTENDED_KEY;
             bGotEvent = TRUE;
+            ODGetInResetSequence();
             break;
          }
 
@@ -404,6 +411,7 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
             {
                bGotEvent = TRUE;
                memcpy(pInputEvent, &LastInputEvent, sizeof(tODInputEvent));
+               ODGetInResetSequence();
             }
          }
       }
@@ -425,29 +433,26 @@ FunctionExit:
                aKeySequences[nMatchedSequence].chExtendedKey;
             pInputEvent->EventType = EVENT_EXTENDED_KEY;
             bGotEvent = TRUE;
-         }
-         else
-         {
-            /* If the sequence began with an escape key, then return an escape */
-            /* key event.                                                      */
-            /* 04/05 - You need to store or dump the rest of the sequence...   */
-            /*         or it'll park here effectively forever!                 */
-            /* if(szCurrentSequence[0] == 27 && strlen(szCurrentSequence) == 1)*/
-            if(szCurrentSequence[0] == 27)
-            {
-               pInputEvent->bFromRemote = bSequenceFromRemote;
-               pInputEvent->chKeyPress = szCurrentSequence[0];
-               pInputEvent->EventType = EVENT_CHARACTER;
-               bGotEvent = TRUE;
-            }
+            ODGetInResetSequence();
          }
       }
    }
-
-   /* On success, reset current sequence buffer. */
-   if(bGotEvent)
-   {
-      ODGetInResetSequence();
+   if(!bGotEvent) {
+      /* If the sequence began with an escape key, then return an escape */
+      /* key event.                                                      */
+      /* 04/05 - You need to store or dump the rest of the sequence...   */
+      /*         or it'll park here effectively forever!                 */
+      /* if(szCurrentSequence[0] == 27 && strlen(szCurrentSequence) == 1)*/
+      if(szCurrentSequence[0])
+      {
+         /* This is no longer actually KNOWN correct */
+         pInputEvent->bFromRemote = bSequenceFromRemote;
+         pInputEvent->chKeyPress = szCurrentSequence[0];
+         pInputEvent->EventType = EVENT_CHARACTER;
+         /* Shift the sequence to the left */
+         memcpy(szCurrentSequence, szCurrentSequence+1, strlen(szCurrentSequence));
+         bGotEvent = TRUE;
+      }
    }
 
    /* Exit function with appropriate return value. */
