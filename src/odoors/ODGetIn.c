@@ -445,12 +445,43 @@ FunctionExit:
       /* if(szCurrentSequence[0] == 27 && strlen(szCurrentSequence) == 1)*/
       if(szCurrentSequence[0])
       {
-         /* This is no longer actually KNOWN correct */
-         pInputEvent->bFromRemote = bSequenceFromRemote;
+         /* This is already broken input... we'll assume it's remote     */
+         /* as local codes are handle immediately in doorway mode.       */
+         /* Further, we'll just grab the longest seq. that matches.      */
+         int matchlen=0;
+         pInputEvent->bFromRemote = TRUE;
          pInputEvent->chKeyPress = szCurrentSequence[0];
          pInputEvent->EventType = EVENT_CHARACTER;
+         if(!(wFlags & GETIN_RAW)) {
+            /* Search for a matching control sequence. */
+            for(nMatchedSequence = 0; nMatchedSequence < DIM(aKeySequences);
+               ++nMatchedSequence)
+            {
+               int seqlen;
+
+               /* Skip sequences that use control characters if required. */
+               if((wFlags & GETIN_RAWCTRL)
+                  && aKeySequences[nMatchedSequence].bIsControlKey)
+               {
+                  continue;
+               }
+               seqlen=strlen(aKeySequences[nMatchedSequence].pszSequence);
+
+               if(seqlen > matchlen && strncmp(szCurrentSequence,
+                  aKeySequences[nMatchedSequence].pszSequence, seqlen) == 0)
+               {
+                  pInputEvent->chKeyPress = aKeySequences[nMatchedSequence].chExtendedKey;
+                  pInputEvent->EventType = EVENT_EXTENDED_KEY;
+                  matchlen=seqlen;
+               }
+            }
+         }
+         
          /* Shift the sequence to the left */
-         memcpy(szCurrentSequence, szCurrentSequence+1, strlen(szCurrentSequence));
+         if(matchlen==0)
+            memcpy(szCurrentSequence, szCurrentSequence+1, strlen(szCurrentSequence));
+         else
+            memcpy(szCurrentSequence, szCurrentSequence+matchlen, strlen(szCurrentSequence)-matchlen+1);
          bGotEvent = TRUE;
       }
    }
