@@ -1,5 +1,10 @@
 /* $Id$ */
 
+/* If you want to remove QWk FTP downloads */
+/*           change this to false          */
+
+var doQWK = true;
+
 /* FTP link */
 
  if(user.number || system.matchuser("Guest")) {
@@ -51,6 +56,7 @@ else
 if(user.number==0 || user.security.restrictions&UFLAG_G) {
     }
 else
+    if(doQWK)
     template.leftnav.push({ html: '<a href="' + template.ftp_url + template.ftpqwk + '">Download QWK Packet</a>' });
         
 write_template("leftnav.inc");
