@@ -248,7 +248,9 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
       {
          if(TimeToWait != OD_NO_TIMEOUT ||
             (bTimerActive && ODTimerElapsed(&SequenceFailTimer)
-            && szCurrentSequence[0] == 27 && strlen(szCurrentSequence) == 1))
+            /* 04/05 You can't expect ESC to be pressed and nothing else to follow */
+            /* && szCurrentSequence[0] == 27 && strlen(szCurrentSequence) == 1)) */
+            && szCurrentSequence[0] == 27))
          {
             /* If no input event could be obtained within the specified */
             /* then return with failure.                                */
@@ -428,7 +430,10 @@ FunctionExit:
          {
             /* If the sequence began with an escape key, then return an escape */
             /* key event.                                                      */
-            if(szCurrentSequence[0] == 27 && strlen(szCurrentSequence) == 1)
+            /* 04/05 - You need to store or dump the rest of the sequence...   */
+            /*         or it'll park here effectively forever!                 */
+            /* if(szCurrentSequence[0] == 27 && strlen(szCurrentSequence) == 1)*/
+            if(szCurrentSequence[0] == 27)
             {
                pInputEvent->bFromRemote = bSequenceFromRemote;
                pInputEvent->chKeyPress = szCurrentSequence[0];
