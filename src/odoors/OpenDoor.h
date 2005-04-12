@@ -545,15 +545,14 @@ typedef void OD_PERSONALITY_PROC;
 /* ========================================================================= */
 
 /* Force byte alignment, if possible */
-/* 04/05 Why do this?  It's not like you write structs to disk!
-/* #ifdef __TURBOC__ */
-/* #if(__TURBOC__ >= 0x295) */
-/* #pragma option -a- */
-/* #endif /* __TURBOC__ >= 0x295 */
-/* #endif /* __TURBOC__ */
-/* #ifdef _MSC_VER */
-/* #pragma pack(1) */
-/* #endif /* _MSC_VER */
+#ifdef __TURBOC__
+#if(__TURBOC__ >= 0x295)
+#pragma option -a-
+#endif /* __TURBOC__ >= 0x295 */
+#endif /* __TURBOC__ */
+#ifdef _MSC_VER
+#pragma pack(1)
+#endif /* _MSC_VER */
 
 typedef struct
 {
