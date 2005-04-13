@@ -106,7 +106,7 @@ td.rtn {
 }
 
 .tlink { 
-    font-size: smaller; 
+    font-size: small; 
     color: #7788ff; 
     font-weight: bold; 
     margin: 0px; 
@@ -122,7 +122,7 @@ td.rtn {
 }
 
 a.tlink, a.tlink:visited { 
-    font-size: smaller; 
+    font-size: small; 
     color: #000000; 
     font-weight: bold; 
     margin: 0px; 
@@ -448,7 +448,7 @@ td.grouplist {
 /* Subs Listing */
 
 table.sublist { 
-    font-size: small; 
+    font-size: 10pt; 
     margin-left: auto; 
     margin-right: auto; 
     background-color: #bbbbbb; 
@@ -502,20 +502,27 @@ td.subinfonwr {
 
 /* Messages Listing */
 
-table.msglist { 
+table.msglist {
+    border-top: 2px solid #000000; 
+    border-left: 2px solid #000000; 
+    border-bottom: 2px solid #ffffff; 
+    border-right: 2px solid #ffffff; 
+    padding: 1px;
     font-weight: normal; 
-    font-size: small; 
+    font-size: 10pt; 
     margin-left: auto; 
     margin-right: auto; 
     background-color: #888888; 
 }
 
 tr.msglist1 { 
-    background-color: #aaaaaa; 
+    padding: 1px;
+    background-color: #aaaaaa;
 }
 
-tr.msglist2 {  
-    background-color: #cccccc; 
+tr.msglist2 { 
+    padding: 1px; 
+    background-color: #cccccc;
 }
 
 th.msglist { 
@@ -533,7 +540,8 @@ a.msglist:hover {
 }
 
 a.msglist:visited { 
-    color: #660099; 
+    color: #660099;
+    font-weight: normal; 
 }
 
 a.msglistnu { 
