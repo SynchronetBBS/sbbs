@@ -3,7 +3,7 @@
 # Baja include file defining DOS Directory Entry Attribute constants
 # Specifically used with the SET_FILE_ATTRIB and GET_FILE_ATTRIB functions
 
-# $id$
+# $id: $
 
 # @format.tab-size 8, @format.use-tabs true
 

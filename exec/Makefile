@@ -4,7 +4,7 @@
 
 # @format.tab-size 8, @format.use-tabs true
 
-# $id$
+# $id: $
 
 all : 	bullseye.bin \
         chat_sec.bin \

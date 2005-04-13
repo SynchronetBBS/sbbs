@@ -4,7 +4,7 @@
 # 	 numbers set by system calls. Errors which exist in Unix(tm)
 # 	 but not MSDOS have value -1.
 
-# $id$
+# $id: $
 
 # @format.tab-size 8, @format.use-tabs true
 

@@ -2,7 +2,7 @@
 
 # Baja include file for NODE.DAB (_NODEFILE) field values
 
-# $id$
+# $id: $
 
 # @format.tab-size 8, @format.use-tabs true
 

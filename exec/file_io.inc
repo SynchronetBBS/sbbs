@@ -2,7 +2,7 @@
 
 # Baja include file defining various File I/O related constants
 
-# $id$
+# $id: $
 
 # @format.tab-size 8, @format.use-tabs true
 
