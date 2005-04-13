@@ -3074,6 +3074,7 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 
 		session->js_branch.counter=0;
 
+		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling script (%s)",session->socket,script);
 		if((js_script=JS_CompileFile(session->js_cx, session->js_glob
 			,script))==NULL) {
 			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)"
@@ -3081,7 +3082,9 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 			return(FALSE);
 		}
 
+		lprintf(LOG_DEBUG,"%04d JavaScript: Executing script",session->socket);
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Done executing",session->socket);
 	} while(0);
 
 	SAFECOPY(session->req.physical_path, path);
