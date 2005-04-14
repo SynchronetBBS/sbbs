@@ -47,6 +47,7 @@
 
 #define DEFAULT_LOG_MASK	0xff	/* Display all LOG levels */
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
+#define DEFAULT_STACK_LIMIT	(32*1024)
 
 JSRuntime*	js_runtime;
 JSContext*	js_cx;
@@ -55,6 +56,7 @@ js_branch_t	branch;
 scfg_t		scfg;
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
 ulong		js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+ulong		stack_limit=DEFAULT_STACK_LIMIT;
 FILE*		confp;
 FILE*		errfp;
 FILE*		nulfp;
@@ -94,6 +96,7 @@ void usage(FILE* fp)
 #endif
 		"\t-m<bytes>      set maximum heap size (default=%u bytes)\n"
 		"\t-s<bytes>      set context stack size (default=%u bytes)\n"
+		"\t-S<bytes>      set thread stack size limit (default=%u, 0=unlimited)\n"
 		"\t-b<limit>      set branch limit (default=%u, 0=unlimited)\n"
 		"\t-y<interval>   set yield interval (default=%u, 0=never)\n"
 		"\t-g<interval>   set garbage collection interval (default=%u, 0=never)\n"
@@ -112,6 +115,7 @@ void usage(FILE* fp)
 		"\t-!             wait for keypress (pause) on error\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_CONTEXT_STACK
+		,DEFAULT_STACK_LIMIT
 		,JAVASCRIPT_BRANCH_LIMIT
 		,JAVASCRIPT_YIELD_INTERVAL
 		,JAVASCRIPT_GC_INTERVAL
@@ -585,6 +589,7 @@ static const char* js_ext(const char* fname)
 
 long js_exec(const char *fname, char** args)
 {
+	ulong		stack_frame;
 	int			argc=0;
 	uint		line_no;
 	char		path[MAX_PATH+1];
@@ -622,6 +627,14 @@ long js_exec(const char *fname, char** args)
 	}
 	JS_ClearPendingException(js_cx);
 
+	if(stack_limit) {
+#if JS_STACK_GROWTH_DIRECTION > 0
+		stack_frame=((ulong)&stack_frame)+stack_limit;
+#else
+		stack_frame=((ulong)&stack_frame)-stack_limit;
+#endif
+		JS_SetThreadStackLimit(js_cx, stack_frame);
+	}
 
 	argv=JS_NewArrayObject(js_cx, 0, NULL);
 	JS_DefineProperty(js_cx, js_glob, "argv", OBJECT_TO_JSVAL(argv)
@@ -789,6 +802,10 @@ int main(int argc, char **argv, char** environ)
 				case 's':
 					if(*p==0) p=argv[++argn];
 					js_cx_stack=strtoul(p,NULL,0);
+					break;
+				case 'S':
+					if(*p==0) p=argv[++argn];
+					stack_limit=strtoul(p,NULL,0);
 					break;
 				case 'b':
 					if(*p==0) p=argv[++argn];
