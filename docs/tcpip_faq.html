@@ -1,0 +1,156 @@
+<html>
+<head>
+<title>Synchronet Version 3 and TCP/IP: Answers to Frequently Asked Questions</title>
+</head>
+<body>
+<font face="Arial", "Helvetica">
+<h1 align="center">Synchronet Version 3 and TCP/IP<br><i>Answers to Frequently Asked Questions</i></h1>
+<hr>
+<p>
+<h2>Table of Contents:</h2>
+<ul>
+	<li><a href="#ports">What inbound ports do I need to open in my firewall?</a>
+	<li><a href="#private_ip">How come my friends can't connect to my BBS at my <b>192.168.x.x</b>, <b>172.[16-31].x.x</b>, or <b>10.x.x.x</b> IP address?</a>
+	<li><a href="#public_ip">So what is my <b>public</b> IP address?</a>
+	<li><a href="#port25">Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</a>
+	<li><a href="#ftp_connect">Why can't users connect to my FTP server?</a>
+	<li><a href="#ftp_nat">Why do FTP clients lock-up when listing directories or downloading files from my FTP server?</a>
+	<li><a href="#socket_io">Why do external programs that use socket I/O (e.g. Synchronet Blackjack, Synchronet BBS List, DoorMUD) hang on my Windows BBS?</a>
+</ul>
+
+<a name="ports"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>What inbound ports do I need to open in my firewall?</i>
+<p>
+<b>Answer:</b>
+<br>Depends on which Synchronet servers and services you wish to make available
+to Internet clients and which ports you have configured those servers and services to listen on.
+<p>The default Synchronet installation enables servers and services on the following ports:
+<p>
+<table border=1>
+<tr valign="top" align="left"><th>Protocol<th>Port<th>Comments
+<tr valign="top"><td nowrap>Telnet<td nowrap>TCP 23<td>For telnet logins (highly recommended)
+<tr valign="top"><td>RLogin<td nowrap>TCP 513<td>Optional for quick-login from RLogin clients (e.g. SyncTerm)
+<tr valign="top"><td>SMTP<td nowrap>TCP 25<td>Necesary for receiving Internet e-mail and inter-bbs instant messages
+<tr valign="top"><td>POP3<td nowrap>TCP 110<td>Allows BBS users to check their e-mail using standard Internet mail clients (e.g. Outlook Express)
+<tr valign="top"><td>FTP<td nowrap>TCP 21<td>Allows access to the BBS file/download areas using a standard FTP client
+<tr valign="top"><td>HTTP<td nowrap>TCP 80<td>Required for access to the BBS's web server
+<tr valign="top"><td>NNTP<td nowrap>TCP 119<td>Allows BBS users to read and post messages using standard news readers/clients
+<tr valign="top"><td>Gopher<td nowrap>TCP 70<td>Archaic protocol allows reading of messages and other BBS info
+<tr valign="top"><td>Finger<td nowrap>TCP 79<td>Allows remote querying of BBS user info, who's online, and other BBS info
+<tr valign="top"><td>Finger<td nowrap>UDP 79<td>For use with the Synchronet inter-bbs instant message service
+<tr valign="top"><td>IRC<td nowrap>TCP 6667<td>Allows IRC clients to chat with eachother
+</table>
+<p>Enabling connectivity to Synchronet through your firewall is <b>no different</b> than enabling connectivity to any other TCP/IP server. Follow your
+firewall documentation for forwarding or opening ports for TCP/IP servers located "behind" the firewall. Your firewall may have the option of placing
+the entire BBS computer in a "DMZ" (opening <b>all</b> its ports to the public Internet), but doing so is not normally recommended.
+</p>
+
+<a name="private_ip"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>How come my friends can't connect to my BBS at my <b>192.168.x.x</b>, <b>172.[16-31].x.x</b>, or <b>10.x.x.x</b> IP address?</i>
+<p>
+<b>Answer:</b>
+<br>The IP address ranges listed above are reserved for use in <b>private</b> networks and are <b>not publicly addressible</b>
+from the Internet. See this <a href=http://www.faqs.org/rfcs/rfc1918.html>document</a> for technical details.
+<p>You do <b>not</b> want to advertise this IP address to the public since it is useless to anyone outside of your
+own private network. IP addresses in these ranges are typically assigned to your computer (using DHCP) by your router/firewall device
+to allow multiple computers on your <b>private</b> network to share the same <b>public</b> IP address using a mechanism known as
+<i>Network Address Translation</i> (<a href=http://www.faqs.org/rfcs/rfc1631.html>NAT</a>).
+Clients on the Internet must use the IP address of your router/firewall device's public/WAN port
+to connect to your BBS. This IP address <b>will not</b> begin with <i>192.168</i>, <i>172.[16-31]</i>, or <i>10</i>.
+</p>
+
+<a name="public_ip"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>So what is my <b>public</b> IP address?</i>
+<p>
+<b>Answer:</b>
+<br>If you need to know your public IP address, you can usually query your router/firewall device using it's configuration interface
+(typically via telnet or HTTP to its private/LAN port) or access <a href=http://www.whatismyipaddress.com/>any</a>
+<a href=http://checkip.dyndns.org/>one</a> of <a href=http://www.whatismyip.com/>many</a>
+public web-sites that can tell you what your public IP address is. However, it is usually much better to advertise a <b>hostname</b>
+(e.g. <i>vert.synchro.net</i>) rather than an hard-to-remember IP address (e.g. <i>69.104.209.209</i>).
+<p>
+If you use a <i><a href=dyndns.txt>Dynamic DNS</a></i> service to get hostname for your BBS, 
+they can usually correctly determine your public IP address automatically, even if your IP address changes.
+So you don't <b>need</b> to necessarily know what it is.
+</p>
+
+<a name="port25"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</i>
+<p>
+<b>Answer:</b>
+<br>You must have the Synchronet SMTP (mail) server running and listening for incoming connections on TCP port 25 (the standard SMTP port).
+You (or a friend) can test this basic connectivity by attempting to telnet to port 25 (instead of port 23) at your BBS's hostname or
+public IP address from
+a remote location on the Internet. The remote telnet client should see a successful connection and a text message similar to the following:</p>
+<tt>220 bbs.synchro.net Synchronet SMTP Server 1.362-Win32 Ready</tt>
+<p>You should also see evidence of the successful SMTP connection to the server in your Synchronet Mail Server window/log output.
+If you do not, then its likely that your firewall or Internet Service Provider is blocking incoming connections to TCP port 25.
+Before concluding this is the case, verify that the remote telnet client can connect to other SMTP servers first (e.g. <i>vert.synchro.net</i>, TCP port 25).
+If it cannot, then this remote client probably has restrictions on which (if any) connections he can make to TCP port 25. Try using a different
+(less restrictive) remote Internet connection for your test.
+<p>
+If your firewall or Internet Service Provider is blocking incoming connections to TCP port 25 (many consumer-class ISPs do),
+then you won't be able to receive Internet e-mail on your BBS. Fixing your firewall configuration is rather simple, but
+changing ISPs is often not. One possible work-around is having a mail proxy (3rd party server) receive the e-mail for you and forward it
+to a non-standard (non-blocked) SMTP port. Many Dynamic DNS services offer this <a href=http://www.dyndns.org/services/mailhop/relay.html>service</a>
+for a fee. Or fellow sysops may be able to do perform this service for your for free.
+</p>
+
+<a name="ftp_connect"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>Why can't users connect to my FTP server?</i>
+<p>
+<b>Answer:</b>
+<br>You must have the Synchronet FTP server running and listen for incoming connections on TCP port 21 (the standard FTP port).
+See the previous answer about methods of testing this basic connectivity using a remote telnet client.
+<p>If your FTP server window/log indicates an accepted FTP connection, then it's not a connectivity problem and probably a login failure.
+<p>FTP sessions require a <b>login</b>. If you have not created a <i>Guest</i> account for your BBS, then the FTP server will
+not allow <i>Annonymous</i> logins (most web browsers, for example, will attempt to login anonymously by default). If this is the problem,
+then either create a <i>Guest</i> account (preferably using the <tt>exec/makeguest.js</tt> module) or tell your FTP users that they
+must login with a valid BBS user account in order to use the FTP server.
+</p>
+
+<a name="ftp_nat"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>Why do FTP clients lock-up when listing directories or downloading files from my FTP server?</i>
+<p>
+<b>Answer:</b><br>
+Your BBS computer is probably behind a <i>Network Address Translator</i> (<a href=http://www.faqs.org/rfcs/rfc1631.html>NAT</a>). 
+NAT functionality is typically built into router/firewall devices.
+If your NAT device supports active and passive FTP servers "behind" the NAT, then you should have no problems. Unfortunately, this is
+not always the case (some cheaper consumer-level firewalls do not handle FTP server connections correctly).
+Sometimes <b>passive</b> (PASV) transfers work fine (most web browsers use passive FTP transfers by default), but
+<b>active</b> (PORT) transfers do not (the Windows command-line FTP client for example, <b>only</b> supports active transfers). This
+<a href=http://www.ncftpd.com/ncftpd/doc/misc/ftp_and_firewalls.html>document</a> contains the technical details about how and why and recommended
+solutions.
+</p>
+
+<a name="socket_io"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>Why do external programs that use socket I/O (e.g. Synchronet Blackjack, Synchronet BBS List, DoorMUD) hang on my Windows BBS?</i>
+<p>
+<b>Answer:</b><br>
+Some software firewall and anti-virus programs interfere with the inheritance of socket descriptors between processes. I don't know if this is
+an intentional security "feature" or a design flaw. One such program is the <b><i>ZoneAlarm Security Suite</i></b>. If you have this
+(or similar) software installed, it most be completely un-installed for socket inheritance to work.
+</p>
+
+
+<hr>
+<p align="right"><font size="1">
+$Id$</font>
+</p>
+</font>
+</body>
+</html>
