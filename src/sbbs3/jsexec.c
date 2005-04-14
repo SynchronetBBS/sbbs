@@ -146,9 +146,12 @@ int lprintf(int level, char *fmt, ...)
 		return(ret);
 	}
 #endif
-	if(level<=err_level)
+	if(level<=err_level) {
 		ret=fprintf(errfp,"%s\n",sbuf);
-	if(level>err_level || (errfp!=stderr && errfp!=confp))
+		if(errfp!=stderr && confp!=stdout)
+			ret=fprintf(statfp,"%s\n",sbuf);
+	}
+	if(level>err_level || errfp!=stderr)
 		ret=fprintf(confp,"%s\n",sbuf);
     return(ret);
 }
