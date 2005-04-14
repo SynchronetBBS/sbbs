@@ -3050,6 +3050,7 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 	jsval		rval;
 	char		path[MAX_PATH+1];
 	BOOL		retval=TRUE;
+	clock_t		start;
 
 	sprintf(path,"%sSBBS_SSJS.%u.%u.html",temp_dir,getpid(),session->socket);
 	if((session->req.fp=fopen(path,"wb"))==NULL) {
@@ -3083,8 +3084,9 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 		}
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Executing script",session->socket);
+		start=msclock();
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
-		lprintf(LOG_DEBUG,"%04d JavaScript: Done executing",session->socket);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Done executing (%ld ms)",session->socket,msclock()-start);
 	} while(0);
 
 	SAFECOPY(session->req.physical_path, path);
