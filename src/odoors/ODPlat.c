@@ -494,7 +494,7 @@ tODResult ODSemaphoreDown(tODSemaphoreHandle hSemaphore, tODMilliSec Timeout)
    ASSERT(hSemaphore != NULL);
 
 #ifdef ODPLAT_WIN32
-   if(WaitForSingleObject(hSemaphore, Timeout) == WAIT_FAILED)
+   if(WaitForSingleObject(hSemaphore, Timeout) != WAIT_OBJECT_0)
    {
       return(kODRCTimeout);
    }
