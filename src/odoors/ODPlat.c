@@ -673,7 +673,7 @@ tODMilliSec ODTimerLeft(tODTimer *pTimer)
 {
 #ifdef ODPLAT_NIX
    struct timeval tv;
-   tODMilliSec left=0;
+   tODMilliSec nowtick;
 #endif
    ASSERT(pTimer != NULL);
 
@@ -695,10 +695,10 @@ tODMilliSec ODTimerLeft(tODTimer *pTimer)
    }
 #elif defined(ODPLAT_NIX)
    gettimeofday(&tv,NULL);
-   left=pTimer->Start+pTimer->Duration-(long long)tv.tv_sec*1000-tv.tv_usec/1000;
-   if(left<0)
-      left=0;
-   return(left);
+   nowtick=(long long)tv.tv_sec*1000-tv.tv_usec/1000;
+   if(pTimer->Start+pTimer->Duration <= nowtick)
+      return(0);
+   return(pTimer->Start - nowtick);
 #else /* !ODPLAT_DOS */
    {
       tODMilliSec Now;
