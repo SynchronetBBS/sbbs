@@ -46,25 +46,24 @@ function write_template(filename)  {
     if(!inc.open("r",true,1024)) {
         horrible_error("!Error " + inc.error + " opening template file: "+ fname);
     }
-    var file='';
-    while(! inc.eof)  {
-        file=file += inc.read(1024);
-    }
+    var file=inc.read();
     inc.close();
-    file=file.replace(/([\x00-\xff]*?)<<REPEAT (.*?)>>([\x00-\xff]*?)<<END REPEAT \2>>/g,
-        function(matched, start, objname, bit, offset, s) {
-            var ret='';
-            start=parse_regular_bit(start,"",template);
-            start=start.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
-            write(start);
-            for(obj in template[objname]) {
-                var thisbit=parse_regular_bit(bit,objname,template[objname][obj]);
-                thisbit=parse_regular_bit(thisbit,"",template);
-                thisbit=thisbit.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
-                write(thisbit);
-            }
-            return("");
-        });
+    /* The following 'if' statement fixes performance problem with pages *not* containing REPEAT clauses */
+    if(file.search(/<<REPEAT .*>>/)>0)  
+        file=file.replace(/([\x00-\xff]*?)<<REPEAT (.*?)>>([\x00-\xff]*?)<<END REPEAT \2>>/g,
+            function(matched, start, objname, bit, offset, s) {
+                var ret='';
+                start=parse_regular_bit(start,"",template);
+                start=start.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
+                write(start);
+                for(obj in template[objname]) {
+                    var thisbit=parse_regular_bit(bit,objname,template[objname][obj]);
+                    thisbit=parse_regular_bit(thisbit,"",template);
+                    thisbit=thisbit.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
+                    write(thisbit);
+                }
+                return("");
+            });
     file=parse_regular_bit(file, "", template);
     file=file.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
     write(file);
