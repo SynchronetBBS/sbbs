@@ -219,9 +219,13 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
          return(FALSE);
       }
 
-      /* If you have a *local* extended char, send it immediately */
+      /* If you have a *local* char, send it immediately */
       if((!LastInputEvent.bFromRemote) && (LastInputEvent.chKeyPress != 0)
+#if 0
             && (LastInputEvent.EventType == EVENT_EXTENDED_KEY)) {
+#else
+            ) {
+#endif
          memcpy(pInputEvent, &LastInputEvent, sizeof(tODInputEvent));
          OD_API_EXIT();
          return(TRUE);
@@ -293,9 +297,13 @@ ODAPIDEF BOOL ODCALL od_get_input(tODInputEvent *pInputEvent,
          break;
       }
 
-      /* If you have a *local* extended char, send it immediately */
+      /* If you have a *local* char, send it immediately */
       if((!LastInputEvent.bFromRemote) && (LastInputEvent.chKeyPress != 0)
+#if 0
             && (LastInputEvent.EventType == EVENT_EXTENDED_KEY)) {
+#else
+            ) {
+#endif
          memcpy(pInputEvent, &LastInputEvent, sizeof(tODInputEvent));
          OD_API_EXIT();
          return(TRUE);
