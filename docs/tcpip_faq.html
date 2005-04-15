@@ -11,7 +11,7 @@
 <ul>
 	<li><a href="#ports">What inbound ports do I need to open in my firewall?</a>
 	<li><a href="#private_ip">How come my friends can't connect to my BBS at my <b>192.168.x.x</b>, <b>172.[16-31].x.x</b>, or <b>10.x.x.x</b> IP address?</a>
-	<li><a href="#public_ip">So what is my <b>public</b> IP address?</a>
+	<li><a href="#public_ip">So what is my public IP address?</a>
 	<li><a href="#port25">Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</a>
 	<li><a href="#ftp_connect">Why can't users connect to my FTP server?</a>
 	<li><a href="#ftp_nat">Why do FTP clients lock-up when listing directories or downloading files from my FTP server?</a>
@@ -40,7 +40,7 @@ to Internet clients and which ports you have configured those servers and servic
 <tr valign="top"><td>Gopher<td nowrap>TCP 70<td>Archaic protocol allows reading of messages and other BBS info
 <tr valign="top"><td>Finger<td nowrap>TCP 79<td>Allows remote querying of BBS user info, who's online, and other BBS info
 <tr valign="top"><td>Finger<td nowrap>UDP 79<td>For use with the Synchronet inter-bbs instant message service
-<tr valign="top"><td>IRC<td nowrap>TCP 6667<td>Allows IRC clients to chat with eachother
+<tr valign="top"><td>IRC<td nowrap>TCP 6667<td>Allows Internet Relay Chat (IRC) clients to connect to your BBS
 </table>
 <p>Enabling connectivity to Synchronet through your firewall is <b>no different</b> than enabling connectivity to any other TCP/IP server. Follow your
 firewall documentation for forwarding or opening ports for TCP/IP servers located "behind" the firewall. Your firewall may have the option of placing
@@ -110,7 +110,7 @@ for a fee. Or fellow sysops may be able to do perform this service for your for 
 <i>Why can't users connect to my FTP server?</i>
 <p>
 <b>Answer:</b>
-<br>You must have the Synchronet FTP server running and listen for incoming connections on TCP port 21 (the standard FTP port).
+<br>You must have the Synchronet FTP server running and listening for incoming connections on TCP port 21 (the standard FTP port).
 See the previous answer about methods of testing this basic connectivity using a remote telnet client.
 <p>If your FTP server window/log indicates an accepted FTP connection, then it's not a connectivity problem and probably a login failure.
 <p>FTP sessions require a <b>login</b>. If you have not created a <i>Guest</i> account for your BBS, then the FTP server will
@@ -143,7 +143,7 @@ solutions.
 <b>Answer:</b><br>
 Some software firewall and anti-virus programs interfere with the inheritance of socket descriptors between processes. I don't know if this is
 an intentional security "feature" or a design flaw. One such program is the <b><i>ZoneAlarm Security Suite</i></b>. If you have this
-(or similar) software installed, it most be completely un-installed for socket inheritance to work.
+(or similar) software installed, it must be completely un-installed for socket inheritance to work.
 </p>
 
 
