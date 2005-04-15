@@ -160,6 +160,7 @@ typedef struct  {
 	char *		post_data;
 	size_t		post_len;
 	int			dynamic;
+	char		xjs_handler[MAX_PATH+1];
 	struct log_data	*ld;
 	char		request_line[MAX_REQUEST_LINE+1];
 	BOOL		finished;				/* Done processing request. */
@@ -295,8 +296,9 @@ static void respond(http_session_t * session);
 static BOOL js_setup(http_session_t* session);
 static char *find_last_slash(char *str);
 static BOOL check_extra_path(http_session_t * session);
-static BOOL exec_ssjs(http_session_t* session, char *script);
+static BOOL exec_ssjs(http_session_t* session, char* script);
 static BOOL ssjs_send_headers(http_session_t* session);
+static BOOL get_xjs_handler(char* ext, http_session_t*);
 
 static time_t
 sub_mkgmt(struct tm *tm)
@@ -982,7 +984,7 @@ static void send_error(http_session_t * session, const char* message)
 		 * ie: Don't "upgrade" to a 500 error
 		 */
 
-		sprintf(sbuf,"%s%s.ssjs",error_dir,error_code);
+		sprintf(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
 		if(!stat(sbuf,&sb)) {
 			lprintf(LOG_INFO,"%04d Using SSJS error page",session->socket);
 			session->req.dynamic=IS_SSJS;
@@ -1610,6 +1612,8 @@ static int is_dynamic_req(http_session_t* session)
 
 	if(stricmp(ext,startup->ssjs_ext)==0)
 		i=IS_SSJS;
+	else if(get_xjs_handler(ext,session))
+		i=IS_SSJS;
 	else if(stricmp(ext,startup->js_ext)==0)
 		i=IS_JS;
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && i)  {
@@ -2065,6 +2069,25 @@ static void get_cgi_handler(char* cmdline, size_t maxlen)
 		safe_snprintf(cmdline,maxlen,"%s %s",value,fname);
 	}
 	fclose(fp);
+}
+
+static BOOL get_xjs_handler(char* ext, http_session_t* session)
+{
+	char	path[MAX_PATH+1];
+	char	value[INI_MAX_VALUE_LEN+1];
+	FILE*	fp;
+
+	if((fp=iniOpenFile(iniFileName(path,sizeof(path),scfg.ctrl_dir,"xjs_handler.ini")))==NULL)
+		return(FALSE);
+
+	if(iniReadString(fp, ROOT_SECTION, ext+1, NULL, value)!=NULL) {
+		if(getfname(value)==value)	/* no path specified */
+			SAFEPRINTF2(session->req.xjs_handler,"%s%s",scfg.exec_dir,value);
+		else
+			SAFECOPY(session->req.xjs_handler,value);
+	}
+	fclose(fp);
+	return(session->req.xjs_handler[0]!=0);
 }
 
 static str_list_t get_cgi_env(http_session_t *session)
@@ -3045,12 +3068,16 @@ static BOOL ssjs_send_headers(http_session_t* session)
 	return(send_headers(session,session->req.status));
 }
 
-static BOOL exec_ssjs(http_session_t* session, char *script)  {
+static BOOL exec_ssjs(http_session_t* session, char* script)  {
 	JSScript*	js_script;
 	jsval		rval;
 	char		path[MAX_PATH+1];
 	BOOL		retval=TRUE;
 	clock_t		start;
+
+	/* External JavaScript handler? */
+	if(script == session->req.physical_path && session->req.xjs_handler[0])
+		script = session->req.xjs_handler;
 
 	sprintf(path,"%sSBBS_SSJS.%u.%u.html",temp_dir,getpid(),session->socket);
 	if((session->req.fp=fopen(path,"wb"))==NULL) {
@@ -3075,7 +3102,7 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 
 		session->js_branch.counter=0;
 
-		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling script (%s)",session->socket,script);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling script: %s",session->socket,script);
 		if((js_script=JS_CompileFile(session->js_cx, session->js_glob
 			,script))==NULL) {
 			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)"
@@ -3083,10 +3110,11 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 			return(FALSE);
 		}
 
-		lprintf(LOG_DEBUG,"%04d JavaScript: Executing script",session->socket);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Executing script: %s",session->socket,script);
 		start=msclock();
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
-		lprintf(LOG_DEBUG,"%04d JavaScript: Done executing (%ld ms)",session->socket,msclock()-start);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Done executing script: %s (%ld ms)"
+			,session->socket,script,msclock()-start);
 	} while(0);
 
 	SAFECOPY(session->req.physical_path, path);
