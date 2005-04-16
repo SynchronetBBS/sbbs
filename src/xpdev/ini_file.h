@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -68,7 +68,7 @@ str_list_t	iniReadSectionList(FILE*, const char* prefix);
 str_list_t	iniReadKeyList(FILE*, const char* section);
 /* Read all key and value pairs and return as a named string list */
 named_string_t**
-			iniReadNamedStringList	(FILE*, const char* section);
+			iniReadNamedStringList(FILE*, const char* section);
 
 /* These functions read a single key of the specified type */
 char*		iniReadString(FILE*, const char* section, const char* key
@@ -97,7 +97,7 @@ void*		iniFreeNamedStringList(named_string_t** list);
 
 /* File I/O Functions */
 char*		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
-FILE*		iniOpenFile(const char* fname);
+FILE*		iniOpenFile(const char* fname, BOOL create);
 str_list_t	iniReadFile(FILE*);
 BOOL		iniWriteFile(FILE*, const str_list_t);
 BOOL		iniCloseFile(FILE*);

@@ -1019,11 +1019,11 @@ ulong iniGetBitField(str_list_t* list, const char* section, const char* key,
 	return(parseBitField(value,bitdesc));
 }
 
-FILE* iniOpenFile(const char* fname)
+FILE* iniOpenFile(const char* fname, BOOL create)
 {
 	char* mode="r+";
 
-	if(!fexist(fname))
+	if(create && !fexist(fname))
 		mode="w+";
 
 	return(fopen(fname,mode));
