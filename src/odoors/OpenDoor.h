@@ -915,6 +915,7 @@ od_control;
  *    od_edit_str()           - Fancy formatted string input function (ANS/AVT)
  *    od_clear_keybuffer()    - Removes any waiting keys in keyboard buffer
  *    od_multiline_edit()     - Edits text that spans multiple lines  (ANS/AVT)
+ *    od_key_pending()        - Returns TRUE if a key is waiting to be processed
  *
  * COMMON DOOR ACTIVITY FUNCTIONS
  *    od_page()               - Allows user to page sysop
@@ -962,6 +963,7 @@ ODAPIDEF char ODCALL   od_get_answer(char *pszOptions);
 ODAPIDEF void ODCALL   od_get_cursor(INT *pnRow, INT *pnColumn);
 ODAPIDEF BOOL ODCALL   od_get_input(tODInputEvent *pInputEvent,
                           tODMilliSec TimeToWait, WORD wFlags);
+ODAPIDEF BOOL ODCALL   od_key_pending(void);
 ODAPIDEF char ODCALL   od_get_key(BOOL bWait);
 ODAPIDEF BOOL ODCALL   od_gettext(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, void *pBlock);

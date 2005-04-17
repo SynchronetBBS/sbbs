@@ -402,6 +402,37 @@ ODAPIDEF void ODCALL od_clear_keybuffer(void)
    OD_API_EXIT();
 }
 
+/* ----------------------------------------------------------------------------
+ * od_key_pending()
+ *
+ * Returns TRUE if there's a key pending, FALSE otherwise.
+ *
+ * Parameters: none
+ *
+ *     Return: TRUE if character is waiting, FALSE if no character is waiting.
+ */
+ODAPIDEF BOOL ODCALL od_key_pending(void)
+{
+   /* Initialize OpenDoors if it hasn't already been done. */
+   if(!bODInitialized) od_init();
+
+   /* Log function entry if running in trace mode. */
+   TRACE(TRACE_API, "od_get_key()");
+
+   OD_API_ENTRY();
+
+   /* Call the OpenDoors kernel. */
+   CALL_KERNEL_IF_NEEDED();
+
+   if(!ODInQueueWaiting(hODInputQueue))
+   {
+         OD_API_EXIT();
+         return(FALSE);
+   }
+
+   OD_API_EXIT();
+   return(TRUE);
+}
 
 /* ----------------------------------------------------------------------------
  * od_get_key()
