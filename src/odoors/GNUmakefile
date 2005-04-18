@@ -51,6 +51,7 @@ OS      :=      $(shell uname)
 os	:=	$(shell echo $(OS) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 OBJDIR	:=	objs-$(OS)/
 LIBDIR	:=	libs-$(OS)/
+EXEDIR	:=	exe-$(OS)/
 
 LD	:=	gcc
 
@@ -104,7 +105,9 @@ endif
 #
 # Define primary target.
 #
-all: ${OBJDIR} ${LIBDIR} ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB} ex_chat ex_diag ex_hello ex_music ex_ski ex_vote
+all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${LIBDIR}libODoors${SHLIB} \
+    ${LIBDIR}libODoors${STATICLIB} $(EXEDIR)ex_chat $(EXEDIR)ex_diag \
+    $(EXEDIR)ex_hello $(EXEDIR)ex_music $(EXEDIR)ex_ski $(EXEDIR)ex_vote
 #
 #------------------------------------------------------------------------------
 #
@@ -170,6 +173,9 @@ ${OBJDIR}:
 ${LIBDIR}:
 	mkdir ${LIBDIR}
 
+${EXEDIR}:
+	mkdir ${EXEDIR}
+
 $(OBJDIR)%$(OBJFILE) : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
@@ -181,23 +187,23 @@ ${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
 	ar -r ${LIBDIR}libODoors${STATICLIB} ${OBJECTS}
 	ranlib ${LIBDIR}libODoors${STATICLIB}
 	
-ex_chat: ex_chat.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_chat.c -o ex_chat -lODoors
+${EXEDIR}ex_chat: ex_chat.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_chat.c -o $@ -lODoors
 
-ex_diag: ex_diag.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_diag.c -o ex_diag -lODoors
+${EXEDIR}ex_diag: ex_diag.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_diag.c -o $@ -lODoors
 
-ex_hello: ex_hello.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_hello.c -o ex_hello -lODoors
+${EXEDIR}ex_hello: ex_hello.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_hello.c -o $@ -lODoors
 
-ex_music: ex_music.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_music.c -o ex_music -lODoors
+${EXEDIR}ex_music: ex_music.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_music.c -o $@ -lODoors
 
-ex_ski: ex_ski.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(LDFLAGS) ex_ski.c -o ex_ski -lODoors -lxpdev
+${EXEDIR}ex_ski: ex_ski.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(LDFLAGS) ex_ski.c -o $@ -lODoors -lxpdev
 
-ex_vote: ex_vote.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o ex_vote -lODoors -DMULTINODE_AWARE
+${EXEDIR}ex_vote: ex_vote.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o $@ -lODoors -DMULTINODE_AWARE
 
 #
 #------------------------------------------------------------------------------
