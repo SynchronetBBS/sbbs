@@ -193,6 +193,7 @@ tODResult ODKrnlInitialize(void)
    sigemptyset(&(act.sa_mask));
    sigaction(SIGHUP,&act,NULL);
 
+#ifdef USE_KERNEL_SIGNAL
    /* Run kernel on SIGALRM (Every .01 seconds) */
    act.sa_handler=sig_run_kernel;
    act.sa_flags=SA_RESTART;
@@ -203,6 +204,7 @@ tODResult ODKrnlInitialize(void)
    itv.it_value.tv_sec=0;
    itv.it_value.tv_usec=10000;
    setitimer(ITIMER_REAL,&itv,NULL);
+#endif
 
    /* Make stdin signal driven. */
 /*   act.sa_handler=sig_get_char;
@@ -220,8 +222,12 @@ tODResult ODKrnlInitialize(void)
    /* Make sure SIGHUP, SIGALRM, and SIGIO are unblocked */
    sigemptyset(&block);
    sigaddset(&block,SIGHUP);
+#ifdef USE_KERNEL_SIGNAL
    sigaddset(&block,SIGALRM);
+#endif
+#if 0
    sigaddset(&block,SIGIO);
+#endif
    sigprocmask(SIG_UNBLOCK,&block,NULL);
 #endif
 

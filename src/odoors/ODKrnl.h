@@ -66,7 +66,11 @@ tODResult ODKrnlStartChatThread(BOOL bTriggeredInternally);
 #define CALL_KERNEL_IF_NEEDED()
 #else /* !OD_MULTITHREADED */
 #ifdef ODPLAT_NIX
+#ifdef USE_KERNEL_SIGNAL
 #define CALL_KERNEL_IF_NEEDED()
+#else
+#define CALL_KERNEL_IF_NEEDED()     od_kernel()
+#endif
 #else
 #define CALL_KERNEL_IF_NEEDED()     od_kernel()
 #endif /* !ODPLAT_NIX */
