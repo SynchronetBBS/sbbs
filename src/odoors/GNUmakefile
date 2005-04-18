@@ -49,6 +49,8 @@ CC	:=	gcc
 # Get OS name
 OS      :=      $(shell uname)
 os	:=	$(shell echo $(OS) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
+OBJDIR	:=	objs-$(OS)/
+LIBDIR	:=	libs-$(OS)/
 
 LD	:=	gcc
 
@@ -63,7 +65,7 @@ endif
 #
 # Compiler command-line flags.
 #
-CFLAGS	+=	-O2 -L. -I../xpdev
+CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev
 ifeq ($(OS),Darwin)
  CFLAGS		+=	-D__unix__
  LDFLAGS	+=	$(CFLAGS) -dynamiclib -single_module
@@ -102,7 +104,7 @@ endif
 #
 # Define primary target.
 #
-all: ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB} ex_chat ex_diag ex_hello ex_music ex_ski ex_vote
+all: ${OBJDIR} ${LIBDIR} ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB} ex_chat ex_diag ex_hello ex_music ex_ski ex_vote
 #
 #------------------------------------------------------------------------------
 #
@@ -161,6 +163,15 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
 	 ${OBJDIR}ODWin${OBJFILE}
 #         ${OBJDIR}ODoor.res
 #         ${OBJDIR}odsys${OBJFILE}\	this file is missing
+
+${OBJDIR}:
+	mkdir ${OBJDIR}
+
+${LIBDIR}:
+	mkdir ${LIBDIR}
+
+$(OBJDIR)%$(OBJFILE) : %.c
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 ${LIBDIR}libODoors${SHLIB} : ${OBJECTS}
 	$(LD) $(LDFLAGS) -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
