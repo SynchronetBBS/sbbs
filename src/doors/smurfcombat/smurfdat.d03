@@ -1,0 +1,24 @@
+..............................................................................
+.                       Hostage Menu                                         .
+..............................................................................
+.[1] Torture Hostage  : This command lets you torture hostages, however this .
+.                       may be too much for a hostage, esp. if it's a female .
+.                       which may kill him/her.  This has a negative result, .
+.                       see kill hostage.                                    .
+.[2] Abuse Hostage    : This command is like torture hostage except it has a .
+.                       greater affect on your hostage, and if word gets out .
+.                       about your torchurings, you will lose levels and you .
+.                       will be  attacked  at random  intervals by  computer .
+.                       players.                                             .
+.[3] Kill Hostage     : This command will let you attempt to kill a hostage, .
+.                       if you succeed you will lose  1-5 levels, lose 5 win .
+.                       points, and you will recieve 3 loss points.          .
+.[4] Transfer Hostage : This  command  will let  you transfer  a hostage  to .
+.                       another player with an open slot for a hostage.      .
+.[5] Release Hostage  : In Smurf Combat you  have the  option or releasing a .
+.                       hostage,  maybe to open up space for others or maybe .
+.                       that smurf simply can't pay up.                      .
+.[?] Hostage Help     : This documentation.                                  .
+.[Q] Quit Menu                                                               .
+..............................................................................
+.                                                                            .

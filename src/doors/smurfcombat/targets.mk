@@ -1,0 +1,6 @@
+SMURF	=	$(EXEODIR)$(DIRSEP)smurf$(EXE_SUFFIX)$(EXEFILE)
+
+all: xpdev-mt ciolib-mt $(MTOBJODIR) $(EXEODIR) $(SMURF)
+
+$(SMURF):	$(XPDEV-MT_LIB) $(CIOLIB-MT)
+

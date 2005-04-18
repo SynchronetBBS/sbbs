@@ -1,0 +1,13 @@
+char           *__version = "DELTA1A";
+char           *__vspace = "   ";
+char           *__saveversion = "v177v";
+char           *__vnew = "BETA";
+char           *__vnewsp = "";
+char           *__vday = "BETA";
+char           *__vdaysp = "";
+char           *__vcnv = "BETA";
+char           *__vcnvsp = "";
+char           *__vkey = "1.0";
+char           *__vkeysp = " ";
+char           *__vlog = "1.0";
+char           *__vlogsp = " ";
