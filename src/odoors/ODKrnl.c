@@ -705,9 +705,7 @@ statup:
 
    ODKrnlTimeUpdate();
 
-#ifndef ODPLAT_NIX
    ODTimerStart(&RunKernelTimer, 250);
-#endif
 
    OD_API_EXIT();
 

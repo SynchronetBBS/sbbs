@@ -774,7 +774,7 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
    if(Milliseconds==0)  {
       /* Prevent 100% CPU *only* no delay is actually required here */
       tv.tv_sec=0;
-      tv.tv_usec=1;
+      tv.tv_usec=1000;
       select(0,NULL,NULL,NULL,&tv);
    }
    else  {
