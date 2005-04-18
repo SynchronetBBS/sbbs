@@ -58,7 +58,7 @@ Place Drop File		Start-up Directory
 
  ----------------------------------------------------------------------------
 
- Registration is $9 + $3 S&H and can be sent to:
+ Registration is NOTHING and can be sent to:
 
  Laurence Maar			(909)861-1616 or (818)792-9988
  1415 Valeview Drive

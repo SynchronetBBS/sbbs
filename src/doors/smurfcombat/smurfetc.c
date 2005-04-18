@@ -505,7 +505,7 @@ lastquote(void)
     if (!statis) {
 	od_set_colour(L_CYAN, D_BLACK);
 	od_printf("Laurence: Hey, before you go, I was just wondering how come your\n\r");
-	od_printf("          SysOp didn't register this program, I mean it's ONLY $9!!!\n\n\r");
+	od_printf("          SysOp didn't register this program, I mean it's FREE!!!\n\n\r");
 	 /* sleep(2); */ od_set_colour(L_WHITE, D_BLUE);
 	od_printf("REGISTER ME!");
 	od_set_colour(7, 0);

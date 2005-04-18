@@ -66,7 +66,7 @@ mustregister(void)
 	od_printf("Sorry to interrupt your fun like this but your Sysop didn't\n\r");
 	od_printf("register this version of SMURF COMBAT yet!               \n\n\r");
 	od_printf("In order for this function to be orperative, your Sysop has\n\r");
-	od_printf("to pay the one time, VERY low registration cost of $9!!! \n\n\r");
+	od_printf("to pay the one time, VERY low registration cost of NOTHING!!!\n\n\r");
 	od_printf("Consider the advantages,  plain out no more waits,  and ALL\n\r");
 	od_printf("the functions work 100 percent!\n\n\r");
 	/* sleep(5); */
@@ -87,10 +87,6 @@ registerme(void)
 	od_printf("like to take .21 minutes to remind you that it took 10,000+\n\r");
 	od_printf("minutes of day-in-day-out work to complete this game.\n\n\r");
 	od_set_colour(11, 0);
-	/* cyc=0; do{ cyc++;od_printf("                 *** $9
-	 * ***\r");od_sleep(200); cyc++;od_printf("                ONLY $9!
-	 * \r");od_sleep(200); cyc++;od_printf("registration is only $9!
-	 * \r");od_sleep(200); }while(cyc<3); // sleep(1); */
 	od_set_colour(10, 0);
 	od_printf("\n\n\rThanks for your time, I hope you appreciate mine.\n\n\r");
 	/* sleep(2); */

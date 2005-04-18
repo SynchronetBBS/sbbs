@@ -69,7 +69,7 @@ titlescreen(void)
     if (!statis) {
 	od_printf(" Note that this copy is unregistered and registration is ");
 	od_set_colour(L_CYAN, D_BLACK);
-	od_printf("only $9.\n\r");
+	od_printf("FREE.\n\r");
 	sleep(2);
     } else
 	od_printf(" Thank your SysOp for registering me!\n\r");
