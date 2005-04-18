@@ -369,7 +369,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 			sprintf(vpath,"/%s/%s/%s"
 				,cfg->lib[l]->sname
-				,cfg->dir[d]->code
+				,cfg->dir[d]->code_suffix
 				,html_index_file);
 			if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
 				return(NULL);
