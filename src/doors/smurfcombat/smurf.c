@@ -252,9 +252,11 @@ getcommand(void)
 	    enterpointer = 0;
 	    what();
 	    newplayer(2);
+#ifdef ALLOW_CHEATING
 	} else if (bbsinkey == '$' && enterpointer == 1) {
 	    what();
 	    smurfmoney[thisuserno] += 1000000;
+#endif
 	} else if (bbsinkey == 'S' && enterpointer == 1 && od_control.user_num == 1) {
 	    enterpointer = 0;
 	    maint(2);
