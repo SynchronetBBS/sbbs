@@ -3,11 +3,11 @@
 #include<dos.h>
 #endif
 #include<time.h>
-#include<OpenDoor.h>
 #include<stdio.h>
 #include<string.h>
 #include<ciolib.h>
 #include<stdlib.h>
+#include<OpenDoor.h>
 #include<genwrap.h>
 #define SD_GREEN  0x0a
 #define SD_CYAN 0x0b
