@@ -39,6 +39,7 @@
 #define _STR_LIST_H
 
 #include <stdio.h>			/* FILE */
+#include <stddef.h>         /* size_t */
 #include "gen_defs.h"
 
 #if defined(__cplusplus)
