@@ -52,6 +52,16 @@ Any checks or money orders MUST be addressed to 'CASH' or 'Laurence Maar'
  o         C:\BBS\SMURF\> smurf local                                       o
  o                                                                          o
  o                                                                          o
+ o STARTING FROM THE BBS                                                    o
+ o =====================                                                    o
+ o To start Smurf Combat as a door, use the folowing command-line:          o
+ o         C:\BBS\SMURF\> smurf [dropfile [handle]]                         o
+ o                                                                          o
+ o If no dropfile is specified, it will be loaded from the current          o
+ o directory.  If no handle is specified, t will be read from the dropfile  o
+ o (Currently, this is only available with door32.sys)                      o
+ o                                                                          o
+ o                                                                          o
  o STARTING A NEW GAME (REROLL)                                             o
  o ============================                                             o
  o Because i'm running outta time here, i'm NOT GOING TO TELL YOU HOW TO    o
