@@ -1114,7 +1114,7 @@ video_async_event(void *crap)
 				* was wrong with select....
 				*/
 
-				perror("select");
+				/* perror("select"); */
 				break;
 			case 0:
 				if(console_new_mode!=NO_NEW_MODE)
