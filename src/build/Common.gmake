@@ -307,22 +307,22 @@ endif
 -include objects.mk		# defines $(OBJS)
 
 # Implicit C Compile Rule
-$(OBJODIR)/%$(OFILE) : %.c $(OBJODIR) $(BUILD_DEPENDS)
+$(OBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 
 # Implicit C++ Compile Rule
-$(OBJODIR)/%$(OFILE) : %.cpp $(OBJODIR) $(BUILD_DEPENDS)
+$(OBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
 
 # Implicit MT C Compile Rule
-$(MTOBJODIR)/%$(OFILE) : %.c $(MTOBJODIR) $(BUILD_DEPENDS)
+$(MTOBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
 # Implicit MT C++ Compile Rule
-$(MTOBJODIR)/%$(OFILE) : %.cpp $(MTOBJODIR) $(BUILD_DEPENDS)
+$(MTOBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
