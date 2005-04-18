@@ -16,3 +16,13 @@ LDFLAGS	+=	-L$(SRC_ROOT)/odoors
 $(SMURF): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) -lODoors
+
+dist:: $(SMURF)
+	rm -f $(SRC_ROOT)/*.so* $(SRC_ROOT)/*.a $(SRC_ROOT)/*.o
+	$(MAKE) -C $(SRC_ROOT)/odoors
+	-mkdir dist
+	cp install.sh dist
+	cp $(SMURF) dist/smurf.`uname`
+	cp *.d0* dist
+	cp *.doc dist
+	cp *.txt dist

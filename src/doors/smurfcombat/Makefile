@@ -12,3 +12,11 @@ LDFLAGS =      $(LDFLAGS) -L$(SRC_ROOT)/odoors
 $(SMURF): $(OBJS)
 	@echo Linking $@
         ${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -e$@ $(OBJS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) ODoors.lib
+
+dist:: $(SMURF)
+	-md dist
+	copy /Y $(SMURF) dist
+	copy /Y *.d0* dist
+	copy /Y *.doc dist
+	copy /Y *.txt dist
+	copy /Y install.bat dist
