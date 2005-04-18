@@ -1,5 +1,5 @@
 **************************************************************************
-* OpenDoors v6.23 C/C++ Door Development Kit for DOS and Win32 Platforms *
+* OpenDoors v6.24 C/C++ Door Development Kit for DOS and Win32 Platforms *
 **************************************************************************
 
 August 10, 2003
@@ -91,5 +91,12 @@ descriptor on the command-line.
 
 v6.23 changes:
 *nix support using stdio
+
+v6.24 chagnes:
+Fixed timeing bugs on *nix
+Fixed output truncated bug on *nix
+Fixed od_get_input() hang on ESC on Win32
+Fixed various other bugs.
+Added od_key_pending() function.
 
 /* End of ODOORS62.TXT */

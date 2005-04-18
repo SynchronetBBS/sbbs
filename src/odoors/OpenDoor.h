@@ -80,7 +80,7 @@
 /* ========================================================================= */
 
 /* OpenDoors API version number. */
-#define OD_VERSION 0x622
+#define OD_VERSION 0x624
 
 #define DIRSEP		'\\'
 #define DIRSEP_STR	"\\"
