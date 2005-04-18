@@ -46,6 +46,12 @@ Any checks or money orders MUST be addressed to 'CASH' or 'Laurence Maar'
  o CALLINFO.BBS, EXITINFO.BBS.                                              o
  o                                                                          o
  o                                                                          o
+ o STARTING IN LOCAL MODE                                                   o
+ o ======================                                                   o
+ o To start Smurf Combat in local mode, simply type the following:          o
+ o         C:\BBS\SMURF\> smurf local                                       o
+ o                                                                          o
+ o                                                                          o
  o STARTING A NEW GAME (REROLL)                                             o
  o ============================                                             o
  o Because i'm running outta time here, i'm NOT GOING TO TELL YOU HOW TO    o

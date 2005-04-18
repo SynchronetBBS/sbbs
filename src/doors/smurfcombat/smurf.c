@@ -135,6 +135,9 @@ char*   argv[100];
 	__CNV__main();
 	exit(0);
     }
+    if (argc > 1 && strnicmp(argv[1], "LOCAL", 5) == 0) {
+	od_control.od_force_local=TRUE;
+    }
 #ifdef TODO_LOCAL_DISPLAY
     __mess(5);
 #endif
