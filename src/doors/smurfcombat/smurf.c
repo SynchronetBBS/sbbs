@@ -143,13 +143,13 @@ char*   argv[100];
 		od_control.od_force_local=TRUE;
 		arg++;
 	}
-	if(argc >= arg) {
+	if(argc > arg) {
 		strcpy(od_control.info_path,argv[arg]);
 		if(isdir(argv[arg]))
 			strcat(od_control.info_path, DIRSEP_STR);
 		arg++;
 	}
-	if(argc >= arg) {
+	if(argc > arg) {
 		int type,len,got;
 		SOCKET sock;
 #ifdef _WIN32
