@@ -31,9 +31,11 @@ maint(int level)
     /* fclose(stream); */
     do {
 	od_clr_scr();
+#ifdef TODO_LOCAL_DISPLAY
 	gotoxy(1, 20);
 	printf("Local ECho Only: Press Alt-C To Chat!");
 	gotoxy(1, 1);
+#endif
 	od_set_colour(L_YELLOW, D_BLACK);
 	od_printf("\n\rLevel %d (%s) ", level, leveln[level]);
 	od_set_colour(L_RED, D_BLACK);
