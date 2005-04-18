@@ -142,8 +142,10 @@ char*   argv[100];
     __mess(5);
 #endif
     od_init();
+#ifdef TODO_STATUS_LINE
     od_control.od_status_on = FALSE;
     od_set_statusline(STATUS_NONE);
+#endif
 #ifdef TODO_LOCAL_DISPLAY
     window(1, 1, 80, 25);
     clrscr();
@@ -697,7 +699,7 @@ void            checkstatus(void){
 	smurffights[thisuserno] = 0;
 	roundsleft = 0;
     }
-    sprintf(logname, "SMURF.%03i", thisuserno);
+    sprintf(logname, "smurf.%03i", thisuserno);
     od_control.user_screen_length = 23;
     __mess(3);			       /* Update Bulletins */
     __mess(1);			       /* Smurf Times */
