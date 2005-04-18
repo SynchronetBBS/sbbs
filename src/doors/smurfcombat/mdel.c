@@ -8,7 +8,7 @@ int mdel(char *glob)
 	strcpy(this,glob);
 	while(fexistcase(this)) {
 		if(unlink(this)==-1)
-			return(count);
+			return(-1);
 		count++;
 		strcpy(this,glob);
 	}
