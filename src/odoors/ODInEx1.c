@@ -339,6 +339,11 @@ ODAPIDEF void ODCALL od_init(void)
    FILE *pfDropFile=NULL;
    char *pointer;
    INT nFound = FOUND_NONE;
+#ifdef _WIN32
+   float forcefloats;
+
+   forcefloats=1.1;
+#endif
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_init()");
