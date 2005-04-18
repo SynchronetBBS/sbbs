@@ -33,9 +33,7 @@ protov(void)
     od_set_color(3, 0);
     od_printf("OMBAT ");
     od_set_color(11, 0);
-    od_printf("2.xx %s ", __version);
-    od_set_color(3, 0);
-    od_printf("(Trial Release) ");
+    od_printf("v%s ", __version);
     od_set_color(11, 0);
     od_printf("**********!\n\r");
     od_set_color(15, 0);
@@ -59,21 +57,23 @@ protov(void)
     od_set_color(7, 0);
     od_printf("aar\n\n\r");
 
-    /* od_set_color(7,0); od_printf("Program:    ");
-     * 
-     * if(statis) od_printf("Registered\n\r"); else
-     * od_printf("Unregistered\n\r");
-     * 
-     * od_printf("Interbbs:   n/a (Local Game Only)\n\r");
-     * 
-     * od_printf("Synchronet: n/a (Project Discontinued)\n\n\r"); */
+    od_set_color(7,0); od_printf("Program:    ");
+      
+     if(statis) od_printf("Registered\n\r"); else
+     od_printf("Unregistered\n\r");
+      
+     od_printf("Interbbs:   n/a (Local Game Only)\n\r");
+     
+     od_printf("Synchronet: n/a (Project Discontinued)\n\n\r");
 
+/*
     od_set_color(7, 0);
     od_printf("This version is intended to be run SysOps who wish to participate in the M.E.\n\r");
     od_printf("game testing program. You will be automatically listed as an OFFICIAL site in\n\r");
     od_printf("our next release upon report of ANY program malfunction.    Simply report the\n\r");
     od_printf("nature and location of the error. Not only will your BBS be advertised nation\n\r");
     od_printf("wide, but you will be able to enjoy error free games!\n\r");
+*/
 
     od_set_color(15, 0);
     od_printf("Laurence Maar (909)861-1616.   1415 Valeview Dr.   Diamond Bar, CA 91765-4337\n\n\r");

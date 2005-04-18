@@ -28,10 +28,10 @@ main()
 
     textcolor(11);
     cprintf(" Programme Code : ");
-    gets(temp_string);
+    cgets(temp_string);
     security_code = atoi(temp_string);
     cprintf("        Repetez : ");
-    gets(temp_string);
+    cgets(temp_string);
     security_verification = atoi(temp_string);
     if (security_code != security_verification) {
 	printf("\nCodes ne match pas!\n");
@@ -39,9 +39,9 @@ main()
     }
     textcolor(11);
     cprintf(" Individule Nom : ");
-    gets(registration_string);
+    cgets(registration_string);
     cprintf("        Repetez : ");
-    gets(registration_verification);
+    cgets(registration_verification);
     if (strcmp(registration_string, registration_verification) != 0) {
 	printf("\nStrings ne match pas!\n");
 	return (1);

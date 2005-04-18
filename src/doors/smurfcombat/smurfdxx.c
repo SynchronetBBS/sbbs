@@ -108,6 +108,7 @@ __DAY__main(void)
     int             hostage[1000], holder[1000], hcount;
     getdate(&d);
 
+#ifdef TODO_LOCAL_DISPLAY
     textcolor(12);
     cprintf("\n   S M U R F   C O M B A T\n\n\r");
     textcolor(10);
@@ -126,6 +127,7 @@ __DAY__main(void)
     od_sleep(200);
     textcolor(14);
     cprintf("Success.\n\r");
+#endif
     sprintf(newdate, "%02d%02d%04d", d.da_day, d.da_mon, d.da_year);
     stream = fopen("smurf.cfg", "r+");
     fscanf(stream, "%3s", intext);
@@ -140,12 +142,15 @@ __DAY__main(void)
     fprintf(stream, "%8s", newdate);
     fprintf(stream, "\n\r\n\r1. Arena Rounds/Day ###\n\r2. Turns/Day ###\n\r3. Last Ran Date DDMMYYYY\n\r");
     fclose(stream);
+#ifdef TODO_LOCAL_DISPLAY
     textcolor(13);
     cprintf("Loading Smurf Players: ");
     od_sleep(200);
     textcolor(14);
+#endif
     loadgame();
     backgame();
+#ifdef TODO_LOCAL_DISPLAY
     cprintf("Success.\n\r");
     textcolor(13);
     cprintf("Loading Hostage Intellegence: ");
@@ -156,6 +161,7 @@ __DAY__main(void)
 	cprintf(".");
     }
     cprintf("Success.\n\r");
+#endif
 
     stream = fopen("smurf.hst", "r+");
     cyc = 0;
@@ -177,8 +183,10 @@ __DAY__main(void)
 	    }
     }
 
+#ifdef TODO_LOCAL_DISPLAY
     textcolor(13);
     cprintf("Reseting Variables: ");
+#endif
 
     stream = fopen("smurf.hst", "a+");
     fclose(stream);
@@ -214,6 +222,7 @@ __DAY__main(void)
     fclose(stream);
 
     sleep(1);
+#ifdef TODO_LOCAL_DISPLAY
     textcolor(14);
     for (cyc = 0; cyc < noplayers; cyc++) {
 	od_sleep(50);
@@ -226,6 +235,7 @@ __DAY__main(void)
     cprintf("Animating Cpu Players: ");
     od_sleep(100);
     textcolor(14);
+#endif
     for (cyc = 0; cyc < noplayers; cyc++) {
 	if (realnumb[cyc] == 0) {
 
@@ -250,11 +260,15 @@ __DAY__main(void)
 		    fclose(logstream);
 		    hostage[cyc2] = 255;
 		    holder[cyc2] = 255;
+#ifdef TODO_LOCAL_DISPLAY
 		    od_sleep(200);
 		    cprintf("$");
+#endif
 		}
+#ifdef TODO_LOCAL_DISPLAY
 	    od_sleep(200);
 	    cprintf("@");
+#endif
 	    for (cyc3 = 0; cyc3 < turnsaday; cyc3++) {
 		mod = smurflevel[cyc] / 2;
 		if (mod < 1)
@@ -270,13 +284,18 @@ __DAY__main(void)
 		__DAY__checklevel();
 	    }
 	} else {
+#ifdef TODO_LOCAL_DISPLAY
 	    od_sleep(50);
 	    cprintf(".");
+#endif
 	}
-    } cprintf("Success.\n\r");
+    }
+#ifdef TODO_LOCAL_DISPLAY
+    cprintf("Success.\n\r");
 
     textcolor(13);
     cprintf("Saving Player Game File: ");
+#endif
     stream = fopen("smurf.hst", "w+");
     fprintf(stream, "255255");
     for (cyc = 0; cyc < hcount; cyc++)
@@ -296,6 +315,7 @@ __DAY__main(void)
     } while (feof(stream) == 0);
     fclose(stream);
 
+#ifdef TODO_LOCAL_DISPLAY
     od_sleep(200);			       /* stream = fopen("smurf.log",
 				        * "a+");fprintf(stream, "SPAWN:)
 				        * Logon Maintenance.\n\r");
@@ -304,8 +324,11 @@ __DAY__main(void)
     cprintf("Success.\n\r");
     textcolor(13);
     cprintf("Writing Today Log File: ");
+#endif
     stream = fopen("smurf.new", "w+");
+#ifdef TODO_LOCAL_DISPLAY
     od_sleep(200);
+#endif
     for (cyc = 0; cyc < noplayers; cyc++) {
 	if (realnumb[cyc] == 0) {
 	    if (gain[cyc] > 0)
@@ -318,9 +341,11 @@ __DAY__main(void)
     }
     fclose(stream);
     savegame();
+#ifdef TODO_LOCAL_DISPLAY
     textcolor(14);
     cprintf("Success.\n\r");	       /* stream = fopen("smurf.log",
 				        * "a+");fprintf(stream, "SPAWN:)
 				        * Disconnect Maintenance.\n\r");
 				        * fclose(stream); */
+#endif
 }
