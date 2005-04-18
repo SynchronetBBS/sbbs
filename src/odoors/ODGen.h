@@ -107,20 +107,20 @@
 
 /* VERSION INFORMATION CONSTANTS. */
 #define OD_VER_SHORTNAME   "OpenDoors"
-#define OD_VER_STATUSLINE  "  OpenDoors 6.20 - (C) Copyright 1991-2001" \
+#define OD_VER_STATUSLINE  "  OpenDoors 6.22 - (C) Copyright 1991-2001" \
                            " by Brian Pirie                      "
-#define OD_VER_UNREG_STAT  "  OpenDoors 6.20  *WARNING* Unregistered Version" \
+#define OD_VER_UNREG_STAT  "  OpenDoors 6.22  *WARNING* Unregistered Version" \
                            " - Limit 1 month trial period! "
 
 #ifdef ODPLAT_DOS
-#define OD_VER_SIGNON      "[OpenDoors 6.20/DOS - " \
+#define OD_VER_SIGNON      "[OpenDoors 6.22/DOS - " \
                            "(C) Copyright 1991-2001 by Brian Pirie]\n\r"
-#define OD_VER_FULLNAME    "OpenDoors 6.20/DOS"
+#define OD_VER_FULLNAME    "OpenDoors 6.22/DOS"
 #endif /* ODPLAT_DOS */
 #ifdef ODPLAT_WIN32
-#define OD_VER_SIGNON      "[OpenDoors 6.20/Win32 - " \
+#define OD_VER_SIGNON      "[OpenDoors 6.22/Win32 - " \
                            "(C) Copyright 1991-2001 by Brian Pirie]\n\r"
-#define OD_VER_FULLNAME    "OpenDoors 6.20/Win32"
+#define OD_VER_FULLNAME    "OpenDoors 6.22/Win32"
 #endif /* ODPLAT_WIN32 */
 
 
