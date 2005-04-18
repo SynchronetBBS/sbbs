@@ -356,12 +356,12 @@ char *ciolib_cgets(char *str)
 	CIOLIB_INIT();
 	
 	maxlen=*(unsigned char *)str;
-	while((ch=ciolib_getche())!='\n') {
+	while((ch=ciolib_getche())!='\n' && ch !='\r') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
 				ciolib_getche();
 				break;
-			case '\r':	/* Skip \r (ToDo: Should this be treeated as a \n? */
+			case '\r':	/* Skip \r (ToDo: Should this be treated as a \n? */
 				break;
 			case '\b':
 				if(len==0) {
