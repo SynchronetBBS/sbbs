@@ -76,7 +76,9 @@ ODAPIDEF void ODVCALL od_printf(char *pszFormat,...)
    char *pchStart;
    BOOL bNotFound;
    INT nCharCount;
+   float dummyfloat;   /* Forces floating point support to be loaded */
 
+   dummyfloat=1.1;
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_printf()");
 
