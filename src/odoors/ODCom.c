@@ -2773,7 +2773,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 			FD_SET(pPortInfo->socket,&socket_set);
 
 			tv.tv_sec=0;
-			tv.tv_usec=0;
+			tv.tv_usec=100;
 
 			select_ret = select(pPortInfo->socket+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
 			if (select_ret == SOCKET_ERROR)
@@ -2810,7 +2810,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 				FD_SET(STDIN_FILENO,&socket_set);
 
 				tv.tv_sec=0;
-				tv.tv_usec=0;
+				tv.tv_usec=100;
 
 				select_ret = select(STDIN_FILENO+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
 				if (select_ret == -1) {
@@ -2962,7 +2962,7 @@ keep_going:
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
 
-			tv.tv_sec=0;
+			tv.tv_sec=1;
 			tv.tv_usec=0;
 
 			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
@@ -3201,7 +3201,7 @@ tODResult ODComGetBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize,
 			FD_SET(pPortInfo->socket,&socket_set);
 
 			tv.tv_sec=0;
-			tv.tv_usec=0;
+			tv.tv_usec=100;
 
 			if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,&tv) != 1) {
 				*pnBytesRead = 0;
@@ -3452,7 +3452,7 @@ try_again:
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
 
-			tv.tv_sec=0;
+			tv.tv_sec=1;
 			tv.tv_usec=0;
 
 			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
