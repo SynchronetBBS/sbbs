@@ -460,7 +460,7 @@ static int ODGetCodeIfLongest(WORD wFlags)
          if(seqlen2<=seqlen1) {	/* The sequence would be completed in buffer */
             if(strncmp(aKeySequences[i].pszSequence, szCurrentSequence, seqlen2)==0) {
                retval=i;
-               CurrLen=seqlen;
+               CurrLen=seqlen2;
             }
          }
          else {		/* Possible partial sequence */
