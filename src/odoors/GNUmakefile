@@ -175,7 +175,7 @@ $(OBJDIR)%$(OBJFILE) : %.c
 
 ${LIBDIR}libODoors${SHLIB} : ${OBJECTS}
 	$(LD) $(LDFLAGS) -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
-	ln -fs ${LIBDIR}libODoors${SHLIB}.6.2 ${LIBDIR}libODoors${SHLIB}
+	ln -fs libODoors${SHLIB}.6.2 ${LIBDIR}libODoors${SHLIB}
 
 ${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
 	ar -r ${LIBDIR}libODoors${STATICLIB} ${OBJECTS}
