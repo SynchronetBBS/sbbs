@@ -11,7 +11,7 @@ include ${SRC_ROOT}/build/Common.gmake
 CFLAGS	+=	$(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 LDFLAGS	+=	$(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
 CFLAGS	+=	-I$(SRC_ROOT)/odoors -I../gamesdk -I../mylibs -I.
-LDFLAGS	+=	-L$(SRC_ROOT)/odoors
+LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-`uname`
 
 vpath %.c ../gamesdk
 
