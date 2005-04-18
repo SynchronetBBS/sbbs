@@ -286,10 +286,10 @@ SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # Pull in lib-specific flags
-include		$(CIOLIB_SRC)$(DIRSEP)Common.make
-include		$(UIFC_SRC)$(DIRSEP)Common.make
-include		$(SMBLIB_SRC)$(DIRSEP)Common.make
-include		$(XPDEV_SRC)$(DIRSEP)Common.make
+-include		$(CIOLIB_SRC)$(DIRSEP)Common.make
+-include		$(UIFC_SRC)$(DIRSEP)Common.make
+-include		$(SMBLIB_SRC)$(DIRSEP)Common.make
+-include		$(XPDEV_SRC)$(DIRSEP)Common.make
 -include		$(CIOLIB_SRC)$(DIRSEP)Common.gmake
 -include		$(UIFC_SRC)$(DIRSEP)Common.gmake
 -include		$(SMBLIB_SRC)$(DIRSEP)Common.gmake
@@ -307,22 +307,22 @@ endif
 -include objects.mk		# defines $(OBJS)
 
 # Implicit C Compile Rule
-$(OBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS)
+$(OBJODIR)/%$(OFILE) : %.c $(OBJODIR) $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 
 # Implicit C++ Compile Rule
-$(OBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS)
+$(OBJODIR)/%$(OFILE) : %.cpp $(OBJODIR) $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
 
 # Implicit MT C Compile Rule
-$(MTOBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS)
+$(MTOBJODIR)/%$(OFILE) : %.c $(MTOBJODIR) $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
 # Implicit MT C++ Compile Rule
-$(MTOBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS)
+$(MTOBJODIR)/%$(OFILE) : %.cpp $(MTOBJODIR) $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
