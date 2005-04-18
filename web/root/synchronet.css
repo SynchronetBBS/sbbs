@@ -572,7 +572,7 @@ td.msg {
 }
 
 td.msgnavleft { 
-    width: 25%;  
+    width: 1%;  
     background-color: #dddddd; 
     text-align: left; 
     padding: 4px; 
@@ -586,7 +586,7 @@ td.msgnavmid {
 }
 
 td.msgnavright { 
-    width: 25%;  
+    width: 1%;  
     background-color: #dddddd; 
     text-align: right; 
     padding: 4px; 
@@ -691,16 +691,22 @@ pre.leftalign {
 }
 
 a.footer { 
-font-size: 8pt;
-font-weight: normal; 
-text-decoration: none; 
+    font-size: 8pt;
+    font-weight: normal; 
+    text-decoration: none; 
 }
 
 a.footer:hover {
-text-decoration: underline; 
+    text-decoration: underline; 
 }
 
 /* FPT (ftp_html.js) Styles */
+
+h1.ftp_title {
+ font-size: 20pt;
+ font-style: italic;
+ color: white;
+}
 
 table.ftp_stats { 
     text-align:left; 
@@ -716,20 +722,106 @@ th.ftp_stats {
     background-color:#777777; 
 }
 
-table.ftpdirlist { 
-    color:white; 
+a.ftp_dirlist {
+    font-size: 10pt;
+    text-decoration: none;
+    color: black;
+}
+
+a.ftp_dirlist:hover { 
+    text-decoration:underline;
+}
+
+a.ftp_dirlist:visited {
+ color: #888888;
+}
+
+a.ftp_dirlist_sm {
+    font-size: 8pt;
+    text-decoration: none;
+    color: black;
+}
+
+a.ftp_dirlist_sm:hover { 
+    text-decoration:underline;
+}
+
+a.ftp_dirlist_sm:visited {
+    color: #888888;
+}
+
+th.ftp_dirlist_hdr {
+    background-color: #8899aa;
+    text-align: center;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 4px;
+    font-size: 8pt;
+}
+
+th.ftp_dirlist_hdr_rt {
+    background-color: #8899aa;
+    text-align: right;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 4px;
+    font-size: 8pt;
+}
+
+a.ftp_dirlist_hdr {
+ color: black;
+ text-decoration: none;
+}
+
+a.ftp_dirlist_hdr:hover {
+ text-decoration: underline;
+}
+
+th.ftp_dirlist_ftr {
+    background-color: #8899aa;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 4px;
+    font-size: 8pt;
+}
+
+table.ftp_dirlist { 
+    color:black; 
     text-align:left; 
     font-weight: normal; 
-    font-size: small; 
-    background-color: #888888; 
+    font-size: 10pt; 
+    background-color: #cccccc; 
 }
 
-th.ftpdirlist { 
-    color: white; 
+tt.ftp_dirlist {
+    font-size: 9pt;
+    vertical-align: top;
+    padding-left: 5px;
 }
 
-pre.ftpdesc { 
-    background-color: #888888; 
-    color:white; 
+th.ftp_dirlist { 
+    font-size: 10pt;
+    color: black;
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
+td.ftp_dirlist { 
+    font-size: 8pt;
+    color: black;
+    vertical-align: top;
+    padding-left: 5px;
+    padding-right: 5px; 
+}
+
+pre.ftp_desc { 
+    background-color: #cccccc; 
+    color:black;
+    font-size: 8pt;
+    padding-left: 5px;
+    padding-right: 5px; 
+}
+
+div.ftp_ftr {
+ font-size: 8pt;
+}
