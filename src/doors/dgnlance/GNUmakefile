@@ -2,8 +2,8 @@ SRC_ROOT        = ../..
 include ${SRC_ROOT}/build/Common.gmake
 
 # OpenDoors
-LDFLAGS	+=	-L../../odoors
-CFLAGS	+=	-I../../odoors
+LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-`uname`
+CFLAGS	+=	-I$(SRC_ROOT)/odoors
 
 ifdef STATIC
  LDFLAGS	+=	-static
