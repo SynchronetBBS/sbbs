@@ -8,6 +8,8 @@ http_reply.fast=true;
 load("sbbsdefs.js");
 load("../web/lib/template.ssjs");
 
+var show_qnet=false;
+
 var sub="";
 
 if(system.lastuser==undefined)	/* v3.10 */
@@ -22,6 +24,8 @@ for(i=1;i<=lastuser;i++) {
 	usr=new Object;
 	u.number=i;
 	if(u.settings&USER_DELETED)
+		continue;
+	if(!show_qnet && (u.security.restrictions & UFLAG_Q))
 		continue;
 	usr.alias=u.alias.toString();
 	usr.location=u.location.toString();
