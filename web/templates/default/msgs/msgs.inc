@@ -6,7 +6,7 @@
 
 
 <div align="center">
-@@JS:template.can_post?'<form name="PostMsg" action="post.ssjs?msg_sub=^^sub:code^^&amp;post=new" method="post"><input type="submit" value="'+template.post_button+'" /></form>':''@@
+@@JS:template.can_post?'<form name="PostMsg" action="post.ssjs?msg_sub='+template.sub.code+'&amp;post=new" method="post"><input type="submit" value="'+template.post_button+'" /></form>':''@@
 @@JS:template.show_choice==undefined ? '' : '(' + template.show_choice + ')<br /><br />'@@
 </div>
 
