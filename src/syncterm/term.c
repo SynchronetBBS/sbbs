@@ -145,6 +145,23 @@ void update_status(struct bbslist *bbs)
 	gotoxy(txtinfo.curx,txtinfo.cury);
 }
 
+#if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
+void dump(BYTE* buf, int len)
+{
+	char str[128];
+	int i,j;
+	size_t slen=0;
+
+	slen=sprintf(str,"RX: ");
+	for(i=0;i<len;i+=j) {
+		for(j=0;i+j<len && j<32;j++)
+			slen+=sprintf(str+slen,"%02X ",buf[i+j]);
+		OutputDebugString(str);
+		slen=sprintf(str,"RX: ");
+	}
+}
+#endif
+
 void doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
@@ -182,6 +199,9 @@ void doterm(struct bbslist *bbs)
 			case 0:
 				break;
 			default:
+#if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
+				dump(buf,i);
+#endif
 				cterm_write(buf,i,prn,sizeof(prn));
 				conn_send(prn,strlen(prn),0);
 				break;
