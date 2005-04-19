@@ -12,10 +12,12 @@
 	<li><a href="#ports">What inbound ports do I need to open in my firewall?</a>
 	<li><a href="#private_ip">How come my friends can't connect to my BBS at my <b>192.168.x.x</b>, <b>172.[16-31].x.x</b>, or <b>10.x.x.x</b> IP address?</a>
 	<li><a href="#public_ip">So what is my public IP address?</a>
-	<li><a href="#port25">Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</a>
+	<li><a href="#tx_smtp">Why can't I send Internet e-mail from my BBS?</a>
+	<li><a href="#rx_smtp">Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</a>
 	<li><a href="#ftp_connect">Why can't users connect to my FTP server?</a>
 	<li><a href="#ftp_nat">Why do FTP clients lock-up when listing directories or downloading files from my FTP server?</a>
 	<li><a href="#socket_io">Why do external programs that use socket I/O (e.g. Synchronet Blackjack, Synchronet BBS List, DoorMUD) hang on my Windows BBS?</a>
+	<li><a href="#bandwidth">How many nodes/clients/users can I support with my Internet connection?</a>
 </ul>
 
 <a name="ports"><hr></a>
@@ -75,12 +77,65 @@ to connect to your BBS. This IP address <b>will not</b> begin with <i>192.168</i
 public web-sites that can tell you what your public IP address is. However, it is usually much better to advertise a <b>hostname</b>
 (e.g. <i>vert.synchro.net</i>) rather than an hard-to-remember IP address (e.g. <i>69.104.209.209</i>).
 <p>
-If you use a <i><a href=dyndns.txt>Dynamic DNS</a></i> service to get hostname for your BBS, 
+If you use a <i><a href=dyndns.txt>Dynamic DNS</a></i> service to get a hostname for your BBS, 
 they can usually correctly determine your public IP address automatically, even if your IP address changes.
 So you don't <b>need</b> to necessarily know what it is.
 </p>
 
-<a name="port25"><hr></a>
+<a name="tx_smtp"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>Why can't I send Internet e-mail from my BBS?</i>
+<p>
+<b>Answer:</b>
+<br>You must have the Synchronet "SendMail" thread enabled in your Synchronet Mail Server configuration.
+<br>If you <b>do not</b> see the following message in your Synchronet Mail Server window/log output when the server
+is started or recycled:</p>
+<tt>0000 SendMail thread started</tt>
+<p>then you do not have the SendMail thread enabled and your system cannot deliver any Internet e-mail messages
+until it is enabled and recycled (any previously queued outbound messages will be delivered at that time).
+<p>If your Synchronet "SendMail" thread cannot deliver e-mail messages, it could be for any of the following
+reasons:
+<ol>
+<li>You have your mail server configured for "Direct Delivery", but have an improperly configured DNS server
+IP address.
+<br>Example errors indicating this condition include:
+<br><tt>0000 !SEND INVALID DNS server address</tt>
+<br><tt>0000 !SEND ERROR -1 obtaining MX records for someserver.com from 192.168.1.1</tt>
+<p>
+<li>Your firewall, Internet Service Provider, or Anti-Virus software is blocking, intercepting, or filtering
+outbound connections to TCP port 25 (many consumer-class ISPs do this). 
+<br>Example errors indicating this condition include:
+<br><tt>0700 !SEND ERROR 60 connecting to SMTP server: smtp.somedomain.com</tt>
+<p>
+You can verify if this is the case by attempting to telnet to a known public SMTP server (e.g. <i>vert.synchro.net</i>, TCP port 25).
+<br>You should see a mail server version banner similar to the following:
+<br><tt>220 bbs.synchro.net Synchronet SMTP Server 1.362-Win32 Ready</tt>
+<p>
+If your ISP is blocking port 25, they will normally make an exception for their own mail servers
+(e.g. <tt>mail.yourisp.com</tt> or <tt>smtp.yourisp.com</tt>). If this is the case (and your ISP's mail server allows the <i>from</i> address of your e-mail message
+to contain any hostname or IP address of your choosing), then you need to configure your mail server to use your ISP's mail server as its
+relay server.
+<p>
+If your ISP's mail server only allows mail to be sent from <tt>somename@yourisp.com</tt>
+then you need to contact your ISP about how you can send mail from a different domain using their mail server.
+Perhaps they only allow this feature when using SMTP authentication..
+<p>
+<li>You have your mail server configured to use an external "Relay Server", but have an improperly configured
+relay server hostname or IP address.
+<br>Example errors indicating this condition include:
+<br><tt>0000 !ERROR resolving hostname: badhostname.com</tt>
+<br><tt>0680 !SEND ERROR 60 connecting to SMTP server: 192.168.1.1</tt>
+<p>
+<li>You have your mail server configured to use an external "Relay Server", but the SMTP relay server requires
+authentication
+<br>(Synchronet v3.12+ supports <i>Plain</i>, <i>Login</i>, and <i>CRAM-MD5</i> methods of SMTP authentication).
+</ol>
+In general, you need to check your Synchronet Mail Server window/log output for details about why Internet e-mail
+delivery attempts may be failing.
+</p>
+
+<a name="rx_smtp"><hr></a>
 <p>
 <b>Question:</b><br>
 <i>Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</i>
@@ -103,6 +158,7 @@ changing ISPs is often not. One possible work-around is having a mail proxy (3rd
 to a non-standard (non-blocked) SMTP port. Many Dynamic DNS services offer this <a href=http://www.dyndns.org/services/mailhop/relay.html>service</a>
 for a fee. Or fellow sysops may be able to do perform this service for your for free.
 </p>
+
 
 <a name="ftp_connect"><hr></a>
 <p>
@@ -144,6 +200,44 @@ solutions.
 Some software firewall and anti-virus programs interfere with the inheritance of socket descriptors between processes. I don't know if this is
 an intentional security "feature" or a design flaw. One such program is the <b><i>ZoneAlarm Security Suite</i></b>. If you have this
 (or similar) software installed, it must be completely un-installed for socket inheritance to work.
+</p>
+
+<a name="bandwidth"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>How many nodes/clients/users can I support with my Internet connection?</i>
+<p>
+<b>Answer:</b><br>
+Depends on what those clients will be doing while connected. Here are some facts to consider:
+<ol>
+<li><b>A BBS node doesn't consume any bandwidth when not <i>in use</i>.</b>
+<p>
+<li><b>An active TCP/IP session doesn't consume any appreciable bandwidth when idle.</b>
+<p>
+<li><b>Most Internet connections are <i>asymmetrical</i> in nature (as in <i>A</i>DSL).</b>
+<p>This means your <i>upstream</i> channel usually has less bandwidth than your <i>downstream</i> channel.
+<br>When TCP/IP clients (users of your BBS's servers) <i>download</i> content from your servers
+(this includes viewing menus, reading messages, and playing door games on your BBS),
+they are primarily using your <i>upstream</i> channel.
+So if you have a  1.5Mbps/128Kbps DSL connection, your <i>downstream</i> is 1.5Mbps while your
+<i>upstream</i> is only 128Kbps.
+If you have a "56K" dial-up connections, for example, your <i>downstream</i> is probably more likely
+in the 43-53Kbps range while your <i>upstream</i> bandwidth cannot be any more than 33.6Kbps.
+If you are lucky enough to have an <i><b>S</b>DSL</i> or other type of <i>symmetrical</i> Internet connection,
+then both your upstream and downstream channels are of the same bandwidth.
+<p>
+<li><b>Most BBS traffic is <i>bursty</i>.</b>
+<p>With the exception of file transfers, most BBS traffic is sent and received in small bursts.
+For example, the BBS user's TCP/IP session is idle while the user is viewing menus, reading messages, 
+pausing between keystrokes, etc.
+Many clients sending and receiving data in small intermittent bursts can be active simultaneously without
+any perceptible impact on eachother.
+<p>
+<li><b>Not all clients will be capable of maximizing your upstream channel.</b>
+<p>If you have a 256Kbps upstream channel, for example, you could support four or five simultaneous 56K
+clients all downloading files, and all getting 100% utilization of their respective downstream channels.
+</ol>
+<p>
 </p>
 
 
