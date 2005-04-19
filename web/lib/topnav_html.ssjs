@@ -78,7 +78,7 @@ if(sub!='mail' && http_request.virtual_path=="/msgs/post.ssjs")
     template.topnav.push({html: '<a class="tlink" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a>'});
 
 if(sub!='mail' && http_request.virtual_path=="/msgs/post.ssjs")
-    template.topnav.push({html: '<a class="tlink" href="msgs.ssjs?msg_grp='+template.sub.name+'">'+template.sub.description+'</a>'});
+    template.topnav.push({html: '<a class="tlink" href="msgs.ssjs?msg_sub='+template.sub.name+'">'+template.sub.description+'</a>'});
 
 if(sub!='mail' && http_request.virtual_path=="/msgs/post.ssjs")
     template.topnav.push({html: '<span class="tlink">Posting Message</span>'});
@@ -94,7 +94,7 @@ if(sub!='mail' && http_request.virtual_path=="/msgs/reply.ssjs")
     template.topnav.push({html: '<a class="tlink" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a>'});
 
 if(sub!='mail' && http_request.virtual_path=="/msgs/reply.ssjs")
-    template.topnav.push({html: '<a class="tlink" href="msgs.ssjs?msg_grp='+template.sub.name+'">'+template.sub.description+'</a>'});
+    template.topnav.push({html: '<a class="tlink" href="msgs.ssjs?msg_sub='+template.sub.name+'">'+template.sub.description+'</a>'});
 
 if(sub!='mail' && http_request.virtual_path=="/msgs/reply.ssjs")
     template.topnav.push({html: '<span class="tlink">Replying to Message</span>'});
