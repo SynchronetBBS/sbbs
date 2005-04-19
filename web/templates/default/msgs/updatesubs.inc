@@ -17,7 +17,7 @@
     <td class="sublistright">%%subs:messages%%</td>
     <td class="sublistright" nowrap="nowrap">%%subs:lastmsg%%</td>
     <td class="sublist" align="center">
-        @@JS:if(%%subs:ischecked%% == 1)'Off'; else if(%%subs:ischecked%% == 2)'On'; else if(%%subs:ischecked%% == 3)'To You Only';@@
+        @@JS:if(RepeatObj.ischecked == 1)'Off'; else if(RepeatObj.ischecked == 2)'On'; else if(RepeatObj.ischecked == 3)'To You Only';@@
     </td>
 </tr>
 <<END REPEAT subs>>

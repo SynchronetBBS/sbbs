@@ -25,7 +25,7 @@
     <!-- %%JS:template.color=0%% -->
     <<REPEAT messages>>
     <tr class=@@JS:((template.color++)%2==0)?'"msglist1"':'"msglist2"';@@>
-    @@JS:template.can_delete?'<td align=center><input name="number" value="^^messages:number^^" type="checkbox"></td>':''@@
+    @@JS:template.can_delete?'<td align=center><input name="number" value="'+RepeatObj.number+'" type="checkbox"></td>':''@@
        <td align="center">
             @@JS:if(RepeatObj.attachments>0) '<img alt="Attachment" src="/graphics/attach_black.gif" />'; else '&nbsp;';@@
        </td>
