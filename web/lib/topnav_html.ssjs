@@ -56,7 +56,7 @@ if(http_request.virtual_path=="/msgs/subs.ssjs")
 
 if(http_request.virtual_path=="/msgs/subinfo.ssjs" && sub!='mail') {
     template.topnav.push({html: '<a class="tlink" href="/msgs">Message Groups</a><a class="tlink" href="/msgs/subs.ssjs?msg_grp='+template.sub.grp_name+'">'+template.sub.grp_name+'</a>'});
-    template.topnav.push({html: '<a class="tlink" href="/msgs/msgs.ssjs?msg_sub='+template.sub.code+'">'+template.sub.description+'</a><span class="tlink">Sub Information</span>'});
+    template.topnav.push({html: '<a class="tlink" href="/msgs/msgs.ssjs?msg_sub='+encodeURIComponent(template.sub.code)+'">'+template.sub.description+'</a><span class="tlink">Sub Information</span>'});
 }
 
 if(http_request.virtual_path=="/msgs/msgs.ssjs" && sub!='mail')
@@ -115,7 +115,7 @@ if(sub!='mail' && http_request.virtual_path=="/msgs/savemsg.ssjs")
     template.topnav.push({html: '<a class="tlink" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a>'});
 
 if(sub!='mail' && http_request.virtual_path=="/msgs/savemsg.ssjs")
-    template.topnav.push({html: '<a class="tlink" href="msgs.ssjs?msg_grp='+template.sub.name+'">'+template.sub.description+'</a>'});
+    template.topnav.push({html: '<a class="tlink" href="msgs.ssjs?msg_sub='+encodeURIComponent(template.sub.code)+'">'+template.sub.description+'</a>'});
 
 if(sub!='mail' && http_request.virtual_path=="/msgs/savemsg.ssjs")
     template.topnav.push({html: '<span class="tlink">Posted Message</span>'});
