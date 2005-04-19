@@ -21,13 +21,13 @@
     <td class="sublistright">%%subs:messages%%</td>
     <td class="sublistright" nowrap="nowrap">%%subs:lastmsg%%</td>
     <td class="sublist">
-      <input name="sub-%%subs:code%%" type="radio" value="1" @@JS:if(%%subs:ischecked%%==1)' checked="checked"';@@ />
+      <input name="sub-%%subs:code%%" type="radio" value="1" @@JS:if(RepeatObj.ischecked==1)' checked="checked"';@@ />
     </td>
     <td class="sublist">
-      <input name="sub-%%subs:code%%" type="radio" value="2" @@JS:if(%%subs:ischecked%%==2)' checked="checked"';@@ />
+      <input name="sub-%%subs:code%%" type="radio" value="2" @@JS:if(RepeatObj.ischecked==2)' checked="checked"';@@ />
     </td>
     <td class="sublist">  
-      <input name="sub-%%subs:code%%" type="radio" value="3" @@JS:if(%%subs:ischecked%%==3)' checked="checked"';@@ />
+      <input name="sub-%%subs:code%%" type="radio" value="3" @@JS:if(RepeatObj.ischecked==3)' checked="checked"';@@ />
     </td>
 </tr>
 <<END REPEAT subs>>

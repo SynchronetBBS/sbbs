@@ -10,7 +10,7 @@
     <td width="1%" class="msgheader" nowrap="nowrap" onDblClick="window.open().document.write('%%hfields%%')">Subject:</td>
     <td nowrap="nowrap">%%hdr:subject%%</td>
     <td width="1%" class="msgheader" nowrap="nowrap">Date:</td>
-    <td nowrap="nowrap">%%JS:system.timestr(@@hdr:when_written_time@@)%%</td>
+    <td nowrap="nowrap">%%JS:system.timestr(template.hdr.when_written_time)%%</td>
 </tr>
 <tr class="msg">
     <td width="1%" class="msgheader" nowrap="nowrap">From:</td>
@@ -32,8 +32,8 @@
 <table class="msg2" width="100%">
 <tr>
     <td width="1%" class="msgnavleft" nowrap="nowrap">@@prevlink@@</td>
-    <td width="1%" class="msgnavmid">@@JS:template.can_post?'<a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a>':'Reply'@@</td>
-    <td width="1%"class="msgnavmid">@@JS:template.can_post?'<a href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New</a>':'Post New'@@</td>
+    <td width="1%" class="msgnavmid">@@JS:template.can_post?'<a href="reply.ssjs?msg_sub='+template.sub.code+'&amp;reply_to='+template.hdr.number+'">Reply</a>':'Reply'@@</td>
+    <td width="1%"class="msgnavmid">@@JS:template.can_post?'<a href="post.ssjs?msg_sub='+template.sub.code+'&amp;post=new">Post New</a>':'Post New'@@</td>
     @@JS:template.can_delete?'<td width="1%" class="msgnavmid"><a href="management.ssjs?Action=Delete+Selected+Message%28s%29&amp;msg_sub='+template.sub.code+'&amp;number='+template.hdr.number+'">Delete</a>':'Delete'@@</td>
     <td width="1%" class="msgnavright" nowrap="nowrap">@@nextlink@@</td>
 </tr>

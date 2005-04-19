@@ -63,7 +63,7 @@
             <tr>
             <td class="newuser">&nbsp;</td>
             <td class="newuser">
-                <input type="submit" value="Join!" />Join!
+                <input type="submit" value="Join!" />
             </td>
             </tr>
         </table>

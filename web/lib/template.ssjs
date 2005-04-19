@@ -18,6 +18,13 @@
 /* the value of template.name.sname.                                         */
 /* (^^ and %% are also supported)                                            */
 /*                                                                           */
+/* Inside of REPEAT sections, the current object from the repeated array is  */
+/* Available to JS: replacements as RepeatObj                                */
+/*                                                                           */
+/* The convienience function Nz(value[, valifundefined]) is also available.  */
+/* It returns valifindefined if value is undefined, or value if it is.       */
+/* valifundefined defaults to the empty string.                              */
+/*                                                                           */
 /*****************************************************************************/
 
 /* $Id$ */
@@ -35,6 +42,15 @@ template.Theme_CSS_File=Themes[CurrTheme].css;
 template.server=server;
 template.system=system;
 
+function Nz(value, valifundefined)
+{
+	if(valifundefined==undefined)
+		valifundefined='';
+	if(value==undefined)
+		return(valifundefined);
+	return(value);
+}
+
 function write_template(filename)  {
     var fname='../web/templates/'+Themes[CurrTheme].dir+'/'+filename;
     if(!file_exists(fname)) {
@@ -48,63 +64,55 @@ function write_template(filename)  {
     }
     var file=inc.read();
     inc.close();
-    /* The following 'if' statement fixes performance problem with pages *not* containing REPEAT clauses */
-    if(file.search(/<<REPEAT .*>>/)>0)  
-        file=file.replace(/([\x00-\xff]*?)<<REPEAT (.*?)>>([\x00-\xff]*?)<<END REPEAT \2>>/g,
-            function(matched, start, objname, bit, offset, s) {
-                var ret='';
-                start=parse_regular_bit(start,"",template);
-                start=start.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
-                write(start);
-                for(obj in template[objname]) {
-                    var thisbit=parse_regular_bit(bit,objname,template[objname][obj]);
-                    thisbit=parse_regular_bit(thisbit,"",template);
-                    thisbit=thisbit.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
-                    write(thisbit);
-                }
-                return("");
-            });
-    file=parse_regular_bit(file, "", template);
-    file=file.replace(/\<\!-- Magical Synchronet ([\^%@])-code --\>/g,'$1');
-    write(file);
-}
-function parse_regular_bit(bit, objname, obj) {
-    if(objname=="JS") {
-        return(bit);
+    var offset;
+    while((offset=file.search(/<<REPEAT .*?>>/))>-1) {
+        parse_regular_bit(file.substr(0,offset),'',template);
+        file=file.substr(offset);
+        var m=file.match(/^<<REPEAT (.*?)>>([\x00-\xff]*?)<<END REPEAT \1>>/);
+        if(m.index>-1) {
+            for(obj in template[m[1]]) {
+                parse_regular_bit(m[2],m[1],template[m[1]][obj]);
+            }
+            file=file.substr(m[0].length);
+        }
     }
-    if(objname=='') {
-        bit=bit.replace(/([%^@])\1([^^%@\r\n]*?)\:([^:%^@\r\n]*?)\1\1/g,
-            function (matched, start, objname, prop, offset, s) {
-                var res=matched;
-                if(template[objname]!=undefined)
-                    res=escape_match(start, template[objname][prop]);
-                return(res);
-            });
-        bit=bit.replace(/([%^@])\1([^:^%@\r\n]*?)\1\1/g,
-            function (matched, start, exp, offset, s) {
-                var res=escape_match(start, template[exp]);
-                return(res);
-            });
-        bit=bit.replace(/([%^@])\1JS:([\x00-\xff]*?)\1\1/g,
-            function (matched, start, exp, offset, s) {
-                var res=escape_match(start, eval(exp));
-                return(res);
-            });
-        bit=bit.replace(/([%^@])\1(.*?)\1\1/g,'');
-    }
-    else {
-        bit=bit.replace(new RegExp('([%^@])\\1'+regex_escape(objname)+':([^^%@\r\n]*?)\\1\\1',"g"),
-            function (matched, start, exp, offset, s) {
-                var res=matched;
-                if(obj[exp]!=undefined)
-                    res=escape_match(start, obj[exp]);
-                return(res);
-            });
-    }
-    return bit;
+    parse_regular_bit(file, "", template);
 }
 
-function escape_match(start, exp, end)  {
+function parse_regular_bit(bit, objname, RepeatObj) {
+ var offset;
+ var i=0;
+ while((offset=bit.search(/([%^@])\1(.*?)\1\1/))>-1) {
+    write(bit.substr(0,offset));
+    bit=bit.substr(offset);
+    var m=bit.match(/^([%^@])\1([\x00-\xff]*?)\1\1/);
+    if(m.index>-1) {
+        if(m[2].substr(0,3)=='JS:') {
+            var val=eval(m[2].substr(3));
+            if(val!=undefined)
+                write(escape_match(m[1],eval(m[2].substr(3))));
+        }
+        else if(m[2].substr(0,objname.length+1)==objname+':') {
+            if(RepeatObj[m[2].substr(objname.length+1)]!=undefined)
+                write(escape_match(m[1],RepeatObj[m[2].substr(objname.length+1)]));
+        }
+        else if((i=m[2].search(/:/))>0) {
+            if(template[m[2].substr(0,i)]!=undefined) {
+                if(template[m[2].substr(0,i)][m[2].substr(i+1)]!=undefined)
+                    write(escape_match(m[1],template[m[2].substr(0,i)][m[2].substr(i+1)]));
+            }
+        }
+        else {
+            if(template[m[2]]!=undefined)
+                write(escape_match(m[1],template[m[2]]));
+        }
+    }
+    bit=bit.substr(m[0].length);
+ }
+ write(bit);
+}
+
+function escape_match(start, exp)  {
     if(exp==undefined)
         exp='';
     exp=exp.toString();
@@ -112,9 +120,6 @@ function escape_match(start, exp, end)  {
         exp=html_encode(exp,false,false,false,false);
     if(start=="^")
         exp=encodeURIComponent(exp);
-    exp=exp.replace(/\@/g,'<!-- Magical Synchronet @-code -->');
-    exp=exp.replace(/\^/g,'<!-- Magical Synchronet ^-code -->');
-    exp=exp.replace(/\%/g,'<!-- Magical Synchronet %-code -->');
     return(exp);
 }
 
