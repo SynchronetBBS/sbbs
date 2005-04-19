@@ -34,7 +34,8 @@ for(i=1;i<=lastuser;i++) {
 	usr.laston=0-u.stats.laston_date;
 	template.users.push(usr);
 }
-template.users.sort(alphasort);
+if(http_request.query["sort"]!=undefined)
+	template.users.sort(alphasort);
 
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
