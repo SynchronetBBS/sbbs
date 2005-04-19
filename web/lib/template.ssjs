@@ -90,7 +90,7 @@ function parse_regular_bit(bit, objname, RepeatObj) {
         if(m[2].substr(0,3)=='JS:') {
             var val=eval(m[2].substr(3));
             if(val!=undefined)
-                write(escape_match(m[1],eval(m[2].substr(3))));
+                write(escape_match(m[1],val));
         }
         else if(m[2].substr(0,objname.length+1)==objname+':') {
             if(RepeatObj[m[2].substr(objname.length+1)]!=undefined)
