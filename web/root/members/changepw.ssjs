@@ -50,7 +50,7 @@ else  {
 }
 
 if(success)
-    template.reponse='Please <a href="/login.ssjs">Re-Login</a>.';
+    template.response='Please <a href="/login.ssjs">Re-Login</a>.';
 else
     template.response='<a href="' + backurl + '">Back to Change Password Page</a>';
 
