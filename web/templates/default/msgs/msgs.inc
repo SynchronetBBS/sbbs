@@ -6,7 +6,7 @@
 
 
 <div align="center">
-@@JS:template.can_post?'<form name="PostMsg" action="post.ssjs?msg_sub='+template.sub.code+'&amp;post=new" method="post"><input type="submit" value="'+template.post_button+'" /></form>':''@@
+@@JS:template.can_post?'<form name="PostMsg" action="post.ssjs?msg_sub='+template.sub.code+'&amp;post=new" method="post"><input type="image" src="/graphics/'+template.post_button_image+'" value="'+template.post_button+'" /></form>':''@@
 @@JS:template.show_choice==undefined ? '' : '(' + template.show_choice + ')<br /><br />'@@
 </div>
 
@@ -53,7 +53,7 @@
     <<END REPEAT messages>>
     </table>
     <br />
-    @@JS:template.can_delete?'<div align="center"><input class="msg" type="submit" name="Action" value="Delete Selected Message(s)" /></div>':''@@
+    @@JS:template.can_delete?'<div align="center"><input class="msg" type="image" src="/graphics/delete_messages.gif" name="Action" value="Delete Selected Message(s)" /></div>':''@@
 </form>
         
 <script type="text/javascript">

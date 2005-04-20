@@ -9,7 +9,13 @@
 </head>
 <body>
 
-  <h1 id="siteName">@@system:name@@</h1> 
+<!-- Remove comment tages for text System Name below -->
+<!-- <h1 id="siteName">@@system:name@@</h1> -->
+
+<!-- Comment out or delete below <span> for no logo display -->
+
+@@name_logo@@
+
    <div id="Greeting"> 
         @@user_greeting@@
    </div>

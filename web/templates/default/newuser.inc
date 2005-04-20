@@ -5,7 +5,7 @@
     <td class="main" valign="top"><br />
 
 <center>
-    (%%required%% indicates required fields)<br>
+    (<b>%%required%%</b> indicates required fields)<br /><br />
     %%err_message%%
 </center>
     <form action="newuser.ssjs" method="post">
@@ -63,7 +63,8 @@
             <tr>
             <td class="newuser">&nbsp;</td>
             <td class="newuser">
-                <input type="submit" value="Join!" />
+                <br />
+                <input type="image" src="/graphics/join.gif" value="Join!" />
             </td>
             </tr>
         </table>
