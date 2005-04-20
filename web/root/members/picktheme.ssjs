@@ -1,4 +1,4 @@
-/* $Id : $ */
+/* $Id$ */
 
 /* 
  * Write new theme file BEFORE loading the template lib so the
