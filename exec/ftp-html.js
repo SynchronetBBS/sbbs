@@ -371,12 +371,13 @@ if(ftp.file_list.length) {
             var uploader=ftp.file_list[i].uploader;
             if(ftp.file_list[i].settings&FILE_ANON)
                 uploader="Anonymous";
-			else if(!(user.security.restrictions&UFLAG_G)) { /* ! Guest/Anonymous */
+			else {
 				if(uploader == "-> ADDFILES <-")
-					uploader="Sysop".link("mailto:sysop@"+system.inetaddr);
-				else
+					uploader=system.operator;
+				if(!(user.security.restrictions&UFLAG_G)) /* ! Guest/Anonymous */
 					uploader=uploader.link("mailto:" + uploader + "@" + system.inetaddr);
 			}
+
             writeln("<td nowrap>" + dat_font + uploader);
 
             /* download count */
