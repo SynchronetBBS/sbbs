@@ -3,13 +3,15 @@
  * new theme is used here
  */
 
+var sub='';
+
 var sq="'";
 var dq='"';
 var pl='+';
 themefile=new File(system.data_dir+'user/'+format("%04d.html_theme",user.number));
 themefile.open("w",false);
 ctheme=http_request.query.theme[0];
-ctheme=ctheme.replace(/"/g,dq+pl+sq+dq+sq+pl+dq);	/* "+'"'+" */
+ctheme=ctheme.replace(/"/g,dq+pl+sq+dq+sq+pl+dq);   /* "+'"'+" */
 themefile.writeln('CurrTheme="'+ctheme+'";');
 themefile.close();
 
@@ -17,5 +19,7 @@ load('../web/lib/template.ssjs');
 template.theme=Themes[CurrTheme];
 
 write_template("header.inc");
+load("../web/lib/topnav_html.ssjs");
+load("../web/lib/leftnav_html.ssjs");
 write_template("picktheme.inc");
 write_template("footer.inc");
