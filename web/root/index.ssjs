@@ -1,7 +1,6 @@
 /* $Id$ */
 
 load("../web/lib/template.ssjs");
-load("../web/lib/siteutils.ssjs");
 
 var sub='';
 
