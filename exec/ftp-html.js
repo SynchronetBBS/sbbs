@@ -369,12 +369,14 @@ if(ftp.file_list.length) {
         if(ftp.curdir.name!=undefined) {    /* not valid for aliased files in root */
             /* uploader */
             var uploader=ftp.file_list[i].uploader;
-            if (ftp.file_list[i].settings&FILE_ANON)
+            if(ftp.file_list[i].settings&FILE_ANON)
                 uploader="Anonymous";
-            else if (uploader == "-> ADDFILES <-")
-                uploader="Sysop".link("mailto:sysop@"+system.inetaddr);
-            else if (!(user.security.restrictions&UFLAG_G)) /* ! Guest/Anonymous */
-                uploader=uploader.link("mailto:" + uploader + "@" + system.inetaddr);
+			else if(!(user.security.restrictions&UFLAG_G)) { /* ! Guest/Anonymous */
+				if(uploader == "-> ADDFILES <-")
+					uploader="Sysop".link("mailto:sysop@"+system.inetaddr);
+				else
+					uploader=uploader.link("mailto:" + uploader + "@" + system.inetaddr);
+			}
             writeln("<td nowrap>" + dat_font + uploader);
 
             /* download count */
