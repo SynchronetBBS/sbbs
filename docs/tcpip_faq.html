@@ -10,13 +10,14 @@
 <h2>Table of Contents:</h2>
 <ul>
 	<li><a href="#ports">What inbound ports do I need to open in my firewall?</a>
-	<li><a href="#private_ip">How come my friends can't connect to my BBS at my <b>192.168.x.x</b>, <b>172.[16-31].x.x</b>, or <b>10.x.x.x</b> IP address?</a>
-	<li><a href="#public_ip">So what is my public IP address?</a>
+	<li><a href="#private_ip">How come my friends can't connect to my BBS at my IP address?</a>
+	<li><a href="#public_ip">What is my public IP address?</a>
 	<li><a href="#tx_smtp">Why can't I send Internet e-mail from my BBS?</a>
 	<li><a href="#rx_smtp">Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</a>
 	<li><a href="#ftp_connect">Why can't users connect to my FTP server?</a>
 	<li><a href="#ftp_nat">Why do FTP clients lock-up when listing directories or downloading files from my FTP server?</a>
-	<li><a href="#socket_io">Why do external programs that use socket I/O (e.g. Synchronet Blackjack, Synchronet BBS List, DoorMUD) hang on my Windows BBS?</a>
+	<li><a href="#socket_io">Why do some external programs that use socket I/O hang on my Windows BBS?</a>
+	<li><a href="#bind">Why do some or all of my servers get bind errors when starting or recycling?</a>
 	<li><a href="#bandwidth">How many nodes/clients/users can I support with my Internet connection?</a>
 </ul>
 
@@ -68,7 +69,7 @@ to connect to your BBS. This IP address <b>will not</b> begin with <i>192.168</i
 <a name="public_ip"><hr></a>
 <p>
 <b>Question:</b><br>
-<i>So what is my <b>public</b> IP address?</i>
+<i>What is my <b>public</b> IP address?</i>
 <p>
 <b>Answer:</b>
 <br>If you need to know your public IP address, you can usually query your router/firewall device using it's configuration interface
@@ -200,6 +201,33 @@ solutions.
 Some software firewall and anti-virus programs interfere with the inheritance of socket descriptors between processes. I don't know if this is
 an intentional security "feature" or a design flaw. One such program is the <b><i>ZoneAlarm Security Suite</i></b>. If you have this
 (or similar) software installed, it must be completely un-installed for socket inheritance to work.
+</p>
+
+<a name="bind"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>Why do some or all of my servers get <b>bind errors</b> when starting or recycling?</i>
+<p>
+<b>Answer:</b><br>
+If you're getting bind errors when first starting up Synchronet, similar to the following:
+<p><tt>0420 !ERROR 48 binding FTP Server socket to port 21</tt>
+<p>this usually means you have another TCP/IP server on your system that is already bound to 
+(and is presumably already listening for incoming connections on) this port.
+This could be a pre-existing instance of Synchronet or any other Telnet/Web/Mail/FTP servers that you may
+have installed on your system. You can use utilities such as
+<a href="http://www.rt.com/man/netstat.1.html">netstat</a> (for Windows or Unix)
+or <a href="http://www.sysinternals.com/ntw2k/source/tcpview.shtml">TCPView</a> (for Windows) to verify what programs
+(if any) have the TCP or UDP port in question already bound. If these utilities do not report any program is
+bound to (and listening) on this port, you can try telnetting to the port in question and see if anything answers.
+If you're unable to connect to the port with a telnet client and Synchronet cannot bind the port, your TCP/IP
+stack probably needs to be reset, so a system reboot may be in order.
+<p>If you're running a <b>Unix</b>-like operating system (<i>not</i> Windows) and get bind errors only when
+recycling servers, this is most likely because a TCP session is stuck in a TCP <i>TIMEWAIT</i> state
+(you can use <a href="http://www.rt.com/man/netstat.1.html">netstat</a> to verify this). The session
+will eventually time-out and close properly on its own, allowing the port to re-bound at that time. You can either increase the <b>BindRetryCount</b> and/or <b>BindRetryDelay</b> values
+in your <tt>ctrl/sbbs.ini</tt> file, or you can add the following line to your <tt>ctrl/sockopts.cfg</tt> file:
+<p><tt>REUSEADDR 1</tt>
+<p>to work-around this problem.
 </p>
 
 <a name="bandwidth"><hr></a>
