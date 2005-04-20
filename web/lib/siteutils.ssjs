@@ -8,6 +8,8 @@
 
 var portnum="";
 
+template.name_logo='<h1 id="siteName">' + system.name + '</h1>';
+
 var http_port = 80;
 var irc_port = 6667;
 var ftp_port = 21;
@@ -41,6 +43,9 @@ var file = new File(file_cfgname(system.ctrl_dir, "services.ini"));
  file.close();
 } 
 
-  
- 
-   
+file = new File(web_root_dir + "/graphics/logo.gif");
+    if(file.open("r")) {
+        template.name_logo='<div id="siteName"><img src="/graphics/logo.gif" alt="Synchronet" title="Synchronet" /></div>';
+    file.close();
+}
+

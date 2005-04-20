@@ -32,6 +32,8 @@
 template=new Object;
 load("sbbsdefs.js");    // UFLAG_G
 load("../web/lib/html_themes.ssjs");
+load("../web/lib/siteutils.ssjs");  // Port Check & Logo Check
+ 
 if(http_request.virtual_path=="/nodelist.ssjs")
     load("../web/lib/main_nodelist.ssjs"); // Who's Online Listing
 http_reply.fast=true;
@@ -44,11 +46,11 @@ template.system=system;
 
 function Nz(value, valifundefined)
 {
-	if(valifundefined==undefined)
-		valifundefined='';
-	if(value==undefined)
-		return(valifundefined);
-	return(value);
+    if(valifundefined==undefined)
+        valifundefined='';
+    if(value==undefined)
+        return(valifundefined);
+    return(value);
 }
 
 function write_template(filename)  {
