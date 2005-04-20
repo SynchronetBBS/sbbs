@@ -407,7 +407,7 @@ if(ftp.file_list.length) {
             if (ftp.file_list[i].settings&FILE_ANON)
                 uploader="Anonymous";
             else if (uploader == "-> ADDFILES <-")
-                uploader="Sysop".link("mailto:sysop@"+system.inetaddr);
+                uploader=system.operator;
             else if (!(user.security.restrictions&UFLAG_G)) /* ! Guest/Anonymous */
                 uploader='<a class="ftp_dirlist_sm" href="mailto:' + uploader + '@' 
                 + system.inetaddr + '">' + uploader + '</a>';
