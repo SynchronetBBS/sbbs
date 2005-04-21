@@ -91,6 +91,10 @@ LINK32=link.exe
 # Name "services - Win32 Debug"
 # Begin Source File
 
+SOURCE=.\sbbs_ini.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\services.c
 # End Source File
 # End Target

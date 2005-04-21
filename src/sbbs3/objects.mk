@@ -128,7 +128,8 @@ WEB_OBJS	= $(MTOBJODIR)$(DIRSEP)websrvr$(OFILE) \
 			
 
 # Must add new additions to MONO_OBJS too!
-SERVICE_OBJS	= $(MTOBJODIR)$(DIRSEP)services$(OFILE)
+SERVICE_OBJS	= $(MTOBJODIR)$(DIRSEP)services$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE)
 
 MONO_OBJS	= \
 			$(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE) \
