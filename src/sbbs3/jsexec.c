@@ -104,7 +104,7 @@ void usage(FILE* fp)
 #endif
 		"\t-m<bytes>      set maximum heap size (default=%u bytes)\n"
 		"\t-s<bytes>      set context stack size (default=%u bytes)\n"
-		"\t-S<bytes>      set thread stack size limit (default=%u, 0=unlimited)\n"
+		"\t-S<bytes>      set thread stack limit (default=%u, 0=unlimited)\n"
 		"\t-b<limit>      set branch limit (default=%u, 0=unlimited)\n"
 		"\t-y<interval>   set yield interval (default=%u, 0=never)\n"
 		"\t-g<interval>   set garbage collection interval (default=%u, 0=never)\n"
