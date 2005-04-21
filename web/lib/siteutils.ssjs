@@ -43,9 +43,6 @@ var file = new File(file_cfgname(system.ctrl_dir, "services.ini"));
  file.close();
 } 
 
-file = new File(web_root_dir + "/graphics/logo.gif");
-    if(file.open("r")) {
-        template.name_logo='<div id="siteName"><img src="/graphics/logo.gif" alt="Synchronet" title="Synchronet" /></div>';
-    file.close();
-}
+if(this.web_root_dir!=undefined && file_exists(web_root_dir + "/graphics/logo.gif"))
+    template.name_logo='<div id="siteName"><img src="/graphics/logo.gif" alt="Synchronet" title="Synchronet" /></div>';
 
