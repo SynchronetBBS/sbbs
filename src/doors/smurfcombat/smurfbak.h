@@ -81,8 +81,10 @@ backgame(void)
     } fclose(stream);
     fprintf(stream, "%03i", noplayers);
     for (cyc = 0; cyc < noplayers; cyc++) {
+#ifdef TODO_LOCAL_DISPLAY
 	od_sleep(50);
 	cprintf(".");
+#endif
 	for (cyc2 = 0; cyc2 < 40; cyc2++)
 	    fprintf(stream, "%03i", realname[cyc][cyc2]);
 	fprintf(stream, "%010i", realnumb[cyc]);

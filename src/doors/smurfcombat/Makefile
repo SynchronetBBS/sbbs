@@ -16,6 +16,7 @@ $(SMURF): $(OBJS)
 dist:: $(SMURF)
 	-md dist
 	copy /Y $(SMURF) dist
+	copy /Y $(SRC_ROOT)\odoors\ODoors62.dll dist
 	copy /Y *.d0* dist
 	copy /Y *.doc dist
 	copy /Y *.txt dist
