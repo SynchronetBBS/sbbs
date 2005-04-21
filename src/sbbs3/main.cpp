@@ -860,7 +860,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 }
 
-bool sbbs_t::js_init()
+bool sbbs_t::js_init(ulong* stack_frame)
 {
 	char		node[128];
 
@@ -918,6 +918,20 @@ bool sbbs_t::js_init()
 		/* Console Object */
 		if(js_CreateConsoleObject(js_cx, js_glob)==NULL)
 			break;
+
+		if(startup->js.thread_stack) {
+			ulong stack_limit;
+
+#if JS_STACK_GROWTH_DIRECTION > 0
+			stack_limit=((ulong)stack_frame)+startup->js.thread_stack;
+#else
+			stack_limit=((ulong)stack_frame)-startup->js.thread_stack;
+#endif
+			JS_SetThreadStackLimit(js_cx, stack_limit);
+
+			lprintf(LOG_DEBUG,"%s JavaScript: Thread stack limit: %lu bytes"
+				,node, startup->js.thread_stack);
+		}
 
 		success=true;
 
@@ -1533,6 +1547,7 @@ void output_thread(void* arg)
 
 void event_thread(void* arg)
 {
+	ulong		stack_frame;
 	char		str[MAX_PATH+1];
 	char		bat_list[MAX_PATH+1];
 	char		semfile[MAX_PATH+1];
@@ -1563,7 +1578,7 @@ void event_thread(void* arg)
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
-		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
+		if(!sbbs->js_init(&stack_frame)) /* This must be done in the context of the event thread */
 			lprintf(LOG_ERR,"!JavaScript Initialization FAILURE");
 	}
 #endif
@@ -3268,6 +3283,7 @@ void sbbs_t::logoffstats()
 
 void node_thread(void* arg)
 {
+	ulong			stack_frame;
 	char			str[128];
 	char			uname[LEN_ALIAS+1];
 	int				file;
@@ -3291,7 +3307,7 @@ void node_thread(void* arg)
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
-		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
+		if(!sbbs->js_init(&stack_frame)) /* This must be done in the context of the node thread */
 			lprintf(LOG_ERR,"!Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
 	}
 #endif
