@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -870,21 +870,21 @@ bool sbbs_t::js_init()
     	strcpy(node,client_name);
 
 	lprintf(LOG_DEBUG,"%s JavaScript: Creating runtime: %lu bytes"
-		,node,startup->js_max_bytes);
+		,node,startup->js.max_bytes);
 
-	if((js_runtime = JS_NewRuntime(startup->js_max_bytes))==NULL)
+	if((js_runtime = JS_NewRuntime(startup->js.max_bytes))==NULL)
 		return(false);
 
 	lprintf(LOG_DEBUG,"%s JavaScript: Initializing context (stack: %lu bytes)"
-		,node,startup->js_cx_stack);
+		,node,startup->js.cx_stack);
 
-    if((js_cx = JS_NewContext(js_runtime, startup->js_cx_stack))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, startup->js.cx_stack))==NULL)
 		return(false);
 	
 	memset(&js_branch,0,sizeof(js_branch));
-	js_branch.limit = startup->js_branch_limit;
-	js_branch.gc_interval = startup->js_gc_interval;
-	js_branch.yield_interval = startup->js_yield_interval;
+	js_branch.limit = startup->js.branch_limit;
+	js_branch.gc_interval = startup->js.gc_interval;
+	js_branch.yield_interval = startup->js.yield_interval;
 	js_branch.terminated = &terminated;
 	js_branch.auto_terminate = TRUE;
 
@@ -3751,8 +3751,8 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->rlogin_port==0)				startup->rlogin_port=513;
 	if(startup->xtrn_polls_before_yield==0)	startup->xtrn_polls_before_yield=10;
 #ifdef JAVASCRIPT
-	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 #endif
 	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;

@@ -46,13 +46,6 @@
 #include "ini_file.h"
 #include "scfgdefs.h"   /* scfg_t */
 
-#define strJavaScriptMaxBytes		"JavaScriptMaxBytes"
-#define strJavaScriptContextStack	"JavaScriptContextStack"
-#define strJavaScriptBranchLimit	"JavaScriptBranchLimit"
-#define strJavaScriptGcInterval		"JavaScriptGcInterval"
-#define strJavaScriptYieldInterval	"JavaScriptYieldInterval"
-#define strSemFileCheckFrequency	"SemFileCheckFrequency"
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -76,6 +69,21 @@ void sbbs_read_ini(
 	,mail_startup_t*		mail_startup
 	,BOOL*					run_services
 	,services_startup_t*	services_startup
+	);
+
+void sbbs_read_js_settings(
+	 FILE* fp
+	,const char* section
+	,js_startup_t* js
+	,js_startup_t* defaults
+	);
+
+BOOL sbbs_set_js_settings(
+	 str_list_t* list
+	,const char* section
+	,js_startup_t* js
+	,js_startup_t* defaults
+	,ini_style_t*
 	);
 
 BOOL sbbs_write_ini(

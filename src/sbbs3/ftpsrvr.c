@@ -483,9 +483,9 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 	BOOL		success=FALSE;
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)"
-		,sock,startup->js_cx_stack);
+		,sock,startup->js.cx_stack);
 
-    if((js_cx = JS_NewContext(runtime, startup->js_cx_stack))==NULL)
+    if((js_cx = JS_NewContext(runtime, startup->js.cx_stack))==NULL)
 		return(NULL);
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Context created",sock);
@@ -3794,9 +3794,9 @@ static void ctrl_thread(void* arg)
 				}
 				if(js_runtime == NULL) {
 					lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes"
-						,sock,startup->js_max_bytes);
+						,sock,startup->js.max_bytes);
 
-					if((js_runtime = JS_NewRuntime(startup->js_max_bytes))==NULL) {
+					if((js_runtime = JS_NewRuntime(startup->js.max_bytes))==NULL) {
 						lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",sock);
 						sockprintf(sock,"451 Error creating JavaScript runtime");
 						filepos=0;
@@ -4543,8 +4543,8 @@ void DLLCALL ftp_server(void* arg)
 	else
 		startup->options|=FTP_OPT_NO_JAVASCRIPT;
 #ifdef JAVASCRIPT
-	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 	sprintf(js_server_props.version,"%s %s",FTP_SERVER,revision);
 	js_server_props.version_detail=ftp_ver();

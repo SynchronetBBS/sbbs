@@ -45,11 +45,6 @@ typedef struct {
 	DWORD	size;				/* sizeof(bbs_struct_t) */
     DWORD   interface_addr;
     DWORD	options;			/* See BBS_OPT definitions */
-    DWORD	js_max_bytes;
-	DWORD	js_cx_stack;
-	DWORD	js_branch_limit;
-	DWORD	js_yield_interval;
-	DWORD	js_gc_interval;
 	WORD	sem_chk_freq;			/* semaphore file checking frequency (in seconds) */
 
 	void*	cbdata;					/* Private data passed to callbacks */ 
@@ -80,6 +75,9 @@ typedef struct {
 	DWORD	log_mask;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
+
+	/* JavaScript operating parameters */
+	js_startup_t js;
 
 } services_startup_t;
 

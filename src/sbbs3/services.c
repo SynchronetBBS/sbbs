@@ -97,11 +97,7 @@ typedef struct {
 	DWORD	options;
 	int		listen_backlog;
 	DWORD	stack_size;
-    DWORD	js_max_bytes;
-	DWORD	js_cx_stack;
-	DWORD	js_branch_limit;
-	DWORD	js_yield_interval;
-	DWORD	js_gc_interval;
+	js_startup_t	js;
 	js_server_props_t js_server_props;
 	/* These are run-time state and stat vars */
 	DWORD	clients;
@@ -776,7 +772,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	JSObject*	server;
 	BOOL		success=FALSE;
 
-    if((js_cx = JS_NewContext(js_runtime, service_client->service->js_cx_stack))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, service_client->service->js.cx_stack))==NULL)
 		return(NULL);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -1044,7 +1040,7 @@ static void js_service_thread(void* arg)
 	/* Initialize client display */
 	client_on(socket,&client,FALSE /* update */);
 
-	if((js_runtime=JS_NewRuntime(service->js_max_bytes))==NULL
+	if((js_runtime=JS_NewRuntime(service->js.max_bytes))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
@@ -1150,13 +1146,13 @@ static void js_static_service_thread(void* arg)
 	memset(&service_client,0,sizeof(service_client));
 	service_client.socket = service->socket;
 	service_client.service = service;
-	service_client.branch.limit = service->js_branch_limit;
-	service_client.branch.gc_interval = service->js_gc_interval;
-	service_client.branch.yield_interval = service->js_yield_interval;
+	service_client.branch.limit = service->js.branch_limit;
+	service_client.branch.gc_interval = service->js.gc_interval;
+	service_client.branch.yield_interval = service->js.yield_interval;
 	service_client.branch.terminated = &service->terminated;
 	service_client.branch.auto_terminate = TRUE;
 
-	if((js_runtime=JS_NewRuntime(service->js_max_bytes))==NULL) {
+	if((js_runtime=JS_NewRuntime(service->js.max_bytes))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript runtime"
 			,service->socket,service->protocol);
 		close_socket(service->socket);
@@ -1453,11 +1449,7 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 		SAFECOPY(serv.cmd,iniReadString(fp,sec_list[i],"Command","",cmd));
 
 		/* JavaScript operating parameters */
-		serv.js_max_bytes=iniReadInteger(fp,sec_list[i]		,strJavaScriptMaxBytes		,startup->js_max_bytes);
-		serv.js_cx_stack=iniReadInteger(fp,sec_list[i]		,strJavaScriptContextStack	,startup->js_cx_stack);
-		serv.js_branch_limit=iniReadInteger(fp,sec_list[i]	,strJavaScriptBranchLimit	,startup->js_branch_limit);
-		serv.js_gc_interval=iniReadInteger(fp,sec_list[i]	,strJavaScriptGcInterval	,startup->js_gc_interval);
-		serv.js_yield_interval=iniReadInteger(fp,sec_list[i]	,strJavaScriptYieldInterval	,startup->js_yield_interval);
+		sbbs_read_js_settings(fp, sec_list[i], &serv.js, &startup->js);
 
 		for(j=0;j<*services;j++)
 			if(service[j].interface_addr==serv.interface_addr && service[j].port==serv.port
@@ -1592,8 +1584,8 @@ void DLLCALL services_thread(void* arg)
 
 	/* Setup intelligent defaults */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
-	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 	uptime=0;
 	served=0;
@@ -2023,9 +2015,9 @@ void DLLCALL services_thread(void* arg)
 				client->service->clients++;		/* this should be mutually exclusive */
 				client->udp_buf=udp_buf;
 				client->udp_len=udp_len;
-				client->branch.limit			= service[i].js_branch_limit;
-				client->branch.gc_interval		= service[i].js_gc_interval;
-				client->branch.yield_interval	= service[i].js_yield_interval;
+				client->branch.limit			= service[i].js.branch_limit;
+				client->branch.gc_interval		= service[i].js.gc_interval;
+				client->branch.yield_interval	= service[i].js.yield_interval;
 				client->branch.terminated		= &client->service->terminated;
 				client->branch.auto_terminate	= TRUE;
 

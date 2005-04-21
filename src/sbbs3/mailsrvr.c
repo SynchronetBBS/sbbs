@@ -1504,15 +1504,15 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 	do {
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes\n"
-			,sock, startup->js_max_bytes);
+			,sock, startup->js.max_bytes);
 
-		if((js_runtime = JS_NewRuntime(startup->js_max_bytes))==NULL)
+		if((js_runtime = JS_NewRuntime(startup->js.max_bytes))==NULL)
 			break;
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)\n"
-			,sock, startup->js_cx_stack);
+			,sock, startup->js.cx_stack);
 
-		if((js_cx = JS_NewContext(js_runtime, startup->js_cx_stack))==NULL)
+		if((js_cx = JS_NewContext(js_runtime, startup->js.cx_stack))==NULL)
 			break;
 
 		JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -3991,8 +3991,8 @@ void DLLCALL mail_server(void* arg)
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 
 #ifdef JAVASCRIPT
-	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 #endif
 
 	uptime=0;

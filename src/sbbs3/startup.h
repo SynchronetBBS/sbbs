@@ -46,11 +46,12 @@
 #include "sbbsdefs.h"	/* LOG_* (syslog.h) values */
 
 typedef struct {
-	ulong	max_bytes;
-	ulong	cx_stack;
-	ulong	branch_limit;
-	ulong	gc_interval;
-	ulong	yield_interval;
+	ulong	max_bytes;		/* max allocated bytes before garbage collection */
+	ulong	cx_stack;		/* bytes for script execution stack */
+	ulong	thread_stack;	/* limit of stack size for native execution thread */
+	ulong	branch_limit;	/* maximum number of branches (for infinite loop detection) */
+	ulong	gc_interval;	/* number of branches between garbage collection attempts */
+	ulong	yield_interval;	/* number of branches between time-slice yields */
 } js_startup_t;
 
 typedef struct {
@@ -81,11 +82,6 @@ typedef struct {
     DWORD	options;			/* See BBS_OPT definitions */
     DWORD	rlogin_interface;
     DWORD	xtrn_polls_before_yield;
-    DWORD	js_max_bytes;
-	DWORD	js_cx_stack;
-	DWORD	js_branch_limit;
-	DWORD	js_yield_interval;
-	DWORD	js_gc_interval;
     RingBuf** node_spybuf;			/* Spy output buffer (each node)	*/
     RingBuf** node_inbuf;			/* User input buffer (each node)	*/
     sem_t**	node_spysem;			/* Spy output semaphore (each node)	*/
@@ -122,6 +118,9 @@ typedef struct {
 	DWORD	log_mask;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
+
+	/* JavaScript operating parameters */
+	js_startup_t js;
 
 } bbs_startup_t;
 

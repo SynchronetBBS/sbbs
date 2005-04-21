@@ -2959,9 +2959,9 @@ js_initcx(http_session_t *session)
 	JSContext*	js_cx;
 
 	lprintf(LOG_INFO,"%04d JavaScript: Initializing context (stack: %lu bytes)"
-		,session->socket,startup->js_cx_stack);
+		,session->socket,startup->js.cx_stack);
 
-    if((js_cx = JS_NewContext(session->js_runtime, startup->js_cx_stack))==NULL)
+    if((js_cx = JS_NewContext(session->js_runtime, startup->js.cx_stack))==NULL)
 		return(NULL);
 
 	lprintf(LOG_INFO,"%04d JavaScript: Context created",session->socket);
@@ -2995,9 +2995,9 @@ static BOOL js_setup(http_session_t* session)
 
 	if(session->js_runtime == NULL) {
 		lprintf(LOG_INFO,"%04d JavaScript: Creating runtime: %lu bytes"
-			,session->socket,startup->js_max_bytes);
+			,session->socket,startup->js.max_bytes);
 
-		if((session->js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL) {
+		if((session->js_runtime=JS_NewRuntime(startup->js.max_bytes))==NULL) {
 			lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",session->socket);
 			return(FALSE);
 		}
@@ -3569,8 +3569,8 @@ void DLLCALL web_server(void* arg)
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->max_cgi_inactivity==0) 		startup->max_cgi_inactivity=120; /* seconds */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2; /* seconds */
-	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,".ssjs");
 	if(startup->js_ext[0]==0)				SAFECOPY(startup->js_ext,".bbs");
 
@@ -3876,9 +3876,9 @@ void DLLCALL web_server(void* arg)
    			session->socket=client_socket;
 			session->js_branch.auto_terminate=TRUE;
 			session->js_branch.terminated=&terminate_server;
-			session->js_branch.limit=startup->js_branch_limit;
-			session->js_branch.gc_interval=startup->js_gc_interval;
-			session->js_branch.yield_interval=startup->js_yield_interval;
+			session->js_branch.limit=startup->js.branch_limit;
+			session->js_branch.gc_interval=startup->js.gc_interval;
+			session->js_branch.yield_interval=startup->js.yield_interval;
 
 			_beginthread(http_session_thread, 0, session);
 			served++;
