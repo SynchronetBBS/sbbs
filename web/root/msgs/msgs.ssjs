@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("../web/lib/msgslib.ssjs");
 load("../web/lib/mime_decode.ssjs");
 
@@ -179,12 +181,12 @@ for(displayed=0;displayed<max_messages && last_offset >= 0;last_offset--) {
 }
 
 if(sub=='mail') {
-	template.can_post=!(user.security.restrictions&UFLAG_E);
-	template.post_button="Create New E-Mail";
+    template.can_post=!(user.security.restrictions&UFLAG_E);
+    template.post_button_image="new_e-mail.gif";
 } else {
-	template.can_post=msg_area.sub[sub].can_post;
-	template.post_button="Create New Message";
-}				
+    template.can_post=msg_area.sub[sub].can_post;
+    template.post_button_image="new_message.gif";
+}			
 
 load("../web/lib/topnav_html.ssjs");
 load("../web/lib/leftnav_html.ssjs");

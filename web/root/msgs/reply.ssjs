@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("../web/lib/msgslib.ssjs");
 
 if(sub=='mail') {
@@ -63,6 +65,15 @@ if(this.word_wrap != undefined)  {
 else  {
 	template.body=template.body.replace(/^(.)/mg,"> $1");
 }
+
+if(sub=='mail') {
+    template.can_post=!(user.security.restrictions&UFLAG_E);
+    template.reply_button="send_reply.gif";
+} else {
+    template.can_post=msg_area.sub[sub].can_post;
+    template.reply_button="post_reply.gif";
+}
+
 title="Reply to message";
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");

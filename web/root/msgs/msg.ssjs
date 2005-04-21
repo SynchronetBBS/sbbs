@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("../web/lib/msgslib.ssjs");
 load("../web/lib/mime_decode.ssjs");
 
@@ -110,12 +112,12 @@ if(template.hdr.thread_first!=0) {
 if(tmp!=undefined)
 	template.nextlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+next_msg_html+'</a>';
 else
-    template.nextlink=next_msg_html;
+    template.nextlink=no_next_msg_html;
 tmp=find_np_message(template.idx.offset,false);
 if(tmp!=undefined)
 	template.prevlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+prev_msg_html+'</a>';
 else
-    template.prevlink=prev_msg_html;
+    template.prevlink=no_prev_msg_html;
 
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");

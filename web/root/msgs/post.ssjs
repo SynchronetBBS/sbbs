@@ -1,3 +1,5 @@
+/*  $Id$ */
+
 /* 
  * ToDo:
  * Deal with 
@@ -41,6 +43,15 @@ if(sub!='mail') {
 		error("You don't have sufficient rights to post in this sub");
 	}
 }
+
+if(sub=='mail') {
+    template.can_post=!(user.security.restrictions&UFLAG_E);
+    template.post_button="send_new_e-mail.gif";
+} else {
+    template.can_post=msg_area.sub[sub].can_post;
+    template.post_button="post_new_message.gif";
+}
+
 template.title="Post a message in " + template.sub.description;
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
