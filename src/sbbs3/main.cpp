@@ -3158,7 +3158,7 @@ void sbbs_t::reset_logon_vars(void)
     for(i=0;i<cfg.total_grps;i++)
         cursub[i]=0;
 	cur_cps=3000;
-    cur_rate=38400;
+    cur_rate=30000;
     dte_rate=38400;
 	main_cmds=xfer_cmds=posts_read=0;
 	lastnodemsg=0;
