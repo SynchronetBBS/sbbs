@@ -511,9 +511,17 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		if(tleft>0x7fff)	/* Reduce time-left for broken 16-bit doors		*/
 			tleft=0x7fff;	/* That interpret this value as a signed short	*/
 
+		/* Note about door.sys, line 2 (April-24-2005):
+		   It *should* be the DCE rate (any number, including the popular modem
+		   DCE rates of 14400, 28800, and 33600).  However, according to Deuce,
+		   doors created with the DMlib door kit choke with "Error -25: Illegal
+		   baud rate" if this isn't a valid FOSSIL baud (DTE) rate, so we're
+		   changing this value to the DTE rate until/unless some other doors
+		   have an issue with that. <sigh>
+		*/
 		sprintf(str,"COM%d:\n%lu\n%u\n%u\n%lu\n%c\n%c\n%c\n%c\n"
 			,online==ON_REMOTE ? cfg.com_port:0	/* 01: COM port - 0 if Local */
-			,cur_rate							/* 02: DCE rate */
+			,dte_rate /* was cur_rate */		/* 02: DCE rate, see note above */
 			,8									/* 03: Data bits */
 			,cfg.node_num						/* 04: Node number */
 			,dte_rate							/* 05: DTE rate */
