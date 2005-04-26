@@ -975,10 +975,8 @@ function Server_Work() {
 		case "WHOIS":
 			if (!cmd[2] || ThisOrigin.server)
 				break;
-			if (cmd[2][0] == ":")
-				cmd[2] = cmd[2].slice(1);
-			if (IRC_match(servername, cmd[2])) {
-				var wi_nicks = cmd[1].split(",");
+			if (searchbyserver(cmd[1]) == -1) {
+				var wi_nicks = IRC_string(cmd[2]).split(",");
 				for (wi_nick in wi_nicks) {
 				var wi = Users[wi_nicks[wi_nick].toUpperCase()];
 					if (wi)
@@ -988,10 +986,10 @@ function Server_Work() {
 				} 
 				ThisOrigin.numeric(318, wi_nicks[0]+" :End of /WHOIS list.");
 			} else {
-				var dest_server = searchbyserver(cmd[2]);
+				var dest_server = searchbyserver(cmd[1]);
 				if (!dest_server)
 					break;
-				dest_server.rawout(":" + ThisOrigin.nick + " WHOIS " + cmd[1] + " " + dest_server.nick);
+				dest_server.rawout(":" + ThisOrigin.nick + " WHOIS " + dest_server.nick + " :" + IRC_string(cmd[2]));
 			}
 			break;
 		case "CAPAB":

@@ -1287,14 +1287,16 @@ function User_Work() {
 				break;
 			}
 			if (cmd[2]) {
-				var dest_server = searchbyserver(cmd[2]);
+				var dest_server = searchbyserver(cmd[1]);
 				if (!dest_server) {
-					this.numeric402(cmd[2]);
+					this.numeric402(cmd[1]);
 					break;
 				}
 				if (dest_server != -1) {
-					dest_server.rawout(":" + this.nick + " WHOIS " + cmd[1] + " " + dest_server.nick);
+					dest_server.rawout(":" + this.nick + " WHOIS " + dest_server.nick + " :" + IRC_string(cmdline));
 					break;
+				} else {
+					cmd[1] = cmd[2];
 				}
 			}
 			var wi_nicks = cmd[1].split(",");
