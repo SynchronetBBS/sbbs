@@ -3063,6 +3063,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->PasswordEdit->Text=Password;
     PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(global.js.max_bytes);
     PropertiesDlg->JS_ContextStackEdit->Text=IntToStr(global.js.cx_stack);
+    PropertiesDlg->JS_ThreadStackEdit->Text=IntToStr(global.js.thread_stack);    
     PropertiesDlg->JS_BranchLimitEdit->Text=IntToStr(global.js.branch_limit);
     PropertiesDlg->JS_GcIntervalEdit->Text=IntToStr(global.js.gc_interval);
     PropertiesDlg->JS_YieldIntervalEdit->Text=IntToStr(global.js.yield_interval);
@@ -3088,6 +3089,8 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         	=PropertiesDlg->JS_MaxBytesEdit->Text.ToIntDef(JAVASCRIPT_MAX_BYTES);
         global.js.cx_stack
         	=PropertiesDlg->JS_ContextStackEdit->Text.ToIntDef(JAVASCRIPT_CONTEXT_STACK);
+        global.js.thread_stack
+        	=PropertiesDlg->JS_ThreadStackEdit->Text.ToIntDef(JAVASCRIPT_THREAD_STACK);
         global.js.branch_limit
         	=PropertiesDlg->JS_BranchLimitEdit->Text.ToIntDef(JAVASCRIPT_BRANCH_LIMIT);
         global.js.gc_interval

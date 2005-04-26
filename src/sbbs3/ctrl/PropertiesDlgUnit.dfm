@@ -43,9 +43,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 9
     Width = 312
     Height = 272
-    ActivePage = AdvancedTabSheet
+    ActivePage = JavaScriptTabSheet
     Anchors = [akLeft, akTop, akBottom]
-    TabIndex = 2
+    TabIndex = 3
     TabOrder = 2
     object SettingsTabSheet: TTabSheet
       Caption = 'Settings'
@@ -403,11 +403,11 @@ object PropertiesDlg: TPropertiesDlg
         Width = 109
         Height = 24
         AutoSize = False
-        Caption = 'Stack Size'
+        Caption = 'Context Stack'
       end
       object Label12: TLabel
         Left = 9
-        Top = 76
+        Top = 108
         Width = 109
         Height = 24
         AutoSize = False
@@ -415,7 +415,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object Label13: TLabel
         Left = 9
-        Top = 108
+        Top = 140
         Width = 109
         Height = 24
         AutoSize = False
@@ -423,18 +423,28 @@ object PropertiesDlg: TPropertiesDlg
       end
       object Label14: TLabel
         Left = 9
-        Top = 140
+        Top = 172
         Width = 109
         Height = 24
         AutoSize = False
         Caption = 'Yield Interval'
+      end
+      object Label15: TLabel
+        Left = 9
+        Top = 76
+        Width = 109
+        Height = 24
+        AutoSize = False
+        Caption = 'Thread Stack'
       end
       object JS_MaxBytesEdit: TEdit
         Left = 121
         Top = 12
         Width = 168
         Height = 24
-        Hint = 'Maximum number of bytes that can be allocated per runtime'
+        Hint = 
+          'Maximum number of bytes that can be allocated per runtime before' +
+          ' garbage collection'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
@@ -451,7 +461,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object JS_BranchLimitEdit: TEdit
         Left = 121
-        Top = 76
+        Top = 108
         Width = 168
         Height = 24
         Hint = 
@@ -463,7 +473,7 @@ object PropertiesDlg: TPropertiesDlg
       end
       object JS_GcIntervalEdit: TEdit
         Left = 121
-        Top = 108
+        Top = 140
         Width = 168
         Height = 24
         Hint = 
@@ -475,13 +485,23 @@ object PropertiesDlg: TPropertiesDlg
       end
       object JS_YieldIntervalEdit: TEdit
         Left = 121
-        Top = 140
+        Top = 172
         Width = 168
         Height = 24
         Hint = 'Number of branches between forced yields (0=disabled)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
+      end
+      object JS_ThreadStackEdit: TEdit
+        Left = 121
+        Top = 76
+        Width = 168
+        Height = 24
+        Hint = 'JS thread stack limit (in bytes, 0=unlimited)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 5
       end
     end
   end
