@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -954,16 +954,16 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         hSCManager = openSCManager(
                             NULL,                   // machine (NULL == local)
                             NULL,                   // database (NULL == default)
-                            SC_MANAGER_ALL_ACCESS   // access required
+                            SC_MANAGER_CONNECT		// access required
                             );
 
 	/* Open Synchronet Services */
     if(hSCManager!=NULL) {
-		bbs_svc =  openService(hSCManager, NTSVC_NAME_BBS, SERVICE_ALL_ACCESS);
-		ftp_svc =  openService(hSCManager, NTSVC_NAME_FTP, SERVICE_ALL_ACCESS);
-		web_svc =  openService(hSCManager, NTSVC_NAME_WEB, SERVICE_ALL_ACCESS);        
-		mail_svc =  openService(hSCManager, NTSVC_NAME_MAIL, SERVICE_ALL_ACCESS);
-		services_svc =  openService(hSCManager, NTSVC_NAME_SERVICES, SERVICE_ALL_ACCESS);
+		bbs_svc =  openService(hSCManager, NTSVC_NAME_BBS, GENERIC_READ|GENERIC_EXECUTE);
+		ftp_svc =  openService(hSCManager, NTSVC_NAME_FTP, GENERIC_READ|GENERIC_EXECUTE);
+		web_svc =  openService(hSCManager, NTSVC_NAME_WEB, GENERIC_READ|GENERIC_EXECUTE);        
+		mail_svc =  openService(hSCManager, NTSVC_NAME_MAIL, GENERIC_READ|GENERIC_EXECUTE);
+		services_svc =  openService(hSCManager, NTSVC_NAME_SERVICES, GENERIC_READ|GENERIC_EXECUTE);
     }
 }
 //---------------------------------------------------------------------------
