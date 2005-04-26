@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -40,6 +40,7 @@
 
 #include "MainFormUnit.h"
 #include "WebCfgDlgUnit.h"
+#include "TextFileEditUnit.h"
 #include <stdio.h>			// sprintf()
 #include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------------
@@ -78,8 +79,12 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
 
     HtmlRootEdit->Text=AnsiString(MainForm->web_startup.root_dir);
     ErrorSubDirEdit->Text=AnsiString(MainForm->web_startup.error_dir);
+    CGIDirEdit->Text=AnsiString(MainForm->web_startup.cgi_dir);
     EmbeddedJsExtEdit->Text=AnsiString(MainForm->web_startup.js_ext);
     ServerSideJsExtEdit->Text=AnsiString(MainForm->web_startup.ssjs_ext);
+
+    CGIContentEdit->Text=AnsiString(MainForm->web_startup.default_cgi_content);
+    CGIMaxInactivityEdit->Text=AnsiString((int)MainForm->web_startup.max_cgi_inactivity);
 
     IndexFileEdit->Text.SetLength(0);
     for(p=MainForm->web_startup.index_file_name;*p;p++) {
@@ -87,6 +92,15 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
             IndexFileEdit->Text=IndexFileEdit->Text+",";
         IndexFileEdit->Text=IndexFileEdit->Text+AnsiString(*p);
     }
+
+    CGIExtEdit->Text.SetLength(0);
+    for(p=MainForm->web_startup.cgi_ext;*p;p++) {
+        if(p!=MainForm->web_startup.cgi_ext)
+            CGIExtEdit->Text=CGIExtEdit->Text+",";
+        CGIExtEdit->Text=CGIExtEdit->Text+AnsiString(*p);
+    }
+
+    CGICheckBox->Checked=!(MainForm->web_startup.options&WEB_OPT_NO_CGI);
 
     AnswerSoundEdit->Text=AnsiString(MainForm->web_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->web_startup.hangup_sound);
@@ -103,6 +117,8 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
         =!(MainForm->web_startup.options&BBS_OPT_NO_HOST_LOOKUP);
 
     PageControl->ActivePage=GeneralTabSheet;
+
+    CGICheckBoxClick(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
@@ -136,14 +152,30 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
         ,HtmlRootEdit->Text.c_str());
     SAFECOPY(MainForm->web_startup.error_dir
         ,ErrorSubDirEdit->Text.c_str());
+    SAFECOPY(MainForm->web_startup.cgi_dir
+        ,CGIDirEdit->Text.c_str());
     SAFECOPY(MainForm->web_startup.js_ext
         ,EmbeddedJsExtEdit->Text.c_str());
     SAFECOPY(MainForm->web_startup.ssjs_ext
         ,ServerSideJsExtEdit->Text.c_str());
 
+    SAFECOPY(MainForm->web_startup.default_cgi_content
+        ,CGIContentEdit->Text.c_str());
+    MainForm->web_startup.max_cgi_inactivity
+        =CGIMaxInactivityEdit->Text.ToIntDef(120);
+
     strListFree(&MainForm->web_startup.index_file_name);
     strListSplitCopy(&MainForm->web_startup.index_file_name,
         IndexFileEdit->Text.c_str(),",");
+
+    strListFree(&MainForm->web_startup.cgi_ext);
+    strListSplitCopy(&MainForm->web_startup.cgi_ext,
+        CGIExtEdit->Text.c_str(),",");
+
+	if(CGICheckBox->Checked==false)
+    	MainForm->web_startup.options|=WEB_OPT_NO_CGI;
+    else
+	    MainForm->web_startup.options&=~WEB_OPT_NO_CGI;
 
     SAFECOPY(MainForm->web_startup.answer_sound
         ,AnswerSoundEdit->Text.c_str());
@@ -208,6 +240,48 @@ void __fastcall TWebCfgDlg::AccessLogCheckBoxClick(TObject *Sender)
 {
     LogBaseLabel->Enabled=AccessLogCheckBox->Checked;
     LogBaseNameEdit->Enabled=AccessLogCheckBox->Checked;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TWebCfgDlg::CGIEnvButtonClick(TObject *Sender)
+{
+	char path[MAX_PATH+1];
+
+    iniFileName(path,sizeof(path),MainForm->cfg.ctrl_dir,"cgi_env.ini");
+	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+	TextFileEditForm->Filename=AnsiString(path);
+    TextFileEditForm->Caption="CGI Environment Variables";
+	TextFileEditForm->ShowModal();
+    delete TextFileEditForm;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TWebCfgDlg::WebHandlersButtonClick(TObject *Sender)
+{
+	char path[MAX_PATH+1];
+
+    iniFileName(path,sizeof(path),MainForm->cfg.ctrl_dir,"web_handler.ini");
+	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+	TextFileEditForm->Filename=AnsiString(path);
+    TextFileEditForm->Caption="Web Content Handlers";
+	TextFileEditForm->ShowModal();
+    delete TextFileEditForm;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TWebCfgDlg::CGICheckBoxClick(TObject *Sender)
+{
+    bool enabled=CGICheckBox->Checked;
+
+    CGIDirLabel->Enabled=enabled;
+    CGIDirEdit->Enabled=enabled;
+    CGIExtLabel->Enabled=enabled;
+    CGIExtEdit->Enabled=enabled;
+    CGIContentLabel->Enabled=enabled;
+    CGIContentEdit->Enabled=enabled;
+    CGIMaxInactivityLabel->Enabled=enabled;
+    CGIMaxInactivityEdit->Enabled=enabled;
+    CGIEnvButton->Enabled=enabled;
 }
 //---------------------------------------------------------------------------
 

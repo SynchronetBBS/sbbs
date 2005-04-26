@@ -25,14 +25,14 @@ object WebCfgDlg: TWebCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SoundTabSheet
-    TabIndex = 3
+    ActivePage = CGITabSheet
+    TabIndex = 2
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
       object MaxClientesLabel: TLabel
         Left = 9
-        Top = 106
+        Top = 108
         Width = 96
         Height = 24
         AutoSize = False
@@ -40,7 +40,7 @@ object WebCfgDlg: TWebCfgDlg
       end
       object MaxInactivityLabel: TLabel
         Left = 9
-        Top = 138
+        Top = 140
         Width = 96
         Height = 24
         AutoSize = False
@@ -48,7 +48,7 @@ object WebCfgDlg: TWebCfgDlg
       end
       object PortLabel: TLabel
         Left = 9
-        Top = 74
+        Top = 76
         Width = 96
         Height = 24
         AutoSize = False
@@ -56,7 +56,7 @@ object WebCfgDlg: TWebCfgDlg
       end
       object InterfaceLabel: TLabel
         Left = 9
-        Top = 42
+        Top = 44
         Width = 96
         Height = 24
         AutoSize = False
@@ -75,7 +75,7 @@ object WebCfgDlg: TWebCfgDlg
       end
       object MaxClientsEdit: TEdit
         Left = 105
-        Top = 106
+        Top = 108
         Width = 48
         Height = 24
         Hint = 'Maximum number of simultaneous clients (default=10)'
@@ -85,7 +85,7 @@ object WebCfgDlg: TWebCfgDlg
       end
       object MaxInactivityEdit: TEdit
         Left = 105
-        Top = 138
+        Top = 140
         Width = 48
         Height = 24
         Hint = 
@@ -97,7 +97,7 @@ object WebCfgDlg: TWebCfgDlg
       end
       object PortEdit: TEdit
         Left = 105
-        Top = 74
+        Top = 76
         Width = 48
         Height = 24
         Hint = 'TCP port to use for HTTP connections (default=80)'
@@ -107,7 +107,7 @@ object WebCfgDlg: TWebCfgDlg
       end
       object NetworkInterfaceEdit: TEdit
         Left = 105
-        Top = 42
+        Top = 44
         Width = 192
         Height = 24
         Hint = 'Your network adapter'#39's static IP address or blank for <ANY>'
@@ -236,6 +236,114 @@ object WebCfgDlg: TWebCfgDlg
           'List of filenames that will be automatically sent to client (e.g' +
           '. index.html)'
         TabOrder = 5
+      end
+    end
+    object CGITabSheet: TTabSheet
+      Caption = 'CGI'
+      ImageIndex = 4
+      object CGIDirLabel: TLabel
+        Left = 9
+        Top = 44
+        Width = 96
+        Height = 25
+        AutoSize = False
+        Caption = 'SubDirectory'
+      end
+      object CGIExtLabel: TLabel
+        Left = 9
+        Top = 76
+        Width = 96
+        Height = 25
+        AutoSize = False
+        Caption = 'File Extensions'
+      end
+      object CGIMaxInactivityLabel: TLabel
+        Left = 9
+        Top = 140
+        Width = 96
+        Height = 24
+        AutoSize = False
+        Caption = 'Max Inactivity'
+      end
+      object CGIContentLabel: TLabel
+        Left = 9
+        Top = 108
+        Width = 96
+        Height = 25
+        AutoSize = False
+        Caption = 'Content-Type'
+      end
+      object CGIDirEdit: TEdit
+        Left = 105
+        Top = 44
+        Width = 192
+        Height = 24
+        Hint = 'CGI sub-directory (off of HTML root)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 0
+      end
+      object CGICheckBox: TCheckBox
+        Left = 9
+        Top = 12
+        Width = 280
+        Height = 25
+        Hint = 'CGI support is enabled when checked'
+        Caption = 'Enabled'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+        OnClick = CGICheckBoxClick
+      end
+      object CGIExtEdit: TEdit
+        Left = 105
+        Top = 76
+        Width = 192
+        Height = 24
+        Hint = 'File extensions that denote CGI executable files'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 2
+      end
+      object CGIMaxInactivityEdit: TEdit
+        Left = 105
+        Top = 140
+        Width = 48
+        Height = 24
+        Hint = 
+          'Maximum number of seconds of inactivity before disconnect (defau' +
+          'lt=120)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 3
+      end
+      object CGIContentEdit: TEdit
+        Left = 105
+        Top = 108
+        Width = 192
+        Height = 24
+        Hint = 'Default Content-Type for CGI output'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
+      end
+      object CGIEnvButton: TButton
+        Left = 8
+        Top = 176
+        Width = 145
+        Height = 25
+        Caption = 'Environment Vars'
+        TabOrder = 5
+        OnClick = CGIEnvButtonClick
+      end
+      object WebHandlersButton: TButton
+        Left = 160
+        Top = 176
+        Width = 137
+        Height = 25
+        Caption = 'Content Handlers'
+        TabOrder = 6
+        OnClick = WebHandlersButtonClick
       end
     end
     object LogTabSheet: TTabSheet
