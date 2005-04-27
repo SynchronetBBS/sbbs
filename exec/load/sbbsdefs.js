@@ -225,6 +225,9 @@ var   USER_EXTDESC 	=(1<<19)	/* Extended file descriptions				*/
 var   USER_AUTOHANG	=(1<<20)	/* Auto-hang-up after transfer				*/
 var   USER_WIP 		=(1<<21)	/* Supports WIP terminal emulation			*/
 var   USER_AUTOLOGON=(1<<22)	/* AutoLogon via IP							*/
+var	  USER_HTML		=(1<<23)	/* Using Deuce's HTML terminal (*cough*)	*/
+var	  USER_NOPAUSESPIN=(1<<24)	/* No spinning cursor at pause prompt		*/
+
 					    		/********************************************/
 
 					    		/********************************************/
