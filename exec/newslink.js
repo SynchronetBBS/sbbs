@@ -708,7 +708,7 @@ for(i in area) {
 
 		if(hdr["nntp-posting-host"]!=undefined 
 			&& (system.trashcan("ip", hdr["nntp-posting-host"]) 
-				|| system.trashcan("ip-silent", hdr["nntp-posting-host"])) {
+				|| system.trashcan("ip-silent", hdr["nntp-posting-host"]))) {
 			print("!Filtered IP address in NNTP-Posting-Host header field: " + hdr["nntp-posting-host"]);
 			continue;
 		}
