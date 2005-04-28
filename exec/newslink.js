@@ -705,6 +705,13 @@ for(i in area) {
 			}
 			//print(line);
 		}
+
+		if(hdr["nntp-posting-host"]!=undefined 
+			&& (system.trashcan("ip", hdr["nntp-posting-host"]) 
+				|| system.trashcan("ip-silent", hdr["nntp-posting-host"])) {
+			print("!Filtered IP address in NNTP-Posting-Host header field: " + hdr["nntp-posting-host"]);
+			continue;
+		}
 			
         if(file!=undefined) {   
             if(file.is_open==true) { /* Incomplete attachment? */
