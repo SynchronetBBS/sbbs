@@ -225,7 +225,7 @@ else {
         }
     }
     for(len in maxlengths) {
-        if(http_request.query[len].length>maxlengths[len]) {
+        if(http_request.query[len]!=undefined && http_request.query[len].length>maxlengths[len]) {
             err=1;
             template.err_message+=len+" data too long (Length: "+http_request.query[len].length+" Max: "+maxlengths[len]+")\r\n";
             template.errs[titles[len]]='Max length: '+maxlengths[len];
