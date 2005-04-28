@@ -56,6 +56,7 @@ ulong _beginthread(void( *start_address )( void * )
 {
 	pthread_t	thread;
 	pthread_attr_t attr;
+	size_t		default_stack;
 
 	pthread_attr_init(&attr);     /* initialize attribute structure */
 
@@ -64,10 +65,12 @@ ulong _beginthread(void( *start_address )( void * )
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	/* Default stack size in BSD is too small for JS stuff */
-#ifdef BSD
-	if(stack_size==0)
-		stack_size=1<<17;
-#endif
+	/* Force to at least 128k */
+	if(!pthread_attr_getstacksize(&attr, &default_stack)) {
+		if(default_stack < (1<<17)) {
+			stack_size=1<<17;
+		}
+	}
 	if(stack_size!=0)
 		pthread_attr_setstacksize(&attr, stack_size);
 
