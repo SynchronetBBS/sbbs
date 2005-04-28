@@ -640,7 +640,8 @@ function Server_Work() {
 			if (!cmd[3])
 				break;
 			// FIXME: when on Earth does this happen? :P?
-			if ((cmd[2] == 1) && !this.info) {
+			var hops = parseInt(cmd[2]);
+			if ((hops == 1) && !this.info) {
 				umode_notice(USERMODE_OPER,"Notice","This wasn't supposed to happen!");
 				this.nick = cmd[1];
 				this.hops = 1;
@@ -648,12 +649,17 @@ function Server_Work() {
 				this.linkparent = servername;
 				this.parent = this.nick;
 				var newsrv = this;
-			} else if (parseInt(cmd[2]) > 1) {
+			} else if (hops > 1) {
 				if (this.hub) {
+					var lcserver = cmd[1].toLowerCase();
+					if (searchbyserver(lcserver)) {
+						this.quit("Server " + cmd[1] + " already exists.");
+						return 0;
+					}
 					var new_id = "id" + next_client_id;
 					next_client_id++;
-					Servers[cmd[1].toLowerCase()] = new IRC_Server;
-					var newsrv = Servers[cmd[1].toLowerCase()];
+					Servers[lcserver] = new IRC_Server;
+					var newsrv = Servers[lcserver];
 					newsrv.hops = cmd[2];
 					newsrv.nick = cmd[1];
 					newsrv.info = IRC_string(cmdline);
@@ -672,6 +678,7 @@ function Server_Work() {
 					return 0;
 				}
 			} else {
+				umode_notice(USERMODE_OPER,"Notice","Refusing to comply with supposedly bogus SERVER command from " + this.nick + ": " + cmdline);
 				break;
 			}
 			this.bcast_to_servers_raw(":" + newsrv.linkparent + " SERVER " + newsrv.nick + " " + (parseInt(newsrv.hops)+1) + " :" + newsrv.info);
