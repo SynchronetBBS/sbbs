@@ -65,12 +65,12 @@ ulong _beginthread(void( *start_address )( void * )
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	/* Default stack size in BSD is too small for JS stuff */
-	/* Force to at least 128k */
-	if(!pthread_attr_getstacksize(&attr, &default_stack)) {
-		if(default_stack < (1<<17)) {
-			stack_size=1<<17;
-		}
-	}
+	/* Force to at least 256k */
+#define XPDEV_MIN_THREAD_STACK_SIZE	(256*1024)
+	if(stack_size==0 && pthread_attr_getstacksize(&attr, &default_stack)==0
+		&& default_stack < XPDEV_MIN_THREAD_STACK_SIZE)
+		stack_size=XPDEV_MIN_THREAD_STACK_SIZE;
+
 	if(stack_size!=0)
 		pthread_attr_setstacksize(&attr, stack_size);
 
