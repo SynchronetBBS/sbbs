@@ -20,8 +20,10 @@ var doQWK = true;
             host=host.slice(0,port);
     else
         host=host;
-    template.ftp_url=template.ftp_url + host; 
-    template.ftpidx="/00index.html?$" + new Date().valueOf().toString(36);
+    template.ftp_url += host; 
+    if(ftp_port!=21)
+        template.ftp_url += ":" + ftp_port;
+    template.ftpidx ="/00index.html?$" + new Date().valueOf().toString(36);
     template.ftpqwk = "/" + system.qwk_id.toLowerCase() + ".qwk";
  }
 
