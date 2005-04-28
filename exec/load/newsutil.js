@@ -169,6 +169,7 @@ function parse_news_header(hdr, line)
 					data: line + ": " + data 
 				}
 			);
+			hdr[line.toLowerCase()]=data;
 			break;
 	}
 }
