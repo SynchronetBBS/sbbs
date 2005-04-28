@@ -1498,7 +1498,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			var str = type_str + " " + target + " :" + send_str;
 			target_socket.originatorout(str,this);
 			if (target_socket.away && (type_str == "PRIVMSG") &&
-			    target_socket.local)
+			    !this.server && target_socket.local)
 				this.numeric(301, target_socket.nick + " :" + target_socket.away);
 		} else {
 			this.numeric401(target);
