@@ -357,6 +357,24 @@ Package=<4>
 
 ###############################################################################
 
+Project: "v4upgrade"=.\v4upgrade.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name sbbs
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name xpdev
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "websrvr"=.\websrvr.dsp - Package Owner=<4>
 
 Package=<5>
