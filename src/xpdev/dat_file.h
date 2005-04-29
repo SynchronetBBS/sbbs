@@ -1,6 +1,6 @@
 /* dat_file.h */
 
-/* Functions to deal with comma-separated value (CSV) files and lists */
+/* Functions to deal with comma (CSV) and tab-delimited files and lists */
 
 /* $Id$ */
 
@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -56,23 +56,23 @@ str_list_t*	dataParseList(str_list_t list, str_list_t* columns, dataLineParser_t
 str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t);
 
 str_list_t	dataCreateList(str_list_t records[], str_list_t columns, dataLineCreator_t);
-BOOL		dataWriteFile(FILE* fp, str_list_t records[], str_list_t columns, dataLineCreator_t);
+BOOL		dataWriteFile(FILE* fp, str_list_t records[], str_list_t columns, const char* separator, dataLineCreator_t);
 
 /* CSV (comma separated value) API */
 char*		csvLineCreator(str_list_t);
 str_list_t	csvLineParser(char* line);
-#define		csvParseList(list,col)		dataParseList(list,col,csvLineParser)
-#define		csvCreateList(rec,col)		dataCreateList(rec,col,csvLineCreator)
-#define		csvReadFile(fp,col)			dataReadFile(fp,col,csvLineParser)
-#define		csvWriteFile(fp,rec,col)	dataWriteFile(fp,rec,col,csvLineCreator)
+#define		csvParseList(list,col)			dataParseList(list,col,csvLineParser)
+#define		csvCreateList(rec,col)			dataCreateList(rec,col,csvLineCreator)
+#define		csvReadFile(fp,col)				dataReadFile(fp,col,csvLineParser)
+#define		csvWriteFile(fp,rec,sep,col)	dataWriteFile(fp,rec,col,sep,csvLineCreator)
 
 /* Tab-delimited API */
 char*		tabLineCreator(str_list_t);
 str_list_t	tabLineParser(char* line);
-#define		tabParseList(list,col)		dataParseList(list,col,tabLineParser)
-#define		tabCreateList(rec,col)		dataCreateList(rec,col,tabLineCreator)
-#define		tabReadFile(fp,col)			dataReadFile(fp,col,tabLineParser)
-#define		tabWriteFile(fp,rec,col)	dataWriteFile(fp,rec,col,tabLineCreator)
+#define		tabParseList(list,col)			dataParseList(list,col,tabLineParser)
+#define		tabCreateList(rec,col)			dataCreateList(rec,col,tabLineCreator)
+#define		tabReadFile(fp,col)				dataReadFile(fp,col,tabLineParser)
+#define		tabWriteFile(fp,rec,sep,col)	dataWriteFile(fp,rec,col,sep,tabLineCreator)
 
 #if defined(__cplusplus)
 }
