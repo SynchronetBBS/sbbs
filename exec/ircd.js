@@ -1147,7 +1147,7 @@ function IRCClient_lusers() {
 function num_noninvis_users() {
 	var counter = 0;
 	for(myuser in Users) {
-		if (!Users[myuser].mode&USERMODE_INVISIBLE)
+		if (!(Users[myuser].mode&USERMODE_INVISIBLE))
 			counter++;
 	}
 	return counter;
