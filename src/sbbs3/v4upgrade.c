@@ -35,6 +35,7 @@
 
 #include "sbbs.h"
 #include "sbbs4defs.h"
+#include "ini_file.h"
 
 scfg_t scfg;
 BOOL overwrite_existing_files=TRUE;
@@ -81,7 +82,7 @@ BOOL upgrade_users(void)
 		user.number=i;
 		if((ret=getuserdat(&scfg,&user))!=0) {
 			printf("\nError %d reading user.dat\n",ret);
-			continue;
+			return(FALSE);
 		}
 		/******************************************/
 		/* personal info */
@@ -193,14 +194,76 @@ BOOL upgrade_users(void)
 			,user.curdir
 			,user.curxtrn
 			);
-		printf("reclen=%u\n",len);
-		fprintf(out,"%s%*s\r\n",rec,USER_REC_LEN-len,"");
+		//printf("reclen=%u\n",len);
+		if((ret=fprintf(out,"%*s\r\n",USER_REC_LEN,rec))!=USER_REC_LINE_LEN) {
+			printf("!Error %d (errno: %d) writing %u bytes to user.tab\n"
+				,ret, errno, USER_REC_LINE_LEN);
+			return(FALSE);
+		}
 	}
 	fclose(out);
 
 	printf("\n%u user records converted\n",total);
 
 	return(TRUE);
+}
+
+BOOL upgrade_stats(void)
+{
+	char	path[MAX_PATH+1];
+	BOOL	success;
+	time_t	t;
+	stats_t	stats;
+	FILE*	fp;
+	str_list_t	list;
+
+	printf("Upgrading statistics data files...\n");
+
+    sprintf(path,"%sdsts.dab",scfg.ctrl_dir);
+	printf("\t%s\n",path);
+	if((fp=fopen(path,"rb"))==NULL) {
+		perror(path);
+		return(FALSE);
+	}
+	fread(&t,sizeof(t),1,fp);
+    fread(&stats,sizeof(stats),1,fp);
+    fclose(fp);
+
+	sprintf(path,"%sdstats.dat",scfg.ctrl_dir);
+	if(!overwrite(path))
+		return(TRUE);
+	if((fp=fopen(path,"wb"))==NULL) {
+		perror(path);
+		return(FALSE);
+	}
+
+	if((list = strListInit())==NULL) {
+		printf("!malloc failure\n");
+		return(FALSE);
+	}
+
+	iniSetHexInt(&list,  ROOT_SECTION	,"TimeStamp"	,t				,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"Logons"		,stats.logons	,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"LogonsToday"	,stats.ltoday	,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"Timeon"		,stats.timeon	,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"TimeonToday"	,stats.ttoday	,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"Uploads"		,stats.uls		,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"UploadBytes"	,stats.ulb		,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"Downloads"	,stats.dls		,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"DownloadBytes",stats.dlb		,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"PostsToday"	,stats.ptoday	,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"EmailToday"	,stats.etoday	,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"FeedbackToday",stats.ftoday	,NULL);
+	iniSetInteger(&list, ROOT_SECTION	,"NewUsersToday",stats.nusers	,NULL);
+
+	success=iniWriteFile(fp, list);
+
+	fclose(fp);
+
+	if(success)
+		printf("\nstatistics converted\n");
+
+	return(success);
 }
 
 char *usage="\nusage: v4upgrade [ctrl_dir]\n";
@@ -245,5 +308,9 @@ int main(int argc, char** argv)
 	if(!upgrade_users())
 		return(1);
 
+	if(!upgrade_stats())
+		return(2);
+
+	printf("Upgrade successful.\n");
     return(0);
 }
