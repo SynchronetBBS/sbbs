@@ -42,12 +42,6 @@
 #include <unistd.h>
 #include <termios.h>
 
-#if defined(__FreeBSD__)
-	#include <sys/kbio.h>
-#elif defined(__linux__)
-	#include <sys/kd.h>
-#endif
-
 #include <sys/time.h>
 #include <sys/types.h>
 #include <signal.h>

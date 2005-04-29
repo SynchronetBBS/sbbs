@@ -39,6 +39,7 @@
 #define _SEMWRAP_H
 
 #include "gen_defs.h"
+#include "wrapdll.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -68,10 +69,10 @@ extern "C" {
 
 	/* POSIX semaphores */
 	typedef HANDLE sem_t;
-	int sem_init(sem_t*, int pshared, unsigned int value);
-	int sem_post(sem_t*);
-	int sem_getvalue(sem_t*, int* value);
-	int sem_destroy(sem_t*);
+	DLLEXPORT int DLLCALL sem_init(sem_t*, int pshared, unsigned int value);
+	DLLEXPORT int DLLCALL sem_post(sem_t*);
+	DLLEXPORT int DLLCALL sem_getvalue(sem_t*, int* value);
+	DLLEXPORT int DLLCALL sem_destroy(sem_t*);
 	#define sem_wait(psem)				sem_trywait_block(psem,INFINITE)
 	#define sem_trywait(psem)			sem_trywait_block(psem,0)
 
@@ -91,7 +92,7 @@ extern "C" {
 #endif
 
 /* NOT POSIX */
-int sem_trywait_block(sem_t* psem, unsigned long timeout);
+DLLEXPORT int DLLCALL sem_trywait_block(sem_t* psem, unsigned long timeout);
 
 
 /* Change semaphore to "unsignaled" (NOT POSIX) */
