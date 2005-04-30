@@ -203,37 +203,54 @@ BOOL upgrade_users(void)
 	}
 	fclose(out);
 
-	printf("\n%u user records converted\n",total);
+	printf("\n\tdata/user/user.dat -> %s (%u users)\n", outpath,total);
 
 	return(TRUE);
 }
 
+typedef struct {
+	time_t	time;
+	ulong	ltoday;
+	ulong	ttoday;
+	ulong	uls;
+	ulong	ulb;
+	ulong	dls;
+	ulong	dlb;
+	ulong	ptoday;
+	ulong	etoday;
+	ulong	ftoday;
+} csts_t;
+
 BOOL upgrade_stats(void)
 {
-	char	path[MAX_PATH+1];
+	char	inpath[MAX_PATH+1];
+	char	outpath[MAX_PATH+1];
 	BOOL	success;
+	ulong	count;
 	time_t	t;
 	stats_t	stats;
-	FILE*	fp;
+	FILE*	in;
+	FILE*	out;
+	csts_t	csts;
 	str_list_t	list;
 
-	printf("Upgrading statistics data files...\n");
+	printf("Upgrading statistics data...\n");
 
-    sprintf(path,"%sdsts.dab",scfg.ctrl_dir);
-	printf("\t%s\n",path);
-	if((fp=fopen(path,"rb"))==NULL) {
-		perror(path);
+    sprintf(inpath,"%sdsts.dab",scfg.ctrl_dir);
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"rb"))==NULL) {
+		perror(inpath);
 		return(FALSE);
 	}
-	fread(&t,sizeof(t),1,fp);
-    fread(&stats,sizeof(stats),1,fp);
-    fclose(fp);
+	fread(&t,sizeof(t),1,in);
+    fread(&stats,sizeof(stats),1,in);
+    fclose(in);
 
-	sprintf(path,"%sdstats.dat",scfg.ctrl_dir);
-	if(!overwrite(path))
+	sprintf(outpath,"%sstats.dat",scfg.ctrl_dir);
+	if(!overwrite(outpath))
 		return(TRUE);
-	if((fp=fopen(path,"wb"))==NULL) {
-		perror(path);
+	if((out=fopen(outpath,"wb"))==NULL) {
+		perror(outpath);
 		return(FALSE);
 	}
 
@@ -256,12 +273,129 @@ BOOL upgrade_stats(void)
 	iniSetInteger(&list, ROOT_SECTION	,"FeedbackToday",stats.ftoday	,NULL);
 	iniSetInteger(&list, ROOT_SECTION	,"NewUsersToday",stats.nusers	,NULL);
 
-	success=iniWriteFile(fp, list);
+	success=iniWriteFile(out, list);
 
-	fclose(fp);
+	fclose(out);
+	strListFree(&list);
+	printf("-> %s\n", outpath);
 
-	if(success)
-		printf("\nstatistics converted\n");
+	if(!success) {
+		printf("!iniWriteFile failure\n");
+		return(FALSE);
+	}
+
+    sprintf(inpath,"%scsts.dab",scfg.ctrl_dir);
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"rb"))==NULL) {
+		perror(inpath);
+		return(FALSE);
+	}
+
+	sprintf(outpath,"%sstats.tab",scfg.ctrl_dir);
+	if(!overwrite(outpath))
+		return(TRUE);
+	if((out=fopen(outpath,"wb"))==NULL) {
+		perror(outpath);
+		return(FALSE);
+	}
+	fprintf(out,"Time Stamp\tLogons\tTimeon\tUploaded Files\tUploaded Bytes\t"
+				"Downloaded Files\tDownloaded Bytes\tPosts\tEmail Sent\tFeedback Sent\r\n");
+
+	count=0;
+	while(!feof(in)) {
+		if(fread(&csts,1,sizeof(csts),in)!=sizeof(csts))
+			break;
+		fprintf(out,"%lx\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t\r\n"
+			,csts.time
+			,csts.ltoday
+			,csts.ttoday
+			,csts.uls
+			,csts.ulb
+			,csts.dls
+			,csts.dlb
+			,csts.ptoday
+			,csts.etoday
+			,csts.ftoday
+			);
+		count++;
+	}
+	fclose(in);
+	fclose(out);
+	printf("-> %s (%u days)\n", outpath, count);
+
+	return(success);
+}
+
+BOOL upgrade_event_data(void)
+{
+	char	inpath[MAX_PATH+1];
+	char	outpath[MAX_PATH+1];
+	BOOL	success;
+	FILE*	in;
+	FILE*	out;
+	size_t	i;
+	time_t	t;
+	str_list_t	list;
+
+	printf("Upgrading event data...\n");
+
+	sprintf(outpath,"%sevent.dat",scfg.ctrl_dir);
+	if(!overwrite(outpath))
+		return(TRUE);
+	if((out=fopen(outpath,"wb"))==NULL) {
+		perror(outpath);
+		return(FALSE);
+	}
+
+	if((list = strListInit())==NULL) {
+		printf("!malloc failure\n");
+		return(FALSE);
+	}
+
+	// Read TIME.DAB
+	sprintf(inpath,"%stime.dab",scfg.ctrl_dir);
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"rb"))==NULL) {
+		perror("open failure");
+		return(FALSE);
+	}
+	for(i=0;i<scfg.total_events;i++) {
+		t=0;
+		fread(&t,1,sizeof(t),in);
+		iniSetHexInt(&list, "Events", scfg.event[i]->code, t, NULL);
+	}
+	t=0;
+	fread(&t,1,sizeof(t),in);
+	iniSetHexInt(&list,ROOT_SECTION,"QWKPrePack",t,NULL);
+	fclose(in);
+
+	printf("-> %s (%u timed events)\n", outpath, i);
+
+	// Read QNET.DAB
+	sprintf(inpath,"%sqnet.dab",scfg.ctrl_dir);
+	printf("\t%s ",inpath);
+	i=0;
+	if((in=fopen(inpath,"rb"))==NULL)
+		perror("open failure");
+	else {
+		for(i=0;i<scfg.total_qhubs;i++) {
+			t=0;
+			fread(&t,1,sizeof(t),in);
+			iniSetHexInt(&list,"QWKNetworkHubs",scfg.qhub[i]->id,t,NULL);
+		}
+		fclose(in);
+	}
+	printf("-> %s (%u QWKnet hubs)\n", outpath, i);
+
+	success=iniWriteFile(out, list);
+
+	fclose(out);
+	strListFree(&list);
+
+	if(!success) {
+		printf("!iniWriteFile failure\n");
+		return(FALSE);
+	}
 
 	return(success);
 }
@@ -310,6 +444,9 @@ int main(int argc, char** argv)
 
 	if(!upgrade_stats())
 		return(2);
+
+	if(!upgrade_event_data())
+		return(3);
 
 	printf("Upgrade successful.\n");
     return(0);
