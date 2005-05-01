@@ -129,31 +129,47 @@ BOOL sbbs_set_js_settings(
 	,ini_style_t* style)
 {
 	BOOL	failure=FALSE;
+	js_startup_t global_defaults = {
+			 JAVASCRIPT_MAX_BYTES
+			,JAVASCRIPT_CONTEXT_STACK
+			,JAVASCRIPT_THREAD_STACK
+			,JAVASCRIPT_BRANCH_LIMIT
+			,JAVASCRIPT_GC_INTERVAL
+			,JAVASCRIPT_YIELD_INTERVAL
+		};
+
+	if(defaults==NULL)
+		defaults=&global_defaults;
 
 	if(js->max_bytes==defaults->max_bytes)
-		failure|=iniRemoveValue(lp,section,strJavaScriptMaxBytes);
+		iniRemoveValue(lp,section,strJavaScriptMaxBytes);
 	else
 		failure|=iniSetInteger(lp,section,strJavaScriptMaxBytes,js->max_bytes,style)==NULL;
 
 	if(js->cx_stack==defaults->cx_stack)
-		failure|=iniRemoveValue(lp,section,strJavaScriptContextStack);
+		iniRemoveValue(lp,section,strJavaScriptContextStack);
 	else 
 		failure|=iniSetInteger(lp,section,strJavaScriptContextStack,js->cx_stack,style)==NULL;
 
 	if(js->thread_stack==defaults->thread_stack)
-		failure|=iniRemoveValue(lp,section,strJavaScriptThreadStack);
+		iniRemoveValue(lp,section,strJavaScriptThreadStack);
 	else 
 		failure|=iniSetInteger(lp,section,strJavaScriptThreadStack,js->thread_stack,style)==NULL;
 
 	if(js->branch_limit==defaults->branch_limit)
-		failure|=iniRemoveValue(lp,section,strJavaScriptBranchLimit);
+		iniRemoveValue(lp,section,strJavaScriptBranchLimit);
 	else
 		failure|=iniSetInteger(lp,section,strJavaScriptBranchLimit,js->branch_limit,style)==NULL;
 
 	if(js->gc_interval==defaults->gc_interval)
-		failure|=iniRemoveValue(lp,section,strJavaScriptGcInterval);
+		iniRemoveValue(lp,section,strJavaScriptGcInterval);
 	else 
 		failure|=iniSetInteger(lp,section,strJavaScriptGcInterval,js->gc_interval,style)==NULL;
+
+	if(js->yield_interval==defaults->yield_interval)
+		iniRemoveValue(lp,section,strJavaScriptYieldInterval);
+	else 
+		failure|=iniSetInteger(lp,section,strJavaScriptYieldInterval,js->yield_interval,style)==NULL;
 
 	return(!failure);
 }
@@ -648,26 +664,9 @@ BOOL sbbs_write_ini(
 		else
 			iniSetInteger(lp,section,strBindRetryDelay,global->bind_retry_delay,&style);
 
-		if(global->js.max_bytes==JAVASCRIPT_MAX_BYTES)
-			iniRemoveKey(lp,section,strJavaScriptMaxBytes);
-		else
-			iniSetInteger(lp,section,strJavaScriptMaxBytes,global->js.max_bytes,&style);
-		if(global->js.cx_stack==JAVASCRIPT_CONTEXT_STACK)
-			iniRemoveKey(lp,section,strJavaScriptContextStack);
-		else
-			iniSetInteger(lp,section,strJavaScriptContextStack,global->js.cx_stack,&style);
-		if(global->js.branch_limit==JAVASCRIPT_BRANCH_LIMIT)
-			iniRemoveKey(lp,section,strJavaScriptBranchLimit);
-		else
-			iniSetInteger(lp,section,strJavaScriptBranchLimit,global->js.branch_limit,&style);
-		if(global->js.gc_interval==JAVASCRIPT_GC_INTERVAL)
-			iniRemoveKey(lp,section,strJavaScriptGcInterval);
-		else
-			iniSetInteger(lp,section,strJavaScriptGcInterval,global->js.gc_interval,&style);
-		if(global->js.yield_interval==JAVASCRIPT_YIELD_INTERVAL)
-			iniRemoveKey(lp,section,strJavaScriptYieldInterval);
-		else
-			iniSetInteger(lp,section,strJavaScriptYieldInterval,global->js.yield_interval,&style);
+		/* JavaScript operating parameters */
+		if(!sbbs_set_js_settings(lp,section,&global->js,NULL,&style))
+			break;
 	}
 
 	/***********************************************************************/
