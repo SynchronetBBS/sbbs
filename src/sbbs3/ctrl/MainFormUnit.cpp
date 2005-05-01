@@ -2494,6 +2494,12 @@ bool __fastcall TMainForm::SaveIniSettings(TObject* Sender)
         );
     fclose(fp);
 
+	if(!success) {
+		char err[MAX_PATH*2];
+        SAFEPRINTF(err,"Failure writing initialization file: %s",ini_file);
+        Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+	}
+
     return(success);
 }
 
@@ -3078,13 +3084,44 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         SAFECOPY(global.host_name,PropertiesDlg->HostnameEdit->Text.c_str());
         SAFECOPY(global.ctrl_dir,PropertiesDlg->CtrlDirEdit->Text.c_str());
         SAFECOPY(global.temp_dir,PropertiesDlg->TempDirEdit->Text.c_str());
+        global.sem_chk_freq=PropertiesDlg->SemFreqUpDown->Position;
+
+        /* Copy global values to server startup structs */
+        /* We don't support per-server unique values here (yet) */
+        SAFECOPY(bbs_startup.host_name,global.host_name);
+        SAFECOPY(bbs_startup.ctrl_dir,global.ctrl_dir);
+        SAFECOPY(bbs_startup.temp_dir,global.temp_dir);
+        bbs_startup.sem_chk_freq=global.sem_chk_freq;
+
+        SAFECOPY(ftp_startup.host_name,global.host_name);
+        SAFECOPY(ftp_startup.ctrl_dir,global.ctrl_dir);
+        SAFECOPY(ftp_startup.temp_dir,global.temp_dir);
+        ftp_startup.sem_chk_freq=global.sem_chk_freq;
+
+        SAFECOPY(web_startup.host_name,global.host_name);
+        SAFECOPY(web_startup.ctrl_dir,global.ctrl_dir);
+        SAFECOPY(web_startup.temp_dir,global.temp_dir);
+        web_startup.sem_chk_freq=global.sem_chk_freq;
+
+        SAFECOPY(mail_startup.host_name,global.host_name);
+        SAFECOPY(mail_startup.ctrl_dir,global.ctrl_dir);
+        SAFECOPY(mail_startup.temp_dir,global.temp_dir);
+        mail_startup.sem_chk_freq=global.sem_chk_freq;
+
+        SAFECOPY(services_startup.host_name,global.host_name);
+        SAFECOPY(services_startup.ctrl_dir,global.ctrl_dir);
+        SAFECOPY(services_startup.temp_dir,global.temp_dir);
+        services_startup.sem_chk_freq=global.sem_chk_freq;
+
         Password=PropertiesDlg->PasswordEdit->Text;
         NodeForm->Timer->Interval=PropertiesDlg->NodeIntUpDown->Position*1000;
         ClientForm->Timer->Interval=PropertiesDlg->ClientIntUpDown->Position*1000;
-        global.sem_chk_freq=PropertiesDlg->SemFreqUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
         UndockableForms=PropertiesDlg->UndockableCheckBox->Checked;
         UseFileAssociations=PropertiesDlg->FileAssociationsCheckBox->Checked;
+
+        /* JavaScript operating parameters */
+        js_startup_t js=global.js; // save for later comparison
         global.js.max_bytes
         	=PropertiesDlg->JS_MaxBytesEdit->Text.ToIntDef(JAVASCRIPT_MAX_BYTES);
         global.js.cx_stack
@@ -3097,6 +3134,13 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         	=PropertiesDlg->JS_GcIntervalEdit->Text.ToIntDef(JAVASCRIPT_GC_INTERVAL);
         global.js.yield_interval
         	=PropertiesDlg->JS_YieldIntervalEdit->Text.ToIntDef(JAVASCRIPT_YIELD_INTERVAL);
+
+        /* Copy global settings, if appropriate (not unique) */
+        if(memcmp(&bbs_startup.js,&js,sizeof(js))==0)       bbs_startup.js=global.js;
+        if(memcmp(&ftp_startup.js,&js,sizeof(js))==0)       ftp_startup.js=global.js;
+        if(memcmp(&web_startup.js,&js,sizeof(js))==0)       web_startup.js=global.js;
+        if(memcmp(&mail_startup.js,&js,sizeof(js))==0)      mail_startup.js=global.js;
+        if(memcmp(&services_startup.js,&js,sizeof(js))==0)  services_startup.js=global.js;
 
         MaxLogLen
         	=PropertiesDlg->MaxLogLenEdit->Text.ToIntDef(0);
