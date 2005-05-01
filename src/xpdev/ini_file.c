@@ -216,35 +216,35 @@ static size_t get_value(str_list_t list, const char* section, const char* key, c
 	return(i);
 }
 
-BOOL iniSectionExists(str_list_t* list, const char* section)
+BOOL iniSectionExists(str_list_t list, const char* section)
 {
 	size_t	i;
 
 	if(section==ROOT_SECTION)
 		return(TRUE);
 
-	i=find_section_index(*list,section);
-	return((*list)[i]!=NULL);
+	i=find_section_index(list,section);
+	return(list[i]!=NULL);
 }
 
-BOOL iniKeyExists(str_list_t* list, const char* section, const char* key)
+BOOL iniKeyExists(str_list_t list, const char* section, const char* key)
 {
 	char	val[INI_MAX_VALUE_LEN];
 	size_t	i;
 
-	i=get_value(*list, section, key, val);
+	i=get_value(list, section, key, val);
 
-	if((*list)[i]==NULL || *(*list)[i]==INI_OPEN_SECTION_CHAR)
+	if(list[i]==NULL || *(list[i])==INI_OPEN_SECTION_CHAR)
 		return(FALSE);
 
 	return(TRUE);
 }
 
-BOOL iniValueExists(str_list_t* list, const char* section, const char* key)
+BOOL iniValueExists(str_list_t list, const char* section, const char* key)
 {
 	char	val[INI_MAX_VALUE_LEN];
 
-	get_value(*list, section, key, val);
+	get_value(list, section, key, val);
 
 	return(val[0]!=0);
 }
@@ -480,9 +480,9 @@ char* iniReadString(FILE* fp, const char* section, const char* key, const char* 
 	return(value);
 }
 
-char* iniGetString(str_list_t* list, const char* section, const char* key, const char* deflt, char* value)
+char* iniGetString(str_list_t list, const char* section, const char* key, const char* deflt, char* value)
 {
-	get_value(*list, section, key, value);
+	get_value(list, section, key, value);
 
 	if(*value==0 /* blank value or missing key */) {
 		if(deflt!=NULL)
@@ -535,13 +535,13 @@ str_list_t iniReadStringList(FILE* fp, const char* section, const char* key
 	return(splitList(list,sep));
 }
 
-str_list_t iniGetStringList(str_list_t* list, const char* section, const char* key
+str_list_t iniGetStringList(str_list_t list, const char* section, const char* key
 						 ,const char* sep, const char* deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
 	char*	value=buf;
 
-	get_value(*list, section, key, value);
+	get_value(list, section, key, value);
 
 	if(*value==0 /* blank value or missing key */)
 		value=(char*)deflt;
@@ -606,7 +606,7 @@ str_list_t iniReadSectionList(FILE* fp, const char* prefix)
 	return(lp);
 }
 
-str_list_t iniGetSectionList(str_list_t* list, const char* prefix)
+str_list_t iniGetSectionList(str_list_t list, const char* prefix)
 {
 	char*	p;
 	char	str[INI_MAX_LINE_LEN];
@@ -632,6 +632,29 @@ str_list_t iniGetSectionList(str_list_t* list, const char* prefix)
 
 	return(lp);
 }
+
+size_t iniGetSectionCount(str_list_t list, const char* prefix)
+{
+	char*	p;
+	char	str[INI_MAX_LINE_LEN];
+	size_t	i,items=0;
+
+	if(list==NULL)
+		return(0);
+
+	for(i=0;list[i];i++) {
+		SAFECOPY(str,list[i]);
+		if((p=section_name(str))==NULL)
+			continue;
+		if(prefix!=NULL)
+			if(strnicmp(p,prefix,strlen(prefix))!=0)
+				continue;
+		items++;
+	}
+
+	return(items);
+}
+
 
 str_list_t iniReadKeyList(FILE* fp, const char* section)
 {
@@ -666,7 +689,7 @@ str_list_t iniReadKeyList(FILE* fp, const char* section)
 	return(lp);
 }
 
-str_list_t iniGetKeyList(str_list_t* list, const char* section)
+str_list_t iniGetKeyList(str_list_t list, const char* section)
 {
 	char*	p;
 	char*	vp;
@@ -680,7 +703,7 @@ str_list_t iniGetKeyList(str_list_t* list, const char* section)
 	if(list==NULL)
 		return(lp);
 
-	for(i=find_section(*list,section);list[i]==NULL;i++) {
+	for(i=find_section(list,section);list[i]==NULL;i++) {
 		SAFECOPY(str,list[i]);
 		if((p=key_name(str,&vp))==NULL)
 			continue;
@@ -742,7 +765,7 @@ iniReadNamedStringList(FILE* fp, const char* section)
 }
 
 named_string_t**
-iniGetNamedStringList(str_list_t* list, const char* section)
+iniGetNamedStringList(str_list_t list, const char* section)
 {
 	char*	name;
 	char*	value;
@@ -759,7 +782,7 @@ iniGetNamedStringList(str_list_t* list, const char* section)
 	if(list==NULL)
 		return(lp);
 
-	for(i=find_section(*list,section);list[i]!=NULL;i++) {
+	for(i=find_section(list,section);list[i]!=NULL;i++) {
 		SAFECOPY(str,list[i]);
 		if((name=key_name(str,&value))==NULL)
 			continue;
@@ -799,11 +822,11 @@ long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 	return(strtol(value,NULL,0));
 }
 
-long iniGetInteger(str_list_t* list, const char* section, const char* key, long deflt)
+long iniGetInteger(str_list_t list, const char* section, const char* key, long deflt)
 {
 	char	value[INI_MAX_VALUE_LEN];
 
-	get_value(*list, section, key, value);
+	get_value(list, section, key, value);
 
 	if(*value==0)	/* blank value or missing key */
 		return(deflt);
@@ -816,7 +839,7 @@ ushort iniReadShortInt(FILE* fp, const char* section, const char* key, ushort de
 	return((ushort)iniReadInteger(fp, section, key, deflt));
 }
 
-ushort iniGetShortInt(str_list_t* list, const char* section, const char* key, ushort deflt)
+ushort iniGetShortInt(str_list_t list, const char* section, const char* key, ushort deflt)
 {
 	return((ushort)iniGetInteger(list, section, key, deflt));
 }
@@ -845,11 +868,11 @@ ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong def
 	return(parseIpAddress(value));
 }
 
-ulong iniGetIpAddress(str_list_t* list, const char* section, const char* key, ulong deflt)
+ulong iniGetIpAddress(str_list_t list, const char* section, const char* key, ulong deflt)
 {
 	char	value[INI_MAX_VALUE_LEN];
 
-	get_value(*list, section, key, value);
+	get_value(list, section, key, value);
 
 	if(*value==0)		/* blank value or missing key */
 		return(deflt);
@@ -916,11 +939,11 @@ double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt
 	return(atof(value));
 }
 
-double iniGetFloat(str_list_t* list, const char* section, const char* key, double deflt)
+double iniGetFloat(str_list_t list, const char* section, const char* key, double deflt)
 {
 	char	value[INI_MAX_VALUE_LEN];
 
-	get_value(*list, section, key, value);
+	get_value(list, section, key, value);
 
 	if(*value==0)		/* blank value or missing key */
 		return(deflt);
@@ -950,11 +973,11 @@ BOOL iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 	return(parseBool(value));
 }
 
-BOOL iniGetBool(str_list_t* list, const char* section, const char* key, BOOL deflt)
+BOOL iniGetBool(str_list_t list, const char* section, const char* key, BOOL deflt)
 {
 	char	value[INI_MAX_VALUE_LEN];
 
-	get_value(*list, section, key, value);
+	get_value(list, section, key, value);
 
 	if(*value==0)		/* blank value or missing key */
 		return(deflt);
@@ -1006,12 +1029,12 @@ ulong iniReadBitField(FILE* fp, const char* section, const char* key,
 	return(parseBitField(value,bitdesc));
 }
 
-ulong iniGetBitField(str_list_t* list, const char* section, const char* key, 
+ulong iniGetBitField(str_list_t list, const char* section, const char* key, 
 						ini_bitdesc_t* bitdesc, ulong deflt)
 {
 	char	value[INI_MAX_VALUE_LEN];
 
-	get_value(*list, section, key, value);
+	get_value(list, section, key, value);
 
 	if(*value==0)		/* blank value or missing key */
 		return(deflt);
