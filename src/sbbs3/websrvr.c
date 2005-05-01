@@ -1221,7 +1221,7 @@ static BOOL check_ars(http_session_t * session)
 		/* Should go to the hack log? */
 		if(scfg.sys_misc&SM_ECHO_PW)
 			lprintf(LOG_WARNING,"%04d !PASSWORD FAILURE for user %s: '%s' expected '%s'"
-				,session->socket,username,password,session->user.pass);
+				,session->socket,username,password,thisuser.pass);
 		else
 			lprintf(LOG_WARNING,"%04d !PASSWORD FAILURE for user %s"
 				,session->socket,username);
