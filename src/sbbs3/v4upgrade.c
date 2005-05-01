@@ -249,7 +249,7 @@ BOOL upgrade_stats(void)
 	sprintf(outpath,"%sstats.dat",scfg.ctrl_dir);
 	if(!overwrite(outpath))
 		return(TRUE);
-	if((out=fopen(outpath,"wb"))==NULL) {
+	if((out=fopen(outpath,"w"))==NULL) {
 		perror(outpath);
 		return(FALSE);
 	}
@@ -294,7 +294,7 @@ BOOL upgrade_stats(void)
 	sprintf(outpath,"%sstats.tab",scfg.ctrl_dir);
 	if(!overwrite(outpath))
 		return(TRUE);
-	if((out=fopen(outpath,"wb"))==NULL) {
+	if((out=fopen(outpath,"w"))==NULL) {
 		perror(outpath);
 		return(FALSE);
 	}
@@ -342,7 +342,7 @@ BOOL upgrade_event_data(void)
 	sprintf(outpath,"%sevent.dat",scfg.ctrl_dir);
 	if(!overwrite(outpath))
 		return(TRUE);
-	if((out=fopen(outpath,"wb"))==NULL) {
+	if((out=fopen(outpath,"w"))==NULL) {
 		perror(outpath);
 		return(FALSE);
 	}
@@ -400,6 +400,191 @@ BOOL upgrade_event_data(void)
 	return(success);
 }
 
+BOOL upgrade_ip_filters(void)
+{
+	char	inpath[MAX_PATH+1];
+	char	outpath[MAX_PATH+1];
+	char*	p;
+	FILE*	in;
+	FILE*	out;
+	BOOL	success;
+	size_t	i;
+	size_t	total;
+	str_list_t	inlist;
+	str_list_t	outlist;
+
+	printf("Upgrading IP address filters...\n");
+
+	sprintf(outpath,"%sip-filter.ini",scfg.ctrl_dir);
+	if(!overwrite(outpath))
+		return(TRUE);
+	if((out=fopen(outpath,"w"))==NULL) {
+		perror(outpath);
+		return(FALSE);
+	}
+
+	if((outlist = strListInit())==NULL) {
+		printf("!malloc failure\n");
+		return(FALSE);
+	}
+
+	sprintf(inpath,"%sip.can",scfg.text_dir);
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"r"))==NULL) {
+		perror("open failure");
+		return(FALSE);
+	}
+
+	if((inlist = strListReadFile(in,NULL,4096))==NULL) {
+		printf("!failure reading %s\n",inpath);
+		return(FALSE);
+	}
+
+	total=0;
+	for(i=0;inlist[i]!=NULL;i++) {
+		p=truncsp(inlist[i]);
+		SKIP_WHITESPACE(p);
+		if(*p==';')
+			strListPush(&outlist,p);
+		else if(*p) {
+			iniAddSection(&outlist,p,NULL);
+			total++;
+		}
+	}
+
+	printf("-> %s (%u IP addresses)\n", outpath, total);
+	fclose(in);
+	strListFreeStrings(inlist);
+
+	sprintf(inpath,"%sip-silent.can",scfg.text_dir);
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"r"))==NULL) {
+		perror("open failure");
+		return(FALSE);
+	}
+
+	if((inlist = strListReadFile(in,NULL,4096))==NULL) {
+		printf("!failure reading %s\n",inpath);
+		return(FALSE);
+	}
+
+	total=0;
+	for(i=0;inlist[i]!=NULL;i++) {
+		p=truncsp(inlist[i]);
+		SKIP_WHITESPACE(p);
+		if(*p==';')
+			strListPush(&outlist,p);
+		else if(*p) {
+			iniSetBool(&outlist,p,"Silent",TRUE,NULL);
+			total++;
+		}
+	}
+
+	printf("-> %s (%u IP addresses)\n", outpath, total);
+	fclose(in);
+	strListFree(&inlist);
+
+	success=iniWriteFile(out, outlist);
+
+	fclose(out);
+
+	if(!success) {
+		printf("!iniWriteFile failure\n");
+		return(FALSE);
+	}
+
+	printf("\tFiltering %u total IP addresses\n", iniGetSectionCount(outlist,NULL));
+
+	strListFree(&outlist);
+
+	return(success);
+}
+
+BOOL upgrade_host_filters(void)
+{
+	char	inpath[MAX_PATH+1];
+	char	outpath[MAX_PATH+1];
+	char*	p;
+	FILE*	in;
+	FILE*	out;
+	BOOL	success;
+	size_t	i;
+	size_t	total;
+	str_list_t	inlist;
+	str_list_t	outlist;
+
+	printf("Upgrading Hostname filters...\n");
+
+	sprintf(outpath,"%shost-filter.ini",scfg.ctrl_dir);
+	if(!overwrite(outpath))
+		return(TRUE);
+	if((out=fopen(outpath,"w"))==NULL) {
+		perror(outpath);
+		return(FALSE);
+	}
+
+	if((outlist = strListInit())==NULL) {
+		printf("!malloc failure\n");
+		return(FALSE);
+	}
+
+	sprintf(inpath,"%shost.can",scfg.text_dir);
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"r"))==NULL) {
+		perror("open failure");
+		return(FALSE);
+	}
+
+	if((inlist = strListReadFile(in,NULL,4096))==NULL) {
+		printf("!failure reading %s\n",inpath);
+		return(FALSE);
+	}
+
+	total=0;
+	for(i=0;inlist[i]!=NULL;i++) {
+		p=truncsp(inlist[i]);
+		SKIP_WHITESPACE(p);
+		if(*p==';')
+			strListPush(&outlist,p);
+		else if(*p) {
+			iniAddSection(&outlist,p,NULL);
+			total++;
+		}
+	}
+
+	printf("-> %s (%u hostnames)\n", outpath, total);
+	fclose(in);
+	strListFree(&inlist);
+
+	success=iniWriteFile(out, outlist);
+
+	fclose(out);
+
+	if(!success) {
+		printf("!iniWriteFile failure\n");
+		return(FALSE);
+	}
+
+	printf("\tFiltering %u total hostnames\n", iniGetSectionCount(outlist,NULL));
+
+	strListFree(&outlist);
+
+	return(success);
+}
+
+
+BOOL upgrade_filters()
+{
+	if(!upgrade_ip_filters())
+		return(FALSE);
+
+	if(!upgrade_host_filters())
+		return(FALSE);
+
+	return(TRUE);
+}
+
+
 char *usage="\nusage: v4upgrade [ctrl_dir]\n";
 
 int main(int argc, char** argv)
@@ -447,6 +632,13 @@ int main(int argc, char** argv)
 
 	if(!upgrade_event_data())
 		return(3);
+
+	if(!upgrade_filters())
+		return(4);
+	
+	// alias.cfg
+	// domains.cfg
+	// ftpalias.cfg
 
 	printf("Upgrade successful.\n");
     return(0);
