@@ -15,7 +15,7 @@
 	<li><a href="#tx_smtp">Why can't I send Internet e-mail from my BBS?</a>
 	<li><a href="#rx_smtp">Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</a>
 	<li><a href="#ftp_connect">Why can't users connect to my FTP server?</a>
-	<li><a href="#ftp_nat">Why do FTP clients lock-up when listing directories or downloading files from my FTP server?</a>
+	<li><a href="#ftp_nat">Why do FTP clients lock-up or time-out when listing directories or downloading files from my FTP server?</a>
 	<li><a href="#socket_io">Why do some external programs that use socket I/O hang on my Windows BBS?</a>
 	<li><a href="#bind">Why do some or all of my servers get bind errors when starting or recycling?</a>
 	<li><a href="#bandwidth">How many nodes/clients/users can I support with my Internet connection?</a>
@@ -24,7 +24,7 @@
 <a name="ports"><hr></a>
 <p>
 <b>Question:</b><br>
-<i>What inbound ports do I need to open in my firewall?</i>
+<i>What inbound ports do I need to open in my <b>firewall</b>?</i>
 <p>
 <b>Answer:</b>
 <br>Depends on which Synchronet servers and services you wish to make available
@@ -33,9 +33,9 @@ to Internet clients and which ports you have configured those servers and servic
 <p>
 <table border=1>
 <tr valign="top" align="left"><th>Protocol<th>Port<th>Comments
-<tr valign="top"><td nowrap>Telnet<td nowrap>TCP 23<td>For telnet logins (highly recommended)
+<tr valign="top"><td nowrap>Telnet<td nowrap>TCP 23<td>For Telnet logins (highly recommended)
 <tr valign="top"><td>RLogin<td nowrap>TCP 513<td>Optional for quick-login from RLogin clients (e.g. SyncTerm)
-<tr valign="top"><td>SMTP<td nowrap>TCP 25<td>Necesary for receiving Internet e-mail and inter-bbs instant messages
+<tr valign="top"><td>SMTP<td nowrap>TCP 25<td>Necessary for receiving Internet e-mail and inter-bbs instant messages
 <tr valign="top"><td>POP3<td nowrap>TCP 110<td>Allows BBS users to check their e-mail using standard Internet mail clients (e.g. Outlook Express)
 <tr valign="top"><td>FTP<td nowrap>TCP 21<td>Allows access to the BBS file/download areas using a standard FTP client
 <tr valign="top"><td>HTTP<td nowrap>TCP 80<td>Required for access to the BBS's web server
@@ -59,7 +59,7 @@ the entire BBS computer in a "DMZ" (opening <b>all</b> its ports to the public I
 <br>The IP address ranges listed above are reserved for use in <b>private</b> networks and are <b>not publicly addressible</b>
 from the Internet. See this <a href=http://www.faqs.org/rfcs/rfc1918.html>document</a> for technical details.
 <p>You do <b>not</b> want to advertise this IP address to the public since it is useless to anyone outside of your
-own private network. IP addresses in these ranges are typically assigned to your computer (using DHCP) by your router/firewall device
+own private/local area network (LAN). IP addresses in these ranges are typically assigned to your computer (using DHCP) by your router/firewall device
 to allow multiple computers on your <b>private</b> network to share the same <b>public</b> IP address using a mechanism known as
 <i>Network Address Translation</i> (<a href=http://www.faqs.org/rfcs/rfc1631.html>NAT</a>).
 Clients on the Internet must use the IP address of your router/firewall device's public/WAN port
@@ -73,10 +73,10 @@ to connect to your BBS. This IP address <b>will not</b> begin with <i>192.168</i
 <p>
 <b>Answer:</b>
 <br>If you need to know your public IP address, you can usually query your router/firewall device using it's configuration interface
-(typically via telnet or HTTP to its private/LAN port) or access <a href=http://www.whatismyipaddress.com/>any</a>
+(typically via Telnet or HTTP to its private/LAN port) or access <a href=http://www.whatismyipaddress.com/>any</a>
 <a href=http://checkip.dyndns.org/>one</a> of <a href=http://www.whatismyip.com/>many</a>
 public web-sites that can tell you what your public IP address is. However, it is usually much better to advertise a <b>hostname</b>
-(e.g. <i>vert.synchro.net</i>) rather than an hard-to-remember IP address (e.g. <i>69.104.209.209</i>).
+(e.g. <i>vert.synchro.net</i>) rather than a cryptic hard-to-remember IP address (e.g. <i>69.104.209.211</i>).
 <p>
 If you use a <i><a href=dyndns.txt>Dynamic DNS</a></i> service to get a hostname for your BBS, 
 they can usually correctly determine your public IP address automatically, even if your IP address changes.
@@ -86,7 +86,7 @@ So you don't <b>need</b> to necessarily know what it is.
 <a name="tx_smtp"><hr></a>
 <p>
 <b>Question:</b><br>
-<i>Why can't I send Internet e-mail from my BBS?</i>
+<i>Why can't I <b>send Internet e-mail</b> from my BBS?</i>
 <p>
 <b>Answer:</b>
 <br>You must have the Synchronet "SendMail" thread enabled in your Synchronet Mail Server configuration.
@@ -94,7 +94,7 @@ So you don't <b>need</b> to necessarily know what it is.
 is started or recycled:</p>
 <tt>0000 SendMail thread started</tt>
 <p>then you do not have the SendMail thread enabled and your system cannot deliver any Internet e-mail messages
-until it is enabled and recycled (any previously queued outbound messages will be delivered at that time).
+until it is enabled and recycled (delivery of any previously queued outbound messages will be attempted at that time).
 <p>If your Synchronet "SendMail" thread cannot deliver e-mail messages, it could be for any of the following
 reasons:
 <ol>
@@ -109,7 +109,7 @@ outbound connections to TCP port 25 (many consumer-class ISPs do this).
 <br>Example errors indicating this condition include:
 <br><tt>0700 !SEND ERROR 60 connecting to SMTP server: smtp.somedomain.com</tt>
 <p>
-You can verify if this is the case by attempting to telnet to a known public SMTP server (e.g. <i>vert.synchro.net</i>, TCP port 25).
+You can verify if this is the case by attempting to Telnet to a known public SMTP server (e.g. <i>vert.synchro.net</i>, TCP port 25).
 <br>You should see a mail server version banner similar to the following:
 <br><tt>220 bbs.synchro.net Synchronet SMTP Server 1.362-Win32 Ready</tt>
 <p>
@@ -139,17 +139,17 @@ delivery attempts may be failing.
 <a name="rx_smtp"><hr></a>
 <p>
 <b>Question:</b><br>
-<i>Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</i>
+<i>Why can't my BBS <b>receive Internet e-mail</b> or inter-BBS instant messages?</i>
 <p>
 <b>Answer:</b>
 <br>You must have the Synchronet SMTP (mail) server running and listening for incoming connections on TCP port 25 (the standard SMTP port).
-You (or a friend) can test this basic connectivity by attempting to telnet to port 25 (instead of port 23) at your BBS's hostname or
+You (or a friend) can test this basic connectivity by attempting to Telnet to port 25 (instead of port 23) at your BBS's hostname or
 public IP address from
-a remote location on the Internet. The remote telnet client should see a successful connection and a text message similar to the following:</p>
+a remote location on the Internet. The remote Telnet client should see a successful connection and a text message similar to the following:</p>
 <tt>220 bbs.synchro.net Synchronet SMTP Server 1.362-Win32 Ready</tt>
 <p>You should also see evidence of the successful SMTP connection to the server in your Synchronet Mail Server window/log output.
 If you do not, then its likely that your firewall or Internet Service Provider is blocking incoming connections to TCP port 25.
-Before concluding this is the case, verify that the remote telnet client can connect to other SMTP servers first (e.g. <i>vert.synchro.net</i>, TCP port 25).
+Before concluding this is the case, verify that the remote Telnet client can connect to other SMTP servers first (e.g. <i>vert.synchro.net</i>, TCP port 25).
 If it cannot, then this remote client probably has restrictions on which (if any) connections he can make to TCP port 25. Try using a different
 (less restrictive) remote Internet connection for your test.
 <p>
@@ -157,7 +157,7 @@ If your firewall or Internet Service Provider is blocking incoming connections t
 then you won't be able to receive Internet e-mail on your BBS. Fixing your firewall configuration is rather simple, but
 changing ISPs is often not. One possible work-around is having a mail proxy (3rd party server) receive the e-mail for you and forward it
 to a non-standard (non-blocked) SMTP port. Many Dynamic DNS services offer this <a href=http://www.dyndns.org/services/mailhop/relay.html>service</a>
-for a fee. Or fellow sysops may be able to do perform this service for your for free.
+for a fee. Or a fellow sysop may be able and willing to perform this service for you for free.
 </p>
 
 
@@ -168,7 +168,7 @@ for a fee. Or fellow sysops may be able to do perform this service for your for 
 <p>
 <b>Answer:</b>
 <br>You must have the Synchronet FTP server running and listening for incoming connections on TCP port 21 (the standard FTP port).
-See the previous answer about methods of testing this basic connectivity using a remote telnet client.
+See the previous answer about methods of testing this basic connectivity using a remote Telnet client.
 <p>If your FTP server window/log indicates an accepted FTP connection, then it's not a connectivity problem and probably a login failure.
 <p>FTP sessions require a <b>login</b>. If you have not created a <i>Guest</i> account for your BBS, then the FTP server will
 not allow <i>Annonymous</i> logins (most web browsers, for example, will attempt to login anonymously by default). If this is the problem,
@@ -179,7 +179,7 @@ must login with a valid BBS user account in order to use the FTP server.
 <a name="ftp_nat"><hr></a>
 <p>
 <b>Question:</b><br>
-<i>Why do FTP clients lock-up when listing directories or downloading files from my FTP server?</i>
+<i>Why do FTP clients lock-up or time-out when listing directories or downloading files from my FTP server?</i>
 <p>
 <b>Answer:</b><br>
 Your BBS computer is probably behind a <i>Network Address Translator</i> (<a href=http://www.faqs.org/rfcs/rfc1631.html>NAT</a>). 
@@ -218,13 +218,13 @@ have installed on your system. You can use utilities such as
 <a href="http://www.rt.com/man/netstat.1.html">netstat</a> (for Windows or Unix)
 or <a href="http://www.sysinternals.com/ntw2k/source/tcpview.shtml">TCPView</a> (for Windows) to verify what programs
 (if any) have the TCP or UDP port in question already bound. If these utilities do not report any program is
-bound to (and listening) on this port, you can try telnetting to the port in question and see if anything answers.
-If you're unable to connect to the port with a telnet client and Synchronet cannot bind the port, your TCP/IP
+bound to (and listening) on this port, you can try Telnetting to the port in question and see if anything answers.
+If you're unable to connect to the port with a Telnet client and Synchronet cannot bind the port, your TCP/IP
 stack probably needs to be reset, so a system reboot may be in order.
 <p>If you're running a <b>Unix</b>-like operating system (<i>not</i> Windows) and get bind errors only when
 recycling servers, this is most likely because a TCP session is stuck in a TCP <i>TIMEWAIT</i> state
 (you can use <a href="http://www.rt.com/man/netstat.1.html">netstat</a> to verify this). The session
-will eventually time-out and close properly on its own, allowing the port to re-bound at that time. You can either increase the <b>BindRetryCount</b> and/or <b>BindRetryDelay</b> values
+will eventually time-out and close properly on its own, allowing the port to be re-bound at that time. You can either increase the <b>BindRetryCount</b> and/or <b>BindRetryDelay</b> values
 in your <tt>ctrl/sbbs.ini</tt> file, or you can add the following line to your <tt>ctrl/sockopts.cfg</tt> file:
 <p><tt>REUSEADDR 1</tt>
 <p>to work-around this problem.
@@ -255,7 +255,7 @@ If you are lucky enough to have an <i><b>S</b>DSL</i> or other type of <i>symmet
 then both your upstream and downstream channels are of the same bandwidth.
 <p>
 <li><b>Most BBS traffic is <i>bursty</i>.</b>
-<p>With the exception of file transfers, most BBS traffic is sent and received in small bursts.
+<p>With the exception of large file transfers, most BBS traffic is sent and received in small bursts.
 For example, the BBS user's TCP/IP session is idle while the user is viewing menus, reading messages, 
 pausing between keystrokes, etc.
 Many clients sending and receiving data in small intermittent bursts can be active simultaneously without
