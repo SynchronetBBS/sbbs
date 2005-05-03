@@ -38,7 +38,7 @@
 #ifndef _SBBS4DEFS_H
 #define _SBBS4DEFS_H
 
-#define USER_REC_LEN		998					/* does not include CRLF terminator */
-#define USER_REC_LINE_LEN	(USER_REC_LEN+2)	/* includes CRLF terminator */
+#define USER_REC_LINE_LEN	1000					/* includes CRLF terminator */
+#define USER_REC_LEN		(USER_REC_LINE_LEN-2)	/* does not include CRLF */
 
 #endif /* Don't add anything after this #endif statement */
