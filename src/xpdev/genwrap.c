@@ -89,9 +89,10 @@ char* DLLCALL lastchar(const char* str)
 /****************************************************************************/
 /* Return character value of C-escaped (\) character						*/
 /****************************************************************************/
-char DLLCALL unescape_char(char ch)
+char DLLCALL c_unescape_char(char ch)
 {
 	switch(ch) {
+		case 'e':	return(ESC);	/* non-standard */
 		case 'a':	return('\a');
 		case 'b':	return('\b');
 		case 'f':	return('\f');
@@ -108,7 +109,7 @@ char DLLCALL unescape_char(char ch)
 /* (supports \Xhh and \0ooo escape sequences)								*/
 /* This code currently has problems with sequences like: "\x01blue"			*/
 /****************************************************************************/
-char DLLCALL unescape_char_ptr(const char* str, char** endptr)
+char DLLCALL c_unescape_char_ptr(const char* str, char** endptr)
 {
 	char	ch;
 
@@ -117,7 +118,7 @@ char DLLCALL unescape_char_ptr(const char* str, char** endptr)
 	else if(isdigit(*str))
 		ch=(char)strtol(++str,endptr,8);
 	else {
-		ch=unescape_char(*(str++));
+		ch=c_unescape_char(*(str++));
 		if(endptr!=NULL)
 			*endptr=(char*)str;
 	}
@@ -128,7 +129,7 @@ char DLLCALL unescape_char_ptr(const char* str, char** endptr)
 /****************************************************************************/
 /* Unescape a C string, in place											*/
 /****************************************************************************/
-char* DLLCALL unescape_cstr(char* str)
+char* DLLCALL c_unescape_str(char* str)
 {
 	char	ch;
 	char*	buf;
@@ -142,12 +143,50 @@ char* DLLCALL unescape_cstr(char* str)
 	dst=str;
 	while((ch=*(src++))!=0) {
 		if(ch=='\\')	/* escape */
-			ch=unescape_char_ptr(src,&src);
+			ch=c_unescape_char_ptr(src,&src);
 		*(dst++)=ch;
 	}
 	*dst=0;
 	free(buf);
 	return(str);
+}
+
+char* DLLCALL c_escape_char(char ch)
+{
+	switch(ch) {
+		case 0:		return("\\x00");
+		case 1:		return("\\x01");
+		case ESC:	return("\\e");		/* non-standard */
+		case '\a':	return("\\a");
+		case '\b':	return("\\b");
+		case '\f':	return("\\f");
+		case '\n':	return("\\n");
+		case '\r':	return("\\r");
+		case '\t':	return("\\t");
+		case '\v':	return("\\v");
+		case '\\':	return("\\\\");
+		case '\"':	return("\\\"");
+		case '\'':	return("\\'");
+	}
+	return(NULL);
+}
+
+char* DLLCALL c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only)
+{
+	const char*	s;
+	char*	d;
+	char*	e;
+
+	for(s=src,d=dst;*s && (size_t)(d-dst)<maxlen;s++,d++) {
+		if((!ctrl_only || (uchar)*s < ' ') && (e=c_escape_char(*s))!=NULL) {
+			*d=0;
+			strncat(dst,e,maxlen-(d-dst));
+			d++;
+		} else *d=*s;
+	}
+	*d=0;
+
+	return(dst);
 }
 
 /****************************************************************************/
