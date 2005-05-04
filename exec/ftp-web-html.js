@@ -96,7 +96,7 @@ var prevdir;
 var hdr_font="<font color=silver>";
 var dat_font="<font color=#CCCCCC>";
 
-if(!(user.security.restrictions&UFLAG_G)) { /* !Guest or Anonymous */
+if(!(user.security.restrictions&UFLAG_G) && system.matchuser("Guest")) { /* !Guest or Anonymous */
     /* Logout button */
     writeln("<table align=right>");
     writeln("<form>");
@@ -106,7 +106,7 @@ if(!(user.security.restrictions&UFLAG_G)) { /* !Guest or Anonymous */
     writeln("</form>");
     writeln("</table><br /><br />");
 
-writeln("<table nowrap class=\"ftp_stats\"><tr><td>");
+	writeln("<table nowrap class=\"ftp_stats\"><tr><td>");
 
     /* User Info */
     writeln("<table nowrap align=left>");
@@ -146,7 +146,7 @@ writeln("<table nowrap class=\"ftp_stats\"><tr><td>");
         ,user.stats.files_downloaded));
     writeln("</table>");
 
-writeln("</tr></td></table>");  
+	writeln("</tr></td></table>");  
     
     writeln("<br>");
 } else if(ftp.curlib.name==undefined) { /* Login */

@@ -84,7 +84,7 @@ var prevdir;
 var hdr_font="<font color=black>";
 var dat_font="<font color=#112233>";
 
-if(!(user.security.restrictions&UFLAG_G)) { /* !Guest or Anonymous */
+if(!(user.security.restrictions&UFLAG_G) && system.matchuser("Guest")) { /* !Guest or Anonymous */
     /* Logout button */
     writeln("<table align=right>");
     writeln("<form>");
