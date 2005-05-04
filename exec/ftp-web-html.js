@@ -400,17 +400,17 @@ if(ftp.file_list.length) {
         /* date/time */
         writeln('<td align="left" class="ftp_dirlist" nowrap="nowrap">' 
             + strftime("%b %d, %Y %H:%M" ,ftp.file_list[i].time) + "</td>");
-
         if(ftp.curdir.name!=undefined) {    /* not valid for aliased files in root */
             /* uploader */
             var uploader=ftp.file_list[i].uploader;
-            if (ftp.file_list[i].settings&FILE_ANON)
+            if(ftp.file_list[i].settings&FILE_ANON)
                 uploader="Anonymous";
-            else if (uploader == "-> ADDFILES <-")
-                uploader=system.operator;
-            else if (!(user.security.restrictions&UFLAG_G)) /* ! Guest/Anonymous */
-                uploader='<a class="ftp_dirlist_sm" href="mailto:' + uploader + '@' 
-                + system.inetaddr + '">' + uploader + '</a>';
+			else {
+				if(uploader == "-> ADDFILES <-")
+					uploader=system.operator;
+				if(!(user.security.restrictions&UFLAG_G)) /* ! Guest/Anonymous */
+					uploader=uploader.link("mailto:" + uploader + "@" + system.inetaddr);
+			}
             writeln('<td class="ftp_dirlist" nowrap="nowrap">' + uploader + '</td>');
 
             /* download count */
