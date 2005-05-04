@@ -49,9 +49,12 @@ int nopen(const char* str, int access)
 
     if(access&O_DENYNONE) {
         share=SH_DENYNO;
-        access&=~O_DENYNONE; }
-    else if((access&~O_BINARY)==O_RDONLY) share=SH_DENYWR;
-    else share=SH_DENYRW;
+        access&=~O_DENYNONE; 
+	} 
+	else if((access&~(O_TEXT|O_BINARY))==O_RDONLY) 
+		share=SH_DENYWR;
+    else 
+		share=SH_DENYRW;
 
 #if !defined(__unix__)	/* Basically, a no-op on Unix anyway */
 	if(!(access&O_TEXT))
