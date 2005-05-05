@@ -82,6 +82,10 @@ LIB32=link.exe -lib
 # Name "xpdev - Win32 Debug"
 # Begin Source File
 
+SOURCE=.\dat_file.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\dirwrap.c
 # End Source File
 # Begin Source File
