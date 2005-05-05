@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -40,5 +40,110 @@
 
 #define USER_REC_LINE_LEN	1000					/* includes CRLF terminator */
 #define USER_REC_LEN		(USER_REC_LINE_LEN-2)	/* does not include CRLF */
+
+char* user_dat_columns[] = {
+	 "Alias"
+	,"Name"
+	,"Handle"
+	,"IpAddress"
+	,"Hostname"
+	,"Comment"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Netmail"
+	,"Address"
+	,"Location"
+	,"Zip Code"
+	,"Password"
+	,"PhoneNumber"
+	,"BirthDate"
+	,"Gender"
+	,"Connection"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"LastOnDate"
+	,"FirstOnDate"
+	,"ExpirationDate"
+	,"PasswordModDate"
+	,"NewFileScanDate"
+	,"CurrentLogonTime"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Logons"
+	,"LogonsToday"
+	,"TimeOn"
+	,"ExtraTime"
+	,"TimeToday"
+	,"TimeUsedLastLogon"
+	,"MessagesPosted"
+	,"EmailsSent"
+	,"FeedbackSent"
+	,"EmailsToday"
+	,"PostsToday"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"BytesUploaded"
+	,"FilesUplaoded"
+	,"BytesDownloaded"
+	,"FilesDownloaded"
+	,"Credits"
+	,"FreeCredits"
+	,"Minutes"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"SecurityLevel"
+	,"FlagSet1"
+	,"FlagSet2"
+	,"FlagSet3"
+	,"FlagSet4"
+	,"ExemptionFlags"
+	,"RestrictionFlags"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"MiscSettings"
+	,"QWKSettings"
+	,"ChatSettings"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"Reserved"
+	,"TerminalRows"
+	,"TransferProtocol"
+	,"ExternalEditor"
+	,"CommandShell"
+	,"TempFileType"
+	,"CurrentSubboard"
+	,"CurrentDirectory"
+	,"CurrentExternalProgram"
+	/* Insert new fields here */
+	,"Padding"
+	,NULL
+};
+
+char* stats_dat_columns[] = {
+	 "TimeStamp"
+	,"Logons"
+	,"Timeon"
+	,"FilesUploaded"
+	,"BytesUploaded"
+	,"FilesDownloaded"
+	,"BytesDownloaded"
+	,"Posts"
+	,"EmailsSent"
+	,"FeedbackSent"
+	,NULL 
+};
 
 #endif /* Don't add anything after this #endif statement */
