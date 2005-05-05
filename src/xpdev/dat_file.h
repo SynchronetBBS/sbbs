@@ -48,27 +48,28 @@ extern "C" {
 /* Generic API */
 /***************/
 
-typedef str_list_t	(*dataLineParser_t)(char*);
-typedef char*		(*dataLineCreator_t)(str_list_t);
+typedef str_list_t	(*dataLineParser_t)(const char*);
+typedef char*		(*dataLineCreator_t)(const str_list_t);
 
 /* columns arguments are optional (may be NULL) */
-str_list_t*	dataParseList(str_list_t list, str_list_t* columns, dataLineParser_t);
+str_list_t*	dataParseList(const str_list_t records, str_list_t* columns, dataLineParser_t);
 str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t);
 
-str_list_t	dataCreateList(str_list_t records[], str_list_t columns, dataLineCreator_t);
-BOOL		dataWriteFile(FILE* fp, str_list_t records[], str_list_t columns, const char* separator, dataLineCreator_t);
+str_list_t	dataCreateList(const str_list_t records[], const str_list_t columns, dataLineCreator_t);
+BOOL		dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns
+						  ,const char* separator, dataLineCreator_t);
 
 /* CSV (comma separated value) API */
-char*		csvLineCreator(str_list_t);
-str_list_t	csvLineParser(char* line);
+char*		csvLineCreator(const str_list_t);
+str_list_t	csvLineParser(const char* line);
 #define		csvParseList(list,col)			dataParseList(list,col,csvLineParser)
 #define		csvCreateList(rec,col)			dataCreateList(rec,col,csvLineCreator)
 #define		csvReadFile(fp,col)				dataReadFile(fp,col,csvLineParser)
 #define		csvWriteFile(fp,rec,sep,col)	dataWriteFile(fp,rec,col,sep,csvLineCreator)
 
 /* Tab-delimited API */
-char*		tabLineCreator(str_list_t);
-str_list_t	tabLineParser(char* line);
+char*		tabLineCreator(const str_list_t);
+str_list_t	tabLineParser(const char* line);
 #define		tabParseList(list,col)			dataParseList(list,col,tabLineParser)
 #define		tabCreateList(rec,col)			dataCreateList(rec,col,tabLineCreator)
 #define		tabReadFile(fp,col)				dataReadFile(fp,col,tabLineParser)
