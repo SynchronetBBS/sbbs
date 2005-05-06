@@ -128,6 +128,7 @@ function IRC_quit(server,reason) {
 		reason = IRCLIB_VERSION;
 
 	server.send("QUIT :" + reason + "\r\n");
+	server.poll(5);	/* wait for a response or disconnect */
 }
 
 // This function is intended to match against so-called "IRC wildcards", which
