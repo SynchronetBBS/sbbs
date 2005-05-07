@@ -848,7 +848,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 #else
 
 		if(service_client->service->js_server_props.version[0]==0) {
-			sprintf(service_client->service->js_server_props.version
+			SAFEPRINTF(service_client->service->js_server_props.version
 				,"Synchronet Services %s",revision);
 			service_client->service->js_server_props.version_detail=
 				services_ver();

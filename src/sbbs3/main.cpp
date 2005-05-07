@@ -3773,7 +3773,8 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 	if(startup->temp_dir[0])				backslash(startup->temp_dir);
 
-	sprintf(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
+	ZERO_VAR(js_server_props);
+	SAFEPRINTF3(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
 	js_server_props.version_detail=bbs_ver();
 	js_server_props.clients=&node_threads_running;
 	js_server_props.options=&startup->options;

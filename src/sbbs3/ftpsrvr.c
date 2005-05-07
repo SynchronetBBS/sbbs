@@ -4584,7 +4584,8 @@ void DLLCALL ftp_server(void* arg)
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
-	sprintf(js_server_props.version,"%s %s",FTP_SERVER,revision);
+	ZERO_VAR(js_server_props);
+	SAFEPRINTF2(js_server_props.version,"%s %s",FTP_SERVER,revision);
 	js_server_props.version_detail=ftp_ver();
 	js_server_props.clients=&active_clients;
 	js_server_props.options=&startup->options;
