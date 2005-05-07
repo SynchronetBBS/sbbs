@@ -42,14 +42,21 @@
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
 
 static const char*	nulstr="";
+static const char*  strAutoStart="AutoStart";
 static const char*  strCtrlDirectory="CtrlDirectory";
 static const char*  strTempDirectory="TempDirectory";
 static const char*	strOptions="Options";
 static const char*	strInterface="Interface";
+static const char*	strPort="Port";
+static const char*	strMaxClients="MaxClients";
+static const char*	strMaxInactivity="MaxInactivity";
 static const char*	strHostName="HostName";
 static const char*	strLogMask="LogMask";
 static const char*	strBindRetryCount="BindRetryCount";
 static const char*	strBindRetryDelay="BindRetryDelay";
+static const char*	strAnswerSound="AnswerSound";
+static const char*	strHangupSound="HangupSound";
+static const char*	strHackAttemptSound="HackAttemptSound";
 static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
 static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
 static const char*	strJavaScriptThreadStack	="JavaScriptThreadStack";
@@ -107,7 +114,7 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 	iniFileName(ini_file,MAX_PATH,ctrl_dir,"startup.ini");
 }
 
-static sbbs_fix_js_settings(js_startup_t* js)
+static void sbbs_fix_js_settings(js_startup_t* js)
 {
 	/* Some sanity checking here */
 	if(js->max_bytes==0)	js->max_bytes=JAVASCRIPT_MAX_BYTES;
@@ -277,7 +284,7 @@ void sbbs_read_ini(
 	section = "BBS";
 
 	if(run_bbs!=NULL)
-		*run_bbs=iniReadBool(fp,section,"AutoStart",TRUE);
+		*run_bbs=iniReadBool(fp,section,strAutoStart,TRUE);
 
 	if(bbs!=NULL) {
 
@@ -338,9 +345,9 @@ void sbbs_read_ini(
 			,iniReadString(fp,section,"DOSemuPath",default_dosemu_path,value));
 
 		SAFECOPY(bbs->answer_sound
-			,iniReadString(fp,section,"AnswerSound",nulstr,value));
+			,iniReadString(fp,section,strAnswerSound,nulstr,value));
 		SAFECOPY(bbs->hangup_sound
-			,iniReadString(fp,section,"HangupSound",nulstr,value));
+			,iniReadString(fp,section,strHangupSound,nulstr,value));
 
 		bbs->log_mask
 			=iniReadBitField(fp,section,strLogMask,log_mask_bits,global->log_mask);
@@ -356,22 +363,31 @@ void sbbs_read_ini(
 	section = "FTP";
 
 	if(run_ftp!=NULL)
-		*run_ftp=iniReadBool(fp,section,"AutoStart",TRUE);
+		*run_ftp=iniReadBool(fp,section,strAutoStart,TRUE);
 
 	if(ftp!=NULL) {
 
 		ftp->interface_addr
 			=iniReadIpAddress(fp,section,strInterface,global->interface_addr);
 		ftp->port
-			=iniReadShortInt(fp,section,"Port",IPPORT_FTP);
+			=iniReadShortInt(fp,section,strPort,IPPORT_FTP);
 		ftp->max_clients
-			=iniReadShortInt(fp,section,"MaxClients",10);
+			=iniReadShortInt(fp,section,strMaxClients,10);
 		ftp->max_inactivity
-			=iniReadShortInt(fp,section,"MaxInactivity",300);	/* seconds */
+			=iniReadShortInt(fp,section,strMaxInactivity,300);	/* seconds */
 		ftp->qwk_timeout
 			=iniReadShortInt(fp,section,"QwkTimeout",600);		/* seconds */
 		ftp->sem_chk_freq
 			=iniReadShortInt(fp,section,strSemFileCheckFrequency,global->sem_chk_freq);
+
+		/* Passive transfer settings (for stupid firewalls/NATs) */
+		ftp->pasv_ip_addr
+			=iniReadIpAddress(fp,section,"PasvIpAddress",0);
+		ftp->pasv_port_low
+			=iniReadShortInt(fp,section,"PasvPortLow",IPPORT_RESERVED);
+		ftp->pasv_port_high
+			=iniReadShortInt(fp,section,"PasvPortHigh",0xffff);
+
 
 		/* JavaScript Operating Parameters */
 		sbbs_read_js_settings(fp, section, &ftp->js, &global->js);
@@ -387,11 +403,11 @@ void sbbs_read_ini(
 			,iniReadString(fp,section,"HtmlIndexScript","ftp-html.js",value));
 
 		SAFECOPY(ftp->answer_sound
-			,iniReadString(fp,section,"AnswerSound",nulstr,value));
+			,iniReadString(fp,section,strAnswerSound,nulstr,value));
 		SAFECOPY(ftp->hangup_sound
-			,iniReadString(fp,section,"HangupSound",nulstr,value));
+			,iniReadString(fp,section,strHangupSound,nulstr,value));
 		SAFECOPY(ftp->hack_sound
-			,iniReadString(fp,section,"HackAttemptSound",nulstr,value));
+			,iniReadString(fp,section,strHackAttemptSound,nulstr,value));
 
 		SAFECOPY(ftp->temp_dir
 			,iniReadString(fp,section,strTempDirectory,ftp->temp_dir,value));
@@ -410,7 +426,7 @@ void sbbs_read_ini(
 	section = "Mail";
 
 	if(run_mail!=NULL)
-		*run_mail=iniReadBool(fp,section,"AutoStart",TRUE);
+		*run_mail=iniReadBool(fp,section,strAutoStart,TRUE);
 
 	if(mail!=NULL) {
 
@@ -423,9 +439,9 @@ void sbbs_read_ini(
 		mail->relay_port
 			=iniReadShortInt(fp,section,"RelayPort",IPPORT_SMTP);
 		mail->max_clients
-			=iniReadShortInt(fp,section,"MaxClients",10);
+			=iniReadShortInt(fp,section,strMaxClients,10);
 		mail->max_inactivity
-			=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
+			=iniReadShortInt(fp,section,strMaxInactivity,120);		/* seconds */
 		mail->max_delivery_attempts
 			=iniReadShortInt(fp,section,"MaxDeliveryAttempts",50);
 		mail->rescan_frequency
@@ -487,7 +503,7 @@ void sbbs_read_ini(
 	section = "Services";
 
 	if(run_services!=NULL)
-		*run_services=iniReadBool(fp,section,"AutoStart",TRUE);
+		*run_services=iniReadBool(fp,section,strAutoStart,TRUE);
 
 	if(services!=NULL) {
 
@@ -507,9 +523,9 @@ void sbbs_read_ini(
 			,iniReadString(fp,section,strTempDirectory,services->temp_dir,value));
 
 		SAFECOPY(services->answer_sound
-			,iniReadString(fp,section,"AnswerSound",nulstr,value));
+			,iniReadString(fp,section,strAnswerSound,nulstr,value));
 		SAFECOPY(services->hangup_sound
-			,iniReadString(fp,section,"HangupSound",nulstr,value));
+			,iniReadString(fp,section,strHangupSound,nulstr,value));
 
 		services->log_mask
 			=iniReadBitField(fp,section,strLogMask,log_mask_bits,global->log_mask);
@@ -525,18 +541,18 @@ void sbbs_read_ini(
 	section = "Web";
 
 	if(run_web!=NULL)
-		*run_web=iniReadBool(fp,section,"AutoStart",FALSE);
+		*run_web=iniReadBool(fp,section,strAutoStart,FALSE);
 
 	if(web!=NULL) {
 
 		web->interface_addr
 			=iniReadIpAddress(fp,section,strInterface,global->interface_addr);
 		web->port
-			=iniReadShortInt(fp,section,"Port",IPPORT_HTTP);
+			=iniReadShortInt(fp,section,strPort,IPPORT_HTTP);
 		web->max_clients
-			=iniReadShortInt(fp,section,"MaxClients",10);
+			=iniReadShortInt(fp,section,strMaxClients,10);
 		web->max_inactivity
-			=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
+			=iniReadShortInt(fp,section,strMaxInactivity,120);		/* seconds */
 		web->sem_chk_freq
 			=iniReadShortInt(fp,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
@@ -573,16 +589,16 @@ void sbbs_read_ini(
 			,iniReadString(fp,section,"EmbJavaScriptExtension",".bbs",value));
 
 		web->max_inactivity
-			=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
+			=iniReadShortInt(fp,section,strMaxInactivity,120);		/* seconds */
 		web->max_cgi_inactivity
 			=iniReadShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
 
 		SAFECOPY(web->answer_sound
-			,iniReadString(fp,section,"AnswerSound",nulstr,value));
+			,iniReadString(fp,section,strAnswerSound,nulstr,value));
 		SAFECOPY(web->hangup_sound
-			,iniReadString(fp,section,"HangupSound",nulstr,value));
+			,iniReadString(fp,section,strHangupSound,nulstr,value));
 		SAFECOPY(web->hack_sound
-			,iniReadString(fp,section,"HackAttemptSound",nulstr,value));
+			,iniReadString(fp,section,strHackAttemptSound,nulstr,value));
 
 		web->log_mask
 			=iniReadBitField(fp,section,strLogMask,log_mask_bits,global->log_mask);
@@ -685,7 +701,7 @@ BOOL sbbs_write_ini(
 
 		section = "BBS";
 
-		if(!iniSetBool(lp,section,"AutoStart",run_bbs,&style))
+		if(!iniSetBool(lp,section,strAutoStart,run_bbs,&style))
 			break;
 
 		if(bbs->telnet_interface==global->interface_addr)
@@ -747,9 +763,9 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"DOSemuPath",bbs->dosemu_path,&style))
 			break;
 
-		if(!iniSetString(lp,section,"AnswerSound",bbs->answer_sound,&style))
+		if(!iniSetString(lp,section,strAnswerSound,bbs->answer_sound,&style))
 			break;
-		if(!iniSetString(lp,section,"HangupSound",bbs->hangup_sound,&style))
+		if(!iniSetString(lp,section,strHangupSound,bbs->hangup_sound,&style))
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,bbs_options,bbs->options,&style))
@@ -769,7 +785,7 @@ BOOL sbbs_write_ini(
 
 		section = "FTP";
 
-		if(!iniSetBool(lp,section,"AutoStart",run_ftp,&style))
+		if(!iniSetBool(lp,section,strAutoStart,run_ftp,&style))
 			break;
 
 		if(ftp->interface_addr==global->interface_addr)
@@ -777,13 +793,21 @@ BOOL sbbs_write_ini(
 		else if(!iniSetIpAddress(lp,section,strInterface,ftp->interface_addr,&style))
 			break;
 
-		if(!iniSetShortInt(lp,section,"Port",ftp->port,&style))
+		if(!iniSetShortInt(lp,section,strPort,ftp->port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"MaxClients",ftp->max_clients,&style))
+		if(!iniSetShortInt(lp,section,strMaxClients,ftp->max_clients,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"MaxInactivity",ftp->max_inactivity,&style))
+		if(!iniSetShortInt(lp,section,strMaxInactivity,ftp->max_inactivity,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
+			break;
+
+		/* Passive transfer settings */
+		if(!iniSetIpAddress(lp,section,"PasvIpAddress",ftp->pasv_ip_addr,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"PasvPortLow",ftp->pasv_port_low,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"PasvPortHigh",ftp->pasv_port_high,&style))
 			break;
 
 		if(ftp->sem_chk_freq==global->sem_chk_freq)
@@ -818,11 +842,11 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"HtmlIndexScript",ftp->html_index_script,&style))
 			break;
 
-		if(!iniSetString(lp,section,"AnswerSound",ftp->answer_sound,&style))
+		if(!iniSetString(lp,section,strAnswerSound,ftp->answer_sound,&style))
 			break;
-		if(!iniSetString(lp,section,"HangupSound",ftp->hangup_sound,&style))
+		if(!iniSetString(lp,section,strHangupSound,ftp->hangup_sound,&style))
 			break;
-		if(!iniSetString(lp,section,"HackAttemptSound",ftp->hack_sound,&style))
+		if(!iniSetString(lp,section,strHackAttemptSound,ftp->hack_sound,&style))
 			break;
 	
 		if(!iniSetBitField(lp,section,strOptions,ftp_options,ftp->options,&style))
@@ -843,7 +867,7 @@ BOOL sbbs_write_ini(
 
 		section = "Mail";
 
-		if(!iniSetBool(lp,section,"AutoStart",run_mail,&style))
+		if(!iniSetBool(lp,section,strAutoStart,run_mail,&style))
 			break;
 
 		if(mail->interface_addr==global->interface_addr)
@@ -867,9 +891,9 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,"RelayPort",mail->relay_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"MaxClients",mail->max_clients,&style))
+		if(!iniSetShortInt(lp,section,strMaxClients,mail->max_clients,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"MaxInactivity",mail->max_inactivity,&style))
+		if(!iniSetShortInt(lp,section,strMaxInactivity,mail->max_inactivity,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts,&style))
 			break;
@@ -940,7 +964,7 @@ BOOL sbbs_write_ini(
 
 		section = "Services";
 
-		if(!iniSetBool(lp,section,"AutoStart",run_services,&style))
+		if(!iniSetBool(lp,section,strAutoStart,run_services,&style))
 			break;
 
 		if(services->interface_addr==global->interface_addr)
@@ -973,9 +997,9 @@ BOOL sbbs_write_ini(
 		else if(!iniSetString(lp,section,strTempDirectory,services->temp_dir,&style))
 			break;
 
-		if(!iniSetString(lp,section,"AnswerSound",services->answer_sound,&style))
+		if(!iniSetString(lp,section,strAnswerSound,services->answer_sound,&style))
 			break;
-		if(!iniSetString(lp,section,"HangupSound",services->hangup_sound,&style))
+		if(!iniSetString(lp,section,strHangupSound,services->hangup_sound,&style))
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,service_options,services->options,&style))
@@ -996,7 +1020,7 @@ BOOL sbbs_write_ini(
 
 		section = "Web";
 
-		if(!iniSetBool(lp,section,"AutoStart",run_web,&style))
+		if(!iniSetBool(lp,section,strAutoStart,run_web,&style))
 			break;
 
 		if(web->interface_addr==global->interface_addr)
@@ -1004,11 +1028,11 @@ BOOL sbbs_write_ini(
 		else if(!iniSetIpAddress(lp,section,strInterface,web->interface_addr,&style))
 			break;
 
-		if(!iniSetShortInt(lp,section,"Port",web->port,&style))
+		if(!iniSetShortInt(lp,section,strPort,web->port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"MaxClients",web->max_clients,&style))
+		if(!iniSetShortInt(lp,section,strMaxClients,web->max_clients,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"MaxInactivity",web->max_inactivity,&style))
+		if(!iniSetShortInt(lp,section,strMaxInactivity,web->max_inactivity,&style))
 			break;
 
 		if(web->sem_chk_freq==global->sem_chk_freq)
@@ -1056,16 +1080,16 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"JavaScriptExtension",web->ssjs_ext,&style))
 			break;
 
-		if(!iniSetShortInt(lp,section,"MaxInactivity",web->max_inactivity,&style))
+		if(!iniSetShortInt(lp,section,strMaxInactivity,web->max_inactivity,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"MaxCgiInactivity",web->max_cgi_inactivity,&style))
 			break;
 
-		if(!iniSetString(lp,section,"AnswerSound",web->answer_sound,&style))
+		if(!iniSetString(lp,section,strAnswerSound,web->answer_sound,&style))
 			break;
-		if(!iniSetString(lp,section,"HangupSound",web->hangup_sound,&style))
+		if(!iniSetString(lp,section,strHangupSound,web->hangup_sound,&style))
 			break;
-		if(!iniSetString(lp,section,"HackAttemptSound",web->hack_sound,&style))
+		if(!iniSetString(lp,section,strHackAttemptSound,web->hack_sound,&style))
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,web_options,web->options,&style))

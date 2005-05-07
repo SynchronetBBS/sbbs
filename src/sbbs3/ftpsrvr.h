@@ -49,6 +49,9 @@ typedef struct {
 	WORD	qwk_timeout;
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
     DWORD   interface_addr;
+	DWORD	pasv_ip_addr;
+	WORD	pasv_port_low;
+	WORD	pasv_port_high;
     DWORD	options;			/* See FTP_OPT definitions */
 
 	void*	cbdata;				/* Private data passed to callbacks */ 
