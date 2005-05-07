@@ -14,6 +14,8 @@ XPDEV-MT_SHLIB_BUILD	= $(LIBODIR)$(DIRSEP)$(LIBPREFIX)xpdev_mt$(SOFILE)
 
 all: lib mtlib
 
+tests: $(WRAPTEST)
+
 dl: dl-lib dl-mtlib
 
 lib:	$(OBJODIR) $(LIBODIR) $(XPDEV_LIB_BUILD)
