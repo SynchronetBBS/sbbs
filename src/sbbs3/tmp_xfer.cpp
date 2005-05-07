@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -66,11 +66,11 @@ void sbbs_t::temp_xfer()
 		errormsg(WHERE,ERR_ALLOC,"temp_dir",sizeof(dir_t));
 		return; }
 	memset(cfg.dir[dirnum],0,sizeof(dir_t));
-	strcpy(cfg.dir[dirnum]->lname,"Temporary");
-	strcpy(cfg.dir[dirnum]->sname,"Temp");
-	strcpy(cfg.dir[dirnum]->code,"TEMP");
-	strcpy(cfg.dir[dirnum]->path,cfg.temp_dir);
-	strcpy(cfg.dir[dirnum]->data_dir,cfg.dir[0]->data_dir);
+	SAFECOPY(cfg.dir[dirnum]->lname,"Temporary");
+	SAFECOPY(cfg.dir[dirnum]->sname,"Temp");
+	SAFECOPY(cfg.dir[dirnum]->code,"TEMP");
+	SAFECOPY(cfg.dir[dirnum]->path,cfg.temp_dir);
+	SAFECOPY(cfg.dir[dirnum]->data_dir,cfg.dir[0]->data_dir);
 	cfg.dir[dirnum]->maxfiles=MAX_FILES;
 	cfg.dir[dirnum]->op_ar=(uchar *)nulstr;
 	temp_dirnum=curdirnum=usrdir[curlib][curdir[curlib]];
@@ -80,8 +80,8 @@ void sbbs_t::temp_xfer()
 	/* Fill filedat information */
 	/****************************/
 	memset(&f,0,sizeof(f));
-	sprintf(f.name,"temp_%3.3d.%s",cfg.node_num,useron.tmpext);
-	strcpy(f.desc,"Temp File");
+	SAFEPRINTF2(f.name,"temp_%3.3d.%s",cfg.node_num,useron.tmpext);
+	SAFECOPY(f.desc,"Temp File");
 	f.dir=dirnum;
 
 	if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT))
@@ -98,7 +98,7 @@ void sbbs_t::temp_xfer()
 			menu("tempxfer"); }
 		ASYNC;
 		bputs(text[TempDirPrompt]);
-		strcpy(f.uler,temp_uler);
+		SAFECOPY(f.uler,temp_uler);
 		ch=(char)getkeys("ADEFNILQRVX?\r",0);
 		if(ch>' ')
 			logch(ch,0);
@@ -153,7 +153,7 @@ void sbbs_t::temp_xfer()
 				xfer_prot_menu(XFER_DOWNLOAD);
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
-				strcpy(tmp2,"Q");
+				SAFECOPY(tmp2,"Q");
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
@@ -314,11 +314,11 @@ void sbbs_t::extract(uint dirnum)
 		|| strchr(fname,'?'))
 		return;
 	padfname(fname,f.name);
-	strcpy(str,f.name);
+	SAFECOPY(str,f.name);
 	truncsp(str);
 	for(i=0;i<cfg.total_fextrs;i++)
 		if(!stricmp(str+9,cfg.fextr[i]->ext) && chk_ar(cfg.fextr[i]->ar,&useron)) {
-			strcpy(excmd,cfg.fextr[i]->cmd);
+			SAFECOPY(excmd,cfg.fextr[i]->cmd);
 			break; }
 	if(i==cfg.total_fextrs) {
 		bputs(text[UnextractableFile]);
@@ -363,8 +363,8 @@ void sbbs_t::extract(uint dirnum)
 			temp_cdt=0L;
 		else
 			temp_cdt=f.cdt;
-		strcpy(temp_uler,f.uler);
-		strcpy(temp_file,f.name); }     /* padded filename */
+		SAFECOPY(temp_uler,f.uler);
+		SAFECOPY(temp_file,f.name); }     /* padded filename */
 	if(!fexistcase(path)) {
 		bputs(text[FileNotThere]);  /* not on disk */
 		return; }
@@ -438,8 +438,8 @@ ulong sbbs_t::create_filelist(char *name, long mode)
 		bputs(text[NoFiles]);
 		sprintf(str,"%s%s",cfg.temp_dir,name);
 		remove(str); }
-	strcpy(temp_file,name);
-	strcpy(temp_uler,"File List");
+	SAFECOPY(temp_file,name);
+	SAFECOPY(temp_uler,"File List");
 	return(k);
 }
 
