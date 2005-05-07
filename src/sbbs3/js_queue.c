@@ -411,11 +411,13 @@ js_queue_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 
 	*rval = JSVAL_VOID;
 
+#if 0	/* This doesn't appear to be doing anything but leaking memory */
 	if((q=(msg_queue_t*)malloc(sizeof(msg_queue_t)))==NULL) {
 		JS_ReportError(cx,"malloc failed");
 		return(JS_FALSE);
 	}
 	memset(q,0,sizeof(msg_queue_t));
+#endif
 
 	if(argn<argc && JSVAL_IS_STRING(argv[argn]))
 		name=JS_GetStringBytes(JS_ValueToString(cx,argv[argn++]));
