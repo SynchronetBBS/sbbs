@@ -20,8 +20,8 @@ object FtpCfgDlg: TFtpCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SoundTabSheet
-    TabIndex = 3
+    ActivePage = PasvTabSheet
+    TabIndex = 1
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -173,6 +173,69 @@ object FtpCfgDlg: TFtpCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6
+      end
+    end
+    object PasvTabSheet: TTabSheet
+      Caption = 'Passive'
+      ImageIndex = 4
+      object PasvIpLabel: TLabel
+        Left = 9
+        Top = 12
+        Width = 96
+        Height = 25
+        AutoSize = False
+        Caption = 'IP Address'
+      end
+      object PasvPortLabel: TLabel
+        Left = 9
+        Top = 44
+        Width = 96
+        Height = 25
+        AutoSize = False
+        Caption = 'Data Port'
+      end
+      object PasvPortThroughLabel: TLabel
+        Left = 160
+        Top = 44
+        Width = 81
+        Height = 25
+        Alignment = taCenter
+        AutoSize = False
+        Caption = 'through'
+      end
+      object PasvIpAddrEdit: TEdit
+        Left = 105
+        Top = 12
+        Width = 192
+        Height = 24
+        Hint = 'Your static public IP address or blank for <unspecified>'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 0
+      end
+      object PasvPortLowEdit: TEdit
+        Left = 105
+        Top = 44
+        Width = 48
+        Height = 24
+        Hint = 
+          'Lowest TCP port to use for passive FTP data connections (default' +
+          '=1024)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+      end
+      object PasvPortHighEdit: TEdit
+        Left = 249
+        Top = 44
+        Width = 48
+        Height = 24
+        Hint = 
+          'Highest TCP port to use for passive FTP data connections (defaul' +
+          't=65535)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 2
       end
     end
     object IndexTabSheet: TTabSheet

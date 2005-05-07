@@ -96,6 +96,13 @@ __published:
     TLabel *HackAttemptSoundLabel;
     TEdit *HackAttemptSoundEdit;
     TButton *HackAttemptSoundButton;
+    TTabSheet *PasvTabSheet;
+    TLabel *PasvIpLabel;
+    TEdit *PasvIpAddrEdit;
+    TLabel *PasvPortLabel;
+    TEdit *PasvPortLowEdit;
+    TEdit *PasvPortHighEdit;
+    TLabel *PasvPortThroughLabel;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);

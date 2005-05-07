@@ -66,12 +66,27 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
         );
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
+    if(MainForm->ftp_startup.pasv_ip_addr==0)
+        PasvIpAddrEdit->Text="<unspecified>";
+    else {
+        sprintf(str,"%d.%d.%d.%d"
+            ,(MainForm->ftp_startup.pasv_ip_addr>>24)&0xff
+            ,(MainForm->ftp_startup.pasv_ip_addr>>16)&0xff
+            ,(MainForm->ftp_startup.pasv_ip_addr>>8)&0xff
+            ,MainForm->ftp_startup.pasv_ip_addr&0xff
+        );
+        PasvIpAddrEdit->Text=AnsiString(str);
+    }
+
     MaxClientsEdit->Text=AnsiString((int)MainForm->ftp_startup.max_clients);
     MaxInactivityEdit->Text=AnsiString((int)MainForm->ftp_startup.max_inactivity);
     QwkTimeoutEdit->Text=AnsiString((int)MainForm->ftp_startup.qwk_timeout);
 	PortEdit->Text=AnsiString((int)MainForm->ftp_startup.port);
     AutoStartCheckBox->Checked=MainForm->FtpAutoStart;
     LogFileCheckBox->Checked=MainForm->FtpLogFile;
+
+	PasvPortLowEdit->Text=AnsiString((int)MainForm->ftp_startup.pasv_port_low);
+  	PasvPortHighEdit->Text=AnsiString((int)MainForm->ftp_startup.pasv_port_high);
 
     IndexFileNameEdit->Text=AnsiString(MainForm->ftp_startup.index_file_name);
     HtmlFileNameEdit->Text=AnsiString(MainForm->ftp_startup.html_index_file);
@@ -121,12 +136,33 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->ftp_startup.interface_addr=addr;
     } else
         MainForm->ftp_startup.interface_addr=0;
+    SAFECOPY(str,PasvIpAddrEdit->Text.c_str());
+    p=str;
+    while(*p && *p<=' ') p++;
+    if(*p && isdigit(*p)) {
+        addr=atoi(p)<<24;
+        while(*p && *p!='.') p++;
+        if(*p=='.') p++;
+        addr|=atoi(p)<<16;
+        while(*p && *p!='.') p++;
+        if(*p=='.') p++;
+        addr|=atoi(p)<<8;
+        while(*p && *p!='.') p++;
+        if(*p=='.') p++;
+        addr|=atoi(p);
+        MainForm->ftp_startup.pasv_ip_addr=addr;
+    } else
+        MainForm->ftp_startup.pasv_ip_addr=0;
+
     MainForm->ftp_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
     MainForm->ftp_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(300);
     MainForm->ftp_startup.qwk_timeout=QwkTimeoutEdit->Text.ToIntDef(600);
     MainForm->ftp_startup.port=PortEdit->Text.ToIntDef(23);
     MainForm->FtpAutoStart=AutoStartCheckBox->Checked;
     MainForm->FtpLogFile=LogFileCheckBox->Checked;
+
+    MainForm->ftp_startup.pasv_port_low=PasvPortLowEdit->Text.ToIntDef(IPPORT_RESERVED);
+    MainForm->ftp_startup.pasv_port_high=PasvPortHighEdit->Text.ToIntDef(0xffff);
 
     SAFECOPY(MainForm->ftp_startup.index_file_name
         ,IndexFileNameEdit->Text.c_str());
