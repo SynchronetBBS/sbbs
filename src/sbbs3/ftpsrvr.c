@@ -4679,6 +4679,21 @@ void DLLCALL ftp_server(void* arg)
 		}
 		lprintf(LOG_DEBUG,"Maximum clients: %d",startup->max_clients);
 
+		/* Sanity-check the passive port range */
+		if(startup->pasv_port_low || startup->pasv_port_high) {
+			if(startup->pasv_port_low > startup->pasv_port_high
+				|| startup->pasv_port_high-startup->pasv_port_low < (startup->max_clients-1)) {
+				lprintf(LOG_WARNING,"!Correcting Passive Port Range (Low: %u, High: %u)"
+					,startup->pasv_port_low,startup->pasv_port_high);
+				if(startup->pasv_port_low)
+					startup->pasv_port_high = startup->pasv_port_low+(startup->max_clients-1);
+				else
+					startup->pasv_port_low = startup->pasv_port_high-(startup->max_clients-1);
+			}
+			lprintf(LOG_DEBUG,"Passive Port Low: %u",startup->pasv_port_low);
+			lprintf(LOG_DEBUG,"Passive Port High: %u",startup->pasv_port_high);
+		}
+
 		lprintf(LOG_DEBUG,"Maximum inactivity: %d seconds",startup->max_inactivity);
 
 		active_clients=0, update_clients();
