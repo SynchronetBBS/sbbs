@@ -185,11 +185,35 @@ must login with a valid BBS user account in order to use the FTP server.
 Your BBS computer is probably behind a <i>Network Address Translator</i> (<a href=http://www.faqs.org/rfcs/rfc1631.html>NAT</a>). 
 NAT functionality is typically built into router/firewall devices.
 If your NAT device supports active and passive FTP servers "behind" the NAT, then you should have no problems. Unfortunately, this is
-not always the case (some cheaper consumer-level firewalls do not handle FTP server connections correctly).
+not always the case (some cheaper consumer-level firewalls do not handle FTP server connections correctly
+or they do not support FTP servers listening on non-standard ports).
 Sometimes <b>passive</b> (PASV) transfers work fine (most web browsers use passive FTP transfers by default), but
-<b>active</b> (PORT) transfers do not (the Windows command-line FTP client for example, <b>only</b> supports active transfers). This
-<a href=http://www.ncftpd.com/ncftpd/doc/misc/ftp_and_firewalls.html>document</a> contains the technical details about how and why and recommended
-solutions.
+<b>active</b> (PORT) transfers do not (the Windows command-line FTP client for example, <b>only</b> supports active transfers), or vice versa.
+<p>
+This <a href=http://www.ncftpd.com/ncftpd/doc/misc/ftp_and_firewalls.html>document</a>
+contains the technical details about how and why and recommended solutions.
+<p>
+Enabling the logging of FTP data channel activity can really help diagnose these kinds of problems. 
+This can be done by adding the <tt>DEBUG_DATA</tt> option to the <tt>Options</tt> value in the
+<tt>[FTP]</tt> section of your <tt>ctrl/sbbs.ini</tt> file
+or by checking the <b>Data Channel Activity</b> checkbox in the <i>Log</i>
+tab of the <i>FTP Server Configuration</i> dialog in the <i>Synchronet Control Panel</i> for Win32.
+<p>
+If you're having problems with <b>passive</b> (PASV) transfers through your NAT/firewall device
+and you're running Synchronet v3.12b (FTP Server Revision 1.293) or later:
+<ul>
+<li>If the remote client is attempting to connect to a <b>private</b> IP address 
+(your NAT device isn't <i>translating</i> the PASV response) and you have a
+<b>static</b> public IP address, you can work-around this limitation of your NAT device by using
+the <tt>PasvIpAddress</tt> value in the <tt>[FTP]</tt> section of your <tt>ctrl/sbbs.ini</tt> file to
+specify your <b>public</b> IP address.
+<p>
+<li>If your firewall cannot dynamically open/forward FTP PASV data ports for incoming passive FTP data connections, you can
+specifiy a limited <i>range</i> of TCP port numbers to use for passive transfers by modifying the
+<tt>PasvPortLow</tt> and <tt>PasvPortHigh</tt> values in the <tt>[FTP]</tt> section of your
+<tt>ctrl/sbbs.ini</tt> file. You will of course need to configure your firewall device to open/forward
+these ports to your FTP server.
+</ul>
 </p>
 
 <a name="socket_io"><hr></a>
