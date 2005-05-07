@@ -2866,7 +2866,8 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
-		if(!stricmp(cmd, "PASV")) {
+		if(!stricmp(cmd, "PASV") 
+			|| !stricmp(cmd, "P@SW")) {	// Kludge required for SMC Barricade V1.2
 
 			if(pasv_sock!=INVALID_SOCKET) 
 				ftp_close_socket(&pasv_sock,__LINE__);
