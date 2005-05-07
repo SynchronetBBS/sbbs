@@ -280,6 +280,8 @@ function Unregistered_Quit(msg) {
 		this.rawout("ERROR :" + msg);
 	if (server.client_remove!=undefined)
 		server.client_remove(this.socket);
+	if(server.clients != undefined)
+		log(LOG_DEBUG,format("%d clients", server.clients));
 	this.socket.close();
 	delete Local_Sockets[this.id];
 	delete Local_Sockets_Map[this.id];
@@ -290,7 +292,7 @@ function Unregistered_Quit(msg) {
 
 function Unregistered_Resolve_Check() {
 	var my_resolved = this.pending_resolve.read();
-	if (my_resolved) {
+	if (my_resolved && my_resolved!=null) {
 		if (my_resolved.search(/[.]/))
 			this.hostname = my_resolved;
 		else
