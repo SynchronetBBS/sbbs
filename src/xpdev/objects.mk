@@ -32,3 +32,7 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)str_list$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)threadwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpbeep$(OFILE)
+
+TESTOBJS = \
+	$(MTOBJODIR)$(DIRSEP)wraptest$(OFILE)
+
