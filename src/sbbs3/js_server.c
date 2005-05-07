@@ -48,6 +48,7 @@ enum {
 
 static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	char*		ip;
     jsint       tiny;
 	struct in_addr in_addr;
 	js_server_props_t*	p;
@@ -59,7 +60,8 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SERVER_PROP_VER:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,p->version));
+			if(p->version!=NULL)
+				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,p->version));
 			break;
 		case SERVER_PROP_VER_DETAIL:
 			if(p->version_detail!=NULL)
@@ -69,7 +71,8 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(p->interface_addr!=NULL) {
 				in_addr.s_addr=*(p->interface_addr);
 				in_addr.s_addr=htonl(in_addr.s_addr);
-				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,inet_ntoa(in_addr)));
+				if((ip=inet_ntoa(in_addr))!=NULL)
+					*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,ip));
 			}
 			break;
 		case SERVER_PROP_OPTIONS:
