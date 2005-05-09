@@ -88,6 +88,9 @@ static size_t js_decode_value(JSContext *cx, JSObject *parent
 		return(count);
 
 	switch(v->type) {
+		case JSTYPE_NULL:
+			*rval = JSVAL_NULL;
+			break;
 		case JSTYPE_BOOLEAN:
 			*rval = BOOLEAN_TO_JSVAL(v->value.b);
 			break;
@@ -219,11 +222,12 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 			nv->value.b=JSVAL_TO_BOOLEAN(val);
 			break;
 		case JSVAL_OBJECT:
+			if(JSVAL_IS_NULL(val)) {
+				nv->type=JSTYPE_NULL;
+				break;
+			}
 			nv->type=JSTYPE_OBJECT;
 			obj = JSVAL_TO_OBJECT(val);
-
-			if(JSVAL_IS_NULL(val))
-				break;
 
 			if(JS_IsArrayObject(cx, obj))
 				nv->type=JSTYPE_ARRAY;
