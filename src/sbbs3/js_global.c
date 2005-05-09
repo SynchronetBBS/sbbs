@@ -102,7 +102,7 @@ static void background_thread(void* arg)
 
 	msgQueueAttach(bg->msg_queue);
 	JS_SetContextThread(bg->cx);
-	if(JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result) && result!=JSVAL_VOID)
+	if(JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result) /* && result!=JSVAL_VOID */)
 		js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
 	JS_DestroyScript(bg->cx, bg->script);
 	JS_DestroyContext(bg->cx);
