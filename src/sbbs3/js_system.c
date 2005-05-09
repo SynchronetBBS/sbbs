@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1280,8 +1280,6 @@ js_popen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	jsval		val;
 	JSObject*	array;
 	JSString*	js_str;
-
-	*rval = JSVAL_VOID;
 
 	if(argc<1)
 		return(JS_TRUE);

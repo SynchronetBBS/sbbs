@@ -569,8 +569,6 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	*rval = JSVAL_VOID;
-
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 
@@ -595,8 +593,6 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
-
-	*rval = JSVAL_VOID;
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
@@ -718,7 +714,6 @@ js_alert(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	sbbs->attr(LIGHTGRAY);
 	sbbs->bputs(crlf);
 
-	*rval = JSVAL_VOID;
     return(JS_TRUE);
 }
 

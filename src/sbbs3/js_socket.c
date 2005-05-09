@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -101,8 +101,6 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
-
-	*rval = JSVAL_VOID;
 
 	if(p->sock==INVALID_SOCKET)
 		return(JS_TRUE);
@@ -248,14 +246,12 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((new_socket=accept_socket(p->sock,NULL,NULL))==INVALID_SOCKET) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
-		*rval = JSVAL_VOID;
 		return(JS_TRUE);
 	}
 
 	if((sockobj=js_CreateSocketObject(cx, obj, "new_socket", new_socket))==NULL) {
 		closesocket(new_socket);
 		JS_ReportError(cx,"Error creating new socket object");
-		*rval = JSVAL_VOID;
 		return(JS_TRUE);
 	}
 	if((new_p=(private_t*)JS_GetPrivate(cx,sockobj))==NULL) {
@@ -1314,8 +1310,6 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&type);
-
-	*rval = JSVAL_VOID;
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
 		JS_ReportError(cx,"malloc failed");

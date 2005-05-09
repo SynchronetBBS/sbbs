@@ -275,8 +275,6 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int		rd;
 	int32	len=128;
 
-	*rval = JSVAL_VOID;
-
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 	if((buf=malloc(len))==NULL)
@@ -297,8 +295,6 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*	buf;
 	char*	p;
 	int32	len=128;
-
-	*rval = JSVAL_VOID;
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
@@ -394,7 +390,6 @@ js_alert(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	fprintf(confp,"!%s\n",JS_GetStringBytes(str));
 
-	*rval = JSVAL_VOID;
     return(JS_TRUE);
 }
 
@@ -432,10 +427,8 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	} else
 		instr[0]=0;
 
-	if(!fgets(instr,sizeof(instr),stdin)) {
-		*rval = JSVAL_VOID;
+	if(!fgets(instr,sizeof(instr),stdin))
 		return(JS_TRUE);
-	}
 
 	if((str=JS_NewStringCopyZ(cx, instr))==NULL)
 	    return(JS_FALSE);

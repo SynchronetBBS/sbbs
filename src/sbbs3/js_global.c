@@ -326,7 +326,6 @@ js_yield(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		MAYBE_YIELD();
 	}
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -339,7 +338,6 @@ js_mswait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_ValueToInt32(cx,argv[0],&val);
 	mswait(val);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -375,14 +373,12 @@ js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_ValueToInt32(cx,argv[1],&dur);
 
 	sbbs_beep(freq,dur);
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
 static JSBool
 js_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	*rval = JSVAL_VOID;
 	if(argc)
 		JS_DefineProperty(cx, obj, "exit_code", argv[0]
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -1917,8 +1913,6 @@ js_getfext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	*rval = JSVAL_VOID;
-
 	if((p=getfext(str))==NULL)
 		return(JS_TRUE);
 
@@ -1942,8 +1936,6 @@ js_getfcase(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
-
-	*rval = JSVAL_VOID;
 
 	SAFECOPY(path,str);
 	if(fexistcase(path)) {
@@ -2290,8 +2282,6 @@ js_freediskspace(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
-
-	*rval = JSVAL_VOID;
 
 	if((p=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_TRUE);
