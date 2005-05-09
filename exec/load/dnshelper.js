@@ -18,4 +18,5 @@
    acceptable.  Otherwise simply use resolve_host() as per normal.
 */
 
-resolve_host(argv[0]);
+if(resolve_host(argv[0])==null)
+	false;	// Work-around for bug in v3.12a (segfault when decoding "null")
