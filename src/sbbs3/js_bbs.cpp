@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -912,7 +912,6 @@ js_menu(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
  		return(JS_FALSE);
  
 	sbbs->menu(JS_GetStringBytes(str));
- 	*rval=JSVAL_VOID;
 
     return(JS_TRUE);
 }
@@ -926,7 +925,6 @@ js_hangup(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	sbbs->hangup();
-	*rval=JSVAL_VOID;
 
 	return(JS_TRUE);
 }
@@ -941,7 +939,6 @@ js_nodesync(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->getnodedat(sbbs->cfg.node_num,&sbbs->thisnode,0);
 	sbbs->nodesync();
-	*rval=JSVAL_VOID;
 
 	return(JS_TRUE);
 }
@@ -1419,7 +1416,6 @@ js_logoff(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		sbbs->hangup(); 
 	}
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1433,7 +1429,6 @@ js_logout(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->logout();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1447,7 +1442,6 @@ js_automsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->automsg();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1461,7 +1455,6 @@ js_time_bank(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->time_bank();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1475,7 +1468,6 @@ js_text_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->text_sec();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1489,7 +1481,6 @@ js_qwk_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->qwk_sec();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1503,7 +1494,6 @@ js_xtrn_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->xtrn_sec();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1517,7 +1507,6 @@ js_xfer_policy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 	sbbs->xfer_policy();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1531,7 +1520,6 @@ js_batchmenu(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->batchmenu();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1557,7 +1545,6 @@ js_batchaddlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 	sbbs->batch_add_list(JS_GetStringBytes(JS_ValueToString(cx, argv[0])));
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1571,7 +1558,6 @@ js_temp_xfer(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->temp_xfer();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1587,7 +1573,6 @@ js_user_config(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if(!(sbbs->useron.rest&FLAG('G')))    /* not guest */
 		getuserdat(&sbbs->cfg,&sbbs->useron);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1601,7 +1586,6 @@ js_user_sync(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	getuserdat(&sbbs->cfg,&sbbs->useron);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1615,7 +1599,6 @@ js_sys_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->sys_info();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1632,7 +1615,6 @@ js_sub_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(subnum<sbbs->cfg.total_subs)
 		sbbs->subinfo(subnum);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1648,7 +1630,6 @@ js_dir_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(dirnum<sbbs->cfg.total_dirs)
 		sbbs->dirinfo(dirnum);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1662,7 +1643,6 @@ js_user_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->user_info();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1676,7 +1656,6 @@ js_ver(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->ver();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1690,7 +1669,6 @@ js_sys_stats(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->sys_stats();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1708,7 +1686,6 @@ js_node_stats(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 
 	sbbs->node_stats(node_num);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1726,7 +1703,6 @@ js_userlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->userlist(mode);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1744,7 +1720,6 @@ js_useredit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->useredit(usernumber);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1758,7 +1733,6 @@ js_change_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 	sbbs->change_user();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1772,7 +1746,6 @@ js_logonlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->logonlist();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1786,7 +1759,6 @@ js_nodelist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->nodelist();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1800,7 +1772,6 @@ js_whos_online(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 	sbbs->whos_online(true);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1816,7 +1787,6 @@ js_spy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_ValueToInt32(cx,argv[0],&node_num);
 	sbbs->spy(node_num);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1838,7 +1808,6 @@ js_readmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	sbbs->readmail(usernumber,readwhich);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1923,7 +1892,6 @@ js_bulkmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(ar && ar[0])
 		FREE(ar);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2012,7 +1980,6 @@ js_telnet_gate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 	sbbs->telnet_gate(addr,mode);
 	
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2054,7 +2021,6 @@ js_multinode_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	sbbs->multinodechat(channel);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2068,7 +2034,6 @@ js_private_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 
 	sbbs->nodemsg();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2082,7 +2047,6 @@ js_private_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 	sbbs->privchat();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2096,7 +2060,6 @@ js_get_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	sbbs->getnmsg();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2141,7 +2104,6 @@ js_get_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 	sbbs->getsmsg(usernumber);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2333,7 +2295,6 @@ js_msgscan_cfg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 	sbbs->new_scan_cfg(mode);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2348,7 +2309,6 @@ js_msgscan_ptrs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 	sbbs->new_scan_ptr_cfg();
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2366,7 +2326,6 @@ js_msgscan_reinit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	}
 	sbbs->bputs(sbbs->text[MsgPtrsInitialized]);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2392,7 +2351,6 @@ js_scansubs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	else
 		sbbs->scansubs(mode);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2418,7 +2376,6 @@ js_scandirs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	else
 		sbbs->scandirs(mode);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2457,7 +2414,7 @@ js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	time_t		t=time(NULL);
 	sbbs_t*		sbbs;
 
-	*rval = JSVAL_VOID;
+	*rval = JSVAL_NULL;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
