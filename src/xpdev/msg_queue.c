@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -173,23 +173,38 @@ static BOOL list_wait(link_list_t* list, long timeout)
 
 BOOL msgQueueWait(msg_queue_t* q, long timeout)
 {
-	return(list_wait(msgQueueReadList(q),timeout));
+	BOOL			result;
+	link_list_t*	list = msgQueueReadList(q);
+
+	if((result=list_wait(list,timeout))==TRUE)
+#if defined(LINK_LIST_THREADSAFE)
+		listSemPost(list)	/* Replace the semaphore we just cleared */
+#endif
+		;
+
+	return(result);
 }
 
 void* msgQueueRead(msg_queue_t* q, long timeout)
 {
-	if(!list_wait(msgQueueReadList(q),timeout))
-		return(NULL);
+	link_list_t*	list = msgQueueReadList(q);
 
-	return listShiftNode(msgQueueReadList(q));
+	list_wait(list,timeout);
+
+	return listShiftNode(list);
 }
 
 void* msgQueuePeek(msg_queue_t* q, long timeout)
 {
-	if(!list_wait(msgQueueReadList(q),timeout))
-		return(NULL);
+	link_list_t*	list = msgQueueReadList(q);
 
-	return listNodeData(listFirstNode(msgQueueReadList(q)));
+	if(list_wait(list,timeout))
+#if defined(LINK_LIST_THREADSAFE)
+		listSemPost(list)	/* Replace the semaphore we just cleared */
+#endif
+		;
+
+	return listNodeData(listFirstNode(list));
 }
 
 void* msgQueueFind(msg_queue_t* q, const void* data, size_t length)
