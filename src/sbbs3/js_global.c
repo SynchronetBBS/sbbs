@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -99,11 +99,14 @@ static void background_thread(void* arg)
 {
 	background_data_t* bg = (background_data_t*)arg;
 	jsval result=JSVAL_VOID;
+	jsval exit_code;
 
 	msgQueueAttach(bg->msg_queue);
 	JS_SetContextThread(bg->cx);
-	if(JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result) /* && result!=JSVAL_VOID */)
-		js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
+	if(!JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result)
+		&& JS_GetProperty(bg->cx, bg->obj, "exit_code", &exit_code))
+		result=exit_code;
+	js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
 	JS_DestroyScript(bg->cx, bg->script);
 	JS_DestroyContext(bg->cx);
 	JS_DestroyRuntime(bg->runtime);
@@ -2523,7 +2526,7 @@ static JSClass js_global_class = {
 };
 
 static jsSyncMethodSpec js_global_functions[] = {
-	{"exit",			js_exit,			0,	JSTYPE_VOID,	"[number exit_code]"
+	{"exit",			js_exit,			0,	JSTYPE_VOID,	"[exit_code]"
 	,JSDOCSTR("stop script execution, "
 		"optionally setting the global property <tt>exit_code</tt> to the specified numeric value")
 	,311
@@ -2540,9 +2543,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"(in a child thread) but may communicate with the parent "
 		"script/thread by reading from and/or writing to the <i>parent_queue</i> "
 		"(an automatically created <i>Queue</i> object). " 
-		"The result (last executed statement) of the executed script will also be automatically "
-		"written to the <i>parent_queue</i> "
-		"which may be read later by the parent script.")
+		"The result (last executed statement) of the executed script "
+		"(or the optional <i>exit_code</i> passed to the <i>exit()/<i> function) "
+		"will be automatically written to the <i>parent_queue</i> "
+		"which may be read later by the parent script (using <i>load_result.read()</i>, for example).")
 	,312
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
