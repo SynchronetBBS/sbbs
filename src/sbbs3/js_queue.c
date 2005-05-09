@@ -135,7 +135,7 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
-	if(argc) 	/* timeout specified */
+	if(argc && JSVAL_IS_NUMBER(argv[0])) 	/* timeout specified */
 		JS_ValueToInt32(cx,argv[0],&timeout);
 
 	if((v=msgQueuePeek(q,timeout))==NULL)
@@ -154,22 +154,27 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	msg_queue_t* q;
 	queued_value_t	find_v;
 	queued_value_t*	v;
+	int32 timeout=0;
 
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
 
-	if(argc) {	/* value named specified */
+	if(JSVAL_IS_STRING(argv[0])) {	/* value named specified */
 		ZERO_VAR(find_v);
 		SAFECOPY(find_v.name,JS_GetStringBytes(JS_ValueToString(cx,argv[0])));
 		v=msgQueueFind(q,&find_v,sizeof(find_v.name));
-	} else
-		v=msgQueueRead(q, /* timeout */0);
+	} else {
+		if(JSVAL_IS_NUMBER(argv[0]))
+			JS_ValueToInt32(cx,argv[0],&timeout);
+		v=msgQueueRead(q, timeout);
+	}
 
-	js_decode_value(cx, obj, v, rval, /* peek */FALSE);
-
-	FREE_AND_NULL(v);
+	if(v!=NULL) {
+		js_decode_value(cx, obj, v, rval, /* peek */FALSE);
+		free(v);
+	}
 
 	return(JS_TRUE);
 }
@@ -179,17 +184,20 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	msg_queue_t*	q;
 	queued_value_t*	v;
+	int32 timeout=0;
 
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
 
-	v=msgQueuePeek(q, /* timeout */0);
+	if(argc && JSVAL_IS_NUMBER(argv[0])) 	/* timeout specified */
+		JS_ValueToInt32(cx,argv[0],&timeout);
 
-	js_decode_value(cx, obj, v, rval, /* peek */TRUE);
-
-	FREE_AND_NULL(v);
+	if((v=msgQueuePeek(q, timeout))!=NULL) {
+		js_decode_value(cx, obj, v, rval, /* peek */TRUE);
+		free(v);
+	}
 
 	return(JS_TRUE);
 }
@@ -380,22 +388,24 @@ static JSClass js_queue_class = {
 };
 
 static jsSyncMethodSpec js_queue_functions[] = {
-	{"poll",		js_poll,		0,	JSTYPE_UNDEF,	"[timeout]"
-	,JSDOCSTR("wait for a value on the queue for up to <i>timeout</i> milliseconds "
-		"(default: <i>infinite</i>), returns <i>true</i> or the <i>name</i> (string) of "
+	{"poll",		js_poll,		1,	JSTYPE_UNDEF,	"[timeout]"
+	,JSDOCSTR("wait for any value to be written to the queue for up to <i>timeout</i> milliseconds "
+		"(default: <i>0</i>), returns <i>true</i> or the <i>name</i> (string) of "
 		"the value waiting (if it has one), or <i>false</i> if no values are waiting")
 	,312
 	},
-	{"read",		js_read,		0,	JSTYPE_UNDEF,	"[name]"
+	{"read",		js_read,		1,	JSTYPE_UNDEF,	"[name or timeout]"
 	,JSDOCSTR("read a value from the queue, if <i>name</i> not specified, reads next value "
-		"from the bottom of the queue")
+		"from the bottom of the queue (waiting up to <i>timeout</i> milliseconds)")
 	,312
 	},
-	{"peek",		js_peek,		0,	JSTYPE_UNDEF,	""
-	,JSDOCSTR("peek at the value at the bottom of the queue")
+	{"peek",		js_peek,		1,	JSTYPE_UNDEF,	"[timeout]"
+	,JSDOCSTR("peek at the value at the bottom of the queue, "
+		"wait up to <i>timeout</i> milliseconds for any value to be written "
+		"(default: <i>0</i>)")
 	,312
 	},
-	{"write",		js_write,		0,	JSTYPE_BOOLEAN,	"value [,name]"
+	{"write",		js_write,		1,	JSTYPE_BOOLEAN,	"value [,name]"
 	,JSDOCSTR("write a value (optionally named) to the queue")
 	,312
 	},
