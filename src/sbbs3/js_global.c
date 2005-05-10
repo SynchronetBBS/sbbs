@@ -52,6 +52,7 @@
 enum {
 	 GLOB_PROP_ERRNO
 	,GLOB_PROP_ERRNO_STR
+	,GLOB_PROP_SOCKET_ERROR
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -62,6 +63,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
+		case GLOB_PROP_SOCKET_ERROR:
+			JS_NewNumberValue(cx,ERROR_VALUE,vp);
+			break;
 		case GLOB_PROP_ERRNO:
 			JS_NewNumberValue(cx,errno,vp);
 			break;
@@ -79,8 +83,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static struct JSPropertySpec js_global_properties[] = {
 /*		 name,		tinyid,				flags */
 
-	{	"errno",	GLOB_PROP_ERRNO,	GLOBOBJ_FLAGS },
-	{	"errno_str",GLOB_PROP_ERRNO_STR,GLOBOBJ_FLAGS },
+	{	"errno"			,GLOB_PROP_ERRNO		,GLOBOBJ_FLAGS },
+	{	"errno_str"		,GLOB_PROP_ERRNO_STR	,GLOBOBJ_FLAGS },
+	{	"socket_error"	,GLOB_PROP_SOCKET_ERROR	,GLOBOBJ_FLAGS },
 	{0}
 };
 
