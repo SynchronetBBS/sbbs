@@ -807,8 +807,12 @@ static BOOL get_cgi_handler(char* cmdline, size_t maxlen)
 
 	for(i=0;cgi_handlers[i]!=NULL;i++) {
 		if(stricmp(cgi_handlers[i]->name, ext+1)==0) {
+#ifdef _WIN32
 			SAFECOPY(fname,cmdline);
 			safe_snprintf(cmdline,maxlen,"%s %s",cgi_handlers[i]->value,fname);
+#else
+			SAFECOPY(cmdline, cgi_handlers[i]->value);
+#endif
 			return(TRUE);
 		}
 	}
@@ -1336,9 +1340,9 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 }
 
 #if defined(_WIN32)
-static int pipereadline(HANDLE pipe, char *buf, size_t length)
+static int pipereadline(HANDLE pipe, char *buf, size_t length, char *fullbuf, size_t fullbuf_len)
 #else
-static int pipereadline(int pipe, char *buf, size_t length)
+static int pipereadline(int pipe, char *buf, size_t length, char *fullbuf, size_t fullbuf_len)
 #endif
 {
 	char	ch;
@@ -1347,6 +1351,11 @@ static int pipereadline(int pipe, char *buf, size_t length)
 	int		ret=0;
 
 	start=time(NULL);
+	/* Terminate buffers */
+	if(buf != NULL)
+		buf[0]=0;
+	if(fullbuf != NULL)
+		fullbuf[0]=0;
 	for(i=0;TRUE;) {
 		if(time(NULL)-start>startup->max_cgi_inactivity)
 			return(-1);
@@ -1360,11 +1369,18 @@ static int pipereadline(int pipe, char *buf, size_t length)
 		if(ret==1)  {
 			start=time(NULL);
 
+			if(fullbuf != NULL && i < (fullbuf_len-1)) {
+				fullbuf[i]=ch;
+				fullbuf[i+1]=0;
+			}
+
 			if(ch=='\n')
 				break;
 
-			if(i<length)
-				buf[i++]=ch;
+			if(buf != NULL && i<length)
+				buf[i]=ch;
+
+			i++;
 		}
 		else
 			return(-1);
@@ -1374,10 +1390,12 @@ static int pipereadline(int pipe, char *buf, size_t length)
 	if(i>length)
 		i=length;
 
-	if(i>0 && buf[i-1]=='\r')
+	if(i>0 && buf != NULL && buf[i-1]=='\r')
 		buf[--i]=0;
-	else
-		buf[i]=0;
+	else {
+		if(buf != NULL)
+			buf[i]=0;
+	}
 
 	return(i);
 }
@@ -2154,6 +2172,7 @@ static BOOL exec_cgi(http_session_t *session)
 	fd_set	write_set;
 	int		high_fd=0;
 	char	buf[1024];
+	char	fbuf[1026];
 	BOOL	done_parsing_headers=FALSE;
 	BOOL	done_reading=FALSE;
 	char	cgi_status[MAX_REQUEST_LINE+1];
@@ -2168,6 +2187,8 @@ static BOOL exec_cgi(http_session_t *session)
 	char	ch;
 	BOOL	orig_keep=FALSE;
 	size_t	idx;
+	str_list_t	tmpbuf;
+	size_t	tmpbuflen=0;
 
 	SAFECOPY(cmdline,session->req.physical_path);
 
@@ -2189,13 +2210,16 @@ static BOOL exec_cgi(http_session_t *session)
 	}
 
 	if((child=fork())==0)  {
+		str_list_t  env_list;
+		char*   env_block;
+
 		/* Do a full suid thing. */
 		if(startup->setuid!=NULL)
 			startup->setuid(TRUE);
 
-		/* Set up environment */
-		for(idx=0;session->req.cgi_env[idx]!=NULL;idx++)
-			putenv(session->req.cgi_env[idx]);
+		env_list=get_cgi_env(session);
+		env_block = strListCreateBlock(env_list);
+		strListFree(&env_list);
 
 		/* Set up STDIO */
 		dup2(session->socket,0);		/* redirect stdin */
@@ -2214,7 +2238,11 @@ static BOOL exec_cgi(http_session_t *session)
 		}
 
 		/* Execute command */
-		execl(cmdline,cmdline,NULL);
+		if(get_cgi_handler(cgipath, sizeof(cgipath)))
+			execle(cgipath,cgipath,cmdline,NULL,env_block);
+		else
+			execle(cmdline,cmdline,NULL,env_block);
+
 		lprintf(LOG_ERR,"%04d !FAILED! execl()",session->socket);
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
@@ -2239,6 +2267,7 @@ static BOOL exec_cgi(http_session_t *session)
 
 	/* ToDo: Magically set done_parsing_headers for nph-* scripts */
 	cgi_status[0]=0;
+	tmpbuf=strListInit();
 	while(!done_reading)  {
 		tv.tv_sec=startup->max_cgi_inactivity;
 		tv.tv_usec=0;
@@ -2267,7 +2296,7 @@ static BOOL exec_cgi(http_session_t *session)
 				}
 				else  {
 					/* This is the tricky part */
-					i=pipereadline(out_pipe[0],buf,sizeof(buf));
+					i=pipereadline(out_pipe[0],buf,sizeof(buf), fbuf, sizeof(fbuf));
 					if(i<0)  {
 						done_reading=TRUE;
 						got_valid_headers=FALSE;
@@ -2276,6 +2305,8 @@ static BOOL exec_cgi(http_session_t *session)
 						start=time(NULL);
 
 					if(!done_parsing_headers && *buf)  {
+						if(tmpbuf != NULL)
+							strListPush(&tmpbuf, fbuf);
 						SAFECOPY(header,buf);
 						directive=strtok(header,":");
 						if(directive != NULL)  {
@@ -2312,6 +2343,36 @@ static BOOL exec_cgi(http_session_t *session)
 									strListPush(&session->req.dynamic_heads,buf);
 							}
 						}
+						if(directive == NULL || value == NULL) {
+							/* Invalid header line... send 'er all as plain-text */
+							char    content_type[MAX_REQUEST_LINE+1];
+
+							/* free() the non-headers so they don't get sent, then recreate the list */
+							strListFreeStrings(session->req.dynamic_heads);
+
+							/* Force connection close */
+							session->req.keep_alive=0;
+
+							/* Copy current status */
+							SAFECOPY(cgi_status,session->req.status);
+
+							/* Add the content-type header (REQUIRED) */
+							SAFEPRINTF2(content_type,"%s: %s",get_header(HEAD_TYPE),startup->default_cgi_content);
+							strListPush(&session->req.dynamic_heads,content_type);
+							send_headers(session,cgi_status);
+
+							/* Now send the tmpbuf */
+							for(i=0; tmpbuf != NULL && tmpbuf[i] != NULL; i++) {
+								int snt;
+
+								snt=write(session->socket,tmpbuf[i],strlen(tmpbuf[i]));
+								if(session->req.ld!=NULL && snt>0) {
+									session->req.ld->size+=snt;
+								}
+							}
+							done_parsing_headers=TRUE;
+							got_valid_headers=TRUE;
+						}
 					}
 					else  {
 						if(got_valid_headers)  {
@@ -2344,6 +2405,9 @@ static BOOL exec_cgi(http_session_t *session)
 		}
 	}
 
+	if(tmpbuf != NULL)
+		strListFree(&tmpbuf);
+
 	/* Drain STDERR */	
 	tv.tv_sec=1;
 	tv.tv_usec=0;
@@ -2351,7 +2415,7 @@ static BOOL exec_cgi(http_session_t *session)
 	FD_SET(err_pipe[0],&read_set);
 	if(select(high_fd+1,&read_set,&write_set,NULL,&tv)>0)
 	if(FD_ISSET(err_pipe[0],&read_set)) {
-		while(pipereadline(err_pipe[0],buf,sizeof(buf))!=-1)
+		while(pipereadline(err_pipe[0],buf,sizeof(buf),NULL,0)!=-1)
 			lprintf(LOG_ERR,"%s",buf);
 	}
 
@@ -2531,7 +2595,7 @@ static BOOL exec_cgi(http_session_t *session)
 			else  {
 				/* This is the tricky part */
 				buf[0]=0;
-				i=pipereadline(rdpipe,buf,sizeof(buf));
+				i=pipereadline(rdpipe,buf,sizeof(buf),NULL,0);
 				if(i<0)  {
 					got_valid_headers=FALSE;
 					break;
