@@ -2211,15 +2211,12 @@ static BOOL exec_cgi(http_session_t *session)
 
 	if((child=fork())==0)  {
 		str_list_t  env_list;
-		char*   env_block;
 
 		/* Do a full suid thing. */
 		if(startup->setuid!=NULL)
 			startup->setuid(TRUE);
 
 		env_list=get_cgi_env(session);
-		env_block = strListCreateBlock(env_list);
-		strListFree(&env_list);
 
 		/* Set up STDIO */
 		dup2(session->socket,0);		/* redirect stdin */
@@ -2238,12 +2235,15 @@ static BOOL exec_cgi(http_session_t *session)
 		}
 
 		/* Execute command */
-		if(get_cgi_handler(cgipath, sizeof(cgipath)))
-			execle(cgipath,cgipath,cmdline,NULL,env_block);
-		else
-			execle(cmdline,cmdline,NULL,env_block);
+		if(get_cgi_handler(cgipath, sizeof(cgipath))) {
+			lprintf(LOG_INFO,"%04d Using handler %s to execute %s",session->socket,cgipath,cmdline);
+			execle(cgipath,cgipath,cmdline,NULL,env_list);
+		}
+		else {
+			execle(cmdline,cmdline,NULL,env_list);
+		}
 
-		lprintf(LOG_ERR,"%04d !FAILED! execl()",session->socket);
+		lprintf(LOG_ERR,"%04d !FAILED! execle() (%d)",session->socket,errno);
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
 
