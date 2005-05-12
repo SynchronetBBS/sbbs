@@ -807,12 +807,8 @@ static BOOL get_cgi_handler(char* cmdline, size_t maxlen)
 
 	for(i=0;cgi_handlers[i]!=NULL;i++) {
 		if(stricmp(cgi_handlers[i]->name, ext+1)==0) {
-#ifdef _WIN32
 			SAFECOPY(fname,cmdline);
 			safe_snprintf(cmdline,maxlen,"%s %s",cgi_handlers[i]->value,fname);
-#else
-			SAFECOPY(cmdline, cgi_handlers[i]->value);
-#endif
 			return(TRUE);
 		}
 	}
@@ -2236,8 +2232,16 @@ static BOOL exec_cgi(http_session_t *session)
 
 		/* Execute command */
 		if(get_cgi_handler(cgipath, sizeof(cgipath))) {
+			char *comspec;
+			comspec=getenv("SHELL");
+			if(comspec==NULL)
+#ifdef _PATH_BSHELL
+				comspec=_PATH_BSHELL;
+#else
+				comspec="/bin/sh";
+#endif
 			lprintf(LOG_INFO,"%04d Using handler %s to execute %s",session->socket,cgipath,cmdline);
-			execle(cgipath,cgipath,cmdline,NULL,env_list);
+			execle(comspec,comspec,"-c",cgipath,NULL,env_list);
 		}
 		else {
 			execle(cmdline,cmdline,NULL,env_list);
