@@ -2343,7 +2343,7 @@ static BOOL exec_cgi(http_session_t *session)
 									strListPush(&session->req.dynamic_heads,buf);
 							}
 						}
-						if(directive == NULL || value == NULL) {
+						if(*buf && (directive == NULL || value == NULL)) {
 							/* Invalid header line... send 'er all as plain-text */
 							char    content_type[MAX_REQUEST_LINE+1];
 
