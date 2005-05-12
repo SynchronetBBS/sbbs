@@ -292,7 +292,7 @@ function Unregistered_Quit(msg) {
 
 function Unregistered_Resolve_Check() {
 	var my_resolved = this.pending_resolve.read();
-	if (my_resolved && my_resolved!=null) {
+	if (my_resolved) {
 		if (my_resolved.search(/[.]/))
 			this.hostname = my_resolved;
 		else
