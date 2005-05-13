@@ -273,6 +273,7 @@ writeln("<tr><td>" + "argc".bold() + "<td>number<td>number of arguments passed t
 writeln("<tr><td>" + "argv".bold() + "<td>array<td>array of argument strings (argv.length == argc)</td>");
 writeln("<tr><td>" + "errno".bold() + "<td>number<td>last system error number</td>");
 writeln("<tr><td>" + "errno_str".bold() + "<td>string<td>description of last system error</td>");
+writeln("<tr><td>" + "socket_errno".bold() + "<td>number<td>last socket-related error number (same as <i>errno</i> on Unix platforms)</td>");
 f.writeln("</ul>");
 
 document_object("js"		,js);
