@@ -44,7 +44,7 @@
 /****************************************************************************/
 BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 {
-	char buf[F_LEN+1],str[256];
+	char buf[F_LEN+1],str[MAX_PATH+1];
 	int file;
 	long length;
 
@@ -109,7 +109,7 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 {
-    char buf[F_LEN+1],str[256],tmp[128];
+    char buf[F_LEN+1],str[MAX_PATH+1],tmp[128];
     int file;
     long length;
 
@@ -158,7 +158,7 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 {
-	char	str[256],fname[13],c,fdat[F_LEN+1];
+	char	str[MAX_PATH+1],fname[13],c,fdat[F_LEN+1];
 	char	tmp[128];
 	uchar	HUGE16 *ixbbuf,idx[3];
     int		i,file;
@@ -325,7 +325,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 {
-	char			str[256],fname[13];
+	char			str[MAX_PATH+1],fname[13];
 	uchar HUGE16 *	ixbbuf;
 	int				file;
 	long			l,length;
@@ -376,7 +376,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 {
-	char	c,str[256],ixbname[12],HUGE16 *ixbbuf,fname[13];
+	char	c,str[MAX_PATH+1],ixbname[12],HUGE16 *ixbbuf,fname[13];
     int		i,file;
 	long	l,length;
 
@@ -441,7 +441,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 {
-	char str[256],fname[13],HUGE16 *ixbbuf;
+	char str[MAX_PATH+1],fname[13],HUGE16 *ixbbuf;
     int i,file;
     long length,l;
 
@@ -519,7 +519,7 @@ char* DLLCALL unpadfname(char *filename, char *str)
 /****************************************************************************/
 BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 {
-    char str[256],*ixtbuf;
+    char str[MAX_PATH+1],*ixtbuf;
     int file;
     long l,length;
 
@@ -577,7 +577,7 @@ BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 
 void DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 {
-	char str[256];
+	char str[MAX_PATH+1];
 	int file;
 
 	memset(ext,0,F_EXBSIZE+1);
@@ -591,7 +591,7 @@ void DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 
 void DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 {
-	char str[256],nulbuf[F_EXBSIZE];
+	char str[MAX_PATH+1],nulbuf[F_EXBSIZE];
 	int file;
 
 	strip_invalid_attr(ext);	/* eliminate bogus ctrl-a codes */
@@ -612,7 +612,7 @@ void DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 /****************************************************************************/
 int DLLCALL update_uldate(scfg_t* cfg, file_t* f)
 {
-	char str[256],fname[13];
+	char str[MAX_PATH+1],fname[13];
 	int i,file;
 	long l,length;
 
@@ -663,9 +663,9 @@ char* DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path)
 
 	unpadfname(f->name,fname);
 	if(f->dir>=cfg->total_dirs)
-		SAFEPRINTF2(path,"%s%s",cfg->temp_dir,fname);
+		safe_snprintf(path,MAX_PATH,"%s%s",cfg->temp_dir,fname);
 	else
-		SAFEPRINTF2(path,"%s%s",f->altpath>0 && f->altpath<=cfg->altpaths 
+		safe_snprintf(path,MAX_PATH,"%s%s",f->altpath>0 && f->altpath<=cfg->altpaths 
 			? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
 			,fname);
 
