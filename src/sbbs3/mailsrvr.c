@@ -446,12 +446,14 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	if((p=smb_get_hfield(msg,RFC822FROM,NULL))!=NULL)
 		s=sockprintf(socket,"From: %s",p);	/* use original RFC822 header field */
 	else {
-		if(msg->from_net.type==NET_INTERNET && msg->from_net.addr!=NULL)
-			SAFECOPY(fromaddr,(char*)msg->from_net.addr);
-		else if(msg->from_net.type==NET_QWK && msg->from_net.addr!=NULL)
+		if(msg->from_net.type==NET_QWK && msg->from_net.addr!=NULL)
 			SAFEPRINTF2(fromaddr,"%s!%s"
 				,(char*)msg->from_net.addr
 				,usermailaddr(&scfg,fromhost,msg->from));
+		else if(msg->from_net.type==NET_FIDO && msg->from_net.addr!=NULL)
+			SAFECOPY(fromaddr,smb_faddrtoa((faddr_t *)msg->from_net.addr,NULL));
+		else if(msg->from_net.type!=NET_NONE && msg->from_net.addr!=NULL)
+			SAFECOPY(fromaddr,(char*)msg->from_net.addr);
 		else 
 			usermailaddr(&scfg,fromaddr,msg->from);
 		if(fromaddr[0]=='<')
