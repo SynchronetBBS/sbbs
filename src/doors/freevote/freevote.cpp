@@ -13,6 +13,7 @@
 #include <genwrap.h>
 #include <dirwrap.h>
 #include <filewrap.h>
+#include <xpendian.h>
 
 /* Manifest constants used by EZVote */
 #define NO_QUESTION              -1
@@ -61,7 +62,7 @@ struct time {
 typedef struct
 {
    char szUserName[36];
-   unsigned int bVotedOnQuestion[MAX_QUESTIONS];
+   WORD bVotedOnQuestion[MAX_QUESTIONS];
 } tUserRecord;
 
 tUserRecord CurrentUserRecord;
@@ -117,8 +118,8 @@ typedef struct
    char szQuestion[QUESTION_STR_SIZE];
    char aszAnswer[MAX_ANSWERS][ANSWER_STR_SIZE];
    char nTotalAnswers;
-   unsigned int auVotesForAnswer[MAX_ANSWERS];
-   unsigned int uTotalVotes;
+   DWORD auVotesForAnswer[MAX_ANSWERS];
+   DWORD uTotalVotes;
 /*   char bCanAddAnswers;
    char bMultipleAnswers;
    char b
@@ -174,6 +175,126 @@ void QuestionEditor(void);
 FILE *QRead(tQuestionRecord *QuestionRecord,int nQuestion);
 int QWrite(tQuestionRecord *QuestionRecord, FILE *fpFile,int nQuestion);
 
+#define USERRECORD_SIZE (sizeof(WORD)*MAX_QUESTIONS+36)
+#define QUESTIONRECORD_SIZE (QUESTION_STR_SIZE+(MAX_ANSWERS*ANSWER_STR_SIZE)+1+(sizeof(DWORD)*MAX_ANSWERS)+sizeof(DWORD)+1+36+8)
+
+int
+freadUserRecord(tUserRecord *urec, FILE *f)
+{
+	int i;
+
+	if(fread(urec->szUserName, sizeof(urec->szUserName), 1, f)!=1)
+		return(0);
+	for(i=0; i<MAX_QUESTIONS; i++) {
+		if(fread(&urec->bVotedOnQuestion[i], sizeof(WORD), 1, f)!=1)
+			return(0);
+		urec->bVotedOnQuestion[i]=LE_SHORT(urec->bVotedOnQuestion[i]);
+	}
+	return(1);
+}
+
+int
+fwriteUserRecord(tUserRecord *urec, FILE *f)
+{
+	int i;
+
+	if(fwrite(urec->szUserName, sizeof(urec->szUserName), 1, f)!=1)
+		return(0);
+	for(i=0; i<MAX_QUESTIONS; i++) {
+		urec->bVotedOnQuestion[i]=LE_SHORT(urec->bVotedOnQuestion[i]);
+		if(fwrite(&urec->bVotedOnQuestion[i], sizeof(WORD), 1, f)!=1)
+			return(0);
+		urec->bVotedOnQuestion[i]=LE_SHORT(urec->bVotedOnQuestion[i]);
+	}
+	return(1);
+}
+
+int
+freadQuestionRecord(tQuestionRecord *q, FILE *f)
+{
+	INT32 i;
+
+	if(fread(q->szQuestion, sizeof(q->szQuestion), 1, f)!=1)
+		return(0);
+	for(i=0; i<MAX_ANSWERS; i++) {
+		if(fread(q->aszAnswer[i], sizeof(q->aszAnswer[i]), 1, f)!=1)
+			return(0);
+	}
+	if(fread(&q->nTotalAnswers, sizeof(q->nTotalAnswers), 1, f)!=1)
+		return(0);
+	for(i=0; i<MAX_ANSWERS; i++) {
+		if(fread(&q->auVotesForAnswer[i], sizeof(q->auVotesForAnswer[i]), 1, f)!=1)
+			return(0);
+		q->auVotesForAnswer[i]=LE_SHORT(q->auVotesForAnswer[i]);
+	}
+	if(fread(&q->uTotalVotes, sizeof(q->uTotalVotes), 1, f)!=1)
+		return(0);
+	q->uTotalVotes=LE_SHORT(q->uTotalVotes);
+	if(fread(&q->bitflags, sizeof(q->bitflags), 1, f)!=1)
+		return(0);
+	if(fread(q->szCreatorName, sizeof(q->szCreatorName), 1, f)!=1)
+		return(0);
+	switch(sizeof(time_t)) {
+		case 4:
+			if(fread(&q->lCreationTime, sizeof(q->lCreationTime), 1, f)!=1)
+				return(0);
+			q->lCreationTime=LE_LONG(q->lCreationTime);
+			if(fread(&i, sizeof(i), 1, f)!=1)
+				return(0);
+			break;
+		default:
+			fprintf(stderr, "Unhandled time_t size (%d)\n", sizeof(time_t));
+			exit(1);
+	}
+}
+
+int
+fwriteQuestionRecord(tQuestionRecord *q, FILE *f)
+{
+	INT32 i;
+
+	if(fwrite(q->szQuestion, sizeof(q->szQuestion), 1, f)!=1)
+		return(0);
+	for(i=0; i<MAX_ANSWERS; i++) {
+		if(fwrite(q->aszAnswer[i], sizeof(q->aszAnswer[i]), 1, f)!=1)
+			return(0);
+	}
+	if(fwrite(&q->nTotalAnswers, sizeof(q->nTotalAnswers), 1, f)!=1)
+		return(0);
+	for(i=0; i<MAX_ANSWERS; i++) {
+		q->auVotesForAnswer[i]=LE_SHORT(q->auVotesForAnswer[i]);
+		if(fwrite(&q->auVotesForAnswer[i], sizeof(q->auVotesForAnswer[i]), 1, f)!=1) {
+			q->auVotesForAnswer[i]=LE_SHORT(q->auVotesForAnswer[i]);
+			return(0);
+		}
+		q->auVotesForAnswer[i]=LE_SHORT(q->auVotesForAnswer[i]);
+	}
+	q->uTotalVotes=LE_SHORT(q->uTotalVotes);
+	if(fwrite(&q->uTotalVotes, sizeof(q->uTotalVotes), 1, f)!=1) {
+		q->uTotalVotes=LE_SHORT(q->uTotalVotes);
+		return(0);
+	}
+	q->uTotalVotes=LE_SHORT(q->uTotalVotes);
+	if(fwrite(&q->bitflags, sizeof(q->bitflags), 1, f)!=1)
+		return(0);
+	if(fwrite(q->szCreatorName, sizeof(q->szCreatorName), 1, f)!=1)
+		return(0);
+	switch(sizeof(time_t)) {
+		case 4:
+			q->lCreationTime=LE_LONG(q->lCreationTime);
+			if(fwrite(&q->lCreationTime, sizeof(q->lCreationTime), 1, f)!=1) {
+				q->lCreationTime=LE_LONG(q->lCreationTime);
+				return(0);
+			}
+			q->lCreationTime=LE_LONG(q->lCreationTime);
+			if(fwrite(&i, sizeof(i), 1, f)!=1)
+				return(0);
+			break;
+		default:
+			fprintf(stderr, "Unhandled time_t size (%d)\n", sizeof(time_t));
+			exit(1);
+	}
+}
 
 void gettime(struct time *tim)  {
   struct timeval ti;
@@ -1220,7 +1341,6 @@ maint(void)
   int nFileUser=0;
 
 
-
    nowtime=time(NULL);
 
    /* Attempt to open question file. */
@@ -1234,14 +1354,14 @@ maint(void)
    }
 
    /* Loop for every question record in the file. */
-   while(fread(&QuestionRecord, sizeof(QuestionRecord), 1, fpQuestionFile) == 1)
+   while(freadQuestionRecord(&QuestionRecord, fpQuestionFile) == 1)
    {
       if(maxtime!=0 && (nowtime-QuestionRecord.lCreationTime)>maxtime
        && (QuestionRecord.bitflags & NEVER_DELETE_QUESTION)==FALSE) {
-	fseek(fpQuestionFile,(long)nFileQuestion*sizeof(tQuestionRecord),SEEK_SET);
+	fseek(fpQuestionFile,(long)nFileQuestion*QUESTIONRECORD_SIZE,SEEK_SET);
 	QuestionRecord.bitflags|=QUESTION_DELETED;
-	fwrite(&QuestionRecord, sizeof(QuestionRecord), 1, fpQuestionFile);
-	fseek(fpQuestionFile,(long)(1+nFileQuestion)*sizeof(tQuestionRecord),SEEK_SET);
+	fwriteQuestionRecord(&QuestionRecord, fpQuestionFile);
+	fseek(fpQuestionFile,(long)(1+nFileQuestion)*QUESTIONRECORD_SIZE,SEEK_SET);
       }
 
       if(QuestionRecord.bitflags & QUESTION_DELETED) {
@@ -1260,10 +1380,10 @@ maint(void)
      nFileQuestion=0;
      od_printf("\n\n\rThere are deleted questions!\n\n\rI will pack the question file NOW!\n\n\r");
      fpPackFile=ExculsiveFileOpen("freevote.tmp","wb");
-     while(fread(&QuestionRecord, sizeof(QuestionRecord), 1, fpQuestionFile) == 1)
+     while(freadQuestionRecord(&QuestionRecord, fpQuestionFile) == 1)
      {
        if((QuestionRecord.bitflags & QUESTION_DELETED)==0)
-	 fwrite(&QuestionRecord, sizeof(QuestionRecord),1,fpPackFile);
+	 fwriteQuestionRecord(&QuestionRecord,fpPackFile);
 
        /* Move to next question in file. */
        ++nFileQuestion;
@@ -1276,7 +1396,7 @@ maint(void)
      fpUserFile=ExculsiveFileOpen(USER_FILENAME,"rb");
      fpPackFile=ExculsiveFileOpen("freevote.tmp","wb");
      nFileUser=0;
-     while(fread(&UserRecord, sizeof(UserRecord), 1, fpUserFile) == 1)
+     while(freadUserRecord(&UserRecord, fpUserFile) == 1)
      {
        deleted_n=0;
        for(cnt=0;cnt<MAX_QUESTIONS;cnt++) {
@@ -1301,7 +1421,7 @@ maint(void)
 
        if(cnt2>0) {
   //     od_printf("DEBUG:Wrote!\n\n\r");
-	 fwrite(&UserRecord, sizeof(UserRecord),1,fpPackFile);
+	 fwriteUserRecord(&UserRecord,fpPackFile);
        }
 
     //   WaitForEnter();
@@ -1336,8 +1456,8 @@ FILE
 
   /* Read the answer record from disk, because it may have been changed. */
   /* by another node. */
-  fseek(fpFile, (long)nQuestion * sizeof(tQuestionRecord), SEEK_SET);
-  if(fread(QuestionRecord, sizeof(tQuestionRecord), 1, fpFile) != 1) {
+  fseek(fpFile, (long)nQuestion * QUESTIONRECORD_SIZE, SEEK_SET);
+  if(freadQuestionRecord(QuestionRecord, fpFile) != 1) {
     /* If unable to access file, display error and return. */
     fclose(fpFile);
     od_printf("\n\rUnable to read from question file.\n\r");
@@ -1351,8 +1471,8 @@ int
 QWrite(tQuestionRecord *QuestionRecord, FILE *fpFile, int nQuestion)
 {
   /* Write the question record back to the file. */
-  fseek(fpFile, (long)nQuestion * sizeof(tQuestionRecord), SEEK_SET);
-  if(fwrite(QuestionRecord, sizeof(tQuestionRecord), 1, fpFile) != 1) {
+  fseek(fpFile, (long)nQuestion * QUESTIONRECORD_SIZE, SEEK_SET);
+  if(fwriteQuestionRecord(QuestionRecord, fpFile) != 1) {
     /* If unable to access file, display error and return. */
     fclose(fpFile);
     od_printf("\n\rUnable to write question to file.\n\r");
@@ -1606,7 +1726,7 @@ QuestionEditor(void)
 		    }
 		    fpUserFile=ExculsiveFileOpen(USER_FILENAME,"r+b");
 		    nFileUser=0;
-		    while(fread(&UserRecord, sizeof(UserRecord), 1, fpUserFile) == 1) {
+		    while(freadUserRecord(&UserRecord, fpUserFile) == 1) {
 		      votedon=UserRecord.bVotedOnQuestion[nQuestion];
 
 		      UserRecord.bVotedOnQuestion[nQuestion]=0;
@@ -1623,10 +1743,10 @@ QuestionEditor(void)
 			  UserRecord.bVotedOnQuestion[nQuestion] |= answers[x];
 		      }
 
-		      fseek(fpUserFile,(long)nFileUser * (long)sizeof(UserRecord),SEEK_SET);
-		      fwrite(&UserRecord, sizeof(UserRecord), 1, fpUserFile);
+		      fseek(fpUserFile,(long)nFileUser * (long)USERRECORD_SIZE,SEEK_SET);
+		      fwriteUserRecord(&UserRecord, fpUserFile);
 		      ++nFileUser;
-		      fseek(fpUserFile,(long)nFileUser * (long)sizeof(UserRecord),SEEK_SET);
+		      fseek(fpUserFile,(long)nFileUser * (long)USERRECORD_SIZE,SEEK_SET);
 		    }
 		    fclose(fpUserFile);
 		    votedon=CurrentUserRecord.bVotedOnQuestion[nQuestion];
@@ -1648,12 +1768,12 @@ QuestionEditor(void)
 		  } else {
 		    fpUserFile=ExculsiveFileOpen(USER_FILENAME,"r+b");
 		    nFileUser=0;
-		    while(fread(&UserRecord, sizeof(UserRecord), 1, fpUserFile) == 1) {
+		    while(freadUserRecord(&UserRecord, fpUserFile) == 1) {
 		      UserRecord.bVotedOnQuestion[nQuestion] &=~ answers[nAnswer];
-		      fseek(fpUserFile,(long)nFileUser * (long)sizeof(UserRecord),SEEK_SET);
-		      fwrite(&UserRecord, sizeof(UserRecord), 1, fpUserFile);
+		      fseek(fpUserFile,(long)nFileUser * (long)USERRECORD_SIZE,SEEK_SET);
+		      fwriteUserRecord(&UserRecord, fpUserFile);
 		      ++nFileUser;
-		      fseek(fpUserFile,(long)nFileUser * (long)sizeof(UserRecord),SEEK_SET);
+		      fseek(fpUserFile,(long)nFileUser * (long)USERRECORD_SIZE,SEEK_SET);
 		    }
 		    fclose(fpUserFile);
 		    CurrentUserRecord.bVotedOnQuestion[nQuestion] &=~ answers[nAnswer];
@@ -1725,12 +1845,12 @@ QuestionEditor(void)
 	       if(key=='2' || key=='3') {
 		 fpUserFile=ExculsiveFileOpen(USER_FILENAME,"r+b");
 		 nFileUser=0;
-		 while(fread(&UserRecord, sizeof(UserRecord), 1, fpUserFile) == 1) {
+		 while(freadUserRecord(&UserRecord, fpUserFile) == 1) {
 		   UserRecord.bVotedOnQuestion[nQuestion]=0;
-		   fseek(fpUserFile,(long)nFileUser * (long)sizeof(UserRecord),SEEK_SET);
-		   fwrite(&UserRecord, sizeof(UserRecord), 1, fpUserFile);
+		   fseek(fpUserFile,(long)nFileUser * (long)USERRECORD_SIZE,SEEK_SET);
+		   fwriteUserRecord(&UserRecord, fpUserFile);
 		   ++nFileUser;
-		   fseek(fpUserFile,(long)nFileUser * (long)sizeof(UserRecord),SEEK_SET);
+		   fseek(fpUserFile,(long)nFileUser * (long)USERRECORD_SIZE,SEEK_SET);
 		 }
 		 fclose(fpUserFile);
 		 CurrentUserRecord.bVotedOnQuestion[nQuestion]=0;
@@ -2235,7 +2355,7 @@ void VoteOnQuestion(int all)
 //      }
 
       /* Update the user's record in the user file. */
-//      fseek(fpFile, (long)nCurrentUserNumber * sizeof(tUserRecord), SEEK_SET);
+//      fseek(fpFile, (long)nCurrentUserNumber * USERRECORD_SIZE, SEEK_SET);
 //      if(fwrite(&CurrentUserRecord, sizeof(tUserRecord), 1, fpFile) != 1)
 //      {
 	 /* If unable to access file, display error and return. */
@@ -3076,7 +3196,7 @@ void AddQuestion(void)
 
    /* If question file is full, display message and return to main menu */
    /* after closing file.                                               */
-   if(ftell(fpQuestionFile) / sizeof(tQuestionRecord) >= MAX_QUESTIONS)
+   if(ftell(fpQuestionFile) / QUESTIONRECORD_SIZE >= MAX_QUESTIONS)
    {
       fclose(fpQuestionFile);
       od_printf("`bright`Cannot add another question, FrEevOtE is limited to %d questions.\n\r", MAX_QUESTIONS);
@@ -3085,7 +3205,7 @@ void AddQuestion(void)
    }
 
    /* Add new question to file. */
-   if(fwrite(&QuestionRecord, sizeof(QuestionRecord), 1, fpQuestionFile) != 1)
+   if(fwriteQuestionRecord(&QuestionRecord, fpQuestionFile) != 1)
    {
       fclose(fpQuestionFile);
       od_printf("Unable to write to question file.\n\r");
@@ -3179,8 +3299,8 @@ void DeleteQuestion(void)
    }
 
    /* Write the question record back to the file. */
-   fseek(fpFile, (long)nQuestion * sizeof(tQuestionRecord), SEEK_SET);
-   if(fwrite(&QuestionRecord, sizeof(tQuestionRecord), 1, fpFile) != 1)
+   fseek(fpFile, (long)nQuestion * QUESTIONRECORD_SIZE, SEEK_SET);
+   if(fwriteQuestionRecord(&QuestionRecord, fpFile) != 1)
    {
       /* If unable to access file, display error and return. */
       fclose(fpFile);
@@ -3261,8 +3381,8 @@ void DeleteYourQuestion(void)
    }
 
    /* Write the question record back to the file. */
-   fseek(fpFile, (long)nQuestion * sizeof(tQuestionRecord), SEEK_SET);
-   if(fwrite(&QuestionRecord, sizeof(tQuestionRecord), 1, fpFile) != 1)
+   fseek(fpFile, (long)nQuestion * QUESTIONRECORD_SIZE, SEEK_SET);
+   if(fwriteQuestionRecord(&QuestionRecord, fpFile) != 1)
    {
       /* If unable to access file, display error and return. */
       fclose(fpFile);
@@ -3305,7 +3425,7 @@ int CountQuestions()
    QuestionCount=0;
    nFileQuestion=0;
    /* Loop for every question record in the file. */
-   while(fread(&QuestionRecord, sizeof(QuestionRecord), 1, fpQuestionFile) == 1)
+   while(freadQuestionRecord(&QuestionRecord, fpQuestionFile) == 1)
    {
       /* Determine whether or not the user has voted on this question. */
       bVotedOnQuestion = CurrentUserRecord.bVotedOnQuestion[nFileQuestion];
@@ -3368,7 +3488,7 @@ int CountQuestionsF()
    QuestionCount=0;
    nFileQuestion=0;
    /* Loop for every question record in the file. */
-   while(fread(&QuestionRecord, sizeof(QuestionRecord), 1, fpQuestionFile) == 1)
+   while(freadQuestionRecord(&QuestionRecord, fpQuestionFile) == 1)
    {
       /* Determine whether or not the user has voted on this question. */
       bVotedOnQuestion = CurrentUserRecord.bVotedOnQuestion[nFileQuestion];
@@ -3447,7 +3567,7 @@ int ChooseQuestion(unsigned int nFromWhichQuestions, char *pszTitle, int *nLocat
    }
 
    /* Loop for every question record in the file. */
-   while(fread(&QuestionRecord, sizeof(QuestionRecord), 1, fpQuestionFile) == 1)
+   while(freadQuestionRecord(&QuestionRecord, fpQuestionFile) == 1)
    {
       /* Determine whether or not the user has voted on this question. */
       bVotedOnQuestion = CurrentUserRecord.bVotedOnQuestion[nFileQuestion];
@@ -3745,8 +3865,8 @@ int FirstQuestion(unsigned int nFromWhichQuestions, int nFileQuestion)
    }
 
    /* Loop for every question record in the file. */
-   fseek(fpQuestionFile,sizeof(QuestionRecord)*(long)nFileQuestion,SEEK_SET);
-   while(fread(&QuestionRecord, sizeof(QuestionRecord), 1, fpQuestionFile) == 1)
+   fseek(fpQuestionFile,QUESTIONRECORD_SIZE*(long)nFileQuestion,SEEK_SET);
+   while(freadQuestionRecord(&QuestionRecord, fpQuestionFile) == 1)
    {
       /* Determine whether or not the user has voted on this question. */
       bVotedOnQuestion = CurrentUserRecord.bVotedOnQuestion[nFileQuestion];
@@ -4099,8 +4219,8 @@ int ReadOrAddCurrentUser(void)
    nCurrentUserNumber = 0;
 
    /* Loop for each record in the file */
-//   fseek(fpUserFile, (long)nCurrentUserNumber * sizeof(tUserRecord), SEEK_SET);
-   while(fread(&CurrentUserRecord, sizeof(tUserRecord), 1, fpUserFile) == 1)
+//   fseek(fpUserFile, (long)nCurrentUserNumber * USERRECORD_SIZE, SEEK_SET);
+   while(freadUserRecord(&CurrentUserRecord, fpUserFile) == 1)
    {
 
       /* If name in record matches the current user name ... */
@@ -4115,7 +4235,7 @@ int ReadOrAddCurrentUser(void)
 
       /* Move user record number to next user record. */
       nCurrentUserNumber++;
-  //    fseek(fpUserFile, (long)nCurrentUserNumber * sizeof(tUserRecord), SEEK_SET);
+  //    fseek(fpUserFile, (long)nCurrentUserNumber * USERRECORD_SIZE, SEEK_SET);
    }
    fclose(fpUserFile);
    } else {
@@ -4141,7 +4261,7 @@ int ReadOrAddCurrentUser(void)
 
       fpUserFile = ExculsiveFileOpen(USER_FILENAME, "a+b");
       /* Write the new record to the file. */
-      if(fwrite(&CurrentUserRecord, sizeof(tUserRecord), 1, fpUserFile) == 1)
+      if(fwriteUserRecord(&CurrentUserRecord, fpUserFile) == 1)
       {
 	 /* If write succeeded, record that we now have a valid user record. */
 	 bGotUser = TRUE;
@@ -4181,10 +4301,10 @@ void WriteCurrentUser(void)
    /* Move to appropriate location in user file for the current user's */
    /* record. */
 
-   fseek(fpUserFile, (long)nCurrentUserNumber * sizeof(tUserRecord), SEEK_SET);
+   fseek(fpUserFile, (long)nCurrentUserNumber * USERRECORD_SIZE, SEEK_SET);
 
    /* Write the new record to the file. */
-   if(fwrite(&CurrentUserRecord, sizeof(tUserRecord), 1, fpUserFile) < 1)
+   if(fwriteUserRecord(&CurrentUserRecord, fpUserFile) < 1)
    {
       /* If unable to write the record, display an error message. */
       fclose(fpUserFile);
