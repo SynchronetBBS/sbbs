@@ -107,6 +107,8 @@ extern struct ibbs IBBS;
 
     Alliance_Maint();
 
+    Game_Write();
+
     DisplayStr("Done.\n");
 
   }
