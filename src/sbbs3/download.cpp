@@ -316,12 +316,6 @@ bool sbbs_t::checkdszlog(file_t* f)
 	char*	rname;
 	char	code;
 	ulong	bytes;
-	ulong	dte;
-	ulong	cps;
-	ulong	errors;
-	ulong	flows;
-	ulong	block_size;
-	long	serial_no;
 	FILE*	fp;
 	bool	success=false;
 
@@ -331,24 +325,39 @@ bool sbbs_t::checkdszlog(file_t* f)
 
 	unpadfname(f->name,fname);
 
-	/* Increase real path is different (long filename?) */
 	getfilepath(&cfg,f,rpath);
+	fexistcase(rpath);	/* incase of long filename */
 	rname=getfname(rpath);
 
 	while(!ferror(fp)) {
 		if(!fgets(str,sizeof(str),fp))
 			break;
-		sscanf(str,"%c %lu %lu bps %lu cps %lu errors %lu %lu %s %ld"
-			,&code
-			,&bytes
-			,&dte
-			,&cps
-			,&errors
-			,&flows
-			,&block_size
-			,path
-			,&serial_no);
-		p=getfname(path);	/* DSZ stores fullpath, BiModem doesn't */
+		if((p=strrchr(str,' '))!=NULL)
+			*p=0;	/* we don't care about no stinking serial number */
+		p=str;
+		code=*p;
+		FIND_WHITESPACE(p);	// Skip code
+		SKIP_WHITESPACE(p);
+		bytes=strtoul(p,NULL,10);
+		FIND_WHITESPACE(p);	// Skip bytes
+		SKIP_WHITESPACE(p);
+		FIND_WHITESPACE(p);	// Skip DTE rate
+		SKIP_WHITESPACE(p);
+		FIND_WHITESPACE(p);	// Skip "bps" rate
+		SKIP_WHITESPACE(p);
+		FIND_WHITESPACE(p);	// Skip CPS
+		SKIP_WHITESPACE(p);
+		FIND_WHITESPACE(p);	// Skip "cps"
+		SKIP_WHITESPACE(p);
+		FIND_WHITESPACE(p);	// Skip errors
+		SKIP_WHITESPACE(p);
+		FIND_WHITESPACE(p);	// Skip "errors"
+		SKIP_WHITESPACE(p);
+		FIND_WHITESPACE(p);	// Skip flows
+		SKIP_WHITESPACE(p);
+		FIND_WHITESPACE(p);	// Skip block size
+		SKIP_WHITESPACE(p);
+		p=getfname(p);	/* DSZ stores fullpath, BiModem doesn't */
 		if(stricmp(p,fname)==0 || stricmp(p,rname)==0) {
 			/* E for Error or L for Lost Carrier or s for Skipped */
 			/* or only sent 0 bytes! */
