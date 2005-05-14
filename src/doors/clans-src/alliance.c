@@ -645,7 +645,7 @@ extern struct clan *PClan;
       if (Clan->Alliances[iTemp] != -1)
       {
         for (CurAlliance = 0; CurAlliance < MAX_ALLIANCES; CurAlliance++)
-          if (Alliances[CurAlliances] != NULL && Alliances[CurAlliance]->ID == Clan->Alliances[iTemp])
+          if (Alliances[CurAlliance] != NULL && Alliances[CurAlliance]->ID == Clan->Alliances[iTemp])
           {
             sprintf(szString, "|06* |14%s\n", Alliances[ CurAlliance ]->szName);
             rputs(szString);
@@ -940,7 +940,7 @@ extern struct clan *PClan;
 
     // find spot to place in that particular alliance to place clan
     for (iTemp = 0; iTemp < MAX_ALLIANCEMEMBERS; iTemp++)
-      if (Alliances[WhichAlliances] != NULL && Alliances[WhichAlliance]->Member[ iTemp ][0] == -1)
+      if (Alliances[WhichAlliance] != NULL && Alliances[WhichAlliance]->Member[ iTemp ][0] == -1)
         break;
 
     if (iTemp == MAX_ALLIANCEMEMBERS)
