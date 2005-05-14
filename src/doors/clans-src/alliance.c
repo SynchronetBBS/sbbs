@@ -645,7 +645,7 @@ extern struct clan *PClan;
       if (Clan->Alliances[iTemp] != -1)
       {
         for (CurAlliance = 0; CurAlliance < MAX_ALLIANCES; CurAlliance++)
-          if (Alliances[CurAlliance]->ID == Clan->Alliances[iTemp])
+          if (Alliances[CurAlliances] != NULL && Alliances[CurAlliance]->ID == Clan->Alliances[iTemp])
           {
             sprintf(szString, "|06* |14%s\n", Alliances[ CurAlliance ]->szName);
             rputs(szString);
@@ -656,7 +656,7 @@ extern struct clan *PClan;
 
     // free up mem used by alliances
     for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-      if (Alliances[iTemp])
+      if (Alliances[iTemp] != NULL)
         free(Alliances[iTemp]);
   }
 
@@ -867,7 +867,7 @@ extern struct clan *PClan;
     for (iTemp = 0; iTemp  < MAX_ALLIANCES; iTemp++)
     {
       // update empire
-      if (Alliances[iTemp])  {
+      if (Alliances[iTemp] != NULL)  {
         Empire_Maint(&Alliances[iTemp]->Empire);
         if (Alliances[iTemp]->szName[0] == '?')
           Alliances[iTemp]->szName[0] = '!';
@@ -879,7 +879,7 @@ extern struct clan *PClan;
 
     // free up mem used by alliances
     for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-      if (Alliances[iTemp])
+      if (Alliances[iTemp] != NULL)
         free(Alliances[iTemp]);
   }
 
@@ -920,7 +920,7 @@ extern struct clan *PClan;
     // find that alliance
     for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
     {
-      if (Alliances[iTemp]->ID == AllyID)
+      if (Alliances[iTemp] != NULL && Alliances[iTemp]->ID == AllyID)
         break;
     }
 
@@ -930,7 +930,7 @@ extern struct clan *PClan;
 
       // free up mem used by alliances
       for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-        if (Alliances[iTemp])
+        if (Alliances[iTemp] != NULL)
           free(Alliances[iTemp]);
       return;
     }
@@ -940,7 +940,7 @@ extern struct clan *PClan;
 
     // find spot to place in that particular alliance to place clan
     for (iTemp = 0; iTemp < MAX_ALLIANCEMEMBERS; iTemp++)
-      if (Alliances[WhichAlliance]->Member[ iTemp ][0] == -1)
+      if (Alliances[WhichAlliances] != NULL && Alliances[WhichAlliance]->Member[ iTemp ][0] == -1)
         break;
 
     if (iTemp == MAX_ALLIANCEMEMBERS)
@@ -949,7 +949,7 @@ extern struct clan *PClan;
 
       // free up mem used by alliances
       for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-        if (Alliances[iTemp])
+        if (Alliances[iTemp] != NULL)
           free(Alliances[iTemp]);
       return;
     }
@@ -965,7 +965,7 @@ extern struct clan *PClan;
 
     // free up mem used by alliances
     for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-      if (Alliances[iTemp])
+      if (Alliances[iTemp] != NULL)
         free(Alliances[iTemp]);
   }
 
