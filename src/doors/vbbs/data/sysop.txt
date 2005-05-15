@@ -1,0 +1,274 @@
+Virtual BBS
+Version 3.20
+
+(C)1999-2002 by Darryl Perry
+
+Vagabond Software:
+http://vs3.vbsoft.org/
+                           
+
+What is Virtual BBS?:
+-----------------------
+    This is a simulation of what it may be like to be a system operator
+    on one of the larger data services in the nation. It is not designed
+    to be 100% accurate or resemble any one BBS. The problems and
+    situations found in this program are the result of many years
+    of personally running a BBS.
+
+
+Virtual BBS/Sysop: Then, and Now:
+---------------------------------
+
+    Several years ago, I used to run a BBS using TBBS (The Breadboard System,
+    by eSoft.)  One of the most popular games at the time was Virtual Sysop.
+    This game could only be played on TBBS systems.
+
+    Years later, I stopped using TBBS as my bbs platform, and instead ran
+    Telegard.  I wanted to be able to play all the popular online games
+    that TBBS did not have the ability to run.  The downside to that was
+    that I was no longer going to be able to run Virtual Sysop.  The authors
+    had no intentions of porting the game over so that dropfile-type systems
+    could run the game as well.
+
+    So, the obvious solution was to create a version that could run from
+    Telegard or any other BBS software that uses a dropfile.  What you
+    now have in your hands is the result.   Since this is not a direct
+    port of the original game, (Virtual Sysop I+II were written in a
+    version of dBase III code, Virtual Sysop 3.00df was written in C using
+    the OPENDOORS library), this game will not play the same as those that
+    you may have seen on TBBS bbs systems.
+
+    It turned out that the authours of the TBBS Virtual Sysop games DID
+    have intentions of porting the game and/or converting to a web game.
+    As a result, this door has been renamed to "Virtual BBS" to avoid any
+    name comfusions as much as possible.
+
+
+DROP FILE SUPPORT:
+------------------
+
+     - DOOR.SYS       (DOOR.SYS compatible systems)
+     - DORINFOx.DEF   (QBBS/RBBS/Remote Access systems)
+     - PCBOARD.SYS    (PCBOARD systems)
+     - SFDOORS.DAT    (Spitfire systems)
+     - CALLINFO.BBS   (Wildcat previous to v3.0 systems)
+
+GAME FILES:
+---------------
+
+    The following files are required in order to run the program:
+
+    - MSGSR.DAT         -   Responses to reading the mail.
+    - MSGSA.DAT         -   Responses to the work actions.
+    - MSGSV.DAT         -   Responses to the virus infection.
+    - MAINMENU.ANS      -   The Main Menu.  Edit as you wish.
+    - VIRUS.DAT         -   List of viruii (viruses?).  Edit as you wish.
+    - VBBS.EXE          -   The game program.
+    - VBBS.TXT          -   The user documentation
+    - SYSOP.TXT         -   You're reading it now.
+    - RESET.BAT         -   Used for resetting the game.
+    - TEXT.DAT          -   The language file for the game.
+                                Edit as you wish.
+    - VBBS.DOC          -   Info on how the game is played.
+
+    The following files are created the first time that the game is run:
+
+    - USERS.VB3         -   Player info is kept here.
+    - MAIL.VB3          -   Netmail info is kept here.
+
+    The following files are not needed, but can be used to modify your
+    game, see Modifying the Game section below:
+
+    - APD.DAT			-  Actions Per Day
+    - CPU.DAT			-  Define the names of the CPU's
+    - SOFTWARE.DAT		-  Define the names of the BBS software packages.
+
+
+WARRANTY:
+---------
+
+This product is provided "as is" without warranty of any kind. The entire
+risk as to the results and performance of the program is assumed by you.
+Futhermore, the author does not warrant, guarantee, or make any other
+representations regarding the use of, or the results of the use of the
+program, and you rely on the program and results solely at your own
+risk. The author cannot and will not accept responsibility for system
+damage, loss of profit, or any other special, consequential or incidental 
+damages resulting from the use or inability to use this product.
+
+
+USAGE:
+------
+
+This product is being distributed as FREEWARE.  However, it is also BETA
+software.  You WILL encounter bugs and unavailable options.  If this game
+is to evolve, your input will be muchly appreciated.
+
+DISTRIBUTION:
+-------------
+
+You are encouraged to distribute this copy of VBBS provided the archive 
+is kept in its original and unmodified state.  
+
+
+SYSTEM REQUIREMENTS:
+--------------------
+
+DOS Only Systems:
+
+     - ANSI.SYS MUST be loaded in your CONFIG.SYS.  
+       Users who are using some other type of ANSI emulation may get
+       the system to work...ex. DVANSI.  This should be loaded at system
+       boot up, not just in each process or window.
+     
+     - SHARE.EXE MUST be loaded in your CONFIG.SYS.
+
+     - DOS 5.0 or later.
+
+Windows Systems:
+
+     - Windows 95/98/Me running Door32 compatible BBS software with DTR hack
+     - Windows NT4/2000/XP running Door32 compatible BBS software
+
+Setup:
+------
+Updating from older existing versions, v3.00df and older:
+	The current version (v3.01df) requires that the game be reset,
+	as there are changes in the data files that cannot be converted.  If
+	you have an existing installation, the new installation will overwrite
+	it, and you will need to run the reset.bat file.
+    
+
+New Installations:
+    To setup VBBS on your BBS, edit your door bat file to look like this:
+
+    @ECHO OFF
+    CD \BBS\DOOR\VBBS
+    VBBS.EXE -D C:\BBS\
+
+    The only parameter that Virtual BBS needs is the path to the dropfile.
+
+Windows Users:
+
+    For use under Win32 compatible BBS software, call the door directly.  Ex:
+
+    VBBS32.EXE -D C:\BBS\	
+
+Linux Users:
+	For linux use, you must supply the path and the door file name, in the
+	proper case.  If the dropfile is in upper case, you must supply the name
+	in upper case.
+
+	Also, only the door.sys dropfile format is working at this time.
+
+	example:
+	/home/doors/vbbs/vbbs /home/bbs/node1/door.sys
+
+Multinode Note:
+
+    Be sure and pass the proper directory where you node stores it's dropfiles.  Ex:
+
+    VBBS32.EXE -D C:\BBS\NODE*N
+
+    Consult your BBS documentation for more information.
+
+
+Modifying the Game:
+-------------------
+
+    It is possible to make minor changes to the playability of the game.
+    You will find to sysop editable files, MSGSA.DAT, MSGSV.DAT and
+    MSGSR.DAT.  They all use the same format for all files.
+
+    MSGSx.DAT:
+
+    Each time the (W)ork command is executed, a random entry from MSGSA.DAT
+    is read.  Each time a virus is encountered, a random entry from MSGSV.DAT 
+    is read.
+    Each time a PROBLEM message is read, a random entry from MSGSR.DAT is
+    read.  It is recommended that you leave the ACTION and VALUE fields set
+    to zero (0) in this file.
+
+    The format is as follows
+
+    !@#  <----Denots the beginning of a record.  Must exist for each record.>
+    0    <----ACTION #>
+    0    <----VALUE>
+    <The text of the result of a work command.>
+    <It can be any number of lines.>
+
+    Action Numbers:
+    ---------------
+    There are 14 possible actions, listed below.  Others may be added in
+    later versions.
+
+    Action                                          Value
+    ---------------------------------------------------------------------
+    0 - Nothing happens                             Not Used (0)
+    1 - Add random free users.                      Not Used (0)
+    2 - Random free users become subscribers.       Not Used (0)
+    3 - Free users leave the system.                Not Used (0)
+    4 - Paying users leave the system.              Not Used (0)
+    5 - Add money to the bank.                      Ammount to add
+    6 - Subtract money to the bank.                 Ammount to subtract
+    7 - Upgrade CPU by one, up to the max.          Not Used (0)
+    8 - Add Actions.                                Ammount to add
+    9 - Random number of free user start paying.    Not Used (0)
+   10 - Upgrade Harddrive by one, up to the max.    Not Used (0)
+   11 - Downgrade CPU by one, down to the max.      Not Used (0)
+   12 - Downgrade Harddrive, down wo the max.       Not Used (0)
+   13 - Downgrade (remove) modem.                   Not Used (0)
+
+
+   - APD.DAT
+
+   The default number of actions per day is 100.  This number can be
+   changed to you liking by including the text file APD.DAT.
+   APD.DAT (Actions Per Day) is a text file with a single line.  This
+   line contains the numberic number for the actions per day.  Anything
+   more than one line will ge ignored.  If the number is unreadable,
+   it will default to 100.
+
+   Note, players will not see the change until the day after the change.
+
+   - TEXT.DAT
+
+   With v3.01df (rev 0424200) comes a new datafile called TEXT.DAT.  This
+   file holds all the text of the game, and is configurable by the sysop.
+
+   The format is:
+
+   nnnn <text>
+
+   where nnnn is a zero padded number, and <text> is the text to be
+   displayed.  Be certain to have at least a single space between the
+   number and the text.  Any spaces more than on will be displayed as
+   part of the text.
+
+   The text of this file can now include ANSI graphics and colors.  It can
+   also include many macros.  The list of macros can be found at the top
+   of TEXT.DAT.
+
+
+
+Resetting the Game:
+-------------------
+    When you wish to begin a new game of Virtual BBS, just erase the 
+    USERS.VB3 and MAIL.VB3 files.  Or, you can use the RESET.BAT file
+    provided in this archive.
+
+Bug Reports:
+------------
+    Yes, you will undoubtedly find some bugs and wish to report them.  Here
+    is how to do it.
+
+    Email  : dperry.geo@yahoo.com
+    Netmail: Sysop at 1:211/105
+    BBS    : Cyberia BBS cyberia.darktech.org
+    Echos  : DOORGAMES, BBSDOORS and BBS_CARNIVAL
+    UseNet : alt.bbs, alt.bbs.doors, most alt.bbs.* groups.
+
+    I regularly read the above Fidonet echos.  If my echomail is flowing
+    properly, I will likely be able to find your postings there.
+
+    When making reports, please as be as specific as possible.

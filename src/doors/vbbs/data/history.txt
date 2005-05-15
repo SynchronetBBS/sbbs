@@ -1,0 +1,159 @@
+Virtual BBS 3.20 by Darryl Perry, 1999-2002
+
+Revision History:
+
+Release 3.20
+    o Removed C++ code.
+    o Change name from "Virtual Sysop III" to "Virtual BBS"
+
+Release 3.10
+    o VS3 transfered to Vagabond Software
+
+The release number follows the format of MMDDYYYY.
+Release 3.05
+    o Changed the version format to Major.minor format.
+    o The Linux version is ready for beta testing.
+    o Added in-game messaging.
+    o Changed the text.dat color macros.
+    o Added more available computers, harddrives and BBS software for purchase.
+	o Added routine that will delete players who are inactive for more than 
+	  15 days.
+    o Added feature that will delete a player who leaves the game with less 
+	  than 1 point.
+	o fixed a bug that would would occur when a virus attack was encountered,
+	  and either no text was displayed, or it went into an infinate loop,
+	  displaying :END.
+
+Release 08232000
+    o Scores were showing as negative values.  Changed datatype to unsigned.
+    o The 'T'itle option displayed the Store Menu.  Fixed.
+    o Fixed some problems in the TEXT.DAT that were causing the game to
+      GPF on some window boxes.
+    o The number of possible modems and unused modem slots for the high end
+      BBS software packages were showing up as a negative value.
+    o When buying modems, it always said that 10 was the max that you can
+      buy, no matter how much money you had.  It now checks to see if you
+      have enough empty slots for your current BBS package.
+
+Release 08202000
+    o Money was showing as a negative when too much was accumulated.
+    o Fixed a problem with the corrupt polititian.  You can no longer give
+      him more than you have in the bank.  Also, you now get a little
+      private education when you donate a proper ammount.
+    o Fixed many problems with the tutors.
+    o The Break Into an Office option of the 'Use Skills' menu now works.
+    o Employees can no longer be used in personal menu.
+    o The Shoplifing option now works.
+    o Fixed a problem with the experience listing.
+    o Fixed a problem where hacking a board gave way too much of a score.
+    o Fixed a problem with the Top Ten list.  It wasn't sorting the list
+      properly.
+    o Made it so that when the 'A'nswer Chat command is used, an action is
+      used up too.  It seems that people can continue getting subscriptions
+      by hitting the 'A'nswer chat command, even if there were not pending
+      chats.
+    o Problem messages were not being displayed.  Fixed.
+    o Removed the '=' command or the real sysop menu from the game.  In order
+      to access the sysop menu, you must now start the game with the -CONFIG
+      command line parameter.  This option does not care if you are the
+      sysop or not.
+
+Release 07092000
+    o Uberhund of Darklands BBS reported:
+     
+      When a players accesses the "charge users" function, it seems that a
+      counter within the game gets incremented, but the player doesn't get
+      a turn deducted from their total. So they can hit "c" for charge users,
+      then answer "no" to the "do you want to charge users" question, and
+      they will receive things such as chat requests and subscriptions. So,
+      theoretically, a user can receive unlimited money and additional users
+      by just sitting there and hitting "c", "n" over and over again, and
+      answering chat requests and getting subscription money.
+
+      I've changed it so that the items get incremented only if the player
+      chooses 'Y'es at the charge users prompt.
+
+    o You can hold down any button that causes repetitive actions without
+      turn-loss and still receive subscriptions and chat messages (even if
+      you haven't just received a subscription
+
+      A beautiful example of this is the "a" key,  which you can hold down
+      and automagically answer any incoming chats, while generating more
+      chats (and thus more users and $) and subscriptions. I got a few
+      thousand callers and boucou dollars by doing this (especially if you
+      pause in the middle to charge your users).
+
+      I didn't want to do it this way, but if it's causing a problem, I'll
+      have to make this change.  Now, if you hit 'A', even when there is
+      no pending chat, you will have a turn decucted.
+
+    o Fixed one or two cosmetic issues in the TEXT.DAT file.
+
+Release 05142000
+    o Happy Mothers Day!
+    o When performing actions, the text would also show the ANSI color codes,
+      instead of interpreting them.  Fixed.
+
+    o If a player has less than 1 modem, one will be provided by a user.
+
+Release 04242000
+    o Changed release format from YYMMDD to MMDDYYYY.
+
+    o Removed all the text from the game and placed it in the TEXT.DAT
+      file.  This is in result of a DGROUP compiler error, which means
+      that there were too many string constants in the program.
+
+    o It has been reported that hitting 'R' when a subscripition arrives,
+      it would be possible to keep accruing money.  I was not able to
+      duplicate this phenomena.
+
+    o When using a tutor, only one action would be used, instead of the listed 
+      amount.
+
+    o When hitting "Users Now Online", the game would error out.
+
+    o No matter how many phone lines you buy at one time the same amount of
+      money was charged.
+
+    o If a harddrive level increased above the max, just high-ascii chars
+      would be displayed.  It is now not possible to go past the max.
+
+
+Release 990811
+
+    o When charging a fee, some free users would join, and some would leave.
+      It was possible for the number of free users to go below zero.  Fixed.
+
+    o If you edited a player in the sysop menu, you would not be able to
+      leave the sysop menu.  Fixed.
+
+Release 990809
+
+    o Fixed virus scan option.  TurboScan was alwasy being run when asked
+      even if answered with No.
+
+    o Fixed CPU Upgrade.  When receiving a computer upgrade resulting from
+      a (W)ork action, the text would say 'You now have a #' where '#'
+      would be the numeric value of the cpy type.  It now correctly displays
+      the textual value of the cpu type.
+
+    o Added action items #13 - Delete Modem, and #14 - Damage Phone line.
+      Made changes to MSGSA.DAT and MSGSV.DAT to reflect the changes.
+
+    o Changed MAINMENU.ANS to show the (Q)uit command.
+
+    o When doing the (U)sers command, the figures would reflect how many
+      modems the player had, and not the phone lines.  It was possible for
+      a player to have fewer phone lines than modems but be treated as if
+      he also had the same number of phone lines as modems.  Fixed.
+
+Release 990806
+
+    o Rewrote the function that increments the number of messages waiting
+      to be read.  Previously, every action was generating about 4-8 new
+      messages.  It now has a 40% chance of a single new message being
+      added to the waiting list after each action.  Also, the score is no
+      longer being reduced if mail is not read.
+
+    o If new phone lines were ordered, they were not being installed during
+      the next day's newday event.  Fixed.

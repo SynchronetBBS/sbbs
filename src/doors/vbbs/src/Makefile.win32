@@ -1,0 +1,96 @@
+#
+#  Virtual BBS makefile
+#
+##################################
+
+O	     = ./obj
+
+# define tools
+CC = cl
+LD = link
+RC = rc
+RM = rm -f
+MV = mv -f
+CP = cp
+
+BUILD ?= release
+
+TARGET = ./bin/vbbs32.exe
+
+OBJS += $(O)/mx_file.obj
+OBJS += $(O)/v3_basic.obj
+OBJS += $(O)/vbbs_db.obj
+OBJS += $(O)/v3_hack.obj
+OBJS += $(O)/v3_io.obj
+OBJS += $(O)/v3_learn.obj
+OBJS += $(O)/v3_mail.obj
+OBJS += $(O)/v3_maint.obj
+OBJS += $(O)/v3_mci.obj
+OBJS += $(O)/v3_store.obj
+OBJS += $(O)/vbbsutil.obj
+OBJS += $(O)/vbbs.obj
+
+ifeq ($(BUILD),debug)
+	TYPE      = debug
+    CFLAGS    = /nologo /I../include /MTd /W3 /G6 /GX /Zi /Fm /D "DEBUG" /D "WIN32" /D "_WINDOWS" /c
+    CPPFLAGS  = /nologo /I../include /MTd /W3 /G6 /GX /Zi /Fm /D "DEBUG" /D "WIN32" /D "_WINDOWS" /c
+    LDFLAGS   = ../lib/ODoorW.lib \
+              /NOLOGO /INCREMENTAL:no \
+              /MAP \
+              /DEBUG \
+      	      /MACHINE:I386 \
+    	      /OUT:$(TARGET) \
+      	      /SUBSYSTEM:windows
+
+else
+	TYPE      = release
+    CFLAGS    = /nologo /I../include /MT /W3 /G6 /GX /O2 /Fm /D "RELEASE" /D "WIN32" /D "_WINDOWS" /c
+    CPPFLAGS  = /nologo /I../include /MT /W3 /G6 /GX /O2 /Fm /D "RELEASE" /D "WIN32" /D "_WINDOWS" /c
+    LDFLAGS   = ../lib/ODoorW.lib \
+              /NOLOGO /INCREMENTAL:no \
+              /MAP \
+      	      /MACHINE:I386 \
+    	      /OUT:$(TARGET) \
+      	      /SUBSYSTEM:windows
+endif
+
+.PHONY : all run $(TARGET) REPORT
+.SUFFIXES: .c
+
+.SILENT:
+
+all: $(TARGET)
+
+bin:
+	mkdir bin
+
+obj:
+	mkdir obj
+
+$(O)/ODoor.res : ODRes.rc
+	$(RC) /fo $@ $<
+
+REPORT:
+	echo building $(TYPE)
+
+$(TARGET): bin obj $(OBJS) $(LIBS) REPORT
+	echo linking $@
+	$(LD) $(LDFLAGS) $(OBJS) $(LIBS)
+	$(CP) $(TARGET) ../build
+	$(CP) *.pdb	../build
+
+clean:
+	$(RM) *.obj *.exe $(O)/*.obj $(O)/*.res bin/*.map bin/*.pdb bin/*.lib bin/*.exp $(TARGET)
+
+$(O)/%.obj : %.c
+	$(CC) $(CFLAGS) $< /Fo$@
+
+$(O)/%.obj : %.cpp
+	$(CC) $(CPPFLAGS) $< /Fo$@
+
+%.obj : %.c
+	$(CC) $(CFLAGS) $<
+
+%.obj : %.cpp
+	$(CC) $(CPPFLAGS) $<
+

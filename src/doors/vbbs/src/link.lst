@@ -1,0 +1,1 @@
+c0m.obj v3_basic.obj v3_hack.obj v3_io.obj v3_learn.obj v3_mail.obj v3_mci.obj v3_store.obj v3_maint.obj mx_file.obj vbbs_db.obj vbbsutil.obj vbbs.obj,vbbs.exe,,odoorm.lib fp87.lib mathm.lib cm.lib

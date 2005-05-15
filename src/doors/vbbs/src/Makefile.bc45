@@ -1,0 +1,82 @@
+#
+#  Virtual BBS makefile
+#
+##################################
+
+O	     = ./obj
+
+# define tools
+CC = bcc
+LD = tlink
+
+RM = rm -f
+MV = mv -f
+CP = cp
+
+BUILD ?= release
+
+TARGET = vbbs.exe
+EDITOR = vbbsedit.exe
+
+
+OBJS = \
+		mx_file.obj \
+	   	v3_basic.obj \
+	   	vbbs_db.obj \
+       	v3_hack.obj \
+       	v3_io.obj \
+       	v3_learn.obj \
+       	v3_mail.obj \
+		v3_maint.obj \
+       	v3_mci.obj \
+       	v3_store.obj \
+       	vbbsutil.obj \
+       	vbbs.obj
+
+EOBJS = \
+		v3_cfg.obj \
+        v3_mci.obj \
+        mx_file.obj \
+        v3_io.obj \
+		v3_basic.obj
+
+!if $d(VS3_DEBUG)
+    CFLAGS  = -2 -c -v -mm -f287 -ff- -w -M -RT- -x- -I../include
+    LDFLAGS = /v
+!else
+    CFLAGS  = -2 -O1 -c -mm -f287 -ff- -w -M -RT- -x- -I../include
+    LDFLAGS =
+!endif
+
+#.SILENT:
+
+all: $(TARGET) $(EDITOR)
+
+bin:
+	mkdir bin
+
+obj:
+	mkdir obj
+
+$(TARGET): $(OBJS)
+	echo linking $@
+	$(CP) ../lib/odoorm.lib .
+	$(LD) $(LDFLAGS) @link.lst
+	$(CP) $(TARGET) ../build
+
+$(EDITOR): $(EOBJS)
+	echo linking $@
+	$(CP) ../lib/odoorm.lib .
+	$(LD) $(LDFLAGS) c0fm.obj $(EOBJS),$(EDITOR),,odoorm.lib fp87.lib mathm.lib cm.lib
+	$(CP) $(EDITOR) ../build
+
+clean:
+	$(RM) *.obj *.exe *.map *.lib *.OBJ *.EXE *.MAP *.LIB
+
+.asm.obj:
+      $(AS) $(AFLAGS) $&.asm
+.c.obj:
+      $(CC) $(CFLAGS) $&.c
+.cpp.obj:
+      $(CC) $(CFLAGS) $&.cpp
+

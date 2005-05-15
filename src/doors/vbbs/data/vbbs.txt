@@ -1,0 +1,320 @@
+ VBBS: The Virtual BBS Simulation.
+ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+ (Virtual BBS, 3.0)
+ Copyright 1999 - 2002 by Darryl Perry
+ All rights reserved.
+
+ Maintained by Vagabond Software
+ http://vs3.vbsoft.org/
+
+
+This is a simulation of what it may be like to be a system operator on one of
+the larger data services in the nation. It is not designed to be 100% accurate
+or resemble any one BBS. The problems and situations found in this program are
+the result of many years of running a BBS.
+
+
+INSTRUCTIONS FOR PLAYING THE GAME
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+       "The local system operator's group welcomes a new member to their
+        community!  Most of them wish you the best of luck with your BBS
+        and users."
+
+
+GENERAL INTRODUCTION
+
+         Every effort has been made to make this game true to life whenever
+        possible. There are some areas that have been changed to make the game
+        more enjoyable and less like work. After all, if you would put up with
+        the pain of being a real sysop then you would be running a real BBS.
+
+         Most of the users that you will find in this simulation will not take
+        up any of your time, as do many actual users. The few that will use up
+        your time are the ones to watch. They will be giving you the most
+        trouble.
+
+
+YOUR GOAL
+
+         Your goal is to get your BBS to grow. You must attract the most users
+        and get them to take part in your system. This will make up the larger
+        part of your score in the game. Hardware and software don't count much
+        if you don't have any users.
+
+         For the most part use the golden rule and you will do ok.
+
+
+PROMPT LINE
+
+         The prompt line is made up of 3 (or 4) parts:
+ 
+            (non-paying users : paying users : actions left today)
+ 
+         The first part tells you the total number of non-paying (free) users
+        that may be talked into paying for your system.
+
+         You must have more than 50 users to start charging for access.
+
+         The second item is the total number of paying users. These people are
+        paying for your system and you should make sure that they have enough
+        phone lines to use. They tend to be very easy to make mad because they
+        are putting their money into your system. Too many busy signals and
+        they may even demand their money back.
+
+         The third part is the number of actions you have left today. There is
+        only so much one person can do in a day. Even a super sysop is
+        limited. Keep an eye on this number until you find out what takes up
+        your time and what doesn't.
+
+         If you hire employees a "point" number will be added to your actions.
+        This shows the number of employee actions available. Most employees
+        are limited in how fast they can do a job compared to the main sysop.
+        It might take an employee 2 or more actions to do something you could
+        do in 1 action.
+
+         You will find that most of the prompts are easy to understand so feel
+        free to explore.
+
+
+ANSWER MAIL
+
+         Answering mail is one of the jobs that every sysop must decide when
+        and how often to do. Most of the mail sent to a sysop is nothing more
+        than questions that the sysop has answered many times before. These
+        are called "no-brainer" messages and any sysop can answer these in his
+        sleep. It still takes time to answer them, but you are not shown the
+        text of each one as they are answered.
+
+         It is a good idea not to let the mail pile up in your box for too
+        long. When the users see that it is taking a long time for you to get
+        back to them they may get mad. This normally starts with more
+        messages, but may end up with them leaving your system.
+
+
+PROBLEM MAIL
+
+         When your system gets larger, the co-sysops will start answering more
+        and more of the "no-brainer" mail. If they find a message that they
+        can't answer, or is a problem that they don't want to answer, they
+        will send it to you. These messages are called "problem" mail. They
+        are normally from mad users who are upset about something to the point
+        of being rude. It takes special care to answer each message in a way
+        that will either cool the user down or stop him from bothering you
+        again.
+
+         Don't be so eager to lock out a user or ignore his mail. Bad things
+        can happen if you get a reputation as a censor or make the wrong
+        person mad at you. It may even get to the point that you will be
+        forced to take your system down or end up in a lawsuit.
+ 
+
+MAIN FUNCTIONS
+
+         The following commands should be the ones you spend the most time
+        with. They are (W)ork, (V)irus scan and (S)tore. Be careful. It is
+        easy to forget to keep up with your (M)ail or to keep the number of
+        free lines ahead of the number of users calling your system.
+
+
+PHONE LINE LOAD
+
+         The (U)sage function will show you a quick overview of the work load
+        percentage on each group of your phone lines. The numbers are split
+        into two different sections. The slow modems and high speed modems.
+        The slow modem users are any user with a modem not capable of 9600
+        bps. They are happy to connect with any of your available modems. The
+        high speed modem users have paid extra for their hardware and only
+        want to use the high speed lines on your system.
+
+         The users will start to complain about the busy signals if the load
+        on your phone lines starts to get too high. They will only complain
+        for a short time before they leave your board. When users leave your
+        board they normally take their friends with them. This can take a big
+        chunk out of your customer base.
+
+         It is suggested that you spend part of your time each day installing
+        modems until you are well ahead of the number of users. This will give
+        you some time to devote to building up your user base without fear of
+        overloading your phone lines.
+
+
+CHARGING FOR ACCESS
+
+         The method you select to charge your users for access to your system
+        is up to you. Just about every option is available, some more
+        successful than others. You are encouraged to consider several things
+        about charging before you actually start taking money. First, what is
+        the main thing that you will be selling. Is it bytes or time? Will the
+        users re-subscribe for more of the same access? What would you be
+        willing to pay if you were a user?
+
+         You will be able to change the way you are charging once each day by
+        going into the (C)harge option. It is suggested that you not change
+        the way you are charging very often. It can make your paying users
+        unhappy which may cost you both money and subscribers.
+
+
+FREE USERS
+
+         Keep an eye on the number of free users you have on your system. They
+        don't have anything invested in your service and can cause problems
+        between you and the phone company. It is a good idea to keep the
+        number of free users as low as possible. Some of them will subscribe
+        on their own, but others need to be "reminded" why they should
+        subscribe to your service with the (C)harge option.
+
+
+VIRUS CHECKING
+
+         When you work around communications it is likely that some point in
+        your many connections that you will attract a virus or two. It is
+        strongly suggested that you use the scanning option at least once for
+        every ten "working" actions. There are some situations that a
+        TurboScan mode will be available. But remember that this faster scan
+        may not catch all of the infected files as the regular scan. If a
+        virus is found its name will be displayed. If it is found in more than
+        one place it will be shown more than once.
+
+
+SHOPPING
+
+         The store menu allows you to purchase a wide range of items. You will
+        need to go to the store to buy just about everything for your system.
+        Not every store on the menu has the same price on the same item. You
+        should shop around until you find what you need. It is possible that
+        the "discount" stores may pull you in with a false price and charge
+        you a higher price than the full retail stores.
+
+     (PHONE SERVICE)
+         Much like the real world, the phone service in this game is not 100%
+        reliable. If you have to deal with the phone company try to keep it as
+        simple as possible. Errors are likely when you start placing orders
+        while asking for other services. When calling for repairs remember
+        that the service trucks must charge you for every trip even if they
+        don't find anything wrong with your line.
+
+         When you start adding large numbers of phone lines you will quickly
+        out grow the local phone services which will require them to run
+        special lines just for you. This will cost time, money and actions so
+        think and plan carefully before jumping into that first multi-line
+        order.
+ 
+
+PERSONAL OPTIONS
+
+         There are several options not directly related to running a BBS that
+        are available in this game. They range from going to school to get a
+        higher education and buying insurance to illegal activities like
+        hacking or burglary. These options are not available to the very new
+        player to try and make things a little less complicated for them.
+
+     (EDUCATION)
+         There are different types of education available. The public
+        education is the kind of information found most often in schools or
+        from tutors. The personal education is more of the "secret" stuff
+        normally found out from direct word of mouth. Each type will allow you
+        to do different things. A good public education will make it easier
+        for you to run your BBS or if you are in the mood, break into someone
+        else's office or take something from the store without getting cought.
+        A good personal education will make it easier to hack a BBS or rob the
+        bank.
+
+     (CALLER-ID)
+         The most useful of the personal options are the protection devices.
+        These come in two forms; Caller ID and Office Security. The Caller ID
+        is rated with a number showing the level or strength of validation
+        that is used by the hardware. Different hardware has different caller
+        validation abilities. Sometimes this equipment can be damaged by
+        someone trying to break into your system or by "age". Check it every
+        so often to make sure that it is still operational.
+
+     (SECURITY)
+         The Office Security ranges from locks on the door to very complex
+        security and access management services. Like the Caller ID it is
+        rated with a number showing the level or strength. Burglars can do
+        more damage to your system than hackers so a good security system can
+        be a very smart investment. These systems are more robust than Caller
+        ID systems, but they also have a limited lifetime.
+
+     (INSURANCE)
+         The only insurance company we could get to open an office in this
+        game was not very well known. They do cover most damage from hackers
+        or burglars, but the coverage for the first 60 days is limited. They
+        also retain the right to cancel your policy if the claim is too high.
+        The good thing is that they don't keep good records so you can sign up
+        with them as often as you like.
+
+         Illegal activities are not suggested but are there just for those who
+        can't resist. These options have a risk of being detected by the
+        police. Jail terms are stiff and can take you out of the game for
+        several real days. You must serve your time.
+
+         If you don't call back at least once each day you are in jail your
+        term will grow one day for each one you skip.
+
+     (HACKING)
+         Hacking is the safest of the "dark" actions. This is where you use
+        your "personal" education to break into other systems. You must be
+        able to out smart their validation system to gain access. Otherwise
+        the police will be notified. What you do once you are on the inside is
+        up to you.
+
+     (BREAKING IN)
+         Breaking into an office is more risky but allows you to steal items
+        and do things that hackers can't. For example, a hacker can't destroy
+        backup tapes or take a modem or computer from a BBS. Since you are in
+        a hurry, some items may break. So get all you can in the limited time
+        you have.
+
+     (ROB BANK)
+         Rob the bank is the hardest of all the options. It really is for the
+        very very experienced and should not be attempted without much strong
+        drink. The odds of you actually getting even a part of the funds from
+        the bank are so small that if you put the same time into working you
+        would be a multi-billionaire. The chance is there and the prize is not
+        small either.
+
+     (SHOPLIFTING)
+         Shoplifting is available for those who are so experienced that they
+        either want a larger challenge or a chance at the big stuff. This
+        option is very hard! The store is always trying out new security
+        hardware. The Bank is the only thing harder to break.
+
+         There is a difference in the score you get from items you steal and
+        items you buy. Sometimes the difference is small, but often it is much
+        more noticeable.
+
+         Every illegal activity leaves some kind of a trace or clue. The
+        police are not always bright enough to pick up the clue so the player
+        may have to look at the damage report in person. If the hacker or
+        thief was very good the clue will be too small to use in court. But
+        not too small to allow the player to track down who the criminal was.
+        Watch out for mad victims.
+
+         A byproduct of being the victim of a crime is that you get "mad" and
+        have an extra boost of energy. This is shown as extra actions on the
+        command line. Even if you are in jail or in debt for education you can
+        still find those extra actions. Use these wisely. Protect yourself
+        before you go off in a rage to attack your attacker.
+
+         It is also possible for the hacker or burglar to "lie" and leave a
+        fake clue. So you may end up venting your anger on the wrong person if
+        you are not careful.
+
+ 
+SCORE CALCULATION
+
+         The score is calculated on the main parts of the BBS.
+
+        They include:
+                Computer type and operating system, file storage, BBS
+                software, number of phone lines, number of modems,
+                number of users and how long it takes you to answer
+                your waiting mail.
+
+         Each part of the calculation can be affected by other parts. Keep an
+        eye on your score in the (R)eport option until you get a feel for how
+        things work. The largest part of the score is the number of users.
+        Keep your users happy and your score will grow faster.
+
+

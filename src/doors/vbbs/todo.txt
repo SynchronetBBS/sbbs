@@ -1,0 +1,21 @@
+Virtual Sysop 3 TODO:
+
+  [ ] no matter how many phone lines you buy at the phone store, they always tell
+      you that they will charge you $35.00 for installation.  They lie!  They
+      charge you $35.00 x the number of lines being installed.
+  [ ] education not working properly.  (not adding education, not deducting money)
+  [ ] Hardware loss too often ... game balance issue.
+  [ ] mail message reading/writing should be improved
+  [ ] user file i/o should be more multinode friendly
+  [ ] add packing routines for the mail file
+  [ ] improve all daily maint to keep the game cleaner
+  [ ] make one function to calculate available modems
+  [ ] report shows wrong number of actions
+  [ ] need to rewrite how user data is handled
+  [ ] write function to calculate score, don't save it in user record
+  [ ] need to filter user text input to remove unwanted characters
+  [ ] check monitary transations to make sure they check balances before hand
+  [ ] add logging to reduce cheating bugs
+
+Fixed
+

@@ -1,0 +1,787 @@
+; TEXT.DAT - Virtual BBS v3.20
+;
+; This file is used for the game Virtual BBS v3.01df and later.
+;
+; Lines preceded with a ';' are coments, and will not be used by the game.
+;
+; The format is:
+; NNNN <Text>
+; where NNNN is a zero-padded 4 digit number.  <Text> is the text to be
+; displayed by the game.  NNNN and <Text> is separated by a single space.
+; The <Text> starts after the first space following NNNN.
+;
+; It is possible to have multiple lines that all have the same NNNN.  The
+; game will display ALL lines that have a matching NNNN.
+;
+; ANSI graphics and colors can be included in the <Text>
+;
+; main prompt
+0001 `0F~SM[~&1:~&2:~&3]: `0F
+; main prompt with employe actions
+0002 `0F~SM[~&1:~&2:~&3.~&4]:
+0003 ~SM`0E  You aren't the sysop!~SM
+
+; New player welcome screen
+0005 `0A~SMWelcome New System Operator!~SM
+0005 `0AYou have just spent a long time and a good bit of money to get your computer~SM
+0005 `0Aand software ready to go on-line. Someone gave you an old IBM XT that they were~SM
+0005 `0Agoing to toss in the trash. You got a shareware BBS program and a cheap modem~SM
+0005 `0Aand now you are ready to start accepting calls.~SM
+
+; Exit text
+0009 ~SM~SM`0FDisconnect from your service?
+0010 ~SM~SM`0BYour line has been released to allow other users to access your service.~SM~SM
+0010 You have ~&1 actions left today.~SM~SM
+0010 Thank you for playing~SM~SM
+0011 ~SM`0FReturning to ~&1, please wait...~SM
+
+; Virus scan text
+0020 ~SM~SM`0EMurphyscan(TM) scans all drives and files for all KNOWN viruses!~SM
+0020 You have a ~&1  EST. SCAN TIME ~&2 SECONDS~SM~SM
+0021 `0ETurboScan(TM) super fast virus detection option is available but may not~SM
+0021 identify all infections accurately.  Time savings MAY be 50%% or more.~SM~SM
+0021 `0FWould you like to use the TurboScan option?
+0022 ~SM`0F          [ÄÄÄÄÄÄÄÄÄÄÄ] <<TurboScan!>>~SM
+0023 ~SM`0F          [ÄÄÄÄÄÄÄÄÄÄÄ] <FullScan>~SM
+0024 `0FProgress: ~SL
+0025 `0FÛ
+0026 ~SM`0C >>> VIRUS DETECTED <<<~SM
+0027 ~SM`0E >>> No virus found <<<~SM
+0028 ~SM`0A                   We at Murphycorp recommend you run~SM
+0028                    Murphyscan(TM) every ten (10) downloads.~SM
+0028                       Thank you for using Murphyscan(TM)!~SM~SM
+0028 `0D*not responsible for damage resulting from misuse.`03~SM
+
+0050 `0BA`03nswer Chat
+0051 `0BB`03ank
+0052 `0BC`03harge Users
+0053 `0BE`03mploy
+0054 `0BI`03nspect
+0055 `0BL`03ist BBSes
+0056 `0BM`03ail
+0057 `0BN`03etwork
+0058 `0BP`03ersonal
+0059 `0BQ`03uit
+0060 `0BR`03eport
+0061 `0BS`03tore
+0062 `0BT`03itle Change
+0063 `0BU`03sers Online
+0064 `0BV`03irus Scan
+0065 `0BW`03ork
+0066 `03 Employees help.
+0067 `0B?`03-Menu
+
+0070 ~SM`0CUnable to access the user file.~SM
+0071 ~SM`0CUnable to update your user record file.~SM
+0080 ~SM`0FPress [ENTER] to continue.
+0081 `0F [Y]: ~SL
+0082 `0F [N]: ~SL
+0083 `0FY`07es~SM
+0084 `0FN`07o~SM
+
+0090 `0AYou contact the local labor union and they inform you that your BBS is~SM
+0090 still too small. Please check back when you are a little larger. You~SM
+0090 need at least 100 lines to be able to hire employees from this office.~SM
+
+0091 `0AYou contact the local labor union and they inform you that you are in need~SM
+0091 of ~&1 worker(s) to completely cover your current hardware and software setup.~SM
+0091 This is a requirement of the union and is not negotiable. If you choose to~SM
+0091 sign with us we will claim certain rights for our members.  These rights~SM
+0091 include but are not limited to: `0F~SM~SM
+0091 ~EF 51. Employees must not work more than 8 hours a day with 1 hour for lunch.~SM
+0091 ~EF 52. Employees must have 12 paid holidays per year plus 2 weeks vacation.~SM
+0091 ~EF 53. Employee responsibility must be limited to no more than 99 lines.~SM
+0091 ~EF 54. Extra employees must be hired if the work load increases.~SM~SM
+0091 `0ADo you agree to these terms?
+
+0092 ~SM~SMThank you for joining our team. We know that you will grow to trust and~SM
+0092 respect our professional methods for dealing with your users.~SM~SM
+0092 `0E* PAYROLL: $~&1~CP
+0093 `0C** WARNING: Payroll account balance is low.~SM
+
+0094 `0E* WARNING: Payroll checks bounced. Double check bank account!~SM
+0094 You need at least $~&1~SM
+
+0095 ~SM`0BWe thank you for at least allowing us to offer our help. Please return if~SM
+0095 there is a time in the future that you would like our help.~SM
+
+0096 ~SM`0FThe union boss double checks his roster and adds ~&1 employee(s)~SM
+0096 It is too late for them to make it in for work today, but they will~SM
+0096 report to your office first thing tomorrow morning.~SM
+
+0100 ~SM~SM`0FComputer Department Store~SM~SM
+0100   `06(`0EA`06) `0BBBS Software Dept.~SM
+0100   `06(`0EB`06) `0BComputer Dept.~SM
+0100   `06(`0EC`06) `0BModem Dept.~SM
+0100   `06(`0ED`06) `0BHard Drive Dept.~SM
+0100   `06(`0EE`06) `0BPhone Company.~SM~SM
+0100 `0BChoice or `06(`0EQ`06) `0Bto Quit: ~SL
+0101 `0EA `06- `0BBBS Software Dept
+0102 `0EB `06- `0BComputer Dept
+0103 `0EC `06- `0BModem Dept
+0104 `0ED `06- `0BHard Drive Dept
+0105 `0EE `06- `0BPhone Company
+0106 `0EQ`0Buit
+
+0200 ~SM~SM`0EPhone Company For information call 555-1212`06~SM
+0200 ======================================================================~SM~SM
+0200 `06(`0EP`06)rice list           (`0ED`06)isconnect lines~SM
+0200 `06(`0EA`06)dd new lines        (`0ES`06)erivce call~SM
+0200 `06(`0EC`06)allerID             (`0ER`06)eport on account~SM
+0200 ~SM`0BChoice or `06(`0EQ`06) `0Bto Quit: ~SL
+
+0201 `0AAdd~SM
+0202 `0ACaller ID~SM
+0203 `0ADisconnect~SM
+0204 `0APrice list~SM
+0205 `0AReport~SM
+0206 `0AService call~SM
+0207 ~SM`0EYou do not have enough money for a service call.~SM
+
+0210 ~SMYou have ~&1 lines in service.~SM~SM
+0211 ~SMYou have ~&1 lines in service and ~&2 lines on order.~SM~SM
+0212 How many lines do you want to install?
+0213 ~SM~SM`0CYou cannot afford to purchase that many lines.`03~SM
+0214 You can not afford to install any more phone lines.~SM
+0215 ~SM~SMThis installation will cost $~&1.00~SM
+0215 Monthly service will be $~&2.00 in addition to current service.~SM
+0215 ~SM`0FDo you want to order them?
+0216 ~SM~SMYour order has been placed in the computer.  It often takes several days~SM
+0216 to get someone out to your location to install the lines.~SM
+
+0220 ~SM~SM`0FYou already have CallerID enabled on your phone lines. The phone company is~SM
+0220 not in the business of decoding the ID signals at your end of the line. We~SM
+0220 suggest that you contact a security firm for this kind of service.~SM
+
+0221 ~SM~SM`0FThe CallerID service will cost an additional $9.00 a month for each phone~SM
+0221 which is $~&1.00 for your current account.~SM
+0221 ~SMDo you want to add CallerID?
+0222 `06CallerID is now enabled on all your phone lines.~SM
+
+0230 ~SMYou have ~&1 lines in service and ~&2 lines on order.~SM
+0230 ~SMRemoving phone lines will cancel any new phone line orders!  No refunds will~SM
+0230 be made on the part of the phone company.  Installation costs will be lost.~SM
+0231 ~SMYou have ~&1 lines in service.~SM
+0232 ~SM`0FHow many do you want to remove? ~SL
+0233 ~SM~SM`0CRemove ~&1 line?
+
+0239   ~SM`0FPhone Service Order Center~SM
+0239   `03(All prices are per line)~SM~SM
+0239   `0EBasic Service          $20.00 per month (1 to 3 lines)~SM
+0239   Commercial Service     $50.00 per month (4 lines or more)~SM
+0239   Caller ID                9.00 per month~SM
+0239   Installation            70.00 first line~SM
+0239   Installation            35.00 all other lines~SM
+0239   Service Call            65.00 per trip~SM
+
+0238 ~SM Phone Lines: ~&1~SM
+0238  Line Damage: ~&2~SM
+0238  Phone Order: ~&3~SM
+0238    Caller ID: ~&4~SM
+0238    Last Bill: ~SM
+0238 Monthly Cost: $~&5.00 for ~&6 service.~SM
+
+0240 `0FYou have ~&1 lines needing service.~SM
+0241 `0EA service truck is sent to your location anyway just to double check.~SM
+0242 ~SMA service truck is sent out to your location and no phone trouble is found.~SM
+0242 ~SMYour service has been repaired~SM
+0243 ~SMYou see the service truck drive past your location and seconds later the~SM
+0243 ~SMphones are back in operation.
+0244 ~SMMany trucks gather outside your door and camp there for several hours.
+0244 ~SMIt doesn't look like they are doing anything more than talking to each
+0244 ~SMother. When it gets close to quitting time they all drive off and your
+0244 ~SMphones come back on.~SM
+0245 The phone lines go back into service right away.
+0246 The operator calls you on one of the trouble lines and gets a modem.
+0247 It looks like the lines are back in service.
+0248 The lines go back into service in less than 30 minutes.
+0249 The lines go back into service in less than an hour.
+0250 The service truck stops by and he takes away part of the phone wire. They~SM
+0250 left a note on your door saying that they will install new phone service~SM
+0250 at your location soon.
+0251 ~SM~SM`0FThe bill for $65.00 has been deducted from your account.~SM
+
+0260 ~SM~SM`0AA friend rushes out of the bank and bumps into you.~SM
+0260 ~SMThe tax dudes are in there! he whispers to you.~SM
+0260 ~SM`0FDo you still want to go inside?
+
+0261 ~SM~SM`0AThe bank examiner while checking your account notices that you have not~SM
+0261 paid any taxes on the interest and reports you to the IRS. They promptly~SM
+0261 send an auditor over and subtract the amount for the taxes plus charges~SM
+0261 for not filing on time. They both thank you kindly as they leave.~SM
+0261 ~SM`0FThe teller quickly pulls up your new account balance and prints it on a~SM
+0261 small piece of paper and hands it to you.~SM
+
+0262 ~SM~SM`0EThe bank reports a balance of $~&1~SM
+
+0270 ~SM~SM`0FThe few users you have decide that your small system is not worth paying for.~SM
+0270 They all say that they will not pay until your system is larger. Maybe you~SM
+0270 should put some work into the setup before trying to charge for access. At~SM
+0270 the very least you should try to attract a few more users.~SM
+
+0271 ~SM~SM`0FCharging for access to your system may cause a drop in the number of calls.~SM
+0271 Are you sure that you want to charge for access? (y/N)
+
+0272 ~SM~SMOptions~SM
+0272 (0) None      -Free access to all~SM
+0272 (1) Lifetime  -Users pay only once~SM
+0272 (2) Yearly    -Users pay each year~SM
+0272 (3) Monthly   -Users pay each month~SM
+0272 (4) Weekly    -Users pay each week~SM
+0272 (5) Hourly    -Users pay for connect time only~SM
+0272 (6) Download  -Users pay for bytes received~SM
+0272 ~SMChoice>
+
+0273 ~SM`0E~&1 users decide to pay.~SM
+0274 ~&1 users decide to leave.~SM
+
+0280 ~SM~SM`0FYou have ~&1 messages waiting to be read.~SM
+0280 ~SMWould you like to answer your mail now?
+
+0281 ~SM~SM`0EEmployees help.`0F
+0282 ~SM~SM                0%%-----------------50%%---------------100%%~SM
+0282 Answering Mail: `0C
+0283 `0CÛ
+0284 ~SM~SM`0EYou answer all of the messages.~SM
+0285 ~SM`0EYou answer all your mail.
+0286 ~SM~&1 new members join your system.
+0287 ~SM~SMYou have no messages waiting~SM~SM
+
+0290 ~SM`0EYou answer some problem messages.~SM~SM
+0291 ~SM`0FProblem Message Number: ~&1~SM~SM
+0292 ~SM`0E<`0FD`0E>elete, <`0FI`0E>gnore, <`0FP`0E>olite answer, <`0FR`0E>ude answer, <`0FL`0E>ock-out user: ~SL
+0293 `0FDelete~SM
+0294 `0FIgnore~SM
+0295 `0FPolite~SM~SM`0EYou do your best to be nice and not to cut the user down.~SM
+0296 `0FRude~SM
+0297 `0FLock out~SM
+0298 ~SM~SM                  Top 10 Systems and their Operators~SMÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0299 ~SM`09* Your employees are done for the day and have all gone home~SM~SM
+0300 ~SM~&1 free users, and
+0301 ~&1 paying customers decide to leave~SMbecause of all the busy signals.~SM~SM
+0302 ~SM~SMYour users are complaining because they can't get online~SM
+0302 because of all the busy signals.~SM~SM
+0302 You should get more modem lines NOW!~SM
+0303 ~SM`09* A chat is still pending.~SM
+0304 ~SM`09* A chat request has been made.~SM
+0305 ~SM~SM`0E* Some subscriptions arrive in the mail~SM
+
+0310 ~SM~SM`0FNo chat requests are pending.~SM
+0311 `0FThis user accidentaly hit the chat key by mistake.  He appologized~SM
+0311 for wasting you precious time.  You take pity on him and give him a~SM
+0311 a guided tour of your system.~SM~SM
+0311 He is tells all his friends about your friendly BBS, and your caller~SM
+0311 count jumps up.~SM
+
+0312 `0FThis caller is slow with typing.  He asks a few questions that are ~SM
+0312 spelled out in your bulletin section.  You are patient with him, however~SM
+0312 and he is your newest happy user.  Two days later you recieve a large~SM
+0312 donation in your mailbox.~SM
+
+0313 `0FThat caller has just logged off.  Try to be quicker next time!~SM
+
+0314 ~SM`0FThis caller is in the middle of a file transfer right now.  Try~SM
+0314 chatting with him again later.~SM
+
+0315 ~SM~SM`0FYou do not have enough actions left to do that!~SMTry again tommorrow.~SM
+
+0400 ~SMThe local system operators' group welcomes you as a member of their community!~SM
+0400 Most of them wish you the best of luck with your BBS and users.~SM
+0400 ~SM`0FThe local directory of Bulletin Board Systems needs some information from you.~SM
+0400 In order to keep our records straight we need to know the name that you call~SM
+0400 your BBS in this game. The list has space for up to 30 characters.~SM
+0401 ~SM`0E                         [..............................]~SM
+0401 `0EWhat is your BBS called? `0F
+0402 ~SM~SMThat name is already in use!  Try again?
+0403 ~SM~SMBBS name not changed.~SM
+0404 ~SM`0E                         [..............................]~SM
+0404 `0EWhat is your sysop name? `0F
+0405 ~SM~SMThat name is already in use!  Try again?
+0406 ~SM~SMSysop name not changed.~SM
+0407 ~SM~SMDo you wish to change the name of your BBS?
+
+0410 ~SM~SMYour personal command menu is now active.~SM
+0410 `0APress '?' for the list of options.~SM
+0411 `0F[personal:~&1]:
+0412 ~SM~SMExiting Personal Menu~SM~SM
+
+0413 ~SM`03ÄÄÄÄÄÄÄ`0F[Personal Commands]`0BÄÄÄÄÄÄ~SM
+0413 `03(`0BQ`03) `0FQuit Personal Menu~SM
+0413 `03(`0BL`03) `0FLearn~SM
+0413 `03(`0BU`03) `0FUse Skill~SM
+0413 `03(`0BS`03) `0FSecurity~SM
+0413 `03(`0BI`03) `0FInsurance policy~SM
+0413 `03(`0BB`03) `0FBank report~SM
+0413 `03(`0BR`03) `0FReport on BBS setup~SM
+0413 `03ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM~SM
+
+0420 ~SM~SM`0FHello and welcome. You have come to the right place. I can tell that you are~SM
+0420 a smart one. I could tell that the moment you walked in the door. Just by the~SM
+0420 way you walk I can see that you are not someone to be fooled with. That is~SM
+0420 why I am not going to give you a sales pitch and try to sign you up for some~SM
+0420 foolish insurance just to make a big commission for myself. No, I'm not that~SM
+0420 kind of guy. I would rather you be happy and enjoy the peace of mind that only~SM
+0420 comes from being prepared for the worst. Ah, yes, here is a perfect policy for~SM
+0420 someone in your situation. It covers all your investment in that nifty stuff~SM
+0420 you are running over there. The payments are very reasonable and will replace~SM
+0420 hardware and software in the event of fire, earthquake, flood, theft and most~SM
+0420 cases of dog bite. This policy has the least exclusions of any major policy in~SM
+0420 the country. I'm sure that someone as cautious as you would have no problem~SM
+0420 with any of the disclaimers. It is a perfect policy for someone like you. In~SM
+0420 fact I have already sold hundreds of these exact same policies to other sysop~SM
+0420 people in this very area. You really can't afford not to have this protection~SM
+0420 covering your large investment.~SM~SM
+0420 Buy protection?
+
+0421 ~SM~SMThat is a very wise choice. The policy will take effect in 60 days.~SM
+0421 But I'm sure that won't be a problem. It hasn't been a problem with~SM
+0421 any of the other sysop people in this area.~SM~SM
+
+0422 ~SM~SMThat is OK. I can see that you will need some time to think this over.~SM
+0422 I don't want to make you feel like you are under any pressure or anything~SM
+0422 like that. Just take your time and come back to visit me when you are~SM
+0422 ready for the best protection money can buy.~SM~SM
+
+0430 ~SM~SM`0AHigher Learning~SM
+0430 `02ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0430 `02(`0AQ`02) `0FQuit `07............. `0BLeave Higher Learning Menu~SM
+0430 `02(`0AT`02) `0FTake a class`07...... `0BCollege, Tech School, etc.~SM
+0430 `02(`0AH`02) `0FHire a tutor`07...... `0BPersonalized instruction~SM
+0430 `02(`0AB`02) `0FBribe an official`07. `0BGet inside security info~SM
+0430 `02(`0AV`02) `0FVisit a hacker`07.... `0BLearn from the underworld~SM
+0430 `02ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0430 `0F[Personal:~&1]:
+
+0435 ~SM~SM`0CAvailable tutors~SM
+0435 `05ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0435 `05(`0C0`05) `0FQuit`07.................... `0BLeave Tutor Menu~SM
+0435 `05(`0C1`05) `0FScruffy old guy`07......... `0BExpensive, knows his stuff~SM
+0435 `05(`0C2`05) `0FStern retired teacher`07... `0BVery strict, makes you learn~SM
+0435 `05(`0C3`05) `0FUniversity professor`07.... `0BOnly works after class hours~SM
+0435 `05(`0C4`05) `0FYoung lady`07.............. `0BWorks between her own classes~SM
+0435 `05(`0C5`05) `0FChild prodigy`07........... `0BVery expensive, and knows it~SM
+0435 `05ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0435 `0F[personal:~&1]:
+
+0436 ~SM~SM`0AYou do not have enough money for his services.~SM
+0437 ~SM~SM`0AYou do not have enough money for her services.~SM
+0438 ~SM~SM`0AHis service is very much in demand.  He agrees to teach you only if you~SM
+0439 ~SM~SM`0AHer service is very much in demand.  She agrees to teach you only if you~SM
+0440 agree to pay $~&2.00 and work a minimum of ~&1 actions.~SM~SM`0FDo you agree?
+
+
+0450 ~SM~SM`09Available Schools~SM
+0450 `01ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0450 `01(`090`01) `0FQuit School Menu~SM
+0450 `01(`091`01) `0FOlde Crusty Ivy University~SM
+0450 `01(`092`01) `0FGeneric County Technical Institute~SM
+0450 `01(`093`01) `0FCity Junior College~SM
+0450 `01(`094`01) `0FSchool of Experimental Transfixiation~SM
+0450 `01(`095`01) `0FBrains by Mail certification~SM
+0450 `01(`096`01) `0FSchool of Hard Knocks (teach yourself)~SM
+0450 `01ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0450 `0F[personal:~&1]:
+
+0460 ~SM~SM`0FHe wants $~&1.00 up front to let you see his stuff.~SM
+0460 He will also take anywhere from 10 to 90 actions,~SM
+0460 depending on how much he shows to you.~SM~SMDo you agree?
+
+0461 `0AHe hacks into your bank account and quickly finds out that you don't~SM
+0461 have that kind of money.  It is not a good idea to make a hacker mad.~SM
+0462 An FBI sting catches the hacker and he bargains with them by giving them~SM
+0462 your name as his source of information.~SM~SM
+0462 You have to spend 50 actions in court and $~&1.00 for your defense.~SM
+
+0463 ~SM~SM`0AHe shows you a few simple tricks. You think they are stupid, but he tells~SM
+0463 you that he has cracked a lot of big companies with those tricks.~SM
+0463 His hands moved very quickly and it looked like he made an extra hack.~SM
+0463 You wonder what the extra hack was all about. Could it involve you?~SM
+0463 ~SMIt would be a very good idea not to visit here again today.~SM~SM~SM
+0464 ~SM~SMA very wise idea~SM~SM
+
+0470 There is only one available class for this term.
+0471 There are ~&1 available classes for this term.
+0472 ~SMThe average course is ~&1 hour not including study time.~SM
+0473 The cost is $~&2.00 and ~&1 actions per credit hour.~SM~SMNumber of classes to take:
+0474            Suggested actions: ~&1~SM   How many study actions?
+0475 ~SM~SMIt is obvious to the professor that you are not serious about your~SM
+0475 education.  He allows you to drop the class so that he does not~SM
+0475 have to fail you.~SM~SM
+0476 ~SMNumber of classes: ~&1~SM
+0477 Total course cost: $~&1.00~SM
+0478 Level of study   : ~&1~SM
+0479 Days to complete : ~&1 (approximately.)~SM
+0480 ~SMIs this correct?
+0481 ~SM~SM`0EYour course grade is: ~&1
+0482   (Excellent!)~SM~SM
+0483   (Not bad)~SM~SM
+0484   (Not your best work)~SM~SM
+0485   (You should study harder)~SM~SM
+0486   (You didn't come here to learn!)~SM~SM
+0487 `09* You receive another certificate of education.~SM~SM
+0488 ~SM~SMYou do not have the amount of money that it takes for this kind of~SMclass load.  Come back when you have more money.~SM
+0490 ~SM~SMYou are the #1 BBS.  There is nobody else to inspect!~SM
+0491 ~SM~SM`09Enter a FULL or PARTIAL BBS name~SM
+0491 `0FSearch for which BBS? (?=List, <CR>=Quit): ~SL
+0492 ~SMDo you mean ~&1?
+
+0500 ~SM~SMUse Skills:~SM
+0500 `06ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0500 `06(`0EQ`06) `0FQuit.............. Exit Skills Menu~SM
+0500 `06(`0EH`06) `0FHack a BBS........ A phone line attack~SM
+0500 `06(`0EB`06) `0FBreak in Office... To take things~SM
+0500 `06(`0ES`06) `0FShoplift.......... Take from the store~SM
+0500 `06(`0ER`06) `0FRob bank.......... Get lots of money~SM
+0500 `06ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM~SM
+0500 `0F[personal:~&1]:
+
+0510 ~SM~SM`0FIt is not smart to try and take things from a computer store. Chances~SM
+0510 are very high that you will get put in jail! Their security system is~SM
+0510 very high tech and next to impossible to escape detection.~SM~SM
+0510 Do you still want to shoplift?
+
+0515 ~SM~SMu`0AYour efforts are not as skilled as you may have thought. The police show~SM
+0515 up in less than a minute and catch you in the act. The store manager has~SM
+0515 three different camera shots of you in action and quickly sends them to~SM
+0515 the local TV stations. They love the footage and play it every half hour~SM
+0515 for the next two days. You are famous and in jail! This is not a good~SM
+0515 combination. Bubba, your new roomie, likes famous cell mates a lot!~SM
+0515 ~SM`0FThe judge at your trial thinks you are photogenic and has you pose for~SM
+0515 a few more mug shots for his scrap book. He only gives you a short stay~SM
+0515 in the jail because he knows Bubba. He does charge you a Hefty fine~SM
+0515 which wipes out about half of your bank account.~SM~SM
+
+0516 ~SM~SMA Very wise choice!~SM
+
+0520 ~SM~SMIt is not smart to try and rob a bank without lots of planning. Chances~SM
+0520 are very high that you will get put in jail!~SM
+0520 ~SMDo you still want to rob the bank?
+
+0521 ~SM~SM`0AYour education and planning must not have been enough. The rent-a-cop~SM
+0521 security guard picked you off without even blinking an eye. He made it~SM
+0521 on to one of those 'cop' shows as a big time hero and got a raise out~SM
+0521 of the deal. He writes to you in your new home at the jail house to thank~SM
+0521 you for making it so easy on him and invites you to come by again when~SM
+0521 you get out again.~SM~SM
+0521 `0FThe judge at your trial thinks this is such a funny story that he gives~SM
+0521 you a 'short' term just for giving him a good laugh. He doesn't even~SM
+0521 charge you for the court time he is laughing to hard.~SM~SM
+0522 ~SM~SMA Very wise choice!~SM
+
+0530 ~SM~SMYou need an education of at least 1 to be accurate at hacking other boards.~SM~SM
+0530 It is not smart to try and hack into a BBS that has caller ID.  You could~SM
+0530 get put in jail!~SM~SM
+0530 Do you still want to hack?
+
+0531 ~SM~SMYou try hacking a random BBS and the police show up at your door even~SM
+0531 before you can hang up the phone. They put you in jail for 50 actions~SM
+0531 and charge you $~&1.00 in fines.~SM~SM
+
+0535 ~SM~SM`0FYou need a private education of at least 4 to be accurate at this.~SM~SM
+0535 This is not a smart thing to do for a novice. Breaking and entering will~SM
+0535 bring longer jail terms than hacking in most cases.~SM~SM
+0535 Do you still want to break in?
+
+0536 ~SM~SM`0AYou try breaking into a random office and the police show up at the door even~SM
+0536 before you can get anything. They put you in jail for 75 actions~SM
+0536 and charge you $180.00 in fines.~SM
+
+0537 ~SM~SM`0EA very smart move.~SM
+
+0540 ~SM~SMSecurity Menu:~SM
+0540 `06ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0540 `06(`0EQ`06) `0FQuit.............. Exit Security Menu~SM
+0540 `06(`0EB`06) `0FBurgler Alarm..... Install Office Alarm~SM
+0540 `06(`0EC`06) `0FCaller ID......... Install Caller ID~SM
+0540 `06ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0540 `0F[personal:~&1]:
+
+0541 ~SM~SM`0FYou request a special security team to come and check out your office~SM
+0541 for any possible weak security areas. They make several diagnostic checks~SM
+0541 and present you with a $~&1.00 bill for their service.~SM~SM
+0541 This will take you to the next highest level of security for your system.~SM
+0541 It will take you 10 actions to install everything.~SM~SM
+0541 Do you want to upgrade your office security?
+
+0542 ~SM~SMWe'll come back when you have the funds.~SM
+0543 ~SM~SMThey finish their work in no time, and are soon on their way.~SM
+0544 ~SM~SMMaybe later then.~SM
+
+0545 ~SM~SM`0FYou request a special phone security team to come and check out your system~SM
+0545 for any possible weak security areas. They make several diagnostic checks~SM
+0545 and present you with a $~&1.00 bill for their service.~SM~SM
+0545 This will take you to the next highest level of security for your system.~SM
+0545 It will take you 1 actions to install everything.~SM~SM
+0545 Do you want to upgrade your phone security?
+
+0546 ~SM~SMWe'll come back when you have the funds.~SM
+0547 ~SM~SMThey finish their work in no time, and are soon on their way.~SM
+
+0550 ~SM~SM`0AThe public official is not available at this time.~SM
+0550 But his office would be more than happy to accept a~SM
+0550 small "donation" from you.~SM
+0550 (Wink, wink)~SM~SM
+0550 `0FWould you like to make a donation?
+0551 ~SM~SMDonation amount:
+0552 ~SM~SM`0AThe office staff accept your check for $~&1.00 but~SM
+0552 they look a little strange. Was it not enough?~SM
+0553 ~SM~SM`0FHis office staff look you straight in the eye and~SM
+0553 tell you that they don't know where he is.~SM
+0554 ~SM`0FHis office staff tell you that he is on a cruise~SM
+0554 right now, and will get back to you when he returns.  Don't forget to vote!~SM
+
+0570 ~SM~SM`0AThis is the hardest way to learn something new. You will save some money~SM
+0570 but it will take over ~&1 actions!~SM~SM
+0570 `0FDo you still want to learn this way?
+
+0580 ~SM~SMHacking to the best of your ability...
+0581 ~SMYou made it in!~SM~SM
+0581 It looks like they only have a level ~&1 caller information system.~SM~SM
+0581 Options:~SM
+0581 `02ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0581   `02(`0AA`02) `0BDestroy their BBS software~SM
+0581   `02(`0AB`02) `0BDelete user records from their system~SM
+0581   `02(`0AC`02) `0BLower their security system one level~SM
+0581   `02(`0AD`02) `0BSend virus to attack their hardware~SM
+0581   `02(`0AE`02) `0BLeave a fake clue card~SM
+0581 `02ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0581 `0FChoice:
+0582 Ripping BBS software.....
+0583 Hacking user records.....
+0584 Hacking security system..
+0585 Uploading virus..........
+0586 Leaving fake clues.......
+0587 Success!~SM~SM
+0588 NO CARRIER~SM~SM
+0590 You make mince meat out of this sysop's BBS software.  As a result,~SM
+0590 ~&1 free users have stopped calling ~&2~SM
+0591 You wreak havok out of this sysop's user file.  As a result,~SM
+0591 ~&1 paying users have stopped calling ~&2~SM
+
+
+0700 ~SM~SM
+0701  Your nearest competition:~SM
+0702 `0E Report on the setup of ~&0~SM
+0703 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+0704 `0A   Computer: ~&1~SM
+0705     Storage: ~&2~SM
+0706      Modems: ~&3 2400bps~SM
+0707      Modems: ~&4 High Speed~SM
+0708      Modems: ~&5 Digital~SM
+0709    Software: Can support up to ~&6 line(s) <~&7> (~&8 ports unused)~SM
+0710 `0FPhone Lines: ~&9~SM
+0711 Phone Order: ~&A phone line to be installed.~SM
+0727 Line Status: ~&N phone lines are damaged.~SM
+0712       `0AUsers: ~&B free, ~&C paying.~SM
+0713  Experience: ~&D~SM
+0714   Education: ~&E Public, ~&F Private.~SM
+0715   Caller ID: ~&G~SM
+0716     Actions: ~&H left today.~SM
+0717    Messages: ~&I waiting to be read~SM
+0718   Insurance: NO COVERAGE~SM
+0719   Insurance: You're Covered!~SM
+0720 Start Score: ~&J (UP by ~&K points)~SM
+0721 Start Score: ~&J (DOWN by ~&K points)~SM
+0722 `0F      Score: ~&M points!
+0723  (WORK Harder!)
+0724  (You are the #1 BBS!)~SM
+0725  (You are ~&L away from the #1 BBS!)~SM
+0726 ~SM`0FThis is the latest available information about your nearest competition.~SM
+0726 No warranty is made on the reliability of this information. Use at your~SM
+0726 own risk. The cost of this report has been deducted from your account.~SM~SM
+
+0730 ~SM~SM`0BAvailable software packages: `0F~SM~SM
+0730 `09   Key Software Package               Price~SM
+0730 `01   ÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄ
+0732  (Step Down)
+;0733
+0734 ~SM~SMChoice (~&4) or (Q) to Quit:
+0735 ~SM`01   (`09~&1`09) ~EL30~&2 $~ER12~&3
+0736 ~SMYou have purchased a ~&1 software package.~SM~SM
+0737 ~SMCome back when you have what it takes!~SM~SM
+
+0740 ~SM~SMAvailable Computer Configurations: `0F~SM~SM
+0740 `0A   Key Computer                       $       Price~SM
+0740 `02   ÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄ
+;0741
+0742 ~SM`02   (`0A~&1`02) `0B~EL30~&2 $~ER12~&3
+0743  (step down)
+;0744
+0745 ~SM~SMChoice (~&4) or (Q) to Quit:
+0746 ~SM~SMYou have purchased a ~&1 computer~SM~SM~SM
+0747 ~SMCome back when you have what it takes!~SM~SM~SM
+
+
+0750 ~SM~SM`0BHardware prices include all mounting and connecting hardware, cables,~SM
+0750 driver software installation, testing and labor.~SM~SM
+0750  `0BModems:~SM~SM
+0750  `0DKey Description            Cost   Minimum Requirements~SM
+0750  `09ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ ~SM
+0751  `06(`0D~&1`06) ~EL16~&2 $~ER9~&3   ~&4~SM
+0752   ~SM`0CYou cannot afford to purchase any modems.  Try again later.~SM~SM~SP
+0753 ~SM~SM`0BBuy Which?:(A-~&1,Q=Quit):
+0754 ~SM`0BYou can afford to purchase ~&1 ~&2 modems.~SM~SMPurchase how many? (0 to Quit):
+0755 ~SM`0BYou cannot afford to purchase that many modems.~SM~SM
+0756 ~SM`0BEach modem takes one action to install.  You have elected to~SM
+0756 install ~&1 modems~SM~SM
+0756 `0BDo you wish to continue?
+0757 ~SM~SM`0B~&1 new modems are now installed on your system.~SM~SM
+0758 ~SMAborted~SM~SM
+0759 ~SM~SM`0BYou do not need any modems.~SM~SM
+
+0760 ~SM~SM`0BAvailable Harddrive Configurations: `0F~SM~SM
+0760 `0C   Key Size                           $ Price~SM
+0760 `05   ÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄ~SM
+0761    `05(`0C~&1`05) `0B~EL30~&2 $~ER12~&3
+0762  (step down)
+0764 ~SM
+0765 ~SMChoice (~&5) or (Q) to Quit:
+0766 ~SMYou have purchased a ~&1~SM~SM
+0767 ~SMCome back when you have what it takes!~SM~SM
+
+
+0800 `0D* You have not played for ~&1 days.  You really should call more often!~SM
+0801 ~SMThe phone company has finished installing your ~&1 new phone lines.~SM
+0802 ~SM`0FThere are ~&1 players in this game.~SM
+0810 `0EChecking User Data            -
+0811 OK!
+0812 ERROR!~SM~SM Your software has detected a hacker attempt since your last call.~SM
+0813 `0E* Insurance company adjustment check arrives.~SM
+0814 `0E* Insurance company has canceled your policy.~SM
+0815 >> Check the damage report on your personal menu. <<~SM
+0816
+0817 ~SM`0ESystem hardware diagnostics   -
+0818 OK!
+0819 ERROR!
+0820 ~SM`0ESecurity system diagnostics   -
+0821 Classified.
+0822 ERROR!
+0823 OK!
+0824 ~SM`0ECaller validation diagnostics -
+0826 Classified.
+0827 ERROR!
+0828 OK!
+0829 ~SM`0EPhone Line diagnostics        -
+0830 DAMAGE!
+0831 OK!
+0832 ~SM
+0833 ~SM`0E*WARNING* - You have no working phone lines.~SM
+0834 ~SMThe Phone bill arrives in the mail.  You pay $~&1.00~SM
+0835 ~SM`0E** NOTICE ** The phone company has switched on your ~&1 new phonelines.~SM
+0836 ~SM`09* Insurance premium payment.  $1.00~SM
+0837   Your policy will soon expire.  You should think about renewing~SM
+0838   You insurance policy has been revoked due to non-payment.~SM
+0839 ~SMYour education is becomming dated!~SM
+0840 ~SM`0BYou have messages waiting.~SM
+0841 ~SM`0FPress '?' for help~SM
+0842 ~SM`0EOpMode.~SM
+0850 ~&1 new users join your system~SM
+0851 ~&1 free users subscribe to your system~SM
+0852 ~&1 users leave your system~SM
+0853 ~&1 paying users leave your system~SM
+0854 `0EYou gain $~&1, your bank account now shows $~&2.`0F~SM
+0855 ~SMYou now have a ~&1~SM
+0856 ~SM~&1 free users subscribe to your system~SM
+0857 ~SMYou now have a ~&1~SM
+0858 ~SM** WARNING **~SM
+0858 ~SMYou have no computer!  Your callers won't be able to call, and they~SM
+0858 won't like that.  You had better get a new computer SOON!~SM
+0859 ~SM`0EYou dust off your old ~&1~SMand it is now your system computer.~SM
+0860 ~SM** WARNING **~SM
+0860 You do not have a working harddrive.  You have nothing to run your BBS.~SM
+0860 You had better get a new harddrive soon!~SM
+0861 ~SM`0EYou reinstall your old ~&1~SM
+0862 ~SM~SM`0E**WARNING**~SM
+0862 `0EYou have no modems!  ~SMLuckily, one of your users loans you his old 2400 baud.~SM`03
+0862 `0EYou should get new modems soon!~SM`03
+0863 But yours is much better, so you donate it to charity.
+0864 ~SMYou call the Phone Company to hurry them up, so you can get your ordered
+0864 phone lines installed.  They charge you ~IN actions for the fast service.~SM
+0865 ~SMMaybe you had better go and order some phone lines.~SM
+
+0870 ~SM`0C********** VIRUS ATTACK DETECTED! **********`0E~SM~SM
+0871 ~SMYou vow never to forget to run your virus protection again!~SM~SM
+
+0875 `09* Disinfecting the ~&1 virus.~SM
+
+0880 ~SM~SM2400 baud users have access to ~&1 lines which are filled to ~&2%% capacity.~SM
+0881 High Speed users have access to ~&1 lines which are filled to ~&2%% capacity.~SM
+
+0890 ~SM~SM                     All Systems and their Operators~SM
+0890 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM
+;0891-0895  1=Ranking, 2=BBS Name, 3=Sysop name, 4=Score, 5=Line 894,
+;           6=length of line 894, 7=line 895
+;0891 `03~ER3~&1-`0E~EL45~&5`0E Score: `0B~ER10~&4
+0891 `03~ER3~&1-`0E~EL45~&5`0E Score: `0B~ER10~&4
+0892  <--YOU!~SM
+0893 ~SM
+0894 `0E~&2 `07(`0F~&3`07)
+0895 ~EF.~&6
+
+;0900 1=# of  users, 2=# of lines, 3=Sysop, 4=ranking number,
+;0900 5=BBS Name 6=Score
+0900 `06~ER3~&4-`0E~EL45~&5 `0E Score: `0B~&6~SM   Sysop: ~&3 with ~&2 lines, ~&1 users.~SM
+0901 ~SM`03   Sysop: ~&3 with ~&2 lines,  ~&1 users.~SM
+0902 `03~&4-`06
+0903 ~EF.~&1
+0904 `0E~&5`06 `06
+0905 `0E Score: `0B~&6
+
+1000 [6;1H`09(`03A`09) `02Sysop Name `0F:`0E |SA
+1001 [6;50H`09(`03F`09) `02Level       `0F: |EX
+1002 [7;1H`09(`03B`09) `02BBS Name   `0F: |BN
+1003 [7;50H`09(`03G`09) `02Score       `0F: |SN
+1004 [8;1H`09(`03C`09) `02Computer   `0F: (~IN) |CU
+1005 [8;50H`09(`03H`09) `02Actions     `0F: |AC
+1006 [9;1H`09(`03D`09) `02Storage    `0F: |HD
+1007 [9;50H`09(`03I`09) `02Money       `0F: |AU
+1008 [10;1H`09(`03E`09) `02BBS S/W    `0F: |BS
+1009 [10;50H`09(`03J`09) `02Money       `0F: |AU
+1010 [11;1H`0EPhone Lines[1;30m:[11;26H`0EModems`09:[11;50H`0ESecurity`09:
+1011 [12;1H`09(`03K`09) `02Installed  `0F: |PI
+1012 [12;26H`09(`03N`09) `02Low speed `0F: |MA
+1013 [12;50H`09(`03R`09) `02CallerID    `0F: |S2
+1014 [13;1H`09(`03L`09) `02Ordered    `0F: |PO
+1015 [13;26H`09(`03O`09) `02High Speed`0F: |MB
+1016 [13;50H`09(`03R`09) `02Insurance   `0F: |IS
+1017 [14;1H`09(`03M`09) `02Damaged    `0F: |PD
+1018 [14;26H`09(`03P`09) `02Digital   `0F: |MC
+1019 [14;50H`09(`03T`09) `02Alarm       `0F: |S1
+1020 [15;1H`0EEducation[1;30m:[15;26H`0ECallers`09:[15;50H`0EEmployees`09:
+1021 [16;1H`09(`03U`09) `02Public     `0F: |P1
+1022 [16;26H`09(`03W`09) `02Free      `0F: |UF
+1023 [16;50H`09(`03Y`09) `02Employees   `0F: |EM
+1024 [17;1H`09(`03V`09) `02Private    `0F: |P2
+1025 [17;26H`09(`03X`09) `02Paying    `0F: |UP
+1026 [17;50H`09(`03Z`09) `02Action      `0F: |EA
+1030 ~SM~SM~SM`09Player Editor: (]/[) Next/Prev, Q=Quit`0B:
+
+1040 ~SM~SM`09New Level: `0F
+1041 ~SM~SM`09New Computer: `0F
+
+; Network Mail Strings
+1100 ~SM`09S`01ubject: `1F
+1101 ~SM   `07Type message below.  <ENTER> on a blank line ends.
+1102 ~SM   [---+----+----+----+----+----+----+----+----+----+----+----+----+----+----]~SM
+1110 ~SM~SMWould you like to send something?
+1111 ~SMWhat would you like to send? ~SM
+1119 ~SM~SMWhich? [1-2, 0=Quit] :
+1120 ~SM~SMYou don't have that many actions to give.~SM
+1120 ~SMPlease try again.~SM
+1130 ~SMSend this message?
+
+1140 ~SM~SM[1;32mNetwork Mail Menu~SM~SM
+1140 `07P`09)oll for mail~SM
+1140 `07S`09)end Network Mail~SM
+1140 ~SM`02Network Mail Menu: (`07Q=Quit`02)`07: ~SL
+
+1150 ~SM~SM`09Ú~EFÄ75¿~SM
+1150 `09³ `0FFrom: ~EL68~&1`09³~SM
+1150 `09³ `0FDate: ~EL68~&2`09³~SM
+1150 `09³ `0FSubj: ~EL68~&3`09³~SM
+1150 Ã~EFÄ75´~SM
+
+1151 `09À~EFÄ75Ù
+
+1160 ~SM~SMDelete this message?
+1161 ~SM~SMYour mailbox is empty~SM

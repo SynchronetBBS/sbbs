@@ -1,0 +1,96 @@
+#
+#  Virtual BBS makefile
+#
+##################################
+
+O	     = ./obj
+
+# define tools
+ifeq ($(COMPILER), borland)
+CC = bcc
+LD = tlink
+else
+CC = cl
+LD = link
+RC = rc
+endif
+
+RM = rm -f
+MV = mv -f
+CP = cp
+
+BUILD ?= release
+
+TARGET = vbbs.exe
+EDITOR = vbbsedit.exe
+
+OBJS = v3_basic.obj \
+       v3_hack.obj \
+       v3_io.obj \
+       v3_learn.obj \
+       v3_mail.obj \
+       v3_mci.obj \
+       v3_store.obj \
+       vbbs.obj
+
+EOBJS = v3_cfg.obj \
+        v3_mci.obj \
+        v3_io.obj \
+		v3_basics.obj \
+
+ifeq ($(COMPILER), borland)
+ifeq ($(BUILD),debug)
+    CFLAGS  = -c -v -f287 -w -I../opendoor
+    LDFLAGS =
+else
+    CFLAGS  = -c -O2 -f287 -w -I../opendoor
+    LDFLAGS =
+endif
+else
+ifeq ($(BUILD),debug)
+    CFLAGS  = /nologo /I../opendoor /AM /W3 /G3 /Zi /FPi87 /c
+    LDFLAGS = /nologo /map /stack:4096 /codeview
+else
+    CFLAGS  = /nologo /I../opendoor /AM /W3 /G3 /O2 /FPi87 /c
+    LDFLAGS = /nologo /map /stack:4096
+endif
+endif
+
+.PHONY : all run $(TARGET) $(EDITOR)
+.SUFFIXES: .c
+
+#.SILENT:
+
+all: $(TARGET) $(EDITOR)
+
+bin:
+	mkdir bin
+
+obj:
+	mkdir obj
+
+#$(O)/ODoor.res : ODRes.rc
+#	$(RC) /fo $@ $<
+
+$(TARGET): $(OBJS)
+	echo linking $@
+	$(CP) ../opendoor/odoor.lib .
+	$(LD) $(LDFLAGS) $(OBJS),$(TARGET),,odoor.lib,nul.def
+	$(CP) $(TARGET) ../build
+
+$(EDITOR): $(EOBJS)
+	echo linking $@
+	$(CP) ../opendoor/odoor.lib .
+	$(LD) $(LDFLAGS) $(EOBJS),$(EDITOR),,odoor.lib,nul.def
+	$(CP) $(EDITOR) ../build
+
+clean:
+	$(RM) *.obj *.exe $(O)/*.obj $(O)/*.res bin/*.map bin/*.pdb bin/*.lib bin/*.exp $(TARGET)
+
+#$(O)/%.obj : %.c
+#	$(CC) $(CFLAGS) $< /Fo$@
+
+%.obj : %.c
+	$(CC) $(CFLAGS) $<
+	$(MV) $@ $@
+
