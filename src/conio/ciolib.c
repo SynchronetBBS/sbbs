@@ -59,8 +59,7 @@ static struct text_info cio_textinfo;
 static int lastmode=3;
 int _wscroll=1;
 int directvideo=0;
-int dont_move_cursor=0;
-int hold_refresh=0;
+int hold_update=0;
 static int initialized=0;
 
 int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
@@ -713,8 +712,8 @@ int ciolib_cputs(char *str)
 
 	CIOLIB_INIT();
 
-	olddmc=dont_move_cursor;
-	dont_move_cursor=1;
+	olddmc=hold_update;
+	hold_update=1;
 	for(pos=0;str[pos];pos++)
 	{
 		ret=str[pos];
@@ -722,7 +721,7 @@ int ciolib_cputs(char *str)
 			ciolib_putch('\r');
 		ciolib_putch(str[pos]);
 	}
-	dont_move_cursor=olddmc;
+	hold_update=olddmc;
 	ciolib_gotoxy(ciolib_wherex(),ciolib_wherey());
 	return(ret);
 }

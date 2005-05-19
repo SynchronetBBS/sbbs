@@ -133,7 +133,7 @@ int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf)
 	}
 	textattr(orig_attr);
 	move(oldy, oldx);
-	if(!hold_refresh)
+	if(!hold_update)
 		refresh();
 	return(1);
 }
@@ -633,7 +633,7 @@ int _putch(unsigned char ch, BOOL refresh_now)
 	else
 		ret=addch(cha);
 
-	if(!hold_refresh) {
+	if(!hold_update) {
 		if(refresh_now)
 			refresh();
 	}
@@ -644,7 +644,7 @@ int _putch(unsigned char ch, BOOL refresh_now)
 void curs_gotoxy(int x, int y)
 {
 	move(y-1,x-1);
-	if(!hold_refresh)
+	if(!hold_update)
 		refresh();
 }
 
@@ -729,7 +729,7 @@ void curs_setcursortype(int type) {
 			break;
 
 	}
-	if(!hold_refresh)
+	if(!hold_update)
 		refresh();
 }
 

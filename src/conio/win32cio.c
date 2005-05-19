@@ -470,7 +470,7 @@ void win32_gotoxy(int x, int y)
 	ypos=y;
 	cp.X=x-1;
 	cp.Y=y-1;
-	if(!dont_move_cursor)
+	if(!hold_update)
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),cp);
 }
 
