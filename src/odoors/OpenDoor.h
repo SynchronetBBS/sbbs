@@ -178,10 +178,18 @@
 
 /* Portable types that are the same size across all platforms */
 #ifndef ODPLAT_WIN32
+#ifndef BYTE
 typedef unsigned char      BYTE;                        /* Unsigned, 8 bits. */
+#endif
+#ifndef WORD
 typedef unsigned short     WORD;                       /* Unsigned, 16 bits. */
+#endif
+#ifndef DWORD
 typedef unsigned long      DWORD;                      /* Unsigned, 32 bits. */
+#endif
+#ifndef CHAR
 typedef char               CHAR;         /* Native character representation. */
+#endif
 #define DWORD_DEFINED
 #define WORD_DEFINED
 #endif /* !ODPLAT_WIN32 */
