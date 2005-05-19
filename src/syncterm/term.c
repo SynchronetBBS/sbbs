@@ -115,8 +115,8 @@ void update_status(struct bbslist *bbs)
 	timeon=now - bbs->connected;
     gettextinfo(&txtinfo);
 	oldscroll=_wscroll;
-	olddmc=dont_move_cursor;
-	dont_move_cursor=TRUE;
+	olddmc=hold_update;
+	hold_update=TRUE;
 	textattr(YELLOW|(BLUE<<4));
 	/* Move to status line thinger */
 	window(term.x-1,term.y+term.height-1,term.x+term.width-2,term.y+term.height-1);
@@ -141,7 +141,7 @@ void update_status(struct bbslist *bbs)
 	_wscroll=oldscroll;
 	textattr(txtinfo.attribute);
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
-	dont_move_cursor=olddmc;
+	hold_update=olddmc;
 	gotoxy(txtinfo.curx,txtinfo.cury);
 }
 
