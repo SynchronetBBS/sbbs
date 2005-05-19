@@ -60,6 +60,7 @@ static int lastmode=3;
 int _wscroll=1;
 int directvideo=0;
 int dont_move_cursor=0;
+int hold_refresh=0;
 static int initialized=0;
 
 int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
