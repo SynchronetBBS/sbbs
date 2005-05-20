@@ -503,7 +503,7 @@ void ciolib_wscroll(void)
 	if(!_wscroll)
 		return;
 	ciolib_movetext(ti.winleft,ti.wintop+1,ti.winright,ti.winbottom,ti.winleft,ti.wintop);
-	ciolib_gotoxy(1,ti.winbottom-ti.winleft+1);
+	ciolib_gotoxy(1,ti.winbottom-ti.wintop+1);
 	os=_wscroll;
 	_wscroll=0;
 	/* ciolib_cprintf("%*s",ti.winright-ti.winleft+1,""); */
