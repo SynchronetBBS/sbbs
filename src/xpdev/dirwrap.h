@@ -62,6 +62,8 @@ extern "C" {
 #if defined(__unix__)
 
 	#define ALLFILES "*"	/* matches all files in a directory */
+	#include <sys/types.h>
+	#include <sys/stat.h>
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
 	#define MKDIR(dir)		mkdir(dir,0777)
 
