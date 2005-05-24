@@ -8,7 +8,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
 
-if(http_request.query.Action=="Delete Selected Message(s)") {
+if(http_request.query.Action=="Delete" || http_request.query.Action=="Delete,Delete") {
 	var hdr;
 	var deleted=0;
 	var errors=0;
@@ -56,7 +56,7 @@ if(http_request.query.Action=="Delete Selected Message(s)") {
 	template.detail+=")";
 }
 template.backurl=http_request.header.referer;
-
+template.detail+=" Action = " +http_request.query.Action;
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
 load("../web/lib/leftnav_html.ssjs");

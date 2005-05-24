@@ -10,7 +10,7 @@
 @@JS:template.show_choice==undefined ? '' : '(' + template.show_choice + ')<br /><br />'@@
 </div>
 
-<form name="DeleteMsg" action="management.ssjs" method="post">
+<form name="DeleteMsg" action="management.ssjs?Action=Delete" method="post">
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
 <tr class="msglist">
@@ -53,7 +53,7 @@
     <<END REPEAT messages>>
     </table>
     <br />
-    @@JS:template.can_delete?'<div align="center"><input class="msg" type="image" src="/graphics/delete_messages.gif" name="Action" value="Delete Selected Message(s)" /></div>':''@@
+    @@JS:template.can_delete?'<div align="center"><input class="msg" type="image" src="/graphics/delete_messages.gif" name="Action" value="Delete" /></div>':''@@
 </form>
         
 <script type="text/javascript">
