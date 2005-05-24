@@ -53,7 +53,7 @@
     <<END REPEAT messages>>
     </table>
     <br />
-    @@JS:template.can_delete?'<div align="center"><input class="msg" type="image" src="/graphics/delete_messages.gif" name="Action" value="Delete" /></div>':''@@
+    @@JS:template.can_delete?'<div align="center"><input class="msg" type="image" src="/graphics/delete_messages.gif" /></div>':''@@
 </form>
         
 <script type="text/javascript">
