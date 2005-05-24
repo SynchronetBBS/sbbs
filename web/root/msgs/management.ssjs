@@ -56,7 +56,7 @@ if(http_request.query.Action=="Delete" || http_request.query.Action=="Delete,Del
 	template.detail+=")";
 }
 template.backurl=http_request.header.referer;
-template.detail+=" Action = " +http_request.query.Action;
+
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
 load("../web/lib/leftnav_html.ssjs");
