@@ -2516,6 +2516,36 @@ js_list_named_queues(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 
     return(JS_TRUE);
 }
+
+static JSBool
+js_flags_str(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	char		str[64];
+	jsdouble	d;
+	JSString*	js_str;
+
+	if(JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	if(JSVAL_IS_STRING(argv[0])) {	/* string to long */
+
+		if((p=JS_GetStringBytes(JSVAL_TO_STRING(argv[0])))==NULL) 
+			return(JS_FALSE);
+
+		JS_NewNumberValue(cx,aftol(p),rval);
+		return(JS_TRUE);
+	}
+
+	/* number to string */
+	JS_ValueToNumber(cx,argv[0],&d);
+
+	if((js_str = JS_NewStringCopyZ(cx, ltoaf((long)d,str)))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
 	
 static JSClass js_global_class = {
      "Global"				/* name			*/
@@ -2587,7 +2617,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"ascii",			js_ascii,			1,	JSTYPE_UNDEF,	JSDOCSTR("[string text] or [number value]")
-	,JSDOCSTR("convert string to ASCII value or vice-versa (returns number OR string)")
+	,JSDOCSTR("convert single character to numeric ASCII value or vice-versa (returns number OR string)")
 	,310
 	},		
 	{"ascii_str",		js_ascii_str,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
@@ -2794,7 +2824,11 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("returns an array of <i>named queues</i> (created with the <i>Queue</i> constructor)")
 	,312
 	},
-
+	{"flags_str",		js_flags_str,		1,	JSTYPE_UNDEF,	JSDOCSTR("[string text] or [number value]")
+	,JSDOCSTR("convert a string of security flags (letters) into their numeric value or vice-versa "
+	"(returns number OR string) - (added in v3.12b)")
+	,312
+	},
 	{0}
 };
 
