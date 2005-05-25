@@ -844,12 +844,14 @@ char *readline(long *offset, char *outstr, int maxlen, FILE *instream)
 /****************************************************************************/
 long aftol(char *str)
 {
+	char	ch;
 	size_t	c=0;
 	ulong	l=0UL;
 
 	while(str[c]) {
-		if(toupper(str[c])>='A' && toupper(str[c])<='Z')
-			l|=FLAG(toupper(str[c]));
+		ch=toupper(str[c]);
+		if(ch>='A' && ch<='Z')
+			l|=FLAG(ch);
 		c++; 
 	}
 	return(l);
