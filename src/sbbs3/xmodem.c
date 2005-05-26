@@ -127,7 +127,7 @@ void xmodem_cancel(xmodem_t* xm)
 {
 	int i;
 
-	if(!xm->cancelled) {
+	if(!xm->cancelled && is_connected(xm)) {
 		for(i=0;i<8 && is_connected(xm);i++)
 			putcom(CAN);
 		for(i=0;i<10 && is_connected(xm);i++)
@@ -491,7 +491,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 				sent_bytes+=rd;
 			}
 		}
-		if(sent_bytes >= (ulong)st.st_size && !xm->cancelled) {
+		if(sent_bytes >= (ulong)st.st_size && !xm->cancelled && is_connected(xm)) {
 
 	#if 0 /* !SINGLE_THREADED */
 			lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
