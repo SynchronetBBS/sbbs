@@ -1,9 +1,64 @@
-Synchronet External X/Y/Zmodem Protocols
-----------------------------------------
+Synchronet External X/Y/Zmodem (SEXYZ) File Transfer Protocol Driver
+--------------------------------------------------------------------
 
 $Id$
 
-Example configuration for Synchronet v3.12:
+Overview
+--------
+SEXYZ was developed as a native (32-bit) socket-based replacement for the
+16-bit DOS file transfer drivers (e.g. FDSZ, CE-XYZ, etc.) that we've been
+stuck with on Win32 BBSes for *far* too long. While SEXYZ was designed with
+Synchronet BBSes in mind, it should also work with other Win32 BBS packages
+that have the ability to pass socket descriptors to external file transfer
+protocol drivers.
+
+SEXYZ behaves much like DSZ/FDSZ and CE-XYZ:
+
+    o Familiar command-line syntax
+    o Supports the DSZLOG environment variable for result logging
+    o Supports batch transfer file lists
+
+SEXYZ has several advantages over legacy drivers like FDSZ and CE-XYZ:
+
+    o Faster (native, multi-threaded design)
+    o Socket-based (no need for FOSSIL drivers or virtual COM ports/UARTs)
+    o Multi-tasking friendly (does not needlessly consume CPU cycles)
+    o Supports long filenames (e.g. not just DOS "8.3" formatted names)
+    o Supports Ymodem-G (FDSZ does not)
+    o Handles Telnet IAC escaping and option negotiations
+    o Actively developed and supported
+    o Open source (at cvs.synchro.net)!
+
+
+Syntax
+------
+Just running "sexyz" by itself will display the supported command-line usage
+(options and commands):
+
+usage: sexyz <socket> [-opts] <cmd> [file | path | +list]
+
+socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
+
+opts   = -o  to overwrite files when receiving
+         -s  disable Zmodem streaming (Slow Zmodem)
+         -!  to pause after abnormal exit (error)
+         -telnet to enable Telnet mode
+         -rlogin to enable RLogin (pass-through) mode
+
+cmd    = v  to display detailed version information
+         sx to send Xmodem     rx to recv Xmodem
+         sX to send Xmodem-1K  rc to recv Xmodem-CRC
+         sy to send Ymodem     ry to recv Ymodem
+         sY to send Ymodem-1K  rg to recv Ymodem-G
+         sz to send Zmodem     rz to recv Zmodem
+
+file   = filename to send or receive
+path   = directory to receive files into
+list   = name of text file with list of filenames to send or receive
+
+
+Example configuration for Synchronet v3.12-Win32
+------------------------------------------------
 
 SCFG:File Options->Transfer Protocols:
 
@@ -54,3 +109,28 @@ SCFG:File Options->Transfer Protocols:
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
+
+
+Note Regarding Synchronet for Unix
+----------------------------------
+Synchronet for Unix does not yet support socket-based file transfer protocols,
+so SEXYZ is only currently supported on Synchronet for Unix in "stdio" mode.
+You can enable "stdio" mode in SEXYZ by removing '%h' (the socket descriptor)
+from the above command-lines and changing the access requirements from
+"!UNIX" to "UNIX". However, since (l)rzsz comes with most Unix distributions
+and works quite well, SEXYZ is not recommended for use on Unix BBSes for the
+time-being. See docs/sbbsunix.txt for details on configuring (l)rzsz on
+Synchronet if it's not already configured in SCFG:File Options->Transfer
+Protocols.
+
+
+Credits
+-------
+The X/Ymodem code is completely original by Rob Swindell <rob [at] synchro
+[dot] net>, migrated from the Synchronet Transfer Protocols (STP) program
+circa 1997.
+
+The Unix "stdio" mode support written by Stephen Hurd (aka Deuce).
+
+The base Zmodem code is largely based on zmtx/zmrx v1.02 (C) Mattheij Computer
+Service 1994 by Jacques Mattheij <jacquesm [at] hacktic [dot] nl>.
