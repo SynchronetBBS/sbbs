@@ -1,0 +1,56 @@
+Synchronet External X/Y/Zmodem Protocols
+----------------------------------------
+
+$Id$
+
+Example configuration for Synchronet v3.12:
+
+SCFG:File Options->Transfer Protocols:
+
+[File Transfer Protocol]
+ 1: Mnemonic (Command Key)        X
+ 2: Protocol Name                 Xmodem (SEXYZ)
+ 3: Access Requirements           !UNIX
+ 4: Upload Command Line           %!sexyz %h -%p rC %f
+ 5: Download Command Line         %!sexyz %h -%p sX %f
+ 6: Batch Upload Command Line
+ 7: Batch Download Command Line
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               Yes
+
+[File Transfer Protocol]
+ 1: Mnemonic (Command Key)        Y
+ 2: Protocol Name                 Ymodem (SEXYZ)
+ 3: Access Requirements           !UNIX
+ 4: Upload Command Line           %!sexyz %h -%p ry %f
+ 5: Download Command Line         %!sexyz %h -%p sY %f
+ 6: Batch Upload Command Line     %!sexyz %h -%p ry %g
+ 7: Batch Download Command Line   %!sexyz %h -%p sY +%f
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               Yes
+
+[File Transfer Protocol]
+ 1: Mnemonic (Command Key)        G
+ 2: Protocol Name                 Ymodem-G (SEXYZ)
+ 3: Access Requirements           !UNIX
+ 4: Upload Command Line           %!sexyz %h -%p rg %f
+ 5: Download Command Line         %!sexyz %h -%p sY %f
+ 6: Batch Upload Command Line     %!sexyz %h -%p rg %g
+ 7: Batch Download Command Line   %!sexyz %h -%p sY +%f
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               Yes
+
+[File Transfer Protocol]
+ 1: Mnemonic (Command Key)        Z
+ 2: Protocol Name                 Zmodem (SEXYZ)
+ 3: Access Requirements           !UNIX
+ 4: Upload Command Line           %!sexyz %h -%p rz %f
+ 5: Download Command Line         %!sexyz %h -%p sz %f
+ 6: Batch Upload Command Line     %!sexyz %h -%p rz %g
+ 7: Batch Download Command Line   %!sexyz %h -%p sz +%f
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               Yes
