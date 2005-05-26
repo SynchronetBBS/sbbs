@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -76,14 +76,14 @@ void		xmodem_init(xmodem_t*, void* cbdata, long* mode
 						);
 char*		xmodem_ver(char *buf);
 const char* xmodem_source(void);
-void		xmodem_cancel(xmodem_t*);
+int			xmodem_cancel(xmodem_t*);
 BOOL		xmodem_get_ack(xmodem_t*, unsigned tries, unsigned block_num);
 BOOL		xmodem_get_mode(xmodem_t*);
 BOOL		xmodem_put_eot(xmodem_t*);
-void		xmodem_put_ack(xmodem_t*);
-void		xmodem_put_nak(xmodem_t*, unsigned block_num);
+int			xmodem_put_ack(xmodem_t*);
+int			xmodem_put_nak(xmodem_t*, unsigned block_num);
 int			xmodem_get_block(xmodem_t*, uchar* block, unsigned block_num);
-void		xmodem_put_block(xmodem_t*, uchar* block, unsigned block_size, unsigned block_num);
+int			xmodem_put_block(xmodem_t*, uchar* block, unsigned block_size, unsigned block_num);
 BOOL		xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, ulong* sent);
 
 #endif	/* Don't add anything after this line */

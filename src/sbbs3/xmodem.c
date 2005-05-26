@@ -96,14 +96,14 @@ static char *chr(uchar ch)
 }
 
 
-void xmodem_put_ack(xmodem_t* xm)
+int xmodem_put_ack(xmodem_t* xm)
 {
 	while(getcom(0)!=NOINP)
 		;				/* wait for any trailing data */
-	putcom(ACK);
+	return putcom(ACK);
 }
 
-void xmodem_put_nak(xmodem_t* xm, unsigned block_num)
+int xmodem_put_nak(xmodem_t* xm, unsigned block_num)
 {
 	while(getcom(0)!=NOINP)
 		;				/* wait for any trailing data */
@@ -111,29 +111,34 @@ void xmodem_put_nak(xmodem_t* xm, unsigned block_num)
 	if(block_num<=1) {
 		if(*(xm->mode)&GMODE) {		/* G for Ymodem-G */
 			lprintf(xm,LOG_INFO,"Requesting mode: Streaming, 16-bit CRC");
-			putcom('G');
+			return putcom('G');
 		} else if(*(xm->mode)&CRC) {	/* C for CRC */
 			lprintf(xm,LOG_INFO,"Requesting mode: 16-bit CRC");
-			putcom('C');
+			return putcom('C');
 		} else {				/* NAK for checksum */
 			lprintf(xm,LOG_INFO,"Requesting mode: 8-bit Checksum");
-			putcom(NAK);
+			return putcom(NAK);
 		}
-	} else
-		putcom(NAK);
+	}
+	return putcom(NAK);
 }
 
-void xmodem_cancel(xmodem_t* xm)
+int xmodem_cancel(xmodem_t* xm)
 {
 	int i;
+	int result;
 
 	if(!xm->cancelled && is_connected(xm)) {
 		for(i=0;i<8 && is_connected(xm);i++)
-			putcom(CAN);
+			if((result=putcom(CAN))!=0)
+				return result;
 		for(i=0;i<10 && is_connected(xm);i++)
-			putcom('\b');
+			if((result=putcom('\b'))!=0)
+				return result;
 		xm->cancelled=TRUE;
 	}
+
+	return 0;
 }
 
 /****************************************************************************/
@@ -252,23 +257,29 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 /*****************/
 /* Sends a block */
 /*****************/
-void xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned block_num)
+int xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned block_num)
 {
+	int		result;
 	uchar	ch,chksum;
     uint	i;
 	ushort	crc;
 
 	if(block_size==128)
-		putcom(SOH);
+		result=putcom(SOH);
 	else			/* 1024 */
-		putcom(STX);
+		result=putcom(STX);
+	if(result!=0)
+		return(result);
 	ch=(uchar)(block_num&0xff);
-	putcom(ch);
-	putcom((uchar)~ch);
+	if((result=putcom(ch))!=0)
+		return result;
+	if((result=putcom((uchar)~ch))!=0)
+		return result;
 	chksum=0;
 	crc=0;
 	for(i=0;i<block_size && is_connected(xm);i++) {
-		putcom(block[i]);
+		if((result=putcom(block[i]))!=0)
+			return result;
 		if((*xm->mode)&CRC)
 			crc=ucrc16(block[i],crc);
 		else
@@ -276,12 +287,11 @@ void xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned 
 	}
 
 	if((*xm->mode)&CRC) {
-		putcom((uchar)(crc >> 8));
-		putcom((uchar)(crc&0xff)); 
+		if((result=	putcom((uchar)(crc >> 8)))!=0)
+			return result;
+		return		putcom((uchar)(crc&0xff)); 
 	}
-	else
-		putcom(chksum);
-//	YIELD();
+	return putcom(chksum);
 }
 
 /************************************************************/
