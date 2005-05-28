@@ -30,8 +30,8 @@ SEXYZ has several advantages over legacy drivers like FDSZ and CE-XYZ:
     o Open source (at cvs.synchro.net)!
 
 
-Syntax
-------
+Command-line Syntax
+-------------------
 Just running "sexyz" by itself will display the supported command-line usage
 (options and commands):
 
@@ -122,6 +122,46 @@ and works quite well, SEXYZ is not recommended for use on Unix BBSes for the
 time-being. See docs/sbbsunix.txt for details on configuring (l)rzsz on
 Synchronet if it's not already configured in SCFG:File Options->Transfer
 Protocols.
+
+
+Optional Initialization File (sexyz.ini)
+----------------------------------------
+If the file sexyz.ini exists in the same directory as the sexyz executable
+(e.g. C:\sbbs\exec\sexyz.ini), it will be loaded and used to the over-ride
+default operating parameters shown below. Like all Synchronet .ini files,
+you can have a unique .ini file for different local systems by embedding
+the local hostname (sexyz[.host].ini) or platform (sexyz[.platform].ini)
+in the filename. The filenames are *not* case sensitive. Examples:
+
+	C:\sbbs\exec\sexyz.dadscomputer.ini
+	C:\sbbs\exec\sexyz.win32.ini
+	/sbbs/exec/sexyz.linux.ini
+
+Example .ini file (with default values given):
+
+	TCP_NoDelay=TRUE			/* disable the TCP Nagle algorithm */
+	DebugTx=FALSE
+	DebugRx=FALSE
+	DebugTelnet=FALSE
+	PauseOnExit=FALSE
+	PauseOnAbend=FALSE
+	OutbufHighwaterMark=1100	/* bytes before auto-flush */
+	OutbufDrainTimeout=10		/* milliseconds before auto-flush */
+	ProgressInterval=1			/* seconds */
+
+	[Xmodem]
+	SendTimeout=10	/* seconds */
+	RecvTimeout=10	/* seconds */
+	ByteTimeout=3	/* seconds */
+	AckTimeout=10	/* seconds */
+	BlockSize=1024	/* 128 or 1024 */
+	MaxErrors=10
+	G_Delay=1		/* milliseconds, yield between transmitted Ymodem-G blocks */
+
+	[Zmodem]
+	SendTimeout=10	/* seconds */
+	RecvTimeout=10	/* seconds */
+	MaxErrors=10
 
 
 Credits
