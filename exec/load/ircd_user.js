@@ -153,6 +153,8 @@ function IRC_User(id) {
 	this.ircout=ircout;
 	this.originatorout=originatorout;
 	this.rawout=rawout;
+	this.sendq = new IRC_Queue();
+	this.recvq = new IRC_Queue();
 	// Output helper functions (shared)
 	this.bcast_to_channel=IRCClient_bcast_to_channel;
 	this.bcast_to_channel_servers=IRCClient_bcast_to_channel_servers;
@@ -193,6 +195,7 @@ function IRC_User(id) {
 	// Global functions
 	this.check_nickname=IRCClient_check_nickname;
 	this.check_timeout=IRCClient_check_timeout;
+	this.check_sendq=IRCClient_check_sendq;
 	this.get_usermode=IRCClient_get_usermode;
 	this.netsplit=IRCClient_netsplit;
 	this.onchanwith=IRCClient_onchanwith;

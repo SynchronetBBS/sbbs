@@ -718,7 +718,7 @@ while (!server.terminated) {
 					client_sock.send(":" + servername + " 465 * :You've been Z:Lined from this server.\r\n");
 					client_sock.close();
 				} else {
-					new_id = "id" + next_client_id;
+					var new_id = "id" + next_client_id;
 					next_client_id++;
 					if(server.client_add != undefined)
 						server.client_add(client_sock);
@@ -729,10 +729,12 @@ while (!server.terminated) {
 	}
 
 	// Check for ping timeouts
+	// FIXME: In the future these just need to be maps.  This is stupid.
 	for(this_sock in Selectable_Sockets) {
-		if (Selectable_Sockets_Map[this_sock] &&
-		    Selectable_Sockets_Map[this_sock].check_timeout())
-			continue;
+		if (Selectable_Sockets_Map[this_sock]) {
+			Selectable_Sockets_Map[this_sock].check_timeout();
+			Selectable_Sockets_Map[this_sock].check_sendq();
+		}
 	}
 
 	// Check for pending DNS hostname resolutions.
@@ -838,25 +840,6 @@ function IRCClient_RMChan(rmchan_obj) {
 }
 
 //////////////////// Output Helper Functions ////////////////////
-function writeout(sock,str) {
-	if (!sock || !str)
-		return 0;
-	var send_tries;
-	var sent;
-	for (send_tries=0;send_tries<=10;send_tries++) {
-		sent = sock.send(str + "\r\n");
-		if (sent)
-			return 1;
-		log("!Warning: Socket error: " + sock.error + " -- Retrying.");
-		mswait(100);
-		if (!sock.is_connected)
-			return 0; // Failure
-	}
-	// If we get this far, we failed miserably.
-	log("!ERROR: Socket write failed after 10 retries!  Dropping socket.");
-	return 0;
-}
-
 function rawout(str) {
 	var sendsock;
 	var str_end;
@@ -879,8 +862,8 @@ function rawout(str) {
 		return 0;
 	}
 
-	if (!writeout(sendsock,str))
-		this.flagged_for_quit = "Socket write failed miserably";
+	if (!this.sendq.bytes && !sendsock.send(str + "\r\n"))
+		this.sendq.add(str);
 }
 
 function originatorout(str,origin) {
@@ -906,11 +889,12 @@ function originatorout(str,origin) {
 		return 0;
 	}
 
-	if (!writeout(sendsock,send_data))
-		this.flagged_for_quit = "Socket write failed miserably";
+	if (!this.sendq.bytes && !sendsock.send(send_data + "\r\n"))
+		this.sendq.add(send_data);
 }
 
 function ircout(str) {
+	var send_data;
 	var sendsock;
 
 	if (debug)
@@ -925,8 +909,14 @@ function ircout(str) {
 		return 0;
 	}
 
-	if (!writeout(sendsock,":" + servername + " " + str))
-		this.flagged_for_quit = "Socket write failed miserably";
+	send_data = ":" + servername + " " + str;
+	if (!this.sendq.bytes && !sendsock.send(send_data + "\r\n"))
+		this.sendq.add(send_data);
+}
+
+function Queue_Add(str) {
+	this.bytes = this.bytes + str.length;
+	this.queue.push(str);
 }
 
 function IRCClient_server_notice(str) {
@@ -2756,6 +2746,13 @@ function IRCClient_check_timeout() {
 	return 0; // no ping timeout
 }
 
+function IRCClient_check_sendq() {
+	if (this.sendq.bytes && this.socket.send(this.sendq.queue[0] + "\r\n")) {
+		this.sendq.bytes = this.sendq.bytes - this.sendq.queue[0].length;
+		this.sendq.queue.shift();
+	}
+}
+
 function IRCClient_finalize_server_connect(states) {
 	hcc_counter++;
 	gnotice("Link with " + this.nick + "[unknown@" + this.hostname +
@@ -2856,4 +2853,11 @@ function SJOIN_Nick(nick,isop,isvoice) {
 	this.nick = nick;
 	this.isop = isop;
 	this.isvoice = isvoice;
+}
+
+// Track IRC socket queues
+function IRC_Queue() {
+	this.queue = new Array();
+	this.bytes = 0;
+	this.add = Queue_Add;
 }

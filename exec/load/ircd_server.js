@@ -60,6 +60,8 @@ function IRC_Server() {
 	this.ircout=ircout;
 	this.originatorout=originatorout;
 	this.rawout=rawout;
+	this.sendq = new IRC_Queue();
+	this.recvq = new IRC_Queue();
 	// IRC protocol sending functions
 	this.bcast_to_channel=IRCClient_bcast_to_channel;
 	this.bcast_to_servers=IRCClient_bcast_to_servers;
@@ -75,6 +77,7 @@ function IRC_Server() {
 	this.finalize_server_connect=IRCClient_finalize_server_connect;
 	// Global Functions
 	this.check_timeout=IRCClient_check_timeout;
+	this.check_sendq=IRCClient_check_sendq;
 	this.set_chanmode=IRCClient_set_chanmode;
 	this.check_nickname=IRCClient_check_nickname;
 	// Output helper functions (shared)
@@ -651,11 +654,11 @@ function Server_Work() {
 				var newsrv = this;
 			} else if (hops > 1) {
 				if (this.hub) {
-					var lcserver = cmd[1].toLowerCase();
 					if (searchbyserver(lcserver)) {
 						this.quit("Server " + cmd[1] + " already exists.");
 						return 0;
 					}
+					var lcserver = cmd[1].toLowerCase();
 					var new_id = "id" + next_client_id;
 					next_client_id++;
 					Servers[lcserver] = new IRC_Server;

@@ -49,12 +49,15 @@ function Unregistered_Client(id,socket) {
 	this.work = Unregistered_Commands;
 	this.quit = Unregistered_Quit;
 	this.check_timeout = IRCClient_check_timeout;
+	this.check_sendq = IRCClient_check_sendq;
 	this.resolve_check = Unregistered_Resolve_Check;
 	this.welcome = Unregistered_Welcome;
 	// Output helper functions (shared)
 	this.rawout = rawout;
 	this.originatorout = originatorout;
 	this.ircout = ircout;
+	this.sendq = new IRC_Queue();
+	this.recvq = new IRC_Queue();
 	this.server_notice = IRCClient_server_notice;
 	this.check_nickname = IRCClient_check_nickname;
 	// Numerics (shared)
@@ -216,6 +219,8 @@ function Unregistered_Commands() {
 			new_server.flags = this_nline.flags;
 			new_server.nick = cmd[1];
 			new_server.hostname = this.hostname;
+			new_server.recvq = this.recvq;
+			new_server.sendq = this.sendq;
 			if (!qwk_slave) { // qwk slaves should never be hubs.
 				for (hl in HLines) {
 					if (HLines[hl].servername.toLowerCase()
@@ -357,6 +362,8 @@ function Unregistered_Welcome() {
 	new_user.created = time();
 	new_user.ip = this.ip;
 	new_user.ircclass = my_iline.ircclass;
+	new_user.sendq = this.sendq;
+	new_user.recvq = this.recvq;
 	hcc_counter++;
 	this.numeric("001", ":Welcome to the Synchronet IRC Service, " + new_user.nuh);
 	this.numeric("002", ":Your host is " + servername + ", running version " + VERSION);
