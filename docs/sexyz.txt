@@ -26,6 +26,7 @@ SEXYZ has several advantages over legacy drivers like FDSZ and CE-XYZ:
     o Supports long filenames (e.g. not just DOS "8.3" formatted names)
     o Supports Ymodem-G (FDSZ does not)
     o Handles Telnet IAC escaping and option negotiations
+	o Handles fast (e.g. 100+Mbps) file transfers without issue
     o Actively developed and supported
     o Open source (at cvs.synchro.net)!
 
@@ -42,7 +43,7 @@ socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
 opts   = -o  to overwrite files when receiving
          -s  disable Zmodem streaming (Slow Zmodem)
          -!  to pause after abnormal exit (error)
-         -telnet to enable Telnet mode
+         -telnet to enable Telnet mode (the default)
          -rlogin to enable RLogin (pass-through) mode
 
 cmd    = v  to display detailed version information
@@ -156,7 +157,7 @@ Example .ini file (with default values given):
 	AckTimeout=10	/* seconds */
 	BlockSize=1024	/* 128 or 1024 */
 	MaxErrors=10
-	G_Delay=1		/* milliseconds, yield between transmitted Ymodem-G blocks */
+	G_Delay=1		/* millisecond yield between sent Ymodem-G blocks */
 
 	[Zmodem]
 	SendTimeout=10	/* seconds */
@@ -164,13 +165,97 @@ Example .ini file (with default values given):
 	MaxErrors=10
 
 
+Compatibility
+-------------
+The Xmodem, Ymodem, and Zmodem file transfers should be compatible with any
+terminal programs or remote protocol drivers that conform to the public
+specifications for these protocols written by Chuck Forsberg (Xmodem was
+actually written by Ward Christensen, but was extended and documented by our
+friend, Chuck).
+
+SEXYZ supports the following protocols and their popular permutations:
+
+Xmodem:		128 byte blocks, 8-bit checksum error detection
+Xmodem-CRC:	128 byte blocks, 16-bit CRC error detection
+Xmodem-1K:	1024 byte blocks, 16-bit CRC error detection
+Ymodem:		128 byte blocks, 16-bit CRC error detection, batch file transfers
+Ymodem-1K:	1024 byte blocks, 16-bit CRC error detection, batch file transfers
+Ymodem-G:	1024 byte blocks, 16-bit CRC error detection, batch file transfers
+			and streaming (no acknowledgements)
+Zmodem:		1024 byte blocks, 16-bit or 32-bit CRC error detection, batch file
+			transfers, resume, auto-download, and more
+
+SEXYZ does not support Zmodem-8K (a.k.a. ZedZap) since this program is
+designed for use over the Internet where packets over approximately 1500 bytes
+in length are usually fragmented in transit. If you want the absolute fastest,
+lowest overhead protocol, use Ymodem-G instead of Zmodem.
+
+As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
+
+	sexyz.c  1.38
+	xmodem.c 1.20
+	zmodem.c 1.25
+
+SEXYZ for Win32 has been tested successfully with the following telnet clinets
+/terminal programs:
+
+[ztelnet]
+OS: Linux
+Version: 1.2.2
+URL: ftp://ibiblio.org/pub/Linux/system/network/telnet/
+Tested: Zmodem uploads and downloads
+Failed: none
+
+[HyperTerminal Private Edition]
+By: Hilgraeve, Inc.
+OS: Win32
+Version: 6.3
+URL: http://www.hilgraeve.com/htpe/
+Tested: Xmodem (checksum and CRC), Xmodem-1K, Ymodem-1K, Ymodem-G and Zmodem
+        both uploads and downloads
+Failed: Zmodem uploads (CRC errors detected): appears to be the fault of
+        HyperTerminal and can be reproduced with any protocol driver on the 
+		BBS/server side (even FDSZ)
+
+[mTelnet]
+By: enigma
+OS: Win32
+Version: 1.0 (beta 12)/w32
+URL: http://ozone.eesc.com
+Tested: Zmodem uploads and downloads
+Failed: none
+
+[NetRunner]
+By: Mystic Software Development (James Coyle/g00r00)
+OS: Win32
+Version: 0.09
+URL: www.mysticbbs.com
+Tested: Zmodem uploads and downloads
+Failed: Zmodem uploads (unexpected characters received)
+
+[ZOC]
+By: EmTec, Innovative Software, Markus Schmidt
+OS: Win32
+Version: 5.02
+URL: http://www.emtec.com
+Tested: Xmodem, Ymodem, Zmodem uploads and downloads
+Failed: none
+
+
 Credits
 -------
-The X/Ymodem code is completely original by Rob Swindell <rob [at] synchro
+The Xmodem (a.k.a. MODEM, MODEM2, XMODEM) protocol was originally developed by
+Ward Christensen in 1977.
+
+The Ymodem (a.k.a. YMODEM) and Zmodem (a.k.a. ZMODEM) protocols were developed
+and documented by Chuck Forsberg; Ymodem being primarily a set of extensions
+to Ward's Xmodem protocol. Ymodem-G was also developed by Chuck.
+
+The X/Ymodem code used in SEXYZ was written by Rob Swindell <rob [at] synchro
 [dot] net>, migrated from the Synchronet Transfer Protocols (STP) program
 circa 1997.
 
-The Unix "stdio" mode support written by Stephen Hurd (aka Deuce).
+The Unix "stdio" mode support in SEXYZ written by Stephen Hurd (aka Deuce).
 
-The base Zmodem code is largely based on zmtx/zmrx v1.02 (C) Mattheij Computer
+The Zmodem code in SEXYZ is based on zmtx/zmrx v1.02 (C) Mattheij Computer
 Service 1994 by Jacques Mattheij <jacquesm [at] hacktic [dot] nl>.
