@@ -81,6 +81,7 @@ long	zmode=0L;						/* Zmodem mode						*/
 uchar	block[1024];					/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
 char*	dszlog;
+int		log_level=LOG_INFO;
 
 xmodem_t xm;
 zmodem_t zm;
@@ -157,6 +158,9 @@ static BOOL winsock_startup(void)
 static int lputs(void* unused, int level, const char* str)
 {
 	FILE*	fp=statfp;
+
+	if(level>log_level)
+		return 0;
 
     if(level<LOG_NOTICE)
 		fp=errfp;
@@ -236,6 +240,23 @@ static char *chr(uchar ch)
 	return(str); 
 }
 
+#if defined(_WIN32) && defined(_DEBUG)
+void dump(BYTE* buf, int len)
+{
+	char str[128];
+	int i,j;
+	size_t slen=0;
+
+	slen=sprintf(str,"TX: ");
+	for(i=0;i<len;i+=j) {
+		for(j=0;i+j<len && j<32;j++)
+			slen+=sprintf(str+slen,"%02X ",buf[i+j]);
+		OutputDebugString(str);
+		slen=sprintf(str,"TX: ");
+	}
+}
+#endif
+
 void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 {
 	uchar	buf[3];
@@ -283,8 +304,9 @@ int recv_byte(void* unused, unsigned timeout)
 		tv.tv_usec=0;
 
 		if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
-			if(i==SOCKET_ERROR)
+			if(i==SOCKET_ERROR) {
 				lprintf(LOG_ERR,"ERROR %d selecting socket", ERROR_VALUE);
+			}
 			if(timeout)
 				lprintf(LOG_WARNING,"Receive timeout (%u seconds)", timeout);
 			return(NOINP);
@@ -298,9 +320,9 @@ int recv_byte(void* unused, unsigned timeout)
 			i=recv(sock,&ch,sizeof(ch),0);
 
 		if(i!=sizeof(ch)) {
-			if(i==0)
+			if(i==0) {
 				lprintf(LOG_WARNING,"Socket Disconnected");
-			else
+			} else
 				lprintf(LOG_ERR,"recv error %d (%d)",i,ERROR_VALUE);
 			return(-2); 
 		}
@@ -521,6 +543,9 @@ static void output_thread(void* arg)
 			break;
 		}
 
+#if defined(_WIN32) && defined(_DEBUG)
+		dump(buf+bufbot,i);
+#endif
 		if(i!=(int)(buftop-bufbot)) {
 			lprintf(LOG_ERR,"Short socket send (%u instead of %u)"
 				,i ,buftop-bufbot);
@@ -805,7 +830,7 @@ static int send_files(char** fname, uint fnames)
 			break;
 	}
 
-	if(mode&ZMODEM && !zm.cancelled)
+	if(mode&ZMODEM && !zm.cancelled && is_connected(NULL))
 		zmodem_get_zfin(&zm);
 
 	if(fnum<fnames) /* error occurred */
@@ -1167,7 +1192,7 @@ static const char* usage=
 	"opts   = -o  to overwrite files when receiving\n"
 	"         -s  disable Zmodem streaming (Slow Zmodem)\n"
 	"         -!  to pause after abnormal exit (error)\n"
-	"         -telnet to enable Telnet mode\n"
+	"         -telnet to enable Telnet mode (the default)\n"
 	"         -rlogin to enable RLogin (pass-through) mode\n"
 	"\n"
 	"cmd    = v  to display detailed version information\n"
@@ -1239,12 +1264,17 @@ int main(int argc, char **argv)
 
 	tcp_nodelay				=iniReadBool(fp,ROOT_SECTION,"TCP_NODELAY",TRUE);
 
+	if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
+		log_level=LOG_DEBUG;
+
 	debug_tx				=iniReadBool(fp,ROOT_SECTION,"DebugTx",FALSE);
 	debug_rx				=iniReadBool(fp,ROOT_SECTION,"DebugRx",FALSE);
 	debug_telnet			=iniReadBool(fp,ROOT_SECTION,"DebugTelnet",FALSE);
 
 	pause_on_exit			=iniReadBool(fp,ROOT_SECTION,"PauseOnExit",FALSE);
 	pause_on_abend			=iniReadBool(fp,ROOT_SECTION,"PauseOnAbend",FALSE);
+
+	log_level				=iniReadInteger(fp,ROOT_SECTION,"LogLevel",log_level);
 
 	outbuf.highwater_mark	=iniReadInteger(fp,ROOT_SECTION,"OutbufHighwaterMark",1100);
 	outbuf_drain_timeout	=iniReadInteger(fp,ROOT_SECTION,"OutbufDrainTimeout",10);
@@ -1352,6 +1382,10 @@ int main(int argc, char **argv)
 				}
 				if(stricmp(arg,"rlogin")==0) {
 					telnet=FALSE;
+					continue;
+				}
+				if(stricmp(arg,"debug")==0) {
+					log_level=LOG_DEBUG;
 					continue;
 				}
 				switch(toupper(*arg)) {
