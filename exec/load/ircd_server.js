@@ -654,7 +654,7 @@ function Server_Work() {
 				var newsrv = this;
 			} else if (hops > 1) {
 				if (this.hub) {
-					if (searchbyserver(lcserver)) {
+					if (searchbyserver(cmd[1])) {
 						this.quit("Server " + cmd[1] + " already exists.");
 						return 0;
 					}
