@@ -492,10 +492,10 @@ int zmodem_send_pos_header(zmodem_t* zm, int type, long pos, BOOL hex)
 	uchar header[5];
 
 	header[0]   = type;
-	header[ZP0] =  pos        & 0xff;
-	header[ZP1] = (pos >>  8) & 0xff;
-	header[ZP2] = (pos >> 16) & 0xff;
-	header[ZP3] = (pos >> 24) & 0xff;
+	header[ZP0] =  (uchar)(pos        & 0xff);
+	header[ZP1] = (uchar)((pos >>  8) & 0xff);
+	header[ZP2] = (uchar)((pos >> 16) & 0xff);
+	header[ZP3] = (uchar)((pos >> 24) & 0xff);
 
 	if(hex)
 		return zmodem_tx_hex_header(zm, header);
@@ -1569,10 +1569,10 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	 * and wait for zrinit. if it doesnt come then try again
 	 */
 
-	zeof_frame[ZP0] =  s.st_size        & 0xff;
-	zeof_frame[ZP1] = (s.st_size >> 8)  & 0xff;
-	zeof_frame[ZP2] = (s.st_size >> 16) & 0xff;
-	zeof_frame[ZP3] = (s.st_size >> 24) & 0xff;
+	zeof_frame[ZP0] = (uchar) (s.st_size        & 0xff);
+	zeof_frame[ZP1] = (uchar)((s.st_size >> 8)  & 0xff);
+	zeof_frame[ZP2] = (uchar)((s.st_size >> 16) & 0xff);
+	zeof_frame[ZP3] = (uchar)((s.st_size >> 24) & 0xff);
 
 	zm->raw_trace = FALSE;
 	for(errors=0;errors<zm->max_errors && !zm->cancelled && is_connected(zm);errors++) {
