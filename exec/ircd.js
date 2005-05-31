@@ -915,7 +915,7 @@ function ircout(str) {
 }
 
 function Queue_Add(str) {
-	this.bytes = this.bytes + str.length;
+	this.bytes += str.length;
 	this.queue.push(str);
 }
 
@@ -2748,7 +2748,7 @@ function IRCClient_check_timeout() {
 
 function IRCClient_check_sendq() {
 	if (this.sendq.bytes && this.socket.send(this.sendq.queue[0] + "\r\n")) {
-		this.sendq.bytes = this.sendq.bytes - this.sendq.queue[0].length;
+		this.sendq.bytes -= this.sendq.queue[0].length;
 		this.sendq.queue.shift();
 	}
 }
