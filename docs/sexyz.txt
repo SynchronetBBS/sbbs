@@ -26,7 +26,7 @@ SEXYZ has several advantages over legacy drivers like FDSZ and CE-XYZ:
     o Supports long filenames (e.g. not just DOS "8.3" formatted names)
     o Supports Ymodem-G (FDSZ does not)
     o Handles Telnet IAC escaping and option negotiations
-	o Handles fast (e.g. 100+Mbps) file transfers without issue
+    o Transfers files over fast connections (e.g. 100KB/sec) without issue
     o Actively developed and supported
     o Open source (at cvs.synchro.net)!
 
@@ -112,6 +112,25 @@ SCFG:File Options->Transfer Protocols:
 10: Supports DSZLOG               Yes
 
 
+Example configuration for Mystic v1.08-Win32
+--------------------------------------------
+(provided by Dream Master)
+
+A. Active     : Yes
+B. HotKey     : Z
+C. Description: Zmodem
+D. Batch      : No
+E. Send Cmd   : c:\mystic\prots\sexyz.exe %0 sz %3
+F. Receive Cmd: c:\mystic\prots\sexyz.exe %0 rz %3
+
+A. Active     : Yes
+B. HotKey     : Z
+C. Description: Zmodem batch
+D. Batch      : Yes
+E. Send Cmd   : c:\mystic\prots\sexyz.exe %0 sz +%3
+F. Receive Cmd: c:\mystic\prots\sexyz.exe %0 rz +%3
+
+
 Note Regarding Synchronet for Unix
 ----------------------------------
 Synchronet for Unix does not yet support socket-based file transfer protocols,
@@ -141,14 +160,15 @@ in the filename. The filenames are *not* case sensitive. Examples:
 Example .ini file (with default values given):
 
 	TCP_NoDelay=TRUE			/* disable the TCP Nagle algorithm */
-	DebugTx=FALSE
-	DebugRx=FALSE
-	DebugTelnet=FALSE
-	PauseOnExit=FALSE
-	PauseOnAbend=FALSE
+	Debug=FALSE					/* enable debug logging */
+	DebugTx=FALSE				/* debug transmitted characters */
+	DebugRx=FALSE				/* debug received characters */
+	DebugTelnet=FALSE			/* debug telnet commands */
+	PauseOnExit=FALSE			/* wait for key-press on exit */
+	PauseOnAbend=FALSE			/* wait for key-press on abnormal exit */
 	OutbufHighwaterMark=1100	/* bytes before auto-flush */
 	OutbufDrainTimeout=10		/* milliseconds before auto-flush */
-	ProgressInterval=1			/* seconds */
+	ProgressInterval=1			/* interval (in seconds) of progress display */
 
 	[Xmodem]
 	SendTimeout=10	/* seconds */
@@ -231,7 +251,9 @@ OS: Win32
 Version: 0.09
 URL: www.mysticbbs.com
 Tested: Zmodem uploads and downloads
-Failed: Zmodem uploads (unexpected characters received)
+Failed: Zmodem uploads (CRC errors detected): appears to be the fault of
+        NetRunner and can be reproduced with any protocol driver on the 
+		BBS/server side (FDSZ and CEXYZ both failed in the same manner)
 
 [ZOC]
 By: EmTec, Innovative Software, Markus Schmidt
