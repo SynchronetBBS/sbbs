@@ -99,6 +99,7 @@ BOOL	telnet=TRUE;
 BOOL	stdio=FALSE;
 struct termios origterm;
 #endif
+BOOL	aborted=FALSE;
 BOOL	terminate=FALSE;
 BOOL	debug_tx=FALSE;
 BOOL	debug_rx=FALSE;
@@ -154,7 +155,6 @@ static BOOL winsock_startup(void)
 
 #endif
 
-
 static int lputs(void* unused, int level, const char* str)
 {
 	FILE*	fp=statfp;
@@ -186,6 +186,26 @@ static int lprintf(int level, const char *fmt, ...)
     va_end(argptr);
     return(lputs(NULL,level,sbuf));
 }
+
+void break_handler(int type)
+{
+	lprintf(LOG_NOTICE,"-> Aborted Locally (signal: %d)",type);
+
+	/* Flag to indicate local (as opposed to remote) abort */
+	aborted=TRUE;
+
+	/* Stop any transfers in progress immediately */
+	xm.cancelled=TRUE;	
+	zm.cancelled=TRUE;
+}
+
+#if defined(_WIN32)
+BOOL WINAPI ControlHandler(DWORD CtrlType)
+{
+	break_handler((int)CtrlType);
+	return TRUE;
+}
+#endif
 
 static char *chr(uchar ch)
 {
@@ -824,6 +844,13 @@ static int send_files(char** fname, uint fnames)
 				fflush(logfp);
 			}
 			total_bytes += sent_bytes;
+
+			if(aborted) {
+				xm.cancelled=FALSE;
+				xmodem_cancel(&xm);
+				break;
+			}
+
 		} /* while(gi<(int)g.gl_pathc) */
 
 		if(gi<(int)g.gl_pathc)/* error occurred */
@@ -874,7 +901,6 @@ static int receive_files(char** fname_list, int fnames)
 	uint	cps;
 	uint	wr;
 	BOOL	success=FALSE;
-	BOOL	cancelled=FALSE;
 	long	fmode;
 	long	serial_num=-1;
 	ulong	file_bytes=0,file_bytes_left=0;
@@ -891,7 +917,7 @@ static int receive_files(char** fname_list, int fnames)
 	while((i=getcom(0))!=NOINP)
 		lprintf(LOG_WARNING,"Throwing out received: %s",chr((uchar)i));
 
-	while(!terminate && !cancelled && is_connected(NULL)) {
+	while(is_connected(NULL)) {
 		if(mode&XMODEM) {
 			SAFECOPY(str,fname_list[0]);	/* we'll have at least one fname */
 			file_bytes=file_bytes_left=0x7fffffff;
@@ -1083,7 +1109,7 @@ static int receive_files(char** fname_list, int fnames)
 						break;
 					}
 					if(i==CAN) {		/* Cancel */
-						cancelled=TRUE;
+						xm.cancelled=TRUE;
 						break;
 					}
 
@@ -1155,6 +1181,13 @@ static int receive_files(char** fname_list, int fnames)
 				,serial_num); 
 			fflush(logfp);
 		}
+
+		if(aborted) {
+			xm.cancelled=FALSE;
+			xmodem_cancel(&xm);
+			break;
+		}
+
 		if(mode&XMODEM)	/* maximum of one file */
 			break;
 		if((cps=file_bytes/t)==0)
@@ -1528,6 +1561,20 @@ int main(int argc, char **argv)
 		}
 	}
 
+	/* Install Ctrl-C/Break signal handler here */
+#if defined(_WIN32)
+	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
+#elif defined(__unix__)
+	signal(SIGQUIT,break_handler);
+	signal(SIGINT,break_handler);
+	signal(SIGTERM,break_handler);
+
+	signal(SIGHUP,SIG_IGN);
+
+	/* Don't die on SIGPIPE  */
+	signal(SIGPIPE,SIG_IGN);
+#endif
+
 #if !SINGLE_THREADED
 	_beginthread(output_thread,0,NULL);
 #endif
@@ -1540,7 +1587,7 @@ int main(int argc, char **argv)
 #if !SINGLE_THREADED
 	lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
 	if(WaitForEvent(outbuf_empty,5000)!=WAIT_OBJECT_0)
-		lprintf(LOG_DEBUG,"FAILURE\n");
+		lprintf(LOG_DEBUG,"FAILURE");
 #endif
 
 	terminate=TRUE;	/* stop output thread */
