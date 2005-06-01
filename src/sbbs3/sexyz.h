@@ -48,7 +48,6 @@
 #define CRC 			(1<<5)	/* Use CRC error correction 				*/
 #define GMODE			(1<<6)	/* For Qmodem-G and Ymodem-G				*/
 #define RECVDIR 		(1<<7)	/* Directory specified to download to		*/
-#define DEBUG			(1<<8)	/* Debug output 							*/
 #define OVERWRITE		(1<<9)	/* Overwrite receiving files				*/
 
 							/* Zmodem mode bits 						*/

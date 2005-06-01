@@ -159,6 +159,11 @@ static int lputs(void* unused, int level, const char* str)
 {
 	FILE*	fp=statfp;
 
+#if defined(_WIN32) && defined(_DEBUG)
+	if(log_level==LOG_DEBUG || level==LOG_DEBUG)
+		OutputDebugString(str);
+#endif
+
 	if(level>log_level)
 		return 0;
 
@@ -231,11 +236,6 @@ static char *chr(uchar ch)
 			case ZBIN:		return("ZBIN");
 			case ZHEX:		return("ZHEX");
 			case ZBIN32:	return("ZBIN32");
-			case ZBINR32:	return("ZBINR32");
-			case ZVBIN:		return("ZVBIN");
-			case ZVHEX:		return("ZVHEX");
-			case ZVBIN32:	return("ZVBIN32");
-			case ZVBINR32:	return("ZVBINR32");
 			case ZRESC:		return("ZRESC");
 			case ZCRCE:		return("ZCRCE");
 			case ZCRCG:		return("ZCRCG");
@@ -358,6 +358,8 @@ int recv_byte(void* unused, unsigned timeout)
 				}
 				if(telnet_cmdlen==1) {
 					telnet_cmdlen=0;
+					if(debug_rx)
+						lprintf(LOG_DEBUG,"RX: %s",chr(TELNET_IAC));
 					return(TELNET_IAC);
 				}
 			}
@@ -926,7 +928,7 @@ static int receive_files(char** fname_list, int fnames)
 		else {
 			if(mode&YMODEM) {
 				lprintf(LOG_INFO,"Fetching Ymodem header block");
-				for(errors=0;errors<xm.max_errors;errors++) {
+				for(errors=0;errors<xm.max_errors && !xm.cancelled;errors++) {
 					if(errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
 						mode&=~CRC;
 					xmodem_put_nak(&xm, /* expected_block: */ 0);
@@ -935,7 +937,7 @@ static int receive_files(char** fname_list, int fnames)
 						break; 
 					} 
 				}
-				if(errors>=xm.max_errors) {
+				if(errors>=xm.max_errors || xm.cancelled) {
 					lprintf(LOG_ERR,"Error fetching Ymodem header block");
 					xmodem_cancel(&xm);
 					return(1); 
@@ -986,7 +988,7 @@ static int receive_files(char** fname_list, int fnames)
 					case ZSINIT:
 						lprintf(LOG_WARNING,"Remote attempted ZSINIT (not supported)");
 						zmodem_send_nak(&zm);
-						break;
+						continue;
 					case ZFIN:
 						zmodem_send_zfin(&zm);	/* ACK */
 						/* fall-through */
@@ -1035,8 +1037,8 @@ static int receive_files(char** fname_list, int fnames)
 				} 
 			}
 			fprintf(statfp,"File size: %lu bytes\n", file_bytes);
-			fprintf(statfp,"Remaining: %lu bytes in %u files\n", total_bytes, total_files);
-//			getchar();
+			if(total_files>1)
+				fprintf(statfp,"Remaining: %lu bytes in %u files\n", total_bytes, total_files);
 		}
 
 		lprintf(LOG_DEBUG,"Receiving: %.64s ",str);
@@ -1437,9 +1439,6 @@ int main(int argc, char **argv)
 					case '!':
 						pause_on_abend=TRUE;
 						break;
-					case 'D':
-						mode|=DEBUG; 
-						break;
 				}
 			}
 		}
@@ -1550,13 +1549,13 @@ int main(int argc, char **argv)
 #endif
 
 	if(!socket_check(sock, NULL, NULL, 0)) {
-		fprintf(statfp,"!No socket connection\n");
+		lprintf(LOG_WARNING,"No socket connection");
 		return(-1); 
 	}
 
 	if((dszlog=getenv("DSZLOG"))!=NULL) {
 		if((logfp=fopen(dszlog,"w"))==NULL) {
-			fprintf(statfp,"!Error opening DSZLOG file: %s\n",dszlog);
+			lprintf(LOG_WARNING,"Error %d opening DSZLOG file: %s",errno,dszlog);
 			return(-1); 
 		}
 	}
