@@ -1352,7 +1352,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 		 * check out that header
 		 */
 
-		while(zmodem_rx_poll(zm)) {
+		while(zmodem_rx_poll(zm) && !zm->cancelled) {
 			int type;
 			int c;
 			if((c = zmodem_rx_raw(zm, zm->send_timeout)) < 0)
@@ -1363,10 +1363,9 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 					return type;
 				}
 			}
-			if(zm->cancelled)
-				return(-1);
 		}
-
+		if(zm->cancelled)
+			return(-1);
 	}
 
 	/*
