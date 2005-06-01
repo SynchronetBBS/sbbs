@@ -3686,7 +3686,11 @@ static void sendmail_thread(void* arg)
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			sockprintf(sock,"HELO %s",startup->host_name);
+			if(startup->options&MAIL_OPT_RELAY_TX 
+				&& (startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=0)	/* Requires ESMTP */
+				sockprintf(sock,"EHLO %s",startup->host_name);
+			else
+				sockprintf(sock,"HELO %s",startup->host_name);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
