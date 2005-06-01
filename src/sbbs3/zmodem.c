@@ -94,11 +94,6 @@ static char *chr(uchar ch)
 		case ZBIN:		return("ZBIN");
 		case ZHEX:		return("ZHEX");
 		case ZBIN32:	return("ZBIN32");
-		case ZBINR32:	return("ZBINR32");
-		case ZVBIN:		return("ZVBIN");
-		case ZVHEX:		return("ZVHEX");
-		case ZVBIN32:	return("ZVBIN32");
-		case ZVBINR32:	return("ZVBINR32");
 		case ZRESC:		return("ZRESC");
 		case ZCRCE:		return("ZCRCE");
 		case ZCRCG:		return("ZCRCG");
@@ -132,11 +127,8 @@ int zmodem_tx_raw(zmodem_t* zm, unsigned char ch)
 {
 	int	result;
 
-	if(zm->raw_trace)
-		lprintf(zm,LOG_INFO,"RX: %s ",chr(ch));
-
 	if((result=zm->send_byte(zm->cbdata,ch,zm->send_timeout))!=0)
-		lprintf(zm,LOG_ERR,"Send error: %d",result);
+		lprintf(zm,LOG_ERR,"zmodem_tx_raw SEND ERROR: %d",result);
 
 	zm->last_sent = ch;
 
@@ -198,7 +190,7 @@ int zmodem_tx_hex(zmodem_t* zm, uchar val)
 	char* xdigit="0123456789abcdef";
 	int	result;
 
-//	lprintf(zm,LOG_INFO,"TX: %02X ",val);
+	lprintf(zm,LOG_DEBUG,"zmodem_tx_hex: %02X ",val);
 
 	if((result=zmodem_tx_raw(zm, xdigit[val>>4]))!=0)
 		return result;
@@ -235,7 +227,7 @@ int zmodem_tx_hex_header(zmodem_t* zm, unsigned char * p)
 	lprintf(zm,LOG_INFO,"");
 #endif
 
-	lprintf(zm,LOG_DEBUG,"tx_hex_header: %s", chr(type));
+	lprintf(zm,LOG_DEBUG,"zmodem_tx_hex_header: %s", chr(type));
 
 	if((result=zmodem_tx_padded_zdle(zm))!=0)
 		return result;
@@ -263,9 +255,6 @@ int zmodem_tx_hex_header(zmodem_t* zm, unsigned char * p)
 	/*
  	 * update the crc as though it were zero
 	 */
-
-//	crc = ucrc16(0,crc);
-//	crc = ucrc16(0,crc);
 
 	/* 
 	 * transmit the crc
@@ -305,11 +294,6 @@ int zmodem_tx_bin32_header(zmodem_t* zm, unsigned char * p)
 	int result;
 	unsigned long crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"tx binary header 32 bits crc");
-//	zm->raw_trace = 1;
-#endif
-
 	if((result=zmodem_tx_padded_zdle(zm))!=0)
 		return result;
 
@@ -341,10 +325,6 @@ int zmodem_tx_bin16_header(zmodem_t* zm, unsigned char * p)
 	int result;
 	unsigned int crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"tx binary header 16 bits crc");
-#endif
-
 	if((result=zmodem_tx_padded_zdle(zm))!=0)
 		return result;
 
@@ -358,9 +338,6 @@ int zmodem_tx_bin16_header(zmodem_t* zm, unsigned char * p)
 		if((result=zmodem_tx(zm, *p++))!=0)
 			return result;
 	}
-
-//	crc = ucrc16(0,crc);
-//	crc = ucrc16(0,crc);
 
 	if((result=	zmodem_tx(zm, (uchar)(crc >> 8)))!=0)
 		return result;
@@ -394,9 +371,7 @@ int zmodem_tx_32_data(zmodem_t* zm, uchar sub_frame_type, unsigned char * p, int
 	int	result;
 	unsigned long crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"tx_32_data");
-#endif
+	lprintf(zm,LOG_DEBUG,"zmodem_tx_32_data");
 
 	crc = 0xffffffffl;
 
@@ -430,9 +405,7 @@ int zmodem_tx_16_data(zmodem_t* zm, uchar sub_frame_type,unsigned char * p,int l
 	int	result;
 	unsigned short crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"tx_16_data");
-#endif
+	lprintf(zm,LOG_DEBUG,"zmodem_tx_16_data");
 
 	crc = 0;
 
@@ -450,9 +423,6 @@ int zmodem_tx_16_data(zmodem_t* zm, uchar sub_frame_type,unsigned char * p,int l
 	if((result=zmodem_tx_raw(zm, sub_frame_type))!=0)
 		return result;
 	
-//	crc = ucrc16(0,crc);
-//	crc = ucrc16(0,crc);
-
 	if((result=	zmodem_tx(zm, (uchar)(crc >> 8)))!=0)
 		return result;
 	return		zmodem_tx(zm, (uchar)(crc&0xff));
@@ -504,8 +474,6 @@ int zmodem_send_pos_header(zmodem_t* zm, int type, long pos, BOOL hex)
 
 int zmodem_tx_znak(zmodem_t* zm)
 {
-//	lprintf(zm,LOG_INFO,"tx_znak");
-
 	return zmodem_send_pos_header(zm, ZNAK, zm->ack_file_pos, /* Hex? */ TRUE);
 }
 
@@ -543,13 +511,11 @@ int zmodem_rx_raw(zmodem_t* zm, int to)
 	if((c=zm->recv_byte(zm->cbdata,to)) < 0)
 		return(TIMEOUT);
 
-//	lprintf(zm,LOG_INFO,"%02X  ",c);
-
 	if(c == CAN) {
 		zm->n_cans++;
 		if(zm->n_cans == 5) {
 			zm->cancelled=TRUE;
-			lprintf(zm,LOG_WARNING,"Cancelled remotely");
+			lprintf(zm,LOG_WARNING,"zmodem_rx_raw: Cancelled remotely");
 			return(TIMEOUT);
 		}
 	}
@@ -640,7 +606,8 @@ int zmodem_rx(zmodem_t* zm, int to)
 				case ZCRCG:
 				case ZCRCQ:
 				case ZCRCW:
-//					lprintf(zm,LOG_DEBUG,"escaping data subpacket type: %s", chr((uchar)c));
+					lprintf(zm,LOG_DEBUG,"zmodem_rx: encoding data subpacket type: %s"
+						,chr((uchar)c));
 					return (c | ZDLEESC);
 				case ZRUB0:
 					return 0x7f;
@@ -694,9 +661,7 @@ int zmodem_rx_32_data(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigned
 	unsigned long crc;
 	int sub_frame_type;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"rx_32_data");
-#endif
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_32_data");
 
 	crc = 0xffffffffl;
 
@@ -726,10 +691,12 @@ int zmodem_rx_32_data(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigned
 	rxd_crc |= zmodem_rx(zm, zm->recv_timeout) << 24;
 
 	if(rxd_crc != crc) {
-		lprintf(zm,LOG_WARNING,"CRC-32 ERROR (%08lX vs %08lX) Bytes=%u"
-			,rxd_crc, crc, *l);
+		lprintf(zm,LOG_WARNING,"CRC32 ERROR (%08lX, expected: %08lX) Bytes=%u, sub-frame-type=%s"
+			,rxd_crc, crc, *l, chr((char)sub_frame_type));
 		return FALSE;
 	}
+	lprintf(zm,LOG_DEBUG,"GOOD CRC32: %08lX (Bytes=%u, sub-frame-type=%s)"
+		,crc, *l, chr((char)sub_frame_type));
 
 	zm->ack_file_pos += *l;
 
@@ -743,9 +710,7 @@ int zmodem_rx_16_data(zmodem_t* zm, register unsigned char* p, unsigned maxlen, 
  	unsigned short crc;
 	unsigned short rxd_crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"rx_16_data");
-#endif
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_16_data");
 
 	crc = 0;
 
@@ -766,18 +731,15 @@ int zmodem_rx_16_data(zmodem_t* zm, register unsigned char* p, unsigned maxlen, 
 
 	crc = ucrc16(sub_frame_type,crc);
 
-//	crc = ucrc16(0,crc);
-//	crc = ucrc16(0,crc);
-
 	rxd_crc  = zmodem_rx(zm, zm->recv_timeout) << 8;
 	rxd_crc |= zmodem_rx(zm, zm->recv_timeout);
 
 	if(rxd_crc != crc) {
-		lprintf(zm,LOG_WARNING,"CRC-16 ERROR (%04hX vs %04hX) Bytes=%d"
+		lprintf(zm,LOG_WARNING,"CRC16 ERROR (%04hX, expected: %04hX) Bytes=%d"
 			,rxd_crc, crc, *l);
 		return FALSE;
 	}
-	lprintf(zm,LOG_DEBUG,"GOOD CRC-16: %04hX (Bytes=%d)", crc, *l);
+	lprintf(zm,LOG_DEBUG,"GOOD CRC16: %04hX (Bytes=%d)", crc, *l);
 
 	zm->ack_file_pos += *l;
 
@@ -789,6 +751,8 @@ int zmodem_rx_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l)
 	unsigned char zack_header[] = { ZACK, 0, 0, 0, 0 };
 	int sub_frame_type;
 	long pos;
+
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_data (%u-bit)", zm->receive_32_bit_data ? 32:16);
 
 	/*
 	 * fill in the file pointer in case acknowledgement is requested.	
@@ -814,7 +778,8 @@ int zmodem_rx_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l)
 	if(sub_frame_type==TIMEOUT)
 		return(TIMEOUT);
 	
-	lprintf(zm,LOG_DEBUG,"received sub-frame type: %s",chr((uchar)sub_frame_type));
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_data received sub-frame-type: %s"
+		,chr((uchar)sub_frame_type));
 
 	switch (sub_frame_type)  {
 		/*
@@ -842,7 +807,7 @@ int zmodem_rx_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l)
 	}
 
 	if(sub_frame_type!=FALSE)
-		lprintf(zm,LOG_WARNING,"Invalid sub-frame type: %s",chr((uchar)sub_frame_type));
+		lprintf(zm,LOG_WARNING,"Invalid sub-frame-type: %s",chr((uchar)sub_frame_type));
 
 	return FALSE;
 }
@@ -902,8 +867,7 @@ int zmodem_rx_hex(zmodem_t* zm, int to)
 
 	ret = (n1 << 4) | n0;
 
-	if(*(zm->mode)&DEBUG)
-		lprintf(zm,LOG_INFO,"zmodem_rx_hex returning 0x%02X", ret);
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_hex returning: 0x%02X", ret);
 
 	return ret;
 }
@@ -914,41 +878,39 @@ int zmodem_rx_hex(zmodem_t* zm, int to)
  * not a valid header.
  */
 
-void zmodem_rx_bin16_header(zmodem_t* zm, int to)
+BOOL zmodem_rx_bin16_header(zmodem_t* zm, int to)
 {
 	int c;
 	int n;
 	unsigned short int crc;
 	unsigned short int rxd_crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"rx binary header 16 bits crc");
-#endif
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_bin16_header");
 
 	crc = 0;
 
 	for(n=0;n<HDRLEN;n++) {
 		c = zmodem_rx(zm, to);
 		if(c == TIMEOUT) {
-			lprintf(zm,LOG_ERR,"timeout");
-			return;
+			lprintf(zm,LOG_WARNING,"zmodem_rx_bin16_header: timeout");
+			return(FALSE);
 		}
 		crc = ucrc16(c,crc);
 		zm->rxd_header[n] = c;
 	}
 
-//	crc = ucrc16(0,crc);
-//	crc = ucrc16(0,crc);
-
 	rxd_crc  = zmodem_rx(zm, zm->recv_timeout) << 8;
 	rxd_crc |= zmodem_rx(zm, zm->recv_timeout);
 
 	if(rxd_crc != crc) {
-		lprintf(zm,LOG_ERR,"bad crc %4.4x %4.4x",rxd_crc,crc);
-		return;
+		lprintf(zm,LOG_WARNING,"CRC16 ERROR: 0x%hX, expected: 0x%hX", rxd_crc, crc);
+		return(FALSE);
 	}
+	lprintf(zm,LOG_DEBUG,"GOOD CRC16: %04hX", crc);
 
 	zm->rxd_header_len = 5;
+
+	return(TRUE);
 }
 
 void zmodem_rx_hex_header(zmodem_t* zm, int to)
@@ -958,9 +920,8 @@ void zmodem_rx_hex_header(zmodem_t* zm, int to)
 	unsigned short int crc = 0;
 	unsigned short int rxd_crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"rx_hex_header : ");
-#endif
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_hex_header");
+
 	for(i=0;i<HDRLEN;i++) {
 		c = zmodem_rx_hex(zm, to);
 		if(c == TIMEOUT) {
@@ -970,9 +931,6 @@ void zmodem_rx_hex_header(zmodem_t* zm, int to)
 
 		zm->rxd_header[i] = c;
 	}
-
-//	crc = ucrc16(0,crc);
-//	crc = ucrc16(0,crc);
 
 	/*
 	 * receive the crc
@@ -995,10 +953,11 @@ void zmodem_rx_hex_header(zmodem_t* zm, int to)
 	rxd_crc |= c;
 
 	if(rxd_crc == crc) {
+		lprintf(zm,LOG_DEBUG,"GOOD CRC16: %04hX", crc);
 		zm->rxd_header_len = 5;
 	}
 	else {
-		lprintf(zm,LOG_ERR,"BAD CRC-16: 0x%hX, expected: 0x%hX", rxd_crc, crc);
+		lprintf(zm,LOG_WARNING,"CRC16 ERROR: 0x%hX, expected: 0x%hX", rxd_crc, crc);
 	}
 
 	/*
@@ -1013,23 +972,21 @@ void zmodem_rx_hex_header(zmodem_t* zm, int to)
 	}
 }
 
-void zmodem_rx_bin32_header(zmodem_t* zm, int to)
+BOOL zmodem_rx_bin32_header(zmodem_t* zm, int to)
 {
 	int c;
 	int n;
 	unsigned long crc;
 	unsigned long rxd_crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"rx binary header 32 bits crc");
-#endif
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_bin32_header");
 
 	crc = 0xffffffffL;
 
 	for(n=0;n<HDRLEN;n++) {
 		c = zmodem_rx(zm, zm->recv_timeout);
 		if(c == TIMEOUT) {
-			return;
+			return(TRUE);
 		}
 		crc = ucrc32(c,crc);
 		zm->rxd_header[n] = c;
@@ -1043,10 +1000,14 @@ void zmodem_rx_bin32_header(zmodem_t* zm, int to)
 	rxd_crc |= zmodem_rx(zm, zm->recv_timeout) << 24;
 
 	if(rxd_crc != crc) {
-		return;
+		lprintf(zm,LOG_WARNING,"CRC32 ERROR (%08lX, expected: %08lX)"
+			,rxd_crc, crc);
+		return(FALSE);
 	}
+	lprintf(zm,LOG_DEBUG,"GOOD CRC32: %08lX", crc);
 
 	zm->rxd_header_len = 5;
+	return(TRUE);
 }
 
 /*
@@ -1062,9 +1023,8 @@ int zmodem_rx_header_raw(zmodem_t* zm, int to, int errors)
 {
 	int c;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"rx header : ");
-#endif
+	lprintf(zm,LOG_DEBUG,"zmodem_rx_header_raw");
+
 	zm->rxd_header_len = 0;
 
 	do {
@@ -1086,7 +1046,8 @@ int zmodem_rx_header_raw(zmodem_t* zm, int to, int errors)
 		 */
 
 		if(c != ZDLE) {
-			lprintf(zm,LOG_WARNING,"Expected ZDLE, received: %s", chr((uchar)c));
+			lprintf(zm,LOG_WARNING,"zmodem_rx_header_raw: Expected ZDLE, received: %s"
+				,chr((uchar)c));
 			continue;
 		}
 
@@ -1097,13 +1058,10 @@ int zmodem_rx_header_raw(zmodem_t* zm, int to, int errors)
 		c = zmodem_rx(zm, to);
 
 		if(c == TIMEOUT) {
-			lprintf(zm,LOG_ERR,"TIMEOUT %s %d",__FILE__,__LINE__);
+			lprintf(zm,LOG_WARNING,"zmodem_rx_header_raw: TIMEOUT");
 			return c;
 		}
 
-#if 0 /* def _DEBUG */
-		lprintf(zm,LOG_INFO,"");
-#endif
 		switch (c) {
 			case ZBIN:
 				zmodem_rx_bin16_header(zm, to);
@@ -1121,7 +1079,8 @@ int zmodem_rx_header_raw(zmodem_t* zm, int to, int errors)
 				/*
 				 * unrecognized header style
 				 */
-				lprintf(zm,LOG_ERR,"UNRECOGNIZED header style: %s",chr((uchar)c));
+				lprintf(zm,LOG_ERR,"zmodem_rx_header_raw: UNRECOGNIZED header style: %s"
+					,chr((uchar)c));
 				if(errors) {
 					return INVHDR;
 				}
@@ -1158,12 +1117,12 @@ int zmodem_rx_header_raw(zmodem_t* zm, int to, int errors)
 int zmodem_rx_header(zmodem_t* zm, int timeout)
 {
 	int ret = zmodem_rx_header_raw(zm, timeout, FALSE);
-#if 1
+
 	if(ret == TIMEOUT)
-		lprintf(zm,LOG_WARNING,"zmodem_rx_header timeout");
+		lprintf(zm,LOG_WARNING,"zmodem_rx_header TIMEOUT");
 	else
-		lprintf(zm,LOG_INFO,"zmodem_rx_header returning: %s", chr((uchar)ret));
-#endif
+		lprintf(zm,LOG_DEBUG,"zmodem_rx_header returning: %s", chr((uchar)ret));
+
 	if(ret==ZCAN)
 		zm->cancelled=TRUE;
 
@@ -1340,9 +1299,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 			} while(type != ZACK);
 
 			if((ulong)ftell(fp) >= fsize) {
-				if(*(zm->mode)&DEBUG) {
-					lprintf(zm,LOG_INFO,"end of file (%ld)", fsize );
-				}
+				lprintf(zm,LOG_DEBUG,"end of file (%ld)", fsize );
 				return ZACK;
 			}
 		}
@@ -1410,7 +1367,8 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 				zmodem_parse_zrinit(zm);
 				break;
 			}
-			lprintf(zm,LOG_WARNING,"RX header type: %d 0x%02X", i, i);
+			lprintf(zm,LOG_WARNING,"zmodem_send_file: received header type: %d 0x%02X"
+				,i, i);
 		}
 		if(errors>=zm->max_errors || zm->cancelled)
 			return(FALSE);
@@ -1435,23 +1393,17 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	if(zm->management_protect) {
 		zfile_frame[ZF1] = ZF1_ZMPROT;		
-		if(*(zm->mode)&DEBUG) {
-			lprintf(zm,LOG_INFO,"zmtx: protecting destination");
-		}
+		lprintf(zm,LOG_DEBUG,"zmodem_send_file: protecting destination");
 	}
 
 	if(zm->management_clobber) {
 		zfile_frame[ZF1] = ZF1_ZMCLOB;
-		if(*(zm->mode)&DEBUG) {
-			lprintf(zm,LOG_INFO,"zmtx: overwriting destination");
-		}
+		lprintf(zm,LOG_DEBUG,"zmodem_send_file: overwriting destination");
 	}
 
 	if(zm->management_newer) {
 		zfile_frame[ZF1] = ZF1_ZMNEW;
-		if(*(zm->mode)&DEBUG) {
-			lprintf(zm,LOG_INFO,"zmtx: overwriting destination if newer");
-		}
+		lprintf(zm,LOG_DEBUG,"zmodem_send_file: overwriting destination if newer");
 	}
 
 	/*
@@ -1573,7 +1525,6 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	zeof_frame[ZP2] = (uchar)((s.st_size >> 16) & 0xff);
 	zeof_frame[ZP3] = (uchar)((s.st_size >> 24) & 0xff);
 
-	zm->raw_trace = FALSE;
 	for(errors=0;errors<zm->max_errors && !zm->cancelled && is_connected(zm);errors++) {
 		lprintf(zm,LOG_INFO,"Sending End-of-File (ZEOF) frame (%u of %u)", errors+1, zm->max_errors);
 		zmodem_tx_hex_header(zm,zeof_frame);
@@ -1586,128 +1537,13 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	return(success);
 }
 
-#if 0
-
-zmodem_send_files(char** fname, int total_files)
-{
-	int i;
-	int fnum;
-	char * s;
-
-	/*
-	 * clear the input queue from any possible garbage
-	 * this also clears a possible ZRINIT from an already started
-	 * zmodem receiver. this doesn't harm because we reinvite to
-	 * receive again below and it may be that the receiver whose
-	 * ZRINIT we are about to wipe has already died.
-	 */
-
-	zmodem_rx_purge();
-
-	/*
-	 * establish contact with the receiver
-	 */
-
-	lprintf(zm,LOG_INFO,"zmtx: establishing contact with receiver");
-
-	i = 0;
-	do {
-		unsigned char zrqinit_header[] = { ZRQINIT, 0, 0, 0, 0 };
-		i++;
-		if(i > 10) {
-			lprintf(zm,LOG_INFO,"zmtx: can't establish contact with receiver");
-			bail(3);
-		}
-
-		zmodem_tx_raw('r');
-		zmodem_tx_raw('z');
-		zmodem_tx_raw('\r');
-		zmodem_tx_hex_header(zrqinit_header);
-	} while(zmodem_rx_header(7) != ZRINIT);
-
-	lprintf(zm,LOG_INFO,"zmtx: contact established");
-	lprintf(zm,LOG_INFO,"zmtx: starting file transfer");
-
-	/*
-	 * decode receiver capability flags
-	 * forget about encryption and compression.
-	 */
-
-	zmodem_can_full_duplex					= (zm->rxd_header[ZF0] & ZF0_CANFDX)  != 0;
-	zmodem_can_overlap_io					= (zm->rxd_header[ZF0] & ZF0_CANOVIO) != 0;
-	zmodem_can_break						= (zm->rxd_header[ZF0] & ZF0_CANBRK)  != 0;
-	zmodem_can_fcs_32						= (zm->rxd_header[ZF0] & ZF0_CANFC32) != 0;
-	zmodem_escape_all_control_characters	= (zm->rxd_header[ZF0] & ZF0_ESCCTL)  != 0;
-	zmodem_escape_8th_bit					= (zm->rxd_header[ZF0] & ZF0_ESC8)    != 0;
-
-	if(*(zm->mode)&DEBUG) {
-		lprintf(zm,LOG_INFO,"receiver %s full duplex"          ,zmodem_can_full_duplex               ? "can"      : "can't");
-		lprintf(zm,LOG_INFO,"receiver %s overlap io"           ,zmodem_can_overlap_io                ? "can"      : "can't");
-		lprintf(zm,LOG_INFO,"receiver %s break"                ,zmodem_can_break                     ? "can"      : "can't");
-		lprintf(zm,LOG_INFO,"receiver %s fcs 32"               ,zmodem_can_fcs_32                    ? "can"      : "can't");
-		lprintf(zm,LOG_INFO,"receiver %s escaped control chars",zmodem_escape_all_control_characters ? "requests" : "doesn't request");
-		lprintf(zm,LOG_INFO,"receiver %s escaped 8th bit"      ,zmodem_escape_8th_bit                ? "requests" : "doesn't request");
-	}
-
-	/* 
-	 * and send each file in turn
-	 */
-
-	n_files_remaining = total_files;
-
-	for(fnum=0;fnum<total_files && is_connected(zm);fnum++) {
-		if(send_file(fname[fnum])) {
-			lprintf(zm,LOG_WARNING,"zmtx: remote aborted.");
-			break;
-		}
-		n_files_remaining--;
-	}
-
-	/*
-	 * close the session
-	 */
-
-	lprintf(zm,LOG_INFO,"zmtx: closing the session");
-
-	{
-		int type;
-		unsigned char zfin_header[] = { ZFIN, 0, 0, 0, 0 };
-
-		zmodem_tx_hex_header(zfin_header);
-		do {
-			type = zmodem_rx_header(10);
-		} while(type != ZFIN && type != TIMEOUT);
-		
-		/*
-		 * these Os are formally required; but they don't do a thing
-		 * unfortunately many programs require them to exit 
-		 * (both programs already sent a ZFIN so why bother ?)
-		 */
-
-		if(type != TIMEOUT) {
-			zmodem_tx_raw('O');
-			zmodem_tx_raw('O');
-		}
-	}
-
-	/*
-	 * c'est fini
-	 */
-
-	if(*(zm->mode)&DEBUG) {
-		lprintf(zm,LOG_INFO,"zmtx: cleanup and exit");
-	}
-
-	return 0;
-}
-
-#endif
-
 int zmodem_recv_init(zmodem_t* zm)
 {
 	int			ch;
 	int			type=CAN;
 	unsigned	errors;
+
+	lprintf(zm,LOG_DEBUG,"zmodem_recv_init");
 
 	while(!zm->cancelled && (ch=zm->recv_byte(zm,0))!=NOINP)
 		lprintf(zm,LOG_WARNING,"Throwing out received: %s",chr((uchar)ch));
@@ -1823,6 +1659,10 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, ti
 			}
 			if(zm->cancelled)
 				return(ZCAN);
+
+			if(type == ZFILE)	/* rrs: what? Ignore following data block! */
+				zmodem_rx_data(zm,zm->rx_data_subpacket,sizeof(zm->rx_data_subpacket),&n);
+
 		} while(type != ZDATA);
 
 		pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
