@@ -1781,6 +1781,7 @@ static void smtp_thread(void* arg)
 	char		name_alias_buf[128];
 	char		reverse_path[128];
 	char		date[64];
+	char		qwkid[32];
 	char		rcpt_name[128];
 	char		rcpt_addr[128];
 	char		sender[128];
@@ -3055,20 +3056,22 @@ static void smtp_thread(void* arg)
 			usernum=0;	/* unknown user at this point */
 
 			if(routed) {
+				SAFECOPY(qwkid,p);
+				truncstr(qwkid,"/");
 				/* Search QWKnet hub-IDs for route destination */
 				for(i=0;i<scfg.total_qhubs;i++) {
-					if(!stricmp(p,scfg.qhub[i]->id))
+					if(!stricmp(qwkid,scfg.qhub[i]->id))
 						break;
 				}
 				if(i<scfg.total_qhubs) {	/* found matching QWKnet Hub */
 
-					lprintf(LOG_INFO,"%04d SMTP Routing mail for %s to QWKnet Hub: %s"
-						,socket, rcpt_addr, scfg.qhub[i]->id);
+					lprintf(LOG_INFO,"%04d SMTP Routing mail for %s <%s> to QWKnet Hub: %s"
+						,socket, rcpt_addr, p, scfg.qhub[i]->id);
 
 					fprintf(rcptlst,"[%u]\n",rcpt_count++);
 					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
 					fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_QWK);
-					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),scfg.qhub[i]->id);
+					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),p);
 
 					sockprintf(socket,ok_rsp);
 					state=SMTP_STATE_RCPT_TO;
