@@ -260,7 +260,6 @@ static char *chr(uchar ch)
 	return(str); 
 }
 
-#if defined(_WIN32) && defined(_DEBUG)
 void dump(BYTE* buf, int len)
 {
 	char str[128];
@@ -271,11 +270,10 @@ void dump(BYTE* buf, int len)
 	for(i=0;i<len;i+=j) {
 		for(j=0;i+j<len && j<32;j++)
 			slen+=sprintf(str+slen,"%02X ",buf[i+j]);
-		OutputDebugString(str);
+		lprintf(LOG_DEBUG,"%s",str);
 		slen=sprintf(str,"TX: ");
 	}
 }
-#endif
 
 void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 {
@@ -426,8 +424,10 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 	ResetEvent(outbuf_empty);
 #endif
 
+#if 0
 	if(debug_tx)
 		lprintf(LOG_DEBUG,"TX: %s",chr(ch));
+#endif
 	return(0);
 }
 
@@ -565,9 +565,9 @@ static void output_thread(void* arg)
 			break;
 		}
 
-#if defined(_WIN32) && defined(_DEBUG)
-		dump(buf+bufbot,i);
-#endif
+		if(debug_tx)
+			dump(buf+bufbot,i);
+
 		if(i!=(int)(buftop-bufbot)) {
 			lprintf(LOG_ERR,"Short socket send (%u instead of %u)"
 				,i ,buftop-bufbot);
@@ -766,6 +766,10 @@ static int send_files(char** fname, uint fnames)
 		globfree(&g);
 	}
 
+	if(xm.total_files<1) {
+		lprintf(LOG_ERR,"No files to send");
+		return(-1);
+	}
 	if(xm.total_files>1)
 		lprintf(LOG_INFO,"Sending %u files (%lu KB total)"
 			,xm.total_files,xm.total_bytes/1024);
@@ -826,7 +830,7 @@ static int send_files(char** fname, uint fnames)
 						,(xm.total_bytes-xm.sent_bytes)/1024
 						);
 			} else
-				lprintf(LOG_WARNING,"File Transfer Failure");
+				lprintf(LOG_WARNING,"File Transfer %s", aborted ? "Aborted" : "Failure");
 
 			/* DSZLOG entry */
 			if(logfp) {
@@ -928,7 +932,7 @@ static int receive_files(char** fname_list, int fnames)
 		else {
 			if(mode&YMODEM) {
 				lprintf(LOG_INFO,"Fetching Ymodem header block");
-				for(errors=0;errors<xm.max_errors && !xm.cancelled;errors++) {
+				for(errors=0;errors<=xm.max_errors && !xm.cancelled;errors++) {
 					if(errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
 						mode&=~CRC;
 					xmodem_put_nak(&xm, /* expected_block: */ 0);
@@ -960,38 +964,23 @@ static int receive_files(char** fname_list, int fnames)
 
 			} else {	/* Zmodem */
 				lprintf(LOG_INFO,"Waiting for Zmodem sender...");
-				i=zmodem_recv_init(&zm);
-				if(zm.cancelled)
-					return(1);
-				if(i<0)
-					return(-1);
-				lprintf(LOG_DEBUG,"Received header: %s",chr((uchar)i));
-				switch(i) {
-					case ZFREECNT:
-						zmodem_send_pos_header(&zm, ZACK, getfreediskspace(".",1), /* Hex? */ TRUE) ;
-						continue;
-					case ZCOMMAND:
-						lprintf(LOG_WARNING,"Remote command attempted and rejected");
-						zmodem_send_nak(&zm);
-						continue;
-					case ZFILE:
-						if(!zmodem_recv_file_info(&zm
+				i=zmodem_recv_init(&zm
 							,fname,sizeof(fname)
 							,&file_bytes
 							,&ftime
 							,&fmode
 							,&serial_num
 							,&total_files
-							,&total_bytes))
-							continue;
+							,&total_bytes);
+				if(zm.cancelled)
+					return(1);
+				if(i<0)
+					return(-1);
+				lprintf(LOG_DEBUG,"Received header: %s",chr((uchar)i));
+				switch(i) {
+					case ZFILE:
 						break;
-					case ZSINIT:
-						lprintf(LOG_WARNING,"Remote attempted ZSINIT (not supported)");
-						zmodem_send_nak(&zm);
-						continue;
 					case ZFIN:
-						zmodem_send_zfin(&zm);	/* ACK */
-						/* fall-through */
 					case ZCOMPL:
 						return(0);
 					case ZRQINIT:
@@ -1091,7 +1080,7 @@ static int receive_files(char** fname_list, int fnames)
  			 * wait for the eof header
 			 */
 
-			for(;errors<zm.max_errors && !success && !zm.cancelled; errors++) {
+			for(;errors<=zm.max_errors && !success && !zm.cancelled; errors++) {
 				if(zmodem_rx_header_and_check(&zm,zm.recv_timeout))
 					success=TRUE;
 			} 
@@ -1163,7 +1152,7 @@ static int receive_files(char** fname_list, int fnames)
 			lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
 				,t/60,t%60,file_bytes/t);	
 		else
-			lprintf(LOG_ERR,"File Transfer Failure");
+			lprintf(LOG_ERR,"File Transfer %s", aborted ? "Aborted":"Failure");
 
 		if(!(mode&XMODEM) && ftime)
 			setfdate(str,ftime); 
@@ -1185,6 +1174,9 @@ static int receive_files(char** fname_list, int fnames)
 		}
 
 		if(aborted) {
+			lprintf(LOG_DEBUG,"Locally aborted, sending cancel to remote");
+			if(mode&ZMODEM)
+				zmodem_abort_receive(&zm);
 			xm.cancelled=FALSE;
 			xmodem_cancel(&xm);
 			break;
