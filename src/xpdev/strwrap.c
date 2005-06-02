@@ -39,15 +39,4 @@ char* ltoa(long val, char* str, int radix)
 	return(str);
 }
 
-/* Set characters of a string to a character. 8/
-char           *
-strset (char *str, int c)
-{
-	char *p;
-	for (p=str; *p; p++) {
-		*p=c;
-	}
-	return (str);
-}
- 
 #endif
