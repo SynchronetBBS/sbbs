@@ -976,15 +976,13 @@ static int receive_files(char** fname_list, int fnames)
 					return(1);
 				if(i<0)
 					return(-1);
-				lprintf(LOG_DEBUG,"Received header: %s",chr((uchar)i));
 				switch(i) {
 					case ZFILE:
 						break;
 					case ZFIN:
 					case ZCOMPL:
-						return(0);
-					case ZRQINIT:
-					case ZCAN:
+						return(!success);
+					default:
 						return(-1);
 				}
 			}
@@ -1040,7 +1038,7 @@ static int receive_files(char** fname_list, int fnames)
 			break; 
 		}
 
-		if(fexist(str) && !(mode&OVERWRITE)) {
+		if(fexistcase(str) && !(mode&OVERWRITE)) {
 			lprintf(LOG_WARNING,"%s already exists",str);
 			if(mode&ZMODEM) {
 				zmodem_send_zskip(&zm);
@@ -1050,7 +1048,7 @@ static int receive_files(char** fname_list, int fnames)
 			return(1); 
 		}
 		if((fp=fopen(str,"wb"))==NULL) {
-			lprintf(LOG_ERR,"Error creating %s",str);
+			lprintf(LOG_ERR,"Error %d creating %s",errno,str);
 			if(mode&ZMODEM) {
 				zmodem_send_zskip(&zm);
 				continue;
@@ -1081,7 +1079,7 @@ static int receive_files(char** fname_list, int fnames)
 			 */
 
 			for(;errors<=zm.max_errors && !success && !zm.cancelled; errors++) {
-				if(zmodem_rx_header_and_check(&zm,zm.recv_timeout))
+				if(zmodem_recv_header_and_check(&zm,zm.recv_timeout))
 					success=TRUE;
 			} 
 
