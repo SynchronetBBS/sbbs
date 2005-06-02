@@ -9,6 +9,7 @@
 OBJS	= \
 	$(OBJODIR)$(DIRSEP)conwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)dat_file$(OFILE) \
+	$(OBJODIR)$(DIRSEP)datewrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)dirwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)filewrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)genwrap$(OFILE) \
@@ -18,9 +19,11 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)str_list$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpbeep$(OFILE)
 
+
 MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)conwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)dat_file$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)datewrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)dirwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)filewrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)genwrap$(OFILE) \
