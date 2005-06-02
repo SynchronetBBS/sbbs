@@ -272,6 +272,8 @@ void		zmodem_init(zmodem_t*, void* cbdata, long* mode
 						);
 char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);
+int			zmodem_abort_receive(zmodem_t*);
+int			zmodem_send_ack(zmodem_t*, long pos);
 int			zmodem_send_nak(zmodem_t*);
 int			zmodem_send_zskip(zmodem_t* zm);
 int			zmodem_send_zrinit(zmodem_t*);
@@ -281,7 +283,14 @@ int			zmodem_get_zfin(zmodem_t* zm);
 void		zmodem_parse_zrinit(zmodem_t*);
 int			zmodem_send_zfin(zmodem_t*);
 BOOL		zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init, time_t* start, ulong* bytes_sent);
-int			zmodem_recv_init(zmodem_t* zm);
+int			zmodem_recv_init(zmodem_t* zm
+									,char* fname, size_t maxlen
+									,ulong* size
+									,time_t* time
+									,long* mode
+									,long* serial_num
+									,ulong* total_files
+									,ulong* total_bytes);
 BOOL		zmodem_recv_file_info(zmodem_t* zm
 									,char* fname, size_t maxlen
 									,ulong* size
