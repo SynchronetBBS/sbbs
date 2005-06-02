@@ -39,16 +39,15 @@ char* ltoa(long val, char* str, int radix)
 	return(str);
 }
 
-/** char *strset(p,set) returns a ptr to 1st char from set in p, else 0 */
+/* Set characters of a string to a character. 8/
 char           *
-strset (p, set)
-	char           *p, *set;
+strset (char *str, int c)
 {
-	for (; *p; p++) {
-		if (strchr (set, *p))
-			return (p);
+	char *p;
+	for (p=str; *p; p++) {
+		*p=c;
 	}
-	return (0);
+	return (str);
 }
  
 #endif

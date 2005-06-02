@@ -6,7 +6,7 @@ extern "C" {
 #endif
 char* itoa(int val, char* str, int radix);
 char* ltoa(long val, char* str, int radix);
-char* strset (char *p, char *set);
+char* strset (char *str, int c);
 #if defined(__cplusplus)
 }
 #endif
