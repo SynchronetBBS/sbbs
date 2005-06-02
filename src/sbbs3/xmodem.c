@@ -153,7 +153,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 	uint	b,errors;
 	ushort	crc,calc_crc;
 
-	for(errors=0;errors<xm->max_errors && is_connected(xm);errors++) {
+	for(errors=0;errors<=xm->max_errors && is_connected(xm);errors++) {
 
 		i=getcom(expected_block_num<=1 ? 5 : 10);
 		if(eot && i!=EOT && i!=NOINP)
@@ -348,7 +348,7 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 	lprintf(xm,LOG_INFO,"Waiting for transfer mode request...");
 
 	*(xm->mode)&=~(GMODE|CRC);
-	for(errors=can=0;errors<xm->max_errors && is_connected(xm);errors++) {
+	for(errors=can=0;errors<=xm->max_errors && is_connected(xm);errors++) {
 		i=getcom(xm->recv_timeout);
 		if(can && i!=CAN)
 			can=0;
@@ -390,7 +390,7 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 	unsigned errors;
 	unsigned cans=0;
 
-	for(errors=0;errors<xm->max_errors && is_connected(xm);errors++) {
+	for(errors=0;errors<=xm->max_errors && is_connected(xm);errors++) {
 
 		lprintf(xm,LOG_INFO,"Sending End-of-Text (EOT) indicator (%d)",errors+1);
 
@@ -458,7 +458,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			lprintf(xm,LOG_INFO,"Sending Ymodem header block: '%s'",block+strlen(block)+1);
 			
 			block_len=strlen(block)+1+i;
-			for(errors=0;errors<xm->max_errors && !xm->cancelled && is_connected(xm);errors++) {
+			for(errors=0;errors<=xm->max_errors && !xm->cancelled && is_connected(xm);errors++) {
 				xmodem_put_block(xm, block, block_len <=128 ? 128:1024, 0  /* block_num */);
 				if(xmodem_get_ack(xm,1,0))
 					break; 
@@ -478,7 +478,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 
 		block_num=1;
 		errors=0;
-		while(sent_bytes < (ulong)st.st_size && errors<xm->max_errors && !xm->cancelled
+		while(sent_bytes < (ulong)st.st_size && errors<=xm->max_errors && !xm->cancelled
 			&& is_connected(xm)) {
 			fseek(fp,sent_bytes,SEEK_SET);
 			memset(block,CPMEOF,xm->block_size);
@@ -552,7 +552,7 @@ void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 	xm->ack_timeout=10;			/* seconds */
 
 	xm->block_size=1024;
-	xm->max_errors=10;
+	xm->max_errors=9;
 	xm->g_delay=1;
 
 	xm->cbdata=cbdata;
