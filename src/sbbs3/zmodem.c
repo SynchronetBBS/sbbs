@@ -221,13 +221,6 @@ int zmodem_tx_hex_header(zmodem_t* zm, unsigned char * p)
 	uchar type=*p;
 	unsigned short int crc;
 
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"tx_hheader : ");
-	for(i=0;i<HDRLEN;i++)
-		lprintf(zm,LOG_INFO,"%02X ",*(p+i));
-	lprintf(zm,LOG_INFO,"");
-#endif
-
 	lprintf(zm,LOG_DEBUG,"zmodem_tx_hex_header: %s", chr(type));
 
 	if((result=zmodem_tx_padded_zdle(zm))!=0)
@@ -277,10 +270,6 @@ int zmodem_tx_hex_header(zmodem_t* zm, unsigned char * p)
 
 	if(type!=ZACK && type!=ZFIN)
 		result=zmodem_tx_raw(zm, XON);
-
-#if 0 /* def _DEBUG */
-	lprintf(zm,LOG_INFO,"");
-#endif
 
 	return(result);
 }
@@ -353,14 +342,11 @@ int zmodem_tx_bin16_header(zmodem_t* zm, unsigned char * p)
  * advantage and they would clutter the code unneccesarily
  */
 
-int zmodem_tx_header(zmodem_t* zm, unsigned char * p)
+int zmodem_tx_bin_header(zmodem_t* zm, unsigned char * p)
 {
-	if(zm->can_fcs_32) {
-		if(!zm->want_fcs_16)
-			return zmodem_tx_bin32_header(zm, p);
-		return zmodem_tx_bin16_header(zm, p);
-	}
-	return zmodem_tx_hex_header(zm, p);	/* <--- is this a bug? (rrs) */
+	if(zm->can_fcs_32 && !zm->want_fcs_16)
+		return zmodem_tx_bin32_header(zm, p);
+	return zmodem_tx_bin16_header(zm, p);
 }
 
 /*
@@ -436,13 +422,7 @@ int zmodem_tx_16_data(zmodem_t* zm, uchar sub_frame_type,unsigned char * p,int l
 int zmodem_tx_data(zmodem_t* zm, uchar sub_frame_type, unsigned char * p, int l)
 {
 	int result;
-#if 0
-	int i;
 
-	for(i=0;i<l;i++)
-		fprintf(stderr,"%02X  ",p[i]);
-	fprintf(stderr,"\n");
-#endif
 	if(!zm->want_fcs_16 && zm->can_fcs_32) {
 		if((result=zmodem_tx_32_data(zm, sub_frame_type,p,l))!=0)
 			return result;
@@ -470,7 +450,8 @@ int zmodem_send_pos_header(zmodem_t* zm, int type, long pos, BOOL hex)
 
 	if(hex)
 		return zmodem_tx_hex_header(zm, header);
-	return zmodem_tx_header(zm, header);
+	else
+		return zmodem_tx_bin_header(zm, header);
 }
 
 int zmodem_send_ack(zmodem_t* zm, long pos)
@@ -1482,7 +1463,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		lprintf(zm,LOG_INFO,"Sending ZFILE header block: '%s'"
 			,zm->tx_data_subpacket+strlen(zm->tx_data_subpacket)+1);
 
-		zmodem_tx_header(zm,zfile_frame);
+		zmodem_tx_bin_header(zm,zfile_frame);
 		zmodem_tx_data(zm,ZCRCW,zm->tx_data_subpacket,p - zm->tx_data_subpacket);
 	
 		/*
@@ -1596,33 +1577,39 @@ int zmodem_recv_init(zmodem_t* zm
 
 		lprintf(zm,LOG_DEBUG,"Received header: %s",chr((uchar)type));
 
+		if(type==ZFILE) {
+			if(!zmodem_recv_file_info(zm
+				,fname,maxlen
+				,p_size
+				,p_time
+				,p_mode
+				,p_serial
+				,p_total_files
+				,p_total_bytes))
+				continue;
+			return(type);
+		}
+
+		if(type==ZFIN) {
+			zmodem_send_zfin(zm);	/* ACK */
+			return(type);
+		}
+
+		lprintf(zm,LOG_WARNING,"Received header type: %s, expected ZFILE or ZFIN"
+			,chr((uchar)type));
+		lprintf(zm,LOG_DEBUG,"ZF0=%02X ZF1=%02X ZF2=%02X ZF3=%02X"
+			,zm->rxd_header[ZF0],zm->rxd_header[ZF1],zm->rxd_header[ZF2],zm->rxd_header[ZF3]);
+
 		switch(type) {
 			case ZFREECNT:
 				zmodem_send_pos_header(zm, ZACK, getfreediskspace(".",1), /* Hex? */ TRUE);
 				break;
-			case ZFILE:
-				if(!zmodem_recv_file_info(zm
-					,fname,maxlen
-					,p_size
-					,p_time
-					,p_mode
-					,p_serial
-					,p_total_files
-					,p_total_bytes))
-					continue;
-				return(type);
 			case ZSINIT:
 			case ZCOMMAND:
 				/* unsupported headers, receive and ignore data subpacket to follow */
 				zmodem_recv_subpacket(zm);
-				continue;
-			case ZFIN:
-				zmodem_send_zfin(zm);	/* ACK */
-				return(type);
+				break;
 		}
-		lprintf(zm,LOG_WARNING,"Received header type: %s, expected ZFILE", chr((uchar)type));
-		lprintf(zm,LOG_DEBUG,"ZF0=%02X ZF1=%02X ZF2=%02X ZF3=%02X"
-			,zm->rxd_header[ZF0],zm->rxd_header[ZF1],zm->rxd_header[ZF2],zm->rxd_header[ZF3]);
 	}
 
 	return(type);
