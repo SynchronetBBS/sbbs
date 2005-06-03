@@ -149,12 +149,12 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, int conn_type)
 	}
 
 	switch(con_type) {
-		CONN_TYPE_TELNET:
+		case CONN_TYPE_TELNET:
 			memset(telnet_local_option,0,sizeof(telnet_local_option));
 			memset(telnet_remote_option,0,sizeof(telnet_remote_option));
 			break;
 
-		CONN_TYPE_RLOGIN:
+		case CONN_TYPE_RLOGIN:
 			conn_send("",1,1000);
 			conn_send(passwd,strlen(passwd)+1,1000);
 			conn_send(ruser,strlen(ruser)+1,1000);
