@@ -203,7 +203,10 @@ int telnet_recv(char *buffer, size_t buflen, unsigned timeout)
 		if(!data_waiting)
 			return(0);
 
-		rd=recv(conn_socket,buffer,avail<(int)buflen?avail:buflen,0);
+		if(!ioctlsocket(conn_socket,FIONREAD,(void *)&avail) && avail)
+			rd=recv(conn_socket,buffer,avail<(int)buflen?avail:buflen,0);
+		else
+			return(0);
 		if(rd>0) {
 			if(telnet_interpret(buffer, rd, telnet_buf, &rd)==telnet_buf) {
 				if(rd==0)	/* all bytes removed */
