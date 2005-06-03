@@ -244,6 +244,7 @@ typedef struct {
 
 	/* Status */
 	BOOL		cancelled;
+	BOOL		local_abort;
 	BOOL		file_skipped;
 	BOOL		no_streaming;
 	unsigned	recv_bufsize;	/* Receiver specified buffer size */
