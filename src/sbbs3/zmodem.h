@@ -193,7 +193,7 @@
 
 typedef struct {
 
-	unsigned char rxd_header[ZMAXHLEN];						/* last received header */
+	BYTE rxd_header[ZMAXHLEN];								/* last received header */
 	int rxd_header_len;										/* last received header size */
 
 	/*
@@ -224,8 +224,8 @@ typedef struct {
 
 	int n_files_remaining;
 	int n_bytes_remaining;
-	unsigned char tx_data_subpacket[MAX_SUBPACKETSIZE];
-	unsigned char rx_data_subpacket[8192];							/* zzap = 8192 */
+	BYTE tx_data_subpacket[MAX_SUBPACKETSIZE];
+	BYTE rx_data_subpacket[8192];							/* zzap = 8192 */
 
 	ulong current_file_size;
 	time_t transfer_start;
@@ -256,7 +256,7 @@ typedef struct {
 	/* Callbacks */
 	void*		cbdata;
 	int			(*lputs)(void*, int level, const char* str);
-	int			(*send_byte)(void*, uchar ch, unsigned timeout);
+	int			(*send_byte)(void*, BYTE ch, unsigned timeout);
 	int			(*recv_byte)(void*, unsigned timeout);
 	void		(*progress)(void*, ulong start_pos, ulong current_pos, ulong fsize, time_t start);
 	BOOL		(*is_connected)(void*);
@@ -266,12 +266,14 @@ typedef struct {
 void		zmodem_init(zmodem_t*, void* cbdata
 						,int	(*lputs)(void*, int level, const char* str)
 						,void	(*progress)(void*, ulong, ulong, ulong, time_t)
-						,int	(*send_byte)(void*, uchar ch, unsigned timeout)
+						,int	(*send_byte)(void*, BYTE ch, unsigned timeout)
 						,int	(*recv_byte)(void*, unsigned timeout)
 						,BOOL	(*is_connected)(void*)
 						);
 char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);
+int			zmodem_rx(zmodem_t* zm);
+int zmodem_tx(zmodem_t* zm, BYTE ch);
 int			zmodem_abort_receive(zmodem_t*);
 int			zmodem_send_ack(zmodem_t*, long pos);
 int			zmodem_send_nak(zmodem_t*);
