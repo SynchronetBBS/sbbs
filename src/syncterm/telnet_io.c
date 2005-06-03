@@ -192,8 +192,18 @@ int telnet_recv(char *buffer, size_t buflen, unsigned timeout)
 {
 	int		rd;
 	int		avail;
-	BYTE	telnet_buf[4096];
+	BYTE	*p;
 	BOOL	data_waiting;
+	static BYTE	*telnet_buf=NULL;
+	static int tbsize=0;
+
+	if(tbsize < buflen) {
+		p=(BYTE *)realloc(telnet_buf, buflen);
+		if(p != NULL) {
+			telnet_buf=p;
+			tbsize = buflen;
+		}
+	}
 
 	while(1) {
 
