@@ -1681,7 +1681,7 @@ BOOL zmodem_recv_file_info(zmodem_t* zm
 
 unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, time_t start)
 {
-	int			i;
+	int			i=0;
 	unsigned	errors=0;
 
 	if(start==0)
@@ -1692,6 +1692,10 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize
 
 	while(errors<=zm->max_errors && is_connected(zm)
 		&& (ulong)ftell(fp) < fsize && !zm->cancelled) {
+
+		if(i!=ENDOFFRAME)
+			zmodem_send_pos_header(zm, ZRPOS, ftell(fp), /* Hex? */ TRUE);
+
 		if((i = zmodem_recv_file_frame(zm,fp,offset,fsize,start)) == ZEOF)
 			break;
 		if(i!=ENDOFFRAME) {
@@ -1709,8 +1713,6 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, ti
 	long pos;
 	unsigned n;
 	int type;
-
-	zmodem_send_pos_header(zm, ZRPOS, ftell(fp), /* Hex? */ TRUE);
 
 	/*
 	 * wait for a ZDATA header with the right file offset
