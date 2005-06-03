@@ -1518,10 +1518,11 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		if(sent!=NULL)
 			*sent+=sent_bytes;
 
-		if(type == ZFERR || type == ZABORT || zm->cancelled)
+		if(type == ZFERR || type == ZABORT || type == TIMEOUT || zm->cancelled)
 			return(FALSE);
 
 	} while(type == ZRPOS || type == ZNAK);
+
 
 	lprintf(zm,LOG_INFO,"Finishing transfer on rx of header type: %s", chr((uchar)type));
 
