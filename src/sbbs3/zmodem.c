@@ -1503,7 +1503,8 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		if(type == ZRPOS) {
 			pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) | (zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
-			lprintf(zm,LOG_INFO,"Resuming transfer from offset: %lu", pos);
+			if(pos)
+				lprintf(zm,LOG_INFO,"Resuming transfer from offset: %lu", pos);
 		}
 
 		/*
