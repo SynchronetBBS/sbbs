@@ -823,7 +823,9 @@ char* DLLCALL backslash(char* path)
 	if(!IS_PATH_DELIM(*p)) {
 #if defined(__unix__)
 		/* Convert trailing backslash to forwardslash on *nix */
-		if(*p!='\\')
+		if(*p!='\\' && *p)
+#else
+		if(*p)
 #endif
 			p++;
 		*p=PATH_DELIM;
