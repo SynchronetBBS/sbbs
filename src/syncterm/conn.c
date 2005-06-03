@@ -107,6 +107,7 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, int conn_type)
 	unsigned int	neta;
 	int	i;
 
+	con_type=conn_type;
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
 			break;
