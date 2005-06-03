@@ -446,8 +446,9 @@ void doterm(struct bbslist *bbs)
 	int	key;
 	int i,j,k;
 	unsigned char *scrollback;
-	char *p;
+	unsigned char *p;
 	char zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };
+	char zrqbuf[5];
 
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
@@ -459,6 +460,7 @@ void doterm(struct bbslist *bbs)
 	memset(scrollback,0,term.width*2*backlines);
 	cterm_init(term.height,term.width,term.x-1,term.y-1,backlines,scrollback);
 	ch[1]=0;
+	zrqbuf[0]=0;
 
 	/* Main input loop */
 	for(;;) {
@@ -481,11 +483,41 @@ void doterm(struct bbslist *bbs)
 				dump(buf,i);
 #endif
 				buf[i]=0;
-				if(strstr(buf,zrqinit)!=NULL)	{ /* this should be more robust */
-					zmodem_receive();
-					break;
+				p=buf;
+				if(!zrqbuf[0]) {
+					p=memchr(buf, zrqinit[0], i);
+					if(p!=NULL) {
+						cterm_write(buf, p-buf, prn, sizeof(prn));
+						if(prn[0])
+							conn_send(prn,strlen(prn),0);
+						zrqbuf[0]=*(p++);
+						zrqbuf[1]=0;
+					}
+					else
+						p=buf;
 				}
-				cterm_write(buf,i,prn,sizeof(prn));
+				if(zrqbuf[0]) {	/* Already have the start of the sequence */
+					j=strlen(zrqbuf);
+					while(j<4 /* strlen(zrqinit) */ && p<buf+i) {
+						if(*p==zrqinit[j]) {
+							zrqbuf[j++]=zrqinit[j];
+							zrqbuf[j]=0;
+							p++;
+						}
+						else
+							break;
+					}
+					if(j==4 /* strlen(zrqinit) */) {	/* Have full sequence */
+						zmodem_receive();
+						zrqbuf[0]=0;
+					}
+					else if(p<=buf+i-(4 /* strlen(zrqinit */ - j)) {	/* Not a real zrqinit */
+						cterm_write(zrqbuf, j, prn, sizeof(prn));
+						if(prn[0])
+							conn_send(prn,strlen(prn),0);
+					}
+				}
+				cterm_write(p,(buf+i)-p,prn,sizeof(prn));
 				if(prn[0])
 					conn_send(prn,strlen(prn),0);
 				break;
