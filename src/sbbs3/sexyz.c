@@ -160,7 +160,7 @@ static int lputs(void* unused, int level, const char* str)
 	FILE*	fp=statfp;
 
 #if defined(_WIN32) && defined(_DEBUG)
-	if(log_level==LOG_DEBUG || level==LOG_DEBUG)
+	if(log_level==LOG_DEBUG)
 		OutputDebugString(str);
 #endif
 
@@ -1272,7 +1272,7 @@ int main(int argc, char **argv)
 	RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
 
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected);
-	zmodem_init(&zm,NULL,&mode,lputs,zmodem_progress,send_byte,recv_byte,is_connected);
+	zmodem_init(&zm,NULL,lputs,zmodem_progress,send_byte,recv_byte,is_connected);
 
 	/* Generate path/sexyz[.host].ini from path/sexyz[.exe] */
 	SAFECOPY(str,argv[0]);
