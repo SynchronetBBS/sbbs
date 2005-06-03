@@ -494,7 +494,7 @@ int zmodem_recv_poll(zmodem_t* zm)
 {
 	int rd=0;
 
-	socket_check(sock,&rd,NULL,0);
+//	socket_check(sock,&rd,NULL,0);
 
 	return(rd);
 }
@@ -1682,6 +1682,8 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize
 	int			i;
 	unsigned	errors=0;
 
+	if(start==0)
+		start=time(NULL);
 	while(errors<=zm->max_errors && is_connected(zm)
 		&& (ulong)ftell(fp) < fsize && !zm->cancelled) {
 		if((i = zmodem_recv_file_frame(zm,fp,offset,fsize,start)) == ZEOF)
@@ -1764,7 +1766,7 @@ char* zmodem_ver(char *buf)
 	return(buf);
 }
 
-void zmodem_init(zmodem_t* zm, void* cbdata, long* mode
+void zmodem_init(zmodem_t* zm, void* cbdata
 				,int	(*lputs)(void*, int level, const char* str)
 				,void	(*progress)(void* unused, ulong, ulong, ulong, time_t)
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
@@ -1784,7 +1786,6 @@ void zmodem_init(zmodem_t* zm, void* cbdata, long* mode
 	zm->max_errors=9;
 
 	zm->cbdata=cbdata;
-	zm->mode=mode;
 	zm->lputs=lputs;
 	zm->progress=progress;
 	zm->send_byte=send_byte;

@@ -263,7 +263,7 @@ typedef struct {
 
 } zmodem_t;
 
-void		zmodem_init(zmodem_t*, void* cbdata, long* mode
+void		zmodem_init(zmodem_t*, void* cbdata
 						,int	(*lputs)(void*, int level, const char* str)
 						,void	(*progress)(void*, ulong, ulong, ulong, time_t)
 						,int	(*send_byte)(void*, uchar ch, unsigned timeout)
