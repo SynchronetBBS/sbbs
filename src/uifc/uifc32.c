@@ -169,6 +169,7 @@ int uifcini32(uifcapi_t* uifcapi)
 	api->showbuf=showbuf;
 	api->timedisplay=timedisplay;
 	api->getstrxy=ugetstr;
+	api->printf=uprintf;
 
 	/* A esc_delay of less than 10 is stupid... silently override */
 	if(api->esc_delay < 10)
