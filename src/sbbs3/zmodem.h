@@ -231,7 +231,7 @@ typedef struct {
 	time_t transfer_start;
 	time_t last_status;
 
-	int receive_32_bit_data;
+	int receive_32bit_data;
 	int use_crc16;
 	long ack_file_pos;				/* file position used in acknowledgement of correctly */
 									/* received data subpackets */
