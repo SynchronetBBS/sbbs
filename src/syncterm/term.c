@@ -244,6 +244,7 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos
 			case CTRL_C:
 			case CTRL_X:
 				zm->cancelled=TRUE;
+				zm->local_abort=TRUE;
 				break;
 		}
 	}
@@ -419,6 +420,9 @@ void zmodem_receive(void)
 		} while(0);
 		/* finally */
 	}
+	if(zm.local_abort)
+		zmodem_abort_receive(&zm);
+
 	/* wait for "over-and-out" */
 	timeout=zm.recv_timeout;
 	zm.recv_timeout=2;
