@@ -1141,14 +1141,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						*cur += (height-vbrdrsize-1);
 						if(*cur>opts-1)
 							*cur = opts-1;
-						if(bar) {
-							*bar = height-vbrdrsize-1;
-							if(*bar>opts)
-								*bar=opts;
-						}
-						y=top+height-bbrdrwidth-1;
-						if(opts<height)
-							y=top+opts-bbrdrwidth-1;
+						if(bar)
+							*bar = optheight-vbrdrsize-1;
+						y=top+optheight-bbrdrwidth-1;
 						gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
 						textattr(api->lclr|(api->bclr<<4));
 						if(*cur>height-vbrdrsize-1)  /* Scroll mode */
@@ -1181,14 +1176,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 										: api->lclr|(api->bclr<<4)
 									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 							(*cur)=opts-1;
-							y=top+height-bbrdrwidth-1;
-							if(opts<height)
-								y=top+opts-bbrdrwidth-1;
-							if(bar) {
-								(*bar)=height-vbrdrsize-1;
-								if(*bar>opts)
-									*bar=opts;
-							}
+							y=top+optheight-bbrdrwidth-1;
+							if(bar)
+								(*bar)=optheight-vbrdrsize-1;
 							break; 
 						}
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
@@ -1198,14 +1188,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						(*cur)=opts-1;
-						y=top+height-bbrdrwidth-1;
-						if(opts<height)
-							y=top+opts-bbrdrwidth-1;
-						if(bar) {
-							(*bar)=height-vbrdrsize-1;
-							if(*bar>opts)
-								*bar=opts;
-						}
+						y=top+optheight-bbrdrwidth-1;
+						if(bar)
+							(*bar)=optheight-vbrdrsize-1;
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						for(i=1;i<148;i+=2)
@@ -1384,11 +1369,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 											: api->lclr|(api->bclr<<4)
 										,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 								y=top+height-bbrdrwidth-1;
-								if(bar) {
-									(*bar)=height-vbrdrsize-1;
-									if(*bar>opts)
-										*bar=opts;
-								}
+								if(bar)
+									(*bar)=optheight-vbrdrsize-1;
 								break; 
 							}
 							if(y-((*cur)-j)<top+tbrdrwidth) {
