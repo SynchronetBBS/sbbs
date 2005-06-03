@@ -21,24 +21,9 @@ int drawfpwindow(uifcapi_t *api)
 	int listheight=0;
 	int height;
 	int width;
-	char  hclr,lclr,bclr,cclr,lbclr;
 	char  shade[1024];
 
 	width=SCRN_RIGHT-SCRN_LEFT+1;
-	if(!(api->mode&UIFC_COLOR) && (api->mode&UIFC_MONO))
-        {
-		bclr=BLACK;
-		hclr=WHITE;
-		lclr=LIGHTGRAY;
-		cclr=LIGHTGRAY;
-		lbclr=BLACK|(LIGHTGRAY<<4);     /* lightbar color */
-	} else {
-		bclr=BLUE;
-		hclr=YELLOW;
-		lclr=WHITE;
-		cclr=CYAN;
-		lbclr=BLUE|(LIGHTGRAY<<4);      /* lightbar color */
-	}
 
 	height=api->scrn_len-4;
 	/* Make sure it's odd */
@@ -49,24 +34,24 @@ int drawfpwindow(uifcapi_t *api)
 	
         i=0;
 	lbuf[i++]='\xc9';
-	lbuf[i++]=hclr|(bclr<<4);
+	lbuf[i++]=api->hclr|(api->bclr<<4);
 	for(j=1;j<width-1;j++) {
 		lbuf[i++]='\xcd';
-		lbuf[i++]=hclr|(bclr<<4);
+		lbuf[i++]=api->hclr|(api->bclr<<4);
 	}
 	if(api->mode&UIFC_MOUSE && width>6) {
 		lbuf[2]='[';
-		lbuf[3]=hclr|(bclr<<4);
+		lbuf[3]=api->hclr|(api->bclr<<4);
 		lbuf[4]=0xfe;
-		lbuf[5]=lclr|(bclr<<4);
+		lbuf[5]=api->lclr|(api->bclr<<4);
 		lbuf[6]=']';
-		lbuf[7]=hclr|(bclr<<4);
+		lbuf[7]=api->hclr|(api->bclr<<4);
 		lbuf[8]='[';
-		lbuf[9]=hclr|(bclr<<4);
+		lbuf[9]=api->hclr|(api->bclr<<4);
 		lbuf[10]='?';
-		lbuf[11]=lclr|(bclr<<4);
+		lbuf[11]=api->lclr|(api->bclr<<4);
 		lbuf[12]=']';
-		lbuf[13]=hclr|(bclr<<4);
+		lbuf[13]=api->hclr|(api->bclr<<4);
 		api->buttony=SCRN_TOP;
 		api->exitstart=SCRN_LEFT+1;
 		api->exitend=SCRN_LEFT+3;
@@ -74,10 +59,10 @@ int drawfpwindow(uifcapi_t *api)
 		api->helpend=SCRN_LEFT+6;
 	}
 	lbuf[i++]='\xbb';
-	lbuf[i]=hclr|(bclr<<4);
+	lbuf[i]=api->hclr|(api->bclr<<4);
 	puttext(SCRN_LEFT,SCRN_TOP,SCRN_LEFT+width-1,SCRN_TOP,lbuf);
-	lbuf[5]=hclr|(bclr<<4);
-	lbuf[11]=hclr|(bclr<<4);
+	lbuf[5]=api->hclr|(api->bclr<<4);
+	lbuf[11]=api->hclr|(api->bclr<<4);
 	for(j=2;j<14;j+=2)
 		lbuf[j]='\xcd';
 	lbuf[0]='\xc8';
@@ -110,7 +95,7 @@ int drawfpwindow(uifcapi_t *api)
 	
 
 	/* Shadow */
-	if(bclr==BLUE) {
+	if(api->bclr==BLUE) {
 		gettext(SCRN_LEFT+width,SCRN_TOP+1,SCRN_LEFT+width+1
 			,SCRN_TOP+(height-1),shade);
 		for(j=1;j<1024;j+=2)
@@ -165,6 +150,35 @@ char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 	return(opts);
 }
 
+void display_current_path(uifcapi_t *api, char *path)
+{
+	int width;
+	char	dpath[MAX_PATH+2];
+	int pad=0;
+	int i,j;
+	char *p;
+
+	width=SCRN_RIGHT-SCRN_LEFT-3;
+	SAFECOPY(dpath, path);
+	strcat(dpath, "/");
+	while(strlen(dpath) > width) {
+		/* Just remove paths from the start. */
+		dpath[0]='.';
+		dpath[1]='.';
+		dpath[2]='.';
+		memmove(dpath+3, dpath+(strlen(dpath)-width+4), width-1);
+	}
+	/* For Win32, convert all "confusing" / to \\ */
+#ifdef _WIN32
+	for(p=dpath; *p; p++) {
+		if(*p=='/')
+			*p='\\';
+	}
+#endif
+
+	api->printf(SCRN_LEFT+2, SCRN_TOP+1, api->hclr|(api->bclr<<4), "%*s%-*s", pad, "", width, dpath);
+}
+
 int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char *msk, int opts)
 {
 	char	cpath[MAX_PATH+1];
@@ -187,6 +201,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	int		root=0;
 	int		reread=FALSE;
 	int		lbclr;
+	char	*lastpath=NULL;
 
 	lbclr=api->lbclr;
 
@@ -237,13 +252,20 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 #else
 #error Need to do something about root paths (in get_file_opt_list() too!)
 #endif
-		if(glob(cglob, 0, NULL, &fgl)!=0)
-			return(-1);
+		if(glob(cglob, 0, NULL, &fgl)!=0) {
+			if(lastpath==NULL)
+				return(-1);
+			api->msg("Cannot read directory!");
+			SAFECOPY(cpath, lastpath);
+			FREE_AND_NULL(lastpath);
+			continue;
+		}
 		api->list_height=api->scrn_len-4-8;
 		dir_list=get_file_opt_list(fgl.gl_pathv, fgl.gl_pathc, TRUE, root);
 		file_list=get_file_opt_list(fgl.gl_pathv, fgl.gl_pathc, FALSE, root);
 		reread=FALSE;
 		dircur=dirbar=filecur=filecur=0;
+		display_current_path(api, cpath);
 		while(!reread) {
 			api->lbclr=api->lclr|(api->bclr<<4);
 			api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
@@ -255,6 +277,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					if(i==-2-'\t')
 						currfield++;
 					if(i==0 && !root) {	/* Previous Dir */
+						FREE_AND_NULL(lastpath);
+						lastpath=strdup(cpath);
 						p1=strrchr(cpath,'/');
 	#ifdef _WIN32
 						p2=strrchr(cpath,'\\');
@@ -266,6 +290,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						break;
 					}
 					if(i>=0) {
+						FREE_AND_NULL(lastpath);
+						lastpath=strdup(cpath);
 						strcat(cpath,"/");
 						strcat(cpath,dir_list[i]);
 						reread=TRUE;
@@ -280,6 +306,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		}
 	}
 
+	FREE_AND_NULL(lastpath);
 	return(0);
 }
 
