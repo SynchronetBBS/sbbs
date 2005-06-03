@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "sockwrap.h"
@@ -5,6 +7,7 @@
 #include "bbslist.h"
 #include "telnet_io.h"
 #include "conn.h"
+#include "uifcbail.h"
 
 static int	con_type=CONN_TYPE_UNKNOWN;
 SOCKET conn_socket=INVALID_SOCKET;
