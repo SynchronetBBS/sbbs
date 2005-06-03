@@ -538,7 +538,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		else opts++;
 	if(mode&WIN_XTR && opts<MAX_OPTS)
 		opts++;
-	optheight=opts+hbrdrsize+2;
+	optheight=opts+vbrdrsize;
 	height=optheight;
 	if(mode&WIN_FIXEDHEIGHT) {
 		height=api->list_height;
