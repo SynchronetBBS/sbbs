@@ -246,6 +246,7 @@ typedef struct {
 	BOOL		cancelled;
 	BOOL		file_skipped;
 	BOOL		no_streaming;
+	unsigned	recv_bufsize;	/* Receiver specified buffer size */
 
 	/* Configuration */
 	long*		mode;
@@ -260,6 +261,7 @@ typedef struct {
 	int			(*recv_byte)(void*, unsigned timeout);
 	void		(*progress)(void*, ulong start_pos, ulong current_pos, ulong fsize, time_t start);
 	BOOL		(*is_connected)(void*);
+	BOOL		(*data_waiting)(void*);
 
 } zmodem_t;
 
@@ -269,6 +271,7 @@ void		zmodem_init(zmodem_t*, void* cbdata
 						,int	(*send_byte)(void*, BYTE ch, unsigned timeout)
 						,int	(*recv_byte)(void*, unsigned timeout)
 						,BOOL	(*is_connected)(void*)
+						,BOOL	(*data_waiting)(void*)
 						);
 char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);

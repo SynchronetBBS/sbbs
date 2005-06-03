@@ -29,7 +29,6 @@
 
 #include "genwrap.h"
 #include "dirwrap.h"
-#include "sockwrap.h"
 
 #include "zmodem.h"
 #include "crc16.h"
@@ -45,9 +44,6 @@
 #define ZDLEESC 0x8000	/* one of ZCRCE; ZCRCG; ZCRCQ or ZCRCW was received; ZDLE escaped */
 
 #define HDRLEN     5	/* size of a zmodem header */
-
-/* temporary */
-extern	SOCKET sock;
 
 static int lprintf(zmodem_t* zm, int level, const char *fmt, ...)
 {
@@ -69,6 +65,13 @@ static BOOL is_connected(zmodem_t* zm)
 	if(zm->is_connected!=NULL)
 		return(zm->is_connected(zm->cbdata));
 	return(TRUE);
+}
+
+int zmodem_data_waiting(zmodem_t* zm)
+{
+	if(zm->data_waiting)
+		return(zm->data_waiting(zm->cbdata));
+	return(FALSE);
 }
 
 static char *chr(uchar ch)
@@ -484,19 +487,6 @@ int zmodem_send_znak(zmodem_t* zm)
 int zmodem_send_zskip(zmodem_t* zm)
 {
 	return zmodem_send_pos_header(zm, ZSKIP, 0L, /* Hex? */ TRUE);
-}
-
-/*
- * receive any style header within timeout milliseconds
- */
-
-int zmodem_recv_poll(zmodem_t* zm)
-{
-	int rd=0;
-
-//	socket_check(sock,&rd,NULL,0);
-
-	return(rd);
 }
 
 /*
@@ -1167,8 +1157,6 @@ int zmodem_recv_header_and_check(zmodem_t* zm)
 
 void zmodem_parse_zrinit(zmodem_t* zm)
 {
-	ushort buf_size;
-
 	zm->can_full_duplex					= (zm->rxd_header[ZF0] & ZF0_CANFDX)  != 0;
 	zm->can_overlap_io					= (zm->rxd_header[ZF0] & ZF0_CANOVIO) != 0;
 	zm->can_break						= (zm->rxd_header[ZF0] & ZF0_CANBRK)  != 0;
@@ -1185,13 +1173,8 @@ void zmodem_parse_zrinit(zmodem_t* zm)
 		,zm->escape_all_control_characters ? "ALL" : "Normal"
 		);
 
-	if(!zm->can_overlap_io)
-		zm->no_streaming = TRUE;
-
-	if((buf_size = (zm->rxd_header[ZP0]<<8 | zm->rxd_header[ZP1])) != 0) {
-		lprintf(zm,LOG_INFO,"Receiver specified buffer size of: %u", buf_size);
-		zm->no_streaming = TRUE;
-	}
+	if((zm->recv_bufsize = (zm->rxd_header[ZP0]<<8 | zm->rxd_header[ZP1])) != 0)
+		lprintf(zm,LOG_INFO,"Receiver specified buffer size of: %u", zm->recv_bufsize);
 }
 
 int zmodem_get_zrinit(zmodem_t* zm)
@@ -1255,7 +1238,8 @@ int zmodem_get_zfin(zmodem_t* zm)
 int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent)
 {
 	int n;
-	uchar type = ZCRCG;
+	uchar type;
+	unsigned buf_sent=0;
 
 	if(sent!=NULL)
 		*sent=0;
@@ -1285,17 +1269,32 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 		if(zm->progress!=NULL)
 			zm->progress(zm->cbdata, pos, ftell(fp), fsize, zm->transfer_start);
 
+		type = ZCRCG;
+
+		/** ZMODEM.DOC:
+			ZCRCW data subpackets expect a response before the next frame is sent.
+			If the receiver does not indicate overlapped I/O capability with the
+			CANOVIO bit, or sets a buffer size, the sender uses the ZCRCW to allow
+			the receiver to write its buffer before sending more data.
+		***/
+		if(!zm->can_overlap_io || zm->no_streaming
+			|| (zm->recv_bufsize && buf_sent+n>=zm->recv_bufsize)) {
+			type=ZCRCW;
+			buf_sent=0;
+		}
+
 		/*
 		 * at end of file wait for an ACK
 		 */
-		if(zm->no_streaming || (ulong)ftell(fp) == fsize) {
+		if(feof(fp))
 			type = ZCRCW;
-		}
 
 		zmodem_send_data(zm, type, zm->tx_data_subpacket, n);
 
 		if(sent!=NULL)
 			*sent+=n;
+		
+		buf_sent+=n;
 
 		if(type == ZCRCW) {
 			int type;
@@ -1317,7 +1316,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 		 * check out that header
 		 */
 
-		while(zmodem_recv_poll(zm) && !zm->cancelled) {
+		while(zmodem_data_waiting(zm) && !zm->cancelled) {
 			int type;
 			int c;
 			if((c = zmodem_recv_raw(zm)) < 0)
@@ -1778,7 +1777,8 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 				,void	(*progress)(void* unused, ulong, ulong, ulong, time_t)
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 				,int	(*recv_byte)(void*, unsigned timeout)
-				,BOOL	(*is_connected)(void*))
+				,BOOL	(*is_connected)(void*)
+				,BOOL	(*data_waiting)(void*))
 {
 	memset(zm,0,sizeof(zmodem_t));
 
@@ -1798,4 +1798,5 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 	zm->send_byte=send_byte;
 	zm->recv_byte=recv_byte;
 	zm->is_connected=is_connected;
+	zm->data_waiting=data_waiting;
 }
