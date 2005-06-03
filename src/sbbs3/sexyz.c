@@ -592,6 +592,15 @@ BOOL is_connected(void* unused)
 	return socket_check(sock,NULL,NULL,0);
 }
 
+BOOL data_waiting(void* unused)
+{
+	BOOL rd;
+
+	if(!socket_check(sock,&rd,NULL,0))
+		return(FALSE);
+	return(rd);
+}
+
 /****************************************************************************/
 /* Returns the number of blocks required to send len bytes					*/
 /****************************************************************************/
@@ -1272,7 +1281,7 @@ int main(int argc, char **argv)
 	RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
 
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected);
-	zmodem_init(&zm,NULL,lputs,zmodem_progress,send_byte,recv_byte,is_connected);
+	zmodem_init(&zm,NULL,lputs,zmodem_progress,send_byte,recv_byte,is_connected,data_waiting);
 
 	/* Generate path/sexyz[.host].ini from path/sexyz[.exe] */
 	SAFECOPY(str,argv[0]);

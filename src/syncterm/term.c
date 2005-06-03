@@ -324,6 +324,18 @@ static BOOL is_connected(void* unused)
 	return socket_check(conn_socket,NULL,NULL,0);
 }
 
+#if defined(__BORLANDC__)
+	#pragma argsused
+#endif
+BOOL data_waiting(void* unused)
+{
+	BOOL rd;
+
+	if(!socket_check(conn_socket,&rd,NULL,0))
+		return(FALSE);
+	return(rd);
+}
+
 void zmodem_receive(void)
 {
 	char		fpath[MAX_PATH+1];
@@ -344,7 +356,7 @@ void zmodem_receive(void)
 	zmodem_init(&zm
 		,/* cbdata */&zm
 		,lputs, zmodem_progress
-		,send_byte,recv_byte,is_connected);
+		,send_byte,recv_byte,is_connected,data_waiting);
 
 	while(zmodem_recv_init(&zm
 			,fpath,sizeof(fpath)
