@@ -9,7 +9,6 @@ enum {
 	,FILE_LIST
 	,CURRENT_PATH
 	,MASK_FIELD
-	,NAME_FIELD
 	,FIELD_LIST_TERM
 };
 
@@ -177,18 +176,19 @@ void display_current_path(uifcapi_t *api, char *path)
 	}
 #endif
 
-	api->printf(SCRN_LEFT+2, SCRN_TOP+height-4, api->hclr|(api->bclr<<4), "%-*s", width, dpath);
+	api->printf(SCRN_LEFT+2, SCRN_TOP+height-4, api->lclr|(api->bclr<<4), "%-*s", width, dpath);
 }
 
 int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char *msk, int opts)
 {
 	char	cpath[MAX_PATH+1];
-	char	cdir[MAX_PATH+1];
 	char	cmsk[MAX_PATH*4+1];
 	char	cglob[MAX_PATH*4+1];
+	char	dglob[MAX_PATH*4+1];
 	char	*p1;
 	char	*p2;
 	glob_t	fgl;
+	glob_t	dgl;
 	int		dircur=0;
 	int		dirbar=0;
 	int		filecur=0;
@@ -227,16 +227,6 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		SAFECOPY(cpath,".");
 
 	FULLPATH(cpath,((dir==NULL||dir[0]==0)?".":dir),sizeof(cpath));
-	p1=strrchr(cpath,'/');
-#ifdef _WIN32
-	p2=strrchr(cpath,'\\');
-	if(p2>p1)
-		p1=p2;
-#endif
-	if(p1!=NULL)
-		SAFECOPY(cdir,p1);
-	else
-		SAFECOPY(cdir,"NONE");
 
 	if(msk==NULL || msk[0]==0) {
 		SAFECOPY(cmsk,"*");
@@ -255,7 +245,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	if(i>width-4)
 		i=width-4;
 	api->printf(SCRN_LEFT+2, SCRN_TOP+1, api->hclr|(api->bclr<<4), "%*s%-*s", (width-i)/2-2, "", i, title);
-
+	api->printf(SCRN_LEFT+2, SCRN_TOP+height-2, api->hclr|(api->bclr<<4), "Mask: ");
+	api->printf(SCRN_LEFT+8, SCRN_TOP+height-2, api->lclr|(api->bclr<<4), "%-*s", width-7, msk);
 	while(1) {
 		tmppath=strdup(cpath);
 		if(tmppath != NULL)
@@ -263,6 +254,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		FREE_AND_NULL(tmppath);
 
 		sprintf(cglob,"%s/%s",cpath,cmsk);
+		sprintf(dglob,"%s/*",cpath,cmsk);
 #ifdef __unix__
 		if(cpath[1]==0)
 			root=TRUE;
@@ -271,7 +263,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 #else
 #error Need to do something about root paths (in get_file_opt_list() too!)
 #endif
-		if(glob(cglob, 0, NULL, &fgl)!=0) {
+		if(glob(dglob, 0, NULL, &dgl)!=0) {
 			if(lastpath==NULL)
 				return(-1);
 			api->msg("Cannot read directory!");
@@ -280,9 +272,13 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 			currfield=lastfield;
 			continue;
 		}
+		if(glob(cglob, 0, NULL, &fgl)!=0)
+			fgl.gl_pathc=0;
 		api->list_height=api->scrn_len-4-8;
-		dir_list=get_file_opt_list(fgl.gl_pathv, fgl.gl_pathc, TRUE, root);
+		dir_list=get_file_opt_list(dgl.gl_pathv, dgl.gl_pathc, TRUE, root);
 		file_list=get_file_opt_list(fgl.gl_pathv, fgl.gl_pathc, FALSE, root);
+		globfree(&dgl);
+		globfree(&fgl);
 		reread=FALSE;
 		dircur=dirbar=filecur=filecur=0;
 		display_current_path(api, cpath);
@@ -348,8 +344,13 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					FREE_AND_NULL(tmplastpath);
 					currfield++;
 					break;
+				case MASK_FIELD:
+					api->getstrxy(SCRN_LEFT+8, SCRN_TOP+height-2, width-7, cmsk, sizeof(cmsk)-1, K_EDIT|K_TABEXIT, &i);
+					reread=TRUE;
+					currfield++;
+					break;
 			}
-			if(currfield==MASK_FIELD)
+			if(currfield==FIELD_LIST_TERM)
 				currfield=DIR_LIST;
 		}
 	}
