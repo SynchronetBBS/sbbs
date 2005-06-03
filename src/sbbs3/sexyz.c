@@ -1079,7 +1079,7 @@ static int receive_files(char** fname_list, int fnames)
 			 */
 
 			for(;errors<=zm.max_errors && !success && !zm.cancelled; errors++) {
-				if(zmodem_recv_header_and_check(&zm,zm.recv_timeout))
+				if(zmodem_recv_header_and_check(&zm))
 					success=TRUE;
 			} 
 
