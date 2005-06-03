@@ -197,12 +197,15 @@ static int lputs(void* unused, int level, const char* str)
 		case LOG_INFO:
 		case LOG_DEBUG:
 		case LOG_NOTICE:
+			textcolor(WHITE);
 			SAFEPRINTF(msg,"%s\r\n",str);
 			break;
 		case LOG_WARNING:
+			textcolor(LIGHTMAGENTA);
 			SAFEPRINTF(msg,"Warning: %s\r\n",str);
 			break;
 		default:
+			textcolor(LIGHTRED);
 			SAFEPRINTF(msg,"!ERROR: %s\r\n",str);
 			break;
 	}
