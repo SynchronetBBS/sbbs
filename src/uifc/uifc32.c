@@ -60,7 +60,6 @@
 
 #define BLINK	128
 
-static char  hclr,lclr,bclr,cclr,lbclr;
 static int   cursor;
 static char* helpfile=0;
 static uint  helpline=0;
@@ -246,17 +245,17 @@ int uifcini32(uifcapi_t* uifcapi)
             || txtinfo.currmode==MONO50 || txtinfo.currmode==BW40X50 || txtinfo.currmode==BW80X50
             || txtinfo.currmode==MONO60 || txtinfo.currmode==BW40X60 || txtinfo.currmode==BW80X60))
 	{
-        bclr=BLACK;
-        hclr=WHITE;
-        lclr=LIGHTGRAY;
-        cclr=LIGHTGRAY;
-			lbclr=BLACK|(LIGHTGRAY<<4);	/* lightbar color */
+        api->bclr=BLACK;
+        api->hclr=WHITE;
+        api->lclr=LIGHTGRAY;
+        api->cclr=LIGHTGRAY;
+			api->lbclr=BLACK|(LIGHTGRAY<<4);	/* lightbar color */
     } else {
-        bclr=BLUE;
-        hclr=YELLOW;
-        lclr=WHITE;
-        cclr=CYAN;
-		lbclr=BLUE|(LIGHTGRAY<<4);	/* lightbar color */
+        api->bclr=BLUE;
+        api->hclr=YELLOW;
+        api->lclr=WHITE;
+        api->cclr=CYAN;
+		api->lbclr=BLUE|(LIGHTGRAY<<4);	/* lightbar color */
     }
 
 	blk_scrn_len=api->scrn_width*api->scrn_len*2;
@@ -277,7 +276,7 @@ int uifcini32(uifcapi_t* uifcapi)
 	}
     for(i=0;i<blk_scrn_len;i+=2) {
         blk_scrn[i]='°';
-        blk_scrn[i+1]=cclr|(bclr<<4);
+        blk_scrn[i+1]=api->cclr|(api->bclr<<4);
     }
 
     cursor=_NOCURSOR;
@@ -423,7 +422,7 @@ void uifcbail(void)
 /****************************************************************************/
 int uscrn(char *str)
 {
-    textattr(bclr|(cclr<<4));
+    textattr(api->bclr|(api->cclr<<4));
     gotoxy(1,1);
     clreol();
     gotoxy(3,1);
@@ -459,7 +458,7 @@ static void timedisplay()
 
 	now=time(NULL);
 	if(difftime(now,savetime)>=60) {
-		uprintf(api->scrn_width-25,1,bclr|(cclr<<4),utimestr(&now));
+		uprintf(api->scrn_width-25,1,api->bclr|(api->cclr<<4),utimestr(&now));
 		savetime=now; 
 	}
 }
@@ -643,22 +642,22 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		ptr=tmp_buffer;
 		if(!(mode&WIN_NOBRDR)) {
 			*(ptr++)='É';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)=api->hclr|(api->bclr<<4);
 
 			if(api->mode&UIFC_MOUSE) {
 				*(ptr++)='[';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 				/* *(ptr++)='þ'; */
 				*(ptr++)=0xfe;
-				*(ptr++)=lclr|(bclr<<4);
+				*(ptr++)=api->lclr|(api->bclr<<4);
 				*(ptr++)=']';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 				*(ptr++)='[';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 				*(ptr++)='?';
-				*(ptr++)=lclr|(bclr<<4);
+				*(ptr++)=api->lclr|(api->bclr<<4);
 				*(ptr++)=']';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 				i=6;
 				api->buttony=s_top+top;
 				api->exitstart=s_left+left+1;
@@ -671,60 +670,60 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 			for(;i<width-2;i++) {
 				*(ptr++)='Í';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 			}
 			*(ptr++)='»';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)=api->hclr|(api->bclr<<4);
 			*(ptr++)='º';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)=api->hclr|(api->bclr<<4);
 			a=title_len;
 			b=(width-a-1)/2;
 			for(i=0;i<b;i++) {
 				*(ptr++)=' ';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 			}
 			for(i=0;i<a;i++) {
 				*(ptr++)=title[i];
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 			}
 			for(i=0;i<width-(a+b)-2;i++) {
 				*(ptr++)=' ';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 			}
 			*(ptr++)='º';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)=api->hclr|(api->bclr<<4);
 			*(ptr++)='Ì';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)=api->hclr|(api->bclr<<4);
 			for(i=0;i<width-2;i++) {
 				*(ptr++)='Í';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 			}
 			*(ptr++)='¹';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)=api->hclr|(api->bclr<<4);
 		}
 
 		if((*cur)>=opts)
 			(*cur)=opts-1;			/* returned after scrolled */
 
 		if(!bar) {
-			if((*cur)>height-vbrdrsize-1)
-				(*cur)=height-vbrdrsize-1;
+			if((*cur)>(opts<height?opts:height)-vbrdrsize-1)
+				(*cur)=(opts<height?opts:height)-vbrdrsize-1;
 			i=0;
 		}
 		else {
 			if((*bar)>=opts)
 				(*bar)=opts-1;
-			if((*bar)>height-vbrdrsize-1)
-				(*bar)=height-vbrdrsize-1;
+			if((*bar)>(opts<height?opts:height)-vbrdrsize-1)
+				(*bar)=(opts<height?opts:height)-vbrdrsize-1;
 			if((*cur)==opts-1)
-				(*bar)=height-vbrdrsize-1;
+				(*bar)=(opts<height?opts:height)-vbrdrsize-1;
 			if((*bar)<0)
 				(*bar)=0;
 			if((*cur)<(*bar))
 				(*cur)=(*bar);
 			i=(*cur)-(*bar);
-			if(i+(height-vbrdrsize-1)>=opts) {
-				i=opts-(height-vbrdrsize);
+			if(i+((opts<height?opts:height)-vbrdrsize-1)>=opts) {
+				i=opts-((opts<height?opts:height)-vbrdrsize);
 				(*cur)=i+(*bar);
 			}
 		}
@@ -734,28 +733,32 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		j=0;
 		if(i<0) i=0;
 		longopt=0;
-		while(j<height-vbrdrsize && i<opts) {
+		while(j<height-vbrdrsize) {
 			if(!(mode&WIN_NOBRDR)) {
 				*(ptr++)='º';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 			}
 			*(ptr++)=' ';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)=api->hclr|(api->bclr<<4);
 			*(ptr++)='³';
-			*(ptr++)=lclr|(bclr<<4);
+			*(ptr++)=api->lclr|(api->bclr<<4);
 			if(i==(*cur))
-				a=lbclr;
+				a=api->lbclr;
 			else
-				a=lclr|(bclr<<4);
-			b=strlen(option[i]);
-			if(b>longopt)
-				longopt=b;
-			if(b+hbrdrsize+2>width)
-				b=width-hbrdrsize-2;
-			for(c=0;c<b;c++) {
-				*(ptr++)=option[i][c];
-				*(ptr++)=a; 
+				a=api->lclr|(api->bclr<<4);
+			if(i<opts) {
+				b=strlen(option[i]);
+				if(b>longopt)
+					longopt=b;
+				if(b+hbrdrsize+2>width)
+					b=width-hbrdrsize-2;
+				for(c=0;c<b;c++) {
+					*(ptr++)=option[i][c];
+					*(ptr++)=a; 
+				}
 			}
+			else
+				c=0;
 			while(c<width-hbrdrsize-2) {
 				*(ptr++)=' ';
 				*(ptr++)=a;
@@ -763,20 +766,20 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			}
 			if(!(mode&WIN_NOBRDR)) {
 				*(ptr++)='º';
-				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=api->hclr|(api->bclr<<4);
 			}
 			i++;
 			j++; 
 		}
 		if(!(mode&WIN_NOBRDR)) {
 			*(ptr++)='È';
-			*(ptr++)=hclr|(bclr<<4);
+			*(ptr++)=api->hclr|(api->bclr<<4);
 			for(i=0;i<width-2;i++) {
 				*(ptr++)='Í';
-				*(ptr++)=hclr|(bclr<<4); 
+				*(ptr++)=api->hclr|(api->bclr<<4); 
 			}
 			*(ptr++)='¼';
-			*(ptr)=hclr|(bclr<<4);	/* Not incremented to shut ot BCC */
+			*(ptr)=api->hclr|(api->bclr<<4);	/* Not incremented to shut ot BCC */
 		}
 		puttext(s_left+left,s_top+top,s_left+left+width-1
 			,s_top+top+height-1,tmp_buffer);
@@ -787,21 +790,21 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(opts+vbrdrsize>height && ((!bar && (*cur)!=opts-1)
 			|| (bar && ((*cur)-(*bar))+(height-vbrdrsize)<opts))) {
 			gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
-			textattr(lclr|(bclr<<4));
+			textattr(api->lclr|(api->bclr<<4));
 			putch(31);	   /* put down arrow */
-			textattr(hclr|(bclr<<4)); 
+			textattr(api->hclr|(api->bclr<<4)); 
 		}
 
 		if(bar && (*bar)!=(*cur)) {
 			gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-			textattr(lclr|(bclr<<4));
+			textattr(api->lclr|(api->bclr<<4));
 			putch(30);	   /* put the up arrow */
-			textattr(hclr|(bclr<<4)); 
+			textattr(api->hclr|(api->bclr<<4)); 
 		}
 
 		if(!(mode&WIN_NOBRDR)) {
 			/* Shadow */
-			if(bclr==BLUE) {
+			if(api->bclr==BLUE) {
 				gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
 					,s_top+top+height-1,shade);
 				for(i=1;i<height*4;i+=2)
@@ -822,21 +825,25 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		j=2;
 
 		longopt=0;
-		while(j<height-bbrdrwidth-1 && i<opts) {
+		while(j<height-bbrdrwidth-1) {
 			ptr=tmp_buffer;
 			if(i==(*cur))
-				a=lbclr;
+				a=api->lbclr;
 			else
-				a=lclr|(bclr<<4);
-			b=strlen(option[i]);
-			if(b>longopt)
-				longopt=b;
-			if(b+hbrdrsize+2>width)
-				b=width-hbrdrsize-2;
-			for(c=0;c<b;c++) {
-				*(ptr++)=option[i][c];
-				*(ptr++)=a; 
+				a=api->lclr|(api->bclr<<4);
+			if(i<opts) {
+				b=strlen(option[i]);
+				if(b>longopt)
+					longopt=b;
+				if(b+hbrdrsize+2>width)
+					b=width-hbrdrsize-2;
+				for(c=0;c<b;c++) {
+					*(ptr++)=option[i][c];
+					*(ptr++)=a; 
+				}
 			}
+			else
+				c=0;
 			while(c<width-hbrdrsize-2) {
 				*(ptr++)=' ';
 				*(ptr++)=a;
@@ -877,7 +884,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					if(mevnt.startx>=s_left+left+lbrdrwidth+2
 							&& mevnt.startx<=s_left+left+width-rbrdrwidth-1
 							&& mevnt.starty>=s_top+top+tbrdrwidth
-							&& mevnt.starty<=(s_top+top+height)-bbrdrwidth-1
+							&& mevnt.starty<=(s_top+top+(opts<height?opts:height))-bbrdrwidth-1
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
 
 						(*cur)=(mevnt.starty)-(s_top+top+tbrdrwidth);
@@ -898,10 +905,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gettext(s_left+left,s_top+top,s_left
 								+left+width-1,s_top+top+height-1,win);
 							for(i=1;i<(width*height*2);i+=2)
-								win[i]=lclr|(cclr<<4);
+								win[i]=api->lclr|(api->cclr<<4);
 							j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
 							for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-								win[i]=hclr|(cclr<<4);
+								win[i]=api->hclr|(api->cclr<<4);
 
 							puttext(s_left+left,s_top+top,s_left
 								+left+width-1,s_top+top+height-1,win);
@@ -991,18 +998,18 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					case CIO_KEY_HOME:	/* home */
 						if(!opts)
 							break;
-						if(opts+vbrdrsize>height) {
+						if(opts+vbrdrsize>(opts<height?opts:height)) {
 							gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-							textattr(lclr|(bclr<<4));
+							textattr(api->lclr|(api->bclr<<4));
 							putch(' ');    /* Delete the up arrow */
 							gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
 							putch(31);	   /* put the down arrow */
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth
-								,lbclr
+								,api->lbclr
 								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[0]);
-							for(i=1;i<height-vbrdrsize;i++)    /* re-display options */
+							for(i=1;i<(opts<height?opts:height)-vbrdrsize;i++)    /* re-display options */
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+i
-									,lclr|(bclr<<4)
+									,api->lclr|(api->bclr<<4)
 									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 							(*cur)=0;
 							if(bar)
@@ -1013,7 +1020,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(s_left+left+lbrdrwidth+2,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						for(i=1;i<width*2;i+=2)
-							line[i]=lclr|(bclr<<4);
+							line[i]=api->lclr|(api->bclr<<4);
 						puttext(s_left+left+lbrdrwidth+2,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						(*cur)=0;
@@ -1023,41 +1030,41 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						for(i=1;i<width*2;i+=2)
-							line[i]=lbclr;
+							line[i]=api->lbclr;
 						puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						break;
 					case CIO_KEY_UP:	/* up arrow */
 						if(!opts)
 							break;
-						if(!(*cur) && opts+vbrdrsize>height) {
+						if(!(*cur) && opts+vbrdrsize>(opts<height?opts:height)) {
 							gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth); /* like end */
-							textattr(lclr|(bclr<<4));
+							textattr(api->lclr|(api->bclr<<4));
 							putch(30);	   /* put the up arrow */
 							gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
 							putch(' ');    /* delete the down arrow */
-							for(i=(opts+vbrdrsize)-height,j=0;i<opts;i++,j++)
+							for(i=(opts+vbrdrsize)-(opts<height?opts:height),j=0;i<opts;i++,j++)
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
-									,i==opts-1 ? lbclr
-										: lclr|(bclr<<4)
+									,i==opts-1 ? api->lbclr
+										: api->lclr|(api->bclr<<4)
 									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 							(*cur)=opts-1;
 							if(bar)
-								(*bar)=height-vbrdrsize-1;
-							y=top+height-bbrdrwidth-1;
+								(*bar)=(opts<height?opts:height)-vbrdrsize-1;
+							y=top+(opts<height?opts:height)-bbrdrwidth-1;
 							break; 
 						}
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						for(i=1;i<width*2;i+=2)
-							line[i]=lclr|(bclr<<4);
+							line[i]=api->lclr|(api->bclr<<4);
 						puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						if(!(*cur)) {
-							y=top+height-bbrdrwidth-1;
+							y=top+(opts<height?opts:height)-bbrdrwidth-1;
 							(*cur)=opts-1;
 							if(bar)
-								(*bar)=height-vbrdrsize-1; 
+								(*bar)=(opts<height?opts:height)-vbrdrsize-1; 
 						}
 						else {
 							(*cur)--;
@@ -1068,26 +1075,26 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(y<top+tbrdrwidth) {	/* scroll */
 							if(!(*cur)) {
 								gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-								textattr(lclr|(bclr<<4));
+								textattr(api->lclr|(api->bclr<<4));
 								putch(' '); /* delete the up arrow */
 							}
-							if((*cur)+height-vbrdrsize==opts-1) {
+							if((*cur)+(opts<height?opts:height)-vbrdrsize==opts-1) {
 								gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
-								textattr(lclr|(bclr<<4));
+								textattr(api->lclr|(api->bclr<<4));
 								putch(31);	/* put the dn arrow */
 							}
 							y++;
 							scroll_text(s_left+left+lbrdrwidth+1,s_top+top+tbrdrwidth
 								,s_left+left+width-rbrdrwidth-1,s_top+top+height-bbrdrwidth-1,1);
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth
-								,lbclr
+								,api->lbclr
 								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[*cur]);
 						}
 						else {
 							gettext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=lbclr;
+								line[i]=api->lbclr;
 							puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						}
@@ -1095,14 +1102,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					case CIO_KEY_PPAGE:	/* PgUp */
 						if(!opts)
 							break;
-						*cur -= (height-vbrdrsize-1);
+						*cur -= ((opts<height?opts:height)-vbrdrsize-1);
 						if(*cur<0)
 							*cur = 0;
 						if(bar)
 							*bar=0;
 						y=top+tbrdrwidth;
 						gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-						textattr(lclr|(bclr<<4));
+						textattr(api->lclr|(api->bclr<<4));
 						if(*cur && opts>height-tbrdrwidth)  /* Scroll mode */
 							putch(30);	   /* put the up arrow */
 						else
@@ -1112,10 +1119,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							putch(31);	   /* put the down arrow */
 						else
 							putch(' ');    /* delete the down arrow */
-						for(i=*cur,j=0;i<=*cur-vbrdrsize-1+height;i++,j++)
+						for(i=*cur,j=0;i<=*cur-vbrdrsize-1+(opts<height?opts:height);i++,j++)
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
-								,i==*cur ? lbclr
-									: lclr|(bclr<<4)
+								,i==*cur ? api->lbclr
+									: api->lclr|(api->bclr<<4)
 								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 						break;
 					case CIO_KEY_NPAGE:	/* PgDn */
@@ -1124,11 +1131,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						*cur += (height-vbrdrsize-1);
 						if(*cur>opts-1)
 							*cur = opts-1;
-						if(bar)
+						if(bar) {
 							*bar = height-vbrdrsize-1;
+							if(*bar>opts)
+								*bar=opts;
+						}
 						y=top+height-bbrdrwidth-1;
+						if(opts<height)
+							y=top+opts-bbrdrwidth-1;
 						gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-						textattr(lclr|(bclr<<4));
+						textattr(api->lclr|(api->bclr<<4));
 						if(*cur>height-vbrdrsize-1)  /* Scroll mode */
 							putch(30);	   /* put the up arrow */
 						else
@@ -1138,10 +1150,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							putch(31);	   /* put the down arrow */
 						else
 							putch(' ');    /* delete the down arrow */
-						for(i=*cur+vbrdrsize+1-height,j=0;i<=*cur;i++,j++)
+						for(i=*cur+vbrdrsize+1-(opts<height?opts:height),j=0;i<=*cur;i++,j++)
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
-								,i==*cur ? lbclr
-									: lclr|(bclr<<4)
+								,i==*cur ? api->lbclr
+									: api->lclr|(api->bclr<<4)
 								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 						break;
 					case CIO_KEY_END:	/* end */
@@ -1149,35 +1161,45 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							break;
 						if(opts+vbrdrsize>height) {	/* Scroll mode */
 							gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-							textattr(lclr|(bclr<<4));
+							textattr(api->lclr|(api->bclr<<4));
 							putch(30);	   /* put the up arrow */
 							gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+vbrdrsize)-height,j=0;i<opts;i++,j++)
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
-									,i==opts-1 ? lbclr
-										: lclr|(bclr<<4)
+									,i==opts-1 ? api->lbclr
+										: api->lclr|(api->bclr<<4)
 									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 							(*cur)=opts-1;
 							y=top+height-bbrdrwidth-1;
-							if(bar)
+							if(opts<height)
+								y=top+opts-bbrdrwidth-1;
+							if(bar) {
 								(*bar)=height-vbrdrsize-1;
+								if(*bar>opts)
+									*bar=opts;
+							}
 							break; 
 						}
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						for(i=1;i<width*2;i+=2)
-							line[i]=lclr|(bclr<<4);
+							line[i]=api->lclr|(api->bclr<<4);
 						puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						(*cur)=opts-1;
 						y=top+height-bbrdrwidth-1;
-						if(bar)
+						if(opts<height)
+							y=top+opts-bbrdrwidth-1;
+						if(bar) {
 							(*bar)=height-vbrdrsize-1;
+							if(*bar>opts)
+								*bar=opts;
+						}
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						for(i=1;i<148;i+=2)
-							line[i]=lbclr;
+							line[i]=api->lbclr;
 						puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						break;
@@ -1186,16 +1208,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							break;
 						if((*cur)==opts-1 && opts+vbrdrsize>height) { /* like home */
 							gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-							textattr(lclr|(bclr<<4));
+							textattr(api->lclr|(api->bclr<<4));
 							putch(' ');    /* Delete the up arrow */
 							gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
 							putch(31);	   /* put the down arrow */
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth
-								,lbclr
+								,api->lbclr
 								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[0]);
 							for(i=1;i<height-vbrdrsize;i++)    /* re-display options */
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+i
-									,lclr|(bclr<<4)
+									,api->lclr|(api->bclr<<4)
 									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 							(*cur)=0;
 							y=top+tbrdrwidth;
@@ -1206,7 +1228,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						for(i=1;i<width*2;i+=2)
-							line[i]=lclr|(bclr<<4);
+							line[i]=api->lclr|(api->bclr<<4);
 						puttext(s_left+lbrdrwidth+2+left,s_top+y
 							,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 						if((*cur)==opts-1) {
@@ -1228,12 +1250,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(y==top+height-bbrdrwidth) {	/* scroll */
 							if(*cur==opts-1) {
 								gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
-								textattr(lclr|(bclr<<4));
+								textattr(api->lclr|(api->bclr<<4));
 								putch(' ');	/* delete the down arrow */
 							}
 							if((*cur)+vbrdrsize==height) {
 								gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-								textattr(lclr|(bclr<<4));
+								textattr(api->lclr|(api->bclr<<4));
 								putch(30);	/* put the up arrow */
 							}
 							y--;
@@ -1242,7 +1264,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,s_left+left+width-rbrdrwidth-1,s_top+top+height-bbrdrwidth-1,0);
 							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+height-bbrdrwidth-1
-								,lbclr
+								,api->lbclr
 								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[*cur]);
 						}
 						else {
@@ -1250,7 +1272,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,s_left+left+width-rbrdrwidth-1,s_top+y
 								,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=lbclr;
+								line[i]=api->lbclr;
 							puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y
 								,line);
@@ -1273,11 +1295,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								gettext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
-									tmp_buffer[i]=lclr|(cclr<<4);
+									tmp_buffer[i]=api->lclr|(api->cclr<<4);
 								if(opts) {
 									j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
 									for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-										tmp_buffer[i]=hclr|(cclr<<4); 
+										tmp_buffer[i]=api->hclr|(api->cclr<<4); 
 								}
 								puttext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
@@ -1296,10 +1318,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								gettext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
-									tmp_buffer[i]=lclr|(cclr<<4);
+									tmp_buffer[i]=api->lclr|(api->cclr<<4);
 								j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
 								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-									tmp_buffer[i]=hclr|(cclr<<4);
+									tmp_buffer[i]=api->hclr|(api->cclr<<4);
 								puttext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 							}
@@ -1340,7 +1362,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if(y+(j-(*cur))+2>height+top) {
 								(*cur)=j;
 								gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-								textattr(lclr|(bclr<<4));
+								textattr(api->lclr|(api->bclr<<4));
 								putch(30);	   /* put the up arrow */
 								if((*cur)==opts-1) {
 									gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
@@ -1348,28 +1370,31 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								}
 								for(i=((*cur)+vbrdrsize+1)-height,j=0;i<(*cur)+1;i++,j++)
 									uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
-										,i==(*cur) ? lbclr
-											: lclr|(bclr<<4)
+										,i==(*cur) ? api->lbclr
+											: api->lclr|(api->bclr<<4)
 										,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
 								y=top+height-bbrdrwidth-1;
-								if(bar)
+								if(bar) {
 									(*bar)=height-vbrdrsize-1;
+									if(*bar>opts)
+										*bar=opts;
+								}
 								break; 
 							}
 							if(y-((*cur)-j)<top+tbrdrwidth) {
 								(*cur)=j;
 								gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
-								textattr(lclr|(bclr<<4));
+								textattr(api->lclr|(api->bclr<<4));
 								if(!(*cur))
 									putch(' ');    /* Delete the up arrow */
 								gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
 								putch(31);	   /* put the down arrow */
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth
-									,lbclr
+									,api->lbclr
 									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[(*cur)]);
 								for(i=1;i<height-vbrdrsize;i++) 	/* re-display options */
 									uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+i
-										,lclr|(bclr<<4)
+										,api->lclr|(api->bclr<<4)
 										,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
 										,option[(*cur)+i]);
 								y=top+tbrdrwidth;
@@ -1380,7 +1405,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gettext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=lclr|(bclr<<4);
+								line[i]=api->lclr|(api->bclr<<4);
 							puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 							if((*cur)>j)
@@ -1397,7 +1422,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gettext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=lbclr;
+								line[i]=api->lbclr;
 							puttext(s_left+lbrdrwidth+2+left,s_top+y
 								,s_left+left+width-rbrdrwidth-1,s_top+y,line);
 							break; 
@@ -1415,10 +1440,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								gettext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
-									tmp_buffer[i]=lclr|(cclr<<4);
+									tmp_buffer[i]=api->lclr|(api->cclr<<4);
 								j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
 								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-									tmp_buffer[i]=hclr|(cclr<<4);
+									tmp_buffer[i]=api->hclr|(api->cclr<<4);
 
 								puttext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
@@ -1440,7 +1465,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								gettext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
-									tmp_buffer[i]=lclr|(cclr<<4);
+									tmp_buffer[i]=api->lclr|(api->cclr<<4);
 								puttext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 							}
@@ -1546,25 +1571,25 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 	i=0;
 	if(!(mode&WIN_NOBRDR)) {
 		in_win[i++]='É';
-		in_win[i++]=hclr|(bclr<<4);
+		in_win[i++]=api->hclr|(api->bclr<<4);
 		for(j=1;j<width-1;j++) {
 			in_win[i++]='Í';
-			in_win[i++]=hclr|(bclr<<4);
+			in_win[i++]=api->hclr|(api->bclr<<4);
 		}
 		if(api->mode&UIFC_MOUSE && width>6) {
 			in_win[2]='[';
-			in_win[3]=hclr|(bclr<<4);
+			in_win[3]=api->hclr|(api->bclr<<4);
 			/* in_win[4]='þ'; */
 			in_win[4]=0xfe;
-			in_win[5]=lclr|(bclr<<4);
+			in_win[5]=api->lclr|(api->bclr<<4);
 			in_win[6]=']';
-			in_win[7]=hclr|(bclr<<4);
+			in_win[7]=api->hclr|(api->bclr<<4);
 			in_win[8]='[';
-			in_win[9]=hclr|(bclr<<4);
+			in_win[9]=api->hclr|(api->bclr<<4);
 			in_win[10]='?';
-			in_win[11]=lclr|(bclr<<4);
+			in_win[11]=api->lclr|(api->bclr<<4);
 			in_win[12]=']';
-			in_win[13]=hclr|(bclr<<4);
+			in_win[13]=api->hclr|(api->bclr<<4);
 			api->buttony=s_top+top;
 			api->exitstart=s_left+left+1;
 			api->exitend=s_left+left+3;
@@ -1573,49 +1598,49 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 		}
 
 		in_win[i++]='»';
-		in_win[i++]=hclr|(bclr<<4);
+		in_win[i++]=api->hclr|(api->bclr<<4);
 		in_win[i++]='º';
-		in_win[i++]=hclr|(bclr<<4);
+		in_win[i++]=api->hclr|(api->bclr<<4);
 	}
 
 	if(plen) {
 		in_win[i++]=' ';
-		in_win[i++]=lclr|(bclr<<4); 
+		in_win[i++]=api->lclr|(api->bclr<<4); 
 	}
 
 	for(j=0;prompt[j];j++) {
 		in_win[i++]=prompt[j];
-		in_win[i++]=lclr|(bclr<<4); 
+		in_win[i++]=api->lclr|(api->bclr<<4); 
 	}
 
 	if(plen) {
 		in_win[i++]=':';
-		in_win[i++]=lclr|(bclr<<4);
+		in_win[i++]=api->lclr|(api->bclr<<4);
 	}
 
 	for(j=0;j<iwidth+2;j++) {
 		in_win[i++]=' ';
-		in_win[i++]=lclr|(bclr<<4); 
+		in_win[i++]=api->lclr|(api->bclr<<4); 
 	}
 
 	if(!(mode&WIN_NOBRDR)) {
 		in_win[i++]='º';
-		in_win[i++]=hclr|(bclr<<4);
+		in_win[i++]=api->hclr|(api->bclr<<4);
 		in_win[i++]='È';
-		in_win[i++]=hclr|(bclr<<4);
+		in_win[i++]=api->hclr|(api->bclr<<4);
 		for(j=1;j<width-1;j++) {
 			in_win[i++]='Í';
-			in_win[i++]=hclr|(bclr<<4); 
+			in_win[i++]=api->hclr|(api->bclr<<4); 
 		}
 		in_win[i++]='¼';
-		in_win[i]=hclr|(bclr<<4);	/* I is not incremented to shut up BCC */
+		in_win[i]=api->hclr|(api->bclr<<4);	/* I is not incremented to shut up BCC */
 	}
 	puttext(s_left+left,s_top+top,s_left+left+width-1
 		,s_top+top+height-1,in_win);
 
 	if(!(mode&WIN_NOBRDR)) {
 		/* Shadow */
-		if(bclr==BLUE) {
+		if(api->bclr==BLUE) {
 			gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
 				,s_top+top+(height-1),shade);
 			for(j=1;j<12;j+=2)
@@ -1631,7 +1656,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 		}
 	}
 
-	textattr(lclr|(bclr<<4));
+	textattr(api->lclr|(api->bclr<<4));
 	if(!plen)
 		i=ugetstr(s_left+left+2,s_top+top+tbrdrwidth,iwidth,str,max,kmode,NULL);
 	else
@@ -1709,9 +1734,9 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	***/
 		outstr[max]=0;
 		i=j=strlen(outstr);
-		textattr(lbclr);
+		textattr(api->lbclr);
 		getstrupd(left, top, width, outstr, i, &soffset);
-		textattr(lclr|(bclr<<4));
+		textattr(api->lclr|(api->bclr<<4));
 		if(strlen(outstr)<width) {
 			k=wherex();
 			f=wherey();
@@ -2000,40 +2025,40 @@ void bottomline(int line)
 {
 	int i=4;
 
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F1 ");
+	uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F1 ");
 	i+=3;
-	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Help  ");
+	uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Help  ");
 	i+=6;
 	if(line&BL_GET) {
-		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F5 ");
+		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F5 ");
 		i+=3;
-		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Copy Item  ");
+		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Copy Item  ");
 		i+=11; 
 	}
 	if(line&BL_PUT) {
-		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F6 ");
+		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F6 ");
 		i+=3;
-		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Paste  ");
+		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Paste  ");
 		i+=7; 
 	}
 	if(line&BL_INS) {
-		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"INS ");
+		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"INS ");
 		i+=4;
-		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Add Item  ");
+		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Add Item  ");
 		i+=10; 
 	}
 	if(line&BL_DEL) {
-		uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"DEL ");
+		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"DEL ");
 		i+=4;
-		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
+		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Delete Item  ");
 		i+=13; 
 	}
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC ");	/* Backspace is no good no way to abort editing */
+	uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"ESC ");	/* Backspace is no good no way to abort editing */
 	i+=4;
-	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Exit");
+	uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Exit");
 	i+=4;
 	gotoxy(i,api->scrn_len+1);
-	textattr(BLACK|(cclr<<4));
+	textattr(BLACK|(api->cclr<<4));
 	clreol();
 }
 
@@ -2146,7 +2171,7 @@ void upop(char *str)
 			,(api->scrn_width+26-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
 	memset(buf,' ',25*3*2);
 	for(i=1;i<26*3*2;i+=2)
-		buf[i]=(hclr|(bclr<<4));
+		buf[i]=(api->hclr|(api->bclr<<4));
 	buf[0]='Ú';
 	for(i=2;i<25*2;i+=2)
 		buf[i]='Ä';
@@ -2243,7 +2268,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(!is_redraw) {
 		memset(tmp_buffer2,' ',width*height*2);
 		for(i=1;i<width*height*2;i+=2)
-			tmp_buffer2[i]=(hclr|(bclr<<4));
+			tmp_buffer2[i]=(api->hclr|(api->bclr<<4));
 	    tmp_buffer2[0]='Ú';
 		j=title_len;
 		if(j>width-6) {
@@ -2254,12 +2279,12 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
    		      tmp_buffer2[i]='Ä';
 		if(api->mode&UIFC_MOUSE && !mode&WIN_DYN) {
 			tmp_buffer2[2]='[';
-			tmp_buffer2[3]=hclr|(bclr<<4);
+			tmp_buffer2[3]=api->hclr|(api->bclr<<4);
 			/* tmp_buffer2[4]='þ'; */
 			tmp_buffer2[4]=0xfe;
-			tmp_buffer2[5]=lclr|(bclr<<4);
+			tmp_buffer2[5]=api->lclr|(api->bclr<<4);
 			tmp_buffer2[6]=']';
-			tmp_buffer2[7]=hclr|(bclr<<4);
+			tmp_buffer2[7]=api->hclr|(api->bclr<<4);
 			/* Buttons are ignored - leave it this way to not confuse stuff from help() */
 		}
 	    tmp_buffer2[i]='´'; i+=4;
@@ -2343,7 +2368,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	}
 	memset(textbuf,' ',(width-2-pad-pad)*lines*2);
 	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
-		textbuf[i]=(hclr|(bclr<<4));
+		textbuf[i]=(api->hclr|(api->bclr<<4));
 
 	i=0;
 
@@ -2362,8 +2387,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		}
 		else if(hbuf[j]!=CR) {
 			textbuf[i]=hbuf[j];
-			textbuf[i+1]=inverse ? (bclr|(cclr<<4))
-				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4));
+			textbuf[i+1]=inverse ? (api->bclr|(api->cclr<<4))
+				: high ? (api->hclr|(api->bclr<<4)) : (api->lclr|(api->bclr<<4));
 			if((i+2)%((width-2-pad-pad)*2)==0 && (hbuf[j+1]==LF) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
 				i-=2;
 		}
