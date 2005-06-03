@@ -7,7 +7,7 @@
 #include "bbslist.h"
 #include "telnet_io.h"
 #include "conn.h"
-#include "uifcbail.h"
+#include "uifcinit.h"
 
 static int	con_type=CONN_TYPE_UNKNOWN;
 SOCKET conn_socket=INVALID_SOCKET;
