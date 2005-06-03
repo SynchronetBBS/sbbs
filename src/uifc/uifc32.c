@@ -1126,7 +1126,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						else
 							putch(' ');    /* delete the up arrow */
 						gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
-						if(opts > height-tbrdrwidth && *cur + height - 4 < opts)
+						if(opts > height-tbrdrwidth && *cur + height - vbrdrsize < opts)
 							putch(31);	   /* put the down arrow */
 						else
 							putch(' ');    /* delete the down arrow */
