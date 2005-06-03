@@ -170,35 +170,50 @@ static BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
     return(outbuf);
 }
 
+#if defined(_WIN32) && defined(_DEBUG)
+static void dump(BYTE* buf, int len)
+{
+	char str[128];
+	int i,j;
+	size_t slen=0;
+
+	slen=sprintf(str,"dump: ");
+	for(i=0;i<len;i+=j) {
+		for(j=0;i+j<len && j<32;j++)
+			slen+=sprintf(str+slen,"%02X ",buf[i+j]);
+		OutputDebugString(str);
+		slen=sprintf(str,"dump: ");
+	}
+}
+#endif
+
+
 int telnet_recv(char *buffer, size_t buflen, unsigned timeout)
 {
-	int	r;
-	int	avail;
-	int rd;
-	BYTE *inbuf;
+	int		rd;
+	int		avail;
+	BYTE	telnet_buf[4096];
+	BOOL	data_waiting;
 
-	if(!socket_check(conn_socket, NULL, NULL, timeout))
-		return(-1);
+	while(1) {
 
-	if((inbuf=(BYTE *)malloc(buflen))==NULL)
-		return(-1);
+		if(!socket_check(conn_socket, &data_waiting, NULL, timeout))
+			return(-1);
 
-	if(!ioctlsocket(conn_socket,FIONREAD,(void *)&avail) && avail)
-		r=recv(conn_socket,inbuf,avail<(int)buflen?avail:buflen,0);
-	else {
-		free(inbuf);
-		return(0);
+		if(!data_waiting)
+			return(0);
+
+		rd=recv(conn_socket,buffer,avail<(int)buflen?avail:buflen,0);
+		if(rd>0) {
+			if(telnet_interpret(buffer, rd, telnet_buf, &rd)==telnet_buf) {
+				if(rd==0)	/* all bytes removed */
+					continue;
+				memcpy(buffer, telnet_buf, rd);
+			}
+		}
+		break;
 	}
-
-	if(r==-1 && (errno==EAGAIN || errno==EINTR || errno==0))	/* WTF? */
-		r=0;
-	if(r) {
-		if(telnet_interpret(inbuf, r, buffer, &r)==inbuf)
-			memcpy(buffer, inbuf, r);
-	}
-
-	free(inbuf);
-	return(r);
+	return(rd);
 }
 
 BYTE* telnet_expand(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *newlen)
