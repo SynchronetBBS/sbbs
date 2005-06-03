@@ -1829,8 +1829,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			rd += i;
 
 			if(mode&EX_BIN) {
-				if(telnet_mode&TELNET_MODE_OFF)
+				if(telnet_mode&TELNET_MODE_OFF) {
 					bp=buf;
+					output_len=rd;
+				}
 				else
    	       			bp=telnet_expand(buf, rd, output_buf, output_len);
 			} else			/* LF to CRLF expansion */
