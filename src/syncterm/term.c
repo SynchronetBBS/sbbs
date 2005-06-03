@@ -229,7 +229,8 @@ void zmodem_receive(void)
 			,&total_bytes)==ZFILE) {
 		fname=getfname(fpath);
 		SAFEPRINTF2(str,"Downloading %s via Zmodem (%lu bytes)", fname, bytes);
-		uifc.pop(str);
+		if(uifc.pop!=NULL)
+			uifc.pop(str);	
 
 		do {	/* try */
 			SAFEPRINTF2(fpath,"%s/%s","."/* download_dir */,fname);
@@ -257,7 +258,8 @@ void zmodem_receive(void)
 		} while(0);
 		/* finally */
 
-		uifc.pop(NULL);
+		if(uifc.pop!=NULL)
+			uifc.pop(NULL);
 	}
 }
 
