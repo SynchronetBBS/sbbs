@@ -158,9 +158,14 @@ while(client.socket.is_connected && !quit) {
 					writeln("381 More authentication required");
 					break;
 				case "PASS":
-					if(login(username,cmd[2]))
-						writeln("281 Authentication successful");
-					else
+					logout();
+					if(login(username,cmd[2])) {
+						if(no_anonymous && user.security.restrictions&UFLAG_G) {
+							writeln("502 Anonymous/Guest logins disallowed");
+							logout();
+						} else
+							writeln("281 Authentication successful");
+					} else
 						writeln("502 Authentication failure");
 					break;
 				default:
