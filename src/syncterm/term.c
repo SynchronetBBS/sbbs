@@ -224,6 +224,20 @@ static int lprintf(int level, const char *fmt, ...)
     return(lputs(NULL,level,sbuf));
 }
 
+static void zmodem_check_abort(zmodem_t* zm)
+{
+	if(kbhit()) {
+		switch(getch()) {
+			case ESC:
+			case CTRL_C:
+			case CTRL_X:
+				zm->cancelled=TRUE;
+				zm->local_abort=TRUE;
+				break;
+		}
+	}
+}
+
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
@@ -236,18 +250,8 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos
 	long		t;
 	time_t		now;
 	static time_t last_progress;
-	zmodem_t*	zm=(zmodem_t*)cbdata;
 
-	if(kbhit()) {
-		switch(getch()) {
-			case ESC:
-			case CTRL_C:
-			case CTRL_X:
-				zm->cancelled=TRUE;
-				zm->local_abort=TRUE;
-				break;
-		}
-	}
+	zmodem_check_abort((zmodem_t*)cbdata);
 
 	now=time(NULL);
 	if(now-last_progress>0 || current_pos >= fsize || wherex()<=1) {
