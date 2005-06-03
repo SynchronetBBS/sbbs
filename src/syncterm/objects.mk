@@ -4,8 +4,6 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)conn$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet_io$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)raw_io$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)rlogin$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)term$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)window$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)menu$(OFILE) \
