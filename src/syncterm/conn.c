@@ -9,19 +9,19 @@ static int	con_type=CONN_TYPE_UNKNOWN;
 SOCKET conn_socket=INVALID_SOCKET;
 char *conn_types[]={"Unknown","RLogin","Telnet","Raw",""};
 
-int conn_recv(char *buffer, size_t buflen)
+int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 {
 	int retval=-1;
 
 	switch(con_type) {
 		case CONN_TYPE_RLOGIN:
-			retval=rlogin_recv(buffer, buflen);
+			retval=rlogin_recv(buffer, buflen, timeout);
 			break;
 		case CONN_TYPE_TELNET:
-			retval=telnet_recv(buffer, buflen);
+			retval=telnet_recv(buffer, buflen, timeout);
 			break;
 		case CONN_TYPE_RAW:
-			retval=raw_recv(buffer, buflen);
+			retval=raw_recv(buffer, buflen, timeout);
 			break;
 	}
 	return(retval);

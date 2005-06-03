@@ -8,8 +8,12 @@
 #include "term.h"
 #include "uifcinit.h"
 #include "menu.h"
+#include "dirwrap.h"
+#include "zmodem.h"
 
 #define	BUFSIZE	2048
+
+#define DUMP
 
 int backlines=2000;
 
@@ -162,6 +166,101 @@ void dump(BYTE* buf, int len)
 }
 #endif
 
+/* Zmodem Routines */
+static int lputs(void* unused, int level, const char* str)
+{
+#if defined(_WIN32) && defined(_DEBUG)
+	char msg[512];
+
+//	if(log_level==LOG_DEBUG || level==LOG_DEBUG)
+		sprintf(msg,"SyncTerm: %s",str);
+		OutputDebugString(msg);
+#endif
+	return 0;
+}
+
+static int send_byte(void* unused, uchar ch, unsigned timeout)
+{
+	return conn_send(&ch,sizeof(char),timeout*1000);
+}
+
+static int recv_byte(void* unused, unsigned timeout)
+{
+	char str[128];
+	uchar ch;
+
+	if(conn_recv(&ch,sizeof(ch),timeout*1000)!=sizeof(ch)) {
+		lputs(NULL,LOG_ERR,"RECEIVE TIMEOUT");
+		return(-1);
+	}
+//	sprintf(str,"RX: %02X", ch);
+//	lputs(NULL,LOG_DEBUG,str);
+	return(ch);
+}
+
+static BOOL is_connected(void* unused)
+{
+	return socket_check(conn_socket,NULL,NULL,0);
+}
+
+void zmodem_receive(void)
+{
+	char		fpath[MAX_PATH+1];
+	char*		fname;
+	char		str[MAX_PATH*2];
+	FILE*		fp;
+	ulong		bytes;
+	ulong		total_files;
+	ulong		total_bytes;
+	time_t		ftime;
+	unsigned	errors;
+	zmodem_t	zm;
+
+	zmodem_init(&zm,NULL /* cbdata */,lputs,NULL /* zmodem_progress */
+		,send_byte,recv_byte,is_connected);
+
+	while(zmodem_recv_init(&zm
+			,fpath,sizeof(fpath)
+			,&bytes
+			,&ftime
+			,NULL
+			,NULL
+			,&total_files
+			,&total_bytes)==ZFILE) {
+		fname=getfname(fpath);
+		SAFEPRINTF2(str,"Downloading %s via Zmodem (%lu bytes)", fname, bytes);
+		uifc.pop(str);
+
+		do {	/* try */
+			SAFEPRINTF2(fpath,"%s/%s","."/* download_dir */,fname);
+			if(fexist(fpath)) {
+				/* lprintf(LOG_WARNING,"%s already exists",str); */
+				zmodem_send_zskip(&zm);
+				break;
+			}
+
+			if((fp=fopen(fpath,"wb"))==NULL) {
+				/* lprintf(LOG_ERR,"Error %d creating %s",errno,fpath); */
+				zmodem_send_zskip(&zm);
+				break;
+			}
+
+			errors=zmodem_recv_file_data(&zm,fp,/* offset */0,bytes, /* start time */0);
+
+			for(;errors<=zm.max_errors && !zm.cancelled; errors++) {
+				if(zmodem_recv_header_and_check(&zm))
+					break;
+			}
+
+			fclose(fp);
+
+		} while(0);
+		/* finally */
+
+		uifc.pop(NULL);
+	}
+}
+
 void doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
@@ -171,6 +270,7 @@ void doterm(struct bbslist *bbs)
 	int i,j,k;
 	unsigned char *scrollback;
 	char *p;
+	char zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };
 
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
@@ -186,7 +286,8 @@ void doterm(struct bbslist *bbs)
 	/* Main input loop */
 	for(;;) {
 		/* Get remote input */
-		i=conn_recv(buf,sizeof(buf));
+		i=conn_recv(buf,sizeof(buf),0);
+
 		if(!term.nostatus)
 			update_status(bbs);
 		switch(i) {
@@ -202,6 +303,11 @@ void doterm(struct bbslist *bbs)
 #if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
 				dump(buf,i);
 #endif
+				buf[i]=0;
+				if(strstr(buf,zrqinit)!=NULL)	{ /* this should be more robust */
+					zmodem_receive();
+					break;
+				}
 				cterm_write(buf,i,prn,sizeof(prn));
 				conn_send(prn,strlen(prn),0);
 				break;

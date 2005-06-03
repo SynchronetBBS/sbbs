@@ -14,7 +14,7 @@ enum {
 	,CONN_TYPE_TERMINATOR
 };
 
-int conn_recv(char *buffer, size_t buflen);
+int conn_recv(char *buffer, size_t buflen, unsigned int timeout);
 int conn_send(char *buffer, size_t buflen, unsigned int timeout);
 int conn_connect(char *addr, int port, char *ruser, char *passwd, int conn_type);
 int conn_close(void);

@@ -5,13 +5,13 @@
 #include "bbslist.h"
 #include "conn.h"
 
-int raw_recv(char *buffer, size_t buflen)
+int raw_recv(char *buffer, size_t buflen, unsigned timeout)
 {
 	int	r;
 	size_t	avail;
 	int rd;
 
-	if(!socket_check(conn_socket, NULL, NULL, 0))
+	if(!socket_check(conn_socket, NULL, NULL, timeout))
 		return(-1);
 
 	if(!ioctlsocket(conn_socket,FIONREAD,(void *)&avail) && avail)

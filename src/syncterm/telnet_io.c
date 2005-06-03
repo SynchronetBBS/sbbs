@@ -170,14 +170,14 @@ static BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
     return(outbuf);
 }
 
-int telnet_recv(char *buffer, size_t buflen)
+int telnet_recv(char *buffer, size_t buflen, unsigned timeout)
 {
 	int	r;
 	int	avail;
 	int rd;
 	BYTE *inbuf;
 
-	if(!socket_check(conn_socket, NULL, NULL, 0))
+	if(!socket_check(conn_socket, NULL, NULL, timeout))
 		return(-1);
 
 	if((inbuf=(BYTE *)malloc(buflen))==NULL)
