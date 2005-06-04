@@ -1754,9 +1754,10 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		f=inkey();
 		if(f==CIO_KEY_MOUSE) {
 			if((f=uifc_getmouse(&mevnt))==0) {
-				if((mevnt.starty != top
-						|| (mevnt.startx > left+width
-						    || mevnt.startx < left))
+				if(mode & K_MOUSEEXIT
+						&& (mevnt.starty != top
+							|| mevnt.startx > left+width
+						    || mevnt.startx < left)
 						&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
 					if(lastkey)
 						*lastkey=CIO_KEY_MOUSE;
@@ -1828,6 +1829,16 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 			}
 			if(ch==CIO_KEY_MOUSE) {
 				if((ch=uifc_getmouse(&mevnt))==0) {
+					if(mode & K_MOUSEEXIT 
+							&& (mevnt.starty != top
+								|| mevnt.startx > left+width
+						    	|| mevnt.startx < left)
+							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
+						if(lastkey)
+							*lastkey=CIO_KEY_MOUSE;
+						ungetmouse(&mevnt);
+						return(j);
+					}
 					if(mevnt.starty == top
 							&& mevnt.startx>=left
 							&& mevnt.startx<=left+width
