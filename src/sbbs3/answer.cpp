@@ -104,6 +104,8 @@ bool sbbs_t::answer()
 				,terminal);
 			SAFECOPY(rlogin_name
 				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
+			SAFECOPY(rlogin_pass
+				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str : str2);
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);

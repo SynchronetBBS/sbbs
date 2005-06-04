@@ -364,14 +364,19 @@ BOOL sbbs_t::newuser()
 	}
 
 	c=0;
-	while(c<LEN_PASS) { 				/* Create random password */
-		useron.pass[c]=sbbs_random(43)+'0';
-		if(isalnum(useron.pass[c]))
-			c++; 
+	if(sys_status&SS_RLOGIN && rlogin_pass[0]) {
+		SAFECOPY(useron.pass, rlogin_pass);
 	}
-	useron.pass[c]=0;
+	else {
+		while(c<LEN_PASS) { 				/* Create random password */
+			useron.pass[c]=sbbs_random(43)+'0';
+			if(isalnum(useron.pass[c]))
+				c++; 
+		}
+		useron.pass[c]=0;
+	}
 
-	if(!(sys_status&SS_RLOGIN)) {
+	if(!(sys_status&SS_RLOGIN && rlogin_pass[0])) {
 		bprintf(text[YourPasswordIs],useron.pass);
 
 		if(cfg.sys_misc&SM_PWEDIT && yesno(text[NewPasswordQ]))

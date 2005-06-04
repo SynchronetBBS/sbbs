@@ -219,6 +219,7 @@ public:
 	node_t	thisnode;		/* Node information */
 	smb_t	smb;			/* Currently open message base */
 	char	rlogin_name[LEN_ALIAS+1];
+	char	rlogin_pass[LEN_PASS+1];
 
 	uint	temp_dirnum;
 
