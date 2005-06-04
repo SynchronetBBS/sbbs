@@ -1837,7 +1837,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						if(lastkey)
 							*lastkey=CIO_KEY_MOUSE;
 						ungetmouse(&mevnt);
-						return(j);
+						ch=CR;
+						continue;
 					}
 					if(mevnt.starty == top
 							&& mevnt.startx>=left
