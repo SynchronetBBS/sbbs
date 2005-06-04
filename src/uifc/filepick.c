@@ -255,6 +255,9 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	if((opts & UIFC_FP_MULTI)==UIFC_FP_MULTI && (opts & (UIFC_FP_ALLOWENTRY|UIFC_FP_OVERPROMPT|UIFC_FP_CREATPROMPT)))
 		return(-1);
 
+	fp->files=0;
+	fp->selected=NULL;
+
 	/* No initial path specified */
 	if(dir==NULL || !dir[0])
 		SAFECOPY(cpath,".");
@@ -307,6 +310,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 #endif
 		if(glob(dglob, 0, NULL, &dgl)!=0) {
 			if(lastpath==NULL) {
+				fp->files=0;
 				retval=-1;
 				goto cleanup;
 			}
@@ -337,7 +341,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 				case DIR_LIST:
 					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
 					if(i==-1) {
-						retval=0;
+						retval=fp->files=0;
 						goto cleanup;
 					}
 					if(i==-2-'\t')
@@ -355,7 +359,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 				case FILE_LIST:
 					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
 					if(i==-1) {
-						retval=0;
+						retval=fp->files=0;
 						goto cleanup;
 					}
 					if(i>=0) {
@@ -365,14 +369,14 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 							fp->selected=(char **)malloc(sizeof(char *));
 							if(fp->selected==NULL) {
 								fp->files=0;
-								retval=0;
+								retval=-1;
 								goto cleanup;
 							}
 							fp->selected[0]=strdup(cfile);
 							if(fp->selected[0]==NULL) {
-								free(fp->selected);
+								FREE_AND_NULL(fp->selected);
 								fp->files=0;
-								retval=0;
+								retval=-1;
 								goto cleanup;
 							}
 							finished=reread=TRUE;
@@ -388,7 +392,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					tmplastpath=strdup(cpath);
 					api->getstrxy(SCRN_LEFT+2, SCRN_TOP+height-2, width-1, cfile, sizeof(cfile)-1, K_EDIT|K_TABEXIT, &i);
 					if(i==ESC) {
-						retval=0;
+						retval=fp->files=0;
 						goto cleanup;
 					}
 					if((opts & (UIFC_FP_FILEEXIST|UIFC_FP_PATHEXIST)) && !fexist(cfile)) {
@@ -412,14 +416,14 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 								fp->selected=(char **)malloc(sizeof(char *));
 								if(fp->selected==NULL) {
 									fp->files=0;
-									retval=0;
+									retval=-1;
 									goto cleanup;
 								}
 								fp->selected[0]=strdup(cfile);
 								if(fp->selected[0]==NULL) {
 									free(fp->selected);
 									fp->files=0;
-									retval=0;
+									retval=-1;
 									goto cleanup;
 								}
 							}
@@ -442,14 +446,14 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						fp->selected=(char **)malloc(sizeof(char *));
 						if(fp->selected==NULL) {
 							fp->files=0;
-							retval=0;
+							retval=-1;
 							goto cleanup;
 						}
 						fp->selected[0]=strdup(cfile);
 						if(fp->selected[0]==NULL) {
-							free(fp->selected);
+							FREE_AND_NULL(fp->selected);
 							fp->files=0;
-							retval=0;
+							retval=-1;
 							goto cleanup;
 						}
 						finished=reread=TRUE;
@@ -463,7 +467,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					p=strdup(cmsk);
 					api->getstrxy(SCRN_LEFT+8, SCRN_TOP+height-3, width-7, cmsk, sizeof(cmsk)-1, K_EDIT|K_TABEXIT, &i);
 					if(i==ESC) {
-						retval=0;
+						retval=fp->files=0;
 						goto cleanup;
 					}
 					if(strcmp(cmsk, p)) {
