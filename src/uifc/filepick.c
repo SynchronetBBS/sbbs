@@ -240,6 +240,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	char	*YesNo[]={"Yes", "No", ""};
 	int		finished=FALSE;
 	int		retval=0;
+	int		fieldmove;
 
 	height=api->scrn_len-3;
 	width=SCRN_RIGHT-SCRN_LEFT-3;
@@ -331,6 +332,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 			api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
 			api->lbclr=lbclr;
 			lastfield=currfield;
+			fieldmove=0;
 			switch(currfield) {
 				case DIR_LIST:
 					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
@@ -339,7 +341,9 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						goto cleanup;
 					}
 					if(i==-2-'\t')
-						currfield++;
+						fieldmove=1;
+					if(i==-3842)	/* Backtab */
+						fieldmove=-1;
 					if(i>=0) {
 						FREE_AND_NULL(lastpath);
 						lastpath=strdup(cpath);
@@ -374,8 +378,10 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 							finished=reread=TRUE;
 						}
 					}
-					if(i==-2-'\t')	/* This is only until the text fields are here */
-						currfield++;
+					if(i==-2-'\t')
+						fieldmove=1;
+					if(i==-3842)	/* Backtab */
+						fieldmove=-1;
 					break;
 				case CURRENT_PATH:
 					FREE_AND_NULL(tmplastpath);
@@ -399,7 +405,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					}
 					sprintf(cfile,"%s%s%s%s",drive,tdir,fname,ext);
 					if(isdir(cfile)) {
-						if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && i!='\t') {
+						if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && i!='\t' && i != 3840) {
 							if(opts & UIFC_FP_DIRSEL) {
 								finished=reread=TRUE;
 								retval=fp->files=1;
@@ -431,7 +437,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						}
 					}
 					FREE_AND_NULL(tmplastpath);
-					if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && i!='\t') {
+					if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && i!='\t' && i!=3840) {
 						retval=fp->files=1;
 						fp->selected=(char **)malloc(sizeof(char *));
 						if(fp->selected==NULL) {
@@ -448,7 +454,10 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						}
 						finished=reread=TRUE;
 					}
-					currfield++;
+					if(i==3840)
+						fieldmove=-1;
+					else
+						fieldmove=1;
 					break;
 				case MASK_FIELD:
 					p=strdup(cmsk);
@@ -462,13 +471,26 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						reread=TRUE;
 					}
 					FREE_AND_NULL(p);
-					currfield++;
+					if(i==3840)
+						fieldmove=-1;
+					else
+						fieldmove=1;
 					break;
 			}
-			if(currfield==MASK_FIELD && (opts & UIFC_FP_MSKNOCHG))
-				currfield++;
-			if(currfield==CURRENT_PATH && !(opts & UIFC_FP_ALLOWENTRY))
-				currfield++;
+			currfield+=fieldmove;
+			if(currfield<0)
+				currfield=FIELD_LIST_TERM-1;
+			while(1) {
+				if(currfield==MASK_FIELD && (opts & UIFC_FP_MSKNOCHG)) {
+					currfield+=fieldmove;
+					continue;
+				}
+				if(currfield==CURRENT_PATH && !(opts & UIFC_FP_ALLOWENTRY)) {
+					currfield+=fieldmove;
+					continue;
+				}
+				break;
+			}
 			if(currfield==FIELD_LIST_TERM)
 				currfield=DIR_LIST;
 		}
