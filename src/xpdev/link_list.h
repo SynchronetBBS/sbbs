@@ -164,7 +164,7 @@ BOOL			listSwapNodes(list_node_t* node1, list_node_t* node2);
 
 /* Convenience macros for pushing, popping, and inserting nodes */
 #define	listPushNode(list, data)				listAddNode(list, data, listLastNode(list))
-#define listInsertNode(link, data)				listAddNode(list, data, FIRST_NODE)
+#define listInsertNode(list, data)				listAddNode(list, data, FIRST_NODE)
 #define listPushNodeData(list, data, length)	listAddNodeData(list, data, length, listLastNode(list))
 #define	listInsertNodeData(list, data, length)	listAddNodeData(list, data, length, FIRST_NODE)
 #define	listPushNodeString(list, str)			listAddNodeString(list, str, listLastNode(list))
