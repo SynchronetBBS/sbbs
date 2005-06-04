@@ -19,6 +19,13 @@ int backlines=2000;
 
 struct terminal term;
 
+#define TRANSFER_WIN_WIDTH	66
+#define TRANSFER_WIN_HEIGHT	18
+static char winbuf[TRANSFER_WIN_WIDTH*TRANSFER_WIN_HEIGHT*2];	/* Save buffer for transfer window */
+static struct text_info	trans_ti;
+static struct text_info	log_ti;
+static char	curr_trans_fname[MAX_PATH+1];
+
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
@@ -187,12 +194,10 @@ static int lputs(void* unused, int level, const char* str)
 	}
 #endif
 
-	if(level>log_level)
-		return 0;
-
-	if(wherex()>1)
-		cputs("\r\n");
-
+	/* Assumes the receive window has been drawn! */
+	window(log_ti.winleft, log_ti.wintop, log_ti.winright, log_ti.winbottom);
+	gotoxy(log_ti.curx, log_ti.cury);
+	textbackground(BLACK);
 	switch(level) {
 		case LOG_INFO:
 		case LOG_DEBUG:
@@ -209,7 +214,8 @@ static int lputs(void* unused, int level, const char* str)
 			SAFEPRINTF(msg,"!ERROR: %s\r\n",str);
 			break;
 	}
-	return cputs(msg);
+	cputs(msg);
+	gettextinfo(&log_ti);
 }
 
 static int lprintf(int level, const char *fmt, ...)
@@ -252,9 +258,15 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos
 	static time_t last_progress;
 
 	zmodem_check_abort((zmodem_t*)cbdata);
-
+	
+	window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
+			, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
+			, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 2
+			, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+5);
+	gotoxy(1,1);
+	textattr(YELLOW | (BLUE<<4));
 	now=time(NULL);
-	if(now-last_progress>0 || current_pos >= fsize || wherex()<=1) {
+	if(now-last_progress>0 || current_pos >= fsize) {
 		t=now-start;
 		if(t<=0)
 			t=1;
@@ -265,23 +277,35 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos
 		l=fsize/cps;	/* total transfer est time */
 		l-=t;			/* now, it's est time left */
 		if(l<0) l=0;
+		cprintf("Current file: %-.*s", TRANSFER_WIN_WIDTH - 18, curr_trans_fname);
+		clreol();
+		cputs("\r\n");
 		if(start_pos)
 			sprintf(orig,"From: %lu  ", start_pos);
 		else
 			orig[0]=0;
-		cprintf("\r%sKByte: %lu/%lu  "
-			"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
-			,orig
-			,current_pos/1024
-			,fsize/1024
+		cprintf("%sKByte: %lu/%lu", orig, current_pos/1024, fsize/1024);
+		clreol();
+		cputs("\r\n");
+		cprintf("Time: %lu:%02lu/%lu:%02lu  CPS: %u"
 			,t/60L
 			,t%60L
 			,l/60L
 			,l%60L
 			,cps
-			,(long)(((float)current_pos/(float)fsize)*100.0)
 			);
 		clreol();
+		cputs("\r\n");
+		cprintf("%*s%2d%%\r\n", TRANSFER_WIN_WIDTH/2-2, "", (long)(((float)current_pos/(float)fsize)*100.0));
+		l = 60*((float)current_pos/(float)fsize);
+		cprintf("[%*.*s%*s]", l, l, 
+				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+				, 60-l, "");
 		last_progress=now;
 	}
 }
@@ -341,6 +365,59 @@ BOOL data_waiting(void* unused)
 	return(rd);
 }
 
+void draw_recv_window(void)
+{
+	char	outline[66*2];
+	int		i, top, left;
+
+	gettextinfo(&trans_ti);
+	top=(trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2;
+	left=(trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2;
+	gettext(left, top, left + TRANSFER_WIN_WIDTH - 1, top + TRANSFER_WIN_HEIGHT - 1, winbuf);
+	memset(outline, YELLOW | (BLUE<<4), sizeof(outline));
+	for(i=2;i < sizeof(outline) - 2; i+=2) {
+		outline[i] = 0xcd;	/* Double horizontal line */
+	}
+	outline[0]=0xc9;
+	outline[sizeof(outline)-2]=0xbb;
+	puttext(left, top, left + TRANSFER_WIN_WIDTH - 1, top, outline);
+	outline[0] = 0xcc;
+	outline[sizeof(outline)-2]=0xb9;
+	puttext(left, top+6, left + TRANSFER_WIN_WIDTH - 1, top+6, outline);
+	outline[0]=0xc8;
+	outline[sizeof(outline)-2]=0xbc;
+	puttext(left, top + TRANSFER_WIN_HEIGHT - 1, left+TRANSFER_WIN_WIDTH - 1, top + TRANSFER_WIN_HEIGHT - 1, outline);
+	outline[0]=0xba;
+	outline[sizeof(outline)-2]=0xba;
+	for(i=2;i < sizeof(outline) - 2; i+=2) {
+		outline[i] = ' ';
+	}
+	for(i=1; i<6; i++) {
+		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top+i, outline);
+	}
+	for(i=3;i < sizeof(outline) - 2; i+=2) {
+		outline[i] = LIGHTGRAY | (BLACK << 8);
+	}
+	for(i=7; i<TRANSFER_WIN_HEIGHT-1; i++) {
+		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top+i, outline);
+	}
+	window(left+2, top + 7, left + TRANSFER_WIN_WIDTH - 3, top + TRANSFER_WIN_HEIGHT - 2);
+	gotoxy(1,1);
+	gettextinfo(&log_ti);
+}
+
+void erase_recv_window(void) {
+	puttext(
+		  ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)
+		, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)
+		, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 1
+		, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2) + TRANSFER_WIN_HEIGHT - 1
+		, winbuf);
+	window(trans_ti.winleft, trans_ti.wintop, trans_ti.winright, trans_ti.winbottom);
+	gotoxy(trans_ti.curx, trans_ti.cury);
+	textattr(trans_ti.attribute);
+}
+
 void zmodem_receive(void)
 {
 	char		fpath[MAX_PATH+1];
@@ -358,6 +435,8 @@ void zmodem_receive(void)
 	zmodem_t	zm;
 	char*		download_dir=".";
 
+	draw_recv_window();
+
 	zmodem_init(&zm
 		,/* cbdata */&zm
 		,lputs, zmodem_progress
@@ -373,6 +452,7 @@ void zmodem_receive(void)
 			,&total_bytes)==ZFILE) {
 		lprintf(LOG_DEBUG,"fpath=%s",fpath);
 		fname=getfname(fpath);
+		SAFECOPY(curr_trans_fname, fpath);
 		lprintf(LOG_DEBUG,"fname=%s",fname);
 		kbytes=bytes/1024;
 		if(kbytes<1) kbytes=0;
@@ -434,7 +514,7 @@ void zmodem_receive(void)
 		zmodem_rx(&zm);
 	zm.recv_timeout=timeout;
 
-	cputs("\r\n");
+	erase_recv_window();
 }
 /* End of Zmodem Stuff */
 
