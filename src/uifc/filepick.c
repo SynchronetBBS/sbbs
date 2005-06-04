@@ -355,6 +355,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					currfield++;
 					break;
 			}
+			if(currfield==MASK_FIELD && (opts & UIFC_FP_MSKNOCHG))
+				currfield++;
 			if(currfield==FIELD_LIST_TERM)
 				currfield=DIR_LIST;
 		}
