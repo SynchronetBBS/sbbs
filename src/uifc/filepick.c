@@ -279,7 +279,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		i=width-4;
 	api->printf(SCRN_LEFT+2, SCRN_TOP+1, api->hclr|(api->bclr<<4), "%*s%-*s", (width-i)/2-2, "", i, title);
 	api->printf(SCRN_LEFT+2, SCRN_TOP+height-3, api->hclr|(api->bclr<<4), "Mask: ");
-	api->printf(SCRN_LEFT+8, SCRN_TOP+height-3, api->lclr|(api->bclr<<4), "%-*s", width-7, msk);
+	api->printf(SCRN_LEFT+8, SCRN_TOP+height-3, api->lclr|(api->bclr<<4), "%-*s", width-7, cmsk);
 	while(!finished) {
 		tmppath=strdup(cpath);
 		if(tmppath != NULL)
@@ -292,7 +292,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		switch(currfield) {
 			case DIR_LIST:
 				if(lastfield==DIR_LIST)
-					sprintf(cfile,"%s%s",cpath,msk);
+					sprintf(cfile,"%s%s",cpath,cmsk);
 				break;
 		}
 
@@ -345,7 +345,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						lastpath=strdup(cpath);
 						strcat(cpath,dir_list[i]);
 						reread=TRUE;
-						sprintf(cfile,"%s%s",cpath,msk);
+						sprintf(cfile,"%s%s",cpath,cmsk);
 					}
 					break;
 				case FILE_LIST:
