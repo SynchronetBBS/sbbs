@@ -598,6 +598,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
 				free(title);
+				uifc_mouse_enable();
 				return(-1);
 			}
 			gettext(s_left+left,s_top+top,s_left+left+width+1
@@ -620,6 +621,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
 				free(title);
+				uifc_mouse_enable();
 				return(-1);
 			}
 			gettext(s_left+left,s_top+top,s_left+left+width+1
@@ -874,10 +876,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 	last_menu_cur=cur;
 	last_menu_bar=bar;
+	uifc_mouse_enable();
+
 	if(mode&WIN_IMM)
 		return(-2);
-
-	uifc_mouse_enable();
 
 	while(1) {
 	#if 0					/* debug */
