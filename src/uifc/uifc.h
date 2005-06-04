@@ -217,6 +217,9 @@
 #define K_DECIMAL	(1L<<13)	/* Allow floating point numbers only		*/
 #define K_DEUCEEXIT	(1L<<14)	/* Return whenever Deuce wants to exit		*/
 								/* Returns on up/down/F2					*/
+#define K_MOUSEEXIT	(1L<<15)	/* Returns when mouse is clicked outside of */
+								/* Input area (NOT outside of window!)		*/
+								/* And ungets the mouse event.				*/
 
 #define HELPBUF_SIZE 4000
 

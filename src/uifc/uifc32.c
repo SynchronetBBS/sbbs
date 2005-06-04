@@ -1754,6 +1754,15 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		f=inkey();
 		if(f==CIO_KEY_MOUSE) {
 			if((f=uifc_getmouse(&mevnt))==0) {
+				if((mevnt.starty != top
+						|| (mevnt.startx > left+width
+						    || mevnt.startx < left))
+						&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
+					if(lastkey)
+						*lastkey=CIO_KEY_MOUSE;
+					ungetmouse(&mevnt);
+					return(j);
+				}
 				if(mevnt.startx>=left
 						&& mevnt.startx<=left+width
 						&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
@@ -1761,7 +1770,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					if(i>j)
 						i=j;
 				}
-				if(mevnt.startx>=left
+				if(mevnt.starty == top
+						&& mevnt.startx>=left
 						&& mevnt.startx<=left+width
 						&& (mevnt.event==CIOLIB_BUTTON_2_CLICK
 						|| mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
@@ -1818,14 +1828,16 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 			}
 			if(ch==CIO_KEY_MOUSE) {
 				if((ch=uifc_getmouse(&mevnt))==0) {
-					if(mevnt.startx>=left
+					if(mevnt.starty == top
+							&& mevnt.startx>=left
 							&& mevnt.startx<=left+width
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
 						i=mevnt.startx-left+soffset;
 						if(i>j)
 							i=j;
 					}
-					if(mevnt.startx>=left
+					if(mevnt.starty == top
+							&& mevnt.startx>=left
 							&& mevnt.startx<=left+width
 							&& (mevnt.event==CIOLIB_BUTTON_2_CLICK
 							|| mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
