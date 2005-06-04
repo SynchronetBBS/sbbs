@@ -38,7 +38,7 @@
 #include <signal.h>
 #include <stdio.h>
 /* #include "curs_fix.h" */
-/* #include "filepick.h" */
+#include "filepick.h"
 #include "uifc.h"
 
 /********************/
@@ -62,7 +62,7 @@ int main(int argc, char** argv)  {
 	int		last;
 	int		edtuser=0;
 	char	longtitle[1024];
-/*	struct file_pick fper; */
+	struct file_pick fper;
 	/******************/
 	/* Ini file stuff */
 	/******************/
@@ -175,7 +175,13 @@ int main(int argc, char** argv)  {
 		}
 		if(j==2) {
 			/* File picker */
-/*			filepick(&uifc, "Bob", &fper, NULL, NULL, 0); */
+			if(filepick(&uifc, "Bob", &fper, NULL, NULL, UIFC_FP_ALLOWENTRY)!=-1) {
+				if(fper.files==1) {
+					sprintf(str,"File selected: %-.200s",fper.selected[0]);
+					uifc.msg(str);
+				}
+				filepick_free(&fper);
+			}
 		}
 	}
 }
