@@ -211,7 +211,7 @@
 #define K_NOCRLF	(1L<<9) 	/* Don't print CRLF after string input      */
 #define K_ALPHA 	(1L<<10)	/* Only allow alphabetic characters 		*/
 #define K_SCANNING	(1L<<11)	/* UPC Scanner is active... return on '%'	*/
-#define K_TABEXIT	(1L<<12)	/* Return on TAB					    	*/
+#define K_TABEXIT	(1L<<12)	/* Return on TAB or BACKTAB			    	*/
 #define K_DECIMAL	(1L<<13)	/* Allow floating point numbers only		*/
 #define K_DEUCEEXIT	(1L<<13)	/* Return whenever Deuce wants to exit		*/
 								/* Define this behaviour better - ToDo		*/

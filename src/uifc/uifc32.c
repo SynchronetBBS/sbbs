@@ -1910,7 +1910,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					}
 				case CR:
 					break;
-				case '\t':	/* '%' indicates that a UPC is coming next */
+				case 3840:	/* Backtab */
+				case '\t':
 					if(mode&K_TABEXIT)
 						ch=CR;
 					break;
