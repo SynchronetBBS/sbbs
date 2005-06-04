@@ -957,8 +957,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							|| mevnt.starty<s_top+top
 							|| mevnt.starty>s_top+top+height-1)
 							&& (mevnt.event==CIOLIB_BUTTON_1_CLICK
-							|| mevnt.event==CIOLIB_BUTTON_3_CLICK))
-						i=ESC;
+							|| mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
+						if(mode&WIN_UNGETMOUSE) {
+							ungetmouse(mevnt);
+						}
+						else {
+							i=ESC;
+						}
+					}
 				}
 			}
 			/* For compatibility with terminals lacking special keys */

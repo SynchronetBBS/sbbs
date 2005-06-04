@@ -191,6 +191,8 @@
 							 * Return value is -2 - keyvalue */
 #define WIN_NOBRDR	(1<<24)	/* Do not draw a border around the window */
 #define WIN_FIXEDHEIGHT	(1<<25)	/* Use list_height from uifc struct */
+#define WIN_UNGETMOUSE  (1<<26) /* If the mouse is clicked outside the window, */
+								/* Put the mouse event back into the event queue */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 
@@ -213,8 +215,8 @@
 #define K_SCANNING	(1L<<11)	/* UPC Scanner is active... return on '%'	*/
 #define K_TABEXIT	(1L<<12)	/* Return on TAB or BACKTAB			    	*/
 #define K_DECIMAL	(1L<<13)	/* Allow floating point numbers only		*/
-#define K_DEUCEEXIT	(1L<<13)	/* Return whenever Deuce wants to exit		*/
-								/* Define this behaviour better - ToDo		*/
+#define K_DEUCEEXIT	(1L<<14)	/* Return whenever Deuce wants to exit		*/
+								/* Returns on up/down/F2					*/
 
 #define HELPBUF_SIZE 4000
 
