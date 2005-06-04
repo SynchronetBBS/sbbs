@@ -7,8 +7,8 @@
 enum {
 	 DIR_LIST
 	,FILE_LIST
-	,CURRENT_PATH
 	,MASK_FIELD
+	,CURRENT_PATH
 	,FIELD_LIST_TERM
 };
 
@@ -25,12 +25,12 @@ int drawfpwindow(uifcapi_t *api)
 
 	width=SCRN_RIGHT-SCRN_LEFT+1;
 
-	height=api->scrn_len-4;
+	height=api->scrn_len-3;
 	/* Make sure it's odd */
 	if(!(width%2))
 		width--;
 
-	listheight=height-8;
+	listheight=height-7;
 
         i=0;
 	lbuf[i++]='\xc9';
@@ -86,8 +86,6 @@ int drawfpwindow(uifcapi_t *api)
 		SCRN_LEFT+width-1,SCRN_TOP+height-2,lbuf);
 	puttext(SCRN_LEFT,SCRN_TOP+height-3,
 		SCRN_LEFT+width-1,SCRN_TOP+height-3,lbuf);
-	puttext(SCRN_LEFT,SCRN_TOP+height-4,
-		SCRN_LEFT+width-1,SCRN_TOP+height-4,lbuf);
 	lbuf[width-1]='\xba';
 	for(j=0;j<listheight;j++)
 		puttext(SCRN_LEFT,SCRN_TOP+3+j
@@ -158,7 +156,7 @@ void display_current_path(uifcapi_t *api, char *path)
 	int width;
 	int height;
 
-	height=api->scrn_len-4;
+	height=api->scrn_len-3;
 	width=SCRN_RIGHT-SCRN_LEFT-3;
 	SAFECOPY(dpath, path);
 	while(strlen(dpath) > width) {
@@ -176,12 +174,18 @@ void display_current_path(uifcapi_t *api, char *path)
 	}
 #endif
 
-	api->printf(SCRN_LEFT+2, SCRN_TOP+height-4, api->lclr|(api->bclr<<4), "%-*s", width, dpath);
+	api->printf(SCRN_LEFT+2, SCRN_TOP+height-2, api->lclr|(api->bclr<<4), "%-*s", width, dpath);
 }
 
 int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char *msk, int opts)
 {
+	char	cfile[MAX_PATH*5+1];
 	char	cpath[MAX_PATH+1];
+	char	cdrive[3];
+	char	cdir[MAX_PATH+1];
+	char	cfname[MAX_PATH+1];
+	char	cext[MAX_PATH+1];
+	char	cname[MAX_PATH+1];
 	char	cmsk[MAX_PATH*4+1];
 	char	cglob[MAX_PATH*4+1];
 	char	dglob[MAX_PATH*4+1];
@@ -209,7 +213,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	int width;
 	int height;
 
-	height=api->scrn_len-4;
+	height=api->scrn_len-3;
 	width=SCRN_RIGHT-SCRN_LEFT-3;
 
 	lbclr=api->lbclr;
@@ -227,6 +231,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		SAFECOPY(cpath,".");
 
 	FULLPATH(cpath,((dir==NULL||dir[0]==0)?".":dir),sizeof(cpath));
+	backslash(cpath);
 
 	if(msk==NULL || msk[0]==0) {
 		SAFECOPY(cmsk,"*");
@@ -245,16 +250,24 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	if(i>width-4)
 		i=width-4;
 	api->printf(SCRN_LEFT+2, SCRN_TOP+1, api->hclr|(api->bclr<<4), "%*s%-*s", (width-i)/2-2, "", i, title);
-	api->printf(SCRN_LEFT+2, SCRN_TOP+height-2, api->hclr|(api->bclr<<4), "Mask: ");
-	api->printf(SCRN_LEFT+8, SCRN_TOP+height-2, api->lclr|(api->bclr<<4), "%-*s", width-7, msk);
+	api->printf(SCRN_LEFT+2, SCRN_TOP+height-3, api->hclr|(api->bclr<<4), "Mask: ");
+	api->printf(SCRN_LEFT+8, SCRN_TOP+height-3, api->lclr|(api->bclr<<4), "%-*s", width-7, msk);
 	while(1) {
 		tmppath=strdup(cpath);
 		if(tmppath != NULL)
 			FULLPATH(cpath,tmppath,sizeof(cpath));
 		FREE_AND_NULL(tmppath);
 
-		sprintf(cglob,"%s/%s",cpath,cmsk);
-		sprintf(dglob,"%s/*",cpath,cmsk);
+		backslash(cpath);
+		sprintf(cglob,"%s%s",cpath,cmsk);
+		sprintf(dglob,"%s*",cpath,cmsk);
+		switch(currfield) {
+			case DIR_LIST:
+				if(lastfield==DIR_LIST)
+					sprintf(cfile,"%s%s",cpath,msk);
+				break;
+		}
+
 #ifdef __unix__
 		if(cpath[1]==0)
 			root=TRUE;
@@ -274,15 +287,15 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		}
 		if(glob(cglob, 0, NULL, &fgl)!=0)
 			fgl.gl_pathc=0;
-		api->list_height=api->scrn_len-4-8;
+		api->list_height=api->scrn_len-3-7;
 		dir_list=get_file_opt_list(dgl.gl_pathv, dgl.gl_pathc, TRUE, root);
 		file_list=get_file_opt_list(fgl.gl_pathv, fgl.gl_pathc, FALSE, root);
 		globfree(&dgl);
 		globfree(&fgl);
 		reread=FALSE;
 		dircur=dirbar=filecur=filecur=0;
-		display_current_path(api, cpath);
 		while(!reread) {
+			display_current_path(api, cfile);
 			api->lbclr=api->lclr|(api->bclr<<4);
 			api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
 			api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
@@ -293,44 +306,33 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
 					if(i==-2-'\t')
 						currfield++;
-					if(i==0 && !root) {	/* Previous Dir */
-						FREE_AND_NULL(lastpath);
-						lastpath=strdup(cpath);
-						p1=strrchr(cpath,'/');
-#ifdef _WIN32
-						p2=strrchr(cpath,'\\');
-						if(p2>p1)
-							p1=p2;
-#endif
-						*p1=0;
-#ifdef __unix__
-						if(!cpath[0])
-							strcpy(cpath,"/");
-#endif
-						reread=TRUE;
-						break;
-					}
 					if(i>=0) {
 						FREE_AND_NULL(lastpath);
 						lastpath=strdup(cpath);
-						strcat(cpath,"/");
 						strcat(cpath,dir_list[i]);
 						reread=TRUE;
+						sprintf(cfile,"%s%s",cpath,msk);
 					}
 					break;
 				case FILE_LIST:
-					api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
+					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
+					if(i>=0)
+						sprintf(cfile,"%s%s",cpath,file_list[i]);
 					if(i==-2-'\t')	/* This is only until the text fields are here */
 						currfield++;
 					break;
 				case CURRENT_PATH:
 					FREE_AND_NULL(tmplastpath);
 					tmplastpath=strdup(cpath);
-					api->getstrxy(SCRN_LEFT+2, SCRN_TOP+height-4, width-1, cpath, sizeof(cpath)-1, K_EDIT|K_TABEXIT, &i);
-					tmppath=strdup(cpath);
-					if(tmppath != NULL)
-						FULLPATH(cpath,tmppath,sizeof(cpath));
-					FREE_AND_NULL(tmppath);
+					api->getstrxy(SCRN_LEFT+2, SCRN_TOP+height-2, width-1, cfile, sizeof(cfile)-1, K_EDIT|K_TABEXIT, &i);
+					_splitpath(cfile, cdrive, cdir, cfname, cext);
+					sprintf(cpath,"%s%s",cdrive,cdir);
+					sprintf(cfile,"%s%s%s%s",cdrive,cdir,cfname,cext);
+					if(isdir(cfile)) {
+						SAFECOPY(cpath, cfile);
+						backslash(cfile);
+						strcat(cfile,cmsk);
+					}
 					if(tmplastpath != NULL) {
 						if(strcmp(tmplastpath, cpath)) {
 							reread=TRUE;
@@ -338,15 +340,18 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 							lastpath=tmplastpath;
 							tmplastpath=NULL;
 						}
-						else
-							display_current_path(api, cpath);
 					}
 					FREE_AND_NULL(tmplastpath);
 					currfield++;
 					break;
 				case MASK_FIELD:
-					api->getstrxy(SCRN_LEFT+8, SCRN_TOP+height-2, width-7, cmsk, sizeof(cmsk)-1, K_EDIT|K_TABEXIT, &i);
-					reread=TRUE;
+					p1=strdup(cmsk);
+					api->getstrxy(SCRN_LEFT+8, SCRN_TOP+height-3, width-7, cmsk, sizeof(cmsk)-1, K_EDIT|K_TABEXIT, &i);
+					if(strcmp(cmsk, p1)) {
+						sprintf(cfile,"%s%s",cpath,cmsk);
+						reread=TRUE;
+					}
+					FREE_AND_NULL(p1);
 					currfield++;
 					break;
 			}
