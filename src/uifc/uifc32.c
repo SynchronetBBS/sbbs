@@ -960,6 +960,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							|| mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
 						if(mode&WIN_UNGETMOUSE) {
 							ungetmouse(&mevnt);
+							i=CIO_KEY_MOUSE;
 						}
 						else {
 							i=ESC;
