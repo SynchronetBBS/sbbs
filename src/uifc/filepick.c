@@ -1,3 +1,5 @@
+#include <ctype.h>
+
 #include "dirwrap.h"
 #include "uifc.h"
 #include "ciolib.h"
@@ -119,6 +121,31 @@ void free_opt_list(char **opts)
 	free(opts);
 }
 
+char *insensitive_mask(char *mask)
+{
+#ifdef __unix__
+	char *in;
+	char *out;
+	static char nmask[MAX_PATH*4+1];
+
+	out=nmask;
+	for(in=mask; *in; in++) {
+		if(isalpha(*in)) {
+			*(out++)='[';
+			*(out++)=tolower(*in);
+			*(out++)=toupper(*in);
+			*(out++)=']';
+		}
+		else
+			*(out++)=*in;
+	}
+	*out=0;
+	return(nmask);
+#else
+	return(mask);
+#endif
+}
+
 char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 {
 	char **opts;
@@ -212,6 +239,9 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	char	*tmppath=NULL;
 	int width;
 	int height;
+	char	*YesNo[]={"Yes", "No", ""};
+	char	*NoYes[]={"No", "Yes", ""};
+	int		finished=FALSE;
 
 	height=api->scrn_len-3;
 	width=SCRN_RIGHT-SCRN_LEFT-3;
@@ -252,15 +282,15 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	api->printf(SCRN_LEFT+2, SCRN_TOP+1, api->hclr|(api->bclr<<4), "%*s%-*s", (width-i)/2-2, "", i, title);
 	api->printf(SCRN_LEFT+2, SCRN_TOP+height-3, api->hclr|(api->bclr<<4), "Mask: ");
 	api->printf(SCRN_LEFT+8, SCRN_TOP+height-3, api->lclr|(api->bclr<<4), "%-*s", width-7, msk);
-	while(1) {
+	while(!finished) {
 		tmppath=strdup(cpath);
 		if(tmppath != NULL)
 			FULLPATH(cpath,tmppath,sizeof(cpath));
 		FREE_AND_NULL(tmppath);
 
 		backslash(cpath);
-		sprintf(cglob,"%s%s",cpath,cmsk);
-		sprintf(dglob,"%s*",cpath,cmsk);
+		sprintf(cglob,"%s%s",cpath,(opts&UIFC_FP_MSKCASE)?cmsk:insensitive_mask(cmsk));
+		sprintf(dglob,"%s*",cpath);
 		switch(currfield) {
 			case DIR_LIST:
 				if(lastfield==DIR_LIST)
@@ -316,8 +346,11 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					break;
 				case FILE_LIST:
 					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
-					if(i>=0)
+					if(i>=0) {
 						sprintf(cfile,"%s%s",cpath,file_list[i]);
+						if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI)
+							finished=reread=TRUE;
+					}
 					if(i==-2-'\t')	/* This is only until the text fields are here */
 						currfield++;
 					break;
@@ -327,13 +360,22 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					api->getstrxy(SCRN_LEFT+2, SCRN_TOP+height-2, width-1, cfile, sizeof(cfile)-1, K_EDIT|K_TABEXIT, &i);
 					if((opts & (UIFC_FP_FILEEXIST|UIFC_FP_PATHEXIST)) && !fexist(cfile)) {
 						FREE_AND_NULL(tmplastpath);
-						api->msg("No such file/path!");
+						api->msg("No such path/file!");
 						continue;
 					}
 					_splitpath(cfile, cdrive, cdir, cfname, cext);
 					sprintf(cpath,"%s%s",cdrive,cdir);
+					if(!isdir(cpath)) {
+						FREE_AND_NULL(tmplastpath);
+						api->msg("No such path!");
+						continue;
+					}
 					sprintf(cfile,"%s%s%s%s",cdrive,cdir,cfname,cext);
 					if(isdir(cfile)) {
+						if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && i!='\t') {
+							if(opts & UIFC_FP_DIRSEL)
+								finished=reread=TRUE;
+						}
 						SAFECOPY(cpath, cfile);
 						backslash(cfile);
 						strcat(cfile,cmsk);
@@ -347,6 +389,9 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						}
 					}
 					FREE_AND_NULL(tmplastpath);
+					if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && i!='\t') {
+						finished=reread=TRUE;
+					}
 					currfield++;
 					break;
 				case MASK_FIELD:
@@ -366,6 +411,16 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 				currfield++;
 			if(currfield==FIELD_LIST_TERM)
 				currfield=DIR_LIST;
+		}
+		if(finished) {
+			if((opts & UIFC_FP_OVERPROMPT) && fexist(cfile)) {
+				if(api->list(WIN_MID|WIN_SAV, 0,0,0, &i, NULL, "File exists, overwrite?", YesNo)!=0)
+					finished=FALSE;
+			}
+			if((opts & UIFC_FP_CREATPROMPT) && !fexist(cfile)) {
+				if(api->list(WIN_MID|WIN_SAV, 0,0,0, &i, NULL, "File does not exist, create?", YesNo)!=0)
+					finished=FALSE;
+			}
 		}
 	}
 
