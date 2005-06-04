@@ -223,7 +223,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		return(-1);
 
 	/* Illegal options */
-	if((opts & UIFC_FP_MULTI) && (opts & (UIFC_FP_ALLOWENTRY|UIFC_FP_OVERPROMPT|UIFC_FP_CREATPROMPT)))
+	if((opts & UIFC_FP_MULTI)==UIFC_FP_MULTI && (opts & (UIFC_FP_ALLOWENTRY|UIFC_FP_OVERPROMPT|UIFC_FP_CREATPROMPT)))
 		return(-1);
 
 	/* No initial path specified */
@@ -325,6 +325,11 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					FREE_AND_NULL(tmplastpath);
 					tmplastpath=strdup(cpath);
 					api->getstrxy(SCRN_LEFT+2, SCRN_TOP+height-2, width-1, cfile, sizeof(cfile)-1, K_EDIT|K_TABEXIT, &i);
+					if((opts & (UIFC_FP_FILEEXIST|UIFC_FP_PATHEXIST)) && !fexist(cfile)) {
+						FREE_AND_NULL(tmplastpath);
+						api->msg("No such file/path!");
+						continue;
+					}
 					_splitpath(cfile, cdrive, cdir, cfname, cext);
 					sprintf(cpath,"%s%s",cdrive,cdir);
 					sprintf(cfile,"%s%s%s%s",cdrive,cdir,cfname,cext);
@@ -356,6 +361,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					break;
 			}
 			if(currfield==MASK_FIELD && (opts & UIFC_FP_MSKNOCHG))
+				currfield++;
+			if(currfield==CURRENT_PATH && !(opts & UIFC_FP_ALLOWENTRY))
 				currfield++;
 			if(currfield==FIELD_LIST_TERM)
 				currfield=DIR_LIST;
