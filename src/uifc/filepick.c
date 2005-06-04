@@ -14,12 +14,11 @@ enum {
 	,FIELD_LIST_TERM
 };
 
-int drawfpwindow(uifcapi_t *api)
+void drawfpwindow(uifcapi_t *api)
 {
 	char lbuf[1024];
 	int i;
 	int j;
-	int y;
 	int listheight=0;
 	int height;
 	int width;
@@ -111,14 +110,17 @@ int drawfpwindow(uifcapi_t *api)
 	}
 }
 
-void free_opt_list(char **opts)
+void free_opt_list(char ***opts)
 {
 	char **p;
 
-	for(p=opts; *p[0]; p++) {
-		free(*p);
+	if(*opts==NULL)
+		return;
+	for(p=*opts; *p && (*p)[0]; p++) {
+		if(*p)
+			FREE_AND_NULL((*p));
 	}
-	free(opts);
+	FREE_AND_NULL(*opts);
 }
 
 char *insensitive_mask(char *mask)
@@ -149,14 +151,13 @@ char *insensitive_mask(char *mask)
 char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 {
 	char **opts;
-	char *opt;
-	char *p;
 	int  i;
 	int  j=0;
 
 	opts=(char **)malloc((files+2)*sizeof(char *));
 	if(opts==NULL)
 		return(NULL);
+	memset(opts, 0, (files+2)*sizeof(char *));
 	if(dirsonly) {
 		if(!root)
 			opts[j++]=strdup("..");
@@ -178,8 +179,6 @@ char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 void display_current_path(uifcapi_t *api, char *path)
 {
 	char	dpath[MAX_PATH+2];
-	int i,j;
-	char *p;
 	int width;
 	int height;
 
@@ -206,42 +205,41 @@ void display_current_path(uifcapi_t *api, char *path)
 
 int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char *msk, int opts)
 {
-	char	cfile[MAX_PATH*5+1];
-	char	cpath[MAX_PATH+1];
-	char	cdrive[3];
-	char	cdir[MAX_PATH+1];
-	char	cfname[MAX_PATH+1];
-	char	cext[MAX_PATH+1];
-	char	cname[MAX_PATH+1];
-	char	cmsk[MAX_PATH*4+1];
-	char	cglob[MAX_PATH*4+1];
-	char	dglob[MAX_PATH*4+1];
-	char	*p1;
-	char	*p2;
-	glob_t	fgl;
-	glob_t	dgl;
+	char	cfile[MAX_PATH*5+1];		/* Current full path to file */
+	char	cpath[MAX_PATH+1];			/* Current path */
+	char	drive[3];
+	char	tdir[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
+	char	ext[MAX_PATH+1];
+	char	cmsk[MAX_PATH*4+1];			/* Current file mask */
+	char	cglob[MAX_PATH*4+1];		/* File glob patter */
+	char	dglob[MAX_PATH*4+1];		/* Directory glob pattern */
+	char	*p;
+	glob_t	fgl;						/* Files */
+	glob_t	dgl;						/* Directories */
 	int		dircur=0;
 	int		dirbar=0;
 	int		filecur=0;
 	int		filebar=0;
 	int		listwidth;
-	int	listheight;
 	char	**dir_list;
 	char	**file_list;
 	int		currfield=DIR_LIST;
 	int		lastfield=DIR_LIST;
 	int		i;
-	int		root=0;
+	int		root=0;						/* Is this the root of the file system? */
+										/* On *nix, this just means no .. on Win32,
+										 * Something should be done about drive letters. */
 	int		reread=FALSE;
 	int		lbclr;
 	char	*lastpath=NULL;
 	char	*tmplastpath=NULL;
 	char	*tmppath=NULL;
-	int width;
-	int height;
+	int		width;
+	int		height;
 	char	*YesNo[]={"Yes", "No", ""};
-	char	*NoYes[]={"No", "Yes", ""};
 	int		finished=FALSE;
+	int		retval=0;
 
 	height=api->scrn_len-3;
 	width=SCRN_RIGHT-SCRN_LEFT-3;
@@ -307,8 +305,10 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 #error Need to do something about root paths (in get_file_opt_list() too!)
 #endif
 		if(glob(dglob, 0, NULL, &dgl)!=0) {
-			if(lastpath==NULL)
-				return(-1);
+			if(lastpath==NULL) {
+				retval=-1;
+				goto cleanup;
+			}
 			api->msg("Cannot read directory!");
 			SAFECOPY(cpath, lastpath);
 			FREE_AND_NULL(lastpath);
@@ -323,7 +323,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		globfree(&dgl);
 		globfree(&fgl);
 		reread=FALSE;
-		dircur=dirbar=filecur=filecur=0;
+		dircur=dirbar=filecur=filebar=0;
 		while(!reread) {
 			display_current_path(api, cfile);
 			api->lbclr=api->lclr|(api->bclr<<4);
@@ -334,6 +334,10 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 			switch(currfield) {
 				case DIR_LIST:
 					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
+					if(i==-1) {
+						retval=0;
+						goto cleanup;
+					}
 					if(i==-2-'\t')
 						currfield++;
 					if(i>=0) {
@@ -346,10 +350,29 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					break;
 				case FILE_LIST:
 					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
+					if(i==-1) {
+						retval=0;
+						goto cleanup;
+					}
 					if(i>=0) {
 						sprintf(cfile,"%s%s",cpath,file_list[i]);
-						if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI)
+						if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI) {
+							retval=fp->files=1;
+							fp->selected=(char **)malloc(sizeof(char *));
+							if(fp->selected==NULL) {
+								fp->files=0;
+								retval=0;
+								goto cleanup;
+							}
+							fp->selected[0]=strdup(cfile);
+							if(fp->selected[0]==NULL) {
+								free(fp->selected);
+								fp->files=0;
+								retval=0;
+								goto cleanup;
+							}
 							finished=reread=TRUE;
+						}
 					}
 					if(i==-2-'\t')	/* This is only until the text fields are here */
 						currfield++;
@@ -358,23 +381,42 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					FREE_AND_NULL(tmplastpath);
 					tmplastpath=strdup(cpath);
 					api->getstrxy(SCRN_LEFT+2, SCRN_TOP+height-2, width-1, cfile, sizeof(cfile)-1, K_EDIT|K_TABEXIT, &i);
+					if(i==ESC) {
+						retval=0;
+						goto cleanup;
+					}
 					if((opts & (UIFC_FP_FILEEXIST|UIFC_FP_PATHEXIST)) && !fexist(cfile)) {
 						FREE_AND_NULL(tmplastpath);
 						api->msg("No such path/file!");
 						continue;
 					}
-					_splitpath(cfile, cdrive, cdir, cfname, cext);
-					sprintf(cpath,"%s%s",cdrive,cdir);
+					_splitpath(cfile, drive, tdir, fname, ext);
+					sprintf(cpath,"%s%s",drive,tdir);
 					if(!isdir(cpath)) {
 						FREE_AND_NULL(tmplastpath);
 						api->msg("No such path!");
 						continue;
 					}
-					sprintf(cfile,"%s%s%s%s",cdrive,cdir,cfname,cext);
+					sprintf(cfile,"%s%s%s%s",drive,tdir,fname,ext);
 					if(isdir(cfile)) {
 						if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && i!='\t') {
-							if(opts & UIFC_FP_DIRSEL)
+							if(opts & UIFC_FP_DIRSEL) {
 								finished=reread=TRUE;
+								retval=fp->files=1;
+								fp->selected=(char **)malloc(sizeof(char *));
+								if(fp->selected==NULL) {
+									fp->files=0;
+									retval=0;
+									goto cleanup;
+								}
+								fp->selected[0]=strdup(cfile);
+								if(fp->selected[0]==NULL) {
+									free(fp->selected);
+									fp->files=0;
+									retval=0;
+									goto cleanup;
+								}
+							}
 						}
 						SAFECOPY(cpath, cfile);
 						backslash(cfile);
@@ -390,18 +432,36 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					}
 					FREE_AND_NULL(tmplastpath);
 					if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && i!='\t') {
+						retval=fp->files=1;
+						fp->selected=(char **)malloc(sizeof(char *));
+						if(fp->selected==NULL) {
+							fp->files=0;
+							retval=0;
+							goto cleanup;
+						}
+						fp->selected[0]=strdup(cfile);
+						if(fp->selected[0]==NULL) {
+							free(fp->selected);
+							fp->files=0;
+							retval=0;
+							goto cleanup;
+						}
 						finished=reread=TRUE;
 					}
 					currfield++;
 					break;
 				case MASK_FIELD:
-					p1=strdup(cmsk);
+					p=strdup(cmsk);
 					api->getstrxy(SCRN_LEFT+8, SCRN_TOP+height-3, width-7, cmsk, sizeof(cmsk)-1, K_EDIT|K_TABEXIT, &i);
-					if(strcmp(cmsk, p1)) {
+					if(i==ESC) {
+						retval=0;
+						goto cleanup;
+					}
+					if(strcmp(cmsk, p)) {
 						sprintf(cfile,"%s%s",cpath,cmsk);
 						reread=TRUE;
 					}
-					FREE_AND_NULL(p1);
+					FREE_AND_NULL(p);
 					currfield++;
 					break;
 			}
@@ -412,6 +472,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 			if(currfield==FIELD_LIST_TERM)
 				currfield=DIR_LIST;
 		}
+		free_opt_list(&file_list);
+		free_opt_list(&dir_list);
 		if(finished) {
 			if((opts & UIFC_FP_OVERPROMPT) && fexist(cfile)) {
 				if(api->list(WIN_MID|WIN_SAV, 0,0,0, &i, NULL, "File exists, overwrite?", YesNo)!=0)
@@ -424,11 +486,22 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		}
 	}
 
+cleanup:		/* Cleans up allocated variables returns from function */
 	FREE_AND_NULL(lastpath);
-	return(0);
+	FREE_AND_NULL(tmppath);
+	FREE_AND_NULL(tmplastpath);
+	free_opt_list(&file_list);
+	free_opt_list(&dir_list);
+	return(retval);
 }
 
 int filepick_free(struct file_pick *fp)
 {
+	int i;
+
+	for(i=0; i<fp->files; i++) {
+		FREE_AND_NULL(fp->selected[i]);
+	}
+	FREE_AND_NULL(fp->selected);
 	return(0);
 }
