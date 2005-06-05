@@ -21,7 +21,7 @@ struct terminal term;
 
 #define TRANSFER_WIN_WIDTH	66
 #define TRANSFER_WIN_HEIGHT	18
-static char winbuf[TRANSFER_WIN_WIDTH*TRANSFER_WIN_HEIGHT*2];	/* Save buffer for transfer window */
+static char winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2];	/* Save buffer for transfer window */
 static struct text_info	trans_ti;
 static struct text_info	log_ti;
 static char	curr_trans_fname[MAX_PATH+1];
@@ -368,13 +368,14 @@ BOOL data_waiting(void* unused)
 
 void draw_recv_window(void)
 {
-	char	outline[66*2];
+	char	outline[TRANSFER_WIN_WIDTH*2];
+	char	shadow[TRANSFER_WIN_WIDTH*2];	/* Assumes that width*2 > height * 2 */
 	int		i, top, left;
 
 	gettextinfo(&trans_ti);
 	top=(trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2;
 	left=(trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2;
-	gettext(left, top, left + TRANSFER_WIN_WIDTH - 1, top + TRANSFER_WIN_HEIGHT - 1, winbuf);
+	gettext(left, top, left + TRANSFER_WIN_WIDTH + 1, top + TRANSFER_WIN_HEIGHT, winbuf);
 	memset(outline, YELLOW | (BLUE<<4), sizeof(outline));
 	for(i=2;i < sizeof(outline) - 2; i+=2) {
 		outline[i] = 0xcd;	/* Double horizontal line */
@@ -402,6 +403,35 @@ void draw_recv_window(void)
 	for(i=7; i<TRANSFER_WIN_HEIGHT-1; i++) {
 		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top+i, outline);
 	}
+
+	/* Shadow */
+	if(uifc.bclr==BLUE) {
+		gettext(left + TRANSFER_WIN_WIDTH
+				, top+1
+				, left + TRANSFER_WIN_WIDTH + 1
+				, top + (TRANSFER_WIN_HEIGHT - 1)
+				, shadow);
+		for(i=1;i<sizeof(shadow);i+=2)
+			shadow[i]=DARKGRAY;
+		puttext(left + TRANSFER_WIN_WIDTH
+				, top+1
+				, left + TRANSFER_WIN_WIDTH + 1
+				, top + (TRANSFER_WIN_HEIGHT - 1)
+				, shadow);
+		gettext(left + 2
+				, top + TRANSFER_WIN_HEIGHT
+				, left + TRANSFER_WIN_WIDTH + 1
+				, top + TRANSFER_WIN_HEIGHT
+				, shadow);
+		for(i=1;i<sizeof(shadow);i+=2)
+			shadow[i]=DARKGRAY;
+		puttext(left + 2
+				, top + TRANSFER_WIN_HEIGHT
+				, left + TRANSFER_WIN_WIDTH + 1
+				, top + TRANSFER_WIN_HEIGHT
+				, shadow);
+	}
+
 	window(left+2, top + 7, left + TRANSFER_WIN_WIDTH - 3, top + TRANSFER_WIN_HEIGHT - 2);
 	gotoxy(1,1);
 	gettextinfo(&log_ti);
@@ -411,8 +441,8 @@ void erase_recv_window(void) {
 	puttext(
 		  ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)
 		, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)
-		, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 1
-		, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2) + TRANSFER_WIN_HEIGHT - 1
+		, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH + 1
+		, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2) + TRANSFER_WIN_HEIGHT
 		, winbuf);
 	window(trans_ti.winleft, trans_ti.wintop, trans_ti.winright, trans_ti.winbottom);
 	gotoxy(trans_ti.curx, trans_ti.cury);
