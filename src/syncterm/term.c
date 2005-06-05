@@ -199,8 +199,9 @@ static int lputs(void* unused, int level, const char* str)
 	gotoxy(log_ti.curx, log_ti.cury);
 	textbackground(BLACK);
 	switch(level) {
-		case LOG_INFO:
 		case LOG_DEBUG:
+			return(0);
+		case LOG_INFO:
 		case LOG_NOTICE:
 			textcolor(WHITE);
 			SAFEPRINTF(msg,"%s\r\n",str);
