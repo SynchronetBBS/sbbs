@@ -461,5 +461,5 @@ int ciolib_ungetmouse(struct mouse_event *mevent)
 	if((me=(struct mouse_event *)malloc(sizeof(struct mouse_event)))==NULL)
 		return(-1);
 	memcpy(me,mevent,sizeof(struct mouse_event));
-	return(listAddNode(&state.output,me,FIRST_NODE)==NULL);
+	return(listInsertNode(&state.output,me)==NULL);
 }
