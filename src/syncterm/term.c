@@ -596,6 +596,7 @@ void doterm(struct bbslist *bbs)
 						cterm_write(zrqbuf, j, prn, sizeof(prn));
 						if(prn[0])
 							conn_send(prn,strlen(prn),0);
+						zrqbuf[0]=0;
 					}
 				}
 				cterm_write(p,(buf+i)-p,prn,sizeof(prn));
