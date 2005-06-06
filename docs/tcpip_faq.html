@@ -109,6 +109,7 @@ IP address.
 outbound connections to TCP port 25 (many consumer-class ISPs do this). 
 <br>Example errors indicating this condition include:
 <br><tt>0700 !SEND ERROR 60 connecting to SMTP server: smtp.somedomain.com</tt>
+<br><tt>0023 !SEND ERROR 110 connecting to SMTP server: mx.somesite.org</tt>
 <p>
 You can verify if this is the case by attempting to Telnet to a known public SMTP server (e.g. <i>vert.synchro.net</i>, TCP port 25).
 <br>You should see a mail server version banner similar to the following:
