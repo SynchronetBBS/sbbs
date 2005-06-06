@@ -1125,6 +1125,7 @@ int curs_hidemouse(void)
 		return(-1);
 	#endif
 */
+	return(-1);
 }
 
 int curs_showmouse(void)
@@ -1136,4 +1137,5 @@ int curs_showmouse(void)
 	#endif
 	return(-1);
 */
+	return(-1);
 }

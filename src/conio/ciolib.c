@@ -553,7 +553,7 @@ void ciolib_gotoxy(int x, int y)
 	cio_api.gotoxy(nx,ny);
 }
 
-void ciolib_textmode(mode)
+void ciolib_textmode(int mode)
 {
 	CIOLIB_INIT();
 	

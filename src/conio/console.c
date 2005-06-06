@@ -109,6 +109,7 @@
 
 #define CONSOLE_CLIPBOARD	XA_PRIMARY
 
+#include <threadwrap.h>
 #include <genwrap.h>
 
 #include "console.h"
@@ -377,6 +378,8 @@ struct {
 
 #define	HWM	16
 void resize_window(void);
+int KbdEmpty(void);
+int load_font(char *filename, int width, int height, int scale);
 
 void tty_pause()
 {
@@ -513,7 +516,7 @@ void
 video_update()
 {
 	static clock_t	lastupd=-1;
-	static clock_started=0;
+	static int clock_started=0;
 	clock_t upd;
 
 	upd=msclock();
@@ -1671,7 +1674,7 @@ KbdRead()
 }
 
 int
-KbdEmpty()
+KbdEmpty(void)
 {
 	return(K_NEXT == K_FREE);
 }

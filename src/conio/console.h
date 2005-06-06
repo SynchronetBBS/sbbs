@@ -82,6 +82,7 @@ int tty_peek(int flag);
 int tty_kbhit(void);
 void tty_beep(void);
 void x_win_title(const char *title);
+int console_init(void);
 
 #define	TTYF_BLOCK	0x00000008
 #define	TTYF_POLL	0x00000010

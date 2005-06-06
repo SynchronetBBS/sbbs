@@ -33,6 +33,7 @@
 
 #ifdef __unix__
 #include "ciolib.h"
+#include "console.h"
 
 #ifdef __cplusplus
 extern "C" {

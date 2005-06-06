@@ -97,7 +97,7 @@ struct mouse_state {
 
 struct mouse_state state;
 int mouse_events=0;
-static mouse_initialized=0;
+static int mouse_initialized=0;
 
 void init_mouse(void)
 {

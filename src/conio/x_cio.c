@@ -33,6 +33,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include <threadwrap.h>
 
@@ -73,6 +74,7 @@ int x_puttext(int sx, int sy, int ex, int ey, void *fill)
 			vmem[y*DpyCols+x]=sch;
 		}
 	}
+	return(1);
 }
 
 int x_gettext(int sx, int sy, int ex, int ey, void *fill)
@@ -105,6 +107,7 @@ int x_gettext(int sx, int sy, int ex, int ey, void *fill)
 			*(out++)=sch >> 8;
 		}
 	}
+	return(1);
 }
 
 void x_textattr(int attr)
