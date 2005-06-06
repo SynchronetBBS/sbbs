@@ -193,6 +193,8 @@ static int lputs(void* unused, int level, const char* str)
 		return 0;
 	}
 #endif
+	if(level == LOG_DEBUG)
+		return 0;
 
 	/* Assumes the receive window has been drawn! */
 	window(log_ti.winleft, log_ti.wintop, log_ti.winright, log_ti.winbottom);
@@ -200,7 +202,6 @@ static int lputs(void* unused, int level, const char* str)
 	textbackground(BLACK);
 	switch(level) {
 		case LOG_DEBUG:
-			return(0);
 		case LOG_INFO:
 		case LOG_NOTICE:
 			textcolor(WHITE);
@@ -257,9 +258,12 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos
 	long		t;
 	time_t		now;
 	static time_t last_progress;
+	int			old_hold;
 
 	zmodem_check_abort((zmodem_t*)cbdata);
 	
+	old_hold = hold_update;
+	hold_update = TRUE;
 	window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
 			, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
 			, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 2
@@ -309,6 +313,9 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos
 				, 60-l, "");
 		last_progress=now;
 	}
+	hold_update = FALSE;
+	gotoxy(wherex(), wherey());
+	hold_update = old_hold;
 }
 
 #if defined(__BORLANDC__)
@@ -370,8 +377,10 @@ void draw_recv_window(void)
 {
 	char	outline[TRANSFER_WIN_WIDTH*2];
 	char	shadow[TRANSFER_WIN_WIDTH*2];	/* Assumes that width*2 > height * 2 */
-	int		i, top, left;
+	int		i, top, left, old_hold;
 
+	old_hold = hold_update;
+	hold_update=TRUE;
 	gettextinfo(&trans_ti);
 	top=(trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2;
 	left=(trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2;
@@ -433,7 +442,9 @@ void draw_recv_window(void)
 	}
 
 	window(left+2, top + 7, left + TRANSFER_WIN_WIDTH - 3, top + TRANSFER_WIN_HEIGHT - 2);
+	hold_update = FALSE;
 	gotoxy(1,1);
+	hold_update = old_hold;
 	gettextinfo(&log_ti);
 }
 
