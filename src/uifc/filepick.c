@@ -315,6 +315,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	listwidth-=3;
 	listwidth/=2;
 	/* Draw the file picker itself... */
+	hold_update = TRUE;
 	drawfpwindow(api);
 	/* Display the title centered */
 	i=strlen(title);
@@ -323,6 +324,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	api->printf(SCRN_LEFT+2, SCRN_TOP+1, api->hclr|(api->bclr<<4), "%*s%-*s", (width-i)/2-2, "", i, title);
 	api->printf(SCRN_LEFT+2, SCRN_TOP+height-3, api->hclr|(api->bclr<<4), "Mask: ");
 	while(!finished) {
+		hold_update = TRUE;
 		api->printf(SCRN_LEFT+8, SCRN_TOP+height-3, api->lclr|(api->bclr<<4), "%-*s", width-7, cmsk);
 		tmppath=strdup(cpath);
 		if(tmppath != NULL)
@@ -353,6 +355,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 				retval=-1;
 				goto cleanup;
 			}
+			hold_update=FALSE;
 			api->msg("Cannot read directory!");
 			SAFECOPY(cpath, lastpath);
 			FREE_AND_NULL(lastpath);
@@ -369,6 +372,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		reread=FALSE;
 		dircur=dirbar=filecur=filebar=0;
 		while(!reread) {
+			hold_update=TRUE;
 			display_current_path(api, cfile);
 			api->lbclr=api->lclr|(api->bclr<<4);
 			api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
@@ -376,6 +380,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 			api->lbclr=lbclr;
 			lastfield=currfield;
 			fieldmove=0;
+			hold_update = FALSE;
 			switch(currfield) {
 				case DIR_LIST:
 					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS|WIN_UNGETMOUSE,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
@@ -461,7 +466,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					}
 					sprintf(cfile,"%s%s%s%s",drive,tdir,fname,ext);
 					if(strchr(fname,'*') !=NULL || strchr(fname,'?') !=NULL
-						|| strchr(ext,'*') !=NULL || strchr(ext,'?') !=NULL) {
+						|| strchr(ext,'*') !=NULL || strchr(ext,'?') !=NULL
+						|| !isdir(cfile)) {
 						if(opts & UIFC_FP_MSKNOCHG) {
 							sprintf(cfile,"%s%s%s",drive,tdir,cmsk);
 							FREE_AND_NULL(tmplastpath);
