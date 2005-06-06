@@ -126,7 +126,7 @@ const char* DLLCALL telnet_opt_desc(uchar opt)
     return(unknown);
 }
 
-const uchar DLLCALL telnet_opt_ack(uchar cmd)
+uchar DLLCALL telnet_opt_ack(uchar cmd)
 {
 	switch(cmd) {
 		case TELNET_DO:		return TELNET_WILL;
@@ -137,7 +137,7 @@ const uchar DLLCALL telnet_opt_ack(uchar cmd)
 	return 0;
 }
 
-const uchar DLLCALL telnet_opt_nak(uchar cmd)
+uchar DLLCALL telnet_opt_nak(uchar cmd)
 {
 	switch(cmd) {
 		case TELNET_DO:		return TELNET_WONT;

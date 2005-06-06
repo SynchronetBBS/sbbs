@@ -148,8 +148,8 @@ extern "C" {
 
 DLLEXPORT const char* DLLCALL telnet_cmd_desc(uchar cmd);   
 DLLEXPORT const char* DLLCALL telnet_opt_desc(uchar opt);
-DLLEXPORT const uchar DLLCALL telnet_opt_ack(uchar cmd);
-DLLEXPORT const uchar DLLCALL telnet_opt_nak(uchar cmd);
+DLLEXPORT		uchar DLLCALL telnet_opt_ack(uchar cmd);
+DLLEXPORT		uchar DLLCALL telnet_opt_nak(uchar cmd);
 
 #ifdef __cplusplus
 }
