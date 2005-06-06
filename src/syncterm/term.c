@@ -185,6 +185,7 @@ int log_level = LOG_INFO;
 static int lputs(void* unused, int level, const char* str)
 {
 	char msg[512];
+	int chars;
 #if defined(_WIN32) && defined(_DEBUG) && 0
 
 	if(level==LOG_DEBUG) {
@@ -216,8 +217,9 @@ static int lputs(void* unused, int level, const char* str)
 			SAFEPRINTF(msg,"!ERROR: %s\r\n",str);
 			break;
 	}
-	cputs(msg);
+	chars=cputs(msg);
 	gettextinfo(&log_ti);
+	return chars;
 }
 
 static int lprintf(int level, const char *fmt, ...)
