@@ -46,6 +46,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <ctype.h>		/* isdigit */
 #include <sys/stat.h>
 #ifdef __unix__
 #include <termios.h>
