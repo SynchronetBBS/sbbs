@@ -490,7 +490,7 @@ char *binstr(uchar *buf, ushort length)
 			&& buf[i]!='\r' && buf[i]!='\n' && buf[i]!='\t')
 			break;
 	if(i==length)		/* not binary */
-		return(buf);
+		return((char*)buf);
 	for(i=0;i<length;i++) {
 		sprintf(tmp,"%02X ",buf[i]);
 		strcat(str,tmp); 
