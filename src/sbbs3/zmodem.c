@@ -1565,7 +1565,7 @@ int zmodem_recv_init(zmodem_t* zm
 
 	lprintf(zm,LOG_DEBUG,"zmodem_recv_init");
 
-	while(!zm->cancelled && (ch=zm->recv_byte(zm,0))!=NOINP)
+	while(is_connected(zm) && !zm->cancelled && (ch=zm->recv_byte(zm,0))!=NOINP)
 		lprintf(zm,LOG_DEBUG,"Throwing out received: %s",chr((uchar)ch));
 
 	for(errors=0; errors<=zm->max_errors && !zm->cancelled && is_connected(zm); errors++) {

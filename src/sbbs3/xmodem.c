@@ -98,14 +98,14 @@ static char *chr(uchar ch)
 
 int xmodem_put_ack(xmodem_t* xm)
 {
-	while(getcom(0)!=NOINP)
+	while(getcom(0)!=NOINP && is_connected(xm))
 		;				/* wait for any trailing data */
 	return putcom(ACK);
 }
 
 int xmodem_put_nak(xmodem_t* xm, unsigned block_num)
 {
-	while(getcom(0)!=NOINP)
+	while(getcom(0)!=NOINP && is_connected(xm))
 		;				/* wait for any trailing data */
 
 	if(block_num<=1) {
@@ -191,18 +191,15 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 					return(EOT);
 				return(NOINP);
 		}
-		i=getcom(xm->byte_timeout);
-		if(i==NOINP)
+		if((i=getcom(xm->byte_timeout))==NOINP)
 			break; 
 		block_num=i;
-		i=getcom(xm->byte_timeout);
-		if(i==NOINP)
+		if((i=getcom(xm->byte_timeout))==NOINP)
 			break; 
 		block_inv=i;
 		calc_crc=calc_chksum=0;
 		for(b=0;b<xm->block_size && is_connected(xm);b++) {
-			i=getcom(xm->byte_timeout);
-			if(i==NOINP)
+			if((i=getcom(xm->byte_timeout))==NOINP)
 				break;
 			block[b]=i;
 			if((*xm->mode)&CRC)
@@ -394,7 +391,7 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 
 		lprintf(xm,LOG_INFO,"Sending End-of-Text (EOT) indicator (%d)",errors+1);
 
-		while((ch=getcom(0))!=NOINP)
+		while((ch=getcom(0))!=NOINP && is_connected(xm))
 			lprintf(xm,LOG_INFO,"Throwing out received: %s",chr((uchar)ch));
 
 		putcom(EOT);
