@@ -275,7 +275,7 @@ BYTE* MD5CALL MD5_hex(BYTE* to, const BYTE digest[MD5_DIGEST_SIZE])
 	BYTE const* from = digest;
     static char *hexdigits = "0123456789abcdef";
     const BYTE *end = digest + MD5_DIGEST_SIZE;
-    char *d = to;
+    char *d = (char *)to;
 
     while (from < end) {
 		*d++ = hexdigits[(*from >> 4)];

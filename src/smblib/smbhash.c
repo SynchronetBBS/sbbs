@@ -163,7 +163,7 @@ static char* strip_chars(uchar* dst, const uchar* src, uchar* set)
 	}
 	*dst=0;
 
-	return(dst);
+	return((char *)dst);
 }
 
 /* Allocates and calculates hashes of data (based on flags)					*/
@@ -198,7 +198,7 @@ hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
 hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned flags
 							,const char* str)
 {
-	char*	p=(uchar*)str;
+	char*	p=(char *)str;
 	hash_t*	hash;
 
 	if(flags&SMB_HASH_PROC_MASK) {	/* string pre-processing */
