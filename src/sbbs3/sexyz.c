@@ -120,7 +120,6 @@ unsigned	outbuf_drain_timeout;
 unsigned	flows=0;
 unsigned	select_errors=0;
 
-#define getcom(t)	recv_byte(NULL,t)
 #define putcom(ch)	send_byte(NULL,ch,10)
 
 #ifdef __unix__
@@ -342,7 +341,7 @@ int recv_byte(void* unused, unsigned timeout)
 				lprintf(LOG_WARNING,"Socket Disconnected");
 			} else
 				lprintf(LOG_ERR,"recv error %d (%d)",i,ERROR_VALUE);
-			return(-2); 
+			return(NOINP); 
 		}
 
 		if(telnet) {
@@ -929,7 +928,7 @@ static int receive_files(char** fname_list, int fnames)
 	outbuf.highwater_mark=0;	/* don't delay ACK/NAK transmits */
 
 	/* Purge input buffer */
-	while((i=getcom(0))!=NOINP)
+	while((i=recv_byte(NULL,0))!=NOINP)
 		lprintf(LOG_WARNING,"Throwing out received: %s",chr((uchar)i));
 
 	while(is_connected(NULL)) {
