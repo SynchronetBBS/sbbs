@@ -309,21 +309,21 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
 6. Running Synchronet:
 
-   1. Set the SBBSCTRL environment variable to point to your "ctrl" directory:
+   A. Set the SBBSCTRL environment variable to point to your "ctrl" directory:
       # export SBBSCTRL=/sbbs/ctrl
 
-   2. Run the main executable (with default settings/options):
+   B. Run the main executable (with default settings/options):
       # /sbbs/exec/sbbs
 
-   3. To view available command-line options, run:
+   C. To view available command-line options, run:
       # /sbbs/exec/sbbs help | more
 
-   4. To view default settings (node and port numbers), run:
+   D. To view default settings (node and port numbers), run:
       # /sbbs/exec/sbbs defaults
 
-   5. To change the default settings, edit the file /sbbs/ctrl/sbbs.ini
+   E. To change the default settings, edit the file /sbbs/ctrl/sbbs.ini
 
-   6. For more details, see /sbbs/docs/sbbscon.txt
+   F. For more details, see /sbbs/docs/sbbscon.txt
 
 
 7. Debugging:
