@@ -113,6 +113,15 @@ A. There are changes (fixes, improvements, etc.) being made all the time.
    (http://www.synchro.net/docs/support.html) and the Synchronet Announcements
    mailing list (subscribe at listserver@synchro.net).
 
+Q. Can I use a different compiler to build Synchronet for *nix?
+A. Yes, currently Synchronet has successfully been built with both GCC and ICC
+   (The Intel C Compiler).  To specify an alternate compiler, add
+   ``DONT_CLOBBER_CC=1 CC=icc CXX=icpc'' to the gmake command lines where
+   icc is the C compiler name and icpc is the C++ compiler name.  If you get
+   errors during the build (not warnings) please submit a bug report.  If you
+   are using a commercial compiler other than ICC, we will probobly be unable
+   to help you without a copy of the compiler.
+
 
 Step-by-step Instructions
 =========================
