@@ -583,7 +583,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 			endmime(socket,boundary);
 			if(msg->hdr.auxattr&MSG_KILLFILE)
 				if(remove(filepath)!=0)
-					lprintf(LOG_WARNING,"%04u !ERROR %d removing %s",socket,filepath);
+					lprintf(LOG_WARNING,"%04u !ERROR %d removing %s",socket,errno,filepath);
 		}
     }
     sockprintf(socket,".");	/* End of text */

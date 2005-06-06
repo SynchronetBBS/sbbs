@@ -3653,7 +3653,7 @@ long DLLCALL bbs_ver_num(void)
 
 void DLLCALL bbs_terminate(void)
 {
-   	lprintf(LOG_DEBUG,"BBS Server terminate",telnet_socket);
+   	lprintf(LOG_DEBUG,"BBS Server terminate");
 	terminate_server=true;
 }
 
@@ -4128,7 +4128,8 @@ void DLLCALL bbs_thread(void* arg)
             lprintf(LOG_INFO,"Node %d local spy socket %d bound to %s"
                 , i, uspy_listen_socket[i-1], uspy_addr.sun_path);
 	        if(listen(uspy_listen_socket[i-1],1))  {
-	            lprintf(LOG_ERR,"Node %d !ERROR %d listening local spy socket %d", i, errno);
+	            lprintf(LOG_ERR,"Node %d !ERROR %d listening local spy socket %d"
+					,i, errno, uspy_listen_socket[i-1]);
 	            close_socket(uspy_listen_socket[i-1]);
 				uspy_listen_socket[i-1]=INVALID_SOCKET;
 	            continue;
