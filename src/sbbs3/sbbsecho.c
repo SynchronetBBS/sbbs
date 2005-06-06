@@ -1024,7 +1024,7 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 		return; }
 	if((cfgfile=fopen(cfg.cfgfile,"r"))==NULL) {
 		printf("\7ERROR couldn't open %s.\n",cfg.cfgfile);
-		logprintf("ERROR line %d opening %s",__LINE__,cfg.cfgfile
+		logprintf("ERROR line %d opening %s %s",__LINE__,cfg.cfgfile
 			,strerror(errno));
 		fclose(outfile);
 		free(outname);
@@ -2261,7 +2261,7 @@ char* getfmsg(FILE *stream, ulong *outlen)
 
 	if(outlen)
 		*outlen=length;
-	return(fbuf);
+	return((char*)fbuf);
 }
 
 #define MAX_TAILLEN 1024

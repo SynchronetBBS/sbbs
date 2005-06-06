@@ -2260,7 +2260,7 @@ hot key event. Hot key events are control characters that are used to
 execute an external program or module anywhere in the BBS.
 */
 		uifc.savnum=1;
-		sprintf(str,"Ctrl-%C Hot Key Event",cfg.hotkey[i]->key+'@');
+		sprintf(str,"Ctrl-%c Hot Key Event",cfg.hotkey[i]->key+'@');
 		switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,60,&dfltopt,0
 			,str,opt)) {
 			case -1:
