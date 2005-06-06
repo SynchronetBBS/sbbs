@@ -1443,7 +1443,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	p += strlen(p) + 1;
 
 	sprintf(p,"%lu %lo %lo %d %u %lu %d"
-		,s.st_size
+		,(ulong)s.st_size
 		,s.st_mtime
 		,0						/* file mode */
 		,0						/* serial number */
