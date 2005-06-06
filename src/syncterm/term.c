@@ -193,7 +193,7 @@ static int lputs(void* unused, int level, const char* str)
 		return 0;
 	}
 #endif
-	if(level == LOG_DEBUG)
+	if(level > log_level)
 		return 0;
 
 	/* Assumes the receive window has been drawn! */
