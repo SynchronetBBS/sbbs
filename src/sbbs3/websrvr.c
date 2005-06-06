@@ -2196,12 +2196,12 @@ static BOOL exec_cgi(http_session_t *session)
 	/* Set up I/O pipes */
 
 	if(pipe(out_pipe)!=0) {
-		lprintf(LOG_ERR,"%04d Can't create out_pipe",session->socket,buf);
+		lprintf(LOG_ERR,"%04d Can't create out_pipe",session->socket);
 		return(FALSE);
 	}
 
 	if(pipe(err_pipe)!=0) {
-		lprintf(LOG_ERR,"%04d Can't create err_pipe",session->socket,buf);
+		lprintf(LOG_ERR,"%04d Can't create err_pipe",session->socket);
 		return(FALSE);
 	}
 
