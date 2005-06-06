@@ -1,4 +1,5 @@
 (All of these per BBS and a global default... with a "default" option for the BBS entry)
+Log level (Used for ZModem transfers)
 Screen Size
 Upload Directory
 Download Directory
