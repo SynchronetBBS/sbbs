@@ -38,6 +38,8 @@
 #ifndef _CRC32_H_
 #define _CRC32_H_
 
+#include <stdio.h>	/* FILE */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,6 +47,7 @@ extern "C" {
 extern long crc32tbl[];
 
 unsigned long crc32(char* buf, unsigned long len);
+unsigned long fcrc32(FILE* fp, unsigned long len);
 
 #ifdef __cplusplus
 }

@@ -89,5 +89,18 @@ unsigned long crc32(char *buf, unsigned long len)
 	return(~crc);
 }
 
+unsigned long fcrc32(FILE* fp, unsigned long len)
+{
+	int	ch;
+	unsigned long l,crc=0xffffffff;
+
+	rewind(fp);
+	for(l=0;(len==0 || l<len) && !feof(fp);l++) {
+		if((ch=fgetc(fp))==EOF)
+			break;
+		crc=ucrc32(ch,crc);
+	}
+	return(~crc);
+}
 
 
