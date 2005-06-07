@@ -248,9 +248,9 @@ typedef struct {
 	BOOL		file_skipped;
 	BOOL		no_streaming;
 	unsigned	recv_bufsize;	/* Receiver specified buffer size */
+	long		crc_request;
 
 	/* Configuration */
-	long*		mode;
 	unsigned	send_timeout;
 	unsigned	recv_timeout;
 	unsigned	max_errors;
@@ -286,6 +286,7 @@ int			zmodem_send_zrinit(zmodem_t*);
 int			zmodem_send_pos_header(zmodem_t* zm, int type, long pos, BOOL hex);
 int			zmodem_get_zrinit(zmodem_t*);
 int			zmodem_get_zfin(zmodem_t* zm);
+BOOL		zmodem_get_crc(zmodem_t*, long length, ulong* crc);
 void		zmodem_parse_zrinit(zmodem_t*);
 int			zmodem_send_zfin(zmodem_t*);
 BOOL		zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init, time_t* start, ulong* bytes_sent);

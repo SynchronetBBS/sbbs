@@ -85,6 +85,7 @@ static char *chr(uchar ch)
 		case ZACK:		return("ZACK");
 		case ZFILE:		return("ZFILE");
 		case ZSKIP:		return("ZSKIP");
+		case ZCRC:		return("ZCRC");
 		case ZNAK:		return("ZNAK");
 		case ZABORT:	return("ZABORT");
 		case ZFIN:		return("ZFIN");
@@ -361,7 +362,7 @@ int zmodem_send_data32(zmodem_t* zm, uchar sub_frame_type, unsigned char * p, in
 	int	result;
 	unsigned long crc;
 
-	lprintf(zm,LOG_DEBUG,"zmodem_send_data32");
+	lprintf(zm,LOG_DEBUG,"zmodem_send_data32: %s", chr(sub_frame_type));
 
 	crc = 0xffffffffl;
 
@@ -395,7 +396,7 @@ int zmodem_send_data16(zmodem_t* zm, uchar sub_frame_type,unsigned char * p,int 
 	int	result;
 	unsigned short crc;
 
-	lprintf(zm,LOG_DEBUG,"zmodem_send_data16");
+	lprintf(zm,LOG_DEBUG,"zmodem_send_data16: %s", chr(sub_frame_type));
 
 	crc = 0;
 
@@ -1108,13 +1109,18 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 	 * return its type.
 	 */
 
-	if(zm->rxd_header[0] == ZDATA) {
-		zm->ack_file_pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
-			(zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
-	}
-
-	if(zm->rxd_header[0] == ZFILE) {
-		zm->ack_file_pos = 0l;
+	switch(zm->rxd_header[0]) {
+		case ZCRC:
+			zm->crc_request = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
+				(zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
+			break;
+		case ZDATA:
+			zm->ack_file_pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
+				(zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
+			break;
+		case ZFILE:
+			zm->ack_file_pos = 0l;
+			break;
 	}
 
 #if 0 //def _DEBUG
@@ -1153,6 +1159,16 @@ int zmodem_recv_header_and_check(zmodem_t* zm)
 	}
 
 	return type;
+}
+
+BOOL zmodem_get_crc(zmodem_t* zm, long length, ulong* crc)
+{
+	zmodem_send_pos_header(zm,ZCRC,length,TRUE);
+	if(zmodem_recv_header(zm)!=ZCRC)
+		return(FALSE);
+	if(crc!=NULL)
+		*crc = zm->crc_request;
+	return(TRUE);
 }
 
 void zmodem_parse_zrinit(zmodem_t* zm)
@@ -1403,16 +1419,16 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		zfile_frame[ZF1] = ZF1_ZMPROT;		
 		lprintf(zm,LOG_DEBUG,"zmodem_send_file: protecting destination");
 	}
-
-	if(zm->management_clobber) {
+	else if(zm->management_clobber) {
 		zfile_frame[ZF1] = ZF1_ZMCLOB;
 		lprintf(zm,LOG_DEBUG,"zmodem_send_file: overwriting destination");
 	}
-
-	if(zm->management_newer) {
+	else if(zm->management_newer) {
 		zfile_frame[ZF1] = ZF1_ZMNEW;
 		lprintf(zm,LOG_DEBUG,"zmodem_send_file: overwriting destination if newer");
 	}
+	else
+		zfile_frame[ZF1] = ZF1_ZMCRC;
 
 	/*
 	 * transport options
@@ -1488,6 +1504,11 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			return(FALSE);
 		}
 
+		if(type == ZCRC) {
+			zmodem_send_pos_header(zm,ZCRC,fcrc32(fp,zm->crc_request),TRUE);
+			type = zmodem_recv_header(zm);
+		}
+
 	} while(type != ZRPOS);
 
 	zm->transfer_start = time(NULL);
@@ -1495,6 +1516,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	if(start!=NULL)		
 		*start=zm->transfer_start;
 
+	rewind(fp);
 	do {
 		/*
 		 * fetch pos from the ZRPOS header
@@ -1525,6 +1547,8 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 
 	lprintf(zm,LOG_INFO,"Finishing transfer on rx of header type: %s", chr((uchar)type));
+	if(sent!=NULL)
+		lprintf(zm,LOG_DEBUG,"Sent %lu total bytes", *sent);
 
 	if(type==ZACK) {
 		/*
