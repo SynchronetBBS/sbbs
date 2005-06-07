@@ -183,6 +183,7 @@ void display_current_path(uifcapi_t *api, char *path)
 	char	dpath[MAX_PATH+2];
 	int width;
 	int height;
+	char	*p;
 
 	height=api->scrn_len-3;
 	width=SCRN_RIGHT-SCRN_LEFT-3;
@@ -363,7 +364,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		else
 			root=FALSE;
 #else
-#error Need to do something about root paths (in get_file_opt_list() too!)
+//#error Need to do something about root paths (in get_file_opt_list() too!)
 #endif
 		if(glob(dglob, 0, NULL, &dgl)!=0) {
 			if(lastpath==NULL) {
