@@ -10,6 +10,7 @@
 #include "menu.h"
 #include "dirwrap.h"
 #include "zmodem.h"
+#include "crc32.h"
 
 #define	BUFSIZE	2048
 
@@ -200,7 +201,7 @@ static int lputs(void* unused, int level, const char* str)
 	/* Assumes the receive window has been drawn! */
 	window(log_ti.winleft, log_ti.wintop, log_ti.winright, log_ti.winbottom);
 	gotoxy(log_ti.curx, log_ti.cury);
-	textbackground(BLACK);
+	textbackground(BLUE);
 	switch(level) {
 		case LOG_DEBUG:
 		case LOG_INFO:
@@ -271,7 +272,7 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos
 			, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 2
 			, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+5);
 	gotoxy(1,1);
-	textattr(YELLOW | (BLUE<<4));
+	textattr(LIGHTCYAN | (BLUE<<4));
 	now=time(NULL);
 	if(now-last_progress>0 || current_pos >= fsize) {
 		t=now-start;
@@ -394,9 +395,17 @@ void draw_recv_window(void)
 	outline[0]=0xc9;
 	outline[sizeof(outline)-2]=0xbb;
 	puttext(left, top, left + TRANSFER_WIN_WIDTH - 1, top, outline);
-	outline[0] = 0xcc;
-	outline[sizeof(outline)-2]=0xb9;
+
+	for(i=2;i < sizeof(outline) - 2; i+=2) {
+		outline[i] = 0xc4;	/* Single horizontal line */
+	}
+	outline[0] = 0xc7;	// 0xcc
+	outline[sizeof(outline)-2]=0xb6;	// 0xb6
 	puttext(left, top+6, left + TRANSFER_WIN_WIDTH - 1, top+6, outline);
+
+	for(i=2;i < sizeof(outline) - 2; i+=2) {
+		outline[i] = 0xcd;	/* Double horizontal line */
+	}
 	outline[0]=0xc8;
 	outline[sizeof(outline)-2]=0xbc;
 	puttext(left, top + TRANSFER_WIN_HEIGHT - 1, left+TRANSFER_WIN_WIDTH - 1, top + TRANSFER_WIN_HEIGHT - 1, outline);
@@ -408,9 +417,9 @@ void draw_recv_window(void)
 	for(i=1; i<6; i++) {
 		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top+i, outline);
 	}
-	for(i=3;i < sizeof(outline) - 2; i+=2) {
-		outline[i] = LIGHTGRAY | (BLACK << 8);
-	}
+//	for(i=3;i < sizeof(outline) - 2; i+=2) {
+//		outline[i] = LIGHTGRAY | (BLACK << 8);
+//	}
 	for(i=7; i<TRANSFER_WIN_HEIGHT-1; i++) {
 		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top+i, outline);
 	}
@@ -448,6 +457,7 @@ void draw_recv_window(void)
 	gotoxy(1,1);
 	hold_update = old_hold;
 	gettextinfo(&log_ti);
+	_setcursortype(_NOCURSOR);
 }
 
 void erase_recv_window(void) {
@@ -460,6 +470,7 @@ void erase_recv_window(void) {
 	window(trans_ti.winleft, trans_ti.wintop, trans_ti.winright, trans_ti.winbottom);
 	gotoxy(trans_ti.curx, trans_ti.cury);
 	textattr(trans_ti.attribute);
+	_setcursortype(_NORMALCURSOR);
 }
 
 void zmodem_receive(void)
@@ -469,10 +480,13 @@ void zmodem_receive(void)
 	char		str[MAX_PATH*2];
 	FILE*		fp;
 	long		l;
+	ulong		crc;
+	ulong		rcrc;
 	ulong		bytes;
 	ulong		kbytes;
 	ulong		total_files;
 	ulong		total_bytes;
+	BOOL		skip;
 	time_t		ftime;
 	unsigned	timeout;
 	unsigned	errors=0;
@@ -503,24 +517,42 @@ void zmodem_receive(void)
 		lprintf(LOG_INFO,"Downloading %s (%lu KBytes) via Zmodem", fname, kbytes);
 
 		do {	/* try */
+			skip=TRUE;
 			//sprintf(fpath,"./%s",fname);
 			strcpy(fpath,fname);
 			lprintf(LOG_DEBUG,"fpath=%s",fpath);
-			if(fexist(fpath) && flength(fpath)>=(long)bytes) {
-				lprintf(LOG_WARNING,"%s already exists, skipping file",fpath);
-				zmodem_send_zskip(&zm);
-				break;
-			}
-
-			if(flength(fpath)>0)
+			if(fexist(fpath)) {
+				lprintf(LOG_WARNING,"%s already exists",fpath);
+				l=flength(fpath);
+				if(l>=(long)bytes) {
+					lprintf(LOG_WARNING,"Local file size (%lu bytes) >= remote file size (%ld)"
+						,l, bytes);
+					break;
+				}
+				if((fp=fopen(fpath,"rb"))==NULL) {
+					lprintf(LOG_ERR,"Error %d opening %s",errno,fpath);
+					break;
+				}
+				crc=fcrc32(fp,l);
+				fclose(fp);
+				if(!zmodem_get_crc(&zm,l,&rcrc)) {
+					lprintf(LOG_ERR,"Failed to get CRC of remote file: %s", fpath);
+					break;
+				}
+				if(crc!=rcrc) {
+					lprintf(LOG_WARNING,"Remote file has different CRC value");
+					lprintf(LOG_DEBUG,"Remote CRC: %08lx vs Local CRC: %08lx)", rcrc, crc);
+					break;
+				}
 				lprintf(LOG_INFO,"Resuming download of %s",fpath);
+			}
 
 			if((fp=fopen(fpath,"ab"))==NULL) {
-				lprintf(LOG_ERR,"Error %d opening %s, skipping file",errno,fpath);
-				zmodem_send_zskip(&zm);
+				lprintf(LOG_ERR,"Error %d opening/creating/appending %s",errno,fpath);
 				break;
 			}
 
+			skip=FALSE;
 			errors=zmodem_recv_file_data(&zm,fp,flength(fpath),bytes, /* start time */0);
 
 			for(;errors<=zm.max_errors && !zm.cancelled; errors++) {
@@ -547,6 +579,11 @@ void zmodem_receive(void)
 
 		} while(0);
 		/* finally */
+
+		if(skip) {
+			lprintf(LOG_WARNING,"Skipping file");
+			zmodem_send_zskip(&zm);
+		}
 	}
 	if(zm.local_abort)
 		zmodem_abort_receive(&zm);
@@ -558,7 +595,11 @@ void zmodem_receive(void)
 		zmodem_rx(&zm);
 	zm.recv_timeout=timeout;
 
+	lprintf(LOG_NOTICE,"Hit any key to continue...");
+	getch();
+
 	erase_recv_window();
+
 }
 /* End of Zmodem Stuff */
 
