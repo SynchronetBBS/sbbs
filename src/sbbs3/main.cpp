@@ -1238,34 +1238,20 @@ void input_thread(void *arg)
 			if(sbbs->client_socket==INVALID_SOCKET)
 				break;
 
-			if(FD_ISSET(sbbs->client_socket,&socket_set))  {
-	        	if(ERROR_VALUE == ENOTSOCK)
-    	            lprintf(LOG_NOTICE,"Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
-				else if(ERROR_VALUE==ESHUTDOWN)
-					lprintf(LOG_NOTICE,"Node %d socket shutdown on input->select", sbbs->cfg.node_num);
-				else if(ERROR_VALUE==EINTR)
-					lprintf(LOG_NOTICE,"Node %d input thread interrupted",sbbs->cfg.node_num);
-        	    else if(ERROR_VALUE==ECONNRESET) 
-					lprintf(LOG_NOTICE,"Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
-	            else if(ERROR_VALUE==ECONNABORTED) 
-					lprintf(LOG_NOTICE,"Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
-				else
-					lprintf(LOG_WARNING,"Node %d !ERROR %d input->select socket %d"
-                		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
-				break;
-			}
-#ifdef __unix__
-			else if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET && 
-					FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
-				if(ERROR_VALUE != EAGAIN)  {
-					lprintf(LOG_ERR,"Node %d !ERROR %d on local spy socket %d input->select"
-						, sbbs->cfg.node_num, errno, uspy_socket[sbbs->cfg.node_num-1]);
-					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
-					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
-				}
-				continue;
-			}
-#endif
+	       	if(ERROR_VALUE == ENOTSOCK)
+    	        lprintf(LOG_NOTICE,"Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==ESHUTDOWN)
+				lprintf(LOG_NOTICE,"Node %d socket shutdown on input->select", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==EINTR)
+				lprintf(LOG_NOTICE,"Node %d input thread interrupted",sbbs->cfg.node_num);
+            else if(ERROR_VALUE==ECONNRESET) 
+				lprintf(LOG_NOTICE,"Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
+	        else if(ERROR_VALUE==ECONNABORTED) 
+				lprintf(LOG_NOTICE,"Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
+			else
+				lprintf(LOG_WARNING,"Node %d !ERROR %d input->select socket %d"
+               		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
+			break;
 		}
 
 		if(sbbs->client_socket==INVALID_SOCKET) {
