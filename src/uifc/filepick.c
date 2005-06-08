@@ -504,7 +504,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					sprintf(cfile,"%s%s%s%s",drive,tdir,fname,ext);
 					if(strchr(fname,'*') !=NULL || strchr(fname,'?') !=NULL
 						|| strchr(ext,'*') !=NULL || strchr(ext,'?') !=NULL
-						|| !isdir(cfile)) {
+						|| (!isdir(cfile) && i!='\r' && i!='\n')) {
 						if(opts & UIFC_FP_MSKNOCHG) {
 							sprintf(cfile,"%s%s%s",drive,tdir,cmsk);
 							FREE_AND_NULL(tmplastpath);
@@ -516,6 +516,10 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 							reread=TRUE;
 						}
 						break;
+					}
+					else {
+						if((opts & UIFC_FP_MULTI)!=UIFC_FP_MULTI && (i=='\r' || i!='\n'))
+						fieldmove=0;
 					}
 					if((currfield != CURRENT_PATH) || fieldmove)
 						break;
