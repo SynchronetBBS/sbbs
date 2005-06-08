@@ -1305,6 +1305,8 @@ void input_thread(void *arg)
             while((rd=RingBufFree(&sbbs->inbuf))==0) {
             	if(time(NULL)-start>=5) {
                 	rd=1;
+					if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+						sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
                 	break;
                 }
                 YIELD();
