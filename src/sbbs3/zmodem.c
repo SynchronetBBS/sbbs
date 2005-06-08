@@ -789,21 +789,12 @@ int zmodem_recv_data16(zmodem_t* zm, register unsigned char* p, unsigned maxlen,
 int zmodem_recv_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l, BOOL ack)
 {
 	int subpkt_type;
-	long pos;
 	unsigned n=0;
 
 	if(l==NULL)
 		l=&n;
 
 	lprintf(zm,LOG_DEBUG,"zmodem_recv_data (%u-bit)", zm->receive_32bit_data ? 32:16);
-
-	/*
-	 * fill in the file pointer in case acknowledgement is requested.	
-	 * the ack file pointer will be updated in the subpacket read routine;
-	 * so we need to get it now
-	 */
-
-	pos = zm->ack_file_pos;
 
 	/*
 	 * receive the right type of frame
@@ -843,14 +834,14 @@ int zmodem_recv_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l,
 		 */
 		case ZCRCQ:		
 			if(ack)
-				zmodem_send_ack(zm, pos);
+				zmodem_send_ack(zm, zm->ack_file_pos);
 			return FRAMEOK;
 		/*
 		 * frame ends; ZACK expected
 		 */
 		case ZCRCW:
 			if(ack)
-				zmodem_send_ack(zm, pos);
+				zmodem_send_ack(zm, zm->ack_file_pos);
 			return ENDOFFRAME;
 	}
 
@@ -1252,7 +1243,7 @@ void zmodem_parse_zrinit(zmodem_t* zm)
 		,zm->escape_all_control_characters ? "ALL" : "Normal"
 		);
 
-	if((zm->recv_bufsize = (zm->rxd_header[ZP0]<<8 | zm->rxd_header[ZP1])) != 0)
+	if((zm->recv_bufsize = (zm->rxd_header[ZP0] | zm->rxd_header[ZP1]<<8)) != 0)
 		lprintf(zm,LOG_INFO,"Receiver specified buffer size of: %u", zm->recv_bufsize);
 }
 
@@ -1277,8 +1268,8 @@ int zmodem_send_zrinit(zmodem_t* zm)
 	zrinit_header[ZF0] = ZF0_CANBRK | ZF0_CANFDX | ZF0_CANOVIO | ZF0_CANFC32;
 
 	if(zm->no_streaming) {
-		zrinit_header[ZP0] = sizeof(zm->rx_data_subpacket) >> 8;
-		zrinit_header[ZP1] = sizeof(zm->rx_data_subpacket) & 0xff;
+		zrinit_header[ZP0] = sizeof(zm->rx_data_subpacket) & 0xff;
+		zrinit_header[ZP1] = sizeof(zm->rx_data_subpacket) >> 8;
 	}
 
 	return zmodem_send_hex_header(zm, zrinit_header);
