@@ -1481,6 +1481,9 @@ int main(int argc, char **argv)
 		} 
 	}
 
+	if(telnet)
+		zm.escape_telnet_iac = TRUE;
+
 	if(sock==INVALID_SOCKET || sock<1) {
 #ifdef __unix__
 		if(STDOUT_FILENO > STDIN_FILENO)
