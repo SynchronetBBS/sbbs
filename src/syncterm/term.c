@@ -180,20 +180,33 @@ void dump(BYTE* buf, int len)
 /* Zmodem Stuff */
 int log_level = LOG_INFO;
 
+static void zmodem_check_abort(zmodem_t* zm)
+{
+	if(zm!=NULL && kbhit()) {
+		switch(getch()) {
+			case ESC:
+			case CTRL_C:
+			case CTRL_X:
+				zm->cancelled=TRUE;
+				zm->local_abort=TRUE;
+				break;
+		}
+	}
+}
+
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-static int lputs(void* unused, int level, const char* str)
+static int lputs(void* cbdata, int level, const char* str)
 {
 	char msg[512];
 	int chars;
-#if defined(_WIN32) && defined(_DEBUG) && 0
 
-	if(level==LOG_DEBUG) {
-		sprintf(msg,"SyncTerm: %s",str);
-		OutputDebugString(msg);
-		return 0;
-	}
+	zmodem_check_abort((zmodem_t*)cbdata);
+
+#if defined(_WIN32) && defined(_DEBUG) && TRUE
+	sprintf(msg,"SyncTerm: %s",str);
+	OutputDebugString(msg);
 #endif
 	if(level > log_level)
 		return 0;
@@ -233,20 +246,6 @@ static int lprintf(int level, const char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
     return(lputs(NULL,level,sbuf));
-}
-
-static void zmodem_check_abort(zmodem_t* zm)
-{
-	if(kbhit()) {
-		switch(getch()) {
-			case ESC:
-			case CTRL_C:
-			case CTRL_X:
-				zm->cancelled=TRUE;
-				zm->local_abort=TRUE;
-				break;
-		}
-	}
 }
 
 #if defined(__BORLANDC__)
@@ -329,6 +328,9 @@ static int send_byte(void* unused, uchar ch, unsigned timeout)
 	return conn_send(&ch,sizeof(char),timeout*1000);
 }
 
+static	ulong	bufbot;
+static	ulong	buftop;
+
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
@@ -338,8 +340,6 @@ static int recv_byte(void* unused, unsigned timeout)
 	int		i;
 	time_t start=time(NULL);
 	static	BYTE	buf[2048];
-	static	ulong	bufbot;
-	static	ulong	buftop;
 
 	if(bufbot==buftop) {
 		if((i=conn_recv(buf,sizeof(buf),timeout*1000))<1) {
@@ -493,6 +493,7 @@ void zmodem_receive(void)
 	zmodem_t	zm;
 	char*		download_dir=".";
 
+	bufbot=buftop=0;	/* purge our receive buffer */
 	draw_recv_window();
 
 	zmodem_init(&zm
