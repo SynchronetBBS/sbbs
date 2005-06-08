@@ -35,6 +35,7 @@
 #include "crc32.h"
 
 #include "sexyz.h"
+#include "telnet.h"
 
 #define ENDOFFRAME 2
 #define FRAMEOK    1
@@ -207,6 +208,8 @@ int zmodem_send_esc(zmodem_t* zm, unsigned char c)
 
 int zmodem_tx(zmodem_t* zm, unsigned char c)
 {
+	int result;
+
 	switch (c) {
 		case DLE:
 		case DLE|0x80:          /* even if high-bit set */
@@ -220,6 +223,13 @@ int zmodem_tx(zmodem_t* zm, unsigned char c)
 		case CR|0x80:
 			if(zm->escape_all_control_characters && (zm->last_sent&0x7f) == '@')
 				return zmodem_send_esc(zm, c);
+			break;
+		case TELNET_IAC:
+			if(zm->escape_telnet_iac) {
+				if((result=zmodem_send_raw(zm, ZDLE))!=0)
+					return(result);
+				return zmodem_send_raw(zm, ZRUB1);
+			}
 			break;
 		default:
 			if(zm->escape_all_control_characters && (c&0x60)==0)

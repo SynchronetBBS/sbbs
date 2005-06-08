@@ -251,6 +251,7 @@ typedef struct {
 	long		crc_request;
 
 	/* Configuration */
+	BOOL		escape_telnet_iac;
 	unsigned	send_timeout;
 	unsigned	recv_timeout;
 	unsigned	max_errors;
