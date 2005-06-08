@@ -412,12 +412,12 @@ int zmodem_send_bin_header(zmodem_t* zm, unsigned char * p)
  * data subpacket transmission
  */
 
-int zmodem_send_data32(zmodem_t* zm, uchar subpkt_type, unsigned char * p, int l)
+int zmodem_send_data32(zmodem_t* zm, uchar subpkt_type, unsigned char * p, size_t l)
 {
 	int	result;
 	unsigned long crc;
 
-	lprintf(zm,LOG_DEBUG,"zmodem_send_data32: %s", chr(subpkt_type));
+	lprintf(zm,LOG_DEBUG,"zmodem_send_data32: %s (%u bytes)", chr(subpkt_type), l);
 
 	crc = 0xffffffffl;
 
@@ -446,12 +446,12 @@ int zmodem_send_data32(zmodem_t* zm, uchar subpkt_type, unsigned char * p, int l
 	return		zmodem_tx(zm, (uchar) ((crc >> 24) & 0xff));
 }
 
-int zmodem_send_data16(zmodem_t* zm, uchar subpkt_type,unsigned char * p,int l)
+int zmodem_send_data16(zmodem_t* zm, uchar subpkt_type,unsigned char * p, size_t l)
 {
 	int	result;
 	unsigned short crc;
 
-	lprintf(zm,LOG_DEBUG,"zmodem_send_data16: %s", chr(subpkt_type));
+	lprintf(zm,LOG_DEBUG,"zmodem_send_data16: %s (%u bytes)", chr(subpkt_type), l);
 
 	crc = 0;
 
@@ -1162,14 +1162,15 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 
 	frame_type = zm->rxd_header[0];
 
+	zm->rxd_header_pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
+				(zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
+
 	switch(frame_type) {
 		case ZCRC:
-			zm->crc_request = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
-				(zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
+			zm->crc_request = zm->rxd_header_pos;
 			break;
 		case ZDATA:
-			zm->ack_file_pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
-				(zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
+			zm->ack_file_pos = zm->rxd_header_pos;
 			break;
 		case ZFILE:
 			zm->ack_file_pos = 0l;
@@ -1196,12 +1197,17 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 
 int zmodem_recv_header(zmodem_t* zm)
 {
-	int ret = zmodem_recv_header_raw(zm, FALSE);
+	int ret;
+	
+	ret = zmodem_recv_header_raw(zm, FALSE);
 
 	if(ret == TIMEOUT)
 		lprintf(zm,LOG_WARNING,"zmodem_recv_header TIMEOUT");
+	else if(ret == INVHDR)
+		lprintf(zm,LOG_WARNING,"zmodem_recv_header detected an invalid header");
 	else
-		lprintf(zm,LOG_DEBUG,"zmodem_recv_header returning: %s", frame_desc(ret));
+		lprintf(zm,LOG_DEBUG,"zmodem_recv_header returning: %s (pos=%ld)"
+			,frame_desc(ret), zm->rxd_header_pos);
 
 	if(ret==ZCAN)
 		zm->cancelled=TRUE;
@@ -1212,6 +1218,7 @@ int zmodem_recv_header(zmodem_t* zm)
 int zmodem_recv_header_and_check(zmodem_t* zm)
 {
 	int type;
+
 	while(is_connected(zm)) {
 		type = zmodem_recv_header_raw(zm,TRUE);		
 
@@ -1376,14 +1383,20 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 		
 		buf_sent+=n;
 
-		if(type == ZCRCW) {
+		if(type == ZCRCW) {	/* ZACK expected */
 			int type;
-			do {
+			while(is_connected(zm) && !zm->cancelled) {
 				type = zmodem_recv_header(zm);
 				if(type == ZNAK || type == ZRPOS || type == TIMEOUT) {
 					return type;
 				}
-			} while(type != ZACK);
+				if(type == ZACK) {
+					if(zm->rxd_header_pos == ftell(fp))
+						break;
+					lprintf(zm,LOG_WARNING,"ZACK for incorrect offset (%lu vs %lu)"
+						,zm->rxd_header_pos, ftell(fp));
+				}
+			} 
 
 			if((ulong)ftell(fp) >= fsize) {
 				lprintf(zm,LOG_DEBUG,"end of file (%ld)", fsize );
@@ -1396,20 +1409,23 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 		 * check out that header
 		 */
 
-		while(zmodem_data_waiting(zm) && !zm->cancelled) {
+		while(zmodem_data_waiting(zm) && !zm->cancelled && is_connected(zm)) {
 			int type;
 			int c;
 			if((c = zmodem_recv_raw(zm)) < 0)
 				return(c);
 			if(c == ZPAD) {
 				type = zmodem_recv_header(zm);
-				if(type != TIMEOUT && type != ACK) {
+				if(type != TIMEOUT && type != ZACK) {
 					return type;
 				}
 			}
 		}
 		if(zm->cancelled)
 			return(-1);
+
+		if(type == ZCRCW)	/* end-of-frame */
+			zmodem_send_pos_header(zm, ZDATA, ftell(fp), /* Hex? */ FALSE);
 	}
 
 	/*
@@ -1592,7 +1608,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		 */
 
 		if(type == ZRPOS) {
-			pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) | (zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
+			pos = zm->rxd_header_pos;
 			if(pos)
 				lprintf(zm,LOG_INFO,"Resuming transfer from offset: %lu", pos);
 		}
@@ -1783,7 +1799,6 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize
 
 int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, time_t start)
 {
-	long pos;
 	unsigned n;
 	int type;
 
@@ -1803,11 +1818,9 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, ti
 
 		} while(type != ZDATA);
 
-		pos = zm->rxd_header[ZP0] | (zm->rxd_header[ZP1] << 8) |
-			(zm->rxd_header[ZP2] << 16) | (zm->rxd_header[ZP3] << 24);
-		if(pos==ftell(fp))
+		if(zm->rxd_header_pos==ftell(fp))
 			break;
-		lprintf(zm,LOG_WARNING,"Wrong ZDATA block (%lu vs %lu)", pos, ftell(fp));
+		lprintf(zm,LOG_WARNING,"Wrong ZDATA block (%lu vs %lu)", zm->rxd_header_pos, ftell(fp));
 
 	} while(!zm->cancelled && is_connected(zm));
 		

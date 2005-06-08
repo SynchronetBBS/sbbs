@@ -195,6 +195,7 @@ typedef struct {
 
 	BYTE rxd_header[ZMAXHLEN];								/* last received header */
 	int rxd_header_len;										/* last received header size */
+	long rxd_header_pos;									/* last received header position value */
 
 	/*
 	 * receiver capability flags
