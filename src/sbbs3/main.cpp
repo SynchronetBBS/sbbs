@@ -1271,6 +1271,12 @@ void input_thread(void *arg)
 		if(sbbs->client_socket==INVALID_SOCKET)
 			break;
 
+		if(sbbs->client_socket==INVALID_SOCKET) {
+			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
+			break;
+		}
+
 		if(FD_ISSET(sbbs->client_socket,&socket_set))
 			sock=sbbs->client_socket;
 #ifdef __unix__
@@ -1287,12 +1293,6 @@ void input_thread(void *arg)
 #endif
 		else
 			continue;
-
-		if(sbbs->client_socket==INVALID_SOCKET) {
-			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
-				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
-			break;
-		}
 
     	rd=RingBufFree(&sbbs->inbuf);
 
