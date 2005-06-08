@@ -1268,9 +1268,6 @@ void input_thread(void *arg)
 #endif
 		}
 
-		if(sbbs->client_socket==INVALID_SOCKET)
-			break;
-
 		if(sbbs->client_socket==INVALID_SOCKET) {
 			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
 				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
