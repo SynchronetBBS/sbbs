@@ -696,8 +696,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
  * show the progress of the transfer like this:
  * zmtx: sending file "garbage" 4096 bytes ( 20%)
  */
-void zmodem_progress(void* unused, ulong start_pos, ulong current_pos
-					 ,ulong fsize, time_t start)
+void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos)
 {
 	char		orig[128];
 	unsigned	cps;
@@ -705,17 +704,18 @@ void zmodem_progress(void* unused, ulong start_pos, ulong current_pos
 	long		t;
 	time_t		now;
 	static time_t last_progress;
+	zmodem_t*	zm = (zmodem_t*)cbdata;
 
 	now=time(NULL);
-	if(now-last_progress>=progress_interval || current_pos >= fsize || newline) {
-		t=now-start;
+	if(now-last_progress>=progress_interval || current_pos >= zm->current_file_size || newline) {
+		t=now-zm->transfer_start;
 		if(t<=0)
 			t=1;
 		if(start_pos>current_pos)
 			start_pos=0;
 		if((cps=(current_pos-start_pos)/t)==0)
 			cps=1;		/* cps so far */
-		l=fsize/cps;	/* total transfer est time */
+		l=zm->current_file_size/cps;	/* total transfer est time */
 		l-=t;			/* now, it's est time left */
 		if(l<0) l=0;
 		if(start_pos)
@@ -726,13 +726,13 @@ void zmodem_progress(void* unused, ulong start_pos, ulong current_pos
 			"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
 			,orig
 			,current_pos/1024
-			,fsize/1024
+			,zm->current_file_size/1024
 			,t/60L
 			,t%60L
 			,l/60L
 			,l%60L
 			,cps
-			,(long)(((float)current_pos/(float)fsize)*100.0)
+			,(long)(((float)current_pos/(float)zm->current_file_size)*100.0)
 			);
 		newline=FALSE;
 		last_progress=now;
@@ -783,8 +783,8 @@ static int send_files(char** fname, uint fnames)
 		lprintf(LOG_INFO,"Sending %u files (%lu KB total)"
 			,xm.total_files,xm.total_bytes/1024);
 
-	zm.n_files_remaining = xm.total_files;
-	zm.n_bytes_remaining = xm.total_bytes;
+	zm.files_remaining = xm.total_files;
+	zm.bytes_remaining = xm.total_bytes;
 
 	/***********************************************/
 	/* Send every file matching names or filespecs */
@@ -976,20 +976,20 @@ static int receive_files(char** fname_list, int fnames)
 
 			} else {	/* Zmodem */
 				lprintf(LOG_INFO,"Waiting for Zmodem sender...");
-				i=zmodem_recv_init(&zm
-							,fname,sizeof(fname)
-							,&file_bytes
-							,&ftime
-							,&fmode
-							,&serial_num
-							,&total_files
-							,&total_bytes);
+
+				i=zmodem_recv_init(&zm);
+
 				if(zm.cancelled)
 					return(1);
 				if(i<0)
 					return(-1);
 				switch(i) {
 					case ZFILE:
+						SAFECOPY(fname,zm.current_file_name);
+						file_bytes = zm.current_file_size;
+						ftime = zm.current_file_time;
+						total_files = zm.files_remaining;
+						total_bytes = zm.bytes_remaining;
 						break;
 					case ZFIN:
 					case ZCOMPL:
@@ -1084,7 +1084,7 @@ static int receive_files(char** fname_list, int fnames)
 		success=FALSE;
 		if(mode&ZMODEM) {
 
-			errors=zmodem_recv_file_data(&zm,fp,0,file_bytes,startfile);
+			errors=zmodem_recv_file_data(&zm,fp,0);
 
 			/*
  			 * wait for the eof header

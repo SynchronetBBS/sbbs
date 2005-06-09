@@ -28,7 +28,8 @@
 #include <sys/stat.h>	/* struct stat */
 
 #include "genwrap.h"
-#include "dirwrap.h"
+#include "dirwrap.h"	/* getfname() */
+#include "filewrap.h"	/* filelength() */
 
 #include "zmodem.h"
 #include "crc16.h"
@@ -1326,7 +1327,7 @@ int zmodem_get_zfin(zmodem_t* zm)
  * the name is only used to show progress
  */
 
-int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent)
+int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 {
 	int n;
 	uchar type;
@@ -1360,7 +1361,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 		}
 #endif
 		if(zm->progress!=NULL)
-			zm->progress(zm->cbdata, pos, ftell(fp), fsize, zm->transfer_start);
+			zm->progress(zm->cbdata, pos, ftell(fp));
 
 		type = ZCRCG;
 
@@ -1376,7 +1377,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 			buf_sent=0;
 		}
 
-		if((ulong)ftell(fp) >= fsize || n==0)	// can't use feof() here!
+		if((ulong)ftell(fp) >= zm->current_file_size || n==0)	// can't use feof() here!
 			type = ZCRCE;
 
 		zmodem_send_data(zm, type, zm->tx_data_subpacket, n);
@@ -1404,8 +1405,8 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 				} 
 			}
 
-			if((ulong)ftell(fp) >= fsize) {
-				lprintf(zm,LOG_DEBUG,"zmodem_send_from: end of file (%ld)", fsize );
+			if((ulong)ftell(fp) >= zm->current_file_size) {
+				lprintf(zm,LOG_DEBUG,"zmodem_send_from: end of file (%ld)", zm->current_file_size );
 				return ZACK;
 			}
 			if(n==0) {
@@ -1561,8 +1562,8 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		,s.st_mtime
 		,0						/* file mode */
 		,0						/* serial number */
-		,zm->n_files_remaining
-		,zm->n_bytes_remaining
+		,zm->files_remaining
+		,zm->bytes_remaining
 		,0						/* file type */
 		);
 
@@ -1637,7 +1638,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		 * and start sending
 		 */
 
-		type = zmodem_send_from(zm, fp, pos, s.st_size, &sent_bytes);
+		type = zmodem_send_from(zm, fp, pos, &sent_bytes);
 
 		if(!is_connected(zm))
 			return(FALSE);
@@ -1679,14 +1680,127 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	return(success);
 }
 
-int zmodem_recv_init(zmodem_t* zm
-						   ,char* fname, size_t maxlen
-						   ,ulong* p_size
-						   ,time_t* p_time
-						   ,long* p_mode
-						   ,long* p_serial
-						   ,ulong* p_total_files
-						   ,ulong* p_total_bytes)
+int zmodem_recv_files(zmodem_t* zm, const char* download_dir, ulong* bytes_received)
+{
+	char		fpath[MAX_PATH+1];
+	FILE*		fp;
+	long		l;
+	BOOL		skip;
+	ulong		b;
+	ulong		crc;
+	ulong		rcrc;
+	ulong		bytes;
+	ulong		kbytes;
+	ulong		start_bytes;
+	unsigned	files_received=0;
+	time_t		t;
+	unsigned	cps;
+	unsigned	timeout;
+	unsigned	errors=0;
+
+	if(bytes_received!=NULL)
+		*bytes_received=0;
+	zm->current_file_num=1;
+	while(zmodem_recv_init(zm)==ZFILE) {
+		bytes=zm->current_file_size;
+		kbytes=bytes/1024;
+		if(kbytes<1) kbytes=0;
+		lprintf(zm,LOG_INFO,"Downloading %s (%lu KBytes) via Zmodem", zm->current_file_name, kbytes);
+
+		do {	/* try */
+			skip=TRUE;
+
+			sprintf(fpath,"%s/%s",download_dir,zm->current_file_name);
+			lprintf(zm,LOG_DEBUG,"fpath=%s",fpath);
+			if(fexist(fpath)) {
+				lprintf(zm,LOG_WARNING,"%s already exists",fpath);
+				l=flength(fpath);
+				if(l>=(long)bytes) {
+					lprintf(zm,LOG_WARNING,"Local file size (%lu bytes) >= remote file size (%ld)"
+						,l, bytes);
+					break;
+				}
+				if((fp=fopen(fpath,"rb"))==NULL) {
+					lprintf(zm,LOG_ERR,"Error %d opening %s",errno,fpath);
+					break;
+				}
+				crc=fcrc32(fp,l);
+				fclose(fp);
+				if(!zmodem_get_crc(zm,l,&rcrc)) {
+					lprintf(zm,LOG_ERR,"Failed to get CRC of remote file: %s", fpath);
+					break;
+				}
+				if(crc!=rcrc) {
+					lprintf(zm,LOG_WARNING,"Remote file has different CRC value");
+					lprintf(zm,LOG_DEBUG,"Remote CRC: %08lx vs Local CRC: %08lx)", rcrc, crc);
+					break;
+				}
+				lprintf(zm,LOG_INFO,"Resuming download of %s",fpath);
+			}
+
+			if((fp=fopen(fpath,"ab"))==NULL) {
+				lprintf(zm,LOG_ERR,"Error %d opening/creating/appending %s",errno,fpath);
+				break;
+			}
+			start_bytes=filelength(fileno(fp));
+
+			skip=FALSE;
+			errors=zmodem_recv_file_data(zm,fp,flength(fpath));
+
+			for(;errors<=zm->max_errors && !zm->cancelled; errors++) {
+				if(zmodem_recv_header_and_check(zm))
+					break;
+			}
+			fclose(fp);
+			l=flength(fpath);
+			if(errors && l==0)	{	/* aborted/failed download */
+				if(remove(fpath))	/* don't save 0-byte file */
+					lprintf(zm,LOG_ERR,"Error %d removing %s",errno,fpath);
+				else
+					lprintf(zm,LOG_INFO,"Deleted 0-byte file %s",fpath);
+			}
+			else {
+				if(l!=(long)bytes) {
+					lprintf(zm,LOG_WARNING,"Incomplete download (%ld bytes received, expected %lu)"
+						,l,bytes);
+				} else {
+					if((t=time(NULL)-zm->transfer_start)<=0)
+						t=1;
+					b=l-start_bytes;
+					if((cps=b/t)==0)
+						cps=1;
+					lprintf(zm,LOG_INFO,"Received %lu bytes successfully (%u CPS)",b,cps);
+					files_received++;
+					if(bytes_received!=NULL)
+						*bytes_received+=b;
+				}
+				if(zm->current_file_time)
+					setfdate(fpath,zm->current_file_time);
+			}
+
+		} while(0);
+		/* finally */
+
+		if(skip) {
+			lprintf(zm,LOG_WARNING,"Skipping file");
+			zmodem_send_zskip(zm);
+		}
+		zm->current_file_num++;
+	}
+	if(zm->local_abort)
+		zmodem_abort_receive(zm);
+
+	/* wait for "over-and-out" */
+	timeout=zm->recv_timeout;
+	zm->recv_timeout=2;
+	if(zmodem_rx(zm)=='O')
+		zmodem_rx(zm);
+	zm->recv_timeout=timeout;
+
+	return(files_received);
+}
+
+int zmodem_recv_init(zmodem_t* zm)
 {
 	int			type=CAN;
 	unsigned	errors;
@@ -1709,15 +1823,7 @@ int zmodem_recv_init(zmodem_t* zm
 		lprintf(zm,LOG_DEBUG,"Received header: %s",chr((uchar)type));
 
 		if(type==ZFILE) {
-			if(!zmodem_recv_file_info(zm
-				,fname,maxlen
-				,p_size
-				,p_time
-				,p_mode
-				,p_serial
-				,p_total_files
-				,p_total_bytes))
-				continue;
+			zmodem_parse_zfile_subpacket(zm);
 			return(type);
 		}
 
@@ -1735,51 +1841,40 @@ int zmodem_recv_init(zmodem_t* zm
 	return(type);
 }
 
-BOOL zmodem_recv_file_info(zmodem_t* zm
-						   ,char* fname, size_t maxlen
-						   ,ulong* p_size
-						   ,time_t* p_time
-						   ,long* p_mode
-						   ,long* p_serial
-						   ,ulong* p_total_files
-						   ,ulong* p_total_bytes)
+void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 {
 	int			i;
-	ulong		size=0;
-	ulong		time=0;
-	ulong		total_files=0;
-	ulong		total_bytes=0;
 	long		mode=0;
 	long		serial=-1;
 
-	if(fname!=NULL)
-		safe_snprintf(fname,maxlen,"%s",zm->rx_data_subpacket);
+	SAFECOPY(zm->current_file_name,getfname(zm->rx_data_subpacket));
+
+	zm->current_file_size = 0;
+	zm->current_file_time = 0;
+	zm->files_remaining = 0;
+	zm->bytes_remaining = 0;
 
 	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%lu %lo %lo %lo %lu %lu"
-		,&size					/* file size (decimal) */
-		,&time 					/* file time (octal unix format) */
-		,&mode 					/* file mode */
+		,&zm->current_file_size	/* file size (decimal) */
+		,&zm->current_file_time /* file time (octal unix format) */
+		,&mode					/* file mode */
 		,&serial				/* program serial number */
-		,&total_files			/* remaining files to be sent */
-		,&total_bytes			/* remaining bytes to be sent */
+		,&zm->files_remaining	/* remaining files to be sent */
+		,&zm->bytes_remaining	/* remaining bytes to be sent */
 		);
 
 	lprintf(zm,LOG_DEBUG,"Zmodem header (%u fields): %s"
 		,i, zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1);
 
-	if(!total_files)
-		total_files=1;
-	if(!total_bytes)
-		total_bytes=size;
+	if(!zm->files_remaining)
+		zm->files_remaining = 1;
+	if(!zm->bytes_remaining)
+		zm->bytes_remaining = zm->current_file_size;
 
-	if(p_size)			*p_size=size;
-	if(p_time)			*p_time=time;
-	if(p_mode)			*p_mode=mode;
-	if(p_serial)		*p_serial=serial;
-	if(p_total_files)	*p_total_files=total_files;
-	if(p_total_bytes)	*p_total_bytes=total_bytes;
-
-	return(TRUE);
+	if(!zm->total_files)
+		zm->total_files = zm->files_remaining;
+	if(!zm->total_bytes)
+		zm->total_bytes = zm->bytes_remaining;
 }
 
 /*
@@ -1787,24 +1882,23 @@ BOOL zmodem_recv_file_info(zmodem_t* zm
  * the name is only used to show progress
  */
 
-unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, time_t start)
+unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset)
 {
 	int			i=0;
 	unsigned	errors=0;
 
-	if(start==0)
-		start=time(NULL);
+	zm->transfer_start=time(NULL);
 
 	fseek(fp,offset,SEEK_SET);
 	offset=ftell(fp);
 
 	while(errors<=zm->max_errors && is_connected(zm)
-		&& (ulong)ftell(fp) < fsize && !zm->cancelled) {
+		&& (ulong)ftell(fp) < zm->current_file_size && !zm->cancelled) {
 
 		if(i!=ENDOFFRAME)
 			zmodem_send_pos_header(zm, ZRPOS, ftell(fp), /* Hex? */ TRUE);
 
-		if((i = zmodem_recv_file_frame(zm,fp,offset,fsize,start)) == ZEOF)
+		if((i = zmodem_recv_file_frame(zm,fp,offset)) == ZEOF)
 			break;
 		if(i!=ENDOFFRAME) {
 			if(i>0)
@@ -1816,7 +1910,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize
 }
 
 
-int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, time_t start)
+int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset)
 {
 	unsigned n;
 	int type;
@@ -1853,7 +1947,7 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset, ulong fsize, ti
 		}
 
 		if(zm->progress!=NULL)
-			zm->progress(zm->cbdata,offset,ftell(fp),fsize,start);
+			zm->progress(zm->cbdata,offset,ftell(fp));
 
 		if(zm->cancelled)
 			return(ZCAN);
@@ -1878,7 +1972,7 @@ char* zmodem_ver(char *buf)
 
 void zmodem_init(zmodem_t* zm, void* cbdata
 				,int	(*lputs)(void*, int level, const char* str)
-				,void	(*progress)(void* unused, ulong, ulong, ulong, time_t)
+				,void	(*progress)(void* unused, ulong, ulong)
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 				,int	(*recv_byte)(void*, unsigned timeout)
 				,BOOL	(*is_connected)(void*)
