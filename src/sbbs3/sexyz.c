@@ -1218,7 +1218,7 @@ void exiting(void)
 }
 
 static const char* usage=
-	"usage: sexyz <socket> [-opts] <cmd> [file | path | +list]\n"
+	"usage: sexyz <socket> [-opts] <cmd> [file | path | @list]\n"
 	"\n"
 #ifdef __unix__
 	"socket = TCP socket descriptor (leave blank for stdio mode)\n"
@@ -1329,6 +1329,7 @@ int main(int argc, char **argv)
 	zm.send_timeout			=iniReadInteger(fp,"Zmodem","SendTimeout",zm.send_timeout);	/* seconds */
 	zm.recv_timeout			=iniReadInteger(fp,"Zmodem","RecvTimeout",zm.recv_timeout);	/* seconds */
 	zm.max_errors			=iniReadInteger(fp,"Zmodem","MaxErrors",zm.max_errors);
+	zm.escape_telnet_iac	=iniReadBool(fp,"Zmodem","EscapeTelnetIAC",TRUE);
 
 	if(fp!=NULL)
 		fclose(fp);
@@ -1445,7 +1446,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		else if(argv[i][0]=='+') {
+		else if((argv[i][0]=='+' || argv[i][0]=='@') && fexist(argv[i]+1)) {
 			if(mode&RECVDIR) {
 				fprintf(statfp,"!Cannot specify both directory and filename\n");
 				exit(1); 
@@ -1484,8 +1485,8 @@ int main(int argc, char **argv)
 		} 
 	}
 
-	if(telnet)
-		zm.escape_telnet_iac = TRUE;
+	if(!telnet)
+		zm.escape_telnet_iac = FALSE;
 
 	if(sock==INVALID_SOCKET || sock<1) {
 #ifdef __unix__
