@@ -36,7 +36,7 @@ Command-line Syntax
 Just running "sexyz" by itself will display the supported command-line usage
 (options and commands):
 
-usage: sexyz <socket> [-opts] <cmd> [file | path | +list]
+usage: sexyz <socket> [-opts] <cmd> [file | path | @list]
 
 socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
 
@@ -82,7 +82,7 @@ SCFG:File Options->Transfer Protocols:
  4: Upload Command Line           %!sexyz %h -%p ry %f
  5: Download Command Line         %!sexyz %h -%p sY %f
  6: Batch Upload Command Line     %!sexyz %h -%p ry %g
- 7: Batch Download Command Line   %!sexyz %h -%p sY +%f
+ 7: Batch Download Command Line   %!sexyz %h -%p sY @%f
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
@@ -94,7 +94,7 @@ SCFG:File Options->Transfer Protocols:
  4: Upload Command Line           %!sexyz %h -%p rg %f
  5: Download Command Line         %!sexyz %h -%p sY %f
  6: Batch Upload Command Line     %!sexyz %h -%p rg %g
- 7: Batch Download Command Line   %!sexyz %h -%p sY +%f
+ 7: Batch Download Command Line   %!sexyz %h -%p sY @%f
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
@@ -106,7 +106,7 @@ SCFG:File Options->Transfer Protocols:
  4: Upload Command Line           %!sexyz %h -%p rz %f
  5: Download Command Line         %!sexyz %h -%p sz %f
  6: Batch Upload Command Line     %!sexyz %h -%p rz %g
- 7: Batch Download Command Line   %!sexyz %h -%p sz +%f
+ 7: Batch Download Command Line   %!sexyz %h -%p sz @%f
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
@@ -127,8 +127,8 @@ A. Active     : Yes
 B. HotKey     : Z
 C. Description: Zmodem batch
 D. Batch      : Yes
-E. Send Cmd   : c:\mystic\prots\sexyz.exe %0 sz +%3
-F. Receive Cmd: c:\mystic\prots\sexyz.exe %0 rz +%3
+E. Send Cmd   : c:\mystic\prots\sexyz.exe %0 sz @%3
+F. Receive Cmd: c:\mystic\prots\sexyz.exe %0 rz @%3
 
 
 Note Regarding Synchronet for Unix
@@ -159,30 +159,31 @@ in the filename. The filenames are *not* case sensitive. Examples:
 
 Example .ini file (with default values given):
 
-	TCP_NoDelay=TRUE			/* disable the TCP Nagle algorithm */
-	Debug=FALSE					/* enable debug logging */
-	DebugTx=FALSE				/* debug transmitted characters */
-	DebugRx=FALSE				/* debug received characters */
-	DebugTelnet=FALSE			/* debug telnet commands */
-	PauseOnExit=FALSE			/* wait for key-press on exit */
-	PauseOnAbend=FALSE			/* wait for key-press on abnormal exit */
-	OutbufHighwaterMark=1100	/* bytes before auto-flush */
-	OutbufDrainTimeout=10		/* milliseconds before auto-flush */
-	ProgressInterval=1			/* interval (in seconds) of progress display */
+	TCP_NoDelay=TRUE			; disable the TCP Nagle algorithm
+	Debug=FALSE					; enable debug logging
+	DebugTx=FALSE				; debug transmitted characters
+	DebugRx=FALSE				; debug received characters
+	DebugTelnet=FALSE			; debug telnet commands
+	PauseOnExit=FALSE			; wait for key-press on exit
+	PauseOnAbend=FALSE			; wait for key-press on abnormal exit
+	OutbufHighwaterMark=1100	; bytes before auto-flush
+	OutbufDrainTimeout=10		; milliseconds before auto-flush
+	ProgressInterval=1			; interval (in seconds) of progress display
 
 	[Xmodem]
-	SendTimeout=10	/* seconds */
-	RecvTimeout=10	/* seconds */
-	ByteTimeout=3	/* seconds */
-	AckTimeout=10	/* seconds */
-	BlockSize=1024	/* 128 or 1024 */
+	SendTimeout=10	; seconds
+	RecvTimeout=10	; seconds
+	ByteTimeout=3	; seconds
+	AckTimeout=10	; seconds
+	BlockSize=1024	; 128 or 1024
 	MaxErrors=10
-	G_Delay=1		/* millisecond yield between sent Ymodem-G blocks */
+	G_Delay=1		; millisecond yield between sent Ymodem-G blocks
 
 	[Zmodem]
-	SendTimeout=10	/* seconds */
-	RecvTimeout=10	/* seconds */
+	SendTimeout=10	; seconds
+	RecvTimeout=10	; seconds
 	MaxErrors=10
+	EscapeTelnetIAC=TRUE	; Send ZDLE/ZRUB1 instead of 0xff with -telnet
 
 
 Compatibility
@@ -270,8 +271,8 @@ The Xmodem (a.k.a. MODEM, MODEM2, XMODEM) protocol was originally developed by
 Ward Christensen in 1977.
 
 The Ymodem (a.k.a. YMODEM) and Zmodem (a.k.a. ZMODEM) protocols were developed
-and documented by Chuck Forsberg; Ymodem being primarily a set of extensions
-to Ward's Xmodem protocol. Ymodem-G was also developed by Chuck.
+and documented (poorly) by Chuck Forsberg; Ymodem being primarily a set of
+extensions to Ward's Xmodem protocol. Ymodem-G was also developed by Chuck.
 
 The X/Ymodem code used in SEXYZ was written by Rob Swindell <rob [at] synchro
 [dot] net>, migrated from the Synchronet Transfer Protocols (STP) program
@@ -280,4 +281,6 @@ circa 1997.
 The Unix "stdio" mode support in SEXYZ written by Stephen Hurd (aka Deuce).
 
 The Zmodem code in SEXYZ is based on zmtx/zmrx v1.02 (C) Mattheij Computer
-Service 1994 by Jacques Mattheij <jacquesm [at] hacktic [dot] nl>.
+Service 1994 by Jacques Mattheij <jacquesm [at] hacktic [dot] nl>. Although
+SEXYZ's Zmodem code no longer resembles zmtx/zmrx much, it served as a good
+starting point, and Jacques' version of Chuck's ZMODEM.DOC was very helpful!
