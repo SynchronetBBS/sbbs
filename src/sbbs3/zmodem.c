@@ -1376,11 +1376,8 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 			buf_sent=0;
 		}
 
-		/*
-		 * at end of file wait for an ACK - can't use feof() here!
-		 */
-		if((ulong)ftell(fp) >= fsize || n==0)
-			type = ZCRCW;
+		if((ulong)ftell(fp) >= fsize || n==0)	// can't use feof() here!
+			type = ZCRCE;
 
 		zmodem_send_data(zm, type, zm->tx_data_subpacket, n);
 
@@ -1389,19 +1386,23 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent
 		
 		buf_sent+=n;
 
-		if(type == ZCRCW) {	/* ZACK expected */
-			int type;
-			lprintf(zm,LOG_DEBUG,"Sent end-of-frame (ZCRCW sub-packet), waiting for ZACK");
-			while(is_connected(zm) && !zm->cancelled) {
-				type = zmodem_recv_header(zm);
-				if(type != ZACK)
-					return(type);
+		if(type == ZCRCW || type == ZCRCE) {	
+			int ack;
+			lprintf(zm,LOG_DEBUG,"Sent end-of-frame (%s sub-packet)", chr(type));
 
-				if(zm->rxd_header_pos == ftell(fp))
-					break;
-				lprintf(zm,LOG_WARNING,"ZACK for incorrect offset (%lu vs %lu)"
-					,zm->rxd_header_pos, ftell(fp));
-			} 
+			if(type==ZCRCW) {	/* ZACK expected */
+
+				lprintf(zm,LOG_DEBUG,"Waiting for ZACK");
+				while(is_connected(zm) && !zm->cancelled) {
+					if((ack = zmodem_recv_header(zm)) != ZACK)
+						return(ack);
+
+					if(zm->rxd_header_pos == ftell(fp))
+						break;
+					lprintf(zm,LOG_WARNING,"ZACK for incorrect offset (%lu vs %lu)"
+						,zm->rxd_header_pos, ftell(fp));
+				} 
+			}
 
 			if((ulong)ftell(fp) >= fsize) {
 				lprintf(zm,LOG_DEBUG,"zmodem_send_from: end of file (%ld)", fsize );
