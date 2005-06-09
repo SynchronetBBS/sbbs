@@ -866,6 +866,9 @@ static int send_files(char** fname, uint fnames)
 				break;
 			}
 
+			if(xm.cancelled || zm.cancelled)
+				break;
+
 		} /* while(gi<(int)g.gl_pathc) */
 
 		if(gi<(int)g.gl_pathc)/* error occurred */
