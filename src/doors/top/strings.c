@@ -22,6 +22,7 @@ which is contained in WORDS.C.
 ******************************************************************************/
 
 #include "top.h"
+#include "strwrap.h"
 
 /* IMPORTANT:  All TOP string functions are designed to work with strings
                of 256 bytes or less (including the terminating \0).  Many
