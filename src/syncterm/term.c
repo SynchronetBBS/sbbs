@@ -178,7 +178,10 @@ void dump(BYTE* buf, int len)
 #endif
 
 /* Zmodem Stuff */
-int log_level = LOG_INFO;
+static int log_level = LOG_INFO;
+static ulong total_files;
+static ulong total_bytes;
+static ulong current_file;
 
 static void zmodem_check_abort(zmodem_t* zm)
 {
@@ -284,7 +287,8 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos
 		l=fsize/cps;	/* total transfer est time */
 		l-=t;			/* now, it's est time left */
 		if(l<0) l=0;
-		cprintf("Current file: %-.*s", TRANSFER_WIN_WIDTH - 18, curr_trans_fname);
+		cprintf("File (%u of %u): %-.*s"
+			,current_file, total_files, TRANSFER_WIN_WIDTH - 20, curr_trans_fname);
 		clreol();
 		cputs("\r\n");
 		if(start_pos)
@@ -484,8 +488,6 @@ void zmodem_receive(void)
 	ulong		rcrc;
 	ulong		bytes;
 	ulong		kbytes;
-	ulong		total_files;
-	ulong		total_bytes;
 	BOOL		skip;
 	time_t		ftime;
 	unsigned	timeout;
@@ -501,6 +503,8 @@ void zmodem_receive(void)
 		,lputs, zmodem_progress
 		,send_byte,recv_byte,is_connected,data_waiting);
 
+//	zm.no_streaming=TRUE;
+	current_file=1;
 	while(zmodem_recv_init(&zm
 			,fpath,sizeof(fpath)
 			,&bytes
@@ -585,6 +589,7 @@ void zmodem_receive(void)
 			lprintf(LOG_WARNING,"Skipping file");
 			zmodem_send_zskip(&zm);
 		}
+		current_file++;
 	}
 	if(zm.local_abort)
 		zmodem_abort_receive(&zm);
