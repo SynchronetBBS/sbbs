@@ -1,0 +1,295 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      MulAware (MultiTasker Aware) 4.00
+
+               Copyright (c) 1992 ABSoft - ALL RIGHTS RESERVED
+
+                    Designed and Written by Jack Ridgway
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                   Page 1
+
+        MulAware 4.00 Copyright (c) 1992 ABSoft - ALL RIGHTS RESERVED
+
+
+
+
+   CONTENTS
+
+     Disclaimer .....................................................  3
+
+     Freeware Agreement .............................................  3
+
+     Distribution Archive Contents ..................................  3
+
+     What is MulAware ...............................................  3
+
+     How to Use MulAware ............................................  4
+
+     Untested Multitaskers ..........................................  4
+
+     Registration ...................................................  4
+
+     Technical Support ..............................................  5
+
+     Acknowledements ................................................  5
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                   Page 2
+
+        MulAware 4.00 Copyright (c) 1992 ABSoft - ALL RIGHTS RESERVED
+
+
+
+
+   DISCLAIMER
+
+     Users of MulAware must accept this disclaimer of warranty:
+     "MulAware is supplied as is.  The author disclaims all warranties,
+     expressed or implied, including, without limitation, the warranties
+     of merchantability and of fitness for any purpose.  The author
+     assumes no liability for damages, direct or consequential, which
+     may result from the use of MulAware."
+
+
+   FREEWARE AGREEMENT
+
+     MulAware is a "freeware program" and is provided at no charge to
+     the user.  Feel free to share it with your friends, but please do
+     not give it away altered or as part of another system.  MulAware
+     may NOT be used in a commercial environment without purchasing the
+     source code from ABSoft.  A BBS operated for profit IS a commercial
+     environment; however, a subscription system not operated for profit
+     is not considered a commercial environment in relation to this
+     agreement.
+
+     Anyone distributing MulAware for any kind of remuneration must
+     first contact ABSoft at the address below for authorization.  This
+     authorization will be automatically granted to distributors
+     recognized by the (ASP) as adhering to its guidelines for shareware
+     distributors, and such distributors may begin offering MulAware
+     immediately; however, ABSoft must still be advised so that the
+     distributor can be kept up-to-date with the latest version of
+     MulAware.
+
+
+   DISTRIBUTION ARCHIVE CONTENTS
+
+     You will find the following files in TPMUL400.*
+
+       MULAWARE.TP6 - TP 6.0 MulAware Unit
+       MULAWARE.TP7 - TP 7.0 & BP 7.0 Real Mode MulAware Unit
+       MULAWARE.TPP - BP 7.0 Protected Mode MulAware Unit
+       MULAWARE.DOC - MulAware Documentation
+       MULAWARE.INT - Interface and Documentation on Using MulAware
+       MULTEST.PAS  - Source Code for MulTest
+       REGISTER.FRM - ABSoft Registration Form
+       FILE_ID.DIZ  - BBS Description of MulAware
+
+
+   WHAT IS MulAware?
+
+     MulAware is a Turbo Pascal Unit to make your programs fully
+     MultiTasker Aware.
+
+
+
+                                   Page 3
+
+        MulAware 4.00 Copyright (c) 1992 ABSoft - ALL RIGHTS RESERVED
+
+
+
+
+     MulAware currently supports the following multitaskers:
+
+     Windows 3.x & NT
+     DESQview 2.xx
+     DoubleDOS
+     VMiX 2.xx
+     MultiDos Plus 4.xx
+     OS/2 2.0
+     DOS 5.0 Task Switcher and Compatibles
+     TaskView, TopView, OmniView, & Compatibles
+
+
+   HOW TO USE MulAware
+
+     If you are using TP 6.0, rename MULAWARE.TP6 to MULAWARE.TPU.  If
+     you are using TP 7.0, rename MULAWARE.TP7 to MULAWARE.TPU.  Since
+     this is a programmer's tool, I'm going to assume you have decent
+     knowledge of computers in general, and Turbo Pascal in particular.
+     Simply place MulAware in your USES statement.
+
+     Uses
+       Crt,
+       MulAware,
+       Dos;
+
+     See the enclosed MULAWARE.INT for complete documentation on the
+     Constants, Types, Variables, Functions, and Procedures in MulAware.
+
+     The enclosed MULTEST.PAS is a sample program that tests for all
+     the supported multitaskers, and returns an errorlevel based on
+     what it finds.
+
+
+   UNTESTED MULTITASKERS
+
+     MulAware has not been tested under Windows NT, DoubleDOS, TaskView,
+     TopView, and OmniView.  If you would like to donate a copy of any
+     of these for testing, feel free to do so :)
+
+
+   REGISTRATION
+
+     MulAware is distributed as FreeWare.  This is a contribution to all
+     the shareware/freeware/pd programmers, to whom I certainly owe a
+     lot.  Please read the DISCLAIMER & FREEWARE AGREEMENT earlier in
+     the documentation for more information.
+
+     Source code is available from ABSoft.  Please see the enclosed
+     registration form for information and pricing.
+
+
+
+                                   Page 4
+
+        MulAware 4.00 Copyright (c) 1992 ABSoft - ALL RIGHTS RESERVED
+
+
+
+
+   TECHNICAL SUPPORT
+
+     ABSoft
+     P.O. Box 55647
+     Jackson, MS 39296-5647
+
+     The Big Bang Theory BBS
+     601-366-1664 (HST/v.32bis)
+
+     SL_Net     250:302/532
+     FidoNet    1:3632/4
+
+
+   ACKNOWLEDGMENTS
+
+     * Turbo Pascal is a registered trademark of Borland International
+     * OS/2 is a registered trademark of IBM Corporation
+     * MS-DOS is a registered trademark of Microsoft Corporation
+     * DESQview is a registered trademark of Quarterdeck Office Systems
+     * VMiX is a registered trademark of Commercial Software Associates
+     * Windows is a registered trademark of Microsoft Corporation
+     * MultiDos Plus is a registered trademark of Nanosoft Inc.
+     * All other programs are copyright and/or trademarked by their
+       respective author unless otherwise noted
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                   Page 5
+
+        MulAware 4.00 Copyright (c) 1992 ABSoft - ALL RIGHTS RESERVED

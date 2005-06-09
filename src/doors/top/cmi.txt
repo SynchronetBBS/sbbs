@@ -1,0 +1,21 @@
+Enter TOP:
+
+join() default channel
+if failed, join() personal channel
+if failed, exit() with error
+
+Join channel:
+
+check() ban/invite, if fails then don't move
+unjoin() current channel
+join() new channel
+if failed, join() default channel
+if failed, join() personal channel
+if failed, exit() with error
+
+Banned/uninvited from current channel:
+
+unjoin() current channel
+join() default channel
+if failed, join() personal channel
+if failed, exit() with error

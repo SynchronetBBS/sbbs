@@ -1,0 +1,977 @@
+; Generic Language File For The Online Pub
+; ----------------------------------------
+;
+;     The GENERIC language file has no specific theme, and is somewhat less
+; "exciting" than the other themes.  It is suitable as is for a business-style
+; teleconference, or as a framework for themes.
+;
+;     The language file controls every character of text displayed by TOP, and
+; may be freely changed by sysops.  This is handy if you want to edit TOP's
+; display colours, command words, or want to change TOP's "theme" to match your
+; own BBS's theme.  You can also use this file to translate TOP's text into
+; different languages.
+;
+;     The language file consists of "language items".  Each time TOP wants to
+; display text, it looks in the language file for a language item, identified
+; by a unique keyword, and displays the text associated with that item.  Each
+; line of this file is one language item, except for lines (like this one) that
+; begin with a semi-colon.  Lines beginning with semi-colons are comments, and
+; are ignored by TOP.  NOTE:  DO NOT USE BLANK LINES WHEN FORMATTING!  Blank
+; lines will work, but they will waste memory.  If you want to format this file
+; for readability, use lines with just a semi-colon on them (as this file
+; does), instead of blank lines.
+;
+;     The format of a language item is this:
+;
+;     <name> <text>
+;
+;     <name> is a special keyword that TOP will look for when it needs to use
+; the language item.  <text> is the actual language text, also called a string.
+; Note that <name> is always one "word" long, so <text> always starts on the
+; second word.  As in this file, you may use extra space between <name> and
+; <text> to improve readability.
+;
+;      The language items in this file are grouped into categories.  A comment
+; following each category name describes what the items in the categories are
+; used for.  The categories that you'll most likely want or need to change
+; appear at the top of this file, with categories that will rarely need
+; changing in the middle and categories that will probably never need changing
+; towards the end. Note that the category names are just comments, and do not
+; actually affect the way TOP reads the language items. The actual order of
+; appearance of the language items is not important, and you may regroup them
+; in any way you like.  Also, some blocks of items are preceeded by comments to
+; let you know in general what they do.
+;
+;     Throughout this language file, special character combinations are used.
+; These combinations are called "Language Tokens", and each one performs a
+; special function, as described below.  All language tokens are
+; case-insensitive, i.e. @b and @B are the same.
+;
+;    Token      Function
+; ------------|-----------------------
+;      @1       *Replaced with the first special parameter for that item.
+;               Special parameters are used by language items in much the same
+;               way that batch files use DOS command line parameters. Each
+;               parameter has a number from 1 to 9, and you can use (display)
+;               these parameters by inserting the corresponding language token,
+;               i.e. @1 to @9.  The contents of the special parameters vary for
+;               each language item.  Unfortunately, as this is a gamma version
+;               of TOP, there are currently no descriptions of what these
+;               parameters are for each item, so you will have to use a
+;               combination of common sense and expirimentation to figure out
+;               exactly what they are used for in each item.  To be safe, try
+;               to build new strings around these parameter tokens.  NOTE:
+;               Although it is rarely necessary to use each parameter token
+;               more than once, you can use any parameter token as many times
+;               as needed.
+;  @2 thru @9   *Replaced with parameters 2 through 9, as described above.
+;      @<       Replaced with a destructive backspace.  A destructive backspace
+;               is actually a sequence of three ASCII characters: 008
+;               (backspace), 032 (space), and 008 (backspace).  This ensures
+;               that the character under the cursor after the backspace will be
+;               removed from the screen.  If you wish to use a non-destructive
+;               backspace, use @X008 (see @X description below).
+;      @B       Replaced with a Ctrl-G (ASCII 007), producing a BEEP noise. Do
+;               not use too many of these codes in a row, because the beeping
+;               can be annoying and can delay the user's terminal (and in rare
+;               cases even crash it).  This is because the actual noise
+;               generated is system-dependant, and may sound different or have
+;               different lengths on different computers. Also, the noise
+;               generated on the remote system can sound different as well.
+;               Furthermore, some terminal programs allow the user to disable
+;               the beeps, so do not rely on them to get a user's attention -
+;               use some text as well.
+;      @C       CR/LF (ASCII 013/010).  Advances the cursor to the next line.
+;      @D       Deletes from the cursor to the end of the current line.
+;               Ignored if ANSI or AVATAR is not being used.
+;      @E       Erases the screen.  NOTE:  May not work on all terminals!  Do
+;               not rely on a screen clear to set up a display or the display
+;               may be corrupted if the user's terminal does not support screen
+;               clearing!
+;   @L"Name"    Displays the language item named Name.  Name may be any valid
+;               <name> word that appears in this language file, or one of your
+;               own language item names.  The quotation marks ARE REQUIRED.
+;               NOTE:  This token is never used by any of the language files
+;               included with TOP, but is available in case you want to put
+;               headers or footers or other common text strings in certain
+;               items.  IF YOU USE YOUR OWN CUSTOM LANGUAGE ITEM NAME, BE SURE
+;               TO DEFINE IT IN YOUR LANGUAGE FILE!  Language Item Names are
+;               limited to 30 characters or less.  WARNING:  Do not use this
+;               token to display language items that require parameters!
+;               There is no way for TOP to know to pass the parameters and as
+;               a result TOP may display garbage or crash.
+;    @P0102     Position Cursor.  Positions the cursor at (2,1).  The first
+;               two digits indicate the row (y-coordinate) to position the
+;               cursor at, and the second two digits indicate the column
+;               (x-coordinate) to position the cursor at.  The first number can
+;               be from 01 to 25 (SEE NOTE), and the second can be from 01 to
+;               80.  If the number for either position is less than 10, it must
+;               have a zero in front of it.  Examples:  0135 (35,1) instead of
+;               135, 1005 (5,10) instead of 105, and 0101 (2,1) instead of 11.
+;               As this corresponds to a graphical code, it will be ignored if
+;               ANSI or AVATAR is not available to the user.  Many language
+;               items that use this token by default have non-graphical
+;               equivalents, or are not used at all in non-graphical mode.
+;               NOTE:  Though values from 01 to 25 are valid for the row
+;               position, the number must also not exceed both the user's
+;               defined screen size, and, if Snoop mode is on, the current
+;               local screen size.  Unless absolutely required, you should try
+;               to keep this value limited to 23 or less, as graphical modes
+;               will not be permitted by TOP if the user has a screen size less
+;               than 23.
+;    @R123      Repeat Indicator.  Repeats the next character 123 times.  123
+;               can be any 3 digit number from 000 to 255, and must be
+;               zero-padded (003 instead of 3, and 075 instead of 75).  The
+;               number cannot be greater than 500.  This token should be used
+;               when a character has to be repeated many times (eg. seperator
+;               lines).  It saves memory space, and it can provide faster
+;               displaying time.
+;      @S       Space character.  Use this if you need to put a space character
+;               at the beginning of a language item.  If you don't, TOP will
+;               think the space is just for formatting purposes and disregard
+;               it.  You can also use this token at the end of language items
+;               if your editor trims spaces from the end of each line.  It is
+;               recommended that you use this token at the end of items even if
+;               your editor doesn't do this, because one day you may edit the
+;               language file using a different editor (one which does trim
+;               spaces) and cause problems for yourself.  Plus, it makes it
+;               more apparent that a space is there.
+;    @X123      Displays ASCII character #123.  123 can be any 3 digit number
+;               from 000 to 255.  Note that it must be zero-padded (003 instead
+;               of 3 and 075 instead of 75).  Useful for embedding raw ANSI
+;               codes, although this is not recommended.
+;
+;   * For each of the Parameter Tokens (@1 thru @9), modifiers may be used to
+;     control the display.  These modifiers and their functions are listed
+;     below.  C and C++ programmers will find these somewhat familiar.
+;
+;   Modifier    Function
+; ------------|------------------------
+;     .##       Forces display length to be ## characters long and
+;               right-justifies the parameter text, filling the unused portion
+;               with spaces.  Longer strings will be clipped to ## characters.
+;               ## may be from 1 to 32767.
+;    .0##       Same as .##, but fills the remaining display (if any) with
+;               zeroes instead of spaces.
+;    .-##       Same as .##, but left-justifies the result.
+;     ..        Use two periods if you need to display a period immediately
+;               after using a parameter token that uses no modifiers.
+;
+;     Examples of Language Token and Parameter Token Modifier usage appear
+; throughout this file.
+;
+; -----------------------------------------------------------------------------
+;
+; Item Name Explanations
+;
+;     While it is neither required nor recommended that you be familliar with
+; the item name (<name>) of each of the language items, there are some
+; conventions used when naming the items that you should be aware of.  Note
+; that these items pertain only to TOP's default items and do not have to be
+; applied to your own names.  The conventions are as follows:
+;
+;     - Names starting with "Cmds" indicate command word items.
+;     - Names ending in "Keys" or "Char" indicate command key items.  For
+; "Keys" items, the order of the characters is important!
+;     - Names ending in "Prompt" indicate prompts.  They almost always end in
+; either a space (@s) token, or @s plus a colour code.
+;     - Names ending in "Prefix" and "Suffix" (or "Pref" and "Suf" in some
+; cases) indicate formatting items.  "Prefix" items naturally come before
+; complex displays, while "Suffix" items come after.  In some cases the Prefix
+; items also include the item being prefixed, thus acting as a "shell" to
+; display text that you might want to change the colour/appearance of.
+;     - Names starting with "Log" indicate log items that are written to the
+; system log.
+;     - Names ending in "Sep" indicate seperator items (normally a line of
+; hyphens) used purely for cosmetic formatting.
+;     - Names are grouped with the common bond appearing first in the name.
+; For example, "CmdsChangeChatMode" and "CmdsChangeEMessage" are first bonded
+; by "Cmds" and then by "Change" (the CHANGE command).
+;
+;     When looking for specific items to change, it is recommended that you
+; search for specific text and not for a language item name, because the item
+; names are usually cryptic and hard to remember.  The items are named for
+; brevity and not appearance.  Use the item name only as a limited guide when
+; changing an item.
+;
+;     A complete guide to all language item names, uses, and parameters will
+; appear in a configuration program, to be released with a future version of
+; TOP.
+;
+; -----------------------------------------------------------------------------
+;
+; Cosmetic / Atmosphere
+;
+; These items have no practical merit and exist only to provide atmosphere.
+;
+SitDown             @c@c
+BroughtToYouBy      @c^nYour sysop is ^p@1^n here at ^p@2^n.@c
+Goodbye             Thank you for using The Online Pub.@c@c
+;
+; General Information
+;
+; These items tell the user about what's going on with regards to the system.
+;
+Searching           ^kSearching User File for ^p@1^k...
+Setup               ^mPlease wait, setting up...
+Creating            @c@c^oStand by, creating...
+DateTime            @c^nThe date is ^l@1.02/@2.02/@3.04^n and the time is ^l@4.02:@5.02:@6.02^n.@c
+TimeIn              ^jYou have been in The Online Pub for ^p@1^j minutes and have ^p@2^j minutes remaining.@c
+LoggedOnNode        ^nYou are logged on to Node ^p@1^n of this system.@c
+CreditDisplay       ^pYou have ^k@1^p credits remaining.@c
+Greeting            @c@c^oWelcome to The Online Pub, ^l@1^o.  You are user number @2, last called @3 days ago.@c
+YoureInChannel      ^oYou're in Channel #^p@1^o.@c
+ChannelTopic        ^oChannel Topic: "^k@1^o"@c
+YoureInConference   ^oYou're in the ^p@1^o Conference Channel.@c
+ConferenceTopic     ^oConference Topic: "^k@1^o"@c
+YoureInUserChannel  ^oYou're in ^p@1^o's Personal Channel.@c
+UserChannelTopic    ^oTopic: "^k@1^o"@c
+LookAround          ^oThe following people are in this Channel:@s@s
+LookAroundNobody    ^oThere is nobody else in this Channel at the moment.
+ShortHelp           ^nType ^pCOMMANDS^n for command list, ^pHELP^n for extensive help,@cor ^pQUIT^n to return to the BBS.
+ReturnToBBS         ^nNow returning to ^l@1^n...^h@c@c
+NoLongerOnSystem    @c^l@1^m is no longer on the system!
+ReturnToMain        @c^nReturning to the main channel...
+;
+; User Actions
+;
+; Whenever a user does something, including talking, these items are used.
+; These are some of the items most frequently used by TOP!
+;
+MsgPrefix           ^A^oFrom ^l@1^o: @2&L
+WhisperPrefix       ^A^oFrom ^l@1^j (whispered)^o: @2&L
+DirectedPrefix      ^A^oFrom ^l@1^o, to ^l@2^o: ^k@3&L
+TalkTypePrefix      ^A^oFrom ^l@1^o: ^k@2
+GAPrefix            ^l@1^o @2&L
+GA2Prefix           ^l@1^o's @2&L
+EMessage            ^l@1^m has just entered the teleconference.
+XMessage            ^l@1^m has just left the teleconference.
+InProf              ^l@1^n has entered the Profile Editor.
+OutProf             ^l@1^n has returned from the Profile Editor.
+HandleChangeMsg     ^l@1^n has changed ^p@2^n handle to ^l@3^n.
+EXMsgChange         ^l@1^n just updated ^p@2^n entry/exit messages.
+SexChangeMsg        ^l@1^n has changed genders to @2^n!
+PersActChangeMsg    ^l@1^n just updated ^p@2^n personal actions.
+Secretly            @<^j...^I^psecretly!
+PrivChatIn          ^l@1^n has just entered a private chat.
+PrivChatOut         ^l@1^n has just returned from a private chat.
+PrivChatRequested   @b^l@1^n is requesting a private chat with you!@cType ^pCHAT @1^n to accept, or ^pDENYCHAT^n to decline.
+PrivChatDenied      ^nSorry, ^l@1^n has denied your request for a private chat.
+ChannelIn           ^l@1^m has just changed to this channel.
+ChannelOut          ^l@1^m has just changed to another channel.
+LinkOn              ^l@1^m has just started a link to ^p@2^m.
+LinkPrefix          ^o(^p@1^o): @2
+LinkOff             ^mThe link to ^p@1^m has just disintegrated.
+HasTossed           ^o@1^j has just tossed you out of the teleconference!@c
+HasZapped           ^o@1^j has just zapped you off of the system!@c
+TossOut             ^l@1^m has disconnected from the system.
+TossComment         ^nComment:  ^l@1@c
+HasCleared          ^mNode ^p@1^m (^l@2^m) has just been cleared by ^l@3^m.
+SecChangeMsg        ^l@1^n has changed your security level to ^p@2^n.
+TopicChangeMsg      ^l@1^n has just changed the topic for this channel to:@c^g"^p@2^g"
+ModChangeMsg        ^l@1^n has just appointed ^p@2^n the new moderator of this channel.
+HasBeenBanned       ^l@1^n has just ^I^mbanned^A^n ^p@2^n from this channel.
+HasBeenUnBanned     ^l@1^n has just ^kunbanned^n ^p@2^n from this channel.
+HasBeenInvited      ^l@1^n has just ^kinvited^n ^p@2^n to this channel.
+HasBeenUnInvited    ^l@1^n has just ^I^muninvited^A^n ^p@2^n from this channel.
+YouBannedChan       ^nYou have just been ^I^mbanned^A^n from channel ^p@1^n.
+YouBannedUserChan   ^nYou have just been ^I^mbanned^A^n from ^p@1^n's channel.
+YouBannedConf       ^nYou have just been ^I^mbanned^A^n from the ^p@1^n confenence.
+YouUnBannedChan     ^nYou have just been ^kunbanned^n from channel ^p@1^n.
+YouUnBannedUsChan   ^nYou have just been ^kunbanned^n from ^p@1^n's channel.
+YouUnBannedConf     ^nYou have just been ^kunbanned^n from the ^p@1^n conference.
+YouInvitedChan      ^nYou have just been ^kinvited^n to channel ^p@1^n.
+YouInvitedUsChan    ^nYou have just been ^kinvited^n to ^p@1^n's channel.
+YouInvitedConf      ^nYou have just been ^kinvited^n to the ^p@1^n conference.
+YouUnInvitedChan    ^nYou have just been ^I^muninvited^A^n from channel ^p@1^n.
+YouUnInvitedUsCh    ^nYou have just been ^I^muninvited^A^n from ^p@1^n's channel.
+YouUnInvitedConf    ^nYou have just been ^I^muninvited^A^n from the ^p@1^n conference.
+;
+; Action Confirmation
+;
+; When a user issues a successful command, one of these items is shown.  They
+; are pretty generic.
+;
+WhisperSent         ^m-- Message Sent Only To ^l@1^m --@c
+DirectedSent        ^m-- Message Directed At ^l@1^m --@c
+GASent              ^m-- General Action Sent --@c
+MsgSent             ^m-- Message Sent --@c
+TalkTypeActionSent  ^m-- TalkType Action Sent --@c
+TalkTypeMsgSent     ^m-- TalkType Message Sent --@c
+Forgotten           ^nOkay, you will no longer receive any messages, actions, or whispers from ^l@1^n.@c
+Remembered          ^nOkay, you have no longer forgotten ^l@1^n.@c
+ChangedHandle       ^nOkay, you will now be known as ^l@1^n.@c
+ChangedEMessage     ^nOkay, your entry message has been changed.@c
+ChangedXMessage     ^nOkay, your exit message has been changed.@c
+EMessageCleared     ^nOkay, your entry message has been cleared.@c
+XMessageCleared     ^nOkay, your exit message has been cleared.@c
+ChangedSex          ^nOkay, you will now be shown as @1.@c
+ChangedChatMode     ^nOkay, TOP will now operate in ^k@1^n mode.@c
+ChangedListed       ^nOkay, your channel name/number will be ^k@1^n.@c
+DirectLogOffMsg     ^mOkay, see you later!@c
+HasBeenTossed       ^jOkay, ^o@1^j has been tossed back to the BBS.@c
+HasBeenZapped       ^jOkay, ^o@1^j has been zapped off of the system.@c
+NodeCleared         ^jOkay, node ^o@1^j is now cleared.@c
+SecHasBeenSetAt     ^jOkay, ^o@1^j's security is now ^p@2^j.@c
+PrivChatReqOK       ^nOkay, ^l@1^n has been notified of your request for a private chat.@c
+PrivChatDenyOK      ^nOkay, you've denied ^k@1^n's private chat request.@c
+NowInChannel        ^pOkay, you've joined Channel #^k@1^p.@c
+NowInConference     ^pOkay, you've joined the ^k@1^p Conference Channel.@c
+NowInUserChannel    ^pOkay, you've joined ^k@1^p's Private Channel.@c
+BannedUser          ^pOkay, ^l@1^p is now banned from this channel.@c
+UnBannedUser        ^pOkay, ^l@1^p is no longer banned from this channel.@c
+InvitedUser         ^pOkay, ^l@1^p is now invited to this channel.@c
+UnInvitedUser       ^pOkay, ^l@1^p is no longer invited to this channel.@c
+ChangedTopic        ^pOkay, the topic for this channel has been changed.@c
+ChangedMod          ^pOkay, ^l@1^p is now the moderator of this channel.
+ActionsNowOff       ^pOkay, you have now turned actions ^mOFF^p.  This means that you will no longer@creceieve actions from any user, and you will not be able to send any actions@cyourself, including general actions.@c
+ActionsNowOn        ^pOkay, you have now turned actions ^kON^p, and will be able to receive and send@cactions again.@c
+JustTo              ^j...^pand just to ^l@1^p!
+;
+; Prompts
+;
+; When TOP requires interaction with the user, it shows one of these items.
+; These are also pretty generic.
+;
+EnterName           ^jPlease enter your full name--->@s^p
+EnterPW             ^oPlease enter your password--->@s^p
+EnterNewPW          @c^oPlease enter a password to secure your account--->@s^n
+ConfirmPW           @c@c^oRe-Enter that password to confirm it          --->@s^n
+GenderPrompt        @c^oAre you (^nM^o)ale or (^nF^o)emale?
+EnterHandle         ^oPlease enter your handle (30 chars. max., ENTER to quit)@c--->@s^l
+MorePrompt          ^eMore (Y/n/=)?
+PressAnyKey         ^ePress any key to continue...
+DefaultPrompt       ^A^k@1:@s
+;
+; Command Words
+;
+; These items work differently from those above.  These items are the words and
+; shortcuts used to trigger every command available from TOP.  Each word is
+; considered a synonym for the command, with the "main" command word appearing
+; first in the item.  Note that commands may not contain spaces, although some
+; commands are specifically set up as two word commands.
+;
+CmdsQuit            QUIT Q EXIT X
+CmdsCommands        COMMANDS !
+CmdsColourHelp      COLOURHELP COLORHELP COLHELP @
+CmdsTime            TIME /TIME DATE /DATE CREDITS /$ $ /* *
+CmdsWho             SCAN WHO /S
+CmdsProfile         PROFILE EDIT /E
+CmdsLookUp          LOOKUP /L
+CmdsNodes           NODES # /# USERS
+CmdsPage            PAGE /P
+CmdsForget          FORGET /F
+CmdsRemember        REMEMBER /R
+CmdsLogOff          /LOGOFF /!
+CmdsWhisperLong1    WHISPER
+CmdsWhisperLong2    TO AT
+CmdsDirectedLong1   DIRECT
+CmdsDirectedLong2   TO AT
+CmdsGA              GA
+CmdsGA2             GA'S
+CmdsHelp            HELP ? /?
+CmdsHelpActions     ACTIONS
+CmdsHelpGeneral     GENERAL TOP
+CmdsHelpChannels    CHANNELS
+CmdsHelpTopics      TOPICS TOPIC
+CmdsAction          ACTION /A
+CmdsActionList      LIST
+CmdsActionListAll   ALL
+CmdsActionOn        ON
+CmdsActionOff       OFF
+CmdsActionAll       ALL EVERYONE /A /E
+CmdsActionSecretly  SECRETLY /S
+CmdsSysop           SYSOP /.
+CmdsSysopClear      CLEAR C
+CmdsSysopToss       TOSS T
+CmdsSysopZap        ZAP Z
+CmdsSysopSetSec     SETSEC SEC S
+CmdsChange          CHANGE /-
+CmdsChangeHandle    HANDLE
+CmdsChangeEMessage  EMESSAGE ENTRYMSG ENTRY EMSG ENTRYMESSAGE
+CmdsChangeXMessage  XMESSAGE EXITMSG EXIT XMSG EXITMESSAGE
+CmdsChangeSex       SEX GENDER
+CmdsChangeChatMode  CHATMODE MODE
+CmdsChangeListed    LISTED LISTSTATUS
+CmdsPrivChat        CHAT /C PRIVCHAT
+CmdsPrivDenyChat    DENYCHAT
+CmdsJoin            JOIN /J
+CmdsConfList        CONFLIST /CL
+CmdsModerator       MODERATOR MODERATE MOD /M
+CmdsModTopicChg     SETTOPIC TOPIC TOPICSET TOPSET TOP T
+CmdsModModChg       SETMOD CHGMOD CHANGEMOD MOD M
+CmdsModBan          BAN
+CmdsModUnBan        UNBAN
+CmdsModInvite       INVITE INV
+CmdsModUnInvite     UNINVITE UNINV
+;
+; Command Keys
+;
+; These are the keys that TOP uses for some single-key options.  IMPORTANT:  Be
+; sure to keep the order of the keys the same, otherwise you may end up having
+; a situation where, for example, Y will mean "no" and vice-versa.
+;
+GenderKeys          MF
+MoreKeys            YN=@x013
+YesNoKeys           YN@x013
+DirectedShortChar   >
+WhisperShortChar    /
+;
+; Error, Invalid Command, and Warning Messages
+;
+; These messages are displayed whenever the user does something wrong.
+;
+InvalidPW           @c@c^I^mInvalid Password!!^A@s@c@c
+MaxPW               ^nSorry, you are only allowed @1 incorrect password attempts.
+PWNoMatch           @c@c^I^mPasswords do not match!!^A^m  Try again.@c
+CmdNotAvail         ^mSorry, that command is not available on this system.@c
+NotLoggedIn         ^mSorry, ^l@1^m is not logged into The Online Pub at the moment.@c
+NotSpecific         ^mSorry, the name you specified, ^l@1^m, is not specific enough.  Please try again using more letters.@c
+HandleInUse         ^I^kThat handle is already in use here!^A^o  Try again.@c
+HandleNotSpecified  ^mYou must specify a handle with the ^lCHANGE HANDLE^m command.@c
+ActionsNotAllowed   ^mSorry, actions are not permitted on this system.@c
+DualWindowNoGfx     ^mSorry, you can not use Dual Window chat mode without ANSI graphics@ccapability.@c
+ChgSexNotAllowed    ^mSorry, changing genders is not permitted on this system.@c
+ChgEXMsgNotAllowed  ^mSorry, custom entry/exit messages are not permitted on this system.@c
+ChgHandNotAllowed   ^mSorry, you are not allowed to change your handle on this system.@c
+NoAccTalk           ^mSorry, you do not have a high enough access level to send text.  However, please feel free to watch the conversation.@c
+NoAccChgHandle      ^mSorry, you do not have a high enough access level to change your handle.@c
+NoAccChgSex         ^mSorry, you do not have a high enough access level to change your gender.@c
+NoAccChgEXMsg       ^mSorry, you do not have a high enough access level to change your entry or exit@cmessage.@c
+NoAccPrivMsg        ^mSorry, you do not have a high enough access level to send private messages.@c
+NoAccActUse         ^mSorry, you do not have a high enough access level to use Actions.@c
+PrivChatCantReq1    ^mCan't send chat request - ^l@1^n still wants to chat with you.@c
+PrivChatCantReq2    ^mCan't send chat request - ^l@1^n has not yet responded to your earlier chat request.@c
+PrivChatCantDeny    ^mCan't deny chat request - nobody has requested a chat with you.@c
+NotInYourChannel    ^mSorry, ^l@1^m is not in this channel.@c
+NoHelpAvailable     ^mSorry, there is no help available for that command/topic.@c
+BadListName         ^I^mInvalid list name!^A  Type ^lACTION LIST^m (with no name) for a list of action lists.@c
+BadChannelSec       ^mSorry, you do not have the proper security level to access that channel.@c
+BadChannelName      ^mBad channel name/number.@c
+BadContext          ^A^mSorry, the ^p@1^m @2 cannot be used in that context.@c
+HasForgotYou        ^mSorry, ^l@1^m has decided to forget that you exist.@c
+WhisperNotSent      ^m-- Invalid Whisper --@c
+DirectedNotSent     ^m-- Invalid Directed Message --@c
+GANotSent           ^m-- Invalid General Action --@c
+Banned              ^mSorry, but you have been ^I^pbanned^A^m from that channel.@c
+CantBanFromHere     ^mSorry, you cannot ban users from this channel.@c
+WasntBanned         ^l@1^m has not been banned from this channel.@c
+CantBan             ^mCan't ban ^l@1^m - too many users already banned.@c
+NotInvited          ^mSorry, but you haven't been invited to that channel.@c
+CantInvFromHere     ^mSorry, you cannot invite users to this channel.@c
+WasntInvited        ^l@1^m has not been invited to this channel.@c
+CantInvite          ^mCan't invite ^l@1^m - too many users already invited.@c
+NotModerator        ^mSorry, you do not have moderator powers at this channel.@c
+CantModInMain       ^mSorry, moderator commands cannot be used in the main channel.@cUse the ^pSYSOP^m commands if you need to control users in the main channel.@c
+CantModToSysop      ^mSorry, you can't do that moderator command to a sysop.@c
+CantDoCmdToSelf     ^mSorry, you can't do that command to yourself.@c
+CantDoCmdToSysop    ^mSorry, you can't do that command to a sysop.@c
+;
+; Commonly Used Words, Phrases, and Symbols
+;
+; These are words, symbols, and frequently used expressions that TOP uses for
+; specific displays.
+;
+Female              Female
+Male                Male
+His                 ^phis
+Her                 ^pher
+Himself             ^phimself
+Herself             ^pherself
+He                  ^phe
+She                 ^pshe
+You                 ^lyou
+All                 ^leveryone
+YourSuffix          ^lr
+Pers3Suffix         ^o's
+Normal              Normal
+Action              Action
+TalkType            TalkType
+ChannelListed       listed
+ChannelUnlisted     unlisted
+SingularHas         @shas
+PluralHave          s have
+NormalChatMode      normal
+DualWindowChatMode  dual window
+UserChanShortName   ^l@1^n
+PWEcho              *
+PersActListName     PERSONAL
+PersActListDesc     Your Personal Actions
+Yes                 Yes
+No                  No
+On                  ON
+Off                 OFF
+;
+; BBS-specific
+;
+; These items are used only by BBS-specific functions inside TOP.  If you run
+; an unsupported BBS type or are not using the BBS-specific features, you can
+; comment this section out to reduce TOP's memory requirements.
+;
+NodeNotInUse        @c^mSorry, node @1 is not currently in use.@c@c
+NodeDND             @c^mSorry, node @1 does not wish to be disturbed.@c@c
+CantPage            ^m -- ^I^mUNABLE to send message to node @1!!!^A^m --@c@c
+Paged               ^m-- Message sent to node @1 --@c@c
+InvalidNode         ^mInvalid node.  Nodes can range from ^p1^m to ^p@1^m.@c
+RAEnter             ^oPress ENTER to continue:
+RAOnNode            on node
+RaMsgFrom           Message from
+RAJustPosted        has just posted a message to you in area
+PageStatYes         ^kYes
+PageStatNo          ^m No
+NotAvailToPage      ^mSorry, node @1 is not available to be paged.
+NodeStatus          Teleconf.
+EnterPageSep        @c^c@r078-^p@c
+NodesNodeDisp       ^o@1.5@s
+NodesHandleDisp     ^l@1.-25@s
+NodesRealNameDisp   ^l@1.-25@s
+NodesSpeedDisp      ^k@1.6@s
+NodesLocationDisp   ^n@1.-20@s
+NodesStatusDisp     ^p@1.-10@s
+NodesPageStatDisp   ^m @1.3@s
+NodesGenderDisp     ^o@1@s
+NodesNumCallsDisp   ^m@1@s
+NodesNodeHdr        ^p Node@s
+NodesHandleHdr      ^pHandle                   @s
+NodesRealNameHdr    ^pName                     @s
+NodesSpeedHdr       ^p Speed@s
+NodesLocationHdr    ^pLocation            @s
+NodesStatusHdr      ^pStatus    @s
+NodesPageStatHdr    ^pAvail@s
+NodesGenderHdr      ^pGender@s
+NodesNumCallsHdr    ^pCalls@s
+NodesNodeSep        ^c@r006-
+NodesHandleSep      ^c@r026-
+NodesRealNameSep    ^c@r026-
+NodesSpeedSep       ^c@r007-
+NodesLocationSep    ^c@r021-
+NodesStatusSep      ^c@r011-
+NodesPageStatSep    ^c@r006-
+NodesGenderSep      ^c@r007-
+NodesNumCallsSep    ^c@r006-
+PageWho             @c^nPage user on which node (? for a list, ENTER to abort)?@s^p
+EnterPage           @c^oEnter the message to send to node @1.  A blank line will end.
+InvalidNode         @c^I^mInvalid Node Number!^A@s@c
+NoMemToPage         ^I^mNot enough memory to page other users!^A@s
+PageAborted         @c@c^m-- ^IPage Aborted^A --@c
+NodesListEndLine    @c
+NodesListAfterKey   @c@c
+NodesHdrPrefix      @c
+NodesHdrSuffix      @c
+NodesSepPrefix
+NodesSepSuffix      @c
+RAPageRecvPrefix    @c^p
+RAEnterSuffix       @c
+RAPageRecvSuffix    @c
+RAStatusType0       Browsing
+RAStatusType1       File Xfer
+RAStatusType2       Messages
+RAStatusType3       In a Door
+RAStatusType4       Sysop Chat
+RAStatusType5       Questions
+RAStatusType6       Conference
+RAStatusType7       New User
+SBBSStatusType0     Browsing
+SBBSStatusType1     D/loading
+SBBSStatusType2     Uploading
+SBBSStatusType3     Read Msgs.
+SBBSStatusType4     Write Msg.
+SBBSStatusType5     Sysop Chat
+SBBSStatusType6     In a Door
+SBBSStatusType7     New User
+SBBSStatusType8     QWK Mail
+SBBSStatusType9     File List
+SBBSStatusType10    Node Chat
+; The page headers and footers contain BBS-specific codes and should not be
+; modified unless you know exactly what you are doing.
+RAPageHeader        @x010@x011[0E@b@x011]497 @x011[0B@1@x011[0E @x011]496 @x011[0A@2@x011[0E (in @x011[0DPub Chat@x011[0E):@x011[0F@x010
+RAPageFooter        @x010@x011[0E@x011]258@x001@x010
+MaxPageHeader       @c@x022@x001@x014@bMessage from @x022@x001@x011@1@x022@x001@x014 on node @x022@x001@x010@2@x022@x001@x014 (In @x022@x001@x013Pub Chat@x022@x001@x014):@x022@x001@x015@c
+SBBSRecvPageHdr     ^oMessage from ^l@1^o on node ^k@2^o (in ^nTeleconference^o):^p
+SBBSPageHeader      /MESSAGE,@1,@2/@x010
+SBBSPageFooter      /END/@x010
+;
+; System Messages
+;
+; These are messages triggered by events not related to chatting, and are
+; usually error messages.
+;
+FileErrorPrefix     @c
+CantOpen            ^I^nCan't open file:  ^p@1^n!!
+CantRead            ^nCan't read from file:  ^p@1^n!!
+CantWrite           ^nCan't write to file:  ^p@1^n!!
+CantAccess          ^nCan't access file:  ^p@1^n!!
+CantClose           ^nCan't close file:  ^p@1^n!!
+FileErrorMsgPrefix  @c
+FileErrorMsgSuffix  ^h@c@c
+NoFreeNode          @c@c^M^pCannot find a free node!@c
+ContactSuper        ^A^lPlease contact your Supervisor so this problem can be corrected!@c@c
+CantInitFiles       @c@c^I^mCan't initialize files!^A^m  Please inform your Sysop!@c@c
+InformSysop         ^A^lPlease inform your sysop immediately!!
+CantDoAction        @c^mCAN'T DO ACTION!  Please mention this to your Sysop.
+PrivChatNoMem       @c^mNot enough memory to enter private chat!  Please inform Sysop.@c
+PrivChatCantOpen    @c^mCan't open ^p@1^n for private chat!  Please inform Sysop.@c
+PrivChatBufProb     @c^mPrivate chat buffer overflow!  Please inform Sysop.@c
+NodeInUse           @c@c^mThe node you are on, ^l@1^m, is already in use.
+NodeInUseContact    Contact your Sysop so this problem can be fixed.
+CrashToss           ^mThe user on node ^l@1^m has mysteriously vanished from the teleconference!  Please inform Sysop.
+AccessProblem       @c^pThe Online Pub is having a problem accessing a file.@c
+AccessPrompt        Press Esc to abort, or wait until the access attempt succeeds.@c
+AccessShutDown      @c^mShutting down.  Please inform your sysop of this problem.@c@c
+OutOfCredits        @c^mSorry, you have run out of credits!@cExitting TOP, returning to BBS...@c@c
+OutOfMemory         ^I^mOut of memory!!!^A^p
+CantJoin            ^mCan't join that channel!  Unable to create record for it.  Odds are your sysop is out of disk space!@c
+SevereJoinError     @c^I^mCan't join own channel!^A^m  CHANIDX.TCH may be corrupted!@c^pPlease inform your sysop immediately.@c@c
+JoinError           @c^mCan't join that channel!  Please inform Sysop.@c
+UnJoinError         @c^mCan't unjoin current channel successfully!  Please inform Sysop.@cAttempting to join requested channel...@c
+CantJoinAtStart     @c^mCan't join main channel!  Please inform Sysop.@cAttempting to join your personal channel...@c@c
+CantDoModCmd        ^I^mCan't perform moderator command!^A  Please inform sysop.@c
+CanReJoin           @c^I^mCan't rejoin channel!^A  Please inform your sysop immediately!@c^oReturning to BBS...@c@c
+;
+; Displays and Colouring
+;
+; These items make up some of the displays in TOP, including the larger list
+; displays.  NOTE:  Do not change or remove any of the @ tokens unless you have
+; studied the language token explanations at the start of this file and know
+; precisely what you are doing!
+;
+ChannelListHdr      @c^mChannel Name/Number   Topic@c
+ChannelListSep      ^c@r078-@c
+ChannelListFormat   ^n@1.-20  ^o@2@c
+ScanHeader          ^p@cHandle                             Channel  Status@c
+ScanHeaderSep       ^c@r078-@c
+ScanInfo            ^l@1.-30  ^n@2.10  ^m@3@c
+ScanUnlistedChan    ^mUnlisted
+ScanEditing         Editing@s
+ScanNotEditing
+ScanPrivChat        Chatting@s
+ScanNotPrivChat
+ActFileListPrefix   @c^pAvailable Action Lists@c@c
+ActFileListHdr      ^mName       Description@c
+ActFileListSep      ^c@r078-@c
+ActFileListItem     ^l@1.-8 ^g- ^n@2@c
+ActFileListSuffix   @c^jType ^oACTION LIST <name>^j to list the actions in a particular list, or ^oACTION LIST ALL^j to list all actions.@c@c
+ActListHeader       ^jActions in List "^o@1^j" (^p@2^j)@c@c
+ActListLegend       ^k+^m denotes TalkType.@c
+ActListSep          @c
+ActListItem         ^n@1.-10
+ActListCharNormal   @s
+ActListCharTType    ^k+
+ActListItemSep      @s
+DWRestoreInput      ^A^k
+DWInputCurPos       @p0201^A^k
+DWTopDisplay        @p0101^E^p@r079 @p0102Input Window   -   Type HELP and press ENTER for help.
+DWMiddleDisplay     @p0601^B^p@r079 @p0602Chat Window   -   Type QUIT to return to the BBS.
+DWBottomDisplay
+DWClearInput        @p0201^A^m@d@c@d@c@d@c@d@c
+DWPrepareInput      @p0101^A^m@d@c@d@c@d@c@d@c@d@c@d@c
+DWOutputPrepare     @e
+DWOutputSetCurPos   @p0701
+DWOutputPrefix      ^A^o
+DWRestorePrefix     @c
+LookAroundList      @1^l@2
+LookAroundSep       ^o,
+ActionListHeader    @c^jList of ^nActions^j and ^kTalkTypes^j:@c
+ActionListAction    ^n @1.-10@s
+ActionListTalkType  ^k @1.-10@s
+Personals           @c^jPersonals-->
+PersUndefined       ^h<Undefined>
+PrivChatPrefix      @c^l--- Private Chat entered ---@c^mPress ESC to exit.@c@c
+PrivChatSuffix      @c@c^l--- Private Chat Mode ended --@c@c
+PrivChatSuffix2     @c@c^l--- @1 has ended Private Chat Mode --@c@c
+PrivChatCol1        ^o
+PrivChatCol2        ^k
+CommandListPrefix   ^A^p @c
+ActionResponse      ^n@1
+MorePromptSuffix    @<@<@<@<@<@<@<@<@<@<@<@<@<
+EMsgPrefix          ^m@1
+XMsgPrefix          ^m@1
+ActionMe            ^l@1^o
+ActionYouPrefix     ^l
+ActionYouSuffix     ^o
+ActionHisHerPrefix  ^p
+ActionHisHerSuffix  ^o
+ActionHeShePrefix   ^p
+ActionHeSheSuffix   ^o
+ActionSelfPrefix    ^p
+ActionSelfSuffix    ^o
+ActionYour          ^l@1^o
+ActionPossessive    @1
+;
+; Display Formatting
+;
+; These items are mostly linefeeds and insignificant formatting items.  They are
+; mostly part of displays that are used multiple times or under conditional
+; circumstances, when attaching the formatting codes to a main item is not
+; always desirable.
+;
+MsgSentPrefix
+MsgDisplayPrefix    @c
+WhisperSentPrefix
+WhisperNotSentPref
+GASentPrefix
+GANotSentPrefix
+ActionListBeforeKey @c
+ActionListAfterKey  @c@c
+ActionUseSuffix     @c
+ActionSuffix        @c
+MoreAbortSuffix     @c@c
+ActionListBlockSep  @c
+ActListPrefix       @c
+ActListLineEnd      @c
+ActListSuffix       @c
+LookAroundFirst
+LookAroundAfter     @c
+ColourHelpPrefix
+ColourHelpSuffix    @c
+MessageTrailer      @c
+DelPromptPrefix
+DelPrompt           @<
+DelPromptSuffix
+ShowFilePrefix
+ShowFileSuffix      @c
+PressAnyKeySuffix   @c
+ChanSummaryPrefix
+OpeningSuffix       @c
+HelpPrefix          @c
+HelpSuffix          @c
+DirectNotSentPref
+DirectedSentPrefix
+NewUserScrnPrefix   @c
+PrivChatEndLine     @c
+PWBackSpace         @<
+InputPrefix         @c
+GenderPromptSuffix  @c
+LocalLANStartPref   @c
+ResponsePrefix      @c
+;
+; Log Messages
+;
+; These messages are shown to the sysop in the log.
+;
+LogMaxPW            !!!! Failed to enter the correct password!
+LogHandle           Using handle: @1
+LogStartSignOn      Began New User sign-on
+LogAbortSignOn      Aborted New User sign-on
+LogEnded            TOP v@1 ended successfully
+LogAlert            !!!!
+LogCouldntAccess    Could not access a file!
+LogLocal            Running in LOCAL mode
+LogLAN              Running in LAN mode
+LogDoor             Running in DOOR mode
+LogCantDoAction     !!!! CAN'T DO ACTION:  @1
+LogNodeInUse        !!!! Node @1 already in use!
+LogNameUsed         Logged in using the name: @1
+LogSentPage         Sent page to node @1
+LogCantPage         !!!! Can't page node @1!
+LogChangedHandle    Changed handle to @1
+LogOutOfMemory      !!!! OUT OF MEMORY!
+LogCantLoadLang     !!!! Can't load language file!  (May be out of memory.)
+LogCantLoadChan     !!!! Can't load channel definitions!  (May be out of memory.)
+LogNoFreeNode       !!!! Can't find a free node!
+LogOneRunMode       Task initiated from command line.
+LogCantLoadActs     !!!! Can't load action file(s)!
+LogOutOfCredits     Ran out of credits, exiting
+LogDelUser          Deleted user "@1"
+LogPacking          Packing User File...
+LogPrevCrashDetect  Previous run of this node crashed!
+LogSevereJoinErr    !!!! Can't Join own channel!
+LogEnterPrivChat    Entered private chat with node @1
+LogPrivChatFileErr  !!!! Can't open Private Chat files!
+LogEndPrivChat      Ended private chat mode
+LogFoundCrashed     Detected crashed node @1, clearing
+LogTossed           Tossed "@1" out of door
+LogZapped           Zapped "@1" off of system
+LogClearedNode      Cleared node @1
+;
+; Profile Editor
+;
+; These items are all used by the Profile Editor.  They are seperated into the
+; sections in which they are used to aid editing.
+;
+ProfEditPrefix      @c
+;
+ProfMainPrefix      @c
+ProfMainPersAct     ^kA^o) Edit your ^lPERSONAL ACTIONS@c
+ProfMainGender      ^kG^o) Change your ^lGENDER@c
+ProfMainHandle      ^kH^o) Edit your ^lHANDLE@c
+ProfMainEXMsg       ^kM^o) Edit ^lENTRANCE AND EXIT MESSAGES@c
+ProfMainPref        ^kO^o) Edit ^lPERSONAL PREFERENCE OPTIONS@c
+ProfMainPW          ^kP^o) Change your ^lACCESS PASSWORD@c
+ProfMainQuit        ^kQ^o) Quit back to ^lCHAT MODE@c
+ProfMainPrompt      @c^mSelect--->@s
+ProfMainKeys        ADGHMOPQ
+ProfMainShowKey      ^p@1
+;
+ProfPActHeader      @c@c^oCurrent Personal Actions:@c@c
+ProfPActNumber      ^c--- ^p@1^c ---@c
+ProfPActVerbType    ^n  Verb    : ^o@1.-10    ^nType: ^l@2@c
+ProfPActResponse    ^n  Response: "^o@1^n"@c
+ProfPActSingular    ^n  Singular: "^o@1^n"@c
+ProfPActPlural      ^n  Plural  : "^o@1^n"@c
+ProfPActPrompt      @c^j(^oC^j)lear, (^oE^j)dit, or (^oQ^j)uit--->@s^k
+ProfPActKeys        CEQ
+;
+ProfClearAction     Clear Action
+ProfClActNumPrompt  @c@c^oClear which action (1-4)--->@s
+ProfClActShowNum    ^k@1
+ProfClActOKPrompt   @c@c^oClear action #^p@1^o, Are You Sure (y/N)?@s
+ProfClActCleared    @c@c^mAction #^p@1^m Cleared.
+;
+ProfEditAction      Edit Action
+ProfEdActNumPrompt  @c@c^oEdit which action (1-4)--->@s
+ProfEdActShowNum    ^k@1
+ProfEdActHeader     @c@c^oEditing Action #^p@1@c@c
+ProfEdActCurSet     Current Settings:@c
+ProfEdActPrefix     @c
+ProfEdActType       ^kT^o) Edit Action ^lTYPE@c
+ProfEdActVerb       ^kV^o) Edit Command ^lVERB@c
+ProfEdActResponse   ^kR^o) Edit ^lRESPONSE@c
+ProfEdActSingular   ^kS^o) Edit ^lSINGULAR TEXT@c
+ProfEdActPlural     ^kP^o) Edit ^lPLURAL TEXT@c
+ProfEdActHelp       @c^kH^o) Personal Action Editor ^lHELP@c
+ProfEdActQuit       ^kQ^o) Quit to ^lPREVIOUS MENU@c
+ProfEdActPrompt     @c^mSelect--->@s
+ProfEdActKeys       TVRSPHQ
+ProfEdActShowKey    ^k@1
+;
+ProfEdActEdCurType  @c@c^mCurrent Type: ^k@1@c
+ProfEdActEdTPrompt  ^jShould this Personal Action be a (^oN^j)^lormal^j Action or a (^oT^j)^lalkType^j?@s
+ProfEdActEdTypKeys  NT
+ProfEdActEdNewType  ^p@1@c
+ProfEdActEdCurVerb  @c@c^mCurrent Verb:  ^o@1@c
+ProfEdActEdVPrompt  ^nEnter the new ^lCOMMAND VERB^n for this Action (10 chars. max., ENTER to abort)@c--->@s^p
+ProfEdActEdCurResp  @c@c^mCurrent Response Text:@c^o@1@c
+ProfEdActEdRPrompt  ^nEnter the new ^lRESPONSE TEXT^n for this Action (60 chars. max., ENTER to abort)@c--->@s^p
+ProfEdActEdCurSing  @c@c^mCurrent Singular Text:@c^o@1@c
+ProfEdActEdSPrompt  ^nEnter the new ^lSINGULAR TEXT^n for this Action (60 chars. max., ENTER to abort)@c--->@s^p
+ProfEdActEdCurPlur  @c@c^mCurrent Plural Text:@c^o@1@c
+ProfEdActEdPPrompt  ^nEnter the new ^lPLURAL TEXT^n for this Action (60 chars. max., ENTER to abort)@c--->@s^p
+ProfEdActEdHlpPref  @c@c
+ProfEdActQuitMsg    Quit@c
+;
+ProfEdSexPrompt     @c@c^oAre you (^nM^o)ale or (^nF^o)emale?@s
+ProfEdSexKeys       MF
+ProfEdSexSuffix     ^A@s@c
+ProfEdHandlePrompt  @c@c^oPlease enter your new handle (30 chars. max., ENTER to abort)@c--->@s^l
+;
+ProfEdEXMsgPrefix   @c@c
+ProfEdEXMsgCurEMsg  ^A^nCurrent Entry Message:@c^p@1^n@c@c
+ProfEdEXMsgCurXMsg  ^A^nCurrent Exit Message:@c^p@1^n@c@c
+ProfEdEXMsgEMsg     ^kE^o) Edit ^lENTRY MESSAGE@c
+ProfEdEXMsgXMsg     ^kX^o) Edit ^lEXIT MESSAGE@c
+ProfEdEXMsgQuit     ^kQ^o) Quit to ^lPREVIOUS MENU@c
+ProfEdEXMsgPrompt   @c^mSelect--->@s
+ProfEdEXMsgKeys     EXQ
+ProfEdEXMsgShowKey  ^p@1
+ProfEdEXMsgSuffix    @c
+;
+ProfEdEXMEdCurEnt   @c@c^mCurrent Entry Message:@c^o@1^m@c
+ProfEdEXMEdEPrompt  ^nEnter your new ^lENTRY MESSAGE^n (ENTER to clear)@c--->@s
+ProfEdEXMEdCurExit  @c@c^mCurrent Exit Message:@c^o@1^m@c
+ProfEdEXMEdXPrompt  ^nEnter your new ^lEXIT MESSAGE^n (ENTER to clear)@c--->@s
+;
+ProfEdPrefPrefix    @c@c
+ProfEdPrefActEcho   ^kA^o) Toggle ^lACTION ECHOING^o (Currently ^p@1^o)@c
+ProfEdPrefTActEcho  ^kB^o) Toggle ^lTALKTYPE ACTION ECHOING^o (Currently ^p@1^o)@c
+ProfEdPrefTMsgEcho  ^kC^o) Toggle ^lTALKTYPE MESSAGE ECHOING^o (Currently ^p@1^o)@c
+ProfEdPrefMsgSent   ^kD^o) Toggle ^lMESSAGE SENT RESPONSE^o (Currently ^p@1^o)@c
+ProfEdPrefGAEcho    ^kE^o) Toggle ^lGENERAL ACTION ECHOING^o (Currently ^p@1^o)@c
+ProfEdPrefTTSent    ^kF^o) Toggle ^lTALKTYPE SENT RESPONSE^o (Currently ^p@1^o)@c
+ProfEdPrefDualWin   ^kG^o) Toggle ^lDUAL WINDOW CHAT MODE^o (Currently ^p@1^o)@c
+ProfEdPrefBlockTxt  ^kH^o) Toggle ^lBLOCKING OF INCOMING TEXT WHILE TYPING^o (Currently ^p@1^o)@c
+ProfEdPrefListed    ^kI^o) Toggle ^lCHANNEL NUMBER DISPLAYING TO OTHER USERS^o (Currently ^p@1^o)@c
+ProfEdPrefEchoOwn   ^kJ^o) Toggle ^lECHOING OF OWN TEXT^o (Currently ^p@1^o)@c
+ProfEdPrefActions   ^kK^o) Toggile ^lACTION SEND/RECEIVE BLOCKING^o (Currently ^p@1^o)@c
+ProfEdPrefQuit      ^kQ^o) Quit to ^lPREVIOUS MENU@c
+ProfEdPrefPrompt    @c^mSelect--->@s
+ProfEdPrefKeys      ABCDEFGHIJKQ
+ProfEdPrefShowKey   ^p@1
+ProfEdPrefSuffix    @c
+;
+ProfEdPWCurPrompt   @c@c^oPlease enter your current password--->@s^n
+ProfEdPWBadPW       @c@c^I^mIncorrect Password!!^A^m@c
+ProfEdPWNewPrompt   @c@c^oPlease enter a password to secure your account--->@s^n
+ProfEdPWConfPrompt  @c@c^oRe-Enter that password to confirm it          --->@s^n
+ProfEdPWNoMatch     @c@c^I^mPasswords do not match!!^A^m@c
+ProfEdPWSuffix      @c
+;
+ProfEditSuffix      @c@c
+;
+; New and Unsorted Items
+;
+; These items were added at the last minute.
+EnterPageFS         @c^oEnter the message to send to node @1.  Press Esc or Ctrl-Z when done.
+EnterPageFSSep      @c^c@r078-^p@c
+LogCantLoadCWords   WARNING:  Can't load CENSOR.CFG
+CensorToss1         ^mSorry, you cannot use the word "^p@1&C^m" under any circumstances!@cPlease call back when you clean up your act...@c@c
+CensorWarn2         ^mPlease do not use the word "^p@1&C^m" here!@cPlease retype what you wish to say without using that word.@c
+CensorToss2         ^mSorry, your language is getting too filthy!@cPlease call back when you clean up your act...@c@c
+CensorWarn3         ^mPlease do not use the word "^p@1&C^m" here!@cPlease retype what you wish to say without using that word.@c
+CensorWarn4         ^mPlease avoid using the word "^p@1&C^m" in the future.@c
+CensorToss4         ^mSorry, you are getting too vulgar!@cPlease call back when you clean up your act...@c@c
+CensorWarn5         ^mPlease avoid using the word "^p@1&C^m" in the future.@c
+CensorReplace       ^mThat word has been replaced with something more appropriate.@c
+BioUserHasNone      ^mSorry, that user has not completed a biography.@c
+BioUserNotFound     ^mSorry, ^l@1^m is not a valid user name.  Please try again, or type ^pUSERLIST^m for a list of users.@c
+BioDispPrefix       @c^kBiography of ^p@1^k:@c@c
+BioQuesNumber       ^o@1.2^j)@s
+BioRespPrefix       ^n@1^j:@s
+BioResp             ^l@1
+BioNoResp           ^h<< ^pNone ^h>>
+BioRespSuffix       @c
+BioDispSuffix
+BioNumRespPrompt    ^nQuestion #^l@1^n - ^o@2@c^kPlease enter a NUMERIC response--->@s^p
+BioStrRespPrompt    ^nQuestion #^l@1^n - ^o@2@c^k--->@s^p
+BioBadNumResp       @c^mSorry, responses to this question must be from ^o@1^m to ^o@2^m.@cPlease try again.@c
+BioBadStrResp       @c^mSorry, responses to this question must be at least ^o@1^m characters long.@cPlease try again.@c
+BioRespSuffix       @c
+BioGetAllPrefix     @c^pThe biography is a way for other users to find out about you.  Please answer@ceach question truthfully.  If you wish to skip a question, enter "none" (or@c"0" for numeric responses).@c@c
+BioGetAllSuffix     @c
+BioEditPrompt       @c^oEnter a question number, R to redisplay your biography, C to complete all@cunanswered questions, or Q to quit--->@s^l
+BioEditQuitKeys     QX
+BioEditShowKeys     R
+BioEditCompKeys     C
+BioBadEditQNum      @c^mSorry, that is not a valid question number!@c
+BioEditDoAllPrompt  @c^nYou have not yet filled out your biography.@cDo you wish to answer ^pall^n of the questions now (Y/n)?--->@s^l
+BioEditDoAllSuffix  @c
+BioEditSuffix       @c
+CmdsBio             BIO BIOGRAPHY /B
+LogCantLoadBioQues  WARNING:  Can't load BIOQUES.CFG
+LookUpSuffix        @c
+EnterPageLinPrompt  @c^oEnter the message to send to node @1.@c--->@s^k
+EnterPageLinSuffix  @c
+Interrupt           ^p***
+CmdsUserList        USERLIST /U
+UserListHeader      @c@cUser Name                      @1@c
+UserListSep         ^c@r078-@c
+UserListEntry       ^l@1.-30 ^o@2@c
+UserListSuffix      @c
+InBioEditor         ^l@1^n has entered the Biography Editor.
+OutBioEditor        ^l@1^n has returned from the Biography Editor!
+TimeMsgPrefix       ^E^p@1^A
+TimeMsgForcePrefix  @c^E^p@1^A@c
+BioForceAllNotDone  @c^mYou did not complete all of the biography questions!@cYou must complete all remaining questions before you are allowed to chat!@c@c
+BioChangeMsg        ^l@1^n has just updated ^p@2^n biography!
+BioForcePrefix      @c
+SharingVioError     @c@c^I^mSharing Violation Error!^A@cFILE:  ^p@1^m@cPlease inform your sysop so this problem can be fixed!@c@c
+LogSharingVioError  !!!! SHARING VIOLATION ERROR!
+LogSharingVioFile   !!!! File:  @1
+ProfEdActEdBadSing  @c^mSorry, the singular text for all personal actions ^Imust^A contain the ^p%m^m ("me") action token!  Please try again, or press ^oH^m if you need help.  No changes have been made.@c
+ProfEdActEdBadPlur  @c^mSorry, the plural text for all personal actions ^Imust^A contain the ^p%m^m ("me") action token!  Please try again, or press ^oH^m if you need help.  No changes have been made.
+MaxPageFooter       @c
+CmdsSlots           SLOTS SLOT
+CmdsMatch           MATCH
+CmdsMatchShow       SHOW DISPLAY
+CmdsMatchStart      START BEGIN
+MatchNotEnoughCash  @c^mNot enough cash!  MatchGame requires ^l@1^m CyberDollars to play, and you only have ^l@2^m!@c
+MatchNewGame        @c@c^J^pA new MatchGame has begun!!^A^p
+MatchGameAlreadyOn  @c^mGame already underway!@c
+MatchGameNotOn      @c^mGame not in progress!@c
+MatchAlreadyPicked  @c^I^mAlready picked that number!@c
+MatchDispSep        @c@c
+MatchDispPicked     @1@2.02^A
+MatchDispUnPicked   ^g-^l@1.02^g-
+MatchDispBoardEnd   @c@c
+MatchWin            ^I^kYou win ^p@1^k CyberDollars!!!@c@c
+MatchLose            ^mSorry, you lost ^l@1^m CyberDollars.@c@c

@@ -1,0 +1,13 @@
+BJ4TOP v2.00 - Revision History
+-------------------------------
+
+Version 2.00 (changes from BJ4RAP v0.90)
+----------------------------------------
+
+    - Upgraded program to support changes for The Online Pub v2.00.
+    - Author changed, new author is Paul Sidorsky (author of TOP).
+    - Six-deck system now used for a more realistic casino feel.
+    - Multiple splitting (up to 6 hands) is now permitted.
+    - New registration scheme implemented.
+    - Parts of the code have been optimized for more efficiency.
+

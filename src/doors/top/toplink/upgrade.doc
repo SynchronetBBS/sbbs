@@ -1,0 +1,28 @@
+How to upgrade from RAPLink 1.00 to TOPLink 2.00g1
+--------------------------------------------------
+
+    The upgrade procedure is fairly straightforward, but there are a few
+mandatory steps you need to go through.
+
+    1) Unpack TOPLink.  You can unpack it to a new directory, or to your
+RAPLink directory.  If you unpack it to a new directory, be sure to copy the
+DONTSHOW.TXT file from RAPLink to this directory after unpacking.
+
+    2) Run TOPLINK /CONFIG and configure TOPLink.  You will have to reconfigure
+ALL of the parameters, because both RAPLink and TOPLink store configuration
+information in the executable (.EXE) file itself, and this information
+unfortunately cannot be transfered between programs.
+
+    3) TOPLink has some new settings.  The names and short descriptions
+provided by TOPLink should be self-explanatory, but if you need additional
+information then consult TOPLINK.DOC.
+
+    4) If you use a batch file to run TOP, modify it to call TOPLINK.EXE
+instead of RAPLINK.EXE.  With TOPLink, you _MUST_ specify a node number on the
+command line!  This is different from RAPLink, with which a node number was
+optional.
+
+    5) Finally, change your TOP.CFG file so that CrashProtDelay is set to 0!
+TOPLink will not work with CrashProtDelay turned on.
+
+    Be sure to skim over TOPLINK.DOC and HISTORY.DOC for other new information!

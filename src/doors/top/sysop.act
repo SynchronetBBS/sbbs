@@ -1,0 +1,15 @@
+Sysop's Action List
+10000
+MAXSECURITY
+MINCHANNEL
+MAXCHANNEL
+NORMAL
+THREATTOSS
+One more and you're outta here!
+%m is threatening to toss people out of the Pub!
+%m is threatening to toss %y out of the Pub!
+TALKTYPE
+SCOMMAND
+Do this, do that!
+^I^mSysop^A^l %m is commanding %h mere users to do things!
+^I^mSysop^A^l %m, commanding %h mere users

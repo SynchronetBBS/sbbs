@@ -1,0 +1,124 @@
+How TOP's Channels & CMI Work (v3.00b1)
+---------------------------------------
+
+    This file explains how TOP manages and uses different channels for
+conferencing from a programming point of view.  There is already a lengthy
+explanation from an outsider's point of view in TOP.DOC.  In particular, this
+file describes how TOP's Channel Management Interface (CMI) works, as this is
+the most important part of the system, and anybody changing TOP's core
+operations will need to at least be aware of how the CMI works so they can make
+the expected function calls when needed.
+
+    The first part of this file is a description about how TOP uses channels.
+It begins with a condensed version of the information in TOP.DOC and covers
+TOP's internal numbering of channels.  Next, it moves on to describe how TOP
+determines which messages are on which channels.  Finally, it introduces the
+CMI and explains all of the concepts, such as joining, moderatorship, and
+ban/invite lists.  The second part is a reference guide for the CMI, and the
+third part describes how the CMI is actually used within TOP.
+
+    This file assumes familiarity with TOP's messaging system and with
+MESSAGES.TXT.
+
+
+                              ====================
+                              1. How Channels Work
+                              ====================
+
+    Channel Numbering
+    -----------------
+
+   TOP supports a maximum of (2^32)-2 (4.2 billion) different chat channels.
+This is, of course, a theoretical maximum, because it is actually impossible to
+have more channels in use than nodes inside TOP, and is it not possible to have
+more than 32767 nodes period.  However, even if this were to actually happen,
+TOP's channel system would (theoretically) have no problem coping!
+
+    This seemingly absurd maximum makes sense once you realize that all a
+channel is, from TOP's point of view, is a number.  Every time a message is
+sent, the "channel" field (see MESSAGES.TXT) is set to a certain number.  The
+receiving node simply only displays those messages that have a channel number
+matching the one its user is currently joined to.  This brings up an important
+concept that will be needed later:  EVERY NODE RECEIVES AND PROCESSES MESSAGES
+SENT TO IT REGARDLESS OF ITS CHANNEL.  Normally, however, each node of TOP just
+skips messages not received on its current channel.
+
+    As you know, TOP has three different types of channels:  Normal,
+Conferences, and Personal Channels.  (If you didn't know this, read TOP.DOC and
+CHANNELS.CFG before proceeding.)  To accomplish this, TOP reserves blocks of
+numbers within the 4.2 billion for each type of channel.  TOP also reserves two
+numbers for "special" channels.  The channel blocks are assigned as follows:
+
+    * B means "billion" (the North American definition of 1 000 000 000)
+    * M means "million".
+
+0                   Global channel.  This is a special channel.  Any message
+                    received on this channel will be treated as if it came from
+                    the same channel the user is currently joined to.  This
+                    is critical for messages such as MSG_FORGET, MSG_REMEMBER,
+                    MSG_INVITE, MSG_BAN, etc.  This channel cannot be joined
+                    except by Sysops, who can use it to make global
+                    announcements to all users.
+
+1 to 4B-1           Normal channels.  These are channels any user can join by
+                    simply typing JOIN x, where x is a number from 1 to
+                    3999999999 inclusive.  One of these channels will be
+                    designated the "default", as specified by the
+                    DefaultChannel setting in TOP.CFG.  They may also have
+                    alias names setup in CHANNELS.CFG.
+
+4B to 4B+1M-1       Personal Channels.  These are the channels that can be
+                    accessed by typing JOIN username, where username is the
+                    name of a user currently inside TOP.  Internally, the
+                    number given to each channel is 4B plus the node number
+                    which the user is on.  So, for example, if BlindSpot is on
+                    node 5, then his personal channel number is 4B+5, or
+                    4000000005.
+
+4B+1M to (2^32)-2   Conference Channels.  These are channels defined as
+                    Conferences in CHANNELS.CFG.  The numbering is simple:  The
+                    first conference definition in CHANNELS.CFG is 4B+1M
+                    (4001000000), the next is 4B+1M+1 (4001000001), then
+                    4B+1M+2 (4001000002), etc.
+
+(2^32)-1            Busy channel.  This last channel (whose actual number is
+                    4294967295) is used by nodes who are "busy".  Busy nodes
+                    are those currently doing things that don't allow them to
+                    process messages.  This most commonly occurs in Private
+                    Chat or during execution of an ECP.  This channel is never
+                    joined by any node, so it never has any messages on it
+                    specifically.
+
+
+    Channels & Messages
+    -------------------
+
+    As mentioned above, when a TOP node sends a message, it simply sets the
+channel field of the message to the number which corresponds to the channel its
+user is on, or to the global channel.  This is explained in MESSAGES.TXT so it
+won't be covered again here.
+
+    The processing that actually makes the channels work occurs at the
+receiving end of a message.  When TOP receives a message, it checks to see what
+the channel field is.  If it's 0 or the user's current channel, it processes
+the message.  Otherwise, it is skipped outright.
+
+    The skipping of the message is not essential, but it makes things easier
+and (more importantly) faster.  For example, not skipping messages would
+eliminate the need for a global channel, but then TOP wouldn't know to ignore
+the message until it had checked its type as well.  This doesn't seem like
+much, but since messages are processed while their data on disk is locked, it's
+important to keep the processing time as low as possible.  It would also
+require either a check in the processing of each message type, or a general
+check with a list of message types to process, so it's much simpler to simply
+skip all off-channel messages.
+
+    Again, note that nodes are sent messages on every channel, but its up to the
+node which ones it wants to process.  This concept is important because it
+provides enormous flexibility.  There are many ways in which the channel system
+could be enhanced by taking advantage of this functionality.  It would be a
+simple matter to modify TOP to allow a user (ideally a sysop) to receive chat
+messages from any channel, regardless of their current channel inside TOP.
+
+
+

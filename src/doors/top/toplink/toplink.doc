@@ -1,0 +1,327 @@
+                             TOPLink Version 2.00g1
+                               User Documentation
+                     Copyright 1996 Paul Sidorsky, ISMWare
+           Original Documentation Copyright 1994 David Ong, OmniWare
+
+
+                                [ Description ]
+
+TOPLink is a teleconference linking program.  Specifically, it links TOP (The
+Online Pub) teleconferences to almost any other teleconference program such as
+another copy of TOP, a Major BBS teleconference, or even IRC on the Internet!
+
+                                [ Gamma Notice ]
+
+This is a gamma version of TOPLink, release in conjunction with the gamma
+version of TOP.  It is fully functional but not complete.  Please report all
+bugs to the author immediately!  See the end of this file for information on
+how to contact the author.
+
+The final release of TOPLink will contain the following enhancements:
+
+    - File locking for more stable and secure interaction with TOP.
+
+    - Support for TOP's Crash Protection.
+
+    - Support for TOP v2.00 (final) when it is released.
+
+                                [ Requirements ]
+
+TOPLink requires:  128K of memory.
+                   The Online Pub Teleconference (TOP) v2.00g1 or higher.
+                   FOSSIL Communications Driver loaded.
+                   SHARE.EXE loaded (or an operating system with built-in SHARE
+                     support, such as OS/2).
+
+NOTE:  At this time, there is no OS/2 or Win95 version of TOPLink.  This DOS
+       version of TOPLink should work seamlessly with TOP for OS/2 or TOP for
+       Win95.
+
+                                  [ Licence ]
+
+You may upload TOPLink to any bulletin board, distribute copies to other users,
+and use TOPLink provided these conditions are met:
+
+1) You may use TOPLink for a 60 DAY TRIAL PERIOD after which you MUST register
+   TOPLink or discontinue using it.
+2) None of the files contained in the archive have been added, deleted, or
+   modified in any way prior to being distributed.
+3) There is no charge other than a nominal fee for the diskette and cost of
+   sending the program.
+4) Shareware distributors MUST make it clear that they are receiving an
+   unregistered EVALUATION copy that requires a registration fee be sent to the
+   author after a trial period.
+5) Registered versions of this program ARE NOT TO BE DISTRIBUTED.
+6) This licence may be revoked by the author without prior notice.
+
+                                   [ Files ]
+
+TOPLINK.EXE      TOPLink program for BBSs running TOP 2.00g1 or higher.
+TOPLINK.DOC      This file.  Documentation for TOPLink.
+UPGRADE.DOC      What to do if you're upgrading from RAPLink.
+HISTORY.DOC      Program history.
+REGISTER.FRM     Registration form.
+README.1ST       Important program information.
+DONTSHOW.TXT     Sample file used with TOPLink.
+FILE_ID.DIZ      Archive description, for BBSs.
+
+*** WARNING: Do not PKLITE, LZEXE or do any similar thing to TOPLink.  Doing so
+             will corrupt the program!  TOPLink writes its configuration
+             directly to the TOPLINK.EXE file.
+
+It is recommended you put these files in a seperate directory from TOP.
+
+                            [ Configuring TOPLink ]
+
+Run TOPLink with a /CONFIG parameter to access the configuration manual.
+
+Command line> TOPLINK /CONFIG
+
+You will be able to configure these options by using the up/down cursor keys to
+move to the option you wish to change.  Then hit ENTER to change that option.
+-------------------------------------------------------------------------
+Your BBS Name
+  - This is the name of your BBS system.
+
+ANSI Stripping
+  - If this is set to ON, TOPLink will remove all ANSI coming from the BBS you
+    have linked to.
+
+PubColour Code Sending
+  - If this is set to ON, TOPLink will send PubColour codes to the BBS you have
+    linked to.  This can be set ON if you are connect to another TOP
+    teleconference, otherwise it should be OFF.
+
+Show BBS Name
+  - When turned ON, the name of the BBS is displayed in front of the text
+    received from that BBS.  TOPLink usually looks better with this setting
+    turn OFF, but can be confusing to the users especially if TOPLink is
+    connected to another TOP teleconference.
+
+Sending Delay
+  - Some teleconference programs cannot received data at the rate TOPLink sends
+    it.  If this is true of the teleconference TOPLink is linked to make sure
+    this setting is set to a suitablely long delay.  For TOP systems a delay of
+    7ms works well.
+
+Checking Delay
+  - In order to reduce the stress on a multi-tasking or network system TOPLink
+    can be set to delay for a certain number of seconds between checking
+    incoming text from the linked BBS, and incoming text from local useres.  If
+    this setting is set to 0, TOPLink will continuously be checking for
+    incoming messages.
+
+Direct Text
+  - This can be used to turn off access to direct text.  Direct text is text
+    from the user that is sent exactly as the user writes it.  No braces "[]"
+    or any other text is added to it.
+
+BBS Commands
+  - TOPLink has commands which the linked BBS can send.  If you do not want
+    them to be able to, turn this option to OFF.
+
+Give Time Slices
+  - When there is no incoming text from the linked BBS and no incoming text
+    from the local users, TOPLink will give up time slices to the operating
+    system.  This can help overall system performance on a multitasked PC.
+
+Channel Number
+  - This is the channel number that you want TOPLink to "inhabit".  It can
+    range from 0 to 2147483647.  TOPLink is currently _NOT_ able to use
+    channels right up to 3999999999 (as TOP supports), nor is it able to use
+    Personal Channels or Conferences.  Setting this to 0 means that TOP will
+    reside in EVERY channel simultaneously.
+
+Minimum Security
+  - TOPLink can appear invisible to users who don't have a certain security
+    level.  This allows you to prevent "twit" users or unverified users from
+    using or seeing the link.  All text sent by TOPLink will be ignored by
+    users who don't have this security level, and all text sent by these users
+    will be ignored by TOPLink.  This can be set from 0 to 65535.
+
+MaxNodes Setting
+  - This should be set exactly the same as the MaxNodes setting in your TOP.CFG
+    file.
+
+Crash Prot. Delay
+  - This setting is not used in this version of TOPLink, but it will be used in
+    the next (release) version.  For now, you MUST set the CrashProtDelay
+    setting in TOP.CFG to 0!  TOPLink does not currently support TOP's crash
+    protection.
+
+-------------------------------------------------------------------------
+
+After you have set the options to your preference press the <ESC> key. You will
+be prompted as to if you want to save the settings.  Type "Y" if you want them
+saved, "N" if you don't.
+
+                             [ DONTSHOW.TXT File ]
+
+Any message you don't want displayed from the other BBS should be added to this
+file.  Usually message sent text is ignored since it adds a lot of extra
+clutter.  Up to 50 lines can be placed in the DONTSHOW.TXT file with an ASCII
+text editor.
+
+Sample DONTSHOW.TXT file:
+-Sent-
+-- Message Sent --
+-- Sent --
+
+The file must be placed in the SAME directory TOPLink is in.
+
+                              [ Linking to a BBS ]
+
+First of all, make sure TOP HAS BEEN RUN PREVIOUSLY OR IS RUNNING.  TOPLink
+will not initialize/create the *.TCH files.
+
+Then call the BBS you want to link to using any terminal program that allows
+you to shell to DOS.  Enter the BBS's teleconference and shell to DOS.  Then
+run TOPLink with these parameters:
+=========================================================================
+TOPLink <com port> <BBS Name> <TOP work path> <node>
+
+<comport>    Is the com port you are going to use.
+             COM1 = 1, COM2 = 2, etc.
+<BBS Name>   Is the name of the BBS (Only one word!) you are linking to.
+<work path>  Is the path to TOP's work directory.
+<node>       Is the node TOPLink should use.
+
+Example:
+Command Line> TOPLINK 2 Nucleus d:\top\workdir
+=========================================================================
+
+                          [ While TOPLink is Running ]
+
+TOPLink will load and a Pub entry message should appear to all the TOP users.
+The screen should look something like this once TOPLink has started:
+*****************************************************************************
+     TOPLink v2.00g1 Copyright 1996 Paul Sidorsky, All Rights Reserved.
+°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+°ÚÄÄ Com Port: 2 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ Node: 3 ÄÄÄÂÄÄÄÄ¿°°°
+°³[ TOPLink v1.00 Activated ]                                       ³Sent³°°°
+°³[ TOPLink v1.00 Activated ]                                       ³Rcvd³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°³                                                                  ³    ³°°°
+°ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄ´°°°
+°³L)inked to: Nucleus                                                    ³°°°
+°³A)nsi Stripping is: Off           B)BS Name Displaying is: On          ³°°°
+°³S)end TOP codes: Off              D)irect Text is: On                  ³°°°
+°ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ°°°
+°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+ <ESC> Exits TOPLink and disengages the link                   Unregistered
+*****************************************************************************
+
+The window displays what TOPLink sends or receives from the com port and what
+it does to it shown by the right hand section of the window.
+
+These are the codes and what they mean:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sent - Text that is sent to the other BBS.
+Rcvd - Text received from the other BBS but not broadcasted to the local TOP
+       users.
+Brod - Text received from the other BBS and is broadcasted to the local TOP
+       users.
+DTxt - Direct text sent from a local user.  No braces "[]" or any other text
+       is added to it.
+-Who - Sending response from a (TOP:WHO) command issued by the linked BBS.
+-Ver - Sending response from a (TOP:VER) command issued by the linked BBS.
+
+Availible commands in the TOPLink session:
+-------------------------------------------------------------------------
+Key to press                       What it Does
+     L                 Change the name of the link.
+     A                 Toggles ANSI stripping of incoming text.
+     B                 Toggles display of linked BBS Name to local users.
+     S                 Toggles sending of TOP colour codes to linked BBS.
+     D                 Toggles ability of local users to send text
+                       directly to the linked BBS.
+    ESC                Exits TOPLink
+   Alt-J               Shells to DOS.
+-------------------------------------------------------------------------
+
+                             [ Commands for Users ]
+
+By typing text as usual, TOPLink will send it over the modem to the linked BBS.
+Actions, talktypes, profile editor enter/exiting, and many other things are
+sent to the linked BBS.
+
+Direct text can be sent to the linked BBS by a user by whipsering to the link
+and putting a "*" before the text.
+eg:
+Rebel: /q *poker scan
+
+Commands from the other BBS can be sent to TOPLink.  There are currently two
+commands availible.  They must be enclosed with parentheses "()".
+
+(TOP:WHO) - Shows who is in TOP at the moment.
+(TOP:VER) - Shows version and copyright of TOPLink.
+
+                              [ Acknowledgements ]
+
+    The author of TOPLink wishes to thank David Ong for providing me with the
+original source code and documentation for RAPLink so it could be adapted for
+TOP.  David was too busy with university and related happenings to do this job.
+I am immensely grateful to him that I didn't have to rewrite TOPLink and its
+documentation, because it saved me months worth of work.
+
+                                 [ Disclaimer ]
+
+  This software and accompanying materials are distributed "as is" without
+warranty, expressed or implied; including but not limited to any implied
+warranties of merchantability or fitness for a particular purpose. In no event
+shall Paul Sidorsky or anyone else involved with the creation and production of
+this product be held liable for any damages, including, but not limited to, any
+lost profits, savings, data or other incidental, indirect, special, or
+consequential damages arising out of the use or inability to use this software,
+or for any claim by any other party, even if Paul Sidorsky have advised of the
+possibility of such damages. The person using the software bears all risk as to
+the quality and performance of the software.
+
+                         [ Copyright Acknowledgements ]
+
+This document may have mentioned other products.  All copyrights, trademarks
+and reserved rights held by these products are acknowledged. All trademarks and
+registered trademarks belong to their respective owners.
+
+                            [ Registering TOPLink ]
+
+TOPLink is shareware.  If you use TOPLink for more than a 60 DAY TRIAL
+PERIOD you MUST register it or discontinue using TOPLink.
+
+Registering TOPLink costs $15.  Please see REGISTER.FRM for payment details.
+
+TOPLink is NOT CRIPPLED, but does have "reminders" that it is unregistered.
+Registering TOPLink will remove all these reminders that TOPLink.
+
+**************************************************************************
+*Print out REGISTER.FRM, complete the form and mail to the address shown!*
+**************************************************************************
+
+                            [ Reaching the author ]
+
+Please report any bugs and feel free to send comments/suggestions!
+
+  FidoNet - 1:134/31
+  Internet - None right now.
+  Or call the ISMWare Support directly (403)686-0449 and leave a message
+  by pressing L at the main menu.
+
+Or send mail to:   Paul Sidorsky
+                   1414 45th Street SW
+                   Calgary, Alberta
+                   CANADA T3C 2C2
+
+The latest version of TOPLink can be downloaded from the ISMWare Support BBS by
+calling (403)686-0449.  The current version of TOPLink can also be freqed using
+the magic name of "TOPLINK".

@@ -1,0 +1,1155 @@
+Main Action List
+MINSECURITY
+MAXSECURITY
+MINCHANNEL
+MAXCHANNEL
+TALKTYPE
+AFK
+Don't stay ^lA^nway ^lF^nrom ^lK^neyboard too long!
+%m is ^pA^oway ^pF^orom the ^pK^oeyboard for a moment...
+%m, who is going ^pA^oway ^pF^orom %h ^pK^oeyboard
+NORMAL
+BARF
+What a mess!
+%m just barfed all over the floor!
+%m just barfed all over %y!
+NORMAL
+BEAMUP
+Beam me up, Scotty!
+%m just beamed up to the Enterprise!
+%m just beamed %y up to the Enterprise!
+NORMAL
+BLUSH
+Embarrassed, are we?
+%m is blushing in embarrassment.
+%m is blushing at %y in embarrassment.
+NORMAL
+BODYPART
+Holy violent, Batman!
+%m just tore off %h leg!
+%m just tore off %h leg and is hitting %y with the wet end!
+NORMAL
+BONK
+BONK!  BONK!
+%m is bonking %h head against the bar!
+%m just bonked %y on the head!
+NORMAL
+BOOT
+Whap!  Boot to the head!
+%m just laced up %h boots!
+%m is booting %y to the head!
+NORMAL
+BOUNCE
+Boing!
+%m is bouncing around the Pub!
+%m is bouncing around on top of %y, the human trampoline!
+NORMAL
+BOW
+How courteous of you!
+%m is bowing curteously.
+%m is bowing to %y.
+NORMAL
+BRAWL
+Let's kick some butt!
+%m just started a brawl!
+%m is brawling with %y!
+NORMAL
+BURP
+How rude!
+%m just let out a big burp!
+%m is burping right in %y%s face!
+NORMAL
+CAB
+Yo!  Taxi!
+%m just called a cab.
+%m just called a cab to take %y home.
+NORMAL
+CARESS
+Oh, baby, you make me feel so....
+%m is gently caressing %f!
+%m is gently caressing %y!
+TALKTYPE
+CHEER
+Yay!!!
+%m is cheering enthusiastically!
+%m, cheering enthusiastically
+NORMAL
+CHUCKLE
+Funny, huh?
+%m is chuckling in amusement.
+%m is chuckling at %y in amusement.
+NORMAL
+CLAP
+Clap clap clap!
+%m is clapping wildly!
+%m is clapping in admiration for %y!
+NORMAL
+COLLAPSE
+Down I go...
+%m just collapsed flat on the floor!
+%m just collapsed on top of %y!
+NORMAL
+COMFORT
+There, there, it ain't so bad!
+%m needs to be comforted!
+%m is comforting %y, and offering %h sympathy.
+NORMAL
+COUGH
+Ack!  There goes a lung!
+%m is coughing up a lung!
+%m is coughing all over %y!
+NORMAL
+CURTSEY
+How courteous of you!
+%m is curtseying courteously.
+%m is curtseying to %y.
+NORMAL
+DANCE
+C'mon baby, let's do the twist!
+%m is dancing up a storm!
+%m is dancing with %y.
+NORMAL
+DIE
+You're dead, Jim.
+%m just dropped dead!
+%m wants %y dead!
+NORMAL
+DIS
+Phhhhzzzzzzam!
+%m just pulled out a disruptor!
+%m just blasted %y with a disruptor!
+NORMAL
+DODGE
+Hah!  Missed me by a mile!
+%m just dodged!
+%m just dodged %y!
+NORMAL
+DRINK
+Bottom's up!
+%m just gulped down a drink.
+%m just gulped down %y%s drink!
+NORMAL
+EGRIN
+You devil you!
+%m is sporting an evil grin!
+%m just flashed %y an evil grin!
+NORMAL
+EXPLODE
+BOOOOOOOOOOOM!!!!!
+%m just exploded!
+%m just caused %y to explode!
+NORMAL
+EYEROLL
+Hard on the retinas, no?
+%m's eyes are rolling in their sockets.
+%m is rolling %h eyes at %y.
+NORMAL
+FAKEQ
+That'll fool 'em!
+%m ^mjust staggered out of the Pub.
+N/A
+NORMAL
+FONDLE
+Ooooh, baby!
+%m is fondling %f!
+%m is fondling %y!
+NORMAL
+FRENCH
+Oh man!
+%m is french-kissing the bartender.
+%m is french-kissing %y!
+NORMAL
+FROWN
+Hey, cheer up, will ya?
+%m is frowning darkly!
+%m is frowning darkly at %y!
+NORMAL
+GIGGLE
+Pretty funny, huh?
+%m is giggling.
+%m is giggling at %y.
+NORMAL
+GLARE
+Such a nasty look!
+%m is sporting a nasty glare on %h face.
+%m is glaring at %y.
+NORMAL
+GREET
+Hey there!  How ya been?
+%m mutters some words of greeting.
+%m just greeted %y to the Pub!
+NORMAL
+GRENADE
+It's gonna blow!
+%m just tossed a grenade!  ^I^mBOOM^A^o!
+%m just tossed a grenade at %y and blew %y to smithereens!
+NORMAL
+WHINE
+Poor baby!
+%m is whining!
+%m is whining at %y!
+NORMAL
+GRIN
+Feeling happy, are we?
+%m is grinning stupidly.
+%m is grinning at %y.
+NORMAL
+GROPE
+Hey baby, let's party!
+%m is groping %f!
+%m is groping %y!
+NORMAL
+GROWL
+Doing your bear impression again, eh?
+%m is growling!
+%m is growling at %y!
+NORMAL
+GRUNT
+Hmph!!
+%m is grunting.
+%m is grunting at %y.
+NORMAL
+HANDSHAKE
+Howdy!  How ya doin'?
+%m wants to shake hands!
+%m is shaking hands with %y.
+NORMAL
+HIT
+A little violent today, are we?
+%m just hit %f!
+%m is hitting %y!
+NORMAL
+HUG
+Awww.... how sweet?
+%m is hugging %f tightly.
+%m is hugging %y tightly.
+NORMAL
+INNOCENT
+Who?  Me??  Nah!
+%m is trying to look innocent.
+%m just gave an innocent look to %y.
+NORMAL
+KICK
+Violent, aren't you?
+%m just kicked the bar!
+%m is kicking the life out of %y!
+NORMAL
+KISS
+Going for the gusto, are we?
+%m is blowing kisses.
+%m just kissed %y!
+NORMAL
+LAUGH
+Ha ha ha!
+%m is laughing hysterically!
+%m is laughing at %y!
+NORMAL
+LICK
+Mmmm....tasty!
+%m is licking %f!
+%m is licking %y!
+NORMAL
+LLAP
+Live Long And Prosper!
+%m gives the Vulcan salute and says, "Live Long And Prosper."
+%m gives the Vulcan salute to %y and says, "Live Long And Prosper."
+NORMAL
+LOOK
+See anything you like?
+%m's eyes are roaming around the Pub.
+%m is looking %y over.
+NORMAL
+MCCOY
+What am I, a doctor or a bartender?
+A gruff doctor steps up to %m and says: "He's dead, Jim."
+%m steps up to %y and says: "He's dead, Jim."
+NORMAL
+MOON
+Hey!  What makes you think anybody wants to see your behind??!
+%m is mooning everybody in the Pub!
+%m is mooning %y!
+NORMAL
+NIBBLE
+Nibble, nibble!
+%m is nibbling on %h fingernails!
+%m is nibbling %y!
+NORMAL
+NOD
+Uh huh.
+%m is nodding in agreement.
+%m is nodding to %y in agreement.
+NORMAL
+NUDGE
+Nudge, nudge, wink, wink!
+%m just nudged the table.
+%m nudges %y (nudge, nudge, wink, wink, say no more!)
+NORMAL
+NUKE
+Bombs away!
+%m just launched a nuclear missile!
+%m just replaced %y with a mushroom cloud!
+NORMAL
+ORDER
+Say please!!
+%m is ordering another drink.
+%m is trying to order %y around!
+NORMAL
+PASSOUT
+Can't take it, eh?
+%m just passed out on the floor.
+%m just passed out on top of %y.
+NORMAL
+PEANUTS
+Chow down!
+%m just grabbed the peanuts.
+%m just handed the peanuts to %y.
+NORMAL
+PHASER
+He's dead, Jim.
+%m just pulled out %h phaser!
+%m just blasted %y with %h phaser!
+NORMAL
+PINCH
+Got the roving fingers, do ya?
+%m just pinched %f!
+%m is pinching %y!
+NORMAL
+POUT
+Stop acting like a baby!
+%m is pouting!
+%m is pouting at %y!
+NORMAL
+PUNCH
+Oof!
+%m just rammed %h fist against the window!  Crash!
+%m is punching %y%s lights out!
+NORMAL
+ROFL
+Funny, huh?
+%m is rolling around on the floor, laughing %h head off!
+%m is rolling around on the floor, laughing %h head off at %y!
+NORMAL
+SCRATCH
+Scratch, scratch...
+%m scratches %h head in puzzlement.
+%m is scratching %y!
+NORMAL
+SEDUCE
+Ooh, baby!
+%m just assumed a seductive pose.
+%m is seducing %y.
+NORMAL
+SHOOT
+Put that gun away!  We don't want any trouble here!
+%m just pulled out a gun!
+%m just shot %y!
+NORMAL
+SHRUG
+I dunno...
+%m shrugs %h shoulders.
+%m shrugs %h shoulders at %y.
+NORMAL
+SLAP
+Whap!  Whap!
+%m just slapped %f in the face!
+%m just slapped %y in the face!
+NORMAL
+SLIME
+I ain't afraid of no ghost!
+Something just slimed %m!
+%m just slimed %y!
+NORMAL
+SMACK
+SMACK!
+%m is smacking %f in the forehead!
+%m just smacked %y across the back of the head!
+NORMAL
+SMELL
+Sniff, sniff!
+%m is smelling around the Pub.
+%m is smelling %y.
+NORMAL
+SMILE
+Such a sweet smile.
+%m is smiling happily.
+%m is smiling at %y.
+NORMAL
+SMIRK
+Wipe that smirk off your face!!
+%m is smirking.
+%m is smirking at %y!
+NORMAL
+SMOKE
+Puff puff...
+%m just lit a cigarette.
+%m hands %h cigarette to %y.
+NORMAL
+SMOOCH
+SMOOOOOOOOOOOCH.
+%m is making smooching noises.
+%m is smooching %y!
+NORMAL
+SNEEZE
+Catching a cold, eh?
+%m just sneezed!
+%m just sneezed all over %y!
+NORMAL
+SNICKER
+What are you up to?
+%m is snickering mischeviously.
+%m is snickering at %y.
+NORMAL
+SNIFF
+Sniff, boo hoo!
+%m is sniffing!
+N/A
+NORMAL
+SNUGGLE
+Now isn't that cozy?
+N/A
+%m is snuggling up to %y.
+NORMAL
+SPIT
+Ewww, gross!
+%m just spit on the floor!
+%m just spit on %y!
+NORMAL
+STARE
+Your eyes are locked!
+%m is staring off into space.
+%m is staring at %y!
+NORMAL
+STRIP
+You look maaaaaaahvelous!
+%m is stripping!
+%m is stripping %y!
+NORMAL
+TEASE
+Oh, you flirt!
+%m is such a tease!
+%m is teasing %y!
+NORMAL
+TICKLE
+Tickle, tickle, tickle!
+%m is tickling %f!
+%m is tickling %y!
+NORMAL
+TIP
+Gosh, thanks eh?
+%m just tipped the bartender.
+%m just tipped %y.
+NORMAL
+TOKE
+Hey!  Say ^I^mNO^A^n to drugs, you fool!
+%m lights a joint and takes a slow toke.
+%m just passed %h joint to %y.
+NORMAL
+WARP
+Warp nine, Mr. Data!
+%m just engaged warp drive!
+%m just sent %y into warp!
+NORMAL
+WAVE
+Let's do the wave!
+%m is waving!
+%m is waving to %y!
+NORMAL
+WHISTLE
+Whistle while you work...
+%m is whistling a little tune.
+%m looks at %y and whistles appreciatively.
+NORMAL
+WINK
+Wink, wink!
+%m is winking.
+%m is winking at %y!
+NORMAL
+ZAP
+ZZZZZZZZZZap!
+N/A
+%m just zapped %y!
+TALKTYPE
+CRY
+Boo hoo hoo!
+%m is crying uncontrollably!
+%m, crying uncontrollably
+TALKTYPE
+FAZED
+Fazed?  Fazed?  You?  Nah!
+%m looks fazed.
+%m, sounding rather fazed
+NORMAL
+GASP
+GASP!
+%m just gasped in amazement!
+%m just gasped at %y in amazement!
+TALKTYPE
+GROAN
+Oh, maaaaaan!
+%m is groaning!
+%m, groaning
+TALKTYPE
+LIE
+Liar liar pants on fire!
+%m is lying through %h teeth!
+%m, who is clearly lying
+TALKTYPE
+MOAN
+Oh, baby!
+%m is moaning!
+%m, moaning
+TALKTYPE
+PONDER
+Hmm...
+%m is pondering matters.
+%m, who ponders
+TALKTYPE
+SCREAM
+AAAAAAARRRRRGGGGHHHH!
+%m is screaming!
+%m, SCREAMING
+TALKTYPE
+SIGH
+Sigh!
+%m lets out a wistful sigh.
+%m, sighing wistfully
+TALKTYPE
+SING
+My, what a lovely voice you have!
+%m is singing!
+%m, singing out loud
+TALKTYPE
+SWEAR
+Naughty naughty!
+%m is swearing!
+%m, swearing
+TALKTYPE
+THINK
+I can smell the wood burning from over here!
+%m is thinking things over.
+%m, thinking out loud
+TALKTYPE
+WONDER
+Hmmmmm...
+%m is wondering about life, the universe, and everything.
+%m, who wonders
+TALKTYPE
+YAWN
+Get some sleep!
+%m is yawning.  Must be tired!
+%m, yawning
+TALKTYPE
+YELL
+Gosh, what a loudmouth you are!
+%m is yelling at the top of %h lungs!
+%m, at the top of %h lungs
+NORMAL
+BLINK
+How unbelievable!
+%m is blinking is disbelief!
+%m is blinking at %y in disbelief!
+NORMAL
+BASH
+WHAM!
+%m is bashing %h head against the bar.
+%m just bashed %y%s head against the bar!
+NORMAL
+TYPO
+Need new fingers?
+%m needs a new set of fingers!
+%m just handed %y a new set of fingers!
+NORMAL
+STAPLE
+Ka-chunk!
+%m just pulled out a heavy-duty stapler.
+%m just stapled %y to the wall!
+TALKTYPE
+SOB
+Awww, what a pity!
+%m is sobbing uncontrollably.
+%m, sobbing uncontrollably
+NORMAL
+BAK
+About time you got back!
+%m is ^pB^oack ^pA^ot the ^pK^oeyboard and ready to talk!
+%m is waiting anxiously for %y to get ^pB^oack ^pA^ot the ^pK^oeyboard!
+NORMAL
+KILL
+Murderer!!!!
+%m is fit to kill!
+%m just killed %y in the most gruesome, horrible way imaginable!
+TALKTYPE
+SHOUT
+You don't have to shout!!!
+%m is shouting at everything!
+%m, shouting
+NORMAL
+HIDE
+Scaredy cat!
+%m is looking for a place to hide.
+%m just hid behind %y!
+NORMAL
+GAH
+GAH!!!!
+%m just screamed "^M^pGAH!!!^A^o" and swallowed %h tounge!
+%m looks at %y, screams "^M^pGAH!!!^A^o", and swallows %h tounge!
+NORMAL
+BRB
+Going somewhere?
+%m will be right back!
+N/A
+NORMAL
+TTYL
+Talk To You Later!
+%m will talk to ^leveryone^o later!
+%m will talk to %y later!
+NORMAL
+BLAH
+BLAH!!!!
+%m says BLAH!
+%m looks at %y and says BLAH!
+NORMAL
+SCRAM
+ZZZZZZZZT!
+%m is playing with strange scientific equipment.
+%m just scrambled %y%s brainwave patterns!
+NORMAL
+FRY
+I can hear it sizzle!
+%m's brains are being ^I^pfried^A^o!
+%m just pulled out a wok and is ^pfrying^o %y%s brains!
+NORMAL
+NBL
+Not Bloody Likely!
+%m raises %h eyebrow and says, "^I^mNot Bloody Likely!^A^o"
+%m looks at %y oddly and says, "^I^mNot Bloody Likely!^A^o"
+TALKTYPE
+HYPNO
+You are getting sleepy!
+%m is swinging a pendulum in a hypnotic fashion.
+%m, in a hypnotic tone
+TALKTYPE
+IDEA
+Another Einstien, eh?
+%m just got an idea!
+%m, as if getting an idea
+NORMAL
+FAKEPROF
+You're soooo sneaky!
+%m ^nhas entered the Profile Editor.
+N/A
+NORMAL
+UPPERCUT
+POW!!  Right in the jaw!
+%m just gave %f a swift uppercut to the jaw!
+%m just gave %y a swift uppercut to the jaw!
+NORMAL
+DOH
+DOH!!!
+%m just slapped %h forehead saying, "DOH!"
+%m looks at %y, slaps %h forhead, and says, "DOH!"
+NORMAL
+RUN
+Where are you going in such a hurry?
+%m is running around the Pub in sheer terror!
+%m is running away from %y in sheer terror!
+TALKTYPE
+CHANT
+Rah rah rah!
+%m is chanting monotonously.
+%m, chanting monotonously
+TALKTYPE
+GRUMBLE
+Life is so unfair, isn't it?
+%m is grumbling unhappily.
+%m, grumbling unhappily
+TALKTYPE
+MUMBLE
+Hey!  Speak up!
+%m is mumbling incoherently to %f.
+%m, mumbling incoherently
+TALKTYPE
+MUTTER
+Hey, don't be like that!
+%m is muttering to %f in annoyance.
+%m, muttering
+NORMAL
+ASPIRIN
+Got a headache, eh?
+%m just took an aspirin.
+%m just handed %y an aspirin.
+NORMAL
+XFINGERS
+Cross your fingers!
+%m is crossing %h fingers and hoping.
+%m is crossing %h fingers and hoping for %y.
+NORMAL
+PULSE
+Ra-tat-tat-tat-tat!!
+%m just loaded a high-powered pulse-rifle.
+%m just fired several pulse-rifle rounds into %y!
+NORMAL
+EYEBALL
+Worried, eh?
+%m is eyeballing the Pub with a look of worry.
+%m is eyeballing %y.
+NORMAL
+WATER
+Good ol' H2O!
+%m just downed a tall glass of water.
+%m just dumped a pail of water over %y!
+NORMAL
+BOO
+BOOOOOOOOOOOOOOOOOO!!!!
+%m is booing with disapproval!
+%m is booing %y with disapproval!
+NORMAL
+MOO
+Doing cow impersonations, eh?
+%m is mooing in soft low tones.
+%m is mooing at %y.
+NORMAL
+CLUB
+What are you, a caveman?
+%m just pulled out a large wooden club.
+%m just clobbered %y on the head with a large wooden club!
+NORMAL
+FREEZE
+Brrrrrr!  That's cold!
+%m is freezing cold!
+%m just froze %y!
+NORMAL
+BEG
+Pleeeeeease!?!
+%m is begging for stuff!
+%m is begging %y!
+NORMAL
+BKICK
+WHAP!  Right in the butt!
+%m is looking for some butt to kick!
+%m just gave %y a good, swift, kick in the butt!
+NORMAL
+BRAINTOSS
+Calling Dr. Frankenstein!
+%m is tossing around a brain.
+%m just tossed %y a fresh brain!
+TALKTYPE
+SAY
+Say what?!
+%m has been playing text adventure games too long.
+%m, who has played text adventures way too long
+NORMAL
+SHUDDER
+Frightening!!
+%m shudders in fear.
+%m is shuddering at %y in fear.
+NORMAL
+JUMP
+Temper temper!
+%m is jumping up and down in a fit of anger!
+%m is jumping up and down on top of %y in a fit of anger!
+NORMAL
+PIANO
+Love that Baby Grand!
+%m just sat down at the piano and started playing!
+%m just dropped a piano on %y%s head!
+NORMAL
+BAT
+Take me out to the ball game....
+%m just stepped up to bat.
+%m just swung %h baseball bat at %y%s head!  Looks like a home run!
+NORMAL
+ERASE
+Hey!  Where'd you get that eraser?
+%m is fumbling with an eraser.
+%m just erased %y from existance!
+NORMAL
+EATCHIPS
+CRUNCH crunch crunch...
+%m is munching on some chips!
+%m just stole %y%s chips and is eating them!
+NORMAL
+EATPIZZA
+Mama Mia!
+%m is sinking %h teeth into a large pizza!
+%m just stole a piece of pizza from %y and devoured it!
+NORMAL
+ARGH
+ARRRRRRRRRRRRRRRRRRRRRRRRGGGGGGGGGGGGGGGGGGGGHHHHHHHHHHHHHHHH!
+%m screams, "^J^pARRRRRRRRRRRRRRRGGGGGGGGGGGGGGGGHHHHHHHHHHHHHHHH!^A^o"
+%m looks at %y and screams, "^J^pARRRRRRRRRRGGGGGGGGGGGHHHHHHHHHH!^A^o"
+NORMAL
+CASTRATE
+Put that knife away!
+%m just grabbed a large kitchen knife!
+%m just hacked off %y%s private parts and threw them out the window!
+NORMAL
+HICCUP
+HIC!
+%m has the hiccups!
+%m just hiccuped in %y%s face!
+NORMAL
+DUCK
+Yikes!  Look out above!
+%m just ducked!
+%m just ducked %y!
+TALKTYPE
+HUM
+Hummmmmmmmm....
+%m is humming a little tune.
+%m, humming along
+NORMAL
+SHAKE
+Hey!  Not so rough!
+%m is shaking violently!
+%m is shaking the life out of %y!
+NORMAL
+SLEEP
+......zzzzzzzzzz......
+%m just fell asleep!
+%m just fell asleep on %y%s shoulder!
+NORMAL
+WAKE
+Hey!  Wake up!
+%m just woke up.
+%m is trying to wake %y up!
+TALKTYPE
+SARC
+Yeah, right!
+%m is in a sarcastic mood!
+%m, dripping with sarcasm
+NORMAL
+HOLDON
+HOLD ON!!!
+%m is holding on for dear life!
+%m is holding onto %y!
+TALKTYPE
+BORED
+So little to do and so much time to do it!
+%m is bored out of %h mind!
+%m, who is bored
+NORMAL
+AXE
+Watch where you're swingin' that thing!!!
+%m is idly swinging an axe around.
+%m just swung %h axe and hacked off %y%s head!
+NORMAL
+PILLOW
+Pillowy Soft!
+%m is grabbing %h pillow!
+%m just whopped %y over the head with %h pillow!
+TALKTYPE
+CHOKE
+Got a pretzel stuck in your throat?
+%m is choking on something!
+%m, choking on something
+NORMAL
+DEATHCHOKE
+Quick!  Anybody know the Hiemlich Maneuver?!
+%m is choking to death!!
+%m is choking %y to death!
+TALKTYPE
+CONFUSED
+What's going on?!?!
+%m is confused!!!
+%m, in a confused state
+NORMAL
+ELBOW
+Hey!  Watch where you put that thing!
+%m is showing off %h elbows.
+%m just elbowed %y in the face!
+NORMAL
+SHAKEHEAD
+No way!
+%m is shaking %h head in disagreement.
+%m is shaking %h head at %y in disagreement.
+NORMAL
+PSHAW
+Yeah, right!
+%m says, "Pshaw!  Yeah, right!"
+%m looks at %y and says, "Pshaw!  Yeah, right!"
+NORMAL
+BEEP
+BEEEEEEEEEEEEEEEEEEEEEP!
+%m is making beeping noises!
+%m is beeping loudly at %y!
+TALKTYPE
+BGASP
+Gasp!  I can't breathe!
+%m is gasping for breath!
+%m, gasping for breath
+TALKTYPE
+ANNOUNCE
+Attention Pubgoers!
+%m is fiddling with the PA system.
+%m, over the bar's PA system
+NORMAL
+SWITCHOFF
+Hmmm...where's that off switch?!
+%m is searching for the off switch.
+%m just switched %y off!
+NORMAL
+WHITEOUT
+That should take care of 'em!
+%m just opened a bottle of white-out!
+%m just whited %y out!
+NORMAL
+ENCOURAGE
+Go for it!!!
+%m is chanting some words of encouragement!
+%m is encouraging %y!
+NORMAL
+POKE
+Stop poking around!
+%m is poking around the Pub.
+%m just poked %y in the ribs!
+NORMAL
+CREMATE
+Burn baby burn!
+%m just set up %h portable crematorium!
+%m just cremated %y!
+NORMAL
+SHIELDS
+Shields up, Captain!
+%m just put up %h deflector shields!
+%m is shielding %f from %y!
+NORMAL
+BLOWHORN
+BLAAAAAAAAAAAAAAAARRRRRRRRRRP!
+%m is blowing a horn!
+%m just blew a horn in %y%s face!
+NORMAL
+HOMEWORK
+What're you doing chatting when there's homework to be done?!
+%m has too much homework!
+%m just dumped all of %h homework on %y!
+TALKTYPE
+LOL
+Such a loud laugh!
+%m is laughing out loud!
+%m, while laughing out loud
+NORMAL
+BEDTUCK
+Nighty-night!
+%m is waiting to be tucked into bed!
+%m just tucked %y into bed!
+NORMAL
+GLANCE
+Need a quick look, huh?
+%m is glancing around the Pub.
+%m just gave %y a quick glance!
+NORMAL
+GOODLUCK
+Good luck!
+%m is hoping for some good luck!
+%m is wishing %y good luck.
+NORMAL
+TORCH
+Come on baby light my fire!
+%m just lit a torch!
+%m just put a torch to %y%s clothing!
+NORMAL
+HOSE
+Hey!  No hoses allowed in the Pub!
+%m just turned on the hose.
+%m is hosing %y off!
+TALKTYPE
+SNORT
+Hey, cut that out you pig!
+%m is snorting like a pig!
+%m, snorting like a pig
+NORMAL
+MELT
+Like ice in a pot of boiling water!
+%m just melted!
+%m just melted %y out of existance!
+NORMAL
+GAG
+Help!!!!!
+%m just gagged on something!
+%m is trying to gag %y!
+NORMAL
+TOMATO
+Hey, where did you get those tomatoes?!
+%m just grabbed a bucket of tomatoes.
+%m is pelting %y with tomatoes!
+NORMAL
+EEK
+EEEEEEEEEEEEEEEEEEEEK!
+%m screams, EEEEEEEEEEEEEEEEEEK!
+%m looks at %y and screams, EEEEEEEEEEEEEEEEEEEEK!
+NORMAL
+HMMM
+Deep in thought, huh?
+%m lets out a long, thoughtful Hmmmmmm....
+%m is considering what %y said.  Hmmmmmm....
+NORMAL
+BTOSS
+Have a tall cool one!
+%m is tossing around a bottle of beer!
+%m just tossed %y a cold bottle of beer!
+NORMAL
+BCATCH
+Wow, what co-ordination!
+%m just caught a bottle of beer!
+%m just caught a bottle of beer from %y.
+NORMAL
+BSMASH
+Hate beer, eh?
+%m just smashed a bottle of beer against the floor!  SMASH!
+%m just whipped a bottle of beer at %y%s head!  SMASH!
+TALKTYPE
+PRAY
+Please help me!
+%m is saying a prayer.
+%m, in prayer
+NORMAL
+HARM
+Hey, don't you know violence solves nothing?
+%m has a strong desire to harm somebody!
+%m just inflicted bodily harm on %y!
+TALKTYPE
+WEEP
+Oh you poor thing!
+%m is weeping like it's the end of the world!
+%m, weeping like a maniac
+NORMAL
+STOMP
+Don't!  You'll wear out your shoes!
+%m just stomped %h foot against the floor!
+%m just stomped on %y%s foot!
+NORMAL
+POKE
+Poke!  Poke!
+%m is poking around.
+%m is poking at %y!
+NORMAL
+DROOL
+You need your tounge sandbagged!
+%m is drooling all over the floor.
+%m is drooling all over %y!
+NORMAL
+MUNCH
+Mmmmm, good!
+%m is munching on something.
+%m is munching on %y!
+NORMAL
+YIPE
+YIPE!!!!!
+%m just turned white as a ghost and screamed, YIPE!!!!!!!!!
+%m looks at %y and screams, YIPE!!!!!!!!!
+NORMAL
+PULVERIZE
+WHAM!  Totally mangled!
+%m is looking to pulverize something (or someone!).
+%m just pulverized %y!
+NORMAL
+SHIVER
+Brrrrrrrrrrrrrrrrrrrr!
+%m is shivering.
+%m just shivered because of %y.
+NORMAL
+SQUIRM
+Felling a little uncomfortable?
+%m is squirming uncomfortably.
+%m is squirming away from %y.
+NORMAL
+MOSH
+Party on dude!
+%m is moshing around the Pub!
+%m is moshing around the Pub with %y!
+NORMAL
+LURCH
+What happened to your balance?!
+%m is lurching around.  Too much beer maybe?
+%m just lurched into %y!
+TALKTYPE
+PLACARD
+Sign, sign, everywhere a sign...
+%m is holding up a big placard.
+%m, holding up a big placard
+NORMAL
+STEAL
+THIEF!!
+%m just stole something from the bar!
+%m just stole something from %y!
+NORMAL
+MOVE
+Hahaha...can't hide behind me!
+%m is moving around violently.
+%m just moved away from %y!                              
+NORMAL
+THPT
+Thpt!
+%m is sticking %h tongue out!  Thpt!
+%m is sticking %h tongue out at %y.  Thpt!
+NORMAL
+PUNT
+And it's a field goal!
+%m is punting a football around the Pub!
+%m just lined up %y%s head and punted it away!
+NORMAL
+NOT!
+I don't think so!
+%m gives a dirty look and yells, NOT!!!!!!!!!!!!!!!
+%m gives %y a dirty look and yells, NOT!!!!!!!!!!!!!!!
+NORMAL
+SHOVE
+No pushing!
+%m just shoved over a table!
+%m just shoved %y into the wall!
+NORMAL
+WELCOME
+How courteous!
+%m is welcoming people to the Pub!
+%m is welcoming %y to the Pub!
+NORMAL
+SLAMDUNK
+WHAMMO!
+%m just jumped up and slam-dunked a basket!
+%m just slam-dunked %y into the garbage can!
+NORMAL
+BOWL
+...Strike!!!
+%m picks up a bowling ball and bowls it at some beer bottles!
+%m just bowled %y over!  Steeeeeeeerike!
+NORMAL
+ANTITYPO
+Sorry, we're out of fingers!
+%m just confiscated all the extra sets of fingers!
+%m is hiding the extra sets of fingers from %y!
+NORMAL
+DUH
+Like, d-uh!
+%m gives a very stupid look and says, D-uh!
+%m gives a very stupid look to %y and says, D-uh!
+TALKTYPE
+BELCH
+You dirty pig!
+%m just belched very loudly!
+%m, while belching
+NORMAL
+POKERFACE
+Nobody will ever know what you have!
+%m is displaying a perfect poker face.
+%m just looked at %y with a perfect poker face!
+NORMAL
+CARDPEEK
+No peeking!
+%m is peeking at %h cards.
+%m is peeking at %y%s cards!
+NORMAL
+PUSH
+Don't be pushy!
+%m is being pushy!
+%m is pushing %y around!
+NORMAL
+STOP
+Hold it right there!
+%pSTOPPIC1
+%pSTOPPIC2
+TALKTYPE
+SNORE
+Who can sleep with all that snoring?!
+%m is snoring so loud that %e drowns out the jukebox!
+%m, in between snores

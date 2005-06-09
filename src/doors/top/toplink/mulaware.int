@@ -1,0 +1,172 @@
+Unit MulAware;
+{
+  Multitasking Routines for TP 6.0, TP 7.0, & BP 7.0
+
+  Copyright (c) 1992 ABSoft - ALL RIGHTS RESERVED
+
+  1.00+  Internal Use Only
+  2.00   First Distributed Release
+  2.10   Fixed Windows Checking
+  2.11   Took out VMiX Code
+  2.20   Fixed DDOS Code - Locking up Novell
+  2.21   Fixed Code - Tried to be too smart for my own good
+  2.22   Fixed Code Again - Was Checking for DV 2.40+ instead of 2.26+
+  3.00   Complete ReWrite
+  3.01   Minor Update
+  3.10   Minor Update
+  3.11   Documentation Changes
+  3.12   Minor Optimizations
+  3.13   Took out Win 386 Support
+  3.20   Added MultiDos Plus Support
+  3.30   Added VMiX Support
+  3.40   Added Windows NT Support
+  3.41   Minor Optimizations
+  4.00   Updated for TP 7.0 & BP 7.0
+}
+
+{$A-,B-,D-,E-,F-,G-,I-,L-,N-,O-,R-,S-,V-,X-}
+
+{$IFDEF VER70}
+  {$P-,Q-,T-,Y-}
+{$ENDIF}
+
+{$IFDEF PMODE}
+  {$G+}
+{$ENDIF}
+
+Interface
+
+Type
+  MultiType = (None,          {No Supported MultiTasker Found}
+               DESQview,      {DESQview 2.26+}
+               TopView,       {TopView, TaskView, DESQview 2.00-2.25,
+                               OmniView, or Compatible}
+               OS2,           {OS/2 2.0}
+               WinEnh,        {MS Windows 3.x in Enhanced Mode}
+               DoubleDOS,     {DoubleDOS}
+               WinStandard,   {MS Windows in Standard Mode}
+               TaskSwitcher,  {MS DOS 5.0 Task Switcher or Compatible}
+               MultiDos,      {MultiDos Plus 4.01}
+               VMiX,          {VMiX 2.75+}
+               WinNT);        {Windows NT}
+
+
+Var
+  MultiTasker : MultiType;
+
+Procedure TimeSlice;
+{
+ Causes the current task to give up the rest of its time slice.
+ Useful in loops while waiting for keyboard input.  This procedure
+ calls the DOS idle interrupt if MultiTasker = None.
+
+ example:
+   While not Keypressed do TimeSlice;
+
+ Supported by:
+   None
+   DESQview
+   WinEnh
+   WinStandard
+   OS2
+   DoubleDOS
+   TopView
+   TaskSwitcher
+   MultiDos
+   VMiX
+}
+
+Procedure PreventSwitching;
+{
+ Suspends multitasking and only services the current task.  Useful during
+ critical program functions.  Don't leave on for too long!  Call
+ ResumeSwitching to resume multitasking.
+
+ Supported by:
+   DESQview
+   WinEnh
+   DoubleDOS
+   TopView
+   MultiDos
+}
+
+Procedure ResumeSwitching;
+{
+ Called to resume multitasking after it has been suspended by
+ PreventSwitching.
+
+ Supported by:
+   DESQview
+   WinEnh
+   DoubleDOS
+   TopView
+   MultiDos
+}
+
+Function  MulVersion : Word;
+{
+ Returns the Version Number.  The high byte contains the major number, and
+ the low byte contains the minor number.  The number may be accessed like
+ this - WriteLn('Version ', Hi(MulVersion), '.', Lo(MulVersion)).
+
+ Example:
+   DESQview 2.42 returns $022A (554).
+
+ Supported by:
+   DESQview
+   WinEnh
+   OS2
+   VMiX
+   TopView (returns 0 for TaskView & DESQview 2.00-2.25}
+}
+
+Function  VirtualBuffer : Word;
+{
+ Returns the address of the virtual video buffer.  Useful for doing
+ direct screen writes without 'bleed through'.  Under DoubleDOS, this
+ procedure must be called everytime you wish to do a direct write,
+ because the buffer changes.  The standard video address is returned
+ under a non-supported multitasker.  This is only valid for standard
+ text modes!
+
+ Supported by:
+   DESQview
+   DoubleDOS
+   TopView
+   MultiDos
+}
+
+Procedure TV_UpdateBuffer(Num : Word; Buffer, CharOffset : Word);
+{
+ Must be called when running under TaskView or clones to update the
+ screen from the virtual buffer.  This may be called under DESQview,
+ but doing so will cause DESQview to stop updating the screen
+ automatically.  Num contains the number of sequential characters
+ that were changed.  Buffer:CharOffset points to the first character
+ changed.  Buffer is the VirtualBuffer.  CharOffset is the Offset of
+ the first character changed.
+
+ Do NOT call with Num = 0!
+
+ Supported by:
+   DESQview
+   TopView
+}
+
+Function  DDOS_Visible : Boolean;
+{
+ Returns true if the current task is the visible task under DoubleDOS.
+ Returns false if DoubleDOS NOT running OR if the current task is the
+ invisible task.  You must check MultiTasker if a false is returned.
+
+ Supported by:
+   DoubleDOS
+}
+
+Function  MDOS_Visible : Boolean;
+{
+ Returns true if the current task is the foreground task under MultiDos.
+ Returns false if the current task is running in the background OR
+ MultiDos is NOT running.  You must check MultiTasker if a false is
+ returned.
+}

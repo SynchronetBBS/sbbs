@@ -1,0 +1,24 @@
+TOPLink v2.00 - Revision History
+--------------------------------
+
+Version 2.00g1 (changes from RAPLink 1.00)
+------------------------------------------
+
+    - Upgraded program to support changes for The Online Pub v2.00g1.
+    - Author changed, new author is Paul Sidorsky (author of TOP).
+    - TOPLink can now use a configurable channel number.
+    - TOPLink can now exclude people who's security is too low from the link.
+    - The MaxNodes setting from TOP.CFG is now supported.
+    - TOPLink now supports additional message types.
+    - Text sent to remote no longer has Pub theme.
+    - %e action token is now supported.
+    - Pictorial actions (%p token) are recognized but ignored by TOPLink.
+    - New registration scheme implemented.
+    - Parts of the code have been optimized for more efficiency.
+
+Version 2.00
+------------
+
+    - Minor bugfixes.
+    - Version number increased to coincide with the release of TOP v2.00.
+

@@ -1,0 +1,152 @@
+                         Blackjack for TOP Version 2.00
+                     Copyright 1996 Paul Sidorsky, ISMWare
+           Original Documentation Copyright 1995 David On, OmniWare
+
+
+                                [ Description ]
+
+Blackjack for TOP is a full-featured, add-on game module for the popular
+TOP (The Online Pub) Teleconference.
+
+
+                                [ Requirements ]
+
+BJ4TOP requires:  128K of free memory
+                  The Online Pub Teleconference (TOP) v2.00g1 or higher.
+                  Fossil Communications Driver loaded
+                  SHARE.EXE loaded (or an operating system with built-in SHARE
+                    support, such as OS/2).
+
+
+                                  [ Licence ]
+
+You may upload BJ4TOP to any bulletin board, distribute copies to other users,
+and use BJ4TOP provided these conditions are met:
+
+1) You may use BJ4TOP for a 60 DAY TRIAL PERIOD after which you MUST register
+   BJ4TOP or discontinue using it.
+2) None of the files contained in the archive have been added, deleted, or
+   modified in any way prior to being distributed.
+3) There is no charge other than a nominal fee for the diskette and cost of
+   sending the program.
+4) Shareware distributors MUST make it clear that they are receiving an
+   unregistered EVALUATION copy that requires a registration fee be sent to the
+   author after a trial period.
+5) Registered versions of this program ARE NOT TO BE DISTRIBUTED.
+6) This licence may be revoked by the author without prior notice.
+
+
+                                   [ Files ]
+
+BJ4TOP.EXE       The BJ4TOP program.
+BJ4TOP.DOC       This file.  Documentation for BJ4TOP.
+UPGRADE.DOC      What to do if you're upgrading from BJ4TOP.
+BJUSER.DOC       User documentation for those who don't know how to play
+                 blackjack.  Put in your file areas for download.
+HISTORY.DOC      Program history.
+REGISTER.FRM     Registration form.
+FILE_ID.DIZ      BBS ad file.
+
+*** WARNING: Do not PKLITE, LZEXE or do any similar thing to the BJ4TOP.  Doing
+             so will corrupt the program!  BJ4TOP writes its configuration
+             directly to the BJ4TOP.EXE files.
+
+It is recommended you put these files in a seperate directory from TOP.
+
+                               [ Running BJ4TOP ]
+
+First of all, make sure TOP HAS BEEN RUN PREVIOUSLY OR IS RUNNING.  BJ4TOP will
+not initialize/create the NODEIDX.TCH and NODEIDX2.TCH files.  Then, run BJ4TOP
+with these parameters:
+============================================================================
+BJ4TOP <work path> <node>
+
+<work path>  Is the path to TOP's work directory.
+<node>       Is the node BJ4TOP should use.
+============================================================================
+Examples would be:
+Command line>BJ4TOP C:\TOP\WORKDIR 4
+
+In any TOP sessions that are running, you should see this:
+==========================================================
+Blackjack Dealer just sauntered into the Pub!
+*** Blackjack v2.00 Game Module Active ***
+Type /BJ HELP for the commands.
+=================================================
+
+If you enter "/BJ HELP" in a TOP session, you will get this command list for
+blackjack:
+=================================================
+Enter /BJ BET <amount> to change your bet (cannot be done during a game).
+Enter /BJ CD or /BJ $ for your current number of Cyberdollars.
+Enter /BJ DOUBLE 2 to double down on your second hand.
+Enter /BJ DOUBLE to double down.
+Enter /BJ HAND to view the dealer's and your own cards.
+Enter /BJ HELP for this commands list.
+Enter /BJ HIT to be dealt a card.
+Enter /BJ HIT 2 to be dealt a card to your second hand.
+Enter /BJ INSURE to make an insurance bet against a blackjack.
+Enter /BJ OFF to be dealt out of blackjack.
+Enter /BJ ON to join in the next game of blackjack.
+Enter /BJ SCAN to see who's playing blackjack.
+Enter /BJ SPLIT to split your hand.
+Enter /BJ STAY to end your turn.
+Enter /BJ TURN to see who's turn it is.
+=================================================
+
+So, if a user wanted to play a game s/he would type in "/BJ ON".
+
+
+                                 [ Disclaimer ]
+
+This software and accompanying materials are distributed "as is" without
+warranty, expressed or implied; including but not limited to any implied
+warranties of merchantability or fitness for a particular purpose. In no event
+shall David Ong, OmniWare or anyone involved with the creation and production
+of this product be held liable for any damages, including, but not limited to,
+any lost profits, savings, data or other incidental, indirect, special, or
+consequential damages arising out of the use or inability to use this software,
+or for any claim by any other party, even if Paul Sidorsky has been advised of
+the possibility of such damages.  The person using the software bears all risk
+as to the quality and performance of the software.
+
+                         [ Copyright Acknowledgements ]
+
+This document may have mentioned other products.  All copyrights, trademarks
+and reserved rights held by these products are acknowledged.  All trademarks
+and registered trademarks belong to their respective owners.
+
+
+                             [ Registering BJ4TOP ]
+
+BJ4TOP is shareware.  If you use it for more than a 60 DAY TRIAL PERIOD you
+MUST register it or discontinue using it.
+
+Registering BJ4TOP costs $15.  Please see REGISTER.FRM for payment details.
+
+BJ4TOP is NOT CRIPPLED, but does have "reminders" that it is unregistered.
+Registering BJ4TOP will remove all these reminders.
+
+**************************************************************************
+*Print out REGISTER.FRM, complete the form and mail to the address shown!*
+**************************************************************************
+
+                            [ Reaching the author ]
+
+Please report any bugs and feel free to send comments/suggestions!
+
+Mail Networks:
+
+  FidoNet - 1:134/31
+  Internet - None right now.
+  Or call the ISMWare Support directly (403)686-0449 and leave a message
+  by pressing L at the main menu.
+
+Or send mail to:   Paul Sidorsky
+                   1414 45th Street SW
+                   Calgary, Alberta
+                   CANADA T3C 2C2
+
+The latest version of BJ4TOP can be downloaded from the ISMWare Support BBS by
+calling (403)686-0449.  The current version of BJ4TOP can also be freqed using
+the magic name of "BJ4TOP".

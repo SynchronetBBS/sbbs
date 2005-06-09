@@ -1,0 +1,20 @@
+How to upgrade from BJ4RAP 1.00 to BJ4TOP 2.00g1
+--------------------------------------------------
+
+    The upgrade procedure is fairly straightforward, but there are a few
+mandatory steps you need to go through.
+
+    1) Unpack BJ4TOP.  You can unpack it to a new directory, or to your BJ4RAP
+directory.  If you unpack it to a new directory, be sure to copy the
+DONTSHOW.TXT file from BJ4RAP to this directory after unpacking.
+
+    2) If you use a batch file to run TOP, modify it to call BJ4TOP.EXE instead
+of BJ4RAP.EXE.  With BJ4TOP, you _MUST_ specify a node number on the command
+line!  This is different from BJ4RAP, with which a node number was optional.
+
+    3) Change your TOP.CFG file so that CrashProtDelay is set to 0!  BJ4TOP
+will not work with CrashProtDelay turned on.  Also, make sure that channel 1 is
+accessable to your users, as BJ4TOP only works on channel 1.
+
+    Be sure to skim over BJ4TOP.DOC and HISTORY.DOC for other new information!
+

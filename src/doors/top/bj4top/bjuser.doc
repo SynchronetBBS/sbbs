@@ -1,0 +1,38 @@
+Game Play
+---------
+    The object of the game is to draw cards that add up to 21 or as close
+to 21 as possible without going over (Bust).  Blackjack is an Ace and Ten
+value card on the first two cards dealt.  Blackjack pays 3 to 2.
+    The Jack, Queen, and King count 10.  The Aces counts 1 or 11, whichever
+you wish.  All other cards count as face value.  The dealer gives each
+player two cards.  The dealer's first card is face up, his second card is
+face down.
+    If you are satisfied with the total of your two cards, you can "stand"
+(draw no more cards).  If not, you can take a "hit" (draw one or more cards,
+one at a time).  If your total is nearer 21 than the Dealer's, you win even
+money.
+    If you go over 21 (Bust) you lose even if the Dealer goes Bust.  A tie is
+a Standoff and nobody loses.  After each player is satisfied with the cards
+s/he has asked for, the Dealer turns up his hidden card.  If he has 16 or
+less he must draw additional cards until he reaches 17 or over.  If he has 17
+or more he does not take any more cards.  If he Busts he must pay all the
+players still in the game.
+
+Pairs
+-----
+    Always split pairs of Aces and pairs of Eights.  Another equal amount of
+bet is wagered.  Your cards are then split and you are now playing two
+separate hands.
+
+Doubling-Down
+-------------
+    You may Double-Down on any hand in this game, preferably when your hand
+totals 10 or 11.  Player doubles his bet and is dealt only ONE more card.
+
+Insurance
+---------
+    If you decide to take insurance you are insuring your hand in the event
+the dealer has Blackjack.  Insurance pays 2 to 1, therefore, the insurance
+wager should be 1/2 of your original bet.  If the dealer has Blackjack you
+lose your original bet, but you are paid on your insurance, thus losing
+nothing.

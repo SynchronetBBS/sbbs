@@ -1,0 +1,204 @@
+EPI Structure
+
+Opcodes are a series of words corresponding to the No. field of the command
+below.  All other values are also words unless otherwise indicated.
+
+Numerical data is compiled as follows:
+
+<type> <index/value>
+
+<type> specifies what <index/value> will be, one of the following:
+
+    0 - Variable index.
+    1 - Short (1-word) value.
+    2 - Long (2-word) value.
+
+If the requirement is constant, then <type> is omitted and the meaning of
+<index/value> is assumed as needed.
+
+All numeric data is assumed to be unsigned.
+
+String data is compiled as follows:
+<type> <index/length> [<string data>]
+
+<type> specifies what <index/length> will be, one of:
+
+    0 - Variable index.
+    1 - String value length.
+
+If <type> is 1, then <string data> is the actual string data (1 char per byte),
+padded with an ASCII 0 to supply an even number of characters, if needed.
+
+If the requirement is constant, then <type> is omitted and the meaning of
+<index/length> is assumed.  If the assumption is type 1 then <string data>
+follows (0-padded if needed).
+
+In memory, string variables are stored as:
+
+<length> <string data>
+
+Fields are the same as above.
+
+Code indexes are stored as a long (double word) and indicate the offset number
+of words from the start of the program.
+
+Boolean types are the same as numeric types, where !0 = TRUE and 0 = FALSE.
+
+EPI Variable Types
+
+0   INT         Short (1-word) integer.
+0   SHORT       Short (1-word) integer.
+1   LONG        Long (2-word) integer.
+2   BOOL        Short (1-word) integer with TRUE/FALSE compile-time checking.
+3   STRING(X)   String variable of X characters.  (X) = (255) if omitted.
+
+EPI Programs
+
+Programs consist of multiple statements, one per line.  Statements can be
+generalized as follows:
+
+<command> <params>
+
+<command> is a command word from below.  <params> are the required
+parameter(s), if any, for that command word, according to the chart below.
+
+Labels take the following form:
+
+:<name>
+
+<name> is the name of the label.  The colon specifies where the label actually
+points to and is not needed for references.
+
+All variable names and label names are limited to 30 characters or less.
+
+EPI Compilation
+
+Compilation is linear, one pass compilation.  Each line is read and compiled
+sequentially on each pass.
+
+All lines are read and processed.  Comments are ignored.  Variable declarations
+are processed and allocators are written to the output file in this format:
+
+<type> <info>
+
+Type is a number from the variable type chart above.  <info> depends on the
+variable type.  For strings it is the buffer length, and for numeric variables
+it is the default value, or 0.  (Note that longs can only be initialized in
+short range.)
+
+Variable names and indexes are stored in memory so the program may refer to
+them.,,,,,,,,,,,,,,,,,
+
+Labels are read and their names
+
+EPI Commands (simple format)
+
+No.    Command Word  Params
+      Description
+-------------------------------------------------------------------------------
+    0  ADD           <var> [<amount>]
+      Adds <amount> (1) to <var> and stores result in <var>.
+    0  INC           <var>
+      Synonym for ADD <var> 1.
+    1  SUB           <var> [<amount>]
+      Subtracts <amount> (1) from <var> and stores result in <var>.
+    1  DEC           <var>
+      Synonym for DEC <var> 1.
+    2  MUL           <var> <amount>
+      Multiplies <var> and <amount> and stores result in <var>.
+    3  DIV           <var> <amount>
+      Divides <var> by <amount> and stores result in <var>.  Mod is discarded.
+    4  MOD           <var> <var> <amount>
+      Divides <var2> by <amount>, stores remainder in <var1>, discards quo.
+    -  CALC          <var> <math exp>
+      Calculates a math expression (+-*/%) and stores result in <var>.
+      Compiles to an ASSIGN followed by a bunch of math ops, all operating on
+      <var>.
+    5  CALL          <code index>
+      Calls function residing at <code index>.
+    6  SHELL         <string>
+      Shells to DOS and executes the command in <string>.
+    7  JUMP          <code index>
+      Changes program execution location to <code index>.
+    7  RETURN
+      Returns from last function.  Translates to JUMP with popped code index.
+    8  LOOP          <var> <amount> <amount> [<amount>]
+      Counts <var> from <amount1> to <amount2> in steps of <amount3> (1).
+    9  ENDLOOP
+      Ends the last loop.
+   10  ASSIGN        <var> [<amount>]
+      Sets <var> to <amount> (0).
+   10  ZERO          <var>
+      Same as ASSIGN <var> 0.
+   11  SET           <var> [<string>]
+      Sets string variable <var> to <string> ("").
+   11  CLEAR         <var>
+      Same as SET <var> "".
+   12  CONCAT        <var> <string>
+      Adds <string> to the end of <var> and stores result in <var>.
+   13  COMPARE       <var> <var> <string>
+      Compares <var2> and <string> and stores result in <var1>.
+   14  FIND          <var> <var> <string>
+      Looks for <string> in <var2> and stores result in <var1>.
+   15  OUTPUT        <string> <dest> [<var>] <param var[s]>
+      Prints <string> to <dest> (SCREEN), opt. store in <var> and using <param
+      vars> to fill @# tokens.
+   16  FILTER        <string> [<string>]
+      Filters PubColour codes from <string1>, storing the result in <string2>
+      (<string1>).
+   17  TRIM          <var> <string> [<string>]
+      Trims <string1> of spaces by <var> method, storing the result in
+      <string2> (<string1>).
+   17  LEFTTRIM      <string> [<string>]
+      Synonym for TRIM TRIM_LEFT <string> [<string>].
+   17  RIGHTTRIM     <string> [<string>]
+      Synonym for TRIM TRIM_RIGHT <string> [<string>].
+   17  FULLTRIM      <string> [<string>]
+      Synonym for TRIM TRIM_ALL <string> [<string>].
+   18  CLIP          <string> <var>
+      Clips <string> to <var> characters.
+   19  EXTEND        <string> <var> [<var>]
+      Extends <string> to <var1> characters, filling with <var2> (32).
+   20  OUTLANG       <string> <dest> [<var>] <param var[s]>
+      Like OUTPUT but <string> is the name of a language item.
+   21  RANDOM        <var> <amount>
+      Generates a random number from 0 to <amount>-1 and assigns it to <var>.
+  100  SETTIME       <amount>
+      Sets a user's remaining time to <amount> minutes.
+  101  ADDTIME       <amount>
+      Adds <amount> minutes to the user's remaining time.
+  102  SUBTIME       <amount>
+      Subtracts <amount> minutes from the user's remaining time.
+  103  SETSEC        <amount>
+      Sets a user's TOP security level to <amount>.
+  104  SETHANDLE     <var>
+      Sets a user's TOP handle to <var>.
+  500  CARDINIT      <var> <amount> <boolean>
+      Initializes a set of cards containing <amount> decks, assigning the index
+      to <var>, or 0 for failure.  If <boolean> is true, each deck will be
+      treated as if it had jokers, with 54 slots for cards per deck.
+      Otherwise, the deck(s) will contain 52 slots.  Programs are free to treat
+      the cards in any way they like, though the standard identifications
+      (given by CARDNAMES) are recommended.
+  501  CARDSHUFFLE   <var>
+      Shuffles a set of cards, index <var>.  This takes all of the discarded
+      cards in the deck and marks them as available again.  It does not touch
+      removed cards.
+  502  CARDDEAL      <var> <var> [<var>]
+      Picks card <var3> (-1 (random)) from set index <var2> and stores it in
+      <var1>, or stores 0 if the card is not available.
+  503  CARDDISCARD   <var> <var>
+      Discards card <var1> from set index <var2>.
+  504  CARDREMOVE    <var> <var>
+      Removes card <var1> from play from set index <var2>.  Removed cards can
+      only be brought back into play using CARDRESET.
+  505  CARDRESET     <var>
+      Resets set index <var> completely, marking ALL cards available again.
+  506  CARDCLOSE     <var>
+      Removes set index <var> from circulation, making it free to be used
+      again.
+  507  CARDNAMES     <var>
+      Returns a 108 character string containing the standard 54 two-character
+      strings (AS, 2S, 3H, etc.) to identify cards, storing it in <var>.  This
+      string comes from the language file, and can be changed by sysops.
+

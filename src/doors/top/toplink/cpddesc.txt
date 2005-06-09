@@ -1,0 +1,7 @@
+  - In order for TOPLink to stay online it must update the data files before a
+    certain time interval has passed.  Otherwise, TOP will think that TOPLink
+    has crashed and remove it from the teleconference.  Thus, TOPLink has to
+    know the CrashProtDelay setting from TOP.CFG.  However, you should actually
+    set this a little lower (5-10 seconds lower) than the setting in TOP.CFG so
+    that there is no danger of TOPLink taking too long if it is processing a
+    lot of incoming or outgoing text.

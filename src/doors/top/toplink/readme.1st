@@ -1,0 +1,21 @@
+Be sure to read the whole TOPLINK.DOC!
+
+Here are some IMPORTANT PORTIONS from the manual for those of you who hate
+reading them:
+
+*** WARNING: Do not run PKLITE, LZEXE, or any similar program on TOPLink.
+             Doing so will confuse the program!  TOPLink writes its
+             configuration directly to the TOPLINK.EXE file.
+
+Run TOPLink with a /CONFIG parameter to access the configuration editor.
+
+Before linking:
+First of all, make sure TOP HAS BEEN RUN PREVIOUSLY OR IS RUNNING.  TOPLink
+will not initialize/create the NODEIDX.TCH and NODEIDX2.TCH files.
+
+Running the link after using terminal to get into a BBS's teleconference:
+TOPLink <com port> <BBS Name> <TOP work path> <node>
+
+If you are upgrading from RAPLink, read the file UPGRADE.DOC.
+
+And please register!

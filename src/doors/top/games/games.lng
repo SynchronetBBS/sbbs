@@ -1,0 +1,187 @@
+PokerYouStartGame   @c^pOkay, you've started Poker game #^k@1^p.@c
+PokerMsgStartGame   @b^l@1^p has started Poker game #^k@2^p!
+PokerYouJoinGame    @c^pOkay, you've now joined Poker game #^k@1^p.@c
+PokerMsgJoinGame    ^l@1^p has joined Poker game #^k@2^p!
+PokerNoMainGame     @c^mYou have not set a main game in Poker!@c
+PokerBadGameNum     @c^mInvalid game number specified!@c
+PokerYouQuitGame    @c^pOkay, you have quit Poker game #^k@1^p.@c
+PokerMsgQuitGame    ^l@1^p has quit Poker game #^k@2^p!
+PokerMainGameSet    @c^pOkay, your main Poker game is now game #^k@1^p.@c
+PokerGameNotOn      @c^mGame #^l@1^m has not started!@c
+PokerWhosTurn       @c^nIt is ^l@1^n's turn to ^k@2^n in Poker.@c
+PokerShowPot        @c^pThe current pot is ^k@1^p CyberDollar@2.@c
+PokerNotInGame      @c^mYou aren't playing in Poker game #^l@1^m!@c
+PokerHandPrefix     @c
+PokerHandSuffix     @c
+PokerHandNameSuf    @c
+PokerNoBet          @c^mYou must specify a bet when using ^lPOKER @1^m!@c
+PokerNotYourTurn    @c^mIt is not your turn to ^k@1^m in Poker game #^l@2^m!@c
+PokerNotEnoughCash  @c^mYou don't have enough CyberCash!  (Bet = ^l@1^m, CyberCash = ^l@2^m)@c
+PokerBetTooLow      @c^mYou did not bet enough!  (Bet = ^l@1^m, Needed = ^l@2^m)@c
+PokerInvalidBet     @c^mInvalid bet! (Bet = ^l@1^m, Minimum = ^l@2^m, Maximum = ^l@3^m)@c
+PokerNoMoreRaise    @c^mRaise limit reached!  Can't raise any more this round.@c
+PokerYouCall        @c^nOkay, you call the bet.  (^l@1^n CyberDollar@2)@c
+PokerMsgCall        ^pIn Poker game #^k@1^p, ^l@2^p calls the bet (^k@3^p CyberDollar@4).
+PokerYouRaise       @c^nOkay, you call the bet (^l@1^n CyberDollar@2) and raise by ^l@3^n CyberDollar@4.@c
+PokerMsgRaise       ^pIn Poker game #^k@1^p, ^l@2^p calls the bet (^k@3^p CyberDollar@4), and raises by ^k@5^p CyberDollar@6!
+PokerDealtCard      ^pYou are dealt a ^k@1^p of ^k@2^p.
+PokerYouDiscard     @c^mOkay, you discard ^p@1^m card@2.@c
+PokerMsgDiscard     ^pIn Poker game #^k@1^p, ^l@2^p discards ^k@3^p card@4.
+PokerNotPlaying     @c^mYou are not playing in Poker game #^l@1^m!@c
+PokerYouFold        @c^nOkay, you fold your hand.@c
+PokerMsgFold        ^pIn Poker game #^k@1^p, ^l@2^p folds @3 hand.
+PokerBadGameOver    @c^I^mWARNING - Can't finish up Poker game #^l@1^m!  If you were playing in@cgame #^l@1^m, report this to your Sysop immediately!^A @c
+PokerBadFinish      @c^I^mERROR!  Conflicting results finishing Poker game #^l@1^m!!^A @cThe game has been cleared and your CyberCash total restored.@cPlease inform Sysop immediately!!^A @c
+PokerWinAmount      ^kYou win ^o@1^k CyberDollar@2!@c
+PokerYouLose        ^mSorry, you didn't win!  Better luck next time!@c
+PokerTooBroke       @c^mYou are too broke to play in Poker game #^l@1^m!  You will still be able@cto watch proceedings, but you will not be dealt a hand.
+PokerGameStarted    ^I^pPoker game #^k@1^p has started!^A@s
+PokerTooManyPeople  @c^mThere are too many people playing in Poker game #^l@1^m right now!@c
+PokerCantFindPlyr   @c^I^mCan't find your player record in Poker!!^A @cPlease inform Sysop about this error!@c
+PokerNameLHighCard  ^pHigh Card (^k@1^p).
+PokerNameLOnePair   ^pA pair of ^k@1^p.
+PokerNameLTwoPair   ^pTwo pair, ^k@1^p and ^k@2^p!
+PokerNameL3Kind     ^pThree ^k@1^p!!
+PokerNameLStraight  ^I^pA straight (^k@1^p high)!!!^A@s
+PokerNameLFlush     ^I^pA flush in ^k@1^p (^k@2^p high)!!!!^A@s
+PokerNameLFHouse    ^I^pA full house, ^k@1^p over ^k@2^p!!!!!^A@s
+PokerNameL4Kind     ^I^pFour ^k@1^p!!!!!!^A@s
+PokerNameLStrFlush  ^I^pA straight flush in ^k@1^p (^k@2^p high)!!!!!!!!^A@s
+PokerNameLRoyFlush  ^I^pA ROYAL FLUSH IN ^k@1^p!!!!!!!!!!!!!!!^A@s
+PokerNameSHighCard  ^k@1^p High
+PokerNameSOnePair   ^pPair of ^k@1
+PokerNameSTwoPair   ^pTwo Pair (^k@1^p & ^k@2^p)
+PokerNameS3Kind     ^pThree ^k@1
+PokerNameSStraight  ^k@1^p High Straight
+PokerNameSFlush     ^pFlush (^k@1^p, ^k@2^p High)
+PokerNameSFHouse    ^pFull House (^k@1^p/^k@2^p)
+PokerNameS4Kind     ^pFour ^k@1
+PokerNameSStrFlush  ^pStraight Flush (^k@1^p, ^k@2^p High)
+PokerNameSRoyFlush  ^I^oROYAL^A^p Flush (^k@1^p)
+PokerYourHand       @c^nYour Hand:@c
+PokerDispHandPref
+PokerDispCardPref   ^H
+CardShrtColour1     ^a
+CardShrtColour2     ^a
+CardShrtColour3     ^m
+CardShrtColour4     ^m
+CardShrtSngValue1   A
+CardShrtSngValue2   2
+CardShrtSngValue3   3
+CardShrtSngValue4   4
+CardShrtSngValue5   5
+CardShrtSngValue6   6
+CardShrtSngValue7   7
+CardShrtSngValue8   8
+CardShrtSngValue9   9
+CardShrtSngValue10  T
+CardShrtSngValue11  J
+CardShrtSngValue12  Q
+CardShrtSngValue13  K
+CardShrtSngValue14  A
+CardShrtSngValue15  O
+CardShrtPluValue1   As
+CardShrtPluValue2   2s
+CardShrtPluValue3   3s
+CardShrtPluValue4   4s
+CardShrtPluValue5   5s
+CardShrtPluValue6   6s
+CardShrtPluValue7   7s
+CardShrtPluValue8   8s
+CardShrtPluValue9   9s
+CardShrtPluValue10  Ts
+CardShrtPluValue11  Js
+CardShrtPluValue12  Qs
+CardShrtPluValue13  Ks
+CardShrtPluValue14  As
+CardShrtPluValue15  Os
+CardShrtSngSuitA1   S
+CardShrtSngSuitA2   C
+CardShrtSngSuitA3   H
+CardShrtSngSuitA4   D
+CardShrtPluSuitA1   Ss
+CardShrtPluSuitA2   Cs
+CardShrtPluSuitA3   Hs
+CardShrtPluSuitA4   Ds
+CardShrtSngSuitI1   @x006
+CardShrtSngSuitI2   @x005
+CardShrtSngSuitI3   @x003
+CardShrtSngSuitI4   @x004
+CardShrtPluSuitI1   @x006s
+CardShrtPluSuitI2   @x005s
+CardShrtPluSuitI3   @x003s
+CardShrtPluSuitI4   @x004s
+PokerDispCardSuf    ^A@s
+PokerDispHandSuf    @b
+PokerHandPrefix     @c
+PokerHandSuffix     @c
+CardLongSngValue1   Ace
+CardLongSngValue2   Two
+CardLongSngValue3   Three
+CardLongSngValue4   Four
+CardLongSngValue5   Five
+CardLongSngValue6   Six
+CardLongSngValue7   Seven
+CardLongSngValue8   Eight
+CardLongSngValue9   Nine
+CardLongSngValue10  Ten
+CardLongSngValue11  Jack
+CardLongSngValue12  Queen
+CardLongSngValue13  King
+CardLongSngValue14  Ace
+CardLongSngValue15  Joker
+CardLongSngSuit1    Spade
+CardLongSngSuit2    Club
+CardLongSngSuit3    Heart
+CardLongSngSuit4    Diamond
+CardLongPluValue1   Aces
+CardLongPluValue2   Twos
+CardLongPluValue3   Threes
+CardLongPluValue4   Fours
+CardLongPluValue5   Fives
+CardLongPluValue6   Sixes
+CardLongPluValue7   Sevens
+CardLongPluValue8   Eights
+CardLongPluValue9   Nines
+CardLongPluValue10  Tens
+CardLongPluValue11  Jacks
+CardLongPluValue12  Queens
+CardLongPluValue13  Kings
+CardLongPluValue14  Aces
+CardLongPluValue15  Jokers
+CardLongSngSuit1    Spade
+CardLongSngSuit2    Club
+CardLongSngSuit3    Heart
+CardLongSngSuit4    Diamond
+CardLongPluSuit1    Spades
+CardLongPluSuit2    Clubs
+CardLongPluSuit3    Hearts
+CardLongPluSuit4    Diamonds
+PokerDiscSingular
+PokerDiscPlural     s
+PokerGameEnded      @c^lPoker^p game #^k@1^p has ended!@c
+PokerHandsWere      @c^nThe hands were:@c
+;
+; Other more complex EndHandDisp stuff goes here once I figure out how
+; to make it easily configurable.
+;
+PokerPotWas         @c^oThe pot was ^l@1^o CyberDollar@2.@c
+PokerMsgYourTurn    @b^pIt is your turn to ^l@1^p in Poker game #^k@2^p!
+Bet                 bet
+Discard             discard
+CmdsPoker           POKER
+CmdsSlots           SLOTS SLOT
+CmdsMatch           MATCH
+CmdsMatchShow       SHOW DISPLAY
+CmdsMatchStart      START BEGIN
+MatchNotEnoughCash  @c^mNot enough cash!  MatchGame requires ^l@1^m CyberDollars to play, and you only have ^l@2^m!@c
+MatchNewGame        @c@c^J^pA new MatchGame has begun!!^A^p
+MatchGameAlreadyOn  @c^mGame already underway!@c
+MatchGameNotOn      @c^mGame not in progress!@c
+MatchAlreadyPicked  @c^I^mAlready picked that number!@c
+MatchDispSep        @c@c
+MatchDispPicked     @1@2.02^A
+MatchDispUnPicked   ^g-^l@2.02^g-
+MatchDispBoardEnd   @c@c
+MatchWin            ^I^kYou win ^p@1^k CyberDollars!!!@c@c
+MatchLose            ^mSorry, you lost ^l@1^m CyberDollars.@c@c

@@ -1,0 +1,176 @@
+
+                                TOPMaint v2.00a
+                     User Maintenance Utility for TOP v2.00
+
+    Introduction
+    ------------
+
+    TOPMaint is simple utility that lets you manage your TOP v2.00 user file.
+It replaces the crude TOP EDIT and TOP PACK modes in TOP v2.00 and adds some
+extra functionality as well.
+
+    TOPMaint requires The Online Pub v2.00.  It should also work with v2.00g1
+and might even work with RAP (RA Pub) v1.82/v1.82a, but it has only been tested
+with TOP v2.00.
+
+    Though TOPMAINT.EXE is a DOS program, it will work with the DOS, OS/2, and
+Win95 versions of TOP.
+
+    Installation
+    ------------
+
+    Installation of TOPMaint is very easy.  Simply unpack the entire contents
+of the TOPMaint Distribution Archive (TMTD200A.ARJ, or .ZIP, etc.) to your main
+TOP directory (the same one with TOP.EXE and USERS.TOP).
+
+    Operation
+    ---------
+
+    TOPMaint features four modes of operation, which are described briefly
+below:
+
+    DELETE mode lets you delete a user from USERS.TOP.  It works much like the
+crude user deletor in TOP EDIT mode, but is a lot easier to use.
+
+    PURGE mode is a new feature which lets you remove idle or "twit" users from
+the user file.  By specifying a number of days, you can delete users that have
+not entered TOP in a certain number of days.  By specifying a minimum security
+level, you can instruct TOP to delete all users who's security is less that
+that level.  Specifying both allows you to perform idle deletion on users while
+"protecting" those users with a high enough security, for example sysops,
+subops, or paid users.
+
+    PACK mode is identical to the TOP PACK mode that is built into TOP.  It
+should always be used instead of TOP PACK, as it runs faster and is more
+suitable for batch file operation.
+
+    SETSEC mode works the same as the SYSOP SETSEC command inside TOP.  It
+replaces the extremely crude "set user to 65535 security" option in TOP EDIT
+mode, which makes it a lot easier to upgrade sysops and other users.
+
+    The specific operation of each mode is explained in TOPMAINT.EXE itself.
+Simply run TOPMaint as follows to get a list of commands:
+
+TOPMAINT ?
+
+    WARNING:  No users must be inside TOP while TOPMaint is running!  Running
+TOPMaint while users are chatting in TOP can permanently damage your user file!
+
+    Tips, Suggestions, and Warnings
+    -------------------------------
+
+    Below are some tips and suggested uses for TOPMaint, as well as warnings
+about what TOPMaint can and can't do.
+
+    - Always backup your user file (USERS.TOP) before running TOPMaint.
+TOPMaint does not do very much errorchecking (to keep it small and fast), so if
+a problem arises it could spell big trouble for your user file.  The simplest
+and safest way to avert this is to use the following line (either manually or
+in a batch file) before TOPMaint is run:
+
+COPY USERS.TOP USERS.BAK
+
+    This will backup your user file.  Be sure that no users are inside TOP
+before this command is run.  See below for details on how to do this in a batch
+file.
+
+    - The PURGE and PACK modes of TOPMaint are best suited for inclusion in
+the nightly maintenance batch file that most BBSs use.  Here is an example
+snippet from a batch file:
+
+COPY USERS.TOP USERS.BAK
+TOPMAINT PURGE /S10000 /D30
+TOPMAINT PACK
+
+    Replace 10000 with the sysop, cosysop, or subop security (whichever is
+lowest) so important users will not be deleted.  Replace 30 with the number of
+days that you wish to allow users to remain idle before they are deleted.
+Ideally, this latter figure should be the same number of days that you delete
+idle users from your BBS entirely, if you do so.
+
+    - Because TOPMaint can't be run while users are inside TOP, if you are
+using TOPMaint in your nightly maintenance and nodes are allowed to remain
+logged into the system while maintenance is running, you will have to take
+special steps to allow TOPMaint to be run.  First, change the batch file used
+to call TOP.EXE as follows:
+
+CD \BBS\TOP
+ECHO . > TOP%1.FLG
+TOP %1
+DEL TOP%1.FLG
+
+    Note that to use this batch file, you must pass the node number to the
+batch file as the first parameter.  This batch file creates simple semaphore
+flags while a user is in TOP, and deletes them once TOP finishes running.  You
+can then perform the following check in your nightly maintenance batch file to
+make sure no users are in TOP before running TOPMaint:
+
+CD \BBS\TOP
+if not exist TOP*.FLG TOPMAINT PURGE /S10000 /D30
+if not exist TOP*.FLG TOPMAINT PACK
+
+    - TOPMaint does not log its activities.  However, you can maintain a record
+of what TOPMaint does by using some fancy batch file work.  Below is an example
+of a nightly maintenance batch file snippet that runs TOPMaint and logs its
+activities.
+
+CD \BBS\TOP
+TOPMAINT PURGE /S10000 /D30 > TMPLOG
+COPY TOPMAINT.LOG + TMPLOG TOPMAINT.LOG
+TOPMAINT PACK > TMPLOG
+COPY TOPMAINT.LOG + TMPLOG TOPMAINT.LOG
+DEL TMPLOG
+
+    This batch file redirects TOPMaint's output to a file (TMPLOG), then
+appends this file to TOPMAINT.LOG (creating it if it does not exist).  A
+temporary file is necessary because files are overwritten when redirection is
+used.  This is why TMPLOG only needs to be deleted after the entire maintenance
+is finished.  Actually, it doesn't need to be deleted at all, but doing so
+keeps your TOP directory cleaner.
+
+    Please note that TOPMaint uses some ASCII control codes so viewing a log
+file inside a text editor may look a little strange, though by no means
+unreadable.  However, the best method of viewing a log file is from DOS, as
+follows:
+
+TYPE TOPMAINT.LOG | MORE
+
+    This will pipe the log file through DOS's MORE command, allowing you to
+view it a screen at a time.  All control codes will perform their proper
+function, thus the output will be a lot more legible.
+
+    Future Plans
+    ------------
+
+    As the next version of TOP (v3.00) is at least a year away, a few more
+enhancements are planned for TOPMaint to provide some important features that
+weren't able to be included in TOP v2.00.  These include:
+
+    - The ability to change a user's handle.
+
+    - The ability to run TOPMaint before TOP to undo the automatic name
+capitalization that TOP forces on user's handles.
+
+    - A native OS/2 version.
+
+    Contacting the Author
+    ---------------------
+
+    The author of TOPMaint and TOP can be reached as follows:
+
+    FidoNet Netmail: 1:134/31 (address to Paul Sidorsky)
+    Internet Email : paulsid@nucleus.com
+    BBS            : (403)686-0449 (Press L at the Main Menu)
+
+    Note that my Internet access has finally been renewed and I can once again
+be reached at paulsid@nucleus.com.  I again apologize for not having Internet
+access when TOP v2.00 was released, but when you're broke, you're broke!
+
+    Please do not hesitate to contact me if you have a bug report or suggestion
+for TOPMaint or TOP!
+
+    Revision History
+    ----------------
+
+    Version 2.00a - Initial release.
+

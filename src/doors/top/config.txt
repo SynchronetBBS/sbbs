@@ -1,0 +1,127 @@
+Complete List of TOP Keywords
+-----------------------------
+
+Keywords can appear in the config. file in any order, unless noted.  All
+keywords that do not appear will be assigned a default value, unless noted as
+mandatory.  Default values should appear in the TOP source, obviously, and
+should also appear in the docs and in the annotated config. file.  Commented
+keywords aren't currently supported by the config. reader.  Keywords marked
+with a ^ are not yet supported by the program itself.
+
+-------------------- Needs Memory/Disk toggle support.
+
+DC1 Keywords
+------------
+
+BBSType                   Type of BBS (*1)
+BBSName                   Name of BBS
+SysopName                 Name of System Operator
+SystemLocation            Location of System
+;^SystemPhone               System Phone Number
+;^SystemBPS                 System bps rates (*2)
+;^SystemSummary             Description of System
+TOPPath                   Path to TOP Files
+TOPWorkPath               Path to InterTOP Messages
+TOPANSIPath               Path to TOP ANSI/AVT/RIP files.
+BBSPath                   Path to BBS Files
+BBSIPCPath                Path to BBS IPC Files
+SecuritySysop             Security Level of Sysops (All Securities = 0-65535)
+SecurityNewUser           Security Level to give to New Users
+SecurityTalk              Security Level to Talk in Pub
+SecurityChangeHandle      Security Level needed to Change Handles
+SecurityChangeSex         Security Level needed to Change Sex
+SecurityChangeEXMsg       Security Level needed to Change Entry/Exit
+SecuritySendPrivate       Security Level to Whisper/SecretAct
+SecurityActionUse         Security Level to use Actions
+;^SecurityOverrideTime      Security Level to ignore Time Restrictions
+ShowTitle                 Show Title Page?
+ShowNews                  Show News File?
+AllowActions              Allow Actions to be used?
+AllowHandles              Allow Handles to be used?
+AllowNewHandles           Allow New Handles or use BBS ones?
+AllowChangeHandle         Allow Handles to be changed?
+AllowChangeSex            Allow Sex to be changed?
+AllowChangeEXMsg          Allow Entry/Exit to be changed?
+AllowPrivateMsgs          Allow Whispers/SecretAct
+AllowForgetting           Allow users to Forget/Be Forgotten
+;^MaxCallTime               Maximum time allowed per call (0-1440)
+;^MaxDayTime                Maximum time allowed per day (0-1440)
+InactiveTimeout           Inactivity Timeout, in seconds
+LocalBeeping              Sessions to beep locally for (*4)
+;^MaintTime                 Time and Day to run Maintenance (*5)
+LangFile                  Base File Name (no path or ext.) of Language File
+PollDelay                 Delay between message polls, in .1s units
+RetryDelay                Delay between file retries, in .1s units
+RetryMax                  Maximum number of file retries before error/warning
+
+DC2 Keywords
+------------
+
+MaxNodes                  Number of nodes on system
+;^NameBreakChars            Characters Used for Name Capitalization (*6)
+;^EditingPassword           Password for getting into the System Editor
+;^SysopHandle               System Operator's Handle
+;^Pipe                      Path of OS/2 Pipes (TOP/2 Only)
+;^SecurityActionOp          Security Level for Action Ops
+;^SecurityOverrideOptions   Security Level to ignore Allowance Options
+;^SecurityOverrideSettings  Security Level to ignore TOP Restrictions
+;^SecurityOverrideInactive  Security Level to ignore Inactive Timeout
+;^SecurityCantForget        Security Level for people who can't be forgotten
+;^SecurityForget            Security Level to forget users
+ShowOpeningCredits        Show opening credits?
+ShowClosingCredits        Show closing credits?
+NoRegName                 Use Sysop's Handle in Regnote.
+;^LogInEditOnlyNodes        Write Editor Only logins to NODEIDX?
+AllowHighASCII            Allow ASCII 128-255?
+;^AllowPubColour            Allow PubColour to be used at all?
+;^AllowPubColourInHandles   Allow PubColour in Handles?
+;^AllowPubColourInBio       Allow PubColour in Bio Entries?
+CrashProtDelay            Seconds between Crash Protection Sweeps (0-65535)
+
+TOP Keywords
+------------
+
+;^AllowPubColourInChat      Allow PubColour in typed text?
+DefaultChannel            Default chat channel for New Users
+;^NewUsersEnterPassword     Sessions to prompt new users to enter a password (*4)
+;^EnforcePassword           Sessions where a password must always be present
+;^MinimumPasswordLength     Minimum number of characters for password (1-20)
+MaxActions                Maximum number of actions allowed
+MaxPWTries                Maximum number of password attempts before failure
+;^PokerMinBet               Minimum bet allowed in Poker
+;^PokerMaxBet               Maximum bet allowed in Poker
+;^PokerAnte                 Ante for Poker games
+
+Footnotes
+---------
+
+1 - One of "UNKNOWN", "RA2", "MAX2", "MAX3", or "SBBS11".
+
+2 - The letters A through Z represent supported bps rates if present.
+    A=300,B=600,C=1200,D=2400,E=4800,F=7200,G=9600,H=12000,I=14400,J=16800,
+    K=19200,L=21600,M=24000,N=26400,O=28800,P=31200,Q=33600.  The remaining
+    letters are unused at this time.  The symbol * can also be used.  It
+    represents a customized bps rate, and should be followed immediately by a
+    bps rate, for example: "*38400".  There can be as many * symbols as needed.
+    Letters can be seperated by spaces if needed, but this should normally not
+    be done.
+
+3 - UseHandles keyword obsoleted by AllowHandles and AllowNewHandles.
+
+4 - Can contain the words "None", "Local", "Remote", or "LAN", each signifying
+    the type of session the setting is allowed to be used with.  If "None" is
+    present, it overrides the entire line, meaning the setting will not be used
+    whatsoever, even if other valid words are present.
+
+5 - Format is "<day|type> [<time>]".  Using a day means that maintenance will
+    be performed on a weekly basis on the specified day.  Days can be one of
+    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", or
+    "Saturday", though only the first three letters are needed.  Using a type
+    means maintenance will be performed as described by the type used.  Types
+    can be one of "Daily", or "Weekly", with "Weekly" being the same as
+    specifying "Sunday" as a day.  Time is optional, and indicates the time (in
+    HH[:MM[:SS]] format.  If a time is omitted, 00:00:00 will be used.
+
+6 - Can contain any ASCII character including space.  Therefore, chars. should
+    logically not be separated by spaces.  Space can NOT be the first character
+    used, for obvious reasons.

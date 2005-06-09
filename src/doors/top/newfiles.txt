@@ -1,0 +1,33 @@
+Revised TOP FIle Naming Schemes
+
+All temporary .TOP files are being renamed to .TCH so there is less confusion
+over which files can be deleted, and so the temporary files can be found
+easier.  "TCH" stands for "TOP Chat", thus "TCH File" means "TOP Chat File"
+which is pretty much accurate.
+
+The following files have undergone naming structure changes.  The 5 chars for a
+node space allows up to 32767 nodes to be safely used.
+
+    MIDX###.TOP ---> MIX#####.TCH
+
+    This is done simply to shorten the name.
+
+    NODE###.TOP ---> MSG#####.TCH
+
+    This is done to shorten the name as well as give a more accurate
+description of what the files are for.
+
+    CHR#####.TCH
+
+    This is not used yet, but will be the new Char By Char data file, described
+in NEWCHAT.TXT.  The reason for the name is obvious.
+
+    PRV#####.TCH
+
+    This is a Private Chat data file.  The format is a prototype of the method
+described in NEWCHAT.TXT.  The reason for the name is obvious.
+
+    EPR#####.TCH
+
+    This is an Entered Private Chat file, and is used as a flag when a node is
+in a private chat.  The reason for the name is obvious.

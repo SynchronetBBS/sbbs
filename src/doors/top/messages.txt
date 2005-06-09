@@ -1,0 +1,1263 @@
+TOP v3.00wb1 Message Specifications - Revision B000
+---------------------------------------------------
+
+	This file describes how TOP sends messages between nodes.  This messaging
+system is probably the most important element of TOP.  It is not overly
+complex, but a thorough understanding of how it works is needed by anybody
+making modifications to TOP, writing add-ons like TOPLink, or writing external
+command programs (ECPs).
+
+    The first part of this file gives a brief introduction to sending messages
+in TOP.  Anybody working with TOP should know how this is done.  The second
+part describes each message, including what it is used for, what data it
+requires, and how it is to be responded to.  It is intended as a reference
+guide.	The third and last part of this file describes the inner workings of
+the messaging system, from a technical standpoint.	You only need to
+familiarize yourself with this part if you are planning to change TOP's
+messaging system, develop third-party add-ons like TOPLink, or if you are
+simply curious.
+
+    NOTE:  This file refers to a couple of other files which are not
+distributed as part of the TOP specifications in the ECPDK.  As a result, only
+those who have obtained the TOP source code will have these files.  Please
+contact me if you need information regarding any of the features described.
+
+						================================
+						1. Introduction to TOP Messaging
+						================================
+
+    Messages are sent from one node to another using files.  In TOP, this is
+done via the dispatch_message() function.  This function fills the msg_typ
+structure that will be written to the message file (see section 3).  It also
+determines which nodes receive the message.
+
+	The dispatch_message() Function
+	-------------------------------
+
+	The dispatch_message() function takes five parameters.	The prototype for
+the dispatch_message() function is reproduced below:
+
+void dispatch_message(XINT type, unsigned char *string, XINT tonode,
+					  XINT priv, XINT echo);
+
+	The first three parameters correspond directly to fields in the msg_typ
+structure (type, string, and doneto respectively).	As such, they will not be
+discussed right now.  Instead, refer to the discussion of the msg_typ structure
+below.
+
+	The last two parameters determine which node or nodes receive the message.
+They are both boolean flags that can be either TRUE or FALSE.  The priv
+parameter controls whether the message should be sent privately.  If it is
+TRUE, dispatch_message() will only send the message to the node specified in
+the tonode parameter.  Otherwise, TOP will send the message to all nodes
+currently using TOP.  The echo parameters simply controls whether or not the
+node sending the message should receive a copy of it.  Setting it to TRUE sends
+a copy of the message to the sending node.	Otherwise, TOP will skip the
+sending node when dispatching the message.
+
+	In addition, a few global variables also correspond to fields in the
+msg_typ structure.	Global variables were used when data was added in later
+versions of TOP, because I did not wish to change a hundred-some odd calls to
+dispatch_message().  The global variables msgextradata, msgminsec, and
+msgmaxsec correspond to the data1, minsec, and maxsec fields of the msg_typ
+structure, respectively.  The msgsendglobal global variable is a flag affects
+the channel field of the msg_typ structure.  If the flag is TRUE, the message
+will be sent on channel 0 (globally).  Otherwise, the message will be sent on
+the user's current channel.
+
+    For ECP programmers, the parameters of the SendType and SendGlobal keywords
+correspond to the parameters of the dispatch_message() function.  The global
+variables are not available, except for msgsendglobal which is turned on by
+using SendGlobal.
+
+	The msg_typ Structure
+	---------------------
+
+	The msg_typ structure contains all of the data needed for one node of TOP
+to communicate with another.  Most of the data in the structure depends on
+relatively constant information such as the user's handle and the current
+channel the user is on.  Only a few fields change with each message, and as
+noted above the parameters to dispatch_message() and the msg... global
+variables are used to change these fields.
+
+    For ECP programmers, these fields are filled either with data from the
+parameters of the Send... keywords, or by TOP itself for fixed fields like the
+from node number.
+
+	Each field of the msg_typ structure is discussed in detail below.
+
+unsigned XINT	structlength	This field simply contains the length of the
+								msg_typ structure (i.e. sizeof(msg_typ)) for
+								the version of TOP in use.	It is intended for
+								future compatibility and linking.  A version of
+								TOP can look at this field and see how long the
+								msg_typ structure is.  If it is different than
+								the known size, compensations could be made.
+								This field is filled in by dispatch_message()
+								but is not currently used anywhere in TOP.
+
+XINT			type			The type of message being sent.  This should be
+								one of the MSG_ constants defined in TOPSTR.H
+								and described below.  It is set by the type
+								parameter of the dispatch_message() function.
+
+XINT			from			The node that is sending the message.  Filled
+								in by dispatch_message().
+
+XINT			doneto			The node the message is being "done to".  This
+								is essentially the receiving node for the
+								message.  However, it does not mean that this
+								is the only node that will receive the message.
+								The receiving nodes are controlled by the priv
+								and echo parameters of dispatch_message() and
+								are described above.  Many messages used by TOP
+								can be "done to" one node but still seen by all
+								nodes.	The effect of this field depends on the
+								message type.  Regardless of the message type,
+								this field is always set to the tonode
+								parameter of dispatch_message().  If the
+								message is not being "done to" any specific
+								node, this should be set to -1.
+
+XINT			gender			The gender of the node sending the message.  It
+								is set to user.gender by dispatch_message().
+								TOP uses 0 for male and 1 for female in this
+								field.
+
+unsigned char*	handle			The handle of the user on the node that is
+								sending the message.  It is set to user.handle
+								by dispatch_message().
+
+unsigned char*	string			The main text data of the message.	The actual
+								content of this field varies wildly with each
+								message type.  It is usually the actual text to
+								be displayed on screen, or specific data being
+								changed (eg. a user's new handle).  It is set
+								by the string parameter of the
+								dispatch_message() function.
+
+unsigned long	channel 		The user's current channel.  It is set to the
+								curchannel global variable by
+								dispatch_message(), unless the global variable
+								msgsendglobal is TRUE, in which case it will be
+								set to 0 (the global channel).	See
+								CHANNELS.TXT for a description of the internal
+								channel numbers used by TOP.
+
+unsigned XINT	minsec			The minimum security that can receive this
+								message.  This field is set by the msgminsec
+								global variable.  It is neither supported nor
+								used by TOP at this time, so if you wish to use
+								this field you will need to add code to
+								process_messages() to check this parameter.
+
+unsigned XINT	maxsec			The maximum security that can receive this
+								message.  This field is set by the minmaxsec
+								global variable.  Again, it is not currently
+								supported by TOP.
+
+long			data1			Type-specific numeric data.  The contents
+								depend entirely on the message type, and most
+								message types don't use extra data.  It is set
+								by the msgextradata global variable.
+
+							  ====================
+							  2. TOP Message Types
+							  ====================
+
+	This section lists each TOP message type and the data that is required in
+certain fields.  It should be used as a reference when adding or changing
+features.  This section is also particularly important to those wishing to
+develop ECPs.
+
+	Each entry in the list shows the MSG_ constant, its numeric equivalent, and
+a brief description on the top line.  After this, there are short (one line)
+descriptions of what data belongs in the doneto, string, and data1 fields.  A
+detailed usage description follows.  Concluding the entry is a list of related
+or similar message types.
+
+	Some message types are not used in TOP and are marked as "Reserved" in
+TOPSTR.H.  These message types _are_ documented below, as there is an expected
+behaviour that is associated with each of these message types.	Unused message
+types have a * beside their number in the listings below.  If you wish to use
+one of these message types, you must remember to implement processing code in
+the process_message() function, or the message will not work.  ECP programmers
+should ignore these message types unless they are programming for a newer or
+customized version of TOP that is known to use them.
+
+	I realize some of the message types are redundant and could be combined
+using the data1 field as a distinguisher, but I have left them the way they
+are.  Many of the message types were created before the data1 field was
+implemented, and since the type field can handle 65536 types, there is no
+danger of a shortage.  Also, the use of very specific types keeps the already
+cluttered process_message() function a little more organized.
+
+	User Defined Types
+	------------------
+
+	If you wish to add your own message types, please assign them negative
+numbers.  This will prevent them from conflicting with any future versions of
+TOP or external utilities.	Negative message numbers ranging from -32768 to -1
+are available, so there is no danger of running out.
+
+	TOP itself will simply ignore all message types that it does not recognize.
+
+	Message Type List
+	-----------------
+
+	In the list below, the term "formatting" refers to the adding of prefix and
+suffix text and colour codes to the actual text to make the text suit the
+command.  For example, the whisper command shows the text using a prefix of
+"From BlindSpot (whispered): ".  Formatting is done by the node receiving the
+message, unless otherwise noted in the list below.
+
+	The term "raw text" means that text should be passed on as entered by the
+user, without formatting and without filtering PubColour(TM) codes.  (However,
+the censor and trimming routines should be used before sending if their effects
+are desired.)
+
+	Where a "null string" or "empty string" is referred to it means that the
+string should contain a single \0 (ASCII 0) character in the first byte,
+effectively meaning the string is empty of displayable text.  NEVER PASS THE
+VALUE NULL AS THE string PARAMETER WHEN CALLING dispatch_message()!
+
+	NOTE:  There are some cases where parameters are not used by TOP when
+processing messages, even though the parameters are listed below as requiring
+data.  To prevent confusion I will not list any specific cases.  For safety,
+you should always pass the data listed below, even if you have discovered that
+TOP does not use it.  Remember that there may be external utilities (like
+TOPLink) that may expect the data to be there.
+
+-------------------------------------------------------------------------------
+MSG_NULL			#0		Null or deleted message.
+
+doneto	-	Unused.
+string	-	Unused.
+data1	-	Unused.
+
+	This is a null (or "deleted") message that TOP will ignore completely.  It
+is not sent by TOP itself.	The intent of this message is to provide a means
+for external utilities to delete messages quickly and easily.  The technique
+for accomplishing this is beyond the scope of this list, however.  Please note
+that TOP does NOT delete messages by simply setting them to this type.	A
+discussion of how TOP deletes messages follows this list.
+
+See Also:  None
+------------------------------------------------------------------------------
+MSG_TEXT			#1		Regular chat text.
+
+doneto	-	Unused.
+string	-	The raw text that will be displayed.
+data1	-	Unused.
+
+	This message type is used for normal chat text.  Any text that is typed by
+the user that does not trigger a valid command and is not blocked by the censor
+will be sent using this message type.
+
+See Also:  MSG_GENERIC (#35)
+-------------------------------------------------------------------------------
+MSG_ENTRY			#2		A user has entered TOP.
+
+doneto	-	Unused.
+string	-	Raw text of user's custom entry message, or null to use default.
+data1	-	Unused.
+
+	This message type is sent when a user enters TOP.  In addition to
+displaying the user's entry message, this message tells all receiving nodes
+to mark the sending node as "active" so that it can see the user immediately.
+
+	Generally, you can just pass user.emessage as the string parameter.  If the
+user has a custom entry message it is stored there, otherwise user.emessage
+will be an empty string.  The receiving node will show the default entry
+message if an empty string is detected.
+
+See Also:  MSG_EXIT (#3)
+-------------------------------------------------------------------------------
+MSG_EXIT			#3		A user has exited TOP via the QUIT command.
+
+doneto	-	Unused.
+string	-	Raw text of user's custom exit message, or null to use default.
+data1	-	Unused.
+
+	This message type is sent when a user leaves TOP using the QUIT command. In
+addition to displaying the user's exit message, this message tells all
+receiving nodes to mark the sending node as "inactive" so that it can no longer
+see the user.
+
+	Generally, you can just pass user.xmessage as the string parameter.  If the
+user has a custom exit message it is stored there, otherwise user.xmessage will
+be an empty string.  The receiving node will show the default exit message if
+an empty string is detected.
+
+	Please note that there are three other message types used to exit TOP under
+different circumstances:  MSG_TOSSOUT, MSG_TOSSED, and MSG_ZAPPED.	MSG_UNLINK
+is also used to exit TOP for linked systems.
+
+See Also:  MSG_ENTRY (#2), MSG_TOSSOUT (#19), MSG_UNLINK (#24),
+           MSG_TOSSED (#26), MSG_ZAPPED (#27)
+-------------------------------------------------------------------------------
+MSG_INEDITOR		#4		A user has entered the Profile Editor.
+
+doneto	-	Unused.
+string	-	Handle of the user entering the Profile Editor.
+data1	-	Unused.
+
+	This message is sent to inform other users that a user has entered the
+Profile Editor.  It is sent mainly to inform other users, although TOP will
+cancel any private chat requests involving the sending node (both to and from)
+upon reception of this message.
+
+See Also:  MSG_OUTEDITOR (#5)
+-------------------------------------------------------------------------------
+MSG_OUTEDITOR		#5		A user has returned from the Profile Editor.
+
+doneto	-	Unused.
+string	-	Handle of the user leaving the Profile Editor.
+data1	-	Unused.
+
+	This message is sent to inform other users that a user has returned the
+Profile Editor.  It is sent purely to inform other users.
+
+See Also:  MSG_INEDITOR (#4)
+-------------------------------------------------------------------------------
+MSG_WHISPER 		#6		Private message from one user to another.
+
+doneto	-	Node that is to receive the whisper.
+string	-	Raw text containing the private message.
+data1	-	Unused.
+
+	A whisper is a private message sent from one node to another.  As such,
+this message should always be sent to just one node (priv parameter = TRUE).
+
+See Also:  MSG_TEXT (#1), MSG_DIRECTED (#39)
+-------------------------------------------------------------------------------
+MSG_GA				#7		Regular general action.
+
+doneto	-	Unused.
+string	-	Raw general action text.
+data1	-	Unused.
+
+	This message type sends a general action to other nodes.  The string
+parameter should only contain the actual text that makes up the general action.
+It should not contain the user's handle or any formatting; that is added by the
+receiving node.
+
+See Also:  MSG_GA2 (#8)
+-------------------------------------------------------------------------------
+MSG_GA2 			#8		Possessive general action.
+
+doneto	-	Unused.
+string	-	Raw general action text.
+data1	-	Unused.
+
+	This message type sends a possessive general action to other nodes.  A
+possessive general action is the same as a regular one, except it uses
+different language items to show a possessive case.  The string parameter
+should only contain the actual text that makes up the general action.  It
+should not contain the user's handle or any formatting; that is added by the
+receiving node.
+
+See Also:  MSG_GA (#7)
+-------------------------------------------------------------------------------
+MSG_ACTIONSIN		#9		Singular action of type Normal.
+
+doneto	-	Unused.
+string	-	Formatted action text including colour codes and names.
+data1	-	Unused.
+
+	This message type is sent when the user types a Normal action verb without
+specifying a user name.  The string parameter should contain the completely
+formatted action text, except for % tokens which are processed by the
+receiving node.
+
+See Also:  MSG_ACTIONPLU (#10), MSG_TLKTYPSIN (#11), MSG_TLKTYPPLU (#12),
+           MSG_ACTPLUSEC (#13)
+-------------------------------------------------------------------------------
+MSG_ACTIONPLU		#10 	Plural action of type Normal.
+
+doneto	-	Node which the action is being done to.
+string	-	Formatted action text including colour codes and names.
+data1	-	Unused.
+
+	This message type is sent when the user types a Normal action verb with a
+user name.	All nodes on channel should receive this message, i.e. it is not
+private.  Use MSG_ACTPLUSEC for private (secret) actions.  The string parameter
+should contain the completely formatted action text, except for % tokens which
+are processed by the receiving node.
+
+See Also:  MSG_ACTIONSIN (#9), MSG_TLKTYPSIN (#11), MSG_TLKTYPPLU (#12),
+           MSG_ACTPLUSEC (#13)
+-------------------------------------------------------------------------------
+MSG_TLKTYPSIN		#11 	Singular action of type TalkType.
+
+doneto	-	Unused.
+string	-	Formatted action text including colour codes and names.
+data1	-	Unused.
+
+	This message type is sent when the user types a TalkType action verb
+without specifying additional text.  The string parameter should contain the
+completely formatted action text, except for % tokens which are processed by
+the receiving node.
+
+See Also:  MSG_ACTIONSIN (#9), MSG_ACTIONPLU (#10), MSG_TLKTYPPLU (#12),
+           MSG_ACTPLUSEC (#13)
+-------------------------------------------------------------------------------
+MSG_TLKTYPPLU		#12 	Plural action of type TalkType.
+
+doneto	-	Unused.
+string	-	Formatted action text including colour codes and names.
+data1	-	Offset in string where user text begins.
+
+	This message type is sent when the user types a TalkType action verb with
+additional text.  The string parameter should contain the completely formatted
+action text, except for % tokens which are processed by the receiving node.
+The data1 parameter is used to tell the receiving nodes when the action prefix
+ends and the text that the user typed begins, so TOP can stop processing %
+tokens at that point.  Processing % tokens in the user text can be dangerous to
+system integrity.
+
+See Also:  MSG_ACTIONSIN (#9), MSG_ACTIONPLU (#10), MSG_TLKTYPSIN (#11),
+           MSG_ACTPLUSEC (#13)
+-------------------------------------------------------------------------------
+MSG_ACTPLUSEC		#13 	Private plural action of type Normal.
+
+doneto	-	Node which the action is being done to.
+string	-	Formatted action text including colour codes and names.
+data1	-	Unused.
+
+	This message type is sent when the user types a Normal action verb with a
+user name and the /S (secret) suffix.  Only the node in the doneto field should
+receive this message.  Use MSG_ACTIONPLU for public actions.  The string
+parameter should contain the completely formatted action text, except for %
+tokens which are processed by the receiving node, and except for the
+"...secretly!" message which is added after processing.
+
+See Also:  MSG_ACTIONSIN (#9), MSG_ACTIONPLU (#10), MSG_TLKTYPSIN (#11),
+           MSG_TLKTYPPLU (#12)
+-------------------------------------------------------------------------------
+MSG_HANDLECHG		#14 	A user has changed his/her TOP handle.
+
+doneto	-	Unused.
+string	-	The new handle for the user.
+data1	-	Unused.
+
+	This message type is sent whenever a user changes their handle in TOP, by
+way of the profile editor or the CHANGE HANDLE command.  In addition to
+informing other users, this messages lets other nodes on the same channel
+update the online handles index immediately.
+
+See Also:  MSG_BIOCHG (#15), MSG_SEXCHG (#16), MSG_ACTIONCHG (#17),
+           MSG_PERACTCHG (#18), MSG_EXMSGCHG (#25)
+-------------------------------------------------------------------------------
+MSG_BIOCHG			#15 	A user has changed his/her biography.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent whenever a user changes a biography response in the
+biography editor.  It is sent purely to inform other users.
+
+	NOTE:  In versions of TOP prior to 2.00 (2.00g1 and all RAP versions), this
+message type was sent when a user changed their description.
+
+See Also:  MSG_HANDLECHG (#14), MSG_SEXCHG (#16), MSG_ACTIONCHG (#17),
+           MSG_PERACTCHG (#18), MSG_EXMSGCHG (#25)
+-------------------------------------------------------------------------------
+MSG_SEXCHG			#16 	A user has changed his/her gender.
+
+doneto	-	Unused.
+string	-	Raw text of the new gender.
+data1	-	Unused.
+
+	This message is sent when a user changes their gender in the profile editor
+or using the CHANGE SEX command.  It is sent solely to inform other users.
+
+See Also:  MSG_HANDLECHG (#14), MSG_BIOCHG (#15), MSG_ACTIONCHG (#17),
+           MSG_PERACTCHG (#18), MSG_EXMSGCHG (#25)
+-------------------------------------------------------------------------------
+MSG_ACTIONCHG		#17*	A user has changed an action list.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is intended for use with an online action editor.	When the
+editor is used, it would send this message globally to all nodes.  Upon
+reception, a node should free and then reload all actions (using loadactions()
+should work fine).	The user should also be told of the change.
+
+See Also:  MSG_HANDLECHG (#14), MSG_BIOCHG (#15), MSG_SEXCHG (#16),
+           MSG_PERACTCHG (#18), MSG_EXMSGCHG (#25)
+-------------------------------------------------------------------------------
+MSG_PERACTCHG		#18 	A user has changed a personal action.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent whenever a user changes a personal action in the
+profile editor.  It is sent purely to inform other users.
+
+See Also:  MSG_HANDLECHG (#14), MSG_BIOCHG (#15), MSG_SEXCHG (#16),
+           MSG_ACTIONCHG (#17), MSG_EXMSGCHG (#25)
+-------------------------------------------------------------------------------
+MSG_TOSSOUT 		#19 	A user has abruptly left the pub.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent whenever a user abruptly leaves TOP.  There are
+various reasons that this can occur.  The most common reasons are those listed
+in TOP.DOC for errorlevels 1-10.  From a technical standpoint, this message is
+sent whenever the before_exit() procedure is called without the node first
+having been manually deregistered.	Thus, it could be sent when TOP is exited
+for any reason.  The intent of this message is to inform other users that the
+user is no longer on the system.
+
+See Also:  MSG_EXIT (#3), MSG_TOSSED (#26), MSG_ZAPPED (#27),
+           MSG_DELETED (#28)
+-------------------------------------------------------------------------------
+MSG_FORGET			#20 	Sent when one user forgets another.
+
+doneto	-	Node that is being forgotten.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent whenever one user forgets another with the FORGET
+command.  It is simply a notification message; there is no text displayed by
+the remote end.  (Forgetting is done in secrecy to avoid provoking the user
+being forgotten.)  Upon reception, the node should set the FGT_HASFORGOTME flag
+in the forgetstatus for the sending node.  Similarly, the sender should set the
+FGT_FORGOTTEN flag for the target node.
+
+NOTE:  This message MUST reach the target node!  Forgetting is tracked on both
+the node that does the forgetting and the node being forgotten, and if the
+records of who has forgotten who don't match, it will cause a lot of problems.
+To ensure this messages reaches the target, simply send it globally.
+
+See Also:  MSG_REMEMBER (#21)
+-------------------------------------------------------------------------------
+MSG_REMEMBER		#21 	Sent when one user remembers another.
+
+doneto	-	Node that is being remembered.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent when a user remembers another user with the REMEMBER
+command.  It works exactly the same as MSG_FORGET, except that the involved
+nodes should clear the appropriate forgetstatus flags as mentioned above.
+
+See Also:  MSG_FORGET (#20)
+-------------------------------------------------------------------------------
+MSG_LINKUP			#22 	A link to another system has been activated.
+
+doneto	-	Unused.
+string	-	Name of the linked site.
+data1	-	Unused.
+
+	This message is sent whenever a node establishes a link with another
+system.  Upon reception, the sending node's handle should be changed into the
+contents of string.  The sole purpose for this message is to notify users of
+the link's activation.  Aside from the handle change, nothing internal is
+changed.
+
+	MSG_LINKUP as well as MSG_LINKTEXT and MSG_UNLINK are never sent by TOP.
+They were included for possible future internal linking support.  However, they
+ARE used by the TOPLink add-on and as such should be supported!
+
+See Also:  MSG_LINKTEXT (#23), MSG_UNLINK (#24)
+-------------------------------------------------------------------------------
+MSG_LINKTEXT		#23 	Text from a linked system.
+
+doneto	-	Unused.
+string	-	Unformatted text to be sent.
+data1	-	Unused.
+
+	This message is sent whenever a link node transmits text from the linked
+system.  Linked text is displayed using a special language item, hence the need
+for this message type.	In every other sense, however, linked text is just like
+normal text.
+
+See Also:  MSG_LINKUP (#22), MSG_UNLINK (#24)
+-------------------------------------------------------------------------------
+MSG_UNLINK			#24 	A linked system has disconnected.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent whenever a linked system is disconnected.	The
+receiving node should mark the sender as inactive as for any other exit-type
+message.  Other than that, this message is a link-specific user notification
+(like MSG_LINKUP) and has no other function.
+
+See Also:  MSG_LINKUP (#22), MSG_LINKTEXT (#23)
+-------------------------------------------------------------------------------
+MSG_EXMSGCHG		#25 	A user has changed his/her entry and/or exit msg.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent when a user changes their entry and/or exit message in
+the profile editor or using the CHANGE EMESAGE or CHANGE XMESSAGE commands.  It
+is sent solely to inform other users.
+
+See Also:  MSG_HANDLECHG (#14), MSG_BIOCHG (#15), MSG_SEXCHG (#16),
+           MSG_ACTIONCHG (#17), MSG_PERACTCHG (#18)
+-------------------------------------------------------------------------------
+MSG_TOSSED			#26 	A sysop has tossed a user back to the BBS.
+
+doneto	-	Node that is being tossed.
+string	-	Unformatted optional reason text, or null for none.
+data1	-	Unused.
+
+	This message is sent when a sysop uses the SYSOP TOSS command to send a
+user back to the BBS.  If a reason exists it will be displayed to the user
+before the toss.  This message should only be sent to the node that is being
+tossed, which will respond by exiting and sending a MSG_TOSSOUT.  Do not
+confuse this with MSG_TOSSOUT!
+
+See Also:  MSG_TOSSOUT (#19), MSG_ZAPPED (#27), MSG_DELETED (#28)
+-------------------------------------------------------------------------------
+MSG_ZAPPED			#27 	A sysop has zapped a user off the system.
+
+doneto	-	Node that is being zapped.
+string	-	Unformatted optional reason text, or null for none.
+data1	-	Unused.
+
+	This message is sent when a sysop uses the SYSOP ZAP command to send a user
+back to the BBS.  If a reason exists it will be displayed to the user before
+the toss.  This message should only be sent to the node that is being tossed,
+which will respond by sending a MSG_TOSSOUT and then disconnecting the user.
+
+See Also:  MSG_TOSSOUT (#19), MSG_TOSSED (#26), MSG_DELETED (#28)
+-------------------------------------------------------------------------------
+MSG_DELETED 		#28*	A sysop deleted a user that is currently online.
+
+doneto	-	Node that the deleted user is on.
+string	-	Unformatted optional reason text, or null for none.
+data1	-	Unused.
+
+	This message is intended for use with an online user editor or a SYSOP
+DELETE command.  It should be sent to a user who is being deleted, if that user
+is currently online.  TOP should respond by sending a MSG_TOSSOUT, then zeroing
+the entire user record and saving it, followed by disconnecting the user.  This
+of course does not delete the user from the BBS but does delete their TOP
+information.
+
+See Also:  MSG_TOSSOUT (#19), MSG_TOSSED (#26), MSG_ZAPPED (#27)
+-------------------------------------------------------------------------------
+MSG_CLEARNODE		#29 	A sysop cleared a crashed node.
+
+doneto	-	Unused.
+string  -   String representation of the node that is being cleared.
+data1	-	Unused.
+
+	This message is sent to _all_ nodes when a sysop issued a SYSOP CLEAR
+command.  It is a signal to the other nodes to clear the offending node from
+memory, effectively rendering that node to an unused state.  Should the node in
+question be active and not crashed, the user will suddenly be "cut out of the
+loop", and will not receive any text (except pages) though they can still type.
+While this can be funny it is not recommended as it may cause TOP to exhibit
+odd behaviour and even crash.
+
+See Also:  MSG_KILLCRASH (#38)
+-------------------------------------------------------------------------------
+MSG_SYSGIVECD		#30 	A sysop gave a user some CyberCash.
+
+doneto	-	Node to receive the CyberCash.
+string	-	String representation of the amount of CyberCash to give.
+data1	-	Unused.
+
+	This message is sent to a node when a sysop uses the SYSOP_CDGIVE command.
+It will credit the user with the amount of CyberCash specified in string.
+
+See Also:  MSG_SYSTAKECD (#31), MSG_SYSSETCD (#32)
+-------------------------------------------------------------------------------
+MSG_SYSTAKECD		#31 	A sysop took some CyberCash away from a user.
+
+doneto	-	Node to take the CyberCash from.
+string	-	String representation of the amount of CyberCash to take.
+data1	-	Unused.
+
+	This message is sent to a node when a sysop uses the SYSOP_CDTAKE command.
+It will debit the user with the amount of CyberCash specified in string.
+
+See Also:  MSG_SYSGIVECD (#30), MSG_SYSSETCD (#32)
+-------------------------------------------------------------------------------
+MSG_SYSSETCD		#32 	A sysop set a user's CyberCash total.
+
+doneto	-	Node to receive the CyberCash.
+string	-	String representation of the amount of cash the user should have.
+data1	-	Unused.
+
+	This message is sent to a node when a sysop uses the SYSOP_CDSET command.
+It will set the user's CyberCash total to the value specified in string.
+
+See Also:  MSG_SYSGIVECD (#30), MSG_SYSTAKECD (#31)
+-------------------------------------------------------------------------------
+MSG_TRANSCD 		#33*	A user transfered CyberCash to another user.
+
+doneto	-	Node to receive the CyberCash.
+string	-	String representation of the amount of cash the user is to get.
+data1	-	Unused.
+
+	This message type is intended for user-to-user CyberCash transfers.  It
+should be self explanitory.
+
+See Also:  MSG_SYSGIVECD (#30), MSG_SYSTAKECD (#31), MSG_SYSSETCD (#32)
+-------------------------------------------------------------------------------
+MSG_EXTCOMMAND      #34     Triggers an external command on another node.
+
+doneto	-	Node that is to run the command.
+string	-	Full command text, as if the user typed it into TOP.
+data1	-	Unused.
+
+    This message type allows an external command program run on one node to
+trigger an external command program on another node.  The text in string should
+appear just as if the user on the other node typed it.  For example, "DICE
+6d6".  The receiving node will then interpret this text as if it were typed by
+the user, searching through SPAWN.CFG records to find the program and command
+line to use.
+
+    IMPORTANT:  TOP executes the command in the middle of message processing.
+As a result, the ECP being triggered MUST run quickly or it will interefere
+with the message processing and the overall operation of TOP!
+
+See Also:  None
+-------------------------------------------------------------------------------
+MSG_GENERIC         #35     Sends unformatted, unedited text.
+
+doneto	-	Unused.
+string	-	Full text to be shown, as it should appear to other users.
+data1	-	Unused.
+
+	This is the most basic message for text displaying.  TOP will simply show
+whatever is in string, translating any codes but not adding any prefix or
+suffix text.
+
+See Also:  MSG_TEXT (#1)
+-------------------------------------------------------------------------------
+MSG_INCHANNEL		#36 	A user has entered a channel.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent whenever a user joins a new channel.  The channel
+being joined is contained in the channel field of the message data.  This
+message is purely for user notification.
+
+See Also:  MSG_OUTCHANNEL (#37)
+-------------------------------------------------------------------------------
+MSG_OUTCHANNEL		#37 	A used has left a channel.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message is sent whenever a user leaves a channel.	The channel being
+left is contained in the channel field of the message data.  This message is
+purely for user notification.
+
+See Also:  MSG_INCHANNEL (#36)
+-------------------------------------------------------------------------------
+MSG_KILLCRASH		#38 	Instruction to clear a crashed node.
+
+doneto	-	Unused.
+string	-	String represenation of the node being cleared.
+data1	-	Unused.
+
+	This message is sent whenever TOP's crash protection detects that a node
+has crashed.  When this occurs, this message type will be sent globally to all
+nodes.	Upon receiving this message, TOP will clear the node in question from
+memory.  This message essentially functions like MSG_CLEARNODE except the
+language item that is displayed is different.
+
+See Also:  MSG_CLEARNODE (#29)
+-------------------------------------------------------------------------------
+MSG_DIRECTED		#39 	Directed message from one user to another.
+
+doneto	-	Node that the message is directed to.
+string	-	Raw text containing the directed message.
+data1	-	Unused.
+
+	A directed message is a public message that is directed towards a specific
+user.  As such it is always sent publically (priv = 0) with doneto being set to
+a specific node.
+
+See Also:  MSG_WHISPER (#6)
+-------------------------------------------------------------------------------
+MSG_SYSINEDITOR 	#40*	A sysop has entered a system editor.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message type is intended for use with online system editors, such as a
+user, configuration, or language file editor.  It is simply a notification to
+other users that a sysop has entered such an editor.
+
+See Also:  MSG_SYSOUTEDITOR (#41), MSG_SYSUSEREDITED (#42),
+           MSG_SYSCFGEDITED (#43), MSG_SYSLANGEDITED (#44)
+-------------------------------------------------------------------------------
+MSG_SYSOUTEDITOR	#41*	A sysop has returned from a system editor.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message type is intended for use with online system editors, such as a
+user, configuration, or language file editor.  It is simply a notification to
+other users that a sysop has returned from such an editor.
+
+See Also:  MSG_SYSINEDITOR (#40), MSG_SYSUSEREDITED (#42),
+           MSG_SYSCFGEDITED (#43), MSG_SYSLANGEDITED (#44)
+-------------------------------------------------------------------------------
+MSG_SYSUSEREDITED	#42*	A sysop has edited a user's data.
+
+doneto	-	Node containing the user who's data was edited.
+string	-	Null string.
+data1	-	Unused.
+
+	This message type is intended for use with an online user editor.  When a
+sysop using this editor edits a user that is currently in TOP, this message
+should be sent privately to that user.	Upon reception, a node should reload
+the user's data from USERS.TOP.
+
+See Also:  MSG_SYSINEDITOR (#40), MSG_SYSOUTEDITOR (#41),
+           MSG_SYSCFGEDITED (#43), MSG_SYSLANGEDITED (#44)
+-------------------------------------------------------------------------------
+MSG_SYSCFGEDITED	#43*	A sysop has edited the system configuration.
+
+doneto	-	Unused.
+string	-	Null string.
+data1	-	Unused.
+
+	This message type is intended for use with an online configuration editor.
+When a sysop has finished editing the configuration, this message should be
+sent globally to all nodes.  Upon reception, a node should reload the entire
+system configuration (*.CFG).
+
+See Also:  MSG_SYSINEDITOR (#40), MSG_SYSOUTEDITOR (#41),
+           MSG_SYSUSEREDITED (#42), MSG_SYSLANGEDITED (#44)
+-------------------------------------------------------------------------------
+MSG_SYSLANGEDITED	#44*	A sysop has edited the language file.
+
+doneto	-	Unused.
+string	-	Base name of the language file that was edited (no path/extension).
+data1	-	Unused.
+
+	This message type is intended for use with an online language editor.  When
+a sysop has finished editing the language file, this message should be sent
+globally to all nodes.  Upon reception, a node should check to see if the file
+name in string matches the language file that node is using, and if it does the
+language file should be reloaded.  The language file name is included in string
+to support a future version of TOP that will allow each user to choose a
+different language file.
+
+See Also:  MSG_SYSINEDITOR (#40), MSG_SYSOUTEDITOR (#41),
+           MSG_SYSUSEREDITED (#42), MSG_SYSCFGEDITED (#43)
+-------------------------------------------------------------------------------
+MSG_SYSSETSEC       #45     A sysop has changed a user's security level.
+
+doneto  -   Node containing the user who's security is being changed.
+string  -   String representation of the new security level.
+data1   -   Unused.
+
+    This message is sent when a sysop uses the SYSOP SETSEC command.  It is
+sent privately to the node affected, which then adjusts the user's security to
+the specified level.
+
+See Also:  None
+-------------------------------------------------------------------------------
+MSG_INPRIVCHAT      #46     A user has entered private chat mode.
+
+doneto  -   Unused.
+string  -   Handle of the user entering private chat.
+data1   -   Unused.
+
+    This message is sent when a user enters private chat with another user.  It
+it intended solely for notifying other users.  The other user is not specified;
+instead one message will be sent from each of the nodes involved.
+
+See Also:  MSG_OUTPRIVCHAT (#47), MSG_WANTSPRIVCHAT (#48),
+           MSG_DENYPRIVCHAT (#49)
+-------------------------------------------------------------------------------
+MSG_OUTPRIVCHAT     #47     A user has returned from private chat mode.
+
+doneto  -   Unused.
+string  -   Handle of the user returning from private chat.
+data1   -   Unused.
+
+    This message is sent when a user returns from a private chat with another
+user.  It it intended solely for notifying other users.  The other user is not
+specified; instead one message will be sent from each of the nodes involved.
+
+See Also:  MSG_INPRIVCHAT (#46), MSG_WANTSPRIVCHAT (#48),
+           MSG_DENYPRIVCHAT (#49)
+-------------------------------------------------------------------------------
+MSG_WANTSPRIVCHAT   #48     Private chat requested or accepted.
+
+doneto  -   Node containing the user who the request is aimed at.
+string  -   Handle of the user requesting the private chat.
+data1   -   Unused.
+
+    This message is sent globally whenever a user uses the CHAT command.  It
+either initiates a request for chat, or accepts a user's standing request to
+chat. Each user may only have a standing request to chat from one user at a
+time.  Consult PRIVCHAT.TXT when using this message to be sure that you do not
+confuse TOP.
+
+See Also:  MSG_INPRIVCHAT (#46), MSG_OUTPRIVCHAT (#47), MSG_DENYPRIVCHAT (#49)
+-------------------------------------------------------------------------------
+MSG_DENYPRIVCHAT    #49     Denies a user's request for a private chat.
+
+doneto  -   Node containing the user who's request is being denied.
+string  -   Handle of the user denying the chat request.
+data1   -   Unused.
+
+    This message is sent globally to deny a user's private chat request with
+the DENYCHAT command.  Consult PRIVCHAT.TXT for why this is needed.
+
+See Also:  MSG_INPRIVCHAT (#46), MSG_OUTPRIVCHAR (#47), MSG_WANTSPRIVCHAT (#48)
+-------------------------------------------------------------------------------
+MSG_CHANTOPICCHG    #50     The topic for the current channel has changed.
+
+doneto  -   Unused.
+string  -   The new topic.
+data1   -   Unused.
+
+    This message is sent whenever a moderator uses the MODERATOR SETTOPIC
+command to change a channel's topic.  This message not only notifies the users
+of the topic change, but instructs each node to update its current CMI
+information.
+
+See Also:  MSG_CHANMODCHG (#55)
+-------------------------------------------------------------------------------
+MSG_CHANBANNED      #51     Bans a user from a channel.
+
+doneto  -   Node containing the user to be banned.
+string  -   Null string.
+data1   -   Channel number to ban the user from.
+
+    This message is sent whenever a moderator uses the MODERATOR BAN command to
+ban a user from the channel that the moderator is currently in.  As the command
+can be used on a user anywhere in TOP, the channel number is stored in the
+data1 field.  This command can only be used in certain types of channels.  See
+CHANNELS.TXT for more information.
+
+See Also:  MSG_CHANUNBANNED (#52), MSG_CHANINVITED (#53),
+           MSG_CHANUNINVITED (#54)
+-------------------------------------------------------------------------------
+MSG_CHANUNBANNED    #52     Removes the ban on a user from a channel.
+
+doneto  -   Node containing the user to be unbanned.
+string  -   Null string.
+data1   -   Channel number to unban the user from.
+
+    This message is sent whenever a moderator uses the MODERATOR UNBAN command
+to undo a user's ban from the channel that the moderator is currently in.  As
+the command can be used on a user anywhere in TOP, the channel number is stored
+in the data1 field.  This command can only be used in certain types of
+channels.  See CHANNELS.TXT for more information.
+
+See Also:  MSG_CHANBANNED (#51), MSG_CHANINVITED (#53),
+           MSG_CHANUNINVITED (#54)
+-------------------------------------------------------------------------------
+MSG_CHANINVITED     #53     Invites a user to a channel.
+
+doneto  -   Node containing the user to be invited.
+string  -   Null string.
+data1   -   Channel number to invite the user to.
+
+    This message is sent whenever a moderator uses the MODERATOR INVITE command
+to invite a user to the channel that the moderator is currently in.  As the
+command can be used on a user anywhere in TOP, the channel number is stored in
+the data1 field.  This command can only be used in certain types of channels.
+See CHANNELS.TXT for more information.
+
+See Also:  MSG_CHANBANNED (#51), MSG_CHANUNBANNED (#52),
+           MSG_CHANUNINVITED (#54)
+-------------------------------------------------------------------------------
+MSG_CHANUNINVITED   #54     Removes a user's invitation to a channel.
+
+doneto  -   Node containing the user to be uninvited.
+string  -   Null string.
+data1   -   Channel number to uninvite the user from.
+
+    This message is sent whenever a moderator uses the MODERATOR UNINVITE
+command to remove a user's invitation to the channel that the moderator is
+currently in.  As the command can be used on a user anywhere in TOP, the
+channel number is stored in the data1 field.  This command can only be used in
+certain types of channels.  See CHANNELS.TXT for more information.
+
+See Also:  MSG_CHANBANNED (#51), MSG_CHANUNBANNED (#52),
+           MSG_CHANINVITED (#53)
+-------------------------------------------------------------------------------
+MSG_CHANMODCHG      #55     Changes or adds a moderator for this channel.
+
+doneto  -   Node containing the new or additional moderator.
+string  -   Null string.
+data1   -   Unused.
+
+    This message is sent whenever a moderator uses the MODERATOR SETMOD to
+change or add a moderator from the current channel.  Whether the old moderator
+retains moderator powers depends on factors that are not covered here, but the
+message used in both cases is the same.  This message serves to both notify
+users of the change and to update each node's internal CMI information with the
+new moderator.
+
+See Also:  MSG_CHANTOPICCHG (#50)
+-------------------------------------------------------------------------------
+MSG_FORCERESCAN     #56     Forces nodes to reload the two node indexes.
+
+doneto  -   Unused.
+string  -   Null string.
+data1   -   Unused.
+
+    This message is not sent by TOP itself, but is supported if it is needed.
+It forces all nodes that receive it to reload information from NODEIDX.TCH and
+NODEIDX2.TCH.  It was originally implemented as a temporary workaround for a
+problem that was later properly corrected.  Any routine that properly accesses
+the node indexes and sends the appropriate change messages should never need to
+use this message type, but it is here if it is needed.
+
+See Also:  None
+-------------------------------------------------------------------------------
+MSG_INBIOEDITOR     #57     A user has entered the biography editor.
+
+doneto  -   Unused.
+string  -   Handle of the user that entered the biography editor.
+data1   -   Unused.
+
+    This message is sent whenever a user uses the BIO command to enter the
+biography editor.  It is sent solely to notify other users.
+
+See Also:  MSG_OUTBIOEDITOR (#58)
+-------------------------------------------------------------------------------
+MSG_OUTBIOEDITOR    #58     A user has returned from the biography editor.
+
+doneto  -   Unused.
+string  -   Handle of the user that returned from the biography editor.
+data1   -   Unused.
+
+    This message is sent whenever a user returns from the biography editor.  It
+is sent solely to notify other users.
+
+See Also:  MSG_INBIOEDITOR (#57)
+-------------------------------------------------------------------------------
+MSG_AFKON           #59     A user has entered AFK mode.
+
+doneto  -   Unused.
+string  -   Optional reason text, or null string for none.
+data1   -   Unused.
+
+    This message is sent whenever a user enters the AFK command to indicate
+they are away from the keyboard.  It is sent only to notify other users.  The
+optional reason, if present, will be displayed with the notification.
+
+See Also:  MSG_AFKOFF (#60)
+-------------------------------------------------------------------------------
+MSG_AFKOFF          #60     A user has returned from AFK mode.
+
+doneto  -   Unused.
+string  -   Null string.
+data1   -   Unused.
+
+    This message is sent whenever a user enters the AFK command a second time to indicate
+they have returned to the keyboard.  It is sent only to notify other users.
+
+See Also:  MSG_AFKON (#59)
+-------------------------------------------------------------------------------
+MSG_INSHELL         #61     A local sysop has engaged a DOS shell.
+
+doneto  -   Unused.
+string  -   Null string.
+data1   -   Unused.
+
+    This message is sent whenever a sysop at the BBS site uses Alt-J to engage
+a DOS shell.  During this time, the user on the node where the shell was run
+will be held in limbo, so to notify other users, this message is sent.  It has
+no function other than notification.
+
+See Also:  MSG_OUTSHELL (#62)
+-------------------------------------------------------------------------------
+MSG_OUTSHELL        #62     A local sysop has returned from a DOS shell.
+
+doneto  -   Unused.
+string  -   Null string.
+data1   -   Unused.
+
+    This message is sent whenever a local sysop returns from a DOS shell, thus
+releasing the user on that node from their "paused" state.  It has no function
+other than notification.
+
+See Also:  MSG_INSHELL (#61)
+-------------------------------------------------------------------------------
+MSG_INSYSCHAT       #63     A local sysop has engaged a chat with a user.
+
+doneto  -   Unused.
+string  -   Null string.
+data1   -   Unused.
+
+    This message is sent whenever a sysop at the BBS site uses Alt-C to engage
+a sysop-to-user chat with a user.  This message is sent so that other users
+will know that the user involved cannot respond.  It has no function other than
+notification.
+
+See Also:  MSG_OUTSYSCHAT (#64)
+-------------------------------------------------------------------------------
+MSG_OUTSYSCHAT      #64     A local sysop has ended a chat with a user.
+
+doneto  -   Unused.
+string  -   Null string.
+data1   -   Unused.
+
+    This message is sent when a local sysop terminates a sysop-to-user chat,
+allowing the user to communicate with other TOP users once again.  It has no
+function other than notification.
+
+See Also:  MSG_INSYSCHAT (#63)
+-------------------------------------------------------------------------------
+
+                              ===================
+                              Technical Reference
+                              ===================
+
+    While TOP's messaging system is not technically complex, it is very touchy.
+Proper procedures must be followed and precautions must be taken, or the system
+will break down.  Because the messaging system is the only way TOP can
+dynamically communicate information between nodes, a complete understanding of
+it is needed for anybody making modiciations to it or developing add-on
+programs.  ECP programmers need not worry about these details as TOP handles
+all of the messy work associated with exchanging messages.
+
+    File Descriptions
+    -----------------
+
+    The TOP messaging system is made up of three types of files, which are
+described below.
+
+    CHGIDX.TCH      The change index.  This is a simple file that contains one
+                    byte per node.  This byte, when true, signifies that at
+                    least one new message has been sent to the node.  Each
+                    node's change byte is located at an offset equal to the
+                    node number.
+
+    MIXnnnnn.TCH    The message index.  Each node has its own.  The message
+                    index is also a series of bytes.  Each byte represents one
+                    record in the message data file (see below).  When a byte
+                    is true, it means there is a message at the corresponding
+                    record.  nnnnn represents the node number in decimal
+                    notation, zero-padded to five digits.
+
+    MSGnnnnn.TCH    The message data file.  Again, each node has its own.  This
+                    file contains a series of records of type msg_typ (see
+                    TOPSTR.H).  The first record corresponds to the first byte
+                    in the message index, etc.  nnnnn represents the node
+                    number in decimal notation, zero-padded to five digits.
+
+    File Access Procedure
+    ---------------------
+
+    Each file should be opened in DenyNone sharing mode.  Record locking is
+used to restrict access.  Both reading and writing must be done under locked
+conditions to ensure data does not change while it is being accessed.
+
+    Proper locking procedure is to lock _ALL_ data in a record.  In the change
+index and message index, this simply one byte at a time.  For the message data
+file, the entire record should be locked even if it is not all being used.
+
+    For speed, the change index should always be left open.  Also, TOP leaves
+the incoming message files, that is those with the same number as the node,
+open at all times.  This is not necessary (especially when sending more than
+receiving) but is recommended for speed if possible.  The outgoing message
+files, that is those that belong to another node, are only opened as needed.
+
+    Reading
+    -------
+
+    To read a message, the procedure below is followed.  Sorry, but unless you
+have the TOP source you don't get any source code examples.
+
+    1. Scan the node's byte in the change index.  If it is true, proceed to the
+next step, otherwise repeat.
+
+    2. Immediately clear the change index byte.  This has to be done to prevent
+any messages getting lost while reading.  This could occur if, for example, we
+are processing a message later in the file and another node writes a new
+message to the now cleared first record.  If the change index byte was not
+cleared immediately, TOP would never know this new message was there!
+
+    3. Looping for the entire length of the message index file, check one byte
+at a time (in sequential order).  If the byte is true, DO NOT UNLOCK IT, and
+proceed.  Leaving the byte locked prevents other nodes from trying to use this
+spot.
+
+    4. Read in the message from corresponding record of the message data file
+and process it.  All checks regarding the validity or usefulness of the message
+are performed after reading.  Unlock the message index byte after both reading
+and processing have been completed.
+
+    5. When the loop is finished, DO NOTHING.  NEVER TRUNCATE ANY OF THE FILES!
+Files must not be truncated for the reason described in step 2.  New messages
+that were sent during the reading process will be read the next time around.
+
+    The above steps are generally repeated at a regular interval.  During steps
+that reading is not performed, messages will accumulate in the files,
+increasing their size.  Because many sysops use a RAMDisk, it is important not
+to go too long without scanning.
+
+    Writing
+    -------
+
+    The procedure for writing a message is described below.
+
+    1. Looping for the entire length of the message index file, read each byte.
+
+    2. Proceed when a false byte is found, noting the byte's offset.  If none
+can be found, create a new record by using an offset equal to the length of the
+message index file.  LEAVE THE BYTE BEING USED LOCKED.
+
+    3. Write true to the message index byte being used.  LEAVE IT LOCKED.
+
+    4. Write the message to the corresponding record of the message data file.
+
+    5. Unlock the message index byte.
+
+    6. Write a true byte to the change index to tell the receiving node that
+there is a new message.
+
+    Determining Recipients
+    ----------------------
+
+    When determining where to send a message, use the same criteria (tonode,
+priv, echo) that the dispatch_message() function uses.  This is easily done as
+described below.
+
+    1. Check if tonode is not set (i.e. if it is negative) and if priv is
+false.  If either conditions is true, assume ALL nodes, otherwise assume only
+the tonode.
+
+    2. If echo is set and all nodes are being used, send the message to ourself
+as well, otherwise skip us during the sending.  echo has no effect for private
+messages.
+
+    Note that the channel, message type, security, forget status, etc. all have
+no effect whether or not a node gets the message.
+
+                                   =========
+                                   Afterword
+                                   =========
+
+    That is essentially all the information you need to know about the message
+system.  If you have any questions, please do not hesitate to contact me by
+Internet as follows:
+
+Email   -   ismware@shaw.ca
+WWW     -   http://members.shaw.ca/paulsid/ismware/top/
+

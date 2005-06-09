@@ -1,0 +1,11 @@
+Biography Notes
+
+Bio responses are stored in the file BIORESP.TOP.  This is simply a big record
+of bio_resp_typ structs.
+
+The response file is indexed through BIOIDX.TOP.  This is a record of 100 longs
+per user, with each long containing the record number of the bio response for
+the corresponding question.  For example, question 0's response will be pointed
+to by the first long, question 1's by the second, etc.  This allows TOP to grab
+all of a user's responses simply by seeking to that point in the index, loading
+100 longs, then loading the responses directly, without excessive scanning.

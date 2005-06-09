@@ -1,0 +1,812 @@
+Notes for the TOP Source Code - July 13, 2000
+=============================
+
+    This is a somewhat hastily written collection of instructions, notes,
+anecdotes, and tips for working with the source code for The Online Pub.
+
+    Introduction
+    ------------
+
+    This is the C source code for a beta version of what I originally intended
+to be The Online Pub v2.01 (though such a version was never released). In a
+move that I will regret for the rest of my life, I wiped out all traces of the
+TOP v3.00wb1 source when it became apparent that I couldn't afford any time to
+complete the project and didn't want it as a distraction.  Those who want any
+of the features of TOP v3.00wb1 will have to rewrite them.  I'm truly sorry for
+this, but believe me it hurts every time I think about it.  NOTE:  There's a
+section near the end about what needs to be done to this source to make it
+match v3.00wb1.
+
+    Also, I must apologize for the unfinished condition of the entire source
+package.  It was my initial intention to complete all of the accompanying
+description files, including a more organized version of this file.  However,
+with my summer break winding down I decided it was best to wrap this up quickly
+while I have a chance.  If I didn't get the source released this summer I
+probably wouldn't have a chance to get it released again!
+
+    Some of the source files refer to text descriptions which simply don't
+exist.  This includes, but is not limited to, BBS.TXT and PRIVCHAT.TXT.
+Another file, CHANNELS.TXT, is only partially completed.  These are files I
+wanted to write, but as I said I felt I was running out of time.  My code is
+fairly well-commented, and programmers nowadays are generally fairly smart, so
+I think people will be able to figure out what's going on.  If not, I am happy
+to answer questions regarding the source.  Please see the end of this file for
+contact instructions.  NOTE:  While as I say the code is commented, some late
+modifications may not have been commented.
+
+    Please remember that it was never originally my intention for this source
+to be distributed, so it doesn't follow many good practices for portable code.
+Nevertheless it has been cleaned up significantly from its original state and
+should be fairly straightforward to use.
+
+    Usage Restrictions
+    ------------------
+
+    The TOP source is distributed under the terms of the GNU General
+Public Licence (GPL) version 2, which is included in the archive in the file
+COPYING.
+
+    The GPL isn't exactly the licence I had wanted but it's close enough and
+will save me a lot of time writing my own.  It's also one that a lot of people
+are familiar with because it's been around for so long.  Besides, I've recently
+begun to use a lot of open source software, so it's only fair that I make my
+own small contribution!
+
+    Below is the required information for the GPL.  This information applies to
+each and every file contained in the distribution archive of the TOP source,
+even if this information is missing from that file itself.
+
+    Copyright 1993 - 2000 Paul J. Sidorsky
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License, version 2, as
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+    What This Package Contains
+    --------------------------
+
+    This package will let you build a version of TOP that is essentially
+equivalent to TOP v2.00.  Actually, it's a little better than v2.00, because it
+has several bug fixes.  It's labelled as v2.01b because it was my intention to
+have such a version, but I never got around to releasing it and instead went
+straight to v3.00wb1.
+
+    While the package only comes with a Project file for TOP for DOS, it's
+possible to build the Win32 version, and even the OS/2 version, with only a
+small amount of effort.  All versions are built from the same source.
+
+    You also get the source to add-on programs like TOPMaint, TOPLink, and
+BJ4TOP, as well as some bonus goodies including removed features like Poker,
+though for any of this stuff you are on your own in getting it to work.  I will
+only provide support for compiling TOP, TOPACT, and TOPMaint.
+
+    Requirements
+    ------------
+
+    First, it's assumed you're familiar with TOP itself, and with BBSing in
+general, and of course with the C programming language.  I won't help anybody
+who doesn't meet these three requirements.
+
+    To compile the TOP source, you need the following:
+
+    - Borland C++ v4.52 or compatible.  Borland C++ Builder should work for the
+Win32 version but the project file will have to be converted, imported, and
+then modified according to the instructions given later.  It MAY be possible to
+use a different brand of compiler after making significant modifications, but I
+don't provide support for those wanting to try.
+
+    - Version 6.0 or higher of the OpenDoors toolkit by Brian Pirie.  If you
+are a registered user of the OpenDoors toolkit I suggest you use v6.0 as it was
+the version TOP was originally compiled with and thus is known to be
+compatible.  However, if you are not registered then you should be able to use
+version 6.1 which is distributed under the GNU LGPL and thus does not require
+registration.  Note that I have not tested the TOP source with v6.1 so I can't
+say if it works or not.  v5.0 may work with minor modifications, but as
+registration entitled users to free upgrades there should be no reason not to
+upgrade.  (There's no Win32 version of v5.0 either.)  Customized versions may
+or may not work depending on how much customization was done.
+
+    - You may also want to get Fortify by Simon P. Bullen.  Fortify is a handy
+shell that monitors memory allocation and access, and was instrumental in
+solving the infamous random-crashing bug that plagued RAP v1.82 (RAP's
+predecessor).  It's freely available.  TOP can be compiled without Fortify (and
+normally was anyhow) with very minor changes, however.  NOTE:  Fortify is used
+by TOP/DOS only.  If you're compiling the Win32 or OS/2 versions you won't even
+have to change anything as Fortify is not compiled in these cases.
+
+    Extra Files
+    -----------
+
+    I've included a whole bunch of extra files, including unfinished bits of
+code, my original design notes, and other tidbits, in the hope that at least
+some of them will be useful.  Below is a list of those files and a description
+of what each of them does, in no particular order.  Any file NOT listed below
+can be considered part of TOP proper, including documentation.
+
+    NOTE:  When I say "this file" below I'm referring to the file you're
+reading, SOURCE.TXT, and not the file being described.
+
+    OS2.ZIP - Files needed by anyone attempting to compile TOP for OS/2.
+
+    BIORESP.TXT - A brief description of the BIO*.TOP data files.
+
+    CMI.TXT - Some working notes for the Channel Management Interface.
+
+    CONFIG.TXT - A largely outdated list of TOP configuration keywords.  It was
+left over from before TOP v2.00 and the final syntax doesn't even match in many
+cases.  There may be some ideas in here, though.
+
+    EPI.TXT - Before I did any serious testing with External Commands (a la TOP
+v3.00wb1), I was worried they wouldn't work, so I had begun working on a
+scripting language for TOP add-ons called the EPI.  I don't even remember what
+EPI stood for, but I think it means External Program Interface.  It is mainly
+included as a curiousity.
+
+    LNG_HELP.TXT - The beginnings of a detailed help file for the language
+items.  Obviously it's way incomplete.
+
+    NEWCHAT.TXT - I had the wild idea of incorporating both a line-by-line
+style chat (as TOP is now) and a multi-window character-by-character (CBC) chat
+(like most Sysop Chat doors) into the same program so users could pick the way
+they liked best.  It was my way of competing against the CBC chat doors so
+sysops would use TOP no matter which style they liked.  Given enough time I
+would have implemented it, but it was a challenging task.  My
+design notes are in here, and are actually fairly complete, but of course I
+never got too far into any implementation.  Also see CHARCHAT.C.
+
+    NEWFILES.TXT - A curiousity describing the renaming of TOP's data files.
+
+    REVISION.TXT - My design diary.  This is a log of every change ever made to
+TOP, and is well worth reading for those interested in modifying the source.
+Here you'll read about idea, potential problems, alternate approaches, etc. as
+well as the feelings and emotions I experienced while working on TOP.
+
+    BBSWC.C - An alpha version of Wildcat BBS support.  I never did get it to
+work and didn't get to spend much time testing it to find out why.
+
+    CHARCHAT.C - A few functions that were to form the foundation of the CBC
+chat mode.  Mainly a curiousity.  See NEWCHAT.TXT.
+
+    MAINT.C - Source for the TOP EDIT and TOP PACK commands.  This was
+superceded by the TOPMaint utility.  MAINT.C is actually required to build TOP
+without modifications, but it was always considered a quick hack and was not
+intended to be a part of RAP/TOP for as long as it was.  It should be easy
+enough to eliminate from the project with only minor code changes, and I
+recommend you do so.  Use TOPMaint instead.  I think even the 3.00wb1 version
+of TOPMaint will work with v2.01 if need be!
+
+    SPAWN.C - The beginnings of what became ECP support in TOP v3.00wb1.
+Because of the importance of ECP support in TOP v3.00wb1, I've included a
+section later in this file that tells how to go about modifying SPAWN.C to
+achieve v3.00wb1-level ECP support.
+
+    TOPACT.C - The TOP Action Compiler, which is of course a vital part of the
+TOP package but not required to actually recompile TOP.  Its source is not
+commented.  However, the compiler is very descriptive about what it is doing to
+the user so it should be easy to figure out the source from its output.
+
+    GAMES.ZIP - The source code to three games that were, at one point, built
+into TOP:  Poker, Slots, and MatchGame.  All were eventually removed because
+of the amount of space they took up as well as because an external system for
+games was desired.  That system, of course, eventually became ECPs, but only
+Slots was ever converted.  There is a full section on the games (mainly poker)
+later in this file.
+
+    TOPMAINT.ZIP - The source code for TOPMaint.  This should be unpacked to a
+separate directory.
+
+    TOPLINK.ZIP - The source code for TOPLink.  This requires TurboPascal 7 to
+compile.
+
+    BJ4TOP.ZIP - The source code for BJ4TOP.  Also requires TP 7.
+
+    How to Compile TOP
+    ------------------
+
+    This will briefly take you through the steps required to compile the DOS
+version of TOP.  It's assumed you've compiled many projects before and know the
+general routine.  If you haven't, don't ask me for help as I don't have the
+time to explain it.
+
+    NOTE:  If you want to compile the Windows version you will have to modify
+all of the settings in the project (.IDE) file for the DOS version.  The files
+used are the same.  If you want to compile the OS/2 version with Borland C++
+for OS/2, it's possible to do something similar, but you're on your own!
+
+    1) Unpack the entire distribution archive to its own directory.
+
+    2) Obtain OpenDoors and (if desired) Fortify and install them per their own
+instructions.
+
+    3) Run Borland C++ and load the TOP.IDE file.
+
+    4) Check the settings for the Directories used by the project them.  Edit
+as needed to be sure they match the locations of the files where you put TOP.
+
+    5) Similarly, check the source files for directories and change any you
+find.  I've tried to remove them all but may have missed some.
+
+    6) If you don't have Fortify, do a GREP search for "fortify" in the source
+and remove any lines and conditional compilation sections that refer to it.
+Lastly, remove it from the project file.
+
+    7) Hit F9 to compile.  Full build time on my PIII 500MHz was about 6
+seconds.  According to my revision log, it was around a minute on my old
+Pentium 133MHz and around 5 minutes on my even older 486DX/100.
+
+    8) TOP will either compile, or give errors.  If you get errors, check your
+directories and the source files for the points mentioned above.  If you can't
+solve the problem, email me (see end of this file) and I'll try to help.
+
+    9) If you didn't get errors, edit all of the configuration files (*.CFG)
+and then try to run TOP.  (You may be able to use TOP v3.00wb1 configuration
+files, but I don't recommend this.)  If it compiles but doesn't work, it is a
+configuration problem.  You need to get TOP properly configured before trying
+to modify it or you may spend time chasing bugs in the source that are actually
+simple misconfiguration problems.
+
+    Making TOP Appear Registered
+    ----------------------------
+
+    I removed as little of the registration system as possible because I didn't
+want to risk introducing any hidden problems that caused TOP to fail to work.
+So, the core of the system is intact, although of course the code verifiers
+have been removed.
+
+    To make TOP appear as if you registered it, go to line 443 (or so) inside
+INIT.C, set registeredtop = RKVALID, and set the regname, regsystem, and
+regtype strings to whatever you want.  (I've never tested this but it should
+work.)
+
+    However, I would appreciate it if, instead of trying to pass yourself off
+as a registered user, you simply remove all of the registration stuff and just
+let your version of TOP run without any indication that there was ever a
+registration system for it.  Unless, of course, you are in fact a registered
+user and have a key.  Your key won't work with any version compiled with this
+TOP source, so modifying the source is the only way to make TOP appear
+registered.
+
+    Style Notes
+    -----------
+
+    The coding style used in TOP is fairly consistent, however, there is one
+important thing to mention.  At some point during the development, I switched
+from this indentation style:
+
+void myfunc(void)
+    {
+    int myvar;
+
+    myvar = 555;
+
+    }
+
+    ...to this (more conventional) one:
+
+void myfunc(void)
+{
+    int myvar;
+
+    myvar = 555;
+
+}
+
+    Both styles appear throughout the source, so watch for it.  The different
+locations of the braces can be confusing if you start working on a section with
+one style after recently working on a section with the other.  It even confused
+me a few times, and I had to sort out a "missing }" error on more than one
+occaision.
+
+    Also, for a large stretch of TOP's development period, I had the curious
+habit of prefixing local variables with a letter or two, usually the initials
+for the function itself.  I didn't really understand all of the things about
+scope in C, and became afraid that I may inadvertantly be affecting variables
+in other functions by naming them all the same.
+
+    Finally there are the "stringarray" structs which were left over from very
+early in TOP's development, when I was still learning C.  I didn't know how to
+work string arrays, but I did know how to use arrays of structs, so I simply
+put a string in a struct and made an array of the structs.  Later on when I
+knew what I was doing it became very annoying to work with, having to put
+.string after things, but I never got around to reworking all of the areas
+where it was used.
+
+    Building TOP/95 or TOP/2
+    ------------------------
+
+    You can build TOP for Win32 (TOP/95) and TOP for OS/2 (TOP/2) from the same
+source as TOP for DOS (TOP/DOS).  I don't provide any support for those that
+try to do this, but I'll provide some tips to help you get it working:
+
+    - First of all, it's recommended you get either the full TOP/95 v3.00wb1 or
+TOP/2 v2.00 package.  These packages have extra version-specific documentation
+that you will need to help get TOP running properly.  (Note that although there
+was no 2.00 version of TOP/95 available, v3.00wb1 is configured the same way as
+the version that will be built from the source you have.  Actually, I would
+have released a TOP/95 v2.00 but there was a stupid bug that kept it from
+working.  Unfortunately, because I didn't have Win95 when I released, I set the
+version aside until later, but the bug was so obvious that I could have seen it
+without Win95.  I just never looked!  See the end of REVISION.TXT for info.
+about the bug.  Anyhow, the bug IS FIXED in the source you have, so the Win95
+version should compile and work.)
+
+    - For TOP/2, you need to obtain Doors/2 which is an authorized OS/2 port of
+OpenDoors by Joel Downer.  Like OpenDoors it has an unregistered version which
+can be obtained free of charge for trial purposes.  For TOP/95, you need
+OpenDoors v6.0 which is needed for TOP/DOS compilation anyhow.
+
+    - All versions use the same source files, though the OS/2 version needs a
+few extra files (which are included).  We'll put that consideration aside for
+the moment, though.  I've only provided the DOS version of the project file,
+because the backups of the Win32 and OS/2 project files that I have are out of
+date.
+
+    - For TOP/95, you can probably use Borland C++'s Project window to simply
+change the Target type of the existing project file.  It should be a Win32 GUI
+(_NOT_ CONSOLE) application.  For TOP/2, probably the best thing to do is to
+load the DOS project file, copy the list of all of the files, then make a new
+OS/2 project and add all of the files from the list.  If you do this, make sure
+to note the include and library directories from the original project as well,
+and be sure to change your new project file to include the equivalent
+directories for the OS/2 version.
+
+    - For both projects, remove any references to the DOS OpenDoors libraries,
+then add the libraries required for the version you are making.
+
+    - Be sure your compiler defines the __WIN32__ variable for TOP/95, or the
+__OS2__ variable for TOP/2.  The source uses these variables where conditional
+compilation is needed.  Borland C++ compilers should define these variables on
+their own.
+
+    - That should be it for the Win95 version of TOP.  The OS/2 version needs
+some extra source files, though.  Unpack OS2.ZIP, then add CMDLINE.C,
+BBSMAXMC.C, and MCP32.LIB to the project file.  Be sure that you unpack to the
+same directory as the rest of the source because there are some header files
+that TOP will need.  (You don't need to change anything for the headers.  They
+will be included via conditional compilation directives.)  Once you add these
+files, you should be able to compile.
+
+    Interlude
+    ---------
+
+    The remainder of this file is dedicated to discussing certain sections of
+the TOP source itself.
+
+    Comments
+    --------
+
+    Comments enclosed in /* */ (C style) are used to document areas of TOP.
+These are the comments you will want to read.
+
+    Comments following // (C++ style) are my own personal notes, and are used
+for "to-do's", bug notes, etc.  They are less crucial.  Borland C++ supports
+both style comments even for C, so I made no qualms about using them both.
+
+    //| was used to comment out game-related code.  See the section on Games
+below.
+
+    //! was used to denote sections that hadn't been converted to the language
+file system yet, and may still be lingering around in some places.
+
+    XINT & XDATE
+    ------------
+
+    For portability, I _ALWAYS_ used XINT and XDATE instead of int and struct
+date, respectively, and I recommend you do the same.  This convention was the
+result of a hasty conversion made when Doors/2 (the OS/2 port of OpenDoors) was
+released and I had the unexpected chance to compile an OS/2 version.
+
+    Ideally I should have defined a bunch of types like byte and word and sbyte
+and stuff, but at the time I didn't know about how compilers worked out sizes
+of shorts and longs and stuff like that.  I just knew that OS/2 used 32-bit
+ints and that this would cause a problem with TOP/DOS's 16-bit ints when
+reading files, so I made the change and always stuck with it.
+
+    XDATE is needed because TOP stores a few struct date's and they use the int
+keyword inside them, and thus would be a different size under OS/2 or Win32.
+
+    Initialization & Main Loop
+    --------------------------
+
+    TOP initializes by going through INIT.C, then proceding to USER.C where it
+checks if the user's name is found and loads all of the info.  Only after all
+of this does TOP end up back in MAIN.C where it finally begins executing
+main_loop(), which is an infinite loop that is only exited by a call to
+od_exit().
+
+    The initialization is rather convoluted.  I seemed to like to use an
+"initialization-style-of-the-month" when implementing new features, so nearly
+everything is done differently.  Pay close attention to the comments for all
+initialization functions (which don't necessarily appear in INIT.C) so you know
+what's going on.
+
+    Output
+    ------
+
+    All output from TOP is done using the top_output() function, which is not
+unexpectedly housed in the file OUTPUT.C.  This is probably the most
+complicated module inside TOP.  The top_output() function itself is about 700
+lines long, plus almost 200 lines for support functions.  (process_messages()
+is longer but it is repetitive so it's not very complicated.)
+
+    top_output() and its support functions provide many benefits:
+
+    - Allowing output to be plain (via OpenDoors), emulated (i.e.
+ANSI/AVATAR/RIP/RA code translation, also via OpenDoors), sent to a string (either formatted or
+non-), or sent to the console (using plain C functions).
+    - Processing PubColour (^) codes.
+    - Processing language (@) codes.
+    - Word-wrap as the output is generated so it looks nice.
+
+    top_output() is used everywhere in TOP, from normal output right through to
+logging.  About the only place a printf() function is used (usually sprintf())
+is for constructing filenames.
+
+    top_output() works a lot like printf() in that it can take a variable
+number of parameters and uses a string to determine how many there are.  One
+important difference, though, is that all of the variable parameters MUST BE
+STRINGS.  top_output() can only handle strings so passing it anything else will
+generate some really strange results.  To use numbers, there is a global array
+of strings called outnum[] that can be used to hold the results of itoa() or
+ultoa() or fcvt() or other to-string conversions.  Simply store the results of
+a conversion in one of the outnum[] strings and then pass that string to
+top_output().
+
+    top_output() is generally called with a language item as the string, that
+is:
+
+top_output(OUT_SCREEN, getlang("MyLanguageItem"), myparamstring);
+
+    It's important to keep track of how many parameters each language item has.
+The easiest way to do this is to build your default language items so as to use
+ALL of the parameters that they support.  For example, if you have three
+parameters, make sure to use @1, @2, and @3 in the default language item. Don't
+use just one or two, because this makes it easy forget the other parameter(s)
+exist(s).  And, obviously, don't try to use four because TOP won't know where
+to find the fourth parameter and will end up displaying garbage, possibly lots
+of it.
+
+    Try to get into the habit of calling top_output() for everything.  It's
+very powerful, especially when combined with language items!
+
+    DEBUG Mode
+    ----------
+
+    DEBUG mode was hastily added to help me track the infamous random crashing
+bug that used to occur during startup in RAP 1.8x versions.  (RAP was TOP's
+original name.)
+
+    DEBUG mode is enabled by running TOP with the word DEBUG following the node
+number.  This will open a debugging log (TOPDEBUG.LOG) and enable (or rather,
+not disable) Fortify.
+
+    If you run into crashing problems, try DEBUG mode.  When you run TOP in
+debug mode, make sure to redirect stdout to a file (e.g. TOP 4 DEBUG >
+file.txt) so you can go back and look at any output from Fortify, as well as
+from a few TOP tests, later.  The code that you've been given does not cause
+Fortify to produce any output (no news is good news), at least not if TOP is
+configured properly.
+
+    NOTE:  DEBUG mode often makes TOP _VERY_SLOW_ when starting up.  Be
+patient.  Once running, it should work at normal speed.  Cleanup on exit takes
+a bit longer than normal, but not much.
+
+    From a source point of view, the DEBUG mode stuff is included in INIT.C.
+DEBUG mode is enabled by assigning the debuglog pointer to a file opened with
+fopen(), so it can also be done directly in the source, without using the DEBUG
+parameter.
+
+    When debuglog is not NULL, the wdl() (which stands for "write debug log")
+function will log whatever messages it is passed.  This is what's written to
+TOPDEBUG.LOG.  wdl() is used throughout INIT.C and also in USER.C, but is not
+included in TOP.H so if you want to use it elsewhere you will need to make it
+visible to wherever you want to use it.
+
+    In DEBUG mode, TOP also outputs a few things (like a memory check) to
+stdout using plain printf().  This is NOT RECOMMENDED, however, because it can
+cause OpenDoors to abort if it finds the text cursor is somewhere unexpected.
+I had meant to phase out all of these outputs but never got around to it.
+
+    If you wish to remove DEBUG mode entirely, simply GREP search for
+"debuglog" and remove all relevant sections of code, and then remove the wdl()
+function and any calls to it.  Lastly, remove anything related to fortify as
+described in the compilation instructions above.
+
+    wdl() and the debug log aren't really needed anymore.  However, I recommend
+keeping the Fortify part of DEBUG mode if you have Fortify (or can find it) as
+it is very handy, especially for a program like TOP which has a lot of pointers
+but was never really written with "safety" guidelines (e.g. initializing
+pointers to NULL) in mind.  I simply didn't know better at the time!
+
+    Poker & Other Games
+    -------------------
+
+    At one point during the development cycle I had planned to include some
+games with TOP, and had gone so far as to write them and integrate them into
+TOP.  They were eventually disabled in favour of looking for a way to make them
+external to TOP.  However, I still have the source, so I've included it in case
+anybody wants to try to get them working.
+
+    The most well-known game is Slots, because it was eventually converted to
+an ECP to work with TOP v3.00wb1.  However, the biggest and, may I say, most
+impressive game was Poker.  As such, I'll be discussing Poker for most of this
+section, though near the end I'll give a little information on how to get Slots
+and a third TOP game, MatchGame, working as well.  I'll conclude with some
+information pertinent to ALL of the games.
+
+    Poker was, like most of TOP, based on an add-on to the Major BBS.  It
+allowed players in a channel to play traditional 5-card draw poker.  The game
+and its commands were all built into TOP.  Ultimately, Poker made TOP rather
+bulky, because it needed 9 different source modules, a ton of language file
+items, and several extra configuration options.  So that's why it was removed.
+Keep this in mind, because it means a lot of work for anybody who wants to try
+to get it working!
+
+    The good news is that in the source you have, almost all of the Poker
+support was not removed, but simply commented out.  Thus most of the work is
+done for you.  However, I'm pretty sure there were one or to things that were
+removed, so you may need to do some tweaking.  That's what the rest of this
+section focuses on.
+
+    I didn't go to the trouble of reintegrating Poker myself, but I'll describe
+all of the modules and try to orient you with what's supposed to happen, so
+that you can find any missing pieces and fill them back in.
+
+    Before I go on, I need to mention a few more things.  First of all, Poker
+is not completely stable.  There are occaisional problems with missing messages
+which can cause problems.  Secondly, there are actually two versions of Poker
+included in the source package.  "Old Poker" was the first version, and is
+somewhat more stable.  It's included in its own archive, OLDPOKER.ZIP, which is
+inside GAMES.ZIP.  However, it's not nearly as flexible, and more importantly,
+nearly everything in the TOP source that supports it has been removed.  You're
+on your own if you want to try to use it.
+
+    These instructions focus on "New Poker", which is made up of 9 different
+modules.  Here is a description of each of the modules:
+
+    POKER.C     This is the command processor for Poker commands.  It's only
+                called when a Poker command is issued, so it should be easy to
+                integrate in and of itself.
+
+    POKERCOR.C  The "core" of Poker is its message processor.  This is called
+                from PROCMSGS.C when a MSG_POKER is received.  MSG_POKER isn't
+                in TOP.H but it's easy enough to add because the actual number
+                of any TOP message doesn't matter.
+
+    POKEREVT.C  The Poker event kernel, which is called from the main loop
+                when the poker poll time is exceeded.  It performs
+                time-sensitive functions.
+
+    POKERNAM.C  A simple module that contains functions to get the name of a
+                hand, e.g. "Two Pair" or "Full House".
+
+    POKERSCO.C  Contains functions for scoring the hands and finding the
+                winner of a hand.
+
+    POKERSYS.C  Various basic ("system") functions, like displaying the hand
+                and finding players.
+
+    POKERTRN.C  Functions for tracking whose turn it is.
+
+    POKER_IO.C  Functions for working with the poker data file (POKERDAT.TOP)
+                and for communicating with other nodes.
+
+    TOPPOKER.H  The header file that includes definitions needed for Poker.
+
+    Here's a general idea of how Poker works.  This is all from memory, and
+keep in mind I haven't worked with TOP Poker in over 5 years so it probably
+isn't 100% accurate.
+
+    1) One player starts a game.  The player's node creates a record in
+POKERDAT.TOP.
+
+    2) Other players can join the game.  Each player's node adds a mention in
+POKERDAT.TOP.
+
+    3) Eventually, the poker kernel will determine enough time has past and try
+to start the game.  If there are at least two players this will happen,
+otherwise the kernel will tell the player who started the game that it's not
+full enough.
+
+    4) The Poker kernel works by having EACH NODE do its own checks based on an
+event time that's stored in POKERDAT.TOP.  This means that when it's time to
+start a game, each node will notice this and take action.  It's each node's
+responsibility to deduct the CyberCash and deal the hand.  The latter is done
+by maintaining a list of flags for each card, so two nodes can't have the same
+cards.
+
+    5) While starting the game, the turn is advanced (by each node).  During
+this process, the node whose player has the first turn will notify the player
+that it's time for a bet.
+
+    6) Any node can try to bet at any time, but its each nodes responsibility
+to check that this attempt is denied unless it's the node's turn to bet.  Nodes
+can fold or even quit the game entirely at any time, however.  This is done via
+direct access to POKERDAT.TOP.
+
+    7) As I left it, Poker DOES NOT check if a node bets within the allowed
+time.  This is important functionality that should be added to POKEREVT.C if
+you want to use Poker on your BBS.  At the very least, a node should remove
+itself (from the game entirely) after a reasonable time has passed while it's
+the node's turn to bet.
+
+    8) After betting, the turn is advanced and other nodes bet.  Once the
+betting has disintegrated according to game rules, the discard stage is
+performed in exactly the same way as betting.  A final round of betting
+follows.
+
+    9) One the final betting is done, the last node sends a "GameOver" message
+to all other nodes.  Each node is then responsible for checking in with its
+hand and a checksum.  The last node to check in will detect that it's the last
+and then send the others a "Finished" message (which is actually done at the
+end of PROCMSGS.C because a node can't send a message while it is processing
+incoming messages), which will cause each node to display the results.
+
+    10) Each node resets itself and we go back to the joining stage (step 2).
+
+    Now that you've read this, you should read my original notes in
+NEWPOKER.TXT which is included in the GAMES.ZIP archive.  It describes all of
+the commands and operations.  Unfortunately, I described them somewhat in terms
+of Old Poker.  Nevertheless, after reading you should have a fairly good idea
+of how New Poker is supposed to work.
+
+    I suggest you uncomment all of the //| lines (and /*//| sections) that
+pertain to Poker in TOP.H and the source files, insert all Poker modules into
+the project, and try to compile.  This may be all that's required, but I can't
+remember if I took anything out or not.  If I did, it was probably something
+minor that can easily be replaced.  To test Poker you'll need to be able to run
+two nodes of TOP. Local nodes will work fine, or you can borrow two nodes from
+your BBS.  Log into both with different accounts and try to play a game with
+yourself.  If you can do and things seem normal (i.e. games start, turns
+progress, discards work, and the player that wins is the one who's supposed to
+win) then you've succeeded!
+
+    If you get it to work, I suggest you run through all of the // comments in
+the poker modules.  Most of them describe stuff that was to be added in.
+You'll need to add in any critical functionality if you want to let your users
+play.  New Poker was still in its infancy when I removed it so many key details
+were missing, such as the fact that the bet expiry time isn't enforced as
+mentioned earlier (step 7).
+
+    I can provide LIMITED support for New Poker, but I'm not going to go to too
+much trouble to try and help somebody.  As I said, I won't support Old Poker.
+
+    BTW, if you're wondering, Old Poker worked by relying on the lowest node in
+TOP to do most of the work.  This made it more stable because it had a central
+manager, but the "handoff" from one lowest node to another could sometimes be a
+problem, and also Old Poker didn't allow multiple games which is something I
+had hoped would become an integral part of New Poker.  Try it at your own risk.
+
+    Lastly, on to the rest of the games.  The other two games are MUCH simpler
+and simply respond to commands.  There's no need for any timing or
+coordination with other nodes.  As such, each game is only one module and only
+requires a command processor and a bit of initialization code.  You should just
+be able to uncomment the //| lines relevant to each game, add the module to the
+project, and recompile with no trouble.
+
+    Slots is the ancestor of the slot machine ECP that TOP v3.00wb1 users are
+familiar with. However, the version that was built into TOP had more
+functionality.  You could change the bet and even perform multiple "pulls of
+the handle" at a time to allow for quicker play.
+
+    MatchGame is a simple and, I have to say, rather lame game that works kind
+of like a scratch-and-win lottery ticket.  You pick three squares of 20 and
+hope that the prizes behind each are the same.  If so, you win the prize!  It
+was written one day when I was really really bored and I didn't give it much
+attention.  It was also the last game added to TOP so it isn't very complete.
+The stats weren't finished.
+
+    Okay, lastly some info. common to all games.
+
+    You'll need to add the required items to your language file to use the
+games.  There's a file, GAMES.LNG, in the archive which should be APPENDED to
+your language file.  It may not be complete, so watch for areas where nothing
+is displayed as it means the language items may be missing.
+
+    Also, some of the games had configuration options which WERE REMOVED from
+TOP.  Scan the game modules for references to "cfg.".  You'll need to add any
+variables that have cfg. in front of them to TOPCFG.H.  If you want, you can
+add support for them in CFG.C, but you can also just hard code the values by
+hand at the end of the init() function.
+
+    SPAWN.C (ECP Support)
+    ---------------------
+
+    SPAWN.C has the beginnings of what became ECP support inside TOP v3.00wb1.
+It is incomplete, but I'll tell you what needs to be finished in case you want
+to try to get it working.  Please also see the next section that talks about
+general concerns related to bringing this source up to par with v3.00wb1.
+
+    I'll assume for this section that you have TOP v3.00wb1 as well as a copy
+of the TOP v3.00wb1 ECPDK, and are familiar with how ECPs work.
+
+    The SPAWN.CFG configuration file loader, load_spawn_progs(), will read
+SPAWN.CFG files from TOP v3.00wb1 WITH ONE IMPORTANT EXCEPTION:  IT DOES NOT
+SUPPORT COMMENTS!  This was added later.  You've got two options here:  a)
+modify the loader to read comments, or b) remove all comments from a SPAWN.CFG
+file that you want to use.  Also, you need to uncomment the line in INIT.C that
+calls the configuration loader.
+
+    The command processor, check_spawn_cmds(), is largely complete, but it
+needs to have support for the rest of the * tokens that are described in a TOP
+v3.00wb1 SPAWN.CFG as well as in ECPDK.DOC.  Most of these will be very easy to
+do.  The only problems are *M and *! which need to set OpenDoors variables to
+work, and */ which needs, at the very least, a one second delay.  (When I
+implemented */ in TOP v3.00wb1 I did so by storing the result of a time() call,
+then waiting until the result of a subsequent call changed, so that the delay
+was only as long as needed, but of course you don't need to go to this
+trouble.)
+
+    The major thing that's missing from SPAWN.C is the TOP Spawn File (TSP)
+processor.  Luckily, it's just a simple text file processor, and the TSP files
+are documented very well in ECPDK.DOC so it should be very easy to build one
+yourself!
+
+    You may also wish to add support for the Swap... group of configuration
+keywords that TOP v3.00wb1 features.  These shouldn't be too hard to support.
+See TOP.CFG from TOP v3.00wb1 for more details.
+
+    Rebuilding TOP v3.00wb1
+    -----------------------
+
+    For those that are interested in using the TOP source but also having some
+of the TOP v3.00wb1 features, you will of course have to rewrite these
+features.  If you are planning to rewrite a TOP v3.00wb1 feature and are
+willing to distribute your changes, PLEASE LET ME KNOW!  I will post this
+information to the TOP web site so that others don't waste time trying to
+rewrite the same feature.  Contact information is at the end of this file.
+
+    First of all, anybody planning to add a TOP v3.00wb1 feature should obtain
+the TOP v3.00wb1 ECPDK.  This kit contains an extremely valuable file:  TOP.H
+from v3.00wb1!  It's the only surviving remnant of the v3.00wb1 source.  It's
+not complete because the function prototypes and global variable declarations
+were split off into another file, but it has all of the data structures and
+thus should provide some important clues.
+
+    Next, make sure you get TOP v3.00wb1 itself, because the WHATSNEW.DOC file
+included with it has details of all of the changes made since v2.00 (i.e. this
+source).  Though these details have been generalized and "dumbed down" a fair
+bit, they will still be useful in reconstructing any feature.  In addition, you
+of course have TOP v3.00wb1 itself which will show you how all of the features
+are supposed to behave.  Remember, the program itself isn't the only useful
+source of information!  You also have configuration files and language file
+additions to go on.
+
+    I will be more than happy to provide tips and advice to anybody
+implementing TOP v3.00wb1 features, as long as they are willing to release
+their additions.  I only have my memory to rely upon here, but I will help with
+what I can.
+
+    Contacting the Author
+    ---------------------
+
+    The author of TOP, Paul Sidorsky, can be reached at <ismware@shaw.ca>.
+Email is the only way to reach me.  I don't use ICQ and have no access to a
+FidoNet BBS.  Please don't try to find my phone number and call me, either.
+(More than one person has done that in the past!)  If you happen to find and
+use one of my other email addresses, that's okay, but I may miss your message
+as I have lots of other email coming to my personal addresses.  Please use
+ismware@shaw.ca to be sure I get your question.  Also, keep in mind that I'm
+very busy attending university most of the year, so it may take me up to two
+weeks to respond!  However, I do promise to respond to all legitimate questions
+regarding the TOP source.
+
+    Before you contact me, please check the TOP web site.  This is where I'm
+consolidating my support for TOP, including the TOP source.  You may find
+answers to your questions on the site.  You may even find modified versions of
+the source there that already implement some of the things discussed in this
+file!  The TOP web site is at:
+
+http://members.shaw.ca/ismware/top/
+
+    Good luck with the source!
+

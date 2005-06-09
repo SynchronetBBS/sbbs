@@ -1,0 +1,114 @@
+New Poker Commands & Notes
+--------------------------
+
+Commands with a * instead of a hyphen are for the future, and not needed for
+the first beta.  Anything with a û (251) after it means it's been completed
+_IN_FULL_, except for text displays and text message sends.
+
+Main Commands
+
+START <gm> - Starts a new game.  Optional <gm> will be the game type.          û
+JOIN <num> - Join game number <num>.  Maybe allow ALL here, I dunno.           û
+QUIT <num> - Quit game number <num>.  ALL is allowed to quit all games.        û
+MAIN <num> - Sets the main poker game to <num>.  OFF sets no main game.        û
+SCAN <gam> - Scans players.  Optional <gam> limits to players in one game.
+STATS <gm> * View stats for game <gm>.  No <gm> shows historical stats.
+KILL <gam> * Sysop only, kills game number <gam>.  ALL works here too.
+
+Misc. Commands.  Optional game number can precede any of these commands.
+
+DEALER <x> * Sets <x> as the new dealer.  OFF = put down, ON = pick up.
+
+The commands below are for dealers only.
+
+MINBET <b> * Sets <b> as the minimum bet.
+MAXBET <b> * Sets <b> as the maximum bet.
+LIMIT <xy> * Sets <xy> as the min. and max.  Format is "x y".  Short to above.
+ANTE <bet> * Sets <ante> as the ante.
+ROUNDS <x> * Limits to <x> rounds of raising.  UNLIM=unlimited.  0=no raising.
+CYCLES <x> * Use <x> cycles of bet, discard.  Default=1.  0=deal then showdown.
+MINAI <nu> * Reserves <nu> spots for AIs.
+MAXAI <nu> * Limits game to <nu> AI players.
+MINPL <pl> * Sets <pl> as the minimum number of players.
+MAXPL <pl> * Sets <pl> as the maximum number of players.
+JOKERS <s> * Turns Joker usage on or off.  Joker = O in card abbrevs.
+WILD <wcs> * Sets the cards in <wcs> as wild.  If no <wcs>, none are wild.
+ACES <ace> * Sets Aces to <ace>.  HIGH=High (def), LOW=Low.
+HURRY      * Forces the next event (deal/toss) right now.  Overrides HOLD.
+HOLD       * Suspends the game until the next command. (DEAL or BET/DISCARD)
+UNHOLD     * Removes the hold placed by HOLD.
+DELAY <dl> * Sets a <dl> second delay between end of last game and start.
+WAIT <ti>  * Sets a <ti> second time limit on the playing of a turn.
+MINDESC <> * Sets <> as the minimum number of discardable cards, if not stand.
+MAXDISC <> * Sets <> as the maximum number of discardable cards.
+
+Playing Commands.  Optional game number works here too.
+
+HAND       - View hand.                                                        û
+BET <tbet> - Bets <tbet>.                                                      û
+CALL       - Call the bet.                                                     û
+RAISE <bt> - Raise the bet by <bt>.                                            û
+FOLD       - Fold your hand.                                                   û
+DISCARD <> - Discard the optional card numbers present in <>.  Usual is "1 2". û
+STAND      - Discard no cards (pass the discard round).                        û
+POT        - View the poker pot.                                               û
+TURN       - View who's turn it is and what they are to do.                    û
+VIEW <plr> * View visible hands in stud poker.  Optional <plr> shows one only.
+
+Logic
+
+The base is still the file POKERDAT.TOP, only the format is different.  All    û
+nodes access this file for their own needs.
+
+As before, messages are still sent, though they are a lot different than       û
+before, and there are only two of them now.  The new messages are below.  AIG =
+All In Game.
+
+GameOver   - "Game over!".  Sent to AIG by last better.  Starts postproc.      û
+Finished   - "Postproc Finished".  To AIG by last to write.  Starts handdisp.  û
+
+Everything else is done by the node where the command was issuedû.  Misc.
+commands can't happen during a game so they don't need messages, and
+notifications are sent via MSG_GENERIC normal messagesû.  Hand and pot commands
+are handled as nowû.  Turn changes are written to the file and turns are
+performed by the same node, so there is no need for turn change messagesû.
+
+When a game starts or cards are discarded, the new hand is immediately "dealt"
+by the nodeû.  The message are sent _AFTER_ dealing, and the file remains
+locked during dealing to prevent deck problemsû.
+
+Bets and discards are processed, the pot is recalculated and the cards shuffled
+if needed, then the message is sent to the next callerû.  Notifications are
+sent via normal MSG_GENERICû.
+
+Folds are rather unimportant.  If it's the user's turn right now then a
+Yourwhatever message is sent after the folding process is cleaned upû.  A
+MSG_GENERIC visual notification is sent, but that's allû.
+
+Post processing is like this:  Each node evaluates the hands, pays out if      û
+needed, and writes a check value of the results.
+
+Handdisp is like this:  The hand is displayed, obviously.  First, however, the û
+checksums are all compared, and if there's a difference, the original cybercash
+totals before ante (stored in the data file) are restored and a problem is
+reported.  The game is also shut down and deleted at this point in the hope
+that the problem isn't severe and a restart will correct it.
+
+Background processing occurs on an adustable time interval (1s is the lowest
+since a time() comparison is done) and checks whether sufficient time has
+elapsed from the last action to take action now.  "Game initializations"û and
+"player turns" are the actions that are checked up on.  The causes are DELAY
+time reachedû and wait time reached, resp. The actions are to start the gameû
+or delete the player, resp.
+
+Wait time warnings occur at 1/2, 2/3, 5/6, 11/12, and 23/24 of waittime (the
+set values from the old poker), with punting occuring at 1/1 of course.  These
+times cut it a little close together if waittime is small, but since that means
+an intense, fast-paced game, that should be okay.  A check to only use the
+highest most recent value should be put in, so if two times round up to the
+same number, or if more than one second passes between checks, then the thing
+won't blare unncessarily at the user.
+
+An array tracks the locking and unlocking that the node has done on each game, û
+and the TOP-exit cleanup uses this array in case anything goes wrong during a
+poker command.

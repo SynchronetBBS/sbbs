@@ -1,0 +1,889 @@
+The Online Pub Revision List
+----------------------------
+
+Version 2.00g1
+
+0913 - Lost the old revision list to a HD crash.  This is what was added as far
+       as I can remember:  Poker, Slots, MatchGame, 90% support for language
+       file, partial new PubColour support (output only), new word splitter,
+       basic config. file support, and a rename from The RemoteAccess Pub (RAP)
+       to The Done-Right Online Pub-Chat Door (DROPChat).  It was at this point
+       that I began rewriting.
+0920 - Abandoned the rewrite since I was not enjoying it, and since I
+       discovered that the rewrite was only going to end up being more-or-less
+       the same as this version with just better names.  I can do just as much
+       by just gradually overhauling this version.  Renamed program from
+       DROPChat to The Online Pub (TOP), because I've discovered that most of
+       the users using teleconferencing programs want a professional
+       appearance, and a name like DROPChat doesn't offer that in my opinion.
+       Fixed the infamous "rescan bug" again (it was lost in the crash).  MAY
+       have fixed the dreaded "memory flaw" by not using sizeof with pointers,
+       but I won't know this until some testing starts.  It's about the only
+       thing left that I can think of.  Reduced stack size from 32k to 8k.  One
+       part in the RA code was creating a 8000 byte local array, which
+       accounted for most of the need for the increase.  No overflows so far.
+0950 - Added processing support for the new configuration file system.  This
+       uses OpenDoors' built in config. file system, which is more flexible.
+       As with before, only a few settings are actually USED.  I still need to
+       add in support in both the processor and the structure for new options
+       appearing in the rewrite, and also some new ones I have thought of.
+       Also removed a call to od_kernel() that was happening before od_init()
+       in LAN and Local modes.
+1000 - About 67% of the DC1 configuration options are now actually used in the
+       program.  This means I will be able to FINALLY get rid of the annoying
+       5 parameter command line.  The command line still remains intact until I
+       test the new options, however the work path and /H switch are no longer
+       needed, which actually results in a 3 parameter command line.
+1010 - Completely removed all of the old command line parameters, except for
+       the EDIT and PACK switches, which are optional, and also the node
+       number, which is also optional.  Added a VERY cheap Node Config. Editor
+       to allow me to choose the type of each node and save the NODECFG.TOP
+       file.  The editor is currently accessable by using NODES as the sole
+       command line parameter.  The NODECFG.TOP file is not yet supported by
+       TOP itself.
+1020 - Added basic support for the Node Config.  The SolidNode parameter, and
+       the comport modification parameters are not supported yet.
+1700 - Added basic support for MULTI-CHANNELS!  Right now, channels from 0 to
+       over 2 BILLION are supported with the JOIN command.  In the near future
+       I'll make this an unsigned long and use channels 0 to 4B-1 for "normal"
+       chat, channels 4B to 4.001B-1 for user's personal channels, and the rest
+       for defineable "conferences".  Message types MSG_INCHANNEL and
+       MSG_OUTCHANNEL are used for channel notificaitons.  The WHO command now
+       needs severe modifications because right now there's no way to find out
+       where another user is.
+1750 - Updated fixname() and filter_string() to recognize new PubColour.
+1850 - Fixed poker Name display problem (patched it to use wordret) and the
+       infamous "always tossout the lowest node" bug in poker.  Converted
+       language file system to a Config. file style system, where each entry
+       takes the format of a keyword followed by the actual language text.
+       This allows the addition of new language items without having to
+       recompile all of the time, and also gets rid of the old DROPLang
+       compiler.  In addition, I can sort the items any way I want with nothing
+       more than some cut and paste work in a text editor.  Also fixed a few
+       cases in PROCMSGS where outnum[] wasn't being used so the raw numbers
+       were outputting garbage.
+1851 - Sort of fixed the GA bug.  They work now, but ANYTHING typed that starts
+       with GA will also trigger a GA.  Oh well, better than them not working
+       at all, for now.
+2500 - Overhauled SCAN to be more like MajorBBS.  Changed pressing ENTER to
+       display the tiny "who's on" list (handles only), like MajorBBS.  Added
+       support for the first TASK flag (TASK_EDITING).  Changed leftover
+       internal occurences of "drc" and "rap" to "top".
+2501 - Fixed small bug in outchecksuffix() that was causing the - to be left on
+       when the length was converted, resulting in weird results.
+2502 - TOP now wipes the node's record in NODEIDX while unregistering the node.
+3000 - Implemented Crash Protection.  A new lastaccess variable in the NODEIDX
+       is used to determine when a node last accessed the file.  Under normal
+       operation, this value is kept up-to-date either when the NODEIDX is
+       saved, or when CrashProtDelay-10 seconds have elapsed (the -10 is to
+       insure the value will be updated in time).  The updating is maintained
+       by the new top_kernel() function, which is hooked into od_kernel() using
+       od_control.od_ker_exec.  top_kernel() also checks the other nodes every
+       CrashProtDelay seconds, and deletes nodes who's lastaccess time is too
+       long ago.  CrashProtDelay config. keyword added as a supplement.  node
+       variable added to maintain an up-to-date node_idx_typ record for the
+       current node, which also saves stack memory.
+3200 - Changed around Output routines.  top_output() now calls the new
+       top_outstring() which outputs to a string, interpreting @ codes.  Then
+       top_output() displays the string while parsing ^ codes.  This allows the
+       addition of the new top_outlog(), which can be used for Log entries
+       using language items.  It calls top_outstring() then od_log_write().
+       Also changed od_emulate() calls to od_putch() in an attempt to speed up
+       output.  Right now even local output seems faster, but that may just be
+       wishful thinking.
+3201 - Went back to old output routines for now, since the new ones are buggy
+       with long unbroken strings.  I should note here that using od_putch()
+       instead of od_emulate() _HAS_ sped up output considerably!
+3202 - Changed around output routines AGAIN.  Now, top_output() takes a
+       new parameter as its first:  outmode.  Outmode is either OUT_SCREEN or
+       OUT_STRING.  OUT_SCREEN acts as before, and OUT_STRING causes
+       top_output() to return a pointer to outputstr, a global variable where
+       the resulting output is held.  top_outstring() and top_outlog() are
+       gone, and log entries are once again written manually, though all that's
+       actually needed is to call od_log_write(top_output(OUT_STRING, ...)).
+3220 - Converted some hardcoded text to language prompts, mostly log entries
+       that now use the new OUT_STRING feature of top_output().
+3221 - Hopefully fixed a problem with Poker aborting with a floating point
+       error at the end of some hands.
+3222 - Internal modification - moved ver to a static global variable defined
+       and set in GLOBAL.C.  This will make recompiling faster since INIT.C
+       doesn't have to compile after every change.
+3223 - Any array that used MAXNODES has now been made Dynamic, meaning the
+       MaxNodes keyword will work more effectively now.  It may also work with
+       >255 values, but I haven't verified this yet.  Added MaxNodes and
+       MaxActions keywords, though I forget exactly when.  Forgot to log them.
+3224 - Corrected a small problem that caused allocation for extra language
+       items if comments were used in the language file.
+3230 - Added PokerMinBet, PokerMaxBet, and PokerAnte config. keywords and
+       support for them in the program.  Moved nodecfg variable to a global and
+       made some adjustments to farmalloc() it earlier than other vars.
+3231 - Made Personal Preference Options available to all systems for testing
+       purposes.  I'm not sure if I'll keep it this way for the release.  On
+       one hand I'd like to join the ASP and get TOP as an ASP approved
+       program, and on the other I'd like to reward registered users.  I guess
+       I'll make the decision when the release time comes.
+3232 - Included ASSERT.H and added an assert() test to the division after a
+       poker hand for a divide by 0 error.  The error I attempted to fix in
+       revision 3221 is still there.
+3233 - Fixed a couple of cosmetic bugs, including renaming a few language items
+       (HandleChange, SexChange, EXMsgChange, DescChange) by adding the word
+       Msg after them to avoid a couple of possible future name conflicts.  I
+       had renamed these in the language file but not in the program.  Also
+       changed version number from 1.90 to 2.00, since there are more than
+       enough changes to call this a major new version.
+3234 - Removed that stupid 2 second delay after "setting up" I put in there to
+       make TOP look like it was doing something.  Updated @L token to new
+       language format (Format is now @L"LangItemName").  This also allows
+       users to define their own language tokens for "common" items and use
+       them globally, saving space.  Fixed a couple of other cosmetic bugs,
+       including the extra space between the "who's in" list and the short
+       help.
+3240 - Channel value changed to unsigned long as noted in the revision 1700
+       notes.  Channel field added to NODEIDX.  Corrected bug in SCAN which was
+       displaying the user's current channel for everybody online.  Changed
+       detection of '\r' to '\n' to try and circumvent that pesky ANSI "bleed"
+       bug.
+3241 - Upgraded the show_file() function a little to make some of the extra
+       needs optional.  Moved the MiniHelp to an ANSI file (MINIHELP.A??).
+       Upgraded the external ANSI files to reflect the current commands.
+3242 - Support for solidnode variable in Node Cfg. added.  Poker index file now
+       cleared when a node enters TOP.  MIDX and NODE files now truncated upon
+       entry of TOP.
+3243 - Updated copyright dates to say 1995.
+3250 - Added the rest of the node configuration and support for it at
+       initialization.  Added the DefaultCyberCash keyword and support for it.
+       Added Enough Cash checks to MatchGame and Poker.
+3251 - Raised max. slots bet to 500000.  Fixed slots speed (based on bps rate).
+       Hopefully fixed problem with TOP Node Cfg.  OpenDoors needs a 0-based
+       port, and TOP was using a 1-based port.
+4150 - Completely overhauled BBS interface.  Function pointers are now used to
+       call common BBS functions such as paging, loading a node's info, etc.,
+       and the PAGE and NODES command now each just call a single generic
+       routine which calls the BBS functions.  Overhauled RA support to the new
+       method.  Max support hasn't been touched yet pending testing of RA
+       support.  Corrected a few cases of od_emulate() in BBS functions.
+       Removed an unused variable in nearly all Node functions which was taking
+       up 256 bytes a shot (about 1.5k there!).  Also noting that the fix in
+       3251 worked, but there still needs to be some safety checking with the
+       port number.
+4250 - Maximus support updated to the new interface, though it does not seem to
+       be working at the moment.  It crashes the system right away.  Also
+       made a few minor fixes to the mods installed in 4150.  RA support is
+       working perfectly now.
+4350 - SuperBBS support added.  Most of it uses the RA calls.
+4351 - Fixed problem where Max and SBBS were crashing.  I (embarassingly)
+       forgot to uncomment the max_init() call, and there wasn't even a
+       sbbs_init() call, so that's how I found the error.
+4352 - Tidied up everything to do with SBBS and RA BBS integration.
+4353 - checkcmdmatch() now checks the entire command line instead of aborting
+       right away, and returns the highest value possible.  SBBS support
+       changed so the useron file is NOT kept open during run, since it seems
+       to interfere with SBBS working.
+4354 - Minor mods to the SBBS code - fixed wrong status type display and am
+       testing something which will hopefully ensure the proper nodes are
+       detected.  Also fixed improper display of SBBS status codes.
+4355 - Scrapped 4354 change to mods.  Fixed bug where TOP was taking a GOOD
+       return code from bbs_call_loaduseron as a BAD one!  Fixed places where a
+       0-based node was NOT being used, causing problems for all of the BBS
+       interfaces!
+4400 - Internal change to use 0-based node numbers everywhere.  This allows
+       node 0 to be a local node, and allows BBSs which use node 0 to use it
+       without problem.
+4401 - Possibly fixed cause of SBBS crashing bug by changing the way the file
+       is opened (DENYNONE now, was DENYRW).
+4500 - Added generic Field editor which will be used for all of the online
+       editors in the program, including, perhaps, the profile editor, for ANSI
+       users only of course.
+4550 - Added user selector which will be used for the user editor.  Corrected
+       bug that prevented CR/LFs from being written to RA/SBBS pages.
+4560 - Fixed editor so it won't try to show NULL variables.  Added disabled
+       field support to editor.  Added a few fields of the user editor for
+       testing.
+4561 - Fixed cheap bug in poker that prevented anybody but the first person
+       from calling/discarding.
+4660 - Added Directed messages (> and DIRECT TO commands).  Modified
+       dispatch_message() to echo messages if they're done to the sending node
+       regardless of other settings.
+4700 - Added most of the rest of the user editor, though it still doesn't
+       actually save the edited values yet.  Tried disabling crash protection
+       to see if it was causing crashes, but this is not the case, so it is now
+       definitely something in the RA BBS-specific module.
+4701 - Reenabled crash protection.
+4710 - User editor saves and other nodes load the edited info. now.  Some user
+       editor fields still are disabled though since they require more detailed
+       editing.
+4720 - Node editor no longer uses OD so the comport doesn't matter.
+       top_output() modified to use a new OUT_LOCAL mode, which will use normal
+       conio calls instead of OD output calls.
+4721 - Found and fixed SERIOUS flaw in BBS node loading code (RA and SBBS).
+       Fields in the USERON file that were longer than the ones in TOP weren't
+       being truncated, leading to overshooting the buffer.  The reverse was
+       also true, though this was less of a concern as nearly all of the info.
+       was being taken from the USERON file so it wasn't going to be too long.
+       However, both ways have been fixed.
+4722 - Found stupid problem with the node editor in that it was still using
+       OD's input routine.  Fixed.  Had to write my own input routine
+       (my_input_str() for now) but that wasn't hard.
+4723 - Fixed reported bugs about TOP using the Work Path instead of the BBS
+       Multi Path.  Also made title page file name TOPTITLE.A?? instead of
+       TOPTITL.A??.  The E was eliminated because the old DROPChat name made
+       the title page filename DROPTITL.A??.
+4724 - Added DisableLogging language item test to see if there's a problem with
+       emessage distribution.  Setting this item to "On" will disable sending
+       of an emessage.
+4725 - Caught another occurence of the problems described in 4721.  Doubt it
+       will fix crashing after doing a NODES command though.  Added outproc
+       and outdefattrib vars for future use.
+4726 - Found and fixed ANOTHER SERIOUS PROBLEM in new RA/SBBS code.  During a
+       useron save, the size of the useron file was ALWAYS being changed even
+       if it was big enough.  Furthermore it was being made one record too
+       small!  This COULD be the cause of the NODES-related crashing, but we'll
+       have to see.
+4727 - Fixed small problem that caused the channel in the nodeidx to get
+       corrupted whenever a person went into the Profile Editor.  I wasn't
+       using the new global node variable which stores the nodeidx info. when
+       saving.
+4750 - Rewrote most of the command processor.  It's still buggy at this point
+       in time.
+4751 - Changed strcpy() call in xxx_pascal_string() functions to memmove() in a
+       desperate attempt to fix the RA/SBBS crashing.  memmove() calls should
+       be a little more stable.  Small problem in ra_saveuseron() and
+       sbbs_saveuseron() corrected.
+4752 - CrashProtDelay can now be set to 0 to disable Crash Protection in cases
+       where it's causing "vanishing acts".
+4800 - RA USERON support overhauled, it's a little more efficient now.  Pascal
+       string commands now have PROPER errorchecking, which was long overdue
+       and probably why RA support was barfing out.  unbuild_pascal_string()
+       now takes the maximum length of the C string as its first parameter to
+       facilitate errorchecking.  build_pascal_string() now returns the length
+       of the string, not including the Pascal length byte.
+4810 - RA debugging stuff removed, it seems to work now!  SBBS SUSERON support
+       overhauled, using the new RA USERON support as a framework.
+4811 - Optimized build_pascal_string() a little more.  Forced all bbs_call
+       function calls to far.  Found & fixed serious problem in new SBBS
+       SUSERON support - the SUSERON file wasn't being opened!
+4812 - Added check_nodes_used() call to start of bbs_useron().  Tracked down a
+       problem where TOP was copying a statustype regardless of whether or not
+       the status number was valid.  Local testing indicates this could very
+       well be the cause of the RA/SBBS crashing that has been haunting me for
+       so long!  Real-time testing will be needed to say for sure though.
+4813 - Fixed problems with command processor.  Was using a bad method of
+       comparing the strings.  All of the other quirks (i.e. "/sewqrp" yielding
+       a whisper to Starhawk as "wqrp") all lie in the command checks
+       themselves now.
+4814 - Re-updated SBBS support so it doesn't leave the SUSERON file open.
+       Hopefully this will mean it works properly from the SBBS side.
+4815 - Fixed SBBS support.  It was ignoring the Line In Use bit so that's why
+       it wasn't working probably.
+4816 - Fixed possible problem in top_output() with controlled length params.
+       If lenbuf couldn't be allocated it would still be memset() and that
+       would be potentially dangerous if it ever failed.  Added NULL function
+       checks to the bbs_call calls for added safety.  Who knows, maybe it'll
+       give clues to why RA support is crashing?
+5000 - Added support for Channel Definitions and CHANNELS.TOP file.  Added
+       CHANNELS command and MaxChannelDefs config keyword.  Still need to do
+       some work with regard to using the channel topics and stuff, and at the
+       moment you can't change to a conference yet.  Personal channels are not
+       implemented, and SCAN needs updating to support channel names.
+       Moderator functions also need to be implemented, along with banning for
+       normal channels and invitations for personal channels.
+5100 - Conferences can now be joined.  Channel Aliases can also be used.
+5110 - Added "You're in channel xxx" and "Topic: xxx" displays.
+5111 - SCAN enhanced to show channel names.
+5112 - Added length checks to top_output()'s parameter field-length processor.
+       It now seems apparent that the crash in RA Support is actually due to
+       a bug in top_output() and not the RA Support at all!  I don't know if
+       this will fix it, but it's a good place to start.  Corrected getlang()
+       so it returns a string with a single \0 in it and not a NULL pointer,
+       which will make things prettier if a language prompt isn't given.  the
+       argptrs[] array is now initialized to \0s as well which should make
+       things prettier if a "too high" parameter number is given.
+5113 - It now seems very likely that the problem in 5112 was the cause of the
+       RA crashing.  Testing of 5112 showed that only PART of the "Yes"
+       language item (used for page status) was copied!  Modified top_output()
+       to count the number of ^^ codes and add 2 bytes for each to lenbuf to
+       try and counter the problem described.  whos_in_pub() modified to only
+       display users in the current channel.  Problem with "leftover"
+       non-channel messages fixed (forgot to 0 the message idx byte for the
+       unneeded messages).
+5114 - Added security checking to the JOIN command.  Also added displaying of
+       Personal Channels for future use.
+5115 - Moved almost all string literals to language items in about the first
+       1/2 of the modules.  Still have the other half to go.  Added changes to
+       allow TOP to recompile under BC++/2 2.0, and fixes to smooth out porting
+       problems.  One fix includes a problem with user searching.  An
+       uninitialized variable was being used as a condition while searching for
+       a user's name, which under OS/2 caused the entire user searching
+       procedure to be bypassed!  Some other uninitialized variable problems
+       fixed too.
+5500 - Converted to a brand new Poker which doesn't rely on the "first node"
+       method anymore.  Also converted 95% of poker text to lang file, with the
+       rest to come once testing is done.  Changed "more" prompts to call a
+       function and to (by default) delete themselves onscreen once used.  New
+       poker hooks put in, naturally.  Added data1 & minsec values to the
+       message structure and new global variables to accompany them.
+5501 - Seem to have fixed all of the MAJOR bugs in Poker.  Fortunately there
+       weren't any that were hard to fix.  Added new OUT_STRINGNF type for
+       top_output() which tells TOP _not_ to filter colour codes when
+       outputting to a string, in case the string is going to be displayed
+       later.
+6000 - Actions rewritten.  Multiple lists are now supported.  Each list can be
+       assigned to specific security levels and/or channels.  TOPACT.EXE is the
+       action compiler to convert the text files to binary, until an editor for
+       the binary files can be made.  The ACTION LIST command hasn't yet been
+       reimplemented.
+6100 - Several more text movements to the language file.  Added @< (backspace)
+       code to output function.  It should also be noted that I have decided to
+       remove support for multiple-word commands.  It makes things too
+       difficult to manage.  I will be converting away from this shortly and
+       after that the command processor should run in tip-top shape.  Added
+       mnemonics to TOPACT for miniumum & maximum security settings, and
+       several ranges of channel settings.
+6200 - Reimplemented ACTION LIST command.
+6210 - Fixed more bugs with Poker.  It is now playable and should work well
+       enough to be tested by the beta people.
+6211 - Fixed TOP/DOS's shelling!  Had to take out the preshell() and
+       postshell() functions, that cleared things up.  Ironic, since those
+       functions were actually supposed to _prevent_ crashing, but I guess that
+       crashing was due to something else.  Fixed a problem in TOPACT that
+       wasn't incrementing the counter and thus not properly compiling the
+       files.
+6220 - Redid checkcmdmatch() a little.  It now _always_ matches exactly, and
+       expects a word rather than an entire string.  Commands in the language
+       file must now be one word.  Using an underscore to indicate two words
+       won't work.  Most of the major commands have been converted, and the
+       rest will be done after some testing has been completed.  Also fixed
+       problem where doing an action to ALL wasn't working.
+6221 - @R (Repeat character) language token now works.  I couldn't make it
+       repeat other language tokens, unfortunately, but I may put in support
+       for some tokens (@X comes to mind) later.
+6222 - Corrected whispering - it is now FINALLY done properly, using the normal
+       command processor and no tricks.  Corrected directed messages similarly.
+       Also moved whispering and directed messages to nearly the end of the
+       command checking function, just for safety.  Also made slight
+       modification to find_node_from_name() so that it would zero the return
+       string if there was no remaining string after the handle, to assist in
+       invalid command checking.
+6223 - Converted the last of the main commands to the new command processor.
+6230 - Modified main_loop() so that typing no longer blocks out messages.  This
+       is in preparation for the input/output split windows.
+6500 - Implemented the basic dual window (input/output) pub chat mode.
+6501 - Added CHANGE CHATMODE command to toggle between normal/dual window chat
+       mode.
+7000 - Added most of the new command-oriented help system.  Still have to
+       diversify the help for commands with multiple words (like CHANGE).
+7010 - Added CHANGE LISTED command to toggle whether or not a user's channel
+       number should be displayed to other users.  Added channellisted field to
+       the node_idx_typ struct.
+7020 - Added these subcommands to the CHANGE command:  SEX, EMESSAGE, XMESSAGE.
+7021 - Added the structlength field to the start of the node_idx_typ and
+       msg_typ, for third party developers.  Added the MSG_EXTCOMMAND for
+       future third-party support.  Added code to support the AllowActions
+       keyword.  Added ability to once again block text while typing, as well
+       as the option to have your own text echoed to you during chat (handy for
+       dual-window mode).  Both options are controlled from the Profile Editor.
+7022 - Added the two previous CHANGE toggles to the profile editor as well.
+       Added ANSI checking in both CHANGE CHATMODE and the Profile Editor.
+       AVATAR is not currently allowed for DW mode because I don't know the
+       cursor store/restore codes yet.  Changed CHANNELS command to CONFLIST,
+       and updated help file name to reflect the change.
+7023 - Added debugging log to INIT.C and searching in USER.C to help track the
+       persistant crashing.  Debug mode is triggered by the DEBUG switch after
+       the node number.
+7024 - DEBUG switch now turns on Fortify, the memory checker I got off one of
+       the PDN echoes.  This may provide additional insight into why these
+       persistant but random crashes are happening.  At release of this beta,
+       I had it reporting nothing.  Hopefully in a crash situation, it will
+       report something to one of the testers.  Also used Fortify to track down
+       a slight but potentially fatal flaw in checkcmdmatch().  I forgot to
+       allocate space for the \0 in the tmpstore string.
+7025 - New Maximus support fixed.  The logic for whether it was a new IPC file
+       was screwed.  Corrected bugs in BBS support that didn't bring TOP to the
+       proper screen location in dual-window mode before displaying incoming
+       pages.
+7026 - Fixed problem where directed messages were working like whispers.
+       That's what I get for cutting and pasting.  Fixed several minor bugs
+       which I forgot to detail.  Added support for the AllowNewHandles
+       keyword.  If it's off, TOP will take the name from the drop file or name
+       prompt and use that in chat.  Changed extension of all temporary files
+       to .TCH, which will make them easier to find and safer to delete.
+7030 - Added internal security levels and support for most of the
+       security-related configuration keywords.  Optimized PROCINP.C a little
+       so it returns after processing (faster).  Added SYSOP SETSEC commmand.
+       Tried to add support for the MaxPWTries keyword, but it was already
+       done (I changed the constant to the config value a long time ago).
+       Added support for local beeping control.  The short scan (ENTER) now
+       only displays the users in the current channel.  Extremely cheap user
+       security setter added to TOP EDIT running method.  TOP PACK now can
+       globally set user securities.  It now runs TOP PACK [<sec>] [<cds>].
+7040 - Fixed LOOKUP command to now use the language file and respect the
+       cfg.usehandles setting.  Renamed TOP.CFG to CFG.TOP for consistency.
+       Changed the style of the node configuration.  It is now a text
+       configuration file, with the same options.  Fixed problem where RAP was
+       ignoring the "Ready" flag in USERON.BBS, thus showing users that were on
+       while RA was in WFC mode.
+7041 - Found flaw related to the new node configuration loader.  The kludge
+       value for cfg.maxmsglen was too high (256 instead of 255), which would
+       cause memory overruns.
+7500 - Simple character-by-character chat mode added for private chats.  CHAT
+       command added to engage this chat mode.
+7501 - top_output() now recognizes the outproc... variables and will act
+       appropriately.  Modified the places that require certain code processing
+       to be turned off to use these variables.  Private chat mode now informs
+       the user who didn't press ESC that chat mode has been exitted, instead
+       of just dumping the user back to the Pub.
+7502 - Added &%, &@, and &^ language parameter modifiers to top_output() to
+       dynamically toggle processing of codes.  The &% token doesn't actually
+       have an effect, yet.  I need to figure out a way to inform the message
+       processor not to use action codes first.
+7503 - Fixed problem with secret actions not working (still using old command
+       recognition method).  Fixed problem where TOP wouldn't ask for a sex
+       for new users when the BBS is RA 2.0x.  I _thought_ that OD would get
+       the sex from the EXITINFO.BBS file, but after taking a look, it doesn't.
+       Fixed problem with Sysop commands not working.  Also removed the
+       shorthand form of the Sysop commands.  Finally fixed the problem with
+       the toss/zap comment displaying garbage sometimes.
+7504 - Added /LOGOFF and /! commands for people to logoff from inside TOP.
+7505 - Fixed a few small problems with the language file.
+7506 - Added credit display to the TIME command.  Added support for credit
+       deduction in top_kernel().  Added cfg.usecredits variable & support.
+7510 - Reenabled support for personal actions.  TOP will create a "fake" action
+       list as list number 0 and copy the info. from the user file to there on
+       startup.
+7511 - Fixed problem with last-list actions not working.  Fixed problem with
+       directed messages and whispers not reporting people not logged in.  It
+       doesn't work exactly as I want it to (i.e. /fdfhg reports "fdfhg not
+       logged in" instead of "whisper not sent") but it works enough.  Fixed
+       serious bug where if the name after a bad action was too long, TOP would
+       crash.  Sometime a long time ago I forgot that tmphand[] may not just
+       have to hold normal handles but also failed handle inputs, and thus made
+       it too small.
+7512 - Modified PRIVCHAT.C to call a share-aware file delete function
+       (sh_unlink()).  Fixed credit kernel to use credits by 1 minute instead
+       of 1 second, which is how RA does it.  Implemented possible temporary
+       fix for the reported "whisper-losing-first-character" bug.  Added %e
+       (he/she) action token.
+7513 - Added the ability for actions to read and show external files from the
+       TOPANSIPath (%p token).  Added OUT_EMULATE mode to top_output() to
+       accomodate that and future file-display routines.  Fixed stupid stack
+       overflow error that occured when private chat was exitted.  The share
+       aware sh_unlink() function was calling itself instead of the regular
+       unlink() to do the actual deletion.  Finally fixed the damn midnight
+       clock overwrap bug.  I had to kludge in my own myclock() function to
+       manually compensate for the sudden loss of a day's worth of clock ticks
+       that happens at midnight under DOS.  Whether this is a DOS or BC++ 3 bug
+       I do not know.
+7514 - Fixed careless error.  TOP tried to free the action-picture buffer even
+       when it wasn't being used, and the buffer was not initialized to NULL so
+       the dofree() shell had no way of blocking the problem.  Also changed all
+       uninitialized pointers to initialize to NULL to prevent the same mistake
+       in the future.  Updated copyright dates to say 1996.  Got rid of all
+       occurences of actionfil since it's no longer needed with multiple lists.
+7515 - Fixed cheap error where directed messages were being sent privately.
+       I'm not being careful with my cutting and pasting.  Upgraded some of the
+       profile editor to use the language file, the rest will come.  It's
+       crashing right now but I'll fix that after it's all converted.
+       Optimized message-sending to remove some needless code-duplication.
+7516 - Converted the rest of the profile editor to use language items.  Renamed
+       CFG.TOP to TOP.CFG, NODECFG.TOP to NODES.CFG, and CHANNELS.TOP to
+       CHANNELS.CFG.  Fixed potentially serious bug where TOP wasn't allocating
+       space for the personal action list pointer in addition to the rest of
+       the lists.  Thanks to Fortify for that one.  Also made small change in
+       INIT.C to not try to disable Fortify if the FORTIFY macro is not
+       defined, in preparation for a public release with no debug code.  Added
+       @E (Erase Screen) output token.
+7520 - Converted every other known instance of hardcoded text to language
+       items, except the CHANGE and SYSOP command screens which need to be
+       converted to help screens.  Removed support for the user editor and
+       generic editor module.  Maybe in the future I'll put them back.
+7530 - Added crude personal channel support.  Modified JOIN command to not exit
+       the channel until it is confirmed that the user can enter the new
+       channel.
+8000 - Implemented Channel Management Interface (CMI).  Channel data is stored
+       in CHANIDX.TCH in the work path, and contains information like the
+       moderator, topic, and who is banned or invited.  This is in addition to
+       the information used from the CHANNELS.CFG file.  Currently, there is
+       no external difference from how channels used to be.
+8010 - Added MODERATOR command and SETTOPIC subcommand.  For testing purposes,
+       right now anybody can change any channel's topic.  Modified cmi_load()
+       to check if the channel is not deleted before using it.
+8100 - Modified cmi_setspec() to handle full and not found cases, as well as
+       fixed it to use the requested node instead of the current one .
+       Modified cmi_adduser() and cmi_subuser() to act on the current buffer
+       channel instead of loading a new one.  It makes it easier on me this
+       way.  Modified action processor and TOPACT so that "N/A" in the response
+       text field will cause no response to an action to be shown.
+       Changed TOP so that channel 0 is now a generic broadcast channel
+       for sending and receiving messages.  All nodes will accept messages on
+       channel 0 no matter which channel the user has joined.  Channel 1 is now
+       the lowest (and default) channel.  This also solves my dilemma over
+       whether or not to allow users access to channel 0.  I thought some may
+       find it confusing since the default channel on most BBS programs is
+       always 1.  Now I don't have to worry.  Support for SETMOD and Ban/Invite
+       commands added, though they are not yet acknowledged by other nodes.
+8500 - Fixed initial problems with CMI loading/saving.  Implemented remaining
+       moderator commands on the receiving end.  Added support for
+       DefaultChannel keyword.  Optimized some areas that displayed channel
+       names to use a function I had written originally for this purpose in
+       CHANNELS.C but forgot about.  Joining (by command or force) a new
+       channel now shows a summary of that channel upon entering.  Changed the
+       channelname() function so it takes a channel number instead of a channel
+       definition, so it can be used with all functions.
+8501 - Added moderatorship check before doing a moderator command.
+       Node deregistering now scans and removes the node from any specnode[]
+       field from all channels.  Fixed slight cosmetic bug with the channel
+       name when joining.  When a user is "evicted" from their current channel
+       a MSG_INCHANNEL message will now be sent to the new channel.  Sysops now
+       are exempted from channel and moderator restrictions.  Users are now
+       "evicted" from a personal channel if the user it belongs to exits TOP.
+       Inadvertantly found and fixed places where I totally forgot to write the
+       user's security to the node index.  Optimized check_dupe_handles() to
+       only read in the 31 handle bytes and not the entire user record, which
+       cuts the search time to 1/3 of the time needed before.  Need to do the
+       same to the user search code at the start of TOP later.
+8502 - Fixed silly problem with SBBS support.  I had reordered and renamed the
+       BBS constants and forgot they were duplicated in TOP.H.  Because the
+       SBBS constant was reordered in one place and not in the other, SBBS
+       support wouldn't work.  The BBS constants are no longer duplicated in
+       TOP.H.
+8503 - Corrected a few cosmetic bugs directly related to commands.  Added cheap
+       fix code to restore the amount of credits after exiting so RA doesn't
+       deduct them again causing a double loss of credits.
+8504 - Made slight change to nodeinfo time saving to try to prevent crash
+       protection failing.  Doubt it will work though.  Added support for
+       configured unlisted channels in the WHO command.  Added ability to turn
+       actions off and back on.
+8600 - Added ability to define custom commands that shell out to programs.
+       This is done via the new SPAWN.CFG file.  No external command list is
+       displayed yet, though.
+8601 - TOP now looks for the NODES.CFG file in the same directory as TOP.EXE.
+       Added checking for pages inside private chat.  Temporarily disabled
+       spawning while some work is done to it.
+8602 - Removed ability to perform some commands (FORGET, REMEMBER, CHAT) on
+       yourself.  Added checking to see if a user is on your channel for some
+       commands (WHISPER, DIRECT, actions).  Fixed slight problem with TOP
+       reporting no name when something is done to a user that has forgot you.
+8700 - Finalized configuration options.  Implemented support for all remaining
+       configuration options.  Removed support for those options which are not
+       being used in the first release.  Fixed TOP so it properly uses the TASK
+       environment variable.
+8701 - May have fixed the problem with crash protection.  I appeared to be
+       subtracting the current time from the old time, instead of vice versa.
+       Fixed problem with profile editor not showing pref2 settings correctly
+       (pref1 was being tested instead).
+8800 - Added Private Chat task support.  Added chat disable during tasks by
+       using channel 0xFFFFFFFF as a "busy" channel.  Removed most debug code
+       (except Fortify and the wdl, which will remain for the gamma versions),
+       recompiled with more optimizations.  Added MSG_FORCERESCAN type and
+       support.
+8801 - Added extra logging.  Added support for the LogFile field of the node
+       configuration.  Added global msgminsec and msgmaxsec variables for
+       future use.
+8900 - Implemented the show_helpfile() function to simplify help file displays
+       throughout TOP.  Implemented support for help on all commands, including
+       multi-word commands, as well as non-command topics.  Added ability for
+       sysops to join channel 0 to make global announcements.
+8901 - Fixed several problems in Private Chat which were introduced in recent
+       modifications.  One was the exitting was not being detected properly,
+       thus stranding nodes sometimes.  Also, an accidentally inserted send of
+       a MSG_INEDITOR message caused the pcnode variable to be reset to -1,
+       which prevented proper operation.  Damn my cutting and pasting!  Also
+       fixed private chat's CPU hogging.  There is still a slight problem if a
+       user exits Private Chat before the other user is ready, because each
+       node deletes the EPR* files before entering chat.  Right now, I will
+       take this problem over the one caused by potential "loose" EPR* files,
+       because a) it is less serious than a loose EPR* file, and b) it is less
+       likely to occur.
+8902 - Fixed problems with cmi_busy().  I tried to cut corners and paid for it.
+       The curchannel variable wasn't being set which was one problem.  Also,
+       the messages needed to be processed while the channel was still
+       0xFFFFFFFF so the node wouldn't think it was back in the channel and
+       display them.  Optimized the mused variable with the lastmsgused
+       variable, all in process_messages().  This means TOP no longer requires
+       special conditions about whether or not to display the message prefix -
+       it can determine this on its own.  Fixed long-time cosmetic bug in Dual
+       Window mode.  Extra CR/LFs were sometimes being shown.  Fixing this bug
+       involved overhauling a lot of the language file as well as globalizing
+       the onflag variable.  Probably too much work for a simple
+       non-destructive cosmetic bug, but at least it looks nice now.
+9000 - Implemented new registration system for OS/2 and updated DOS
+       registration to use new key and reg. type.  Fixed some flaws in the
+       language file usage.  Fixed problems resulting from command
+       channel-checking.  Redid check_nodes_used() so it also checks the
+       handles, which does away with the load_online_handles() function. This
+       was also necessary for nodes to catch other nodes who did not join TOP
+       in their channel.  activenodes[] now converts all users not in the
+       current channel to the value 2 for easy testing.  msgglobaldata variable
+       added to make global sending of messages easier.  Some messages that
+       needed to be globalized (FORGET, REMEMBER, etc.) now are sent globally.
+       MSG_FORCERESCAN is no longer used at this time though support for it
+       will stay in in case I need it later.  Disabled ability to do
+       ban/inviting commands to self.  Fixed globalness of sysop commands.
+       Fixed problem with cmi_unbusy() not properly rejoining the channel.
+       Fixed cross-channel chatting.  Fixed profile editor message sending.
+       Fixed SYSOP SETSEC command.  Fixed short credit screen.  Fixed
+       cfg.actionusesec usage with actions themselves.  Changed TOP to test
+       user.security instead of od_control.user_security.  Fixed CHANNELS.CFG
+       and .TAC loaders to use the TOPPath setting.  Fixed stupid passing of
+       NULL on some messages, which TOP/2 didn't like.  Added NoRegName keyword
+       and support.  Fixed problem with displayed "vanished" nodes.  Released
+       as TOP v2.00g1.
+
+Version 2.00
+
+9001 - Recompiled TOP/DOS with OD 6.00.  Changed giveup_slice() calls to
+       od_sleep(0) calls.  Changed BBS code to use the new bbs_call_pageedit
+       function hook.  Moved page editor to the ra_longpageditor() function,
+       which now also uses the new od_multiline_edit() function introduced in
+       OD 6.00.  It still needs to use the od_fsedit() call from Doors/2,
+       though.  The max_shortpageeditor() also needs to be added.  Added
+       modifications to compile with OD for Win95 and BC++ 4.52 and released a
+       limited beta version to see if it works.
+9002 - Fixed a spot in the new user procedure where TOP used AllowNewHandles
+       instead of AllowHandles.  Added support in the node config for OD 6.00's
+       new RTS/CTS support.
+9100 - Added basic Censor and required CENSOR.CFG loading information.  It
+       still needs to be able to distinguish whole words or parts of words.
+9110 - Added ability for sysops to pick the default new user preferences to
+       suit their own language file and system.  This is done by the
+       DefaultPrefs keyword.
+9111 - Fixed compilation error in the Win95 version.  I had Dynamic runtime
+       library linkage turned on, which meant the users needed a .DLL that I
+       didn't include.  However, it was found to crash so more work will need
+       to be done.
+A000 - Implemented the long-awaited Biography feature, including configurable
+       questions file, editor, and "fill out all" mode.  The editor is entered
+       using the BIO command.  Changed LOOKUP command to call up a user's
+       Biography instead of the cheap summary from before.  Created
+       find_user_from_name() function to get a user's record num and data from
+       a name.  Modified startup code to use this function, which will speed up
+       the initial name search a bit as the new function only reads the name
+       and handle during searching.
+A100 - Added Maximus/2 MCP support at last.  Unfortunately, Max/2 doesn't make
+       this easy.  It does not disconnect its own pipe, leaving double nodes on
+       the who's on list, and causing all pages to be sent to nodes twice.
+       There is no correction for this at this time.  The module BBSMAXMC,
+       which contains this support, compiles only in the OS/2 version of TOP.
+       Added the max_shortpageeditor() function for one-line pages.  Moved
+       MECCA string display code to its own function.
+A110 - Corrected small bugs with MCP support.  Added ActionPrefix keyword to
+       allow periods or other characters or words to prefix action commands
+       (eg. ".yawn").
+A111 - Changed from using atexit() to od_control.od_before_exit, since the
+       former wasn't working under OS/2.  Put in a printf() so this can be
+       confirmed during testing; this will need to be removed later.  Reenabled
+       the ability to process & tokens, which also required the creation of an
+       argnum variable to store the argument number instead of getting in
+       dynamically each time - probably what I should have done in the first
+       place.  I am not convinced that the & processing is stable with regard
+       to the process flags remaining FALSE for subsequent outputs, but it
+       seems to work fine so I'll leave it as it is for now.
+A112 - Added a language item to display if a user is typing text and gets
+       interrupted by an incoming message.  Unfortunately, the detection for
+       this situation isn't working so it will need to be fixed later.  Also
+       discovered that the censor replacement text doesn't work if the text
+       isn't the same length as the offending text.  This may have been done by
+       design (I forget), but it needs to be changed in future.
+A120 - Added the USERLIST command.
+A121 - Removed some remaining Press Any Key prompts (hopefully all of them, but
+       we'll see).
+A122 - Got rid of few (unimportant) instances of regular int variables being
+       used instead of XINT.  There are a few more, but these require header
+       changes which I'm not willing to do just yet.  MCP support now won't
+       poll node 0, which Max/2 does not use.  The last MCP message is now
+       saved and the next incoming message is compared to it, in an attempt to
+       circumvent Max/2's double-paging (described above).  A match also removes
+       the last message, so if a user sends the same message twice it won't be
+       ignored.  Fixed a problem where the MCP msgbuf isn't freed after it's
+       used, and though that's not a big problem under OS/2 with only small
+       amounts of memory in question, it's still obviously not a wanted effect.
+A123 - Fixed a bug in the bio editor that was using the question number instead
+       of the record number when saving responses.  Fixed a very stupid
+       oversight where I forgot to add CMI support when joining Conferences,
+       which made them totally unpredictable.  This should fix a reported
+       problem where the security wasn't being checked as well.  Fixed problems
+       with channels being wrongly displayed as Unlisted under OS/2, and to a
+       lesser extent under DOS.
+A124 - Temporarily disabled the profanity censor as it is causing problems.
+A125 - Fixed the profanity censor by telling it not to try to censor words that
+       are longer than the remainder of the string to be checked.  Also fixed
+       the censor so it will now properly use replacement words that are not
+       the same length as the one being censored.  I was using the wrong string
+       length here.
+A126 - Removed references to the user description, as the Bio makes that
+       obsolete.  Changed fixname(), trim_string(), and filter_string() to
+       check for 0 length strings and ignore them.  Added message processing
+       for the MSG_INBIOEDITOR and MSG_OUTBIOEDITOR types, which was omitted
+       when the Bio Editor was added.
+A127 - Replaced a key line of code (the call to find_max_score()) that
+       accidentally got deleted in the last version.  Gotta be more careful
+       with that Ctrl-Y key I guess.
+A128 - Removed all references to the description field completely.  Added the
+       sendtimemsgs() function which uses the od_control.od_time_msg_func hook
+       to trap "time left" or "inactivity" messages and echo them to the user
+       as proper MSG_GENERIC messages.  The blocktimemsgs global variable has
+       also been added, which is set to TRUE while TOP is processing messages,
+       thus preventing the sendtimemsgs() function from causing sharing errors.
+       If a time message is received while this variable is TRUE, TOP will just
+       use od_printf() to inform the user.  This may be enhanced in the future
+       so it does not interfere with displays that may be on the screen.
+       Removed the printf() that displays when TOP has exited abruptly.
+       Added a process_messages() call to before_exit(), which is needed so
+       "sorry, time is up" messages can be seen.  I thought I put this in long
+       ago, but either I didn't, or it was causing problems so I took it out.
+A200 - Rewrote the name parser function (find_node_from_name()).  It now looks
+       for exact matches first, then looks for partial matches.  It uses much
+       less memory and should also be faster!  The find_max_score() function is
+       also no longer used, as name scoring is done inside the main function on
+       a "save high score only" basis.
+A201 - Fixed a stupid mistake with the new processor.  I was copying the data
+       for newstring to the handle string by accident.
+A202 - Added a temporary fix for %P tokens in personal actions.  It may become
+       permanent depending on how the attempt to fix the crashing related to
+       unfound %P files goes.
+A203 - Fixed where I foolishly forgot to make the above fix work for just
+       personal actions.  Added the FixNames configuration keyword to control
+       whether or not the fixname() function does anything.
+A250 - Fixed a problem where TOP was letting Max/2 MCP pages and other messages
+       get through, which making a mess of the prompt line.  I had forgotten to
+       make TOP check to make sure the messages were of CMSG_HEY_DUDE type.
+       Added the ForceBio option which forces users to fill out their
+       biographies before they can chat.  The Bio editor now sends out
+       MSG_BIOCHG whenever users change anything in their biographies.  Fixed a
+       minor bug where I didn't put the user in "busy channel" mode while
+       they're in the bio editor.  Also changed TOP to use constants relating
+       to the busy and maximum channel numbers.  Added FORCEOFF setting to
+       FixNames keyword so TOP will auto-correct the capitalization of existing
+       users' handles or names.  Added a TOP icon and more information for the
+       About window in TOP/95.  Corrected a small mistake in checking for
+       failed Bio string questions under the minimum length requested.  Changed
+       all remaining instances of int to XINT, except of course where int is
+       needed (eg. WinMain() in TOP/95).  Fixed a non-initialized variable in
+       the new name parser which was causing TOP/2 to exit with a TRAP 5.
+A251 - Revised some of the errorlevels to make more logical sense, and to get
+       rid of the conditions with unassigned errorlevels that were just using
+       44.  Moved the error message and log message for a sharing violation
+       error (in the openfile() function) to the language file.  Obviously I
+       had thought it wasn't necessary to do so, but I want to be complete so
+       it's there now.
+A260 - Removed support for the FixNames keyword.  Unfortunately, OpenDoors and
+       Doors/2 have an auto-capitalizer for names as well, and until I have the
+       time to work around this, FixNames won't work.  In order to preserve the
+       use of the .DLL files for the OS/2 and Win95 versions, I can't just
+       change the door kits and recompile, so something else will have to be
+       figured out.  Made %m mandatory in personal action singular & plural
+       text to prevent "fake" messages from users.  Wrote the 2G1TO200 upgrade
+       program which will enforce the same requirements on existing personal
+       actions.  Changed Max/2 MCP support so the BBSIPCPath can now be set to
+       the pipe defined for Maximus.  Corrected two small bugs in Maximus
+       support.  One was with MCP support where the header wasn't being
+       properly added to messages, and the other was with regular support where
+       not a large enough buffer was being used to hold the MaxPageHeader
+       language item.  REALLY fixed the TOP/2 unlisted channels bug.  I'd made
+       a silly typo that stopped it from working.  Fixed the detection for when
+       a user is typing and is interrupted by a message so that the language
+       item (*** or whatever) will now display properly.
+A270 - Extended censor coverage to all input strings in TOP, except for strings
+       >= 512 bytes written with the long page editor, which are too big for
+       the censor to handle right now.  Corrected a small mistake on my part in
+       the long page editor.  I was using the FS language strings for the
+       regular page editor and regular strings for the FS editor.  Fixed a
+       cosmetic bug where a CR/LF would be sent if you were typing and somebody
+       you've forgotten sent a message to you.  Fixed where *** was being sent
+       to people even with Block Msgs While Typing turned on.  Fixed the very
+       long standing "rogue MECCA code" problem with Maximus pages (damn
+       typos!).
+A280 - Finally enhanced the find_node_from_name() function to take the entire
+       last word as part of the handle, not just the significant letters.  This
+       means that if two people with similar handles are in TOP and one person
+       leaves while another person is whispering to him/her, TOP will say that
+       it can't find the handle, rather than sending the message to the other
+       person because the first letters matched.  Also changed the same
+       function to only copy the first word or 30 characters of what the user
+       typed, whatever is less.  This means if a user does an invalid whisper,
+       the user won't get the entire message dumped back at him/her.
+A281 - Implemented "whole word" feature of the censor.  Fixed a crash with the
+       Bio editor using the censor.  I wasn't giving the response string a big
+       enough buffer.  I should really change that 256-byte minimum on the
+       censor buffer, though.  Changed the 511 byte limit on long page
+       censoring to 255, for the same reason.  Fixed the BIO command so it only
+       works if it's the only word typed, like the other commands.  Fixed a
+       problem with multi-word handles and the new name processor.  Fixed
+       another problem with the name processor logic that stopped the
+       not-specific-enough detection from working with any command where the
+       handle doesn't end the string.  Fixed a third name processor problem
+       with the returning of invalid/unspecific handles.  Only showing the
+       first word wasn't enough if the error was in the second or later words,
+       so this has been removed (though the 30 character limit is still in
+       place).
+A300 - Implemented SHARE detection in TOP/DOS.  Fixed problems with Dual
+       Window chat mode.  Finally fixed the problem with & tokens and
+       talktypes.  They still won't work but internal modifications have been
+       made so that language token processing is turned off after the
+       talktypetextstart length has been processed.  Fixed a small problem with
+       the wrong handle being used in invite/ban notifications.  Finally added
+       single-line paging (eg. /P 4 Hey there!").  Fixed problems with the page
+       function return values that were causing the page confirm/error messages
+       to not be sent properly.  Censor enhanced to ignore colour codes in the
+       middle of words.  Released as v2.00.
+
+Version 2.01
+
+A301 - Restarted development after a year off.  Demand is becoming significant
+       for me to get something done.  It was probably always there but I was
+       both unwilling and unable to seek it out, until now.  Now that I have a
+       new HD I can keep TOP "in easy reach" to work on it as well.  More
+       important, I enjoy working on TOP and wish to resume at least minor
+       development.  Fixed the bug that prevented the Win95 version from
+       working.  I had forgotten to exclude the clock_tick timeslicing macro
+       from Win95 compilation, and Win95 didn't like it.  TOP/DOS is now
+       compiled using BC 4.52 instead of 3.0.  Now that I'm running Win95 and
+       always have access to the Windows IDE that 4.52 uses, there's little
+       point in my keeping BC 3.0 installed.  Also, thanks to system upgrades,
+       TOP can now be fully compiled in under a minute.  It used to take at
+       least five.
+A310 - Fixed the bug that prevented high ASCII from working.  Apparently BC
+       doesn't like ?: tests inside parentheses.  Updated copyright dates to
+       say 1997.  ASCII 127 (delete) is now interpreted as a backspace.  It was
+       previously treated as displayable, but this is not always the case on
+       some terminals.  The CHANGE command now issues MSG_SEXCHG and
+       MSG_EXMSGCHG messages when the appropriate commands are entered.
+       Removed the trim_string() calls that change the real name and handles
+       passed from the drop file.  Apparently they are a security risk.
+       Directed messages now echo if the user has text echoing turned on.
+       Fixed slight logic error that allowed backspaces even with no text
+       typed.
+A311 - Commented the source code in preparation for making it available.  The
+       buffer that holds action output has been expanded to hold 1000 extra
+       bytes.  If too many tokens were used in personal actions it was possible
+       to crash TOP.  The extra bytes should solve this problem for personal
+       actions and normal actions.  The only possible way it could still occur
+       is if a sysop goes nuts with tokens in a pictorial action. Fixed a small
+       bug where the XMsgPrefix wasn't being used (again due to cutting and
+       pasting).  Updated copyright dates to say 1998.  Fixed small bug where
+       the OpenDoors security was not being updated to the actual security in
+       local/LAN mode, which occurred due to careless searching and replacing.
+A320 - Started fixing bugs found while making comments.  Got rid of an old
+       RAPColour code compensator in the trim_string() function.  Fixed where
+       the censor was using the number of non-comment lines in CENSOR.CFG,
+       which made the count too high and wasted memory.  It now divides the
+       number of counted lines by 3, the number of lines per definition.  The
+       channel summary now stops as soon as it finds another user in the
+       channel, instead of continuing to count the users.  The count is no
+       longer used so aborting saves time.  Fixed another problem in the name
+       processor with multi-word handles.  Now specifying one full word of a
+       multi-word handle will work properly with things like secret actions.
+       TOP should (hopefully) now get the user's DND status from the BBS useron
+       file and save it in the NODEIDX.  There's no way for me to test this,
+       unfortunately.  RA credit support enhanced slightly.  Now a negative
+       number _will_ cause TOP to deduct the credits, while a positive
+       number will not (the old behaviour).  I've had old reports saying RA
+       won't deduct while my original tester said it would, so now TOP supports
+       both ways.  Maybe it's a RA 2.00/2.50 thing.
+A321 - Found and fixed a memory leak in the Profile Editor that has been around
+       for quite a while, probably since multiple action lists were added.
+       Thanks to Fortify once again!  I forgot to add one byte for the
+       terminating \0 when reallocating the action pointers in the personal
+       action editor.  Personally I have not had this bug cause a problem but I
+       had a report of an infrequent TRAP on an OS/2 test system, and I suspect
+       it was because of this leak.

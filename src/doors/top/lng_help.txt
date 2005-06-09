@@ -1,0 +1,142 @@
+~ShortHelp
+    Displayed both when the user enters TOP, and when the user presses
+ENTER without typing anything.  It follows the list of the names of people
+that are in the Pub.
+
+Parameters:  None
+~SitDown
+    Displayed when the user enters TOP for the first time.  This item is
+purely to set a "mood" and is not important.
+
+Parameters:  None
+~EnterName
+    This is a prompt that is displayed in LOCAL and LAN modes when the user
+needs to enter his or her real name.  You should specify a colour setting
+at the end of this item to indicate what colour the user's name will be
+echoed back in.  A space at the end of this item is also recommended.
+
+Parameters:  None
+~Searching
+    Displayed while TOP is searching for the user's name in the user file.
+
+Parameters:  @1 - Name being searched
+~EnterPW
+    This item is the prompt for the user's password.  It is only displayed
+if the user's password in the user file is not blank.  A colour setting at
+the end is recommended, and will be the colour used to echo back the
+password "mask" characters (* by default).  A space at the end is
+recommended.
+
+Parameters:  None
+~InvalidPW
+    Displayed each time the user enters an invalid password.
+
+Parameters:  None
+~MaxPW
+    Displayed if the user does not enter the correct password within the
+maximum number of allowed tries.
+
+Parameters:  @1 - Maximum number of tries allowed
+~LogMaxPW
+    This is what will be written to the log when the user does not enter
+the correct password within the maximum number of tries.
+
+Parameters:  None
+~Greeting
+    Displayed to the user after his/her user record has been found, as a
+welcome.
+
+Parameters:  @1 - User's login name
+             @2 - User's record number
+             @3 - Number of days since the user last entered TOP
+~Setup
+    Displayed while TOP logs in the user and notifies other people in TOP
+that the user has entered.  This does not usually take very long, so you
+can use this item for nearly anything.
+
+Parameters:  None
+~LogHandle
+    Written to the log when the user logs in if handles are enabled.  If
+handles are not enabled, this item is not used.
+
+Parameters:  @1 - User's handle.
+~LogStartSignOn
+    Written to the log when a user begins the New-User Signup Procedure.
+
+Parameters:  None
+~EnterHandle
+    Prompts the user to enter a handle that will be used to identify his or her
+self in TOP.  It is also used in the Bio. Editor when a user changes their
+handle.  It is not used if users are not allowed to enter/change their handles.
+A colour setting at the end is recommended, and will be used to echo back the
+handle that the user types.  A space at the end is also recommended.
+
+Parameters:  None
+~LogAbortSignOn
+    Written to the log when a user aborts the New-User Signup.
+
+Parameters:  None
+~HandleInUse
+    Displayed when a user enters a handle that is already in use inside
+TOP.  Not used if users are not allowed to enter or change their handles.
+
+Parameters:  None
+~EnterNewPW
+    Prompt for the user to enter a new password.  Used when the users
+changes his or her password.  A colour setting at the end is recommended,
+and will be the colour used to echo back the password "mask" character (*
+by default), and a space at the end is also recommended.
+
+Parameters:  None
+~ConfirmPW
+    Prompt for the user to confirm the newly entered password by entering
+it a second time.  Used when the users changes his or her password.  A
+colour setting at the end is recommended, and is used to echo back the
+password "mask" character (* by default).  A space at the end is also
+recommended.
+
+Parameters:  None
+~PWNoMatch
+    Displayed if the password the user enters to confirm a changed password
+does not match the one originally entered.  Used when a user changes their
+password.
+
+Parameters:  None
+~GenderPrompt
+    Prompts the user for their new gender.  This is used when the user
+first signs in to TOP, and also when the user is changing their gender (if
+gender changes are permitted).  NOTE:  AS MENTIONED, THIS IS _ALWAYS_ USED
+IN THE NEW-USER SIGNON PROCEDURE, SO DON'T NEGLECT IT JUST BECAUSE YOU HAVE
+GENDER CHANGES DISABLED!  A space at the end is recommended.  Unlike most
+prompts, you will NOT need a colour setting here, because the text
+displayed once the user selects a gender, the language item for that gender
+will be displayed, and these items usually (and should) have their own
+colour settings.
+
+Parameters:  None
+~GenderKeys
+    These are the keys used to select a gender.  This is used when the user
+first signs in to TOP, and also when the user is changing their gender (if
+gender changes are permitted).  NOTE:  AS MENTIONED, THIS IS _ALWAYS_ USED
+IN THE NEW-USER SIGNON PROCEDURE, SO DON'T NEGLECT IT JUST BECAUSE YOU HAVE
+GENDER CHANGES DISABLED!
+
+    The first character is the key to select the Male gender, and the second
+character is the key that selects the Female gender.  If this item is longer
+than two characters, all other characters will be ignored.
+
+Parameters:  None
+~Female
+    This is simply the word "Female".  It should include colour codes if
+desired.
+
+Parameters:  None
+~Male
+    This is simply the word "Male".  It should include colour codes if desired.
+
+Parameters:  None
+~EnterDescPrompt
+    Prompts the user to enter a short description of themselves.  This is used
+when a new user signs into TOP.  A space at the end is recommended
+
+Parameters:  None
