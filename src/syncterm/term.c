@@ -484,12 +484,17 @@ void zmodem_receive(void)
 	char		str[MAX_PATH*2];
 	FILE*		fp;
 	long		l;
+	BOOL		skip;
+	ulong		b;
 	ulong		crc;
 	ulong		rcrc;
 	ulong		bytes;
 	ulong		kbytes;
-	BOOL		skip;
+	ulong		start_bytes;
+	time_t		start_time;
 	time_t		ftime;
+	time_t		t;
+	unsigned	cps;
 	unsigned	timeout;
 	unsigned	errors=0;
 	zmodem_t	zm;
@@ -556,6 +561,8 @@ void zmodem_receive(void)
 				lprintf(LOG_ERR,"Error %d opening/creating/appending %s",errno,fpath);
 				break;
 			}
+			start_bytes=filelength(fileno(fp));
+			start_time=time(NULL);
 
 			skip=FALSE;
 			errors=zmodem_recv_file_data(&zm,fp,flength(fpath),bytes, /* start time */0);
@@ -576,8 +583,14 @@ void zmodem_receive(void)
 				if(l!=(long)bytes) {
 					lprintf(LOG_WARNING,"Incomplete download (%ld bytes received, expected %lu)"
 						,l,bytes);
-				} else
-					lprintf(LOG_INFO,"Received %lu bytes successfully",bytes);
+				} else {
+					if((t=time(NULL)-start_time)<=0)
+						t=1;
+					b=l-start_bytes;
+					if((cps=b/t)==0)
+						cps=1;
+					lprintf(LOG_INFO,"Received %lu bytes successfully (%u CPS)",b,cps);
+				}
 				if(ftime)
 					setfdate(fpath,ftime);
 			}
