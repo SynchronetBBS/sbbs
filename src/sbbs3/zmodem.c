@@ -1323,6 +1323,7 @@ int zmodem_get_zfin(zmodem_t* zm)
 	return 0;
 }
 
+
 /*
  * send from the current position in the file
  * all the way to end of file or until something goes wrong.
@@ -1352,8 +1353,6 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 		/*
 		 * read a block from the file
 		 */
-		if(zm->block_size < 128 || zm->block_size > sizeof(zm->tx_data_subpacket))
-			zm->block_size = 1024;	/* sanity check block size here */
 
 		n = fread(zm->tx_data_subpacket,sizeof(BYTE),zm->block_size,fp);
 
@@ -1367,7 +1366,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 		}
 #endif
 		if(zm->progress!=NULL)
-			zm->progress(zm->cbdata, pos, ftell(fp));
+			zm->progress(zm->cbdata, ftell(fp));
 
 		type = ZCRCG;
 
@@ -1388,11 +1387,6 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 
 		if(zmodem_send_data(zm, type, zm->tx_data_subpacket, n)!=0)
 			return(TIMEOUT);
-
-		if(sent!=NULL)
-			*sent+=n;
-		
-		buf_sent+=n;
 
 		if(type == ZCRCW || type == ZCRCE) {	
 			int ack;
@@ -1420,7 +1414,6 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 				lprintf(zm,LOG_DEBUG,"zmodem_send_from: read error at offset %lu", ftell(fp) );
 				return ZACK;
 			}
-
 		}
 
 		/* 
@@ -1444,6 +1437,19 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 		}
 		if(zm->cancelled)
 			return(-1);
+
+		if(sent!=NULL)
+			*sent+=n;
+		
+		buf_sent+=n;
+
+		zm->consecutive_errors = 0;
+
+		if(zm->block_size < zm->max_block_size) {
+			zm->block_size*=2;
+			if(zm->block_size > zm->max_block_size)
+				zm->block_size = zm->max_block_size;
+		}
 
 		if(type == ZCRCW)	/* end-of-frame */
 			zmodem_send_pos_header(zm, ZDATA, ftell(fp), /* Hex? */ FALSE);
@@ -1476,6 +1482,21 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	int		type;
 	int		i;
 	unsigned errors;
+
+	if(zm->block_size == 0)
+		zm->block_size = ZBLOCKLEN;	
+
+	if(zm->block_size < 128)
+		zm->block_size = 128;	
+
+	if(zm->block_size > sizeof(zm->tx_data_subpacket))
+		zm->block_size = sizeof(zm->tx_data_subpacket);
+
+	if(zm->max_block_size < zm->block_size)
+		zm->max_block_size = zm->block_size;
+
+	if(zm->max_block_size > sizeof(zm->rx_data_subpacket))
+		zm->max_block_size = sizeof(zm->rx_data_subpacket);
 
 	if(sent!=NULL)	
 		*sent=0;
@@ -1624,13 +1645,46 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	} while(type != ZRPOS);
 
-	zm->transfer_start = time(NULL);
+	zm->transfer_start_time = time(NULL);
+	zm->transfer_start_pos = 0;
+	if(zm->rxd_header_pos && zm->rxd_header_pos <= zm->current_file_size) {
+		pos = zm->transfer_start_pos = zm->rxd_header_pos;
+		lprintf(zm,LOG_INFO,"Starting transfer at offset: %lu (resume)", pos);
+	}
 
 	if(start!=NULL)		
-		*start=zm->transfer_start;
+		*start=zm->transfer_start_time;
 
 	rewind(fp);
+	zm->consecutive_errors = 0;
 	do {
+		/*
+		 * and start sending
+		 */
+
+		type = zmodem_send_from(zm, fp, pos, &sent_bytes);
+
+		if(!is_connected(zm))
+			return(FALSE);
+
+		if(type == ZFERR || type == ZABORT || zm->cancelled)
+			return(FALSE);
+
+		if(sent!=NULL)
+			*sent+=sent_bytes;
+
+		if(type == ZACK)	/* success */
+			break;
+
+		if(zm->block_size == zm->max_block_size && zm->max_block_size > ZBLOCKLEN)
+			zm->max_block_size /= 2;
+
+		if(zm->block_size > 128)
+			zm->block_size /= 2; 
+
+		if(++zm->consecutive_errors > zm->max_errors)
+			return(FALSE);
+
 		/*
 		 * fetch pos from the ZRPOS header
 		 */
@@ -1645,22 +1699,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 				lprintf(zm,LOG_WARNING,"Invalid ZRPOS offset: %lu", zm->rxd_header_pos);
 		}
 
-		/*
-		 * and start sending
-		 */
-
-		type = zmodem_send_from(zm, fp, pos, &sent_bytes);
-
-		if(!is_connected(zm))
-			return(FALSE);
-
-		if(sent!=NULL)
-			*sent+=sent_bytes;
-
-		if(type == ZFERR || type == ZABORT || type == TIMEOUT || zm->cancelled)
-			return(FALSE);
-
-	} while(type == ZRPOS || type == ZNAK);
+	} while(type == ZRPOS || type == ZNAK || type==TIMEOUT);
 
 
 	lprintf(zm,LOG_INFO,"Finishing transfer on rx of header type: %s", chr((uchar)type));
@@ -1775,7 +1814,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, ulong* bytes_recei
 					lprintf(zm,LOG_WARNING,"Incomplete download (%ld bytes received, expected %lu)"
 						,l,bytes);
 				} else {
-					if((t=time(NULL)-zm->transfer_start)<=0)
+					if((t=time(NULL)-zm->transfer_start_time)<=0)
 						t=1;
 					b=l-start_bytes;
 					if((cps=b/t)==0)
@@ -1898,7 +1937,8 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset)
 	int			i=0;
 	unsigned	errors=0;
 
-	zm->transfer_start=time(NULL);
+	zm->transfer_start_pos=offset;
+	zm->transfer_start_time=time(NULL);
 
 	fseek(fp,offset,SEEK_SET);
 	offset=ftell(fp);
@@ -1909,7 +1949,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset)
 		if(i!=ENDOFFRAME)
 			zmodem_send_pos_header(zm, ZRPOS, ftell(fp), /* Hex? */ TRUE);
 
-		if((i = zmodem_recv_file_frame(zm,fp,offset)) == ZEOF)
+		if((i = zmodem_recv_file_frame(zm,fp)) == ZEOF)
 			break;
 		if(i!=ENDOFFRAME) {
 			if(i>0)
@@ -1921,7 +1961,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset)
 }
 
 
-int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset)
+int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 {
 	unsigned n;
 	int type;
@@ -1957,8 +1997,11 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset)
 			fwrite(zm->rx_data_subpacket,1,n,fp);
 		}
 
+		if(type==FRAMEOK)
+			zm->block_size = n;
+
 		if(zm->progress!=NULL)
-			zm->progress(zm->cbdata,offset,ftell(fp));
+			zm->progress(zm->cbdata,ftell(fp));
 
 		if(zm->cancelled)
 			return(ZCAN);
@@ -1983,7 +2026,7 @@ char* zmodem_ver(char *buf)
 
 void zmodem_init(zmodem_t* zm, void* cbdata
 				,int	(*lputs)(void*, int level, const char* str)
-				,void	(*progress)(void* unused, ulong, ulong)
+				,void	(*progress)(void* unused, ulong)
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 				,int	(*recv_byte)(void*, unsigned timeout)
 				,BOOL	(*is_connected)(void*)
@@ -1992,13 +2035,14 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 	memset(zm,0,sizeof(zmodem_t));
 
 	/* Use sane default values */
-	zm->send_timeout=10;		/* seconds */
-	zm->recv_timeout=10;		/* seconds */
+	zm->send_timeout=15;		/* seconds */
+	zm->recv_timeout=15;		/* seconds */
 #if 0
 	zm->byte_timeout=3;			/* seconds */
 	zm->ack_timeout=10;			/* seconds */
 #endif
-	zm->block_size=1024;
+	zm->block_size=ZBLOCKLEN;
+	zm->max_block_size=ZBLOCKLEN;
 	zm->max_errors=9;
 
 	zm->cbdata=cbdata;
