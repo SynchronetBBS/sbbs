@@ -162,7 +162,7 @@ Protocols.
 Optional Initialization File (sexyz.ini)
 ----------------------------------------
 If the file sexyz.ini exists in the same directory as the sexyz executable
-(e.g. C:\sbbs\exec\sexyz.ini), it will be loaded and used to the over-ride
+(e.g. C:\sbbs\exec\sexyz.ini), it will be loaded and used to over-ride the
 default operating parameters shown below. Like all Synchronet .ini files,
 you can have a unique .ini file for different local systems by embedding
 the local hostname (sexyz[.host].ini) or platform (sexyz[.platform].ini)
@@ -293,13 +293,14 @@ Ward Christensen in 1977.
 
 The Ymodem (a.k.a. YMODEM) and Zmodem (a.k.a. ZMODEM) protocols were developed
 and documented (poorly) by Chuck Forsberg; Ymodem being primarily a set of
-extensions to Ward's Xmodem protocol. Ymodem-G was also developed by Chuck.
+enhancements to Ward's Xmodem protocol. Ymodem-G was also developed by Chuck.
 
 The X/Ymodem code used in SEXYZ was written by Rob Swindell <rob [at] synchro
 [dot] net>, migrated from the Synchronet Transfer Protocols (STP) program
 circa 1997.
 
-The Unix "stdio" mode support in SEXYZ written by Stephen Hurd (aka Deuce).
+The Unix "stdio" mode support in SEXYZ was written by Stephen Hurd (a.k.a.
+Deuce) of Synchronix/FreeBSD Synchronet stardom and "scary code" infamy.
 
 The Zmodem code in SEXYZ is based on zmtx/zmrx v1.02 (C) Mattheij Computer
 Service 1994 by Jacques Mattheij <jacquesm [at] hacktic [dot] nl>. Although
