@@ -3238,7 +3238,7 @@ static void respond(http_session_t * session)
 
 int read_post_data(http_session_t * session)
 {
-	int i;
+	unsigned i;
 
 	if(session->req.dynamic!=IS_CGI && session->req.post_len)  {
 		i = session->req.post_len;
