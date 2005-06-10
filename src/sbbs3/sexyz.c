@@ -853,7 +853,7 @@ static int send_files(char** fname, uint fnames)
 					,cps
 					,errors
 					,flows
-					,xm.block_size
+					,mode&ZMODEM ? zm.block_size : xm.block_size
 					,path); 
 				fflush(logfp);
 			}
@@ -1176,7 +1176,7 @@ static int receive_files(char** fname_list, int fnames)
 				,file_bytes/t
 				,errors
 				,flows
-				,xm.block_size
+				,mode&ZMODEM ? zm.block_size : xm.block_size
 				,str
 				,serial_num); 
 			fflush(logfp);
