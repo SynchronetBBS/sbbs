@@ -1098,7 +1098,9 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 		do {
 			if((c = zmodem_recv_raw(zm)) < 0)
 				return(c);
-		} while(c != ZPAD && !zm->cancelled);
+			if(zm->cancelled)
+				return(ZCAN);
+		} while(c != ZPAD);
 
 		if((c = zmodem_recv_raw(zm)) < 0)
 			return(c);
@@ -1788,13 +1790,14 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, ulong* bytes_recei
 				}
 				setvbuf(fp,NULL,_IOFBF,0x10000);
 
-				lprintf(zm,LOG_INFO,"Calculating CRC of %s", fpath);
+				lprintf(zm,LOG_INFO,"Calculating CRC of: %s", fpath);
 				crc=fcrc32(fp,l);
 				fclose(fp);
 				lprintf(zm,LOG_INFO,"CRC of %s (%lu bytes): %08lX"
-					,fpath, l, crc);
+					,getfname(fpath), l, crc);
+				lprintf(zm,LOG_INFO,"Requesting CRC of remote file: %s", zm->current_file_name);
 				if(!zmodem_get_crc(zm,l,&rcrc)) {
-					lprintf(zm,LOG_ERR,"Failed to get CRC of remote file: %s", fpath);
+					lprintf(zm,LOG_ERR,"Failed to get CRC of remote file");
 					break;
 				}
 				if(crc!=rcrc) {
