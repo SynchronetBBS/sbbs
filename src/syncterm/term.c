@@ -312,7 +312,7 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 			);
 		clreol();
 		cputs("\r\n");
-		cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-2, ""
+		cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-4, ""
 			,(long)(((float)current_pos/(float)zm->current_file_size)*100.0));
 		l = 60*((float)current_pos/(float)zm->current_file_size);
 		cprintf("[%*.*s%*s]", l, l, 
