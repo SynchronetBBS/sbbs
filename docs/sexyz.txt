@@ -42,6 +42,8 @@ socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
 
 opts   = -o  to overwrite files when receiving
          -s  disable Zmodem streaming (Slow Zmodem)
+         -4  transmit with 4K Zmodem subpackets
+         -8  transmit with 8K Zmodem subpackets (ZedZap)
          -!  to pause after abnormal exit (error)
          -telnet to enable Telnet mode (the default)
          -rlogin to enable RLogin (pass-through) mode
@@ -56,6 +58,11 @@ cmd    = v  to display detailed version information
 file   = filename to send or receive
 path   = directory to receive files into
 list   = name of text file with list of filenames to send or receive
+
+
+NOTE: SEXYZ actually supports either "+list" or "@list" syntax for specifying
+      a file list on the command-line. If the list file doesn't exist, it'll
+      treat the '+' or '@' as part of the filename to send or receive.
 
 
 Example configuration for Synchronet v3.12-Win32
@@ -163,7 +170,7 @@ Example .ini file (with default values given):
 	Debug=FALSE					; enable debug logging
 	DebugTx=FALSE				; debug transmitted characters
 	DebugRx=FALSE				; debug received characters
-	DebugTelnet=FALSE			; debug telnet commands
+	DebugTelnet=FALSE			; debug Telnet commands
 	PauseOnExit=FALSE			; wait for key-press on exit
 	PauseOnAbend=FALSE			; wait for key-press on abnormal exit
 	OutbufHighwaterMark=1100	; bytes before auto-flush
@@ -182,6 +189,7 @@ Example .ini file (with default values given):
 	[Zmodem]
 	SendTimeout=10	; seconds
 	RecvTimeout=10	; seconds
+    BlockSize=1024	; 1024 is "true" Zmodem, 8192 for Zmodem-8K (ZedZap)
 	MaxErrors=10
 	EscapeTelnetIAC=TRUE	; Send ZDLE/ZRUB1 instead of 0xff with -telnet
 
@@ -205,11 +213,10 @@ Ymodem-G:	1024 byte blocks, 16-bit CRC error detection, batch file transfers
 			and streaming (no acknowledgements)
 Zmodem:		1024 byte blocks, 16-bit or 32-bit CRC error detection, batch file
 			transfers, resume, auto-download, and more
+Zmodem-8K:	8192 byte blocks, 16-bit or 32-bit CRC error detection, batch file
+			transfers, resume, auto-download, and more (a.k.a. ZedZap)
 
-SEXYZ does not support Zmodem-8K (a.k.a. ZedZap) since this program is
-designed for use over the Internet where packets over approximately 1500 bytes
-in length are usually fragmented in transit. If you want the absolute fastest,
-lowest overhead protocol, use Ymodem-G instead of Zmodem.
+If you want the absolute fastest, lowest overhead protocol, use Ymodem-G.
 
 As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 
@@ -217,7 +224,7 @@ As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 	xmodem.c 1.20
 	zmodem.c 1.25
 
-SEXYZ for Win32 has been tested successfully with the following telnet clinets
+SEXYZ for Win32 has been tested successfully with the following Telnet clinets
 /terminal programs:
 
 [ztelnet]
