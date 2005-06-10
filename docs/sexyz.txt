@@ -5,7 +5,7 @@ $Id$
 
 Overview
 --------
-SEXYZ was developed as a native (32-bit) socket-based replacement for the
+SEXYZ was developed as a native (32-bit) TCP/socket-based replacement for the
 16-bit DOS file transfer drivers (e.g. FDSZ, CE-XYZ, etc.) that we've been
 stuck with on Win32 BBSes for *far* too long. While SEXYZ was designed with
 Synchronet BBSes in mind, it should also work with other Win32 BBS packages
@@ -43,8 +43,8 @@ socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
 opts   = -y  to overwrite files when receiving
          -o  disable Zmodem CRC-32 mode (use CRC-16)
          -s  disable Zmodem streaming (Slow Zmodem)
-         -2  set initial Zmodem block size to 2K
-         -4  set initial Zmodem block size to 4K
+         -2  set maximum Zmodem block size to 2K
+         -4  set maximum Zmodem block size to 4K
          -8  set maximum Zmodem block size to 8K (ZedZap)
          -!  to pause after abnormal exit (error)
          -telnet to enable Telnet mode (the default)
@@ -65,6 +65,12 @@ list   = name of text file with list of filenames to send or receive
 NOTE: SEXYZ actually supports either "+list" or "@list" syntax for specifying
       a file list on the command-line. If the list file doesn't exist, it'll
       treat the '+' or '@' as part of the filename to send or receive.
+
+NOTE: SEXYZ also supports "rzsz" command-line syntax for some commands.
+      Examples: "sexyz rx -c" to recv Xmodem-CRC
+                "sexyz sx -k" to send Xmodem-1K
+                "sexyz rb"    to recv Ymodem
+                "sexyz sb -k" to send Ymodem-1K
 
 
 Example configuration for Synchronet v3.12-Win32
@@ -162,40 +168,42 @@ you can have a unique .ini file for different local systems by embedding
 the local hostname (sexyz[.host].ini) or platform (sexyz[.platform].ini)
 in the filename. The filenames are *not* case sensitive. Examples:
 
-	C:\sbbs\exec\sexyz.dadscomputer.ini
-	C:\sbbs\exec\sexyz.win32.ini
-	/sbbs/exec/sexyz.linux.ini
+    C:\sbbs\exec\sexyz.dadscomputer.ini
+    C:\sbbs\exec\sexyz.win32.ini
+    /sbbs/exec/sexyz.linux.ini
 
 Example .ini file (with default values given):
 
-	TCP_NoDelay=TRUE			; disable the TCP Nagle algorithm
-	Debug=FALSE					; enable debug logging
-	DebugTx=FALSE				; debug transmitted characters
-	DebugRx=FALSE				; debug received characters
-	DebugTelnet=FALSE			; debug Telnet commands
-	PauseOnExit=FALSE			; wait for key-press on exit
-	PauseOnAbend=FALSE			; wait for key-press on abnormal exit
-	OutbufHighwaterMark=1100	; bytes before auto-flush
-	OutbufDrainTimeout=10		; milliseconds before auto-flush
-	ProgressInterval=1			; interval (in seconds) of progress display
+    Telnet=TRUE                 ; set to FALSE to change the default mode
+    TCP_NoDelay=TRUE            ; disable the TCP Nagle algorithm
+    Debug=FALSE                 ; enable debug logging
+    DebugTx=FALSE               ; debug transmitted characters
+    DebugRx=FALSE               ; debug received characters
+    DebugTelnet=FALSE           ; debug Telnet commands
+    PauseOnExit=FALSE           ; wait for key-press on exit
+    PauseOnAbend=FALSE          ; wait for key-press on abnormal exit
+    OutbufSize=8192             ; bytes (between 1024 and 65536)
+    OutbufHighwaterMark=1100    ; bytes before auto-flush
+    OutbufDrainTimeout=10       ; milliseconds before auto-flush
+    ProgressInterval=1          ; interval (in seconds) of progress display
 
-	[Xmodem]
-	SendTimeout=10	; seconds
-	RecvTimeout=10	; seconds
-	ByteTimeout=3	; seconds
-	AckTimeout=10	; seconds
-	BlockSize=1024	; 128 or 1024
-	MaxErrors=10
-	G_Delay=1		; millisecond yield between sent Ymodem-G blocks
+    [Xmodem]
+    SendTimeout=10  ; seconds
+    RecvTimeout=10  ; seconds
+    ByteTimeout=3   ; seconds
+    AckTimeout=10   ; seconds
+    BlockSize=1024  ; 128 or 1024
+    MaxErrors=10
+    G_Delay=1       ; millisecond yield between sent Ymodem-G blocks
 
-	[Zmodem]
-	SendTimeout=15		; seconds
-	RecvTimeout=15		; seconds
-    BlockSize=1024		; 1024 is usually best to start with
-	MaxBlockSize=1024	; 1024 is "true" Zmodem, 8192 for Zmodem-8K (ZedZap)
-	MaxErrors=10
-    CRC16=FALSE				; CRC-32 is the default
-	EscapeTelnetIAC=TRUE	; Send ZDLE/ZRUB1 instead of 0xff with -telnet
+    [Zmodem]
+    SendTimeout=15      ; seconds
+    RecvTimeout=15      ; seconds
+    BlockSize=1024      ; 1024 is usually best to start with
+    MaxBlockSize=1024   ; 1024 is "true" Zmodem, 8192 for Zmodem-8K (ZedZap)
+    MaxErrors=10
+    CRC16=FALSE             ; CRC-32 is the default
+    EscapeTelnetIAC=TRUE    ; Send ZDLE/ZRUB1 instead of 0xff with -telnet
 
 
 Compatibility
@@ -208,25 +216,25 @@ friend, Chuck).
 
 SEXYZ supports the following protocols and their popular permutations:
 
-Xmodem:		128 byte blocks, 8-bit checksum error detection
-Xmodem-CRC:	128 byte blocks, 16-bit CRC error detection
-Xmodem-1K:	1024 byte blocks, 16-bit CRC error detection
-Ymodem:		128 byte blocks, 16-bit CRC error detection, batch file transfers
-Ymodem-1K:	1024 byte blocks, 16-bit CRC error detection, batch file transfers
-Ymodem-G:	1024 byte blocks, 16-bit CRC error detection, batch file transfers
-			and streaming (no acknowledgements)
-Zmodem:		1024 byte blocks, 16-bit or 32-bit CRC error detection, batch file
-			transfers, resume, auto-download, and more
-Zmodem-8K:	8192 byte blocks, 16-bit or 32-bit CRC error detection, batch file
-			transfers, resume, auto-download, and more (a.k.a. ZedZap)
+Xmodem:     128 byte blocks, 8-bit checksum error detection
+Xmodem-CRC: 128 byte blocks, 16-bit CRC error detection
+Xmodem-1K:  1024 byte blocks, 16-bit CRC error detection
+Ymodem:     128 byte blocks, 16-bit CRC error detection, batch file transfers
+Ymodem-1K:  1024 byte blocks, 16-bit CRC error detection, batch file transfers
+Ymodem-G:   1024 byte blocks, 16-bit CRC error detection, batch file transfers
+            and streaming (no acknowledgements)
+Zmodem:     1024 byte blocks, 16-bit or 32-bit CRC error detection, batch file
+            transfers, resume, auto-download, and more
+Zmodem-8K:  8192 byte blocks, 16-bit or 32-bit CRC error detection, batch file
+            transfers, resume, auto-download, and more (a.k.a. ZedZap)
 
 If you want the absolute fastest, lowest overhead protocol, use Ymodem-G.
 
 As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 
-	sexyz.c  1.38
-	xmodem.c 1.20
-	zmodem.c 1.25
+    sexyz.c  1.38
+    xmodem.c 1.20
+    zmodem.c 1.25
 
 SEXYZ for Win32 has been tested successfully with the following Telnet clinets
 /terminal programs:
@@ -247,7 +255,7 @@ Tested: Xmodem (checksum and CRC), Xmodem-1K, Ymodem-1K, Ymodem-G and Zmodem
         both uploads and downloads
 Failed: Zmodem uploads (CRC errors detected): appears to be the fault of
         HyperTerminal and can be reproduced with any protocol driver on the 
-		BBS/server side (even FDSZ)
+        BBS/server side (even FDSZ)
 
 [mTelnet]
 By: enigma
@@ -265,7 +273,7 @@ URL: www.mysticbbs.com
 Tested: Zmodem uploads and downloads
 Failed: Zmodem uploads (CRC errors detected): appears to be the fault of
         NetRunner and can be reproduced with any protocol driver on the 
-		BBS/server side (FDSZ and CEXYZ both failed in the same manner)
+        BBS/server side (FDSZ and CEXYZ both failed in the same manner)
 
 [ZOC]
 By: EmTec, Innovative Software, Markus Schmidt
