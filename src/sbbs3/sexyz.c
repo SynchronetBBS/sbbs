@@ -402,6 +402,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 {
 	uchar		buf[2] = { TELNET_IAC, TELNET_IAC };
 	unsigned	len=1;
+	DWORD		result;
 
 	if(telnet && ch==TELNET_IAC)	/* escape IAC char */
 		len=2;
@@ -411,14 +412,15 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 	if(RingBufFree(&outbuf)<len) {
 		fprintf(statfp,"FLOW");
 		flows++;
-		if(WaitForEvent(outbuf_empty,timeout*1000)!=WAIT_OBJECT_0) {
+		result=WaitForEvent(outbuf_empty,timeout*1000);
+		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
+		if(result!=WAIT_OBJECT_0) {
 			fprintf(statfp
-				,"\n!TIMEOUT waiting for output buffer to flush (%u seconds, %u bytes)\n"
-				,timeout, RingBufFull(&outbuf));
+				,"\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
+				,result, timeout, RingBufFull(&outbuf));
 			newline=TRUE;
 			return(-1);
 		}
-		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
 	}
 
 	RingBufWrite(&outbuf,buf,len);
