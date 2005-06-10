@@ -1671,8 +1671,10 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		if(type == ZFERR || type == ZABORT || zm->cancelled)
 			return(FALSE);
 
-		if(sent!=NULL)
-			*sent+=sent_bytes;
+		if(sent != NULL)
+			*sent += sent_bytes;
+
+		pos += sent_bytes;
 
 		if(type == ZACK)	/* success */
 			break;
@@ -1772,9 +1774,10 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, ulong* bytes_recei
 					break;
 				}
 				if((fp=fopen(fpath,"rb"))==NULL) {
-					lprintf(zm,LOG_ERR,"Error %d opening %s",errno,fpath);
+					lprintf(zm,LOG_ERR,"Error %d opening %s", errno, fpath);
 					break;
 				}
+				lprintf(zm,LOG_INFO,"Calculating CRC of %s", fpath);
 				crc=fcrc32(fp,l);
 				fclose(fp);
 				if(!zmodem_get_crc(zm,l,&rcrc)) {
