@@ -1308,6 +1308,7 @@ int main(int argc, char **argv)
 	if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
 		log_level=LOG_DEBUG;
 
+	telnet					=iniReadBool(fp,ROOT_SECTION,"Telnet",TRUE);
 	debug_tx				=iniReadBool(fp,ROOT_SECTION,"DebugTx",FALSE);
 	debug_rx				=iniReadBool(fp,ROOT_SECTION,"DebugRx",FALSE);
 	debug_telnet			=iniReadBool(fp,ROOT_SECTION,"DebugTelnet",FALSE);
