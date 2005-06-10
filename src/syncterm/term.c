@@ -256,7 +256,7 @@ static int lprintf(int level, const char *fmt, ...)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos)
+void zmodem_progress(void* cbdata, ulong current_pos)
 {
 	char		orig[128];
 	unsigned	cps;
@@ -279,12 +279,12 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos)
 	textattr(LIGHTCYAN | (BLUE<<4));
 	now=time(NULL);
 	if(now-last_progress>0 || current_pos >= zm->current_file_size) {
-		t=now-zm->transfer_start;
+		t=now-zm->transfer_start_time;
 		if(t<=0)
 			t=1;
-		if(start_pos>current_pos)
-			start_pos=0;
-		if((cps=(current_pos-start_pos)/t)==0)
+		if(zm->transfer_start_pos>current_pos)
+			zm->transfer_start_pos=0;
+		if((cps=(current_pos-zm->transfer_start_pos)/t)==0)
 			cps=1;		/* cps so far */
 		l=zm->current_file_size/cps;	/* total transfer est time */
 		l-=t;			/* now, it's est time left */
@@ -293,19 +293,21 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos)
 			,zm->current_file_num, zm->total_files, TRANSFER_WIN_WIDTH - 20, zm->current_file_name);
 		clreol();
 		cputs("\r\n");
-		if(start_pos)
-			sprintf(orig,"From: %lu  ", start_pos);
+		if(zm->transfer_start_pos)
+			sprintf(orig,"From: %lu  ", zm->transfer_start_pos);
 		else
 			orig[0]=0;
 		cprintf("%sByte: %lu of %lu (%lu KB)"
 			,orig, current_pos, zm->current_file_size, zm->current_file_size/1024);
 		clreol();
 		cputs("\r\n");
-		cprintf("Time: %lu:%02lu  ETA: %lu:%02lu  CPS: %u"
+		cprintf("Time: %lu:%02lu  ETA: %lu:%02lu  Block: %u/CRC-%u  %u cps"
 			,t/60L
 			,t%60L
 			,l/60L
 			,l%60L
+			,zm->block_size
+			,zm->receive_32bit_data ? 32 : 16
 			,cps
 			);
 		clreol();
@@ -505,7 +507,6 @@ void zmodem_receive(void)
 	getch();
 
 	erase_recv_window();
-
 }
 /* End of Zmodem Stuff */
 
