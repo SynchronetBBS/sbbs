@@ -648,7 +648,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
 		if(mode&SEND) {
 			total_blocks=num_blocks(fsize,xm.block_size);
 			fprintf(statfp,"\rBlock (%lu%s): %lu/%lu  Byte: %lu  "
-				"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
+				"Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
 				,xm.block_size%1024L ? xm.block_size: xm.block_size/1024L
 				,xm.block_size%1024L ? "" : "K"
 				,block_num
@@ -663,7 +663,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
 				);
 		} else if(mode&YMODEM) {
 			fprintf(statfp,"\rBlock (%lu%s): %lu  Byte: %lu  "
-				"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
+				"Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
 				,xm.block_size%1024L ? xm.block_size: xm.block_size/1024L
 				,xm.block_size%1024L ? "" : "K"
 				,block_num
@@ -677,7 +677,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
 				);
 		} else { /* XModem receive */
 			fprintf(statfp,"\rBlock (%lu%s): %lu  Byte: %lu  "
-				"Time: %lu:%02lu  CPS: %u "
+				"Time: %lu:%02lu  %u cps "
 				,xm.block_size%1024L ? xm.block_size: xm.block_size/1024L
 				,xm.block_size%1024L ? "" : "K"
 				,block_num
@@ -696,9 +696,8 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
  * show the progress of the transfer like this:
  * zmtx: sending file "garbage" 4096 bytes ( 20%)
  */
-void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos)
+void zmodem_progress(void* cbdata, ulong current_pos)
 {
-	char		orig[128];
 	unsigned	cps;
 	long		l;
 	long		t;
@@ -707,25 +706,23 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos)
 
 	now=time(NULL);
 	if(now-last_progress>=progress_interval || current_pos >= zm.current_file_size || newline) {
-		t=now-zm.transfer_start;
+		t=now-zm.transfer_start_time;
 		if(t<=0)
 			t=1;
-		if(start_pos>current_pos)
-			start_pos=0;
-		if((cps=(current_pos-start_pos)/t)==0)
+		if(zm.transfer_start_pos>current_pos)
+			zm.transfer_start_pos=0;
+		if((cps=(current_pos-zm.transfer_start_pos)/t)==0)
 			cps=1;		/* cps so far */
 		l=zm.current_file_size/cps;	/* total transfer est time */
 		l-=t;			/* now, it's est time left */
 		if(l<0) l=0;
-		if(start_pos)
-			sprintf(orig,"From: %lu  ", start_pos);
-		else
-			orig[0]=0;
-		fprintf(statfp,"\r%sKByte: %lu/%lu  "
-			"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
-			,orig
+		fprintf(statfp,"\rKByte: %lu/%lu  %u/CRC-%u  "
+			"Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
 			,current_pos/1024
 			,zm.current_file_size/1024
+			,zm.block_size
+			,mode&RECV ? (zm.receive_32bit_data ? 32:16) : 
+				(zm.can_fcs_32 && !zm.want_fcs_16) ? 32:16
 			,t/60L
 			,t%60L
 			,l/60L
@@ -1228,8 +1225,9 @@ static const char* usage=
 	"opts   = -y  to overwrite files when receiving\n"
 	"         -o  disable Zmodem CRC-32 mode (use CRC-16)\n"
 	"         -s  disable Zmodem streaming (Slow Zmodem)\n"
-	"         -4  transmit with 4K Zmodem blocks\n"
-	"         -8  transmit with 8K Zmodem blocks (ZedZap)\n"
+	"         -2  set initial Zmodem block size to 2K\n"
+	"         -4  set initial Zmodem block size to 4K\n"
+	"         -8  set maximum Zmodem block size to 8K (ZedZap)\n"
 	"         -!  to pause after abnormal exit (error)\n"
 	"         -telnet to enable Telnet mode (the default)\n"
 	"         -rlogin to enable RLogin (pass-through) mode\n"
@@ -1330,7 +1328,8 @@ int main(int argc, char **argv)
 
 	zm.send_timeout			=iniReadInteger(fp,"Zmodem","SendTimeout",zm.send_timeout);	/* seconds */
 	zm.recv_timeout			=iniReadInteger(fp,"Zmodem","RecvTimeout",zm.recv_timeout);	/* seconds */
-	zm.block_size			=iniReadInteger(fp,"Zmodem","BlockSize",zm.block_size);		/* 1024 or 8192 */
+	zm.block_size			=iniReadInteger(fp,"Zmodem","BlockSize",zm.block_size);			/* 1024  */
+	zm.max_block_size		=iniReadInteger(fp,"Zmodem","MaxBlockSize",zm.max_block_size);	/* 1024 or 8192 */
 	zm.max_errors			=iniReadInteger(fp,"Zmodem","MaxErrors",zm.max_errors);
 	zm.escape_telnet_iac	=iniReadBool(fp,"Zmodem","EscapeTelnetIAC",TRUE);
 	zm.want_fcs_16			=iniReadBool(fp,"Zmodem","CRC16",FALSE);
@@ -1437,11 +1436,14 @@ int main(int argc, char **argv)
 					case 'C':	/* sz/rz compatible */
 						mode|=CRC;
 						break;
+					case '2':
+						zm.block_size=2048;
+						break;
 					case '4':
 						zm.block_size=4096;
 						break;
-					case '8':
-						zm.block_size=8192;
+					case '8':	/* ZedZap */
+						zm.max_block_size=8192;
 						break;
 					case 'O':	/* disable Zmodem CRC-32 */
 						zm.want_fcs_16=TRUE;
