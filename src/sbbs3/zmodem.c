@@ -70,10 +70,10 @@ static BOOL is_connected(zmodem_t* zm)
 	return(TRUE);
 }
 
-int zmodem_data_waiting(zmodem_t* zm)
+int zmodem_data_waiting(zmodem_t* zm, unsigned timeout)
 {
 	if(zm->data_waiting)
-		return(zm->data_waiting(zm->cbdata));
+		return(zm->data_waiting(zm->cbdata, timeout));
 	return(FALSE);
 }
 
@@ -1421,7 +1421,8 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 		 * check out that header
 		 */
 
-		while(zmodem_data_waiting(zm) && !zm->cancelled && is_connected(zm)) {
+		while(zmodem_data_waiting(zm, zm->consecutive_errors ? 1000:0) 
+			&& !zm->cancelled && is_connected(zm)) {
 			int type;
 			int c;
 			lprintf(zm,LOG_DEBUG,"Back-channel traffic detected:");
@@ -2030,7 +2031,7 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 				,int	(*recv_byte)(void*, unsigned timeout)
 				,BOOL	(*is_connected)(void*)
-				,BOOL	(*data_waiting)(void*))
+				,BOOL	(*data_waiting)(void*, unsigned timeout))
 {
 	memset(zm,0,sizeof(zmodem_t));
 

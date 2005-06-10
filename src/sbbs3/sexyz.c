@@ -412,7 +412,9 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		fprintf(statfp,"FLOW");
 		flows++;
 		if(WaitForEvent(outbuf_empty,timeout*1000)!=WAIT_OBJECT_0) {
-			fprintf(statfp,"\n!ERROR Waiting for output buffer to flush\n");
+			fprintf(statfp
+				,"\n!TIMEOUT waiting for output buffer to flush (%u seconds, %u bytes)\n"
+				,timeout, RingBufFull(&outbuf));
 			newline=TRUE;
 			return(-1);
 		}
@@ -592,11 +594,11 @@ BOOL is_connected(void* unused)
 	return socket_check(sock,NULL,NULL,0);
 }
 
-BOOL data_waiting(void* unused)
+BOOL data_waiting(void* unused, unsigned timeout)
 {
 	BOOL rd;
 
-	if(!socket_check(sock,&rd,NULL,0))
+	if(!socket_check(sock,&rd,NULL,timeout))
 		return(FALSE);
 	return(rd);
 }
