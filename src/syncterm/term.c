@@ -377,11 +377,11 @@ static BOOL is_connected(void* unused)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-BOOL data_waiting(void* unused)
+BOOL data_waiting(void* unused, unsigned timeout)
 {
 	BOOL rd;
 
-	if(!socket_check(conn_socket,&rd,NULL,0))
+	if(!socket_check(conn_socket,&rd,NULL,timeout))
 		return(FALSE);
 	return(rd);
 }
