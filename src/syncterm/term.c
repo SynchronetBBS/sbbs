@@ -354,8 +354,8 @@ static int recv_byte(void* unused, unsigned timeout)
 	if(bufbot==buftop) {
 		if((i=conn_recv(buf,sizeof(buf),timeout*1000))<1) {
 			if(timeout)
-				lprintf(LOG_ERR,"RECEIVE ERROR %d (after %u seconds)"
-					,i, time(NULL)-start);
+				lprintf(LOG_ERR,"RECEIVE ERROR %d (after %u seconds, timeout=%u)"
+					,i, time(NULL)-start, timeout);
 			return(-1);
 		}
 		buftop=i;
