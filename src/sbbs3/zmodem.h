@@ -258,8 +258,10 @@ typedef struct {
 
 	/* Configuration */
 	BOOL		escape_telnet_iac;
+	unsigned	init_timeout;
 	unsigned	send_timeout;
 	unsigned	recv_timeout;
+	unsigned	crc_timeout;
 	unsigned	max_errors;
 	unsigned	block_size;
 	unsigned	max_block_size;
