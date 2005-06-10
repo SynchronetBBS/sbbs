@@ -121,8 +121,6 @@ unsigned	outbuf_drain_timeout;
 unsigned	flows=0;
 unsigned	select_errors=0;
 
-#define putcom(ch)	send_byte(NULL,ch,10)
-
 #ifdef __unix__
 void resetterm(void)
 {
@@ -414,7 +412,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		flows++;
 		result=WaitForEvent(outbuf_empty,timeout*1000);
 		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
-		if(result!=WAIT_OBJECT_0) {
+		if(result!=WAIT_OBJECT_0 && RingBufFree(&outbuf)<len) {
 			fprintf(statfp
 				,"\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
 				,result, timeout, RingBufFull(&outbuf));
@@ -803,6 +801,7 @@ static int send_files(char** fname, uint fnames)
 				lprintf(LOG_ERR,"Error %d opening %s for read",errno,path);
 				continue;
 			}
+			setvbuf(fp,NULL,_IOFBF,0x10000);
 
 			fsize=filelength(fileno(fp));
 
@@ -949,7 +948,7 @@ static int receive_files(char** fname_list, int fnames)
 						mode&=~CRC;
 					xmodem_put_nak(&xm, /* expected_block: */ 0);
 					if(xmodem_get_block(&xm, block, /* expected_block: */ 0) == 0) {
-						putcom(ACK);
+						send_byte(NULL,ACK,10);
 						break; 
 					} 
 				}
@@ -1128,7 +1127,7 @@ static int receive_files(char** fname_list, int fnames)
 					continue;
 				}
 				if(!(mode&GMODE))
-					putcom(ACK);
+					send_byte(NULL,ACK,10);
 				if(file_bytes_left<=0L)  { /* No more bytes to send */
 					lprintf(LOG_WARNING,"Attempt to send more byte specified in header");
 					break; 
@@ -1330,8 +1329,10 @@ int main(int argc, char **argv)
 	xm.max_errors			=iniReadInteger(fp,"Xmodem","MaxErrors",xm.max_errors);
 	xm.g_delay				=iniReadInteger(fp,"Xmodem","G_Delay",xm.g_delay);
 
+	zm.init_timeout			=iniReadInteger(fp,"Zmodem","InitTimeout",zm.init_timeout);	/* seconds */
 	zm.send_timeout			=iniReadInteger(fp,"Zmodem","SendTimeout",zm.send_timeout);	/* seconds */
 	zm.recv_timeout			=iniReadInteger(fp,"Zmodem","RecvTimeout",zm.recv_timeout);	/* seconds */
+	zm.crc_timeout			=iniReadInteger(fp,"Zmodem","CrcTimeout",zm.crc_timeout);	/* seconds */
 	zm.block_size			=iniReadInteger(fp,"Zmodem","BlockSize",zm.block_size);			/* 1024  */
 	zm.max_block_size		=iniReadInteger(fp,"Zmodem","MaxBlockSize",zm.max_block_size);	/* 1024 or 8192 */
 	zm.max_errors			=iniReadInteger(fp,"Zmodem","MaxErrors",zm.max_errors);
