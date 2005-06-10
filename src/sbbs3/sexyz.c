@@ -72,7 +72,8 @@
 #include "sexyz.h"
 
 #define SINGLE_THREADED		FALSE
-#define IO_THREAD_BUF_SIZE	4096
+#define MIN_OUTBUF_SIZE		1024
+#define MAX_OUTBUF_SIZE		(64*1024)
 
 /***************/
 /* Global Vars */
@@ -117,6 +118,7 @@ RingBuf		outbuf;
 	xpevent_t	outbuf_empty;
 #endif
 unsigned	outbuf_drain_timeout;
+long		outbuf_size;
 
 unsigned	flows=0;
 unsigned	select_errors=0;
@@ -485,7 +487,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 static void output_thread(void* arg)
 {
 	char		stats[128];
-    BYTE		buf[IO_THREAD_BUF_SIZE];
+    BYTE		buf[MAX_OUTBUF_SIZE];
 	int			i;
     ulong		avail;
 	ulong		total_sent=0;
@@ -1229,8 +1231,8 @@ static const char* usage=
 	"opts   = -y  to overwrite files when receiving\n"
 	"         -o  disable Zmodem CRC-32 mode (use CRC-16)\n"
 	"         -s  disable Zmodem streaming (Slow Zmodem)\n"
-	"         -2  set initial Zmodem block size to 2K\n"
-	"         -4  set initial Zmodem block size to 4K\n"
+	"         -2  set maximum Zmodem block size to 2K\n"
+	"         -4  set maximum Zmodem block size to 4K\n"
 	"         -8  set maximum Zmodem block size to 8K (ZedZap)\n"
 	"         -!  to pause after abnormal exit (error)\n"
 	"         -telnet to enable Telnet mode (the default)\n"
@@ -1285,8 +1287,6 @@ int main(int argc, char **argv)
 		,PLATFORM_DESC
 		);
 
-	RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
-
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected);
 	zmodem_init(&zm,NULL,lputs,zmodem_progress,send_byte,recv_byte,is_connected,data_waiting);
 
@@ -1319,6 +1319,7 @@ int main(int argc, char **argv)
 
 	outbuf.highwater_mark	=iniReadInteger(fp,ROOT_SECTION,"OutbufHighwaterMark",1100);
 	outbuf_drain_timeout	=iniReadInteger(fp,ROOT_SECTION,"OutbufDrainTimeout",10);
+	outbuf_size				=iniReadInteger(fp,ROOT_SECTION,"OutbufSize",8192);
 
 	progress_interval		=iniReadInteger(fp,ROOT_SECTION,"ProgressInterval",1);
 
@@ -1344,6 +1345,14 @@ int main(int argc, char **argv)
 		fclose(fp);
 
 	atexit(exiting);
+
+	if(outbuf_size < MIN_OUTBUF_SIZE)
+		outbuf_size = MIN_OUTBUF_SIZE;
+	else if(outbuf_size > MAX_OUTBUF_SIZE)
+		outbuf_size = MAX_OUTBUF_SIZE;
+	
+	fprintf(statfp,"Output buffer size: %u\n", outbuf_size);
+	RingBufInit(&outbuf, outbuf_size);
 
 #if !defined(RINGBUF_EVENT)
 	outbuf_empty=CreateEvent(NULL,/* ManualReset */TRUE, /*InitialState */TRUE,NULL);
@@ -1443,10 +1452,10 @@ int main(int argc, char **argv)
 						mode|=CRC;
 						break;
 					case '2':
-						zm.block_size=2048;
+						zm.max_block_size=2048;
 						break;
 					case '4':
-						zm.block_size=4096;
+						zm.max_block_size=4096;
 						break;
 					case '8':	/* ZedZap */
 						zm.max_block_size=8192;
