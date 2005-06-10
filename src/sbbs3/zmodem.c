@@ -1383,7 +1383,8 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 		if((ulong)ftell(fp) >= zm->current_file_size || n==0)	// can't use feof() here!
 			type = ZCRCE;
 
-		zmodem_send_data(zm, type, zm->tx_data_subpacket, n);
+		if(zmodem_send_data(zm, type, zm->tx_data_subpacket, n)!=0)
+			return(TIMEOUT);
 
 		if(sent!=NULL)
 			*sent+=n;
