@@ -704,18 +704,17 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos)
 	long		t;
 	time_t		now;
 	static time_t last_progress;
-	zmodem_t*	zm = (zmodem_t*)cbdata;
 
 	now=time(NULL);
-	if(now-last_progress>=progress_interval || current_pos >= zm->current_file_size || newline) {
-		t=now-zm->transfer_start;
+	if(now-last_progress>=progress_interval || current_pos >= zm.current_file_size || newline) {
+		t=now-zm.transfer_start;
 		if(t<=0)
 			t=1;
 		if(start_pos>current_pos)
 			start_pos=0;
 		if((cps=(current_pos-start_pos)/t)==0)
 			cps=1;		/* cps so far */
-		l=zm->current_file_size/cps;	/* total transfer est time */
+		l=zm.current_file_size/cps;	/* total transfer est time */
 		l-=t;			/* now, it's est time left */
 		if(l<0) l=0;
 		if(start_pos)
@@ -726,13 +725,13 @@ void zmodem_progress(void* cbdata, ulong start_pos, ulong current_pos)
 			"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
 			,orig
 			,current_pos/1024
-			,zm->current_file_size/1024
+			,zm.current_file_size/1024
 			,t/60L
 			,t%60L
 			,l/60L
 			,l%60L
 			,cps
-			,(long)(((float)current_pos/(float)zm->current_file_size)*100.0)
+			,(long)(((float)current_pos/(float)zm.current_file_size)*100.0)
 			);
 		newline=FALSE;
 		last_progress=now;
@@ -1228,6 +1227,8 @@ static const char* usage=
 	"\n"
 	"opts   = -o  to overwrite files when receiving\n"
 	"         -s  disable Zmodem streaming (Slow Zmodem)\n"
+	"         -4  transmit with 4K Zmodem blocks\n"
+	"         -8  transmit with 8K Zmodem blocks (ZedZap)\n"
 	"         -!  to pause after abnormal exit (error)\n"
 	"         -telnet to enable Telnet mode (the default)\n"
 	"         -rlogin to enable RLogin (pass-through) mode\n"
@@ -1328,6 +1329,7 @@ int main(int argc, char **argv)
 
 	zm.send_timeout			=iniReadInteger(fp,"Zmodem","SendTimeout",zm.send_timeout);	/* seconds */
 	zm.recv_timeout			=iniReadInteger(fp,"Zmodem","RecvTimeout",zm.recv_timeout);	/* seconds */
+	zm.block_size			=iniReadInteger(fp,"Zmodem","BlockSize",zm.block_size);		/* 1024 or 8192 */
 	zm.max_errors			=iniReadInteger(fp,"Zmodem","MaxErrors",zm.max_errors);
 	zm.escape_telnet_iac	=iniReadBool(fp,"Zmodem","EscapeTelnetIAC",TRUE);
 
@@ -1429,6 +1431,12 @@ int main(int argc, char **argv)
 				switch(toupper(*arg)) {
 					case 'K':	/* sz/rz compatible */
 						xm.block_size=1024;
+						break;
+					case '4':
+						zm.block_size=4096;
+						break;
+					case '8':
+						zm.block_size=8192;
 						break;
 					case 'S':	/* disable Zmodem streaming */
 						zm.no_streaming=TRUE;

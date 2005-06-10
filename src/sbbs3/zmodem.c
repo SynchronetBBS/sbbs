@@ -1349,7 +1349,10 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 		/*
 		 * read a block from the file
 		 */
-		n = fread(zm->tx_data_subpacket,1,sizeof(zm->tx_data_subpacket),fp);
+		if(zm->block_size < 128 || zm->block_size > sizeof(zm->tx_data_subpacket))
+			zm->block_size = 1024;	/* sanity check block size here */
+
+		n = fread(zm->tx_data_subpacket,sizeof(BYTE),zm->block_size,fp);
 
 #if 0
 		if(n == 0) {
@@ -1398,7 +1401,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 					if((ack = zmodem_recv_header(zm)) != ZACK)
 						return(ack);
 
-					if(zm->rxd_header_pos == ftell(fp))
+					if(zm->rxd_header_pos == (ulong)ftell(fp))
 						break;
 					lprintf(zm,LOG_WARNING,"ZACK for incorrect offset (%lu vs %lu)"
 						,zm->rxd_header_pos, ftell(fp));
@@ -1498,6 +1501,8 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	}
 
 	fstat(fileno(fp),&s);
+	zm->current_file_size = s.st_size;
+	SAFECOPY(zm->current_file_name, getfname(fname));
 
 	/*
 	 * the file exists. now build the ZFILE frame
@@ -1558,7 +1563,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	p += strlen(p) + 1;
 
 	sprintf(p,"%lu %lo %lo %d %u %lu %d"
-		,(ulong)s.st_size
+		,zm->current_file_size
 		,s.st_mtime
 		,0						/* file mode */
 		,0						/* serial number */
@@ -1627,7 +1632,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		 */
 
 		if(type == ZRPOS) {
-			if(zm->rxd_header_pos <= s.st_size) {
+			if(zm->rxd_header_pos <= zm->current_file_size) {
 				pos = zm->rxd_header_pos;
 				lprintf(zm,LOG_INFO,"Resuming transfer from offset: %lu", pos);
 			} else
@@ -1662,10 +1667,10 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		 * and wait for zrinit. if it doesnt come then try again
 		 */
 
-		zeof_frame[ZP0] = (uchar) (s.st_size        & 0xff);
-		zeof_frame[ZP1] = (uchar)((s.st_size >> 8)  & 0xff);
-		zeof_frame[ZP2] = (uchar)((s.st_size >> 16) & 0xff);
-		zeof_frame[ZP3] = (uchar)((s.st_size >> 24) & 0xff);
+		zeof_frame[ZP0] = (uchar) (zm->current_file_size        & 0xff);
+		zeof_frame[ZP1] = (uchar)((zm->current_file_size >> 8)  & 0xff);
+		zeof_frame[ZP2] = (uchar)((zm->current_file_size >> 16) & 0xff);
+		zeof_frame[ZP3] = (uchar)((zm->current_file_size >> 24) & 0xff);
 
 		for(errors=0;errors<=zm->max_errors && !zm->cancelled && is_connected(zm);errors++) {
 			lprintf(zm,LOG_INFO,"Sending End-of-File (ZEOF) frame (%u of %u)"
@@ -1931,7 +1936,7 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, ulong offset)
 
 		} while(type != ZDATA);
 
-		if(zm->rxd_header_pos==ftell(fp))
+		if(zm->rxd_header_pos==(ulong)ftell(fp))
 			break;
 		lprintf(zm,LOG_WARNING,"Wrong ZDATA block (%lu vs %lu)", zm->rxd_header_pos, ftell(fp));
 
@@ -1986,8 +1991,8 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 #if 0
 	zm->byte_timeout=3;			/* seconds */
 	zm->ack_timeout=10;			/* seconds */
-	zm->block_size=1024;
 #endif
+	zm->block_size=1024;
 	zm->max_errors=9;
 
 	zm->cbdata=cbdata;

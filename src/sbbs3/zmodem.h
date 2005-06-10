@@ -193,9 +193,9 @@
 
 typedef struct {
 
-	BYTE rxd_header[ZMAXHLEN];								/* last received header */
-	int rxd_header_len;										/* last received header size */
-	long rxd_header_pos;									/* last received header position value */
+	BYTE	rxd_header[ZMAXHLEN];							/* last received header */
+	int		rxd_header_len;									/* last received header size */
+	ulong	rxd_header_pos;									/* last received header position value */
 
 	/*
 	 * receiver capability flags
@@ -221,9 +221,7 @@ typedef struct {
 
 	/* from zmtx.c */
 
-	#define MAX_SUBPACKETSIZE 1024
-
-	BYTE tx_data_subpacket[MAX_SUBPACKETSIZE];
+	BYTE tx_data_subpacket[8192];
 	BYTE rx_data_subpacket[8192];							/* zzap = 8192 */
 
 	char		current_file_name[MAX_PATH+1];
@@ -260,6 +258,7 @@ typedef struct {
 	unsigned	send_timeout;
 	unsigned	recv_timeout;
 	unsigned	max_errors;
+	unsigned	block_size;
 
 	/* Callbacks */
 	void*		cbdata;
@@ -283,7 +282,7 @@ void		zmodem_init(zmodem_t*, void* cbdata
 char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);
 int			zmodem_rx(zmodem_t* zm);
-int zmodem_tx(zmodem_t* zm, BYTE ch);
+int			zmodem_tx(zmodem_t* zm, BYTE ch);
 int			zmodem_abort_receive(zmodem_t*);
 int			zmodem_send_ack(zmodem_t*, long pos);
 int			zmodem_send_nak(zmodem_t*);
