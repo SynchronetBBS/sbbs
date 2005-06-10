@@ -197,8 +197,10 @@ Example .ini file (with default values given):
     G_Delay=1       ; millisecond yield between sent Ymodem-G blocks
 
     [Zmodem]
+    InitTimeout=10      ; seconds
     SendTimeout=15      ; seconds
-    RecvTimeout=15      ; seconds
+    RecvTimeout=20      ; seconds
+    CrcTimeout=60       ; seconds
     BlockSize=1024      ; 1024 is usually best to start with
     MaxBlockSize=1024   ; 1024 is "true" Zmodem, 8192 for Zmodem-8K (ZedZap)
     MaxErrors=10
