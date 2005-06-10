@@ -1467,7 +1467,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, time_t* start, ulong* sent)
 {
 	BOOL	success=FALSE;
-	long	pos=0;
+	ulong	pos=0;
 	ulong	sent_bytes;
 	struct	stat s;
 	unsigned char * p;
@@ -1637,8 +1637,10 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		if(type == ZRPOS) {
 			if(zm->rxd_header_pos <= zm->current_file_size) {
-				pos = zm->rxd_header_pos;
-				lprintf(zm,LOG_INFO,"Resuming transfer from offset: %lu", pos);
+				if(pos != zm->rxd_header_pos) {
+					pos = zm->rxd_header_pos;
+					lprintf(zm,LOG_INFO,"Resuming transfer from offset: %lu", pos);
+				}
 			} else
 				lprintf(zm,LOG_WARNING,"Invalid ZRPOS offset: %lu", zm->rxd_header_pos);
 		}
