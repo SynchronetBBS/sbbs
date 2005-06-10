@@ -43,8 +43,9 @@ socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
 opts   = -y  to overwrite files when receiving
          -o  disable Zmodem CRC-32 mode (use CRC-16)
          -s  disable Zmodem streaming (Slow Zmodem)
-         -4  transmit with 4K Zmodem subpackets
-         -8  transmit with 8K Zmodem subpackets (ZedZap)
+         -2  set initial Zmodem block size to 2K
+         -4  set initial Zmodem block size to 4K
+         -8  set maximum Zmodem block size to 8K (ZedZap)
          -!  to pause after abnormal exit (error)
          -telnet to enable Telnet mode (the default)
          -rlogin to enable RLogin (pass-through) mode
@@ -188,11 +189,12 @@ Example .ini file (with default values given):
 	G_Delay=1		; millisecond yield between sent Ymodem-G blocks
 
 	[Zmodem]
-	SendTimeout=10	; seconds
-	RecvTimeout=10	; seconds
-    BlockSize=1024	; 1024 is "true" Zmodem, 8192 for Zmodem-8K (ZedZap)
+	SendTimeout=15		; seconds
+	RecvTimeout=15		; seconds
+    BlockSize=1024		; 1024 is usually best to start with
+	MaxBlockSize=1024	; 1024 is "true" Zmodem, 8192 for Zmodem-8K (ZedZap)
 	MaxErrors=10
-    CRC16=FALSE     ; CRC-32 is the default
+    CRC16=FALSE				; CRC-32 is the default
 	EscapeTelnetIAC=TRUE	; Send ZDLE/ZRUB1 instead of 0xff with -telnet
 
 
