@@ -40,7 +40,8 @@ usage: sexyz <socket> [-opts] <cmd> [file | path | @list]
 
 socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
 
-opts   = -o  to overwrite files when receiving
+opts   = -y  to overwrite files when receiving
+         -o  disable Zmodem CRC-32 mode (use CRC-16)
          -s  disable Zmodem streaming (Slow Zmodem)
          -4  transmit with 4K Zmodem subpackets
          -8  transmit with 8K Zmodem subpackets (ZedZap)
@@ -191,6 +192,7 @@ Example .ini file (with default values given):
 	RecvTimeout=10	; seconds
     BlockSize=1024	; 1024 is "true" Zmodem, 8192 for Zmodem-8K (ZedZap)
 	MaxErrors=10
+    CRC16=FALSE     ; CRC-32 is the default
 	EscapeTelnetIAC=TRUE	; Send ZDLE/ZRUB1 instead of 0xff with -telnet
 
 
