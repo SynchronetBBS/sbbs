@@ -1260,6 +1260,16 @@ void input_thread(void *arg)
 			break;
 		}
 
+/*		\______    ______/
+ *       \  0 \   / 0   /
+ *        -----   ------           /----\
+ *              ||               -< Boo! |
+ *             /_\                 \----/
+ *      \_______________/
+ *       \/\/\/\/\/\/\//
+ *        -------------
+ */
+
 		if(FD_ISSET(sbbs->client_socket,&socket_set))
 			sock=sbbs->client_socket;
 #ifdef __unix__
