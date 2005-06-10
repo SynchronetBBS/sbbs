@@ -202,13 +202,13 @@ typedef struct {
 	 * extracted from the ZRINIT frame as received
 	 */
 
-	int can_full_duplex;
-	int can_overlap_io;
-	int can_break;
-	int can_fcs_32;
-	int want_fcs_16;
-	int escape_all_control_characters;						/* guess */
-	int escape_8th_bit;
+	BOOL can_full_duplex;
+	BOOL can_overlap_io;
+	BOOL can_break;
+	BOOL can_fcs_32;
+	BOOL want_fcs_16;
+	BOOL escape_all_control_characters;						/* guess */
+	BOOL escape_8th_bit;
 
 	/*
 	 * file management options.

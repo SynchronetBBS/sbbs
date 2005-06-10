@@ -1249,12 +1249,12 @@ BOOL zmodem_get_crc(zmodem_t* zm, long length, ulong* crc)
 
 void zmodem_parse_zrinit(zmodem_t* zm)
 {
-	zm->can_full_duplex					= (zm->rxd_header[ZF0] & ZF0_CANFDX)  != 0;
-	zm->can_overlap_io					= (zm->rxd_header[ZF0] & ZF0_CANOVIO) != 0;
-	zm->can_break						= (zm->rxd_header[ZF0] & ZF0_CANBRK)  != 0;
-	zm->can_fcs_32						= (zm->rxd_header[ZF0] & ZF0_CANFC32) != 0;
-	zm->escape_all_control_characters	= (zm->rxd_header[ZF0] & ZF0_ESCCTL)  != 0;
-	zm->escape_8th_bit					= (zm->rxd_header[ZF0] & ZF0_ESC8)    != 0;
+	zm->can_full_duplex					= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANFDX);
+	zm->can_overlap_io					= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANOVIO);
+	zm->can_break						= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANBRK);
+	zm->can_fcs_32						= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANFC32);
+	zm->escape_all_control_characters	= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESCCTL);
+	zm->escape_8th_bit					= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESC8);
 
 	lprintf(zm,LOG_INFO,"Receiver requested mode (0x%02X):\r\n"
 		"%s-duplex, %s overlap I/O, CRC-%u, Escape: %s"
@@ -1287,7 +1287,10 @@ int zmodem_send_zrinit(zmodem_t* zm)
 {
 	unsigned char zrinit_header[] = { ZRINIT, 0, 0, 0, 0 };
 	
-	zrinit_header[ZF0] = ZF0_CANBRK | ZF0_CANFDX | ZF0_CANOVIO | ZF0_CANFC32;
+	zrinit_header[ZF0] = ZF0_CANBRK | ZF0_CANFDX | ZF0_CANOVIO;
+
+	if(!zm->want_fcs_16)
+		zrinit_header[ZF0] |= ZF0_CANFC32;
 
 	if(zm->no_streaming) {
 		zrinit_header[ZP0] = sizeof(zm->rx_data_subpacket) & 0xff;
