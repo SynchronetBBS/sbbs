@@ -412,12 +412,13 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		flows++;
 		result=WaitForEvent(outbuf_empty,timeout*1000);
 		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
-		if(result!=WAIT_OBJECT_0 && RingBufFree(&outbuf)<len) {
+		if(result!=WAIT_OBJECT_0) {
 			fprintf(statfp
 				,"\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
 				,result, timeout, RingBufFull(&outbuf));
 			newline=TRUE;
-			return(-1);
+			if(RingBufFree(&outbuf)<len)
+				return(-1);
 		}
 	}
 
