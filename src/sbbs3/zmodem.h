@@ -209,7 +209,7 @@ typedef struct {
 	BOOL can_break;
 	BOOL can_fcs_32;
 	BOOL want_fcs_16;
-	BOOL escape_all_control_characters;						/* guess */
+	BOOL escape_ctrl_chars;	
 	BOOL escape_8th_bit;
 
 	/*

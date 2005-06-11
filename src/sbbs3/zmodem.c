@@ -223,7 +223,7 @@ int zmodem_tx(zmodem_t* zm, unsigned char c)
 			return zmodem_send_esc(zm, c);
 		case CR:
 		case CR|0x80:
-			if(zm->escape_all_control_characters && (zm->last_sent&0x7f) == '@')
+			if(zm->escape_ctrl_chars && (zm->last_sent&0x7f) == '@')
 				return zmodem_send_esc(zm, c);
 			break;
 		case TELNET_IAC:
@@ -234,7 +234,7 @@ int zmodem_tx(zmodem_t* zm, unsigned char c)
 			}
 			break;
 		default:
-			if(zm->escape_all_control_characters && (c&0x60)==0)
+			if(zm->escape_ctrl_chars && (c&0x60)==0)
 				return zmodem_send_esc(zm, c);
 			break;
 	}
@@ -619,7 +619,7 @@ int zmodem_rx(zmodem_t* zm)
 	 				 * if all control characters should be escaped and 
 					 * this one wasnt then its spurious and should be dropped.
 					 */
-					if(zm->escape_all_control_characters && (c & 0x60) == 0) {
+					if(zm->escape_ctrl_chars && (c & 0x60) == 0) {
 						continue;
 					}
 					/*
@@ -666,7 +666,7 @@ int zmodem_rx(zmodem_t* zm)
 				case ZRUB1:
 					return 0xff;
 				default:
-					if(zm->escape_all_control_characters && (c & 0x60) == 0) {
+					if(zm->escape_ctrl_chars && (c & 0x60) == 0) {
 						/*
 						 * a not escaped control character; probably
 						 * something from a network. just drop it.
@@ -1260,7 +1260,7 @@ void zmodem_parse_zrinit(zmodem_t* zm)
 	zm->can_overlap_io					= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANOVIO);
 	zm->can_break						= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANBRK);
 	zm->can_fcs_32						= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANFC32);
-	zm->escape_all_control_characters	= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESCCTL);
+	zm->escape_ctrl_chars				= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESCCTL);
 	zm->escape_8th_bit					= INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESC8);
 
 	lprintf(zm,LOG_INFO,"Receiver requested mode (0x%02X):\r\n"
@@ -1269,7 +1269,7 @@ void zmodem_parse_zrinit(zmodem_t* zm)
 		,zm->can_full_duplex ? "Full" : "Half"
 		,zm->can_overlap_io ? "Can" : "Cannot"
 		,zm->can_fcs_32 ? 32 : 16
-		,zm->escape_all_control_characters ? "ALL" : "Normal"
+		,zm->escape_ctrl_chars ? "ALL" : "Normal"
 		);
 
 	if((zm->recv_bufsize = (zm->rxd_header[ZP0] | zm->rxd_header[ZP1]<<8)) != 0)
@@ -1296,10 +1296,22 @@ int zmodem_send_zrinit(zmodem_t* zm)
 {
 	unsigned char zrinit_header[] = { ZRINIT, 0, 0, 0, 0 };
 	
-	zrinit_header[ZF0] = ZF0_CANBRK | ZF0_CANFDX | ZF0_CANOVIO;
+	zrinit_header[ZF0] = ZF0_CANFDX;
+
+	if(!zm->no_streaming)
+		zrinit_header[ZF0] |= ZF0_CANOVIO;
+
+	if(zm->can_break)
+		zrinit_header[ZF0] |= ZF0_CANBRK;
 
 	if(!zm->want_fcs_16)
 		zrinit_header[ZF0] |= ZF0_CANFC32;
+
+	if(zm->escape_ctrl_chars)
+		zrinit_header[ZF0] |= ZF0_ESCCTL;
+
+	if(zm->escape_8th_bit)
+		zrinit_header[ZF0] |= ZF0_ESC8;
 
 	if(zm->no_streaming && zm->recv_bufsize==0)
 		zm->recv_bufsize = sizeof(zm->rx_data_subpacket);
