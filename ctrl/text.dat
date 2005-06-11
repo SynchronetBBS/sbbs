@@ -111,7 +111,7 @@
 "_\r\nncWhich or h~Qncuit: h"                    087 WhichTextFile
 "_\r\nyhBefore which file: n"                       088 AddTextFileBeforeWhich
 "\r\nPath and filename (no path indicates "\            089 AddTextFilePath
-	"%sTEXT\\%s\\filename):\r\n"
+	"%stext/%s/filename):\r\n"
 "Description:\r\n"                                      090 AddTextFileDesc
 "_\r\nyhRemove which: n"                            091 RemoveWhichTextFile
 "Delete %s"                                             092 DeleteTextFileQ
