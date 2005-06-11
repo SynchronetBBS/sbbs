@@ -203,9 +203,11 @@ Example .ini file (with default values given):
     CrcTimeout=60       ; seconds
     BlockSize=1024      ; 1024 is usually best to start with
     MaxBlockSize=1024   ; 1024 is "true" Zmodem, 8192 for Zmodem-8K (ZedZap)
-    MaxErrors=10
-    CRC16=FALSE             ; CRC-32 is the default
-    EscapeTelnetIAC=TRUE    ; Send ZDLE/ZRUB1 instead of 0xff with -telnet
+    MaxErrors=10        ; maximum number of consecutive errors
+    RecvBufSize=0       ; specify non-zero for partial streaming receives
+    Streaming=TRUE      ; set to FALSE to disable streaming (block-at-a-time)
+    CRC32=TRUE          ; set to FALSE to force CRC-16 instead
+    EscapeTelnetIAC=TRUE    ; send ZDLE/ZRUB1 instead of 0xff with -telnet
 
 
 Compatibility

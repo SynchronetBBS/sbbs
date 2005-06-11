@@ -1339,13 +1339,18 @@ int main(int argc, char **argv)
 	zm.block_size			=iniReadInteger(fp,"Zmodem","BlockSize",zm.block_size);			/* 1024  */
 	zm.max_block_size		=iniReadInteger(fp,"Zmodem","MaxBlockSize",zm.max_block_size);	/* 1024 or 8192 */
 	zm.max_errors			=iniReadInteger(fp,"Zmodem","MaxErrors",zm.max_errors);
+	zm.recv_bufsize			=iniReadInteger(fp,"Zmodem","RecvBufSize",0);
+	zm.no_streaming			=!iniReadBool(fp,"Zmodem","Streaming",TRUE);
+	zm.want_fcs_16			=!iniReadBool(fp,"Zmodem","CRC32",TRUE);
 	zm.escape_telnet_iac	=iniReadBool(fp,"Zmodem","EscapeTelnetIAC",TRUE);
-	zm.want_fcs_16			=iniReadBool(fp,"Zmodem","CRC16",FALSE);
 
 	if(fp!=NULL)
 		fclose(fp);
 
 	atexit(exiting);
+
+	if(zm.recv_bufsize > 0xffff)
+		zm.recv_bufsize = 0xffff;
 
 	if(outbuf_size < MIN_OUTBUF_SIZE)
 		outbuf_size = MIN_OUTBUF_SIZE;
