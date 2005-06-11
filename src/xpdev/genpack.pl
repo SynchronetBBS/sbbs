@@ -47,7 +47,7 @@ while($header =~ m/struct\s+([^\s\r\n]*)[\s\r\n]+{([^}]*)}/gs) {
 			$functions .= "\tint\t\t".join(', ',@ints).";\n";
 		}
 		$functions .="\n\tp = buf;\n";
-		$functions .= $packcode;
+		$functions .= $unpackcode;
 		$functions .="\n\treturn((int)(p-buf));\n}\n\n";
 	}
 	else {
