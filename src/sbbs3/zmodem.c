@@ -1301,10 +1301,11 @@ int zmodem_send_zrinit(zmodem_t* zm)
 	if(!zm->want_fcs_16)
 		zrinit_header[ZF0] |= ZF0_CANFC32;
 
-	if(zm->no_streaming) {
-		zrinit_header[ZP0] = sizeof(zm->rx_data_subpacket) & 0xff;
-		zrinit_header[ZP1] = sizeof(zm->rx_data_subpacket) >> 8;
-	}
+	if(zm->no_streaming && zm->recv_bufsize==0)
+		zm->recv_bufsize = sizeof(zm->rx_data_subpacket);
+
+	zrinit_header[ZP0] = zm->recv_bufsize & 0xff;
+	zrinit_header[ZP1] = zm->recv_bufsize >> 8;
 
 	return zmodem_send_hex_header(zm, zrinit_header);
 }
