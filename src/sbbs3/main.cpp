@@ -1237,7 +1237,16 @@ void input_thread(void *arg)
 
 			if(sbbs->client_socket==INVALID_SOCKET)
 				break;
-
+#ifdef __unix__
+			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
+				if(!socket_check(uspy_socket[sbbs->cfg.node_num-1],NULL,NULL,0)) {
+					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
+					lprintf(LOG_NOTICE,"Closing local spy socket: %d",uspy_socket[sbbs->cfg.node_num-1]);
+					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
+					continue;
+				}
+			}
+#endif
 	       	if(ERROR_VALUE == ENOTSOCK)
     	        lprintf(LOG_NOTICE,"Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
 			else if(ERROR_VALUE==ESHUTDOWN)
