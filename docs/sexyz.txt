@@ -238,9 +238,9 @@ If you want the absolute fastest, lowest overhead protocol, use Ymodem-G.
 
 As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 
-    sexyz.c  1.38
-    xmodem.c 1.20
-    zmodem.c 1.25
+	sexyz.c  1.65
+	xmodem.c 1.24
+	zmodem.c 1.61
 
 SEXYZ for Win32 has been tested successfully with the following Telnet clinets
 /terminal programs:
