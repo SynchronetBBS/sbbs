@@ -137,7 +137,7 @@ int sbbs_t::text_sec()
 					i=0;
 				bprintf(text[AddTextFilePath]
 					,cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code);
-				if(!getstr(addpath,80,K_UPPER))
+				if(!getstr(addpath,80,0))
 					continue;
 				strcat(addpath,crlf);
 				bputs(text[AddTextFileDesc]);
