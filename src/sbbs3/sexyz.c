@@ -1343,6 +1343,8 @@ int main(int argc, char **argv)
 	zm.no_streaming			=!iniReadBool(fp,"Zmodem","Streaming",TRUE);
 	zm.want_fcs_16			=!iniReadBool(fp,"Zmodem","CRC32",TRUE);
 	zm.escape_telnet_iac	=iniReadBool(fp,"Zmodem","EscapeTelnetIAC",TRUE);
+	zm.escape_8th_bit		=iniReadBool(fp,"Zmodem","Escape8thBit",FALSE);
+	zm.escape_ctrl_chars	=iniReadBool(fp,"Zmodem","EscapeCtrlChars",FALSE);
 
 	if(fp!=NULL)
 		fclose(fp);

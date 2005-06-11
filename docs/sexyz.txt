@@ -208,6 +208,8 @@ Example .ini file (with default values given):
     Streaming=TRUE      ; set to FALSE to disable streaming (block-at-a-time)
     CRC32=TRUE          ; set to FALSE to force CRC-16 instead
     EscapeTelnetIAC=TRUE    ; send ZDLE/ZRUB1 instead of 0xff with -telnet
+    Escape8thBit=FALSE      ; ZDLE-escape all bytes with bit-7 set
+    EscapeCtrlChars=FALSE   ; ZDLE-escape all control characters (< 20h)
 
 
 Compatibility
