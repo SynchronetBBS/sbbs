@@ -262,7 +262,7 @@ As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 	xmodem.c 1.24	<-- Includes Ymodem
 	zmodem.c 1.61
 
-SEXYZ for Win32 has been tested successfully with the following Telnet clinets
+SEXYZ for Win32 has been tested successfully with the following Telnet clients
 /terminal programs:
 
 [ztelnet]
@@ -316,18 +316,18 @@ For technical support (including bug reports), see
 http://www.synchro.net/docs/support.html for details.
 
 When submitting problem/bug reports, please include the version output from
-"sexyz v" command. We're also very interested in reports of compatibility
+the "sexyz v" command. We're also very interested in reports of compatibility
 (or incompatibility) with terminal programs or telnet clients.
 
 
 Credits
 -------
-The Xmodem (a.k.a. MODEM, MODEM2, XMODEM) protocol was originally developed by
+The Xmodem (a.k.a. MODEM, MODEM2, XMODEM) protocol was originally created by
 Ward Christensen in 1977.
 
-The Ymodem (a.k.a. YMODEM) and Zmodem (a.k.a. ZMODEM) protocols were developed
+The Ymodem (a.k.a. YMODEM) and Zmodem (a.k.a. ZMODEM) protocols were created
 and documented (poorly) by Chuck Forsberg; Ymodem being primarily a set of
-enhancements to Ward's Xmodem protocol. Ymodem-G was also developed by Chuck.
+enhancements to Ward's Xmodem protocol. Ymodem-G was also created by Chuck.
 
 The X/Ymodem code used in SEXYZ was written by Rob Swindell <rob [at] synchro
 [dot] net>, migrated from the Synchronet Transfer Protocols (STP) program
