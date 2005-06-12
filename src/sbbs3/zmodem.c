@@ -572,7 +572,7 @@ int zmodem_recv_raw(zmodem_t* zm)
 		if(zm->n_cans == 5) {
 			zm->cancelled=TRUE;
 			lprintf(zm,LOG_WARNING,"recv_raw: Cancelled remotely");
-			return(TIMEOUT);
+/*			return(TIMEOUT);	removed June-12-2005 */
 		}
 	}
 	else {
@@ -1404,7 +1404,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 			buf_sent=0;
 		}
 
-		if((ulong)ftell(fp) >= zm->current_file_size || n==0)	// can't use feof() here!
+		if((ulong)ftell(fp) >= zm->current_file_size || n==0)	/* can't use feof() here! */
 			type = ZCRCE;
 
 		if(zmodem_send_data(zm, type, zm->tx_data_subpacket, n)!=0)
@@ -1541,8 +1541,8 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 				zmodem_parse_zrinit(zm);
 				break;
 			}
-			lprintf(zm,LOG_WARNING,"send_file: received header type: %d 0x%02X"
-				,i, i);
+			lprintf(zm,LOG_WARNING,"send_file: received header type %s"
+				,frame_desc(i));
 		}
 		if(errors>=zm->max_errors || zm->cancelled)
 			return(FALSE);
@@ -1889,8 +1889,10 @@ int zmodem_recv_init(zmodem_t* zm)
 
 	lprintf(zm,LOG_DEBUG,"recv_init");
 
-//	while(is_connected(zm) && !zm->cancelled && (ch=zm->recv_byte(zm,0))!=NOINP)
-//		lprintf(zm,LOG_DEBUG,"Throwing out received: %s",chr((uchar)ch));
+#if 0
+	while(is_connected(zm) && !zm->cancelled && (ch=zm->recv_byte(zm,0))!=NOINP)
+		lprintf(zm,LOG_DEBUG,"Throwing out received: %s",chr((uchar)ch));
+#endif
 
 	for(errors=0; errors<=zm->max_errors && !zm->cancelled && is_connected(zm); errors++) {
 		lprintf(zm,LOG_DEBUG,"Sending ZRINIT (%u of %u)"
