@@ -7,6 +7,7 @@
 #include "conn.h"
 #include "term.h"
 #include "uifcinit.h"
+#include "filepick.h"
 #include "menu.h"
 #include "dirwrap.h"
 #include "zmodem.h"
@@ -147,9 +148,9 @@ void update_status(struct bbslist *bbs)
 			break;
 		default:
 			if(timeon>359999)
-				cprintf(" %-30.30s \263 %-6.6s \263 Connected: Too Long \263 ALT-M for menu ",bbs->name,conn_types[bbs->conn_type]);
+				cprintf(" %-30.30s \263 %-6.6s \263 Connected: Too Long \263 ALT-Z for menu ",bbs->name,conn_types[bbs->conn_type]);
 			else
-				cprintf(" %-30.30s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 ALT-M for menu ",bbs->name,conn_types[bbs->conn_type],timeon/3600,(timeon-(timeon/3600))/60,timeon%60);
+				cprintf(" %-30.30s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 ALT-Z for menu ",bbs->name,conn_types[bbs->conn_type],timeon/3600,(timeon-(timeon/3600))/60,timeon%60);
 			break;
 	}
 	_wscroll=oldscroll;
@@ -386,7 +387,7 @@ BOOL data_waiting(void* unused, unsigned timeout)
 	return(rd);
 }
 
-void draw_recv_window(void)
+void draw_transfer_window(void)
 {
 	char	outline[TRANSFER_WIN_WIDTH*2];
 	char	shadow[TRANSFER_WIN_WIDTH*2];	/* Assumes that width*2 > height * 2 */
@@ -470,7 +471,7 @@ void draw_recv_window(void)
 	_setcursortype(_NOCURSOR);
 }
 
-void erase_recv_window(void) {
+void erase_transfer_window(void) {
 	puttext(
 		  ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)
 		, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)
@@ -483,7 +484,61 @@ void erase_recv_window(void) {
 	_setcursortype(_NORMALCURSOR);
 }
 
-void zmodem_receive(void)
+void zmodem_upload(void)
+{
+	char	str[MAX_PATH*2];
+	char	path[MAX_PATH+1];
+	int		result;
+	ulong	fsize;
+	FILE*	fp;
+	zmodem_t	zm;
+	struct file_pick fpick;
+
+	init_uifc();
+	result=filepick(&uifc, "Upload", &fpick, NULL, NULL, UIFC_FP_ALLOWENTRY);
+	uifcbail();
+	
+	if(result==-1 || fpick.files<1) {
+		filepick_free(&fpick);
+		return;
+	}
+	SAFECOPY(path,fpick.selected[0]);
+	filepick_free(&fpick);
+
+	if((fp=fopen(path,"rb"))==NULL) {
+		SAFEPRINTF2(str,"Error %d opening %s for read",errno,path);
+		uifcmsg("ERROR",str);
+		return;
+	}
+	setvbuf(fp,NULL,_IOFBF,0x10000);
+
+	draw_transfer_window();
+
+	zmodem_init(&zm
+		,/* cbdata */&zm
+		,lputs, zmodem_progress
+		,send_byte,recv_byte,is_connected,data_waiting);
+
+	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
+	
+	fsize=filelength(fileno(fp));
+
+	lprintf(LOG_INFO,"Sending %s (%lu KB) via Zmodem"
+		,path,fsize/1024);
+
+	if(zmodem_send_file(&zm, path, fp
+		,/* ZRQINIT? */TRUE, /* start_time */NULL, /* sent_bytes */ NULL))
+		zmodem_get_zfin(&zm);
+
+	fclose(fp);
+
+	lprintf(LOG_NOTICE,"Hit any key to continue...");
+	getch();
+
+	erase_transfer_window();
+}
+
+void zmodem_download(void)
 {
 	zmodem_t	zm;
 	char*		download_dir=".";
@@ -491,7 +546,7 @@ void zmodem_receive(void)
 	ulong		bytes_received;
 
 	bufbot=buftop=0;	/* purge our receive buffer */
-	draw_recv_window();
+	draw_transfer_window();
 
 	zmodem_init(&zm
 		,/* cbdata */&zm
@@ -506,7 +561,7 @@ void zmodem_receive(void)
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	getch();
 
-	erase_recv_window();
+	erase_transfer_window();
 }
 /* End of Zmodem Stuff */
 
@@ -519,8 +574,11 @@ void doterm(struct bbslist *bbs)
 	int i,j,k;
 	unsigned char *scrollback;
 	unsigned char *p;
-	char zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };
+	char zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
 	char zrqbuf[5];
+	char zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
+	char zrbuf[5];
+
 
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
@@ -570,7 +628,7 @@ void doterm(struct bbslist *bbs)
 				}
 				if(zrqbuf[0]) {	/* Already have the start of the sequence */
 					j=strlen(zrqbuf);
-					while(j<4 /* strlen(zrqinit) */ && p<buf+i) {
+					while(j<sizeof(zrqinit)-1 && p<buf+i) {
 						if(*p==zrqinit[j]) {
 							zrqbuf[j++]=zrqinit[j];
 							zrqbuf[j]=0;
@@ -579,17 +637,54 @@ void doterm(struct bbslist *bbs)
 						else
 							break;
 					}
-					if(j==4 /* strlen(zrqinit) */) {	/* Have full sequence */
-						zmodem_receive();
+					if(j==sizeof(zrqinit)-1) {	/* Have full sequence */
+						zmodem_download();
 						zrqbuf[0]=0;
 					}
-					else if(p<=buf+i-(4 /* strlen(zrqinit */ - j)) {	/* Not a real zrqinit */
+					else if(p<=buf+i-((sizeof(zrqinit)-1) - j)) {	/* Not a real zrqinit */
 						cterm_write(zrqbuf, j, prn, sizeof(prn));
 						if(prn[0])
 							conn_send(prn,strlen(prn),0);
 						zrqbuf[0]=0;
 					}
 				}
+
+				/* Block copy of above zrqinit check (needs to be cleaned-up) */
+				if(!zrbuf[0]) {
+					p=memchr(buf, zrinit[0], i);
+					if(p!=NULL) {
+						cterm_write(buf, p-buf, prn, sizeof(prn));
+						if(prn[0])
+							conn_send(prn,strlen(prn),0);
+						zrbuf[0]=*(p++);
+						zrbuf[1]=0;
+					}
+					else
+						p=buf;
+				}
+				if(zrbuf[0]) {	/* Already have the start of the sequence */
+					j=strlen(zrbuf);
+					while(j<sizeof(zrinit)-1 && p<buf+i) {
+						if(*p==zrinit[j]) {
+							zrbuf[j++]=zrinit[j];
+							zrbuf[j]=0;
+							p++;
+						}
+						else
+							break;
+					}
+					if(j==sizeof(zrinit)-1) {	/* Have full sequence */
+						zmodem_upload();
+						zrbuf[0]=0;
+					}
+					else if(p<=buf+i-((sizeof(zrinit)-1) - j)) {	/* Not a real zrinit */
+						cterm_write(zrbuf, j, prn, sizeof(prn));
+						if(prn[0])
+							conn_send(prn,strlen(prn),0);
+						zrbuf[0]=0;
+					}
+				}
+
 				cterm_write(p,(buf+i)-p,prn,sizeof(prn));
 				if(prn[0])
 					conn_send(prn,strlen(prn),0);
@@ -653,6 +748,12 @@ void doterm(struct bbslist *bbs)
 				case CIO_KEY_F(4):
 					conn_send("\033Ox",3,0);
 					break;
+				case 0x1600:	/* ALT-U - Upload */
+					zmodem_upload();
+					break;
+				case 0x2000:	/* ALT-D - Download */
+					zmodem_download();
+					break;
 				case 0x1f00:	/* ALT-S */
 					viewscroll();
 					break;
@@ -711,7 +812,7 @@ void doterm(struct bbslist *bbs)
 						break;
 					}
 					/* FALLTHROUGH for curses/ansi modes */
-				case 0x3200:		/* ALT-M */
+				case 0x2c00:		/* ALT-Z */
 					i=wherex();
 					j=wherey();
 					switch(syncmenu(bbs)) {
