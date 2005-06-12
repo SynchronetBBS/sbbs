@@ -31,6 +31,26 @@ SEXYZ has several advantages over legacy drivers like FDSZ and CE-XYZ:
     o Open source (at cvs.synchro.net)!
 
 
+Distribution
+------------
+SEXYZ is freeware, licensed under the GNU General Public License (GPL)
+http://www.fsf.org/licensing/licenses/gpl.txt
+with portions licensed under the GNU Lesser General Public License (LGPL)
+http://www.fsf.org/licensing/licenses/lgpl.txt.
+
+You can find the current source code (in C) in the CVS repository at
+cvs.synchro.net.
+
+The latest and greatest build will be included in Synchronet-Win32 releases.
+You should be able to find/download the latest general release of SEXYZ-Win32
+(sexyzNNN.zip) at one or all of the following locations:
+
+http://www.synchro.net
+ftp://ftp.synchro.net
+ftp://vert.synchro.net
+telnet://vert.synchro.net
+
+
 Command-line Syntax
 -------------------
 Just running "sexyz" by itself will display the supported command-line usage
@@ -239,7 +259,7 @@ If you want the absolute fastest, lowest overhead protocol, use Ymodem-G.
 As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 
 	sexyz.c  1.65
-	xmodem.c 1.24
+	xmodem.c 1.24	<-- Includes Ymodem
 	zmodem.c 1.61
 
 SEXYZ for Win32 has been tested successfully with the following Telnet clinets
@@ -290,6 +310,16 @@ Tested: Xmodem, Ymodem, Zmodem uploads and downloads
 Failed: none
 
 
+Support
+-------
+For technical support (including bug reports), see 
+http://www.synchro.net/docs/support.html for details.
+
+When submitting problem/bug reports, please include the version output from
+"sexyz v" command. We're also very interested in reports of compatibility
+(or incompatibility) with terminal programs or telnet clients.
+
+
 Credits
 -------
 The Xmodem (a.k.a. MODEM, MODEM2, XMODEM) protocol was originally developed by
@@ -310,3 +340,16 @@ The Zmodem code in SEXYZ is based on zmtx/zmrx v1.02 (C) Mattheij Computer
 Service 1994 by Jacques Mattheij <jacquesm [at] hacktic [dot] nl>. Although
 SEXYZ's Zmodem code no longer resembles zmtx/zmrx much, it served as a good
 starting point, and Jacques' version of Chuck's ZMODEM.DOC was very helpful!
+
+The 16-bit CRC table and calculation macro was (unwittingly) contributed by
+Mark G. Mendel and Stephen Satchell.
+
+The 32-bit CRC table and calculation macro was (unwittingly) contributed by
+Gary S. Brown.
+
+SEXYZ includes portions of the Synchronet XPDEV and SMBLIB libraries which
+are licensed under the GNU Lesser General Public License (LGPL).
+http://www.fsf.org/licensing/licenses/lgpl.txt
+
+Synchronet BBS software is written by and copyright 2005 Rob Swindell.
+http://www.synchro.net/docs/copyright.html
