@@ -387,7 +387,7 @@ BOOL data_waiting(void* unused, unsigned timeout)
 	return(rd);
 }
 
-void draw_transfer_window(void)
+void draw_transfer_window(char* title)
 {
 	char	outline[TRANSFER_WIN_WIDTH*2];
 	char	shadow[TRANSFER_WIN_WIDTH*2];	/* Assumes that width*2 > height * 2 */
@@ -405,7 +405,15 @@ void draw_transfer_window(void)
 	}
 	outline[0]=0xc9;
 	outline[sizeof(outline)-2]=0xbb;
-	puttext(left, top, left + TRANSFER_WIN_WIDTH - 1, top, outline);
+	puttext(left, top, left + TRANSFER_WIN_WIDTH - 1, top, outline);\
+
+	/* Title */
+	gotoxy(left+4,top);
+	textattr(YELLOW|(BLUE<<4));
+	cprintf("\xb5 %*s \xc6",strlen(title),"");
+	gotoxy(left+6,top);
+	textattr(WHITE|(BLUE<<4));
+	cprintf("%s",title);
 
 	for(i=2;i < sizeof(outline) - 2; i+=2) {
 		outline[i] = 0xc4;	/* Single horizontal line */
@@ -434,6 +442,14 @@ void draw_transfer_window(void)
 	for(i=7; i<TRANSFER_WIN_HEIGHT-1; i++) {
 		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top+i, outline);
 	}
+
+	/* Title */
+	gotoxy(left + TRANSFER_WIN_WIDTH - 20, top + i);
+	textattr(YELLOW|(BLUE<<4));
+	cprintf("\xb5              \xc6");
+	textattr(WHITE|(BLUE<<4));
+	gotoxy(left + TRANSFER_WIN_WIDTH - 18, top + i);
+	cprintf("ESC to Abort");
 
 	/* Shadow */
 	if(uifc.bclr==BLUE) {
@@ -512,7 +528,7 @@ void zmodem_upload(void)
 	}
 	setvbuf(fp,NULL,_IOFBF,0x10000);
 
-	draw_transfer_window();
+	draw_transfer_window("Zmodem Upload");
 
 	zmodem_init(&zm
 		,/* cbdata */&zm
@@ -546,7 +562,7 @@ void zmodem_download(void)
 	ulong		bytes_received;
 
 	bufbot=buftop=0;	/* purge our receive buffer */
-	draw_transfer_window();
+	draw_transfer_window("Zmodem Download");
 
 	zmodem_init(&zm
 		,/* cbdata */&zm
