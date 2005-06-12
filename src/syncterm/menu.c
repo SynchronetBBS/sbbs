@@ -103,10 +103,12 @@ void viewscroll(void)
 
 int syncmenu(struct bbslist *bbs)
 {
-	char	*opts[4]={
-						 "Scrollback (ALT-S)"
-						,"Disconnect (CTRL-Q)"
-						,"Send Login (ALT-L)"
+	char	*opts[]={
+						 "Scrollback (Alt-S)"
+						,"Disconnect (Ctrl-Q)"
+						,"Send Login (Alt-L)"
+						,"Zmodem Upload (Alt-U)"
+						,"Zmodem Download (Alt-D)"
 						,""};
 	int		opt=0;
 	int		i;
@@ -121,7 +123,7 @@ int syncmenu(struct bbslist *bbs)
 	if(cio_api.mode!=CIOLIB_MODE_CURSES
 			&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
 			&& cio_api.mode!=CIOLIB_MODE_ANSI) {
-		opts[1]="Disconnect (ALT-H)";
+		opts[1]="Disconnect (Alt-H)";
 	}
 
 	for(ret=0;!ret;) {
