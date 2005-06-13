@@ -186,6 +186,7 @@ tODResult ODKrnlInitialize(void)
    tODResult Result = kODRCSuccess;
    
 #ifdef ODPLAT_NIX
+#ifdef USE_KERNEL_SIGNAL
    /* HUP Detection */
    act.sa_handler=sig_no_carrier;
    /* If two HUP signals are recieved, die on the second */
@@ -193,7 +194,6 @@ tODResult ODKrnlInitialize(void)
    sigemptyset(&(act.sa_mask));
    sigaction(SIGHUP,&act,NULL);
 
-#ifdef USE_KERNEL_SIGNAL
    /* Run kernel on SIGALRM (Every .01 seconds) */
    act.sa_handler=sig_run_kernel;
    act.sa_flags=SA_RESTART;
@@ -219,16 +219,19 @@ tODResult ODKrnlInitialize(void)
 /*   fcntl(0,F_SETFL,fcntl(0,F_GETFL)|O_ASYNC); */
 /*/
 
+#ifdef USE_KERNEL_SIGNAL
    /* Make sure SIGHUP, SIGALRM, and SIGIO are unblocked */
    sigemptyset(&block);
    sigaddset(&block,SIGHUP);
-#ifdef USE_KERNEL_SIGNAL
    sigaddset(&block,SIGALRM);
-#endif
 #if 0
    sigaddset(&block,SIGIO);
 #endif
    sigprocmask(SIG_UNBLOCK,&block,NULL);
+#else	/* Using ODComCarrier... don't catch HUP signal */
+   sigemptyset(&block);
+   sigaddset(&block,SIGHUP);
+   sigprocmask(SIG_BLOCK,&block,NULL);
 #endif
 
    /* Initialize time of next status update and next time deduction. */
@@ -377,7 +380,7 @@ ODAPIDEF void ODCALL od_kernel(void)
    /* activies.                                                         */
    if(od_control.baud != 0)
    {
-#ifndef ODPLAT_NIX	/* On *nix, this is handled by signals */
+#ifndef USE_KERNEL_SIGNAL
       /* If carrier detection is enabled, then shutdown OpenDoors if */
       /* the carrier detect signal is no longer high.                */
       if(!(od_control.od_disable&DIS_CARRIERDETECT))
@@ -1655,11 +1658,14 @@ static void sig_get_char(int sig)
    }
 }
 
+#ifdef USE_KERNEL_SIGNAL
 static void sig_no_carrier(int sig)
 {
-   if(od_control.baud != 0)
+   if(od_control.baud != 0 && )
    {
-      ODKrnlForceOpenDoorsShutdown(ERRORLEVEL_NOCARRIER);
+      if(!(od_control.od_disable&DIS_CARRIERDETECT))
+      	ODKrnlForceOpenDoorsShutdown(ERRORLEVEL_NOCARRIER);
    }
 }
+#endif
 #endif
