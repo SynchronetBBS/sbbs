@@ -854,7 +854,7 @@ static int send_files(char** fname, uint fnames)
 					,sent_bytes
 					,115200 /* baud */
 					,cps
-					,errors
+					,mode&ZMODEM ? zm.errors : xm.errors
 					,flows
 					,mode&ZMODEM ? zm.block_size : xm.block_size
 					,path); 
@@ -1320,7 +1320,7 @@ int main(int argc, char **argv)
 
 	outbuf.highwater_mark	=iniReadInteger(fp,ROOT_SECTION,"OutbufHighwaterMark",1100);
 	outbuf_drain_timeout	=iniReadInteger(fp,ROOT_SECTION,"OutbufDrainTimeout",10);
-	outbuf_size				=iniReadInteger(fp,ROOT_SECTION,"OutbufSize",8192);
+	outbuf_size				=iniReadInteger(fp,ROOT_SECTION,"OutbufSize",16*1024);
 
 	progress_interval		=iniReadInteger(fp,ROOT_SECTION,"ProgressInterval",1);
 
