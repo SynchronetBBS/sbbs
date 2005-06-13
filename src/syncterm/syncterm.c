@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #include <sys/stat.h>
 
 #include <gen_defs.h>
@@ -182,17 +184,16 @@ int main(int argc, char **argv)
 		bbs->type=USER_BBSLIST;
 		bbs->reversed=FALSE;
 		bbs->screen_mode=SCREEN_MODE_CURRENT;
+		bbs->conn_type=CONN_TYPE_TELNET;
+		bbs->port=23;
+		p1=url;
 		if(!strnicmp("rlogin://",url,9)) {
 			bbs->conn_type=CONN_TYPE_RLOGIN;
 			bbs->port=513;
+			p1=url+9;
 		}
-		else if(!strnicmp("telnet://",url,9)) {
-			bbs->conn_type=CONN_TYPE_TELNET;
-			bbs->port=23;
-		}
-		else
-			goto USAGE;
-		p1=url+9;
+		else if(!strnicmp("telnet://",url,9))
+			p1=url+9;
 		/* Remove trailing / (Win32 adds one 'cause it hates me) */
 		p2=strchr(p1,'/');
 		if(p2!=NULL)
