@@ -104,11 +104,12 @@ void viewscroll(void)
 int syncmenu(struct bbslist *bbs)
 {
 	char	*opts[]={
-						 "Scrollback (Alt-S)"
+						 "Scrollback (Alt-B)"
 						,"Disconnect (Ctrl-Q)"
 						,"Send Login (Alt-L)"
 						,"Zmodem Upload (Alt-U)"
 						,"Zmodem Download (Alt-D)"
+						,"Exit (Alt-X)"
 						,""};
 	int		opt=0;
 	int		i;
@@ -148,6 +149,12 @@ int syncmenu(struct bbslist *bbs)
 				SLEEP(10);
 				conn_send(bbs->password,strlen(bbs->password),0);
 				conn_send("\r",1,0);
+				break;
+			default:
+				uifcbail();
+				puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+				free(buf);
+				return(ret);
 		}
 	}
 

@@ -581,7 +581,7 @@ void zmodem_download(void)
 }
 /* End of Zmodem Stuff */
 
-void doterm(struct bbslist *bbs)
+BOOL doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
 	unsigned char buf[BUFSIZE];
@@ -621,7 +621,7 @@ void doterm(struct bbslist *bbs)
 				cterm_end();
 				conn_close();
 				uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
-				return;
+				return(FALSE);
 			case 0:
 				break;
 			default:
@@ -770,7 +770,7 @@ void doterm(struct bbslist *bbs)
 				case 0x2000:	/* ALT-D - Download */
 					zmodem_download();
 					break;
-				case 0x1f00:	/* ALT-S */
+				case 0x3000:	/* ALT-B - Scrollback */
 					viewscroll();
 					break;
 				case 0x2600:	/* ALT-L */
@@ -788,7 +788,8 @@ void doterm(struct bbslist *bbs)
 						break;
 					}
 					/* FALLTHROUGH for curses/ansi modes */
-				case 0x2300:	/* ALT-H */
+				case 0x2d00:	/* Alt-X - Exit */
+				case 0x2300:	/* Alt-H - Hangup */
 					{
 						char *opts[3]={
 										 "Yes"
@@ -809,7 +810,7 @@ void doterm(struct bbslist *bbs)
 							cterm_end();
 							free(scrollback);
 							conn_close();
-							return;
+							return(key==0x2d00 /* Alt-X? */);
 						}
 						uifcbail();
 						puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
@@ -836,7 +837,18 @@ void doterm(struct bbslist *bbs)
 							cterm_end();
 							free(scrollback);
 							conn_close();
-							return;
+							return(FALSE);
+						case 3:
+							zmodem_upload();
+							break;
+						case 4:
+							zmodem_download();
+							break;
+						case 5:
+							cterm_end();
+							free(scrollback);
+							conn_close();
+							return(TRUE);
 					}
 					gotoxy(i,j);
 					break;
@@ -852,4 +864,6 @@ void doterm(struct bbslist *bbs)
 		}
 		SLEEP(1);
 	}
+
+	return(FALSE);
 }

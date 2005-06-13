@@ -14,7 +14,7 @@ struct terminal {
 extern struct terminal term;
 extern int backlines;
 
-void doterm(struct bbslist *);
+BOOL doterm(struct bbslist *);
 void mousedrag(unsigned char *scrollback);
 
 #endif
