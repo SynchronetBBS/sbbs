@@ -86,11 +86,16 @@ NOTE: SEXYZ actually supports either "+list" or "@list" syntax for specifying
       a file list on the command-line. If the list file doesn't exist, it'll
       treat the '+' or '@' as part of the filename to send or receive.
 
-NOTE: SEXYZ also supports "rzsz" command-line syntax for some commands.
-      Examples: "sexyz rx -c" to recv Xmodem-CRC
-                "sexyz sx -k" to send Xmodem-1K
+NOTE: SEXYZ also supports "rz/sz" command-line syntax for some commands.
+      Examples: "sexyz -c rx" to recv Xmodem-CRC
+                "sexyz -k sx" to send Xmodem-1K
                 "sexyz rb"    to recv Ymodem
-                "sexyz sb -k" to send Ymodem-1K
+                "sexyz -k sb" to send Ymodem-1K
+
+
+Installation for Synchronet v3.12-Win32
+---------------------------------------
+Copy sexyz.exe into your Synchronet "exec" directory.
 
 
 Example configuration for Synchronet v3.12-Win32
@@ -145,6 +150,23 @@ SCFG:File Options->Transfer Protocols:
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
+
+Optional/Advanced:
+
+[File Transfer Protocol]
+ 1: Mnemonic (Command Key)        8
+ 2: Protocol Name                 Zmodem-8K (SEXYZ)
+ 3: Access Requirements           !UNIX
+ 4: Upload Command Line           %!sexyz %h -%p rz %f
+ 5: Download Command Line         %!sexyz %h -%p -8 sz %f
+ 6: Batch Upload Command Line     %!sexyz %h -%p rz %g
+ 7: Batch Download Command Line   %!sexyz %h -%p -8 sz @%f
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               Yes
+
+NOTE: It is suggested you remove existing FDSZ or CE-XYZ transfer protocol
+      entries as they are no longer needed.
 
 
 Example configuration for Mystic v1.08-Win32
@@ -202,7 +224,7 @@ Example .ini file (with default values given):
     DebugTelnet=FALSE           ; debug Telnet commands
     PauseOnExit=FALSE           ; wait for key-press on exit
     PauseOnAbend=FALSE          ; wait for key-press on abnormal exit
-    OutbufSize=8192             ; bytes (between 1024 and 65536)
+    OutbufSize=16384            ; bytes (between 1024 and 65536)
     OutbufHighwaterMark=1100    ; bytes before auto-flush
     OutbufDrainTimeout=10       ; milliseconds before auto-flush
     ProgressInterval=1          ; interval (in seconds) of progress display
@@ -253,8 +275,6 @@ Zmodem:     1024 byte blocks, 16-bit or 32-bit CRC error detection, batch file
             transfers, resume, auto-download, and more
 Zmodem-8K:  8192 byte blocks, 16-bit or 32-bit CRC error detection, batch file
             transfers, resume, auto-download, and more (a.k.a. ZedZap)
-
-If you want the absolute fastest, lowest overhead protocol, use Ymodem-G.
 
 As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 
@@ -327,7 +347,8 @@ Ward Christensen in 1977.
 
 The Ymodem (a.k.a. YMODEM) and Zmodem (a.k.a. ZMODEM) protocols were created
 and documented (poorly) by Chuck Forsberg; Ymodem being primarily a set of
-enhancements to Ward's Xmodem protocol. Ymodem-G was also created by Chuck.
+enhancements to Ward's Xmodem protocol. Ymodem-G (a.k.a. YMODEM-g) was also
+created by Chuck.
 
 The X/Ymodem code used in SEXYZ was written by Rob Swindell <rob [at] synchro
 [dot] net>, migrated from the Synchronet Transfer Protocols (STP) program
