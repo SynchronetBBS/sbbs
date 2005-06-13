@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef _UIFCINIT_H_
 #define _UIFCINIT_H_
 

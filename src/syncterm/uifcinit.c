@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #include <gen_defs.h>
 #include <stdio.h>
 

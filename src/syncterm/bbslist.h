@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef _BBSLIST_H_
 #define _BBSLIST_H_
 

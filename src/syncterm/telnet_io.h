@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef _TELNET_IO_H_
 #define _TELNET_IO_H_
 
