@@ -52,6 +52,7 @@ typedef struct {
 	unsigned	byte_timeout;
 	unsigned	send_timeout;
 	unsigned	recv_timeout;
+	unsigned	errors;
 	unsigned	max_errors;
 	unsigned	g_delay;
 	unsigned	total_files;

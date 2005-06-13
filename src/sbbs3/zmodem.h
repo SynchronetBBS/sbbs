@@ -255,6 +255,8 @@ typedef struct {
 	BOOL		no_streaming;
 	unsigned	recv_bufsize;	/* Receiver specified buffer size */
 	long		crc_request;
+	unsigned	errors;
+	unsigned	consecutive_errors;
 
 	/* Configuration */
 	BOOL		escape_telnet_iac;
@@ -265,7 +267,6 @@ typedef struct {
 	unsigned	max_errors;
 	unsigned	block_size;
 	unsigned	max_block_size;
-	unsigned	consecutive_errors;
 
 	/* Callbacks */
 	void*		cbdata;
