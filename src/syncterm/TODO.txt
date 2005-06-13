@@ -9,4 +9,8 @@ ANSI Music/Delete Line toggle
 Default user
 Default password
 Output pacing (9600, 14400, 28800, 36600, unlimited, etc)
-
+Default connection protocol (RLogin / Telnet)
+Being able to override the default protocol from the command-line:
+  syncterm -r vert.synchro.net	(RLogin)
+  syncterm -t vert.synchro.net	(Telnet)
+Specifying a BBS entry from the command-line
