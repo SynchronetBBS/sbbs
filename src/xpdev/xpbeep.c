@@ -8,11 +8,11 @@
 	#include <mmsystem.h>
 #elif defined(__unix__)
 	#include <fcntl.h>
-	#if SOUNDCARD_H_IN==SYS
+	#if SOUNDCARD_H_IN==1
 		#include <sys/soundcard.h>
-	#elif SOUNDCARD_H_IN==INCLUDE
+	#elif SOUNDCARD_H_IN==2
 		#include <soundcard.h>
-	#elif SOUNDCARD_H_IN==LINUX
+	#elif SOUNDCARD_H_IN==3
 		#include <linux/soundcard.h>
 	#else
 		#warning Cannot find soundcard.h
