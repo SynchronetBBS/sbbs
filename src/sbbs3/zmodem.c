@@ -1423,25 +1423,34 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 			if(type==ZCRCW) {	/* ZACK expected */
 
 				lprintf(zm,LOG_DEBUG,"Waiting for ZACK");
-				while(is_connected(zm) && !zm->cancelled) {
+				while(is_connected(zm)) {
 					if((ack = zmodem_recv_header(zm)) != ZACK)
 						return(ack);
+
+					if(zm->cancelled)
+						return(ZCAN);
 
 					if(zm->rxd_header_pos == (ulong)ftell(fp))
 						break;
 					lprintf(zm,LOG_WARNING,"ZACK for incorrect offset (%lu vs %lu)"
 						,zm->rxd_header_pos, ftell(fp));
 				} 
-			}
 
-			if((ulong)ftell(fp) >= zm->current_file_size) {
-				lprintf(zm,LOG_DEBUG,"send_from: end of file (%ld)", zm->current_file_size );
-				return ZACK;
 			}
-			if(n==0) {
-				lprintf(zm,LOG_DEBUG,"send_from: read error at offset %lu", ftell(fp) );
-				return ZACK;
-			}
+		}
+
+		if(sent!=NULL)
+			*sent+=n;
+
+		buf_sent+=n;
+
+		if((ulong)ftell(fp) >= zm->current_file_size) {
+			lprintf(zm,LOG_DEBUG,"send_from: end of file (%ld)", zm->current_file_size );
+			return ZACK;
+		}
+		if(n==0) {
+			lprintf(zm,LOG_DEBUG,"send_from: read error at offset %lu", ftell(fp) );
+			return ZACK;
 		}
 
 		/* 
@@ -1465,12 +1474,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 				lprintf(zm,LOG_DEBUG,"Received: %s",chr(c));
 		}
 		if(zm->cancelled)
-			return(-1);
-
-		if(sent!=NULL)
-			*sent+=n;
-		
-		buf_sent+=n;
+			return(ZCAN);
 
 		zm->consecutive_errors = 0;
 
