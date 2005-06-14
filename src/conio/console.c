@@ -98,7 +98,6 @@
 #endif
 #include <fcntl.h>
 #include <limits.h>
-#include <paths.h>
 #include <stdio.h>
 #include <unistd.h>	/* sysconf() */
 
