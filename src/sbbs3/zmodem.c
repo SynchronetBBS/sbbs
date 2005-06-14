@@ -1376,7 +1376,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 	 * send the data in the file
 	 */
 
-	while(!feof(fp) && is_connected(zm)) {
+	while(is_connected(zm)) {
 
 		/*
 		 * read a block from the file
@@ -1384,15 +1384,6 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 
 		n = fread(zm->tx_data_subpacket,sizeof(BYTE),zm->block_size,fp);
 
-#if 0
-		if(n == 0) {
-			lprintf(zm,LOG_DEBUG,"send_from: read 0 bytes from offset %lu!", ftell(fp));
-			/*
-			 * nothing to send ?
-			 */
-			break;
-		}
-#endif
 		if(zm->progress!=NULL)
 			zm->progress(zm->cbdata, ftell(fp));
 
@@ -1484,7 +1475,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 				zm->block_size = zm->max_block_size;
 		}
 
-		if(type == ZCRCW)	/* end-of-frame */
+		if(type == ZCRCW || type == ZCRCE)	/* end-of-frame */
 			zmodem_send_pos_header(zm, ZDATA, ftell(fp), /* Hex? */ FALSE);
 	}
 
