@@ -585,6 +585,7 @@ public:
 	void	printstatslog(uint node);
 	ulong	logonstats(void);
 	void	logoffstats(void);
+	int		nopen(char *str, int access);
 	int		mv(char *src, char *dest, char copy); /* fast file move/copy function */
 	bool	chksyspass(void);
 	bool	chk_ar(uchar * str, user_t * user); /* checks access requirements */
