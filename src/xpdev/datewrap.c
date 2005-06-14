@@ -47,7 +47,7 @@
 
 #include "datewrap.h"	/* struct defs, verify prototypes */
 
-void getdate(struct date* nyd)
+void xp_getdate(struct date* nyd)
 {
 	time_t tim;
 	struct tm *dte;

@@ -61,7 +61,8 @@ struct time {
 extern "C" {
 #endif
 
-void getdate(struct date*);
+#define getdate(x)	xp_getdate(x)
+void xp_getdate(struct date*);
 void gettime(struct time*);
 
 #if defined(__cplusplus)
