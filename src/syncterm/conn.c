@@ -109,7 +109,7 @@ int conn_send(char *buffer, size_t buflen, unsigned int timeout)
 	return(0);
 }
 
-int conn_connect(char *addr, int port, char *ruser, char *passwd, int conn_type)
+int conn_connect(char *addr, int port, char *ruser, char *passwd, int conn_type, int speed)
 {
 	HOSTENT *ent;
 	SOCKADDR_IN	saddr;
@@ -168,7 +168,14 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, int conn_type)
 			conn_send("",1,1000);
 			conn_send(passwd,strlen(passwd)+1,1000);
 			conn_send(ruser,strlen(ruser)+1,1000);
-			conn_send("ansi-bbs/9600",14,1000);
+			if(speed) {
+				char	sbuf[30];
+				sprintf(sbuf, "ansi-bbs/%d", speed);
+
+				conn_send(sbuf, strlen(sbuf)+1,1000);
+			}
+			else
+				conn_send("ansi-bbs/115200",15,1000);
 			break;
 	}
 

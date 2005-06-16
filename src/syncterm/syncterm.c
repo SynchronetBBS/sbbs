@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 		return(1);
 
 	while(bbs!=NULL || (bbs=show_bbslist(BBSLIST_SELECT,path))!=NULL) {
-		if(!conn_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->conn_type)) {
+		if(!conn_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->conn_type,bbs->bpsrate)) {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
 
