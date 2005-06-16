@@ -478,9 +478,10 @@ double	DLLCALL	xp_timer(void)
 #else
 #ifdef _WIN32
 	LARGE_INTEGER	freq;
-	if(QueryPerformanceFrequency(&freq)) {
-		ret=QueryPerformanceCounter();
-		ret /= freq;
+	LARGE_INTEGER	tick;
+	if(QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&tick)) {
+		ret=((double)tick.HighPart*4294967296)+((double)tick.LowPart);
+		ret /= ((double)freq.HighPart*4294967296)+((double)freq.LowPart);
 	}
 	else {
 		ret=GetTickCount();
