@@ -379,8 +379,6 @@ static int recv_byte(void* unused, unsigned timeout)
 #endif
 static BOOL is_connected(void* unused)
 {
-	if(bufbot < buftop);
-		return(TRUE);
 	return socket_check(conn_socket,NULL,NULL,0);
 }
 
