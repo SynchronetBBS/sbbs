@@ -1,16 +1,13 @@
-(All of these per BBS and a global default... with a "default" option for the BBS entry)
- Log level (Used for ZModem transfers)
- Screen Size
- Upload Directory
- Download Directory
+Add a "defaults" section of the ini (Just the top level) which will be used for
+undefined values in each item as well as default values for a new item.
+
+More per-BBS settings:
 Upload Protocol
 Download Protocol
 ANSI Music/Delete Line toggle
- Default user
- Default password
-Output pacing (9600, 14400, 28800, 36600, unlimited, etc)
- Default connection protocol (RLogin / Telnet)
 Being able to override the default protocol from the command-line:
   syncterm -r vert.synchro.net	(RLogin)
   syncterm -t vert.synchro.net	(Telnet)
 Specifying a BBS entry from the command-line
+Online speed change and log level changing (From the menu)
+  Should this modify the entry or not?
