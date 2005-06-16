@@ -606,6 +606,9 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
 	BYTE zrbuf[5];
 	int	inch;
+	double nextchar=0;
+	double lastchar=0;
+	double thischar=0;
 
 	log_level = bbs->loglevel;
 	ciomouse_setevents(0);
@@ -623,80 +626,88 @@ BOOL doterm(struct bbslist *bbs)
 
 	/* Main input loop */
 	for(;;) {
-		/* Get remote input */
-		inch=recv_byte(NULL, 0);
+		if(bbs->bpsrate)
+			thischar=xp_timer();
+		if(!bbs->bpsrate || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
+			/* Get remote input */
+			inch=recv_byte(NULL, 0);
 
-		if(!term.nostatus)
-			update_status(bbs);
-		switch(inch) {
-			case -1:
-				if(!is_connected(NULL)) {
-					free(scrollback);
-					cterm_end();
-					conn_close();
-					uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
-					return(FALSE);
-				}
-				break;
-			default:
-				if(!zrqbuf[0]) {
-					if(inch == zrqinit[0]) {
-						zrqbuf[0]=inch;
-						zrqbuf[1]=0;
-						continue;
+			if(!term.nostatus)
+				update_status(bbs);
+			switch(inch) {
+				case -1:
+					if(!is_connected(NULL)) {
+						free(scrollback);
+						cterm_end();
+						conn_close();
+						uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
+						return(FALSE);
 					}
-				}
-				else {	/* Already have the start of the sequence */
-					j=strlen(zrqbuf);
-					if(inch == zrqinit[j]) {
-						zrqbuf[j]=zrqinit[j];
-						zrqbuf[++j]=0;
-						if(j==sizeof(zrqinit)-1) {	/* Have full sequence */
-							zmodem_download(bbs->dldir);
+					break;
+				default:
+					if(bbs->bpsrate) {
+						lastchar = xp_timer();
+						nextchar = lastchar + 1/(double)(bbs->bpsrate/10);
+					}
+					if(!zrqbuf[0]) {
+						if(inch == zrqinit[0]) {
+							zrqbuf[0]=inch;
+							zrqbuf[1]=0;
+							continue;
+						}
+					}
+					else {	/* Already have the start of the sequence */
+						j=strlen(zrqbuf);
+						if(inch == zrqinit[j]) {
+							zrqbuf[j]=zrqinit[j];
+							zrqbuf[++j]=0;
+							if(j==sizeof(zrqinit)-1) {	/* Have full sequence */
+								zmodem_download(bbs->dldir);
+								zrqbuf[0]=0;
+							}
+						}
+						else {	/* Not a real zrqinit */
+							zrqbuf[j]=inch;
+							cterm_write(zrqbuf, j, prn, sizeof(prn));
+							if(prn[0])
+								conn_send(prn,strlen(prn),0);
 							zrqbuf[0]=0;
 						}
-					}
-					else {	/* Not a real zrqinit */
-						zrqbuf[j]=inch;
-						cterm_write(zrqbuf, j, prn, sizeof(prn));
-						if(prn[0])
-							conn_send(prn,strlen(prn),0);
-						zrqbuf[0]=0;
-					}
-					continue;
-				}
-
-				if(!zrbuf[0]) {
-					if(inch == zrinit[0]) {
-						zrbuf[0]=inch;
-						zrbuf[1]=0;
 						continue;
 					}
-				}
-				else {	/* Already have the start of the sequence */
-					j=strlen(zrbuf);
-					if(inch == zrinit[j]) {
-						zrbuf[j]=zrinit[j];
-						zrbuf[++j]=0;
-						if(j==sizeof(zrinit)-1) {	/* Have full sequence */
-							zmodem_upload(bbs->uldir);
-							zrbuf[0]=0;
+
+					if(!zrbuf[0]) {
+						if(inch == zrinit[0]) {
+							zrbuf[0]=inch;
+							zrbuf[1]=0;
+							continue;
 						}
 					}
-					else {	/* Not a real zrinit */
-						zrbuf[j]=inch;
-						cterm_write(zrbuf, j, prn, sizeof(prn));
-						if(prn[0])
-							conn_send(prn,strlen(prn),0);
-						zrbuf[0]=0;
+					else {	/* Already have the start of the sequence */
+						j=strlen(zrbuf);
+						if(inch == zrinit[j]) {
+							zrbuf[j]=zrinit[j];
+							zrbuf[++j]=0;
+							if(j==sizeof(zrinit)-1) {	/* Have full sequence */
+								zmodem_upload(bbs->uldir);
+								zrbuf[0]=0;
+							}
+						}
+						else {	/* Not a real zrinit */
+							zrbuf[j]=inch;
+							cterm_write(zrbuf, j, prn, sizeof(prn));
+							if(prn[0])
+								conn_send(prn,strlen(prn),0);
+							zrbuf[0]=0;
+						}
+						continue;
 					}
+					ch[0]=inch;
+					cterm_write(ch, 1, prn, sizeof(prn));
+					if(prn[0])
+						conn_send(prn, strlen(prn), 0);
 					continue;
-				}
-				ch[0]=inch;
-				cterm_write(ch, 1, prn, sizeof(prn));
-				if(prn[0])
-					conn_send(prn, strlen(prn), 0);
-				continue;
+			}
 		}
 
 		/* Get local input */

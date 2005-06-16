@@ -12,6 +12,25 @@
 
 char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", ""};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", ""};
+char *rate_names[]={"75bps (V.23)", "110bps (Bell 102/V.21)", "150bps (Bell 103/V.21)", "300bps (Bell 103/V.21)", "600bps (V.22)", "1200bps (Bell 212A/V.22)", "2400bps (V.22bis/V.32)", "9600bps (V.32)", "14.4Kbps (V.32bis)", "28.8Kbps (V.32fast/V.34)", "33.6Kbps (V.34bis)", "56Kbps (K56Flex/X2/V.90)", "64000bps (ISDN-1B)", "128000 (ISDN-2B)", "Unlimited", ""};
+int rates[]={75, 110, 150, 300, 600, 1200, 2400, 9600, 14400, 28800, 33600, 56000, 64000, 128000, 0};
+
+char *get_rate_name(int curr_rate) {
+	int i=0;
+
+	for(i=0; rates[i] && (!curr_rate || curr_rate > rates[i]); i++);
+	return(rate_names[i]);
+}
+
+int get_next_rate(int curr_rate) {
+	int i=0;
+
+	if(curr_rate == 0)
+		i=0;
+	else
+		for(i=0; rates[i] && curr_rate >= rates[i]; i++);
+	return(rates[i]);
+}
 
 void sort_list(struct bbslist **list)  {
 	struct bbslist *tmp;
@@ -74,6 +93,7 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 			iniReadString(listfile,bbsname,"DownloadPath","",list[*i]->dldir);
 			iniReadString(listfile,bbsname,"UploadPath","",list[*i]->uldir);
 			list[*i]->loglevel=iniReadInteger(listfile,bbsname,"LogLevel",LOG_INFO);
+			list[*i]->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
 			list[*i]->type=type;
 			list[*i]->id=*i;
 			(*i)++;
@@ -106,7 +126,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
 	}
-	opt[12][0]=0;
+	opt[13][0]=0;
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inifile=iniReadFile(listfile);
 		fclose(listfile);
@@ -126,6 +146,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		sprintf(opt[9], "Download Path:    %s",item->dldir);
 		sprintf(opt[10],"Upload Path:      %s",item->uldir);
 		sprintf(opt[11],"Log Level:        %s",log_levels[item->loglevel]);
+		sprintf(opt[12],"Simulated BPS:    %s",get_rate_name(item->bpsrate));
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
@@ -224,6 +245,13 @@ int edit_list(struct bbslist *item,char *listpath)
 				changed=1;
 				iniSetInteger(&inifile,item->name,"LogLevel",item->loglevel,NULL);
 				break;
+			case 12:
+fprintf(stderr, "Old Rate: %d\n", item->bpsrate);
+				item->bpsrate=get_next_rate(item->bpsrate);
+				changed=1;
+				iniSetInteger(&inifile,item->name,"BPSRate",item->bpsrate,NULL);
+fprintf(stderr, "New Rate: %d\n", item->bpsrate);
+				break;
 		}
 		if(uifc.changes)
 			changed=1;
@@ -259,6 +287,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,NULL);
 	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,NULL);
 	iniSetInteger(&inifile,bbs->name,"LogLevel",bbs->loglevel,NULL);
+	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,NULL);
 	if((listfile=fopen(listpath,"w"))!=NULL) {
 		iniWriteFile(listfile,inifile);
 		fclose(listfile);
