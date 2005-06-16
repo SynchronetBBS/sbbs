@@ -606,9 +606,9 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
 	BYTE zrbuf[5];
 	int	inch;
-	double nextchar=0;
-	double lastchar=0;
-	double thischar=0;
+	long double nextchar=0;
+	long double lastchar=0;
+	long double thischar=0;
 	int	speed;
 
 	speed = bbs->bpsrate;
@@ -651,7 +651,7 @@ BOOL doterm(struct bbslist *bbs)
 				default:
 					if(speed) {
 						lastchar = xp_timer();
-						nextchar = lastchar + 1/(double)(speed/10);
+						nextchar = lastchar + 1/(long double)(speed/10);
 					}
 					if(!zrqbuf[0]) {
 						if(inch == zrqinit[0]) {
