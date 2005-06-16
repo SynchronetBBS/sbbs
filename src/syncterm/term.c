@@ -611,7 +611,7 @@ BOOL doterm(struct bbslist *bbs)
 	double thischar=0;
 	int	speed;
 
-	speed = bbs-> bpsrate;
+	speed = bbs->bpsrate;
 	log_level = bbs->loglevel;
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
@@ -628,12 +628,10 @@ BOOL doterm(struct bbslist *bbs)
 
 	/* Main input loop */
 	for(;;) {
+		if(!speed && bbs->bpsrate)
+			speed = bbs->bpsrate;
 		if(speed)
 			thischar=xp_timer();
-		else {
-			if(bbs->bpsrate)
-				speed = bbs->bpsrate;
-		}
 		if(!speed || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
 			/* Get remote input */
 			inch=recv_byte(NULL, 0);
