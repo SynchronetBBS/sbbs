@@ -246,11 +246,9 @@ int edit_list(struct bbslist *item,char *listpath)
 				iniSetInteger(&inifile,item->name,"LogLevel",item->loglevel,NULL);
 				break;
 			case 12:
-fprintf(stderr, "Old Rate: %d\n", item->bpsrate);
 				item->bpsrate=get_next_rate(item->bpsrate);
 				changed=1;
 				iniSetInteger(&inifile,item->name,"BPSRate",item->bpsrate,NULL);
-fprintf(stderr, "New Rate: %d\n", item->bpsrate);
 				break;
 		}
 		if(uifc.changes)
