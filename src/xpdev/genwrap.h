@@ -284,6 +284,7 @@ DLLEXPORT int DLLCALL	get_errno(void);
 #endif
 
 DLLEXPORT int		DLLCALL	xp_random(int);
+DLLEXPORT double  	DLLCALL	xp_timer(void);
 DLLEXPORT char*		DLLCALL os_version(char *str);
 DLLEXPORT char*		DLLCALL	lastchar(const char* str);
 DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...);

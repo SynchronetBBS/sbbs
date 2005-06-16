@@ -460,3 +460,35 @@ int DLLCALL	get_errno(void)
 {
 	return(errno);
 }
+
+/****************************************************************************/
+/* Returns the current value of the systems best timer (in SECONDS)			*/
+/* Any value < 0 indicates an error											*/
+/****************************************************************************/
+double	DLLCALL	xp_timer(void)
+{
+	double ret=0;
+#ifdef __unix__
+	struct timeval tv;
+	if(gettimeofday(&tv,NULL)==1)
+		return(-1);
+	ret=tv.tv_usec;
+	ret /= 1000000;
+	ret += tv.tv_sec;
+#else
+#ifdef _WIN32
+	LARGE_INTEGER	freq;
+	if(QueryPerformanceFrequency(&freq)) {
+		ret=QueryPerformanceCounter();
+		ret /= freq;
+	}
+	else {
+		ret=GetTickCount();
+		ret /= 1000;
+	}
+#else
+#error Need xp_timer implementation!
+#endif
+#endif
+	return(ret);
+}
