@@ -111,7 +111,7 @@ int spyon(char *sockname)  {
 					telnet_strip++;
 					if(buf==255 && telnet_strip==2) {
 						telnet_strip=0;
-						cterm_write(&buf,1,NULL,0);
+						cterm_write(&buf,1,NULL,0,NULL);
 					}
 					if(telnet_strip==3)
 						telnet_strip=0;
@@ -120,7 +120,7 @@ int spyon(char *sockname)  {
 					if(buf==255)
 						telnet_strip=1;
 					else
-						cterm_write(&buf,1,NULL,0);
+						cterm_write(&buf,1,NULL,0,NULL);
 			}
 			else if(i<0) {
 				close(spy_sock);
