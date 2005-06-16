@@ -465,7 +465,7 @@ int DLLCALL	get_errno(void)
 /* Returns the current value of the systems best timer (in SECONDS)			*/
 /* Any value < 0 indicates an error											*/
 /****************************************************************************/
-double	DLLCALL	xp_timer(void)
+long double	DLLCALL	xp_timer(void)
 {
 	double ret=0;
 #ifdef __unix__
