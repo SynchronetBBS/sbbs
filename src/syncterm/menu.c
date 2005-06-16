@@ -153,6 +153,7 @@ int syncmenu(struct bbslist *bbs)
 				conn_send("\r",1,0);
 				break;
 			default:
+				ret=i;
 				uifcbail();
 				puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 				free(buf);

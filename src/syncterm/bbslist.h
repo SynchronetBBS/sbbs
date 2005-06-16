@@ -4,6 +4,7 @@
 #define _BBSLIST_H_
 
 #include "gen_defs.h"
+#include "dirwrap.h"	/* MAX_PATH */
 #include <time.h>
 
 #define LIST_NAME_MAX	30
@@ -46,6 +47,9 @@ struct bbslist {
 	int				reversed;
 	int				screen_mode;
 	int				nostatus;
+	char			dldir[MAX_PATH];
+	char			uldir[MAX_PATH];
+	int				loglevel;
 };
 
 struct bbslist *show_bbslist(int mode,char *path);

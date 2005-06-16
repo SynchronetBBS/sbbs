@@ -511,7 +511,7 @@ void erase_transfer_window(void) {
 	_setcursortype(_NORMALCURSOR);
 }
 
-void zmodem_upload(void)
+void zmodem_upload(char *uldir)
 {
 	char	str[MAX_PATH*2];
 	char	path[MAX_PATH+1];
@@ -522,7 +522,7 @@ void zmodem_upload(void)
 	struct file_pick fpick;
 
 	init_uifc();
-	result=filepick(&uifc, "Upload", &fpick, NULL, NULL, UIFC_FP_ALLOWENTRY);
+	result=filepick(&uifc, "Upload", &fpick, uldir, NULL, UIFC_FP_ALLOWENTRY);
 	uifcbail();
 	
 	if(result==-1 || fpick.files<1) {
@@ -565,10 +565,9 @@ void zmodem_upload(void)
 	erase_transfer_window();
 }
 
-void zmodem_download(void)
+void zmodem_download(char *download_dir)
 {
 	zmodem_t	zm;
-	char*		download_dir=".";
 	int			files_received;
 	ulong		bytes_received;
 
@@ -608,6 +607,7 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE zrbuf[5];
 	int	inch;
 
+	log_level = bbs->loglevel;
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
@@ -652,7 +652,7 @@ BOOL doterm(struct bbslist *bbs)
 						zrqbuf[j]=zrqinit[j];
 						zrqbuf[++j]=0;
 						if(j==sizeof(zrqinit)-1) {	/* Have full sequence */
-							zmodem_download();
+							zmodem_download(bbs->dldir);
 							zrqbuf[0]=0;
 						}
 					}
@@ -679,7 +679,7 @@ BOOL doterm(struct bbslist *bbs)
 						zrbuf[j]=zrinit[j];
 						zrbuf[++j]=0;
 						if(j==sizeof(zrinit)-1) {	/* Have full sequence */
-							zmodem_download();
+							zmodem_upload(bbs->uldir);
 							zrbuf[0]=0;
 						}
 					}
@@ -757,10 +757,10 @@ BOOL doterm(struct bbslist *bbs)
 					conn_send("\033Ox",3,0);
 					break;
 				case 0x1600:	/* ALT-U - Upload */
-					zmodem_upload();
+					zmodem_upload(bbs->uldir);
 					break;
 				case 0x2000:	/* ALT-D - Download */
-					zmodem_download();
+					zmodem_download(bbs->dldir);
 					break;
 				case 0x3000:	/* ALT-B - Scrollback */
 					viewscroll();
@@ -831,10 +831,10 @@ BOOL doterm(struct bbslist *bbs)
 							conn_close();
 							return(FALSE);
 						case 3:
-							zmodem_upload();
+							zmodem_upload(bbs->uldir);
 							break;
 						case 4:
-							zmodem_download();
+							zmodem_download(bbs->dldir);
 							break;
 						case 5:
 							cterm_end();
