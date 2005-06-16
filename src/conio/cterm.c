@@ -765,8 +765,9 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 						if(cterm.escbuf[1]) {
 							p=strtok(cterm.escbuf+1,";");
 							if(p!=NULL) {
-								if(atoi(p)<2) {
-									p=strtok(NULL,";");
+								if(p!=cterm.escbuf+1 || atoi(p)<2) {
+									if(p==cterm.escbuf+1)
+										p=strtok(NULL,";");
 									if(p!=NULL) {
 										switch(atoi(p)) {
 											case 0:
