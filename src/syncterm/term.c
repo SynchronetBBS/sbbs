@@ -272,16 +272,16 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 
 	zmodem_check_abort(zm);
 	
-	old_hold = hold_update;
-	hold_update = TRUE;
-	window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
-			, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
-			, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 2
-			, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+5);
-	gotoxy(1,1);
-	textattr(LIGHTCYAN | (BLUE<<4));
 	now=time(NULL);
 	if(now-last_progress>0 || current_pos >= zm->current_file_size) {
+		old_hold = hold_update;
+		hold_update = TRUE;
+		window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
+				, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
+				, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 2
+				, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+5);
+		gotoxy(1,1);
+		textattr(LIGHTCYAN | (BLUE<<4));
 		t=now-zm->transfer_start_time;
 		if(t<=0)
 			t=1;
@@ -327,10 +327,10 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 				, 60-l, "");
 		last_progress=now;
+		hold_update = FALSE;
+		gotoxy(wherex(), wherey());
+		hold_update = old_hold;
 	}
-	hold_update = FALSE;
-	gotoxy(wherex(), wherey());
-	hold_update = old_hold;
 }
 
 #if defined(__BORLANDC__)
@@ -364,6 +364,11 @@ static int recv_byte(void* unused, unsigned timeout)
 		buftop=i;
 		bufbot=0;
 	}
+	if(buftop < sizeof(buf) - 1) {
+		i=conn_recv(buf + buftop, sizeof(buf) - buftop, 0);
+		if(i > 0)
+			buftop+=i;
+	}
 	ch=buf[bufbot++];
 //	lprintf(LOG_DEBUG,"RX: %02X", ch);
 	return(ch);
@@ -374,6 +379,8 @@ static int recv_byte(void* unused, unsigned timeout)
 #endif
 static BOOL is_connected(void* unused)
 {
+	if(bufbot < buftop);
+		return(TRUE);
 	return socket_check(conn_socket,NULL,NULL,0);
 }
 
@@ -384,6 +391,8 @@ BOOL data_waiting(void* unused, unsigned timeout)
 {
 	BOOL rd;
 
+	if(bufbot < buftop)
+		return(TRUE);
 	if(!socket_check(conn_socket,&rd,NULL,timeout))
 		return(FALSE);
 	return(rd);
