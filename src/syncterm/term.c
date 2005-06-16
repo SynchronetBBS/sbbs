@@ -609,7 +609,9 @@ BOOL doterm(struct bbslist *bbs)
 	double nextchar=0;
 	double lastchar=0;
 	double thischar=0;
+	int	speed;
 
+	speed = bbs-> bpsrate;
 	log_level = bbs->loglevel;
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
@@ -626,9 +628,13 @@ BOOL doterm(struct bbslist *bbs)
 
 	/* Main input loop */
 	for(;;) {
-		if(bbs->bpsrate)
+		if(speed)
 			thischar=xp_timer();
-		if(!bbs->bpsrate || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
+		else {
+			if(bbs->bpsrate)
+				speed = bbs->bpsrate;
+		}
+		if(!speed || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
 			/* Get remote input */
 			inch=recv_byte(NULL, 0);
 
@@ -645,9 +651,9 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					break;
 				default:
-					if(bbs->bpsrate) {
+					if(speed) {
 						lastchar = xp_timer();
-						nextchar = lastchar + 1/(double)(bbs->bpsrate/10);
+						nextchar = lastchar + 1/(double)(speed/10);
 					}
 					if(!zrqbuf[0]) {
 						if(inch == zrqinit[0]) {
@@ -668,7 +674,7 @@ BOOL doterm(struct bbslist *bbs)
 						}
 						else {	/* Not a real zrqinit */
 							zrqbuf[j]=inch;
-							cterm_write(zrqbuf, j, prn, sizeof(prn));
+							cterm_write(zrqbuf, j, prn, sizeof(prn), &speed);
 							if(prn[0])
 								conn_send(prn,strlen(prn),0);
 							zrqbuf[0]=0;
@@ -695,7 +701,7 @@ BOOL doterm(struct bbslist *bbs)
 						}
 						else {	/* Not a real zrinit */
 							zrbuf[j]=inch;
-							cterm_write(zrbuf, j, prn, sizeof(prn));
+							cterm_write(zrbuf, j, prn, sizeof(prn), &speed);
 							if(prn[0])
 								conn_send(prn,strlen(prn),0);
 							zrbuf[0]=0;
@@ -703,7 +709,7 @@ BOOL doterm(struct bbslist *bbs)
 						continue;
 					}
 					ch[0]=inch;
-					cterm_write(ch, 1, prn, sizeof(prn));
+					cterm_write(ch, 1, prn, sizeof(prn), &speed);
 					if(prn[0])
 						conn_send(prn, strlen(prn), 0);
 					continue;
