@@ -16,6 +16,7 @@
 #include "crc32.h"
 
 #define	BUFSIZE	2048
+static char recvbuf[BUFSIZE];
 
 #define DUMP
 
@@ -352,10 +353,9 @@ static int recv_byte(void* unused, unsigned timeout)
 	BYTE	ch;
 	int		i;
 	time_t start=time(NULL);
-	static	BYTE	buf[2048];
 
 	if(bufbot==buftop) {
-		if((i=conn_recv(buf,sizeof(buf),timeout*1000))<1) {
+		if((i=conn_recv(recvbuf,sizeof(recvbuf),timeout*1000))<1) {
 			if(timeout)
 				lprintf(LOG_ERR,"RECEIVE ERROR %d (after %u seconds, timeout=%u)"
 					,i, time(NULL)-start, timeout);
@@ -364,12 +364,12 @@ static int recv_byte(void* unused, unsigned timeout)
 		buftop=i;
 		bufbot=0;
 	}
-	if(buftop < sizeof(buf) - 1) {
-		i=conn_recv(buf + buftop, sizeof(buf) - buftop, 0);
+	if(buftop < sizeof(recvbuf)) {
+		i=conn_recv(recvbuf + buftop, sizeof(recvbuf) - buftop, 0);
 		if(i > 0)
 			buftop+=i;
 	}
-	ch=buf[bufbot++];
+	ch=recvbuf[bufbot++];
 //	lprintf(LOG_DEBUG,"RX: %02X", ch);
 	return(ch);
 }
@@ -572,7 +572,9 @@ void zmodem_download(void)
 	int			files_received;
 	ulong		bytes_received;
 
+#if 0
 	bufbot=buftop=0;	/* purge our receive buffer */
+#endif
 	draw_transfer_window("Zmodem Download");
 
 	zmodem_init(&zm
@@ -595,17 +597,16 @@ void zmodem_download(void)
 BOOL doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
-	unsigned char buf[BUFSIZE];
 	unsigned char prn[BUFSIZE];
 	int	key;
 	int i,j,k;
 	unsigned char *scrollback;
 	unsigned char *p;
-	char zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
-	char zrqbuf[5];
-	char zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
-	char zrbuf[5];
-
+	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
+	BYTE zrqbuf[5];
+	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
+	BYTE zrbuf[5];
+	int	inch;
 
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
@@ -623,100 +624,79 @@ BOOL doterm(struct bbslist *bbs)
 	/* Main input loop */
 	for(;;) {
 		/* Get remote input */
-		i=conn_recv(buf,sizeof(buf),0);
+		inch=recv_byte(NULL, 0);
 
 		if(!term.nostatus)
 			update_status(bbs);
-		switch(i) {
+		switch(inch) {
 			case -1:
-				free(scrollback);
-				cterm_end();
-				conn_close();
-				uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
-				return(FALSE);
-			case 0:
+				if(!is_connected(NULL)) {
+					free(scrollback);
+					cterm_end();
+					conn_close();
+					uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
+					return(FALSE);
+				}
 				break;
 			default:
-#if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
-				dump(buf,i);
-#endif
-				buf[i]=0;
-				p=buf;
 				if(!zrqbuf[0]) {
-					p=memchr(buf, zrqinit[0], i);
-					if(p!=NULL) {
-						cterm_write(buf, p-buf, prn, sizeof(prn));
-						if(prn[0])
-							conn_send(prn,strlen(prn),0);
-						zrqbuf[0]=*(p++);
+					if(inch == zrqinit[0]) {
+						zrqbuf[0]=inch;
 						zrqbuf[1]=0;
+						continue;
 					}
-					else
-						p=buf;
 				}
-				if(zrqbuf[0]) {	/* Already have the start of the sequence */
+				else {	/* Already have the start of the sequence */
 					j=strlen(zrqbuf);
-					while(j<sizeof(zrqinit)-1 && p<buf+i) {
-						if(*p==zrqinit[j]) {
-							zrqbuf[j++]=zrqinit[j];
-							zrqbuf[j]=0;
-							p++;
+					if(inch == zrqinit[j]) {
+						zrqbuf[j]=zrqinit[j];
+						zrqbuf[++j]=0;
+						if(j==sizeof(zrqinit)-1) {	/* Have full sequence */
+							zmodem_download();
+							zrqbuf[0]=0;
 						}
-						else
-							break;
 					}
-					if(j==sizeof(zrqinit)-1) {	/* Have full sequence */
-						zmodem_download();
-						zrqbuf[0]=0;
-					}
-					else if(p<=buf+i-((sizeof(zrqinit)-1) - j)) {	/* Not a real zrqinit */
+					else {	/* Not a real zrqinit */
+						zrqbuf[j]=inch;
 						cterm_write(zrqbuf, j, prn, sizeof(prn));
 						if(prn[0])
 							conn_send(prn,strlen(prn),0);
 						zrqbuf[0]=0;
 					}
+					continue;
 				}
 
-				/* Block copy of above zrqinit check (needs to be cleaned-up) */
 				if(!zrbuf[0]) {
-					p=memchr(buf, zrinit[0], i);
-					if(p!=NULL) {
-						cterm_write(buf, p-buf, prn, sizeof(prn));
-						if(prn[0])
-							conn_send(prn,strlen(prn),0);
-						zrbuf[0]=*(p++);
+					if(inch == zrinit[0]) {
+						zrbuf[0]=inch;
 						zrbuf[1]=0;
+						continue;
 					}
-					else
-						p=buf;
 				}
-				if(zrbuf[0]) {	/* Already have the start of the sequence */
+				else {	/* Already have the start of the sequence */
 					j=strlen(zrbuf);
-					while(j<sizeof(zrinit)-1 && p<buf+i) {
-						if(*p==zrinit[j]) {
-							zrbuf[j++]=zrinit[j];
-							zrbuf[j]=0;
-							p++;
+					if(inch == zrinit[j]) {
+						zrbuf[j]=zrinit[j];
+						zrbuf[++j]=0;
+						if(j==sizeof(zrinit)-1) {	/* Have full sequence */
+							zmodem_download();
+							zrbuf[0]=0;
 						}
-						else
-							break;
 					}
-					if(j==sizeof(zrinit)-1) {	/* Have full sequence */
-						zmodem_upload();
-						zrbuf[0]=0;
-					}
-					else if(p<=buf+i-((sizeof(zrinit)-1) - j)) {	/* Not a real zrinit */
+					else {	/* Not a real zrinit */
+						zrbuf[j]=inch;
 						cterm_write(zrbuf, j, prn, sizeof(prn));
 						if(prn[0])
 							conn_send(prn,strlen(prn),0);
 						zrbuf[0]=0;
 					}
+					continue;
 				}
-
-				cterm_write(p,(buf+i)-p,prn,sizeof(prn));
+				ch[0]=inch;
+				cterm_write(ch, 1, prn, sizeof(prn));
 				if(prn[0])
-					conn_send(prn,strlen(prn),0);
-				break;
+					conn_send(prn, strlen(prn), 0);
+				continue;
 		}
 
 		/* Get local input */
