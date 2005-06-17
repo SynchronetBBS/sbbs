@@ -63,7 +63,7 @@ void free_list(struct bbslist **list, int listcount)
  * Reads in a BBS list from listpath using *i as the counter into bbslist
  * first BBS read goes into list[i]
  */
-void read_list(char *listpath, struct bbslist **list, int *i, int type)
+void read_list(char *listpath, struct bbslist **list, int *i, int type, char* home)
 {
 	FILE	*listfile;
 	char	*bbsname;
@@ -90,8 +90,8 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 			list[*i]->reversed=iniReadBool(listfile,bbsname,"Reversed",0);
 			list[*i]->screen_mode=iniReadInteger(listfile,bbsname,"ScreenMode",SCREEN_MODE_CURRENT);
 			list[*i]->nostatus=iniReadBool(listfile,bbsname,"NoStatus",0);
-			iniReadString(listfile,bbsname,"DownloadPath","",list[*i]->dldir);
-			iniReadString(listfile,bbsname,"UploadPath","",list[*i]->uldir);
+			iniReadString(listfile,bbsname,"DownloadPath",home,list[*i]->dldir);
+			iniReadString(listfile,bbsname,"UploadPath",home,list[*i]->uldir);
 			list[*i]->loglevel=iniReadInteger(listfile,bbsname,"LogLevel",LOG_INFO);
 			list[*i]->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
 			list[*i]->type=type;
@@ -134,24 +134,24 @@ int edit_list(struct bbslist *item,char *listpath)
 	else
 		return(0);
 	for(;;) {
-		sprintf(opt[0], "BBS Name:         %s",item->name);
-		sprintf(opt[1], "Address:          %s",item->addr);
-		sprintf(opt[2], "Port:             %hu",item->port);
-		sprintf(opt[3], "Username:         %s",item->user);
-		sprintf(opt[4], "Password");
-		sprintf(opt[5], "Connection:       %s",conn_types[item->conn_type]);
-		sprintf(opt[6], "Reversed:         %s",item->reversed?"Yes":"No");
-		sprintf(opt[7], "Screen Mode:      %s",screen_modes[item->screen_mode]);
-		sprintf(opt[8], "Hide Status Line: %s",item->nostatus?"Yes":"No");
-		sprintf(opt[9], "Download Path:    %s",item->dldir);
-		sprintf(opt[10],"Upload Path:      %s",item->uldir);
-		sprintf(opt[11],"Log Level:        %s",log_levels[item->loglevel]);
-		sprintf(opt[12],"Simulated BPS:    %s",get_rate_name(item->bpsrate));
+		sprintf(opt[0], "BBS Name          %s",item->name);
+		sprintf(opt[1], "Address           %s",item->addr);
+		sprintf(opt[2], "Port              %hu",item->port);
+		sprintf(opt[3], "Username          %s",item->user);
+		sprintf(opt[4], "Password          ********");
+		sprintf(opt[5], "Connection        %s",conn_types[item->conn_type]);
+		sprintf(opt[6], "Reversed          %s",item->reversed?"Yes":"No");
+		sprintf(opt[7], "Screen Mode       %s",screen_modes[item->screen_mode]);
+		sprintf(opt[8], "Hide Status Line  %s",item->nostatus?"Yes":"No");
+		sprintf(opt[9], "Download Path     %s",item->dldir);
+		sprintf(opt[10],"Upload Path       %s",item->uldir);
+		sprintf(opt[11],"Log Level         %s",log_levels[item->loglevel]);
+		sprintf(opt[12],"Simulated BPS     %s",get_rate_name(item->bpsrate));
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
 						"Select item to edit.";
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&copt,NULL,"Edit Entry",opts)) {
+		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&copt,NULL,"Edit Entry",opts)) {
 			case -1:
 				if((listfile=fopen(listpath,"w"))!=NULL) {
 					iniWriteFile(listfile,inifile);
@@ -314,10 +314,8 @@ void del_bbs(char *listpath, struct bbslist *bbs)
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
  */
-struct bbslist *show_bbslist(int mode, char *path)
+struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 {
-	char	*home=NULL;
-	char	listpath[MAX_PATH+1];
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
 	int		opt=0,bar=0;
@@ -330,28 +328,13 @@ struct bbslist *show_bbslist(int mode, char *path)
 	if(init_uifc())
 		return(NULL);
 
-	/* User BBS list */
-	if(inpath==NULL) {
-		home=getenv("HOME");
-		if(home==NULL)
-			home=getenv("USERPROFILE");
-	}
-	if(home==NULL)
-		strcpy(listpath,path);
-	else
-		strcpy(listpath,home);
-	strncat(listpath,"/syncterm.lst",sizeof(listpath));
-	if(strlen(listpath)>MAX_PATH) {
-		fprintf(stderr,"Path to syncterm.lst too long");
-		return(NULL);
-	}
-	read_list(listpath, &list[0], &listcount, USER_BBSLIST);
+	read_list(listpath, &list[0], &listcount, USER_BBSLIST, home);
 
 	/* System BBS List */
 #ifdef PREFIX
 	strcpy(listpath,PREFIX"/etc/syncterm.lst");
 
-	read_list(listpath, list, &listcount, SYSTEM_BBSLIST);
+	read_list(listpath, list, &listcount, SYSTEM_BBSLIST, home);
 #endif
 	sort_list(list);
 
@@ -361,7 +344,7 @@ struct bbslist *show_bbslist(int mode, char *path)
 						"~ CTRL-E ~ Switch listing to Edit mode\n"
 						"~ CTRL-D ~ Switch listing to Dial mode\n"
 						"Select a bbs to edit/dial an entry.";
-		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)|WIN_SAV|WIN_MID|WIN_INS|WIN_DEL|WIN_EXTKEYS|WIN_INSACT,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Select BBS":"Edit BBS",(char **)list);
+		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)|WIN_ORG|WIN_MID|WIN_INS|WIN_DEL|WIN_EXTKEYS|WIN_INSACT,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 		if(val==listcount)
 			val=listcount|MSK_INS;
 		if(val<0) {
