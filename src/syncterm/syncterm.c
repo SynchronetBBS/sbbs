@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 			settitle("SyncTERM");
 		}
 		if(exit_now || url[0]) {
-			if(bbs->id==-1) {
+			if(bbs != NULL && bbs->id==-1) {
 				char	*YesNo[3]={"Yes","No",""};
 				/* Started from the command-line with a URL */
 				init_uifc();
@@ -303,8 +303,8 @@ int main(int argc, char **argv)
 					default: /* ESC/No */
 						break;
 				}
+				free(bbs);
 			}
-			free(bbs);
 			bbs=NULL;
 			break;
 		}
