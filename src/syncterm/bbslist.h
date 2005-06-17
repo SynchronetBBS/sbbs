@@ -54,8 +54,11 @@ struct bbslist {
 };
 
 struct bbslist *show_bbslist(char* listpath, int mode, char *home);
+extern char *rate_names[];
+extern int rates[];
 void read_list(char *listpath, struct bbslist **list, int *i, int type, char* home);
 void free_list(struct bbslist **list, int listcount);
 void add_bbs(char *listpath, struct bbslist *bbs);
+int  get_rate_num(int rate);
 
 #endif

@@ -866,6 +866,19 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					gotoxy(i,j);
 					break;
+				case 0x9800:	/* ALT-Up */
+					if(speed)
+						speed=rates[get_rate_num(speed)+1];
+					else
+						speed=rates[0];
+					break;
+				case 0xa000:	/* ALT-Down */
+					i=get_rate_num(speed);
+					if(i==0)
+						speed=0;
+					else
+						speed=rates[i-1];
+					break;
 				case '\b':
 					key='\b';
 					/* FALLTHROUGH to default */

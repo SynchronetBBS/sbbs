@@ -15,11 +15,12 @@ char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notic
 char *rate_names[]={"75bps (V.23)", "110bps (Bell 102/V.21)", "150bps (Bell 103/V.21)", "300bps (Bell 103/V.21)", "600bps (V.22)", "1200bps (Bell 212A/V.22)", "2400bps (V.22bis/V.32)", "9600bps (V.32)", "14.4Kbps (V.32bis)", "28.8Kbps (V.32fast/V.34)", "33.6Kbps (V.34bis)", "56Kbps (K56Flex/X2/V.90)", "64000bps (ISDN-1B)", "128000 (ISDN-2B)", "Unlimited", ""};
 int rates[]={75, 110, 150, 300, 600, 1200, 2400, 9600, 14400, 28800, 33600, 56000, 64000, 128000, 0};
 
-char *get_rate_name(int curr_rate) {
+int get_rate_num(int rate)
+{
 	int i=0;
 
-	for(i=0; rates[i] && (!curr_rate || curr_rate > rates[i]); i++);
-	return(rate_names[i]);
+	for(i=0; rates[i] && (!rate || rate > rates[i]); i++);
+	return(i);
 }
 
 int get_next_rate(int curr_rate) {
@@ -28,7 +29,7 @@ int get_next_rate(int curr_rate) {
 	if(curr_rate == 0)
 		i=0;
 	else
-		for(i=0; rates[i] && curr_rate >= rates[i]; i++);
+		i=get_rate_num(curr_rate)+1;
 	return(rates[i]);
 }
 
@@ -146,7 +147,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		sprintf(opt[9], "Download Path     %s",item->dldir);
 		sprintf(opt[10],"Upload Path       %s",item->uldir);
 		sprintf(opt[11],"Log Level         %s",log_levels[item->loglevel]);
-		sprintf(opt[12],"Simulated BPS     %s",get_rate_name(item->bpsrate));
+		sprintf(opt[12],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
