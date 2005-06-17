@@ -161,9 +161,8 @@ int main(int argc, char **argv)
 			home=getenv("USERPROFILE");
 	}
 	if(home==NULL)
-		strcpy(listpath,path);
-	else
-		strcpy(listpath,home);
+		home=path;
+	strcpy(listpath,home);
 	strncat(listpath,"/syncterm.lst",sizeof(listpath));
 	if(strlen(listpath)>MAX_PATH) {
 		fprintf(stderr,"Path to syncterm.lst too long");
@@ -222,7 +221,7 @@ int main(int argc, char **argv)
 		SAFECOPY(bbs->addr,p1);
 		
 		/* Find BBS listing in users phone book */
-		read_list(listpath, &list[0], &listcount, USER_BBSLIST);
+		read_list(listpath, &list[0], &listcount, USER_BBSLIST, home);
 		for(i=0;i<listcount;i++) {
 			if((stricmp(bbs->addr,list[i]->addr)==0)
 					&& (bbs->port==list[i]->port)
@@ -239,7 +238,7 @@ int main(int argc, char **argv)
 	if(!winsock_startup())
 		return(1);
 
-	while(bbs!=NULL || (bbs=show_bbslist(BBSLIST_SELECT,path))!=NULL) {
+	while(bbs!=NULL || (bbs=show_bbslist(listpath,BBSLIST_SELECT,home))!=NULL) {
 		if(!conn_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->conn_type,bbs->bpsrate)) {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
