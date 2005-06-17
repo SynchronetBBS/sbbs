@@ -116,20 +116,23 @@ void mousedrag(unsigned char *scrollback)
 	}
 }
 
-void update_status(struct bbslist *bbs)
+void update_status(struct bbslist *bbs, int speed)
 {
 	char buf[160];
+	char nbuf[50];
 	int oldscroll;
 	int olddmc;
 	struct	text_info txtinfo;
 	int now;
 	static int lastupd=0;
+	static int oldspeed=0;
 	int	timeon;
 
 	now=time(NULL);
-	if(now==lastupd)
+	if(now==lastupd && speed==oldspeed)
 		return;
 	lastupd=now;
+	oldspeed=speed;
 	timeon=now - bbs->connected;
     gettextinfo(&txtinfo);
 	oldscroll=_wscroll;
@@ -140,20 +143,24 @@ void update_status(struct bbslist *bbs)
 	window(term.x-1,term.y+term.height-1,term.x+term.width-2,term.y+term.height-1);
 	gotoxy(1,1);
 	_wscroll=0;
+	if(speed)
+		sprintf(nbuf, "%-.30s (%d)", bbs->name, speed);
+	else
+		sprintf(nbuf, "%-.30s", bbs->name);
 	switch(cio_api.mode) {
 		case CIOLIB_MODE_CURSES:
 		case CIOLIB_MODE_CURSES_IBM:
 		case CIOLIB_MODE_ANSI:
 			if(timeon>359999)
-				cprintf(" %-29.29s \263 %-6.6s \263 Connected: Too Long \263 CTRL-S for menu ",bbs->name,conn_types[bbs->conn_type]);
+				cprintf(" %-29.29s \263 %-6.6s \263 Connected: Too Long \263 CTRL-S for menu ",nbuf,conn_types[bbs->conn_type]);
 			else
-				cprintf(" %-29.29s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 CTRL-S for menu ",bbs->name,conn_types[bbs->conn_type],timeon/3600,(timeon/60)%60,timeon%60);
+				cprintf(" %-29.29s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 CTRL-S for menu ",nbuf,conn_types[bbs->conn_type],timeon/3600,(timeon/60)%60,timeon%60);
 			break;
 		default:
 			if(timeon>359999)
-				cprintf(" %-30.30s \263 %-6.6s \263 Connected: Too Long \263 ALT-Z for menu ",bbs->name,conn_types[bbs->conn_type]);
+				cprintf(" %-30.30s \263 %-6.6s \263 Connected: Too Long \263 ALT-Z for menu ",nbuf,conn_types[bbs->conn_type]);
 			else
-				cprintf(" %-30.30s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 ALT-Z for menu ",bbs->name,conn_types[bbs->conn_type],timeon/3600,(timeon-(timeon/3600))/60,timeon%60);
+				cprintf(" %-30.30s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 ALT-Z for menu ",nbuf,conn_types[bbs->conn_type],timeon/3600,(timeon-(timeon/3600))/60,timeon%60);
 			break;
 	}
 	_wscroll=oldscroll;
@@ -637,7 +644,7 @@ BOOL doterm(struct bbslist *bbs)
 			inch=recv_byte(NULL, 0);
 
 			if(!term.nostatus)
-				update_status(bbs);
+				update_status(bbs, speed);
 			switch(inch) {
 				case -1:
 					if(!is_connected(NULL)) {
