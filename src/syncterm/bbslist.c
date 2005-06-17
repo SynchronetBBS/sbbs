@@ -339,7 +339,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 	sort_list(list);
 
 	for(;;) {
-		uifc.helpbuf=	"`SyncTERM Dialing List`\n\n"
+		uifc.helpbuf=	"`SyncTERM Dialing Directory`\n\n"
 						"Commands:\n"
 						"~ CTRL-E ~ Switch listing to Edit mode\n"
 						"~ CTRL-D ~ Switch listing to Dial mode\n"
