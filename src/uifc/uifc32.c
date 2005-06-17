@@ -76,7 +76,7 @@ static void  bottomline(int line);
 static char  *utimestr(time_t *intime);
 static void  help(void);
 static int   ugetstr(int left, int top, int width, char *outstr, int max, long mode, int *lastkey);
-static void  timedisplay(void);
+static void  timedisplay(BOOL force);
 
 /* API routines */
 static void uifcbail(void);
@@ -452,13 +452,13 @@ static void scroll_text(int x1, int y1, int x2, int y2, int down)
 /* Updates time in upper left corner of screen with current time in ASCII/  */
 /* Unix format																*/
 /****************************************************************************/
-static void timedisplay()
+static void timedisplay(BOOL force)
 {
 	static time_t savetime;
 	time_t now;
 
 	now=time(NULL);
-	if(difftime(now,savetime)>=60) {
+	if(force || difftime(now,savetime)>=60) {
 		uprintf(api->scrn_width-25,1,api->bclr|(api->cclr<<4),utimestr(&now));
 		savetime=now; 
 	}
@@ -881,13 +881,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_IMM)
 		return(-2);
 
+	if(mode&WIN_ORG)
+		timedisplay(/* force? */TRUE);
+
 	while(1) {
 	#if 0					/* debug */
 		gotoxy(30,1);
 		cprintf("y=%2d h=%2d c=%2d b=%2d s=%2d o=%2d"
 			,y,height,*cur,bar ? *bar :0xff,api->savdepth,opts);
 	#endif
-		timedisplay();
+		timedisplay(/* force? */FALSE);
 		i=0;
 		if(kbwait()) {
 			i=inkey();

@@ -435,7 +435,7 @@ typedef struct {
 /* Updates time in upper left corner of screen with current time in ASCII/  */
 /* Unix format																*/
 /****************************************************************************/
-	void (*timedisplay)(void);
+	void (*timedisplay)(BOOL force);
 
 /****************************************************************************/
 /* String input/exit box at a specified position							*/

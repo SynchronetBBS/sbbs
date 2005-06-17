@@ -316,15 +316,16 @@ else
 /* Updates time in upper left corner of screen with current time in ASCII/  */
 /* Unix format																*/
 /****************************************************************************/
-static void timedisplay(void)
+static void timedisplay(BOOL force)
 {
 	static time_t savetime;
 	time_t now;
 
-now=time(NULL);
-if(difftime(now,savetime)>=60) {
-	uprintf(55,1,bclr|(cclr<<4),utimestr(&now));
-	savetime=now; }
+	now=time(NULL);
+	if(force || difftime(now,savetime)>=60) {
+		uprintf(55,1,bclr|(cclr<<4),utimestr(&now));
+		savetime=now; 
+	}
 }
 
 /****************************************************************************/
@@ -605,7 +606,7 @@ while(1) {
 		,y,height,*cur,bar ? *bar :0xff,api->savdepth,opts);
 #endif
 	if(!show_free_mem)
-		timedisplay();
+		timedisplay(FALSE);
 #ifndef __FLAT__
 	if(api->mode&UIFC_MOUSE) {
 
