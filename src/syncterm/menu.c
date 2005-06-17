@@ -158,7 +158,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 					j=get_rate_num(*speed);
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,NULL,"Output Rate",rate_names);
 					if(i>=0)
-						speed = rates[i];
+						*speed = rates[i];
 				}
 				ret=5;
 				break;
