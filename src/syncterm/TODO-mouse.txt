@@ -6,6 +6,8 @@ copy [x]
 highlight [x]
 send [x]
 open [x]			(Open the thing as the OS would like you to)
+scroll_up [#]
+scroll_down [#]			(For mouse wheel "buttons")
 
 end char is the char the mouse event is over at the end of the event.
 
