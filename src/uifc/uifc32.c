@@ -57,6 +57,7 @@
 #define BL_DEL      (1<<1)  /* DEL key */
 #define BL_GET      (1<<2)  /* Get key */
 #define BL_PUT      (1<<3)  /* Put key */
+#define BL_EDIT     (1<<4)  /* Edit key */
 
 #define BLINK	128
 
@@ -531,6 +532,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_DEL) bline|=BL_DEL;
 	if(mode&WIN_GET) bline|=BL_GET;
 	if(mode&WIN_PUT) bline|=BL_PUT;
+	if(mode&WIN_EDIT) bline|=BL_EDIT;
 	bottomline(bline);
 	while(opts<MAX_OPTS)
 		if(option[opts]==NULL || option[opts][0]==0)
@@ -1286,14 +1288,32 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,line);
 						}
 						break;
-					case CIO_KEY_F(1):	/* F1 */
+					case CIO_KEY_F(1):	/* F1 - Help */
 						api->showhelp();
 						break;
-					case CIO_KEY_F(5):	/* F5 */
+					case CIO_KEY_F(2):	/* F2 - Edit */
+						if(mode&WIN_XTR && (*cur)==opts-1)	/* can't edit */
+							break;							/* extra line */
+						if(mode&WIN_EDIT) {
+							if(mode&WIN_EDITACT) {
+								gettext(s_left+left,s_top+top,s_left
+									+left+width-1,s_top+top+height-1,tmp_buffer);
+								for(i=1;i<(width*height*2);i+=2)
+									tmp_buffer[i]=api->lclr|(api->cclr<<4);
+								j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
+								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
+									tmp_buffer[i]=api->hclr|(api->cclr<<4);
+								puttext(s_left+left,s_top+top,s_left
+									+left+width-1,s_top+top+height-1,tmp_buffer);
+							}
+							return((*cur)|MSK_EDIT); 
+						}
+						break;
+					case CIO_KEY_F(5):	/* F5 - Copy */
 						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1))
 							return((*cur)|MSK_GET);
 						break;
-					case CIO_KEY_F(6):	/* F6 */
+					case CIO_KEY_F(6):	/* F6 - Paste */
 						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1))
 							return((*cur)|MSK_PUT);
 						break;
@@ -2059,6 +2079,12 @@ void bottomline(int line)
 	i+=3;
 	uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Help  ");
 	i+=6;
+	if(line&BL_EDIT) {
+		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F2 ");
+		i+=3;
+		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Edit Item  ");
+		i+=11; 
+	}
 	if(line&BL_GET) {
 		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F5 ");
 		i+=3;
