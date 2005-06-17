@@ -23,6 +23,12 @@ static WSADATA WSAData;
 #define SOCKLIB_DESC WSAData.szDescription
 static BOOL WSAInitialized=FALSE;
 
+char* syncterm_version = "SyncTERM 0.00"
+#ifdef _DEBUG
+	" Debug ("__DATE__")"
+#endif
+	;
+
 static BOOL winsock_startup(void)
 {
 	int		status;             /* Status Code */
