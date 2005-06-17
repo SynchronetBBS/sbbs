@@ -344,7 +344,9 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						"~ CTRL-E ~ Switch listing to Edit mode\n"
 						"~ CTRL-D ~ Switch listing to Dial mode\n"
 						"Select a bbs to edit/dial an entry.";
-		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)|WIN_ORG|WIN_MID|WIN_INS|WIN_DEL|WIN_EXTKEYS|WIN_INSACT,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
+		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+			|WIN_ORG|WIN_MID|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_INSACT
+			,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 		if(val==listcount)
 			val=listcount|MSK_INS;
 		if(val<0) {
@@ -475,6 +477,16 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						list[i]->id=i;
 					}
 					listcount--;
+					break;
+				case MSK_EDIT:
+					i=list[opt]->id;
+					if(edit_list(list[opt],listpath)) {
+						sort_list(list);
+						for(j=0;list[j]->name[0];j++) {
+							if(list[j]->id==i)
+								opt=j;
+						}
+					}
 					break;
 			}
 		}
