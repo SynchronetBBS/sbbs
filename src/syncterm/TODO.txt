@@ -17,9 +17,3 @@ Themeing support... would require exposing extra bits of uifc (Specifically,
   they would want is external protocol support... something that is far beyond
   what I'm willing to do (The FOSSIL emulator would need to get added, along
   with DSZ log parsing etc, bascially... it would be pointless bloat)
-It would be nice to not need to switch to the full uifc screen for the menus,
-  The reasons it does that currently is the time update stuff and the status
-  line info.  There's really no good reason any of the rest of the screen needs
-  to be overwritten/distrubed in any way.  In some circumstances, it's actually
-  annoying.  I think that uifc32 will correctly handle a NULL pointer as the
-  time update bit, so why has this not been done already?
