@@ -528,7 +528,7 @@ void zmodem_upload(char *uldir)
 	zmodem_t	zm;
 	struct file_pick fpick;
 
-	init_uifc();
+	init_uifc(FALSE, FALSE);
 	result=filepick(&uifc, "Upload", &fpick, uldir, NULL, UIFC_FP_ALLOWENTRY);
 	uifcbail();
 	
@@ -817,7 +817,7 @@ BOOL doterm(struct bbslist *bbs)
 						buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 						gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 						i=0;
-						init_uifc();
+						init_uifc(FALSE, FALSE);
 						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
 							uifcbail();
 							free(buf);

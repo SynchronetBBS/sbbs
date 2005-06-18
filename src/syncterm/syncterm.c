@@ -295,7 +295,7 @@ int main(int argc, char **argv)
 			if(bbs != NULL && bbs->id==-1) {
 				char	*YesNo[3]={"Yes","No",""};
 				/* Started from the command-line with a URL */
-				init_uifc();
+				init_uifc(TRUE, TRUE);
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this BBS in directory?",YesNo)) {
 					case 0:	/* Yes */
 						add_bbs(path,bbs);

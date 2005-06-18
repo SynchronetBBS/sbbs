@@ -327,7 +327,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 	char	str[6];
 	char	*YesNo[3]={"Yes","No",""};
 
-	if(init_uifc())
+	if(init_uifc(TRUE, TRUE))
 		return(NULL);
 
 	read_list(listpath, &list[0], &listcount, USER_BBSLIST, home);

@@ -64,7 +64,7 @@ void viewscroll(void)
 						top+=term.height;
 						break;
 					case CIO_KEY_F(1):
-						init_uifc();
+						init_uifc(FALSE, FALSE);
 						uifc.helpbuf=	"`Scrollback Buffer`\n\n"
 										"~ J ~ or ~ Up Arrow ~   Scrolls up one line\n"
 										"~ K ~ or ~ Down Arrow ~ Scrolls down one line\n"
@@ -132,7 +132,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 	}
 
 	for(ret=0;!ret;) {
-		init_uifc();
+		init_uifc(FALSE, !(bbs->nostatus));
 		uifc.helpbuf=	"`Online Menu`\n\n"
 						"~ Scrollback ~         allows to you to view the scrollback buffer\n"
 						"~ Disconnect ~         disconnects the current session and returns to the\n"
