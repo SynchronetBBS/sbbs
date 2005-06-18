@@ -188,7 +188,7 @@ void dump(BYTE* buf, int len)
 #endif
 
 /* Zmodem Stuff */
-static int log_level = LOG_INFO;
+int log_level = LOG_INFO;
 
 static void zmodem_check_abort(zmodem_t* zm)
 {
@@ -858,7 +858,7 @@ BOOL doterm(struct bbslist *bbs)
 						case 4:
 							zmodem_download(bbs->dldir);
 							break;
-						case 6:
+						case 7:
 							cterm_end();
 							free(scrollback);
 							conn_close();

@@ -112,6 +112,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"Zmodem Upload (Alt-U)"
 						,"Zmodem Download (Alt-D)"
 						,"Change Output Rate (Alt-Up/Alt-Down)"
+						,"Change Log Level"
 						,"Exit (Alt-X)"
 						,""};
 	int		opt=0;
@@ -161,6 +162,13 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						*speed = rates[i];
 				}
 				ret=5;
+				break;
+			case 6:		/* Change log level (temporarily) */
+				j=log_level;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,NULL,"Log Level",log_levels);
+				if(i>=0)
+					log_level = j;
+				ret=6;
 				break;
 			default:
 				ret=i;

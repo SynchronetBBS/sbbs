@@ -9,5 +9,3 @@ Being able to override the default protocol from the command-line:
   syncterm -r vert.synchro.net	(RLogin)
   syncterm -t vert.synchro.net	(Telnet)
 Specifying a BBS entry from the command-line
-Online speed change and log level changing (From the menu)
-  Should this modify the entry or not?

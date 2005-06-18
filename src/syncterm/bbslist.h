@@ -54,6 +54,7 @@ struct bbslist {
 };
 
 struct bbslist *show_bbslist(char* listpath, int mode, char *home);
+extern char *log_levels[];
 extern char *rate_names[];
 extern int rates[];
 void read_list(char *listpath, struct bbslist **list, int *i, int type, char* home);
