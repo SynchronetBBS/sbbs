@@ -205,7 +205,9 @@ int uifcini32(uifcapi_t* uifcapi)
         }
     }
 
+#if 0
     clrscr();
+#endif
 
     gettextinfo(&txtinfo);
     /* unsupported mode? */
