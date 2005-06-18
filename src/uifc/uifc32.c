@@ -883,8 +883,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_IMM)
 		return(-2);
 
-	if(mode&WIN_ORG)
-		timedisplay(/* force? */TRUE);
+	if(mode&WIN_ORG) {
+		if(api->timedisplay != NULL)
+			api->timedisplay(/* force? */TRUE);
+	}
 
 	while(1) {
 	#if 0					/* debug */
@@ -892,7 +894,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		cprintf("y=%2d h=%2d c=%2d b=%2d s=%2d o=%2d"
 			,y,height,*cur,bar ? *bar :0xff,api->savdepth,opts);
 	#endif
-		timedisplay(/* force? */FALSE);
+		if(api->timedisplay != NULL)
+			timedisplay(/* force? */FALSE);
 		i=0;
 		if(kbwait()) {
 			i=inkey();
