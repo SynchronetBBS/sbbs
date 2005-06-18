@@ -605,8 +605,10 @@ while(1) {
 	cprintf("y=%2d h=%2d c=%2d b=%2d s=%2d o=%2d"
 		,y,height,*cur,bar ? *bar :0xff,api->savdepth,opts);
 #endif
-	if(!show_free_mem)
-		timedisplay(FALSE);
+	if(!show_free_mem) {
+		if(api->timedisplay != NULL)
+			api->timedisplay(FALSE);
+	}
 #ifndef __FLAT__
 	if(api->mode&UIFC_MOUSE) {
 
