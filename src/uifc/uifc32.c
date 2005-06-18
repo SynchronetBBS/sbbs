@@ -52,12 +52,6 @@
 #include "keys.h"
 #include "uifc.h"
 #define MAX_GETSTR	5120
-							/* Bottom line elements */
-#define BL_INS      (1<<0)  /* INS key */
-#define BL_DEL      (1<<1)  /* DEL key */
-#define BL_GET      (1<<2)  /* Get key */
-#define BL_PUT      (1<<3)  /* Put key */
-#define BL_EDIT     (1<<4)  /* Edit key */
 
 #define BLINK	128
 
@@ -169,6 +163,7 @@ int uifcini32(uifcapi_t* uifcapi)
     api->showhelp=help;
 	api->showbuf=showbuf;
 	api->timedisplay=timedisplay;
+	api->bottomline=bottomline;
 	api->getstrxy=ugetstr;
 	api->printf=uprintf;
 
@@ -533,7 +528,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_GET) bline|=BL_GET;
 	if(mode&WIN_PUT) bline|=BL_PUT;
 	if(mode&WIN_EDIT) bline|=BL_EDIT;
-	bottomline(bline);
+	if(api->bottomline != NULL)
+		api->bottomline(bline);
 	while(opts<MAX_OPTS)
 		if(option[opts]==NULL || option[opts][0]==0)
 			break;
@@ -895,7 +891,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			,y,height,*cur,bar ? *bar :0xff,api->savdepth,opts);
 	#endif
 		if(api->timedisplay != NULL)
-			timedisplay(/* force? */FALSE);
+			api->timedisplay(/* force? */FALSE);
 		i=0;
 		if(kbwait()) {
 			i=inkey();

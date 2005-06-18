@@ -225,6 +225,19 @@
 								/* Input area (NOT outside of window!)		*/
 								/* And ungets the mouse event.				*/
 
+						/* Bottom line elements */
+#define BL_INS      (1<<0)  /* INS key */
+#define BL_DEL      (1<<1)  /* DEL key */
+#define BL_GET      (1<<2)  /* Get key */
+#define BL_PUT      (1<<3)  /* Put key */
+
+#define BL_INS      (1<<0)  /* INS key */
+#define BL_DEL      (1<<1)  /* DEL key */
+#define BL_GET      (1<<2)  /* Get key */
+#define BL_PUT      (1<<3)  /* Put key */
+#define BL_EDIT     (1<<4)  /* Edit key */
+
+
 #define HELPBUF_SIZE 4000
 
 #ifndef _GEN_DEFS_H
@@ -440,6 +453,11 @@ typedef struct {
 /* Unix format																*/
 /****************************************************************************/
 	void (*timedisplay)(BOOL force);
+
+/****************************************************************************/
+/* Displays the bottom line using the BL_* macros							*/
+/****************************************************************************/
+    void (*bottomline)(int line);
 
 /****************************************************************************/
 /* String input/exit box at a specified position							*/

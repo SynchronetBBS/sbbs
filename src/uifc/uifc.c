@@ -56,12 +56,6 @@ DosSleep(msec ? msec : 1);
     #define mswait(x) delay(x)
 #endif
 
-							/* Bottom line elements */
-#define BL_INS      (1<<0)  /* INS key */
-#define BL_DEL      (1<<1)  /* DEL key */
-#define BL_GET      (1<<2)  /* Get key */
-#define BL_PUT      (1<<3)  /* Put key */
-
 static char hclr,lclr,bclr,cclr,show_free_mem=0;
 static int cursor;
 static char* helpfile=0;
@@ -142,6 +136,7 @@ int uifcini(uifcapi_t* uifcapi)
     api->showhelp=help;
 	api->showbuf=NULL;
 	api->timedisplay=timedisplay;
+	api->bottomline=bottomline;
 
     if(api->scrn_len!=0) {
         switch(api->scrn_len) {
@@ -373,7 +368,8 @@ if(mode&WIN_INS) bline|=BL_INS;
 if(mode&WIN_DEL) bline|=BL_DEL;
 if(mode&WIN_GET) bline|=BL_GET;
 if(mode&WIN_PUT) bline|=BL_PUT;
-bottomline(bline);
+if(api->bottomline != NULL)
+	api->bottomline(bline);
 while(opts<max_opts && opts<MAX_OPTS)
 	if(option[opts]==NULL || option[opts][0]==0)
 		break;
