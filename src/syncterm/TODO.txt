@@ -17,3 +17,6 @@ Themeing support... would require exposing extra bits of uifc (Specifically,
   they would want is external protocol support... something that is far beyond
   what I'm willing to do (The FOSSIL emulator would need to get added, along
   with DSZ log parsing etc, bascially... it would be pointless bloat)
+In the .ini file, use more meaningfull values for screenmode and connectiontype
+  (ie: 80x25 and RLogin respectively)
+
