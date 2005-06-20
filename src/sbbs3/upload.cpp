@@ -199,8 +199,12 @@ bool sbbs_t::uploadfile(file_t *f)
 	f->opencount=0;
 	strcpy(f->uler,useron.alias);
 	bprintf(text[FileNBytesReceived],f->name,ultoac(length,tmp));
-	if(!f->desc[0])
-		sprintf(f->desc,"%.*s",LEN_FDESC,text[NoDescription]);
+	if(!f->desc[0]) {
+		if(stricmp(f->name,getfname(path)))
+			SAFECOPY(f->desc,getfname(path));
+		else
+			sprintf(f->desc,"%.*s",LEN_FDESC,text[NoDescription]);
+	}
 	if(!addfiledat(&cfg,f))
 		return(0);
 
