@@ -13,7 +13,7 @@
 
 static int	con_type=CONN_TYPE_UNKNOWN;
 SOCKET conn_socket=INVALID_SOCKET;
-char *conn_types[]={"Unknown","RLogin","Telnet","Raw",""};
+char *conn_types[]={"Unknown","RLogin","Telnet","Raw",NULL};
 
 int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 {
