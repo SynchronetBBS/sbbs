@@ -7,8 +7,7 @@
 #include <uifc.h>
 
 #include "uifcinit.h"
-
-extern char* syncterm_version;
+#include "syncterm.h"
 
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 static int uifc_initialized=0;
