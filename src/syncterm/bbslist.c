@@ -85,12 +85,12 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type, char* ho
 			list[*i]->calls=iniReadInteger(listfile,bbsname,"TotalCalls",0);
 			iniReadString(listfile,bbsname,"UserName","",list[*i]->user);
 			iniReadString(listfile,bbsname,"Password","",list[*i]->password);
-			list[*i]->conn_type=iniReadInteger(listfile,bbsname,"ConnectionType",CONN_TYPE_RLOGIN);
+			list[*i]->conn_type=iniReadEnum(listfile,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
 			dumb=iniReadBool(listfile,bbsname,"BeDumb",0);
 			if(dumb)
 				list[*i]->conn_type=CONN_TYPE_RAW;
 			list[*i]->reversed=iniReadBool(listfile,bbsname,"Reversed",0);
-			list[*i]->screen_mode=iniReadInteger(listfile,bbsname,"ScreenMode",SCREEN_MODE_CURRENT);
+			list[*i]->screen_mode=iniReadEnum(listfile,bbsname,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
 			list[*i]->nostatus=iniReadBool(listfile,bbsname,"NoStatus",0);
 			iniReadString(listfile,bbsname,"DownloadPath",home,list[*i]->dldir);
 			iniReadString(listfile,bbsname,"UploadPath",home,list[*i]->uldir);
@@ -209,7 +209,7 @@ int edit_list(struct bbslist *item,char *listpath)
 				if(item->conn_type==CONN_TYPE_TERMINATOR)
 					item->conn_type=CONN_TYPE_RLOGIN;
 				changed=1;
-				iniSetInteger(&inifile,item->name,"ConnectionType",item->conn_type,NULL);
+				iniSetEnum(&inifile,item->name,"ConnectionType",conn_types,item->conn_type,NULL);
 				break;
 			case 6:
 				item->reversed=!item->reversed;
@@ -221,7 +221,7 @@ int edit_list(struct bbslist *item,char *listpath)
 				if(item->screen_mode==SCREEN_MODE_TERMINATOR)
 					item->screen_mode=0;
 				changed=1;
-				iniSetInteger(&inifile,item->name,"ScreenMode",item->screen_mode,NULL);
+				iniSetEnum(&inifile,item->name,"ScreenMode",screen_modes,item->screen_mode,NULL);
 				break;
 			case 8:
 				item->nostatus=!item->nostatus;
@@ -281,9 +281,9 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
 	iniSetString(&inifile,bbs->name,"UserName",bbs->user,NULL);
 	iniSetString(&inifile,bbs->name,"Password",bbs->password,NULL);
-	iniSetInteger(&inifile,bbs->name,"ConnectionType",bbs->conn_type,NULL);
+	iniSetEnum(&inifile,bbs->name,"ConnectionType",conn_types,bbs->conn_type,NULL);
 	iniSetBool(&inifile,bbs->name,"Reversed",bbs->reversed,NULL);
-	iniSetInteger(&inifile,bbs->name,"ScreenMode",bbs->screen_mode,NULL);
+	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes,bbs->screen_mode,NULL);
 	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,NULL);
 	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,NULL);
 	iniSetInteger(&inifile,bbs->name,"LogLevel",bbs->loglevel,NULL);
