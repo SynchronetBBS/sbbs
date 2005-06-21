@@ -387,6 +387,15 @@ char* iniSetShortInt(str_list_t* list, const char* section, const char* key, ush
 	return iniSetString(list, section, key, str, style);
 }
 
+char* iniSetLongInt(str_list_t* list, const char* section, const char* key, ulong value
+					,ini_style_t* style)
+{
+	char	str[INI_MAX_VALUE_LEN];
+
+	SAFEPRINTF(str,"%lu",value);
+	return iniSetString(list, section, key, str, style);
+}
+
 char* iniSetHexInt(str_list_t* list, const char* section, const char* key, ulong value
 					,ini_style_t* style)
 {
@@ -424,13 +433,34 @@ char* iniSetBool(str_list_t* list, const char* section, const char* key, BOOL va
 char* iniSetEnum(str_list_t* list, const char* section, const char* key, str_list_t names, unsigned value
 					,ini_style_t* style)
 {
-	char	str[INI_MAX_VALUE_LEN];
-
 	if(value < strListCount(names))
 		return iniSetString(list, section, key, names[value], style);
 
-	SAFEPRINTF(str,"%u",value);
-	return iniSetString(list, section, key, str, style);
+	return iniSetLongInt(list, section, key, value, style);
+}
+
+char* iniSetNamedInt(str_list_t* list, const char* section, const char* key, named_long_t* names
+					 ,long value, ini_style_t* style)
+{
+	size_t	i;
+
+	for(i=0;names[i].name!=NULL;i++)
+		if(names[i].value==value)
+			return iniSetString(list, section, key, names[i].name, style);
+
+	return iniSetInteger(list, section, key, value, style);
+}
+
+char* iniSetNamedFloat(str_list_t* list, const char* section, const char* key, named_double_t* names
+					 ,double value, ini_style_t* style)
+{
+	size_t	i;
+
+	for(i=0;names[i].name!=NULL;i++)
+		if(names[i].value==value)
+			return iniSetString(list, section, key, names[i].name, style);
+
+	return iniSetFloat(list, section, key, value, style);
 }
 
 char* iniSetBitField(str_list_t* list, const char* section, const char* key
@@ -856,6 +886,32 @@ ushort iniGetShortInt(str_list_t list, const char* section, const char* key, ush
 	return((ushort)iniGetInteger(list, section, key, deflt));
 }
 
+ulong iniReadLongInt(FILE* fp, const char* section, const char* key, ulong deflt)
+{
+	char*	value;
+	char	buf[INI_MAX_VALUE_LEN];
+
+	if((value=read_value(fp,section,key,buf))==NULL)
+		return(deflt);
+
+	if(*value==0)		/* blank value */
+		return(deflt);
+
+	return(strtoul(value,NULL,0));
+}
+
+ulong iniGetLongInt(str_list_t list, const char* section, const char* key, ulong deflt)
+{
+	char	value[INI_MAX_VALUE_LEN];
+
+	get_value(list, section, key, value);
+
+	if(*value==0)	/* blank value or missing key */
+		return(deflt);
+
+	return(strtoul(value,NULL,0));
+}
+
 #if !defined(NO_SOCKET_SUPPORT)
 
 static ulong parseIpAddress(const char* value)
@@ -1032,6 +1088,84 @@ unsigned iniGetEnum(str_list_t list, const char* section, const char* key, str_l
 		return(deflt);
 
 	return(parseEnum(value,names));
+}
+
+static long parseNamedInt(const char* value, named_long_t* names)
+{
+	unsigned i;
+
+	for(i=0;names[i].name!=NULL;i++)
+		if(stricmp(names[i].name,value)==0)
+			return(names[i].value);
+
+	return(strtol(value,NULL,0));
+}
+
+long iniReadNamedInt(FILE* fp, const char* section, const char* key
+					 ,named_long_t* names, long deflt)
+{
+	char	buf[INI_MAX_VALUE_LEN];
+	char*	value;
+
+	if((value=read_value(fp,section,key,buf))==NULL)
+		return(deflt);
+
+	if(*value==0)		/* blank value */
+		return(deflt);
+
+	return(parseNamedInt(value,names));
+}
+
+long iniGetNamedInt(str_list_t list, const char* section, const char* key
+					,named_long_t* names, long deflt)
+{
+	char	value[INI_MAX_VALUE_LEN];
+
+	get_value(list, section, key, value);
+
+	if(*value==0)		/* blank value or missing key */
+		return(deflt);
+
+	return(parseNamedInt(value,names));
+}
+
+static double parseNamedFloat(const char* value, named_double_t* names)
+{
+	unsigned i;
+
+	for(i=0;names[i].name!=NULL;i++)
+		if(stricmp(names[i].name,value)==0)
+			return(names[i].value);
+
+	return(atof(value));
+}
+
+double iniReadNamedFloat(FILE* fp, const char* section, const char* key
+					 ,named_double_t* names, double deflt)
+{
+	char	buf[INI_MAX_VALUE_LEN];
+	char*	value;
+
+	if((value=read_value(fp,section,key,buf))==NULL)
+		return(deflt);
+
+	if(*value==0)		/* blank value */
+		return(deflt);
+
+	return(parseNamedFloat(value,names));
+}
+
+double iniGetNamedFloat(str_list_t list, const char* section, const char* key
+					,named_double_t* names, double deflt)
+{
+	char	value[INI_MAX_VALUE_LEN];
+
+	get_value(list, section, key, value);
+
+	if(*value==0)		/* blank value or missing key */
+		return(deflt);
+
+	return(parseNamedFloat(value,names));
 }
 
 static ulong parseBitField(char* value, ini_bitdesc_t* bitdesc)

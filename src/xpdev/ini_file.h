@@ -79,6 +79,8 @@ long		iniReadInteger(FILE*, const char* section, const char* key
 					,long deflt);
 ushort		iniReadShortInt(FILE*, const char* section, const char* key
 					,ushort deflt);
+ulong		iniReadLongInt(FILE*, const char* section, const char* key
+					,ulong deflt);
 ulong		iniReadIpAddress(FILE*, const char* section, const char* key
 					,ulong deflt);
 double		iniReadFloat(FILE*, const char* section, const char* key
@@ -87,6 +89,10 @@ BOOL		iniReadBool(FILE*, const char* section, const char* key
 					,BOOL deflt);
 unsigned	iniReadEnum(FILE*, const char* section, const char* key
 					,str_list_t names, unsigned deflt);
+long		iniReadNamedInt(FILE*, const char* section, const char* key
+					,named_long_t*, long deflt);
+double		iniReadNamedFloat(FILE*, const char* section, const char* key
+					,named_double_t*, double deflt);
 ulong		iniReadBitField(FILE*, const char* section, const char* key
 					,ini_bitdesc_t* bitdesc, ulong deflt);
 
@@ -119,6 +125,8 @@ long		iniGetInteger(str_list_t, const char* section, const char* key
 					,long deflt);
 ushort		iniGetShortInt(str_list_t, const char* section, const char* key
 					,ushort deflt);
+ulong		iniGetLongInt(str_list_t, const char* section, const char* key
+					,ulong deflt);
 ulong		iniGetIpAddress(str_list_t, const char* section, const char* key
 					,ulong deflt);
 double		iniGetFloat(str_list_t, const char* section, const char* key
@@ -127,15 +135,20 @@ BOOL		iniGetBool(str_list_t, const char* section, const char* key
 					,BOOL deflt);
 unsigned	iniGetEnum(str_list_t, const char* section, const char* key
 					,str_list_t names, unsigned deflt);
+long		iniGetNamedInt(str_list_t, const char* section, const char* key
+					,named_long_t*, long deflt);
+double		iniGetNamedFloat(str_list_t, const char* section, const char* key
+					,named_double_t*, double deflt);
 ulong		iniGetBitField(str_list_t, const char* section, const char* key
 					,ini_bitdesc_t* bitdesc, ulong deflt);
-
 
 char*		iniSetString(str_list_t*, const char* section, const char* key, const char* value
 					,ini_style_t*);
 char*		iniSetInteger(str_list_t*, const char* section, const char* key, long value
 					,ini_style_t*);
 char*		iniSetShortInt(str_list_t*, const char* section, const char* key, ushort value
+					,ini_style_t*);
+char*		iniSetLongInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
 char*		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
@@ -147,6 +160,10 @@ char*		iniSetBool(str_list_t*, const char* section, const char* key, BOOL value
 					,ini_style_t*);
 char*		iniSetEnum(str_list_t*, const char* section, const char* key, str_list_t names
 					,unsigned value, ini_style_t*);
+char*		iniSetNamedInt(str_list_t*, const char* section, const char* key, named_long_t*
+					,long value, ini_style_t*);
+char*		iniSetNamedFloat(str_list_t*, const char* section, const char* key, named_double_t*
+					,double value, ini_style_t*);
 char*		iniSetBitField(str_list_t*, const char* section, const char* key, ini_bitdesc_t*, ulong value
 					,ini_style_t*);
 char*		iniSetStringList(str_list_t*, const char* section, const char* key
