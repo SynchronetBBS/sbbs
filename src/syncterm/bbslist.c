@@ -328,6 +328,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 	char	str[6];
 	char	*YesNo[3]={"Yes","No",""};
 	char	title[1024];
+	char	*p;
 
 	if(init_uifc(TRUE, TRUE))
 		return(NULL);
@@ -348,8 +349,12 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						"~ CTRL-E ~ Switch listing to Edit mode\n"
 						"~ CTRL-D ~ Switch listing to Dial mode\n"
 						"Select a bbs to edit/dial an entry.";
-		if(list[opt]!=NULL && list[opt]->name[0])
-			sprintf(title, "%s - %s (%d calls / Last: %s)", syncterm_version, (char *)(list[opt]), list[opt]->calls, list[opt]->connected?ctime(&list[opt]->connected):"Never");
+		if(list[opt]!=NULL && list[opt]->name[0]) {
+			sprintf(title, "%s - %s (%d calls / Last: %s", syncterm_version, (char *)(list[opt]), list[opt]->calls, list[opt]->connected?ctime(&list[opt]->connected):"Never\n");
+			p=strrchr(title, '\n');
+			if(p!=NULL)
+				*p=')';
+		}
 		else
 			strcpy(title,syncterm_version);
 		settitle(title);
