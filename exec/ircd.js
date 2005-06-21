@@ -346,7 +346,7 @@ function isklined(kl_str) {
 	for(the_kl in KLines) {
 		if (KLines[the_kl].hostmask &&
 		    IRC_match(kl_str,KLines[the_kl].hostmask))
-			return 1;
+			return KLines[the_kl];
 	}
 	return 0;
 }
@@ -363,8 +363,9 @@ function iszlined(zl_ip) {
 function scan_for_klined_clients() {
 	for(thisUser in Local_Users) {
 		var theuser=Local_Users[thisUser];
-		if (theuser.uprefix && isklined(theuser.uprefix + "@" + theuser.hostname))
-			theuser.quit("User has been K:Lined (" + KLines[thiskl].reason + ")");
+		var kline=isklined(theuser.uprefix + "@" + theuser.hostname));
+		if (kline)
+			theuser.quit("User has been K:Lined (" + kline.reason + ")");
 		if (iszlined(theuser.ip))
 			theuser.quit("User has been Z:Lined");
 	}
