@@ -363,7 +363,7 @@ function iszlined(zl_ip) {
 function scan_for_klined_clients() {
 	for(thisUser in Local_Users) {
 		var theuser=Local_Users[thisUser];
-		var kline=isklined(theuser.uprefix + "@" + theuser.hostname));
+		var kline=isklined(theuser.uprefix + "@" + theuser.hostname);
 		if (kline)
 			theuser.quit("User has been K:Lined (" + kline.reason + ")");
 		if (iszlined(theuser.ip))
