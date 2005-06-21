@@ -19,14 +19,14 @@ int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 11520
 
 int get_rate_num(int rate)
 {
-	int i=0;
+	int i;
 
 	for(i=0; rates[i] && (!rate || rate > rates[i]); i++);
 	return(i);
 }
 
 int get_next_rate(int curr_rate) {
-	int i=0;
+	int i;
 
 	if(curr_rate == 0)
 		i=0;
