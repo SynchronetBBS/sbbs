@@ -198,6 +198,16 @@ typedef struct {
 
 typedef struct {
 	char*	name;
+	float	value;
+} named_float_t;
+
+typedef struct {
+	char*	name;
+	double	value;
+} named_double_t;
+
+typedef struct {
+	char*	name;
 	BOOL	value;
 } named_bool_t;
 
