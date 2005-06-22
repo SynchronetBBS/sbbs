@@ -33,6 +33,7 @@ template=new Object;
 load("sbbsdefs.js");    // UFLAG_G
 load("../web/lib/html_themes.ssjs");
 load("../web/lib/siteutils.ssjs");  // Port Check & Logo Check
+load("../web/lib/global_defs.ssjs");  // Global Defs - User Alias and the like.
  
 if(http_request.virtual_path=="/nodelist.ssjs")
     load("../web/lib/main_nodelist.ssjs"); // Who's Online Listing
@@ -145,13 +146,4 @@ function regex_escape(str)
     return(str);
 }
 
-if(user.number==0)
-    template.user_greeting="Welcome, Guest.";
-else
-    if(!(user.security.restrictions&UFLAG_G))
-        template.user_greeting="Welcome, "+user.alias+ ".<br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
-    else
-        template.user_greeting="Welcome, "+user.alias+ ".";
-
-    
-
+ 
