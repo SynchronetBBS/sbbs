@@ -81,12 +81,16 @@ ushort		iniReadShortInt(FILE*, const char* section, const char* key
 					,ushort deflt);
 ulong		iniReadLongInt(FILE*, const char* section, const char* key
 					,ulong deflt);
+ulong		iniReadBytes(FILE*, const char* section, const char* key
+					,ulong unit, ulong deflt);
 ulong		iniReadIpAddress(FILE*, const char* section, const char* key
 					,ulong deflt);
 double		iniReadFloat(FILE*, const char* section, const char* key
 					,double deflt);
 BOOL		iniReadBool(FILE*, const char* section, const char* key
 					,BOOL deflt);
+time_t		iniReadDateTime(FILE*, const char* section, const char* key
+					,time_t deflt);
 unsigned	iniReadEnum(FILE*, const char* section, const char* key
 					,str_list_t names, unsigned deflt);
 long		iniReadNamedInt(FILE*, const char* section, const char* key
@@ -127,12 +131,16 @@ ushort		iniGetShortInt(str_list_t, const char* section, const char* key
 					,ushort deflt);
 ulong		iniGetLongInt(str_list_t, const char* section, const char* key
 					,ulong deflt);
+ulong		iniGetBytes(str_list_t, const char* section, const char* key
+					,ulong unit, ulong deflt);
 ulong		iniGetIpAddress(str_list_t, const char* section, const char* key
 					,ulong deflt);
 double		iniGetFloat(str_list_t, const char* section, const char* key
 					,double deflt);
 BOOL		iniGetBool(str_list_t, const char* section, const char* key
 					,BOOL deflt);
+time_t		iniGetDateTime(str_list_t, const char* section, const char* key
+					,time_t deflt);
 unsigned	iniGetEnum(str_list_t, const char* section, const char* key
 					,str_list_t names, unsigned deflt);
 long		iniGetNamedInt(str_list_t, const char* section, const char* key
@@ -150,6 +158,8 @@ char*		iniSetShortInt(str_list_t*, const char* section, const char* key, ushort 
 					,ini_style_t*);
 char*		iniSetLongInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
+char*		iniSetBytes(str_list_t*, const char* section, const char* key, ulong unit, ulong value
+					,ini_style_t*);
 char*		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
 char*		iniSetFloat(str_list_t*, const char* section, const char* key, double value
@@ -157,6 +167,8 @@ char*		iniSetFloat(str_list_t*, const char* section, const char* key, double val
 char*		iniSetIpAddress(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
 char*		iniSetBool(str_list_t*, const char* section, const char* key, BOOL value
+					,ini_style_t*);
+char*		iniSetDateTime(str_list_t*, const char* section, const char* key, BOOL include_time, time_t
 					,ini_style_t*);
 char*		iniSetEnum(str_list_t*, const char* section, const char* key, str_list_t names
 					,unsigned value, ini_style_t*);
