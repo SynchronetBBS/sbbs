@@ -18,3 +18,7 @@ Themeing support... would require exposing extra bits of uifc (Specifically,
   what I'm willing to do (The FOSSIL emulator would need to get added, along
   with DSZ log parsing etc, bascially... it would be pointless bloat)
 Some sort of scrollback indicator
+Allow some way for SysOps (With the System Password) to auto-login... obviously,
+  RLogin can't do this magically... need somewhere to enter it, ALT-L should
+  send it etc.
+
