@@ -38,6 +38,12 @@
 #ifndef _DATEWRAP_H_
 #define _DATEWRAP_H_
 
+#include "genwrap.h"	/* time_t */
+
+/* Decimal-coded date functions */
+long	time_to_date(time_t time);
+time_t	date_to_time(long date);
+
 #if defined(__BORLANDC__)
 
 #include <dos.h>

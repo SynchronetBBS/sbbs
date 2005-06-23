@@ -35,9 +35,46 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#if !defined(__BORLANDC__)
+#include "genwrap.h"
 
-#include <time.h>	/* time(), time_t, struct tm, localtime() */
+/* Decimal-coded date functions */
+long time_to_date(time_t time)
+{
+	struct tm tm;
+
+	if(time==0)
+		return(0);
+
+	ZERO_VAR(tm);
+	if(gmtime_r(&time,&tm)==NULL)
+		return(0);
+	return(((tm.tm_year+1900)*10000)+((tm.tm_mon+1)*100)+tm.tm_mday);
+}
+
+time_t date_to_time(long date)
+{
+	struct tm tm;
+
+	ZERO_VAR(tm);
+
+	if(date==0)
+		return(0);
+
+	tm.tm_year=date/10000;
+	tm.tm_mon=(date/100)%100;
+	tm.tm_mday=date%100;
+
+	/* correct for tm-wierdness */
+	if(tm.tm_year>=1900)
+		tm.tm_year-=1900;
+	if(tm.tm_mon)
+		tm.tm_mon--;
+	tm.tm_isdst=-1;	/* Auto-adjust for DST */
+
+	return(mktime(&tm));
+}
+
+#if !defined(__BORLANDC__)
 
 #if defined(_WIN32)
 	#include <windows.h>	/* SYSTEMTIME and GetLocalTime() */
