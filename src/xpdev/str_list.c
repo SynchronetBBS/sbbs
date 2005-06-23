@@ -473,5 +473,6 @@ char* strListCreateBlock(str_list_t list)
 
 void strListFreeBlock(char* block)
 {
-	FREE_AND_NULL(block);	/* this must be done here for Windows-DLL reasons */
+	if(block!=NULL)
+		free(block);	/* this must be done here for Windows-DLL reasons */
 }

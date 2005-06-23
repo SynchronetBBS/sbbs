@@ -467,7 +467,7 @@ int DLLCALL	get_errno(void)
 /****************************************************************************/
 long double	DLLCALL	xp_timer(void)
 {
-	long double ret=0;
+	long double ret;
 #ifdef __unix__
 	struct timeval tv;
 	if(gettimeofday(&tv,NULL)==1)
