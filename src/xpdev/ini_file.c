@@ -436,8 +436,8 @@ char* iniSetBytes(str_list_t* list, const char* section, const char* key, ulong 
 				unit=1;
 			bytes=value*unit;
 
-			if(fmod(bytes,1024*1024*1024*1024)==0)
-				SAFEPRINTF(str,"%gT",bytes/(1024*1024*1024*1024));
+			if(fmod(bytes,1024.0*1024.0*1024.0*1024.0)==0)
+				SAFEPRINTF(str,"%gT",bytes/(1024.0*1024.0*1024.0*1024.0));
 			else if(fmod(bytes,1024*1024*1024)==0)
 				SAFEPRINTF(str,"%gG",bytes/(1024*1024*1024));
 			else if(fmod(bytes,1024*1024)==0)
@@ -471,9 +471,10 @@ char* iniSetDateTime(str_list_t* list, const char* section, const char* key
 					 ,BOOL include_time, time_t value, ini_style_t* style)
 {
 	char	str[INI_MAX_VALUE_LEN];
+	char	tstr[32];
 	char*	p;
 
-	if((p=ctime(&value))==NULL)
+	if((p=ctime_r(&value,tstr))==NULL)
 		SAFEPRINTF(str,"0x%lx",value);
 	else if(!include_time)	/* reformat into "Mon DD YYYY" */
 		safe_snprintf(str,sizeof(str),"%.3s %.2s %.4s"		,p+4,p+8,p+20);
@@ -798,7 +799,7 @@ str_list_t iniGetKeyList(str_list_t list, const char* section)
 	if(list==NULL)
 		return(lp);
 
-	for(i=find_section(list,section);list[i]==NULL;i++) {
+	for(i=find_section(list,section);list[i]!=NULL;i++) {
 		SAFECOPY(str,list[i]);
 		if((p=key_name(str,&vp))==NULL)
 			continue;
@@ -1158,6 +1159,8 @@ static time_t fixedDateTime(struct tm* tm, const char* tstr, char pm)
 {
 	if(tm->tm_year<70)
 		tm->tm_year+=100;	/* 05 == 2005 (not 1905) and 70 == 1970 (not 2070) */
+	else if(tm->tm_year>1900)
+		tm->tm_year-=1900;
 	if(tm->tm_mon)
 		tm->tm_mon--;		/* zero-based month field */
 
@@ -1165,6 +1168,8 @@ static time_t fixedDateTime(struct tm* tm, const char* tstr, char pm)
 	sscanf(tstr,"%u:%u:%u",&tm->tm_hour,&tm->tm_min,&tm->tm_sec);
 	if(tm->tm_hour < 12 && (toupper(pm)=='P' || strchr(tstr,'p') || strchr(tstr,'P')))
 		tm->tm_hour += 12;	/* pm, correct for 24 hour clock */
+
+	tm->tm_isdst=-1;	/* auto-detect */
 
 	return(mktime(tm));
 }
@@ -1189,16 +1194,16 @@ static time_t parseDateTime(const char* value)
 	char	pm=0;
 	time_t	t;
 	struct tm tm;
-	struct tm* curr_tm;
+	struct tm curr_tm;
 
 	ZERO_VAR(tm);
 	tstr[0]=0;
 
 	/* Use current month and year as default */
 	t=time(NULL);
-	if((curr_tm=gmtime(&t))!=NULL) {	
-		tm.tm_mon=curr_tm->tm_mon+1;	/* convert to one-based (reversed later) */
-		tm.tm_year=curr_tm->tm_year;
+	if(localtime_r(&t,&curr_tm)!=NULL) {	
+		tm.tm_mon=curr_tm.tm_mon+1;	/* convert to one-based (reversed later) */
+		tm.tm_year=curr_tm.tm_year;
 	}
 
 	/* DD.MM.[CC]YY [time] [p] */
