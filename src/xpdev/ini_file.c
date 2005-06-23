@@ -38,6 +38,7 @@
 #include <stdlib.h>		/* strtol */
 #include <string.h>		/* strlen */
 #include <ctype.h>		/* isdigit */
+#include <math.h>		/* fmod */
 #if !defined(NO_SOCKET_SUPPORT)
 	#include "sockwrap.h"	/* inet_addr */
 #endif
@@ -420,18 +421,32 @@ char* iniSetBytes(str_list_t* list, const char* section, const char* key, ulong 
 	char	str[INI_MAX_VALUE_LEN];
 	double	bytes;
 
-	if(unit<1)
-		unit=1;
-	bytes=value*unit;
+	switch(unit) {
+		case 1024*1024*1024:
+			SAFEPRINTF(str,"%luG",value);
+			break;
+		case 1024*1024:
+			SAFEPRINTF(str,"%luM",value);
+			break;
+		case 1024:
+			SAFEPRINTF(str,"%luK",value);
+			break;
+		default:
+			if(unit<1)
+				unit=1;
+			bytes=value*unit;
 
-	if(bytes>=(1024*1024*1024))
-		SAFEPRINTF(str,"%gG",bytes/(1024*1024*1024));
-	else if(bytes>=(1024*1024))
-		SAFEPRINTF(str,"%gM",bytes/(1024*1024));
-	else if(bytes>=(100*1024) || ((ulong)bytes%(1024))==0)
-		SAFEPRINTF(str,"%gK",bytes/1024);
-	else
-		SAFEPRINTF(str,"%g",bytes);
+			if(fmod(bytes,1024*1024*1024*1024)==0)
+				SAFEPRINTF(str,"%gT",bytes/(1024*1024*1024*1024));
+			else if(fmod(bytes,1024*1024*1024)==0)
+				SAFEPRINTF(str,"%gG",bytes/(1024*1024*1024));
+			else if(fmod(bytes,1024*1024)==0)
+				SAFEPRINTF(str,"%gM",bytes/(1024*1024));
+			else if(fmod(bytes,1024)==0)
+				SAFEPRINTF(str,"%gK",bytes/1024);
+			else
+				SAFEPRINTF(str,"%g",bytes);
+	}
 
 	return iniSetString(list, section, key, str, style);
 }
