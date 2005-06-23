@@ -445,7 +445,7 @@ char* iniSetBytes(str_list_t* list, const char* section, const char* key, ulong 
 			else if(fmod(bytes,1024)==0)
 				SAFEPRINTF(str,"%gK",bytes/1024);
 			else
-				SAFEPRINTF(str,"%g",bytes);
+				SAFEPRINTF(str,"%lu",(ulong)bytes);
 	}
 
 	return iniSetString(list, section, key, str, style);
