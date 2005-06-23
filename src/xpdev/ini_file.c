@@ -1222,11 +1222,23 @@ static time_t parseDateTime(const char* value)
 		&& (tm.tm_mon=getMonth(month))!=0)
 		return(fixedDateTime(&tm,tstr,pm));
 
+	/* Wday, DD Mon YYYY [time] (IETF standard date syntax) */
+	if(sscanf(value,"%*s %u %s %u %s"
+		,&tm.tm_mday,month,&tm.tm_year,tstr)>=2
+		&& (tm.tm_mon=getMonth(month))!=0)
+		return(fixedDateTime(&tm,tstr,0));
+
 	/* Mon DD[,] [CC]YY [time] [p] */
 	if(sscanf(value,"%s %u%*c %u %s %c"
 		,month,&tm.tm_mday,&tm.tm_year,tstr,&pm)>=2
 		&& (tm.tm_mon=getMonth(month))!=0)
 		return(fixedDateTime(&tm,tstr,pm));
+
+	/* Wday Mon DD [time] YYYY (ctime format) */
+	if(sscanf(value,"%*s %s %u %s %u"
+		,month,&tm.tm_mday,tstr,&tm.tm_year)>=2
+		&& (tm.tm_mon=getMonth(month))!=0)
+		return(fixedDateTime(&tm,tstr,0));
 	
 	return(strtoul(value,NULL,0));
 }
