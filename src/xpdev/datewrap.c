@@ -65,9 +65,9 @@ void gettime(struct time* nyt)
 	SYSTEMTIME systime;
 
 	GetLocalTime(&systime);
-	nyt->ti_hour=systime.wHour;
-	nyt->ti_min=systime.wMinute;
-	nyt->ti_sec=systime.wSecond;
+	nyt->ti_hour=(unsigned char)systime.wHour;
+	nyt->ti_min=(unsigned char)systime.wMinute;
+	nyt->ti_sec=(unsigned char)systime.wSecond;
 	nyt->ti_hund=systime.wMilliseconds/10;
 #else	/* !Win32 (e.g. Unix) */
 	struct tm *dte;
