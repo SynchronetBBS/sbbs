@@ -133,7 +133,7 @@ char* user_dat_columns[] = {
 };
 
 char* stats_dat_columns[] = {
-	 "TimeStamp"
+	 "Date"
 	,"Logons"
 	,"Timeon"
 	,"FilesUploaded"

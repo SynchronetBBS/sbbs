@@ -37,6 +37,7 @@
 #include "sbbs4defs.h"
 #include "ini_file.h"
 #include "dat_file.h"
+#include "datewrap.h"
 
 scfg_t scfg;
 BOOL overwrite_existing_files=TRUE;
@@ -54,6 +55,52 @@ BOOL overwrite(const char* path)
 
 	return(TRUE);
 }
+
+/****************************************************************************/
+/* Converts a date string in format MM/DD/YY into unix time format			*/
+/****************************************************************************/
+long DLLCALL dstrtodate(scfg_t* cfg, char *instr)
+{
+	char*	p;
+	char*	day;
+	char	str[16];
+	struct tm tm;
+
+	if(!instr[0] || !strncmp(instr,"00/00/00",8))
+		return(0);
+
+	if(isdigit(instr[0]) && isdigit(instr[1])
+		&& isdigit(instr[3]) && isdigit(instr[4])
+		&& isdigit(instr[6]) && isdigit(instr[7]))
+		p=instr;	/* correctly formatted */
+	else {
+		p=instr;	/* incorrectly formatted */
+		while(*p && isdigit(*p)) p++;
+		if(*p==0)
+			return(0);
+		p++;
+		day=p;
+		while(*p && isdigit(*p)) p++;
+		if(*p==0)
+			return(0);
+		p++;
+		sprintf(str,"%02u/%02u/%02u"
+			,atoi(instr)%100,atoi(day)%100,atoi(p)%100);
+		p=str;
+	}
+
+	memset(&tm,0,sizeof(tm));
+	tm.tm_year=((p[6]&0xf)*10)+(p[7]&0xf);
+	if(cfg->sys_misc&SM_EURODATE) {
+		tm.tm_mon=((p[3]&0xf)*10)+(p[4]&0xf);
+		tm.tm_mday=((p[0]&0xf)*10)+(p[1]&0xf); }
+	else {
+		tm.tm_mon=((p[0]&0xf)*10)+(p[1]&0xf);
+		tm.tm_mday=((p[3]&0xf)*10)+(p[4]&0xf); }
+
+	return(((tm.tm_year+1900)*10000)+(tm.tm_mon*100)+tm.tm_mday);
+}
+
 
 BOOL upgrade_users(void)
 {
@@ -101,14 +148,14 @@ BOOL upgrade_users(void)
 
 		/******************************************/
 		/* very personal info */
-		len+=sprintf(rec+len,"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%c\t%s\t"
+		len+=sprintf(rec+len,"%s\t%s\t%s\t%s\t%s\t%s\t%lu\t%c\t%s\t"
 			,user.netmail
 			,user.address
 			,user.location
 			,user.zipcode
 			,user.pass
 			,user.phone
-			,user.birth
+			,dstrtodate(&scfg,user.birth)
 			,user.sex
 			,user.modem
 			);
@@ -117,10 +164,10 @@ BOOL upgrade_users(void)
 
 		/******************************************/
 		/* date/times */
-		len+=sprintf(rec+len,"%lx\t%lx\t%lx\t%lx\t%lx\t%lx\t"
+		len+=sprintf(rec+len,"%lx\t%lx\t%lu\t%lx\t%lx\t%lx\t"
 			,user.laston
 			,user.firston
-			,user.expire
+			,time_to_date(user.expire)
 			,user.pwmod
 			,user.ns_time
 			,user.logontime
@@ -261,19 +308,19 @@ BOOL upgrade_stats(void)
 		return(FALSE);
 	}
 
-	iniSetHexInt(&list,  ROOT_SECTION	,"TimeStamp"	,t				,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"Logons"		,stats.logons	,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"LogonsToday"	,stats.ltoday	,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"Timeon"		,stats.timeon	,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"TimeonToday"	,stats.ttoday	,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"Uploads"		,stats.uls		,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"UploadBytes"	,stats.ulb		,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"Downloads"	,stats.dls		,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"DownloadBytes",stats.dlb		,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"PostsToday"	,stats.ptoday	,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"EmailToday"	,stats.etoday	,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"FeedbackToday",stats.ftoday	,NULL);
-	iniSetInteger(&list, ROOT_SECTION	,"NewUsersToday",stats.nusers	,NULL);
+	iniSetDateTime(&list,	ROOT_SECTION	,"TimeStamp"	,TRUE, t		,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"Logons"		,stats.logons	,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"LogonsToday"	,stats.ltoday	,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"Timeon"		,stats.timeon	,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"TimeonToday"	,stats.ttoday	,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"Uploads"		,stats.uls		,NULL);
+	iniSetLongInt(&list,	ROOT_SECTION	,"UploadBytes"	,stats.ulb		,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"Downloads"	,stats.dls		,NULL);
+	iniSetLongInt(&list,	ROOT_SECTION	,"DownloadBytes",stats.dlb		,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"PostsToday"	,stats.ptoday	,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"EmailToday"	,stats.etoday	,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"FeedbackToday",stats.ftoday	,NULL);
+	iniSetInteger(&list,	ROOT_SECTION	,"NewUsersToday",stats.nusers	,NULL);
 
 	success=iniWriteFile(out, list);
 
@@ -311,8 +358,8 @@ BOOL upgrade_stats(void)
 	while(!feof(in)) {
 		if(fread(&csts,1,sizeof(csts),in)!=sizeof(csts))
 			break;
-		fprintf(out,"%lx\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t\n"
-			,csts.time
+		fprintf(out,"%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t\n"
+			,time_to_date(csts.time)
 			,csts.ltoday
 			,csts.ttoday
 			,csts.uls
