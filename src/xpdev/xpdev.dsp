@@ -86,6 +86,10 @@ SOURCE=.\dat_file.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\datewrap.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\dirwrap.c
 # End Source File
 # Begin Source File
