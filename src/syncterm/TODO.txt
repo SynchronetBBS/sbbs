@@ -20,3 +20,6 @@ Themeing support... would require exposing extra bits of uifc (Specifically,
 Allow some way for SysOps (With the System Password) to auto-login... obviously,
   RLogin can't do this magically... need somewhere to enter it, ALT-L should
   send it etc.
+Adding new entry should be streamlined... just prompt for name and addy, fill
+  from (vapourware) defaults, then dump to the edit menu.
+Edit menu should use menus, not advancing lists.
