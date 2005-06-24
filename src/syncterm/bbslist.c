@@ -360,11 +360,16 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						"Commands:\n\n"
 						"~ CTRL-E ~ to edit the selected entry\n"
 						" ~ ENTER ~ to dial the selected entry";
-		if(list[opt]!=NULL && list[opt]->name[0]) {
-			sprintf(title, "%s - %s (%d calls / Last: %s", syncterm_version, (char *)(list[opt]), list[opt]->calls, list[opt]->connected?ctime(&list[opt]->connected):"Never\n");
-			p=strrchr(title, '\n');
-			if(p!=NULL)
-				*p=')';
+		if(opt != oldopt) {
+			if(list[opt]!=NULL && list[opt]->name[0]) {
+				sprintf(title, "%s - %s (%d calls / Last: %s", syncterm_version, (char *)(list[opt]), list[opt]->calls, list[opt]->connected?ctime(&list[opt]->connected):"Never\n");
+				p=strrchr(title, '\n');
+				if(p!=NULL)
+					*p=')';
+			}
+			else
+				strcpy(title,syncterm_version);
+			settitle(title);
 		}
 		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 			|WIN_ORG|WIN_ACT|WIN_INSACT|WIN_DELACT
