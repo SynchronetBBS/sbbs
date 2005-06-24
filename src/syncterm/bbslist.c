@@ -332,13 +332,14 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 {
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
-	int		opt=0,bar=0;
+	int		opt=0,bar=0,oldopt=-1;
 	static struct bbslist retlist;
 	int		val;
 	int		listcount=0;
 	char	str[6];
 	char	*YesNo[3]={"Yes","No",""};
 	char	title[1024];
+	char	currtitle[1024];
 	char	*p;
 
 	if(init_uifc(TRUE, TRUE))
@@ -365,9 +366,6 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 			if(p!=NULL)
 				*p=')';
 		}
-		else
-			strcpy(title,syncterm_version);
-		settitle(title);
 		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 			|WIN_ORG|WIN_MID|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_INSACT|WIN_DYN
 			,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
@@ -387,6 +385,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 							if(list[j]->id==i)
 								opt=j;
 						}
+						oldopt=-1;
 					}
 					break;
 #endif
@@ -490,6 +489,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 							if(list[j]->id==listcount-1)
 								opt=j;
 						}
+						oldopt=-1;
 					}
 					break;
 				case MSK_DEL:
@@ -518,6 +518,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						list[i]->id=i;
 					}
 					listcount--;
+					oldopt=-1;
 					break;
 				case MSK_EDIT:
 					i=list[opt]->id;
@@ -527,6 +528,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 							if(list[j]->id==i)
 								opt=j;
 						}
+						oldopt=-1;
 					}
 					break;
 			}
@@ -540,6 +542,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						if(list[j]->id==i)
 							opt=j;
 					}
+					oldopt=-1;
 				}
 			}
 			else {
