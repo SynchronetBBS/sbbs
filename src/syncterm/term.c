@@ -723,7 +723,7 @@ BOOL doterm(struct bbslist *bbs)
 					continue;
 			}
 		}
-		hold_update=FALSE;
+		hold_update=oldmc;
 		gotoxy(wherex(), wherey());
 
 		/* Get local input */
