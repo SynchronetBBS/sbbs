@@ -904,6 +904,7 @@ void ctputs(char *buf)
 					cputs(outp);
 					outp=p+1;
 					scrollup();
+					gotoxy(cx,cy);
 				}
 				else
 					cy++;
@@ -930,6 +931,7 @@ void ctputs(char *buf)
 						cputs(outp);
 						outp=p+1;
 						scrollup();
+						gotoxy(cx,cy);
 					}
 					else
 						cy++;
@@ -946,6 +948,7 @@ void ctputs(char *buf)
 					outp=p;
 					scrollup();
 					cx=1;
+					gotoxy(cx,cy);
 				}
 				else {
 					if(cx==cterm.width) {
