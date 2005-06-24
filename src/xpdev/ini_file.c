@@ -1155,6 +1155,12 @@ BOOL iniGetBool(str_list_t list, const char* section, const char* key, BOOL defl
 	return(parseBool(value));
 }
 
+static BOOL validDate(struct tm* tm)
+{
+	return(tm->tm_mon && tm->tm_mon<=12 
+		&& tm->tm_mday && tm->tm_mday<=31);
+}
+
 static time_t fixedDateTime(struct tm* tm, const char* tstr, char pm)
 {
 	if(tm->tm_year<70)
@@ -1184,7 +1190,7 @@ static int getMonth(const char* month)
 		if(strnicmp(month,mon[i],3)==0)
 			return(i+1);
 
-	return(0);
+	return(atoi(month));
 }
 
 static time_t parseDateTime(const char* value)
@@ -1206,38 +1212,51 @@ static time_t parseDateTime(const char* value)
 		tm.tm_year=curr_tm.tm_year;
 	}
 
-	/* DD.MM.[CC]YY [time] [p] */
+	/* DD.MM.[CC]YY [time] [p] <-- Euro/Canadian numeric date format */
 	if(sscanf(value,"%u.%u.%u %s %c"
-		,&tm.tm_mday,&tm.tm_mon,&tm.tm_year,tstr,&pm)>=2)
+		,&tm.tm_mday,&tm.tm_mon,&tm.tm_year,tstr,&pm)>=2
+		&& validDate(&tm))
 		return(fixedDateTime(&tm,tstr,pm));
 
-	/* MM/DD/[CC]YY [time] [p] */
+	/* MM/DD/[CC]YY [time] [p] <-- American numeric date format */
 	if(sscanf(value,"%u%*c %u%*c %u %s %c"
-		,&tm.tm_mon,&tm.tm_mday,&tm.tm_year,tstr,&pm)>=2)
+		,&tm.tm_mon,&tm.tm_mday,&tm.tm_year,tstr,&pm)>=2
+		&& validDate(&tm))
 		return(fixedDateTime(&tm,tstr,pm));
 
-	/* DD[-]Mon [CC]YY [time] [p] */
+	/* DD[-]Mon [CC]YY [time] [p] <-- Perversion of RFC822 date format */
 	if(sscanf(value,"%u%*c %s %u %s %c"
 		,&tm.tm_mday,month,&tm.tm_year,tstr,&pm)>=2
-		&& (tm.tm_mon=getMonth(month))!=0)
+		&& (tm.tm_mon=getMonth(month))!=0
+		&& validDate(&tm))
 		return(fixedDateTime(&tm,tstr,pm));
 
-	/* Wday, DD Mon YYYY [time] (IETF standard date syntax) */
+	/* Wday, DD Mon YYYY [time] <-- IETF standard (RFC2822) date format */
 	if(sscanf(value,"%*s %u %s %u %s"
 		,&tm.tm_mday,month,&tm.tm_year,tstr)>=2
-		&& (tm.tm_mon=getMonth(month))!=0)
+		&& (tm.tm_mon=getMonth(month))!=0
+		&& validDate(&tm))
 		return(fixedDateTime(&tm,tstr,0));
 
-	/* Mon DD[,] [CC]YY [time] [p] */
+	/* Mon DD[,] [CC]YY [time] [p] <-- Preferred date format */
 	if(sscanf(value,"%s %u%*c %u %s %c"
 		,month,&tm.tm_mday,&tm.tm_year,tstr,&pm)>=2
-		&& (tm.tm_mon=getMonth(month))!=0)
+		&& (tm.tm_mon=getMonth(month))!=0
+		&& validDate(&tm))
 		return(fixedDateTime(&tm,tstr,pm));
 
-	/* Wday Mon DD [time] YYYY (ctime format) */
+	/* Wday Mon DD YYYY [time] <-- JavaScript (SpiderMonkey) Date.toString() format */
+	if(sscanf(value,"%*s %s %u %u %s"
+		,month,&tm.tm_mday,&tm.tm_year,tstr)>=2
+		&& (tm.tm_mon=getMonth(month))!=0
+		&& validDate(&tm))
+		return(fixedDateTime(&tm,tstr,0));
+
+	/* Wday Mon DD [time] YYYY <-- ctime() format */
 	if(sscanf(value,"%*s %s %u %s %u"
 		,month,&tm.tm_mday,tstr,&tm.tm_year)>=2
-		&& (tm.tm_mon=getMonth(month))!=0)
+		&& (tm.tm_mon=getMonth(month))!=0
+		&& validDate(&tm))
 		return(fixedDateTime(&tm,tstr,0));
 	
 	return(strtoul(value,NULL,0));
