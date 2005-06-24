@@ -1581,6 +1581,11 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<tt>a+</tt> open for reading and appending<br>"
 		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br>"
 		"<tt>e&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access <i>(introduced in v3.12)</i><br>"
+		"<br><b>Note:</b> When using the <tt>iniSet</tt> methods to modify a <tt>.ini</tt> file, "
+		"the file must be opened for both reading and writing.<br>"
+		"<br><b>Note:</b> To open an existing or create a new file for both reading and writing, "
+		"use the <i>file_exists</i> function like so:<br>"
+		"<tt>file.open(file_exists(file.name) ? 'r+':'w+');</tt>"
 		)
 	,310
 	},		
