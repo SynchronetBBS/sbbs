@@ -81,8 +81,8 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type, char* ho
 			strcpy(list[*i]->name,bbsname);
 			iniReadString(listfile,bbsname,"Address","",list[*i]->addr);
 			list[*i]->port=iniReadShortInt(listfile,bbsname,"Port",513);
-			list[*i]->added=iniReadInteger(listfile,bbsname,"Added",0);
-			list[*i]->connected=iniReadInteger(listfile,bbsname,"LastConnected",0);
+			list[*i]->added=iniReadDateTime(listfile,bbsname,"Added",0);
+			list[*i]->connected=iniReadDateTime(listfile,bbsname,"LastConnected",0);
 			list[*i]->calls=iniReadInteger(listfile,bbsname,"TotalCalls",0);
 			iniReadString(listfile,bbsname,"UserName","",list[*i]->user);
 			iniReadString(listfile,bbsname,"Password","",list[*i]->password);
@@ -287,8 +287,8 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	 */
 	iniSetString(&inifile,bbs->name,"Address",bbs->addr,NULL);
 	iniSetShortInt(&inifile,bbs->name,"Port",bbs->port,NULL);
-	iniSetInteger(&inifile,bbs->name,"Added",time(NULL),NULL);
-	iniSetInteger(&inifile,bbs->name,"LastConnected",bbs->connected,NULL);
+	iniSetDateTime(&inifile,bbs->name,"Added",/* include time */TRUE,time(NULL),NULL);
+	iniSetDateTime(&inifile,bbs->name,"LastConnected",/* include time */TRUE,bbs->connected,NULL);
 	iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
 	iniSetString(&inifile,bbs->name,"UserName",bbs->user,NULL);
 	iniSetString(&inifile,bbs->name,"Password",bbs->password,NULL);

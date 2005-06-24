@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 				if((listfile=fopen(listpath,"r"))!=NULL) {
 					inifile=iniReadFile(listfile);
 					fclose(listfile);
-					iniSetInteger(&inifile,bbs->name,"LastConnected",bbs->connected,NULL);
+					iniSetDateTime(&inifile,bbs->name,"LastConnected",TRUE,bbs->connected,NULL);
 					iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
 					if((listfile=fopen(listpath,"w"))!=NULL) {
 						iniWriteFile(listfile,inifile);
