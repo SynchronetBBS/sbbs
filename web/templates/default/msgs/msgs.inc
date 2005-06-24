@@ -19,7 +19,7 @@
     <th class="msglist">Subject</th>
     <th class="msglist">From</th>
     <th class="msglist">To</th>
-    <th class="msglist">Date</th>
+    <th class="msglist">@@sort_date@@</th>
 </tr>
 
     <!-- %%JS:template.color=0%% -->
