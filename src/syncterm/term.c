@@ -617,6 +617,8 @@ BOOL doterm(struct bbslist *bbs)
 	long double lastchar=0;
 	long double thischar=0;
 	int	speed;
+	int	oldmc;
+	int	updated=FALSE;
 
 	speed = bbs->bpsrate;
 	log_level = bbs->loglevel;
@@ -634,7 +636,9 @@ BOOL doterm(struct bbslist *bbs)
 	zrbuf[0]=0;
 
 	/* Main input loop */
+	oldmc=hold_update;
 	for(;;) {
+		hold_update=TRUE;
 		if(!speed && bbs->bpsrate)
 			speed = bbs->bpsrate;
 		if(speed)
@@ -682,6 +686,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_write(zrqbuf, j, prn, sizeof(prn), &speed);
 							if(prn[0])
 								conn_send(prn,strlen(prn),0);
+							updated=TRUE;
 							zrqbuf[0]=0;
 						}
 						continue;
@@ -709,6 +714,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_write(zrbuf, j, prn, sizeof(prn), &speed);
 							if(prn[0])
 								conn_send(prn,strlen(prn),0);
+							updated=TRUE;
 							zrbuf[0]=0;
 						}
 						continue;
@@ -717,9 +723,14 @@ BOOL doterm(struct bbslist *bbs)
 					cterm_write(ch, 1, prn, sizeof(prn), &speed);
 					if(prn[0])
 						conn_send(prn, strlen(prn), 0);
+					updated=TRUE;
 					continue;
 			}
 		}
+		hold_update=oldmc;
+		if(updated)
+			gotoxy(wherex(), wherey());
+		updated=FALSE;
 
 		/* Get local input */
 		while(kbhit()) {
