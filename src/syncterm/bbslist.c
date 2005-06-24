@@ -367,7 +367,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 				*p=')';
 		}
 		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-			|WIN_ORG|WIN_MID|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_INSACT|WIN_DYN
+			|WIN_ORG|WIN_ACT|WIN_MID|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_INSACT|WIN_DYN
 			,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 		if(val==listcount)
 			val=listcount|MSK_INS;
