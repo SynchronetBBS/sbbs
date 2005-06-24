@@ -487,8 +487,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				,iniReadFloat(p->fp,section,key,*JSVAL_TO_DOUBLE(dflt)),rval);
 			break;
 		case JSVAL_OBJECT:
-			dflt_obj = JSVAL_TO_OBJECT(dflt);
-			if(js_DateIsValid(cx, dflt_obj)) {
+			if((dflt_obj = JSVAL_TO_OBJECT(dflt))!=NULL && js_DateIsValid(cx, dflt_obj)) {
 				date_obj = js_NewDateObjectMsec(cx
 					,(jsdouble)iniReadDateTime(p->fp,section,key
 						,(time_t)(js_DateGetMsecSinceEpoch(cx,dflt_obj)/1000.0))
@@ -530,6 +529,7 @@ js_iniSetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	jsval	value=argv[2];
 	private_t*	p;
 	str_list_t	list;
+	JSObject*	value_obj;
 
 	*rval = JSVAL_FALSE;
 
@@ -563,9 +563,16 @@ js_iniSetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				if(JSVAL_IS_NUMBER(value)) {
 					JS_ValueToInt32(cx,value,&i);
 					result = iniSetInteger(&list,section,key,i,NULL);
-				} else
-					result = iniSetString(&list,section,key
-								,JS_GetStringBytes(JS_ValueToString(cx,value)),NULL);
+				} else {
+					if(JSVAL_IS_OBJECT(value) 
+						&& (value_obj = JSVAL_TO_OBJECT(value))!=NULL
+						&& js_DateIsValid(cx, value_obj)) {
+						result = iniSetDateTime(&list,section,key,/* include_time */TRUE
+									,(time_t)(js_DateGetMsecSinceEpoch(cx,value_obj)/1000.0),NULL);
+					} else
+						result = iniSetString(&list,section,key
+									,JS_GetStringBytes(JS_ValueToString(cx,value)),NULL);
+				}
 				break;
 		}
 	}
