@@ -91,12 +91,14 @@ static int *last_menu_cur=NULL;
 static int *last_menu_bar=NULL;
 static int save_menu_cur=-1;
 static int save_menu_bar=-1;
+static int save_menu_opts=-1;
 
 static void reset_dynamic(void) {
 	last_menu_cur=NULL;
 	last_menu_bar=NULL;
 	save_menu_cur=-1;
 	save_menu_bar=-1;
+	save_menu_opts=-1;
 }
 
 /****************************************************************************/
@@ -585,7 +587,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			&& last_menu_cur==cur
 			&& last_menu_bar==bar
 			&& save_menu_cur==*cur
-			&& save_menu_bar==*bar)
+			&& save_menu_bar==*bar
+			&& save_menu_opts==opts)
 		is_redraw=1;
 	if(mode&WIN_DYN && mode&WIN_REDRAW)
 		is_redraw=1;
@@ -1514,6 +1517,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(mode&WIN_DYN) {
 			save_menu_cur=*cur;
 			save_menu_bar=*bar;
+			save_menu_opts=opts;
 			return(-2-i);
 		}
 	}
@@ -2313,7 +2317,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			&& last_menu_cur==curp
 			&& last_menu_bar==barp
 			&& save_menu_cur==*curp
-			&& save_menu_bar==*barp)
+			&& save_menu_bar==*barp
+			&& save_menu+opts==opts)
 		is_redraw=1;
 	if(mode&WIN_DYN && mode&WIN_REDRAW)
 		is_redraw=1;
