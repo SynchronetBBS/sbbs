@@ -21,4 +21,4 @@ Some sort of scrollback indicator
 Allow some way for SysOps (With the System Password) to auto-login... obviously,
   RLogin can't do this magically... need somewhere to enter it, ALT-L should
   send it etc.
-
+Use CTRL-E to edit the current entry rather than toggle edit and dial modes.
