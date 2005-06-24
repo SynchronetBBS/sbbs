@@ -336,7 +336,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 	static struct bbslist retlist;
 	int		val;
 	int		listcount=0;
-	char	str[6];
+	char	str[128];
 	char	*YesNo[3]={"Yes","No",""};
 	char	title[1024];
 	char	currtitle[1024];
@@ -367,7 +367,8 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 				*p=')';
 		}
 		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-			|WIN_ORG|WIN_ACT|WIN_MID|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_INSACT|WIN_DYN
+			|WIN_ORG|WIN_ACT|WIN_INSACT|WIN_DELACT
+			|WIN_MID|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
 			,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 		if(val==listcount)
 			val=listcount|MSK_INS;
@@ -467,12 +468,12 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						if(list[listcount-1]->conn_type==CONN_TYPE_RLOGIN) {
 							uifc.helpbuf=	"`Reversed`\n\n"
 											"Select this option if you wish to send the username and password in the wrong\n"
-											"order (usefull for connecting to v3.11 and lower systems with the default"
+											"order (useful for connecting to v3.11 and lower systems with the default"
 											"config)";
 							list[listcount-1]->reversed=1;
+							uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->reversed,NULL,"Reversed",YesNo);
+							list[listcount-1]->reversed=!list[listcount-1]->reversed;
 						}
-						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->reversed,NULL,"Reversed",YesNo);
-						list[listcount-1]->reversed=!list[listcount-1]->reversed;
 						uifc.helpbuf=	"`Screen Mode`\n\n"
 										"Select the screen size for this connection\n";
 						list[listcount-1]->screen_mode=SCREEN_MODE_CURRENT;
@@ -509,6 +510,10 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						uifc.msg("It's gone, calm down man!");
 						break;
 					}
+					sprintf(str,"Delete %s?",list[opt]->name);
+					i=1;
+					if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,str,YesNo)!=0)
+						break;
 					del_bbs(listpath,list[opt]);
 					free(list[opt]);
 					for(i=opt;list[i]->name[0];i++) {
