@@ -32,12 +32,17 @@ void viewscroll(void)
 	drawwin();
 	top=cterm.backpos;
 	gotoxy(1,1);
+	textattr(uifc.hclr|(uifc.bclr<<4)|BLINK);
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
 		if(top>cterm.backpos)
 			top=cterm.backpos;
 		puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,scrollback+(term.width*2*top));
+		cputs("Scrollback");
+		gotoxy(71,1);
+		cputs("Scrollback");
+		gotoxy(1,1);
 		key=getch();
 		switch(key) {
 			case 0xff:
