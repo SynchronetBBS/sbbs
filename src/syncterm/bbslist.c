@@ -356,14 +356,9 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 
 	for(;;) {
 		uifc.helpbuf=	"`SyncTERM Dialing Directory`\n\n"
-						"Commands:\n"
-#if 0	/* Don't to the two list "mode" anymore */
-						"~ CTRL-E ~ Switch listing to Edit mode\n"
-						"~ CTRL-D ~ Switch listing to Dial mode\n"
-#else
-						"~ CTRL-E ~ Edit the cirrent entry\n"
-#endif
-						"Select a bbs to edit/dial an entry.";
+						"Commands:\n\n"
+						"~ CTRL-E ~ to edit the selected entry\n"
+						" ~ ENTER ~ to dial the selected entry";
 		if(list[opt]!=NULL && list[opt]->name[0]) {
 			sprintf(title, "%s - %s (%d calls / Last: %s", syncterm_version, (char *)(list[opt]), list[opt]->calls, list[opt]->connected?ctime(&list[opt]->connected):"Never\n");
 			p=strrchr(title, '\n');
