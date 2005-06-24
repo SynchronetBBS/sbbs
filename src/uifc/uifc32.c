@@ -2317,8 +2317,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			&& last_menu_cur==curp
 			&& last_menu_bar==barp
 			&& save_menu_cur==*curp
-			&& save_menu_bar==*barp
-			&& save_menu+opts==opts)
+			&& save_menu_bar==*barp)
 		is_redraw=1;
 	if(mode&WIN_DYN && mode&WIN_REDRAW)
 		is_redraw=1;
