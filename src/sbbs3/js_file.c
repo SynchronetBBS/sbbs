@@ -44,6 +44,8 @@
 
 #ifdef JAVASCRIPT
 
+#include "jsdate.h"	/* Yes, I know this is a private header file */
+
 typedef struct
 {
 	FILE*	fp;
@@ -455,6 +457,8 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	jsval	dflt=argv[2];
 	private_t*	p;
 	JSObject*	array;
+	JSObject*	dflt_obj;
+	JSObject*	date_obj;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -483,6 +487,16 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				,iniReadFloat(p->fp,section,key,*JSVAL_TO_DOUBLE(dflt)),rval);
 			break;
 		case JSVAL_OBJECT:
+			dflt_obj = JSVAL_TO_OBJECT(dflt);
+			if(js_DateIsValid(cx, dflt_obj)) {
+				date_obj = js_NewDateObjectMsec(cx
+					,(jsdouble)iniReadDateTime(p->fp,section,key
+						,(time_t)(js_DateGetMsecSinceEpoch(cx,dflt_obj)/1000.0))
+					*1000.0);
+				if(date_obj!=NULL)
+					*rval = OBJECT_TO_JSVAL(date_obj);
+				break;
+			}
 		    array = JS_NewArrayObject(cx, 0, NULL);
 			list=iniReadStringList(p->fp,section,key,",",JS_GetStringBytes(JS_ValueToString(cx,dflt)));
 			for(i=0;list && list[i];i++) {
