@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 		if(!conn_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->conn_type,bbs->bpsrate)) {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
-
+			init_uifc(TRUE, TRUE);
 			bbs->connected=time(NULL);
 			bbs->calls++;
 			if(bbs->id != -1) {
