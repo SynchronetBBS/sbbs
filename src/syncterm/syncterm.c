@@ -309,7 +309,6 @@ int main(int argc, char **argv)
 		}
 		else
 			bbs=NULL;
-		init_uifc(TRUE, TRUE);
 	}
 	uifcbail();
 #ifdef _WINSOCKAPI_

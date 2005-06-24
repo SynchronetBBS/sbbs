@@ -43,17 +43,19 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 	}
 	else {
 		uifc.timedisplay=NULL;
-		if(!bottom) {
-			uifc.bottomline=NULL;
-			uifc_initialized &= ~WITH_BOT;
-		}
-		else {
-			uifc.bottomline=bottomfunc;
-			uifc_initialized |= WITH_BOT;
-			gotoxy(1, txtinfo.screenheight);
-			textattr(uifc.bclr|(uifc.cclr<<4));
-			clreol();
-		}
+		uifc_initialized &= ~WITH_SCRN;
+	}
+
+	if(bottom) {
+		uifc.bottomline=bottomfunc;
+		uifc_initialized |= WITH_BOT;
+		gotoxy(1, txtinfo.screenheight);
+		textattr(uifc.bclr|(uifc.cclr<<4));
+		clreol();
+	}
+	else {
+		uifc.bottomline=NULL;
+		uifc_initialized &= ~WITH_BOT;
 	}
 
 	return(0);
