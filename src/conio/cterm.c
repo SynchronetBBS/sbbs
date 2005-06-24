@@ -938,11 +938,14 @@ void ctputs(char *buf)
 			default:
 				if(cy==cterm.height
 						&& cx==cterm.width) {
-						*p=0;
-						cputs(outp);
-						outp=p+1;
-						scrollup();
-						cx=1;
+					char ch;
+					ch=*p;
+					*p=0;
+					cputs(outp);
+					*p=ch;
+					outp=p;
+					scrollup();
+					cx=1;
 				}
 				else {
 					if(cx==cterm.width) {
