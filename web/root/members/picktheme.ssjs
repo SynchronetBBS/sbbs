@@ -11,11 +11,12 @@ var sq="'";
 var dq='"';
 var pl='+';
 themefile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
-themefile.open("w",false);
-ctheme=http_request.query.theme[0];
-ctheme=ctheme.replace(/"/g,dq+pl+sq+dq+sq+pl+dq);   /* "+'"'+" */
-themefile.iniSetValue(null, 'CurrTheme', ctheme);
-themefile.close();
+if(themefile.open("w",false)) {
+  ctheme=http_request.query.theme[0];
+  ctheme=ctheme.replace(/"/g,dq+pl+sq+dq+sq+pl+dq);   /* "+'"'+" */
+  themefile.iniSetValue(null, 'CurrTheme', ctheme);
+  themefile.close();
+}
 
 load('../web/lib/template.ssjs');
 template.theme=Themes[CurrTheme];
