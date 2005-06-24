@@ -617,8 +617,6 @@ BOOL doterm(struct bbslist *bbs)
 	long double lastchar=0;
 	long double thischar=0;
 	int	speed;
-	int	oldmc;
-	BOOL	updated=FALSE;
 
 	speed = bbs->bpsrate;
 	log_level = bbs->loglevel;
@@ -634,12 +632,9 @@ BOOL doterm(struct bbslist *bbs)
 	ch[1]=0;
 	zrqbuf[0]=0;
 	zrbuf[0]=0;
-	oldmc=hold_update;
 
 	/* Main input loop */
 	for(;;) {
-		updated=FALSE;
-		hold_update=TRUE;
 		if(!speed && bbs->bpsrate)
 			speed = bbs->bpsrate;
 		if(speed)
@@ -685,7 +680,6 @@ BOOL doterm(struct bbslist *bbs)
 						else {	/* Not a real zrqinit */
 							zrqbuf[j]=inch;
 							cterm_write(zrqbuf, j, prn, sizeof(prn), &speed);
-							updated=TRUE;
 							if(prn[0])
 								conn_send(prn,strlen(prn),0);
 							zrqbuf[0]=0;
@@ -713,7 +707,6 @@ BOOL doterm(struct bbslist *bbs)
 						else {	/* Not a real zrinit */
 							zrbuf[j]=inch;
 							cterm_write(zrbuf, j, prn, sizeof(prn), &speed);
-							updated=TRUE;
 							if(prn[0])
 								conn_send(prn,strlen(prn),0);
 							zrbuf[0]=0;
@@ -722,15 +715,11 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					ch[0]=inch;
 					cterm_write(ch, 1, prn, sizeof(prn), &speed);
-					updated=TRUE;
 					if(prn[0])
 						conn_send(prn, strlen(prn), 0);
 					continue;
 			}
 		}
-		hold_update=oldmc;
-		if(updated)
-			gotoxy(wherex(), wherey());
 
 		/* Get local input */
 		while(kbhit()) {
