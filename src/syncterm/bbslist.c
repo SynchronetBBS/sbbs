@@ -86,6 +86,7 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type, char* ho
 			list[*i]->calls=iniReadInteger(listfile,bbsname,"TotalCalls",0);
 			iniReadString(listfile,bbsname,"UserName","",list[*i]->user);
 			iniReadString(listfile,bbsname,"Password","",list[*i]->password);
+			iniReadString(listfile,bbsname,"SystemPassword","",list[*i]->syspass);
 			list[*i]->conn_type=iniReadEnum(listfile,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
 			dumb=iniReadBool(listfile,bbsname,"BeDumb",0);
 			if(dumb)
@@ -129,7 +130,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
 	}
-	opt[13][0]=0;
+	opt[14][0]=0;
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inifile=iniReadFile(listfile);
 		fclose(listfile);
@@ -142,14 +143,15 @@ int edit_list(struct bbslist *item,char *listpath)
 		sprintf(opt[2], "Port              %hu",item->port);
 		sprintf(opt[3], "Username          %s",item->user);
 		sprintf(opt[4], "Password          ********");
-		sprintf(opt[5], "Connection        %s",conn_types[item->conn_type]);
-		sprintf(opt[6], "Reversed          %s",item->reversed?"Yes":"No");
-		sprintf(opt[7], "Screen Mode       %s",screen_modes[item->screen_mode]);
-		sprintf(opt[8], "Hide Status Line  %s",item->nostatus?"Yes":"No");
-		sprintf(opt[9], "Download Path     %s",item->dldir);
-		sprintf(opt[10],"Upload Path       %s",item->uldir);
-		sprintf(opt[11],"Log Level         %s",log_levels[item->loglevel]);
-		sprintf(opt[12],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
+		sprintf(opt[5], "System Password   %s",item->syspass[0]?"********":"<none>");
+		sprintf(opt[6], "Connection        %s",conn_types[item->conn_type]);
+		sprintf(opt[7], "Reversed          %s",item->reversed?"Yes":"No");
+		sprintf(opt[8], "Screen Mode       %s",screen_modes[item->screen_mode]);
+		sprintf(opt[9], "Hide Status Line  %s",item->nostatus?"Yes":"No");
+		sprintf(opt[10], "Download Path     %s",item->dldir);
+		sprintf(opt[11],"Upload Path       %s",item->uldir);
+		sprintf(opt[12],"Log Level         %s",log_levels[item->loglevel]);
+		sprintf(opt[13],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
@@ -206,49 +208,57 @@ int edit_list(struct bbslist *item,char *listpath)
 				iniSetString(&inifile,item->name,"Password",item->password,NULL);
 				break;
 			case 5:
+				uifc.helpbuf=	"`System Password`\n\n"
+								"Enter your System password for auto-login."
+								"For non-Synchronet systems, or non-SysOp accounts,"
+								"this can be used for simple scripting.";
+				uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",item->syspass,MAX_SYSPASS_LEN,K_EDIT);
+				iniSetString(&inifile,item->name,"SystemPassword",item->syspass,NULL);
+				break;
+			case 6:
 				item->conn_type++;
 				if(item->conn_type==CONN_TYPE_TERMINATOR)
 					item->conn_type=CONN_TYPE_RLOGIN;
 				changed=1;
 				iniSetEnum(&inifile,item->name,"ConnectionType",conn_types,item->conn_type,NULL);
 				break;
-			case 6:
+			case 7:
 				item->reversed=!item->reversed;
 				changed=1;
 				iniSetBool(&inifile,item->name,"Reversed",item->reversed,NULL);
 				break;
-			case 7:
+			case 8:
 				item->screen_mode++;
 				if(item->screen_mode==SCREEN_MODE_TERMINATOR)
 					item->screen_mode=0;
 				changed=1;
 				iniSetEnum(&inifile,item->name,"ScreenMode",screen_modes,item->screen_mode,NULL);
 				break;
-			case 8:
+			case 9:
 				item->nostatus=!item->nostatus;
 				changed=1;
 				iniSetBool(&inifile,item->name,"NoStatus",item->nostatus,NULL);
 				break;
-			case 9:
+			case 10:
 				uifc.helpbuf=	"`Download Path`\n\n"
 								"Enter the path where downloads will be placed.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Download Path",item->dldir,MAX_PATH,K_EDIT);
 				iniSetString(&inifile,item->name,"DownloadPath",item->dldir,NULL);
 				break;
-			case 10:
+			case 11:
 				uifc.helpbuf=	"`Upload Path`\n\n"
 								"Enter the path where uploads will be browsed for.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Upload Path",item->uldir,MAX_PATH,K_EDIT);
 				iniSetString(&inifile,item->name,"UploadPath",item->uldir,NULL);
 				break;
-			case 11:
+			case 12:
 				item->loglevel++;
 				if(item->loglevel>LOG_DEBUG)
 					item->loglevel=0;
 				changed=1;
 				iniSetInteger(&inifile,item->name,"LogLevel",item->loglevel,NULL);
 				break;
-			case 12:
+			case 13:
 				item->bpsrate=get_next_rate(item->bpsrate);
 				changed=1;
 				iniSetInteger(&inifile,item->name,"BPSRate",item->bpsrate,NULL);
@@ -282,6 +292,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
 	iniSetString(&inifile,bbs->name,"UserName",bbs->user,NULL);
 	iniSetString(&inifile,bbs->name,"Password",bbs->password,NULL);
+	iniSetString(&inifile,bbs->name,"SystemPassword",bbs->syspass,NULL);
 	iniSetEnum(&inifile,bbs->name,"ConnectionType",conn_types,bbs->conn_type,NULL);
 	iniSetBool(&inifile,bbs->name,"Reversed",bbs->reversed,NULL);
 	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes,bbs->screen_mode,NULL);
@@ -454,6 +465,11 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						uifc.helpbuf=	"`Password`\n\n"
 										"Enter your password for auto-login.";
 						uifc.input(WIN_MID|WIN_SAV,0,0,"Password",list[listcount-1]->password,MAX_PASSWD_LEN,K_EDIT);
+						uifc.helpbuf=	"`System Password`\n\n"
+										"Enter your System password for auto-login."
+										"For non-Synchronet systems, or non-SysOp accounts,"
+										"this can be used for simple scripting.";
+						uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",list[listcount-1]->syspass,MAX_SYSPASS_LEN,K_EDIT);
 						if(list[listcount-1]->conn_type==CONN_TYPE_RLOGIN) {
 							uifc.helpbuf=	"`Reversed`\n\n"
 											"Select this option if you wish to send the username and password in the wrong\n"

@@ -169,6 +169,11 @@ int syncmenu(struct bbslist *bbs, int *speed)
 				SLEEP(10);
 				conn_send(bbs->password,strlen(bbs->password),0);
 				conn_send("\r",1,0);
+				if(bbs->syspass[0]) {
+					SLEEP(10);
+					conn_send(bbs->syspass,strlen(bbs->syspass),0);
+					conn_send("\r",1,0);
+				}
 				break;
 			case 5:		/* Output rate */
 				if(speed != NULL) {
