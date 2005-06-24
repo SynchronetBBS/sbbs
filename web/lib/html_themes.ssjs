@@ -9,10 +9,10 @@ var CurrTheme=DefaultTheme;
 
 /* Read in current users selected theme if it exists */
 if(file_exists(system.data_dir+'user/'+format("%04d.html_prefs",user.number))) {
-  themefile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
-  if(themefile.open("r",false)) {
-  CurrTheme=themefile.iniGetValue(null, 'CurrTheme');
-  themefile.close();
+  prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
+  if(prefsfile.open("r",false)) {
+  CurrTheme=prefsfile.iniGetValue(null, 'CurrTheme');
+  prefsfile.close();
   }
 }
     
