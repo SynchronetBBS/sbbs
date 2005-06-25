@@ -17,6 +17,13 @@ char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notic
 char *rate_names[]={"300bps", "600bps", "1200bps", "2400bps", "4800bps", "9600bps", "19.2Kbps", "38.4Kbps", "57.6Kbps", "76.8Kbps", "115.2Kbps", "Unlimited", NULL};
 int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200, 0};
 
+ini_style_t ini_style = {
+	/* key_len */ 15, 
+	/* key_prefix */ "\t", 
+	/* section_separator */ "\n", 
+	/* value_separarator */NULL, 
+	/* bit_separator */ NULL };
+
 int get_rate_num(int rate)
 {
 	int i;
@@ -176,7 +183,7 @@ int edit_list(struct bbslist *item,char *listpath)
 								"Enter the domain name of the system to connect to ie:\n"
 								"nix.synchro.net";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Address",item->addr,LIST_ADDR_MAX,K_EDIT);
-				iniSetString(&inifile,item->name,"Address",item->addr,NULL);
+				iniSetString(&inifile,item->name,"Address",item->addr,&ini_style);
 				break;
 			case 2:
 				i=item->port;
@@ -189,7 +196,7 @@ int edit_list(struct bbslist *item,char *listpath)
 				if(j<1 || j>65535)
 					j=513;
 				item->port=j;
-				iniSetShortInt(&inifile,item->name,"Port",item->port,NULL);
+				iniSetShortInt(&inifile,item->name,"Port",item->port,&ini_style);
 				if(i!=j)
 					uifc.changes=1;
 				else
@@ -199,13 +206,13 @@ int edit_list(struct bbslist *item,char *listpath)
 				uifc.helpbuf=	"`Username`\n\n"
 								"Enter the username to attempt auto-login to the remote with.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Username",item->user,MAX_USER_LEN,K_EDIT);
-				iniSetString(&inifile,item->name,"UserName",item->user,NULL);
+				iniSetString(&inifile,item->name,"UserName",item->user,&ini_style);
 				break;
 			case 4:
 				uifc.helpbuf=	"`Password`\n\n"
 								"Enter your password for auto-login.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Password",item->password,MAX_PASSWD_LEN,K_EDIT);
-				iniSetString(&inifile,item->name,"Password",item->password,NULL);
+				iniSetString(&inifile,item->name,"Password",item->password,&ini_style);
 				break;
 			case 5:
 				uifc.helpbuf=	"`System Password`\n\n"
@@ -213,55 +220,55 @@ int edit_list(struct bbslist *item,char *listpath)
 								"For non-Synchronet systems, or non-SysOp accounts,"
 								"this can be used for simple scripting.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",item->syspass,MAX_SYSPASS_LEN,K_EDIT);
-				iniSetString(&inifile,item->name,"SystemPassword",item->syspass,NULL);
+				iniSetString(&inifile,item->name,"SystemPassword",item->syspass,&ini_style);
 				break;
 			case 6:
 				item->conn_type++;
 				if(item->conn_type==CONN_TYPE_TERMINATOR)
 					item->conn_type=CONN_TYPE_RLOGIN;
 				changed=1;
-				iniSetEnum(&inifile,item->name,"ConnectionType",conn_types,item->conn_type,NULL);
+				iniSetEnum(&inifile,item->name,"ConnectionType",conn_types,item->conn_type,&ini_style);
 				break;
 			case 7:
 				item->reversed=!item->reversed;
 				changed=1;
-				iniSetBool(&inifile,item->name,"Reversed",item->reversed,NULL);
+				iniSetBool(&inifile,item->name,"Reversed",item->reversed,&ini_style);
 				break;
 			case 8:
 				item->screen_mode++;
 				if(item->screen_mode==SCREEN_MODE_TERMINATOR)
 					item->screen_mode=0;
 				changed=1;
-				iniSetEnum(&inifile,item->name,"ScreenMode",screen_modes,item->screen_mode,NULL);
+				iniSetEnum(&inifile,item->name,"ScreenMode",screen_modes,item->screen_mode,&ini_style);
 				break;
 			case 9:
 				item->nostatus=!item->nostatus;
 				changed=1;
-				iniSetBool(&inifile,item->name,"NoStatus",item->nostatus,NULL);
+				iniSetBool(&inifile,item->name,"NoStatus",item->nostatus,&ini_style);
 				break;
 			case 10:
 				uifc.helpbuf=	"`Download Path`\n\n"
 								"Enter the path where downloads will be placed.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Download Path",item->dldir,MAX_PATH,K_EDIT);
-				iniSetString(&inifile,item->name,"DownloadPath",item->dldir,NULL);
+				iniSetString(&inifile,item->name,"DownloadPath",item->dldir,&ini_style);
 				break;
 			case 11:
 				uifc.helpbuf=	"`Upload Path`\n\n"
 								"Enter the path where uploads will be browsed for.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Upload Path",item->uldir,MAX_PATH,K_EDIT);
-				iniSetString(&inifile,item->name,"UploadPath",item->uldir,NULL);
+				iniSetString(&inifile,item->name,"UploadPath",item->uldir,&ini_style);
 				break;
 			case 12:
 				item->loglevel++;
 				if(item->loglevel>LOG_DEBUG)
 					item->loglevel=0;
 				changed=1;
-				iniSetInteger(&inifile,item->name,"LogLevel",item->loglevel,NULL);
+				iniSetInteger(&inifile,item->name,"LogLevel",item->loglevel,&ini_style);
 				break;
 			case 13:
 				item->bpsrate=get_next_rate(item->bpsrate);
 				changed=1;
-				iniSetInteger(&inifile,item->name,"BPSRate",item->bpsrate,NULL);
+				iniSetInteger(&inifile,item->name,"BPSRate",item->bpsrate,&ini_style);
 				break;
 		}
 		if(uifc.changes)
@@ -285,21 +292,21 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	 * Redundant:
 	 * iniAddSection(&inifile,bbs->name,NULL);
 	 */
-	iniSetString(&inifile,bbs->name,"Address",bbs->addr,NULL);
-	iniSetShortInt(&inifile,bbs->name,"Port",bbs->port,NULL);
-	iniSetDateTime(&inifile,bbs->name,"Added",/* include time */TRUE,time(NULL),NULL);
-	iniSetDateTime(&inifile,bbs->name,"LastConnected",/* include time */TRUE,bbs->connected,NULL);
-	iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
-	iniSetString(&inifile,bbs->name,"UserName",bbs->user,NULL);
-	iniSetString(&inifile,bbs->name,"Password",bbs->password,NULL);
-	iniSetString(&inifile,bbs->name,"SystemPassword",bbs->syspass,NULL);
-	iniSetEnum(&inifile,bbs->name,"ConnectionType",conn_types,bbs->conn_type,NULL);
-	iniSetBool(&inifile,bbs->name,"Reversed",bbs->reversed,NULL);
-	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes,bbs->screen_mode,NULL);
-	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,NULL);
-	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,NULL);
-	iniSetInteger(&inifile,bbs->name,"LogLevel",bbs->loglevel,NULL);
-	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,NULL);
+	iniSetString(&inifile,bbs->name,"Address",bbs->addr,&ini_style);
+	iniSetShortInt(&inifile,bbs->name,"Port",bbs->port,&ini_style);
+	iniSetDateTime(&inifile,bbs->name,"Added",/* include time */TRUE,time(NULL),&ini_style);
+	iniSetDateTime(&inifile,bbs->name,"LastConnected",/* include time */TRUE,bbs->connected,&ini_style);
+	iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,&ini_style);
+	iniSetString(&inifile,bbs->name,"UserName",bbs->user,&ini_style);
+	iniSetString(&inifile,bbs->name,"Password",bbs->password,&ini_style);
+	iniSetString(&inifile,bbs->name,"SystemPassword",bbs->syspass,&ini_style);
+	iniSetEnum(&inifile,bbs->name,"ConnectionType",conn_types,bbs->conn_type,&ini_style);
+	iniSetBool(&inifile,bbs->name,"Reversed",bbs->reversed,&ini_style);
+	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes,bbs->screen_mode,&ini_style);
+	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,&ini_style);
+	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,&ini_style);
+	iniSetInteger(&inifile,bbs->name,"LogLevel",bbs->loglevel,&ini_style);
+	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,&ini_style);
 	if((listfile=fopen(listpath,"w"))!=NULL) {
 		iniWriteFile(listfile,inifile);
 		fclose(listfile);
