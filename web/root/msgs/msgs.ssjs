@@ -12,12 +12,12 @@ var ShowMsgs=GET_ALL_MESSAGES;
 if(file_exists(system.data_dir+'user/'+format("%04d.html_prefs",user.number))) {
   prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
   if(prefsfile.open("r",false)) {
-  sort_date=prefsfile.iniGetValue(null, 'sort_date', 'descending');
+  SortDate=prefsfile.iniGetValue(null, 'SortDate', 'descending');
   prefsfile.close();
   }
 }
 
-if(sort_date=="ascending")
+if(SortDate=="ascending")
   DateDescending=false;
 else
   DateDescending=true;
@@ -141,28 +141,28 @@ if(http_request.query.sort_date != undefined) {
   switch(http_request.query.sort_date[0]) {
     case "ascending":
       DateDescending=false;
-      sort_date="ascending"
+      SortDate="ascending"
       prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
       if(prefsfile.open("r+",false)) {
-          prefsfile.iniSetValue(null, 'sort_date', 'ascending');
+          prefsfile.iniSetValue(null, 'SortDate', 'ascending');
           prefsfile.close();
       } else {
       if(prefsfile.open("w+",false)) {
-          prefsfile.iniSetValue(null, 'sort_date', 'ascending');
+          prefsfile.iniSetValue(null, 'SortDate', 'ascending');
           prefsfile.close();
         }
       }
       break;
     case "descending":
       DateDescending=true;
-      sort_date="descending"
+      SortDate="descending"
       prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
       if(prefsfile.open("r+",false)) {
-          prefsfile.iniSetValue(null, 'sort_date', 'descending');
+          prefsfile.iniSetValue(null, 'SortDate', 'descending');
           prefsfile.close();
         } else {
       if(prefsfile.open("w+",false)) {
-          prefsfile.iniSetValue(null, 'sort_date', 'descending');
+          prefsfile.iniSetValue(null, 'SortDate', 'descending');
           prefsfile.close();
         }
       }
@@ -183,21 +183,21 @@ if(total_pages>1) {
         if(currpage==page)
             template.pagelinks += '<b>'+(page+1)+'</b> ';
         else
-            template.pagelinks += "<a href=\""+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(page*max_messages)+'&amp;sort_date=' + sort_date +'">'+(page+1)+'</a> ';
+            template.pagelinks += "<a href=\""+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(page*max_messages)+'&amp;sort_date=' + SortDate +'">'+(page+1)+'</a> ';
     }
     if(DateDescending) {
     if(offset+max_messages < msgarray.length)  {
-        template.pagelinks+='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'&amp;sort_date=' + sort_date +'">'+next_page_html+'</a>';
+        template.pagelinks+='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'&amp;sort_date=' + SortDate +'">'+next_page_html+'</a>';
     }
     if(offset>0) {
-        template.pagelinks='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'&amp;sort_date=' + sort_date +'">'+prev_page_html+'</a> '+template.pagelinks;
+        template.pagelinks='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'&amp;sort_date=' + SortDate +'">'+prev_page_html+'</a> '+template.pagelinks;
     }
 } else {
     if(offset+max_messages < msgarray.length)  {
-        template.pagelinks+='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'&amp;sort_date=' + sort_date +'">'+next_page_html+'</a>';
+        template.pagelinks+='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'&amp;sort_date=' + SortDate +'">'+next_page_html+'</a>';
     }
     if(offset>0) {
-        template.pagelinks='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'&amp;sort_date=' + sort_date +'">'+prev_page_html+'</a> '+template.pagelinks;
+        template.pagelinks='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'&amp;sort_date=' + SortDate +'">'+prev_page_html+'</a> '+template.pagelinks;
     }
   }
 }
