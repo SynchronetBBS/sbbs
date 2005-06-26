@@ -16,7 +16,7 @@ if(file_exists(system.data_dir+'user/'+format("%04d.html_prefs",user.number))) {
   prefsfile.close();
   }
 } else {
-  SortDate="Descending";
+  SortDate="descending";
 }
 
 if(SortDate=="ascending")
