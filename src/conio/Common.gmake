@@ -8,6 +8,9 @@ X_PRESENT	= $(shell if [ ! \( -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)Xlib.h -a -f $
 ifeq ($(X_PRESENT),NO)
  NO_X=1
 else
+ ifeq ($(os),darwin)	# No X11 for OSX
+  NO_X=1
+ endif
 endif
 
 ifeq ($(os),sunos)
