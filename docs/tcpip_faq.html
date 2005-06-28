@@ -258,11 +258,11 @@ stack probably needs to be reset, so a system reboot may be in order.
 <p>If you're running a <b>Unix</b>-like operating system (<i>not</i> Windows) and get bind errors only when
 recycling servers, this is most likely because a TCP session is stuck in a TCP <i>TIMEWAIT</i> state
 (you can use <a href="http://www.rt.com/man/netstat.1.html">netstat</a> to verify this). The session
-will eventually time-out and close properly on its own, allowing the port to be re-bound at that time. You can either increase the 
+will eventually time-out and close properly on its own, allowing the port to be re-bound at that time.
+To work-around this problem, you can either increase the 
 <tt>BindRetryCount</tt> and/or <tt>BindRetryDelay</tt> values
 in your <tt>ctrl/sbbs.ini</tt> file, or you can add the following line to your <tt>ctrl/sockopts.cfg</tt> file:
 <p><tt>REUSEADDR 1</tt>
-<p>to work-around this problem.
 </p>
 
 <a name="bandwidth"><hr></a>
@@ -277,7 +277,7 @@ Depends on what those clients will be doing while connected. Here are some facts
 <p>
 <li><b>An active TCP session doesn't consume any appreciable bandwidth when <i>idle</i>.</b>
 <p>
-<li><b>Most Internet connections are <i>asymmetrical</i> in nature (as in <i>A</i>DSL).</b>
+<li><b>Most Internet connections are <i>asymmetrical</i> in nature (as in <u>A</u>DSL).</b>
 <p>This means your <i>upstream</i> channel usually has less bandwidth than your <i>downstream</i> channel.
 <br>When TCP/IP clients (users of your BBS's servers) <i>download</i> content from your servers
 (this includes viewing menus, reading messages, and playing door games on your BBS),
@@ -286,7 +286,7 @@ they are primarily using your <i>upstream</i> channel.
 <i>upstream</i> is only 128Kbps.
 If you have a &quot;56K&quot; dial-up connections, for example, your <i>downstream</i> is probably 
 in the 43-53Kbps range while your <i>upstream</i> bandwidth cannot be any more than 33.6Kbps.
-<p>If you are lucky enough to have an <i><b>S</b>DSL</i> or other type of <i>symmetrical</i> Internet connection,
+<p>If you are lucky enough to have an <b><u>S</u>DSL</b> or other type of <i>symmetrical</i> Internet connection,
 then both your upstream and downstream channels are of the same bandwidth.
 <p>
 <li><b>Most BBS traffic is <i>bursty</i>.</b>
