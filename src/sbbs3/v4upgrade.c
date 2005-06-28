@@ -164,7 +164,7 @@ BOOL upgrade_users(void)
 
 		/******************************************/
 		/* date/times */
-		len+=sprintf(rec+len,"%lu%06u\t%lu%06u\t%lu%06u\t%lu%06u\t%lu%06u\t%lu%06u\t"
+		len+=sprintf(rec+len,"%08lu%06u\t%08lu%06u\t%08lu%06u\t%08lu%06u\t%08lu%06u\t%08lu%06u\t"
 			,time_to_isoDate(user.laston)
 			,time_to_isoTime(user.laston)
 			,time_to_isoDate(user.firston)
