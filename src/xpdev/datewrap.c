@@ -41,39 +41,48 @@
 /**********************************************/
 /* Decimal-coded ISO-8601 date/time functions */
 /**********************************************/
+isoDateTime_t isoDateTime_create(unsigned year, unsigned month, unsigned day
+								   ,unsigned hour, unsigned minute, unsigned second)
+{
+	isoDateTime_t	isoDateTime;
+
+	isoDateTime.date=(year*10000)+(month*100)+day;
+	isoDateTime.time=(hour*10000)+(minute*100)+second;
+
+	return(isoDateTime);
+
+}
+
 isoDateTime_t time_to_isoDateTime(time_t time)
 {
+	isoDateTime_t	never = {0,0};
 	struct tm tm;
-	isoDateTime_t	isoDateTime = {0,0};
 
 	if(time==0)
-		return(isoDateTime);
+		return(never);
 
 	ZERO_VAR(tm);
 	if(gmtime_r(&time,&tm)==NULL)
-		return(isoDateTime);
+		return(never);
 
-	isoDateTime.date=((tm.tm_year+1900)*10000)+((tm.tm_mon+1)*100)+tm.tm_mday;
-	isoDateTime.time=(tm.tm_hour*10000)+(tm.tm_min*100)+tm.tm_sec;
-
-	return(isoDateTime);
+	return(isoDateTime_create(tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec));
 }
 
-long time_to_isoDate(time_t time)
+isoDate_t time_to_isoDate(time_t time)
 {
 	isoDateTime_t	isoDateTime = time_to_isoDateTime(time);
 
 	return(isoDateTime.date);
 }
 
-long time_to_isoTime(time_t time)
+isoTime_t time_to_isoTime(time_t time)
 {
 	isoDateTime_t	isoDateTime = time_to_isoDateTime(time);
 
 	return(isoDateTime.time);
 }
 
-time_t isoDate_to_time(long date, long time)
+time_t isoDate_to_time(isoDate_t date, isoTime_t time)
 {
 	struct tm tm;
 
@@ -82,13 +91,13 @@ time_t isoDate_to_time(long date, long time)
 	if(date==0)
 		return(0);
 
-	tm.tm_year=date/10000;
-	tm.tm_mon=(date/100)%100;
-	tm.tm_mday=date%100;
+	tm.tm_year	=isoDate_year(date);
+	tm.tm_mon	=isoDate_month(date);
+	tm.tm_mday	=isoDate_day(date);
 
-	tm.tm_hour=time/10000;
-	tm.tm_min=(time/100)%100;
-	tm.tm_sec=time%100;
+	tm.tm_hour	=isoTime_hour(time);
+	tm.tm_min	=isoTime_minute(time);
+	tm.tm_sec	=isoTime_second(time);
 
 	/* correct for tm-weirdness */
 	if(tm.tm_year>=1900)

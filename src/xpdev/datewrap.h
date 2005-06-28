@@ -44,15 +44,28 @@
 /* Decimal-coded ISO-8601 date/time functions */
 /**********************************************/
 
+typedef long	isoDate_t;	/* CCYYMMDD (decimal) */
+typedef int		isoTime_t;	/* HHMMSS   (decimal) */
+
 typedef struct {
-	long	date;	/* CCYYMMDD (decimal) */
-	long	time;	/* HHMMSS   (decimal) */
+	isoDate_t	date;	
+	isoTime_t	time;	
 } isoDateTime_t;
 
-long			time_to_isoDate(time_t);
-long			time_to_isoTime(time_t);
+#define isoDate_year(date)		((date)/10000)
+#define isoDate_month(date)		(((date)/100)%100)
+#define isoDate_day(date)		((date)%100)
+
+#define isoTime_hour(time)		((time)/10000)
+#define isoTime_minute(time)	(((time)/100)%100)
+#define isoTime_second(time)	((time)%100)
+
+isoDateTime_t	isoDateTime_create(unsigned year, unsigned month, unsigned day
+								   ,unsigned hour, unsigned minute, unsigned second);
+isoDate_t		time_to_isoDate(time_t);
+isoTime_t		time_to_isoTime(time_t);
 isoDateTime_t	time_to_isoDateTime(time_t);
-time_t			isoDate_to_time(long date, long time);
+time_t			isoDate_to_time(isoDate_t date, isoTime_t time);
 time_t			isoDateTime_to_time(isoDateTime_t);
 
 
