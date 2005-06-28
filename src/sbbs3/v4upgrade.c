@@ -164,13 +164,19 @@ BOOL upgrade_users(void)
 
 		/******************************************/
 		/* date/times */
-		len+=sprintf(rec+len,"%lx\t%lx\t%lu\t%lx\t%lx\t%lx\t"
-			,user.laston
-			,user.firston
-			,time_to_date(user.expire)
-			,user.pwmod
-			,user.ns_time
-			,user.logontime
+		len+=sprintf(rec+len,"%lu%06u\t%lu%06u\t%lu%06u\t%lu%06u\t%lu%06u\t%lu%06u\t"
+			,time_to_isoDate(user.laston)
+			,time_to_isoTime(user.laston)
+			,time_to_isoDate(user.firston)
+			,time_to_isoTime(user.firston)
+			,time_to_isoDate(user.expire)
+			,time_to_isoTime(user.expire)
+			,time_to_isoDate(user.pwmod)
+			,time_to_isoTime(user.pwmod)
+			,time_to_isoDate(user.ns_time)
+			,time_to_isoTime(user.ns_time)
+			,time_to_isoDate(user.logontime)
+			,time_to_isoTime(user.logontime)
 			);
 		/* some unused records for future expansion */
 		len+=sprintf(rec+len,"\t\t\t\t");	
@@ -359,7 +365,7 @@ BOOL upgrade_stats(void)
 		if(fread(&csts,1,sizeof(csts),in)!=sizeof(csts))
 			break;
 		fprintf(out,"%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t\n"
-			,time_to_date(csts.time)
+			,time_to_isoDate(csts.time)
 			,csts.ltoday
 			,csts.ttoday
 			,csts.uls
