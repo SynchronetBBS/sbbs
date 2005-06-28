@@ -60,7 +60,7 @@ typedef struct {
 #define isoTime_minute(time)	(((time)/100)%100)
 #define isoTime_second(time)	((time)%100)
 
-isoDateTime_t	isoDateTime_create(unsigned year, unsigned month, unsigned day
+isoDateTime_t	create_isoDateTime(unsigned year, unsigned month, unsigned day
 								   ,unsigned hour, unsigned minute, unsigned second);
 isoDate_t		time_to_isoDate(time_t);
 isoTime_t		time_to_isoTime(time_t);

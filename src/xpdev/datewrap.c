@@ -41,7 +41,7 @@
 /**********************************************/
 /* Decimal-coded ISO-8601 date/time functions */
 /**********************************************/
-isoDateTime_t isoDateTime_create(unsigned year, unsigned month, unsigned day
+isoDateTime_t create_isoDateTime(unsigned year, unsigned month, unsigned day
 								   ,unsigned hour, unsigned minute, unsigned second)
 {
 	isoDateTime_t	isoDateTime;
@@ -65,7 +65,7 @@ isoDateTime_t time_to_isoDateTime(time_t time)
 	if(gmtime_r(&time,&tm)==NULL)
 		return(never);
 
-	return(isoDateTime_create(tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec));
+	return(create_isoDateTime(tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec));
 }
 
 isoDate_t time_to_isoDate(time_t time)
