@@ -42,6 +42,7 @@
 #if !defined(NO_SOCKET_SUPPORT)
 	#include "sockwrap.h"	/* inet_addr */
 #endif
+#include "datewrap.h"	/* isoDateTime_t */
 #include "dirwrap.h"	/* fexist */
 #include "filewrap.h"	/* chsize */
 #include "ini_file.h"
@@ -1203,6 +1204,7 @@ static time_t parseDateTime(const char* value)
 	time_t	t;
 	struct tm tm;
 	struct tm curr_tm;
+	isoDateTime_t iso;
 
 	ZERO_VAR(tm);
 	tstr[0]=0;
@@ -1213,6 +1215,11 @@ static time_t parseDateTime(const char* value)
 		tm.tm_mon=curr_tm.tm_mon+1;	/* convert to one-based (reversed later) */
 		tm.tm_year=curr_tm.tm_year;
 	}
+
+	/* CCYYMMDDTHHMMSS <--- ISO-8601 date and time format */
+	if(sscanf(value,"%uT%u"
+		,&iso.date,&iso.time)>=2)
+		return(isoDateTime_to_time(iso));
 
 	/* DD.MM.[CC]YY [time] [p] <-- Euro/Canadian numeric date format */
 	if(sscanf(value,"%u.%u.%u %s %c"
