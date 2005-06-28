@@ -40,9 +40,25 @@
 
 #include "genwrap.h"	/* time_t */
 
-/* Decimal-coded date functions */
-long	time_to_date(time_t time);
-time_t	date_to_time(long date);
+/**********************************************/
+/* Decimal-coded ISO-8601 date/time functions */
+/**********************************************/
+
+typedef struct {
+	long	date;	/* CCYYMMDD (decimal) */
+	long	time;	/* HHMMSS   (decimal) */
+} isoDateTime_t;
+
+long			time_to_isoDate(time_t);
+long			time_to_isoTime(time_t);
+isoDateTime_t	time_to_isoDateTime(time_t);
+time_t			isoDate_to_time(long date, long time);
+time_t			isoDateTime_to_time(isoDateTime_t);
+
+
+/***********************************/
+/* Borland DOS date/time functions */
+/***********************************/
 
 #if defined(__BORLANDC__)
 

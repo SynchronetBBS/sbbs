@@ -36,22 +36,44 @@
  ****************************************************************************/
 
 #include "genwrap.h"
+#include "datewrap.h"	/* isoDateTime_t */
 
-/* Decimal-coded date functions */
-long time_to_date(time_t time)
+/**********************************************/
+/* Decimal-coded ISO-8601 date/time functions */
+/**********************************************/
+isoDateTime_t time_to_isoDateTime(time_t time)
 {
 	struct tm tm;
+	isoDateTime_t	isoDateTime = {0,0};
 
 	if(time==0)
-		return(0);
+		return(isoDateTime);
 
 	ZERO_VAR(tm);
 	if(gmtime_r(&time,&tm)==NULL)
-		return(0);
-	return(((tm.tm_year+1900)*10000)+((tm.tm_mon+1)*100)+tm.tm_mday);
+		return(isoDateTime);
+
+	isoDateTime.date=((tm.tm_year+1900)*10000)+((tm.tm_mon+1)*100)+tm.tm_mday;
+	isoDateTime.time=(tm.tm_hour*10000)+(tm.tm_min*100)+tm.tm_sec;
+
+	return(isoDateTime);
 }
 
-time_t date_to_time(long date)
+long time_to_isoDate(time_t time)
+{
+	isoDateTime_t	isoDateTime = time_to_isoDateTime(time);
+
+	return(isoDateTime.date);
+}
+
+long time_to_isoTime(time_t time)
+{
+	isoDateTime_t	isoDateTime = time_to_isoDateTime(time);
+
+	return(isoDateTime.time);
+}
+
+time_t isoDate_to_time(long date, long time)
 {
 	struct tm tm;
 
@@ -64,7 +86,11 @@ time_t date_to_time(long date)
 	tm.tm_mon=(date/100)%100;
 	tm.tm_mday=date%100;
 
-	/* correct for tm-wierdness */
+	tm.tm_hour=time/10000;
+	tm.tm_min=(time/100)%100;
+	tm.tm_sec=time%100;
+
+	/* correct for tm-weirdness */
 	if(tm.tm_year>=1900)
 		tm.tm_year-=1900;
 	if(tm.tm_mon)
@@ -73,6 +99,15 @@ time_t date_to_time(long date)
 
 	return(mktime(&tm));
 }
+
+time_t isoDateTime_to_time(isoDateTime_t iso)
+{
+	return(isoDate_to_time(iso.date,iso.time));
+}
+
+/***********************************/
+/* Borland DOS date/time functions */
+/***********************************/
 
 #if !defined(__BORLANDC__)
 
