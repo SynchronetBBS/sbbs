@@ -255,7 +255,7 @@ isoDateTime_t isoDateTime_parse(const char* str)
 	ZERO_VAR(xpDateTime);
 	ZERO_VAR(isoDateTime);
 
-	if((sscanf(str,"%4u%-%2u%-%2uT%2u:%2u:%f%6s"	/* CCYY-MM-DDThh:MM:ss±hhmm */
+	if((sscanf(str,"%4u%-%2u-%2uT%2u:%2u:%f%6s"	/* CCYY-MM-DDThh:MM:ss±hhmm */
 		,&xpDateTime.date.year
 		,&xpDateTime.date.month
 		,&xpDateTime.date.day
