@@ -43,7 +43,7 @@ time_t sane_mktime(struct tm* tm)
 {
 	if(tm->tm_year>=1900)
 		tm->tm_year-=1900;
-	if(tm->tm_mon)
+	if(tm->tm_mon)		/* Month is zero-based */
 		tm->tm_mon--;
 	tm->tm_isdst=-1;	/* Auto-adjust for DST */
 
@@ -60,13 +60,13 @@ xpDateTime_t xpDateTime_create(unsigned year, unsigned month, unsigned day
 {
 	xpDateTime_t	xpDateTime;
 
-	xpDateTime.date.year=year;
-	xpDateTime.date.month=month;
-	xpDateTime.date.day=day;
-	xpDateTime.time.hour=hour;
-	xpDateTime.time.minute=minute;
-	xpDateTime.time.second=second;
-	xpDateTime.zone=zone;
+	xpDateTime.date.year	= year;
+	xpDateTime.date.month	= month;
+	xpDateTime.date.day		= day;
+	xpDateTime.time.hour	= hour;
+	xpDateTime.time.minute	= minute;
+	xpDateTime.time.second	= second;
+	xpDateTime.zone			= zone;
 
 	return xpDateTime;
 }
@@ -80,11 +80,11 @@ xpDateTime_t xpDateTime_now(void)
 	return(xpDateTime_create(systime.wYear,systime.wMonth,systime.wDay
 		,systime.wHour,systime.wMinute,(float)systime.wSecond+(systime.wMilliseconds*0.001F),0));
 #else	/* !Win32 (e.g. Unix) */
-	struct tm *tm;
+	struct tm tm;
 	struct timeval tv;
 
 	gettimeofday(&tv,NULL);
-	tm=localtime(&tv.tv_sec);
+	localtime_r(&tv.tv_sec,&tm);
 
 	return xpDateTime_create(1900+tm->tm_year,1+tm->tm_mon,tm->tm_mday
 		,tm->tm_hour,tm->tm_min,(float)tm->tm_sec+(tv.tv_usec*0.00001),0);
@@ -191,13 +191,13 @@ time_t isoDate_to_time(isoDate_t date, isoTime_t time)
 	if(date==0)
 		return(0);
 
-	tm.tm_year	=isoDate_year(date);
-	tm.tm_mon	=isoDate_month(date);
-	tm.tm_mday	=isoDate_day(date);
+	tm.tm_year	= isoDate_year(date);
+	tm.tm_mon	= isoDate_month(date);
+	tm.tm_mday	= isoDate_day(date);
 
-	tm.tm_hour	=isoTime_hour(time);
-	tm.tm_min	=isoTime_minute(time);
-	tm.tm_sec	=isoTime_second(time);
+	tm.tm_hour	= isoTime_hour(time);
+	tm.tm_min	= isoTime_minute(time);
+	tm.tm_sec	= isoTime_second(time);
 
 	return sane_mktime(&tm);
 }
@@ -224,13 +224,13 @@ time_t isoDateTime_to_time(isoDateTime_t iso)
 void xp_getdate(struct date* nyd)
 {
 	time_t tim;
-	struct tm *dte;
+	struct tm dte;
 
 	tim=time(NULL);
-	dte=localtime(&tim);
-	nyd->da_year=dte->tm_year+1900;
-	nyd->da_day=dte->tm_mday;
-	nyd->da_mon=dte->tm_mon+1;
+	localtime_r(&tim,&dte);
+	nyd->da_year=dte.tm_year+1900;
+	nyd->da_day=dte.tm_mday;
+	nyd->da_mon=dte.tm_mon+1;
 }
 
 void gettime(struct time* nyt)
@@ -244,14 +244,14 @@ void gettime(struct time* nyt)
 	nyt->ti_sec=(unsigned char)systime.wSecond;
 	nyt->ti_hund=systime.wMilliseconds/10;
 #else	/* !Win32 (e.g. Unix) */
-	struct tm *dte;
+	struct tm dte;
 	struct timeval tim;
 
 	gettimeofday(&tim,NULL);
-	dte=localtime(&tim.tv_sec);
-	nyt->ti_min=dte->tm_min;
-	nyt->ti_hour=dte->tm_hour;
-	nyt->ti_sec=dte->tm_sec;
+	localtime_r(&tim.tv_sec,&dte);
+	nyt->ti_min=dte.tm_min;
+	nyt->ti_hour=dte.tm_hour;
+	nyt->ti_sec=dte.tm_sec;
 	nyt->ti_hund=tim.tv_usec/10000;
 #endif
 }
