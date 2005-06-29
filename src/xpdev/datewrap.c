@@ -38,26 +38,87 @@
 #include "genwrap.h"
 #include "datewrap.h"	/* isoDateTime_t */
 
-/**********************************************/
-/* Decimal-coded ISO-8601 date/time functions */
-/**********************************************/
-isoDateTime_t create_isoDateTime(unsigned year, unsigned month, unsigned day
-								   ,unsigned hour, unsigned minute, unsigned second)
+/* Compensates for struct tm "weirdness" */
+time_t sane_mktime(struct tm* tm)
 {
-	isoDateTime_t	isoDateTime;
+	if(tm->tm_year>=1900)
+		tm->tm_year-=1900;
+	if(tm->tm_mon)
+		tm->tm_mon--;
+	tm->tm_isdst=-1;	/* Auto-adjust for DST */
 
-	isoDateTime.date=(year*10000)+(month*100)+day;
-	isoDateTime.time=(hour*10000)+(minute*100)+second;
+	return mktime(tm);
+}
 
-	return(isoDateTime);
+/**************************************/
+/* Cross-platform date/time functions */
+/**************************************/
+
+xpDateTime_t xpDateTime_create(unsigned year, unsigned month, unsigned day
+							  ,unsigned hour, unsigned minute, float second
+							  ,int zone)
+{
+	xpDateTime_t	xpDateTime;
+
+	xpDateTime.date.year=year;
+	xpDateTime.date.month=month;
+	xpDateTime.date.day=day;
+	xpDateTime.time.hour=hour;
+	xpDateTime.time.minute=minute;
+	xpDateTime.time.second=second;
+	xpDateTime.zone=zone;
+
+	return xpDateTime;
+}
+
+xpDateTime_t xpDateTime_now(void)
+{
+#if defined(_WIN32)
+	SYSTEMTIME systime;
+
+	GetLocalTime(&systime);
+	return(xpDateTime_create(systime.wYear,systime.wMonth,systime.wDay
+		,systime.wHour,systime.wMinute,(float)systime.wSecond+(systime.wMilliseconds*0.001F),0));
+#else	/* !Win32 (e.g. Unix) */
+	struct tm *tm;
+	struct timeval tv;
+
+	gettimeofday(&tv,NULL);
+	tm=localtime(&tv.tv_sec);
+
+	return xpDateTime_create(1900+tm->tm_year,1+tm->tm_mon,tm->tm_mday
+		,tm->tm_hour,tm->tm_min,(float)tm->tm_sec+(tv.tv_usec*0.00001),0);
+#endif
 
 }
 
-isoDateTime_t time_to_isoDateTime(time_t time)
+time_t xpDateTime_to_time(xpDateTime_t xpDateTime)
 {
-	isoDateTime_t	never = {0,0};
 	struct tm tm;
 
+	ZERO_VAR(tm);
+
+	if(xpDateTime.date.year==0)
+		return(0);
+
+	tm.tm_year	= xpDateTime.date.year;
+	tm.tm_mon	= xpDateTime.date.month;
+	tm.tm_mday	= xpDateTime.date.day;
+
+	tm.tm_hour	= xpDateTime.time.hour;
+	tm.tm_min	= xpDateTime.time.minute;
+	tm.tm_sec	= (int)xpDateTime.time.second;
+
+	return sane_mktime(&tm);
+
+}
+
+xpDateTime_t time_to_xpDateTime(time_t time)
+{
+	xpDateTime_t	never;
+	struct tm tm;
+
+	memset(&never,0,sizeof(never));
 	if(time==0)
 		return(never);
 
@@ -65,21 +126,60 @@ isoDateTime_t time_to_isoDateTime(time_t time)
 	if(gmtime_r(&time,&tm)==NULL)
 		return(never);
 
-	return(create_isoDateTime(tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec));
+	return xpDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
+		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec,0);
+}
+
+
+/**********************************************/
+/* Decimal-coded ISO-8601 date/time functions */
+/**********************************************/
+
+isoDateTime_t isoDateTime_create(unsigned year, unsigned month, unsigned day
+								,unsigned hour, unsigned minute, unsigned second)
+{
+	isoDateTime_t	isoDateTime;
+
+	isoDateTime.date = isoDate_create(year,month,day);
+	isoDateTime.time = isoTime_create(hour,minute,second);
+
+	return isoDateTime;
+}
+
+isoDateTime_t isoDateTime_now(void)
+{
+	return time_to_isoDateTime(time(NULL));
+}
+
+isoDateTime_t time_to_isoDateTime(time_t time)
+{
+	isoDateTime_t	never;
+	struct tm tm;
+
+	memset(&never,0,sizeof(never));
+	if(time==0)
+		return(never);
+
+	ZERO_VAR(tm);
+	if(gmtime_r(&time,&tm)==NULL)
+		return(never);
+
+	return isoDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
+		,tm.tm_hour,tm.tm_min,tm.tm_sec);
 }
 
 isoDate_t time_to_isoDate(time_t time)
 {
 	isoDateTime_t	isoDateTime = time_to_isoDateTime(time);
 
-	return(isoDateTime.date);
+	return isoDateTime.date;
 }
 
 isoTime_t time_to_isoTime(time_t time)
 {
 	isoDateTime_t	isoDateTime = time_to_isoDateTime(time);
 
-	return(isoDateTime.time);
+	return isoDateTime.time;
 }
 
 time_t isoDate_to_time(isoDate_t date, isoTime_t time)
@@ -99,19 +199,12 @@ time_t isoDate_to_time(isoDate_t date, isoTime_t time)
 	tm.tm_min	=isoTime_minute(time);
 	tm.tm_sec	=isoTime_second(time);
 
-	/* correct for tm-weirdness */
-	if(tm.tm_year>=1900)
-		tm.tm_year-=1900;
-	if(tm.tm_mon)
-		tm.tm_mon--;
-	tm.tm_isdst=-1;	/* Auto-adjust for DST */
-
-	return(mktime(&tm));
+	return sane_mktime(&tm);
 }
 
 time_t isoDateTime_to_time(isoDateTime_t iso)
 {
-	return(isoDate_to_time(iso.date,iso.time));
+	return isoDate_to_time(iso.date,iso.time);
 }
 
 /***********************************/

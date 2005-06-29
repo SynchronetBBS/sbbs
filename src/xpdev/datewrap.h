@@ -40,33 +40,75 @@
 
 #include "genwrap.h"	/* time_t */
 
+/* Compensates for struct tm "weirdness" */
+time_t sane_mktime(struct tm*);
+
+/**************************************/
+/* Cross-platform date/time functions */
+/**************************************/
+
+typedef struct {
+	unsigned	year;
+	unsigned	month;
+	unsigned	day;
+} xpDate_t;
+
+typedef struct {
+	unsigned	hour;
+	unsigned	minute;
+	float		second;	/* supports fractional seconds */
+} xpTime_t;
+
+typedef struct {
+	xpDate_t	date;
+	xpTime_t	time;
+	int			zone;	/* minutes +/- UTC */
+} xpDateTime_t;
+
+xpDateTime_t	xpDateTime_create(unsigned year, unsigned month, unsigned day
+								   ,unsigned hour, unsigned minute, float second, int zone);
+xpDateTime_t	xpDateTime_now(void);
+time_t			xpDateTime_to_time(xpDateTime_t);
+xpDateTime_t	time_to_xpDateTime(time_t);
+
 /**********************************************/
 /* Decimal-coded ISO-8601 date/time functions */
 /**********************************************/
 
-typedef long	isoDate_t;	/* CCYYMMDD (decimal) */
-typedef int		isoTime_t;	/* HHMMSS   (decimal) */
+typedef ulong	isoDate_t;	/* CCYYMMDD (decimal) */
+typedef uint	isoTime_t;	/* HHMMSS   (decimal) */
 
 typedef struct {
-	isoDate_t	date;	
-	isoTime_t	time;	
+	isoDate_t	date;
+	isoTime_t	time;
 } isoDateTime_t;
 
-#define isoDate_year(date)		((date)/10000)
-#define isoDate_month(date)		(((date)/100)%100)
-#define isoDate_day(date)		((date)%100)
+#define isoDate_create(year,mon,day)	(((year)*10000)+((mon)*100)+(day))
+#define isoTime_create(hour,min,sec)	(((hour)*10000)+((min)*100)+(sec))
 
-#define isoTime_hour(time)		((time)/10000)
-#define isoTime_minute(time)	(((time)/100)%100)
-#define isoTime_second(time)	((time)%100)
+#define isoDate_year(date)				((date)/10000)
+#define isoDate_month(date)				(((date)/100)%100)
+#define isoDate_day(date)				((date)%100)
+										
+#define isoTime_hour(time)				((time)/10000)
+#define isoTime_minute(time)			(((time)/100)%100)
+#define isoTime_second(time)			((time)%100)
 
-isoDateTime_t	create_isoDateTime(unsigned year, unsigned month, unsigned day
+isoDateTime_t	isoDateTime_create(unsigned year, unsigned month, unsigned day
 								   ,unsigned hour, unsigned minute, unsigned second);
+isoDateTime_t	isoDateTime_now(void);
 isoDate_t		time_to_isoDate(time_t);
 isoTime_t		time_to_isoTime(time_t);
 isoDateTime_t	time_to_isoDateTime(time_t);
 time_t			isoDate_to_time(isoDate_t date, isoTime_t time);
 time_t			isoDateTime_to_time(isoDateTime_t);
+
+/***************************************************/
+/* Conversion between xpDate/Time and isoDate/Time */
+/***************************************************/
+
+#define xpDate_to_isoDate(date)	(((date).year*10000)+((date).month*100)+(date).day)
+#define xpTime_to_isoTime(time)	(((time).hour*10000)+((time).minute*100)+(int)((time).second))
 
 
 /***********************************/
