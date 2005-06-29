@@ -107,8 +107,8 @@ time_t			isoDateTime_to_time(isoDateTime_t);
 /* Conversion between xpDate/Time and isoDate/Time */
 /***************************************************/
 
-#define xpDate_to_isoDate(date)	(((date).year*10000)+((date).month*100)+(date).day)
-#define xpTime_to_isoTime(time)	(((time).hour*10000)+((time).minute*100)+(int)((time).second))
+#define xpDate_to_isoDate(date)	isoDate_create((date).year,(date).month,(date).day)
+#define xpTime_to_isoTime(time)	isoTime_create((time).hour,(time).minute,(time).second)
 
 
 /***********************************/
