@@ -56,7 +56,7 @@ time_t sane_mktime(struct tm* tm)
 
 xpDateTime_t xpDateTime_create(unsigned year, unsigned month, unsigned day
 							  ,unsigned hour, unsigned minute, float second
-							  ,int zone)
+							  ,xpTimeZone_t zone)
 {
 	xpDateTime_t	xpDateTime;
 
@@ -136,6 +136,26 @@ xpDateTime_t time_to_xpDateTime(time_t time)
 /* Decimal-coded ISO-8601 date/time functions */
 /**********************************************/
 
+isoDate_t xpDateTime_to_isoDateTime(xpDateTime_t xpDateTime, isoTime_t* isoTime)
+{
+	if(isoTime!=NULL)
+		*isoTime=0;
+
+	if(xpDateTime.date.year==0)
+		return(0);
+
+	if(isoTime!=NULL)
+		*isoTime=isoTime_create(xpDateTime.time.hour,xpDateTime.time.minute,xpDateTime.time.second);
+
+	return isoDate_create(xpDateTime.date.year,xpDateTime.date.month,xpDateTime.date.day);
+}
+
+xpDateTime_t isoDateTime_to_xpDateTime(isoDate_t date, isoTime_t time)
+{
+	return xpDateTime_create(isoDate_year(date),isoDate_month(date),isoDate_day(date)
+		,isoTime_hour(time),isoTime_minute(time),(float)isoTime_second(time),LOCAL_UTC_DIFF);
+}
+
 isoDate_t time_to_isoDateTime(time_t time, isoTime_t* isoTime)
 {
 	struct tm tm;
@@ -185,7 +205,7 @@ time_t isoDateTime_to_time(isoDate_t date, isoTime_t time)
 	return sane_mktime(&tm);
 }
 
-BOOL isoTimeZone_parse(const char* str, int* zone)
+BOOL isoTimeZone_parse(const char* str, xpTimeZone_t* zone)
 {
 	unsigned hour=0,minute=0;
 
