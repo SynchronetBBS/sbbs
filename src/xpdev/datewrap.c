@@ -278,7 +278,7 @@ isoDateTime_t isoDateTime_parse(const char* str)
 		,&xpDateTime.time.hour
 		,&xpDateTime.time.minute
 		,&xpDateTime.time.second
-		,zone)>=2
+		,zone)>=1
 		) && isoTimeZone_parse(zone,&xpDateTime.zone))
 		return xpDateTime_to_isoDateTime(xpDateTime);
 
