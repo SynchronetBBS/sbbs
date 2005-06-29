@@ -43,6 +43,9 @@
 /* Compensates for struct tm "weirdness" */
 time_t sane_mktime(struct tm*);
 
+/* Converts timezone from seconds west of UTC to minutes east of UTC */
+#define LOCAL_UTC_DIFF	(-timezone/60)
+
 /**************************************/
 /* Cross-platform date/time functions */
 /**************************************/
@@ -66,7 +69,8 @@ typedef struct {
 } xpDateTime_t;
 
 xpDateTime_t	xpDateTime_create(unsigned year, unsigned month, unsigned day
-								   ,unsigned hour, unsigned minute, float second, int zone);
+								   ,unsigned hour, unsigned minute, float second
+								   ,int zone);
 xpDateTime_t	xpDateTime_now(void);
 time_t			xpDateTime_to_time(xpDateTime_t);
 xpDateTime_t	time_to_xpDateTime(time_t);
@@ -81,6 +85,7 @@ typedef uint	isoTime_t;	/* HHMMSS   (decimal) */
 typedef struct {
 	isoDate_t	date;
 	isoTime_t	time;
+	int			zone;	/* minutes +/- UTC */
 } isoDateTime_t;
 
 #define isoDate_create(year,mon,day)	(((year)*10000)+((mon)*100)+(day))
@@ -95,21 +100,24 @@ typedef struct {
 #define isoTime_second(time)			((time)%100)
 
 isoDateTime_t	isoDateTime_create(unsigned year, unsigned month, unsigned day
-								   ,unsigned hour, unsigned minute, unsigned second);
+								   ,unsigned hour, unsigned minute, unsigned second
+								   ,int zone);
 isoDateTime_t	isoDateTime_now(void);
 isoDate_t		time_to_isoDate(time_t);
 isoTime_t		time_to_isoTime(time_t);
 isoDateTime_t	time_to_isoDateTime(time_t);
 time_t			isoDate_to_time(isoDate_t date, isoTime_t time);
 time_t			isoDateTime_to_time(isoDateTime_t);
+BOOL			isoTimeZone_parse(const char* str, int* zone);
+isoDateTime_t	isoDateTime_parse(const char* str);
 
 /***************************************************/
 /* Conversion between xpDate/Time and isoDate/Time */
 /***************************************************/
 
 #define xpDate_to_isoDate(date)	isoDate_create((date).year,(date).month,(date).day)
-#define xpTime_to_isoTime(time)	isoTime_create((time).hour,(time).minute,(time).second)
-
+#define xpTime_to_isoTime(time)	isoTime_create((time).hour,(time).minute,(unsigned)((time).second))
+isoDateTime_t	xpDateTime_to_isoDateTime(xpDateTime_t);
 
 /***********************************/
 /* Borland DOS date/time functions */

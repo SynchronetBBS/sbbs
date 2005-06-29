@@ -78,7 +78,8 @@ xpDateTime_t xpDateTime_now(void)
 
 	GetLocalTime(&systime);
 	return(xpDateTime_create(systime.wYear,systime.wMonth,systime.wDay
-		,systime.wHour,systime.wMinute,(float)systime.wSecond+(systime.wMilliseconds*0.001F),0));
+		,systime.wHour,systime.wMinute,(float)systime.wSecond+(systime.wMilliseconds*0.001F)
+		,LOCAL_UTC_DIFF));
 #else	/* !Win32 (e.g. Unix) */
 	struct tm tm;
 	struct timeval tv;
@@ -87,7 +88,8 @@ xpDateTime_t xpDateTime_now(void)
 	localtime_r(&tv.tv_sec,&tm);
 
 	return xpDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
-		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec+(tv.tv_usec*0.00001),0);
+		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec+(tv.tv_usec*0.00001)
+		,LOCAL_UTC_DIFF);
 #endif
 
 }
@@ -127,21 +129,33 @@ xpDateTime_t time_to_xpDateTime(time_t time)
 		return(never);
 
 	return xpDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
-		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec,0);
+		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec,LOCAL_UTC_DIFF);
 }
 
+isoDateTime_t xpDateTime_to_isoDateTime(xpDateTime_t xpDateTime)
+{
+	isoDateTime_t isoDateTime;
+
+	isoDateTime.date=xpDate_to_isoDate(xpDateTime.date);
+	isoDateTime.time=xpTime_to_isoTime(xpDateTime.time);
+	isoDateTime.zone=xpDateTime.zone;
+
+	return(isoDateTime);
+}
 
 /**********************************************/
 /* Decimal-coded ISO-8601 date/time functions */
 /**********************************************/
 
 isoDateTime_t isoDateTime_create(unsigned year, unsigned month, unsigned day
-								,unsigned hour, unsigned minute, unsigned second)
+								,unsigned hour, unsigned minute, unsigned second
+								,int zone)
 {
 	isoDateTime_t	isoDateTime;
 
 	isoDateTime.date = isoDate_create(year,month,day);
 	isoDateTime.time = isoTime_create(hour,minute,second);
+	isoDateTime.zone = zone;
 
 	return isoDateTime;
 }
@@ -165,7 +179,7 @@ isoDateTime_t time_to_isoDateTime(time_t time)
 		return(never);
 
 	return isoDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
-		,tm.tm_hour,tm.tm_min,tm.tm_sec);
+		,tm.tm_hour,tm.tm_min,tm.tm_sec,LOCAL_UTC_DIFF);
 }
 
 isoDate_t time_to_isoDate(time_t time)
@@ -205,6 +219,70 @@ time_t isoDate_to_time(isoDate_t date, isoTime_t time)
 time_t isoDateTime_to_time(isoDateTime_t iso)
 {
 	return isoDate_to_time(iso.date,iso.time);
+}
+
+BOOL isoTimeZone_parse(const char* str, int* zone)
+{
+	unsigned hour=0,minute=0;
+
+	switch(*str) {
+		case 0:		/* local time-zone */
+			*zone = LOCAL_UTC_DIFF;	
+			return TRUE;	
+		case 'Z':	/* UTC */
+			*zone = 0;		
+			return TRUE;
+		case '+':
+		case '-':	/* "+/- HH[:]MM" */
+			if(sscanf(str+1,"%2u%*s%2u",&hour,&minute)>=1) {
+				*zone = (hour*60) + minute;
+				if(*str=='-')
+					*zone = -(*zone);
+				return TRUE;
+			}
+			break;
+	}
+	return FALSE;
+}
+
+isoDateTime_t isoDateTime_parse(const char* str)
+{
+	char zone[16];
+	xpDateTime_t	xpDateTime;
+	isoDateTime_t	isoDateTime;
+
+	zone[0]=0;
+	ZERO_VAR(xpDateTime);
+	ZERO_VAR(isoDateTime);
+
+	if((sscanf(str,"%4u%-%2u%-%2uT%2u:%2u:%f%6s"	/* CCYY-MM-DDThh:MM:ss±hhmm */
+		,&xpDateTime.date.year
+		,&xpDateTime.date.month
+		,&xpDateTime.date.day
+		,&xpDateTime.time.hour
+		,&xpDateTime.time.minute
+		,&xpDateTime.time.second
+		,zone)>=2
+	||	sscanf(str,"%4u%2u%2uT%2u%2u%f%6s"			/* CCYYMMDDThhmmss±hhmm */
+		,&xpDateTime.date.year
+		,&xpDateTime.date.month
+		,&xpDateTime.date.day
+		,&xpDateTime.time.hour
+		,&xpDateTime.time.minute
+		,&xpDateTime.time.second
+		,zone)>=4
+	||	sscanf(str,"%4u%2u%2u%2u%2u%f%6s"			/* CCYYMMDDhhmmss±hhmm */
+		,&xpDateTime.date.year
+		,&xpDateTime.date.month
+		,&xpDateTime.date.day
+		,&xpDateTime.time.hour
+		,&xpDateTime.time.minute
+		,&xpDateTime.time.second
+		,zone)>=2
+		) && isoTimeZone_parse(zone,&xpDateTime.zone))
+		return xpDateTime_to_isoDateTime(xpDateTime);
+
+	return isoDateTime;
 }
 
 /***********************************/
