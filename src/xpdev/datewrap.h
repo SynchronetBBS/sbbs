@@ -82,12 +82,6 @@ xpDateTime_t	time_to_xpDateTime(time_t);
 typedef ulong	isoDate_t;	/* CCYYMMDD (decimal) */
 typedef uint	isoTime_t;	/* HHMMSS   (decimal) */
 
-typedef struct {
-	isoDate_t	date;
-	isoTime_t	time;
-	int			zone;	/* minutes +/- UTC */
-} isoDateTime_t;
-
 #define isoDate_create(year,mon,day)	(((year)*10000)+((mon)*100)+(day))
 #define isoTime_create(hour,min,sec)	(((hour)*10000)+((min)*100)+(sec))
 
@@ -99,17 +93,13 @@ typedef struct {
 #define isoTime_minute(time)			(((time)/100)%100)
 #define isoTime_second(time)			((time)%100)
 
-isoDateTime_t	isoDateTime_create(unsigned year, unsigned month, unsigned day
-								   ,unsigned hour, unsigned minute, unsigned second
-								   ,int zone);
-isoDateTime_t	isoDateTime_now(void);
-isoDate_t		time_to_isoDate(time_t);
 isoTime_t		time_to_isoTime(time_t);
-isoDateTime_t	time_to_isoDateTime(time_t);
-time_t			isoDate_to_time(isoDate_t date, isoTime_t time);
-time_t			isoDateTime_to_time(isoDateTime_t);
+isoDate_t		time_to_isoDateTime(time_t, isoTime_t*);
+time_t			isoDateTime_to_time(isoDate_t date, isoTime_t time);
 BOOL			isoTimeZone_parse(const char* str, int* zone);
-isoDateTime_t	isoDateTime_parse(const char* str);
+xpDateTime_t	isoDateTime_parse(const char* str);
+
+#define			time_to_isoDate(t)		time_to_isoDateTime(t,NULL)
 
 /***************************************************/
 /* Conversion between xpDate/Time and isoDate/Time */
@@ -117,7 +107,6 @@ isoDateTime_t	isoDateTime_parse(const char* str);
 
 #define xpDate_to_isoDate(date)	isoDate_create((date).year,(date).month,(date).day)
 #define xpTime_to_isoTime(time)	isoTime_create((time).hour,(time).minute,(unsigned)((time).second))
-isoDateTime_t	xpDateTime_to_isoDateTime(xpDateTime_t);
 
 /***********************************/
 /* Borland DOS date/time functions */
