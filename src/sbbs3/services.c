@@ -1983,7 +1983,7 @@ void DLLCALL services_thread(void* arg)
 					,service[i].protocol, host_ip, ntohs(client_addr.sin_port));
 
 				if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
-					lprintf(LOG_WARNING,"%04d !%s MAXMIMUM CLIENTS (%u) reached, access denied"
+					lprintf(LOG_WARNING,"%04d !%s MAXIMUM CLIENTS (%u) reached, access denied"
 						,client_socket, service[i].protocol, service[i].max_clients);
 					mswait(3000);
 					close_socket(client_socket);

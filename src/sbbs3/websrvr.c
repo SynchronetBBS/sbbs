@@ -3929,7 +3929,7 @@ void DLLCALL web_server(void* arg)
 			}
 
 			if(startup->max_clients && active_clients>=startup->max_clients) {
-				lprintf(LOG_WARNING,"%04d !MAXMIMUM CLIENTS (%d) reached, access denied"
+				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, startup->max_clients);
 				mswait(3000);
 				close_socket(client_socket);

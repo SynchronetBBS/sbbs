@@ -4847,7 +4847,7 @@ void DLLCALL ftp_server(void* arg)
 			}
 
 			if(active_clients>=startup->max_clients) {
-				lprintf(LOG_WARNING,"%04d !MAXMIMUM CLIENTS (%d) reached, access denied"
+				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, startup->max_clients);
 				sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
 				mswait(3000);
