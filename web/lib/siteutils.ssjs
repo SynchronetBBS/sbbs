@@ -16,7 +16,6 @@ var ftp_port = 21;
 var nntp_port = 119;
 var gopher_port = 70;
 var finger_port = 79;
-var udp_finger_port = 79;
 var telnet_port = 23;
 var rlogin_port = 513;
 var smtp_port = 25;
@@ -39,7 +38,6 @@ if(file.open("r")) {
     irc_port = file.iniGetValue("irc","port",irc_port);
     gopher_port = file.iniGetValue("gopher","port",gopher_port);
     finger_port = file.iniGetValue("finger","port",finger_port);
-    udp_finger_port = file.iniGetValue("udp-finger","port",udp_finger_port);
     file.close();
 } 
 
