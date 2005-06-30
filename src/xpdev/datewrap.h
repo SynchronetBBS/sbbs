@@ -43,8 +43,12 @@
 /* Compensates for struct tm "weirdness" */
 time_t sane_mktime(struct tm*);
 
+#if defined(__BORLANDC__)
+	#define timezone _timezone
+#endif
+
 /* Converts timezone from seconds west of UTC to minutes east of UTC */
-#define LOCAL_UTC_DIFF	(-_timezone/60)
+#define LOCAL_UTC_DIFF	(-timezone/60)
 
 /**************************************/
 /* Cross-platform date/time functions */
