@@ -18,8 +18,6 @@ var doQWK = true;
     var port = host.indexOf(':');
     if(port>=0)
             host=host.slice(0,port);
-    else
-        host=host;
     template.ftp_url += host; 
     if(ftp_port!=21)
         template.ftp_url += ":" + ftp_port;
