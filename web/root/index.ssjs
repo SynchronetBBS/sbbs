@@ -41,6 +41,9 @@ load("../web/lib/leftnav_html.ssjs");
         host = http_request.host;
     if(host==undefined || !host.length)
         host = system.host_name;
+    var port = host.indexOf(':');
+    if(port>=0)
+        host=host.slice(0,port);
     
     if(telnet_port=="23")
       telnet_port="";
