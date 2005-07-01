@@ -307,8 +307,8 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
            # export SBBSCTRL=/sbbs/ctrl
 
    B. Change SCFG->Networks->QWK->Hubs->VERT:
-      Pack Command Line               zip -j -D %f %s
-      Unpack Command Line             unzip -o -j %f %s -d %g
+      Pack Command Line               zip -jD %f %s
+      Unpack Command Line             unzip -ojC %f %s -d %g
       Call-out Command Line           *qnet-ftp VERT dove.synchro.net YOURPASS
       (see docs/dove-net.txt for more details)
 
@@ -379,7 +379,7 @@ Default Configuration (SCFG) Screen-shots
 
 [Viewable File Type]
 1: File Extension        zip
-2: Command Line          unzip -C -l %s
+2: Command Line          unzip -vq %s
 3: Access Requirements   UNIX
 
 [Viewable File Type]
@@ -418,7 +418,7 @@ Default Configuration (SCFG) Screen-shots
 
 [Extractable File Type]
 1: File Extension        zip
-2: Command Line          unzip -C -o -j %f %s -d %g
+2: Command Line          unzip -ojC %f %s -d %g
 3: Access Requirements   UNIX
 
 [Extractable File Type]
@@ -433,7 +433,7 @@ Default Configuration (SCFG) Screen-shots
 
 [Compressable File Type]
 1: File Extension        zip
-2: Command Line          zip -j -D %f %s
+2: Command Line          zip -jD %f %s
 3: Access Requirements   UNIX
 
 [Compressable File Type]
@@ -575,8 +575,8 @@ Default Configuration (SCFG) Screen-shots
 SBBSecho zip/unzip configuration (ctrl/sbbsecho.cfg)
 ================================
 PACKER ZIP 0 504B
-  PACK zip -j %f %s
-  UNPACK unzip -o -j %f -d %s
+  PACK zip -jD %f %s
+  UNPACK unzip -ojC %f -d %s
 
 
 Send comments/questions to rob[at]synchro[dot]net
