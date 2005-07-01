@@ -23,7 +23,6 @@ template.ftp_port = ftp_port;
 template.nntp_port = nntp_port;
 template.gopher_port = gopher_port;
 template.finger_port = finger_port;
-template.udp_finger_port = udp_finger_port;
 template.telnet_port = telnet_port;
 template.rlogin_port = rlogin_port;
 template.smtp_port = smtp_port;
