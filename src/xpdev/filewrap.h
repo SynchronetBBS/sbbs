@@ -80,8 +80,10 @@
 		#include <share.h>
 		#define L_SET	SEEK_SET
 	#else
+		#ifndef O_TEXT
 		#define O_TEXT		0		/* all files in binary mode on Unix */
 		#define O_BINARY	0		/* all files in binary mode on Unix */
+		#endif
 		#undef	O_DENYNONE
 		#define O_DENYNONE  (1<<31)	/* req'd for Baja/nopen compatibility */
 

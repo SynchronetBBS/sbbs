@@ -67,6 +67,10 @@ extern "C" {
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
 	#define MKDIR(dir)		mkdir(dir,0777)
 
+	#if defined(__CYGWIN__)
+		#define DLLEXPORT	/* CygWin's glob.h #undef's DLLEXPORT */
+	#endif
+
 #else	
 
 	#include <direct.h>		/* mkdir() */

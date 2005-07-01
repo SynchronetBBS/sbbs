@@ -43,7 +43,7 @@
 /* Compensates for struct tm "weirdness" */
 time_t sane_mktime(struct tm*);
 
-#if defined(__BORLANDC__)
+#if defined(__BORLANDC__) || defined(__CYGWIN__)
 	#define timezone _timezone
 #endif
 
