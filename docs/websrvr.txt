@@ -122,6 +122,9 @@ two other configuration files.
 The default web pages use a Template engine which also allows for Theme 
 support.
 
+[Note:  With this latest implementation of SSJS, @@ codes no longer can be
+nested.]
+
 3.1 The Template Scheme
 -------------------------
 Each page consists of four parts:
@@ -218,7 +221,7 @@ For example the groups.inc:
 <<REPEAT groups>>
 <tr>
     <td class="grouplist"><a class="grouplist" href="subs.ssjs?msg_grp=^^groups:name^^">%%groups:description%%</a></td>
-    <td class="grouplist" align="right">@@JS:msg_area.grp_list['@@groups:index@@'].sub_list.length@@</td>
+    <td class="grouplist" align="right">@@JS:msg_area.grp_list[RepeatObj.index].sub_list.length@@</td>
 </tr>
 <<END REPEAT groups>>
 </table>
@@ -237,7 +240,7 @@ the main table layout in this case) to:
 
 <<REPEAT groups>>
     <a class="grouplist" href="subs.ssjs?msg_grp=^^groups:name^^">%%groups:description%%</a>
-     @@JS:msg_area.grp_list['@@groups:index@@'].sub_list.length@@<br />
+    @@JS:msg_area.grp_list[RepeatObj.index].sub_list.length@@<br />
 <<END REPEAT groups>>
 
 <br />
@@ -249,7 +252,7 @@ This principle applies to all the .inc files in msgs respectively.
 3.4 The SSJS Template Library
 -------------------------------
 
-%%name%% is replaced with the HTML encoded value of template.name         
+%%name%% is replaced with the HTML encoded value of template.name
 
 i.e.; Spaces are replaced with: this&nbsp;is&nbsp;html
 
@@ -257,23 +260,23 @@ i.e.; Spaces are replaced with: this&nbsp;is&nbsp;html
 
 i.e.; Spaces are replaced with:  this%20is%20URI
           
-@@name@@ is replaced with the value if template.name                      
+@@name@@ is replaced with the value if template.name
 
 No changes or encoding is performed.
 
-@@name:sname@@ is replaced with the value of template.name.sname          
-(^^ and %% are also supported)                                            
-                                                                          
+@@name:sname@@ is replaced with the value of template.name.sname
+(^^ and %% are also supported)
+
 @@JS:js_expression@@ is replaced with the return value of js_expression   
-(^^ and %% are also supported)                                            
-                                                                          
-<<REPEAT name>>                                                           
- ... @@name:sname@@ ...                                                   
-<<END REPEAT name>>                                                       
-                                                                          
+(^^ and %% are also supported)
+
+<<REPEAT name>>
+    @@name:sname@@
+<<END REPEAT name>>
+
 Iterates over the array/object template.name and replaces name:sname with 
-the value of template.name.sname.                                         
-(^^ and %% are also supported)                                            
+the value of template.name.sname.
+(^^ and %% are also supported)
 
 3.5 Message Configuration
 --------------------------
@@ -333,4 +336,22 @@ but the Who's Online page before displaying the Left side Nodelisting.
 
 IMPORTANT!  Anything contained within @@JS: @@ MUST be on one line or there will 
 be errors in parsing.
+
+3.7 global_defs.ssjs
+--------------------
+
+This version of the Web Layout now includes a new file called golbal_defs.ssjs.  It
+is located in the ../web/lib directory.  This file can be used for creating global 
+definitions that span all pages of a site.  For example:
+
+template.user_alias=user.alias;
+
+Now @@user_alias@@ can be in any *.inc template files and it will display the user's 
+alias.
+
+Care should be excersied when using this file as loading it up with hundreds of predefined
+definitions may slow down overall page rendering as the file is loaded on every page.  
+It would be better to just put a few popular definitions that are truly global rather many
+definitions.  It would be inefficient to have thirty of forty message definitions being 
+loaded when a user is looking at the statistics page.
 
