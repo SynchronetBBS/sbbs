@@ -727,6 +727,8 @@ BOOL doterm(struct bbslist *bbs)
 					continue;
 			}
 		}
+		else if (speed)
+			updated=FALSE;
 		hold_update=oldmc;
 		if(updated)
 			gotoxy(wherex(), wherey());
@@ -735,6 +737,8 @@ BOOL doterm(struct bbslist *bbs)
 		/* Get local input */
 		while(kbhit()) {
 			struct mouse_event mevent;
+
+			gotoxy(wherex(), wherey());
 			key=getch();
 			if(key==0 || key==0xff)
 				key|=getch()<<8;
