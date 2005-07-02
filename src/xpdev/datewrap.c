@@ -96,11 +96,11 @@ xpDateTime_t xpDateTime_now(void)
 xpTimeZone_t xpTimeZone_local(void)
 {
 #if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__)
-	struct tm t;
-	time_t i;
+	struct tm tm;
+	time_t t;
 
-	localtime_r(&i, &i);
-	return(t.tm_gmtoff/60);
+	localtime_r(&t, &tm);
+	return(tm.tm_gmtoff/60);
 #else
 #if defined(__BORLANDC__) || defined(__CYGWIN__)
 	#define timezone _timezone
