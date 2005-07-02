@@ -95,12 +95,20 @@ xpDateTime_t xpDateTime_now(void)
 
 xpTimeZone_t xpTimeZone_local(void)
 {
+#if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__)
+	struct tm t;
+	time_t i;
+
+	localtime_r(&i, &i);
+	return(t.tm_gmtoff/60);
+#else
 #if defined(__BORLANDC__) || defined(__CYGWIN__)
 	#define timezone _timezone
 #endif
 
 	/* Converts (_)timezone from seconds west of UTC to minutes east of UTC */
 	return -timezone/60;
+#endif
 }
 
 time_t xpDateTime_to_time(xpDateTime_t xpDateTime)
