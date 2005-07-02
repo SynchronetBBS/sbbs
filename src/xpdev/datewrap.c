@@ -79,7 +79,7 @@ xpDateTime_t xpDateTime_now(void)
 	GetLocalTime(&systime);
 	return(xpDateTime_create(systime.wYear,systime.wMonth,systime.wDay
 		,systime.wHour,systime.wMinute,(float)systime.wSecond+(systime.wMilliseconds*0.001F)
-		,LOCAL_UTC_DIFF));
+		,xpTimeZone_local()));
 #else	/* !Win32 (e.g. Unix) */
 	struct tm tm;
 	struct timeval tv;
@@ -89,9 +89,18 @@ xpDateTime_t xpDateTime_now(void)
 
 	return xpDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
 		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec+(tv.tv_usec*0.00001)
-		,LOCAL_UTC_DIFF);
+		,xpTimeZone_local());
+#endif
+}
+
+xpTimeZone_t xpTimeZone_local(void)
+{
+#if defined(__BORLANDC__) || defined(__CYGWIN__)
+	#define timezone _timezone
 #endif
 
+	/* Converts (_)timezone from seconds west of UTC to minutes east of UTC */
+	return -timezone/60;
 }
 
 time_t xpDateTime_to_time(xpDateTime_t xpDateTime)
@@ -129,7 +138,7 @@ xpDateTime_t time_to_xpDateTime(time_t time)
 		return(never);
 
 	return xpDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
-		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec,LOCAL_UTC_DIFF);
+		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec,xpTimeZone_local());
 }
 
 /**********************************************/
@@ -153,7 +162,7 @@ isoDate_t xpDateTime_to_isoDateTime(xpDateTime_t xpDateTime, isoTime_t* isoTime)
 xpDateTime_t isoDateTime_to_xpDateTime(isoDate_t date, isoTime_t time)
 {
 	return xpDateTime_create(isoDate_year(date),isoDate_month(date),isoDate_day(date)
-		,isoTime_hour(time),isoTime_minute(time),(float)isoTime_second(time),LOCAL_UTC_DIFF);
+		,isoTime_hour(time),isoTime_minute(time),(float)isoTime_second(time),xpTimeZone_local());
 }
 
 isoDate_t time_to_isoDateTime(time_t time, isoTime_t* isoTime)
@@ -211,7 +220,7 @@ BOOL isoTimeZone_parse(const char* str, xpTimeZone_t* zone)
 
 	switch(*str) {
 		case 0:		/* local time-zone */
-			*zone = LOCAL_UTC_DIFF;	
+			*zone = xpTimeZone_local();	
 			return TRUE;	
 		case 'Z':	/* UTC */
 			*zone = 0;		

@@ -43,13 +43,6 @@
 /* Compensates for struct tm "weirdness" */
 time_t sane_mktime(struct tm*);
 
-#if defined(__BORLANDC__) || defined(__CYGWIN__)
-	#define timezone _timezone
-#endif
-
-/* Converts timezone from seconds west of UTC to minutes east of UTC */
-#define LOCAL_UTC_DIFF	(-timezone/60)
-
 /**************************************/
 /* Cross-platform date/time functions */
 /**************************************/
@@ -80,6 +73,7 @@ xpDateTime_t	xpDateTime_create(unsigned year, unsigned month, unsigned day
 xpDateTime_t	xpDateTime_now(void);
 time_t			xpDateTime_to_time(xpDateTime_t);
 xpDateTime_t	time_to_xpDateTime(time_t);
+xpTimeZone_t	xpTimeZone_local(void);
 
 /**********************************************/
 /* Decimal-coded ISO-8601 date/time functions */
