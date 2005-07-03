@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include <time.h>		/* ctime */
+#include <string.h>		/* strcat */
 #include "smblib.h"
 
 static char *binstr(uchar *buf, ushort length)

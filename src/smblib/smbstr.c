@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include <ctype.h>		/* is*() */
+#include <string.h>		/* strcpy, strcat, memset, strchr */
 #include <genwrap.h> 		/* stricmp */
 #include "smblib.h"
 

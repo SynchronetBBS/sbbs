@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include <time.h>
+#include <string.h>	/* strlen(), memset() */
 #include "smblib.h"
 #include "genwrap.h"
 #include "crc32.h"
