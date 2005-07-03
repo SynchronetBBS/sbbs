@@ -37,6 +37,8 @@
 
 #define STARTUP_INI_BITDESC_TABLES
 
+#include <string.h>	/* strchr, memset */
+
 #include "dirwrap.h"	/* backslash */
 #include "sbbs_ini.h"
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
