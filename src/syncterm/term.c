@@ -730,13 +730,11 @@ BOOL doterm(struct bbslist *bbs)
 			}
 		}
 		else if (speed) {
-			updated=FALSE;
 			sleep=FALSE;
 		}
 		hold_update=oldmc;
-		if(updated)
+		if(updated && sleep)
 			gotoxy(wherex(), wherey());
-		updated=FALSE;
 
 		/* Get local input */
 		while(kbhit()) {
@@ -914,7 +912,7 @@ BOOL doterm(struct bbslist *bbs)
 					}
 			}
 		}
-		if(!updated)
+		if(sleep)
 			SLEEP(1);
 		else
 			MAYBE_YIELD();
