@@ -120,7 +120,7 @@ typedef struct {
 } ftp_t;
 
 
-static const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
+static const char *ftp_mon[]={"Jan","Feb","Mar","Apr","May","Jun"
             ,"Jul","Aug","Sep","Oct","Nov","Dec"};
 
 BOOL direxist(char *dir)
@@ -3084,7 +3084,7 @@ static void ctrl_thread(void* arg)
 							,isdir(g.gl_pathv[i]) ? 'd':'-'
 							,scfg.sys_id
 							,f.size
-							,mon[tm.tm_mon],tm.tm_mday);
+							,ftp_mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
 							fprintf(fp,"%02d:%02d %s\r\n"
 								,tm.tm_hour,tm.tm_min
@@ -3366,7 +3366,7 @@ static void ctrl_thread(void* arg)
 						,lib<0 ? scfg.sys_id : dir<0 
 							? scfg.lib[lib]->sname : scfg.dir[dir]->code_suffix
 						,512L
-						,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
+						,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 						,startup->index_file_name);
 				else
 					fprintf(fp,"%s\r\n",startup->index_file_name);
@@ -3381,7 +3381,7 @@ static void ctrl_thread(void* arg)
 						,lib<0 ? scfg.sys_id : dir<0 
 							? scfg.lib[lib]->sname : scfg.dir[dir]->code_suffix
 						,512L
-						,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
+						,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 						,startup->html_index_file);
 				else
 					fprintf(fp,"%s\r\n",startup->html_index_file);
@@ -3407,7 +3407,7 @@ static void ctrl_thread(void* arg)
 							,scfg.sys_id
 							,scfg.sys_id
 							,l
-							,mon[tm.tm_mon],tm.tm_mday,tm.tm_hour,tm.tm_min
+							,ftp_mon[tm.tm_mon],tm.tm_mday,tm.tm_hour,tm.tm_min
 							,scfg.sys_id);
 					} else
 						fprintf(fp,"%s.qwk\r\n",scfg.sys_id);
@@ -3474,7 +3474,7 @@ static void ctrl_thread(void* arg)
 									,scfg.sys_id
 									,scfg.lib[scfg.dir[dir]->lib]->sname
 									,512L
-									,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
+									,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 									,p);
 							}
 							else {
@@ -3486,7 +3486,7 @@ static void ctrl_thread(void* arg)
 									,scfg.sys_id
 									,scfg.sys_id
 									,flength(np)
-									,mon[tm.tm_mon],tm.tm_mday,tm.tm_hour,tm.tm_min
+									,ftp_mon[tm.tm_mon],tm.tm_mday,tm.tm_hour,tm.tm_min
 									,p);
 							}
 						} else
@@ -3507,7 +3507,7 @@ static void ctrl_thread(void* arg)
 							,scfg.sys_id
 							,scfg.sys_id
 							,512L
-							,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
+							,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 							,scfg.lib[i]->sname);
 					else
 						fprintf(fp,"%s\r\n",scfg.lib[i]->sname);
@@ -3527,7 +3527,7 @@ static void ctrl_thread(void* arg)
 							,scfg.sys_id
 							,scfg.lib[lib]->sname
 							,512L
-							,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
+							,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 							,scfg.dir[i]->code_suffix);
 					else
 						fprintf(fp,"%s\r\n",scfg.dir[i]->code_suffix);
@@ -3569,7 +3569,7 @@ static void ctrl_thread(void* arg)
 							,str
 							,scfg.dir[dir]->code_suffix
 							,f.size
-							,mon[tm.tm_mon],tm.tm_mday);
+							,ftp_mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
 							fprintf(fp,"%02d:%02d %s\r\n"
 								,tm.tm_hour,tm.tm_min
