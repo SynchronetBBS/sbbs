@@ -86,7 +86,8 @@ xpDateTime_t xpDateTime_now(void)
 	struct timeval tv;
 	time_t	t;
 
-	t=time(NULL);
+	gettimeofday(&tv, NULL);
+	t=tv.tv_sec;
 	localtime_r(&t,&tm);
 
 	return xpDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
