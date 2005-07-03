@@ -32,6 +32,7 @@
  ****************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <genwrap.h>
 #include <semwrap.h>

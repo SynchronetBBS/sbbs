@@ -99,6 +99,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>	/* malloc */
 #include <unistd.h>	/* sysconf() */
 
 #include <X11/Xlib.h>
