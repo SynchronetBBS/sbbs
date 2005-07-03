@@ -6,7 +6,6 @@
 #include <uifc.h>
 
 extern	uifcapi_t uifc; /* User Interface (UIFC) Library API */
-extern int uifc_initialized;
 int	init_uifc(BOOL scrn, BOOL bottom);
 void uifcbail(void);
 void uifcmsg(char *msg, char *helpbuf);
