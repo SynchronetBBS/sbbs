@@ -738,6 +738,7 @@ BOOL doterm(struct bbslist *bbs)
 		while(kbhit()) {
 			struct mouse_event mevent;
 
+			updated=TRUE;
 			gotoxy(wherex(), wherey());
 			key=getch();
 			if(key==0 || key==0xff)
@@ -909,7 +910,10 @@ BOOL doterm(struct bbslist *bbs)
 					}
 			}
 		}
-		MAYBE_YIELD();
+		if(updated)
+			SLEEP(1);
+		else
+			MAYBE_YIELD();
 	}
 
 	return(FALSE);
