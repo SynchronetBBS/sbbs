@@ -909,7 +909,7 @@ BOOL doterm(struct bbslist *bbs)
 					}
 			}
 		}
-		SLEEP(1);
+		MAYBE_YIELD();
 	}
 
 	return(FALSE);
