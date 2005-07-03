@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include <unistd.h>
+#include <stdlib.h>
 #include "sockwrap.h"	/* Must go before <sys/un.h> */
 #include <sys/un.h>
 #include <stdio.h>
