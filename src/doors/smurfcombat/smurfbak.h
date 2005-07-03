@@ -6,7 +6,7 @@ backgame(void)
     struct date     d;
     int             thp;
     getdate(&d);
-    sprintf(backname, "smurf.S%02.2d", d.da_day);
+    sprintf(backname, "smurf.s%02.2d", d.da_day);
     stream = fopen(backname, "w+");
     fprintf(stream, "%03i", noplayers);
     for (cyc = 0; cyc < noplayers; cyc++) {
