@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include <stdio.h>		/* NULL */
+#include <stdlib.h>		/* malloc() */
 #include "xpevent.h"
 
 xpevent_t
