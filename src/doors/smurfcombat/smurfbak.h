@@ -78,7 +78,9 @@ backgame(void)
 	 /* 69c */ fprintf(stream, "%03i", smurfsex[cyc]);	/* 000/001/002
 								 * Nil/Mal/Fem */
 
-    } fclose(stream);
+    }
+    /* ToDo: Figure out why this was here and what it was trying to do. */
+    /* fclose(stream); */
     fprintf(stream, "%03i", noplayers);
     for (cyc = 0; cyc < noplayers; cyc++) {
 #ifdef TODO_LOCAL_DISPLAY
