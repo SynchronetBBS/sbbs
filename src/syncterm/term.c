@@ -619,6 +619,7 @@ BOOL doterm(struct bbslist *bbs)
 	int	speed;
 	int	oldmc;
 	int	updated=FALSE;
+	BOOL	sleep=TRUE;
 
 	speed = bbs->bpsrate;
 	log_level = bbs->loglevel;
@@ -639,6 +640,7 @@ BOOL doterm(struct bbslist *bbs)
 	oldmc=hold_update;
 	for(;;) {
 		hold_update=TRUE;
+		sleep=TRUE;
 		if(!speed && bbs->bpsrate)
 			speed = bbs->bpsrate;
 		if(speed)
@@ -727,8 +729,10 @@ BOOL doterm(struct bbslist *bbs)
 					continue;
 			}
 		}
-		else if (speed)
+		else if (speed) {
 			updated=FALSE;
+			sleep=FALSE;
+		}
 		hold_update=oldmc;
 		if(updated)
 			gotoxy(wherex(), wherey());
