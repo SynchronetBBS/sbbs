@@ -199,6 +199,7 @@ static int lputs(int level, char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
+	char	*p;
 
 #ifdef __unix__
 
@@ -219,8 +220,15 @@ static int lputs(int level, char *str)
 	pthread_mutex_lock(&mutex);
 	/* erase prompt */
 	printf("\r%*s\r",prompt_len,"");
-	if(str!=NULL)
-		printf("%s\n",str);
+	if(str!=NULL) {
+		for(p=str; *p; p++) {
+			if(iscntrl(*p))
+				printf("^%c",'@'+*p);
+			else
+				printf("%c",*p);
+		}
+		puts("");
+	}
 	/* re-display prompt with current stats */
 	if(prompt!=NULL)
 		prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
