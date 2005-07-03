@@ -910,7 +910,7 @@ BOOL doterm(struct bbslist *bbs)
 					}
 			}
 		}
-		if(updated)
+		if(!updated)
 			SLEEP(1);
 		else
 			MAYBE_YIELD();
