@@ -323,11 +323,13 @@ void gettime(struct time* nyt)
 	nyt->ti_sec=(unsigned char)systime.wSecond;
 	nyt->ti_hund=systime.wMilliseconds/10;
 #else	/* !Win32 (e.g. Unix) */
+	struct tm dte;
+	time_t t;
 	struct timeval tim;
-	time_t dte;
 
-	dte=time(NULL);
-	localtime_r(&dte,&dte);
+	gettimeofday(&tim, NULL);
+	t=tim.tv_sec;
+	localtime_r(&t,&dte);
 	nyt->ti_min=dte.tm_min;
 	nyt->ti_hour=dte.tm_hour;
 	nyt->ti_sec=dte.tm_sec;
