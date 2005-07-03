@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "string.h"	/* memset */
 #include "genwrap.h"
 #include "datewrap.h"	/* xpDateTime_t */
 
@@ -83,9 +84,10 @@ xpDateTime_t xpDateTime_now(void)
 #else	/* !Win32 (e.g. Unix) */
 	struct tm tm;
 	struct timeval tv;
+	time_t	t;
 
-	gettimeofday(&tv,NULL);
-	localtime_r(&tv.tv_sec,&tm);
+	t=time(NULL);
+	localtime_r(&t,&tm);
 
 	return xpDateTime_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday
 		,tm.tm_hour,tm.tm_min,(float)tm.tm_sec+(tv.tv_usec*0.00001)
@@ -321,11 +323,11 @@ void gettime(struct time* nyt)
 	nyt->ti_sec=(unsigned char)systime.wSecond;
 	nyt->ti_hund=systime.wMilliseconds/10;
 #else	/* !Win32 (e.g. Unix) */
-	struct tm dte;
 	struct timeval tim;
+	time_t dte;
 
-	gettimeofday(&tim,NULL);
-	localtime_r(&tim.tv_sec,&dte);
+	dte=time(NULL);
+	localtime_r(&dte,&dte);
 	nyt->ti_min=dte.tm_min;
 	nyt->ti_hour=dte.tm_hour;
 	nyt->ti_sec=dte.tm_sec;
