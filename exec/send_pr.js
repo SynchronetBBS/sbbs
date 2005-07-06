@@ -26,9 +26,9 @@ if(tmp == -1)
 	exit();
 pr.Priority=priority[tmp];
 cats = new Array('build-bcc','build-nix','build-vcc','ciolib','console','doc','ftp','irc','ircd','js','menuedit','newslink','nntp','pop3','scfg','services','smblib','smtp','syncterm','telnet','uedit','uifc','umonitor','useredit','webif','websrvr','win32-gui','xpdev');
-console.uselect(0, "Category", "Win32 Build System (BCC)", "SYSOP");
-console.uselect(1, "Category", "*nix Build System", "SYSOP");
-console.uselect(2, "Category", "Win32 Build System (VCC)", "SYSOP");
+// console.uselect(0, "Category", "Win32 Build System (BCC)", "SYSOP");
+// console.uselect(1, "Category", "*nix Build System", "SYSOP");
+// console.uselect(2, "Category", "Win32 Build System (VCC)", "SYSOP");
 // console.uselect(3, "Category", "CONIO emulation library", "");
 console.uselect(4, "Category", "Synchronet Console (sbbs)", "SYSOP");
 console.uselect(5, "Category", "Documentation Bug", "");
