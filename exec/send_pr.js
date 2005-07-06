@@ -109,7 +109,7 @@ body += ">Fix:\r\n" + pr.Fix;
 hdrs.from=user.alias;
 hdrs.from_ext=user.number;
 hdrs.to='bugs@bbsdev.net';
-hdrs.subject=pr.Synopsis
+hdrs.subject=pr.Synopsis;
 
 var msgbase = new MsgBase('mail');
 if(msgbase.open!=undefined && msgbase.open()==false) {
