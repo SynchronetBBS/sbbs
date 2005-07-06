@@ -68,7 +68,7 @@ if(tmp == -1)
 	exit();
 pr.Class=cls[tmp];
 pr.Release=system.version_notice
-pr.ReleaseNote="\t"+system.os_version+' '+system.js_version+' '+system.socket_lib+' '+system.msgbase_lib+' '+system.compiled_when+' '+system.compiled_with;
+pr.ReleaseNote="\t"+system.os_version+"\r\n\t"+system.js_version+"\r\n\t"+system.socket_lib+"\r\n\t"+system.msgbase_lib+"\r\n\tCompiled: "+system.compiled_when+' with '+system.compiled_with;
 console.print("\nYPrecise description of the problem (Blank line ends)W\n");
 pr.Description = '';
 do {
