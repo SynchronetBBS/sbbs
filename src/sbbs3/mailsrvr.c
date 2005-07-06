@@ -2149,9 +2149,9 @@ static void smtp_thread(void* arg)
 							,socket, str);
 
 						if(mailproc_list[i].native) {
-							if((i=system(str))!=0)
+							if((j=system(str))!=0)
 								lprintf(LOG_WARNING,"%04d !SMTP system(%s) returned %d (errno: %d)"
-									,socket, str, i, errno);
+									,socket, str, j, errno);
 						} else  /* JavaScript */
 							js_mailproc(socket, &client, &relay_user, str /* cmdline */
 								,msgtxt_fname, rcptlst_fname, proc_err_fname
