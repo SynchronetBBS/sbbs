@@ -90,7 +90,7 @@ function mime_decode(hdr, body)
 			}
 			/* Search for HTML encoded bit */
 			for(bit in msgbits) {
-				var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
+				var pieces=msgbits[bit].split(/\r?\n\r?\n/);
 				var pheads=pieces[0];
 				if(pheads==undefined)
 					continue;
@@ -113,7 +113,7 @@ function mime_decode(hdr, body)
 			}
 			/* Search for plaintext bit */
 			for(bit in msgbits) {
-				var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
+				var pieces=msgbits[bit].split(/\r?\n\r?\n/);
 				var pheads=pieces[0];
 				var content=pieces.slice(2).join('');
 				if(content==undefined)
@@ -213,7 +213,7 @@ function mime_get_attach(hdr, body, filename)
 		msgbits=body.split(re);
 		/* Search for attachments */
 		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
+			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
 			var disp=pieces[0].match(/content-disposition:\s+(?:attachment|inline)[;\s]*filename="?([^";\r\n]*)"?/i);
 			if(disp==undefined)
 				continue;
@@ -257,7 +257,7 @@ function mime_get_cid_attach(hdr, body, cid)
 		msgbits=body.split(re);
 		/* Search for attachments */
 		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
+			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
 			var disp=pieces[0].match(/content-id:\s+<?([^\<\>;\r\n]*)>?/i);
 			if(disp==undefined)
 				continue;
