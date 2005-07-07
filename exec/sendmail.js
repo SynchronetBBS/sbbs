@@ -61,10 +61,10 @@ while((line=readln()) != undefined) {
 
 var msgbase = new MsgBase('mail');
 if(msgbase.open!=undefined && msgbase.open()==false) {
-	writeln("Cannot send bug report (open error)!");
+	writeln("Cannot send email (open error)!");
 	exit();
 }
 if(!msgbase.save_msg(hdrs, body)) {
-	writeln("Cannot send bug report (save error)!");
+	writeln("Cannot send email (save error)!");
 	exit();
 }
