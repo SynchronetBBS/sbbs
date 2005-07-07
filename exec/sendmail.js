@@ -1,5 +1,5 @@
-#!/sbbs/exec/jsexec -x
-// Change previous line to correct jsexec path!
+#!/sbbs/exec/jsexec -x -c/sbbs/ctrl
+// Change previous line to correct jsexec and ctrl paths!
 
 load("sbbsdefs.js");
 load("mailutil.js");
