@@ -3423,6 +3423,8 @@ static void sendmail_thread(void* arg)
 	char		secret[64];
 	char		md5_data[384];
 	char		digest[MD5_DIGEST_SIZE];
+	char		numeric_ip[16];
+	char		domain_list[MAX_PATH+1];
 	char*		server;
 	char*		msgtxt=NULL;
 	char*		p;
@@ -3545,6 +3547,7 @@ static void sendmail_thread(void* arg)
 				smb_unlockmsghdr(&smb,&msg);
 				continue;
 			}
+
 			if(!(startup->options&MAIL_OPT_SEND_INTRANSIT) && msg.hdr.netattr&MSG_INTRANSIT) {
 				smb_unlockmsghdr(&smb,&msg);
 				lprintf(LOG_ERR,"0000 SEND Message #%lu from %s to %s - in transit"
@@ -3573,49 +3576,84 @@ static void sendmail_thread(void* arg)
 			}
 
 			port=0;
-			if(startup->options&MAIL_OPT_RELAY_TX) { 
-				server=startup->relay_server;
-				port=startup->relay_port;
-			} else {
-				p=strrchr((char*)msg.to_net.addr,':');	/* non-standard SMTP port */
-				if(p!=NULL) {
-					*p=0;
-					port=atoi(p+1);
-				}
-				SAFECOPY(to,(char*)msg.to_net.addr);
-				truncstr(to,"> ");
 
-				p=strrchr(to,'@');
-				if(p==NULL) {
-					remove_msg_intransit(&smb,&msg);
-					lprintf(LOG_WARNING,"0000 !SEND INVALID destination address: %s", to);
-					SAFEPRINTF(err,"Invalid destination address: %s", to);
-					bounce(&smb,&msg,err,TRUE);
-					continue;
+			/* Check if this is a local email ToDo */
+			SAFECOPY(to,(char*)msg.to_net.addr);
+			truncstr(to,"> ");
+
+			p=strrchr(to,'@');
+			if(p==NULL) {
+				remove_msg_intransit(&smb,&msg);
+				lprintf(LOG_WARNING,"0000 !SEND INVALID destination address: %s", to);
+				SAFEPRINTF(err,"Invalid destination address: %s", to);
+				bounce(&smb,&msg,err,TRUE);
+				continue;
+			}
+			p++;
+			sprintf(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
+			if(stricmp(p,scfg.sys_inetaddr)==0
+					|| stricmp(p,startup->host_name)==0
+					|| findstr(p,domain_list)) {
+				/* This is a local message... no need to send to remote */
+				port = startup->smtp_port;
+				if(startup->interface_addr==0)
+					server="127.0.0.1";
+				else {
+					sprintf(numeric_ip, "%u.%u.%u.%u"
+							, startup->interface_addr >> 24
+							, (startup->interface_addr >> 16) & 0xff
+							, (startup->interface_addr >> 8) & 0xff
+							, startup->interface_addr & 0xff);
+					server = numeric_ip;
 				}
-				if((dns=resolve_ip(startup->dns_server))==INADDR_NONE) {
-					remove_msg_intransit(&smb,&msg);
-					lprintf(LOG_WARNING,"0000 !SEND INVALID DNS server address: %s"
-						,startup->dns_server);
-					continue;
+			}
+			else {
+				if(startup->options&MAIL_OPT_RELAY_TX) { 
+					server=startup->relay_server;
+					port=startup->relay_port;
+				} else {
+					p=strrchr((char*)msg.to_net.addr,':');	/* non-standard SMTP port */
+					if(p!=NULL) {
+						*p=0;
+						port=atoi(p+1);
+					}
+#if 0	/* Already done */
+					SAFECOPY(to,(char*)msg.to_net.addr);
+					truncstr(to,"> ");
+#endif
+					p=strrchr(to,'@');
+#if 0	/* Already done */
+					if(p==NULL) {
+						remove_msg_intransit(&smb,&msg);
+						lprintf(LOG_WARNING,"0000 !SEND INVALID destination address: %s", to);
+						SAFEPRINTF(err,"Invalid destination address: %s", to);
+						bounce(&smb,&msg,err,TRUE);
+						continue;
+					}
+#endif
+					if((dns=resolve_ip(startup->dns_server))==INADDR_NONE) {
+						remove_msg_intransit(&smb,&msg);
+						lprintf(LOG_WARNING,"0000 !SEND INVALID DNS server address: %s"
+							,startup->dns_server);
+						continue;
+					}
+					p++;
+					lprintf(LOG_DEBUG,"0000 SEND getting MX records for %s from %s",p,startup->dns_server);
+					if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
+						,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE
+						,TIMEOUT_THREAD_WAIT/2))!=0) {
+						remove_msg_intransit(&smb,&msg);
+						lprintf(LOG_WARNING,"0000 !SEND ERROR %d obtaining MX records for %s from %s"
+							,i,p,startup->dns_server);
+						SAFEPRINTF2(err,"Error %d obtaining MX record for %s",i,p);
+						bounce(&smb,&msg,err,FALSE);
+						continue;
+					}
+					server=mx;
 				}
-				p++;
-				lprintf(LOG_DEBUG,"0000 SEND getting MX records for %s from %s",p,startup->dns_server);
-				if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
-					,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE
-					,TIMEOUT_THREAD_WAIT/2))!=0) {
-					remove_msg_intransit(&smb,&msg);
-					lprintf(LOG_WARNING,"0000 !SEND ERROR %d obtaining MX records for %s from %s"
-						,i,p,startup->dns_server);
-					SAFEPRINTF2(err,"Error %d obtaining MX record for %s",i,p);
-					bounce(&smb,&msg,err,FALSE);
-					continue;
-				}
-				server=mx;
 			}
 			if(!port)
 				port=IPPORT_SMTP;
-
 
 			if((sock=mail_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
 				remove_msg_intransit(&smb,&msg);
