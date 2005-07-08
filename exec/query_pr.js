@@ -12,8 +12,7 @@ var r;	/* Response object */
 s.connect("gnats.bbsdev.net",1529);
 if(!s.is_connected) {
 	writeln("Cannot connect to GNATS database!");
-	write("Press any key to exit");
-	read(1);
+	console.pause();
 	exit();
 }
 
@@ -21,8 +20,7 @@ r=get_response(s);
 if(r.code!=200) {
 	writeln("CONNECT Expected 200, got "+r.code);
 	writeln(r.message);
-	write("Press any key to exit");
-	read(1);
+	console.pause();
 	exit();
 }
 s.send("USER guest\r\n");
@@ -30,8 +28,7 @@ r=get_response(s);
 if(r.code!=210) {
 	writeln("USER Expected 210, got "+r.code);
 	writeln(r.message);
-	write("Press any key to exit");
-	read(1);
+	console.pause();
 	exit();
 }
 set_prlist(s);
@@ -54,8 +51,7 @@ if(r.code == 300) {
 			if(r.code!=210) {
 				writeln("QFMT Expected 210, got "+r.code);
 				writeln(r.message);
-				write("Press any key to exit");
-				read(1);
+				console.pause();
 				exit();
 			}
 			m=prs[pr].match(/^[^\/]*\/([0-9]*)/);
@@ -65,19 +61,16 @@ if(r.code == 300) {
 				if(r.code != 300) {
 					writeln("QUER Expected 300, got "+r.code);
 					writeln(r.message);
-					write("Press any key to exit");
-					read(1);
+					console.pause();
 					exit();
 				}
 				writeln(r.text);
 				writeln();
-				writeln("--- End of PR (Press any key to return to list) ---");
-				read(1);
+				writeln("--- End of PR ---");
 			}
 			else {
 				writeln("Error getting PR info");
-				write("Press any key to exit");
-				read(1);
+				console.pause();
 				exit();
 			}
 		}
@@ -88,14 +81,12 @@ if(r.code == 300) {
 }
 else if (r.code == 220) {
 	writeln("No PRs!");
-	write("Press any key to exit");
-	read(1);
+	console.pause();
 }
 else {
 	writeln("QUER Expected 300 or 220, got "+r.code);
 	writeln(r.message);
-	write("Press any key to exit");
-	read(1);
+	console.pause();
 	exit();
 }
 
@@ -176,8 +167,7 @@ function set_prlist(s)
 	r=get_response(s);
 	if(r.code!=210) {
 		writeln("EXPR Expected 210, got "+r.code);
-		write("Press any key to exit");
-		read(1);
+		console.pause();
 		exit();
 	}
 	s.send('QFMT "%9.9s/%-5.5s %-45.45s %-10.10s" Category Number Synopsis Responsible State\r\n');
@@ -185,8 +175,7 @@ function set_prlist(s)
 	if(r.code!=210) {
 		writeln("QFMT Expected 210, got "+r.code);
 		writeln(r.message);
-		write("Press any key to exit");
-		read(1);
+		console.pause();
 		exit();
 	}
 }
