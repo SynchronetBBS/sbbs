@@ -71,7 +71,7 @@ if(r.code == 300) {
 				}
 				writeln(r.text);
 				writeln();
-				writeln("--- End of PR (Press a key to return to list) ---");
+				writeln("--- End of PR (Press any key to return to list) ---");
 				read(1);
 			}
 			else {
@@ -88,6 +88,8 @@ if(r.code == 300) {
 }
 else if (r.code == 220) {
 	writeln("No PRs!");
+	write("Press any key to exit");
+	read(1);
 }
 else {
 	writeln("QUER Expected 300 or 220, got "+r.code);
@@ -97,8 +99,6 @@ else {
 	exit();
 }
 
-write("Press any key to exit");
-read(1);
 s.send("QUIT\r\n");
 
 function get_response(s)
