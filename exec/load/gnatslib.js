@@ -34,6 +34,7 @@ function GNATS(host,user,pass)
 	this.get_result=GNATS_get_result;
 	this.get_results=GNATS_get_results;
 	this.get_list=GNATS_get_list;
+	this.get_valid=GNATS_get_valid;
 }
 
 function GNATS_connect()
@@ -269,6 +270,19 @@ function GNATS_get_list(type)
 	if(!this.cmd("LIST",type))
 		return(undefined);
 	if(!this.expect("LIST",301))
+		return(undefined);
+	items=this.response.text.split(/\r?\n/);
+	items.pop()	// Remove empty field at end
+	return(items);
+}
+
+function GNATS_get_valid(field)
+{
+	var items;
+
+	if(!this.cmd("FVLD",field))
+		return(undefined);
+	if(!this.expect("FVLD",301))
 		return(undefined);
 	items=this.response.text.split(/\r?\n/);
 	items.pop()	// Remove empty field at end
