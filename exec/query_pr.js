@@ -42,7 +42,10 @@ if(r.code == 300) {
 	while(!done) {
 		var c;
 		for(c=0; c < prs.length; c++) {
-			console.uselect(c,"Problem Report",prs[c],"");
+			m=prs[c].match(/^(.{72}) (.{10}) (.{6}) (.{10}) (.{10})$/);
+			if(m!=undefined && m.index>-1) {
+				console.uselect(c,"Problem Report",format("%s\r\n     State: %s Responsible: %s Category: %s PR: %s",m[1],m[5],m[4],m[2],m[3]),"");
+			}
 		}
 		pr=console.uselect();
 		if(pr>=0) {
@@ -170,7 +173,7 @@ function set_prlist(s)
 		console.pause();
 		exit();
 	}
-	s.send('QFMT "%9.9s/%-5.5s %-45.45s %-10.10s" Category Number Synopsis Responsible State\r\n');
+	s.send('QFMT "%-72.72s %-10.10s %-6.6s %-10.10s %-10.10s" Synopsis Category Number Responsible State\r\n');
 	r=get_response(s);
 	if(r.code!=210) {
 		writeln("QFMT Expected 210, got "+r.code);
