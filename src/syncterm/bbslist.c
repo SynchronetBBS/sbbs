@@ -366,6 +366,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 	for(;;) {
 		uifc.helpbuf=	"`SyncTERM Dialing Directory`\n\n"
 						"Commands:\n\n"
+						"~ CTRL-D ~ Quick-dial a URL\n"
 						"~ CTRL-E ~ to edit the selected entry\n"
 						" ~ ENTER ~ to dial the selected entry";
 		if(opt != oldopt) {
@@ -400,7 +401,9 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 					break;
 				case -6:		/* CTRL-D */
 					uifc.changes=0;
-					uifc.input(WIN_MID|WIN_SAV,0,0,"Telnet Address",addy,LIST_ADDR_MAX,0);
+					uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
+									"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n"
+					uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
 					if(uifc.changes) {
 						parse_url(addy,&retlist);
 						free_list(&list[0],listcount);
