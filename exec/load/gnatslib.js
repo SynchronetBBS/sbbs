@@ -50,7 +50,7 @@ function GNATS_connect()
 		return(false);
 	if(!this.cmd("USER",this.user,this.pass))
 		return(false);
-	if(!this.expect("USER",210);
+	if(!this.expect("USER",210))
 		return(false);
 	return(true);
 }
@@ -71,7 +71,7 @@ function GNATS_get_fullpr(num)
 {
 	if(!this.reset_expr())		// Reset current expression.
 		return(undefined);
-	if(!this.set_expr("State==State"));	// Select all PRs
+	if(!this.set_expr("State==State"))	// Select all PRs
 		return(undefined);
 	if(!this.set_qfmt("full"))		// Request full PR
 		return(undefined);
@@ -85,31 +85,48 @@ function GNATS_get_fullpr(num)
 function GNATS_expect()
 {
 	var i;
-	for(i=1; i<arguments.length; i++) {
-		if(this.response.code == arguments[i])
+	var args=new Array();
+	var desc;
+
+	desc=arguments[0];
+	for(i=1; i<arguments.length; i++)
+		args.push(arguments[i]);
+	for(i=0; i<args.length; i++) {
+		if(this.response.code == args[i])
 			return(true);
 	}
-	this.error=arguments.unshift()+" expected "+arguments.join(" or ")+"\r\n"+this.response.message;
+	this.error=desc+" expected "+args.join(" or ")+" got "+this.response.code+"\r\n"+this.response.message;
+
 	return(false);
 }
 
 function GNATS_cmd()
 {
-	var send=arguments.join(" ")+"\r\n";
+	var send;
+	var i;
+	var args=new Array();
 
+	for(i=0; i<arguments.length; i++)
+		args.push(arguments[i]);
+
+	send=args.join(' ')+"\r\n";
 	if(!this.socket.is_connected) {
 		this.error="Socket not connected";
 		return(false);
 	}
 
-	this.socket.send(send);
-	return(this.get_response);
+	if(!this.socket.send(send)) {
+		this.error="Error sending on socket";
+		return(false);
+	}
+	return(this.get_response());
 }
 
 function GNATS_get_response()
 {
 	var line;
 	var m;
+	var done=false;
 
 	this.error='';
 	this.response.message='';
@@ -125,8 +142,9 @@ function GNATS_get_response()
 
 	while(!done) {
 		if(this.socket.poll(30)) {
-			resp.raw+=this.socket.recvline();
-			m=resp.raw.match(/^([0-9]{3})([- ])(.*)$/);
+			line=this.socket.recvline();
+			this.response.raw += line;
+			m=line.match(/^([0-9]{3})([- ])(.*)$/);
 			if(m != undefined && m.index>-1) {
 				this.response.code=parseInt(m[1]);
 				this.response.message+=m[3];
@@ -197,7 +215,7 @@ function GNATS_set_qfmt(format)
 {
 	if(format==undefined)
 		format="standard";
-	if(!this.cmd("QFMT",format)
+	if(!this.cmd("QFMT",format))
 		return(false);
 	if(!this.expect("QFMT",210))
 		return(FALSE);
@@ -206,9 +224,15 @@ function GNATS_set_qfmt(format)
 
 function GNATS_set_expr()
 {
+	var i;
+	var args=new Array();
+
+	for(i=0; i<arguments.length; i++)
+		args.push(arguments[i]);
+
 	if(!this.reset_expr())
 		return(false);
-	if(!this.cmd("EXPR",arguments.join(" "))
+	if(!this.cmd("EXPR",args.join(" ")))
 		return(false);
 	if(!this.expect("EXPR",210))
 		return(FALSE);

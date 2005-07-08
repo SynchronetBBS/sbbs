@@ -1,4 +1,11 @@
 load("sbbsdefs.js");
+load("gnatslib.js");
+
+gnats=new GNATS("gnats.bbsdev.net","guest");
+if(!gnats.connect()) {
+	writeln(gnats.error);
+	exit();
+}
 
 pr = new Object;
 var tmp;
@@ -9,62 +16,42 @@ pr.Organization = system.name;
 pr.Confidential = console.noyes("Confidential")?'no':'yes';
 console.print("YOne-line synopsis of the problem: W");
 pr.Synopsis = console.getstr();
-severity = new Array('critical','serious','non-critical');
-console.uselect(0,"Severity","Critical","SYSOP");
-console.uselect(1,"Severity","Serious","");
-console.uselect(2,"Severity","Non-Critical","");
+severity = gnats.get_valid("Severity");
+for(i=0; i<severity.length; i++) {
+	console.uselect(i,"Severity",severity[i]);
+}
 tmp=console.uselect();
 if(tmp == -1)
 	exit();
 pr.Severity=severity[tmp];
-priority = new Array('high','medium','low');
-console.uselect(0,"Priority","High","SYSOP");
-console.uselect(1,"Priority","Medium","");
-console.uselect(2,"Priority","Low","");
+priority = gnats.get_valid("Priority");
+for(i=0; i<priority.length; i++) {
+	console.uselect(i,"Priority",priority[i]);
+}
 tmp=console.uselect();
 if(tmp == -1)
 	exit();
 pr.Priority=priority[tmp];
-cats = new Array('build-bcc','build-nix','build-vcc','ciolib','console','doc','ftp','irc','ircd','js','menuedit','newslink','nntp','pop3','sbbsctrl','sbbsNTsvcs','scfg','services','smblib','smtp','syncterm','telnet','uedit','uifc','umonitor','useredit','webif','websrvr','xpdev');
-// console.uselect(0, "Category", "Win32 Build System (BCC)", "SYSOP");
-// console.uselect(1, "Category", "*nix Build System", "SYSOP");
-// console.uselect(2, "Category", "Win32 Build System (VCC)", "SYSOP");
-// console.uselect(3, "Category", "CONIO emulation library", "");
-console.uselect(4, "Category", "Synchronet Console (sbbs)", "SYSOP");
-console.uselect(5, "Category", "Documentation Bug", "");
-console.uselect(6, "Category", "FTP Server", "");
-console.uselect(7, "Category", "IRC Client", "");
-console.uselect(8, "Category", "IRC Daemon", "");
-console.uselect(9, "Category", "JavaScript Integration", "");
-// console.uselect(10, "Category", "Menu Editor", "SYSOP");
-console.uselect(11, "Category", "NewsLink", "");
-console.uselect(12, "Category", "NNTP Daemon", "");
-console.uselect(13, "Category", "POP3 (server to user) mail server", "");
-console.uselect(14, "Category", "Win32 Synchronet GUI", "");
-console.uselect(15, "Category", "Synchronet NT Services", "");
-console.uselect(16, "Category", "Synchronet Configuration Utility", "SYSOP");
-console.uselect(17, "Category", "Services", "SYSOP");
-// console.uselect(18, "Category", "SMB Library", "");
-console.uselect(19, "Category", "SMTP (server to server) mail server", "");
-// console.uselect(20, "Category", "SyncTERM", "");
-console.uselect(21, "Category", "Telnet Interface", "");
-console.uselect(22, "Category", "Synchronet External User Editor", "SYSOP");
-// console.uselect(23, "Category", "UIFC library", "");
-console.uselect(24, "Category", "User Monitor", "SYSOP");
-console.uselect(25, "Category", "Synchronet GUI User Editor", "SYSOP");
-console.uselect(26, "Category", "Web Interface", "");
-console.uselect(27, "Category", "Web Server", "");
-console.uselect(28, "Category", "Win32 Synchronet GUI", "SYSOP");
-// console.uselect(29, "Category", "XPDEV library", "");
+allcats=gnats.get_list("Categories");
+cats=new Array();
+for(i=0; i<allcats.length; i++) {
+	var flds=allcats[i].split(/:/);
+	cats.push(flds[0]);
+	console.uselect(i, "Category", flds[1], "");
+}
 tmp=console.uselect();
 if(tmp == -1)
 	exit();
 pr.Category=cats[tmp];
-cls = new Array('sw-bug','doc-bug','support','change-request');
-console.uselect(0, "Category", "Problem requiring a correction to software.", "");
-console.uselect(1, "Category", "Problem requiring a correction or improvement in documentation.", "");
-console.uselect(2, "Category", "A support problem or question.", "");
-console.uselect(3, "Category", "Suggested change in functionality.", "");
+cls = gnats.get_valid("Class");
+for(i=0; i<cls.length; i++) {
+	if(!gnats.cmd("ADMV","class",cls[i]))
+		continue;
+	if(!gnats.expect("ADMV",350))
+		continue;
+	var flds=gnats.response.message.split(/:/);
+	console.uselect(i, "Class", flds[2], "");
+}
 tmp=console.uselect();
 if(tmp == -1)
 	exit();
