@@ -37,7 +37,7 @@ query.responsible.list="Responsible";
 query.responsible.listdesc=1;
 query.responsible.desc="Responsible";
 query.state=new Object;
-query.state.text='Not equal to "closed"';
+query.state.text='Doesn'+"'"+'t equal "closed"';
 query.state.expr='State != "closed"';
 query.state.field="State";
 query.state.list="States";
