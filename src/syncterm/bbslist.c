@@ -348,6 +348,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 	char	title[1024];
 	char	currtitle[1024];
 	char	*p;
+	char	addy[LIST_ADDR_MAX+1];
 
 	if(init_uifc(TRUE, TRUE))
 		return(NULL);
@@ -387,10 +388,6 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 		if(val<0) {
 			switch(val) {
 				case -7:		/* CTRL-E */
-#if 0	/* Don't to the two list "mode" anymore */
-					mode=BBSLIST_EDIT;
-					break;
-#else
 					i=list[opt]->id;
 					if(edit_list(list[opt],listpath)) {
 						sort_list(list);
@@ -401,9 +398,14 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						oldopt=-1;
 					}
 					break;
-#endif
 				case -6:		/* CTRL-D */
-					mode=BBSLIST_SELECT;
+					uifc.changes=0;
+					uifc.input(WIN_MID|WIN_SAV,0,0,"Telnet Address",addy,LIST_ADDR_MAX,0);
+					if(uifc.changes) {
+						parse_url(addy,&retlist);
+						free_list(&list[0],listcount);
+						return(&retlist);
+					}
 					break;
 				case -1:		/* ESC */
 					free_list(&list[0],listcount);
