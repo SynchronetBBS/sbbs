@@ -12,21 +12,21 @@ var r;	/* Response object */
 s.connect("gnats.bbsdev.net",1529);
 if(!s.is_connected) {
 	writeln("Cannot connect to GNATS database!");
-	exit;
+	exit();
 }
 
 r=get_response(s);
 if(r.code!=200) {
 	writeln("CONNECT Expected 200, got "+r.code);
 	writeln(r.message);
-	exit;
+	exit();
 }
 s.send("USER guest\r\n");
 r=get_response(s);
 if(r.code!=210) {
 	writeln("USER Expected 210, got "+r.code);
 	writeln(r.message);
-	exit;
+	exit();
 }
 set_prlist(s);
 s.send('QUER\r\n');
@@ -48,7 +48,7 @@ if(r.code == 300) {
 			if(r.code!=210) {
 				writeln("QFMT Expected 210, got "+r.code);
 				writeln(r.message);
-				exit;
+				exit();
 			}
 			m=prs[pr].match(/^[^\/]*\/([0-9]*)/);
 			if(m!=undefined && m.index >-1) {
@@ -57,13 +57,13 @@ if(r.code == 300) {
 				if(r.code != 300) {
 					writeln("QUER Expected 300, got "+r.code);
 					writeln(r.message);
-					exit;
+					exit();
 				}
 				writeln(r.text);
 			}
 			else {
 				writeln("Error getting PR info");
-				exit;
+				exit();
 			}
 		}
 		else
@@ -77,7 +77,7 @@ else if (r.code == 220) {
 else {
 	writeln("QUER Expected 300 or 220, got "+r.code);
 	writeln(r.message);
-	exit;
+	exit();
 }
 
 s.send("QUIT\r\n");
@@ -124,7 +124,7 @@ function get_response(s)
 		}
 		else {
 			writeln("Error while recieving response!");
-			exit;
+			exit();
 		}
 	}
 	if(resp.type==SENDING_PR) {
@@ -143,7 +143,7 @@ function get_response(s)
 				}
 				else {
 					writeln("Error while recieving PR!");
-					exit;
+					exit();
 				}
 			}
 		}
@@ -157,13 +157,13 @@ function set_prlist(s)
 	r=get_response(s);
 	if(r.code!=210) {
 		writeln("EXPR Expected 210, got "+r.code);
-		exit;
+		exit();
 	}
 	s.send('QFMT "%9.9s/%-5.5s %-45.45s %-10.10s" Category Number Synopsis Responsible State\r\n');
 	r=get_response(s);
 	if(r.code!=210) {
 		writeln("QFMT Expected 210, got "+r.code);
 		writeln(r.message);
-		exit;
+		exit();
 	}
 }
