@@ -290,6 +290,7 @@ function set_prlist(s)
 					}
 				}
 				else {
+					write(query[fields[f]].desc+" "+text+": ");
 					var val=console.getstr();
 					text += ' "'+val+'"';
 					val.replace(/"/,'\\"');
