@@ -77,10 +77,14 @@ do {
 	pr.Fix += "\t" + line + "\r\n";
 } while (line != '');
 
-var hdrs = new Object;
-hdrs.to_net_type=NET_INTERNET;
-hdrs.to_net_addr='bugs@bbsdev.net';
 var body='';
+body += "To: bugs\r\n";
+body += "CC:\r\n";
+body += "Subject: "+pr.Synopsis+"\r\n";
+body += "From: "+user.name+" <"+user.alias+"@"+system.inet_addr+">\r\n";
+body += "Reply-To: "+user.name+" <"+user.alias+"@"+system.inet_addr+">\r\n";
+body += "X-Send-Pr-Version: Synchronet send_pr.js\r\n";
+body += "\r\n";
 body += ">Submitter-Id:\t" + pr.SubmitterId + "\r\n";
 body += ">Originator:\t" + pr.Originator + "\r\n";
 body += ">Confidential:\t" + pr.Confidential + "\r\n";
@@ -95,17 +99,8 @@ body += ">Description:\r\n" + pr.Description;
 body += ">How-To-Repeat:\r\n" + pr.HowToRepeat;
 body += ">Fix:\r\n" + pr.Fix;
 
-hdrs.from=user.alias;
-hdrs.from_ext=user.number;
-hdrs.to='bugs@bbsdev.net';
-hdrs.subject=pr.Synopsis;
-
-var msgbase = new MsgBase('mail');
-if(msgbase.open!=undefined && msgbase.open()==false) {
-	writeln("Cannot send bug report (open error)!");
-	exit();
+if(!gnats.submit(body)) {
+	writeln(gnats.error);
+	console.pause();
 }
-if(!msgbase.save_msg(hdrs, client, body)) {
-	writeln("Cannot send bug report (save error)!");
-	exit();
-}
+gnats.close();
