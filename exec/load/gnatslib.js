@@ -35,6 +35,7 @@ function GNATS(host,user,pass)
 	this.get_results=GNATS_get_results;
 	this.get_list=GNATS_get_list;
 	this.get_valid=GNATS_get_valid;
+	this.submit=GNATS_submit;
 }
 
 function GNATS_connect()
@@ -313,7 +314,30 @@ function GNATS_get_valid(field)
 	return(items);
 }
 
+function GNATS_submit(pr)
+{
+	var lines;
+	var i;
 
+	if(!this.cmd("SUBM"))
+		return(false);
+	if(!this.expect("SUBM",211))
+		return(false);
+	lines=pr.split(/\r?\n/);
+	for(i=0; i<lines.length; i++) {
+		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
+			this.error="Error sending PR";
+			this.close();
+			return(false);
+		}
+	}
+	if(!this.socket.send(".\r\n")) {
+		this.error="Error sending PR";
+		this.close();
+		return(true);
+	}
+	return(true);
+}
 
 
 
