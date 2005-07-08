@@ -3,6 +3,8 @@
 load("../web/lib/msgslib.ssjs");
 load("../web/lib/mime_decode.ssjs");
 
+template.txtbodybgwht=0;
+
 if(msgbase.open!=undefined && msgbase.open()==false) {
     error(msgbase.last_error);
 }
@@ -89,6 +91,9 @@ if(template.hdr != null)  {
         template.hfields+="</html>";
     }
 }
+
+if(msg.type!="plain" && sub=="mail")
+  template.txtbodybgwht=1;
 
 var tmp=find_np_message(template.idx.offset,true);
 template.temp=tmp

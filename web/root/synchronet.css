@@ -689,6 +689,23 @@ pre.leftalign {
     font-size:9pt; 
 }
 
+pre.leftalignwht { 
+    background-color: white; 
+    color: #000000; 
+    text-align: left; 
+    padding: 3px; 
+    font-size:9pt; 
+}
+
+.txtbodywht { 
+background-color: #ffffff;
+}
+
+.txtbody { 
+background-color: #000000;
+}
+
+
 /* Footer */
 
 .footer { 
