@@ -402,7 +402,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 				case -6:		/* CTRL-D */
 					uifc.changes=0;
 					uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
-									"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n"
+									"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n";
 					uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
 					if(uifc.changes) {
 						parse_url(addy,&retlist);
