@@ -14,11 +14,11 @@ function GNATS(host,user,pass)
 	this.pass=pass;
 	this.error='';
 	this.response=new Object;
-        this.response.message='';
-        this.response.text='';
-        this.response.raw='';
-        this.response.code=0;
-        this.response.type=PR_ERROR;
+	this.response.message='';
+	this.response.text='';
+	this.response.raw='';
+	this.response.code=0;
+	this.response.type=PR_ERROR;
 	this.socket=new Socket(SOCK_STREAM);
 
 	// Methods
@@ -412,7 +412,7 @@ function GNATS_replace(pr,field,note)
 	return(true);
 }
 
-function GNATS_change_field(pr,field,new,why)
+function GNATS_change_field(pr,field,newval,why)
 {
 	var old;
 	var note='';
@@ -424,11 +424,11 @@ function GNATS_change_field(pr,field,new,why)
 	old=this.get_result();
 	if(old==undefined)
 		return(false);
-	if(old==new)
+	if(old==newval)
 		return(false);
-	if(!this.replace(pr,field,new))
+	if(!this.replace(pr,field,newval))
 		return(false);
-	note += field+'-Changed-From-To: '+old+'->'+new+"\r\n";
+	note += field+'-Changed-From-To: '+old+'->'+newval+"\r\n";
 	note += field+'-Changed-By: '+this.user+"\r\n";
 	note += field+'-Changed-When: '+strftime("%a, %d %b %Y %H:%M:%S %z",new Date())+"\r\n";
 	note += field+'-Changed-Why:\r\n";
