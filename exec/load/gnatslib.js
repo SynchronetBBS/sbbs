@@ -1,4 +1,6 @@
 load("sockdefs.js");
+load("mailutil.js");
+load("sbbsdefs.js");
 
 var PR_SUCCESS=0;
 var PR_SENDING_DATA=1;
@@ -6,12 +8,25 @@ var PR_QUERY_SUCCESS=2;
 var PR_ERROR=3;
 var PR_RETRY=4;
 
-function GNATS(host,user,pass)
+function GNATS(host,user,pass,email)
 {
 	// Properties
-	this.host=host;
-	this.user=user;
-	this.pass=pass;
+	if(host == undefined)
+		this.host='gnats.bbsdev.net';
+	else
+		this.host=host;
+	if(user == undefined)
+		this.user=guest;
+	else
+		this.user=user;
+	if(pass == undefined)
+		this.pass=''
+	else
+		this.pass=pass;
+	if(email==undefined)
+		email='bugs@'+this.host;
+	else
+		this.email=email;
 	this.error='';
 	this.response=new Object;
 	this.response.message='';
@@ -39,7 +54,8 @@ function GNATS(host,user,pass)
 	this.and_expr=GNATS_and_expr;
 	this.append=GNATS_append;
 	this.replace=GNATS_replace;
-	this.change_field=GNATS_change_field;
+	this.get_field=GNATS_get_field;
+	this.send_followup=GNATS_send_followup;
 }
 
 function GNATS_connect()
@@ -357,83 +373,142 @@ function GNATS_and_expr(expr)
 	return(true);
 }
 
-function GNATS_append(pr,field,note)
+function GNATS_get_field(pr,field)
 {
-	if(!this.cmd("APPN",pr,field))
-		return(false);
-	if(!this.expect("APPN",201))
-		return(false);
-	lines=note.split(/\r?\n/);
-	for(i=0; i<lines.length; i++) {
-		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
-			this.error="Error sending data";
-			this.close();
-			return(false);
-		}
-	}
-	if(!this.socket.send(".\r\n")) {
-		this.error="Error sending data";
-		this.close();
-		return(true);
-	}
-	if(!this.get_response())
-		return(false);
-	if(!this.expect("APPN",200))
-		return(false);
-	return(true);
-}
-
-function GNATS_replace(pr,field,note)
-{
-	if(!this.cmd("REPL",pr,field))
-		return(false);
-	if(!this.expect("REPL",201))
-		return(false);
-	lines=note.split(/\r?\n/);
-	for(i=0; i<lines.length; i++) {
-		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
-			this.error="Error sending data";
-			this.close();
-			return(false);
-		}
-	}
-	if(!this.socket.send(".\r\n")) {
-		this.error="Error sending data";
-		this.close();
-		return(true);
-	}
-	if(!this.get_response())
-		return(false);
-	if(!this.expect("REPL",200))
-		return(false);
-	return(true);
-}
-
-function GNATS_change_field(pr,field,newval,why)
-{
-	var old;
-	var note='';
+	var retval;
 
 	if(!this.set_qfmt('"%s" '+field))
 		return(false);
-	if(!this.set_expr("Number=="+pr))
+	return(this.get_result(pr));
+}
+
+function GNATS_append(pr,field,newval,reason)
+{
+	if(!this.cmd("APPN",pr,field))
 		return(false);
-	old=this.get_result();
-	if(old==undefined)
+	if(!this.expect("APPN",212))
 		return(false);
-	if(old==newval)
-		return(false);
-	if(!this.replace(pr,field,newval))
-		return(false);
-	note += field+'-Changed-From-To: '+old+'->'+newval+"\r\n";
-	note += field+'-Changed-By: '+this.user+"\r\n";
-	note += field+'-Changed-When: '+strftime("%a, %d %b %H:%M:%S %z %Y",new Date())+"\r\n";
-	note += field+'-Changed-Why:\r\n';
-	lines=note.split(/\r?\n/);
+	lines=newval.split(/\r?\n/);
 	for(i=0; i<lines.length; i++) {
-		note += "\t"+lines[i]+"\r\n";
+		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
+			this.error="Error sending data";
+			this.close();
+			return(false);
+		}
 	}
-	if(!this.append(pr,"Audit-Trail",note))
+	if(!this.socket.send(".\r\n")) {
+		this.error="Error sending data";
+		this.close();
+		return(true);
+	}
+	if(!this.get_response())
 		return(false);
+	if(!this.expect("APPN",210,213))
+		return(false);
+	if(this.response.code==213) {	// Need to send a reason
+		lines=reason.split(/\r?\n/);
+		for(i=0; i<lines.length; i++) {
+			if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
+				this.error="Error sending data";
+				this.close();
+				return(false);
+			}
+		}
+		if(!this.socket.send(".\r\n")) {
+			this.error="Error sending data";
+			this.close();
+			return(true);
+		}
+		if(!expect("APPN",210))
+			return(false);
+	}
+	return(true);
+}
+
+function GNATS_replace(pr,field,newval,reason)
+{
+	if(!this.cmd("REPL",pr,field))
+		return(false);
+	if(!this.expect("REPL",212))
+		return(false);
+	lines=newval.split(/\r?\n/);
+	for(i=0; i<lines.length; i++) {
+		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
+			this.error="Error sending data";
+			this.close();
+			return(false);
+		}
+	}
+	if(!this.socket.send(".\r\n")) {
+		this.error="Error sending data";
+		this.close();
+		return(true);
+	}
+	if(!this.get_response())
+		return(false);
+	if(!this.expect("REPL",210,213))
+		return(false);
+	if(this.response.code==213) {	// Need to send a reason
+		lines=reason.split(/\r?\n/);
+		for(i=0; i<lines.length; i++) {
+			if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
+				this.error="Error sending data";
+				this.close();
+				return(false);
+			}
+		}
+		if(!this.socket.send(".\r\n")) {
+			this.error="Error sending data";
+			this.close();
+			return(true);
+		}
+		if(!expect("REPL",210))
+			return(false);
+	}
+	return(true);
+}
+
+function GNATS_send_followup(pr,name,from,message)
+{
+	var hdrs = new Object;
+	var recips = new Array();
+
+	var recip = new Object;
+	recip.to='bugs';
+	recip.to_net_type=NET_INTERNET;
+	recip.to_net_addr=this.email;
+	hdrs.rcpt_list = new Array();
+	hdrs.rcpt_list.push(recip);
+
+	var orig=this.get_field(pr,'Reply-To');
+	recip = new Object;
+	recip.to=mail_get_name(orig);
+	recip.to_net_type=NET_INTERNET;
+	recip.to_net_addr=mail_get_address(orig);
+	hdrs.rcpt_list.push(recip);
+
+	hdrs.from=name;
+	hdrs.from_net_type=NET_INTERNET;
+	hdrs.from_net_addr=from;
+	hdrs.replyto=name;
+	hdrs.replyto_net_type=NET_INTERNET;
+	hdrs.replyto_net_addr=from;
+
+	if(!this.set_qfmt('"Re: %s/%d: %s" Category Number Synopsis'));
+		return(false);
+	var subject=this.get_result(pr);
+	if(subject==undefined)
+		return(false);
+	hdrs.subject=subject.replace(/[\r\n]/g,'');
+
+	var msgbase = new MsgBase('mail');
+	if(msgbase.open!=undefined && msgbase.open()==false) {
+		this.error='Cannot open message base';
+		return(false);
+	}
+	if(!msgbase.save_msg(hdrs, message)) {
+		this.error=msgbase.error;
+		return(false);
+	}
 	return(true);
 }
