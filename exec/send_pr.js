@@ -71,14 +71,14 @@ if(tmp == -1)
 	exit();
 pr.Class=cls[tmp];
 pr.Release=system.version_notice+system.revision+" Compiled: "+system.compiled_when+" with "+system.compiled_with;
-pr.Environment="\t"+system.os_version+"\r\n\t"+system.js_version+"\r\n\t"+system.socket_lib+"\r\n\t"+system.msgbase_lib;
+pr.Environment=system.os_version+"\r\n"+system.js_version+"\r\n"+system.socket_lib+"\r\n"+system.msgbase_lib;
 console.print("\r\n\1y\1hPrecise description of the problem (Blank line ends):\r\n");
 pr.Description = '';
 do {
 	var line=truncsp(console.getstr(MAX_LINE_LEN, K_WRAP | K_LINE));
 	if(console.aborted)
 		exit();
-	pr.Description += "\t" + line + "\r\n";
+	pr.Description += line + "\r\n";
 } while (line != '');
 console.print("\1y\1hSteps to reproduce the problem (Blank line ends):\r\n");
 pr.HowToRepeat = '';
@@ -86,7 +86,7 @@ do {
 	var line=truncsp(console.getstr(MAX_LINE_LEN, K_WRAP | K_LINE));
 	if(console.aborted)
 		exit();
-	pr.HowToRepeat += "\t" + line + "\r\n";
+	pr.HowToRepeat += line + "\r\n";
 } while (line != '');
 console.print("\1y\1hFix/Workaround if known (Blank line ends):\r\n");
 pr.Fix = '';
@@ -94,7 +94,7 @@ do {
 	var line=truncsp(console.getstr(MAX_LINE_LEN, K_WRAP | K_LINE));
 	if(console.aborted)
 		exit();
-	pr.Fix += "\t" + line + "\r\n";
+	pr.Fix += line + "\r\n";
 } while (line != '');
 
 var body='';
