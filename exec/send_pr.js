@@ -5,6 +5,8 @@ load("gnatslib.js");
 
 const REVISION = "$Revision$".split(' ')[1];
 
+const MAX_LINE_LEN = 78
+
 console.clear();
 console.center(format("Synchronet Bug Submission Module %s\r\n", REVISION));
 console.crlf();
@@ -24,9 +26,9 @@ pr.Organization = system.name;
 pr.Confidential = console.noyes("Confidential")?'no':'yes';
 if(console.aborted)
 	exit();
-console.print("\r\n\1YOne-line synopsis of the problem\r\n:\1W ");
-pr.Synopsis = console.getstr();
-if(console.aborted)
+console.print("\r\n\1y\1hOne-line synopsis of the problem:\r\n");
+pr.Synopsis = truncsp(console.getstr(MAX_LINE_LEN, K_LINE));
+if(console.aborted || !pr.Synopsis.length)
 	exit();
 severity = gnats.get_valid("Severity");
 for(i=0; i<severity.length; i++) {
@@ -70,26 +72,26 @@ if(tmp == -1)
 pr.Class=cls[tmp];
 pr.Release=system.version_notice+system.revision+" Compiled: "+system.compiled_when+" with "+system.compiled_with;
 pr.Environment="\t"+system.os_version+"\r\n\t"+system.js_version+"\r\n\t"+system.socket_lib+"\r\n\t"+system.msgbase_lib;
-console.print("\r\n\1YPrecise description of the problem (Blank line ends):\1W\r\n");
+console.print("\r\n\1y\1hPrecise description of the problem (Blank line ends):\r\n");
 pr.Description = '';
 do {
-	var line=console.getstr();
+	var line=truncsp(console.getstr(MAX_LINE_LEN, K_WRAP | K_LINE));
 	if(console.aborted)
 		exit();
 	pr.Description += "\t" + line + "\r\n";
 } while (line != '');
-console.print("\1YSteps to reproduce the problem (Blank line ends):\1W\r\n");
+console.print("\1y\1hSteps to reproduce the problem (Blank line ends):\r\n");
 pr.HowToRepeat = '';
 do {
-	var line=console.getstr();
+	var line=truncsp(console.getstr(MAX_LINE_LEN, K_WRAP | K_LINE));
 	if(console.aborted)
 		exit();
 	pr.HowToRepeat += "\t" + line + "\r\n";
 } while (line != '');
-console.print("\1YFix/Workaround if known (Blank line ends):\1W\r\n");
+console.print("\1y\1hFix/Workaround if known (Blank line ends):\r\n");
 pr.Fix = '';
 do {
-	var line=console.getstr();
+	var line=truncsp(console.getstr(MAX_LINE_LEN, K_WRAP | K_LINE));
 	if(console.aborted)
 		exit();
 	pr.Fix += "\t" + line + "\r\n";
@@ -119,7 +121,8 @@ body += ">How-To-Repeat:\r\n" + pr.HowToRepeat;
 body += ">Fix:\r\n" + pr.Fix;
 
 if(!gnats.submit(body)) {
-	writeln(gnats.error);
+	alert(gnats.error);
 	console.pause();
-}
+} else
+	console.print("\1y\1hProblem Report (PR) submitted successfully.\r\n");
 gnats.close();
