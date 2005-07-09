@@ -220,7 +220,7 @@ function GNATS_set_qfmt(format)
 	if(!this.cmd("QFMT",format))
 		return(false);
 	if(!this.expect("QFMT",210))
-		return(FALSE);
+		return(false);
 	return(true);
 }
 
@@ -237,7 +237,7 @@ function GNATS_set_expr()
 	if(!this.cmd("EXPR",args.join(" & ")))
 		return(false);
 	if(!this.expect("EXPR",210))
-		return(FALSE);
+		return(false);
 	return(true);
 }
 
@@ -353,16 +353,16 @@ function GNATS_and_expr(expr)
 	if(!this.cmd("EXPR",args.join(" & ")))
 		return(false);
 	if(!this.expect("EXPR",210))
-		return(FALSE);
+		return(false);
 	return(true);
 }
 
 function GNATS_append(pr,field,note)
 {
 	if(!this.cmd("APPN",pr,field))
-		return(FALSE);
+		return(false);
 	if(!this.expect("APPN",201))
-		return(FALSE);
+		return(false);
 	lines=note.split(/\r?\n/);
 	for(i=0; i<lines.length; i++) {
 		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
@@ -386,9 +386,9 @@ function GNATS_append(pr,field,note)
 function GNATS_replace(pr,field,note)
 {
 	if(!this.cmd("REPL",pr,field))
-		return(FALSE);
+		return(false);
 	if(!this.expect("REPL",201))
-		return(FALSE);
+		return(false);
 	lines=note.split(/\r?\n/);
 	for(i=0; i<lines.length; i++) {
 		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
