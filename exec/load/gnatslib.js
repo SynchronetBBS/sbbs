@@ -39,8 +39,7 @@ function GNATS(host,user,pass)
 	this.and_expr=GNATS_and_expr;
 	this.append=GNATS_append;
 	this.replace=GNATS_replace;
-	this.change_state=GNATS_change_state;
-	this.change_responsible=GNATS_change_responsible;
+	this.change_field=GNATS_change_field;
 }
 
 function GNATS_connect()
@@ -413,13 +412,12 @@ function GNATS_replace(pr,field,note)
 	return(true);
 }
 
-function GNATS_change_state(pr,new,why)
+function GNATS_change_field(pr,field,new,why)
 {
 	var old;
 	var note='';
 
-	
-	if(!this.set_qfmt('"%s" State'))
+	if(!this.set_qfmt('"%s" '+field))
 		return(false);
 	if(!this.set_expr("Number=="+pr))
 		return(false);
@@ -428,41 +426,12 @@ function GNATS_change_state(pr,new,why)
 		return(false);
 	if(old==new)
 		return(false);
-	if(!this.replace(pr,"State",new))
+	if(!this.replace(pr,field,new))
 		return(false);
-	note += 'State-Changed-From-To: '+old+'->'+new+"\r\n";
-	note += 'State-Changed-By: '+this.user+"\r\n";
-	note += 'State-Changed-When: '+strftime("%a, %d %b %Y %H:%M:%S %z",new Date())+"\r\n";
-	note += 'State-Changed-Why:\r\n";
-	lines=note.split(/\r?\n/);
-	for(i=0; i<lines.length; i++) {
-		note += "\t"+lines[i]+"\r\n";
-	}
-	if(!this.append(pr,"Audit-Trail",note))
-		return(false);
-	return(true);
-}
-
-function GNATS_change_responsible(pr,new,why)
-{
-	var old;
-	var note='';
-
-	if(!this.set_qfmt('"%s" Responsible'))
-		return(false);
-	if(!this.set_expr("Number=="+pr))
-		return(false);
-	old=this.get_result();
-	if(old==undefined)
-		return(false);
-	if(old==new)
-		return(false);
-	if(!this.replace(pr,"Responsible",new))
-		return(false);
-	note += 'Responsible-Changed-From-To: '+old+'->'+new+"\r\n";
-	note += 'Responsible-Changed-By: '+this.user+"\r\n";
-	note += 'Responsible-Changed-When: '+strftime("%a, %d %b %Y %H:%M:%S %z",new Date())+"\r\n";
-	note += 'Responsible-Changed-Why:\r\n";
+	note += field+'-Changed-From-To: '+old+'->'+new+"\r\n";
+	note += field+'-Changed-By: '+this.user+"\r\n";
+	note += field+'-Changed-When: '+strftime("%a, %d %b %Y %H:%M:%S %z",new Date())+"\r\n";
+	note += field+'-Changed-Why:\r\n";
 	lines=note.split(/\r?\n/);
 	for(i=0; i<lines.length; i++) {
 		note += "\t"+lines[i]+"\r\n";
