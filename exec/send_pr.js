@@ -87,6 +87,7 @@ body += "X-Send-Pr-Version: Synchronet send_pr.js\r\n";
 body += "\r\n";
 body += ">Submitter-Id:\t" + pr.SubmitterId + "\r\n";
 body += ">Originator:\t" + pr.Originator + "\r\n";
+body += ">Organization:\r\n\t" + pr.Organization + "\r\n";
 body += ">Confidential:\t" + pr.Confidential + "\r\n";
 body += ">Synopsis:\t" + pr.Synopsis + "\r\n";
 body += ">Severity:\t" + pr.Severity + "\r\n";
