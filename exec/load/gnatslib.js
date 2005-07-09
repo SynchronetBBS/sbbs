@@ -473,17 +473,18 @@ function GNATS_send_followup(pr,name,from,message)
 	var hdrs = new Object;
 	var recips = new Array();
 
-	hdrs.to='bugs';
-	hdrs.to_net_type=NET_INTERNET;
-	hdrs.to_net_addr=this.email;
+	var rcpt_list = new Array();
+	var recip = new Object;
+	recip.to='bugs';
+	recip.to_net_type=NET_INTERNET;
+	recip.to_net_addr=this.email;
 
-	hdrs.rcpt_list = new Array();
 	var orig=this.get_field(pr,'Reply-To');
 	var recip = new Object;
 	recip.to=mail_get_name(orig);
 	recip.to_net_type=NET_INTERNET;
 	recip.to_net_addr=mail_get_address(orig);
-	hdrs.rcpt_list.push(recip);
+	rcpt_list.push(recip);
 
 	hdrs.from=name;
 	hdrs.from_net_type=NET_INTERNET;
@@ -492,7 +493,7 @@ function GNATS_send_followup(pr,name,from,message)
 	hdrs.replyto_net_type=NET_INTERNET;
 	hdrs.replyto_net_addr=from;
 
-	if(!this.set_qfmt('"Re: %s/%d: %s" Category Number Synopsis'))
+	if(!this.set_qfmt('"Re: PR %s/%d: %s" Category Number Subject'))
 		return(false);
 	var subject=this.get_result(pr);
 	if(subject==undefined)
@@ -504,7 +505,7 @@ function GNATS_send_followup(pr,name,from,message)
 		this.error='Cannot open message base';
 		return(false);
 	}
-	if(!msgbase.save_msg(hdrs, message)) {
+	if(!msgbase.save_msg(hdrs, message, rcpt_list)) {
 		this.error='Error saving message: '+msgbase.error;
 		msgbase.close();
 		return(false);
