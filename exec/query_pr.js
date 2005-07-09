@@ -1,3 +1,5 @@
+// $Id$
+
 load("sbbsdefs.js");
 load("sockdefs.js");
 load("gnatslib.js");
