@@ -117,7 +117,6 @@ function GNATS_cmd()
 		this.error="Socket not connected";
 		return(false);
 	}
-
 	if(!this.socket.send(send)) {
 		this.error="Error sending on socket";
 		return(false);
@@ -264,7 +263,6 @@ function GNATS_get_results(format)
 {
 	var i;
 	var prs;
-	var success=0;
 	var result;
 	var results = new Array();
 
@@ -284,7 +282,6 @@ function GNATS_get_results(format)
 		result=this.get_result(prs[i]);
 		if(result != undefined) {
 			results.push(result);
-			success++;
 		}
 	}
 	return(results);
