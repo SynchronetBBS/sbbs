@@ -45,7 +45,7 @@ query.state.list="States";
 query.state.listdesc=2;
 query.state.desc="State";
 
-var gnats = new GNATS("localhost","guest");
+var gnats = new GNATS("gnats.bbsdev.net","guest");
 
 if(!gnats.connect())
 	handle_error();
