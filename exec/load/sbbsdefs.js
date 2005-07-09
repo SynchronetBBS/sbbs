@@ -464,6 +464,10 @@ var XTRN_QUOTENONE	=(1<<13)	/* Automatically quote none of msg			*/
 var XTRN_NATIVE		=(1<<14)	/* Native application (EX_NATIVE)			*/
 var XTRN_STRIPKLUDGE=(1<<15)	/* Strip FTN Kludge lines from msg			*/
 var XTRN_CHKTIME	=(1<<16)	/* Check time online (EX_CHKTIME)			*/
+var XTRN_LWRCASE	=(1<<17)	/* Use lowercase drop-file names			*/
+var XTRN_SH			=(1<<18)	/* Use command shell to execute				*/
+var XTRN_PAUSE		=(1<<19)	/* Force a screen pause on exit				*/
+var XTRN_NOECHO		=(1<<20)	/* Don't echo stdin to stdout				*/
 					    		/********************************************/
 
 								/********************************************/
