@@ -1,5 +1,13 @@
+// $Id$
+
 load("sbbsdefs.js");
 load("gnatslib.js");
+
+const REVISION = "$Revision$".split(' ')[1];
+
+console.clear();
+console.center(format("Synchronet Bug Submission Module %s\r\n", REVISION));
+console.crlf();
 
 gnats=new GNATS("gnats.bbsdev.net","guest");
 if(!gnats.connect()) {
@@ -14,8 +22,12 @@ pr.SubmitterId = 'default';
 pr.Originator = user.name;
 pr.Organization = system.name;
 pr.Confidential = console.noyes("Confidential")?'no':'yes';
-console.print("YOne-line synopsis of the problem: W");
+if(console.aborted)
+	exit();
+console.print("\1YOne-line synopsis of the problem\r\n:\1W ");
 pr.Synopsis = console.getstr();
+if(console.aborted)
+	exit();
 severity = gnats.get_valid("Severity");
 for(i=0; i<severity.length; i++) {
 	console.uselect(i,"Severity",severity[i]);
@@ -58,22 +70,28 @@ if(tmp == -1)
 pr.Class=cls[tmp];
 pr.Release=system.version_notice+system.revision+" Compiled: "+system.compiled_when+" with "+system.compiled_with;
 pr.Environment="\t"+system.os_version+"\r\n\t"+system.js_version+"\r\n\t"+system.socket_lib+"\r\n\t"+system.msgbase_lib;
-console.print("\nYPrecise description of the problem (Blank line ends)W\n");
+console.print("\r\n\1YPrecise description of the problem (Blank line ends):\1W\r\n");
 pr.Description = '';
 do {
 	var line=console.getstr();
+	if(console.aborted)
+		exit();
 	pr.Description += "\t" + line + "\r\n";
 } while (line != '');
-console.print("YSteps to reproduce the problem (Blank line ends)W\n");
+console.print("\1YSteps to reproduce the problem (Blank line ends):\1W\r\n");
 pr.HowToRepeat = '';
 do {
 	var line=console.getstr();
+	if(console.aborted)
+		exit();
 	pr.HowToRepeat += "\t" + line + "\r\n";
 } while (line != '');
-console.print("YFix/Workaround if known (Blank line ends)W\n");
+console.print("\1YFix/Workaround if known (Blank line ends):\1W\r\n");
 pr.Fix = '';
 do {
 	var line=console.getstr();
+	if(console.aborted)
+		exit();
 	pr.Fix += "\t" + line + "\r\n";
 } while (line != '');
 
