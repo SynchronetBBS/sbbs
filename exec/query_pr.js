@@ -78,6 +78,20 @@ while(!done) {
 					writeln(pr);
 					writeln();
 					writeln("--- End of PR ---");
+					if(!console.noyes("Submit a followup")) {
+						console.print("\1y\1hFollowup message (Blank line ends):\r\n");
+						var note = '';
+						do {
+							var line=console.getstr();
+							if(console.aborted)
+								break;
+							note += line + "\r\n";
+						} while (line != '');
+						if(line == '') {
+							if(!gnats.send_followup(m[1],user.name,user.email,note))
+								handle_error();
+						}
+					}
 				}
 				else {
 					writeln("Error getting PR info");

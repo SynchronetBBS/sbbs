@@ -473,15 +473,13 @@ function GNATS_send_followup(pr,name,from,message)
 	var hdrs = new Object;
 	var recips = new Array();
 
-	var recip = new Object;
-	recip.to='bugs';
-	recip.to_net_type=NET_INTERNET;
-	recip.to_net_addr=this.email;
-	hdrs.rcpt_list = new Array();
-	hdrs.rcpt_list.push(recip);
+	hdrs.to='bugs';
+	hdrs.to_net_type=NET_INTERNET;
+	hdrs.to_net_addr=this.email;
 
+	hdrs.rcpt_list = new Array();
 	var orig=this.get_field(pr,'Reply-To');
-	recip = new Object;
+	var recip = new Object;
 	recip.to=mail_get_name(orig);
 	recip.to_net_type=NET_INTERNET;
 	recip.to_net_addr=mail_get_address(orig);
@@ -494,7 +492,7 @@ function GNATS_send_followup(pr,name,from,message)
 	hdrs.replyto_net_type=NET_INTERNET;
 	hdrs.replyto_net_addr=from;
 
-	if(!this.set_qfmt('"Re: %s/%d: %s" Category Number Synopsis'));
+	if(!this.set_qfmt('"Re: %s/%d: %s" Category Number Synopsis'))
 		return(false);
 	var subject=this.get_result(pr);
 	if(subject==undefined)
@@ -507,8 +505,10 @@ function GNATS_send_followup(pr,name,from,message)
 		return(false);
 	}
 	if(!msgbase.save_msg(hdrs, message)) {
-		this.error=msgbase.error;
+		this.error='Error saving message: '+msgbase.error;
+		msgbase.close();
 		return(false);
 	}
+	msgbase.close();
 	return(true);
 }
