@@ -427,7 +427,7 @@ function GNATS_change_field(pr,field,newval,why)
 		return(false);
 	note += field+'-Changed-From-To: '+old+'->'+newval+"\r\n";
 	note += field+'-Changed-By: '+this.user+"\r\n";
-	note += field+'-Changed-When: '+strftime("%a, %d %b %Y %H:%M:%S %z",new Date())+"\r\n";
+	note += field+'-Changed-When: '+strftime("%a, %d %b %H:%M:%S %z %Y",new Date())+"\r\n";
 	note += field+'-Changed-Why:\r\n';
 	lines=note.split(/\r?\n/);
 	for(i=0; i<lines.length; i++) {
