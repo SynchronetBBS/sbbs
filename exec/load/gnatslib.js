@@ -37,6 +37,10 @@ function GNATS(host,user,pass)
 	this.get_valid=GNATS_get_valid;
 	this.submit=GNATS_submit;
 	this.and_expr=GNATS_and_expr;
+	this.append=GNATS_append;
+	this.replace=GNATS_replace;
+	this.change_state=GNATS_change_state;
+	this.change_responsible=GNATS_change_responsible;
 }
 
 function GNATS_connect()
@@ -335,6 +339,10 @@ function GNATS_submit(pr)
 		this.close();
 		return(true);
 	}
+	if(!this.get_response())
+		return(false);
+	if(!this.expect("SUBM",200))
+		return(false);
 	return(true);
 }
 
@@ -350,5 +358,116 @@ function GNATS_and_expr(expr)
 		return(false);
 	if(!this.expect("EXPR",210))
 		return(FALSE);
+	return(true);
+}
+
+function GNATS_append(pr,field,note)
+{
+	if(!this.cmd("APPN",pr,field))
+		return(FALSE);
+	if(!this.expect("APPN",201))
+		return(FALSE);
+	lines=note.split(/\r?\n/);
+	for(i=0; i<lines.length; i++) {
+		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
+			this.error="Error sending data";
+			this.close();
+			return(false);
+		}
+	}
+	if(!this.socket.send(".\r\n")) {
+		this.error="Error sending data";
+		this.close();
+		return(true);
+	}
+	if(!this.get_response())
+		return(false);
+	if(!this.expect("APPN",200))
+		return(false);
+	return(true);
+}
+
+function GNATS_replace(pr,field,note)
+{
+	if(!this.cmd("REPL",pr,field))
+		return(FALSE);
+	if(!this.expect("REPL",201))
+		return(FALSE);
+	lines=note.split(/\r?\n/);
+	for(i=0; i<lines.length; i++) {
+		if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
+			this.error="Error sending data";
+			this.close();
+			return(false);
+		}
+	}
+	if(!this.socket.send(".\r\n")) {
+		this.error="Error sending data";
+		this.close();
+		return(true);
+	}
+	if(!this.get_response())
+		return(false);
+	if(!this.expect("REPL",200))
+		return(false);
+	return(true);
+}
+
+function GNATS_change_state(pr,new,why)
+{
+	var old;
+	var note='';
+
+	
+	if(!this.set_qfmt('"%s" State'))
+		return(false);
+	if(!this.set_expr("Number=="+pr))
+		return(false);
+	old=this.get_result();
+	if(old==undefined)
+		return(false);
+	if(old==new)
+		return(false);
+	if(!this.replace(pr,"State",new))
+		return(false);
+	note += 'State-Changed-From-To: '+old+'->'+new+"\r\n";
+	note += 'State-Changed-By: '+this.user+"\r\n";
+	note += 'State-Changed-When: '+strftime("%a, %d %b %Y %H:%M:%S %z",new Date())+"\r\n";
+	note += 'State-Changed-Why:\r\n";
+	lines=note.split(/\r?\n/);
+	for(i=0; i<lines.length; i++) {
+		note += "\t"+lines[i]+"\r\n";
+	}
+	if(!this.append(pr,"Audit-Trail",note))
+		return(false);
+	return(true);
+}
+
+function GNATS_change_responsible(pr,new,why)
+{
+	var old;
+	var note='';
+
+	if(!this.set_qfmt('"%s" Responsible'))
+		return(false);
+	if(!this.set_expr("Number=="+pr))
+		return(false);
+	old=this.get_result();
+	if(old==undefined)
+		return(false);
+	if(old==new)
+		return(false);
+	if(!this.replace(pr,"Responsible",new))
+		return(false);
+	note += 'Responsible-Changed-From-To: '+old+'->'+new+"\r\n";
+	note += 'Responsible-Changed-By: '+this.user+"\r\n";
+	note += 'Responsible-Changed-When: '+strftime("%a, %d %b %Y %H:%M:%S %z",new Date())+"\r\n";
+	note += 'Responsible-Changed-Why:\r\n";
+	lines=note.split(/\r?\n/);
+	for(i=0; i<lines.length; i++) {
+		note += "\t"+lines[i]+"\r\n";
+	}
+	if(!this.append(pr,"Audit-Trail",note))
+		return(false);
 	return(true);
 }
