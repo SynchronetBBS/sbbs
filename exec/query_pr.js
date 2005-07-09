@@ -45,25 +45,25 @@ query.state.list="States";
 query.state.listdesc=2;
 query.state.desc="State";
 
-var gnats = new GNATS("gnats.bbsdev.net","guest");
+var gnats = new GNATS("localhost","guest");
 
 if(!gnats.connect())
-	error();
+	handle_error();
 
 var done=false;
 while(!done) {
-	done=set_prlist(s);
+	done=set_prlist();
 	if(done)
 		break;
-	prs=gnats.get_results();
+	prs=gnats.get_results('"%-72.72s %-10.10s %-6.6s %-10.10s %-10.10s" Synopsis Category Number Responsible State');
 	if(prs==undefined)
-		error();
+		handle_error();
 	if(prs.length > 0) {
 		var donelist=false;
 		var c;
 		while(!donelist) {
 			for(c=0; c < prs.length; c++) {
-				m=prs[c].match(/^(.{72}) (.{10}) (.{6}) (.{10}) (.{10})$/);
+				m=prs[c].match(/^(.{72}) (.{10}) (.{6}) (.{10}) (.{10})\r\n$/);
 				if(m!=undefined && m.index>-1) {
 					console.uselect(c,"Problem Report",format("%s\r\n     State: %s Responsible: %s Category: %s PR: %s",m[1],m[5],m[4],m[2],m[3]),"");
 				}
@@ -74,7 +74,7 @@ while(!done) {
 				if(m!=undefined && m.index >-1) {
 					var pr=gnats.get_fullpr(m[1]);
 					if(pr==undefined)
-						error();
+						handle_error();
 					writeln(pr);
 					writeln();
 					writeln("--- End of PR ---");
@@ -82,7 +82,7 @@ while(!done) {
 				else {
 					writeln("Error getting PR info");
 					console.pause();
-					clean_exit(s);
+					clean_exit();
 				}
 			}
 			else
@@ -94,9 +94,9 @@ while(!done) {
 		console.pause();
 	}
 }
-clean_exit(s);
+clean_exit();
 
-function set_prlist(s)
+function set_prlist()
 {
 	var i;
 	var j;
@@ -161,7 +161,7 @@ function set_prlist(s)
 				if(query[fields[f]].list != undefined) {
 					var vals=gnats.get_list(query[fields[f]].list);
 					if(vals==undefined)
-						error();
+						handle_error();
 					for(i=0; i<vals.length; i++) {
 						cols=vals[i].split(/:/);
 						console.uselect(i, query[fields[f]].desc, cols[0]+" ("+cols[query[fields[f]].listdesc]+")", "");
@@ -188,15 +188,13 @@ function set_prlist(s)
 		}
 	}
 	if(!gnats.reset_expr())
-		error();
+		handle_error();
 	for(field in fields) {
 		if(query[fields[field]].expr != undefined) {
 			if(!gnats.and_expr(query[fields[field]].expr))
-				error();
+				handle_error();
 		}
 	}
-	if(!gnats.set_qfmt('"%-72.72s %-10.10s %-6.6s %-10.10s %-10.10s" Synopsis Category Number Responsible State'))
-		error();
 }
 
 function clean_exit(s,code)
@@ -205,7 +203,7 @@ function clean_exit(s,code)
 	exit(code);
 }
 
-function error()
+function handle_error()
 {
 	writeln(gnats.error);
 	console.pause();
