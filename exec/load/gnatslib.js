@@ -24,7 +24,7 @@ function GNATS(host,user,pass,email)
 	else
 		this.pass=pass;
 	if(email==undefined)
-		email='bugs@'+this.host;
+		this.email='bugs@'+this.host;
 	else
 		this.email=email;
 	this.error='';
