@@ -36,6 +36,7 @@ function GNATS(host,user,pass)
 	this.get_list=GNATS_get_list;
 	this.get_valid=GNATS_get_valid;
 	this.submit=GNATS_submit;
+	this.and_expr=GNATS_and_expr;
 }
 
 function GNATS_connect()
@@ -71,8 +72,6 @@ function GNATS_close()
 function GNATS_get_fullpr(num)
 {
 	if(!this.reset_expr())		// Reset current expression.
-		return(undefined);
-	if(!this.set_expr("State==State"))	// Select all PRs
 		return(undefined);
 	if(!this.set_qfmt("full"))		// Request full PR
 		return(undefined);
@@ -233,7 +232,7 @@ function GNATS_set_expr()
 
 	if(!this.reset_expr())
 		return(false);
-	if(!this.cmd("EXPR",args.join(" ")))
+	if(!this.cmd("EXPR",args.join(" & ")))
 		return(false);
 	if(!this.expect("EXPR",210))
 		return(FALSE);
@@ -339,5 +338,17 @@ function GNATS_submit(pr)
 	return(true);
 }
 
+function GNATS_and_expr(expr)
+{
+	var i;
+	var args=new Array();
 
+	for(i=0; i<arguments.length; i++)
+		args.push(arguments[i]);
 
+	if(!this.cmd("EXPR",args.join(" & ")))
+		return(false);
+	if(!this.expect("EXPR",210))
+		return(FALSE);
+	return(true);
+}

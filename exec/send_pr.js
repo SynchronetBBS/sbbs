@@ -56,8 +56,8 @@ tmp=console.uselect();
 if(tmp == -1)
 	exit();
 pr.Class=cls[tmp];
-pr.Release=system.version_notice
-pr.ReleaseNote="\t"+system.os_version+"\r\n\t"+system.js_version+"\r\n\t"+system.socket_lib+"\r\n\t"+system.msgbase_lib+"\r\n\tCompiled: "+system.compiled_when+' with '+system.compiled_with;
+pr.Release=system.version_notice+system.revision+" Compiled: "+system.compiled_when+" with "+system.compiled_with;
+pr.Environment="\t"+system.os_version+"\r\n\t"+system.js_version+"\r\n\t"+system.socket_lib+"\r\n\t"+system.msgbase_lib;
 console.print("\nYPrecise description of the problem (Blank line ends)W\n");
 pr.Description = '';
 do {
@@ -95,7 +95,7 @@ body += ">Priority:\t" + pr.Priority + "\r\n";
 body += ">Category:\t" + pr.Category + "\r\n";
 body += ">Class:\t" + pr.Class + "\r\n";
 body += ">Release:\t" + pr.Release + "\r\n";
-body += ">Release-Note:\r\n" + pr.ReleaseNote + "\r\n";
+body += ">Environment:\r\n" + pr.Enviroment + "\r\n";
 body += ">Description:\r\n" + pr.Description;
 body += ">How-To-Repeat:\r\n" + pr.HowToRepeat;
 body += ">Fix:\r\n" + pr.Fix;
