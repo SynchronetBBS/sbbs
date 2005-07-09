@@ -72,11 +72,13 @@ while(bbs.online) {
 				write(bbs.text(XtrnProgLstUnderline)); 
 			}
 			console.crlf();
+			var n;
 			if(xtrn_area.sec_list[xsec].prog_list.length >= 10)
 				n=(xtrn_area.sec_list[xsec].prog_list.length/2)+(xtrn_area.sec_list[xsec].prog_list.length&1);
 			else
 				n=xtrn_area.sec_list[xsec].prog_list.length;
 
+			var i;
 			for(i=0;i<n;i++) {
 				printf(bbs.text(XtrnProgLstFmt),i+1
 					,xtrn_area.sec_list[xsec].prog_list[i].name
@@ -111,7 +113,7 @@ while(bbs.online) {
 		}
 		bbs.exec_xtrn(xtrn_area.sec_list[xsec].prog_list[i].code); 
 
-		if(xtrn_area.sec_list[xsec].prog_list[i].settingsXTRN_PAUSE)
+		if(xtrn_area.sec_list[xsec].prog_list[i].settings&XTRN_PAUSE)
 			bbs.line_counter=2;	/* force a pause before CLS */
 	}
 	if(xtrn_area.sec_list.length<2)
