@@ -2,11 +2,21 @@ load("sockdefs.js");
 load("mailutil.js");
 load("sbbsdefs.js");
 
-var PR_SUCCESS=0;
-var PR_SENDING_DATA=1;
-var PR_QUERY_SUCCESS=2;
-var PR_ERROR=3;
-var PR_RETRY=4;
+const PR_SUCCESS=0;
+const PR_SENDING_DATA=1;
+const PR_QUERY_SUCCESS=2;
+const PR_ERROR=3;
+const PR_RETRY=4;
+
+const GNATS_LEVEL_DENY=0;
+const GNATS_LEVEL_NONE=1;
+const GNATS_LEVEL_LISTDB=2;
+const GNATS_LEVEL_VIEW=3;
+const GNATS_LEVEL_VIEWCONF=4;
+const GNATS_LEVEL_EDIT=5;
+const GNATS_LEVEL_ADMIN=6;
+
+const GNATS_LEVELS=new Array('deny','none','listdb','view','viewconf','edit','admin');
 
 function GNATS(host,user,pass,email)
 {
@@ -35,6 +45,7 @@ function GNATS(host,user,pass,email)
 	this.response.code=0;
 	this.response.type=PR_ERROR;
 	this.socket=new Socket(SOCK_STREAM);
+	this.access=GNATS_LEVEL_DENY;
 
 	// Methods
 	this.connect=GNATS_connect;
@@ -73,6 +84,21 @@ function GNATS_connect()
 		return(false);
 	if(!this.expect("USER",210))
 		return(false);
+	if(!this.cmd("USER"))		// Get current access level
+		return(false);
+	if(!this.expect("USER",350))
+		return(false);
+	var lines=this.response.message.split(/\r?\n/);
+	lines.pop();
+	var level=lines.pop();
+	level=level.replace(/[\r\n]/g,'');
+	var i;
+	for(i=0; i<GNATS_LEVELS.length; i++) {
+		if(level==GNATS_LEVELS[i]) {
+			this.access=i;
+			break;
+		}
+	}
 	return(true);
 }
 
