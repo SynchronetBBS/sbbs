@@ -19,7 +19,7 @@ query.text.expr=undefined;
 query.text.field="fieldtype:Text";
 query.text.list=undefined;
 query.text.desc="Single Line Text Fields";
-query.text=new Object;
+query.multitext=new Object;
 query.multitext.text="Any";
 query.multitext.expr=undefined;
 query.multitext.field="fieldtype:Multitext";
@@ -53,7 +53,13 @@ query.state.list="States";
 query.state.listdesc=2;
 query.state.desc="State";
 
-var gnats = new GNATS("gnats.bbsdev.net","guest");
+var user="guest";
+var password=undefined;
+if(argc>0)
+	user=argv[0];
+if(argc>1)
+	password=argv[1];
+var gnats = new GNATS("gnats.bbsdev.net",user,password);
 
 if(!gnats.connect())
 	handle_error();
@@ -80,6 +86,124 @@ while(!done) {
 			if(pr>=0) {
 				m=prs[pr].match(/.{84}([0-9]*)/);
 				if(m!=undefined && m.index >-1) {
+					if(gnats.access >= GNATS_LEVEL_EDIT && 
+							!console.noyes("Modify/Remove this PR")) {
+						var fields=gnats.get_list("FieldNames");
+						for(c=0; c<fields.length; c++) {
+							console.uselect(c,"Field",fields[c],"");
+						}
+						console.uselect(fields.length,"Fields","Delete this PR","");
+						var field=console.uselect();
+						if(field>=0 && field<fields.length) {
+							var oldval=gnats.get_field(m[1],fields[field]);
+							var newval=undefined;
+							if(oldval==undefined)
+								oldval='';
+							if(!gnats.cmd("FTYP",fields[field]))
+								handle_error();
+							if(!gnats.expect("FTYP",350))
+								handle_error();
+							switch(gnats.response.message) {
+								case 'Text':
+								case 'TextWithRegex':
+								case 'Date':
+									oldval=oldval.replace(/[\r\n]/g,'');
+									var newval=console.getstr(oldval,78,K_EDIT);
+									if(console.aborted)
+										newval=undefined;
+									break;
+								case 'MultiText':
+									writeln("Cannot yet modify multitext fields, sorry.");
+									break;
+								case 'Enum':
+									var vals=gnats.get_valid(fields[field]);
+									if(vals==undefined)
+										handle_error();
+									for(c=0; c<vals.length; c++) {
+										console.uselect(c, "New Value", vals[c], "");
+									}
+									c=console.uselect();
+									if(c>=0 && c<vals.length)
+										newval=vals[c];
+									break;
+								case 'MultiEnum':
+									var vals=gnats.get_valid(fields[field]);
+									if(vals==undefined)
+										handle_error();
+									oldval=oldval.replace(/[\r\n]/g,'');
+									var sep=',';
+									if(oldval.search(/:/)>-1)
+										sep=':';
+									var cvals=oldval.split(/:,/);
+									var cv = new Object;
+									for(c=0; c<cvals.length; c++)
+										cv[cvals[c]]=true;
+									var doneenum=false;
+									while(!doneenum) {
+										for(c=0; c<vals.length; c++) {
+											if(cv[vals[c]] == undefined || cv[vals[c]]==false)
+												console.uselect(c, "New Values", vals[c], "");
+											else 
+												console.uselect(c, "New Values", vals[c]+ '(Selected)', "");
+										}
+										console.uselect(c, "New Values", "Save Changes", "");
+										c=console.uselect();
+										if(c<0)
+											break;
+										else if(c>=0 && c<vals.length) {
+											if(cv[vals[c]] == undefined || cv[vals[c]]==false)
+												cv[vals[c]]=true;
+											else
+												cv[vals[c]]=false;
+										}
+										else if(c==vals.length)
+											doneenum=true;
+									}
+									if(doneenum) {
+										var newvals=new Array();
+										for(c=0; c<vals.length; c++) {
+											if(cv[vals[c]] != undefined && cv[vals[c]]==true)
+												newvals.push(vals[c]);
+										}
+										newval=newvals.join(sep);
+									}
+									break;
+								case 'Integer':
+									oldval=oldval.replace(/[\r\n]/g,'');
+									var newval=console.getstr(oldval,78,K_EDIT|K_NUMBER);
+									if(console.aborted)
+										newval=undefined;
+									break;
+							}
+							if(newval != undefined) {
+								var reason='';
+								if(!gnats.cmd("FIELDFLAGS",fields[field]))
+									handle_error();
+								if(!gnats.expect("FIELDFLAGS",350))
+									handle_error();
+								if(gnats.response.message.search(/\brequireChangeReason\b/)>-1) {
+									console.print("\1y\1hFollowup message (Blank line ends):\r\n");
+									do {
+										var line=console.getstr();
+										if(console.aborted)
+											break;
+										reason += line + "\r\n";
+									} while (line != '');
+								}
+								if(!gnats.replace(m[1],fields[field],newval,reason))
+									handle_error();
+							}
+						}
+						else if(field==fields.length) {
+							if(console.yesno("Are you sure you wish to delete this PR?")) {
+								if(!gnats.cmd("DELETE",m[1]))
+									handle_error();
+								if(!gnats.expect("DELETE",210))
+									handle_error();
+								continue;
+							}
+						}
+					}
 					var pr=gnats.get_fullpr(m[1]);
 					if(pr==undefined)
 						handle_error();
@@ -192,7 +316,7 @@ function set_prlist()
 					if(val>0 && val < vals.length) {
 						cols=vals[val].split(/:/);
 						text += ' "'+cols[0]+'"';
-						expr += ' "'+cols[0].replace(/"/,'\\"')+'"';
+						expr += ' "'+cols[0].replace(/"/g,'\\"')+'"';
 						query[fields[f]].text=text;
 						query[fields[f]].expr=expr;
 					}
@@ -201,8 +325,8 @@ function set_prlist()
 					write(query[fields[f]].desc+" "+text+": ");
 					var val=console.getstr();
 					text += ' "'+val+'"';
-					val.replace(/"/,'\\"');
-					expr += ' "'+val.replace(/"/,'\\"')+'"';
+					val.replace(/"/g,'\\"');
+					expr += ' "'+val.replace(/"/g,'\\"')+'"';
 					query[fields[f]].text=text;
 					query[fields[f]].expr=expr;
 				}
