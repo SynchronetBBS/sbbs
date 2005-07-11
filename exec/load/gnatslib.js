@@ -89,7 +89,6 @@ function GNATS_connect()
 	if(!this.expect("USER",350))
 		return(false);
 	var lines=this.response.message.split(/\r?\n/);
-	lines.pop();
 	var level=lines.pop();
 	level=level.replace(/[\r\n]/g,'');
 	var i;
@@ -429,7 +428,7 @@ function GNATS_append(pr,field,newval,reason)
 	}
 	if(!this.get_response())
 		return(false);
-	if(!this.expect("APPN",210,213))
+	if(!this.expect("APPN2",210,213))
 		return(false);
 	if(this.response.code==213) {	// Need to send a reason
 		var reasonstr;
@@ -450,7 +449,9 @@ function GNATS_append(pr,field,newval,reason)
 			this.close();
 			return(true);
 		}
-		if(!expect("APPN",210))
+		if(!this.get_response())
+			return(false);
+		if(!expect("APPN3",210))
 			return(false);
 	}
 	return(true);
@@ -477,7 +478,7 @@ function GNATS_replace(pr,field,newval,reason)
 	}
 	if(!this.get_response())
 		return(false);
-	if(!this.expect("REPL",210,213))
+	if(!this.expect("REPL2",210,213,403))
 		return(false);
 	if(this.response.code==213) {	// Need to send a reason
 		var reasonstr;
@@ -498,7 +499,9 @@ function GNATS_replace(pr,field,newval,reason)
 			this.close();
 			return(true);
 		}
-		if(!expect("REPL",210))
+		if(!this.get_response())
+			return(false);
+		if(!this.expect("REPL3",210))
 			return(false);
 	}
 	return(true);
