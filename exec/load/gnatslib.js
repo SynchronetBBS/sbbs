@@ -432,7 +432,12 @@ function GNATS_append(pr,field,newval,reason)
 	if(!this.expect("APPN",210,213))
 		return(false);
 	if(this.response.code==213) {	// Need to send a reason
-		lines=reason.split(/\r?\n/);
+		var reasonstr;
+		if(typeof(reason)=='function')
+			reasonstr=reason();
+		else
+			reasonstr=reason;
+		lines=reasonstr.split(/\r?\n/);
 		for(i=0; i<lines.length; i++) {
 			if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
 				this.error="Error sending data";
@@ -475,7 +480,12 @@ function GNATS_replace(pr,field,newval,reason)
 	if(!this.expect("REPL",210,213))
 		return(false);
 	if(this.response.code==213) {	// Need to send a reason
-		lines=reason.split(/\r?\n/);
+		var reasonstr;
+		if(typeof(reason)=='function')
+			reasonstr=reason();
+		else
+			reasonstr=reason;
+		lines=reasonstr.split(/\r?\n/);
 		for(i=0; i<lines.length; i++) {
 			if(!this.socket.send(lines[i].replace(/^\./,'..')+"\r\n")) {
 				this.error="Error sending data";
