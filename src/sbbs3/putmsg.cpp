@@ -53,6 +53,7 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 	uchar	exatr=0;
 	int 	orgcon=console,i;
 	ulong	l=0,sys_status_sav=sys_status;
+	long	col=0;
 
 	attr_sp=0;	/* clear any saved attributes */
 	tmpatr=curatr;	/* was lclatr(-1) */
@@ -239,8 +240,13 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 				if(i)					/* if valid string, go to top */
 					continue; 
 			}
-			if(str[l]!=CTRL_Z)
+			if(str[l]!=CTRL_Z) {
 				outchar(str[l]);
+				if(!exatr && !outchar_esc && lncntr && lbuflen && cols && ++col==cols)
+					lncntr++;
+				else
+					col=0;
+			}
 			l++; 
 		} 
 	}
