@@ -763,6 +763,7 @@ int main(int argc, char **argv, char** environ)
 	char*	omode="w";
 	int		argn;
 	long	result;
+	ulong	exec_count=0;
 	BOOL	loop=FALSE;
 	BOOL	nonbuffered_con=FALSE;
 
@@ -958,6 +959,9 @@ int main(int argc, char **argv, char** environ)
 
 	do {
 
+		if(exec_count++)
+			fprintf(statfp,"\nRe-running: %s\n", module);
+
 		recycled=FALSE;
 
 		if(!js_init(environ)) {
@@ -967,6 +971,9 @@ int main(int argc, char **argv, char** environ)
 		fprintf(statfp,"\n");
 
 		result=js_exec(module,&argv[argn]);
+
+		if(result)
+			lprintf(LOG_ERR,"!Module set exit_code: %ld", result);
 
 		fprintf(statfp,"\n");
 		fprintf(statfp,"JavaScript: Destroying context\n");
