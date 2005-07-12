@@ -1324,7 +1324,7 @@ static void native_service_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_WARNING,"%04d !%s CLIENT BLOCKED in host.can: %s"
+		lprintf(LOG_NOTICE,"%04d !%s CLIENT BLOCKED in host.can: %s"
 			,socket, service->protocol, host_name);
 		close_socket(socket);
 		if(service->clients)
