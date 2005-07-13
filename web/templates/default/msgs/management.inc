@@ -6,7 +6,7 @@
 
 <center>
 %%detail%%<br>
-<a href="@@backurl@@">Back to previous page</a>
+<a href="msgs.ssjs?msg_sub=^^sub_code^^">Back to message index.</a>
 </center>
 
 <!-- end Main Content -->
