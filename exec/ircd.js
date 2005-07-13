@@ -772,6 +772,7 @@ while (!server.terminated) {
 			}
 		} catch(e) {
 			gnotice("FATAL ERROR: " + e + " CMDLINE: " + Global_CommandLine);
+			log(LOG_ERR,"JavaScript exception: " + e + " CMDLINE: " + Global_CommandLine);
 			terminate_everything("A fatal error occured!", /* ERROR? */true);
 		}
 	}
