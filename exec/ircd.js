@@ -117,14 +117,14 @@ function int_to_ip(ip) {
 		));
 }
 
-function terminate_everything(terminate_reason) {
-	log("Terminating: " + terminate_reason);
+function terminate_everything(terminate_reason, error) {
+	log(error ? LOG_ERR : LOG_NOTICE, "Terminating: " + terminate_reason);
 	for(thisClient in Local_Sockets_Map) {
 		var Client = Local_Sockets_Map[thisClient];
 		Client.rawout("ERROR :" + terminate_reason);
 		Client.socket.close();
 	}
-	exit();
+	exit(error);
 }
 
 function searchbyserver(server_name,ignore_wildcards) {
@@ -713,6 +713,7 @@ while (!server.terminated) {
 	// Setup a new socket if a connection is accepted.
 	for (pl in open_plines) {
 		if (open_plines[pl].poll()) {
+			log(LOG_DEBUG,"Accepting new connection on port " + open_plines[pl].local_port);
 			var client_sock=open_plines[pl].accept();
 			if(client_sock) {
 				if (iszlined(client_sock.remote_ip_address)) {
@@ -723,9 +724,12 @@ while (!server.terminated) {
 					next_client_id++;
 					if(server.client_add != undefined)
 						server.client_add(client_sock);
+					if(server.clients != undefined)
+						log(LOG_DEBUG,format("%d clients", server.clients));
 					Unregistered[new_id] = new Unregistered_Client(new_id,client_sock);
 				}
-			}
+			} else
+				log(LOG_DEBUG,"!ERROR " + open_plines[pl].error + " accepting connection");
 		}
 	}
 
@@ -768,7 +772,7 @@ while (!server.terminated) {
 			}
 		} catch(e) {
 			gnotice("FATAL ERROR: " + e + " CMDLINE: " + Global_CommandLine);
-			terminate_everything("Terminated: A fatal error occured!");
+			terminate_everything("A fatal error occured!", /* ERROR? */true);
 		}
 	}
 
