@@ -98,7 +98,7 @@ xpDateTime_t xpDateTime_now(void)
 
 xpTimeZone_t xpTimeZone_local(void)
 {
-#if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__DARWIN__)
 	struct tm tm;
 	time_t t;
 
