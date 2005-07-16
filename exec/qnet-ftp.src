@@ -151,9 +151,8 @@ if_true
 		lprintf "QNET-FTP: !ftp_put failed socket_error=%d\r\n" _socket_error
 	else
 		lprintf "QNET-FTP: REP packet sent successfully"
+		remove_file rep
 		end_if
-
-	remove_file rep
 	end_if
 
 #######################
