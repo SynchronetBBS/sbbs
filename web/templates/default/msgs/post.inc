@@ -20,7 +20,7 @@
       <td class="postmsg" colspan="2">@@privnote@@</td>
     </tr>
     <tr>
-      <td class="postmsg" colspan="2"><textarea class="postmsg" name=body rows="20" cols="80" wrap="hard"></textarea></td>
+      <td class="postmsg" colspan="2"><textarea class="postmsg" name=body rows="20" cols="79" wrap="hard"></textarea></td>
       </tr>
     <tr>
       <td align="center" class="postmsg" colspan="2"><input type="image" src="/graphics/@@post_button@@" value=@@JS:template.sub.code=='mail'? '"Send E-Mail"' : '"Post Message"' @@/></td>
