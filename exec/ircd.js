@@ -2405,10 +2405,10 @@ function IRCClient_do_complex_list(cmd) {
 			   (IRC_match(Channels[aChan].topic,list.Topic)))
 				continue;
 			if ((list.add_flags&LIST_PEOPLE) &&
-			    (Channels[aChan].count_users() < list.People) )
+			    (true_array_len(Channels[aChan].users) < list.People) )
 				continue;
 			else if ((list.del_flags&LIST_PEOPLE) &&
-			    (Channels[aChan].count_users() >= list.People) )
+			    (true_array_len(Channels[aChan].users) >= list.People) )
 				continue;
 			if ((list.add_flags&LIST_TOPICAGE) && list.TopicTime &&
 			  (Channels[aChan].topictime > (time()-list.TopicTime)))
@@ -2590,10 +2590,10 @@ function IRCClient_do_list_usage() {
 // Bahamut parsing to determine that.
 function Channel_match_list_mask(mask) {
 	if (mask[0] == ">") { // Chan has more than X people?
-		if (this.count_users() < parseInt(mask.slice(1)))
+		if (true_array_len(this.users) < parseInt(mask.slice(1)))
 			return 0;
 	} else if (mask[0] == "<") { // Chan has less than X people?
-		if (this.count_users() >= parseInt(mask.slice(1)))
+		if (true_array_len(this.users) >= parseInt(mask.slice(1)))
 			return 0;
 	} else if (mask[0].toUpperCase() == "C") { //created X mins ago?
 		if ((mask[1] == ">") && (this.created <
