@@ -14,6 +14,7 @@ var line;
 var done_headers=false;
 var hdrs=new Object;
 var body='';
+var rcpt_list=new Array();
 
 while((line=readln()) != undefined) {
 	if(!done_headers) {
@@ -25,9 +26,14 @@ while((line=readln()) != undefined) {
 		if(m != undefined && m.index>-1) {
 			switch(m[1].toLowerCase()) {
 				case 'to':
-					hdrs.to=mail_get_name(m[2]);
-					hdrs.to_net_type=NET_INTERNET;
-					hdrs.to_net_addr=mail_get_address(m[2]);
+					addys=m[2].split(',');
+					for (addy in addys) {
+						var hdr=new Object;
+						hdr.to=mail_get_name(addys[addy]);
+						hdr.to_net_type=NET_INTERNET;
+						hdr.to_net_addr=mail_get_address(addys[addy]);
+						rcpt_list.push(hdr);
+					}
 					break;
 				case 'from':
 					hdrs.from=mail_get_name(m[2]);
@@ -64,7 +70,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 	writeln("Cannot send email (open error)!");
 	exit();
 }
-if(!msgbase.save_msg(hdrs, body)) {
+if(!msgbase.save_msg(hdrs, body, rcpt_list)) {
 	writeln("Cannot send email (save error)!");
 	exit();
 }
