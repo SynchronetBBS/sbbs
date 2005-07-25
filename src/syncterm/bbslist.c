@@ -501,7 +501,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 										"an extra line to the display (May cause problems with some BBS software)\n";
 						list[listcount-1]->nostatus=1;
 						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->nostatus,NULL,"Hide Status Lines",YesNo);
-						list[listcount-1]->nostatus=!list[listcount-1];
+						list[listcount-1]->nostatus=!list[listcount-1]->nostatus;
 						add_bbs(listpath,list[listcount-1]);
 						sort_list(list);
 						for(j=0;list[j]->name[0];j++) {
