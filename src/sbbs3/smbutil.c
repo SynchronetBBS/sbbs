@@ -182,6 +182,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	int 		i;
 	ushort		agent=AGENT_SMBUTIL;
 	smbmsg_t	msg;
+	long		dupechk_hashes=SMB_HASH_SOURCE_ALL;
 
 	/* Read message text from stream (file or stdin) */
 	msgtxtlen=0;
@@ -326,9 +327,11 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		bail(1); 
 	}
 
+	if(mode&NOCRC || smb.status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
+		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
+
 	if((i=smb_addmsg(&smb,&msg,smb.status.attr&SMB_HYPERALLOC
-		,mode&NOCRC ? SMB_HASH_SOURCE_NONE : SMB_HASH_SOURCE_ALL
-		,xlat,msgtxt,NULL))!=SMB_SUCCESS) {
+		,dupechk_hashes,xlat,msgtxt,NULL))!=SMB_SUCCESS) {
 		fprintf(errfp,"\n%s!smb_addmsg returned %d: %s\n"
 			,beep,i,smb.last_error);
 		bail(1); 
