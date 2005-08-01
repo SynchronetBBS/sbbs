@@ -257,6 +257,9 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	hash_t		found;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 
+	if(smb->status.attr&SMB_EMAIL)
+		return(SMB_SUCCESS);
+
 	hashes=smb_msghashes(msg,text);
 
 	if(smb_findhash(smb, hashes, &found, SMB_HASH_SOURCE_ALL, update)==SMB_SUCCESS && !update) {
