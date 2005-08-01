@@ -208,7 +208,7 @@
 		<tt>ctrl/sbbs<i>[.host | .platform]</i>.ini</tt> or <tt>ctrl/startup<i>[.host | .platform]</i>.ini</tt>
 	</ul><br>
 <li><b>Web Server</b><ul>
-	<li>Win32-CGI support (tested with php-cgi.exe)
+	<li>Win32-CGI support (tested with <tt>php-cgi.exe</tt>)
 	<li>Created <tt>ctrl/cgi_env.ini</tt> which dictates which system environment variables
 	will be passed to CGI processes and which default or forced values they will have
 	<li>Default CGI content-type is now configurable via sbbs.ini [web] DefaultCGIContent (defaults to "text/plain")
@@ -247,7 +247,7 @@
 		This should allow for competing dynamic HTML solutions based on server-side
 		JavaScript (e.g. <tt>.xjs</tt>).<br>
 		Tip: use <i>http_request.real_path</i> for the path to file-to-be-parsed<br>
-		This should also allow php-cgi.exe (for example) to automatically handle .php files
+		This should also allow <tt>php-cgi.exe</tt> (for example) to automatically handle .php files
 	<li>Bug-fix: when logging failed login attempt, was logging wrong password variable
 	</ul><br>
 <li><b>Mail Server</b><ul>
@@ -428,7 +428,8 @@
 		<i>from_net_addr</i>
 	</ul><br>
 <li><b>IRC Daemon</b><ul>
-	<li>Lots of bug-fixes by Cyan in
+	<li>Lots of bug-fixes and enhancements by Cyan
+	<li>For details, see
 		<a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/ircd.js">ircd.js</a>,
 		<a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/ircd_user.js">ircd_user.js</a>,
 		<a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/ircd_channel.js">ircd_channel.js</a>,
@@ -436,9 +437,14 @@
 		<a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/ircd_unreg.js">ircd_unreg.js</a>
 	</ul><br>
 <li><b>Documentation</b><ul>
-	<li>The ListGate module (exec/listgate.js) is now documented in <tt><a href="listgate.txt">docs/listgate.txt</a>
+	<li>The ListGate module (<tt>exec/listgate.js</tt>) is now documented in <tt><a href="listgate.txt">docs/listgate.txt</a></tt>
 	<li>Fixed JS documentation error: default timeout value for <i>Queue.poll()</i> is <i>0</i>, not
 		<i>infinite</i>
+	</ul><br>
+<li><b>SEXYZ</b><ul>
+	<li>Synchronet External X/Y/Zmodem file transfer protocol driver
+	<li>Replaces 16-bit DOS drivers: FDSZ or CE-XYZ
+	<li>See <tt><a href="sexyz.txt">docs/sexyz.txt</a></tt> for details
 	</ul><br>
 </ul>
 For <b>many</b> more changes since v3.10, see <a href=v311_new.html>v311_new.html</a> and
