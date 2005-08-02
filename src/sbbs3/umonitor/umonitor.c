@@ -829,8 +829,8 @@ int main(int argc, char** argv)  {
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-    printf("\nSynchronet UNIX Monitor %s-%s  Copyright 2004 "
-        "Rob Swindell\n",revision,PLATFORM_DESC);
+    printf("\nSynchronet UNIX Monitor %s-%s  Copyright %s "
+        "Rob Swindell\n",revision,PLATFORM_DESC,__DATE__+7);
 
 	p=getenv("SBBSCTRL");
 	if(p==NULL) {
