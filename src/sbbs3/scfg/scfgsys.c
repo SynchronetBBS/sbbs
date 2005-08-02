@@ -1416,14 +1416,14 @@ This value is a 32-bit hexadecimal number. Each set bit represents a
 control key combination that will `not` be handled internally by
 Synchronet or by a Global Hot Key Event.
 
-To disable internal handling of the `Ctrl-C` key combination (for example),
+To disable internal handling of the `Ctrl-C` key combination (for example)
 set this value to `8`. The value is determined by taking 2 to the power of
-the ASCII value of the control character (Ctrl-A is 1, Ctrl-B is 2, etc).
-In the case of Ctrl-C, taking 2 to the power of 3 equals 8.
+the ASCII value of the control character (Ctrl-A is 1, Ctrl-B is 2, 
+etc.). In the case of Ctrl-C, taking 2 to the power of 3 equals 8.
 
 To pass-through multiple control key combinations, multiple bits must be
-set (or'd together) which may require the use of a hexadecimal
-calculator.
+set (or'd together) to create the necessary value, which may require the
+use of a hexadecimal calculator.
 
 If unsure, leave this value set to `0`, the default.
 */
