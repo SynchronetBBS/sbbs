@@ -337,13 +337,40 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
 7. Debugging:
 
+   You can either run Synchronet (sbbs) from the GNU debugger (gdb), or you
+   can debug an sbbs crash "post portem" provided you have a system-generated
+   core file as a result of a crash. Often times, a core file is the best way
+   to find the root cause of a crash, so if you can configure your system to
+   create core files when sbbs crashes, that can be very helpful to the
+   developers in finding and fixing any bugs and ultimately, improving the
+   quality of the software.
+
+   You can run "ulimit -c" to check if core file generation is enabled for the
+   current user profile (0 = disabled, non-zero or "unlimited" = enabled). An 
+   "unlimited" core file size is the preferred setting. If your system is
+   configured for no core file generation, check for a call to "ulimit -c 0"
+   in your /etc/profile (or similar startup file) and remove/edit the command.
+
+   Linux Sysops: to help locate sbbs crash core files, the following
+   lines in your /etc/sysctl.conf file can be helpful:
+
+     # Controls whether core dumps will append the PID to the core filename.
+     # Useful for debugging multi-threaded applications.
+     kernel.core_uses_pid = 1
+     kernel.core_pattern = /tmp/core.%e.%p
+
+   This will place core files with the name "core.sbbs.####" in the /tmp dir
+   instead of core.#### in the current directory (typically /sbbs/ctrl).
+
    A. Run the GNU debugger:
       # gdb /sbbs/exec/sbbs
+      or:
+      # gdb /sbbs/exec/sbbs /tmp/core.sbbs.####
 
-   B. Run Synchronet:
+   B. Run Synchronet (if no core file used):
       (gdb) run -nd
 
-   C. After segfault, display back-trace:
+   C. After segfault or other crash, display back-trace:
       (gdb) bt
 
    D. If (and only if) the last line of the output looks like this:
