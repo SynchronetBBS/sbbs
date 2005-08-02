@@ -441,6 +441,18 @@
 	<li>Fixed JS documentation error: default timeout value for <i>Queue.poll()</i> is <i>0</i>, not
 		<i>infinite</i>
 	</ul><br>
+<li><b>Message Bases</b> (SMBLIB v2.41)<ul>
+	<li>Hash database no longer used for the <i>mail</i> database:<ul>
+		<li>Message-IDs were not used for duplicate checking or threading
+		<li>The old body text CRC history dupe checking is sufficient (when enabled)
+		<li>Eliminates unnecessary burden on mail database operations
+		<li>Reduces disk consumption of typically-ephemeral mail messages
+		<li>After upgrading, you can safely delete your <tt>date/mail.hash</tt> file
+	</ul>
+	</ul><br>
+<li><b>SCFG</b><ul>
+	<li>Bug-fix: crash when using help (F1) in certain contexts
+	</ul><br>
 <li><b>SEXYZ</b><ul>
 	<li>Synchronet External X/Y/Zmodem file transfer protocol driver
 	<li>Replaces 16-bit DOS drivers: FDSZ or CE-XYZ
