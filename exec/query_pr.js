@@ -353,5 +353,5 @@ function handle_error()
 {
 	writeln(gnats.error);
 	console.pause();
-	clean_exit();
+	clean_exit(1);
 }
