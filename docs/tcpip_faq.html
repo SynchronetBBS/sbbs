@@ -90,13 +90,13 @@ So you don't <b>need</b> to necessarily know what it is.
 <i>Why can't I <b>send Internet e-mail</b> from my BBS?</i>
 <p>
 <b>Answer:</b>
-<br>You must have the Synchronet "SendMail" thread enabled in your Synchronet Mail Server configuration.
+<br>You must have the Synchronet SendMail thread enabled in your Synchronet Mail Server configuration.
 <br>If you <b>do not</b> see the following message in your Synchronet Mail Server window/log output when the server
 is started or recycled:</p>
 <tt>0000 SendMail thread started</tt>
 <p>then you do not have the SendMail thread enabled and your system cannot deliver any Internet e-mail messages
 until it is enabled and recycled (delivery of any previously queued outbound messages will be attempted at that time).
-<p>If your Synchronet "SendMail" thread cannot deliver e-mail messages, it could be for any of the following
+<p>If your Synchronet SendMail thread cannot deliver e-mail messages, it could be for any of the following
 reasons:
 <ol>
 <li>You have your mail server configured for "Direct Delivery", but have an improperly configured DNS server
@@ -104,6 +104,7 @@ IP address.
 <br>Example errors indicating this condition include:
 <br><tt>0000 !SEND INVALID DNS server address</tt>
 <br><tt>0000 !SEND ERROR -1 obtaining MX records for someserver.com from 192.168.1.1</tt>
+<p>The configured DNS server IP address should usually be set to that of your ISP's primary DNS server.
 <p>
 <li>Your firewall, Internet Service Provider, or Anti-Virus software is blocking, intercepting, or filtering
 outbound connections to TCP port 25 (many consumer-class ISPs do this). 
@@ -111,17 +112,20 @@ outbound connections to TCP port 25 (many consumer-class ISPs do this).
 <br><tt>0700 !SEND ERROR 60 connecting to SMTP server: smtp.somedomain.com</tt>
 <br><tt>0023 !SEND ERROR 110 connecting to SMTP server: mx.somesite.org</tt>
 <p>
-You can verify if this is the case by attempting to Telnet to a known public SMTP server (e.g. <i>vert.synchro.net</i>, TCP port 25).
+You can verify if this is the case by attempting to Telnet to a known public SMTP server (e.g. <i>vert.synchro.net</i>) on TCP port 25.
 <br>You should see a mail server version banner similar to the following:
 <br><tt>220 bbs.synchro.net Synchronet SMTP Server 1.362-Win32 Ready</tt>
+<p>If you cannot connect or do not see a mail server version banner, then <i>something</i> is filtering or blocking
+your outbound connections to TCP port 25.
 <p>
 If your ISP is blocking port 25, they will normally make an exception for their own mail servers
 (e.g. <tt>mail.yourisp.com</tt> or <tt>smtp.yourisp.com</tt>). If this is the case (and your ISP's mail server allows the <i>from</i> address of your e-mail message
 to contain any hostname or IP address of your choosing), then you need to configure your mail server to use your ISP's mail server as its
-relay server.
+relay server. <b>Do not</b> use your own mail server's hostname or IP address as the relay server
+(this will cause an undesireable message "loop").
 <p>
-If your ISP's mail server <b>only</b> allows mail to be sent from <tt>somename@yourisp.com</tt>
-then you need to contact your ISP about how you can send mail from a different domain using their mail server.
+If your ISP's mail server <b>only</b> allows e-mail to be sent from <tt>somename@yourisp.com</tt>
+then you need to contact your ISP about how you can send e-mail from a different domain using their mail server.
 Perhaps they only allow this feature when using SMTP authentication?
 <p>
 <li>You have your mail server configured to use an external "Relay Server", but have an improperly configured
@@ -130,9 +134,29 @@ relay server hostname or IP address.
 <br><tt>0000 !ERROR resolving hostname: badhostname.com</tt>
 <br><tt>0680 !SEND ERROR 60 connecting to SMTP server: 192.168.1.1</tt>
 <p>
-<li>You have your mail server configured to use an external "Relay Server", but the SMTP relay server requires
-authentication
-<br>(Synchronet v3.12+ supports <i>Plain</i>, <i>Login</i>, and <i>CRAM-MD5</i> methods of SMTP authentication).
+<li>You have your mail server configured to use an external "Relay Server", but the specified relay server requires
+SMTP authentication in order to allow relaying of mail.
+<br>Example errors indicating this condition include:
+<br><tt>0000 !Delivery attempt #1 FAILED (somehost.org replied with: "550 Relay not allowed." instead of the expected reply: "250 ...")</tt>
+<br><tt>0000 !Delivery attempt #1 FAILED (somehost.org replied with: "553 Authentication required." instead of the expected reply: "250 ...")</tt>
+<p>Synchronet v3.12+ supports the <i>Plain</i>, <i>Login</i>, and <i>CRAM-MD5</i> methods of SMTP authentication when relaying
+mail through an external relay server. To enable SMTP authentication when relaying, add one of the <tt>RELAY_AUTH</tt> flags to the <tt>Options</tt> value in the
+<tt>[Mail]</tt> section of your <tt>ctrl/sbbs.ini</tt> file. Or, if running sbbsctrl-Win32, enable one of the authentication
+radio buttons on the "Relay" tab of the Mail Server Configuration dialog.
+<p>
+<li>You have a message in your outbound e-mail queue that is flagged as '<i>in transit</i>'. If you're 
+running only <i>one</i> instance of the Synchronet Mail Server, this is not a normal condition and the affected message
+<b>will not be sent</b> until the '<i>in transit</i>' flag is cleared.
+<br>Example log message indicating this condition:
+<br><tt>0000 SEND Message #999 from Some User to someone@somesite.com - in transit</tt>
+<p>This condition can occur if the Synchronet SendMail thread is terminated unexpectedly while in the process of
+attempting the delivery an outbound e-mail message.
+The '<i>in transit</i>' flag is used to protect multiple instances of the SendMail thread from attempting to deliver the same e-mail message simultaneously.
+<p>
+If you only have one instance of the Synchronet SendMail thread active (the usual scenario), you can eliminate this problem
+by adding <tt>SEND_INTRANSIT</tt> to the <tt>Options</tt> value in the <tt>[Mail]</tt> section of your <tt>ctrl/sbbs.ini</tt> file.
+Or you can remove the '<i>in transit</i>' flags from all existing e-mail messages by running the <tt>fixsmb</tt> utility on your
+<tt>data/mail</tt> database or by running the <tt>exec/notransit.js</tt> script.
 </ol>
 In general, you need to check your Synchronet Mail Server window/log output for details about why Internet e-mail
 delivery attempts may be failing.
