@@ -59,7 +59,7 @@ if(argc>0)
 	user=argv[0];
 if(argc>1)
 	password=argv[1];
-var gnats = new GNATS("gnats.bbsdev.net",user,password);
+var gnats = new GNATS("bugs.synchro.net",user,password);
 
 if(!gnats.connect())
 	handle_error();

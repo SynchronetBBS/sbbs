@@ -11,7 +11,7 @@ console.clear();
 console.center(format("Synchronet Bug Submission Module %s\r\n", REVISION));
 console.crlf();
 
-gnats=new GNATS("gnats.bbsdev.net","guest");
+gnats=new GNATS("bugs.synchro.net","guest");
 if(!gnats.connect()) {
 	writeln(gnats.error);
 	exit();

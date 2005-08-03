@@ -22,7 +22,7 @@ function GNATS(host,user,pass,email)
 {
 	// Properties
 	if(host == undefined)
-		this.host='gnats.bbsdev.net';
+		this.host='bugs.synchro.net';
 	else
 		this.host=host;
 	if(user == undefined)
