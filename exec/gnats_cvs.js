@@ -33,15 +33,18 @@ while((pr=myRe.exec(logmsg))!=undefined) {
 
 for(pr in auditprs) {
 	if(name != gnats.get_field(pr,"Responsible")) {
+		log("Changeing responsible to "+name+" for PR: "+pr);
 		if(!gnats.replace(pr, "Responsible", name, "CVS Commit"))
 			handle_error();
 	}
+	log("Appending log info to PR: "+pr);
 	if(!gnats.append(pr,"Audit-Trail", logmsg, "CVS Commit"))
 		handle_error();
 }
 
 for(pr in stateprs) {
 	if(stateprs[pr] != gnats.get_field(pr,"State")) {
+		log("Changeing state of PR: "+pr+" to "+stateprs[pr]);
 		if(!gnats.replace(pr, "State", stateprs[pr], "CVS Commit"))
 			handle_error();
 	}
@@ -49,7 +52,7 @@ for(pr in stateprs) {
 
 function handle_error()
 {
-        writeln(gnats.error);
+        log(gnats.error);
         gnats.close();
         exit(1);
 }
