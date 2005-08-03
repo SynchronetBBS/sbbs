@@ -510,13 +510,13 @@ function GNATS_replace(pr,field,newval,reason)
 function GNATS_send_followup(pr,name,from,message)
 {
 	var hdrs = new Object;
-	var recips = new Array();
 
 	var rcpt_list = new Array();
 	var recip = new Object;
-	recip.to='bugs';
+	recip.to=mail_get_name(this.email);
 	recip.to_net_type=NET_INTERNET;
-	recip.to_net_addr=this.email;
+	recip.to_net_addr=mail_get_address(this.email);
+	rcpt_list.push(recip);
 
 	var orig=this.get_field(pr,'Reply-To');
 	var recip = new Object;
