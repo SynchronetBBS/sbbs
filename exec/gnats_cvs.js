@@ -17,7 +17,7 @@ if(!gnats.connect())
 
 while((line=readln()) != undefined)
 	logmsg += line+"\n";
-logmsg+='--- End CVS Commit Message ---\n';
+logmsg+='--- End CVS Commit Message ---\n\n';
 
 auditprs=new Object;
 stateprs=new Object;
