@@ -53,13 +53,13 @@ query.state.list="States";
 query.state.listdesc=2;
 query.state.desc="State";
 
-var user="guest";
+var gnats_user="guest";
 var password=undefined;
 if(argc>0)
-	user=argv[0];
+	gnats_user=argv[0];
 if(argc>1)
 	password=argv[1];
-var gnats = new GNATS("bugs.synchro.net",user,password);
+var gnats = new GNATS("bugs.synchro.net",gnats_user,password);
 
 if(!gnats.connect())
 	handle_error();
