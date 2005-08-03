@@ -26,3 +26,4 @@
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
 ALL (echo %p %{sVv}; cat) | smbutil -o -i -tAll "-sCVS commit %p/%s" -f$USER i /sbbs/data/subs/syncprog;sync
 ALL jsexec -c /sbbs/ctrl ircmsg -s bbs.synchro.net -p 5050 -c \#synchronet -n cvs_$USER -x "^In directory cvs" -x "^Modified Files:\$" -x "^Log Message:\$"
+ALL jsexec gnats_cvs $USER cvs justme
