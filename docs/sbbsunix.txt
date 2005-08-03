@@ -370,7 +370,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    B. Run Synchronet (if no core file used):
       (gdb) run -nd
 
-   C. After segfault or other crash, display back-trace:
+   C. After segfault or other crash (or when using a core), display back-trace:
       (gdb) bt
 
    D. If (and only if) the last line of the output looks like this:
