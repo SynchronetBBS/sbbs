@@ -1,7 +1,7 @@
 #!/sbbs/exec/jsexec -x -c /sbbs/ctrl
 load("gnatslib.js");
 
-var logmsg='';
+var logmsg='----- CVS Commit Message -----\n';
 var name=argv[0];
 
 var gnats_user="guest";
@@ -17,7 +17,7 @@ if(!gnats.connect())
 
 while((line=readln()) != undefined)
 	logmsg += line+"\n";
-logmsg += "\n";
+var logmsg='--- End CVS Commit Message ---\n';
 
 auditprs=new Object;
 stateprs=new Object;
