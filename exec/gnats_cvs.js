@@ -31,21 +31,29 @@ while((pr=myRe.exec(logmsg))!=undefined) {
 	stateprs[pr[1]]=pr[2];
 }
 
-for(pr in auditprs) {
-	if(name != gnats.get_field(pr,"Responsible")) {
-		log("Changeing responsible to "+name+" for PR: "+pr);
-		if(!gnats.replace(pr, "Responsible", name, "CVS Commit"))
+for(pr in stateprs) {
+	var oldstate = gnats.get_field(pr,"State");
+	oldstate = oldstate.replace(/[\r\n]/g,'');
+	if(stateprs[pr] != oldstate) {
+		log("Changeing state of PR: "+pr+" to "+stateprs[pr]);
+		if(!gnats.replace(pr, "State", stateprs[pr], logmsg))
 			handle_error();
+		else
+			delete auditprs[pr];
 	}
-	log("Appending log info to PR: "+pr);
-	if(!gnats.append(pr,"Audit-Trail", logmsg, "CVS Commit"))
-		handle_error();
 }
 
-for(pr in stateprs) {
-	if(stateprs[pr] != gnats.get_field(pr,"State")) {
-		log("Changeing state of PR: "+pr+" to "+stateprs[pr]);
-		if(!gnats.replace(pr, "State", stateprs[pr], "CVS Commit"))
+for(pr in auditprs) {
+	var oldname = gnats.get_field(pr,"Responsible");
+	oldname = oldname.replace(/[\r\n]/g,'');
+	if(name != oldname) {
+		log("Changeing responsible to "+name+" for PR: "+pr);
+		if(!gnats.replace(pr, "Responsible", name, logmsg))
+			handle_error();
+	}
+	else {
+		log("Sending followup to PR: "+pr);
+		if(!gnats.send_followup(pr, name, name, logmsg))
 			handle_error();
 	}
 }
