@@ -7,8 +7,7 @@ $Id$
 ---------------
 The Synchronet Web Server is a mostly HTTP 1.1 compliant web server capable of
 handing basic web servicing tasks.  It has most of the basic features of a
-general-purpose web server one would come to expect, but currently, the *nix
-version is more capable (the Win32 version doesn't support CGI scripts)
+general-purpose web server one would come to expect.
 
 It also, through Server-Side JavaScript (SSJS) allows dynamic pages to be
 created which access to BBS data directly.
@@ -38,8 +37,7 @@ IndexFileNames=index.html,index.ssjs
     web pages at all.
 CGIExtensions=.cgi
     Files with this extension will be considered CGI files.  On *nix
-    systems, the web server will attempt to execute them as such.  CGI
-    files on Win32 systems will currently always return an error.
+    systems, the web server will attempt to execute them as such.
 JavaScriptExtension=.ssjs
     Files with this extension will be considered SSJS files.  On all
     systems, this will be attempted to run with the JavaScript interpreter.
