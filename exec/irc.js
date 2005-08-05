@@ -111,6 +111,9 @@ while(!connected)  {
 }
 
 // Main loop
+socks = new Array;
+socks.push(sock);
+socks.push(client.socket);
 while(!quit)  {
 	if(!sock.is_connected || !connected)  {
 		alert("Lost connection");
@@ -126,8 +129,15 @@ while(!quit)  {
 		clean_exit();
 	}
 
-	screen.update();
-	recieve_command();
+	ready=socket_select(socks, 1);
+	for(thissock in ready) {
+		if(ready[thissock]==0) {	// IRC server
+			recieve_command();
+		}
+		if(ready[thissock]==1) {	// Client
+			screen.update();
+		}
+	}
 }
 sock.close();
 clean_exit();
@@ -1242,12 +1252,12 @@ function Screen_update_input_line()  {
 }
 
 function Screen_update()  {
-	var key=console.inkey();
-	if(key!="")  {
-		this.handle_key(key);
-	}
-	else {
-		sleep(1);
+	while(1) {
+		var key=console.inkey();
+		if(key!="")
+			this.handle_key(key);
+		else
+			break;
 	}
 }
 
