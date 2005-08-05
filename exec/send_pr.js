@@ -79,7 +79,7 @@ do {
 	if(console.aborted)
 		exit();
 	pr.Description += line + "\r\n";
-} while (line != '');
+} while (line != '' && bbs.online);
 console.print("\1y\1hSteps to reproduce the problem (Blank line ends):\r\n");
 pr.HowToRepeat = '';
 do {
@@ -87,7 +87,7 @@ do {
 	if(console.aborted)
 		exit();
 	pr.HowToRepeat += line + "\r\n";
-} while (line != '');
+} while (line != '' && bbs.online);
 console.print("\1y\1hFix/Workaround if known (Blank line ends):\r\n");
 pr.Fix = '';
 do {
@@ -95,7 +95,7 @@ do {
 	if(console.aborted)
 		exit();
 	pr.Fix += line + "\r\n";
-} while (line != '');
+} while (line != '' && bbs.online);
 
 var body='';
 body += "To: bugs\r\n";
@@ -120,11 +120,14 @@ body += ">Description:\r\n" + pr.Description;
 body += ">How-To-Repeat:\r\n" + pr.HowToRepeat;
 body += ">Fix:\r\n" + pr.Fix;
 
-if(!gnats.submit(body)) {
-	alert(gnats.error);
-	console.pause();
-} else {
-	console.print("\1y\1hProblem Report (PR) submitted successfully.\r\n");
-	console.print(gnats.message);
+// Only submit if the user is still online...
+if(bbs.online) {
+	if(!gnats.submit(body)) {
+		alert(gnats.error);
+		console.pause();
+	} else {
+		console.print("\1y\1hProblem Report (PR) submitted successfully.\r\n");
+		console.print(gnats.message);
+	}
 }
 gnats.close();

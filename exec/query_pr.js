@@ -65,7 +65,7 @@ if(!gnats.connect())
 	handle_error();
 
 var done=false;
-while(!done) {
+while(!done && bbs.online) {
 	done=set_prlist();
 	if(done)
 		break;
@@ -75,7 +75,7 @@ while(!done) {
 	if(prs.length > 0) {
 		var donelist=false;
 		var c;
-		while(!donelist) {
+		while(!donelist && bbs.online) {
 			for(c=0; c < prs.length; c++) {
 				m=prs[c].match(/^(.{72}) (.{10}) (.{6}) (.{10}) (.{10})\r\n$/);
 				if(m!=undefined && m.index>-1) {
@@ -139,7 +139,7 @@ while(!done) {
 									for(c=0; c<cvals.length; c++)
 										cv[cvals[c]]=true;
 									var doneenum=false;
-									while(!doneenum) {
+									while(!doneenum && bbs.online) {
 										for(c=0; c<vals.length; c++) {
 											if(cv[vals[c]] == undefined || cv[vals[c]]==false)
 												console.uselect(c, "New Values", vals[c], "");
@@ -175,6 +175,8 @@ while(!done) {
 										newval=undefined;
 									break;
 							}
+							if(!bbs.online)
+								newval=undefined;
 							if(newval != undefined) {
 								var reason='';
 								if(!gnats.cmd("FIELDFLAGS",fields[field]))
@@ -188,7 +190,7 @@ while(!done) {
 										if(console.aborted)
 											break;
 										reason += line + "\r\n";
-									} while (line != '');
+									} while (line != '' && bbs.online);
 								}
 								if(!gnats.replace(m[1],fields[field],newval,reason))
 									handle_error();
@@ -218,8 +220,8 @@ while(!done) {
 							if(console.aborted)
 								break;
 							note += line + "\r\n";
-						} while (line != '');
-						if(line == '') {
+						} while (line != '' && bbs.online);
+						if(line == '' && bbs.online) {
 							if(!gnats.send_followup(m[1],user.name,user.email,note))
 								handle_error();
 						}
@@ -252,7 +254,7 @@ function set_prlist()
 	for (field in query) {
 		fields.push(field);
 	}
-	while(!done) {
+	while(!done && bbs.online) {
 		var text='';
 		var expr='';
 		console.uselect(0,"Field","Run Query","");
