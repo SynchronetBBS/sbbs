@@ -1184,6 +1184,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{	"last_error"		,SOCK_PROP_LAST_ERROR	,JSPROP_READONLY,	310 },	/* alias */
 	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,SOCK_PROP_FLAGS,	310 },
 	{	"is_writeable"		,SOCK_PROP_IS_WRITEABLE	,SOCK_PROP_FLAGS,	311 },
+	{	"is_writable"		,SOCK_PROP_IS_WRITEABLE	,JSPROP_READONLY,	312 },	/* alias */
 	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,SOCK_PROP_FLAGS,	310 },
 	{	"nread"				,SOCK_PROP_NREAD		,SOCK_PROP_FLAGS,	310 },
 	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	310 },
