@@ -123,6 +123,8 @@ body += ">Fix:\r\n" + pr.Fix;
 if(!gnats.submit(body)) {
 	alert(gnats.error);
 	console.pause();
-} else
+} else {
 	console.print("\1y\1hProblem Report (PR) submitted successfully.\r\n");
+	console.print(gnats.message);
+}
 gnats.close();
