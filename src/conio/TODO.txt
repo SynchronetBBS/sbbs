@@ -1,5 +1,0 @@
-Currently, win32cio.c and console.c have separate lists of scancodes.  The one
-in console.c is *definately* missing some, and I belive that the one in
-win32cio.c is too.  This should be unified in a new file if possible (The Win32
-one has an extra field in the struct).  If it's not possible, console.c should
-be updated to support at least everything win32cio.c does.
