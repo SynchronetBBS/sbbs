@@ -152,7 +152,6 @@ BYTE CursCol=0;
 typedef struct TextLine {
     WORD	*data;
     u_char	max_length;	/* Not used, but here for future use */
-    u_char	changed;
 	u_char	*exposed;
 } TextLine;
 TextLine *lines = NULL;
@@ -451,35 +450,20 @@ video_update_text()
 	pthread_mutex_lock(&lines_mutex);
 	memcpy(vmemc, vmem, DpyCols*(DpyRows+1)*sizeof(WORD));
 	for (r = 0; r < (DpyRows+1); ++r) {
-	    if (!lines[r].changed) {
-			for (c = 0; c < DpyCols; ++c) {
-				if ((lines[r].data[c] != vmemc[r * DpyCols + c]) 
-						|| (lines[r].data[c] & 0x8000 && show != os)
-						|| (lines[r].exposed[c])
-						|| (((r == or && c==oc) || (r == cursrow && c==curscol)) && (or != cursrow || oc !=curscol))) {
-					setgc(vmemc[r * DpyCols + c]  & 0xff00);
-					x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmemc[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
-					lines[r].changed = 2;
-					flush=1;
-				}
-			}
-	    }
-
-	    if (!lines[r].changed)
-			continue;
-
-		reset_poll();
-		memcpy(lines[r].data,
-			&vmemc[r * DpyCols], sizeof(WORD) * DpyCols);
-
-		if(lines[r].changed==1) {
-			for (c = 0; c < DpyCols; ++c) {
+		for (c = 0; c < DpyCols; ++c) {
+			if ((lines[r].data[c] != vmemc[r * DpyCols + c]) 
+					|| (lines[r].data[c] & 0x8000 && show != os)
+					|| (lines[r].exposed[c])
+					|| (((r == or && c==oc) || (r == cursrow && c==curscol)) && (or != cursrow || oc !=curscol))) {
 				setgc(vmemc[r * DpyCols + c]  & 0xff00);
 				x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmemc[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
+				lines[r].exposed[c]=0;
+				lines[r].data[c]=vmemc[r * DpyCols + c];
+				flush=1;
 			}
 		}
-		lines[r].changed = 0;
-		memset(lines[r].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
+
+		reset_poll();
 	}
 	pthread_mutex_unlock(&lines_mutex);
 
@@ -559,8 +543,7 @@ get_lines()
 				fprintf(stderr, "Could not allocate data structure for text lines\n");
 				exit(1);
 			}
-			memset(lines[i].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
-			lines[i].changed = 1;
+			memset(lines[i].exposed,1,CONSOLE_MAX_COLS * sizeof(u_char));
 		}
 		pthread_mutex_unlock(&lines_mutex);
 	}
@@ -1203,7 +1186,7 @@ resize_window()
 	if(lines != NULL) {
 		pthread_mutex_lock(&lines_mutex);
 		for (r = 0; r < (CONSOLE_MAX_ROWS+1); ++r) {
-			lines[r].changed = 1;
+			memset(lines[r].exposed,1,CONSOLE_MAX_COLS * sizeof(u_char));
 		}
 		pthread_mutex_unlock(&lines_mutex);
 	}
