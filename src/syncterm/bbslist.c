@@ -223,11 +223,16 @@ int edit_list(struct bbslist *item,char *listpath)
 				iniSetString(&inifile,item->name,"SystemPassword",item->syspass,&ini_style);
 				break;
 			case 6:
+				item->conn_type--;
+				uifc.helpbuf=	"`Connection Type`\n\n"
+								"Select the type of connection you wish to make:\n"
+								"~ RLogin:~ Auto-login with RLogin protocol\n"
+								"~ Telnet:~ Use more common Telnet protocol (experimental)\n"
+								"~ Raw:   ~ Make a raw socket connection (experimental)\n";
+				uifc.list(WIN_SAV,0,0,0,&(item->conn_type),NULL,"Connection Type",&(conn_types[1]));
 				item->conn_type++;
-				if(item->conn_type==CONN_TYPE_TERMINATOR)
-					item->conn_type=CONN_TYPE_RLOGIN;
-				changed=1;
 				iniSetEnum(&inifile,item->name,"ConnectionType",conn_types,item->conn_type,&ini_style);
+				changed=1;
 				break;
 			case 7:
 				item->reversed=!item->reversed;
@@ -235,11 +240,11 @@ int edit_list(struct bbslist *item,char *listpath)
 				iniSetBool(&inifile,item->name,"Reversed",item->reversed,&ini_style);
 				break;
 			case 8:
-				item->screen_mode++;
-				if(item->screen_mode==SCREEN_MODE_TERMINATOR)
-					item->screen_mode=0;
-				changed=1;
+				uifc.helpbuf=	"`Screen Mode`\n\n"
+								"Select the screen size for this connection\n";
+				uifc.list(WIN_SAV,0,0,0,&(item->screen_mode),NULL,"Screen Mode",screen_modes);
 				iniSetEnum(&inifile,item->name,"ScreenMode",screen_modes,item->screen_mode,&ini_style);
+				changed=1;
 				break;
 			case 9:
 				item->nostatus=!item->nostatus;
@@ -259,16 +264,21 @@ int edit_list(struct bbslist *item,char *listpath)
 				iniSetString(&inifile,item->name,"UploadPath",item->uldir,&ini_style);
 				break;
 			case 12:
-				item->loglevel++;
-				if(item->loglevel>LOG_DEBUG)
-					item->loglevel=0;
-				changed=1;
+				uifc.helpbuf=	"`Log Level`\n\n"
+								"Set the level of verbosity for file transfer info.\n\n";
+				uifc.list(WIN_SAV,0,0,0,&(item->loglevel),NULL,"Log Level",log_levels);
 				iniSetInteger(&inifile,item->name,"LogLevel",item->loglevel,&ini_style);
+				changed=1;
 				break;
 			case 13:
-				item->bpsrate=get_next_rate(item->bpsrate);
-				changed=1;
+				uifc.helpbuf=	"`Simulated BPS Rate`\n\n"
+								"Select the rate which recieved characters will be displayed.\n\n"
+								"This allows ANSImation to work as intended.";
+				i=get_rate_num(item->bpsrate);
+				uifc.list(WIN_SAV,0,0,0,&i,NULL,"Simulated BPS Rate",rate_names);
+				item->bpsrate=rates[i];
 				iniSetInteger(&inifile,item->name,"BPSRate",item->bpsrate,&ini_style);
+				changed=1;
 				break;
 		}
 		if(uifc.changes)
