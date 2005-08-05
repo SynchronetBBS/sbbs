@@ -298,8 +298,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	int		filecur=0;
 	int		filebar=0;
 	int		listwidth;
-	char	**dir_list;
-	char	**file_list;
+	char	**dir_list=NULL;
+	char	**file_list=NULL;
 	int		currfield=DIR_LIST;
 	int		lastfield=DIR_LIST;
 	int		i;
@@ -386,7 +386,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 #else
 //#error Need to do something about root paths (in get_file_opt_list() too!)
 #endif
-		if(glob(dglob, GLOB_MARK, NULL, &dgl)!=0) {
+		if(glob(dglob, GLOB_MARK, NULL, &dgl)!=0 && !isdir(cpath)) {
 			if(lastpath==NULL) {
 				fp->files=0;
 				retval=-1;
