@@ -24,7 +24,8 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 
     gettextinfo(&txtinfo);
 	if(!uifc_initialized) {
-		uifc.scrn_len=txtinfo.screenheight;
+		/* Set scrn_len to 0 to prevent textmode() call */
+		uifc.scrn_len=0;
 		if((i=uifcini32(&uifc))!=0) {
 			fprintf(stderr,"uifc library init returned error %d\n",i);
 			return(-1);
