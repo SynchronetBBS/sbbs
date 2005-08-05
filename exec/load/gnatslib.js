@@ -378,7 +378,7 @@ function GNATS_submit(pr)
 	}
 	if(!this.get_response())
 		return(false);
-	if(!this.expect("SUBM",200))
+	if(!this.expect("SUBM",350))
 		return(false);
 	return(true);
 }
