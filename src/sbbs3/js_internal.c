@@ -312,6 +312,22 @@ js_report_error(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	return(JS_TRUE);
 }
 
+static JSBool
+js_on_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	js_branch_t*	branch;
+
+	if((branch=(js_branch_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(branch->exit_func==NULL)
+		branch->exit_func=strListInit();
+
+	strListPush(&branch->exit_func,JS_GetStringBytes(JS_ValueToString(cx, argv[0])));
+
+	return(JS_TRUE);
+}
+
 static JSClass js_internal_class = {
      "JsInternal"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -336,6 +352,10 @@ static jsSyncMethodSpec js_functions[] = {
 		"otherwise it is only performed if deemed appropriate by the JavaScript engine")
 	,311
 	},
+	{"on_exit",			js_on_exit,			1,	JSTYPE_VOID,	JSDOCSTR("string to_eval")
+	,JSDOCSTR("add a string to evaluate/execute (LIFO) upon script's termination (added in v3.12b)")
+	,312
+	},
 	{"report_error",	js_report_error,	1,	JSTYPE_VOID,	JSDOCSTR("error [, bool fatal]")
 	,JSDOCSTR("report an error using the standard JavaScript error reporting mechanism "
 	"(including script filename and line number), "
@@ -344,6 +364,22 @@ static jsSyncMethodSpec js_functions[] = {
 	},
 	{0}
 };
+
+void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_branch_t* branch)
+{
+	char*	p;
+	jsval	rval;
+	JSScript* script;
+
+	while((p=strListPop(&branch->exit_func))!=NULL) {
+		if((script=JS_CompileScript(cx, obj, p, strlen(p), NULL, 0))!=NULL) {
+			JS_ExecuteScript(cx, obj, script, &rval);
+			JS_DestroyScript(cx, script);
+		}
+	}
+
+	strListFree(&branch->exit_func);
+}
 
 JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_branch_t* branch)
 {

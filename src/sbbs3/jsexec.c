@@ -713,6 +713,8 @@ long js_exec(const char *fname, char** args)
 	}
 	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 
+	js_EvalOnExit(js_cx, js_glob, &branch);
+
 	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 
 	if(rval!=JSVAL_VOID) {

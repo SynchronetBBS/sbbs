@@ -1610,6 +1610,8 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 		success=JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 
+		js_EvalOnExit(js_cx, js_glob, &js_branch);
+
 	} while(0);
 
 	if(js_cx!=NULL)

@@ -82,6 +82,7 @@ typedef struct {
 	ulong	gc_attempts;
 	BOOL	auto_terminate;
 	BOOL*	terminated;
+	str_list_t	exit_func;
 } js_branch_t;
 
 #define JSVAL_NULL_OR_VOID(val)		(JSVAL_IS_NULL(val) || JSVAL_IS_VOID(val))

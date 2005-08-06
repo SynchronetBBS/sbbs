@@ -1094,6 +1094,7 @@ static void js_service_thread(void* arg)
 	else  {
 		JS_SetBranchCallback(js_cx, js_BranchCallback);
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		js_EvalOnExit(js_cx, js_glob, &service_client.branch);
 		JS_DestroyScript(js_cx, js_script);
 	}
 	JS_DestroyContext(js_cx);	/* Free Context */
@@ -1193,6 +1194,7 @@ static void js_static_service_thread(void* arg)
 		}
 
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		js_EvalOnExit(js_cx, js_glob, &service_client.branch);
 		JS_DestroyScript(js_cx, js_script);
 
 		JS_DestroyContext(js_cx);	/* Free Context */
