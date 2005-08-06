@@ -87,7 +87,7 @@ extern struct cterminal cterm;
 void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback);
 char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int *speed);
 int cterm_openlog(char *logfile, int logtype);
-void cterm_closelog();
+void cterm_closelog(void);
 void cterm_end(void);
 #ifdef __cplusplus
 }
