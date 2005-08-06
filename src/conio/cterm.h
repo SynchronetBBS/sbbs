@@ -34,10 +34,18 @@
 #ifndef _CTERM_H_
 #define _CTERM_H_
 
+#include <stdio.h>	/* FILE* */
+
 enum {
 	 CTERM_MUSIC_NORMAL
 	,CTERM_MUSIC_LEGATO
 	,CTERM_MUSIC_STACATTO
+};
+
+enum {
+	 LOG_NONE
+	,LOG_ASCII
+	,LOG_RAW
 };
 
 struct cterminal {
@@ -63,6 +71,8 @@ struct cterminal {
 	int backlines;
 	int	xpos;
 	int ypos;
+	int log;
+	FILE* logfile;
 };
 
 #ifdef __cplusplus

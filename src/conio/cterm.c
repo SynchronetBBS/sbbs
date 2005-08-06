@@ -870,6 +870,8 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	cterm.backpos=0;
 	cterm.backlines=backlines;
 	cterm.scrollback=scrollback;
+	cterm.log=LOG_NONE;
+	cterm.logfile=NULL;
 	if(cterm.scrollback!=NULL)
 		memset(cterm.scrollback,0,cterm.width*2*cterm.backlines);
 	textattr(cterm.attr);
@@ -893,6 +895,8 @@ void ctputs(char *buf)
 	_wscroll=0;
 	cx=wherex();
 	cy=wherey();
+	if(cterm.log==LOG_ASCII)
+		fputs(buf, cterm.logfile);
 	for(p=buf;*p;p++) {
 		switch(*p) {
 			case '\r':
@@ -987,6 +991,8 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int
 		case 0:
 			break;
 		default:
+			if(cterm.log==LOG_RAW)
+				fwrite(buf, buflen, 1, cterm.logfile);
 			prn[0]=0;
 			for(j=0;j<buflen;j++) {
 				ch[0]=buf[j];
