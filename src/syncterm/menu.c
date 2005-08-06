@@ -118,6 +118,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"Zmodem Download (Alt-D)"
 						,"Change Output Rate (Alt-Up/Alt-Down)"
 						,"Change Log Level"
+						,"Capture Control (Alt-C)"
 						,"Exit (Alt-X)"
 						,""};
 	int		opt=0;
@@ -148,6 +149,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						"~ Zmodem Download ~    Initiates a ZModem download\n"
 						"~ Change Output Rate ~ Changes the speed charaters are output to the screen\n"
 						"~ Change Log Level ~   Changes the minimum log leve for ZModem information\n"
+						"~ Capture Control ~    Enables/Disables screen capture\n"
 						"~ Exit ~               Disconnects and closes the Syncterm";
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {
@@ -198,6 +200,9 @@ int syncmenu(struct bbslist *bbs, int *speed)
 				if(i>=0)
 					log_level = j;
 				ret=6;
+				break;
+			case 7:		/* Capture control */
+				ret=i;
 				break;
 			default:
 				ret=i;

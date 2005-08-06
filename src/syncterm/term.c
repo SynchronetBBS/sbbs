@@ -119,7 +119,7 @@ void mousedrag(unsigned char *scrollback)
 void update_status(struct bbslist *bbs, int speed)
 {
 	char buf[160];
-	char nbuf[50];
+	char nbuf[LIST_NAME_MAX+10+11+1];	/* Room for "Name (Logging) (115300)" and terminator */
 	int oldscroll;
 	int olddmc;
 	struct	text_info txtinfo;
@@ -143,10 +143,11 @@ void update_status(struct bbslist *bbs, int speed)
 	window(term.x-1,term.y+term.height-1,term.x+term.width-2,term.y+term.height-1);
 	gotoxy(1,1);
 	_wscroll=0;
+	strcpy(nbuf, bbs->name);
+	if(cterm.log)
+		strcat(nbuf, " (Logging)");
 	if(speed)
-		sprintf(nbuf, "%-.30s (%d)", bbs->name, speed);
-	else
-		sprintf(nbuf, "%-.30s", bbs->name);
+		sprintf(strchr(nbuf,0)," (%d)", speed);
 	switch(cio_api.mode) {
 		case CIOLIB_MODE_CURSES:
 		case CIOLIB_MODE_CURSES_IBM:
@@ -600,6 +601,90 @@ void zmodem_download(char *download_dir)
 }
 /* End of Zmodem Stuff */
 
+void capture_control(struct bbslist *bbs)
+{
+	char *buf;
+	struct	text_info txtinfo;
+	int i,j;
+
+   	gettextinfo(&txtinfo);
+	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	init_uifc(FALSE, FALSE);
+
+	if(!cterm.log) {
+		struct file_pick fpick;
+		char *opts[3]={
+						 "ASCII"
+						,"Raw"
+						,""
+					  };
+
+		i=0;
+		uifc.helpbuf="`Capture Type`\n\n"
+					"~ ASCII ~ Strips out ANSI sequences\n"
+					"~ Raw ~   Leaves ANSI sequences in\n\n"
+					"Raw is usefull for stealing ANSI screens from other systems.\n"
+					"Don't do that though.  :-)";
+		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Type",opts)!=-1) {
+			j=filepick(&uifc, "Capture File", &fpick, bbs->dldir, NULL, UIFC_FP_ALLOWENTRY);
+
+			if(j!=-1 || fpick.files>=1)
+				cterm_openlog(fpick.selected[0], i?CTERM_LOG_RAW:CTERM_LOG_ASCII);
+			filepick_free(&fpick);
+		}
+
+	}
+	else {
+		if(cterm.log & CTERM_LOG_PAUSED) {
+			char *opts[3]={
+							 "Unpause"
+							,"Close"
+						  };
+			i=0;
+			uifc.helpbuf="`Capture Control`\n\n"
+						"~ Unpause ~ Continues logging\n"
+						"~ Close ~   Closes the log\n\n";
+			if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Control",opts)!=-1) {
+				switch(i) {
+					case 0:
+						cterm.log=cterm.log & CTERM_LOG_MASK;
+						break;
+					case 1:
+						cterm_closelog();
+						break;
+				}
+			}
+		}
+		else {
+			char *opts[3]={
+							 "Pause"
+							,"Close"
+						  };
+			i=0;
+			uifc.helpbuf="`Capture Control`\n\n"
+						"~ Pause ~ Suspends logging\n"
+						"~ Close ~ Closes the log\n\n";
+			if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Control",opts)!=-1) {
+				switch(i) {
+					case 0:
+						cterm.log=cterm.log |= CTERM_LOG_PAUSED;
+						break;
+					case 1:
+						cterm_closelog();
+						break;
+				}
+			}
+		}
+	}
+	uifcbail();
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
+	textattr(txtinfo.attribute);
+	gotoxy(txtinfo.curx,txtinfo.cury);
+	free(buf);
+}
+
 BOOL doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
@@ -796,14 +881,14 @@ BOOL doterm(struct bbslist *bbs)
 				case CIO_KEY_F(4):
 					conn_send("\033Ox",3,0);
 					break;
-				case 0x1600:	/* ALT-U - Upload */
-					zmodem_upload(bbs->uldir);
+				case 0x3000:	/* ALT-B - Scrollback */
+					viewscroll();
+					break;
+				case 0x2e00:	/* ALT-C - Capture */
+					capture_control(bbs);
 					break;
 				case 0x2000:	/* ALT-D - Download */
 					zmodem_download(bbs->dldir);
-					break;
-				case 0x3000:	/* ALT-B - Scrollback */
-					viewscroll();
 					break;
 				case 0x2600:	/* ALT-L */
 					conn_send(bbs->user,strlen(bbs->user),0);
@@ -816,6 +901,9 @@ BOOL doterm(struct bbslist *bbs)
 						conn_send(bbs->syspass,strlen(bbs->syspass),0);
 						conn_send("\r",1,0);
 					}
+				case 0x1600:	/* ALT-U - Upload */
+					zmodem_upload(bbs->uldir);
+					break;
 				case 17:		/* CTRL-Q */
 					if(cio_api.mode!=CIOLIB_MODE_CURSES
 							&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
@@ -882,6 +970,9 @@ BOOL doterm(struct bbslist *bbs)
 							zmodem_download(bbs->dldir);
 							break;
 						case 7:
+							capture_control(bbs);
+							break;
+						case 8:
 							cterm_end();
 							free(scrollback);
 							conn_close();
