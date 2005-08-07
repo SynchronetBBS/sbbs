@@ -44,6 +44,7 @@
 #include "nodedefs.h"	/* node_t */
 #include "fidodefs.h"	/* fmsghdr_t, fpkthdr_t, FIDO_*, etc. */
 #include "xpbeep.h"		/* BEEP() */
+#include "str_list.h"	/* str_list_t */
 
 /*************/
 /* Constants */
