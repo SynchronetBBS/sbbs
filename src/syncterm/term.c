@@ -901,6 +901,7 @@ BOOL doterm(struct bbslist *bbs)
 						conn_send(bbs->syspass,strlen(bbs->syspass),0);
 						conn_send("\r",1,0);
 					}
+					break;
 				case 0x1600:	/* ALT-U - Upload */
 					zmodem_upload(bbs->uldir);
 					break;
