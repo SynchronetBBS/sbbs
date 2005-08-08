@@ -176,6 +176,7 @@ int uifcini(uifcapi_t* uifcapi)
         textmode(C80);  /* set mode to 80x25*/
         gettextinfo(&txtinfo);
     }
+	window(1,1,txtinfo.screenwidth,txtinfo.screenheight);
 
     api->scrn_len=txtinfo.screenheight;
     if(api->scrn_len<MIN_LINES || api->scrn_len>MAX_LINES) {
@@ -1489,7 +1490,9 @@ static int uprintf(int x, int y, char attr, char *fmat, ...)
 /****************************************************************************/
 void bottomline(int line)
 {
-	int i=4;
+	int i=0;
+uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"    ");
+i+=4;
 uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F1 ");
 i+=3;
 uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Help  ");
