@@ -576,7 +576,6 @@ void ascii_upload(FILE *fp, char *path)
 	ch[1]=0;
 	while(!feof(fp)) {
 		if(fgets(linebuf, 1025, fp)!=NULL) {
-			p=strchr(p,0);
 			if((p=strrchr(linebuf,'\n'))!=NULL) {
 				if((p==linebuf && !lastwaslf) || (p>linebuf && *(p-1)!='\n')) {
 					*p='\r';
@@ -587,6 +586,7 @@ void ascii_upload(FILE *fp, char *path)
 				}
 			}
 			lastwascr=FALSE;
+			p=strchr(p,0);
 			if(p!=NULL && p>linebuf) {
 				if(*(p-1)=='\r')
 					lastwascr=TRUE;
