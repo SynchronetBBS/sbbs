@@ -895,7 +895,7 @@ void ctputs(char *buf)
 	_wscroll=0;
 	cx=wherex();
 	cy=wherey();
-	if(cterm.log==CTERM_LOG_ASCII)
+	if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
 		fputs(buf, cterm.logfile);
 	for(p=buf;*p;p++) {
 		switch(*p) {
@@ -991,7 +991,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int
 		case 0:
 			break;
 		default:
-			if(cterm.log==CTERM_LOG_RAW)
+			if(cterm.log==CTERM_LOG_RAW && cterm.logfile != NULL)
 				fwrite(buf, buflen, 1, cterm.logfile);
 			prn[0]=0;
 			for(j=0;j<buflen;j++) {
@@ -1023,7 +1023,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int
 						case 7:			/* Beep */
 							ctputs(prn);
 							prn[0]=0;
-							if(cterm.log==CTERM_LOG_ASCII)
+							if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
 								fputs("\t", cterm.logfile);
 							#ifdef __unix__
 								putch(7);
@@ -1034,7 +1034,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int
 						case 12:		/* ^L - Clear screen */
 							ctputs(prn);
 							prn[0]=0;
-							if(cterm.log==CTERM_LOG_ASCII)
+							if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
 								fputs("\t", cterm.logfile);
 							clearscreen(cterm.attr);
 							gotoxy(1,1);
@@ -1047,7 +1047,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int
 						case '\t':
 							ctputs(prn);
 							prn[0]=0;
-							if(cterm.log==CTERM_LOG_ASCII)
+							if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
 								fputs("\t", cterm.logfile);
 							for(k=0;k<11;k++) {
 								if(cterm_tabs[k]>wherex()) {
