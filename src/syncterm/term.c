@@ -519,19 +519,25 @@ void erase_transfer_window(void) {
 	_setcursortype(_NORMALCURSOR);
 }
 
-void zmodem_upload(char *uldir)
+void ascii_upload(FILE *fp, char *path);
+void zmodem_upload(FILE *fp, char *path);
+
+void begin_upload(char *uldir)
 {
 	char	str[MAX_PATH*2];
 	char	path[MAX_PATH+1];
 	int		result;
-	ulong	fsize;
+	int i;
 	FILE*	fp;
-	zmodem_t	zm;
 	struct file_pick fpick;
+	char	*opts[3]={
+			 "ZModem"
+			,"ASCII"
+			,""
+		};
 
 	init_uifc(FALSE, FALSE);
 	result=filepick(&uifc, "Upload", &fpick, uldir, NULL, UIFC_FP_ALLOWENTRY);
-	uifcbail();
 	
 	if(result==-1 || fpick.files<1) {
 		filepick_free(&fpick);
@@ -546,6 +552,54 @@ void zmodem_upload(char *uldir)
 		return;
 	}
 	setvbuf(fp,NULL,_IOFBF,0x10000);
+
+	i=0;
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Transfer Type",opts)) {
+		case 0:
+			zmodem_upload(fp, path);
+			break;
+		case 1:
+			ascii_upload(fp, path);
+			break;
+	}
+	uifcbail();
+}
+
+void ascii_upload(FILE *fp, char *path)
+{
+	char linebuf[1024+2];	/* One extra for terminator, one extra for added CR */
+	char *p;
+	char ch[2];
+	int  inch;
+
+	ch[1]=0;
+	while(!feof(fp)) {
+		if(fgets(linebuf, 1025, fp)!=NULL) {
+			if((p=strrchr(linebuf,'\n'))!=NULL) {
+				if(p==linebuf || *(p-1)!='\n') {
+					*p='\r';
+					p++;
+					*p='\n';
+					p++;
+					*p=0;
+				}
+			}
+			conn_send(linebuf,strlen(linebuf),0);
+		}
+		/* Note, during ASCII uploads, do NOT send ANSI responses and don't
+		 * allow speed changes. */
+		while((inch=recv_byte(NULL, 0))>=0) {
+			ch[0]=inch;
+			cterm_write(ch, 1, NULL, 0, NULL);
+		}
+	}
+	fclose(fp);
+}
+
+void zmodem_upload(FILE *fp, char *path)
+{
+	zmodem_t	zm;
+	ulong	fsize;
 
 	draw_transfer_window("Zmodem Upload");
 
@@ -792,7 +846,7 @@ BOOL doterm(struct bbslist *bbs)
 							zrbuf[j]=zrinit[j];
 							zrbuf[++j]=0;
 							if(j==sizeof(zrinit)-1) {	/* Have full sequence */
-								zmodem_upload(bbs->uldir);
+								begin_upload(bbs->uldir);
 								zrbuf[0]=0;
 							}
 						}
@@ -903,7 +957,7 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					break;
 				case 0x1600:	/* ALT-U - Upload */
-					zmodem_upload(bbs->uldir);
+					begin_upload(bbs->uldir);
 					break;
 				case 17:		/* CTRL-Q */
 					if(cio_api.mode!=CIOLIB_MODE_CURSES
@@ -965,7 +1019,7 @@ BOOL doterm(struct bbslist *bbs)
 							conn_close();
 							return(FALSE);
 						case 3:
-							zmodem_upload(bbs->uldir);
+							begin_upload(bbs->uldir);
 							break;
 						case 4:
 							zmodem_download(bbs->dldir);

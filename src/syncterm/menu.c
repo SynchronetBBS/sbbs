@@ -201,9 +201,6 @@ int syncmenu(struct bbslist *bbs, int *speed)
 					log_level = j;
 				ret=6;
 				break;
-			case 7:		/* Capture control */
-				ret=i;
-				break;
 			default:
 				ret=i;
 				uifcbail();
