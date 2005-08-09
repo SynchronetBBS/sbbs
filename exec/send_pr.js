@@ -20,7 +20,6 @@ if(!gnats.connect()) {
 pr = new Object;
 var tmp;
 
-pr.SubmitterId = 'default';
 pr.Originator = user.name;
 pr.Confidential = console.noyes("Confidential")?'no':'yes';
 if(console.aborted)
@@ -104,7 +103,6 @@ body += "From: "+user.name+" <"+user.email+">\r\n";
 body += "Reply-To: "+user.name+" <"+user.email+">\r\n";
 body += "X-Send-Pr-Version: Synchronet send_pr.js\r\n";
 body += "\r\n";
-body += ">Submitter-Id:\t" + pr.SubmitterId + "\r\n";
 body += ">Originator:\t" + pr.Originator + "\r\n";
 body += ">Confidential:\t" + pr.Confidential + "\r\n";
 body += ">Synopsis:\t" + pr.Synopsis + "\r\n";
