@@ -16,7 +16,7 @@ then
 	echo "${rc_subr_path} not found" >> /dev/stderr
 	if [ `/usr/bin/uname -r | /usr/bin/sed 's/[^0-9].*//g'` -lt 5 ]
 		echo "Please install the sysutils/rc_subr port" >> /dev/stderr
-	exit
+	exit 1
 fi
 
 . ${rc_subr_path}
