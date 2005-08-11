@@ -532,28 +532,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	sbbs->js_branch.counter++;
-
-	/* Terminated? */
-	if(sbbs->js_branch.auto_terminate && sbbs->terminated) {
-		JS_ReportError(cx,"Terminated");
-		sbbs->js_branch.counter=0;
-		return(JS_FALSE);
-	}
-	/* Infinite loop? */
-	if(sbbs->js_branch.limit && sbbs->js_branch.counter>sbbs->js_branch.limit) {
-		JS_ReportError(cx,"Infinite loop (%lu branches) detected",sbbs->js_branch.counter);
-		sbbs->js_branch.counter=0;
-		return(JS_FALSE);
-	}
-	/* Give up timeslices every once in a while */
-	if(sbbs->js_branch.yield_interval && (sbbs->js_branch.counter%sbbs->js_branch.yield_interval)==0)
-		YIELD();
-
-	if(sbbs->js_branch.gc_interval && (sbbs->js_branch.counter%sbbs->js_branch.gc_interval)==0)
-		JS_MaybeGC(cx), sbbs->js_branch.gc_attempts++;
-
-    return(JS_TRUE);
+	return(js_CommonBranchCallback(cx,&sbbs->js_branch));
 }
 
 static const char* js_ext(const char* fname)
