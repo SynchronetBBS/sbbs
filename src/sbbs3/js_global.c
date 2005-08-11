@@ -342,10 +342,13 @@ static JSBool
 js_mswait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32 val=1;
+	clock_t start=msclock();
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&val);
 	mswait(val);
+
+	JS_NewNumberValue(cx,msclock()-start,rval);
 
 	return(JS_TRUE);
 }
@@ -2586,8 +2589,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,312
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
-	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	JSDOCSTR("[number milliseconds]")
-	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep)")
+	{"mswait",			js_mswait,			0,	JSTYPE_NUMBER,	JSDOCSTR("[number milliseconds]")
+	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep), returns number of elapsed clock ticks (in v3.12b+)")
 	,310
 	},
 	{"yield",			js_yield,			0,	JSTYPE_VOID,	JSDOCSTR("[bool forced]")
