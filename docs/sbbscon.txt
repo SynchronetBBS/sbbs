@@ -292,6 +292,11 @@ sbbs_status()
 	fi
 }
 
+extra_commands="config monitor uedit"
+config_cmd=${sbbs_execdir}/scfg
+monitor_cmd=${sbbs_execdir}/umonitor
+uedit_cmd=${sbbs_execdir}/uedit
+
 SHELL=$sbbs_shell
 export SHELL
 SBBSCTRL=$sbbs_ctrldir
