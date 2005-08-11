@@ -532,6 +532,12 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
+	if(sbbs->js_branch.auto_terminate && !sbbs->online) {
+		JS_ReportError(cx,"Disconnected");
+		sbbs->js_branch.counter=0;
+		return(JS_FALSE);
+	}
+
 	return(js_CommonBranchCallback(cx,&sbbs->js_branch));
 }
 
