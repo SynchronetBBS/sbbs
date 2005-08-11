@@ -44,7 +44,7 @@ sbbs_dir=${sbbs_dir-"/sbbs/"}
 sbbs_ctrldir=${sbbs_ctrldir-"${sbbs_dir}/ctrl/"}
 sbbs_execdir=${sbbs_execdir-"${sbbs_dir}/exec/"}
 sbbs_program=${sbbs_program-"${sbbs_execdir}/sbbs"}
-sbbs_procname=${sbbs_procname-"${sbbs_execdir}/sbbs"}
+sbbs_procname=${sbbs_procname-"${sbbs_program}"}
 sbbs_shell=${sbbs_shell-"/bin/sh"}
 
 sbbs_status()
