@@ -255,6 +255,12 @@ FreeBSD:
 . /etc/rc.subr
 #. /usr/local/etc/rc.subr
 
+status_cmd=sbbs_status
+name="sbbs"
+rcvar=`set_rcvar`
+
+load_rc_config $name
+
 # Setup defaults...
 # Define these sbbs_* variables in one of these files:
 #       /etc/rc.conf
@@ -272,12 +278,6 @@ sbbs_execdir=${sbbs_execdir-"${sbbs_dir}/exec/"}
 sbbs_program=${sbbs_program-"${sbbs_execdir}/sbbs"}
 sbbs_procname=${sbbs_procname-"${sbbs_execdir}/sbbs"}
 sbbs_shell=${sbbs_shell-"/bin/sh"}
-
-status_cmd=sbbs_status
-name="sbbs"
-rcvar=`set_rcvar`
-
-load_rc_config $name
 
 sbbs_status()
 {
