@@ -240,73 +240,39 @@ Linux:
 
 FreeBSD:
 --------
-1) Set up your BBS to run as a daemon, make SURE it works.
 
-2) If running FreeBSD 4.x or lower, install the sysutils/rc.subr port.
+1) Get the Synchronet service run script (init file) from:
+   http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/rc.d/sbbs
 
-3) Create the following file as /usr/local/etc/rc.d/synchronet.sh owned by
-   root, and chmod 555:
+2) Copy the run script (sbbs) into your /etc/rc.d directory
+   (If using FreeBSD 4.x, install the rc_subr port and copy the run script
+   to /usr/local/etc/rc.d/sbbs.sh instead)
 
---- CUT --- /usr/local/etc/rc.d/synchronet.sh --- CUT ---
-#!/bin/sh
+3) Set up the sbbs settings:
+   In one of /etc/rc.conf, /etc/rc.conf.local, or /etc/rc.conf.d/sbbs add the
+   line:
+   sbbs_enable=YES	# Required to run Synchronet
 
-# For FreeBSD 4.x with the rc.subr port, comment the next line
-# and uncomment the one after it.
-. /etc/rc.subr
-#. /usr/local/etc/rc.subr
+4) In one of the files from step three, add appropriate lines from the
+   following (Defaults are shown here):
+   sbbs_flags=""			# Additional command-line flags
+   sbbs_pidfile="/var/run/sbbs.pid"	# Path of pid from your .ini
+   sbbs_dir="/sbbs/"			# Root sbbs path
+					# The rest of the sbbs_*dir derive
+					# from this be default
+   sbbs_ctrldir="${sbbs_dir}/ctrl/"
+   sbbs_execdir="${sbbs_dir}/exec/"
+   sbbs_program="${sbbs_execdir}/sbbs"	# Synchronet binary
+   sbbs_procname="${sbbs_program}"	# Process name as seen by ps(1)
+   sbbs_shell="/bin/sh"			# SHELL variable
+   sbbs_user="root"			# User to START sbbs as.  If this is
+					# not root, you cannot bind low ports
+   sbbs_group="wheel"			# Group to start sbbs as
 
-status_cmd=sbbs_status
-name="sbbs"
-rcvar=`set_rcvar`
-
-load_rc_config $name
-
-# Setup defaults...
-# Define these sbbs_* variables in one of these files:
-#       /etc/rc.conf
-#       /etc/rc.conf.local
-#       /etc/rc.conf.d/sbbs
-#
-# DO NOT CHANGE THESE DEFAULT VALUES HERE
-#
-sbbs=${sbbs-"NO"}
-sbbs_enable=${sbbs_enable-"NO"}
-sbbs_flags=${sbbs_flags-""}
-sbbs_pidfile=${sbbs_pidfile-"/var/run/sbbs.pid"}
-sbbs_dir=${sbbs_dir-"/sbbs/"}
-sbbs_ctrldir=${sbbs_ctrldir-"${sbbs_dir}/ctrl/"}
-sbbs_execdir=${sbbs_execdir-"${sbbs_dir}/exec/"}
-sbbs_program=${sbbs_program-"${sbbs_execdir}/sbbs"}
-sbbs_procname=${sbbs_procname-"${sbbs_execdir}/sbbs"}
-sbbs_shell=${sbbs_shell-"/bin/sh"}
-
-sbbs_status()
-{
-	${sbbs_execdir}/node list
-
-	echo
-	if [ -n "$rc_pid" ]; then
-		echo "${name} is running as pid $rc_pid."
-	else
-		echo "${name} is not running."
-		return 1
-	fi
-}
-
-extra_commands="config monitor uedit"
-config_cmd=${sbbs_execdir}/scfg
-monitor_cmd=${sbbs_execdir}/umonitor
-uedit_cmd=${sbbs_execdir}/uedit
-
-SHELL=$sbbs_shell
-export SHELL
-SBBSCTRL=$sbbs_ctrldir
-export SBBSCTRL
-run_rc_command "$1"
---- CUT --- END OF FILE --- CUT ---
-
-4) If running FreeBSD 4.x or lower, ensure the rc.subr source line is
-   correct.
+5) Start the Synchronet system service (FreeBSD 5.x+):
+   # /etc/rc.d/sbbs start
+   (FreeBSD 4.x and lower):
+   # /usr/local/etc/rc.d/sbbs.sh start
 
 A note on SysOp paging:
 For most systems, the BBS must either have write access to the sound card via
