@@ -283,11 +283,10 @@ sbbs_status()
 {
 	${sbbs_execdir}/node list
 
+	echo
 	if [ -n "$rc_pid" ]; then
-		echo
 		echo "${name} is running as pid $rc_pid."
 	else
-		echo
 		echo "${name} is not running."
 		return 1
 	fi
