@@ -6,7 +6,7 @@
 # Location of rc.subr
 if [ `/usr/bin/uname -r | /usr/bin/sed 's/[^0-9].*//g'` -lt 5 ]
 then
-	rc_subr_path="/usr/local/etc/rc.subr.bob"
+	rc_subr_path="/usr/local/etc/rc.subr"
 else
 	rc_subr_path="/etc/rc.subr"
 fi
