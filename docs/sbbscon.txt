@@ -242,37 +242,66 @@ FreeBSD:
 --------
 1) Set up your BBS to run as a daemon, make SURE it works.
 
-2) Create the following file as /usr/local/etc/rc.d/synchronet.sh owned by
+2) If running FreeBSD 4.x or lower, install the sysutils/rc.subr port.
+
+3) Create the following file as /usr/local/etc/rc.d/synchronet.sh owned by
    root, and chmod 555:
 
 --- CUT --- /usr/local/etc/rc.d/synchronet.sh --- CUT ---
 #!/bin/sh
 
-# Replace the path in the following line with your sbbs install DIR
-SBBSDIR=/sbbs
+# For FreeBSD 4.x with the rc.subr port, comment the next line
+# and uncomment the one after it.
+. /etc/rc.subr
+#. /usr/local/etc/rc.subr
 
-case "$1" in
-start)
-        echo -n 'sbbs '
-        cd $SBBSDIR/exec
-        export SBBSCTRL=$SBBSDIR/ctrl
-        export SHELL=/bin/sh
-        ./sbbs
-        ;;
-stop)
-        echo "Shutting down Synchronet... "
-        kill `cat /var/run/sbbs.pid`
-        while ps -p `cat /var/run/sbbs.pid` > /dev/null
-        do      sleep 1
-        done
-        ;;
-*)
-        echo "Usage: `basename $0` {start|stop}" >&2
-        ;;
-esac
+# Setup defaults...
+# Define these sbbs_* variables in one of these files:
+#       /etc/rc.conf
+#       /etc/rc.conf.local
+#       /etc/rc.conf.d/sbbs
+#
+# DO NOT CHANGE THESE DEFAULT VALUES HERE
+#
+sbbs_enable=${sbbs_enable-"YES"}
+sbbs_flags=${sbbs_flags-""}
+sbbs_pidfile=${sbbs_pidfile-"/var/run/sbbs.pid"}
+sbbs_dir=${sbbs_dir-"/sbbs/"}
+sbbs_ctrldir=${sbbs_ctrldir-"${sbbs_dir}/ctrl/"}
+sbbs_execdir=${sbbs_execdir-"${sbbs_dir}/exec/"}
+sbbs_program=${sbbs_program-"${sbbs_execdir}/sbbs"}
+sbbs_procname=${sbbs_procname-"${sbbs_execdir}/sbbs"}
+sbbs_shell=${sbbs_shell-"/bin/sh"}
 
-exit 0
+status_cmd=sbbs_status
+name="sbbs"
+rcvar=`set_rcvar`
+
+load_rc_config $name
+
+sbbs_status()
+{
+	${sbbs_execdir}/node list
+
+	if [ -n "$rc_pid" ]; then
+		echo
+		echo "${name} is running as pid $rc_pid."
+	else
+		echo
+		echo "${name} is not running."
+		return 1
+	fi
+}
+
+SHELL=$sbbs_shell
+export SHELL
+SBBSCTRL=$sbbs_ctrldir
+export SBBSCTRL
+run_rc_command "$1"
 --- CUT --- END OF FILE --- CUT ---
+
+4) If running FreeBSD 4.x or lower, ensure the rc.subr source line is
+   correct.
 
 A note on SysOp paging:
 For most systems, the BBS must either have write access to the sound card via
