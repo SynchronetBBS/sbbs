@@ -269,6 +269,7 @@ load_rc_config $name
 #
 # DO NOT CHANGE THESE DEFAULT VALUES HERE
 #
+sbbs=${sbbs-"NO"}
 sbbs_enable=${sbbs_enable-"NO"}
 sbbs_flags=${sbbs_flags-""}
 sbbs_pidfile=${sbbs_pidfile-"/var/run/sbbs.pid"}
