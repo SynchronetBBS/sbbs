@@ -815,7 +815,7 @@ static void read_startup_ini(BOOL recycle
 			is_daemon=iniReadBool(fp,section,"Daemonize",FALSE);
 		SAFECOPY(log_facility,iniReadString(fp,section,"LogFacility","U",value));
 		SAFECOPY(log_ident,iniReadString(fp,section,"LogIdent","synchronet",value));
-		SAFECOPY(pid_fname,iniReadString(fp,section,PidFile","/var/run/sbbs.pid",value));
+		SAFECOPY(pid_fname,iniReadString(fp,section,"PidFile","/var/run/sbbs.pid",value));
 		umask(iniReadInteger(fp,section,"umask",077));
 	}
 #endif
