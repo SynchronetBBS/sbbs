@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -631,6 +631,7 @@ void sbbs_t::qwk_sec()
 				last_ns_time=ns_time;
 				remove(str);
 				continue; }
+#if 0	/* no such thing as local logon */
 			if(online==ON_LOCAL) {			/* Local QWK packet creation */
 				bputs(text[EnterPath]);
 				if(!getstr(str,60,K_LINE|K_UPPER)) {
@@ -662,7 +663,7 @@ void sbbs_t::qwk_sec()
 					for(i=0;i<cfg.total_subs;i++)
 						sav_ptr[i]=subscan[i].ptr; }
 				continue; }
-
+#endif
 			/***************/
 			/* Send Packet */
 			/***************/
@@ -725,6 +726,7 @@ void sbbs_t::qwk_sec()
 				errorlog("Couldn't extract REP packet - configuration error");
 				continue; }
 
+#if 0	/* no such thing as local logon */
 			if(online==ON_LOCAL) {		/* Local upload of rep packet */
 				bputs(text[EnterPath]);
 				if(!getstr(str,60,K_LINE|K_UPPER))
@@ -737,6 +739,7 @@ void sbbs_t::qwk_sec()
 					unpack_rep();
 				delfiles(cfg.temp_dir,ALLFILES);
 				continue; }
+#endif
 
 			/******************/
 			/* Receive Packet */

@@ -875,10 +875,12 @@ void sbbs_t::editfile(char *str)
 	sprintf(str2,"%sQUOTES.TXT",cfg.node_dir);
 	fexistcase(str2);
 	remove(str2);
+#if 0	/* no such thing as local logon */
 	if(cfg.node_editor[0] && online==ON_LOCAL) {
 		external(cmdstr(cfg.node_editor,str,nulstr,NULL),0,cfg.node_dir);
 		return; 
 	}
+#endif
 	if(useron.xedit) {
 		editor_inf(useron.xedit,nulstr,nulstr,0,INVALID_SUB);
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
@@ -890,9 +892,12 @@ void sbbs_t::editfile(char *str)
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
 				mode|=EX_WWIV; 
 		}
+#if 0	/* no such thing as local logon */
 		if(online==ON_LOCAL)
 			external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,str,nulstr,NULL),mode,cfg.node_dir);
-		else {
+		else 
+#endif
+		{
 			CLS;
 			rioctl(IOCM|PAUSE|ABORT);
 			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,str,nulstr,NULL),mode,cfg.node_dir);

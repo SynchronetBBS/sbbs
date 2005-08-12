@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -103,6 +103,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 			bputs(text[FileAlreadyThere]);
 			remove(msgpath);
 			return(false); }
+#if 0	/* no such thing as local logon */
 		if(online==ON_LOCAL) {		/* Local upload */
 			bputs(text[EnterPath]);
 			if(!getstr(str,60,K_LINE|K_UPPER)) {
@@ -112,7 +113,9 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 			backslash(str);
 			strcat(str,title);
 			mv(str,str2,1); }
-		else { /* Remote */
+		else 
+#endif
+		{ /* Remote */
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");

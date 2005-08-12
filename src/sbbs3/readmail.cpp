@@ -237,6 +237,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 						sprintf(str3,text[DownloadAttachedFileQ]
 							,tp,ultoac(length,tmp));
 						if(length>0L && yesno(str3)) {
+#if 0	/* no such thing as local logon */
 							if(online==ON_LOCAL) {
 								bputs(text[EnterPath]);
 								if(getstr(str3,60,K_LINE)) {
@@ -252,7 +253,9 @@ void sbbs_t::readmail(uint usernumber, int which)
 										bprintf(text[FileNBytesSent]
 											,fd.name,ultoac(length,tmp)); } } }
 
-							else {	/* Remote User */
+							else 
+#endif
+							{	/* Remote User */
 								xfer_prot_menu(XFER_DOWNLOAD);
 								mnemonics(text[ProtocolOrQuit]);
 								strcpy(str3,"Q");
