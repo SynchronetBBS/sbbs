@@ -397,13 +397,13 @@ static jsSyncMethodSpec js_queue_functions[] = {
 	{"read",		js_read,		1,	JSTYPE_UNDEF,	"[name or timeout]"
 	,JSDOCSTR("read a value from the queue, if <i>name</i> not specified, reads next value "
 		"from the bottom of the queue (waiting up to <i>timeout</i> milliseconds)")
-	,312
+	,313
 	},
 	{"peek",		js_peek,		1,	JSTYPE_UNDEF,	"[timeout]"
 	,JSDOCSTR("peek at the value at the bottom of the queue, "
 		"wait up to <i>timeout</i> milliseconds for any value to be written "
 		"(default: <i>0</i>)")
-	,312
+	,313
 	},
 	{"write",		js_write,		1,	JSTYPE_BOOLEAN,	"value [,name]"
 	,JSDOCSTR("write a value (optionally named) to the queue")

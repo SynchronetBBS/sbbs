@@ -2590,8 +2590,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_NUMBER,	JSDOCSTR("[number milliseconds]")
-	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep), returns number of elapsed clock ticks (in v3.12b+)")
-	,310
+	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep), returns number of elapsed clock ticks (in v3.13)")
+	,313
 	},
 	{"yield",			js_yield,			0,	JSTYPE_VOID,	JSDOCSTR("[bool forced]")
 	,JSDOCSTR("release current thread time-slice, "
@@ -2830,8 +2830,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"flags_str",		js_flags_str,		1,	JSTYPE_UNDEF,	JSDOCSTR("[string text] or [number value]")
 	,JSDOCSTR("convert a string of security flags (letters) into their numeric value or vice-versa "
-	"(returns number OR string) - (added in v3.12b)")
-	,312
+	"(returns number OR string) - (added in v3.13)")
+	,313
 	},
 	{0}
 };

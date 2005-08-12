@@ -50,8 +50,8 @@
 /* Constants */
 /*************/
 
-#define VERSION 	"3.12"  /* Version: Major.minor  */
-#define REVISION	'b'     /* Revision: lowercase letter */
+#define VERSION 	"3.13"  /* Version: Major.minor  */
+#define REVISION	'a'     /* Revision: lowercase letter */
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version " VERSION

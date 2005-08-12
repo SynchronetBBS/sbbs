@@ -353,14 +353,14 @@ static jsSyncMethodSpec js_functions[] = {
 	,311
 	},
 	{"on_exit",			js_on_exit,			1,	JSTYPE_VOID,	JSDOCSTR("string to_eval")
-	,JSDOCSTR("add a string to evaluate/execute (LIFO) upon script's termination (added in v3.12b)")
-	,312
+	,JSDOCSTR("add a string to evaluate/execute (LIFO) upon script's termination")
+	,313
 	},
 	{"report_error",	js_report_error,	1,	JSTYPE_VOID,	JSDOCSTR("error [, bool fatal]")
 	,JSDOCSTR("report an error using the standard JavaScript error reporting mechanism "
 	"(including script filename and line number), "
-	"if <i>fatal</i> is <i>true</i>, terminates script - (added in v3.12b)")
-	,312
+	"if <i>fatal</i> is <i>true</i>, immediately terminates script")
+	,313
 	},
 	{0}
 };
