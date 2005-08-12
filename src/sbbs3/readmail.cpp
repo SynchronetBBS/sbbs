@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -239,7 +239,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 						if(length>0L && yesno(str3)) {
 							if(online==ON_LOCAL) {
 								bputs(text[EnterPath]);
-								if(getstr(str3,60,K_LINE|K_UPPER)) {
+								if(getstr(str3,60,K_LINE)) {
 									backslashcolon(str3);
 									sprintf(tmp,"%s%s",str3,tp);
 									if(!mv(str2,tmp,which!=MAIL_YOUR)) {
@@ -608,7 +608,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 					break;
 	*/
 				bputs(text[FileToWriteTo]);
-				if(getstr(str,40,K_LINE|K_UPPER))
+				if(getstr(str,40,K_LINE))
 					msgtotxt(&msg,str,1,1);
 				break;
 			case 'E':
