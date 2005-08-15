@@ -21,12 +21,12 @@ logmsg+='--- End CVS Commit Message ---\n\n';
 
 auditprs=new Object;
 stateprs=new Object;
-myRe=/PR:([0-9]+)/g;
+myRe=/PR:\s?([0-9]+)/g;
 while((pr=myRe.exec(logmsg))!=undefined) {
 	auditprs[pr[1]]=pr[1];
 }
 
-myRe=/PR:([0-9]+)-\>([a-z]*)/g;
+myRe=/PR:\s?([0-9]+)-\>([a-z]*)/g;
 while((pr=myRe.exec(logmsg))!=undefined) {
 	stateprs[pr[1]]=pr[2];
 }
