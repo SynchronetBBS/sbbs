@@ -1,8 +1,6 @@
 
 <!-- $Id$ -->
 
-</td>
-
     <td class="main" valign="top"><br />
         <br />
 
@@ -20,7 +18,6 @@
         @@JS:if(show_gender)'<th class="main_nodelist">Gender</th>'@@
         <th class="main_nodelist">Time</th>  
     </tr>
-    <tr>    
 
 <<REPEAT who_online>>
             <tr>
