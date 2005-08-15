@@ -1,7 +1,6 @@
 <!-- $Id$ -->
 
 <!-- Main Content --> 
-</td>
 
     <td class="main" valign="top"><br />
         <br />
