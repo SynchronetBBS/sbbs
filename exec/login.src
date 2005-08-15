@@ -25,6 +25,7 @@ set str "Guest"
 matchuser guest str		# save Guest account number in guest
 
 :top
+sync
 compare c 10
 if_greater_or_equal
 	hangup
