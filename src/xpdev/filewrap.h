@@ -67,6 +67,10 @@
 	#define SH_DENYRW			OF_SHARE_EXCLUSIVE
 	#endif
 
+	#ifndef SH_COMPAT
+	#define SH_COMPAT			0
+	#endif
+
 #elif defined(__unix__)
 
 	#include <fcntl.h>
@@ -98,6 +102,10 @@
 			#define SH_DENYWR   F_SANERDLCKNO    /* shareable lock */
 		#else
 			#define SH_DENYWR   F_RDLCK    /* shareable lock */
+		#endif
+
+		#ifndef SH_COMPAT
+			#define SH_COMPAT			0
 		#endif
 	#endif
 	#define chsize(fd,size)		ftruncate(fd,size)
