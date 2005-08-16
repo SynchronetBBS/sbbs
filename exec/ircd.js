@@ -178,6 +178,9 @@ function parse_nline_flags(flags) {
 			case "k":
 				nline_flags |= NLINE_CHECK_WITH_QWKMASTER;
 				break;
+			case "d":
+				nline_flags |= NLINE_IS_DREAMHAVEN;
+				break;
 			default:
 				log("!WARNING Unknown N:Line flag '" + flags[thisflag] + "' in config.");
 				break;
