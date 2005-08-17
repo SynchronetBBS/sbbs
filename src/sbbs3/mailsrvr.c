@@ -1493,6 +1493,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 	jsval		val;
 	jsval		rval=JSVAL_VOID;
 
+	ZERO_VAR(js_branch);
 
 	SAFECOPY(fname,cmdline);
 	truncstr(fname," \t");
