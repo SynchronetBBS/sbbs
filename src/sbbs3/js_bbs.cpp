@@ -999,7 +999,7 @@ js_exec_xtrn(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_ValueToInt32(cx,argv[0],&i);
 
 	if(i>=sbbs->cfg.total_xtrns) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -1104,14 +1104,14 @@ js_replace_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	len=strlen(p);
 	if(!len) {
 		sbbs->text[i]=nulstr;
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 	} else {
 		sbbs->text[i]=(char *)MALLOC(len+1);
 		if(sbbs->text[i]==NULL) {
 			sbbs->text[i]=sbbs->text_sav[i];
 		} else {
 			strcpy(sbbs->text[i],p);
-			*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+			*rval = JSVAL_TRUE;
 		}
 	}
 
@@ -1142,7 +1142,7 @@ js_revert_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		sbbs->text[i]=sbbs->text_sav[i];
 	}
 
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	*rval = JSVAL_TRUE;
 
 	return(JS_TRUE);
 }
@@ -1160,7 +1160,7 @@ js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -1175,7 +1175,7 @@ js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		,sbbs->cfg.ctrl_dir,JS_GetStringBytes(js_str));
 
 	if((stream=fnopen(NULL,path,O_RDONLY))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 	for(i=0;i<TOTAL_TEXT && !feof(stream);i++) {
@@ -1193,9 +1193,9 @@ js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		} 
 	}
 	if(i<TOTAL_TEXT) 
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 	else
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 
 	fclose(stream);
 
@@ -1240,7 +1240,7 @@ js_logkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -1248,7 +1248,7 @@ js_logkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		comma=JS_ValueToBoolean(cx,argv[1],&comma);
 
 	if((p=JS_GetStringBytes(js_str))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -1256,7 +1256,7 @@ js_logkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		,comma ? true:false	// This is a dumb bool conversion to make BC++ happy
 		);
 
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	*rval = JSVAL_TRUE;
 	return(JS_TRUE);
 }
 
@@ -1271,18 +1271,18 @@ js_logstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	if((p=JS_GetStringBytes(js_str))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	sbbs->log(p);
 
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	*rval = JSVAL_TRUE;
 	return(JS_TRUE);
 }
 
@@ -1323,22 +1323,22 @@ js_trashcan(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if((js_can=JS_ValueToString(cx, argv[0]))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	if((can=JS_GetStringBytes(js_can))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	if((str=JS_GetStringBytes(js_str))==NULL) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -1907,7 +1907,7 @@ js_upload_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	dirnum=get_dirnum(cx,sbbs,argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -1928,7 +1928,7 @@ js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	dirnum=get_dirnum(cx,sbbs,argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -1948,13 +1948,13 @@ js_resort_dir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	dirnum=get_dirnum(cx,sbbs,argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	sbbs->resort(dirnum);
 
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	*rval = JSVAL_TRUE;
 	return(JS_TRUE);
 }
 
@@ -2270,7 +2270,7 @@ js_postmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	subnum=get_subnum(cx,sbbs,argv[0]);
 
 	if(subnum>=sbbs->cfg.total_subs) {	// invalid sub-board
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -2393,7 +2393,7 @@ js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	subnum=get_subnum(cx,sbbs,argv[0]);
 
 	if(subnum>=sbbs->cfg.total_subs) {	// invalid sub-board
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
