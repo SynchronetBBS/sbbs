@@ -501,6 +501,29 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		}
 	}
 
+	if(msg->hdr.number==0 && JS_GetProperty(cx, hdr, "number", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JS_ValueToInt32(cx,val,&i32);
+		msg->hdr.number=i32;
+	}
+
+	return(TRUE);
+}
+
+/* obj must've been previously returned from get_msg_header() */
+DLLEXPORT BOOL DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
+{
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(FALSE);
+	}
+
+	if(!parse_header_object(cx, p, obj, msg, /* recipient */ TRUE)) {
+		smb_freemsgmem(msg);
+		return(FALSE);
+	}
+
 	return(TRUE);
 }
 
@@ -589,6 +612,20 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	return(JS_TRUE);
 }
 
+static JSClass js_msghdr_class = {
+     "MsgHeader"			/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,JS_PropertyStub		/* getProperty	*/
+	,JS_PropertyStub		/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
+
+
 static JSBool
 js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -665,9 +702,15 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if(msg.hdr.number==0) /* No valid message number/id/offset specified */
 		return(JS_TRUE);
 
-	if((hdrobj=JS_NewObject(cx,NULL,NULL,obj))==NULL) {
+	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,NULL,obj))==NULL) {
 		smb_freemsgmem(&msg);
 		return(JS_TRUE);
+	}
+
+	if(!JS_SetPrivate(cx, hdrobj, p)) {
+		smb_freemsgmem(&msg);
+		JS_ReportError(cx,"JS_SetPrivate failed");
+		return(JS_FALSE);
 	}
 
 	JS_NewNumberValue(cx,msg.hdr.number,&v);
