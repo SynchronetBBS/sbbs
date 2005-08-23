@@ -1683,9 +1683,16 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 	smbmsg_t	nextmsg;
 
 	if(!remsg->hdr.thread_first) {	/* New msg is first reply */
-		remsg->hdr.thread_first=newmsgnum;
+		if(remsg->idx.offset==0		/* index not read? */
+			&& (retval=smb_getmsgidx(smb,remsg))!=SMB_SUCCESS)
+			return(retval);
 		if((retval=smb_lockmsghdr(smb,remsg))!=SMB_SUCCESS)
 			return(retval);
+		if(!remsg->hdr.length		/* header not read? */
+			&& (retval=smb_getmsghdr(smb,remsg))!=SMB_SUCCESS)
+			return(retval);
+
+		remsg->hdr.thread_first=newmsgnum;
 		retval=smb_putmsghdr(smb,remsg);
 		smb_unlockmsghdr(smb,remsg);
 		return(retval);
