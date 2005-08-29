@@ -225,4 +225,5 @@ SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)zmodem$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)
