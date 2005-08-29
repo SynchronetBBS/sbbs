@@ -48,8 +48,10 @@
 #include <stdarg.h>
 #include <ctype.h>		/* isdigit */
 #include <sys/stat.h>
+
 #ifdef __unix__
-#include <termios.h>
+	#include <termios.h>
+	#include <signal.h>
 #endif
 
 /* xpdev */
