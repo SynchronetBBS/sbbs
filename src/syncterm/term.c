@@ -541,6 +541,7 @@ void begin_upload(char *uldir)
 	
 	if(result==-1 || fpick.files<1) {
 		filepick_free(&fpick);
+		uifcbail();
 		return;
 	}
 	SAFECOPY(path,fpick.selected[0]);
@@ -549,6 +550,7 @@ void begin_upload(char *uldir)
 	if((fp=fopen(path,"rb"))==NULL) {
 		SAFEPRINTF2(str,"Error %d opening %s for read",errno,path);
 		uifcmsg("ERROR",str);
+		uifcbail();
 		return;
 	}
 	setvbuf(fp,NULL,_IOFBF,0x10000);
