@@ -575,7 +575,11 @@ BOOL DLLCALL isdir(const char *filename)
 			*p=0;
 	}
 
+#if defined(__BORLANDC__) && !defined(__unix__)	/* stat() doesn't work right */
+	if(stat(path, &st)!=0 || strchr(path,'*')!=NULL || strchr(path,'?')!=NULL)
+#else
 	if(stat(path, &st)!=0)
+#endif
 		return(FALSE);
 
 	return(S_ISDIR(st.st_mode) ? TRUE : FALSE);
