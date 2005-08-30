@@ -522,7 +522,7 @@ void erase_transfer_window(void) {
 void ascii_upload(FILE *fp, char *path);
 void zmodem_upload(FILE *fp, char *path);
 
-void begin_upload(char *uldir)
+void begin_upload(char *uldir, BOOL autozm)
 {
 	char	str[MAX_PATH*2];
 	char	path[MAX_PATH+1];
@@ -531,7 +531,7 @@ void begin_upload(char *uldir)
 	FILE*	fp;
 	struct file_pick fpick;
 	char	*opts[3]={
-			 "ZModem"
+			 "Zmodem"
 			,"ASCII"
 			,""
 		};
@@ -555,14 +555,18 @@ void begin_upload(char *uldir)
 	}
 	setvbuf(fp,NULL,_IOFBF,0x10000);
 
-	i=0;
-	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Transfer Type",opts)) {
-		case 0:
-			zmodem_upload(fp, path);
-			break;
-		case 1:
-			ascii_upload(fp, path);
-			break;
+	if(autozm) 
+		zmodem_upload(fp, path);
+	else {
+		i=0;
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Transfer Type",opts)) {
+			case 0:
+				zmodem_upload(fp, path);
+				break;
+			case 1:
+				ascii_upload(fp, path);
+				break;
+		}
 	}
 	uifcbail();
 }
@@ -855,7 +859,7 @@ BOOL doterm(struct bbslist *bbs)
 							zrbuf[j]=zrinit[j];
 							zrbuf[++j]=0;
 							if(j==sizeof(zrinit)-1) {	/* Have full sequence */
-								begin_upload(bbs->uldir);
+								begin_upload(bbs->uldir, TRUE);
 								zrbuf[0]=0;
 							}
 						}
@@ -966,7 +970,7 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					break;
 				case 0x1600:	/* ALT-U - Upload */
-					begin_upload(bbs->uldir);
+					begin_upload(bbs->uldir, FALSE);
 					break;
 				case 17:		/* CTRL-Q */
 					if(cio_api.mode!=CIOLIB_MODE_CURSES
@@ -1028,7 +1032,7 @@ BOOL doterm(struct bbslist *bbs)
 							conn_close();
 							return(FALSE);
 						case 3:
-							begin_upload(bbs->uldir);
+							begin_upload(bbs->uldir, FALSE);
 							break;
 						case 4:
 							zmodem_download(bbs->dldir);
