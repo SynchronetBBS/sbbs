@@ -486,6 +486,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						api->msg("No such path/file!");
 						continue;
 					}
+					if(isdir(cfile))
+						backslash(cfile);
 					_splitpath(cfile, drive, tdir, fname, ext);
 					sprintf(cpath,"%s%s",drive,tdir);
 					if(!isdir(cpath)) {
@@ -504,6 +506,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					sprintf(cfile,"%s%s%s%s",drive,tdir,fname,ext);
 					if(strchr(fname,'*') !=NULL || strchr(fname,'?') !=NULL
 						|| strchr(ext,'*') !=NULL || strchr(ext,'?') !=NULL
+						|| (isdir(cfile) && !(opts & UIFC_FP_DIRSEL) && (i=='\r' || i=='\n'))
 						|| (!isdir(cfile) && i!='\r' && i!='\n')) {
 						if(opts & UIFC_FP_MSKNOCHG) {
 							sprintf(cfile,"%s%s%s",drive,tdir,cmsk);
@@ -512,7 +515,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 							continue;
 						}
 						else {
-							sprintf(cmsk, "%s%s", fname, ext);
+							if(!isdir(cfile))
+								sprintf(cmsk, "%s%s", fname, ext);
 							reread=TRUE;
 						}
 						break;
