@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -61,7 +61,7 @@ void sbbs_t::fileinfo(file_t* f)
 	bprintf(text[FiFilename],getfname(path));
 	SAFECOPY(fpath,path);
 	fexistcase(fpath);
-	if(strcmp(path,fpath))	/* Different "actual" filename */
+	if(strcmp(path,fpath) && strcmp(f->desc,getfname(fpath)))	/* Different "actual" filename */
 		bprintf(text[FiFilename],getfname(fpath));
 
 	if(f->size!=-1L)
