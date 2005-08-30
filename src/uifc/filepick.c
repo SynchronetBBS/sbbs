@@ -486,11 +486,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						api->msg("No such path/file!");
 						continue;
 					}
-#ifdef __BORLANDC__	/* Borland makes stat() support wildcards! */
-					if(isdir(cfile) && strchr(cfile,'*') == NULL && strchr(cfile,'?') == NULL)
-#else
 					if(isdir(cfile))
-#endif
 						backslash(cfile);
 					_splitpath(cfile, drive, tdir, fname, ext);
 					sprintf(cpath,"%s%s",drive,tdir);
