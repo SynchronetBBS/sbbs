@@ -378,6 +378,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	if(online==ON_LOCAL)
 		eprintf(LOG_INFO,"Executing external: %s",cmdline);
+	else
+		lprintf(LOG_INFO,"Node %d Executing external: %s",cfg.node_num,cmdline);
 
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
