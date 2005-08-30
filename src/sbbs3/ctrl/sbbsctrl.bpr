@@ -40,7 +40,7 @@
     <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi vcljpg.bpi bcbsmp.bpi dsnap.bpi dbrtl.bpi 
       vcldb.bpi bdertl.bpi inet.bpi inetdb.bpi vcldbx.bpi qrpt.bpi teeui.bpi 
       teedb.bpi tee.bpi dss.bpi nmfast.bpi dclocx.bpi"/>
-    <PATHCPP value=".;.."/>
+    <PATHCPP value=".;..;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -121,8 +121,8 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
-MinorVer=12
-Release=1
+MinorVer=13
+Release=0
 Build=0
 Debug=0
 PreRelease=0
