@@ -311,7 +311,7 @@ cmdkey U
 	end_cmd
 
 cmdkey N
-	print "\r\nbhUse c@NEWFILETIME@b for new file scan date/time"
+	print "\r\nbhUse c@NEWFILETIME@b for new file scan date/time "
 	yes_no ""
 	if_false
 		file_ptrs_cfg
