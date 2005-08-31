@@ -232,18 +232,13 @@ char *mycmdstr(scfg_t* cfg, char *instr, char *fpath, char *fspec)
 					strcat(cmd,fspec);
 					break;
 				case '!':   /* EXEC Directory */
-					if(cfg->exec_dir[0]!='\\' 
-						&& cfg->exec_dir[0]!='/' 
-						&& cfg->exec_dir[1]!=':') {
-						strcpy(str,cfg->node_dir);
-						strcat(str,cfg->exec_dir);
-						if(FULLPATH(str2,str,40))
-							strcpy(str,str2);
-						backslash(str);
-						strcat(cmd,str); }
-					else
-						strcat(cmd,cfg->exec_dir);
+					strcat(cmd,cfg->exec_dir);
 					break;
+                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+                    strcat(cmd,cfg->exec_dir);
+#endif
+                    break;
 				case '#':   /* Node number (same as SBBSNNUM environment var) */
 					sprintf(str,"%d",cfg->node_num);
 					strcat(cmd,str);
@@ -254,6 +249,20 @@ char *mycmdstr(scfg_t* cfg, char *instr, char *fpath, char *fspec)
 					break;
 				case '%':   /* %% for percent sign */
 					strcat(cmd,"%");
+					break;
+				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+					strcat(cmd,".exe");
+#endif
+					break;
+				case '?':	/* Platform */
+#ifdef __OS2__
+					strcpy(str,"OS2");
+#else
+					strcpy(str,PLATFORM_DESC);
+#endif
+					strlwr(str);
+					strcat(cmd,str);
 					break;
 				default:    /* unknown specification */
 					printf("ERROR Checking Command Line '%s'\n",instr);
