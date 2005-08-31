@@ -64,7 +64,7 @@ if_true
 		if_true
 			shift_str 4
 			call get_arg
-			printfile_str
+			printfile "%s"
 			end_if
 		return
 		end_if
