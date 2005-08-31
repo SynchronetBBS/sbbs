@@ -597,6 +597,11 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(nulstr);
 	}
 
+	if(!strncmp(sp,"INCLUDE:",5)) {
+		printfile(cmdstr(sp+8,nulstr,nulstr,str),P_NOCRLF);
+		return(nulstr);
+	}
+
 	if(!strcmp(sp,"QUESTION"))
 		return(question);
 
