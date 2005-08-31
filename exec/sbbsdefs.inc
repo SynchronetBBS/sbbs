@@ -172,7 +172,9 @@
 				# msg has printed.
 !define P_NOATCODES	.2	# Don't allow @ codes
 !define P_OPENCLOSE	.3	# Open and close the file
-
+!define P_NOPAUSE	.4	# Disable screen pause
+!define P_HTML		.5	# Message is HTML
+!define P_NOCRLF	.6	# Don't prepend a CRLF
 
 				# Values for USER_EVENT function
 !define EVENT_NONE      0       # Only accessible by menu

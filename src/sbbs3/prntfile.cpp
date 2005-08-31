@@ -75,7 +75,7 @@ void sbbs_t::printfile(char *str, long mode)
 		sys_status&=~SS_ABORT; 
 	}
 
-	if(!tos && !wip && !rip && !html)
+	if(!(mode&P_NOCRLF) && !tos && !wip && !rip && !html)
 		CRLF;
 
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {

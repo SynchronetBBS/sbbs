@@ -686,6 +686,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_OPENCLOSE (1<<3)		/* Open and close the file					*/
 #define P_NOPAUSE	(1<<4)		/* Disable screen pause						*/
 #define P_HTML		(1<<5)		/* Message is HTML							*/
+#define P_NOCRLF	(1<<6)		/* Don't prepend a CRLF	in printfile()		*/
 								
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */

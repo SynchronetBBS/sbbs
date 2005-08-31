@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -325,6 +325,9 @@ var   P_SAVEATR		=(1<<1)		/* Save the new current attributres after	*/
 					    		/* msg has printed */
 var   P_NOATCODES	=(1<<2)		/* Don't allow @ codes                      */
 var   P_OPENCLOSE	=(1<<3)		/* Open and close the file					*/
+var   P_NOPAUSE		=(1<<4)		/* Disable screen pause						*/
+var   P_HTML		=(1<<5)		/* Message is HTML							*/
+var   P_NOCRLF		=(1<<6)		/* Don't prepend a CRLF	in printfile()		*/
 							    /********************************************/
 
     							/********************************************/
