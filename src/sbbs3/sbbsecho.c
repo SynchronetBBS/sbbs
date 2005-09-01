@@ -1953,6 +1953,7 @@ ulong getlastmsg(uint subnum, ulong *ptr, time_t *t)
 	int i;
 	smb_t smbfile;
 
+	ZERO_VAR(smbfile);
 	if(subnum>=scfg.total_subs) {
 		printf("\nERROR getlastmsg, subnum=%d\n",subnum);
 		logprintf("ERROR line %d getlastmsg %d",__LINE__,subnum);
@@ -2561,11 +2562,14 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		smbfile->status.max_crcs = scfg.sub[subnum]->maxcrcs;
 		smbfile->status.max_msgs = scfg.sub[subnum]->maxmsgs;
 		if(scfg.sub[subnum]->misc&SUB_HYPER)
-			storage = smb->status.attr = SMB_HYPERALLOC;
+			storage = smbfile->status.attr = SMB_HYPERALLOC;
 		else if(scfg.sub[subnum]->misc&SUB_FAST)
 			storage = SMB_FASTALLOC;
 		if(scfg.sub[subnum]->misc&SUB_LZH)
 			xlat=XLAT_LZH;
+
+		msg.idx.time=msg.hdr.when_imported.time;	/* needed for MSG-ID generation */
+		msg.idx.number=smbfile->status.last_msg+1;		/* needed for MSG-ID generation */
 
 		/* Generate default (RFC822) message-id (always) */
 		SAFECOPY(msg_id,get_msgid(&scfg,subnum,&msg));
@@ -3747,8 +3751,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 				else if(msg.hdr.thread_back) {	/* generate REPLYID */
 					memset(&orig_msg,0,sizeof(orig_msg));
 					orig_msg.hdr.number=msg.hdr.thread_back;
-					if(smb_getmsgidx(smb, &orig_msg))
-						f+=sprintf(fmsgbuf+f,"\1REPLY: <%s>\r",smb->last_error);
+					if(smb_getmsgidx(&smb[cur_smb], &orig_msg))
+						f+=sprintf(fmsgbuf+f,"\1REPLY: <%s>\r",smb[cur_smb].last_error);
 					else {
 						smb_lockmsghdr(&smb[cur_smb],&orig_msg);
 						smb_getmsghdr(&smb[cur_smb],&orig_msg);
