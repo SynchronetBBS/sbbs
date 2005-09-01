@@ -378,8 +378,7 @@ void sbbs_t::ctrl_a(char x)
 		return; 
 	}
 	if((uchar)x>0x7f) {
-		if(useron.misc&ANSI)
-			cursor_right((uchar)x-0x7f);
+		cursor_right((uchar)x-0x7f);
 		return; 
 	}
 	switch(toupper(x)) {
