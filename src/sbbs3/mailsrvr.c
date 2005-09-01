@@ -3699,6 +3699,12 @@ static void sendmail_thread(void* arg)
 				server_addr.sin_addr.s_addr = ip_addr;
 				server_addr.sin_family = AF_INET;
 				server_addr.sin_port = htons(port);
+
+				if((server==mx || server==mx2) && (ip_addr&0xff)==127) {
+					SAFEPRINTF2(err,"Bad IP address (%s) for MX server: %s"
+						,inet_ntoa(server_addr.sin_addr),server);
+					continue;
+				}
 				
 				lprintf(LOG_INFO,"%04d SEND connecting to port %u on %s [%s]"
 					,sock
