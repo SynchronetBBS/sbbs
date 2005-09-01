@@ -86,9 +86,6 @@ static const char*	error_404="404 Not Found";
 static const char*	error_500="500 Internal Server Error";
 static const char*	unknown="<unknown>";
 
-/* Is this not in a header somewhere? */
-extern const uchar* nular;
-
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define MAX_REQUEST_LINE		1024	/* NOT including terminator */
 #define MAX_HEADERS_SIZE		16384	/* Maximum total size of all headers 
