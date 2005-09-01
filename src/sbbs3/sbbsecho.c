@@ -2566,6 +2566,10 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			storage = SMB_FASTALLOC;
 		if(scfg.sub[subnum]->misc&SUB_LZH)
 			xlat=XLAT_LZH;
+
+		/* Generate default (RFC822) message-id (always) */
+		SAFECOPY(msg_id,get_msgid(&scfg,subnum,&msg));
+		smb_hfield_str(&msg,RFC822MSGID,msg_id);
 	}
 	if(smbfile->status.max_crcs==0)
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
