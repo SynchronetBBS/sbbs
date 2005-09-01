@@ -52,6 +52,7 @@ int sbbs_t::show_atcode(char *instr)
 {
 	char	str[128],str2[128],*p,*tp,*sp;
     int     len;
+	int		disp_len;
 	bool	padded_left=false;
 	bool	padded_right=false;
 
@@ -66,21 +67,25 @@ int sbbs_t::show_atcode(char *instr)
 	(*tp)=0;
 	sp=(str+1);
 
+	disp_len=len;
 	if((p=strstr(sp,"-L"))!=NULL)
 		padded_left=true;
 	else if((p=strstr(sp,"-R"))!=NULL)
 		padded_right=true;
-	if(p!=NULL)
+	if(p!=NULL) {
+		if(*(p+2) && isdigit(*(p+2)))
+			disp_len=atoi(p+2);
 		*p=0;
+	}
 
 	p=atcode(sp,str2);
 	if(p==NULL)
 		return(0);
 
 	if(padded_left)
-		rprintf("%-*.*s",len,len,p);
+		rprintf("%-*.*s",disp_len,disp_len,p);
 	else if(padded_right)
-		rprintf("%*.*s",len,len,p);
+		rprintf("%*.*s",disp_len,disp_len,p);
 	else
 		rputs(p);
 
