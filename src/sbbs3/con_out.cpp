@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -267,7 +267,7 @@ void sbbs_t::center(char *instr)
 	SAFECOPY(str,instr);
 	truncsp(str);
 	j=bstrlen(str);
-	for(i=0;i<(80-j)/2;i++)
+	for(i=0;i<(cols-j)/2;i++)
 		outchar(' ');
 	bputs(str);
 	CRLF;
