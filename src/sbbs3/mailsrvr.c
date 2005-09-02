@@ -424,16 +424,15 @@ static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 
 #define MAX_LINE_LEN	1000
 
-static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlines)
+static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlines
+						  ,str_list_t file_list, char* mime_boundary)
 {
 	char		toaddr[256]="";
 	char		fromaddr[256]="";
 	char		fromhost[256];
 	char		date[64];
-	char		filepath[MAX_PATH+1]="";
 	char*		p;
 	char*		tp;
-	char*		boundary=NULL;
 	char*		content_type=NULL;
 	int			i;
 	int			s;
@@ -504,14 +503,14 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	if(msg->reply_id!=NULL)
 		if(!sockprintf(socket,"In-Reply-To: %s",msg->reply_id))
 			return(0);
+
     for(i=0;i<msg->total_hfields;i++) { 
 		if(msg->hfield[i].type==RFC822HEADER) { 
 			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0)
 				content_type=msg->hfield_dat[i];
 			if(!sockprintf(socket,"%s",(char*)msg->hfield_dat[i]))
 				return(0);
-        } else if(msg->hdr.auxattr&MSG_FILEATTACH && msg->hfield[i].type==FILEATTACH) 
-            strncpy(filepath,(char*)msg->hfield_dat[i],sizeof(filepath)-1);
+        }
     }
 	/* Default MIME Content-Type for non-Internet messages */
 	if(msg->from_net.type!=NET_INTERNET && content_type==NULL) {
@@ -520,21 +519,12 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 		sockprintf(socket,"Content-Transfer-Encoding: 8bit");
 	}
 
-	if(msg->hdr.auxattr&MSG_FILEATTACH) {
-		if(filepath[0]==0) { /* filename stored in subject */
-			if(msg->idx.to!=0)
-				snprintf(filepath,sizeof(filepath)-1,"%sfile/%04u.in/%s"
-					,scfg.data_dir,msg->idx.to,msg->subj);
-			else
-				snprintf(filepath,sizeof(filepath)-1,"%sfile/%04u.out/%s"
-					,scfg.data_dir,msg->idx.from,msg->subj);
-		}
-        boundary=mimegetboundary();
-        mimeheaders(socket,boundary);
+	if(strListCount(file_list)) {	/* File attachments */
+        mimeheaders(socket,mime_boundary);
         sockprintf(socket,"");
-        mimeblurb(socket,boundary);
+        mimeblurb(socket,mime_boundary);
         sockprintf(socket,"");
-        mimetextpartheader(socket,boundary);
+        mimetextpartheader(socket,mime_boundary);
 	}
 	if(!sockprintf(socket,""))	/* Header Terminator */
 		return(0);
@@ -574,21 +564,69 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 			&& !(lines%startup->lines_per_yield))	
 			YIELD();
 	}
-    if(msg->hdr.auxattr&MSG_FILEATTACH) { 
-	    sockprintf(socket,"");
-		lprintf(LOG_INFO,"%04u MIME Encoding and sending %s",socket,filepath);
-        if(!mimeattach(socket,boundary,filepath))
-			lprintf(LOG_ERR,"%04u !ERROR opening/encoding/sending %s",socket,filepath);
-		else {
-			endmime(socket,boundary);
-			if(msg->hdr.auxattr&MSG_KILLFILE)
-				if(remove(filepath)!=0)
-					lprintf(LOG_WARNING,"%04u !ERROR %d removing %s",socket,errno,filepath);
+	if(file_list!=NULL) {
+		for(i=0;file_list[i];i++) { 
+			sockprintf(socket,"");
+			lprintf(LOG_INFO,"%04u MIME Encoding and sending %s",socket,file_list[i]);
+			if(!mimeattach(socket,mime_boundary,file_list[i]))
+				lprintf(LOG_ERR,"%04u !ERROR opening/encoding/sending %s",socket,file_list[i]);
+			else {
+				endmime(socket,mime_boundary);
+				if(msg->hdr.auxattr&MSG_KILLFILE)
+					if(remove(file_list[i])!=0)
+						lprintf(LOG_WARNING,"%04u !ERROR %d removing %s",socket,errno,file_list[i]);
+			}
+		}
+	}
+    sockprintf(socket,".");	/* End of text */
+	return(lines);
+}
+
+static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlines)
+{
+	char		filepath[MAX_PATH+1];
+	ulong		retval;
+	char*		boundary=NULL;
+	unsigned	i;
+	str_list_t	file_list=NULL;
+	str_list_t	split;
+
+	if(msg->hdr.auxattr&MSG_FILEATTACH) {
+
+		boundary = mimegetboundary();
+		file_list = strListInit();
+
+		/* Parse header fields */
+		for(i=0;i<msg->total_hfields;i++)
+	        if(msg->hfield[i].type==FILEATTACH) 
+				strListPush(&file_list,(char*)msg->hfield_dat[i]);
+
+		/* Parse subject (if necessary) */
+		if(!strListCount(file_list)) {	/* filename(s) stored in subject */
+			split=strListSplitCopy(NULL,msg->subj," ");
+			if(split!=NULL) {
+				for(i=0;split[i];i++) {
+					if(msg->idx.to!=0)
+						SAFEPRINTF3(filepath,"%sfile/%04u.in/%s"
+							,scfg.data_dir,msg->idx.to,truncsp(split[i]));
+					else
+						SAFEPRINTF3(filepath,"%sfile/%04u.out/%s"
+							,scfg.data_dir,msg->idx.from,truncsp(split[i]));
+					strListPush(&file_list,filepath);
+				}
+				strListFree(&split);
+			}
 		}
     }
-    sockprintf(socket,".");	/* End of text */
-    if(boundary) FREE(boundary);
-	return(lines);
+
+	retval = sockmimetext(socket,msg,msgtxt,maxlines,file_list,boundary);
+
+	strListFree(&file_list);
+
+	if(boundary!=NULL)
+		free(boundary);
+
+	return(retval);
 }
 
 static u_long resolve_ip(char *inaddr)
