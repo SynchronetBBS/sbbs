@@ -2378,10 +2378,12 @@ static BOOL exec_cgi(http_session_t *session)
 				}
 			}
 			if(FD_ISSET(err_pipe[0],&read_set))  {
-				i=read(err_pipe[0],buf,sizeof(buf));
-				buf[i]=0;
-				if(i>0)
+				i=read(err_pipe[0],buf,sizeof(buf)-1);
+				if(i>0) {
+					buf[i]=0;
+					lprintf(LOG_ERR,"%04d CGI Error: %s",session->socket,buf);
 					start=time(NULL);
+				}
 			}
 			if(!done_wait)
 				done_wait = (waitpid(child,&status,WNOHANG)==child);
@@ -2405,10 +2407,21 @@ static BOOL exec_cgi(http_session_t *session)
 	tv.tv_usec=0;
 	FD_ZERO(&read_set);
 	FD_SET(err_pipe[0],&read_set);
-	if(select(high_fd+1,&read_set,&write_set,NULL,&tv)>0)
-	if(FD_ISSET(err_pipe[0],&read_set)) {
-		while(pipereadline(err_pipe[0],buf,sizeof(buf),NULL,0)!=-1)
-			lprintf(LOG_ERR,"%s",buf);
+	while(select(high_fd+1,&read_set,NULL,NULL,&tv)>0) {
+		if(FD_ISSET(err_pipe[0],&read_set)) {
+			i=read(err_pipe[0],buf,sizeof(buf)-1);
+			if(i>0) {
+				buf[i]=0;
+				lprintf(LOG_ERR,"%04d CGI Error: %s",session->socket,buf);
+				start=time(NULL);
+			}
+			else
+				break;
+		}
+		tv.tv_sec=1;
+		tv.tv_usec=0;
+		FD_ZERO(&read_set);
+		FD_SET(err_pipe[0],&read_set);
 	}
 
 	if(!done_wait)
