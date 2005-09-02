@@ -255,8 +255,6 @@ public:
 	char 	*text[TOTAL_TEXT];			/* Text from ctrl\text.dat */
 	char 	*text_sav[TOTAL_TEXT];		/* Text from ctrl\text.dat */
 	char 	dszlog[127];	/* DSZLOG enviornment variable */
-	int		keybuftop,keybufbot;	/* Keyboard input buffer pointers */
-	char 	keybuf[KEY_BUFSIZE];	/* Keyboard input buffer */
 	char *	connection;		/* Connection Description */
 	ulong	cur_rate;		/* Current Connection (DCE) Rate */
 	ulong	cur_cps;		/* Current Average Transfer CPS */

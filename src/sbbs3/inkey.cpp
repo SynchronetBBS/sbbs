@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -49,12 +49,7 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 {
 	uchar	ch=0;
 
-    if(keybuftop!=keybufbot) {
-        ch=keybuf[keybufbot++];
-        if(keybufbot==KEY_BUFSIZE)
-            keybufbot=0; 
-	} else
-		ch=incom(timeout);
+	ch=incom(timeout);
 	if(ch==0) {
 		// moved here from getkey() on AUG-29-2001
 		if(sys_status&SS_SYSPAGE) 
@@ -254,9 +249,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				return(ESC);
 			ch=i;
 			if(ch!='[') {
-				ungetkey(ESC);
 				ungetkey(ch);
-				return(0); 
+				return(ESC); 
 			}
 			i=j=0;
 			autoterm|=ANSI; 			/* <ESC>[x means they have ANSI */
@@ -287,12 +281,11 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						case 'K':	/* ANSI:  clear-to-end-of-line */
 							return(CTRL_E);	/* ctrl-e (end line) */
 					}
-					ungetkey(ESC);
 					ungetkey('[');
 					for(j=0;j<i;j++)
 						ungetkey(str[j]);
 					ungetkey(ch);
-					return(0); 
+					return(ESC); 
 				}
 				if(ch=='R') {       /* cursor position report */
 					if(i && !(useron.rows)) {	/* auto-detect rows */
@@ -307,11 +300,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				str[i++]=ch; 
 			}
 
-			ungetkey(ESC);		/* should only get here if time-out */
 			ungetkey('[');
 			for(j=0;j<i;j++)
 				ungetkey(str[j]);
-			return(0); 
+			return(ESC); 
 	}
 	return(ch);
 }
