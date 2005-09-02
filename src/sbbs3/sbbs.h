@@ -480,6 +480,7 @@ public:
 	int		rputs(char *str);				/* BBS raw puts function */
 	int		bprintf(char *fmt, ...);		/* BBS printf function */
 	int		rprintf(char *fmt, ...);		/* BBS raw printf function */
+	void	backspace(void);				/* Output a destructive backspace via outchar */
 	void	outchar(char ch);				/* Output a char - check echo and emu.  */
 	void	center(char *str);
 	void	clearline(void);

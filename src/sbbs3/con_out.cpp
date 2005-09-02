@@ -160,6 +160,21 @@ int sbbs_t::rprintf(char *fmt, ...)
 }
 
 /****************************************************************************/
+/* Outputs destructive backspace locally and remotely (if applicable),		*/
+/****************************************************************************/
+void sbbs_t::backspace(void)
+{
+	int		oldconsole;
+
+	oldconsole=console;
+	console &= ~(CON_R_ECHOX|CON_L_ECHOX);
+	outchar('\b');
+	outchar(' ');
+	outchar('\b');
+	console=oldconsole;
+}
+
+/****************************************************************************/
 /* Outputs character locally and remotely (if applicable), preforming echo  */
 /* translations (X's and r0dent emulation) if applicable.					*/
 /****************************************************************************/
@@ -197,7 +212,7 @@ void sbbs_t::outchar(char ch)
 #endif
 #if 0 
 	if(console&CON_L_ECHO) {
-		if(console&CON_L_ECHOX && (uchar)ch>' ')
+		if(console&CON_L_ECHOX && (uchar)ch>=' ')
 			putch(password_char);
 		else if(cfg.node_misc&NM_NOBEEP && ch==BEL);	 /* Do nothing if beep */
 		else if(ch==BEL) {
@@ -211,7 +226,7 @@ void sbbs_t::outchar(char ch)
 	if(online==ON_REMOTE && console&CON_R_ECHO) {
 		/* TODO: If this replaces spaces, destructive backspace won't work */
 		/* if it doesn't, a space is displayed as a space */
-		if(console&CON_R_ECHOX && (uchar)ch>' ') {
+		if(console&CON_R_ECHOX && (uchar)ch>=' ') {
 			ch=text[YN][3];
 			if(text[YN][2]==0 || ch==0) ch='X';
 		}

@@ -93,7 +93,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		attr(atr);
 		if(isprint(ch) || ch==DEL) {
 			for(i=0;i<l;i++)
-				bputs("\b \b");
+				backspace();
 			i=l=0; 
 		}
 		else {
@@ -267,7 +267,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					cursor_left((l-i)+1); 
 				}
 				else if(!(mode&K_NOECHO))
-					bputs("\b \b");
+					backspace();
 				break;
 			case CTRL_I:	/* Ctrl-I/TAB */
 				if(!(i%EDIT_TABSIZE)) {
@@ -376,13 +376,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						i--;
 						l--;
 						if(!(mode&K_NOECHO))
-							bputs("\b \b"); 
+							backspace(); 
 					}
 					while(i && str1[i-1]!=' ') {
 						i--;
 						l--;
 						if(!(mode&K_NOECHO))
-							bputs("\b \b"); 
+							backspace(); 
 					} 
 				}
 				break;
@@ -409,7 +409,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						}
 						while(l) {
 							l--;
-							bputs("\b \b"); 
+							backspace(); 
 						} 
 					}
 				}
@@ -468,7 +468,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						i--;
 						l--;
 						if(!(mode&K_NOECHO))
-							bputs("\b \b");
+							backspace();
 					}
 					break;
 				}
@@ -509,7 +509,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					wordwrap[z]=0;
 					if(!(mode&K_NOECHO))
 						while(z--) {
-							rputs("\b \b");
+							backspace();
 							i--; 
 						}
 					strrev(wordwrap);
@@ -595,7 +595,7 @@ long sbbs_t::getnum(ulong max)
 			if(useron.misc&COLDKEYS)
 				ch=getkey(K_UPPER);
 			if(ch==BS || ch==DEL) {
-				bputs("\b \b");
+				backspace();
 				continue; 
 			}
 			CRLF;
@@ -613,7 +613,7 @@ long sbbs_t::getnum(ulong max)
 			return(i); 
 		}
 		else if((ch==BS || ch==DEL) && n) {
-			bputs("\b \b");
+			backspace();
 			i/=10;
 			n--; 
 		}

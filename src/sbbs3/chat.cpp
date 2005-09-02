@@ -906,7 +906,7 @@ void sbbs_t::privchat(bool local)
 			if(ch==BS || ch==DEL) {
 				if(localchar) {
 					if(echo)
-						bputs("\b \b");
+						backspace();
 					localchar--;
 					localbuf[localline][localchar]=0; } }
 			else if(ch==TAB) {
@@ -1022,11 +1022,11 @@ void sbbs_t::privchat(bool local)
 			}
 			attr(cfg.color[clr_chatremote]);
 			if(sys_status&SS_SPLITP && !remote_activity)
-				bputs("\b \b");             /* Delete fake cursor */
+				backspace();             /* Delete fake cursor */
 			remote_activity=1;
 			if(ch==BS || ch==DEL) {
 				if(remotechar) {
-					bputs("\b \b");
+					backspace();
 					remotechar--;
 					remotebuf[remoteline][remotechar]=0; } }
 			else if(ch==TAB) {
@@ -1644,7 +1644,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 						if(sbbs_random(100)) {
 							mswait(100+sbbs_random(300));
 							while(c) {
-								bputs("\b \b");
+								backspace();
 								mswait(50+sbbs_random(50));
 								c--; } } }
 					outchar(theanswer[i]);

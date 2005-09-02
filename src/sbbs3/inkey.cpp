@@ -94,7 +94,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 	if(ch==CTRL_C) {  /* Ctrl-C Abort */
 		sys_status|=SS_ABORT;
 		if(mode&K_SPIN) /* back space once if on spinning cursor */
-			bputs("\b \b");
+			backspace();
 		return(0); 
 	}
 	if(ch==CTRL_Z && !(mode&K_MSG)
