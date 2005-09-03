@@ -1952,6 +1952,9 @@ const char* quoted_string(const char* str, char* buf, size_t maxlen)
 	return(buf);
 }
 
+#define QUOTED_STRING(ch, str, buf, maxlen) \
+	((isalpha(ch) && isupper(ch)) ? str : quoted_string(str,buf,maxlen))
+	
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
@@ -1974,7 +1977,7 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 				ch=toupper(ch);
             switch(ch) {
                 case 'A':   /* User alias */
-                    strcat(cmd,quoted_string(useron.alias,str,sizeof(str)));
+                    strcat(cmd,QUOTED_STRING(instr[i],useron.alias,str,sizeof(str)));
                     break;
                 case 'B':   /* Baud (DTE) Rate */
                     strcat(cmd,ultoa(dte_rate,str,10));
@@ -1989,10 +1992,10 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,ultoa((ulong)cur_cps*10,str,10));
                     break;
                 case 'F':   /* File path */
-                    strcat(cmd,quoted_string(fpath,str,sizeof(str)));
+                    strcat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
                     break;
                 case 'G':   /* Temp directory */
-                    strcat(cmd,quoted_string(cfg.temp_dir,str,sizeof(str)));
+                    strcat(cmd,cfg.temp_dir);
                     break;
                 case 'H':   /* Port Handle or Hardware Flow Control */
 #if defined(__unix__)
@@ -2005,10 +2008,10 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,cid);
                     break;
                 case 'J':
-                    strcat(cmd,quoted_string(cfg.data_dir,str,sizeof(str)));
+                    strcat(cmd,cfg.data_dir);
                     break;
                 case 'K':
-                    strcat(cmd,quoted_string(cfg.ctrl_dir,str,sizeof(str)));
+                    strcat(cmd,cfg.ctrl_dir);
                     break;
                 case 'L':   /* Lines per message */
                     strcat(cmd,ultoa(cfg.level_linespermsg[useron.level],str,10));
@@ -2017,10 +2020,10 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,ultoa(useron.min,str,10));
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-                    strcat(cmd,quoted_string(cfg.node_dir,str,sizeof(str)));
+                    strcat(cmd,cfg.node_dir);
                     break;
                 case 'O':   /* SysOp */
-                    strcat(cmd,quoted_string(cfg.sys_op,str,sizeof(str)));
+                    strcat(cmd,QUOTED_STRING(instr[i],cfg.sys_op,str,sizeof(str)));
                     break;
                 case 'P':   /* Client protocol */
                     strcat(cmd,client.protocol);
@@ -2031,8 +2034,8 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                 case 'R':   /* Rows */
                     strcat(cmd,ultoa(rows,str,10));
                     break;
-                case 'S':   /* File Spec */
-                    strcat(cmd,quoted_string(fspec,str,sizeof(str)));
+                case 'S':   /* File Spec (or Baja command str) */
+                    strcat(cmd,fspec);
                     break;
                 case 'T':   /* Time left in seconds */
                     gettimeleft();
@@ -2057,10 +2060,10 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,str);
                     break;
                 case 'Y':
-                    strcat(cmd,quoted_string(comspec,str,sizeof(str)));
+                    strcat(cmd,comspec);
                     break;
                 case 'Z':
-                    strcat(cmd,quoted_string(cfg.text_dir,str,sizeof(str)));
+                    strcat(cmd,cfg.text_dir);
                     break;
 				case '~':	/* DOS-compatible (8.3) filename */
 #ifdef _WIN32
@@ -2069,15 +2072,15 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 					GetShortPathName(fpath,sfpath,sizeof(sfpath));
 					strcat(cmd,sfpath);
 #else
-                    strcat(cmd,quoted_string(fpath,str,sizeof(str)));
+                    strcat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
 #endif			
 					break;
                 case '!':   /* EXEC Directory */
-                    strcat(cmd,quoted_string(cfg.exec_dir,str,sizeof(str)));
+                    strcat(cmd,cfg.exec_dir);
                     break;
                 case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
 #ifndef __unix__
-                    strcat(cmd,quoted_string(cfg.exec_dir,str,sizeof(str)));
+                    strcat(cmd,cfg.exec_dir);
 #endif
                     break;
 
@@ -2144,7 +2147,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
             switch(ch) {
                 case 'A':   /* User alias */
 					if(user!=NULL)
-						strcat(cmd,quoted_string(user->alias,str,sizeof(str)));
+						strcat(cmd,QUOTED_STRING(instr[i],user->alias,str,sizeof(str)));
                     break;
                 case 'B':   /* Baud (DTE) Rate */
                     break;
@@ -2155,20 +2158,20 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                 case 'E':   /* Estimated Rate */
                     break;
                 case 'F':   /* File path */
-                    strcat(cmd,quoted_string(fpath,str,sizeof(str)));
+                    strcat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
                     break;
                 case 'G':   /* Temp directory */
-                    strcat(cmd,quoted_string(cfg->temp_dir,str,sizeof(str)));
+                    strcat(cmd,cfg->temp_dir);
                     break;
                 case 'H':   /* Port Handle or Hardware Flow Control */
                     break;
                 case 'I':   /* IP address */
                     break;
                 case 'J':
-                    strcat(cmd,quoted_string(cfg->data_dir,str,sizeof(str)));
+                    strcat(cmd,cfg->data_dir);
                     break;
                 case 'K':
-                    strcat(cmd,quoted_string(cfg->ctrl_dir,str,sizeof(str)));
+                    strcat(cmd,cfg->ctrl_dir);
                     break;
                 case 'L':   /* Lines per message */
 					if(user!=NULL)
@@ -2179,10 +2182,10 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 						strcat(cmd,ultoa(user->min,str,10));
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-                    strcat(cmd,quoted_string(cfg->node_dir,str,sizeof(str)));
+                    strcat(cmd,cfg->node_dir);
                     break;
                 case 'O':   /* SysOp */
-                    strcat(cmd,quoted_string(cfg->sys_op,str,sizeof(str)));
+                    strcat(cmd,QUOTED_STRING(instr[i],cfg->sys_op,str,sizeof(str)));
                     break;
                 case 'P':   /* Client protocol */
                     break;
@@ -2194,7 +2197,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 						strcat(cmd,ultoa(user->rows,str,10));
                     break;
                 case 'S':   /* File Spec */
-                    strcat(cmd,quoted_string(fspec,str,sizeof(str)));
+                    strcat(cmd,fspec);
                     break;
                 case 'T':   /* Time left in seconds */
                     break;
@@ -2220,7 +2223,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                 case 'Y':
                     break;
                 case 'Z':
-                    strcat(cmd,quoted_string(cfg->text_dir,str,sizeof(str)));
+                    strcat(cmd,cfg->text_dir);
                     break;
 				case '~':	/* DOS-compatible (8.3) filename */
 #ifdef _WIN32
@@ -2229,15 +2232,15 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 					GetShortPathName(fpath,sfpath,sizeof(sfpath));
 					strcat(cmd,sfpath);
 #else
-                    strcat(cmd,quoted_string(fpath,str,sizeof(str)));
+                    strcat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)));
 #endif			
 					break;
                 case '!':   /* EXEC Directory */
-                    strcat(cmd,quoted_string(cfg->exec_dir,str,sizeof(str)));
+                    strcat(cmd,cfg->exec_dir);
                     break;
                 case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
 #ifndef __unix__
-                    strcat(cmd,quoted_string(cfg->exec_dir,str,sizeof(str)));
+                    strcat(cmd,cfg->exec_dir);
 #endif
                     break;
 
