@@ -608,10 +608,10 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 				for(i=0;split[i];i++) {
 					if(msg->idx.to!=0)
 						SAFEPRINTF3(filepath,"%sfile/%04u.in/%s"
-							,scfg.data_dir,msg->idx.to,truncsp(split[i]));
+							,scfg.data_dir,msg->idx.to,getfname(truncsp(split[i])));
 					else
 						SAFEPRINTF3(filepath,"%sfile/%04u.out/%s"
-							,scfg.data_dir,msg->idx.from,truncsp(split[i]));
+							,scfg.data_dir,msg->idx.from,getfname(truncsp(split[i])));
 					strListPush(&file_list,filepath);
 				}
 				strListFree(&split);
