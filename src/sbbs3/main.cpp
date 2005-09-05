@@ -366,6 +366,8 @@ static const char *js_type_str[] = {
     "string",
     "number",
     "boolean",
+	"null",
+	"xml object",
 	"array",
 	"alias",
 	"undefined"
