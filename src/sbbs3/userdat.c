@@ -1300,6 +1300,8 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 			case AR_LOCAL:
 			case AR_EXPERT:
 			case AR_SYSOP:
+			case AR_GUEST:
+			case AR_QNODE:
 			case AR_QUIET:
 			case AR_OS2:
 			case AR_DOS:
@@ -1392,6 +1394,16 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				break;
 			case AR_SYSOP:
 				if(user==NULL || user->level<SYSOP_LEVEL)
+					result=not;
+				else result=!not;
+				break;
+			case AR_GUEST:
+				if(user==NULL || !(user->rest&FLAG('G')))
+					result=not;
+				else result=!not;
+				break;
+			case AR_QNODE:
+				if(user==NULL || !(user->rest&FLAG('Q')))
 					result=not;
 				else result=!not;
 				break;

@@ -88,6 +88,8 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_LOCAL:
 			case AR_EXPERT:
 			case AR_SYSOP:
+			case AR_GUEST:
+			case AR_QNODE:
 			case AR_QUIET:
 			case AR_OS2:
 			case AR_DOS:
@@ -188,6 +190,16 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				break;
 			case AR_SYSOP:
 				if(!SYSOP)
+					result=_not;
+				else result=!_not;
+				break;
+			case AR_GUEST:
+				if(!(user->rest&FLAG('G')))
+					result=_not;
+				else result=!_not;
+				break;
+			case AR_QNODE:
+				if(!(user->rest&FLAG('Q')))
 					result=_not;
 				else result=!_not;
 				break;
