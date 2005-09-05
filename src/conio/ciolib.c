@@ -398,7 +398,7 @@ int vsscanf( const char *buffer, const char *format, va_list arg_ptr )
 	int i, ret;
 	void *arg_arr[25];
 
-	// Do exception handling in case we go too far //
+	/* Do exception handling in case we go too far // */
 	__try
 	{
 		for ( i = 0; i < 25; i++ )

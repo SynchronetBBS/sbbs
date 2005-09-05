@@ -973,9 +973,9 @@ static void js_service_thread(void* arg)
 	jsval					val;
 	jsval					rval;
 
-	// Copy service_client arg
+	/* Copy service_client arg */
 	service_client=*(service_client_t*)arg;
-	// Free original
+	/* Free original */
 	free(arg);
 
 	socket=service_client.socket;
@@ -1140,7 +1140,7 @@ static void js_static_service_thread(void* arg)
 	jsval					val;
 	jsval					rval;
 
-	// Copy service_client arg
+	/* Copy service_client arg */
 	service=(service_t*)arg;
 
 	service->running=TRUE;
@@ -1245,7 +1245,7 @@ static void native_static_service_thread(void* arg)
 		GetCurrentProcess(),
 		(HANDLE*)&socket_dup,
 		0,
-		TRUE, // Inheritable
+		TRUE, /* Inheritable */
 		DUPLICATE_SAME_ACCESS)) {
 		lprintf(LOG_ERR,"%04d !%s ERROR %d duplicating socket descriptor"
 			,socket,service->protocol,GetLastError());
@@ -1365,7 +1365,7 @@ static void native_service_thread(void* arg)
 		GetCurrentProcess(),
 		(HANDLE*)&socket_dup,
 		0,
-		TRUE, // Inheritable
+		TRUE, /* Inheritable */
 		DUPLICATE_SAME_ACCESS)) {
 		lprintf(LOG_ERR,"%04d !%s ERROR %d duplicating socket descriptor"
 			,socket,service->protocol,GetLastError());

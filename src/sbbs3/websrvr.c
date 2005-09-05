@@ -2518,14 +2518,14 @@ static BOOL exec_cgi(http_session_t *session)
 	sa.lpSecurityDescriptor = NULL;
 	sa.bInheritHandle = TRUE;
 
-	// Create the child output pipe (override default 4K buffer size)
+	/* Create the child output pipe (override default 4K buffer size) */
 	if(!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,sizeof(buf))) {
 		lprintf(LOG_ERR,"%04d !ERROR %d creating stdout pipe",session->socket,GetLastError());
 		return(FALSE);
 	}
 	startup_info.hStdError=startup_info.hStdOutput;
 
-	// Create the child input pipe.
+	/* Create the child input pipe. */
 	if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,0 /* default buffer size */)) {
 		lprintf(LOG_ERR,"%04d !ERROR %d creating stdin pipe",session->socket,GetLastError());
 		return(FALSE);
@@ -2547,16 +2547,16 @@ static BOOL exec_cgi(http_session_t *session)
 	strListFree(&env_list);
 
     success=CreateProcess(
-		NULL,			// pointer to name of executable module
-		cmdline,  		// pointer to command line string
-		NULL,  			// process security attributes
-		NULL,   		// thread security attributes
-		TRUE,	 		// handle inheritance flag
-		CREATE_NEW_CONSOLE, // creation flags
-        env_block,  	// pointer to new environment block
-		startup_dir,	// pointer to current directory name
-		&startup_info,  // pointer to STARTUPINFO
-		&process_info  	// pointer to PROCESS_INFORMATION
+		NULL,			/* pointer to name of executable module */
+		cmdline,  		/* pointer to command line string */
+		NULL,  			/* process security attributes */
+		NULL,   		/* thread security attributes */
+		TRUE,	 		/* handle inheritance flag */
+		CREATE_NEW_CONSOLE, /* creation flags */
+        env_block,  	/* pointer to new environment block */
+		startup_dir,	/* pointer to current directory name */
+		&startup_info,  /* pointer to STARTUPINFO */
+		&process_info  	/* pointer to PROCESS_INFORMATION */
 		);
 
 	strListFreeBlock(env_block);
@@ -2580,12 +2580,12 @@ static BOOL exec_cgi(http_session_t *session)
 
 		waiting = 0;
 		PeekNamedPipe(
-			rdpipe,             // handle to pipe to copy from
-			NULL,               // pointer to data buffer
-			0,					// size, in bytes, of data buffer
-			NULL,				// pointer to number of bytes read
-			&waiting,			// pointer to total number of bytes available
-			NULL				// pointer to unread bytes in this message
+			rdpipe,             /* handle to pipe to copy from */
+			NULL,               /* pointer to data buffer */
+			0,					/* size, in bytes, of data buffer */
+			NULL,				/* pointer to number of bytes read */
+			&waiting,			/* pointer to total number of bytes available */
+			NULL				/* pointer to unread bytes in this message */
 			);
 		if(waiting) {
 

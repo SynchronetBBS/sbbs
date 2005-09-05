@@ -120,15 +120,15 @@ static int vdd_op(BYTE op)
 #if 0
 
 char win95int14[]={
-	 0xCF	// IRET
-	,0x90	// NOP
+	 0xCF	/* IRET */
+	,0x90	/* NOP */
 	,0x90
 	,0x90
 	,0x90
 	,0x90
-	,0x54	// FOSSIL sig
-	,0x19	// FOSSIL sig
-	,0x1B	// FOSSIL highest func supported
+	,0x54	/* FOSSIL sig */
+	,0x19	/* FOSSIL sig */
+	,0x1B	/* FOSSIL highest func supported */
 };
 
 #else
@@ -189,26 +189,26 @@ void vdd_getstatus(vdd_status_t* status)
 
 WORD PortStatus()
 {
-	WORD			status=0x0008;			// AL bit 3 (change in DCD) always set
+	WORD			status=0x0008;			/* AL bit 3 (change in DCD) always set */
 	vdd_status_t	vdd_status;
 
 	vdd_getstatus(&vdd_status);
 
-	if(vdd_status.online)			// carrier detect
-		status|=0x0080;				// DCD
+	if(vdd_status.online)			/* carrier detect */
+		status|=0x0080;				/* DCD */
 
-	if(vdd_status.inbuf_full)		// receive data ready 
-		status|=0x0100;				// RDA
+	if(vdd_status.inbuf_full)		/* receive data ready  */
+		status|=0x0100;				/* RDA */
 
-//	if(vm->overrun)					// overrun error detected
-//		status|=0x0200;				// OVRN
+/*	if(vm->overrun)					/* overrun error detected */
+/*		status|=0x0200;				/* OVRN */
 
 	if(vdd_status.outbuf_full
-		<vdd_status.outbuf_size/2)	// room available in output buffer
-		status|=0x2000;				// THRE
+		<vdd_status.outbuf_size/2)	/* room available in output buffer */
+		status|=0x2000;				/* THRE */
 
-	if(!vdd_status.outbuf_full)		// output buffer is empty
-		status|=0x4000;				// TSRE
+	if(!vdd_status.outbuf_full)		/* output buffer is empty */
+		status|=0x4000;				/* TSRE */
 
 	return(status);
 }
@@ -242,7 +242,7 @@ void interrupt winNTint14(
 				,0,0
 				,0,0
 		        ,80,25
-		        ,1 // 38400
+		        ,1 /* 38400 */
 			};
 
 	switch(_ax>>8) {
@@ -286,7 +286,7 @@ void interrupt winNTint14(
 			break;
 		case 0x0B:	/* write char to com port, no wait */
         	if(0 /*RingBufFree(&vm->out)<2 */) {
-            	_ax=0; // char was not accepted
+            	_ax=0; /* char was not accepted */
                 break;
             }
 			ch=_ax&0xff;
@@ -294,10 +294,10 @@ void interrupt winNTint14(
 			_ax = vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
 			nodata=0;
 			break;
-        case 0x0C:	// non-destructive read-ahead
+        case 0x0C:	/* non-destructive read-ahead */
 			vdd_getstatus(&vdd_status);
 			if(!vdd_status.inbuf_full) {
-				_ax=0xffff;	// no char available
+				_ax=0xffff;	/* no char available */
 				vdd_op(VDD_YIELD);
 				break;
 			}
@@ -355,8 +355,8 @@ void interrupt winNTint16(
 
 	vdd_getstatus(&status);
  	switch(_ax>>8) {
-    	case 0x00:	// Read char from keyboard
-        case 0x10:	// Read char from enhanced keyboard
+    	case 0x00:	/* Read char from keyboard */
+        case 0x10:	/* Read char from enhanced keyboard */
 			if(status.inbuf_full) {
 				_asm mov buf_seg, ss;
 				vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
@@ -367,12 +367,12 @@ void interrupt winNTint16(
 			if(++nodata>=polls_before_yield)
 				vdd_op(VDD_YIELD);
 			break;
-    	case 0x01:	// Get keyboard status
-        case 0x11:	// Get enhanced keyboard status
+    	case 0x01:	/* Get keyboard status */
+        case 0x11:	/* Get enhanced keyboard status */
 			if(status.inbuf_full) {
 				_asm mov buf_seg, ss;
 				vdd_buf(VDD_PEEK, 1, buf_seg, (WORD)&ch);
-                flags&=~(1<<6);	// clear zero flag
+                flags&=~(1<<6);	/* clear zero flag */
                 _ax=ch;
 				nodata=0;
 				return;

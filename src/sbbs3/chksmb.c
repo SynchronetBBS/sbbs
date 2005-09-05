@@ -678,7 +678,8 @@ int main(int argc, char **argv)
 			break;
 		fprintf(stderr,"#%-5lu (%06lX) 1st Pass ",idx.number,idx.offset);
 		if(idx.attr&MSG_DELETE) {
-	//		fprintf(stderr,"%sMarked for deletion\n",beep);
+			/* Message Disabled... why?  ToDo */
+			/* fprintf(stderr,"%sMarked for deletion\n",beep); */
 			delidx++; 
 		}
 		for(m=0;m<l;m++)

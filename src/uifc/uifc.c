@@ -517,7 +517,7 @@ else {
 	if((*cur)<(*bar))
 		(*cur)=(*bar);
 	i=(*cur)-(*bar);
-//
+
 	if(i+(height-5)>=opts) {
 		i=opts-(height-4);
 		(*cur)=i+(*bar);

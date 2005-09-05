@@ -659,12 +659,14 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		}
 		if(smb_locksmbhdr(&smb)!=0) {
 			smb_close(&smb);
-			//errormsg(WHERE,ERR_LOCK,smb.file,x);
+			/* errormsg disabled.  Why?  ToDo */
+			/* errormsg(WHERE,ERR_LOCK,smb.file,x); */
 			return(FALSE); 
 		}
 		if(smb_getstatus(&smb)!=0) {
 			smb_close(&smb);
-			//errormsg(WHERE,ERR_READ,smb.file,x);
+			/* errormsg disabled.  Why?  ToDo */
+			/* errormsg(WHERE,ERR_READ,smb.file,x); */
 			return(FALSE); 
 		}
 		smb.status.max_msgs=0;
@@ -672,7 +674,8 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		smb.status.max_age=cfg->mail_maxage;
 		if(smb_putstatus(&smb)!=0) {
 			smb_close(&smb);
-			//errormsg(WHERE,ERR_WRITE,smb.file,x);
+			/* errormsg disabled.  Why?  ToDo */
+			/* errormsg(WHERE,ERR_WRITE,smb.file,x); */
 			return(FALSE); 
 		}
 		smb_close(&smb); 

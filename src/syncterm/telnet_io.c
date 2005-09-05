@@ -59,14 +59,14 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 
 	if(inlen<1) {
 		*outlen=0;
-		return(inbuf);	// no length? No interpretation
+		return(inbuf);	/* no length? No interpretation */
 	}
 
     first_iac=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
 
     if(!telnet_cmdlen	&& first_iac==NULL) {
         *outlen=inlen;
-        return(inbuf);	// no interpretation needed
+        return(inbuf);	/* no interpretation needed */
     }
 
     if(first_iac!=NULL) {

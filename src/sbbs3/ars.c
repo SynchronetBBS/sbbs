@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-const uchar* nular="";	// AR_NULL
+const uchar* nular="";	/* AR_NULL */
 
 /* Converts ASCII ARS string into binary ARS buffer */
 

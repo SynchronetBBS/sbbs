@@ -349,18 +349,18 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	if(strcmp(str,tmp) && user->ltoday) 
 		resetdailyuserdat(cfg,user);
 
-#if 0 // removed 01/19/00
+#if 0 /* removed 01/19/00 Why?  ToDo */
 	if(useron.number==user->number) {
 		if(user!=&useron)
 			useron=*user;
 
 		if(online) {
 
-	#if 0	/* legacy? */
+	#if 0	/* legacy? ToDo */
 			getusrdirs();
 			getusrsubs();
 	#endif
-			if(user->misc&AUTOTERM) {			// was useron.misc (01/19/00)
+			if(user->misc&AUTOTERM) {			/* was useron.misc (01/19/00) */
 				user->misc&=~(ANSI|RIP|WIP|HTML);
 				user->misc|=autoterm; 
 			}
@@ -1226,7 +1226,7 @@ int DLLCALL putnmsg(scfg_t* cfg, int num, char *strin)
 	sprintf(str,"%smsgs/n%3.3u.msg",cfg->data_dir,num);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
 		return(errno); 
-	lseek(file,0L,SEEK_END);	// Instead of opening with O_APPEND
+	lseek(file,0L,SEEK_END);	/* Instead of opening with O_APPEND */
 	i=strlen(strin);
 	if(write(file,strin,i)!=i) {
 		close(file);

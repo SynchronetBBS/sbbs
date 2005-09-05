@@ -491,8 +491,8 @@ char* DLLCALL prep_dir(char* base, char* path, size_t buflen)
 #endif
 
 	backslashcolon(str);
-	strcat(str,".");                // Change C: to C:. and C:\SBBS\ to C:\SBBS\.
-	FULLPATH(abspath,str,buflen);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
+	strcat(str,".");                /* Change C: to C:. and C:\SBBS\ to C:\SBBS\. */
+	FULLPATH(abspath,str,buflen);	/* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC */
 	backslash(abspath);
 
 	sprintf(path,"%.*s",(int)(buflen-1),abspath);

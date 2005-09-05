@@ -1204,7 +1204,7 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 			break;
 	}
 
-#if 0 //def _DEBUG
+#if 0 /*def _DEBUG */
 	lprintf(zm,LOG_DEBUG,"recv_header_raw received header type: %s"
 		,frame_desc(frame_type));
 #endif

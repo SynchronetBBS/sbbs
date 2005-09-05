@@ -450,7 +450,7 @@ save(void)
 			fprintf(fp, "L");
 			break;
 		case 2:
-			//Clear Screen on Home since sync doesn 't support homeing.
+			/*Clear Screen on Home since sync doesn 't support homeing. */
 				fprintf(fp, "L");
 			break;
 		}
@@ -479,7 +479,7 @@ save(void)
 		fprintf(fp, "N");
 
 		SauceDescr.DataType = 1;
-		//I really don 't know the "Sauce" specs.
+		/*I really don 't know the "Sauce" specs. */
 			SauceDescr.FileType = 8;
 		SauceDescr.TInfo1 = 80;
 		SauceDescr.TInfo2 = LastLine;

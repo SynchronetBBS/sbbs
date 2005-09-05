@@ -303,13 +303,13 @@ static int svc_lputs(void* p, int level, char* str)
 	if(svc->log_handle == INVALID_HANDLE_VALUE) {
 		sprintf(fname,"\\\\.\\mailslot\\%s.log",svc->name);
 		svc->log_handle = CreateFile(
-			fname,					// pointer to name of the file
-			GENERIC_WRITE,			// access (read-write) mode
-			FILE_SHARE_READ,		// share mode
-			NULL,					// pointer to security attributes
-			OPEN_EXISTING,			// how to create
-			FILE_ATTRIBUTE_NORMAL,  // file attributes
-			NULL					// handle to file with attributes to copy
+			fname,					/* pointer to name of the file */
+			GENERIC_WRITE,			/* access (read-write) mode */
+			FILE_SHARE_READ,		/* share mode */
+			NULL,					/* pointer to security attributes */
+			OPEN_EXISTING,			/* how to create */
+			FILE_ATTRIBUTE_NORMAL,  /* file attributes */
+			NULL					/* handle to file with attributes to copy */
 			);
 	}
 	if(svc->log_handle != INVALID_HANDLE_VALUE) {
@@ -328,19 +328,19 @@ static int svc_lputs(void* p, int level, char* str)
 	if((*svc->log_mask)&(1<<level)) {
 		if(svc->event_handle == NULL)
 			svc->event_handle = RegisterEventSource(
-				NULL,		// server name for source (NULL = local computer)
-				svc->name   // source name for registered handle
+				NULL,		/* server name for source (NULL = local computer) */
+				svc->name   /* source name for registered handle */
 				);
 		if(svc->event_handle != NULL)
-			ReportEvent(svc->event_handle,  // event log handle
-				event_type(level),		// event type
-				0,						// category zero
-				0,						// event identifier
-				NULL,					// no user security identifier
-				1,						// one string
-				0,						// no data
-				&str,					// pointer to string array
-				NULL);					// pointer to data
+			ReportEvent(svc->event_handle,  /* event log handle */
+				event_type(level),		/* event type */
+				0,						/* category zero */
+				0,						/* event identifier */
+				NULL,					/* no user security identifier */
+				1,						/* one string */
+				0,						/* no data */
+				&str,					/* pointer to string array */
+				NULL);					/* pointer to data */
 	}
 
     return(0);
@@ -552,15 +552,15 @@ static BOOL register_event_source(char* name, char* path)
 	sprintf(keyname,"system\\CurrentControlSet\\services\\eventlog\\application\\%s",name);
 
 	retval=RegCreateKeyEx(
-		HKEY_LOCAL_MACHINE,			// handle to an open key
-		keyname,			// address of subkey name
-		0,				// reserved
-		"",				// address of class string
-		0,				// special options flag
-		KEY_ALL_ACCESS, // desired security access
-		NULL,           // address of key security structure
-		&hKey,			// address of buffer for opened handle
-		&disp			// address of disposition value buffer
+		HKEY_LOCAL_MACHINE,			/* handle to an open key */
+		keyname,			/* address of subkey name */
+		0,				/* reserved */
+		"",				/* address of class string */
+		0,				/* special options flag */
+		KEY_ALL_ACCESS, /* desired security access */
+		NULL,           /* address of key security structure */
+		&hKey,			/* address of buffer for opened handle */
+		&disp			/* address of disposition value buffer */
 		);
 
 	if(retval!=ERROR_SUCCESS) {
@@ -571,12 +571,12 @@ static BOOL register_event_source(char* name, char* path)
 
 	value="EventMessageFile";
 	retval=RegSetValueEx(
-		hKey,			// handle to key to set value for
-		value,			// name of the value to set
-		0,				// reserved
-		REG_SZ,			// flag for value type
-		path,			// address of value data
-		strlen(path)	// size of value data
+		hKey,			/* handle to key to set value for */
+		value,			/* name of the value to set */
+		0,				/* reserved */
+		REG_SZ,			/* flag for value type */
+		path,			/* address of value data */
+		strlen(path)	/* size of value data */
 		);
 
 	if(retval!=ERROR_SUCCESS) {
@@ -589,12 +589,12 @@ static BOOL register_event_source(char* name, char* path)
 	value="TypesSupported";
 	type=EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE;
 	retval=RegSetValueEx(
-		hKey,			// handle to key to set value for
-		value,			// name of the value to set
-		0,				// reserved
-		REG_DWORD,		// flag for value type
-		(BYTE*)&type,	// address of value data
-		sizeof(type)	// size of value data
+		hKey,			/* handle to key to set value for */
+		value,			/* name of the value to set */
+		0,				/* reserved */
+		REG_DWORD,		/* flag for value type */
+		(BYTE*)&type,	/* address of value data */
+		sizeof(type)	/* size of value data */
 		);
 
 	RegCloseKey(hKey);
@@ -695,10 +695,10 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 	}
 
 	if(QueryServiceConfig(
-		hService,		// handle of service
-		NULL,			// address of service config. structure
-		0,				// size of service configuration buffer
-		&size			// address of variable for bytes needed
+		hService,		/* handle of service */
+		NULL,			/* address of service config. structure */
+		0,				/* size of service configuration buffer */
+		&size			/* address of variable for bytes needed */
 		) || GetLastError()!=ERROR_INSUFFICIENT_BUFFER) {
 		printf("\n!Unexpected QueryServiceConfig ERROR %u\n",err=GetLastError());
 		return(-1);
@@ -713,10 +713,10 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 	}
 
 	if(!QueryServiceConfig(
-		hService,		// handle of service
-		service_config,	// address of service config. structure
-		size,			// size of service configuration buffer
-		&size			// address of variable for bytes needed
+		hService,		/* handle of service */
+		service_config,	/* address of service config. structure */
+		size,			/* size of service configuration buffer */
+		&size			/* address of variable for bytes needed */
 		)) {
 		printf("\n!QueryServiceConfig ERROR %u\n",GetLastError());
 		return(-1);
@@ -740,19 +740,19 @@ static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 	printf("Installing service: %-*s ... ", STRLEN_MAX_DISPLAY_NAME, display_name);
 
     hService = CreateService(
-        hSCManager,						// SCManager database
-        name,							// name of service
-        display_name,					// name to display
-        SERVICE_ALL_ACCESS,				// desired access
-        SERVICE_WIN32_SHARE_PROCESS,	// service type
-		start_type,						// start type (auto or manual)
-        SERVICE_ERROR_NORMAL,			// error control type
-        path,							// service's binary
-        NULL,							// no load ordering group
-        NULL,							// no tag identifier
-        "",								// dependencies
-        NULL,							// LocalSystem account
-        NULL);							// no password
+        hSCManager,						/* SCManager database */
+        name,							/* name of service */
+        display_name,					/* name to display */
+        SERVICE_ALL_ACCESS,				/* desired access */
+        SERVICE_WIN32_SHARE_PROCESS,	/* service type */
+		start_type,						/* start type (auto or manual) */
+        SERVICE_ERROR_NORMAL,			/* error control type */
+        path,							/* service's binary */
+        NULL,							/* no load ordering group */
+        NULL,							/* no tag identifier */
+        "",								/* dependencies */
+        NULL,							/* LocalSystem account */
+        NULL);							/* no password */
 
 	if(hService==NULL) {
 		if((err=GetLastError())==ERROR_SERVICE_EXISTS)
@@ -792,9 +792,9 @@ static int install(const char* svc_name)
     }
 
     hSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
-                        SC_MANAGER_ALL_ACCESS   // access required
+                        NULL,                   /* machine (NULL == local) */
+                        NULL,                   /* database (NULL == default) */
+                        SC_MANAGER_ALL_ACCESS   /* access required */
                         );
     if(hSCManager==NULL) {
 		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
@@ -850,7 +850,7 @@ static void remove_service(SC_HANDLE hSCManager, char* name, char* disp_name)
     if((hService=open_service(hSCManager, name))==NULL)
 		return;
 
-    // try to stop the service
+    /* try to stop the service */
     if(ControlService( hService, SERVICE_CONTROL_STOP, &status))
     {
         printf("\nStopping: %-*s ... ", STRLEN_MAX_DISPLAY_NAME, disp_name);
@@ -864,7 +864,7 @@ static void remove_service(SC_HANDLE hSCManager, char* name, char* disp_name)
             printf("FAILED!, ");
     }
 
-    // now remove the service
+    /* now remove the service */
     if(DeleteService(hService))
 		printf("Removed\n");
 	else
@@ -884,7 +884,7 @@ static void stop_service(SC_HANDLE hSCManager, char* name, char* disp_name)
     if((hService=open_service(hSCManager, name))==NULL)
 		return;
 
-    // try to stop the service
+    /* try to stop the service */
     if(ControlService( hService, SERVICE_CONTROL_STOP, &status))
     {
         while(QueryServiceStatus(hService, &status) && status.dwCurrentState == SERVICE_STOP_PENDING)
@@ -913,7 +913,7 @@ static void control_service(SC_HANDLE hSCManager, char* name, char* disp_name, D
     if((hService=open_service(hSCManager, name))==NULL)
 		return;
 
-    // try to stop the service
+    /* try to stop the service */
     if(!ControlService( hService, SERVICE_CONTROL_STOP, &status)) {
 		if((err=GetLastError())==ERROR_SERVICE_NOT_ACTIVE)
 			printf("Not active\n");
@@ -936,9 +936,9 @@ static int control(const char* svc_name, DWORD ctrl)
     SC_HANDLE   hSCManager;
 
     hSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
-                        SC_MANAGER_ALL_ACCESS   // access required
+                        NULL,                   /* machine (NULL == local) */
+                        NULL,                   /* database (NULL == default) */
+                        SC_MANAGER_ALL_ACCESS   /* access required */
                         );
     if(hSCManager==NULL) {
 		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
@@ -990,7 +990,7 @@ static void start_service(SC_HANDLE hSCManager, char* name, char* disp_name
 	if(QueryServiceStatus(hService, &status) && status.dwCurrentState == SERVICE_RUNNING)
 		printf("Already running\n");
 	else {
-		// Start the service
+		/* Start the service */
 		if(StartService( hService, argc, argv))
 		{
 			while(QueryServiceStatus(hService, &status) && status.dwCurrentState == SERVICE_START_PENDING)
@@ -1016,9 +1016,9 @@ static int uninstall(const char* svc_name)
     SC_HANDLE   hSCManager;
 
     hSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
-                        SC_MANAGER_ALL_ACCESS   // access required
+                        NULL,                   /* machine (NULL == local) */
+                        NULL,                   /* database (NULL == default) */
+                        SC_MANAGER_ALL_ACCESS   /* access required */
                         );
     if(hSCManager==NULL) {
 		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
@@ -1054,17 +1054,17 @@ static void set_service_start_type(SC_HANDLE hSCManager, char* name
 		return;
 
 	if(!ChangeServiceConfig(
-		hService,				// handle to service
-		SERVICE_NO_CHANGE,		// type of service
-		start_type,				// when to start service
-		SERVICE_NO_CHANGE,		// severity if service fails to start
-		NULL,					// pointer to service binary file name
-		NULL,					// pointer to load ordering group name
-		NULL,					// pointer to variable to get tag identifier
-		NULL,					// pointer to array of dependency names
-		NULL,					// pointer to account name of service
-		NULL,					// pointer to password for service account
-		NULL					// pointer to display name
+		hService,				/* handle to service */
+		SERVICE_NO_CHANGE,		/* type of service */
+		start_type,				/* when to start service */
+		SERVICE_NO_CHANGE,		/* severity if service fails to start */
+		NULL,					/* pointer to service binary file name */
+		NULL,					/* pointer to load ordering group name */
+		NULL,					/* pointer to variable to get tag identifier */
+		NULL,					/* pointer to array of dependency names */
+		NULL,					/* pointer to account name of service */
+		NULL,					/* pointer to password for service account */
+		NULL					/* pointer to display name */
 		))
 		printf("\n!ERROR %d changing service config for: %s\n",GetLastError(),name);
 	else
@@ -1082,9 +1082,9 @@ static int enable(const char* svc_name, BOOL enabled)
     SC_HANDLE   hSCManager;
 
     hSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
-                        SC_MANAGER_ALL_ACCESS   // access required
+                        NULL,                   /* machine (NULL == local) */
+                        NULL,                   /* database (NULL == default) */
+                        SC_MANAGER_ALL_ACCESS   /* access required */
                         );
     if(hSCManager==NULL) {
 		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
@@ -1117,9 +1117,9 @@ static int list(const char* svc_name)
 	DWORD		start_type;
 
     hSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
-                        SC_MANAGER_ALL_ACCESS   // access required
+                        NULL,                   /* machine (NULL == local) */
+                        NULL,                   /* database (NULL == default) */
+                        SC_MANAGER_ALL_ACCESS   /* access required */
                         );
     if(hSCManager==NULL) {
 		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
@@ -1152,9 +1152,9 @@ static int start(const char* svc_name, int argc, char** argv)
     SC_HANDLE   hSCManager;
 
     hSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
-                        SC_MANAGER_ALL_ACCESS   // access required
+                        NULL,                   /* machine (NULL == local) */
+                        NULL,                   /* database (NULL == default) */
+                        SC_MANAGER_ALL_ACCESS   /* access required */
                         );
     if(hSCManager==NULL) {
 		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());

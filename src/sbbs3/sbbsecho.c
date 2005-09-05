@@ -2104,7 +2104,7 @@ ulong matchname(char *inname)
 			username[total_users].alias=crc32(alias,0);
 			username[total_users].real=crc32(name,0); }
 		close(userdat);
-		fprintf(stderr,"     \b\b\b\b\b");  // Clear counter
+		fprintf(stderr,"     \b\b\b\b\b");  /* Clear counter */
 		fprintf(stderr,
 			"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 			"%25s"
@@ -3111,7 +3111,8 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 				fputc(0,outpkt[i].stream);
 				fputc(0,outpkt[i].stream);
 				fclose(outpkt[i].stream); }
-	//		  pack_bundle(outpkt[i].filename,outpkt[i].uplink);
+			  /* pack_nundle() disabled.  Why?  ToDo */
+			  /* pack_bundle(outpkt[i].filename,outpkt[i].uplink); */
 			memset(&outpkt[i],0,sizeof(outpkt_t)); }
 		totalpkts=openpkts=0;
 		attach_bundles();
@@ -3170,7 +3171,8 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 					fputc(0,outpkt[i].stream);
 					fputc(0,outpkt[i].stream);
 					fclose(outpkt[i].stream);
-	//				  pack_bundle(outpkt[i].filename,outpkt[i].uplink);
+					/* pack_bundle() disabled.  Why?  ToDo */
+					/* pack_bundle(outpkt[i].filename,outpkt[i].uplink); */
 					outpkt[i].stream=outpkt[totalpkts-1].stream;
 					memcpy(&outpkt[i],&outpkt[totalpkts-1],sizeof(outpkt_t));
 					memset(&outpkt[totalpkts-1],0,sizeof(outpkt_t));
@@ -3260,8 +3262,9 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 			++totalpkts;
 			if(totalpkts>=MAX_TOTAL_PKTS) {
 				fclose(outpkt[totalpkts-1].stream);
-//				  pack_bundle(outpkt[totalpkts-1].filename
-//					  ,outpkt[totalpkts-1].uplink);
+				/* pack_bundle() disabled.  Why?  ToDo */
+				/* pack_bundle(outpkt[totalpkts-1].filename
+					  ,outpkt[totalpkts-1].uplink); */
 				--totalpkts;
 				--openpkts; 
 			}

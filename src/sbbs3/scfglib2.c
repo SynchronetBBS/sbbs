@@ -1013,7 +1013,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->dir!=NULL) {
 		for(i=0;i<cfg->total_dirs;i++) {
-#if 0 //ndef SCFG
+#if 0 /*ndef SCFG */
 			if(cfg->dir[i]->data_dir!=cfg->data_dir_dirs) 
 				FREE_AND_NULL(cfg->dir[i]->data_dir);
 #endif

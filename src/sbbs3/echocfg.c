@@ -52,7 +52,8 @@
 
 char **opt;
 
-// void uifc.bail(int code);
+/* Declaration removed... why?  ToDo */
+/* void uifc.bail(int code); */
 int main();
 
 uchar node_swap=1;

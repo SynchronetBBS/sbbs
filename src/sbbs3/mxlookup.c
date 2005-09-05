@@ -80,44 +80,44 @@ typedef struct _PACK {
 #pragma pack(pop)		/* original packing */
 #endif
 
-#define DNS_QR			(1<<15)		// Query/Response (0=Query, 1=Response)
-#define DNS_AA			(1<<10)		// Authoritavie Answer
-#define DNS_TC			(1<<9)		// Truncation due to length limits
-#define DNS_RD			(1<<8)		// Recursion Query desired
-#define DNS_RA			(1<<7)		// Recursion Query available
+#define DNS_QR			(1<<15)		/* Query/Response (0=Query, 1=Response) */
+#define DNS_AA			(1<<10)		/* Authoritavie Answer */
+#define DNS_TC			(1<<9)		/* Truncation due to length limits */
+#define DNS_RD			(1<<8)		/* Recursion Query desired */
+#define DNS_RA			(1<<7)		/* Recursion Query available */
 
-#define DNS_RCODE_MASK	0x000f		// Response code bit field
+#define DNS_RCODE_MASK	0x000f		/* Response code bit field */
 enum {
-	 DNS_RCODE_OK		// No error condition
-	,DNS_RCODE_FMT		// Format error
-	,DNS_RCODE_SERVER	// Server Failure
-	,DNS_RCODE_NAME		// Name error
-	,DNS_RCODE_NI		// Not Implemented
-	,DNS_RCODE_REFUSE	// Refused
+	 DNS_RCODE_OK		/* No error condition */
+	,DNS_RCODE_FMT		/* Format error */
+	,DNS_RCODE_SERVER	/* Server Failure */
+	,DNS_RCODE_NAME		/* Name error */
+	,DNS_RCODE_NI		/* Not Implemented */
+	,DNS_RCODE_REFUSE	/* Refused */
 };
 
 /* DNS Resource Record Types (from RFC 1035) - subset of query types */
 enum {
-	 DNS_A=1			// 1 a host address
-	,DNS_NS             // 2 an authoritative name server
-	,DNS_MD             // 3 a mail destination (Obsolete - use MX)
-	,DNS_MF             // 4 a mail forwarder (Obsolete - use MX)
-	,DNS_CNAME          // 5 the canonical name for an alias
-	,DNS_SOA            // 6 marks the start of a zone of authority
-	,DNS_MB             // 7 a mailbox domain name (EXPERIMENTAL)
-	,DNS_MG             // 8 a mail group member (EXPERIMENTAL)
-	,DNS_MR             // 9 a mail rename domain name (EXPERIMENTAL)
-	,DNS_NULL           // 10 a null RR (EXPERIMENTAL)
-	,DNS_WKS            // 11 a well known service description
-	,DNS_PTR            // 12 a domain name pointer
-	,DNS_HINFO          // 13 host information
-	,DNS_MINFO          // 14 mailbox or mail list information
-	,DNS_MX             // 15 mail exchange
-	,DNS_TXT            // 16 text strings
+	 DNS_A=1			/* 1 a host address */
+	,DNS_NS             /* 2 an authoritative name server */
+	,DNS_MD             /* 3 a mail destination (Obsolete - use MX) */
+	,DNS_MF             /* 4 a mail forwarder (Obsolete - use MX) */
+	,DNS_CNAME          /* 5 the canonical name for an alias */
+	,DNS_SOA            /* 6 marks the start of a zone of authority */
+	,DNS_MB             /* 7 a mailbox domain name (EXPERIMENTAL) */
+	,DNS_MG             /* 8 a mail group member (EXPERIMENTAL) */
+	,DNS_MR             /* 9 a mail rename domain name (EXPERIMENTAL) */
+	,DNS_NULL           /* 10 a null RR (EXPERIMENTAL) */
+	,DNS_WKS            /* 11 a well known service description */
+	,DNS_PTR            /* 12 a domain name pointer */
+	,DNS_HINFO          /* 13 host information */
+	,DNS_MINFO          /* 14 mailbox or mail list information */
+	,DNS_MX             /* 15 mail exchange */
+	,DNS_TXT            /* 16 text strings */
 };
 
-#define DNS_IN			1			// Internet Query Class
-#define DNS_ALL			255			// Query all records
+#define DNS_IN			1			/* Internet Query Class */
+#define DNS_ALL			255			/* Query all records */
 
 #ifdef MX_LOOKUP_TEST
 	#define mail_open_socket(type)	socket(AF_INET, type, IPPROTO_IP)
@@ -135,8 +135,8 @@ size_t dns_name(BYTE* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, BYTE* 
 
 	while(p && *p && (*namelen)<maxlen) {
 		if(len) 
-			name[(*namelen)++]='.';		// insert between.names
-		if(((*p)&0xC0)==0xC0) {	// Compresssed name
+			name[(*namelen)++]='.';		/* insert between.names */
+		if(((*p)&0xC0)==0xC0) {	/* Compresssed name */
 			(*p)&=~0xC0;
 			offset=ntohs(*(WORD*)p);
 			(*p)|=0xC0;
@@ -146,9 +146,9 @@ size_t dns_name(BYTE* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, BYTE* 
 		plen=(*p);
 		if((*namelen)+plen>maxlen)
 			break;
-		memcpy(name+(*namelen),p+1,plen);	// don't copy length byte
+		memcpy(name+(*namelen),p+1,plen);	/* don't copy length byte */
 		(*namelen)+=plen;
-		plen++;		// Increment past length byte
+		plen++;		/* Increment past length byte */
 		p+=plen;
 		len+=plen;
 	}
@@ -254,7 +254,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 		memcpy(msg+len,p,namelen);
 		len+=namelen;
 	}
-	*(msg+len)=0;	// terminator
+	*(msg+len)=0;	/* terminator */
 	len++;
 	memcpy(msg+len,&query,sizeof(query));
 	len+=sizeof(query);

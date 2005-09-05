@@ -453,16 +453,16 @@ BOOL DLLCALL fexist(const char *filespec)
 	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
 		return(FALSE);
 
-    // start the search
+    /* start the search */
     glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, &g);
 
     if (!g.gl_pathc) {
-	    // no results
+	    /* no results */
     	globfree(&g);
     	return FALSE;
     }
 
-    // make sure it's not a directory
+    /* make sure it's not a directory */
 	c = g.gl_pathc;
     while (c--) {
     	if (*lastchar(g.gl_pathv[c]) != '/') {
@@ -632,7 +632,7 @@ ulong DLLCALL delfiles(char *inpath, char *spec)
 	for(i=0;i<g.gl_pathc;i++) {
 		if(isdir(g.gl_pathv[i]))
 			continue;
-		CHMOD(g.gl_pathv[i],S_IWRITE);	// Incase it's been marked RDONLY
+		CHMOD(g.gl_pathv[i],S_IWRITE);	/* Incase it's been marked RDONLY */
 		if(remove(g.gl_pathv[i])==0)
 			files++;
 	}
@@ -680,10 +680,10 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
  
 	if (GetDiskFreeSpaceEx!=NULL) {	/* Windows 95-OSR2 or later */
 		if(!GetDiskFreeSpaceEx(
-			path,		// pointer to the directory name
-			&avail,		// receives the number of bytes on disk avail to the caller
-			&size,		// receives the number of bytes on disk
-			NULL))		// receives the free bytes on disk
+			path,		/* pointer to the directory name */
+			&avail,		/* receives the number of bytes on disk avail to the caller */
+			&size,		/* receives the number of bytes on disk */
+			NULL))		/* receives the free bytes on disk */
 			return(0);
 
 		if(unit>1)
@@ -706,11 +706,11 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 	/* Windows 95 (old way), limited to 2GB */
 	sprintf(root,"%.3s",path);
 	if(!GetDiskFreeSpace(
-		root,					// pointer to root path
-		&SectorsPerCluster,		// pointer to sectors per cluster
-		&BytesPerSector,		// pointer to bytes per sector
-		&NumberOfFreeClusters,	// pointer to number of free clusters
-		&TotalNumberOfClusters  // pointer to total number of clusters
+		root,					/* pointer to root path */
+		&SectorsPerCluster,		/* pointer to sectors per cluster */
+		&BytesPerSector,		/* pointer to bytes per sector */
+		&NumberOfFreeClusters,	/* pointer to number of free clusters */
+		&TotalNumberOfClusters  /* pointer to total number of clusters */
 		))
 		return(0);
 

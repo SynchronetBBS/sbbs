@@ -83,8 +83,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 			sprintf(str,"\\\\.\\mailslot\\sbbsexec\\wr%d",node_num);
 			rdslot=CreateMailslot(str
-				,sizeof(buf)			// Max message size (0=any)
-				,MAILSLOT_WAIT_FOREVER 	// Read timeout
+				,sizeof(buf)			/* Max message size (0=any) */
+				,MAILSLOT_WAIT_FOREVER 	/* Read timeout */
 				,NULL);
 			if(rdslot==INVALID_HANDLE_VALUE) {
 #if defined(_DEBUG)
@@ -121,9 +121,9 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 			sprintf(str,"sbbsexec_hungup%d",node_num);
 			hungup_event=OpenEvent(
-				EVENT_ALL_ACCESS,	// access flag 
-				FALSE,				// inherit flag 
-				str);				// pointer to event-object name 
+				EVENT_ALL_ACCESS,	/* access flag  */
+				FALSE,				/* inherit flag  */
+				str);				/* pointer to event-object name  */
 			if(hungup_event==NULL) {
 #if defined(_DEBUG)
 				if(fp!=NULL)
@@ -248,8 +248,9 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 #endif
 			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
-//			if(fp!=NULL)
-//				fwrite(p,count,1,fp);
+			/* Code disabled.  Why?  ToDo */
+/*			if(fp!=NULL)
+				fwrite(p,count,1,fp); */
 			if(!WriteFile(wrslot,p,count,&retval,NULL)) {
 #if defined(_DEBUG)
 				if(fp!=NULL)
@@ -280,11 +281,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 			/* INBUF FULL/SIZE */
 			if(!GetMailslotInfo(
-				rdslot,					// mailslot handle 
- 				&status->inbuf_size,	// address of maximum message size 
-				&status->inbuf_full,	// address of size of next message 
-				&msgs,					// address of number of messages 
- 				NULL					// address of read time-out 
+				rdslot,					/* mailslot handle  */
+ 				&status->inbuf_size,	/* address of maximum message size  */
+				&status->inbuf_full,	/* address of size of next message  */
+				&msgs,					/* address of number of messages  */
+ 				NULL					/* address of read time-out  */
 				)) {
 				status->inbuf_full=0;
 				status->inbuf_size=DEFAULT_MAX_MSG_SIZE;
@@ -297,11 +298,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 			/* OUTBUF FULL/SIZE */
 			if(!GetMailslotInfo(
-				wrslot,					// mailslot handle 
- 				&status->outbuf_size,	// address of maximum message size 
-				&status->outbuf_full,	// address of size of next message 
-				&msgs,					// address of number of messages 
- 				NULL					// address of read time-out 
+				wrslot,					/* mailslot handle  */
+ 				&status->outbuf_size,	/* address of maximum message size  */
+				&status->outbuf_full,	/* address of size of next message  */
+				&msgs,					/* address of number of messages  */
+ 				NULL					/* address of read time-out  */
 				)) {
 				status->outbuf_full=0;
 				status->outbuf_size=DEFAULT_MAX_MSG_SIZE;
@@ -338,11 +339,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_INBUF_FULL:
 			if(!GetMailslotInfo(
-				rdslot,		// mailslot handle 
- 				NULL,		// address of maximum message size 
-				&retval,	// address of size of next message 
-				&msgs,		// address of number of messages 
- 				NULL		// address of read time-out 
+				rdslot,		/* mailslot handle  */
+ 				NULL,		/* address of maximum message size  */
+				&retval,	/* address of size of next message  */
+				&msgs,		/* address of number of messages  */
+ 				NULL		/* address of read time-out  */
 				))
 				retval=0;
 			if(retval==MAILSLOT_NO_MESSAGE)
@@ -354,22 +355,22 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_INBUF_SIZE:
 			if(!GetMailslotInfo(
-				rdslot,		// mailslot handle 
- 				&retval,	// address of maximum message size 
-				NULL,		// address of size of next message 
-				NULL,		// address of number of messages 
- 				NULL		// address of read time-out 
+				rdslot,		/* mailslot handle  */
+ 				&retval,	/* address of maximum message size  */
+				NULL,		/* address of size of next message  */
+				NULL,		/* address of number of messages  */
+ 				NULL		/* address of read time-out  */
 				))
 				retval=DEFAULT_MAX_MSG_SIZE;
 			break;
 
 		case VDD_OUTBUF_FULL:
 			if(!GetMailslotInfo(
-				wrslot,		// mailslot handle 
- 				NULL,		// address of maximum message size 
-				&retval,	// address of size of next message 
-				&msgs,		// address of number of messages 
- 				NULL		// address of read time-out 
+				wrslot,		/* mailslot handle  */
+ 				NULL,		/* address of maximum message size  */
+				&retval,	/* address of size of next message  */
+				&msgs,		/* address of number of messages  */
+ 				NULL		/* address of read time-out  */
 				))
 				retval=0;
 			if(retval==MAILSLOT_NO_MESSAGE)
@@ -379,11 +380,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_OUTBUF_SIZE:
 			if(!GetMailslotInfo(
-				wrslot,		// mailslot handle 
- 				&retval,	// address of maximum message size 
-				NULL,		// address of size of next message 
-				NULL,		// address of number of messages 
- 				NULL		// address of read time-out 
+				wrslot,		/* mailslot handle  */
+ 				&retval,	/* address of maximum message size  */
+				NULL,		/* address of size of next message  */
+				NULL,		/* address of number of messages  */
+ 				NULL		/* address of read time-out  */
 				)) 
 				retval=DEFAULT_MAX_MSG_SIZE;
 			break;

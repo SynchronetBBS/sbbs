@@ -384,7 +384,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		else
 			root=FALSE;
 #else
-//#error Need to do something about root paths (in get_file_opt_list() too!)
+/* #error Need to do something about root paths (in get_file_opt_list() too!) */
 #endif
 		if(glob(dglob, GLOB_MARK, NULL, &dgl)!=0 && !isdir(cpath)) {
 			if(lastpath==NULL) {

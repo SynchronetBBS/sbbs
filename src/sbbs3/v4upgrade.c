@@ -249,7 +249,8 @@ BOOL upgrade_users(void)
 			,user.curdir
 			,user.curxtrn
 			);
-		//printf("reclen=%u\n",len);
+		/* Message disabled.  Why?  ToDo */
+		/* printf("reclen=%u\n",len); */
 		if((ret=fprintf(out,"%-*.*s\r\n",USER_REC_LEN,USER_REC_LEN,rec))!=USER_REC_LINE_LEN) {
 			printf("!Error %d (errno: %d) writing %u bytes to user.tab\n"
 				,ret, errno, USER_REC_LINE_LEN);
@@ -411,7 +412,7 @@ BOOL upgrade_event_data(void)
 		return(FALSE);
 	}
 
-	// Read TIME.DAB
+	/* Read TIME.DAB */
 	sprintf(inpath,"%stime.dab",scfg.ctrl_dir);
 	printf("\t%s ",inpath);
 	if((in=fopen(inpath,"rb"))==NULL) {
@@ -430,7 +431,7 @@ BOOL upgrade_event_data(void)
 
 	printf("-> %s (%u timed events)\n", outpath, i);
 
-	// Read QNET.DAB
+	/* Read QNET.DAB */
 	sprintf(inpath,"%sqnet.dab",scfg.ctrl_dir);
 	printf("\t%s ",inpath);
 	i=0;
@@ -772,9 +773,9 @@ int main(int argc, char** argv)
 	if(!upgrade_filters())
 		return(4);
 	
-	// alias.cfg
-	// domains.cfg
-	// ftpalias.cfg
+	/* alias.cfg */
+	/* domains.cfg */
+	/* ftpalias.cfg */
 
 	printf("Upgrade successful.\n");
     return(0);

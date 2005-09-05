@@ -366,7 +366,7 @@ long isvar(uchar *arg)
 		return(0);
 
 	sprintf(name,"%.80s",arg);
-	if((p=strchr(name,' '))!=NULL)	// Truncate at first space
+	if((p=strchr(name,' '))!=NULL)	/* Truncate at first space */
 		*p=0;
 	if(!case_sens)
 		strupr(name);
@@ -640,10 +640,10 @@ void compile(char *src)
 				break;
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(2,out);		// int offset
-				fputc(1,out);       // int length
-				ch=0; }             // place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(2,out);		/* int offset */
+				fputc(1,out);       /* int length */
+				ch=0; }             /* place holder */
 			else
 				ch=val(src,arg);
 			fprintf(out,"%c%c",CS_TWO_MORE_BYTES,CS_USER_EVENT);
@@ -1111,10 +1111,10 @@ void compile(char *src)
 				&& *arg3 && strchr(arg3,'"'))) {
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(2,out);		// int offset
-				fputc(1,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(2,out);		/* int offset */
+				fputc(1,out);		/* int length */
+				i=0; }				/* place holder */
 			else
 				i=val(src,arg);
 			fputc(CS_VAR_INSTRUCTION,out);
@@ -1136,10 +1136,10 @@ void compile(char *src)
 				break;
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(2,out);		// int offset
-				fputc(1,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(2,out);		/* int offset */
+				fputc(1,out);		/* int length */
+				i=0; }				/* place holder */
 			else
 				i=val(src,arg);
 			fputc(CS_VAR_INSTRUCTION,out);
@@ -1432,10 +1432,10 @@ void compile(char *src)
 				break;
 			if((l=isvar(arg2))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(6,out);		// int offset
-				fputc(4,out);		// int length
-				l=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(6,out);		/* int offset */
+				fputc(4,out);		/* int length */
+				l=0; }				/* place holder */
 			else
 				l=val(src,arg2);
 			fprintf(out,"%c%c",CS_VAR_INSTRUCTION
@@ -1527,10 +1527,10 @@ void compile(char *src)
 			if(!(*arg)) break;
 			if((l=isvar(arg2))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(6,out);		// int offset
-				fputc(4,out);		// int length
-				l=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(6,out);		/* int offset */
+				fputc(4,out);		/* int length */
+				l=0; }				/* place holder */
 			else
 				l=val(src,arg2);
 			fputc(CS_VAR_INSTRUCTION,out);
@@ -1606,10 +1606,10 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2) || !(*arg3)) break;
 			if((l=isvar(arg2))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(6,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(6,out);		/* int offset */
+				fputc(2,out);		/* int length */
+				i=0; }				/* place holder */
 			else
 				i=val(src,arg2);
 
@@ -1866,10 +1866,10 @@ void compile(char *src)
 			if(!(*arg)) break;
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(2,out);       // int offset
-				fputc(1,out);       // int length
-				ch=0; } 			// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(2,out);       /* int offset */
+				fputc(1,out);       /* int length */
+				ch=0; } 			/* place holder */
 			else
 				ch=val(src,arg);
 
@@ -2039,10 +2039,10 @@ void compile(char *src)
 			/* TCP port */
 			if((l=isvar(arg3))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(10,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(10,out);		/* int offset */
+				fputc(2,out);		/* int length */
+				i=0; }				/* place holder */
 			else
 				i=val(src,arg3);
 
@@ -2075,10 +2075,10 @@ void compile(char *src)
 				i=0;
 			else if((l=isvar(arg3))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(10,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(10,out);		/* int offset */
+				fputc(2,out);		/* int length */
+				i=0; }				/* place holder */
 			else 
 				i=val(src,arg3);
 
@@ -2173,10 +2173,10 @@ void compile(char *src)
 			if(!(*arg)) break;
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(1,out);       // int length
-				ch=0; } 			// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(1,out);       /* int length */
+				ch=0; } 			/* place holder */
 			else
 				ch=val(src,arg);
 
@@ -2186,10 +2186,10 @@ void compile(char *src)
 			if(!(*arg)) break;
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(1,out);       // int length
-				ch=0; } 			// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(1,out);       /* int length */
+				ch=0; } 			/* place holder */
 			else
 				ch=val(src,arg);
 
@@ -2264,10 +2264,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg2))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(6,out);		// int offset
-					fputc(2,out);		// int length
-					i=0; }				// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(6,out);		/* int offset */
+					fputc(2,out);		/* int length */
+					i=0; }				/* place holder */
 				else
 					i=val(src,arg2);
 
@@ -2282,10 +2282,10 @@ void compile(char *src)
 				break;
 			if((l=isvar(arg3))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(8,out);		// int offset
-				fputc(1,out);       // int length
-				j=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(8,out);		/* int offset */
+				fputc(1,out);       /* int length */
+				j=0; }				/* place holder */
 			else
 				j=val(src,arg3);
 
@@ -2316,10 +2316,10 @@ void compile(char *src)
 			if(!(*arg)) break;
 			if((l=isvar(arg2))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(2,out);		// int offset
-				fputc(4,out);		// int length
-				l=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(2,out);		/* int offset */
+				fputc(4,out);		/* int length */
+				l=0; }				/* place holder */
 			else if(*arg2)
 				l=val(src,arg2);
 			else
@@ -2521,10 +2521,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg2))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(6,out);		// int offset
-					fputc(1,out);		// int length
-					i=0; }				// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(6,out);		/* int offset */
+					fputc(1,out);		/* int length */
+					i=0; }				/* place holder */
 				else if(*arg2)
 					i=val(src,arg2);
 				else
@@ -2551,10 +2551,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg2))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(6,out);		// int offset
-					fputc(2,out);		// int length
-					i=0; }				// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(6,out);		/* int offset */
+					fputc(2,out);		/* int length */
+					i=0; }				/* place holder */
 				else
 					i=val(src,arg2);
 
@@ -2566,10 +2566,10 @@ void compile(char *src)
 			if(!(*arg)) break;
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(2,out);		/* int length */
+				i=0; }				/* place holder */
 			else
 				i=val(src,arg);
 
@@ -2584,10 +2584,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg2))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(6,out);		// int offset
-					fputc(1,out);		// int length
-					i=0; }				// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(6,out);		/* int offset */
+					fputc(1,out);		/* int length */
+					i=0; }				/* place holder */
 				else
 					i=val(src,arg2);
 
@@ -2604,10 +2604,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg2))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(6,out);		// int offset
-					fputc(1,out);		// int length
-					i=0; }				// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(6,out);		/* int offset */
+					fputc(1,out);		/* int length */
+					i=0; }				/* place holder */
 				else
 					i=val(src,arg2);
 
@@ -2624,10 +2624,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg2))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(6,out);		// int offset
-					fputc(1,out);		// int length
-					i=0; }				// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(6,out);		/* int offset */
+					fputc(1,out);		/* int length */
+					i=0; }				/* place holder */
 				else
 					i=atoi(arg2);
 
@@ -2645,10 +2645,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg2))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(6,out);		// int offset
-					fputc(1,out);		// int length
-					i=0; }				// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(6,out);		/* int offset */
+					fputc(1,out);		/* int length */
+					i=0; }				/* place holder */
 				else
 					i=atoi(arg2);
 
@@ -2661,10 +2661,10 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			if((l=isvar(arg2))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(6,out);		// int offset
-				fputc(1,out);		// int length
-				ch=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(6,out);		/* int offset */
+				fputc(1,out);		/* int length */
+				ch=0; }				/* place holder */
 			else
 				ch=val(src,arg2);
 
@@ -2704,10 +2704,10 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(2,out);		/* int length */
+				i=0; }				/* place holder */
 			else
 				i=val(src,arg);
 
@@ -2722,10 +2722,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(1,out);		// int offset
-					fputc(2,out);		// int length
-					i=0; }				// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(1,out);		/* int offset */
+					fputc(2,out);		/* int length */
+					i=0; }				/* place holder */
 				else
 					i=val(src,arg); }
 
@@ -2738,10 +2738,10 @@ void compile(char *src)
 
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(4,out);		// int length
-				l=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(4,out);		/* int length */
+				l=0; }				/* place holder */
 			else
 				l=val(src,arg);
 
@@ -2758,10 +2758,10 @@ void compile(char *src)
 
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(4,out);		// int length
-				l=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(4,out);		/* int length */
+				l=0; }				/* place holder */
 			else
 				l=val(src,arg);
 
@@ -2778,10 +2778,10 @@ void compile(char *src)
 
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(4,out);		// int length
-				l=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(4,out);		/* int length */
+				l=0; }				/* place holder */
 			else
 				l=val(src,arg);
 
@@ -2798,10 +2798,10 @@ void compile(char *src)
 
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(2,out);		/* int length */
+				i=0; }				/* place holder */
 			else
 				i=val(src,arg);
 
@@ -2825,10 +2825,10 @@ void compile(char *src)
 
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(1,out);		// int length
-				ch=0; } 			// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(1,out);		/* int length */
+				ch=0; } 			/* place holder */
 			else
 				ch=val(src,arg);
 
@@ -2840,10 +2840,10 @@ void compile(char *src)
 
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(1,out);		// int length
-				ch=0; } 			// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(1,out);		/* int length */
+				ch=0; } 			/* place holder */
 			else
 				ch=val(src,arg);
 
@@ -2856,10 +2856,10 @@ void compile(char *src)
 
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }			   // place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(2,out);		/* int length */
+				i=0; }			    /* place holder */
 			else
 				i=val(src,arg);
 
@@ -2872,10 +2872,10 @@ void compile(char *src)
 
 			if((l=isvar(arg))!=0) {
 				fputc(CS_USE_INT_VAR,out);
-				fwrite(&l,4,1,out); // variable
-				fputc(1,out);		// int offset
-				fputc(2,out);		// int length
-				i=0; }				// place holder
+				fwrite(&l,4,1,out); /* variable */
+				fputc(1,out);		/* int offset */
+				fputc(2,out);		/* int length */
+				i=0; }				/* place holder */
 			else
 				i=val(src,arg);
 
@@ -3065,10 +3065,10 @@ void compile(char *src)
 			else {
 				if((l=isvar(arg))!=0) {
 					fputc(CS_USE_INT_VAR,out);
-					fwrite(&l,4,1,out); // variable
-					fputc(1,out);		// int offset
-					fputc(1,out);       // int length
-					ch=0; } 			// place holder
+					fwrite(&l,4,1,out); /* variable */
+					fputc(1,out);		/* int offset */
+					fputc(1,out);       /* int length */
+					ch=0; } 			/* place holder */
 				else
 					ch=val(src,arg);
 			}

@@ -152,7 +152,7 @@ void bail(int code)
 }
 
 /*****************************************************************************/
-// Expands Unix LF to CRLF
+/* Expands Unix LF to CRLF													 */
 /*****************************************************************************/
 ulong lf_expand(BYTE* inbuf, BYTE* outbuf)
 {

@@ -617,7 +617,8 @@ void read_echo_cfg()
 					sprintf(cfg.listcfg[cfg.listcfgs-1].flag[j].flag,"%.4s",tp); }
 				while(*p && *p<=' ') p++; } }
 
-	//    printf("Unrecognized line in SBBSECHO.CFG file.\n");
+		/* Message disabled why?  ToDo */
+		/* printf("Unrecognized line in SBBSECHO.CFG file.\n"); */
 	}
 	fclose(stream);
 	printf("\n");

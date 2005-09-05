@@ -72,8 +72,8 @@ int main(int argnum, char *args[])
 		exit(0);
 	}
 	CreateFontFile();
-	//Huh ? It 's not open!
-		// fseek(font, 0, SEEK_SET);
+	/*Huh ? It 's not open! */
+		/* fseek(font, 0, SEEK_SET); */
 	while (1) {
 		fgets(filename, 255, fp);
 		if (!feof(fp)) {

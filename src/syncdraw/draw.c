@@ -416,27 +416,27 @@ drawline(void)
 			Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2 + 1] = Attribute;
 			if (d == -1)
 				addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][0]);
-			//Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][0];
+			/*Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][0]; */
 			else
 			if (d == 1)
 				addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][1]);
-			//Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][1];
+			/*Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][1]; */
 			else
 			addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][5]);
-			//Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][5];
+			/*Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][5]; */
 			break;
 		case -1:
 			Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2 + 1] = Attribute;
 			if (d == -1)
 				addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][2]);
-			//Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][2];
+			/*Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][2]; */
 			else
 			if (d == 1)
 				addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][3]);
-			//Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][3];
+			/*Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][3]; */
 			else
 			addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][5]);
-			//Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][5];
+			/*Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][5]; */
 			break;
 		}
 		switch (b) {
@@ -444,28 +444,28 @@ drawline(void)
 			Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 1] = Attribute;
 			if (c == 1)
 				addtopage(CursorY + FirstLine, CursorX * 2 - 2, CharSet[ActiveCharset][2]);
-			//Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][2];
+			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][2]; */
 			else
 			if (c == -1)
 				addtopage(CursorY + FirstLine, CursorX * 2 - 2, CharSet[ActiveCharset][0]);
-			//Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][0];
+			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][0]; */
 			else
 			addtopage(CursorY + FirstLine, CursorX * 2 - 2, CharSet[ActiveCharset][4]);
-			//Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][4];
+			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][4]; */
 			break;
 
 		case -1:
 			Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 3] = Attribute;
 			if (c == 1)
 				addtopage(CursorY + FirstLine, CursorX * 2 + 2, CharSet[ActiveCharset][3]);
-			//Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][3];
+			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][3]; */
 			else
 			if (c == -1)
 				addtopage(CursorY + FirstLine, CursorX * 2 + 2, CharSet[ActiveCharset][1]);
-			//Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][1];
+			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][1]; */
 			else
 			addtopage(CursorY + FirstLine, CursorX * 2 + 2, CharSet[ActiveCharset][4]);
-			//Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][4];
+			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][4]; */
 			break;
 		}
 		c = a;

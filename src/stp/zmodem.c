@@ -207,8 +207,8 @@ zmodem_tx_hex_header(zmodem_t* zm, unsigned char * p)
  	 * update the crc as though it were zero
 	 */
 
-//	crc = UPDCRC16(0,crc);
-//	crc = UPDCRC16(0,crc);
+/*	crc = UPDCRC16(0,crc); */
+/*	crc = UPDCRC16(0,crc); */
 
 	/* 
 	 * transmit the crc
@@ -245,7 +245,7 @@ zmodem_tx_bin32_header(zmodem_t* zm, unsigned char * p)
 
 #ifdef DEBUG
 	fprintf(stderr,"tx binary header 32 bits crc\n");
-//	zm->raw_trace = 1;
+/*	zm->raw_trace = 1; */
 #endif
 
 	zmodem_tx_raw(zm, ZPAD);
@@ -305,8 +305,8 @@ zmodem_tx_bin16_header(zmodem_t* zm, unsigned char * p)
 		zmodem_tx(zm, *p++);
 	}
 
-//	crc = UPDCRC16(0,crc);
-//	crc = UPDCRC16(0,crc);
+/*	crc = UPDCRC16(0,crc); */
+/*	crc = UPDCRC16(0,crc); */
 
 	zmodem_tx(zm, (uchar)(crc >> 8));
 	zmodem_tx(zm, (uchar)(crc&0xff));
@@ -395,8 +395,8 @@ zmodem_tx_16_data(zmodem_t* zm, uchar sub_frame_type,unsigned char * p,int l)
 	zmodem_tx_raw(zm, ZDLE); 
 	zmodem_tx_raw(zm, sub_frame_type);
 	
-//	crc = UPDCRC16(0,crc);
-//	crc = UPDCRC16(0,crc);
+/*	crc = UPDCRC16(0,crc); */
+/*	crc = UPDCRC16(0,crc); */
 
 	zmodem_tx(zm, (uchar)(crc >> 8));
 	zmodem_tx(zm, (uchar)(crc&0xff));
@@ -487,7 +487,7 @@ zmodem_rx_raw(zmodem_t* zm, int to)
 	if((c=recv_byte(zm->sock,to,zm->mode)) > 0xff)
 		return TIMEOUT;
 
-//	fprintf(stdout,"%02X  ",c);
+/*	fprintf(stdout,"%02X  ",c); */
 
 	if (c == CAN) {
 		zm->n_cans++;
@@ -714,8 +714,8 @@ zmodem_rx_16_data(zmodem_t* zm, register unsigned char * p,int * l)
 
 	crc = UPDCRC16(sub_frame_type,crc);
 
-//	crc = UPDCRC16(0,crc);
-//	crc = UPDCRC16(0,crc);
+/*	crc = UPDCRC16(0,crc); */
+/*	crc = UPDCRC16(0,crc); */
 
 	rxd_crc  = zmodem_rx(zm, 1) << 8;
 	rxd_crc |= zmodem_rx(zm, 1);
@@ -880,8 +880,8 @@ zmodem_rx_bin16_header(zmodem_t* zm, int to)
 		zm->rxd_header[n] = c;
 	}
 
-//	crc = UPDCRC16(0,crc);
-//	crc = UPDCRC16(0,crc);
+/*	crc = UPDCRC16(0,crc); */
+/*	crc = UPDCRC16(0,crc); */
 
 	rxd_crc  = zmodem_rx(zm, 1) << 8;
 	rxd_crc |= zmodem_rx(zm, 1);
@@ -918,8 +918,8 @@ zmodem_rx_hex_header(zmodem_t* zm, int to)
 		zm->rxd_header[i] = c;
 	}
 
-//	crc = UPDCRC16(0,crc);
-//	crc = UPDCRC16(0,crc);
+/*	crc = UPDCRC16(0,crc); */
+/*	crc = UPDCRC16(0,crc); */
 
 	/*
 	 * receive the crc
