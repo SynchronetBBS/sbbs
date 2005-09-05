@@ -64,7 +64,7 @@ static void js_finalize_queue(JSContext *cx, JSObject *obj)
 		return;
 	
 	if(msgQueueDetach(q)==0 && (n=listFindNode(&named_queues,q,/* length=0 for ptr compare */0))!=NULL)
-		listRemoveNode(&named_queues,n,TRUE);
+		listRemoveNode(&named_queues,n,FALSE);
 
 	JS_SetPrivate(cx, obj, NULL);
 }
