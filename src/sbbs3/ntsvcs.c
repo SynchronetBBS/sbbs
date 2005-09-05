@@ -1127,15 +1127,15 @@ static int list(const char* svc_name)
 	}
 
 	for(i=0;ntsvc_list[i]!=NULL;i++) {
-		if(svc_name!=NULL 
-			&& (stricmp(ntsvc_list[i]->name, svc_name)
-			||  stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name)))
-			continue;
-		start_type = get_service_info(hSCManager, ntsvc_list[i]->name, &state);
-		printf("%-*s ... %s, %s\n"
-			,STRLEN_MAX_DISPLAY_NAME, ntsvc_list[i]->display_name
-			,start_type_desc(start_type)
-			,state_desc(state));
+		if(svc_name==NULL 
+			|| !stricmp(ntsvc_list[i]->name, svc_name)
+			|| !stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name)) {
+			start_type = get_service_info(hSCManager, ntsvc_list[i]->name, &state);
+			printf("%-*s ... %s, %s\n"
+				,STRLEN_MAX_DISPLAY_NAME, ntsvc_list[i]->display_name
+				,start_type_desc(start_type)
+				,state_desc(state));
+		}
 	}
 
 	CloseServiceHandle(hSCManager);
@@ -1165,11 +1165,10 @@ static int start(const char* svc_name, int argc, char** argv)
 		if(svc_name==NULL 
 			&& get_service_info(hSCManager, ntsvc_list[i]->name,NULL)==SERVICE_DISABLED)
 			continue;
-		if(svc_name!=NULL 
-			&& (stricmp(ntsvc_list[i]->name, svc_name)
-			||  stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name)))
-			continue;
-		start_service(hSCManager,ntsvc_list[i]->name,ntsvc_list[i]->display_name
+		if(svc_name==NULL 
+			|| !stricmp(ntsvc_list[i]->name, svc_name)
+			|| !stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name))
+			start_service(hSCManager,ntsvc_list[i]->name,ntsvc_list[i]->display_name
 				,argc,argv);
 	}
 
