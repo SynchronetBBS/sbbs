@@ -1824,7 +1824,7 @@ void decompile(FILE *bin, FILE *src)
 					case FIO_SET_LENGTH:
 						VARLNG("FSET_LENGTH");
 					case FIO_SET_LENGTH_VAR:
-						VARVAR("FIO_SET_LENGTH_VAR");
+						VARVAR("FSET_LENGTH");
 					case FIO_PRINTF:
 						fprintf(src,"FPRINTF ");
 						write_var(bin,src);
