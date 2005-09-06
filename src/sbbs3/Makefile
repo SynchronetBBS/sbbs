@@ -121,7 +121,7 @@ $(BAJA): $(BAJA_OBJS)
 # UnBaja Utility
 $(UNBAJA): $(UNBAJA_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $**
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(WILDARGS)
 
 # Node Utility
 $(NODE): $(NODE_OBJS)
