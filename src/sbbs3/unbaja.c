@@ -1295,7 +1295,6 @@ void decompile(FILE *bin, FILE *src)
 						VARVAR("COMPARE");
 					case STRNCMP_VARS:
 						UCHVARVAR("STRNCMP");
-						break;
 					case STRSTR_VARS:
 						VARVAR("STRSTR");
 					case COPY_VAR:
@@ -2153,14 +2152,18 @@ int main(int argc, char **argv)
 
 	for(f=1; f<argc; f++) {
 		bin=fopen(argv[f],"rb");
-		if(bin!=NULL) {
+		if(bin==NULL)
+			perror(argv[f]);
+		else {
 			SAFECOPY(newname, argv[f]);
 			p=strrchr(newname, '.');
 			if(p==NULL)
 				p=strchr(newname,0);
 			strcpy(p,".decompiled");
 			src=fopen(newname,"w");
-			if(src != NULL) {
+			if(src == NULL) 
+				perror(newname);
+			else {
 				printf("Decompiling %s to %s\n",argv[f],newname);
 				fputs("!include sbbsdefs.inc\n",src);
 				fputs("!include userdefs.inc\n",src);
@@ -2175,5 +2178,6 @@ int main(int argc, char **argv)
 		}
 	}
 
+	return(0);
 }
 
