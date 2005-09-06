@@ -1788,7 +1788,7 @@ void decompile(FILE *bin, FILE *src)
 					case CS_FTP_PUT:
 						VARVARVAR("FTP_PUT");
 					case CS_FTP_GET:
-						VARVARVAR("GTP_GET");
+						VARVARVAR("FTP_GET");
 					case CS_FTP_RENAME:
 						VARVARVAR("FTP_RENAME");
 					case CS_FTP_DELETE:
