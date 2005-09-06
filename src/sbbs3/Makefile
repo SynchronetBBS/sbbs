@@ -118,6 +118,11 @@ $(BAJA): $(BAJA_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
+# UnBaja Utility
+$(UNBAJA): $(UNBAJA_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $**
+
 # Node Utility
 $(NODE): $(NODE_OBJS)
 	@echo Linking $@
