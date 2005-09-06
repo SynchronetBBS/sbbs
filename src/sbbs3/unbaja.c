@@ -2,7 +2,6 @@
 
 /* 
  * Stuff left ToDo:
- * Add ARS decompilation
  * Add label pre-resolution so only used labels are inserted
  */
 
@@ -12,6 +11,7 @@
 #include "dirwrap.h"
 
 #include "cmdshell.h"
+#include "ars_defs.h"
 
 char *getvar(long name)
 {
@@ -779,7 +779,451 @@ void eol(FILE *src)
 						write_ushort(bin,src);\
 						eol(src);			 \
 						break
-						
+
+char *decompile_ars(uchar *ars, int len)
+{
+	int i;
+	static char	buf[1024];
+	char	*out;
+	uchar	*in;
+	uint	artype;
+	char	ch;
+	uint	n;
+	int		equals=0;
+	int		not=0;
+
+	out=buf;
+	buf[0]=0;
+	for(in=ars;in<ars+len;in++) {
+		switch(*in) {
+			case AR_NULL:
+				break;
+			case AR_OR:
+				*(out++)='|';
+				artype=*in;
+				break;
+			case AR_NOT:
+				not=1;
+				break;
+			case AR_EQUAL:
+				equals=1;
+				break;
+			case AR_BEGNEST:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*(out++)='(';
+				artype=*in;
+				break;
+			case AR_ENDNEST:
+				*(out++)=')';
+				artype=*in;
+				break;
+			case AR_LEVEL:
+				*(out++)='$';
+				*(out++)='L';
+				artype=*in;
+				break;
+			case AR_AGE:
+				*(out++)='$';
+				*(out++)='A';
+				artype=*in;
+				break;
+			case AR_BPS:
+				*(out++)='$';
+				*(out++)='B';
+				artype=*in;
+				break;
+			case AR_NODE:
+				*(out++)='$';
+				*(out++)='N';
+				artype=*in;
+				break;
+			case AR_TLEFT:
+				*(out++)='$';
+				*(out++)='R';
+				artype=*in;
+				break;
+			case AR_TUSED:
+				*(out++)='$';
+				*(out++)='O';
+				artype=*in;
+				break;
+			case AR_USER:
+				*(out++)='$';
+				*(out++)='U';
+				artype=*in;
+				break;
+			case AR_TIME:
+				*(out++)='$';
+				*(out++)='T';
+				artype=*in;
+				break;
+			case AR_PCR:
+				*(out++)='$';
+				*(out++)='P';
+				artype=*in;
+				break;
+			case AR_FLAG1:
+				*(out++)='$';
+				*(out++)='F';
+				*(out++)='1';
+				artype=*in;
+				break;
+			case AR_FLAG2:
+				*(out++)='$';
+				*(out++)='F';
+				*(out++)='2';
+				artype=*in;
+				break;
+			case AR_FLAG3:
+				*(out++)='$';
+				*(out++)='F';
+				*(out++)='3';
+				artype=*in;
+				break;
+			case AR_FLAG4:
+				*(out++)='$';
+				*(out++)='F';
+				*(out++)='4';
+				artype=*in;
+				break;
+			case AR_EXEMPT:
+				*(out++)='$';
+				*(out++)='X';
+				artype=*in;
+				break;
+			case AR_REST:
+				*(out++)='$';
+				*(out++)='Z';
+				artype=*in;
+				break;
+			case AR_SEX:
+				*(out++)='$';
+				*(out++)='S';
+				artype=*in;
+				break;
+			case AR_UDR:
+				*(out++)='$';
+				*(out++)='K';
+				artype=*in;
+				break;
+			case AR_UDFR:
+				*(out++)='$';
+				*(out++)='D';
+				artype=*in;
+				break;
+			case AR_EXPIRE:
+				*(out++)='$';
+				*(out++)='E';
+				artype=*in;
+				break;
+			case AR_CREDIT:
+				*(out++)='$';
+				*(out++)='C';
+				artype=*in;
+				break;
+			case AR_DAY:
+				*(out++)='$';
+				*(out++)='W';
+				artype=*in;
+				break;
+			case AR_ANSI:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*(out++)='$';
+				*(out++)='[';
+				artype=*in;
+				break;
+			case AR_RIP:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*(out++)='$';
+				*(out++)='*';
+				artype=*in;
+				break;
+			case AR_LOCAL:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*(out++)='$';
+				*(out++)='G';
+				artype=*in;
+				break;
+			case AR_GROUP:
+				*(out++)='$';
+				*(out++)='M';
+				artype=*in;
+				break;
+			case AR_SUB:
+				*(out++)='$';
+				*(out++)='H';
+				artype=*in;
+				break;
+			case AR_LIB:
+				*(out++)='$';
+				*(out++)='I';
+				artype=*in;
+				break;
+			case AR_DIR:
+				*(out++)='$';
+				*(out++)='J';
+				artype=*in;
+				break;
+			case AR_EXPERT :
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"EXPERT");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_SYSOP:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"SYSOP");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_QUIET:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"QUIET");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_MAIN_CMDS:
+				*out=0;
+				strcat(out,"MAIN_CMDS");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_FILE_CMDS:
+				*out=0;
+				strcat(out,"FILE_CMDS");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_RANDOM:
+				*(out++)='$';
+				*(out++)='Q';
+				artype=*in;
+				break;
+			case AR_LASTON:
+				*(out++)='$';
+				*(out++)='Y';
+				artype=*in;
+				break;
+			case AR_LOGONS:
+				*(out++)='$';
+				*(out++)='V';
+				artype=*in;
+				break;
+			case AR_WIP:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"WIP");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_SUBCODE:
+				*out=0;
+				strcat(out,"SUBCODE");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_DIRCODE:
+				*out=0;
+				strcat(out,"DIRCODE");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_OS2:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"OS2");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_DOS:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"DOS");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_WIN32:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"WIN32");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_UNIX:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"UNIX");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_LINUX :
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"LINUX");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_SHELL:
+				*out=0;
+				strcat(out,"SHELL");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_PROT:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"PROT");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_GUEST:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"GUEST");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_QNODE:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"QNODE");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			default:
+				printf("Error decoding ARS!\n");
+				return("Unknown ARS String");
+		}
+		switch(*in) {
+			case AR_TIME:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+				n=*((short *)in);
+				in++;
+				out+=sprintf(out,"%02d:%02d",n/60,n%60);
+				break;
+			case AR_AGE:    /* byte operands */
+			case AR_PCR:
+			case AR_UDR:
+			case AR_UDFR:
+			case AR_NODE:
+			case AR_LEVEL:
+			case AR_TLEFT:
+			case AR_TUSED:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+				out+=sprintf(out,"%d",*in);
+				break;
+			case AR_BPS:    /* int operands */
+			case AR_MAIN_CMDS:
+			case AR_FILE_CMDS:
+			case AR_EXPIRE:
+			case AR_CREDIT:
+			case AR_USER:
+			case AR_RANDOM:
+			case AR_LASTON:
+			case AR_LOGONS:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+    			n=*((short *)in);
+				in++;
+				out+=sprintf(out,"%d",n);
+    			break;
+			case AR_GROUP:
+			case AR_LIB:
+			case AR_DIR:
+			case AR_SUB:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+    			n=*((short *)in);
+				n++;              /* convert from to 0 base */
+				in++;
+				out+=sprintf(out,"%d",n);
+    			break;
+			case AR_SUBCODE:
+			case AR_DIRCODE:
+			case AR_SHELL:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+				n=sprintf(out,"%s ",in);
+				out+=n;
+				in+=n-1;
+				break;
+			case AR_FLAG1:
+			case AR_FLAG2:
+			case AR_FLAG3:
+			case AR_FLAG4:
+			case AR_EXEMPT:
+			case AR_SEX:
+			case AR_REST:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+				*(out++)=*in;
+				break;
+		}
+	}
+	*out=0;
+	return(buf);
+}
 
 void decompile(FILE *bin, FILE *src)
 {
@@ -1252,10 +1696,9 @@ void decompile(FILE *bin, FILE *src)
 				break;
 			case CS_COMPARE_ARS:
 				fread(&uch,1,1,bin);
-				p=(char *)malloc(i);
-				fread(p,i,1,bin);
-				fprintf(src,"COMPARE_ARS \"SOME RANDOM ARS\"\n");
-				printf("Cannot (yet) decode binary ARS strings.\n");
+				p=(char *)malloc(uch);
+				fread(p,uch,1,bin);
+				fprintf(src,"COMPARE_ARS %s\n",decompile_ars(p,uch));
 				free(p);
 				break;
 			case CS_TOGGLE_USER_MISC:
