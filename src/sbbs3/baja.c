@@ -125,6 +125,8 @@ ulong ahtoul(char *str)
 uchar cesc(char ch)
 {
 	switch(ch) {
+		case 'e':
+			return(ESC);
 		case 'r':
 			return(CR);
 		case 'n':
@@ -247,6 +249,9 @@ void writecstr(uchar *p)
 						tmp[1]=*(p++);
 						tmp[2]=0; }
 					str[j]=(char)ahtoul(tmp);
+					break;
+				case 'e':
+					str[j]=ESC;
 					break;
 				case 'r':
 					str[j]=CR;
