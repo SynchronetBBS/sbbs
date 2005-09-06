@@ -507,7 +507,9 @@ static void add_env(http_session_t *session, const char *name,const char *value)
 		lprintf(LOG_WARNING,"%04d Cannot allocate memory for string", session->socket);
 		return;
 	}
+#if 0	/* this is way too verbose for every request */
 	lprintf(LOG_DEBUG,"%04d Adding CGI environment variable %s=%s",session->socket,newname,value);
+#endif
 	sprintf(p,"%s=%s",newname,value);
 	strListPush(&session->req.cgi_env,p);
 	free(p);
