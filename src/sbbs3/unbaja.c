@@ -2166,10 +2166,7 @@ int main(int argc, char **argv)
 			else {
 				printf("Decompiling %s to %s\n",argv[f],newname);
 				fputs("!include sbbsdefs.inc\n",src);
-				fputs("!include userdefs.inc\n",src);
-				fputs("!include nodedefs.inc\n",src);
 				fputs("!include file_io.inc\n",src);
-				fputs("!include errno.inc\n",src);
 				fputs("!include dir_attr.inc\n\n",src);
 				decompile(bin, src);
 				fclose(src);
