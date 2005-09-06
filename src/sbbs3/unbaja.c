@@ -1243,7 +1243,8 @@ void decompile(FILE *bin, FILE *src)
 		ush=ftell(bin);
 		fprintf(src,":label_%04x\n",ush);
 
-		fread(&uch,1,1,bin);
+		if(fread(&uch,1,1,bin)!=1)
+			break;
 		switch(uch) {
 			case CS_USE_INT_VAR:
 				usevar=TRUE;
