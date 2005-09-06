@@ -339,14 +339,16 @@ void write_var(FILE *bin, FILE *src)
 void write_cstr(FILE *bin, FILE *src)
 {
 	uchar ch;
+	char* p;
 
 	fputc('"',src);
 	while(fread(&ch,1,1,bin)==1) {
 		if(ch==0)
 			break;
-		if(ch<' ' || ch > 126 || ch == '"' || ch=='\\') {
+		if((p=c_escape_char(ch))!=NULL)
+			fprintf(src,"%s",p);
+		else if(ch<' ' || ch > 126)
 			fprintf(src, "\\%03d", ch);
-		}
 		else
 			fputc(ch, src);
 	}
@@ -404,12 +406,6 @@ void write_logic(FILE *bin, FILE *src)
 		fputs("FALSE ",src);
 }
 
-void write_keys(FILE *bin, FILE *src)
-{
-	while(write_key(bin,src,TRUE));
-	fputc(' ',src);
-}
-
 int write_key(FILE *bin, FILE *src, int keyset)
 {
 	uchar uch;
@@ -451,6 +447,12 @@ int write_key(FILE *bin, FILE *src, int keyset)
 	if(!keyset)
 		fputc(' ',src);
 	return(uch);;
+}
+
+void write_keys(FILE *bin, FILE *src)
+{
+	while(write_key(bin,src,TRUE));
+	fputc(' ',src);
 }
 
 void eol(FILE *src)
