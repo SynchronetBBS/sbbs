@@ -10,7 +10,7 @@
 <body>
 <font face=arial,helvetica>
 <h1>Synchronet JavaScript Object Model Reference</h1>
-Generated for <b>Synchronet v3.12a</b>, compiled Dec 31 2004 01:54
+Generated for <b>Synchronet v3.13a</b>, compiled Sep  5 2005 17:27
 <br><font size=-1>
 Property and Method version numbers (when available) indicate the Synchronet version when the item was added or modified.
 </font>
@@ -130,6 +130,9 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <a href="#bbs.mods"><b>bbs.mods</b></a> object
 <ul>
 </ul>
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
+<a href=#bbs_properties>properties</a>
 </ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
@@ -340,15 +343,15 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>confirm</b><td>boolean<td><tt>confirm(value)
 <td>3.10
 <td>displays a Yes/No prompt and returns <i>true</i> or <i>false</i> based on users confirmation (ala client-side JS)
-<tr valign=top><td><b>exit</b><td>void<td><tt>exit([number exit_code])
+<tr valign=top><td><b>exit</b><td>void<td><tt>exit([exit_code])
 <td>3.11
 <td>stop script execution, optionally setting the global property <tt>exit_code</tt> to the specified numeric value
 <tr valign=top><td><b>load</b><td>undefined<td><tt>load([<i>bool</i> background or <i>object</i> scope,] <i>string</i> filename [,args])
 <td>3.12
-<td>load and execute a JavaScript module (<i>filename</i>), optionally specifying a target <i>scope</i> object (default: <i>this</i>) and a list of arguments to pass to the module (as <i>argv</i>). Returns the result (last executed statement) of the executed script or a newly created <i>Queue</i> object if <i>background</i> is <i>true</i>).<br><br><b>Background</b> (added in v3.12):<br>If <i>background</i> is <i>true</i>, the loaded script runs in the background (in a child thread) but may communicate with the parent script/thread by reading from and/or writing to the <i>parent_queue</i> (an automatically created <i>Queue</i> object). The result (last executed statement) of the executed script will also be automatically written to the <i>parent_queue</i> which may be read later by the parent script.
-<tr valign=top><td><b>mswait</b><td>void<td><tt>mswait([number milliseconds])
-<td>3.10
-<td>millisecond wait/sleep routine (AKA sleep)
+<td>load and execute a JavaScript module (<i>filename</i>), optionally specifying a target <i>scope</i> object (default: <i>this</i>) and a list of arguments to pass to the module (as <i>argv</i>). Returns the result (last executed statement) of the executed script or a newly created <i>Queue</i> object if <i>background</i> is <i>true</i>).<br><br><b>Background</b> (added in v3.12):<br>If <i>background</i> is <i>true</i>, the loaded script runs in the background (in a child thread) but may communicate with the parent script/thread by reading from and/or writing to the <i>parent_queue</i> (an automatically created <i>Queue</i> object). The result (last executed statement) of the executed script (or the optional <i>exit_code</i> passed to the <i>exit()/<i> function) will be automatically written to the <i>parent_queue</i> which may be read later by the parent script (using <i>load_result.read()</i>, for example).
+<tr valign=top><td><b>mswait</b><td>number<td><tt>mswait([number milliseconds])
+<td>3.13
+<td>millisecond wait/sleep routine (AKA sleep), returns number of elapsed clock ticks (in v3.13)
 <tr valign=top><td><b>yield</b><td>void<td><tt>yield([bool forced])
 <td>3.11
 <td>release current thread time-slice, a <i>forced</i> yield will yield to all other pending tasks (lowering CPU utilization), a non-<i>forced</i> yield will yield only to pending tasks of equal or higher priority. <i>forced</i> defaults to <i>true</i>
@@ -369,7 +372,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <td>return ASCII control character representing character passed - Example: <tt>ctrl('C') returns ''</tt>
 <tr valign=top><td><b>ascii</b><td>undefined<td><tt>ascii([string text] or [number value])
 <td>3.10
-<td>convert string to ASCII value or vice-versa (returns number OR string)
+<td>convert single character to numeric ASCII value or vice-versa (returns number OR string)
 <tr valign=top><td><b>ascii_str</b><td>string<td><tt>ascii_str(string text)
 <td>3.10
 <td>convert extended-ASCII in string to plain ASCII
@@ -505,6 +508,9 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>list_named_queues</b><td>array<td><tt>list_named_queues()
 <td>3.12
 <td>returns an array of <i>named queues</i> (created with the <i>Queue</i> constructor)
+<tr valign=top><td><b>flags_str</b><td>undefined<td><tt>flags_str([string text] or [number value])
+<td>3.13
+<td>convert a string of security flags (letters) into their numeric value or vice-versa (returns number OR string) - (added in v3.13)
 </table>
 <br>
 <table border=1 width=100%>
@@ -522,6 +528,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr><td><b>argv</b><td>array<td>array of argument strings (argv.length == argc)</td>
 <tr><td><b>errno</b><td>number<td>last system error number</td>
 <tr><td><b>errno_str</b><td>string<td>description of last system error</td>
+<tr><td><b>socket_errno</b><td>number<td>last socket-related error number (same as <i>errno</i> on Unix platforms)</td>
 </table>
 <h2><a name=js>js object</a>
 <br><font size=-1>JavaScript execution and garbage collection control object</font>
@@ -548,6 +555,12 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>gc</b><td>void<td><tt>js.gc(bool forced)
 <td>3.11
 <td>perform a garbage collection operation (freeing memory for unused allocated objects), if <i>forced</i> is <i>true</i> (the default) a garbage collection is always performed, otherwise it is only performed if deemed appropriate by the JavaScript engine
+<tr valign=top><td><b>on_exit</b><td>void<td><tt>js.on_exit(string to_eval)
+<td>3.13
+<td>add a string to evaluate/execute (LIFO) upon script's termination
+<tr valign=top><td><b>report_error</b><td>void<td><tt>js.report_error(error [, bool fatal])
+<td>3.13
+<td>report an error using the standard JavaScript error reporting mechanism (including script filename and line number), if <i>fatal</i> is <i>true</i>, immediately terminates script
 </table>
 <br>
 <table border=1 width=100%>
@@ -860,7 +873,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <td>private host name that uniquely identifies this system on the local network
 <tr valign=top><td><b>host_name</b><td>string
 <td>N/A
-<td>public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inetaddr</i>)
+<td>public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inet_addr</i>)
 <tr valign=top><td><b>version</b><td>string
 <td>N/A
 <td>Synchronet version number (e.g. '3.10')
@@ -1545,9 +1558,9 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>list_file_info</b><td>number<td><tt>bbs.list_file_info(directory [,string filespec] [,number mode])
 <td>3.10
 <td>list extended file information for files in the specified file directory
-<tr valign=top><td><b>post_msg</b><td>boolean<td><tt>bbs.post_msg(sub-board [,number mode])
-<td>3.10
-<td>post a message in the specified message sub-board (number or internal code) with optinal <i>mode</i> (bitfield)
+<tr valign=top><td><b>post_msg</b><td>boolean<td><tt>bbs.post_msg(sub-board [,number mode] [,object reply_header])
+<td>3.13
+<td>post a message in the specified message sub-board (number or internal code) with optinal <i>mode</i> (bitfield)<br>If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header will be used for the in-reply-to header fields (this argument added in v3.13)
 <tr valign=top><td><b>cfg_msg_scan</b><td>void<td><tt>bbs.cfg_msg_scan([number type])
 <td>3.10
 <td>configure message scan (<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)
@@ -1904,6 +1917,24 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <br><font size=-1>Global repository for 3rd party modifications</font>
 <font size=-1> - introduced in v3.12</font>
 </h2>
+<br>
+<table border=1 width=100%>
+<caption align=left><b><tt>bbs</tt>
+<a name=bbs_properties> properties</a>
+</b></caption>
+<tr bgcolor=gray>
+<th align=left width=100>
+<font color="white">Name</font>
+<th align=left width=100>
+<font color="white">Type</font>
+<th align=left width=50>
+<font color="white">Ver</font>
+<th align=left>
+<font color="white">Description</font>
+<tr valign=top><td><b>action</b><td>number
+<td>3.10
+<td>system status bitfield (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)
+</table>
 <h2><a name=console>console object</a>
 <br><font size=-1>Controls the user's Telnet/RLogin terminal</font>
 </h2>
@@ -2697,7 +2728,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Description</font>
 <tr valign=top><td><b>open</b><td>boolean<td><tt>File.open([string mode, boolean shareable, number buflen])
 <td>3.10
-<td>open file, <i>shareable</i> defaults to <i>false</i>, <i>buflen</i> defaults to 2048 bytes, mode (default: <tt>'w+'</tt>) specifies the type of access requested for the file, as follows:<br><tt>r&nbsp</tt> open for reading; if the file does not exist or cannot be found, the open call fails<br><tt>w&nbsp</tt> open an empty file for writing; if the given file exists, its contents are destroyed<br><tt>a&nbsp</tt> open for writing at the end of the file (appending); creates the file first if it doesn’t exist<br><tt>r+</tt> open for both reading and writing (the file must exist)<br><tt>w+</tt> open an empty file for both reading and writing; if the given file exists, its contents are destroyed<br><tt>a+</tt> open for reading and appending<br><tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br><tt>e&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access <i>(introduced in v3.12)</i><br>
+<td>open file, <i>shareable</i> defaults to <i>false</i>, <i>buflen</i> defaults to 2048 bytes, mode (default: <tt>'w+'</tt>) specifies the type of access requested for the file, as follows:<br><tt>r&nbsp</tt> open for reading; if the file does not exist or cannot be found, the open call fails<br><tt>w&nbsp</tt> open an empty file for writing; if the given file exists, its contents are destroyed<br><tt>a&nbsp</tt> open for writing at the end of the file (appending); creates the file first if it doesn’t exist<br><tt>r+</tt> open for both reading and writing (the file must exist)<br><tt>w+</tt> open an empty file for both reading and writing; if the given file exists, its contents are destroyed<br><tt>a+</tt> open for reading and appending<br><tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br><tt>e&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access <i>(introduced in v3.12)</i><br><br><b>Note:</b> When using the <tt>iniSet</tt> methods to modify a <tt>.ini</tt> file, the file must be opened for both reading and writing.<br><br><b>Note:</b> To open an existing or create a new file for both reading and writing, use the <i>file_exists</i> function like so:<br><tt>file.open(file_exists(file.name) ? 'r+':'w+');</tt>
 <tr valign=top><td><b>close</b><td>void<td><tt>File.close()
 <td>3.10
 <td>close file
@@ -2877,13 +2908,13 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Description</font>
 <tr valign=top><td><b>poll</b><td>undefined<td><tt>Queue.poll([timeout])
 <td>3.12
-<td>wait for a value on the queue for up to <i>timeout</i> milliseconds (default: <i>infinite</i>), returns <i>true</i> or the <i>name</i> (string) of the value waiting (if it has one), or <i>false</i> if no values are waiting
-<tr valign=top><td><b>read</b><td>undefined<td><tt>Queue.read([name])
-<td>3.12
-<td>read a value from the queue, if <i>name</i> not specified, reads next value from the bottom of the queue
-<tr valign=top><td><b>peek</b><td>undefined<td><tt>Queue.peek()
-<td>3.12
-<td>peek at the value at the bottom of the queue
+<td>wait for any value to be written to the queue for up to <i>timeout</i> milliseconds (default: <i>0</i>), returns <i>true</i> or the <i>name</i> (string) of the value waiting (if it has one), or <i>false</i> if no values are waiting
+<tr valign=top><td><b>read</b><td>undefined<td><tt>Queue.read([name or timeout])
+<td>3.13
+<td>read a value from the queue, if <i>name</i> not specified, reads next value from the bottom of the queue (waiting up to <i>timeout</i> milliseconds)
+<tr valign=top><td><b>peek</b><td>undefined<td><tt>Queue.peek([timeout])
+<td>3.13
+<td>peek at the value at the bottom of the queue, wait up to <i>timeout</i> milliseconds for any value to be written (default: <i>0</i>)
 <tr valign=top><td><b>write</b><td>boolean<td><tt>Queue.write(value [,name])
 <td>3.12
 <td>write a value (optionally named) to the queue
@@ -3047,4 +3078,4 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <td><i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>
 </table>
 <p><small>
-Totals: 480 properties, 264 methods
+Totals: 481 properties, 267 methods
