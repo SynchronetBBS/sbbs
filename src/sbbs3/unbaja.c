@@ -2158,7 +2158,7 @@ int main(int argc, char **argv)
 			p=strrchr(newname, '.');
 			if(p==NULL)
 				p=strchr(newname,0);
-			strcat(p,".decompiled");
+			strcpy(p,".decompiled");
 			src=fopen(newname,"w");
 			if(src != NULL) {
 				printf("Decompiling %s to %s\n",argv[f],newname);
