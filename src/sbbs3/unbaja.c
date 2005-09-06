@@ -1464,9 +1464,9 @@ void decompile(FILE *bin, FILE *src)
 					case COPY_CHAR:
 						VAR("COPY_CHAR");
 					case SHIFT_TO_FIRST_CHAR:
-						MVARCH("SHIFT_TO_FIRST_CHAR");
+						MVARUCH("SHIFT_TO_FIRST_CHAR");
 					case SHIFT_TO_LAST_CHAR:
-						MVARCH("SHIFT_TO_LAST_CHAR");
+						MVARUCH("SHIFT_TO_LAST_CHAR");
 					case MATCHUSER:
 						VARVAR("MATCHUSER");
 					default:
