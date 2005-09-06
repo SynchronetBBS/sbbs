@@ -344,7 +344,7 @@ void write_cstr(FILE *bin, FILE *src)
 	while(fread(&ch,1,1,bin)==1) {
 		if(ch==0)
 			break;
-		if(ch<' ' || ch > 126 || ch == '"') {
+		if(ch<' ' || ch > 126 || ch == '"' || ch=='\\') {
 			fprintf(src, "\\%03d", ch);
 		}
 		else
