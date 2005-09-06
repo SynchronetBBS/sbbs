@@ -590,6 +590,19 @@ void eol(FILE *src)
 						eol(src);			 \
 						break
 
+#define MVARSHTUCH(name)	WRITE_NAME(name); \
+						write_var(bin,src);  \
+						write_short(bin,src);  \
+						if(usevar) {		 \
+							fprintf(src,"%s ",getvar(var)); \
+							usevar=FALSE;	 \
+							fread(buf,1,1,bin); \
+						} else {				 \
+							write_uchar(bin,src);		 \
+						}					 \
+						eol(src);			 \
+						break
+
 #define MVARSHT(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						if(usevar) {		 \
@@ -1429,7 +1442,7 @@ void decompile(FILE *bin, FILE *src)
 					case PRINTFILE_VAR_MODE:
 						MVARSHT("PRINTFILE");
 					case PRINTTAIL_VAR_MODE:
-						MVARSHT("PRINTTAIL");
+						MVARSHTUCH("PRINTTAIL");
 					case CHKSUM_TO_INT:
 						VARVAR("CHKSUM");
 					case STRIP_CTRL_STR_VAR:
