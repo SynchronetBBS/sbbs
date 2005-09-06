@@ -2158,21 +2158,16 @@ int main(int argc, char **argv)
 			p=strrchr(newname, '.');
 			if(p==NULL)
 				p=strchr(newname,0);
-			*(p++)='.';
-			*(p++)='d';
-			*(p++)='e';
-			*(p++)='c';
-			*(p++)='o';
-			*(p++)='m';
-			*(p++)='p';
-			*(p++)='i';
-			*(p++)='l';
-			*(p++)='e';
-			*(p++)='d';
-			*(p++)=0;
+			strcat(p,".decompiled");
 			src=fopen(newname,"w");
 			if(src != NULL) {
 				printf("Decompiling %s to %s\n",argv[f],newname);
+				fputs("!include sbbsdefs.inc\n",src);
+				fputs("!include userdefs.inc\n",src);
+				fputs("!include nodedefs.inc\n",src);
+				fputs("!include file_io.inc\n",src);
+				fputs("!include errno.inc\n",src);
+				fputs("!include dir_attr.inc\n\n",src);
 				decompile(bin, src);
 				fclose(src);
 			}
