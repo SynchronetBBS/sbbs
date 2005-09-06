@@ -1233,6 +1233,7 @@ void decompile(FILE *bin, FILE *src)
 	ushort	ush;
 	short	sh;
 	long	lng;
+	long	lng2;
 	ulong	ulng;
 	int		usevar=FALSE;
 	long	var=0;
@@ -1420,10 +1421,42 @@ void decompile(FILE *bin, FILE *src)
 						CHSTR("RECEIVE_FILE_VIA");
 					case RECEIVE_FILE_VIA_VAR:
 						CHVAR("RECEIVE_FILE_VIA");
-					case TELNET_GATE_STR:
-						MLNGSTR("TELNET_GATE");
-					case TELNET_GATE_VAR:
-						MLNGVAR("TELNET_GATE");
+					case TELNET_GATE_STR:				/* TELNET_GATE reverses argument order */
+						WRITE_NAME("TELNET_GATE");
+						fread(&lng,4,1,bin);
+						fputc('"',src);
+						while(fread(&ch,1,1,bin)==1) {
+							if(ch==0)
+								break;
+							if(ch<' ' || ch > 126 || ch == '"') {
+								fprintf(src, "\\%03d", ch);
+							}
+							else
+								fputc(ch, src);
+						}
+						fputc('"',src);
+						fputc(' ',src);
+						if(usevar) {
+							fprintf(src,"%s ",getvar(var));
+							usevar=FALSE;
+						} else {
+							fprintf(src,"%ld ",lng);
+						}
+						eol(src);
+						break;
+					case TELNET_GATE_VAR:				/* TELNET_GATE reverses argument order */
+						WRITE_NAME("TELNET_GATE");
+						fread(&lng,4,1,bin);
+						fread(&lng2, 1, 4, bin);
+						fprintf(src,"%s ",getvar(lng2));
+						if(usevar) {
+							fprintf(src,"%s ",getvar(var));
+							usevar=FALSE;
+						} else {
+							fprintf(src,"%ld ",lng);
+						}
+						eol(src);
+						break;
 					case COPY_FIRST_CHAR:
 						VARVAR("COPY_FIRST_CHAR");
 					case COMPARE_FIRST_CHAR:
