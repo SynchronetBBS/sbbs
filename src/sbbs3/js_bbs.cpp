@@ -2656,8 +2656,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) "
 		"with optinal <i>mode</i> (bitfield)<br>"
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
-		"will be used for the in-reply-to header fields (added in v3.13)")
-	,310
+		"will be used for the in-reply-to header fields (this argument added in v3.13)")
+	,313
 	},		
 	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[number type]")
 	,JSDOCSTR("configure message scan "
