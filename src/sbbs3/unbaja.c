@@ -1,3 +1,11 @@
+/* $Id$ */
+
+/* 
+ * Stuff left ToDo:
+ * Add ARS decompilation
+ * Add label pre-resolution so only used labels are inserted
+ */
+
 #include <stdio.h>
 #include <string.h>
 
