@@ -514,6 +514,12 @@ void eol(FILE *src)
 						eol(src);			 \
 						break
 						
+#define VARUCH(name)	WRITE_NAME(name); \
+						write_var(bin,src);  \
+						write_uchar(bin,src);  \
+						eol(src);			 \
+						break
+						
 #define VARVARVAR(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						write_var(bin,src);  \
@@ -1460,7 +1466,7 @@ void decompile(FILE *bin, FILE *src)
 					case COPY_FIRST_CHAR:
 						VARVAR("COPY_FIRST_CHAR");
 					case COMPARE_FIRST_CHAR:
-						VARCH("COMPARE_FIRST_CHAR");
+						VARUCH("COMPARE_FIRST_CHAR");
 					case COPY_CHAR:
 						VAR("COPY_CHAR");
 					case SHIFT_TO_FIRST_CHAR:
