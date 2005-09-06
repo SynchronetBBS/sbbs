@@ -310,14 +310,18 @@ void newvar(uchar *in)
 	long i,l;
 
 	sprintf(name,"%.80s",in);
-	if(!case_sens)
-		strupr(name);
-	l=crc32(name,0);
-	for(i=0;i<vars;i++)
-		if(var_name[i]==l)
-			break;
-	if(i<vars)
-		return;
+	if(strncmp(name,"var_",4)==0)	/* decompiled source? */
+		l=strtoul(name+4,NULL,16);
+	else {
+		if(!case_sens)
+			strupr(name);
+		l=crc32(name,0);
+		for(i=0;i<vars;i++)
+			if(var_name[i]==l)
+				break;
+		if(i<vars)
+			return;
+	}
 	if((var_name=(ulong *)REALLOC(var_name,sizeof(long)*(vars+1)))==NULL) {
 		printf("Too many (%lu) variables!\n",vars);
 		bail(1); }
@@ -338,11 +342,13 @@ void writecrc(uchar *src, uchar *in)
 	p=strchr(name,' ');
 	if(p) *p=0;
 
-	if(!case_sens)
-		strupr(name);
 	if(!stricmp(name,"STR") || !name[0])
 		l=0;
+	else if(strncmp(name,"var_",4)==0)	/* decompiled source? */
+		l=strtoul(name+4,NULL,16);
 	else {
+		if(!case_sens)
+			strupr(name);
 		l=crc32(name,0);
 
 		for(i=0;i<vars;i++)
@@ -368,6 +374,8 @@ long isvar(uchar *arg)
 	sprintf(name,"%.80s",arg);
 	if((p=strchr(name,' '))!=NULL)	/* Truncate at first space */
 		*p=0;
+	if(strncmp(name,"var_",4)==0)	/* decompiled source? */
+		return(strtoul(name+4,NULL,16));
 	if(!case_sens)
 		strupr(name);
 	l=crc32(name,0);
@@ -3361,8 +3369,8 @@ void compile(char *src)
 }
 
 char *banner=	"\n"
-				"BAJA v2.33 - Synchronet Shell/Module Compiler - "
-				"Copyright 2003 Rob Swindell\n";
+				"BAJA v2.34 - Synchronet Shell/Module Compiler - "
+				"Copyright %s Rob Swindell\n";
 
 char *usage=	"\n"
 				"usage: baja [-opts] file[.src]\n"
@@ -3409,14 +3417,14 @@ int main(int argc, char **argv)
 					show_banner=0;
 					break;
 				default:
-					printf(banner);
+					printf(banner,__DATE__+7);
 					printf(usage);
 					bail(1); }
 		else
 			strcpy(src,argv[i]);
 
 	if(show_banner)
-		printf(banner);
+		printf(banner,__DATE__+7);
 
 	if(!src[0]) {
 		printf(usage);
