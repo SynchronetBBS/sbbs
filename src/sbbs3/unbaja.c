@@ -627,6 +627,21 @@ void eol(FILE *src)
 						eol(src);			 \
 						break
 
+#define MVARVARNZUST(name)	WRITE_NAME(name); \
+							write_var(bin,src);  \
+							write_var(bin,src);  \
+							if(usevar) {		 \
+								fprintf(src,"%s ",getvar(var)); \
+								usevar=FALSE;	 \
+								fread(buf,2,1,bin); \
+							} else {				 \
+								fread(&ush, 2, 1, bin); \
+								if(ush)					\
+									fprintf(src,"%u ",ush);  \
+							}					 \
+							eol(src);			 \
+							break
+
 #define MVARVARUST(name)	WRITE_NAME(name); \
 							write_var(bin,src);  \
 							write_var(bin,src);  \
@@ -1852,11 +1867,11 @@ void decompile(FILE *bin, FILE *src)
 					case FIO_CLOSE:
 						VAR("FCLOSE");
 					case FIO_READ:
-						VARVARUST("FREAD");
+						MVARVARNZUST("FREAD");
 					case FIO_READ_VAR:
 						VARVARVAR("FREAD");
 					case FIO_WRITE:
-						VARVARUST("FWRITE");
+						MVARVARNZUST("FWRITE");
 					case FIO_WRITE_VAR:
 						VARVARVAR("FWRITE");
 					case FIO_GET_LENGTH:
