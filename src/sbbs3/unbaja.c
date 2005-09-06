@@ -404,46 +404,58 @@ void write_logic(FILE *bin, FILE *src)
 		fputs("FALSE ",src);
 }
 
-void write_key(FILE *bin, FILE *src)
+void write_keys(FILE *bin, FILE *src)
+{
+	while(write_key(bin,src,TRUE));
+	fputc(' ',src);
+}
+
+int write_key(FILE *bin, FILE *src, int keyset)
 {
 	uchar uch;
 	fread(&uch,1,1,bin);
+	if(uch==0 && keyset)
+		return(uch);;
 	if(uch==CS_DIGIT)
-		fputs("DIGIT ",src);
+		fputs("DIGIT",src);
 	else if(uch==CS_EDIGIT)
-		fputs("EDIGIT ",src);
+		fputs("EDIGIT",src);
 	else if(uch==CR)
-		fputs("\\r ",src);
+		fputs("\\r",src);
 	else if(uch==LF)
-		fputs("\\n ",src);
+		fputs("\\n",src);
 	else if(uch==TAB)
-		fputs("\\t ",src);
+		fputs("\\t",src);
 	else if(uch==BS)
-		fputs("\\b ",src);
+		fputs("\\b",src);
 	else if(uch==BEL)
-		fputs("\\a ",src);
+		fputs("\\a",src);
 	else if(uch==FF)
-		fputs("\\f ",src);
+		fputs("\\f",src);
 	else if(uch==11)
-		fputs("\\v ",src);
+		fputs("\\v",src);
 	else if(uch & 0x80)
-		fprintf(src,"/%c ",uch&0x7f);
+		fprintf(src,"/%c",uch&0x7f);
 	else if(uch < ' ')
-		fprintf(src,"^%c ",uch+0x40);
+		fprintf(src,"^%c",uch+0x40);
 	else if(uch=='\\')
-		fputs("'\\' ",src);
+		fputs("'\\'",src);
 	else if(uch=='^')
-		fputs("'^' ",src);
+		fputs("'^'",src);
 	else if(uch=='/')
-		fputs("'/' ",src);
+		fputs("'/'",src);
 	else if(uch=='\'')
-		fputs("\\' ",src);
+		fputs("\\'",src);
 	else
-		fprintf(src,"%c ",uch);
+		fprintf(src,"%c",uch);
+	if(!keyset)
+		fputc(' ',src);
+	return(uch);;
 }
 
 void eol(FILE *src)
 {
+	fseek(src, ftell(src)-1,SEEK_SET);
 	fputc('\n',src);
 }
 
@@ -451,8 +463,13 @@ void eol(FILE *src)
 							/* printf("%s\n",name) */
 							
 
+#define KEYS(name)		WRITE_NAME(name); \
+						write_keys(bin,src); \
+						eol(src);			 \
+						break
+
 #define KEY(name)		WRITE_NAME(name); \
-						write_key(bin,src); \
+						write_key(bin,src,FALSE); \
 						eol(src);			 \
 						break
 
@@ -1634,12 +1651,12 @@ void decompile(FILE *bin, FILE *src)
 				MUCH("MULTINODE_CHAT");
 			case CS_GOTO:
 				fread(&ush,2,1,bin);
-				fprintf(src,"GOTO label_%04x",ush);
+				fprintf(src,"GOTO label_%04x ",ush);
 				eol(src);
 				break;
 			case CS_CALL:
 				fread(&ush,2,1,bin);
-				fprintf(src,"CALL label_%04x",ush);
+				fprintf(src,"CALL label_%04x ",ush);
 				eol(src);
 				break;
 			case CS_TOGGLE_NODE_MISC:
@@ -1717,9 +1734,9 @@ void decompile(FILE *bin, FILE *src)
 			case CS_READ_SIF:
 				STR("READ_SIF");
 			case CS_CMDKEYS:
-				STR("CMDKEYS");
+				KEYS("CMDKEYS");
 			case CS_COMPARE_KEYS:
-				STR("COMPARE_KEYS");
+				KEYS("COMPARE_KEYS");
 			case CS_STR_FUNCTION:
 				fread(&uch,1,1,bin);
 				switch(uch) {
