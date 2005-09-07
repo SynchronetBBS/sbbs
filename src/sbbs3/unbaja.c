@@ -2291,7 +2291,7 @@ int main(int argc, char **argv)
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-	printf("\nUNBAJA %s-%s - Synchronet Baja Shell/Module De-compiler\n"
+	printf("\nUNBAJA v%s-%s - Synchronet Baja Shell/Module De-compiler\n"
 		,revision, PLATFORM_DESC);
 
 	for(f=1; f<argc; f++) {
@@ -2308,7 +2308,7 @@ int main(int argc, char **argv)
 			if(src == NULL) 
 				perror(newname);
 			else {
-				printf("Decompiling %s to %s\n",argv[f],newname);
+				printf("\nDecompiling %s to %s\n",argv[f],newname);
 				fputs("!include sbbsdefs.inc\n",src);
 				fputs("!include file_io.inc\n",src);
 				fputs("!include dir_attr.inc\n\n",src);
