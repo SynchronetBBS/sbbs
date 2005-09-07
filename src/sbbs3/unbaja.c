@@ -13,6 +13,9 @@
 #include "cmdshell.h"
 #include "ars_defs.h"
 
+int indent=0;
+int indenteol=0;
+
 char *getvar(long name)
 {
 	static char varname[20];
@@ -459,9 +462,12 @@ void eol(FILE *src)
 {
 	fseek(src, ftell(src)-1,SEEK_SET);
 	fputc('\n',src);
+	indent+=indenteol;
+	indenteol=0;
 }
 
-#define WRITE_NAME(name)	fputs(name" ",src) \
+#define WRITE_NAME(name)	if(indent<0) indent=0; \
+							fprintf(src,"%.*s"name" ",indent,"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t") \
 							/* printf("%s\n",name) */
 							
 
@@ -1309,16 +1315,19 @@ void decompile(FILE *bin, FILE *src)
 				fread(&uch,1,1,bin);
 				switch(uch) {
 					case SHOW_VARS:
-						fprintf(src,"SHOW_VARS\n");
+						WRITE_NAME("SHOW_VARS");
+						eol(src);
 						break;
 					case PRINT_VAR:
 						VAR("PRINT");
 					case VAR_PRINTF:
 					case VAR_PRINTF_LOCAL:
-						if(uch==VAR_PRINTF)
-							fprintf(src,"PRINTF ");
-						else
-							fprintf(src,"LPRINTF ");
+						if(uch==VAR_PRINTF) {
+							WRITE_NAME("PRINTF");
+						}
+						else {
+							WRITE_NAME("LPRINTF");
+						}
 						write_cstr(bin,src);
 						fread(&uch, 1, 1, bin);
 						for(i=0; i<uch; i++) {
@@ -1361,7 +1370,7 @@ void decompile(FILE *bin, FILE *src)
 					case CAT_STR_VARS:
 						VARVAR("STRCAT");
 					case FORMAT_STR_VAR:
-						fprintf(src,"SPRINTF ");
+						WRITE_NAME("SPRINTF");
 						write_var(bin,src);
 						write_cstr(bin,src);
 						fread(&uch, 1, 1, bin);
@@ -1529,18 +1538,23 @@ void decompile(FILE *bin, FILE *src)
 				}
 				break;
 			case CS_IF_TRUE:
+				indenteol=1;
 				NONE("IF_TRUE");
 			case CS_IF_FALSE:
+				indenteol=1;
 				NONE("IF_FALSE");
 			case CS_ELSE:
+				indenteol=1;
 				NONE("ELSE");
 			case CS_ENDIF:
+				indent--;
 				NONE("END_IF");
 			case CS_CMD_HOME:
 				NONE("CMD_HOME");
 			case CS_CMD_POP:
 				NONE("CMD_POP");
 			case CS_END_CMD:
+				indent--;
 				NONE("END_CMD");
 			case CS_RETURN:
 				NONE("RETURN");
@@ -1605,18 +1619,25 @@ void decompile(FILE *bin, FILE *src)
 			case CS_RESTORELINE:
 				NONE("RESTORELINE");
 			case CS_IF_GREATER:
+				indenteol=1;
 				NONE("IF_GREATER");
 			case CS_IF_GREATER_OR_EQUAL:
+				indenteol=1;
 				NONE("IF_GREATER_OR_EQUAL");
 			case CS_IF_LESS:
+				indenteol=1;
 				NONE("IF_LESS");
 			case CS_IF_LESS_OR_EQUAL:
+				indenteol=1;
 				NONE("IF_LESS_OR_EQUAL");
 			case CS_DEFAULT:
+				indenteol=1;
 				NONE("DEFAULT");
 			case CS_END_SWITCH:
+				indent--;
 				NONE("END_SWITCH");
 			case CS_END_CASE:
+				indent--;
 				NONE("END_CASE");
 			case CS_PUT_NODE:
 				NONE("PUT_NODE");
@@ -1638,18 +1659,21 @@ void decompile(FILE *bin, FILE *src)
 					case CS_EXIT:
 						NONE("EXIT");
 					case CS_LOOP_BEGIN:
+						indenteol=1;
 						NONE("LOOP_BEGIN");
 					case CS_CONTINUE_LOOP:
 						NONE("CONTINUE_LOOP");
 					case CS_BREAK_LOOP:
 						NONE("BREAK_LOOP");
 					case CS_END_LOOP:
+						indent--;
 						NONE("END_LOOP");
 					default:
 						printf("ERROR!  Unknown one-byte instruction: %02x%02X\n",CS_ONE_MORE_BYTE,uch);
 				}
 				break;
 			case CS_CMDKEY:
+				indenteol=1;
 				KEY("CMDKEY");
 			case CS_NODE_ACTION:
 				MUCH("NODE_ACTION");
@@ -1674,6 +1698,7 @@ void decompile(FILE *bin, FILE *src)
 			case CS_NODE_STATUS:
 				MUCH("NODE_STATUS");
 			case CS_CMDCHAR:
+				indenteol=1;
 				CH("CMDCHAR");
 			case CS_COMPARE_CHAR:
 				CH("COMPARE_CHAR");
@@ -1690,12 +1715,14 @@ void decompile(FILE *bin, FILE *src)
 				break;
 			case CS_GOTO:
 				fread(&ush,2,1,bin);
-				fprintf(src,"GOTO label_%04x ",ush);
+				WRITE_NAME("GOTO");
+				fprintf(src,"label_%04x ",ush);
 				eol(src);
 				break;
 			case CS_CALL:
 				fread(&ush,2,1,bin);
-				fprintf(src,"CALL label_%04x ",ush);
+				WRITE_NAME("CALL");
+				fprintf(src,"label_%04x ",ush);
 				eol(src);
 				break;
 			case CS_TOGGLE_NODE_MISC:
@@ -1761,6 +1788,7 @@ void decompile(FILE *bin, FILE *src)
 			case CS_SET_MENU_FILE:
 				STR("SET_MENU_FILE");
 			case CS_CMDSTR:
+				indenteol=1;
 				STR("CMDSTR");
 			case CS_CHKFILE:
 				STR("CHKFILE");
@@ -1773,6 +1801,7 @@ void decompile(FILE *bin, FILE *src)
 			case CS_READ_SIF:
 				STR("READ_SIF");
 			case CS_CMDKEYS:
+				indenteol=1;
 				KEYS("CMDKEYS");
 			case CS_COMPARE_KEYS:
 				KEYS("COMPARE_KEYS");
@@ -1793,7 +1822,8 @@ void decompile(FILE *bin, FILE *src)
 				fread(&uch,1,1,bin);
 				p=(char *)malloc(uch);
 				fread(p,uch,1,bin);
-				fprintf(src,"COMPARE_ARS %s\n",decompile_ars(p,uch));
+				WRITE_NAME("COMPARE_ARS");
+				fprintf(src,"%s\n",decompile_ars(p,uch));
 				free(p);
 				break;
 			case CS_TOGGLE_USER_MISC:
@@ -1811,8 +1841,10 @@ void decompile(FILE *bin, FILE *src)
 			case CS_COMPARE_USER_QWK:
 				MLNG("COMPARE_USER_QWK");
 			case CS_SWITCH:
+				indenteol=1;
 				VAR("SWITCH");
 			case CS_CASE:
+				indenteol=1;
 				LNG("CASE");
 			case CS_NET_FUNCTION:
 				fread(&uch,1,1,bin);
@@ -1883,7 +1915,7 @@ void decompile(FILE *bin, FILE *src)
 					case FIO_GET_POS:
 						VARVAR("FGET_POS");
 					case FIO_SEEK:
-						fprintf(src,"FSEEK ");
+						WRITE_NAME("FSEEK");
 						write_var(bin,src);
 						write_lng(bin,src);
 						fread(&ush,2,1,bin);
@@ -1896,7 +1928,7 @@ void decompile(FILE *bin, FILE *src)
 						eol(src);
 						break;
 					case FIO_SEEK_VAR:
-						fprintf(src,"FSEEK ");
+						WRITE_NAME("FSEEK");
 						write_var(bin,src);
 						write_var(bin,src);
 						fread(&ush,2,1,bin);
@@ -1921,7 +1953,7 @@ void decompile(FILE *bin, FILE *src)
 					case FIO_SET_LENGTH_VAR:
 						VARVAR("FSET_LENGTH");
 					case FIO_PRINTF:
-						fprintf(src,"FPRINTF ");
+						WRITE_NAME("FPRINTF");
 						write_var(bin,src);
 						write_cstr(bin,src);
 						fread(&uch, 1, 1, bin);
