@@ -164,7 +164,7 @@ long val(char *src, char *p)
 	else if(*p=='.')    /* Bit */
 		l=1L<<strtol(p+1,&p,0);
 	else {
-		printf("SYNTAX ERROR (expecting integer constant):\n");
+		printf("!SYNTAX ERROR (expecting integer constant):\n");
 		printf(linestr,src,line,*p ? p : "<end of line>");
 		bail(1);
 		return(0); }
@@ -360,7 +360,7 @@ void writecrc(uchar *src, uchar *in)
 			if(var_name[i]==l)
 				break;
 		if(i==vars) {
-			printf("SYNTAX ERROR (expecting variable name):\n");
+			printf("!SYNTAX ERROR (expecting variable name):\n");
 			printf(linestr,src,line,*in ? (char*)in : "<end of line>");
 			bail(1); 
 		}
@@ -719,7 +719,7 @@ void compile(char *src)
 				if(!stricmp(label_name[i],p))
 					break;
 			if(i<labels) {
-				printf("SYNTAX ERROR (duplicate label name):\n");
+				printf("!SYNTAX ERROR (duplicate label name):\n");
 				printf(linestr,src,line,p);
 				bail(1); }
 			if((label_name=(char **)REALLOC(label_name,sizeof(char *)*(labels+1)))
@@ -1987,6 +1987,8 @@ void compile(char *src)
 			continue; }
 		if(!stricmp(p,"CHDIR") || !stricmp(p,"CHANGE_DIR")) {
 			if(!(*arg)) break;
+			printf("!WARNING: CHANGE_DIR deprecated in Synchronet v3+\n");
+			printf(linestr,src,line,save);
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(CHANGE_DIR,out);
 			writecrc(src,arg);			/* Str var */
@@ -3365,7 +3367,7 @@ void compile(char *src)
 
 
 	if(!feof(in)) {
-		printf("SYNTAX ERROR:\n");
+		printf("!SYNTAX ERROR:\n");
 		printf(linestr,src,line,save);
 		bail(1); }
 	fclose(in);
