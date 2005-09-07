@@ -1,10 +1,5 @@
 /* $Id$ */
 
-/* 
- * Stuff left ToDo:
- * Add label pre-resolution so only used labels are inserted
- */
-
 #include <stdio.h>
 #include <string.h>
 
@@ -331,143 +326,144 @@ char *getvar(long name)
 	}
 }
 
-void write_var(FILE *bin, FILE *src)
+void write_var(FILE *bin, char *src)
 {
 	long lng;
 
 	fread(&lng, 1, 4, bin);
-	fprintf(src,"%s ",getvar(lng));
+	sprintf(strchr(src,0),"%s ",getvar(lng));
 }
 
-void write_cstr(FILE *bin, FILE *src)
+void write_cstr(FILE *bin, char *src)
 {
 	uchar ch;
 	char* p;
 
-	fputc('"',src);
+	strcat(src,"\"");
 	while(fread(&ch,1,1,bin)==1) {
 		if(ch==0)
 			break;
 		if((p=c_escape_char(ch))!=NULL)
-			fprintf(src,"%s",p);
+			sprintf(strchr(src,0),"%s",p);
 		else if(ch<' ' || ch > 126)
-			fprintf(src, "\\%03d", ch);
+			sprintf(strchr(src,0), "\\%03d", ch);
 		else
-			fputc(ch, src);
+			sprintf(strchr(src,0), "%c", ch);
 	}
-	fputc('"',src);
-	fputc(' ',src);
+	strcat(src,"\" ");
 }
 
-void write_lng(FILE *bin, FILE *src)
+void write_lng(FILE *bin, char *src)
 {
 	long lng;
 
 	fread(&lng,4,1,bin);
-	fprintf(src,"%ld ",lng);
+	sprintf(strchr(src,0),"%ld ",lng);
 }
 
-void write_short(FILE *bin, FILE *src)
+void write_short(FILE *bin, char *src)
 {
 	short sht;
 
 	fread(&sht,2,1,bin);
-	fprintf(src,"%d ",sht);
+	sprintf(strchr(src,0),"%d ",sht);
 }
 
-void write_ushort(FILE *bin, FILE *src)
+void write_ushort(FILE *bin, char *src)
 {
 	ushort sht;
 
 	fread(&sht,2,1,bin);
-	fprintf(src,"%d ",sht);
+	sprintf(strchr(src,0),"%d ",sht);
 }
 
-void write_ch(FILE *bin, FILE *src)
+void write_ch(FILE *bin, char *src)
 {
 	char ch;
 
 	fread(&ch,1,1,bin);
-	fprintf(src,"%c ",ch);
+	sprintf(strchr(src,0),"%c ",ch);
 }
 
-void write_uchar(FILE *bin, FILE *src)
+void write_uchar(FILE *bin, char *src)
 {
 	uchar uch;
 
 	fread(&uch,1,1,bin);
-	fprintf(src,"%u ",uch);
+	sprintf(strchr(src,0),"%u ",uch);
 }
 
-void write_logic(FILE *bin, FILE *src)
+void write_logic(FILE *bin, char *src)
 {
 	char ch;
 	fread(&ch,1,1,bin);
 	if(ch==LOGIC_TRUE)
-		fputs("TRUE ",src);
+		strcat(src,"TRUE ");
 	else
-		fputs("FALSE ",src);
+		strcat(src,"FALSE ");
 }
 
-int write_key(FILE *bin, FILE *src, int keyset)
+int write_key(FILE *bin, char *src, int keyset)
 {
 	uchar uch;
 	fread(&uch,1,1,bin);
 	if(uch==0 && keyset)
-		return(uch);;
+		return(uch);
 	if(uch==CS_DIGIT)
-		fputs("DIGIT",src);
+		strcat(src,"DIGIT");
 	else if(uch==CS_EDIGIT)
-		fputs("EDIGIT",src);
+		strcat(src,"EDIGIT");
 	else if(uch==CR)
-		fputs("\\r",src);
+		strcat(src,"\\r");
 	else if(uch==LF)
-		fputs("\\n",src);
+		strcat(src,"\\n");
 	else if(uch==TAB)
-		fputs("\\t",src);
+		strcat(src,"\\t");
 	else if(uch==BS)
-		fputs("\\b",src);
+		strcat(src,"\\b");
 	else if(uch==BEL)
-		fputs("\\a",src);
+		strcat(src,"\\a");
 	else if(uch==FF)
-		fputs("\\f",src);
+		strcat(src,"\\f");
 	else if(uch==11)
-		fputs("\\v",src);
+		strcat(src,"\\v");
 	else if(uch & 0x80)
-		fprintf(src,"/%c",uch&0x7f);
+		sprintf(strchr(src,0),"/%c",uch&0x7f);
 	else if(uch < ' ')
-		fprintf(src,"^%c",uch+0x40);
+		sprintf(strchr(src,0),"^%c",uch+0x40);
 	else if(uch=='\\')
-		fputs("'\\'",src);
+		strcat(src,"'\\'");
 	else if(uch=='^')
-		fputs("'^'",src);
+		strcat(src,"'^'");
 	else if(uch=='/')
-		fputs("'/'",src);
+		strcat(src,"'/'");
 	else if(uch=='\'')
-		fputs("\\'",src);
+		strcat(src,"\\'");
 	else
-		fprintf(src,"%c",uch);
+		sprintf(strchr(src,0),"%c",uch);
 	if(!keyset)
-		fputc(' ',src);
+		strcat(src," ");
 	return(uch);;
 }
 
-void write_keys(FILE *bin, FILE *src)
+void write_keys(FILE *bin, char *src)
 {
 	while(write_key(bin,src,TRUE));
-	fputc(' ',src);
+	strcat(src," ");
 }
 
-void eol(FILE *src)
+void eol(char *src)
 {
-	fseek(src, ftell(src)-1,SEEK_SET);
-	fputc('\n',src);
+	char *p;
+	p=strchr(src,0);
+	p--;
+	*p='\n';
 	indent+=indenteol;
 	indenteol=0;
 }
 
 #define WRITE_NAME(name)	if(indent<0) indent=0; \
-							fprintf(src,"%.*s"name" ",indent,"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t") \
+							sprintf(strchr(src,0),"%.*s"name" ",indent,"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t") \
 							/* printf("%s\n",name) */
 							
 
@@ -566,7 +562,7 @@ void eol(FILE *src)
 						
 #define MUCH(name)		WRITE_NAME(name); \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,1,1,bin); \
 						} else {				 \
@@ -577,7 +573,7 @@ void eol(FILE *src)
 
 #define MSHT(name)		WRITE_NAME(name); \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,2,1,bin); \
 						} else {				 \
@@ -589,7 +585,7 @@ void eol(FILE *src)
 #define MVARLNG(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,4,1,bin); \
 						} else {				 \
@@ -602,7 +598,7 @@ void eol(FILE *src)
 						write_var(bin,src);  \
 						write_short(bin,src);  \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,1,1,bin); \
 						} else {				 \
@@ -614,7 +610,7 @@ void eol(FILE *src)
 #define MVARSHT(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,2,1,bin); \
 						} else {				 \
@@ -626,7 +622,7 @@ void eol(FILE *src)
 #define MVARUCH(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,1,1,bin); \
 						} else {				 \
@@ -639,13 +635,13 @@ void eol(FILE *src)
 							write_var(bin,src);  \
 							write_var(bin,src);  \
 							if(usevar) {		 \
-								fprintf(src,"%s ",getvar(var)); \
+								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
 								fread(buf,2,1,bin); \
 							} else {				 \
 								fread(&ush, 2, 1, bin); \
 								if(ush)					\
-									fprintf(src,"%u ",ush);  \
+									sprintf(strchr(src,0),"%u ",ush);  \
 							}					 \
 							eol(src);			 \
 							break
@@ -654,7 +650,7 @@ void eol(FILE *src)
 							write_var(bin,src);  \
 							write_var(bin,src);  \
 							if(usevar) {		 \
-								fprintf(src,"%s ",getvar(var)); \
+								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
 								fread(buf,2,1,bin); \
 							} else {				 \
@@ -666,7 +662,7 @@ void eol(FILE *src)
 #define MVARUSTVAR(name)	WRITE_NAME(name); \
 							write_var(bin,src);  \
 							if(usevar) {		 \
-								fprintf(src,"%s ",getvar(var)); \
+								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
 								fread(buf,2,1,bin); \
 							} else {				 \
@@ -679,7 +675,7 @@ void eol(FILE *src)
 #define MVARUSTSTR(name)	WRITE_NAME(name); \
 							write_var(bin,src);  \
 							if(usevar) {		 \
-								fprintf(src,"%s ",getvar(var)); \
+								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
 								fread(buf,2,1,bin); \
 							} else {				 \
@@ -691,7 +687,7 @@ void eol(FILE *src)
 
 #define MLNG(name)	WRITE_NAME(name); \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,4,1,bin); \
 						} else {				 \
@@ -702,7 +698,7 @@ void eol(FILE *src)
 
 #define MLNGVAR(name)	WRITE_NAME(name); \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,4,1,bin); \
 						} else {				 \
@@ -714,7 +710,7 @@ void eol(FILE *src)
 
 #define MSHTSTR(name)	WRITE_NAME(name); \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,2,1,bin); \
 						} else {				 \
@@ -726,7 +722,7 @@ void eol(FILE *src)
 
 #define MLNGSTR(name)	WRITE_NAME(name); \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,4,1,bin); \
 						} else {				 \
@@ -739,7 +735,7 @@ void eol(FILE *src)
 #define MVARLNGLNG(name)	WRITE_NAME(name); \
 							write_var(bin,src);  \
 							if(usevar) {		 \
-								fprintf(src,"%s ",getvar(var)); \
+								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
 								fread(buf,4,1,bin); \
 							} else {				 \
@@ -752,7 +748,7 @@ void eol(FILE *src)
 #define MVARUCHLNG(name)	WRITE_NAME(name); \
 							write_var(bin,src);  \
 							if(usevar) {		 \
-								fprintf(src,"%s ",getvar(var)); \
+								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
 								fread(buf,1,1,bin); \
 							} else {				 \
@@ -765,7 +761,7 @@ void eol(FILE *src)
 #define MVARCH(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						if(usevar) {		 \
-							fprintf(src,"%s ",getvar(var)); \
+							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
 							fread(buf,1,1,bin); \
 						} else {				 \
@@ -1284,7 +1280,7 @@ char *decompile_ars(uchar *ars, int len)
 	return(buf);
 }
 
-void decompile(FILE *bin, FILE *src)
+void decompile(FILE *bin, FILE *srcfile)
 {
 	int i;
 	char	ch;
@@ -1298,19 +1294,36 @@ void decompile(FILE *bin, FILE *src)
 	long	var=0;
 	char	buf[80];
 	char	*p;
+	char	src[2048];
+	int		redo=FALSE;
+	char	*labels;
+	size_t	currpos=0;
 
-	while(!feof(bin)) {
-		ush=ftell(bin);
-		fprintf(src,":label_%04x\n",ush);
+	labels=(char *)calloc(1,filelength(fileno(srcfile)));
+	if(labels==NULL) {
+		printf("ERROR allocating memory for labels\n");
+		return;
+	}
+	while(1) {
+		currpos=ftell(bin);
 
-		if(fread(&uch,1,1,bin)!=1)
-			break;
+		if(fread(&uch,1,1,bin)!=1) {
+			if(redo)
+				break;
+			redo=TRUE;
+			printf("Second pass...\n");
+			rewind(bin);
+			continue;
+		}
+		src[0]=0;
+		if(labels[currpos])
+			sprintf(src,":label_%04x\n",currpos);
 		switch(uch) {
 			case CS_USE_INT_VAR:
 				usevar=TRUE;
 				fread(&var,4,1,bin);
 				fread(&buf,2,1,bin);	/* offset/length */
-				break;
+				continue;
 			case CS_VAR_INSTRUCTION:
 				fread(&uch,1,1,bin);
 				switch(uch) {
@@ -1486,23 +1499,12 @@ void decompile(FILE *bin, FILE *src)
 					case TELNET_GATE_STR:				/* TELNET_GATE reverses argument order */
 						WRITE_NAME("TELNET_GATE");
 						fread(&lng,4,1,bin);
-						fputc('"',src);
-						while(fread(&ch,1,1,bin)==1) {
-							if(ch==0)
-								break;
-							if(ch<' ' || ch > 126 || ch == '"') {
-								fprintf(src, "\\%03d", ch);
-							}
-							else
-								fputc(ch, src);
-						}
-						fputc('"',src);
-						fputc(' ',src);
+						write_cstr(bin,src);
 						if(usevar) {
-							fprintf(src,"%s ",getvar(var));
+							sprintf(strchr(src,0),"%s ",getvar(var));
 							usevar=FALSE;
 						} else {
-							fprintf(src,"%ld ",lng);
+							sprintf(strchr(src,0),"%ld ",lng);
 						}
 						eol(src);
 						break;
@@ -1510,12 +1512,12 @@ void decompile(FILE *bin, FILE *src)
 						WRITE_NAME("TELNET_GATE");
 						fread(&lng,4,1,bin);
 						fread(&lng2, 1, 4, bin);
-						fprintf(src,"%s ",getvar(lng2));
+						sprintf(strchr(src,0),"%s ",getvar(lng2));
 						if(usevar) {
-							fprintf(src,"%s ",getvar(var));
+							sprintf(strchr(src,0),"%s ",getvar(var));
 							usevar=FALSE;
 						} else {
-							fprintf(src,"%ld ",lng);
+							sprintf(strchr(src,0),"%ld ",lng);
 						}
 						eol(src);
 						break;
@@ -1534,6 +1536,7 @@ void decompile(FILE *bin, FILE *src)
 					default:
 						printf("ERROR!  Unknown variable-length instruction: %02x%02X\n",CS_VAR_INSTRUCTION,uch);
 						printf("Cannot continue.\n");
+						free(labels);
 						return;
 				}
 				break;
@@ -1715,14 +1718,16 @@ void decompile(FILE *bin, FILE *src)
 				break;
 			case CS_GOTO:
 				fread(&ush,2,1,bin);
+				labels[ush]=TRUE;
 				WRITE_NAME("GOTO");
-				fprintf(src,"label_%04x ",ush);
+				sprintf(strchr(src,0),"label_%04x ",ush);
 				eol(src);
 				break;
 			case CS_CALL:
 				fread(&ush,2,1,bin);
+				labels[ush]=TRUE;
 				WRITE_NAME("CALL");
-				fprintf(src,"label_%04x ",ush);
+				sprintf(strchr(src,0),"label_%04x ",ush);
 				eol(src);
 				break;
 			case CS_TOGGLE_NODE_MISC:
@@ -1744,6 +1749,7 @@ void decompile(FILE *bin, FILE *src)
 			case CS_THREE_MORE_BYTES:
 				printf("ERROR!  I dont know anything about CS_THREE_MORE_BYTES.\n");
 				printf("Cannot continue.\n");
+				free(labels);
 				return;
 			case CS_MENU:
 				STR("MENU");
@@ -1823,7 +1829,7 @@ void decompile(FILE *bin, FILE *src)
 				p=(char *)malloc(uch);
 				fread(p,uch,1,bin);
 				WRITE_NAME("COMPARE_ARS");
-				fprintf(src,"%s\n",decompile_ars(p,uch));
+				sprintf(strchr(src,0),"%s\n",decompile_ars(p,uch));
 				free(p);
 				break;
 			case CS_TOGGLE_USER_MISC:
@@ -1890,6 +1896,7 @@ void decompile(FILE *bin, FILE *src)
 					default:
 						printf("ERROR!  Unknown net function %02x%02X\n",CS_NET_FUNCTION,uch);
 						printf("Cannot continue.\n");
+						free(labels);
 						return;
 				}
 				break;
@@ -1920,11 +1927,11 @@ void decompile(FILE *bin, FILE *src)
 						write_lng(bin,src);
 						fread(&ush,2,1,bin);
 						if(ush==SEEK_CUR)
-							fputs("CUR ",src);
+							strcat(src,"CUR ");
 						else if(ush==SEEK_END)
-							fputs("END ",src);
+							strcat(src,"END ");
 						else
-							fprintf(src, "%d ",ush);
+							sprintf(strchr(src,0), "%d ",ush);
 						eol(src);
 						break;
 					case FIO_SEEK_VAR:
@@ -1933,11 +1940,11 @@ void decompile(FILE *bin, FILE *src)
 						write_var(bin,src);
 						fread(&ush,2,1,bin);
 						if(ush==SEEK_CUR)
-							fputs("CUR ",src);
+							strcat(src,"CUR ");
 						else if(ush==SEEK_END)
-							fputs("END ",src);
+							strcat(src,"END ");
 						else
-							fprintf(src, "%d ",ush);
+							sprintf(strchr(src,0), "%d ",ush);
 						eol(src);
 						break;
 					case FIO_LOCK:
@@ -2003,6 +2010,7 @@ void decompile(FILE *bin, FILE *src)
 					default:
 						printf("ERROR!  Unknown file function %02x%02X\n",CS_FIO_FUNCTION,uch);
 						printf("Cannot continue.\n");
+						free(labels);
 						return;
 				}
 				break;
@@ -2265,9 +2273,13 @@ void decompile(FILE *bin, FILE *src)
 			default:
 				printf("ERROR!  Unknown instruction: %02X\n",uch);
 				printf("Cannot continue.\n");
+				free(labels);
 				return;
 		}
+		if(redo)
+			fputs(src,srcfile);
 	}
+	free(labels);
 }
 
 int main(int argc, char **argv)
