@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -3374,8 +3374,7 @@ void compile(char *src)
 }
 
 char *banner=	"\n"
-				"BAJA v2.34 - Synchronet Shell/Module Compiler - "
-				"Copyright %s Rob Swindell\n";
+				"BAJA v2.34-%s (rev %s) - Synchronet Shell/Module Compiler\n";
 
 char *usage=	"\n"
 				"usage: baja [-opts] file[.src]\n"
@@ -3390,9 +3389,12 @@ char *usage=	"\n"
 
 int main(int argc, char **argv)
 {
-	uchar str[128],src[128]="",*p;
-	int i,j;
-	int show_banner=1;
+	uchar	str[128],src[128]="",*p;
+	int		i,j;
+	int		show_banner=1;
+	char	revision[16];
+
+	sscanf("$Revision$", "%*s %s", revision);
 
 	for(i=1;i<argc;i++)
 		if(argv[i][0]=='-'
@@ -3422,14 +3424,14 @@ int main(int argc, char **argv)
 					show_banner=0;
 					break;
 				default:
-					printf(banner,__DATE__+7);
+					printf(banner,PLATFORM_DESC,revision);
 					printf(usage);
 					bail(1); }
 		else
 			strcpy(src,argv[i]);
 
 	if(show_banner)
-		printf(banner,__DATE__+7);
+		printf(banner,PLATFORM_DESC,revision);
 
 	if(!src[0]) {
 		printf(usage);
