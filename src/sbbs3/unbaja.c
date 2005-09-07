@@ -837,12 +837,10 @@ void eol(char *src)
 
 char *decompile_ars(uchar *ars, int len)
 {
-	int i;
 	static char	buf[1024];
 	char	*out;
 	uchar	*in;
 	uint	artype;
-	char	ch;
 	uint	n;
 	int		equals=0;
 	int		not=0;
@@ -1286,10 +1284,8 @@ void decompile(FILE *bin, FILE *srcfile)
 	char	ch;
 	uchar	uch;
 	ushort	ush;
-	short	sh;
 	long	lng;
 	long	lng2;
-	ulong	ulng;
 	int		usevar=FALSE;
 	long	var=0;
 	char	buf[80];
