@@ -309,10 +309,16 @@ void cvttab(char *str)
 			str[i]=' ';
 }
 
-void newvar(uchar *in)
+void newvar(uchar* src, uchar *in)
 {
 	uchar name[128];
 	long i,l;
+
+	if(isdigit(*in)) {
+		printf("!SYNTAX ERROR (illegal variable name):\n");
+		printf(linestr,src,line,(char*)in);
+		bail(1); 
+	}
 
 	sprintf(name,"%.80s",in);
 	if(strncmp(name,"var_",4)==0)	/* decompiled source? */
@@ -373,7 +379,7 @@ long isvar(uchar *arg)
 	uchar name[128],*p;
 	long i,l;
 
-	if(!arg || !(*arg))
+	if(!arg || !(*arg) || isdigit(*arg))
 		return(0);
 
 	sprintf(name,"%.80s",arg);
@@ -550,7 +556,7 @@ void compile(char *src)
 			for(p=arg;*p && *p!='#';) {
 				sp=strchr(p,' ');
 				if(sp) *sp=0;
-				newvar(p);
+				newvar(src,p);
 				if(!sp)
 					break;
 				p=sp+1;
@@ -855,7 +861,7 @@ void compile(char *src)
 				if(sp) *sp=0;
 				fputc(CS_VAR_INSTRUCTION,out);
 				fputc(DEFINE_STR_VAR,out);
-				newvar(p);
+				newvar(src,p);
 				writecrc(src,p);
 				if(!sp)
 					break;
@@ -870,7 +876,7 @@ void compile(char *src)
 				if(sp) *sp=0;
 				fputc(CS_VAR_INSTRUCTION,out);
 				fputc(DEFINE_INT_VAR,out);
-				newvar(p);
+				newvar(src,p);
 				writecrc(src,p);
 				if(!sp)
 					break;
@@ -885,7 +891,7 @@ void compile(char *src)
 				if(sp) *sp=0;
 				fputc(CS_VAR_INSTRUCTION,out);
 				fputc(DEFINE_GLOBAL_STR_VAR,out);
-				newvar(p);
+				newvar(src,p);
 				writecrc(src,p);
 				if(!sp)
 					break;
@@ -900,7 +906,7 @@ void compile(char *src)
 				if(sp) *sp=0;
 				fputc(CS_VAR_INSTRUCTION,out);
 				fputc(DEFINE_GLOBAL_INT_VAR,out);
-				newvar(p);
+				newvar(src,p);
 				writecrc(src,p);
 				if(!sp)
 					break;
