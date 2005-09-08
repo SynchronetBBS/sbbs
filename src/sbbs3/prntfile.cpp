@@ -79,7 +79,7 @@ void sbbs_t::printfile(char *str, long mode)
 		CRLF;
 
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
-		lprintf(LOG_NOTICE,"File not found: %s",str);
+		lprintf(LOG_NOTICE,"Node %d !File not found: %s",cfg.node_num,str);
 		bputs(text[FileNotFound]);
 		if(SYSOP) bputs(str);
 		CRLF;
@@ -134,7 +134,7 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 		CRLF; 
 	}
 	if((file=nopen(str,O_RDONLY))==-1) {
-		lprintf(LOG_NOTICE,"File not found: %s",str);
+		lprintf(LOG_NOTICE,"Node %d !File not found: %s",cfg.node_num,str);
 		bputs(text[FileNotFound]);
 		if(SYSOP) bputs(str);
 		CRLF;

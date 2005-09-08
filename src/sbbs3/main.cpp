@@ -3322,7 +3322,7 @@ void node_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if(!sbbs->js_init(&stack_frame)) /* This must be done in the context of the node thread */
-			lprintf(LOG_ERR,"!Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
+			lprintf(LOG_ERR,"Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
 	}
 #endif
 
@@ -4135,7 +4135,7 @@ void DLLCALL bbs_thread(void* arg)
 	    if(uspy_listen_socket[i-1]!=INVALID_SOCKET) {
 	        uspy_addr_len=SUN_LEN(&uspy_addr);
 	        if(bind(uspy_listen_socket[i-1], (struct sockaddr *) &uspy_addr, uspy_addr_len)) {
-	            lprintf(LOG_ERR,"!Node %d !ERROR %d binding local spy socket %d to %s"
+	            lprintf(LOG_ERR,"Node %d !ERROR %d binding local spy socket %d to %s"
 	                , i, errno, uspy_listen_socket[i-1], uspy_addr.sun_path);
 	            close_socket(uspy_listen_socket[i-1]);
 				uspy_listen_socket[i-1]=INVALID_SOCKET;

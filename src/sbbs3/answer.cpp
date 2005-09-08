@@ -167,7 +167,7 @@ bool sbbs_t::answer()
 				lprintf(LOG_DEBUG,"Node %d RLogin: Unknown user: %s",cfg.node_num,rlogin_name);
 		}
 		if(rlogin_name[0]==0) {
-			lprintf(LOG_DEBUG,"!Node %d RLogin: No user name received",cfg.node_num);
+			lprintf(LOG_DEBUG,"Node %d !RLogin: No user name received",cfg.node_num);
 			sys_status&=~SS_RLOGIN;
 		}
 	}
