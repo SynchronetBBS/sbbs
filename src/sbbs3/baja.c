@@ -2265,6 +2265,10 @@ void compile(char *src)
 		if(!stricmp(p,"PRINT")) {
 			if(!(*arg)) break;
 			fprintf(out,"%c",CS_PRINT);
+			if(strstr(arg,"%s")!=NULL) {
+				printf("!WARNING: PRINT \"%%s\" is a security hole if STR contains unvalidated input\n");
+				printf(linestr,src,line,save);
+			}
 			writecstr(arg);
 			continue; }
 		if(!stricmp(p,"PRINT_LOCAL")) {
