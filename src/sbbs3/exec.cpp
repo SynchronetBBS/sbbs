@@ -1766,7 +1766,7 @@ int sbbs_t::exec(csi_t *csi)
 				outchar(csi->cmd&0x7f);
 			return(0);
 		case CS_PRINTSTR:
-			putmsg(csi->str,P_SAVEATR|P_NOABORT);
+			putmsg(csi->str,P_SAVEATR|P_NOABORT|P_NOATCODES);
 			return(0);
 		case CS_CMD_HOME:
 			if(csi->cmdrets<MAX_CMDRETS)
