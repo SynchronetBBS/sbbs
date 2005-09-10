@@ -575,7 +575,7 @@ while(client.socket.is_connected && !quit) {
 					var ng_found = false;					/* Requires sbbs v3.13	*/
 					var ng_list = hdr.newsgroups.split(','); 
 					for(n in ng_list) 
-						if(ng[n].toLowerCase() == selected.newsgroup.toLowerCase()) {
+						if(ng_list[n].toLowerCase() == selected.newsgroup.toLowerCase()) {
 							ng_found = true; 
 							break;  
 						}
