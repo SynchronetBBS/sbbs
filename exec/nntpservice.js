@@ -571,6 +571,15 @@ while(client.socket.is_connected && !quit) {
 
 				if(hdr.newsgroups==undefined)
 					hdr.newsgroups = selected.newsgroup;
+				else {	/* Tracker1's mod for adding the correct newsgroup name		*/
+					var ng_found = false;					/* Requires sbbs v3.13	*/
+					var ng_list = hdr.newsgroups.split(','); 
+					for(n in ng_list) 
+						if(ng[n].toLowerCase() == selected.newsgroup.toLowerCase()) 
+							ng_found = true, break; 
+					if(!ng_found)
+						hdr.newsgroups = selected.newsgroup + ',' + hdr.newsgroups;
+				}
 
 				if(hdr.from_org==undefined && !hdr.from_net_type)
 					hdr.from_org=system.name;
