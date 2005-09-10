@@ -201,3 +201,8 @@ $(MTOBJODIR)$(DIRSEP)services$(OFILE): services.c
         $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DSERVICES_EXPORTS -DSMB_IMPORTS -USBBS_EXPORTS \
 			-n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
 
+# QWKNodes
+$(QWKNODES): $(QWKNODES_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(SMBLIB_LIBS) $(XPDEV_LIBS)
+

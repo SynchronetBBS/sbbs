@@ -230,3 +230,13 @@ SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)
+
+QWKNODES_OBJS = \
+			$(OBJODIR)$(DIRSEP)qwknodes$(OFILE)\
+			$(OBJODIR)$(DIRSEP)date_str$(OFILE)\
+			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
+			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE)\
+			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
+			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
+			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
