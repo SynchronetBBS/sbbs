@@ -562,6 +562,7 @@ object ConfigWizard: TConfigWizard
     Width = 88
     Height = 31
     Caption = '&Next >'
+    Default = True
     TabOrder = 1
     OnClick = NextButtonClick
   end
@@ -764,7 +765,7 @@ object ConfigWizard: TConfigWizard
           Width = 184
           Height = 24
           Style = csDropDownList
-          ItemHeight = 16
+          ItemHeight = 0
           ParentShowHint = False
           ShowHint = True
           TabOrder = 0
@@ -814,7 +815,7 @@ object ConfigWizard: TConfigWizard
         Top = 41
         Width = 240
         Height = 24
-        ItemHeight = 16
+        ItemHeight = 0
         TabOrder = 0
         OnChange = VerifyInternetAddresses
       end
