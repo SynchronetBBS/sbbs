@@ -20,23 +20,28 @@
 		</ul>
 	<li>The startup/initialization file may now be named:<br>
 		<tt>ctrl/sbbs<i>[.host | .platform]</i>.ini</tt> or <tt>ctrl/startup<i>[.host | .platform]</i>.ini</tt>
+	<li>New bool ARS keywords (convenience shorthand):<ul>
+		<li><tt>GUEST</tt> (shorthand for "<tt>REST G</tt>")
+		<li><tt>QNODE</tt> (shorthand for "<tt>REST Q</tt>")
+		</ul>
 	</ul><br>
 <li><b>Web Server</b><ul>
 	<li>Win32-CGI support (tested with <tt>php-cgi.exe</tt>)
 	<li>Created <tt>ctrl/cgi_env.ini</tt> which dictates which system environment variables
 	will be passed to CGI processes and which default or forced values they will have
-	<li>Default CGI content-type is now configurable via sbbs.ini [web] DefaultCGIContent (defaults to "text/plain")
-	<li>Added CGI environment variable REDIRECT_STATUS=200 for PHP-CGI kludge (thx Deuce)
-	<li>Added non-standard (Apache) SCRIPT_FILENAME env variable required by PHP-CGI
+	<li>Default CGI content-type is now configurable via <tt>sbbs.ini [web] DefaultCGIContent</tt><br>
+		(defaults to "<tt>text/plain</tt>")
+	<li>Added CGI environment variable <tt>REDIRECT_STATUS=200</tt> for PHP-CGI kludge (thx Deuce)
+	<li>Added non-standard (Apache) <tt>SCRIPT_FILENAME</tt> environment variable required by PHP-CGI
 	<li>Bug-fix: default server-side JavaScript file extension (".ssjs", not "ssjs")
 	<li>Bug-fix: removed ":port" specification from vhost paths
 	<li>When logging and using virtual hosts, log every virtual host in it's own
 		separate file in the format: <tt>(prefix)vhostname-date.log</tt>
-	<li>Renamed sbbs.ini [web] CgiTempDirectory to just TempDirectory (this directory is
-		actually used for SSJS, not CGI)
-	<li>Work-around: chdir() to ctrl_dir during initialization
+	<li>Renamed <tt>sbbs.ini [web] CgiTempDirectory</tt> to just <tt>TempDirectory</tt><br>
+		(this directory is actually used for SSJS, not CGI)
+	<li>Work-around: change current directory to <tt>ctrl</tt> directory during initialization
 		<br>Deuce's .ssjs files
-		make assumptions about the cwd when opening files
+		make assumptions about the current working directory when opening files
 	<li>Created global JS variables: <i>web_root_dir</i> and <i>web_error_dir</i><br>
 		to be used in the
 		future instead of assuming that <tt>"../web/.."</tt> will be the correct location of a
@@ -62,7 +67,7 @@
 		This should allow for competing dynamic HTML solutions based on server-side
 		JavaScript (e.g. <tt>.xjs</tt>).<br>
 		Tip: use <i>http_request.real_path</i> for the path to file-to-be-parsed<br>
-		This should also allow <tt>php-cgi.exe</tt> (for example) to automatically handle .php files
+		This should also allow <tt>php-cgi.exe</tt> (for example) to automatically handle <tt>.php</tt> files
 	<li>Bug-fix: when logging failed login attempts, was logging wrong password variable (i.e. garbage)
 	</ul><br>
 <li><b>Mail Server</b><ul>
@@ -78,6 +83,10 @@
 	<li>If sending to a domain your system handles (i.e. system inetaddr, host name
 		or an entry in <tt>ctrl/domains.cfg</tt>), connect to the local SMTP server, by interface IP if server is  
 		bound to a specific IP, or "127.0.0.1" if it is not
+	<li>Reject (don't attempt to send to) MX records that resolve to <tt>127.x.x.x</tt><br>
+		(e.g. <tt>sbcglobel.net</tt> [sic])
+	<li>Bug-fix: handles attachments of multiple files specified in subject<br>
+		(typically FTN netmail messages)
 	</ul><br>
 <li><b>FTP Server</b><ul>
 	<li>Now supports configurable IP address to use in PASV responses
@@ -125,13 +134,34 @@
 		filenames with spaces in them
 	<li>Fix ups for new user creation via RLogin (Deuce)
 	<li>Bug-fix: don't upper-case the file path when it's input for a new file in a text file section
+	<li>Bug-fixes: interrupting users or chatting with users during logon process
+	<li>New @-code: <tt>INCLUDE</tt><br>
+		Just like <tt>TYPE</tt>, except no auto-prepending of CRLF (blank line)<br>
+		Used for including <tt>head.asc</tt> and <tt>tail.asc</tt> in the new <tt>menu/main.asc</tt>
+	<li>The width of fixed-width @-codes may now be specified (as a decimal number)<br>
+		following the <tt>-R</tt> or <tt>-L</tt> (right or left justification) appendage<br>
+		Allows expanded text to be shorter than the unexpanded @-code length<br>
+		(e.g. <tt>@NODE-L2@</tt> for a left-justified 2 character node number)
+	<li>Bugfix: Ctrl-A codes to move the cursor right (>0x7f) weren't working for non-ANSI users
+	<li>New command-line specifier (<tt>%@</tt>) expands to <tt>exec</tt> dir on Win32
+		(same as <tt>%!</tt>), blank on Unix<br>for use with <i>info-zip</i> command-lines
+	<li>Command-lines containing filenames (<tt>%f</tt>) with spaces in them are now automatically
+		quoted as needed
+	<li>Command-lines of external programs are now logged
+	<li>Additional (potentially helpful) log output when detecting QWK pack semaphore
+		and mutex (lock) files
+	<li>Bugfix: Baja/PCMS integer manipulation functions (e.g. ADD,SUB,MUL,DIV,AND, etc.)
+		did not work if the second argument was a string variable
+	<li>Password masking now handles space characters correctly
+	<li>ESC immediately followed by anything other than '<tt>[</tt>' is now handled immediately
 	<li>Auto-terminating JavaScript modules:<br>
 		If <i>js.auto_terminate</i> is <i>true</i> (the default value) and the remote user disconnects,
 		the script will automatically terminate<br>
 		(use the new <i>js.on_exit()</i> method to have any critical clean-up functions perfomed during termination)
+	<li>New Baja module/shell decompiler (from <i>Deuce</i>): <tt>unbaja</tt>
 	</ul><br>
 <li><b>JavaScript</b><ul>
-	<li>Bug-fix: predictable random numbers being returned from random()
+	<li>Bug-fix: predictable random numbers being returned from <i>random()</i>
 	<li>Bug-fix: <i>system.newuser_password</i> and <i>system.newuser_magic_word</i> were reversed
 	<li>Bug-fix: <i>Queue</i> objects can now have <i>null</i> encoded/enqueued and dequeued
 		without converting to an empty object or segfaulting
@@ -141,12 +171,12 @@
 	<li>Bug-fix: corrected <i>link</i> property for directories in libraries that use a "code prefix"
 		(the prefix isn't used in the FTP virtual directories)
 	<li>JSexec-Unix: a <tt>SIGHUP</tt> will cause a recycle/re-run
-	<li>JSexec: added '-f' option to force console output stream to non-buffered
-	<li>JSexec: added '-S' option to set thread stack size limit, default is 256K bytes<br> 
+	<li>JSexec: added <tt>-f</tt> option to force console output stream to non-buffered
+	<li>JSexec: added <tt>-S</tt> option to set thread stack size limit, default is 256K bytes<br> 
 		This should keep JSexec from crashing due to the ircd recursion bug.<br>
-		It'll log a JS exception/error and exit (or loop) instead. Use '-S0' to set an unlimited
-		thread stack size
-	<li>JSexec: if error and console messages are redirected to files (using -e and -o options)
+		It'll log a JS exception/error and exit (or loop) instead
+		<br>Use <tt>-S0</tt> to set an unlimited thread stack size (not recommended)
+	<li>JSexec: if error and console messages are redirected to files (using <tt>-e</tt> and <tt>-o</tt> options)
 		echo error messages to status output (default: stderr) as well
 	<li>All string-modification methods now return <i>undefined</i> if passed an undefined
 		value (rather than converting to the string "undefined")
@@ -155,6 +185,9 @@
 	<li><i>bbs.get_newscantime()</i> now returns <i>null</i> on abort instead of <i>undefined</i><br>
 		It's been determined that <i>null</i> is the better error return value for functions
 		(for one, it's easier to to enqueue/dequeue)
+	<li>New feature (requested by sinister-x), if a msg header object is passed to
+		<i>bbs.post_msg()</i>, it will be used for the in-relpy-to header fields and thread
+		linkage automatically
 	<li>Always enqueue the result of a background-executed script (even if it fails with an
 		error)<br>
 		If an argument is passed to <i>exit()</i>, enqueue that value instead
@@ -167,28 +200,36 @@
 	<li>New global function: <i>flags_str()</i> to convert string flag representations
 		(e.g. "A-Z") to/from numeric representation (used in the <i>user.security</i>
 		properties)
-	<li>New advanced function: <i>js.report_error()</i> 
-		- used to report errors uses the internal JS error reporter<br>
+	<li>New advanced function: <i>js.report_error()</i><br>
+		used to report errors using the internal JS error reporter<br>
 		(passing <i>false</i> as the second argument causes the script to immediately terminate)<br>
-		<i>log()</i> should be used for normal script error reporting
+		<i>log()</i> should be used instead, for normal script error reporting
+	<li>New <i>console.printfile()</i> mode flag: <tt>P_NOCRLF</tt> (defined in <tt>sbbsdefs.js</tt>)
 	<li>Bug-fix: <i>log()</i> now treats a single numeric argument as the value to be logged rather than the log level
-	<li>New advanced function: <i>js.on_exit()</i> - used to add a string to a last-in-first-out queue
-	    of strings to be evaluated/executed upon termination of the script
+	<li>New advanced function: <i>js.on_exit()</i><br>
+		used to add a string to a last-in-first-out queue
+	    of strings to be automatically evaluated/executed upon termination of the script
 	<li>If a <i>Date</i> object is passed as the default value to <i>File.iniGetObject()</i>, return
 		a <i>Date</i> object
+	<li>The object properties returned from <i>MsgBase.get_msg_index()</i> and <i>get_msg_header()</i>
+		(header and index fields) are now writable
 	</ul><br>
 <li><b>SBBSecho</b><ul>
 	<li>Work-around for BRE/FE inter-BBS attachment bug (remove pre-pended '^' from attached filename)
-	<li>Fix case of attached files before placing in .?LO files (for Unix file system compatibility)
+	<li>Fix case of attached files before placing in <tt>.?LO</tt> files (for Unix file system compatibility)
+	<li>Now supports <tt>%@</tt> (for info-zip), <tt>%.</tt>, and <tt>%?</tt> command-line specifiers
+		in file pack/unpack command-line
+	<li>Create RFC822 mesage-IDs for imported FTN echomail messages<br>
+		(for later cross-referencing of posted replies via <tt>nntpservice.js</tt>)
 	</ul><br>
 <li><b>Synchronet Console</b><ul>
 	<li>Bug-fix: for log output, display control characters in ^X format<br>
 		(ths should fix the mystery termination bug when ran from xterm and logging a Ctrl-E character)
-	<li>Bug-fix: don't over-ride the Unix syslog facility type when using the 'sbbs -d' option
+	<li>Bug-fix: don't over-ride the Unix syslog facility type when using the sbbs <tt>-d</tt> option
 		and no facility type was specified
-	<li>Allow the Unix syslog identity to be configurable using the sbbs.ini [Unix] LogIdent key
-	<li>Allow the Unix PID file name to be configured using sbbs.ini [Unix] PidFile (when daemonized only)<br>
-		(default is still <tt>/var/run/sbbs.pid</tt>)
+	<li>Allow the Unix syslog identity to be configured using the <tt>sbbs.ini [Unix] LogIdent</tt> key
+	<li>Allow the Unix PID file name to be configured using the <tt>sbbs.ini [Unix] PidFile</tt><br>
+		(when daemonized only) default is still <tt>/var/run/sbbs.pid</tt>
 	</ul><br>
 <li><b>Synchronet Control Panel (for Win32)</b><ul>
 	<li>Bug-fix: hostname being set to "(null)" when importing registry settings from v3.00-v3.11
@@ -205,10 +246,12 @@
 	<li>If [-]help or [-]? is passed on the command-line, no longer attempts to start
 		service control dispatcher (just displays usage)
 	<li>Usage is no longer displayed if the service control dispatcher is started successfully
-	<li>"/options" are supported (as well as "-options" and just "options")
+	<li>"/options" are supported (as well as <tt>-options</tt> and just <tt>options</tt>)
 	<li>When re-enabling a disabled service, sets the service's start type to "auto" or
-		"manual" based on the AutoStart settings in the startup .ini file
+		"manual" based on the AutoStart settings in the startup file (e.g. <tt>sbbs.ini</tt>)
+	<li>Added "list" command, to list service install/start mode and current state
 	<li>Added "start" and "stop" commands to easily start and stop one or all services using sbbsNTsvcs
+	<li>Added mute, unmute, and recycle commands
 	<li>Allow short-hand service names on command-line (e.g. just "BBS" instead of "SynchronetBBS")
 	</ul><br>
 <li><b>CHKSMB</b><ul>
@@ -218,23 +261,23 @@
 <li><b>ListServer</b><ul>
 	<li>Work-around bug in v3.12a: remove msgtxt file to prevent mail server from
 		attempting delivery of list contributions to user #0
-	<li>Stops parsing listserver commands when tear line ("---") is reached
+	<li>Stops parsing listserver commands when tear line (<tt>---</tt>) is reached
 	<li>Export no messages if the list.ptr file is empty/invalid
 	<li>Report an error if no listname was specified on the subscribe/unsubscribe command line
 	<li>Beautified/unified log output (include "ListServer" in all output)
 	<li>Don't send help text for every invalid command (just once)
 	<li>Bug-fix: moderated message posting
-	<li>Bug-fix: convert sub code to lowercase for use as index into msg_area.sub[] array
+	<li>Bug-fix: convert sub code to lowercase for use as index into <i>msg_area.sub[]</i> array
 	</ul><br>
 <li><b>NewsLink</b><ul>
 	<li>Bug-fix: If aborted due to disconnection, the import pointer would be off by one
-		causing the next article to not be imported the next time newslink ran
+		causing the next article to not be imported the next time NewsLink was run
 	<li>Use XOVER to get article headers (if supported on server)<br>This reduces the
 		likelihood of requesting a bad article number which some servers now consider
 		worthy of disconnection!
-	<li>Added "-nx" command-line option or "no_xover" <tt>newlink.cfg</tt> option to disable
+	<li>Added <tt>-nx</tt> command-line option or "no_xover" <tt>newlink.cfg</tt> option to disable
 		XOVER-on-import support
-	<li>Added an "unmangle" option to <tt>newslink.cfg</tt> (or "-um" on the command-line)
+	<li>Added an "unmangle" option to <tt>newslink.cfg</tt> (or <tt>-um</tt> on the command-line)
 		to automatically remove the NewsLink anti-spam measure from the e-mail address
 		(if present) in imported messages
 	<li>If "NNTP-Posting-Host" header field is defined, compare value to contents of
@@ -244,14 +287,14 @@
 	</ul><br>
 <li><b>NNTP Service</b><ul>
 	<li>Added support for the LISTGROUP command (from RFC 2980)
-	<li>Bug-fix: Don't allow guest/anonymous logins if the "-na" option is used
+	<li>Bug-fix: Don't allow guest/anonymous logins if the <tt>-na</tt> option is used
 	<li>Bug-fix: Always logout the current user upon receipt of AUTHINFO PASS
 	<li>Bug-fix: don't attempt to use <i>msgbase.cfg</i> for xref field:<br>
 		use selected.newsgroup instead, which is always valid, even for the "mail" group
 	<li>Bug-fix: treat messages posted by non-QWKnet accounts as "local" messages<br>
 		(i.e. set <i>header.from_net_type</i> to <i>NET_NONE</i>)<br>
 		This defeats the v3.12 "feature"
-		in <i>msgbase.save_msg()</i>, which auto-detects the from_net_type based on the
+		in <i>msgbase.save_msg()</i>, which auto-detects the <i>from_net_type</i> based on the
 		<i>from_net_addr</i>
 	</ul><br>
 <li><b>IRC Daemon</b><ul>
@@ -264,6 +307,7 @@
 		<a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/ircd_unreg.js">ircd_unreg.js</a>
 	</ul><br>
 <li><b>Documentation</b><ul>
+	<li>The Web Server is now documented in <tt><a href="websrvr.txt">docs/websrvr.txt</a></tt>
 	<li>The ListGate module (<tt>exec/listgate.js</tt>) is now documented in <tt><a href="listgate.txt">docs/listgate.txt</a></tt>
 	<li>Fixed JS documentation error: default timeout value for <i>Queue.poll()</i> is <i>0</i>, not
 		<i>infinite</i>
