@@ -477,7 +477,7 @@ char* iniSetDateTime(str_list_t* list, const char* section, const char* key
 
 	if(value==0)
 		SAFECOPY(str,"Never");
-	else if((p=ctime_r(&value,tstr))==NULL)
+	else if((p=CTIME_R(&value,tstr))==NULL)
 		SAFEPRINTF(str,"0x%lx",value);
 	else if(!include_time)	/* reformat into "Mon DD YYYY" */
 		safe_snprintf(str,sizeof(str),"%.3s %.2s %.4s"		,p+4,p+8,p+20);
