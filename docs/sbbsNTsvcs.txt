@@ -29,24 +29,38 @@ services know the location of your Synchronet CTRL directory from the
 SBBSCTRL environment variable. See sbbscon.txt for more details about the
 SBBSCTRL environment variable and the initialization file (sbbs.ini).
 
-If you are using the Synchronet Control Panel (for Win32) and want to use
-your current settings for the Synchronet Console or NT Services, you can
-export your settings to your ctrl/sbbs.ini file using the File->Export
-Settings menu option. If you are using Synchronet v3.12 or later, the
-relevant settings are automatically stored in this file (no exporting is
-necessary).
+Synchronet v3.12 and later automatically stores the relevant settings
+in your Synchronet initialization file (no exporting is necessary).
 
 Once installed, the Synchronet NT services may be started from the NT Services
-dialog (under the Control Panel), by running the Synchronet Control Panel, or 
-if the system is rebooted, the services will start automatically.
+dialog (under the Windows Control Panel, Administrative Tools, Services), 
+by running the Synchronet Control Panel, or if the system is rebooted, the
+services will start automatically if enabled and configured for AutoStart.
 
-To remove the Synchronet NT services, run:
+To remove/un-install the Synchronet NT services, run:
 
 	sbbsNTsvcs remove
 
 You may also enable and disable the Synchronet NT services with the sbbsNTsvcs
-command-line options. Run "sbbsNTsvcs" from a command prompt to see the 
-available command-line options.
+command-line options. Run "sbbsNTsvcs -?" from a command prompt to see the 
+available command-line options. Example:
+
+Available Commands:
+
+list                 to list services
+install              to install services
+remove               to remove serivces
+disable              to disable services
+enable               to re-enable disabled services
+start                to start services
+stop                 to stop services
+recycle              to recycle services
+mute                 to mute (sounds of) services
+unmute               to unmute (sounds of) services
+
+To recycle the Synchronet Web Server service, run:
+
+	sbbsNTsvcs recycle web
 
 Synchronet Control Panel
 ------------------------
@@ -63,10 +77,16 @@ integrate these features with the Synchronet NT services in the future.
 
 NT Event Log
 ------------
-Error messages (determined by the LogMask in your sbbs.ini file) will be
+Log messages (determined by the LogMask in your sbbs.ini file) will be
 logged as NT application event log messages (viewable in your NT Event
-Viewer). The event log messages are currently stored in an undefined format,
-though you can view the text.
+Viewer). 
+
+You may wish to configure your NT event log to overwrite old messages
+as needed:
+1. Open the Event Viewer (e.g. from Control Panel->Administrative Tools)
+2. Right click Application Log, Select Properties
+3. Set the maximum log size to something like 8192 (8MB) or bigger
+4. Select "Overwrite events as needed" or "older x days"
 
 Debug Output
 ------------
