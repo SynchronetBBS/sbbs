@@ -21,8 +21,8 @@ function cntnodes()
 	nodes_inuse=0
 	nodes_wfc=0
 
-	for(i=0; i<bbs.nodes; i++) {
-		if(system.node_list.status & NODE_WFC)
+	for(i=0; i<system.nodes; i++) {
+		if(system.node_list[i].status & NODE_WFC)
 			nodes_wfc++;
 		if(system.node_list[i].status & NODE_INUSE)
 			nodes_inuse++;
