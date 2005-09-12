@@ -138,7 +138,7 @@ sem_t	x11_title;
 int InitCS;
 int InitCE;
 int FW, FH;
-int FS=1;
+int FontScale=1;
 #define MAX_SCALE	2
 WORD DpyCols;
 BYTE DpyRows;
@@ -482,8 +482,8 @@ video_update_text()
 	    x11.XChangeGC(dpy, cgc, GCForeground | GCFunction, &v);
 	    x11.XFillRectangle(dpy, win, cgc,
 			   2 +curscol * FW,
-			   2 + cursrow * FH + CursStart * FS,
-			   FW, (CursEnd + 1)*FS - (CursStart*FS));
+			   2 + cursrow * FH + CursStart * FontScale,
+			   FW, (CursEnd + 1)*FontScale - (CursStart*FontScale));
 		flush=1;
 	}
 
@@ -614,13 +614,13 @@ video_event(XEvent *ev)
 				int	oldFS;
 				int r;
 
-				oldFS=FS;
+				oldFS=FontScale;
 				if((ev->xconfigure.width == FW * DpyCols + 4)
 						&& (ev->xconfigure.height == FH * (DpyRows+1) + 4))
 					break;
 						
-				FW=FW/FS;
-				FH=FH/FS;
+				FW=FW/FontScale;
+				FH=FH/FontScale;
 				newFSH=(ev->xconfigure.width+(FW*DpyCols)/2)/(FW*DpyCols);
 				newFSW=(ev->xconfigure.height+(FH*(DpyRows+1))/2)/(FH*(DpyRows+1));
 				if(newFSW<1)
@@ -632,10 +632,10 @@ video_event(XEvent *ev)
 				if(newFSH>MAX_SCALE)
 					newFSH=MAX_SCALE;
 				if(newFSH<newFSW)
-					FS=newFSH;
+					FontScale=newFSH;
 				else
-					FS=newFSW;
-				load_font(NULL,FW,FH,FS);
+					FontScale=newFSW;
+				load_font(NULL,FW,FH,FontScale);
 				resize_window();
 				break;
 		}
@@ -1171,10 +1171,10 @@ resize_window()
 	sh->base_width = FW * DpyCols + 4;
 	sh->base_height = FH * (DpyRows+1) + 4;
 
-    sh->min_width = (FW/FS) * DpyCols + 4;
-	sh->max_width = (FW/FS) * MAX_SCALE * DpyCols + 4;
-    sh->min_height = (FH/FS) * (DpyRows+1) +4;
-	sh->max_height = (FH/FS) * MAX_SCALE * (DpyRows+1) +4;
+    sh->min_width = (FW/FontScale) * DpyCols + 4;
+	sh->max_width = (FW/FontScale) * MAX_SCALE * DpyCols + 4;
+    sh->min_height = (FH/FontScale) * (DpyRows+1) +4;
+	sh->max_height = (FH/FontScale) * MAX_SCALE * (DpyRows+1) +4;
     sh->flags = USSize | PMinSize | PMaxSize | PSize;
 
     x11.XSetWMNormalHints(dpy, win, sh);
@@ -1312,7 +1312,7 @@ load_font(char *filename, int width, int height, int scale)
 
 	if(pfnt!=0)
 		x11.XFreePixmap(dpy,pfnt);
-	scaledfont=scale_bitmap(font, FW, FH*256, &FS);
+	scaledfont=scale_bitmap(font, FW, FH*256, &FontScale);
 	if(scaledfont==NULL)
 		pfnt=x11.XCreateBitmapFromData(dpy, win, font, FW, FH*256);
 	else {
@@ -1383,7 +1383,7 @@ init_mode(int mode)
     update_pixels();
 
     /* Update font. */
-    if(load_font(NULL,vmode.charwidth,vmode.charheight,FS)) {
+    if(load_font(NULL,vmode.charwidth,vmode.charheight,FontScale)) {
 		sem_post(&console_mode_changed);
 		return(-1);
 	}
