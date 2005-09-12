@@ -269,6 +269,8 @@ else
       XP_SEM :=    1
       MT_CFLAGS    +=    -D_POSIX_PTHREAD_SEMANTICS
       MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+      # This makes ctime_r() be the correct one.
+      CFLAGS	   += -D_POSIX_PTHREAD_SEMANTICS
      else            # Linux / Other UNIX
       XP_SEM :=    1
       MT_CFLAGS    += -DUSE_XP_SEMAPHORES
