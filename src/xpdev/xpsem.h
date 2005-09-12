@@ -51,8 +51,8 @@
 struct xp_sem;
 typedef struct xp_sem *xp_sem_t;
 
-#define SEM_FAILED	((xp_sem_t *)0)
-#define SEM_VALUE_MAX	UINT_MAX
+#define XP_SEM_FAILED	((xp_sem_t *)0)
+#define XP_SEM_VALUE_MAX	UINT_MAX
 
 #if defined(__solaris__)
 typedef unsigned int	u_int32_t;
@@ -88,7 +88,7 @@ int  xp_sem_timedwait (xp_sem_t *sem, const struct timespec *abs_timeout);
 */
 
 struct xp_sem {
-#define SEM_MAGIC       ((u_int32_t) 0x09fa4012)
+#define XP_SEM_MAGIC       ((u_int32_t) 0x09fa4012)
         u_int32_t       magic;
         pthread_mutex_t lock;
         pthread_cond_t  gtzero;
@@ -105,7 +105,7 @@ extern void  _thread_init (void);
 	(_threads_initialized != 0)
 
 #define _SEM_CHECK_VALIDITY(sem)		\
-	if (sem==NULL || (*(sem))->magic != SEM_MAGIC) {	\
+	if (sem==NULL || (*(sem))->magic != XP_SEM_MAGIC) {	\
 		errno = EINVAL;			\
 		retval = -1;			\
 		goto RETURN;			\

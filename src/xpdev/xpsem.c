@@ -57,7 +57,7 @@ xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
 		goto RETURN;
 	}
 
-	if (value > SEM_VALUE_MAX) {
+	if (value > XP_SEM_VALUE_MAX) {
 		errno = EINVAL;
 		retval = -1;
 		goto RETURN;
@@ -90,7 +90,7 @@ xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
 	
 	(*sem)->count = (u_int32_t)value;
 	(*sem)->nwaiters = 0;
-	(*sem)->magic = SEM_MAGIC;
+	(*sem)->magic = XP_SEM_MAGIC;
 
 	retval = 0;
   RETURN:
@@ -129,7 +129,7 @@ xp_sem_t *
 xp_sem_open(const char *name, int oflag, ...)
 {
 	errno = ENOSYS;
-	return SEM_FAILED;
+	return XP_SEM_FAILED;
 }
 
 int
