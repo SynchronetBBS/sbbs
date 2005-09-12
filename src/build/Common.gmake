@@ -100,7 +100,7 @@
 
 # Set VERSION
 ifndef VERSION
- VERSION	:=	3.12
+ VERSION	:=	3.13
 endif
 
 # Put local (optional) macro definitions in localdefs.mk
