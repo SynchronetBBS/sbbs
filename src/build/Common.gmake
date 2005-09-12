@@ -226,9 +226,9 @@ endif
 
 # OS Specific Flags
 ifeq ($(os),sunos)    # Solaris
- CFLAGS	+= -D__solaris__ -DNEEDS_DAEMON -DNEEDS_FORKPTY -DNEEDS_SETENV -DNEEDS_CFMAKERAW
+ CFLAGS	+= -D__solaris__ -DNEEDS_DAEMON -DNEEDS_FORKPTY -DNEEDS_CFMAKERAW
  # Solaris 10 provides setenv()
- ifeq ($(shell if [ `uname -r | sed 's/^..//'` -lt 10 ] ; then echo "Yes" ; else echo "No" ; fi),Yes)
+ ifeq ($(shell if [ `uname -r | sed 's/\.//'` -lt 510 ] ; then echo "Yes" ; else echo "No" ; fi),Yes)
   CFLAGS += -DNEEDS_SETENV
  endif
  LDFLAGS	+=	-L/opt/sfw/lib
