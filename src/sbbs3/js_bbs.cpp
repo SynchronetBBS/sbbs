@@ -2602,7 +2602,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("display user list")
 	,310
 	},		
-	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	""
+	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	JSDOCSTR("[user_number]")
 	,JSDOCSTR("enter the user editor")
 	,310
 	},		
