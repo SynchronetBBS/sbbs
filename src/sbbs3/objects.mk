@@ -239,4 +239,8 @@ QWKNODES_OBJS = \
 			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
 			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
+			$(OBJODIR)$(DIRSEP)ars$(OFILE)
+
+SLOG_OBJS = \
+			$(OBJODIR)$(DIRSEP)slog$(OFILE) \
+			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
