@@ -2594,8 +2594,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("display system statistics")
 	,310
 	},		
-	{"node_stats",		js_node_stats,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("display current node statistics")
+	{"node_stats",		js_node_stats,		0,	JSTYPE_VOID,	JSDOCSTR("[node_number]")
+	,JSDOCSTR("display current (or specified) node statistics")
 	,310
 	},		
 	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	""
