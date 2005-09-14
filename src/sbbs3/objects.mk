@@ -270,3 +270,11 @@ DUPEFIND_OBJS = \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
 
+SMBACTIV_OBJS = \
+			$(OBJODIR)$(DIRSEP)smbactiv$(OFILE)\
+			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE)\
+			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
+			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
+			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
+			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
