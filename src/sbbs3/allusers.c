@@ -336,6 +336,6 @@ for(i=1;i<argc;i++) {
 				exit(1); }
 	else {
 		strcpy(dir,argv[i]);
-		backslash(dir);
+		backslash(dir); } }
 return(0);
 }
