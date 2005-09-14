@@ -220,3 +220,8 @@ $(ALLUSERS): $(ALLUSERS_OBJS)
 $(DELFILES): $(DELFILES_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
+
+# DUPEFIND
+$(DUPEFIND): $(DUPEFIND_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)

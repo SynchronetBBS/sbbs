@@ -259,4 +259,14 @@ DELFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
-			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE)\
+			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE)
+
+DUPEFIND_OBJS = \
+			$(OBJODIR)$(DIRSEP)dupefind$(OFILE) \
+			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE)\
+			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
+			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
+			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
+			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+
