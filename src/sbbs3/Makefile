@@ -225,3 +225,8 @@ $(DELFILES): $(DELFILES_OBJS)
 $(DUPEFIND): $(DUPEFIND_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
+
+# SMBACTIV
+$(SMBACTIV): $(SMBACTIV_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
