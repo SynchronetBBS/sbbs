@@ -211,3 +211,8 @@ $(SLOG): $(SLOG_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
 
+# ALLUSERS
+$(ALLUSERS): $(ALLUSERS_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
+

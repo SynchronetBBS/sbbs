@@ -225,3 +225,8 @@ $(QWKNODES): $(QWKNODES_OBJS)
 $(SLOG): $(SLOG_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(SLOG_OBJS) $(XPDEV_LIBS)
+
+# ALLUSERS
+$(ALLUSERS): $(ALLUSERS_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(ALLUSERS_OBJS) $(XPDEV_LIBS)

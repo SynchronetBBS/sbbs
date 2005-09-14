@@ -244,3 +244,8 @@ QWKNODES_OBJS = \
 SLOG_OBJS = \
 			$(OBJODIR)$(DIRSEP)slog$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+
+ALLUSERS_OBJS = \
+			$(OBJODIR)$(DIRSEP)allusers$(OFILE) \
+			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(OBJODIR)$(DIRSEP)ars$(OFILE)
