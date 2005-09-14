@@ -106,7 +106,7 @@ chdir(cfg.ctrl_dir);
 dirnum=libnum=-1;
 if(argv[1][0]=='*')
 	misc|=ALL;
-else if(argv[1][0]!='/') {
+else if(argv[1][0]!='/' && argv[1][0]!='-') {
 	strupr(argv[1]);
 	for(i=0;i<cfg.total_dirs;i++)
 		if(!stricmp(argv[1],cfg.dir[i]->code))
@@ -116,7 +116,7 @@ else if(argv[1][0]!='/') {
 		return(1); }
 	dirnum=i; }
 for(i=1;i<argc;i++) {
-	if(!stricmp(argv[i],"/LIB")) {
+	if(!stricmp(argv[i]+1,"LIB")) {
 		if(dirnum!=-1) {
 			printf("\nBoth directory code and /LIB parameters were used.\n");
 			return(1); }
@@ -132,7 +132,7 @@ for(i=1;i<argc;i++) {
 			printf("\nLibrary short name '%s' not found.\n",argv[i]);
 			return(1); }
 		libnum=j; }
-	else if(!stricmp(argv[i],"/NOT")) {
+	else if(!stricmp(argv[i]+1,"NOT")) {
 		if(nots>=MAX_NOTS) {
 			printf("\nMaximum number of /NOT options (%u) exceeded.\n"
 				,MAX_NOTS);
@@ -142,13 +142,13 @@ for(i=1;i<argc;i++) {
 			printf("\nDirectory internal code must follow /NOT parameter.\n");
             return(1); }
 		sprintf(not[nots++],"%.8s",argv[i]); }
-	else if(!stricmp(argv[i],"/OFF"))
+	else if(!stricmp(argv[i]+1,"OFF"))
 		misc|=OFFLINE;
-	else if(!stricmp(argv[i],"/NOL"))
+	else if(!stricmp(argv[i]+1,"NOL"))
 		misc|=NO_LINK;
-	else if(!stricmp(argv[i],"/RPT"))
+	else if(!stricmp(argv[i]+1,"RPT"))
 		misc|=REPORT;
-	else if(!stricmp(argv[i],"/ALL")) {
+	else if(!stricmp(argv[i]+1,"ALL")) {
 		if(dirnum!=-1) {
 			printf("\nBoth directory code and /ALL parameters were used.\n");
             return(1); }
