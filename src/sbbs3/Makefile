@@ -216,3 +216,7 @@ $(ALLUSERS): $(ALLUSERS_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
 
+# DELFILES
+$(DELFILES): $(DELFILES_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)

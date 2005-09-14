@@ -249,3 +249,14 @@ ALLUSERS_OBJS = \
 			$(OBJODIR)$(DIRSEP)allusers$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE)
+
+DELFILES_OBJS = \
+			$(OBJODIR)$(DIRSEP)delfiles$(OFILE) \
+			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE)\
+			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
+			$(OBJODIR)$(DIRSEP)scfglib2$(OFILE) \
+			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
+			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
+			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE)\
