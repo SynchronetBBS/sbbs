@@ -123,6 +123,8 @@ ifeq ($(INSTALL),UNIX)
 	fail
 else
 	@echo Installing to $(SBBSDIR)
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/delfiles $(SBBSDIR)/exec/delfiles
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/allusers $(SBBSDIR)/exec/allusers
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/qwknodes $(SBBSDIR)/exec/qwknodes
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/asc2ans $(SBBSDIR)/exec/asc2ans
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/ans2asc $(SBBSDIR)/exec/ans2asc
