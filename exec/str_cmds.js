@@ -28,11 +28,15 @@ if(argc>0) {
 
 function str_cmds(str)
 {
-	var file;
-	var word;
-	var i;
-	var j;
-	var a;
+	var file;	// File
+	var word;	// First word of args
+	var i;		// Temp integer
+	var j;		// Temp integer
+	var k;		// Temp integer
+	var l;		// Temp integer
+	var m;		// Temp integer
+	var a;		// Temp array
+	var s;		// Temp string
 
 	// Remove any trailing spaces
 
@@ -389,7 +393,7 @@ function str_cmds(str)
 			}
 			if(str.search(/^ALL$/i)!=-1) {
 				for(i=0;i<file_area.lib_list.length;i++) {
-					for(j=0;j<file_area.lib_list[i].length;j++) {
+					for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
 						bbs.resort_dir(file_area.lib_list[i].dir_list[j].number);
 					}
 				}
@@ -407,27 +411,79 @@ function str_cmds(str)
 			return;
 		}
 
-		if(word=="OLDUL") {
-			// ToDo "OLDUL" not implemented
-			write("\r\n\001h\001rOLDUL command not implemented.");
-			return;
-		}
+		if(word=="OLDUL" || word=="OLD" || word=="OFFLINE" || word=="CLOSE") {
+			str=str.replace(/^[A-Z]*\s/,"");
+			if(file_area.lib_list.length<1)
+				return;
+			s=bbs.get_filespec();
+			if(s==null)
+				return;
+			s=s.replace(/^(.*)(\..*)?$/,
+				function(s, p1, p2, oset, s) {
+					if(p2==undefined)
+						return(format("%-8.8s    ",p1));
+					return(format("%-8.8s%-4.4s",p1,p2));
+				}
+			);
+			write("\r\nSearching ");
+			if(str.toUpperCase()=="ALL")
+				write("all libraries");
+			else if(str.toUpperCase()=="LIB")
+				write("library");
+			else
+				write("directory");
+			write(" for files ");
+			if(word=="OLDUL") {
+				printf("uploaded before %s\r\n", system.timestr(bbs.new_file_time));
+				m=FI_OLDUL;
+			}
+			else if(word=="OLD") {
+				printf("not downloaded since %s\r\n", system.timestr(bbs.new_file_time));
+				m=FI_OLD;
+			}
+			else if(word=="OFFLINE") {
+				write("not online...\r\n");
+				m=FI_OFFLINE;
+			}
+			else {
+				write("currently open...\r\n");
+				m=FI_CLOSE;
+			}
+			k=0;
+			if(str.toUpperCase()=="ALL") {
+				for(i=0;i<file_area.lib_list.length;i++) {
+					for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
+						/* ToDo... there's an offline check in here */
+						/* if(cfg.lib[i]->offline_dir==usrdir[i][j])
+                               continue; */
+						l=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number,s,m);
+						if(l==-1)
+							return;
+						k+=l;
+					}
+				}
+			}
+			// ToDo: Is bbs.curlib and bbs.curdir an index to the *_list array?
+			else if(str.toUpperCase()=="LIB") {
+				for(j=0;j<file_area.lib_list[bbs.curlib].length;j++) {
+					/* ToDo... there's an offliune check in here */
+					/* if(cfg.lib[usrlib[curlib]]->offline_dir==usrdir[curlib][i])
+                           continue; */
 
-		if(word=="OLD") {
-			// ToDo "OLD" not implemented
-			write("\r\n\001h\001rOLD command not implemented.");
-			return;
-		}
-
-		if(word=="OFFLINE") {
-			// ToDo "OFFLINE" not implemented
-			write("\r\n\001h\001rOFFLINE command not implemented.");
-			return;
-		}
-
-		if(word=="CLOSE") {
-			// ToDo "CLOSE" not implemented
-			write("\r\n\001h\001rCLOSE command not implemented.");
+					l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[j].number,s,m);
+					if(l==-1)
+						return;
+					k+=l;
+				}
+			}
+			else {
+				l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,s,m);
+				if(l==-1)
+					return;
+				k+=l;
+			}
+			if(k>1)
+				printf(bbs.text(NFilesListed),k);
 			return;
 		}
 
