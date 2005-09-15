@@ -293,8 +293,11 @@ function str_cmds(str)
 				var files=0;
 				var bytes=0;
 				var dirs=0;
-				// ToDo: Is bbs.curlib and bbs.curdir an index to the *_list array?
-				str=file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].path;
+				curlib=get_lib_index(bbs.curlib);
+				if(curlib==-1)
+					return;
+				/* ToDo bbs.curdir is not necessarily correct */
+				str=file_area.lib_list[curlib].dir_list[bbs.curdir].path;
 				write("\r\nDirectory of: "+str+"\r\n\r\n");
 				a=directory(str+"*",GLOB_NOSORT);
 				for(i=0; i<a.length; i++) {
@@ -316,8 +319,8 @@ function str_cmds(str)
 					write(file_getname(a[i]));
 					console.crlf();
 				}
-                                write(add_commas(files,16)+" File(s)");
-                                writeln(add_commas(bytes,15)+" bytes");
+                write(add_commas(files,16)+" File(s)");
+                writeln(add_commas(bytes,15)+" bytes");
 				write(add_commas(dirs,16)+" Dir(s)");
 				writeln(add_commas(dir_freespace(str),16)+" bytes free");
 			}
@@ -398,14 +401,16 @@ function str_cmds(str)
 					}
 				}
 			}
-			// ToDo: Is bbs.curlib and bbs.curdir an index to the *_list array?
 			else if(str.search(/^LIB$/i)!=-1) {
-				for(j=0;j<file_area.lib_list[bbs.curlib].length;j++) {
-					bbs.resort_dir(file_area.lib_list[bbs.curlib].dir_list[j].number);
+				curlib=get_lib_index(bbs.curlib);
+				if(curlib==-1)
+					return;
+				for(j=0;j<file_area.lib_list[curlib].dir_list.length;j++) {
+					bbs.resort_dir(file_area.lib_list[curlib].dir_list[j].number);
 				}
 			}
 			else {
-				bbs.resort_dir(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
+				bbs.resort_dir(undefined);
 			}
 			str=str.substr(7);
 			return;
@@ -463,21 +468,23 @@ function str_cmds(str)
 					}
 				}
 			}
-			// ToDo: Is bbs.curlib and bbs.curdir an index to the *_list array?
 			else if(str.toUpperCase()=="LIB") {
-				for(j=0;j<file_area.lib_list[bbs.curlib].length;j++) {
+				curlib=get_lib_index(bbs.curlib);
+				if(curlib==-1)
+					return;
+				for(j=0;j<file_area.lib_list[curlib].dir_list.length;j++) {
 					/* ToDo... there's an offliune check in here */
 					/* if(cfg.lib[usrlib[curlib]]->offline_dir==usrdir[curlib][i])
                            continue; */
 
-					l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[j].number,s,m);
+					l=bbs.list_file_info(file_area.lib_list[curlib].dir_list[j].number,s,m);
 					if(l==-1)
 						return;
 					k+=l;
 				}
 			}
 			else {
-				l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,s,m);
+				l=bbs.list_file_info(undefined,s,m);
 				if(l==-1)
 					return;
 				k+=l;
@@ -841,3 +848,15 @@ function unpackchatpass(node)
 	}
     return(pass);
 }
+
+function get_lib_index(lib)
+{
+	var i;
+
+	for(i=0;i<file_area.lib_list.length;i++) {
+		if(file_area.lib_list[i].number==lib)
+			return(i);
+	}
+	return(-1);
+}
+
