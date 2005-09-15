@@ -96,7 +96,7 @@ cmdkey [
 # String commands start with a semicolon
 cmdkey ;
 	getstrupr 40
-	exec_bin str_cmds
+	exec "?str_cmds %s"
 	end_cmd
 
 cmdkey T
@@ -547,7 +547,7 @@ cmdkey [
 # String commands start with a semicolon
 cmdkey ;
 	getstrupr 40
-	exec_bin str_cmds
+	exec "?str_cmds %s"
 	end_cmd
 
 cmdkey Q
