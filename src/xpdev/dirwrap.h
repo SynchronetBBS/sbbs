@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -71,7 +71,14 @@ extern "C" {
 		#define DLLEXPORT	/* CygWin's glob.h #undef's DLLEXPORT */
 	#endif
 
-#else	
+#else
+
+	/* Values for the second argument to access.
+	   These may be OR'd together.  */
+	#define R_OK    4               /* Test for read permission.  */
+	#define W_OK    2               /* Test for write permission.  */
+	#define X_OK    1               /* Test for execute permission.  */
+	#define F_OK    0               /* Test for existence.  */
 
 	#include <direct.h>		/* mkdir() */
 
