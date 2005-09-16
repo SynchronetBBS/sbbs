@@ -248,7 +248,7 @@ str_list_t strListSplit(str_list_t* lp, char* str, const char* delimit)
 
 	if(lp==NULL) {
 		if((list = strListInit())==NULL)
-			return(0);
+			return(NULL);
 		lp=&list;
 		count=0;
 	} else
@@ -263,19 +263,23 @@ str_list_t strListSplit(str_list_t* lp, char* str, const char* delimit)
 
 str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delimit)
 {
-	char*	buf;
+	char*		buf;
+	str_list_t	new_list;
 
-	if(str==NULL)
+	if(str==NULL || delimit==NULL)
 		return(NULL);
 
 	if((buf=strdup(str))==NULL)
 		return(NULL);
 
-	*list=strListSplit(list,buf,delimit);
+	new_list=strListSplit(list,buf,delimit);
 
 	free(buf);
 
-	return(*list);
+	if(list!=NULL)
+		*list = new_list;
+
+	return(new_list);
 }
 
 size_t	strListMerge(str_list_t* list, str_list_t add_list)
