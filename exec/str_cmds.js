@@ -234,7 +234,10 @@ function str_cmds(str)
 		if(word=="UEDIT") {
 			// Prompts for syspass
 			str=str.substr(5);
-			bbs.edit_user(str);
+			if(parseInt(str))
+				bbs.edit_user(str);
+			else
+				bbs.edit_user();
 			return;
 		}
 
