@@ -2489,6 +2489,7 @@ static BOOL exec_cgi(http_session_t *session)
 	DWORD	msglen;
 	DWORD	retval;
 	BOOL	success;
+	BOOL	process_terminated=FALSE;
     PROCESS_INFORMATION process_info;
 	SECURITY_ATTRIBUTES sa;
     STARTUPINFO startup_info={0};
@@ -2574,9 +2575,12 @@ static BOOL exec_cgi(http_session_t *session)
 	SAFEPRINTF2(content_type,"%s: %s",get_header(HEAD_TYPE),startup->default_cgi_content);
 	while(server_socket!=INVALID_SOCKET) {
 
+		if(WaitForSingleObject(process_info.hProcess,0)==WAIT_OBJECT_0)
+			process_terminated=TRUE;	/* handle remaining data in pipe before breaking */
+
 		if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
-			lprintf(LOG_WARNING,"%04d CGI Process %s Timed out"
-				,session->socket,getfname(cmdline));
+			lprintf(LOG_WARNING,"%04d CGI Process %s timed out after %u seconds of inactivity"
+				,session->socket,getfname(cmdline),startup->max_cgi_inactivity);
 			break;
 		}
 
@@ -2589,89 +2593,88 @@ static BOOL exec_cgi(http_session_t *session)
 			&waiting,			/* pointer to total number of bytes available */
 			NULL				/* pointer to unread bytes in this message */
 			);
-		if(waiting) {
-
-			/* reset inactivity timer */
-			start=time(NULL);	
-
-			msglen=0;
-			if(done_parsing_headers) {
-				if(ReadFile(rdpipe,buf,sizeof(buf),&msglen,NULL)==FALSE) {
-					lprintf(LOG_ERR,"%04d !ERROR %d reading from pipe"
-						,session->socket,GetLastError());
-					break;
-				}
-			}
-			else  {
-				/* This is the tricky part */
-				buf[0]=0;
-				i=pipereadline(rdpipe,buf,sizeof(buf),NULL,0);
-				if(i<0)  {
-					got_valid_headers=FALSE;
-					break;
-				}
-				lprintf(LOG_DEBUG,"%04d CGI header line: %s"
-					,session->socket, buf);
-				SAFECOPY(header,buf);
-				if(strchr(header,':')!=NULL) {
-					directive=strtok(header,":");
-					value=strtok(NULL,"");
-					i=get_header_type(directive);
-					switch (i)  {
-						case HEAD_LOCATION:
-							got_valid_headers=TRUE;
-							if(*value=='/')  {
-								unescape(value);
-								SAFECOPY(session->req.virtual_path,value);
-								session->req.send_location=MOVED_STAT;
-								if(cgi_status[0]==0)
-									SAFECOPY(cgi_status,error_302);
-							} else  {
-								SAFECOPY(session->req.virtual_path,value);
-								session->req.send_location=MOVED_STAT;
-								if(cgi_status[0]==0)
-									SAFECOPY(cgi_status,error_302);
-							}
-							break;
-						case HEAD_STATUS:
-							SAFECOPY(cgi_status,value);
-							break;
-						case HEAD_LENGTH:
-							session->req.keep_alive=orig_keep;
-							strListPush(&session->req.dynamic_heads,buf);
-							break;
-						case HEAD_TYPE:
-							got_valid_headers=TRUE;
-							SAFECOPY(content_type,buf);
-							break;
-						default:
-							strListPush(&session->req.dynamic_heads,buf);
-					}
-					continue;
-				}
-				if(i) {
-					strcat(buf,"\r\n");	/* Add back the missing line terminator */
-					msglen=strlen(buf);	/* we will send this text later */
-				}
-				done_parsing_headers = TRUE;	/* invalid header */
-				session->req.dynamic=IS_CGI;
-				strListPush(&session->req.dynamic_heads,content_type);
-				send_headers(session,cgi_status);
-			}
-			if(msglen) {
-				lprintf(LOG_DEBUG,"%04d Sending %d bytes: %.*s"
-					,session->socket,msglen,msglen,buf);
-				wr=sendsocket(session->socket,buf,msglen);
-				/* log actual bytes sent */
-				if(session->req.ld!=NULL && wr>0)
-					session->req.ld->size+=wr;	
-			}
+		if(!waiting) {
+			if(process_terminated)
+				break;
+			Sleep(1);
 			continue;
 		}
-		Sleep(1);
+		/* reset inactivity timer */
+		start=time(NULL);	
 
-		if(WaitForSingleObject(process_info.hProcess,0)==WAIT_OBJECT_0)
-			break;
+		msglen=0;
+		if(done_parsing_headers) {
+			if(ReadFile(rdpipe,buf,sizeof(buf),&msglen,NULL)==FALSE) {
+				lprintf(LOG_ERR,"%04d !ERROR %d reading from pipe"
+					,session->socket,GetLastError());
+				break;
+			}
+		}
+		else  {
+			/* This is the tricky part */
+			buf[0]=0;
+			i=pipereadline(rdpipe,buf,sizeof(buf),NULL,0);
+			if(i<0)  {
+				lprintf(LOG_WARNING,"%04d CGI pipereadline returned %d",session->socket,i);
+				got_valid_headers=FALSE;
+				break;
+			}
+			lprintf(LOG_DEBUG,"%04d CGI header line: %s"
+				,session->socket, buf);
+			SAFECOPY(header,buf);
+			if(strchr(header,':')!=NULL) {
+				directive=strtok(header,":");
+				value=strtok(NULL,"");
+				i=get_header_type(directive);
+				switch (i)  {
+					case HEAD_LOCATION:
+						got_valid_headers=TRUE;
+						if(*value=='/')  {
+							unescape(value);
+							SAFECOPY(session->req.virtual_path,value);
+							session->req.send_location=MOVED_STAT;
+							if(cgi_status[0]==0)
+								SAFECOPY(cgi_status,error_302);
+						} else  {
+							SAFECOPY(session->req.virtual_path,value);
+							session->req.send_location=MOVED_STAT;
+							if(cgi_status[0]==0)
+								SAFECOPY(cgi_status,error_302);
+						}
+						break;
+					case HEAD_STATUS:
+						SAFECOPY(cgi_status,value);
+						break;
+					case HEAD_LENGTH:
+						session->req.keep_alive=orig_keep;
+						strListPush(&session->req.dynamic_heads,buf);
+						break;
+					case HEAD_TYPE:
+						got_valid_headers=TRUE;
+						SAFECOPY(content_type,buf);
+						break;
+					default:
+						strListPush(&session->req.dynamic_heads,buf);
+				}
+				continue;
+			}
+			if(i) {
+				strcat(buf,"\r\n");	/* Add back the missing line terminator */
+				msglen=strlen(buf);	/* we will send this text later */
+			}
+			done_parsing_headers = TRUE;	/* invalid header */
+			session->req.dynamic=IS_CGI;
+			strListPush(&session->req.dynamic_heads,content_type);
+			send_headers(session,cgi_status);
+		}
+		if(msglen) {
+			lprintf(LOG_DEBUG,"%04d Sending %d bytes: %.*s"
+				,session->socket,msglen,msglen,buf);
+			wr=sendsocket(session->socket,buf,msglen);
+			/* log actual bytes sent */
+			if(session->req.ld!=NULL && wr>0)
+				session->req.ld->size+=wr;	
+		}
 	}
 
     if(GetExitCodeProcess(process_info.hProcess, &retval)==FALSE)
