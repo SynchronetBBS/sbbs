@@ -127,12 +127,6 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="MEM") {
-			// ToDo "MEM" not implemented
-			writeln("\r\n\001h\001rMEM command not implemented.");
-			return;
-		}
-
 		if(str=="YLOG") {
 			if(bbs.check_syspass()) {
 				str=system.logs_dir+strftime("logs/%m%d%y.log",time()-24*60*60);
@@ -293,11 +287,7 @@ function str_cmds(str)
 				var files=0;
 				var bytes=0;
 				var dirs=0;
-				curlib=get_lib_index(bbs.curlib);
-				if(curlib==-1)
-					return;
-				/* ToDo bbs.curdir is not necessarily correct */
-				str=file_area.lib_list[curlib].dir_list[bbs.curdir].path;
+				str=file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].path;
 				write("\r\nDirectory of: "+str+"\r\n\r\n");
 				a=directory(str+"*",GLOB_NOSORT);
 				for(i=0; i<a.length; i++) {
@@ -402,11 +392,8 @@ function str_cmds(str)
 				}
 			}
 			else if(str.search(/^LIB$/i)!=-1) {
-				curlib=get_lib_index(bbs.curlib);
-				if(curlib==-1)
-					return;
-				for(j=0;j<file_area.lib_list[curlib].dir_list.length;j++) {
-					bbs.resort_dir(file_area.lib_list[curlib].dir_list[j].number);
+				for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
+					bbs.resort_dir(file_area.lib_list[bbs.curlib].dir_list[j].number);
 				}
 			}
 			else {
@@ -469,15 +456,12 @@ function str_cmds(str)
 				}
 			}
 			else if(str.toUpperCase()=="LIB") {
-				curlib=get_lib_index(bbs.curlib);
-				if(curlib==-1)
-					return;
-				for(j=0;j<file_area.lib_list[curlib].dir_list.length;j++) {
+				for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
 					/* ToDo... there's an offliune check in here */
 					/* if(cfg.lib[usrlib[curlib]]->offline_dir==usrdir[curlib][i])
                            continue; */
 
-					l=bbs.list_file_info(file_area.lib_list[curlib].dir_list[j].number,s,m);
+					l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[j].number,s,m);
 					if(l==-1)
 						return;
 					k+=l;
