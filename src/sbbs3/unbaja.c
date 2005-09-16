@@ -1737,7 +1737,7 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_GETNUM:
 				MSHT("GETNUM");
 			case CS_COMPARE_NODE_MISC:
-				MSHT("COMPARE_MODE_MISC");
+				MSHT("COMPARE_NODE_MISC");
 			case CS_MSWAIT:
 				MSHT("MSWAIT");
 			case CS_ADJUST_USER_MINUTES:
