@@ -2666,9 +2666,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 		"(<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)")
 	,310
 	},		
-	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	JSDOCSTR("[number type]")
-	,JSDOCSTR("change message scan pointer values "
-		"(<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)")
+	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	""
+	,JSDOCSTR("change message scan pointer values")
 	,310
 	},		
 	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	""
