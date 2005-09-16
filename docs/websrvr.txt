@@ -10,34 +10,43 @@ handing basic web servicing tasks.  It has most of the basic features of a
 general-purpose web server one would come to expect.
 
 It also, through Server-Side JavaScript (SSJS) allows dynamic pages to be
-created which access to BBS data directly.
+created which can access BBS data directly.
+
 
 2. Web Server Configuration
 ---------------------------
-Most of the web server configuration is in your system INI file (Usually
-ctrl/sbbs.ini) the [Web] section contains the following unique settings (The
-remaining sections are the same as the same ones in other sections and are
-documented elsewhere)
+Most of the web server configuration is in your startup INI file (usually
+ctrl/sbbs.ini). The [Web] section contains the following unique settings:
 
-2.1. INI file web configuration [Web] section keys
---------------------------------------------------
+
+2.1. Initialization file [Web] section keys
+-------------------------------------------
 RootDirectory=../web/html
     This is the root directory of your web server... a request to
     http://yourbbs.synchro.net/index.html will be served out of this dir.
 ErrorDirectory=error
     The directory relative to RootDirectory where the various error
-    messages are located.  The error messages are named by the error code
-    they will be displayed on and may be either .html or .ssjs files.
-    (.ssjs files are displayed if they exist, .html files if they do not)
+    message files are located.  The error message files are named by the
+    numeric HTTP error code they will represent and may be either .html 
+    or .ssjs files (.ssjs files take precedence over .html files for the
+    same error).
 IndexFileNames=index.html,index.ssjs
     A comma-separated list of filenames in order of preference to serve as
-    the default document in a directory.  Many SysOps change this to:
+    the default document in a directory.  Many Sysops change this to:
     IndexFileNames=index.html,index.htm,index.ssjs
     Do not remove the index.ssjs unless you are not using the stock
     web pages at all.
+CGIDirectory=cgi-bin
+    A directory relative to RootDirectory where any files found will be
+    considered CGI-executable. Be careful what files you put in this
+    directory.
 CGIExtensions=.cgi
-    Files with this extension will be considered CGI files.  On *nix
-    systems, the web server will attempt to execute them as such.
+    A comma-separated list of file extensions/suffixes. Files with these
+    extensions will be considered CGI-executable and the web server will
+    attempt to execute them as such.
+DefaultCGIContent=text/plain
+    If the CGI program does not generate a content-type header, this value
+    will be used for the MIME content-type specified in the HTTP response.
 JavaScriptExtension=.ssjs
     Files with this extension will be considered SSJS files.  On all
     systems, this will be attempted to run with the JavaScript interpreter.
@@ -100,38 +109,55 @@ Options=NO_HOST_LOOKUP
     NO_JAVASCRIPT
         Disable SSJS execution.
 
+
 2.2. Other web-related configuration files
 ------------------------------------------
-In addition to the keys in the INI file, the web server also, by default, uses
-two other configuration files.
+In addition to the [Web] keys in the initialization file, the web server
+also uses some other configuration files:
+
     ctrl/mime_types.ini
         Contains the file extension to mime-type mapping.  Each line
         is in the format "extension = mime-type" ie: "html = text/html"
-        The extensions are case-insensitive.
+        The extensions are case-insensitive and do not include the '.'.
     ctrl/webicons.ini
         Contains the URLs to the icons used by the default 404.ssjs
-        script for each file type.  Format is "extension = URL" ie:
-        "html=/icons/layout.gif".  Two "magical" extensions exist:
+        script for each file type/extension.  Format is "extension = URL".
+        Example: "html=/icons/layout.gif".  Two "magical" extensions exist:
         DIRECTORY which is used for directories and DefaultIcon which
         is used for extensions which don't exist in the list.
+    ctrl/web_handler.ini
+        Contains 2 sections, [CGI] and [JavaScript], where a list of file
+        extensions and their associated content-creation handlers are
+        specified. The [CGI] section is for natively-executed CGI handlers
+        (e.g. "pl = perl" indicates "perl" will be used to handle ".pl"
+        files). The [JavaScript] section is used for JS-executed content
+        handlers (e.g. "xjs = xjs_handler.js").
+    ctrl/cgi_env.ini
+        Contains a list of system environment variables to pass to CGI
+        processes.  Each variable can have an optionally specified default
+        value, over-ridden value, and prepended or appended text.
 
-3.0 The Template System
---------------------------
-The default web pages use a Template engine which also allows for Theme 
+
+3.0 The SSJS Template System
+----------------------------
+The default web pages use a SSJS Template engine which also allows for Theme 
 support.
 
 [Note:  With this latest implementation of SSJS, @@ codes no longer can be
 nested.]
 
-3.1 The Template Scheme
--------------------------
+
+3.1 The SSJS Template Scheme
+----------------------------
 Each page consists of four parts:
+
     The Header (../web/templates/default/header.inc)
         This file contains the basic requirements for the HTML page.
         The opening HTML, doctype, title, CSS file link, etc.  The
         header file includes the open body, System Name, and User 
         greeting plus the initial page layout table start.  The rest
         of the layout is continued in the next files.
+
     Top Navigation (../web/templates/default/topnav.inc & 
         ../web/lib/topnav_html.ssjs)
         The topnav.inc file contains the basic design of the "breadcrumbs"
@@ -150,29 +176,39 @@ Each page consists of four parts:
             directory.  You would add a check for the path to links.html
             as:  
                 if(http_request.virtual_path=="/links.html")
-                    template.topnav.push({html: '<span class="tlink">Some Links</span>'});
+                    template.topnav.push({html: '<span class="tlink">
+                        Some Links</span>'});
+
     Left Side Navigation (../web/templates/default/leftnav.inc &
-        ../web/lib/leftnav_nodelist.ssjs & ../web/lib/leftnav_html.ssjs)  This starts the main 
-        table layout in the default layout and also provides two other things -- the main 
-        navigation links and a brief nodelisting that displays when users are online via telnet.
-        The links are dynamically created as in the Top Navigation example above with the exception
-        of the two static links.
+        ../web/lib/leftnav_nodelist.ssjs & ../web/lib/leftnav_html.ssjs)
+        This starts the main table layout in the default layout and also
+        provides two other things -- the main navigation links and a brief
+        nodelisting that displays when users are online via telnet.
+        The links are dynamically created as in the Top Navigation example
+        above with the exception of the two static links.
+
     Main Content (various files)
-        This is where the layout of the main content is created.  It is best to look at the 
-        various files in ../web/templates/default & ../web/templates/default/msgs to see how
-        the code is dispayed for the various functions of the Web side of Synchronet.  Some 
-        details on what each of the special codes contained in those files do will follow.
+        This is where the layout of the main content is created.  It is best
+        to look at the various files in ../web/templates/default & 
+        ../web/templates/default/msgs to see how the code is dispayed for the
+        various functions of the Web side of Synchronet.  Some details on what
+        each of the special codes contained in those files do will follow.
+
     Footer (../web/templates/default/footer.inc)
-        This file contains the closing HTML and whatever bottom information you would like.
-        In the case of the default layout, the Webserver/Synchronet versions and the XHTML 1.0
-        logo.  Links to privacy statements or anything else can be placed here and they will 
+        This file contains the closing HTML and whatever bottom information
+        you would like. In the case of the default layout, the
+        Web Server/Synchronet versions and the XHTML 1.0 logo.  Links to
+        privacy statements or anything else can be placed here and they will 
         be displayed at the bottom of each page.
 
-3.2 Theme Support
------------------   
-Theme Layouts can be added to Synchronet by creating them and placing the *.inc files in
-their own directory under ../web/templates/
-Themes are activated by editing the ../web/templates/html_themes.ssjs file.  This file contains:
+
+3.2 SSJS Theme Support
+----------------------
+Theme Layouts can be added to Synchronet by creating them and placing the
+*.inc files in their own directory under ../web/templates/
+
+Themes are activated by editing the ../web/templates/html_themes.ssjs file.
+This file contains:
 
     /* Set default theme name */
     var DefaultTheme="Default";
@@ -198,13 +234,15 @@ to:
 
     var DefaultTheme="CoolTheme";
 
-3.3 Special Codes Used in Template System
--------------------------------------------
-By looking at at the message related files located in ../web/templates/default/msgs,
-it can be seen that some special codes are used to display dynamically created content.
-It is very important to maintain the information EXACTLY as seen in each file or else
-the messaging system will fail.  While how it is displayed can be changed, the correct 
-information will only be dispayed by following the format in the *.inc files.
+
+3.3 Special Codes Used in the SSJS Template System
+--------------------------------------------------
+By looking at at the message related files located in templates/default/msgs,
+it can be seen that some special codes are used to display dynamically created
+content. It is very important to maintain the information EXACTLY as seen in
+each file or else the messaging system will fail.  While how it is displayed
+can be changed, the correct information will only be dispayed by following the
+format in the *.inc files.
 
 For example the groups.inc:
 
@@ -218,8 +256,11 @@ For example the groups.inc:
 </tr>
 <<REPEAT groups>>
 <tr>
-    <td class="grouplist"><a class="grouplist" href="subs.ssjs?msg_grp=^^groups:name^^">%%groups:description%%</a></td>
-    <td class="grouplist" align="right">@@JS:msg_area.grp_list[RepeatObj.index].sub_list.length@@</td>
+    <td class="grouplist">
+        <a class="grouplist" href="subs.ssjs?msg_grp=^^groups:name^^">
+            %%groups:description%%</a></td>
+    <td class="grouplist" align="right">
+        @@JS:msg_area.grp_list[RepeatObj.index].sub_list.length@@</td>
 </tr>
 <<END REPEAT groups>>
 </table>
@@ -227,17 +268,18 @@ For example the groups.inc:
 
 <!-- end Main Content -->
 
-While the table layout can be changed or even eliminated, the information within the
-<<REPEAT groups>> and <<END REPEAT groups>> must remain intact.  To remove the table yet keep
-the correct infomation, the resulting groups.inc would be changed to (while maintaining 
-the main table layout in this case) to:
+While the table layout can be changed or even eliminated, the information
+within the <<REPEAT groups>> and <<END REPEAT groups>> must remain intact.
+To remove the table yet keep the correct infomation, the resulting groups.inc
+would be changed to (while maintaining the main table layout in this case) to:
 
 <!-- Main Content -->  
     
     <td class="main" valign="top"><br />
 
 <<REPEAT groups>>
-    <a class="grouplist" href="subs.ssjs?msg_grp=^^groups:name^^">%%groups:description%%</a>
+    <a class="grouplist" href="subs.ssjs?msg_grp=^^groups:name^^">
+        %%groups:description%%</a>
     @@JS:msg_area.grp_list[RepeatObj.index].sub_list.length@@<br />
 <<END REPEAT groups>>
 
@@ -246,6 +288,7 @@ the main table layout in this case) to:
 <!-- end Main Content -->
 
 This principle applies to all the .inc files in msgs respectively.
+
 
 3.4 The SSJS Template Library
 -------------------------------
@@ -276,8 +319,9 @@ Iterates over the array/object template.name and replaces name:sname with
 the value of template.name.sname.
 (^^ and %% are also supported)
 
-3.5 Message Configuration
---------------------------
+
+3.5 SSJS Message Configuration
+------------------------------
 Configuration settings for the SSJS Messaging system is located in the
 ../web/lib/msgsconfig.ssjs file:
 
@@ -304,52 +348,57 @@ Mark message as private';
 private_reply_message='<input type="checkbox" name="private" value="Yes" checked /> \
 Mark message as private';
 
-Each of these are configurable.  NOTE:  Lines ending in "\" indicate the line below
-is part of the line above.  The "\" is not part of the configuration as it too be 
-removed.
+Each of these are configurable.  NOTE:  Lines ending in "\" indicate the line
+below is part of the line above.  The "\" is not part of the configuration as
+it too be removed.
 
 See the actual file for the defaults currently in use.
 
 3.6 Embedded Javascript
 -----------------------
 
-The *.inc files can (and do in the default layout) have embedded javascript
-which is parsed by the Javascript engine.  Care should be taken as a large
-number of embedded Javascript in the *.inc files slow down overall processing
+The *.inc files can (and do in the default layout) have embedded JavaScript
+which is parsed by the JavaScript engine.  Care should be taken as a large
+number of embedded JavaScript in the *.inc files slow down overall processing
 of pages.
 
-Anything contained within @@JS: @@ is processed by the Server side 
-Javascript engine.
+Anything contained within @@JS: @@ is processed by the Server-side JavaScript
+engine.
 
 For example, it can check if the user is Guest or an actual user with this line:
 
-@@JS:if(user.number==0 || user.security.restrictions&UFLAG_G)'<html code for Guest>'; \
-else '<html code for registered user>';@@
+@@JS:if(user.number==0 || user.security.restrictions&UFLAG_G) \
+'<html code for Guest>'; else '<html code for registered user>';@@
         
-What this does is display links specific for Registered Users only to them and 
-not Guest.  There are many things that can be done with @@JS: @@ code.   
-Note, it also can be used to display HTML based on location as in the Nodelisting stuff.
-In this case, it checks for whether or not a user is online, or if the user is anywhere 
-but the Who's Online page before displaying the Left side Nodelisting.
+What this does is display links specific for Registered Users only to them
+and not Guest.  There are many things that can be done with @@JS: @@ code.
+Note, it also can be used to display HTML based on location as in the
+node listing stuff. In this case, it checks for whether or not a user is
+online, or if the user is anywhere but the Who's Online page before displaying
+the Left side node listing.
 
-IMPORTANT!  Anything contained within @@JS: @@ MUST be on one line or there will 
-be errors in parsing.
+IMPORTANT!  Anything contained within @@JS: @@ MUST be on one line or there
+will be errors in parsing.
+
 
 3.7 global_defs.ssjs
 --------------------
 
-This version of the Web Layout now includes a new file called golbal_defs.ssjs.  It
-is located in the ../web/lib directory.  This file can be used for creating global 
-definitions that span all pages of a site.  For example:
+This version of the Web Layout now includes a new file called
+global_defs.ssjs.  It is located in the ../web/lib directory.  This file can
+be used for creating global definitions that span all pages of a site.
+For example:
 
 template.user_alias=user.alias;
 
-Now @@user_alias@@ can be in any *.inc template files and it will display the user's 
-alias.
+Now @@user_alias@@ can be in any *.inc template files and it will display the
+user's alias.
 
-Care should be excersied when using this file as loading it up with hundreds of predefined
-definitions may slow down overall page rendering as the file is loaded on every page.  
-It would be better to just put a few popular definitions that are truly global rather many
-definitions.  It would be inefficient to have thirty of forty message definitions being 
-loaded when a user is looking at the statistics page.
+Care should be excersied when using this file as loading it up with hundreds
+of predefined definitions may slow down overall page rendering as the file is
+loaded on every page.  It would be better to just put a few popular 
+definitions that are truly global rather many definitions.  It would be
+inefficient to have thirty of forty message definitions being loaded when a
+user is looking at the statistics page.
 
+/* End of file */
