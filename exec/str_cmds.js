@@ -359,7 +359,6 @@ function str_cmds(str)
 		}
 
 		if(word=="UPLOAD") {
-			// ToDo This apparently is broken.
 			str=str.substr(7);
 			if(str.toUpperCase()=="ALL") {
 				for(i=0; i<file_area.lib_list.length; i++) {
