@@ -2598,8 +2598,9 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("display current (or specified) node statistics")
 	,310
 	},		
-	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("display user list")
+	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	JSDOCSTR("[mode]")
+	,JSDOCSTR("display user list"
+	"(see <tt>UL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> values)")
 	,310
 	},		
 	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	JSDOCSTR("[user_number]")
