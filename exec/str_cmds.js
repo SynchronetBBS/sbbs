@@ -361,7 +361,27 @@ function str_cmds(str)
 		if(word=="UPLOAD") {
 			// ToDo This apparently is broken.
 			str=str.substr(7);
-			bbs.bulk_upload(str);
+			if(str.toUpperCase()=="ALL") {
+				for(i=0; i<file_area.lib_list.length; i++) {
+					for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+						/* ToDo extra check here...
+	                        if(cfg.lib[i]->offline_dir==usrdir[i][j])
+   	                         continue; */
+						bbs.bulk_upload(file_area.lib_list[i].dir_list[j].number);
+					}
+				}
+				return;
+			}
+			if(str.toUpperCase()=="LIB") {
+				for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+					/* ToDo extra check here...
+						if(cfg.lib[usrlib[curlib]]->offline_dir
+                         ==usrdir[curlib][i]) */
+					bbs.bulk_upload(file_area.lib_list[bbs.curlib].dir_list[i].number);
+				}
+				return;
+			}
+			bbs.bulk_upload();
 			return;
 		}
 
