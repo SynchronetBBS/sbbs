@@ -265,7 +265,7 @@ static BOOL winsock_startup(void)
 
 DLLEXPORT void DLLCALL sbbs_srand()
 {
-	srand(msclock());
+	srand(time(NULL) ^ GetCurrentThreadId());
 	sbbs_random(10);	/* Throw away first number */
 }
 

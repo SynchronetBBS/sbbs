@@ -770,7 +770,7 @@ static void pop3_thread(void* arg)
 		memset(&user,0,sizeof(user));
 		password[0]=0;
 
-		srand(time(NULL));	/* seed random number generator */
+		srand(time(NULL) ^ GetCurrentThreadId());	/* seed random number generator */
 		rand();	/* throw-away first result */
 		safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%.128s>"
 			,rand(),socket,(ulong)time(NULL),clock(),startup->host_name);
@@ -2039,7 +2039,7 @@ static void smtp_thread(void* arg)
 		return;
 	}
 
-	srand(time(NULL));	/* seed random number generator */
+	srand(time(NULL) ^ GetCurrentThreadId());	/* seed random number generator */
 	rand();	/* throw-away first result */
 	SAFEPRINTF3(session_id,"%x%x%lx",socket,rand(),clock());
 
