@@ -63,6 +63,7 @@ LINK32=link.exe
 # PROP Use_Debug_Libraries 1
 # PROP Output_Dir "msvc.win32.exe.debug"
 # PROP Intermediate_Dir "msvc.win32.debug"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
 # ADD CPP /nologo /W2 /Gm /GX /ZI /Od /I "..\xpdev" /I "..\smblib" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
