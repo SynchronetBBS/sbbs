@@ -16,7 +16,7 @@
 	<li><a href="#rx_smtp">Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</a>
 	<li><a href="#ftp_connect">Why can't users connect to my FTP server?</a>
 	<li><a href="#ftp_nat">Why do FTP clients lock-up or time-out when listing directories or downloading files from my FTP server?</a>
-	<li><a href="#socket_io">Why do some external programs that use socket I/O hang on my Windows BBS?</a>
+	<li><a href="#socket_io">Why do external programs that use socket I/O not work on my Windows BBS?</a>
 	<li><a href="#bind">Why do some or all of my servers get bind errors when starting or recycling?</a>
 	<li><a href="#bandwidth">How many nodes/clients/users can I support with my Internet connection?</a>
 </ul>
@@ -228,11 +228,11 @@ tab of the <i>FTP Server Configuration</i> dialog in the <i>Synchronet Control P
 <p>If you're having problems with <b>passive</b> transfers and you're seeing
 <tt>!UNSUPPORTED COMMAND from <i>username</i>: 'P@SW'</tt> in your FTP server log/window output,
 you're probably using an <b><i>SMC Barricade</i></b> router (see this <a href="http://www.gbnetwork.co.uk/smcftpd/">
-document</a> for details). Upgrade to Synchronet v3.12b (FTP Server Revision 1.296) or later to
+document</a> for details). Upgrade to Synchronet v3.13a (FTP Server Revision 1.296) or later to
 work-around this problem with this device.
 <p>
 If you're having problems with <b>passive</b> (PASV) transfers through your NAT/firewall device
-and you're running Synchronet v3.12b (FTP Server Revision 1.296) or later:
+and you're running Synchronet v3.13a (FTP Server Revision 1.296) or later:
 <ul>
 <li>If the remote client is attempting to connect to your <a href="#private_ip"><b>private</b> IP address</a>
 (your NAT device isn't <i>translating</i> the PASV response from the FTP server) and you have a
@@ -251,10 +251,10 @@ these ports to your FTP server.
 <a name="socket_io"><hr></a>
 <p>
 <b>Question:</b><br>
-<i>Why do external programs that use socket I/O (e.g. Synchronet Blackjack, Synchronet BBS List, DoorMUD) hang on my Windows BBS?</i>
+<i>Why do external programs that use socket I/O (e.g. Synchronet Blackjack, Synchronet BBS List, DoorMUD, SEXYZ) not work on my Windows BBS?</i>
 <p>
 <b>Answer:</b><br>
-Some software firewall and anti-virus programs interfere with the inheritance of socket descriptors between processes. 
+Some &quot;security&quot; software (e.g. firewall and anti-virus programs) will interfere with the inheritance of socket descriptors between processes. 
 One such program is the <b><i>ZoneAlarm Security Suite</i></b>. 
 I don't know if this is an intentional security "feature" or a <b>design flaw</b>.
 If you have this (or similar) software installed, it must be completely un-installed for socket inheritance to work.
@@ -274,7 +274,7 @@ similar to the following:
 This could be a pre-existing instance of Synchronet or any other Telnet/Web/Mail/FTP servers that you may
 have installed on your system. You can use utilities such as
 <a href="http://www.rt.com/man/netstat.1.html">netstat</a> (for Windows or Unix)
-or <a href="http://www.sysinternals.com/ntw2k/source/tcpview.shtml">TCPView</a> (for Windows) to verify what programs
+or <a href="http://www.sysinternals.com/Utilities/TcpView.html">TCPView</a> (for Windows) to verify what programs
 (if any) have the TCP or UDP port in question already bound. If these utilities do not report any program is
 bound to (and listening) on this port, you can try Telnetting to the port in question and see if anything answers.
 If you're unable to connect to the port with a Telnet client and Synchronet cannot bind the port, your TCP/IP
@@ -318,7 +318,7 @@ then both your upstream and downstream channels are of the same bandwidth.
 For example, the BBS user's TCP session is idle while the user is viewing menus, reading messages, 
 pausing between keystrokes, etc.
 Many clients sending and receiving data in small intermittent bursts can be active simultaneously without
-any perceptible impact on eachother.
+any perceptible impact on one another.
 <p>
 <li><b>Not all clients will be capable of saturating your upstream channel.</b>
 <p>If you have a 256Kbps upstream channel, for example, you could support four or five simultaneous
