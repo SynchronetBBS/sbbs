@@ -56,6 +56,11 @@
 
 static ini_style_t default_style;
 
+void iniSetDefaultStyle(ini_style_t style)
+{
+	default_style = style;
+}
+
 static char* section_name(char* p)
 {
 	char*	tp;
@@ -315,26 +320,41 @@ BOOL iniRenameSection(str_list_t* list, const char* section, const char* newname
 	return(strListReplace(*list, i, str)!=NULL);
 }
 
-size_t iniAddSection(str_list_t* list, const char* section
-					,ini_style_t* style)
+static size_t ini_add_section(str_list_t* list, const char* section
+					,ini_style_t* style, size_t index)
 {
 	char	str[INI_MAX_LINE_LEN];
-	size_t	i;
 
 	if(section==ROOT_SECTION)
 		return(0);
 
-	i=find_section_index(*list, section);
-	if((*list)[i]==NULL) {
-		if(style==NULL)
-			style=&default_style;
-		if(style->section_separator!=NULL)
-			strListAppend(list, style->section_separator, i++);
-		SAFEPRINTF(str,"[%s]",section);
-		strListAppend(list, str, i);
-	}
+	if((*list)[index]!=NULL)
+		return(index);
 
-	return(i);
+	if(style==NULL)
+		style=&default_style;
+	if(index > 0 && style->section_separator!=NULL)
+		strListAppend(list, style->section_separator, index++);
+	SAFEPRINTF(str,"[%s]",section);
+	strListAppend(list, str, index);
+
+	return(index);
+}
+
+size_t iniAddSection(str_list_t* list, const char* section, ini_style_t* style)
+{
+	if(section==ROOT_SECTION)
+		return(0);
+
+	return ini_add_section(list,section,style,find_section_index(*list, section));
+}
+
+size_t iniAppendSection(str_list_t* list, const char* section, ini_style_t* style)
+{
+	if(section==ROOT_SECTION)
+		return(0);
+
+	return ini_add_section(list,section,style,strListCount(*list));
 }
 
 char* iniSetString(str_list_t* list, const char* section, const char* key, const char* value

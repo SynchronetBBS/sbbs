@@ -150,6 +150,8 @@ double		iniGetNamedFloat(str_list_t, const char* section, const char* key
 ulong		iniGetBitField(str_list_t, const char* section, const char* key
 					,ini_bitdesc_t* bitdesc, ulong deflt);
 
+void		iniSetDefaultStyle(ini_style_t);
+
 char*		iniSetString(str_list_t*, const char* section, const char* key, const char* value
 					,ini_style_t*);
 char*		iniSetInteger(str_list_t*, const char* section, const char* key, long value
@@ -182,6 +184,9 @@ char*		iniSetStringList(str_list_t*, const char* section, const char* key
 					,const char* sep, str_list_t value, ini_style_t*);
 
 size_t		iniAddSection(str_list_t*, const char* section
+					,ini_style_t*);
+
+size_t		iniAppendSection(str_list_t*, const char* section
 					,ini_style_t*);
 
 BOOL		iniSectionExists(str_list_t, const char* section);
