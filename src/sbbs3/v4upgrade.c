@@ -41,6 +41,7 @@
 
 scfg_t scfg;
 BOOL overwrite_existing_files=TRUE;
+ini_style_t style = { 25, NULL, NULL, " = ", NULL };
 
 BOOL overwrite(const char* path)
 {
@@ -126,7 +127,7 @@ BOOL upgrade_users(void)
 
 	total=lastuser(&scfg);
 	for(i=1;i<=total;i++) {
-		printf("\b\b\b\b\b%5u",i);
+		printf("\b\b\b\b\b%5u",total-i);
 		memset(&user,0,sizeof(user));
 		user.number=i;
 		if((ret=getuserdat(&scfg,&user))!=0) {
@@ -476,6 +477,9 @@ BOOL upgrade_ip_filters(void)
 	str_list_t	inlist;
 	str_list_t	outlist;
 
+	style.section_separator = NULL;
+	iniSetDefaultStyle(style);
+
 	printf("Upgrading IP Address filters...\n");
 
 	sprintf(outpath,"%sip-filter.ini",scfg.ctrl_dir);
@@ -533,7 +537,7 @@ BOOL upgrade_ip_filters(void)
 		if(*p==';')
 			strListPush(&outlist,p);
 		else if(*p) {
-			iniAddSection(&outlist,p,NULL);
+			iniAppendSection(&outlist,p,NULL);
 			total++;
 		}
 	}
@@ -599,6 +603,9 @@ BOOL upgrade_filter(const char* desc, const char* inpath, const char* msgpath, c
 	str_list_t	inlist;
 	str_list_t	outlist;
 
+	style.section_separator = NULL;
+	iniSetDefaultStyle(style);
+
 	printf("Upgrading %s filters...\n",desc);
 
 	if(!overwrite(outpath))
@@ -653,7 +660,7 @@ BOOL upgrade_filter(const char* desc, const char* inpath, const char* msgpath, c
 		if(*p==';')
 			strListPush(&outlist,p);
 		else if(*p) {
-			iniAddSection(&outlist,p,NULL);
+			iniAppendSection(&outlist,p,NULL);
 			total++;
 		}
 	}
@@ -672,6 +679,97 @@ BOOL upgrade_filter(const char* desc, const char* inpath, const char* msgpath, c
 	}
 
 	printf("\tFiltering %u total %ss\n", iniGetSectionCount(outlist,NULL),desc);
+
+	strListFree(&outlist);
+
+	return(success);
+}
+
+BOOL upgrade_list(const char* desc, const char* infile, const char* outfile
+				  ,BOOL section_list, const char* key)
+{
+	char*	p;
+	char*	vp;
+	char	inpath[MAX_PATH+1];
+	char	outpath[MAX_PATH+1];
+	FILE*	in;
+	FILE*	out;
+	BOOL	success;
+	size_t	i;
+	size_t	total;
+	str_list_t	inlist;
+	str_list_t	outlist;
+
+	style.section_separator = (section_list && key==NULL) ? NULL : "";
+	iniSetDefaultStyle(style);
+
+	SAFEPRINTF2(inpath,"%s%s",scfg.ctrl_dir,infile);
+	SAFEPRINTF2(outpath,"%s%s",scfg.ctrl_dir,outfile);
+
+	if(!fexistcase(inpath))
+		return(TRUE);
+
+	printf("Upgrading %s...\n",desc);
+
+	if(!overwrite(outpath))
+		return(TRUE);
+	if((out=fopen(outpath,"w"))==NULL) {
+		perror(outpath);
+		return(FALSE);
+	}
+
+	if((outlist = strListInit())==NULL) {
+		printf("!malloc failure\n");
+		return(FALSE);
+	}
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"r"))==NULL) {
+		perror("open failure");
+		return(FALSE);
+	}
+
+	if((inlist = strListReadFile(in,NULL,4096))==NULL) {
+		printf("!failure reading %s\n",inpath);
+		return(FALSE);
+	}
+
+	total=0;
+	for(i=0;inlist[i]!=NULL;i++) {
+		p=truncsp(inlist[i]);
+		SKIP_WHITESPACE(p);
+		if(*p==';')
+			strListPush(&outlist,p);
+		else if(*p) {
+			vp=NULL;
+			if((!section_list || key!=NULL)
+				&& ((vp=strchr(p,' '))!=NULL || ((vp=strchr(p,'\t'))!=NULL))) {
+				*(vp++) = 0;
+				SKIP_WHITESPACE(vp);
+			}
+			if(section_list) {
+				iniAppendSection(&outlist,p,NULL);
+				if(vp!=NULL && *vp)
+					iniSetString(&outlist,p,key,vp,NULL);
+			} else
+				iniSetString(&outlist,ROOT_SECTION,p,vp,NULL);
+			total++;
+		}
+	}
+
+	printf("-> %s (%u %ss)\n", outpath, total, desc);
+	fclose(in);
+	strListFree(&inlist);
+
+	success=iniWriteFile(out, outlist);
+
+	fclose(out);
+
+	if(!success) {
+		printf("!iniWriteFile failure\n");
+		return(FALSE);
+	}
+
+	printf("\tWrote %u total %s\n", iniGetSectionCount(outlist,NULL),desc);
 
 	strListFree(&outlist);
 
@@ -761,6 +859,8 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 
+	iniSetDefaultStyle(style);
+
 	if(!upgrade_users())
 		return(1);
 
@@ -772,9 +872,34 @@ int main(int argc, char** argv)
 
 	if(!upgrade_filters())
 		return(4);
+
+	if(!upgrade_list("Twit list", "twitlist.cfg", "twitlist.ini", TRUE, NULL))
+		return(5);
+
+	if(!upgrade_list("RLogin allow", "rlogin.cfg", "rlogin.ini", TRUE, NULL))
+		return(5);
+
+	if(!upgrade_list("Mail alias", "alias.cfg", "alias.ini", FALSE, NULL))
+		return(5);
 	
-	/* alias.cfg */
-	/* domains.cfg */
+	if(!upgrade_list("Mail domain", "domains.cfg", "domains.ini", TRUE, NULL))
+		return(5);
+
+	if(!upgrade_list("Allowed relay", "relay.cfg", "relay.ini", TRUE, NULL))
+		return(5);
+
+	if(!upgrade_list("SPAM bait", "spambait.cfg", "spambait.ini", TRUE, NULL))
+		return(5);
+
+	if(!upgrade_list("SPAM block", "spamblock.cfg", "spamblock.ini", TRUE, NULL))
+		return(5);
+
+	if(!upgrade_list("DNS blacklist", "dns_blacklist.cfg", "dns_blacklist.ini", TRUE, "notice"))
+		return(5);
+
+	if(!upgrade_list("DNS blacklist exemptions", "dnsbl_exempt.cfg", "dnsbl_exempt.ini", TRUE, NULL))
+		return(5);
+
 	/* ftpalias.cfg */
 
 	printf("Upgrade successful.\n");
