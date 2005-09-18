@@ -110,6 +110,7 @@ BOOL	debug_tx=FALSE;
 BOOL	debug_rx=FALSE;
 BOOL	debug_telnet=FALSE;
 BOOL	pause_on_exit=FALSE;
+BOOL	pause_on_abend=FALSE;
 BOOL	newline=TRUE;
 
 time_t		progress_interval;
@@ -1217,12 +1218,20 @@ static int receive_files(char** fname_list, int fnames)
 	return(!success);	/* 0=success */
 }
 
-void exiting(void)
+void bail(int code)
 {
-	if(pause_on_exit) {
+#if defined(_WINSOCKAPI_)
+	if(WSAInitialized && WSACleanup()!=0) 
+		lprintf(LOG_ERR,"WSACleanup ERROR: %d",ERROR_VALUE);
+#endif
+
+	if(logfp!=NULL)
+		fclose(logfp);
+	if(pause_on_exit || (pause_on_abend && code!=0)) {
 		printf("Hit enter to continue...");
 		getchar();
 	}
+	exit(code);
 }
 
 static const char* usage=
@@ -1270,7 +1279,6 @@ int main(int argc, char **argv)
 	uint	fnames=0;
 	FILE*	fp;
 	BOOL	tcp_nodelay;
-	BOOL	pause_on_abend=FALSE;
 	char	compiler[32];
 	str_list_t fname_list;
 
@@ -1355,8 +1363,6 @@ int main(int argc, char **argv)
 	if(fp!=NULL)
 		fclose(fp);
 
-	atexit(exiting);
-
 	if(zm.recv_bufsize > 0xffff)
 		zm.recv_bufsize = 0xffff;
 
@@ -1424,7 +1430,7 @@ int main(int argc, char **argv)
 					default:
 						fprintf(statfp,"Unrecognized command '%s'\n\n",argv[i]);
 						fprintf(statfp,usage);
-						exit(1); 
+						bail(1); 
 				} 
 				continue;
 			}
@@ -1439,7 +1445,7 @@ int main(int argc, char **argv)
 #endif
 				fprintf(statfp,"Compiled %s %.5s with %s\n",__DATE__,__TIME__,compiler);
 				fprintf(statfp,"%s\n",os_version(str));
-				exit(1);
+				bail(0);
 			}
 
 			arg=argv[i];
@@ -1496,12 +1502,12 @@ int main(int argc, char **argv)
 		else if((argv[i][0]=='+' || argv[i][0]=='@') && fexist(argv[i]+1)) {
 			if(mode&RECVDIR) {
 				fprintf(statfp,"!Cannot specify both directory and filename\n");
-				exit(1); 
+				bail(1); 
 			}
 			sprintf(str,"%s",argv[i]+1);
 			if((fp=fopen(str,"r"))==NULL) {
 				fprintf(statfp,"!Error %d opening filelist: %s\n",errno,str);
-				exit(1); 
+				bail(1); 
 			}
 			while(!feof(fp) && !ferror(fp)) {
 				if(!fgets(str,sizeof(str),fp))
@@ -1516,15 +1522,15 @@ int main(int argc, char **argv)
 			if(isdir(argv[i])) { /* is a directory */
 				if(mode&RECVDIR) {
 					fprintf(statfp,"!Only one directory can be specified\n");
-					exit(1); 
+					bail(1); 
 				}
 				if(fnames) {
 					fprintf(statfp,"!Cannot specify both directory and filename\n");
-					exit(1); 
+					bail(1); 
 				}
 				if(mode&SEND) {
 					fprintf(statfp,"!Cannot send directory '%s'\n",argv[i]);
-					exit(1);
+					bail(1);
 				}
 				mode|=RECVDIR; 
 			}
@@ -1548,7 +1554,7 @@ int main(int argc, char **argv)
 #else
 		fprintf(statfp,"!No socket descriptor specified\n\n");
 		fprintf(errfp,usage);
-		exit(1);
+		bail(1);
 #endif
 	}
 #ifdef __unix__
@@ -1559,13 +1565,13 @@ int main(int argc, char **argv)
 	if(!(mode&(SEND|RECV))) {
 		fprintf(statfp,"!No command specified\n\n");
 		fprintf(statfp,usage);
-		exit(1); 
+		bail(1); 
 	}
 
 	if(mode&(SEND|XMODEM) && !fnames) { /* Sending with any or recv w/Xmodem */
 		fprintf(statfp,"!Must specify filename or filelist\n\n");
 		fprintf(statfp,usage);
-		exit(1); 
+		bail(1); 
 	}
 
 #ifdef __unix__
@@ -1590,7 +1596,7 @@ int main(int argc, char **argv)
 		backslash(fname[0]); */
 
 	if(!winsock_startup())
-		return(-1);
+		bail(-1);
 
 	/* Enable the Nagle Algorithm */
 #ifdef __unix__
@@ -1604,13 +1610,13 @@ int main(int argc, char **argv)
 
 	if(!socket_check(sock, NULL, NULL, 0)) {
 		lprintf(LOG_WARNING,"No socket connection");
-		return(-1); 
+		bail(-1); 
 	}
 
 	if((dszlog=getenv("DSZLOG"))!=NULL) {
 		if((logfp=fopen(dszlog,"w"))==NULL) {
 			lprintf(LOG_WARNING,"Error %d opening DSZLOG file: %s",errno,dszlog);
-			return(-1); 
+			bail(-1); 
 		}
 	}
 
@@ -1652,15 +1658,6 @@ int main(int argc, char **argv)
 		,retval, flows, select_errors);
 	fprintf(statfp,"\n");
 
-	if(logfp!=NULL)
-		fclose(logfp);
-
-	if(retval && pause_on_abend) {
-		printf("Hit enter to continue...");
-		getchar();
-		pause_on_exit=FALSE;
-	}
-
-	return(retval);
+	bail(retval);
 }
 
