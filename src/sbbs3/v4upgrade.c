@@ -756,7 +756,7 @@ BOOL upgrade_list(const char* desc, const char* infile, const char* outfile
 		}
 	}
 
-	printf("-> %s (%u %ss)\n", outpath, total, desc);
+	printf("-> %s (%u)\n", outpath, total);
 	fclose(in);
 	strListFree(&inlist);
 
@@ -769,13 +769,12 @@ BOOL upgrade_list(const char* desc, const char* infile, const char* outfile
 		return(FALSE);
 	}
 
-	printf("\tWrote %u total %s\n", iniGetSectionCount(outlist,NULL),desc);
+	printf("\tWrote %u items\n", iniGetSectionCount(outlist,NULL));
 
 	strListFree(&outlist);
 
 	return(success);
 }
-
 
 BOOL upgrade_filters()
 {
@@ -817,6 +816,208 @@ BOOL upgrade_filters()
 		return(FALSE);
 
 	return(TRUE);
+}
+
+#define BBS_VIRTUAL_PATH		"bbs:/""/"	/* this is actually bbs:<slash><slash> */
+
+BOOL upgrade_ftp_aliases(void)
+{
+	char*	p;
+	char*	path;
+	char*	desc;
+	char*	section;
+	char	inpath[MAX_PATH+1];
+	char	outpath[MAX_PATH+1];
+	FILE*	in;
+	FILE*	out;
+	BOOL	success;
+	size_t	i;
+	size_t	total;
+	str_list_t	inlist;
+	str_list_t	outlist;
+
+	style.section_separator = "";
+	iniSetDefaultStyle(style);
+
+	SAFEPRINTF(inpath,"%sftpalias.cfg",scfg.ctrl_dir);
+	SAFEPRINTF(outpath,"%sftp_alias.ini",scfg.ctrl_dir);
+
+	if(!fexistcase(inpath))
+		return(TRUE);
+
+	printf("Upgrading FTP Aliases...\n");
+
+	if(!overwrite(outpath))
+		return(TRUE);
+	if((out=fopen(outpath,"w"))==NULL) {
+		perror(outpath);
+		return(FALSE);
+	}
+
+	if((outlist = strListInit())==NULL) {
+		printf("!malloc failure\n");
+		return(FALSE);
+	}
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"r"))==NULL) {
+		perror("open failure");
+		return(FALSE);
+	}
+
+	if((inlist = strListReadFile(in,NULL,4096))==NULL) {
+		printf("!failure reading %s\n",inpath);
+		return(FALSE);
+	}
+
+	total=0;
+	for(i=0;inlist[i]!=NULL;i++) {
+		p=truncsp(inlist[i]);
+		SKIP_WHITESPACE(p);
+		if(*p==';') {
+			strListPush(&outlist,p);
+			continue;
+		} else if(*p==0)
+			continue;
+		path=p;
+		FIND_WHITESPACE(path);
+		if(*path==0)
+			continue;
+		*(path++)=0;
+		SKIP_WHITESPACE(path);
+		desc=path;
+		FIND_WHITESPACE(desc);
+		if(*desc==0)
+			continue;
+		*(desc++)=0;
+		SKIP_WHITESPACE(desc);
+		iniAppendSection(&outlist,p,NULL);
+		if(!strnicmp(path,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH)))
+			path+=strlen(BBS_VIRTUAL_PATH)-1;
+		else
+			iniSetBool(&outlist,p,"Local",TRUE,NULL);
+		iniSetString(&outlist,p,"Path",path,NULL);
+		if(!stricmp(desc,"hidden"))
+			iniSetBool(&outlist,p,"Hidden",TRUE,NULL);
+		else
+			iniSetString(&outlist,p,"Description",desc,NULL);
+		total++;
+	}
+
+	section="local";
+	iniAppendSection(&outlist,section,NULL);
+	iniSetString(&outlist,section,"Description","Local file system",NULL);
+	iniSetString(&outlist,section,"Path","/",NULL);
+	iniSetBool(&outlist,section,"Local",TRUE,NULL);
+	iniSetString(&outlist,section,"AccessRequirements","SYSOP",NULL);
+
+	printf("-> %s (%u FTP aliases)\n", outpath, total);
+	fclose(in);
+	strListFree(&inlist);
+
+	success=iniWriteFile(out, outlist);
+
+	fclose(out);
+
+	if(!success) {
+		printf("!iniWriteFile failure\n");
+		return(FALSE);
+	}
+
+	printf("\tWrote %u total FTP aliases\n", iniGetSectionCount(outlist,NULL));
+
+	strListFree(&outlist);
+
+	return(success);
+}
+
+#define upg_iniSetString(list,section,key,val) \
+		if(*val) iniSetString(list,section,key,val,NULL)
+
+#define upg_iniSetInteger(list,section,key,val) \
+		if(val) iniSetInteger(list,section,key,val,NULL)
+
+BOOL upgrade_msg_areas(void)
+{
+	char	str[128];
+	char	outpath[MAX_PATH+1];
+	char	data_subs[MAX_PATH+1];
+	FILE*	out;
+	BOOL	success;
+	size_t	i;
+	str_list_t	outlist;
+
+	style.section_separator = "";
+	iniSetDefaultStyle(style);
+
+	SAFEPRINTF(outpath,"%smsg_areas.ini",scfg.ctrl_dir);
+
+	SAFEPRINTF(data_subs,"%ssubs",scfg.data_dir);
+	backslash(data_subs);
+
+	printf("Upgrading Message Area configuration...\n");
+
+	if(!overwrite(outpath))
+		return(TRUE);
+	if((out=fopen(outpath,"w"))==NULL) {
+		perror(outpath);
+		return(FALSE);
+	}
+
+	if((outlist = strListInit())==NULL) {
+		printf("!malloc failure\n");
+		return(FALSE);
+	}
+
+	for(i=0; i<scfg.total_grps; i++) {
+		SAFEPRINTF(str,"Group:%s",scfg.grp[i]->sname);
+		iniAppendSection(&outlist,str,NULL);
+		upg_iniSetString(&outlist,str,"Description",scfg.grp[i]->lname);
+		upg_iniSetString(&outlist,str,"AccessRequirements",scfg.grp[i]->arstr);
+		upg_iniSetString(&outlist,str,"CodePrefix",scfg.grp[i]->code_prefix);
+	}
+	for(i=0; i<scfg.total_subs; i++) {
+		sprintf(str,"%s",scfg.sub[i]->code_suffix);
+		iniAppendSection(&outlist,str,NULL);
+		upg_iniSetString(&outlist,str,"Group",scfg.grp[scfg.sub[i]->grp]->sname);
+		upg_iniSetString(&outlist,str,"Name",scfg.sub[i]->sname);
+		upg_iniSetString(&outlist,str,"Newsgroup",scfg.sub[i]->newsgroup);
+		upg_iniSetString(&outlist,str,"QwkName",scfg.sub[i]->qwkname);
+		upg_iniSetInteger(&outlist,str,"QwkConference",scfg.sub[i]->qwkconf);
+		upg_iniSetString(&outlist,str,"Description",scfg.sub[i]->lname);
+		if(stricmp(scfg.sub[i]->data_dir, data_subs))
+			iniSetString(&outlist,str,"DataDir",scfg.sub[i]->data_dir,NULL);
+		if(strcmp(scfg.sub[i]->tagline, scfg.qnet_tagline))
+			upg_iniSetString(&outlist,str,"TagLine",scfg.sub[i]->tagline);
+		if(strcmp(scfg.origline, scfg.sub[i]->origline))
+			upg_iniSetString(&outlist,str,"OriginLine",scfg.sub[i]->origline);
+		upg_iniSetString(&outlist,str,"AccessRequirements",scfg.sub[i]->arstr);
+		upg_iniSetString(&outlist,str,"ReadRequirements",scfg.sub[i]->read_arstr);
+		upg_iniSetString(&outlist,str,"PostRequirements",scfg.sub[i]->post_arstr);
+		upg_iniSetString(&outlist,str,"OperatorRequirements",scfg.sub[i]->op_arstr);
+		upg_iniSetString(&outlist,str,"ModeratorRequirements",scfg.sub[i]->mod_arstr);
+		upg_iniSetString(&outlist,str,"PostSemFile",scfg.sub[i]->post_sem);
+		upg_iniSetInteger(&outlist,str,"MaxMessages",scfg.sub[i]->maxmsgs);
+		upg_iniSetInteger(&outlist,str,"MaxMessageAge",scfg.sub[i]->maxage);
+		upg_iniSetInteger(&outlist,str,"CrcHistory",scfg.sub[i]->maxcrcs);
+		if(scfg.sub[i]->faddr.zone)
+			iniSetString(&outlist,str,"FidoNetAddress",smb_faddrtoa(&scfg.sub[i]->faddr,NULL),NULL);
+	}
+	printf("-> %s (%u groups and %u sub-boards)\n", outpath, scfg.total_grps, scfg.total_subs);
+
+	success=iniWriteFile(out, outlist);
+
+	fclose(out);
+
+	if(!success) {
+		printf("!iniWriteFile failure\n");
+		return(FALSE);
+	}
+
+	printf("\tWrote %u items\n", iniGetSectionCount(outlist,NULL));
+
+	strListFree(&outlist);
+
+	return(success);
 }
 
 
@@ -873,34 +1074,40 @@ int main(int argc, char** argv)
 	if(!upgrade_filters())
 		return(4);
 
-	if(!upgrade_list("Twit list", "twitlist.cfg", "twitlist.ini", TRUE, NULL))
+	if(!upgrade_list("Twits", "twitlist.cfg", "twitlist.ini", TRUE, NULL))
 		return(5);
 
 	if(!upgrade_list("RLogin allow", "rlogin.cfg", "rlogin.ini", TRUE, NULL))
 		return(5);
 
-	if(!upgrade_list("Mail alias", "alias.cfg", "alias.ini", FALSE, NULL))
+	if(!upgrade_list("E-Mail aliases", "alias.cfg", "alias.ini", FALSE, NULL))
 		return(5);
 	
-	if(!upgrade_list("Mail domain", "domains.cfg", "domains.ini", TRUE, NULL))
+	if(!upgrade_list("E-Mail domains", "domains.cfg", "domains.ini", TRUE, NULL))
 		return(5);
 
-	if(!upgrade_list("Allowed relay", "relay.cfg", "relay.ini", TRUE, NULL))
+	if(!upgrade_list("Allowed mail relayers", "relay.cfg", "relay.ini", TRUE, NULL))
 		return(5);
 
-	if(!upgrade_list("SPAM bait", "spambait.cfg", "spambait.ini", TRUE, NULL))
+	if(!upgrade_list("SPAM bait addresses", "spambait.cfg", "spambait.ini", TRUE, NULL))
 		return(5);
 
-	if(!upgrade_list("SPAM block", "spamblock.cfg", "spamblock.ini", TRUE, NULL))
+	if(!upgrade_list("Blocked spammers", "spamblock.cfg", "spamblock.ini", TRUE, NULL))
 		return(5);
 
-	if(!upgrade_list("DNS blacklist", "dns_blacklist.cfg", "dns_blacklist.ini", TRUE, "notice"))
+	if(!upgrade_list("DNS black-lists", "dns_blacklist.cfg", "dns_blacklist.ini", TRUE, "notice"))
 		return(5);
 
-	if(!upgrade_list("DNS blacklist exemptions", "dnsbl_exempt.cfg", "dnsbl_exempt.ini", TRUE, NULL))
+	if(!upgrade_list("DNS black-list exemptions", "dnsbl_exempt.cfg", "dnsbl_exempt.ini", TRUE, NULL))
 		return(5);
 
-	/* ftpalias.cfg */
+	if(!upgrade_ftp_aliases())
+		return(-1);
+
+	/* attr.cfg */
+
+	if(!upgrade_msg_areas())
+		return(-1);
 
 	printf("Upgrade successful.\n");
     return(0);
