@@ -87,10 +87,10 @@ void sbbs_t::userlist(long mode)
 				continue; 
 		}
 		if(sort) {
-			if((line[j]=(char *)MALLOC(128))==0) {
+			if((line[j]=(char *)malloc(128))==0) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,83);
 				for(i=0;i<j;i++)
-					FREE(line[i]);
+					free(line[i]);
 				return; 
 			}
 			sprintf(name,"%s #%d",user.alias,i);
@@ -111,7 +111,7 @@ void sbbs_t::userlist(long mode)
 	if(i<=k) {	/* aborted */
 		if(sort)
 			for(i=0;i<j;i++)
-				FREE(line[i]);
+				free(line[i]);
 		return; 
 	}
 	if(!sort) {
@@ -130,7 +130,7 @@ void sbbs_t::userlist(long mode)
 	for(i=0;i<j && !msgabort();i++)
 		bputs(line[i]);
 	for(i=0;i<j;i++)
-		FREE(line[i]);
+		free(line[i]);
 }
 
 /****************************************************************************/
@@ -138,7 +138,7 @@ void sbbs_t::userlist(long mode)
 /****************************************************************************/
 void sbbs_t::sif(char *fname, char *answers, long len)
 {
-	char	str[256],tmplt[256],HUGE16 *buf;
+	char	str[256],tmplt[256],*buf;
 	uint	t,max,min,mode,cr;
 	int		file;
 	long	length,l=0,m,top,a=0;
@@ -150,7 +150,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 		return; 
 	}
 	length=filelength(file);
-	if((buf=(char *)MALLOC(length))==0) {
+	if((buf=(char *)malloc(length))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		answers[0]=0;
@@ -298,7 +298,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 		} 
 	}
 	answers[a]=0;
-	FREE((char *)buf);
+	free((char *)buf);
 }
 
 /****************************************************************************/
@@ -306,7 +306,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 /****************************************************************************/
 void sbbs_t::sof(char *fname, char *answers, long len)
 {
-	char str[256],HUGE16 *buf,max,min,cr;
+	char str[256],*buf,max,min,cr;
 	int file;
 	long length,l=0,m,a=0;
 
@@ -317,7 +317,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 		return; 
 	}
 	length=filelength(file);
-	if((buf=(char *)MALLOC(length))==0) {
+	if((buf=(char *)malloc(length))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		answers[0]=0;
@@ -425,7 +425,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 				a+=max+2; 
 		} 
 	}
-	FREE((char *)buf);
+	free((char *)buf);
 }
 
 /****************************************************************************/
@@ -436,20 +436,20 @@ void sbbs_t::create_sif_dat(char *siffile, char *datfile)
 	char *buf;
 	int file;
 
-	if((buf=(char *)MALLOC(SIF_MAXBUF))==NULL) {
+	if((buf=(char *)malloc(SIF_MAXBUF))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,siffile,SIF_MAXBUF);
 		return; 
 	}
 	memset(buf,SIF_MAXBUF,0);	 /* initialize to null */
 	sif(siffile,buf,SIF_MAXBUF);
 	if((file=nopen(datfile,O_WRONLY|O_TRUNC|O_CREAT))==-1) {
-		FREE(buf);
+		free(buf);
 		errormsg(WHERE,ERR_OPEN,datfile,O_WRONLY|O_TRUNC|O_CREAT);
 		return; 
 	}
 	write(file,buf,strlen(buf));
 	close(file);
-	FREE(buf);
+	free(buf);
 }
 
 /****************************************************************************/
@@ -470,7 +470,7 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 		close(file);
 		return; 
 	}
-	if((buf=(char *)MALLOC(length))==NULL) {
+	if((buf=(char *)malloc(length))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,datfile,length);
 		return; 
@@ -478,7 +478,7 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 	read(file,buf,length);
 	close(file);
 	sof(siffile,buf,length);
-	FREE(buf);
+	free(buf);
 }
 
 /****************************************************************************/

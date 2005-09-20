@@ -92,7 +92,7 @@ select No or hit  ESC .
 		i=uifc.list(WIN_MID,0,0,0,&i,0,str,opt);
 		if(!i) {
 			--cfg.sys_nodes;
-/*			FREE(cfg.node_path[cfg.sys_nodes]); */
+/*			free(cfg.node_path[cfg.sys_nodes]); */
 			cfg.new_install=new_install;
 			write_main_cfg(&cfg,backup_level);
             refresh_cfg(&cfg);

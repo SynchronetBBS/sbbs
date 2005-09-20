@@ -239,16 +239,16 @@ if(i!=0) {
     exit(1);
 }
 
-if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 	allocfail(sizeof(char *)*(MAX_OPTS+1));
 for(i=0;i<(MAX_OPTS+1);i++)
-	if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+	if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
 		allocfail(MAX_OPLN);
 
-if((mopt=(char **)MALLOC(sizeof(char *)*14))==NULL)
+if((mopt=(char **)malloc(sizeof(char *)*14))==NULL)
 	allocfail(sizeof(char *)*14);
 for(i=0;i<14;i++)
-	if((mopt[i]=(char *)MALLOC(64))==NULL)
+	if((mopt[i]=(char *)malloc(64))==NULL)
 		allocfail(64);
 
 if((p=getenv("SBBSEXEC"))!=NULL)
@@ -686,7 +686,7 @@ abreviation of the name.
 			uifc.msg("Invalid Code");
 			uifc.helpbuf=0;
             continue; }
-		if((cfg.txtsec=(txtsec_t **)REALLOC(cfg.txtsec
+		if((cfg.txtsec=(txtsec_t **)realloc(cfg.txtsec
 			,sizeof(txtsec_t *)*(cfg.total_txtsecs+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_txtsecs+1);
 			cfg.total_txtsecs=0;
@@ -695,7 +695,7 @@ abreviation of the name.
 		if(cfg.total_txtsecs)
 			for(j=cfg.total_txtsecs;j>i;j--)
                 cfg.txtsec[j]=cfg.txtsec[j-1];
-		if((cfg.txtsec[i]=(txtsec_t *)MALLOC(sizeof(txtsec_t)))==NULL) {
+		if((cfg.txtsec[i]=(txtsec_t *)malloc(sizeof(txtsec_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(txtsec_t));
 			continue; }
 		memset((txtsec_t *)cfg.txtsec[i],0,sizeof(txtsec_t));
@@ -706,7 +706,7 @@ abreviation of the name.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.txtsec[i]);
+		free(cfg.txtsec[i]);
 		cfg.total_txtsecs--;
 		for(j=i;j<cfg.total_txtsecs;j++)
 			cfg.txtsec[j]=cfg.txtsec[j+1];
@@ -856,7 +856,7 @@ indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 			uifc.msg("Invalid Code");
 			uifc.helpbuf=0;
             continue; }
-		if((cfg.shell=(shell_t **)REALLOC(cfg.shell
+		if((cfg.shell=(shell_t **)realloc(cfg.shell
 			,sizeof(shell_t *)*(cfg.total_shells+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_shells+1);
 			cfg.total_shells=0;
@@ -865,7 +865,7 @@ indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 		if(cfg.total_shells)
 			for(j=cfg.total_shells;j>i;j--)
 				cfg.shell[j]=cfg.shell[j-1];
-		if((cfg.shell[i]=(shell_t *)MALLOC(sizeof(shell_t)))==NULL) {
+		if((cfg.shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(shell_t));
 			continue; }
 		memset((shell_t *)cfg.shell[i],0,sizeof(shell_t));
@@ -876,7 +876,7 @@ indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.shell[i]);
+		free(cfg.shell[i]);
 		cfg.total_shells--;
 		for(j=i;j<cfg.total_shells;j++)
 			cfg.shell[j]=cfg.shell[j+1];

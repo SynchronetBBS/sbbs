@@ -624,7 +624,7 @@ void maint(void)
 	ulong l,m,n,f,flagged=0;
 	time_t now;
 	smbmsg_t msg;
-	idxrec_t HUGE16 *idx;
+	idxrec_t *idx;
 
 	printf("Maintaining %s\r\n",smb.file);
 	now=time(NULL);
@@ -647,7 +647,7 @@ void maint(void)
 		return; 
 	}
 	printf("Loading index...\n");
-	if((idx=(idxrec_t *)LMALLOC(sizeof(idxrec_t)*smb.status.total_msgs))
+	if((idx=(idxrec_t *)malloc(sizeof(idxrec_t)*smb.status.total_msgs))
 		==NULL) {
 		smb_unlocksmbhdr(&smb);
 		fprintf(errfp,"\n%s!Error allocating %lu bytes of memory\n"
@@ -714,7 +714,7 @@ void maint(void)
 	}
 
 	if(!flagged) {				/* No messages to delete */
-		LFREE(idx);
+		free(idx);
 		smb_unlocksmbhdr(&smb);
 		return; 
 	}
@@ -798,7 +798,7 @@ void maint(void)
 	printf("\nDone.\n\n");
 	fflush(smb.sid_fp);
 
-	LFREE(idx);
+	free(idx);
 	smb.status.total_msgs-=flagged;
 	smb_putstatus(&smb);
 	smb_unlocksmbhdr(&smb);
@@ -1000,7 +1000,7 @@ void packmsgs(ulong packable)
 	setvbuf(tmp_shd,NULL,_IOFBF,2*1024);
 	setvbuf(tmp_sid,NULL,_IOFBF,2*1024);
 	if(!(smb.status.attr&SMB_HYPERALLOC)
-		&& (datoffset=(datoffset_t *)LMALLOC(sizeof(datoffset_t)*smb.status.total_msgs))
+		&& (datoffset=(datoffset_t *)malloc(sizeof(datoffset_t)*smb.status.total_msgs))
 		==NULL) {
 		smb_unlocksmbhdr(&smb);
 		smb_close_ha(&smb);
@@ -1147,7 +1147,7 @@ void packmsgs(ulong packable)
 	}
 
 	if(datoffset)
-		LFREE(datoffset);
+		free(datoffset);
 	if(!(smb.status.attr&SMB_HYPERALLOC)) {
 		smb_close_ha(&smb);
 		smb_close_da(&smb); 
@@ -1277,7 +1277,7 @@ void delmsgs(void)
 /****************************************************************************/
 void readmsgs(ulong start)
 {
-	char	HUGE16 *inbuf;
+	char	*inbuf;
 	int 	i,done=0,domsg=1;
 	smbmsg_t msg;
 
@@ -1319,7 +1319,7 @@ void readmsgs(ulong start)
 
 			if((inbuf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL))!=NULL) {
 				printf("%s",inbuf);
-				FREE(inbuf); 
+				free(inbuf); 
 			}
 
 			i=smb_unlockmsghdr(&smb,&msg);

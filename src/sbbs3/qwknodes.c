@@ -110,7 +110,7 @@ char *loadmsgtail(smbmsg_t msg)
 		if(xlat!=XLAT_NONE) 		/* no translations supported */
 			continue;
 		length=msg.dfield[i].length-2;
-		if((buf=REALLOC(buf,l+msg.dfield[i].length+1))==NULL)
+		if((buf=realloc(buf,l+msg.dfield[i].length+1))==NULL)
 			return(buf);
 		l+=fread(buf+l,1,length,smb.sdt_fp);
 		buf[l]=0; 
@@ -138,7 +138,7 @@ void gettag(smbmsg_t msg, char *tag)
 		p+=16;
 	while(*p && *p<=' ') p++;
 	strcpy(tag,p);
-	FREE(buf);
+	free(buf);
 }
 
 
@@ -333,7 +333,7 @@ int main(int argc, char **argv)
 						break;
 				if(l==total_crcs) {
 					total_crcs++;
-					if((crc=(ulong *)REALLOC(crc
+					if((crc=(ulong *)realloc(crc
 						,sizeof(ulong)*total_crcs))==NULL) {
 						printf("Error allocating %lu bytes\n"
 							,sizeof(ulong)*total_crcs);

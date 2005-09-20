@@ -27,11 +27,6 @@ typedef struct {
 file_t* file;
 ulong	file_count=0;
 
-#ifdef FREE
-#undef FREE
-#endif
-#define FREE(x) if(x!=NULL) free(x);
-
 int fchksum(const char* fname, long length,
 #ifdef USE_MD5
 			BYTE*
@@ -58,7 +53,7 @@ int fchksum(const char* fname, long length,
 	if(fread(buf,sizeof(BYTE),length,fp) != length) {
 		perror(fname);
 		fclose(fp);
-		FREE(buf);
+		FREE_AND_NULL(buf);
 		return(-1);
 	}
 
@@ -68,7 +63,7 @@ int fchksum(const char* fname, long length,
 #else
 	*chksum = crc32(buf, length);
 #endif
-	FREE(buf);
+	FREE_AND_NULL(buf);
 	return(0);
 }
 

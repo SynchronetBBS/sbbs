@@ -198,16 +198,16 @@ void sbbs_t::update_qwkroute(char *via)
 		else
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 		for(i=0;i<total_nodes;i++) {
-			FREE(qwk_node[i]);
-			FREE(qwk_path[i]); }
+			free(qwk_node[i]);
+			free(qwk_path[i]); }
 		if(qwk_node) {
-			FREE(qwk_node);
+			free(qwk_node);
 			qwk_node=NULL; }
 		if(qwk_path) {
-			FREE(qwk_path);
+			free(qwk_path);
 			qwk_path=NULL; }
 		if(qwk_time) {
-			FREE(qwk_time);
+			free(qwk_time);
 			qwk_time=NULL; }
 		total_nodes=0;
 		return; }
@@ -232,19 +232,19 @@ void sbbs_t::update_qwkroute(char *via)
 				if(i<total_nodes && qwk_time[i]>t)
 					continue;
 				if(i==total_nodes) {
-					if((qwk_node=(char **)REALLOC(qwk_node,sizeof(char *)*(i+1)))==NULL) {
+					if((qwk_node=(char **)realloc(qwk_node,sizeof(char *)*(i+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,9*(i+1));
 						break; }
-					if((qwk_path=(char **)REALLOC(qwk_path,sizeof(char *)*(i+1)))==NULL) {
+					if((qwk_path=(char **)realloc(qwk_path,sizeof(char *)*(i+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,sizeof(char*)*(i+1));
 						break; }
-					if((qwk_time=(time_t *)REALLOC(qwk_time,sizeof(time_t)*(i+1)))==NULL) {
+					if((qwk_time=(time_t *)realloc(qwk_time,sizeof(time_t)*(i+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,sizeof(time_t)*(i+1));
 						break; }
-					if((qwk_node[i]=(char *)MALLOC(9))==NULL) {
+					if((qwk_node[i]=(char *)malloc(9))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,9);
 						break; }
-					if((qwk_path[i]=(char *)MALLOC(MAX_PATH+1))==NULL) {
+					if((qwk_path[i]=(char *)malloc(MAX_PATH+1))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,MAX_PATH+1);
 						break; }
 					total_nodes++; }
@@ -270,20 +270,20 @@ void sbbs_t::update_qwkroute(char *via)
 			if(!stricmp(qwk_node[i],node))
 				break;
 		if(i==total_nodes) {		/* Not in list */
-			if((qwk_node=(char **)REALLOC(qwk_node,sizeof(char *)*(total_nodes+1)))==NULL) {
+			if((qwk_node=(char **)realloc(qwk_node,sizeof(char *)*(total_nodes+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,9*(total_nodes+1));
 				break; }
-			if((qwk_path=(char **)REALLOC(qwk_path,sizeof(char *)*(total_nodes+1)))==NULL) {
+			if((qwk_path=(char **)realloc(qwk_path,sizeof(char *)*(total_nodes+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,sizeof(char *)*(total_nodes+1));
 				break; }
-			if((qwk_time=(time_t *)REALLOC(qwk_time,sizeof(time_t)*(total_nodes+1)))
+			if((qwk_time=(time_t *)realloc(qwk_time,sizeof(time_t)*(total_nodes+1)))
 				==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,sizeof(time_t)*(total_nodes+1));
 				break; }
-			if((qwk_node[total_nodes]=(char *)MALLOC(9))==NULL) {
+			if((qwk_node[total_nodes]=(char *)malloc(9))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,9);
 				break; }
-			if((qwk_path[total_nodes]=(char *)MALLOC(MAX_PATH+1))==NULL) {
+			if((qwk_path[total_nodes]=(char *)malloc(MAX_PATH+1))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,MAX_PATH+1);
 				break; }
 			total_nodes++; }
@@ -338,14 +338,14 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 
 		if((i=smb_locksmbhdr(&smb))!=0) {			  /* Lock the base, so nobody */
 			if(msgs)
-				FREE(mail);
+				free(mail);
 			smb_close(&smb);
 			errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);	/* messes with the index */
 			return; }
 
 		if((i=smb_getstatus(&smb))!=0) {
 			if(msgs)
-				FREE(mail);
+				free(mail);
 			smb_close(&smb);
 			errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 			return; }
@@ -380,7 +380,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 			delmail(useron.number,MAIL_YOUR);
 		smb_close(&smb);
 		if(msgs)
-			FREE(mail); }
+			free(mail); }
 
 }
 
@@ -401,7 +401,7 @@ void sbbs_t::qwk_sec()
 	memset(&fd,0,sizeof(fd));
 	getusrdirs();
 	fd.dir=cfg.total_dirs;
-	if((sav_ptr=(ulong *)MALLOC(sizeof(ulong)*cfg.total_subs))==NULL) {
+	if((sav_ptr=(ulong *)malloc(sizeof(ulong)*cfg.total_subs))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ulong)*cfg.total_subs);
 		return; }
 	for(i=0;i<cfg.total_subs;i++)
@@ -767,7 +767,7 @@ void sbbs_t::qwk_sec()
 			//autohangup();
 			} }
 	delfiles(cfg.temp_dir,ALLFILES);
-	FREE(sav_ptr);
+	free(sav_ptr);
 }
 
 void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)

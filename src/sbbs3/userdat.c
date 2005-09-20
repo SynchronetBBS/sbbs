@@ -1125,7 +1125,7 @@ int DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin)
 /****************************************************************************/
 char* DLLCALL getsmsg(scfg_t* cfg, int usernumber)
 {
-	char	str[MAX_PATH+1], HUGE16 *buf;
+	char	str[MAX_PATH+1], *buf;
 	int		i;
     int		file;
     long	length;

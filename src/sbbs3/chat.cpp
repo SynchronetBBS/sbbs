@@ -77,7 +77,7 @@ void sbbs_t::multinodechat(int channel)
 	}
 	bprintf(text[WelcomeToChannelN],channel,cfg.chan[channel-1]->name);
 	if(gurubuf) {
-		FREE(gurubuf);
+		free(gurubuf);
 		gurubuf=NULL; }
 	if(cfg.chan[channel-1]->misc&CHAN_GURU && cfg.chan[channel-1]->guru<cfg.total_gurus
 		&& chk_ar(cfg.guru[cfg.chan[channel-1]->guru]->ar,&useron)) {
@@ -85,7 +85,7 @@ void sbbs_t::multinodechat(int channel)
 		if((file=nopen(str,O_RDONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 			return; }
-		if((gurubuf=(char *)MALLOC(filelength(file)+1))==NULL) {
+		if((gurubuf=(char *)malloc(filelength(file)+1))==NULL) {
 			close(file);
 			errormsg(WHERE,ERR_ALLOC,str,filelength(file)+1);
 			return; }
@@ -211,7 +211,7 @@ void sbbs_t::multinodechat(int channel)
 						bputs(text[WrongPassword]);
 						continue; }
 					if(gurubuf) {
-						FREE(gurubuf);
+						free(gurubuf);
 						gurubuf=NULL; }
 					if(cfg.chan[savch-1]->misc&CHAN_GURU
 						&& cfg.chan[savch-1]->guru<cfg.total_gurus
@@ -222,7 +222,7 @@ void sbbs_t::multinodechat(int channel)
 						if((file=nopen(str,O_RDONLY))==-1) {
 							errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 							break; }
-						if((gurubuf=(char *)MALLOC(filelength(file)+1))==NULL) {
+						if((gurubuf=(char *)malloc(filelength(file)+1))==NULL) {
 							close(file);
 							errormsg(WHERE,ERR_ALLOC,str
 								,filelength(file)+1);
@@ -537,7 +537,7 @@ bool sbbs_t::guru_page(void)
 		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 		return(false); 
 	}
-	if((gurubuf=(char *)MALLOC(filelength(file)+1))==NULL) {
+	if((gurubuf=(char *)malloc(filelength(file)+1))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,path,filelength(file)+1);
 		return(false); 
@@ -546,7 +546,7 @@ bool sbbs_t::guru_page(void)
 	gurubuf[filelength(file)]=0;
 	close(file);
 	localguru(gurubuf,i);
-	FREE(gurubuf);
+	free(gurubuf);
 	return(true);
 }
 
@@ -632,7 +632,7 @@ void sbbs_t::chatsection()
 			default:	/* 'Q' or <CR> */
 				lncntr=0;
 //				if(gurubuf)
-//					FREE(gurubuf);
+//					free(gurubuf);
 				return; }
 		action=NODE_CHAT;
 		if(!(useron.misc&EXPERT) || useron.misc&(WIP|HTML)
@@ -642,7 +642,7 @@ void sbbs_t::chatsection()
 		ASYNC;
 		bputs(text[ChatPrompt]); }
 //	if(gurubuf)
-//		FREE(gurubuf);
+//		free(gurubuf);
 }
 
 /****************************************************************************/
@@ -832,7 +832,7 @@ void sbbs_t::privchat(bool local)
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE|O_CREAT);
 		return; }
 
-	if((p=(char *)MALLOC(PCHAT_LEN))==NULL) {
+	if((p=(char *)malloc(PCHAT_LEN))==NULL) {
 		close(in);
 		close(out);
 		errormsg(WHERE,ERR_ALLOC,str,PCHAT_LEN);
@@ -840,7 +840,7 @@ void sbbs_t::privchat(bool local)
 	memset(p,0,PCHAT_LEN);
 	write(in,p,PCHAT_LEN);
 	write(out,p,PCHAT_LEN);
-	FREE(p);
+	free(p);
 	lseek(in,0L,SEEK_SET);
 	lseek(out,0L,SEEK_SET);
 
@@ -1431,11 +1431,11 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	localtime_r(&now,&tm);
 
 	for(i=0;i<100;i++) {
-		if((answer[i]=(char *)MALLOC(512))==NULL) {
+		if((answer[i]=(char *)malloc(512))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,512);
 			while(i) {
 				i--;
-				FREE(answer[i]); }
+				free(answer[i]); }
 			sys_status&=~SS_GURUCHAT;
 			return; } }
 	ptr=gurubuf;
@@ -1459,7 +1459,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 		break; }
 	if(k<1) {
 		for(i=0;i<100;i++)
-			FREE(answer[i]);
+			free(answer[i]);
 		return; }
 	if(cstr[k+1]=='?')
 		k++;
@@ -1682,7 +1682,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 				hangup();
 			break; } }
 	for(i=0;i<100;i++)
-		FREE(answer[i]);
+		free(answer[i]);
 }
 
 /****************************************************************************/
@@ -1711,7 +1711,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 			ar=arstr(NULL,str,&cfg);
 			c=chk_ar(ar,&useron);
 			if(ar[0]!=AR_NULL)
-				FREE(ar);
+				free(ar);
 			if(!c && _and) {
 				result=false;
 				break; }

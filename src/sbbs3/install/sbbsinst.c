@@ -349,16 +349,16 @@ int main(int argc, char **argv)
 		bail(1);
 	}
 
-	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	if((mopt=(char **)MALLOC(sizeof(char *)*MAX_OPTS))==NULL)
+	if((mopt=(char **)malloc(sizeof(char *)*MAX_OPTS))==NULL)
 		allocfail(sizeof(char *)*MAX_OPTS);
 	for(i=0;i<MAX_OPTS;i++)
-		if((mopt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+		if((mopt[i]=(char *)malloc(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	sprintf(str,"Synchronet Installation %s-%s",revision,PLATFORM_DESC);
@@ -690,7 +690,7 @@ int view_file(char *filename, char *title)
 	if(fexist(filename)) {
 		if((buffile=sopen(filename,O_RDONLY,SH_DENYWR))>=0) {
 			j=filelength(buffile);
-			if((buf=(char *)MALLOC(j+1))!=NULL) {
+			if((buf=(char *)malloc(j+1))!=NULL) {
 				read(buffile,buf,j);
 				close(buffile);
 				*(buf+j)=0;
@@ -916,10 +916,10 @@ get_distlist(void)
 	int     (*readline) (int sock, char *buf, size_t length, char *error)=NULL;
 
 	memset(errors,0,sizeof(errors));
-	if((dist=(dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
+	if((dist=(dist_t **)malloc(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
 		allocfail(sizeof(void *)*MAX_DISTRIBUTIONS);
 	for(i=0;i<MAX_DISTRIBUTIONS;i++)
-		if((dist[i]=(void *)MALLOC(sizeof(dist_t)))==NULL)
+		if((dist[i]=(void *)malloc(sizeof(dist_t)))==NULL)
 			allocfail(sizeof(dist_t));
 
 	sprintf(str,DEFAULT_LIBFILE,params.sys_desc);
@@ -928,10 +928,10 @@ get_distlist(void)
 	if(!fexistcase(str))	/* use lib-unix.tgz if all else fails */
 		sprintf(str,DEFAULT_LIBFILE,DEFAULT_SYSTYPE);
 	if(fexist(DEFAULT_DISTFILE) && fexistcase(str))  {
-		if((file=(char **)MALLOC(sizeof(char *)*MAX_DIST_FILES))==NULL)
+		if((file=(char **)malloc(sizeof(char *)*MAX_DIST_FILES))==NULL)
 			allocfail(sizeof(char *)*MAX_DIST_FILES);
 		for(i=0;i<MAX_DIST_FILES;i++)
-			if((file[i]=(char *)MALLOC(MAX_FILELEN))==NULL)
+			if((file[i]=(char *)malloc(MAX_FILELEN))==NULL)
 				allocfail(MAX_FILELEN);
 		server=NULL;
 		f=0;
@@ -1002,10 +1002,10 @@ get_distlist(void)
 
 				file=NULL;
 
-				if((server=(struct server_ent_t **)MALLOC(sizeof(void *)*MAX_SERVERS))==NULL)
+				if((server=(struct server_ent_t **)malloc(sizeof(void *)*MAX_SERVERS))==NULL)
 					allocfail(sizeof(struct server_ent_t *)*MAX_SERVERS);
 				for(i=0;i<MAX_SERVERS;i++)
-					if((server[i]=(struct server_ent_t *)MALLOC(sizeof(struct server_ent_t)))==NULL)
+					if((server[i]=(struct server_ent_t *)malloc(sizeof(struct server_ent_t)))==NULL)
 						allocfail(64);
 				f=0;
 				s=0;
@@ -1022,16 +1022,16 @@ get_distlist(void)
 				if(server!=NULL)
 					memset(server[s],0,sizeof(struct server_ent_t));
 
-				if((file=(char **)MALLOC(sizeof(char *)*MAX_DIST_FILES))==NULL)
+				if((file=(char **)malloc(sizeof(char *)*MAX_DIST_FILES))==NULL)
 					allocfail(sizeof(char *)*MAX_DIST_FILES);
 				for(i=0;i<MAX_DIST_FILES;i++)
-					if((file[i]=(char *)MALLOC(MAX_FILELEN))==NULL)
+					if((file[i]=(char *)malloc(MAX_FILELEN))==NULL)
 						allocfail(MAX_FILELEN);
 
-				if((server=(struct server_ent_t **)MALLOC(sizeof(struct server_ent_t *)*MAX_SERVERS))==NULL)
+				if((server=(struct server_ent_t **)malloc(sizeof(struct server_ent_t *)*MAX_SERVERS))==NULL)
 					allocfail(sizeof(struct server_ent_t *)*MAX_SERVERS);
 				for(i=0;i<MAX_SERVERS;i++)
-					if((server[i]=(struct server_ent_t *)MALLOC(sizeof(struct server_ent_t)))==NULL)
+					if((server[i]=(struct server_ent_t *)malloc(sizeof(struct server_ent_t)))==NULL)
 						allocfail(64);
 				f=0;
 				s=0;

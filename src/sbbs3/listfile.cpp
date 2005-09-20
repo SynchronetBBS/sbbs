@@ -74,32 +74,32 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 	if(!l) {
 		close(file);
 		return(0); }
-	if((ixbbuf=(uchar *)MALLOC(l))==NULL) {
+	if((ixbbuf=(uchar *)malloc(l))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,l);
 		return(0); }
 	if(lread(file,ixbbuf,l)!=l) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,l);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		return(0); }
 	close(file);
 	sprintf(str,"%s%s.dat",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		return(0); }
 	datbuflen=filelength(file);
-	if((datbuf=(char *)MALLOC(datbuflen))==NULL) {
+	if((datbuf=(char *)malloc(datbuflen))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,datbuflen);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		return(0); }
 	if(lread(file,datbuf,datbuflen)!=datbuflen) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,datbuflen);
-		FREE((char *)datbuf);
-		FREE((char *)ixbbuf);
+		free((char *)datbuf);
+		free((char *)ixbbuf);
 		return(0); }
 	close(file);
 	if(!tofile) {
@@ -134,8 +134,8 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 						found-=letter-'A'; }
 					letter='A'; }
 				else if((int)i==-1) {
-					FREE((char *)ixbbuf);
-					FREE((char *)datbuf);
+					free((char *)ixbbuf);
+					free((char *)datbuf);
 					return(-1); }
 				else
 					break;
@@ -150,8 +150,8 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 			anchor=m;
 
 		if(msgabort()) {		 /* used to be !tofile && msgabort() */
-			FREE((char *)ixbbuf);
-			FREE((char *)datbuf);
+			free((char *)ixbbuf);
+			free((char *)datbuf);
 			return(-1); }
 		for(j=0;j<12 && m<l;j++)
 			if(j==8)
@@ -287,13 +287,13 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 				bputs("\r\1>");
 			if(mode&FL_EXFIND) {
 				if(!viewfile(&f,1)) {
-					FREE((char *)ixbbuf);
-					FREE((char *)datbuf);
+					free((char *)ixbbuf);
+					free((char *)datbuf);
 					return(-1); } }
 			else {
 				if(!viewfile(&f,0)) {
-					FREE((char *)ixbbuf);
-					FREE((char *)datbuf);
+					free((char *)ixbbuf);
+					free((char *)datbuf);
 					return(-1); } } }
 
 		else if(tofile)
@@ -309,8 +309,8 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 			disp=1;
 			found++; }
 		if(sys_status&SS_ABORT) {
-			FREE((char *)ixbbuf);
-			FREE((char *)datbuf);
+			free((char *)ixbbuf);
+			free((char *)datbuf);
 			return(-1); }
 		if(mode&(FL_EXFIND|FL_VIEW))
 			continue;
@@ -333,8 +333,8 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 				lncntr=0;
 				lastbat=found;
 				if((int)(i=batchflagprompt(dirnum,bf,letter-'A'+1,l/F_IXBSIZE))<1) {
-					FREE((char *)ixbbuf);
-					FREE((char *)datbuf);
+					free((char *)ixbbuf);
+					free((char *)datbuf);
 					if((int)i==-1)
 						return(-1);
 					else
@@ -362,8 +362,8 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?') && m)
 			break; }
 
-	FREE((char *)ixbbuf);
-	FREE((char *)datbuf);
+	free((char *)ixbbuf);
+	free((char *)datbuf);
 	return(found);
 }
 
@@ -371,7 +371,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 /* Prints one file's information on a single line                           */
 /* Return 1 if displayed, 0 otherwise										*/
 /****************************************************************************/
-bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
+bool sbbs_t::listfile(char *fname, char *buf, uint dirnum
 	, char *search, char letter, ulong datoffset)
 {
 	char	str[256],ext[513]="",*ptr,*cr,*lf,exist=1;
@@ -854,13 +854,13 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 			return(0); }
 		usrxfrlen=filelength(file);
-		if((usrxfrbuf=(uchar *)MALLOC(usrxfrlen))==NULL) {
+		if((usrxfrbuf=(uchar *)malloc(usrxfrlen))==NULL) {
 			close(file);
 			errormsg(WHERE,ERR_ALLOC,str,usrxfrlen);
 			return(0); }
 		if(read(file,usrxfrbuf,usrxfrlen)!=usrxfrlen) {
 			close(file);
-			FREE(usrxfrbuf);
+			free(usrxfrbuf);
 			errormsg(WHERE,ERR_READ,str,usrxfrlen);
 			return(0); }
 		close(file); }
@@ -871,24 +871,24 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 	if(!l) {
 		close(file);
 		return(0); }
-	if((ixbbuf=(uchar *)MALLOC(l))==NULL) {
+	if((ixbbuf=(uchar *)malloc(l))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,l);
 		return(0); }
 	if(lread(file,ixbbuf,l)!=l) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,l);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		if(usrxfrbuf)
-			FREE(usrxfrbuf);
+			free(usrxfrbuf);
 		return(0); }
 	close(file);
 	sprintf(str,"%s%s.dat",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_READ,str,O_RDONLY);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		if(usrxfrbuf)
-			FREE(usrxfrbuf);
+			free(usrxfrbuf);
 		return(0); }
 	close(file);
 	m=0;
@@ -1286,16 +1286,16 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?')) 
 			break; 
 	}
-	FREE((char *)ixbbuf);
+	free((char *)ixbbuf);
 	if(usrxfrbuf)
-		FREE(usrxfrbuf);
+		free(usrxfrbuf);
 	return(found);
 }
 
 /****************************************************************************/
 /* Prints one file's information on a single line to a file 'file'          */
 /****************************************************************************/
-void sbbs_t::listfiletofile(char *fname, char HUGE16 *buf, uint dirnum, int file)
+void sbbs_t::listfiletofile(char *fname, char *buf, uint dirnum, int file)
 {
     char	str[256];
 	char 	tmp[512];

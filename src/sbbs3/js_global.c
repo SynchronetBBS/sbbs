@@ -2348,7 +2348,7 @@ js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
 		return(JS_FALSE);
 
-	if((index=(SOCKET *)MALLOC(sizeof(SOCKET)*limit))==NULL)
+	if((index=(SOCKET *)malloc(sizeof(SOCKET)*limit))==NULL)
 		return(JS_FALSE);
 
 	FD_ZERO(&socket_set);

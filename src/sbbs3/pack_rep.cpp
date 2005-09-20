@@ -51,7 +51,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	long	l,msgcnt,submsgs,posts,packedmail,netfiles=0,deleted;
 	long	mailmsgs;
 	ulong	last,msgs;
-	post_t	HUGE16 *post;
+	post_t	*post;
 	mail_t	*mail;
 	FILE*	rep;
 	DIR*	dir;
@@ -126,7 +126,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	}
 	smb_close(&smb);					/* Close the e-mail */
 	if(mailmsgs)
-		FREE(mail);
+		free(mail);
 
 	for(i=0;i<cfg.qhub[hubnum]->subs;i++) {
 		j=cfg.qhub[hubnum]->sub[i]; 			/* j now equals the real sub num */
@@ -195,7 +195,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 				YIELD(); /* yield */
 		}
 		eprintf(LOG_INFO,remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
-		LFREE(post);
+		free(post);
 		smb_close(&smb); 
 		YIELD();	/* yield */
 	}
@@ -256,14 +256,14 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 		if((i=smb_locksmbhdr(&smb))!=0) {			  /* Lock the base, so nobody */
 			if(mailmsgs)
-				FREE(mail);
+				free(mail);
 			smb_close(&smb);
 			errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);	/* messes with the index */
 			return(true); }
 
 		if((i=smb_getstatus(&smb))!=0) {
 			if(mailmsgs)
-				FREE(mail);
+				free(mail);
 			smb_close(&smb);
 			errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 			return(true); }
@@ -300,7 +300,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			delmail(0,MAIL_YOUR);
 		smb_close(&smb);
 		if(mailmsgs)
-			FREE(mail); 
+			free(mail); 
 		eprintf(LOG_INFO,"Deleted %d sent NetMail messages",deleted); 
 	}
 

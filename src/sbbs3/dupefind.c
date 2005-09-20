@@ -12,7 +12,7 @@ void bail(int code)
 exit(code);
 }
 
-long lputs(char FAR16 *str)
+long lputs(char *str)
 {
     char tmp[256];
     int i,j,k;
@@ -113,7 +113,7 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 	if(argc>2)
         end_lib=atoi(argv[2])-1;
 
-	if((fcrc=(ulong **)MALLOC(cfg.total_dirs*sizeof(ulong *)))==NULL) {
+	if((fcrc=(ulong **)malloc(cfg.total_dirs*sizeof(ulong *)))==NULL) {
 		printf("Not enough memory for CRCs.\r\n");
 		return(1); }
 
@@ -121,27 +121,27 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 		fprintf(stderr,"Reading directory index %u of %u\r",i+1,cfg.total_dirs);
         sprintf(str,"%s%s.ixb",cfg.dir[i]->data_dir,cfg.dir[i]->code);
 		if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
-			fcrc[i]=(ulong *)MALLOC(1*sizeof(ulong));
+			fcrc[i]=(ulong *)malloc(1*sizeof(ulong));
             fcrc[i][0]=0;
 			continue; }
         l=filelength(file);
 		if(!l || (cfg.dir[i]->lib<start_lib || cfg.dir[i]->lib>end_lib)) {
             close(file);
-			fcrc[i]=(ulong *)MALLOC(1*sizeof(ulong));
+			fcrc[i]=(ulong *)malloc(1*sizeof(ulong));
 			fcrc[i][0]=0;
             continue; }
-		if((fcrc[i]=(ulong *)MALLOC((l/22+2)*sizeof(ulong)))==NULL) {
+		if((fcrc[i]=(ulong *)malloc((l/22+2)*sizeof(ulong)))==NULL) {
             printf("Not enough memory for CRCs.\r\n");
             return(1); }
 		fcrc[i][0]=(ulong)(l/22);
-        if((ixbbuf=(char *)MALLOC(l))==NULL) {
+        if((ixbbuf=(char *)malloc(l))==NULL) {
             close(file);
             printf("\7Error allocating memory for index %s.\r\n",str);
             continue; }
         if(read(file,ixbbuf,l)!=l) {
             close(file);
             printf("\7Error reading %s.\r\n",str);
-			FREE(ixbbuf);
+			free(ixbbuf);
             continue; }
         close(file);
 		j=1;
@@ -151,7 +151,7 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 			strupr(str);
 			fcrc[i][j++]=crc32(str,0);
 			m+=22; }
-		FREE(ixbbuf); }
+		free(ixbbuf); }
 	lputs("\n");
 
 	foundcrc=0L;
@@ -172,7 +172,7 @@ fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 									g=total_found+1; }
 							if(g==total_found) {
 								++total_found;
-								if((foundcrc=(ulong *)REALLOC(foundcrc
+								if((foundcrc=(ulong *)realloc(foundcrc
 									,total_found*sizeof(ulong)))==NULL) {
 								printf("Out of memory reallocating\r\n");
 								return(1); } }

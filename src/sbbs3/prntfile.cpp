@@ -92,7 +92,7 @@ void sbbs_t::printfile(char *str, long mode)
 		errormsg(WHERE,ERR_CHK,str,length);
 		return;
 	}
-	if((buf=(char*)MALLOC(length+1L))==NULL) {
+	if((buf=(char*)malloc(length+1L))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1L);
 		return; 
@@ -105,7 +105,7 @@ void sbbs_t::printfile(char *str, long mode)
 		buf[l]=0;
 		putmsg(buf,mode);
 	}
-	FREE(buf); 
+	free(buf); 
 
 	if((mode&P_NOABORT || wip || rip || html) && online==ON_REMOTE) {
 		SYNC;
@@ -146,7 +146,7 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 		errormsg(WHERE,ERR_CHK,str,length);
 		return;
 	}
-	if((buf=(char*)MALLOC(length+1L))==NULL) {
+	if((buf=(char*)malloc(length+1L))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1L);
 		return; 
@@ -174,7 +174,7 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 		SYNC;
 		rioctl(IOSM|ABORT); 
 	}
-	FREE(buf);
+	free(buf);
 }
 
 /****************************************************************************/

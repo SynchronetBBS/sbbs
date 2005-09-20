@@ -111,7 +111,7 @@ file transfer menu prompt.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Library Short Name",str2,LEN_GSNAME
 			,K_EDIT)<1)
 			continue;
-		if((cfg.lib=(lib_t **)REALLOC(cfg.lib,sizeof(lib_t *)*(cfg.total_libs+1)))==NULL) {
+		if((cfg.lib=(lib_t **)realloc(cfg.lib,sizeof(lib_t *)*(cfg.total_libs+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_libs+1);
 			cfg.total_libs=0;
 			bail(1);
@@ -123,7 +123,7 @@ file transfer menu prompt.
 			for(j=0;j<cfg.total_dirs;j++)
 				if(cfg.dir[j]->lib>=i)
 					cfg.dir[j]->lib++; }
-		if((cfg.lib[i]=(lib_t *)MALLOC(sizeof(lib_t)))==NULL) {
+		if((cfg.lib[i]=(lib_t *)malloc(sizeof(lib_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(lib_t));
 			continue; }
 		memset((lib_t *)cfg.lib[i],0,sizeof(lib_t));
@@ -161,10 +161,10 @@ library, select Yes.
 					else
 						strcpy(tmp,cfg.dir[j]->data_dir);
 					delfiles(tmp,str); }
-		FREE(cfg.lib[i]);
+		free(cfg.lib[i]);
 		for(j=0;j<cfg.total_dirs;) {
 			if(cfg.dir[j]->lib==i) {
-				FREE(cfg.dir[j]);
+				free(cfg.dir[j]);
 				cfg.total_dirs--;
 				k=j;
 				while(k<cfg.total_dirs) {
@@ -557,14 +557,14 @@ command: DIR /ON /AD /B > DIRS.RAW
 							break; }
 					if(j==cfg.total_dirs) {
 
-						if((cfg.dir=(dir_t **)REALLOC(cfg.dir
+						if((cfg.dir=(dir_t **)realloc(cfg.dir
 							,sizeof(dir_t *)*(cfg.total_dirs+1)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,"dir",cfg.total_dirs+1);
 							cfg.total_dirs=0;
 							bail(1);
 							break; }
 
-						if((cfg.dir[j]=(dir_t *)MALLOC(sizeof(dir_t)))
+						if((cfg.dir[j]=(dir_t *)malloc(sizeof(dir_t)))
 							==NULL) {
 							errormsg(WHERE,ERR_ALLOC,"dir",sizeof(dir_t));
 							break; }
@@ -699,7 +699,7 @@ this directory will be stored. Example: C:\XFER\GAMES
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory File Path",path,50
 			,K_EDIT)<1)
 			continue;
-		if((cfg.dir=(dir_t **)REALLOC(cfg.dir,sizeof(dir_t *)*(cfg.total_dirs+1)))==NULL) {
+		if((cfg.dir=(dir_t **)realloc(cfg.dir,sizeof(dir_t *)*(cfg.total_dirs+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_dirs+1);
 			cfg.total_dirs=0;
 			bail(1);
@@ -708,7 +708,7 @@ this directory will be stored. Example: C:\XFER\GAMES
 		if(j)
 			for(n=cfg.total_dirs;n>dirnum[i];n--)
                 cfg.dir[n]=cfg.dir[n-1];
-		if((cfg.dir[dirnum[i]]=(dir_t *)MALLOC(sizeof(dir_t)))==NULL) {
+		if((cfg.dir[dirnum[i]]=(dir_t *)malloc(sizeof(dir_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dir_t));
 			continue; }
 		memset((dir_t *)cfg.dir[dirnum[i]],0,sizeof(dir_t));
@@ -752,7 +752,7 @@ select Yes.
 				else
 					strcpy(tmp,cfg.dir[dirnum[i]]->data_dir);
 				delfiles(tmp,str); }
-		FREE(cfg.dir[dirnum[i]]);
+		free(cfg.dir[dirnum[i]]);
 		cfg.total_dirs--;
 		for(j=dirnum[i];j<cfg.total_dirs;j++)
 			cfg.dir[j]=cfg.dir[j+1];

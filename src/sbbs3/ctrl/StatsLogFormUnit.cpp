@@ -84,7 +84,7 @@ void __fastcall TStatsLogForm::FormShow(TObject *Sender)
         close(file);
         return;
     }
-    if((buf=(char *)MALLOC(length))==NULL) {
+    if((buf=(char *)malloc(length))==NULL) {
         close(file);
         sprintf(str,"!Error allocating %lu bytes",length);
         Log->Lines->Add(AnsiString(str));

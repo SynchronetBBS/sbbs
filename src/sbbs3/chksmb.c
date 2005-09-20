@@ -239,7 +239,7 @@ int main(int argc, char **argv)
 	}
 
 	if((length/SHD_BLOCK_LEN)*sizeof(ulong)) {
-		if((number=(ulong *)MALLOC(((length/SHD_BLOCK_LEN)+2)*sizeof(ulong)))
+		if((number=(ulong *)malloc(((length/SHD_BLOCK_LEN)+2)*sizeof(ulong)))
 			==NULL) {
 			printf("Error allocating %lu bytes of memory\n"
 				,(length/SHD_BLOCK_LEN)*sizeof(ulong));
@@ -662,11 +662,11 @@ int main(int argc, char **argv)
 
 	fprintf(stderr,"\nChecking %s Index\n\n",smb.file);
 
-	if((offset=(ulong *)MALLOC(total*sizeof(ulong)))==NULL) {
+	if((offset=(ulong *)malloc(total*sizeof(ulong)))==NULL) {
 		printf("Error allocating %lu bytes of memory\n",total*sizeof(ulong));
 		return(++errors); 
 	}
-	if((number=(ulong *)MALLOC(total*sizeof(ulong)))==NULL) {
+	if((number=(ulong *)malloc(total*sizeof(ulong)))==NULL) {
 		printf("Error allocating %lu bytes of memory\n",total*sizeof(ulong));
 		return(++errors); 
 	}

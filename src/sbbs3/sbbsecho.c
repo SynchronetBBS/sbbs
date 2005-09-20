@@ -528,7 +528,7 @@ void file_to_netmail(FILE *infile,char *title,faddr_t addr,char *to)
 	if(len>8192L)
 		len=8192L;
 	rewind(infile);
-	if((buf=(char *)MALLOC(len+1))==NULL) {
+	if((buf=(char *)malloc(len+1))==NULL) {
 		printf("ERROR allocating %lu bytes for file to netmail buffer.\n",len);
 		logprintf("ERROR line %d allocating %lu for file to netmail buf",__LINE__
 			,len);
@@ -548,7 +548,7 @@ void file_to_netmail(FILE *infile,char *title,faddr_t addr,char *to)
 			strcat(buf,"\r\nContinued in next message...\r\n");
 		create_netmail(to,title,buf,addr,FALSE); 
 	}
-	FREE(buf);
+	free(buf);
 }
 /******************************************************************************
  This function sends a notify list to applicable nodes, this list includes the
@@ -842,7 +842,7 @@ void alter_areas(area_t* add_area,area_t* del_area,faddr_t addr)
 							FREE_AND_NULL(cfg.area[i].uplink);
 						} else
 							if((cfg.area[i].uplink=(faddr_t *)
-								REALLOC(cfg.area[i].uplink,sizeof(faddr_t)
+								realloc(cfg.area[i].uplink,sizeof(faddr_t)
 								*(cfg.area[i].uplinks)))==NULL) {
 								printf("ERROR allocating memory for area #%u "
 									"uplinks.\n",i+1);
@@ -894,7 +894,7 @@ void alter_areas(area_t* add_area,area_t* del_area,faddr_t addr)
 
 						++cfg.area[i].uplinks;
 						if((cfg.area[i].uplink=(faddr_t *)
-							REALLOC(cfg.area[i].uplink,sizeof(faddr_t)
+							realloc(cfg.area[i].uplink,sizeof(faddr_t)
 							*(cfg.area[i].uplinks)))==NULL) {
 							printf("ERROR allocating memory for area #%u "
 								"uplinks.\n",i+1);
@@ -1271,7 +1271,7 @@ void command(char *instr,faddr_t addr)
 	if((p=strstr(instr,"FROM"))!=NULL);
 
 	if((p=strstr(instr,"+ALL"))!=NULL) {
-		if((add_area.tag=(char **)REALLOC(add_area.tag
+		if((add_area.tag=(char **)realloc(add_area.tag
 			,sizeof(char *)*add_area.tags+1))==NULL) {
 			printf("ERROR allocating memory for add area tag #%u.\n"
 				,add_area.tags+1);
@@ -1294,7 +1294,7 @@ void command(char *instr,faddr_t addr)
 	}
 
 	if((p=strstr(instr,"-ALL"))!=NULL) {
-		if((del_area.tag=(char **)REALLOC(del_area.tag
+		if((del_area.tag=(char **)realloc(del_area.tag
 			,sizeof(char *)*del_area.tags+1))==NULL) {
 			printf("ERROR allocating memory for del area tag #%u.\n"
 				,del_area.tags+1);
@@ -1390,7 +1390,7 @@ char *process_areafix(faddr_t addr,char* inbuf,char *password)
 		truncstr(str,"\r\n");
 		switch(action) {
 			case '+':                       /* Add Area */
-				if((add_area.tag=(char **)REALLOC(add_area.tag
+				if((add_area.tag=(char **)realloc(add_area.tag
 					,sizeof(char *)*add_area.tags+1))==NULL) {
 					printf("ERROR allocating memory for add area tag #%u.\n"
 						,add_area.tags+1);
@@ -1408,7 +1408,7 @@ char *process_areafix(faddr_t addr,char* inbuf,char *password)
 				add_area.tags++;
 				break;
 			case '-':                       /* Remove Area */
-				if((del_area.tag=(char **)REALLOC(del_area.tag
+				if((del_area.tag=(char **)realloc(del_area.tag
 					,sizeof(char *)*del_area.tags+1))==NULL) {
 					printf("ERROR allocating memory for del area tag #%u.\n"
 						,del_area.tags+1);
@@ -1607,7 +1607,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 				continue;
 			num_mfncrc++;
 			p=getfname(hdr.subj);
-			if((mfncrc=(long *)REALLOC(mfncrc,num_mfncrc*sizeof(long)))==NULL) {
+			if((mfncrc=(long *)realloc(mfncrc,num_mfncrc*sizeof(long)))==NULL) {
 				printf("ERROR allocating %lu bytes for bundle name crc.\n"
 					,num_mfncrc*sizeof(long));
 				logprintf("ERROR line %d allocating %lu for bundle name crc"
@@ -1638,7 +1638,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 		if(!error)			/* remove bundles.sbe if no error occurred */		
 			remove(fname);	/* used to truncate here, August-20-2002 */
 		if(num_mfncrc)
-			FREE(mfncrc);
+			free(mfncrc);
 		return(0); 
 	}
 
@@ -2068,7 +2068,7 @@ ulong matchname(char *inname)
 		last_user=filelength(userdat)/U_LEN;
 		for(total_users=0;total_users<last_user;total_users++) {
 			printf("%5ld\b\b\b\b\b",total_users);
-			if((username=(username_t *)REALLOC(username
+			if((username=(username_t *)realloc(username
 				,(total_users+1L)*sizeof(username_t)))==NULL)
 				break;
 			username[total_users].alias=0;
@@ -2861,7 +2861,7 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char *inbuf
 	if(!fbuf)
 		fbuf=inbuf;
 	if(seenbys->addr) {
-		FREE(seenbys->addr);
+		free(seenbys->addr);
 		seenbys->addr=0;
 		seenbys->addrs=0; }
 	addr.zone=addr.net=addr.node=addr.point=seenbys->addrs=0;
@@ -2895,7 +2895,7 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char *inbuf
 					addr.point=atoi(p2+1);
 				if(!addr.zone)
 					addr.zone=zone; 		/* Was 1 */
-				if((seenbys->addr=(faddr_t *)REALLOC(seenbys->addr
+				if((seenbys->addr=(faddr_t *)realloc(seenbys->addr
 					,sizeof(faddr_t)*(seenbys->addrs+1)))==NULL) {
 					printf("ERROR allocating memory for seenbys\n");
 					logprintf("ERROR line %d allocating memory for message "
@@ -2911,7 +2911,7 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char *inbuf
 				break;
 			p=p1; } }
 	else {
-		if((seenbys->addr=(faddr_t *)REALLOC(seenbys->addr
+		if((seenbys->addr=(faddr_t *)realloc(seenbys->addr
 			,sizeof(faddr_t)))==NULL) {
 			printf("ERROR allocating memory for seenbys\n");
 			logprintf("ERROR line %d allocating memory for message seenbys."
@@ -2920,7 +2920,7 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char *inbuf
 		memset(&seenbys->addr[0],0,sizeof(faddr_t)); }
 
 	if(paths->addr) {
-		FREE(paths->addr);
+		free(paths->addr);
 		paths->addr=0;
 		paths->addrs=0; }
 	addr.zone=addr.net=addr.node=addr.point=paths->addrs=0;
@@ -2952,7 +2952,7 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char *inbuf
 					addr.point=atoi(p2+1);
 				if(!addr.zone)
 					addr.zone=zone; 		/* Was 1 */
-				if((paths->addr=(faddr_t *)REALLOC(paths->addr
+				if((paths->addr=(faddr_t *)realloc(paths->addr
 					,sizeof(faddr_t)*(paths->addrs+1)))==NULL) {
 					printf("ERROR allocating memory for paths\n");
 					logprintf("ERROR line %d allocating memory for message "
@@ -2965,7 +2965,7 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char *inbuf
 				break;
 			p=p1; } }
 	else {
-		if((paths->addr=(faddr_t *)REALLOC(paths->addr
+		if((paths->addr=(faddr_t *)realloc(paths->addr
 			,sizeof(faddr_t)))==NULL) {
 			printf("ERROR allocating memory for paths\n");
 			logprintf("ERROR line %d allocating memory for message paths."
@@ -3310,7 +3310,7 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, char* info)
 		printf("%s", path);
 		logprintf("%s Exported to %s",info,path);
 	}
-	FREE(fmsgbuf); 
+	free(fmsgbuf); 
 
 	return(0);
 }
@@ -3439,7 +3439,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 				putsmsg(&scfg,cfg.notify,str); 
 			}
 		if(fmsgbuf)
-			FREE(fmsgbuf);
+			free(fmsgbuf);
 		if(cfg.log&LOG_AREAFIX)
 			logprintf(info);
 		return(-2); 
@@ -3492,7 +3492,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	}
 	if(i) {
 		if(fmsgbuf)
-			FREE(fmsgbuf);
+			free(fmsgbuf);
 		return(0);
 	}
 
@@ -3527,7 +3527,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	netmail++;
 
 	if(fmsgbuf)
-		FREE(fmsgbuf);
+		free(fmsgbuf);
 
 	/***************************/
 	/* Updating message header */
@@ -3720,7 +3720,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 					continue; 
 				}
 				fmsgbuflen=strlen((char *)buf)+4096; /* over alloc for kludge lines */
-				fmsgbuf=MALLOC(fmsgbuflen);
+				fmsgbuf=malloc(fmsgbuflen);
 				if(!fmsgbuf) {
 					printf("ERROR allocating %lu bytes for fmsgbuf\n",fmsgbuflen);
 					logprintf("ERROR line %d allocating %lu bytes for fmsgbuf"
@@ -3953,11 +3953,11 @@ int main(int argc, char **argv)
 	"s: import private echomail override (strip private status)\n"
 	"!: notify users of received echomail     @: prompt for key upon exiting (debug)\n";
 
-	if((email=(smb_t *)MALLOC(sizeof(smb_t)))==NULL) {
+	if((email=(smb_t *)malloc(sizeof(smb_t)))==NULL) {
 		printf("ERROR allocating memory for email.\n");
 		bail(1); }
 	memset(email,0,sizeof(smb_t));
-	if((smb=(smb_t *)MALLOC(MAX_OPEN_SMBS*sizeof(smb_t)))==NULL) {
+	if((smb=(smb_t *)malloc(MAX_OPEN_SMBS*sizeof(smb_t)))==NULL) {
 		printf("ERROR allocating memory for smbs.\n");
 		bail(1); }
 	for(i=0;i<MAX_OPEN_SMBS;i++)
@@ -4149,7 +4149,7 @@ int main(int argc, char **argv)
 		SKIP_WHITESPACE(p);	/* Find first printable char */
 		if(*p==';' || !*p)          /* Ignore blank lines or start with ; */
 			continue;
-		if((cfg.area=(areasbbs_t *)REALLOC(cfg.area,sizeof(areasbbs_t)*
+		if((cfg.area=(areasbbs_t *)realloc(cfg.area,sizeof(areasbbs_t)*
 			(cfg.areas+1)))==NULL) {
 			printf("ERROR allocating memory for area #%u.\n",cfg.areas+1);
 			bail(1); }
@@ -4177,7 +4177,7 @@ int main(int argc, char **argv)
 		strupr(tmp);
 		if(tmp[0]=='*')         /* UNKNOWN-ECHO area */
 			cfg.badecho=cfg.areas;
-		if((cfg.area[cfg.areas].name=(char *)MALLOC(strlen(tmp)+1))==NULL) {
+		if((cfg.area[cfg.areas].name=(char *)malloc(strlen(tmp)+1))==NULL) {
 			printf("ERROR allocating memory for area #%u tag name.\n"
 				,cfg.areas+1);
 			bail(1); }
@@ -4190,7 +4190,7 @@ int main(int argc, char **argv)
 
 		while(*p && *p!=';') {
 			if((cfg.area[cfg.areas].uplink=(faddr_t *)
-				REALLOC(cfg.area[cfg.areas].uplink
+				realloc(cfg.area[cfg.areas].uplink
 				,sizeof(faddr_t)*(cfg.area[cfg.areas].uplinks+1)))==NULL) {
 				printf("ERROR allocating memory for area #%u uplinks.\n"
 					,cfg.areas+1);
@@ -4413,7 +4413,7 @@ int main(int argc, char **argv)
 				start_tick=msclock();
 
 				if(fmsgbuf) {
-					FREE(fmsgbuf);
+					free(fmsgbuf);
 					fmsgbuf=0; 
 				}
 
@@ -4769,7 +4769,7 @@ int main(int argc, char **argv)
 				printf("(%.1f/min) ",(float)echomail/(import_time/60.0));
 			printf("(%.1f/sec)\n",(float)echomail/import_time); }
 		if(fmsgbuf) {
-			FREE(fmsgbuf);
+			free(fmsgbuf);
 			fmsgbuf=0; }
 
 		}
@@ -4995,7 +4995,7 @@ int main(int argc, char **argv)
 
 			putfmsg(stream,fmsgbuf,hdr,fakearea,msg_seen,msg_path);
 
-			FREE(fmsgbuf);
+			free(fmsgbuf);
 			fclose(stream);
 			/**************************************/
 			/* Delete source netmail if specified */
@@ -5063,8 +5063,8 @@ int main(int argc, char **argv)
 	if(email->shd_fp)
 		smb_close(email);
 
-	FREE(smb);
-	FREE(email);
+	free(smb);
+	free(email);
 
 	bail(0);
 	return(0);

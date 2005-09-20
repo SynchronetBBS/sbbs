@@ -555,14 +555,14 @@ void synclist(char *inpath, int dirnum)
 		printf("ERR_LEN (%ld) of %s\n",length,str);
 		return; 
 	}
-	if((ixbbuf=(uchar HUGE16 *)MALLOC(length))==NULL) {
+	if((ixbbuf=(uchar *)malloc(length))==NULL) {
 		close(file);
 		printf("ERR_ALLOC %s\n",str);
 		return; 
 	}
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		printf("ERR_READ %s\n",str);
 		return; 
 	}

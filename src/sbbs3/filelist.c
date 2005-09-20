@@ -302,7 +302,7 @@ int main(int argc, char **argv)
 			close(file);
 			if(misc&AUTO) fclose(out);
 			continue; }
-		if((ixbbuf=(char *)MALLOC(l))==NULL) {
+		if((ixbbuf=(char *)malloc(l))==NULL) {
 			close(file);
 			if(misc&AUTO) fclose(out);
 			printf("\7ERR_ALLOC %s %lu\n",str,l);
@@ -311,27 +311,27 @@ int main(int argc, char **argv)
 			close(file);
 			if(misc&AUTO) fclose(out);
 			printf("\7ERR_READ %s %lu\n",str,l);
-			FREE((char *)ixbbuf);
+			free((char *)ixbbuf);
 			continue; }
 		close(file);
 		sprintf(str,"%s%s.dat",scfg.dir[i]->data_dir,scfg.dir[i]->code);
 		if((file=nopen(str,O_RDONLY))==-1) {
 			printf("\7ERR_OPEN %s %u\n",str,O_RDONLY);
-			FREE((char *)ixbbuf);
+			free((char *)ixbbuf);
 			if(misc&AUTO) fclose(out);
 			continue; }
 		datbuflen=filelength(file);
-		if((datbuf=MALLOC(datbuflen))==NULL) {
+		if((datbuf=malloc(datbuflen))==NULL) {
 			close(file);
 			printf("\7ERR_ALLOC %s %lu\n",str,datbuflen);
-			FREE((char *)ixbbuf);
+			free((char *)ixbbuf);
 			if(misc&AUTO) fclose(out);
 			continue; }
 		if(read(file,datbuf,datbuflen)!=(int)datbuflen) {
 			close(file);
 			printf("\7ERR_READ %s %lu\n",str,datbuflen);
-			FREE((char *)datbuf);
-			FREE((char *)ixbbuf);
+			free((char *)datbuf);
+			free((char *)ixbbuf);
 			if(misc&AUTO) fclose(out);
 			continue; }
 		close(file);
@@ -447,8 +447,8 @@ int main(int argc, char **argv)
 					lines++; }
 				fclose(in); }
 			fprintf(out,"\r\n"); }
-		FREE((char *)datbuf);
-		FREE((char *)ixbbuf);
+		free((char *)datbuf);
+		free((char *)ixbbuf);
 		fprintf(out,"\r\n"); /* blank line at end of dir */
 		if(misc&AUTO) fclose(out); }
 

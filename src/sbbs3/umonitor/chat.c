@@ -167,7 +167,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 		return(-1);
     }
 
-	if((p=(char *)MALLOC(PCHAT_LEN))==NULL) {
+	if((p=(char *)malloc(PCHAT_LEN))==NULL) {
 		close(in);
 		close(out);
 		free(buf);
@@ -176,7 +176,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	memset(p,0,PCHAT_LEN);
 	write(in,p,PCHAT_LEN);
 	write(out,p,PCHAT_LEN);
-	FREE(p);
+	free(p);
 	lseek(in,0,SEEK_SET);
 	lseek(out,0,SEEK_SET);
 

@@ -219,13 +219,13 @@ int main(int argc, char **argv)
 	read_echo_cfg();
 
 	// savnum=0;
-	if((opt=(char **)MALLOC(sizeof(char *)*300))==NULL) {
+	if((opt=(char **)malloc(sizeof(char *)*300))==NULL) {
 		uifc.bail();
 		puts("memory allocation error\n");
 		exit(1); 
 	}
 	for(i=0;i<300;i++)
-		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL) {
+		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL) {
 	      	uifc.bail();
 			puts("memory allocation error\n");
 			exit(1); 
@@ -341,7 +341,7 @@ int main(int argc, char **argv)
 							,"Node Address (ALL wildcard allowed)",str
 							,25,K_EDIT)<1)
 							continue;
-						if((cfg.nodecfg=(nodecfg_t *)REALLOC(cfg.nodecfg
+						if((cfg.nodecfg=(nodecfg_t *)realloc(cfg.nodecfg
 							,sizeof(nodecfg_t)*(cfg.nodecfgs+1)))==NULL) {
 							printf("\nMemory Allocation Error\n");
 							exit(1); }
@@ -362,7 +362,7 @@ int main(int argc, char **argv)
 						for(j=i;j<cfg.nodecfgs;j++)
 							memcpy(&cfg.nodecfg[j],&cfg.nodecfg[j+1]
 								,sizeof(nodecfg_t));
-						if((cfg.nodecfg=(nodecfg_t *)REALLOC(cfg.nodecfg
+						if((cfg.nodecfg=(nodecfg_t *)realloc(cfg.nodecfg
 							,sizeof(nodecfg_t)*(cfg.nodecfgs)))==NULL) {
 							printf("\nMemory Allocation Error\n");
 							exit(1); }
@@ -503,7 +503,7 @@ int main(int argc, char **argv)
 											,K_EDIT|K_UPPER)<1)
 											continue;
 										if((cfg.nodecfg[i].flag=(flag_t *)
-											REALLOC(cfg.nodecfg[i].flag
+											realloc(cfg.nodecfg[i].flag
 											,sizeof(flag_t)*
 											(cfg.nodecfg[i].numflags+1)))==NULL) {
 											printf("\nMemory Allocation Error\n");
@@ -528,7 +528,7 @@ int main(int argc, char **argv)
 											strcpy(cfg.nodecfg[i].flag[j].flag
 												,cfg.nodecfg[i].flag[j+1].flag);
 										if((cfg.nodecfg[i].flag=(flag_t *)
-											REALLOC(cfg.nodecfg[i].flag
+											realloc(cfg.nodecfg[i].flag
 											,sizeof(flag_t)*
 											(cfg.nodecfg[i].numflags)))==NULL) {
 											printf("\nMemory Allocation Error\n");
@@ -857,7 +857,7 @@ int main(int argc, char **argv)
 						if(uifc.input(WIN_MID,0,0
 							,"Packer Name",str,25,K_EDIT|K_UPPER)<1)
 							continue;
-						if((cfg.arcdef=(arcdef_t *)REALLOC(cfg.arcdef
+						if((cfg.arcdef=(arcdef_t *)realloc(cfg.arcdef
 							,sizeof(arcdef_t)*(cfg.arcdefs+1)))==NULL) {
 							printf("\nMemory Allocation Error\n");
 							exit(1); }
@@ -880,7 +880,7 @@ int main(int argc, char **argv)
 						for(j=i;j<cfg.arcdefs;j++)
 							memcpy(&cfg.arcdef[j],&cfg.arcdef[j+1]
 								,sizeof(arcdef_t));
-						if((cfg.arcdef=(arcdef_t *)REALLOC(cfg.arcdef
+						if((cfg.arcdef=(arcdef_t *)realloc(cfg.arcdef
 							,sizeof(arcdef_t)*(cfg.arcdefs)))==NULL) {
 							printf("\nMemory Allocation Error\n");
 							exit(1); }
@@ -965,7 +965,7 @@ int main(int argc, char **argv)
 						if(uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Echo List Path/Name",str,50,K_EDIT)<1)
 							continue;
-						if((cfg.listcfg=(echolist_t *)REALLOC(cfg.listcfg
+						if((cfg.listcfg=(echolist_t *)realloc(cfg.listcfg
 							,sizeof(echolist_t)*(cfg.listcfgs+1)))==NULL) {
 							printf("\nMemory Allocation Error\n");
 							exit(1); }
@@ -986,7 +986,7 @@ int main(int argc, char **argv)
 						for(j=i;j<cfg.listcfgs;j++)
 							memcpy(&cfg.listcfg[j],&cfg.listcfg[j+1]
 								,sizeof(echolist_t));
-						if((cfg.listcfg=(echolist_t *)REALLOC(cfg.listcfg
+						if((cfg.listcfg=(echolist_t *)realloc(cfg.listcfg
 							,sizeof(echolist_t)*(cfg.listcfgs)))==NULL) {
 							printf("\nMemory Allocation Error\n");
 							exit(1); }
@@ -1075,7 +1075,7 @@ int main(int argc, char **argv)
 											,K_EDIT|K_UPPER)<1)
 											continue;
 										if((cfg.listcfg[i].flag=(flag_t *)
-											REALLOC(cfg.listcfg[i].flag
+											realloc(cfg.listcfg[i].flag
 											,sizeof(flag_t)*
 											(cfg.listcfg[i].numflags+1)))==NULL) {
 											printf("\nMemory Allocation Error\n");
@@ -1100,7 +1100,7 @@ int main(int argc, char **argv)
 											strcpy(cfg.listcfg[i].flag[j].flag
 												,cfg.listcfg[i].flag[j+1].flag);
 										if((cfg.listcfg[i].flag=(flag_t *)
-											REALLOC(cfg.listcfg[i].flag
+											realloc(cfg.listcfg[i].flag
 											,sizeof(flag_t)*
 											(cfg.listcfg[i].numflags)))==NULL) {
 											printf("\nMemory Allocation Error\n");

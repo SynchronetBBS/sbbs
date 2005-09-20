@@ -268,7 +268,7 @@ command line examples for a few file types.
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
 					i&=MSK_OFF;
-					FREE(cfg.fview[i]);
+					free(cfg.fview[i]);
 					cfg.total_fviews--;
 					while(i<cfg.total_fviews) {
 						cfg.fview[i]=cfg.fview[i+1];
@@ -277,14 +277,14 @@ command line examples for a few file types.
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
-					if((cfg.fview=(fview_t **)REALLOC(cfg.fview
+					if((cfg.fview=(fview_t **)realloc(cfg.fview
 						,sizeof(fview_t *)*(cfg.total_fviews+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fviews+1);
 						cfg.total_fviews=0;
 						bail(1);
 						continue; }
 					if(!cfg.total_fviews) {
-						if((cfg.fview[0]=(fview_t *)MALLOC(
+						if((cfg.fview[0]=(fview_t *)malloc(
 							sizeof(fview_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fview_t));
 							continue; }
@@ -294,7 +294,7 @@ command line examples for a few file types.
 					else {
 						for(j=cfg.total_fviews;j>i;j--)
 							cfg.fview[j]=cfg.fview[j-1];
-						if((cfg.fview[i]=(fview_t *)MALLOC(
+						if((cfg.fview[i]=(fview_t *)malloc(
 							sizeof(fview_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fview_t));
 							continue; }
@@ -383,7 +383,7 @@ listed.
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
 					i&=MSK_OFF;
-					FREE(cfg.ftest[i]);
+					free(cfg.ftest[i]);
 					cfg.total_ftests--;
 					while(i<cfg.total_ftests) {
 						cfg.ftest[i]=cfg.ftest[i+1];
@@ -392,14 +392,14 @@ listed.
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
-					if((cfg.ftest=(ftest_t **)REALLOC(cfg.ftest
+					if((cfg.ftest=(ftest_t **)realloc(cfg.ftest
 						,sizeof(ftest_t *)*(cfg.total_ftests+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_ftests+1);
 						cfg.total_ftests=0;
 						bail(1);
 						continue; }
 					if(!cfg.total_ftests) {
-						if((cfg.ftest[0]=(ftest_t *)MALLOC(
+						if((cfg.ftest[0]=(ftest_t *)malloc(
 							sizeof(ftest_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ftest_t));
 							continue; }
@@ -411,7 +411,7 @@ listed.
 
 						for(j=cfg.total_ftests;j>i;j--)
 							cfg.ftest[j]=cfg.ftest[j-1];
-						if((cfg.ftest[i]=(ftest_t *)MALLOC(
+						if((cfg.ftest[i]=(ftest_t *)malloc(
 							sizeof(ftest_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ftest_t));
 							continue; }
@@ -505,7 +505,7 @@ for each file type and command line listed.
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
 					i&=MSK_OFF;
-					FREE(cfg.dlevent[i]);
+					free(cfg.dlevent[i]);
 					cfg.total_dlevents--;
 					while(i<cfg.total_dlevents) {
 						cfg.dlevent[i]=cfg.dlevent[i+1];
@@ -514,14 +514,14 @@ for each file type and command line listed.
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
-					if((cfg.dlevent=(dlevent_t **)REALLOC(cfg.dlevent
+					if((cfg.dlevent=(dlevent_t **)realloc(cfg.dlevent
 						,sizeof(dlevent_t *)*(cfg.total_dlevents+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_dlevents+1);
 						cfg.total_dlevents=0;
 						bail(1);
 						continue; }
 					if(!cfg.total_dlevents) {
-						if((cfg.dlevent[0]=(dlevent_t *)MALLOC(
+						if((cfg.dlevent[0]=(dlevent_t *)malloc(
 							sizeof(dlevent_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dlevent_t));
 							continue; }
@@ -534,7 +534,7 @@ for each file type and command line listed.
 
 						for(j=cfg.total_dlevents;j>i;j--)
 							cfg.dlevent[j]=cfg.dlevent[j-1];
-						if((cfg.dlevent[i]=(dlevent_t *)MALLOC(
+						if((cfg.dlevent[i]=(dlevent_t *)malloc(
 							sizeof(dlevent_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dlevent_t));
 							continue; }
@@ -622,7 +622,7 @@ extract the file(s).
                     break;
 				if((i&MSK_ON)==MSK_DEL) {
 					i&=MSK_OFF;
-                    FREE(cfg.fextr[i]);
+                    free(cfg.fextr[i]);
                     cfg.total_fextrs--;
                     while(i<cfg.total_fextrs) {
                         cfg.fextr[i]=cfg.fextr[i+1];
@@ -631,14 +631,14 @@ extract the file(s).
                     continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
-					if((cfg.fextr=(fextr_t **)REALLOC(cfg.fextr
+					if((cfg.fextr=(fextr_t **)realloc(cfg.fextr
 						,sizeof(fextr_t *)*(cfg.total_fextrs+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fextrs+1);
 						cfg.total_fextrs=0;
 						bail(1);
 						continue; }
                     if(!cfg.total_fextrs) {
-                        if((cfg.fextr[0]=(fextr_t *)MALLOC(
+                        if((cfg.fextr[0]=(fextr_t *)malloc(
                             sizeof(fextr_t)))==NULL) {
                             errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fextr_t));
                             continue; }
@@ -649,7 +649,7 @@ extract the file(s).
 
                         for(j=cfg.total_fextrs;j>i;j--)
                             cfg.fextr[j]=cfg.fextr[j-1];
-                        if((cfg.fextr[i]=(fextr_t *)MALLOC(
+                        if((cfg.fextr[i]=(fextr_t *)malloc(
                             sizeof(fextr_t)))==NULL) {
                             errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fextr_t));
                             continue; }
@@ -729,7 +729,7 @@ files from the transfer section, and more.
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
 					i&=MSK_OFF;
-					FREE(cfg.fcomp[i]);
+					free(cfg.fcomp[i]);
 					cfg.total_fcomps--;
 					while(i<cfg.total_fcomps) {
 						cfg.fcomp[i]=cfg.fcomp[i+1];
@@ -738,14 +738,14 @@ files from the transfer section, and more.
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
-					if((cfg.fcomp=(fcomp_t **)REALLOC(cfg.fcomp
+					if((cfg.fcomp=(fcomp_t **)realloc(cfg.fcomp
 						,sizeof(fcomp_t *)*(cfg.total_fcomps+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fcomps+1);
 						cfg.total_fcomps=0;
 						bail(1);
 						continue; }
 					if(!cfg.total_fcomps) {
-						if((cfg.fcomp[0]=(fcomp_t *)MALLOC(
+						if((cfg.fcomp[0]=(fcomp_t *)malloc(
 							sizeof(fcomp_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fcomp_t));
 							continue; }
@@ -755,7 +755,7 @@ files from the transfer section, and more.
 					else {
 						for(j=cfg.total_fcomps;j>i;j--)
 							cfg.fcomp[j]=cfg.fcomp[j-1];
-						if((cfg.fcomp[i]=(fcomp_t *)MALLOC(
+						if((cfg.fcomp[i]=(fcomp_t *)malloc(
 							sizeof(fcomp_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fcomp_t));
 							continue; }
@@ -841,7 +841,7 @@ command line for that method blank.
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
 					i&=MSK_OFF;
-					FREE(cfg.prot[i]);
+					free(cfg.prot[i]);
 					cfg.total_prots--;
 					while(i<cfg.total_prots) {
 						cfg.prot[i]=cfg.prot[i+1];
@@ -850,14 +850,14 @@ command line for that method blank.
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
-					if((cfg.prot=(prot_t **)REALLOC(cfg.prot
+					if((cfg.prot=(prot_t **)realloc(cfg.prot
 						,sizeof(prot_t *)*(cfg.total_prots+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_prots+1);
 						cfg.total_prots=0;
 						bail(1);
 						continue; }
 					if(!cfg.total_prots) {
-						if((cfg.prot[0]=(prot_t *)MALLOC(
+						if((cfg.prot[0]=(prot_t *)malloc(
 							sizeof(prot_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(prot_t));
 							continue; }
@@ -866,7 +866,7 @@ command line for that method blank.
 					} else {
 						for(j=cfg.total_prots;j>i;j--)
 							cfg.prot[j]=cfg.prot[j-1];
-						if((cfg.prot[i]=(prot_t *)MALLOC(
+						if((cfg.prot[i]=(prot_t *)malloc(
 							sizeof(prot_t)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(prot_t));
 							continue; }
@@ -1021,7 +1021,7 @@ multiple CD-ROMs or hard disks.
 					break;
 				if((i&MSK_ON)==MSK_DEL) {
 					i&=MSK_OFF;
-					FREE(cfg.altpath[i]);
+					free(cfg.altpath[i]);
 					cfg.altpaths--;
 					while(i<cfg.altpaths) {
 						cfg.altpath[i]=cfg.altpath[i+1];
@@ -1030,21 +1030,21 @@ multiple CD-ROMs or hard disks.
 					continue; }
 				if((i&MSK_ON)==MSK_INS) {
 					i&=MSK_OFF;
-					if((cfg.altpath=(char **)REALLOC(cfg.altpath
+					if((cfg.altpath=(char **)realloc(cfg.altpath
 						,sizeof(char *)*(cfg.altpaths+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,cfg.altpaths+1);
 						cfg.altpaths=0;
 						bail(1);
                         continue; }
 					if(!cfg.altpaths) {
-						if((cfg.altpath[0]=(char *)MALLOC(LEN_DIR+1))==NULL) {
+						if((cfg.altpath[0]=(char *)malloc(LEN_DIR+1))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,LEN_DIR+1);
 							continue; }
 						memset(cfg.altpath[0],0,LEN_DIR+1); }
 					else {
 						for(j=cfg.altpaths;j>i;j--)
 							cfg.altpath[j]=cfg.altpath[j-1];
-						if((cfg.altpath[i]=(char *)MALLOC(LEN_DIR+1))==NULL) {
+						if((cfg.altpath[i]=(char *)malloc(LEN_DIR+1))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,LEN_DIR+1);
 							continue; }
 						if(i>=cfg.altpaths)

@@ -58,13 +58,13 @@ int sbbs_t::xtrn_sec()
 		return(1); 
 	}
 
-	if((usrxtrn=(uint *)MALLOC(cfg.total_xtrns*sizeof(int)))==NULL) {
+	if((usrxtrn=(uint *)malloc(cfg.total_xtrns*sizeof(int)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_xtrns);
 		return(1); 
 	}
-	if((usrxsec=(uint *)MALLOC(cfg.total_xtrnsecs*sizeof(int)))==NULL) {
+	if((usrxsec=(uint *)malloc(cfg.total_xtrnsecs*sizeof(int)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_xtrnsecs);
-		FREE(usrxtrn);
+		free(usrxtrn);
 		return(1); 
 	}
 
@@ -74,8 +74,8 @@ int sbbs_t::xtrn_sec()
 				usrxsec[usrxsecs++]=i;
 		if(!usrxsecs) {
 			bputs(text[NoXtrnPrograms]);
-			FREE(usrxtrn);
-			FREE(usrxsec);
+			free(usrxtrn);
+			free(usrxsec);
 			return(1); 
 		}
 		if(usrxsecs>1) {
@@ -105,8 +105,8 @@ int sbbs_t::xtrn_sec()
 
 		if(xsec>=cfg.total_xtrnsecs) {
 			bputs(text[NoXtrnPrograms]);
-			FREE(usrxtrn);
-			FREE(usrxsec);
+			free(usrxtrn);
+			free(usrxsec);
 			return(1); 
 		}
 
@@ -187,8 +187,8 @@ int sbbs_t::xtrn_sec()
 		if(usrxsecs<2)
 			break; 
 	}
-	FREE(usrxtrn);
-	FREE(usrxsec);
+	free(usrxtrn);
+	free(usrxsec);
 	return(0);
 }
 

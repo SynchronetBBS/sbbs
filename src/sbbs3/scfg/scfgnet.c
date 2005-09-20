@@ -189,7 +189,7 @@ To configure a hub, select it and hit  ENTER .
 							break;
 						if((i&MSK_ON)==MSK_INS) {
 							i&=MSK_OFF;
-							if((cfg.qhub=(qhub_t **)REALLOC(cfg.qhub
+							if((cfg.qhub=(qhub_t **)realloc(cfg.qhub
                                 ,sizeof(qhub_t *)*(cfg.total_qhubs+1)))==NULL) {
                                 errormsg(WHERE,ERR_ALLOC,nulstr
                                     ,sizeof(qhub_t *)*(cfg.total_qhubs+1));
@@ -211,7 +211,7 @@ outgoing network packets and must be accurate.
 
 							for(j=cfg.total_qhubs;j>i;j--)
                                 cfg.qhub[j]=cfg.qhub[j-1];
-							if((cfg.qhub[i]=(qhub_t *)MALLOC(sizeof(qhub_t)))
+							if((cfg.qhub[i]=(qhub_t *)malloc(sizeof(qhub_t)))
 								==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr
 									,sizeof(qhub_t));
@@ -228,10 +228,10 @@ outgoing network packets and must be accurate.
 							continue; }
 						if((i&MSK_ON)==MSK_DEL) {
 							i&=MSK_OFF;
-							FREE(cfg.qhub[i]->mode);
-							FREE(cfg.qhub[i]->conf);
-							FREE(cfg.qhub[i]->sub);
-							FREE(cfg.qhub[i]);
+							free(cfg.qhub[i]->mode);
+							free(cfg.qhub[i]->conf);
+							free(cfg.qhub[i]->sub);
+							free(cfg.qhub[i]);
 							cfg.total_qhubs--;
 							while(i<cfg.total_qhubs) {
 								cfg.qhub[i]=cfg.qhub[i+1];
@@ -342,7 +342,7 @@ Format: Zone:Net/Node[.Point]
 								,str,25,K_EDIT|K_UPPER))
 								continue;
 
-							if((cfg.faddr=(faddr_t *)REALLOC(cfg.faddr
+							if((cfg.faddr=(faddr_t *)realloc(cfg.faddr
                                 ,sizeof(faddr_t)*(cfg.total_faddrs+1)))==NULL) {
                                 errormsg(WHERE,ERR_ALLOC,nulstr
                                     ,sizeof(faddr_t)*cfg.total_faddrs+1);
@@ -725,7 +725,7 @@ To configure a hub, select it and hit  ENTER .
 							break;
 						if((i&MSK_ON)==MSK_INS) {
 							i&=MSK_OFF;
-							if((cfg.phub=(phub_t **)REALLOC(cfg.phub
+							if((cfg.phub=(phub_t **)realloc(cfg.phub
                                 ,sizeof(phub_t *)*(cfg.total_phubs+1)))==NULL) {
                                 errormsg(WHERE,ERR_ALLOC,nulstr
                                     ,sizeof(phub_t *)*(cfg.total_phubs+1));
@@ -747,7 +747,7 @@ This is the Site Name of this hub. It is used for only for reference.
 							for(j=cfg.total_phubs;j>i;j--)
                                 cfg.phub[j]=cfg.phub[j-1];
 
-							if((cfg.phub[i]=(phub_t *)MALLOC(sizeof(phub_t)))
+							if((cfg.phub[i]=(phub_t *)malloc(sizeof(phub_t)))
 								==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr
 									,sizeof(phub_t));
@@ -762,7 +762,7 @@ This is the Site Name of this hub. It is used for only for reference.
 							continue; }
 						if((i&MSK_ON)==MSK_DEL) {
 							i&=MSK_OFF;
-							FREE(cfg.phub[i]);
+							free(cfg.phub[i]);
 							cfg.total_phubs--;
 							while(i<cfg.total_phubs) {
 								cfg.phub[i]=cfg.phub[i+1];
@@ -1198,11 +1198,11 @@ this option to Strip out.
 		if((m=uifc.list(WIN_MID|WIN_SAV,0,0,0,&m,0
 			,"Ctrl-A Codes",opt))==-1)
 			continue;
-		if((cfg.qhub[num]->sub=(ushort *)REALLOC(cfg.qhub[num]->sub
+		if((cfg.qhub[num]->sub=(ushort *)realloc(cfg.qhub[num]->sub
 			,sizeof(ushort *)*(cfg.qhub[num]->subs+1)))==NULL
-		|| (cfg.qhub[num]->conf=(ushort *)REALLOC(cfg.qhub[num]->conf
+		|| (cfg.qhub[num]->conf=(ushort *)realloc(cfg.qhub[num]->conf
             ,sizeof(ushort *)*(cfg.qhub[num]->subs+1)))==NULL
-		|| (cfg.qhub[num]->mode=(uchar *)REALLOC(cfg.qhub[num]->mode
+		|| (cfg.qhub[num]->mode=(uchar *)realloc(cfg.qhub[num]->mode
 			,sizeof(uchar *)*(cfg.qhub[num]->subs+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.qhub[num]->subs+1);
 			continue; }

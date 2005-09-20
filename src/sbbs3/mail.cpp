@@ -44,7 +44,7 @@
 int sbbs_t::delmail(uint usernumber, int which)
 {
 	ulong	 i,l,now;
-	idxrec_t HUGE16 *idxbuf;
+	idxrec_t *idxbuf;
 	smbmsg_t msg;
 
 	now=time(NULL);
@@ -53,17 +53,17 @@ int sbbs_t::delmail(uint usernumber, int which)
 		return(2); }
 	if(!smb.status.total_msgs)
 		return(0);
-	if((idxbuf=(idxrec_t *)LMALLOC(smb.status.total_msgs*sizeof(idxrec_t)))==NULL) {
+	if((idxbuf=(idxrec_t *)malloc(smb.status.total_msgs*sizeof(idxrec_t)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,smb.file,smb.status.total_msgs*sizeof(idxrec_t));
 		return(-1); }
 	if((i=smb_open_da(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		LFREE(idxbuf);
+		free(idxbuf);
 		return(i); }
 	if((i=smb_open_ha(&smb))!=0) {
 		smb_close_da(&smb);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		LFREE(idxbuf);
+		free(idxbuf);
 		return(i); }
 	smb_rewind(smb.sid_fp);
 	for(l=0;l<smb.status.total_msgs;) {
@@ -101,7 +101,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 	smb_fsetlength(smb.sid_fp,0);
 	for(i=0;i<l;i++)
 		smb_fwrite(&smb,&idxbuf[i],sizeof(idxrec_t),smb.sid_fp);
-	LFREE(idxbuf);
+	free(idxbuf);
 	smb.status.total_msgs=l;
 	smb_putstatus(&smb);
 	smb_fflush(smb.sid_fp);
@@ -174,7 +174,7 @@ void sbbs_t::delallmail(uint usernumber)
 	if((i=smb_locksmbhdr(&smb))!=0) {			/* Lock the base, so nobody */
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
-		FREE(mail);
+		free(mail);
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);	/* messes with the index */
 		return; }
 	for(l=0;l<msgs;l++) {
@@ -191,7 +191,7 @@ void sbbs_t::delallmail(uint usernumber)
 			smb_unlockmsghdr(&smb,&msg); } }
 
 	if(msgs)
-		FREE(mail);
+		free(mail);
 	if(deleted && cfg.sys_misc&SM_DELEMAIL)
 		delmail(usernumber,MAIL_ANY);
 	smb_unlocksmbhdr(&smb);

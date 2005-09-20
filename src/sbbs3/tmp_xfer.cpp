@@ -62,7 +62,7 @@ void sbbs_t::temp_xfer()
 	/*************************************/
 	/* Create TEMP directory information */
 	/*************************************/
-	if((cfg.dir[dirnum]=(dir_t *)MALLOC(sizeof(dir_t)))==0) {
+	if((cfg.dir[dirnum]=(dir_t *)malloc(sizeof(dir_t)))==0) {
 		errormsg(WHERE,ERR_ALLOC,"temp_dir",sizeof(dir_t));
 		return; }
 	memset(cfg.dir[dirnum],0,sizeof(dir_t));
@@ -261,7 +261,7 @@ void sbbs_t::temp_xfer()
 				break; }
 		if(sys_status&SS_ABORT)
 			break; }
-	FREE(cfg.dir[dirnum]);
+	free(cfg.dir[dirnum]);
 	cfg.total_dirs--;
 }
 

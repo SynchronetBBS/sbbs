@@ -195,7 +195,7 @@ main menu and reading message prompts.
 		sprintf(str2,"%.*s",LEN_GSNAME,str);
 		if(uifc.input(WIN_MID,0,0,"Group Short Name",str2,LEN_GSNAME,K_EDIT)<1)
 			continue;
-		if((cfg.grp=(grp_t **)REALLOC(cfg.grp,sizeof(grp_t *)*(cfg.total_grps+1)))==NULL) {
+		if((cfg.grp=(grp_t **)realloc(cfg.grp,sizeof(grp_t *)*(cfg.total_grps+1)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_grps+1);
 			cfg.total_grps=0;
 			bail(1);
@@ -208,7 +208,7 @@ main menu and reading message prompts.
                 if(cfg.sub[j]->grp>=i)
                     cfg.sub[j]->grp++; }
 
-		if((cfg.grp[i]=(grp_t *)MALLOC(sizeof(grp_t)))==NULL) {
+		if((cfg.grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(grp_t));
 			continue; }
 		memset((grp_t *)cfg.grp[i],0,sizeof(grp_t));
@@ -246,10 +246,10 @@ select Yes.
 						strcpy(tmp,cfg.sub[j]->data_dir);
 					delfiles(tmp,str);
 					clearptrs(j); }
-		FREE(cfg.grp[i]);
+		free(cfg.grp[i]);
 		for(j=0;j<cfg.total_subs;) {
 			if(cfg.sub[j]->grp==i) {	/* delete subs of this group */
-				FREE(cfg.sub[j]);
+				free(cfg.sub[j]);
 				cfg.total_subs--;
 				k=j;
 				while(k<cfg.total_subs) {	/* move all subs down */
@@ -685,7 +685,7 @@ import into the current message group.
 							break; }
 					if(j==cfg.total_subs) {
 
-						if((cfg.sub=(sub_t **)REALLOC(cfg.sub
+						if((cfg.sub=(sub_t **)realloc(cfg.sub
 							,sizeof(sub_t *)*(cfg.total_subs+1)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_subs+1);
 							cfg.total_subs=0;
@@ -693,7 +693,7 @@ import into the current message group.
 							break; 
 						}
 
-						if((cfg.sub[j]=(sub_t *)MALLOC(sizeof(sub_t)))
+						if((cfg.sub[j]=(sub_t *)malloc(sizeof(sub_t)))
 							==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(sub_t));
 							break; 

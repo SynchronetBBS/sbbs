@@ -160,7 +160,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 {
 	char	str[MAX_PATH+1],fname[13],c,fdat[F_LEN+1];
 	char	tmp[128];
-	uchar	HUGE16 *ixbbuf,idx[3];
+	uchar	*ixbbuf,idx[3];
     int		i,file;
 	long	l,length;
 	time_t	now;
@@ -244,13 +244,13 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 			close(file);
 			return(FALSE); 
 		}
-		if((ixbbuf=(uchar *)MALLOC(length))==NULL) {
+		if((ixbbuf=(uchar *)malloc(length))==NULL) {
 			close(file);
 			return(FALSE); 
 		}
 		if(lread(file,ixbbuf,length)!=length) {
 			close(file);
-			FREE((char *)ixbbuf);
+			free((char *)ixbbuf);
 			return(FALSE); 
 		}
 	/************************************************/
@@ -261,7 +261,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 				for(i=0;i<12 && toupper(fname[i])==toupper(ixbbuf[l+i]);i++);
 				if(i==12) {     /* file already in directory index */
 					close(file);
-					FREE((char *)ixbbuf);
+					free((char *)ixbbuf);
 					return(FALSE); 
 				}
 				if(cfg->dir[f->dir]->sort==SORT_NAME_A 
@@ -285,22 +285,22 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		lseek(file,l,SEEK_SET);
 		if(write(file,fname,11)!=11) {  /* Write filename to IXB file */
 			close(file);
-			FREE((char *)ixbbuf);
+			free((char *)ixbbuf);
 			return(FALSE); 
 		}
 		if(write(file,idx,3)!=3) {  /* Write DAT offset into IXB file */
 			close(file);
-			FREE((char *)ixbbuf);
+			free((char *)ixbbuf);
 			return(FALSE); 
 		}
 		write(file,&f->dateuled,sizeof(time_t));
 		write(file,&f->datedled,4);              /* Write 0 for datedled */
 		if(lwrite(file,&ixbbuf[l],length-l)!=length-l) { /* Write rest of IXB */
 			close(file);
-			FREE((char *)ixbbuf);
+			free((char *)ixbbuf);
 			return(FALSE); 
 		}
-		FREE((char *)ixbbuf); }
+		free((char *)ixbbuf); }
 	else {              /* IXB file is empty... No files */
 		if(write(file,fname,11)!=11) {  /* Write filename it IXB file */
 			close(file);
@@ -326,7 +326,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 {
 	char			str[MAX_PATH+1],fname[13];
-	uchar HUGE16 *	ixbbuf;
+	uchar *	ixbbuf;
 	int				file;
 	long			l,length;
 
@@ -339,13 +339,13 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 		close(file);
 		return(FALSE); 
 	}
-	if((ixbbuf=(uchar *)MALLOC(length))==NULL) {
+	if((ixbbuf=(uchar *)malloc(length))==NULL) {
 		close(file);
 		return(FALSE); 
 	}
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		return(FALSE); 
 	}
 	close(file);
@@ -358,7 +358,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 			break; 
 	}
 	if(l>=length) {
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		return(FALSE); 
 	}
 	l+=11;
@@ -367,7 +367,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 		|((long)ixbbuf[l+5]<<16)|((long)ixbbuf[l+6]<<24);
 	f->datedled=ixbbuf[l+7]|((long)ixbbuf[l+8]<<8)
 		|((long)ixbbuf[l+9]<<16)|((long)ixbbuf[l+10]<<24);
-	FREE((char *)ixbbuf);
+	free((char *)ixbbuf);
 	return(TRUE);
 }
 
@@ -376,7 +376,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 {
-	char	c,str[MAX_PATH+1],ixbname[12],HUGE16 *ixbbuf,fname[13];
+	char	c,str[MAX_PATH+1],ixbname[12],*ixbbuf,fname[13];
     int		i,file;
 	long	l,length;
 
@@ -392,13 +392,13 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 		close(file);
 		return(FALSE); 
 	}
-	if((ixbbuf=(char *)MALLOC(length))==0) {
+	if((ixbbuf=(char *)malloc(length))==0) {
 		close(file);
 		return(FALSE); 
 	}
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		return(FALSE); 
 	}
 	close(file);
@@ -412,11 +412,11 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 		if(stricmp(ixbname,fname))
 			if(lwrite(file,&ixbbuf[l],F_IXBSIZE)!=F_IXBSIZE) {
 				close(file);
-				FREE((char *)ixbbuf);
+				free((char *)ixbbuf);
 				return(FALSE); 
 		} 
 	}
-	FREE((char *)ixbbuf);
+	free((char *)ixbbuf);
 	close(file);
 	SAFEPRINTF2(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
@@ -441,7 +441,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 {
-	char str[MAX_PATH+1],fname[13],HUGE16 *ixbbuf;
+	char str[MAX_PATH+1],fname[13],*ixbbuf;
     int i,file;
     long length,l;
 
@@ -455,19 +455,19 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 	if(!length) {
 		close(file);
 		return(FALSE); }
-	if((ixbbuf=(char *)MALLOC(length))==NULL) {
+	if((ixbbuf=(char *)malloc(length))==NULL) {
 		close(file);
 		return(FALSE); }
 	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		return(FALSE); }
 	close(file);
 	for(l=0;l<length;l+=F_IXBSIZE) {
 		for(i=0;i<11;i++)
 			if(toupper(fname[i])!=toupper(ixbbuf[l+i])) break;
 		if(i==11) break; }
-	FREE((char *)ixbbuf);
+	free((char *)ixbbuf);
 	if(l!=length)
 		return(TRUE);
 	return(FALSE);
@@ -534,18 +534,18 @@ BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 		return(FALSE); 
 	}
 	length=filelength(file);
-	if((ixtbuf=(char *)MALLOC(length))==NULL) {
+	if((ixtbuf=(char *)malloc(length))==NULL) {
 		close(file);
 		return(FALSE); 
 	}
 	if(read(file,ixtbuf,length)!=length) {
 		close(file);
-		FREE(ixtbuf);
+		free(ixtbuf);
 		return(FALSE); 
 	}
 	close(file);
 	if((file=sopen(str,O_WRONLY|O_TRUNC|O_BINARY,SH_DENYRW))==-1) {
-		FREE(ixtbuf);
+		free(ixtbuf);
 		return(FALSE); 
 	}
 	for(l=0;l<length;l+=24) {
@@ -570,7 +570,7 @@ BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 			continue;
 		write(file,ixtbuf+l,24); }
 	close(file);
-	FREE(ixtbuf);
+	free(ixtbuf);
 
 	return(TRUE);
 }

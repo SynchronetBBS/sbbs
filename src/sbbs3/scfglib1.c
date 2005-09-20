@@ -159,7 +159,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->mdm_results,instream);
 
 	if(cfg->mdm_results) {
-		if((cfg->mdm_result=(mdm_result_t *)MALLOC(sizeof(mdm_result_t)*cfg->mdm_results))
+		if((cfg->mdm_result=(mdm_result_t *)malloc(sizeof(mdm_result_t)*cfg->mdm_results))
 			==NULL)
 		return allocerr(instream,error,offset,fname,sizeof(mdm_result_t *)*cfg->mdm_results);
 	} else
@@ -377,14 +377,14 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	#endif
 
 	if(cfg->total_shells) {
-		if((cfg->shell=(shell_t **)MALLOC(sizeof(shell_t *)*cfg->total_shells))==NULL)
+		if((cfg->shell=(shell_t **)malloc(sizeof(shell_t *)*cfg->total_shells))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(shell_t *)*cfg->total_shells);
 	} else
 		cfg->shell=NULL;
 
 	for(i=0;i<cfg->total_shells;i++) {
 		if(feof(instream)) break;
-		if((cfg->shell[i]=(shell_t *)MALLOC(sizeof(shell_t)))==NULL)
+		if((cfg->shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(shell_t));
 		memset(cfg->shell[i],0,sizeof(shell_t));
 
@@ -449,7 +449,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_grps,instream);
 
 	if(cfg->total_grps) {
-		if((cfg->grp=(grp_t **)MALLOC(sizeof(grp_t *)*cfg->total_grps))==NULL)
+		if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(grp_t *)*cfg->total_grps);
 	} else
 		cfg->grp=NULL;
@@ -457,7 +457,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	for(i=0;i<cfg->total_grps;i++) {
 
 		if(feof(instream)) break;
-		if((cfg->grp[i]=(grp_t *)MALLOC(sizeof(grp_t)))==NULL)
+		if((cfg->grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(grp_t));
 		memset(cfg->grp[i],0,sizeof(grp_t));
 
@@ -482,14 +482,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_subs,instream);
 
 	if(cfg->total_subs) {
-		if((cfg->sub=(sub_t **)MALLOC(sizeof(sub_t *)*cfg->total_subs))==NULL)
+		if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(sub_t *)*cfg->total_subs);
 	} else
 		cfg->sub=NULL;
 
 	for(i=0;i<cfg->total_subs;i++) {
 		if(feof(instream)) break;
-		if((cfg->sub[i]=(sub_t *)MALLOC(sizeof(sub_t)))==NULL)
+		if((cfg->sub[i]=(sub_t *)malloc(sizeof(sub_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(sub_t));
 		memset(cfg->sub[i],0,sizeof(sub_t));
 
@@ -567,7 +567,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_faddrs,instream);
 
 	if(cfg->total_faddrs) {
-		if((cfg->faddr=(faddr_t *)MALLOC(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
+		if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(faddr_t)*cfg->total_faddrs);
 	} else
 		cfg->faddr=NULL;
@@ -596,14 +596,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_qhubs,instream);
 
 	if(cfg->total_qhubs) {
-		if((cfg->qhub=(qhub_t **)MALLOC(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
+		if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(qhub_t*)*cfg->total_qhubs);
 	} else
 		cfg->qhub=NULL;
 
 	for(i=0;i<cfg->total_qhubs;i++) {
 		if(feof(instream)) break;
-		if((cfg->qhub[i]=(qhub_t *)MALLOC(sizeof(qhub_t)))==NULL)
+		if((cfg->qhub[i]=(qhub_t *)malloc(sizeof(qhub_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(qhub_t));
 		memset(cfg->qhub[i],0,sizeof(qhub_t));
 
@@ -618,11 +618,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 		get_int(k,instream);
 
 		if(k) {
-			if((cfg->qhub[i]->sub=(ushort *)MALLOC(sizeof(ushort)*k))==NULL)
+			if((cfg->qhub[i]->sub=(ushort *)malloc(sizeof(ushort)*k))==NULL)
 				return allocerr(instream,error,offset,fname,sizeof(uint)*k);
-			if((cfg->qhub[i]->conf=(ushort *)MALLOC(sizeof(ushort)*k))==NULL)
+			if((cfg->qhub[i]->conf=(ushort *)malloc(sizeof(ushort)*k))==NULL)
 				return allocerr(instream,error,offset,fname,sizeof(ushort)*k);
-			if((cfg->qhub[i]->mode=(char *)MALLOC(sizeof(char)*k))==NULL)
+			if((cfg->qhub[i]->mode=(char *)malloc(sizeof(char)*k))==NULL)
 				return allocerr(instream,error,offset,fname,sizeof(uchar)*k);
 		}
 
@@ -656,14 +656,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_phubs,instream);
 
 	if(cfg->total_phubs) {
-		if((cfg->phub=(phub_t **)MALLOC(sizeof(phub_t *)*cfg->total_phubs))==NULL)
+		if((cfg->phub=(phub_t **)malloc(sizeof(phub_t *)*cfg->total_phubs))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(phub_t*)*cfg->total_phubs);
 	} else
 		cfg->phub=NULL;
 
 	for(i=0;i<cfg->total_phubs;i++) {
 		if(feof(instream)) break;
-		if((cfg->phub[i]=(phub_t *)MALLOC(sizeof(phub_t)))==NULL)
+		if((cfg->phub[i]=(phub_t *)malloc(sizeof(phub_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(phub_t));
 		memset(cfg->phub[i],0,sizeof(phub_t));
 

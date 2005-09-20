@@ -81,7 +81,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_fextrs,instream);
 
 	if(cfg->total_fextrs) {
-		if((cfg->fextr=(fextr_t **)MALLOC(sizeof(fextr_t *)*cfg->total_fextrs))==NULL)
+		if((cfg->fextr=(fextr_t **)malloc(sizeof(fextr_t *)*cfg->total_fextrs))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(fextr_t*)*cfg->total_fextrs); 
 	} else
 		cfg->fextr=NULL;
@@ -89,7 +89,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	for(i=0; i<cfg->total_fextrs; i++) {
 		if(feof(instream))
 			break;
-		if((cfg->fextr[i]=(fextr_t *)MALLOC(sizeof(fextr_t)))==NULL)
+		if((cfg->fextr[i]=(fextr_t *)malloc(sizeof(fextr_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(fextr_t));
 		memset(cfg->fextr[i],0,sizeof(fextr_t));
 		get_str(cfg->fextr[i]->ext,instream);
@@ -109,7 +109,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_fcomps,instream);
 
 	if(cfg->total_fcomps) {
-		if((cfg->fcomp=(fcomp_t **)MALLOC(sizeof(fcomp_t *)*cfg->total_fcomps))==NULL)
+		if((cfg->fcomp=(fcomp_t **)malloc(sizeof(fcomp_t *)*cfg->total_fcomps))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(fcomp_t*)*cfg->total_fcomps); 
 	} else
 		cfg->fcomp=NULL;
@@ -117,7 +117,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	for(i=0; i<cfg->total_fcomps; i++) {
 		if(feof(instream))
 			break;
-		if((cfg->fcomp[i]=(fcomp_t *)MALLOC(sizeof(fcomp_t)))==NULL)
+		if((cfg->fcomp[i]=(fcomp_t *)malloc(sizeof(fcomp_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(fcomp_t));
 		memset(cfg->fcomp[i],0,sizeof(fcomp_t));
 		get_str(cfg->fcomp[i]->ext,instream);
@@ -137,14 +137,14 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_fviews,instream);
 
 	if(cfg->total_fviews) {
-		if((cfg->fview=(fview_t **)MALLOC(sizeof(fview_t *)*cfg->total_fviews))==NULL)
+		if((cfg->fview=(fview_t **)malloc(sizeof(fview_t *)*cfg->total_fviews))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(fview_t*)*cfg->total_fviews); 
 	} else
 		cfg->fview=NULL;
 
 	for(i=0; i<cfg->total_fviews; i++) {
 		if(feof(instream)) break;
-		if((cfg->fview[i]=(fview_t *)MALLOC(sizeof(fview_t)))==NULL)
+		if((cfg->fview[i]=(fview_t *)malloc(sizeof(fview_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(fview_t));
 		memset(cfg->fview[i],0,sizeof(fview_t));
 		get_str(cfg->fview[i]->ext,instream);
@@ -164,14 +164,14 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_ftests,instream);
 
 	if(cfg->total_ftests) {
-		if((cfg->ftest=(ftest_t **)MALLOC(sizeof(ftest_t *)*cfg->total_ftests))==NULL)
+		if((cfg->ftest=(ftest_t **)malloc(sizeof(ftest_t *)*cfg->total_ftests))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(ftest_t*)*cfg->total_ftests); 
 	} else
 		cfg->ftest=NULL;
 
 	for(i=0; i<cfg->total_ftests; i++) {
 		if(feof(instream)) break;
-		if((cfg->ftest[i]=(ftest_t *)MALLOC(sizeof(ftest_t)))==NULL)
+		if((cfg->ftest[i]=(ftest_t *)malloc(sizeof(ftest_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(ftest_t));
 		memset(cfg->ftest[i],0,sizeof(ftest_t));
 		get_str(cfg->ftest[i]->ext,instream);
@@ -192,7 +192,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_dlevents,instream);
 
 	if(cfg->total_dlevents) {
-		if((cfg->dlevent=(dlevent_t **)MALLOC(sizeof(dlevent_t *)*cfg->total_dlevents))
+		if((cfg->dlevent=(dlevent_t **)malloc(sizeof(dlevent_t *)*cfg->total_dlevents))
 			==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(dlevent_t*)*cfg->total_dlevents); 
 	} else
@@ -200,7 +200,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 	for(i=0; i<cfg->total_dlevents; i++) {
 		if(feof(instream)) break;
-		if((cfg->dlevent[i]=(dlevent_t *)MALLOC(sizeof(dlevent_t)))==NULL)
+		if((cfg->dlevent[i]=(dlevent_t *)malloc(sizeof(dlevent_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(dlevent_t));
 		memset(cfg->dlevent[i],0,sizeof(dlevent_t));
 		get_str(cfg->dlevent[i]->ext,instream);
@@ -222,14 +222,14 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_prots,instream);
 
 	if(cfg->total_prots) {
-		if((cfg->prot=(prot_t **)MALLOC(sizeof(prot_t *)*cfg->total_prots))==NULL)
+		if((cfg->prot=(prot_t **)malloc(sizeof(prot_t *)*cfg->total_prots))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(prot_t*)*cfg->total_prots); 
 	} else
 		cfg->prot=NULL;
 
 	for(i=0;i<cfg->total_prots;i++) {
 		if(feof(instream)) break;
-		if((cfg->prot[i]=(prot_t *)MALLOC(sizeof(prot_t)))==NULL)
+		if((cfg->prot[i]=(prot_t *)malloc(sizeof(prot_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(prot_t));
 		memset(cfg->prot[i],0,sizeof(prot_t));
 
@@ -257,7 +257,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->altpaths,instream);
 
 	if(cfg->altpaths) {
-		if((cfg->altpath=(char **)MALLOC(sizeof(char *)*cfg->altpaths))==NULL)
+		if((cfg->altpath=(char **)malloc(sizeof(char *)*cfg->altpaths))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(char *)*cfg->altpaths); 
 	} else
 		cfg->altpath=NULL;
@@ -268,7 +268,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		offset+=LEN_DIR+1;
 		backslash(str);
 		j=LEN_DIR+1;
-		if((cfg->altpath[i]=(char *)MALLOC(j))==NULL)
+		if((cfg->altpath[i]=(char *)malloc(j))==NULL)
 			return allocerr(instream,error,offset,fname,j);
 		memset(cfg->altpath[i],0,j);
 		strcpy(cfg->altpath[i],str);
@@ -285,14 +285,14 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_libs,instream);
 
 	if(cfg->total_libs) {
-		if((cfg->lib=(lib_t **)MALLOC(sizeof(lib_t *)*cfg->total_libs))==NULL)
+		if((cfg->lib=(lib_t **)malloc(sizeof(lib_t *)*cfg->total_libs))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(lib_t *)*cfg->total_libs);
 	} else
 		cfg->lib=NULL;
 
 	for(i=0;i<cfg->total_libs;i++) {
 		if(feof(instream)) break;
-		if((cfg->lib[i]=(lib_t *)MALLOC(sizeof(lib_t)))==NULL)
+		if((cfg->lib[i]=(lib_t *)malloc(sizeof(lib_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(lib_t));
 		memset(cfg->lib[i],0,sizeof(lib_t));
 		cfg->lib[i]->offline_dir=INVALID_DIR;
@@ -325,14 +325,14 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_dirs,instream);
 
 	if(cfg->total_dirs) {
-		if((cfg->dir=(dir_t **)MALLOC(sizeof(dir_t *)*(cfg->total_dirs+1)))==NULL)
+		if((cfg->dir=(dir_t **)malloc(sizeof(dir_t *)*(cfg->total_dirs+1)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(dir_t *)*(cfg->total_dirs+1));
 	} else
 		cfg->dir=NULL;
 
 	for(i=0;i<cfg->total_dirs;i++) {
 		if(feof(instream)) break;
-		if((cfg->dir[i]=(dir_t *)MALLOC(sizeof(dir_t)))==NULL)
+		if((cfg->dir[i]=(dir_t *)malloc(sizeof(dir_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(dir_t));
 		memset(cfg->dir[i],0,sizeof(dir_t));
 
@@ -395,14 +395,14 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 
 	if(cfg->total_txtsecs) {
-		if((cfg->txtsec=(txtsec_t **)MALLOC(sizeof(txtsec_t *)*cfg->total_txtsecs))==NULL)
+		if((cfg->txtsec=(txtsec_t **)malloc(sizeof(txtsec_t *)*cfg->total_txtsecs))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(txtsec_t *)*cfg->total_txtsecs); 
 	} else
 		cfg->txtsec=NULL;
 
 	for(i=0;i<cfg->total_txtsecs;i++) {
 		if(feof(instream)) break;
-		if((cfg->txtsec[i]=(txtsec_t *)MALLOC(sizeof(txtsec_t)))==NULL)
+		if((cfg->txtsec[i]=(txtsec_t *)malloc(sizeof(txtsec_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(txtsec_t));
 		memset(cfg->txtsec[i],0,sizeof(txtsec_t));
 
@@ -444,14 +444,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_swaps,instream);
 
 	if(cfg->total_swaps) {
-		if((cfg->swap=(swap_t **)MALLOC(sizeof(swap_t *)*cfg->total_swaps))==NULL)
+		if((cfg->swap=(swap_t **)malloc(sizeof(swap_t *)*cfg->total_swaps))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(swap_t *)*cfg->total_swaps); 
 	} else
 		cfg->swap=NULL;
 
 	for(i=0;i<cfg->total_swaps;i++) {
 		if(feof(instream)) break;
-		if((cfg->swap[i]=(swap_t *)MALLOC(sizeof(swap_t)))==NULL)
+		if((cfg->swap[i]=(swap_t *)malloc(sizeof(swap_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(swap_t));
 		get_str(cfg->swap[i]->cmd,instream); 
 	}
@@ -464,14 +464,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_xedits,instream);
 
 	if(cfg->total_xedits) {
-		if((cfg->xedit=(xedit_t **)MALLOC(sizeof(xedit_t *)*cfg->total_xedits))==NULL)
+		if((cfg->xedit=(xedit_t **)malloc(sizeof(xedit_t *)*cfg->total_xedits))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(xedit_t *)*cfg->total_xedits); 
 	} else
 		cfg->xedit=NULL;
 
 	for(i=0;i<cfg->total_xedits;i++) {
 		if(feof(instream)) break;
-		if((cfg->xedit[i]=(xedit_t *)MALLOC(sizeof(xedit_t)))==NULL)
+		if((cfg->xedit[i]=(xedit_t *)malloc(sizeof(xedit_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(xedit_t));
 		memset(cfg->xedit[i],0,sizeof(xedit_t));
 
@@ -499,7 +499,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_xtrnsecs,instream);
 
 	if(cfg->total_xtrnsecs) {
-		if((cfg->xtrnsec=(xtrnsec_t **)MALLOC(sizeof(xtrnsec_t *)*cfg->total_xtrnsecs))
+		if((cfg->xtrnsec=(xtrnsec_t **)malloc(sizeof(xtrnsec_t *)*cfg->total_xtrnsecs))
 			==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(xtrnsec_t *)*cfg->total_xtrnsecs);
 	} else
@@ -507,7 +507,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 
 	for(i=0;i<cfg->total_xtrnsecs;i++) {
 		if(feof(instream)) break;
-		if((cfg->xtrnsec[i]=(xtrnsec_t *)MALLOC(sizeof(xtrnsec_t)))==NULL)
+		if((cfg->xtrnsec[i]=(xtrnsec_t *)malloc(sizeof(xtrnsec_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(xtrnsec_t));
 		memset(cfg->xtrnsec[i],0,sizeof(xtrnsec_t));
 
@@ -529,14 +529,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_xtrns,instream);
 
 	if(cfg->total_xtrns) {
-		if((cfg->xtrn=(xtrn_t **)MALLOC(sizeof(xtrn_t *)*cfg->total_xtrns))==NULL)
+		if((cfg->xtrn=(xtrn_t **)malloc(sizeof(xtrn_t *)*cfg->total_xtrns))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(xtrn_t *)*cfg->total_xtrns);
 	} else
 		cfg->xtrn=NULL;
 
 	for(i=0;i<cfg->total_xtrns;i++) {
 		if(feof(instream)) break;
-		if((cfg->xtrn[i]=(xtrn_t *)MALLOC(sizeof(xtrn_t)))==NULL)
+		if((cfg->xtrn[i]=(xtrn_t *)malloc(sizeof(xtrn_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(xtrn_t));
 		memset(cfg->xtrn[i],0,sizeof(xtrn_t));
 
@@ -570,14 +570,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_events,instream);
 
 	if(cfg->total_events) {
-		if((cfg->event=(event_t **)MALLOC(sizeof(event_t *)*cfg->total_events))==NULL)
+		if((cfg->event=(event_t **)malloc(sizeof(event_t *)*cfg->total_events))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(event_t *)*cfg->total_events);
 	} else
 		cfg->event=NULL;
 
 	for(i=0;i<cfg->total_events;i++) {
 		if(feof(instream)) break;
-		if((cfg->event[i]=(event_t *)MALLOC(sizeof(event_t)))==NULL)
+		if((cfg->event[i]=(event_t *)malloc(sizeof(event_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(event_t));
 		memset(cfg->event[i],0,sizeof(event_t));
 
@@ -603,14 +603,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_natvpgms,instream);
 
 	if(cfg->total_natvpgms) {
-		if((cfg->natvpgm=(natvpgm_t **)MALLOC(sizeof(natvpgm_t *)*cfg->total_natvpgms))==NULL)
+		if((cfg->natvpgm=(natvpgm_t **)malloc(sizeof(natvpgm_t *)*cfg->total_natvpgms))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(natvpgm_t *)*cfg->total_natvpgms);
 	} else
 		cfg->natvpgm=NULL;
 
 	for(i=0;i<cfg->total_natvpgms;i++) {
 		if(feof(instream)) break;
-		if((cfg->natvpgm[i]=(natvpgm_t *)MALLOC(sizeof(natvpgm_t)))==NULL)
+		if((cfg->natvpgm[i]=(natvpgm_t *)malloc(sizeof(natvpgm_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(natvpgm_t));
 		get_str(cfg->natvpgm[i]->name,instream);
 		cfg->natvpgm[i]->misc=0; 
@@ -628,14 +628,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_hotkeys,instream);
 
 	if(cfg->total_hotkeys) {
-		if((cfg->hotkey=(hotkey_t **)MALLOC(sizeof(hotkey_t *)*cfg->total_hotkeys))==NULL)
+		if((cfg->hotkey=(hotkey_t **)malloc(sizeof(hotkey_t *)*cfg->total_hotkeys))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(hotkey_t *)*cfg->total_hotkeys);
 	} else
 		cfg->hotkey=NULL;
 
 	for(i=0;i<cfg->total_hotkeys;i++) {
 		if(feof(instream)) break;
-		if((cfg->hotkey[i]=(hotkey_t *)MALLOC(sizeof(hotkey_t)))==NULL)
+		if((cfg->hotkey[i]=(hotkey_t *)malloc(sizeof(hotkey_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(hotkey_t));
 		memset(cfg->hotkey[i],0,sizeof(hotkey_t));
 
@@ -680,14 +680,14 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_gurus,instream);
 
 	if(cfg->total_gurus) {
-		if((cfg->guru=(guru_t **)MALLOC(sizeof(guru_t *)*cfg->total_gurus))==NULL)
+		if((cfg->guru=(guru_t **)malloc(sizeof(guru_t *)*cfg->total_gurus))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(guru_t *)*cfg->total_gurus);
 	} else
 		cfg->guru=NULL;
 
 	for(i=0;i<cfg->total_gurus;i++) {
 		if(feof(instream)) break;
-		if((cfg->guru[i]=(guru_t *)MALLOC(sizeof(guru_t)))==NULL)
+		if((cfg->guru[i]=(guru_t *)malloc(sizeof(guru_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(guru_t));
 		memset(cfg->guru[i],0,sizeof(guru_t));
 
@@ -710,14 +710,14 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_actsets,instream);
 
 	if(cfg->total_actsets) {
-		if((cfg->actset=(actset_t **)MALLOC(sizeof(actset_t *)*cfg->total_actsets))==NULL)
+		if((cfg->actset=(actset_t **)malloc(sizeof(actset_t *)*cfg->total_actsets))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(actset_t *)*cfg->total_actsets);
 	} else
 		cfg->actset=NULL;
 
 	for(i=0;i<cfg->total_actsets;i++) {
 		if(feof(instream)) break;
-		if((cfg->actset[i]=(actset_t *)MALLOC(sizeof(actset_t)))==NULL)
+		if((cfg->actset[i]=(actset_t *)malloc(sizeof(actset_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(actset_t));
 		get_str(cfg->actset[i]->name,instream);
 	}
@@ -731,7 +731,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_chatacts,instream);
 
 	if(cfg->total_chatacts) {
-		if((cfg->chatact=(chatact_t **)MALLOC(sizeof(chatact_t *)*cfg->total_chatacts))
+		if((cfg->chatact=(chatact_t **)malloc(sizeof(chatact_t *)*cfg->total_chatacts))
 			==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(chatact_t *)*cfg->total_chatacts);
 	} else
@@ -739,7 +739,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 
 	for(i=0;i<cfg->total_chatacts;i++) {
 		if(feof(instream)) break;
-		if((cfg->chatact[i]=(chatact_t *)MALLOC(sizeof(chatact_t)))==NULL)
+		if((cfg->chatact[i]=(chatact_t *)malloc(sizeof(chatact_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(chatact_t));
 		memset(cfg->chatact[i],0,sizeof(chatact_t));
 
@@ -760,14 +760,14 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_chans,instream);
 
 	if(cfg->total_chans) {
-		if((cfg->chan=(chan_t **)MALLOC(sizeof(chan_t *)*cfg->total_chans))==NULL)
+		if((cfg->chan=(chan_t **)malloc(sizeof(chan_t *)*cfg->total_chans))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(chan_t *)*cfg->total_chans);
 	} else
 		cfg->chan=NULL;
 
 	for(i=0;i<cfg->total_chans;i++) {
 		if(feof(instream)) break;
-		if((cfg->chan[i]=(chan_t *)MALLOC(sizeof(chan_t)))==NULL)
+		if((cfg->chan[i]=(chan_t *)malloc(sizeof(chan_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(chan_t));
 		memset(cfg->chan[i],0,sizeof(chan_t));
 
@@ -795,14 +795,14 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_pages,instream);
 
 	if(cfg->total_pages) {
-		if((cfg->page=(page_t **)MALLOC(sizeof(page_t *)*cfg->total_pages))==NULL)
+		if((cfg->page=(page_t **)malloc(sizeof(page_t *)*cfg->total_pages))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(page_t *)*cfg->total_pages);
 	} else
 		cfg->page=NULL;
 
 	for(i=0;i<cfg->total_pages;i++) {
 		if(feof(instream)) break;
-		if((cfg->page[i]=(page_t *)MALLOC(sizeof(page_t)))==NULL)
+		if((cfg->page[i]=(page_t *)malloc(sizeof(page_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(page_t));
 		memset(cfg->page[i],0,sizeof(page_t));
 

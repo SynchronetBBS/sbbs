@@ -213,7 +213,7 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 /****************************************************************************/
 void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 {
-	char	HUGE16 *buf;
+	char	*buf;
 	int 	i;
 	FILE	*out;
 

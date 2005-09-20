@@ -198,7 +198,7 @@ void sbbs_t::nodesync()
 /****************************************************************************/
 int sbbs_t::getnmsg()
 {
-	char	str[MAX_PATH+1], HUGE16 *buf;
+	char	str[MAX_PATH+1], *buf;
 	int		file;
 	long	length;
 
@@ -221,14 +221,14 @@ int sbbs_t::getnmsg()
 		close(file);
 		return(0); 
 	}
-	if((buf=(char *)LMALLOC(length+1))==NULL) {
+	if((buf=(char *)malloc(length+1))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1);
 		return(-1); 
 	}
 	if(lread(file,buf,length)!=length) {
 		close(file);
-		FREE(buf);
+		free(buf);
 		errormsg(WHERE,ERR_READ,str,length);
 		return(errno); 
 	}
@@ -241,7 +241,7 @@ int sbbs_t::getnmsg()
 		CRLF; 
 	}
 	putmsg(buf,P_NOATCODES);
-	LFREE(buf);
+	free(buf);
 
 	return(0);
 }
@@ -302,7 +302,7 @@ int sbbs_t::getnodeext(uint number, char *ext)
 /****************************************************************************/
 int sbbs_t::getsmsg(int usernumber)
 {
-	char	str[MAX_PATH+1], HUGE16 *buf;
+	char	str[MAX_PATH+1], *buf;
     int		file;
     long	length;
 
@@ -314,14 +314,14 @@ int sbbs_t::getsmsg(int usernumber)
 		return(errno); 
 	}
 	length=filelength(file);
-	if((buf=(char *)LMALLOC(length+1))==NULL) {
+	if((buf=(char *)malloc(length+1))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1);
 		return(-1); 
 	}
 	if(lread(file,buf,length)!=length) {
 		close(file);
-		FREE(buf);
+		free(buf);
 		errormsg(WHERE,ERR_READ,str,length);
 		return(errno); 
 	}
@@ -340,7 +340,7 @@ int sbbs_t::getsmsg(int usernumber)
 		}
 	}
 	putmsg(buf,P_NOATCODES);
-	LFREE(buf);
+	free(buf);
 
 	return(0);
 }

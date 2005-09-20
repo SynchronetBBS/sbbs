@@ -142,7 +142,7 @@ usually an abreviation of the sub-board's name.
 			continue; 
 		}
 
-		if((cfg.sub=(sub_t **)REALLOC(cfg.sub,sizeof(sub_t *)*(cfg.total_subs+1)))==NULL) {
+		if((cfg.sub=(sub_t **)realloc(cfg.sub,sizeof(sub_t *)*(cfg.total_subs+1)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_subs+1);
 			cfg.total_subs=0;
 			bail(1);
@@ -163,7 +163,7 @@ usually an abreviation of the sub-board's name.
 					if(cfg.qhub[q]->sub[s]>=subnum[i])
 						cfg.qhub[q]->sub[s]++; }
 
-		if((cfg.sub[subnum[i]]=(sub_t *)MALLOC(sizeof(sub_t)))==NULL) {
+		if((cfg.sub[subnum[i]]=(sub_t *)malloc(sizeof(sub_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(sub_t));
 			continue; }
 		memset((sub_t *)cfg.sub[subnum[i]],0,sizeof(sub_t));
@@ -213,7 +213,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 				delfiles(tmp,str);
 				clearptrs(subnum[i]); 
 		}
-		FREE(cfg.sub[subnum[i]]);
+		free(cfg.sub[subnum[i]]);
 		cfg.total_subs--;
 		for(j=subnum[i];j<cfg.total_subs;j++)
 			cfg.sub[j]=cfg.sub[j+1];

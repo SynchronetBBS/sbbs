@@ -1733,7 +1733,7 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result,
 	char		*p;
 	char		*p2;
 
-	fromstr=(char *)MALLOC(strlen(buf)+1);
+	fromstr=(char *)malloc(strlen(buf)+1);
 	if(fromstr==NULL)
 		return(0);
 	strcpy(fromstr,buf);

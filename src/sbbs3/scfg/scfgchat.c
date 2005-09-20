@@ -82,7 +82,7 @@ This is the command line to execute for this external chat pager.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Line",str,50
 			,K_EDIT)<1)
             continue;
-		if((cfg.page=(page_t **)REALLOC(cfg.page,sizeof(page_t *)*(cfg.total_pages+1)))
+		if((cfg.page=(page_t **)realloc(cfg.page,sizeof(page_t *)*(cfg.total_pages+1)))
             ==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_pages+1);
 			cfg.total_pages=0;
@@ -91,7 +91,7 @@ This is the command line to execute for this external chat pager.
 		if(cfg.total_pages)
 			for(j=cfg.total_pages;j>i;j--)
 				cfg.page[j]=cfg.page[j-1];
-		if((cfg.page[i]=(page_t *)MALLOC(sizeof(page_t)))==NULL) {
+		if((cfg.page[i]=(page_t *)malloc(sizeof(page_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(page_t));
 			continue; }
 		memset((page_t *)cfg.page[i],0,sizeof(page_t));
@@ -101,7 +101,7 @@ This is the command line to execute for this external chat pager.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.page[i]);
+		free(cfg.page[i]);
 		cfg.total_pages--;
 		for(j=i;j<cfg.total_pages;j++)
 			cfg.page[j]=cfg.page[j+1];
@@ -241,7 +241,7 @@ channel name.
 			uifc.msg("Invalid Code");
 			uifc.helpbuf=0;
             continue; }
-		if((cfg.chan=(chan_t **)REALLOC(cfg.chan,sizeof(chan_t *)*(cfg.total_chans+1)))
+		if((cfg.chan=(chan_t **)realloc(cfg.chan,sizeof(chan_t *)*(cfg.total_chans+1)))
             ==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_chans+1);
 			cfg.total_chans=0;
@@ -250,7 +250,7 @@ channel name.
 		if(cfg.total_chans)
 			for(j=cfg.total_chans;j>i;j--)
 				cfg.chan[j]=cfg.chan[j-1];
-		if((cfg.chan[i]=(chan_t *)MALLOC(sizeof(chan_t)))==NULL) {
+		if((cfg.chan[i]=(chan_t *)malloc(sizeof(chan_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(chan_t));
 			continue; }
 		memset((chan_t *)cfg.chan[i],0,sizeof(chan_t));
@@ -261,7 +261,7 @@ channel name.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.chan[i]);
+		free(cfg.chan[i]);
 		cfg.total_chans--;
 		for(j=i;j<cfg.total_chans;j++)
 			cfg.chan[j]=cfg.chan[j+1];
@@ -512,7 +512,7 @@ This is the output string displayed with this action output.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"",out,LEN_CHATACTOUT
 			,K_MSG)<1)
             continue;
-		if((cfg.chatact=(chatact_t **)REALLOC(cfg.chatact
+		if((cfg.chatact=(chatact_t **)realloc(cfg.chatact
             ,sizeof(chatact_t *)*(cfg.total_chatacts+1)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_chatacts+1);
 			cfg.total_chatacts=0;
@@ -521,7 +521,7 @@ This is the output string displayed with this action output.
 		if(j)
 			for(n=cfg.total_chatacts;n>chatnum[i];n--)
 				cfg.chatact[n]=cfg.chatact[n-1];
-		if((cfg.chatact[chatnum[i]]=(chatact_t *)MALLOC(sizeof(chatact_t)))==NULL) {
+		if((cfg.chatact[chatnum[i]]=(chatact_t *)malloc(sizeof(chatact_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(chatact_t));
 			continue; }
 		memset((chatact_t *)cfg.chatact[chatnum[i]],0,sizeof(chatact_t));
@@ -533,7 +533,7 @@ This is the output string displayed with this action output.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.chatact[chatnum[i]]);
+		free(cfg.chatact[chatnum[i]]);
 		cfg.total_chatacts--;
 		for(j=chatnum[i];j<cfg.total_chatacts && j<MAX_OPTS;j++)
 			cfg.chatact[j]=cfg.chatact[j+1];
@@ -638,7 +638,7 @@ it internally. This code is usually an abreviation of the Guru name.
 			uifc.msg("Invalid Code");
 			uifc.helpbuf=0;
             continue; }
-		if((cfg.guru=(guru_t **)REALLOC(cfg.guru,sizeof(guru_t *)*(cfg.total_gurus+1)))
+		if((cfg.guru=(guru_t **)realloc(cfg.guru,sizeof(guru_t *)*(cfg.total_gurus+1)))
             ==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_gurus+1);
 			cfg.total_gurus=0;
@@ -647,7 +647,7 @@ it internally. This code is usually an abreviation of the Guru name.
 		if(cfg.total_gurus)
 			for(j=cfg.total_gurus;j>i;j--)
 				cfg.guru[j]=cfg.guru[j-1];
-		if((cfg.guru[i]=(guru_t *)MALLOC(sizeof(guru_t)))==NULL) {
+		if((cfg.guru[i]=(guru_t *)malloc(sizeof(guru_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(guru_t));
 			continue; }
 		memset((guru_t *)cfg.guru[i],0,sizeof(guru_t));
@@ -658,7 +658,7 @@ it internally. This code is usually an abreviation of the Guru name.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.guru[i]);
+		free(cfg.guru[i]);
 		cfg.total_gurus--;
 		for(j=i;j<cfg.total_gurus;j++)
 			cfg.guru[j]=cfg.guru[j+1];
@@ -778,7 +778,7 @@ This is the name of the selected chat action set.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Chat Action Set Name",str,25
 			,0)<1)
             continue;
-        if((cfg.actset=(actset_t **)REALLOC(cfg.actset,sizeof(actset_t *)*(cfg.total_actsets+1)))
+        if((cfg.actset=(actset_t **)realloc(cfg.actset,sizeof(actset_t *)*(cfg.total_actsets+1)))
             ==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_actsets+1);
 			cfg.total_actsets=0;
@@ -787,7 +787,7 @@ This is the name of the selected chat action set.
         if(cfg.total_actsets)
             for(j=cfg.total_actsets;j>i;j--)
                 cfg.actset[j]=cfg.actset[j-1];
-        if((cfg.actset[i]=(actset_t *)MALLOC(sizeof(actset_t)))==NULL) {
+        if((cfg.actset[i]=(actset_t *)malloc(sizeof(actset_t)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(actset_t));
             continue; }
 		memset((actset_t *)cfg.actset[i],0,sizeof(actset_t));
@@ -797,7 +797,7 @@ This is the name of the selected chat action set.
         continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-        FREE(cfg.actset[i]);
+        free(cfg.actset[i]);
         cfg.total_actsets--;
         for(j=i;j<cfg.total_actsets;j++)
             cfg.actset[j]=cfg.actset[j+1];

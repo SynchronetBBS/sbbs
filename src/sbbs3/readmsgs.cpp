@@ -43,7 +43,7 @@ int sbbs_t::sub_op(uint subnum)
 }
 
 
-void sbbs_t::listmsgs(int subnum, post_t HUGE16 *post, long i, long posts)
+void sbbs_t::listmsgs(int subnum, post_t *post, long i, long posts)
 {
 	char ch;
 	smbmsg_t msg;
@@ -161,7 +161,7 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 
 /****************************************************************************/
 /****************************************************************************/
-post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode)
+post_t * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode)
 {
 	char name[128];
 	ushort aliascrc,namecrc,sysop;
@@ -169,7 +169,7 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 	ulong l=0,total,alloc_len;
 	smbmsg_t msg;
 	idxrec_t idx;
-	post_t HUGE16 *post;
+	post_t *post;
 
 	if(posts==NULL)
 		return(NULL);
@@ -203,7 +203,7 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 		while(alloc_len%4096)
 			alloc_len++;
 	#endif
-	if((post=(post_t HUGE16 *)LMALLOC(alloc_len))==NULL) {	/* alloc for max */
+	if((post=(post_t *)malloc(alloc_len))==NULL) {	/* alloc for max */
 		smb_unlocksmbhdr(&smb);
 		errormsg(WHERE,ERR_ALLOC,smb.file,sizeof(post_t *)*cfg.sub[subnum]->maxmsgs);
 		return(NULL); 
@@ -333,7 +333,7 @@ static int get_start_msg(sbbs_t* sbbs, smb_t* smb)
 int sbbs_t::scanposts(uint subnum, long mode, char *find)
 {
 	char	str[256],str2[256],do_find=true,mismatches=0
-			,done=0,domsg=1,HUGE16 *buf,*p;
+			,done=0,domsg=1,*buf,*p;
 	char	find_buf[128];
 	char	tmp[128];
 	int		i;
@@ -341,7 +341,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 	uint	lp=0;
 	long	org_mode=mode;
 	ulong	msgs,last,l;
-	post_t	HUGE16 *post;
+	post_t	*post;
 	smbmsg_t	msg;
 
 	cursubnum=subnum;	/* for ARS */
@@ -403,7 +403,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		if(smb.curmsg==smb.msgs) {  /* no new messages */
 			if(!(mode&SCAN_BACK)) {
 				if(post)
-					LFREE(post);
+					free(post);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
 				return(0); 
@@ -512,7 +512,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		if(smb.status.last_msg!=last) { 	/* New messages */
 			last=smb.status.last_msg;
 			if(post) {
-				LFREE((void *)post); 
+				free((void *)post); 
 			}
 			post=loadposts(&smb.msgs,subnum,0,lp);   /* So re-load */
 			if(!smb.msgs)
@@ -535,7 +535,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				break; 
 			}
 			if(post)
-				LFREE(post);
+				free(post);
 			post=loadposts(&smb.msgs,subnum,0,lp);
 			if(!smb.msgs)
 				break;
@@ -563,7 +563,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				}
 				strupr((char *)buf);
 				if(!strstr((char *)buf,find) && !strstr(msg.subj,find)) {
-					FREE(buf);
+					free(buf);
 					if(smb.curmsg<smb.msgs-1) 
 						smb.curmsg++;
 					else if(org_mode&SCAN_FIND) 
@@ -572,7 +572,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 							domsg=0;
 					continue; 
 				}
-				FREE(buf); 
+				free(buf); 
 			}
 
 			if(mode&SCAN_CONST)
@@ -640,7 +640,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				if(msg.total_hfields)
 					smb_freemsgmem(&msg);
 				if(post)
-					LFREE(post);
+					free(post);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
 				return(1); 
@@ -674,7 +674,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				if(msg.total_hfields)
 					smb_freemsgmem(&msg);
 				if(post)
-					LFREE(post);
+					free(post);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
 				return(0);
@@ -852,7 +852,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				if(msg.total_hfields)
 					smb_freemsgmem(&msg);
 				if(post)
-					LFREE(post);
+					free(post);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
 				return(1);
@@ -1079,7 +1079,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 	if(msg.total_hfields)
 		smb_freemsgmem(&msg);
 	if(post)
-		LFREE(post);
+		free(post);
 	if(!(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
 		&& reads && chk_ar(cfg.sub[subnum]->post_ar,&useron)
 		&& !(useron.rest&FLAG('P'))) {
@@ -1103,7 +1103,7 @@ int sbbs_t::searchsub(uint subnum, char *search)
 	int 	i,found;
 	long	posts;
 	ulong	total;
-	post_t	HUGE16 *post;
+	post_t	*post;
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
@@ -1123,7 +1123,7 @@ int sbbs_t::searchsub(uint subnum, char *search)
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,posts,total);
 	found=searchposts(subnum,post,0,posts,search);
 	if(posts)
-		LFREE(post);
+		free(post);
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 	return(found);
@@ -1135,10 +1135,10 @@ int sbbs_t::searchsub(uint subnum, char *search)
 /* title). 'msgs' is the total number of valid messages.                    */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-int sbbs_t::searchposts(uint subnum, post_t HUGE16 *post, long start, long posts
+int sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 	, char *search)
 {
-	char	HUGE16 *buf,ch;
+	char	*buf,ch;
 	long	l,found=0;
 	smbmsg_t msg;
 
@@ -1174,7 +1174,7 @@ int sbbs_t::searchposts(uint subnum, post_t HUGE16 *post, long start, long posts
 				,msg.subj);
 			found++; 
 		}
-		FREE(buf);
+		free(buf);
 		smb_freemsgmem(&msg); 
 	}
 
@@ -1185,7 +1185,7 @@ int sbbs_t::searchposts(uint subnum, post_t HUGE16 *post, long start, long posts
 /* Will search the messages pointed to by 'msg' for message to the user on  */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-void sbbs_t::showposts_toyou(post_t HUGE16 *post, ulong start, long posts)
+void sbbs_t::showposts_toyou(post_t *post, ulong start, long posts)
 {
 	char	str[128];
 	ushort	namecrc,aliascrc,sysop;
@@ -1241,7 +1241,7 @@ int sbbs_t::searchsub_toyou(uint subnum)
 	int 	i;
 	long	posts;
 	ulong	total;
-	post_t	HUGE16 *post;
+	post_t	*post;
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
@@ -1261,12 +1261,12 @@ int sbbs_t::searchsub_toyou(uint subnum)
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,total);
 	if(posts) {
 		if(post)
-			LFREE(post);
+			free(post);
 		post=loadposts(&posts,subnum,0,LP_BYSELF|LP_OTHERS);
 		showposts_toyou(post,0,posts); 
 	}
 	if(post)
-		LFREE(post);
+		free(post);
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 	return(posts);

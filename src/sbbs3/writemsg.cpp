@@ -528,7 +528,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 	}
 	flen=filelength(file);
 	slen=strlen(str2);
-	if((buf=(char *)MALLOC(flen))==NULL) {
+	if((buf=(char *)malloc(flen))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,flen);
 		return; 
@@ -586,7 +586,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 
 	maxlines=cfg.level_linespermsg[useron.level];
 
-	if((str=(char **)MALLOC(sizeof(char *)*(maxlines+1)))==NULL) {
+	if((str=(char **)malloc(sizeof(char *)*(maxlines+1)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"msgeditor",sizeof(char *)*(maxlines+1));
 		return(0); 
 	}
@@ -594,7 +594,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 	l=0;
 	while(l<m && lines<maxlines) {
 		msgabort(); /* to allow pausing */
-		if((str[lines]=(char *)MALLOC(MAX_LINE_LEN))==NULL) {
+		if((str[lines]=(char *)malloc(MAX_LINE_LEN))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,MAX_LINE_LEN);
 			for(i=0;i<lines;i++)
 				free(str[i]);
@@ -654,7 +654,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 	while(online && !done) {
 		checkline();
 		if(line==lines) {
-			if((str[line]=(char *)MALLOC(MAX_LINE_LEN))==NULL) {
+			if((str[line]=(char *)malloc(MAX_LINE_LEN))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,MAX_LINE_LEN);
 				for(i=0;i<lines;i++)
 					free(str[i]);
@@ -731,7 +731,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				else {
 					for(line=lines;line>i;line--)   /* move the pointers */
 						str[line]=str[line-1];
-					if((str[i]=(char *)MALLOC(MAX_LINE_LEN))==NULL) {
+					if((str[i]=(char *)malloc(MAX_LINE_LEN))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,MAX_LINE_LEN);
 						for(i=0;i<lines;i++)
 							free(str[i]);
@@ -905,7 +905,7 @@ void sbbs_t::editfile(char *str)
 		}
 		return; 
 	}
-	if((buf=(char *)MALLOC(maxlines*MAX_LINE_LEN))==NULL) {
+	if((buf=(char *)malloc(maxlines*MAX_LINE_LEN))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,maxlines*MAX_LINE_LEN);
 		return; 
 	}
@@ -1281,7 +1281,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	newsub=usrsub[newgrp][newsub];
 
 	length=smb_getmsgdatlen(msg);
-	if((buf=(char *)MALLOC(length))==NULL) {
+	if((buf=(char *)malloc(length))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,smb.file,length);
 		return(false); 
 	}

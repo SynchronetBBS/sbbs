@@ -151,7 +151,7 @@ mail_t* DLLCALL loadmail(smb_t* smb, long* msgs, uint usernumber
 			continue;					
 		if(mode&LM_UNREAD && idx.attr&MSG_READ)
 			continue;
-		if((mail=(mail_t *)REALLOC(mail,sizeof(mail_t)*(l+1)))
+		if((mail=(mail_t *)realloc(mail,sizeof(mail_t)*(l+1)))
 			==NULL) {
 			smb_unlocksmbhdr(smb);
 			return(NULL); 
@@ -166,5 +166,5 @@ mail_t* DLLCALL loadmail(smb_t* smb, long* msgs, uint usernumber
 
 void DLLCALL freemail(mail_t* mail)
 {
-	FREE(mail);
+	free(mail);
 }

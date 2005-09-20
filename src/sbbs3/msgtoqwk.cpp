@@ -47,7 +47,7 @@
 ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	, int conf)
 {
-	char	str[512],from[512],to[512],ch=0,tear=0,tearwatch=0,HUGE16 *buf,*p;
+	char	str[512],from[512],to[512],ch=0,tear=0,tearwatch=0,*buf,*p;
 	char 	tmp[512];
 	long	l,size=0,offset;
 	int 	i;
@@ -306,7 +306,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		fputc(ch,qwk_fp);
 		size++; }
 
-	LFREE(buf);
+	free(buf);
 	if(ch!=QWK_NEWLINE) {
 		fputc(QWK_NEWLINE,qwk_fp); 		/* make sure it ends in CRLF */
 		size++; }

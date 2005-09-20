@@ -74,42 +74,42 @@ void sbbs_t::resort(uint dirnum)
 		return; }
 	ixblen=filelength(ixbfile);
 	datlen=filelength(datfile);
-	if((ixbbuf=(uchar *)MALLOC(ixblen))==NULL) {
+	if((ixbbuf=(uchar *)malloc(ixblen))==NULL) {
 		close(ixbfile);
 		close(datfile);
 		errormsg(WHERE,ERR_ALLOC,ixbfname,ixblen);
 		return; }
-	if((datbuf=(uchar *)MALLOC(datlen))==NULL) {
+	if((datbuf=(uchar *)malloc(datlen))==NULL) {
 		close(ixbfile);
 		close(datfile);
-		FREE((char *)ixbbuf);
+		free((char *)ixbbuf);
 		errormsg(WHERE,ERR_ALLOC,datfname,datlen);
 		return; }
 	if(lread(ixbfile,ixbbuf,ixblen)!=ixblen) {
 		close(ixbfile);
 		close(datfile);
-		FREE((char *)ixbbuf);
-		FREE((char *)datbuf);
+		free((char *)ixbbuf);
+		free((char *)datbuf);
 		errormsg(WHERE,ERR_READ,ixbfname,ixblen);
 		return; }
 	if(lread(datfile,datbuf,datlen)!=datlen) {
 		close(ixbfile);
 		close(datfile);
-		FREE((char *)ixbbuf);
-		FREE((char *)datbuf);
+		free((char *)ixbbuf);
+		free((char *)datbuf);
 		errormsg(WHERE,ERR_READ,datfname,datlen);
 		return; }
 	close(ixbfile);
 	close(datfile);
 	if((ixbfile=nopen(ixbfname,O_WRONLY|O_TRUNC))==-1) {
-		FREE((char *)ixbbuf);
-		FREE((char *)datbuf);
+		free((char *)ixbbuf);
+		free((char *)datbuf);
 		errormsg(WHERE,ERR_OPEN,ixbfname,O_WRONLY|O_TRUNC);
 		return; }
 	if((datfile=nopen(datfname,O_WRONLY|O_TRUNC))==-1) {
 		close(ixbfile);
-		FREE((char *)ixbbuf);
-		FREE((char *)datbuf);
+		free((char *)ixbbuf);
+		free((char *)datbuf);
 		errormsg(WHERE,ERR_OPEN,datfname,O_WRONLY|O_TRUNC);
 		return; }
 	for(l=0,i=0;l<ixblen && i<MAX_FILES;l+=F_IXBSIZE,i++)
@@ -135,16 +135,16 @@ void sbbs_t::resort(uint dirnum)
 	if((exbfile=nopen(exbfname,O_RDWR|O_CREAT))==-1) {
 		close(ixbfile);
 		close(datfile);
-		FREE((char *)ixbbuf);
-		FREE((char *)datbuf);
+		free((char *)ixbbuf);
+		free((char *)datbuf);
 		errormsg(WHERE,ERR_OPEN,exbfname,O_RDWR|O_CREAT);
 		return; }
 	if((txbfile=nopen(txbfname,O_RDWR|O_CREAT))==-1) {
 		close(exbfile);
 		close(datfile);
 		close(exbfile);
-		FREE((char *)ixbbuf);
-		FREE((char *)datbuf);
+		free((char *)ixbbuf);
+		free((char *)datbuf);
 		errormsg(WHERE,ERR_OPEN,txbfname,O_RDWR|O_CREAT);
 		return; }
 
@@ -180,8 +180,8 @@ void sbbs_t::resort(uint dirnum)
 	rename(txbfname,exbfname);
 	if(!flength(exbfname))
 		remove(exbfname);
-	FREE((char *)ixbbuf);
-	FREE((char *)datbuf);
+	free((char *)ixbbuf);
+	free((char *)datbuf);
 	if(ixblen/F_IXBSIZE==datlen/F_LEN)
 		bputs(text[Sorted]);
 	else

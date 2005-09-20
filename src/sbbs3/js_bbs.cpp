@@ -1093,7 +1093,7 @@ js_replace_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		return(JS_TRUE);
 
 	if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
-		FREE(sbbs->text[i]);
+		free(sbbs->text[i]);
 
 	if((js_str=JS_ValueToString(cx, argv[1]))==NULL)
 		return(JS_TRUE);
@@ -1106,7 +1106,7 @@ js_replace_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		sbbs->text[i]=nulstr;
 		*rval = JSVAL_TRUE;
 	} else {
-		sbbs->text[i]=(char *)MALLOC(len+1);
+		sbbs->text[i]=(char *)malloc(len+1);
 		if(sbbs->text[i]==NULL) {
 			sbbs->text[i]=sbbs->text_sav[i];
 		} else {
@@ -1133,12 +1133,12 @@ js_revert_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if(i<0 || i>=TOTAL_TEXT) {
 		for(i=0;i<TOTAL_TEXT;i++) {
 			if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
-				FREE(sbbs->text[i]);
+				free(sbbs->text[i]);
 			sbbs->text[i]=sbbs->text_sav[i]; 
 		}
 	} else {
 		if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
-			FREE(sbbs->text[i]);
+			free(sbbs->text[i]);
 		sbbs->text[i]=sbbs->text_sav[i];
 	}
 
@@ -1167,7 +1167,7 @@ js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	for(i=0;i<TOTAL_TEXT;i++) {
 		if(sbbs->text[i]!=sbbs->text_sav[i]) {
 			if(sbbs->text[i]!=nulstr)
-				FREE(sbbs->text[i]);
+				free(sbbs->text[i]);
 			sbbs->text[i]=sbbs->text_sav[i]; 
 		}
 	}
@@ -1184,11 +1184,11 @@ js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			continue; 
 		}
 		if(!strcmp(sbbs->text[i],sbbs->text_sav[i])) {	/* If identical */
-			FREE(sbbs->text[i]);					/* Don't alloc */
+			free(sbbs->text[i]);					/* Don't alloc */
 			sbbs->text[i]=sbbs->text_sav[i]; 
 		}
 		else if(sbbs->text[i][0]==0) {
-			FREE(sbbs->text[i]);
+			free(sbbs->text[i]);
 			sbbs->text[i]=nulstr; 
 		} 
 	}
@@ -1890,7 +1890,7 @@ js_bulkmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 	sbbs->bulkmail(ar);
 	if(ar && ar[0])
-		FREE(ar);
+		free(ar);
 
 	return(JS_TRUE);
 }

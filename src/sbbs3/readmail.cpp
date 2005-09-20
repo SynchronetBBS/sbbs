@@ -131,7 +131,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 			if((long)(smb.curmsg=getnum(smb.msgs))>0)
 				smb.curmsg--;
 			else if((long)smb.curmsg==-1) {
-				FREE(mail);
+				free(mail);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
 				return; } }
@@ -179,7 +179,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 
 		if(smb.status.last_msg!=last) { 	/* New messages */
 			last=smb.status.last_msg;
-			FREE(mail);
+			free(mail);
 			mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);   /* So re-load */
 			if(!smb.msgs)
 				break;
@@ -194,7 +194,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 			if(mismatches>5) {	/* We can't do this too many times in a row */
 				errormsg(WHERE,ERR_CHK,"message number",mail[smb.curmsg].number);
 				break; }
-			FREE(mail);
+			free(mail);
 			mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);
 			if(!smb.msgs)
 				break;
@@ -688,7 +688,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 		smb_freemsgmem(&msg);
 
 	if(smb.msgs)
-		FREE(mail);
+		free(mail);
 
 	/***************************************/
 	/* Delete messages marked for deletion */

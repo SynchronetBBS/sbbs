@@ -187,13 +187,13 @@ void sbbs_t::closefile(file_t* f)
 		errormsg(WHERE,ERR_OPEN,str1,O_RDONLY);
 		return; }
 	length=filelength(file);
-	if((buf=(char *)MALLOC(length))==NULL) {
+	if((buf=(char *)malloc(length))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str1,length);
 		return; }
 	if(read(file,buf,length)!=length) {
 		close(file);
-		FREE(buf);
+		free(buf);
 		errormsg(WHERE,ERR_READ,str1,length);
 		return; }
 	close(file);
@@ -210,7 +210,7 @@ void sbbs_t::closefile(file_t* f)
 				ch=1;
 				continue; } }
 		write(file,buf+l,BO_LEN); }
-	FREE(buf);
+	free(buf);
 	close(file);
 }
 

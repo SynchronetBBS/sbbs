@@ -149,17 +149,17 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	}
 
 	bodylen=0;
-	if((body=(char *)LMALLOC((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
-		LFREE(header);
+	if((body=(char *)malloc((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
+		free(header);
 		smb_freemsgmem(&msg);
 		errormsg(WHERE,ERR_ALLOC,"QWK msg body",(blocks-1L)*QWK_BLOCK_LEN*2L);
 		return(false); 
 	}
 
 	taillen=0;
-	if((tail=(char *)LMALLOC((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
-		LFREE(header);
-		LFREE(body);
+	if((tail=(char *)malloc((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
+		free(header);
+		free(body);
 		smb_freemsgmem(&msg);
 		errormsg(WHERE,ERR_ALLOC,"QWK msg tail",(blocks-1L)*QWK_BLOCK_LEN*2L);
 		return(false); 
@@ -380,8 +380,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 	smb_freemsgmem(&msg);
 
-	LFREE(body);
-	LFREE(tail);
+	free(body);
+	free(tail);
 
 	return(success);
 }

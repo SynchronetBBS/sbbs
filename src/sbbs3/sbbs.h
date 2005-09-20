@@ -435,7 +435,7 @@ public:
 	void	automsg(void);
 	bool	writemsg(char *str, char *top, char *title, long mode, int subnum
 				,char *dest);
-	char	putmsg(char HUGE16 *str, long mode);
+	char	putmsg(char *str, long mode);
 	bool	msgabort(void);
 	bool	email(int usernumber, char *top, char *title, long mode);
 	void	forwardmail(smbmsg_t* msg, int usernum);
@@ -618,11 +618,11 @@ public:
 	bool	addtobatdl(file_t* f);
 
 	/* listfile.cpp */
-	bool	listfile(char *fname, char HUGE16 *buf, uint dirnum
+	bool	listfile(char *fname, char *buf, uint dirnum
 				,char *search, char letter, ulong datoffset);
 	int		listfiles(uint dirnum, char *filespec, int tofile, long mode);
 	int		listfileinfo(uint dirnum, char *filespec, long mode);
-	void	listfiletofile(char *fname, char HUGE16 *buf, uint dirnum, int file);
+	void	listfiletofile(char *fname, char *buf, uint dirnum, int file);
 	int		batchflagprompt(uint dirnum, file_t bf[], uint total, long totalfiles);
 
 	/* bat_xfer.cpp */

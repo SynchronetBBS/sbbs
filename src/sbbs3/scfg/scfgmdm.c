@@ -40,7 +40,7 @@ int exec_mdm(char *fname);
 void mdm_cfg(int mdmnum)
 {
 
-FREE(cfg.mdm_result);
+free(cfg.mdm_result);
 cfg.mdm_result=NULL;
 
 /*
@@ -246,7 +246,7 @@ while(!feof(stream)) {
 			if(cfg.mdm_result[j].code==i)
 				break;
 		if(j>=cfg.mdm_results) {
-			if((cfg.mdm_result=(mdm_result_t *)REALLOC(
+			if((cfg.mdm_result=(mdm_result_t *)realloc(
 				cfg.mdm_result,sizeof(mdm_result_t)
 				*(cfg.mdm_results+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,p,cfg.mdm_results+1);
@@ -307,16 +307,16 @@ while(!feof(stream)) {
 	if(!fgets(fname,120,stream))
 		break;
 	truncsp(fname);
-	if((mdm_type=REALLOC(mdm_type,sizeof(char *)*(mdm_types+1)))==NULL) {
+	if((mdm_type=realloc(mdm_type,sizeof(char *)*(mdm_types+1)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"Modem Type",sizeof(char *)*(mdm_types+1));
 		break; }
-	if((mdm_file=REALLOC(mdm_file,sizeof(char *)*(mdm_types+1)))==NULL) {
+	if((mdm_file=realloc(mdm_file,sizeof(char *)*(mdm_types+1)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"Modem File",sizeof(char *)*(mdm_types+1));
         break; }
-	if((mdm_type[mdm_types]=MALLOC(strlen(str)+1))==NULL) {
+	if((mdm_type[mdm_types]=malloc(strlen(str)+1))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"Modem Typename",sizeof(char *)*(mdm_types+1));
         break; }
-	if((mdm_file[mdm_types]=MALLOC(9))==NULL) {
+	if((mdm_file[mdm_types]=malloc(9))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"Modem Filename",sizeof(char *)*(mdm_types+1));
         break; }
 	strcpy(mdm_type[mdm_types],str);

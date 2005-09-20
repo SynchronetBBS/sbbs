@@ -322,13 +322,13 @@ This is the internal code for the timed event.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Event Internal Code",str,LEN_CODE
 			,K_UPPER)<1)
             continue;
-		if((cfg.event=(event_t **)REALLOC(cfg.event
+		if((cfg.event=(event_t **)realloc(cfg.event
 			,sizeof(event_t *)*(cfg.total_events+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_events+1);
 			cfg.total_events=0;
 			bail(1);
             continue; }
-		if((cfg.event[i]=(event_t *)MALLOC(sizeof(event_t)))==NULL) {
+		if((cfg.event[i]=(event_t *)malloc(sizeof(event_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(event_t));
 			continue; }
 		memset((event_t *)cfg.event[i],0,sizeof(event_t));
@@ -340,7 +340,7 @@ This is the internal code for the timed event.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.event[i]);
+		free(cfg.event[i]);
 		cfg.total_events--;
 		for(j=i;j<cfg.total_events;j++)
 			cfg.event[j]=cfg.event[j+1];
@@ -818,7 +818,7 @@ online program name.
 			uifc.msg("Invalid Code");
 			uifc.helpbuf=0;
             continue; }
-		if((cfg.xtrn=(xtrn_t **)REALLOC(cfg.xtrn,sizeof(xtrn_t *)*(cfg.total_xtrns+1)))
+		if((cfg.xtrn=(xtrn_t **)realloc(cfg.xtrn,sizeof(xtrn_t *)*(cfg.total_xtrns+1)))
             ==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_xtrns+1);
 			cfg.total_xtrns=0;
@@ -827,7 +827,7 @@ online program name.
 		if(j)
 			for(n=cfg.total_xtrns;n>xtrnnum[i];n--)
 				cfg.xtrn[n]=cfg.xtrn[n-1];
-		if((cfg.xtrn[xtrnnum[i]]=(xtrn_t *)MALLOC(sizeof(xtrn_t)))==NULL) {
+		if((cfg.xtrn[xtrnnum[i]]=(xtrn_t *)malloc(sizeof(xtrn_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(xtrn_t));
 			continue; }
 		memset((xtrn_t *)cfg.xtrn[xtrnnum[i]],0,sizeof(xtrn_t));
@@ -839,7 +839,7 @@ online program name.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.xtrn[xtrnnum[i]]);
+		free(cfg.xtrn[xtrnnum[i]]);
 		cfg.total_xtrns--;
 		for(j=xtrnnum[i];j<cfg.total_xtrns;j++)
 			cfg.xtrn[j]=cfg.xtrn[j+1];
@@ -1526,7 +1526,7 @@ This is the internal code for the external editor.
 			uifc.helpbuf=0;
             continue; }
 
-		if((cfg.xedit=(xedit_t **)REALLOC(cfg.xedit
+		if((cfg.xedit=(xedit_t **)realloc(cfg.xedit
             ,sizeof(xedit_t *)*(cfg.total_xedits+1)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_xedits+1);
 			cfg.total_xedits=0;
@@ -1535,7 +1535,7 @@ This is the internal code for the external editor.
 		if(cfg.total_xedits)
 			for(j=cfg.total_xedits;j>i;j--)
 				cfg.xedit[j]=cfg.xedit[j-1];
-		if((cfg.xedit[i]=(xedit_t *)MALLOC(sizeof(xedit_t)))==NULL) {
+		if((cfg.xedit[i]=(xedit_t *)malloc(sizeof(xedit_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(xedit_t));
 			continue; }
 		memset((xedit_t *)cfg.xedit[i],0,sizeof(xedit_t));
@@ -1546,7 +1546,7 @@ This is the internal code for the external editor.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.xedit[i]);
+		free(cfg.xedit[i]);
 		cfg.total_xedits--;
 		for(j=i;j<cfg.total_xedits;j++)
 			cfg.xedit[j]=cfg.xedit[j+1];
@@ -1939,7 +1939,7 @@ This is the executable filename of the native external program.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Native Program Name",str,12
 			,0)<1)
             continue;
-		if((cfg.natvpgm=(natvpgm_t **)REALLOC(cfg.natvpgm
+		if((cfg.natvpgm=(natvpgm_t **)realloc(cfg.natvpgm
 			,sizeof(natvpgm_t *)*(cfg.total_natvpgms+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_natvpgms+1);
 			cfg.total_natvpgms=0;
@@ -1948,7 +1948,7 @@ This is the executable filename of the native external program.
 		if(cfg.total_natvpgms)
 			for(j=cfg.total_natvpgms;j>i;j--)
 				cfg.natvpgm[j]=cfg.natvpgm[j-1];
-		if((cfg.natvpgm[i]=(natvpgm_t *)MALLOC(sizeof(natvpgm_t)))==NULL) {
+		if((cfg.natvpgm[i]=(natvpgm_t *)malloc(sizeof(natvpgm_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(natvpgm_t));
 			continue; }
 		memset((natvpgm_t *)cfg.natvpgm[i],0,sizeof(natvpgm_t));
@@ -1958,7 +1958,7 @@ This is the executable filename of the native external program.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.natvpgm[i]);
+		free(cfg.natvpgm[i]);
 		cfg.total_natvpgms--;
 		for(j=i;j<cfg.total_natvpgms;j++)
 			cfg.natvpgm[j]=cfg.natvpgm[j+1];
@@ -2046,7 +2046,7 @@ abreviation of the name.
 			uifc.msg("Invalid Code");
 			uifc.helpbuf=0;
             continue; }
-		if((cfg.xtrnsec=(xtrnsec_t **)REALLOC(cfg.xtrnsec
+		if((cfg.xtrnsec=(xtrnsec_t **)realloc(cfg.xtrnsec
 			,sizeof(xtrnsec_t *)*(cfg.total_xtrnsecs+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_xtrnsecs+1);
 			cfg.total_xtrnsecs=0;
@@ -2060,7 +2060,7 @@ abreviation of the name.
 					cfg.xtrn[j]->sec++; }
 
 
-		if((cfg.xtrnsec[i]=(xtrnsec_t *)MALLOC(sizeof(xtrnsec_t)))==NULL) {
+		if((cfg.xtrnsec[i]=(xtrnsec_t *)malloc(sizeof(xtrnsec_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(xtrnsec_t));
 			continue; }
 		memset((xtrnsec_t *)cfg.xtrnsec[i],0,sizeof(xtrnsec_t));
@@ -2071,10 +2071,10 @@ abreviation of the name.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.xtrnsec[i]);
+		free(cfg.xtrnsec[i]);
 		for(j=0;j<cfg.total_xtrns;) {
 			if(cfg.xtrn[j]->sec==i) {	 /* delete xtrns of this group */
-				FREE(cfg.xtrn[j]);
+				free(cfg.xtrn[j]);
 				cfg.total_xtrns--;
 				k=j;
 				while(k<cfg.total_xtrns) {	 /* move all xtrns down */
@@ -2210,7 +2210,7 @@ indicates a Ctrl-A hot key event.
 			,K_UPPER)<1)
             continue;
 
-		if((cfg.hotkey=(hotkey_t **)REALLOC(cfg.hotkey
+		if((cfg.hotkey=(hotkey_t **)realloc(cfg.hotkey
             ,sizeof(hotkey_t *)*(cfg.total_hotkeys+1)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_hotkeys+1);
 			cfg.total_hotkeys=0;
@@ -2219,7 +2219,7 @@ indicates a Ctrl-A hot key event.
 		if(cfg.total_hotkeys)
 			for(j=cfg.total_hotkeys;j>i;j--)
 				cfg.hotkey[j]=cfg.hotkey[j-1];
-		if((cfg.hotkey[i]=(hotkey_t *)MALLOC(sizeof(hotkey_t)))==NULL) {
+		if((cfg.hotkey[i]=(hotkey_t *)malloc(sizeof(hotkey_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(hotkey_t));
 			continue; }
 		memset((hotkey_t *)cfg.hotkey[i],0,sizeof(hotkey_t));
@@ -2229,7 +2229,7 @@ indicates a Ctrl-A hot key event.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		FREE(cfg.hotkey[i]);
+		free(cfg.hotkey[i]);
 		cfg.total_hotkeys--;
 		for(j=i;j<cfg.total_hotkeys;j++)
 			cfg.hotkey[j]=cfg.hotkey[j+1];

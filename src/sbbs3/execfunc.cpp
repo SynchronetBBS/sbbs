@@ -225,7 +225,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				p=(uchar *)nulstr;
 			bulkmail(p);
 			if(p && p[0])
-				FREE(p);
+				free(p);
 			return(0);
 
 		case CS_INC_MAIN_CMDS:

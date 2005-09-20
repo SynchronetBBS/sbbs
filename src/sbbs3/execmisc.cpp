@@ -120,19 +120,19 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						csi->ip+=4;
 						return(0); }
 					csi->str_vars++;
-					csi->str_var=(char **)REALLOC(csi->str_var
+					csi->str_var=(char **)realloc(csi->str_var
 						,sizeof(char *)*csi->str_vars);
-					csi->str_var_name=(long *)REALLOC(csi->str_var_name
+					csi->str_var_name=(long *)realloc(csi->str_var_name
 						,sizeof(long)*csi->str_vars);
 					if(csi->str_var==NULL
 						|| csi->str_var_name==NULL) { /* REALLOC failed */
 						errormsg(WHERE,ERR_ALLOC,"local str var"
 							,sizeof(char *)*csi->str_vars);
 						if(csi->str_var_name) {
-							FREE(csi->str_var_name);
+							free(csi->str_var_name);
 							csi->str_var_name=0; }
 						if(csi->str_var) {
-							FREE(csi->str_var);
+							free(csi->str_var);
 							csi->str_var=0; }
 						csi->str_vars=0; }
 					else {
@@ -145,19 +145,19 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						csi->ip+=4;
 						return(0); }
 					csi->int_vars++;
-					csi->int_var=(long *)REALLOC(csi->int_var
+					csi->int_var=(long *)realloc(csi->int_var
 						,sizeof(char *)*csi->int_vars);
-					csi->int_var_name=(long *)REALLOC(csi->int_var_name
+					csi->int_var_name=(long *)realloc(csi->int_var_name
 						,sizeof(long)*csi->int_vars);
 					if(csi->int_var==NULL
 						|| csi->int_var_name==NULL) { /* REALLOC failed */
 						errormsg(WHERE,ERR_ALLOC,"local int var"
 							,sizeof(char *)*csi->int_vars);
 						if(csi->int_var_name) {
-							FREE(csi->int_var_name);
+							free(csi->int_var_name);
 							csi->int_var_name=0; }
 						if(csi->int_var) {
-							FREE(csi->int_var);
+							free(csi->int_var);
 							csi->int_var=0; }
 						csi->int_vars=0; }
 					else {
@@ -170,19 +170,19 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						csi->ip+=4;
 						return(0); }
 					global_str_vars++;
-					global_str_var=(char **)REALLOC(global_str_var
+					global_str_var=(char **)realloc(global_str_var
 						,sizeof(char *)*global_str_vars);
-					global_str_var_name=(long *)REALLOC(global_str_var_name
+					global_str_var_name=(long *)realloc(global_str_var_name
 						,sizeof(long)*global_str_vars);
 					if(global_str_var==NULL
 						|| global_str_var_name==NULL) { /* REALLOC failed */
 						errormsg(WHERE,ERR_ALLOC,"global str var"
 							,sizeof(char *)*global_str_vars);
 						if(global_str_var_name) {
-							FREE(global_str_var_name);
+							free(global_str_var_name);
 							global_str_var_name=0; }
 						if(global_str_var) {
-							FREE(global_str_var);
+							free(global_str_var);
 							global_str_var=0; }
 						global_str_vars=0; }
 					else {
@@ -196,19 +196,19 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						csi->ip+=4;
 						return(0); }
 					global_int_vars++;
-					global_int_var=(long *)REALLOC(global_int_var
+					global_int_var=(long *)realloc(global_int_var
 						,sizeof(char *)*global_int_vars);
-					global_int_var_name=(long *)REALLOC(global_int_var_name
+					global_int_var_name=(long *)realloc(global_int_var_name
 						,sizeof(long)*global_int_vars);
 					if(global_int_var==NULL
 						|| global_int_var_name==NULL) { /* REALLOC failed */
 						errormsg(WHERE,ERR_ALLOC,"local int var"
 							,sizeof(char *)*global_int_vars);
 						if(global_int_var_name) {
-							FREE(global_int_var_name);
+							free(global_int_var_name);
 							global_int_var_name=0; }
 						if(global_int_var) {
-							FREE(global_int_var);
+							free(global_int_var);
 							global_int_var=0; }
 						global_int_vars=0; }
 					else {
@@ -436,9 +436,9 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 								break;
 					if(pp && *pp!=csi->str && i==MAX_SYSVARS) {
 						if(*pp)
-							*pp=(char *)REALLOC(*pp,strlen(*pp)+strlen(tmp)+1);
+							*pp=(char *)realloc(*pp,strlen(*pp)+strlen(tmp)+1);
 						else
-							*pp=(char *)REALLOC(*pp,strlen(tmp)+1); }
+							*pp=(char *)realloc(*pp,strlen(tmp)+1); }
 					if(pp && *pp)
 						strcat(*pp,tmp);
 					return(0);
@@ -464,9 +464,9 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 									break;
 						if(pp && *pp!=csi->str && i==MAX_SYSVARS) {
 							if(*pp)
-								*pp=(char *)REALLOC(*pp,strlen(*pp)+strlen(tmp)+1);
+								*pp=(char *)realloc(*pp,strlen(*pp)+strlen(tmp)+1);
 							else
-								*pp=(char *)REALLOC(*pp,strlen(tmp)+1); }
+								*pp=(char *)realloc(*pp,strlen(tmp)+1); }
 						if(pp && *pp)
 							strcat(*pp,tmp);
 						return(0);
@@ -482,9 +482,9 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 								break;
 					if(*pp1!=csi->str && (!*pp1 || i==MAX_SYSVARS)) {
 						if(*pp1)
-							*pp1=(char *)REALLOC(*pp1,strlen(*pp1)+strlen(*pp2)+1);
+							*pp1=(char *)realloc(*pp1,strlen(*pp1)+strlen(*pp2)+1);
 						else
-							*pp1=(char *)REALLOC(*pp1,strlen(*pp2)+1); }
+							*pp1=(char *)realloc(*pp1,strlen(*pp2)+1); }
 					strcat(*pp1,*pp2);
 					return(0);
 				case FORMAT_STR_VAR:
@@ -1502,12 +1502,12 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				while(*(csi->ip++));	 /* Find NULL */
 				return(0); }
 			if(text[i]!=text_sav[i] && text[i]!=nulstr)
-				FREE(text[i]);
+				free(text[i]);
 			j=strlen(cmdstr((char *)csi->ip,path,csi->str,buf));
 			if(!j)
 				text[i]=nulstr;
 			else
-				text[i]=(char *)MALLOC(j+1);
+				text[i]=(char *)malloc(j+1);
 			if(!text[i]) {
 				errormsg(WHERE,ERR_ALLOC,"replacement text",j);
 				while(*(csi->ip++));	 /* Find NULL */
