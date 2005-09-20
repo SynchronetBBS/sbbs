@@ -1,0 +1,73 @@
+l
+                        bhHow to Play chDomain Poker
+
+   chDomain Poker is a single/multi-player online game written exclusively
+for Synchronet BBS systems, game play is the same as playing an actual game
+of Draw Poker, if you don't know how to play draw poker then read on, otherwise
+you can probably skip these instructions.
+
+   In this game of poker (unless the SysOp of this BBS has disallowed it) all
+bets are made in credits (rather than money or chips as in an actual game),
+each table in the game has a minimum number of credits required to play the
+game, as well as a table and bet limit (this is done so that everyone can have
+fun playing the game, rather than just the people with an enormous amount of
+credits).
+
+   Game play is as follows:
+
+        Note: The word "clockwise" used in these instructions refers to
+        the order of players from the first one who entered to the last.
+
+        Before the deal, each player must put an amount of money into the pot
+(called the ANTE), the dealer then deals out 5 cards to each player one at a
+time in a "clockwise" order (the ante in Domain Poker is 10% of the allowable
+bet).  After the cards have been dealt to each player, the first player
+"clockwise" from the dealer must either make an opening bet, or fold (drop
+out of the game).  Once the opening bet has been made, the other players in
+the game may either Call (put an equal amount of money in the pot), Raise
+(increase the bet amount), or Fold (drop out of the game) - this is referred
+to as the 'Betting' stage in the game.
+
+        After all the bets have been made, and everyone has placed an equal
+amount of money into the pot, the game moves on to the 'Discard' stage.  In
+this stage, each player (once again starting "clockwise" from the dealer) is
+allowed to discard up to 3 cards, for each card discarded, a new one is drawn
+from the deck, this is done to try and improve the player's hand.
+
+        After the 'Discard' stage, the game goes into yet another 'Betting'
+stage, where the pot may once again be raised (of course, the pot can only be
+raised to the Table Limit, after which, no more bets will be allowed until the
+next hand).  Once this second 'Betting' stage is over, a winner is declared,
+and the pot of credits goes to that player.  In the very rare case of a tie,
+the credits are divided equally between the players that tied.
+
+        As you should have already guessed, your goal in the game is to get
+the highest ranking hand of cards, there are 10 standard ranks, in order they
+are:
+
+        Royal Flush     - The five highest cards (Ten thru Ace) in one suit
+        Straight Flush  - Five cards of the same suit in numerical order
+        Four of a Kind  - Four cards of equal face value
+        Full House      - A three of a kind and a pair
+        Flush           - Five cards of the same suit, not in numerical order
+        Straight        - Five cards in numerical order but different suits
+        Three of a Kind - Three cards of equal face value
+        Two Pairs       - Self explanitory (ie: 2 tens and 2 kings)
+        One Pair        - Two cards of equal face value
+        High Card       - Simply the highest card in the hand
+
+        A little extra help here - a 'suit' is the type of card, for example
+Clubs, Hearts, Spades and Diamonds are the different available cards suits.
+Face cards in order from highest to lowest would be - Jack, Queen, King, Ace.
+In a straight, an Ace can either be the lowest card or the highest card
+(ie: A-2-3-4-5 and 10-J-Q-K-A are both considered a straight).  Of course
+the game will automatically tell you exactly what hand it is that you have, but
+this information is helpful when you are discarding cards in an attempt to get
+a better hand.
+
+   That's about it, if you have further questions, ask a friend for help, or
+consult your nearest encyclopedia!
+
+   Special thanks to Beemer for help with getting me some good instructions
+on the game of draw poker.
+p
