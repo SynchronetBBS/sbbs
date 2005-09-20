@@ -903,15 +903,14 @@ void ctputs(char *buf)
 				cx=1;
 				break;
 			case '\n':
-				if(cy==cterm.height) {
-					*p=0;
-					cputs(outp);
-					outp=p+1;
+				*p=0;
+				cputs(outp);
+				outp=p+1;
+				if(cy==cterm.height)
 					scrollup();
-					gotoxy(cx,cy);
-				}
 				else
 					cy++;
+				gotoxy(cx,cy);
 				break;
 			case '\b':
 				if(cx>0)
