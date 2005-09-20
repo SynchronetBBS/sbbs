@@ -382,6 +382,10 @@ void outchar(char ch)
 {
 	static char lastch;
 
+	/* Fix for unix-formatted text, expand sole LF to CRLF */
+	if(ch=='\n' && lastch!='\r')
+		outchar('\r');
+
 #ifndef __16BIT__
 	if(client_socket!=INVALID_SOCKET) {
 		ulong	top=outbuftop+1;
@@ -429,9 +433,6 @@ void outchar(char ch)
 		lncntr=0;
 		bpause(); 
 	}
-	/* Fix for unix-formatted text, expand sole LF to CRLF */
-	if(ch=='\n' && lastch!='\r')
-		outchar('\r');
 	lastch=ch;
 }
 
