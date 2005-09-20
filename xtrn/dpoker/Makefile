@@ -12,9 +12,9 @@
 
 # $Id$
 
-XSDK		=	../sdk
-SRC_ROOT	=	../../src
-!include $(SRC_ROOT)/build/Common.bmake
+XSDK		=	..\sdk
+SRC_ROOT	=	..\..\src
+!include $(SRC_ROOT)\build\Common.bmake
 
 .path.c = .;$(XSDK)
 
@@ -22,8 +22,8 @@ CFLAGS	=	$(CFLAGS) -I$(XSDK) -DUSE_XPDEV $(XPDEV_CFLAGS)
 
 $(DPOKER): $(OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $^ -e$@ $(XPDEV-MT_LIBS)
+	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $** -e$@ $(XPDEV-MT_LIBS)
 
 $(DPCLEAN): $(DPCLEAN_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $^ -e$@ $(XPDEV-MT_LIBS)
+	$(QUIET)$(CC) $(CFLAGS) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $** -e$@ $(XPDEV-MT_LIBS)
