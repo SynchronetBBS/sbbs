@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
     initdata();
     sprintf(str,"player.%d",node_num);
-    if (!fexist(str)) return;
+    if (!fexist(str)) return(0);
     else {
         get_player(node_num);
         newpts=temppts;
