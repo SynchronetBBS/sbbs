@@ -1,0 +1,4 @@
+DPOKER		=	$(EXEODIR)$(DIRSEP)dpoker$(EXEFILE)
+DPCLEAN		=	$(EXEODIR)$(DIRSEP)dpclean$(EXEFILE)
+
+all: xpdev xpdev-mt $(MTOBJODIR) $(EXEODIR) $(DPOKER) $(DPCLEAN)

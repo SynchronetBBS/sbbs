@@ -30,7 +30,7 @@
 /***********************************************************
  Wow! Look at all this code to make a cleanup program <grin>
 ************************************************************/
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     char str[128];
     int x;
@@ -43,7 +43,7 @@ void main(int argc, char **argv)
                 "Entertainment");
         printf("\r\n\r\nUsage: DPCLEAN [/options]\r\n");
         printf("\r\nOptions: DAILY = Perform daily clean-up");
-        return;
+        return(0);
     }
     for (x=1; x<argc; x++) {
         if (!strchr(argv[x],'/')) {
@@ -52,12 +52,12 @@ void main(int argc, char **argv)
                 strcat(node_dir,"\\"); } }
 
     initdata();
-    sprintf(str,"PLAYER.%d",node_num);
+    sprintf(str,"player.%d",node_num);
     if (!fexist(str)) return;
     else {
         get_player(node_num);
         newpts=temppts;
         quit_out();
     }
-    return;
+    return(0);
 }
