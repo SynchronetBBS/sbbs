@@ -69,43 +69,13 @@
 	#define strnicmp strncasecmp
 #endif
 
-/****************************************************************************/
-/* MALLOC/FREE Macros for various compilers and environments				*/
-/* MALLOC is used for allocations of 64k or less							*/
-/* FREE is used to free buffers allocated with MALLOC						*/
-/* LMALLOC is used for allocations of possibly larger than 64k				*/
-/* LFREE is used to free buffers allocated with LMALLOC 					*/
-/* REALLOC is used to re-size a previously MALLOCed or LMALLOCed buffer 	*/
-/****************************************************************************/
-#if defined(__COMPACT__) || defined(__LARGE__) || defined(__HUGE__)
-	#if defined(__TURBOC__)
-		#define REALLOC(x,y) farrealloc(x,y)
-		#define LMALLOC(x) farmalloc(x)
-		#define MALLOC(x) farmalloc(x)
-		#define LFREE(x) farfree(x)
-		#define FREE(x) farfree(x)
-	#elif defined(__WATCOMC__)
-		#define REALLOC realloc
-		#define LMALLOC(x) halloc(x,1)	/* far heap, but slow */
-		#define MALLOC malloc			/* far heap, but 64k max */
-		#define LFREE hfree
-		#define FREE free
-	#else	/* Other 16-bit Compiler */
-		#define REALLOC realloc
-		#define LMALLOC malloc
-		#define MALLOC malloc
-		#define LFREE free
-		#define FREE free
-	#endif
-#else		/* 32-bit Compiler or Small Memory Model */
-	#define REALLOC realloc
-	#define LMALLOC malloc
-	#define MALLOC malloc
-	#define LFREE free
-	#define FREE free
-#endif
+#define REALLOC realloc
+#define LMALLOC malloc
+#define MALLOC malloc
+#define LFREE free
+#define FREE free
 #if !defined(FREE_AND_NULL)
-	#define FREE_AND_NULL(x)			if(x!=NULL) { FREE(x); x=NULL; }
+	#define FREE_AND_NULL(x)			if(x!=NULL) { free(x); x=NULL; }
 #endif
 
 #if !defined(MAX_PATH)	/* maximum path length */

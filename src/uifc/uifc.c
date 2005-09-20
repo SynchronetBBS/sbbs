@@ -397,7 +397,7 @@ if(mode&WIN_T2B)
 else if(mode&WIN_BOT)
 	top=api->scrn_len-height-3-top;
 if(mode&WIN_SAV && api->savdepth==api->savnum) {
-	if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+	if((sav[api->savnum].buf=(char *)malloc((width+3)*(height+2)*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes."
             ,__LINE__,(width+3)*(height+2)*2);
 		return(-1); }
@@ -415,8 +415,8 @@ else if(mode&WIN_SAV
 	|| sav[api->savnum].bot!=SCRN_TOP+top+height)) { /* dimensions have changed */
 	puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
 		,sav[api->savnum].buf);	/* put original window back */
-	FREE(sav[api->savnum].buf);
-	if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+	free(sav[api->savnum].buf);
+	if((sav[api->savnum].buf=(char *)malloc((width+3)*(height+2)*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes."
             ,__LINE__,(width+3)*(height+2)*2);
 		return(-1); }
@@ -678,7 +678,7 @@ while(1) {
 						,sav[api->savnum].right,sav[api->savnum].bot
 						,sav[api->savnum].buf);
 					showmouse();
-					FREE(sav[api->savnum].buf);
+					free(sav[api->savnum].buf);
 					api->savdepth--; }
 				return(*cur); }
 			else if(r.w.cx/8>=SCRN_LEFT+left+3
@@ -710,7 +710,7 @@ hitesc:
                     ,sav[api->savnum].right,sav[api->savnum].bot
                     ,sav[api->savnum].buf);
 				showmouse();
-                FREE(sav[api->savnum].buf);
+                free(sav[api->savnum].buf);
                 api->savdepth--; }
             return(-1); }
 				}
@@ -1134,7 +1134,7 @@ hitesc:
 								,sav[api->savnum].right,sav[api->savnum].bot
 								,sav[api->savnum].buf);
 							showmouse();
-							FREE(sav[api->savnum].buf);
+							free(sav[api->savnum].buf);
 							api->savdepth--; }
 						return(*cur);
 					case ESC:
@@ -1155,7 +1155,7 @@ hitesc:
 								,sav[api->savnum].right,sav[api->savnum].bot
 								,sav[api->savnum].buf);
 							showmouse();
-							FREE(sav[api->savnum].buf);
+							free(sav[api->savnum].buf);
 							api->savdepth--; }
 						return(-1); } } }
 	else
@@ -1678,15 +1678,15 @@ void help()
 
 	_setcursortype(_NOCURSOR);
 
-	if((savscrn=(char *)MALLOC(80*25*2))==NULL) {
+	if((savscrn=(char *)malloc(80*25*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,80*25*2);
 		_setcursortype(cursor);
 		return; }
-	if((buf=(char *)MALLOC(76*21*2))==NULL) {
+	if((buf=(char *)malloc(76*21*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,76*21*2);
-		FREE(savscrn);
+		free(savscrn);
 		_setcursortype(cursor);
 		return; }
 	hidemouse();
@@ -1826,8 +1826,8 @@ void help()
 	hidemouse();
 	puttext(1,1,80,25,savscrn);
 	showmouse();
-	FREE(savscrn);
-	FREE(buf);
+	free(savscrn);
+	free(buf);
 	_setcursortype(cursor);
 }
 

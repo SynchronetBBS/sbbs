@@ -44,41 +44,11 @@
 
 #include "lzh.h"
 
-/****************************************************************************/
-/* Memory allocation macros for various compilers and environments			*/
-/* MALLOC is used for allocations of 64k or less							*/
-/* FREE is used to free buffers allocated with MALLOC						*/
-/* LMALLOC is used for allocations of possibly larger than 64k				*/
-/* LFREE is used to free buffers allocated with LMALLOC 					*/
-/* REALLOC is used to re-size a previously MALLOCed or LMALLOCed buffer 	*/
-/****************************************************************************/
-#if defined(__COMPACT__) || defined(__LARGE__) || defined(__HUGE__)
-	#if defined(__TURBOC__)
-		#define REALLOC(x,y) farrealloc(x,y)
-		#define LMALLOC(x) farmalloc(x)
-		#define MALLOC(x) farmalloc(x)
-		#define LFREE(x) farfree(x)
-		#define FREE(x) farfree(x)
-	#elif defined(__WATCOMC__)
-		#define REALLOC realloc
-		#define LMALLOC(x) halloc(x,1)	/* far heap, but slow */
-		#define MALLOC malloc			/* far heap, but 64k max */
-		#define LFREE hfree
-		#define FREE free
-	#else	/* Other 16-bit Compiler */
-		#define REALLOC realloc
-		#define LMALLOC malloc
-		#define MALLOC malloc
-		#define LFREE free
-		#define FREE free
-	#endif
-#else		/* 32-bit Compiler or Small Memory Model */
-	#define REALLOC realloc
-	#define LMALLOC malloc
-	#define MALLOC malloc
-	#define LFREE free
-	#define FREE free
-#endif
+#define REALLOC realloc
+#define LMALLOC malloc
+#define MALLOC malloc
+#define LFREE free
+#define FREE free
 
 
 
@@ -597,40 +567,40 @@ long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
 
 #ifdef LZH_DYNAMIC_BUF
 
-	if((lzh.text_buf=(uchar *)MALLOC(LZH_N + LZH_F - 1))==NULL)
+	if((lzh.text_buf=(uchar *)malloc(LZH_N + LZH_F - 1))==NULL)
 		return(-1);
-	if((lzh.freq=(unsigned short*)MALLOC((LZH_T + 1)*sizeof(unsigned short)))==NULL) {
-		FREE(lzh.text_buf);
+	if((lzh.freq=(unsigned short*)malloc((LZH_T + 1)*sizeof(unsigned short)))==NULL) {
+		free(lzh.text_buf);
 		return(-1); }
-	if((lzh.prnt=(short *)MALLOC((LZH_T + LZH_N_CHAR)*sizeof(short)))==NULL) {
-		FREE(lzh.text_buf);
-		FREE(lzh.freq);
+	if((lzh.prnt=(short *)malloc((LZH_T + LZH_N_CHAR)*sizeof(short)))==NULL) {
+		free(lzh.text_buf);
+		free(lzh.freq);
 		return(-1); }
-	if((lzh.son=(short *)MALLOC((LZH_T + 1) * sizeof(short)))==NULL) {
-		FREE(lzh.text_buf);
-		FREE(lzh.prnt);
-		FREE(lzh.freq);
+	if((lzh.son=(short *)malloc((LZH_T + 1) * sizeof(short)))==NULL) {
+		free(lzh.text_buf);
+		free(lzh.prnt);
+		free(lzh.freq);
 		return(-1); }
-	if((lzh.lson=(short *)MALLOC((LZH_N + 1)*sizeof(short)))==NULL) {
-		FREE(lzh.text_buf);
-		FREE(lzh.prnt);
-		FREE(lzh.freq);
-		FREE(lzh.son);
+	if((lzh.lson=(short *)malloc((LZH_N + 1)*sizeof(short)))==NULL) {
+		free(lzh.text_buf);
+		free(lzh.prnt);
+		free(lzh.freq);
+		free(lzh.son);
 		return(-1); }
-	if((lzh.rson=(short *)MALLOC((LZH_N + 257)*sizeof(short)))==NULL) {
-		FREE(lzh.text_buf);
-		FREE(lzh.prnt);
-		FREE(lzh.freq);
-		FREE(lzh.son);
-		FREE(lzh.lson);
+	if((lzh.rson=(short *)malloc((LZH_N + 257)*sizeof(short)))==NULL) {
+		free(lzh.text_buf);
+		free(lzh.prnt);
+		free(lzh.freq);
+		free(lzh.son);
+		free(lzh.lson);
 		return(-1); }
-	if((lzh.dad=(short *)MALLOC((LZH_N + 1)*sizeof(short)))==NULL) {
-		FREE(lzh.text_buf);
-		FREE(lzh.prnt);
-		FREE(lzh.freq);
-		FREE(lzh.son);
-        FREE(lzh.lson);
-		FREE(lzh.rson);
+	if((lzh.dad=(short *)malloc((LZH_N + 1)*sizeof(short)))==NULL) {
+		free(lzh.text_buf);
+		free(lzh.prnt);
+		free(lzh.freq);
+		free(lzh.son);
+        free(lzh.lson);
+		free(lzh.rson);
 		return(-1); }
 #endif
 
@@ -639,13 +609,13 @@ long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
 	outlen=sizeof(inlen);
 	if(!inlen) {
 #ifdef LZH_DYNAMIC_BUF
-		FREE(lzh.text_buf);
-		FREE(lzh.prnt);
-		FREE(lzh.freq);
-		FREE(lzh.son);
-        FREE(lzh.lson);
-        FREE(lzh.rson);
-		FREE(lzh.dad);
+		free(lzh.text_buf);
+		free(lzh.prnt);
+		free(lzh.freq);
+		free(lzh.son);
+        free(lzh.lson);
+        free(lzh.rson);
+		free(lzh.dad);
 #endif
 		return(outlen); }
 	lzh_start_huff(&lzh);
@@ -704,13 +674,13 @@ long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
 */
 
 #ifdef LZH_DYNAMIC_BUF
-	FREE(lzh.text_buf);
-	FREE(lzh.prnt);
-	FREE(lzh.freq);
-	FREE(lzh.son);
-	FREE(lzh.lson);
-	FREE(lzh.rson);
-	FREE(lzh.dad);
+	free(lzh.text_buf);
+	free(lzh.prnt);
+	free(lzh.freq);
+	free(lzh.son);
+	free(lzh.lson);
+	free(lzh.rson);
+	free(lzh.dad);
 #endif
 
 	return(outlen);
@@ -728,20 +698,20 @@ long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf)
 	memset(&lzh,0,sizeof(lzh));
 #ifdef LZH_DYNAMIC_BUF
 
-	if((lzh.text_buf=(uchar *)MALLOC((LZH_N + LZH_F - 1)*2))==NULL)
+	if((lzh.text_buf=(uchar *)malloc((LZH_N + LZH_F - 1)*2))==NULL)
 		return(-1);
-	if((lzh.freq=(unsigned short *)MALLOC((LZH_T + 1)*sizeof(unsigned short)))
+	if((lzh.freq=(unsigned short *)malloc((LZH_T + 1)*sizeof(unsigned short)))
 		==NULL) {
-		FREE(lzh.text_buf);
+		free(lzh.text_buf);
 		return(-1); }
-	if((lzh.prnt=(short *)MALLOC((LZH_T + LZH_N_CHAR)*sizeof(short)))==NULL) {
-		FREE(lzh.text_buf);
-		FREE(lzh.freq);
+	if((lzh.prnt=(short *)malloc((LZH_T + LZH_N_CHAR)*sizeof(short)))==NULL) {
+		free(lzh.text_buf);
+		free(lzh.freq);
 		return(-1); }
-	if((lzh.son=(short *)MALLOC((LZH_T + 1) * sizeof(short)))==NULL) {
-		FREE(lzh.text_buf);
-		FREE(lzh.prnt);
-		FREE(lzh.freq);
+	if((lzh.son=(short *)malloc((LZH_T + 1) * sizeof(short)))==NULL) {
+		free(lzh.text_buf);
+		free(lzh.prnt);
+		free(lzh.freq);
 		return(-1); }
 
 #endif
@@ -751,10 +721,10 @@ long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf)
 	incnt+=sizeof(textsize);
 	if (textsize == 0) {
 #ifdef LZH_DYNAMIC_BUF
-		FREE(lzh.text_buf);
-		FREE(lzh.prnt);
-		FREE(lzh.freq);
-		FREE(lzh.son);
+		free(lzh.text_buf);
+		free(lzh.prnt);
+		free(lzh.freq);
+		free(lzh.son);
 #endif
 		return(textsize); }
 	lzh_start_huff(&lzh);
@@ -799,10 +769,10 @@ long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf)
 ***/
 
 #ifdef LZH_DYNAMIC_BUF
-	FREE(lzh.text_buf);
-	FREE(lzh.prnt);
-	FREE(lzh.freq);
-	FREE(lzh.son);
+	free(lzh.text_buf);
+	free(lzh.prnt);
+	free(lzh.freq);
+	free(lzh.son);
 #endif
 
 return(count);

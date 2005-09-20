@@ -260,17 +260,17 @@ int uifcini32(uifcapi_t* uifcapi)
     }
 
 	blk_scrn_len=api->scrn_width*api->scrn_len*2;
-	if((blk_scrn=(char *)MALLOC(blk_scrn_len))==NULL)  {
+	if((blk_scrn=(char *)malloc(blk_scrn_len))==NULL)  {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,blk_scrn_len);
 				return(-1);
 	}
-	if((tmp_buffer=(uchar *)MALLOC(blk_scrn_len))==NULL)  {
+	if((tmp_buffer=(uchar *)malloc(blk_scrn_len))==NULL)  {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,blk_scrn_len);
 				return(-1);
 	}
-	if((tmp_buffer2=(uchar *)MALLOC(blk_scrn_len))==NULL)  {
+	if((tmp_buffer2=(uchar *)malloc(blk_scrn_len))==NULL)  {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,blk_scrn_len);
 				return(-1);
@@ -597,7 +597,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 	if(!is_redraw) {
 		if(mode&WIN_SAV && api->savdepth==api->savnum) {
-			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+			if((sav[api->savnum].buf=(char *)malloc((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
 				free(title);
@@ -619,8 +619,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			|| sav[api->savnum].bot!=s_top+top+height)) { /* dimensions have changed */
 			puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
 				,sav[api->savnum].buf);	/* put original window back */
-			FREE(sav[api->savnum].buf);
-			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+			free(sav[api->savnum].buf);
+			if((sav[api->savnum].buf=(char *)malloc((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
 				free(title);
@@ -919,7 +919,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 						if(mode&WIN_ACT) {
 							uifc_mouse_disable();
-							if((win=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+							if((win=(char *)malloc((width+3)*(height+2)*2))==NULL) {
 								cprintf("UIFC line %d: error allocating %u bytes."
 									,__LINE__,(width+3)*(height+2)*2);
 								return(-1);
@@ -1481,7 +1481,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								puttext(sav[api->savnum].left,sav[api->savnum].top
 									,sav[api->savnum].right,sav[api->savnum].bot
 									,sav[api->savnum].buf);
-								FREE(sav[api->savnum].buf);
+								free(sav[api->savnum].buf);
 								api->savdepth--; 
 							}
 							if(mode&WIN_XTR && (*cur)==opts-1)
@@ -1502,7 +1502,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								puttext(sav[api->savnum].left,sav[api->savnum].top
 									,sav[api->savnum].right,sav[api->savnum].bot
 									,sav[api->savnum].buf);
-								FREE(sav[api->savnum].buf);
+								free(sav[api->savnum].buf);
 								api->savdepth--; 
 							}
 							return(-1);
@@ -2423,7 +2423,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(lines < height-2-pad-pad)
 		lines=height-2-pad-pad;
 
-	if((textbuf=(char *)MALLOC((width-2-pad-pad)*lines*2))==NULL) {
+	if((textbuf=(char *)malloc((width-2-pad-pad)*lines*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(width-2-pad-pad)*lines*2);
 		_setcursortype(cursor);
@@ -2538,7 +2538,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	}
 	if(is_redraw)			/* Force redraw of menu also. */
 		reset_dynamic();
-	FREE(textbuf);
+	free(textbuf);
 	_setcursortype(cursor);
 }
 
