@@ -1989,7 +1989,9 @@ void initdata(void)
 	else				/* Version 1a */
 		name_len=30;
 
+#ifdef __unix__
 	_termios_setup();
+#endif
 
 	if(client_socket==INVALID_SOCKET)
 		xsdk_mode&=~XSDK_MODE_NOCONSOLE;
