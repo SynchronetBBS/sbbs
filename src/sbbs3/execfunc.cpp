@@ -265,9 +265,6 @@ int sbbs_t::exec_function(csi_t *csi)
 			change_user();
 			return(0);
 		case CS_SHOW_MEM:
-	#ifdef __MSDOS__
-			 bprintf(text[NBytesFreeMemory],farcoreleft());
-	#endif
 			return(0);
 		case CS_ERROR_LOG:
 			sprintf(str,"%serror.log", cfg.logs_dir);

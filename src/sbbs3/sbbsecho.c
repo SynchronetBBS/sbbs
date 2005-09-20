@@ -66,6 +66,7 @@
 #include "scfglib.h"
 #include "lzh.h"
 #include "sbbsecho.h"
+#include "genwrap.h"		/* PLATFORM_DESC */
 
 smb_t *smb,*email;
 long misc=(IMPORT_PACKETS|IMPORT_NETMAIL|IMPORT_ECHOMAIL|EXPORT_ECHOMAIL
@@ -3976,21 +3977,7 @@ int main(int argc, char **argv)
 	printf("\nSBBSecho v%s-%s (rev %s) - Synchronet FidoNet Packet "
 		"Tosser\n"
 		,SBBSECHO_VER
-#ifdef PLATFORM_DESC
 		,PLATFORM_DESC
-#else
-	#if defined(__OS2__)
-		,"OS/2"
-	#elif defined(__NT__)
-		,"Win32"
-	#elif defined(__DOS4G__)
-		,"DOS4G"
-	#elif defined(__FLAT__)
-		,"DOS32"
-	#else
-		,"DOS16"
-	#endif
-#endif
 		,revision
 		);
 

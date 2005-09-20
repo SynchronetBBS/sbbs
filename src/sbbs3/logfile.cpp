@@ -329,13 +329,6 @@ void sbbs_t::errormsg(int line, const char *source, char action, const char *obj
 		strcat(str,tmp); 
 		errno=0;
 	}
-#if defined(__MSDOS__)
-	if(_doserrno && _doserrno!=(ulong)errno) {
-		sprintf(tmp,"\r\n  doserrno: %d",_doserrno);
-		strcat(str,tmp); 
-	}
-	_doserrno=0;
-#endif
 #if defined(_WIN32)
 	if(GetLastError()!=0) {
 		sprintf(tmp,"\r\n  WinError: %d (0x%X)",GetLastError(), GetLastError());

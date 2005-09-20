@@ -1088,15 +1088,11 @@ extern
 
 /* Global data */
 
-#if defined(__FLAT__) || defined(_WIN32)
-
+/* ToDo: These should be hunted down and killed */
 #define lread(f,b,l) read(f,b,l)
 #define lfread(b,l,f) fread(b,l,f)
 #define lwrite(f,b,l) write(f,b,l)
 #define lfwrite(b,l,f) fwrite(b,l,f)
-
 #define lkbrd(x)	0
-
-#endif
 
 #endif	/* Don't add anything after this line */

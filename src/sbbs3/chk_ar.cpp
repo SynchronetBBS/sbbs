@@ -156,11 +156,7 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				#endif
 				break;
 			case AR_DOS:
-				#ifdef __FLAT__
-					result=_not;
-				#else
-					result=!_not;
-				#endif
+				result=_not;
 				break;
 			case AR_WIN32:
 				#ifndef _WIN32

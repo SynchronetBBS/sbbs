@@ -88,10 +88,6 @@ typedef struct {
 
 #define JSVAL_NULL_OR_VOID(val)		(JSVAL_IS_NULL(val) || JSVAL_IS_VOID(val))
 
-#ifndef __FLAT__
-#define __FLAT__	/* 32-bit "flat" memory model */
-#endif
-
 /************/
 /* Maximums */
 /************/
