@@ -52,28 +52,12 @@
 #if defined(__unix__)
 	#include <sys/param.h>	/* PATH_MAX */
 #endif
-#if (defined(__unix__) || defined(_WIN32)) && !defined(__FLAT__)
-    #define __FLAT__
-#endif
-
-#if defined(__FLAT__)
-	#define far
-#endif
-
-#if !defined(__FLAT__)
-    #include <bios.h>
-#endif
 
 #if defined(__unix__) && !defined(stricmp)
     #define stricmp strcasecmp
 	#define strnicmp strncasecmp
 #endif
 
-#define REALLOC realloc
-#define LMALLOC malloc
-#define MALLOC malloc
-#define LFREE free
-#define FREE free
 #if !defined(FREE_AND_NULL)
 	#define FREE_AND_NULL(x)			if(x!=NULL) { free(x); x=NULL; }
 #endif
@@ -96,26 +80,15 @@
 	#define INT_86(i,j,k) int86(i,j,k)
 #endif
 
-#ifdef __FLAT__
-	#define MAX_OPTS	10000
-	#define MSK_ON		0xf0000000
-	#define MSK_OFF 	0x0fffffff
-	#define MSK_INS 	0x10000000
-	#define MSK_DEL 	0x20000000
-	#define MSK_GET 	0x30000000
-	#define MSK_PUT 	0x40000000
-	#define MSK_EDIT 	0x50000000
-	/* Dont forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
-#else
-	#define MAX_OPTS	500 	/* Maximum number of options per menu call */
-	#define MSK_ON		0xf000
-	#define MSK_OFF 	0x0fff
-	#define MSK_INS 	0x1000
-	#define MSK_DEL 	0x2000
-	#define MSK_GET 	0x3000
-	#define MSK_PUT 	0x4000
-	#define MSK_EDIT 	0x5000
-#endif
+#define MAX_OPTS	10000
+#define MSK_ON		0xf0000000
+#define MSK_OFF 	0x0fffffff
+#define MSK_INS 	0x10000000
+#define MSK_DEL 	0x20000000
+#define MSK_GET 	0x30000000
+#define MSK_PUT 	0x40000000
+#define MSK_EDIT 	0x50000000
+/* Dont forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
 #define MAX_OPLN	75		/* Maximum length of each option per menu call */
 #define MAX_BUFS	7		/* Maximum number of screen buffers to save */
 #define MIN_LINES   14      /* Minimum number of screen lines supported */
@@ -278,18 +251,7 @@ typedef struct {
     uchar   *buf;
 } win_t;
 
-#if !defined(__FLAT__)
-    /* LCLOLL.ASM */
-    int lclini(int);
-    void lclxy(int,int);
-    int lclwx(void);
-    int lclwy(void);
-    int lclatr(int);
-    void lputc(int);
-    long lputs(char far *);
-#endif    
-
-#if defined(__OS2__) || !defined(__FLAT__)
+#if defined(__OS2__)
 void mswait(int msecs);
 extern mswtyp;
 #endif

@@ -52,7 +52,7 @@ DosSleep(msec ? msec : 1);
 #elif defined(_WIN32)
 	#include <windows.h>
 	#define mswait(x) Sleep(x)
-#elif defined(__FLAT__)
+#else
     #define mswait(x) delay(x)
 #endif
 
@@ -84,7 +84,6 @@ static void upop(char *str);
 static void sethelp(int line, char* file);
 static void timedisplay(void);
 
-#ifdef __FLAT__
 int inkey(int mode)
 {
 	int c;
@@ -96,15 +95,6 @@ if(!c)
 	c=(getch()<<8);
 return(c);
 }
-#else
-int inkey(int mode)
-{
-if(mode)
-	return(bioskey(1));
-while(!bioskey(1));
-return(bioskey(0));
-}
-#endif
 
 static uint mousecursor=0x28;
 
@@ -116,9 +106,6 @@ int uifcini(uifcapi_t* uifcapi)
 {
 	int 	i;
 	struct	text_info txtinfo;
-#ifndef __FLAT__
-	union	REGS r;
-#endif
 
     if(uifcapi==NULL || uifcapi->size!=sizeof(uifcapi_t))
         return(-1);
@@ -193,34 +180,6 @@ int uifcini(uifcapi_t* uifcapi)
     }
 	api->scrn_width=txtinfo.screenwidth;
 
-#ifndef __FLAT__
-
-    r.w.ax=0x0000;				/* reset mouse and get driver status */
-    INT_86(0x33,&r,&r);
-
-    if(r.w.ax==0xffff) {		/* mouse driver installed */
-        uifc_status|=UIFC_MOUSE;
-
-
-        r.w.ax=0x0020;			/* enable mouse driver */
-        INT_86(0x33,&r,&r);
-
-        r.w.ax=0x000a;			/* set text pointer type */
-        r.w.bx=0x0000;			/* software cursor */
-        r.w.cx=0x77ff;
-        r.w.dx=mousecursor<<8;
-        INT_86(0x33,&r,&r);
-
-        r.w.ax=0x0013;			/* set double speed threshold */
-        r.w.dx=32;				/* double speed threshold */
-        INT_86(0x33,&r,&r);
-
-        r.w.ax=0x0001;			/* show mouse pointer */
-        INT_86(0x33,&r,&r); }
-
-    #endif
-
-
     if(!(api->mode&UIFC_COLOR)
         && (api->mode&UIFC_MONO
             || txtinfo.currmode==MONO || txtinfo.currmode==BW80)) {
@@ -247,24 +206,10 @@ int uifcini(uifcapi_t* uifcapi)
 
 static void hidemouse(void)
 {
-#ifndef __FLAT__
-	union  REGS r;
-
-if(uifc_status&UIFC_MOUSE) {
-	r.w.ax=0x0002;			/* hide mouse pointer */
-	INT_86(0x33,&r,&r); }
-#endif
 }
 
 static void showmouse(void)
 {
-#ifndef __FLAT__
-	union  REGS r;
-
-if(uifc_status&UIFC_MOUSE) {
-	r.w.ax=0x0001;			/* show mouse pointer */
-	INT_86(0x33,&r,&r); }
-#endif
 }
 
 
@@ -347,21 +292,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
 
-#ifndef __FLAT__
-	union REGS reg,r;
-
-hidemouse();
-
-r.w.ax=0x0006;	/* Get button release info */
-r.w.bx=0x0000;	/* Left button */
-INT_86(0x33,&r,&r);  /* Clears any buffered mouse clicks */
-
-r.w.ax=0x0006;	/* Get button release info */
-r.w.bx=0x0001;	/* Right button */
-INT_86(0x33,&r,&r);  /* Clears any buffered mouse clicks */
-
-#endif
-
 if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1)
 	putch(7);
 i=0;
@@ -427,16 +357,6 @@ else if(mode&WIN_SAV
 	sav[api->savnum].right=SCRN_LEFT+left+width+1;
 	sav[api->savnum].bot=SCRN_TOP+top+height; }
 
-
-#ifndef __FLAT__
-if(show_free_mem) {
-	#if defined(__LARGE__) || defined(__HUGE__) || defined(__COMPACT__)
-	uprintf(58,1,bclr|(cclr<<4),"%10ld bytes free",farcoreleft());
-	#else
-	uprintf(58,1,bclr|(cclr<<4),"%10u bytes free",coreleft());
-	#endif
-	}
-#endif
 
 
 if(mode&WIN_ORG) { /* Clear around menu */
@@ -606,115 +526,6 @@ while(1) {
 		if(api->timedisplay != NULL)
 			api->timedisplay(FALSE);
 	}
-#ifndef __FLAT__
-	if(api->mode&UIFC_MOUSE) {
-
-		r.w.ax=0x0003;		/* Get button status and mouse position */
-		INT_86(0x33,&r,&r);
-
-		if(r.w.bx&1) {		/* Left button down */
-
-			if(r.w.cx/8>=SCRN_LEFT+left
-				&& r.w.cx/8<=SCRN_LEFT+left+width
-				&& r.w.dx/8>=SCRN_TOP+top+2
-				&& r.w.dx/8<=(SCRN_TOP+top+height)-3) {
-
-				hidemouse();
-				gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-					,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-				for(i=1;i<width*2;i+=2)
-					line[i]=lclr|(bclr<<4);
-				puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-					,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-
-				(*cur)=(r.w.dx/8)-(SCRN_TOP+top+2);
-				if(bar)
-					(*bar)=(*cur);
-				y=top+3+((r.w.dx/8)-(SCRN_TOP+top+2));
-
-				gettext(SCRN_LEFT+3+left,SCRN_TOP+y
-					,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-				for(i=1;i<width*2;i+=2)
-					line[i]=bclr|(LIGHTGRAY<<4);
-				puttext(SCRN_LEFT+3+left,SCRN_TOP+y
-					,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
-				showmouse(); } }
-
-		r.w.ax=0x0006;		/* Get button release information */
-		r.w.bx=0x0000;		/* left button */
-		INT_86(0x33,&r,&r);
-
-		if(r.w.bx) {	  /* Left button release same as CR */
-
-			if(r.w.cx/8>=SCRN_LEFT+left
-				&& r.w.cx/8<=SCRN_LEFT+left+width
-				&& r.w.dx/8>=SCRN_TOP+top+2
-				&& r.w.dx/8<=(SCRN_TOP+top+height)-3) {
-
-				(*cur)=(r.w.dx/8)-(SCRN_TOP+top+2);
-				if(bar)
-					(*bar)=(*cur);
-				y=top+3+((r.w.dx/8)-(SCRN_TOP+top+2));
-
-				if(!opts || (mode&WIN_XTR && (*cur)==opts-1))
-					continue;
-
-				if(mode&WIN_ACT) {
-					hidemouse();
-					gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-						+left+width-1,SCRN_TOP+top+height-1,win);
-					for(i=1;i<(width*height*2);i+=2)
-						win[i]=lclr|(cclr<<4);
-					j=(((y-top)*width)*2)+7+((width-4)*2);
-					for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-						win[i]=hclr|(cclr<<4);
-
-					puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-						+left+width-1,SCRN_TOP+top+height-1,win);
-					showmouse(); }
-				else if(mode&WIN_SAV) {
-					hidemouse();
-					puttext(sav[api->savnum].left,sav[api->savnum].top
-						,sav[api->savnum].right,sav[api->savnum].bot
-						,sav[api->savnum].buf);
-					showmouse();
-					free(sav[api->savnum].buf);
-					api->savdepth--; }
-				return(*cur); }
-			else if(r.w.cx/8>=SCRN_LEFT+left+3
-				&& r.w.cx/8<=SCRN_LEFT+left+5
-				&& r.w.dx/8==(SCRN_TOP+top)-1)		/* Clicked help icon */
-				help();
-			else
-				goto hitesc; }
-
-		r.w.ax=0x0006;		/* Get button release information */
-		r.w.bx=0x0001;		/* right button */
-		INT_86(0x33,&r,&r);
-
-		if(r.w.bx) {	  /* Right button down, same as ESC */
-hitesc:
-            if(mode&WIN_ESC || (mode&WIN_CHE && api->changes)
-                && !(mode&WIN_SAV)) {
-                hidemouse();
-                gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-                    +left+width-1,SCRN_TOP+top+height-1,win);
-                for(i=1;i<(width*height*2);i+=2)
-                    win[i]=lclr|(cclr<<4);
-                puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
-                    +left+width-1,SCRN_TOP+top+height-1,win);
-                showmouse(); }
-            else if(mode&WIN_SAV) {
-				hidemouse();
-                puttext(sav[api->savnum].left,sav[api->savnum].top
-                    ,sav[api->savnum].right,sav[api->savnum].bot
-                    ,sav[api->savnum].buf);
-				showmouse();
-                free(sav[api->savnum].buf);
-                api->savdepth--; }
-            return(-1); }
-				}
-#endif
 
 	if(inkey(1)) {
 		i=inkey(0);
@@ -1281,9 +1092,6 @@ static int getstr(char *outstr, int max, long mode)
 {
 	uchar   ch,str[256],ins=0,buf[256],y;
 	int     i,j,k,f=0;	/* i=offset, j=length */
-#ifndef __FLAT__
-	union  REGS r;
-#endif
 
 cursor=_NORMALCURSOR;
 _setcursortype(cursor);
@@ -1299,23 +1107,6 @@ if(mode&K_EDIT) {
 	strcpy(str,outstr);
 	i=j=strlen(str);
 	while(inkey(1)==0) {
-#ifndef __FLAT__
-		if(api->mode&UIFC_MOUSE) {
-			r.w.ax=0x0006;		/* Get button release information */
-			r.w.bx=0x0000;		/* Left button */
-			INT_86(0x33,&r,&r);
-			if(r.w.bx) {		/* Left button release same as CR */
-				cursor=_NOCURSOR;
-				_setcursortype(cursor);
-				return(i); }
-			r.w.ax=0x0006;		/* Get button release information */
-			r.w.bx=0x0001;		/* Right button */
-			INT_86(0x33,&r,&r);
-			if(r.w.bx) {		/* Right button release same as ESC */
-				cursor=_NOCURSOR;
-				_setcursortype(cursor);
-				return(-1); } }
-#endif
 		mswait(1);
 		}
 	f=inkey(0);
@@ -1334,21 +1125,6 @@ while(1) {
 
 
 	if(i>j) j=i;
-#ifndef __FLAT__
-	if(api->mode&UIFC_MOUSE) {
-		r.w.ax=0x0006;		/* Get button release information */
-		r.w.bx=0x0000;		/* Left button */
-		INT_86(0x33,&r,&r);
-		if(r.w.bx)			/* Left button release same as CR */
-			break;
-		r.w.ax=0x0006;		/* Get button release information */
-		r.w.bx=0x0001;		/* Right button */
-		INT_86(0x33,&r,&r);
-		if(r.w.bx) {		/* Right button release same as ESC */
-			cursor=_NOCURSOR;
-			_setcursortype(cursor);
-			return(-1); } }
-#endif
 	if(f || inkey(1)) {
 		if(f) k=f;			/* First key */
 		else k=inkey(0);
@@ -1672,9 +1448,6 @@ void help()
 	unsigned short line;
 	long l;
 	FILE *fp;
-#ifndef __FLAT__
-	union  REGS r;
-#endif
 
 	_setcursortype(_NOCURSOR);
 
@@ -1807,19 +1580,6 @@ void help()
 		if(inkey(1)) {
 			inkey(0);
 			break; }
-	#ifndef __FLAT__
-		if(api->mode&UIFC_MOUSE) {
-			r.w.ax=0x0006;		/* Get button release information */
-			r.w.bx=0x0000;		/* Left button */
-			INT_86(0x33,&r,&r);
-			if(r.w.bx)			/* Left button release same as CR */
-				break;
-			r.w.ax=0x0006;		/* Get button release information */
-			r.w.bx=0x0001;		/* Right button */
-			INT_86(0x33,&r,&r);
-			if(r.w.bx)			/* Left button release same as CR */
-				break; }
-	#endif
 		mswait(1);
 		}
 
