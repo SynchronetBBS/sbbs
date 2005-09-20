@@ -380,6 +380,7 @@ void output_thread(void* arg)
 /****************************************************************************/
 void outchar(char ch)
 {
+	static char lastch;
 
 #ifndef __16BIT__
 	if(client_socket!=INVALID_SOCKET) {
@@ -428,6 +429,10 @@ void outchar(char ch)
 		lncntr=0;
 		bpause(); 
 	}
+	/* Fix for unix-formatted text, expand sole LF to CRLF */
+	if(ch=='\n' && lastch!='\r')
+		outchar('\r');
+	lastch=ch;
 }
 
 /****************************************************************************/
