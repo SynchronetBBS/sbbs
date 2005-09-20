@@ -267,41 +267,16 @@ enum {								/* Node Action */
 /* LMALLOC is used for allocations of possibly larger than 64k				*/
 /* LFREE is used to free buffers allocated with LMALLOC 					*/
 /* REALLOC is used to re-size a previously MALLOCed or LMALLOCed buffer 	*/
-/* FAR16 is used to create a far (32-bit) pointer in 16-bit compilers		*/
-/* HUGE16 is used to create a huge (32-bit) pointer in 16-bit compilers 	*/
+/* is used to create a far (32-bit) pointer in 16-bit compilers		*/
+/* is used to create a huge (32-bit) pointer in 16-bit compilers 	*/
 /****************************************************************************/
-#if defined(__COMPACT__) || defined(__LARGE__) || defined(__HUGE__)
-	#define __16BIT__
-	#define HUGE16 huge
-	#define FAR16 far
-	#if defined(__TURBOC__)
-		#define REALLOC(x,y) farrealloc(x,y)
-		#define LMALLOC(x) farmalloc(x)
-		#define MALLOC(x) farmalloc(x)
-		#define LFREE(x) farfree(x)
-		#define FREE(x) farfree(x)
-	#elif defined(__WATCOMC__)
-		#define REALLOC realloc
-		#define LMALLOC(x) halloc(x,1)	/* far heap, but slow */
-		#define MALLOC malloc			/* far heap, but 64k max */
-		#define LFREE hfree
-		#define FREE free
-	#else	/* Other 16-bit Compiler */
-		#define REALLOC realloc
-		#define LMALLOC malloc
-		#define MALLOC malloc
-		#define LFREE free
-		#define FREE free
-	#endif
-#else		/* 32-bit Compiler or Small Memory Model */
-	#define HUGE16
-	#define FAR16
-	#define REALLOC realloc
-	#define LMALLOC malloc
-	#define MALLOC malloc
-	#define LFREE free
-	#define FREE free
-#endif
+#define HUGE16
+#define FAR16
+#define REALLOC realloc
+#define LMALLOC malloc
+#define MALLOC malloc
+#define LFREE free
+#define FREE free
 
 #define KEY_BUFSIZE 256
 

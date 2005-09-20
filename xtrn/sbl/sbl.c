@@ -1243,19 +1243,19 @@ int main(int argc, char **argv)
 							l=bbs.updated;
 							break; }
 					if(sort_by_str) {
-						if((sortstr=(sortstr_t *)REALLOC(sortstr
+						if((sortstr=(sortstr_t *)realloc(sortstr
 							,sizeof(sortstr_t)*i))==NULL) {
 							bprintf("\r\n\7Memory allocation error\r\n");
-							LFREE(sortstr);
+							free(sortstr);
 							done=1;
 							continue; }
 						strcpy(sortstr[i-1].str,str);
 						sortstr[i-1].offset=j-1; }
 					else {
-						if((sortint=(sortint_t *)REALLOC(sortint
+						if((sortint=(sortint_t *)realloc(sortint
 							,sizeof(sortint_t)*i))==NULL) {
 							bprintf("\r\n\7Memory allocation error\r\n");
-							LFREE(sortint);
+							free(sortint);
 							done=1;
 							continue; }
 						sortint[i-1].i=l;
@@ -1277,9 +1277,9 @@ int main(int argc, char **argv)
 				if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 					bprintf("\r\n\7Error creating %s\r\n",str);
 					if(sort_by_str)
-						LFREE(sortstr);
+						free(sortstr);
 					else
-						LFREE(sortint);
+						free(sortint);
 					pause();
 					break; }
 				for(j=0;j<i;j++)
@@ -1289,9 +1289,9 @@ int main(int argc, char **argv)
 						write(file,&sortint[j].offset,2);
 				close(file);
 				if(sort_by_str)
-					LFREE(sortstr);
+					free(sortstr);
 				else
-					LFREE(sortint);
+					free(sortint);
 				bputs("\r\n\r\n\1n\1hDone.\r\n");
 				pause();
 				break;

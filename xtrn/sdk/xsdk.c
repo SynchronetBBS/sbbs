@@ -1810,18 +1810,18 @@ void initdata(void)
 	sprintf(mdm_answ,"%.63s",str);
 	truncsp(mdm_answ);
 	fgets(str,81,stream);			/* memory address of modem status register */
-	msr=(uint FAR16 *)atol(str);
+	msr=(uint *)atol(str);
 	if(!fgets(str,81,stream))		/* total number of external programs */
 		total_xtrns=0;
 	else
 		total_xtrns=atoi(str);
-	if(total_xtrns && (xtrn=(char **)MALLOC(sizeof(char *)*total_xtrns))==NULL) {
+	if(total_xtrns && (xtrn=(char **)malloc(sizeof(char *)*total_xtrns))==NULL) {
 		printf("Allocation error 1: %u\r\n",sizeof(char *)*total_xtrns);
 		exit(1); }
 	for(i=0;i<(int)total_xtrns;i++) {
 		fgets(str,81,stream);
 		truncsp(str);
-		if((xtrn[i]=(char *)MALLOC(strlen(str)+1))==NULL) {
+		if((xtrn[i]=(char *)malloc(strlen(str)+1))==NULL) {
 			printf("Allocation error 2 (%u): %u\r\n",i,strlen(str)+1);
 			exit(1); }
 		strcpy(xtrn[i],str); }
@@ -1953,7 +1953,7 @@ void initdata(void)
 			exit(1); 
 		}
 		fgets(tmp,81,stream);					/* so get MSR address from file */
-		msr=(uint FAR16 *)atol(tmp);
+		msr=(uint *)atol(tmp);
 		fclose(stream);
 		remove(str); 
 	}
@@ -2088,7 +2088,7 @@ void printfile(char *str)
 		bprintf("File not Found: %s\r\n",str);
 		return; }
 	length=filelength(file);
-	if((buf=MALLOC(length+1L))==NULL) {
+	if((buf=malloc(length+1L))==NULL) {
 		close(file);
 		bprintf("\7\r\nPRINTFILE: Error allocating %lu bytes of memory for %s.\r\n"
 			,length+1L,str);
@@ -2097,7 +2097,7 @@ void printfile(char *str)
 	close(file);
 	bputs(buf);
 	aborted=0;
-	FREE(buf);
+	free(buf);
 }
 
 /****************************************************************************/
@@ -2489,13 +2489,13 @@ void getsmsg(int usernumber)
 		bprintf("\7Error opening %s for read/write access\r\n",str);
 		return; }
 	length=filelength(file);
-	if((buf=MALLOC(length+1))==NULL) {
+	if((buf=malloc(length+1))==NULL) {
 		close(file);
 		bprintf("\7Error allocating %u bytes of memory for %s\r\n",length+1,str);
 		return; }
 	if(read(file,buf,length)!=length) {
 		close(file);
-		FREE(buf);
+		free(buf);
 		bprintf("\7Error reading %u bytes from %s\r\n",length,str);
 		return; }
 	chsize(file,0L);
@@ -2509,7 +2509,7 @@ void getsmsg(int usernumber)
 		node.misc&=~NODE_MSGW;
 		putnodedat(node_num,node); }
 	bputs(buf);
-	FREE(buf);
+	free(buf);
 }
 
 /****************************************************************************/
@@ -2566,13 +2566,13 @@ void getnmsg(void)
 		printf("Couldn't open %s for read/write\r\n",str);
 		return; }
 	length=filelength(file);
-	if((buf=MALLOC(length+1))==NULL) {
+	if((buf=malloc(length+1))==NULL) {
 		close(file);
 		printf("Couldn't allocate %lu bytes for %s\r\n",length+1,str);
 		return; }
 	if(read(file,buf,length)!=length) {
 		close(file);
-		FREE(buf);
+		free(buf);
 		printf("Couldn't read %lu bytes from %s\r\n",length,str);
 		return; }
 	chsize(file,0L);
@@ -2580,7 +2580,7 @@ void getnmsg(void)
 	buf[length]=0;
 
 	bputs(buf);
-	FREE(buf);
+	free(buf);
 }
 
 /****************************************************************************/

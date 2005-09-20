@@ -540,11 +540,11 @@ int main(int argc, char **argv)
 			continue;
 		}
 		i++;
-		if((sort=(sort_t **)REALLOC(sort
+		if((sort=(sort_t **)realloc(sort
 			,sizeof(sort_t *)*i))==NULL) {
 			printf("\r\n\7Memory allocation error\r\n");
 			return(1); }
-		if((sort[i-1]=(sort_t *)LMALLOC(sizeof(sort_t)
+		if((sort[i-1]=(sort_t *)malloc(sizeof(sort_t)
 			))==NULL) {
 			printf("\r\n\7Memory allocation error\r\n");
 			return(1); }

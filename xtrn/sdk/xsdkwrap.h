@@ -81,8 +81,6 @@
 	#define PLATFORM_DESC	"Win32"
 #elif defined(__OS2__)
 	#define PLATFORM_DESC	"OS/2"
-#elif defined(__MSDOS__)
-	#define PLATFORM_DESC	"DOS"
 #elif defined(__linux__)
 	#define PLATFORM_DESC	"Linux"
 #elif defined(__FreeBSD__)
@@ -174,13 +172,6 @@
 	#define pthread_mutex_unlock(pmtx)	ReleaseMutex(*(pmtx))
 	#define	pthread_mutex_destroy(pmtx)	CloseHandle(*(pmtx))
 
-
-#elif defined(__MSDOS__)
-
-	/* No semaphores */
-
-#else
-
 	#warning "Need semaphore wrappers."
 
 #endif
@@ -214,10 +205,6 @@
 	char*	strrev(char* str);
 	char*	_fullpath(char* absPath, const char* relPath
 								,size_t maxLength);
-
-#elif defined(__MSDOS__)
-
-	void mswait(int ms);	/* Wait a specific number of milliseconds */
 
 #else	/* Unsupported OS */
 

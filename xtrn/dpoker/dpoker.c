@@ -244,7 +244,7 @@ void main(int argc, char **argv)
             pause();
             exit(1);}
         length=filelength(file);
-        if ((buf=(char *)MALLOC(length))!=NULL) {
+        if ((buf=(char *)malloc(length))!=NULL) {
             read(file,buf,length);
         }
         close(file);
@@ -256,7 +256,7 @@ void main(int argc, char **argv)
             if (!stricmp(player_stuff.name,user_name))
                 time_played+=(player_stuff.time*60);
         }
-        FREE(buf);
+        free(buf);
     }
 
 
@@ -314,7 +314,7 @@ void main(int argc, char **argv)
                 bprintf("\r\n\1y\1hList of today's players\1n\r\n");
                 if((file=nopen("DPOKER.PLR",O_RDONLY))!=-1) {
                     length=filelength(file);
-                    if ((buf=(char *)MALLOC(length))!=NULL) {
+                    if ((buf=(char *)malloc(length))!=NULL) {
                         read(file,buf,length);
                     }
                     close(file);
@@ -335,7 +335,7 @@ void main(int argc, char **argv)
                                 lost+=labs(player_stuff.points);
                         }
                     }
-                    FREE(buf);
+                    free(buf);
                     if (won || lost) {
                         bprintf("\r\n\r\n\1m\1hYou've won \1y%ldK \1mand "
                                 "lost \1y%ldK \1mfor a total %s of "

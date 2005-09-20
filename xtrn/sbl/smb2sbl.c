@@ -75,20 +75,20 @@ char *loadmsgtxt(smbmsg_t msg, int tails)
 		length=msg.dfield[i].length-2;
 		if(lzh) {
 			length-=2;
-			if((lzhbuf=MALLOC(length))==NULL) {
+			if((lzhbuf=malloc(length))==NULL) {
 				printf("ERR_ALLOC lzhbuf of %lu\n",length);
 				return(buf); }
 			fread(lzhbuf,1,length,smb.sdt_fp);
 			lzhlen=*(long *)lzhbuf;
-			if((buf=REALLOC(buf,l+lzhlen+3))==NULL) {
-				FREE(lzhbuf);
+			if((buf=realloc(buf,l+lzhlen+3))==NULL) {
+				free(lzhbuf);
 				printf("ERR_ALLOC lzhoutbuf of %ld\n",l+lzhlen+1);
 				return(buf); }
 			lzh_decode(lzhbuf,length,buf+l);
-			FREE(lzhbuf);
+			free(lzhbuf);
 			l+=lzhlen; }
 		else {
-			if((buf=REALLOC(buf,l+msg.dfield[i].length+3))==NULL) {
+			if((buf=realloc(buf,l+msg.dfield[i].length+3))==NULL) {
 				printf("ERR_ALLOC of %lu\n",l+msg.dfield[i].length+1);
 				return(buf); }
 			l+=fread(buf+l,1,length,smb.sdt_fp); }
@@ -505,7 +505,7 @@ int main(int argc, char **argv)
 		bbs.total_numbers=number;
 		if(fwrite(&bbs,1,sizeof(bbs_t),stream)!=sizeof(bbs_t))
 			fprintf(stderr,"!WRITE ERROR %d\n",errno);
-		FREE(buf);
+		free(buf);
 		smb_freemsgmem(&msg);
 		}
 	lseek(file,0L,SEEK_SET);

@@ -124,7 +124,7 @@ GLOBAL char     latr;           /* Starting attribute of line buffer */
 GLOBAL uint 	inDV;			/* DESQview version if running under DV */
 GLOBAL int		keybuftop,keybufbot;	/* Keyboard input buffer pointers */
 GLOBAL char     keybuf[KEY_BUFSIZE];    /* Keyboard input buffer */
-GLOBAL uint FAR16 *msr;			/* Last modem status register contents */
+GLOBAL uint *msr;			/* Last modem status register contents */
 GLOBAL char 	**xtrn; 		/* List of external program names */
 GLOBAL uint 	total_xtrns;	/* Total number of external programs */
 GLOBAL uchar	lastnodemsg;	/* Last node to send a message to */
