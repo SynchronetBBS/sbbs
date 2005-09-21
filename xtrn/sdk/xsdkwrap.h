@@ -171,7 +171,9 @@
 	#define pthread_mutex_unlock(pmtx)	ReleaseMutex(*(pmtx))
 	#define	pthread_mutex_destroy(pmtx)	CloseHandle(*(pmtx))
 
-/*	#warning "Need semaphore wrappers." */
+#else
+
+	#warning "Need semaphore wrappers."
 
 #endif
 
