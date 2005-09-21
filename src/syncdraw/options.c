@@ -10,7 +10,7 @@
 #include "config.h"
 #include "effekt.h"
 #include "key.h"
-#include "mdraw.h"
+#include "syncdraw.h"
 #include "miscfunctions.h"
 
 char 

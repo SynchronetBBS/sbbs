@@ -37,7 +37,7 @@ CreateFontFile(void)
 	FILE           *fp;
 	char            FontFile[255];
 	MysticDrawFontHeader Head;
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.mdraw/allfont.fnt");
+	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw/allfont.fnt");
 	fp = fopen(FontFile, "wb");
 	if (fp != NULL) {
 		Head.NumberofFonts = 0;
@@ -63,7 +63,7 @@ Openfont(int num)
 	FILE           *fp;
 	int             x;
 	char            FontFile[255];
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.mdraw/allfont.fnt");
+	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw/allfont.fnt");
 	fp = fopen(FontFile, "rb");
 	if (fp != NULL) {
 		fseek(fp, HeaderSize + (FontRecordSize * num), SEEK_SET);
@@ -104,7 +104,7 @@ ReadFonts(unsigned char ch)
 	FILE           *fp;
 	char            FontFile[255];
 
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.mdraw/allfont.fnt");
+	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw/allfont.fnt");
 	for (a = 1; a <= 60; a++)
 		for (b = 1; b <= 24; b++)
 			Chars[a][b] = 0;

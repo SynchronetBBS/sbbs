@@ -8,7 +8,7 @@
 #include <keys.h>
 
 #include "crt.h"
-#include "mdraw.h"
+#include "syncdraw.h"
 #include "key.h"
 #include "miscfunctions.h"
 

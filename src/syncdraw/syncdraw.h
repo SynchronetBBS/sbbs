@@ -1,5 +1,5 @@
-#ifndef _MDRAW_H_
-#define _MDRAW_H_
+#ifndef _SYNCDRAW_H_
+#define _SYNCDRAW_H_
 
 #define UNDOPage 0
 #define MaxLines 1000

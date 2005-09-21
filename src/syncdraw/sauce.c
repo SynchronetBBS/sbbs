@@ -6,7 +6,7 @@
 #include <keys.h>
 
 #include "key.h"
-#include "mdraw.h"
+#include "syncdraw.h"
 #include "miscfunctions.h"
 #include "sauce.h"
 

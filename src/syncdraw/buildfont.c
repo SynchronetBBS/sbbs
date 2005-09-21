@@ -56,7 +56,7 @@ int main(int argnum, char *args[])
 	char            filename[254];
 	int             x, y;
 	char            FontFile[255];
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.mdraw/allfont.fnt");
+	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw/allfont.fnt");
 
 
 	if (argnum < 2) {

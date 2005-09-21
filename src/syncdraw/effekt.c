@@ -7,7 +7,7 @@
 
 #include "crt.h"
 #include "key.h"
-#include "mdraw.h"
+#include "syncdraw.h"
 #include "effekt.h"
 #include "miscfunctions.h"
 

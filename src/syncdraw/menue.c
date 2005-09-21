@@ -9,7 +9,7 @@
 #include "key.h"
 #include "crt.h"
 #include "fonts.h"
-#include "mdraw.h"
+#include "syncdraw.h"
 #include "miscfunctions.h"
 #include "sauce.h"
 #include "effekt.h"

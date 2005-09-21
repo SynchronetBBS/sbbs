@@ -45,7 +45,7 @@
 #include "help.h"
 #include "key.h"
 #include "load.h"
-#include "mdraw.h"
+#include "syncdraw.h"
 #include "menue.h"
 #include "miscfunctions.h"
 #include "options.h"
@@ -698,10 +698,10 @@ SelectFont(void)
 	char			buf[11*16*2];
 
 	memset(buf,0,sizeof(buf));
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.mdraw");
+	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw");
 	if(!isdir(FontFile))
 		MKDIR(FontFile);
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.mdraw/allfont.fnt");
+	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw/allfont.fnt");
 	DrawBox(10, 6, 27, 18);
 	DrawBox(30, 5, 61, 18);
 	fp = fopen(FontFile, "rb");

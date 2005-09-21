@@ -4,7 +4,7 @@
 #include <gen_defs.h>
 #include <keys.h>
 
-#include "mdraw.h"
+#include "syncdraw.h"
 #include "key.h"
 #include "options.h"
 #include "miscfunctions.h"

@@ -1,7 +1,7 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
-#define CONFIGFILE "/.mdraw/mdraw.config"
+#define CONFIGFILE "/.syncdraw/syncdraw.config"
 
 void loadconfig(void);
 void saveconfig(void);

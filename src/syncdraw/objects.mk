@@ -4,7 +4,7 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)load$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)options$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)fonts$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)mdraw$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)syncdraw$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)sauce$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)config$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)menue$(OFILE) \
