@@ -96,8 +96,7 @@
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else
-	#warning "Need to describe target platform"
-	#define PLATFORM_DESC	"UNKNOWN"
+	#error "Need to describe target platform"
 #endif
 
 #if defined(__unix__)
@@ -172,7 +171,7 @@
 	#define pthread_mutex_unlock(pmtx)	ReleaseMutex(*(pmtx))
 	#define	pthread_mutex_destroy(pmtx)	CloseHandle(*(pmtx))
 
-	#warning "Need semaphore wrappers."
+/*	#warning "Need semaphore wrappers." */
 
 #endif
 
@@ -208,7 +207,7 @@
 
 #else	/* Unsupported OS */
 
-	#warning "Unsupported Target: Need some macros of function prototypes here."
+	#error "Unsupported Target: Need some macros of function prototypes here."
 
 #endif
 

@@ -396,7 +396,7 @@ BOOL fexist(char *filespec)
 
 #else
 
-#warning "fexist() port needs to support wildcards!"
+	#error "fexist() port needs to support wildcards!"
 
 	return(FALSE);
 
