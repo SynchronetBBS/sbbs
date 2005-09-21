@@ -18,7 +18,7 @@ include $(SRC_ROOT)/build/Common.gmake
 
 vpath %.c $(XSDK)
 
-CFLAGS	+=	-I$(XSDK) -DUSE_XPDEV $(XPDEV_CFLAGS)
+CFLAGS	+=	-I$(XSDK) -DUSE_XPDEV $(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 
 ifeq ($(os),sunos)
  LDFLAGS	+=	-lsocket -lnsl -lrt
@@ -34,4 +34,10 @@ $(DPCLEAN): $(DPCLEAN_OBJS)
    ifndef bcc
 	@echo Linking $@
    endif
-	$(QUIET)$(CC) $(CFLAGS) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $^ -o $@ $(XPDEV-MT_LIBS)
+	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $^ -o $@ $(XPDEV-MT_LIBS)
+
+$(DPCONFIG): $(DPCONFIG_OBJS)
+   ifndef bcc
+	@echo Linking $@
+   endif
+	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(LDFLAGS) $^ -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)

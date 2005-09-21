@@ -23,6 +23,7 @@
                 Irvine, CA 92619-4452
 ******************************************************************************/
 
+#include "ini_file.h"
 #include "xsdk.h"
 #define VERSION "2K5"
 
@@ -139,11 +140,13 @@ enum { OPEN, DEAL, BET, DISCARD, BET2, GET_WINNER };
 
 int main(int argc, char **argv)
 {
-    FILE *fp;
     char ch,str[256],str1[10],*buf;
     int file,i,x;
     long won,lost;
     ulong length,l,lastrun;
+	FILE	*inifile;
+	int		opts;
+	char	key_name[8];
 
     struct {
         char name[25];
@@ -206,27 +209,39 @@ int main(int argc, char **argv)
             unlink("dpoker.plr"); }
         close(file); }
 
-    if((file=nopen("dpoker.cfg",O_RDONLY))==-1) {
-        printf("Error opening config file.  Did you run DPCONFIG?\r\n");
-        pause();
-        return(1); }
-    if(filelength(file)!=500L) {
-        printf("Incorrect configuration file for this version of Domain Poker."
-            "\r\nYou must delete the file dpoker.cfg and run DPCONFIG.EXE!"
-            "\r\n");
-        pause();
-        exit(1); }
-    read(file,comp_name,26);
-    read(file,&num_tables,sizeof(num_tables));
-    read(file,&time_allowed,sizeof(time_allowed));
-    read(file,&skim,sizeof(skim));
-    for(i=1;i<=num_tables;i++) {
-        read(file,&options[i],sizeof(short));
-        read(file,&ante[i],sizeof(short));
-        read(file,&bet_limit[i],sizeof(short));
-        read(file,&max_total[i],sizeof(long));
-        read(file,str,8); }
-    close(file);
+	inifile=fopen("dpoker.ini","r");
+	iniReadString(inifile,NULL,"ComputerName","Domain Entertainment",comp_name);
+	num_tables=iniReadShortInt(inifile,NULL,"Tables",10);
+	if(num_tables>MAX_TABLES)
+		num_tables=MAX_TABLES;
+	if(num_tables<1)
+		num_tables=1;
+	time_allowed=iniReadInteger(inifile,NULL,"TimeAllowed",86400);
+	if(time_allowed>86400 || time_allowed<0)
+		time_allowed=86400;
+	skim=iniReadShortInt(inifile,NULL,"Skim",10);
+	if(skim<0)
+		skim=0;
+	if(skim>50)
+		skim=50;
+	for(i=1;i<=num_tables;i++) {
+		sprintf(key_name,"Table%d",i);
+		opts=0;
+		opts|=(iniReadBool(inifile,key_name,"ComputerPlayer",TRUE)?COMPUTER:0);
+		opts|=(iniReadBool(inifile,key_name,"Password",FALSE)?PASSWORD:0);
+		options[i]=opts;
+		ante[i]=iniReadShortInt(inifile,key_name,"Ante",250);
+		if(ante[i] < 0)
+			ante[i]=0;
+		bet_limit[i]=iniReadShortInt(inifile,key_name,"BetLimit",250);
+		if(bet_limit[i] < 1)
+			bet_limit[i]=1;
+		max_total[i]=iniReadInteger(inifile,key_name,"TableLimit",1000);
+		if(max_total[i] < 1)
+			max_total[i]=1;
+	}
+	if(inifile!=NULL)
+		fclose(inifile);
 
     if (comp_name[0]==0)
         strcpy(comp_name,sys_guru);
