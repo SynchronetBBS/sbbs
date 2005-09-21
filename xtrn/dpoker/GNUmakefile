@@ -1,13 +1,12 @@
-# Makefile.gnu
+# GNUmakefile
 
 #########################################################################
-# Makefile for Synchronet Blackjack										#
+# Makefile for Domain Poker												#
 # For use with GNU make and GNU C Compiler								#
 # @format.tab-size 4, @format.use-tabs true								#
 #																		#
-# Linux: make -f Makefile.gnu											#
-# Win32: make -f Makefile.gnu os=win32									#
-# FreeBSD: make -f Makefile.gnu os=freebsd								#
+# Linux: make															#
+# FreeBSD: gmake														#
 #########################################################################
 
 # $Id$
