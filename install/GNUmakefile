@@ -71,12 +71,13 @@ endif
 MKFLAGS	+=	os=$(os)
 
 ifdef DEBUG
- SUFFIX  :=  debug
+ BUILD  :=  debug
  MKFLAGS	+=	DEBUG=1
 else
- SUFFIX  :=  release
+ BUILD  :=  release
  MKFLAGS	+=	RELEASE=1
 endif
+BUILDPATH	?=	$(BUILD)
 
 ifdef JSLIB
  MKFLAGS	+=	JSLIB=$(JSLIB)
@@ -96,7 +97,7 @@ binaries:	sbbs3 scfg umonitor uedit
 
 externals:	sbj sbl dpoker
 
-sbbs3:	src $(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX) $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(SUFFIX)
+sbbs3:	src $(SBBSDIR)/lib/mozilla/js/$(machine).$(BUILD) $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(BUILD)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
 scfg:	src
@@ -109,7 +110,7 @@ uedit:	src
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/uedit $(MKFLAGS)
 
 baja:	run sbbs3
-	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/baja
+	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja
 
 sbj:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
@@ -126,40 +127,40 @@ ifeq ($(INSTALL),UNIX)
 	fail
 else
 	@echo Installing to $(SBBSDIR)
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/smbactiv $(SBBSDIR)/exec/smbactiv
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/dupefind $(SBBSDIR)/exec/dupefind
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/delfiles $(SBBSDIR)/exec/delfiles
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/allusers $(SBBSDIR)/exec/allusers
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/qwknodes $(SBBSDIR)/exec/qwknodes
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/asc2ans $(SBBSDIR)/exec/asc2ans
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/ans2asc $(SBBSDIR)/exec/ans2asc
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/jsexec $(SBBSDIR)/exec/jsexec
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/baja $(SBBSDIR)/exec/baja
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/unbaja $(SBBSDIR)/exec/unbaja
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/slog $(SBBSDIR)/exec/slog
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/node $(SBBSDIR)/exec/node
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/chksmb $(SBBSDIR)/exec/chksmb
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/fixsmb $(SBBSDIR)/exec/fixsmb
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/addfiles $(SBBSDIR)/exec/addfiles
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/makeuser $(SBBSDIR)/exec/makeuser
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/smbutil $(SBBSDIR)/exec/smbutil
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/sbbs $(SBBSDIR)/exec/sbbs
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/sbbsmono $(SBBSDIR)/exec/sbbsmono
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/sbbsecho $(SBBSDIR)/exec/sbbsecho
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/echocfg $(SBBSDIR)/exec/echocfg
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/filelist $(SBBSDIR)/exec/filelist
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(SUFFIX)/scfg $(SBBSDIR)/exec/scfg
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(SUFFIX)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(SUFFIX)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).exe.$(SUFFIX)/umonitor $(SBBSDIR)/exec/umonitor
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/uedit/$(CCPRE).$(machine).exe.$(SUFFIX)/uedit $(SBBSDIR)/exec/uedit
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(SUFFIX)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(SUFFIX)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(SUFFIX)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(SUFFIX)/libservices.so $(SBBSDIR)/exec/libservices.so
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(SUFFIX)/libwebsrvr.so $(SBBSDIR)/exec/libwebsrvr.so
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/smbactiv $(SBBSDIR)/exec/smbactiv
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/dupefind $(SBBSDIR)/exec/dupefind
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/delfiles $(SBBSDIR)/exec/delfiles
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/allusers $(SBBSDIR)/exec/allusers
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/qwknodes $(SBBSDIR)/exec/qwknodes
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/asc2ans $(SBBSDIR)/exec/asc2ans
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/ans2asc $(SBBSDIR)/exec/ans2asc
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/jsexec $(SBBSDIR)/exec/jsexec
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja $(SBBSDIR)/exec/baja
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/unbaja $(SBBSDIR)/exec/unbaja
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/slog $(SBBSDIR)/exec/slog
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/node $(SBBSDIR)/exec/node
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/chksmb $(SBBSDIR)/exec/chksmb
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/fixsmb $(SBBSDIR)/exec/fixsmb
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/addfiles $(SBBSDIR)/exec/addfiles
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/makeuser $(SBBSDIR)/exec/makeuser
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/smbutil $(SBBSDIR)/exec/smbutil
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbs $(SBBSDIR)/exec/sbbs
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbsmono $(SBBSDIR)/exec/sbbsmono
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbsecho $(SBBSDIR)/exec/sbbsecho
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/echocfg $(SBBSDIR)/exec/echocfg
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/filelist $(SBBSDIR)/exec/filelist
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(BUILDPATH)/scfg $(SBBSDIR)/exec/scfg
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(BUILDPATH)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(BUILDPATH)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/umonitor $(SBBSDIR)/exec/umonitor
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/uedit/$(CCPRE).$(machine).exe.$(BUILDPATH)/uedit $(SBBSDIR)/exec/uedit
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libservices.so $(SBBSDIR)/exec/libservices.so
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libwebsrvr.so $(SBBSDIR)/exec/libwebsrvr.so
 # kludge... must fix this to allow moz JS libs and such.  ToDo
-	$(INSBIN) $(SBBSDIR)/lib/mozilla/*/$(machine).$(SUFFIX)/*.so $(SBBSDIR)/exec/
+	$(INSBIN) $(SBBSDIR)/lib/mozilla/*/$(machine).$(BUILD)/*.so $(SBBSDIR)/exec/
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
 	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
 endif
@@ -177,14 +178,14 @@ ifndef NOCVS
 	$(CVS_CO) run-sbbs3
 endif
 
-$(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX): 
+$(SBBSDIR)/lib/mozilla/js/$(machine).$(BUILD): 
 ifndef NOCVS
-	$(CVS_CO) lib/mozilla/js/$(machine).$(SUFFIX)
+	$(CVS_CO) lib/mozilla/js/$(machine).$(BUILD)
 endif
 
-$(SBBSDIR)/lib/mozilla/nspr/$(machine).$(SUFFIX): 
+$(SBBSDIR)/lib/mozilla/nspr/$(machine).$(BUILD): 
 ifndef NOCVS
-	$(CVS_CO) lib/mozilla/nspr/$(machine).$(SUFFIX)
+	$(CVS_CO) lib/mozilla/nspr/$(machine).$(BUILD)
 endif
 
 cvslogin: $(SBBSDIR)
