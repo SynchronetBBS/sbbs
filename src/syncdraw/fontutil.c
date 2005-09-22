@@ -279,6 +279,11 @@ main(int argc, char **argv)
 			cprintf("Enter Name:");
 			Name = strdup(inputfield("", 30, 25, 10));
 			fp = fopen(Name, "rb");
+			if(fp==NULL) {
+				fprintf(stderr, "Cannot open %s\r\n",Name);
+				free(Name);
+				break;
+			}
 			fread(&TDFont.Sign, 1, 19, fp);
 			fclose(fp);
 			TDFont.Sign[19] = 0;
