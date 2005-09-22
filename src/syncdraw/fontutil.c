@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <ctype.h>
 
+#include "homedir.h"
 #include "fonts.h"
 
 char            nul[200];
@@ -196,12 +197,16 @@ main(int argc, char **argv)
 	char           *Name;
 	int             size[2000];
 	char            FontFile[255];
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw/allfont.fnt");
+	sprintf(FontFile, "%s%s", homedir(), "allfont.fnt");
 
 	fp = fopen(FontFile, "rb");
 	if (fp == NULL) {
 		CreateFontFile();
 		fp = fopen(FontFile, "rb");
+	}
+	if(fp==NULL) {
+		printf("Cannot open %s\n",FontFile);
+		return(1);
 	}
 	fread(&Header.sign, 1, 10, fp);
 	fread(&Header.NumberofFonts, 2, 1, fp);
@@ -249,16 +254,24 @@ main(int argc, char **argv)
 		case 'E':
 			Openfont(c + b - 1);
 			fp = fopen(FontFile, "rb");
-			for (x = 1; x <= fnts[b + c - 1][0]; x++)
-				a[x - 1] = fnts[b + c - 1][x];
-			a[x - 1] = 0;
-			strcat(a,".tdf");
-			fp2 = fopen(a, "wb");
-			fseek(fp, FontRec.FilePos, SEEK_SET);
-			for (x = 0; (unsigned long)x < FontRec.Length; x++)
-				fputc(fgetc(fp), fp2);
-			fclose(fp2);
-			fclose(fp);
+			if(fp!=NULL) {
+				for (x = 1; x <= fnts[b + c - 1][0]; x++)
+					a[x - 1] = fnts[b + c - 1][x];
+				a[x - 1] = 0;
+				strcat(a,".tdf");
+				fp2 = fopen(a, "wb");
+				if(fp2!=NULL) {
+					fseek(fp, FontRec.FilePos, SEEK_SET);
+					for (x = 0; (unsigned long)x < FontRec.Length; x++)
+						fputc(fgetc(fp), fp2);
+					fclose(fp2);
+				}
+				else
+					fprintf(stderr,"cannot write to %s\r\n",a);
+				fclose(fp);
+			}
+			else
+				fprintf(stderr,"cannot open %s for read\r\n",FontFile);
 			break;
 		case 'i':
 		case 'I':
@@ -269,9 +282,17 @@ main(int argc, char **argv)
 			fread(&TDFont.Sign, 1, 19, fp);
 			fclose(fp);
 			TDFont.Sign[19] = 0;
-			if (strcmp(TDFont.Sign, "TheDraw FONTS file") != 0)
+			if (strcmp(TDFont.Sign, "TheDraw FONTS file") != 0) {
+				fprintf(stderr, "Not a TheDraw FONTS file.\r\n");
+				free(Name);
 				break;
+			}
 			fp = fopen(FontFile, "rb");
+			if(fp==NULL) {
+				fprintf(stderr, "Cannot open %s\r\n",FontFile);
+				free(Name);
+				break;
+			}
 			b = 0;
 			while (!feof(fp)) {
 				fgetc(fp);
@@ -279,7 +300,21 @@ main(int argc, char **argv)
 			}
 			fseek(fp, 0, SEEK_SET);
 			fp2 = fopen("tmp.fnt", "wb");
+			if(fp2==NULL) {
+				fprintf(stderr, "Cannot open tmp.fnt\r\n");
+				fclose(fp);
+				free(Name);
+				break;
+			}
 			fp3 = fopen(Name, "rb");
+			if(fp3==NULL) {
+				fprintf(stderr, "Cannot open %s\r\n",Name);
+				fclose(fp);
+				fclose(fp2);
+				free(Name);
+				break;
+			}
+			free(Name);
 			if (errno != 0) {
 				fclose(fp);
 				fclose(fp2);

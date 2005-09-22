@@ -36,6 +36,7 @@
 
 #include <dirwrap.h>
 
+#include "homedir.h"
 #include "block.h"
 #include "config.h"
 #include "crt.h"
@@ -698,10 +699,7 @@ SelectFont(void)
 	char			buf[11*16*2];
 
 	memset(buf,0,sizeof(buf));
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw");
-	if(!isdir(FontFile))
-		MKDIR(FontFile);
-	sprintf(FontFile, "%s%s", getenv("HOME")==NULL?"":getenv("HOME"), "/.syncdraw/allfont.fnt");
+	sprintf(FontFile, "%s%s", homedir(), "allfont.fnt");
 	DrawBox(10, 6, 27, 18);
 	DrawBox(30, 5, 61, 18);
 	fp = fopen(FontFile, "rb");
@@ -1038,9 +1036,6 @@ main(int argnum, char *args[])
 
 	initciolib(CIOLIB_MODE_AUTO);
 
-	/* Silly kludge for now */
-	if(getenv("HOME")==NULL)
-		putenv("HOME=.");
 	CharSet[0] = NCharSet[0];
 	CharSet[1] = NCharSet[1];
 	CharSet[2] = NCharSet[2];

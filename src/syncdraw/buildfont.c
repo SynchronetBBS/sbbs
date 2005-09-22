@@ -5,6 +5,7 @@
 
 #include "dirwrap.h"
 
+#include "homedir.h"
 #include "fonts.h"
 
 FontRecord      fr[10000];
@@ -61,22 +62,14 @@ int main(int argnum, char *args[])
 	char            filename[254];
 	int             x, y;
 	char            FontFile[255];
-	char		Dir[255];
-	sprintf(Dir,"%s%s", getenv("HOME")==NULL?"":getenv("HOME"),"/.syncdraw/");
 
-	sprintf(FontFile, "%s%s", Dir, "allfont.fnt");
+	sprintf(FontFile, "%s%s", homedir(), "allfont.fnt");
 
 	if (argnum < 2) {
 		printf("usage :\n");
 		printf("%s <FILENAME>\n",args[0]);
 		printf("FILENAME is a text file which contains a list of tdf fonts\n");
 		return(0);
-	}
-	if(!isdir(Dir)) {
-		if(MKDIR(Dir)) {
-			printf("cannot create or open %s",Dir);
-			return(1);
-		}
 	}
 
 	FilePos = HeaderSize;
