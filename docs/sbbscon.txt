@@ -251,23 +251,23 @@ FreeBSD:
 3) Set up the sbbs settings:
    In one of /etc/rc.conf, /etc/rc.conf.local, or /etc/rc.conf.d/sbbs add the
    line:
-   sbbs_enable=YES	# Required to run Synchronet
+   sbbs_enable=YES      # Required to run Synchronet
 
 4) In one of the files from step three, add appropriate lines from the
    following (Defaults are shown here):
-   sbbs_flags=""			# Additional command-line flags
-   sbbs_pidfile="/var/run/sbbs.pid"	# Path of pid from your .ini
-   sbbs_dir="/sbbs/"			# Root sbbs path
-					# The rest of the sbbs_*dir derive
-					# from this be default
+   sbbs_flags=""                        # Additional command-line flags
+   sbbs_pidfile="/var/run/sbbs.pid"     # Path of pid from your .ini
+   sbbs_dir="/sbbs/"                    # Root sbbs path
+                                        # The rest of the sbbs_*dir derive
+                                        # from this be default
    sbbs_ctrldir="${sbbs_dir}/ctrl/"
    sbbs_execdir="${sbbs_dir}/exec/"
-   sbbs_program="${sbbs_execdir}/sbbs"	# Synchronet binary
-   sbbs_procname="${sbbs_program}"	# Process name as seen by ps(1)
-   sbbs_shell="/bin/sh"			# SHELL variable
-   sbbs_user="root"			# User to START sbbs as.  If this is
-					# not root, you cannot bind low ports
-   sbbs_group="wheel"			# Group to start sbbs as
+   sbbs_program="${sbbs_execdir}/sbbs"  # Synchronet binary
+   sbbs_procname="${sbbs_program}"      # Process name as seen by ps(1)
+   sbbs_shell="/bin/sh"                 # SHELL variable
+   sbbs_user="root"                     # User to START sbbs as.  If this is
+                                        # not root, you cannot bind low ports
+   sbbs_group="wheel"                   # Group to start sbbs as
 
 5) Start the Synchronet system service (FreeBSD 5.x+):
    # /etc/rc.d/sbbs start
