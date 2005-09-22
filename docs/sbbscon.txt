@@ -48,11 +48,11 @@ suggested you initialize this environment variable in your system startup
 and/or login scripts. See section 3 for details.
 
 The SCFG application supports multiple forms of user interface. The default
-interface is currently curses/conio (fullscreen colored text). To use a
-different interface, use the -G (graphical) or -D (stdio) command-line
-options. There are other command-line options to control the character set
-used, escape key delay, monochrome/color mode, etc. Type "scfg -?" to list
-all the available command-line options.
+interface is currently X11 if available or curses/conio (fullscreen colored
+text) if not. To use a different interface, use the -iD (stdio), or -iA (ANSI
+output) command-line options. There are other command-line options to control
+the character set used, escape key delay, monochrome/color mode, etc. Type
+"scfg --help" to list all the available command-line options.
 
 There are other system-configuration files that are simple text files to be
 edited using any ASCII text editor: ctrl/*.cfg and text/*.can. Each of
