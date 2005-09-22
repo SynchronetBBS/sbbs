@@ -20,7 +20,7 @@ while(1) {
 	var str="";
 
 	// Display TEXT\MENU\CHAT.* if not in expert mode
-	if(!user.settings & USER_EXPERT) {
+	if(!(user.settings & USER_EXPERT)) {
 		bbs.menu("chat");
 	}
 
