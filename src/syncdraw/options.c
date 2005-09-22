@@ -388,7 +388,7 @@ exitprg(void)
 		saveconfig();
 		clrscr();
 		gotoxy(1, 1);
-		printf("Thanx 4 using this mysticdraw\n");
+		printf("Thanx 4 using this syncdraw\n");
 		exit(0);
 	}
 }
