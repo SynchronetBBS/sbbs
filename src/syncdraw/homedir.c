@@ -1,4 +1,5 @@
 #include "dirwrap.h"
+#include "shlobj.h"
 
 char	HomeDir[MAX_PATH+1];
 
@@ -14,10 +15,10 @@ char *homedir(void)
 		backslash(HomeDir);
 		strcat(HomeDir,"SyncTools/");
 		if(!isdir(HomeDir))
-			MKDIR(HomeDir)
+			MKDIR(HomeDir);
 		strcat(HomeDir,"SyncDraw/");
 		if(!isdir(HomeDir))
-			MKDIR(HomeDir)
+			MKDIR(HomeDir);
 		/* Really, why would I want a version in here? */
 		if(isdir(HomeDir))
 			return(HomeDir);
