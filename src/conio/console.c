@@ -1491,7 +1491,11 @@ console_init()
 	x11.XSendEvent=XSendEvent;
 	x11.XSetSelectionOwner=XSetSelectionOwner;
 #else
+#if defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)
+	if((dl=dlopen("/usr/X11R6/lib/libX11.dylib",RTLD_LAZY|RTLD_GLOBAL))==NULL)
+#else
 	if((dl=dlopen("libX11.so",RTLD_LAZY))==NULL)
+#endif
 		return(-1);
 	if((x11.XChangeGC=dlsym(dl,"XChangeGC"))==NULL) {
 		dlclose(dl);
