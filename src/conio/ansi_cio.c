@@ -68,7 +68,7 @@ const int 	ansi_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 const int 	ansi_colours[8]={0,4,2,6,1,5,3,7};
 static WORD		ansi_inch;
 static unsigned char		ansi_raw_inch;
-WORD	*vmem;
+WORD	*ansivmem;
 int		ansi_row=0;
 int		ansi_col=0;
 int		force_move=1;
@@ -238,9 +238,9 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 			if(sch==0)
 				sch=' ';
 			sch |= (*(out++))<<8;
-			if(vmem[y*ansi_cols+x]==sch)
+			if(ansivmem[y*ansi_cols+x]==sch)
 				continue;
-			vmem[y*ansi_cols+x]=sch;
+			ansivmem[y*ansi_cols+x]=sch;
 			ansi_gotoxy(x+1,y+1);
 			if(attrib!=sch>>8) {
 				textattr(sch>>8);
@@ -283,7 +283,7 @@ int ansi_gettext(int sx, int sy, int ex, int ey, void* buf)
 	out=fill;
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
-			sch=vmem[y*ansi_cols+x];
+			sch=ansivmem[y*ansi_cols+x];
 			*(out++)=sch & 0xff;
 			*(out++)=sch >> 8;
 		}
@@ -761,10 +761,10 @@ int ansi_initciolib(long inmode)
 	sem_init(&goahead,0,0);
 	sem_init(&need_key,0,0);
 
-	vmem=(WORD *)malloc(ansi_rows*ansi_cols*sizeof(WORD));
+	ansivmem=(WORD *)malloc(ansi_rows*ansi_cols*sizeof(WORD));
 	ansi_sendstr(init,-1);
 	for(i=0;i<ansi_rows*ansi_cols;i++)
-		vmem[i]=0x0720;
+		ansivmem[i]=0x0720;
 	_beginthread(ansi_keythread,1024,NULL);
 	return(1);
 }
