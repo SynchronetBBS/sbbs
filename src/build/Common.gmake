@@ -221,6 +221,7 @@ ifeq ($(os),openbsd)
 else
  ifeq ($(os),darwin)
   SOFILE =	.dylib
+  CFLAGS +=	-Wno-long-double
  endif
 endif
 
