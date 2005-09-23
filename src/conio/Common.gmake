@@ -9,7 +9,10 @@ ifeq ($(X_PRESENT),NO)
  NO_X=1
 else
  ifeq ($(os),darwin)	# No X11 for OSX
-  NO_X=1
+  ifndef HAS_DLOPEN
+   NO_X=1
+   $(shell echo Define HAS_DLOPEN for 10.3 and higher, or if dlcompat is installed \(http://www.opendarwin.org/projects/dlcompat/\))
+  endif
  endif
 endif
 
@@ -22,6 +25,9 @@ ifndef NO_X
  ifdef STATIC
   CIOLIB-MT_LIBS		+=	-L$(X_PATH)$(DIRSEP)lib -lX11
  else
+  ifeq ($(os),darwin)
+   CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+  endif
   ifeq ($(os),linux)
    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
   endif
