@@ -136,8 +136,8 @@ void resetterm(void)
 
 #ifdef _WINSOCKAPI_
 
-WSADATA WSAData;
-static BOOL WSAInitialized=FALSE;
+/* Note: Don't call WSACleanup() or TCP session will close! */
+WSADATA WSAData;	
 
 static BOOL winsock_startup(void)
 {
@@ -145,7 +145,6 @@ static BOOL winsock_startup(void)
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
 		fprintf(statfp,"%s %s\n",WSAData.szDescription, WSAData.szSystemStatus);
-		WSAInitialized=TRUE;
 		return(TRUE);
 	}
 
@@ -1220,11 +1219,6 @@ static int receive_files(char** fname_list, int fnames)
 
 void bail(int code)
 {
-#if defined(_WINSOCKAPI_)
-	if(WSAInitialized && WSACleanup()!=0) 
-		lprintf(LOG_ERR,"WSACleanup ERROR: %d",ERROR_VALUE);
-#endif
-
 	if(logfp!=NULL)
 		fclose(logfp);
 	if(pause_on_exit || (pause_on_abend && code!=0)) {
