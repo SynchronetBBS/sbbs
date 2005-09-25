@@ -210,8 +210,10 @@ Once the terminal capability files are installed, edit the ExternalTermANSI
 value in the [BBS] section of your .ini file to read:
     ExternalTermANSI=ansi-bbs
 
-Note: Some Linux distros may require the 'termcap-compat' package in order to
-      support these terminal capability definitions.
+Note: Once again, many Linux distros do not have a termcap.  This is fine.
+      You do NOT need to install the termcap-compat package.  If termcap
+      isn't installed, it means nothing uses it.  Only if there is a
+      termcap do you need to add the ansi-bbs termcap definition.
 
 
 6. Running Synchronet
