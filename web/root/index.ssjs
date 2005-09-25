@@ -70,7 +70,8 @@ load("../web/lib/leftnav_html.ssjs");
     else 
       gopher_port = ":" + gopher_port;        
         
-    template.additional_services ='[' + ("telnet".link("telnet://"+host +telnet_port)) + '] ';
+	template.additional_services ='[' + ("java telnet".link("telnet/")) + '] ';
+    template.additional_services+='[' + ("telnet".link("telnet://"+host +telnet_port)) + '] ';
     template.additional_services+='[' + ("rlogin".link("rlogin://"+host +rlogin_port)) + '] ';
     template.additional_services+='[' + ("ftp".link("ftp://"+host +ftp_port)) + '] ';
     template.additional_services+='[' + ("irc".link("irc://"+host +irc_port)) + '] ';
