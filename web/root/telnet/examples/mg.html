@@ -1,0 +1,49 @@
+<HTML>
+<HEAD>
+<TITLE>The Java(tm) Telnet Applet: Connect to MorgenGrauen</TITLE>
+</HEAD>
+<BODY>
+
+<H1>The Java<SUP>(tm)</SUP> Telnet Applet: Connect to MorgenGrauen</H1>
+
+<P>&copy; 1996-98 <A HREF="mailto:leo@first.gmd.de">Matthias L. Jugel</A>,
+<A HREF="mailto:msmeissn@cip.informatik.uni-erlangen.de">Marcus Mei&szlig;ner</A> 
+<P>
+This is a variation with almost all available parameters set. Two modules
+(ButtonBar and Script) are used for customization. It will login you as
+guest in the MUD MorgenGrauen.
+<P>
+
+<APPLET CODEBASE="../" CODE="telnet.class" WIDTH=640 HEIGHT=480>
+  <PARAM NAME=address VALUE="mg.mud.de">
+  <PARAM NAME=port VALUE="23">
+
+  <!-- terminal emulation -->
+  <PARAM NAME=VTscrollbar VALUE="true">
+  <PARAM NAME=VTresize    VALUE="font">
+  <PARAM NAME=VTfont      VALUE="Courier">
+  <PARAM NAME=VTfontsize  VALUE="13">
+  <PARAM NAME=VTid        VALUE="vt320">
+
+  <!-- modules: #1 is a buttonbar -->
+  <PARAM NAME=module#1    VALUE="ButtonBar@North">
+  <PARAM NAME=1#Button    VALUE="Norden|norden\n\r">
+  <PARAM NAME=2#Button    VALUE="S\&uuml;den|sueden\n\r">
+  <PARAM NAME=3#Button    VALUE="Westen|westen\n\r">
+  <PARAM NAME=4#Button    VALUE="Osten|Osten\n\r">
+  <PARAM NAME=5#Button    VALUE="Anwesende|kwer\n\r">
+  <PARAM NAME=6#Button    VALUE="HILFE!|hilfe \@help@\n\r">
+  <PARAM NAME=7#Input     VALUE="help#20|">
+  <PARAM NAME=8#Button    VALUE="Verbinden|\$connect()">
+  <PARAM NAME=9#Button    VALUE="Abbrechen|\$disconnect()">
+  <PARAM NAME=10#Button   VALUE="Externes Fenster|\$detach()">
+  <PARAM NAME=11#Button   VALUE="Text senden:|\@send@\r\n">
+  <PARAM NAME=12#Input    VALUE="send#80|wer">
+
+	<!-- modules: #2 is a script -->
+  <PARAM NAME=module#2    VALUE="Script">
+  <PARAM NAME=script      VALUE="denn ?|gast|EMail|none|ch:|weiblich">
+
+</APPLET>
+</BODY>
+</HTML>

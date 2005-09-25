@@ -1,0 +1,31 @@
+<HTML>
+<HEAD>
+<TITLE>The JAVA Telnet Applet</TITLE>
+</HEAD>
+
+<H1>The JAVA Telnet Applet</H1>
+
+<P>&copy; 1996 <A HREF="mailto:leo@first.gmd.de">Matthias L. Jugel</A>, 
+&copy; 1996 <A HREF="mailto:msmeissn@cip.informatik.uni-erlangen.de">Marcus 
+Mei&szlig;ner</A> 
+
+<APPLET CODE="telnet.class" WIDTH=640 HEIGHT=480>
+<PARAM NAME=address VALUE="tanis.first.gmd.de">
+<PARAM NAME=port VALUE="23">
+<PARAM NAME=emulation VALUE="vt320">
+<PARAM NAME=VTcolumns VALUE="80">
+<PARAM NAME=VTrows VALUE="24">
+<PARAM NAME=VTfont VALUE="Courier">
+<PARAM NAME=VTfontsize VALUE="12">
+<PARAM NAME=VTbuffer VALUE="1000">
+<PARAM NAME=VTscrollbar VALUE="true">
+<PARAM NAME=VTcharset VALUE="ibm">
+<PARAM NAME=1#Button VALUE="List Users|who\n">
+<PARAM NAME=2#Button VALUE="Execute:|sag \@exec@\n">
+<PARAM NAME=3#Input VALUE="exec#10|ps">
+<PARAM NAME=4#Button VALUE="Connect:|\$connect(\@addr@)">
+<PARAM NAME=5#Input VALUE="addr#20|localhost">
+<PARAM NAME=6#Button VALUE="Disconnect!|\$disconnect()">
+<PARAM NAME=script VALUE="login:|leo|TERM =|vt100">
+</APPLET>
+</HTML>

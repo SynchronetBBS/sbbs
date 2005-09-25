@@ -1,0 +1,19 @@
+The Java(tm) Telnet Applet
+
+There are still some bugs we know of and we will draw attention to during
+development. Take a look at http://www.first.gmd.de/persons/leo/java/Telnet
+from time to time to get new versions or mail to leo@first.gmd.de to get
+notified of new versions.
+
+Report bugs to leo@first.gmd.de stating the Operating System you use plus
+the Web browser or Applet Viewer version. Attach the java console log if
+possible.
+
+Known BUGS:
+
+  * There is still a bug when you try to resize the window too much.
+      SYMPTOMS: The font/screen rssize gets switched off and the font
+                is set to default
+      WORKAROUND: None yet.
+
+  * Redraw problems on Win* platforms.
