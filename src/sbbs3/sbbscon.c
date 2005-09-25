@@ -1713,7 +1713,8 @@ int main(int argc, char** argv)
 	}
 
 	if(!isatty(fileno(stdin)))  			/* redirected */
-		select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
+		while(1)
+			select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
 	else 								/* interactive */
 #endif
 	{
