@@ -211,7 +211,7 @@ int win32_getchcode(WORD code, DWORD state)
 			if(state & (RIGHT_CTRL_PRESSED|LEFT_CTRL_PRESSED))
 				return(keyval[i].CTRL);
 			if((state & (CAPSLOCK_ON)) && isalpha(keyval[i].Key)) {
-				if(!(state & (SHIFT_PRESSED))
+				if(!(state & SHIFT_PRESSED))
 					return(keyval[i].Shift);
 			}
 			else {
