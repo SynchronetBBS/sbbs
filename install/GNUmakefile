@@ -53,6 +53,7 @@ ifeq ($(INSTALL),UNIX)
  MKFLAGS	+=	PREFIX=$(PREFIX)
 else	# Classic Install
  SBBSDIR	?=	$(shell pwd)
+ export SBBSDIR
 endif
 
 # Get OS
