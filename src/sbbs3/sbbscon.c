@@ -1595,6 +1595,7 @@ int main(int argc, char** argv)
 	if((gr_entry=getgrnam(new_gid_name))!=0)
 		new_gid=gr_entry->gr_gid;
 	
+	do_seteuid(TRUE);
 #endif
 
 	/* Install Ctrl-C/Break signal handler here */
