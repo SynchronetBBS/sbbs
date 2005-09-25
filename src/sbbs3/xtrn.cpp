@@ -312,6 +312,14 @@ BYTE* cr_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
     return(outbuf);
 }
 
+static void add_env_var(str_list_t* list, const char* var, const char* val)
+{
+	char	str[MAX_PATH*2];
+	SetEnvironmentVariable(var,NULL);	/* Delete in current process env */
+	SAFEPRINTF2(str,"%s=%s",var,val);
+	strListPush(list,str);
+}
+
 /* Clean-up resources while preserving current LastError value */
 #define XTRN_CLEANUP												\
 	last_error=GetLastError();										\
@@ -436,18 +444,23 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 
 		// Current environment passed to child process
-		sprintf(str,"DSZLOG=%sPROTOCOL.LOG",cfg.node_dir);		strListPush(&env_list,str);
-		sprintf(str,"SBBSNODE=%s",cfg.node_dir);				strListPush(&env_list,str);
-		sprintf(str,"SBBSCTRL=%s",cfg.ctrl_dir);				strListPush(&env_list,str);
-		sprintf(str,"SBBSDATA=%s",cfg.data_dir);				strListPush(&env_list,str);
-		sprintf(str,"SBBSEXEC=%s",cfg.exec_dir);				strListPush(&env_list,str);
-		sprintf(str,"SBBSNNUM=%d",cfg.node_num);				strListPush(&env_list,str);
+		sprintf(str,"%sprotocol.log",cfg.node_dir);			
+		add_env_var(&env_list,"DSZLOG",str);
+		add_env_var(&env_list,"SBBSNODE",cfg.node_dir);
+		add_env_var(&env_list,"SBBSCTRL",cfg.ctrl_dir);
+		add_env_var(&env_list,"SBBSDATA",cfg.data_dir);
+		add_env_var(&env_list,"SBBSEXEC",cfg.exec_dir);
+		sprintf(str,"%d",cfg.node_num);
+		add_env_var(&env_list,"SBBSNNUM",str);
 		/* date/time env vars */
-		sprintf(str,"DAY=%02u",tm.tm_mday);						strListPush(&env_list,str);
-		sprintf(str,"WEEKDAY=%s",wday[tm.tm_wday]);				strListPush(&env_list,str);
-		sprintf(str,"MONTHNAME=%s",mon[tm.tm_mon]);				strListPush(&env_list,str);
-		sprintf(str,"MONTH=%02u",tm.tm_mon+1);					strListPush(&env_list,str);
-		sprintf(str,"YEAR=%u",1900+tm.tm_year);					strListPush(&env_list,str);
+		sprintf(str,"%02u",tm.tm_mday);	
+		add_env_var(&env_list,"DAY",str);
+		add_env_var(&env_list,"WEEKDAY",wday[tm.tm_wday]);
+		add_env_var(&env_list,"MONTHNAME",mon[tm.tm_mon]);
+		sprintf(str,"%02u",tm.tm_mon+1);
+		add_env_var(&env_list,"MONTH",str);
+		sprintf(str,"%u",1900+tm.tm_year);
+		add_env_var(&env_list,"YEAR",str);
 
 		env_strings=GetEnvironmentStrings();
 		env_block=strListCopyBlock(env_strings);
