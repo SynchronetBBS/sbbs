@@ -259,7 +259,7 @@ int win32_keyboardio(int isgetch)
 		switch(input.EventType) {
 			case KEY_EVENT:
 				if(input.Event.KeyEvent.bKeyDown) {
-					if(state & (RIGHT_ALT_PRESSED|LEFT_ALT_PRESSED|RIGHT_CTRL_PRESSED|LEFT_CTRL_PRESSED|ENHANCED_KEY))
+					if(input.Event.KeyEvent.dwControlKeyState & (RIGHT_ALT_PRESSED|LEFT_ALT_PRESSED|RIGHT_CTRL_PRESSED|LEFT_CTRL_PRESSED|ENHANCED_KEY))
 						lastch=win32_getchcode(input.Event.KeyEvent.wVirtualKeyCode, input.Event.KeyEvent.dwControlKeyState);
 					else
 						lastch=input.Event.KeyEvent.uChar.AsciiChar;
