@@ -219,20 +219,23 @@ This is the preferred method of QWKnet packet transfers.
    password you used when creating your QWKnet account on Vertrauen. The rest
    of the command line must be exactly as shown above.
 
+   Note: if using Synchronet v3.13 or later, having '%s' in place of 'VERT'
+         in the call-out command-line is normal.
+
 
 Example Configuration (in SCFG->Networks->QWK->Hubs->VERT):
 -----------------------------------------------------------
 Hub System ID              VERT
 
-Win32:
+v3.12a-Win32:
 Pack Command Line          %!pkzip %f %s
 Unpack Command Line        %!pkunzip -o %f %g %s
 
-Unix:
-Pack Command Lineb         zip -j -D %f %s
-Unpack Command Line        unzip -o -j %f %s -d %g
+v3.13a and later:
+Pack Command Lineb         %@zip -jD %f %s
+Unpack Command Line        %@unzip -Coj %f %s -d %g
 
-Call-out Command Line      *qnet-ftp VERT dove.synchro.net YOURPASS
+Call-out Command Line      *qnet-ftp %s dove.synchro.net YOURPASS
 Call-out Node              1
 Call-out Days              All
 Call-out Frequency         4 times a day
@@ -261,6 +264,17 @@ Networked Sub-boards...
 2014  DOVE-Net        Synchronet Programming (C/C++ and CVS)
 2013  DOVE-Net        Synchronet Data
 2010  DOVE-Net        DOVE-Net Sysops Only
+
+
+Forcing a Network Call-out
+--------------------------
+If using the Synchronet-Win32 Control Panel, use the BBS->Force Network
+Call-out menu option and select "VERT".
+
+If using Unix/Linux, use the following command-line (with correct path):
+# touch /sbbs/data/qnet/vert.now
+
+Watch your event log/window for QNET-FTP log messages.
 
 
 Terminology (as used in this document)
