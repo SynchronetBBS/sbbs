@@ -140,9 +140,12 @@ CFLAGS	=	$(CFLAGS) -Od -D_DEBUG
 
 # Debug or release build?
 !ifdef DEBUG
-BUILDPATH	=	debug
+BUILD	=	debug
 !else
-BUILDPATH	=	release
+BUILD	=	release
+!endif
+!ifndef BUILDPATH
+BUILDPATH	=	$(BUILD)
 !endif
 
 OBJODIR =	$(CCPRE).win32.obj.$(BUILDPATH)
@@ -194,6 +197,7 @@ xpdev:
 	set DEBUG=$(DEBUG)
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
+	set BUILDPATH=$(BUILDPATH)
 	cd $(XPDEV_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -206,6 +210,7 @@ xpdev-mt:
 	set DEBUG=$(DEBUG)
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
+	set BUILDPATH=$(BUILDPATH)
 	cd $(XPDEV_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
@@ -218,6 +223,7 @@ smblib:
 	set DEBUG=$(DEBUG)
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
+	set BUILDPATH=$(BUILDPATH)
 	cd $(SMBLIB_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -230,6 +236,7 @@ ciolib-mt:
 	set DEBUG=$(DEBUG)
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
+	set BUILDPATH=$(BUILDPATH)
 	cd $(CIOLIB_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
@@ -242,6 +249,7 @@ uifc:
 	set DEBUG=$(DEBUG)
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
+	set BUILDPATH=$(BUILDPATH)
 	cd $(UIFC_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -254,6 +262,7 @@ uifc-mt:
 	set DEBUG=$(DEBUG)
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
+	set BUILDPATH=$(BUILDPATH)
 	cd $(UIFC_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit

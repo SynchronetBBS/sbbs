@@ -30,7 +30,7 @@ CFLAGS = $(CFLAGS) -DJAVASCRIPT
 !endif
 
 !ifndef JSLIBDIR
-	JSLIBDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)js$(DIRSEP)win32.$(BUILDPATH)
+	JSLIBDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)js$(DIRSEP)win32.$(BUILD)
 !endif
 !ifndef JSLIB
 	JSLIB	=	js32omf
@@ -38,7 +38,7 @@ CFLAGS = $(CFLAGS) -DJAVASCRIPT
 !ifndef NSPRDIR
 	# There *IS* no debug build in CVS
 	# That's ok, looks like it doesn't need NSPR4
-	#NSPRDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)win32.$(BUILDPATH)
+	#NSPRDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)win32.$(BUILD)
 	#NSPRDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)win32.release
 !endif
 JS_LDFLAGS = $(JS_LDFLAGS) $(JSLIBDIR)$(DIRSEP)$(UL_PRE)$(JSLIB)$(UL_SUF)
