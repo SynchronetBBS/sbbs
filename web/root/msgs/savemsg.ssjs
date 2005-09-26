@@ -1,6 +1,8 @@
 load("../web/lib/msgslib.ssjs");
 
-if(sub=='mail') {
+if(sub==undefined)
+	error("'sub' not defined");
+else if(sub=='mail') {
 	template.group=new Object;
 	template.group.name="E-Mail";
 	template.group.description="E-Mail";
