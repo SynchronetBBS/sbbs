@@ -276,6 +276,10 @@ If using Unix/Linux, use the following command-line (with correct path):
 
 Watch your event log/window for QNET-FTP log messages.
 
+NOTE: Vertrauen limits the size of QWK packets, currently to 10,000
+      messages per packet, so it might take several call-outs to get all
+      the messages stored in the DOVE-Net conferences on Vertrauen.
+
 
 Terminology (as used in this document)
 --------------------------------------
