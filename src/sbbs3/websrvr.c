@@ -38,19 +38,9 @@
 /*
  * General notes: (ToDo stuff)
  *
- * Currently, all SSJS requests for a session are ran in the same context without clearing the context in
- * any way.  This behaviour should not be relied on as it may disappear in the future... this will require
- * some thought as it COULD be handy in some circumstances and COULD cause weird bugs in others.
- *
- * Dynamic content is always resent on an If-Modified-Since request... this may not be optimal behaviour
- * for GET requests...
- *
  * Should support RFC2617 Digest auth.
  *
  * Support the ident protocol... the standard log format supports it.
- *
- * SSJS stuff should support chunked transfer for HTTP/1.1 and fast mode.
- *		(Would allow keep-alives to stay erm... alive)
  *
  * Add in support to pass connections through to a different webserver...
  *      probobly in access.ars... with like a simplified mod_rewrite.
