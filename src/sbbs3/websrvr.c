@@ -2537,6 +2537,7 @@ static BOOL exec_cgi(http_session_t *session)
 	char	*directive=NULL;
 	char	*value=NULL;
 	time_t	start;
+	BOOL	no_chunked=FALSE;
 
 	/* Win32-specific */
 	char*	env_block;
@@ -2709,10 +2710,14 @@ static BOOL exec_cgi(http_session_t *session)
 					case HEAD_LENGTH:
 						session->req.keep_alive=orig_keep;
 						strListPush(&session->req.dynamic_heads,buf);
+						no_chunked=TRUE;
 						break;
 					case HEAD_TYPE:
 						got_valid_headers=TRUE;
 						SAFECOPY(content_type,buf);
+						break;
+					case HEAD_TRANSFER_ENCODING:
+						no_chunked=TRUE;
 						break;
 					default:
 						strListPush(&session->req.dynamic_heads,buf);
@@ -2725,16 +2730,26 @@ static BOOL exec_cgi(http_session_t *session)
 			}
 			done_parsing_headers = TRUE;	/* invalid header */
 			session->req.dynamic=IS_CGI;
+			if(!no_chunked && session->http_ver>=HTTP_1_1) {
+				session->req.keep_alive=orig_keep;
+				session->req.write_chunked=TRUE;
+			}
 			strListPush(&session->req.dynamic_heads,content_type);
 			send_headers(session,cgi_status);
 		}
 		if(msglen) {
+			if(session->req.write_chunked) {
+				sprintf(header,"%X\r\n",msglen);
+				sendsocket(session->socket,header,strlen(header));
+			}
 			lprintf(LOG_DEBUG,"%04d Sending %d bytes: %.*s"
 				,session->socket,msglen,msglen,buf);
 			wr=sendsocket(session->socket,buf,msglen);
 			/* log actual bytes sent */
 			if(session->req.ld!=NULL && wr>0)
 				session->req.ld->size+=wr;	
+			if(session->req.write_chunked)
+				sendsocket(session->socket,newline,2);
 		}
 	}
 
