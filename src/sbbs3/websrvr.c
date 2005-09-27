@@ -2203,6 +2203,7 @@ static BOOL exec_cgi(http_session_t *session)
 	size_t	idx;
 	str_list_t	tmpbuf;
 	size_t	tmpbuflen=0;
+	BOOL	no_chunked=FALSE;
 
 	SAFECOPY(cmdline,session->req.physical_path);
 
@@ -2307,10 +2308,16 @@ static BOOL exec_cgi(http_session_t *session)
 						int snt=0;
 						start=time(NULL);
 						if(session->req.method!=HTTP_HEAD) {
+							if(session->req.write_chunked) {
+								sprintf(header,"%X\r\n",i);
+								write(session->socket,header,strlen(header));
+							}
 							snt=write(session->socket,buf,i);
 							if(session->req.ld!=NULL && snt>0) {
 								session->req.ld->size+=snt;
 							}
+							if(session->req.write_chunked)
+								write(session->socket,newline,2);
 						}
 					}
 					else
@@ -2356,10 +2363,14 @@ static BOOL exec_cgi(http_session_t *session)
 								case HEAD_LENGTH:
 									session->req.keep_alive=orig_keep;
 									strListPush(&session->req.dynamic_heads,buf);
+									no_chunked=TRUE;
 									break;
 								case HEAD_TYPE:
 									got_valid_headers=TRUE;
 									strListPush(&session->req.dynamic_heads,buf);
+									break;
+								case HEAD_TRANSFER_ENCODING:
+									no_chunked=TRUE;
 									break;
 								default:
 									strListPush(&session->req.dynamic_heads,buf);
@@ -2371,6 +2382,10 @@ static BOOL exec_cgi(http_session_t *session)
 						}
 					}
 					else  {
+						if(!no_chunked && session->http_ver>=HTTP_1_1) {
+							session->req.keep_alive=orig_keep;
+							session->req.write_chunked=TRUE;
+						}
 						if(got_valid_headers)  {
 							session->req.dynamic=IS_CGI;
 							if(cgi_status[0]==0)
@@ -2387,9 +2402,6 @@ static BOOL exec_cgi(http_session_t *session)
 							/* free() the non-headers so they don't get sent, then recreate the list */
 							strListFreeStrings(session->req.dynamic_heads);
 
-							/* Force connection close */
-							session->req.keep_alive=0;
-
 							/* Copy current status */
 							SAFECOPY(cgi_status,session->req.status);
 
@@ -2400,14 +2412,30 @@ static BOOL exec_cgi(http_session_t *session)
 
 							/* Now send the tmpbuf */
 							for(i=0; tmpbuf != NULL && tmpbuf[i] != NULL; i++) {
-								snt=write(session->socket,tmpbuf[i],strlen(tmpbuf[i]));
+								if(strlen(tmpbuf[i])>0) {
+									if(session->req.write_chunked) {
+										sprintf(header,"%X\r\n",strlen(tmpbuf[i]));
+										write(session->socket,header,strlen(header));
+									}
+									snt=write(session->socket,tmpbuf[i],strlen(tmpbuf[i]));
+									if(session->req.write_chunked)
+										write(session->socket,newline,2);
+									if(session->req.ld!=NULL && snt>0) {
+										session->req.ld->size+=snt;
+									}
+								}
+							}
+							if(strlen(fbuf)>0) {
+								if(session->req.write_chunked) {
+									sprintf(header,"%X\r\n",strlen(fbuf));
+									write(session->socket,header,strlen(header));
+								}
+								snt=write(session->socket,fbuf,strlen(fbuf));
 								if(session->req.ld!=NULL && snt>0) {
 									session->req.ld->size+=snt;
 								}
-							}
-							snt=write(session->socket,fbuf,strlen(fbuf));
-							if(session->req.ld!=NULL && snt>0) {
-								session->req.ld->size+=snt;
+								if(session->req.write_chunked)
+									write(session->socket,newline,2);
 							}
 							got_valid_headers=TRUE;
 						}
