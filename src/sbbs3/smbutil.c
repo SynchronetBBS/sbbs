@@ -108,6 +108,7 @@ char *usage=
 "cmd:\n"
 "       l[n] = list msgs starting at number n\n"
 "       r[n] = read msgs starting at number n\n"
+"       x[n] = dump msg index at number n\n"
 "       v[n] = view msg headers starting at number n\n"
 "       i[f] = import msg from text file f (or use stdin)\n"
 "       e[f] = import e-mail from text file f (or use stdin)\n"
@@ -477,6 +478,29 @@ void listmsgs(ulong start, ulong count)
 		printf("%4lu %-25.25s %-25.25s %.20s\n"
 			,msg.hdr.number,msg.from,msg.to,msg.subj);
 		smb_freemsgmem(&msg);
+		l++; 
+	}
+}
+
+/****************************************************************************/
+/****************************************************************************/
+void dumpindex(ulong start, ulong count)
+{
+	ulong l=0;
+	idxrec_t idx;
+
+	if(!start)
+		start=1;
+	if(!count)
+		count=~0;
+	fseek(smb.sid_fp,(start-1L)*sizeof(idxrec_t),SEEK_SET);
+	while(l<count) {
+		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
+			break;
+
+		printf("%4lu %04hX %04hX %04Xh %04Xh %06X %.24s\n"
+			,idx.number,idx.from,idx.to,idx.subj,idx.attr
+			,idx.offset,ctime(&idx.time));
 		l++; 
 	}
 }
@@ -1617,6 +1641,10 @@ int main(int argc, char **argv)
 							break;
 						case 'L':
 							listmsgs(atol(cmd+1),count);
+							y=strlen(cmd)-1;
+							break;
+						case 'X':
+							dumpindex(atol(cmd+1),count);
 							y=strlen(cmd)-1;
 							break;
 						case 'P':
