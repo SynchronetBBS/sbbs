@@ -104,7 +104,6 @@ int SMBCALL smb_open(smb_t* smb)
 
 	memset(&(smb->status),0,sizeof(smb->status));
 	if(filelength(fileno(smb->shd_fp))>=(long)sizeof(smbhdr_t)) {
-		setvbuf(smb->shd_fp,NULL,_IONBF,SHD_BLOCK_LEN);
 		if(smb_locksmbhdr(smb)!=SMB_SUCCESS) {
 			smb_close(smb);
 			/* smb_lockmsghdr set last_error */
@@ -145,8 +144,6 @@ int SMBCALL smb_open(smb_t* smb)
 		}
 		rewind(smb->shd_fp); 
 	}
-
-	setvbuf(smb->shd_fp,NULL,_IOFBF,SHD_BLOCK_LEN);
 
 	if((i=smb_open_fp(smb,&smb->sdt_fp,SH_DENYNO))!=SMB_SUCCESS)
 		return(i);
@@ -371,7 +368,6 @@ int SMBCALL smb_getstatus(smb_t* smb)
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
-	setvbuf(smb->shd_fp,NULL,_IONBF,SHD_BLOCK_LEN);
 	clearerr(smb->shd_fp);
 	if(fseek(smb->shd_fp,sizeof(smbhdr_t),SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -380,7 +376,6 @@ int SMBCALL smb_getstatus(smb_t* smb)
 		return(SMB_ERR_SEEK);
 	}
 	i=smb_fread(smb,&(smb->status),sizeof(smbstatus_t),smb->shd_fp);
-	setvbuf(smb->shd_fp,NULL,_IOFBF,SHD_BLOCK_LEN);
 	if(i==sizeof(smbstatus_t))
 		return(SMB_SUCCESS);
 	safe_snprintf(smb->last_error,sizeof(smb->last_error)
