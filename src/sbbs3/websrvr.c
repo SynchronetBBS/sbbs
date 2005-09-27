@@ -144,7 +144,6 @@ typedef struct  {
 	int			method;
 	char		virtual_path[MAX_PATH+1];
 	char		physical_path[MAX_PATH+1];
-	BOOL		parsed_headers;
 	BOOL    	expect_go_ahead;
 	time_t		if_modified_since;
 	BOOL		keep_alive;
@@ -163,6 +162,8 @@ typedef struct  {
 	struct log_data	*ld;
 	char		request_line[MAX_REQUEST_LINE+1];
 	BOOL		finished;				/* Done processing request. */
+	BOOL		read_chunked;
+	BOOL		write_chunked;
 
 	/* CGI parameters */
 	char		query_str[MAX_REQUEST_LINE+1];
@@ -257,6 +258,7 @@ enum {
 	,HEAD_SERVER
 	,HEAD_REFERER
 	,HEAD_AGENT
+	,HEAD_TRANSFER_ENCODING
 };
 
 static struct {
@@ -280,6 +282,7 @@ static struct {
 	{ HEAD_SERVER,			"Server"				},
 	{ HEAD_REFERER,			"Referer"				},
 	{ HEAD_AGENT,			"User-Agent"			},
+	{ HEAD_TRANSFER_ENCODING,			"Transfer-Encoding"			},
 	{ -1,					NULL /* terminator */	},
 };
 
@@ -718,6 +721,10 @@ static void close_request(http_session_t * session)
 	time_t		now;
 	int			i;
 
+	if(session->req.write_chunked) {
+		sendsocket(session->socket, "0\r\n\r\n",5);
+	}
+
 	if(session->req.ld!=NULL) {
 		now=time(NULL);
 		localtime_r(&now,&session->req.ld->completed);
@@ -946,7 +953,14 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
 		safecat(headers,header,MAX_HEADERS_SIZE);
 	}
-	if(session->req.keep_alive) {
+
+	if(session->req.write_chunked) {
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TRANSFER_ENCODING),"Chunked");
+		safecat(headers,header,MAX_HEADERS_SIZE);
+	}
+
+	/* DO NOT send a content-length for chunked */
+	if(session->req.keep_alive && (!session->req.write_chunked)) {
 		if(ret)  {
 			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
 			safecat(headers,header,MAX_HEADERS_SIZE);
@@ -1607,6 +1621,13 @@ static BOOL parse_headers(http_session_t * session)
 						session->req.ld->agent=strdup(value);
 					}
 					break;
+				case HEAD_TRANSFER_ENCODING:
+					/* don't actuallty support it yet... */
+					if(!stricmp(value,"chunked"))
+						session->req.read_chunked=TRUE;
+					else
+						send_error(session,"501 Not Implemented");
+					break;
 				default:
 					break;
 			}
@@ -1976,6 +1997,9 @@ static BOOL check_request(http_session_t * session)
 	int		i;
 	struct stat sb;
 	int		send404=0;
+
+	if(session->req.finished)
+		return(FALSE);
 
 	SAFECOPY(path,session->req.physical_path);
 	if(startup->options&WEB_OPT_DEBUG_TX)
@@ -2830,7 +2854,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 }
 
 static JSBool
-js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_writefunc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval, BOOL writeln)
 {
     uintN		i;
     JSString*	str=NULL;
@@ -2843,17 +2867,23 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if((!session->req.prev_write) && (!session->req.sent_headers)) {
-		/* "Fast Mode" requested? */
-		jsval		val;
-		JSObject*	reply;
-
-		JS_GetProperty(cx, session->js_glob, "http_reply", &val);
-		reply=JSVAL_TO_OBJECT(val);
-		JS_GetProperty(cx, reply, "fast", &val);
-		if(JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
-			session->req.keep_alive=FALSE;
+		if(session->http_ver>=HTTP_1_1 && session->req.keep_alive) {
+			session->req.write_chunked=TRUE;
 			if(!ssjs_send_headers(session))
 				return(JS_FALSE);
+		}
+		else {
+			/* "Fast Mode" requested? */
+			jsval		val;
+			JSObject*	reply;
+			JS_GetProperty(cx, session->js_glob, "http_reply", &val);
+			reply=JSVAL_TO_OBJECT(val);
+			JS_GetProperty(cx, reply, "fast", &val);
+			if(JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
+				session->req.keep_alive=FALSE;
+				if(!ssjs_send_headers(session))
+					return(JS_FALSE);
+			}
 		}
 	}
 
@@ -2862,18 +2892,46 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     for(i=0; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
+		if(JS_GetStringLength(str)<1 && !writeln)
+			continue;
 		if(session->req.sent_headers) {
-			if(session->req.method!=HTTP_HEAD && session->req.method!=HTTP_OPTIONS)
+			if(session->req.method!=HTTP_HEAD && session->req.method!=HTTP_OPTIONS) {
+				if(session->req.write_chunked) {
+					char	chstr[12];
+					sprintf(chstr,"%X\r\n", JS_GetStringLength(str)+(writeln?2:0));
+					sendsocket(session->socket, chstr, strlen(chstr));
+				}
 				sendsocket(session->socket, JS_GetStringBytes(str), JS_GetStringLength(str));
+				if(writeln)
+					sendsocket(session->socket, newline, 2);
+				if(session->req.write_chunked)
+					sendsocket(session->socket, newline, 2);
+			}
 		}
-		else
+		else {
 			fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
+			if(writeln)
+				fwrite(newline,1,2,session->req.fp);
+		}
 	}
 
 	if(str==NULL)
 		*rval = JSVAL_VOID;
 	else
 		*rval = STRING_TO_JSVAL(str);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	http_session_t* session;
+
+	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	js_writefunc(cx, obj, argc, argv, rval,FALSE);
 
 	return(JS_TRUE);
 }
@@ -2886,15 +2944,7 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	js_write(cx, obj, argc, argv, rval);
-
-	/* Should this do the whole \r\n thing for Win32 *shudder* */
-	if(session->req.sent_headers) {
-		if(session->req.method!=HTTP_HEAD && session->req.method!=HTTP_OPTIONS)
-			sendsocket(session->socket, "\n", 1);
-	}
-	else
-		fprintf(session->req.fp,"\n");
+	js_writefunc(cx, obj, argc, argv, rval,TRUE);
 
 	return(JS_TRUE);
 }
@@ -3270,26 +3320,73 @@ static void respond(http_session_t * session)
 
 int read_post_data(http_session_t * session)
 {
-	unsigned i;
+	unsigned i=0;
 
-	if(session->req.dynamic!=IS_CGI && session->req.post_len)  {
-		i = session->req.post_len;
-		if(i < (MAX_POST_LEN+1) && (session->req.post_data=malloc(i+1)) != NULL)  {
-			session->req.post_len=recvbufsocket(session->socket,session->req.post_data,i);
-			if(session->req.post_len != i)
-				lprintf(LOG_DEBUG,"%04d !ERROR Browser said they sent %d bytes, but I got %d",session->socket,i,session->req.post_len);
-			if(session->req.post_len > i)
-				session->req.post_len = i;
-			session->req.post_data[session->req.post_len]=0;
-			if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)  {
-				js_add_request_prop(session,"post_data",session->req.post_data);
-				js_parse_query(session,session->req.post_data);
+	if(session->req.dynamic!=IS_CGI && (session->req.post_len || session->req.read_chunked))  {
+		if(session->req.read_chunked) {
+			char *p;
+			size_t	ch_len=0;
+			int	bytes_read=0;
+			char	ch_lstr[12];
+			session->req.post_len=0;
+
+			while(1) {
+				/* Read chunk length */
+				if(sockreadline(session,ch_lstr,sizeof(ch_lstr)-1)>0) {
+					ch_len=strtol(ch_lstr,NULL,16);
+				}
+				else {
+					send_error(session,error_500);
+					return(FALSE);
+				}
+				if(ch_len==0)
+					break;
+				/* Check size */
+				i += ch_len;
+				if(i > MAX_POST_LEN) {
+					send_error(session,"413 Request entity too large");
+					return(FALSE);
+				}
+				/* realloc() to new size */
+				p=realloc(session->req.post_data, i);
+				if(p==NULL) {
+					lprintf(LOG_CRIT,"%04d !ERROR Allocating %d bytes of memory",session->socket,session->req.post_len);
+					send_error(session,"413 Request entity too large");
+					return(FALSE);
+				}
+				session->req.post_data=p;
+				/* read new data */
+				bytes_read=recvbufsocket(session->socket,session->req.post_data+session->req.post_len,ch_len);
+				if(!bytes_read) {
+					send_error(session,error_500);
+					return(FALSE);
+				}
+				session->req.post_len+=bytes_read;
+			}
+			/* Read more headers! */
+			if(!get_request_headers(session))
+				return(FALSE);
+			if(!parse_headers(session))
+				return(FALSE);
+		}
+		else {
+			i = session->req.post_len;
+			if(i < (MAX_POST_LEN+1) && (session->req.post_data=malloc(i+1)) != NULL)
+				session->req.post_len=recvbufsocket(session->socket,session->req.post_data,i);
+			else  {
+				lprintf(LOG_CRIT,"%04d !ERROR Allocating %d bytes of memory",session->socket,i);
+				send_error(session,"413 Request entity too large");
+				return(FALSE);
 			}
 		}
-		else  {
-			lprintf(LOG_CRIT,"%04d !ERROR Allocating %d bytes of memory",session->socket,i);
-			send_error(session,"413 Request entity too large");
-			return(FALSE);
+		if(session->req.post_len != i)
+				lprintf(LOG_DEBUG,"%04d !ERROR Browser said they sent %d bytes, but I got %d",session->socket,i,session->req.post_len);
+		if(session->req.post_len > i)
+			session->req.post_len = i;
+		session->req.post_data[session->req.post_len]=0;
+		if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)  {
+			js_add_request_prop(session,"post_data",session->req.post_data);
+			js_parse_query(session,session->req.post_data);
 		}
 	}
 	return(TRUE);
