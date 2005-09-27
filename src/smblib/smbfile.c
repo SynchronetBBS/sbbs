@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -184,7 +184,10 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 		close(file);
 		return(SMB_ERR_OPEN); 
 	}
-	setvbuf(*fp,NULL,_IOFBF,2*1024);
+	if(fp==&smb->sid_fp)
+		setvbuf(*fp,NULL,_IONBF,0);	/* no buffering (cause of *.sid corruption?) */
+	else
+		setvbuf(*fp,NULL,_IOFBF,2*1024);
 	return(SMB_SUCCESS);
 }
 
