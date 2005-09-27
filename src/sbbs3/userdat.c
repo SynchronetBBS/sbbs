@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -198,27 +198,29 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 {
 	char userdat[U_LEN+1],str[U_LEN+1],tmp[64];
 	int i,file;
+	unsigned user_number;
 
 	if(user==NULL)
 		return(-1);
 
-	if(!VALID_CFG(cfg) || user->number<1) {
-		memset(user,0,sizeof(user_t));
+	user_number=user->number;
+	memset(user,0,sizeof(user_t));
+
+	if(!VALID_CFG(cfg) || user_number<1)
 		return(-1); 
-	}
+
 	sprintf(userdat,"%suser/user.dat",cfg->data_dir);
-	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1) {
-		memset(user,0,sizeof(user_t));
+	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
 		return(errno); 
-	}
-	if(user->number > (filelength(file)/U_LEN)) {
+
+	if(user_number > (unsigned)(filelength(file)/U_LEN)) {
 		close(file);
 		return(-1);	/* no such user record */
 	}
-	lseek(file,(long)((long)(user->number-1)*U_LEN),SEEK_SET);
+	lseek(file,(long)((long)(user_number-1)*U_LEN),SEEK_SET);
 	i=0;
 	while(i<LOOP_NODEDAB
-		&& lock(file,(long)((long)(user->number-1)*U_LEN),U_LEN)==-1) {
+		&& lock(file,(long)((long)(user_number-1)*U_LEN),U_LEN)==-1) {
 		if(i)
 			mswait(100);
 		i++; 
@@ -226,18 +228,16 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	if(i>=LOOP_NODEDAB) {
 		close(file);
-		memset(user,0L,sizeof(user_t));
 		return(-2); 
 	}
 
 	if(read(file,userdat,U_LEN)!=U_LEN) {
-		unlock(file,(long)((long)(user->number-1)*U_LEN),U_LEN);
+		unlock(file,(long)((long)(user_number-1)*U_LEN),U_LEN);
 		close(file);
-		memset(user,0L,sizeof(user_t));
 		return(-3); 
 	}
 
-	unlock(file,(long)((long)(user->number-1)*U_LEN),U_LEN);
+	unlock(file,(long)((long)(user_number-1)*U_LEN),U_LEN);
 	close(file);
 	/* order of these function calls is irrelevant */
 	getrec(userdat,U_ALIAS,LEN_ALIAS,user->alias);
@@ -350,7 +350,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 		resetdailyuserdat(cfg,user);
 
 #if 0 /* removed 01/19/00 Why?  ToDo */
-	if(useron.number==user->number) {
+	if(useron.number==user_number) {
 		if(user!=&useron)
 			useron=*user;
 
@@ -367,6 +367,8 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 		} 
 	}
 #endif
+	user->number=user_number;	/* Signal of success */
+
 	return(0);
 }
 
