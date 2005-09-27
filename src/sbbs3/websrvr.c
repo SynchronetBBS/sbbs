@@ -722,7 +722,12 @@ static void close_request(http_session_t * session)
 	int			i;
 
 	if(session->req.write_chunked) {
-		sendsocket(session->socket, "0\r\n\r\n",5);
+		sendsocket(session->socket, "0\r\n",3);
+		if(session->req.dynamic==IS_SSJS)
+			ssjs_send_headers(session);
+		else
+			/* Non-ssjs isn't capable of generating headers during execution */
+			sendsocket(session->socket, newline,2);
 	}
 
 	if(session->req.ld!=NULL) {
@@ -881,112 +886,116 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		return(TRUE);
 	}
 
-	status_line=status;
-	ret=stat(session->req.physical_path,&stats);
-	if(session->req.method==HTTP_OPTIONS)
-		ret=-1;
-	if(!ret && session->req.if_modified_since && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
-		status_line="304 Not Modified";
-		ret=-1;
-		send_file=FALSE;
-	}
-	if(session->req.send_location==MOVED_PERM)  {
-		status_line=error_301;
-		ret=-1;
-		send_file=FALSE;
-	}
-	if(session->req.send_location==MOVED_TEMP)  {
-		status_line=error_302;
-		ret=-1;
-		send_file=FALSE;
-	}
-
-	if(session->req.ld!=NULL)
-		session->req.ld->status=atoi(status_line);
-
-	headers=malloc(MAX_HEADERS_SIZE);
-	if(headers==NULL)  {
-		lprintf(LOG_CRIT,"Could not allocate memory for response headers.");
-		return(FALSE);
-	}
-	*headers=0;
-	/* Status-Line */
-	safe_snprintf(header,sizeof(header),"%s %s",http_vers[session->http_ver],status_line);
-
-	lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
-
-	safecat(headers,header,MAX_HEADERS_SIZE);
-
-	/* General Headers */
-	ti=time(NULL);
-	if(gmtime_r(&ti,&tm)==NULL)
-		memset(&tm,0,sizeof(tm));
-	safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
-		,get_header(HEAD_DATE)
-		,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
-		,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
-	safecat(headers,header,MAX_HEADERS_SIZE);
-	if(session->req.keep_alive) {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
-	else {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Close");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
-
-	/* Response Headers */
-	safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
-	safecat(headers,header,MAX_HEADERS_SIZE);
-	
-	/* Entity Headers */
-	if(session->req.dynamic) {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST, OPTIONS");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
-	else {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, OPTIONS");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
-
-	if(session->req.send_location) {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
-
-	if(session->req.write_chunked) {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TRANSFER_ENCODING),"Chunked");
-		safecat(headers,header,MAX_HEADERS_SIZE);
-	}
-
-	/* DO NOT send a content-length for chunked */
-	if(session->req.keep_alive && (!session->req.write_chunked)) {
-		if(ret)  {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
-			safecat(headers,header,MAX_HEADERS_SIZE);
+	if(!session->req.sent_headers) {
+		status_line=status;
+		ret=stat(session->req.physical_path,&stats);
+		if(session->req.method==HTTP_OPTIONS)
+			ret=-1;
+		if(!ret && session->req.if_modified_since && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
+			status_line="304 Not Modified";
+			ret=-1;
+			send_file=FALSE;
 		}
-		else  {
-			safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
-			safecat(headers,header,MAX_HEADERS_SIZE);
+		if(session->req.send_location==MOVED_PERM)  {
+			status_line=error_301;
+			ret=-1;
+			send_file=FALSE;
 		}
-	}
+		if(session->req.send_location==MOVED_TEMP)  {
+			status_line=error_302;
+			ret=-1;
+			send_file=FALSE;
+		}
 
-	if(!ret && !session->req.dynamic)  {
-		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
+		if(session->req.ld!=NULL)
+			session->req.ld->status=atoi(status_line);
+
+		headers=malloc(MAX_HEADERS_SIZE);
+		if(headers==NULL)  {
+			lprintf(LOG_CRIT,"Could not allocate memory for response headers.");
+			return(FALSE);
+		}
+		*headers=0;
+		/* Status-Line */
+		safe_snprintf(header,sizeof(header),"%s %s",http_vers[session->http_ver],status_line);
+
+		lprintf(LOG_DEBUG,"%04d Result: %s",session->socket,header);
+
 		safecat(headers,header,MAX_HEADERS_SIZE);
-		gmtime_r(&stats.st_mtime,&tm);
+
+		/* General Headers */
+		ti=time(NULL);
+		if(gmtime_r(&ti,&tm)==NULL)
+			memset(&tm,0,sizeof(tm));
 		safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
-			,get_header(HEAD_LASTMODIFIED)
+			,get_header(HEAD_DATE)
 			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 		safecat(headers,header,MAX_HEADERS_SIZE);
-	} 
+		if(session->req.keep_alive) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+		else {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Close");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+
+		/* Response Headers */
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
+		safecat(headers,header,MAX_HEADERS_SIZE);
+
+		/* Entity Headers */
+		if(session->req.dynamic) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST, OPTIONS");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+		else {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, OPTIONS");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+
+		if(session->req.send_location) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+
+		if(session->req.write_chunked) {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TRANSFER_ENCODING),"Chunked");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+
+		/* DO NOT send a content-length for chunked */
+		if(session->req.keep_alive && (!session->req.write_chunked)) {
+			if(ret)  {
+				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
+				safecat(headers,header,MAX_HEADERS_SIZE);
+			}
+			else  {
+				safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
+				safecat(headers,header,MAX_HEADERS_SIZE);
+			}
+		}
+
+		if(!ret && !session->req.dynamic)  {
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
+			safecat(headers,header,MAX_HEADERS_SIZE);
+			gmtime_r(&stats.st_mtime,&tm);
+			safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+				,get_header(HEAD_LASTMODIFIED)
+				,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
+				,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
+			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+	}
 
 	if(session->req.dynamic)  {
 		/* Dynamic headers */
 		/* Set up environment */
 		for(idx=0;session->req.dynamic_heads[idx]!=NULL;idx++)
 			safecat(headers,session->req.dynamic_heads[idx],MAX_HEADERS_SIZE);
+		/* free() the headers so they don't get sent again if more are sent at the end of the request (chunked) */
+		strListFreeStrings(session->req.dynamic_heads);
 	}
 
 	safecat(headers,"",MAX_HEADERS_SIZE);
