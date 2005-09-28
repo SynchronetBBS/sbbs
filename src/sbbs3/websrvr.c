@@ -2141,8 +2141,6 @@ static BOOL check_request(http_session_t * session)
 							prep_dir(root_dir, str, sizeof(str));
 							session->req.cgi_dir=strdup(str);
 						}
-						free(spec);
-						break;
 					}
 					free(spec);
 				}
