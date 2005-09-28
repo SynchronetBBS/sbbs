@@ -80,7 +80,7 @@ xpTimeZone_t	xpTimeZone_local(void);
 /**********************************************/
 
 typedef ulong	isoDate_t;	/* CCYYMMDD (decimal) */
-typedef uint	isoTime_t;	/* HHMMSS   (decimal) */
+typedef ulong	isoTime_t;	/* HHMMSS   (decimal) */
 
 #define			isoDate_create(year,mon,day)	(((year)*10000)+((mon)*100)+(day))
 #define			isoTime_create(hour,min,sec)	(((hour)*10000)+((min)*100)+((unsigned)sec))
