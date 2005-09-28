@@ -882,7 +882,8 @@ BOOL DLLCALL wildmatch(const char *fname, const char *spec, BOOL path)
 					return(TRUE);
 				break;
 			case '*':
-				specp++;
+				while(*specp=='*')
+					specp++;
 				for(;*fnamep!=*specp && *fnamep;fnamep++) {
 					if(path && IS_PATH_DELIM(*fnamep))
 						return(FALSE);
