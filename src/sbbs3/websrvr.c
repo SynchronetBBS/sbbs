@@ -166,6 +166,11 @@ typedef struct  {
 	char		*cleanup_file[MAX_CLEANUPS];
 	BOOL	sent_headers;
 	BOOL	prev_write;
+
+	/* webconfig.ini overrides */
+	char	*error_dir;
+	char	*cgi_dir;
+	char	*realm;
 } http_request_t;
 
 typedef struct  {
@@ -732,6 +737,9 @@ static void close_request(http_session_t * session)
 	strListFree(&session->req.dynamic_heads);
 	strListFree(&session->req.cgi_env);
 	FREE_AND_NULL(session->req.post_data);
+	FREE_AND_NULL(session->req.error_dir);
+	FREE_AND_NULL(session->req.cgi_dir);
+	FREE_AND_NULL(session->req.realm);
 	if(!session->req.keep_alive) {
 		close_socket(session->socket);
 		session->socket=INVALID_SOCKET;
@@ -1044,7 +1052,7 @@ static void send_error(http_session_t * session, const char* message)
 		 * ie: Don't "upgrade" to a 500 error
 		 */
 
-		sprintf(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
+		sprintf(sbuf,"%s%s%s",session->req.error_dir?session->req.error_dir:error_dir,error_code,startup->ssjs_ext);
 		if(!stat(sbuf,&sb)) {
 			lprintf(LOG_INFO,"%04d Using SSJS error page",session->socket);
 			session->req.dynamic=IS_SSJS;
@@ -1068,7 +1076,7 @@ static void send_error(http_session_t * session, const char* message)
 		}
 	}
 	if(!sent_ssjs) {
-		sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
+		sprintf(session->req.physical_path,"%s%s.html",session->req.error_dir?session->req.error_dir:error_dir,error_code);
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_headers(session,message);
 		if(!stat(session->req.physical_path,&sb)) {
@@ -1695,7 +1703,7 @@ static int is_dynamic_req(http_session_t* session)
 				return(IS_CGI);
 			}
 		}
-		_splitpath(cgi_dir, cgidrive, cgidir, fname, ext);
+		_splitpath(session->req.cgi_dir?session->req.cgi_dir:cgi_dir, cgidrive, cgidir, fname, ext);
 		if(stricmp(dir,cgidir)==0 && stricmp(drive,cgidrive)==0)  {
 			init_enviro(session);
 			return(IS_CGI);
@@ -1990,6 +1998,7 @@ static BOOL check_extra_path(http_session_t * session)
 static BOOL check_request(http_session_t * session)
 {
 	char	path[MAX_PATH+1];
+	char	curdir[MAX_PATH+1];
 	char	str[MAX_PATH+1];
 	char	last_ch;
 	char*	last_slash;
@@ -1998,6 +2007,9 @@ static BOOL check_request(http_session_t * session)
 	int		i;
 	struct stat sb;
 	int		send404=0;
+	char	filename[MAX_PATH+1];
+	char	*spec;
+	str_list_t	specs;
 
 	if(session->req.finished)
 		return(FALSE);
@@ -2040,6 +2052,15 @@ static BOOL check_request(http_session_t * session)
 			if(session->req.send_location != MOVED_PERM)
 				session->req.send_location=MOVED_STAT;
 		}
+		filename[0]=0;
+	}
+	else {
+		last_slash=find_last_slash(path);
+		if(last_slash==NULL)
+			last_slash=path;
+		else
+			last_slash++;
+		strcpy(filename,last_slash);
 	}
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
 		session->req.keep_alive=FALSE;
@@ -2051,9 +2072,9 @@ static BOOL check_request(http_session_t * session)
 
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
-	/* Walk up from root_dir checking for access.ars */
-	SAFECOPY(str,path);
-	last_slash=str+strlen(root_dir)-1;
+	/* Walk up from root_dir checking for access.ars and webconfig.ini */
+	SAFECOPY(curdir,path);
+	last_slash=curdir+strlen(root_dir)-1;
 	/* Loop while there's more /s in path*/
 	p=last_slash;
 
@@ -2061,8 +2082,9 @@ static BOOL check_request(http_session_t * session)
 		p=last_slash;
 		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
-		strcat(str,"access.ars");
+		sprintf(str,"%saccess.ars",curdir);
 		if(!stat(str,&sb)) {
+			/* NEVER serve up an access.ars file */
 			if(!strcmp(path,str)) {
 				send_error(session,"403 Forbidden");
 				return(FALSE);
@@ -2080,13 +2102,68 @@ static BOOL check_request(http_session_t * session)
 			/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
 			truncsp(session->req.ars);
 		}
-		SAFECOPY(str,path);
+		sprintf(str,"%swebcontrol.ini",curdir);
+		if(!stat(str,&sb)) {
+			/* NEVER serve up a webcontrol.ini file */
+			if(!strcmp(path,str)) {
+				send_error(session,"403 Forbidden");
+				return(FALSE);
+			}
+			/* Read webcontrol.ars file */
+			if((file=fopen(str,"r"))!=NULL) {
+				specs=iniReadSectionList(file,NULL);
+				/* Read in globals */
+				if(iniReadString(file, NULL, "ARS", session->req.ars,str)==str)
+					SAFECOPY(session->req.ars,str);
+				if(iniReadString(file, NULL, "Realm", scfg.sys_name,str)==str)
+					session->req.realm=strdup(str);
+				if(iniReadString(file, NULL, "ErrorDirectory", error_dir,str)==str) {
+					prep_dir(root_dir, str, sizeof(str));
+					session->req.error_dir=strdup(str);
+				}
+				if(iniReadString(file, NULL, "CGIDirectory", cgi_dir,str)==str) {
+					prep_dir(root_dir, str, sizeof(str));
+					session->req.cgi_dir=strdup(str);
+				}
+
+				/* Read in per-filespec */
+				while((spec=strListPop(&specs))!=NULL) {
+					if(wildmatch(filename,spec,TRUE)) {
+						if(iniReadString(file, spec, "ARS", session->req.ars,str)==str)
+							SAFECOPY(session->req.ars,str);
+						if(iniReadString(file, spec, "Realm", scfg.sys_name,str)==str)
+							session->req.realm=strdup(str);
+						if(iniReadString(file, spec, "ErrorDirectory", error_dir,str)==str) {
+							prep_dir(root_dir, str, sizeof(str));
+							session->req.error_dir=strdup(str);
+						}
+						if(iniReadString(file, spec, "CGIDirectory", cgi_dir,str)==str) {
+							prep_dir(root_dir, str, sizeof(str));
+							session->req.cgi_dir=strdup(str);
+						}
+						free(spec);
+						break;
+					}
+					free(spec);
+				}
+				strListFreeStrings(specs);
+				fclose(file);
+			}
+			else  {
+				/* If cannot open webcontrol.ars, only allow sysop access */
+				SAFECOPY(session->req.ars,"LEVEL 90");
+				break;
+			}
+			/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
+			truncsp(session->req.ars);
+		}
+		SAFECOPY(curdir,path);
 	}
 
 	if(!check_ars(session)) {
 		/* No authentication provided */
 		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
-			,newline,get_header(HEAD_WWWAUTH),scfg.sys_name);
+			,newline,get_header(HEAD_WWWAUTH),session->req.realm?session->req.realm:scfg.sys_name);
 		send_error(session,str);
 		return(FALSE);
 	}
@@ -2559,7 +2636,7 @@ static BOOL exec_cgi(http_session_t *session)
 	if((p=strrchr(startup_dir,'/'))!=NULL || (p=strrchr(startup_dir,'\\'))!=NULL)
 		*p=0;
 	else
-		SAFECOPY(startup_dir,cgi_dir);
+		SAFECOPY(startup_dir,session->req.cgi_dir?session->req.cgi_dir:cgi_dir);
 
 	lprintf(LOG_DEBUG,"%04d CGI startup dir: %s", session->socket, startup_dir);
 
@@ -3190,7 +3267,7 @@ static BOOL js_setup(http_session_t* session)
 			STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx, root_dir))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 		JS_DefineProperty(session->js_cx, session->js_glob, "web_error_dir",
-			STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx, error_dir))
+			STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx, session->req.error_dir?session->req.error_dir:error_dir))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	}
