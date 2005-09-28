@@ -96,6 +96,7 @@ typedef struct {
 	DWORD	max_clients;
 	DWORD	options;
 	int		listen_backlog;
+	int		log_level;
 	DWORD	stack_size;
 	js_startup_t	js;
 	js_server_props_t js_server_props;
@@ -392,7 +393,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(service==NULL)
 		lprintf(level,"%04d %s",client->socket,str);
-	else
+	else if(level <= client->service->log_level)
 		lprintf(level,"%04d %s %s",client->socket,client->service->protocol,str);
 
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
@@ -1434,6 +1435,7 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 	char**		sec_list;
 	service_t*	np;
 	service_t	serv;
+	int			log_level;
 
 	iniFileName(services_ini,sizeof(services_ini),scfg.ctrl_dir,"services.ini");
 
@@ -1443,6 +1445,7 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 	}
 
 	lprintf(LOG_INFO,"Reading %s",services_ini);
+	log_level = iniReadLogLevel(fp,ROOT_SECTION,"LogLevel",LOG_DEBUG);
 	sec_list = iniReadSectionList(fp,"");
     for(i=0; sec_list!=NULL && sec_list[i]!=NULL; i++) {
 		memset(&serv,0,sizeof(service_t));
@@ -1454,6 +1457,7 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 		serv.listen_backlog=iniReadInteger(fp,sec_list[i],"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
 		serv.stack_size=iniReadInteger(fp,sec_list[i],"StackSize",0);
 		serv.options=iniReadBitField(fp,sec_list[i],"Options",service_options,0);
+		serv.log_level = iniReadLogLevel(fp,sec_list[i],"LogLevel",log_level);
 		SAFECOPY(serv.cmd,iniReadString(fp,sec_list[i],"Command","",cmd));
 
 		/* JavaScript operating parameters */
