@@ -859,3 +859,44 @@ BOOL DLLCALL isfullpath(const char* filename)
 #endif
 		);
 }
+
+/****************************************************************************/
+/* Matches file name against filespec										*/
+/* Optionally not allowing * to match PATH_DELIM (for paths)				*/
+/****************************************************************************/
+BOOL DLLCALL wildmatch(const char *fname, const char *spec, BOOL path)
+{
+	char *specp;
+	char *fnamep;
+
+	specp=(char *)spec;
+	fnamep=(char *)fname;
+	for(;;specp++, fnamep++) {
+		switch(*specp) {
+			case '?':
+				if(!(*fnamep))
+					return(FALSE);
+				break;
+			case 0:
+				if(!*fnamep)
+					return(TRUE);
+				break;
+			case '*':
+				specp++;
+				for(;*fnamep!=*specp && *fnamep;fnamep++) {
+					if(path && IS_PATH_DELIM(*fnamep))
+						return(FALSE);
+				}
+			default:
+				if(*specp != *fnamep)
+					return(FALSE);
+		}
+		if(!(*specp && *fnamep))
+			break;
+	}
+	while(*specp=='*')
+		specp++;
+	if(*specp==*fnamep)
+		return(TRUE);
+	return(FALSE);
+}

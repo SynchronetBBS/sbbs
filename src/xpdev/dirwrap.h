@@ -230,6 +230,8 @@ DLLEXPORT int		DLLCALL getfattr(const char* filename);
 DLLEXPORT ulong		DLLCALL getfreediskspace(const char* path, ulong unit);
 DLLEXPORT ulong		DLLCALL delfiles(char *inpath, char *spec);
 DLLEXPORT char*		DLLCALL backslash(char* path);
+DLLEXPORT BOOL 		DLLCALL wildmatch(const char *fname, const char *spec, BOOL path);
+
 
 #if defined(__unix__)
 DLLEXPORT void DLLCALL _splitpath(const char *path, char *drive, char *dir, 
