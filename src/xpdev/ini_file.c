@@ -61,6 +61,13 @@ void iniSetDefaultStyle(ini_style_t style)
 	default_style = style;
 }
 
+char* log_levels[] = {"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
+
+str_list_t iniLogLevelStringList(void)
+{
+	return(log_levels);
+}
+
 static char* section_name(char* p)
 {
 	char*	tp;
