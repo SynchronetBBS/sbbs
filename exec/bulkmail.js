@@ -32,7 +32,7 @@ if(!file_exists(fname))	// Edit aborted
 
 file = new File(fname);
 if(!file.open("rt")) {
-    log("!ERROR " + errno_str + " opening " + fname);
+    log(LOG_ERR,"!ERROR " + errno_str + " opening " + fname);
     exit();
 }
 msgtxt = lfexpand(file.read(file_size(fname)));
@@ -44,7 +44,7 @@ if(msgtxt == "")
 
 msgbase = new MsgBase("mail");
 if(msgbase.open()==false) {
-	log("!ERROR " + msgbase.last_error);
+	log(LOG_ERR,"!ERROR " + msgbase.last_error);
 	exit();
 }
 
@@ -85,7 +85,7 @@ for(i=1; i<=lastuser; i++)
 hdr = { from: system.operator, from_ext: "1", subject: subj };  
 
 if(!msgbase.save_msg(hdr, msgtxt, rcpt_list))
-	log("!ERROR " + msgbase.last_error + "saving bulkmail message");
+	log(LOG_ERR,"!ERROR " + msgbase.last_error + "saving bulkmail message");
 
 msgbase.close();
 

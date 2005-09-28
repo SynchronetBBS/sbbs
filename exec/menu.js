@@ -19,7 +19,7 @@ function isdigit(ch)
 function menu(fname)
 {
 	if(!fname) {
-		alert(log("!No menu file specified"));
+		alert(log(LOG_WARNING,"!No menu file specified"));
 		return(false);
 	}
 
@@ -35,7 +35,7 @@ function menu(fname)
 
 	var file = new File(system.exec_dir + fname);
 	if(!file.open("r")) {
-		alert(log("!ERROR " + file.error + " opening " + fname));
+		alert(log(LOG_ERR,"!ERROR " + file.error + " opening " + fname));
 		return(false);
 	}
 

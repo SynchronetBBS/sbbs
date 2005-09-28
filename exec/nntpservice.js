@@ -130,7 +130,7 @@ while(client.socket.is_connected && !quit) {
 	cmdline = client.socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
 
 	if(cmdline==null) {
-		log("!TIMEOUT waiting for request");
+		log(LOG_WARNING,"!TIMEOUT waiting for request");
 		break;
 	}
 
@@ -196,7 +196,7 @@ while(client.socket.is_connected && !quit) {
 
 	if(!logged_in) {
 		if (auto_login) {
-			log("Autologin Search: Started");
+			log(LOG_DEBUG,"Autologin Search: Started");
 			var oUser = new User(1);
 			sUser = false;
 			sPassword = ""
@@ -209,12 +209,12 @@ while(client.socket.is_connected && !quit) {
 							iLastOn = oUser.stats.laston_date;
 							sUser = oUser.alias;
 							sPassword = oUser.security.password;
-							log("!Autologin Search: Match Found ("+sUser+")");
+							log(LOG_DEBUG,"!Autologin Search: Match Found ("+sUser+")");
 						}
 
 			}
 			oUser = null;
-			log("Autologin Search: Finished");
+			log(LOG_DEBUG,"Autologin Search: Finished");
 
 			if (sUser)
 				login(sUser,sPassword);
@@ -222,7 +222,7 @@ while(client.socket.is_connected && !quit) {
 
 		if(!logged_in) {
 			writeln("502 Authentication required");
-			log("!Authentication required");
+			log(LOG_WARNING,"!Authentication required");
 			continue;
 		}
 	}
@@ -326,7 +326,7 @@ while(client.socket.is_connected && !quit) {
 			}
 			if(!found) {
 				writeln("411 no such newsgroup");
-				log("!no such group");
+				log(LOG_NOTICE,"!no such group");
 				bogus_cmd_counter++;
 				break;
 			}
@@ -640,7 +640,7 @@ while(client.socket.is_connected && !quit) {
 				line = client.socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
 
 				if(line==null) {
-					log("!TIMEOUT waiting for text line");
+					log(LOG_NOTICE,"!TIMEOUT waiting for text line");
 					break;
 				}
 
@@ -735,7 +735,7 @@ while(client.socket.is_connected && !quit) {
 										case "cancel":
 											target=msgbase.get_msg_header(ctrl_msg[1]);
 											if(target==null) {
-												log("!Invalid Message-ID: " + ctrl_msg[1]);
+												log(LOG_NOTICE,"!Invalid Message-ID: " + ctrl_msg[1]);
 												break;
 											}
 											if(logged_in && ((target.from_ext==user.number
@@ -743,16 +743,16 @@ while(client.socket.is_connected && !quit) {
 												|| msg_area.grp_list[g].sub_list[s].is_operator)) {
 												if(msgbase.remove_msg(ctrl_msg[1])) {
 													posted=true;
-													log("Message deleted: " + ctrl_msg[1]);
+													log(LOG_NOTICE,"Message deleted: " + ctrl_msg[1]);
 												} else
-													log("!ERROR " + msgbase.error + 
+													log(LOG_ERR,"!ERROR " + msgbase.error + 
 														" deleting message: " + ctrl_msg[1]);
 												continue;
 											}
 											break;
 									}
 								}
-								log("!Invalid control message: " + hdr.control);
+								log(LOG_WARNING,"!Invalid control message: " + hdr.control);
 								break;
 							}
 
@@ -775,14 +775,14 @@ while(client.socket.is_connected && !quit) {
 			if(posted)
 			    writeln("240 article posted ok");
 			else {
-				log("!post failure");
+				log(LOG_ERR,"!post failure");
 				writeln("441 posting failed");
 			}
    			break;
 
 		default:
 			writeln("500 Syntax error or unknown command");
-			log("!unknown command");
+			log(LOG_NOTICE,"!unknown command");
 			break;
 	}
 
@@ -790,7 +790,7 @@ while(client.socket.is_connected && !quit) {
 		&& bogus_cmd_counter >= max_bogus_cmds) {
 		log(format("!TOO MANY BOGUS COMMANDS (%u)", bogus_cmd_counter));
 		if(filter_bogus_clients) {
-			log("!FILTERING CLIENT'S IP ADDRESS: " + client.ip_address);
+			log(LOG_NOTICE,"!FILTERING CLIENT'S IP ADDRESS: " + client.ip_address);
 			system.filter_ip("NNTP","- TOO MANY BOGUS COMMANDS (Example: " + cmdline +")"
 				, client.host_name, client.ip_address, client.user_name);
 		}

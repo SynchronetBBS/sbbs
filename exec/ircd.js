@@ -182,7 +182,7 @@ function parse_nline_flags(flags) {
 				nline_flags |= NLINE_IS_DREAMHAVEN;
 				break;
 			default:
-				log("!WARNING Unknown N:Line flag '" + flags[thisflag] + "' in config.");
+				log(LOG_WARNING,"!WARNING Unknown N:Line flag '" + flags[thisflag] + "' in config.");
 				break;
 		}
 	}
@@ -271,7 +271,7 @@ function parse_oline_flags(flags) {
 				oline_flags |= OLINE_CAN_UMODEC;
 				break;
 			default:
-				log("!WARNING Unknown O:Line flag '" + flags[thisflag] + "' in config.");
+				log(LOG_WARNING,"!WARNING Unknown O:Line flag '" + flags[thisflag] + "' in config.");
 				break;
 		}
 	}
@@ -468,7 +468,7 @@ function read_config_file() {
 		if(!file_exists(fname))
 			fname=system.ctrl_dir + "ircd.conf";
 	}
-	log("Reading Config: " + fname);
+	log(LOG_INFO,"Reading Config: " + fname);
 	var conf = new File(fname);
 	if (conf.open("r")) {
 		while (!conf.eof) {
@@ -513,7 +513,7 @@ function read_config_file() {
 							break;
 						var kline_mask = create_ban_mask(arg[1],true);
 						if (!kline_mask) {
-							log("!WARNING Invalid K:Line (" + arg[1] + ")");
+							log(LOG_WARNING,"!WARNING Invalid K:Line (" + arg[1] + ")");
 							break;
 						}
 						KLines.push(new KLine(kline_mask,arg[2],"K"));
@@ -578,16 +578,16 @@ function read_config_file() {
 }
 
 function create_new_socket(port) {
-	log("Creating new socket object on port " + port);
+	log(LOG_DEBUG,"Creating new socket object on port " + port);
 	var newsock = new Socket();
 	if(!newsock.bind(port,server.interface_ip_address)) {
-		log("!Error " + newsock.error + " binding socket to TCP port " + port);
+		log(LOG_ERR,"!Error " + newsock.error + " binding socket to TCP port " + port);
 		return 0;
 	}
 	log(format("%04u ",newsock.descriptor)
 		+ "IRC server socket bound to TCP port " + port);
 	if(!newsock.listen(5 /* backlog */)) {
-		log("!Error " + newsock.error + " setting up socket for listening");
+		log(LOG_ERR,"!Error " + newsock.error + " setting up socket for listening");
 		return 0;
 	}
 	return newsock;
@@ -867,7 +867,7 @@ function rawout(str) {
 		}
 		sendsock = Servers[this.parent.toLowerCase()].socket;
 	} else {
-		log("!ERROR: No socket to send to?");
+		log(LOG_ERR,"!ERROR: No socket to send to?");
 		return 0;
 	}
 
@@ -894,7 +894,7 @@ function originatorout(str,origin) {
 		sendsock = Servers[this.parent.toLowerCase()].socket;
 		send_data = ":" + origin.nick + " " + str;
 	} else {
-		log("!ERROR: No socket to send to?");
+		log(LOG_ERR,"!ERROR: No socket to send to?");
 		return 0;
 	}
 
@@ -914,7 +914,7 @@ function ircout(str) {
 	} else if (this.parent) {
 		sendsock = Servers[this.parent.toLowerCase()].socket;
 	} else {
-		log("!ERROR: No socket to send to?");
+		log(LOG_ERR,"!ERROR: No socket to send to?");
 		return 0;
 	}
 

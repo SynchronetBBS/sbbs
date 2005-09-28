@@ -113,7 +113,7 @@ function send_newuser_welcome_msg(fname)
 {
 	file = new File(fname);
 	if(!file.open("rt")) {
-		log("!ERROR " + errno_str + " opening " + fname);
+		log(LOG_ERR,"!ERROR " + errno_str + " opening " + fname);
 		return(false);
 	}
 	msgtxt = lfexpand(file.read(file.length));
@@ -122,7 +122,7 @@ function send_newuser_welcome_msg(fname)
 
 	msgbase = new MsgBase("mail");
 	if(msgbase.open()==false) {
-		log("!ERROR " + msgbase.last_error);
+		log(LOG_ERR,"!ERROR " + msgbase.last_error);
 		return(false);
 	}
 
@@ -135,9 +135,9 @@ function send_newuser_welcome_msg(fname)
 	};
 
 	if(!msgbase.save_msg(hdr, msgtxt))
-		log("!ERROR " + msgbase.last_error + "saving mail message");
+		log(LOG_ERR,"!ERROR " + msgbase.last_error + "saving mail message");
 
-	log("Sent new user welcome e-mail");
+	log(LOG_INFO,"Sent new user welcome e-mail");
 
 	msgbase.close();
 }

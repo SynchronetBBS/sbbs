@@ -454,7 +454,7 @@ function Server_Work() {
 					if (!test_server || (this.nick !=
 					    test_server.parent)) {
 						if (debug && test_server)
-							log("this.nick: " + this.nick + " test_server.parent: " + test_server.parent);
+							log(LOG_DEBUG,"this.nick: " + this.nick + " test_server.parent: " + test_server.parent);
 						umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to introduce nick from server not behind it: " + cmd[1] + "@" + cmd[7]);
 						this.ircout("KILL " + cmd[1] + " :Invalid Origin.");
 						break;

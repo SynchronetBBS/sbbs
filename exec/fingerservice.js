@@ -121,13 +121,13 @@ else						// UDP
 	request = datagram;
 
 if(request==null) {
-	log("!TIMEOUT waiting for request");
+	log(LOG_WARNING,"!TIMEOUT waiting for request");
 	exit();
 }
 
 request = truncsp(request);
 
-log("client request: " + request);
+log(LOG_DEBUG,"client request: " + request);
 
 if(request.substr(0,2).toUpperCase()=="/W")	// "higher level of verbosity"
 	request=request.slice(2);				// ignored...

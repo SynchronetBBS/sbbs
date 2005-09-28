@@ -46,8 +46,8 @@ for(i=0;i<argc;i++) {
 	}
 }
 
-log("Using nick: " + nick);
-log("Connecting to: " +server+ " port " + port);
+log(LOG_INFO,"Using nick: " + nick);
+log(LOG_INFO,"Connecting to: " +server+ " port " + port);
 my_server = IRC_client_connect(server,nick,undefined,undefined,port);
 if(!my_server) {
 	alert("!Couldn't connect to " + server);
@@ -62,7 +62,7 @@ while(!done) {
 			log(response);
 			/* Nick in use... */
 			nick+='_';
-			log("Using nick: " + nick);
+			log(LOG_INFO,"Using nick: " + nick);
 			my_server.send("NICK " + nick + "\r\n");
 		}
 		if(resp[1]=='422' || resp[1]=='376')

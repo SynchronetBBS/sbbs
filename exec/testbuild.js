@@ -196,7 +196,7 @@ function send_email(subject, body)
 {
 	var msgbase = new MsgBase("mail");
 	if(msgbase.open()==false) {
-		log("!ERROR " + msgbase.last_error);
+		log(LOG_ERR,"!ERROR " + msgbase.last_error);
 		return(false);
 	}
 

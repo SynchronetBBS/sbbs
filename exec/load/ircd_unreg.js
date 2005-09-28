@@ -108,7 +108,7 @@ function Unregistered_Commands() {
 	if ((cmdline[0] == "\r") || (cmdline[0] == "\n"))
 		cmdline = cmdline.slice(1);
 	if (debug)
-		log("[UNREG]: " + cmdline);
+		log(LOG_DEBUG,"[UNREG]: " + cmdline);
 	cmd = cmdline.split(" ");
 	if (cmdline[0] == ":") {
 		// Silently ignore NULL originator commands.

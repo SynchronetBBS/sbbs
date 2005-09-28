@@ -29,7 +29,7 @@ for(i in files) {
 		continue;
 	print(system.datestr(t) + " " + files[i]);
 	if(!file_remove(files[i])) {
-		log("!Error " + errno + " removing " + files[i]);
+		log(LOG_ERR,"!Error " + errno + " removing " + files[i]);
 		continue;
 	}
 	purged_files++;

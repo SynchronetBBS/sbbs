@@ -452,7 +452,7 @@ function User_Work() {
 				this.server_notice("Invalid DIE password.");
 				break;
 			}
-			log("!ERROR! Shutting down the ircd as per " + this.nuh);
+			log(LOG_ERR,"!ERROR! Shutting down the ircd as per " + this.nuh);
 			js.terminated = true;
 			break;
 		case "ERROR":
