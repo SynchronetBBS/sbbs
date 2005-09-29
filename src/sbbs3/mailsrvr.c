@@ -3470,9 +3470,7 @@ static void sendmail_thread(void* arg)
 	char*		msgtxt=NULL;
 	char*		p;
 	ushort		port;
-	ulong		offset;
 	ulong		last_msg=0;
-	ulong		total_msgs;
 	ulong		ip_addr;
 	ulong		dns;
 	ulong		lines;
@@ -3484,6 +3482,9 @@ static void sendmail_thread(void* arg)
 	time_t		last_scan=0;
 	smb_t		smb;
 	smbmsg_t	msg;
+	mail_t*		mail;
+	long		msgs;
+	long		l;
 
 	thread_up(TRUE /* setuid */);
 
@@ -3540,10 +3541,8 @@ static void sendmail_thread(void* arg)
 			continue;
 		last_msg=smb.status.last_msg;
 		last_scan=time(NULL);
-		total_msgs=smb.status.total_msgs;
-		smb_rewind(smb.sid_fp);
-		for(offset=0;offset<total_msgs;offset++) {
-
+		mail=loadmail(&smb,&msgs,/* to network */0,MAIL_YOUR,0);
+		for(l=0; l<msgs; l++) {
 			if(active_sendmail!=0)
 				active_sendmail=0, update_clients();
 
@@ -3562,26 +3561,21 @@ static void sendmail_thread(void* arg)
 
 			smb_freemsgmem(&msg);
 
-			smb_fseek(smb.sid_fp, offset*sizeof(msg.idx), SEEK_SET);
-			if(smb_fread(&smb, &msg.idx, sizeof(msg.idx), smb.sid_fp) != sizeof(msg.idx))
+			msg.hdr.number=mail[l].number;
+			if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
+				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) getting message index #%lu"
+					,i, smb.last_error, mail[l].number);
 				break;
-			if(msg.idx.attr&MSG_DELETE)	/* Marked for deletion */
-				continue;
-			if(msg.idx.to)			/* Local */
-				continue;
-			if(msg.idx.number==0)	/* Invalid message number */
-				continue;
-			msg.offset=offset;
-
+			}
 			if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
-				lprintf(LOG_WARNING,"0000 !SEND ERROR %d (%s) locking message header #%lu (offset %lu)"
-					,i, smb.last_error, msg.idx.number, offset);
+				lprintf(LOG_WARNING,"0000 !SEND ERROR %d (%s) locking message header #%lu"
+					,i, smb.last_error, msg.idx.number);
 				continue;
 			}
 			if((i=smb_getmsghdr(&smb,&msg))!=SMB_SUCCESS) {
 				smb_unlockmsghdr(&smb,&msg);
-				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) reading message header #%lu (offset %lu)"
-					,i, smb.last_error, msg.idx.number, offset);
+				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) reading message header #%lu"
+					,i, smb.last_error, msg.idx.number);
 				continue; 
 			}
 			if(msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) {
@@ -3939,6 +3933,9 @@ static void sendmail_thread(void* arg)
 			sock=INVALID_SOCKET;
 		}				
 		status(STATUS_WFC);
+		/* Free up resources here */
+		if(mail!=NULL)
+			freemail(mail);
 	}
 	if(sock!=INVALID_SOCKET)
 		mail_close_socket(sock);
