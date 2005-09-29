@@ -482,29 +482,6 @@ void listmsgs(ulong start, ulong count)
 	}
 }
 
-/****************************************************************************/
-/****************************************************************************/
-void dumpindex(ulong start, ulong count)
-{
-	ulong l=0;
-	idxrec_t idx;
-
-	if(!start)
-		start=1;
-	if(!count)
-		count=~0;
-	fseek(smb.sid_fp,(start-1L)*sizeof(idxrec_t),SEEK_SET);
-	while(l<count) {
-		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
-			break;
-
-		printf("%4lu %04hX %04hX %04Xh %04Xh %06X %.24s\n"
-			,idx.number,idx.from,idx.to,idx.subj,idx.attr
-			,idx.offset,ctime(&idx.time));
-		l++; 
-	}
-}
-
 char *binstr(uchar *buf, ushort length)
 {
 	static char str[512];
@@ -562,6 +539,29 @@ char *my_timestr(time_t *intime)
 		,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
 		,hour,gm->tm_min,mer);
 	return(str);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+void dumpindex(ulong start, ulong count)
+{
+	ulong l=0;
+	idxrec_t idx;
+
+	if(!start)
+		start=1;
+	if(!count)
+		count=~0;
+	fseek(smb.sid_fp,(start-1L)*sizeof(idxrec_t),SEEK_SET);
+	while(l<count) {
+		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
+			break;
+
+		printf("%4lu %04hX %04hX %04Xh %04Xh %06X %s\n"
+			,idx.number,idx.from,idx.to,idx.subj,idx.attr
+			,idx.offset,my_timestr((time_t*)&idx.time));
+		l++; 
+	}
 }
 
 /****************************************************************************/
