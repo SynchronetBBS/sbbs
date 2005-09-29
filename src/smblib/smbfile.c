@@ -184,9 +184,11 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 		close(file);
 		return(SMB_ERR_OPEN); 
 	}
+#if 0	/* This causes a noticeable performance hit when new-scanning subs */
 	if(fp==&smb->sid_fp)
 		setvbuf(*fp,NULL,_IONBF,0);	/* no buffering (cause of *.sid corruption?) */
 	else
+#endif
 		setvbuf(*fp,NULL,_IOFBF,2*1024);
 	return(SMB_SUCCESS);
 }
