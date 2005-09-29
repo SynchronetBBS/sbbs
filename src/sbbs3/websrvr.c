@@ -1960,35 +1960,59 @@ static char *find_first_slash(char *str)
 
 static BOOL check_extra_path(http_session_t * session)
 {
-	char	*p;
+	char	*rp_slash;
+	char	*vp_slash;
 	char	rpath[MAX_PATH+1];
 	char	vpath[MAX_PATH+1];
 	char	epath[MAX_PATH+1];
 	char	str[MAX_PATH+1];
 	struct	stat sb;
+	int		i;
+	char	*end;
 
 	epath[0]=0;
 	if(IS_PATH_DELIM(*lastchar(session->req.physical_path)) || stat(session->req.physical_path,&sb)==-1 /* && errno==ENOTDIR */)
 	{
 		SAFECOPY(vpath,session->req.virtual_path);
 		SAFECOPY(rpath,session->req.physical_path);
-		while((p=find_last_slash(vpath))!=NULL)
+		while((vp_slash=find_last_slash(vpath))!=NULL)
 		{
-			*p=0;
-			if(p==vpath)
+			*vp_slash=0;
+			if((rp_slash=find_last_slash(rpath))==NULL)
 				return(FALSE);
-			if((p=find_last_slash(rpath))==NULL)
-				return(FALSE);
-			*p=0;
 			SAFECOPY(str,epath);
-			sprintf(epath,"/%s%s",(p+1),str);
-			if(stat(rpath,&sb)!=-1 && (!(sb.st_mode&S_IFDIR)))
-			{
-				SAFECOPY(session->req.extra_path_info,epath);
-				SAFECOPY(session->req.virtual_path,vpath);
-				SAFECOPY(session->req.physical_path,rpath);
-				session->req.dynamic=IS_CGI;
-				return(TRUE);
+			sprintf(epath,"/%s%s",(rp_slash+1),str);
+			*(rp_slash+1)=0;
+
+			/* Check if this contains an index */
+			end=strchr(rpath,0);
+			for(i=0; startup->index_file_name!=NULL && startup->index_file_name[i]!=NULL ;i++)  {
+				*end=0;
+				strcat(rpath,startup->index_file_name[i]);
+				if(startup->options&WEB_OPT_DEBUG_TX)
+					lprintf(LOG_DEBUG,"%04d Checking for embedded %s",session->socket,rpath);
+				if(!stat(rpath,&sb)) {
+					*end=0;
+					SAFECOPY(session->req.extra_path_info,epath);
+					SAFECOPY(session->req.virtual_path,vpath);
+					strcat(session->req.virtual_path,"/");
+					SAFECOPY(session->req.physical_path,rpath);
+					if(startup->options&WEB_OPT_DEBUG_TX)
+						lprintf(LOG_DEBUG,"%04d Matched %s",session->socket,rpath);
+					return(TRUE);
+				}
+			}
+
+			/* Check if this is a script */
+			*rp_slash=0;
+			if(vp_slash!=vpath) {
+				if(stat(rpath,&sb)!=-1 && (!(sb.st_mode&S_IFDIR)))
+				{
+					SAFECOPY(session->req.extra_path_info,epath);
+					SAFECOPY(session->req.virtual_path,vpath);
+					SAFECOPY(session->req.physical_path,rpath);
+					return(TRUE);
+				}
 			}
 		}
 	}
