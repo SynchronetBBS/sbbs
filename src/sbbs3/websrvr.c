@@ -3333,7 +3333,7 @@ static BOOL ssjs_send_headers(http_session_t* session)
 				,JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
 			strListPush(&session->req.dynamic_heads,str);
 		}
-		JS_SetArrayLength(session->js_cx, headers, 0);
+		JS_ClearScope(session->js_cx, headers);
 	}
 	return(send_headers(session,session->req.status));
 }
