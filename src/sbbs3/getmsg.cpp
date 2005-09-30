@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -62,27 +62,24 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 		}
 
 		i=smb_getmsghdr(&smb,msg);
-		if(!i && msg->hdr.number==number)
-			return(1);
-
-		/* Wrong offset  */
-
-		if(!i) {
+		if(i==SMB_SUCCESS) {
+			if(msg->hdr.number==number)
+				return(1);
+			/* Wrong offset  */
 			smb_freemsgmem(msg);
-			msg->total_hfields=0; 
 		}
 
 		smb_unlockmsghdr(&smb,msg); 
 	}
 
 	msg->hdr.number=number;
-	if((i=smb_getmsgidx(&smb,msg))!=0)				 /* Message is deleted */
+	if((i=smb_getmsgidx(&smb,msg))!=SMB_SUCCESS)				 /* Message is deleted */
 		return(0);
-	if((i=smb_lockmsghdr(&smb,msg))!=0) {
+	if((i=smb_lockmsghdr(&smb,msg))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 		return(0); 
 	}
-	if((i=smb_getmsghdr(&smb,msg))!=0) {
+	if((i=smb_getmsghdr(&smb,msg))!=SMB_SUCCESS) {
 		sprintf(str,"(%06lX) #%lu/%lu %s",msg->idx.offset,msg->idx.number
 			,number,smb.file);
 		smb_unlockmsghdr(&smb,msg);
