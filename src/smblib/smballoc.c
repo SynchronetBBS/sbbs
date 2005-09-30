@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -135,7 +135,7 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort refs)
 int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 {
 	BOOL	da_opened=FALSE;
-	int		retval=0;
+	int		retval=SMB_SUCCESS;
 	ushort	i;
 	ulong	l,blocks;
 	ulong	sda_offset;
@@ -234,8 +234,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 			return(SMB_ERR_WRITE); 
 		}
 	}
-	fflush(smb->sda_fp);
-	return(SMB_SUCCESS);
+	return fflush(smb->sda_fp); /* SMB_SUCCESS == 0 */
 }
 
 /****************************************************************************/
@@ -245,7 +244,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 /****************************************************************************/
 int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
 {
-	int		i=0;
+	int		i=SMB_SUCCESS;
 	BOOL	da_opened=FALSE;
 	ushort	x;
 
@@ -293,8 +292,7 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
-	fflush(smb->sha_fp);
-	return(SMB_SUCCESS);
+	return fflush(smb->sha_fp);	/* SMB_SUCCESS == 0 */
 }
 
 /****************************************************************************/
