@@ -940,6 +940,12 @@ static void pop3_thread(void* arg)
 				continue;
 			}
 			if(!stricmp(buf, "RSET")) {
+				if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
+					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message base"
+						,socket, i, smb.last_error);
+					sockprintf(socket,"-ERR %d locking message base",i);
+					continue;
+				}
 				for(l=0;l<msgs;l++) {
 					msg.hdr.number=mail[l].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
@@ -966,6 +972,8 @@ static void pop3_thread(void* arg)
 					smb_unlockmsghdr(&smb,&msg);
 					smb_freemsgmem(&msg);
 				}
+				smb_unlocksmbhdr(&smb);
+
 				if(l<msgs)
 					sockprintf(socket,"-ERR %d messages reset (ERROR: %d)",l,i);
 				else
@@ -1126,17 +1134,28 @@ static void pop3_thread(void* arg)
 					lprintf(LOG_DEBUG,"%04d POP3 message transfer complete (%lu lines)"
 						,socket,lines_sent);
 
-					msg.hdr.attr|=MSG_READ;
-					msg.idx.attr=msg.hdr.attr;
-					msg.hdr.netattr|=MSG_SENT;
+					if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
+						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message base"
+							,socket, i, smb.last_error);
+					} else {
+						if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
+							lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
+								,socket, i, smb.last_error);
+						} else {
+							msg.hdr.attr|=MSG_READ;
+							msg.idx.attr=msg.hdr.attr;
+							msg.hdr.netattr|=MSG_SENT;
 
-					if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) 
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
-							,socket, i, smb.last_error, msg.hdr.number);
-					if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
-						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) marking message #%lu as read"
-							,socket, i, smb.last_error, msg.hdr.number);
-					smb_unlockmsghdr(&smb,&msg);
+							if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) 
+								lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
+									,socket, i, smb.last_error, msg.hdr.number);
+							if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
+								lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) marking message #%lu as read"
+									,socket, i, smb.last_error, msg.hdr.number);
+							smb_unlockmsghdr(&smb,&msg);
+						}
+						smb_unlocksmbhdr(&smb);
+					}
 				}
 				smb_freemsgmem(&msg);
 				smb_freemsgtxt(msgtxt);
@@ -1158,13 +1177,21 @@ static void pop3_thread(void* arg)
 				lprintf(LOG_INFO,"%04d POP3 %s deleting message #%ld"
 					,socket, user.alias, msg.hdr.number);
 
+				if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
+					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) locking message base"
+						,socket, i, smb.last_error);
+					sockprintf(socket,"-ERR %d locking message base",i);
+					continue;
+				}
 				if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
+					smb_unlocksmbhdr(&smb);
 					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
 						,socket, i, smb.last_error);
 					sockprintf(socket,"-ERR %d getting message index",i);
 					continue;
 				}
 				if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
+					smb_unlocksmbhdr(&smb);
 					lprintf(LOG_WARNING,"%04d !POP3 ERROR %d (%s) locking message header #%lu"
 						,socket, i, smb.last_error, msg.hdr.number);
 					sockprintf(socket,"-ERR %d locking message header",i);
@@ -1172,6 +1199,7 @@ static void pop3_thread(void* arg)
 				}
 				if((i=smb_getmsghdr(&smb,&msg))!=SMB_SUCCESS) {
 					smb_unlockmsghdr(&smb,&msg);
+					smb_unlocksmbhdr(&smb);
 					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message header #%lu"
 						,socket, i, smb.last_error, msg.hdr.number);
 					sockprintf(socket,"-ERR %d getting message header",i);
@@ -1179,18 +1207,18 @@ static void pop3_thread(void* arg)
 				}
 				msg.hdr.attr|=MSG_DELETE;
 				msg.idx.attr=msg.hdr.attr;
-				if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS) {
-					smb_unlockmsghdr(&smb,&msg);
-					smb_freemsgmem(&msg);
+
+				if((i=smb_putmsg(&smb,&msg))==SMB_SUCCESS && msg.hdr.auxattr&MSG_FILEATTACH)
+					delfattach(&scfg,&msg);
+				smb_unlockmsghdr(&smb,&msg);
+				smb_unlocksmbhdr(&smb);
+				smb_freemsgmem(&msg);
+				if(i!=SMB_SUCCESS) {
 					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) marking message as read"
 						, socket, i, smb.last_error);
 					sockprintf(socket,"-ERR %d marking message for deletion",i);
 					continue;
 				}
-				if(msg.hdr.auxattr&MSG_FILEATTACH)
-					delfattach(&scfg,&msg);
-				smb_unlockmsghdr(&smb,&msg);
-				smb_freemsgmem(&msg);
 				sockprintf(socket,"+OK");
 				if(startup->options&MAIL_OPT_DEBUG_POP3)
 					lprintf(LOG_INFO,"%04d POP3 message deleted", socket);
@@ -3325,21 +3353,30 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		,msg->from
 		,msg->to_net.addr);
 
+	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) {
+		lprintf(LOG_WARNING,"0000 !BOUNCE ERROR %d (%s) locking message base"
+			,i, smb->last_error);
+		return(FALSE);
+	}
+
 	if((i=smb_lockmsghdr(smb,msg))!=SMB_SUCCESS) {
+		smb_unlocksmbhdr(smb);
 		lprintf(LOG_WARNING,"0000 !BOUNCE ERROR %d (%s) locking message header #%lu"
 			,i, smb->last_error, msg->hdr.number);
 		return(FALSE);
 	}
 
 	if((i=smb_putmsg(smb,msg))!=SMB_SUCCESS) {
+		smb_unlockmsghdr(smb,msg);
+		smb_unlocksmbhdr(smb);
 		lprintf(LOG_ERR,"0000 !BOUNCE ERROR %d (%s) incrementing delivery attempt counter"
 			,i, smb->last_error);
-		smb_unlockmsghdr(smb,msg);
 		return(FALSE);
 	}
 
 	if(!immediate && msg->hdr.delivery_attempts<startup->max_delivery_attempts) {
 		smb_unlockmsghdr(smb,msg);
+		smb_unlocksmbhdr(smb);
 		return(TRUE);
 	}
 
@@ -3347,15 +3384,18 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	/* Mark original message as deleted */
 	msg->hdr.attr|=MSG_DELETE;
 	msg->idx.attr=msg->hdr.attr;
-	if((i=smb_putmsg(smb,msg))!=SMB_SUCCESS) {
+
+	i=smb_putmsg(smb,msg);
+
+	smb_unlockmsghdr(smb,msg);
+	smb_unlocksmbhdr(smb);
+	if(i!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"0000 !BOUNCE ERROR %d (%s) deleting message"
 			,i, smb->last_error);
-		smb_unlockmsghdr(smb,msg);
 		return(FALSE);
 	}
 	if(msg->hdr.auxattr&MSG_FILEATTACH)
 		delfattach(&scfg,msg);
-	smb_unlockmsghdr(smb,msg);
 
 	if(msg->from_agent!=AGENT_PERSON	/* don't bounce 'bounce messages' */
 		|| (msg->idx.from==0 && msg->from_net.type==NET_NONE)
@@ -3911,20 +3951,33 @@ static void sendmail_thread(void* arg)
 			}
 			lprintf(LOG_DEBUG,"%04d SEND message transfer complete (%lu lines)", sock, lines);
 
-			msg.hdr.attr|=MSG_DELETE;
-			msg.idx.attr=msg.hdr.attr;
-			msg.hdr.netattr&=~MSG_INTRANSIT;
-			if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) 
-				lprintf(LOG_ERR,"%04d !SEND ERROR %d (%s) locking message header #%lu"
-					,sock
-					,i, smb.last_error, msg.hdr.number);
-			if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
-				lprintf(LOG_ERR,"%04d !SEND ERROR %d (%s) deleting message #%lu"
-					,sock
-					,i, smb.last_error, msg.hdr.number);
-			if(msg.hdr.auxattr&MSG_FILEATTACH)
-				delfattach(&scfg,&msg);
-			smb_unlockmsghdr(&smb,&msg);
+			/* Now lets mark this message for deletion without corrupting the index */
+			if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS)
+				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) locking message base"
+					,i, smb.last_error);
+			else {
+				/* We need to find the index again incase the offset moved (maintenance?) */
+				if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
+					lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) getting message index #%lu"
+						,i, smb.last_error, mail[l].number);
+				} else {
+					msg.hdr.attr|=MSG_DELETE;
+					msg.idx.attr=msg.hdr.attr;
+					msg.hdr.netattr&=~MSG_INTRANSIT;
+					if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) 
+						lprintf(LOG_ERR,"%04d !SEND ERROR %d (%s) locking message header #%lu"
+							,sock
+							,i, smb.last_error, msg.hdr.number);
+					if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
+						lprintf(LOG_ERR,"%04d !SEND ERROR %d (%s) deleting message #%lu"
+							,sock
+							,i, smb.last_error, msg.hdr.number);
+					if(msg.hdr.auxattr&MSG_FILEATTACH)
+						delfattach(&scfg,&msg);
+					smb_unlockmsghdr(&smb,&msg);
+				}
+				smb_unlocksmbhdr(&smb);
+			}
 
 			/* QUIT */
 			sockprintf(sock,"QUIT");

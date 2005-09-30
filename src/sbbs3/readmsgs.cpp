@@ -716,22 +716,25 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					smb_freemsgmem(&msg);
 				msg.total_hfields=0;
 				msg.idx.offset=0;
-				if(loadmsg(&msg,msg.idx.number)) {
-					msg.idx.attr^=MSG_DELETE;
-					msg.hdr.attr=msg.idx.attr;
-					if((i=smb_putmsg(&smb,&msg))!=0)
-						errormsg(WHERE,ERR_WRITE,smb.file,i);
-					smb_unlockmsghdr(&smb,&msg);
-					if(i==0 && msg.idx.attr&MSG_DELETE) {
-						sprintf(str,"%s removed post from %s %s"
-							,useron.alias
-							,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
-						logline("P-",str);
-						if(!stricmp(cfg.sub[subnum]->misc&SUB_NAME
-							? useron.name : useron.alias, msg.from))
-							useron.posts=(ushort)adjustuserrec(&cfg,useron.number
-								,U_POSTS,5,-1); 
-					} 
+				if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
+					if(loadmsg(&msg,msg.idx.number)) {
+						msg.idx.attr^=MSG_DELETE;
+						msg.hdr.attr=msg.idx.attr;
+						if((i=smb_putmsg(&smb,&msg))!=0)
+							errormsg(WHERE,ERR_WRITE,smb.file,i);
+						smb_unlockmsghdr(&smb,&msg);
+						if(i==0 && msg.idx.attr&MSG_DELETE) {
+							sprintf(str,"%s removed post from %s %s"
+								,useron.alias
+								,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
+							logline("P-",str);
+							if(!stricmp(cfg.sub[subnum]->misc&SUB_NAME
+								? useron.name : useron.alias, msg.from))
+								useron.posts=(ushort)adjustuserrec(&cfg,useron.number
+									,U_POSTS,5,-1); 
+						} 
+					}
+					smb_unlocksmbhdr(&smb);
 				}
 				domsg=1;
 				if((cfg.sys_misc&SM_SYSVDELM		// anyone can view delete msgs
@@ -906,11 +909,14 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 								smb_freemsgmem(&msg);
 							msg.total_hfields=0;
 							msg.idx.offset=0;
-							if(loadmsg(&msg,msg.idx.number)) {
-								msg.hdr.attr=msg.idx.attr=i;
-								if((i=smb_putmsg(&smb,&msg))!=0)
-									errormsg(WHERE,ERR_WRITE,smb.file,i);
-								smb_unlockmsghdr(&smb,&msg); 
+							if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
+								if(loadmsg(&msg,msg.idx.number)) {
+									msg.hdr.attr=msg.idx.attr=i;
+									if((i=smb_putmsg(&smb,&msg))!=0)
+										errormsg(WHERE,ERR_WRITE,smb.file,i);
+									smb_unlockmsghdr(&smb,&msg); 
+								}
+								smb_unlocksmbhdr(&smb);
 							}
 							break;
 						case 'E':   /* edit last post */
@@ -928,18 +934,21 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 								smb_freemsgmem(&msg);
 							msg.total_hfields=0;
 							msg.idx.offset=0;
-							if(!loadmsg(&msg,msg.idx.number)) {
-								errormsg(WHERE,ERR_READ,smb.file,msg.idx.number);
-								break; 
+							if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
+								if(!loadmsg(&msg,msg.idx.number)) {
+									errormsg(WHERE,ERR_READ,smb.file,msg.idx.number);
+									break; 
+								}
+								sprintf(str,text[DeletePostQ],msg.hdr.number,msg.subj);
+								if(movemsg(&msg,subnum) && yesno(str)) {
+									msg.idx.attr|=MSG_DELETE;
+									msg.hdr.attr=msg.idx.attr;
+									if((i=smb_putmsg(&smb,&msg))!=0)
+										errormsg(WHERE,ERR_WRITE,smb.file,i); 
+								}
+								smb_unlockmsghdr(&smb,&msg);
 							}
-							sprintf(str,text[DeletePostQ],msg.hdr.number,msg.subj);
-							if(movemsg(&msg,subnum) && yesno(str)) {
-								msg.idx.attr|=MSG_DELETE;
-								msg.hdr.attr=msg.idx.attr;
-								if((i=smb_putmsg(&smb,&msg))!=0)
-									errormsg(WHERE,ERR_WRITE,smb.file,i); 
-							}
-							smb_unlockmsghdr(&smb,&msg);
+							smb_unlocksmbhdr(&smb);
 							break;
 
 						case 'Q':
@@ -963,12 +972,15 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 								smb_freemsgmem(&msg);
 							msg.total_hfields=0;
 							msg.idx.offset=0;
-							if(loadmsg(&msg,msg.idx.number)) {
-								msg.idx.attr|=MSG_VALIDATED;
-								msg.hdr.attr=msg.idx.attr;
-								if((i=smb_putmsg(&smb,&msg))!=0)
-									errormsg(WHERE,ERR_WRITE,smb.file,i);
-								smb_unlockmsghdr(&smb,&msg); 
+							if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
+								if(loadmsg(&msg,msg.idx.number)) {
+									msg.idx.attr|=MSG_VALIDATED;
+									msg.hdr.attr=msg.idx.attr;
+									if((i=smb_putmsg(&smb,&msg))!=0)
+										errormsg(WHERE,ERR_WRITE,smb.file,i);
+									smb_unlockmsghdr(&smb,&msg); 
+								}
+								smb_unlocksmbhdr(&smb);
 							}
 							break;
 						default:
