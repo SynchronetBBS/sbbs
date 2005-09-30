@@ -3324,17 +3324,16 @@ static BOOL ssjs_send_headers(http_session_t* session)
 	JS_GetProperty(session->js_cx,reply,"header",&val);
 	headers = JSVAL_TO_OBJECT(val);
 	heads=JS_Enumerate(session->js_cx,headers);
-		if(heads != NULL) {
-			for(i=0;i<heads->length;i++)  {
-				JS_IdToValue(session->js_cx,heads->vector[i],&val);
-				js_str=JSVAL_TO_STRING(val);
-				JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
-				safe_snprintf(str,sizeof(str),"%s: %s"
-					,JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
-				strListPush(&session->req.dynamic_heads,str);
-			}
-			JS_SetArrayLength(session->js_cx, headers, 0);
+	if(heads != NULL) {
+		for(i=0;i<heads->length;i++)  {
+			JS_IdToValue(session->js_cx,heads->vector[i],&val);
+			js_str=JSVAL_TO_STRING(val);
+			JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
+			safe_snprintf(str,sizeof(str),"%s: %s"
+				,JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
+			strListPush(&session->req.dynamic_heads,str);
 		}
+		JS_SetArrayLength(session->js_cx, headers, 0);
 	}
 	return(send_headers(session,session->req.status));
 }
