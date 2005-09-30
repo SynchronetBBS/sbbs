@@ -491,8 +491,9 @@ int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 {
 	idxrec_t	idx;
-	ulong		byte_offset;
-	ulong		l,length,total,bot,top;
+	long		byte_offset;
+	ulong		l,total,bot,top;
+	long		length;
 
 	if(smb->sid_fp==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"index not open");
@@ -501,7 +502,7 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 	clearerr(smb->sid_fp);
 
 	length=filelength(fileno(smb->sid_fp));
-	if(length<sizeof(idxrec_t)) {
+	if(length<(long)sizeof(idxrec_t)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"invalid index file length: %ld",length);
 		return(SMB_ERR_FILE_LEN);
@@ -520,7 +521,7 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 			byte_offset=msg->offset*sizeof(idxrec_t);
 		if(byte_offset>=length) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"invalid index offset: %ld, byte offset: %lu, length: %lu"
+				,"invalid index offset: %ld, byte offset: %ld, length: %ld"
 				,msg->offset, byte_offset, length);
 			return(SMB_ERR_HDR_OFFSET);
 		}
@@ -538,6 +539,8 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 				,msg->offset,byte_offset);
 			return(SMB_ERR_READ);
 		}
+		/* Save the correct offset (from the beginning of the file) */
+		msg->offset=byte_offset/sizeof(idxrec_t);
 		return(SMB_SUCCESS); 
 	}
 
@@ -1458,11 +1461,20 @@ int SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 {
+	long length;
+
 	if(smb->sid_fp==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"index not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
 	clearerr(smb->sid_fp);
+	length = filelength(fileno(smb->sid_fp));
+	if(length < (long)(msg->offset*sizeof(idxrec_t))) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error)
+			,"invalid index offset: %ld, byte offset: %lu, length: %lu"
+			,msg->offset, msg->offset*sizeof(idxrec_t), length);
+		return(SMB_ERR_HDR_OFFSET);
+	}
 	if(fseek(smb->sid_fp,msg->offset*sizeof(idxrec_t),SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d '%s' seeking to %u in header"
@@ -1476,8 +1488,7 @@ int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 			,get_errno(),STRERROR(get_errno()));
 		return(SMB_ERR_WRITE);
 	}
-	fflush(smb->sid_fp);
-	return(SMB_SUCCESS);
+	return fflush(smb->sid_fp);	/* SMB_SUCCESS == 0 */
 }
 
 /****************************************************************************/
@@ -1577,8 +1588,7 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		}
 		hdrlen++; 
 	}
-	fflush(smb->shd_fp);
-	return(SMB_SUCCESS);
+	return fflush(smb->shd_fp);	/* SMB_SUCCESS == 0 */
 }
 
 /****************************************************************************/
