@@ -1915,10 +1915,8 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				session->req.ld->vhost=strdup(session->req.vhost);
 			session->req.dynamic=is_dynamic_req(session);
 			if(session->req.query_str[0])  {
+				add_env(session,"QUERY_STRING",session->req.query_str);
 				switch(session->req.dynamic) {
-					case IS_CGI:
-						add_env(session,"QUERY_STRING",session->req.query_str);
-						break;
 					case IS_JS:
 					case IS_SSJS:
 						js_add_request_prop(session,"query_string",session->req.query_str);
@@ -1927,11 +1925,9 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				}
 			}
 
-			if(session->req.dynamic==IS_CGI)  {
-				add_env(session,"REQUEST_METHOD",methods[session->req.method]);
-				add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
-					http_vers[session->http_ver] : "HTTP/0.9");
-			}
+			add_env(session,"REQUEST_METHOD",methods[session->req.method]);
+			add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
+				http_vers[session->http_ver] : "HTTP/0.9");
 			return(TRUE);
 		}
 	}
