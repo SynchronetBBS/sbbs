@@ -437,7 +437,8 @@ int main(int argc, char **argv)
 					subjcrc++; 
 				}
 				if(smb.status.attr&SMB_EMAIL 
-					&& msg.from_ext && msg.idx.from!=atoi(msg.from_ext)) {
+					&& (msg.from_ext!=NULL || msg.idx.from) 
+					&& (msg.from_ext==NULL || msg.idx.from!=atoi(msg.from_ext))) {
 					fprintf(stderr,"%sFrom extension mismatch\n",beep);
 					msgerr=TRUE;
 					if(extinfo)
@@ -457,7 +458,8 @@ int main(int argc, char **argv)
 					fromcrc++; 
 				}
 				if(smb.status.attr&SMB_EMAIL 
-					&& msg.to_ext && msg.idx.to!=atoi(msg.to_ext)) {
+					&& (msg.to_ext!=NULL || msg.idx.to) 
+					&& (msg.to_ext==NULL || msg.idx.to!=atoi(msg.to_ext))) {
 					fprintf(stderr,"%sTo extension mismatch\n",beep);
 					msgerr=TRUE;
 					if(extinfo)
