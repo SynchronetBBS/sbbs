@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,9 +37,23 @@
 
 #include "sbbs.h"
 
+static msg_number(smbmsg_t* msg)
+{
+	if(msg->idx.number)
+		return(msg->idx.number);
+	return(msg->hdr.number);
+}
+
+static msg_time(smbmsg_t* msg)
+{
+	if(msg->idx.time)
+		return(msg->idx.time);
+	return(msg->hdr.when_imported.time);
+}
+
 static ulong msgid_serialno(smbmsg_t* msg)
 {
-	return (msg->idx.time-1000000000) + msg->idx.number;
+	return (msg_time(msg)-1000000000) + msg_number(msg);
 }
 
 /****************************************************************************/
@@ -54,7 +68,7 @@ char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg)
 
 	snprintf(msgid,sizeof(msgid)
 		,"%lu.%s@%s %08lx"
-		,msg->idx.number
+		,msg_number(msg)
 		,sub->code
 		,smb_faddrtoa(&sub->faddr,NULL)
 		,msgid_serialno(msg)
@@ -76,14 +90,14 @@ char* DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg)
 	if(subnum>=cfg->total_subs)
 		snprintf(msgid,sizeof(msgid)
 			,"<%08lX.%lu@%s>"
-			,msg->idx.time
-			,msg->idx.number
+			,msg_time(msg)
+			,msg_number(msg)
 			,cfg->sys_inetaddr);
 	else
 		snprintf(msgid,sizeof(msgid)
 			,"<%08lX.%lu.%s@%s>"
-			,msg->idx.time
-			,msg->idx.number
+			,msg_time(msg)
+			,msg_number(msg)
 			,cfg->sub[subnum]->code
 			,cfg->sys_inetaddr);
 
