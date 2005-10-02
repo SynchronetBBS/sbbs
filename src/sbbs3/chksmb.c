@@ -640,7 +640,8 @@ int main(int argc, char **argv)
 
 		fseek(smb.sda_fp,0L,SEEK_SET);
 		for(l=0;l<length;l+=2) {
-			fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
+			if((l%10)==0)
+				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
 			i=0;
 			if(!fread(&i,2,1,smb.sda_fp))
 				break;
