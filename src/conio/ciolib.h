@@ -44,6 +44,7 @@ enum {
 	,CIOLIB_MODE_ANSI
 	,CIOLIB_MODE_X
 	,CIOLIB_MODE_CONIO
+	,CIOLIB_MODE_SDL
 };
 
 #if defined(_WIN32)	/* presumably, Win32 */

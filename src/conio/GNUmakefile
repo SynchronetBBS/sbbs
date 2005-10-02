@@ -12,6 +12,11 @@ else
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)console$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)x_cio$(OFILE)
 endif
+
+ifdef WITH_SDL
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
+endif
+
 ifeq ($(os),netbsd)
  CFLAGS	+=	-DN_CURSES_LIB
 endif

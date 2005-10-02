@@ -117,7 +117,6 @@
 
 #include "keys.h"
 #include "mouse.h"
-#include "vgafont.h"
 
 #define CONSOLE_MAX_ROWS	61
 #define CONSOLE_MAX_COLS	81
