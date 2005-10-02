@@ -556,7 +556,6 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 		sprintf(str,"%.25s",block+71);              /* Title */
 		smb_hfield(&msg,SUBJECT,strlen(str),str);
-		msg.idx.subj=smb_subject_crc(str); 
 	}
 
 	if(qnet) {
@@ -578,10 +577,12 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			strcpy(fulladdr,senderaddr);
 			sprintf(str,"BADADDR: %s",addr);
 			smb_hfield(&msg,SUBJECT,strlen(str),str);
-			msg.idx.subj=smb_subject_crc(str);
 			net=NET_NONE;
 			smb_hfield(&msg,SENDERNETTYPE,sizeof(net),&net);
 		}
+		/* This is required for fixsmb to be able to rebuild the index */
+		sprintf(str,"%u",msg.idx.to);
+		smb_hfield_str(&msg,RECIPIENTEXT,str);
 
 		smb_hfield(&msg,RECIPIENT,strlen(name),name);
 		net=NET_QWK;

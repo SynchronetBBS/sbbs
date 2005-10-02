@@ -242,7 +242,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 
 	memset(&msg,0,sizeof(smbmsg_t));
 	msg.hdr.version=smb_ver();
-	msg.hdr.attr=msg.idx.attr=msgattr;
+	msg.hdr.attr=msgattr;
 	if(mode&WM_FILE)
 		msg.hdr.auxattr|=MSG_FILEATTACH;
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time(NULL);
@@ -268,14 +268,12 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 
 	sprintf(str,"%u",usernumber);
 	smb_hfield_str(&msg,RECIPIENTEXT,str);
-	msg.idx.to=usernumber;
 
 	strcpy(str,useron.alias);
 	smb_hfield_str(&msg,SENDER,str);
 
 	sprintf(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
-	msg.idx.from=useron.number;
 
 	if(useron.misc&NETMAIL) {
 		nettype=smb_netaddr_type(useron.netmail);
@@ -289,7 +287,6 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
-	msg.idx.subj=smb_subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

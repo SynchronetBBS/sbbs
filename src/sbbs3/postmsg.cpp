@@ -309,8 +309,6 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
 	/* using the idx records here is not technically necessary, just for convenience */
-	msg.idx.attr=msg.hdr.attr;
-	msg.idx.time=msg.hdr.when_imported.time;
 	msg.idx.number=smb.status.last_msg+1; /* this *should* be the new message number */
 
 	smb_hfield_str(&msg,FIDOPID,program_id(pid));
@@ -357,12 +355,10 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	smb_hfield_str(&msg,RECIPIENT,touser);
 	strlwr(touser);
-	msg.idx.to=crc16(touser,0);
 
 	strcpy(str,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
 	smb_hfield_str(&msg,SENDER,str);
 	strlwr(str);
-	msg.idx.from=crc16(str,0);
 
 	sprintf(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
@@ -371,7 +367,6 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
-	msg.idx.subj=smb_subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
@@ -508,7 +503,6 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	if(msg->hdr.when_written.time==0)	/* Uninitialized */
 		msg->hdr.when_written = msg->hdr.when_imported;
 
-	msg->idx.time=msg->hdr.when_imported.time;	/* needed for MSG-ID generation */
 	msg->idx.number=smb->status.last_msg+1;		/* needed for MSG-ID generation */
 
 	if(smb->status.max_crcs==0)	/* no CRC checking means no body text dupe checking */

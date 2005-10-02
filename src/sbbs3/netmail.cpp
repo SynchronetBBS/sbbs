@@ -232,7 +232,6 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 
 	net=NET_INTERNET;
 	smb_hfield_str(&msg,RECIPIENT,name);
-	msg.idx.to=0;	/* Out-bound NetMail set to 0 */
 	smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(net),&net);
 	smb_hfield_str(&msg,RECIPIENTNETADDR,addr);
 
@@ -241,7 +240,6 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 
 	sprintf(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
-	msg.idx.from=useron.number;
 
 	/*
 	smb_hfield(&msg,SENDERNETTYPE,sizeof(net),&net);
@@ -253,7 +251,6 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 
 	smb_hfield_str(&msg,SUBJECT,title);
 	strcpy(str,title);
-	msg.idx.subj=smb_subject_crc(str);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
@@ -428,7 +425,8 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 
 	net=NET_QWK;
 	smb_hfield_str(&msg,RECIPIENT,to);
-	msg.idx.to=touser;
+	sprintf(str,"%u",touser);
+	smb_hfield_str(&msg,RECIPIENTEXT,str);
 	smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(net),&net);
 	smb_hfield_str(&msg,RECIPIENTNETADDR,fulladdr);
 
@@ -436,13 +434,11 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 
 	sprintf(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
-	msg.idx.from=useron.number;
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
-	msg.idx.subj=smb_subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

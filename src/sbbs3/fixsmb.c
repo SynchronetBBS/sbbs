@@ -217,10 +217,6 @@ int fixsmb(char* sub)
 				printf("Removing 'in transit' attribute\n");
 				msg.hdr.netattr&=~MSG_INTRANSIT;
 			}
-			msg.idx.number=msg.hdr.number;
-			msg.idx.attr=msg.hdr.attr;
-			msg.idx.time=msg.hdr.when_imported.time;
-			smb_init_idx(&smb,&msg);
 			if((i=smb_putmsg(&smb,&msg))!=0) {
 				printf("\nsmb_putmsg returned %d: %s\n",i,smb.last_error);
 				continue; 
