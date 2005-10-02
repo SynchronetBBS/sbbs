@@ -2239,7 +2239,7 @@ BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user)
 	if(user->exempt&FLAG('D'))
 		return(TRUE);
 
-	if(cfg->dir[dirnum]->ex_ar[0]==0)
+	if(cfg->dir[dirnum]->ex_ar==NULL || cfg->dir[dirnum]->ex_ar[0]==0)
 		return(FALSE);
 
 	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user));
