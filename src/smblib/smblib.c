@@ -353,7 +353,7 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 			SLEEP(smb->retry_delay);
 		}
 	}
-	safe_snprintf(smb->last_error,sizeof(smb->last_error),"timeout locking header");
+	safe_snprintf(smb->last_error,sizeof(smb->last_error),"timeout locking message base");
 	return(SMB_ERR_TIMEOUT);
 }
 
@@ -1395,7 +1395,7 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		smb_unlocksmbhdr(smb);
 		return(i);
 	}
-	msg->idx.number=msg->hdr.number=smb->status.last_msg+1;
+	msg->hdr.number=smb->status.last_msg+1;
 
 	/* This is *not* a dupe-check */
 	if(!(msg->flags&MSG_FLAG_HASHED) /* not already hashed */
@@ -1426,8 +1426,6 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	}
 
 	msg->idx.offset=smb->status.header_offset+l;
-	msg->idx.time=msg->hdr.when_imported.time;
-	msg->idx.attr=msg->hdr.attr;
 	msg->offset=smb->status.total_msgs;
 	i=smb_putmsg(smb,msg);
 	if(i==SMB_SUCCESS) {
@@ -1439,6 +1437,29 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	return(i);
 }
 
+/****************************************************************************/
+/* Safely updates existing index and header records for msg					*/
+/* Nothing should be locked prior to calling this function and nothing		*/
+/* should (normally) be locked when it exits								*/
+/****************************************************************************/
+int SMBCALL smb_updatemsg(smb_t* smb, smbmsg_t* msg)
+{
+	int retval;
+
+	/* Insure no one else can be changing the index at this time */
+	if((retval=smb_locksmbhdr(smb))!=SMB_SUCCESS)
+		return(retval);
+	/* Get the current index record offset (for later update by smb_putmsgidx) */
+	if((retval=smb_getmsgidx(smb, msg))==SMB_SUCCESS) {
+		/* Don't let any one else read or write this header while we're updating it */
+		if((retval=smb_lockmsghdr(smb,msg))==SMB_SUCCESS) {
+			retval=smb_putmsg(smb,msg);
+			smb_unlockmsghdr(smb,msg);
+		}
+	}
+	smb_unlocksmbhdr(smb);
+	return(retval);
+}
 
 /****************************************************************************/
 /* Writes both header and index information for msg 'msg'                   */
@@ -1447,10 +1468,42 @@ int SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg)
 {
 	int i;
 
-	i=smb_putmsghdr(smb,msg);
-	if(i)
+	smb_init_idx(smb,msg);
+
+	if((i=smb_putmsghdr(smb,msg))!=SMB_SUCCESS)
 		return(i);
+
 	return(smb_putmsgidx(smb,msg));
+}
+
+/****************************************************************************/
+/* Initializes/re-synchronizes all the fields of the message index record	*/
+/* with the values from the message header (except for the header offset)	*/
+/****************************************************************************/
+int SMBCALL smb_init_idx(smb_t* smb, smbmsg_t* msg)
+{
+	msg->idx.subj=smb_subject_crc(msg->subj);
+
+	if(smb->status.attr&SMB_EMAIL) {
+		if(msg->to_ext)
+			msg->idx.to=atoi(msg->to_ext);
+		else
+			msg->idx.to=0;
+		if(msg->from_ext)
+			msg->idx.from=atoi(msg->from_ext);
+		else
+			msg->idx.from=0; 
+	} else {
+		msg->idx.to=smb_name_crc(msg->to);
+		msg->idx.from=smb_name_crc(msg->from);
+	}
+
+	/* Make sure these index/header fields are always *nsync */
+	msg->idx.number	= msg->hdr.number;
+	msg->idx.attr	= msg->hdr.attr;	
+	msg->idx.time	= msg->hdr.when_imported.time;
+
+	return(SMB_SUCCESS);
 }
 
 /****************************************************************************/

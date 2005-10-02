@@ -248,7 +248,6 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		}
 		if(msg->hdr.when_written.time==0)	/* Uninitialized */
 			msg->hdr.when_written = msg->hdr.when_imported;
-		smb_init_idx(smb,msg);
 
 		/* Look-up thread_back if RFC822 Reply-ID was specified */
 		if(msg->hdr.thread_back==0 && msg->reply_id!=NULL) {
