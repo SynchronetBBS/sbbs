@@ -965,7 +965,6 @@ static void pop3_thread(void* arg)
 						break;
 					}
 					msg.hdr.attr=mail[l].attr;
-					msg.idx.attr=msg.hdr.attr;
 					if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
 						lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) updating message index"
 							,socket, i, smb.last_error);
@@ -1143,7 +1142,6 @@ static void pop3_thread(void* arg)
 								,socket, i, smb.last_error);
 						} else {
 							msg.hdr.attr|=MSG_READ;
-							msg.idx.attr=msg.hdr.attr;
 							msg.hdr.netattr|=MSG_SENT;
 
 							if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) 
@@ -1206,7 +1204,6 @@ static void pop3_thread(void* arg)
 					continue;
 				}
 				msg.hdr.attr|=MSG_DELETE;
-				msg.idx.attr=msg.hdr.attr;
 
 				if((i=smb_putmsg(&smb,&msg))==SMB_SUCCESS && msg.hdr.auxattr&MSG_FILEATTACH)
 					delfattach(&scfg,&msg);
@@ -2485,9 +2482,9 @@ static void smtp_thread(void* arg)
 					section=sec_list[rcpt_count];
 
 					SAFECOPY(rcpt_name,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
-					usernum=iniReadInteger(rcptlst,section			,smb_hfieldtype(RECIPIENTEXT),0);
-					agent=iniReadShortInt(rcptlst,section			,smb_hfieldtype(RECIPIENTAGENT),AGENT_PERSON);
-					nettype=iniReadShortInt(rcptlst,section			,smb_hfieldtype(RECIPIENTNETTYPE),NET_NONE);
+					usernum=iniReadInteger(rcptlst,section				,smb_hfieldtype(RECIPIENTEXT),0);
+					agent=iniReadShortInt(rcptlst,section				,smb_hfieldtype(RECIPIENTAGENT),AGENT_PERSON);
+					nettype=iniReadShortInt(rcptlst,section				,smb_hfieldtype(RECIPIENTNETTYPE),NET_NONE);
 					sprintf(str,"#%u",usernum);
 					SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),str,value));
 
@@ -2516,13 +2513,12 @@ static void smtp_thread(void* arg)
 
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
 
-					newmsg.idx.to=usernum;
-					if(nettype==NET_NONE) {	/* Local destination */
+					if(usernum) {	/* Local destination or QWKnet routed */
+						/* This is required for fixsmb to be able to rebuild the index */
 						sprintf(str,"%u",usernum);
 						smb_hfield_str(&newmsg, RECIPIENTEXT, str);
-					} else {
-						if(nettype!=NET_QWK)
-							newmsg.idx.to=0;
+					}
+					if(nettype!=NET_NONE) {
 						smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
 						smb_hfield_str(&newmsg, RECIPIENTNETADDR, rcpt_addr);
 					}
@@ -3383,7 +3379,6 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	newmsg=*msg;
 	/* Mark original message as deleted */
 	msg->hdr.attr|=MSG_DELETE;
-	msg->idx.attr=msg->hdr.attr;
 
 	i=smb_putmsg(smb,msg);
 
@@ -3952,32 +3947,13 @@ static void sendmail_thread(void* arg)
 			lprintf(LOG_DEBUG,"%04d SEND message transfer complete (%lu lines)", sock, lines);
 
 			/* Now lets mark this message for deletion without corrupting the index */
-			if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS)
-				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) locking message base"
-					,i, smb.last_error);
-			else {
-				/* We need to find the index again incase the offset moved (maintenance?) */
-				if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) getting message index #%lu"
-						,i, smb.last_error, mail[l].number);
-				} else {
-					msg.hdr.attr|=MSG_DELETE;
-					msg.idx.attr=msg.hdr.attr;
-					msg.hdr.netattr&=~MSG_INTRANSIT;
-					if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) 
-						lprintf(LOG_ERR,"%04d !SEND ERROR %d (%s) locking message header #%lu"
-							,sock
-							,i, smb.last_error, msg.hdr.number);
-					if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
-						lprintf(LOG_ERR,"%04d !SEND ERROR %d (%s) deleting message #%lu"
-							,sock
-							,i, smb.last_error, msg.hdr.number);
-					if(msg.hdr.auxattr&MSG_FILEATTACH)
-						delfattach(&scfg,&msg);
-					smb_unlockmsghdr(&smb,&msg);
-				}
-				smb_unlocksmbhdr(&smb);
-			}
+			msg.hdr.attr|=MSG_DELETE;
+			msg.hdr.netattr&=~MSG_INTRANSIT;
+			if((i=smb_updatemsg(&smb,&msg))!=SMB_SUCCESS)
+				lprintf(LOG_ERR,"%04d !SEND ERROR %d (%s) deleting message #%lu"
+					,sock, i, smb.last_error, msg.hdr.number);
+			if(msg.hdr.auxattr&MSG_FILEATTACH)
+				delfattach(&scfg,&msg);
 
 			/* QUIT */
 			sockprintf(sock,"QUIT");
