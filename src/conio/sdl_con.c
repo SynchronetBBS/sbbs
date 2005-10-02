@@ -27,7 +27,7 @@ SDL_Surface *sdl_font=NULL;
 SDL_Surface	*sdl_cursor=NULL;
 
 struct video_stats vstat;
-int fullscreen=1;
+int fullscreen=0;
 
 /* 256 bytes so I can cheat */
 unsigned char		sdl_keybuf[256];		/* Keyboard buffer */
@@ -178,6 +178,11 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 /* Called from event thread only */
 void sdl_add_key(unsigned int keyval)
 {
+	if(keyval==0xa600) {
+		fullscreen=!fullscreen;
+		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling);
+		return;
+	}
 	if(keyval <= 0xffff) {
 		SDL_mutexP(sdl_keylock);
 		if(sdl_keynext+1==sdl_key) {
