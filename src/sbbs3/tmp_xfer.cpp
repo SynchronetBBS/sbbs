@@ -73,6 +73,7 @@ void sbbs_t::temp_xfer()
 	SAFECOPY(cfg.dir[dirnum]->data_dir,cfg.dir[0]->data_dir);
 	cfg.dir[dirnum]->maxfiles=MAX_FILES;
 	cfg.dir[dirnum]->op_ar=(uchar *)nulstr;
+	cfg.dir[dirnum]->ex_ar=(uchar *)nulstr;
 	temp_dirnum=curdirnum=usrdir[curlib][curdir[curlib]];
 	cfg.total_dirs++;
 
