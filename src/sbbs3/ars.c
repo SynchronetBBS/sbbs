@@ -270,28 +270,28 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
-				i+=2; }
+				i+=4; }
 			else if(!strnicmp(str+i,"UNIX",4)) {
 				artype=AR_UNIX;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
-				i+=2; }
+				i+=3; }
 			else if(!strnicmp(str+i,"LINUX",5)) {
 				artype=AR_LINUX;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
-				i+=2; }
+				i+=4; }
 			else if(!strnicmp(str+i,"PROT",4)) {
 				artype=AR_PROT;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
-				i+=2; }
+				i+=3; }
 			else if(!strnicmp(str+i,"SUBCODE",7)) {
 				artype=AR_SUBCODE;
 				i+=6; }
@@ -498,7 +498,7 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			while(isdigit(str[i+1])) i++;
 			continue; }
 		if(artype==AR_SUBCODE || artype==AR_DIRCODE || artype==AR_SHELL) {
-			for(n=0;n<8
+			for(n=0;n<LEN_EXTCODE
 				&& str[i]
 				&& str[i]!=' '
 				&& str[i]!='('
@@ -508,7 +508,9 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				;n++)
 				ar[j++]=toupper(str[i++]);
 			ar[j++]=0;
-			continue; }
+			i--;
+			continue; 
+		}
 		switch(artype) {
 			case AR_FLAG1:
 			case AR_FLAG2:
