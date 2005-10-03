@@ -1,5 +1,5 @@
 # Find SDL headers!
-ifdef WITH_SDL
+ifndef WITHOUT_SDL
  ifndef SDL_CONFIG
   ifeq ($(shell sdl-config --cflags > /dev/null && echo YES),YES)
    SDL_CONFIG := sdl-config

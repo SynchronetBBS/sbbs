@@ -7,7 +7,6 @@
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "xpbeep.h"
-#include "link_list.h"
 
 #include "ciolib.h"
 #include "vidmodes.h"
@@ -17,14 +16,15 @@
 /* This should all be called from the same thread!		*/
 /********************************************************/
 
-link_list_t sdl_updates;
-
 SDL_Surface	*win=NULL;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
+int sdl_updated;
 
 SDL_Surface *sdl_font=NULL;
 SDL_Surface	*sdl_cursor=NULL;
+
+unsigned short *last_vmem=NULL;
 
 struct video_stats vstat;
 int fullscreen=0;
@@ -53,12 +53,10 @@ struct sdl_drawchar {
 
 enum {
 	 SDL_USEREVENT_UPDATERECT
-	,SDL_USEREVENT_DRAWCHAR
 	,SDL_USEREVENT_SETTITLE
 	,SDL_USEREVENT_SETVIDMODE
 	,SDL_USEREVENT_SHOWMOUSE
 	,SDL_USEREVENT_HIDEMOUSE
-	,SDL_USEREVENT_SHOWCURSOR
 };
 
 const struct sdl_keyvals sdl_keyval[] =
@@ -182,102 +180,49 @@ void sdl_user_func(int func, ...)
 	unsigned int	*i;
 	va_list argptr;
 	void	**args;
-	SDL_Event	*ev;
-	SDL_Event	evnt;
+	SDL_Event	ev;
 
-	if((ev=(SDL_Event *)malloc(sizeof(SDL_Event)))==NULL)
-		return;
-	ev->type=SDL_USEREVENT;
-	ev->user.data1=NULL;
-	ev->user.data2=NULL;
-	ev->user.code=func;
+	ev.type=SDL_USEREVENT;
+	ev.user.data1=NULL;
+	ev.user.data2=NULL;
+	ev.user.code=func;
 	va_start(argptr, func);
 	switch(func) {
 		case SDL_USEREVENT_UPDATERECT:
-			if((ev->user.data1=(void *)malloc(sizeof(SDL_Rect)))==NULL) {
-				free(ev);
-				va_end(argptr);
-				return;
+			/* Only send event if the last event wasn't already handled */
+			if(sdl_updated) {
+				if(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)==1);
+					sdl_updated=0;
 			}
-			((SDL_Rect *)ev->user.data1)->x=va_arg(argptr, unsigned int);
-			((SDL_Rect *)ev->user.data1)->y=va_arg(argptr, unsigned int);
-			((SDL_Rect *)ev->user.data1)->w=va_arg(argptr, unsigned int);
-			((SDL_Rect *)ev->user.data1)->h=va_arg(argptr, unsigned int);
-			listPushNode(&sdl_updates,ev);
-			evnt.type=SDL_USEREVENT;
-			evnt.user.code=-1;
-			evnt.user.data1=NULL;
-			evnt.user.data2=NULL;
-			while(SDL_PeepEvents(&evnt, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SETTITLE:
-			if((ev->user.data1=strdup(va_arg(argptr, char *)))==NULL) {
-				free(ev);
+			if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
 				va_end(argptr);
 				return;
 			}
-			listPushNode(&sdl_updates,ev);
-			evnt.type=SDL_USEREVENT;
-			evnt.user.code=-1;
-			evnt.user.data1=NULL;
-			evnt.user.data2=NULL;
-			SDL_PeepEvents(&evnt, 1, SDL_ADDEVENT, 0xffffffff);
+free(ev.user.data1);
+//			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SETVIDMODE:
-			if((ev->user.data1=(void *)malloc(sizeof(int)))==NULL) {
-				free(ev);
+			if((ev.user.data1=(void *)malloc(sizeof(int)))==NULL) {
 				va_end(argptr);
 				return;
 			}
-			*((int *)ev->user.data1)=va_arg(argptr, int);
-			if((ev->user.data2=(void *)malloc(sizeof(int)))==NULL) {
-				free(ev->user.data1);
-				free(ev);
+			*((int *)ev.user.data1)=va_arg(argptr, int);
+			if((ev.user.data2=(void *)malloc(sizeof(int)))==NULL) {
+				free(ev.user.data1);
 				va_end(argptr);
 				return;
 			}
-			*((int *)ev->user.data2)=va_arg(argptr, int);
-			listPushNode(&sdl_updates,ev);
-			evnt.type=SDL_USEREVENT;
-			evnt.user.code=-1;
-			evnt.user.data1=NULL;
-			evnt.user.data2=NULL;
-			while(SDL_PeepEvents(&evnt, 1, SDL_ADDEVENT, 0xffffffff)!=1);
-			break;
-		case SDL_USEREVENT_DRAWCHAR:
-			if((ev->user.data1=(void *)malloc(sizeof(struct sdl_drawchar)))==NULL) {
-				free(ev);
-				va_end(argptr);
-				return;
-			}
-			((struct sdl_drawchar *)ev->user.data1)->x=va_arg(argptr, unsigned int);
-			((struct sdl_drawchar *)ev->user.data1)->y=va_arg(argptr, unsigned int);
-			((struct sdl_drawchar *)ev->user.data1)->ch=va_arg(argptr, unsigned int);
-			((struct sdl_drawchar *)ev->user.data1)->fg=va_arg(argptr, unsigned int);
-			((struct sdl_drawchar *)ev->user.data1)->bg=va_arg(argptr, unsigned int);
-			((struct sdl_drawchar *)ev->user.data1)->blink=va_arg(argptr, unsigned int);
-			listPushNode(&sdl_updates,ev);
+			*((int *)ev.user.data2)=va_arg(argptr, int);
+			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SHOWMOUSE:
-			listPushNode(&sdl_updates,ev);
-			evnt.type=SDL_USEREVENT;
-			evnt.user.code=-1;
-			while(SDL_PeepEvents(&evnt, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+//			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_HIDEMOUSE:
-			listPushNode(&sdl_updates,ev);
-			evnt.type=SDL_USEREVENT;
-			evnt.user.code=-1;
-			while(SDL_PeepEvents(&evnt, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+//			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
-		case SDL_USEREVENT_SHOWCURSOR:
-			listPushNode(&sdl_updates,ev);
-			evnt.type=SDL_USEREVENT;
-			evnt.user.code=-1;
-			while(SDL_PeepEvents(&evnt, 1, SDL_ADDEVENT, 0xffffffff)!=1);
-			break;
-		default:
-			free(ev);
 	}
 	va_end(argptr);
 }
@@ -378,6 +323,130 @@ int sdl_load_font(char *filename)
     return(0);
 }
 
+/* Called from events thread only */
+int sdl_setup_colours(SDL_Surface *surf, int xor)
+{
+	int i;
+	int ret=0;
+	SDL_Color	co[16];;
+
+	for(i=0; i<16; i++) {
+		co[i^xor].r=dac_default256[vstat.palette[i]].red;
+		co[i^xor].g=dac_default256[vstat.palette[i]].green;
+		co[i^xor].b=dac_default256[vstat.palette[i]].blue;
+	}
+	SDL_SetColors(surf, co, 0, 16);
+	return(ret);
+}
+
+/* Called from events thread only */
+void sdl_draw_cursor(void)
+{
+	static int lastcursor_x=0;
+	static int lastcursor_y=0;
+	SDL_Rect	src;
+	SDL_Rect	dst;
+	int	x;
+	int	y;
+
+	if(vstat.curs_start<=vstat.curs_end) {
+		dst.x=0;
+		dst.y=0;
+		dst.w=vstat.charwidth*vstat.scaling;
+		dst.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
+		src.x=vstat.curs_col*vstat.charwidth*vstat.scaling;
+		src.y=(vstat.curs_row*vstat.charheight+vstat.curs_start)*vstat.scaling;
+		src.w=vstat.charwidth*vstat.scaling;
+		src.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
+		sdl_setup_colours(sdl_cursor, 0);
+		SDL_BlitSurface(win, &src, sdl_cursor, &dst);
+		sdl_setup_colours(sdl_cursor, vstat.currattr);
+		SDL_LockSurface(sdl_cursor);
+		SDL_UnlockSurface(sdl_cursor);
+		SDL_BlitSurface(sdl_cursor, &dst, win, &src);
+		SDL_UpdateRect(win, src.x, src.y, src.w, src.h);
+		lastcursor_x=vstat.curs_col;
+		lastcursor_y=vstat.curs_row;
+	}
+}
+
+/* Called from event thread */
+int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
+{
+	SDL_Color	co;
+	SDL_Rect	src;
+	SDL_Rect	dst;
+	unsigned char	ch;
+
+	ch=(sch >> 8) & 0x0f;
+	co.r=dac_default256[vstat.palette[ch]].red;
+	co.g=dac_default256[vstat.palette[ch]].green;
+	co.b=dac_default256[vstat.palette[ch]].blue;
+	SDL_SetColors(sdl_font, &co, 1, 1);
+	ch=(sch >> 12) & 0x07;
+	co.r=dac_default256[vstat.palette[ch]].red;
+	co.g=dac_default256[vstat.palette[ch]].green;
+	co.b=dac_default256[vstat.palette[ch]].blue;
+	SDL_SetColors(sdl_font, &co, 0, 1);
+	dst.x=x*vstat.charwidth*vstat.scaling;
+	dst.y=y*vstat.charheight*vstat.scaling;
+	dst.w=vstat.charwidth*vstat.scaling;
+	dst.h=vstat.charheight*vstat.scaling;
+	src.x=0;
+	src.w=vstat.charwidth;
+	src.h=vstat.charheight;
+	src.y=vstat.charheight*vstat.scaling;
+	ch=sch & 0xff;
+	if((sch >>15) && !(vstat.blink))
+		src.y *= ' ';
+	else
+		src.y *= ch;
+	SDL_BlitSurface(sdl_font, &src, win, &dst);
+}
+
+/* Called from event thread only, */
+int sdl_full_screen_redraw(void)
+{
+	static int last_blink;
+	int this_blink;
+	int x;
+	int y;
+	unsigned int pos;
+	unsigned short *newvmem;
+	unsigned short *p;
+	SDL_Rect	*rects;
+	int rcount=0;
+
+	this_blink=vstat.blink;
+	if((newvmem=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL)
+		return;
+	memcpy(newvmem, vstat.vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
+	sdl_updated=1;
+	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows);
+	/* Redraw all chars */
+	pos=0;
+	for(y=0;y<vstat.rows;y++) {
+		for(x=0;x<vstat.cols;x++) {
+			if((last_vmem==NULL) || (last_vmem[pos] != newvmem[pos]) || (last_blink != this_blink && newvmem[pos]>>15)) {
+				sdl_draw_one_char(newvmem[pos],x,y);
+				rects[rcount].x=x*vstat.charwidth*vstat.scaling;
+				rects[rcount].y=y*vstat.charheight*vstat.scaling;
+				rects[rcount].w=vstat.charwidth*vstat.scaling;
+				rects[rcount++].h=vstat.charheight*vstat.scaling;
+			}
+			pos++;
+		}
+	}
+	last_blink=this_blink;
+	p=last_vmem;
+	last_vmem=newvmem;
+	free(p);
+
+	sdl_draw_cursor();
+	if(rcount)
+		SDL_UpdateRects(win,rcount,rects);
+}
+
 /* Event Thread */
 void sdl_event_thread(void *data)
 {
@@ -438,6 +507,7 @@ void sdl_event_thread(void *data)
 					break;
 				case SDL_VIDEORESIZE:
 					if(ev.resize.w > 0 && ev.resize.h > 0) {
+						FREE_AND_NULL(last_vmem);
 						vstat.scaling=(int)(ev.resize.w/(vstat.charwidth*vstat.cols));
 						if(vstat.scaling < 1)
 							vstat.scaling=1;
@@ -448,108 +518,40 @@ void sdl_event_thread(void *data)
 					    /* Update font. */
 					    sdl_load_font(NULL);
 					    sdl_setup_colours(win,0);
-						sdl_screen_redraw();
+						sdl_full_screen_redraw();
 					}
 					break;
 				case SDL_VIDEOEXPOSE:
 					SDL_UpdateRect(win,0,0,0,0);
 					break;
 				case SDL_USEREVENT: {
-					SDL_Event *inev;
 					/* Tell SDL to do various stuff... */
-					while(listCountNodes(&sdl_updates) && ((inev=listShiftNode(&sdl_updates))!=NULL)) {
-						switch(inev->user.code) {
-							case SDL_USEREVENT_UPDATERECT:
-								SDL_UpdateRect(win,((SDL_Rect *)inev->user.data1)->x,((SDL_Rect *)inev->user.data1)->y,((SDL_Rect *)inev->user.data1)->w,((SDL_Rect *)inev->user.data1)->h);
-								free(inev->user.data1);
-								break;
-							case SDL_USEREVENT_SETTITLE:
-								SDL_WM_SetCaption((char *)inev->user.data1,NULL);
-								free(inev->user.data1);
-								break;
-							case SDL_USEREVENT_SETVIDMODE:
-								win=SDL_SetVideoMode(*((int *)inev->user.data1),*((int *)inev->user.data2),8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
-								if(sdl_cursor!=NULL)
-									SDL_FreeSurface(sdl_cursor);
-								sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
-							    /* Update font. */
-							    sdl_load_font(NULL);
-								free(inev->user.data1);
-								free(inev->user.data2);
-							    sdl_setup_colours(win,0);
-								break;
-							case SDL_USEREVENT_DRAWCHAR: {
-									SDL_Color	co;
-									SDL_Rect	src;
-									SDL_Rect	dst;
-
-									co.r=dac_default256[vstat.palette[((struct sdl_drawchar *)inev->user.data1)->fg]].red;
-									co.g=dac_default256[vstat.palette[((struct sdl_drawchar *)inev->user.data1)->fg]].green;
-									co.b=dac_default256[vstat.palette[((struct sdl_drawchar *)inev->user.data1)->fg]].blue;
-									SDL_SetColors(sdl_font, &co, 1, 1);
-									co.r=dac_default256[vstat.palette[((struct sdl_drawchar *)inev->user.data1)->bg]].red;
-									co.g=dac_default256[vstat.palette[((struct sdl_drawchar *)inev->user.data1)->bg]].green;
-									co.b=dac_default256[vstat.palette[((struct sdl_drawchar *)inev->user.data1)->bg]].blue;
-									SDL_SetColors(sdl_font, &co, 0, 1);
-									dst.x=((struct sdl_drawchar *)inev->user.data1)->x*vstat.charwidth*vstat.scaling;
-									dst.y=((struct sdl_drawchar *)inev->user.data1)->y*vstat.charheight*vstat.scaling;
-									dst.w=vstat.charwidth*vstat.scaling;
-									dst.h=vstat.charheight*vstat.scaling;
-									src.x=0;
-									src.w=vstat.charwidth;
-									src.h=vstat.charheight;
-									src.y=vstat.charheight*vstat.scaling;
-									if(((struct sdl_drawchar *)inev->user.data1)->blink && !(vstat.blink))
-										src.y *= ' ';
-									else
-										src.y *= ((struct sdl_drawchar *)inev->user.data1)->ch;
-									SDL_BlitSurface(sdl_font, &src, win, &dst);
-									free(inev->user.data1);
-								}
-								break;
-							case SDL_USEREVENT_HIDEMOUSE:
-								SDL_ShowCursor(SDL_DISABLE);
-								break;
-							case SDL_USEREVENT_SHOWMOUSE:
-								SDL_ShowCursor(SDL_ENABLE);
-								break;
-							case SDL_USEREVENT_SHOWCURSOR: {
-									static int lastcursor_x=0;
-									static int lastcursor_y=0;
-									SDL_Rect	src;
-									SDL_Rect	dst;
-
-									/* Erase old cursor */
-									sdl_user_func(SDL_USEREVENT_DRAWCHAR
-											,lastcursor_x
-											,lastcursor_y
-											,vstat.vmem[lastcursor_y*vstat.cols+lastcursor_x] & 0xff
-											,(vstat.vmem[lastcursor_y*vstat.cols+lastcursor_x]>>8) & 0x0f
-											,(vstat.vmem[lastcursor_y*vstat.cols+lastcursor_x]>>12) & 0x07
-											,(vstat.vmem[lastcursor_y*vstat.cols+lastcursor_x]>>15)
-									);
-
-									if(vstat.curs_start<=vstat.curs_end) {
-										dst.x=0;
-										dst.y=0;
-										dst.w=vstat.charwidth*vstat.scaling;
-										dst.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
-										src.x=vstat.curs_col*vstat.charwidth*vstat.scaling;
-										src.y=(vstat.curs_row*vstat.charheight+vstat.curs_start)*vstat.scaling;
-										src.w=vstat.charwidth*vstat.scaling;
-										src.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
-										sdl_setup_colours(sdl_cursor, 0);
-										SDL_BlitSurface(sdl_cursor, &src, win, &dst);
-										sdl_setup_colours(sdl_cursor, vstat.currattr);
-										SDL_BlitSurface(win, &dst, sdl_cursor, &src);
-										SDL_UpdateRect(win, src.x, src.y, src.w, src.h);
-										lastcursor_x=vstat.curs_col;
-										lastcursor_y=vstat.curs_row;
-									}
-								}
-								break;
-						}
-						free(inev);
+					switch(ev.user.code) {
+						case SDL_USEREVENT_UPDATERECT:
+							sdl_full_screen_redraw();
+							break;
+						case SDL_USEREVENT_SETTITLE:
+							SDL_WM_SetCaption((char *)ev.user.data1,NULL);
+							free(ev.user.data1);
+							break;
+						case SDL_USEREVENT_SETVIDMODE:
+							FREE_AND_NULL(last_vmem);
+							win=SDL_SetVideoMode(*((int *)ev.user.data1),*((int *)ev.user.data2),8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
+							sdl_setup_colours(win,0);
+							if(sdl_cursor!=NULL)
+								SDL_FreeSurface(sdl_cursor);
+							sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+							/* Update font. */
+							sdl_load_font(NULL);
+							free(ev.user.data1);
+							free(ev.user.data2);
+							break;
+						case SDL_USEREVENT_HIDEMOUSE:
+							SDL_ShowCursor(SDL_DISABLE);
+							break;
+						case SDL_USEREVENT_SHOWMOUSE:
+							SDL_ShowCursor(SDL_ENABLE);
+							break;
 					}
 					break;
 				}
@@ -567,36 +569,6 @@ void sdl_event_thread(void *data)
 	}
 }
 
-/* Called from blinker thread only, (Passes Event) */
-int sdl_blink(void)
-{
-	int x;
-	int y;
-	int ret=0;
-	unsigned int fg;
-	unsigned int bg;
-	unsigned int blink;
-	unsigned int ch;
-
-	for(x=0;x<vstat.cols;x++) {
-		for(y=0;y<vstat.rows;y++) {
-			blink=vstat.vmem[y*vstat.cols+x]>>15;
-			if(blink) {
-				bg=(vstat.vmem[y*vstat.cols+x]>>12) & 0x07;
-				fg=(vstat.vmem[y*vstat.cols+x]>>8) & 0x0f;
-				ch=vstat.vmem[y*vstat.cols+x] & 0xff;
-
-				sdl_user_func(SDL_USEREVENT_DRAWCHAR, x, y, ch, fg, bg, blink);
-			}
-		}
-	}
-	/* ToDo: Should this only update the blinked chars? */
-	sdl_user_func(SDL_USEREVENT_SHOWCURSOR);
-	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
-
-	return(ret);
-}
-
 /* Blinker Thread */
 void sdl_blinker_thread(void *data)
 {
@@ -606,7 +578,7 @@ void sdl_blinker_thread(void *data)
 			vstat.blink=FALSE;
 		else
 			vstat.blink=TRUE;
-		sdl_blink();
+		sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 	}
 }
 
@@ -627,71 +599,23 @@ int sdl_init_mode(int mode)
 	    vstat.vmem[i] = 0x0700;
 	vstat.currattr=7;
 
-    /* Load 'pixels[]' from default DAC values. */
-	sdl_screen_redraw();
+	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 
 	vstat.mode=mode;
 
     return(0);
 }
 
-/* Called from events thread only */
-int sdl_setup_colours(SDL_Surface *surf, int xor)
-{
-	int i;
-	int ret=0;
-	SDL_Color	co;
-
-	for(i=0; i<16; i++) {
-		co.r=dac_default256[vstat.palette[i]].red;
-		co.g=dac_default256[vstat.palette[i]].green;
-		co.b=dac_default256[vstat.palette[i]].blue;
-		SDL_SetColors(surf, &co, i^xor, 1);
-	}
-	return(ret);
-}
-
 /* Called from main thread only (Passes Event) */
 int sdl_draw_char(unsigned short vch, int xpos, int ypos, int update)
 {
-	unsigned int fg;
-	unsigned int bg;
-	unsigned int blink;
-	unsigned int ch;
-
-	bg=(vch>>12) & 0x07;
-	fg=(vch>>8) & 0x0f;
-	blink=vch>>15;
-	ch=vch & 0xff;
-
 	vstat.vmem[ypos*vstat.cols+xpos]=vch;
-	sdl_user_func(SDL_USEREVENT_DRAWCHAR, xpos, ypos, ch, fg, bg, blink);
 
 	if(update) {
-		sdl_user_func(SDL_USEREVENT_SHOWCURSOR);
 		sdl_user_func(SDL_USEREVENT_UPDATERECT,xpos*vstat.charwidth*vstat.scaling,ypos*vstat.charheight*vstat.scaling,vstat.charwidth*vstat.scaling,vstat.charheight*vstat.scaling);
 	}
 
 	return(0);
-}
-
-/* Called from main thread only, (Passes Event) */
-int sdl_screen_redraw(void)
-{
-	int x;
-	int y;
-	int ret=0;
-
-	for(x=0;x<vstat.cols;x++) {
-		for(y=0;y<vstat.rows;y++) {
-			if(sdl_draw_char(vstat.vmem[y*vstat.cols+x], x, y, FALSE))
-				ret=-1;
-		}
-	}
-	sdl_user_func(SDL_USEREVENT_SHOWCURSOR);
-	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
-
-	return(ret);
 }
 
 /* Called from main thread only (Passes Event) */
@@ -700,8 +624,6 @@ int sdl_init(void)
 	vstat.vmem=NULL;
 	vstat.scaling=1;
 
-	listInit(&sdl_updates,0);
-
 	if(SDL_Init(SDL_INIT_VIDEO))
 		return(-1);
 
@@ -709,6 +631,8 @@ int sdl_init(void)
 		SDL_Quit();
 		return(-1);
 	}
+
+	sdl_updated=1;
 
 	SDL_CreateThread(sdl_event_thread,NULL);
 	SDL_CreateThread(sdl_blinker_thread,NULL);
@@ -758,7 +682,6 @@ int sdl_puttext(int sx, int sy, int ex, int ey, void *fill)
 			sdl_draw_char(sch,x,y,FALSE);
 		}
 	}
-	sdl_user_func(SDL_USEREVENT_SHOWCURSOR);
 	sdl_user_func(SDL_USEREVENT_UPDATERECT
 			,(sx-1)*vstat.charwidth*vstat.scaling
 			,(sy-1)*vstat.charheight*vstat.scaling
