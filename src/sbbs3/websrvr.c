@@ -2001,8 +2001,8 @@ static BOOL check_extra_path(http_session_t * session)
 			if((rp_slash=find_last_slash(rpath))==NULL)
 				return(FALSE);
 			SAFECOPY(str,epath);
-			if(*(rp_slash+1))
-				sprintf(epath,"/%s%s",(rp_slash+1),str);
+			if(*rp_slash)
+				sprintf(epath,"%s%s",rp_slash,str);
 			*(rp_slash+1)=0;
 
 			/* Check if this contains an index */
