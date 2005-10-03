@@ -17,6 +17,7 @@ ifdef WITH_SDL
       SDL_CONFIG := sdl11-config
       WITH_SDL	:=	1
      endif
+    endif
    endif
   endif
 
