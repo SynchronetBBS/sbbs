@@ -60,9 +60,10 @@ static char* program_id(char* pid)
 /****************************************************************************/
 bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 {
-	char	str[256],touser[256],title[LEN_TITLE+1],buf[SDT_BLOCK_LEN]
-			,top[256];
+	char	str[256],title[LEN_TITLE+1],buf[SDT_BLOCK_LEN],top[256];
 	char	msg_id[256];
+	char	touser[64];
+	char	from[64];
 	char	pid[128];
 	ushort	xlat,msgattr;
 	int 	i,j,x,file,storage;
@@ -72,17 +73,18 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	if(remsg) {
 		sprintf(title,"%.*s",LEN_TITLE,remsg->subj);
-#if 0	/* We *do* support internet posts to specific people July-11-2002 */
-		if(cfg.sub[subnum]->misc&SUB_INET)	// All Internet posts to "All" 05/20/97
-			touser[0]=0;
-		else 
-#endif
 		if(remsg->hdr.attr&MSG_ANONYMOUS)
-			strcpy(touser,text[Anonymous]);
+			SAFECOPY(from,text[Anonymous]);
 		else
-			strcpy(touser,remsg->from);
+			SAFECOPY(from,remsg->from);
+		// If user posted this message, reply to the original recipient again
+		if((remsg->from_ext!=NULL && atoi(remsg->from_ext)==useron.number)
+			|| stricmp(useron.alias,remsg->from)==0 || stricmp(useron.name,remsg->from)==0)
+			SAFECOPY(touser,remsg->to);
+		else
+			SAFECOPY(touser,from);
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
-		sprintf(top,text[RegardingByToOn],title,touser,remsg->to
+		sprintf(top,text[RegardingByToOn],title,from,remsg->to
 			,timestr((time_t *)&remsg->hdr.when_written.time)
 			,smb_zonestr(remsg->hdr.when_written.zone,NULL)); 
 	} else {
@@ -128,7 +130,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 #endif
 		(cfg.sub[subnum]->misc&SUB_TOUSER || msgattr&MSG_PRIVATE || touser[0])) {
 		if(!touser[0] && !(msgattr&MSG_PRIVATE))
-			strcpy(touser,"All");
+			SAFECOPY(touser,"All");
 		bputs(text[PostTo]);
 		i=LEN_ALIAS;
 		if(cfg.sub[subnum]->misc&SUB_QNET)
@@ -157,7 +159,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	}
 
 	if(!touser[0])
-		strcpy(touser,"All");       // Default to ALL
+		SAFECOPY(touser,"All");       // Default to ALL
 
 	if(!stricmp(touser,"SYSOP") && !SYSOP)  // Change SYSOP to user #1
 		username(&cfg,1,touser);
@@ -355,7 +357,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	smb_hfield_str(&msg,RECIPIENT,touser);
 	strlwr(touser);
 
-	strcpy(str,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
+	SAFECOPY(str,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
 	smb_hfield_str(&msg,SENDER,str);
 	strlwr(str);
 
