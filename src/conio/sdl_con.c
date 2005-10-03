@@ -217,6 +217,11 @@ void sdl_user_func(int func, ...)
 				return;
 			}
 			listPushNode(&sdl_updates,ev);
+			evnt.type=SDL_USEREVENT;
+			evnt.user.code=-1;
+			evnt.user.data1=NULL;
+			evnt.user.data2=NULL;
+			SDL_PeepEvents(&evnt, 1, SDL_ADDEVENT, 0xffffffff);
 			break;
 		case SDL_USEREVENT_SETVIDMODE:
 			if((ev->user.data1=(void *)malloc(sizeof(int)))==NULL) {
@@ -638,36 +643,12 @@ int sdl_setup_colours(SDL_Surface *surf, int xor)
 	SDL_Color	co;
 
 	for(i=0; i<16; i++) {
-		co.r=dac_default256[vstat.palette[i]^xor].red;
-		co.g=dac_default256[vstat.palette[i]^xor].green;
-		co.b=dac_default256[vstat.palette[i]^xor].blue;
-		SDL_SetColors(surf, &co, i, 1);
+		co.r=dac_default256[vstat.palette[i]].red;
+		co.g=dac_default256[vstat.palette[i]].green;
+		co.b=dac_default256[vstat.palette[i]].blue;
+		SDL_SetColors(surf, &co, i^xor, 1);
 	}
 	return(ret);
-}
-
-/* Called from main thread only */
-int sdl_fillrect(SDL_Rect *r, int colour)
-{
-	int x;
-	int y;
-	int x2;
-	int y2;
-	unsigned int pos;
-
-	x2=r->x+r->w;
-	y2=r->y+r->h;
-//	SDL_LockSurface(win);
-	for(y=r->y; y<y2; y++) {
-		pos=y*vstat.charwidth*vstat.cols*vstat.scaling+r->x;
-		for(x=r->x; x<x2; x++) {
-			pos++;
-			if(pos<vstat.charwidth*vstat.cols*vstat.scaling * vstat.charheight*vstat.rows*vstat.scaling) {
-				((unsigned char *)win->pixels)[pos]=colour;
-			}
-		}
-	}
-//	SDL_UnlockSurface(win);
 }
 
 /* Called from main thread only (Passes Event) */
