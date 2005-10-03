@@ -1990,6 +1990,9 @@ static BOOL check_extra_path(http_session_t * session)
 	int		i;
 	char	*end;
 
+	/* This is already a redirect (probobly index.html etc) */
+	if(!session->req.send_location)
+		return(FALSE);
 	epath[0]=0;
 	if(IS_PATH_DELIM(*lastchar(session->req.physical_path)) || stat(session->req.physical_path,&sb)==-1 /* && errno==ENOTDIR */)
 	{
