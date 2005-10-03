@@ -1,5 +1,5 @@
 # Find SDL headers!
-ifndef WITHOUT_SDL
+ifdef WITH_SDL
  ifndef SDL_CONFIG
   ifeq ($(shell sdl12-config --cflags > /dev/null && echo YES),YES)
    SDL_CONFIG := sdl12-config
@@ -45,7 +45,6 @@ else
  ifeq ($(os),darwin)	# No X11 for OSX
   ifndef HAS_DLOPEN
    NO_X=1
-   $(shell echo Define HAS_DLOPEN for 10.3 and higher, or if dlcompat is installed \(http://www.opendarwin.org/projects/dlcompat/\))
   endif
  endif
 endif

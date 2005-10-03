@@ -175,102 +175,6 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 	return(0x01ffff);
 }
 
-/* Called from event thread only */
-void sdl_add_key(unsigned int keyval)
-{
-	if(keyval==0xa600) {
-		fullscreen=!fullscreen;
-		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling);
-		return;
-	}
-	if(keyval <= 0xffff) {
-		SDL_mutexP(sdl_keylock);
-		if(sdl_keynext+1==sdl_key) {
-			sdl_beep();
-			SDL_mutexV(sdl_keylock);
-			return;
-		}
-		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
-			sdl_beep();
-			SDL_mutexV(sdl_keylock);
-			return;
-		}
-		sdl_keybuf[sdl_keynext++]=keyval & 0xff;
-		SDL_SemPost(sdl_key_pending);
-		if(keyval>0xff) {
-			sdl_keybuf[sdl_keynext++]=keyval >> 8;
-			SDL_SemPost(sdl_key_pending);
-		}
-		SDL_mutexV(sdl_keylock);
-	}
-}
-
-/* Called from event thread only */
-int sdl_load_font(char *filename)
-{
-	unsigned char *font;
-	unsigned int fontsize;
-	int fw;
-	int fh;
-	int	ch;
-	int x;
-	int y;
-	int charrow;
-	int charcol;
-	SDL_Rect r;
-
-	/* I don't actually do this yet! */
-	if(filename != NULL)
-		return(-1);
-
-	fh=vstat.charheight;
-	fw=vstat.charwidth/8+(vstat.charwidth%8?1:0);
-
-	fontsize=fw*fh*256*sizeof(unsigned char);
-
-	if((font=(unsigned char *)malloc(fontsize))==NULL)
-		return(-1);
-
-	switch(vstat.charwidth) {
-		case 8:
-			switch(vstat.charheight) {
-				case 8:
-					memcpy(font, vga_font_bitmap8, fontsize);
-					break;
-				case 14:
-					memcpy(font, vga_font_bitmap14, fontsize);
-					break;
-				case 16:
-					memcpy(font, vga_font_bitmap, fontsize);
-					break;
-				default:
-					return(-1);
-			}
-			break;
-		default:
-			return(-1);
-	}
-
-	if(sdl_font!=NULL)
-		SDL_FreeSurface(sdl_font);
-	sdl_font=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
-	for(ch=0; ch<256; ch++) {
-		for(charrow=0; charrow<vstat.charheight; charrow++) {
-			for(charcol=0; charcol<vstat.charheight; charcol++) {
-				if(font[(ch*vstat.charheight+charrow)*fw+(charcol/8)] & (1<<(charcol%8))) {
-					r.x=charcol*vstat.scaling;
-					r.y=(ch*vstat.charheight+charrow)*vstat.scaling;
-					r.w=vstat.scaling;
-					r.h=vstat.scaling;
-					SDL_FillRect(sdl_font, &r, 1);
-				}
-			}
-		}
-	}
-
-    return(0);
-}
-
 /* Called from all threads */
 void sdl_user_func(int func, ...)
 {
@@ -373,6 +277,102 @@ void sdl_user_func(int func, ...)
 	va_end(argptr);
 }
 
+/* Called from event thread only */
+void sdl_add_key(unsigned int keyval)
+{
+	if(keyval==0xa600) {
+		fullscreen=!fullscreen;
+		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling);
+		return;
+	}
+	if(keyval <= 0xffff) {
+		SDL_mutexP(sdl_keylock);
+		if(sdl_keynext+1==sdl_key) {
+			sdl_beep();
+			SDL_mutexV(sdl_keylock);
+			return;
+		}
+		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
+			sdl_beep();
+			SDL_mutexV(sdl_keylock);
+			return;
+		}
+		sdl_keybuf[sdl_keynext++]=keyval & 0xff;
+		SDL_SemPost(sdl_key_pending);
+		if(keyval>0xff) {
+			sdl_keybuf[sdl_keynext++]=keyval >> 8;
+			SDL_SemPost(sdl_key_pending);
+		}
+		SDL_mutexV(sdl_keylock);
+	}
+}
+
+/* Called from event thread only */
+int sdl_load_font(char *filename)
+{
+	unsigned char *font;
+	unsigned int fontsize;
+	int fw;
+	int fh;
+	int	ch;
+	int x;
+	int y;
+	int charrow;
+	int charcol;
+	SDL_Rect r;
+
+	/* I don't actually do this yet! */
+	if(filename != NULL)
+		return(-1);
+
+	fh=vstat.charheight;
+	fw=vstat.charwidth/8+(vstat.charwidth%8?1:0);
+
+	fontsize=fw*fh*256*sizeof(unsigned char);
+
+	if((font=(unsigned char *)malloc(fontsize))==NULL)
+		return(-1);
+
+	switch(vstat.charwidth) {
+		case 8:
+			switch(vstat.charheight) {
+				case 8:
+					memcpy(font, vga_font_bitmap8, fontsize);
+					break;
+				case 14:
+					memcpy(font, vga_font_bitmap14, fontsize);
+					break;
+				case 16:
+					memcpy(font, vga_font_bitmap, fontsize);
+					break;
+				default:
+					return(-1);
+			}
+			break;
+		default:
+			return(-1);
+	}
+
+	if(sdl_font!=NULL)
+		SDL_FreeSurface(sdl_font);
+	sdl_font=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
+	for(ch=0; ch<256; ch++) {
+		for(charrow=0; charrow<vstat.charheight; charrow++) {
+			for(charcol=0; charcol<vstat.charheight; charcol++) {
+				if(font[(ch*vstat.charheight+charrow)*fw+(charcol/8)] & (1<<(charcol%8))) {
+					r.x=charcol*vstat.scaling;
+					r.y=(ch*vstat.charheight+charrow)*vstat.scaling;
+					r.w=vstat.scaling;
+					r.h=vstat.scaling;
+					SDL_FillRect(sdl_font, &r, 1);
+				}
+			}
+		}
+	}
+
+    return(0);
+}
+
 /* Event Thread */
 void sdl_event_thread(void *data)
 {
@@ -387,8 +387,12 @@ void sdl_event_thread(void *data)
 				case SDL_ACTIVEEVENT:		/* Focus change */
 					break;
 				case SDL_KEYDOWN:			/* Keypress */
-					if(ev.key.keysym.unicode&0x7f)		/* ASCII Key (Whoopee!) */
-						sdl_add_key(ev.key.keysym.unicode&0x7f);
+					if(ev.key.keysym.unicode&0x7f) {		/* ASCII Key (Whoopee!) */
+						if((ev.key.keysym.mod & (KMOD_META|KMOD_ALT)) && (ev.key.keysym.unicode&0x7f == 0x0a))
+							sdl_add_key(0xa600);
+						else
+							sdl_add_key(ev.key.keysym.unicode&0x7f);
+					}
 					else 
 						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
 					break;
@@ -514,10 +518,10 @@ void sdl_event_thread(void *data)
 									sdl_user_func(SDL_USEREVENT_DRAWCHAR
 											,lastcursor_x
 											,lastcursor_y
-											,vstat.vmem[vstat.curs_row*vstat.cols+vstat.curs_col] & 0xff
-											,(vstat.vmem[vstat.curs_row*vstat.cols+vstat.curs_col]>>8) & 0x0f
-											,(vstat.vmem[vstat.curs_row*vstat.cols+vstat.curs_col]>>12) & 0x07
-											,(vstat.vmem[vstat.curs_row*vstat.cols+vstat.curs_col]>>15)
+											,vstat.vmem[lastcursor_y*vstat.cols+lastcursor_x] & 0xff
+											,(vstat.vmem[lastcursor_y*vstat.cols+lastcursor_x]>>8) & 0x0f
+											,(vstat.vmem[lastcursor_y*vstat.cols+lastcursor_x]>>12) & 0x07
+											,(vstat.vmem[lastcursor_y*vstat.cols+lastcursor_x]>>15)
 									);
 
 									if(vstat.curs_start<=vstat.curs_end) {
