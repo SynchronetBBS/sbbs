@@ -2205,7 +2205,7 @@ static BOOL check_request(http_session_t * session)
 	if(recheck_dynamic)
 		session->req.dynamic=is_dynamic_req(session);
 
-	if(!session->req.dynamic && extra_path_info[0])
+	if(!session->req.dynamic && session->req.extra_path_info[0])
 		send404=TRUE;
 
 	if(!check_ars(session)) {
