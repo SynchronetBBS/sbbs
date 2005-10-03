@@ -498,7 +498,7 @@ void sdl_setcursortype(int type)
 			break;
 		default:
 		    vstat.curs_start = vstat.default_curs_start;
-		    vstat.curs_end = vstat.default_curs_start;
+		    vstat.curs_end = vstat.default_curs_end;
 			break;
 	}
 }
@@ -719,17 +719,13 @@ void sdl_draw_cursor(void)
 	if(vstat.blink && vstat.curs_start<=vstat.curs_end) {
 		dst.x=0;
 		dst.y=0;
-		dst.w=vstat.charwidth*vstat.scaling;
-		dst.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
 		src.x=vstat.curs_col*vstat.charwidth*vstat.scaling;
 		src.y=(vstat.curs_row*vstat.charheight+vstat.curs_start)*vstat.scaling;
-		src.w=vstat.charwidth*vstat.scaling;
-		src.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
+		src.w=dst.w=vstat.charwidth*vstat.scaling;
+		src.h=dst.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
 		sdl_setup_colours(sdl_cursor, 0);
 		SDL_BlitSurface(win, &src, sdl_cursor, &dst);
 		sdl_setup_colours(sdl_cursor, vstat.currattr&0x07);
-		SDL_LockSurface(sdl_cursor);
-		SDL_UnlockSurface(sdl_cursor);
 		SDL_BlitSurface(sdl_cursor, &dst, win, &src);
 		lastcursor_x=vstat.curs_col;
 		lastcursor_y=vstat.curs_row;
@@ -879,7 +875,7 @@ int main(int argc, char **argv)
 				case SDL_ACTIVEEVENT:		/* Focus change */
 					break;
 				case SDL_KEYDOWN:			/* Keypress */
-					if(ev.key.keysym.unicode <= 0x7f) {		/* ASCII Key (Whoopee!) */
+					if(ev.key.keysym.unicode > 0 && ev.key.keysym.unicode <= 0x7f) {		/* ASCII Key (Whoopee!) */
 						/* Need magical handling here... 
 						 * if ALT is pressed, run 'er through 
 						 * sdl_get_char_code() ANYWAYS */
