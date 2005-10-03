@@ -25,6 +25,7 @@
                 <td class="main_nodelist"><a href="mailto:@@who_online:email@@">@@who_online:name@@</a></td>
                 <td class="main_nodelist">@@who_online:action@@</td>
                 @@JS:if(show_location)'<td class="main_nodelist" width="25%">'+Nz(RepeatObj.location)+'</td>'@@
+				@@JS:if(show_age)'<td class="main_nodelist" width="1%">'+Nz(RepeatObj.age)+'</td>'@@
                 @@JS:if(show_gender)'<td class="main_nodelist" width="1%">'+Nz(RepeatObj.gender)+'</td>'@@    
                 <td class="main_nodelist" width="1%">@@who_online:timeon@@</td>     
             </tr>
