@@ -875,10 +875,10 @@ int main(int argc, char **argv)
 				case SDL_ACTIVEEVENT:		/* Focus change */
 					break;
 				case SDL_KEYDOWN:			/* Keypress */
-					if(ev.key.keysym.unicode&0x7f) {		/* ASCII Key (Whoopee!) */
+					if(ev.key.keysym.unicode <= 0x7f) {		/* ASCII Key (Whoopee!) */
 						/* Need magical handling here... 
 						 * if ALT is pressed, run 'er through 
-						  * sdl_get_char_code() ANYWAYS */
+						 * sdl_get_char_code() ANYWAYS */
 						if(ev.key.keysym.mod & (KMOD_META|KMOD_ALT))
 							sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
 						else
