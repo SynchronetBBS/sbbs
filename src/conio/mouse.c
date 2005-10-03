@@ -106,7 +106,7 @@ void init_mouse(void)
 	state.click_timeout=0;
 	state.multi_timeout=300;
 	listInit(&state.input,0);
-	listInit(&state.output,0);
+	listInit(&state.output,LINK_LIST_SEMAPHORE);
 	sem_init(&in_sem,0,0);
 	mouse_initialized=1;
 }
@@ -429,11 +429,20 @@ void ciolib_mouse_thread(void *data)
 	}
 }
 
+int mouse_wait(void)
+{
+	while(!mouse_initialized)
+		SLEEP(1);
+	return(listSemWait(&state.output));
+}
+
 int mouse_pending(void)
 {
 	while(!mouse_initialized)
 		SLEEP(1);
-	return(listCountNodes(&state.output));
+	if(listSemTryWait(&state.output))
+		return(TRUE);
+	return(FALSE);
 }
 
 int ciolib_getmouse(struct mouse_event *mevent)
