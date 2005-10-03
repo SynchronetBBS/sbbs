@@ -296,4 +296,9 @@ char *ciolib_getcliptext(void);
 	#define getcliptext()		ciolib_getcliptext()
 #endif
 
+/* Special hackery for SDL */
+#ifdef WITH_SDL
+	#define	main	CIOLIB_main
+#endif
+
 #endif	/* Do not add anything after this line */

@@ -1,37 +1,49 @@
 # Find SDL headers!
-ifdef WITH_SDL
+ifdef USE_SDL
  ifndef SDL_CONFIG
-  ifeq ($(shell sdl-config --cflags > /dev/null && echo YES),YES)
-   SDL_CONFIG := sdl-config
-   WITH_SDL	:=	1
+  ifeq ($(os),darwin)
+   ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
+    WITH_SDL	:=	1
+   endif
   else
-   ifeq ($(shell sdl13-config --cflags > /dev/null && echo YES),YES)
-    SDL_CONFIG := sdl13-config
+   ifeq ($(shell sdl-config --cflags > /dev/null && echo YES),YES)
+    SDL_CONFIG := sdl-config
     WITH_SDL	:=	1
    else
-    ifeq ($(shell sdl12-config --cflags > /dev/null && echo YES),YES)
-     SDL_CONFIG := sdl12-config
+    ifeq ($(shell sdl13-config --cflags > /dev/null && echo YES),YES)
+     SDL_CONFIG := sdl13-config
      WITH_SDL	:=	1
     else
-     ifeq ($(shell sdl11-config --cflags > /dev/null && echo YES),YES)
-      SDL_CONFIG := sdl11-config
+     ifeq ($(shell sdl12-config --cflags > /dev/null && echo YES),YES)
+      SDL_CONFIG := sdl12-config
       WITH_SDL	:=	1
+     else
+      ifeq ($(shell sdl11-config --cflags > /dev/null && echo YES),YES)
+       SDL_CONFIG := sdl11-config
+       WITH_SDL	:=	1
+      endif
      endif
     endif
    endif
   endif
+ endif
 
-  ifdef WITH_SDL
-   ifdef SDL_CONFIG
-    ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null && echo YES),YES)
-     CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
-     CIOLIB-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
-     ifdef STATIC_SDL
-      CIOLIB-MT_LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
-     else
-      CIOLIB-MT_LIBS	+=	$(shell $(SDL_CONFIG) --libs)
-     endif
+ ifdef WITH_SDL
+  ifdef SDL_CONFIG
+   ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null && echo YES),YES)
+    CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
+    CIOLIB-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
+    ifdef STATIC_SDL
+     CIOLIB-MT_LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
+    else
+     CIOLIB-MT_LIBS	+=	$(shell $(SDL_CONFIG) --libs)
     endif
+   endif
+  else
+   ifeq ($(os),darwin)
+    CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
+    CIOLIB-MT_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
+    CIOLIB-MT_LIBS	+=	SDLMain.m -framework SDL -framework Cocoa -I/Library/Frameworks/SDL.framework/Headers
    endif
   endif
  endif

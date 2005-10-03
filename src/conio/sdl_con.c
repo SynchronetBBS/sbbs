@@ -2,14 +2,18 @@
 #include <stdio.h>		/* NULL */
 #include <string.h>
 
-#include "SDL.h"
-
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "xpbeep.h"
 
 #include "ciolib.h"
 #include "vidmodes.h"
+
+#ifdef main
+	#undef main
+#endif
+#include "SDL.h"
+extern int	CIOLIB_main(int argc, char **argv);
 
 /********************************************************/
 /* Low Level Stuff										*/
@@ -23,6 +27,9 @@ int sdl_updated;
 
 SDL_Surface *sdl_font=NULL;
 SDL_Surface	*sdl_cursor=NULL;
+
+static int lastcursor_x=0;
+static int lastcursor_y=0;
 
 unsigned short *last_vmem=NULL;
 
@@ -154,25 +161,6 @@ const struct sdl_keyvals sdl_keyval[] =
 };
 const int sdl_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
-/* Called from event thread only */
-unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
-{
-	int i;
-
-	for(i=0;sdl_keyval[i].keysym;i++) {
-		if(sdl_keyval[i].keysym==keysym) {
-			if(mod & (KMOD_META|KMOD_ALT))
-				return(sdl_keyval[i].alt);
-			if(mod & KMOD_CTRL)
-				return(sdl_keyval[i].ctrl);
-			if(mod & KMOD_SHIFT)
-				return(sdl_keyval[i].shift);
-			return(sdl_keyval[i].key);
-		}
-	}
-	return(0x01ffff);
-}
-
 /* Called from all threads */
 void sdl_user_func(int func, ...)
 {
@@ -200,8 +188,7 @@ void sdl_user_func(int func, ...)
 				va_end(argptr);
 				return;
 			}
-free(ev.user.data1);
-//			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SETVIDMODE:
 			if((ev.user.data1=(void *)malloc(sizeof(int)))==NULL) {
@@ -218,355 +205,13 @@ free(ev.user.data1);
 			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SHOWMOUSE:
-//			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_HIDEMOUSE:
-//			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 	}
 	va_end(argptr);
-}
-
-/* Called from event thread only */
-void sdl_add_key(unsigned int keyval)
-{
-	if(keyval==0xa600) {
-		fullscreen=!fullscreen;
-		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling);
-		return;
-	}
-	if(keyval <= 0xffff) {
-		SDL_mutexP(sdl_keylock);
-		if(sdl_keynext+1==sdl_key) {
-			sdl_beep();
-			SDL_mutexV(sdl_keylock);
-			return;
-		}
-		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
-			sdl_beep();
-			SDL_mutexV(sdl_keylock);
-			return;
-		}
-		sdl_keybuf[sdl_keynext++]=keyval & 0xff;
-		SDL_SemPost(sdl_key_pending);
-		if(keyval>0xff) {
-			sdl_keybuf[sdl_keynext++]=keyval >> 8;
-			SDL_SemPost(sdl_key_pending);
-		}
-		SDL_mutexV(sdl_keylock);
-	}
-}
-
-/* Called from event thread only */
-int sdl_load_font(char *filename)
-{
-	unsigned char *font;
-	unsigned int fontsize;
-	int fw;
-	int fh;
-	int	ch;
-	int x;
-	int y;
-	int charrow;
-	int charcol;
-	SDL_Rect r;
-
-	/* I don't actually do this yet! */
-	if(filename != NULL)
-		return(-1);
-
-	fh=vstat.charheight;
-	fw=vstat.charwidth/8+(vstat.charwidth%8?1:0);
-
-	fontsize=fw*fh*256*sizeof(unsigned char);
-
-	if((font=(unsigned char *)malloc(fontsize))==NULL)
-		return(-1);
-
-	switch(vstat.charwidth) {
-		case 8:
-			switch(vstat.charheight) {
-				case 8:
-					memcpy(font, vga_font_bitmap8, fontsize);
-					break;
-				case 14:
-					memcpy(font, vga_font_bitmap14, fontsize);
-					break;
-				case 16:
-					memcpy(font, vga_font_bitmap, fontsize);
-					break;
-				default:
-					return(-1);
-			}
-			break;
-		default:
-			return(-1);
-	}
-
-	if(sdl_font!=NULL)
-		SDL_FreeSurface(sdl_font);
-	sdl_font=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
-	for(ch=0; ch<256; ch++) {
-		for(charrow=0; charrow<vstat.charheight; charrow++) {
-			for(charcol=0; charcol<vstat.charheight; charcol++) {
-				if(font[(ch*vstat.charheight+charrow)*fw+(charcol/8)] & (1<<(charcol%8))) {
-					r.x=charcol*vstat.scaling;
-					r.y=(ch*vstat.charheight+charrow)*vstat.scaling;
-					r.w=vstat.scaling;
-					r.h=vstat.scaling;
-					SDL_FillRect(sdl_font, &r, 1);
-				}
-			}
-		}
-	}
-
-    return(0);
-}
-
-/* Called from events thread only */
-int sdl_setup_colours(SDL_Surface *surf, int xor)
-{
-	int i;
-	int ret=0;
-	SDL_Color	co[16];;
-
-	for(i=0; i<16; i++) {
-		co[i^xor].r=dac_default256[vstat.palette[i]].red;
-		co[i^xor].g=dac_default256[vstat.palette[i]].green;
-		co[i^xor].b=dac_default256[vstat.palette[i]].blue;
-	}
-	SDL_SetColors(surf, co, 0, 16);
-	return(ret);
-}
-
-/* Called from events thread only */
-void sdl_draw_cursor(void)
-{
-	static int lastcursor_x=0;
-	static int lastcursor_y=0;
-	SDL_Rect	src;
-	SDL_Rect	dst;
-	int	x;
-	int	y;
-
-	if(vstat.curs_start<=vstat.curs_end) {
-		dst.x=0;
-		dst.y=0;
-		dst.w=vstat.charwidth*vstat.scaling;
-		dst.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
-		src.x=vstat.curs_col*vstat.charwidth*vstat.scaling;
-		src.y=(vstat.curs_row*vstat.charheight+vstat.curs_start)*vstat.scaling;
-		src.w=vstat.charwidth*vstat.scaling;
-		src.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
-		sdl_setup_colours(sdl_cursor, 0);
-		SDL_BlitSurface(win, &src, sdl_cursor, &dst);
-		sdl_setup_colours(sdl_cursor, vstat.currattr);
-		SDL_LockSurface(sdl_cursor);
-		SDL_UnlockSurface(sdl_cursor);
-		SDL_BlitSurface(sdl_cursor, &dst, win, &src);
-		SDL_UpdateRect(win, src.x, src.y, src.w, src.h);
-		lastcursor_x=vstat.curs_col;
-		lastcursor_y=vstat.curs_row;
-	}
-}
-
-/* Called from event thread */
-int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
-{
-	SDL_Color	co;
-	SDL_Rect	src;
-	SDL_Rect	dst;
-	unsigned char	ch;
-
-	ch=(sch >> 8) & 0x0f;
-	co.r=dac_default256[vstat.palette[ch]].red;
-	co.g=dac_default256[vstat.palette[ch]].green;
-	co.b=dac_default256[vstat.palette[ch]].blue;
-	SDL_SetColors(sdl_font, &co, 1, 1);
-	ch=(sch >> 12) & 0x07;
-	co.r=dac_default256[vstat.palette[ch]].red;
-	co.g=dac_default256[vstat.palette[ch]].green;
-	co.b=dac_default256[vstat.palette[ch]].blue;
-	SDL_SetColors(sdl_font, &co, 0, 1);
-	dst.x=x*vstat.charwidth*vstat.scaling;
-	dst.y=y*vstat.charheight*vstat.scaling;
-	dst.w=vstat.charwidth*vstat.scaling;
-	dst.h=vstat.charheight*vstat.scaling;
-	src.x=0;
-	src.w=vstat.charwidth;
-	src.h=vstat.charheight;
-	src.y=vstat.charheight*vstat.scaling;
-	ch=sch & 0xff;
-	if((sch >>15) && !(vstat.blink))
-		src.y *= ' ';
-	else
-		src.y *= ch;
-	SDL_BlitSurface(sdl_font, &src, win, &dst);
-}
-
-/* Called from event thread only, */
-int sdl_full_screen_redraw(void)
-{
-	static int last_blink;
-	int this_blink;
-	int x;
-	int y;
-	unsigned int pos;
-	unsigned short *newvmem;
-	unsigned short *p;
-	SDL_Rect	*rects;
-	int rcount=0;
-
-	this_blink=vstat.blink;
-	if((newvmem=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL)
-		return;
-	memcpy(newvmem, vstat.vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
-	sdl_updated=1;
-	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows);
-	/* Redraw all chars */
-	pos=0;
-	for(y=0;y<vstat.rows;y++) {
-		for(x=0;x<vstat.cols;x++) {
-			if((last_vmem==NULL) || (last_vmem[pos] != newvmem[pos]) || (last_blink != this_blink && newvmem[pos]>>15)) {
-				sdl_draw_one_char(newvmem[pos],x,y);
-				rects[rcount].x=x*vstat.charwidth*vstat.scaling;
-				rects[rcount].y=y*vstat.charheight*vstat.scaling;
-				rects[rcount].w=vstat.charwidth*vstat.scaling;
-				rects[rcount++].h=vstat.charheight*vstat.scaling;
-			}
-			pos++;
-		}
-	}
-	last_blink=this_blink;
-	p=last_vmem;
-	last_vmem=newvmem;
-	free(p);
-
-	sdl_draw_cursor();
-	if(rcount)
-		SDL_UpdateRects(win,rcount,rects);
-}
-
-/* Event Thread */
-void sdl_event_thread(void *data)
-{
-	unsigned int i;
-	SDL_Event	ev;
-
-	SDL_EnableUNICODE(1);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	while(1) {
-		if(SDL_WaitEvent(&ev)==1) {
-			switch (ev.type) {
-				case SDL_ACTIVEEVENT:		/* Focus change */
-					break;
-				case SDL_KEYDOWN:			/* Keypress */
-					if(ev.key.keysym.unicode&0x7f) {		/* ASCII Key (Whoopee!) */
-						if((ev.key.keysym.mod & (KMOD_META|KMOD_ALT)) && (ev.key.keysym.unicode&0x7f == 0x0a))
-							sdl_add_key(0xa600);
-						else
-							sdl_add_key(ev.key.keysym.unicode&0x7f);
-					}
-					else 
-						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
-					break;
-				case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
-					break;
-				case SDL_MOUSEMOTION:
-					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,ev.motion.x,ev.motion.y);
-					break;
-				case SDL_MOUSEBUTTONDOWN:
-					switch(ev.button.button) {
-						case SDL_BUTTON_LEFT:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),ev.button.x,ev.button.y);
-							break;
-						case SDL_BUTTON_MIDDLE:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),ev.button.x,ev.button.y);
-							break;
-						case SDL_BUTTON_RIGHT:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),ev.button.x,ev.button.y);
-							break;
-					}
-					break;
-				case SDL_MOUSEBUTTONUP:
-					switch(ev.button.button) {
-						case SDL_BUTTON_LEFT:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),ev.button.x,ev.button.y);
-							break;
-						case SDL_BUTTON_MIDDLE:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),ev.button.x,ev.button.y);
-							break;
-						case SDL_BUTTON_RIGHT:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),ev.button.x,ev.button.y);
-							break;
-					}
-					break;
-				case SDL_QUIT:
-					SDL_Quit();
-					exit(0);
-					break;
-				case SDL_VIDEORESIZE:
-					if(ev.resize.w > 0 && ev.resize.h > 0) {
-						FREE_AND_NULL(last_vmem);
-						vstat.scaling=(int)(ev.resize.w/(vstat.charwidth*vstat.cols));
-						if(vstat.scaling < 1)
-							vstat.scaling=1;
-						win=SDL_SetVideoMode(vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling, 8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
-						if(sdl_cursor!=NULL)
-							SDL_FreeSurface(sdl_cursor);
-						sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
-					    /* Update font. */
-					    sdl_load_font(NULL);
-					    sdl_setup_colours(win,0);
-						sdl_full_screen_redraw();
-					}
-					break;
-				case SDL_VIDEOEXPOSE:
-					SDL_UpdateRect(win,0,0,0,0);
-					break;
-				case SDL_USEREVENT: {
-					/* Tell SDL to do various stuff... */
-					switch(ev.user.code) {
-						case SDL_USEREVENT_UPDATERECT:
-							sdl_full_screen_redraw();
-							break;
-						case SDL_USEREVENT_SETTITLE:
-							SDL_WM_SetCaption((char *)ev.user.data1,NULL);
-							free(ev.user.data1);
-							break;
-						case SDL_USEREVENT_SETVIDMODE:
-							FREE_AND_NULL(last_vmem);
-							win=SDL_SetVideoMode(*((int *)ev.user.data1),*((int *)ev.user.data2),8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
-							sdl_setup_colours(win,0);
-							if(sdl_cursor!=NULL)
-								SDL_FreeSurface(sdl_cursor);
-							sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
-							/* Update font. */
-							sdl_load_font(NULL);
-							free(ev.user.data1);
-							free(ev.user.data2);
-							break;
-						case SDL_USEREVENT_HIDEMOUSE:
-							SDL_ShowCursor(SDL_DISABLE);
-							break;
-						case SDL_USEREVENT_SHOWMOUSE:
-							SDL_ShowCursor(SDL_ENABLE);
-							break;
-					}
-					break;
-				}
-				/* Ignore this stuff */
-				case SDL_SYSWMEVENT:			/* ToDo... This is where Copy/Paste needs doing */
-				case SDL_JOYAXISMOTION:
-				case SDL_JOYBALLMOTION:
-				case SDL_JOYHATMOTION:
-				case SDL_JOYBUTTONDOWN:
-				case SDL_JOYBUTTONUP:
-				default:
-					break;
-			}
-		}
-	}
 }
 
 /* Blinker Thread */
@@ -624,19 +269,8 @@ int sdl_init(void)
 	vstat.vmem=NULL;
 	vstat.scaling=1;
 
-	if(SDL_Init(SDL_INIT_VIDEO))
-		return(-1);
-
-	if((sdl_key_pending=SDL_CreateSemaphore(0))==NULL) {
-		SDL_Quit();
-		return(-1);
-	}
-
 	sdl_updated=1;
 
-	SDL_CreateThread(sdl_event_thread,NULL);
-	SDL_CreateThread(sdl_blinker_thread,NULL);
-	
 	if(sdl_init_mode(3))
 		return(-1);
 
@@ -960,3 +594,395 @@ char *sdl_getcliptext(void)
 	return(ret);
 }
 #endif
+
+/* Called from event thread only */
+void sdl_add_key(unsigned int keyval)
+{
+	if(keyval==0xa600) {
+		fullscreen=!fullscreen;
+		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling);
+		return;
+	}
+	if(keyval <= 0xffff) {
+		SDL_mutexP(sdl_keylock);
+		if(sdl_keynext+1==sdl_key) {
+			sdl_beep();
+			SDL_mutexV(sdl_keylock);
+			return;
+		}
+		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
+			sdl_beep();
+			SDL_mutexV(sdl_keylock);
+			return;
+		}
+		sdl_keybuf[sdl_keynext++]=keyval & 0xff;
+		SDL_SemPost(sdl_key_pending);
+		if(keyval>0xff) {
+			sdl_keybuf[sdl_keynext++]=keyval >> 8;
+			SDL_SemPost(sdl_key_pending);
+		}
+		SDL_mutexV(sdl_keylock);
+	}
+}
+
+/* Called from event thread only */
+int sdl_load_font(char *filename)
+{
+	unsigned char *font;
+	unsigned int fontsize;
+	int fw;
+	int fh;
+	int	ch;
+	int x;
+	int y;
+	int charrow;
+	int charcol;
+	SDL_Rect r;
+
+	/* I don't actually do this yet! */
+	if(filename != NULL)
+		return(-1);
+
+	fh=vstat.charheight;
+	fw=vstat.charwidth/8+(vstat.charwidth%8?1:0);
+
+	fontsize=fw*fh*256*sizeof(unsigned char);
+
+	if((font=(unsigned char *)malloc(fontsize))==NULL)
+		return(-1);
+
+	switch(vstat.charwidth) {
+		case 8:
+			switch(vstat.charheight) {
+				case 8:
+					memcpy(font, vga_font_bitmap8, fontsize);
+					break;
+				case 14:
+					memcpy(font, vga_font_bitmap14, fontsize);
+					break;
+				case 16:
+					memcpy(font, vga_font_bitmap, fontsize);
+					break;
+				default:
+					return(-1);
+			}
+			break;
+		default:
+			return(-1);
+	}
+
+	if(sdl_font!=NULL)
+		SDL_FreeSurface(sdl_font);
+	sdl_font=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
+	for(ch=0; ch<256; ch++) {
+		for(charrow=0; charrow<vstat.charheight; charrow++) {
+			for(charcol=0; charcol<vstat.charheight; charcol++) {
+				if(font[(ch*vstat.charheight+charrow)*fw+(charcol/8)] & (1<<(charcol%8))) {
+					r.x=charcol*vstat.scaling;
+					r.y=(ch*vstat.charheight+charrow)*vstat.scaling;
+					r.w=vstat.scaling;
+					r.h=vstat.scaling;
+					SDL_FillRect(sdl_font, &r, 1);
+				}
+			}
+		}
+	}
+
+    return(0);
+}
+
+/* Called from events thread only */
+int sdl_setup_colours(SDL_Surface *surf, int xor)
+{
+	int i;
+	int ret=0;
+	SDL_Color	co[16];
+
+	for(i=0; i<16; i++) {
+		co[i^xor].r=dac_default256[vstat.palette[i]].red;
+		co[i^xor].g=dac_default256[vstat.palette[i]].green;
+		co[i^xor].b=dac_default256[vstat.palette[i]].blue;
+	}
+	SDL_SetColors(surf, co, 0, 16);
+	return(ret);
+}
+
+/* Called from events thread only */
+void sdl_draw_cursor(void)
+{
+	SDL_Rect	src;
+	SDL_Rect	dst;
+	int	x;
+	int	y;
+
+	if(vstat.blink && vstat.curs_start<=vstat.curs_end) {
+		dst.x=0;
+		dst.y=0;
+		dst.w=vstat.charwidth*vstat.scaling;
+		dst.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
+		src.x=vstat.curs_col*vstat.charwidth*vstat.scaling;
+		src.y=(vstat.curs_row*vstat.charheight+vstat.curs_start)*vstat.scaling;
+		src.w=vstat.charwidth*vstat.scaling;
+		src.h=(vstat.curs_end-vstat.curs_start+1)*vstat.scaling;
+		sdl_setup_colours(sdl_cursor, 0);
+		SDL_BlitSurface(win, &src, sdl_cursor, &dst);
+		sdl_setup_colours(sdl_cursor, vstat.currattr&0x07);
+		SDL_LockSurface(sdl_cursor);
+		SDL_UnlockSurface(sdl_cursor);
+		SDL_BlitSurface(sdl_cursor, &dst, win, &src);
+		lastcursor_x=vstat.curs_col;
+		lastcursor_y=vstat.curs_row;
+	}
+}
+
+/* Called from event thread */
+int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
+{
+	SDL_Color	co;
+	SDL_Rect	src;
+	SDL_Rect	dst;
+	unsigned char	ch;
+
+	ch=(sch >> 8) & 0x0f;
+	co.r=dac_default256[vstat.palette[ch]].red;
+	co.g=dac_default256[vstat.palette[ch]].green;
+	co.b=dac_default256[vstat.palette[ch]].blue;
+	SDL_SetColors(sdl_font, &co, 1, 1);
+	ch=(sch >> 12) & 0x07;
+	co.r=dac_default256[vstat.palette[ch]].red;
+	co.g=dac_default256[vstat.palette[ch]].green;
+	co.b=dac_default256[vstat.palette[ch]].blue;
+	SDL_SetColors(sdl_font, &co, 0, 1);
+	dst.x=x*vstat.charwidth*vstat.scaling;
+	dst.y=y*vstat.charheight*vstat.scaling;
+	dst.w=vstat.charwidth*vstat.scaling;
+	dst.h=vstat.charheight*vstat.scaling;
+	src.x=0;
+	src.w=vstat.charwidth;
+	src.h=vstat.charheight;
+	src.y=vstat.charheight*vstat.scaling;
+	ch=sch & 0xff;
+	if((sch >>15) && !(vstat.blink))
+		src.y *= ' ';
+	else
+		src.y *= ch;
+	SDL_BlitSurface(sdl_font, &src, win, &dst);
+}
+
+/* Called from event thread only, */
+int sdl_full_screen_redraw(void)
+{
+	static int last_blink;
+	int this_blink;
+	int x;
+	int y;
+	unsigned int pos;
+	unsigned short *newvmem;
+	unsigned short *p;
+	SDL_Rect	*rects;
+	int rcount=0;
+
+	this_blink=vstat.blink;
+	if((newvmem=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL)
+		return;
+	memcpy(newvmem, vstat.vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
+	sdl_updated=1;
+	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows);
+	/* Redraw all chars */
+	pos=0;
+	for(y=0;y<vstat.rows;y++) {
+		for(x=0;x<vstat.cols;x++) {
+			if((last_vmem==NULL)
+					|| (last_vmem[pos] != newvmem[pos]) 
+					|| (last_blink != this_blink && newvmem[pos]>>15) 
+					|| (lastcursor_x==x && lastcursor_y==y)
+					|| (vstat.curs_col==x && vstat.curs_row==y)
+					) {
+				sdl_draw_one_char(newvmem[pos],x,y);
+				rects[rcount].x=x*vstat.charwidth*vstat.scaling;
+				rects[rcount].y=y*vstat.charheight*vstat.scaling;
+				rects[rcount].w=vstat.charwidth*vstat.scaling;
+				rects[rcount++].h=vstat.charheight*vstat.scaling;
+			}
+			pos++;
+		}
+	}
+	last_blink=this_blink;
+	p=last_vmem;
+	last_vmem=newvmem;
+	free(p);
+
+	sdl_draw_cursor();
+	if(rcount)
+		SDL_UpdateRects(win,rcount,rects);
+	free(rects);
+}
+
+/* Called from event thread only */
+unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
+{
+	int i;
+
+	for(i=0;sdl_keyval[i].keysym;i++) {
+		if(sdl_keyval[i].keysym==keysym) {
+			if(mod & (KMOD_META|KMOD_ALT))
+				return(sdl_keyval[i].alt);
+			if(mod & KMOD_CTRL)
+				return(sdl_keyval[i].ctrl);
+			if(mod & KMOD_SHIFT)
+				return(sdl_keyval[i].shift);
+			return(sdl_keyval[i].key);
+		}
+	}
+	return(0x01ffff);
+}
+
+/* Called from events thread only */
+struct mainparams {
+	int	argc;
+	char	**argv;
+};
+
+/* Called from events thread only */
+void sdl_runmain(void *data)
+{
+	struct mainparams *mp=data;
+
+	exit(CIOLIB_main(mp->argc, mp->argv));
+}
+
+/* Event Thread */
+int main(int argc, char **argv)
+{
+	unsigned int i;
+	SDL_Event	ev;
+	struct mainparams mp;
+
+	mp.argc=argc;
+	mp.argv=argv;
+	SDL_Init(SDL_INIT_VIDEO);
+
+	SDL_CreateThread(sdl_runmain, &mp);
+	SDL_CreateThread(sdl_blinker_thread, NULL);
+
+	sdl_key_pending=SDL_CreateSemaphore(0);
+
+	SDL_EnableUNICODE(1);
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+	while(1) {
+		if(SDL_WaitEvent(&ev)==1) {
+			switch (ev.type) {
+				case SDL_ACTIVEEVENT:		/* Focus change */
+					break;
+				case SDL_KEYDOWN:			/* Keypress */
+					if(ev.key.keysym.unicode&0x7f) {		/* ASCII Key (Whoopee!) */
+						/* Need magical handling here... 
+						 * if ALT is pressed, run 'er through 
+						  * sdl_get_char_code() ANYWAYS */
+						if(ev.key.keysym.mod & (KMOD_META|KMOD_ALT))
+							sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
+						else
+							sdl_add_key(ev.key.keysym.unicode&0x7f);
+					}
+					else 
+						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
+					break;
+				case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
+					break;
+				case SDL_MOUSEMOTION:
+					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,ev.motion.x,ev.motion.y);
+					break;
+				case SDL_MOUSEBUTTONDOWN:
+					switch(ev.button.button) {
+						case SDL_BUTTON_LEFT:
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),ev.button.x,ev.button.y);
+							break;
+						case SDL_BUTTON_MIDDLE:
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),ev.button.x,ev.button.y);
+							break;
+						case SDL_BUTTON_RIGHT:
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),ev.button.x,ev.button.y);
+							break;
+					}
+					break;
+				case SDL_MOUSEBUTTONUP:
+					switch(ev.button.button) {
+						case SDL_BUTTON_LEFT:
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),ev.button.x,ev.button.y);
+							break;
+						case SDL_BUTTON_MIDDLE:
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),ev.button.x,ev.button.y);
+							break;
+						case SDL_BUTTON_RIGHT:
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),ev.button.x,ev.button.y);
+							break;
+					}
+					break;
+				case SDL_QUIT:
+					SDL_Quit();
+					exit(0);
+					break;
+				case SDL_VIDEORESIZE:
+					if(ev.resize.w > 0 && ev.resize.h > 0) {
+						FREE_AND_NULL(last_vmem);
+						vstat.scaling=(int)(ev.resize.w/(vstat.charwidth*vstat.cols));
+						if(vstat.scaling < 1)
+							vstat.scaling=1;
+						win=SDL_SetVideoMode(vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling, 8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
+						if(sdl_cursor!=NULL)
+							SDL_FreeSurface(sdl_cursor);
+						sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+					    /* Update font. */
+					    sdl_load_font(NULL);
+					    sdl_setup_colours(win,0);
+						sdl_full_screen_redraw();
+					}
+					break;
+				case SDL_VIDEOEXPOSE:
+					SDL_UpdateRect(win,0,0,0,0);
+					break;
+				case SDL_USEREVENT: {
+					/* Tell SDL to do various stuff... */
+					switch(ev.user.code) {
+						case SDL_USEREVENT_UPDATERECT:
+							sdl_full_screen_redraw();
+							break;
+						case SDL_USEREVENT_SETTITLE:
+							SDL_WM_SetCaption((char *)ev.user.data1,NULL);
+							free(ev.user.data1);
+							break;
+						case SDL_USEREVENT_SETVIDMODE:
+							FREE_AND_NULL(last_vmem);
+							win=SDL_SetVideoMode(*((int *)ev.user.data1),*((int *)ev.user.data2),8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
+							sdl_setup_colours(win,0);
+							if(sdl_cursor!=NULL)
+								SDL_FreeSurface(sdl_cursor);
+							sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+							/* Update font. */
+							sdl_load_font(NULL);
+							free(ev.user.data1);
+							free(ev.user.data2);
+							break;
+						case SDL_USEREVENT_HIDEMOUSE:
+							SDL_ShowCursor(SDL_DISABLE);
+							break;
+						case SDL_USEREVENT_SHOWMOUSE:
+							SDL_ShowCursor(SDL_ENABLE);
+							break;
+					}
+					break;
+				}
+				/* Ignore this stuff */
+				case SDL_SYSWMEVENT:			/* ToDo... This is where Copy/Paste needs doing */
+				case SDL_JOYAXISMOTION:
+				case SDL_JOYBALLMOTION:
+				case SDL_JOYHATMOTION:
+				case SDL_JOYBUTTONDOWN:
+				case SDL_JOYBUTTONUP:
+				default:
+					break;
+			}
+		}
+	}
+}
+
