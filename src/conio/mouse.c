@@ -442,7 +442,7 @@ int mouse_pending(void)
 		SLEEP(1);
 	if(listSemTryWait(&state.output))
 		return(TRUE);
-	return(FALSE);
+	return(listCountNodes(&state.output));
 }
 
 int ciolib_getmouse(struct mouse_event *mevent)
