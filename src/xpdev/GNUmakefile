@@ -6,7 +6,8 @@ ifdef XP_SEM
 endif
 MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpevent$(OFILE)
 
-CFLAGS	+=	-DSOUNDCARD_H_IN=$(shell if [ -f /usr/include/sys/soundcard.h ] ; then echo 1 ; elif [ -f /usr/include/soundcard.h ] ; then echo 2 ; elif [ -f /usr/include/linux/soundcard.h ] ; then echo 3 ; else echo 0 ; fi) -I.
+CFLAGS	+=	-DSOUNDCARD_H_IN=$(shell if [ -f /usr/include/sys/soundcard.h ] ; then echo 1 ; elif [ -f /usr/include/soundcard.h ] ; then echo 2 ; elif [ -f /usr/include/linux/soundcard.h ] ; then echo 3 ; else echo 0 ; fi) -I. $(XPDEV_CFLAGS)
+MT_CFLAGS	+=	$(XPDEV-MT_CFLAGS)
 
 SHLIBOPTS   :=  -shared
 ifeq ($(os),darwin)
