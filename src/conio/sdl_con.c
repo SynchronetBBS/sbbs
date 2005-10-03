@@ -24,6 +24,7 @@ SDL_Surface	*win=NULL;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
 int sdl_updated;
+int sdl_exitcode=0;
 
 SDL_Surface *sdl_font=NULL;
 SDL_Surface	*sdl_cursor=NULL;
@@ -847,8 +848,11 @@ struct mainparams {
 void sdl_runmain(void *data)
 {
 	struct mainparams *mp=data;
+	SDL_Event	ev;
 
-	exit(CIOLIB_main(mp->argc, mp->argv));
+	sdl_exitcode=CIOLIB_main(mp->argc, mp->argv);
+	ev.type=SDL_QUIT;
+	while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 }
 
 /* Event Thread */
@@ -920,7 +924,7 @@ int main(int argc, char **argv)
 					break;
 				case SDL_QUIT:
 					SDL_Quit();
-					exit(0);
+					return(sdl_exitcode);
 					break;
 				case SDL_VIDEORESIZE:
 					if(ev.resize.w > 0 && ev.resize.h > 0) {
