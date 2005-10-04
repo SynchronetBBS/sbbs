@@ -43,7 +43,7 @@ ifdef USE_SDL
    ifeq ($(os),darwin)
     CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
     CIOLIB-MT_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
-    CIOLIB-MT_LIBS	+=	$(SRC_ROOT)$(DIRSEP)conio$(DIRSEP)SDLMain.m -framework SDL -framework Cocoa -I/Library/Frameworks/SDL.framework/Headers
+    CIOLIB-MT_LIBS	+=	-framework SDL -framework Cocoa -I/Library/Frameworks/SDL.framework/Headers
    endif
   endif
  endif
