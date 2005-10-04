@@ -9,6 +9,7 @@
 #include <ini_file.h>
 #include <dirwrap.h>
 
+#include "ciolib.h"
 #include "bbslist.h"
 #include "conn.h"
 #include "term.h"
