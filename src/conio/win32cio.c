@@ -243,18 +243,20 @@ int win32_keyboardio(int isgetch)
 
 		while(1) {
 			GetNumberOfConsoleInputEvents(GetStdHandle(STD_INPUT_HANDLE), &num);
-			if(num || mouse_pending())
+			if(num)
 				break;
+			if(mouse_trywait()) {
+				lastch=CIO_KEY_MOUSE;
+				break;
+			}
 			if(isgetch)
 				SLEEP(1);
 			else
 				return(FALSE);
 		}
 
-		if(mouse_pending()) {
-			lastch=CIO_KEY_MOUSE;
+		if(lastch)
 			continue;
-		}
 
 		if(!ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
 				|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT))

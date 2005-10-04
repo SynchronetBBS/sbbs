@@ -56,8 +56,6 @@ enum {
 	,MOUSE_DRAGSTARTED
 };
 
-sem_t in_sem;
-
 struct in_mouse_event {
 	int	event;
 	int	x;
@@ -105,9 +103,8 @@ void init_mouse(void)
 	memset(&state,0,sizeof(state));
 	state.click_timeout=0;
 	state.multi_timeout=300;
-	listInit(&state.input,0);
+	listInit(&state.input,LINK_LIST_SEMAPHORE);
 	listInit(&state.output,LINK_LIST_SEMAPHORE);
-	sem_init(&in_sem,0,0);
 	mouse_initialized=1;
 }
 
@@ -155,7 +152,6 @@ void ciomouse_gotevent(int event, int x, int y)
 	ime->nextevent=NULL;
 
 	listPushNode(&state.input,ime);
-	sem_post(&in_sem);
 }
 
 void add_outevent(int event, int x, int y)
@@ -216,11 +212,11 @@ void ciolib_mouse_thread(void *data)
 				timedout=1;
 			}
 			else {
-				timedout=sem_trywait_block(&in_sem,delay);
+				timedout=listSemTryWaitBlock(&state.input,delay);
 			}
 		}
 		else {
-			sem_wait(&in_sem);
+			listSemWait(&state.input);
 		}
 		if(timedout) {
 			state.timeout[timeout_button-1]=0;
@@ -429,6 +425,13 @@ void ciolib_mouse_thread(void *data)
 	}
 }
 
+int mouse_trywait(void)
+{
+	while(!mouse_initialized)
+		SLEEP(1);
+	return(listSemTryWait(&state.output));
+}
+
 int mouse_wait(void)
 {
 	while(!mouse_initialized)
@@ -440,8 +443,6 @@ int mouse_pending(void)
 {
 	while(!mouse_initialized)
 		SLEEP(1);
-	if(listSemTryWait(&state.output))
-		return(TRUE);
 	return(listCountNodes(&state.output));
 }
 

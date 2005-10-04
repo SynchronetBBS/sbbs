@@ -316,8 +316,6 @@ int ciolib_kbhit(void)
 	CIOLIB_INIT();
 	if(ungotch)
 		return(1);
-	if(mouse_pending())
-		return(1);
 	return(cio_api.kbhit());
 }
 

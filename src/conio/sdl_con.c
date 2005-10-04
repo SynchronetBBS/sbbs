@@ -7,6 +7,7 @@
 #include "xpbeep.h"
 
 #include "ciolib.h"
+#include "keys.h"
 #include "vidmodes.h"
 
 #ifdef main
@@ -23,6 +24,8 @@ extern int	CIOLIB_main(int argc, char **argv);
 SDL_Surface	*win=NULL;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
+SDL_sem *sdl_init_complete;
+int	sdl_init_good=0;
 int sdl_updated;
 int sdl_exitcode=0;
 
@@ -65,6 +68,7 @@ enum {
 	,SDL_USEREVENT_SETVIDMODE
 	,SDL_USEREVENT_SHOWMOUSE
 	,SDL_USEREVENT_HIDEMOUSE
+	,SDL_USEREVENT_INIT
 };
 
 const struct sdl_keyvals sdl_keyval[] =
@@ -211,6 +215,9 @@ void sdl_user_func(int func, ...)
 		case SDL_USEREVENT_HIDEMOUSE:
 			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
+		case SDL_USEREVENT_INIT:
+			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			break;
 	}
 	va_end(argptr);
 }
@@ -272,14 +279,19 @@ int sdl_init(void)
 
 	sdl_updated=1;
 
-	if(sdl_init_mode(3))
-		return(-1);
+	sdl_init_mode(3);
 
 	atexit(SDL_Quit);
 
-	init_mouse();
+	sdl_user_func(SDL_USEREVENT_INIT);
 
-	return(0);
+	SDL_SemWait(sdl_init_complete);
+	if(sdl_init_good) {
+		init_mouse();
+		return(0);
+	}
+
+	return(-1);
 }
 
 /********************************************************/
@@ -851,10 +863,19 @@ void sdl_runmain(void *data)
 	while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 }
 
+/* Mouse event/keyboard thread */
+void sdl_mouse_thread(void *data)
+{
+	while(1) {
+		if(mouse_wait())
+			sdl_add_key(CIO_KEY_MOUSE);
+	}
+}
+
 /* Event Thread */
 int main(int argc, char **argv)
 {
-	unsigned int i;
+	unsigned int i=0;
 	SDL_Event	ev;
 	struct mainparams mp;
 
@@ -862,13 +883,12 @@ int main(int argc, char **argv)
 	mp.argv=argv;
 	SDL_Init(SDL_INIT_VIDEO);
 
-	SDL_CreateThread(sdl_runmain, &mp);
-	SDL_CreateThread(sdl_blinker_thread, NULL);
-
 	sdl_key_pending=SDL_CreateSemaphore(0);
+	sdl_init_complete=SDL_CreateSemaphore(0);
+	sdl_init_complete=SDL_CreateSemaphore(0);
 
-	SDL_EnableUNICODE(1);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+	SDL_CreateThread(sdl_runmain, &mp);
+
 	while(1) {
 		if(SDL_WaitEvent(&ev)==1) {
 			switch (ev.type) {
@@ -890,36 +910,35 @@ int main(int argc, char **argv)
 				case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
 					break;
 				case SDL_MOUSEMOTION:
-					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,ev.motion.x,ev.motion.y);
+					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,ev.motion.x/(vstat.charwidth*vstat.scaling)+1,ev.motion.y/(vstat.charheight*vstat.scaling)+1);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
 					switch(ev.button.button) {
 						case SDL_BUTTON_LEFT:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),ev.button.x,ev.button.y);
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
 							break;
 						case SDL_BUTTON_MIDDLE:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),ev.button.x,ev.button.y);
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
 							break;
 						case SDL_BUTTON_RIGHT:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),ev.button.x,ev.button.y);
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
 							break;
 					}
 					break;
 				case SDL_MOUSEBUTTONUP:
 					switch(ev.button.button) {
 						case SDL_BUTTON_LEFT:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),ev.button.x,ev.button.y);
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
 							break;
 						case SDL_BUTTON_MIDDLE:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),ev.button.x,ev.button.y);
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
 							break;
 						case SDL_BUTTON_RIGHT:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),ev.button.x,ev.button.y);
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
 							break;
 					}
 					break;
 				case SDL_QUIT:
-					SDL_Quit();
 					return(sdl_exitcode);
 					break;
 				case SDL_VIDEORESIZE:
@@ -929,13 +948,20 @@ int main(int argc, char **argv)
 						if(vstat.scaling < 1)
 							vstat.scaling=1;
 						win=SDL_SetVideoMode(vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling, 8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
-						if(sdl_cursor!=NULL)
-							SDL_FreeSurface(sdl_cursor);
-						sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
-					    /* Update font. */
-					    sdl_load_font(NULL);
-					    sdl_setup_colours(win,0);
-						sdl_full_screen_redraw();
+						if(win!=NULL) {
+							if(sdl_cursor!=NULL)
+								SDL_FreeSurface(sdl_cursor);
+							sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+						    /* Update font. */
+						    sdl_load_font(NULL);
+						    sdl_setup_colours(win,0);
+							sdl_full_screen_redraw();
+						}
+						else if(sdl_init_good) {
+							ev.type=SDL_QUIT;
+							sdl_exitcode=1;
+							SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
+						}
 					}
 					break;
 				case SDL_VIDEOEXPOSE:
@@ -954,12 +980,19 @@ int main(int argc, char **argv)
 						case SDL_USEREVENT_SETVIDMODE:
 							FREE_AND_NULL(last_vmem);
 							win=SDL_SetVideoMode(*((int *)ev.user.data1),*((int *)ev.user.data2),8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
-							sdl_setup_colours(win,0);
-							if(sdl_cursor!=NULL)
-								SDL_FreeSurface(sdl_cursor);
-							sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
-							/* Update font. */
-							sdl_load_font(NULL);
+							if(win!=NULL) {
+								sdl_setup_colours(win,0);
+								if(sdl_cursor!=NULL)
+									SDL_FreeSurface(sdl_cursor);
+								sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+								/* Update font. */
+								sdl_load_font(NULL);
+							}
+							else if(sdl_init_good) {
+								ev.type=SDL_QUIT;
+								sdl_exitcode=1;
+								SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
+							}
 							free(ev.user.data1);
 							free(ev.user.data2);
 							break;
@@ -968,6 +1001,21 @@ int main(int argc, char **argv)
 							break;
 						case SDL_USEREVENT_SHOWMOUSE:
 							SDL_ShowCursor(SDL_ENABLE);
+							break;
+						case SDL_USEREVENT_INIT:
+							if(!sdl_init_good) {
+								if(SDL_WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO) {
+									if(win != NULL) {
+										SDL_EnableUNICODE(1);
+										SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
+										SDL_CreateThread(sdl_blinker_thread, NULL);
+										SDL_CreateThread(sdl_mouse_thread, NULL);
+										sdl_init_good=1;
+									}
+								}
+							}
+							SDL_SemPost(sdl_init_complete);
 							break;
 					}
 					break;

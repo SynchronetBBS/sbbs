@@ -1066,6 +1066,15 @@ video_event(XEvent *ev)
 }
 
 void
+mouse_event(void *crap)
+{
+	while(1) {
+		if(mouse_wait())
+			KbdWrite(CIO_KEY_MOUSE);
+	}
+}
+
+void
 video_async_event(void *crap)
 {
 	int x;
@@ -1620,6 +1629,7 @@ console_init()
 	}
 
 	_beginthread(video_async_event,1<<16,NULL);
+	_beginthread(mouse_event,1<<16,NULL);
 	return(0);
 }
 
@@ -1677,26 +1687,20 @@ tty_read(int flag)
 		return(r & 0xff);
 	}
 
-	if (KbdEmpty() && !mouse_pending()) {
+	if (KbdEmpty()) {
 		if (flag & TTYF_BLOCK) {
-			while (KbdEmpty() && !mouse_pending())
+			while (KbdEmpty())
 			tty_pause();
 		} else {
 			return(-1);
 		}
     }
 
-	if(mouse_pending()) {
-		x_nextchar=CIO_KEY_MOUSE>>8;
-		return(CIO_KEY_MOUSE&0xff);
-	}
-	else {
-    	r = KbdRead();
-    	if ((r & 0xff) == 0)
-			x_nextchar = r >> 8;
-    	r &= 0xff;
-    	return(r & 0xff);
-	}
+   	r = KbdRead();
+   	if ((r & 0xff) == 0 || (r & 0xff) == 0xff)
+		x_nextchar = r >> 8;
+   	r &= 0xff;
+   	return(r & 0xff);
 }
 
 int
