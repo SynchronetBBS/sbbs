@@ -223,7 +223,8 @@ int main(int argc, char **argv)
 			SAFECOPY(url,argv[i]);
     }
 
-	initciolib(ciolib_mode);
+	if(initciolib(ciolib_mode))
+		return(1);
 
     gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {
