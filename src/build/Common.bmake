@@ -161,6 +161,7 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # Pull in lib-specific flags
 !include     $(CIOLIB_SRC)$(DIRSEP)Common.make
+!include     $(CIOLIB_SRC)$(DIRSEP)Common.bmake
 !include     $(UIFC_SRC)$(DIRSEP)Common.make
 !include     $(SMBLIB_SRC)$(DIRSEP)Common.make
 !include     $(XPDEV_SRC)$(DIRSEP)Common.make
