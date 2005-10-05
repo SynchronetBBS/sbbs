@@ -25,6 +25,7 @@ extern int	CIOLIB_main(int argc, char **argv);
 
 SDL_Surface	*win=NULL;
 SDL_mutex *sdl_keylock;
+SDL_mutex *sdl_updlock;
 SDL_sem *sdl_key_pending;
 SDL_sem *sdl_init_complete;
 int	sdl_init_good=0;
@@ -184,10 +185,12 @@ void sdl_user_func(int func, ...)
 	switch(func) {
 		case SDL_USEREVENT_UPDATERECT:
 			/* Only send event if the last event wasn't already handled */
+			SDL_mutexP(sdl_updlock);
 			if(sdl_updated) {
 				if(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)==1);
 					sdl_updated=0;
 			}
+			SDL_mutexV(sdl_updlock);
 			break;
 		case SDL_USEREVENT_SETTITLE:
 			if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
@@ -278,8 +281,10 @@ int sdl_init(int mode)
 	vstat.vmem=NULL;
 	vstat.scaling=1;
 
+	SDL_mutexP(sdl_updlock);
 	sdl_updated=1;
-
+	SDL_mutexV(sdl_updlock);
+	
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
 		fullscreen=1;
 
@@ -799,7 +804,9 @@ int sdl_full_screen_redraw(void)
 	if((newvmem=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL)
 		return(-1);
 	memcpy(newvmem, vstat.vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
+	SDL_mutexP(sdl_updlock);
 	sdl_updated=1;
+	SDL_mutexV(sdl_updlock);
 	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows);
 	/* Redraw all chars */
 	pos=0;
@@ -891,6 +898,8 @@ int main(int argc, char **argv)
 
 	sdl_key_pending=SDL_CreateSemaphore(0);
 	sdl_init_complete=SDL_CreateSemaphore(0);
+	sdl_updlock=SDL_CreateMutex();
+	sdl_keylock=SDL_CreateMutex();
 
 	SDL_CreateThread(sdl_runmain, &mp);
 
