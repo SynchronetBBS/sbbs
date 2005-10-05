@@ -891,7 +891,6 @@ int main(int argc, char **argv)
 
 	sdl_key_pending=SDL_CreateSemaphore(0);
 	sdl_init_complete=SDL_CreateSemaphore(0);
-	sdl_init_complete=SDL_CreateSemaphore(0);
 
 	SDL_CreateThread(sdl_runmain, &mp);
 
