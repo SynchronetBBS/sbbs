@@ -106,7 +106,6 @@ char *ciolib_getcliptext(void);
 int try_sdl_init(int mode)
 {
 	if(!sdl_init(mode)) {
-		cio_api.mode=mode;
 		cio_api.mouse=1;
 		cio_api.puttext=sdl_puttext;
 		cio_api.gettext=sdl_gettext;
