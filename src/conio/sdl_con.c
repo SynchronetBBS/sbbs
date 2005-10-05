@@ -1024,7 +1024,6 @@ int main(int argc, char **argv)
 									,SDL_HWSURFACE|SDL_HWPALETTE|SDL_RESIZABLE
 								);
 							if(win!=NULL) {
-fprintf(stderr,"Surface: w:%d h:%d bpp:%d scaling:%d\n", win->w, win->h, win->format->BitsPerPixel, vstat.scaling);
 								vstat.scaling=(int)(win->w/(vstat.charwidth*vstat.cols));
 								if(vstat.scaling < 1)
 									vstat.scaling=1;
