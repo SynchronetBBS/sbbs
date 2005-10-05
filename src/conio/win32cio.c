@@ -375,8 +375,10 @@ int win32_initciolib(long inmode)
 	int	i,j;
 	CONSOLE_SCREEN_BUFFER_INFO	sbuff;
 
-	if(!isatty(fileno(stdin)))
-		return(0);
+	if(!isatty(fileno(stdin))) {
+		if(!AllocConsole())
+			return(0);
+	}
 
 	if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
 		return(0);
