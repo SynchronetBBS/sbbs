@@ -217,7 +217,6 @@ int console_main(int argc, char *argv[])
 
 	/* Load SDL dynamic link library */
 	if ( SDL_Init(SDL_INIT_NOPARACHUTE) < 0 ) {
-		ShowError("WinMain() error", SDL_GetError());
 		return(FALSE);
 	}
 	atexit(cleanup_output);
@@ -232,7 +231,6 @@ int console_main(int argc, char *argv[])
 	   safe to comment it out here.
 	if ( SDL_RegisterApp(appname, CS_BYTEALIGNCLIENT, 
 	                     GetModuleHandle(NULL)) < 0 ) {
-		ShowError("WinMain() error", SDL_GetError());
 		exit(1);
 	}*/
 #else
