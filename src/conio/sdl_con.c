@@ -40,7 +40,7 @@ static int lastcursor_y=0;
 unsigned short *last_vmem=NULL;
 
 struct video_stats vstat;
-int fullscreen=1;
+int fullscreen=0;
 
 /* 256 bytes so I can cheat */
 unsigned char		sdl_keybuf[256];		/* Keyboard buffer */
