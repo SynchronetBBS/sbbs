@@ -184,7 +184,7 @@ static void __cdecl cleanup_output(void)
 #endif
 }
 
-#if defined(_MSC_VER) && !defined(_WIN32_WCE)
+#if (defined(__BORLANDC__) || defined(_MSC_VER)) && !defined(_WIN32_WCE)
 /* The VC++ compiler needs main defined */
 #define console_main main
 #endif
