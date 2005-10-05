@@ -294,6 +294,12 @@ int initciolib(int mode)
 		case CIOLIB_MODE_ANSI:
 			try_ansi_init(mode);
 			break;
+
+#ifdef WITH_SDL
+		case CIOLIB_MODE_SDL:
+			try_sdl_init(mode);
+			break;
+#endif
 	}
 	if(cio_api.mode==CIOLIB_MODE_AUTO) {
 		fprintf(stderr,"CIOLIB initialization failed!\n");
