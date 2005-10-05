@@ -37,6 +37,8 @@
 # endif /* _WIN32_WCE_EMULATION */
 #endif /* main */
 
+#define NO_STDIO_REDIRECT
+
 /* The standard output files */
 #define STDOUT_FILE	TEXT("stdout.txt")
 #define STDERR_FILE	TEXT("stderr.txt")
