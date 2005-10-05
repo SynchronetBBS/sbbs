@@ -297,6 +297,7 @@ int sdl_init(int mode)
 	SDL_SemWait(sdl_init_complete);
 	if(sdl_init_good) {
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
+		FreeConsole();
 		return(0);
 	}
 
