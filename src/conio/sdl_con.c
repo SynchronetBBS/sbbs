@@ -984,12 +984,16 @@ int main(int argc, char **argv)
 							FREE_AND_NULL(last_vmem);
 							win=SDL_SetVideoMode(*((int *)ev.user.data1),*((int *)ev.user.data2),8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
 							if(win!=NULL) {
+								vstat.scaling=(int)(win->w/(vstat.charwidth*vstat.cols));
+								if(vstat.scaling < 1)
+									vstat.scaling=1;
 								sdl_setup_colours(win,0);
 								if(sdl_cursor!=NULL)
 									SDL_FreeSurface(sdl_cursor);
 								sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
 								/* Update font. */
 								sdl_load_font(NULL);
+								sdl_full_screen_redraw();
 							}
 							else if(sdl_init_good) {
 								ev.type=SDL_QUIT;
