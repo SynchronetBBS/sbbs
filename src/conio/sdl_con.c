@@ -40,7 +40,7 @@ static int lastcursor_y=0;
 unsigned short *last_vmem=NULL;
 
 struct video_stats vstat;
-int fullscreen=0;
+int fullscreen=1;
 
 /* 256 bytes so I can cheat */
 unsigned char		sdl_keybuf[256];		/* Keyboard buffer */
@@ -613,7 +613,7 @@ void sdl_add_key(unsigned int keyval)
 {
 	if(keyval==0xa600) {
 		fullscreen=!fullscreen;
-		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling);
+		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols, vstat.charheight*vstat.rows);
 		return;
 	}
 	if(keyval <= 0xffff) {
@@ -686,7 +686,7 @@ int sdl_load_font(char *filename)
 
 	if(sdl_font!=NULL)
 		SDL_FreeSurface(sdl_font);
-	sdl_font=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
+	sdl_font=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
 	for(ch=0; ch<256; ch++) {
 		for(charrow=0; charrow<vstat.charheight; charrow++) {
 			for(charcol=0; charcol<vstat.charheight; charcol++) {
@@ -949,11 +949,24 @@ int main(int argc, char **argv)
 						vstat.scaling=(int)(ev.resize.w/(vstat.charwidth*vstat.cols));
 						if(vstat.scaling < 1)
 							vstat.scaling=1;
-						win=SDL_SetVideoMode(vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling, 8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
+						if(fullscreen)
+							win=SDL_SetVideoMode(
+								 vstat.charwidth*vstat.cols*vstat.scaling
+								,vstat.charheight*vstat.rows*vstat.scaling
+								,32
+								,SDL_SWSURFACE|SDL_HWPALETTE|SDL_FULLSCREEN
+							);
+						else
+							win=SDL_SetVideoMode(
+								 vstat.charwidth*vstat.cols*vstat.scaling
+								,vstat.charheight*vstat.rows*vstat.scaling
+								,8
+								,SDL_HWSURFACE|SDL_HWPALETTE|SDL_RESIZABLE
+							);
 						if(win!=NULL) {
 							if(sdl_cursor!=NULL)
 								SDL_FreeSurface(sdl_cursor);
-							sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+							sdl_cursor=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
 						    /* Update font. */
 						    sdl_load_font(NULL);
 						    sdl_setup_colours(win,0);
@@ -982,15 +995,29 @@ int main(int argc, char **argv)
 							break;
 						case SDL_USEREVENT_SETVIDMODE:
 							FREE_AND_NULL(last_vmem);
-							win=SDL_SetVideoMode(*((int *)ev.user.data1),*((int *)ev.user.data2),8, SDL_HWSURFACE|SDL_HWPALETTE|(fullscreen?SDL_FULLSCREEN:0)|SDL_RESIZABLE|SDL_DOUBLEBUF);
+							if(fullscreen)
+								win=SDL_SetVideoMode(
+									 vstat.charwidth*vstat.cols*vstat.scaling
+									,vstat.charheight*vstat.rows*vstat.scaling
+									,8
+									,SDL_SWSURFACE|SDL_HWPALETTE|SDL_FULLSCREEN
+								);
+							else
+								win=SDL_SetVideoMode(
+									 vstat.charwidth*vstat.cols*vstat.scaling
+									,vstat.charheight*vstat.rows*vstat.scaling
+									,8
+									,SDL_HWSURFACE|SDL_HWPALETTE|SDL_RESIZABLE
+								);
 							if(win!=NULL) {
+fprintf(stderr,"Surface: w:%d h:%d bpp:%d scaling:%d\n", win->w, win->h, win->format->BitsPerPixel, vstat.scaling);
 								vstat.scaling=(int)(win->w/(vstat.charwidth*vstat.cols));
 								if(vstat.scaling < 1)
 									vstat.scaling=1;
 								sdl_setup_colours(win,0);
 								if(sdl_cursor!=NULL)
 									SDL_FreeSurface(sdl_cursor);
-								sdl_cursor=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+								sdl_cursor=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
 								/* Update font. */
 								sdl_load_font(NULL);
 								sdl_full_screen_redraw();
