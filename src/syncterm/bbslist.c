@@ -390,6 +390,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 				strcpy(title,syncterm_version);
 			settitle(title);
 		}
+		oldopt=opt;
 		val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 			|WIN_ORG|WIN_ACT|WIN_INSACT|WIN_DELACT
 			|WIN_MID|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
