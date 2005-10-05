@@ -967,7 +967,8 @@ int main(int argc, char **argv)
 					}
 					break;
 				case SDL_VIDEOEXPOSE:
-					SDL_UpdateRect(win,0,0,0,0);
+					FREE_AND_NULL(last_vmem);
+					sdl_full_screen_redraw();
 					break;
 				case SDL_USEREVENT: {
 					/* Tell SDL to do various stuff... */
