@@ -845,7 +845,7 @@ int sdl_full_screen_redraw(void)
 }
 
 /* Called from event thread only */
-unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
+unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned int unicode)
 {
 	int i;
 
@@ -860,6 +860,8 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 			return(sdl_keyval[i].key);
 		}
 	}
+	if(unicode  && unicode < 256)
+		return(unicode);
 	return(0x01ffff);
 }
 
@@ -919,12 +921,12 @@ int main(int argc, char **argv)
 						 * if ALT is pressed, run 'er through 
 						 * sdl_get_char_code() ANYWAYS */
 						if(ev.key.keysym.mod & (KMOD_META|KMOD_ALT))
-							sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
+							sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
 						else
 							sdl_add_key(ev.key.keysym.unicode&0x7f);
 					}
 					else 
-						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
+						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
 					break;
 				case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
 					break;
