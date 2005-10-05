@@ -295,8 +295,10 @@ int sdl_init(int mode)
 	sdl_user_func(SDL_USEREVENT_INIT);
 
 	SDL_SemWait(sdl_init_complete);
-	if(sdl_init_good)
+	if(sdl_init_good) {
+		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		return(0);
+	}
 
 	return(-1);
 }
@@ -621,6 +623,7 @@ void sdl_add_key(unsigned int keyval)
 {
 	if(keyval==0xa600) {
 		fullscreen=!fullscreen;
+		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols, vstat.charheight*vstat.rows);
 		return;
 	}
