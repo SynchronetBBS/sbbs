@@ -105,8 +105,8 @@ char *ciolib_getcliptext(void);
 #ifdef WITH_SDL
 int try_sdl_init(int mode)
 {
-	if(!sdl_init()) {
-		cio_api.mode=CIOLIB_MODE_SDL;
+	if(!sdl_init(mode)) {
+		cio_api.mode=mode;
 		cio_api.mouse=1;
 		cio_api.puttext=sdl_puttext;
 		cio_api.gettext=sdl_gettext;
@@ -297,6 +297,7 @@ int initciolib(int mode)
 
 #ifdef WITH_SDL
 		case CIOLIB_MODE_SDL:
+		case CIOLIB_MODE_SDL_FULLSCREEN:
 			try_sdl_init(mode);
 			break;
 #endif

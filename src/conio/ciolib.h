@@ -45,6 +45,7 @@ enum {
 	,CIOLIB_MODE_X
 	,CIOLIB_MODE_CONIO
 	,CIOLIB_MODE_SDL
+	,CIOLIB_MODE_SDL_FULLSCREEN
 };
 
 #if defined(_WIN32)	/* presumably, Win32 */

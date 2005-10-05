@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 /* Low-Level stuff (Shouldn't be used by ciolib programs */
-int sdl_init(void);
+int sdl_init(int mode);
 int sdl_load_font(char *filename, int width, int height, double scale);
 int sdl_init_mode(int mode);
 int sdl_setup_colours(void);

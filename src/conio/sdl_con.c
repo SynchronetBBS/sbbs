@@ -273,12 +273,15 @@ int sdl_draw_char(unsigned short vch, int xpos, int ypos, int update)
 }
 
 /* Called from main thread only (Passes Event) */
-int sdl_init(void)
+int sdl_init(int mode)
 {
 	vstat.vmem=NULL;
 	vstat.scaling=1;
 
 	sdl_updated=1;
+
+	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
+		fullscreen=1;
 
 	sdl_init_mode(3);
 
