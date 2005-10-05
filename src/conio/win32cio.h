@@ -37,6 +37,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+void win32_delay(long msec);
 int win32_kbhit(void);
 int win32_getch(void);
 int win32_getche(void);

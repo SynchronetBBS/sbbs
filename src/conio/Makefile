@@ -17,6 +17,11 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 !include ..\build\Common.bmake	# defines clean and output directory rules
 
+!ifdef USE_SDL
+MT_CFLAGS	= $(MT_CFLAGS) -IC:$(DIRSEP)SDL$(DIRSEP)SDL-1.2.9$(DIRSEP)include -DUSE_SDL
+OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE) $(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
+!endif
+
 CFLAGS = -w-par -w-csu $(CFLAGS) $(XPDEV-MT_CFLAGS) $(MT_CFLAGS) -I$(CIOLIB_SRC)
 OBJS = $(OBJS) $(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
 

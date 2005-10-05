@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "vidmodes.h"
 
 #define B_00000000_B	0x00

@@ -99,6 +99,7 @@ enum {
 extern "C" {
 #endif
 void ciomouse_gotevent(int event, int x, int y);
+int mouse_trywait(void);
 int mouse_wait(void);
 int mouse_pending(void);
 int ciolib_getmouse(struct mouse_event *mevent);

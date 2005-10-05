@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>		/* NULL */
+#include <stdlib.h>
 #include <string.h>
 
 #include "gen_defs.h"
@@ -14,6 +15,7 @@
 	#undef main
 #endif
 #include "SDL.h"
+#include "SDL_thread.h"
 extern int	CIOLIB_main(int argc, char **argv);
 
 /********************************************************/
@@ -169,7 +171,6 @@ const int sdl_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 /* Called from all threads */
 void sdl_user_func(int func, ...)
 {
-	static int	sent_update=0;
 	unsigned int	*i;
 	va_list argptr;
 	void	**args;
@@ -223,7 +224,7 @@ void sdl_user_func(int func, ...)
 }
 
 /* Blinker Thread */
-void sdl_blinker_thread(void *data)
+int sdl_blinker_thread(void *data)
 {
 	while(1) {
 		SLEEP(500);
@@ -286,10 +287,8 @@ int sdl_init(void)
 	sdl_user_func(SDL_USEREVENT_INIT);
 
 	SDL_SemWait(sdl_init_complete);
-	if(sdl_init_good) {
-		init_mouse();
+	if(sdl_init_good)
 		return(0);
-	}
 
 	return(-1);
 }
@@ -392,7 +391,7 @@ int sdl_kbhit(void)
 /* Called from main thread only */
 void sdl_delay(long msec)
 {
-	usleep(msec*1000);
+	SLEEP(msec);
 }
 
 /* Called from main thread only */
@@ -405,6 +404,14 @@ int sdl_wherey(void)
 int sdl_wherex(void)
 {
 	return(vstat.curs_col+1);
+}
+
+/* Called from BOTH THREADS */
+int sdl_beep(void)
+{
+	/* ToDo BEEP! */
+	BEEP(440,100);
+	return(0);
 }
 
 /* Put the character _c on the screen at the current cursor position. 
@@ -542,14 +549,6 @@ int sdl_getche(void)
 	}
 }
 
-/* Called from BOTH THREADS */
-int sdl_beep(void)
-{
-	/* ToDo BEEP! */
-	BEEP(440,100);
-	return(0);
-}
-
 /* Called from main thread only */
 void sdl_textmode(int mode)
 {
@@ -572,6 +571,7 @@ int sdl_showmouse(void)
 int sdl_hidemouse(void)
 {
 	sdl_user_func(SDL_USEREVENT_HIDEMOUSE);
+	return(0);
 }
 
 #if 0		/* ToDo Copy/Paste */
@@ -776,6 +776,7 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
 	else
 		src.y *= ch;
 	SDL_BlitSurface(sdl_font, &src, win, &dst);
+	return(0);
 }
 
 /* Called from event thread only, */
@@ -793,7 +794,7 @@ int sdl_full_screen_redraw(void)
 
 	this_blink=vstat.blink;
 	if((newvmem=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL)
-		return;
+		return(-1);
 	memcpy(newvmem, vstat.vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
 	sdl_updated=1;
 	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows);
@@ -825,6 +826,7 @@ int sdl_full_screen_redraw(void)
 	if(rcount)
 		SDL_UpdateRects(win,rcount,rects);
 	free(rects);
+	return(0);
 }
 
 /* Called from event thread only */
@@ -853,7 +855,7 @@ struct mainparams {
 };
 
 /* Called from events thread only */
-void sdl_runmain(void *data)
+int sdl_runmain(void *data)
 {
 	struct mainparams *mp=data;
 	SDL_Event	ev;
@@ -861,10 +863,11 @@ void sdl_runmain(void *data)
 	sdl_exitcode=CIOLIB_main(mp->argc, mp->argv);
 	ev.type=SDL_QUIT;
 	while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+	return(0);
 }
 
 /* Mouse event/keyboard thread */
-void sdl_mouse_thread(void *data)
+int sdl_mouse_thread(void *data)
 {
 	while(1) {
 		if(mouse_wait())
@@ -875,7 +878,7 @@ void sdl_mouse_thread(void *data)
 /* Event Thread */
 int main(int argc, char **argv)
 {
-	unsigned int i=0;
+	unsigned int i;
 	SDL_Event	ev;
 	struct mainparams mp;
 
@@ -940,7 +943,6 @@ int main(int argc, char **argv)
 					break;
 				case SDL_QUIT:
 					return(sdl_exitcode);
-					break;
 				case SDL_VIDEORESIZE:
 					if(ev.resize.w > 0 && ev.resize.h > 0) {
 						FREE_AND_NULL(last_vmem);

@@ -704,3 +704,8 @@ char *win32_getcliptext(void)
 	
 	return(ret);
 }
+
+void win32_delay(long msec)
+{
+	SLEEP(msec);
+}
