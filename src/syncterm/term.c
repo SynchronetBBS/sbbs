@@ -790,6 +790,7 @@ BOOL doterm(struct bbslist *bbs)
 
 	/* Main input loop */
 	oldmc=hold_update;
+	showmouse();
 	for(;;) {
 		hold_update=TRUE;
 		sleep=TRUE;
@@ -810,6 +811,7 @@ BOOL doterm(struct bbslist *bbs)
 						cterm_end();
 						conn_close();
 						uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
+						hidemouse();
 						return(FALSE);
 					}
 					break;
@@ -1003,6 +1005,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_end();
 							free(scrollback);
 							conn_close();
+							hidemouse();
 							return(key==0x2d00 /* Alt-X? */);
 						}
 						uifcbail();
@@ -1030,6 +1033,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_end();
 							free(scrollback);
 							conn_close();
+							hidemouse();
 							return(FALSE);
 						case 3:
 							begin_upload(bbs->uldir, FALSE);
@@ -1044,6 +1048,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_end();
 							free(scrollback);
 							conn_close();
+							hidemouse();
 							return(TRUE);
 					}
 					gotoxy(i,j);
@@ -1077,5 +1082,6 @@ BOOL doterm(struct bbslist *bbs)
 			MAYBE_YIELD();
 	}
 
+	hidemouse();
 	return(FALSE);
 }
