@@ -128,8 +128,8 @@ int try_sdl_init(int mode)
 		cio_api.copytext=win32_copytext;
 		cio_api.getcliptext=win32_getcliptext;
 #else
-		cio_api.copytext=NULL;
-		cio_api.getcliptext=NULL;
+		cio_api.copytext=sdl_copytext;
+		cio_api.getcliptext=sdl_getcliptext;
 #endif
 		return(1);
 	}
