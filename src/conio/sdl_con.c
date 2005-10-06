@@ -1,3 +1,7 @@
+#if (defined(__MACH__) && defined(__APPLE__))
+#include <Carbon/Carbon.h>
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>		/* NULL */
 #include <stdlib.h>
@@ -174,6 +178,15 @@ const struct sdl_keyvals sdl_keyval[] =
 };
 const int sdl_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
+#ifndef _WIN32
+/* *nix copy/paste stuff */
+SDL_sem	*sdl_pastebuf_set;
+SDL_sem	*sdl_pastebuf_copied;
+SDL_mutex	*sdl_copybuf_mutex;
+char *sdl_copybuf=NULL;
+char *sdl_pastebuf=NULL;
+#endif
+
 #if !defined(NO_X) && defined(__unix__)
 #include "SDL_syswm.h"
 
@@ -197,14 +210,6 @@ struct x11 {
 	int		(*XSetSelectionOwner)	(Display*, Atom, Window, Time);
 };
 struct x11 sdl_x11;
-
-/* X11 copy/paste stuff */
-SDL_sem	*sdl_pastebuf_set;
-SDL_sem	*sdl_pastebuf_copied;
-SDL_mutex	*sdl_copybuf_mutex;
-
-char *sdl_copybuf=NULL;
-char *sdl_pastebuf=NULL;
 #endif
 
 /* Called from all threads */
@@ -262,6 +267,10 @@ void sdl_user_func(int func, ...)
 	va_end(argptr);
 }
 
+#if (defined(__MACH__) && defined(__APPLE__))
+int sdl_using_quartz=0;
+#endif
+
 #if !defined(NO_X) && defined(__unix__)
 int sdl_using_x11()
 {
@@ -279,6 +288,20 @@ int sdl_using_x11()
 
 void sdl_copytext(const char *text, size_t buflen)
 {
+#if (defined(__MACH__) && defined(__APPLE__))
+	if(sdl_using_quartz) {
+		ScrapRef	scrap;
+		if(!ClearCurrentScrap()) {		/* purge the current contents of the scrap. */
+fprintf(stderr,"Cleared Scrap\n");
+			if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
+fprintf(stderr,"Got scrap\n");
+				PutScrapFlavor(scrap, kScrapFlavorTypeText, kScrapFlavorMaskTranslated /* kScrapFlavorMaskNone */, buflen, text); 		/* write the data to the scrap */
+			}
+		}
+		return;
+	}
+#endif
+
 #if !defined(NO_X) && defined(__unix__)
 	if(sdl_x11available && sdl_using_x11()) {
 		SDL_mutexP(sdl_copybuf_mutex);
@@ -290,25 +313,46 @@ void sdl_copytext(const char *text, size_t buflen)
 			sdl_user_func(SDL_USEREVENT_COPY,0,0,0,0);
 		}
 		SDL_mutexV(sdl_copybuf_mutex);
+		return;
 	}
-	else {
-#else
-	{
 #endif
-		SDL_mutexP(sdl_copybuf_mutex);
-		FREE_AND_NULL(sdl_copybuf);
 
-		sdl_copybuf=(char *)malloc(buflen+1);
-		if(sdl_copybuf!=NULL)
-			strcpy(sdl_copybuf, text);
-		SDL_mutexV(sdl_copybuf_mutex);
-	}
+	SDL_mutexP(sdl_copybuf_mutex);
+	FREE_AND_NULL(sdl_copybuf);
+
+	sdl_copybuf=(char *)malloc(buflen+1);
+	if(sdl_copybuf!=NULL)
+		strcpy(sdl_copybuf, text);
+	SDL_mutexV(sdl_copybuf_mutex);
 	return;
 }
 
 char *sdl_getcliptext(void)
 {
 	char *ret=NULL;
+
+#if (defined(__MACH__) && defined(__APPLE__))
+	if(sdl_using_quartz) {
+		ScrapRef	scrap;
+		UInt32	fl;
+		Size		scraplen;
+
+		if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
+			if(!GetScrapFlavorFlags(scrap, kScrapFlavorTypeText, &fl) && (fl & kScrapFlavorMaskTranslated)) {
+				if(!GetScrapFlavorSize(scrap, kScrapFlavorTypeText, &scraplen)) {
+					if(sdl_pastebuf!=NULL) {
+						ret=(char *)malloc(scraplen+1);
+						if(ret!=NULL) {
+							if(GetScrapFlavorData(scrap, kScrapFlavorTypeText, &scraplen, ret))
+								FREE_AND_NULL(ret);
+						}
+					}
+				}
+			}
+		}
+		return(ret);
+	}
+#endif
 
 #if !defined(NO_X) && defined(__unix__)
 	if(sdl_x11available && sdl_using_x11()) {
@@ -320,17 +364,14 @@ char *sdl_getcliptext(void)
 				strcpy(ret,sdl_pastebuf);
 			SDL_SemPost(sdl_pastebuf_copied);
 		}
+		return(ret);
 	}
-	else {
-#else
-	{
 #endif
-		SDL_mutexP(sdl_copybuf_mutex);
-		ret=(char *)malloc(strlen(sdl_pastebuf)+1);
-		if(ret!=NULL)
-			strcpy(ret,sdl_copybuf);
-		SDL_mutexV(sdl_copybuf_mutex);
-	}
+	SDL_mutexP(sdl_copybuf_mutex);
+	ret=(char *)malloc(strlen(sdl_pastebuf)+1);
+	if(ret!=NULL)
+		strcpy(ret,sdl_copybuf);
+	SDL_mutexV(sdl_copybuf_mutex);
 	return(ret);
 }
 
@@ -1175,6 +1216,14 @@ int main(int argc, char **argv)
 								,SDL_HWSURFACE|SDL_HWPALETTE|SDL_RESIZABLE
 							);
 						if(win!=NULL) {
+#if (defined(__MACH__) && defined(__APPLE__))
+							char	driver[16];
+							if(SDL_VideoDriverName(driver, sizeof(driver))==NULL) {
+								if(!strcmp(driver,"Quartz"))
+									sdl_using_quartz=TRUE;
+							}
+#endif
+
 							if(sdl_cursor!=NULL)
 								SDL_FreeSurface(sdl_cursor);
 							sdl_cursor=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
@@ -1223,6 +1272,13 @@ int main(int argc, char **argv)
 									,SDL_HWSURFACE|SDL_HWPALETTE|SDL_RESIZABLE
 								);
 							if(win!=NULL) {
+#if (defined(__MACH__) && defined(__APPLE__))
+								char	driver[16];
+								if(SDL_VideoDriverName(driver, sizeof(driver))==NULL) {
+									if(!strcmp(driver,"Quartz"))
+										sdl_using_quartz=TRUE;
+								}
+#endif
 								vstat.scaling=(int)(win->w/(vstat.charwidth*vstat.cols));
 								if(vstat.scaling < 1)
 									vstat.scaling=1;
@@ -1309,6 +1365,8 @@ int main(int argc, char **argv)
 									SDL_SemWait(sdl_pastebuf_copied);
 								}
 							}
+#else
+							break;
 #endif
 					}
 					break;
