@@ -290,14 +290,15 @@ void sdl_copytext(const char *text, size_t buflen)
 {
 #if (defined(__MACH__) && defined(__APPLE__))
 	if(sdl_using_quartz) {
-		ScrapRef	scrap;
-		if(!ClearCurrentScrap()) {		/* purge the current contents of the scrap. */
-fprintf(stderr,"Cleared Scrap\n");
-			if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
-fprintf(stderr,"Got scrap\n");
-				PutScrapFlavor(scrap, kScrapFlavorTypeText, kScrapFlavorMaskTranslated /* kScrapFlavorMaskNone */, buflen, text); 		/* write the data to the scrap */
-			}
+		SDL_mutexP(sdl_copybuf_mutex);
+		FREE_AND_NULL(sdl_copybuf);
+
+		sdl_copybuf=(char *)malloc(buflen+1);
+		if(sdl_copybuf!=NULL) {
+			strcpy(sdl_copybuf, text);
+			sdl_user_func(SDL_USEREVENT_COPY,0,0,0,0);
 		}
+		SDL_mutexV(sdl_copybuf_mutex);
 		return;
 	}
 #endif
@@ -333,24 +334,16 @@ char *sdl_getcliptext(void)
 
 #if (defined(__MACH__) && defined(__APPLE__))
 	if(sdl_using_quartz) {
-		ScrapRef	scrap;
-		UInt32	fl;
-		Size		scraplen;
-
-		if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
-			if(!GetScrapFlavorFlags(scrap, kScrapFlavorTypeText, &fl) && (fl & kScrapFlavorMaskTranslated)) {
-				if(!GetScrapFlavorSize(scrap, kScrapFlavorTypeText, &scraplen)) {
-					if(sdl_pastebuf!=NULL) {
-						ret=(char *)malloc(scraplen+1);
-						if(ret!=NULL) {
-							if(GetScrapFlavorData(scrap, kScrapFlavorTypeText, &scraplen, ret))
-								FREE_AND_NULL(ret);
-						}
-					}
-				}
-			}
+		sdl_user_func(SDL_USEREVENT_PASTE,0,0,0,0);
+		SDL_SemWait(sdl_pastebuf_set);
+		if(sdl_pastebuf!=NULL) {
+			ret=(char *)malloc(strlen(sdl_pastebuf)+1);
+			if(ret!=NULL)
+				strcpy(ret,sdl_pastebuf);
+			SDL_SemPost(sdl_pastebuf_copied);
 		}
 		return(ret);
+
 	}
 #endif
 
@@ -1321,6 +1314,23 @@ int main(int argc, char **argv)
 							SDL_SemPost(sdl_init_complete);
 							break;
 						case SDL_USEREVENT_COPY:
+#if (defined(__MACH__) && defined(__APPLE__))
+							if(sdl_using_quartz) {
+								ScrapRef	scrap;
+								SDL_mutexP(sdl_copybuf_mutex);
+								if(sdl_copybuf!=NULL) {
+									if(!ClearCurrentScrap()) {		/* purge the current contents of the scrap. */
+										if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
+											PutScrapFlavor(scrap, kScrapFlavorTypeText, kScrapFlavorMaskTranslated /* kScrapFlavorMaskNone */, strlen(sdl_copybuf), sdl_copybuf); 		/* write the data to the scrap */
+										}
+									}
+								}
+								FREE_AND_NULL(sdl_copybuf);
+								SDL_mutexV(sdl_copybuf_mutex);
+								break;
+							}
+#endif
+
 #if !defined(NO_X) && defined(__unix__)
 							if(sdl_x11available && sdl_using_x11()) {
 								SDL_SysWMinfo	wmi;
@@ -1328,10 +1338,36 @@ int main(int argc, char **argv)
 								SDL_VERSION(&(wmi.version));
 								SDL_GetWMInfo(&wmi);
 								sdl_x11.XSetSelectionOwner(wmi.info.x11.display, CONSOLE_CLIPBOARD, wmi.info.x11.window, CurrentTime);
+								break;
 							}
 #endif
 							break;
 						case SDL_USEREVENT_PASTE:
+#if (defined(__MACH__) && defined(__APPLE__))
+							if(sdl_using_quartz) {
+								ScrapRef	scrap;
+								UInt32	fl;
+								Size		scraplen;
+	
+								FREE_AND_NULL(sdl_pastebuf);
+								if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
+									if(!GetScrapFlavorFlags(scrap, kScrapFlavorTypeText, &fl) && (fl & kScrapFlavorMaskTranslated)) {
+										if(!GetScrapFlavorSize(scrap, kScrapFlavorTypeText, &scraplen)) {
+											sdl_pastebuf=(char *)malloc(scraplen+1);
+											if(sdl_pastebuf!=NULL) {
+												if(GetScrapFlavorData(scrap, kScrapFlavorTypeText, &scraplen, sdl_pastebuf)) {
+													FREE_AND_NULL(sdl_pastebuf);
+												}
+											}
+										}
+									}
+								}
+								SDL_SemPost(sdl_pastebuf_set);
+								SDL_SemWait(sdl_pastebuf_copied);
+								break;
+							}
+#endif
+
 #if !defined(NO_X) && defined(__unix__)
 							if(sdl_x11available && sdl_using_x11()) {
 								Window sowner=None;
@@ -1364,6 +1400,7 @@ int main(int argc, char **argv)
 									SDL_SemPost(sdl_pastebuf_set);
 									SDL_SemWait(sdl_pastebuf_copied);
 								}
+								break;
 							}
 #else
 							break;
