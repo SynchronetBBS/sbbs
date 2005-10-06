@@ -124,8 +124,13 @@ int try_sdl_init(int mode)
 		cio_api.showmouse=sdl_showmouse;
 		cio_api.hidemouse=sdl_hidemouse;
 		cio_api.settitle=sdl_settitle;
+#ifdef _WIN32
+		cio_api.copytext=win32_copytext;
+		cio_api.getcliptext=win32_getcliptext;
+#else
 		cio_api.copytext=NULL;
 		cio_api.getcliptext=NULL;
+#endif
 		return(1);
 	}
 	return(0);
