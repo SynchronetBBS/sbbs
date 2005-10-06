@@ -31,6 +31,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+/* Icon file! */
+#pragma resource "ciolib.res"
+
 #include <stdarg.h>
 #include <stdlib.h>	/* malloc */
 #include <stdio.h>
