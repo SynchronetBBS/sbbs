@@ -1066,6 +1066,10 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 			return(sdl_keyval[i].key);
 		}
 	}
+#ifdef _WIN32
+	if((mod & (KMOD_META|KMOD_ALT)) && (unicode=='\t'))
+		return(0x01ffff);
+#endif
 	if(unicode  && unicode < 256)
 		return(unicode);
 	return(0x01ffff);
