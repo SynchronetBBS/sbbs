@@ -6,7 +6,9 @@
 #include <stdio.h>		/* NULL */
 #include <stdlib.h>
 #include <string.h>
+#ifdef __unix__
 #include <dlfcn.h>
+#endif
 
 #include "gen_defs.h"
 #include "genwrap.h"
@@ -178,14 +180,12 @@ const struct sdl_keyvals sdl_keyval[] =
 };
 const int sdl_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
-#ifndef _WIN32
 /* *nix copy/paste stuff */
 SDL_sem	*sdl_pastebuf_set;
 SDL_sem	*sdl_pastebuf_copied;
 SDL_mutex	*sdl_copybuf_mutex;
 char *sdl_copybuf=NULL;
 char *sdl_pastebuf=NULL;
-#endif
 
 #if !defined(NO_X) && defined(__unix__)
 #include "SDL_syswm.h"
