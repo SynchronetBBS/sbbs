@@ -26,6 +26,7 @@ extern int	CIOLIB_main(int argc, char **argv);
 SDL_Surface	*win=NULL;
 SDL_mutex *sdl_keylock;
 SDL_mutex *sdl_updlock;
+SDL_mutex *sdl_vstatlock;
 SDL_sem *sdl_key_pending;
 SDL_sem *sdl_init_complete;
 int	sdl_init_good=0;
@@ -232,10 +233,12 @@ int sdl_blinker_thread(void *data)
 {
 	while(1) {
 		SLEEP(500);
+		SDL_mutexP(sdl_vstatlock);
 		if(vstat.blink)
 			vstat.blink=FALSE;
 		else
 			vstat.blink=TRUE;
+		SDL_mutexV(sdl_vstatlock);
 		sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 	}
 }
@@ -247,6 +250,7 @@ int sdl_init_mode(int mode)
     int idx;			/* Index into vmode */
     int i;
 
+	SDL_mutexP(sdl_vstatlock);
 	if(load_vmode(&vstat, mode))
 		return(-1);
 
@@ -257,9 +261,10 @@ int sdl_init_mode(int mode)
 	    vstat.vmem[i] = 0x0700;
 	vstat.currattr=7;
 
-	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
-
 	vstat.mode=mode;
+	SDL_mutexV(sdl_vstatlock);
+
+	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 
     return(0);
 }
@@ -267,11 +272,13 @@ int sdl_init_mode(int mode)
 /* Called from main thread only (Passes Event) */
 int sdl_draw_char(unsigned short vch, int xpos, int ypos, int update)
 {
+	SDL_mutexP(sdl_vstatlock);
 	vstat.vmem[ypos*vstat.cols+xpos]=vch;
 
 	if(update) {
 		sdl_user_func(SDL_USEREVENT_UPDATERECT,xpos*vstat.charwidth*vstat.scaling,ypos*vstat.charheight*vstat.scaling,vstat.charwidth*vstat.scaling,vstat.charheight*vstat.scaling);
 	}
+	SDL_mutexV(sdl_vstatlock);
 
 	return(0);
 }
@@ -279,8 +286,10 @@ int sdl_draw_char(unsigned short vch, int xpos, int ypos, int update)
 /* Called from main thread only (Passes Event) */
 int sdl_init(int mode)
 {
+	SDL_mutexP(sdl_vstatlock);
 	vstat.vmem=NULL;
 	vstat.scaling=1;
+	SDL_mutexV(sdl_vstatlock);
 
 	SDL_mutexP(sdl_updlock);
 	sdl_updated=1;
@@ -342,12 +351,14 @@ int sdl_puttext(int sx, int sy, int ex, int ey, void *fill)
 			sdl_draw_char(sch,x,y,FALSE);
 		}
 	}
+	SDL_mutexP(sdl_vstatlock);
 	sdl_user_func(SDL_USEREVENT_UPDATERECT
 			,(sx-1)*vstat.charwidth*vstat.scaling
 			,(sy-1)*vstat.charheight*vstat.scaling
 			,(ex-sx+1)*vstat.charwidth*vstat.scaling
 			,(ey-sy+1)*vstat.charheight*vstat.scaling
 	);
+	SDL_mutexV(sdl_vstatlock);
 	return(1);
 }
 
@@ -375,6 +386,7 @@ int sdl_gettext(int sx, int sy, int ex, int ey, void *fill)
 		return(0);
 
 	out=fill;
+	SDL_mutexP(sdl_vstatlock);
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
 			sch=vstat.vmem[y*vstat.cols+x];
@@ -382,13 +394,16 @@ int sdl_gettext(int sx, int sy, int ex, int ey, void *fill)
 			*(out++)=sch >> 8;
 		}
 	}
+	SDL_mutexV(sdl_vstatlock);
 	return(1);
 }
 
 /* Called from main thread only */
 void sdl_textattr(int attr)
 {
+	SDL_mutexP(sdl_vstatlock);
 	vstat.currattr=attr;
+	SDL_mutexV(sdl_vstatlock);
 }
 
 /* Called from main thread only */
@@ -411,13 +426,23 @@ void sdl_delay(long msec)
 /* Called from main thread only */
 int sdl_wherey(void)
 {
-	return(vstat.curs_row+1);
+	int ret;
+
+	SDL_mutexP(sdl_vstatlock);
+	ret=vstat.curs_row+1;
+	SDL_mutexV(sdl_vstatlock);
+	return(ret);
 }
 
 /* Called from main thread only */
 int sdl_wherex(void)
 {
-	return(vstat.curs_col+1);
+	int ret;
+
+	SDL_mutexP(sdl_vstatlock);
+	ret=vstat.curs_col+1;
+	SDL_mutexV(sdl_vstatlock);
+	return(ret);
 }
 
 /* Called from BOTH THREADS */
@@ -439,6 +464,7 @@ int sdl_putch(int ch)
 	WORD sch;
 	int i;
 
+	SDL_mutexP(sdl_vstatlock);
 	sch=(vstat.currattr<<8)|ch;
 
 	switch(ch) {
@@ -495,6 +521,7 @@ int sdl_putch(int ch)
 			}
 			break;
 	}
+	SDL_mutexV(sdl_vstatlock);
 
 	return(ch);
 }
@@ -502,24 +529,29 @@ int sdl_putch(int ch)
 /* Called from main thread only */
 void sdl_gotoxy(int x, int y)
 {
+	SDL_mutexP(sdl_vstatlock);
 	vstat.curs_row=y-1;
 	vstat.curs_col=x-1;
+	SDL_mutexV(sdl_vstatlock);
 }
 
 /* Called from main thread only */
 void sdl_gettextinfo(struct text_info *info)
 {
+	SDL_mutexP(sdl_vstatlock);
 	info->currmode=vstat.mode;
 	info->screenheight=vstat.rows;
 	info->screenwidth=vstat.cols;
 	info->curx=sdl_wherex();
 	info->cury=sdl_wherey();
 	info->attribute=vstat.currattr;
+	SDL_mutexV(sdl_vstatlock);
 }
 
 /* Called from main thread only */
 void sdl_setcursortype(int type)
 {
+	SDL_mutexP(sdl_vstatlock);
 	switch(type) {
 		case _NOCURSOR:
 			vstat.curs_start=0xff;
@@ -534,6 +566,7 @@ void sdl_setcursortype(int type)
 		    vstat.curs_end = vstat.default_curs_end;
 			break;
 	}
+	SDL_mutexV(sdl_vstatlock);
 }
 
 /* Called from main thread only */
@@ -628,7 +661,9 @@ void sdl_add_key(unsigned int keyval)
 	if(keyval==0xa600) {
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
+		SDL_mutexP(sdl_vstatlock);
 		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols, vstat.charheight*vstat.rows);
+		SDL_mutexV(sdl_vstatlock);
 		return;
 	}
 	if(keyval <= 0xffff) {
@@ -671,13 +706,16 @@ int sdl_load_font(char *filename)
 	if(filename != NULL)
 		return(-1);
 
+	SDL_mutexP(sdl_vstatlock);
 	fh=vstat.charheight;
 	fw=vstat.charwidth/8+(vstat.charwidth%8?1:0);
 
 	fontsize=fw*fh*256*sizeof(unsigned char);
 
-	if((font=(unsigned char *)malloc(fontsize))==NULL)
+	if((font=(unsigned char *)malloc(fontsize))==NULL) {
+		SDL_mutexV(sdl_vstatlock);
 		return(-1);
+	}
 
 	switch(vstat.charwidth) {
 		case 8:
@@ -692,10 +730,12 @@ int sdl_load_font(char *filename)
 					memcpy(font, vga_font_bitmap, fontsize);
 					break;
 				default:
+					SDL_mutexV(sdl_vstatlock);
 					return(-1);
 			}
 			break;
 		default:
+			SDL_mutexV(sdl_vstatlock);
 			return(-1);
 	}
 
@@ -715,6 +755,7 @@ int sdl_load_font(char *filename)
 			}
 		}
 	}
+	SDL_mutexV(sdl_vstatlock);
 
     return(0);
 }
@@ -726,11 +767,13 @@ int sdl_setup_colours(SDL_Surface *surf, int xor)
 	int ret=0;
 	SDL_Color	co[16];
 
+	SDL_mutexP(sdl_vstatlock);
 	for(i=0; i<16; i++) {
 		co[i^xor].r=dac_default256[vstat.palette[i]].red;
 		co[i^xor].g=dac_default256[vstat.palette[i]].green;
 		co[i^xor].b=dac_default256[vstat.palette[i]].blue;
 	}
+	SDL_mutexV(sdl_vstatlock);
 	SDL_SetColors(surf, co, 0, 16);
 	return(ret);
 }
@@ -743,6 +786,7 @@ void sdl_draw_cursor(void)
 	int	x;
 	int	y;
 
+	SDL_mutexP(sdl_vstatlock);
 	if(vstat.blink && vstat.curs_start<=vstat.curs_end) {
 		dst.x=0;
 		dst.y=0;
@@ -757,9 +801,11 @@ void sdl_draw_cursor(void)
 		lastcursor_x=vstat.curs_col;
 		lastcursor_y=vstat.curs_row;
 	}
+	SDL_mutexV(sdl_vstatlock);
 }
 
 /* Called from event thread */
+/* ONLY Called from sdl_full_screen_redraw() which holds the mutex... */
 int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
 {
 	SDL_Color	co;
@@ -807,14 +853,21 @@ int sdl_full_screen_redraw(void)
 	SDL_Rect	*rects;
 	int rcount=0;
 
+	SDL_mutexP(sdl_vstatlock);
 	this_blink=vstat.blink;
-	if((newvmem=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL)
+	if((newvmem=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL) {
+		SDL_mutexV(sdl_vstatlock);
 		return(-1);
+	}
 	memcpy(newvmem, vstat.vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
+	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows);
+	if(rects==NULL) {
+		SDL_mutexV(sdl_vstatlock);
+		return(-1);
+	}
 	SDL_mutexP(sdl_updlock);
 	sdl_updated=1;
 	SDL_mutexV(sdl_updlock);
-	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows);
 	/* Redraw all chars */
 	pos=0;
 	for(y=0;y<vstat.rows;y++) {
@@ -834,6 +887,8 @@ int sdl_full_screen_redraw(void)
 			pos++;
 		}
 	}
+	SDL_mutexV(sdl_vstatlock);
+
 	last_blink=this_blink;
 	p=last_vmem;
 	last_vmem=newvmem;
@@ -909,6 +964,7 @@ int main(int argc, char **argv)
 	sdl_init_complete=SDL_CreateSemaphore(0);
 	sdl_updlock=SDL_CreateMutex();
 	sdl_keylock=SDL_CreateMutex();
+	sdl_vstatlock=SDL_CreateMutex();
 
 	SDL_CreateThread(sdl_runmain, &mp);
 
@@ -933,31 +989,45 @@ int main(int argc, char **argv)
 				case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
 					break;
 				case SDL_MOUSEMOTION:
+					SDL_mutexP(sdl_vstatlock);
 					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,ev.motion.x/(vstat.charwidth*vstat.scaling)+1,ev.motion.y/(vstat.charheight*vstat.scaling)+1);
+					SDL_mutexV(sdl_vstatlock);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
 					switch(ev.button.button) {
 						case SDL_BUTTON_LEFT:
+							SDL_mutexP(sdl_vstatlock);
 							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+							SDL_mutexV(sdl_vstatlock);
 							break;
 						case SDL_BUTTON_MIDDLE:
+							SDL_mutexP(sdl_vstatlock);
 							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+							SDL_mutexV(sdl_vstatlock);
 							break;
 						case SDL_BUTTON_RIGHT:
+							SDL_mutexP(sdl_vstatlock);
 							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+							SDL_mutexV(sdl_vstatlock);
 							break;
 					}
 					break;
 				case SDL_MOUSEBUTTONUP:
 					switch(ev.button.button) {
 						case SDL_BUTTON_LEFT:
+							SDL_mutexP(sdl_vstatlock);
 							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+							SDL_mutexV(sdl_vstatlock);
 							break;
 						case SDL_BUTTON_MIDDLE:
+							SDL_mutexP(sdl_vstatlock);
 							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+							SDL_mutexV(sdl_vstatlock);
 							break;
 						case SDL_BUTTON_RIGHT:
+							SDL_mutexP(sdl_vstatlock);
 							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+							SDL_mutexV(sdl_vstatlock);
 							break;
 					}
 					break;
@@ -966,6 +1036,7 @@ int main(int argc, char **argv)
 				case SDL_VIDEORESIZE:
 					if(ev.resize.w > 0 && ev.resize.h > 0) {
 						FREE_AND_NULL(last_vmem);
+						SDL_mutexP(sdl_vstatlock);
 						vstat.scaling=(int)(ev.resize.w/(vstat.charwidth*vstat.cols));
 						if(vstat.scaling < 1)
 							vstat.scaling=1;
@@ -997,6 +1068,7 @@ int main(int argc, char **argv)
 							sdl_exitcode=1;
 							SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
 						}
+						SDL_mutexV(sdl_vstatlock);
 					}
 					break;
 				case SDL_VIDEOEXPOSE:
@@ -1015,6 +1087,7 @@ int main(int argc, char **argv)
 							break;
 						case SDL_USEREVENT_SETVIDMODE:
 							FREE_AND_NULL(last_vmem);
+							SDL_mutexP(sdl_vstatlock);
 							if(fullscreen)
 								win=SDL_SetVideoMode(
 									 vstat.charwidth*vstat.cols*vstat.scaling
@@ -1048,6 +1121,7 @@ int main(int argc, char **argv)
 							}
 							free(ev.user.data1);
 							free(ev.user.data2);
+							SDL_mutexV(sdl_vstatlock);
 							break;
 						case SDL_USEREVENT_HIDEMOUSE:
 							SDL_ShowCursor(SDL_DISABLE);
