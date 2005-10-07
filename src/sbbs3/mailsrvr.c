@@ -3463,9 +3463,8 @@ void get_dns_server(char* dns_server, size_t len)
 	str_list_t	list;
 	size_t		count;
 
-	if(isalnum(startup->dns_server[0]))
-		sprintf(dns_server,"%.*s",len,startup->dns_server);
-	else {
+	sprintf(dns_server,"%.*s",len,startup->dns_server);
+	if(!isalnum(dns_server[0])) {
 		if((list=getNameServerList())!=NULL) {
 			if((count=strListCount(list))>0) {
 				sprintf(dns_server,"%.*s",len,list[xp_random(count)]);
