@@ -581,6 +581,7 @@ object ConfigWizard: TConfigWizard
     Top = 14
     Width = 360
     Height = 267
+    PageIndex = 3
     TabOrder = 3
     OnPageChanged = WizNotebookPageChanged
     object TPage
@@ -765,7 +766,7 @@ object ConfigWizard: TConfigWizard
           Width = 184
           Height = 24
           Style = csDropDownList
-          ItemHeight = 0
+          ItemHeight = 16
           ParentShowHint = False
           ShowHint = True
           TabOrder = 0
@@ -793,29 +794,12 @@ object ConfigWizard: TConfigWizard
         AutoSize = False
         Caption = 'Your Internet Address (static IP or host name)'
       end
-      object Label5: TLabel
-        Left = 9
-        Top = 80
-        Width = 344
-        Height = 25
-        AutoSize = False
-        Caption = 'DNS Server IP Address (i.e. your ISP'#39's DNS server)'
-      end
-      object DNSAddressEdit: TEdit
-        Left = 9
-        Top = 105
-        Width = 240
-        Height = 24
-        MaxLength = 127
-        TabOrder = 1
-        OnChange = VerifyInternetAddresses
-      end
       object InternetAddressComboBox: TComboBox
         Left = 9
         Top = 41
         Width = 240
         Height = 24
-        ItemHeight = 0
+        ItemHeight = 16
         TabOrder = 0
         OnChange = VerifyInternetAddresses
       end

@@ -37,8 +37,6 @@ __published:	// IDE-managed Components
     TLabel *Label3;
     TEdit *SystemPasswordEdit;
     TLabel *Label4;
-    TLabel *Label5;
-    TEdit *DNSAddressEdit;
     TLabel *Label6;
     TEdit *NodesEdit;
     TUpDown *NodesUpDown;
