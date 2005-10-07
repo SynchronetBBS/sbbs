@@ -1109,31 +1109,6 @@ int main(int argc, char** argv)
 #endif
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
-#ifdef __unix__	/* Look up DNS server address */
-	{
-		FILE*	fp;
-		char*	p;
-		char	str[128];
-
-		if((fp=fopen("/etc/resolv.conf","r"))!=NULL) {
-			while(!feof(fp)) {
-				if(fgets(str,sizeof(str),fp)==NULL)
-					break;
-				truncsp(str);
-				p=str;
-				while(*p && *p<=' ') p++;	/* skip white-space */
-				if(strnicmp(p,"nameserver",10)!=0) /* no match */
-					continue;
-				p+=10;	/* skip "nameserver" */
-				while(*p && *p<=' ') p++;	/* skip more white-space */
-				SAFECOPY(mail_startup.dns_server,p);
-				break;
-			}
-			fclose(fp);
-		}
-	}
-#endif /* __unix__ */
-
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
