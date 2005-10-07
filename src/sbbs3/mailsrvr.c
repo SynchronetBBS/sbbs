@@ -3349,48 +3349,27 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		,msg->from
 		,msg->to_net.addr);
 
-	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) {
-		lprintf(LOG_WARNING,"0000 !BOUNCE ERROR %d (%s) locking message base"
-			,i, smb->last_error);
-		return(FALSE);
-	}
-
-	if((i=smb_lockmsghdr(smb,msg))!=SMB_SUCCESS) {
-		smb_unlocksmbhdr(smb);
-		lprintf(LOG_WARNING,"0000 !BOUNCE ERROR %d (%s) locking message header #%lu"
-			,i, smb->last_error, msg->hdr.number);
-		return(FALSE);
-	}
-
-	if((i=smb_putmsg(smb,msg))!=SMB_SUCCESS) {
-		smb_unlockmsghdr(smb,msg);
-		smb_unlocksmbhdr(smb);
+	if((i=smb_updatemsg(smb,msg))!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"0000 !BOUNCE ERROR %d (%s) incrementing delivery attempt counter"
 			,i, smb->last_error);
 		return(FALSE);
 	}
 
-	if(!immediate && msg->hdr.delivery_attempts<startup->max_delivery_attempts) {
-		smb_unlockmsghdr(smb,msg);
-		smb_unlocksmbhdr(smb);
+	if(!immediate && msg->hdr.delivery_attempts < startup->max_delivery_attempts)
 		return(TRUE);
-	}
 
 	newmsg=*msg;
 	/* Mark original message as deleted */
 	msg->hdr.attr|=MSG_DELETE;
 
-	i=smb_putmsg(smb,msg);
-
-	smb_unlockmsghdr(smb,msg);
-	smb_unlocksmbhdr(smb);
+	i=smb_updatemsg(smb,msg);
+	if(msg->hdr.auxattr&MSG_FILEATTACH)
+		delfattach(&scfg,msg);
 	if(i!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"0000 !BOUNCE ERROR %d (%s) deleting message"
 			,i, smb->last_error);
 		return(FALSE);
 	}
-	if(msg->hdr.auxattr&MSG_FILEATTACH)
-		delfattach(&scfg,msg);
 
 	if(msg->from_agent!=AGENT_PERSON	/* don't bounce 'bounce messages' */
 		|| (msg->idx.from==0 && msg->from_net.type==NET_NONE)
@@ -3404,17 +3383,16 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	newmsg.hfield=NULL;
 	newmsg.hfield_dat=NULL;
 	newmsg.total_hfields=0;
-	newmsg.idx.to=newmsg.idx.from;
-	newmsg.idx.from=0;
 	newmsg.hdr.delivery_attempts=0;
 
 	SAFEPRINTF(str,"Delivery failure: %s",newmsg.subj);
 	smb_hfield_str(&newmsg, SUBJECT, str);
 	smb_hfield_str(&newmsg, RECIPIENT, newmsg.from);
-	if(newmsg.idx.to) {
-		sprintf(str,"%u",newmsg.idx.to);
-		smb_hfield_str(&newmsg, RECIPIENTEXT, str);
+	if(newmsg.from_ext!=NULL) { /* Back to sender */
+		smb_hfield_str(&newmsg, RECIPIENTEXT, newmsg.from_ext);
+		newmsg.from_ext=NULL;	/* Clear the sender extension */
 	}
+
 	if((newmsg.from_net.type==NET_QWK || newmsg.from_net.type==NET_INTERNET)
 		&& newmsg.reverse_path!=NULL) {
 		smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(newmsg.from_net.type), &newmsg.from_net.type);
@@ -3441,7 +3419,6 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	smb_hfield_str(&newmsg, SMB_COMMENT, err);
 	smb_hfield_str(&newmsg, SMB_COMMENT, "\r\nOriginal message text follows:\r\n");
 
-	smb_init_idx(smb,&newmsg);
 	if((i=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK))!=SMB_SUCCESS)
 		lprintf(LOG_ERR,"0000 !BOUNCE ERROR %d (%s) adding message header"
 			,i,smb->last_error);
