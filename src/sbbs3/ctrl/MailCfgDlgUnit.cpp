@@ -103,7 +103,10 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     SMTPPortEdit->Text=AnsiString(MainForm->mail_startup.smtp_port);
     POP3PortEdit->Text=AnsiString(MainForm->mail_startup.pop3_port);
     RelayPortEdit->Text=AnsiString(MainForm->mail_startup.relay_port);
-    DNSServerEdit->Text=AnsiString(MainForm->mail_startup.dns_server);
+    if(isalnum(MainForm->mail_startup.dns_server[0]))
+        DNSServerEdit->Text=AnsiString(MainForm->mail_startup.dns_server);
+    else
+        DNSServerEdit->Text="<auto>";
     InboundSoundEdit->Text=AnsiString(MainForm->mail_startup.inbound_sound);
     OutboundSoundEdit->Text=AnsiString(MainForm->mail_startup.outbound_sound);
     POP3SoundEdit->Text=AnsiString(MainForm->mail_startup.pop3_sound);
@@ -159,6 +162,18 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     SendMailCheckBox->Checked=
         !(MainForm->mail_startup.options&MAIL_OPT_NO_SENDMAIL);
 
+    int i=0;
+    AdvancedCheckListBox->Checked[i++]
+        =(MainForm->mail_startup.options&MAIL_OPT_SEND_INTRANSIT);
+    AdvancedCheckListBox->Checked[i++]
+        =(MainForm->mail_startup.options&MAIL_OPT_DEBUG_RX_BODY);
+    AdvancedCheckListBox->Checked[i++]
+        =(MainForm->mail_startup.options&MAIL_OPT_ALLOW_RX_BY_NUMBER);
+    AdvancedCheckListBox->Checked[i++]
+        =(MainForm->mail_startup.options&MAIL_OPT_DNSBL_CHKRECVHDRS);
+    AdvancedCheckListBox->Checked[i++]
+        =(MainForm->mail_startup.options&MAIL_OPT_DNSBL_THROTTLE);
+
     DNSBLRadioButtonClick(Sender);
     DNSRadioButtonClick(Sender);
 	POP3EnabledCheckBoxClick(Sender);
@@ -168,7 +183,14 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     PageControl->ActivePage=GeneralTabSheet;
 }
 //---------------------------------------------------------------------------
-
+static void setBit(unsigned long* l, long bit, bool yes)
+{
+    if(yes)
+        *l|=bit;
+    else
+        *l&=~bit;
+}
+//---------------------------------------------------------------------------
 void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
 {
     char    str[128],*p;
@@ -207,8 +229,11 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
 
     SAFECOPY(MainForm->mail_startup.default_user
         ,DefaultUserEdit->Text.c_str());
-    SAFECOPY(MainForm->mail_startup.dns_server
-        ,DNSServerEdit->Text.c_str());
+    if(isalnum(*DNSServerEdit->Text.c_str()))
+        SAFECOPY(MainForm->mail_startup.dns_server
+            ,DNSServerEdit->Text.c_str());
+    else
+        MainForm->mail_startup.dns_server[0]=0;
     SAFECOPY(MainForm->mail_startup.relay_server
         ,RelayServerEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.relay_user
@@ -302,6 +327,23 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->mail_startup.options|=MAIL_OPT_NO_SENDMAIL;
     else
         MainForm->mail_startup.options&=~MAIL_OPT_NO_SENDMAIL;
+
+    int i=0;
+    setBit(&MainForm->mail_startup.options
+        ,MAIL_OPT_SEND_INTRANSIT
+        ,AdvancedCheckListBox->Checked[i++]);
+    setBit(&MainForm->mail_startup.options
+        ,MAIL_OPT_DEBUG_RX_BODY
+        ,AdvancedCheckListBox->Checked[i++]);
+    setBit(&MainForm->mail_startup.options
+        ,MAIL_OPT_ALLOW_RX_BY_NUMBER
+        ,AdvancedCheckListBox->Checked[i++]);
+    setBit(&MainForm->mail_startup.options
+        ,MAIL_OPT_DNSBL_CHKRECVHDRS
+        ,AdvancedCheckListBox->Checked[i++]);
+    setBit(&MainForm->mail_startup.options
+        ,MAIL_OPT_DNSBL_THROTTLE
+        ,AdvancedCheckListBox->Checked[i++]);
 
     MainForm->MailAutoStart=AutoStartCheckBox->Checked;
     MainForm->MailLogFile=LogFileCheckBox->Checked;

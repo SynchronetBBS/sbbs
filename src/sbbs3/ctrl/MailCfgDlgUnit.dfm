@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SoundTabSheet
-    TabIndex = 5
+    ActivePage = AdvancedTabSheet
+    TabIndex = 7
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -816,6 +816,24 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Enable debug logging of DNSBL lookups'
         Caption = 'Debug'
         TabOrder = 3
+      end
+    end
+    object AdvancedTabSheet: TTabSheet
+      Caption = 'Advanced'
+      ImageIndex = 7
+      object AdvancedCheckListBox: TCheckListBox
+        Left = 16
+        Top = 16
+        Width = 305
+        Height = 185
+        ItemHeight = 16
+        Items.Strings = (
+          'SendMail: Ignore '#39'in transit'#39' attribute'
+          'Save received mail files in temp directory'
+          'Allow receipt of mail by user number'
+          'Check '#39'Received'#39' header fields against DNSBL'
+          'Throttle DNS blacklisted server sessions')
+        TabOrder = 0
       end
     end
   end
