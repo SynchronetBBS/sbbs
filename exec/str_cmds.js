@@ -19,9 +19,10 @@ load("sbbsdefs.js");
 load("nodedefs.js");
 load("text.js");
 
-if(argc>0) {
-	str_cmds(argv.join(" "));
-}
+if(argc>0)
+	str_cmds(argv.join(" "));	// use command-line arguments if supplied
+else if(bbs.command_str)
+	str_cmds(bbs.command_str);	// otherwise, use command shell 'str' var, if supported (v3.13b)
 
 // For testing...
 //str_cmds(console.getstr("",60));
@@ -189,6 +190,7 @@ function str_cmds(str)
 		if(word=="DOWN") {
 			str=str.substr(4);
 			i=parseInt(get_arg(str));
+			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
 				write("\r\n\001h\001rInvalid Node!");
@@ -205,6 +207,7 @@ function str_cmds(str)
 		if(word=="RERUN") {
 			str=str.substr(5);
 			i=parseInt(get_arg(str));
+			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
 				write("\r\n\001h\001rInvalid Node!");
@@ -569,6 +572,7 @@ function str_cmds(str)
 		if(word=="LOCK") {
 			str=str.substr(4);
 			i=parseInt(get_arg(str));
+			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
 				write("\r\n\001h\001rInvalid Node!");
@@ -585,6 +589,7 @@ function str_cmds(str)
 		if(word=="INTR") {
 			str=str.substr(4);
 			i=parseInt(get_arg(str));
+			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
 				write("\r\n\001h\001rInvalid Node!");
@@ -622,199 +627,55 @@ function get_arg(str)
 	return(str);
 }
 
-function display_node(node)
+function display_node(node_num)
 {
-	var hour;
-	var mer;
+	var n=node_num-1;
 
-	printf("Node %2d: ",node);
-	switch(system.node_list[node-1].status) {
-		case NODE_WFC:
-			write("Waiting for call");
-			break;
-		case NODE_OFFLINE:
-			write("Offline");
-			break;
-		case NODE_NETTING:
-			write("Networking");
-			break;
-		case NODE_LOGON:
-			write("At logon prompt");
-			break;
-		case NODE_EVENT_WAITING:
-			write("Waiting for all nodes to become inactive");
-			break;
-		case NODE_EVENT_LIMBO:
-			write("Waiting for node %d to finish external event",system.node_list[node-1].aux);
-			break;
-		case NODE_EVENT_RUNNING:
-			write("Running external event");
-			break;
-		case NODE_NEWUSER:
-			write("New user");
-			write(" applying for access ");
-			if(!system.node_list[node-1].connection)
-				write("locally");
-			else if(system.node_list[node-1].connection==0xffff)
-				write("via telnet");
-			else
-				printf("at %ubps",system.node_list[node-1].connection);
-			break;
-		case NODE_QUIET:
-		case NODE_INUSE:
-			printf("User #%d",system.node_list[node-1].useron);
-			write(" ");
-			switch(system.node_list[node-1].action) {
-				case NODE_MAIN:
-					write("at main menu");
-					break;
-				case NODE_RMSG:
-					write("reading messages");
-					break;
-				case NODE_RMAL:
-					write("reading mail");
-					break;
-				case NODE_RSML:
-					write("reading sent mail");
-					break;
-				case NODE_RTXT:
-					write("reading text files");
-					break;
-				case NODE_PMSG:
-					write("posting message");
-					break;
-				case NODE_SMAL:
-					write("sending mail");
-					break;
-				case NODE_AMSG:
-					write("posting auto-message");
-					break;
-				case NODE_XTRN:
-					if(!system.node_list[node-1].aux)
-						write("at external program menu");
-					else
-						write("running external program #%d",system.node_list[node-1].aux);
-					break;
-				case NODE_DFLT:
-					write("changing defaults");
-					break;
-				case NODE_XFER:
-					write("at transfer menu");
-					break;
-				case NODE_RFSD:
-					printf("retrieving from device #%d",system.node_list[node-1].aux);
-					break;
-				case NODE_DLNG:
-					write("downloading");
-					break;
-				case NODE_ULNG:
-					write("uploading");
-					break;
-				case NODE_BXFR:
-					write("transferring bidirectional");
-					break;
-				case NODE_LFIL:
-					write("listing files");
-					break;
-				case NODE_LOGN:
-					write("logging on");
-					break;
-				case NODE_LCHT:
-					write("in local chat with sysop");
-					break;
-				case NODE_MCHT:
-					if(system.node_list[node-1].aux) {
-						printf("in multinode chat channel %d",system.node_list[node-1].aux&0xff);
-						if(system.node_list[node-1].aux&0x1f00) { /* password */
-							write('*');
-							printf(" %s",unpackchatpass(node));
-						}
-					}
-					else
-						write("in multinode global chat channel");
-					break;
-				case NODE_PAGE:
-					printf("paging node %u for private chat",system.node_list[node-1].aux);
-					break;
-				case NODE_PCHT:
-					printf("in private chat with node %u",system.node_list[node-1].aux);
-					break;
-				case NODE_GCHT:
-					write("chatting with The Guru");
-					break;
-				case NODE_CHAT:
-					write("in chat section");
-					break;
-				case NODE_TQWK:
-					write("transferring QWK packet");
-					break;
-				case NODE_SYSP:
-					write("performing sysop activities");
-					break;
-				default:
-					write(system.node_list[node-1].action);
-					break;
-			}
-			if(!system.node_list[node-1].connection)
-				write(" locally");
-			else if(system.node_list[node-1].connection==0xffff)
-				write(" via telnet");
-			else
-				printf(" at %ubps",system.node_list[node-1].connection);
-			if(system.node_list[node-1].action==NODE_DLNG) {
-				if((system.node_list[node-1].aux/60)>=12) {
-					if(system.node_list[node-1].aux/60==12)
-						hour=12;
-					else
-						hour=(system.node_list[node-1].aux/60)-12;
-					mer="pm";
-				}
-				else {
-					if((system.node_list[node-1].aux/60)==0)    /* 12 midnite */
-						hour=12;
-					else hour=system.node_list[node-1].aux/60;
-						mer="am";
-				}
-				printf(" ETA %02d:%02d %s"
-					,hour,system.node_list[node-1].aux-((system.node_list[node-1].aux/60)*60),mer);
-			}
-			break;
-	}
-	if(system.node_list[node-1].misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
+	printf("Node %2d: ",node_num);
+	var node = system.node_list[node_num-1];
+
+	if(node.status==NODE_QUIET || node.status==NODE_INUSE) {
+		write(system.username(node.useron)
+			+ " "
+			+ format(NodeAction[node.action],system.node_list[n].aux));
+	} else
+		printf(NodeStatus[node.status],node.aux);
+
+	if(node.misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
 		write(" (");
-		if(system.node_list[node-1].misc&NODE_AOFF)
+		if(node.misc&NODE_AOFF)
 			write('A');
-		if(system.node_list[node-1].misc&NODE_LOCK)
+		if(node.misc&NODE_LOCK)
 			write('L');
-		if(system.node_list[node-1].misc&(NODE_MSGW|NODE_NMSG))
+		if(node.misc&(NODE_MSGW|NODE_NMSG))
 			write('M');
-		if(system.node_list[node-1].misc&NODE_POFF)
+		if(node.misc&NODE_POFF)
 			write('P');
 		write(')');
 	}
-	if(((system.node_list[node-1].misc
+	if(((node.misc
 		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
-		|| system.node_list[node-1].status==NODE_QUIET)) {
+		|| node.status==NODE_QUIET)) {
 		write(" [");
-		if(system.node_list[node-1].misc&NODE_ANON)
+		if(node.misc&NODE_ANON)
 			write('A');
-		if(system.node_list[node-1].misc&NODE_INTR)
+		if(node.misc&NODE_INTR)
 			write('I');
-		if(system.node_list[node-1].misc&NODE_RRUN)
+		if(node.misc&NODE_RRUN)
 			write('R');
-		if(system.node_list[node-1].misc&NODE_UDAT)
+		if(node.misc&NODE_UDAT)
 			write('U');
-		if(system.node_list[node-1].status==NODE_QUIET)
+		if(node.status==NODE_QUIET)
 			write('Q');
-		if(system.node_list[node-1].misc&NODE_EVENT)
+		if(node.misc&NODE_EVENT)
 			write('E');
-		if(system.node_list[node-1].misc&NODE_DOWN)
+		if(node.misc&NODE_DOWN)
 			write('D');
-		if(system.node_list[node-1].misc&NODE_LCHAT)
+		if(node.misc&NODE_LCHAT)
 			write('C');
 		write(']'); }
-	if(system.node_list[node-1].errors)
-		printf(" %d error%s",system.node_list[node-1].errors, system.node_list[node-1].errors>1 ? 's' : '' );
+	if(node.errors)
+		printf(" %d error%s",node.errors, node.errors>1 ? 's' : '' );
 	printf("\n");
 }
 
@@ -829,30 +690,6 @@ function add_commas(val, pad)
 	while(s.length < pad)
 		s=" "+s;
 	return(s);
-}
-
-function unpackchatpass(node)
-{
-    var bits;
-    var i;
-	var pass;
-
-	pchars=new Array();
-    pchars[0]=(system.node_list[node-1].aux&0x1f00)>>8;
-    pchars[1]=(((system.node_list[node-1].aux&0xe000)>>13)|((system.node_list[node-1].extaux&0x3)<<3));
-    bits=2;
-    for(i=2;i<8;i++) {
-        pchars[i]=((system.node_list[node-1].extaux>>bits)&0x1f);
-        bits+=5;
-	}
-    pchars[8]=0;
-    for(i=0;i<8;i++) {
-		if(pchars[8])
-			pass+=String.fromCharCode(pchars[i]+64);
-		else
-			break;
-	}
-    return(pass);
 }
 
 function get_lib_index(lib)
