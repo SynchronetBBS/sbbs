@@ -298,7 +298,12 @@ int win32_keyboardio(int isgetch)
 							|| (input.Event.KeyEvent.wVirtualKeyCode >= VK_F1 && input.Event.KeyEvent.wVirtualKeyCode <= VK_F24)
 							|| !input.Event.KeyEvent.uChar.AsciiChar
 							|| (!(input.Event.KeyEvent.dwControlKeyState & NUMLOCK_ON) && (input.Event.KeyEvent.uChar.AsciiChar >= '0' && input.Event.KeyEvent.uChar.AsciiChar <= '9')))
-						lastch=win32_getchcode(input.Event.KeyEvent.wVirtualKeyCode, input.Event.KeyEvent.dwControlKeyState);
+						if((input.Event.KeyEvent.dwControlKeyState & RIGHT_ALT_PRESSED|LEFT_ALT_PRESSED)
+								&& (input.Event.KeyEvent.dwControlKeyState & RIGHT_CTRL_PRESSED|LEFT_CTRL_PRESSED)
+								&& (BYTE)input.Event.KeyEvent.uChar.AsciiChar)
+							lastch=(BYTE)input.Event.KeyEvent.uChar.AsciiChar;
+						else
+							lastch=win32_getchcode(input.Event.KeyEvent.wVirtualKeyCode, input.Event.KeyEvent.dwControlKeyState);
 					else
 						lastch=(BYTE)input.Event.KeyEvent.uChar.AsciiChar;
 				} else if(input.Event.KeyEvent.wVirtualKeyCode == VK_MENU)

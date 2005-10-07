@@ -1055,6 +1055,8 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 {
 	int i;
 
+	if((mod & KMOD_META|KMOD_ALT) && (mod & KMOD_CTRL) && unicode && (unicode < 256))
+		return(unicode);
 	for(i=0;sdl_keyval[i].keysym;i++) {
 		if(sdl_keyval[i].keysym==keysym) {
 			if(mod & (KMOD_META|KMOD_ALT))
