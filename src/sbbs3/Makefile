@@ -60,7 +60,7 @@ LDFLAGS =	$(LDFLAGS) $(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(MONO_OBJS) $(OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) $(SMBLIB) $(XPDEV-MT_LIB)  @&&|
+	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) $(SMBLIB) $(XPDEV-MT_LIB) iphlpapi.lib @&&|
 	$** 
 |
 
@@ -85,7 +85,7 @@ $(FTPSRVR): $(FTP_OBJS)
 $(MAILSRVR): $(MAIL_OBJS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) \
-		$(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib @&&|
+		$(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib iphlpapi.lib @&&|
 	$**
 |
 
