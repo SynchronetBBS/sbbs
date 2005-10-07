@@ -65,6 +65,7 @@
 #include "crc32.h"
 #include "base64.h"
 #include "ini_file.h"
+#include "netwrap.h"	/* getNameServerList() */
 
 /* Constants */
 #define FORWARD			"forward:"
@@ -3457,6 +3458,25 @@ static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
 	return(i);
 }
 
+void get_dns_server(char* dns_server, size_t len)
+{
+	str_list_t	list;
+	size_t		count;
+
+	if(isalnum(startup->dns_server[0]))
+		sprintf(dns_server,"%.*s",len,startup->dns_server);
+	else {
+		if((list=getNameServerList())!=NULL) {
+			if((count=strListCount(list))>0) {
+				sprintf(dns_server,"%.*s",len,list[xp_random(count)]);
+				lprintf(LOG_DEBUG,"0000 SEND using auto-detected DNS server address: %s"
+					,dns_server);
+			}
+			freeNameServerList(list);
+		}
+	}
+}
+
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
@@ -3478,6 +3498,7 @@ static void sendmail_thread(void* arg)
 	char		digest[MD5_DIGEST_SIZE];
 	char		numeric_ip[16];
 	char		domain_list[MAX_PATH+1];
+	char		dns_server[16];
 	char*		server;
 	char*		msgtxt=NULL;
 	char*		p;
@@ -3678,14 +3699,15 @@ static void sendmail_thread(void* arg)
 						continue;
 					}
 #endif
-					if((dns=resolve_ip(startup->dns_server))==INADDR_NONE) {
+					get_dns_server(dns_server,sizeof(dns_server));
+					if((dns=resolve_ip(dns_server))==INADDR_NONE) {
 						remove_msg_intransit(&smb,&msg);
 						lprintf(LOG_WARNING,"0000 !SEND INVALID DNS server address: %s"
-							,startup->dns_server);
+							,dns_server);
 						continue;
 					}
 					p++;
-					lprintf(LOG_DEBUG,"0000 SEND getting MX records for %s from %s",p,startup->dns_server);
+					lprintf(LOG_DEBUG,"0000 SEND getting MX records for %s from %s",p,dns_server);
 					if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
 						,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE
 						,TIMEOUT_THREAD_WAIT/2))!=0) {
