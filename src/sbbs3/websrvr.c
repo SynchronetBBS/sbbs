@@ -2226,6 +2226,8 @@ static BOOL check_request(http_session_t * session)
 		if(session->req.method!=HTTP_OPTIONS) {
 			if(startup->options&WEB_OPT_DEBUG_TX)
 				lprintf(LOG_DEBUG,"%04d 404 - %s does not exist",session->socket,path);
+			strcat(session->req.physical_path,session->req.extra_path_info);
+			strcat(session->req.virtual_path,session->req.extra_path_info);
 			send_error(session,error_404);
 			return(FALSE);
 		}
