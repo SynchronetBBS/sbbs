@@ -41,7 +41,7 @@ for(i=0;i<argc;i++) {
 			}
 			break;
 		case "-x":
-			exclude.push(RegExp(argv[++i],"gi"));
+			exclude.push(RegExp(argv[++i],"i"));
 			break;
 	}
 }
