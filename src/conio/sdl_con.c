@@ -769,7 +769,7 @@ int sdl_getche(void)
 			putch(ch);
 			return(ch);
 		}
-		ch=sdl_getch();
+		sdl_getch();
 	}
 }
 
@@ -949,7 +949,7 @@ void sdl_draw_cursor(void)
 
 /* Called from event thread */
 /* ONLY Called from sdl_full_screen_redraw() which holds the mutex... */
-int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
+int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y, struct video_stats *vs)
 {
 	SDL_Color	co;
 	SDL_Rect	src;
@@ -960,30 +960,30 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
 
 	ch=(sch >> 8) & 0x0f;
 	if(lastfg!=ch) {
-		co.r=dac_default256[vstat.palette[ch]].red;
-		co.g=dac_default256[vstat.palette[ch]].green;
-		co.b=dac_default256[vstat.palette[ch]].blue;
+		co.r=dac_default256[vs->palette[ch]].red;
+		co.g=dac_default256[vs->palette[ch]].green;
+		co.b=dac_default256[vs->palette[ch]].blue;
 		SDL_SetColors(sdl_font, &co, 1, 1);
 		lastfg=ch;
 	}
 	ch=(sch >> 12) & 0x07;
 	if(lastbg!=ch) {
-		co.r=dac_default256[vstat.palette[ch]].red;
-		co.g=dac_default256[vstat.palette[ch]].green;
-		co.b=dac_default256[vstat.palette[ch]].blue;
+		co.r=dac_default256[vs->palette[ch]].red;
+		co.g=dac_default256[vs->palette[ch]].green;
+		co.b=dac_default256[vs->palette[ch]].blue;
 		SDL_SetColors(sdl_font, &co, 0, 1);
 		lastbg=ch;
 	}
-	dst.x=x*vstat.charwidth*vstat.scaling;
-	dst.y=y*vstat.charheight*vstat.scaling;
-	dst.w=vstat.charwidth*vstat.scaling;
-	dst.h=vstat.charheight*vstat.scaling;
+	dst.x=x*vs->charwidth*vs->scaling;
+	dst.y=y*vs->charheight*vs->scaling;
+	dst.w=vs->charwidth*vs->scaling;
+	dst.h=vs->charheight*vs->scaling;
 	src.x=0;
-	src.w=vstat.charwidth;
-	src.h=vstat.charheight;
-	src.y=vstat.charheight*vstat.scaling;
+	src.w=vs->charwidth;
+	src.h=vs->charheight;
+	src.y=vs->charheight*vs->scaling;
 	ch=sch & 0xff;
-	if((sch >>15) && !(vstat.blink))
+	if((sch >>15) && !(vs->blink))
 		src.y *= ' ';
 	else
 		src.y *= ch;
@@ -995,7 +995,6 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
 int sdl_full_screen_redraw(void)
 {
 	static int last_blink;
-	int this_blink;
 	int x;
 	int y;
 	unsigned int pos;
@@ -1003,44 +1002,41 @@ int sdl_full_screen_redraw(void)
 	unsigned short *p;
 	SDL_Rect	*rects;
 	int rcount=0;
+	struct video_stats vs;
 
 	SDL_mutexP(sdl_vstatlock);
-	this_blink=vstat.blink;
-	if((newvmem=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL) {
-		SDL_mutexV(sdl_vstatlock);
+	memcpy(&vs, &vstat, sizeof(vs));
+	if((newvmem=(unsigned short *)malloc(vs.cols*vs.rows*sizeof(unsigned short)))==NULL)
 		return(-1);
-	}
-	memcpy(newvmem, vstat.vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
-	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows);
-	if(rects==NULL) {
-		SDL_mutexV(sdl_vstatlock);
+	memcpy(newvmem, vs.vmem, vs.cols*vs.rows*sizeof(unsigned short));
+	SDL_mutexV(sdl_vstatlock);
+	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vs.cols*vs.rows);
+	if(rects==NULL)
 		return(-1);
-	}
 	SDL_mutexP(sdl_updlock);
 	sdl_updated=1;
 	SDL_mutexV(sdl_updlock);
 	/* Redraw all chars */
 	pos=0;
-	for(y=0;y<vstat.rows;y++) {
-		for(x=0;x<vstat.cols;x++) {
+	for(y=0;y<vs.rows;y++) {
+		for(x=0;x<vs.cols;x++) {
 			if((last_vmem==NULL)
 					|| (last_vmem[pos] != newvmem[pos]) 
-					|| (last_blink != this_blink && newvmem[pos]>>15) 
+					|| (last_blink != vs.blink && newvmem[pos]>>15) 
 					|| (lastcursor_x==x && lastcursor_y==y)
-					|| (vstat.curs_col==x && vstat.curs_row==y)
+					|| (vs.curs_col==x && vs.curs_row==y)
 					) {
-				sdl_draw_one_char(newvmem[pos],x,y);
-				rects[rcount].x=x*vstat.charwidth*vstat.scaling;
-				rects[rcount].y=y*vstat.charheight*vstat.scaling;
-				rects[rcount].w=vstat.charwidth*vstat.scaling;
-				rects[rcount++].h=vstat.charheight*vstat.scaling;
+				sdl_draw_one_char(newvmem[pos],x,y,&vs);
+				rects[rcount].x=x*vs.charwidth*vs.scaling;
+				rects[rcount].y=y*vs.charheight*vs.scaling;
+				rects[rcount].w=vs.charwidth*vs.scaling;
+				rects[rcount++].h=vs.charheight*vs.scaling;
 			}
 			pos++;
 		}
 	}
-	SDL_mutexV(sdl_vstatlock);
 
-	last_blink=this_blink;
+	last_blink=vs.blink;
 	p=last_vmem;
 	last_vmem=newvmem;
 	free(p);
