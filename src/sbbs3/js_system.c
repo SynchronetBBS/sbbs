@@ -100,6 +100,7 @@ enum {
 	/* msclock() access */
 	,SYS_PROP_CLOCK
 	,SYS_PROP_CLOCK_PER_SEC
+	,SYS_PROP_TIMER
 
 	/* filenames */
 	,SYS_PROP_DEVNULL
@@ -291,6 +292,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SYS_PROP_CLOCK_PER_SEC:
 			JS_NewNumberValue(cx,MSCLOCKS_PER_SEC,vp);
 			break;
+		case SYS_PROP_TIMER:
+			JS_NewNumberValue(cx,xp_timer(),vp);
+			break;
 
 		case SYS_PROP_LOCAL_HOSTNAME:
 			gethostname(str,sizeof(str));
@@ -396,6 +400,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 	/* clock access */
 	{	"clock_ticks",				SYS_PROP_CLOCK			,SYSOBJ_FLAGS,	311  },
 	{	"clock_ticks_per_second",	SYS_PROP_CLOCK_PER_SEC	,SYSOBJ_FLAGS,	311  },
+	{	"timer",					SYS_PROP_TIMER			,SYSOBJ_FLAGS,	313	 },
 
 	/* last */
 	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME	,SYSOBJ_FLAGS,	311  },
@@ -467,6 +472,7 @@ static char* sys_prop_desc[] = {
 	/* clock */
 	,"amount of elapsed processor time in clock 'ticks'"
 	,"number of clock ticks per second"
+	,"high-resolution timer, in seconds (fractional seconds supported)"
 
 	/* INSERT new tabled properties here */
 	,"private host name that uniquely identifies this system on the local network"
