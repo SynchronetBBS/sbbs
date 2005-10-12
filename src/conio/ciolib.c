@@ -161,8 +161,6 @@ int try_x_init(int mode)
 		cio_api.getch=x_getch;
 		cio_api.getche=x_getche;
 		cio_api.textmode=x_textmode;
-		cio_api.showmouse=NULL;
-		cio_api.hidemouse=NULL;
 		cio_api.settitle=x_settitle;
 		cio_api.copytext=x_copytext;
 		cio_api.getcliptext=x_getcliptext;
@@ -192,9 +190,6 @@ int try_curses_init(int mode)
 		cio_api.textmode=curs_textmode;
 		cio_api.showmouse=curs_showmouse;
 		cio_api.hidemouse=curs_hidemouse;
-		cio_api.settitle=NULL;
-		cio_api.copytext=NULL;
-		cio_api.getcliptext=NULL;
 		return(1);
 	}
 	return(0);
@@ -220,11 +215,6 @@ int try_ansi_init(int mode)
 		cio_api.getch=ansi_getch;
 		cio_api.getche=ansi_getche;
 		cio_api.textmode=ansi_textmode;
-		cio_api.showmouse=NULL;
-		cio_api.hidemouse=NULL;
-		cio_api.settitle=NULL;
-		cio_api.copytext=NULL;
-		cio_api.getcliptext=NULL;
 		return(1);
 	}
 	return(0);
@@ -267,6 +257,8 @@ int try_conio_init(int mode)
 
 int initciolib(int mode)
 {
+	memset(&cio_api,0,sizeof(cio_api));
+
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
 #ifdef WITH_SDL
@@ -548,7 +540,11 @@ void ciolib_wscroll(void)
 	struct text_info ti;
 
 	CIOLIB_INIT();
-	
+
+	if(cio_api.wscroll==NULL) {
+		cio_api.wscroll();
+		return;
+	}
 	ciolib_gettextinfo(&ti);
 	if(!_wscroll)
 		return;
