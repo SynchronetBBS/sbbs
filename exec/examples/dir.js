@@ -17,9 +17,9 @@ if (path==undefined)
 if (path.indexOf('*')<0 && path.indexOf('?')<0)
 	path += "*"; // No pattern specified
 print(path);
-dir = directory(path);
+dir = directory(path,GLOB_PERIOD);
 for (i in dir)  {
-	if(bbs.sys_status&SS_ABORT)
+	if(this.bbs && bbs.sys_status&SS_ABORT)
 		break;
 	print(dir[i]);
 }
