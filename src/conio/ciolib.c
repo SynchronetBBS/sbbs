@@ -544,7 +544,7 @@ void ciolib_wscroll(void)
 
 	CIOLIB_INIT();
 
-	if(cio_api.wscroll==NULL) {
+	if(cio_api.wscroll!=NULL) {
 		cio_api.wscroll();
 		return;
 	}
