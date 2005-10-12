@@ -527,20 +527,14 @@ int sdl_puttext(int sx, int sy, int ex, int ey, void *fill)
 		return(0);
 
 	out=fill;
+	SDL_mutexP(sdl_vstatlock);
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
 			sch=*(out++);
 			sch |= (*(out++))<<8;
-			sdl_draw_char(sch,x,y,FALSE);
+			vstat.vmem[y*vstat.cols+x]=sch;
 		}
 	}
-	SDL_mutexP(sdl_vstatlock);
-	sdl_user_func(SDL_USEREVENT_UPDATERECT
-			,(sx-1)*vstat.charwidth*vstat.scaling
-			,(sy-1)*vstat.charheight*vstat.scaling
-			,(ex-sx+1)*vstat.charwidth*vstat.scaling
-			,(ey-sy+1)*vstat.charheight*vstat.scaling
-	);
 	SDL_mutexV(sdl_vstatlock);
 	return(1);
 }
