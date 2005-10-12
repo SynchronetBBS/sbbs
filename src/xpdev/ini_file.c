@@ -53,6 +53,8 @@
 #define INI_OPEN_SECTION_CHAR	'['
 #define INI_CLOSE_SECTION_CHAR	']'
 #define INI_NEW_SECTION			((char*)~0)
+#define INI_INCLUDE_DIRECTIVE	"!include"
+#define INI_INCLUDE_MAX			10000
 
 static ini_style_t default_style;
 
@@ -1534,17 +1536,46 @@ BOOL iniCloseFile(FILE* fp)
 
 str_list_t iniReadFile(FILE* fp)
 {
+	char		str[INI_MAX_LINE_LEN];
+	char*		p;
 	size_t		i;
+	size_t		inc_len;
+	size_t		inc_counter=0;
 	str_list_t	list;
+	FILE*		insert_fp=NULL;
 	
 	rewind(fp);
 
 	list = strListReadFile(fp, NULL, INI_MAX_LINE_LEN);
-	if(list!=NULL) {
-		/* truncate new-line chars off end of strings */
-		for(i=0; list[i]!=NULL; i++)
-			truncnl(list[i]);
-	}
+	if(list==NULL)
+		return(NULL);
+
+	/* Look for !include directives */
+	inc_len=strlen(INI_INCLUDE_DIRECTIVE);
+	for(i=0; list[i]!=NULL; i++)
+		if(strnicmp(list[i],INI_INCLUDE_DIRECTIVE,inc_len)==0) {
+			p=list[i]+inc_len;
+			FIND_WHITESPACE(p);
+			SKIP_WHITESPACE(p);
+			truncsp(p);
+			if(inc_counter >= INI_INCLUDE_MAX)
+				SAFEPRINTF2(str, ";%s - MAXIMUM INCLUDES REACHED: %u", list[i], INI_INCLUDE_MAX);
+			else if((insert_fp=fopen(p,"r"))==NULL)
+				SAFEPRINTF2(str, ";%s - FAILURE: %s", list[i], STRERROR(errno));
+			else
+				SAFEPRINTF(str, ";%s", list[i]);
+			strListReplace(list, i, str);
+			if(insert_fp!=NULL) {
+				strListInsertFile(insert_fp, &list, i+1, INI_MAX_LINE_LEN);
+				fclose(insert_fp);
+				insert_fp=NULL;
+				inc_counter++;
+			}
+		}
+
+	/* truncate new-line chars off end of strings */
+	for(i=0; list[i]!=NULL; i++)
+		truncnl(list[i]);
 
 	return(list);
 }
@@ -1562,3 +1593,24 @@ BOOL iniWriteFile(FILE* fp, const str_list_t list)
 
 	return(count == strListCount(list));
 }
+
+#ifdef INI_FILE_TEST
+void main(int argc, char** argv)
+{
+	int			i;
+	size_t		l;
+	FILE*		fp;
+	str_list_t	list;
+
+	for(i=1;i<argc;i++) {
+		if((fp=iniOpenFile(argv[i],FALSE)) == NULL)
+			continue;
+		if((list=iniReadFile(fp)) != NULL) {
+			for(l=0;list[l];l++)
+				printf("%s\n", list[l]);
+			strListFree(&list);
+		}
+		fclose(fp);
+	}
+}
+#endif
