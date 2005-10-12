@@ -349,7 +349,7 @@ void strListFree(str_list_t* list)
 	}
 }
 
-str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
+static str_list_t str_list_read_file(FILE* fp, str_list_t* lp, size_t max_line_len)
 {
 	char*		buf=NULL;
 	size_t		count;
@@ -364,7 +364,7 @@ str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
 		lp=&list;
 	}
 
-	count = strListCount(*lp);
+	count=strListCount(*lp);
 	while(!feof(fp)) {
 		if(buf==NULL && (buf=(char*)malloc(max_line_len+1))==NULL)
 			return(NULL);
@@ -378,6 +378,26 @@ str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
 		free(buf);
 
 	return(*lp);
+}
+
+size_t strListInsertFile(FILE* fp, str_list_t* lp, size_t index, size_t max_line_len)
+{
+	str_list_t	list;
+	size_t		count;
+
+	if((list=str_list_read_file(fp, NULL, max_line_len)) == NULL)
+		return(0);
+
+	count = strListInsertList(lp, list, index);
+
+	strListFree(&list);
+
+	return(count);
+}
+
+str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
+{
+	return str_list_read_file(fp,lp,max_line_len);
 }
 
 size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
