@@ -829,7 +829,7 @@ object MailCfgDlg: TMailCfgDlg
         ItemHeight = 16
         Items.Strings = (
           'SendMail: Ignore '#39'in transit'#39' attribute'
-          'Save received mail files in temp directory'
+          'Retain received mail files (in temp directory)'
           'Allow receipt of mail by user number'
           'Check '#39'Received'#39' header fields against DNSBL'
           'Throttle DNS blacklisted server sessions')
