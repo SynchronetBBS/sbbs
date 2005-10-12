@@ -955,17 +955,25 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y)
 	SDL_Rect	src;
 	SDL_Rect	dst;
 	unsigned char	ch;
+	static int	lastfg=-1;
+	static int	lastbg=-1;
 
 	ch=(sch >> 8) & 0x0f;
-	co.r=dac_default256[vstat.palette[ch]].red;
-	co.g=dac_default256[vstat.palette[ch]].green;
-	co.b=dac_default256[vstat.palette[ch]].blue;
-	SDL_SetColors(sdl_font, &co, 1, 1);
+	if(lastfg!=ch) {
+		co.r=dac_default256[vstat.palette[ch]].red;
+		co.g=dac_default256[vstat.palette[ch]].green;
+		co.b=dac_default256[vstat.palette[ch]].blue;
+		SDL_SetColors(sdl_font, &co, 1, 1);
+		lastfg=ch;
+	}
 	ch=(sch >> 12) & 0x07;
-	co.r=dac_default256[vstat.palette[ch]].red;
-	co.g=dac_default256[vstat.palette[ch]].green;
-	co.b=dac_default256[vstat.palette[ch]].blue;
-	SDL_SetColors(sdl_font, &co, 0, 1);
+	if(lastbg!=ch) {
+		co.r=dac_default256[vstat.palette[ch]].red;
+		co.g=dac_default256[vstat.palette[ch]].green;
+		co.b=dac_default256[vstat.palette[ch]].blue;
+		SDL_SetColors(sdl_font, &co, 0, 1);
+		lastbg=ch;
+	}
 	dst.x=x*vstat.charwidth*vstat.scaling;
 	dst.y=y*vstat.charheight*vstat.scaling;
 	dst.w=vstat.charwidth*vstat.scaling;
