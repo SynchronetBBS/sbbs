@@ -231,6 +231,8 @@ static JSBool
 js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*			buf;
+	size_t			buflen;
+	JSString*		str;
     JSScript*		script;
 	JSContext*		cx;
 	JSObject*		obj;
@@ -242,8 +244,11 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 	if(argc<1)
 		return(JS_TRUE);
 
-	if((buf=JS_GetStringBytes(JS_ValueToString(parent_cx, argv[0])))==NULL)
+	if((str=JS_ValueToString(parent_cx, argv[0]))==NULL)
 		return(JS_FALSE);
+	if((buf=JS_GetStringBytes(str))==NULL)
+		return(JS_FALSE);
+	buflen=JS_GetStringLength(str);
 
 	if((cx=JS_NewContext(JS_GetRuntime(parent_cx),JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(JS_FALSE);
@@ -269,7 +274,7 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 		return(JS_FALSE);
 	}
 
-	if((script=JS_CompileScript(cx, obj, buf, strlen(buf), NULL, 0))!=NULL) {
+	if((script=JS_CompileScript(cx, obj, buf, buflen, NULL, 0))!=NULL) {
 		JS_ExecuteScript(cx, obj, script, rval);
 		JS_DestroyScript(cx, script);
 	}
