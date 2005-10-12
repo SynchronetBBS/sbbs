@@ -218,7 +218,8 @@ Example .ini file (with default values given):
 
     Telnet=TRUE                 ; set to FALSE to change the default mode
     TCP_NoDelay=TRUE            ; disable the TCP Nagle algorithm
-    Debug=FALSE                 ; enable debug logging
+	LogLevel=INFO				; set display/log output level
+    Debug=FALSE                 ; enable debug logging (overrides LogLevel)
     DebugTx=FALSE               ; debug transmitted characters
     DebugRx=FALSE               ; debug received characters
     DebugTelnet=FALSE           ; debug Telnet commands
