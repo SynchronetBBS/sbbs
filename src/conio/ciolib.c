@@ -373,7 +373,7 @@ int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 	CIOLIB_INIT();
 
 	if(cio_api.movetext != NULL)
-		return(cio_api.movetext(int sx, int sy, int ex, int ey, int dx, int dy);
+		return(cio_api.movetext(sx, sy, ex, ey, dx, dy));
 
 	width=ex-sx;
 	height=ey-sy;
