@@ -1707,6 +1707,7 @@ js_b64_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 {
 	int			res;
 	size_t		len;
+	size_t		inbuf_len;
 	uchar*		inbuf;
 	uchar*		outbuf;
 	JSString*	js_str;
@@ -1716,14 +1717,17 @@ js_b64_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
+	if((inbuf=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+	inbuf_len=JS_GetStringLength(js_str);
 
-	len=(strlen(inbuf)*10)+1;
+	len=(inbuf_len*10)+1;
 	if((outbuf=(char*)malloc(len))==NULL)
 		return(JS_FALSE);
 
-	res=b64_encode(outbuf,len,inbuf,strlen(inbuf));
+	res=b64_encode(outbuf,len,inbuf,inbuf_len);
 
 	if(res<1) {
 		free(outbuf);
@@ -1781,6 +1785,7 @@ js_md5_calc(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
 	BYTE		digest[MD5_DIGEST_SIZE];
 	JSBool		hex=JS_FALSE;
+	size_t		inbuf_len;
 	char*		inbuf;
 	char		outbuf[64];
 	JSString*	js_str;
@@ -1790,13 +1795,16 @@ js_md5_calc(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
+	if((inbuf=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+	inbuf_len=JS_GetStringLength(js_str);
 
 	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
 		hex=JSVAL_TO_BOOLEAN(argv[1]);
 
-	MD5_calc(digest,inbuf,strlen(inbuf));
+	MD5_calc(digest,inbuf,inbuf_len);
 
 	if(hex)
 		MD5_hex(outbuf,digest);
