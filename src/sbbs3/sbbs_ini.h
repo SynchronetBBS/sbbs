@@ -1,6 +1,6 @@
 /* sbbs_ini.h */
 
-/* Synchronet console configuration (.ini) file routines */
+/* Synchronet initialization (.ini) file routines */
 
 /* $Id$ */
 
@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -71,8 +71,8 @@ void sbbs_read_ini(
 	,services_startup_t*	services_startup
 	);
 
-void sbbs_read_js_settings(
-	 FILE* fp
+void sbbs_get_js_settings(
+	 str_list_t list
 	,const char* section
 	,js_startup_t* js
 	,js_startup_t* defaults
