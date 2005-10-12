@@ -1324,7 +1324,7 @@ int main(int argc, char **argv)
 	pause_on_exit			=iniReadBool(fp,ROOT_SECTION,"PauseOnExit",FALSE);
 	pause_on_abend			=iniReadBool(fp,ROOT_SECTION,"PauseOnAbend",FALSE);
 
-	log_level				=iniReadInteger(fp,ROOT_SECTION,"LogLevel",log_level);
+	log_level				=iniReadLogLevel(fp,ROOT_SECTION,"LogLevel",log_level);
 
 	outbuf.highwater_mark	=iniReadInteger(fp,ROOT_SECTION,"OutbufHighwaterMark",1100);
 	outbuf_drain_timeout	=iniReadInteger(fp,ROOT_SECTION,"OutbufDrainTimeout",10);
