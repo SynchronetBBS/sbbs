@@ -480,8 +480,12 @@ long double	DLLCALL	xp_timer(void)
 	LARGE_INTEGER	freq;
 	LARGE_INTEGER	tick;
 	if(QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&tick)) {
+#if 0
 		ret=((long double)tick.HighPart*4294967296)+((long double)tick.LowPart);
 		ret /= ((long double)freq.HighPart*4294967296)+((long double)freq.LowPart);
+#else
+		ret=((long double)tick.QuadPart)/freq.QuadPart;
+#endif
 	}
 	else {
 		ret=GetTickCount();
