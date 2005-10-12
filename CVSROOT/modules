@@ -24,9 +24,9 @@
 # character to interpose another module into the current module.  This
 # can be useful for creating a module that consists of many directories
 # spread out over the entire source repository.
-lib-win32           -a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release
-lib-win32.release   -a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release
-lib-win32.debug     -a lib/mozilla/js/win32.debug     lib/mozilla/nspr/win32.release
+lib-win32           -a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release lib/microsoft
+lib-win32.release   -a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release lib/microsoft
+lib-win32.debug     -a lib/mozilla/js/win32.debug     lib/mozilla/nspr/win32.release lib/microsoft
 lib-linux           -a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release
 lib-linux.release   -a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release
 lib-linux.debug     -a lib/mozilla/js/linux.debug     lib/mozilla/nspr/linux.debug
@@ -39,7 +39,7 @@ lib-openbsd.debug   -a lib/mozilla/js/openbsd.debug   lib/mozilla/nspr/openbsd.d
 lib-netbsd          -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release
 lib-netbsd.release  -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release
 lib-netbsd.debug    -a lib/mozilla/js/netbsd.debug    lib/mozilla/nspr/netbsd.debug
-src-sbbs3           -a src/build src/sbbs3 src/xpdev src/smblib src/uifc include/mozilla src/conio
+src-sbbs3           -a src/build src/sbbs3 src/xpdev src/smblib src/uifc include src/conio
 run-sbbs3           -a ctrl text exec xtrn node1 node2 node3 node4 docs web
 install install
 include include
