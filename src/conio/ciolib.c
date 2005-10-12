@@ -371,7 +371,10 @@ int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 	unsigned char *buf;
 
 	CIOLIB_INIT();
-	
+
+	if(cio_api.movetext != NULL)
+		return(cio_api.movetext(int sx, int sy, int ex, int ey, int dx, int dy);
+
 	width=ex-sx;
 	height=ey-sy;
 	buf=(unsigned char *)malloc((width+1)*(height+1)*2);
