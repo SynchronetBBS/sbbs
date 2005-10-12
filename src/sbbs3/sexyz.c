@@ -1313,9 +1313,6 @@ int main(int argc, char **argv)
 
 	tcp_nodelay				=iniReadBool(fp,ROOT_SECTION,"TCP_NODELAY",TRUE);
 
-	if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
-		log_level=LOG_DEBUG;
-
 	telnet					=iniReadBool(fp,ROOT_SECTION,"Telnet",TRUE);
 	debug_tx				=iniReadBool(fp,ROOT_SECTION,"DebugTx",FALSE);
 	debug_rx				=iniReadBool(fp,ROOT_SECTION,"DebugRx",FALSE);
@@ -1331,6 +1328,9 @@ int main(int argc, char **argv)
 	outbuf_size				=iniReadInteger(fp,ROOT_SECTION,"OutbufSize",16*1024);
 
 	progress_interval		=iniReadInteger(fp,ROOT_SECTION,"ProgressInterval",1);
+
+	if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
+		log_level=LOG_DEBUG;
 
 	xm.send_timeout			=iniReadInteger(fp,"Xmodem","SendTimeout",xm.send_timeout);	/* seconds */
 	xm.recv_timeout			=iniReadInteger(fp,"Xmodem","RecvTimeout",xm.recv_timeout);	/* seconds */
