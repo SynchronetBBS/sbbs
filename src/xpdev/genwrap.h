@@ -298,11 +298,12 @@ DLLEXPORT char		DLLCALL c_unescape_char(char ch);
 
 /* Millisecond clock */
 typedef		clock_t				msclock_t;
-#define		MSCLOCKS_PER_SEC	1000
 #if defined(_WIN32)
-	#define		msclock()		clock()
+	#define		MSCLOCKS_PER_SEC	CLOCKS_PER_SEC	/* e.g. 18.2 on DOS, 1000.0 on Win32 */
+	#define		msclock()			clock()
 #else
-	clock_t		msclock(void);
+	#define		MSCLOCKS_PER_SEC	1000
+	msclock_t	msclock(void);
 #endif
 
 #if defined(__cplusplus)
