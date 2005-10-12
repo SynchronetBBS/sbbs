@@ -246,6 +246,7 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->etx) {
 		cp=strchr(buf,p->etx);
 		if(cp) *cp=0; 
+		len=strlen(buf);
 	}
 
 	if(p->rot13)
@@ -264,11 +265,12 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if(uulen>=0) {
 			free(buf);
 			buf=uubuf;
+			len=uulen;
 		} else
 			free(uubuf);
 	}
 
-	str = JS_NewStringCopyZ(cx, buf);
+	str = JS_NewStringCopyN(cx, buf, len);
 
 	free(buf);
 
@@ -841,6 +843,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		uubuf=NULL;
 	int			len;	/* string length */
 	int			tlen;	/* total length to write (may be greater than len) */
+	JSString*	str;
 	private_t*	p;
 
 	*rval = JSVAL_FALSE;
@@ -853,8 +856,9 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	cp=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-	len=strlen(cp);
+	str = JS_ValueToString(cx, argv[0]);
+	cp	= JS_GetStringBytes(str);
+	len	= JS_GetStringLength(str);
 
 	if((p->uuencoded || p->b64encoded || p->yencoded)
 		&& len && (uubuf=malloc(len))!=NULL) {

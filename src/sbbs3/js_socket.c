@@ -358,8 +358,8 @@ js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	*rval = JSVAL_FALSE;
 
 	str = JS_ValueToString(cx, argv[0]);
-	cp=JS_GetStringBytes(str);
-	len=strlen(cp);
+	cp	= JS_GetStringBytes(str);
+	len	= JS_GetStringLength(str);
 
 	if(sendsocket(p->sock,cp,len)==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
@@ -394,7 +394,7 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	/* data */
 	data_str = JS_ValueToString(cx, argv[0]);
 	cp = JS_GetStringBytes(data_str);
-	len = strlen(cp);
+	len = JS_GetStringLength(data_str);
 
 	/* address */
 	ip_str = JS_ValueToString(cx, argv[1]);
@@ -566,7 +566,7 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 	buf[len]=0;
 
-	str = JS_NewStringCopyZ(cx, buf);
+	str = JS_NewStringCopyN(cx, buf, len);
 	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
@@ -659,7 +659,7 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 		buf[len]=0;
 
-		str = JS_NewStringCopyZ(cx, buf);
+		str = JS_NewStringCopyN(cx, buf, len);
 		free(buf);
 
 		if(str==NULL)
@@ -730,7 +730,7 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 	buf[len]=0;
 
-	str = JS_NewStringCopyZ(cx, buf);
+	str = JS_NewStringCopyN(cx, buf, len);
 	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
