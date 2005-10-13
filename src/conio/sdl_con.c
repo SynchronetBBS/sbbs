@@ -536,6 +536,7 @@ int sdl_puttext(int sx, int sy, int ex, int ey, void *fill)
 		}
 	}
 	SDL_mutexV(sdl_vstatlock);
+	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 	return(1);
 }
 
