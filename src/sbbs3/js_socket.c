@@ -1309,13 +1309,13 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 	int32	type=SOCK_STREAM;	/* default = TCP */
 	uintN	i;
 	private_t* p;
-	char*	sock_service=NULL;
+	char*	protocol=NULL;
 
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i]))
 			JS_ValueToInt32(cx,argv[i],&type);
-		else if(sock_service==NULL)
-			sock_service=JS_GetStringBytes(JS_ValueToString(cx,argv[i]));
+		else if(protocol==NULL)
+			protocol=JS_GetStringBytes(JS_ValueToString(cx,argv[i]));
 	}
 		
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
@@ -1324,7 +1324,7 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 	}
 	memset(p,0,sizeof(private_t));
 
-	if((p->sock=open_socket(type,sock_service))==INVALID_SOCKET) {
+	if((p->sock=open_socket(type,protocol))==INVALID_SOCKET) {
 		JS_ReportError(cx,"open_socket failed with error %d",ERROR_VALUE);
 		return(JS_FALSE);
 	}

@@ -1046,7 +1046,7 @@ BOOL 	md(char *path);
 	int 	lputs(int level, char *);			/* log output */
 	int 	lprintf(int level, char *fmt, ...);	/* log output */
 	int 	eprintf(int level, char *fmt, ...);	/* event log */
-	SOCKET	open_socket(int type, const char* service);
+	SOCKET	open_socket(int type, const char* protocol);
 	SOCKET	accept_socket(SOCKET s, SOCKADDR* addr, socklen_t* addrlen);
 	int		close_socket(SOCKET);
 	u_long	resolve_ip(char *addr);
