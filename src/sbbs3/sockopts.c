@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "ini_file.h"	/* ini file API */
 
-int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section, char* error, size_t errlen)
+int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* error, size_t errlen)
 {
 	char		cfgfile[MAX_PATH+1];
 	FILE*		fp;
@@ -66,8 +66,8 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section, ch
 
 	if(result==0)
 		result=iniGetSocketOptions(list,type==SOCK_STREAM ? "tcp":"udp",sock,error,errlen);
-	if(result==0 && section!=NULL)
-		result=iniGetSocketOptions(list,section,sock,error,errlen);
+	if(result==0 && protocol!=NULL && *protocol!=0)
+		result=iniGetSocketOptions(list,protocol,sock,error,errlen);
 
 	iniFreeStringList(list);
 
