@@ -422,11 +422,15 @@ int sdl_draw_char(unsigned short vch, int xpos, int ypos, int update)
 {
 	SDL_mutexP(sdl_vstatlock);
 	vstat.vmem[ypos*vstat.cols+xpos]=vch;
+	SDL_mutexV(sdl_vstatlock);
 
 	if(update) {
+#if 0	/* Currently, an update always updates the whole screen... so don't hold the mutex */
 		sdl_user_func(SDL_USEREVENT_UPDATERECT,xpos*vstat.charwidth*vstat.scaling,ypos*vstat.charheight*vstat.scaling,vstat.charwidth*vstat.scaling,vstat.charheight*vstat.scaling);
+#else
+		sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
+#endif
 	}
-	SDL_mutexV(sdl_vstatlock);
 
 	return(0);
 }
@@ -587,9 +591,7 @@ int sdl_gettext(int sx, int sy, int ex, int ey, void *fill)
 /* Called from main thread only */
 void sdl_textattr(int attr)
 {
-	SDL_mutexP(sdl_vstatlock);
 	vstat.currattr=attr;
-	SDL_mutexV(sdl_vstatlock);
 }
 
 /* Called from main thread only */
@@ -612,23 +614,13 @@ void sdl_delay(long msec)
 /* Called from main thread only */
 int sdl_wherey(void)
 {
-	int ret;
-
-	SDL_mutexP(sdl_vstatlock);
-	ret=vstat.curs_row+1;
-	SDL_mutexV(sdl_vstatlock);
-	return(ret);
+	return(vstat.curs_row+1);
 }
 
 /* Called from main thread only */
 int sdl_wherex(void)
 {
-	int ret;
-
-	SDL_mutexP(sdl_vstatlock);
-	ret=vstat.curs_col+1;
-	SDL_mutexV(sdl_vstatlock);
-	return(ret);
+	return(vstat.curs_col+1);
 }
 
 /* Called from BOTH THREADS */
