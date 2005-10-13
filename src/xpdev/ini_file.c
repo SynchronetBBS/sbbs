@@ -968,7 +968,7 @@ iniGetNamedStringList(str_list_t list, const char* section)
 
 /* These functions read a single key of the specified type */
 
-static BOOL parseInteger(const char* value)
+static long parseInteger(const char* value)
 {
 	if(stricmp(value,"TRUE")==0 || stricmp(value,"YES")==0 || stricmp(value,"ON")==0)
 		return(TRUE);
