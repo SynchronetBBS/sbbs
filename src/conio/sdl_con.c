@@ -1147,11 +1147,15 @@ int main(int argc, char **argv)
 				case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
 					break;
 				case SDL_MOUSEMOTION:
+					if(!ciolib_mouse_initialized)
+						break;
 					SDL_mutexP(sdl_vstatlock);
 					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,ev.motion.x/(vstat.charwidth*vstat.scaling)+1,ev.motion.y/(vstat.charheight*vstat.scaling)+1);
 					SDL_mutexV(sdl_vstatlock);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
+					if(!ciolib_mouse_initialized)
+						break;
 					switch(ev.button.button) {
 						case SDL_BUTTON_LEFT:
 							SDL_mutexP(sdl_vstatlock);
@@ -1171,6 +1175,8 @@ int main(int argc, char **argv)
 					}
 					break;
 				case SDL_MOUSEBUTTONUP:
+					if(!ciolib_mouse_initialized)
+						break;
 					switch(ev.button.button) {
 						case SDL_BUTTON_LEFT:
 							SDL_mutexP(sdl_vstatlock);
