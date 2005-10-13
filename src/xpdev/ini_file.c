@@ -52,6 +52,7 @@
 #define INI_COMMENT_CHAR		';'
 #define INI_OPEN_SECTION_CHAR	'['
 #define INI_CLOSE_SECTION_CHAR	']'
+#define INI_SECTION_NAME_SEP	"|"
 #define INI_NEW_SECTION			((char*)~0)
 #define INI_INCLUDE_DIRECTIVE	"!include"
 #define INI_INCLUDE_MAX			10000
@@ -90,6 +91,38 @@ static char* section_name(char* p)
 	return(p);
 }
 
+static BOOL section_match(const char* name, const char* compare)
+{
+	BOOL found=FALSE;
+	str_list_t names=strListSplitCopy(NULL,name,INI_SECTION_NAME_SEP);
+	str_list_t comps=strListSplitCopy(NULL,compare,INI_SECTION_NAME_SEP);
+	size_t	i,j;
+	char*	n;
+	char*	c;
+
+	/* Ignore trailing whitepsace */
+	for(i=0; names[i]!=NULL; i++)
+		truncsp(names[i]);
+	for(i=0; comps[i]!=NULL; i++)
+		truncsp(comps[i]);
+
+	/* Search for matches */
+	for(i=0; names[i]!=NULL && !found; i++)
+		for(j=0; comps[j]!=NULL && !found; j++) {
+			n=names[i];
+			SKIP_WHITESPACE(n);
+			c=comps[j];
+			SKIP_WHITESPACE(c);
+			if(stricmp(n,c)==0)
+				found=TRUE;
+		}
+
+	strListFree(&names);
+	strListFree(&comps);
+
+	return(found);
+}
+
 static BOOL seek_section(FILE* fp, const char* section)
 {
 	char*	p;
@@ -105,7 +138,7 @@ static BOOL seek_section(FILE* fp, const char* section)
 			break;
 		if((p=section_name(str))==NULL)
 			continue;
-		if(stricmp(p,section)==0)
+		if(section_match(p,section))
 			return(TRUE);
 	}
 	return(FALSE);
@@ -119,7 +152,7 @@ static size_t find_section_index(str_list_t list, const char* section)
 
 	for(i=0; list[i]!=NULL; i++) {
 		SAFECOPY(str,list[i]);
-		if((p=section_name(str))!=NULL && stricmp(p,section)==0)
+		if((p=section_name(str))!=NULL && section_match(p,section))
 			return(i);
 	}
 
@@ -1599,6 +1632,7 @@ void main(int argc, char** argv)
 {
 	int			i;
 	size_t		l;
+	char		str[128];
 	FILE*		fp;
 	str_list_t	list;
 
@@ -1606,8 +1640,7 @@ void main(int argc, char** argv)
 		if((fp=iniOpenFile(argv[i],FALSE)) == NULL)
 			continue;
 		if((list=iniReadFile(fp)) != NULL) {
-			for(l=0;list[l];l++)
-				printf("%s\n", list[l]);
+			printf("%s\n",iniGetString(list," test | bogus ","key","default",str));
 			strListFree(&list);
 		}
 		fclose(fp);
