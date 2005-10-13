@@ -120,7 +120,7 @@ int DLLCALL sockopt(char* str, int* level)
 	return(strtoul(str,NULL,0));
 }
 
-static int parse_sockopts_section(str_list_t list, SOCKET sock, int type, const char* section
+static int iniGetSocketOptions(str_list_t list, SOCKET sock, const char* section
 						 ,char* error, size_t errlen)
 {
 	int			i;
@@ -135,7 +135,7 @@ static int parse_sockopts_section(str_list_t list, SOCKET sock, int type, const 
 
 	for(i=0;option_names[i].name!=NULL;i++) {
 		name = option_names[i].name;
-		if(!iniValueExists(list,section,name))
+		if(!iniValueExists(list, section, name))
 			continue;
 		value=iniGetInteger(list, section, name, 0);
 
@@ -145,21 +145,15 @@ static int parse_sockopts_section(str_list_t list, SOCKET sock, int type, const 
 		level	= option_names[i].level;
 		option	= option_names[i].value;
 
-		switch(option) {
-			case SO_LINGER:
-				if(value) {
-					linger.l_onoff = TRUE;
-					linger.l_linger = value;
-				} else {
-					ZERO_VAR(linger);
-				}
-				vp=(BYTE*)&linger;
-				len=sizeof(linger);
-				break;
-			case SO_KEEPALIVE:
-				if(type!=SOCK_STREAM)
-					continue;
-				break;
+		if(option == SO_LINGER) {
+			if(value) {
+				linger.l_onoff = TRUE;
+				linger.l_linger = value;
+			} else {
+				ZERO_VAR(linger);
+			}
+			vp=(BYTE*)&linger;
+			len=sizeof(linger);
 		}
 
 		if((result=setsockopt(sock,level,option,vp,len)) != 0) {
@@ -171,7 +165,6 @@ static int parse_sockopts_section(str_list_t list, SOCKET sock, int type, const 
 
 	return(0);
 }
-
 
 int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section, char* error, size_t errlen)
 {
@@ -197,10 +190,12 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section, ch
 		return(result);
 	}
 
-	result=parse_sockopts_section(list,sock,type,ROOT_SECTION,error,errlen);
+	result=iniGetSocketOptions(list,sock,ROOT_SECTION,error,errlen);
 
+	if(result==0)
+		result=iniGetSocketOptions(list,sock,type==SOCK_STREAM ? "tcp":"udp",error,errlen);
 	if(result==0 && section!=NULL)
-		result=parse_sockopts_section(list,sock,type,section,error,errlen);
+		result=iniGetSocketOptions(list,sock,section,error,errlen);
 
 	iniFreeStringList(list);
 
