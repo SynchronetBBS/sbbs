@@ -196,6 +196,7 @@ typedef struct {
 	int		(*hidemouse)	(void);
 	int		(*showmouse)	(void);
 	void	(*settitle)		(const char *);
+	void	(*setname)		(const char *);
 	void	(*copytext)		(const char *, size_t);
 	char 	*(*getcliptext)	(void);
 } cioapi_t;
@@ -244,10 +245,10 @@ void ciolib_window(int sx, int sy, int ex, int ey);
 void ciolib_delline(void);
 void ciolib_insline(void);
 char *ciolib_getpass(const char *prompt);
-void settitle(const char *title);
+void ciolib_settitle(const char *title);
+void ciolib_setname(const char *title);
 int ciolib_showmouse(void);
 int ciolib_hidemouse(void);
-void ciolib_settitle(const char *title);
 void ciolib_copytext(const char *text, size_t buflen);
 char *ciolib_getcliptext(void);
 #ifdef __cplusplus
@@ -292,6 +293,7 @@ char *ciolib_getcliptext(void);
 	#define ungetmouse(a)			ciolib_ungetmouse(a)
 	#define	hidemouse()				ciolib_hidemouse()
 	#define showmouse()				ciolib_showmouse()
+	#define setname(a)				ciolib_setname(a)
 	#define settitle(a)				ciolib_settitle(a)
 	#define copytext(a,b)			ciolib_copytext(a,b)
 	#define getcliptext()		ciolib_getcliptext()

@@ -29,6 +29,7 @@ int sdl_getch(void);
 int sdl_getche(void);
 int sdl_beep(void);
 void sdl_textmode(int mode);
+void sdl_setname(const char *name);
 void sdl_settitle(const char *title);
 int sdl_hidemouse(void);
 int sdl_showmouse(void);

@@ -126,6 +126,7 @@ int try_sdl_init(int mode)
 		cio_api.textmode=sdl_textmode;
 		cio_api.showmouse=sdl_showmouse;
 		cio_api.hidemouse=sdl_hidemouse;
+		cio_api.setname=sdl_setname;
 		cio_api.settitle=sdl_settitle;
 #ifdef _WIN32
 		cio_api.copytext=win32_copytext;
@@ -161,6 +162,7 @@ int try_x_init(int mode)
 		cio_api.getch=x_getch;
 		cio_api.getche=x_getche;
 		cio_api.textmode=x_textmode;
+		cio_api.setname=x_setname;
 		cio_api.settitle=x_settitle;
 		cio_api.copytext=x_copytext;
 		cio_api.getcliptext=x_getcliptext;
@@ -246,6 +248,7 @@ int try_conio_init(int mode)
 		cio_api.textmode=win32_textmode;
 		cio_api.showmouse=win32_showmouse;
 		cio_api.hidemouse=win32_hidemouse;
+		cio_api.setname=win32_settitle;
 		cio_api.settitle=win32_settitle;
 		cio_api.copytext=win32_copytext;
 		cio_api.getcliptext=win32_getcliptext;
@@ -893,6 +896,13 @@ int ciolib_hidemouse(void) {
 	if(cio_api.hidemouse!=NULL)
 		return(cio_api.hidemouse());
 	return(-1);
+}
+
+void ciolib_setname(const char *name) {
+	CIOLIB_INIT();
+
+	if(cio_api.setname!=NULL)
+		cio_api.setname(name);
 }
 
 void ciolib_settitle(const char *title) {

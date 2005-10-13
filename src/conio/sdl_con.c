@@ -76,6 +76,7 @@ struct sdl_drawchar {
 enum {
 	 SDL_USEREVENT_UPDATERECT
 	,SDL_USEREVENT_SETTITLE
+	,SDL_USEREVENT_SETNAME
 	,SDL_USEREVENT_SETVIDMODE
 	,SDL_USEREVENT_SHOWMOUSE
 	,SDL_USEREVENT_HIDEMOUSE
@@ -234,6 +235,13 @@ void sdl_user_func(int func, ...)
 					sdl_updated=0;
 			}
 			SDL_mutexV(sdl_updlock);
+			break;
+		case SDL_USEREVENT_SETNAME:
+			if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
+				va_end(argptr);
+				return;
+			}
+			while(SDL_PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SETTITLE:
 			if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
@@ -781,6 +789,13 @@ void sdl_textmode(int mode)
 }
 
 /* Called from main thread only (Passes Event) */
+int sdl_setname(const char *name)
+{
+	sdl_user_func(SDL_USEREVENT_SETNAME,name);
+	return(0);
+}
+
+/* Called from main thread only (Passes Event) */
 int sdl_settitle(const char *title)
 {
 	sdl_user_func(SDL_USEREVENT_SETTITLE,title);
@@ -1253,6 +1268,10 @@ int main(int argc, char **argv)
 					switch(ev.user.code) {
 						case SDL_USEREVENT_UPDATERECT:
 							sdl_full_screen_redraw();
+							break;
+						case SDL_USEREVENT_SETNAME:
+							SDL_WM_SetCaption((char *)ev.user.data1,(char *)ev.user.data1);
+							free(ev.user.data1);
 							break;
 						case SDL_USEREVENT_SETTITLE:
 							SDL_WM_SetCaption((char *)ev.user.data1,NULL);

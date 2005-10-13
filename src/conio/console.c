@@ -134,6 +134,7 @@ char *copybuf=NULL;
 char *pastebuf=NULL;
 sem_t	x11_beep;
 sem_t	x11_title;
+sem_t	x11_name;
 int InitCS;
 int InitCE;
 int FW, FH;
@@ -168,6 +169,7 @@ GC gc;
 GC cgc;
 int xfd;
 char window_title[81];
+char window_name[81];
 
 /* X functions */
 struct x11 {
@@ -197,6 +199,7 @@ struct x11 {
 	int		(*XChangeProperty)		(Display*, Window, Atom, Atom, int, int, _Xconst unsigned char*, int);
 	Status	(*XSendEvent)	(Display*, Window, Bool, long, XEvent*);
 	int		(*XSetSelectionOwner)	(Display*, Atom, Window, Time);	
+	int		(*XSetIconName)	(Display*, Window, _Xconst char *);
 };
 struct x11 x11;
 
@@ -1115,6 +1118,8 @@ video_async_event(void *crap)
 					init_mode(console_new_mode);
 				while(!sem_trywait(&x11_beep))
 					x11.XBell(dpy, 0);
+				if(!sem_trywait(&x11_name))
+					x11.XSetIconName(dpy, win, window_name);
 				if(!sem_trywait(&x11_title))
 					x11.XStoreName(dpy, win, window_title);
 				if(!sem_trywait(&copybuf_set)) {
@@ -1498,6 +1503,7 @@ console_init()
 	x11.XChangeProperty=XChangeProperty;
 	x11.XSendEvent=XSendEvent;
 	x11.XSetSelectionOwner=XSetSelectionOwner;
+	x11.XSetIconName=XSetIconName;
 #else
 #if defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)
 	if((dl=dlopen("/usr/X11R6/lib/libX11.dylib",RTLD_LAZY|RTLD_GLOBAL))==NULL)
@@ -1609,6 +1615,10 @@ console_init()
 		dlclose(dl);
 		return(-1);
 	}
+	if((x11.XSetIconName=dlsym(dl,"XSetIconName"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
 #endif
 
 	sem_init(&console_mode_changed,0,0);
@@ -1617,6 +1627,7 @@ console_init()
 	sem_init(&pastebuf_set,0,0);
 	sem_init(&x11_beep,0,0);
 	sem_init(&x11_title,0,0);
+	sem_init(&x11_name,0,0);
 	pthread_mutex_init(&copybuf_mutex, NULL);
 	pthread_mutex_init(&lines_mutex, NULL);
 
@@ -1738,4 +1749,10 @@ void x_win_title(const char *title)
 {
 	SAFECOPY(window_title,title);
 	sem_post(&x11_title);
+}
+
+void x_win_name(const char *name)
+{
+	SAFECOPY(window_name,name);
+	sem_post(&x11_name);
 }

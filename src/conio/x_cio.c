@@ -269,6 +269,11 @@ void x_textmode(int mode)
 	sem_wait(&console_mode_changed);
 }
 
+void x_setname(const char *name)
+{
+	x_win_name(name);
+}
+
 void x_settitle(const char *title)
 {
 	x_win_title(title);

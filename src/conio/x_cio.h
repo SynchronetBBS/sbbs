@@ -54,6 +54,7 @@ int x_getch(void);
 int x_getche(void);
 int x_beep(void);
 void x_textmode(int mode);
+void x_setname(const char *name);
 void x_settitle(const char *title);
 void x_copytext(const char *text, size_t buflen);
 char *x_getcliptext(void);
