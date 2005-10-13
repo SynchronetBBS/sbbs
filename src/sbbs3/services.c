@@ -212,7 +212,7 @@ static void thread_down(void)
 		startup->thread_up(startup->cbdata,FALSE,FALSE);
 }
 
-static SOCKET open_socket(int type)
+static SOCKET open_socket(int type, const char* service)
 {
 	char	error[256];
 	SOCKET	sock;
@@ -222,7 +222,7 @@ static SOCKET open_socket(int type)
 		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
 		sockets++;
-		if(set_socket_options(&scfg, sock, error))
+		if(set_socket_options(&scfg, sock, service, error, sizeof(error)))
 			lprintf(LOG_ERR,"%04d !ERROR %s",sock, error);
 
 #if 0 /*def _DEBUG */
@@ -1696,7 +1696,8 @@ void DLLCALL services_thread(void* arg)
 			service[i].socket=INVALID_SOCKET;
 
 			if((socket = open_socket(
-				(service[i].options&SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM))
+				(service[i].options&SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM
+				,service[i].protocol))
 				==INVALID_SOCKET) {
 				lprintf(LOG_ERR,"!ERROR %d opening %s socket"
 					,ERROR_VALUE, service[i].protocol);
@@ -1892,7 +1893,7 @@ void DLLCALL services_thread(void* arg)
 						continue;
 					}
 
-					if((client_socket = open_socket(SOCK_DGRAM))
+					if((client_socket = open_socket(SOCK_DGRAM, service[i].protocol))
 						==INVALID_SOCKET) {
 						FREE_AND_NULL(udp_buf);
 						lprintf(LOG_ERR,"%04d %s !ERROR %d opening socket"

@@ -71,7 +71,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 		return;
 	}
 
-    if((remote_socket = open_socket(SOCK_STREAM)) == INVALID_SOCKET) {
+    if((remote_socket = open_socket(SOCK_STREAM, "bbs")) == INVALID_SOCKET) {
 		errormsg(WHERE,ERR_OPEN,"socket",0);
 		return;
 	}

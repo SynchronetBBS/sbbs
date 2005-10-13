@@ -56,7 +56,7 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 		timeout=10;
 
 	do {
-		if((sock = open_socket(SOCK_STREAM)) == INVALID_SOCKET) {
+		if((sock = open_socket(SOCK_STREAM, "ident")) == INVALID_SOCKET) {
 			sprintf(buf,"ERROR %d creating socket",ERROR_VALUE);
 			break;
 		}

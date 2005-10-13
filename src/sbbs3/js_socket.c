@@ -1307,18 +1307,24 @@ static JSBool
 js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32	type=SOCK_STREAM;	/* default = TCP */
+	uintN	i;
 	private_t* p;
+	char*	sock_service=NULL;
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&type);
-
+	for(i=0;i<argc;i++) {
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],&type);
+		else if(sock_service==NULL)
+			sock_service=JS_GetStringBytes(JS_ValueToString(cx,argv[i]));
+	}
+		
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
 		JS_ReportError(cx,"malloc failed");
 		return(JS_FALSE);
 	}
 	memset(p,0,sizeof(private_t));
 
-	if((p->sock=open_socket(type))==INVALID_SOCKET) {
+	if((p->sock=open_socket(type,sock_service))==INVALID_SOCKET) {
 		JS_ReportError(cx,"open_socket failed with error %d",ERROR_VALUE);
 		return(JS_FALSE);
 	}

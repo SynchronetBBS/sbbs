@@ -874,7 +874,8 @@ extern "C" {
 
 	/* sockopt.c */
 	DLLEXPORT int		DLLCALL sockopt(char* str, int* level);
-	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error);
+	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section
+		,char* error, size_t errlen);
 
 	/* xtrn.cpp */
 	DLLEXPORT char*		DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr
@@ -1046,7 +1047,7 @@ BOOL 	md(char *path);
 	int 	lputs(int level, char *);			/* log output */
 	int 	lprintf(int level, char *fmt, ...);	/* log output */
 	int 	eprintf(int level, char *fmt, ...);	/* event log */
-	SOCKET	open_socket(int type);
+	SOCKET	open_socket(int type, const char* service);
 	SOCKET	accept_socket(SOCKET s, SOCKADDR* addr, socklen_t* addrlen);
 	int		close_socket(SOCKET);
 	u_long	resolve_ip(char *addr);

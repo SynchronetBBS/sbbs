@@ -1,6 +1,6 @@
 /* sockopts.c */
 
-/* Set socket options based on contents of ctrl/sockopts.cfg */
+/* Set socket options based on contents of ctrl/sockopts.ini */
 
 /* $Id$ */
 
@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -36,14 +36,13 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "ini_file.h"	/* ini file API */
 
-typedef struct {
+static struct {
 	char*	name;
 	int		level;
 	int		value;
-} sockopt_name;
-
-static const sockopt_name option_names[] = {
+} option_names[] = {
 	{ "TYPE",				SOL_SOCKET,		SO_TYPE				},
 	{ "DEBUG",				SOL_SOCKET,		SO_DEBUG			},
 	{ "LINGER",				SOL_SOCKET,		SO_LINGER			},
@@ -104,6 +103,7 @@ static const sockopt_name option_names[] = {
 	{ NULL }
 };
 
+/* This function is used by js_socket.c -> js_get/setsockopt() */
 int DLLCALL sockopt(char* str, int* level)
 {
 	int i;
@@ -120,26 +120,74 @@ int DLLCALL sockopt(char* str, int* level)
 	return(strtoul(str,NULL,0));
 }
 
-int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
+static int parse_sockopts_section(str_list_t list, SOCKET sock, int type, const char* section
+						 ,char* error, size_t errlen)
 {
-	char		cfgfile[MAX_PATH+1];
-	char		str[256];
-	char*		p;
+	int			i;
+	int			result;
 	char*		name;
 	BYTE*		vp;
-	FILE*		fp;
+	socklen_t	len;
 	int			option;
 	int			level;
 	int			value;
+	LINGER		linger;
+
+	for(i=0;option_names[i].name!=NULL;i++) {
+		name = option_names[i].name;
+		if(!iniValueExists(list,section,name))
+			continue;
+		value=iniGetInteger(list, section, name, 0);
+
+		vp=(BYTE*)&value;
+		len=sizeof(value);
+
+		level	= option_names[i].level;
+		option	= option_names[i].value;
+
+		switch(option) {
+			case SO_LINGER:
+				if(value) {
+					linger.l_onoff = TRUE;
+					linger.l_linger = value;
+				} else {
+					ZERO_VAR(linger);
+				}
+				vp=(BYTE*)&linger;
+				len=sizeof(linger);
+				break;
+			case SO_KEEPALIVE:
+				if(type!=SOCK_STREAM)
+					continue;
+				break;
+		}
+
+		if((result=setsockopt(sock,level,option,vp,len)) != 0) {
+			safe_snprintf(error,errlen,"%d setting socket option (%s, %d) to %d"
+				,ERROR_VALUE, name, option, value);
+			return(result);
+		}
+	}
+
+	return(0);
+}
+
+
+int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section, char* error, size_t errlen)
+{
+	char		cfgfile[MAX_PATH+1];
+	FILE*		fp;
 	int			type;
 	int			result=0;
-	LINGER		linger;
+	str_list_t	list;
 	socklen_t	len;
 
 	/* Set user defined socket options */
-	sprintf(cfgfile,"%ssockopts.cfg",cfg->ctrl_dir);
-	if((fp=fopen(cfgfile,"r"))==NULL)
+	iniFileName(cfgfile,sizeof(cfgfile),cfg->ctrl_dir,"sockopts.ini");
+	if((fp=iniOpenFile(cfgfile,FALSE))==NULL)
 		return(0);
+	list=iniReadFile(fp);
+	fclose(fp);
 
 	len = sizeof(type);
 	result=getsockopt(sock,SOL_SOCKET,SO_TYPE,(void*)&type,&len);
@@ -149,54 +197,12 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 		return(result);
 	}
 
-	while(!feof(fp)) {
-		if(!fgets(str,sizeof(str),fp))
-			break;
-		name=str;
-		while(*name && *name<=' ') name++;
-		if(*name==';' || *name==0)	/* blank line or comment */
-			continue;
-		p=name;
-		while(*p && *p>' ') p++;
-		if(*p) *(p++)=0;
-		if((option=sockopt(name,&level))==-1)
-			continue;
-		if(level==IPPROTO_TCP && type!=SOCK_STREAM)
-			continue;
-		while(*p && *p<=' ') p++;
-		len=sizeof(value);
-		value=strtol(p,NULL,0);
-		vp=(BYTE*)&value;
-		while(*p && *p>' ') p++;
-		if(*p) p++;
-		while(*p && *p<=' ') p++;
-		switch(option) {
-			case SO_LINGER:
-				linger.l_onoff = value;
-				linger.l_linger = (int)strtol(p,NULL,0);
-				vp=(BYTE*)&linger;
-				len=sizeof(linger);
-				break;
-			case SO_KEEPALIVE:
-				if(type!=SOCK_STREAM)
-					continue;
-				break;
-		}
-#if 0
-		lprintf("%04d setting socket option: %s to %d", sock, str, value);
-#endif
-		result=setsockopt(sock,level,option,vp,len);
-		if(result) {
-			sprintf(error,"%d setting socket option (%s, %d) to %d"
-				,ERROR_VALUE, name, option, value);
-			break;
-		}
-#if 0
-		len = sizeof(value);
-		getsockopt(sock,level,option,(void*)&value,&len);
-		lprintf("%04d socket option: %s set to %d", sock, name, value);
-#endif
-	}
-	fclose(fp);
+	result=parse_sockopts_section(list,sock,type,ROOT_SECTION,error,errlen);
+
+	if(result==0 && section!=NULL)
+		result=parse_sockopts_section(list,sock,type,section,error,errlen);
+
+	iniFreeStringList(list);
+
 	return(result);
 }

@@ -698,7 +698,7 @@ static SOCKET open_socket(int type)
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
-		if(set_socket_options(&scfg, sock,error))
+		if(set_socket_options(&scfg, sock, "web", error, sizeof(error)))
 			lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
 
 		sockets++;

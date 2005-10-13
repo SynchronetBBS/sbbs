@@ -174,7 +174,7 @@ int eprintf(int level, char *fmt, ...)
     return(startup->event_lputs(level,sbuf));
 }
 
-SOCKET open_socket(int type)
+SOCKET open_socket(int type, const char* service)
 {
 	SOCKET	sock;
 	char	error[256];
@@ -182,7 +182,7 @@ SOCKET open_socket(int type)
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,TRUE);
-	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, error))
+	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, service, error, sizeof(error)))
 		lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
 
 	return(sock);
@@ -3958,7 +3958,7 @@ void DLLCALL bbs_thread(void* arg)
 
     /* open a socket and wait for a client */
 
-    telnet_socket = open_socket(SOCK_STREAM);
+    telnet_socket = open_socket(SOCK_STREAM, "bbs");
 
 	if(telnet_socket == INVALID_SOCKET) {
 		lprintf(LOG_ERR,"!ERROR %d creating Telnet socket", ERROR_VALUE);
@@ -4002,7 +4002,7 @@ void DLLCALL bbs_thread(void* arg)
 
 		/* open a socket and wait for a client */
 
-		rlogin_socket = open_socket(SOCK_STREAM);
+		rlogin_socket = open_socket(SOCK_STREAM, "bbs");
 
 		if(rlogin_socket == INVALID_SOCKET) {
 			lprintf(LOG_ERR,"!ERROR %d creating RLogin socket", ERROR_VALUE);
