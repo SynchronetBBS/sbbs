@@ -40,6 +40,9 @@
 
 #include "genwrap.h"
 #include "str_list.h"	/* strList_t */
+#if !defined(NO_SOCKET_SUPPORT)
+	#include "sockwrap.h"	/* inet_addr, SOCKET */
+#endif
 
 #define INI_MAX_VALUE_LEN	1024		/* Maximum value length, includes '\0' */
 #define ROOT_SECTION		NULL
@@ -154,6 +157,8 @@ double		iniGetNamedFloat(str_list_t, const char* section, const char* key
 ulong		iniGetBitField(str_list_t, const char* section, const char* key
 					,ini_bitdesc_t* bitdesc, ulong deflt);
 #define		iniGetLogLevel(l,s,k,d) iniGetEnum(l,s,k,iniLogLevelStringList(),d)
+int			iniGetSocketOptions(str_list_t, const char* section
+					,SOCKET sock, char* error, size_t errlen);
 
 void		iniSetDefaultStyle(ini_style_t);
 

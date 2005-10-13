@@ -39,9 +39,6 @@
 #include <string.h>		/* strlen */
 #include <ctype.h>		/* isdigit */
 #include <math.h>		/* fmod */
-#if !defined(NO_SOCKET_SUPPORT)
-	#include "sockwrap.h"	/* inet_addr */
-#endif
 #include "datewrap.h"	/* isoDateTime_t */
 #include "dirwrap.h"	/* fexist */
 #include "filewrap.h"	/* chsize */
@@ -1095,6 +1092,53 @@ ulong iniGetBytes(str_list_t list, const char* section, const char* key, ulong u
 }
 
 #if !defined(NO_SOCKET_SUPPORT)
+
+int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
+						 ,char* error, size_t errlen)
+{
+	int			i;
+	int			result;
+	char*		name;
+	BYTE*		vp;
+	socklen_t	len;
+	int			option;
+	int			level;
+	int			value;
+	LINGER		linger;
+	socket_option_t* socket_options=getSocketOptionList();
+
+	for(i=0;socket_options[i].name!=NULL;i++) {
+		name = socket_options[i].name;
+		if(!iniValueExists(list, section, name))
+			continue;
+		value=iniGetInteger(list, section, name, 0);
+
+		vp=(BYTE*)&value;
+		len=sizeof(value);
+
+		level	= socket_options[i].level;
+		option	= socket_options[i].value;
+
+		if(option == SO_LINGER) {
+			if(value) {
+				linger.l_onoff = TRUE;
+				linger.l_linger = value;
+			} else {
+				ZERO_VAR(linger);
+			}
+			vp=(BYTE*)&linger;
+			len=sizeof(linger);
+		}
+
+		if((result=setsockopt(sock,level,option,vp,len)) != 0) {
+			safe_snprintf(error,errlen,"%d setting socket option (%s, %d) to %d"
+				,ERROR_VALUE, name, option, value);
+			return(result);
+		}
+	}
+
+	return(0);
+}
 
 static ulong parseIpAddress(const char* value)
 {
