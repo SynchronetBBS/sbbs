@@ -968,12 +968,25 @@ iniGetNamedStringList(str_list_t list, const char* section)
 
 /* These functions read a single key of the specified type */
 
+static BOOL isTrue(const char* value)
+{
+	return(stricmp(value,"TRUE")==0 || stricmp(value,"YES")==0 || stricmp(value,"ON")==0);
+}
+
 static long parseInteger(const char* value)
 {
-	if(stricmp(value,"TRUE")==0 || stricmp(value,"YES")==0 || stricmp(value,"ON")==0)
+	if(isTrue(value))
 		return(TRUE);
 
 	return(strtol(value,NULL,0));
+}
+
+static ulong parseLongInteger(const char* value)
+{
+	if(isTrue(value))
+		return(TRUE);
+
+	return(strtoul(value,NULL,0));
 }
 
 static BOOL parseBool(const char* value)
@@ -1028,7 +1041,7 @@ ulong iniReadLongInt(FILE* fp, const char* section, const char* key, ulong deflt
 	if(*value==0)		/* blank value */
 		return(deflt);
 
-	return(strtoul(value,NULL,0));
+	return(parseLongInteger(value));
 }
 
 ulong iniGetLongInt(str_list_t list, const char* section, const char* key, ulong deflt)
@@ -1040,7 +1053,7 @@ ulong iniGetLongInt(str_list_t list, const char* section, const char* key, ulong
 	if(*value==0)	/* blank value or missing key */
 		return(deflt);
 
-	return(strtoul(value,NULL,0));
+	return(parseLongInteger(value));
 }
 
 static ulong parseBytes(const char* value, ulong unit)
