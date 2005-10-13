@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -76,6 +76,12 @@
 #endif
 
 #include <errno.h>		/* errno */
+
+typedef struct {
+	char*	name;
+	int		level;
+	int		value;
+} socket_option_t;
 
 /**********************************/
 /* Socket Implementation-specific */
@@ -151,6 +157,10 @@ static  wsa_error;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+socket_option_t*
+		getSocketOptionList(void);
+int		getSocketOptionByName(const char* name, int* level);
 
 int		sendfilesocket(int sock, int file, long *offset, long count);
 int		recvfilesocket(int sock, int file, long *offset, long count);
