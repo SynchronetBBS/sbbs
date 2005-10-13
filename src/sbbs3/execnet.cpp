@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -61,7 +61,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				return(0);
 			if(lp!=NULL) {
 
-				SOCKET sock=open_socket(SOCK_STREAM, NULL);
+				SOCKET sock=open_socket(SOCK_STREAM, "");
 				if(sock!=INVALID_SOCKET) {
 
 					SOCKADDR_IN	addr;
@@ -544,7 +544,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		return(INVALID_SOCKET);
 	}
 
-	if((data_sock=open_socket(SOCK_STREAM, NULL))==INVALID_SOCKET) {
+	if((data_sock=open_socket(SOCK_STREAM, ""))==INVALID_SOCKET) {
 		csi->socket_error=ERROR_VALUE;
 		return(INVALID_SOCKET);
 	}

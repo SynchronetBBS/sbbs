@@ -196,16 +196,18 @@ static void thread_down(void)
 		startup->thread_up(startup->cbdata,FALSE,FALSE);
 }
 
-SOCKET mail_open_socket(int type)
+SOCKET mail_open_socket(int type, const char* protocol)
 {
 	char	error[256];
+	char	section[128];
 	SOCKET	sock;
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
-		if(set_socket_options(&scfg, sock, "mail", error, sizeof(error)))
+		SAFEPRINTF(section,"mail|%s",protocol);
+		if(set_socket_options(&scfg, sock, section, error, sizeof(error)))
 			lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
 
 		sockets++;
@@ -3723,7 +3725,7 @@ static void sendmail_thread(void* arg)
 			if(!port)
 				port=IPPORT_SMTP;
 
-			if((sock=mail_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+			if((sock=mail_open_socket(SOCK_STREAM,"smtp|sendmail"))==INVALID_SOCKET) {
 				remove_msg_intransit(&smb,&msg);
 				lprintf(LOG_ERR,"0000 !SEND ERROR %d opening socket", ERROR_VALUE);
 				continue;
@@ -4233,7 +4235,7 @@ void DLLCALL mail_server(void* arg)
 
 		/* open a socket and wait for a client */
 
-		server_socket = mail_open_socket(SOCK_STREAM);
+		server_socket = mail_open_socket(SOCK_STREAM,"smtp");
 
 		if(server_socket == INVALID_SOCKET) {
 			lprintf(LOG_ERR,"!ERROR %d opening socket", ERROR_VALUE);
@@ -4280,7 +4282,7 @@ void DLLCALL mail_server(void* arg)
 
 			/* open a socket and wait for a client */
 
-			pop3_socket = mail_open_socket(SOCK_STREAM);
+			pop3_socket = mail_open_socket(SOCK_STREAM,"pop3");
 
 			if(pop3_socket == INVALID_SOCKET) {
 				lprintf(LOG_ERR,"!ERROR %d opening POP3 socket", ERROR_VALUE);

@@ -212,9 +212,10 @@ static void thread_down(void)
 		startup->thread_up(startup->cbdata,FALSE,FALSE);
 }
 
-static SOCKET open_socket(int type, const char* service)
+static SOCKET open_socket(int type, const char* protocol)
 {
 	char	error[256];
+	char	section[128];
 	SOCKET	sock;
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
@@ -222,7 +223,8 @@ static SOCKET open_socket(int type, const char* service)
 		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
 		sockets++;
-		if(set_socket_options(&scfg, sock, service, error, sizeof(error)))
+		SAFEPRINTF(section,"services|%s", protocol);
+		if(set_socket_options(&scfg, sock, section, error, sizeof(error)))
 			lprintf(LOG_ERR,"%04d !ERROR %s",sock, error);
 
 #if 0 /*def _DEBUG */

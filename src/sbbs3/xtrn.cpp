@@ -1039,7 +1039,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			ioctlsocket(client_socket, FIONBIO, &l);
 
 			/* Re-set socket options */
-			if(set_socket_options(&cfg, client_socket, "bbs", str, sizeof(str)))
+			if(set_socket_options(&cfg, client_socket, client.protocol, str, sizeof(str)))
 				lprintf(LOG_ERR,"%04d !ERROR %s",client_socket, str);
 
 			if(input_thread_mutex_locked && input_thread_running) {
@@ -1928,7 +1928,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		ioctlsocket(client_socket, FIONBIO, &l);
 
 		/* Re-set socket options */
-		if(set_socket_options(&cfg, client_socket, "bbs", str, sizeof(str)))
+		if(set_socket_options(&cfg, client_socket, client.protocol, str, sizeof(str)))
 			lprintf(LOG_ERR,"%04d !ERROR %s",client_socket, str);
 
 		curatr=~0;			// Can't guarantee current attributes

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -120,10 +120,10 @@ enum {
 #define DNS_ALL			255			/* Query all records */
 
 #ifdef MX_LOOKUP_TEST
-	#define mail_open_socket(type)	socket(AF_INET, type, IPPROTO_IP)
-	#define mail_close_socket(sock)	closesocket(sock)
+	#define mail_open_socket(type,s)	socket(AF_INET, type, IPPROTO_IP)
+	#define mail_close_socket(sock)		closesocket(sock)
 #else
-	int mail_open_socket(int type);
+	int mail_open_socket(int type, const char* section);
 	int mail_close_socket(SOCKET sock);
 #endif
 
@@ -201,9 +201,9 @@ int dns_getmx(char* name, char* mx, char* mx2
 	mx2[0]=0;
 
 	if(use_tcp) 
-		sock = mail_open_socket(SOCK_STREAM);
+		sock = mail_open_socket(SOCK_STREAM,"dns");
 	else
-		sock = mail_open_socket(SOCK_DGRAM);
+		sock = mail_open_socket(SOCK_DGRAM,"dns");
 
 	if(sock == INVALID_SOCKET)
 		return(ERROR_VALUE);
