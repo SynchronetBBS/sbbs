@@ -50,6 +50,7 @@
 #define INI_OPEN_SECTION_CHAR	'['
 #define INI_CLOSE_SECTION_CHAR	']'
 #define INI_SECTION_NAME_SEP	"|"
+#define INI_BIT_SEP				'|'
 #define INI_NEW_SECTION			((char*)~0)
 #define INI_INCLUDE_DIRECTIVE	"!include"
 #define INI_INCLUDE_MAX			10000
@@ -1565,7 +1566,7 @@ static ulong parseBitField(char* value, ini_bitdesc_t* bitdesc)
 	ulong	v=0;
 
 	for(p=value;*p;) {
-		tp=strchr(p,'|');
+		tp=strchr(p,INI_BIT_SEP);
 		if(tp!=NULL)
 			*tp=0;
 		truncsp(p);
