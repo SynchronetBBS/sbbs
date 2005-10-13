@@ -1,0 +1,72 @@
+$Id$
+
+Synchronet/xpdev ini_file module
+--------------------------------
+The basic format of the files supported by the xpdev ini_file module is that
+of the Windows .ini file, with some additional features.
+
+The basic Windows .ini file format is as follows:
+
+1. The file contains ASCII text only with LF or CR/LF-terminated lines.
+
+2. The file is separated into logical "sections". Each section may have its
+   own list of keys with associated values, one per line.
+
+3. A section begins with a line consisting only of "[" <section name> "]".
+
+4. White space before or after the section name is ignored.
+
+5. A section ends when the end of file is reached or a new section begins.
+ 
+6. Keys and associated values within a section are specified, each on their
+   line, in the format: <key_name> "=" <value>
+
+7. White space before and after the key/value separator ("=") is ignored.
+
+8. Comments are lines with the first printing char a semicolon (";").
+
+9. Blank lines between or within sections are ignored.
+
+Example basic Windows .ini file content:
+
+; for 16-bit app support
+[fonts]
+[extensions]
+[Mail]
+MAPI=1
+CMCDLLNAME32=mapi32.dll
+CMCDLLNAME=mapi.dll
+CMC=1
+MAPIX=1
+MAPIXVER=1.0.0.1
+OLEMessaging=1
+[SciCalc]
+layout=0
+[MSUCE]
+Advanced=1
+CodePage=Unicode
+Font=Terminal
+
+
+Synchronet/xpdev extended-ini_file format
+-----------------------------------------
+The Synchronet/xpdev ini_file module supports a somewhat "extended" .ini file
+format with the following additions:
+
+1. Root section
+   Key/value pairs in the file *before* the first section definition are
+   considered part of the "root" section. This section is often used to define
+   key/value pairs that apply globally to all the following sections. The root
+   section may have other uses as well.
+
+2. Literal string values
+   String values separated by the key name with a colon (':') instead of an
+   equals sign ('='), are parsed as "literal" strings, which means the string
+   will retain any trailing white-space on the line. This may be enhanced in
+   the future to support C escape sequences, multiple broken lines, etc.
+
+3. Section name list
+   If one wishes to specify a list of sections for all values to be applied to
+   they may specify a list of section names, separated by '|', where a single
+   section name would normally be specified. Example:
+   "[telnet|rlogin]"
