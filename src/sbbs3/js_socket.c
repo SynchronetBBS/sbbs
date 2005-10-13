@@ -878,7 +878,7 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 	}
 
-	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level);
+	opt = getSocketOptionByName(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level);
 	len = sizeof(val);
 
 	if(opt!=-1 && getsockopt(p->sock, level, opt, (void*)&val, &len)==0) {
@@ -908,7 +908,7 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 	}
 
-	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level);
+	opt = getSocketOptionByName(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level);
 	JS_ValueToInt32(cx,argv[1],&val);
 
 	*rval = BOOLEAN_TO_JSVAL(
