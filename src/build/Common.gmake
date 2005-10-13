@@ -287,6 +287,22 @@ else
  endif
 endif
 
+SHLIBOPTS   :=  -shared
+ifeq ($(os),darwin)
+ MKSHLIB        :=  libtool -dynamic -framework System -lcc_dynamic
+ MKSHPPLIB      :=  libtool -dynamic -framework System -lcc_dynamic -lstdc++
+ SHLIBOPTS  :=
+else
+ ifeq ($(os),sunos)
+  MKSHLIB       :=  /usr/ccs/bin/ld -G
+  MKSHPPLIB     :=  /usr/ccs/bin/ld -G
+  SHLIBOPTS :=
+ else
+  MKSHLIB       :=  $(CC)
+  MKSHPPLIB     :=  $(CXX)
+ endif
+endif
+
 # Paths
 XPDEV_SRC	:=	$(SRC_ROOT)$(DIRSEP)xpdev
 CIOLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)conio
