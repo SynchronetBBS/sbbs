@@ -971,6 +971,19 @@ iniGetNamedStringList(str_list_t list, const char* section)
 
 /* These functions read a single key of the specified type */
 
+static BOOL parseInteger(const char* value)
+{
+	if(stricmp(value,"TRUE")==0 || stricmp(value,"YES")==0 || stricmp(value,"ON")==0)
+		return(TRUE);
+
+	return(strtol(value,NULL,0));
+}
+
+static BOOL parseBool(const char* value)
+{
+	return(INT_TO_BOOL(parseInteger(value)));
+}
+
 long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 {
 	char*	value;
@@ -982,7 +995,7 @@ long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 	if(*value==0)		/* blank value */
 		return(deflt);
 
-	return(strtol(value,NULL,0));
+	return(parseInteger(value));
 }
 
 long iniGetInteger(str_list_t list, const char* section, const char* key, long deflt)
@@ -994,7 +1007,7 @@ long iniGetInteger(str_list_t list, const char* section, const char* key, long d
 	if(*value==0)	/* blank value or missing key */
 		return(deflt);
 
-	return(strtol(value,NULL,0));
+	return(parseInteger(value));
 }
 
 ushort iniReadShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
@@ -1186,14 +1199,6 @@ double iniGetFloat(str_list_t list, const char* section, const char* key, double
 		return(deflt);
 
 	return(atof(value));
-}
-
-static BOOL parseBool(const char* value)
-{
-	if(stricmp(value,"TRUE")==0 || stricmp(value,"YES")==0 || stricmp(value,"ON")==0)
-		return(TRUE);
-
-	return(INT_TO_BOOL(strtol(value,NULL,0)));
 }
 
 BOOL iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
@@ -1419,7 +1424,7 @@ static long parseNamedInt(const char* value, named_long_t* names)
 		if(strnicmp(names[i].name,value,strlen(value))==0)
 			return(names[i].value);
 
-	return(strtol(value,NULL,0));
+	return(parseInteger(value));
 }
 
 long iniReadNamedInt(FILE* fp, const char* section, const char* key
