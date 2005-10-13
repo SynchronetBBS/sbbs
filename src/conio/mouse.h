@@ -95,6 +95,8 @@ enum {
 
 #define CIOLIB_BUTTON_BASE(x)		(x!=CIOLIB_MOUSE_MOVE?x-9*(CIOLIB_BUTTON_NUMBER(x)-1):CIOLIB_MOUSE_MOVE)
 
+extern int ciolib_mouse_initialized;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -96,7 +96,7 @@ struct mouse_state {
 
 struct mouse_state state;
 int mouse_events=0;
-static int mouse_initialized=0;
+int ciolib_mouse_initialized=0;
 
 void init_mouse(void)
 {
@@ -105,7 +105,7 @@ void init_mouse(void)
 	state.multi_timeout=300;
 	listInit(&state.input,LINK_LIST_SEMAPHORE);
 	listInit(&state.output,LINK_LIST_SEMAPHORE);
-	mouse_initialized=1;
+	ciolib_mouse_initialized=1;
 }
 
 int ciomouse_setevents(int events)
@@ -142,7 +142,7 @@ void ciomouse_gotevent(int event, int x, int y)
 {
 	struct in_mouse_event *ime;
 
-	while(!mouse_initialized)
+	while(!ciolib_mouse_initialized)
 		SLEEP(1);
 	ime=(struct in_mouse_event *)malloc(sizeof(struct in_mouse_event));
 	ime->ts=MSEC_CLOCK();
@@ -427,21 +427,21 @@ void ciolib_mouse_thread(void *data)
 
 int mouse_trywait(void)
 {
-	while(!mouse_initialized)
+	while(!ciolib_mouse_initialized)
 		SLEEP(1);
 	return(listSemTryWait(&state.output));
 }
 
 int mouse_wait(void)
 {
-	while(!mouse_initialized)
+	while(!ciolib_mouse_initialized)
 		SLEEP(1);
 	return(listSemWait(&state.output));
 }
 
 int mouse_pending(void)
 {
-	while(!mouse_initialized)
+	while(!ciolib_mouse_initialized)
 		SLEEP(1);
 	return(listCountNodes(&state.output));
 }
@@ -450,7 +450,7 @@ int ciolib_getmouse(struct mouse_event *mevent)
 {
 	int retval=0;
 
-	while(!mouse_initialized)
+	while(!ciolib_mouse_initialized)
 		SLEEP(1);
 	if(listCountNodes(&state.output)) {
 		struct out_mouse_event *out;
