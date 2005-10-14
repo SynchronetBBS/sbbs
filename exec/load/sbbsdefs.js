@@ -162,6 +162,7 @@ var   KEY_RIGHT		='\x06'		/* ctrl-f (rt arrow)						*/
 var	  KEY_LEFT		='\x1d'		/* ctrl-] (lf arrow)						*/
 var	  KEY_HOME		='\x02'		/* ctrl-b (home)							*/
 var   KEY_END       ='\x05'		/* ctrl-e (end)								*/
+var   KEY_DEL       ='\x7f'     /* (del)                                    */
 								/********************************************/
 
 							    /********************************************/
