@@ -6,7 +6,7 @@ var socket;
 if(this.client)
 	socket=client.socket;
 else
-	socket=new Socket(SOCK_STREAM,"test");
+	socket=new Socket(argv[0]=="udp" ? SOCK_DGRAM : SOCK_STREAM,"test");
 
 var option_list;
 if(socket.option_list)
