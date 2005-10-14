@@ -48,23 +48,45 @@
 
 static socket_option_t socket_options[] = {
 	{ "TYPE",				0,				SOL_SOCKET,		SO_TYPE				},
+	{ "ERROR",				0,				SOL_SOCKET,		SO_ERROR			},
 	{ "DEBUG",				0,				SOL_SOCKET,		SO_DEBUG			},
 	{ "LINGER",				SOCK_STREAM,	SOL_SOCKET,		SO_LINGER			},
 	{ "SNDBUF",				0,				SOL_SOCKET,		SO_SNDBUF			},
 	{ "RCVBUF",				0,				SOL_SOCKET,		SO_RCVBUF			},
-#ifndef _WINSOCKAPI_
+
+#ifndef _WINSOCKAPI_	/* Defined, but not supported, by WinSock */
 	{ "SNDLOWAT",			0,				SOL_SOCKET,		SO_SNDLOWAT			},
 	{ "RCVLOWAT",			0,				SOL_SOCKET,		SO_RCVLOWAT			},
 	{ "SNDTIMEO",			0,				SOL_SOCKET,		SO_SNDTIMEO			},
 	{ "RCVTIMEO",			0,				SOL_SOCKET,		SO_RCVTIMEO			},
+#ifdef SO_USELOOPBACK	/* SunOS */
+	{ "USELOOPBACK",		0,				SOL_SOCKET,		SO_USELOOPBACK		},
 #endif
+#endif
+
 	{ "REUSEADDR",			0,				SOL_SOCKET,		SO_REUSEADDR		},	
 	{ "KEEPALIVE",			SOCK_STREAM,	SOL_SOCKET,		SO_KEEPALIVE		},
 	{ "DONTROUTE",			0,				SOL_SOCKET,		SO_DONTROUTE		},
 	{ "BROADCAST",			SOCK_DGRAM,		SOL_SOCKET,		SO_BROADCAST		},
 	{ "OOBINLINE",			SOCK_STREAM,	SOL_SOCKET,		SO_OOBINLINE		},
+
 #ifdef SO_ACCEPTCONN											
 	{ "ACCEPTCONN",			SOCK_STREAM,	SOL_SOCKET,		SO_ACCEPTCONN		},
+#endif
+#ifdef SO_PRIORITY		/* Linux */
+	{ "PRIORITY",			0,				SOL_SOCKET,		SO_PRIORITY			},
+#endif
+#ifdef SO_NO_CHECK		/* Linux */
+	{ "NO_CHECK",			0,				SOL_SOCKET,		SO_NO_CHECK			},
+#endif
+#ifdef SO_PROTOTYPE		/* SunOS */
+	{ "PROTOTYPE",			0,				SOL_SOCKET,		SO_PROTOTYPE		},
+#endif
+#ifdef SO_MAX_MSG_SIZE	/* WinSock2 */
+	{ "MAX_MSG_SIZE",		SOCK_DGRAM,		SOL_SOCKET,		SO_MAX_MSG_SIZE		},
+#endif
+#ifdef SO_CONNECT_TIME	/* WinSock2 */
+	{ "CONNECT_TIME",		SOCK_STREAM,	SOL_SOCKET,		SO_CONNECT_TIME		},
 #endif
 
 	/* IPPROTO-level socket options */
@@ -84,6 +106,9 @@ static socket_option_t socket_options[] = {
 #endif															
 #ifdef TCP_KEEPCNT												
 	{ "TCP_KEEPCNT",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPCNT			},
+#endif															
+#ifdef TCP_KEEPALIVE	/* SunOS */
+	{ "TCP_KEEPALIVE",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPALIVE		},
 #endif															
 #ifdef TCP_SYNCNT												
 	{ "TCP_SYNCNT",			SOCK_STREAM,	IPPROTO_TCP,	TCP_SYNCNT			},

@@ -45,11 +45,11 @@
 /***************/
 #if defined(_WIN32)		/* Use WinSock */
 
-#include <winsock.h>	/* socket/bind/etc. */
-
-/* Let's agree on a standard WinSock symbol here, people */
 #ifndef _WINSOCKAPI_
-#define _WINSOCKAPI_	
+	#include <winsock2.h>	/* socket/bind/etc. */
+	#include <mswsock.h>	/* Microsoft WinSock2 extensions */
+	/* Let's agree on a standard WinSock symbol here, people */
+	#define _WINSOCKAPI_	
 #endif
 
 #elif defined __unix__		/* Unix-variant */
