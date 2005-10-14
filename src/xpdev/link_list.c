@@ -327,6 +327,12 @@ str_list_t listSubStringList(const list_node_t* node, long max)
 	return(str_list);
 }
 
+void* listFreeStringList(str_list_t list)
+{
+	strListFree(&list);
+	return(list);
+}
+
 DLLEXPORT list_node_t* DLLCALL listFirstNode(const link_list_t* list)
 {
 	if(list==NULL)
