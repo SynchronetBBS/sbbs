@@ -79,6 +79,7 @@
 
 typedef struct {
 	char*	name;
+	int		type;		/* Supported socket types (or 0 for unspecified) */
 	int		level;
 	int		value;
 } socket_option_t;
