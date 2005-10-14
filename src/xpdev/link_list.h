@@ -83,7 +83,7 @@ typedef struct link_list {
 } link_list_t;
 
 /* Initialization, Allocation, and Freeing of Lists and Nodes */
-link_list_t*	listInit(link_list_t* /* NULL to auto-allocate */, long flags);
+DLLEXPORT link_list_t*	DLLCALL listInit(link_list_t* /* NULL to auto-allocate */, long flags);
 BOOL			listFree(link_list_t*);
 long			listFreeNodes(link_list_t*);
 BOOL			listFreeNodeData(list_node_t* node);
@@ -93,23 +93,23 @@ long			listAttach(link_list_t*);
 long			listDetach(link_list_t*);
 
 #if defined(LINK_LIST_THREADSAFE)
-BOOL			listSemPost(link_list_t*);
-BOOL			listSemWait(link_list_t*);
-BOOL			listSemTryWait(link_list_t*);
-BOOL			listSemTryWaitBlock(link_list_t*, unsigned long timeout);
+DLLEXPORT BOOL		DLLCALL	listSemPost(link_list_t*);
+DLLEXPORT BOOL		DLLCALL	listSemWait(link_list_t*);
+DLLEXPORT BOOL		DLLCALL	listSemTryWait(link_list_t*);
+DLLEXPORT BOOL		DLLCALL	listSemTryWaitBlock(link_list_t*, unsigned long timeout);
 #endif
 
 /* Lock/unlock mutex-protected linked lists (no-op for unprotected lists) */
-void			listLock(const link_list_t*);
-void			listUnlock(const link_list_t*);
+DLLEXPORT void		DLLCALL	listLock(const link_list_t*);
+DLLEXPORT void		DLLCALL	listUnlock(const link_list_t*);
 
 /* Return count or index of nodes, or -1 on error */
-long			listCountNodes(const link_list_t*);
-long			listNodeIndex(const link_list_t*, list_node_t*);
+DLLEXPORT long		DLLCALL	listCountNodes(const link_list_t*);
+DLLEXPORT long		DLLCALL	listNodeIndex(const link_list_t*, list_node_t*);
 
 /* Get/Set list private data */
-void*			listSetPrivateData(link_list_t*, void*);
-void*			listGetPrivateData(link_list_t*);
+DLLEXPORT void*		DLLCALL	listSetPrivateData(link_list_t*, void*);
+DLLEXPORT void*		DLLCALL	listGetPrivateData(link_list_t*);
 
 /* Return an allocated string list (which must be freed), array of all strings in linked list */
 str_list_t		listStringList(const link_list_t*);
@@ -119,29 +119,29 @@ str_list_t		listSubStringList(const list_node_t*, long max);
 
 /* Extract subset (up to max number of nodes) in linked list (src_node) and place into dest_list */
 /* dest_list == NULL, then allocate a return a new linked list */
-link_list_t*	listExtract(link_list_t* dest_list, const list_node_t* src_node, long max);
+DLLEXPORT link_list_t*	DLLCALL	listExtract(link_list_t* dest_list, const list_node_t* src_node, long max);
 
 /* Simple search functions returning found node or NULL on error */
-list_node_t*	listNodeAt(const link_list_t*, long index);
-list_node_t*	listFindNode(const link_list_t*, const void* data, size_t length);
+DLLEXPORT list_node_t*	DLLCALL	listNodeAt(const link_list_t*, long index);
+DLLEXPORT list_node_t*	DLLCALL	listFindNode(const link_list_t*, const void* data, size_t length);
 
 /* Convenience functions */
-list_node_t*	listFirstNode(const link_list_t*);
-list_node_t*	listLastNode(const link_list_t*);
-list_node_t*	listNextNode(const list_node_t*);
-list_node_t*	listPrevNode(const list_node_t*);
-void*			listNodeData(const list_node_t*);
+DLLEXPORT list_node_t*	DLLCALL	listFirstNode(const link_list_t*);
+DLLEXPORT list_node_t*	DLLCALL	listLastNode(const link_list_t*);
+DLLEXPORT list_node_t*	DLLCALL	listNextNode(const list_node_t*);
+DLLEXPORT list_node_t*	DLLCALL	listPrevNode(const list_node_t*);
+DLLEXPORT void*			DLLCALL	listNodeData(const list_node_t*);
 
 /* Primitive node locking */
-BOOL			listLockNode(list_node_t*);
-BOOL			listUnlockNode(list_node_t*);
-BOOL			listNodeIsLocked(const list_node_t*);
+DLLEXPORT BOOL		DLLCALL	listLockNode(list_node_t*);
+DLLEXPORT BOOL		DLLCALL	listUnlockNode(list_node_t*);
+DLLEXPORT BOOL		DLLCALL	listNodeIsLocked(const list_node_t*);
 
 /* Add node to list, returns pointer to new node or NULL on error */
-list_node_t*	listAddNode(link_list_t*, void* data, list_node_t* after /* NULL=insert */);
+DLLEXPORT list_node_t*	DLLCALL	listAddNode(link_list_t*, void* data, list_node_t* after /* NULL=insert */);
 
 /* Add array of node data to list, returns number of nodes added (or negative on error) */
-long			listAddNodes(link_list_t*, void** data, list_node_t* after /* NULL=insert */);
+DLLEXPORT long		DLLCALL	listAddNodes(link_list_t*, void** data, list_node_t* after /* NULL=insert */);
 
 /* Add node to list, allocating and copying the data for the node */
 list_node_t*	listAddNodeData(link_list_t*, const void* data, size_t length, list_node_t* after);
@@ -150,17 +150,17 @@ list_node_t*	listAddNodeData(link_list_t*, const void* data, size_t length, list
 list_node_t*	listAddNodeString(link_list_t*, const char* str, list_node_t* after);
 
 /* Add a list of strings to the linked list, allocating and copying each */
-long			listAddStringList(link_list_t*, str_list_t, list_node_t* after);
+DLLEXPORT long		DLLCALL	listAddStringList(link_list_t*, str_list_t, list_node_t* after);
 
 /* Add a list of nodes from a source linked list */
-long			listAddNodeList(link_list_t*, const link_list_t* src, list_node_t* after); 
+DLLEXPORT long		DLLCALL	listAddNodeList(link_list_t*, const link_list_t* src, list_node_t* after); 
 
 /* Merge a source linked list into the destination linked list */
 /* after merging, the nodes in the source linked list should not be modified or freed */
-long			listMerge(link_list_t* dest, const link_list_t* src, list_node_t* after);
+DLLEXPORT long		DLLCALL	listMerge(link_list_t* dest, const link_list_t* src, list_node_t* after);
 
 /* Swap the data pointers and flags for 2 nodes (possibly in separate lists) */
-BOOL			listSwapNodes(list_node_t* node1, list_node_t* node2);
+DLLEXPORT BOOL		DLLCALL	listSwapNodes(list_node_t* node1, list_node_t* node2);
 
 /* Convenience macros for pushing, popping, and inserting nodes */
 #define	listPushNode(list, data)				listAddNode(list, data, listLastNode(list))
@@ -175,7 +175,7 @@ BOOL			listSwapNodes(list_node_t* node1, list_node_t* node2);
 #define listShiftNode(list)						listRemoveNode(list, FIRST_NODE, FALSE)
 
 /* Remove node from list, returning the node's data (if not free'd) */
-void*			listRemoveNode(link_list_t*, list_node_t* /* NULL=first */, BOOL free_data);
+DLLEXPORT void*		DLLCALL	listRemoveNode(link_list_t*, list_node_t* /* NULL=first */, BOOL free_data);
 
 /* Remove multiple nodes from list, returning the number of nodes removed */
 long			listRemoveNodes(link_list_t*, list_node_t* /* NULL=first */, long count, BOOL free_data);
