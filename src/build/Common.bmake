@@ -132,6 +132,7 @@ MT_LDFLAGS = -WM
  CFLAGS	=	$(CFLAGS) -v
 !endif
 !endif
+MKSHLIB =       $(CC) -WD
 
 # Common compiler flags
 !ifdef DEBUG
@@ -264,6 +265,7 @@ uifc-mt:
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
+	set USE_SDL=$(USE_SDL)
 	cd $(UIFC_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
