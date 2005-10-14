@@ -39,6 +39,7 @@
 #define _LINK_LIST_H
 
 #include <stddef.h>		/* size_t */
+#include "wrapdll.h"
 #include "str_list.h"	/* string list functions and types */
 
 #if defined(LINK_LIST_THREADSAFE)
