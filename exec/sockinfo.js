@@ -2,8 +2,12 @@
 
 load("sockdefs.js");
 
+var global=js.global;
+if(global==undefined)
+	global=this;
+
 var socket;
-if(this.client)
+if(global.client!=undefined)
 	socket=client.socket;
 else
 	socket=new Socket(argv[0]=="udp" ? SOCK_DGRAM : SOCK_STREAM,"test");
