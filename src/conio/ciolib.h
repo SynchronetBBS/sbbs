@@ -62,9 +62,11 @@
 #elif defined __unix__
         #define CIOLIBCALL
         #define CIOLIBEXPORT
+        #define CIOLIBEXPORTVAR	extern
 #else
         #define CIOLIBCALL
         #define CIOLIBEXPORT
+        #define CIOLIBEXPORTVAR	extern
 #endif
 
 enum {
