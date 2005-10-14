@@ -44,6 +44,13 @@
 	struct termios tio_default;				/* Initial term settings */
 #endif
 
+#if (defined CIOLIB_IMPORTS)
+ #undef CIOLIB_IMPORTS
+#endif
+#if (defined CIOLIB_EXPORTS)
+ #undef CIOLIB_EXPORTS
+#endif
+
 #include "ciolib.h"
 #include "ansi_cio.h"
 

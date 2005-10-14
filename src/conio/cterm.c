@@ -36,9 +36,17 @@
 #include <string.h>
 
 #include <genwrap.h>
-#include <ciolib.h>
 #include <xpbeep.h>
-#include <keys.h>
+
+#if (defined CIOLIB_IMPORTS)
+ #undef CIOLIB_IMPORTS
+#endif
+#if (defined CIOLIB_EXPORTS)
+ #undef CIOLIB_EXPORTS
+#endif
+
+#include "ciolib.h"
+#include "keys.h"
 
 #include "cterm.h"
 

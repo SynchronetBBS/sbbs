@@ -37,6 +37,36 @@
 #include <string.h>	/* size_t */
 #include "mouse.h"
 
+#ifdef CIOLIBEXPORT
+        #undef CIOLIBEXPORT
+#endif
+
+#ifdef _WIN32
+        #ifdef __BORLANDC__
+                #define CIOLIBCALL __stdcall
+        #else
+                #define CIOLIBCALL
+        #endif
+        #if defined(CIOLIB_IMPORTS) || defined(CIOLIB_EXPORTS)
+                #if defined(CIOLIB_IMPORTS)
+                        #define CIOLIBEXPORT __declspec( dllimport )
+                        #define CIOLIBEXPORTVAR __declspec( dllimport )
+                #else
+                        #define CIOLIBEXPORT __declspec( dllexport )
+                        #define CIOLIBEXPORTVAR __declspec( dllexport )
+                #endif
+        #else   /* self-contained executable */
+                #define CIOLIBEXPORT
+                #define CIOLIBEXPORTVAR	extern
+        #endif
+#elif defined __unix__
+        #define CIOLIBCALL
+        #define CIOLIBEXPORT
+#else
+        #define CIOLIBCALL
+        #define CIOLIBEXPORT
+#endif
+
 enum {
 	 CIOLIB_MODE_AUTO
 	,CIOLIB_MODE_CURSES
@@ -201,56 +231,56 @@ typedef struct {
 	char 	*(*getcliptext)	(void);
 } cioapi_t;
 
-extern cioapi_t cio_api;
-extern int _wscroll;
-extern int directvideo;
-extern int hold_update;
+CIOLIBEXPORTVAR cioapi_t cio_api;
+CIOLIBEXPORTVAR int _wscroll;
+CIOLIBEXPORTVAR int directvideo;
+CIOLIBEXPORTVAR int hold_update;
 
 #define _conio_kbhit()		kbhit()
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-int initciolib(int mode);
+CIOLIBEXPORT int CIOLIBCALL initciolib(int mode);
 
-int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
-char *ciolib_cgets(char *str);
-int ciolib_cscanf (char *format , ...);
-int ciolib_kbhit(void);
-int ciolib_getch(void);
-int ciolib_getche(void);
-int ciolib_ungetch(int ch);
-void ciolib_gettextinfo(struct text_info *info);
-int ciolib_wherex(void);
-int ciolib_wherey(void);
-void ciolib_wscroll(void);
-void ciolib_gotoxy(int x, int y);
-void ciolib_clreol(void);
-void ciolib_clrscr(void);
-int ciolib_cputs(char *str);
-int	ciolib_cprintf(char *fmat, ...);
-void ciolib_textbackground(int colour);
-void ciolib_textcolor(int colour);
-void ciolib_highvideo(void);
-void ciolib_lowvideo(void);
-void ciolib_normvideo(void);
-int ciolib_puttext(int a,int b,int c,int d,unsigned char *e);
-int ciolib_gettext(int a,int b,int c,int d,unsigned char *e);
-void ciolib_textattr(int a);
-void ciolib_delay(long a);
-int ciolib_putch(int a);
-void ciolib_setcursortype(int a);
-void ciolib_textmode(int mode);
-void ciolib_window(int sx, int sy, int ex, int ey);
-void ciolib_delline(void);
-void ciolib_insline(void);
-char *ciolib_getpass(const char *prompt);
-void ciolib_settitle(const char *title);
-void ciolib_setname(const char *title);
-int ciolib_showmouse(void);
-int ciolib_hidemouse(void);
-void ciolib_copytext(const char *text, size_t buflen);
-char *ciolib_getcliptext(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
+CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str);
+CIOLIBEXPORT int CIOLIBCALL ciolib_cscanf (char *format , ...);
+CIOLIBEXPORT int CIOLIBCALL ciolib_kbhit(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_getch(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_getche(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_ungetch(int ch);
+CIOLIBEXPORT void CIOLIBCALL ciolib_gettextinfo(struct text_info *info);
+CIOLIBEXPORT int CIOLIBCALL ciolib_wherex(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_wherey(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_wscroll(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_gotoxy(int x, int y);
+CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_cputs(char *str);
+CIOLIBEXPORT int	CIOLIBCALL ciolib_cprintf(char *fmat, ...);
+CIOLIBEXPORT void CIOLIBCALL ciolib_textbackground(int colour);
+CIOLIBEXPORT void CIOLIBCALL ciolib_textcolor(int colour);
+CIOLIBEXPORT void CIOLIBCALL ciolib_highvideo(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_lowvideo(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_normvideo(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,unsigned char *e);
+CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,unsigned char *e);
+CIOLIBEXPORT void CIOLIBCALL ciolib_textattr(int a);
+CIOLIBEXPORT void CIOLIBCALL ciolib_delay(long a);
+CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a);
+CIOLIBEXPORT void CIOLIBCALL ciolib_setcursortype(int a);
+CIOLIBEXPORT void CIOLIBCALL ciolib_textmode(int mode);
+CIOLIBEXPORT void CIOLIBCALL ciolib_window(int sx, int sy, int ex, int ey);
+CIOLIBEXPORT void CIOLIBCALL ciolib_delline(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_insline(void);
+CIOLIBEXPORT char * CIOLIBCALL ciolib_getpass(const char *prompt);
+CIOLIBEXPORT void CIOLIBCALL ciolib_settitle(const char *title);
+CIOLIBEXPORT void CIOLIBCALL ciolib_setname(const char *title);
+CIOLIBEXPORT int CIOLIBCALL ciolib_showmouse(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_hidemouse(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
+CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 #ifdef __cplusplus
 }
 #endif

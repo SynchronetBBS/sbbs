@@ -39,6 +39,13 @@
 
 #include "gen_defs.h"	/* xpdev, for BOOL/TRUE/FALSE */
 
+#if (defined CIOLIB_IMPORTS)
+ #undef CIOLIB_IMPORTS
+#endif
+#if (defined CIOLIB_EXPORTS)
+ #undef CIOLIB_EXPORTS
+#endif
+
 #include "ciolib.h"
 #include "curs_cio.h"
 #include "keys.h"
