@@ -333,6 +333,20 @@ js_on_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_get_parent(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	JSObject* child=NULL;
+	JSObject* parent;
+
+	if(JS_ValueToObject(cx, argv[0], &child)
+		&& child!=NULL
+		&& (parent=JS_GetParent(cx,child))!=NULL)
+		*rval = OBJECT_TO_JSVAL(parent);
+
+	return(JS_TRUE);
+}
+
 static JSClass js_internal_class = {
      "JsInternal"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -365,6 +379,10 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("report an error using the standard JavaScript error reporting mechanism "
 	"(including script filename and line number), "
 	"if <i>fatal</i> is <i>true</i>, immediately terminates script")
+	,313
+	},
+	{"get_parent",		js_get_parent,		1,	JSTYPE_OBJECT,	JSDOCSTR("object child")
+	,JSDOCSTR("return the parent of the specified object")
 	,313
 	},
 	{0}
