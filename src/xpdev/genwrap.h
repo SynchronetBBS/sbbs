@@ -48,11 +48,16 @@
 	#include <sys/time.h>	/* struct timeval */
 	#include <strings.h>	/* strcasecmp() */
 	#include <unistd.h>		/* usleep */
+
+	/* Simple Win32 function equivalents */
+	#define GetCurrentProcessId()		getpid()
+
 	#ifdef _THREAD_SAFE
 		#include <pthread.h>/* Check for GNU PTH libs */
 		#ifdef _PTH_PTHREAD_H_
 			#include <pth.h>
 		#endif
+		#define GetCurrentThreadId()	pthread_self()
 	#endif
 #elif defined(_WIN32)
 	#include <process.h>	/* getpid() */

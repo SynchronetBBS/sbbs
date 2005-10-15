@@ -236,9 +236,7 @@ char* strrev(char* str)
 /****************************************************************************/
 unsigned DLLCALL xp_randomize(void)
 {
-	unsigned thread_id = (unsigned)GetCurrentThreadId();
-	unsigned process_id = (unsigned)GetCurrentProcessId();
-	unsigned seed = time(NULL) ^ BYTE_SWAP_INT(thread_id) ^ process_id;
+	unsigned seed=~0;
 
 #if defined(HAS_DEV_RANDOM) && defined(RANDOM_DEV)
 	int     rf;
@@ -247,6 +245,16 @@ unsigned DLLCALL xp_randomize(void)
 		read(rf, &seed, sizeof(seed));
 		close(rf);
 	}
+#else
+	unsigned curtime	= (unsigned)time(NULL);
+	unsigned process_id = (unsigned)GetCurrentProcessId();
+
+	seed = curtime ^ BYTE_SWAP_INT(process_id);
+
+	#if defined(_WIN32) || defined(GetCurrentThreadId)
+		seed ^= (unsigned)GetCurrentThreadId();
+	#endif
+
 #endif
 
  	srand(seed);
