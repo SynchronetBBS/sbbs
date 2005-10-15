@@ -89,8 +89,6 @@ ulong		iniReadLongInt(FILE*, const char* section, const char* key
 					,ulong deflt);
 ulong		iniReadBytes(FILE*, const char* section, const char* key
 					,ulong unit, ulong deflt);
-ulong		iniReadIpAddress(FILE*, const char* section, const char* key
-					,ulong deflt);
 double		iniReadFloat(FILE*, const char* section, const char* key
 					,double deflt);
 BOOL		iniReadBool(FILE*, const char* section, const char* key
@@ -140,8 +138,6 @@ ulong		iniGetLongInt(str_list_t, const char* section, const char* key
 					,ulong deflt);
 ulong		iniGetBytes(str_list_t, const char* section, const char* key
 					,ulong unit, ulong deflt);
-ulong		iniGetIpAddress(str_list_t, const char* section, const char* key
-					,ulong deflt);
 double		iniGetFloat(str_list_t, const char* section, const char* key
 					,double deflt);
 BOOL		iniGetBool(str_list_t, const char* section, const char* key
@@ -157,8 +153,17 @@ double		iniGetNamedFloat(str_list_t, const char* section, const char* key
 ulong		iniGetBitField(str_list_t, const char* section, const char* key
 					,ini_bitdesc_t* bitdesc, ulong deflt);
 #define		iniGetLogLevel(l,s,k,d) iniGetEnum(l,s,k,iniLogLevelStringList(),d)
+
+#if !defined(NO_SOCKET_SUPPORT)
+ulong		iniReadIpAddress(FILE*, const char* section, const char* key
+					,ulong deflt);
+ulong		iniGetIpAddress(str_list_t, const char* section, const char* key
+					,ulong deflt);
+char*		iniSetIpAddress(str_list_t*, const char* section, const char* key, ulong value
+					,ini_style_t*);
 int			iniGetSocketOptions(str_list_t, const char* section
 					,SOCKET sock, char* error, size_t errlen);
+#endif
 
 void		iniSetDefaultStyle(ini_style_t);
 
@@ -175,8 +180,6 @@ char*		iniSetBytes(str_list_t*, const char* section, const char* key, ulong unit
 char*		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
 char*		iniSetFloat(str_list_t*, const char* section, const char* key, double value
-					,ini_style_t*);
-char*		iniSetIpAddress(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
 char*		iniSetBool(str_list_t*, const char* section, const char* key, BOOL value
 					,ini_style_t*);
