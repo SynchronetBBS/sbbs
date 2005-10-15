@@ -49,6 +49,7 @@
 #endif	/* __unix__ */
 
 #include "genwrap.h"	/* Verify prototypes */
+#include "xpendian.h"	/* BYTE_SWAP */
 
 /****************************************************************************/
 /* Used to replace snprintf()  guarantees to terminate.			  			*/
@@ -231,6 +232,28 @@ char* strrev(char* str)
 #endif
 
 /****************************************************************************/
+/* Initialize (seed) the random number generator							*/
+/****************************************************************************/
+unsigned DLLCALL xp_randomize(void)
+{
+	unsigned thread_id = (unsigned)GetCurrentThreadId();
+	unsigned process_id = (unsigned)GetCurrentProcessId();
+	unsigned seed = time(NULL) ^ BYTE_SWAP_INT(thread_id) ^ process_id;
+
+#if defined(HAS_DEV_RANDOM) && defined(RANDOM_DEV)
+	int     rf;
+
+	if((rf=open(RANDOM_DEV, O_RDONLY))!=-1) {
+		read(rf, &seed, sizeof(seed));
+		close(rf);
+	}
+#endif
+
+ 	srand(seed);
+	return(seed);
+}
+
+/****************************************************************************/
 /* Return random number between 0 and n-1									*/
 /****************************************************************************/
 int DLLCALL xp_random(int n)
@@ -380,9 +403,9 @@ char* DLLCALL asctime_r(const struct tm *tm, char *buf)
 
 #endif	/* !defined(__unix__) */
 
-/********************************************/
-/* Hi-res real-time clock implementation.	*/
-/********************************************/
+/****************************************************************/
+/* Microsoft (DOS/Win32) real-time system clock implementation.	*/
+/****************************************************************/
 #ifdef __unix__
 clock_t DLLCALL msclock(void)
 {
