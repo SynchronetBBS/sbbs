@@ -283,7 +283,10 @@ DLLEXPORT int DLLCALL	get_errno(void);
 	#define CTIME_R(x,y)	ctime_r(x,y)
 #endif
 
+/* Mimic the Borland randomize() and random() CRTL functions */
+DLLEXPORT unsigned	DLLCALL xp_randomize(void);
 DLLEXPORT int		DLLCALL	xp_random(int);
+
 DLLEXPORT long double  	DLLCALL	xp_timer(void);
 DLLEXPORT char*		DLLCALL os_version(char *str);
 DLLEXPORT char*		DLLCALL	lastchar(const char* str);
@@ -296,7 +299,7 @@ DLLEXPORT char*		DLLCALL c_unescape_str(char* str);
 DLLEXPORT char		DLLCALL c_unescape_char_ptr(const char* str, char** endptr);
 DLLEXPORT char		DLLCALL c_unescape_char(char ch);
 
-/* Millisecond clock */
+/* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
 typedef		clock_t				msclock_t;
 #if defined(_WIN32)
 	#define		MSCLOCKS_PER_SEC	CLOCKS_PER_SEC	/* e.g. 18.2 on DOS, 1000.0 on Win32 */
