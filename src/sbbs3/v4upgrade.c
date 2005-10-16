@@ -840,7 +840,7 @@ BOOL upgrade_ftp_aliases(void)
 	iniSetDefaultStyle(style);
 
 	SAFEPRINTF(inpath,"%sftpalias.cfg",scfg.ctrl_dir);
-	SAFEPRINTF(outpath,"%sftp_alias.ini",scfg.ctrl_dir);
+	SAFEPRINTF(outpath,"%sftpalias.ini",scfg.ctrl_dir);
 
 	if(!fexistcase(inpath))
 		return(TRUE);
@@ -929,6 +929,100 @@ BOOL upgrade_ftp_aliases(void)
 
 	return(success);
 }
+
+BOOL upgrade_socket_options(void)
+{
+	char*	p;
+	char*	key;
+	char*	val;
+	char*	section;
+	char	inpath[MAX_PATH+1];
+	char	outpath[MAX_PATH+1];
+	FILE*	in;
+	FILE*	out;
+	BOOL	success;
+	size_t	i;
+	size_t	total;
+	str_list_t	inlist;
+	str_list_t	outlist;
+
+	style.section_separator = "";
+	iniSetDefaultStyle(style);
+
+	SAFEPRINTF(inpath,"%ssockopts.cfg",scfg.ctrl_dir);
+	SAFEPRINTF(outpath,"%ssockopts.ini",scfg.ctrl_dir);
+
+	if(!fexistcase(inpath))
+		return(TRUE);
+
+	printf("Upgrading Socket Options...\n");
+
+	if(!overwrite(outpath))
+		return(TRUE);
+	if((out=fopen(outpath,"w"))==NULL) {
+		perror(outpath);
+		return(FALSE);
+	}
+
+	if((outlist = strListInit())==NULL) {
+		printf("!malloc failure\n");
+		return(FALSE);
+	}
+	printf("\t%s ",inpath);
+	if((in=fopen(inpath,"r"))==NULL) {
+		perror("open failure");
+		return(FALSE);
+	}
+
+	if((inlist = strListReadFile(in,NULL,4096))==NULL) {
+		printf("!failure reading %s\n",inpath);
+		return(FALSE);
+	}
+
+	total=0;
+	for(i=0;inlist[i]!=NULL;i++) {
+		p=truncsp(inlist[i]);
+		SKIP_WHITESPACE(p);
+		if(*p==';') {
+			strListPush(&outlist,p);
+			continue;
+		} else if(*p==0)
+			continue;
+		key=p;
+		FIND_WHITESPACE(p);
+		if(*p==0)
+			continue;
+		*(p++)=0;
+		SKIP_WHITESPACE(p);
+		val=p;
+		section=ROOT_SECTION;
+		if(!stricmp(key,"tcp_nodelay"))
+			section="telnet|rlogin";
+		else if(!stricmp(key,"keepalive"))
+			section="tcp";
+		iniSetString(&outlist,section,key,val,NULL);
+		total++;
+	}
+
+	printf("-> %s (%u Socket Options)\n", outpath, total);
+	fclose(in);
+	strListFree(&inlist);
+
+	success=iniWriteFile(out, outlist);
+
+	fclose(out);
+
+	if(!success) {
+		printf("!iniWriteFile failure\n");
+		return(FALSE);
+	}
+
+	strListFree(&outlist);
+
+	return(success);
+}
+
+
 
 #define upg_iniSetString(list,section,key,val) \
 		if(*val) iniSetString(list,section,key,val,NULL)
@@ -1102,6 +1196,9 @@ int main(int argc, char** argv)
 		return(5);
 
 	if(!upgrade_ftp_aliases())
+		return(-1);
+
+	if(!upgrade_socket_options())
 		return(-1);
 
 	/* attr.cfg */
