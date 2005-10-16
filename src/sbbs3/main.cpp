@@ -541,6 +541,20 @@ DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* int
 	return(JS_TRUE);
 }
 
+char*
+DLLCALL js_ValueToStringBytes(JSContext* cx, jsval val, size_t* len)
+{
+	JSString* str;
+	
+	if((str=JS_ValueToString(cx, val))==NULL)
+		return(NULL);
+
+	if(len!=NULL)
+		*len = JS_GetStringLength(str);
+
+	return(JS_GetStringBytes(str));
+}
+
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
