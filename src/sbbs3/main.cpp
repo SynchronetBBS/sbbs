@@ -1473,17 +1473,41 @@ void output_thread(void* arg)
 	sbbs->console|=CON_R_ECHO;
 
 	while(sbbs->client_socket!=INVALID_SOCKET && !terminate_server) {
-
-    	if(bufbot==buftop)
-	    	avail=RingBufFull(&sbbs->outbuf);
-        else
-        	avail=buftop-bufbot;
-
-		if(!avail) {
+		/*
+		 * I'd like to check the linear buffer against the highwater
+		 * at this point, but it would get too clumsy imho - Deuce
+		 *
+		 * Actually, another option would just be to have the size
+		 * of the linear buffer equal to the MTU... any larger and
+		 * you could have small sends off the end.  this would
+		 * probobly be even clumbsier
+		 */
+		if(bufbot == buftop) {
+			/* Wait for something to output in the RingBuffer */
 			sem_wait(&sbbs->outbuf.sem);
+
+			/* Check for spurious sem post... */
+			if(!RingBufFull(&sbbs->outbuf))
+				continue;
+
+			/* Wait for full buffer or drain timeout */
 			if(sbbs->outbuf.highwater_mark)
 				sem_trywait_block(&sbbs->outbuf.highwater_sem,startup->outbuf_drain_timeout);
-			continue; 
+
+			/*
+			 * At this point, there's something to send and,
+			 * if the highwater mark is set, the timeout has
+			 * passed or we've hit highwater.  Read ring buffer
+			 * into linear buffer.
+			 */
+	    	avail=RingBufFull(&sbbs->outbuf);
+           	if(avail>sizeof(buf)) {
+               	lprintf(LOG_WARNING,"!%s: Insufficient linear output buffer (%lu > %lu)"
+					,node, avail, sizeof(buf));
+               	avail=sizeof(buf);
+           	}
+           	buftop=RingBufRead(&sbbs->outbuf, buf, avail);
+           	bufbot=0;
 		}
 
 		/* Check socket for writability (using select) */
@@ -1506,15 +1530,6 @@ void output_thread(void* arg)
 			continue;
 		}
 
-        if(bufbot==buftop) { // linear buf empty, read from ring buf
-            if(avail>sizeof(buf)) {
-                lprintf(LOG_WARNING,"!%s: Insufficient linear output buffer (%lu > %lu)"
-					,node, avail, sizeof(buf));
-                avail=sizeof(buf);
-            }
-            buftop=RingBufRead(&sbbs->outbuf, buf, avail);
-            bufbot=0;
-        }
 		i=sendsocket(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
