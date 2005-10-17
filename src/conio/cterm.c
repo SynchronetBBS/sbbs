@@ -411,7 +411,7 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 	char	*p;
 	char	*p2;
 	char	tmp[1024];
-	int		i,j,k;
+	int		i,j,k,l;
 	int		row,col;
 
 	switch(cterm.escbuf[0]) {
@@ -573,8 +573,26 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					}
 					free(p2);
 					break;
-				case 'M':
+				case 'M':	/* ANSI music and also supposed to be delete line! */
 					cterm.music=1;
+					break;
+				case 'Y':	/* BananaCom Delete Line */
+					/* i == number of lines to delete */
+					i=atoi(cterm.escbuf+1);
+					if(i==0)
+						i=1;
+					/* j == number of lines to scroll */
+					j=cterm.height-wherey-i+1;
+					p2=(char *)malloc(cterm.width*(j>i?j:i)*2);
+					gettext(cterm.x,cterm.y+wherey()+i,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
+					puttext(cterm.x,cterm.y+wherey(),cterm.x+cterm.width-1,cterm.y+cterm.height-1-i,buf);
+					l=0;
+					for(k=0;k<cterm.width*j;k++) {
+						buf[l++]=' ';
+						buf[l++]=cterm.attr;
+					}
+					puttext(cterm.x,cterm.y+cterm.height-1-i,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
+					free(p2);
 					break;
 				case 'N':
 					/* BananANSI style... does NOT start with MF or MB */
@@ -592,6 +610,7 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					for(i=(cterm.width-wherex())*2-2;i>=wherex();i-=2)
 						p2[i]=' ';
 					puttext(cterm.x+wherex(),cterm.y+wherey(),cterm.x+cterm.width,cterm.y+wherey(),p2);
+					free(p2);
 					break;
 				case 'S':
 					scrollup();
@@ -602,8 +621,6 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 				case 'U':
 					clearscreen(7);
 					gotoxy(1,1);
-					break;
-				case 'Y':	/* ToDo? BananaCom Clear Line */
 					break;
 				case 'Z':
 					for(j=10;j>=0;j--) {
