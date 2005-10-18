@@ -582,16 +582,16 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					if(i==0)
 						i=1;
 					/* j == number of lines to scroll */
-					j=cterm.height-wherey-i+1;
+					j=cterm.height-wherey()-i+1;
 					p2=(char *)malloc(cterm.width*(j>i?j:i)*2);
-					gettext(cterm.x,cterm.y+wherey()+i,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
-					puttext(cterm.x,cterm.y+wherey(),cterm.x+cterm.width-1,cterm.y+cterm.height-1-i,buf);
+					gettext(cterm.x,cterm.y+wherey()+i,cterm.x+cterm.width-1,cterm.y+cterm.height-1,p2);
+					puttext(cterm.x,cterm.y+wherey(),cterm.x+cterm.width-1,cterm.y+cterm.height-1-i,p2);
 					l=0;
 					for(k=0;k<cterm.width*j;k++) {
-						buf[l++]=' ';
-						buf[l++]=cterm.attr;
+						p2[l++]=' ';
+						p2[l++]=cterm.attr;
 					}
-					puttext(cterm.x,cterm.y+cterm.height-1-i,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
+					puttext(cterm.x,cterm.y+cterm.height-1-i,cterm.x+cterm.width-1,cterm.y+cterm.height-1,p2);
 					free(p2);
 					break;
 				case 'N':
