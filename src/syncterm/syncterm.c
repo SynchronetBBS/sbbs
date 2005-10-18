@@ -325,7 +325,7 @@ int main(int argc, char **argv)
 				init_uifc(TRUE, TRUE);
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this BBS in directory?",YesNo)) {
 					case 0:	/* Yes */
-						add_bbs(path,bbs);
+						add_bbs(listpath,bbs);
 						break;
 					default: /* ESC/No */
 						break;
