@@ -3768,6 +3768,10 @@ void http_session_thread(void* arg)
 	client_off(socket);
 
 	thread_down();
+
+	if(startup->index_file_name==NULL || startup->cgi_ext==NULL)
+		lprintf(LOG_DEBUG,"%04d !!! ALL YOUR BASE ARE BELONG TO US !!!", socket);
+
 	lprintf(LOG_INFO,"%04d Session thread terminated (%u clients, %u threads remain, %lu served)"
 		,socket, active_clients, thread_count, served);
 
