@@ -717,8 +717,11 @@ str_list_t iniGetStringList(str_list_t list, const char* section, const char* ke
 
 	get_value(list, section, key, value);
 
-	if(*value==0 /* blank value or missing key */)
+	if(*value==0 /* blank value or missing key */) {
+		if(deflt==NULL)
+			return(NULL);
 		SAFECOPY(value,deflt);
+	}
 
 	return(splitList(value,sep));
 }
