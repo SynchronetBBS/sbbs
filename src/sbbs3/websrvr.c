@@ -2092,7 +2092,7 @@ static BOOL check_request(http_session_t * session)
 		}
 
 		/* Don't send 404 unless authourized... prevent info leak */
-		if(startup->index_file_name[i] == NULL)
+		if(startup->index_file_name==NULL || startup->index_file_name[i] == NULL)
 			send404=1;
 		else {
 			strcat(session->req.virtual_path,startup->index_file_name[i]);
