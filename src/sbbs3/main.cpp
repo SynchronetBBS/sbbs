@@ -1519,8 +1519,9 @@ void output_thread(void* arg)
 
 		i=select(sbbs->client_socket+1,NULL,&socket_set,NULL,&tv);
 		if(i==SOCKET_ERROR) {
-			lprintf(LOG_ERR,"!%s: ERROR %d selecting socket %u for send"
-				,node,ERROR_VALUE,sbbs->client_socket);
+			if(sbbs->client_socket!=INVALID_SOCKET)
+				lprintf(LOG_ERR,"!%s: ERROR %d selecting socket %u for send"
+					,node,ERROR_VALUE,sbbs->client_socket);
 			if(sbbs->cfg.node_num)	/* Only break if node output (not server) */
 				break;
 			RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
