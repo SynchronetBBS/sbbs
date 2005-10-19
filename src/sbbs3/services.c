@@ -1466,6 +1466,11 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 		serv.log_level = iniGetLogLevel(list,sec_list[i],"LogLevel",log_level);
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
 
+		if(serv.cmd[0]==0) {
+			lprintf(LOG_WARNING,"Ignoring service with no command: %s",sec_list[i]);
+			continue;
+		}
+
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, sec_list[i], &serv.js, &startup->js);
 
