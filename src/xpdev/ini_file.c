@@ -713,17 +713,14 @@ str_list_t iniReadStringList(FILE* fp, const char* section, const char* key
 str_list_t iniGetStringList(str_list_t list, const char* section, const char* key
 						 ,const char* sep, const char* deflt)
 {
-	char	buf[INI_MAX_VALUE_LEN];
-	char*	value=buf;
+	char	value[INI_MAX_VALUE_LEN];
 
 	get_value(list, section, key, value);
 
 	if(*value==0 /* blank value or missing key */)
-		value=(char*)deflt;
+		SAFECOPY(value,deflt);
 
-	SAFECOPY(buf,value);
-
-	return(splitList(buf,sep));
+	return(splitList(value,sep));
 }
 
 void* iniFreeStringList(str_list_t list)
