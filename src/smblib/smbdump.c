@@ -76,18 +76,24 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 		fprintf(fp,"%-20.20s %s"	,"to"				,msg->to);
 		if(msg->to_ext)
 			fprintf(fp," #%s",msg->to_ext);
+		if(msg->to_net.type)
+			fprintf(fp," <%s>",smb_netaddr(&msg->to_net));
 		fprintf(fp,"\n");
 	}
 	if(msg->from) {
 		fprintf(fp,"%-20.20s %s"	,"from"				,msg->from);
 		if(msg->from_ext)
 			fprintf(fp," #%s",msg->from_ext);
+		if(msg->from_net.type)
+			fprintf(fp," <%s>",smb_netaddr(&msg->from_net));
 		fprintf(fp,"\n");
 	}
 	if(msg->replyto) {
 		fprintf(fp,"%-20.20s %s"	,"reply-to"			,msg->replyto);
 		if(msg->replyto_ext)
 			fprintf(fp," #%s",msg->replyto_ext);
+		if(msg->replyto_net.type)
+			fprintf(fp," <%s>",smb_netaddr(&msg->replyto_net));
 		fprintf(fp,"\n");
 	}
 	if(msg->summary)
