@@ -126,14 +126,8 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
 	memset(rb,0,sizeof(RingBuf));
 }
 
-/* Non-mutex-protected (standard pthread mutexes are non-recursive) */
-static DWORD ringbuf_full(RingBuf* rb)
-{
-	if(rb->pHead >= rb->pTail)
-		return(rb->pHead - rb->pTail);
-
-	return(rb->size - (rb->pTail - (rb->pHead + 1)));
-}
+#define RINGBUF_FILL_LEVEL(rb)	(rb->pHead >= rb->pTail ? (rb->pHead - rb->pTail) \
+								: (rb->size - (rb->pTail - (rb->pHead + 1))))
 
 DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
 {
@@ -143,7 +137,7 @@ DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
 	pthread_mutex_lock(&rb->mutex);
 #endif
 
-	retval = ringbuf_full(rb);
+	retval = RINGBUF_FILL_LEVEL(rb);
 
 #ifdef RINGBUF_EVENT
 	if(rb->empty_event!=NULL) {
@@ -213,7 +207,7 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 
 #ifdef RINGBUF_SEM
 	sem_post(&rb->sem);
-	if(rb->highwater_mark!=0 && ringbuf_full(rb)>=rb->highwater_mark)
+	if(rb->highwater_mark!=0 && RINGBUF_FILL_LEVEL(rb)>=rb->highwater_mark)
 		sem_post(&rb->highwater_sem);
 #endif
 #ifdef RINGBUF_EVENT
