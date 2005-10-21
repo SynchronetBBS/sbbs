@@ -127,8 +127,9 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
 		CloseEvent(rb->empty_event);
 #endif
 #ifdef RINGBUF_MUTEX
-	pthread_mutex_destroy(&rb->mutex);
-#endif
+	while(pthread_mutex_destroy(&rb->mutex)==-1 && errno==EBUSY)
+		SLEEP(1);
+#endi
 	memset(rb,0,sizeof(RingBuf));
 }
 
