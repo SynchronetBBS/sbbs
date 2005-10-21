@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -38,6 +38,10 @@
 #if defined(__unix__)
 	#include <unistd.h>	/* _POSIX_THREADS */
 	#include <sys/param.h>	/* BSD */
+#endif
+
+#if defined(_WIN32) && !defined(_WIN32_WINNT)
+	#define _WIN32_WINNT 0x0400	/* Needed for TryEnterCriticalSection */
 #endif
 
 #include "threadwrap.h"	/* DLLCALL */
@@ -94,3 +98,82 @@ ulong _beginthread(void( *start_address )( void * )
 #endif
 
 #endif	/* __unix__ */
+
+/****************************************************************************/
+/* Wrappers for POSIX thread (pthread) mutexes								*/
+/****************************************************************************/
+pthread_mutex_t pthread_mutex_initializer(void)
+{
+	pthread_mutex_t	mutex;
+
+	pthread_mutex_init(&mutex,NULL);
+
+	return(mutex);
+}
+
+#if !defined(_POSIX_THREADS)
+
+#if defined(__BORLANDC__)
+        #pragma argsused	/* attr arg not used */
+#endif
+int pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
+{
+#if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
+	return ((((*mutex)=CreateMutex(/* security */NULL, /* owned */FALSE, /* name */NULL))==NULL) ? -1 : 0);
+#elif defined(_WIN32)	/* Win32 Critical Section */
+	InitializeCriticalSection(mutex);
+	return 0;	/* No error */
+#elif defined(__OS2__)
+	return DosCreateMutexSem(/* name */NULL, mutex, /* attr */0, /* owned */0);
+#endif
+}
+
+int pthread_mutex_lock(pthread_mutex_t* mutex)
+{
+#if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
+	return (WaitForSingleObject(*mutex, INFINITE)==WAIT_OBJECT_0 ? 0 : EBUSY);
+#elif defined(_WIN32)	/* Win32 Critical Section */
+	EnterCriticalSection(mutex);
+	return 0;	/* No error */
+#elif defined(__OS2__)
+	return DosRequestMutexSem(*mutex, -1 /* SEM_INDEFINITE_WAIT */);
+#endif
+}
+
+int pthread_mutex_trylock(pthread_mutex_t* mutex)
+{
+#if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
+	return (WaitForSingleObject(*mutex, 0)==WAIT_OBJECT_0 ? 0 : EBUSY);
+#elif defined(_WIN32)	/* Win32 Critical Section */
+	/* TryEnterCriticalSection only available on NT4+ :-( */
+	return (TryEnterCriticalSection(mutex) ? 0 : EBUSY);
+#elif defined(__OS2__)
+	return DosRequestMutexSem(*mutex, 0 /* SEM_IMMEDIATE_RETURN */);
+#endif
+}
+
+int pthread_mutex_unlock(pthread_mutex_t* mutex)
+{
+#if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
+	return (ReleaseMutex(*mutex) ? 0 : GetLastError());
+#elif defined(_WIN32)	/* Win32 Critical Section */
+	LeaveCriticalSection(mutex);
+	return 0;	/* No error */
+#elif defined(__OS2__)
+	return DosReleaseMutexSem(*mutex);
+#endif
+}
+
+int pthread_mutex_destroy(pthread_mutex_t* mutex)
+{
+#if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
+	return (CloseHandle(*mutex) ? 0 : GetLastError());
+#elif defined(_WIN32)	/* Win32 Critical Section */
+	DeleteCriticalSection(mutex);
+	return 0;	/* No error */
+#elif defined(__OS2__)
+	return DosCloseMutexSem(*mutex);
+#endif
+}
+
+#endif	/* POSIX thread mutexes */

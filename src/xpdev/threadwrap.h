@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -67,37 +67,42 @@ extern "C" {
 	#define pthread_self()				GetCurrentThreadId()
 
 	/* POSIX mutexes */
-#if 1	/* Implemented as Win32 Critical Sections */
-	typedef CRITICAL_SECTION pthread_mutex_t;
-	#define pthread_mutex_init(pmtx,v)	InitializeCriticalSection(pmtx),0
-	#define pthread_mutex_lock(pmtx)	EnterCriticalSection(pmtx),0
-	#define pthread_mutex_unlock(pmtx)	LeaveCriticalSection(pmtx),0
-	#define	pthread_mutex_destroy(pmtx)	DeleteCriticalSection(pmtx),0
-	/* TryEnterCriticalSection only available on NT4+ :-( */
-	#define pthread_mutex_trylock(pmtx) (TryEnterCriticalSection(pmtx)?0:EBUSY)
+	#ifdef PTHREAD_MUTEX_AS_WIN32_MUTEX	/* Much slower/heavier than critical sections */
 
-#else	/* Implemented as Win32 Mutexes (much slower) */
-	typedef HANDLE pthread_mutex_t;
-	#define PTHREAD_MUTEX_INITIALIZER	CreateMutex(NULL,FALSE,NULL)
-	#define pthread_mutex_init(pmtx,v)	(*(pmtx)=CreateMutex(NULL,FALSE,NULL))==NULL?-1:0)
-	#define pthread_mutex_lock(pmtx)	(WaitForSingleObject(*(pmtx),INFINITE)==WAIT_OBJECT_0?0:EBUSY)
-	#define pthread_mutex_unlock(pmtx)	(ReleaseMutex(*(pmtx))?0:GetLastError())
-	#define	pthread_mutex_destroy(pmtx)	(CloseHandle(*(pmtx))?0:GetLastError())
-	#define pthread_mutex_trylock(pmtx) (WaitForSingleObject(*(pmtx),0)==WAIT_OBJECT_0?0:EBUSY)
-#endif
+		typedef HANDLE pthread_mutex_t;
 
-#elif defined(__OS2__)	/* These have *not* been tested! */
+	#else	/* Implemented as Win32 Critical Sections */
+
+		typedef CRITICAL_SECTION pthread_mutex_t;
+
+	#endif
+
+#elif defined(__OS2__)
 
 	/* POSIX mutexes */
 	typedef HEV pthread_mutex_t;
-	#define pthread_mutex_init(pmtx,v)	DosCreateMutexSem(NULL,pmtx,0,0)
-	#define pthread_mutex_lock(pmtx)	DosRequestMutexSem(*(psem),-1)
-	#define pthread_mutex_unlock(pmtx)	DosReleaseMutexSem(*(psem))
-	#define	pthread_mutex_destroy(pmtx)	DosCloseMutexSem(*(psem))
 
 #else
 
 	#error "Need thread wrappers."
+
+#endif
+
+/****************************************************************************/
+/* Wrappers for POSIX thread (pthread) mutexes								*/
+/****************************************************************************/
+
+pthread_mutex_t pthread_mutex_initializer(void);
+
+#if !defined(_POSIX_THREADS)
+
+int pthread_mutex_init(pthread_mutex_t*, void* attr);
+int pthread_mutex_lock(pthread_mutex_t*);
+int pthread_mutex_trylock(pthread_mutex_t*);
+int pthread_mutex_unlock(pthread_mutex_t*);
+int pthread_mutex_destroy(pthread_mutex_t*);
+
+#define PTHREAD_MUTEX_INITIALIZER	pthread_mutex_initializer()
 
 #endif
 
