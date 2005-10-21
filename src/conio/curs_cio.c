@@ -657,6 +657,8 @@ void curs_gotoxy(int x, int y)
 
 void call_endwin(void)
 {
+	clrscr();
+	refresh();
 	endwin();
 }
 

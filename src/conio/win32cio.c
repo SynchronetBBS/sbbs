@@ -383,9 +383,11 @@ int win32_getche(void)
 
 static DWORD	orig_in_conmode=0;
 static DWORD	orig_out_conmode=0;
+static void *	win32_suspendbuf=NULL;
 
 void win32_suspend(void)
 {
+	clrscr();
 	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_in_conmode);
 	SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), orig_out_conmode);
 }
