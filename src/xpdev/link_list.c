@@ -38,6 +38,7 @@
 #include <stdlib.h>		/* malloc */
 #include <string.h>		/* memset */
 #include "link_list.h"
+#include "genwrap.h"
 
 #if defined(LINK_LIST_THREADSAFE)
 	#define MUTEX_INIT(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_init((pthread_mutex_t*)&list->mutex,NULL);	}

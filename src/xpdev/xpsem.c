@@ -37,6 +37,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include "gen_defs.h"
+#include "genwrap.h"
 
 int
 xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
