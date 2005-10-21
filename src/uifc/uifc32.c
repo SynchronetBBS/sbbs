@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -527,6 +527,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 	if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1)
 		putch(7);
+	if(api->helpbuf!=NULL || api->helpixbfile[0]!=0) bline|=BL_HELP;
 	if(mode&WIN_INS) bline|=BL_INS;
 	if(mode&WIN_DEL) bline|=BL_DEL;
 	if(mode&WIN_GET) bline|=BL_GET;
@@ -2082,10 +2083,12 @@ void bottomline(int line)
 
 	uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"    ");
 	i+=4;
-	uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F1 ");
-	i+=3;
-	uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Help  ");
-	i+=6;
+	if(line&BL_HELP) {
+		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F1 ");
+		i+=3;
+		uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Help  ");
+		i+=6;
+	}
 	if(line&BL_EDIT) {
 		uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F2 ");
 		i+=3;
@@ -2553,11 +2556,16 @@ static void help(void)
 	long l;
 	FILE *fp;
 
+	if(api->helpbuf==NULL && api->helpixbfile[0]==0)
+		return;
+
 	_setcursortype(_NOCURSOR);
 
-	if(!api->helpbuf) {
+	if(api->helpbuf!=NULL)
+		strcpy(hbuf,api->helpbuf);
+	else {
 		if((fp=fopen(api->helpixbfile,"rb"))==NULL) {
-			sprintf(hbuf," ERROR  Cannot open help index:\r\n          %s"
+			sprintf(hbuf,"\2 ERROR \2 Cannot open help index:\r\n          %s"
 				,api->helpixbfile);
 		}
 		else {
@@ -2583,11 +2591,11 @@ static void help(void)
 			}
 			fclose(fp);
 			if(l==-1L)
-				sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\r\n"
+				sprintf(hbuf,"\2 ERROR \2 Cannot locate help key (%s:%u) in:\r\n"
 					"         %s",p,helpline,api->helpixbfile);
 			else {
 				if((fp=fopen(api->helpdatfile,"rb"))==NULL)
-					sprintf(hbuf," ERROR  Cannot open help file:\r\n          %s"
+					sprintf(hbuf,"\2 ERROR \2 Cannot open help file:\r\n          %s"
 						,api->helpdatfile);
 				else {
 					fseek(fp,l,SEEK_SET);
@@ -2597,8 +2605,6 @@ static void help(void)
 			}
 		}
 	}
-	else
-		strcpy(hbuf,api->helpbuf);
 
 	showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len, "Online Help", hbuf, NULL, NULL);
 }
