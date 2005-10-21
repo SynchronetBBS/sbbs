@@ -67,6 +67,8 @@ void	win32_settitle(const char *title);
 int	win32_initciolib(long inmode);
 void win32_copytext(const char *text, size_t buflen);
 char *win32_getcliptext(void);
+void	win32_suspend(void);
+void	win32_resume(void);
 
 #ifdef __cplusplus
 }

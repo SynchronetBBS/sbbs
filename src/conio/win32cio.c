@@ -381,6 +381,27 @@ int win32_getche(void)
 #define ENABLE_AUTO_POSITION	0x0100
 #endif
 
+static DWORD	orig_in_conmode=0;
+static DWORD	orig_out_conmode=0;
+
+void win32_suspend(void)
+{
+	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_in_conmode);
+	SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), orig_out_conmode);
+}
+
+void win32_resume(void)
+{
+        conmode=orig_in_conmode;
+        conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
+        conmode|=ENABLE_MOUSE_INPUT;
+        SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode);
+        conmode=orig_out_conmode;
+        conmode&=~ENABLE_PROCESSED_OUTPUT;
+        conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
+        SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode);
+}
+
 int win32_initciolib(long inmode)
 {
 	DWORD conmode;
@@ -392,15 +413,17 @@ int win32_initciolib(long inmode)
 			return(0);
 	}
 
-	if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
+	if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &orig_in_conmode))
 		return(0);
+	conmode=orig_in_conmode;
 	conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
 	conmode|=ENABLE_MOUSE_INPUT;
 	if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode))
 		return(0);
 
-	if(!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode))
+	if(!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &orig_out_conmode))
 		return(0);
+	conmode=orig_out_conmode;
 	conmode&=~ENABLE_PROCESSED_OUTPUT;
 	conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
 	if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode))

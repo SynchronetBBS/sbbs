@@ -105,7 +105,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_getpass(const char *prompt);
 CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 
-#define CIOLIB_INIT()		{ if(!initialized) initciolib(CIOLIB_MODE_AUTO); }
+#define CIOLIB_INIT()		{ if(initialized != 1) initciolib(CIOLIB_MODE_AUTO); }
 
 #ifdef WITH_SDL
 int try_sdl_init(int mode)
@@ -194,6 +194,8 @@ int try_curses_init(int mode)
 		cio_api.textmode=curs_textmode;
 		cio_api.showmouse=curs_showmouse;
 		cio_api.hidemouse=curs_hidemouse;
+		cio_api.suspend=curs_suspend;
+		cio_api.resume=curs_resume;
 		return(1);
 	}
 	return(0);
@@ -254,16 +256,33 @@ int try_conio_init(int mode)
 		cio_api.settitle=win32_settitle;
 		cio_api.copytext=win32_copytext;
 		cio_api.getcliptext=win32_getcliptext;
+		cio_api.suspend=win32_suspend;
+		cio_api.resume=win32_resume;
 		return(1);
 	}
 	return(0);
 }
 #endif
 
+CIOLIBEXPORT void CIOLIBCALL suspendciolib(void)
+{
+	if(cio_api.suspend != NULL)
+		cio_api.suspend();
+	initialized=-1;
+}
+
 CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 {
-	if(initialized)
-		return(0);
+	switch(initialized) {
+		case 1:
+			return(0);
+		case -1:
+			if(cio_api.resume != NULL)
+				cio_api.resume();
+			initialized=1;
+			return(0);
+	}
+
 	memset(&cio_api,0,sizeof(cio_api));
 
 	switch(mode) {

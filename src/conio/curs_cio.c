@@ -660,6 +660,16 @@ void call_endwin(void)
 	endwin();
 }
 
+void curs_suspend(void)
+{
+	refresh();
+}
+
+void curs_resume(void)
+{
+
+}
+
 int curs_initciolib(long inmode)
 {
 	short	fg, bg, pair=0;

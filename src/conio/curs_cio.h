@@ -68,6 +68,8 @@ int curs_getche(void);
 void curs_textmode(int mode);
 int curs_showmouse(void);
 int curs_hidemouse(void);
+void curs_suspend(void);
+void curs_resume(void);
 #ifdef __cplusplus
 }
 #endif

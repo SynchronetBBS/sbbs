@@ -239,6 +239,8 @@ typedef struct {
 	void	(*setname)		(const char *);
 	void	(*copytext)		(const char *, size_t);
 	char 	*(*getcliptext)	(void);
+	void	(*suspend)		(void);
+	void	(*resume)		(void);
 } cioapi_t;
 
 CIOLIBEXPORTVAR cioapi_t cio_api;
@@ -252,6 +254,7 @@ CIOLIBEXPORTVAR int hold_update;
 extern "C" {
 #endif
 CIOLIBEXPORT int CIOLIBCALL initciolib(int mode);
+CIOLIBEXPORT void CIOLIBCALL suspendciolib(void);
 
 CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str);
