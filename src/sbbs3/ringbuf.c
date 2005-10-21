@@ -109,12 +109,21 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
 
 void RINGBUFCALL RingBufDispose( RingBuf* rb)
 {
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_lock(&rb->mutex);
+#endif
     if(rb->pStart!=NULL)
 		os_free(rb->pStart);
 #ifdef RINGBUF_SEM
 	sem_post(&rb->sem);			/* just incase someone's waiting */
-	sem_destroy(&rb->sem);
-	sem_destroy(&rb->highwater_sem);
+	while(sem_destroy(&rb->sem)==-1 && errno!=EINVAL) {
+		SLEEP(1);
+		sem_post(&rb->sem);
+	}
+	while(sem_destroy(&rb->highwater_sem)==-1 && errno!=EINVAL) {
+		SLEEP(1);
+		sem_post(&rb->highwater_sem);
+	}
 #endif
 #ifdef RINGBUF_EVENT
 	if(rb->empty_event!=NULL)
