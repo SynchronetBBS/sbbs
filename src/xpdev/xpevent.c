@@ -38,6 +38,7 @@
 #include <stdio.h>		/* NULL */
 #include <stdlib.h>		/* malloc() */
 #include "xpevent.h"
+#include "genwrap.h"
 
 xpevent_t
 CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, void *name)

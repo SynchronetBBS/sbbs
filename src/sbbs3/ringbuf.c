@@ -46,6 +46,7 @@
 #endif
 
 #include "ringbuf.h"
+#include "genwrap.h"	/* SLEEP() */
 
 #ifdef RINGBUF_USE_STD_RTL
 
