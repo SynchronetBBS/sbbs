@@ -655,13 +655,6 @@ void curs_gotoxy(int x, int y)
 		refresh();
 }
 
-void call_endwin(void)
-{
-	clrscr();
-	refresh();
-	endwin();
-}
-
 void curs_suspend(void)
 {
 	refresh();
@@ -669,7 +662,7 @@ void curs_suspend(void)
 
 void curs_resume(void)
 {
-
+	endwin();
 }
 
 int curs_initciolib(long inmode)
