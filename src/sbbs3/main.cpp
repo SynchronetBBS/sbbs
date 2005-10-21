@@ -1484,7 +1484,7 @@ void output_thread(void* arg)
 		 */
 		if(bufbot == buftop) {
 			/* Wait for something to output in the RingBuffer */
-			sem_wait(&sbbs->outbuf.sem);
+			sem_trywait_block(&sbbs->outbuf.sem,1000);
 
 			/* Check for spurious sem post... */
 			if(!RingBufFull(&sbbs->outbuf))
