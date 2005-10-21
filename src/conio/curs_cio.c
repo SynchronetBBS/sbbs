@@ -694,7 +694,7 @@ int curs_initciolib(long inmode)
 	scrollok(stdscr,FALSE);
 	raw();
 	halfdelay(1);
-	atexit(call_endwin);
+	atexit(curs_suspend);
 
 	/* Set up color pairs */
 	for(bg=0;bg<8;bg++)  {
