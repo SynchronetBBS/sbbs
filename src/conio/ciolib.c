@@ -266,6 +266,7 @@ int try_conio_init(int mode)
 
 CIOLIBEXPORT void CIOLIBCALL suspendciolib(void)
 {
+	ciolib_clrscr();
 	if(cio_api.suspend != NULL)
 		cio_api.suspend();
 	initialized=-1;
@@ -279,6 +280,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 		case -1:
 			if(cio_api.resume != NULL)
 				cio_api.resume();
+			ciolib_clrscr();
 			initialized=1;
 			return(0);
 	}

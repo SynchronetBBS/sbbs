@@ -387,7 +387,6 @@ static void *	win32_suspendbuf=NULL;
 
 void win32_suspend(void)
 {
-	clrscr();
 	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_in_conmode);
 	SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), orig_out_conmode);
 }
