@@ -4575,7 +4575,7 @@ void DLLCALL mail_server(void* arg)
 		if(!sendmail_running) {
 			while(sem_destroy(&sendmail_wakeup_sem)==-1 && errno==EBUSY) {
 				mswait(1);
-				sem_post(sendmail_wakeup_sem);
+				sem_post(&sendmail_wakeup_sem);
 			}
 		}
 
