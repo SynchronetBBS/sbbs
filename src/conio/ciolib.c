@@ -32,7 +32,9 @@
  ****************************************************************************/
 
 /* Icon file! */
+#ifdef __BORLANDC__
 #pragma resource "ciolib.res"
+#endif
 
 #include <stdarg.h>
 #include <stdlib.h>	/* malloc */
