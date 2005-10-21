@@ -41,7 +41,7 @@
 
 #if defined(LINK_LIST_THREADSAFE)
 	#define MUTEX_INIT(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_init((pthread_mutex_t*)&list->mutex,NULL);	}
-	#define MUTEX_DESTROY(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_destroy((pthread_mutex_t*)&list->mutex);	}
+	#define MUTEX_DESTROY(list)	{ if(list->flags&LINK_LIST_MUTEX) { while(pthread_mutex_destroy((pthread_mutex_t*)&list->mutex)==EBUSY) SLEEP(1);}	}
 	#define MUTEX_LOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock((pthread_mutex_t*)&list->mutex);		}
 	#define MUTEX_UNLOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock((pthread_mutex_t*)&list->mutex);		}
 #else
@@ -127,7 +127,8 @@ BOOL listFree(link_list_t* list)
 
 #if defined(LINK_LIST_THREADSAFE)
 	if(list->flags&LINK_LIST_SEMAPHORE) {
-		sem_destroy(&list->sem);
+		while(sem_destroy(&list->sem)==-1 && errno==EBUSY)
+			SLEEP(1);
 		list->sem=NULL;
 	}
 #endif
