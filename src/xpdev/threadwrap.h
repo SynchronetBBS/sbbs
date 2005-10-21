@@ -49,6 +49,7 @@ extern "C" {
 
 	#include <sys/param.h>
 	#include <pthread.h>	/* POSIX threads and mutexes */
+	#include <unistd.h>	/* _POSIX_THREADS definition on FreeBSD (at least) */
 
 	/* Win32 thread API wrappers */
 	ulong _beginthread(void( *start_address )( void * )
