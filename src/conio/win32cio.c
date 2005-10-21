@@ -394,14 +394,15 @@ void win32_suspend(void)
 
 void win32_resume(void)
 {
-        conmode=orig_in_conmode;
-        conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
-        conmode|=ENABLE_MOUSE_INPUT;
-        SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode);
-        conmode=orig_out_conmode;
-        conmode&=~ENABLE_PROCESSED_OUTPUT;
-        conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
-        SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode);
+	DWORD conmode;
+    conmode=orig_in_conmode;
+    conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
+    conmode|=ENABLE_MOUSE_INPUT;
+    SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode);
+    conmode=orig_out_conmode;
+    conmode&=~ENABLE_PROCESSED_OUTPUT;
+    conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
+    SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode);
 }
 
 int win32_initciolib(long inmode)
