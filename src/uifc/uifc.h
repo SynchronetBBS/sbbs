@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -74,12 +74,6 @@
 	#endif
 #endif
 
-#ifdef __DPMI32__
-	#define INT_86(i,j,k) int386(i,j,k)
-#else
-	#define INT_86(i,j,k) int86(i,j,k)
-#endif
-
 #define MAX_OPTS	10000
 #define MSK_ON		0xf0000000
 #define MSK_OFF 	0x0fffffff
@@ -99,7 +93,9 @@
 #define uint unsigned int
 #endif
 
+							/**************************/
                             /* Bits in uifcapi_t.mode */
+							/**************************/
 #define UIFC_INMSG	(1<<0)	/* Currently in Message Routine non-recursive */
 #define UIFC_MOUSE	(1<<1)	/* Mouse installed and available */
 #define UIFC_MONO	(1<<2)	/* Force monochrome mode */
@@ -107,8 +103,10 @@
 #define UIFC_IBM	(1<<4)	/* Force use of IBM charset	*/
 #define UIFC_NOCTRL	(1<<5)	/* Don't allow useage of CTRL keys for movement 
 							 * etc in menus (Still available in text boxes) */
-                            /* Bits in uifcapi_t.list mode */
 
+							/*******************************/
+                            /* Bits in uifcapi_t.list mode */
+							/*******************************/
 #define WIN_ORG 	(1<<0)	/* Original menu - destroy valid screen area */
 #define WIN_SAV 	(1<<1)	/* Save existing text and replace when finished */
 #define WIN_ACT 	(1<<2)	/* Menu remains active after a selection */
@@ -251,11 +249,6 @@ typedef struct {
     uchar   *buf;
 } win_t;
 
-#if defined(__OS2__)
-void mswait(int msecs);
-extern mswtyp;
-#endif
-
 typedef struct {
 /****************************************************************************/
 /* Size of the structure (for version compatibility verification).			*/
@@ -378,28 +371,31 @@ typedef struct {
 /****************************************************************************/
 /* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-	void (*showbuf)(int mode, int left, int top, int width, int height, char *title, char *hbuf, int *curp, int *barp);
+	void	(*showbuf)(int mode, int left, int top, int width, int height
+							,char *title, char *hbuf, int *curp, int *barp);
 
 /****************************************************************************/
 /* Updates time in upper left corner of screen with current time in ASCII/  */
 /* Unix format																*/
 /****************************************************************************/
-	void (*timedisplay)(BOOL force);
+	void	(*timedisplay)(BOOL force);
 
 /****************************************************************************/
 /* Displays the bottom line using the BL_* macros							*/
 /****************************************************************************/
-    void (*bottomline)(int line);
+    void	(*bottomline)(int line);
 
 /****************************************************************************/
 /* String input/exit box at a specified position							*/
 /****************************************************************************/
-	int (*getstrxy)(int left, int top, int width, char *outstr, int max, long mode, int *lastkey);
+	int		(*getstrxy)(int left, int top, int width, char *outstr, int max
+							,long mode, int *lastkey);
 
 /****************************************************************************/
 /* Formatted print with attribute											*/
 /****************************************************************************/
-	int (*printf)(int x, int y, unsigned char attr, char *fmat, ...);
+	int		(*printf)(int x, int y, unsigned char attr, char *fmat, ...);
+
 } uifcapi_t;
 
 /****************************************************************************/
