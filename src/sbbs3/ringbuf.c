@@ -109,9 +109,6 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
 
 void RINGBUFCALL RingBufDispose( RingBuf* rb)
 {
-#ifdef RINGBUF_MUTEX
-	pthread_mutex_lock(&rb->mutex);
-#endif
     if(rb->pStart!=NULL)
 		os_free(rb->pStart);
 #ifdef RINGBUF_SEM
