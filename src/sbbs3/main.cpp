@@ -1436,7 +1436,8 @@ void input_thread(void *arg)
 	if(node_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)	// Shutdown locally
 		sbbs->terminated = true;	// Signal JS to stop execution
 
-	pthread_mutex_destroy(&sbbs->input_thread_mutex);
+	while(pthread_mutex_destroy(&sbbs->input_thread_mutex)==EBUSY)
+		mswait(1);
 
 	thread_down();
 	lprintf(LOG_DEBUG,"Node %d input thread terminated (received %lu bytes in %lu blocks)"
