@@ -113,11 +113,11 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
 		os_free(rb->pStart);
 #ifdef RINGBUF_SEM
 	sem_post(&rb->sem);			/* just incase someone's waiting */
-	while(sem_destroy(&rb->sem)==-1 && errno!=EINVAL) {
+	while(sem_destroy(&rb->sem)==-1 && errno==EBUSY) {
 		SLEEP(1);
 		sem_post(&rb->sem);
 	}
-	while(sem_destroy(&rb->highwater_sem)==-1 && errno!=EINVAL) {
+	while(sem_destroy(&rb->highwater_sem)==-1 && errno==EBUSY) {
 		SLEEP(1);
 		sem_post(&rb->highwater_sem);
 	}
