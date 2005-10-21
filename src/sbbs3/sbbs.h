@@ -1027,6 +1027,9 @@ extern "C" {
 	/* js_bbs.cpp */
 	JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent);
 
+	/* js_uifc.c */
+	JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent);
+
 #endif
 
 /* str_util.c */

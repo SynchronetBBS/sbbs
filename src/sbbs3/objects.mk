@@ -221,7 +221,8 @@ MAKEUSER_OBJS = \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE)
 
 JSEXEC_OBJS = \
-			$(OBJODIR)$(DIRSEP)jsexec$(OFILE)
+			$(OBJODIR)$(DIRSEP)jsexec$(OFILE) \
+			$(OBJODIR)$(DIRSEP)js_uifc$(OFILE)
 
 SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \
