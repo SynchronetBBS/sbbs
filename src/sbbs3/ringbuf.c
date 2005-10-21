@@ -227,13 +227,11 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 {
 	DWORD max, first, remain, len;
 
-	len = RingBufFull( rb );
-	if( len == 0 )
-		return(0);
-
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_lock(&rb->mutex);
 #endif
+
+	len = RINGBUF_FILL_LEVEL(rb);
 
 	if( len < cnt )
         cnt = len;
@@ -249,7 +247,7 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 		remain = cnt - first;
 	}
 
-    if(dst!=NULL) {
+    if(first && dst!=NULL) {
 		rb_memcpy( dst, rb->pTail, first );
 		dst += first;
     }
@@ -267,14 +265,14 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 		rb->pTail = rb->pStart;
 
 #ifdef RINGBUF_SEM		/* clear/signal semaphores, if appropriate */
-	if(len-cnt==0)		/* empty */
+	if(RINGBUF_FILL_LEVEL(rb) == 0)		/* empty */
 		sem_reset(&rb->sem);
-	if(len-cnt<rb->highwater_mark)
+	if(RINGBUF_FILL_LEVEL(rb) < rb->highwater_mark)
 		sem_reset(&rb->highwater_sem);
 #endif
 
 #ifdef RINGBUF_EVENT
-	if(rb->empty_event!=NULL && len-cnt==0)
+	if(rb->empty_event!=NULL && RINGBUF_FILL_LEVEL(rb)==0)
 		SetEvent(rb->empty_event);
 #endif
 
