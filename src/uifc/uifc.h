@@ -171,13 +171,8 @@
 #define BL_DEL      (1<<1)  /* DEL key */
 #define BL_GET      (1<<2)  /* Get key */
 #define BL_PUT      (1<<3)  /* Put key */
-
-#define BL_INS      (1<<0)  /* INS key */
-#define BL_DEL      (1<<1)  /* DEL key */
-#define BL_GET      (1<<2)  /* Get key */
-#define BL_PUT      (1<<3)  /* Put key */
 #define BL_EDIT     (1<<4)  /* Edit key */
-
+#define BL_HELP     (1<<5)  /* Help key */
 
 #define HELPBUF_SIZE 4000
 
