@@ -260,6 +260,8 @@ int try_conio_init(int mode)
 
 CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 {
+	if(initialized)
+		return(0);
 	memset(&cio_api,0,sizeof(cio_api));
 
 	switch(mode) {
