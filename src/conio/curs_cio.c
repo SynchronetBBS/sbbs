@@ -657,12 +657,12 @@ void curs_gotoxy(int x, int y)
 
 void curs_suspend(void)
 {
-	refresh();
+	endwin();
 }
 
 void curs_resume(void)
 {
-	endwin();
+	refresh();
 }
 
 int curs_initciolib(long inmode)
