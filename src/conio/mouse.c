@@ -263,8 +263,10 @@ void ciolib_mouse_thread(void *data)
 			struct in_mouse_event *in;
 
 			in=listShiftNode(&state.input);
-			if(in==NULL)
-					continue;
+			if(in==NULL) {
+				YIELD();
+				continue;
+			}
 			but=CIOLIB_BUTTON_NUMBER(in->event);
 			switch(CIOLIB_BUTTON_BASE(in->event)) {
 				case CIOLIB_MOUSE_MOVE:
