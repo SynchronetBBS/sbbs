@@ -715,6 +715,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 		buf[i++]=ti.attribute;
 	}
 	ciolib_puttext(ti.winleft,ti.wintop,ti.winright,ti.winbottom,buf);
+	ciolib_gotoxy(1,1);
 	free(buf);
 }
 
