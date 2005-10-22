@@ -535,7 +535,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_EDIT) bline|=BL_EDIT;
 	if(api->bottomline != NULL)
 		api->bottomline(bline);
-	while(opts<MAX_OPTS)
+	while(option!=NULL && opts<MAX_OPTS)
 		if(option[opts]==NULL || option[opts][0]==0)
 			break;
 		else opts++;
