@@ -66,48 +66,50 @@ const UIFC_IBM		= (1<<4)	/* Force use of IBM charset	*/
 const UIFC_NOCTRL	= (1<<5)	/* Don't allow useage of CTRL keys for movement 
 								 *	 etc in menus (Still available in text boxes) */
 
-							/*******************************/
-                            /* Bits in uifcapi_t.list mode */
-							/*******************************/
-const WIN_ORG 		= (1<<0)  /* Original menu - destroy valid screen area */
-const WIN_SAV 		= (1<<1)  /* Save existing text and replace when finished */
-const WIN_ACT 		= (1<<2)  /* Menu remains active after a selection */
-const WIN_L2R 		= (1<<3)  /* Center the window based on 'width'   */
-const WIN_T2B 		= (1<<4)  /* Center the window based on 'height'  */
-const WIN_INS 		= (1<<5)  /* Allows user to user insert key */
-const WIN_INSACT	= (1<<6)  /* Remains active after insert key */
-const WIN_DEL 		= (1<<7)  /* Allows user to use delete key */
-const WIN_DELACT	= (1<<8)  /* Remains active after delete key */
-const WIN_ESC 		= (1<<9)  /* Screen is active when escape is hit			 */
-const WIN_RHT 		= (1<<10) /* Place window against right side of screen */
-const WIN_BOT 		= (1<<11) /* Place window against botton of screen */
-const WIN_GET 		= (1<<12) /* Allows F5 to Get a menu item */
-const WIN_PUT 		= (1<<13) /* Allows F6 to Put a menu item */
-const WIN_CHE 		= (1<<14) /* Stay active after escape if changes */
-const WIN_XTR 		= (1<<15) /* Add extra line at end for inserting at end */
-const WIN_DYN 		= (1<<16) /* Dynamic window - return at least every second */
-const WIN_HLP 		= (1<<17) /* Parse 'Help codes' */
-const WIN_PACK 		= (1<<18) /* Pack text in window (No padding) */
-const WIN_IMM 		= (1<<19) /* Draw window and return immediately */
-const WIN_FAT		= (1<<20) /* Do not pad outside borders */
-const WIN_REDRAW	= (1<<21) /* Force redraw on dynamic window */
-const WIN_NODRAW	= (1<<22) /* Force not to redraw on dynamic window */
-const WIN_EXTKEYS	= (1<<23) /* Return on any keypress... if it's not handled internally
-							   * Return value is -2 - keyvalue */
-const WIN_NOBRDR	= (1<<24) /* Do not draw a border around the window */
-const WIN_FIXEDHEIGHT= (1<<25)/* Use list_height from uifc struct */
-const WIN_UNGETMOUSE= (1<<26) /* If the mouse is clicked outside the window, */
-							  /* Put the mouse event back into the event queue */
-const WIN_EDIT		= (1<<27) /* Allow F2 to edit a menu item */
-const WIN_EDITACT	= (1<<28) /* Remain active after edit key */
+								/*******************************/
+								/* Bits in uifcapi_t.list mode */
+								/*******************************/
+const WIN_ORG 		= (1<<0)	/* Original menu - destroy valid screen area */
+const WIN_SAV 		= (1<<1)	/* Save existing text and replace when finished */
+const WIN_ACT 		= (1<<2)	/* Menu remains active after a selection */
+const WIN_L2R 		= (1<<3)	/* Center the window based on 'width'   */
+const WIN_T2B 		= (1<<4)	/* Center the window based on 'height'  */
+const WIN_INS 		= (1<<5)	/* Allows user to user insert key */
+const WIN_INSACT	= (1<<6)	/* Remains active after insert key */
+const WIN_DEL 		= (1<<7)	/* Allows user to use delete key */
+const WIN_DELACT	= (1<<8)	/* Remains active after delete key */
+const WIN_ESC 		= (1<<9)	/* Screen is active when escape is hit			 */
+const WIN_RHT 		= (1<<10)	/* Place window against right side of screen */
+const WIN_BOT 		= (1<<11)	/* Place window against botton of screen */
+const WIN_GET 		= (1<<12)	/* Allows F5 to Get a menu item */
+const WIN_PUT 		= (1<<13)	/* Allows F6 to Put a menu item */
+const WIN_CHE 		= (1<<14)	/* Stay active after escape if changes */
+const WIN_XTR 		= (1<<15)	/* Add extra line at end for inserting at end */
+const WIN_DYN 		= (1<<16)	/* Dynamic window - return at least every second */
+const WIN_HLP 		= (1<<17)	/* Parse 'Help codes' */
+const WIN_PACK 		= (1<<18)	/* Pack text in window (No padding) */
+const WIN_IMM 		= (1<<19)	/* Draw window and return immediately */
+const WIN_FAT		= (1<<20)	/* Do not pad outside borders */
+const WIN_REDRAW	= (1<<21)	/* Force redraw on dynamic window */
+const WIN_NODRAW	= (1<<22)	/* Force not to redraw on dynamic window */
+const WIN_EXTKEYS	= (1<<23)	/* Return on any keypress... if it's not handled internally
+								 * Return value is -2 - keyvalue */
+const WIN_NOBRDR	= (1<<24)	/* Do not draw a border around the window */
+const WIN_FIXEDHEIGHT= (1<<25)	/* Use list_height from uifc struct */
+const WIN_UNGETMOUSE= (1<<26)	/* If the mouse is clicked outside the window, */
+								/* Put the mouse event back into the event queue */
+const WIN_EDIT		= (1<<27)	/* Allow F2 to edit a menu item */
+const WIN_EDITACT	= (1<<28)	/* Remain active after edit key */
 
 const WIN_MID		= WIN_L2R|WIN_T2B /* Place window in middle of screen */
 
 const SCRN_TOP		= 3
 const SCRN_LEFT		= 5
 
-								/* Additional kmode constants */
-
+								/********************************************/
+								/* Additional kmode constants				*/
+								/* load('sbbsdefs.js') for the others		*/
+								/********************************************/
 const K_SCANNING	= (1<<11)	/* UPC Scanner is active... return on '%'	*/
 const K_TABEXIT		= (1<<12)	/* Return on TAB or BACKTAB			    	*/
 const K_DECIMAL		= (1<<13)	/* Allow floating point numbers only		*/
@@ -116,3 +118,4 @@ const K_DEUCEEXIT	= (1<<14)	/* Return whenever Deuce wants to exit		*/
 const K_MOUSEEXIT	= (1<<15)	/* Returns when mouse is clicked outside of */
 								/* Input area (NOT outside of window!)		*/
 								/* And ungets the mouse event.				*/
+								/********************************************/
