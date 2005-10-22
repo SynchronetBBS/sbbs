@@ -340,7 +340,7 @@ js_uifc_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_uifc_list(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		title="Title";
+	char*		title=NULL;
 	int32		left=0;
 	int32		top=0;
 	int32		width=0;
