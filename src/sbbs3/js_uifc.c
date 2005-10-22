@@ -341,12 +341,12 @@ static JSBool
 js_uifc_list(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		title="Title";
-	int			left=0;
-	int			top=0;
-	int			width=0;
-	int			dflt=0;
-	int			bar=0;
-	long		mode=0;
+	int32		left=0;
+	int32		top=0;
+	int32		width=0;
+	int32		dflt=0;
+	int32		bar=0;
+	int32		mode=0;
 	JSObject*	objarg;
 	uifcapi_t*	uifc;
 	uintN		argn=0;
