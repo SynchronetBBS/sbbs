@@ -66,7 +66,7 @@ static win_t sav[MAX_BUFS];
 static uifcapi_t* api;
 
 /* Prototypes */
-static int   uprintf(int x, int y, unsigned char attr, char *fmt,...);
+static int   uprintf(int x, int y, unsigned attr, char *fmt,...);
 static void  bottomline(int line);
 static char  *utimestr(time_t *intime);
 static void  help(void);
@@ -146,7 +146,7 @@ int inkey(void)
 
 int uifcini32(uifcapi_t* uifcapi)
 {
-	int 	i;
+	unsigned	i;
 	struct	text_info txtinfo;
 
     if(uifcapi==NULL || uifcapi->size!=sizeof(uifcapi_t))
@@ -498,7 +498,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int vbrdrsize=4;
 	int tbrdrwidth=3;
 	int bbrdrwidth=1;
-	uint title_len;
+	int title_len;
 	struct mouse_event mevnt;
 	char	*title=NULL;
 	int	a,b,c,longopt;
@@ -641,7 +641,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(mode&WIN_ORG) { /* Clear around menu */
 			if(top)
 				puttext(1,2,api->scrn_width,s_top+top-1,blk_scrn);
-			if(s_top+height+top<=api->scrn_len)
+			if((unsigned)(s_top+height+top)<=api->scrn_len)
 				puttext(1,s_top+height+top,api->scrn_width,api->scrn_len,blk_scrn);
 			if(left)
 				puttext(1,s_top+top,s_left+left-1,s_top+height+top
@@ -1387,7 +1387,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						}
 						if(a==1 && !s)
 							break;
-						if(strlen(option[j])>b
+						if(strlen(option[j])>(size_t)b
 							&& ((!a && s && !strnicmp(option[j]+b,search,s+1))
 							|| ((a || !s) && toupper(option[j][b])==toupper(i)))) {
 							if(a) s=0;
@@ -1768,7 +1768,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		textattr(api->lbclr);
 		getstrupd(left, top, width, outstr, i, &soffset);
 		textattr(api->lclr|(api->bclr<<4));
-		if(strlen(outstr)<width) {
+		if(strlen(outstr)<(size_t)width) {
 			k=wherex();
 			f=wherey();
 			cprintf("%*s",width-strlen(outstr),"");
@@ -2056,7 +2056,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 /****************************************************************************/
 /* Performs printf() through puttext() routine								*/
 /****************************************************************************/
-static int uprintf(int x, int y, unsigned char attr, char *fmat, ...)
+static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 {
 	va_list argptr;
 	char str[256],buf[512];
@@ -2293,11 +2293,11 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(api->mode&UIFC_MOUSE)
 		title_len+=6;
 
-	if(top+height>api->scrn_len-3)
+	if((unsigned)(top+height)>api->scrn_len-3)
 		height=(api->scrn_len-3)-top;
-	if(!width || width<title_len+6)
+	if(!width || (unsigned)width<title_len+6)
 		width=title_len+6;
-	if(width>api->scrn_width)
+	if((unsigned)width>api->scrn_width)
 		width=api->scrn_width;
 	if(mode&WIN_L2R)
 		left=(api->scrn_width-width+2)/2;

@@ -240,8 +240,8 @@ enum {
 #endif
 
 typedef struct {
-	uint    left,top,right,bot;
-    uchar   *buf;
+	int		left,top,right,bot;
+    uchar*	buf;
 } win_t;
 
 typedef struct {
@@ -302,7 +302,7 @@ typedef struct {
 /****************************************************************************/
 /* Colours for the various bits												*/
 /****************************************************************************/
-	char	hclr,lclr,bclr,cclr,lbclr;
+	uchar	hclr,lclr,bclr,cclr,lbclr;
 
 /****************************************************************************/
 /* Exit/uninitialize function.												*/
@@ -389,7 +389,7 @@ typedef struct {
 /****************************************************************************/
 /* Formatted print with attribute											*/
 /****************************************************************************/
-	int		(*printf)(int x, int y, unsigned char attr, char *fmat, ...);
+	int		(*printf)(int x, int y, unsigned attr, char *fmat, ...);
 
 } uifcapi_t;
 
