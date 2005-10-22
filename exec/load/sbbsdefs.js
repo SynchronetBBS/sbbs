@@ -1,6 +1,6 @@
 /* sbbsdefs.js */
 
-/* Synchronet Object Model var  ants definitions - (mostly bit-fields) */
+/* Synchronet Object Model constants definitions - (mostly bit-fields) */
 
 /* $Id$ */
 
