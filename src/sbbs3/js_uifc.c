@@ -244,7 +244,6 @@ js_uifc_bail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	uifc->bail();
-	clrscr();
 	return(JS_TRUE);
 }
 
