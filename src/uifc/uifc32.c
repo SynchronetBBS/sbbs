@@ -558,6 +558,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				width=j;
 		}
 	}
+	if(!(mode&WIN_NOBRDR) && api->mode&UIFC_MOUSE && bline&BL_HELP && width<8)
+		width=8;
 	if(width>(s_right+1)-s_left) {
 		width=(s_right+1)-s_left;
 		if(title_len>(width-hbrdrsize-2)) {
@@ -663,13 +665,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				*(ptr++)=api->lclr|(api->bclr<<4);
 				*(ptr++)=']';
 				*(ptr++)=api->hclr|(api->bclr<<4);
-				*(ptr++)='[';
-				*(ptr++)=api->hclr|(api->bclr<<4);
-				*(ptr++)='?';
-				*(ptr++)=api->lclr|(api->bclr<<4);
-				*(ptr++)=']';
-				*(ptr++)=api->hclr|(api->bclr<<4);
-				i=6;
+				i=3;
+				if(bline&BL_HELP) {
+					*(ptr++)='[';
+					*(ptr++)=api->hclr|(api->bclr<<4);
+					*(ptr++)='?';
+					*(ptr++)=api->lclr|(api->bclr<<4);
+					*(ptr++)=']';
+					*(ptr++)=api->hclr|(api->bclr<<4);
+					i+=3;
+				}
 				api->buttony=s_top+top;
 				api->exitstart=s_left+left+1;
 				api->exitend=s_left+left+3;
@@ -1537,6 +1542,7 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 	int height=3;
 	int i,plen,slen,j;
 	int	iwidth;
+	int l;
 	char *prompt;
 	int s_top=SCRN_TOP;
 	int s_left=SCRN_LEFT;
@@ -1567,8 +1573,8 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 		height=1;
 	}
 
-	plen=strlen(inprompt);
-	prompt=strdup(inprompt);
+	prompt=strdup(inprompt==NULL ? "":inprompt);
+	plen=strlen(prompt);
 	if(!plen)
 		slen=2+hbrdrsize;
 	else
@@ -1608,24 +1614,29 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 			in_win[i++]=api->hclr|(api->bclr<<4);
 		}
 		if(api->mode&UIFC_MOUSE && width>6) {
-			in_win[2]='[';
-			in_win[3]=api->hclr|(api->bclr<<4);
+			j=2;
+			in_win[j++]='[';
+			in_win[j++]=api->hclr|(api->bclr<<4);
 			/* in_win[4]='þ'; */
-			in_win[4]=0xfe;
-			in_win[5]=api->lclr|(api->bclr<<4);
-			in_win[6]=']';
-			in_win[7]=api->hclr|(api->bclr<<4);
-			in_win[8]='[';
-			in_win[9]=api->hclr|(api->bclr<<4);
-			in_win[10]='?';
-			in_win[11]=api->lclr|(api->bclr<<4);
-			in_win[12]=']';
-			in_win[13]=api->hclr|(api->bclr<<4);
+			in_win[j++]=0xfe;
+			in_win[j++]=api->lclr|(api->bclr<<4);
+			in_win[j++]=']';
+			in_win[j++]=api->hclr|(api->bclr<<4);
+			l=3;
+			if(api->helpbuf!=NULL || api->helpixbfile[0]!=0) {
+				in_win[j++]='[';
+				in_win[j++]=api->hclr|(api->bclr<<4);
+				in_win[j++]='?';
+				in_win[j++]=api->lclr|(api->bclr<<4);
+				in_win[j++]=']';
+				in_win[j++]=api->hclr|(api->bclr<<4);
+				l+=3;
+			}
 			api->buttony=s_top+top;
 			api->exitstart=s_left+left+1;
 			api->exitend=s_left+left+3;
 			api->helpstart=s_left+left+4;
-			api->helpend=s_left+left+6;
+			api->helpend=s_left+left+l;
 		}
 
 		in_win[i++]='»';
