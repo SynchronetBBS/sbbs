@@ -248,7 +248,11 @@ int win32_keyboardio(int isgetch)
 {
 	INPUT_RECORD input;
 	DWORD num=0;
+	HANDLE h;
 	static WORD lastch;
+
+	if((h=GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE)
+		return(0);
 
 	while(1) {
 		if(lastch) {
@@ -263,7 +267,7 @@ int win32_keyboardio(int isgetch)
 		}
 
 		while(1) {
-			GetNumberOfConsoleInputEvents(GetStdHandle(STD_INPUT_HANDLE), &num);
+			GetNumberOfConsoleInputEvents(h, &num);
 			if(num)
 				break;
 			if(mouse_trywait()) {
@@ -279,7 +283,7 @@ int win32_keyboardio(int isgetch)
 		if(lastch)
 			continue;
 
-		if(!ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
+		if(!ReadConsoleInput(h, &input, 1, &num)
 				|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT))
 			continue;
 
@@ -387,27 +391,37 @@ static void *	win32_suspendbuf=NULL;
 
 void win32_suspend(void)
 {
-	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_in_conmode);
-	SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), orig_out_conmode);
+	HANDLE h;
+
+	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		SetConsoleMode(h, orig_in_conmode);
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		SetConsoleMode(h, orig_out_conmode);
 }
 
 void win32_resume(void)
 {
-	DWORD conmode;
+	DWORD	conmode;
+	HANDLE	h;
+
     conmode=orig_in_conmode;
     conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
     conmode|=ENABLE_MOUSE_INPUT;
-    SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode);
+	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		SetConsoleMode(h, conmode);
+
     conmode=orig_out_conmode;
     conmode&=~ENABLE_PROCESSED_OUTPUT;
     conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
-    SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode);
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		SetConsoleMode(h, conmode);
 }
 
 int win32_initciolib(long inmode)
 {
-	DWORD conmode;
-	int	i,j;
+	DWORD	conmode;
+	int		i,j;
+	HANDLE	h;
 	CONSOLE_SCREEN_BUFFER_INFO	sbuff;
 
 	if(!isatty(fileno(stdin))) {
@@ -415,23 +429,25 @@ int win32_initciolib(long inmode)
 			return(0);
 	}
 
-	if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &orig_in_conmode))
+	if((h=GetStdHandle(STD_INPUT_HANDLE))==INVALID_HANDLE_VALUE
+		|| !GetConsoleMode(h, &orig_in_conmode))
 		return(0);
 	conmode=orig_in_conmode;
 	conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
 	conmode|=ENABLE_MOUSE_INPUT;
-	if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode))
+	if(!SetConsoleMode(h, conmode))
 		return(0);
 
-	if(!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &orig_out_conmode))
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE))==INVALID_HANDLE_VALUE
+		|| !GetConsoleMode(h, &orig_out_conmode))
 		return(0);
 	conmode=orig_out_conmode;
 	conmode&=~ENABLE_PROCESSED_OUTPUT;
 	conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
-	if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode))
+	if(!SetConsoleMode(h, conmode))
 		return(0);
 
-	if(GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &sbuff)==0) {
+	if(GetConsoleScreenBufferInfo(h, &sbuff)==0) {
 		win32_textmode(C80);
 	}
 	else {
@@ -490,7 +506,8 @@ int win32_showmouse(void)
 
 void win32_textmode(int mode)
 {
-	int i;
+	int		i;
+	HANDLE	h;
 	COORD	sz;
 	SMALL_RECT	rc;
 
@@ -504,9 +521,12 @@ void win32_textmode(int mode)
 	rc.Right=vparams[modeidx].cols-1;
 	rc.Top=0;
 	rc.Bottom=vparams[modeidx].rows-1;
-	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
-	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE),TRUE,&rc);
-	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
+
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE) {
+		SetConsoleScreenBufferSize(h,sz);
+		SetConsoleWindowInfo(h,TRUE,&rc);
+		SetConsoleScreenBufferSize(h,sz);
+	}
 }
 
 int win32_gettext(int left, int top, int right, int bottom, void* buf)
@@ -516,6 +536,7 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 	int	y;
 	COORD	bs;
 	COORD	bc;
+	HANDLE	h;
 	SMALL_RECT	reg;
 	unsigned char	*bu;
 
@@ -529,7 +550,8 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 	reg.Top=top-1;
 	reg.Bottom=bottom-1;
 	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
-	ReadConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE),ci,bs,bc,&reg);
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		ReadConsoleOutput(h,ci,bs,bc,&reg);
 	for(y=0;y<=(bottom-top);y++) {
 		for(x=0;x<=(right-left);x++) {
 			bu[((y*bs.X)+x)*2]=ci[(y*bs.X)+x].Char.AsciiChar;
@@ -553,13 +575,14 @@ void win32_gettextinfo(struct text_info* info)
 void win32_gotoxy(int x, int y)
 {
 	COORD	cp;
+	HANDLE	h;
 
 	xpos=x;
 	ypos=y;
 	cp.X=x-1;
 	cp.Y=y-1;
-	if(!hold_update)
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),cp);
+	if(!hold_update && (h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		SetConsoleCursorPosition(h,cp);
 }
 
 void win32_highvideo(void)
@@ -584,6 +607,7 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	CHAR_INFO *ci;
 	int	x;
 	int	y;
+	HANDLE	h;
 	COORD	bs;
 	COORD	bc;
 	SMALL_RECT	reg;
@@ -605,7 +629,8 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 			ci[(y*bs.X)+x].Attributes=DOStoWinAttr(bu[(((y*bs.X)+x)*2)+1]);
 		}
 	}
-	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE),ci,bs,bc,&reg);
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		WriteConsoleOutput(h,ci,bs,bc,&reg);
 	free(ci);
 	return 1;
 }
@@ -630,6 +655,7 @@ void win32_textcolor(int newcolor)
 
 void win32_setcursortype(int type)
 {
+	HANDLE h;
 	CONSOLE_CURSOR_INFO	ci;
 
 	switch(type) {
@@ -648,7 +674,8 @@ void win32_setcursortype(int type)
 			ci.dwSize=13;
 			break;
 	}
-	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE),&ci);
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		SetConsoleCursorInfo(h,&ci);
 }
 
 int win32_wherex(void)
