@@ -106,6 +106,7 @@ static char *apszEnvVarNames[] =
    "PCB",
    "BBS",
    "WCNODEID",
+   "SBBSNODE",
 };
 #define NUM_DIR_ENV_VARS DIM(apszEnvVarNames)
 
