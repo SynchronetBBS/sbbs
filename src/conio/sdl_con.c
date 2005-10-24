@@ -900,15 +900,21 @@ int sdl_load_font(char *filename)
 	if(sdl_font!=NULL)
 		SDL_FreeSurface(sdl_font);
 	sdl_font=SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
-	for(ch=0; ch<256; ch++) {
-		for(charrow=0; charrow<vstat.charheight; charrow++) {
-			for(charcol=0; charcol<vstat.charheight; charcol++) {
-				if(font[(ch*vstat.charheight+charrow)*fw+(charcol/8)] & (1<<(charcol%8))) {
-					r.x=charcol*vstat.scaling;
-					r.y=(ch*vstat.charheight+charrow)*vstat.scaling;
-					r.w=vstat.scaling;
-					r.h=vstat.scaling;
-					SDL_FillRect(sdl_font, &r, 1);
+	if(sdl_font == NULL) {
+		SDL_mutexV(sdl_vstatlock);
+    	return(-1);
+	}
+	else {
+		for(ch=0; ch<256; ch++) {
+			for(charrow=0; charrow<vstat.charheight; charrow++) {
+				for(charcol=0; charcol<vstat.charheight; charcol++) {
+					if(font[(ch*vstat.charheight+charrow)*fw+(charcol/8)] & (1<<(charcol%8))) {
+						r.x=charcol*vstat.scaling;
+						r.y=(ch*vstat.charheight+charrow)*vstat.scaling;
+						r.w=vstat.scaling;
+						r.h=vstat.scaling;
+						SDL_FillRect(sdl_font, &r, 1);
+					}
 				}
 			}
 		}
@@ -1002,7 +1008,8 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y, struct
 		src.y *= ' ';
 	else
 		src.y *= ch;
-	SDL_BlitSurface(sdl_font, &src, win, &dst);
+	if(sdl_font != NULL)
+		SDL_BlitSurface(sdl_font, &src, win, &dst);
 	return(0);
 }
 
