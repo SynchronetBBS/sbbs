@@ -453,6 +453,10 @@ malloc_error:
    {
       od_control.od_node = atoi(pointer);
    }
+   else if((pointer=getenv("SBBSNNUM")) != NULL)
+   {
+      od_control.od_node = atoi(pointer);
+   }
    else if(wODNodeNumber != 65535U)
    {
       od_control.od_node = wODNodeNumber;
