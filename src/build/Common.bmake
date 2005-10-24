@@ -71,7 +71,7 @@
 # Macros
 # Set VERSION
 !ifndef VERSION
- VERSION	=	3.12
+ VERSION	=	3.13
 !endif
 
 # Set DEBUG
