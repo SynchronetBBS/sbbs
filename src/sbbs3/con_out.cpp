@@ -273,6 +273,8 @@ void sbbs_t::outchar(char ch)
 		if(lbuflen<LINE_BUFSIZE)
 			lbuf[lbuflen++]=ch; 
 	}
+	if(outchar_esc==3)
+		outchar_esc=0;
 
 	if(lncntr==rows-1 && ((useron.misc&UPAUSE) || sys_status&SS_PAUSEON) 
 		&& !(sys_status&SS_PAUSEOFF)) {
