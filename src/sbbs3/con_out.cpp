@@ -187,6 +187,12 @@ void sbbs_t::outchar(char ch)
 	if(ch==ESC)
 		outchar_esc=1;
 	else if(outchar_esc==1) {
+		if(ch=='[')
+			outchar_esc++;
+		else
+			outchar_esc=0;
+	}
+	else if(outchar_esc==2) {
 		if((ch>='@' && ch<='Z') || (ch>='a' && ch<='z'))
 			outchar_esc=0;
 	}
