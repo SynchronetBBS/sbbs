@@ -207,6 +207,7 @@ void sbbs_t::outchar(char ch)
 			pause();
 			while(lncntr && online && !(sys_status&SS_ABORT))
 				pause(); 
+			sys_status&=~SS_ABORT;
 		}
 	}
 #if 0
