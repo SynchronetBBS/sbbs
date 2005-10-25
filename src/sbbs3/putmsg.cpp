@@ -221,7 +221,8 @@ char sbbs_t::putmsg(char *str, long mode)
 			}
 
 			/* ansi escape sequence */
-			if(outchar_esc) {
+			if(outchar_esc && outchar_esc < 3) {	/* When outchar_esc is 3, the last char outputted
+													 * was the last char of the ANSI sequence */
 				if(str[l]=='A' || str[l]=='B' || str[l]=='H' || str[l]=='J'
 					|| str[l]=='f' || str[l]=='u')    /* ANSI anim */
 					lncntr=0;			/* so defeat pause */
@@ -242,7 +243,7 @@ char sbbs_t::putmsg(char *str, long mode)
 			}
 			if(str[l]!=CTRL_Z) {
 				outchar(str[l]);
-				if(!exatr && !outchar_esc && lncntr && lbuflen && cols && ++col==cols)
+				if(!exatr && (outchar_esc==0 || outchar_esc==3) && lncntr && lbuflen && cols && ++col==cols)
 					lncntr++;
 				else
 					col=0;
