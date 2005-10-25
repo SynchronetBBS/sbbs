@@ -394,7 +394,7 @@ js_uifc_list(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 	}
 
-    *rval = INT_TO_JSVAL(uifc->list(mode,left,top,width,&dflt,&bar,title,opts));
+    *rval = INT_TO_JSVAL(uifc->list(mode,left,top,width,(int*)&dflt,(int*)&bar,title,opts));
 	strListFree(&opts);
 	return(JS_TRUE);
 }
