@@ -310,7 +310,7 @@ int win32_keyboardio(int isgetch)
 							|| !input.Event.KeyEvent.uChar.AsciiChar
 							|| (!(input.Event.KeyEvent.dwControlKeyState & NUMLOCK_ON) && (input.Event.KeyEvent.uChar.AsciiChar >= '.' && input.Event.KeyEvent.uChar.AsciiChar <= '9')))
 						/* Is this an AltGr key? */
-						if(((input.Event.KeyEvent.dwControlKeyState & RIGHT_ALT_PRESSED|LEFT_CTRL_PRESSED == RIGHT_ALT_PRESSED|LEFT_CTRL_PRESSED)
+						if((input.Event.KeyEvent.dwControlKeyState & RIGHT_ALT_PRESSED|LEFT_CTRL_PRESSED == RIGHT_ALT_PRESSED|LEFT_CTRL_PRESSED)
 								&& (BYTE)input.Event.KeyEvent.uChar.AsciiChar)
 							lastch=(BYTE)input.Event.KeyEvent.uChar.AsciiChar;
 						else
