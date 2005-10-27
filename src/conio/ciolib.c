@@ -278,10 +278,10 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 		case 1:
 			return(0);
 		case -1:
+			initialized=1;
 			if(cio_api.resume != NULL)
 				cio_api.resume();
 			ciolib_clrscr();
-			initialized=1;
 			return(0);
 	}
 
