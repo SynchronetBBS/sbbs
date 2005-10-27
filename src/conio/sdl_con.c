@@ -158,7 +158,7 @@ const struct sdl_keyvals sdl_keyval[] =
 	{SDLK_KP_MULTIPLY, '*', '*', 0x9600, 0x3700},
 	{SDLK_KP_PLUS, '+', '+', 0x9000, 0x4e00},
 	{SDLK_KP_MINUS, '-', '-', 0x8e00, 0x4a00},
-	{SDLK_KP_PERIOD, '.', '.', 0x5300, 0x9300},
+	{SDLK_KP_PERIOD, 0x7f, 0x7f, 0x5300, 0x9300},
 	{SDLK_KP_DIVIDE, '/', '/', 0x9500, 0xa400},
 	{SDLK_KP_ENTER, 0x0d, 0x0d, 0x0a, 0xa600},
 	{SDLK_F1, 0x3b00, 0x5400, 0x5e00, 0x6800},
@@ -1157,14 +1157,30 @@ int main(int argc, char **argv)
 					if(ev.key.keysym.unicode > 0 && ev.key.keysym.unicode <= 0x7f) {		/* ASCII Key (Whoopee!) */
 						/* Need magical handling here... 
 						 * if ALT is pressed, run 'er through 
-						 * sdl_get_char_code() ANYWAYS */
-						if(ev.key.keysym.mod & (KMOD_META|KMOD_ALT))
+						 * sdl_get_char_code() ANYWAYS unless
+						 * both right ALT and left controll are
+						 * pressed in which case it may be an
+						 * AltGr combo */
+						if((ev.key.keysym.mod & (KMOD_RALT))==(KMOD_RALT)) {
+							sdl_add_key(ev.key.keysym.unicode);
+						}
+						else if(ev.key.keysym.mod & (KMOD_META|KMOD_ALT)) {
 							sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
-						else
+						}
+						else {
 							sdl_add_key(ev.key.keysym.unicode&0x7f);
+						}
 					}
 					else 
-						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
+						if((ev.key.keysym.mod & KMOD_NUM) && ev.key.keysym.sym >= SDLK_KP0 && ev.key.keysym.sym <= SDLK_KP9) {
+							sdl_add_key(ev.key.keysym.sym - SDLK_KP0 + '0');
+						}
+						else if((ev.key.keysym.mod & KMOD_NUM) && ev.key.keysym.sym == SDLK_KP_PERIOD) {
+							sdl_add_key('.');
+						}
+						else {
+							sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
+						}
 					break;
 				case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
 					break;
