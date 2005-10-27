@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use MIME::Decoder;
+
 my %chars=(
 "\x00", "B_00000000_B",
 "\x01", "B_10000000_B",
@@ -259,17 +261,41 @@ my %chars=(
 "\xff", "B_11111111_B",
 );
 
-open IN,"< ".shift;
-while(read(IN, $ch, 1)) {
-	my $val=ord($ch);
+my @fontfiles=glob("/usr/share/syscons/fonts/*.fnt");
+$decoder = new MIME::Decoder 'x-uuencode' or die "unsupported";
 
-	$val=(($val & 1)<<7)
-		| (($val & 2)<<5)
-		| (($val & 4)<<3)
-		| (($val & 8)<<1)
-		| (($val & 16)>>1)
-		| (($val & 32)>>3)
-		| (($val & 64)>>5)
-		| (($val & 128)>>7);
-	print $chars{chr($val)},"\n";
+foreach my $fontfile (@fontfiles) {
+	my $width,$height;
+	my $decoded=`uudecode -o /dev/stdout $fontfile`;
+	my $bytes=length($decoded);
+	my $fname=$fontfile;
+	$fname =~ s/\.fnt$//;
+	$fname =~ s/^.*\///;
+	print "char $fname\[$bytes\] = {\n";
+	if($fname =~ /([0-9]+)x([0-9]+)/) {
+		$width=$1;
+		$height=$2;
+	}
+
+	my $lines=0;
+	while(length($decoded)) {
+		my $ch=substr($decoded,0,1);
+		$decoded=substr($decoded,1);
+		my $val=ord($ch);
+
+		$val=(($val & 1)<<7)
+			| (($val & 2)<<5)
+			| (($val & 4)<<3)
+			| (($val & 8)<<1)
+			| (($val & 16)>>1)
+			| (($val & 32)>>3)
+			| (($val & 64)>>5)
+			| (($val & 128)>>7);
+		print "\t$chars{chr($val)}\n";
+		$lines++;
+		if($height && !($lines % $height)) {
+			print "\n";
+		}
+	}
+	print "};\n\n";
 }
