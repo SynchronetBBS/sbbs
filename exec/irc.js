@@ -1342,6 +1342,8 @@ function Screen_handle_key(key)  {
 				if(lastspace==-1)
 					this.input_pos++;
 			}
+			else
+				console.beep();
 			this.update_input_line();
 			break;
 		default:
