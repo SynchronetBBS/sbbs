@@ -162,7 +162,7 @@ function handle_command(prefix,command,message)  {
 			full_message=message.join(" ");
 			full_message=full_message.substr(1);
 			full_message=full_message.replace(/\x01/g,"");
-			screen.print_line(printf(NOTICE_FORMAT,from_nick,full_message));
+			screen.print_line(format(NOTICE_FORMAT,from_nick,full_message));
 			break;
 		case "KICK":
 			tmp_str=message.shift();
@@ -172,7 +172,7 @@ function handle_command(prefix,command,message)  {
 			if(tmp_str2.toUpperCase()==nick.toUpperCase())  {
 				channels.part(tmp_str,"");
 			}
-			screen.print_line(printf(KICK_FORMAT,tmp_str2,tmp_str,full_message));
+			screen.print_line(format(KICK_FORMAT,tmp_str2,tmp_str,full_message));
 			break;
 		case "PRIVMSG":
 			if(message[1].substr(0,2)==":\x01")  {
@@ -187,17 +187,17 @@ function handle_command(prefix,command,message)  {
 					message[0]=message[0].toUpperCase();
 					if(channels.current != undefined)  {
 						if(message[0]==channels.current.name)  {
-							from_nick=printf(FROM_NICK_CURCHAN,from_nick);
+							from_nick=format(FROM_NICK_CURCHAN,from_nick);
 						}
 						else  {
-							from_nick=printf(MSG_FORMAT,from_nick);
+							from_nick=format(MSG_FORMAT,from_nick);
 							if(message[0].slice(0,1)=="#" || message[0].slice(0,1)=="&")  {
 								from_nick=from_nick+"\x01N\x01C"+message[0]+":\x01N\x01W ";
 							}
 						}
 					}
 					else  {
-						from_nick=printf(FROM_NICK_CURCHAN,from_nick);
+						from_nick=format(FROM_NICK_CURCHAN,from_nick);
 					}
 				}
 				message.shift();
@@ -215,7 +215,7 @@ function handle_command(prefix,command,message)  {
 				channels.nick_add(tmp_str,message[0].substr(1));
 			}
 			prefix=prefix.split("!")[1];
-			screen.print_line(printf(JOIN_FORMAT,from_nick,prefix,message[0].substr(1)));
+			screen.print_line(format(JOIN_FORMAT,from_nick,prefix,message[0].substr(1)));
 			break;
 		case "QUIT":
 			from_nick=get_highlighted_nick(prefix,message);
@@ -223,7 +223,7 @@ function handle_command(prefix,command,message)  {
 			prefix=prefix.split("!")[1];
 			full_message=message.shift();
 			full_message=full_message.substr(1);
-			screen.print_line(printf(QUIT_FORMAT,from_nick,channels.current.display,full_message+" "+message.join(" ")));
+			screen.print_line(format(QUIT_FORMAT,from_nick,channels.current.display,full_message+" "+message.join(" ")));
 			channels.nick_quit(tmp_str);
 			break;
 		case "NICK":
@@ -234,7 +234,7 @@ function handle_command(prefix,command,message)  {
 			if(tmp_str.substr(0,1)==':')
 				tmp_str=tmp_str.substr(1);
 			tmp_str=tmp_str.split("!",1)[0]
-			screen.print_line(printf(NICK_FORMAT,from_nick,tmp_str));
+			screen.print_line(format(NICK_FORMAT,from_nick,tmp_str));
 			if(tmp_str2.toUpperCase()==nick.toUpperCase())  {
 				nick=tmp_str;
 				screen.update_statline();
@@ -247,7 +247,7 @@ function handle_command(prefix,command,message)  {
 				tmp_str=message.shift();
 				tmp_str2=message.shift();
 				tmp_str2=tmp_str2.substr(1);
-				screen.print_line(printf(SQUIT_FROM_NICK,from_nick,tmp_str,tmp_str2+message.join(" ")));
+				screen.print_line(format(SQUIT_FROM_NICK,from_nick,tmp_str,tmp_str2+message.join(" ")));
 			}
 			else  {
 				tmp_str=message.shift();
@@ -259,7 +259,7 @@ function handle_command(prefix,command,message)  {
 			from_nick=get_highlighted_nick(prefix,message);
 			tmp_str=get_nick(prefix);
 			prefix=prefix.split("!")[1];
-			screen.print_line(printf(PART_FORMAT,from_nick,prefix,message[0].substr(1)));
+			screen.print_line(format(PART_FORMAT,from_nick,prefix,message[0].substr(1)));
 			channels.nick_part(tmp_str,message[0].substr(1));
 			break;
 		case "MODE":
@@ -271,7 +271,7 @@ function handle_command(prefix,command,message)  {
 					modestr += " ";
 				modestr += message[modeidx];
 			}
-			screen.print_line(printf(MODE_FORMAT,from_nick,message[0],modestr));
+			screen.print_line(format(MODE_FORMAT,from_nick,message[0],modestr));
 			break;
 		case "TOPIC":
 			from_nick=get_highlighted_nick(prefix,message);
@@ -282,7 +282,7 @@ function handle_command(prefix,command,message)  {
 				if(tmp_str.toUpperCase()==channels.channel[i].name)  {
 					channels.channel[i].topic=tmp_str2;
 					screen.update_statline();
-					screen.print_line(printf(TOPIC_FORMAT,from_nick,tmp_str,tmp_str2));
+					screen.print_line(format(TOPIC_FORMAT,from_nick,tmp_str,tmp_str2));
 				}
 			}
 			break;
@@ -608,7 +608,6 @@ function wait_for(commands)  {
 				prefix=message.shift();
 			}
 			command=message.shift();
-			console.print(command);
 			handle_command(prefix,command,message);
 			for(i=0;i<commands.length;i++)  {
 				if(command==commands[i])  {
@@ -976,11 +975,11 @@ function Screen()  {
 		if(connected)  {
 			if(channels != undefined)  {
 				if(channels.current != undefined)  {
-					return "\x01H\x01Y\x014"+channels.current.topic.substr(0,80)+SPACEx80.substr(0,(80-channels.current.topic.length)>0?(80-channels.current.topic.length):0)+"\x01N\x01W\x010";
+					return "\x01H\x01Y\x014"+channels.current.topic.substr(0,79)+SPACEx80.substr(0,(79-channels.current.topic.length)>0?(79-channels.current.topic.length):0)+"\x01N\x01W\x010";
 				}
 			}
 		}
-		return "\x01H\x01Y\x014No Topic"+SPACEx80.substr(0,72)+"\x01N\x01W\x010";
+		return "\x01H\x01Y\x014No Topic"+SPACEx80.substr(0,71)+"\x01N\x01W\x010";
 	}
 	this.input_buffer="";
 	this.input_pos=0;
@@ -1003,7 +1002,9 @@ function Screen_update_statline()  {
 		topic=channels.current.topic;
 	}
 	console.print(this.topicline);
+	console.crlf();
 	console.print(this.statusline);
+	console.crlf();
 	this.update_input_line();
 }
 
@@ -1017,12 +1018,6 @@ function Screen_print_line(line)  {
 	var topic="";
 
 	console.line_counter=0;	// defeat pause
-	console.ansi_gotoxy(1,console.screen_rows-2);
-	console.clearline();
-	console.ansi_gotoxy(1,console.screen_rows-1);
-	console.clearline();
-	console.ansi_gotoxy(1,console.screen_rows);
-	console.clearline();
 	console.ansi_gotoxy(1,console.screen_rows-2);
 	// Remove bold
 	line=line.replace(/\x02/g,"");
@@ -1161,6 +1156,7 @@ function Screen_print_line(line)  {
 						}
 						console.print(prev_colour+line.substring(linestart,lastspace+1));
 						prev_colour=last_colour;
+						console.cleartoeol();
 						console.crlf();
 						this.line.shift();
 						this.line.push(prev_colour+line.substring(linestart,lastspace+1));
@@ -1174,6 +1170,7 @@ function Screen_print_line(line)  {
 	}
 	if(i<=78)  {
 		console.print(prev_colour+line.substr(linestart));
+		console.cleartoeol();
 		this.line.shift();
 		this.line.push(prev_colour+line.substr(linestart));
 		console.crlf();
@@ -1195,6 +1192,7 @@ function Screen_print_line(line)  {
 		topic=channels.current.topic;
 	}
 	console.print(this.topicline);
+	console.crlf();
 	console.print(this.statusline);
 	console.crlf();
 	this.update_input_line();
@@ -1351,9 +1349,12 @@ function Screen_handle_key(key)  {
 					console.ansi_gotoxy(1,console.screen_rows);
 					console.clearline();
 					console.ansi_gotoxy(1,console.screen_rows-2);
+					console.clearline();
 					console.handle_ctrlkey(key,0); // for now
 					console.print(this.topicline);
+					console.crlf();
 					console.print(this.statusline);
+					console.crlf();
 					this.update_input_line();
 				}
 			}
