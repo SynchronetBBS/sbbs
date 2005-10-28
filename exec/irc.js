@@ -5,6 +5,9 @@
 
 // $Id$
 
+// disable auto-termination.
+js.auto_terminate=false;
+
 const REVISION = "$Revision$".split(' ')[1];
 const SPACEx80 = "                                                                                ";
 const MAX_HIST = 50;
@@ -122,6 +125,14 @@ while(!quit)  {
 	
 	if(!client.socket.is_connected)  {
 		sock.send("QUIT :Dropped Carrier.\r\n");
+		quit=1;
+		sock.close();
+		bbs.hangup();
+		clean_exit();
+	}
+
+	if(js.terminated) {
+		sock.send("QUIT :Client terminated.\r\n");
 		quit=1;
 		sock.close();
 		bbs.hangup();
