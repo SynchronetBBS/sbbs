@@ -965,17 +965,21 @@ function Screen()  {
 		if(connected)  {
 			if(channels != undefined)  {
 				if(channels.current != undefined)  {
-					return "\x01N\x014 Nick: "+nick+"   Channel: "+channels.current.display+SPACEx80.substr(0,79-34-nick.length-channels.current.display.length)+" /quit to exit \x01N\x010\x01W";
+					var nick_chan="";
+					nick_char=format("\x01N\x014 Nick: %s   Channel: %s (%d)",nick,channels.current.display,channels.current.nick.length)+SPACEx80;
+					return nick_char.substr(0,68)+" /quit to exit \x01N\x010\x01W";
 				}
 			}
 		}
-		return "\x01N\x014 Nick: "+nick+"   Channel: No Channel"+SPACEx80.substr(0,79-44-nick.length)+" /quit to exit \x01N\x010\x01W";
+		return "\x01N\x014 Nick: "+nick+"   Channel: No Channel (0)"+SPACEx80.substr(0,79-48-nick.length)+" /quit to exit \x01N\x010\x01W";
 	};
 	this.topicline getter=function() {
 		if(connected)  {
 			if(channels != undefined)  {
 				if(channels.current != undefined)  {
-					return "\x01H\x01Y\x014"+channels.current.topic.substr(0,79)+SPACEx80.substr(0,(79-channels.current.topic.length)>0?(79-channels.current.topic.length):0)+"\x01N\x01W\x010";
+					if(channels.current.topic != undefined && channels.current.topic != '') {
+						return "\x01H\x01Y\x014"+channels.current.topic.substr(0,79)+SPACEx80.substr(0,(79-channels.current.topic.length)>0?(79-channels.current.topic.length):0)+"\x01N\x01W\x010";
+					}
 				}
 			}
 		}
