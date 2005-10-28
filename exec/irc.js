@@ -30,8 +30,7 @@ var real_names=true;
 console.ctrlkey_passthru=~(134217728);
 
 /* Command-line options go BEFORE command-line args */
-/* FIXME: there's got to be a better way to copy an array. */
-var irc_args = argv.join(" ").split(" ");
+var irc_args = new Array(argv.toSource());
 var irc_theme = "irc-default.js";
 for (cmdarg=0;cmdarg<argc;cmdarg++) {
 	switch(argv[cmdarg]) {
@@ -131,12 +130,10 @@ while(!quit)  {
 
 	ready=socket_select(socks, 1);
 	for(thissock in ready) {
-		if(ready[thissock]==0) {	// IRC server
+		if(sock.poll(.01))
 			recieve_command();
-		}
-		if(ready[thissock]==1) {	// Client
+		else
 			screen.update();
-		}
 	}
 }
 sock.close();
@@ -234,7 +231,8 @@ function handle_command(prefix,command,message)  {
 			tmp_str2=get_nick(prefix);
 			prefix=prefix.split("!")[1];
 			tmp_str=message.shift();
-			tmp_str=tmp_str.substr(1);
+			if(tmp_str.substr(0,1)==':')
+				tmp_str=tmp_str.substr(1);
 			tmp_str=tmp_str.split("!",1)[0]
 			screen.print_line(printf(NICK_FORMAT,from_nick,tmp_str));
 			if(tmp_str2.toUpperCase()==nick.toUpperCase())  {
@@ -814,26 +812,23 @@ function Channel_send(message)  {
 	sock.send("PRIVMSG "+this.name+" :"+message+"\r\n");
 }
 
-function Channel_matchnick(inline)  {
+function Channel_matchnick(nickpart)  {
 	var i=0;
 	var j=0;
 	var count=0;
 	var tmp_str="\x01N\x01BMatching Nicks:";
 	var nick_var="";
-	var partial=inline.toUpperCase();
+	var partial=nickpart.toUpperCase();
 	var matched="";
 	var start="";
 
-	if(partial.lastIndexOf(" ")!=-1)  {
-		partial=partial.substr(partial.lastIndexOf(" ")+1);
-		start=inline.slice(0,inline.lastIndexOf(" ")+1);
-	}
 	if(partial=="")  {
 		screen.print_line("\x01H\x01BNothing to match.\x01N\x01W");
+		return null;
 	}
 	for(i=0;i<this.nick.length;i++)  {
 		if(partial==this.nick[i].substr(0,partial.length).toUpperCase())  {
-			tmp_str=tmp_str+" "+nick[i];
+			tmp_str=tmp_str+" "+this.nick[i];
 			nick_var=this.nick[i];
 			count++;
 			if(matched=="")  {
@@ -847,24 +842,15 @@ function Channel_matchnick(inline)  {
 			}
 		}
 	}
-	if(count>1 && matched.length==partial.length)  {
-		screen.print_line(tmp_str+"\x01N\x01W");
-		return inline;
-	}
 	if(count<1)  {
 		screen.print_line("\x01H\x01BNo matching nicks.\x01N\x01W");
-		return inline;
+		return null;
 	}
-	if(partial==inline.toUpperCase())  {
-		if(count==1)  {
-			return nick_var+": ";
-		}
-		return nick_var;
+	if(count>1 && matched.length==partial.length) {
+		screen.print_line(tmp_str+"\x01N\x01W");
+		return null;
 	}
-	if(count==1)  {
-		return start+nick_var+" ";
-	}
-	return start+nick_var;
+	return nick_var;
 }
 
 // channels object
@@ -1007,7 +993,7 @@ function Screen_update_statline()  {
 	var cname="";
 	var topic="";
 
-	console.ansi_gotoxy(1,console.screen_rows-1);
+	console.ansi_gotoxy(1,console.screen_rows-2);
 	if(channels.current==undefined)  {
 		cname="No channel";
 		topic="Not in channel";
@@ -1016,11 +1002,8 @@ function Screen_update_statline()  {
 		cname=channels.current.display;
 		topic=channels.current.topic;
 	}
-	console.print(this.statusline);
-	console.crlf();
-	console.ansi_gotoxy(1,1);
-	console.clearline();
 	console.print(this.topicline);
+	console.print(this.statusline);
 	this.update_input_line();
 }
 
@@ -1034,11 +1017,13 @@ function Screen_print_line(line)  {
 	var topic="";
 
 	console.line_counter=0;	// defeat pause
+	console.ansi_gotoxy(1,console.screen_rows-2);
+	console.clearline();
 	console.ansi_gotoxy(1,console.screen_rows-1);
 	console.clearline();
 	console.ansi_gotoxy(1,console.screen_rows);
 	console.clearline();
-	console.ansi_gotoxy(1,console.screen_rows-1);
+	console.ansi_gotoxy(1,console.screen_rows-2);
 	// Remove bold
 	line=line.replace(/\x02/g,"");
 	// mIRC colour codes
@@ -1209,11 +1194,9 @@ function Screen_print_line(line)  {
 		cname=channels.current.display;
 		topic=channels.current.topic;
 	}
+	console.print(this.topicline);
 	console.print(this.statusline);
 	console.crlf();
-	console.ansi_gotoxy(1,1);
-	console.clearline();
-	console.print(this.topicline);
 	this.update_input_line();
 }
 
@@ -1253,7 +1236,7 @@ function Screen_update_input_line()  {
 
 function Screen_update()  {
 	while(1) {
-		var key=console.inkey();
+		var key=console.inkey(100);
 		if(key!="")
 			this.handle_key(key);
 		else
@@ -1264,7 +1247,9 @@ function Screen_update()  {
 function Screen_handle_key(key)  {
 	var commands=[null];
 	var command=null;
-	
+	var nickmatch="";
+	var lastspace=0;
+
 	switch(key)  {
 		case "\r":
 			if(this.input_buffer=="")  {
@@ -1347,10 +1332,14 @@ function Screen_handle_key(key)  {
 			this.update_input_line();
 			break;
 		case "\t":			// Tab
-			this.input_buffer=channels.current.matchnick(this.input_buffer);
-			// Always go to the end of the line on a tab. -- Cyan
-			var my_eol = this.input_buffer.length;
-			this.input_pos = my_eol;
+			lastspace=this.input_buffer.lastIndexOf(" ",this.input_pos);
+			nickmatch=channels.current.matchnick(this.input_buffer.substr(lastspace+1,this.input_pos-lastspace-1));
+			if(nickmatch != null) {
+				this.input_buffer=this.input_buffer.substr(0,lastspace+1)+nickmatch+(lastspace==-1?": ":" ")+this.input_buffer.substr(this.input_pos);
+				this.input_pos=lastspace+2+nickmatch.length;
+				if(lastspace==-1)
+					this.input_pos++;
+			}
 			this.update_input_line();
 			break;
 		default:
@@ -1361,13 +1350,10 @@ function Screen_handle_key(key)  {
 					console.clearline();
 					console.ansi_gotoxy(1,console.screen_rows);
 					console.clearline();
-					console.ansi_gotoxy(1,console.screen_rows-1);
+					console.ansi_gotoxy(1,console.screen_rows-2);
 					console.handle_ctrlkey(key,0); // for now
-					console.print(this.statusline);
-					console.crlf();
-					console.ansi_gotoxy(1,1);
-					console.clearline();
 					console.print(this.topicline);
+					console.print(this.statusline);
 					this.update_input_line();
 				}
 			}
