@@ -51,13 +51,15 @@
 	#include <io.h>
 #endif
 
+#include <fcntl.h>		/* O_RDONLY, O_CREAT, etc. */
+
 /**********/
 /* Macros */
 /**********/
 
 #if defined(_WIN32)
 
-	#include <fcntl.h>			/* O_BINARY */
+	
 	#include <windows.h>		/* OF_SHARE_ */
 	#include <share.h>			/* SH_DENY */
 
@@ -73,7 +75,6 @@
 
 #elif defined(__unix__)
 
-	#include <fcntl.h>
 	#ifdef __solaris__
 		#define LOCK_NB	1
 		#define LOCK_SH 2
