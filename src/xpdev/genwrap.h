@@ -49,9 +49,6 @@
 	#include <strings.h>	/* strcasecmp() */
 	#include <unistd.h>		/* usleep */
 
-	/* Simple Win32 function equivalents */
-	#define GetCurrentProcessId()		getpid()
-
 	#ifdef _THREAD_SAFE
 		#include <pthread.h>/* Check for GNU PTH libs */
 		#ifdef _PTH_PTHREAD_H_
@@ -61,6 +58,11 @@
 	#endif
 #elif defined(_WIN32)
 	#include <process.h>	/* getpid() */
+#endif
+
+#if !defined(_WIN32)
+	/* Simple Win32 function equivalents */
+	#define GetCurrentProcessId()		getpid()
 #endif
 
 /* utime() support */
@@ -306,7 +308,7 @@ DLLEXPORT char		DLLCALL c_unescape_char(char ch);
 
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
 typedef		clock_t				msclock_t;
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__OS2__)
 	#define		MSCLOCKS_PER_SEC	CLOCKS_PER_SEC	/* e.g. 18.2 on DOS, 1000.0 on Win32 */
 	#define		msclock()			clock()
 #else
