@@ -81,6 +81,7 @@ extern "C" {
 #elif defined(__OS2__)
 
 	/* POSIX mutexes */
+	typedef TID pthread_t;
 	typedef HEV pthread_mutex_t;
 
 #else
