@@ -499,15 +499,14 @@ int DLLCALL	get_errno(void)
 long double	DLLCALL	xp_timer(void)
 {
 	long double ret;
-#ifdef __unix__
+#if defined(__unix__)
 	struct timeval tv;
 	if(gettimeofday(&tv,NULL)==1)
 		return(-1);
 	ret=tv.tv_usec;
 	ret /= 1000000;
 	ret += tv.tv_sec;
-#else
-#ifdef _WIN32
+#elif defined(_WIN32)
 	LARGE_INTEGER	freq;
 	LARGE_INTEGER	tick;
 	if(QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&tick)) {
@@ -523,8 +522,7 @@ long double	DLLCALL	xp_timer(void)
 		ret /= 1000;
 	}
 #else
-#error Need xp_timer implementation!
-#endif
+	ret=time(NULL);	/* Weak implementation */
 #endif
 	return(ret);
 }
