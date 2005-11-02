@@ -113,9 +113,6 @@ while(!connected)  {
 }
 
 // Main loop
-socks = new Array;
-socks.push(sock);
-socks.push(client.socket);
 while(!quit)  {
 	if(!sock.is_connected || !connected)  {
 		alert("Lost connection");
@@ -139,13 +136,10 @@ while(!quit)  {
 		clean_exit();
 	}
 
-	ready=socket_select(socks, 1);
-	for(thissock in ready) {
-		if(sock.poll(.01))
-			recieve_command();
-		else
-			screen.update();
-	}
+	if(sock.poll(.01))
+		recieve_command();
+	else
+		screen.update();
 }
 sock.close();
 clean_exit();
