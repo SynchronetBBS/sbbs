@@ -53,9 +53,9 @@ if(channel==undefined) {
 	exit();
 }
 
-var sub = msg_area.sub[channel.sub];
+var sub = msg_area.sub[channel.sub.toLowerCase()];
 if(sub==undefined) {
-    write("!unknown sub-board: " + channel.sub);
+    writeln(log(LOG_ERR,"!unknown sub-board: " + channel.sub));
 	exit();
 }
 
@@ -66,11 +66,11 @@ if(http_request.query["item"]) {
 
 	var msgbase=new MsgBase(channel.sub);
 	if(!msgbase.open())
-		writeln('Error: ' + msgbase.error);
+		writeln(log(LOG_ERR,'Error: ' + msgbase.error));
 	else {
 		template.hdr = msgbase.get_msg_header(false,Number(http_request.query["item"]));
 		if(!template.hdr)
-			writeln('Error: ' + msgbase.error);
+			writeln(log(LOG_ERR,'Error: ' + msgbase.error));
 		else
 			template.body= msgbase.get_msg_body(false, template.hdr.number);
 	}
@@ -105,11 +105,11 @@ if(http_request.query["item"]) {
 	writeln('<body>');
 	var msgbase=new MsgBase(channel.sub);
 	if(!msgbase.open())
-		writeln('Error: ' + msgbase.error);
+		writeln(log(LOG_ERR,'Error: ' + msgbase.error));
 	else {
 		var hdr = msgbase.get_msg_header(false,Number(http_request.query["item"]));
 		if(!hdr)
-			writeln('Error: ' + msgbase.error);
+			writeln(log(LOG_ERR,'Error: ' + msgbase.error));
 		else {
 			for(h in hdr)
 				writeln(h + ": " + hdr[h] + '<br>');
