@@ -6,8 +6,10 @@
 #define VERSION "2K"
 
 void main(int argc, char **argv);
+#if 0
 void interrupt (*oldhandler)(void);
 void interrupt monster_clock(void);
+#endif
 
 unsigned _stklen=20000;
 
@@ -17,10 +19,8 @@ void main(int argc, char **argv)
     char str[256],chbuf[8],*buf,*p,name[26];
     int file,x,r1,r2,ch,times_played=0,lev,maint_only=0;
     long lastrun,length,l,exp;
-    struct date d;
-    struct time t;
 
-    randomize();
+    xp_randomize();
     sprintf(node_dir,"%s",getenv("SBBSNODE"));
     if(node_dir[strlen(node_dir)-1]!='\\')
         strcat(node_dir,"\\");
@@ -60,13 +60,18 @@ void main(int argc, char **argv)
         if((file=nopen("TBD.MNT",O_WRONLY|O_CREAT))!=-1) {
             cls();
             bprintf("\r\nPLEASE WAIT: Running daily maintenance.");
-            lastrun=time(NULL);
+#if 0
+    struct date d;
+    struct time t;
             unixtodos(lastrun,&d,&t);
             t.ti_hour=t.ti_min=t.ti_sec=t.ti_hund=0;
             lastrun=dostounix(&d,&t);
+#endif
+            lastrun=time(NULL);
+            lastrun -= lastrun % 86400;
             write(file,&lastrun,4); close(file);
             perform_daily_maintenance(); } }
-    if((file=nopen("TBD.MNT",O_RDWR|O_DENYALL))==-1) {
+    if((file=nopen("TBD.MNT",O_RDWR))==-1) {
         cls(); bprintf("\r\nPLEASE WAIT: Daily maintenance is running.");
         for(x=0;x<(SQUARE/2);x++) { mswait(1000); bprintf("."); }
     } else {
@@ -74,10 +79,15 @@ void main(int argc, char **argv)
         if(time(NULL)-lastrun>=86400) {
             cls();
             bprintf("\r\nPLEASE WAIT: Running daily maintenance.");
-            lastrun=time(NULL); lseek(file,0L,SEEK_SET);
+#if 0
+    struct date d;
+    struct time t;
             unixtodos(lastrun,&d,&t);
             t.ti_hour=t.ti_min=t.ti_sec=t.ti_hund=0;
             lastrun=dostounix(&d,&t);
+#endif
+            lastrun=time(NULL); lseek(file,0L,SEEK_SET);
+            lastrun -= lastrun % 86400;
             write(file,&lastrun,4);
             perform_daily_maintenance(); }
         close(file); }
@@ -158,9 +168,11 @@ void main(int argc, char **argv)
                 break;
 		}
     } while(ch!='E');
+#if 0
     atexit(restore_clock);
     oldhandler=getvect(0x1C);
     setvect(0x1C,monster_clock);
+#endif
     redraw_screen=0; tpic=0;
     sprintf(str,"MESSAGE.%d",node_num);
     if(fexist(str)) unlink(str);
@@ -971,6 +983,8 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
         user.mapx=x; user.mapy=y; user.roomx=gx; user.roomy=gy;
         bprintf("\1n");
 }
+
+#if 0
 /******************************************************************************
  This is the clock counter that tells the monsters when to move.
 ******************************************************************************/
@@ -979,6 +993,7 @@ void interrupt monster_clock(void)
    ++clock_tick;
    oldhandler();
 }
+
 /******************************************************************************
  This routine is called upon exit to restore the clock interrupt handler and
  clean up the game.
@@ -1005,6 +1020,8 @@ void restore_clock()
         list_users(); pause(); }
     bprintf("\1n");
 }
+#endif
+
 /******************************************************************************
  This function reads any messages waiting for the user
 ******************************************************************************/
