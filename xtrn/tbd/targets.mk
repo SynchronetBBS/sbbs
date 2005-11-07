@@ -1,0 +1,5 @@
+TBD		=	$(EXEODIR)$(DIRSEP)tbd$(EXEFILE)
+MAPMAKER	=	$(EXEODIR)$(DIRSEP)mapmaker$(EXEFILE)
+REROLL		=	$(EXEODIR)$(DIRSEP)reroll$(EXEFILE)
+
+all: xpdev xpdev-mt $(MTOBJODIR) $(EXEODIR) $(REROLL) $(MAPMAKER) $(TBD)
