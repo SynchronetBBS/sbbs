@@ -42,7 +42,7 @@
 #define NUM_MONSTER     33 /* 23 */
 #define NUM_BLOCKAGE    56 /* 6  */
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     FILE *stream;
     char door=0,room[SQUARE][SQUARE],str[128];
@@ -60,7 +60,7 @@ void main(int argc, char **argv)
             printf("\r\nUsage: REROLL /SAVE\r\n");
             printf("\r\nWhere /SAVE     prevents the user data file "
                   "from being deleted\r\n");
-            return;
+            return(1);
         }
         if(!stricmp(argv[1],"/SAVE")) save=1;
     }
@@ -355,5 +355,5 @@ if((file=open("TBD.MNT",O_WRONLY|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))!=-1) {
     lastrun=time(NULL);
     write(file,&lastrun,4); close(file); }
 printf("\r\n\r\nProgram Complete!  The Beast's Domain is ready to go!");
-return;
+return(0);
 }
