@@ -52,16 +52,18 @@ void main(int argc, char **argv)
         save=0;
     long lastrun;
 
-    if(!stricmp(argv[1],"/?")) {
-        if(argc);
-        printf("\r\nThe Beast's Domain  Reroller  Copyright 1993 Domain "
-                "Entertainment\r\n");
-        printf("\r\nUsage: REROLL /SAVE\r\n");
-        printf("\r\nWhere /SAVE     prevents the user data file "
-              "from being deleted\r\n");
-        return;
+    if(argc > 1) {
+        if(!stricmp(argv[1],"/?")) {
+            if(argc);
+            printf("\r\nThe Beast's Domain  Reroller  Copyright 1993 Domain "
+                    "Entertainment\r\n");
+            printf("\r\nUsage: REROLL /SAVE\r\n");
+            printf("\r\nWhere /SAVE     prevents the user data file "
+                  "from being deleted\r\n");
+            return;
+        }
+        if(!stricmp(argv[1],"/SAVE")) save=1;
     }
-    if(!stricmp(argv[1],"/SAVE")) save=1;
 
     xp_randomize();
 #if 0
