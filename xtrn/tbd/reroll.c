@@ -70,17 +70,17 @@ int main(int argc, char **argv)
     clrscr();
 #endif
     printf("Creating The Beast's Domain (may take several minutes)!\r\n\r\n");
-    if(!save) unlink("TBD.USR");
+    if(!save) unlink("tbd.usr");
     else printf("Saving current user file...");
-    unlink("TBD.MNT");
-    unlink("TOPTEN.ANS");
-    unlink("TBDMAP.DAB");
-    unlink("TBDTODAY.LOG");
-    unlink("TBDCHAR.POS");
-/*    if((file=open("TBDMAP.DAB",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
+    unlink("tbd.mnt");
+    unlink("topten.ans");
+    unlink("tbdmap.dab");
+    unlink("tbdtoday.log");
+    unlink("tbdchar.pos");
+/*    if((file=open("tbdmap.dab",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
         printf("Error opening map file\r\n");
         exit(0); } */
-    if((stream=fopen("TBDMAP.DAB","w+b"))==NULL) {
+    if((stream=fopen("tbdmap.dab","w+b"))==NULL) {
         printf("Error opening map file\r\n");
         exit(0); }
 
@@ -200,11 +200,11 @@ fclose(stream);
         } while(weapons2[x]==armor2[x] || weapons2[x]==magic2[x] || armor2[x]==
                 magic2[x]);
     }
-    unlink("TBDOBJ.DAB");
-/*    if((file=open("TBDOBJ.DAB",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
+    unlink("tbdobj.dab");
+/*    if((file=open("tbdobj.dab",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
         printf("Error opening object data file\r\n");
         exit(0); } */
-    if((stream=fopen("TBDOBJ.DAB","w+b"))==NULL) {
+    if((stream=fopen("tbdobj.dab","w+b"))==NULL) {
         printf("Error opening object data file\r\n");
         exit(0); }
 
@@ -344,7 +344,7 @@ for (w=0;w<LEVELS;w++) {
 }
 /* close(file); */
 fclose(stream);
-if((file=open("TBD.MNT",O_WRONLY|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))!=-1) {
+if((file=open("tbd.mnt",O_WRONLY|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))!=-1) {
 #if 0
     struct time t;
     struct date d;

@@ -46,8 +46,8 @@ main(void)
         magic[10],magic2[10],num_monster,num_gold,fountain[10],stairs,staff;
 
     xp_randomize();
-    unlink("TBDMAP.DAB");
-    if((file=open("TBDMAP.DAB",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
+    unlink("tbdmap.dab");
+    if((file=open("tbdmap.dab",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
         printf("Error opening map file\r\n");
         exit(0); }
 
@@ -166,8 +166,8 @@ for (w=0;w<LEVELS;w++) {
 #if 0
     clrscr();
 #endif
-    unlink("TBDOBJ.DAB");
-    if((file=open("TBDOBJ.DAB",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
+    unlink("tbdobj.dab");
+    if((file=open("tbdobj.dab",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
         printf("Error opening object data file\r\n");
         exit(0); }
 

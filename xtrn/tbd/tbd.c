@@ -56,8 +56,8 @@ void main(int argc, char **argv)
 
     initdata();
 
-    if(!(fexist("TBD.MNT")) || maint_only) {
-        if((file=nopen("TBD.MNT",O_WRONLY|O_CREAT))!=-1) {
+    if(!(fexist("tbd.mnt")) || maint_only) {
+        if((file=nopen("tbd.mnt",O_WRONLY|O_CREAT))!=-1) {
             cls();
             bprintf("\r\nPLEASE WAIT: Running daily maintenance.");
 #if 0
@@ -71,7 +71,7 @@ void main(int argc, char **argv)
             lastrun -= lastrun % 86400;
             write(file,&lastrun,4); close(file);
             perform_daily_maintenance(); } }
-    if((file=nopen("TBD.MNT",O_RDWR))==-1) {
+    if((file=nopen("tbd.mnt",O_RDWR))==-1) {
         cls(); bprintf("\r\nPLEASE WAIT: Daily maintenance is running.");
         for(x=0;x<(SQUARE/2);x++) { mswait(1000); bprintf("."); }
     } else {
@@ -97,7 +97,7 @@ void main(int argc, char **argv)
     center_wargs("\1n\1gWelcome to The Beast's Domain v%s",VERSION);
     center_wargs("\1n\1gCopyright 2000 Domain Entertainment");
 
-    if(fexist("TBD.SYS")) printfile("TBD.SYS");
+    if(fexist("tbd.sys")) printfile("tbd.sys");
 
     do {
         mnehigh=GREEN|HIGH; mnelow=GREEN;
@@ -120,10 +120,10 @@ void main(int argc, char **argv)
                     "\1n",sys_name);
                 return;
             case 'S':
-                printfile("TBD.STY");
+                printfile("tbd.sty");
                 break;
             case 'H':
-                printfile("TBD.INS");
+                printfile("tbd.ins");
                 break;
             case 'E':
                 if(cost_per_min && (!user_cdt || cost_per_min>(long)user_cdt) &&
@@ -144,10 +144,10 @@ void main(int argc, char **argv)
                 list_users();
                 break;
             case 'L':
-                if(!(fexist("TBDCHAMP.LST"))) {
+                if(!(fexist("tbdchamp.lst"))) {
                     bprintf("\r\n\1c\1hThe Beast Remains UNDEFEATED!");
                     break; }
-                if((file=nopen("TBDCHAMP.LST",O_RDONLY))==-1) {
+                if((file=nopen("tbdchamp.lst",O_RDONLY))==-1) {
                     printf("Error opening champions file\r\n");
                     exit(1); }
                 cls();
@@ -174,12 +174,12 @@ void main(int argc, char **argv)
     setvect(0x1C,monster_clock);
 #endif
     redraw_screen=0; tpic=0;
-    sprintf(str,"MESSAGE.%d",node_num);
+    sprintf(str,"message.%d",node_num);
     if(fexist(str)) unlink(str);
-    sprintf(str,"DAMAGE.%d",node_num);
+    sprintf(str,"damage.%d",node_num);
     if(fexist(str)) unlink(str);
-    if(fexist("TBDTODAY.LOG")) {
-        if((file=nopen("TBDTODAY.LOG",O_RDONLY))==-1) {
+    if(fexist("tbdtoday.log")) {
+        if((file=nopen("tbdtoday.log",O_RDONLY))==-1) {
             printf("Error opening time file\r\n");
             exit(1);}
         length=filelength(file);
@@ -200,25 +200,25 @@ void main(int argc, char **argv)
             times_per_day);
         pause(); bprintf("\1n"); return; }
 
-    if((file=nopen("TBDTODAY.LOG",O_WRONLY|O_APPEND|O_CREAT))==-1) {
+    if((file=nopen("tbdtoday.log",O_WRONLY|O_APPEND|O_CREAT))==-1) {
         printf("Error opening time file\r\n");
         exit(1);}
     write(file,user_name,25);
     close(file);
 
-    if(!(fexist("TBDCHAR.POS"))) {
-        if((chfile=open("TBDCHAR.POS",O_RDWR|O_DENYNONE|O_CREAT|O_BINARY,
+    if(!(fexist("tbdchar.pos"))) {
+        if((chfile=open("tbdchar.pos",O_RDWR|O_DENYNONE|O_CREAT|O_BINARY,
             S_IWRITE|S_IREAD))==-1) {
             printf("Error opening character position file!\r\n");
             exit(1); }
         for(x=0;x<sys_nodes;x++)
             write(chfile,"\0\0\0\0\0\0\0\0",8);
         close(chfile); }
-    if((chfile=open("TBDCHAR.POS",O_RDWR|O_DENYNONE|O_CREAT|O_BINARY,
+    if((chfile=open("tbdchar.pos",O_RDWR|O_DENYNONE|O_CREAT|O_BINARY,
             S_IWRITE|S_IREAD))==-1) {
             printf("Error opening character position file!\r\n");
             exit(1); }
-    if((rmfile=open("TBDOBJ.DAB",O_RDWR|O_DENYNONE|O_CREAT|O_BINARY,
+    if((rmfile=open("tbdobj.dab",O_RDWR|O_DENYNONE|O_CREAT|O_BINARY,
         S_IWRITE|S_IREAD))==-1) {
         printf("Error opening rooms file! %d\r\n",errno);
         exit(1);
@@ -230,8 +230,8 @@ void main(int argc, char **argv)
         user.exp=0L; user.status=1; user.gold=0; user.level=0; user.armor=0;
         user.weapon=0; user.left_game=time(NULL)-90; user.ring=0; user.key=0;
         user.compass=0; for(x=0;x<6;x++) user.item[x]=0;
-        if(fexist("TBD.CFG")) {
-            if((file=nopen("TBD.CFG",O_RDONLY))!=-1) {
+        if(fexist("tbd.cfg")) {
+            if((file=nopen("tbd.cfg",O_RDONLY))!=-1) {
                 if((fp=fdopen(file,"rt"))!=NULL) {
                     fgets(str,81,fp);
                     user.health=atoi(str);
@@ -266,7 +266,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
     node_t node;
 
     clock_tick=invisible=strong=0; clock_tick2=40;
-    printfile("TBD.MNU"); game_commands(0,-1);
+    printfile("tbd.mnu"); game_commands(0,-1);
     health_timer=user.left_game;
     timeleftmin=(timeleft-(time(NULL)-starttime))/60L;
     bprintf("\x1b[2;41H\1h\1y%6ld",timeleftmin);
@@ -299,7 +299,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
         if(clock_tick==9 || clock_tick>=18) {
             if(!invisible)
                 monster_check(gx,gy);           /* Check for monster attacks */
-            sprintf(str,"MESSAGE.%d",node_num);
+            sprintf(str,"message.%d",node_num);
             if (flength(str)>0) {               /* Checks for new player msg */
                 do {
                     read_player_message();
@@ -761,7 +761,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
         lncntr=0;
         mswait(20);
         nodesync();
-        sprintf(str,"DAMAGE.%d",node_num);
+        sprintf(str,"damage.%d",node_num);
         if(flength(str)>0) {
             if((file=nopen(str,O_RDONLY))!=-1) {
                 health_timer=time(NULL);
@@ -845,7 +845,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 write(chfile,chbuf,8);
                 unlock(chfile,(long)(node_num-1)*8L,8);
                 if(hitnode && hitnode<=sys_nodes) {
-                    sprintf(str,"DAMAGE.%d",hitnode);
+                    sprintf(str,"damage.%d",hitnode);
                     if((file=nopen(str,O_WRONLY|O_CREAT))!=-1) {
                         write(file,&node_num,1);
                         temp=-1; write(file,&temp,1);
@@ -860,7 +860,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
             }
         }
         if(redraw_screen==1) {                 /* Redraw the screen if 1 */
-            printfile("TBD.MNU"); game_commands(menu,-1);
+            printfile("tbd.mnu"); game_commands(menu,-1);
             drawpos(x,y,z);
             timeleftmin=(timeleft-(time(NULL)-starttime))/60L;
             bprintf("\x1b[2;41H\1h\1y%6ld",timeleftmin);
@@ -1012,9 +1012,9 @@ void restore_clock()
     close(chfile);
     if(time(NULL)-user.left_game>120) user.left_game=time(NULL);
     write_user();
-    sprintf(str,"DAMAGE.%d",node_num);
+    sprintf(str,"damage.%d",node_num);
     if(fexist(str)) unlink(str);
-    sprintf(str,"MESSAGE.%d",node_num);
+    sprintf(str,"message.%d",node_num);
     if(fexist(str)) unlink(str); cls();
     if(!(noyes("\r\nView the Top Ten Warriors list"))) {
         list_users(); pause(); }
@@ -1031,7 +1031,7 @@ void read_player_message()
     int file;
     ulong length;
 
-    sprintf(str,"MESSAGE.%d",node_num);
+    sprintf(str,"message.%d",node_num);
     if((file=nopen(str,O_RDONLY))==-1) {
         bprintf("\x1b[19;0HFile not Found: %s",str);
         return; }
@@ -1120,7 +1120,7 @@ void send_player_message(int plr, char *msg)
     int file;
     char fname[81];
 
-    sprintf(fname,"MESSAGE.%d",plr);
+    sprintf(fname,"message.%d",plr);
 
     if((file=nopen(fname,O_WRONLY|O_APPEND|O_CREAT))==-1) {
         bputs("Couldn't open MESSAGE.xxx for WRITE");
@@ -1138,7 +1138,7 @@ void perform_daily_maintenance()
     int x,y,z,monster=0,tradingpost=0,fountain=0,spot=0,ch,val,rnd,num;
     long room,level;
 
-    if((stream=fopen("TBDOBJ.DAB","r+b"))==NULL) {
+    if((stream=fopen("tbdobj.dab","r+b"))==NULL) {
         printf("Error opening room file! %d\r\n",errno);
         exit(1); }
 
@@ -1208,7 +1208,7 @@ void perform_daily_maintenance()
         }
     }
     fclose(stream);
-    unlink("TBDTODAY.LOG");
+    unlink("tbdtoday.log");
 }
 /******************************************************************************
  This function is for displaying the winner message, and updating the winner
@@ -1226,7 +1226,7 @@ void game_winner()
     write(chfile,chbuf,8);
     unlock(chfile,(long)(node_num-1)*8L,8);
 
-    if((file=nopen("TBDCHAMP.LST",O_WRONLY|O_APPEND|O_CREAT))==-1) {
+    if((file=nopen("tbdchamp.lst",O_WRONLY|O_APPEND|O_CREAT))==-1) {
         printf("Error opening champion file\r\n");
         exit(1);}
     write(file,user_name,25);
@@ -1236,7 +1236,7 @@ void game_winner()
 
     user.status=0; user.exp=0L; user.level=0; write_user();
 
-    printfile("TBDWIN.ANS");
+    printfile("tbdwin.ans");
     pause();
 }
 /***************************
@@ -1247,7 +1247,7 @@ void moduser()
     char str[256];
     FILE *fp;
 
-    sprintf(str,"%sMODUSER.DAT",node_dir);
+    sprintf(str,"%smoduser.dat",node_dir);
     if((fp=fopen(str,"wt"))==NULL) {
         printf("Can't open %s\r\n",str);
         exit(1); }
