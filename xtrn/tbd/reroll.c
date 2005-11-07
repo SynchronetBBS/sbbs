@@ -353,6 +353,7 @@ if((file=open("TBD.MNT",O_WRONLY|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))!=-1) {
     lastrun=dostounix(&d,&t);
 #endif
     lastrun=time(NULL);
+    lastrun -= lastrun % 86400;
     write(file,&lastrun,4); close(file); }
 printf("\r\n\r\nProgram Complete!  The Beast's Domain is ready to go!");
 return(0);
