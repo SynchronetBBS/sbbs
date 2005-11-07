@@ -1,0 +1,153 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                               The Beast's Domain
+
+                    Copyright (c) 1995 Domain Entertainment
+
+                           Installation/Configuration
+
+
+The Beast's Domain                                            Table of Contents
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+Introduction ............................................................... 1
+
+Setting up for Synchronet .................................................. 2
+
+Configuring The Beast's Domain ............................................. 3
+
+Command Line Options ....................................................... 4
+
+Demo Version Limitations ................................................... 5
+
+
+
+The Beast's Domain                Introduction                           Page 1
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+    Welcome to The Beast's Domain, a Multi-Player, Interactive, Real-Time, ANSI
+adventure game!  The Beast's Domain can handle up to 250 simultaneous players,
+and is just as fun for BBS's with only a single line!
+    This documentation will help you set-up The Beast's Domain for play on your
+system, quickly and easily.
+
+
+
+The Beast's Domain                Installation                           Page 2
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+GAME SETUP:
+
+    The first thing you'll need to do is make a sub-directory in your SBBS\XTRN
+directory called TBD and copy all of the files you received with The Beast's
+Domain into that directory, or, if you received the program on a floppy disk,
+log into the floppy drive and type INSTALL.
+
+    Next, run your Synchronet Configuration Utility, go into the External
+Programs/Online Programs section and hit 'INS' to add an item.  Now set-up the
+item you've just added as follows:
+
+    Name                        The Beast's Domain
+    Start-up Directory          C:\SBBS\XTRN\TBD    (or whatever yours is!)
+    Command Line                TBD
+    Clean-up Command Line
+    Cost in Credits             0
+    Access Requirements
+    Execution Requirements
+    ANSI Required               Yes
+    Multi-User                  Yes
+    Intercept I/O Interrupts    Yes
+    Shrink BBS                  No
+    Modify User Data            Yes             (<- doesn't matter for DEMO)
+    Uses WWIV Color Codes       No
+    Execute on Event            No
+    BBS Drop File Type          Synchronet      XTRN.DAT
+    Place Drop File In          Node Directory
+
+    That's about all there is to setting the game up!  The Beast's Domain is
+a self-maintaining game.  It runs maintenance routines on the dungeon each day
+automatically.  Before the initial running of The Beast's Domain, you should
+run the REROLL.EXE program, this will create the necessary data files for the
+dungeon, and remove any old data and player files, you will probably only run
+this program ONCE since the game (as previously mentioned) maintains itself.
+
+    If you wish to have a message of your own displayed when a user enters
+the game, you can create a file called TBD.SYS in the \SBBS\XTRN\TBD directory.
+This file will be displayed to users upon entering the game.
+
+
+The Beast's Domain       Configuring The Beast's Domain                  Page 3
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+    Go into the directory where you have placed the TBD files (e.g. at the
+DOS prompt type CD \SBBS\XTRN\TBD), and run the TBDCFG program.  From the
+opening screen you will be given a couple of options to choose from:
+
+    Player Gold     (default is 0)
+    Player Health   (default is 40)
+    Player Weapon   (and displays the name and max damage done)
+    Player Armor    (and displays the name and armor class)
+    Exit Configuration Program
+
+    These are the starting values players will get when entering your game.
+Increasing the starting values helps give players a little push start in the
+start of the game.
+    When you are done editing the options to your liking press ESC or select
+'Exit Configuration Program'.
+
+    IMPORTANT NOTES:  If you already have The Beast's Domain installed on your
+system, users currently in the game will not be affected by any configuration
+changes until they have "died" and restarted from the beginning.  Configuration
+settings ONLY work in the REGISTERED version of the game.
+
+
+
+The Beast's Domain            Command Line Options                       Page 4
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+    There are currently 3 command line options for The Beast's Domain, they
+are as follows:
+
+    /COST=<credits/min>     Use this to have the game AUTOMATICALLY charge
+                            users on a per minute basis to play.
+
+    /TIMES=<times/day>      Use this to set up how many times per day a user
+                            may play the game.
+
+    /MAINT                  Force daily maintenance (can be used in place of
+                            the automated daily maintenance).
+
+
+
+The Beast's Domain          Demo Version Limitations                     Page 5
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+NOTE: The following limitations have been placed on the DEMO version to
+      encourage registration:
+
+      * 10 minutes allowed per player
+
+      * 2 plays per day maximum (not configurable)
+
+      * Cost per minute is always 0 (not configurable)
+
+      * Player position is NOT saved (always starts back at entry point
+        when re-entering the game)
+
