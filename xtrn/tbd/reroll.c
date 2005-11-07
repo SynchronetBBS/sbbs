@@ -255,7 +255,7 @@ for (w=0;w<LEVELS;w++) {
 
                 }
             }
-        } else if((magic[w]==x || magic2[x]==x) && w<8) {
+        } else if((magic[w]==x || magic2[w]==x) && w<8) {
             ch=NUM_TRADINGPOST+2; val=0;
 /*            write(file,&ch,1); write(file,&val,1); */
             fwrite(&ch,sizeof(ch),1,stream);
