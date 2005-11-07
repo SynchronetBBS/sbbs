@@ -1,12 +1,15 @@
-#include <io.h>
-#include <dos.h>
 #include <time.h>
 #include <fcntl.h>
+#if 0
+#include <dos.h>
+#include <io.h>
 #include <conio.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys\stat.h>
+#include <sys/stat.h>
+#include "xsdk.h"		/* Colour definitions */
 #include "objects.h"
 
 #define N  (1<<0)
@@ -48,8 +51,6 @@ void main(int argc, char **argv)
         magic[10],magic2[10],num_monster,num_gold,fountain[10],stairs,staff,
         save=0;
     long lastrun;
-    struct time t;
-    struct date d;
 
     if(!stricmp(argv[1],"/?")) {
         if(argc);
@@ -62,7 +63,10 @@ void main(int argc, char **argv)
     }
     if(!stricmp(argv[1],"/SAVE")) save=1;
 
-    randomize(); clrscr();
+    xp_randomize();
+#if 0
+    clrscr();
+#endif
     printf("Creating The Beast's Domain (may take several minutes)!\r\n\r\n");
     if(!save) unlink("TBD.USR");
     else printf("Saving current user file...");
@@ -85,7 +89,7 @@ for (w=0;w<LEVELS;w++) {
     fseek(stream,w*SQUARE*SQUARE,SEEK_SET);
     for (x=0;x<SQUARE*SQUARE;x++) {
         for (y=0;y<7;y++) {         /* number of possible doors in each room */
-            if (random(4)) {
+            if (xp_random(4)) {
                 switch(y) {
                     case 0:
                         if (x>SQUARE-1) door|=N;
@@ -202,8 +206,8 @@ fclose(stream);
         printf("Error opening object data file\r\n");
         exit(0); }
 
-    stairs=random(SQUARE*SQUARE);
-    do { staff=random(SQUARE*SQUARE); } while(staff==stairs);
+    stairs=xp_random(SQUARE*SQUARE);
+    do { staff=xp_random(SQUARE*SQUARE); } while(staff==stairs);
     printf("\r\n\r\nStocking The Beast's Domain.");
 for (w=0;w<LEVELS;w++) {
     for (x=0;x<SQUARE*SQUARE;x++) {
@@ -339,10 +343,14 @@ for (w=0;w<LEVELS;w++) {
 /* close(file); */
 fclose(stream);
 if((file=open("TBD.MNT",O_WRONLY|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))!=-1) {
-    lastrun=time(NULL);
+#if 0
+    struct time t;
+    struct date d;
     unixtodos(lastrun,&d,&t);
     t.ti_hour=t.ti_min=t.ti_sec=t.ti_hund=0;
     lastrun=dostounix(&d,&t);
+#endif
+    lastrun=time(NULL);
     write(file,&lastrun,4); close(file); }
 printf("\r\n\r\nProgram Complete!  The Beast's Domain is ready to go!");
 return;

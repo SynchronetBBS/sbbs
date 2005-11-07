@@ -1,9 +1,11 @@
+#if 0
 #include <io.h>
+#endif
 #include <fcntl.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys\stat.h>
+#include <sys/stat.h>
+#include "xsdk.h"	/* Colour definitions */
 #include "objects.h"
 
 #define N  (1<<0)
@@ -43,7 +45,7 @@ main(void)
     int file,v=0,w=0,x=0,y=0,z=1,weapons[10],weapons2[10],armor[10],armor2[10],
         magic[10],magic2[10],num_monster,num_gold,fountain[10],stairs,staff;
 
-    randomize(); clrscr();
+    xp_randomize();
     unlink("TBDMAP.DAB");
     if((file=open("TBDMAP.DAB",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
         printf("Error opening map file\r\n");
@@ -55,7 +57,7 @@ for (w=0;w<LEVELS;w++) {
     lseek(file,w*SQUARE*SQUARE,SEEK_SET);
     for (x=0;x<SQUARE*SQUARE;x++) {
         for (y=0;y<7;y++) {         /* number of possible doors in each room */
-            if (random(4)) {
+            if (xp_random(4)) {
                 switch(y) {
                     case 0:
                         if (x>SQUARE-1) door|=N;
@@ -161,13 +163,16 @@ for (w=0;w<LEVELS;w++) {
         } while(weapons2[x]==armor2[x] || weapons2[x]==magic2[x] || armor2[x]==
                 magic2[x]);
     }
-    clrscr(); unlink("TBDOBJ.DAB");
+#if 0
+    clrscr();
+#endif
+    unlink("TBDOBJ.DAB");
     if((file=open("TBDOBJ.DAB",O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
         printf("Error opening object data file\r\n");
         exit(0); }
 
-    stairs=random(SQUARE*SQUARE);
-    do { staff=random(SQUARE*SQUARE); } while(staff==stairs);
+    stairs=xp_random(SQUARE*SQUARE);
+    do { staff=xp_random(SQUARE*SQUARE); } while(staff==stairs);
 for (w=0;w<LEVELS;w++) {
     if(w<8) {
         printf("\r\n\r\nWeapons Shop #1 in Room #%d\r\n",weapons[w]+1);
