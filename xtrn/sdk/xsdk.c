@@ -745,6 +745,44 @@ char getkey(long mode)
 /****************************************************************************/
 /* If remote user, checks DCD to see if user has hung up or not.			*/
 /****************************************************************************/
+int isconnected(void)
+{
+#ifdef __16BIT__
+	if(com_port && !((*msr)&DCD)) return(0);
+#else
+	char	str[256];
+	char	ch;
+	int		i;
+	fd_set	socket_set;
+	struct timeval timeout;
+
+	if(client_socket!=INVALID_SOCKET) {
+		FD_ZERO(&socket_set);
+		FD_SET(client_socket,&socket_set);
+		timeout.tv_sec=0;
+		timeout.tv_usec=100;
+
+		if((i=select(client_socket+1,&socket_set,NULL,NULL,&timeout))>0) {
+			if((i=recv(client_socket,&ch,1,MSG_PEEK))!=1) {
+				sprintf(str,"!XSDK Error %d (%d) checking state of socket %d\n"
+					,i,ERROR_VALUE,client_socket);
+	#ifdef _WIN32
+				OutputDebugString(str);
+	#else
+				fprintf(stderr,"%s",str);
+				fflush(stderr);
+	#endif
+				return(0);
+			}
+		}
+	}
+#endif
+	return(1);
+}
+
+/****************************************************************************/
+/* If remote user, checks DCD to see if user has hung up or not.			*/
+/****************************************************************************/
 void checkline(void)
 {
 #ifdef __16BIT__

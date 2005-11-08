@@ -288,6 +288,7 @@ void nodemsg(void);
 void ungetkey(char ch);
 
 /* Check to see if the user has hung-up */
+int isconnected(void);
 void checkline(void);
 
 /* Display a line (with ctrl-A codes) centered on the screen */
