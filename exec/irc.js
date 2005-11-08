@@ -84,7 +84,7 @@ if(!sock.bind(0,server.interface_ip_address)) {
 if(!sock.connect(irc_server,irc_port)) {
 	log(format("!IRC connection to %s FAILED with error %d"
 		,irc_server,sock.last_error));
-	alert("system not available");
+	alert(irc_server+" not available");
 	clean_exit();
 }
 
@@ -136,10 +136,12 @@ while(!quit)  {
 		clean_exit();
 	}
 
-	if(sock.poll(.01))
+	if(sock.poll(.01)) {
 		recieve_command();
+		screen.update(0);
+	}
 	else
-		screen.update();
+		screen.update(100);
 }
 sock.close();
 clean_exit();
@@ -1242,9 +1244,9 @@ function Screen_update_input_line()  {
 	console.ansi_gotoxy(line_pos+1,console.screen_rows);
 }
 
-function Screen_update()  {
+function Screen_update(wait)  {
 	while(1) {
-		var key=console.inkey(100);
+		var key=console.inkey(wait);
 		if(key!="")
 			this.handle_key(key);
 		else
