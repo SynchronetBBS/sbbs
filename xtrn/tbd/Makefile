@@ -4,35 +4,25 @@
 # Tabstop=8				 	  		 #
 ##################################################################
 
-# Macros
-CC		=	bcc32
-LD		=	ilink32
 XSDK	= ..\sdk
-CFLAGS	= -I$(XSDK)
+SRC_ROOT        =       ..\..\src
+!include $(SRC_ROOT)\build\Common.bmake
+CFLAGS  =	$(CFLAGS) -I$(XSDK) -DUSE_XPDEV $(XPDEV-MT_CFLAGS)
 CFLAGS	= $(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-8004
-OBJS    = xsdk.obj xsdkvars.obj xsdkwrap.obj
-
 .path.c = .;$(XSDK)
 
 # Enable auto-dependency checking
 .autodepend
 .cacheautodepend	
 
-# Implicit C Compile Rule
-.c.obj:
-	@$(CC) $(CFLAGS) -WM -c $<
-
-all: tbd.exe reroll.exe
+# Main EXE Link Rule
+$(TBD): $(OBJS)
+    	@echo Linking $@
+	@$(CC) $(CFLAGS) $(XPDEV-MT_LDFLAGS) -WM -e$@ $** $(XPDEV-MT_LIBS)
+	@copy /y $(TBD) .
 
 # Main EXE Link Rule
-tbd.exe: $(OBJS) tbd.obj tbd2.obj
+$(REROLL): reroll.obj
     	@echo Linking $@
-	@$(CC) $(CFLAGS) -WM -e$@ $**
-
-# Main EXE Link Rule
-reroll.exe: reroll.obj
-    	@echo Linking $@
-	@$(CC) $(CFLAGS) -e$@ $**
-
-clean:
-	del $(OBJS)
+	@$(CC) $(CFLAGS) $(XPDEV-MT_LDFLAGS) -e$@ $** $(XPDEV-MT_LIBS)
+	@copy /y $(REROLL) .
