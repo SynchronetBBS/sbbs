@@ -840,7 +840,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 user.ring=0; user.health=user.max_health; write_user();
                 mswait(1000);
                 status_message(2,"\1r\1h[Press ENTER to Continue Play]\1n");
-                while(getch()!=13 && (com_port && ((*msr)&DCD)));
+                while(getch()!=13 && isconnected());
                 if(menu) game_commands(menu,-1);
                 status_message(0,""); status_message(2,"");
                 status_message(3,"");
@@ -870,7 +870,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 }
                 mswait(1000);
                 status_message(2,"\1r\1h[Press ENTER]\1n");
-                while(getch()!=13 && (com_port && ((*msr)&DCD)));
+                while(getch()!=13 && isconnected());
                 return;
             }
         }
@@ -988,7 +988,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
             oldnumnodes=numnodes;
             clock_tick2=0; }
         firstime=0;
-        if(com_port && !((*msr)&DCD)) {         /* User hung up on game! */
+        if(!isconnected()) {         /* User hung up on game! */
             user.mapx=x; user.mapy=y; user.roomx=gx; user.roomy=gy;
             bprintf("\1n");
             return;
