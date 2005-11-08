@@ -46,7 +46,6 @@ void main(int argc, char **argv)
 	backslash(node_dir);
     if(argc>1) {
         if(!stricmp(argv[1],"/?")) {
-            if(argc);
             bprintf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright 2000 Domain "
                     "Entertainment\r\n",VERSION,xsdk_ver);
             bputs("\r\nUsage: TBD /(switch)\r\n");
