@@ -289,7 +289,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
     long timeleftmin;
     time_t strength_timer,invis_timer,now,timeout,health_timer;
     node_t node;
-    int tock_offset=0;
+    int tick_offset=0;
 
     clock_tick=invisible=strong=0; clock_tick2=40;
     printfile("tbd.mnu"); game_commands(0,-1);
@@ -317,9 +317,9 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                                object[rmobj[(gy*11)+gx].item].name); } }
 
     timeout=time(NULL);                         /* Set timer on entry point */
-    tick_offset=(msclock()/(MSCLOCKS_PER_SEC/18.2))%19;
+    tick_offset=(int)(msclock()/(MSCLOCKS_PER_SEC/18.2))%19;
     do {
-        clock_tick=(msclock()/(MSCLOCKS_PER_SEC/18.2))%19-tick_offset;
+        clock_tick=(int)(msclock()/(MSCLOCKS_PER_SEC/18.2))%19-tick_offset;
         if(clock_tick<0)
             clock_tick+=19;
         ++clock_tick2;
