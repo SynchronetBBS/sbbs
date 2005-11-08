@@ -1,0 +1,15 @@
+#!/bin/sh
+os=`uname | tr "[A-Z]" "[a-z]"`
+exename=`basename $0`
+dirname=`dirname $0`
+if [ -x $dirname\/gcc.$os.exe.release/$exename ]
+	then exec $dirname\/gcc.$os.exe.release/$exename $@
+elif [ -x $dirname\/gcc.$os.exe.debug/$exename ]
+	then exec $dirname\/gcc.$os.exe.debug/$exename $@
+elif [ -x $dirname\/*.$os.exe.release/$exename ]
+	then exec $dirname\/*.$os.exe.release/$exename $@
+elif [ -x $dirname\/*.$os.exe.debug/$exename ]
+	then exec $dirname\/*.$os.exe.debug/$exename $@
+elif [ -x $dirname\/*.$os.exe.*/$exename ]
+	then exec $dirname\/*.$os.exe.*/$exename $@
+fi
