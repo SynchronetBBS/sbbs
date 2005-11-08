@@ -48,7 +48,7 @@ void moduser(void);
 void list_users(void);
 void monster_check(int gx,int gy);
 int warp_to_other(void);
-void perform_daily_maintenance(void);
+void perform_daily_maintenance(int);
 void restore_clock(void);
 void send_message(int oldnumnodes);
 void read_player_message(void);

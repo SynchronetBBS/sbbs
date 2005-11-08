@@ -57,8 +57,13 @@ int main(int argc, char **argv)
     uchar uch;
 
     xp_randomize();
-    sprintf(node_dir,"%s",getenv("SBBSNODE"));
-	backslash(node_dir);
+    if(getenv("SBBSNODE")!=NULL) {
+        sprintf(node_dir,"%s",getenv("SBBSNODE"));
+        backslash(node_dir);
+    }
+    else {
+        node_dir[0]=0;
+    }
     if(argc>1) {
         if(!stricmp(argv[1],"/?")) {
             printf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright 2000 Domain "
@@ -88,18 +93,30 @@ int main(int argc, char **argv)
             if(strstr(strupr(argv[x]),"/MAINT"))
                 maint_only=1; } }
 
-    initdata();
+    if(maint_only && getenv("SBBSNODE")==NULL)
+        maint_only++;
+    if(maint_only < 2)
+        initdata();
 
     if(!(fexist("tbd.mnt")) || maint_only) {
         if((file=nopen("tbd.mnt",O_WRONLY|O_CREAT))!=-1) {
-            cls();
-            bprintf("\r\nPLEASE WAIT: Running daily maintenance.");
+            if(maint_only < 2) {
+                cls();
+                bprintf("\r\nPLEASE WAIT: Running daily maintenance.");
+            }
+            else
+                fputs("\r\nPLEASE WAIT: Running daily maintenance.",stdout);
             lastrun=time(NULL);
             lastrun -= lastrun % 86400;
             write(file,&lastrun,4); close(file);
-            perform_daily_maintenance(); } }
+            perform_daily_maintenance(maint_only);
+        }
+        if(maint_only)
+            return(0);
+    }
     if((file=nopen("tbd.mnt",O_RDWR))==-1) {
-        cls(); bprintf("\r\nPLEASE WAIT: Daily maintenance is running.");
+        cls(); 
+        bprintf("\r\nPLEASE WAIT: Daily maintenance is running.");
         for(x=0;x<(SQUARE/2);x++) { mswait(1000); bprintf("."); }
     } else {
         read(file,&lastrun,4);
@@ -109,9 +126,8 @@ int main(int argc, char **argv)
             lastrun=time(NULL); lseek(file,0L,SEEK_SET);
             lastrun -= lastrun % 86400;
             write(file,&lastrun,4);
-            perform_daily_maintenance(); }
+            perform_daily_maintenance(maint_only); }
         close(file); }
-    if(maint_only) return(0);
 
     cls();
     center_wargs("\1n\1gWelcome to The Beast's Domain v%s",VERSION);
@@ -1125,7 +1141,7 @@ void send_player_message(int plr, char *msg)
 /******************************************************************************
  This function is what re-stocks the dungeon each day.
 ******************************************************************************/
-void perform_daily_maintenance()
+void perform_daily_maintenance(int maint_only)
 {
     FILE *stream;
     int x,y,z,monster=0,tradingpost=0,fountain=0,spot=0,ch,val,rnd,num;
@@ -1134,9 +1150,13 @@ void perform_daily_maintenance()
     if((stream=fopen("tbdobj.dab","r+b"))==NULL) {
         printf("Error opening room file! %d\r\n",errno);
         exit(1); }
+    rmfile=fileno(stream);
 
     for(level=0L;level<LEVELS;level++) {
-        bprintf(".");
+        if(maint_only < 2)
+            bprintf(".");
+        else
+            fputs(".",stdout);
         for(room=0L;room<(SQUARE*SQUARE); room++) {
             monster=tradingpost=fountain=0;
             fseek(stream,(long)(level*SQUARE*SQUARE*110L)+(long)(room*110L),
@@ -1197,7 +1217,9 @@ void perform_daily_maintenance()
                         rmobj[spot].item=NUM_MONSTER+7+rand()%7;
                     else rmobj[spot].item=NUM_MONSTER+10+rand()%12;
                     rmobj[spot].val=(object[rmobj[spot].item].misc*10)+10;
-                    put_single_object(level,room,spot); } }
+                    put_single_object(level,room,spot);
+                }
+            }
         }
     }
     fclose(stream);
