@@ -1407,7 +1407,7 @@ void attr(int atr)
 
 	if((!(atr&HIGH) && curatr&HIGH)	|| (!(atr&BLINK) && curatr&BLINK)
 		|| atr==LIGHTGRAY) {
-		bprintf("\x1b[0m");
+		bputs("\x1b[0m");
 		curatr=LIGHTGRAY; }
 
 	if(atr==LIGHTGRAY) {				 /* no attributes */
@@ -1416,60 +1416,60 @@ void attr(int atr)
 
 	if(atr&BLINK) {						/* special attributes */
 		if(!(curatr&BLINK))
-			bprintf("\x1b[5m"); }
+			bputs("\x1b[5m"); }
 	if(atr&HIGH) {
 		if(!(curatr&HIGH))
-			bprintf("\x1b[1m"); }
+			bputs("\x1b[1m"); }
 
 	if((atr&0x7)==BLACK) {				/* foreground colors */
 		if((curatr&0x7)!=BLACK)
-			bprintf("\x1b[30m"); }
+			bputs("\x1b[30m"); }
 	else if((atr&0x7)==RED) {
 		if((curatr&0x7)!=RED)
-			bprintf("\x1b[31m"); }
+			bputs("\x1b[31m"); }
 	else if((atr&0x7)==GREEN) {
 		if((curatr&0x7)!=GREEN)
-			bprintf("\x1b[32m"); }
+			bputs("\x1b[32m"); }
 	else if((atr&0x7)==BROWN) {
 		if((curatr&0x7)!=BROWN)
-			bprintf("\x1b[33m"); }
+			bputs("\x1b[33m"); }
 	else if((atr&0x7)==BLUE) {
 		if((curatr&0x7)!=BLUE)
-			bprintf("\x1b[34m"); }
+			bputs("\x1b[34m"); }
 	else if((atr&0x7)==MAGENTA) {
 		if((curatr&0x7)!=MAGENTA)
-			bprintf("\x1b[35m"); }
+			bputs("\x1b[35m"); }
 	else if((atr&0x7)==CYAN) {
 		if((curatr&0x7)!=CYAN)
-			bprintf("\x1b[36m"); }
+			bputs("\x1b[36m"); }
 	else if((atr&0x7)==LIGHTGRAY) {
 		if((curatr&0x7)!=LIGHTGRAY)
-			bprintf("\x1b[37m"); }
+			bputs("\x1b[37m"); }
 
 	if((atr&0x70)==(BLACK<<4)) {		/* background colors */
 		if((curatr&0x70)!=(BLACK<<4))
-			bprintf("\x1b[40m"); }
+			bputs("\x1b[40m"); }
 	else if((atr&0x70)==(RED<<4)) {
 		if((curatr&0x70)!=(RED<<4))
-			bprintf("\x1b[41m"); }
+			bputs("\x1b[41m"); }
 	else if((atr&0x70)==(GREEN<<4)) {
 		if((curatr&0x70)!=(GREEN<<4))
-			bprintf("\x1b[42m"); }
+			bputs("\x1b[42m"); }
 	else if((atr&0x70)==(BROWN<<4)) {
 		if((curatr&0x70)!=(BROWN<<4))
-			bprintf("\x1b[43m"); }
+			bputs("\x1b[43m"); }
 	else if((atr&0x70)==(BLUE<<4)) {
 		if((curatr&0x70)!=(BLUE<<4))
-			bprintf("\x1b[44m"); }
+			bputs("\x1b[44m"); }
 	else if((atr&0x70)==(MAGENTA<<4)) {
 		if((curatr&0x70)!=(MAGENTA<<4))
-			bprintf("\x1b[45m"); }
+			bputs("\x1b[45m"); }
 	else if((atr&0x70)==(CYAN<<4)) {
 		if((curatr&0x70)!=(CYAN<<4))
-			bprintf("\x1b[46m"); }
+			bputs("\x1b[46m"); }
 	else if((atr&0x70)==(LIGHTGRAY<<4)) {
 		if((curatr&0x70)!=(LIGHTGRAY<<4))
-			bprintf("\x1b[47m"); }
+			bputs("\x1b[47m"); }
 
 	curatr=atr;
 }
@@ -2228,7 +2228,7 @@ void getnodedat(int number, node_t *node, char lockit)
 			break;
 		count++; }
 	if(count==LOOP_NODEDAB)
-		bprintf("\7Error unlocking and reading node.dab\r\n");
+		bputs("\7Error unlocking and reading node.dab\r\n");
 }
 
 /****************************************************************************/
@@ -2312,7 +2312,7 @@ void printnodedat(int number, node_t node)
 			if(!node.connection)
 				bputs("Locally");
 			else if(node.connection==0xffff)
-				bprintf("via telnet");
+				bputs("via telnet");
 			else
 				bprintf("at %ubps",node.connection);
 			break;
@@ -2374,7 +2374,7 @@ void printnodedat(int number, node_t node)
 					bprintf("retrieving from device #%d",node.aux);
 					break;
 				case NODE_DLNG:
-					bprintf("downloading");
+					bputs("downloading");
 					break;
 				case NODE_ULNG:
 					bputs("uploading");
@@ -2423,7 +2423,7 @@ void printnodedat(int number, node_t node)
 			if(!node.connection)
 				bputs(" locally");
 			else if(node.connection==0xffff)
-				bprintf(" via telnet");
+				bputs(" via telnet");
 			else
 				bprintf(" at %ubps",node.connection);
 			if(node.action==NODE_DLNG) {
