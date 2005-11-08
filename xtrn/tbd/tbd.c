@@ -36,6 +36,9 @@ uchar    map[LEVELS][SQUARE][SQUARE];
 
 void exitfunc(void)
 {
+    char chbuf[8];
+    int temp;
+
     write_user();
     chbuf[0]=0; chbuf[1]=chbuf[2]=chbuf[3]=chbuf[4]=chbuf[5]=
     chbuf[6]=chbuf[7]=-1; temp=0;
@@ -51,6 +54,7 @@ int main(int argc, char **argv)
     char str[256],chbuf[8],*buf,*p,name[26];
     int file,x,r1,r2,ch,times_played=0,lev,maint_only=0;
     long lastrun,length,l,exp;
+    uchar uch;
 
     xp_randomize();
     sprintf(node_dir,"%s",getenv("SBBSNODE"));
@@ -179,10 +183,8 @@ int main(int argc, char **argv)
 						ateof=1;
                     if(!read(file,&exp,4))
 						ateof=1;
-                    /* TODO this is a one-byte value written
-                     * as two-bytes (one byte of junk)
-                     * then read into a four-byte variable... shoot me now. */
-                    read(file,&lev,2);
+                    read(file,&uch,1);
+                    lev=uch;
                     truncsp(name);
                     sprintf(str,"\1m\1h%-25.25s     \1r%5d",name,lev);
                     center_wargs(str); }
@@ -1220,8 +1222,9 @@ void game_winner()
         exit(1);}
     write(file,user_name,25);
     write(file,&user.exp,4);
-    /* TODO this is a uchar! */
-    write(file,&user.level,2);
+    /* Hack: Keep this at two bytes */
+    write(file,&user.level,1);
+    write(file,&user.level,1);
     close(file);
 
     user.status=0; user.exp=0L; user.level=0; write_user();
