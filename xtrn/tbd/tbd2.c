@@ -215,8 +215,11 @@ void status_message(int line,char *str, ...)
 {
     char sbuf[1024];
     int len,x;
+	va_list	vp;
 
-    vsprintf(sbuf,str,_va_ptr);
+	va_start(vp, str);
+    vsprintf(sbuf,str,vp);
+	va_end(vp);
     len=67-bstrlen(sbuf);
     for(x=0;x<len;x++) strcat(sbuf," ");
     bprintf("\x1b[%d;7H%-67s",line+14,sbuf);
@@ -488,32 +491,82 @@ long read_user(int get_empty)
     int file,x,count;
 
     record_number=0L;
-    if(!fexist("TBD.USR")) return 0L;        /* User file doesn't exist */
+    if(!fexist("tbd.usr")) return 0L;        /* User file doesn't exist */
 
-    if((file=nopen("TBD.USR",O_RDWR))==-1) {
+    if((file=nopen("tbd.usr",O_RDWR))==-1) {
         printf("Error opening user data file\r\n");
         exit(1); }
-    while(!eof(file)) {
+	eof=0;
+    while(!eof) {
         count=0;
-        while(lock(file,record_number*(long)(sizeof(user_t)),
-            (long)(sizeof(user_t))) && count++<500);
-        read(file,&user,sizeof(user_t));
+        while(lock(file,record_number*(long)(USER_T_SIZE),
+            (long)(USER_T_SIZE)) && count++<500);
+		if(!read(file,&user.status,2))
+			eof=1;
+		if(!read(file,&user.handle,26))
+			eof=1;
+		if(!read(file,&user.mapx,2))
+			eof=1;
+		if(!read(file,&user.mapy,2))
+			eof=1;
+		if(!read(file,&user.mapz,2))
+			eof=1;
+		if(!read(file,&user.roomx,2))
+			eof=1;
+		if(!read(file,&user.roomy,2))
+			eof=1;
+		if(!read(file,&user.health,2))
+			eof=1;
+		if(!read(file,&user.max_health,2))
+			eof=1;
+		if(!read(file,&user.exp,4))
+			eof=1;
+		if(!read(file,&user.level,1))
+			eof=1;
+		if(!read(file,&user.weapon,2))
+			eof=1;
+		if(!read(file,&user.armor,2))
+			eof=1;
+		if(!read(file,&user.gold,2))
+			eof=1;
+		if(!read(file,&(user.item[0]),2))
+			eof=1;
+		if(!read(file,&(user.item[1]),2))
+			eof=1;
+		if(!read(file,&(user.item[2]),2))
+			eof=1;
+		if(!read(file,&(user.item[3]),2))
+			eof=1;
+		if(!read(file,&(user.item[4]),2))
+			eof=1;
+		if(!read(file,&(user.item[5]),2))
+			eof=1;
+		if(!read(file,&user.left_game,4))
+			eof=1;
+		if(!read(file,&user.ring,1))
+			eof=1;
+		if(!read(file,&user.key,1))
+			eof=1;
+		if(!read(file,&user.compass,1))
+			eof=1;
+		if(!read(file,&user.space,28))
+			eof=1;
         truncsp(user.handle);
         if(!user.status) {
             if(get_empty) {
-                lseek(file,-(long)(sizeof(user_t)),SEEK_CUR);
-                user.status=1; write(file,&user.status,1);
+                lseek(file,-(long)(USER_T_SIZE),SEEK_CUR);
+                user.status=1; write(file,&user.status,2);
                 close(file); return 1;
             } else if(!stricmp(user.handle,user_name)) {
                 close(file); return 0; }
         }
         if(!get_empty && !stricmp(user.handle,user_name)) {
             close(file); return 1; }
-        unlock(file,record_number*(long)(sizeof(user_t)),
-            (long)(sizeof(user_t)));
+        unlock(file,record_number*(long)(USER_T_SIZE),
+            (long)(USER_T_SIZE));
         ++record_number;
     }
-    if(get_empty) { user.status=1; write(file,&user.status,1); }
+    if(get_empty) { user.status=1; write(file,&user.status,2); }
     close(file);
     if(get_empty) return 1;
     return 0;
@@ -526,10 +579,34 @@ void write_user()
     int file;
 
     strcpy(user.handle,user_name);
-    if((file=nopen("TBD.USR",O_WRONLY|O_CREAT))==-1) {
+    if((file=nopen("tbd.usr",O_WRONLY|O_CREAT))==-1) {
         printf("Error opening user data file\r\n"); }
-    lseek(file,record_number*(long)sizeof(user_t),SEEK_SET);
-    write(file,&user,sizeof(user_t));
+    lseek(file,record_number*(long)USER_T_SIZE,SEEK_SET);
+	write(file,&user.status,2);
+	write(file,&user.handle,26);
+	write(file,&user.mapx,2);
+	write(file,&user.mapy,2);
+	write(file,&user.mapz,2);
+	write(file,&user.roomx,2);
+	write(file,&user.roomy,2);
+	write(file,&user.health,2);
+	write(file,&user.max_health,2);
+	write(file,&user.exp,4);
+	write(file,&user.level,1);
+	write(file,&user.weapon,2);
+	write(file,&user.armor,2);
+	write(file,&user.gold,2);
+	write(file,&(user.item[0]),2);
+	write(file,&(user.item[1]),2);
+	write(file,&(user.item[2]),2);
+	write(file,&(user.item[3]),2);
+	write(file,&(user.item[4]),2);
+	write(file,&(user.item[5]),2);
+	write(file,&user.left_game,4);
+	write(file,&user.ring,1);
+	write(file,&user.key,1);
+	write(file,&user.compass,1);
+	write(file,&user.space,28);
     close(file);
 }
 /******************************************************************************
@@ -545,15 +622,65 @@ void list_users()
     for(x=0;x<11;x++) {
         statlev[x]=0; statexp[x]=0L; strcpy(statname[x],"Nobody"); }
 
-    if(!fexist("TBD.USR")) {
+    if(!fexist("tbd.usr")) {
         bprintf("\r\n\1y\1hNo one has dared enter The Beast's Domain yet!");
         return; }
 
-    if((file=nopen("TBD.USR",O_RDONLY))==-1) {
+    if((file=nopen("tbd.usr",O_RDONLY))==-1) {
         printf("Error opening user data file\r\n");
         exit(1); }
-    while(!eof(file)) {
-        read(file,&user,sizeof(user_t));
+	eof=0;
+    while(!eof) {
+		if(!read(file,&user.status,2))
+			eof=1;
+		if(!read(file,&user.handle,26))
+			eof=1;
+		if(!read(file,&user.mapx,2))
+			eof=1;
+		if(!read(file,&user.mapy,2))
+			eof=1;
+		if(!read(file,&user.mapz,2))
+			eof=1;
+		if(!read(file,&user.roomx,2))
+			eof=1;
+		if(!read(file,&user.roomy,2))
+			eof=1;
+		if(!read(file,&user.health,2))
+			eof=1;
+		if(!read(file,&user.max_health,2))
+			eof=1;
+		if(!read(file,&user.exp,4))
+			eof=1;
+		if(!read(file,&user.level,1))
+			eof=1;
+		if(!read(file,&user.weapon,2))
+			eof=1;
+		if(!read(file,&user.armor,2))
+			eof=1;
+		if(!read(file,&user.gold,2))
+			eof=1;
+		if(!read(file,&(user.item[0]),2))
+			eof=1;
+		if(!read(file,&(user.item[1]),2))
+			eof=1;
+		if(!read(file,&(user.item[2]),2))
+			eof=1;
+		if(!read(file,&(user.item[3]),2))
+			eof=1;
+		if(!read(file,&(user.item[4]),2))
+			eof=1;
+		if(!read(file,&(user.item[5]),2))
+			eof=1;
+		if(!read(file,&user.left_game,4))
+			eof=1;
+		if(!read(file,&user.ring,1))
+			eof=1;
+		if(!read(file,&user.key,1))
+			eof=1;
+		if(!read(file,&user.compass,1))
+			eof=1;
+		if(!read(file,&user.space,28))
+			eof=1;
         truncsp(user.handle);
         statlev[10]=user.level; strcpy(statname[10],user.handle);
         statexp[10]=user.exp;
@@ -587,6 +714,7 @@ void get_room_objects(int level,int room,int display)
     int x,y,z=0;
 
     lseek(rmfile,(long)(level*SQUARE*SQUARE*110L)+(long)(room*110L),SEEK_SET);
+	/* TODO this reads an array of 55 { char, char } structs. */
     while(read(rmfile,rmobj,110)==-1 && count++<100);
     if(display) {
         for(x=0;x<55;x++) {
@@ -612,6 +740,7 @@ void comp_room_objects(int level,int room)
     int x,y;
 
     lseek(rmfile,(long)(level*SQUARE*SQUARE*110L)+(long)(room*110L),SEEK_SET);
+	/* TODO this reads an array of 55 { char, char } structs. */
     while(read(rmfile,rmcmp,110)==-1 && count++<100);
     for(x=0;x<55;x++) {
         y=x/11;
@@ -637,6 +766,7 @@ void get_single_object(int level,int room,int num)
 
     lseek(rmfile,(long)(level*SQUARE*SQUARE*110L)+(long)(room*110L)+
         (num*2),SEEK_SET);
+	/* TODO this reads a { char, char } struct. */
     while(read(rmfile,&rmobj[num],2)==-1 && count++<100);
 }
 /******************************************************************************
@@ -651,6 +781,7 @@ void put_single_object(int level,int room,int num)
         (num*2),SEEK_SET);
     while(lock(rmfile,(long)(level*SQUARE*SQUARE*110L)+(long)(room*110L)+
         (num*2),2) && count++<100);
+	/* TODO this writes a { char, char } structs. */
     write(rmfile,&rmobj[num],2);
     unlock(rmfile,(long)(level*SQUARE*SQUARE*110L)+(long)(room*110L)+
         (num*2),2);
@@ -983,7 +1114,7 @@ void read_map_level(int level)
 {
     int x,file;
 
-    if((file=nopen("TBDMAP.DAB",O_RDONLY))==-1) {
+    if((file=nopen("tbdmap.dab",O_RDONLY))==-1) {
         printf("Error opening map file\r\n");
         pause();
         exit(1);}
@@ -1018,7 +1149,7 @@ int player_attack(int player,uchar level,int ac,int symbol)
         if(symbol==tpic) x=x*2;                 /* double if back stab */
         if(strong) x=x*2;                       /* Potion of Strength    */
     } else x=0;
-    sprintf(str,"DAMAGE.%d",player);
+    sprintf(str,"damage.%d",player);
     if((file=nopen(str,O_WRONLY|O_CREAT))!=-1) {
         write(file,&node_num,1); write(file,&x,1); write(file,&level,1);
         close(file);
@@ -1068,7 +1199,7 @@ void monster_attack(uchar level)
     if((rand()%100)<=hitchance) {
         x=(rand()%level)+1;
     }
-    sprintf(str,"DAMAGE.%d",node_num);
+    sprintf(str,"damage.%d",node_num);
     temp=0;
     if((file=nopen(str,O_WRONLY|O_CREAT))!=-1) {
         write(file,&temp,1); write(file,&x,1); write(file,&level,1);
@@ -1142,7 +1273,7 @@ void center_wargs(char *str,...)
     va_end(argptr);
     j=bstrlen(sbuf);
     for(i=0;i<(80-j)/2;i++)
-        outchar(SP);
+        outchar(' ');
 //        str1[x]=32;
 //    str1[x]=0;
 //    strcat(str1,sbuf);
@@ -1255,7 +1386,7 @@ int warp_to_other()
     }
     if(!whonum) return (whonum);
     do {
-        n=who[random(whonum)]; count=0;
+        n=who[xp_random(whonum)]; count=0;
         lseek(chfile,8L*(long)n,SEEK_SET);
         while(read(chfile,chbuf,8)==-1 && count++<100);
     } while(count>=100);
@@ -1263,4 +1394,3 @@ int warp_to_other()
     user.roomx=chbuf[4]; user.roomy=chbuf[5];
     return(whonum);
 }
-

@@ -35,7 +35,7 @@ unsigned _stklen=20000;
 char     redraw_screen;
 long     record_number;
 int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
-                tpic,lasthit,clock_tick,clock_tick2;
+                tpic,lasthit,clock_tick,clock_tick2,eof;
 uchar    map[LEVELS][SQUARE][SQUARE];
 
 void main(int argc, char **argv)
@@ -183,9 +183,12 @@ void main(int argc, char **argv)
                 center_wargs("\1c\1hº \1yPlayer Name                   Level "
                     "\1cº");
                 center_wargs("\1c\1hÓÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ½");
-                while(!eof(file)) {
-                    read(file,name,25);
-                    read(file,&exp,4);
+				eof=0;
+                while(!eof) {
+                    if(!read(file,name,25))
+						eof=1;
+                    if(!read(file,&exp,4))
+						eof=1;
                     /* TODO this is a one-byte value written
                      * as two-bytes (one byte of junk)
                      * then read into a four-byte variable... shoot me now. */
@@ -340,8 +343,11 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                     mswait(100);
                 } while (flength(str)>0); }
         }
+/* TODO this isn't the right way to do 'er... */
+#if 0
         if(wherey()!=gy+7 || wherex()!=gx+36)   /* Replace cursor if moved */
             bprintf("\x1b[%d;%dH",gy+7,gx+36);
+#endif
         if((ch=toupper(inkey(0)))!=0) {
             warn=0; timeout=time(NULL);         /* Reset timer on key press */
             comp_room_objects(z,(y*SQUARE)+x);  /* Compare room objects */

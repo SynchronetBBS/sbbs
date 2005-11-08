@@ -106,6 +106,7 @@ typedef struct {
     uchar ring,key,compass;
     char space[28];
 } user_t;
+#define USER_T_SIZE	100
 
 typedef struct {
     char type,color,symbol,name[50];
@@ -122,6 +123,6 @@ extern long cost_per_min,times_per_day,total_cost;
 extern char     redraw_screen;
 extern long     record_number;
 extern int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
-                tpic,lasthit,clock_tick,clock_tick2;
+                tpic,lasthit,clock_tick,clock_tick2,eof;
 extern uchar    map[LEVELS][SQUARE][SQUARE];
 
