@@ -104,8 +104,10 @@ int main(int argc, char **argv)
                 cls();
                 bprintf("\r\nPLEASE WAIT: Running daily maintenance.");
             }
-            else
+            else {
                 fputs("\r\nPLEASE WAIT: Running daily maintenance.",stdout);
+                fflush(stdout);
+            }
             lastrun=time(NULL);
             lastrun -= lastrun % 86400;
             write(file,&lastrun,4); close(file);
@@ -1155,8 +1157,10 @@ void perform_daily_maintenance(int maint_only)
     for(level=0L;level<LEVELS;level++) {
         if(maint_only < 2)
             bprintf(".");
-        else
+        else {
             fputs(".",stdout);
+            fflush(stdout);
+        }
         for(room=0L;room<(SQUARE*SQUARE); room++) {
             monster=tradingpost=fountain=0;
             fseek(stream,(long)(level*SQUARE*SQUARE*110L)+(long)(room*110L),
@@ -1224,6 +1228,10 @@ void perform_daily_maintenance(int maint_only)
     }
     fclose(stream);
     unlink("tbdtoday.log");
+    if(maint_only < 2)
+        bputs("\r\n");
+    else
+        fputs("\r\n",stdout);
 }
 /******************************************************************************
  This function is for displaying the winner message, and updating the winner
