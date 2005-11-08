@@ -761,9 +761,8 @@ BOOL doterm(struct bbslist *bbs)
 	unsigned char *scrollback;
 	unsigned char *p;
 	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
-	BYTE zrqbuf[5];
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
-	BYTE zrbuf[5];
+	BYTE zrqbuf[5];
 	int	inch;
 	long double nextchar=0;
 	long double lastchar=0;
@@ -786,7 +785,6 @@ BOOL doterm(struct bbslist *bbs)
 	cterm_init(term.height,term.width,term.x-1,term.y-1,backlines,scrollback);
 	ch[1]=0;
 	zrqbuf[0]=0;
-	zrbuf[0]=0;
 
 	/* Main input loop */
 	oldmc=hold_update;
@@ -821,7 +819,7 @@ BOOL doterm(struct bbslist *bbs)
 						nextchar = lastchar + 1/(long double)(speed/10);
 					}
 					if(!zrqbuf[0]) {
-						if(inch == zrqinit[0]) {
+						if(inch == zrqinit[0] || inch == zrinit[0]) {
 							zrqbuf[0]=inch;
 							zrqbuf[1]=0;
 							continue;
@@ -829,16 +827,19 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					else {	/* Already have the start of the sequence */
 						j=strlen(zrqbuf);
-						if(inch == zrqinit[j]) {
-							zrqbuf[j]=zrqinit[j];
+						if(inch == zrqinit[j] || inch == zrinit[j]) {
+							zrqbuf[j]=inch;
 							zrqbuf[++j]=0;
-							if(j==sizeof(zrqinit)-1) {	/* Have full sequence */
-								zmodem_download(bbs->dldir);
+							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
+								if(strcmp(zrqbuf, zrqinit))
+									zmodem_download(bbs->dldir);
+								else
+									begin_upload(bbs->uldir, TRUE);
 								zrqbuf[0]=0;
 							}
 						}
 						else {	/* Not a real zrqinit */
-							zrqbuf[j]=inch;
+							zrqbuf[j++]=inch;
 							cterm_write(zrqbuf, j, prn, sizeof(prn), &speed);
 							if(prn[0])
 								conn_send(prn,strlen(prn),0);
@@ -848,33 +849,6 @@ BOOL doterm(struct bbslist *bbs)
 						continue;
 					}
 
-					if(!zrbuf[0]) {
-						if(inch == zrinit[0]) {
-							zrbuf[0]=inch;
-							zrbuf[1]=0;
-							continue;
-						}
-					}
-					else {	/* Already have the start of the sequence */
-						j=strlen(zrbuf);
-						if(inch == zrinit[j]) {
-							zrbuf[j]=zrinit[j];
-							zrbuf[++j]=0;
-							if(j==sizeof(zrinit)-1) {	/* Have full sequence */
-								begin_upload(bbs->uldir, TRUE);
-								zrbuf[0]=0;
-							}
-						}
-						else {	/* Not a real zrinit */
-							zrbuf[j]=inch;
-							cterm_write(zrbuf, j, prn, sizeof(prn), &speed);
-							if(prn[0])
-								conn_send(prn,strlen(prn),0);
-							updated=TRUE;
-							zrbuf[0]=0;
-						}
-						continue;
-					}
 					ch[0]=inch;
 					cterm_write(ch, 1, prn, sizeof(prn), &speed);
 					if(prn[0])
