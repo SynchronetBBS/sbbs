@@ -256,6 +256,7 @@ int main(int argc, char **argv)
     cls();
     while(initial_inway(user.mapx,user.mapy,user.mapz,r1,r2)) {
         r1=rand()%10; r2=rand()%4; }
+    atexit(write_user);
     movement(user.mapx,user.mapy,user.mapz,r1,r2);
     return(0);
 }
