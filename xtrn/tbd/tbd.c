@@ -13,6 +13,12 @@ void interrupt monster_clock(void);
 
 unsigned _stklen=20000;
 
+char     redraw_screen;
+long     record_number;
+int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
+                tpic,lasthit,clock_tick,clock_tick2;
+uchar    map[LEVELS][SQUARE][SQUARE];
+
 void main(int argc, char **argv)
 {
     FILE *fp;
