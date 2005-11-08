@@ -117,7 +117,7 @@ extern rmobj_t  rmobj[55];
 extern rmobj_t  rmcmp[55];
 extern object_t object[62];
 extern user_t user;
-extern int in_shop,trash[1];
+extern int in_shop;
 extern long cost_per_min,times_per_day,total_cost;
 
 extern char     redraw_screen;

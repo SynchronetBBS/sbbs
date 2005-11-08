@@ -4,7 +4,7 @@
 
 #include "tbd.h"
 
-int in_shop=0,trash[1]={NULL};
+int in_shop=0;
 long cost_per_min=0L,total_cost=0L,times_per_day=0L;
 user_t   user;
 rmobj_t  rmobj[55];

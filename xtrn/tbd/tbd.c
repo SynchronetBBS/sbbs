@@ -24,7 +24,7 @@
 #include "tbd.h"
 #define VERSION "2K"
 
-void main(int argc, char **argv);
+int main(int argc, char **argv);
 
 unsigned _stklen=20000;
 
@@ -34,7 +34,7 @@ int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
                 tpic,lasthit,clock_tick,clock_tick2,ateof;
 uchar    map[LEVELS][SQUARE][SQUARE];
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     FILE *fp;
     char str[256],chbuf[8],*buf,*p,name[26];
@@ -57,7 +57,7 @@ void main(int argc, char **argv)
                   "MINUTE to play the game");
             bputs("\r\n      /TIMES=<times/day> is the number of times a player "
                   "can play each day\r\n");
-            return; }
+            return(0); }
 
         for(x=1; x<argc; x++) {
             if (!strchr(argv[x],'/')) {
@@ -97,7 +97,7 @@ void main(int argc, char **argv)
             write(file,&lastrun,4);
             perform_daily_maintenance(); }
         close(file); }
-    if(maint_only) return;
+    if(maint_only) return(0);
 
     cls();
     center_wargs("\1n\1gWelcome to The Beast's Domain v%s",VERSION);
@@ -124,7 +124,7 @@ void main(int argc, char **argv)
 			case 'Q':
                 bprintf("\r\n\r\n\1n\1gReturning you to \1g\1h%s\r\n\r\n"
                     "\1n",sys_name);
-                return;
+                return(0);
             case 'S':
                 printfile("tbd.sty");
                 break;
@@ -205,7 +205,7 @@ void main(int argc, char **argv)
     if(times_played>=times_per_day && times_per_day && !SYSOP) {
         bprintf("\1r\1h\r\nYou can only play %d times each day!\r\n",
             times_per_day);
-        pause(); bprintf("\1n"); return; }
+        pause(); bprintf("\1n"); return(0); }
 
     if((file=nopen("tbdtoday.log",O_WRONLY|O_APPEND|O_CREAT))==-1) {
         printf("Error opening time file\r\n");
@@ -257,6 +257,7 @@ void main(int argc, char **argv)
     while(initial_inway(user.mapx,user.mapy,user.mapz,r1,r2)) {
         r1=rand()%10; r2=rand()%4; }
     movement(user.mapx,user.mapy,user.mapz,r1,r2);
+    return(0);
 }
 /******************************************************************************
  This is the main loop of the game, this is where all commands are interpreted
