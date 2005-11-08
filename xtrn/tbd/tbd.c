@@ -31,7 +31,7 @@ unsigned _stklen=20000;
 char     redraw_screen;
 long     record_number;
 int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
-                tpic,lasthit,clock_tick,clock_tick2,eof;
+                tpic,lasthit,clock_tick,clock_tick2,ateof;
 uchar    map[LEVELS][SQUARE][SQUARE];
 
 void main(int argc, char **argv)
@@ -164,12 +164,12 @@ void main(int argc, char **argv)
                 center_wargs("\1c\1hº \1yPlayer Name                   Level "
                     "\1cº");
                 center_wargs("\1c\1hÓÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ½");
-				eof=0;
-                while(!eof) {
+				ateof=0;
+                while(!ateof) {
                     if(!read(file,name,25))
-						eof=1;
+						ateof=1;
                     if(!read(file,&exp,4))
-						eof=1;
+						ateof=1;
                     /* TODO this is a one-byte value written
                      * as two-bytes (one byte of junk)
                      * then read into a four-byte variable... shoot me now. */

@@ -496,61 +496,61 @@ long read_user(int get_empty)
     if((file=nopen("tbd.usr",O_RDWR))==-1) {
         printf("Error opening user data file\r\n");
         exit(1); }
-	eof=0;
-    while(!eof) {
+	ateof=0;
+    while(!ateof) {
         count=0;
         while(lock(file,record_number*(long)(USER_T_SIZE),
             (long)(USER_T_SIZE)) && count++<500);
 		if(!read(file,&user.status,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.handle,26))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.mapx,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.mapy,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.mapz,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.roomx,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.roomy,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.health,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.max_health,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.exp,4))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.level,1))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.weapon,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.armor,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.gold,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[0]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[1]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[2]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[3]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[4]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[5]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.left_game,4))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.ring,1))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.key,1))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.compass,1))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.space,28))
-			eof=1;
+			ateof=1;
         truncsp(user.handle);
         if(!user.status) {
             if(get_empty) {
@@ -629,58 +629,58 @@ void list_users()
     if((file=nopen("tbd.usr",O_RDONLY))==-1) {
         printf("Error opening user data file\r\n");
         exit(1); }
-	eof=0;
-    while(!eof) {
+	ateof=0;
+    while(!ateof) {
 		if(!read(file,&user.status,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.handle,26))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.mapx,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.mapy,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.mapz,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.roomx,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.roomy,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.health,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.max_health,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.exp,4))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.level,1))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.weapon,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.armor,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.gold,2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[0]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[1]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[2]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[3]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[4]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&(user.item[5]),2))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.left_game,4))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.ring,1))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.key,1))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.compass,1))
-			eof=1;
+			ateof=1;
 		if(!read(file,&user.space,28))
-			eof=1;
+			ateof=1;
         truncsp(user.handle);
         statlev[10]=user.level; strcpy(statname[10],user.handle);
         statexp[10]=user.exp;
