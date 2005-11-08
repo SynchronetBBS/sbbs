@@ -421,6 +421,7 @@ void draw_others(int x,int y,int z)
                     attr((n+1)&0x1f);
                     bprintf("\x1b[%d;%dH%c",chbuf[5]+7,chbuf[4]+35,
                             chbuf[0]);
+                    attr((n+1));
                 }
         }
     }

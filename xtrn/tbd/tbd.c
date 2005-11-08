@@ -934,7 +934,8 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                    && oz[n][0]==z) {
                     attr((n+1)&0x1f);
                     bprintf("\x1b[%d;%dH%c",ogy[n][0]+7,ogx[n][0]+35,
-                        active[n][0]); }
+                        active[n][0]); 
+                    attr((n+1)); }
                 /********************************************/
                 /* Erase the other guy if he left the room! */
                 /********************************************/
@@ -982,6 +983,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                                 attr((n+1)&0x1f);
                                 bprintf("\x1b[%d;%dH%c",ogy[n][0]+7,
                                         ogx[n][0]+35,active[n][0]);
+                                attr((n+1));
                             }
                         }
                         bprintf("\x1b[%d;%dH\1y\1h%c",gy+7,gx+35,tpic);
