@@ -185,6 +185,9 @@ void main(int argc, char **argv)
                 while(!eof(file)) {
                     read(file,name,25);
                     read(file,&exp,4);
+                    /* TODO this is a one-byte value written
+                     * as two-bytes (one byte of junk)
+                     * then read into a four-byte variable... shoot me now. */
                     read(file,&lev,2);
                     truncsp(name);
                     sprintf(str,"\1m\1h%-25.25s     \1r%5d",name,lev);
@@ -1073,6 +1076,7 @@ void read_player_message()
     close(file);
     if((file=nopen(str,O_WRONLY|O_TRUNC))==-1) {
         bprintf("\x1b[19;0HFile not Found: %s",str);
+        free(buf);
         return; }
     close(file);
     bprintf("\x1b[19;0H");
@@ -1260,6 +1264,7 @@ void game_winner()
         exit(1);}
     write(file,user_name,25);
     write(file,&user.exp,4);
+    /* TODO this is a uchar! */
     write(file,&user.level,2);
     close(file);
 
