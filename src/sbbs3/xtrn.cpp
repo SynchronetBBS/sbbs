@@ -1955,8 +1955,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 #endif	/* !WIN32 */
 
-uint fakeriobp=0xffff;
-
 const char* quoted_string(const char* str, char* buf, size_t maxlen)
 {
 	if(strchr(str,' ')==NULL)
@@ -2061,16 +2059,11 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     sprintf(str,"%s%c",VERSION,REVISION);
                     break;
                 case 'W':   /* Time-slice API type (mswtype) */
-#if 0 //ndef __FLAT__
-                    strcat(cmd,ultoa(mswtyp,str,10));
-#endif
                     break;
                 case 'X':
                     strcat(cmd,cfg.shell[useron.shell]->code);
                     break;
                 case '&':   /* Address of msr */
-                    sprintf(str,"%lu",(DWORD)&fakeriobp);
-                    strcat(cmd,str);
                     break;
                 case 'Y':
                     strcat(cmd,comspec);
@@ -2221,17 +2214,12 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                     sprintf(str,"%s%c",VERSION,REVISION);
                     break;
                 case 'W':   /* Time-slice API type (mswtype) */
-#if 0 //ndef __FLAT__
-                    strcat(cmd,ultoa(mswtyp,str,10));
-#endif
                     break;
                 case 'X':
 					if(user!=NULL)
 						strcat(cmd,cfg->shell[user->shell]->code);
                     break;
                 case '&':   /* Address of msr */
-                    sprintf(str,"%lu",(DWORD)&fakeriobp);
-                    strcat(cmd,str);
                     break;
                 case 'Y':
                     break;

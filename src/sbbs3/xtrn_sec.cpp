@@ -195,13 +195,6 @@ int sbbs_t::xtrn_sec()
 
 char *hungupstr="\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
 
-#ifndef __FLAT__
-extern uint riobp;
-#endif
-
-extern int mswtyp;
-extern uint fakeriobp;
-
 /****************************************************************************/
 /* Convert C string to pascal string										*/
 /****************************************************************************/
@@ -369,11 +362,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,cfg.mdm_dial						/* Modem dial string */
 			,cfg.mdm_offh						/* Modem off-hook string */
 			,cfg.mdm_answ						/* Modem answer string */
-	#ifndef __FLAT__
-			,sys_status&SS_DCDHIGH ? &fakeriobp : &riobp-1	/* Modem status register */
-	#else
 			,0L
-	#endif
 			);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
@@ -414,7 +403,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			"%lx\n%d\n"
 			,ltoaf(useron.flags3,tmp)			/* Flag set #3 */
 			,ltoaf(useron.flags4,tmp2)			/* Flag set #4 */
-			,mswtyp 							/* Time-slice type */
+			,0									/* Time-slice type */
 			,useron.name						/* Real name/company */
 			,cur_rate							/* DCE rate */
 			,cfg.exec_dir

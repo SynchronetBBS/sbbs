@@ -49,10 +49,6 @@
 
 //---------------------------------------------------------------------------
 
-/* Temporary */
-int	mswtyp=0;
-uint riobp;
-
 #define TELNET_SERVER "Synchronet Telnet Server"
 #define STATUS_WFC	"Listening"
 
