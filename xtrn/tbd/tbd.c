@@ -49,35 +49,36 @@ void main(int argc, char **argv)
     sprintf(node_dir,"%s",getenv("SBBSNODE"));
     if(node_dir[strlen(node_dir)-1]!='\\')
         strcat(node_dir,"\\");
-    if(!stricmp(argv[1],"/?")) {
-        if(argc);
-        bprintf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright 2000 Domain "
-                "Entertainment\r\n",VERSION,xsdk_ver);
-        bputs("\r\nUsage: TBD /(switch)\r\n");
-        bputs("\r\nWhere '/(switch)' is one or more of the following:\r\n");
-        bputs("\r\n      /MAINT will force a daily maintenance run (this may "
-              "be used in place of");
-        bputs("\r\n             the normal automatic daily maintenance).");
-        bputs("\r\n      /COST=<cost>       is the cost (in credits) PER "
-              "MINUTE to play the game");
-        bputs("\r\n      /TIMES=<times/day> is the number of times a player "
-              "can play each day\r\n");
-        return; }
+    if(argc>1) {
+        if(!stricmp(argv[1],"/?")) {
+            if(argc);
+            bprintf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright 2000 Domain "
+                    "Entertainment\r\n",VERSION,xsdk_ver);
+            bputs("\r\nUsage: TBD /(switch)\r\n");
+            bputs("\r\nWhere '/(switch)' is one or more of the following:\r\n");
+            bputs("\r\n      /MAINT will force a daily maintenance run (this may "
+                  "be used in place of");
+            bputs("\r\n             the normal automatic daily maintenance).");
+            bputs("\r\n      /COST=<cost>       is the cost (in credits) PER "
+                  "MINUTE to play the game");
+            bputs("\r\n      /TIMES=<times/day> is the number of times a player "
+                  "can play each day\r\n");
+            return; }
 
-    for(x=1; x<argc; x++) {
-        if (!strchr(argv[x],'/')) {
-            strcpy(node_dir,argv[x]);
-            if (node_dir[strlen(node_dir)-1]!='\\')
-                strcat(node_dir,"\\"); }
-        if(strstr(strupr(argv[x]),"/COST=")) {
-            p=strchr(argv[x],'=');
-                if(p!=NULL) cost_per_min=atoi(p+1); }
-        if(strstr(strupr(argv[x]),"/TIMES=")) {
-            p=strchr(argv[x],'=');
-                if(p!=NULL) times_per_day=atoi(p+1); }
-        if(strstr(strupr(argv[x]),"/MAINT"))
-            maint_only=1;
-    }
+        for(x=1; x<argc; x++) {
+            if (!strchr(argv[x],'/')) {
+                strcpy(node_dir,argv[x]);
+                if (node_dir[strlen(node_dir)-1]!='\\')
+                    strcat(node_dir,"\\"); }
+            if(strstr(strupr(argv[x]),"/COST=")) {
+                p=strchr(argv[x],'=');
+                    if(p!=NULL) cost_per_min=atoi(p+1); }
+            if(strstr(strupr(argv[x]),"/TIMES=")) {
+                p=strchr(argv[x],'=');
+                    if(p!=NULL) times_per_day=atoi(p+1); }
+            if(strstr(strupr(argv[x]),"/MAINT"))
+                maint_only=1;
+        } }
 
     initdata();
 
