@@ -34,6 +34,17 @@ int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
                 tpic,lasthit,clock_tick,clock_tick2,ateof;
 uchar    map[LEVELS][SQUARE][SQUARE];
 
+void exitfunc(void)
+{
+    write_user();
+    chbuf[0]=0; chbuf[1]=chbuf[2]=chbuf[3]=chbuf[4]=chbuf[5]=
+    chbuf[6]=chbuf[7]=-1; temp=0;
+    lseek(chfile,(long)(node_num-1)*8L,SEEK_SET);
+    while(lock(chfile,(long)(node_num-1)*8L,8) && temp++<100);
+    write(chfile,chbuf,8);
+    unlock(chfile,(long)(node_num-1)*8L,8);
+}
+
 int main(int argc, char **argv)
 {
     FILE *fp;
@@ -255,7 +266,7 @@ int main(int argc, char **argv)
     cls();
     while(initial_inway(user.mapx,user.mapy,user.mapz,r1,r2)) {
         r1=rand()%10; r2=rand()%4; }
-    atexit(write_user);
+    atexit(exitfunc);
     movement(user.mapx,user.mapy,user.mapz,r1,r2);
     return(0);
 }
