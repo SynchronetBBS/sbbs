@@ -46,17 +46,17 @@ int main(int argc, char **argv)
 	backslash(node_dir);
     if(argc>1) {
         if(!stricmp(argv[1],"/?")) {
-            bprintf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright 2000 Domain "
+            printf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright 2000 Domain "
                     "Entertainment\r\n",VERSION,xsdk_ver);
-            bputs("\r\nUsage: TBD /(switch)\r\n");
-            bputs("\r\nWhere '/(switch)' is one or more of the following:\r\n");
-            bputs("\r\n      /MAINT will force a daily maintenance run (this may "
-                  "be used in place of");
-            bputs("\r\n             the normal automatic daily maintenance).");
-            bputs("\r\n      /COST=<cost>       is the cost (in credits) PER "
-                  "MINUTE to play the game");
-            bputs("\r\n      /TIMES=<times/day> is the number of times a player "
-                  "can play each day\r\n");
+            fputs("\r\nUsage: TBD /(switch)\r\n",stdout);
+            fputs("\r\nWhere '/(switch)' is one or more of the following:\r\n",stdout);
+            fputs("\r\n      /MAINT will force a daily maintenance run (this may "
+                  "be used in place of",stdout);
+            fputs("\r\n             the normal automatic daily maintenance).",stdout);
+            fputs("\r\n      /COST=<cost>       is the cost (in credits) PER "
+                  "MINUTE to play the game",stdout);
+            fputs("\r\n      /TIMES=<times/day> is the number of times a player "
+                  "can play each day\r\n",stdout);
             return(0); }
 
         for(x=1; x<argc; x++) {
@@ -71,8 +71,7 @@ int main(int argc, char **argv)
                 p=strchr(argv[x],'=');
                     if(p!=NULL) times_per_day=atoi(p+1); }
             if(strstr(strupr(argv[x]),"/MAINT"))
-                maint_only=1;
-        } }
+                maint_only=1; } }
 
     initdata();
 
