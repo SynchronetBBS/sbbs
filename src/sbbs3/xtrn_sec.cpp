@@ -1709,22 +1709,19 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		remove(str);
 		hangup(); 
 	}
-	if(online==ON_REMOTE) {
-		checkline();
-		if(!online) {
-			sprintf(str,"%shungup.log",cfg.logs_dir);
-			if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
-				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
-				return(false); 
-			}
-			getnodedat(cfg.node_num,&thisnode,0);
-			now=time(NULL);
-			sprintf(str,hungupstr,useron.alias,cfg.xtrn[thisnode.aux-1]->name
-				,timestr(&now));
-			write(file,str,strlen(str));
-			close(file); 
-		} 
-	}
+	if(!online) {
+		sprintf(str,"%shungup.log",cfg.logs_dir);
+		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
+			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
+			return(false); 
+		}
+		getnodedat(cfg.node_num,&thisnode,0);
+		now=time(NULL);
+		sprintf(str,hungupstr,useron.alias,cfg.xtrn[thisnode.aux-1]->name
+			,timestr(&now));
+		write(file,str,strlen(str));
+		close(file); 
+	} 
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) 	/* Modify user data */
 		moduserdat(xtrnnum);
 
