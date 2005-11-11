@@ -831,7 +831,7 @@ BOOL doterm(struct bbslist *bbs)
 							zrqbuf[j]=inch;
 							zrqbuf[++j]=0;
 							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
-								if(strcmp(zrqbuf, zrqinit))
+								if(!strcmp(zrqbuf, zrqinit))
 									zmodem_download(bbs->dldir);
 								else
 									begin_upload(bbs->uldir, TRUE);
