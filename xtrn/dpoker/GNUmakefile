@@ -12,7 +12,7 @@
 # $Id$
 
 XSDK		=	../sdk
-SRC_ROOT	=	../../src
+SRC_ROOT	?=	../../src
 include $(SRC_ROOT)/build/Common.gmake
 
 vpath %.c $(XSDK)
