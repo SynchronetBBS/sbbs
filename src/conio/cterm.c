@@ -1021,10 +1021,93 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int
 			for(j=0;j<buflen;j++) {
 				ch[0]=buf[j];
 				if(cterm.sequence) {
+					k=strlen(cterm.escbuf);
 					strcat(cterm.escbuf,ch);
-					if((ch[0]>='@' && ch[0]<='Z')
-							|| (ch[0]>='a' && ch[0]<='z')) {
-						do_ansi(retbuf, retsize, speed);
+					if(k) {
+						if(cterm.escbuf[0] != '[') {	/* Not a CSI code. */
+							/* ANSI control characters */
+							if(ch[0] >= 32 && ch[0] <= 47) {
+								/* Legal intermediate character */
+							}
+							else if(ch[0] >= 48 && ch[0] <= 126) {
+								/* Terminating character */
+								do_ansi(retbuf, retsize, speed);
+							}
+							else {
+								/* Broken sequence detected */
+								strcat(prn,"\033");
+								strcat(prn,cterm.escbuf);
+								cterm.escbuf[0]=0;
+								cterm.sequence=0;
+							}
+						}
+						else {
+							/* We know that it was a CSI at this point */
+							/* Here's where we get funky! */
+							/* the last character defines the set of legal next characters */
+							if(ch[0] >= 48 && ch[0] <= 63) {
+								/* Parameter character.  Only legal after '[' and other param chars */
+								if(cterm.escbuf[k]!='[' 
+										&& (cterm.escbuf[k] < 48 || cterm.escbuf[k] > 63)) {
+									/* Broken sequence detected */
+									strcat(prn,"\033");
+									strcat(prn,cterm.escbuf);
+									cterm.escbuf[0]=0;
+									cterm.sequence=0;
+								}
+							}
+							else if(ch[0] >= 32 && ch[0] <= 47) {
+								/* Intermediate character.  Legal after '[', param, or intermetiate chars */
+								if(cterm.escbuf[k]!='[' 
+										&& (cterm.escbuf[k] < 48 || cterm.escbuf[k] > 63) 
+										&& (cterm.escbuf[k] < 32 || cterm.escbuf[k] > 47)) {
+									/* Broken sequence detected */
+									strcat(prn,"\033");
+									strcat(prn,cterm.escbuf);
+									cterm.escbuf[0]=0;
+									cterm.sequence=0;
+								}
+							}
+							else if(ch[0] >= 64 && ch[0] <= 126) {
+								/* Terminating character.  Always legal at this point. */
+								do_ansi(retbuf, retsize, speed);
+							}
+							else {
+								/* Broken sequence detected */
+								strcat(prn,"\033");
+								strcat(prn,cterm.escbuf);
+								cterm.escbuf[0]=0;
+								cterm.sequence=0;
+							}
+						}
+					}
+					else {
+						/* First char after the ESC */
+						if(ch[0] >= 32 && ch[0] <= 47) {
+							/* Legal intermediate character */
+							/* No CSI then */
+						}
+						else if(ch[0]=='[') {
+							/* CSI received */
+						}
+						else if(ch[0] >= 48 && ch[0] <= 126) {
+							/* Terminating character */
+							do_ansi(retbuf, retsize, speed);
+						}
+						else {
+							/* Broken sequence detected */
+							strcat(prn,"\033");
+							strcat(prn,cterm.escbuf);
+							cterm.escbuf[0]=0;
+							cterm.sequence=0;
+						}
+					}
+					if(ch[0]=='\033') {	/* Broken sequence followed by a legal one! */
+						if(prn[0])	/* Don't display the ESC */
+							prn[strlen(prn)-1]=0;
+						ctputs(prn);
+						prn[0]=0;
+						cterm.sequence=1;
 					}
 				}
 				else if (cterm.music) {
