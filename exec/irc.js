@@ -33,23 +33,19 @@ var real_names=true;
 console.ctrlkey_passthru=~(134217728);
 
 /* Command-line options go BEFORE command-line args */
-var irc_args = new Array(argv.toSource());
 var irc_theme = "irc-default.js";
-for (cmdarg=0;cmdarg<argc;cmdarg++) {
+ARGPARSE: for (cmdarg=0;cmdarg<argc;cmdarg++) {
 	switch(argv[cmdarg]) {
 		case "-A":
 		case "-a":
 			real_names=false;
-			irc_args.shift();
 			break;
 		case "-T":
 		case "-t":
 			irc_theme=argv[++cmdarg];
-			irc_args.shift();
-			irc_args.shift();
 			break;
 		default:
-			break;
+			break ARGPARSE;
 	}
 }
 
@@ -60,12 +56,12 @@ Numeric_Format = new Array;
 load(irc_theme);
 
 /* Command-line args can override default server values */
-if(irc_args[0]!=undefined)
-	irc_server=irc_args[0];
-if(irc_args[1]!=undefined)
-	irc_port=Number(irc_args[1]);
-if(irc_args[2]!=undefined)
-	default_channel=irc_args[2];
+if(argv[cmdarg]!=undefined)
+	irc_server=argv[cmdarg++];
+if(argv[cmdarg]!=undefined)
+	irc_port=Number(argv[cmdarg++]);
+if(argv[cmdarg]!=undefined)
+	default_channel=argv[cmdarg++];
 
 default_channel=default_channel.replace(/\s+/g,"_");
 
@@ -623,7 +619,8 @@ function wait_for(commands)  {
 				}
 			}
 		}
-		screen.update();
+		// Don't handle user input at this point!
+		// screen.update();
 	}
 }
 
