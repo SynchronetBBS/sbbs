@@ -436,6 +436,25 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 		case '[':
 			/* ANSI stuff */
 			p=cterm.escbuf+strlen(cterm.escbuf)-1;
+			if(cterm.escbuf[1]>=60 && cterm.escbuf[1] <= 63) {	/* Private extenstions */
+				if(*p=='M') {
+					if(cterm.escbuf[1] == '=') {	/* ANSI Music setup */
+						i=atoi(cterm.escbuf+2);
+						switch(i) {
+							case 1:					/* BANSI (ESC[N) music only) */
+								cterm.music_enable=CTERM_MUSIC_BANSI;
+								break;
+							case 2:					/* ESC[M ANSI music */
+								cterm.music_enable=CTERM_MUSIC_ENABLED;
+								break;
+							default:					/* Disable ANSI Music */
+								cterm.music_enable=CTERM_MUSIC_SYNCTERM;
+								break;
+						}
+					}
+				}
+				break;
+			}
 			switch(*p) {
 				case '@':	/* Insert Char */
 					i=wherex();
@@ -592,30 +611,14 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					free(p2);
 					break;
 				case 'M':	/* ANSI music and also supposed to be delete line! */
-					if(cterm.escbuf[1] == '=') {	/* ANSI Music setup */
-						i=atoi(cterm.escbuf+2);
-						switch(i) {
-							case 1:					/* BANSI (ESC[N) music only) */
-								cterm.music_enable=CTERM_MUSIC_BANSI;
-								break;
-							case 2:					/* ESC[M ANSI music */
-								cterm.music_enable=CTERM_MUSIC_ENABLED;
-								break;
-							default:					/* Disable ANSI Music */
-								cterm.music_enable=CTERM_MUSIC_SYNCTERM;
-								break;
-						}
+					if(cterm.music_enable==CTERM_MUSIC_ENABLED) {
+						cterm.music=1;
 					}
 					else {
-						if(cterm.music_enable==CTERM_MUSIC_ENABLED) {
-							cterm.music=1;
-						}
-						else {
-							i=atoi(cterm.escbuf+1);
-							if(i<1)
-								i=1;
-							dellines(i);
-						}
+						i=atoi(cterm.escbuf+1);
+						if(i<1)
+							i=1;
+						dellines(i);
 					}
 					break;
 				case 'Y':	/* BananaCom Delete Line */
