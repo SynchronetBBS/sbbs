@@ -123,8 +123,8 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type, char* ho
 
 int edit_list(struct bbslist *item,char *listpath)
 {
-	char	opt[15][80];
-	char	*opts[15];
+	char	opt[16][80];
+	char	*opts[16];
 	int		changed=0;
 	int		copt=0,i,j;
 	char	str[6];
@@ -132,7 +132,7 @@ int edit_list(struct bbslist *item,char *listpath)
 	str_list_t	inifile;
 	char	tmp[LIST_NAME_MAX+1];
 
-	for(i=0;i<15;i++)
+	for(i=0;i<16;i++)
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
