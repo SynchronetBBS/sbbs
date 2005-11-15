@@ -386,7 +386,7 @@ void dellines(int lines)
 		buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
-	puttext(cterm.x,cterm.y+cterm.height-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
+	puttext(cterm.x,cterm.y+cterm.height-lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
 	free(buf);
 	gotoxy(1,wherey());
 }
