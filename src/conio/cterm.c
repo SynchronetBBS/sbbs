@@ -373,6 +373,24 @@ void scrollup(void)
 	free(buf);
 }
 
+void dellines(int lines)
+{
+	char *buf;
+	int i,j;
+
+	buf=(char *)malloc(cterm.width*(cterm.height-1)*2);
+	gettext(cterm.x,cterm.y+wherey()+lines-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
+	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-lines,buf);
+	j=0;
+	for(i=0;i<(cterm.width*lines);i++) {
+		buf[j++]=' ';
+		buf[j++]=cterm.attr;
+	}
+	puttext(cterm.x,cterm.y+cterm.height-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
+	free(buf);
+	gotoxy(1,wherey());
+}
+
 void clear2bol(void)
 {
 	char *buf;
@@ -574,7 +592,31 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					free(p2);
 					break;
 				case 'M':	/* ANSI music and also supposed to be delete line! */
-					cterm.music=1;
+					if(cterm.escbuf[1] == '=') {	/* ANSI Music setup */
+						i=atoi(cterm.escbuf+2);
+						switch(i) {
+							case 1:					/* BANSI (ESC[N) music only) */
+								cterm.music_enable=CTERM_MUSIC_BANSI;
+								break;
+							case 2:					/* ESC[M ANSI music */
+								cterm.music_enable=CTERM_MUSIC_ENABLED;
+								break;
+							default:					/* Disable ANSI Music */
+								cterm.music_enable=CTERM_MUSIC_SYNCTERM;
+								break;
+						}
+					}
+					else {
+						if(cterm.music_enable==CTERM_MUSIC_ENABLED) {
+							cterm.music=1;
+						}
+						else {
+							i=atoi(cterm.escbuf+1);
+							if(i<1)
+								i=1;
+							dellines(i);
+						}
+					}
 					break;
 				case 'Y':	/* BananaCom Delete Line */
 					/* i == number of lines to delete */
@@ -596,7 +638,9 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					break;
 				case 'N':
 					/* BananANSI style... does NOT start with MF or MB */
-					cterm.music=2;
+					/* This still conflicts (ANSI erase field) */
+					if(cterm.music_enable >= CTERM_MUSIC_BANSI)
+						cterm.music=2;
 					break;
 				case 'P':	/* Delete char */
 					i=atoi(cterm.escbuf+1);
@@ -859,6 +903,8 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					break;
 				case 'z':	/* ToDo?  Reset */
 					break;
+				case '|':	/* SyncTERM ANSI Music */
+					break;
 			}
 			break;
 		case 'D':
@@ -886,6 +932,7 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	cterm.save_ypos=0;
 	cterm.escbuf[0]=0;
 	cterm.sequence=0;
+	cterm.music_enable=CTERM_MUSIC_BANSI;
 	cterm.music=0;
 	cterm.tempo=120;
 	cterm.octave=4;

@@ -62,6 +62,7 @@ struct cterminal {
 	int save_ypos;
 	char	escbuf[1024];
 	int	sequence;
+	int music_enable;
 	char	musicbuf[1024];
 	int music;
 	int	tempo;
@@ -77,6 +78,10 @@ struct cterminal {
 	int log;
 	FILE* logfile;
 };
+
+#define CTERM_MUSIC_SYNCTERM	0
+#define	CTERM_MUSIC_BANSI		1
+#define	CTERM_MUSIC_ENABLED		2
 
 #ifdef __cplusplus
 extern "C" {
