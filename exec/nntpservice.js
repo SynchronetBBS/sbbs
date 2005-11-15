@@ -20,6 +20,8 @@
 // -mail     expose entire mail database as newsgroup to Sysops
 // -auto     automatic login based on IP address (no password necessary)
 // -nolimit  unlimited message lengths
+// -notag    do not append tear/tagline to local messages for Q-rest accounts
+// -ascii	 convert ex-ASCII to ASCII
 
 // Tested clients:
 //					Microsoft Outlook Express 6
@@ -49,6 +51,8 @@ var filter_bogus_clients = false;
 var include_mail = false;
 var impose_limit = true;
 var sysop_login = false;
+var add_tag = true;
+var ex_ascii = true;
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -62,6 +66,10 @@ for(i=0;i<argc;i++) {
 		include_mail = true;
 	else if(argv[i].toLowerCase()=="-nolimit")
 		impose_limit = false;
+	else if(argv[i].toLowerCase()=="-notag")
+		add_tag = false;
+	else if(argv[i].toLowerCase()=="-ascii")
+		ex_ascii = false;
 	else if(argv[i].toLowerCase()=="-auto") {
 		no_anonymous = true;
 		auto_login = true;
@@ -509,8 +517,14 @@ while(client.socket.is_connected && !quit) {
 					,true /* rfc822 formatted text */);
 
 			// force taglines for QNET Users on local messages
-			if(user.security.restrictions&UFLAG_Q && !hdr.from_net_type)
+			if(add_tag && user.security.restrictions&UFLAG_Q && !hdr.from_net_type)
 				body += "\r\n" + tearline + tagline;
+
+			if(!ex_ascii || msgbase.cfg.settings&SUB_ASCII) {
+				/* Convert Ex-ASCII chars to approximate ASCII equivalents */
+				body = ascii_str(body);
+				hdr.subject = ascii_str(hdr.subject);
+			}
 
 /* Eliminate dupe loops
 			if(user.security.restrictions&UFLAG_Q && hdr!=null)
