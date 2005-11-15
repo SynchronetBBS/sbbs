@@ -668,6 +668,53 @@ void zmodem_download(char *download_dir)
 }
 /* End of Zmodem Stuff */
 
+void music_control(struct bbslist *bbs)
+{
+	char *buf;
+	struct	text_info txtinfo;
+	int i,j;
+	char *opts[4]={
+			 "ESC[| ANSI Music only"
+			,"ESC[N (BANSI-Style) and ESC[| ANSI Music"
+			,"ANSI Music Enabled"
+	};
+
+   	gettextinfo(&txtinfo);
+	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	init_uifc(FALSE, FALSE);
+
+	i=cterm.music_enable;
+	uifc.helpbuf="`Capture Type`\n\n"
+				"~ ANSI Music Disabled ~ Completely disables ANSI music\n"
+				"                      Enables Delete Line\n"
+				"~ ESC[N ~               Enables BANSI-Style ANSI music\n"
+				"                      Enables Delete Line\n"
+				"~ ANSI Music Enabled ~  Enables both ESC[M and ESC[N ANSI music.\n"
+				"                      Delete Line is disabled.\n"
+				"\n"
+				"So-Called ANSI Music has a long and troubled history.  Although the\n"
+				"original ANSI standard has well defined ways to provide private\n"
+				"extensions to the spec, none of these methods were used.  Instead,\n"
+				"so-called ANSI music replaced the Delete Line ANSI sequence.  Many\n"
+				"full-screen editors use DL, and to this day, some programs (Such as\n"
+				"BitchX) require it to run.\n\n"
+				"To deal with this, BananaCom decided to use what *they* though was an\n"
+				"unspecified escape code ESC[N for ANSI music.  Unfortunately, this is\n"
+				"broken also.  Although rarely implemented in BBS clients, ESC[N is\n"
+				"the erase field sequence.\n\n"
+				"SyncTERM has now defined a third ANSI music sequence which *IS* legal\n"
+				"according to the ANSI spec.  Specifically ESC[|.";
+	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Type",opts)!=-1)
+		cterm.music_enable=i;
+	uifcbail();
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
+	textattr(txtinfo.attribute);
+	gotoxy(txtinfo.curx,txtinfo.cury);
+	free(buf);
+}
+
 void capture_control(struct bbslist *bbs)
 {
 	char *buf;
@@ -945,6 +992,9 @@ BOOL doterm(struct bbslist *bbs)
 						conn_send("\r",1,0);
 					}
 					break;
+				case 0x3200:	/* ALT-M */
+					music_control(bbs);
+					break;
 				case 0x1600:	/* ALT-U - Upload */
 					begin_upload(bbs->uldir, FALSE);
 					break;
@@ -1019,6 +1069,9 @@ BOOL doterm(struct bbslist *bbs)
 							capture_control(bbs);
 							break;
 						case 8:
+							music_control(bbs);
+							break;
+						case 9:
 							cterm_end();
 							free(scrollback);
 							conn_close();
