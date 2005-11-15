@@ -53,6 +53,7 @@ struct bbslist {
 	char			uldir[MAX_PATH];
 	int				loglevel;
 	int				bpsrate;
+	int				music;
 };
 
 struct bbslist *show_bbslist(char* listpath, int mode, char *home);

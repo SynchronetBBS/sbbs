@@ -685,7 +685,7 @@ void music_control(struct bbslist *bbs)
 	init_uifc(FALSE, FALSE);
 
 	i=cterm.music_enable;
-	uifc.helpbuf="`Capture Type`\n\n"
+	uifc.helpbuf="`ANSI Music Setup`\n\n"
 				"~ ANSI Music Disabled ~ Completely disables ANSI music\n"
 				"                      Enables Delete Line\n"
 				"~ ESC[N ~               Enables BANSI-Style ANSI music\n"
@@ -705,7 +705,7 @@ void music_control(struct bbslist *bbs)
 				"the erase field sequence.\n\n"
 				"SyncTERM has now defined a third ANSI music sequence which *IS* legal\n"
 				"according to the ANSI spec.  Specifically ESC[|.";
-	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Type",opts)!=-1)
+	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"ANSI Music Setup",opts)!=-1)
 		cterm.music_enable=i;
 	uifcbail();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
@@ -830,6 +830,7 @@ BOOL doterm(struct bbslist *bbs)
 	scrollback=malloc(term.width*2*backlines);
 	memset(scrollback,0,term.width*2*backlines);
 	cterm_init(term.height,term.width,term.x-1,term.y-1,backlines,scrollback);
+	cterm.music_enable=bbs->music;
 	ch[1]=0;
 	zrqbuf[0]=0;
 

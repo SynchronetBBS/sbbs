@@ -10,12 +10,15 @@
 #include "uifcinit.h"
 #include "conn.h"
 #include "ciolib.h"
+#include "cterm.h"
 
 char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 
 char *rate_names[]={"300bps", "600bps", "1200bps", "2400bps", "4800bps", "9600bps", "19.2Kbps", "38.4Kbps", "57.6Kbps", "76.8Kbps", "115.2Kbps", "Unlimited", NULL};
 int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200, 0};
+
+char *music_names[]={"ESC [ | only", "BANSI Style", "All ANSI Music enabled"};
 
 ini_style_t ini_style = {
 	/* key_len */ 15, 
@@ -105,6 +108,7 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type, char* ho
 			iniReadString(listfile,bbsname,"UploadPath",home,list[*i]->uldir);
 			list[*i]->loglevel=iniReadInteger(listfile,bbsname,"LogLevel",LOG_INFO);
 			list[*i]->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
+			list[*i]->music=iniReadInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
 			list[*i]->type=type;
 			list[*i]->id=*i;
 			(*i)++;
@@ -137,7 +141,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
 	}
-	opt[14][0]=0;
+	opt[15][0]=0;
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inifile=iniReadFile(listfile);
 		fclose(listfile);
@@ -159,6 +163,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		sprintf(opt[11],"Upload Path       %s",item->uldir);
 		sprintf(opt[12],"Log Level         %s",log_levels[item->loglevel]);
 		sprintf(opt[13],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
+		sprintf(opt[14],"ANSI Music        %s",music_names[item->music]);
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
@@ -280,6 +285,34 @@ int edit_list(struct bbslist *item,char *listpath)
 				iniSetInteger(&inifile,item->name,"BPSRate",item->bpsrate,&ini_style);
 				changed=1;
 				break;
+			case 14:
+				uifc.helpbuf="`ANSI Music Setup`\n\n"
+						"~ ANSI Music Disabled ~ Completely disables ANSI music\n"
+						"                      Enables Delete Line\n"
+						"~ ESC[N ~               Enables BANSI-Style ANSI music\n"
+						"                      Enables Delete Line\n"
+						"~ ANSI Music Enabled ~  Enables both ESC[M and ESC[N ANSI music.\n"
+						"                      Delete Line is disabled.\n"
+						"\n"
+						"So-Called ANSI Music has a long and troubled history.  Although the\n"
+						"original ANSI standard has well defined ways to provide private\n"
+						"extensions to the spec, none of these methods were used.  Instead,\n"
+						"so-called ANSI music replaced the Delete Line ANSI sequence.  Many\n"
+						"full-screen editors use DL, and to this day, some programs (Such as\n"
+						"BitchX) require it to run.\n\n"
+						"To deal with this, BananaCom decided to use what *they* though was an\n"
+						"unspecified escape code ESC[N for ANSI music.  Unfortunately, this is\n"
+						"broken also.  Although rarely implemented in BBS clients, ESC[N is\n"
+						"the erase field sequence.\n\n"
+						"SyncTERM has now defined a third ANSI music sequence which *IS* legal\n"
+						"according to the ANSI spec.  Specifically ESC[|.";
+				i=item->music;
+				if(uifc.list(WIN_SAV,0,0,0,&i,NULL,"ANSI Music Setup",music_names)!=-1) {
+					item->music=i;
+					iniSetInteger(&inifile,item->name,"ANSIMusic",item->music,&ini_style);
+					changed=1;
+				}
+				break;
 		}
 		if(uifc.changes)
 			changed=1;
@@ -317,6 +350,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"LogLevel",bbs->loglevel,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,&ini_style);
+	iniSetInteger(&inifile,bbs->name,"ANSIMusic",bbs->music,&ini_style);
 	if((listfile=fopen(listpath,"w"))!=NULL) {
 		iniWriteFile(listfile,inifile);
 		fclose(listfile);
