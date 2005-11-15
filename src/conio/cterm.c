@@ -388,7 +388,6 @@ void dellines(int lines)
 	}
 	puttext(cterm.x,cterm.y+cterm.height-lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
 	free(buf);
-	gotoxy(1,wherey());
 }
 
 void clear2bol(void)
