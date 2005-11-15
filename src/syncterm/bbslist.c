@@ -18,7 +18,7 @@ char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notic
 char *rate_names[]={"300bps", "600bps", "1200bps", "2400bps", "4800bps", "9600bps", "19.2Kbps", "38.4Kbps", "57.6Kbps", "76.8Kbps", "115.2Kbps", "Unlimited", NULL};
 int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200, 0};
 
-char *music_names[]={"ESC [ | only", "BANSI Style", "All ANSI Music enabled"};
+char *music_names[]={"ESC [ | only", "BANSI Style", "All ANSI Music enabled", NULL};
 
 ini_style_t ini_style = {
 	/* key_len */ 15, 
