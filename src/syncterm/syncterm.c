@@ -333,7 +333,6 @@ int main(int argc, char **argv)
 				free(bbs);
 			}
 			bbs=NULL;
-			break;
 		}
 		else
 			bbs=NULL;

@@ -817,7 +817,7 @@ BOOL doterm(struct bbslist *bbs)
 	int	speed;
 	int	oldmc;
 	int	updated=FALSE;
-	BOOL	sleep=TRUE;
+	BOOL	sleep;
 
 	speed = bbs->bpsrate;
 	log_level = bbs->loglevel;
