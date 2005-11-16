@@ -647,10 +647,18 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					free(p2);
 					break;
 				case 'S':
-					scrollup();
+					i=atoi(cterm.escbuf+1);
+					if(i==0 && cterm.escbuf[1] != '0')
+						i=1
+					for(j=0; j<i; j++)
+						scrollup();
 					break;
 				case 'T':
-					scrolldown();
+					i=atoi(cterm.escbuf+1);
+					if(i==0 && cterm.escbuf[1] != '0')
+						i=1
+					for(j=0; j<i; j++)
+						scrolldown();
 					break;
 				case 'U':
 					clearscreen(7);
