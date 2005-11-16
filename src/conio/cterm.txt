@@ -107,4 +107,142 @@ CSI * [ p1 [ ; p2 ] ] r
 
 	SOURCE: VT4xx Specification from http://www.vt100.net/
 
+CSI [ p1 ] @
+	Insert Character(s)
+	Defaults: p1 = 1
+	Moves text from the current position to the right edge p1 characters
+	to the right, with rightmost charaters going off-screen and the
+	resulting hole being filled with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] A
+	Cursor Up
+	Defaults: p1 = 1
+	Moves the cursor position up p1 lines from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] B
+	Cursor Down
+	Defaults: p1 = 1
+	Moves the cursor position down p1 lines from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] C
+	Cursor Right
+	Defaults: p1 = 1
+	Moves the cursor position right p1 columns from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] D
+	Cursor Left
+	Defaults: p1 = 1
+	Moves the cursor position left p1 columns from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] E
+	Cursor Next Line
+	Defaults: p1 = 1
+	Moves the cursor position down p1 columns from the current position.
+	Moving past the bottom of the screen scrolls the screen up the remaining
+	number of lines filling newly added lines with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 [ ; p2 ] ] H
+CSI [ p1 [ ; p2 ] ] f
+	Cusror Position
+	Defaults: p1 = 1  p2 = 1
+	Moves the cursor to the p2th column of the p1th line.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] J
+	Erase in Page
+	Defaults: p1 = 0
+	Erases from the current screen according to the value of p1
+	0 - Erase from the current position to the end of the screen.
+	1 - Erase from the current position to the start of the screen.
+	2 - Erase entire screen.  As a violation of ECMA-048, also moves
+	    the cursor to position 1/1 as a number of BBS programs assume
+	    this behaviour.
+	Erased characters are set to the current attribute.
+
+	SOURCE BANSI.TXT
+
+CSI [ p1 ] K
+	Erase in Line
+	Defaults: p1 = 0
+	Erases from the current line according to the value pf p1
+	0 - Erase from the current position to the end of the line.
+	1 - Erase from the current position to the start of the line.
+	2 - Erase entire line.
+	Erased characters are set to the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] L
+	Insert Line(s)
+	Defaults: p1 = 1
+	Inserts p1 lines at the current line position.  The current line and
+	those after it are scrolled down and the new empty lines are filled with
+	the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] M
+	Delete Line(s) / "ANSI" Music
+	Defaults: p1 = 1
+	Deletes the current line and the p1 - 1 lines after it scrolling the first
+	non-deleted line up to the current line and filling the newly empty lines
+	at the end of the screen with the current attribute.
+	If "ANSI" Music is fully enabled (CSI = 2 M), performs "ANSI" music instead.
+	See "ANSI" MUSIC section for more details.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+	SOURCE: BANSI.TXT
+
+CSI N
+	"ANSI" Music / Not implemented.
+	If "ANSI" Music is set to BananaCom (CSI = 1 M) or fully enabled (CSI = 2 M)
+	performs "ANSI" muisic.  See "ANSI" MUSIC section for more details.
+
+	SOURCE: BANSI.TXT
+
+CSI [ p1 ] P
+	Delete Character
+	Defaults: p1 = 1
+	Deletes the character at the current position by shifting all characters from
+	the current column + p1 left to the current column.  Opened blanks at the end
+	of the line are filled with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] S
+	Scroll Up
+	Defaults: p1 = 1
+	Scrolls all text on the screen up p1 lines.  New lines emptied at the bottom
+	are filled with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] T
+	Scroll Down
+	Defaults: p1 = 1
+	Scrolls all text on the screen down p1 lines.  New lines emptied at the top
+	are filled with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
