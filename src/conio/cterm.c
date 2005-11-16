@@ -805,6 +805,13 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 				case 'n':
 					i=atoi(cterm.escbuf+1);
 					switch(i) {
+						case 5:
+							if(retbuf!=NULL) {
+								strcpy(tmp,"\x1b[0n");
+								if(strlen(retbuf)+strlen(tmp) < retsize)
+									strcat(retbuf,tmp);
+							}
+							break;
 						case 6:
 							if(retbuf!=NULL) {
 								sprintf(tmp,"%c[%d;%dR",27,wherey(),wherex());
