@@ -1,0 +1,69 @@
+CTerm terminal chariteristics:
+------------------------------
+
+Control characters:
+
+CR:
+	Move cursor position to column 1 of the current line
+
+LF:
+	Move cursor position to same row of the next column.
+	If current row is the last row, scrolls the screen up
+	and fills the new row with the current attribute.
+
+BS:
+	Non-destructive backspace.  Moves cursor position to
+	the previous column unless the current column is the
+	first, in which case no operation is performed.
+
+0x07:
+	Beep
+
+TAB:
+	Moves to the next tab stop.  Does not overwrite any
+	characters in between.  If the starting position is
+	last column, advances to next line.  If starting
+	position is the last column of the last line, performs
+	a scroll, filling the new line at bottom with the
+	current attribute and moves to the first character in
+	the new line.
+
+Control Codes:
+--------------
+
+Control codes are in the following format:
+ESC {SPACE to '/'}{'0' (ZERO) to '~'}
+	There may be multiple characters from the {SPACE to '/'} set
+	before the terminating '0' to '~'
+
+	Legal combinations which are not handled are silently dropped.
+
+ESC D
+	Scrolls window up one line filling the bottom line with the
+	current attribute.
+	SOURCE: BANSI.TXT
+
+ESC M
+	Scrolls window down one line filling the top line with the
+	current attribute
+	SOURCE: BANSI.TXT
+
+Control Sequences:
+------------------
+
+Control sequences are in the following format:
+ESC [ {'0' (ZERO) to '?'}{SPACE to '/'}{'@' to '~'}
+	There may be multiple characters from the {'0' (ZERO) to '?'}
+	and {SPACE to '/'} before the terminating {'@' to '~'} character.
+
+	Legal combinations not handled are silently dropped.
+
+Sequence Parameters:
+	Parameters are expressed by the {'0' (ZERO) to '?'} character set.
+	Sequences which use parameters use decimal parameters separated by
+	a ';'.  The use of a ':' from the set is reserver.
+	If the parameter string begins with '<', '=', '>', or '?' then
+	this is a non-standard extension to the ANSI spec.
+
+
+
