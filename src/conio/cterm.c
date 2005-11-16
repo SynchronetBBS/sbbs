@@ -649,14 +649,14 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 				case 'S':
 					i=atoi(cterm.escbuf+1);
 					if(i==0 && cterm.escbuf[1] != '0')
-						i=1
+						i=1;
 					for(j=0; j<i; j++)
 						scrollup();
 					break;
 				case 'T':
 					i=atoi(cterm.escbuf+1);
 					if(i==0 && cterm.escbuf[1] != '0')
-						i=1
+						i=1;
 					for(j=0; j<i; j++)
 						scrolldown();
 					break;
