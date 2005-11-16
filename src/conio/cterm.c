@@ -667,9 +667,15 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 					break;
 #endif
 				case 'Z':
+					i=atoi(cterm.escbuf+1);
+					if(i==0 && cterm.escbuf[0] != '0')
+						i=1;
 					for(j=10;j>=0;j--) {
 						if(cterm_tabs[j]<wherex()) {
-							gotoxy(cterm_tabs[j],wherey());
+							k=j-i+1;
+							if(k<0)
+								k=0;
+							gotoxy(cterm_tabs[k],wherey());
 							break;
 						}
 					}
