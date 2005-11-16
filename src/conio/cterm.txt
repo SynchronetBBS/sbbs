@@ -51,8 +51,11 @@ ESC M
 Control Sequences:
 ------------------
 
+Control sequences start with the Control Sequence Introducer which is
+ESC [  CSI will be used to express this from now on.
+
 Control sequences are in the following format:
-ESC [ {'0' (ZERO) to '?'}{SPACE to '/'}{'@' to '~'}
+CSI {'0' (ZERO) to '?'}{SPACE to '/'}{'@' to '~'}
 	There may be multiple characters from the {'0' (ZERO) to '?'}
 	and {SPACE to '/'} before the terminating {'@' to '~'} character.
 
@@ -65,5 +68,43 @@ Sequence Parameters:
 	If the parameter string begins with '<', '=', '>', or '?' then
 	this is a non-standard extension to the ANSI spec.
 
+	Parameters will be shown as pX where X will be a decimal position
+	number.  Surrounded by [] indicates the parameter is optional.
+
+CSI = [p1] M
+	NON-STANDARD EXTENSION.
+	Defaults:  p1 = 0
+	Sets the current state of ANSI music parsing.
+	0 - Only CSI | will introduce an ANSI music string.
+	1 - Both CSI | and CSI N will introduce an ANSI music string.
+	2 - CSI |, CSI N, and CSI M will all intriduce and ANSI music string.
+	    In this mode, Delete Line will not be available.
+
+	SOURCE: CTerm only.
+
+CSI * [ p1 [ ; p2 ] ] r
+	NON-STANDARD EXTENSION.
+	Set the output emulation speed.
+	If p1 or p2 are omitted, causes output speed emulation to stop
+	p1 may be empty.
+	Sequence is ignored if p1 is not empty, 0, or 1.
+	The value of p2 sets the output speed emulation as follows:
+
+	Value		Speed
+	-----		-----
+	empty, 0	Unlimited
+	1		300
+	2		600
+	3		1200
+	4		2400
+	5		4800
+	6		9600
+	7		19200
+	8		38400
+	9		57600
+	10		76800
+	11		115200
+
+	SOURCE: VT4xx Specification from http://www.vt100.net/
 
 
