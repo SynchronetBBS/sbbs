@@ -730,6 +730,9 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 							case 22:
 								cterm.attr &= 0xf7;
 								break;
+							case 25:
+								cterm.attr &= 0x7f;
+								break;
 							case 30:
 								cterm.attr&=248;
 								break;
