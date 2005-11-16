@@ -60,6 +60,7 @@ CSI {'0' (ZERO) to '?'}{SPACE to '/'}{'@' to '~'}
 	and {SPACE to '/'} before the terminating {'@' to '~'} character.
 
 	Legal combinations not handled are silently dropped.
+	Illegal combinations are displayed.
 
 Sequence Parameters:
 	Parameters are expressed by the {'0' (ZERO) to '?'} character set.
