@@ -82,7 +82,7 @@ CSI = [p1] M
 
 	SOURCE: CTerm only.
 
-CSI * [ p1 [ ; p2 ] ] r
+CSI [ p1 [ ; p2 ] ] * r
 	NON-STANDARD EXTENSION.
 	Set the output emulation speed.
 	If p1 or p2 are omitted, causes output speed emulation to stop
@@ -246,3 +246,98 @@ CSI [ p1 ] T
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI U
+	NON-STANDARD (Disabled in current code)
+	Clear screen with default attribute.
+	This code is *supposed* to go to the "next page" according to the ANSI/ECMA specs.
+	With CSI V going to "previous page"
+
+	SOURCE: BANSI.TXT
+
+CSI [ p1 ] Z
+	Cursor Backward Tabulation
+	Defailts: p1 = 1
+	Move the cursor to the p1th preceeding tab stop.  Will no go past the start of the
+	line.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 [ ; pX ... ] ] m
+	Select Graphic Rendition
+	Defaults: p1 = 0
+	Sets or clears one or text attributes.  Unlimited parameters are supported and are
+	applied in received order.  The following are supoprted:
+											Blink Bold FG BG (Modified)
+	0 -  Default attribute, white on black     X    X  X  X
+	1 -  Bright Intensity					        X
+	2 -  Dim intensty						        X
+	5 -  Blink (By definition, slow blink)     X
+	6 -  Blink (By definition, fast blink)     X
+	     NOTE: Both blinks are the same speed.
+	7 -  Negative Image - Reverses FG and BG           X  X
+	8 -  Concealed characters, sets the                X
+	     forground colour to the background
+		 colour.
+	22 - Normal intensity					        X
+	25 - Steady (Not blinking)				   X
+	27 - Positive Image - Reverses FG and BG           X  X
+	     NOTE: This should be a separate
+		       attribute than 7 but this
+			   implementation makes them equal
+    30 - Black foreground					           X
+    31 - Red foreground						           X
+    32 - Green foreground					           X
+    33 - Yellow foreground					           X
+    34 - Blue foreground					           X
+    35 - Magenta foreground					           X
+    36 - Cyan foreground					           X
+    37 - White foreground					           X
+	39 - Default foreground (same as white)	           X
+    40 - Black background					           X
+    41 - Red background						           X
+    42 - Green background					           X
+    43 - Yellow background					           X
+    44 - Blue background					           X
+    45 - Magenta background					           X
+    46 - Cyan background					           X
+    47 - White background					           X
+	49 - Default background (same as black)	           X
+
+	All others are ignored.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] n
+	Device Status Report
+	Defaults: p1 = 0
+	A request for a status report.  CTerm handles the following two requests:
+	5   - Request a DSR
+		  CTerm will always reply with CSI 0 n indicating 
+		  "ready, no malfunction detected"
+	6   - Request active cursor position
+		  CTerm will reply with CSI y ; x R where y is the current line and x is
+		  the current row.
+	255 - NON-STANDARD EXTENSION
+		  Replies as though a CSI [ 6 n was recieved with the cursor in the bottom
+		  right corner.  ie: Returns the terminal size as a position report.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+			(parameters 5 and 6 only)
+	SOURCE: BANSI.TXT (parameter 255)
+
+CSI s
+	NON-STANDARD EXTENSION
+	Save Current Position
+	Saves the current cursor position for later restoring with CSI u
+	although this is non-standard, it's so widely used in the BBS world that any
+	terminal program MUST implement it.
+	
+	SOURCE: BANSI.TXT
+
+CSI u
+	NON-STANDARD EXTENSION (Legal)
+	Restore Cursor Position
+	Move the cursor to the last position saved by CSI s.  If no position has
+	been saved, the cursor is not moved.
+
+	SOURCE: BANSI.TXT
