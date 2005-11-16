@@ -400,9 +400,9 @@ while(client.socket.is_connected && !quit) {
 					,hdr.subject
 					,hdr.from
 					,hdr.date
-					,hdr.id			// message-id
-					,hdr.reply_id	// references
-					,hdr.data_length	// byte count
+					,hdr.id								// message-id
+					,hdr.reply_id ? hdr.reply_id : ''	// references
+					,hdr.data_length					// byte count
 					,Math.round(hdr.data_length/79)+1	// line count
 					,xref(hdr)
 					));
