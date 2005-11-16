@@ -244,19 +244,8 @@ while(client.socket.is_connected && !quit) {
 			break;
 
 		case "LIST":
-			if(cmd[1]!=undefined && cmd[1].toUpperCase()=="OVERVIEW.FMT") {
-				writeln("215 Order of fields in overview database.");
-				writeln("Subject:");
-				writeln("From:");
-				writeln("Date:");
-				writeln("Message-ID:");
-				writeln("References:");
-				writeln("Bytes:");
-				writeln("Lines:");
-				writeln("Xref:full");
-			}
-			else {
-				writeln("215 list of newsgroups follows");
+			if(cmd[1]==undefined) {
+ 				writeln("215 list of newsgroups follows");
 				if(include_mail && user.security.level == 99) {
 					msgbase=new MsgBase("mail");
 					if(msgbase.open()==true) {
@@ -277,8 +266,32 @@ while(client.socket.is_connected && !quit) {
 							));
 						msgbase.close();
 					}
+				writeln(".");	// end of list
 			}
-			writeln(".");	// end of list
+			else if(cmd[1].toUpperCase()=="OVERVIEW.FMT") {
+				writeln("215 Order of fields in overview database.");
+				writeln("Subject:");
+				writeln("From:");
+				writeln("Date:");
+				writeln("Message-ID:");
+				writeln("References:");
+				writeln("Bytes:");
+				writeln("Lines:");
+				writeln("Xref:full");
+				writeln(".");	// end of list
+			}
+			else if(cmd[1].toUpperCase()=="EXTENSIONS") {
+				writeln("202 Extensions supported:");
+				writeln("OVER");
+				writeln("HDR");
+				writeln("LISTGROUP");
+				writeln("XGTITLE");
+				writeln(".");	// end of list
+			}
+			else {
+				writeln("500 Syntax error or unknown command");
+				log(LOG_NOTICE,"!unsupported LIST argument: " + cmd[1]);
+			}
 			break;
 
 		case "XGTITLE":
@@ -307,7 +320,7 @@ while(client.socket.is_connected && !quit) {
 		case "LISTGROUP":
 			found=false;
 			if(cmd[1]==undefined) {
-				if(msgbase==null) {
+				if(!selected) {
 					writeln("412 no newsgroup selected");
 					break;
 				}
@@ -362,11 +375,10 @@ while(client.socket.is_connected && !quit) {
 
 		case "OVER":
 		case "XOVER":
-			if(msgbase==null) {
+			if(!selected) {
 				writeln("412 no newsgroup selected");
 				break;
 			}
-			writeln("224 Overview information follows");
 			var first, last;
 			if(cmd[1]==undefined)
 				first=last=current_article;
@@ -376,6 +388,7 @@ while(client.socket.is_connected && !quit) {
 				last=Number(range[1]);
 			} else
 				first=last=Number(cmd[1]);
+			writeln("224 Overview information follows for articles " + first + " through " + last);
 			for(i=first;i<=last;i++) {
 				hdr=msgbase.get_msg_header(false,i);
 				if(hdr==null)
@@ -397,12 +410,13 @@ while(client.socket.is_connected && !quit) {
 			writeln(".");	// end of list
 			break;
 
+		case "HDR":
 		case "XHDR":
 			if(cmd[1]==undefined || cmd[2]==undefined) {
 				writeln("500 Syntax error or unknown command");
 				break;
 			}
-			if(msgbase==null) {
+			if(!selected) {
 				writeln("412 no newsgroup selected");
 				break;
 			}
@@ -478,7 +492,7 @@ while(client.socket.is_connected && !quit) {
 		case "HEAD":
 		case "BODY":
 		case "STAT":
-			if(msgbase==null) {
+			if(!selected) {
 				writeln("412 no newsgroup selected");
 				bogus_cmd_counter++;
 				break;
@@ -613,7 +627,7 @@ while(client.socket.is_connected && !quit) {
 
 		case "NEXT":
 		case "LAST":
-			if(msgbase==null) {
+			if(!selected) {
 				writeln("412 no newsgroup selected");
 				break;
 			}
