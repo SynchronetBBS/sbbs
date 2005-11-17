@@ -907,6 +907,7 @@ static void handle_sigs(void)
 	int			i;
 	int			sig=0;
 	sigset_t	sigs;
+	sigset_t	allsigs;
 
 	thread_up(NULL,TRUE,TRUE);
 
@@ -922,6 +923,10 @@ static void handle_sigs(void)
 	}
 
 	/* Set up blocked signals */
+	sigfillset(&allsigs);
+	pthread_sigmask(SIG_BLOCK,&allsigs,NULL);
+
+	/* Set up handled/waited sigs */
 	sigemptyset(&sigs);
 	sigaddset(&sigs,SIGINT);
 	sigaddset(&sigs,SIGQUIT);
@@ -930,17 +935,9 @@ static void handle_sigs(void)
 	sigaddset(&sigs,SIGHUP);
 	sigaddset(&sigs,SIGALRM);
 	/* sigaddset(&sigs,SIGPIPE); */
-	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
 	while(1)  {
 		if((i=sigwait(&sigs,&sig))!=0) {   /* wait here until signaled */
 			lprintf(LOG_ERR,"     !sigwait FAILURE (%d)", i);
-			if(i==EINTR) {
-				sigset_t moresigs;
-				lprintf(LOG_ERR,"     Adding signal %d to blocked set",sig);
-				memcpy(&moresigs, &sigs, sizeof(moresigs));
-				sigaddset(&sigs, sig);
-				pthread_sigmask(SIG_BLOCK,&moresigs,NULL);
-			}
 			continue;
 		}
 		lprintf(LOG_NOTICE,"     Got signal (%d)", sig);
