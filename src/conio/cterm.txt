@@ -345,7 +345,7 @@ CSI s
 	although this is non-standard, it's so widely used in the BBS world that
 	any terminal program MUST implement it.
 	
-	SOURCE: BANSI.TXT
+	SOURCE: ANSI.SYS
 
 CSI u
 	NON-STANDARD EXTENSION (Legal)
@@ -353,7 +353,7 @@ CSI u
 	Move the cursor to the last position saved by CSI s.  If no position has
 	been saved, the cursor is not moved.
 
-	SOURCE: BANSI.TXT
+	SOURCE: ANSI.SYS
 
 "ANSI" Music
 ============
