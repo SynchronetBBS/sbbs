@@ -213,10 +213,11 @@ CSI [ p1 ] L
 CSI [ p1 ] M
 	Delete Line(s) / "ANSI" Music
 	Defaults: p1 = 1
-	Deletes the current line and the p1 - 1 lines after it scrolling the first
-	non-deleted line up to the current line and filling the newly empty lines
-	at the end of the screen with the current attribute.
-	If "ANSI" Music is fully enabled (CSI = 2 M), performs "ANSI" music instead.
+	Deletes the current line and the p1 - 1 lines after it scrolling the
+	first non-deleted line up to the current line and filling the newly
+	empty lines at the end of the screen with the current attribute.
+	If "ANSI" Music is fully enabled (CSI = 2 M), performs "ANSI" music
+	instead.
 	See "ANSI" MUSIC section for more details.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
@@ -232,53 +233,54 @@ CSI N
 CSI [ p1 ] P
 	Delete Character
 	Defaults: p1 = 1
-	Deletes the character at the current position by shifting all characters from
-	the current column + p1 left to the current column.  Opened blanks at the end
-	of the line are filled with the current attribute.
+	Deletes the character at the current position by shifting all characters
+	from the current column + p1 left to the current column.  Opened blanks
+	at the end of the line are filled with the current attribute.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 CSI [ p1 ] S
 	Scroll Up
 	Defaults: p1 = 1
-	Scrolls all text on the screen up p1 lines.  New lines emptied at the bottom
-	are filled with the current attribute.
+	Scrolls all text on the screen up p1 lines.  New lines emptied at the
+	bottom are filled with the current attribute.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 CSI [ p1 ] T
 	Scroll Down
 	Defaults: p1 = 1
-	Scrolls all text on the screen down p1 lines.  New lines emptied at the top
-	are filled with the current attribute.
+	Scrolls all text on the screen down p1 lines.  New lines emptied at the
+	top are filled with the current attribute.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 CSI U
 	NON-STANDARD (Disabled in current code)
 	Clear screen with default attribute.
-	This code is *supposed* to go to the "next page" according to the ANSI/ECMA specs.
-	With CSI V going to "previous page"
+	This code is *supposed* to go to the "next page" according to the
+	ANSI/ECMA specs with CSI V going to "previous page"
 
 	SOURCE: BANSI.TXT
 
 CSI [ p1 ] Z
 	Cursor Backward Tabulation
 	Defailts: p1 = 1
-	Move the cursor to the p1th preceeding tab stop.  Will no go past the start of the
-	line.
+	Move the cursor to the p1th preceeding tab stop.  Will no go past the
+	start of the line.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 CSI [ p1 [ ; pX ... ] ] m
 	Select Graphic Rendition
 	Defaults: p1 = 0
-	Sets or clears one or text attributes.  Unlimited parameters are supported and are
-	applied in received order.  The following are supoprted:
-											Blink Bold FG BG (Modified)
+	Sets or clears one or text attributes.  Unlimited parameters are
+	supported and are applied in received order.  The following are
+	supoprted:
+	                                        Blink Bold FG BG (Modified)
 	0 -  Default attribute, white on black     X    X  X  X
-	1 -  Bright Intensity					        X
-	2 -  Dim intensty						        X
+	1 -  Bright Intensity                           X
+	2 -  Dim intensty                               X
 	5 -  Blink (By definition, slow blink)     X
 	6 -  Blink (By definition, fast blink)     X
 	     NOTE: Both blinks are the same speed.
@@ -286,30 +288,30 @@ CSI [ p1 [ ; pX ... ] ] m
 	8 -  Concealed characters, sets the                X
 	     forground colour to the background
 		 colour.
-	22 - Normal intensity					        X
-	25 - Steady (Not blinking)				   X
+	22 - Normal intensity                           X
+	25 - Steady (Not blinking)                 X
 	27 - Positive Image - Reverses FG and BG           X  X
 	     NOTE: This should be a separate
 		       attribute than 7 but this
 			   implementation makes them equal
-    30 - Black foreground					           X
-    31 - Red foreground						           X
-    32 - Green foreground					           X
-    33 - Yellow foreground					           X
-    34 - Blue foreground					           X
-    35 - Magenta foreground					           X
-    36 - Cyan foreground					           X
-    37 - White foreground					           X
+	30 - Black foreground                              X
+	31 - Red foreground                                X
+	32 - Green foreground                              X
+	33 - Yellow foreground                             X
+	34 - Blue foreground                               X
+	35 - Magenta foreground                            X
+	36 - Cyan foreground                               X
+	37 - White foreground                              X
 	39 - Default foreground (same as white)	           X
-    40 - Black background					           X
-    41 - Red background						           X
-    42 - Green background					           X
-    43 - Yellow background					           X
-    44 - Blue background					           X
-    45 - Magenta background					           X
-    46 - Cyan background					           X
-    47 - White background					           X
-	49 - Default background (same as black)	           X
+	40 - Black background                                 X
+	41 - Red background                                   X
+	42 - Green background                                 X
+	43 - Yellow background                                X
+	44 - Blue background                                  X
+	45 - Magenta background                               X
+	46 - Cyan background                                  X
+	47 - White background                                 X
+	49 - Default background (same as black)               X
 
 	All others are ignored.
 
@@ -318,27 +320,30 @@ CSI [ p1 [ ; pX ... ] ] m
 CSI [ p1 ] n
 	Device Status Report
 	Defaults: p1 = 0
-	A request for a status report.  CTerm handles the following two requests:
-	5   - Request a DSR
+	A request for a status report.  CTerm handles the following two
+	requests:
+	5	- Request a DSR
 		  CTerm will always reply with CSI 0 n indicating 
 		  "ready, no malfunction detected"
-	6   - Request active cursor position
-		  CTerm will reply with CSI y ; x R where y is the current line and x is
+	6	- Request active cursor position
+		  CTerm will reply with CSI y ; x R where y is the current line
+		  and x is
 		  the current row.
-	255 - NON-STANDARD EXTENSION
-		  Replies as though a CSI [ 6 n was recieved with the cursor in the bottom
-		  right corner.  ie: Returns the terminal size as a position report.
+	255	- NON-STANDARD EXTENSION
+		  Replies as though a CSI [ 6 n was recieved with the cursor in
+		  the bottom right corner.  ie: Returns the terminal size as a
+		  position report.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-			(parameters 5 and 6 only)
+		(parameters 5 and 6 only)
 	SOURCE: BANSI.TXT (parameter 255)
 
 CSI s
 	NON-STANDARD EXTENSION
 	Save Current Position
 	Saves the current cursor position for later restoring with CSI u
-	although this is non-standard, it's so widely used in the BBS world that any
-	terminal program MUST implement it.
+	although this is non-standard, it's so widely used in the BBS world that
+	any terminal program MUST implement it.
 	
 	SOURCE: BANSI.TXT
 
@@ -352,12 +357,13 @@ CSI u
 
 "ANSI" Music
 ============
-This is the place where the BBS world completely fell on it's face in ANSI useage.
-A programmer with either TeleMate or QModem (the first two programs to support
-"ANSI" music as far as I can tell) decided they needed a method of playing music
-on a BBS conenction.  They decided to add an "unused" ANSI code and go their merry
-way.  Since their product didn't implement CSI M (Delete line) they assumed it was
-unused and blissfully broke the spec.  They defined ANSI music as:
+This is the place where the BBS world completely fell on it's face in ANSI
+useage.  A programmer with either TeleMate or QModem (the first two programs to
+support "ANSI" music as far as I can tell) decided they needed a method of
+playing music on a BBS conenction.  They decided to add an "unused" ANSI code
+and go their merry way.  Since their product didn't implement CSI M (Delete
+line) they assumed it was unused and blissfully broke the spec.  They defined
+"ANSI" music as:
 CSI M <music string> 0x0a
 
 They used a subset of IBM BASICs PLAY statement functionality for ANSI music
@@ -367,12 +373,12 @@ CSI MFABCD 0x0a and the F would not be played as a note.  This just added
 further confusion to the mess.
 
 Later on, BananaCom realized the conflict between delete line and music, so they
-added *another* broken code CSI N (Properly, erase in field... not implemented in
-many BBS clients) which was to provide an "unbroken" method of playing music
+added *another* broken code CSI N (Properly, erase in field... not implemented
+in many BBS clients) which was to provide an "unbroken" method of playing music
 strings.  They also used CSI Y to disambiguate delete line, CSI Y is supposed
-to be a vertical tab (also not implemented in very many clients).  BananaCom also
-introduced many more non-standard and stardard-breaking control sequences which
-are not supported by CTerm.
+to be a vertical tab (also not implemented in very many clients).  BananaCom
+also introduced many more non-standard and stardard-breaking control sequences
+which are not supported by CTerm.
 
 CTerm has further introduced a standard compliant ANSI music introducer CSI |
 
@@ -386,8 +392,9 @@ If any character not in this list is present, the music string is ignored as
 is the introducing code.
 
 If the introducing code is CSI M the first char is examined, and if it is
-a case-insensitive match for any character in "BFLNS" then the music string
-is treated as though an M is located in front of the first character.
+a one of "BbFfLlSs" or if it is "N" or "n" and is not followed by a decimal
+digit, then the music string is treated as though an M is located in front
+of the first character.
 
 The music string is then parsed with the following sequences supported:
 Mx sets misc music parameters where x is one of the following:
@@ -410,10 +417,11 @@ O### Sets the octave of the music where ### is one or more decimal digits.
 N### Plays a single note by number.  Valid values are 0 - 71.  Invalid
 	values are played as silence.  Note zero is C in octave 0.
 	See following section for valid note modifiers.
-A, B, C, D, E, or G Plays the named note from the current octave.
-	an "Octave" is the rising sequence of the following notes:
+A, B, C, D, E, G, or P Plays the named note or pause from the current
+	octave.  An "Octave" is the rising sequence of the following notes:
 	C, C#, D, D#, E, F, F#, G, G#, A, A#, B
 	This is contrary to normal music terminology.
+	The special note "P" is a pause.
 	Notes may be followed by one or more modifier characters which
 	are applied in order.  If one overrides a previous one, the last
 	is used.  The valid modifiers are:
