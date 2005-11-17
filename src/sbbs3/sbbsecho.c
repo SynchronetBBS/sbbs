@@ -2593,12 +2593,13 @@ char *pktname(BOOL temp)
 
 	now=time(NULL);
 	for(i=0;i<MAX_TOTAL_PKTS*2;i++) {
-		now+=i;
+		now++;
 		tm=localtime(&now);
 		sprintf(str,"%s%02u%02u%02u%02u.%s",cfg.outbound,tm->tm_mday,tm->tm_hour
 			,tm->tm_min,tm->tm_sec,temp ? "pk_" : "pkt");
 		if(!fexist(str))				/* Add 1 second if name exists */
-			break; }
+			break; 
+	}
 	return(str);
 }
 /******************************************************************************
