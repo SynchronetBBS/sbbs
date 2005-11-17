@@ -357,8 +357,92 @@ A programmer with either TeleMate or QModem (the first two programs to support
 "ANSI" music as far as I can tell) decided they needed a method of playing music
 on a BBS conenction.  They decided to add an "unused" ANSI code and go their merry
 way.  Since their product didn't implement CSI M (Delete line) they assumed it was
-unused and blissfully broke the spec.  The defined ANSI music as:
+unused and blissfully broke the spec.  They defined ANSI music as:
 CSI M <music string> 0x0a
+
 They used a subset of IBM BASICs PLAY statement functionality for ANSI music
-strings which oftem start with "MF" or "MB", so the 
+strings which oftem start with "MF" or "MB", so the M after the CSI was often
+considered as part of the music string.  You would see things such as:
+CSI MFABCD 0x0a and the F would not be played as a note.  This just added
+further confusion to the mess.
+
+Later on, BananaCom realized the conflict between delete line and music, so they
+added *another* broken code CSI N (Properly, erase in field... not implemented in
+many BBS clients) which was to provide an "unbroken" method of playing music
+strings.  They also used CSI Y to disambiguate delete line, CSI Y is supposed
+to be a vertical tab (also not implemented in very many clients).  BananaCom also
+introduced many more non-standard and stardard-breaking control sequences which
+are not supported by CTerm.
+
+CTerm has further introduced a standard compliant ANSI music introducer CSI |
+
+By default, CTerm allows both CSI N and CSI | to introduce a music string.
+Allowed introducers are set by CSI = p1 M as defined above.
+
+The details of ANSI music are as follows then:
+The following characters are allowed in music strings:
+"aAbBcCdDeEfFgGlLmMnNoOpPsStT0123456789.-+#<> "
+If any character not in this list is present, the music string is ignored as
+is the introducing code.
+
+If the introducing code is CSI M the first char is examined, and if it is
+a case-insensitive match for any character in "BFLNS" then the music string
+is treated as though an M is located in front of the first character.
+
+The music string is then parsed with the following sequences supported:
+Mx sets misc music parameters where x is one of the following:
+	F - Plays music in the foreground, waiting for music to complete
+	    playing before more characters are processed.
+	B - Play music in the background, allowing normal processing to
+	    continue.  This is ignored by CTerm.  All music is played in
+	    the foreground.
+	N - "Normal" not legato, not stacatto
+	L - Play notes legato
+	S - Play notes stacatto
+T### Sets the tempo of the musix where ### is one or more decimal digits.
+	If the decimal number is greater than 255, it is forced to 255.
+	If it is less than 32, it is forced to 32.  The number signifies
+	quarter notes per minute.
+	The default tempo is 120.
+O### Sets the octave of the music where ### is one or more decimal digits.
+	If the decimal number is greater than 6, it is forced to 6.
+	The default octave is 4.
+N### Plays a single note by number.  Valid values are 0 - 71.  Invalid
+	values are played as silence.  Note zero is C in octave 0.
+	See following section for valid note modifiers.
+A, B, C, D, E, or G Plays the named note from the current octave.
+	an "Octave" is the rising sequence of the following notes:
+	C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+	This is contrary to normal music terminology.
+	Notes may be followed by one or more modifier characters which
+	are applied in order.  If one overrides a previous one, the last
+	is used.  The valid modifiers are:
+	+ - Sharp.  The next highest semitone is played.
+		Each sharp character will move up one semitone, so "C++"
+		is equivilent to "D".
+	# - Sharp.  The next highest semitone is played.
+		Each sharp character will move up one semitone, so "C##"
+		is equivilent to "D".
+	- - Flat.  The next lowest semitone is played.
+		Each flat character will move down one semitone, so "D--"
+		is equivilent to "C".
+	. - Duration is 1.5 times what it would otherwise be.  Dots are not
+		cumulative, so "C.." is equivilent to "C."
+	### - Notelength as a reciprical of the fraction of a whole note to
+		play the note for.  For example, 4 would indicate a 1/4 note.
+		The default note length is 4.
+<	Move the the next lowest octave.
+	Octave cannot go above six or below zero.
+>	Move to the next highest octave.
+	Octave cannot go above six or below zero.
+
+The lowest playable character is C in octave zero.  The frequencies for the
+six C notes for the seven octaves in rising order are:
+65406, 130810, 261620, 523250, 1046500, 2093000, 4186000
+
+Purists will note that the lower three octaves are not exactly one half of
+the next higher octave in frequency.  This is due to lost resolution of
+low frequences.  The notes *sound* correct to me.  If anyone can give me
+an excellent reason to change them (and more correct integer values for all
+notes) I am willing to do that assuming the notes still sound "right".
 
