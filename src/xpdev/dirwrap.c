@@ -924,14 +924,14 @@ int DLLCALL mkdirs(const char* path)
 
 	while(*p) {
 		SKIP_CHARSET(p,sep);
+		if(*p==0)
+			break;
 		tp=p;
 		FIND_CHARSET(tp,sep);
-		if(*p) {
-			safe_snprintf(dir,sizeof(dir),"%.*s",tp-path, path);
-			if(!isdir(dir)) {
-				if((result=MKDIR(dir))!=0)
-					break;
-			}
+		safe_snprintf(dir,sizeof(dir),"%.*s",tp-path, path);
+		if(!isdir(dir)) {
+			if((result=MKDIR(dir))!=0)
+				break;
 		}
 		p=tp;
 	}
