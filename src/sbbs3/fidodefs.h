@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -120,7 +120,8 @@ typedef struct _PACK {				/* Fidonet Packet Header				*/
 
 } fpkthdr_t;
 
-#define FIDO_PACKET_HDR_LEN 58
+#define FIDO_PACKET_HDR_LEN			58
+#define FIDO_PACKET_TERMINATOR		0x0000	/* 16-bits */
 
 typedef struct _PACK {				/* FidoNet Packed Message Header 		*/
 	short	type;					/* Message type: 2						*/
@@ -133,7 +134,8 @@ typedef struct _PACK {				/* FidoNet Packed Message Header 		*/
 	char	time[FIDO_TIME_LEN];	/* Time in goof-ball ASCII format		*/
 } fpkdmsg_t;
 
-#define FIDO_PACKED_MSG_HDR_LEN 34	/* Fixed header fields only */
+#define FIDO_PACKED_MSG_HDR_LEN		34		/* Fixed header fields only */
+#define FIDO_PACKED_MSG_TERMINATOR	'\0'	/* 8-bits */
 
 typedef struct _PACK {				/* FidoNet Stored Message Header *.msg	*/
 	char	from[FIDO_NAME_LEN],	/* From user							*/
@@ -155,7 +157,8 @@ typedef struct _PACK {				/* FidoNet Stored Message Header *.msg	*/
 			next;					/* Next message number in stream		*/
 } fmsghdr_t;
 
-#define FIDO_STORED_MSG_HDR_LEN 190
+#define FIDO_STORED_MSG_HDR_LEN		190
+#define FIDO_STORED_MSG_TERMINATOR	'\0'	/* 8-bits */
 
 #if defined(PRAGMA_PACK)
 #pragma pack(pop)		/* original packing */
