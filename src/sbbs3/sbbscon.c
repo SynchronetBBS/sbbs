@@ -907,7 +907,6 @@ static void handle_sigs(void)
 	int			i;
 	int			sig=0;
 	sigset_t	sigs;
-	sigset_t	allsigs;
 
 	thread_up(NULL,TRUE,TRUE);
 
@@ -923,10 +922,6 @@ static void handle_sigs(void)
 	}
 
 	/* Set up blocked signals */
-	sigfillset(&allsigs);
-	pthread_sigmask(SIG_BLOCK,&allsigs,NULL);
-
-	/* Set up handled/waited sigs */
 	sigemptyset(&sigs);
 	sigaddset(&sigs,SIGINT);
 	sigaddset(&sigs,SIGQUIT);
@@ -935,6 +930,7 @@ static void handle_sigs(void)
 	sigaddset(&sigs,SIGHUP);
 	sigaddset(&sigs,SIGALRM);
 	/* sigaddset(&sigs,SIGPIPE); */
+	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
 	while(1)  {
 		if((i=sigwait(&sigs,&sig))!=0) {   /* wait here until signaled */
 			lprintf(LOG_ERR,"     !sigwait FAILURE (%d)", i);
@@ -1582,10 +1578,6 @@ int main(int argc, char** argv)
 	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
 #elif defined(__unix__)
 	/* Set up blocked signals */
-#ifdef _THREAD_SUID_BROKEN
-	sigfillset(&sigs);
-	sigprocmask(SIG_BLOCK,&sigs,NULL);
-#else
 	sigemptyset(&sigs);
 	sigaddset(&sigs,SIGINT);
 	sigaddset(&sigs,SIGQUIT);
@@ -1597,7 +1589,6 @@ int main(int argc, char** argv)
 	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
     signal(SIGPIPE, SIG_IGN);       /* Ignore "Broken Pipe" signal (Also used for broken socket etc.) */
     signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
-#endif
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
 	if(new_uid_name[0]!=0) {        /*  check the user arg, if we have uid 0 */
 		/* Can't recycle servers (re-bind ports) as non-root user */
