@@ -231,6 +231,7 @@ DLLEXPORT ulong		DLLCALL getfreediskspace(const char* path, ulong unit);
 DLLEXPORT ulong		DLLCALL delfiles(char *inpath, char *spec);
 DLLEXPORT char*		DLLCALL backslash(char* path);
 DLLEXPORT BOOL 		DLLCALL wildmatch(const char *fname, const char *spec, BOOL path);
+DLLEXPORT int		DLLCALL	mkdirs(const char* path);
 
 
 #if defined(__unix__)
