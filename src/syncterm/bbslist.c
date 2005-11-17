@@ -232,8 +232,8 @@ int edit_list(struct bbslist *item,char *listpath)
 				uifc.helpbuf=	"`Connection Type`\n\n"
 								"Select the type of connection you wish to make:\n"
 								"~ RLogin:~ Auto-login with RLogin protocol\n"
-								"~ Telnet:~ Use more common Telnet protocol (experimental)\n"
-								"~ Raw:   ~ Make a raw socket connection (experimental)\n";
+								"~ Telnet:~ Use more common Telnet protocol\n"
+								"~ Raw:   ~ Make a raw socket connection\n";
 				uifc.list(WIN_SAV,0,0,0,&(item->conn_type),NULL,"Connection Type",&(conn_types[1]));
 				item->conn_type++;
 				iniSetEnum(&inifile,item->name,"ConnectionType",conn_types,item->conn_type,&ini_style);
@@ -508,8 +508,8 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						uifc.helpbuf=	"`Connection Type`\n\n"
 										"Select the type of connection you wish to make:\n"
 										"~ RLogin:~ Auto-login with RLogin protocol\n"
-										"~ Telnet:~ Use more common Telnet protocol (experimental)\n"
-										"~ Raw:   ~ Make a raw socket connection (experimental)\n";
+										"~ Telnet:~ Use more common Telnet protocol\n"
+										"~ Raw:   ~ Make a raw socket connection\n";
 						list[listcount-1]->conn_type=list[listcount-1]->port==513
 												?CONN_TYPE_RLOGIN-1
 												:(list[listcount-1]->port==23
