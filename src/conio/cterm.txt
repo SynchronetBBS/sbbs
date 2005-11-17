@@ -1,6 +1,13 @@
 CTerm terminal chariteristics:
 ------------------------------
 
+End of line behaviour (wrapping):
+The cursor is moved to the first character of the next line
+as soon as a character is written to the last column of the
+current line, not on the next character.  A tab will wrap
+to the next line only if the current cursor position is the
+last character on the line.
+
 Control characters:
 
 CR:
@@ -342,3 +349,16 @@ CSI u
 	been saved, the cursor is not moved.
 
 	SOURCE: BANSI.TXT
+
+"ANSI" Music
+============
+This is the place where the BBS world completely fell on it's face in ANSI useage.
+A programmer with either TeleMate or QModem (the first two programs to support
+"ANSI" music as far as I can tell) decided they needed a method of playing music
+on a BBS conenction.  They decided to add an "unused" ANSI code and go their merry
+way.  Since their product didn't implement CSI M (Delete line) they assumed it was
+unused and blissfully broke the spec.  The defined ANSI music as:
+CSI M <music string> 0x0a
+They used a subset of IBM BASICs PLAY statement functionality for ANSI music
+strings which oftem start with "MF" or "MB", so the 
+
