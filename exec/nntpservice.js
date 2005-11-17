@@ -85,7 +85,7 @@ function write(str)
 function writeln(str)
 {
 	if(debug)
-		log(format("rsp: %s",str));
+		log("rsp: " + str);
 	write(str + "\r\n");
 }
 
