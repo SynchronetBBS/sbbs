@@ -2005,7 +2005,7 @@ char* prep_code(char *str)
 			tmp[j++]=str[i];
 	tmp[j]=0;
 	strcpy(str,tmp);
-	if(j>=LEN_CODE) {	/* Extra chars? Strip symbolic chars */
+	if(j>LEN_CODE) {	/* Extra chars? Strip symbolic chars */
 		for(i=j=0;str[i];i++)
 			if(isalnum(str[i]))
 				tmp[j++]=str[i];
