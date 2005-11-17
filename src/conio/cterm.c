@@ -326,6 +326,10 @@ void play_music(void)
 						i=1;
 					}
 				}
+				if(note=='P') {
+					notenum=-1;
+					offset=0;
+				}
 				if(notenum==0) {
 					out=strchr(octave,note);
 					if(out==NULL) {
