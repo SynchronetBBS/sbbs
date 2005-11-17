@@ -179,7 +179,10 @@ void playnote(int notenum, int notelen, int dotted)
 			break;
 	}
 	duration-=pauselen;
-	xpbeep(((double)note_frequency[notenum])/1000,duration);
+	if(notenum < 72 && nottenum >= 0)
+		xpbeep(((double)note_frequency[notenum])/1000,duration);
+	else
+		SLEEP(duration);
 	SLEEP(pauselen);
 }
 
@@ -207,8 +210,10 @@ void play_music(void)
 				p++;
 				break;
 			case 'N':
-				cterm.noteshape=CTERM_MUSIC_NORMAL;
-				p++;
+				if(!isdigit(*(p+1)) {
+					cterm.noteshape=CTERM_MUSIC_NORMAL;
+					p++;
+				}
 				break;
 			case 'L':
 				cterm.noteshape=CTERM_MUSIC_LEGATO;
