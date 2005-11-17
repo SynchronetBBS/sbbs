@@ -936,7 +936,7 @@ static void handle_sigs(void)
 			lprintf(LOG_ERR,"     !sigwait FAILURE (%d)", i);
 			if(i==EINTR) {
 				sigset_t moresigs;
-				lprintf(LOG_ERR,"     Adding signal %d to blocked set",i);
+				lprintf(LOG_ERR,"     Adding signal %d to blocked set",sig);
 				memcpy(&moresigs, &sigs, sizeof(moresigs));
 				sigaddset(&sigs, sig);
 				pthread_sigmask(SIG_BLOCK,&moresigs,NULL);
