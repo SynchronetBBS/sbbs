@@ -1401,7 +1401,7 @@ int main(int argc, char **argv)
 								if(sdl_x11available && sdl_using_x11()) {
 									SDL_SysWMinfo	wmi;
 
-									sdl.VERSION(&(wmi.version));
+									SDL_VERSION(&(wmi.version));
 									sdl.GetWMInfo(&wmi);
 									sdl_x11.XSetSelectionOwner(wmi.info.x11.display, CONSOLE_CLIPBOARD, wmi.info.x11.window, CurrentTime);
 									break;
@@ -1439,7 +1439,7 @@ int main(int argc, char **argv)
 									Window sowner=None;
 									SDL_SysWMinfo	wmi;
 
-									sdl.VERSION(&(wmi.version));
+									SDL_VERSION(&(wmi.version));
 									sdl.GetWMInfo(&wmi);
 
 									sowner=sdl_x11.XGetSelectionOwner(wmi.info.x11.display, CONSOLE_CLIPBOARD);
@@ -1498,7 +1498,7 @@ int main(int argc, char **argv)
 										XSelectionEvent *req;
 										SDL_SysWMinfo	wmi;
 
-										sdl.VERSION(&(wmi.version));
+										SDL_VERSION(&(wmi.version));
 										sdl.GetWMInfo(&wmi);
 										req=&(e->xselection);
 										if(req->requestor!=wmi.info.x11.window)
@@ -1562,6 +1562,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	else
+	else {
+fprintf(stderr,"Error: %s",dlerror());
 		return(CIOLIB_main(argc, argv));
+	}
 }

@@ -8,7 +8,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->gotfuncs=0;
 	sdlf->Init=SDL_Init;
 	sdlf->Quit=SDL_Quit;
-	sdlf->RegisterApp=SDL_RegisterApp;
 	sdlf->SetModuleHandle=SDL_SetModuleHandle;
 	sdlf->mutexP=SDL_mutexP;
 	sdlf->mutexV=SDL_mutexV;
@@ -57,10 +56,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->Quit=GetProcAddress(dl, "SDL_Quit"))==NULL) {
-		FreeLibrary(dl);
-		return(-1);
-	}
-	if((sdlf->RegisterApp=GetProcAddress(dl, "SDL_RegisterApp"))==NULL) {
 		FreeLibrary(dl);
 		return(-1);
 	}
@@ -175,9 +170,9 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	void	*dl;
 
 	sdlf->gotfuncs=0;
-	if((dl=dlopen("libSDL.so",RTLD_LAZY|HTLD_GLOBAL))==NULL)
-		if((dl=dlopen("libSDL-1.2.so",RTLD_LAZY|HTLD_GLOBAL))==NULL)
-			if((dl=dlopen("libSDL-1.1.so",RTLD_LAZY|HTLD_GLOBAL))==NULL)
+	if((dl=dlopen("libSDL.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
+		if((dl=dlopen("libSDL-1.2.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
+			if((dl=dlopen("libSDL-1.1.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
 				return(-1);
 
 	if((sdlf->Init=dlsym(dl, "SDL_Init"))==NULL) {
@@ -185,14 +180,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->Quit=dlsym(dl, "SDL_Quit"))==NULL) {
-		dlclose(dl);
-		return(-1);
-	}
-	if((sdlf->RegisterApp=dlsym(dl, "SDL_RegisterApp"))==NULL) {
-		dlclose(dl);
-		return(-1);
-	}
-	if((sdlf->SetModuleHandle=dlsym(dl, "SDL_SetModuleHandle"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
@@ -244,11 +231,11 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		dlclose(dl);
 		return(-1);
 	}
-	if((sdlf->CreateSemaphore=dlsym(dl, "SDL_CreateSemaphore"))==NULL) {
+	if((sdlf->SDL_CreateSemaphore=dlsym(dl, "SDL_CreateSemaphore"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((sdlf->CreateMutex=dlsym(dl, "SDL_CreateMutex"))==NULL) {
+	if((sdlf->SDL_CreateMutex=dlsym(dl, "SDL_CreateMutex"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}

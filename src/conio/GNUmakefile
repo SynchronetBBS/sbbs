@@ -15,6 +15,7 @@ endif
 
 ifdef WITH_SDL
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
 endif
 
 ifeq ($(os),netbsd)

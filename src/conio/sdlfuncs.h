@@ -2,11 +2,11 @@
 #define _SDLFUNCS_H_
 
 #include "SDL.h"
+#include "SDL_thread.h"
 
 struct sdlfuncs {
 	int	(*Init)	(Uint32 flags);
 	void	(*Quit)	(void);
-	int	(*RegisterApp)	(char *name, Uint32 style, void *hInst);
 	void	(*SetModuleHandle)	(void *hInst);
 	int	(*mutexP)	(SDL_mutex *mutex);
 	int	(*mutexV)	(SDL_mutex *mutex);
