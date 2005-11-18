@@ -290,7 +290,7 @@ command line examples for a few file types.
 							continue; }
 						memset(cfg.fview[0],0,sizeof(fview_t));
 						strcpy(cfg.fview[0]->ext,"ZIP");
-						strcpy(cfg.fview[0]->cmd,"%!pkunzip -v %f"); }
+						strcpy(cfg.fview[0]->cmd,"%@unzip -vq %s"); }
 					else {
 						for(j=cfg.total_fviews;j>i;j--)
 							cfg.fview[j]=cfg.fview[j-1];
@@ -405,7 +405,7 @@ listed.
 							continue; }
 						memset(cfg.ftest[0],0,sizeof(ftest_t));
 						strcpy(cfg.ftest[0]->ext,"ZIP");
-						strcpy(cfg.ftest[0]->cmd,"%!pkunzip -t %f");
+						strcpy(cfg.ftest[0]->cmd,"%@unzip -tqq %f");
 						strcpy(cfg.ftest[0]->workstr,"Testing ZIP Integrity..."); }
 					else {
 
@@ -527,8 +527,7 @@ for each file type and command line listed.
 							continue; }
 						memset(cfg.dlevent[0],0,sizeof(dlevent_t));
 						strcpy(cfg.dlevent[0]->ext,"ZIP");
-						strcpy(cfg.dlevent[0]->cmd,"%!pkzip -z %f "
-							"< ..\\text\\zipmsg.txt");
+						strcpy(cfg.dlevent[0]->cmd,"%@zip -z %f < %zzipmsg.txt");
 						strcpy(cfg.dlevent[0]->workstr,"Adding ZIP Comment..."); }
 					else {
 
@@ -644,7 +643,7 @@ extract the file(s).
                             continue; }
 						memset(cfg.fextr[0],0,sizeof(fextr_t));
                         strcpy(cfg.fextr[0]->ext,"ZIP");
-                        strcpy(cfg.fextr[0]->cmd,"%!pkunzip -o %f %g %s"); }
+                        strcpy(cfg.fextr[0]->cmd,"%@unzip -Cojqq %f %s -d %g"); }
                     else {
 
                         for(j=cfg.total_fextrs;j>i;j--)
@@ -751,7 +750,7 @@ files from the transfer section, and more.
 							continue; }
 						memset(cfg.fcomp[0],0,sizeof(fcomp_t));
 						strcpy(cfg.fcomp[0]->ext,"ZIP");
-						strcpy(cfg.fcomp[0]->cmd,"%!pkzip %f %s"); }
+						strcpy(cfg.fcomp[0]->cmd,"%@zip -jD %f %s"); }
 					else {
 						for(j=cfg.total_fcomps;j>i;j--)
 							cfg.fcomp[j]=cfg.fcomp[j-1];

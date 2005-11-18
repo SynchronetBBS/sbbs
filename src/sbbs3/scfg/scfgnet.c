@@ -218,8 +218,8 @@ outgoing network packets and must be accurate.
 								continue; }
 							memset(cfg.qhub[i],0,sizeof(qhub_t));
 							strcpy(cfg.qhub[i]->id,str);
-							strcpy(cfg.qhub[i]->pack,"%!pkzip %f %s");
-							strcpy(cfg.qhub[i]->unpack,"%!pkunzip -o %f %g %s");
+							strcpy(cfg.qhub[i]->pack,"%@zip -jD %f %s");
+							strcpy(cfg.qhub[i]->unpack,"%@unzip -Coj %f %s -d %g");
 							strcpy(cfg.qhub[i]->call,"*qnet-ftp VERT vert.synchro.net YOURPASS");
 							cfg.qhub[i]->node=1;
 							cfg.qhub[i]->days=0xff; /* all days */
