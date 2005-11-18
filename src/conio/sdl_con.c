@@ -1193,6 +1193,12 @@ int main(int argc, char **argv)
 						break;
 					case SDL_KEYDOWN:			/* Keypress */
 						if(ev.key.keysym.unicode > 0 && ev.key.keysym.unicode <= 0x7f) {		/* ASCII Key (Whoopee!) */
+							/* ALT-TAB stuff doesn't work correctly inder Win32,
+							 * seems ot pass a whole slew of TABs though here.
+							 * Kludge-fix 'em by ignoring all ALT-TAB keystrokes
+							 * that appear to be a tab */
+							if(ev.key.keysym.unicode=='\t' && ev.keykeysym.mode & KMOD_ALT)
+								break;
 							/* Need magical handling here... 
 							 * if ALT is pressed, run 'er through 
 							 * sdl_get_char_code() ANYWAYS unless
