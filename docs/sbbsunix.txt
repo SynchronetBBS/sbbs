@@ -307,8 +307,8 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
            # export SBBSCTRL=/sbbs/ctrl
 
    B. Change SCFG->Networks->QWK->Hubs->VERT:
-      Pack Command Line               zip -jD %f %s
-      Unpack Command Line             unzip -ojC %f %s -d %g
+      Pack Command Line               %@zip -jD %f %s
+      Unpack Command Line             %@unzip -Coj %f %s -d %g
       Call-out Command Line           *qnet-ftp VERT dove.synchro.net YOURPASS
       (see docs/dove-net.txt for more details)
 
@@ -406,8 +406,8 @@ Default Configuration (SCFG) Screen-shots
 
 [Viewable File Type]
 1: File Extension        zip
-2: Command Line          unzip -vq %s
-3: Access Requirements   UNIX
+2: Command Line          %@unzip -vq %s
+3: Access Requirements   
 
 [Viewable File Type]
 1: File Extension        tgz
@@ -421,15 +421,15 @@ Default Configuration (SCFG) Screen-shots
 
 [Testable File Type]
 1: File Extension        zip
-2: Command Line          unzip -tqq %f
+2: Command Line          %@unzip -tqq %f
 3: Working String        Testing ZIP Integrity...
-4: Access Requirements   UNIX
+4: Access Requirements   
 
 [Testable File Type]
 1: File Extension        zip
-2: Command Line          zip -z %f < %zzipmsg.txt
+2: Command Line          %@zip -z %f < %zzipmsg.txt
 3: Working String        Adding ZIP Comment...
-4: Access Requirements   UNIX
+4: Access Requirements   
 
 [Testable File Type]
 1: File Extension        tgz
@@ -445,8 +445,8 @@ Default Configuration (SCFG) Screen-shots
 
 [Extractable File Type]
 1: File Extension        zip
-2: Command Line          unzip -ojC %f %s -d %g
-3: Access Requirements   UNIX
+2: Command Line          %@unzip -Cojqq %f %s -d %g
+3: Access Requirements   
 
 [Extractable File Type]
 1: File Extension        tgz
@@ -460,8 +460,8 @@ Default Configuration (SCFG) Screen-shots
 
 [Compressable File Type]
 1: File Extension        zip
-2: Command Line          zip -jD %f %s
-3: Access Requirements   UNIX
+2: Command Line          %@zip -jD %f %s
+3: Access Requirements   
 
 [Compressable File Type]
 1: File Extension        tgz
@@ -602,9 +602,9 @@ Default Configuration (SCFG) Screen-shots
 SBBSecho zip/unzip configuration (ctrl/sbbsecho.cfg)
 ================================
 PACKER ZIP 0 504B
-  PACK zip -jD %f %s
-  UNPACK unzip -ojC %f -d %s
-
+    PACK %@zip -jD %f %s
+    UNPACK %@unzip -ojC %f -d %s
+END
 
 Send comments/questions to rob[at]synchro[dot]net
 
