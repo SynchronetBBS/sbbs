@@ -1312,9 +1312,9 @@ load_font(char *filename, int width, int height, int scale)
 				break;
 			}
 		}
+		if(conio_fontdata[i].desc==NULL)
+			x_current_font=0;
 	}
-	if(conio_fontdata[i].desc==NULL)
-		x_current_font=0;
 	if(conio_fontdata[x_current_font].desc==NULL)
 		return(-1);
 

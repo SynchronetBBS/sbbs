@@ -920,9 +920,9 @@ int sdl_load_font(char *filename)
 				break;
 			}
 		}
+		if(conio_fontdata[x].desc==NULL)
+			sdl_current_font=0;
 	}
-	if(conio_fontdata[x].desc==NULL)
-		sdl_current_font=0;
 	if(conio_fontdata[sdl_current_font].desc==NULL)
 		return(-1);
 
