@@ -34,8 +34,6 @@ ifdef WITH_SDL
    CIOLIB-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
    ifdef STATIC_SDL
     CIOLIB-MT_LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
-   else
-    CIOLIB-MT_LIBS	+=	$(shell $(SDL_CONFIG) --libs)
    endif
   endif
  else
