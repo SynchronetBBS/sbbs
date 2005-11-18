@@ -83,7 +83,7 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type)
 	bbs->reversed=FALSE;
 	bbs->screen_mode=SCREEN_MODE_CURRENT;
 	bbs->conn_type=dflt_conn_type;
-	bbs->port=dflt_conn_type==CON_TYPE_TELNET?23:513;
+	bbs->port=(dflt_conn_type==CONN_TYPE_TELNET)?23:513;
 	bbs->loglevel=LOG_INFO;
 	p1=url;
 	if(!strnicmp("rlogin://",url,9)) {
