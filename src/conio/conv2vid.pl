@@ -324,6 +324,26 @@ while (<IN>) {
 close IN;
 print "struct font_names fnames[$fonts] = {\n";
 foreach my $font (keys %fonts) {
-	print "\t,{$font, \"$fonts{$font}\", $fontsizes{$font}}\n";
+	print "\t,{";
+	if($fontsizes{$font} & 1) {
+		print "$font-8x16, ";
+	}
+	else {
+		print "NULL, ";
+	}
+	if($fontsizes{$font} & 2) {
+		print "$font-8x14, ";
+	}
+	else {
+		print "NULL, ";
+	}
+	if($fontsizes{$font} & 4) {
+		print "$font-8x8, ";
+	}
+	else {
+		print "NULL, ";
+	}
+	print "\"$fonts{$font}\"}\n";
 }
 print "};\n";
+
