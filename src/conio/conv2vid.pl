@@ -74,7 +74,7 @@ while (<IN>) {
 }
 close IN;
 my $arraysize=(scalar keys %fonts)+1;
-print COUT "struct font_names fnames[".$arraysize."] = {\n";
+print COUT "struct conio_font_data_struct conio_fontdata[".$arraysize."] = {\n";
 $started=0;
 foreach my $font (keys %fonts) {
 	if($started) {
@@ -117,14 +117,14 @@ print HOUT <<ENDOFHEADER;
 #ifndef _ALLFONTS_H_
 #define _ALLFONTS_H_
 
-struct font_names {
+struct conio_font_data_struct {
         char *eight_by_sixteen;
         char *eight_by_fourteen;
         char *eight_by_eight;
         char *desc;
 };
 
-extern struct font_names fnames[$arraysize];
+extern struct conio_font_data_struct conio_fontdata[$arraysize];
 
 #endif
 ENDOFHEADER
