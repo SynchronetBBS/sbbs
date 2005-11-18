@@ -1140,6 +1140,7 @@ int main(int argc, char **argv)
 	unsigned int i;
 	SDL_Event	ev;
 	struct mainparams mp;
+	char	drivername[64];
 
 #ifndef _WIN32
 	load_sdl_funcs(&sdl);
@@ -1160,6 +1161,13 @@ int main(int argc, char **argv)
 		if(sdl.Init(SDL_INIT_VIDEO))
 			sdl.gotfuncs=FALSE;
 #endif
+	}
+	if(sdl.VideoDriverName(drivername, sizeof(drivername))!=NULL) {
+		/* Unacceptable drivers */
+		if(!strcmp(drivername,"aalib"))
+			sdl.gotfuncs=FALSE;
+		if(!strcmp(drivername,"dummy"))
+			sdl.gotfuncs=FALSE;
 	}
 
 	if(sdl.gotfuncs) {
@@ -1289,7 +1297,7 @@ int main(int argc, char **argv)
 							if(win!=NULL) {
 	#if (defined(__MACH__) && defined(__APPLE__))
 								char	driver[16];
-								if(sdl.VideoDriverName(driver, sizeof(driver))==NULL) {
+								if(sdl.VideoDriverName(driver, sizeof(driver))!=NULL) {
 									if(!strcmp(driver,"Quartz"))
 										sdl_using_quartz=TRUE;
 								}
@@ -1349,7 +1357,7 @@ int main(int argc, char **argv)
 								if(win!=NULL) {
 	#if (defined(__MACH__) && defined(__APPLE__))
 									char	driver[16];
-									if(sdl.VideoDriverName(driver, sizeof(driver))==NULL) {
+									if(sdl.VideoDriverName(driver, sizeof(driver))!=NULL) {
 										if(!strcmp(driver,"Quartz"))
 											sdl_using_quartz=TRUE;
 									}
