@@ -236,8 +236,7 @@ int main(int argc, char **argv)
 	sscanf("$Revision$", "%*s %s", revision);
 	umask(077);
 
-    printf("\nSynchronet Installation %s-%s  Copyright 2003 "
-        "Rob Swindell\n",revision,PLATFORM_DESC);
+    printf("\nSynchronet Installation %s-%s\n",revision,PLATFORM_DESC);
 
     memset(&uifc,0,sizeof(uifc));
 
