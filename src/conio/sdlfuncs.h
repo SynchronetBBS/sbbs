@@ -35,7 +35,13 @@ struct sdlfuncs {
 	int	(*EnableUNICODE)	(int enable);
 	int	(*EnableKeyRepeat)	(int delay, int interval);
 	int	(*GetWMInfo)	(struct SDL_SysWMinfo *info);
+	int	gotfuncs;
 };
+
+#ifdef _WIN32
+/* Defined in SDL_win32_main.c */
+extern struct sdlfuncs	sdl;
+#endif
 
 #ifdef __cplusplus
 extern "C" {

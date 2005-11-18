@@ -5,6 +5,7 @@
 #ifdef STATIC_SDL
 int load_sdl_funcs(struct sdlfuncs *sdlf)
 {
+	sdlf->gotfuncs=0;
 	sdlf->Init=SDL_Init;
 	sdlf->Quit=SDL_Quit;
 	sdlf->RegisterApp=SDL_RegisterApp;
@@ -33,6 +34,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->EnableUNICODE=SDL_EnableUNICODE;
 	sdlf->EnableKeyRepeat=SDL_EnableKeyRepeat;
 	sdlf->GetWMInfo=SDL_GetWMInfo;
+	sdlf->gotfuncs=1;
 	return(0);
 }
 #else
@@ -44,6 +46,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 {
 	HMODULE	dl;
 
+	sdlf->gotfuncs=0;
 	if((dl=LoadLibrary("SDL.dll"))==NULL)
 		if((dl=LoadLibrary("SDL-1.2.dll"))==NULL)
 			if((dl=LoadLibrary("SDL-1.1.dll"))==NULL)
@@ -161,6 +164,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(dl);
 		return(-1);
 	}
+	sdlf->gotfuncs=1;
 	return(0);
 }
 #elif defined(__unix__)
@@ -170,6 +174,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 {
 	void	*dl;
 
+	sdlf->gotfuncs=0;
 	if((dl=dlopen("libSDL.so",RTLD_LAZY|HTLD_GLOBAL))==NULL)
 		if((dl=dlopen("libSDL-1.2.so",RTLD_LAZY|HTLD_GLOBAL))==NULL)
 			if((dl=dlopen("libSDL-1.1.so",RTLD_LAZY|HTLD_GLOBAL))==NULL)
@@ -287,6 +292,8 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		dlclose(dl);
 		return(-1);
 	}
+	sdlf->gotfuncs=1;
+	return(0);
 }
 #endif
 
