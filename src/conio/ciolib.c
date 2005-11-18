@@ -137,6 +137,7 @@ int try_sdl_init(int mode)
 		cio_api.copytext=sdl_copytext;
 		cio_api.getcliptext=sdl_getcliptext;
 #endif
+		cio_api.setfont=sdl_setfont;
 		return(1);
 	}
 	return(0);
@@ -954,4 +955,14 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void)
 		return(cio_api.getcliptext());
 	else
 		return(NULL);
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force)
+{
+	CIOLIB_INIT();
+
+	if(cio_api.setfont!=NULL)
+		return(cio_api.setfont(font,force));
+	else
+		return(-1);
 }

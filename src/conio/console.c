@@ -114,6 +114,7 @@
 
 #include "console.h"
 #include "vidmodes.h"
+#include "allfonts.h"
 
 #include "keys.h"
 #include "mouse.h"
@@ -149,6 +150,7 @@ WORD *vmem=NULL;
 static int show = 1;
 BYTE CursRow=0;
 BYTE CursCol=0;
+static int x_current_font=-1;
 typedef struct TextLine {
     WORD	*data;
     u_char	max_length;	/* Not used, but here for future use */
@@ -1303,17 +1305,30 @@ load_font(char *filename, int width, int height, int scale)
 		return(1);
 	}
 
+	if(x_current_font<0 || x_current_font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
+		for(i=0; conio_fontdata[i].desc != NULL; i++) {
+			if(!strcmp(conio_fontdata[i].desc, "Codepage 437 English")) {
+				x_current_font=i;
+				break;
+			}
+		}
+	}
+	if(conio_fontdata[i].desc==NULL)
+		x_current_font=0;
+	if(conio_fontdata[x_current_font].desc==NULL)
+		return(-1);
+
 	switch(width) {
 		case 8:
 			switch(height) {
 				case 8:
-					font=vga_font_bitmap8;
+					font=conio_fontdata[x_current_font].eight_by_eight;
 					break;
 				case 14:
-					font=vga_font_bitmap14;
+					font=conio_fontdata[x_current_font].eight_by_fourteen;
 					break;
 				case 16:
-					font=vga_font_bitmap;
+					font=conio_fontdata[x_current_font].eight_by_sixteen;
 					break;
 				default:
 					return(1);
@@ -1322,6 +1337,8 @@ load_font(char *filename, int width, int height, int scale)
 		default:
 			return(1);
 	}
+	if(font==NULL)
+		return(1);
 	FW = width;
     FH = height;
 	memcpy(fontdata, font, height*256);

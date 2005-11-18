@@ -16,6 +16,11 @@ endif
 ifdef WITH_SDL
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)allfonts$(OFILE)
+else
+ ifndef NO_X
+  OBJS	+=	$(MTOBJODIR)$(DIRSEP)allfonts$(OFILE)
+ endif
 endif
 
 ifeq ($(os),netbsd)

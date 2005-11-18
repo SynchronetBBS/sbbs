@@ -35,6 +35,7 @@ int sdl_hidemouse(void);
 int sdl_showmouse(void);
 void sdl_copytext(const char *text, size_t buflen);
 char *sdl_getcliptext(void);
+int sdl_setfont(int font, int force);
 #ifdef __cplusplus
 }
 #endif

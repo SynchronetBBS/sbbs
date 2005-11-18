@@ -24,6 +24,7 @@
 #include "ciolib.h"
 #include "keys.h"
 #include "vidmodes.h"
+#include "allfonts.h"
 
 #ifdef main
 	#undef main
@@ -59,6 +60,7 @@ SDL_Surface	*sdl_cursor=NULL;
 
 static int lastcursor_x=0;
 static int lastcursor_y=0;
+static int sdl_current_font=-1;
 
 unsigned short *last_vmem=NULL;
 
@@ -823,6 +825,43 @@ int sdl_hidemouse(void)
 	return(0);
 }
 
+int sdl_setfont(int font, int force)
+{
+	int changemode=0;
+
+	switch(vstat.charheight) {
+		case 8:
+			if(conio_fontdata[font].eight_by_eight==NULL) {
+				if(force)
+					return(-1);
+				else
+					changemode=1;
+			}
+			break;
+		case 14:
+			if(conio_fontdata[font].eight_by_fourteen==NULL) {
+				if(force)
+					return(-1);
+				else
+					changemode=1;
+			}
+			break;
+		case 16:
+			if(conio_fontdata[font].eight_by_sixteen==NULL) {
+				if(force)
+					return(-1);
+				else
+					changemode=1;
+			}
+			break;
+	}
+	sdl_current_font=font;
+	if(changemode)
+		sdl_init_mode(3);
+	FREE_AND_NULL(last_vmem);
+	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
+}
+
 /* Called from event thread only */
 void sdl_add_key(unsigned int keyval)
 {
@@ -874,6 +913,19 @@ int sdl_load_font(char *filename)
 	if(filename != NULL)
 		return(-1);
 
+	if(sdl_current_font<0 || sdl_current_font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
+		for(x=0; conio_fontdata[x].desc != NULL; x++) {
+			if(!strcmp(conio_fontdata[x].desc, "Codepage 437 English")) {
+				sdl_current_font=x;
+				break;
+			}
+		}
+	}
+	if(conio_fontdata[x].desc==NULL)
+		sdl_current_font=0;
+	if(conio_fontdata[sdl_current_font].desc==NULL)
+		return(-1);
+
 	sdl.mutexP(sdl_vstatlock);
 	fh=vstat.charheight;
 	fw=vstat.charwidth/8+(vstat.charwidth%8?1:0);
@@ -889,21 +941,38 @@ int sdl_load_font(char *filename)
 		case 8:
 			switch(vstat.charheight) {
 				case 8:
-					memcpy(font, vga_font_bitmap8, fontsize);
+					if(conio_fontdata[sdl_current_font].eight_by_eight==NULL) {
+						sdl.mutexV(sdl_vstatlock);
+						free(font);
+						return(-1);
+					}
+					memcpy(font, conio_fontdata[sdl_current_font].eight_by_eight, fontsize);
 					break;
 				case 14:
-					memcpy(font, vga_font_bitmap14, fontsize);
+					if(conio_fontdata[sdl_current_font].eight_by_fourteen==NULL) {
+						sdl.mutexV(sdl_vstatlock);
+						free(font);
+						return(-1);
+					}
+					memcpy(font, conio_fontdata[sdl_current_font].eight_by_fourteen, fontsize);
 					break;
 				case 16:
-					memcpy(font, vga_font_bitmap, fontsize);
+					if(conio_fontdata[sdl_current_font].eight_by_sixteen==NULL) {
+						sdl.mutexV(sdl_vstatlock);
+						free(font);
+						return(-1);
+					}
+					memcpy(font, conio_fontdata[sdl_current_font].eight_by_sixteen, fontsize);
 					break;
 				default:
 					sdl.mutexV(sdl_vstatlock);
+					free(font);
 					return(-1);
 			}
 			break;
 		default:
 			sdl.mutexV(sdl_vstatlock);
+			free(font);
 			return(-1);
 	}
 
@@ -912,6 +981,7 @@ int sdl_load_font(char *filename)
 	sdl_font=sdl.CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
 	if(sdl_font == NULL) {
 		sdl.mutexV(sdl_vstatlock);
+		free(font);
     	return(-1);
 	}
 	else {
@@ -930,7 +1000,7 @@ int sdl_load_font(char *filename)
 		}
 	}
 	sdl.mutexV(sdl_vstatlock);
-
+	free(font);
     return(0);
 }
 
