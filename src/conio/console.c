@@ -1324,18 +1324,19 @@ load_font(char *filename, int width, int height, int scale)
 	}
 	FW = width;
     FH = height;
+	memcpy(fontdata, font, height*256);
 	/* Swap bit order... leftmost bit is most significant, X11 wants it the
 	 * other way. */
 	for(i=0; i<256; i++) {
 		for(j=0; j<height; j++) {
-			font[i*height+j]=		((font[i*height+j] & 0x80) >> 7)
-						| ((font[i*height+j] & 0x40) >> 5)
-						| ((font[i*height+j] & 0x20) >> 3)
-						| ((font[i*height+j] & 0x10) >> 1)
-						| ((font[i*height+j] & 0x08) << 1)
-						| ((font[i*height+j] & 0x04) << 3)
-						| ((font[i*height+j] & 0x02) << 5)
-						| ((font[i*height+j] & 0x01) << 7);
+			fontdata[i*height+j]=		((fontdata[i*height+j] & 0x80) >> 7)
+						| ((fontdata[i*height+j] & 0x40) >> 5)
+						| ((fontdata[i*height+j] & 0x20) >> 3)
+						| ((fontdata[i*height+j] & 0x10) >> 1)
+						| ((fontdata[i*height+j] & 0x08) << 1)
+						| ((fontdata[i*height+j] & 0x04) << 3)
+						| ((fontdata[i*height+j] & 0x02) << 5)
+						| ((fontdata[i*height+j] & 0x01) << 7);
 		}
 	}
 
