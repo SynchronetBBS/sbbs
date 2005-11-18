@@ -467,7 +467,7 @@ int sdl_init(int mode)
 	sdl.mutexP(sdl_updlock);
 	sdl_updated=1;
 	sdl.mutexV(sdl_updlock);
-	
+
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
 		fullscreen=1;
 
@@ -1144,11 +1144,27 @@ int main(int argc, char **argv)
 #ifndef _WIN32
 	load_sdl_funcs(&sdl);
 #endif
+
+	if(sdl.gotfuncs) {
+#ifdef _WIN32
+		/* Fail to windib (ie: No mouse attached) */
+		if(sdl.Init(SDL_INIT_VIDEO)) {
+			if(getenv("SDL_VIDEODRIVER")==NULL) {
+				putenv("SDL_VIDEODRIVER=windib");
+				WinExec(GetCommandLine(), SW_SHOWDEFAULT);
+				exit(0);
+			}
+			sdl.gotfuncs=FALSE;
+		}
+#else
+		if(sdl.Init(SDL_INIT_VIDEO))
+			sdl.gotfuncs=FALSE;
+#endif
+	}
+
 	if(sdl.gotfuncs) {
 		mp.argc=argc;
 		mp.argv=argv;
-
-		sdl.Init(SDL_INIT_VIDEO);
 
 		sdl_key_pending=sdl.SDL_CreateSemaphore(0);
 		sdl_init_complete=sdl.SDL_CreateSemaphore(0);

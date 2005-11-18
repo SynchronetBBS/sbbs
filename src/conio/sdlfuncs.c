@@ -33,6 +33,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->EnableUNICODE=SDL_EnableUNICODE;
 	sdlf->EnableKeyRepeat=SDL_EnableKeyRepeat;
 	sdlf->GetWMInfo=SDL_GetWMInfo;
+	sdlf->GetError=SDL_GetError;
 	sdlf->gotfuncs=1;
 	return(0);
 }
@@ -43,120 +44,124 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 
 int load_sdl_funcs(struct sdlfuncs *sdlf)
 {
-	HMODULE	dl;
+	HMODULE	sdl_dll;
 
 	sdlf->gotfuncs=0;
-	if((dl=LoadLibrary("SDL.dll"))==NULL)
-		if((dl=LoadLibrary("SDL-1.2.dll"))==NULL)
-			if((dl=LoadLibrary("SDL-1.1.dll"))==NULL)
+	if((sdl_dll=LoadLibrary("SDL.dll"))==NULL)
+		if((sdl_dll=LoadLibrary("SDL-1.2.dll"))==NULL)
+			if((sdl_dll=LoadLibrary("SDL-1.1.dll"))==NULL)
 				return(-1);
 
-	if((sdlf->Init=GetProcAddress(dl, "SDL_Init"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->Init=GetProcAddress(sdl_dll, "SDL_Init"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->Quit=GetProcAddress(dl, "SDL_Quit"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->Quit=GetProcAddress(sdl_dll, "SDL_Quit"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SetModuleHandle=GetProcAddress(dl, "SDL_SetModuleHandle"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->SetModuleHandle=GetProcAddress(sdl_dll, "SDL_SetModuleHandle"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->mutexP=GetProcAddress(dl, "SDL_mutexP"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->mutexP=GetProcAddress(sdl_dll, "SDL_mutexP"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->mutexV=GetProcAddress(dl, "SDL_mutexV"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->mutexV=GetProcAddress(sdl_dll, "SDL_mutexV"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->PeepEvents=GetProcAddress(dl, "SDL_PeepEvents"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->PeepEvents=GetProcAddress(sdl_dll, "SDL_PeepEvents"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->VideoDriverName=GetProcAddress(dl, "SDL_VideoDriverName"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->VideoDriverName=GetProcAddress(sdl_dll, "SDL_VideoDriverName"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SemWait=GetProcAddress(dl, "SDL_SemWait"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->SemWait=GetProcAddress(sdl_dll, "SDL_SemWait"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SemPost=GetProcAddress(dl, "SDL_SemPost"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->SemPost=GetProcAddress(sdl_dll, "SDL_SemPost"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->EventState=GetProcAddress(dl, "SDL_EventState"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->EventState=GetProcAddress(sdl_dll, "SDL_EventState"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->CreateRGBSurface=GetProcAddress(dl, "SDL_CreateRGBSurface"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->CreateRGBSurface=GetProcAddress(sdl_dll, "SDL_CreateRGBSurface"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->FillRect=GetProcAddress(dl, "SDL_FillRect"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->FillRect=GetProcAddress(sdl_dll, "SDL_FillRect"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SetColors=GetProcAddress(dl, "SDL_SetColors"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->SetColors=GetProcAddress(sdl_dll, "SDL_SetColors"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->BlitSurface=GetProcAddress(dl, "SDL_UpperBlit"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->BlitSurface=GetProcAddress(sdl_dll, "SDL_UpperBlit"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->UpdateRects=GetProcAddress(dl, "SDL_UpdateRects"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->UpdateRects=GetProcAddress(sdl_dll, "SDL_UpdateRects"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SDL_CreateSemaphore=GetProcAddress(dl, "SDL_CreateSemaphore"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->SDL_CreateSemaphore=GetProcAddress(sdl_dll, "SDL_CreateSemaphore"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SDL_CreateMutex=GetProcAddress(dl, "SDL_CreateMutex"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->SDL_CreateMutex=GetProcAddress(sdl_dll, "SDL_CreateMutex"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->CreateThread=GetProcAddress(dl, "SDL_CreateThread"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->CreateThread=GetProcAddress(sdl_dll, "SDL_CreateThread"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->WaitEvent=GetProcAddress(dl, "SDL_WaitEvent"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->WaitEvent=GetProcAddress(sdl_dll, "SDL_WaitEvent"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SetVideoMode=GetProcAddress(dl, "SDL_SetVideoMode"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->SetVideoMode=GetProcAddress(sdl_dll, "SDL_SetVideoMode"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->FreeSurface=GetProcAddress(dl, "SDL_FreeSurface"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->FreeSurface=GetProcAddress(sdl_dll, "SDL_FreeSurface"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->WM_SetCaption=GetProcAddress(dl, "SDL_WM_SetCaption"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->WM_SetCaption=GetProcAddress(sdl_dll, "SDL_WM_SetCaption"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->ShowCursor=GetProcAddress(dl, "SDL_ShowCursor"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->ShowCursor=GetProcAddress(sdl_dll, "SDL_ShowCursor"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->WasInit=GetProcAddress(dl, "SDL_WasInit"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->WasInit=GetProcAddress(sdl_dll, "SDL_WasInit"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->EnableUNICODE=GetProcAddress(dl, "SDL_EnableUNICODE"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->EnableUNICODE=GetProcAddress(sdl_dll, "SDL_EnableUNICODE"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->EnableKeyRepeat=GetProcAddress(dl, "SDL_EnableKeyRepeat"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->EnableKeyRepeat=GetProcAddress(sdl_dll, "SDL_EnableKeyRepeat"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->GetWMInfo=GetProcAddress(dl, "SDL_GetWMInfo"))==NULL) {
-		FreeLibrary(dl);
+	if((sdlf->GetWMInfo=GetProcAddress(sdl_dll, "SDL_GetWMInfo"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->GetError=GetProcAddress(sdl_dll, "SDL_GetError"))==NULL) {
+		FreeLibrary(sdl_dll);
 		return(-1);
 	}
 	sdlf->gotfuncs=1;
@@ -167,116 +172,120 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 
 int load_sdl_funcs(struct sdlfuncs *sdlf)
 {
-	void	*dl;
+	void	*sdl_dll;
 
 	sdlf->gotfuncs=0;
-	if((dl=dlopen("libSDL.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
-		if((dl=dlopen("libSDL-1.2.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
-			if((dl=dlopen("libSDL-1.1.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
+	if((sdl_dll=dlopen("libSDL.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
+		if((sdl_dll=dlopen("libSDL-1.2.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
+			if((sdl_dll=dlopen("libSDL-1.1.so",RTLD_LAZY|RTLD_GLOBAL))==NULL)
 				return(-1);
 
-	if((sdlf->Init=dlsym(dl, "SDL_Init"))==NULL) {
-		dlclose(dl);
+	if((sdlf->Init=dlsym(sdl_dll, "SDL_Init"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->Quit=dlsym(dl, "SDL_Quit"))==NULL) {
-		dlclose(dl);
+	if((sdlf->Quit=dlsym(sdl_dll, "SDL_Quit"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->mutexP=dlsym(dl, "SDL_mutexP"))==NULL) {
-		dlclose(dl);
+	if((sdlf->mutexP=dlsym(sdl_dll, "SDL_mutexP"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->mutexV=dlsym(dl, "SDL_mutexV"))==NULL) {
-		dlclose(dl);
+	if((sdlf->mutexV=dlsym(sdl_dll, "SDL_mutexV"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->PeepEvents=dlsym(dl, "SDL_PeepEvents"))==NULL) {
-		dlclose(dl);
+	if((sdlf->PeepEvents=dlsym(sdl_dll, "SDL_PeepEvents"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->VideoDriverName=dlsym(dl, "SDL_VideoDriverName"))==NULL) {
-		dlclose(dl);
+	if((sdlf->VideoDriverName=dlsym(sdl_dll, "SDL_VideoDriverName"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SemWait=dlsym(dl, "SDL_SemWait"))==NULL) {
-		dlclose(dl);
+	if((sdlf->SemWait=dlsym(sdl_dll, "SDL_SemWait"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SemPost=dlsym(dl, "SDL_SemPost"))==NULL) {
-		dlclose(dl);
+	if((sdlf->SemPost=dlsym(sdl_dll, "SDL_SemPost"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->EventState=dlsym(dl, "SDL_EventState"))==NULL) {
-		dlclose(dl);
+	if((sdlf->EventState=dlsym(sdl_dll, "SDL_EventState"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->CreateRGBSurface=dlsym(dl, "SDL_CreateRGBSurface"))==NULL) {
-		dlclose(dl);
+	if((sdlf->CreateRGBSurface=dlsym(sdl_dll, "SDL_CreateRGBSurface"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->FillRect=dlsym(dl, "SDL_FillRect"))==NULL) {
-		dlclose(dl);
+	if((sdlf->FillRect=dlsym(sdl_dll, "SDL_FillRect"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SetColors=dlsym(dl, "SDL_SetColors"))==NULL) {
-		dlclose(dl);
+	if((sdlf->SetColors=dlsym(sdl_dll, "SDL_SetColors"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->BlitSurface=dlsym(dl, "SDL_UpperBlit"))==NULL) {
-		dlclose(dl);
+	if((sdlf->BlitSurface=dlsym(sdl_dll, "SDL_UpperBlit"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->UpdateRects=dlsym(dl, "SDL_UpdateRects"))==NULL) {
-		dlclose(dl);
+	if((sdlf->UpdateRects=dlsym(sdl_dll, "SDL_UpdateRects"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SDL_CreateSemaphore=dlsym(dl, "SDL_CreateSemaphore"))==NULL) {
-		dlclose(dl);
+	if((sdlf->SDL_CreateSemaphore=dlsym(sdl_dll, "SDL_CreateSemaphore"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SDL_CreateMutex=dlsym(dl, "SDL_CreateMutex"))==NULL) {
-		dlclose(dl);
+	if((sdlf->SDL_CreateMutex=dlsym(sdl_dll, "SDL_CreateMutex"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->CreateThread=dlsym(dl, "SDL_CreateThread"))==NULL) {
-		dlclose(dl);
+	if((sdlf->CreateThread=dlsym(sdl_dll, "SDL_CreateThread"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->WaitEvent=dlsym(dl, "SDL_WaitEvent"))==NULL) {
-		dlclose(dl);
+	if((sdlf->WaitEvent=dlsym(sdl_dll, "SDL_WaitEvent"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->SetVideoMode=dlsym(dl, "SDL_SetVideoMode"))==NULL) {
-		dlclose(dl);
+	if((sdlf->SetVideoMode=dlsym(sdl_dll, "SDL_SetVideoMode"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->FreeSurface=dlsym(dl, "SDL_FreeSurface"))==NULL) {
-		dlclose(dl);
+	if((sdlf->FreeSurface=dlsym(sdl_dll, "SDL_FreeSurface"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->WM_SetCaption=dlsym(dl, "SDL_WM_SetCaption"))==NULL) {
-		dlclose(dl);
+	if((sdlf->WM_SetCaption=dlsym(sdl_dll, "SDL_WM_SetCaption"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->ShowCursor=dlsym(dl, "SDL_ShowCursor"))==NULL) {
-		dlclose(dl);
+	if((sdlf->ShowCursor=dlsym(sdl_dll, "SDL_ShowCursor"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->WasInit=dlsym(dl, "SDL_WasInit"))==NULL) {
-		dlclose(dl);
+	if((sdlf->WasInit=dlsym(sdl_dll, "SDL_WasInit"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->EnableUNICODE=dlsym(dl, "SDL_EnableUNICODE"))==NULL) {
-		dlclose(dl);
+	if((sdlf->EnableUNICODE=dlsym(sdl_dll, "SDL_EnableUNICODE"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->EnableKeyRepeat=dlsym(dl, "SDL_EnableKeyRepeat"))==NULL) {
-		dlclose(dl);
+	if((sdlf->EnableKeyRepeat=dlsym(sdl_dll, "SDL_EnableKeyRepeat"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->GetWMInfo=dlsym(dl, "SDL_GetWMInfo"))==NULL) {
-		dlclose(dl);
+	if((sdlf->GetWMInfo=dlsym(sdl_dll, "SDL_GetWMInfo"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->GetError=dlsym(sdl_dll, "SDL_GetError"))==NULL) {
+		dlclose(sdl_dll);
 		return(-1);
 	}
 	sdlf->gotfuncs=1;

@@ -35,6 +35,7 @@ struct sdlfuncs {
 	int	(*EnableUNICODE)	(int enable);
 	int	(*EnableKeyRepeat)	(int delay, int interval);
 	int	(*GetWMInfo)	(struct SDL_SysWMinfo *info);
+	char	*(*GetError)	(void);
 	int	gotfuncs;
 };
 
