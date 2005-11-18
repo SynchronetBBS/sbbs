@@ -473,7 +473,7 @@ int sdl_init(int mode)
 
 	sdl_init_mode(3);
 
-	atexit(SDL_Quit);
+	atexit(sdl.Quit);
 
 	sdl_user_func(SDL_USEREVENT_INIT);
 
@@ -1563,7 +1563,6 @@ int main(int argc, char **argv)
 		}
 	}
 	else {
-fprintf(stderr,"Error: %s",dlerror());
 		return(CIOLIB_main(argc, argv));
 	}
 }
