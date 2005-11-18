@@ -1197,7 +1197,7 @@ int main(int argc, char **argv)
 							 * seems ot pass a whole slew of TABs though here.
 							 * Kludge-fix 'em by ignoring all ALT-TAB keystrokes
 							 * that appear to be a tab */
-							if(ev.key.keysym.unicode=='\t' && ev.keykeysym.mode & KMOD_ALT)
+							if(ev.key.keysym.unicode=='\t' && ev.key.keysym.mod & KMOD_ALT)
 								break;
 							/* Need magical handling here... 
 							 * if ALT is pressed, run 'er through 
