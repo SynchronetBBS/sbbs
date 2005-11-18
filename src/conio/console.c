@@ -1295,6 +1295,8 @@ load_font(char *filename, int width, int height, int scale)
     XGCValues gcv;
 	char *font;
 	char *scaledfont;
+	char fontdata[256*16];
+	int	i,j;
 
 	/* I don't actually do this yet! */
 	if(filename != NULL) {
@@ -1322,6 +1324,20 @@ load_font(char *filename, int width, int height, int scale)
 	}
 	FW = width;
     FH = height;
+	/* Swap bit order... leftmost bit is most significant, X11 wants it the
+	 * other way. */
+	for(i=0; i<256; i++) {
+		for(j=0; j<height; j++) {
+			font[i*height+j]=		((font[i*height+j] & 0x80) >> 7)
+						| ((font[i*height+j] & 0x40) >> 5)
+						| ((font[i*height+j] & 0x20) >> 3)
+						| ((font[i*height+j] & 0x10) >> 1)
+						| ((font[i*height+j] & 0x08) << 1)
+						| ((font[i*height+j] & 0x04) << 3)
+						| ((font[i*height+j] & 0x02) << 5)
+						| ((font[i*height+j] & 0x01) << 7);
+		}
+	}
 
 	if(pfnt!=0)
 		x11.XFreePixmap(dpy,pfnt);

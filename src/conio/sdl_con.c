@@ -918,7 +918,7 @@ int sdl_load_font(char *filename)
 		for(ch=0; ch<256; ch++) {
 			for(charrow=0; charrow<vstat.charheight; charrow++) {
 				for(charcol=0; charcol<vstat.charheight; charcol++) {
-					if(font[(ch*vstat.charheight+charrow)*fw+(charcol/8)] & (1<<(charcol%8))) {
+					if(font[(ch*vstat.charheight+charrow)*fw+(charcol/8)] & (0x80 >> (charcol%8))) {
 						r.x=charcol*vstat.scaling;
 						r.y=(ch*vstat.charheight+charrow)*vstat.scaling;
 						r.w=vstat.scaling;
