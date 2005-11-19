@@ -861,7 +861,9 @@ int sdl_setfont(int font, int force)
 	if(changemode)
 		sdl_init_mode(3);
 	FREE_AND_NULL(last_vmem);
+	sdl_load_font(NULL);
 	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
+	return(0);
 }
 
 int sdl_getfont(void)
