@@ -561,8 +561,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				width=j;
 		}
 	}
-	if(!(mode&WIN_NOBRDR) && api->mode&UIFC_MOUSE && bline&BL_HELP && width<8)
-		width=8;
+	/* Determine minimum widths here to accomodate mouse "icons" in border */
+	if(!(mode&WIN_NOBRDR) && api->mode&UIFC_MOUSE) {
+		if(bline&BL_HELP && width<8)
+			width=8;
+		else if(width<5)
+			width=5;
+	}
 	if(width>(s_right+1)-s_left) {
 		width=(s_right+1)-s_left;
 		if(title_len>(width-hbrdrsize-2)) {
