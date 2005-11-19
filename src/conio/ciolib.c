@@ -138,6 +138,7 @@ int try_sdl_init(int mode)
 		cio_api.getcliptext=sdl_getcliptext;
 #endif
 		cio_api.setfont=sdl_setfont;
+		cio_api.getfont=sdl_getfont;
 		return(1);
 	}
 	return(0);
@@ -170,6 +171,7 @@ int try_x_init(int mode)
 		cio_api.copytext=x_copytext;
 		cio_api.getcliptext=x_getcliptext;
 		cio_api.setfont=x_setfont;
+		cio_api.getfont=x_getfont;
 		return(1);
 	}
 	return(0);
@@ -964,6 +966,16 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force)
 
 	if(cio_api.setfont!=NULL)
 		return(cio_api.setfont(font,force));
+	else
+		return(-1);
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(void)
+{
+	CIOLIB_INIT();
+
+	if(cio_api.getfont!=NULL)
+		return(cio_api.getfont());
 	else
 		return(-1);
 }

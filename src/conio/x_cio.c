@@ -325,3 +325,8 @@ int x_setfont(int font, int force)
 	sem_wait(&font_set);
 	return(setfont_return);
 }
+
+int x_getfont(void)
+{
+	return(new_font);
+}

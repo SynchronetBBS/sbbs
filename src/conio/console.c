@@ -130,7 +130,7 @@ sem_t	copybuf_set;
 sem_t	pastebuf_set;
 sem_t	pastebuf_request;
 sem_t	font_set;
-int		new_font;
+int		new_font=-1;
 int		font_force;
 int		setfont_return;
 pthread_mutex_t	copybuf_mutex;

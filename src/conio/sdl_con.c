@@ -864,6 +864,11 @@ int sdl_setfont(int font, int force)
 	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 }
 
+int sdl_getfont(void)
+{
+	return(sdl_current_font);
+}
+
 /* Called from event thread only */
 void sdl_add_key(unsigned int keyval)
 {

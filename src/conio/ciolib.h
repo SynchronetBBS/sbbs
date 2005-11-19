@@ -242,6 +242,7 @@ typedef struct {
 	void	(*suspend)		(void);
 	void	(*resume)		(void);
 	int		(*setfont)		(int font, int force);
+	int		(*getfont)		(void);
 } cioapi_t;
 
 CIOLIBEXPORTVAR cioapi_t cio_api;
@@ -296,6 +297,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_hidemouse(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force);
+CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(void);
 #ifdef __cplusplus
 }
 #endif
@@ -343,6 +345,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force);
 	#define copytext(a,b)			ciolib_copytext(a,b)
 	#define getcliptext()			ciolib_getcliptext()
 	#define setfont(a,b)			ciolib_setfont(a,b)
+	#define getfont()				ciolib_getfont()
 #endif
 
 /* Special hackery for SDL */

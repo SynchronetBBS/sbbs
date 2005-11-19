@@ -36,6 +36,7 @@ int sdl_showmouse(void);
 void sdl_copytext(const char *text, size_t buflen);
 char *sdl_getcliptext(void);
 int sdl_setfont(int font, int force);
+int sdl_getfont(void);
 #ifdef __cplusplus
 }
 #endif
