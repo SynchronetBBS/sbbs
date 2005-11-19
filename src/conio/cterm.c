@@ -55,7 +55,7 @@
 struct cterminal cterm;
 
 /* const int tabs[11]={1,8,16,24,32,40,48,56,64,72,80}; */
-const int cterm_tabs[11]={9,17,25,33,41,49,57,65,73,80,80.1};
+const int cterm_tabs[11]={9,17,25,33,41,49,57,65,73,80,80};
 
 const char *octave="C#D#EF#G#A#B";
 
@@ -452,7 +452,7 @@ void clearscreen(char attr)
 	clrscr();
 }
 
-void do_ansi(char *retbuf, int retsize, int *speed)
+void do_ansi(char *retbuf, size_t retsize, int *speed)
 {
 	char	*p;
 	char	*p2;
@@ -597,7 +597,7 @@ void do_ansi(char *retbuf, int retsize, int *speed)
 							free(p2);
 							break;
 						case 2:
-							clearscreen(cterm.attr);
+							clearscreen((char)cterm.attr);
 							gotoxy(1,1);
 							break;
 					}
@@ -1094,7 +1094,7 @@ void ctputs(char *buf)
 	_wscroll=oldscroll;
 }
 
-char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int *speed)
+char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	unsigned char ch[2];
 	unsigned char prn[BUFSIZE];
@@ -1243,7 +1243,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize, int
 							prn[0]=0;
 							if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
 								fputs("\t", cterm.logfile);
-							clearscreen(cterm.attr);
+							clearscreen((char)cterm.attr);
 							gotoxy(1,1);
 							break;
 						case 27:		/* ESC */
