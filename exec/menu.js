@@ -1,8 +1,11 @@
 // menu.js
 
-// Execute a Synchronet v3.11c menu (.mnu) file
+// $Id$
+
+// Execute a Synchronet menu (.menu) file
 
 load("sbbsdefs.js");
+load("menulib.js");
 
 var menu_stack = new Array();
 var pop_count = 0;
@@ -24,7 +27,7 @@ function menu(fname)
 	}
 
 	if(!file_getext(fname))
-		fname += ".mnu";
+		fname += ".menu";
 
 	// Is menu already running (on stack)? If so, pop contexts to return to it
 	for(var i in menu_stack)
@@ -33,37 +36,11 @@ function menu(fname)
 			return;
 		}
 
-	var file = new File(system.exec_dir + fname);
-	if(!file.open("r")) {
-		alert(log(LOG_ERR,"!ERROR " + file.error + " opening " + fname));
+	var menu;
+	if((menu=read_menu(fname))==undefined)
 		return(false);
-	}
 
 	menu_stack.push(fname);
-
-	// Global options
-	var section = null;	// "root" section
-	var prompt = file.iniGetValue(section,"prompt","'Command: '");
-	var menu_file = file.iniGetValue(section,"menu_file");
-	var menu_fmt  = file.iniGetValue(section,"menu_format", "\1n\1h\1w%s \1b%s");
-	var menu_colwidth = file.iniGetValue(section,"menu_column_width", 39);
-	var menu_reverse = file.iniGetValue(section, "menu_reverse", false);
-
-	var hotkeys = file.iniGetValue(section,"hotkeys",true);
-	var hotkey_ext = file.iniGetValue(section,"hotkey_ext");
-
-	var maxnum = file.iniGetValue(section,"maxnum",0);
-	var num_exec = file.iniGetValue(section,"num_exec");
-
-	var expert = file.iniGetValue(section,"expert",true);
-	var show_menu = file.iniGetValue(section,"show_menu",false);
-
-	var exec = file.iniGetValue(section,"exec");
-
-	// Commands
-	var command = file.iniGetAllObjects("key");
-
-	file.close();
 
 	var done = false;
 
