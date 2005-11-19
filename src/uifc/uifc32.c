@@ -1402,7 +1402,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						}
 						if(a==1 && !s)
 							break;
-						if(strlen(option[j])>(size_t)b
+						if(option[j]!=NULL
+							&& strlen(option[j])>(size_t)b
 							&& ((!a && s && !strnicmp(option[j]+b,search,s+1))
 							|| ((a || !s) && toupper(option[j][b])==toupper(i)))) {
 							if(a) s=0;
