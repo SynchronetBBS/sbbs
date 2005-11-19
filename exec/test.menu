@@ -1,10 +1,10 @@
-prompt:"-c\r\nþ bhMain ncþ h"+(user.security.exemptions&UFLAG_T ? "@TUSED@":"@TLEFT@")+" nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n "
-exec: maxnum = msg_area.grp_list[bbs.curgrp].sub_list.length
+prompt:"-c\r\nþ bhMain ncþ h"+(user.security.exemptions&UFLAG_T ? "@TUSED@":"@TLEFT@")+" nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n"
+exec: menu.maxnum = msg_area.grp_list[bbs.curgrp].sub_list.length
 expert: true
 num_exec: bbs.cursub = parseInt(cmd)-1;
 hotkey_ext: /
-menu_column_width=11
-menu_reverse = true
+column_width=11
+reverse = true
 
 [A]
 description: Option A
@@ -25,9 +25,12 @@ exec: bbs.post_msg()
 description: test
 exec: print("blah")
 
+[s]
+exec: exec_menu("sub")
+
 [x]
 description: exit
 exec: done=true
 
 [?]
-exec: show_menu=true
+exec: menu.show=true
