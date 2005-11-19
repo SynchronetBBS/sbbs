@@ -89,6 +89,8 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type)
 	bbs->conn_type=dflt_conn_type;
 	bbs->port=(dflt_conn_type==CONN_TYPE_TELNET)?23:513;
 	bbs->loglevel=LOG_INFO;
+	bbs->music=CTERM_MUSIC_BANSI;
+	bbs->font=default_font;
 	p1=url;
 	if(!strnicmp("rlogin://",url,9)) {
 		bbs->conn_type=CONN_TYPE_RLOGIN;

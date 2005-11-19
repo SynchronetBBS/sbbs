@@ -492,6 +492,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 					memset(list[listcount-1],0,sizeof(struct bbslist));
 					list[listcount-1]->loglevel=LOG_INFO;
 					list[listcount-1]->id=listcount-1;
+					list[listcount-1]->music=CTERM_MUSIC_BANSI;
 					list[listcount-1]->font=default_font;
 					uifc.changes=0;
 					uifc.helpbuf=	"`BBS Name`\n\n"
