@@ -631,7 +631,7 @@ video_event(XEvent *ev)
 				if((ev->xconfigure.width == FW * DpyCols + 4)
 						&& (ev->xconfigure.height == FH * (DpyRows+1) + 4))
 					break;
-						
+
 				FW=FW/FontScale;
 				FH=FH/FontScale;
 				newFSH=(ev->xconfigure.width+(FW*DpyCols)/2)/(FW*DpyCols);
@@ -1130,14 +1130,15 @@ video_async_event(void *crap)
 				if(x_current_font!=new_font) {
 					int oldfont=x_current_font;
 					x_current_font=new_font;
-					if(load_font(NULL,FW,FH,FontScale)) {
+					if(load_font(NULL,FW/FontScale,FH/FontScale,FontScale)) {
 						if(font_force) {
 							init_mode(3);
 							sem_wait(&console_mode_changed);
-							if(load_font(NULL,FW,FH,FontScale)) {
+							if(load_font(NULL,FW/FontScale,FH/FontScale,FontScale)) {
 								setfont_return=-1;
 								x_current_font=oldfont;
-								load_font(NULL,FW,FH,FontScale);
+								new_font=oldfont;
+								load_font(NULL,FW/FontScale,FH/FontScale,FontScale);
 							}
 							else
 								setfont_return=0;
@@ -1145,7 +1146,8 @@ video_async_event(void *crap)
 						else {
 							setfont_return=-1;
 							x_current_font=oldfont;
-							load_font(NULL,FW,FH,FontScale);
+							new_font=oldfont;
+							load_font(NULL,FW/FontScale,FH/FontScale,FontScale);
 						}
 					}
 					else
@@ -1158,7 +1160,11 @@ video_async_event(void *crap)
 				if(!sem_trywait(&x11_name))
 					x11.XSetIconName(dpy, win, window_name);
 				if(!sem_trywait(&x11_loadfont)) {
-					x_load_font_ret=load_font(font_filename,FW,FH,FontScale);
+					int oldfont=x_current_font;
+					x_load_font_ret=load_font(font_filename,FW/FontScale,FH/FontScale,FontScale);
+					if(x_load_font_ret)
+						x_current_font=oldfont;
+					new_font=x_current_font;
 					resize_window();
 					sem_post(&x11_fontloaded);
 				}
@@ -1341,7 +1347,7 @@ load_font(char *filename, int width, int height, int scale)
 	int	i,j;
 	static char current_filename[MAX_PATH];
 	FILE	*fontfile;
-	
+
 	if(height > 16)
 		return(-1);
 
