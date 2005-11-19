@@ -720,7 +720,7 @@ void font_control(struct bbslist *bbs)
 {
 	char *buf;
 	struct	text_info txtinfo;
-	int i,j;
+	int i,j,k;
 
    	gettextinfo(&txtinfo);
 	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
@@ -730,7 +730,16 @@ void font_control(struct bbslist *bbs)
 	i=j=getfont();
 	uifc.helpbuf="`Font Setup`\n\n"
 				"Change the current font.  Must support the current video mode.";
-	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,&j,"Font Setup",font_names)!=-1)
+	k=uifc.list(WIN_MID|WIN_SAV|WIN_INS,0,0,0,&i,&j,"Font Setup",font_names);
+	if(k & MSK_INS) {
+		struct file_pick fpick;
+		j=filepick(&uifc, "Capture File", &fpick, ".", NULL, 0);
+
+		if(j!=-1 || fpick.files>=1)
+			loadfont(fpick.selected[0]);
+		filepick_free(&fpick);
+	}
+	else
 		setfont(i,FALSE);
 	uifcbail();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
@@ -772,7 +781,6 @@ void capture_control(struct bbslist *bbs)
 				cterm_openlog(fpick.selected[0], i?CTERM_LOG_RAW:CTERM_LOG_ASCII);
 			filepick_free(&fpick);
 		}
-
 	}
 	else {
 		if(cterm.log & CTERM_LOG_PAUSED) {
