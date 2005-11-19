@@ -288,6 +288,8 @@ int uifcini32(uifcapi_t* uifcapi)
 		uifc_mouse_enable();
 	}
 
+	api->initialized=TRUE;
+
     return(0);
 }
 
@@ -415,6 +417,7 @@ void uifcbail(void)
 	FREE_AND_NULL(blk_scrn);
 	FREE_AND_NULL(tmp_buffer);
 	FREE_AND_NULL(tmp_buffer2);
+	api->initialized=FALSE;
 }
 
 /****************************************************************************/

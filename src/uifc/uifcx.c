@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -89,6 +89,7 @@ int uifcinix(uifcapi_t* uifcapi)
     setvbuf(stdin,NULL,_IONBF,0);
     setvbuf(stdout,NULL,_IONBF,0);
     api->scrn_len=24;
+	api->initialized=TRUE;
 
     return(0);
 }
@@ -98,6 +99,7 @@ int uifcinix(uifcapi_t* uifcapi)
 /****************************************************************************/
 void uifcbail(void)
 {
+	api->initialized=FALSE;
 }
 
 /****************************************************************************/
