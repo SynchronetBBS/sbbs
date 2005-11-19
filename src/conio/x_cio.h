@@ -65,6 +65,7 @@ void x_setname(const char *name);
 void x_settitle(const char *title);
 void x_copytext(const char *text, size_t buflen);
 char *x_getcliptext(void);
+int x_setfont(int font, int force);
 #ifdef __cplusplus
 }
 #endif

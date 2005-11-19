@@ -317,3 +317,11 @@ char *x_getcliptext(void)
 	sem_post(&pastebuf_request);
 	return(ret);
 }
+
+int x_setfont(int font, int force)
+{
+	font_force=force;
+	new_font=font;
+	sem_wait(&font_set);
+	return(setfont_return);
+}

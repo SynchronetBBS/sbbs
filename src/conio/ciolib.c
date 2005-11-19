@@ -169,6 +169,7 @@ int try_x_init(int mode)
 		cio_api.settitle=x_settitle;
 		cio_api.copytext=x_copytext;
 		cio_api.getcliptext=x_getcliptext;
+		cio_api.setfont=x_setfont;
 		return(1);
 	}
 	return(0);

@@ -129,6 +129,10 @@ sem_t	console_mode_changed;
 sem_t	copybuf_set;
 sem_t	pastebuf_set;
 sem_t	pastebuf_request;
+sem_t	font_set;
+int		new_font;
+int		font_force;
+int		setfont_return;
 pthread_mutex_t	copybuf_mutex;
 pthread_mutex_t	lines_mutex;
 char *copybuf=NULL;
@@ -1118,6 +1122,32 @@ video_async_event(void *crap)
 			case 0:
 				if(console_new_mode!=NO_NEW_MODE)
 					init_mode(console_new_mode);
+				if(x_current_font!=new_font) {
+					int oldfont=x_current_font;
+					x_current_font=new_font;
+					if(load_font(NULL,FW,FH,FontScale)) {
+						if(font_force) {
+							init_mode(3);
+							sem_wait(&console_mode_changed);
+							if(load_font(NULL,FW,FH,FontScale)) {
+								setfont_return=-1;
+								x_current_font=oldfont;
+								load_font(NULL,FW,FH,FontScale);
+							}
+							else
+								setfont_return=0;
+						}
+						else {
+							setfont_return=-1;
+							x_current_font=oldfont;
+							load_font(NULL,FW,FH,FontScale);
+						}
+					}
+					else
+						setfont_return=0;
+					resize_window();
+					sem_post(&font_set);
+				}
 				while(!sem_trywait(&x11_beep))
 					x11.XBell(dpy, 0);
 				if(!sem_trywait(&x11_name))
@@ -1314,6 +1344,7 @@ load_font(char *filename, int width, int height, int scale)
 		}
 		if(conio_fontdata[i].desc==NULL)
 			x_current_font=0;
+		new_font=x_current_font;
 	}
 	if(conio_fontdata[x_current_font].desc==NULL)
 		return(-1);
@@ -1356,12 +1387,11 @@ load_font(char *filename, int width, int height, int scale)
 						| ((fontdata[i*height+j] & 0x01) << 7);
 		}
 	}
-
 	if(pfnt!=0)
 		x11.XFreePixmap(dpy,pfnt);
-	scaledfont=scale_bitmap(font, FW, FH*256, &FontScale);
+	scaledfont=scale_bitmap(fontdata, FW, FH*256, &FontScale);
 	if(scaledfont==NULL)
-		pfnt=x11.XCreateBitmapFromData(dpy, win, font, FW, FH*256);
+		pfnt=x11.XCreateBitmapFromData(dpy, win, fontdata, FW, FH*256);
 	else {
 		FW*=scale;
 		FH*=scale;
@@ -1662,6 +1692,7 @@ console_init()
 	sem_init(&x11_beep,0,0);
 	sem_init(&x11_title,0,0);
 	sem_init(&x11_name,0,0);
+	sem_init(&font_set,0,0);
 	pthread_mutex_init(&copybuf_mutex, NULL);
 	pthread_mutex_init(&lines_mutex, NULL);
 
