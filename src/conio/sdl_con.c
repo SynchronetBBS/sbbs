@@ -874,8 +874,8 @@ int sdl_loadfont(char *filename)
 {
 	int retval;
 
-	FREE_AND_NULL(last_vmem);
 	retval=sdl_user_func_ret(SDL_USEREVENT_LOADFONT,filename);
+	FREE_AND_NULL(last_vmem);
 	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 	return(retval);
 }

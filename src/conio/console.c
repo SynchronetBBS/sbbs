@@ -1159,6 +1159,7 @@ video_async_event(void *crap)
 					x11.XSetIconName(dpy, win, window_name);
 				if(!sem_trywait(&x11_loadfont)) {
 					x_load_font_ret=load_font(font_filename,FW,FH,FontScale);
+					resize_window();
 					sem_post(&x11_fontloaded);
 				}
 				if(!sem_trywait(&x11_title))
@@ -1370,7 +1371,7 @@ load_font(char *filename, int width, int height, int scale)
 			return(-1);
 		}
 		fclose(fontfile);
-		x_current_font=-1;
+		x_current_font=new_font=-1;
 		if(filename != current_filename)
 			SAFECOPY(current_filename,filename);
 	}
