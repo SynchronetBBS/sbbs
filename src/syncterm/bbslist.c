@@ -109,6 +109,7 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type, char* ho
 			list[*i]->loglevel=iniReadInteger(listfile,bbsname,"LogLevel",LOG_INFO);
 			list[*i]->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
 			list[*i]->music=iniReadInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
+			list[*i]->font=iniReadInteger(listfile,bbsname,"Font",default_font);
 			list[*i]->type=type;
 			list[*i]->id=*i;
 			(*i)++;
@@ -123,8 +124,8 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type, char* ho
 
 int edit_list(struct bbslist *item,char *listpath)
 {
-	char	opt[16][80];
-	char	*opts[16];
+	char	opt[17][80];
+	char	*opts[17];
 	int		changed=0;
 	int		copt=0,i,j;
 	char	str[6];
@@ -132,7 +133,7 @@ int edit_list(struct bbslist *item,char *listpath)
 	str_list_t	inifile;
 	char	tmp[LIST_NAME_MAX+1];
 
-	for(i=0;i<16;i++)
+	for(i=0;i<17;i++)
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
@@ -141,7 +142,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
 	}
-	opt[15][0]=0;
+	opt[16][0]=0;
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inifile=iniReadFile(listfile);
 		fclose(listfile);
@@ -164,6 +165,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		sprintf(opt[12],"Log Level         %s",log_levels[item->loglevel]);
 		sprintf(opt[13],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		sprintf(opt[14],"ANSI Music        %s",music_names[item->music]);
+		sprintf(opt[15],"Font              %s",font_names[item->font]);
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
@@ -313,6 +315,19 @@ int edit_list(struct bbslist *item,char *listpath)
 					changed=1;
 				}
 				break;
+			case 15:
+				uifc.helpbuf=	"`Font`\n\n"
+								"Select the desired font for this connection.\n\n"
+								"Some fonts do not allow some modes.  When this is the case, 80x25 will be"
+								"forced.\n";
+				i=item->font;
+				uifc.list(WIN_SAV,0,0,0,&i,NULL,"Font",font_names);
+				if(i != item->font) {
+					item->font=i;
+					iniSetInteger(&inifile,item->name,"Font",item->font,&ini_style);
+					changed=1;
+				}
+				break;
 		}
 		if(uifc.changes)
 			changed=1;
@@ -351,6 +366,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetInteger(&inifile,bbs->name,"LogLevel",bbs->loglevel,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"ANSIMusic",bbs->music,&ini_style);
+	iniSetInteger(&inifile,bbs->name,"Font",bbs->font,&ini_style);
 	if((listfile=fopen(listpath,"w"))!=NULL) {
 		iniWriteFile(listfile,inifile);
 		fclose(listfile);

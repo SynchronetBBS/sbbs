@@ -10,6 +10,8 @@
 #include <dirwrap.h>
 
 #include "ciolib.h"
+#include "allfonts.h"
+
 #include "bbslist.h"
 #include "conn.h"
 #include "term.h"
@@ -23,6 +25,8 @@ char* syncterm_version = "SyncTERM 0.5"
 	;
 
 char *inpath=NULL;
+int default_font;
+char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
 
 #ifdef _WINSOCKAPI_
 
@@ -235,6 +239,14 @@ int main(int argc, char **argv)
 
 	initciolib(ciolib_mode);
 
+	for(i=0; conio_fontdata[i].desc != NULL; i++) {
+		font_names[i]=conio_fontdata[i].desc;
+		if(!strcmp(conio_fontdata[i].desc,"Codepage 437 English")) {
+			default_font=i;
+		}
+	}
+	font_names[i]="";
+
     gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {
 		fputs("Window too small, must be at least 80x24\n",stderr);
@@ -302,6 +314,7 @@ int main(int argc, char **argv)
 				}
 			}
 			uifcbail();
+			setfont(bbs->font,TRUE);
 			switch(bbs->screen_mode) {
 				case SCREEN_MODE_80X25:
 					textmode(C80);
@@ -325,6 +338,7 @@ int main(int argc, char **argv)
 			if(drawwin())
 				return(1);
 			exit_now=doterm(bbs);
+			setfont(default_font,TRUE);
 			textmode(txtinfo.currmode);
 			settitle("SyncTERM");
 		}

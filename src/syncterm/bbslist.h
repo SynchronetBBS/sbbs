@@ -54,6 +54,7 @@ struct bbslist {
 	int				loglevel;
 	int				bpsrate;
 	int				music;
+	int				font;
 };
 
 struct bbslist *show_bbslist(char* listpath, int mode, char *home);
