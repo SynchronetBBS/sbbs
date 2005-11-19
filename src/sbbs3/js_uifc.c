@@ -45,7 +45,8 @@
 
 /* Properties */
 enum {
-	 PROP_MODE
+	 PROP_INITIALIZED	/* read-only */
+	,PROP_MODE
 	,PROP_CHANGES
 	,PROP_SAVNUM
 	,PROP_SAVDEPTH
@@ -72,6 +73,9 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
+		case PROP_INITIALIZED:
+			*vp=BOOLEAN_TO_JSVAL(uifc->initialized);
+			break;
 		case PROP_MODE:
 			JS_NewNumberValue(cx,uifc->mode,vp);
 			break;
@@ -190,6 +194,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static jsSyncPropertySpec js_properties[] = {
 /*		 name,				tinyid,						flags,		ver	*/
 
+	{	"initialized",		PROP_INITIALIZED,	JSPROP_ENUMERATE|JSPROP_READONLY, 313 },
 	{	"mode",				PROP_MODE,			JSPROP_ENUMERATE,	313 },
 	{	"changes",			PROP_CHANGES,		JSPROP_ENUMERATE,	313 },
 	{	"save_num",			PROP_SAVNUM,		JSPROP_ENUMERATE,	313 },
@@ -206,6 +211,22 @@ static jsSyncPropertySpec js_properties[] = {
 	{	"lightbar_color",	PROP_LBCOLOR,		JSPROP_ENUMERATE,	313 },
 	{0}
 };
+
+/* Convenience functions */
+static uifcapi_t* get_uifc(JSContext *cx, JSObject *obj)
+{
+	uifcapi_t* uifc;
+
+	if((uifc=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(NULL);
+
+	if(!uifc->initialized) {
+		JS_ReportError(cx,"UIFC not initialized");
+		return(NULL);
+	}
+
+	return(uifc);
+}
 
 /* Methods */
 
@@ -240,7 +261,7 @@ js_uifc_bail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uifcapi_t* uifc;
 
-	if((uifc=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
 	uifc->bail();
@@ -253,7 +274,7 @@ js_uifc_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		str;
 	uifcapi_t*	uifc;
 
-	if((uifc=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
 	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
@@ -269,7 +290,7 @@ js_uifc_pop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		str=NULL;
 	uifcapi_t*	uifc;
 
-	if((uifc=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
 	if(argc)
@@ -293,7 +314,7 @@ js_uifc_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	uifcapi_t*	uifc;
 	uintN		argn=0;
 
-	if((uifc=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
@@ -355,7 +376,7 @@ js_uifc_list(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	jsuint		numopts;
 	str_list_t	opts=NULL;
 
-	if((uifc=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
@@ -406,7 +427,7 @@ js_finalize(JSContext *cx, JSObject *obj)
 {
 	uifcapi_t* p;
 
-	if((p=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=get_uifc(cx,obj))==NULL)
 		return;
 	
 	free(p);
