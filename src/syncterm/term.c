@@ -727,10 +727,10 @@ void font_control(struct bbslist *bbs)
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	init_uifc(FALSE, FALSE);
 
-	i=cterm.music_enable;
+	i=j=getfont();
 	uifc.helpbuf="`Font Setup`\n\n"
 				"Change the current font.  Must support the current video mode.";
-	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Font Setup",font_names)!=-1)
+	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,&j,"Font Setup",font_names)!=-1)
 		setfont(i,FALSE);
 	uifcbail();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
