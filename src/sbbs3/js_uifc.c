@@ -235,6 +235,7 @@ js_uifc_init(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	char*	title="Synchronet";
+	char*	mode;
 	uifcapi_t* uifc;
 
 	*rval = JSVAL_FALSE;
@@ -245,11 +246,29 @@ js_uifc_init(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc && (title=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
 		return(JS_FALSE);
 
-	if(initciolib(ciolib_mode))
-		return(JS_TRUE);
+	if(argc>1 && (mode=js_ValueToStringBytes(cx, argv[1], NULL))!=NULL) {
+		if(!stricmp(mode,"STDIO"))
+			ciolib_mode=-1;
+		else if(!stricmp(mode,"AUTO"))
+			ciolib_mode=CIOLIB_MODE_AUTO;
+		else if(!stricmp(mode,"X"))
+			ciolib_mode=CIOLIB_MODE_X;
+		else if(!stricmp(mode,"ANSI"))
+			ciolib_mode=CIOLIB_MODE_ANSI;
+		else if(!stricmp(mode,"CONIO"))
+			ciolib_mode=CIOLIB_MODE_CONIO;
+	}
 
-    if(uifcini32(uifc))
-		return(JS_TRUE);
+	if(ciolib_mode==-1) {
+		if(uifcinix(uifc))
+			return(JS_TRUE);
+	} else {
+		if(initciolib(ciolib_mode))
+			return(JS_TRUE);
+
+		if(uifcini32(uifc))
+			return(JS_TRUE);
+	}
 
 	*rval = JSVAL_TRUE;
 	uifc->scrn(title);
@@ -427,7 +446,7 @@ js_finalize(JSContext *cx, JSObject *obj)
 {
 	uifcapi_t* p;
 
-	if((p=get_uifc(cx,obj))==NULL)
+	if((p=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 	
 	free(p);
