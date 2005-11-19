@@ -330,3 +330,8 @@ int x_getfont(void)
 {
 	return(new_font);
 }
+
+int x_loadfont(char *filename)
+{
+	return(x_load_font(filename));
+}

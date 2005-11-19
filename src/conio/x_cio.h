@@ -67,6 +67,7 @@ void x_copytext(const char *text, size_t buflen);
 char *x_getcliptext(void);
 int x_setfont(int font, int force);
 int x_getfont(void);
+int x_loadfont(char *filename);
 #ifdef __cplusplus
 }
 #endif

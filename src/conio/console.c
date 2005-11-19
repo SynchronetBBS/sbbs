@@ -111,6 +111,7 @@
 
 #include <threadwrap.h>
 #include <genwrap.h>
+#include <dirwrap.h>
 
 #include "console.h"
 #include "vidmodes.h"
@@ -130,6 +131,10 @@ sem_t	copybuf_set;
 sem_t	pastebuf_set;
 sem_t	pastebuf_request;
 sem_t	font_set;
+sem_t	x11_loadfont;
+sem_t	x11_fontloaded;
+int		x_load_font_ret;
+char	font_filename[MAX_PATH];
 int		new_font=-1;
 int		font_force;
 int		setfont_return;
@@ -154,7 +159,7 @@ WORD *vmem=NULL;
 static int show = 1;
 BYTE CursRow=0;
 BYTE CursCol=0;
-static int x_current_font=-1;
+static int x_current_font=-99;
 typedef struct TextLine {
     WORD	*data;
     u_char	max_length;	/* Not used, but here for future use */
@@ -1152,6 +1157,10 @@ video_async_event(void *crap)
 					x11.XBell(dpy, 0);
 				if(!sem_trywait(&x11_name))
 					x11.XSetIconName(dpy, win, window_name);
+				if(!sem_trywait(&x11_loadfont)) {
+					x_load_font_ret=load_font(font_filename,FW,FH,FontScale);
+					sem_post(&x11_fontloaded);
+				}
 				if(!sem_trywait(&x11_title))
 					x11.XStoreName(dpy, win, window_title);
 				if(!sem_trywait(&copybuf_set)) {
@@ -1329,13 +1338,13 @@ load_font(char *filename, int width, int height, int scale)
 	char *scaledfont;
 	char fontdata[256*16];
 	int	i,j;
+	static char current_filename[MAX_PATH];
+	FILE	*fontfile;
+	
+	if(height > 16)
+		return(-1);
 
-	/* I don't actually do this yet! */
-	if(filename != NULL) {
-		return(1);
-	}
-
-	if(x_current_font<0 || x_current_font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
+	if(x_current_font==-99 || x_current_font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
 		for(i=0; conio_fontdata[i].desc != NULL; i++) {
 			if(!strcmp(conio_fontdata[i].desc, "Codepage 437 English")) {
 				x_current_font=i;
@@ -1346,33 +1355,51 @@ load_font(char *filename, int width, int height, int scale)
 			x_current_font=0;
 		new_font=x_current_font;
 	}
-	if(conio_fontdata[x_current_font].desc==NULL)
+	if(x_current_font==-1)
+		filename=current_filename;
+	else if(conio_fontdata[x_current_font].desc==NULL)
 		return(-1);
 
-	switch(width) {
-		case 8:
-			switch(height) {
-				case 8:
-					font=conio_fontdata[x_current_font].eight_by_eight;
-					break;
-				case 14:
-					font=conio_fontdata[x_current_font].eight_by_fourteen;
-					break;
-				case 16:
-					font=conio_fontdata[x_current_font].eight_by_sixteen;
-					break;
-				default:
-					return(1);
-			}
-			break;
-		default:
-			return(1);
+	if(filename != NULL) {
+		if(flength(filename)!=height*256)
+			return(-1);
+		if((fontfile=fopen(filename,"rb"))==NULL)
+			return(-1);
+		if(fread(fontdata, 1, height*256, fontfile)!=height*256) {
+			fclose(fontfile);
+			return(-1);
+		}
+		fclose(fontfile);
+		x_current_font=-1;
+		if(filename != current_filename)
+			SAFECOPY(current_filename,filename);
 	}
-	if(font==NULL)
-		return(1);
+	else {
+		switch(width) {
+			case 8:
+				switch(height) {
+					case 8:
+						font=conio_fontdata[x_current_font].eight_by_eight;
+						break;
+					case 14:
+						font=conio_fontdata[x_current_font].eight_by_fourteen;
+						break;
+					case 16:
+						font=conio_fontdata[x_current_font].eight_by_sixteen;
+						break;
+					default:
+						return(1);
+				}
+				break;
+			default:
+				return(1);
+		}
+		if(font==NULL)
+			return(1);
+		memcpy(fontdata, font, height*256);
+	}
 	FW = width;
     FH = height;
-	memcpy(fontdata, font, height*256);
 	/* Swap bit order... leftmost bit is most significant, X11 wants it the
 	 * other way. */
 	for(i=0; i<256; i++) {
@@ -1693,6 +1720,9 @@ console_init()
 	sem_init(&x11_title,0,0);
 	sem_init(&x11_name,0,0);
 	sem_init(&font_set,0,0);
+	sem_init(&x11_loadfont,0,0);
+	sem_init(&x11_fontloaded,0,0);
+
 	pthread_mutex_init(&copybuf_mutex, NULL);
 	pthread_mutex_init(&lines_mutex, NULL);
 
@@ -1820,4 +1850,12 @@ void x_win_name(const char *name)
 {
 	SAFECOPY(window_name,name);
 	sem_post(&x11_name);
+}
+
+int x_load_font(const char *filename)
+{
+	SAFECOPY(font_filename, filename);
+	sem_post(&x11_loadfont);
+	sem_wait(&x11_fontloaded);
+	return(x_load_font_ret);
 }

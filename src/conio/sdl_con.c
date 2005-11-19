@@ -12,6 +12,7 @@
 
 #include "gen_defs.h"
 #include "genwrap.h"
+#include "dirwrap.h"
 #include "xpbeep.h"
 
 #if (defined CIOLIB_IMPORTS)
@@ -49,8 +50,11 @@ SDL_Surface	*win=NULL;
 SDL_mutex *sdl_keylock;
 SDL_mutex *sdl_updlock;
 SDL_mutex *sdl_vstatlock;
+SDL_mutex *sdl_ufunc_lock;
 SDL_sem *sdl_key_pending;
 SDL_sem *sdl_init_complete;
+SDL_sem *sdl_ufunc_ret;
+int sdl_ufunc_retval;
 int	sdl_init_good=0;
 int sdl_updated;
 int sdl_exitcode=0;
@@ -60,7 +64,7 @@ SDL_Surface	*sdl_cursor=NULL;
 
 static int lastcursor_x=0;
 static int lastcursor_y=0;
-static int sdl_current_font=-1;
+static int sdl_current_font=-99;
 static int lastfg=-1;
 static int lastbg=-1;
 
@@ -101,6 +105,7 @@ enum {
 	,SDL_USEREVENT_INIT
 	,SDL_USEREVENT_COPY
 	,SDL_USEREVENT_PASTE
+	,SDL_USEREVENT_LOADFONT
 };
 
 const struct sdl_keyvals sdl_keyval[] =
@@ -291,6 +296,44 @@ void sdl_user_func(int func, ...)
 			break;
 	}
 	va_end(argptr);
+}
+
+/* Called from main thread only */
+int sdl_user_func_ret(int func, ...)
+{
+	unsigned int	*i;
+	va_list argptr;
+	void	**args;
+	SDL_Event	ev;
+	int		passed=FALSE;
+	char	*p;
+
+	sdl.mutexP(sdl_ufunc_lock);
+	ev.type=SDL_USEREVENT;
+	ev.user.data1=NULL;
+	ev.user.data2=NULL;
+	ev.user.code=func;
+	va_start(argptr, func);
+	switch(func) {
+		case SDL_USEREVENT_LOADFONT:
+			p=va_arg(argptr, char *);
+			if(p!=NULL) {
+				if((ev.user.data1=strdup(p))==NULL) {
+					va_end(argptr);
+					return;
+				}
+			}
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			passed=TRUE;
+			break;
+	}
+	if(passed)
+		sdl.SemWait(sdl_ufunc_ret);
+	else
+		sdl_ufunc_retval=-1;
+	sdl.mutexV(sdl_ufunc_lock);
+	va_end(argptr);
+	return(sdl_ufunc_retval);
 }
 
 #if (defined(__MACH__) && defined(__APPLE__))
@@ -827,9 +870,22 @@ int sdl_hidemouse(void)
 	return(0);
 }
 
+int sdl_loadfont(char *filename)
+{
+	int retval;
+
+	FREE_AND_NULL(last_vmem);
+	retval=sdl_user_func_ret(SDL_USEREVENT_LOADFONT,filename);
+	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
+	return(retval);
+}
+
 int sdl_setfont(int font, int force)
 {
 	int changemode=0;
+
+	if(font < 0 || font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2))
+		return(-1);
 
 	switch(vstat.charheight) {
 		case 8:
@@ -861,7 +917,7 @@ int sdl_setfont(int font, int force)
 	if(changemode)
 		sdl_init_mode(3);
 	FREE_AND_NULL(last_vmem);
-	sdl_load_font(NULL);
+	sdl_user_func_ret(SDL_USEREVENT_LOADFONT,0,0,0,0);
 	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 	return(0);
 }
@@ -907,6 +963,7 @@ void sdl_add_key(unsigned int keyval)
 /* Called from event thread only */
 int sdl_load_font(char *filename)
 {
+	static char current_filename[MAX_PATH];
 	unsigned char *font;
 	unsigned int fontsize;
 	int fw;
@@ -917,12 +974,9 @@ int sdl_load_font(char *filename)
 	int charrow;
 	int charcol;
 	SDL_Rect r;
+	FILE	*fontfile;
 
-	/* I don't actually do this yet! */
-	if(filename != NULL)
-		return(-1);
-
-	if(sdl_current_font<0 || sdl_current_font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
+	if(sdl_current_font==-99 || sdl_current_font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
 		for(x=0; conio_fontdata[x].desc != NULL; x++) {
 			if(!strcmp(conio_fontdata[x].desc, "Codepage 437 English")) {
 				sdl_current_font=x;
@@ -932,7 +986,9 @@ int sdl_load_font(char *filename)
 		if(conio_fontdata[x].desc==NULL)
 			sdl_current_font=0;
 	}
-	if(conio_fontdata[sdl_current_font].desc==NULL)
+	if(sdl_current_font==-1)
+		filename=current_filename;
+	else if(conio_fontdata[sdl_current_font].desc==NULL)
 		return(-1);
 
 	sdl.mutexP(sdl_vstatlock);
@@ -946,43 +1002,67 @@ int sdl_load_font(char *filename)
 		return(-1);
 	}
 
-	switch(vstat.charwidth) {
-		case 8:
-			switch(vstat.charheight) {
-				case 8:
-					if(conio_fontdata[sdl_current_font].eight_by_eight==NULL) {
-						sdl.mutexV(sdl_vstatlock);
-						free(font);
-						return(-1);
-					}
-					memcpy(font, conio_fontdata[sdl_current_font].eight_by_eight, fontsize);
-					break;
-				case 14:
-					if(conio_fontdata[sdl_current_font].eight_by_fourteen==NULL) {
-						sdl.mutexV(sdl_vstatlock);
-						free(font);
-						return(-1);
-					}
-					memcpy(font, conio_fontdata[sdl_current_font].eight_by_fourteen, fontsize);
-					break;
-				case 16:
-					if(conio_fontdata[sdl_current_font].eight_by_sixteen==NULL) {
-						sdl.mutexV(sdl_vstatlock);
-						free(font);
-						return(-1);
-					}
-					memcpy(font, conio_fontdata[sdl_current_font].eight_by_sixteen, fontsize);
-					break;
-				default:
-					sdl.mutexV(sdl_vstatlock);
-					free(font);
-					return(-1);
-			}
-			break;
-		default:
+	if(filename != NULL) {
+		if(flength(filename)!=fontsize) {
 			sdl.mutexV(sdl_vstatlock);
 			free(font);
 			return(-1);
+		}
+		if((fontfile=fopen(filename,"rb"))==NULL) {
+			sdl.mutexV(sdl_vstatlock);
+			free(font);
+			return(-1);
+		}
+		if(fread(font, 1, fontsize, fontfile)!=fontsize) {
+			sdl.mutexV(sdl_vstatlock);
+			free(font);
+			fclose(fontfile);
+			return(-1);
+		}
+		fclose(fontfile);
+		sdl_current_font=-1;
+		if(filename != current_filename)
+			SAFECOPY(current_filename,filename);
+	}
+	else {
+		switch(vstat.charwidth) {
+			case 8:
+				switch(vstat.charheight) {
+					case 8:
+						if(conio_fontdata[sdl_current_font].eight_by_eight==NULL) {
+							sdl.mutexV(sdl_vstatlock);
+							free(font);
+							return(-1);
+						}
+						memcpy(font, conio_fontdata[sdl_current_font].eight_by_eight, fontsize);
+						break;
+					case 14:
+						if(conio_fontdata[sdl_current_font].eight_by_fourteen==NULL) {
+							sdl.mutexV(sdl_vstatlock);
+							free(font);
+							return(-1);
+						}
+						memcpy(font, conio_fontdata[sdl_current_font].eight_by_fourteen, fontsize);
+						break;
+					case 16:
+						if(conio_fontdata[sdl_current_font].eight_by_sixteen==NULL) {
+							sdl.mutexV(sdl_vstatlock);
+							free(font);
+							return(-1);
+						}
+						memcpy(font, conio_fontdata[sdl_current_font].eight_by_sixteen, fontsize);
+						break;
+					default:
+						sdl.mutexV(sdl_vstatlock);
+						free(font);
+						return(-1);
+				}
+				break;
+			default:
+				sdl.mutexV(sdl_vstatlock);
+				free(font);
+				return(-1);
+		}
 	}
 
 	if(sdl_font!=NULL)
@@ -1255,9 +1335,11 @@ int main(int argc, char **argv)
 
 		sdl_key_pending=sdl.SDL_CreateSemaphore(0);
 		sdl_init_complete=sdl.SDL_CreateSemaphore(0);
+		sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
 		sdl_updlock=sdl.SDL_CreateMutex();
 		sdl_keylock=sdl.SDL_CreateMutex();
 		sdl_vstatlock=sdl.SDL_CreateMutex();
+		sdl_ufunc_lock=sdl.SDL_CreateMutex();
 #if !defined(NO_X) && defined(__unix__)
 		sdl_pastebuf_set=sdl.SDL_CreateSemaphore(0);
 		sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
@@ -1411,6 +1493,11 @@ int main(int argc, char **argv)
 					case SDL_USEREVENT: {
 						/* Tell SDL to do various stuff... */
 						switch(ev.user.code) {
+							case SDL_USEREVENT_LOADFONT:
+								sdl_ufunc_retval=sdl_load_font((char *)ev.user.data1);
+								FREE_AND_NULL(ev.user.data1);
+								sdl.SemPost(sdl_ufunc_ret);
+								break;
 							case SDL_USEREVENT_UPDATERECT:
 								sdl_full_screen_redraw();
 								break;

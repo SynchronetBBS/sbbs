@@ -37,6 +37,7 @@ void sdl_copytext(const char *text, size_t buflen);
 char *sdl_getcliptext(void);
 int sdl_setfont(int font, int force);
 int sdl_getfont(void);
+int sdl_loadfont(char *filename);
 #ifdef __cplusplus
 }
 #endif
