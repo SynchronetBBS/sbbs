@@ -61,6 +61,8 @@ SDL_Surface	*sdl_cursor=NULL;
 static int lastcursor_x=0;
 static int lastcursor_y=0;
 static int sdl_current_font=-1;
+static int lastfg=-1;
+static int lastbg=-1;
 
 unsigned short *last_vmem=NULL;
 
@@ -1001,6 +1003,8 @@ int sdl_load_font(char *filename)
 	}
 	sdl.mutexV(sdl_vstatlock);
 	free(font);
+	lastfg=-1;
+	lastbg=-1;
     return(0);
 }
 
@@ -1056,8 +1060,6 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y, struct
 	SDL_Rect	src;
 	SDL_Rect	dst;
 	unsigned char	ch;
-	static int	lastfg=-1;
-	static int	lastbg=-1;
 
 	ch=(sch >> 8) & 0x0f;
 	if(lastfg!=ch) {
