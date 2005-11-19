@@ -120,6 +120,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"Change Log Level"
 						,"Capture Control (Alt-C)"
 						,"ANSI Music Control (Alt-M)"
+						,"Font Control (Alt-F)"
 						,"Exit (Alt-X)"
 						,""};
 	int		opt=0;
@@ -152,6 +153,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						"~ Change Log Level ~   Changes the minimum log leve for ZModem information\n"
 						"~ Capture Control ~    Enables/Disables screen capture\n"
 						"~ ANSI Music Control ~ Enables/Disables ANSI Music\n"
+						"~ Font Control ~       Changes the current font\n"
 						"~ Exit ~               Disconnects and closes the Syncterm";
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {

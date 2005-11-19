@@ -7,6 +7,7 @@
 #include <keys.h>
 
 #include "conn.h"
+#include "syncterm.h"
 #include "term.h"
 #include "uifcinit.h"
 #include "filepick.h"
@@ -715,6 +716,30 @@ void music_control(struct bbslist *bbs)
 	free(buf);
 }
 
+void font_control(struct bbslist *bbs)
+{
+	char *buf;
+	struct	text_info txtinfo;
+	int i,j;
+
+   	gettextinfo(&txtinfo);
+	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	init_uifc(FALSE, FALSE);
+
+	i=cterm.music_enable;
+	uifc.helpbuf="`Font Setup`\n\n"
+				"Change the current font.  Must support the current video mode.";
+	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Font Setup",font_names)!=-1)
+		setfont(i,FALSE);
+	uifcbail();
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
+	textattr(txtinfo.attribute);
+	gotoxy(txtinfo.curx,txtinfo.cury);
+	free(buf);
+}
+
 void capture_control(struct bbslist *bbs)
 {
 	char *buf;
@@ -981,6 +1006,9 @@ BOOL doterm(struct bbslist *bbs)
 				case 0x2000:	/* ALT-D - Download */
 					zmodem_download(bbs->dldir);
 					break;
+				case 0x2100:	/* ALT-F */
+					font_control(bbs);
+					break;
 				case 0x2600:	/* ALT-L */
 					conn_send(bbs->user,strlen(bbs->user),0);
 					conn_send("\r",1,0);
@@ -1073,6 +1101,9 @@ BOOL doterm(struct bbslist *bbs)
 							music_control(bbs);
 							break;
 						case 9:
+							font_control(bbs);
+							break;
+						case 10:
 							cterm_end();
 							free(scrollback);
 							conn_close();
