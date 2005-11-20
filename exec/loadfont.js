@@ -47,10 +47,14 @@ while(1) {
 	}
 }
 
-if(response.substr(0,21) != "\x1b[=67;84;101;114;109;")	// Not CTerm
+if(response.substr(0,21) != "\x1b[=67;84;101;114;109;") {	// Not CTerm
+	console.ctrlkey_passthru=oldctrl;
 	exit(0);
-if(response.substr(-1) != "c")	// Not a DA
+}
+if(response.substr(-1) != "c") {	// Not a DA
+	console.ctrlkey_passthru=oldctrl;
 	exit(0);
+}
 var version=response.substr(21);
 version=version.replace(/c/,"");
 var ver=version.split(/;/);
@@ -58,11 +62,13 @@ if(parseInt(ver[0]) > 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) >= 61)) {
 	// Can handle fonts... send it.
 	if(!font.open(argv[0],"rb",true,4096)) {
 		alert("Unable to open "+argv[0]+"!");
+		console.ctrlkey_passthru=oldctrl;
 		exit(1);
 	}
 	var fontdata=font.read(font.length);
 	if(fontdata.length != font.length) {
 		alert("Error reading font data!");
+		console.ctrlkey_passthru=oldctrl;
 		exit(1);
 	}
 	console.write("\x1b[=255;"+fontsize+"{");
@@ -79,3 +85,4 @@ if(parseInt(ver[0]) > 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) >= 61)) {
 	}
 	console.write("\x1b[0;255 D");
 }
+console.ctrlkey_passthru=oldctrl;
