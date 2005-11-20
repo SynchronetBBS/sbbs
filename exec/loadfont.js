@@ -125,7 +125,7 @@ for (i in filenames) {
 		continue;
 	}
 
-	console.write("\x1b[=255;"+fontsize+"{");
+	console.write("\x1b[="+firstslot+i+";"+fontsize+"{");
 
 	// This doesn't send it all...
 	// console.write(fontdata);
