@@ -1,32 +1,53 @@
 // Loads a font to the remote system
+/*
+ * Supported arguments:
+ * -H causes the last sent font NOT be made active. (Default is activate font)
+ * -S### sets the first font slot to ### default is 256 - number of fonts
+ * Multiple files can be sent at the same time.
+ */
 
 load("sbbsdefs.js");
+var filenames=new Array();
+var showfont=true;
+var firstslot=-1;
+var i;
 
-if(argc==0) {
+for(i=0; i<argc; i++) {
+	if(argv[i].substr(0,1)=="-") {
+		switch(argv[i].substr(1,1).toUpperCase()) {
+			case 'H':	/* Hidden update */
+				showfont=false;
+				break;
+			case 'S':	/* First font slot */
+				firstslot=parseInt(argv[i].substr(2));
+				break;
+		}
+	}
+	else {
+		filenames.push(argv[i]);
+	}
+}
+
+if(filenames.length==0) {
 	alert("No font file specified!");
+	log(LOG_ERR, "!ERROR No font file specified!");
 	exit(1);
 }
 
-var font=new File(argv[0]);
-if(!font.exists) {
-	alert("Cannot load font "+argv[0]+"!");
+if(firstslot==-1) {
+	firstslot=256-filenames.length;
+}
+
+if(firstslot+filenames.length > 256) {
+	alert("No room for "+filenames.length+" fonts if first slot is "+firstslot);
+	log(LOG_ERR, "!ERROR No room for "+filenames.length+" fonts if first slot is "+firstslot);
 	exit(1);
 }
 
-var fontsize;
-switch(font.length) {
-	case 4096:
-		fontsize=0;
-		break;
-	case 3586:
-		fontsize=1;
-		break;
-	case 2048:
-		fontsize=2;
-		break;
-	default:
-		alert("Illegal font file: "+argv[0]+"!");
-		exit(1);
+if(firstslot < 32) {
+	alert("Cannot overwrite default fonts!");
+	log(LOG_ERR, "!ERROR Cannot overwrite default fonts!");
+	exit(1);
 }
 
 // Disable parsed input... we need to do ESC processing ourselves here.
@@ -58,19 +79,52 @@ if(response.substr(-1) != "c") {	// Not a DA
 var version=response.substr(21);
 version=version.replace(/c/,"");
 var ver=version.split(/;/);
-if(parseInt(ver[0]) > 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) >= 61)) {
-	// Can handle fonts... send it.
-	if(!font.open(argv[0],"rb",true,4096)) {
-		alert("Unable to open "+argv[0]+"!");
-		console.ctrlkey_passthru=oldctrl;
-		exit(1);
+if(parseInt(ver[0]) < 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) < 61)) {
+	// Too old for dynamic fonts
+	console.ctrlkey_passthru=oldctrl;
+	exit(0);
+}
+
+for (i in filenames) {
+	var font=new File(filenames[i]);
+
+	if(!font.exists) {
+		alert("Cannot load font "+filenames[i]+"!");
+		log(LOG_ERR, "!ERROR Cannot load font "+filenames[i]+"!");
+		continue;
 	}
+
+	var fontsize;
+	switch(font.length) {
+		case 4096:
+			fontsize=0;
+			break;
+		case 3586:
+			fontsize=1;
+			break;
+		case 2048:
+			fontsize=2;
+			break;
+		default:
+			alert("Illegal font file: "+filenames[i]+"!");
+			log(LOG_ERR, "!ERROR Illegal font file: "+filenames[i]+"!");
+			continue;
+	}
+
+	if(!font.open(argv[0],"rb",true,4096)) {
+		alert("Unable to open "+filenames[i]+"!");
+		log(LOG_ERR,"!ERROR Unable to open "+filenames[i]+"!");
+		continue;
+	}
+
 	var fontdata=font.read(font.length);
 	if(fontdata.length != font.length) {
 		alert("Error reading font data!");
-		console.ctrlkey_passthru=oldctrl;
-		exit(1);
+		log(LOG_ERR,"!ERROR Error reading font data!");
+		font.close();
+		continue;
 	}
+
 	console.write("\x1b[=255;"+fontsize+"{");
 
 	// This doesn't send it all...
@@ -83,6 +137,8 @@ if(parseInt(ver[0]) > 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) >= 61)) {
 		client.socket.send(fontdata.substr(0,1024));
 		fontdata=fontdata.substr(1024);
 	}
-	console.write("\x1b[0;255 D");
+	font.close();
 }
+if(showfont)
+	console.write("\x1b[0;"+(firstslot+filenames.length-1)+" D");
 console.ctrlkey_passthru=oldctrl;
