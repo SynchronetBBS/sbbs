@@ -202,6 +202,8 @@ CSI [ p1 [ ; p2 ] ] sp D
 	Not all fonts are supported in all modes.  If a font is not supported in the
 	current mode, no action is taken.
 
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
 CSI [ p1 ] E
 	Cursor Next Line
 	Defaults: p1 = 1
@@ -323,6 +325,8 @@ CSI [ p1 ] c
 	Use the CVS revision to detect if a specific feature is available.  If you are adding
 	features to a forked version of cterm, please do so by adding an extra parameter to the
 	end, not by incrementing any existing one!
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
 CSI [ p1 [ ; pX ... ] ] m
 	Select Graphic Rendition
