@@ -23,8 +23,8 @@ SRC_ROOT = ..
 !ifdef USE_SDL
 OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE) $(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
 OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
-OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)allfonts$(OFILE)
 !endif
+OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)allfonts$(OFILE)
 
 #The following is necessary only when DLL-exporting wrapper functions
 !ifdef DLLIBS
