@@ -78,6 +78,11 @@ struct cterminal {
 	int log;
 	FILE* logfile;
 	char	DA[1024];
+	char	fontbuf[4096];
+	int		font_slot;
+	int		font_size;
+	int		font_read;
+	int		font_start_time;
 };
 
 #define CTERM_MUSIC_SYNCTERM	0

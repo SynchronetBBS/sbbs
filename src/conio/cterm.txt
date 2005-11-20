@@ -90,6 +90,21 @@ CSI = [p1] M
 
 	SOURCE: CTerm only.
 
+CSI = [ p1 [ ; p2 ] ] {
+	NON-STANDARD EXTENSION.
+	Defaults:  p1 = 255  p2 = 0
+	Indicates that a font block is following.
+	p1 indicates the font slot to place the loaded font into.  This must
+	be higher than the last default defined font (See CSI sp D for list
+	of predefined fonts)  p2 indicates font size according to the
+	following table:
+		0 - 8x16 font, 4096 bytes.
+		1 - 8x14 font, 3586 bytes.
+		2 - 8x8 font, 2048 bytes.
+
+	SOURCE: CTerm only.
+
+
 CSI [ p1 [ ; p2 ] ] * r
 	NON-STANDARD EXTENSION.
 	Set the output emulation speed.
