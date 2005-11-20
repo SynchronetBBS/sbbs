@@ -10,6 +10,7 @@
 #include <dirwrap.h>
 
 #include "ciolib.h"
+#include "cterm.h"
 #include "allfonts.h"
 
 #include "bbslist.h"
