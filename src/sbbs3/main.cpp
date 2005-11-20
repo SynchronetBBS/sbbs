@@ -659,6 +659,26 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_write_raw(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    uintN		i;
+    char*	str=NULL;
+	size_t		len;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+    for (i = 0; i < argc; i++) {
+		if((str=js_ValueToStringBytes(cx, argv[i], &len))==NULL)
+		    return(JS_FALSE);
+		sbbs->putcom(str, len);
+	}
+
+    return(JS_TRUE);
+}
+
+static JSBool
 js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -809,6 +829,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"write",			js_write,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
 	,JSDOCSTR("send one or more values (typically strings) to the server output")
 	,311
+	},
+	{"write_raw",			js_write_raw,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
+	,JSDOCSTR("send a stream of bytes (possibly containing NULLs or special control code sequences) to the server output")
+	,313
 	},
 	{"print",			js_writeln,			0,	JSTYPE_ALIAS },
     {"writeln",         js_writeln,         0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
