@@ -735,7 +735,7 @@ void font_control(struct bbslist *bbs)
 		struct file_pick fpick;
 		j=filepick(&uifc, "Capture File", &fpick, ".", NULL, 0);
 
-		if(j!=-1 || fpick.files>=1)
+		if(j!=-1 && fpick.files>=1)
 			loadfont(fpick.selected[0]);
 		filepick_free(&fpick);
 	}
@@ -777,7 +777,7 @@ void capture_control(struct bbslist *bbs)
 		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Type",opts)!=-1) {
 			j=filepick(&uifc, "Capture File", &fpick, bbs->dldir, NULL, UIFC_FP_ALLOWENTRY);
 
-			if(j!=-1 || fpick.files>=1)
+			if(j!=-1 && fpick.files>=1)
 				cterm_openlog(fpick.selected[0], i?CTERM_LOG_RAW:CTERM_LOG_ASCII);
 			filepick_free(&fpick);
 		}
