@@ -3,12 +3,14 @@
  * Supported arguments:
  * -H causes the last sent font NOT be made active. (Default is activate font)
  * -S### sets the first font slot to ### default is 256 - number of fonts
+ * -P shows progress indicator.
  * Multiple files can be sent at the same time.
  */
 
 load("sbbsdefs.js");
 var filenames=new Array();
 var showfont=true;
+var showprogress=false;
 var firstslot=-1;
 var i;
 
@@ -20,6 +22,9 @@ for(i=0; i<argc; i++) {
 				break;
 			case 'S':	/* First font slot */
 				firstslot=parseInt(argv[i].substr(2));
+				break;
+			case 'P':	/* Show progress indicator */
+				showprogress=true;
 				break;
 		}
 	}
@@ -54,8 +59,13 @@ if(firstslot < 32) {
 var oldctrl=console.ctrlkey_passthru;
 console.ctrlkey_passthru=-1;
 
+if(showprogress) {
+	writeln();
+	write("Detecting font support... ");
+}
+
 // Check if it's CTerm and supports font loading...
-console.write("\x1b[c");
+write("\x1b[c");
 var response='';
 
 while(1) {
@@ -69,10 +79,14 @@ while(1) {
 
 if(response.substr(0,21) != "\x1b[=67;84;101;114;109;") {	// Not CTerm
 	console.ctrlkey_passthru=oldctrl;
+	if(showprogress)
+		writeln("Not detected.");
 	exit(0);
 }
 if(response.substr(-1) != "c") {	// Not a DA
 	console.ctrlkey_passthru=oldctrl;
+	if(showprogress)
+		writeln("Not detected.");
 	exit(0);
 }
 var version=response.substr(21);
@@ -81,9 +95,15 @@ var ver=version.split(/;/);
 if(parseInt(ver[0]) < 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) < 61)) {
 	// Too old for dynamic fonts
 	console.ctrlkey_passthru=oldctrl;
+	if(showprogress)
+		writeln("Not detected.");
 	exit(0);
 }
 
+if(showprogress) {
+	writeln("Detected!");
+	write("Loading fonts...");
+}
 for (i in filenames) {
 	var font=new File(filenames[i]);
 
@@ -124,10 +144,10 @@ for (i in filenames) {
 		continue;
 	}
 
-	console.write("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
+	write("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
 
 	// This doesn't send it all...
-	// console.write(fontdata);
+	// write(fontdata);
 	while(console.output_buffer_level)
 		mswait(1);
 	if(!(console.telnet_mode & TELNET_MODE_OFF))
@@ -137,7 +157,11 @@ for (i in filenames) {
 		fontdata=fontdata.substr(1024);
 	}
 	font.close();
+	if(showprogress)
+		write(".");
 }
+if(showprogress)
+	writeln("done.");
 if(showfont)
-	console.write("\x1b[0;"+(firstslot+filenames.length-1)+" D");
+	write("\x1b[0;"+(firstslot+filenames.length-1)+" D");
 console.ctrlkey_passthru=oldctrl;
