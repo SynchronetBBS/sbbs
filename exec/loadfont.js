@@ -111,7 +111,7 @@ for (i in filenames) {
 			continue;
 	}
 
-	if(!font.open(argv[0],"rb",true,4096)) {
+	if(!font.open("rb",true,4096)) {
 		alert("Unable to open "+filenames[i]+"!");
 		log(LOG_ERR,"!ERROR Unable to open "+filenames[i]+"!");
 		continue;
@@ -125,7 +125,7 @@ for (i in filenames) {
 		continue;
 	}
 
-	console.write("\x1b[="+firstslot+i+";"+fontsize+"{");
+	console.write("\x1b[="+(firstslot+i)+";"+fontsize+"{");
 
 	// This doesn't send it all...
 	// console.write(fontdata);
