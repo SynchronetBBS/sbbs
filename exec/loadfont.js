@@ -63,9 +63,8 @@ while(1) {
 	if(ch=="")
 		break;
 	response += ch;
-	if(ch != '\x1b' && ch != '[' && ch != '=' && ch != ';' && (ch<'0' || ch > '9')) {
+	if(ch != '\x1b' && ch != '[' && (ch < ' ' || ch > '/') && (ch<'0' || ch > '?'))
 		break;
-	}
 }
 
 if(response.substr(0,21) != "\x1b[=67;84;101;114;109;") {	// Not CTerm

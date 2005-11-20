@@ -13,11 +13,11 @@ console.write("\x1b[c");
 var response='';
 
 while(1) {
-	var ch=console.inkey(0, 1000);
+	var ch=console.inkey(0, 500);
 	if(ch=="")
 		break;
 	response += ch;
-	if(ch != '\x1b' && ch != '[' && ch != '=' && ch != ';' && (ch<'0' || ch > '9'))
+	if(ch != '\x1b' && ch != '[' && (ch < ' ' || ch > '/') && (ch<'0' || ch > '?'))
 		break;
 }
 
