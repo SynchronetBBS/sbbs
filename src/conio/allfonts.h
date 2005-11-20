@@ -8,6 +8,6 @@ struct conio_font_data_struct {
         char *desc;
 };
 
-extern struct conio_font_data_struct conio_fontdata[33];
+extern struct conio_font_data_struct conio_fontdata[257];
 
 #endif
