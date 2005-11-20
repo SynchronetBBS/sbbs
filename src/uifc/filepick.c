@@ -368,6 +368,12 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 			FULLPATH(cpath,tmppath,sizeof(cpath));
 		FREE_AND_NULL(tmppath);
 
+#ifdef __unix__
+		if(cpath[0]==0) {
+			cpath[0]='/';
+			cpath[1]=0;
+		}
+#endif
 		backslash(cpath);
 		sprintf(cglob,"%s%s",cpath,(opts&UIFC_FP_MSKCASE)?cmsk:insensitive_mask(cmsk));
 		sprintf(dglob,"%s*",cpath);
@@ -379,6 +385,10 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		}
 
 #ifdef __unix__
+		if(cpath[0]==0) {
+			cpath[0]='/';
+			cpath[1]=0;
+		}
 		if(cpath[1]==0)
 			root=TRUE;
 		else
