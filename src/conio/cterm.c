@@ -717,9 +717,8 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					i=atoi(cterm.escbuf+1);
 					if(!i) {
 						if(retbuf!=NULL) {
-							strcpy(tmp,"\x1b[=67;84;101;114;109c");
-							if(strlen(retbuf)+strlen(tmp) < retsize)
-								strcat(retbuf,tmp);
+							if(strlen(retbuf)+strlen(cterm.DA) < retsize)
+								strcat(retbuf,cterm.DA);
 						}
 					}
 					break;
