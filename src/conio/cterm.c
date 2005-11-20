@@ -527,14 +527,31 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						i=cterm.width;
 					gotoxy(i,wherey());
 					break;
-				case 'D':	/* Cursor Left */
-					i=atoi(cterm.escbuf+1);
-					if(i==0)
-						i=1;
-					i=wherex()-i;
-					if(i<1)
-						i=1;
-					gotoxy(i,wherey());
+				case 'D':	/* Cursor Left and Font Select */
+					if(*(p-1)==' ') {	/* Font Select */
+						i=0;
+						j=0;
+						if(strlen(cterm.escbuf)>2) {
+							if((p=strtok(cterm.escbuf+1,";"))!=NULL) {
+								i=atoi(p);
+								if((p=strtok(NULL,";"))!=NULL) {
+									j=atoi(p);
+								}
+							}
+							if(i==0) {	/* Only the primary font is currently supported */
+								setfont(j,FALSE);
+							}
+						}
+					}
+					else {
+						i=atoi(cterm.escbuf+1);
+						if(i==0)
+							i=1;
+						i=wherex()-i;
+						if(i<1)
+							i=1;
+						gotoxy(i,wherey());
+					}
 					break;
 				case 'E':
 					i=atoi(cterm.escbuf+1);

@@ -160,6 +160,48 @@ CSI [ p1 ] D
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI [ p1 [ ; p2 ] ] sp D
+	Font Selection
+	Defaults: p1 = 0  p2 = 0
+	Sets font p1 to be the one indicated bu p2.  Currently only the primary font
+	(Font zero) is supported.  p2 must be between 0 and 255.  Not all output types
+	support font selection.  Only X11 and SDL currently do.
+	Currently included fonts are:
+		0  - Codepage 437 English
+		1  - Codepage 1251 Cyrillic, (swiss)
+		2  - Russian koi8-r
+		3  - ISO-8859-2 Central European
+		4  - ISO-8859-4 Baltic wide (VGA 9bit mapped)
+		5  - Codepage 866 (c) Russian
+		6  - ISO-8859-9 Turkish
+		7  - haik8 codepage (use only with armscii8 screenmap)
+		8  - ISO-8859-8 Hebrew
+		9  - Ukrainian font koi8-u
+		10 - ISO-8859-15 West European, (thin)
+		11 - ISO-8859-4 Baltic (VGA 9bit mapped)
+		12 - Russian koi8-r (b)
+		13 - ISO-8859-4 Baltic wide
+		14 - ISO-8859-5 Cyrillic
+		15 - ARMSCII-8 Character set
+		16 - ISO-8859-15 West European
+		17 - Codepage 850 Multilingual Latin I, (thin)
+		18 - Codepage 850 Multilingual Latin I
+		19 - Codepage 885 Norwegian, (thin)
+		20 - Codepage 1251 Cyrillic
+		21 - ISO-8859-7 Greek
+		22 - Russian koi8-r (c)
+		23 - ISO-8859-4 Baltic
+		24 - ISO-8859-1 West European
+		25 - Codepage 866 Russian
+		26 - Codepage 437 English, (thin)
+		27 - Codepage 866 (b) Russian
+		28 - Codepage 885 Norwegian
+		29 - Ukrainian font cp866u
+		30 - ISO-8859-1 West European, (thin)
+		31 - Codepage 1131 Belarusian, (swiss)
+	Not all fonts are supported in all modes.  If a font is not supported in the
+	current mode, no action is taken.
+
 CSI [ p1 ] E
 	Cursor Next Line
 	Defaults: p1 = 1
