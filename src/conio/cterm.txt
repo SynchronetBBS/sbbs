@@ -163,6 +163,7 @@ CSI [ p1 ] D
 CSI [ p1 [ ; p2 ] ] sp D
 	Font Selection
 	Defaults: p1 = 0  p2 = 0
+	"sp" indicates a single space character.
 	Sets font p1 to be the one indicated bu p2.  Currently only the primary font
 	(Font zero) is supported.  p2 must be between 0 and 255.  Not all output types
 	support font selection.  Only X11 and SDL currently do.
