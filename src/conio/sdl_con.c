@@ -875,8 +875,6 @@ int sdl_loadfont(char *filename)
 	int retval;
 
 	retval=sdl_user_func_ret(SDL_USEREVENT_LOADFONT,filename);
-	FREE_AND_NULL(last_vmem);
-	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 	return(retval);
 }
 
@@ -916,10 +914,7 @@ int sdl_setfont(int font, int force)
 	sdl_current_font=font;
 	if(changemode)
 		sdl_init_mode(3);
-	FREE_AND_NULL(last_vmem);
-	sdl_user_func_ret(SDL_USEREVENT_LOADFONT,0,0,0,0);
-	sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
-	return(0);
+	return(sdl_user_func_ret(SDL_USEREVENT_LOADFONT,NULL));
 }
 
 int sdl_getfont(void)
@@ -1494,10 +1489,11 @@ int main(int argc, char **argv)
 						/* Tell SDL to do various stuff... */
 						switch(ev.user.code) {
 							case SDL_USEREVENT_LOADFONT:
+								FREE_AND_NULL(last_vmem);
 								sdl_ufunc_retval=sdl_load_font((char *)ev.user.data1);
 								FREE_AND_NULL(ev.user.data1);
 								sdl.SemPost(sdl_ufunc_ret);
-								break;
+								/* Fallthough */
 							case SDL_USEREVENT_UPDATERECT:
 								sdl_full_screen_redraw();
 								break;
