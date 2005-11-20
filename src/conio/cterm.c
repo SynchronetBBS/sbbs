@@ -713,6 +713,16 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					break;
 				case 'b':	/* ToDo?  Banana ANSI */
 					break;
+				case 'c':	/* Device Attributes */
+					i=atoi(cterm.escbuf+1);
+					if(!i) {
+						if(retbuf!=NULL) {
+							strcpy(tmp,"\x1b[=67;84;101;114;109c");
+							if(strlen(retbuf)+strlen(tmp) < retsize)
+								strcat(retbuf,tmp);
+						}
+					}
+					break;
 				case 'g':	/* ToDo?  VT100 Tabs */
 					break;
 				case 'h':	/* ToDo?  Scrolling regeion, word-wrap, doorway mode */
@@ -976,6 +986,10 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 
 void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback)
 {
+	char	*revision="$Revision$";
+	char *in;
+	char	*out;
+
 	cterm.x=xpos;
 	cterm.y=ypos;
 	cterm.height=height;
@@ -1004,6 +1018,18 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	window(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1);
 	clrscr();
 	gotoxy(1,1);
+	strcpy(cterm.DA,"\x1b[=67;84;101;114;109;");
+	out=strchr(cterm.DA, 0);
+	if(out != NULL) {
+		for(in=revision; *in; in++) {
+			if(isdigit(*in))
+				*(out++)=*in;
+			if(*in=='.')
+				*(out++)=';';
+		}
+		*out=0;
+	}
+	strcat(cterm.DA,"c");
 }
 
 void ctputs(char *buf)

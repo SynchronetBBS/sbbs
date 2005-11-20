@@ -77,6 +77,7 @@ struct cterminal {
 	int ypos;
 	int log;
 	FILE* logfile;
+	char	DA[1024];
 };
 
 #define CTERM_MUSIC_SYNCTERM	0

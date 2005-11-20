@@ -265,11 +265,22 @@ CSI U
 
 CSI [ p1 ] Z
 	Cursor Backward Tabulation
-	Defailts: p1 = 1
+	Defaults: p1 = 1
 	Move the cursor to the p1th preceeding tab stop.  Will no go past the
 	start of the line.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] c
+	Device Attributes
+	Defaults: p1 = 0
+	If p1 is 0, CTerm will reply with the sequence:
+	CSI [ = 67;84;101;114;109;pN... c
+	64;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the CVS
+	revision ID of CTerm with dots converted to semi-colons.
+	Use the CVS revision to detect if a specific feature is available.  If you are adding
+	features to a forked version of cterm, please do so by adding an extra parameter to the
+	end, not by incrementing any existing one!
 
 CSI [ p1 [ ; pX ... ] ] m
 	Select Graphic Rendition
