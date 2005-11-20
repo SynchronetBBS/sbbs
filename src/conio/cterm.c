@@ -488,7 +488,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							i=255;
 							j=0;
 							if(strlen(cterm.escbuf)>2) {
-								if((p=strtok(cterm.escbuf+1,";"))!=NULL) {
+								if((p=strtok(cterm.escbuf+2,";"))!=NULL) {
 									i=atoi(p);
 									if(!i && cterm.escbuf[2] != '0')
 										i=255;
