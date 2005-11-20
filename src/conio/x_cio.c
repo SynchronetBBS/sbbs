@@ -320,6 +320,8 @@ char *x_getcliptext(void)
 
 int x_setfont(int font, int force)
 {
+	if(font==getfont())
+		return(0);
 	font_force=force;
 	new_font=font;
 	sem_wait(&font_set);
