@@ -63,7 +63,7 @@ while(1) {
 	if(ch=="")
 		break;
 	response += ch;
-	if(ch != '\x1b' && ch != '[' && ch != '=' && ch != ';' && (ch<'0' && ch > '9')) {
+	if(ch != '\x1b' && ch != '[' && ch != '=' && ch != ';' && (ch<'0' || ch > '9')) {
 		break;
 	}
 }
@@ -125,7 +125,7 @@ for (i in filenames) {
 		continue;
 	}
 
-	console.write("\x1b[="+(firstslot+i)+";"+fontsize+"{");
+	console.write("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
 
 	// This doesn't send it all...
 	// console.write(fontdata);
