@@ -76,6 +76,9 @@ while(1) {
 	if(ch != '\x1b' && ch != '[' && (ch < ' ' || ch > '/') && (ch<'0' || ch > '?'))
 		break;
 }
+// var printable=response;
+// printable=printable.replace(/\x1b/g,"");
+// alert("Response: "+printable);
 
 if(response.substr(0,21) != "\x1b[=67;84;101;114;109;") {	// Not CTerm
 	console.ctrlkey_passthru=oldctrl;
@@ -104,11 +107,19 @@ if(showprogress) {
 	writeln("Detected!");
 	write("Loading fonts...");
 }
+
+/* From here on, it's socket access only */
+console.lock_input(true);
+while(console.output_buffer_level)
+	mswait(1);
+
+var oldblock=client.socket.nonblocking;
+client.socket.nonblocking=false;
+
 for (i in filenames) {
 	var font=new File(filenames[i]);
 
 	if(!font.exists) {
-		alert("Cannot load font "+filenames[i]+"!");
 		log(LOG_ERR, "!ERROR Cannot load font "+filenames[i]+"!");
 		continue;
 	}
@@ -125,43 +136,42 @@ for (i in filenames) {
 			fontsize=2;
 			break;
 		default:
-			alert("Illegal font file: "+filenames[i]+"!");
 			log(LOG_ERR, "!ERROR Illegal font file: "+filenames[i]+"!");
 			continue;
 	}
 
 	if(!font.open("rb",true,4096)) {
-		alert("Unable to open "+filenames[i]+"!");
 		log(LOG_ERR,"!ERROR Unable to open "+filenames[i]+"!");
 		continue;
 	}
 
 	var fontdata=font.read(font.length);
 	if(fontdata.length != font.length) {
-		alert("Error reading font data!");
 		log(LOG_ERR,"!ERROR Error reading font data!");
 		font.close();
 		continue;
 	}
 
-	write("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
+	client.socket.send("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
 
 	// This doesn't send it all...
 	// write(fontdata);
-	while(console.output_buffer_level)
-		mswait(1);
 	if(!(console.telnet_mode & TELNET_MODE_OFF))
 		fontdata=fontdata.replace(/\xff/g,"\xff\xff");
 	while(fontdata.length) {
-		client.socket.send(fontdata.substr(0,1024));
-		fontdata=fontdata.substr(1024);
+		if(client.socket.poll(0,true)) {
+			if(client.socket.send(fontdata.substr(0,1024)))
+				fontdata=fontdata.substr(1024);
+		}
 	}
 	font.close();
 	if(showprogress)
-		write(".");
+		client.socket.send(".");
 }
 if(showprogress)
-	writeln("done.");
+	client.socket.send("done.\r\n");
 if(showfont)
-	write("\x1b[0;"+(firstslot+filenames.length-1)+" D");
+	client.socket.send("\x1b[0;"+(firstslot+filenames.length-1)+" D");
+client.socket.nonblocking=oldblock;
 console.ctrlkey_passthru=oldctrl;
+console.lock_input(false);
