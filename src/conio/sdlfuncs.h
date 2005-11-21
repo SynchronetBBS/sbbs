@@ -3,6 +3,7 @@
 
 #include "SDL.h"
 #include "SDL_thread.h"
+#include "SDL_syswm.h"
 
 struct sdlfuncs {
 	int	(*Init)	(Uint32 flags);

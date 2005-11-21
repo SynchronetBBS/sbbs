@@ -82,4 +82,8 @@ ifndef NO_X
    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
   endif
  endif
+else
+  ifeq ($(os),darwin)
+   CIOLIB-MT_CFLAGS		+=  -DDISABLE_X11=1
+  endif
 endif

@@ -8,7 +8,9 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->gotfuncs=0;
 	sdlf->Init=SDL_Init;
 	sdlf->Quit=SDL_Quit;
+#ifdef _WIN32
 	sdlf->SetModuleHandle=SDL_SetModuleHandle;
+#endif
 	sdlf->mutexP=SDL_mutexP;
 	sdlf->mutexV=SDL_mutexV;
 	sdlf->PeepEvents=SDL_PeepEvents;
