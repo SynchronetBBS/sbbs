@@ -145,7 +145,14 @@ for (i in filenames) {
 		continue;
 	}
 
-	var fontdata=font.read(font.length);
+	// Doesn't work on Win32.. Win32 sucks.
+	// var fontdata=font.read(font.length);
+	var fontdata='';
+	var j;
+	for(j=0; j<font.length; j++) {
+		fontdata+=String.fromCharCode(font.readBin(1));
+	}
+
 	if(fontdata.length != font.length) {
 		log(LOG_ERR,"!ERROR Error reading font data (read "+fontdata.length+", expected "+font.length+")");
 		font.close();
