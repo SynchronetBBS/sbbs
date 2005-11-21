@@ -9,11 +9,11 @@ var oldctrl=console.ctrlkey_passthru;
 console.ctrlkey_passthru=-1;
 
 // Check if it's CTerm and supports font loading...
-console.write("\x1b[c");
+write("\x1b[c");
 var response='';
 
 while(1) {
-	var ch=console.inkey(0, 500);
+	var ch=console.inkey(0, 1000);
 	if(ch=="")
 		break;
 	response += ch;
@@ -42,4 +42,4 @@ var slot=0;
 if(argc>0)
 	slot=parseInt(argv[0]);
 
-console.write("\x1b[0;"+slot+" D");
+write("\x1b[0;"+slot+" D");
