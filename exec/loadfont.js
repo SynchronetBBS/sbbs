@@ -147,7 +147,7 @@ for (i in filenames) {
 
 	var fontdata=font.read(font.length);
 	if(fontdata.length != font.length) {
-		log(LOG_ERR,"!ERROR Error reading font data!");
+		log(LOG_ERR,"!ERROR Error reading font data (read "+fontdata.length+", expected "+font.length+")");
 		font.close();
 		continue;
 	}
