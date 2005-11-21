@@ -167,8 +167,11 @@ for (i in filenames) {
 		fontdata=fontdata.replace(/\xff/g,"\xff\xff");
 	while(fontdata.length) {
 		if(client.socket.poll(0,true)) {
-			if(client.socket.send(fontdata.substr(0,1024)))
-				fontdata=fontdata.substr(1024);
+		// Oh my aching head...
+		//	if(client.socket.send(fontdata.substr(0,1024)))
+		//		fontdata=fontdata.substr(1024);
+			if(client.socket.send(fontdata.substr(0,1)))
+				fontdata=fontdata.substr(1);
 		}
 	}
 	font.close();
