@@ -146,12 +146,7 @@ for (i in filenames) {
 	}
 
 	// Doesn't work on Win32.. Win32 sucks.
-	// var fontdata=font.read(font.length);
-	var fontdata='';
-	var j;
-	for(j=0; j<font.length; j++) {
-		fontdata+=String.fromCharCode(font.readBin(1));
-	}
+	var fontdata=font.read(font.length);
 
 	if(fontdata.length != font.length) {
 		log(LOG_ERR,"!ERROR Error reading font data (read "+fontdata.length+", expected "+font.length+")");
@@ -168,10 +163,10 @@ for (i in filenames) {
 	while(fontdata.length) {
 		if(client.socket.poll(0,true)) {
 		// Oh my aching head...
-		//	if(client.socket.send(fontdata.substr(0,1024)))
-		//		fontdata=fontdata.substr(1024);
-			if(client.socket.send(fontdata.substr(0,1)))
-				fontdata=fontdata.substr(1);
+			if(client.socket.send(fontdata.substr(0,1024)))
+				fontdata=fontdata.substr(1024);
+		//	if(client.socket.send(fontdata.substr(0,1)))
+		//		fontdata=fontdata.substr(1);
 		}
 	}
 	font.close();
