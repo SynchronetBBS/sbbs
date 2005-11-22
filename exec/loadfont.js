@@ -15,7 +15,7 @@ var firstslot=-1;
 var i;
 
 for(i=0; i<argc; i++) {
-	if(argv[i].substr(0,1)=="-") {
+	if(argv[i].toString().substr(0,1)=="-") {
 		switch(argv[i].substr(1,1).toUpperCase()) {
 			case 'H':	/* Hidden update */
 				showfont=false;
@@ -29,7 +29,7 @@ for(i=0; i<argc; i++) {
 		}
 	}
 	else {
-		filenames.push(argv[i]);
+		filenames.push(argv[i].toString());
 	}
 }
 

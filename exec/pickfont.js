@@ -5,7 +5,7 @@
 var detect=false;
 // Parse cmd line.
 for(i=0; i<argc; i++) {
-	if(argv[i].substr(0,1)=="-") {
+	if(argv[i].toString().substr(0,1)=="-") {
 		switch(argv[i].substr(1,1).toUpperCase()) {
 			case 'D':   /* Attempt to detect CTerm */
 				detect=true;
