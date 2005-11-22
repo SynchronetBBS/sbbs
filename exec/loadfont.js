@@ -69,7 +69,7 @@ write("\x1b[c");
 var response='';
 
 while(1) {
-	var ch=console.inkey(0, 1000);
+	var ch=console.inkey(0, 5000);
 	if(ch=="")
 		break;
 	response += ch;
@@ -95,6 +95,7 @@ if(response.substr(-1) != "c") {	// Not a DA
 var version=response.substr(21);
 version=version.replace(/c/,"");
 var ver=version.split(/;/);
+console.terminal="CTerm;"+ver.join(";");
 if(parseInt(ver[0]) < 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) < 61)) {
 	// Too old for dynamic fonts
 	console.ctrlkey_passthru=oldctrl;
