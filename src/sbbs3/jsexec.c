@@ -43,6 +43,8 @@
 #include <signal.h>
 #endif
 
+#include "ciolib.h"
+
 #include "sbbs.h"
 
 #define DEFAULT_LOG_MASK	0xff	/* Display all LOG levels */
