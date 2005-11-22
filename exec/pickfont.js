@@ -5,7 +5,7 @@
 load("sbbsdefs.js");
 
 // Check if it's CTerm and supports font loading...
-if(console.terminal.substr(0,6) != 'CTerm;)
+if(console.terminal.substr(0,6) != 'CTerm;')
 	/* Not CTerm */
 	exit(0);
 
