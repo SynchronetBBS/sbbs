@@ -2,8 +2,6 @@
 // Pass the desired fotn slot on the command line
 // If nothing passed, changes to font 0 (CP437)
 
-load("sbbsdefs.js");
-
 // Check if it's CTerm and supports font loading...
 if(console.terminal.substr(0,6) != 'CTerm;')
 	/* Not CTerm */
