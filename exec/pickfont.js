@@ -15,7 +15,7 @@ for(i=0; i<argc; i++) {
 }
 
 // Check if it's CTerm and supports font loading...
-var ver;
+var ver=new Array(0,0);
 if(console.terminal.substr(0,6) != 'CTerm;') {
 	if(detect) {
 		// Disable parsed input... we need to do ESC processing ourselves here.

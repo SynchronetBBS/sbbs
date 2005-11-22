@@ -61,7 +61,7 @@ if(showprogress) {
 }
 
 // Check if it's CTerm and supports font loading...
-var ver;
+var ver=new Array(0,0);
 if(console.terminal.substr(0,6) != 'CTerm;') {
 	// Disable parsed input... we need to do ESC processing ourselves here.
 	var oldctrl=console.ctrlkey_passthru;
