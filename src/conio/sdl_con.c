@@ -1452,7 +1452,7 @@ int main(int argc, char **argv)
 								win=sdl.SetVideoMode(
 									 vstat.charwidth*vstat.cols*vstat.scaling
 									,vstat.charheight*vstat.rows*vstat.scaling
-									,32
+									,8
 									,SDL_SWSURFACE|SDL_HWPALETTE|SDL_FULLSCREEN
 								);
 							else
