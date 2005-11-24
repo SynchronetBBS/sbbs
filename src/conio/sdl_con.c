@@ -1284,7 +1284,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 	int i;
 
 #ifdef __DARWIN__
-	if(unicode==\x7f) {
+	if(unicode==0x7f) {
 		unicode=0x0f;
 		keysym=SDLK_DELETE;
 	}
