@@ -1193,6 +1193,8 @@ int sdl_full_screen_redraw(int force)
 	int rcount=0;
 	static struct video_stats vs;
 	int	redraw_cursor=0;
+	int	lastlineupdated=0;
+	int	lastcharupdated=0;
 
 	sdl.mutexP(sdl_vstatlock);
 	if(vs.cols!=vstat.cols || vs.rows != vstat.rows || vmemcopies[0]==NULL || vmemcopies[1]==NULL || rects==NULL) {
@@ -1235,25 +1237,45 @@ int sdl_full_screen_redraw(int force)
 					|| (last_blink != vs.blink && newvmem[pos]>>15) 
 					|| (redraw_cursor && ((lastcursor_x==x && lastcursor_y==y) || (vs.curs_col==x && vs.curs_row==y)))
 					) {
+				sdl_draw_one_char(newvmem[pos],x,y,&vs);
+				if(lastcharupdated) {
+					rects[rcount-1].w+=vs.charwidth*vs.scaling;
+					lastcharupdated++;
+				}
+				else {
+					rects[rcount].x=x*vs.charwidth*vs.scaling;
+					rects[rcount].y=y*vs.charheight*vs.scaling;
+					rects[rcount].w=vs.charwidth*vs.scaling;
+					rects[rcount++].h=vs.charheight*vs.scaling;
+					lastcharupdated++;
+				}
 				if(!redraw_cursor && x==vs.curs_col && y==vs.curs_row)
 					redraw_cursor=1;
-				sdl_draw_one_char(newvmem[pos],x,y,&vs);
-				rects[rcount].x=x*vs.charwidth*vs.scaling;
-				rects[rcount].y=y*vs.charheight*vs.scaling;
-				rects[rcount].w=vs.charwidth*vs.scaling;
-				rects[rcount++].h=vs.charheight*vs.scaling;
 			}
+			else
+				lastcharupdated=0;
 			pos++;
 		}
+		if(lastcharupdated==vs.cols) {
+			if(lastlineupdated) {
+				rcount--;
+				rects[rcount-1].h+=vs.charheight*vs.scaling;
+			}
+			else
+				lastlineupdated=1;
+		}
+		else
+			lastlineupdated=0;
+		lastcharupdated=0;
 	}
-
 	last_blink=vs.blink;
 	last_vmem=newvmem;
 
 	if(redraw_cursor)
 		sdl_draw_cursor();
-	if(rcount)
+	if(rcount) {
 		sdl.UpdateRects(win,rcount,rects);
+	}
 	return(0);
 }
 
