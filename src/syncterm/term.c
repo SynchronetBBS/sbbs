@@ -1006,18 +1006,38 @@ BOOL doterm(struct bbslist *bbs)
 					conn_send("\033Ox",3,0);
 					break;
 				case 0x3000:	/* ALT-B - Scrollback */
+#ifdef PCM
+					if(!confirm("View scrollback?",NULL))
+						continue;
+#endif
 					viewscroll();
 					break;
 				case 0x2e00:	/* ALT-C - Capture */
+#ifdef PCM
+					if(!confirm("Go to capture control menu?",NULL))
+						continue;
+#endif
 					capture_control(bbs);
 					break;
 				case 0x2000:	/* ALT-D - Download */
+#ifdef PCM
+					if(!confirm("Begin download?",NULL))
+						continue;
+#endif
 					zmodem_download(bbs->dldir);
 					break;
 				case 0x2100:	/* ALT-F */
+#ifdef PCM
+					if(!confirm("Go to font control menu?",NULL))
+						continue;
+#endif
 					font_control(bbs);
 					break;
 				case 0x2600:	/* ALT-L */
+#ifdef PCM
+					if(!confirm("Send login credentials?",NULL))
+						continue;
+#endif
 					conn_send(bbs->user,strlen(bbs->user),0);
 					conn_send("\r",1,0);
 					SLEEP(10);
@@ -1030,9 +1050,17 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					break;
 				case 0x3200:	/* ALT-M */
+#ifdef PCM
+					if(!confirm("Go to music control menu?",NULL))
+						continue;
+#endif
 					music_control(bbs);
 					break;
 				case 0x1600:	/* ALT-U - Upload */
+#ifdef PCM
+					if(!confirm("Begin upload?",NULL))
+						continue;
+#endif
 					begin_upload(bbs->uldir, FALSE);
 					break;
 				case 17:		/* CTRL-Q */
@@ -1091,27 +1119,55 @@ BOOL doterm(struct bbslist *bbs)
 					j=wherey();
 					switch(syncmenu(bbs, &speed)) {
 						case -1:
+#ifdef PCM
+							if(!confirm("Disconnect?",NULL))
+								continue;
+#endif
 							cterm_end();
 							free(scrollback);
 							conn_close();
 							hidemouse();
 							return(FALSE);
 						case 3:
+#ifdef PCM
+							if(!confirm("Begin upload?",NULL))
+								continue;
+#endif
 							begin_upload(bbs->uldir, FALSE);
 							break;
 						case 4:
+#ifdef PCM
+							if(!confirm("Begin download?",NULL))
+								continue;
+#endif
 							zmodem_download(bbs->dldir);
 							break;
 						case 7:
+#ifdef PCM
+							if(!confirm("Got to capture control menu?",NULL))
+								continue;
+#endif
 							capture_control(bbs);
 							break;
 						case 8:
+#ifdef PCM
+							if(!confirm("Go to music control menu?",NULL))
+								continue;
+#endif
 							music_control(bbs);
 							break;
 						case 9:
+#ifdef PCM
+							if(!confirm("Go to font control menu?",NULL))
+								continue;
+#endif
 							font_control(bbs);
 							break;
 						case 10:
+#ifdef PCM
+							if(!confirm("Disconnect?",NULL))
+								continue;
+#endif
 							cterm_end();
 							free(scrollback);
 							conn_close();
@@ -1121,12 +1177,20 @@ BOOL doterm(struct bbslist *bbs)
 					gotoxy(i,j);
 					break;
 				case 0x9800:	/* ALT-Up */
+#ifdef PCM
+					if(!confirm("Increase simulated BPS rate?",NULL))
+						continue;
+#endif
 					if(speed)
 						speed=rates[get_rate_num(speed)+1];
 					else
 						speed=rates[0];
 					break;
 				case 0xa000:	/* ALT-Down */
+#ifdef PCM
+					if(!confirm("Decrease simulated BPS rate?",NULL))
+						continue;
+#endif
 					i=get_rate_num(speed);
 					if(i==0)
 						speed=0;

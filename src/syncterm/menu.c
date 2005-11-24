@@ -158,17 +158,33 @@ int syncmenu(struct bbslist *bbs, int *speed)
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {
 			case -1:	/* Cancel */
+#ifdef PCM
+				if(!confirm("Exit the menu?",NULL))
+					continue;
+#endif
 				ret=1;
 				break;
 			case 0:		/* Scrollback */
+#ifdef PCM
+				if(!confirm("View scrollback?",NULL))
+					continue;
+#endif
 				uifcbail();
 				puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 				viewscroll();
 				break;
 			case 1:		/* Disconnect */
+#ifdef PCM
+				if(!confirm("Disconect?",NULL))
+					continue;
+#endif
 				ret=-1;
 				break;
 			case 2:		/* Login */
+#ifdef PCM
+				if(!confirm("Send login credentials?",NULL))
+					continue;
+#endif
 				ret=1;
 				conn_send(bbs->user,strlen(bbs->user),0);
 				conn_send("\r",1,0);
@@ -182,6 +198,10 @@ int syncmenu(struct bbslist *bbs, int *speed)
 				}
 				break;
 			case 5:		/* Output rate */
+#ifdef PCM
+				if(!confirm("Modify output rate?",NULL))
+					continue;
+#endif
 				if(speed != NULL) {
 					j=get_rate_num(*speed);
 					uifc.helpbuf="`Output Rate`\n\n"
@@ -195,6 +215,10 @@ int syncmenu(struct bbslist *bbs, int *speed)
 				ret=5;
 				break;
 			case 6:		/* Change log level (temporarily) */
+#ifdef PCM
+				if(!confirm("Change log level for this session?",NULL))
+					continue;
+#endif
 				j=log_level;
 				uifc.helpbuf="`Log Level\n\n"
 						"The log level changes the verbosity of messages shown in the transfer\n"

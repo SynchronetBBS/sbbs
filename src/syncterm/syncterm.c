@@ -23,6 +23,9 @@ char* syncterm_version = "SyncTERM 0.6"
 #ifdef _DEBUG
 	" Debug ("__DATE__")"
 #endif
+#ifdef PCM
+	" Clippy Edition"
+#endif
 	;
 
 char *inpath=NULL;
