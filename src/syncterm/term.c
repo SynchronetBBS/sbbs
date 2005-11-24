@@ -731,16 +731,18 @@ void font_control(struct bbslist *bbs)
 	uifc.helpbuf="`Font Setup`\n\n"
 				"Change the current font.  Must support the current video mode.";
 	k=uifc.list(WIN_MID|WIN_SAV|WIN_INS,0,0,0,&i,&j,"Font Setup",font_names);
-	if(k & MSK_INS) {
-		struct file_pick fpick;
-		j=filepick(&uifc, "Capture File", &fpick, ".", NULL, 0);
+	if(k!=-1) {
+		if(k & MSK_INS) {
+			struct file_pick fpick;
+			j=filepick(&uifc, "Load Font From File", &fpick, ".", NULL, 0);
 
-		if(j!=-1 && fpick.files>=1)
-			loadfont(fpick.selected[0]);
-		filepick_free(&fpick);
+			if(j!=-1 && fpick.files>=1)
+				loadfont(fpick.selected[0]);
+			filepick_free(&fpick);
+		}
+		else
+			setfont(i,FALSE);
 	}
-	else
-		setfont(i,FALSE);
 	uifcbail();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
