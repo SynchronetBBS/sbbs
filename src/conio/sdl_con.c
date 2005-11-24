@@ -1062,7 +1062,7 @@ int sdl_load_font(char *filename)
 
 	if(sdl_font!=NULL)
 		sdl.FreeSurface(sdl_font);
-	sdl_font=sdl.CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
+	sdl_font=sdl.CreateRGBSurface(SDL_SWSURFACE, vstat.charwidth, vstat.charheight*256, 8, 0, 0, 0, 0);
 	if(sdl_font == NULL) {
 		sdl.mutexV(sdl_vstatlock);
 		free(font);
@@ -1453,14 +1453,14 @@ int main(int argc, char **argv)
 									 vstat.charwidth*vstat.cols*vstat.scaling
 									,vstat.charheight*vstat.rows*vstat.scaling
 									,8
-									,SDL_SWSURFACE|SDL_HWPALETTE|SDL_FULLSCREEN
+									,SDL_SWSURFACE|SDL_FULLSCREEN|SDL_ANYFORMAT
 								);
 							else
 								win=sdl.SetVideoMode(
 									 vstat.charwidth*vstat.cols*vstat.scaling
 									,vstat.charheight*vstat.rows*vstat.scaling
 									,8
-									,SDL_HWSURFACE|SDL_HWPALETTE|SDL_RESIZABLE
+									,SDL_SWSURFACE|SDL_RESIZABLE|SDL_ANYFORMAT
 								);
 							if(win!=NULL) {
 	#if (defined(__MACH__) && defined(__APPLE__))
@@ -1473,7 +1473,7 @@ int main(int argc, char **argv)
 
 								if(sdl_cursor!=NULL)
 									sdl.FreeSurface(sdl_cursor);
-								sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+								sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
 						    	/* Update font. */
 						    	sdl_load_font(NULL);
 						    	sdl_setup_colours(win,0);
@@ -1519,14 +1519,14 @@ int main(int argc, char **argv)
 										 vstat.charwidth*vstat.cols*vstat.scaling
 										,vstat.charheight*vstat.rows*vstat.scaling
 										,8
-										,SDL_SWSURFACE|SDL_HWPALETTE|SDL_FULLSCREEN
+										,SDL_SWSURFACE|SDL_FULLSCREEN|SDL_ANYFORMAT
 									);
 								else
 									win=sdl.SetVideoMode(
 										 vstat.charwidth*vstat.cols*vstat.scaling
 										,vstat.charheight*vstat.rows*vstat.scaling
 										,8
-										,SDL_HWSURFACE|SDL_HWPALETTE|SDL_RESIZABLE
+										,SDL_SWSURFACE|SDL_RESIZABLE|SDL_ANYFORMAT
 									);
 								if(win!=NULL) {
 	#if (defined(__MACH__) && defined(__APPLE__))
@@ -1542,7 +1542,7 @@ int main(int argc, char **argv)
 									sdl_setup_colours(win,0);
 									if(sdl_cursor!=NULL)
 										sdl.FreeSurface(sdl_cursor);
-									sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE|SDL_SRCCOLORKEY, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+									sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
 									/* Update font. */
 									sdl_load_font(NULL);
 									sdl_full_screen_redraw();
