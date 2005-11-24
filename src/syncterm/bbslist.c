@@ -511,6 +511,25 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						listcount--;
 					}
 					else {
+						uifc.helpbuf=	"`Connection Type`\n\n"
+										"Select the type of connection you wish to make:\n"
+										"~ RLogin:~ Auto-login with RLogin protocol\n"
+										"~ Telnet:~ Use more common Telnet protocol\n"
+										"~ Raw:   ~ Make a raw socket connection\n";
+						list[listcount-1]->conn_type=CONN_TYPE_RLOGIN-1;
+						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->conn_type,NULL,"Connection Type",&conn_types[1]);
+						list[listcount-1]->conn_type++;
+						switch(list[listcount-1]->conn_type) {
+							case CONN_TYPE_RLOGIN:
+								list[listcount-1]->port=513;
+								break;
+							case CONN_TYPE_TELNET:
+								list[listcount-1]->port=23;
+								break;
+							default:
+								list[listcount-1]->port=0;
+								break;
+						}
 						while(!list[listcount-1]->port) {
 							list[listcount-1]->port=513;
 							sprintf(str,"%hu",list[listcount-1]->port);
@@ -523,18 +542,6 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 								j=0;
 							list[listcount-1]->port=j;
 						}
-						uifc.helpbuf=	"`Connection Type`\n\n"
-										"Select the type of connection you wish to make:\n"
-										"~ RLogin:~ Auto-login with RLogin protocol\n"
-										"~ Telnet:~ Use more common Telnet protocol\n"
-										"~ Raw:   ~ Make a raw socket connection\n";
-						list[listcount-1]->conn_type=list[listcount-1]->port==513
-												?CONN_TYPE_RLOGIN-1
-												:(list[listcount-1]->port==23
-													?CONN_TYPE_TELNET-1
-													:CONN_TYPE_RAW-1);
-						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->conn_type,NULL,"Connection Type",&conn_types[1]);
-						list[listcount-1]->conn_type++;
 						uifc.helpbuf=	"`Username`\n\n"
 										"Enter the username to attempt auto-login to the remote with.";
 						uifc.input(WIN_MID|WIN_SAV,0,0,"User Name",list[listcount-1]->user,MAX_USER_LEN,K_EDIT);
