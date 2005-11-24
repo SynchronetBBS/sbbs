@@ -14,7 +14,7 @@ CR:
 	Move cursor position to column 1 of the current line
 
 LF:
-	Move cursor position to same row of the next column.
+	Move cursor position to same column of the next row.
 	If current row is the last row, scrolls the screen up
 	and fills the new row with the current attribute.
 
