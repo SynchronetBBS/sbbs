@@ -1804,7 +1804,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 #endif
 		f=inkey();
 		if(f==CIO_KEY_MOUSE) {
-			if((f=uifc_getmouse(&mevnt))==0) {
+			f=uifc_getmouse(&mevnt);
+			if(f==0 || (f==ESC && mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
 				if(mode & K_MOUSEEXIT
 						&& (mevnt.starty != top
 							|| mevnt.startx > left+width
@@ -1879,7 +1880,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				}
 			}
 			if(ch==CIO_KEY_MOUSE) {
-				if((ch=uifc_getmouse(&mevnt))==0) {
+				ch=uifc_getmouse(&mevnt);
+				if(ch==0 || (ch==ESC && mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
 					if(mode & K_MOUSEEXIT 
 							&& (mevnt.starty != top
 								|| mevnt.startx > left+width
@@ -1909,6 +1911,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 							i=j;
 						pastebuf=getcliptext();
 						pb=pastebuf;
+						ch=0;
 					}
 				}
 			}
