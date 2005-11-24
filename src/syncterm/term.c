@@ -1013,6 +1013,7 @@ BOOL doterm(struct bbslist *bbs)
 						continue;
 #endif
 					viewscroll();
+					showmouse();
 					break;
 				case 0x2e00:	/* ALT-C - Capture */
 #ifdef PCM
@@ -1020,6 +1021,7 @@ BOOL doterm(struct bbslist *bbs)
 						continue;
 #endif
 					capture_control(bbs);
+					showmouse();
 					break;
 				case 0x2000:	/* ALT-D - Download */
 #ifdef PCM
@@ -1027,6 +1029,7 @@ BOOL doterm(struct bbslist *bbs)
 						continue;
 #endif
 					zmodem_download(bbs->dldir);
+					showmouse();
 					break;
 				case 0x2100:	/* ALT-F */
 #ifdef PCM
@@ -1034,6 +1037,7 @@ BOOL doterm(struct bbslist *bbs)
 						continue;
 #endif
 					font_control(bbs);
+					showmouse();
 					break;
 				case 0x2600:	/* ALT-L */
 #ifdef PCM
@@ -1057,6 +1061,7 @@ BOOL doterm(struct bbslist *bbs)
 						continue;
 #endif
 					music_control(bbs);
+					showmouse();
 					break;
 				case 0x1600:	/* ALT-U - Upload */
 #ifdef PCM
@@ -1064,6 +1069,7 @@ BOOL doterm(struct bbslist *bbs)
 						continue;
 #endif
 					begin_upload(bbs->uldir, FALSE);
+					showmouse();
 					break;
 				case 17:		/* CTRL-Q */
 					if(cio_api.mode!=CIOLIB_MODE_CURSES
@@ -1105,6 +1111,7 @@ BOOL doterm(struct bbslist *bbs)
 						textattr(txtinfo.attribute);
 						gotoxy(txtinfo.curx,txtinfo.cury);
 						free(buf);
+						showmouse();
 					}
 					break;
 				case 19:	/* CTRL-S */
@@ -1176,6 +1183,7 @@ BOOL doterm(struct bbslist *bbs)
 							hidemouse();
 							return(TRUE);
 					}
+					showmouse();
 					gotoxy(i,j);
 					break;
 				case 0x9800:	/* ALT-Up */
