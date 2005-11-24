@@ -68,7 +68,6 @@ static int sdl_current_font=-99;
 static int lastfg=-1;
 static int lastbg=-1;
 
-unsigned short *last_vmem=NULL;
 
 struct video_stats vstat;
 int fullscreen=0;
@@ -320,7 +319,7 @@ int sdl_user_func_ret(int func, ...)
 			if(p!=NULL) {
 				if((ev.user.data1=strdup(p))==NULL) {
 					va_end(argptr);
-					return;
+					return(-1);
 				}
 			}
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
@@ -1177,41 +1176,67 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y, struct
 	return(0);
 }
 
+
 /* Called from event thread only, */
-int sdl_full_screen_redraw(void)
+int sdl_full_screen_redraw(int force)
 {
 	static int last_blink;
 	int x;
 	int y;
 	unsigned int pos;
-	unsigned short *newvmem;
 	unsigned short *p;
-	SDL_Rect	*rects;
+	unsigned short *newvmem=NULL;
+	static unsigned short *vmemcopies[2]={ NULL, NULL };
+	static SDL_Rect	*rects=NULL;
+	static int this_new=0;
+	static unsigned short *last_vmem=NULL;
 	int rcount=0;
-	struct video_stats vs;
+	static struct video_stats vs;
+	int	redraw_cursor=0;
 
 	sdl.mutexP(sdl_vstatlock);
+	if(vs.cols!=vstat.cols || vs.rows != vstat.rows || vmemcopies[0]==NULL || vmemcopies[1]==NULL || rects==NULL) {
+		FREE_AND_NULL(vmemcopies[0]);
+		if((vmemcopies[0]=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL) {
+			sdl.mutexV(sdl_vstatlock);
+			return(-1);
+		}
+		FREE_AND_NULL(vmemcopies[1]);
+		if((vmemcopies[1]=(unsigned short *)malloc(vstat.cols*vstat.rows*sizeof(unsigned short)))==NULL) {
+			sdl.mutexV(sdl_vstatlock);
+			return(-1);
+		}
+		FREE_AND_NULL(rects);
+		if((rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vstat.cols*vstat.rows))==NULL) {
+			sdl.mutexV(sdl_vstatlock);
+			return(-1);
+		}
+	}
+	this_new = (this_new+1) % 2;
+	newvmem=vmemcopies[this_new];
 	memcpy(&vs, &vstat, sizeof(vs));
-	if((newvmem=(unsigned short *)malloc(vs.cols*vs.rows*sizeof(unsigned short)))==NULL)
-		return(-1);
 	memcpy(newvmem, vs.vmem, vs.cols*vs.rows*sizeof(unsigned short));
 	sdl.mutexV(sdl_vstatlock);
-	rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*vs.cols*vs.rows);
-	if(rects==NULL)
-		return(-1);
 	sdl.mutexP(sdl_updlock);
 	sdl_updated=1;
 	sdl.mutexV(sdl_updlock);
 	/* Redraw all chars */
 	pos=0;
+	if(last_vmem==NULL)
+		force=1;
+	if(last_blink != vs.blink
+			|| lastcursor_x!=vs.curs_col
+			|| lastcursor_y!=vs.curs_row)
+		redraw_cursor=1;
 	for(y=0;y<vs.rows;y++) {
 		for(x=0;x<vs.cols;x++) {
-			if((last_vmem==NULL)
+			if(force
 					|| (last_vmem[pos] != newvmem[pos]) 
 					|| (last_blink != vs.blink && newvmem[pos]>>15) 
-					|| (lastcursor_x==x && lastcursor_y==y)
-					|| (vs.curs_col==x && vs.curs_row==y)
+					|| (redraw_cursor && ((lastcursor_x==x && lastcursor_y==y) || (vs.curs_col==x && vs.curs_row==y)))
 					) {
+				if(!redraw_cursor && x==vs.curs_col && y==vs.curs_row)
+					redraw_cursor=1;
 				sdl_draw_one_char(newvmem[pos],x,y,&vs);
 				rects[rcount].x=x*vs.charwidth*vs.scaling;
 				rects[rcount].y=y*vs.charheight*vs.scaling;
@@ -1223,14 +1248,12 @@ int sdl_full_screen_redraw(void)
 	}
 
 	last_blink=vs.blink;
-	p=last_vmem;
 	last_vmem=newvmem;
-	free(p);
 
-	sdl_draw_cursor();
+	if(redraw_cursor)
+		sdl_draw_cursor();
 	if(rcount)
 		sdl.UpdateRects(win,rcount,rects);
-	free(rects);
 	return(0);
 }
 
@@ -1443,18 +1466,18 @@ int main(int argc, char **argv)
 						return(sdl_exitcode);
 					case SDL_VIDEORESIZE:
 						if(ev.resize.w > 0 && ev.resize.h > 0) {
-							FREE_AND_NULL(last_vmem);
 							sdl.mutexP(sdl_vstatlock);
 							vstat.scaling=(int)(ev.resize.w/(vstat.charwidth*vstat.cols));
 							if(vstat.scaling < 1)
 								vstat.scaling=1;
-							if(fullscreen)
+							if(fullscreen) {
 								win=sdl.SetVideoMode(
 									 vstat.charwidth*vstat.cols*vstat.scaling
 									,vstat.charheight*vstat.rows*vstat.scaling
 									,8
 									,SDL_SWSURFACE|SDL_FULLSCREEN|SDL_ANYFORMAT
 								);
+							}
 							else
 								win=sdl.SetVideoMode(
 									 vstat.charwidth*vstat.cols*vstat.scaling
@@ -1477,7 +1500,7 @@ int main(int argc, char **argv)
 						    	/* Update font. */
 						    	sdl_load_font(NULL);
 						    	sdl_setup_colours(win,0);
-								sdl_full_screen_redraw();
+								sdl_full_screen_redraw(TRUE);
 							}
 							else if(sdl_init_good) {
 								ev.type=SDL_QUIT;
@@ -1488,20 +1511,19 @@ int main(int argc, char **argv)
 						}
 						break;
 					case SDL_VIDEOEXPOSE:
-						FREE_AND_NULL(last_vmem);
-						sdl_full_screen_redraw();
+						sdl_full_screen_redraw(TRUE);
 						break;
 					case SDL_USEREVENT: {
 						/* Tell SDL to do various stuff... */
 						switch(ev.user.code) {
 							case SDL_USEREVENT_LOADFONT:
-								FREE_AND_NULL(last_vmem);
 								sdl_ufunc_retval=sdl_load_font((char *)ev.user.data1);
 								FREE_AND_NULL(ev.user.data1);
 								sdl.SemPost(sdl_ufunc_ret);
-								/* Fallthough */
+								sdl_full_screen_redraw(TRUE);
+								break;
 							case SDL_USEREVENT_UPDATERECT:
-								sdl_full_screen_redraw();
+								sdl_full_screen_redraw(FALSE);
 								break;
 							case SDL_USEREVENT_SETNAME:
 								sdl.WM_SetCaption((char *)ev.user.data1,(char *)ev.user.data1);
@@ -1512,7 +1534,6 @@ int main(int argc, char **argv)
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
-								FREE_AND_NULL(last_vmem);
 								sdl.mutexP(sdl_vstatlock);
 								if(fullscreen)
 									win=sdl.SetVideoMode(
@@ -1545,7 +1566,7 @@ int main(int argc, char **argv)
 									sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
 									/* Update font. */
 									sdl_load_font(NULL);
-									sdl_full_screen_redraw();
+									sdl_full_screen_redraw(TRUE);
 								}
 								else if(sdl_init_good) {
 									ev.type=SDL_QUIT;
