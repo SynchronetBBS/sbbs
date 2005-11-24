@@ -125,5 +125,5 @@ int confirm(char *msg, char *helpbuf)
 		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 		free(buf);
 	}
-	return(0);
+	return(ret);
 }
