@@ -103,7 +103,8 @@ int confirm(char *msg, char *helpbuf)
 	struct	text_info txtinfo;
 	char	*options[] = {
 				 "Yes"
-				,"No" };
+				,"No"
+				,"" };
 	int		ret=TRUE;
 	int		copt=0;
 
