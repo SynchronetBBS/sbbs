@@ -1285,7 +1285,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 
 #ifdef __DARWIN__
 	if(unicode==0x7f) {
-		unicode=0x0f;
+		unicode=0x08;
 		keysym=SDLK_DELETE;
 	}
 #endif
@@ -1418,6 +1418,10 @@ int main(int argc, char **argv)
 								sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
 							}
 							else {
+#ifdef __DARWIN__		/* OS X sends Backspace as Delete! */
+								if(ev.key.keysym.unicode==0x7f)
+									ev.key.keysym.unicode=0x08;
+#endif
 								sdl_add_key(ev.key.keysym.unicode&0x7f);
 							}
 						}
