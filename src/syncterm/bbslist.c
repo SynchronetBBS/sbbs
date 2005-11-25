@@ -755,6 +755,40 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 					case 0:			/* Edit default connection settings */
 						edit_list(&defaults,listpath,TRUE);
 						break;
+					case 2: {		/* Screen Setup */
+							struct text_info ti;
+							gettextinfo(&ti);
+
+							uifc.helpbuf=	"`Screen Setup`\n\n"
+									"Select the new screen size.\n";
+							i=ti.currmode;
+							i=uifc.list(WIN_SAV,0,0,0,&i,NULL,"Screen Setup",screen_modes);
+							if(i>=0) {
+								uifcbail();
+								switch(i) {
+									case SCREEN_MODE_80X25:
+										textmode(C80);
+										break;
+									case SCREEN_MODE_80X28:
+										textmode(C80X28);
+										break;
+									case SCREEN_MODE_80X43:
+										textmode(C80X43);
+										break;
+									case SCREEN_MODE_80X50:
+										textmode(C80X50);
+										break;
+									case SCREEN_MODE_80X60:
+										textmode(C80X60);
+										break;
+								}
+								init_uifc(TRUE, TRUE);
+							}
+							val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+								|WIN_T2B|WIN_IMM|WIN_INACT
+								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
+						}
+						break;
 				}
 			}
 		}

@@ -309,6 +309,7 @@ int main(int argc, char **argv)
 		return(1);
 
 	while(bbs!=NULL || (bbs=show_bbslist(listpath,BBSLIST_SELECT,home))!=NULL) {
+    		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		if(!conn_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->syspass,bbs->conn_type,bbs->bpsrate)) {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
