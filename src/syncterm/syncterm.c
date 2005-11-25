@@ -59,7 +59,7 @@ static BOOL winsock_startup(void)
 
 #endif
 
-void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type)
+void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults)
 {
 	char *p1, *p2, *p3;
 	struct	bbslist	*list[MAX_OPTS+1];
@@ -85,16 +85,18 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type)
 	bbs->id=-1;
 	bbs->added=time(NULL);
 	bbs->calls=0;
-	bbs->user[0]=0;
-	bbs->password[0]=0;
 	bbs->type=USER_BBSLIST;
-	bbs->reversed=FALSE;
-	bbs->screen_mode=SCREEN_MODE_CURRENT;
-	bbs->conn_type=dflt_conn_type;
-	bbs->port=(dflt_conn_type==CONN_TYPE_TELNET)?23:513;
-	bbs->loglevel=LOG_INFO;
-	bbs->music=CTERM_MUSIC_BANSI;
-	bbs->font=default_font;
+	if(force_defaults) {
+		bbs->user[0]=0;
+		bbs->password[0]=0;
+		bbs->reversed=FALSE;
+		bbs->screen_mode=SCREEN_MODE_CURRENT;
+		bbs->conn_type=dflt_conn_type;
+		bbs->port=(dflt_conn_type==CONN_TYPE_TELNET)?23:513;
+		bbs->loglevel=LOG_INFO;
+		bbs->music=CTERM_MUSIC_BANSI;
+		bbs->font=default_font;
+	}
 	p1=url;
 	if(!strnicmp("rlogin://",url,9)) {
 		bbs->conn_type=CONN_TYPE_RLOGIN;
@@ -133,7 +135,7 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type)
 
 	/* Find BBS listing in users phone book */
 	if(listpath != NULL) {
-		read_list(listpath, &list[0], &listcount, USER_BBSLIST, home);
+		read_list(listpath, &list[0], NULL, &listcount, USER_BBSLIST, home);
 		for(i=0;i<listcount;i++) {
 			if((stricmp(bbs->addr,list[i]->addr)==0)
 					&& (bbs->port==list[i]->port)
@@ -292,7 +294,13 @@ int main(int argc, char **argv)
 			uifcmsg("Unable to allocate memory","The system was unable to allocate memory.");
 			return(1);
 		}
-		parse_url(url, bbs, conn_type);
+		if((listfile=fopen(listpath,"r"))==NULL)
+			parse_url(url, bbs, conn_type, TRUE);
+		else {
+			read_item(listfile, bbs, NULL, 0, home, USER_BBSLIST);
+			parse_url(url, bbs, conn_type, FALSE);
+			fclose(listfile);
+		}
 		if(bbs->port==0)
 			goto USAGE;
 	}

@@ -3,6 +3,7 @@
 #ifndef _BBSLIST_H_
 #define _BBSLIST_H_
 
+#include <stdio.h>	/* FILE * */
 #include "gen_defs.h"
 #include "dirwrap.h"	/* MAX_PATH */
 #include <time.h>
@@ -61,7 +62,8 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home);
 extern char *log_levels[];
 extern char *rate_names[];
 extern int rates[];
-void read_list(char *listpath, struct bbslist **list, int *i, int type, char* home);
+void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, char *home, int type);
+void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type, char* home);
 void free_list(struct bbslist **list, int listcount);
 void add_bbs(char *listpath, struct bbslist *bbs);
 int  get_rate_num(int rate);
