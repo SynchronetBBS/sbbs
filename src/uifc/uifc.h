@@ -138,6 +138,7 @@
 								/* Put the mouse event back into the event queue */
 #define WIN_EDIT	(1<<27)	/* Allow F2 to edit a menu item */
 #define WIN_EDITACT	(1<<28)	/* Remain active after edit key */
+#define WIN_INACT	(1<<29)	/* Draw window inactive... intended for use with WIN_IMM */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 
