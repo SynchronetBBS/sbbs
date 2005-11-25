@@ -49,7 +49,6 @@ enum {
 	,PROP_MODE
 	,PROP_CHANGES
 	,PROP_SAVNUM
-	,PROP_SAVDEPTH
 	,PROP_SCRN_LEN
     ,PROP_SCRN_WIDTH
 	,PROP_ESC_DELAY
@@ -84,9 +83,6 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case PROP_SAVNUM:
 			*vp=INT_TO_JSVAL(uifc->savnum);
-			break;
-		case PROP_SAVDEPTH:
-			*vp=INT_TO_JSVAL(uifc->savdepth);
 			break;
 		case PROP_SCRN_LEN:
 			*vp=INT_TO_JSVAL(uifc->scrn_len);
@@ -144,9 +140,6 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case PROP_SAVNUM:
 			JS_ValueToInt32(cx, *vp, (int32*)&uifc->savnum);
 			break;
-		case PROP_SAVDEPTH:
-			JS_ValueToInt32(cx, *vp, (int32*)&uifc->savdepth);
-			break;
 		case PROP_SCRN_LEN:
 			JS_ValueToInt32(cx, *vp, (int32*)&uifc->scrn_len);
 			break;
@@ -198,7 +191,6 @@ static jsSyncPropertySpec js_properties[] = {
 	{	"mode",				PROP_MODE,			JSPROP_ENUMERATE,	313 },
 	{	"changes",			PROP_CHANGES,		JSPROP_ENUMERATE,	313 },
 	{	"save_num",			PROP_SAVNUM,		JSPROP_ENUMERATE,	313 },
-	{	"save_depth",		PROP_SAVDEPTH,		JSPROP_ENUMERATE,	313 },
 	{	"screen_length",	PROP_SCRN_LEN,		JSPROP_ENUMERATE,	313 },
 	{	"screen_width",		PROP_SCRN_WIDTH,	JSPROP_ENUMERATE,	313 },
 	{	"list_height",		PROP_LIST_HEIGHT,	JSPROP_ENUMERATE,	313 },
