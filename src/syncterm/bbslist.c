@@ -755,6 +755,9 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 					case 0:			/* Edit default connection settings */
 						edit_list(&defaults,listpath,TRUE);
 						break;
+					case 1:			/* Mouse Actions setup */
+						uifc.msg("This section not yet functional");
+						break;
 					case 2: {		/* Screen Setup */
 							struct text_info ti;
 							gettextinfo(&ti);
@@ -762,6 +765,23 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 							uifc.helpbuf=	"`Screen Setup`\n\n"
 									"Select the new screen size.\n";
 							i=ti.currmode;
+							switch(i) {
+								case C80:
+									i=SCREEN_MODE_80X25;
+									break;
+								case C80X28:
+									i=SCREEN_MODE_80X28;
+									break;
+								case C80X43:
+									i=SCREEN_MODE_80X43;
+									break;
+								case C80X50:
+									i=SCREEN_MODE_80X50;
+									break;
+								case C80X60:
+									i=SCREEN_MODE_80X60;
+									break;
+							}
 							i=uifc.list(WIN_SAV,0,0,0,&i,NULL,"Screen Setup",screen_modes);
 							if(i>=0) {
 								uifcbail();
@@ -788,6 +808,12 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 								|WIN_T2B|WIN_IMM|WIN_INACT
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 						}
+						break;
+					case 3:			/* Font management */
+						uifc.msg("This section not yet functional");
+						break;
+					case 4:			/* Program settings */
+						uifc.msg("This section not yet functional");
 						break;
 				}
 			}
