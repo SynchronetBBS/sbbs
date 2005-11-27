@@ -494,6 +494,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
 	int	is_redraw=0;
+	int	is_lastwin=0;
 	int s_top=SCRN_TOP;
 	int s_left=SCRN_LEFT;
 	int s_right=SCRN_RIGHT;
@@ -610,15 +611,19 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		top=0;
 
 	/* Dynamic Menus */
-	if(mode&WIN_DYN
+	if((mode&WIN_DYN || mode&WIN_SAV)
 			&& cur != NULL
 			&& bar != NULL
 			&& last_menu_cur==cur
 			&& last_menu_bar==bar
 			&& save_menu_cur==*cur
 			&& save_menu_bar==*bar
-			&& save_menu_opts==opts)
-		is_redraw=1;
+			&& save_menu_opts==opts) {
+		if(mode&WIN_DYN)
+			is_redraw=1;
+		if(mode&WIN_SAV)
+			is_lastwin=1;
+	}
 	if(mode&WIN_DYN && mode&WIN_REDRAW)
 		is_redraw=1;
 	if(mode&WIN_DYN && mode&WIN_NODRAW)
@@ -630,6 +635,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	}
 
 	if(mode&WIN_SAV) {
+		if(is_lastwin && sav[api->savnum].buf==NULL)
+			api->savnum--;
 		if(sav[api->savnum].buf==NULL) {
 			if((sav[api->savnum].buf=(char *)malloc((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
