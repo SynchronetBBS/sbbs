@@ -154,16 +154,16 @@ for (i in filenames) {
 	}
 
 	if(!font.open("rb",true,4096)) {
-		log(LOG_ERR,"!ERROR Unable to open "+filenames[i]+"!");
+		log(LOG_ERR,"!ERROR "+font.error+" Unable to open "+filenames[i]+"! errno="+errno);
 		continue;
 	}
 
 	// Doesn't work on Win32.. Win32 sucks.
 	var fontdata=font.read(font.length);
 
+	font.close();
 	if(fontdata.length != font.length) {
-		log(LOG_ERR,"!ERROR Error reading font data (read "+fontdata.length+", expected "+font.length+")");
-		font.close();
+		log(LOG_ERR,"!ERROR Error "+font.error+" reading font data (read "+fontdata.length+", expected "+font.length+") errno="+errno);
 		continue;
 	}
 
@@ -182,7 +182,6 @@ for (i in filenames) {
 		//		fontdata=fontdata.substr(1);
 		}
 	}
-	font.close();
 	if(showprogress)
 		client.socket.send(".");
 }
