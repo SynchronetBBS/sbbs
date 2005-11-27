@@ -39,7 +39,7 @@
 struct sdlfuncs sdl;
 #endif
 
-extern int	CIOLIB_main(int argc, char **argv);
+extern int	CIOLIB_main(int argc, char **argv, char **enviro);
 
 /********************************************************/
 /* Low Level Stuff										*/
@@ -1315,6 +1315,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 struct mainparams {
 	int	argc;
 	char	**argv;
+	char	**env;
 };
 
 /* Called from events thread only */
@@ -1323,7 +1324,7 @@ int sdl_runmain(void *data)
 	struct mainparams *mp=data;
 	SDL_Event	ev;
 
-	sdl_exitcode=CIOLIB_main(mp->argc, mp->argv);
+	sdl_exitcode=CIOLIB_main(mp->argc, mp->argv, mp->env);
 	ev.type=SDL_QUIT;
 	while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 	return(0);
@@ -1339,7 +1340,7 @@ int sdl_mouse_thread(void *data)
 }
 
 /* Event Thread */
-int main(int argc, char **argv)
+int main(int argc, char **argv, char **env)
 {
 	unsigned int i;
 	SDL_Event	ev;
@@ -1377,6 +1378,7 @@ int main(int argc, char **argv)
 	if(sdl.gotfuncs) {
 		mp.argc=argc;
 		mp.argv=argv;
+		mp.env=env;
 
 		sdl_key_pending=sdl.SDL_CreateSemaphore(0);
 		sdl_init_complete=sdl.SDL_CreateSemaphore(0);
@@ -1807,6 +1809,6 @@ int main(int argc, char **argv)
 		}
 	}
 	else {
-		return(CIOLIB_main(argc, argv));
+		return(CIOLIB_main(argc, argv, env));
 	}
 }
