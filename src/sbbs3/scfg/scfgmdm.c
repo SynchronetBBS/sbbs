@@ -273,9 +273,8 @@ while(!feof(stream)) {
 		continue; }
 
 	sprintf(msg,"ERROR: '%.15s' in %.8s.MDM",p,fname);
-	savnum--;
 	umsg(msg);
-	savnum++; }
+}
 
 fclose(stream);
 return(1);

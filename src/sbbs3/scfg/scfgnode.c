@@ -234,7 +234,6 @@ Options with a trailing ... will produce a sub-menu of more options.
 					,cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
 
 				opt[i][0]=0;
-				uifc.savnum=0;
 SETHELP(WHERE);
 /*
 Node Toggle Options:
@@ -255,7 +254,6 @@ more states, such as Yes and No.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Low Priority String Input:
@@ -283,7 +281,6 @@ user, but improving aggregate system performance under multitaskers.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Allow Login by User Number:
@@ -305,7 +302,6 @@ set this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Allow Login by Real Name:
@@ -327,7 +323,6 @@ their alias, set this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Always Prompt for Password:
@@ -349,7 +344,6 @@ prompt for a password, set this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Allow 8-bit Remote Input During Login:
@@ -372,7 +366,6 @@ to send IBM extended ASCII characters during the login sequence.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Spinning Pause Prompt:
@@ -394,7 +387,6 @@ this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						uifc.savnum=1;
 						SETHELP(WHERE);
 /*
 Keep Node File Open:
@@ -433,7 +425,6 @@ option to No.
 				sprintf(opt[i++],"%-27.27s%.40s","Daily Event",cfg.node_daily);
 				sprintf(opt[i++],"%-27.27s%.40s","Text Directory",cfg.text_dir);
 				opt[i][0]=0;
-				uifc.savnum=0;
 SETHELP(WHERE);
 /*
 Node Advanced Options:

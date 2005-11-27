@@ -267,7 +267,6 @@ be able to logon as New, leave this option blank.
 				sprintf(opt[i++],"%-33.33s%s","Display Node List During Logon"
 					,cfg.sys_misc&SM_NONODELIST ? "No" : "Yes");
 				opt[i][0]=0;
-				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 System Toggle Options:
@@ -833,7 +832,6 @@ This is the number of extra minutes automatically given to new users.
 							strcpy(opt[i],cfg.xedit[i-1]->code);
 						opt[i][0]=0;
 						i=0;
-						uifc.savnum=0;
 						SETHELP(WHERE);
 /*
 New User Editor:
@@ -854,7 +852,6 @@ You can use this option to select the default editor for new users.
 							sprintf(opt[i],"%-.8s",cfg.shell[i]->code);
 						opt[i][0]=0;
 						i=0;
-						uifc.savnum=0;
 						SETHELP(WHERE);
 /*
 New User Command Shell:
@@ -1149,7 +1146,6 @@ user.
 				sprintf(opt[i++],"%-27.27s%lX","Control Key Pass-through"
 					,cfg.ctrlkey_passthru);
 				opt[i][0]=0;
-				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 System Advanced Options:
@@ -1448,7 +1444,6 @@ If unsure, leave this value set to `0`, the default.
 				sprintf(opt[i++],"%-16.16s%s","New User Event",cfg.newuser_mod);
 				sprintf(opt[i++],"%-16.16s%s","Expired User",cfg.expire_mod);
 				opt[i][0]=0;
-				uifc.savnum=0;
 				SETHELP(WHERE);
 /*
 Loadable Modules:
@@ -1566,7 +1561,6 @@ security level from 0 to 99. The available options for each level are:
 						,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
 							cfg.level_expireto[i] : cfg.expired_level);
 					opt[j][0]=0;
-					uifc.savnum=0;
 					j=uifc.list(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0
 						,str,opt);
 					if(j==-1)
@@ -1634,7 +1628,6 @@ security level from 0 to 99. The available options for each level are:
 							opt[j][0]=0;
 							j=0;
 							sprintf(str,"Level %u Expires To",i);
-							uifc.savnum=1;
 							j=uifc.list(WIN_SAV,2,1,0,&j,0
 								,str,opt);
 							if(j==-1)
@@ -1819,13 +1812,11 @@ From within the User Edit function, a sysop can use the Validate
 User command and select from this quick-validation list to change a
 user's security values with very few key-strokes.
 */
-				uifc.savnum=0;
 				i=uifc.list(WIN_RHT|WIN_BOT|WIN_ACT|WIN_SAV,0,0,0,&dflt,0
 					,"Quick-Validation Values",opt);
 				if(i==-1)
                     break;
 				sprintf(str,"Quick-Validation Set %d",i);
-				uifc.savnum=0;
 				while(1) {
 					j=0;
 					sprintf(opt[j++],"%-22.22s%u","Level",cfg.val_level[i]);
@@ -1846,7 +1837,6 @@ user's security values with very few key-strokes.
 					sprintf(opt[j++],"%-22.22s%lu","Additional Credits"
 						,cfg.val_cdt[i]);
 					opt[j][0]=0;
-					uifc.savnum=1;
 					j=uifc.list(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0
 						,str,opt);
 					if(j==-1)

@@ -204,7 +204,6 @@ library, select Yes.
 		strcpy(opt[j++],"Import Areas...");
 		strcpy(opt[j++],"File Directories...");
 		opt[j][0]=0;
-		uifc.savnum=0;
 		sprintf(str,"%s Library",cfg.lib[i]->sname);
 		SETHELP(WHERE);
 /*
@@ -615,7 +614,6 @@ while(1) {
 	dirnum[j]=cfg.total_dirs;
 	opt[j][0]=0;
 	sprintf(str,"%s Directories",cfg.lib[libnum]->sname);
-	uifc.savnum=0;
 	i=WIN_SAV|WIN_ACT;
 	if(j)
 		i|=WIN_DEL|WIN_GET|WIN_DELACT;
@@ -638,7 +636,6 @@ To delete a directory, select it with the arrow keys and hit  DEL .
 To configure a directory, select it with the arrow keys and hit  ENTER .
 */
 	i=uifc.list(i,24,1,45,&dflt,&bar,str,opt);
-	uifc.savnum=1;
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -811,7 +808,6 @@ select Yes.
 This menu allows you to configure the individual selected directory.
 Options with a trailing ... provide a sub-menu of more options.
 */
-		uifc.savnum=1;
 		switch(uifc.list(WIN_SAV|WIN_ACT|WIN_RHT|WIN_BOT
 			,0,0,60,&opt_dflt,0,str,opt)) {
 			case -1:
@@ -862,27 +858,22 @@ contents, usually an abreviation of the directory's name.
 				}
                 break;
 			case 3:
-				uifc.savnum=2;
 				sprintf(str,"%s Access",cfg.dir[i]->sname);
 				getar(str,cfg.dir[i]->arstr);
 				break;
 			case 4:
-				uifc.savnum=2;
 				sprintf(str,"%s Upload",cfg.dir[i]->sname);
 				getar(str,cfg.dir[i]->ul_arstr);
 				break;
 			case 5:
-				uifc.savnum=2;
 				sprintf(str,"%s Download",cfg.dir[i]->sname);
 				getar(str,cfg.dir[i]->dl_arstr);
 				break;
 			case 6:
-				uifc.savnum=2;
 				sprintf(str,"%s Operator",cfg.dir[i]->sname);
 				getar(str,cfg.dir[i]->op_arstr);
                 break;
 			case 7:
-				uifc.savnum=2;
 				sprintf(str,"%s Exemption",cfg.dir[i]->sname);
 				getar(str,cfg.dir[i]->ex_arstr);
                 break;
@@ -1020,7 +1011,6 @@ are later downloaded, set this value to 0.
 					sprintf(opt[n++],"%-27.27s%s","Include Transfers In Stats"
 						,cfg.dir[i]->misc&DIR_NOSTAT ? "No":"Yes");
 					opt[n][0]=0;
-					uifc.savnum=2;
 					SETHELP(WHERE);
 /*
 Directory Toggle Options:
@@ -1034,7 +1024,6 @@ more states, such as Yes and No.
 						,&tog_bar,"Toggle Options",opt);
 					if(n==-1)
                         break;
-					uifc.savnum=3;
 					switch(n) {
 						case 0:
 							n=cfg.dir[i]->misc&DIR_FCHK ? 0:1;
@@ -1522,7 +1511,6 @@ cumulative statistics.
 					: cfg.dir[i]->sort==SORT_DATE_A ? "Date Ascending"
 					: "Date Descending");
 				opt[n][0]=0;
-				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Directory Advanced Options:
@@ -1533,7 +1521,6 @@ This is the advanced options menu for the selected file directory.
 						,"Advanced Options",opt);
 					if(n==-1)
                         break;
-					uifc.savnum=3;
                     switch(n) {
 						case 0:
 							SETHELP(WHERE);

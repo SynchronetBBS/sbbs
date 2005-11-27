@@ -47,7 +47,6 @@ while(1) {
 	for(i=0;i<cfg.total_pages && i<MAX_OPTS;i++)
 		sprintf(opt[i],"%-40.40s %-.20s",cfg.page[i]->cmd,cfg.page[i]->arstr);
 	opt[i][0]=0;
-	uifc.savnum=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 	if(cfg.total_pages)
 		j|=WIN_DEL|WIN_GET;
@@ -126,7 +125,6 @@ This is the command line to execute for this external chat pager.
 			,cfg.page[i]->misc&IO_INTS ? "Yes":"No");
 		opt[k][0]=0;
 		sprintf(str,"Sysop Chat Pager #%d",i+1);
-		uifc.savnum=1;
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&j,0,str,opt)) {
 			case -1:
 				done=1;
@@ -144,7 +142,6 @@ This is the command line to execute for this external chat pager.
 					strcpy(cfg.page[i]->cmd,str);
 				break;
 			case 1:
-				uifc.savnum=2;
 				getar(str,cfg.page[i]->arstr);
 				break;
 			case 2:
@@ -152,7 +149,6 @@ This is the command line to execute for this external chat pager.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Intercept I/O Interrupts:
@@ -186,7 +182,6 @@ while(1) {
 		sprintf(opt[i],"%-25s",cfg.chan[i]->name);
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_SAV|WIN_BOT|WIN_RHT;
-	uifc.savnum=0;
 	if(cfg.total_chans)
 		j|=WIN_DEL|WIN_GET;
 	if(cfg.total_chans<MAX_OPTS)
@@ -300,7 +295,6 @@ channel name.
 
 This menu is for configuring the selected chat channel.
 */
-		uifc.savnum=1;
 		sprintf(str,"%s Chat Channel",cfg.chan[i]->name);
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str,opt)) {
 			case -1:
@@ -353,7 +347,6 @@ to be free, set this value to 0.
 				cfg.chan[i]->cost=atol(str);
                 break;
 			case 3:
-				uifc.savnum=2;
 				sprintf(str,"%s Chat Channel",cfg.chan[i]->name);
 				getar(str,cfg.chan[i]->arstr);
 				break;
@@ -362,7 +355,6 @@ to be free, set this value to 0.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Allow Channel to be Password Protected:
@@ -385,7 +377,6 @@ protect it, set this option to Yes.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Guru Joins This Channel When Empty:
@@ -415,7 +406,6 @@ to have available in this channel.
 				for(j=0;j<cfg.total_gurus && j<MAX_OPTS;j++)
 					sprintf(opt[j],"%-25s",cfg.guru[j]->name);
 				opt[j][0]=0;
-				uifc.savnum=2;
 				k=uifc.list(WIN_SAV|WIN_RHT,0,0,25,&j,0
 					,"Available Chat Gurus",opt);
 				if(k==-1)
@@ -434,7 +424,6 @@ wish to have available in this channel.
 				for(j=0;j<cfg.total_actsets && j<MAX_OPTS;j++)
 					sprintf(opt[j],"%-25s",cfg.actset[j]->name);
 				opt[j][0]=0;
-				uifc.savnum=2;
 				k=uifc.list(WIN_SAV|WIN_RHT,0,0,25,&j,0
 					,"Available Chat Action Sets",opt);
 				if(k==-1)
@@ -460,7 +449,6 @@ while(1) {
 			chatnum[j++]=i; }
 	chatnum[j]=cfg.total_chatacts;
 	opt[j][0]=0;
-	uifc.savnum=2;
 	i=WIN_ACT|WIN_SAV;
 	if(j)
 		i|=WIN_DEL|WIN_GET;
@@ -489,7 +477,6 @@ To configure an action, select it with the arrow keys and hit  ENTER .
 */
 	sprintf(str,"%s Chat Actions",cfg.actset[setnum]->name);
 	i=uifc.list(i,0,0,70,&chatact_dflt,&chatact_bar,str,opt);
-	uifc.savnum=3;
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
@@ -584,7 +571,6 @@ while(1) {
 	for(i=0;i<cfg.total_gurus && i<MAX_OPTS;i++)
 		sprintf(opt[i],"%-25s",cfg.guru[i]->name);
 	opt[i][0]=0;
-	uifc.savnum=0;
 	j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 	if(cfg.total_gurus)
 		j|=WIN_DEL|WIN_GET;
@@ -681,7 +667,6 @@ it internally. This code is usually an abreviation of the Guru name.
 		sprintf(opt[k++],"%-27.27s%s","Guru Internal Code",cfg.guru[i]->code);
 		sprintf(opt[k++],"%-27.27s%.40s","Access Requirements",cfg.guru[i]->arstr);
 		opt[k][0]=0;
-		uifc.savnum=1;
 		SETHELP(WHERE);
 /*
 Guru Configuration:
@@ -725,7 +710,6 @@ it internally. This code is usually an abreviation of the Guru name.
                     uifc.helpbuf=0; }
 				break;
 			case 2:
-				uifc.savnum=2;
 				getar(cfg.guru[i]->name,cfg.guru[i]->arstr);
 				break; } } }
 }
@@ -743,7 +727,6 @@ while(1) {
 		sprintf(opt[i],"%-25s",cfg.actset[i]->name);
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_RHT|WIN_BOT|WIN_SAV;
-	uifc.savnum=0;
     if(cfg.total_actsets)
         j|=WIN_DEL|WIN_GET;
 	if(cfg.total_actsets<MAX_OPTS)
@@ -826,7 +809,6 @@ This is the name of the selected chat action set.
 This menu is for configuring the selected chat action set.
 */
 		sprintf(str,"%s Chat Action Set",cfg.actset[i]->name);
-		uifc.savnum=1;
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str
             ,opt)) {
             case -1:

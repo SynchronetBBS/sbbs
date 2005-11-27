@@ -141,7 +141,6 @@ calls to exchange packets with.
 */
 			i=uifc.list(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&qnet_dflt,0
 				,"QWK Packet Networks",opt);
-			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
 					done=1;
@@ -168,7 +167,6 @@ basis with the sub-board configuration Network Options....
 							i|=WIN_INS|WIN_INSACT|WIN_XTR;
 						if(cfg.total_qhubs)
 							i|=WIN_DEL;
-						uifc.savnum=0;
 						SETHELP(WHERE);
 /*
 QWK Network Hubs:
@@ -197,7 +195,6 @@ To configure a hub, select it and hit  ENTER .
 								bail(1);
                                 continue; }
 
-							uifc.savnum=1;
 							SETHELP(WHERE);
 /*
 QWK Network Hub System ID:
@@ -298,7 +295,6 @@ using FidoNet technology.
 */
 			i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&fnet_dflt,0
 				,"FidoNet EchoMail and NetMail",opt);
-			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
 					done=1;
@@ -665,7 +661,6 @@ From this menu you can configure PostLink or PCRelay Networks.
 */
 			i=uifc.list(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&pnet_dflt,0
 				,"PostLink Networks",opt);
-			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
 					done=1;
@@ -704,7 +699,6 @@ Site Number for your BBS.
 							i|=WIN_INS|WIN_INSACT|WIN_XTR;
 						if(cfg.total_phubs)
 							i|=WIN_DEL;
-						uifc.savnum=0;
 						SETHELP(WHERE);
 /*
 PostLink Network Hubs:
@@ -733,7 +727,6 @@ To configure a hub, select it and hit  ENTER .
 								bail(1);
                                 continue; }
 
-							uifc.savnum=1;
 							SETHELP(WHERE);
 /*
 Network Hub Site Name:
@@ -803,7 +796,6 @@ Internet E-mail.
 */
 			i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&inet_dflt,0
 				,"Internet E-mail",opt);
-			uifc.savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
 					done=1;
@@ -960,7 +952,6 @@ while(!done) {
 	strcpy(opt[i++],"Networked Sub-boards...");
 	opt[i][0]=0;
 	sprintf(str,"%s Network Hub",cfg.qhub[num]->id);
-	uifc.savnum=1;
 	SETHELP(WHERE);
 /*
 QWK Network Hub Configuration:
@@ -1039,7 +1030,6 @@ network hub.
 					sprintf(opt[i],"%s        %s"
 						,wday[i],(cfg.qhub[num]->days&(1<<i)) ? "Yes":"No");
 				opt[i][0]=0;
-				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Days to Perform Call-out:
@@ -1059,7 +1049,6 @@ network hub.
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
-			uifc.savnum=2;
 			SETHELP(WHERE);
 /*
 Perform Call-out at a Specific Time:
@@ -1131,7 +1120,6 @@ while(1) {
 			,LEN_SSNAME,LEN_SSNAME
 			,cfg.sub[cfg.qhub[num]->sub[j]]->sname);
 	opt[j][0]=0;
-	uifc.savnum=2;
 	j=WIN_BOT|WIN_SAV|WIN_ACT;
 	if(cfg.qhub[num]->subs<MAX_OPTS)
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
@@ -1157,10 +1145,8 @@ To configure a sub-board for this QWK network hub, select it and hit
 		break;
 	if((j&MSK_ON)==MSK_INS) {
 		j&=MSK_OFF;
-		uifc.savnum=3;
 		if((l=getsub())==-1)
 			continue;
-		uifc.savnum=3;
 		SETHELP(WHERE);
 /*
 Conference Number on Hub:
@@ -1248,7 +1234,6 @@ this option to Strip out.
 			"Strip out" : cfg.qhub[num]->mode[j]==A_LEAVE ?
 			"Leave in" : "Expand to ANSI");
 		opt[n][0]=0;
-		uifc.savnum=3;
 		SETHELP(WHERE);
 /*
 QWK Netted Sub-board:
@@ -1262,13 +1247,11 @@ hub.
 		if(l==-1)
 			break;
 		if(!l) {
-			uifc.savnum=4;
 			m=getsub();
 			if(m!=-1) {
 				cfg.qhub[num]->sub[j]=m;
 				uifc.changes=1; } }
 		else if(l==1) {
-			uifc.savnum=4;
 			SETHELP(WHERE);
 /*
 Conference Number on Hub:
@@ -1292,7 +1275,6 @@ sub-board is networked with on this QWK network hub.
 			strcpy(opt[2],"Expand to ANSI");
 			opt[3][0]=0;
 			m=0;
-			uifc.savnum=4;
 			SETHELP(WHERE);
 /*
 Ctrl-A Codes:
@@ -1337,7 +1319,6 @@ while(!done) {
 		sprintf(opt[i++],"%-27.27s%s","Call-out Time",str); }
 	opt[i][0]=0;
 	sprintf(str,"%s Network Hub",cfg.phub[num]->name);
-	uifc.savnum=1;
 	SETHELP(WHERE);
 /*
 PostLink Network Hub Configuration:
@@ -1392,7 +1373,6 @@ hub.
 					sprintf(opt[i],"%s        %s"
 						,wday[i],(cfg.phub[num]->days&(1<<i)) ? "Yes":"No");
 				opt[i][0]=0;
-				uifc.savnum=2;
 				SETHELP(WHERE);
 /*
 Days to Perform Call-out:
@@ -1412,7 +1392,6 @@ hub.
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
-			uifc.savnum=2;
 			SETHELP(WHERE);
 /*
 Perform Call-out at a Specific Time:
