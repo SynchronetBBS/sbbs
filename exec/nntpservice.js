@@ -534,7 +534,7 @@ while(client.socket.is_connected && !quit) {
 			if(add_tag && user.security.restrictions&UFLAG_Q && !hdr.from_net_type)
 				body += "\r\n" + tearline + tagline;
 
-			if(!ex_ascii || msgbase.cfg.settings&SUB_ASCII) {
+			if(!ex_ascii || (msgbase.cfg && msgbase.cfg.settings&SUB_ASCII)) {
 				/* Convert Ex-ASCII chars to approximate ASCII equivalents */
 				body = ascii_str(body);
 				hdr.subject = ascii_str(hdr.subject);
