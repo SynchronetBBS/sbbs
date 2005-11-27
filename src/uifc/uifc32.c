@@ -624,6 +624,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_DYN && mode&WIN_NODRAW)
 		is_redraw=0;
 
+	if(mode&WIN_ORG) {		/* Clear all save buffers on WIN_ORG */
+		for(i=0; i< MAX_BUFS; i++)
+			FREE_AND_NULL(sav[i].buf);
+	}
+
 	if(mode&WIN_SAV) {
 		if(sav[api->savnum].buf==NULL) {
 			if((sav[api->savnum].buf=(char *)malloc((width+3)*(height+2)*2))==NULL) {
