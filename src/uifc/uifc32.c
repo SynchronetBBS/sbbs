@@ -511,6 +511,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int	a,b,c,longopt;
 	int	optheight=0;
 	uchar	hclr,lclr,bclr,cclr,lbclr;
+	static int	*oldcur=NULL;
+	static int	*oldbar=NULL;
 
 	hclr=api->hclr;
 	lclr=api->lclr;
@@ -611,7 +613,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		top=0;
 
 	/* Dynamic Menus */
-	if((mode&WIN_DYN || mode&WIN_SAV)
+	if(mode&WIN_DYN
 			&& cur != NULL
 			&& bar != NULL
 			&& last_menu_cur==cur
@@ -621,9 +623,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			&& save_menu_opts==opts) {
 		if(mode&WIN_DYN)
 			is_redraw=1;
-		if(mode&WIN_SAV)
-			is_lastwin=1;
 	}
+	if(mode&WIN_SAV) {
+		if(cur==oldcur && bar==oldbar)
+			is_lastwin=1;
+		oldcur=cur;
+		oldbar=bar;
+	}
+
 	if(mode&WIN_DYN && mode&WIN_REDRAW)
 		is_redraw=1;
 	if(mode&WIN_DYN && mode&WIN_NODRAW)
