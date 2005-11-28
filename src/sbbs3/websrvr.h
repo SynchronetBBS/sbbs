@@ -90,6 +90,8 @@ typedef struct {
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 	char	default_cgi_content[128];
+	WORD	outbuf_highwater_mark;	/* output block size control */
+	WORD	outbuf_drain_timeout;
 
 	/* JavaScript operating parameters */
 	js_startup_t js;
