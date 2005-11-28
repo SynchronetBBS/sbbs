@@ -547,6 +547,8 @@ void change_settings(void)
 						uifc.msg("Cannot allocate space for scrollback.");
 					}
 					else {
+						if(scrollback_lines > j)
+							scrollback_lines=j;
 						scrollback_buf=tmpscroll;
 						settings.backlines=j;
 						iniSetInteger(&inicontents,"SyncTERM","ScrollBackLines",settings.backlines,&ini_style);

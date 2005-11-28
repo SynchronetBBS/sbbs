@@ -38,6 +38,7 @@ int default_font=0;
 struct syncterm_settings settings;
 char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
 unsigned char *scrollback_buf=NULL;
+unsigned int  scrollback_lines=0;
 
 #ifdef _WINSOCKAPI_
 
