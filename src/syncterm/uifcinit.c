@@ -117,7 +117,7 @@ int confirm(char *msg, char *helpbuf)
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
-		if(uifc.list(WIN_MID|WIN_ACT,0,0,0,&copt,NULL,msg,options)!=0)
+		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&copt,NULL,msg,options)!=0)
 			ret=FALSE;
 	}
 	if(!i) {

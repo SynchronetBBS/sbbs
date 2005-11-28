@@ -2,6 +2,7 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)bbslist$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)uifcinit$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)filepick$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)fonts$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet_io$(OFILE) \

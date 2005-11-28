@@ -6,6 +6,7 @@
 #include <stdio.h>	/* FILE * */
 #include "gen_defs.h"
 #include "dirwrap.h"	/* MAX_PATH */
+#include "ini_file.h"
 #include <time.h>
 
 #define LIST_NAME_MAX	30
@@ -58,26 +59,15 @@ struct bbslist {
 	char			font[80];
 };
 
-struct font_files {
-	char	*name;
-	char	*path8x8;
-	char	*path8x14;
-	char	*path8x16;
-};
-
 struct bbslist *show_bbslist(int mode);
 extern char *log_levels[];
 extern char *rate_names[];
 extern int rates[];
+extern ini_style_t ini_style;
 void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int type);
 void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
 void free_list(struct bbslist **list, int listcount);
 void add_bbs(char *listpath, struct bbslist *bbs);
 int  get_rate_num(int rate);
-void free_font_files(struct font_files *ff);
-void save_font_files(struct font_files *fonts);
-struct font_files *read_font_files(int *count);
-void load_font_files(void);
-int	find_font_id(char *name);
 
 #endif

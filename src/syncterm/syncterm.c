@@ -16,6 +16,7 @@
 #include "cterm.h"
 #include "allfonts.h"
 
+#include "fonts.h"
 #include "syncterm.h"
 #include "bbslist.h"
 #include "conn.h"
@@ -34,6 +35,7 @@ char* syncterm_version = "SyncTERM 0.6"
 
 char *inpath=NULL;
 int default_font=0;
+struct syncterm_settings settings;
 char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
 
 #ifdef _WINSOCKAPI_
@@ -257,6 +259,20 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 	return(fn);
 }
 
+void load_settings(struct syncterm_settings *set)
+{
+	FILE	*inifile;
+	char	inipath[MAX_PATH];
+
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+	inifile=fopen(inipath,"r");
+	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
+fprintf(stderr,"Confirm: %d\n",set->confirm_close);
+	set->startup_mode=iniReadInteger(inifile,"SyncTERM","VideoMode",FALSE);
+	if(inifile)
+		fclose(inifile);
+}
+
 int main(int argc, char **argv)
 {
 	struct bbslist *bbs=NULL;
@@ -335,9 +351,6 @@ int main(int argc, char **argv)
 				case 'T':
 					conn_type=CONN_TYPE_TELNET;
 					break;
-                case 'V':
-                    textmode(atoi(argv[i]+2));
-                    break;
                 default:
 					goto USAGE;
            }
@@ -345,7 +358,26 @@ int main(int argc, char **argv)
 			SAFECOPY(url,argv[i]);
     }
 
+	load_settings(&settings);
+
 	initciolib(ciolib_mode);
+	switch(settings.startup_mode) {
+		case SCREEN_MODE_80X25:
+			textmode(C80);
+			break;
+		case SCREEN_MODE_80X28:
+			textmode(C80X28);
+			break;
+		case SCREEN_MODE_80X43:
+			textmode(C80X43);
+			break;
+		case SCREEN_MODE_80X50:
+			textmode(C80X50);
+			break;
+		case SCREEN_MODE_80X60:
+			textmode(C80X60);
+			break;
+	}
 
     gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {
@@ -489,7 +521,6 @@ int main(int argc, char **argv)
 		"       W = Win32 native mode\n"
 #endif
 		"       A = ANSI mode\n"
-        "-v# =  set video mode to # (default=auto)\n"
         "-l# =  set screen lines to # (default=auto-detect)\n"
 		"-t  =  use telnet mode if URL does not include the scheme\n"
 		"-r  =  use rlogin mode if URL does not include the scheme\n"
