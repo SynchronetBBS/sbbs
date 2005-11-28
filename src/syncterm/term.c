@@ -21,8 +21,6 @@ static char recvbuf[BUFSIZE];
 
 #define DUMP
 
-int backlines=2000;
-
 struct terminal term;
 
 #define TRANSFER_WIN_WIDTH	66
@@ -862,9 +860,9 @@ BOOL doterm(struct bbslist *bbs)
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
-	scrollback=malloc(term.width*2*backlines);
-	memset(scrollback,0,term.width*2*backlines);
-	cterm_init(term.height,term.width,term.x-1,term.y-1,backlines,scrollback);
+	scrollback=malloc(term.width*2*settings.backlines);
+	memset(scrollback,0,term.width*2*settings.backlines);
+	cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback);
 	cterm.music_enable=bbs->music;
 	ch[1]=0;
 	zrqbuf[0]=0;

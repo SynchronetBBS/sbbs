@@ -269,6 +269,7 @@ void load_settings(struct syncterm_settings *set)
 	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
 fprintf(stderr,"Confirm: %d\n",set->confirm_close);
 	set->startup_mode=iniReadInteger(inifile,"SyncTERM","VideoMode",FALSE);
+	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
 	if(inifile)
 		fclose(inifile);
 }

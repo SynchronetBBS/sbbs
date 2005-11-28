@@ -492,9 +492,10 @@ void change_settings(void)
 	char	inipath[MAX_PATH];
 	FILE	*inifile;
 	str_list_t	inicontents;
-	char	opts[3][80];
-	char	*opt[3];
+	char	opts[4][80];
+	char	*opt[4];
 	int		i,j;
+	char	str[64];
 
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
 	if((inifile=fopen(inipath,"r"))!=NULL) {
@@ -505,14 +506,15 @@ void change_settings(void)
 		inicontents=strListInit();
 	}
 
-	for(i=0; i<3; i++)
+	for(i=0; i<4; i++)
 		opt[i]=opts[i];
 
 	i=0;
-	opts[2][0]=0;
+	opts[3][0]=0;
 	for(;;) {
-		sprintf(opts[0],"Confirm Program Exit: %s",settings.confirm_close?"Yes":"No");
-		sprintf(opts[1],"Startup Video Mode:   %s",screen_modes[settings.startup_mode]);
+		sprintf(opts[0],"Confirm Program Exit:     %s",settings.confirm_close?"Yes":"No");
+		sprintf(opts[1],"Startup Video Mode:       %s",screen_modes[settings.startup_mode]);
+		sprintf(opts[2],"Scrollback Buffer Lines: %d",settings.backlines);
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
@@ -532,6 +534,14 @@ void change_settings(void)
 							break;
 					}
 				}
+				break;
+			case 2:
+				sprintf(str,"%d",settings.backlines);
+				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Scrollback Lines",str,9,K_NUMBER)!=-1) {
+					settings.backlines=atoi(str);
+					iniSetInteger(&inicontents,"SyncTERM","ScrollBackLines",settings.backlines,&ini_style);
+				}
+				break;
 		}
 	}
 write_ini:

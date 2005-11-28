@@ -12,6 +12,7 @@ enum {
 struct syncterm_settings {
 	int		confirm_close;
 	int		startup_mode;
+	int		backlines;
 };
 
 extern char *inpath;
