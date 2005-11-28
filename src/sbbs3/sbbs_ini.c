@@ -1114,9 +1114,9 @@ BOOL sbbs_write_ini(
 			iniRemoveValue(lp,section,strBindRetryDelay);
 		else if(!iniSetInteger(lp,section,strBindRetryDelay,web->bind_retry_delay,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"OutbufHighwaterMark",bbs->outbuf_highwater_mark,&style))
+		if(!iniSetShortInt(lp,section,"OutbufHighwaterMark",web->outbuf_highwater_mark,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"OutbufDrainTimeout",bbs->outbuf_drain_timeout,&style))
+		if(!iniSetShortInt(lp,section,"OutbufDrainTimeout",web->outbuf_drain_timeout,&style))
 			break;
 	}
 
