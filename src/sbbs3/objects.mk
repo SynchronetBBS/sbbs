@@ -124,7 +124,8 @@ MAIL_OBJS	= $(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE) \
 # Must add new additions to MONO_OBJS too!
 WEB_OBJS	= $(MTOBJODIR)$(DIRSEP)websrvr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)base64$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)ars$(OFILE)
+			$(MTOBJODIR)$(DIRSEP)ars$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE)
 			
 
 # Must add new additions to MONO_OBJS too!
