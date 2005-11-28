@@ -13,5 +13,6 @@ void save_font_files(struct font_files *fonts);
 struct font_files *read_font_files(int *count);
 void load_font_files(void);
 int	find_font_id(char *name);
+void font_management(void);
 
 #endif
