@@ -428,8 +428,10 @@ static int writebuf(http_session_t	*session, const char *buf, size_t len)
 
 	while(!terminate_server && sent < len) {
 		avail=RingBufFree(&session->outbuf);
-		if(!avail)
+		if(!avail) {
 			SLEEP(1);
+			continue;
+		}
 		if(avail > len-sent)
 			avail=len-sent;
 		sent+=RingBufWrite(&(session->outbuf), ((char *)buf)+sent, avail);
