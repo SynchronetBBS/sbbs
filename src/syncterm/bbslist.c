@@ -641,6 +641,9 @@ struct bbslist *show_bbslist(int mode)
 					switch(val) {
 						case -2-CIO_KEY_MOUSE:	/* Clicked outside of window... */
 							getmouse(&mevent);
+						case -2-0x0f00:	/* Backtab */
+						case -2-0x4b00:	/* Left Arrow */
+						case -2-0x4d00:	/* Right Arrow */
 						case -11:		/* TAB */
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 								|WIN_T2B|WIN_IMM|WIN_INACT
@@ -817,6 +820,9 @@ struct bbslist *show_bbslist(int mode)
 				switch(val) {
 					case -2-CIO_KEY_MOUSE:
 						getmouse(&mevent);
+					case -2-0x0f00:	/* Backtab */
+					case -2-0x4b00:	/* Left Arrow */
+					case -2-0x4d00:	/* Right Arrow */
 					case -11:		/* TAB */
 						uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
 							,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
