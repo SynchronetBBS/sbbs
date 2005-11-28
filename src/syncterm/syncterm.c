@@ -37,6 +37,7 @@ char *inpath=NULL;
 int default_font=0;
 struct syncterm_settings settings;
 char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
+unsigned char *scrollback_buf=NULL;
 
 #ifdef _WINSOCKAPI_
 
@@ -177,7 +178,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 	switch(SHGetFolderPath(NULL, (shared?CSIDL_COMMON_APPDATA:CSIDL_APPDATA)|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
 		case E_FAIL:
 		case E_INVALIDARG:
-			strcpy(fn,".\\");
+			strcpy(fn,".");
 			break;
 		default:
 			backslash(fn);
@@ -193,9 +194,11 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 
 	switch(type) {
 		case SYNCTERM_PATH_INI:
+			backslash(fn);
 			strncat(fn,"syncterm.ini",fnlen);
 			break;
 		case SYNCTERM_PATH_LIST:
+			backslash(fn);
 			strncat(fn,"syncterm.lst",fnlen);
 			break;
 	}
@@ -393,6 +396,11 @@ int main(int argc, char **argv)
 	else
 		FULLPATH(path,inpath,sizeof(path));
 	atexit(uifcbail);
+
+	scrollback_buf=malloc(80*2*settings.backlines);	/* Terminal width is *always* 80 cols */
+	if(scrollback_buf)==NULL) {
+		uifc.msg("Cannot allocate space for scrollback buffer.\n");
+	}
 
 #ifdef __unix__
 	umask(077);
