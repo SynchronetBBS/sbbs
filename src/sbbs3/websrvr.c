@@ -3074,7 +3074,7 @@ js_writefunc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval,
 			if(session->req.method!=HTTP_HEAD && session->req.method!=HTTP_OPTIONS) {
 				writebuf(session,JS_GetStringBytes(str), JS_GetStringLength(str));
 				if(writeln)
-					sock_sendbuf(session->socket, newline, 2,NULL);
+					writebuf(session, newline, 2);
 			}
 		}
 		else {
