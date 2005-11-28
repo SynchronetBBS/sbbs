@@ -299,6 +299,7 @@ int main(int argc, char **argv)
 	char	*inpath=NULL;
 	BOOL	exit_now=FALSE;
 	int		conn_type=CONN_TYPE_TELNET;
+	BOOL	dont_set_mode=FALSE;
 
 	/* UIFC initialization */
     memset(&uifc,0,sizeof(uifc));
@@ -313,9 +314,6 @@ int main(int argc, char **argv)
 #endif
             )
             switch(toupper(argv[i][1])) {
-                case 'C':
-        			uifc.mode|=UIFC_COLOR;
-                    break;
                 case 'E':
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
@@ -345,9 +343,7 @@ int main(int argc, char **argv)
 					break;
                 case 'L':
                     uifc.scrn_len=atoi(argv[i]+2);
-                    break;
-		        case 'M':   /* Monochrome mode */
-        			uifc.mode|=UIFC_MONO;
+					dont_set_mode=TRUE;
                     break;
 				case 'R':
 					conn_type=CONN_TYPE_RLOGIN;
@@ -365,22 +361,24 @@ int main(int argc, char **argv)
 	load_settings(&settings);
 
 	initciolib(ciolib_mode);
-	switch(settings.startup_mode) {
-		case SCREEN_MODE_80X25:
-			textmode(C80);
-			break;
-		case SCREEN_MODE_80X28:
-			textmode(C80X28);
-			break;
-		case SCREEN_MODE_80X43:
-			textmode(C80X43);
-			break;
-		case SCREEN_MODE_80X50:
-			textmode(C80X50);
-			break;
-		case SCREEN_MODE_80X60:
-			textmode(C80X60);
-			break;
+	if(!dont_set_mode) {
+		switch(settings.startup_mode) {
+			case SCREEN_MODE_80X25:
+				textmode(C80);
+				break;
+			case SCREEN_MODE_80X28:
+				textmode(C80X28);
+				break;
+			case SCREEN_MODE_80X43:
+				textmode(C80X43);
+				break;
+			case SCREEN_MODE_80X50:
+				textmode(C80X50);
+				break;
+			case SCREEN_MODE_80X60:
+				textmode(C80X60);
+				break;
+		}
 	}
 
     gettextinfo(&txtinfo);
@@ -518,8 +516,6 @@ int main(int argc, char **argv)
 	clrscr();
     cprintf("\nusage: syncterm [options] [URL]"
         "\n\noptions:\n\n"
-        "-c  =  force color mode\n"
-		"-m  =  force monochrome mode\n"
         "-e# =  set escape delay to #msec\n"
 		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 #ifdef __unix__
