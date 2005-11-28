@@ -432,7 +432,7 @@ static int writebuf(http_session_t	*session, const char *buf, size_t len)
 			SLEEP(1);
 		if(avail > len-sent)
 			avail=len-sent;
-		sent=RingBufWrite(&(session->outbuf), ((char *)buf)+sent, avail);
+		sent+=RingBufWrite(&(session->outbuf), ((char *)buf)+sent, avail);
 	}
 	return(sent);
 }
