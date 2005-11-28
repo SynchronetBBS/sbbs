@@ -4,6 +4,7 @@
 #include <dirwrap.h>
 #include <ini_file.h>
 #include <uifc.h>
+#include "filepick.h"
 
 #include "syncterm.h"
 #include "bbslist.h"
@@ -74,10 +75,12 @@ void free_list(struct bbslist **list, int listcount)
 	}
 }
 
-void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, char *home, int type)
+void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int type)
 {
 	BOOL	dumb;
+	char	home[MAX_PATH];
 
+	get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
 	if(bbsname != NULL)
 		strcpy(entry->name,bbsname);
 	iniReadString(listfile,bbsname,"Address","",entry->addr);
@@ -108,7 +111,7 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, cha
  * Reads in a BBS list from listpath using *i as the counter into bbslist
  * first BBS read goes into list[i]
  */
-void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type, char* home)
+void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type)
 {
 	FILE	*listfile;
 	char	*bbsname;
@@ -116,12 +119,12 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		if(defaults != NULL)
-			read_item(listfile,defaults,NULL,-1,home,type);
+			read_item(listfile,defaults,NULL,-1,type);
 		bbses=iniReadSectionList(listfile,NULL);
 		while((bbsname=strListPop(&bbses))!=NULL) {
 			if((list[*i]=(struct bbslist *)malloc(sizeof(struct bbslist)))==NULL)
 				break;
-			read_item(listfile,list[*i],bbsname,*i,home,type);
+			read_item(listfile,list[*i],bbsname,*i,type);
 			(*i)++;
 		}
 		fclose(listfile);
@@ -486,11 +489,258 @@ void del_bbs(char *listpath, struct bbslist *bbs)
 	}
 }
 
+struct font_files {
+	char	*name;
+	char	*path8x8;
+	char	*path8x14;
+	char	*path8x16;
+};
+
+void free_font_files(struct font_files *ff)
+{
+	int	i;
+
+	if(ff==NULL)
+		return;
+	for(i=0; ff[i].name != NULL; i++) {
+		FREE_AND_NULL(ff[i].name);
+		FREE_AND_NULL(ff[i].path8x8);
+		FREE_AND_NULL(ff[i].path8x14);
+		FREE_AND_NULL(ff[i].path8x16);
+	}
+	FREE_AND_NULL(ff);
+}
+
+void save_font_files(struct font_files *fonts)
+{
+	FILE	*inifile;
+	char	inipath[MAX_PATH];
+	char	newfont[MAX_PATH];
+	char	*fontid;
+	str_list_t	ini_file;
+	str_list_t	fontnames;
+	int		i;
+
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+	if((inifile=fopen(inipath,"r"))!=NULL) {
+		ini_file=iniReadFile(inifile);
+		fclose(inifile);
+	}
+	else {
+		ini_file=strListInit();
+	}
+
+	fontnames=iniGetSectionList(ini_file, "Font:");
+
+	/* TODO: Remove all sections... we don't *NEED* to do this */
+	while((fontid=strListPop(&fontnames))!=NULL) {
+		iniRemoveSection(&ini_file, fontid);
+	}
+
+	if(fonts != NULL) {
+		for(i=0; fonts[i].name && fonts[i].name[0]; i++) {
+			sprintf(newfont,"Font:%s",fonts[i].name);
+			if(fonts[i].path8x8)
+				iniSetString(&ini_file, newfont, "Path8x8", fonts[i].path8x8, &ini_style);
+			if(fonts[i].path8x14)
+				iniSetString(&ini_file, newfont, "Path8x14", fonts[i].path8x14, &ini_style);
+			if(fonts[i].path8x16)
+				iniSetString(&ini_file, newfont, "Path8x16", fonts[i].path8x16, &ini_style);
+		}
+	}
+	if((inifile=fopen(inipath,"w"))!=NULL) {
+		iniWriteFile(inifile,ini_file);
+		fclose(inifile);
+	}
+	else {
+		uifc.msg("Cannot write to the .ini file!");
+	}
+
+	strListFreeStrings(fontnames);
+	strListFreeStrings(ini_file);
+}
+
+struct font_files *read_font_files(int *count)
+{
+	FILE	*inifile;
+	char	inipath[MAX_PATH];
+	char	fontpath[MAX_PATH];
+	char	*fontid;
+	str_list_t	fonts;
+	struct font_files	*ret=NULL;
+	struct font_files	*tmp=NULL;
+
+	*count=0;
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+	if((inifile=fopen(inipath, "r"))==NULL) {
+		return(ret);
+	}
+	fonts=iniReadSectionList(inifile, "Font:");
+	while((fontid=strListPop(&fonts))!=NULL) {
+		if(!fontid[5])
+			continue;
+		(*count)++;
+		tmp=(struct font_files *)realloc(ret, sizeof(struct font_files)*(*count+1));
+		if(tmp==NULL) {
+			count--;
+			continue;
+		}
+		ret=tmp;
+		ret[*count].name=NULL;
+		ret[*count-1].name=strdup(fontid+5);
+		if((ret[*count-1].path8x8=iniReadString(inifile,fontid,"Path8x8",NULL,fontpath))!=NULL)
+			ret[*count-1].path8x8=strdup(fontpath);
+		if((ret[*count-1].path8x14=iniReadString(inifile,fontid,"Path8x14","",fontpath))!=NULL)
+			ret[*count-1].path8x14=strdup(fontpath);
+		if((ret[*count-1].path8x16=iniReadString(inifile,fontid,"Path8x16",NULL,fontpath))!=NULL)
+			ret[*count-1].path8x16=strdup(fontpath);
+	}
+	fclose(inifile);
+	strListFreeStrings(fonts);
+	return(ret);
+}
+
+void font_management(void)
+{
+	int i,j;
+	int cur=0;
+	int bar=0;
+	int fcur=0;
+	int fbar=0;
+	int	count=0;
+	int	size=0;
+	struct font_files	*fonts;
+	char	*opt[256];
+	char	opts[5][80];
+	struct font_files	*tmp=NULL;
+	char	str[128];
+
+	fonts=read_font_files(&count);
+	opts[4][0]=0;
+
+	for(;;) {
+		uifc.helpbuf=	"`Font Management`\n\n"
+						"Allows you to add and remove font files to/from the default font set.\n\n"
+						"`INS` Adds a new font.\n"
+						"`DEL` Removes an existing font.\n\n"
+						"Selecting a font allows you to set the files for all three font sizes:\n"
+						"8x8, 8x14, and 8x16.";
+		if(fonts) {
+			for(j=0;fonts[j].name && fonts[j].name[0]; j++)
+				opt[j]=fonts[j].name;
+			opt[j]="";
+		}
+		else {
+			opts[0][0]=0;
+			opt[0]=opts[0];
+		}
+		i=uifc.list(WIN_SAV|WIN_INS|WIN_INSACT|WIN_DEL|WIN_XTR,0,0,0,&cur,&bar,"Font",opt);
+		if(i==-1) {
+			save_font_files(fonts);
+			free_font_files(fonts);
+			return;
+		}
+		for(;;) {
+			char 	*fontmask;
+			int		show_filepick=0;
+			char	**path;
+
+			if(i&MSK_DEL) {
+				FREE_AND_NULL(fonts[cur].name);
+				FREE_AND_NULL(fonts[cur].path8x8);
+				FREE_AND_NULL(fonts[cur].path8x14);
+				FREE_AND_NULL(fonts[cur].path8x16);
+				memmove(&(fonts[cur]),&(fonts[cur+1]),sizeof(struct font_files)*(count-cur-1));
+				count--;
+				break;
+			}
+			if(i&MSK_INS) {
+				str[0]=0;
+				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Font Name",str,50,0)==-1)
+					break;
+				count++;
+				tmp=(struct font_files *)realloc(fonts, sizeof(struct font_files)*(count+1));
+				if(tmp==NULL) {
+					uifc.msg("realloc() failure, cannot add font.");
+					count--;
+					break;
+				}
+				fonts=tmp;
+				memmove(fonts+cur+1,fonts+cur,sizeof(struct font_files)*(count-cur));
+				memset(&(fonts[count]),0,sizeof(fonts[count]));
+				fonts[cur].name=strdup(str);
+				fonts[cur].path8x8=NULL;
+				fonts[cur].path8x14=NULL;
+				fonts[cur].path8x16=NULL;
+			}
+			for(i=0; i<5; i++)
+				opt[i]=opts[i];
+			sprintf(opts[0],"Name: %.50s",fonts[cur].name?fonts[cur].name:"<undefined>");
+			sprintf(opts[1],"8x8   %.50s",fonts[cur].path8x8?fonts[cur].path8x8:"<undefined>");
+			sprintf(opts[2],"8x14  %.50s",fonts[cur].path8x14?fonts[cur].path8x14:"<undefined>");
+			sprintf(opts[3],"8x16  %.50s",fonts[cur].path8x16?fonts[cur].path8x16:"<undefined>");
+			opts[4][0]=0;
+			i=uifc.list(WIN_SAV|WIN_INS|WIN_DEL,0,0,0,&fcur,&fbar,"Font",opt);
+			if(i==-1)
+				break;
+			switch(i) {
+				case 0:
+					SAFECOPY(str,fonts[cur].name);
+					free(fonts[cur].name);
+					uifc.input(WIN_SAV|WIN_MID,0,0,"Font Name",str,50,K_EDIT);
+					fonts[cur].name=strdup(str);
+					show_filepick=0;
+					break;
+				case 1:
+					sprintf(str,"8x8 %.50s",fonts[cur].name);
+					path=&(fonts[cur].path8x8);
+					fontmask="*.f8";
+					show_filepick=1;
+					break;
+				case 2:
+					sprintf(str,"8x14 %.50s",fonts[cur].name);
+					path=&(fonts[cur].path8x14);
+					fontmask="*.f14";
+					show_filepick=1;
+					break;
+				case 3:
+					sprintf(str,"8x16 %.50s",fonts[cur].name);
+					path=&(fonts[cur].path8x16);
+					fontmask="*.f16";
+					show_filepick=1;
+					break;
+			}
+			if(show_filepick) {
+				int result;
+				struct file_pick fpick;
+				char	*savbuf;
+				struct text_info	ti;
+
+				gettextinfo(&ti);
+				savbuf=(char *)malloc((ti.screenheight-2)*ti.screenwidth*2);
+				if(savbuf==NULL) {
+					uifc.msg("malloc() failure.");
+					continue;
+				}
+				gettext(1,2,ti.screenwidth,ti.screenheight-1,savbuf);
+				result=filepick(&uifc, str, &fpick, ".", fontmask, UIFC_FP_ALLOWENTRY);
+				if(result!=-1 && fpick.files>0) {
+					free(*path);
+					*(path)=strdup(fpick.selected[0]);
+				}
+				filepick_free(&fpick);
+				puttext(1,2,ti.screenwidth,ti.screenheight-1,savbuf);
+				free(savbuf);
+			}
+		}
+	}
+}
+
 /*
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
  */
-struct bbslist *show_bbslist(char* listpath, int mode, char *home)
+struct bbslist *show_bbslist(int mode)
 {
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
@@ -516,18 +766,19 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 	int		settings=0;
 	struct mouse_event mevent;
 	struct bbslist defaults;
+	char	shared_list[MAX_PATH];
+	char	listpath[MAX_PATH];
 
 	if(init_uifc(TRUE, TRUE))
 		return(NULL);
 
-	read_list(listpath, &list[0], &defaults, &listcount, USER_BBSLIST, home);
+	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
+	read_list(listpath, &list[0], &defaults, &listcount, USER_BBSLIST);
 
 	/* System BBS List */
-#ifdef PREFIX
-	strcpy(listpath,PREFIX"/etc/syncterm.lst");
+	get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
+	read_list(shared_list, &list[0], &defaults, &listcount, SYSTEM_BBSLIST);
 
-	read_list(listpath, list, &listcount, NULL, SYSTEM_BBSLIST, home);
-#endif
 	sort_list(list);
 	uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n";
 	uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
@@ -594,7 +845,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 		#endif
 							memcpy(&retlist, &defaults, sizeof(defaults));
 							if(uifc.changes) {
-								parse_url(addy,&retlist,FALSE);
+								parse_url(addy,&retlist,defaults.conn_type,FALSE);
 								free_list(&list[0],listcount);
 								return(&retlist);
 							}
@@ -810,7 +1061,7 @@ struct bbslist *show_bbslist(char* listpath, int mode, char *home)
 						}
 						break;
 					case 3:			/* Font management */
-						uifc.msg("This section not yet functional");
+						font_management();
 						break;
 					case 4:			/* Program settings */
 						uifc.msg("This section not yet functional");

@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define LIST_NAME_MAX	30
-#define LIST_ADDR_MAX	30
+#define LIST_ADDR_MAX	64
 #define MAX_USER_LEN	30
 #define MAX_PASSWD_LEN	16
 #define MAX_SYSPASS_LEN	16
@@ -58,12 +58,12 @@ struct bbslist {
 	int				font;
 };
 
-struct bbslist *show_bbslist(char* listpath, int mode, char *home);
+struct bbslist *show_bbslist(int mode);
 extern char *log_levels[];
 extern char *rate_names[];
 extern int rates[];
-void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, char *home, int type);
-void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type, char* home);
+void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int type);
+void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
 void free_list(struct bbslist **list, int listcount);
 void add_bbs(char *listpath, struct bbslist *bbs);
 int  get_rate_num(int rate);

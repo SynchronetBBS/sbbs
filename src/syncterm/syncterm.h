@@ -3,10 +3,17 @@
 
 #include "bbslist.h"
 
+enum {
+	 SYNCTERM_PATH_INI
+	,SYNCTERM_PATH_LIST
+	,SYNCTERM_DEFAULT_TRANSFER_PATH
+};
+
 extern char *inpath;
 extern char *syncterm_version;
-void parse_url(char *url, struct bbslist *bbs, int force_defaults);
+void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults);
 extern int default_font;
 extern char *font_names[];
+char *get_syncterm_filename(char *fn, int fnlen, int type, int shared);
 
 #endif

@@ -1,6 +1,9 @@
 /* $Id$ */
 
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <shlobj.h>
+#endif
 
 #include <gen_defs.h>
 #include <stdlib.h>
@@ -13,6 +16,7 @@
 #include "cterm.h"
 #include "allfonts.h"
 
+#include "syncterm.h"
 #include "bbslist.h"
 #include "conn.h"
 #include "term.h"
@@ -63,24 +67,12 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 {
 	char *p1, *p2, *p3;
 	struct	bbslist	*list[MAX_OPTS+1];
-	char	*home=NULL;
 	char	path[MAX_PATH];
 	char	listpath[MAX_PATH+1];
 	int		listcount=0, i;
 
 	/* User BBS list path */
-	if(inpath==NULL) {
-		home=getenv("HOME");
-		if(home==NULL)
-			home=getenv("USERPROFILE");
-	}
-	if(home==NULL)
-		home=path;
-	strcpy(listpath,home);
-	strncat(listpath,"/syncterm.lst",sizeof(listpath));
-	if(strlen(listpath)>MAX_PATH) {
-		fprintf(stderr,"Path to syncterm.lst too long");
-	}
+	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
 
 	bbs->id=-1;
 	bbs->added=time(NULL);
@@ -135,7 +127,7 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 
 	/* Find BBS listing in users phone book */
 	if(listpath != NULL) {
-		read_list(listpath, &list[0], NULL, &listcount, USER_BBSLIST, home);
+		read_list(listpath, &list[0], NULL, &listcount, USER_BBSLIST);
 		for(i=0;i<listcount;i++) {
 			if((stricmp(bbs->addr,list[i]->addr)==0)
 					&& (bbs->port==list[i]->port)
@@ -148,6 +140,121 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		}
 	}
 	free_list(&list[0],listcount);
+}
+
+char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
+{
+	char	oldlst[MAX_PATH+1];
+
+#ifdef _WIN32
+	char	*home;
+	home=getenv("HOME");
+	if(home==NULL)
+		home=getenv("USERPROFILE");
+	if(home==NULL) {
+		strcpy(oldlst,"./syncterm.lst");
+	}
+	else {
+		SAFECOPY(oldlst, home);
+		strcat(oldlst, "/syncterm.lst");
+	}
+	if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
+		switch(SHGetFolderPath(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
+			case E_FAIL:
+			case E_INVALIDARG:
+				getcwd(fn, fnlen);
+				backslash(fn);
+				break;
+			default:
+				backslash(fn);
+				strcat(fn,"SyncTERM");
+				break;
+		}
+		return(fn);
+	}
+	switch(SHGetFolderPath(NULL, (shared?CSIDL_COMMON_APPDATA:CSIDL_APPDATA)|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
+		case E_FAIL:
+		case E_INVALIDARG:
+			strcpy(fn,".\\");
+			break;
+		default:
+			backslash(fn);
+			strcat(fn,"SyncTERM");
+			break;
+	}
+
+	/* Create if it doesn't exist */
+	if(!isdir(fn)) {
+		if(MKDIR(fn))
+			fn[0]=0;
+	}
+
+	switch(type) {
+		case SYNCTERM_PATH_INI:
+			strncat(fn,"syncterm.ini",fnlen);
+			break;
+		case SYNCTERM_PATH_LIST:
+			strncat(fn,"syncterm.lst",fnlen);
+			break;
+	}
+#else
+	char	*home;
+	int		created;
+
+	if(inpath==NULL)
+		home=getenv("HOME");
+	if(home==NULL) {
+		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
+			getcwd(fn, fnlen);
+			backslash(fn);
+			return(fn);
+		}
+		SAFECOPY(oldlst,"syncterm.lst");
+		strcpy(fn,"./");
+	}
+	else {
+		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
+			strcpy(fn, home);
+			backslash(fn);
+			return(fn);
+		}
+		SAFECOPY(oldlst,home);
+		backslash(oldlst);
+		strcat(oldlst,"syncterm.lst");
+		sprintf(fn,"%.*s",fnlen,home);
+		strncat(fn, "/.syncterm", fnlen);
+		backslash(fn);
+	}
+
+	if(shared) {
+#ifdef PREFIX
+		strcpy(fn,PREFIX);
+		backslash(fn);
+#else
+		strcpy(fn,"/usr/local/etc/");
+#endif
+	}
+
+	/* Create if it doesn't exist */
+	if(!isdir(fn) && !shared) {
+		if(MKDIR(fn))
+			fn[0]=0;
+	}
+
+	switch(type) {
+		case SYNCTERM_PATH_INI:
+			strncat(fn,"syncterm.ini",fnlen);
+			break;
+		case SYNCTERM_PATH_LIST:
+			strncat(fn,"syncterm.lst",fnlen);
+			break;
+	}
+#endif
+
+	/* Copy pre-0.7 version of the syncterm.lst file to new location */
+	if(!shared && type == SYNCTERM_PATH_LIST && (!fexist(fn)) && fexist(oldlst))
+		rename(oldlst, fn);
+	return(fn);
 }
 
 int main(int argc, char **argv)
@@ -169,7 +276,6 @@ int main(int argc, char **argv)
 	str_list_t	inifile;
 	FILE *listfile;
 	char	listpath[MAX_PATH+1];
-	char	*home=NULL;
 	char	*inpath=NULL;
 	BOOL	exit_now=FALSE;
 	int		conn_type=CONN_TYPE_TELNET;
@@ -223,12 +329,6 @@ int main(int argc, char **argv)
 		        case 'M':   /* Monochrome mode */
         			uifc.mode|=UIFC_MONO;
                     break;
-				case 'P':
-					if(argv[i][2]==':' && argv[i][3])
-						inpath=argv[i]+3;
-					else
-						goto USAGE;
-					break;
 				case 'R':
 					conn_type=CONN_TYPE_RLOGIN;
 					break;
@@ -274,19 +374,7 @@ int main(int argc, char **argv)
 #endif
 
 	/* User BBS list path */
-	if(inpath==NULL) {
-		home=getenv("HOME");
-		if(home==NULL)
-			home=getenv("USERPROFILE");
-	}
-	if(home==NULL)
-		home=path;
-	strcpy(listpath,home);
-	strncat(listpath,"/syncterm.lst",sizeof(listpath));
-	if(strlen(listpath)>MAX_PATH) {
-		fprintf(stderr,"Path to syncterm.lst too long");
-		return(0);
-	}
+	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
 
 	/* Auto-connect URL */
 	if(url[0]) {
@@ -297,7 +385,7 @@ int main(int argc, char **argv)
 		if((listfile=fopen(listpath,"r"))==NULL)
 			parse_url(url, bbs, conn_type, TRUE);
 		else {
-			read_item(listfile, bbs, NULL, 0, home, USER_BBSLIST);
+			read_item(listfile, bbs, NULL, 0, USER_BBSLIST);
 			parse_url(url, bbs, conn_type, FALSE);
 			fclose(listfile);
 		}
@@ -308,7 +396,7 @@ int main(int argc, char **argv)
 	if(!winsock_startup())
 		return(1);
 
-	while(bbs!=NULL || (bbs=show_bbslist(listpath,BBSLIST_SELECT,home))!=NULL) {
+	while(bbs!=NULL || (bbs=show_bbslist(BBSLIST_SELECT))!=NULL) {
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		if(!conn_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->syspass,bbs->conn_type,bbs->bpsrate)) {
 			/* ToDo: Update the entry with new lastconnected */
@@ -402,7 +490,6 @@ int main(int argc, char **argv)
 		"       A = ANSI mode\n"
         "-v# =  set video mode to # (default=auto)\n"
         "-l# =  set screen lines to # (default=auto-detect)\n"
-        "-p:<path> = set path to users BBS list (default=home then userprofile path\n"
 		"-t  =  use telnet mode if URL does not include the scheme\n"
 		"-r  =  use rlogin mode if URL does not include the scheme\n"
 		"\n"
