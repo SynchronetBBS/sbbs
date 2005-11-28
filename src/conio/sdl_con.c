@@ -1185,7 +1185,7 @@ int sdl_full_screen_redraw(int force)
 	int y;
 	unsigned int pos;
 	unsigned short *p;
-	unsigned short *newvmem=NULL;
+	unsigned short *newvmem;
 	static unsigned short *vmemcopies[2]={ NULL, NULL };
 	static SDL_Rect	*rects=NULL;
 	static int this_new=0;
@@ -1340,7 +1340,11 @@ int sdl_mouse_thread(void *data)
 }
 
 /* Event Thread */
+#ifndef main
 int main(int argc, char **argv, char **env)
+#else
+int SDL_main_env(int argc, char **argv, char **env)
+#endif
 {
 	unsigned int i;
 	SDL_Event	ev;

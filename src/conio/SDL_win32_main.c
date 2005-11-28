@@ -30,6 +30,7 @@
 /* Include the SDL main definition header */
 #include "SDL.h"
 #include "SDL_main.h"
+extern C_LINKAGE int SDL_main_env(int argc, char *argv[], char **env);
 
 #ifdef main
 # ifndef _WIN32_WCE_EMULATION
@@ -194,7 +195,7 @@ static void __cdecl cleanup_output(void)
 #endif
 
 /* This is where execution begins [console apps] */
-int console_main(int argc, char *argv[])
+int console_main(int argc, char *argv[], char **env)
 {
 	int n;
 	char *bufp, *appname;
@@ -240,7 +241,7 @@ int console_main(int argc, char *argv[])
 	}
 
 	/* Run the application main() code */
-	SDL_main(argc, argv);
+	SDL_main_env(argc, argv, env);
 
 	/* Exit cleanly, calling atexit() functions */
 	exit(0);
@@ -352,5 +353,5 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
 	ParseCommandLine(cmdline, argv);
 
 	/* Run the main program (after a little SDL initialization) */
-	return(console_main(argc, argv));
+	return(console_main(argc, argv, _environ));
 }
