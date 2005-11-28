@@ -885,9 +885,10 @@ BOOL doterm(struct bbslist *bbs)
 			switch(inch) {
 				case -1:
 					if(!is_connected(NULL)) {
+						uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
+						cterm.write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 						cterm_end();
 						conn_close();
-						uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 						hidemouse();
 						return(FALSE);
 					}
@@ -1095,6 +1096,7 @@ BOOL doterm(struct bbslist *bbs)
 						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
 							uifcbail();
 							free(buf);
+							cterm.write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							cterm_end();
 							conn_close();
 							hidemouse();
@@ -1127,6 +1129,7 @@ BOOL doterm(struct bbslist *bbs)
 							if(!confirm("Disconnect?",NULL))
 								continue;
 #endif
+							cterm.write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							cterm_end();
 							conn_close();
 							hidemouse();
@@ -1171,6 +1174,7 @@ BOOL doterm(struct bbslist *bbs)
 							if(!confirm("Disconnect?",NULL))
 								continue;
 #endif
+							cterm.write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							cterm_end();
 							conn_close();
 							hidemouse();
