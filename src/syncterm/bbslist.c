@@ -539,8 +539,18 @@ void change_settings(void)
 			case 2:
 				sprintf(str,"%d",settings.backlines);
 				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Scrollback Lines",str,9,K_NUMBER)!=-1) {
-					settings.backlines=atoi(str);
-					iniSetInteger(&inicontents,"SyncTERM","ScrollBackLines",settings.backlines,&ini_style);
+					unsigned char *tmpscroll;
+
+					j=atoi(str);
+					tmpscroll=(unsigned char *)realloc(scrollback_buf,80*2*j);
+					if(tmpscroll == NULL) {
+						uifc.msg("Cannot allocate space for scrollback.");
+					}
+					else {
+						scrollback_buf=tmpscroll;
+						settings.backlines=j;
+						iniSetInteger(&inicontents,"SyncTERM","ScrollBackLines",settings.backlines,&ini_style);
+					}
 				}
 				break;
 		}
