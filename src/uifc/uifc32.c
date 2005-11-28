@@ -621,8 +621,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			&& save_menu_cur==*cur
 			&& save_menu_bar==*bar
 			&& save_menu_opts==opts) {
-		if(mode&WIN_DYN)
-			is_redraw=1;
+		is_redraw=1;
 	}
 	if(mode&WIN_SAV) {
 		if(cur==oldcur && bar==oldbar)
@@ -642,7 +641,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	}
 
 	if(mode&WIN_SAV) {
-		if(is_lastwin && sav[api->savnum].buf==NULL)
+		if(is_lastwin && api->savnum>0 && sav[api->savnum].buf==NULL)
 			api->savnum--;
 		if(sav[api->savnum].buf==NULL) {
 			if((sav[api->savnum].buf=(char *)malloc((width+3)*(height+2)*2))==NULL) {
