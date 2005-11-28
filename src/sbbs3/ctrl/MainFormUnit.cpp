@@ -1065,12 +1065,24 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 #endif
 }
 //---------------------------------------------------------------------------
+BOOL NTsvcEnabled(SC_HANDLE svc, QUERY_SERVICE_CONFIG* config, DWORD config_size)
+{
+	if(svc==NULL || startService==NULL || queryServiceStatus==NULL || config==NULL)
+    	return(FALSE);
 
+	DWORD ret;
+	if(!queryServiceConfig(svc,config,config_size,&ret))
+		return(FALSE);
+	if(config->dwStartType==SERVICE_DISABLED)
+		return(FALSE);
+	return(TRUE);
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 {
 	CanClose=false;
 
-    if(TelnetStop->Enabled && bbs_svc==NULL) {
+    if(TelnetStop->Enabled && !NTsvcEnabled(bbs_svc,bbs_svc_config,bbs_svc_config_size)) {
      	if(TelnetForm->ProgressBar->Position
 	        && Application->MessageBox("Shut down the Telnet Server?"
         	,"Telnet Server In Use", MB_OKCANCEL)!=IDOK)
@@ -1078,7 +1090,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         TelnetStopExecute(Sender);
 	}
 
-    if(MailStop->Enabled && mail_svc==NULL) {
+    if(MailStop->Enabled && !NTsvcEnabled(mail_svc,mail_svc_config,mail_svc_config_size)) {
     	if(MailForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Mail Server?"
         	,"Mail Server In Use", MB_OKCANCEL)!=IDOK)
@@ -1086,7 +1098,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         MailStopExecute(Sender);
     }
 
-    if(FtpStop->Enabled && ftp_svc==NULL) {
+    if(FtpStop->Enabled && !NTsvcEnabled(ftp_svc,ftp_svc_config,ftp_svc_config_size)) {
     	if(FtpForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the FTP Server?"
 	       	,"FTP Server In Use", MB_OKCANCEL)!=IDOK)
@@ -1094,7 +1106,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         FtpStopExecute(Sender);
     }
 
-    if(WebStop->Enabled && web_svc==NULL) {
+    if(WebStop->Enabled && !NTsvcEnabled(web_svc,web_svc_config,web_svc_config_size)) {
     	if(WebForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Web Server?"
 	       	,"Web Server In Use", MB_OKCANCEL)!=IDOK)
@@ -1102,11 +1114,12 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         WebStopExecute(Sender);
     }
 
-    if(ServicesStop->Enabled && services_svc==NULL)
+    if(ServicesStop->Enabled && !NTsvcEnabled(services_svc,services_svc_config,services_svc_config_size))
 	    ServicesStopExecute(Sender);
 
     CanClose=true;
 }
+
 //---------------------------------------------------------------------------
 BOOL StartNTsvc(SC_HANDLE svc, SERVICE_STATUS* status, QUERY_SERVICE_CONFIG* config, DWORD config_size)
 {
