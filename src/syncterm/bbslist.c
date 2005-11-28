@@ -8,6 +8,7 @@
 #include "allfonts.h"
 
 #include "syncterm.h"
+#include "fonts.h"
 #include "bbslist.h"
 #include "uifcinit.h"
 #include "conn.h"

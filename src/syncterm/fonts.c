@@ -87,7 +87,7 @@ struct font_files *read_font_files(int *count)
 	char	*fontid;
 	str_list_t	fonts;
 	struct font_files	*ret=NULL;
-	struct font_files	*tmp=NULL;
+	struct font_files	*tmp;
 
 	*count=0;
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
@@ -204,6 +204,7 @@ int	find_font_id(char *name)
 			break;
 		}
 	}
+	return(ret);
 }
 
 void font_management(void)
@@ -214,11 +215,10 @@ void font_management(void)
 	int fcur=0;
 	int fbar=0;
 	int	count=0;
-	int	size=0;
 	struct font_files	*fonts;
 	char	*opt[256];
 	char	opts[5][80];
-	struct font_files	*tmp=NULL;
+	struct font_files	*tmp;
 	char	str[128];
 
 	fonts=read_font_files(&count);
