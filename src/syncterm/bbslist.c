@@ -512,8 +512,8 @@ void change_settings(void)
 	i=0;
 	opts[3][0]=0;
 	for(;;) {
-		sprintf(opts[0],"Confirm Program Exit:     %s",settings.confirm_close?"Yes":"No");
-		sprintf(opts[1],"Startup Video Mode:       %s",screen_modes[settings.startup_mode]);
+		sprintf(opts[0],"Confirm Program Exit:    %s",settings.confirm_close?"Yes":"No");
+		sprintf(opts[1],"Startup Video Mode:      %s",screen_modes[settings.startup_mode]);
 		sprintf(opts[2],"Scrollback Buffer Lines: %d",settings.backlines);
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Program Settings",opt)) {
 			case -1:
