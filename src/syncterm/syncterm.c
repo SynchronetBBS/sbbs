@@ -270,7 +270,6 @@ void load_settings(struct syncterm_settings *set)
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
 	inifile=fopen(inipath,"r");
 	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
-fprintf(stderr,"Confirm: %d\n",set->confirm_close);
 	set->startup_mode=iniReadInteger(inifile,"SyncTERM","VideoMode",FALSE);
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
 	if(inifile)
@@ -398,7 +397,7 @@ int main(int argc, char **argv)
 	atexit(uifcbail);
 
 	scrollback_buf=malloc(80*2*settings.backlines);	/* Terminal width is *always* 80 cols */
-	if(scrollback_buf)==NULL) {
+	if(scrollback_buf==NULL) {
 		uifc.msg("Cannot allocate space for scrollback buffer.\n");
 	}
 
