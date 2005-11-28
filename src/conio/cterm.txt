@@ -179,9 +179,9 @@ CSI [ p1 [ ; p2 ] ] sp D
 	Font Selection
 	Defaults: p1 = 0  p2 = 0
 	"sp" indicates a single space character.
-	Sets font p1 to be the one indicated bu p2.  Currently only the primary font
-	(Font zero) is supported.  p2 must be between 0 and 255.  Not all output types
-	support font selection.  Only X11 and SDL currently do.
+	Sets font p1 to be the one indicated bu p2.  Currently only the primary
+	font (Font zero) is supported.  p2 must be between 0 and 255.  Not all
+	output types support font selection.  Only X11 and SDL currently do.
 	Currently included fonts are:
 		0  - Codepage 437 English
 		1  - Codepage 1251 Cyrillic, (swiss)
@@ -215,8 +215,8 @@ CSI [ p1 [ ; p2 ] ] sp D
 		29 - Ukrainian font cp866u
 		30 - ISO-8859-1 West European, (thin)
 		31 - Codepage 1131 Belarusian, (swiss)
-	Not all fonts are supported in all modes.  If a font is not supported in the
-	current mode, no action is taken.
+	Not all fonts are supported in all modes.  If a font is not supported in
+	the current mode, no action is taken.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -285,8 +285,9 @@ CSI [ p1 ] M
 
 CSI N
 	"ANSI" Music / Not implemented.
-	If "ANSI" Music is set to BananaCom (CSI = 1 M) or fully enabled (CSI = 2 M)
-	performs "ANSI" muisic.  See "ANSI" MUSIC section for more details.
+	If "ANSI" Music is set to BananaCom (CSI = 1 M) or fully enabled
+	(CSI = 2 M) performs "ANSI" muisic.  See "ANSI" MUSIC section for more
+	details.
 
 	SOURCE: BANSI.TXT
 
@@ -326,7 +327,7 @@ CSI U
 CSI [ p1 ] Z
 	Cursor Backward Tabulation
 	Defaults: p1 = 1
-	Move the cursor to the p1th preceeding tab stop.  Will no go past the
+	Move the cursor to the p1th preceeding tab stop.  Will not go past the
 	start of the line.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
@@ -336,11 +337,12 @@ CSI [ p1 ] c
 	Defaults: p1 = 0
 	If p1 is 0, CTerm will reply with the sequence:
 	CSI [ = 67;84;101;114;109;pN... c
-	64;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the CVS
-	revision ID of CTerm with dots converted to semi-colons.
-	Use the CVS revision to detect if a specific feature is available.  If you are adding
-	features to a forked version of cterm, please do so by adding an extra parameter to the
-	end, not by incrementing any existing one!
+	64;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the
+	CVS revision ID of CTerm with dots converted to semi-colons.
+	Use the CVS revision to detect if a specific feature is available.  If
+	you are adding features to a forked version of cterm, please do so by
+	adding an extra parameter to the end, not by incrementing any existing
+	one!
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -393,7 +395,7 @@ CSI [ p1 [ ; pX ... ] ] m
 CSI [ p1 ] n
 	Device Status Report
 	Defaults: p1 = 0
-	A request for a status report.  CTerm handles the following two
+	A request for a status report.  CTerm handles the following three
 	requests:
 	5	- Request a DSR
 		  CTerm will always reply with CSI 0 n indicating 
@@ -417,11 +419,11 @@ CSI s
 	Saves the current cursor position for later restoring with CSI u
 	although this is non-standard, it's so widely used in the BBS world that
 	any terminal program MUST implement it.
-	
+
 	SOURCE: ANSI.SYS
 
 CSI u
-	NON-STANDARD EXTENSION (Legal)
+	NON-STANDARD EXTENSION
 	Restore Cursor Position
 	Move the cursor to the last position saved by CSI s.  If no position has
 	been saved, the cursor is not moved.
@@ -479,7 +481,7 @@ Mx sets misc music parameters where x is one of the following:
 	N - "Normal" not legato, not stacatto
 	L - Play notes legato
 	S - Play notes stacatto
-T### Sets the tempo of the musix where ### is one or more decimal digits.
+T### Sets the tempo of the music where ### is one or more decimal digits.
 	If the decimal number is greater than 255, it is forced to 255.
 	If it is less than 32, it is forced to 32.  The number signifies
 	quarter notes per minute.
