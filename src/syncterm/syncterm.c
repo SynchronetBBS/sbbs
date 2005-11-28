@@ -33,7 +33,7 @@ char* syncterm_version = "SyncTERM 0.6"
 	;
 
 char *inpath=NULL;
-int default_font;
+int default_font=0;
 char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
 
 #ifdef _WINSOCKAPI_
@@ -87,7 +87,7 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		bbs->port=(dflt_conn_type==CONN_TYPE_TELNET)?23:513;
 		bbs->loglevel=LOG_INFO;
 		bbs->music=CTERM_MUSIC_BANSI;
-		bbs->font=default_font;
+		strcpy(bbs->font,"Codepage 437 English");
 	}
 	p1=url;
 	if(!strnicmp("rlogin://",url,9)) {
@@ -347,14 +347,6 @@ int main(int argc, char **argv)
 
 	initciolib(ciolib_mode);
 
-	for(i=0; conio_fontdata[i].desc != NULL; i++) {
-		font_names[i]=conio_fontdata[i].desc;
-		if(!strcmp(conio_fontdata[i].desc,"Codepage 437 English")) {
-			default_font=i;
-		}
-	}
-	font_names[i]="";
-
     gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {
 		fputs("Window too small, must be at least 80x24\n",stderr);
@@ -396,6 +388,7 @@ int main(int argc, char **argv)
 	if(!winsock_startup())
 		return(1);
 
+	load_font_files();
 	while(bbs!=NULL || (bbs=show_bbslist(BBSLIST_SELECT))!=NULL) {
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		if(!conn_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->syspass,bbs->conn_type,bbs->bpsrate)) {
@@ -417,7 +410,8 @@ int main(int argc, char **argv)
 				}
 			}
 			uifcbail();
-			setfont(bbs->font,TRUE);
+			load_font_files();
+			setfont(find_font_id(bbs->font),TRUE);
 			switch(bbs->screen_mode) {
 				case SCREEN_MODE_80X25:
 					textmode(C80);
@@ -442,6 +436,13 @@ int main(int argc, char **argv)
 				return(1);
 			exit_now=doterm(bbs);
 			setfont(default_font,TRUE);
+			for(i=CONIO_FIRST_FREE_FONT; i<256; i++) {
+				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
+				FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
+				FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
+				FREE_AND_NULL(conio_fontdata[i].desc);
+			}
+			load_font_files();
 			textmode(txtinfo.currmode);
 			settitle("SyncTERM");
 		}

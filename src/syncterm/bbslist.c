@@ -5,6 +5,7 @@
 #include <ini_file.h>
 #include <uifc.h>
 #include "filepick.h"
+#include "allfonts.h"
 
 #include "syncterm.h"
 #include "bbslist.h"
@@ -103,7 +104,7 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->loglevel=iniReadInteger(listfile,bbsname,"LogLevel",LOG_INFO);
 	entry->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
 	entry->music=iniReadInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
-	entry->font=iniReadInteger(listfile,bbsname,"Font",default_font);
+	iniReadString(listfile,bbsname,"Font","Codepage 437 English",entry->font);
 	entry->type=type;
 }
 
@@ -191,7 +192,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 		sprintf(opt[i++],"Log Level         %s",log_levels[item->loglevel]);
 		sprintf(opt[i++],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		sprintf(opt[i++],"ANSI Music        %s",music_names[item->music]);
-		sprintf(opt[i++],"Font              %s",font_names[item->font]);
+		sprintf(opt[i++],"Font              %s",item->font);
 		opt[i++][0]=0;
 		uifc.changes=0;
 
@@ -418,11 +419,11 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 								"Select the desired font for this connection.\n\n"
 								"Some fonts do not allow some modes.  When this is the case, 80x25 will be"
 								"forced.\n";
-				i=item->font;
-				uifc.list(WIN_SAV,0,0,0,&i,NULL,"Font",font_names);
-				if(i != item->font) {
-					item->font=i;
-					iniSetInteger(&inifile,itemname,"Font",item->font,&ini_style);
+				i=j=find_font_id(item->font);
+				uifc.list(WIN_SAV,0,0,0,&i,&j,"Font",font_names);
+				if(i!=find_font_id(item->font)) {
+					strcpy(item->font,font_names[i]);
+					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
 					changed=1;
 				}
 				break;
@@ -464,7 +465,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetInteger(&inifile,bbs->name,"LogLevel",bbs->loglevel,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"ANSIMusic",bbs->music,&ini_style);
-	iniSetInteger(&inifile,bbs->name,"Font",bbs->font,&ini_style);
+	iniSetString(&inifile,bbs->name,"Font",bbs->font,&ini_style);
 	if((listfile=fopen(listpath,"w"))!=NULL) {
 		iniWriteFile(listfile,inifile);
 		fclose(listfile);
@@ -488,13 +489,6 @@ void del_bbs(char *listpath, struct bbslist *bbs)
 		strListFreeStrings(inifile);
 	}
 }
-
-struct font_files {
-	char	*name;
-	char	*path8x8;
-	char	*path8x14;
-	char	*path8x16;
-};
 
 void free_font_files(struct font_files *ff)
 {
@@ -598,6 +592,93 @@ struct font_files *read_font_files(int *count)
 	fclose(inifile);
 	strListFreeStrings(fonts);
 	return(ret);
+}
+
+void load_font_files(void)
+{
+	int count=0;
+	int i;
+	int	nextfont=CONIO_FIRST_FREE_FONT;
+	struct font_files *ff;
+	FILE *fontfile;
+	char	*fontdata;
+
+	ff=read_font_files(&count);
+	for(i=0; i<count; i++) {
+		if(conio_fontdata[nextfont].eight_by_sixteen)
+			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_sixteen);
+		if(conio_fontdata[nextfont].eight_by_fourteen)
+			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_fourteen);
+		if(conio_fontdata[nextfont].eight_by_sixteen)
+			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_eight);
+		if(conio_fontdata[nextfont].desc)
+			FREE_AND_NULL(conio_fontdata[nextfont].desc);
+		if(ff[i].name)
+			conio_fontdata[nextfont].desc=strdup(ff[i].name);
+		else
+			continue;
+		if(ff[i].path8x8) {
+			if((fontfile=fopen(ff[i].path8x8,"r"))!=NULL) {
+				if((fontdata=(char *)malloc(2048))!=NULL) {
+					if(fread(fontdata, 1, 2048, fontfile)==2048) {
+						conio_fontdata[nextfont].eight_by_eight=fontdata;
+					}
+					else {
+						free(fontdata);
+					}
+				}
+			}
+		}
+		if(ff[i].path8x14) {
+			if((fontfile=fopen(ff[i].path8x14,"r"))!=NULL) {
+				if((fontdata=(char *)malloc(3584))!=NULL) {
+					if(fread(fontdata, 1, 3584, fontfile)==3584) {
+						conio_fontdata[nextfont].eight_by_fourteen=fontdata;
+					}
+					else {
+						free(fontdata);
+					}
+				}
+			}
+		}
+		if(ff[i].path8x16) {
+			if((fontfile=fopen(ff[i].path8x16,"r"))!=NULL) {
+				if((fontdata=(char *)malloc(4096))!=NULL) {
+					if(fread(fontdata, 1, 4096, fontfile)==4096) {
+						conio_fontdata[nextfont].eight_by_sixteen=fontdata;
+					}
+					else {
+						free(fontdata);
+					}
+				}
+			}
+		}
+		nextfont++;
+	}
+	free_font_files(ff);
+
+	for(i=0; conio_fontdata[i].desc != NULL; i++) {
+		font_names[i]=conio_fontdata[i].desc;
+		if(!strcmp(conio_fontdata[i].desc,"Codepage 437 English")) {
+			default_font=i;
+		}
+	}
+	font_names[i]="";
+}
+
+int	find_font_id(char *name)
+{
+	int ret=0;
+	int i;
+
+	for(i=0; i<256; i++) {
+		if(!conio_fontdata[i].desc)
+			continue;
+		if(!strcmp(conio_fontdata[i].desc,name)) {
+			ret=i;
+			break;
+		}
+	}
 }
 
 void font_management(void)
