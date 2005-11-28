@@ -33,8 +33,8 @@ void free_font_files(struct font_files *ff)
 void save_font_files(struct font_files *fonts)
 {
 	FILE	*inifile;
-	char	inipath[MAX_PATH];
-	char	newfont[MAX_PATH];
+	char	inipath[MAX_PATH+1];
+	char	newfont[MAX_PATH+1];
 	char	*fontid;
 	str_list_t	ini_file;
 	str_list_t	fontnames;
@@ -82,8 +82,8 @@ void save_font_files(struct font_files *fonts)
 struct font_files *read_font_files(int *count)
 {
 	FILE	*inifile;
-	char	inipath[MAX_PATH];
-	char	fontpath[MAX_PATH];
+	char	inipath[MAX_PATH+1];
+	char	fontpath[MAX_PATH+1];
 	char	*fontid;
 	str_list_t	fonts;
 	struct font_files	*ret=NULL;

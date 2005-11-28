@@ -51,8 +51,8 @@ struct bbslist {
 	int				reversed;
 	int				screen_mode;
 	int				nostatus;
-	char			dldir[MAX_PATH];
-	char			uldir[MAX_PATH];
+	char			dldir[MAX_PATH+1];
+	char			uldir[MAX_PATH+1];
 	int				loglevel;
 	int				bpsrate;
 	int				music;

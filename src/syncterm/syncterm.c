@@ -71,7 +71,7 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 {
 	char *p1, *p2, *p3;
 	struct	bbslist	*list[MAX_OPTS+1];
-	char	path[MAX_PATH];
+	char	path[MAX_PATH+1];
 	char	listpath[MAX_PATH+1];
 	int		listcount=0, i;
 
@@ -266,7 +266,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 void load_settings(struct syncterm_settings *set)
 {
 	FILE	*inifile;
-	char	inipath[MAX_PATH];
+	char	inipath[MAX_PATH+1];
 
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
 	inifile=fopen(inipath,"r");
@@ -281,13 +281,13 @@ int main(int argc, char **argv)
 {
 	struct bbslist *bbs=NULL;
 	struct	text_info txtinfo;
-	char	str[MAX_PATH];
-	char	drive[MAX_PATH];
-	char	path[MAX_PATH];
-	char	fname[MAX_PATH];
-	char	ext[MAX_PATH];
+	char	str[MAX_PATH+1];
+	char	drive[MAX_PATH+1];
+	char	path[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
+	char	ext[MAX_PATH+1];
 	/* Command-line parsing vars */
-	char	url[MAX_PATH];
+	char	url[MAX_PATH+1];
 	char	*p1;
 	char	*p2;
 	char	*p3;

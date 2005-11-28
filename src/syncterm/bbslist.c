@@ -80,7 +80,7 @@ void free_list(struct bbslist **list, int listcount)
 void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int type)
 {
 	BOOL	dumb;
-	char	home[MAX_PATH];
+	char	home[MAX_PATH+1];
 
 	get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
 	if(bbsname != NULL)
@@ -489,7 +489,7 @@ void del_bbs(char *listpath, struct bbslist *bbs)
 
 void change_settings(void)
 {
-	char	inipath[MAX_PATH];
+	char	inipath[MAX_PATH+1];
 	FILE	*inifile;
 	str_list_t	inicontents;
 	char	opts[4][80];
@@ -594,8 +594,8 @@ struct bbslist *show_bbslist(int mode)
 	int		at_settings=0;
 	struct mouse_event mevent;
 	struct bbslist defaults;
-	char	shared_list[MAX_PATH];
-	char	listpath[MAX_PATH];
+	char	shared_list[MAX_PATH+1];
+	char	listpath[MAX_PATH+1];
 
 	if(init_uifc(TRUE, TRUE))
 		return(NULL);

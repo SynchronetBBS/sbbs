@@ -523,7 +523,7 @@ void zmodem_upload(FILE *fp, char *path);
 
 void begin_upload(char *uldir, BOOL autozm)
 {
-	char	str[MAX_PATH*2];
+	char	str[MAX_PATH*2+1];
 	char	path[MAX_PATH+1];
 	int		result;
 	int i;
