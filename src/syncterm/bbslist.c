@@ -496,6 +496,7 @@ void change_settings(void)
 	char	*opt[4];
 	int		i,j;
 	char	str[64];
+	int	cur=0;
 
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
 	if((inifile=fopen(inipath,"r"))!=NULL) {
@@ -509,13 +510,12 @@ void change_settings(void)
 	for(i=0; i<4; i++)
 		opt[i]=opts[i];
 
-	i=0;
 	opts[3][0]=0;
 	for(;;) {
 		sprintf(opts[0],"Confirm Program Exit:    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Startup Video Mode:      %s",screen_modes[settings.startup_mode]);
 		sprintf(opts[2],"Scrollback Buffer Lines: %d",settings.backlines);
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Program Settings",opt)) {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
 			case 0:
@@ -524,8 +524,9 @@ void change_settings(void)
 				break;
 			case 1:
 				j=settings.startup_mode;
-				for(;;) {
-					switch(uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Video Mode",screen_modes)) {
+				i=0;
+				for(;i!=-1;) {
+					switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Video Mode",screen_modes)) {
 						case -1:
 							continue;
 						default:

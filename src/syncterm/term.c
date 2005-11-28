@@ -838,7 +838,6 @@ BOOL doterm(struct bbslist *bbs)
 	unsigned char prn[BUFSIZE];
 	int	key;
 	int i,j,k;
-	unsigned char *scrollback;
 	unsigned char *p;
 	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
@@ -860,9 +859,9 @@ BOOL doterm(struct bbslist *bbs)
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
-	scrollback=malloc(term.width*2*settings.backlines);
-	memset(scrollback,0,term.width*2*settings.backlines);
-	cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback);
+	if(scrollback_buf != NULL)
+		memset(scrollback_buf,0,term.width*2*settings.backlines);
+	cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf);
 	cterm.music_enable=bbs->music;
 	ch[1]=0;
 	zrqbuf[0]=0;
@@ -886,7 +885,6 @@ BOOL doterm(struct bbslist *bbs)
 			switch(inch) {
 				case -1:
 					if(!is_connected(NULL)) {
-						free(scrollback);
 						cterm_end();
 						conn_close();
 						uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
@@ -959,7 +957,7 @@ BOOL doterm(struct bbslist *bbs)
 					getmouse(&mevent);
 					switch(mevent.event) {
 						case CIOLIB_BUTTON_1_DRAG_START:
-							mousedrag(scrollback);
+							mousedrag(scrollback_buf);
 							break;
 						case CIOLIB_BUTTON_2_CLICK:
 						case CIOLIB_BUTTON_3_CLICK:
@@ -1098,7 +1096,6 @@ BOOL doterm(struct bbslist *bbs)
 							uifcbail();
 							free(buf);
 							cterm_end();
-							free(scrollback);
 							conn_close();
 							hidemouse();
 							return(key==0x2d00 /* Alt-X? */);
@@ -1131,7 +1128,6 @@ BOOL doterm(struct bbslist *bbs)
 								continue;
 #endif
 							cterm_end();
-							free(scrollback);
 							conn_close();
 							hidemouse();
 							return(FALSE);
@@ -1176,7 +1172,6 @@ BOOL doterm(struct bbslist *bbs)
 								continue;
 #endif
 							cterm_end();
-							free(scrollback);
 							conn_close();
 							hidemouse();
 							return(TRUE);
