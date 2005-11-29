@@ -720,7 +720,7 @@ long js_exec(const char *fname, char** args)
 		return(-1);
 	}
 	if((diff=xp_timer()-start) > 0)
-		fprintf(statfp,"%s compiled in %.2f seconds\n"
+		fprintf(statfp,"%s compiled in %.2Lf seconds\n"
 			,path
 			,diff);
 
@@ -729,7 +729,7 @@ long js_exec(const char *fname, char** args)
 	js_EvalOnExit(js_cx, js_glob, &branch);
 
 	if((diff=xp_timer()-start) > 0)
-		fprintf(statfp,"%s executed in %.2f seconds\n"
+		fprintf(statfp,"%s executed in %.2Lf seconds\n"
 			,path
 			,diff);
 
