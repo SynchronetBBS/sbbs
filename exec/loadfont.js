@@ -160,12 +160,14 @@ for (i in filenames) {
 
 	// Doesn't work on Win32.. Win32 sucks.
 	var fontdata=font.read(font.length);
+	var fonterr=font.error;
 
-	font.close();
 	if(fontdata.length != font.length) {
-		log(LOG_ERR,"!ERROR Error "+font.error+" reading font data (read "+fontdata.length+", expected "+font.length+") errno="+errno);
+		log(LOG_ERR,"!ERROR Error "+fonterr+" reading font data (read "+fontdata.length+", expected "+font.length+") errno="+errno);
+		font.close();
 		continue;
 	}
+	font.close();
 
 	client.socket.send("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
 
