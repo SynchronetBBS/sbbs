@@ -2340,6 +2340,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	timeleft = 60*10;	/* just incase this is being used for calling gettimeleft() */
 	uselect_total = 0;
 	lbuflen = 0;
+	keybufbot=keybuftop=0;	/* initialize [unget]keybuf pointers */
 	connection="Telnet";
 
 	ZERO_VAR(telnet_local_option);
@@ -2349,7 +2350,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	telnet_mode=0;
 	telnet_last_rxch=0;
 
-	sys_status=lncntr=tos=criterrs=lbuflen=slcnt=0L;
+	sys_status=lncntr=tos=criterrs=slcnt=0L;
 	curatr=LIGHTGRAY;
 	attr_sp=0;	/* attribute stack pointer */
 	errorlevel=0;
@@ -3215,6 +3216,7 @@ void sbbs_t::reset_logon_vars(void)
     slcnt=0;
     altul=0;
     timeleft_warn=0;
+	keybufbot=keybuftop=0;
     logon_uls=logon_ulb=logon_dls=logon_dlb=0;
     logon_posts=logon_emails=logon_fbacks=0;
     batdn_total=batup_total=0;

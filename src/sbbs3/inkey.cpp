@@ -49,7 +49,13 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 {
 	uchar	ch=0;
 
-	ch=incom(timeout);
+	if(keybuftop!=keybufbot) {   
+		ch=keybuf[keybufbot++];   
+		if(keybufbot==KEY_BUFSIZE)   
+			keybufbot=0;   
+	} else 
+		ch=incom(timeout);
+
 	if(ch==0) {
 		// moved here from getkey() on AUG-29-2001
 		if(sys_status&SS_SYSPAGE) 

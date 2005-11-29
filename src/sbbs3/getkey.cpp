@@ -538,5 +538,11 @@ void sbbs_t::pause()
 /****************************************************************************/
 void sbbs_t::ungetkey(char ch)
 {
+#if 0	/* this way breaks ansi_getxy() */
 	RingBufWrite(&inbuf,(uchar*)&ch,sizeof(uchar));
+#else
+	keybuf[keybuftop++]=ch;   
+	if(keybuftop==KEY_BUFSIZE)   
+		keybuftop=0; 
+#endif
 }
