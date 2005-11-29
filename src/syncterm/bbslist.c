@@ -284,7 +284,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 		sprintf(opt[i++], "Hide Status Line  %s",item->nostatus?"Yes":"No");
 		sprintf(opt[i++], "Download Path     %s",item->dldir);
 		sprintf(opt[i++],"Upload Path       %s",item->uldir);
-		sprintf(opt[i++],"Debug Transfers   %s",log_levels[item->loglevel]<LOG_DEBUG?"No":"Yes");
+		sprintf(opt[i++],"Debug Transfers   %s",item->loglevel<LOG_DEBUG?"No":"Yes");
 		sprintf(opt[i++],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		sprintf(opt[i++],"ANSI Music        %s",music_names[item->music]);
 		sprintf(opt[i++],"Font              %s",item->font);
