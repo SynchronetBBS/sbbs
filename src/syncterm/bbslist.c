@@ -32,6 +32,102 @@ ini_style_t ini_style = {
 	/* value_separarator */NULL, 
 	/* bit_separator */ NULL };
 
+void viewofflinescroll(void)
+{
+	int	top;
+	int key;
+	int i;
+	char	*scrnbuf;
+	struct	text_info txtinfo;
+	int	x,y;
+	struct mouse_event mevent;
+
+	x=wherex();
+	y=wherey();
+    gettextinfo(&txtinfo);
+	scrnbuf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrnbuf);
+	uifcbail();
+	drawwin();
+	top=scrollback_lines;
+	gotoxy(1,1);
+	textattr(uifc.hclr|(uifc.bclr<<4)|BLINK);
+	for(i=0;!i;) {
+		if(top<1)
+			top=1;
+		if(top>scrollback_lines)
+			top=scrollback_lines;
+		puttext(((txtinfo.screenwidth-80)/2)+1,1,(txtinfo.screenwidth-80)/2+80,txtinfo.screenheight,scrollback_buf+(80*2*top));
+		cputs("Scrollback");
+		gotoxy(71,1);
+		cputs("Scrollback");
+		gotoxy(1,1);
+		key=getch();
+		switch(key) {
+			case 0xff:
+			case 0:
+				switch(key|getch()<<8) {
+					case CIO_KEY_MOUSE:
+						getmouse(&mevent);
+						switch(mevent.event) {
+							case CIOLIB_BUTTON_1_DRAG_START:
+								mousedrag(scrollback_buf);
+								break;
+						}
+						break;
+					case CIO_KEY_UP:
+						top--;
+						break;
+					case CIO_KEY_DOWN:
+						top++;
+						break;
+					case CIO_KEY_PPAGE:
+						top-=txtinfo.screenheight;
+						break;
+					case CIO_KEY_NPAGE:
+						top+=txtinfo.screenheight;
+						break;
+					case CIO_KEY_F(1):
+						init_uifc(FALSE, FALSE);
+						uifc.helpbuf=	"`Scrollback Buffer`\n\n"
+										"~ J ~ or ~ Up Arrow ~   Scrolls up one line\n"
+										"~ K ~ or ~ Down Arrow ~ Scrolls down one line\n"
+										"~ H ~ or ~ Page Up ~    Scrolls up one screen\n"
+										"~ L ~ or ~ Page Down ~  Scrolls down one screen\n";
+						uifc.showhelp();
+						uifcbail();
+						drawwin();
+						break;
+				}
+				break;
+			case 'j':
+			case 'J':
+				top--;
+				break;
+			case 'k':
+			case 'K':
+				top++;
+				break;
+			case 'h':
+			case 'H':
+				top-=txtinfo.screenheight;
+				break;
+			case 'l':
+			case 'L':
+				top+=txtinfo.screenheight;
+				break;
+			case ESC:
+				i=1;
+				break;
+		}
+	}
+	init_uifc(TRUE, TRUE);
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrnbuf);
+	free(scrnbuf);
+	gotoxy(x,y);
+	return;
+}
+
 int get_rate_num(int rate)
 {
 	int i;
@@ -103,6 +199,8 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int
 	iniReadString(listfile,bbsname,"DownloadPath",home,entry->dldir);
 	iniReadString(listfile,bbsname,"UploadPath",home,entry->uldir);
 	entry->loglevel=iniReadInteger(listfile,bbsname,"LogLevel",LOG_INFO);
+	if(entry->loglevel<LOG_INFO)
+		entry->loglevel=LOG_INFO;
 	entry->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
 	entry->music=iniReadInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
 	iniReadString(listfile,bbsname,"Font","Codepage 437 English",entry->font);
@@ -186,7 +284,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 		sprintf(opt[i++], "Hide Status Line  %s",item->nostatus?"Yes":"No");
 		sprintf(opt[i++], "Download Path     %s",item->dldir);
 		sprintf(opt[i++],"Upload Path       %s",item->uldir);
-		sprintf(opt[i++],"Log Level         %s",log_levels[item->loglevel]);
+		sprintf(opt[i++],"Debug Transfers   %s",log_levels[item->loglevel]<LOG_DEBUG?"No":"Yes");
 		sprintf(opt[i++],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		sprintf(opt[i++],"ANSI Music        %s",music_names[item->music]);
 		sprintf(opt[i++],"Font              %s",item->font);
@@ -355,9 +453,12 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				if(!confirm("Edit BBS Log Level?",NULL))
 					continue;
 #endif
-				uifc.helpbuf=	"`Log Level`\n\n"
+				uifc.helpbuf=	"`Debug Transfers`\n\n"
 								"Set the level of verbosity for file transfer info.\n\n";
-				uifc.list(WIN_SAV,0,0,0,&(item->loglevel),NULL,"Log Level",log_levels);
+				if(item->loglevel==LOG_DEBUG)
+					item->loglevel=LOG_INFO;
+				else
+					item->loglevel=LOG_DEBUG;
 				iniSetInteger(&inifile,itemname,"LogLevel",item->loglevel,&ini_style);
 				changed=1;
 				break;
@@ -639,6 +740,9 @@ struct bbslist *show_bbslist(int mode)
 					val=listcount|MSK_INS;
 				if(val<0) {
 					switch(val) {
+						case -2-0x3000:	/* ALT-B - Scrollback */
+							viewofflinescroll();
+							break;
 						case -2-CIO_KEY_MOUSE:	/* Clicked outside of window... */
 							getmouse(&mevent);
 						case -2-0x0f00:	/* Backtab */
@@ -818,6 +922,9 @@ struct bbslist *show_bbslist(int mode)
 				val=uifc.list(WIN_ACT|WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE
 					,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
 				switch(val) {
+					case -2-0x3000:	/* ALT-B - Scrollback */
+						viewofflinescroll();
+						break;
 					case -2-CIO_KEY_MOUSE:
 						getmouse(&mevent);
 					case -2-0x0f00:	/* Backtab */
