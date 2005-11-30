@@ -1430,6 +1430,7 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 {
 	uint		i,j;
 	FILE*		fp;
+	char*		p;
 	char		cmd[INI_MAX_VALUE_LEN];
 	char		host[INI_MAX_VALUE_LEN];
 	char		prot[INI_MAX_VALUE_LEN];
@@ -1487,7 +1488,8 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 			lprintf(LOG_NOTICE,"Ignoring service (%s) for host: %s", sec_list[i], host);
 			continue;
 		}
-		if(stricmp(iniGetString(list,sec_list[i],"NotHost","",host), startup->host_name)==0) {
+		p=iniGetString(list,sec_list[i],"NotHost","",host);
+		if(*p!=0 && stricmp(p, startup->host_name)==0) {
 			lprintf(LOG_NOTICE,"Ignoring service (%s) not for host: %s", sec_list[i], host);
 			continue;
 		}
