@@ -1,4 +1,5 @@
 #include "ini_file.h"
+#include "ciolib.h"		/* Redefinition of main() */
 #include "uifc.h"
 
 #define MAX_PLAYERS 6
