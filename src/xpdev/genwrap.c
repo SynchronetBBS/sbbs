@@ -516,7 +516,7 @@ long double	DLLCALL	xp_timer(void)
 #else
 		/* In MSVC, a long double does NOT have 19 decimals of precision */
 		ret=(((long double)(tick.QuadPart%freq.QuadPart))/freq.QuadPart);
-		ret+=((long long int)(tick.QuadPart/freq.QuadPart));
+		ret+=tick.QuadPart/freq.QuadPart;
 #endif
 	}
 	else {
