@@ -5,19 +5,19 @@ ifndef SDL_CONFIG
    WITH_SDL	:=	1
   endif
  else
-  ifeq ($(shell sdl-config --cflags 2>&1 > /dev/null && echo YES),YES)
+  ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
    SDL_CONFIG := sdl-config
    WITH_SDL	:=	1
   else
-   ifeq ($(shell sdl13-config --cflags 2>&1 > /dev/null && echo YES),YES)
+   ifeq ($(shell sdl13-config --cflags > /dev/null 2>&1 && echo YES),YES)
     SDL_CONFIG := sdl13-config
     WITH_SDL	:=	1
    else
-    ifeq ($(shell sdl12-config --cflags 2>&1 > /dev/null && echo YES),YES)
+    ifeq ($(shell sdl12-config --cflags > /dev/null 2>&1 && echo YES),YES)
      SDL_CONFIG := sdl12-config
      WITH_SDL	:=	1
     else
-     ifeq ($(shell sdl11-config --cflags 2>&1 > /dev/null && echo YES),YES)
+     ifeq ($(shell sdl11-config --cflags > /dev/null 2>&1 && echo YES),YES)
       SDL_CONFIG := sdl11-config
       WITH_SDL	:=	1
      endif
@@ -29,7 +29,7 @@ endif
 
 ifdef WITH_SDL
  ifdef SDL_CONFIG
-  ifeq ($(shell ${SDL_CONFIG} --cflags 2>&1 > /dev/null && echo YES),YES)
+  ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
    CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
    CIOLIB-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
    ifdef STATIC_SDL
