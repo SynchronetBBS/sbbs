@@ -7,9 +7,11 @@ function get_next_key()
 	var retchar;
 	var bytes=1;
 
+	if(bbs.command_str.substr(0,1)=="\r")
+		bbs.command_str='';
 	if(!bbs.command_str.length) {		// Nothing in STR already?
 		if(user.settings & USER_COLDKEYS)
-			bbs.command_str=console.getstr("",60,0);
+			bbs.command_str=console.getstr("",60,0)+"\r";
 		else
 			bbs.command_str=getkeye();
 	}
@@ -17,22 +19,26 @@ function get_next_key()
 		bytes=2;
 	retchar=bbs.command_str.substr(0,bytes);
 	bbs.command_str=bbs.command_str.substr(bytes);
-log("Returning: "+retchar);
 	return(retchar);
 }
 
 function get_next_keys(keys, have_part)
 {
 	var ret='';
+	var i;
 
-	// If there is something in STR, and coldkeys, push STR back into the input buffer
-	if(bbs.command_str.length && (user.settings & USER_COLDKEYS)) {
-		console.ungetstr(bbs.command_str);
+	// If there is something in STR, and coldkeys, grab from STR
+	if((bbs.command_str.length && (user.settings & USER_COLDKEYS)) || (have_part && !(user.settings & USER_COLDKEYS))) {
+		if((i=keys.indexOf(bbs.command_str.substr(0,1)))!=-1) {
+			bbs.command_str=bbs.command_str.substr(i);
+		}
+		if(keys.indexOf(bbs.command_str.substr(0,1))!=-1) {
+			ret=bbs.command_str.substr(0,1);
+			bbs.command_str=bbs.command_str.substr(1);
+			return(ret);
+		}
 		bbs.command_str='';
 	}
-
-	if(have_part && !(user.settings & USER_COLDKEYS))
-		console.ungetstr(bbs.command_str);
 
 	return(console.getkeys(keys));
 }
@@ -40,33 +46,36 @@ function get_next_keys(keys, have_part)
 function get_next_num(max, have_part)
 {
 	var ret='';
+	var use_str=false;
 
-	// If there is something in STR, and coldkeys, push STR back into the input buffer
-	if(bbs.command_str.length && (user.settings & USER_COLDKEYS)) {
-		console.ungetstr(bbs.command_str);
-		bbs.command_str='';
+	if(bbs.command_str.length && (user.settings & USER_COLDKEYS))
+		use_str=true;
+	while(ret+=get_next_keys("0123456789\r\n",have_part)) {
+		if(parseInt(ret+'0') > max)
+			return(parseInt(ret));
+		if(ret.search(/[\r\n]/)!=-1)
+			return(parseInt(ret));
+		// Using coldkeys and there was something in STR and there was a number
+		if(use_str && !bbs.command_str.length && parseInt(ret)>0)
+			return(parseInt(ret));
 	}
-
-	if(have_part && !(user.settings & USER_COLDKEYS))
-		console.ungetstr(bbs.command_str);
-
 	return(console.getnum(max));
 }
 
 function get_next_str(def_val, max_len, mode_bits, have_part)
 {
 	var ret='';
+	var use_str=false;
 
-	// If there is something in STR, and coldkeys, push STR back into the input buffer
-	if(bbs.command_str.length && (user.settings & USER_COLDKEYS)) {
-		console.ungetstr(bbs.command_str);
-		bbs.command_str='';
+	if(bbs.command_str.length && (user.settings & USER_COLDKEYS))
+		use_str=true;
+	while(ret+=get_next_key()) {
+		if(ret.search(/[\r\n]/)!=-1)
+			return(ret.replace(/[\r\n]/g,''));
+		// Using coldkeys and there was something in STR
+		if(use_str && !bbs.command_str.length)
+			return(ret);
 	}
-
-	if(have_part && !(user.settings & USER_COLDKEYS))
-		console.ungetstr(bbs.command_str);
-
-	return(console.getstr(def_val, max_len, mode_bits));
 }
 
 function getkeye()
@@ -87,6 +96,5 @@ function getkeye()
 		}
 		break;
 	}
-log("Getche - "+key);
 	return(key);
 }
