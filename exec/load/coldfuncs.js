@@ -1,17 +1,16 @@
 // Support functions for cold/hot keys in JS shells.
 
 load("sbbsdefs.js");
+var coldfuncs_last_hotkey='';
 
 function get_next_key()
 {
 	var retchar;
 	var bytes=1;
 
-	if(bbs.command_str.substr(0,1)=="\r")
-		bbs.command_str='';
 	if(!bbs.command_str.length) {		// Nothing in STR already?
 		if(user.settings & USER_COLDKEYS)
-			bbs.command_str=console.getstr("",60,0)+"\r";
+			bbs.command_str=console.getstr("",60,0);
 		else
 			bbs.command_str=getkeye();
 	}
@@ -27,34 +26,42 @@ function get_next_keys(keys, have_part)
 	var ret='';
 	var i;
 
-	// If there is something in STR, and coldkeys, grab from STR
-	if((bbs.command_str.length && (user.settings & USER_COLDKEYS)) || (have_part && !(user.settings & USER_COLDKEYS))) {
-		if((i=keys.indexOf(bbs.command_str.substr(0,1)))!=-1) {
-			bbs.command_str=bbs.command_str.substr(i);
-		}
-		if(keys.indexOf(bbs.command_str.substr(0,1))!=-1) {
-			ret=bbs.command_str.substr(0,1);
-			bbs.command_str=bbs.command_str.substr(1);
+	if(have_part) {
+		bbs.command_str=coldfuncs_last_hotkey;
+		coldfuncs_last_hotkey='';
+	}
+	while(ret=get_next_key()) {
+		if(keys.indexOf(ret)!=-1) {
 			return(ret);
 		}
-		bbs.command_str='';
 	}
-
-	return(console.getkeys(keys));
 }
 
 function get_next_num(max, have_part)
 {
 	var ret='';
 	var use_str=false;
+	var ch;
 
+	if(have_part) {
+		bbs.command_str=coldfuncs_last_hotkey;
+		coldfuncs_last_hotkey='';
+		have_part=false;
+	}
 	if(bbs.command_str.length && (user.settings & USER_COLDKEYS))
 		use_str=true;
-	while(ret+=get_next_keys("0123456789\r\n",have_part)) {
-		if(parseInt(ret+'0') > max)
-			return(parseInt(ret));
-		if(ret.search(/[\r\n]/)!=-1)
-			return(parseInt(ret));
+	while(1) {
+		ch=get_next_keys("0123456789\r\n",have_part);
+		if(ch==undefined || ch=='')
+			return(-1);
+		if(parseInt(ret+ch)<=max) {
+			ret+=ch;
+			write(ch);
+			if(parseInt(ret+'0') > max)
+				return(parseInt(ret));
+			if(ret.search(/[\r\n]/)!=-1)
+				return(parseInt(ret));
+		}
 		// Using coldkeys and there was something in STR and there was a number
 		if(use_str && !bbs.command_str.length && parseInt(ret)>0)
 			return(parseInt(ret));
@@ -67,9 +74,15 @@ function get_next_str(def_val, max_len, mode_bits, have_part)
 	var ret='';
 	var use_str=false;
 
+	if(have_part) {
+		bbs.command_str=coldfuncs_last_hotkey;
+		coldfuncs_last_hotkey='';
+		have_part=false;
+	}
 	if(bbs.command_str.length && (user.settings & USER_COLDKEYS))
 		use_str=true;
 	while(ret+=get_next_key()) {
+		write(ret.substr(-1));
 		if(ret.search(/[\r\n]/)!=-1)
 			return(ret.replace(/[\r\n]/g,''));
 		// Using coldkeys and there was something in STR
@@ -94,7 +107,9 @@ function getkeye()
 			}
 			key=key+key2;
 		}
-		break;
+		if(key != '')
+			break;
 	}
+	coldfuncs_last_hotkey=key.substr(-1);
 	return(key);
 }
