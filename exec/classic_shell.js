@@ -26,8 +26,8 @@
 
 load("sbbsdefs.js");
 load("coldfuncs.js");
-load("str_cmds.js");
 bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
+load("str_cmds.js");
 var str;
 
 // Set return point for main menu commands (via end_cmd)
