@@ -61,8 +61,6 @@ function get_next_num(max, have_part)
 			write(ch);
 			if(parseInt(ret+'0') > max)
 				return(parseInt(ret));
-			if(ret.search(/[\r\n]/)!=-1)
-				return(parseInt(ret));
 		}
 		// Using coldkeys and there was something in STR and there was a number
 		if(use_str && !bbs.command_str.length && parseInt(ret)>0)
