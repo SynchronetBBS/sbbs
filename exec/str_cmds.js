@@ -21,7 +21,7 @@ load("text.js");
 
 if(argc>0)
 	str_cmds(argv.join(" "));	// use command-line arguments if supplied
-else if(bbs.command_str)
+else if(bbs.command_str && bbs.command_str != '')
 	str_cmds(bbs.command_str);	// otherwise, use command shell 'str' var, if supported (v3.13b)
 
 // For testing...
