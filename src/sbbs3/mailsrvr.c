@@ -3694,7 +3694,6 @@ static void sendmail_thread(void* arg)
 							,dns_server);
 						continue;
 					}
-					p++;
 					lprintf(LOG_DEBUG,"0000 SEND getting MX records for %s from %s",p,dns_server);
 					if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
 						,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE
