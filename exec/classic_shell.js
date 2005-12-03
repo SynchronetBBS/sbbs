@@ -46,7 +46,7 @@ while(1) {
 	bbs.main_cmds++;
 
 	// Display main Prompt
-	console.putmsg("-c\r\nþ bhMain ncþ h");
+	console.putmsg("-c\r\nþ bhMain ncþ h",P_SAVEATR);
 	if(user.compare_ars("exempt T"))
 		console.putmsg("@TUSED@");
 	else
@@ -222,7 +222,7 @@ while(1) {
 					if(file_exists(system.text_dir+"menu/grps.*"))
 						bbs.menu("grps");
 					else {
-						console.putmsg(bbs.text(CfgGrpLstHdr));
+						console.putmsg(bbs.text(CfgGrpLstHdr),P_SAVEATR);
 						for(i=0; i<msg_area.grp_list.length; i++) {
 							if(i==bbs.curgrp)
 								console.putmsg('*');
@@ -250,7 +250,7 @@ while(1) {
 					bbs.menu("subs"+(bbs.curgrp+1));
 				else {
 					console.clear();
-					console.putmsg(format(bbs.text(SubLstHdr), msg_area.grp_list[j].description));
+					console.putmsg(format(bbs.text(SubLstHdr), msg_area.grp_list[j].description),P_SAVEATR);
 					for(i=0; i<msg_area.grp_list[j].sub_list.length; i++) {
 						var msgbase=new MsgBase(msg_area.grp_list[j].sub_list[i].code);
 						if(msgbase==undefined)
@@ -393,7 +393,7 @@ while(1) {
 				var i;
 
 				console.clear();
-				console.putmsg(format(bbs.text(SubLstHdr), msg_area.grp_list[bbs.curgrp].description));
+				console.putmsg(format(bbs.text(SubLstHdr), msg_area.grp_list[bbs.curgrp].description),P_SAVEATR);
 				for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++) {
 					var msgbase=new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[i].code);
 					if(msgbase==undefined)
@@ -421,7 +421,7 @@ while(1) {
 				if(file_exists(system.text_dir+"menu/grps.*"))
 					bbs.menu("grps");
 				else {
-					console.putmsg(bbs.text(GrpLstHdr));
+					console.putmsg(bbs.text(GrpLstHdr),P_SAVEATR);
 					for(i=0; i<msg_area.grp_list.length; i++) {
 						if(i==bbs.curgrp)
 							console.putmsg('*');
@@ -451,7 +451,7 @@ while(1) {
 			continue main;
 	}
 // fall through
-	console.putmsg("\r\nchUnrecognized command.");
+	console.putmsg("\r\nchUnrecognized command.",P_SAVEATR);
 	if(user.settings & USER_EXPERT)
 		console.putmsg(" Hit 'i?nch' for a menu.");
 	console.crlf();
@@ -529,7 +529,7 @@ function email()
 					i=WM_FILE;
 				else
 					i=0;
-				console.putmsg(bbs.text(EnterNetMailAddress));
+				console.putmsg(bbs.text(EnterNetMailAddress),P_SAVEATR);
 				str=get_next_str("",60,K_LINE,false);
 				if(str!=null && str !="")
 					bbs.netmail(str,i);
@@ -666,7 +666,7 @@ file_transfers:
 		bbs.file_cmds++;
 
 		// Display main Prompt
-		console.putmsg("-c\r\nþ bhFile ncþ h");
+		console.putmsg("-c\r\nþ bhFile ncþ h",P_SAVEATR);
 		if(user.compare_ars("exempt T"))
 			console.putmsg("@TUSED@");
 		else
@@ -856,9 +856,9 @@ file_transfers:
 				if(i==-1)
 					continue file_transfers;
 				if(i==0)
-					console.putmsg(bbs.text(EmptyDir));
+					console.putmsg(bbs.text(EmptyDir),P_SAVEATR);
 				else
-					console.putmsg(bbs.text(NFilesListed,i));
+					console.putmsg(bbs.text(NFilesListed,i),P_SAVEATR);
 				continue file_transfers;
 
 			case '/L':
@@ -955,7 +955,7 @@ file_transfers:
 					continue file_transfers;
 				}
 				console.crlf();
-				printf(bbs.text(DirLstHdr),file_area.lib_list[bbs.curlib].name);
+				console.putmsg(format(bbs.text(DirLstHdr),file_area.lib_list[bbs.curlib].name),P_SAVEATR);
 				for(i=0;i<file_area.lib_list[bbs.curlib].dir_list.length;i++) {
 					if(i==bbs.curdir)
 						outchar('*');
@@ -991,7 +991,7 @@ xfercfg:
 					if(!(user.settings & USER_EXPERT))
 						bbs.menu(xfercfg);
 					// async
-					console.putmsg("\r\nyhConfig: n");
+					console.putmsg("\r\nyhConfig: n",P_SAVEATR);
 					key=get_next_keys("?QBEP\r");
 					bbs.log_key(key);
 					switch(key) {
@@ -1028,7 +1028,7 @@ xfercfg:
 
 			default:
 				// fall through
-				console.putmsg("\r\nchUnrecognized command.");
+				console.putmsg("\r\nchUnrecognized command.",P_SAVEATR);
 				if(user.settings & USER_EXPERT)
 					console.putmsg(" Hit 'i?nch' for a menu.");
 		}
