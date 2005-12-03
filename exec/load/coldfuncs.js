@@ -51,9 +51,11 @@ function get_next_num(max, have_part)
 	if(bbs.command_str.length && (user.settings & USER_COLDKEYS))
 		use_str=true;
 	while(1) {
-		ch=get_next_keys("0123456789\r\n",have_part);
-		if(ch==undefined || ch=='')
+		ch=get_next_keys("0123456789Q\r\n",have_part);
+		if(ch==undefined || ch=='' || ch=='Q')
 			return(-1);
+		if(ch=='\r' || ch=='\n')
+			return(parseInt(ret));
 		if(parseInt(ret+ch)<=max) {
 			ret+=ch;
 			write(ch);
