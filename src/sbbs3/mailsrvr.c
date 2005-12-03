@@ -3503,6 +3503,7 @@ static void sendmail_thread(void* arg)
 	char*		server;
 	char*		msgtxt=NULL;
 	char*		p;
+	char*		tp;
 	ushort		port;
 	ulong		last_msg=0;
 	ulong		ip_addr;
@@ -3681,25 +3682,11 @@ static void sendmail_thread(void* arg)
 					server=startup->relay_server;
 					port=startup->relay_port;
 				} else {
-					p=strrchr((char*)msg.to_net.addr,':');	/* non-standard SMTP port */
-					if(p!=NULL) {
-						*p=0;
-						port=atoi(p+1);
+					tp=strrchr(p,':');	/* non-standard SMTP port */
+					if(tp!=NULL) {
+						*tp=0;
+						port=atoi(tp+1);
 					}
-#if 0	/* Already done */
-					SAFECOPY(to,(char*)msg.to_net.addr);
-					truncstr(to,"> ");
-#endif
-					p=strrchr(to,'@');
-#if 0	/* Already done */
-					if(p==NULL) {
-						remove_msg_intransit(&smb,&msg);
-						lprintf(LOG_WARNING,"0000 !SEND INVALID destination address: %s", to);
-						SAFEPRINTF(err,"Invalid destination address: %s", to);
-						bounce(&smb,&msg,err,TRUE);
-						continue;
-					}
-#endif
 					get_dns_server(dns_server,sizeof(dns_server));
 					if((dns=resolve_ip(dns_server))==INADDR_NONE) {
 						remove_msg_intransit(&smb,&msg);
