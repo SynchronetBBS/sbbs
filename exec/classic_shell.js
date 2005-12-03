@@ -384,7 +384,6 @@ while(1) {
 			continue main;
 
 		case '*':
-			// ToDo... see line 209 in execmsg.cpp
 			if(!msg_area.grp_list.length)
 				continue main;
 			if(file_exists(system.text_dir+"menu/subs"+(bbs.cursub+1)))
@@ -415,7 +414,6 @@ while(1) {
 			continue main;
 
 		case '/*':
-			// ToDo... see line 193 in execmsg.cpp
 			if(msg_area.grp_list.length) {
 				var i=0;
 				if(file_exists(system.text_dir+"menu/grps.*"))
