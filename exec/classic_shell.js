@@ -46,11 +46,11 @@ while(1) {
 	bbs.main_cmds++;
 
 	// Display main Prompt
-	console.putmsg("-c\r\nþ bhMain ncþ h",P_SAVEATR);
+	console.putmsg("-c\r\nþ bhMain ncþ h");
 	if(user.compare_ars("exempt T"))
-		console.putmsg("@TUSED@");
+		console.putmsg("@TUSED@",P_SAVEATR);
 	else
-		console.putmsg("@TLEFT@");
+		console.putmsg("@TLEFT@",P_SAVEATR);
 	console.putmsg(" nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n");
 
 	// Get key (with / extended commands allowed)
@@ -225,15 +225,15 @@ while(1) {
 						console.putmsg(bbs.text(CfgGrpLstHdr),P_SAVEATR);
 						for(i=0; i<msg_area.grp_list.length; i++) {
 							if(i==bbs.curgrp)
-								console.putmsg('*');
+								console.putmsg('*',P_SAVEATR);
 							else
-								console.putmsg(' ');
+								console.putmsg(' ',P_SAVEATR);
 							if(i<9)
-								console.putmsg(' ');
+								console.putmsg(' ',P_SAVEATR);
 							if(i<99)
-								console.putmsg(' ');
+								console.putmsg(' ',P_SAVEATR);
 							// We use console.putmsg to expand ^A, @, etc
-							console.putmsg(format(bbs.text(CfgGrpLstFmt),i+1,msg_area.grp_list[i].description));
+							console.putmsg(format(bbs.text(CfgGrpLstFmt),i+1,msg_area.grp_list[i].description),P_SAVEATR);
 						}
 					}
 					console.mnemonics(format(bbs.text(JoinWhichGrp),bbs.curgrp+1));
@@ -258,14 +258,14 @@ while(1) {
 						if(!msgbase.open())
 							continue;
 						if(i==bbs.cursub)
-							console.putmsg('*');
+							console.putmsg('*',P_SAVEATR);
 						else
-							console.putmsg(' ');
+							console.putmsg(' ',P_SAVEATR);
 						if(i<9)
-							console.putmsg(' ');
+							console.putmsg(' ',P_SAVEATR);
 						if(i<99)
-							console.putmsg(' ');
-						console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[j].sub_list[i].description,"",msgbase.total_msgs));
+							console.putmsg(' ',P_SAVEATR);
+						console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[j].sub_list[i].description,"",msgbase.total_msgs),P_SAVEATR);
 						msgbase.close();
 					}
 				}
@@ -400,14 +400,14 @@ while(1) {
 					if(!msgbase.open())
 						continue;
 					if(i==bbs.cursub)
-						console.putmsg('*');
+						console.putmsg('*',P_SAVEATR);
 					else
-						console.putmsg(' ');
+						console.putmsg(' ',P_SAVEATR);
 					if(i<9)
-						console.putmsg(' ');
+						console.putmsg(' ',P_SAVEATR);
 					if(i<99)
-						console.putmsg(' ');
-					console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[bbs.curgrp].sub_list[i].description,"",msgbase.total_msgs));
+						console.putmsg(' ',P_SAVEATR);
+					console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[bbs.curgrp].sub_list[i].description,"",msgbase.total_msgs),P_SAVEATR);
 					msgbase.close();
 				}
 			}
@@ -422,15 +422,15 @@ while(1) {
 					console.putmsg(bbs.text(GrpLstHdr),P_SAVEATR);
 					for(i=0; i<msg_area.grp_list.length; i++) {
 						if(i==bbs.curgrp)
-							console.putmsg('*');
+							console.putmsg('*',P_SAVEATR);
 						else
-							console.putmsg(' ');
+							console.putmsg(' ',P_SAVEATR);
 						if(i<9)
-							console.putmsg(' ');
+							console.putmsg(' ',P_SAVEATR);
 						if(i<99)
-							console.putmsg(' ');
+							console.putmsg(' ',P_SAVEATR);
 						// We use console.putmsg to expand ^A, @, etc
-						console.putmsg(format(bbs.text(GrpLstFmt),i+1,msg_area.grp_list[i].description,"",msg_area.grp_list[i].sub_list.length));
+						console.putmsg(format(bbs.text(GrpLstFmt),i+1,msg_area.grp_list[i].description,"",msg_area.grp_list[i].sub_list.length),P_SAVEATR);
 					}
 				}
 			}
@@ -449,9 +449,9 @@ while(1) {
 			continue main;
 	}
 // fall through
-	console.putmsg("\r\nchUnrecognized command.",P_SAVEATR);
+	console.putmsg("\r\nchUnrecognized command.");
 	if(user.settings & USER_EXPERT)
-		console.putmsg(" Hit 'i?nch' for a menu.");
+		console.putmsg(" Hit 'i?nch' for a menu.",P_SAVEATR);
 	console.crlf();
 }
 
@@ -664,11 +664,11 @@ file_transfers:
 		bbs.file_cmds++;
 
 		// Display main Prompt
-		console.putmsg("-c\r\nþ bhFile ncþ h",P_SAVEATR);
+		console.putmsg("-c\r\nþ bhFile ncþ h");
 		if(user.compare_ars("exempt T"))
-			console.putmsg("@TUSED@");
+			console.putmsg("@TUSED@",P_SAVEATR);
 		else
-			console.putmsg("@TLEFT@");
+			console.putmsg("@TLEFT@",P_SAVEATR);
 		console.putmsg(" nc(h@LN@nc) @LIB@ (h@DN@nc) @DIR@: n");
 
 		// Get key (with / extended commands allowed)
