@@ -3906,6 +3906,9 @@ static void sendmail_thread(void* arg)
 				p=(char*)msg.to_net.addr;
 			SAFECOPY(toaddr,p);
 			truncstr(toaddr,"> ");
+			if((p=strrchr(toaddr,'@'))!=NULL && (tp=strrchr(toaddr,':'))!=NULL
+				&& tp > p)
+				*tp=0;	/* Remove ":port" designation from envelope */
 			sockprintf(sock,"RCPT TO: <%s>", toaddr);
 			if(!sockgetrsp(sock,"25", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
