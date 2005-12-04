@@ -688,3 +688,17 @@ var MAIL_SENT			=1		/* mail you have sent						*/
 var MAIL_ANY			=2		/* mail sent to or from you					*/
 var MAIL_ALL			=3		/* all mail (ignores usernumber arg)		*/
 								/********************************************/
+
+								/********************************************/
+								/* 'mode' bits for bbs.email()/netmail()	*/
+								/********************************************/
+var WM_EXTDESC		=(1<<0)		/* Writing extended file description		*/
+var WM_EMAIL		=(1<<1)		/* Writing e-mail							*/
+var WM_NETMAIL		=(1<<2)		/* Writing NetMail							*/
+var WM_ANON 		=(1<<3)		/* Writing anonymous message				*/
+var WM_FILE 		=(1<<4)		/* Attaching a file to the message			*/
+var WM_NOTOP		=(1<<5)		/* Don't add top because we need top line   */
+var WM_QUOTE		=(1<<6)		/* Quote file available 					*/
+var WM_QWKNET		=(1<<7)		/* Writing QWK NetMail (25 char title)		*/
+var WM_PRIVATE		=(1<<8)		/* Private (for creating MSGINF file)		*/
+								/********************************************/
