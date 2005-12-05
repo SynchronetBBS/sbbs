@@ -3753,7 +3753,8 @@ static void sendmail_thread(void* arg)
 				server_addr.sin_family = AF_INET;
 				server_addr.sin_port = htons(port);
 
-				if((server==mx || server==mx2) && (ip_addr&0xff)==127) {
+				if((server==mx || server==mx2) 
+					&& ((ip_addr&0xff)==127 || ip_addr==0)) {
 					SAFEPRINTF2(err,"Bad IP address (%s) for MX server: %s"
 						,inet_ntoa(server_addr.sin_addr),server);
 					continue;
