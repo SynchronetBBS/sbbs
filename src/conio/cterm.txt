@@ -72,7 +72,7 @@ CSI {'0' (ZERO) to '?'}{SPACE to '/'}{'@' to '~'}
 Sequence Parameters:
 	Parameters are expressed by the {'0' (ZERO) to '?'} character set.
 	Sequences which use parameters use decimal parameters separated by
-	a ';'.  The use of a ':' from the set is reserver.
+	a ';'.  The use of a ':' from the set is reserved.
 	If the parameter string begins with '<', '=', '>', or '?' then
 	this is a non-standard extension to the ANSI spec.
 
@@ -349,7 +349,7 @@ CSI [ p1 ] c
 CSI [ p1 [ ; pX ... ] ] m
 	Select Graphic Rendition
 	Defaults: p1 = 0
-	Sets or clears one or text attributes.  Unlimited parameters are
+	Sets or clears one or more text attributes.  Unlimited parameters are
 	supported and are applied in received order.  The following are
 	supoprted:
 	                                        Blink Bold FG BG (Modified)
