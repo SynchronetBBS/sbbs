@@ -1022,12 +1022,14 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					break;
 			}
 			break;
+#if 0
 		case 'D':
 			scrollup();
 			break;
 		case 'M':
 			scrolldown();
 			break;
+#endif
 		case 'c':
 			/* ToDo: Reset Terminal */
 			break;

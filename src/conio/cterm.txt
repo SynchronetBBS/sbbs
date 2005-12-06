@@ -45,12 +45,12 @@ ESC {SPACE to '/'}{'0' (ZERO) to '~'}
 
 	Legal combinations which are not handled are silently dropped.
 
-ESC D
+ESC D	(Disabled in current code)
 	Scrolls window up one line filling the bottom line with the
 	current attribute.
 	SOURCE: BANSI.TXT
 
-ESC M
+ESC M	(Disabled in current code)
 	Scrolls window down one line filling the top line with the
 	current attribute
 	SOURCE: BANSI.TXT
