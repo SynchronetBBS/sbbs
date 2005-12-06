@@ -880,9 +880,17 @@ int sdl_loadfont(char *filename)
 int sdl_setfont(int font, int force)
 {
 	int changemode=0;
+	int	newmode=-1;
 
 	if(font < 0 || font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2))
 		return(-1);
+
+	if(conio_fontdata[font].eight_by_sixteen!=NULL)
+		newmode=C80;
+	else if(conio_fontdata[font].eight_by_fourteen!=NULL)
+		newmode=C80X28;
+	else if(conio_fontdata[font].eight_by_eight!=NULL)
+		newmode=C80X50;
 
 	switch(vstat.charheight) {
 		case 8:
@@ -910,6 +918,8 @@ int sdl_setfont(int font, int force)
 			}
 			break;
 	}
+	if(changemode && newmode==-1)
+		return(-1);
 	sdl_current_font=font;
 	if(changemode)
 		sdl_init_mode(3);
