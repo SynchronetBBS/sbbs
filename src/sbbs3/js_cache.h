@@ -29,6 +29,7 @@ extern "C" {
  * laststat is less than stale time or a new stat() matches
  * the mtime, ctime, and size.
  * Compiles it and adds to the cache if not.
+ * Increments running value.
  */
 struct cached_data *js_get_compiled_script(char *filename);
 
@@ -45,7 +46,7 @@ void js_cache_thread(void *args);
  * Decrements the running value, increments runcount, and updates
  * lastrun
  */
-void js_script_done(struct cached_data entry);
+void js_script_done(struct cached_data *entry);
 #ifdef __cplusplus
 }
 #endif
