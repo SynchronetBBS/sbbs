@@ -4,13 +4,15 @@
 /* JS Compile Cache Stuff */
 struct cache_data {
 	char	filename[MAX_PATH+1];
-	time_t	mtime,ctime;
-	off_t	size;
-	ulong	runcount;
-	time_t	lastrun;
-	time_t	laststat;
+	time_t	mtime,ctime;		/* st_mtime/st_ctime from last stat() call */
+	off_t	size;				/* File size when loaded */
+	ulong	runcount;			/* Number of times this script has been used */
+	time_t	lastrun;			/* Time script was last ran */
+	time_t	laststat;			/* Time of last call to stat() */
 	JSScript	*script;
-	int		running;
+	int		running;			/* Count of currently running scripts */
+	int		expired;			/* TRUE if last stat() makes this as stale and
+								 * running was non-zero */
 };
 
 typedef struct {
