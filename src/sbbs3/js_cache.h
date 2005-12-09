@@ -1,7 +1,16 @@
 #ifndef _JS_CACHE_H_
 #define _JS_CACHE_H_
 
+#include "link_list.h"
+#include "jscntxt.h"
+#include "jsscript.h"
+
 /* JS Compile Cache Stuff */
+struct context_cache {
+	JSContext	*cx;
+	link_list_t	cache;
+};
+
 struct cache_data {
 	char	filename[MAX_PATH+1];
 	time_t	mtime,ctime;		/* st_mtime/st_ctime from last stat() call */
@@ -20,6 +29,7 @@ typedef struct {
 	time_t	max_age;			/* Max age in seconds for lastrun */
 	ulong	max_scripts;		/* Max number of scripts to hold in cache */
 	time_t	stale_timeout;		/* Minimum time between calls to stat() */
+	ulong	expire_period;		/* Time between servicing the exipry cache... milliseconds */
 } js_cache_startup_t;
 
 #ifdef __cplusplus
@@ -33,11 +43,11 @@ extern "C" {
  * Compiles it and adds to the cache if not.
  * Increments running value.
  */
-struct cached_data *js_get_compiled_script(char *filename);
+JSScript *js_get_compiled_script(JSContext *cx, char *filename);
 
 /*
  * Starts the caching thread.  The caching thread periodically
- * checks the cache for entries to be expired.  They are expired
+ * checks the caches for entries to be expired.  They are expired
  * by weigth where weight=(age in seconds)/(number of times ran)
  * does NOT check the laststat nor does it do a stat().
  * It also does not expire an entry for which running is non-zero.
@@ -55,6 +65,11 @@ void js_script_done(struct cached_data *entry);
  * Required for self-modifying scripts.
  */
 void js_cache_expire(char *filename);
+
+/*
+ * Creates a new cached runtime and context
+ */
+JSContext *js_get_cached_context(size_t maxbytes, size_t stacksize);
 #ifdef __cplusplus
 }
 #endif
