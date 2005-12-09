@@ -49,6 +49,12 @@ void js_cache_thread(void *args);
  * lastrun
  */
 void js_script_done(struct cached_data *entry);
+
+/*
+ * Sets the expired member for any existing cached copies of filename
+ * Required for self-modifying scripts.
+ */
+void js_cache_expire(char *filename);
 #ifdef __cplusplus
 }
 #endif
