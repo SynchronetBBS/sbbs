@@ -272,7 +272,7 @@ while(1) {
 				console.mnemonics(format(bbs.text(JoinWhichSub),bbs.cursub+1));
 				i=get_next_num(msg_area.grp_list[j].sub_list.length,false);
 				if(i==-1) {
-					if(msg_area.grm_list.length==1) {
+					if(msg_area.grp_list.length==1) {
 						bbs.curgrp=orig_grp;
 						continue main;
 					}
@@ -651,7 +651,7 @@ function file_transfers()
 
 file_transfers:
 	while(1) {
-		if(user.settings & USER_EXPERT) {
+		if(!(user.settings & USER_EXPERT)) {
 			console.clear();
 			bbs.menu("transfer");
 		}
@@ -726,30 +726,34 @@ file_transfers:
 			case '}':
 			case '+':
 			case '=':
-				bbs.curdir++;
-				if(bbs.curdir>=file_area.lib_list[bbs.cur_lib].dir_list.length)
+				if(bbs.curdir>=file_area.lib_list[bbs.curlib].dir_list.length-1)
 					bbs.curdir=0;
+				else
+					bbs.curdir++;
 				continue file_transfers;
 
 			
 			case '<':
 			case '{':
 			case '-':
-				if(bbs.curdir<=0)
-					bbs.curdir=file_area.lib_list[bbs.cur_lib].dir_list.length;
-				bbs.curdir--;
+				if(bbs.curdir==0)
+					bbs.curdir=file_area.lib_list[bbs.curlib].dir_list.length-1;
+				else
+					bbs.curdir--;
 				continue file_transfers;
 				
 			case ']':
-				bbs.curlib++;
-				if(bbs.curlib >= file_area.lib_list.length)
+				if(bbs.curlib == file_area.lib_list.length-1)
 					bbs.curlib=0;
+				else
+					bbs.curlib++;
 				continue file_transfers;
 
 			case '[':
-				if(bbs.curlib <= 0)
-					bbs.curlib=file_area.lib_list.length;
-				bbs.curlib--;
+				if(bbs.curlib == 0)
+					bbs.curlib=file_area.lib_list.length-1;
+				else
+					bbs.curlib--;
 				continue file_transfers;
 
 			// String commands start with a semicolon
@@ -800,18 +804,48 @@ file_transfers:
 				if(bbs.batch_dnload_total>0) {
 					if(console.yesno(bbs.text(DownloadBatchQ))) {
 						bbs.batch_download();
+						continue file_transfers;
 					}
 				}
-				/* ToDo
-					getfilespec
-					if_true
-						file_download	// See line 290 in execfile.cpp
-						end_if
-				*/
+				str=bbs.get_filespec();
+				if(str==null)
+					continue file_transfers;
+				if(file_area.lib_list.length==0)
+					continue file_transfers;
+				if(user.security.restrictions&UFLAG_D) {
+					console.putmsg(bbs.text(R_Download));
+					continue file_transfers;
+				}
+				str=todo_padfname(str);
+				if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_DOWNLOAD)) {
+					var s=0;
+					console.putmsg(bbs.text(SearchingAllDirs));
+					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+						if(i!=bbs.curdir &&
+								(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_DOWNLOAD))!=0) {
+							if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+								continue file_transfers;
+							}
+						}
+					}
+					console.putmsg(bbs.text(SearchingAllLibs));
+					for(i=0; i<file_area.lib_list.length; i++) {
+						if(i==bbs.curlib)
+							continue;
+						for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+							if((s=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_DOWNLOAD))!=0) {
+								if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+									continue file_transfers;
+								}
+							}
+						}
+					}
+				}
 				continue file_transfers;
 
 			case '/D':
 				/* ToDo: file_download_user
+				   (user_dir not available)
 				   see line 312 in execfile.cpp */
 				continue file_transfers;
 
@@ -820,16 +854,31 @@ file_transfers:
 				str=bbs.get_filespec();
 				if(str==null)
 					continue file_transfers;
-				str=str.replace(/^(.*)(\..*)?$/,
-					function(s, p1, p2, oset, s) {
-						if(p2==undefined)
-							return(format("%-8.8s    ",p1));
-						return(format("%-8.8s%-4.4s",p1,p2));
+				str=todo_padfname(str);
+				if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_INFO)) {
+					var s=0;
+					console.putmsg(bbs.text(SearchingAllDirs));
+					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+						if(i!=bbs.curdir &&
+								(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_INFO))!=0) {
+							if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+								continue file_transfers;
+							}
+						}
 					}
-				);
-				/* ToDo
-					file_list_extended
-					See execfile.cpp:406 */
+					console.putmsg(bbs.text(SearchingAllLibs));
+					for(i=0; i<file_area.lib_list.length; i++) {
+						if(i==bbs.curlib)
+							continue;
+						for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+							if((s=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_INFO))!=0) {
+								if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+									continue file_transfers;
+								}
+							}
+						}
+					}
+				}
 				continue file_transfers;
 
 			case 'F':
@@ -846,7 +895,75 @@ file_transfers:
 				continue file_transfers;
 
 			case 'J':
-				/* ToDo: execfile.cpp:50 */
+				if(!file_area.lib_list.length)
+					continue file_transfers;
+				while(1) {
+					var orig_lib=bbs.curlib;
+					var i=0;
+					var j=0;
+					if(file_area.lib_list.length>1) {
+						if(file_exists(system.text_dir+"menu/libs.*"))
+							bbs.menu("libs");
+						else {
+							console.putmsg(bbs.text(CfgLibLstHdr),P_SAVEATR);
+							for(i=0; i<file_area.lib_list.length; i++) {
+								if(i==bbs.curlib)
+									console.putmsg('*',P_SAVEATR);
+								else
+									console.putmsg(' ',P_SAVEATR);
+								if(i<9)
+									console.putmsg(' ',P_SAVEATR);
+								if(i<99)
+									console.putmsg(' ',P_SAVEATR);
+								// We use console.putmsg to expand ^A, @, etc
+								console.putmsg(format(bbs.text(CfgLibLstFmt),i+1,file_area.lib_list[i].description),P_SAVEATR);
+							}
+						}
+						console.mnemonics(format(bbs.text(JoinWhichLib),bbs.curlib+1));
+						j=get_next_num(file_area.lib_list.length,false);
+						if(j<0)
+							continue file_transfers;
+						if(!j)
+							j=bbs.curlib;
+						else
+							j--;
+					}
+					bbs.curlib=j;
+					if(file_exists(system.text_dir+"menu/dirs"+(bbs.curlib+1)))
+						bbs.menu("dirs"+(bbs.curlib+1));
+					else {
+						console.clear();
+						console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
+						for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
+							if(i==bbs.curdir)
+								console.putmsg('*',P_SAVEATR);
+							else
+								console.putmsg(' ',P_SAVEATR);
+							if(i<9)
+								console.putmsg(' ',P_SAVEATR);
+							if(i<99)
+								console.putmsg(' ',P_SAVEATR);
+							/* ToDo: getfiles() not implemented */
+							console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",-1),P_SAVEATR);
+						}
+					}
+					console.mnemonics(format(bbs.text(JoinWhichDir),bbs.curdir+1));
+					i=get_next_num(file_area.lib_list[j].dir_list.length,false);
+					if(i==-1) {
+						if(file_area.lib_list.length==1) {
+							bbs.curlib=orig_lib;
+							continue file_transfers;
+						}
+						continue;
+					}
+					if(!i)
+						i=bbs.curdir;
+					else
+						i--;
+					bbs.curdir=i;
+					continue file_transfers;
+				}
+				// This never actually happens...
 				continue file_transfers;
 
 			case 'L':
@@ -880,19 +997,46 @@ file_transfers:
 				continue file_transfers;
 
 			case '/O':
-				if(bbs.batch_dnload_total && console.yesno(bbs.text(DownloadBatchQ))) {
-					bbs.batch_download();
-					bbs.logout();
+				if(bbs.batch_dnload_total) {
+					if(console.yesno(bbs.text(DownloadBatchQ))) {
+						bbs.batch_download();
+						bbs.hangup();
+					}
 				}
+				else
+					bbs.hangup();
 				continue file_transfers;
 
 			case 'R':
 				console.putmsg("\r\nchRemove/Edit File(s)\r\n");
-				/* ToDo: execfile.cpp:452
-				getfilespec
-				if_true
-					file_remove
-					end_if */
+				str=bbs.get_filespec();
+				if(str==null)
+					continue file_transfers;
+				str=todo_padfname(str);
+				if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
+					var s=0;
+					console.putmsg(bbs.text(SearchingAllDirs));
+					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+						if(i!=bbs.curdir &&
+								(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_REMOVE))!=0) {
+							if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+								continue file_transfers;
+							}
+						}
+					}
+					console.putmsg(bbs.text(SearchingAllLibs));
+					for(i=0; i<file_area.lib_list.length; i++) {
+						if(i==bbs.curlib)
+							continue;
+						for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+							if((s=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_REMOVE))!=0) {
+								if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+									continue file_transfers;
+								}
+							}
+						}
+					}
+				}
 				continue file_transfers;
 
 			case 'S':
@@ -929,12 +1073,30 @@ file_transfers:
 
 			case 'V':
 				console.putmsg("\r\nchView File(s)\r\n");
-				/* ToDo execfile.cpp:370
-				getfilespec
-				if_true
-					file_view
-					end_if
-				end_cmd */
+				str=bbs.get_filespec();
+				if(str==null)
+					continue file_transfers;
+				str=todo_padfname(str);
+				if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
+					console.putmsg(bbs.text(SearchingAllDirs));
+					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+						if(i==bbs.curdir)
+							continue;
+						if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FL_VIEW))
+							break;
+					}
+					if(i<file_area.lib_list[bbs.curlib].dir_list.length)
+						continue file_transfers;
+					console.putmsg(bbs.text(SearchingAllLibs));
+					for(i=0; i<file_area.lib_list.length; i++) {
+						if(i==bbs.curlib)
+							continue;
+						for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+							if(bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FL_VIEW))
+								continue file_transfers;
+						}
+					}
+				}
 				continue file_transfers;
 
 			case 'Z':
@@ -944,23 +1106,23 @@ file_transfers:
 				continue file_transfers;
 
 			case '*':
-				if(!file_areas.lib_list.length)
+				if(!file_area.lib_list.length)
 					continue file_transfers;
-				str=format("%smenu/dirs%u.*", system.text_dir, file_areas.lib_list[bbs.curlib].number+1);
-				if(file_exist(str)) {
-					str=format("menu/dirs%u.*", file_areas.lib_list[bbs.curlib].number+1);
+				str=format("%smenu/dirs%u.*", system.text_dir, file_area.lib_list[bbs.curlib].number+1);
+				if(file_exists(str)) {
+					str=format("menu/dirs%u.*", file_area.lib_list[bbs.curlib].number+1);
 					bbs.menu(str);
 					continue file_transfers;
 				}
 				console.crlf();
-				console.putmsg(format(bbs.text(DirLstHdr),file_area.lib_list[bbs.curlib].name),P_SAVEATR);
+				console.putmsg(format(bbs.text(DirLstHdr),file_area.lib_list[bbs.curlib].descirption),P_SAVEATR);
 				for(i=0;i<file_area.lib_list[bbs.curlib].dir_list.length;i++) {
 					if(i==bbs.curdir)
-						outchar('*');
+						console.putmsg('*');
 					else
-						outchar(' ');
+						console.putmsg(' ');
 					str=format(bbs.text(DirLstFmt),i+1
-						,file_area.lib_list[bbs.curlib].dir_list[i].name,""
+						,file_area.lib_list[bbs.curlib].dir_list[i].description,""
 						/* ToDo: getfiles not implemented */
 						,-1);
 					if(i<9)
@@ -971,16 +1133,23 @@ file_transfers:
 				}
 				continue file_transfers;
 
-			case '*':
-				/* ToDo: execfile.cpp:200
-					file_show_directories
-					end_cmd	*/
-				continue file_transfers;
-
 			case '/*':
-				/* ToDo execfile.cpp:184
-					file_show_libraries
-					end_cmd */
+				if(!file_area.lib_list.length)
+					continue file_transfers;
+				if(file_exists(system.text_dir+'menu/libs.*')) {
+					bbs.menu('libs');
+					continue file_transfers;
+				}
+				console.putmsg(bbs.text(LibLstHdr),P_SAVEATR);
+				for(i=0;i<file_area.lib_list.length;i++) {
+					if(i==bbs.curlib)
+						console.putmsg('*');
+					else
+						console.putmsg(' ');
+					if(i<9)
+						console.putmsg(' ');
+					console.putmsg(format(bbs.text(LibLstFmt),i+1,file_area.lib_list[i].description,"",file_area.lib_list[i].dir_list.length));
+				}
 				continue file_transfers;
 
 			case '&':
@@ -1080,5 +1249,29 @@ function file_info()
 				return;
 		}
 	}
+}
+
+//############################ Nasty Hacks #######################
+function todo_padfname(fname) {
+	var name='';
+	var ext='';
+
+	var dotpos=fname.lastIndexOf('.');
+	if(dotpos > -1) {
+		name=fname.substr(0,dotpos);
+		ext=fname.substr(dotpos+1);
+	}
+	else {
+		name=fname;
+	}
+	if(name.length > 8) {
+		/* Hack... make long specs match */
+		name=name.substr(0,7)+'*';
+	}
+	if(ext.length > 3) {
+		/* Hack... make long specs match */
+		ext=ext.substr(0,2)+'*';
+	}
+	return(format("%-8.8s-3.3s",name,ext));
 }
 //end of DEFAULT.JS
