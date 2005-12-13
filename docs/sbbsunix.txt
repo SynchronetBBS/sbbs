@@ -221,20 +221,26 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    B. Build the main executable (and utilities):
       # gmake
-      Note: If you're linking with /usr/lib/libmozjs.so, don't forget to add
-            "JSLIB=mozjs" to the gmake command-line
-      Note: If X is not installed in /usr/X11R6, 
-            use "gmake X_PATH=/path/to/X"
-      Note: To debug compile/link command-line problems, adding "VERBOSE=1"
-            to the gmake command-line can be very helpful
-      Note: Warnings (if any) can be safely ignored
-      Note: The "current" code in the CVS repository is in a fairly constant
-            state of change. And often, one or more projects will not build
-            successfully on any given platform. This is a common occurance
-            and is expected in a fluid development project such as this one.
-            If you'd like a verifiably-buildable source code base, either
-            download one of the source code archives (e.g. sbbs_src.tgz) or
-            use a release label (tag) when checking out files from CVS.
+      NOTES:
+      1: If you're linking with /usr/lib/libmozjs.so, don't forget to add
+         "JSLIB=mozjs" to the gmake command-line
+      2: If X is not installed in /usr/X11R6, 
+         use "gmake X_PATH=/path/to/X"
+      3: To debug compile/link command-line problems, adding "VERBOSE=1"
+         to the gmake command-line can be very helpful
+      4: Warnings (if any) can be safely ignored
+      5: The "current" code in the CVS repository is in a fairly constant
+         state of change. And often, one or more projects will not build
+         successfully on any given platform. This is a common occurance
+         and is expected in a fluid development project such as this one.
+         If you'd like a verifiably-buildable source code base, either
+         download one of the source code archives (e.g. sbbs_src.tgz) or
+         use a release label (tag) when checking out files from CVS.
+      6: By default, this will build DEBUG binaries which will be larger,
+         slower, and consume more resources than a RELEASE build.  If you
+         wish a RELEASE build, add "RELEASE=1" to the gmake command-line.
+         This will make it more difficult to send us usefull error reports
+         though.
 
    C. Change to the src/sbbs3/scfg directory:
       # cd /sbbs/src/sbbs3/scfg
