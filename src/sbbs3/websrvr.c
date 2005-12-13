@@ -4018,10 +4018,10 @@ void DLLCALL web_server(void* arg)
 	char			compiler[32];
 	http_session_t *	session;
 	struct timeval tv;
-	startup=(web_startup_t*)arg;
 #ifdef ONE_JS_RUNTIME
 	JSRuntime*      js_runtime;
 #endif
+	startup=(web_startup_t*)arg;
 
 	web_ver();	/* get CVS revision */
 
@@ -4421,7 +4421,7 @@ void DLLCALL web_server(void* arg)
 		}
 
 #ifdef ONE_JS_RUNTIME
-    	if(session.js_runtime!=NULL) {
+    	if(js_runtime!=NULL) {
         	lprintf(LOG_INFO,"%04d JavaScript: Destroying runtime",server_socket);
         	JS_DestroyRuntime(js_runtime);
     	    js_runtime=NULL;
