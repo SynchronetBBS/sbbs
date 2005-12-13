@@ -3786,7 +3786,6 @@ void http_session_thread(void* arg)
 			if(get_req(&session,redirp)) {
 				if(init_error) {
 					send_error(&session, error_500);
-					continue;
 				}
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
