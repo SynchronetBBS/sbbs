@@ -184,7 +184,7 @@ static jsSyncPropertySpec js_properties[] = {
 	{0}
 };
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 static char* prop_desc[] = {
 	 "JavaScript engine version information (AKA system.js_version)"
 	,"set to <i>false</i> to disable the automatic termination of the script upon external request"
@@ -431,7 +431,7 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 	if(!js_DefineSyncMethods(cx, obj, js_functions, /* append? */ FALSE)) 
 		return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"JavaScript execution and garbage collection control object",311);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", prop_desc, JSPROP_READONLY);
 #endif

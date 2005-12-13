@@ -1569,7 +1569,7 @@ static jsSyncPropertySpec js_file_properties[] = {
 	{0}
 };
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 static char* file_prop_desc[] = {
 	 "filename specified in constructor - <small>READ ONLY</small>"
 	,"mode string specified in <i>open</i> call - <small>READ ONLY</small>"
@@ -1811,7 +1811,7 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		return(JS_FALSE);
 	}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for opening, creating, reading, or writing files on the local file system<p>"
 		"Special features include:</h2><ol type=disc>"
 			"<li>Exclusive-access files (default) or shared files<ol type=circle>"

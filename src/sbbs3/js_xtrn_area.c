@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,7 +39,7 @@
 
 #ifdef JAVASCRIPT
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 
 static char* xtrn_sec_prop_desc[] = {
 
@@ -172,7 +172,7 @@ BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* x
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", xtrn_prog_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -210,7 +210,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(areaobj==NULL)
 		return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,areaobj,"External Program Areas",310);
 #endif
 
@@ -293,7 +293,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(!JS_SetProperty(cx, secobj, "prog_list", &val)) 
 			return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx,secobj,"Online Program (door) Sections (current user has access to)",310);
 #endif
 
@@ -351,18 +351,18 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, progobj, "can_run", &val))
 				return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx,progobj,"Online External Programs (doors) (current user has access to)",310);
 #endif
 		}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		js_CreateArrayOfStrings(cx, secobj, "_property_desc_list", xtrn_sec_prop_desc, JSPROP_READONLY);
 #endif
 
 	}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 
 	js_DescribeSyncObject(cx,allsec,"Associative array of all external program sections (use internal code as index)",312);
 	JS_DefineProperty(cx,allsec,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
@@ -428,12 +428,12 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 			return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		js_CreateArrayOfStrings(cx, eventobj, "_property_desc_list", event_prop_desc, JSPROP_READONLY);
 #endif
 	}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,event_array,"Associative array of all timed events (use internal code as index)",311);
 	JS_DefineProperty(cx,event_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
@@ -484,12 +484,12 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 			return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		js_CreateArrayOfStrings(cx, xeditobj, "_property_desc_list", xedit_prop_desc, JSPROP_READONLY);
 #endif
 	}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,xedit_array,"Associative array of all external editors (use internal code as index)",311);
 	JS_DefineProperty(cx,xedit_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif

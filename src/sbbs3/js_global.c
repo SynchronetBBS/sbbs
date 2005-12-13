@@ -2930,7 +2930,7 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethod
 	if(!JS_SetPrivate(cx, glob, cfg))	/* Store a pointer to scfg_t */
 		return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,glob
 		,"Top-level functions and properties (common to all servers and services)",310);
 #endif

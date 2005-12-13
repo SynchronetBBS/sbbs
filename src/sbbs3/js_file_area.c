@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,7 +39,7 @@
 
 #ifdef JAVASCRIPT
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 
 static char* lib_prop_desc[] = {
 	 "index into lib_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
@@ -143,7 +143,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(html_index_file==NULL)
 		html_index_file="";
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,areaobj,"File Transfer Areas",310);
 #endif
 
@@ -209,7 +209,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(!JS_SetProperty(cx, libobj, "link", &val))
 			return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx,libobj,"File Transfer Libraries (current user has access to)",310);
 #endif
 
@@ -408,23 +408,23 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "is_operator", &val))
 				return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 			js_CreateArrayOfStrings(cx, dirobj, "_property_desc_list", dir_prop_desc, JSPROP_READONLY);
 			js_DescribeSyncObject(cx,dirobj,"File Transfer Directories  (current user has access to)",310);
 #endif
 		}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		js_CreateArrayOfStrings(cx, libobj, "_property_desc_list", lib_prop_desc, JSPROP_READONLY);
 #endif
 	}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,alllibs,"Associative array of all libraries (use name as index)",312);
 	JS_DefineProperty(cx,alllibs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,alldirs,"Associative array of all directories (use internal code as index)",311);
 	JS_DefineProperty(cx,alldirs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif

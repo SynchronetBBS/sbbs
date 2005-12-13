@@ -43,7 +43,7 @@ enum {	/* msg_area Object Properties */
 	 PROP_MAX_QWK_MSGS
 };
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 
 static char* msg_grp_prop_desc[] = {
 	 "index into grp_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
@@ -231,7 +231,7 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_CreateArrayOfStrings(cx, subobj, "_property_desc_list", msg_area_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -349,7 +349,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	if(areaobj==NULL)
 		return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,areaobj,"Message Areas",310);
 #endif
 
@@ -424,7 +424,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 			return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx,grpobj,"Message Groups (current user has access to)",310);
 #endif
 
@@ -514,7 +514,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_DefineProperties(cx, subobj, js_sub_properties))
 				return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx,subobj,"Message Sub-boards (current user has access to)</h2>"
 				"(all properties are <small>READ ONLY</small> except for "
 				"<i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)"
@@ -523,17 +523,17 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 
 		}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		js_CreateArrayOfStrings(cx, grpobj, "_property_desc_list", msg_grp_prop_desc, JSPROP_READONLY);
 #endif
 	}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,allgrps,"Associative array of all groups (use name as index)",312);
 	JS_DefineProperty(cx,allgrps,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,allsubs,"Associative array of all sub-boards (use internal code as index)",311);
 	JS_DefineProperty(cx,allsubs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif

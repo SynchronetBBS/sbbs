@@ -322,7 +322,7 @@ enum {
 	,QUEUE_PROP_WRITE_LEVEL
 };
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 static char* queue_prop_desc[] = {
 	 "name of the queue (if it has one)"
 	,"<i>true</i> if data is waiting to be read from queue"
@@ -470,7 +470,7 @@ js_queue_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 		return(JS_FALSE);
 	}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class for bi-directional message queues. "
 		"Used for inter-thread/module communications.", 312);
 	js_DescribeSyncConstructor(cx,obj,"To create a new (named) Queue object: "

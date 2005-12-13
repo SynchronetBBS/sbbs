@@ -358,7 +358,7 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
     for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
 		if(JSVAL_IS_DOUBLE(argv[i]))
-			arglist[i-1]=(char*)(unsigned long)*JSVAL_TO_DOUBLE(argv[i]);
+			arglist[i-1]=(char*)(unsigned long)-1;//*JSVAL_TO_DOUBLE(argv[i]);
 		else if(JSVAL_IS_INT(argv[i]))
 			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
 		else {

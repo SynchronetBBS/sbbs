@@ -346,17 +346,7 @@ DLLCALL js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char* str
 		,STRING_TO_JSVAL(js_str),NULL,NULL,JSPROP_READONLY));
 }
 
-#ifdef _DEBUG
-
-#if 0
-static char* server_prop_desc[] = {
-
-	 "server name and version number"
-	,"detailed version/build information"
-	,NULL
-};
-#endif
-
+#ifdef BUILD_JSDOCS
 
 static const char* method_array_name = "_method_list";
 static const char* propver_array_name = "_property_ver_list";
@@ -490,7 +480,7 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 	return(JS_TRUE);
 }
 
-#else // NON-DEBUG
+#else // NON-JSDOCS
 
 JSBool
 DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)

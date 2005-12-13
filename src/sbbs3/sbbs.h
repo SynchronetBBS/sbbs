@@ -931,10 +931,10 @@ extern "C" {
 		,JSTYPE_UNDEF
 	};
 
-	#ifdef _DEBUG	/* String compiled into debug build only, for JS documentation generation */
+	#ifdef BUILD_JSDOCS	/* String compiled into debug build only, for JS documentation generation */
 		#define	JSDOCSTR(s)	s
 	#else
-		#define JSDOCSTR(s)	""
+		#define JSDOCSTR(s)	NULL
 	#endif
 
 	/* main.cpp */

@@ -1013,7 +1013,7 @@ enum {
 
 };
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 static char* socket_prop_desc[] = {
 	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
@@ -1376,7 +1376,7 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 		return(JS_FALSE);
 	}
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for TCP/IP socket communications",310);
 	js_DescribeSyncConstructor(cx,obj,"To create a new Socket object: "
 		"<tt>load('sockdefs.js'); var s = new Socket(<i>type</i>)</tt><br>"

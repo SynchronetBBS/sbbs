@@ -407,7 +407,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{0}
 };
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 static char* sys_prop_desc[] = {
 	 "BBS name"
 	,"operator name"
@@ -640,7 +640,7 @@ static jsSyncPropertySpec js_sysstats_properties[] = {
 	{0}
 };
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 static char* sysstat_prop_desc[] = {
 	 "total logons"
 	,"logons today"
@@ -1436,7 +1436,7 @@ enum {
 	,NODE_PROP_EXTAUX
 };
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 static char* node_prop_desc[] = {
 	 "status (see <tt>nodedefs.js</tt> for valid values)"
 	,"error counter"
@@ -1624,7 +1624,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if (!js_DefineSyncMethods(cx, sysobj, js_system_functions, FALSE)) 
 		return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,sysobj,"Global system-related properties and methods",310);
 	js_CreateArrayOfStrings(cx, sysobj, "_property_desc_list", sys_prop_desc, JSPROP_READONLY);
 #endif
@@ -1759,7 +1759,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!js_DefineSyncProperties(cx, statsobj, js_sysstats_properties))
 		return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,statsobj,"System statistics",310);
 	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", sysstat_prop_desc, JSPROP_READONLY);
 #endif
@@ -1788,7 +1788,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 		if(!js_DefineSyncProperties(cx, nodeobj, js_node_properties))
 			return(NULL);
 
-#ifdef _DEBUG
+#ifdef BUILD_JSDOCS
 		if(i==0) {
 			js_DescribeSyncObject(cx,nodeobj,"BBS node listing",310);
 			js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
