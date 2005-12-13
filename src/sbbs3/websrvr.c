@@ -1137,6 +1137,11 @@ static void send_error(http_session_t * session, const char* message)
 				session->req.ld->size=strlen(sbuf);
 		}
 	}
+	/* Force the output thread to go NOW */
+	sem_post(&(session->outbuf.highwater_sem));
+	/* ToDo: This should probobly timeout eventually... */
+	while(RingBufFull(&session->outbuf))
+		SLEEP(1);
 	session->req.finished=TRUE;
 }
 
