@@ -739,6 +739,7 @@ static void close_request(http_session_t * session)
 	int			i;
 
 	if(session->req.write_chunked) {
+		/* ToDo: This should probobly timeout eventually... */
 		while(RingBufFull(&session->outbuf))
 			SLEEP(1);
 		session->req.write_chunked=0;
@@ -752,6 +753,11 @@ static void close_request(http_session_t * session)
 
 	/* Force the output thread to go NOW */
 	sem_post(&(session->outbuf.highwater_sem));
+
+	/* Wait for the drain */
+	/* ToDo: This should probobly timeout eventually... */
+	while(RingBufFull(&session->outbuf))
+		SLEEP(1);
 
 	if(session->req.ld!=NULL) {
 		now=time(NULL);
