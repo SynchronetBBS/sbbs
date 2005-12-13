@@ -1042,7 +1042,7 @@ multiple CD-ROMs or hard disks.
 					uifc.changes=1;
 					continue; }
 				sprintf(str,"Path %d",i+1);
-				uifc.input(WIN_MID|WIN_SAV,0,0,str,cfg.altpath[i],sizeof(cfg.altpath[i])-1,K_EDIT); 
+				uifc.input(WIN_MID|WIN_SAV,0,0,str,cfg.altpath[i],LEN_DIR,K_EDIT); 
 			}
 			break; 
 		} 
