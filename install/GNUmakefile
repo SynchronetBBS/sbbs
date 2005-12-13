@@ -24,7 +24,7 @@
 
 ifndef DEBUG
  ifndef RELEASE
-  DEBUG	:=	1
+  RELEASE	:=	1
  endif
 endif
 
