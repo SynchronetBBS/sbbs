@@ -323,7 +323,7 @@ ifdef DEBUG
  CFLAGS	+=	-ggdb
  CFLAGS	+=	-D_DEBUG
 else # RELEASE
- CFLAGS	:= -O3 $(CFLAGS)
+ CFLAGS	:= -O2 $(CFLAGS)
 endif
 
 -include targets.mk
