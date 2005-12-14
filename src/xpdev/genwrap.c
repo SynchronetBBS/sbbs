@@ -238,27 +238,35 @@ unsigned DLLCALL xp_randomize(void)
 {
 	unsigned seed=~0;
 
-#if defined(HAS_DEV_RANDOM) && defined(RANDOM_DEV)
+#if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
 	int     rf;
 
-	if((rf=open(RANDOM_DEV, O_RDONLY))!=-1) {
+	if((rf=open(URANDOM_DEV, O_RDONLY))!=-1) {
 		read(rf, &seed, sizeof(seed));
 		close(rf);
 	}
-#else
-	unsigned curtime	= (unsigned)time(NULL);
-	unsigned process_id = (unsigned)GetCurrentProcessId();
+	else {
+#endif
+		unsigned curtime	= (unsigned)time(NULL);
+		unsigned process_id = (unsigned)GetCurrentProcessId();
 
-	seed = curtime ^ BYTE_SWAP_INT(process_id);
+		seed = curtime ^ BYTE_SWAP_INT(process_id);
 
-	#if defined(_WIN32) || defined(GetCurrentThreadId)
-		seed ^= (unsigned)GetCurrentThreadId();
-	#endif
+		#if defined(_WIN32) || defined(GetCurrentThreadId)
+			seed ^= (unsigned)GetCurrentThreadId();
+		#endif
 
+#if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
+	}
 #endif
 
+#ifdef HAS_RANDOM_FUNC
+ 	srandom(seed);
+	return(seed);
+#else
  	srand(seed);
 	return(seed);
+#endif
 }
 
 /****************************************************************************/
@@ -266,6 +274,9 @@ unsigned DLLCALL xp_randomize(void)
 /****************************************************************************/
 int DLLCALL xp_random(int n)
 {
+#ifdef HAS_RANDOM_FUNC
+	return(random()%n);
+#else
 	float f;
 
 	if(n<2)
@@ -273,6 +284,7 @@ int DLLCALL xp_random(int n)
 	f=(float)rand()/(float)RAND_MAX;
 
 	return((int)(n*f));
+#endif
 }
 
 /****************************************************************************/
