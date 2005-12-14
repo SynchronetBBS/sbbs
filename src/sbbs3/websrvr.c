@@ -201,6 +201,8 @@ typedef struct  {
 	/* Ring Buffer Stuff */
 	RingBuf			outbuf;
 	sem_t			output_thread_terminated;
+	int				outbuf_write_initialized;
+	pthread_mutex_t	outbuf_write;
 
 	/* Client info */
 	client_t		client;
@@ -725,6 +727,21 @@ static int close_socket(SOCKET sock)
 	return(result);
 }
 
+/* Waits for the outbuf to drain */
+static void drain_outbuf(http_session_t * session)
+{
+	/* Force the output thread to go NOW */
+	sem_post(&(session->outbuf.highwater_sem));
+	/* ToDo: This should probobly timeout eventually... */
+	while(RingBufFull(&session->outbuf))
+		SLEEP(1);
+	/* Lock the mutex to ensure data has been sent */
+	while(!session->outbuf_write_initialized)
+		SLEEP(1);
+	pthread_mutex_lock(&session->outbuf_write);
+	pthread_mutex_unlock(&session->outbuf_write);
+}
+
 /**************************************************/
 /* End of a single request...					  */
 /* This is called at the end of EVERY request	  */
@@ -739,9 +756,7 @@ static void close_request(http_session_t * session)
 	int			i;
 
 	if(session->req.write_chunked) {
-		/* ToDo: This should probobly timeout eventually... */
-		while(RingBufFull(&session->outbuf))
-			SLEEP(1);
+		drain_outbuf(session);
 		session->req.write_chunked=0;
 		writebuf(session,"0\r\n",3);
 		if(session->req.dynamic==IS_SSJS)
@@ -770,10 +785,7 @@ static void close_request(http_session_t * session)
 	FREE_AND_NULL(session->req.cgi_dir);
 	FREE_AND_NULL(session->req.realm);
 	if(!session->req.keep_alive) {
-		/* Wait for the drain */
-		/* ToDo: This should probobly timeout eventually... */
-		while(RingBufFull(&session->outbuf))
-			SLEEP(1);
+		drain_outbuf(session);
 		close_socket(session->socket);
 		session->socket=INVALID_SOCKET;
 	}
@@ -1035,8 +1047,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	safecat(headers,"",MAX_HEADERS_SIZE);
 	send_file = (bufprint(session,headers) && send_file);
 	FREE_AND_NULL(headers);
-	while(RingBufFull(&session->outbuf))
-		SLEEP(1);
+	drain_outbuf(session);
 	session->req.write_chunked=chunked;
 	return(send_file);
 }
@@ -1137,11 +1148,7 @@ static void send_error(http_session_t * session, const char* message)
 				session->req.ld->size=strlen(sbuf);
 		}
 	}
-	/* Force the output thread to go NOW */
-	sem_post(&(session->outbuf.highwater_sem));
-	/* ToDo: This should probobly timeout eventually... */
-	while(RingBufFull(&session->outbuf))
-		SLEEP(1);
+	drain_outbuf(session);
 	session->req.finished=TRUE;
 }
 
@@ -3590,6 +3597,8 @@ void http_output_thread(void *arg)
 	int		i;
 
 	obuf=&(session->outbuf);
+	pthread_mutex_init(&session->outbuf_write,NULL);
+	session->outbuf_write_initialized=1;
 
 	thread_up(TRUE /* setuid */);
     while(session->socket!=INVALID_SOCKET && !terminate_server) {
@@ -3628,6 +3637,7 @@ void http_output_thread(void *arg)
 			len+=i;
 		}
 
+		pthread_mutex_lock(&session->outbuf_write);
         RingBufRead(obuf, bufdata, avail);
 		if(chunked) {
 			bufdata+=avail;
@@ -3636,11 +3646,11 @@ void http_output_thread(void *arg)
 			len+=2;
 		}
 
-		if(failed)
-			continue;
-
-		sock_sendbuf(session->socket, buf, len, &failed);
+		if(!failed)
+			sock_sendbuf(session->socket, buf, len, &failed);
+		pthread_mutex_unlock(&session->outbuf_write);
     }
+	pthread_mutex_destroy(&session->outbuf_write);
 	thread_down();
 	sem_post(&session->output_thread_terminated);
 }
