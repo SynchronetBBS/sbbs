@@ -3049,6 +3049,16 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		fprintf(session->req.fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
+static void js_writebuf(http_session_t *session, char *buf, size_t buflen)
+{
+	if(session->req.sent_headers) {
+		if(session->req.method!=HTTP_HEAD && session->req.method!=HTTP_OPTIONS)
+			writebuf(session,buf,buflen);
+	}
+	else
+		fwrite(buf,1,buflen,session->req.fp);
+}
+
 static JSBool
 js_writefunc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval, BOOL writeln)
 {
@@ -3089,18 +3099,9 @@ js_writefunc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval,
 			continue;
 		if(JS_GetStringLength(str)<1 && !writeln)
 			continue;
-		if(session->req.sent_headers) {
-			if(session->req.method!=HTTP_HEAD && session->req.method!=HTTP_OPTIONS) {
-				writebuf(session,JS_GetStringBytes(str), JS_GetStringLength(str));
-				if(writeln)
-					writebuf(session, newline, 2);
-			}
-		}
-		else {
-			fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
-			if(writeln)
-				fwrite(newline,1,2,session->req.fp);
-		}
+		js_writebuf(session,JS_GetStringBytes(str), JS_GetStringLength(str));
+		if(writeln)
+			js_writebuf(session, newline, 2);
 	}
 
 	if(str==NULL)
@@ -3247,6 +3248,191 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	return(JS_TRUE);
 }
+
+#if 0
+static char *find_next_pair(char *buffer, size_t buflen, char find)
+{
+	char	*p;
+	char	*search;
+	char	*end;
+	size_t	buflen2;
+
+	end=buffer+buflen;
+	search=buffer;
+	buflen2=buflen;
+
+	for(;search<end;) {
+		p=memchr(search, chars[i], buflen2);
+		/* Can't even find one... there's definatly no pair */
+		if(p==NULL)
+			return(NULL);
+
+		if(*(p+1)==find)
+			return(p);
+
+		/* Next search pos is at the char after the match */
+		search=p+1;
+		buflen2=end-search;
+	}
+}
+
+static void js_write_escaped(JSContext *cx, JSObject *obj, char *pos, size_t len, char *name_end, char *repeat_section)
+{
+	char	*name=pos+2;
+
+}
+
+enum {
+	 T_AT
+	,T_PERCENT
+	,T_CARET
+	,T_LT
+};
+
+static int js_write_template_part(JSContext *cx, JSObject *obj, char *template, size_t len, char *repeat_section)
+{
+	size_t		len2;
+	char		*pos;
+	char		*end;
+	char		*p;
+	char		*p2;
+	char		*send_end;
+	int			no_more[4];
+	char		*next[4];
+	int			i,j;
+	char		chars[5]="@%^<";
+
+	end=template+len;
+	pos=template;
+	memset(&next,0,sizeof(next));
+	memset(&no_more,0,sizeof(no_more));
+
+	while(pos<end) {
+		send_end=NULL;
+
+		/* Find next seperator */
+		for(i=0; i<4; i++) {
+			if(!no_more[i]) {
+				if(next[i] < pos)
+					next[i]=NULL;
+				if(next[i] == NULL) {
+					if((next[i]=find_next_pair(pos, len, chars[i]))==NULL) {
+						no_more[i]=TRUE;
+						continue;
+					}
+				}
+				if(!send_end || next[i] < send_end)
+					send_end=next[i];
+			}
+		}
+		if(send_end==NULL) {
+			/* Nothing else matched... we're good now! */
+			js_writebuf(session, pos, len);
+			pos=end;
+			len=0;
+			continue;
+		}
+		if(send_end > pos) {
+			i=send_end-pos;
+			js_writebuf(session, pos, i);
+			pos+=i;
+			len-=i;
+		}
+
+		/*
+		 * At this point, pos points to a matched introducer.
+		 * If it's not a repeat section, we can just output it here.
+		 */
+		if(*pos != '<') {
+			/*
+			 * If there is no corresponding terminator to this introdcer,
+			 * force it to be output unchanged.
+			 */
+			if((p=find_next_pair(pos, len, *pos))==NULL) {
+				no_more[strchr(chars,*pos)-char]=TRUE;
+				continue;
+			}
+			js_write_escaped(cx, obj, pos, len, p, repeat_section);
+			continue;
+		}
+
+		/*
+		 * Pos is the start of a repeat section now... this is where things
+		 * start to get tricky.  Set up RepeatObj object, then call self
+		 * once for each repeat.
+		 */
+	}
+}
+
+static JSBool
+js_write_template(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	JSString*	js_str;
+	char		*filename;
+	char		*template;
+	FILE		*tfile;
+	size_t		len;
+	http_session_t* session;
+
+	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(session->req.fp==NULL)
+		return(JS_FALSE);
+
+	if((filename=js_ValueToStringBytes(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	if(!fexist(filename)) {
+		JS_ReportError(cx, "Template file %s does not exist.", filename);
+		return(JS_FALSE);
+	}
+	len=flength(filename);
+
+	if((tfile=fopen(filename,"r"))==NULL) {
+		JS_ReportError(cx, "Unable to open template %s for read.", filename);
+		return(JS_FALSE);
+	}
+
+	if((template=(char *)malloc(len))==NULL) {
+		JS_ReportError(cx, "Unable to allocate %u bytes for template.", len);
+		return(JS_FALSE);
+	}
+
+	if(fread(template, 1, len, tfile) != len) {
+		fclose(tfile);
+		JS_ReportError(cx, "Unable to read %u bytes from template %s.", len, filename);
+		return(JS_FALSE);
+	}
+	fclose(tfile);
+
+	if((!session->req.prev_write) && (!session->req.sent_headers)) {
+		if(session->http_ver>=HTTP_1_1 && session->req.keep_alive) {
+			if(!ssjs_send_headers(session,TRUE))
+				return(JS_FALSE);
+		}
+		else {
+			/* "Fast Mode" requested? */
+			jsval		val;
+			JSObject*	reply;
+			JS_GetProperty(cx, session->js_glob, "http_reply", &val);
+			reply=JSVAL_TO_OBJECT(val);
+			JS_GetProperty(cx, reply, "fast", &val);
+			if(JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
+				session->req.keep_alive=FALSE;
+				if(!ssjs_send_headers(session,FALSE))
+					return(JS_FALSE);
+			}
+		}
+	}
+
+	session->req.prev_write=TRUE;
+	js_write_template_part(cx, obj, template, len, NULL);
+
+	free(template);
+	return(JS_TRUE);
+}
+#endif
 
 static JSFunctionSpec js_global_functions[] = {
 	{"write",           js_write,           1},		/* write to HTML file */
