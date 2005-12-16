@@ -23,6 +23,8 @@
 #define XP_PRINTF_TYPE_PTRDIFF		12	/* Not currently implemented */
 #define XP_PRINTF_TYPE_SIZET		13
 
+#define XP_PRINTF_CONVERT		1<<31	/* OR with type to request a conversion - Not implemented */
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
