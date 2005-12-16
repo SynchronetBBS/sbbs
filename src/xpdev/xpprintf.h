@@ -20,8 +20,9 @@
 #define XP_PRINTF_TYPE_LONGDOUBLE	9
 #define XP_PRINTF_TYPE_VOIDP		10
 #define XP_PRINTF_TYPE_INTMAX		11	/* Not currently implemented */
-#define XP_PRINTF_TYPE_PTRDIFF		12	/* Not currently implemented */
-#define XP_PRINTF_TYPE_SIZET		13
+#define XP_PRINTF_TYPE_UINTMAX		12	/* Not currently implemented */
+#define XP_PRINTF_TYPE_PTRDIFF		13	/* Not currently implemented */
+#define XP_PRINTF_TYPE_SIZET		14
 
 #define XP_PRINTF_CONVERT		1<<31	/* OR with type to request a conversion - Not implemented */
 
