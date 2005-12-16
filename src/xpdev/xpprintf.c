@@ -24,7 +24,7 @@
  * Currently, the type is not overly usefull, but this could be used for
  * automatic type conversions (ie: int to char *).  Right now it just assures
  * that the type passed to sprintf() is the type passed to
- * single_printf_realloc().
+ * xp_asprintf_next().
  */
 char *xp_asprintf_next(char *format, int type, ...)
 {
