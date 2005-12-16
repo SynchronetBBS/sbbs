@@ -350,7 +350,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	 * Copy the arg to the passed type.
 	 */
 	va_start(vars, type);
-	switch(type) {
+	switch(type & ~XP_PRINTF_CONVERT) {
 		case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
 			i=va_arg(vars, int);
 			break;
@@ -386,6 +386,15 @@ char *xp_asprintf_next(char *format, int type, ...)
 			break;
 	}
 	va_end(vars);
+
+	if(type & XP_PRINTF_CONVERT) {
+		type=type & ~XP_PRINTF_CONVERT;
+		if(type != correct_type) {
+			switch(correct_type) {
+				
+			}
+		}
+	}
 
 	/* The next char is now the type... perform native sprintf() using it */
 	*(fmt++)=*p;
