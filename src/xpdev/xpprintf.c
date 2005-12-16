@@ -46,6 +46,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	unsigned long	offset=0;
 	size_t			format_len;
 	size_t			this_format_len;
+	size_t			tail_len;
 	char			entry_buf[MAX_ARG_LEN];
 	char			this_format[MAX_FORMAT_LEN];
 	char			*fmt;
@@ -58,7 +59,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	for(p=format; *p; p++) {
 		if(*p=='%') {
 			if(*(p+1) == '%')
-				p+=2;
+				p++;
 			else
 				break;
 		}
@@ -111,9 +112,16 @@ char *xp_asprintf_next(char *format, int type, ...)
 		i=sprintf(entry_buf,"%u", va_arg(vars, int));
 		va_end(vars);
 		if(i > 1) {
+			/*
+			 * We must calculate this before we go mucking about
+			 * with format and p
+			 */
+			offset=p-format;
 			newbuf=(char *)realloc(format, format_len+i /* -1 for the '*' that's already there, +1 for the terminator */);
 			if(newbuf==NULL)
 				return(NULL);
+			format=newbuf;
+			p=format+offset;
 			/*
 			 * Move trailing end to make space... leaving the * where it
 			 * is so it can be overwritten
@@ -140,9 +148,16 @@ char *xp_asprintf_next(char *format, int type, ...)
 			i=sprintf(entry_buf,"%u", va_arg(vars, int));
 			va_end(vars);
 			if(i > 1) {
+				/*
+				 * We must calculate this before we go mucking about
+				 * with format and p
+				 */
+				offset=p-format;
 				newbuf=(char *)realloc(format, format_len+i /* -1 for the '*' that's already there, +1 for the terminator */);
 				if(newbuf==NULL)
 					return(NULL);
+				format=newbuf;
+				p=format+offset;
 				/*
 				 * Move trailing end to make space... leaving the * where it
 				 * is so it can be overwritten
@@ -289,9 +304,10 @@ char *xp_asprintf_next(char *format, int type, ...)
 	newbuf=(char *)realloc(format, format_len-this_format_len+j+1);
 	if(newbuf==NULL)
 		return(NULL);
+	format=newbuf;
 	/* Move trailing end to make space */
-	memmove(fmt_start+j, fmt_start+this_format_len, format-fmt_start+format_len-this_format_len+1);
-	memcpy(fmt_start, entry_buf, j);
+	memmove(format+offset+j, format+offset+this_format_len, offset+format_len-this_format_len+1);
+	memcpy(format+offset, entry_buf, j);
 	return(format);
 }
 
