@@ -56,6 +56,11 @@ char *xp_asprintf_next(char *format, int type, ...)
 	char			num_str[128];		/* More than enough room for a 256-bit int */
 
 	/*
+	 * Check if we're already done...
+	 */
+	if(!*(size_t *) format)
+		return(format);
+	/*
 	 * Find the next non %% format, leaving %% as it is
 	 */
 	for(p=format+*(size_t *)format; *p; p++) {
@@ -66,8 +71,10 @@ char *xp_asprintf_next(char *format, int type, ...)
 				break;
 		}
 	}
-	if(!*p)
+	if(!*p) {
+		*(size_t *)format=0;
 		return(format);
+	}
 	offset=p-format;
 	format_len=strlen(format+sizeof(size_t))+sizeof(size_t);
 	this_format[0]=0;
@@ -876,7 +883,23 @@ char *xp_asprintf_next(char *format, int type, ...)
 	memmove(format+offset+j, format+offset+this_format_len, offset+format_len-this_format_len+1);
 	memcpy(format+offset, entry_buf, j);
 	p=format+offset+j;
-	*(size_t *)format=p-format;
+	/*
+	 * Search for next non-%% separateor and set offset
+	 * to zero if none found for wrappers to know when
+	 * they're done.
+	 */
+	for(; *p; p++) {
+		if(*p=='%') {
+			if(*(p+1) == '%')
+				p++;
+			else
+				break;
+		}
+	}
+	if(!*p)
+		*(size_t *)format=0;
+	else
+		*(size_t *)format=p-format;
 	return(format);
 }
 
