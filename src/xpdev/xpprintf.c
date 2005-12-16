@@ -56,7 +56,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	/*
 	 * Find the next non %% format, leaving %% as it is
 	 */
-	for(p=format; *p; p++) {
+	for(p=format+*(size_t *)format; *p; p++) {
 		if(*p=='%') {
 			if(*(p+1) == '%')
 				p++;
@@ -67,7 +67,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	if(!*p)
 		return(format);
 	offset=p-format;
-	format_len=strlen(format);
+	format_len=strlen(format+sizeof(size_t))+sizeof(size_t);
 	this_format[0]=0;
 	fmt=this_format;
 	fmt_start=p;
@@ -131,6 +131,8 @@ char *xp_asprintf_next(char *format, int type, ...)
 		}
 		else
 			*p=entry_buf[0];
+		p=format+offset;
+		*(size_t *)format=p-format;
 		return(format);
 	}
 	/* Skip width */
@@ -167,6 +169,8 @@ char *xp_asprintf_next(char *format, int type, ...)
 			}
 			else
 				*p=entry_buf[0];
+			p=format+offset;
+			*(size_t *)format=p-format;
 			return(format);
 		}
 		/* Skip precision */
@@ -308,12 +312,22 @@ char *xp_asprintf_next(char *format, int type, ...)
 	/* Move trailing end to make space */
 	memmove(format+offset+j, format+offset+this_format_len, offset+format_len-this_format_len+1);
 	memcpy(format+offset, entry_buf, j);
+	p=format+offset+j;
+	*(size_t *)format=p-format;
 	return(format);
 }
 
 char *xp_asprintf_start(char *format)
 {
-	return(strdup(format));
+	char	*p;
+
+	p=(char *)malloc(strlen(format)+1+(sizeof(size_t)));
+	if(p==NULL)
+		return(NULL);
+	/* Place current offset at the start of the buffer */
+	*(int *)p=sizeof(size_t);
+	strcpy(p+sizeof(size_t),format);
+	return(p);
 }
 
 char *xp_asprintf_end(char *format)
@@ -321,11 +335,12 @@ char *xp_asprintf_end(char *format)
 	char	*p;
 	size_t	len;
 
-	len=strlen(format);
-	for(p=format; *p; p++, len--) {
+	len=strlen(format+sizeof(size_t));
+	for(p=format+sizeof(size_t); *p; p++, len--) {
 		if(*p=='%' && *(p+1)=='%')
 			memmove(p, p+1, len--);
 	}
+	memmove(format, format+sizeof(size_t), strlen(format+sizeof(size_t))+1);
 	return(format);
 }
 
