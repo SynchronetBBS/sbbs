@@ -1,6 +1,8 @@
 #ifndef _XPPRINTF_H_
 #define _XPPRINTF_H_
 
+#include <stdarg.h>
+
 /* Supported printf argument types */
 #define XP_PRINTF_TYPE_AUTO			0
 #define XP_PRINTF_TYPE_INT			1
@@ -29,9 +31,11 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-char *xp_asprintf_start(char *format);
+char *xp_asprintf_start(const char *format);
 char *xp_asprintf_next(char *format, int type, ...);
 char *xp_asprintf_end(char *format);
+char *xp_asprintf(const char *format, ...);
+char *xp_vasprintf(const char *format, va_list va);
 #if defined(__cplusplus)
 }
 #endif

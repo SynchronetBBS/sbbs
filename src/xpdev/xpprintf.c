@@ -15,6 +15,217 @@
 /* Maximum length of a format specifier including the % */
 #define MAX_FORMAT_LEN	256
 
+static int xp_printf_get_type(const char *format)
+{
+	const char	*p;
+	int		modifier=0;
+	int		j;
+	int		correct_type;
+
+	if(!*(size_t *)format)
+		return(0);
+	p=format+*(size_t *)format;
+	if(*p!='%')
+		return(0);
+	p++;
+
+	/*
+	 * Skip flags (zero or more)
+	 */
+	j=1;
+	while(j) {
+		switch(*p) {
+			case '#':
+				p++;
+				break;
+			case '-':
+				p++;
+				break;
+			case '+':
+				p++;
+				break;
+			case ' ':
+				p++;
+				break;
+			case '0':
+				p++;
+				break;
+			case '\'':
+				p++;
+				break;
+			default:
+				j=0;
+				break;
+		}
+	}
+	if(*p=='*')
+		return(XP_PRINTF_TYPE_INT);
+	while(*p>= '0' && *p <= '9')
+		p++;
+	if(*p=='.') {
+		p++;
+		if(*p=='*')
+			return(XP_PRINTF_TYPE_INT);
+	}
+	while(*p>= '0' && *p <= '9')
+		p++;
+	switch(*p) {
+		case 'h':
+			modifier='h';
+			p++;
+			if(*p=='h') {
+				p++;
+				modifier+='h'<<8;
+			}
+			break;
+		case 'l':
+			modifier='h';
+			p++;
+			if(*p=='l') {
+				p++;
+				modifier+='l'<<8;
+			}
+			break;
+		case 'j':
+			modifier='j';
+			p++;
+			break;
+		case 't':
+			modifier='t';
+			p++;
+			break;
+		case 'z':
+			modifier='z';
+			p++;
+			break;
+		case 'L':
+			modifier='L';
+			p++;
+			break;
+	}
+	/*
+	 * The next char is now the type... if type is auto, 
+	 * set type to what it SHOULD be
+	 */
+	switch(*p) {
+		/* INT types */
+		case 'd':
+		case 'i':
+			switch(modifier) {
+				case 'h'|'h'<<8:
+					correct_type=XP_PRINTF_TYPE_SCHAR;
+					break;
+				case 'h':
+					correct_type=XP_PRINTF_TYPE_SHORT;
+					break;
+				case 'l':
+					correct_type=XP_PRINTF_TYPE_LONG;
+					break;
+				case 'l'|'l'<<8:
+					correct_type=XP_PRINTF_TYPE_LONGLONG;
+					break;
+				case 'j':
+					correct_type=XP_PRINTF_TYPE_INTMAX;
+					break;
+				case 't':
+					correct_type=XP_PRINTF_TYPE_PTRDIFF;
+					break;
+				case 'z':
+					/*
+					 * ToDo this is a signed type of same size
+					 * as size_t
+					 */
+					correct_type=XP_PRINTF_TYPE_LONG;
+					break;
+				default:
+					correct_type=XP_PRINTF_TYPE_INT;
+					break;
+			}
+			break;
+		case 'o':
+		case 'u':
+		case 'x':
+		case 'X':
+			switch(modifier) {
+				case 'h'|'h'<<8:
+					correct_type=XP_PRINTF_TYPE_UCHAR;
+					break;
+				case 'h':
+					correct_type=XP_PRINTF_TYPE_USHORT;
+					break;
+				case 'l':
+					correct_type=XP_PRINTF_TYPE_ULONG;
+					break;
+				case 'l'|'l'<<8:
+					correct_type=XP_PRINTF_TYPE_ULONGLONG;
+					break;
+				case 'j':
+					correct_type=XP_PRINTF_TYPE_UINTMAX;
+					break;
+				case 't':
+					/*
+					 * ToDo this is an unsigned type of same size
+					 * as ptrdiff_t
+					 */
+					correct_type=XP_PRINTF_TYPE_ULONG;
+					break;
+				case 'z':
+					correct_type=XP_PRINTF_TYPE_SIZET;
+					break;
+				default:
+					correct_type=XP_PRINTF_TYPE_UINT;
+					break;
+			}
+			break;
+		case 'a':
+		case 'A':
+		case 'e':
+		case 'E':
+		case 'f':
+		case 'F':
+		case 'g':
+		case 'G':
+			switch(modifier) {
+				case 'L':
+					correct_type=XP_PRINTF_TYPE_LONGDOUBLE;
+					break;
+				case 'l':
+				default:
+					correct_type=XP_PRINTF_TYPE_DOUBLE;
+					break;
+			}
+			break;
+		case 'C':
+			/* ToDo wide chars... not yet supported */
+			correct_type=XP_PRINTF_TYPE_CHAR;
+			break;
+		case 'c':
+			switch(modifier) {
+				case 'l':
+					/* ToDo wide chars... not yet supported */
+				default:
+					correct_type=XP_PRINTF_TYPE_CHAR;
+			}
+			break;
+		case 'S':
+			/* ToDo wide chars... not yet supported */
+			correct_type=XP_PRINTF_TYPE_CHARP;
+			break;
+		case 's':
+			switch(modifier) {
+				case 'l':
+					/* ToDo wide chars... not yet supported */
+				default:
+					correct_type=XP_PRINTF_TYPE_CHARP;
+			}
+			break;
+		case 'p':
+			correct_type=XP_PRINTF_TYPE_VOIDP;
+			break;
+	}
+	return(correct_type);
+}
+
 /*
  * Performs the next replacement in format using the variable
  * specified as the only vararg which is currently the type
@@ -44,6 +255,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	void*			pntr;
 	size_t			s;
 	unsigned long	offset=0;
+	unsigned long	offset2=0;
 	size_t			format_len;
 	size_t			this_format_len;
 	size_t			tail_len;
@@ -60,21 +272,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	 */
 	if(!*(size_t *) format)
 		return(format);
-	/*
-	 * Find the next non %% format, leaving %% as it is
-	 */
-	for(p=format+*(size_t *)format; *p; p++) {
-		if(*p=='%') {
-			if(*(p+1) == '%')
-				p++;
-			else
-				break;
-		}
-	}
-	if(!*p) {
-		*(size_t *)format=0;
-		return(format);
-	}
+	p=format+*(size_t *)format;
 	offset=p-format;
 	format_len=strlen(format+sizeof(size_t))+sizeof(size_t);
 	this_format[0]=0;
@@ -113,24 +311,24 @@ char *xp_asprintf_next(char *format, int type, ...)
 	}
 
 	/*
-	 * If width is '*' then the argument is an unsigned int
+	 * If width is '*' then the argument is an int
 	 * which specifies the width.
 	 */
 	if(*p=='*') {		/* The argument is this width */
 		va_start(vars, type);
-		i=sprintf(entry_buf,"%u", va_arg(vars, int));
+		i=sprintf(entry_buf,"%d", va_arg(vars, int));
 		va_end(vars);
 		if(i > 1) {
 			/*
 			 * We must calculate this before we go mucking about
 			 * with format and p
 			 */
-			offset=p-format;
+			offset2=p-format;
 			newbuf=(char *)realloc(format, format_len+i /* -1 for the '*' that's already there, +1 for the terminator */);
 			if(newbuf==NULL)
 				return(NULL);
 			format=newbuf;
-			p=format+offset;
+			p=format+offset2;
 			/*
 			 * Move trailing end to make space... leaving the * where it
 			 * is so it can be overwritten
@@ -151,24 +349,24 @@ char *xp_asprintf_next(char *format, int type, ...)
 	if(*p=='.') {
 		*(fmt++)=*(p++);
 		/*
-		 * If the precision is '*' then the argument is an unsigned int which
+		 * If the precision is '*' then the argument is an int which
 		 * specifies the precision.
 		 */
 		if(*p=='*') {
 			va_start(vars, type);
-			i=sprintf(entry_buf,"%u", va_arg(vars, int));
+			i=sprintf(entry_buf,"%d", va_arg(vars, int));
 			va_end(vars);
 			if(i > 1) {
 				/*
 				 * We must calculate this before we go mucking about
 				 * with format and p
 				 */
-				offset=p-format;
+				offset2=p-format;
 				newbuf=(char *)realloc(format, format_len+i /* -1 for the '*' that's already there, +1 for the terminator */);
 				if(newbuf==NULL)
 					return(NULL);
 				format=newbuf;
-				p=format+offset;
+				p=format+offset2;
 				/*
 				 * Move trailing end to make space... leaving the * where it
 				 * is so it can be overwritten
@@ -903,17 +1101,32 @@ char *xp_asprintf_next(char *format, int type, ...)
 	return(format);
 }
 
-char *xp_asprintf_start(char *format)
+char *xp_asprintf_start(const char *format)
 {
+	char	*ret;
 	char	*p;
 
-	p=(char *)malloc(strlen(format)+1+(sizeof(size_t)));
-	if(p==NULL)
+	ret=(char *)malloc(strlen(format)+1+(sizeof(size_t)));
+	if(ret==NULL)
 		return(NULL);
 	/* Place current offset at the start of the buffer */
-	*(int *)p=sizeof(size_t);
-	strcpy(p+sizeof(size_t),format);
-	return(p);
+	strcpy(ret+sizeof(size_t),format);
+	/*
+	 * Find the next non %% format, leaving %% as it is
+	 */
+	for(p=ret+sizeof(size_t); *p; p++) {
+		if(*p=='%') {
+			if(*(p+1) == '%')
+				p++;
+			else
+				break;
+		}
+	}
+	if(!*p)
+		*(size_t *)ret=0;
+	else
+		*(size_t *)ret=p-ret;
+	return(ret);
 }
 
 char *xp_asprintf_end(char *format)
@@ -930,6 +1143,92 @@ char *xp_asprintf_end(char *format)
 	return(format);
 }
 
+char *xp_vasprintf(const char *format, va_list va)
+{
+	char	*working;
+	char	*next;
+	int		type;
+	int				i,j;
+	unsigned int	ui;
+	long int		l;
+	unsigned long int	ul;
+	long long int	ll;
+	unsigned long long int	ull;
+	double			d;
+	long double		ld;
+	char*			cp;
+	void*			pntr;
+	size_t			s;
+
+	next=xp_asprintf_start(format);
+	if(next==NULL)
+		return(NULL);
+	working=next;
+	while(*(size_t *)working) {
+		type=xp_printf_get_type(working);
+		switch(type) {
+			case 0:
+				free(working);
+				return(NULL);
+			case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
+				next=xp_asprintf_next(working, type, va_arg(va, int));
+				break;
+			case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
+				next=xp_asprintf_next(working, type, va_arg(va, unsigned int));
+				break;
+			case XP_PRINTF_TYPE_LONG:
+				next=xp_asprintf_next(working, type, va_arg(va, long));
+				break;
+			case XP_PRINTF_TYPE_ULONG:
+				next=xp_asprintf_next(working, type, va_arg(va, unsigned long));
+				break;
+			case XP_PRINTF_TYPE_LONGLONG:
+				next=xp_asprintf_next(working, type, va_arg(va, long long));
+				break;
+			case XP_PRINTF_TYPE_ULONGLONG:
+				next=xp_asprintf_next(working, type, va_arg(va, unsigned long long));
+				break;
+			case XP_PRINTF_TYPE_CHARP:
+				next=xp_asprintf_next(working, type, va_arg(va, char *));
+				break;
+			case XP_PRINTF_TYPE_DOUBLE:
+				next=xp_asprintf_next(working, type, va_arg(va, double));
+				break;
+			case XP_PRINTF_TYPE_LONGDOUBLE:
+				next=xp_asprintf_next(working, type, va_arg(va, long double));
+				break;
+			case XP_PRINTF_TYPE_VOIDP:
+				next=xp_asprintf_next(working, type, va_arg(va, void *));
+				break;
+			case XP_PRINTF_TYPE_SIZET:
+				next=xp_asprintf_next(working, type, va_arg(va, size_t));
+				break;
+		}
+		if(next==NULL) {
+			free(working);
+			return(NULL);
+		}
+		working=next;
+	}
+	next=xp_asprintf_end(working);
+	if(next==NULL) {
+		free(working);
+		return(NULL);
+	}
+	return(next);
+}
+
+char *xp_asprintf(const char *format, ...)
+{
+	char	*ret;
+	va_list	va;
+
+	va_start(va, format);
+	ret=xp_vasprintf(format, va);
+	va_end(va);
+	return(ret);
+}
+
 int main(int argc, char *argv[])
 {
 	char	*format;
@@ -942,6 +1241,9 @@ int main(int argc, char *argv[])
 	float f;
 	long double D;
 
+	p=xp_asprintf("%%%%%*.*f %% %%%ss %cs %*.*lu",3,3,123.123456789,"%llutesting%",32,3,3,123);
+	printf("%s\n",p);
+	free(p);
 	if(argc < 2)
 		return(1);
 
