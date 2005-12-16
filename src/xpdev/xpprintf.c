@@ -53,6 +53,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	int				modifier=0;
 	char			*fmt_start;
 	int				correct_type=0;
+	char			num_str[128];		/* More than enough room for a 256-bit int */
 
 	/*
 	 * Find the next non %% format, leaving %% as it is
@@ -391,7 +392,429 @@ char *xp_asprintf_next(char *format, int type, ...)
 		type=type & ~XP_PRINTF_CONVERT;
 		if(type != correct_type) {
 			switch(correct_type) {
-				
+				case XP_PRINTF_TYPE_INT:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							i=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							i=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							i=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							i=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							i=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							i=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							i=strtol(cp, NULL, 0);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							i=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							i=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							i=(int)pntr;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							i=s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_UINT:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							ui=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							ui=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							ui=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							ui=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							ui=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							ui=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							ui=strtoul(cp, NULL, 0);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							ui=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							ui=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							ui=(unsigned int)pntr;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							ui=s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_LONG:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							l=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							l=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							l=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							l=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							l=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							l=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							l=strtol(cp, NULL, 0);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							l=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							l=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							l=(long)pntr;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							l=s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_ULONG:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							ul=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							ul=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							ul=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							ul=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							ul=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							ul=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							ul=strtoul(cp, NULL, 0);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							ul=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							ul=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							ul=(unsigned long)pntr;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							ul=s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_LONGLONG:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							ll=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							ll=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							ll=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							ll=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							ll=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							ll=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							ll=strtoll(cp, NULL, 0);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							ll=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							ll=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							ll=(long long)pntr;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							ll=s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_ULONGLONG:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							ull=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							ull=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							ull=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							ull=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							ull=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							ull=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							ull=strtoull(cp, NULL, 0);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							ull=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							ull=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							ull=(unsigned long long int)pntr;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							ull=s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_CHARP:
+					num_str[0]=0;
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							sprintf(num_str, "%d", i);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							sprintf(num_str, "%u", i);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							sprintf(num_str, "%ld", l);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							sprintf(num_str, "%lu", ul);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							/* ToDo MSVC doesn't like this */
+							sprintf(num_str, "%lld", ll);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							/* ToDo MSVC doesn't like this */
+							sprintf(num_str, "%llu", ull);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							cp=cp;
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							sprintf(num_str, "%f", d);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							sprintf(num_str, "%Lf", d);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							/* ToDo: Or should this pretend it's a char *? */
+							sprintf(num_str, "%p", pntr);
+							cp=num_str;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							sprintf(num_str, "%zu", s);
+							cp=num_str;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_DOUBLE:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							d=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							d=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							d=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							d=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							d=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							d=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							d=strtod(cp, NULL);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							d=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							d=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							d=(double)((long int)pntr);
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							d=s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_LONGDOUBLE:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							ld=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							ld=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							ld=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							ld=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							ld=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							ld=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							/* strtold() isn't ubiquitous yet */
+							ld=strtod(cp, NULL);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							ld=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							ld=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							ld=(long double)((long int)pntr);
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							ld=s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_VOIDP:
+					/* ToDo: this is nasty... */
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							pntr=(void *)i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							pntr=(void *)ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							pntr=(void *)l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							pntr=(void *)ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							pntr=(void *)ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							pntr=(void *)ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							pntr=(void *)cp;
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							pntr=(void *)(long int)d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							pntr=(void *)(long int)ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							pntr=pntr;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							pntr=(void *)s;
+							break;
+					}
+					break;
+				case XP_PRINTF_TYPE_SIZET:
+					switch(type) {
+						case XP_PRINTF_TYPE_INT:
+							s=i;
+							break;
+						case XP_PRINTF_TYPE_UINT:
+							s=ui;
+							break;
+						case XP_PRINTF_TYPE_LONG:
+							s=l;
+							break;
+						case XP_PRINTF_TYPE_ULONG:
+							s=ul;
+							break;
+						case XP_PRINTF_TYPE_LONGLONG:
+							s=ll;
+							break;
+						case XP_PRINTF_TYPE_ULONGLONG:
+							s=ull;
+							break;
+						case XP_PRINTF_TYPE_CHARP:
+							s=strtoll(cp, NULL, 0);
+							break;
+						case XP_PRINTF_TYPE_DOUBLE:
+							s=d;
+							break;
+						case XP_PRINTF_TYPE_LONGDOUBLE:
+							s=ld;
+							break;
+						case XP_PRINTF_TYPE_VOIDP:
+							s=(size_t)pntr;
+							break;
+						case XP_PRINTF_TYPE_SIZET:
+							s=s;
+							break;
+					}
+					break;
 			}
 		}
 	}
@@ -419,7 +842,10 @@ char *xp_asprintf_next(char *format, int type, ...)
 			j=sprintf(entry_buf, this_format, ull);
 			break;
 		case XP_PRINTF_TYPE_CHARP:
-			j=sprintf(entry_buf, this_format, cp);
+			if(cp==NULL)
+				j=sprintf(entry_buf, this_format, "<null>");
+			else
+				j=sprintf(entry_buf, this_format, cp);
 			break;
 		case XP_PRINTF_TYPE_DOUBLE:
 			j=sprintf(entry_buf, this_format, d);
