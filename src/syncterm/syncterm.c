@@ -174,6 +174,8 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 				strcat(fn,"SyncTERM");
 				break;
 		}
+		if(!isdir(fn))
+			MKDIR(fn);
 		return(fn);
 	}
 	switch(SHGetFolderPath(NULL, (shared?CSIDL_COMMON_APPDATA:CSIDL_APPDATA)|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
@@ -222,6 +224,8 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
 			strcpy(fn, home);
 			backslash(fn);
+			if(!isdir(fn))
+				MKDIR(fn);
 			return(fn);
 		}
 		SAFECOPY(oldlst,home);
