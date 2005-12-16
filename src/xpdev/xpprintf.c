@@ -50,8 +50,9 @@ char *xp_asprintf_next(char *format, int type, ...)
 	char			entry_buf[MAX_ARG_LEN];
 	char			this_format[MAX_FORMAT_LEN];
 	char			*fmt;
-	int				modifier;
+	int				modifier=0;
 	char			*fmt_start;
+	int				correct_type=0;
 
 	/*
 	 * Find the next non %% format, leaving %% as it is
@@ -178,47 +179,6 @@ char *xp_asprintf_next(char *format, int type, ...)
 			*(fmt++)=*(p++);
 	}
 
-	/*
-	 * Copy the arg to the passed type.
-	 */
-	va_start(vars, type);
-	switch(type) {
-		case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
-			i=va_arg(vars, int);
-			break;
-		case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
-			ui=va_arg(vars, unsigned int);
-			break;
-		case XP_PRINTF_TYPE_LONG:
-			l=va_arg(vars, long);
-			break;
-		case XP_PRINTF_TYPE_ULONG:
-			ul=va_arg(vars, unsigned long int);
-			break;
-		case XP_PRINTF_TYPE_LONGLONG:
-			ll=va_arg(vars, long long int);
-			break;
-		case XP_PRINTF_TYPE_ULONGLONG:
-			ull=va_arg(vars, unsigned long long int);
-			break;
-		case XP_PRINTF_TYPE_CHARP:
-			cp=va_arg(vars, char*);
-			break;
-		case XP_PRINTF_TYPE_DOUBLE:
-			d=va_arg(vars, double);
-			break;
-		case XP_PRINTF_TYPE_LONGDOUBLE:
-			ld=va_arg(vars, long double);
-			break;
-		case XP_PRINTF_TYPE_VOIDP:
-			pntr=va_arg(vars, void*);
-			break;
-		case XP_PRINTF_TYPE_SIZET:
-			s=va_arg(vars, size_t);
-			break;
-	}
-	va_end(vars);
-
 	/* Skip/Translate length modifiers */
 	/*
 	 * ToDo: This could (should?) convert the standard ll modifier
@@ -260,6 +220,162 @@ char *xp_asprintf_next(char *format, int type, ...)
 			*(fmt++)=*(p++);
 			break;
 	}
+
+	/*
+	 * The next char is now the type... if type is auto, 
+	 * set type to what it SHOULD be
+	 */
+	if(type==XP_PRINTF_TYPE_AUTO || type & XP_PRINTF_CONVERT) {
+		switch(*p) {
+			/* INT types */
+			case 'd':
+			case 'i':
+				switch(modifier) {
+					case 'h'|'h'<<8:
+						correct_type=XP_PRINTF_TYPE_SCHAR;
+						break;
+					case 'h':
+						correct_type=XP_PRINTF_TYPE_SHORT;
+						break;
+					case 'l':
+						correct_type=XP_PRINTF_TYPE_LONG;
+						break;
+					case 'l'|'l'<<8:
+						correct_type=XP_PRINTF_TYPE_LONGLONG;
+						break;
+					case 'j':
+						correct_type=XP_PRINTF_TYPE_INTMAX;
+						break;
+					case 't':
+						correct_type=XP_PRINTF_TYPE_PTRDIFF;
+						break;
+					case 'z':
+						/*
+						 * ToDo this is a signed type of same size
+						 * as size_t
+						 */
+						correct_type=XP_PRINTF_TYPE_LONG;
+						break;
+					default:
+						correct_type=XP_PRINTF_TYPE_INT;
+						break;
+				}
+				break;
+			case 'o':
+			case 'u':
+			case 'x':
+			case 'X':
+				switch(modifier) {
+					case 'h'|'h'<<8:
+						correct_type=XP_PRINTF_TYPE_UCHAR;
+						break;
+					case 'h':
+						correct_type=XP_PRINTF_TYPE_USHORT;
+						break;
+					case 'l':
+						correct_type=XP_PRINTF_TYPE_ULONG;
+						break;
+					case 'l'|'l'<<8:
+						correct_type=XP_PRINTF_TYPE_ULONGLONG;
+						break;
+					case 'j':
+						correct_type=XP_PRINTF_TYPE_UINTMAX;
+						break;
+					case 't':
+						/*
+						 * ToDo this is an unsigned type of same size
+						 * as ptrdiff_t
+						 */
+						correct_type=XP_PRINTF_TYPE_ULONG;
+						break;
+					case 'z':
+						correct_type=XP_PRINTF_TYPE_SIZET;
+						break;
+					default:
+						correct_type=XP_PRINTF_TYPE_UINT;
+						break;
+				}
+				break;
+			case 'a':
+			case 'A':
+			case 'e':
+			case 'E':
+			case 'f':
+			case 'F':
+			case 'g':
+			case 'G':
+				switch(modifier) {
+					case 'L':
+						correct_type=XP_PRINTF_TYPE_LONGDOUBLE;
+						break;
+					case 'l':
+					default:
+						correct_type=XP_PRINTF_TYPE_DOUBLE;
+						break;
+				}
+				break;
+			case 'c':
+				switch(modifier) {
+					case 'l':
+						/* ToDo wide chars... not yet supported */
+					default:
+						correct_type=XP_PRINTF_TYPE_CHAR;
+				}
+				break;
+			case 's':
+				switch(modifier) {
+					case 'l':
+						/* ToDo wide chars... not yet supported */
+					default:
+						correct_type=XP_PRINTF_TYPE_CHARP;
+				}
+				break;
+		}
+	}
+	if(type==XP_PRINTF_TYPE_AUTO)
+		type=correct_type;
+
+	/*
+	 * Copy the arg to the passed type.
+	 */
+	va_start(vars, type);
+	switch(type) {
+		case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
+			i=va_arg(vars, int);
+			break;
+		case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
+			ui=va_arg(vars, unsigned int);
+			break;
+		case XP_PRINTF_TYPE_LONG:
+			l=va_arg(vars, long);
+			break;
+		case XP_PRINTF_TYPE_ULONG:
+			ul=va_arg(vars, unsigned long int);
+			break;
+		case XP_PRINTF_TYPE_LONGLONG:
+			ll=va_arg(vars, long long int);
+			break;
+		case XP_PRINTF_TYPE_ULONGLONG:
+			ull=va_arg(vars, unsigned long long int);
+			break;
+		case XP_PRINTF_TYPE_CHARP:
+			cp=va_arg(vars, char*);
+			break;
+		case XP_PRINTF_TYPE_DOUBLE:
+			d=va_arg(vars, double);
+			break;
+		case XP_PRINTF_TYPE_LONGDOUBLE:
+			ld=va_arg(vars, long double);
+			break;
+		case XP_PRINTF_TYPE_VOIDP:
+			pntr=va_arg(vars, void*);
+			break;
+		case XP_PRINTF_TYPE_SIZET:
+			s=va_arg(vars, size_t);
+			break;
+	}
+	va_end(vars);
+
 	/* The next char is now the type... perform native sprintf() using it */
 	*(fmt++)=*p;
 	*fmt=0;
