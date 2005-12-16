@@ -816,6 +816,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 					}
 					break;
 			}
+			type=correct_type;
 		}
 	}
 
