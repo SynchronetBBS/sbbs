@@ -314,6 +314,10 @@ char *xp_asprintf_next(char *format, int type, ...)
 						break;
 				}
 				break;
+			case 'C':
+				/* ToDo wide chars... not yet supported */
+				correct_type=XP_PRINTF_TYPE_CHAR;
+				break;
 			case 'c':
 				switch(modifier) {
 					case 'l':
@@ -322,6 +326,10 @@ char *xp_asprintf_next(char *format, int type, ...)
 						correct_type=XP_PRINTF_TYPE_CHAR;
 				}
 				break;
+			case 'S':
+				/* ToDo wide chars... not yet supported */
+				correct_type=XP_PRINTF_TYPE_CHARP;
+				break;
 			case 's':
 				switch(modifier) {
 					case 'l':
@@ -329,6 +337,9 @@ char *xp_asprintf_next(char *format, int type, ...)
 					default:
 						correct_type=XP_PRINTF_TYPE_CHARP;
 				}
+				break;
+			case 'p':
+				correct_type=XP_PRINTF_TYPE_VOIDP;
 				break;
 		}
 	}
