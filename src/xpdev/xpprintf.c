@@ -74,7 +74,8 @@ char *xp_asprintf_next(char *format, int type, ...)
 	/*
 	 * Skip flags (zero or more)
 	 */
-	while(1) {
+	j=1;
+	while(j) {
 		switch(*p) {
 			case '#':
 				*(fmt++)=*(p++);
@@ -95,6 +96,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 				*(fmt++)=*(p++);
 				break;
 			default:
+				j=0;
 				break;
 		}
 	}
@@ -127,7 +129,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 		*(fmt++)=*(p++);
 	/* Check for precision */
 	if(*p=='.') {
-		p++;
+		*(fmt++)=*(p++);
 		/*
 		 * If the precision is '*' then the argument is an unsigned int which
 		 * specifies the precision.
@@ -243,49 +245,52 @@ char *xp_asprintf_next(char *format, int type, ...)
 	*fmt=0;
 	switch(type) {
 		case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
-			j=sprintf(entry_buf, fmt, i);
+			j=sprintf(entry_buf, this_format, i);
 			break;
 		case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
-			j=sprintf(entry_buf, fmt, ui);
+			j=sprintf(entry_buf, this_format, ui);
 			break;
 		case XP_PRINTF_TYPE_LONG:
-			j=sprintf(entry_buf, fmt, l);
+			j=sprintf(entry_buf, this_format, l);
 			break;
 		case XP_PRINTF_TYPE_ULONG:
-			j=sprintf(entry_buf, fmt, ul);
+			j=sprintf(entry_buf, this_format, ul);
 			break;
 		case XP_PRINTF_TYPE_LONGLONG:
-			j=sprintf(entry_buf, fmt, ll);
+			j=sprintf(entry_buf, this_format, ll);
 			break;
 		case XP_PRINTF_TYPE_ULONGLONG:
-			j=sprintf(entry_buf, fmt, ull);
+			j=sprintf(entry_buf, this_format, ull);
 			break;
 		case XP_PRINTF_TYPE_CHARP:
-			j=sprintf(entry_buf, fmt, cp);
+			j=sprintf(entry_buf, this_format, cp);
 			break;
 		case XP_PRINTF_TYPE_DOUBLE:
-			j=sprintf(entry_buf, fmt, d);
+			j=sprintf(entry_buf, this_format, d);
 			break;
 		case XP_PRINTF_TYPE_LONGDOUBLE:
-			j=sprintf(entry_buf, fmt, ld);
+			j=sprintf(entry_buf, this_format, ld);
 			break;
 		case XP_PRINTF_TYPE_VOIDP:
-			j=sprintf(entry_buf, fmt, pntr);
+			j=sprintf(entry_buf, this_format, pntr);
 			break;
 		case XP_PRINTF_TYPE_SIZET:
-			j=sprintf(entry_buf, fmt, s);
+			j=sprintf(entry_buf, this_format, s);
 			break;
 	}
 
-	this_format_len=strlen(fmt);
-	if(j > this_format_len) {
-		newbuf=(char *)realloc(format, format_len-this_format_len+j+1);
-		if(newbuf==NULL)
-			return(NULL);
-		/* Move trailing end to make space */
-		memmove(fmt_start+j, fmt_start+this_format_len, format-fmt_start+format_len-this_format_len);
-		memcpy(fmt_start, entry_buf, j);
-	}
+	this_format_len=strlen(this_format);
+	/*
+	 * This isn't necessary if it's already the right size,
+	 * or it's too large... this realloc() should only need to grow
+	 * the string.
+	 */
+	newbuf=(char *)realloc(format, format_len-this_format_len+j+1);
+	if(newbuf==NULL)
+		return(NULL);
+	/* Move trailing end to make space */
+	memmove(fmt_start+j, fmt_start+this_format_len, format-fmt_start+format_len-this_format_len+1);
+	memcpy(fmt_start, entry_buf, j);
 	return(format);
 }
 
@@ -305,4 +310,63 @@ char *xp_asprintf_end(char *format)
 			memmove(p, p+1, len--);
 	}
 	return(format);
+}
+
+int main(int argc, char *argv[])
+{
+	char	*format;
+	char	*p;
+	int	i,j;
+	long long L;
+	long l;
+	char *cp;
+	double d;
+	float f;
+	long double D;
+
+	if(argc < 2)
+		return(1);
+
+	format=argv[1];
+	format=xp_asprintf_start(format);
+	for(j=2; j<argc; j++) {
+		switch(argv[j][0]) {
+			case 'f':
+				f=atof(argv[j]+1);
+				p=xp_asprintf_next(format,XP_PRINTF_TYPE_FLOAT,f);
+				break;
+			case 'd':
+				d=atof(argv[j]+1);
+				p=xp_asprintf_next(format,XP_PRINTF_TYPE_DOUBLE,d);
+				break;
+			case 'D':
+				/* Don't know of a thing that converts a string to a long double */
+				D=atof(argv[j]+1);
+				p=xp_asprintf_next(format,XP_PRINTF_TYPE_LONGDOUBLE,D);
+				break;
+			case 'i':
+				i=atoi(argv[j]+1);
+				p=xp_asprintf_next(format,XP_PRINTF_TYPE_INT,i);
+				break;
+			case 'l':
+				l=atol(argv[j]+1);
+				p=xp_asprintf_next(format,XP_PRINTF_TYPE_LONG,l);
+				break;
+			case 'L':
+				L=strtoll(argv[j]+1, NULL, 10);
+				p=xp_asprintf_next(format,XP_PRINTF_TYPE_LONGLONG,L);
+				break;
+			case 's':
+				cp=argv[j]+1;
+				p=xp_asprintf_next(format,XP_PRINTF_TYPE_CHARP,cp);
+				break;
+		}
+		if(p==NULL) {
+			printf("Failed converting on item after %s\n",format);
+			return(1);
+		}
+		format=p;
+	}
+	p=xp_asprintf_end(format);
+	printf("At end, value is: '%s'\n",p);
 }
