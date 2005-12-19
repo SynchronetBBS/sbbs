@@ -1090,8 +1090,11 @@ char *xp_asprintf_next(char *format, int type, ...)
 	 * the string.
 	 */
 	newbuf=(char *)realloc(format, format_len-this_format_len+j+1);
-	if(newbuf==NULL)
+	if(newbuf==NULL) {
+		if(entry != entry_buf)
+			free(entry);
 		return(NULL);
+	}
 	format=newbuf;
 	/* Move trailing end to make space */
 	memmove(format+offset+j, format+offset+this_format_len, offset+format_len-this_format_len+1);
