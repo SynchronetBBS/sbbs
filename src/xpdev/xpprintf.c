@@ -6,8 +6,10 @@
 #include "xpprintf.h"
 
 /* MSVC Sucks - can't tell the required len of a *printf() */
-#define MAX_ARG_LEN		1024			/* MAX_ARG_LEN is the maximum length possible as a result of a format which
-										 * is not %s */
+#define MAX_ARG_LEN		1024			/* MAX_ARG_LEN is the maximum length
+										 * possible as a result of a format
+										 * which is not %s
+										 */
 
 /* Maximum length of a format specifier including the % */
 #define MAX_FORMAT_LEN	256
