@@ -453,8 +453,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				if(!confirm("Edit BBS Log Level?",NULL))
 					continue;
 #endif
-				uifc.helpbuf=	"`Debug Transfers`\n\n"
-								"Set the level of verbosity for file transfer info.\n\n";
 				if(item->loglevel==LOG_DEBUG)
 					item->loglevel=LOG_INFO;
 				else
