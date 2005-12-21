@@ -56,7 +56,7 @@ EXEDIR	:=	exe-$(OS)/
 LD	:=	gcc
 
 ifdef DEBUG
- CFLAGS	+=	-g
+ CFLAGS	+=	-g -DOD_DEBUG
  BUILDTYPE	:=	debug
 else
  BUILDTYPE	:=	release
