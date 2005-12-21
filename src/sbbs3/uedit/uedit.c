@@ -36,7 +36,6 @@
  ****************************************************************************/
 
 #include "ciolib.h"
-#define __COLORS	1
 #include "sbbs.h"
 #include <sys/types.h>
 #include <time.h>
