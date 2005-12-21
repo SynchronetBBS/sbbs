@@ -268,7 +268,19 @@ while(client.socket.is_connected && !quit) {
 					}
 				writeln(".");	// end of list
 			}
-			else if(cmd[1].toUpperCase()=="OVERVIEW.FMT") {
+			else if(cmd[1].toUpperCase()=="NEWSGROUPS") {	// RFC 2980 2.1.6
+				writeln("215 list of newsgroups and descriptions follows");
+				if(include_mail && user.security.level == 99)
+					writeln("mail complete mail database");
+				for(g in msg_area.grp_list)
+					for(s in msg_area.grp_list[g].sub_list)
+						writeln(format("%s %s"
+							,msg_area.grp_list[g].sub_list[s].newsgroup
+							,msg_area.grp_list[g].sub_list[s].description
+							));
+				writeln(".");	// end of list
+			}
+			else if(cmd[1].toUpperCase()=="OVERVIEW.FMT") {	// RFC 2980 2.1.7
 				writeln("215 Order of fields in overview database.");
 				writeln("Subject:");
 				writeln("From:");
