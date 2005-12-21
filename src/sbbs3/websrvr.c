@@ -3049,7 +3049,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		fprintf(session->req.fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
-static void js_writebuf(http_session_t *session, char *buf, size_t buflen)
+static void js_writebuf(http_session_t *session, const char *buf, size_t buflen)
 {
 	if(session->req.sent_headers) {
 		if(session->req.method!=HTTP_HEAD && session->req.method!=HTTP_OPTIONS)
@@ -3256,6 +3256,7 @@ static char *find_next_pair(char *buffer, size_t buflen, char find)
 	char	*search;
 	char	*end;
 	size_t	buflen2;
+	char	chars[5]="@%^<";
 
 	end=buffer+buflen;
 	search=buffer;
