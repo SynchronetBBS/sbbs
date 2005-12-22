@@ -51,13 +51,19 @@ function str_cmds(str)
 	);
 
 	log(str);
+	if(str=="HELP")
+		write("\r\nAvailable STR commands (prefix with a semi-colon)\r\n\r\n");
+
 	if(user.compare_ars("SYSOP")) {
 		// Change node action to "sysop activities"
 		bbs.node_action=NODE_SYSP;
 		//sync
 
 		// ######################## SYSOP Functions ##############################
-
+		if(str=="HELP") {
+			writeln("ERR\tDisplay currrent error log and opptionally delete it as well as");
+			writeln("\toptionally clearing all nodes error counters.");
+		}
 		if(str=="ERR") {
 			if(file_exists(system.logs_dir+"error.log")) {
 				write(bbs.text(ErrorLogHdr));
@@ -82,6 +88,8 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP")
+			writeln("GURU\tDisplay and optionally clear current guru log.");
 		if(str=="GURU") {
 			if(file_exists(system.logs_dir+"guru.log")) {
 				console.printfile(system.logs_dir+"guru.log");
@@ -91,18 +99,26 @@ function str_cmds(str)
 			}
 		}
 
+		if(str=="HELP")
+			writeln("CHUSER\tBecome a different user.");
 		if(str=="CHUSER") {
 			// Prompts for syspass
 			bbs.change_user();
 			return;
 		}
 
+		if(str=="HELP")
+			writeln("ANSCAP\tToggle ANSI capture.");
 		if(str=="ANSCAP") {
 			bbs.sys_status^=SS_ANSCAP;
 			printf(bbs.text(ANSICaptureIsNow),bbs.sys_status&SS_ANSCAP?bbs.text(ON):bbs.text(OFF));
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("LIST <filename>");
+			writeln("\tDisplays a file.");
+		}
 		if(str=="LIST") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -111,6 +127,8 @@ function str_cmds(str)
 			}
 		}
 
+		if(str=="HELP")
+			writeln("EDIT\tEdits a specified file using your message editor.");
 		if(str=="EDIT") {
 			if(bbs.check_syspass()) {
 				write(bbs.text(Filename));
@@ -120,6 +138,8 @@ function str_cmds(str)
 			}
 		}
 
+		if(str=="HELP")
+			writeln("LOG\tDisplays todays activity log");
 		if(str=="LOG") {
 			if(bbs.check_syspass()) {
 				str=system.logs_dir+strftime("logs/%m%d%y.log",time());
@@ -128,6 +148,8 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP")
+			writeln("YLOG\tDisplays yesterdays activity log.");
 		if(str=="YLOG") {
 			if(bbs.check_syspass()) {
 				str=system.logs_dir+strftime("logs/%m%d%y.log",time()-24*60*60);
@@ -136,11 +158,15 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP")
+			writeln("SS\tDisplays current system stats");
 		if(str=="SS") {
 			bbs.sys_stats();
 			return;
 		}
 
+		if(str=="HELP")
+			writeln("NS <#>\tDisplays the current node stats for node #.");
 		if(word=="NS") {
 			str=str.substr(2);
 			str=str.replace(/^\s+/,"");
@@ -148,6 +174,10 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("EXEC [command]");
+			writeln("\texecutes command (or prompts for it) with I/O redirected.");
+		}
 		if(word=="EXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -156,6 +186,11 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("NEXEC [command]");
+			writeln("\texecutes command (or prompts for it) with I/O redirected, and assuming");
+			writeln("\tit's a native binary.");
+		}
 		if(word=="NEXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -164,6 +199,11 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("FOSSIL [command]");
+			writeln("\texecutes command (or prompts for it) with I/O redirected, and assuming");
+			writeln("\tthe internal FOSSIL driver will be used.");
+		}
 		if(word=="FOSSIL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(6);
@@ -172,6 +212,10 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("CALL <HubID>");
+			writeln("\tforces callout to HubID");
+		}
 		if(word=="CALL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -182,11 +226,19 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("NODE [parameters]");
+			writeln("\texecutes the node utility with the passed parameters.");
+		}
 		if(word=="NODE") {
 			bbs.exec(system.exec_dir+str.toLowerCase(), EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("DOWN [#]");
+			writeln("\tdowns node #.  If # is omitted, downs the current node.");
+		}
 		if(word=="DOWN") {
 			str=str.substr(4);
 			i=parseInt(get_arg(str));
@@ -204,6 +256,10 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("RERUN [#]");
+			writeln("\tMarks node # for rerun.  If # is omitted, reruns the current node.");
+		}
 		if(word=="RERUN") {
 			str=str.substr(5);
 			i=parseInt(get_arg(str));
@@ -218,22 +274,32 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP")
+			writeln("SLOG\tExecutes the slog utility to display system statistics.");
 		if(str=="SLOG") {
 			bbs.exec(system.exec_dir+"slog /p",EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("NLOG [#]");
+			writeln("\tExecutes the slog utility to display node stats for the specified node.");
+			writeln("\tIf # is omitted, uses the current node.");
+		}
 		if(str=="NLOG") {
 			bbs.exec(system.exec_dir+"slog "+system.node_dir+" /p",EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
 			return;
 		}
-
 		if(word=="NLOG") {
 			str=str.substr(5);
 			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_arg(str)+" /p",EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("UEDIT [#]");
+			writeln("\tEdits user # or starts at user 0");
+		}
 		if(word=="UEDIT") {
 			// Prompts for syspass
 			str=str.substr(5);
@@ -244,11 +310,17 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP")
+			writeln("MAIL\tRead all mail currently in the mail base");
 		if(str=="MAIL") {
 			bbs.read_mail(MAIL_ALL);
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("BULKMAIL");
+			writeln("\tSends a mail to all users which match a specified ARS.");
+		}
 		if(str=="BULKMAIL") {
 			write("\r\nEnter ARS matches to send mail to or [CR] to send ");
 			write("by name/number\r\nARS to match: ");
@@ -258,6 +330,9 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("DOS\tExecutes the DOS shell (command.com) with I/O redirected.");
+		}
 		if(str=="DOS") {	// DOS/Windows shell
 			if(bbs.check_syspass()) {
 				bbs.exec("command.com",EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
@@ -265,8 +340,9 @@ function str_cmds(str)
 			return;
 		}
 
-		// ToDo %y doesn't do the trick here baby.
-		// Isn't there a JS thing that tells me this one?
+		if(str=="HELP")
+			writeln("SHELL\tExecutes the native shell (COMSPEC or SHELL env variable).");
+		// ToDo: Isn't there a JS thing that tells me this one?
 		if(str=="SHELL") {	// Unix shell (-i for interactive)
 			if(bbs.check_syspass()) {
 				if(system.platform != 'Win32')
@@ -277,6 +353,10 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("SPY <#>");
+			writeln("\tSpys on node #.");
+		}
 		if(word=="SPY") {
 			if(bbs.check_syspass()) {
 				str=str.substr(3);
@@ -287,6 +367,11 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("DIR [path]");
+			writeln("\tDisplays a full directory of specified path or the current file area if");
+			writeln("\tnot specified");
+		}
 		if(str=="DIR") {
 			// Dir of current lib:
 			if(bbs.check_syspass()) {
@@ -322,13 +407,6 @@ function str_cmds(str)
 			}
 			return;
 		}
-
-		if(word=="LOAD") {
-			str=str.substr(4);
-			bbs.load_text(get_arg(str));
-			return;
-		}
-
 		if(word=="DIR") {
 			if(bbs.check_syspass()) {
 				var files=0;
@@ -364,6 +442,23 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("LOAD [filespec]");
+			writeln("\tLoads the text.dat from the specified filespec.");
+		}
+		if(word=="LOAD") {
+			str=str.substr(4);
+			bbs.load_text(get_arg(str));
+			return;
+		}
+
+		if(str=="HELP") {
+			writeln("UPLOAD [areaspec]");
+			writeln("\tPerforms a bulk upload in areaspec where area spec is ALL, LIB, or");
+			writeln("\tomitted.");
+			writeln("\tIf areaspec is ALL performs the bulk upload in all file areas.");
+			writeln("\tIf areaspec is LIB, does the same in all areas of teh current lib.");
+		}
 		if(word=="UPLOAD") {
 			str=str.substr(7);
 			if(str.toUpperCase()=="ALL") {
@@ -390,6 +485,11 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("ALTUL [path]");
+			writeln("\tSets the ALT upload path to <path>.  If path is omitted, turns off the");
+			writeln("\talt upload path.");
+		}
 		if(word=="ALTUL") {
 			str=str.substr(6);
 			bbs.alt_ul_dir=(str+0);
@@ -397,6 +497,10 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("RESORT [ALL|LIB|blank]");
+			writeln("\tResorts the specified file areas.");
+		}
 		if(word=="RESORT") {
 			for(i=0;i<system.nodes;i++) {
 				if(i!=bbs.node_num-1) {
@@ -428,6 +532,16 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("OLDUL [ALL|LIB|blank]");
+			writeln("\tLists all files uploaded before your last scan time.");
+			writeln("OLD [ALL|LIB|blank]");
+			writeln("\tLists all files not downloaded since your last scan time.");
+			writeln("OFFLINE [ALL|LIB|blank]");
+			writeln("\tLists all offline files.");
+			writeln("CLOSE [ALL|LIB|blank]");
+			writeln("\tLists all files currently open.");
+		}
 		if(word=="OLDUL" || word=="OLD" || word=="OFFLINE" || word=="CLOSE") {
 			str=str.replace(/^[A-Z]*\s/,"");
 			if(file_area.lib_list.length<1)
@@ -503,6 +617,11 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("GET [path]");
+			writeln("\tToDo: This *should* download the specified file");
+			writeln("\tThis is not currently possible from JS however.");
+		}
 		if(word=="GET") {
 			str=str.substr(3);
 			str=str.replace(/^\s+/,"");
@@ -524,6 +643,11 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("PUT [path]");
+			writeln("\tToDo: This *should* upload the specified file");
+			writeln("\tThis is not currently possible from JS however.");
+		}
 		if(word=="PUT") {
 			str=str.substr(3);
 			str=str.replace(/^\s+/,"");
@@ -551,6 +675,8 @@ function str_cmds(str)
 
 //# Quiet Node
 	if(user.compare_ars("exempt Q")) {
+		if(str=="HELP")
+			writeln("QUIET\tToggles quit setting (you are not lised as online).");
 		if(str=="QUIET") {
 			if(user.compare_ars("QUIET"))
 				system.node_list[bbs.node_num-1].status=NODE_INUSE;
@@ -560,6 +686,10 @@ function str_cmds(str)
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("QUIET\tToggles anonymous setting (the node is listed online, but you are not");
+			writeln("\tmentioned).");
+		}
 		if(str=="ANON") {
 			bbs.node_settings ^= NODE_ANON;
 			display_node(bbs.node_num);
@@ -569,6 +699,10 @@ function str_cmds(str)
 
 // Lock Node
 	if(user.compare_ars("exempt N")) {
+		if(str=="HELP") {
+			writeln("LOCK [#]");
+			writeln("\tLocks the specified node, or the current node if none specified.");
+		}
 		if(word=="LOCK") {
 			str=str.substr(4);
 			i=parseInt(get_arg(str));
@@ -586,6 +720,10 @@ function str_cmds(str)
 			
 // Interrupt Node
 	if(user.compare_ars("exempt I")) {
+		if(str=="HELP") {
+			writeln("INTR [#]");
+			writeln("\tInterrupts the specified node, or the current node if none specified.");
+		}
 		if(word=="INTR") {
 			str=str.substr(4);
 			i=parseInt(get_arg(str));
@@ -603,20 +741,39 @@ function str_cmds(str)
 
 // Chat
 	if(user.compare_ars("exempt C")) {
+		if(str=="HELP")
+			writeln("CHAT\tPages the sysop");
 		if(str=="CHAT") {
 			bbs.page_sysop();
 			return;
 		}
 	}
 
+	if(str=="HELP")
+		writeln("POFF\tToggles if other users can page you for this session.");
 	if(str=="POFF") {
 		bbs.node_settings ^= NODE_POFF;
+		write("Paging is ");
+		if(bbs.node_settings & NODE_POFF)
+			writeln("OFF");
+		else
+			writeln("ON");
 	}
 
 // Edit .plan
 	if(user.compare_ars("rest not G")) {
+		if(str=="HELP")
+			writeln("PLAN\tEdits or deletes your .plan file (displayed when somebody fingers you).");
 		if(str=="PLAN") {
 			var plan=format("%suser/%04d.plan",system.data_dir,user.number);
+			if(file_exists(plan)) {
+				if(console.yesno("Display current .plan"))
+					console.printfile(plan);
+				if(!console.noyes("Delete current .plan"))
+					file_remove(plan);
+			}
+			if(console.yesno("Edit/Create .plan"))
+				console.printfile(plan);
 			console.editfile(plan);
 		}
 	}
