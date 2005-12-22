@@ -612,6 +612,14 @@ function str_cmds(str)
 	if(str=="POFF") {
 		bbs.node_settings ^= NODE_POFF;
 	}
+
+// Edit .plan
+	if(user.compare_ars("rest not G")) {
+		if(str=="PLAN") {
+			var plan=format("%suser/%04d.plan",system.data_dir,user.number);
+			console.editfile(plan);
+		}
+	}
 }
 
 //### Generic routine to ask user for parameter if one wasn't specified ###

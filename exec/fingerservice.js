@@ -416,7 +416,12 @@ write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
 	  ,u.connection
 	  ,u.host_name
 	  ,u.ip_address));
-
+var plan;
+plan=format("%suser/%04s.plan",system.data_dir,u.number);
+if(file_exists(plan))
+	send_file(plan)
+else
+	write("No plan.\r\n");
 done();
 
 /* End of fingerservice.js */
