@@ -484,6 +484,8 @@ static char* sys_prop_desc[] = {
 	,"Synchronet alpha/beta designation (e.g. ' beta')"
 	,"Synchronet full version information (e.g. '3.10k Beta Debug')"
 	,"Synchronet version notice (includes version and platform)"
+	,"Synchronet version number in decimal (e.g. 31301 for v3.13b)"
+	,"Synchronet version number in hexadecimal (e.g. 0x31301 for v3.13b)"
 	,"platform description (e.g. 'Win32', 'Linux', 'FreeBSD')"
 	,"socket library version information"
 	,"message base library version information"
@@ -1674,6 +1676,17 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 		return(NULL);
 	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "version_notice", &val))
+		return(NULL);
+
+	/* Numeric version properties */
+	if(!JS_NewNumberValue(cx, VERSION_NUM, &val))
+		return(NULL);
+	if(!JS_SetProperty(cx, sysobj, "version_num", &val))
+		return(NULL);
+
+	if(!JS_NewNumberValue(cx, VERSION_HEX, &val))
+		return(NULL);
+	if(!JS_SetProperty(cx, sysobj, "version_hex", &val))
 		return(NULL);
 
 	if((js_str=JS_NewStringCopyZ(cx, PLATFORM_DESC))==NULL)
