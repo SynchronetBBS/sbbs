@@ -160,13 +160,13 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if((libobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
+		val=OBJECT_TO_JSVAL(libobj);
 		lib_index=-1;
 		if(user==NULL || chk_ar(cfg,cfg->lib[l]->ar,user)) {
 
 			if(!JS_GetArrayLength(cx, lib_list, &lib_index))
 				return(NULL);
 
-			val=OBJECT_TO_JSVAL(libobj);
 			if(!JS_SetElement(cx, lib_list, lib_index, &val))
 				return(NULL);
 		}
@@ -242,6 +242,26 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			/* Add as property (associative array element) */
 			if(!JS_DefineProperty(cx, alldirs, cfg->dir[d]->code, val
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				return(NULL);
+
+			if(d==cfg->user_dir 
+				&& !JS_DefineProperty(cx, areaobj, "user_dir", val
+					,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				return(NULL);
+
+			if(d==cfg->sysop_dir 
+				&& !JS_DefineProperty(cx, areaobj, "sysop_dir", val
+					,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				return(NULL);
+
+			if(d==cfg->upload_dir 
+				&& !JS_DefineProperty(cx, areaobj, "upload_dir", val
+					,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				return(NULL);
+
+			if(d==cfg->lib[l]->offline_dir
+				&& !JS_DefineProperty(cx, libobj, "offline_dir", val
+					,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
 			val=INT_TO_JSVAL(dir_index);
