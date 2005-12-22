@@ -668,6 +668,8 @@ function send_command(command,param)  {
 			sock.send("PRIVMSG "+send_to+" :\x01"+full_params+"\x01\r\n");
 			break;
 		case "PART":
+			// If the user specifies a channel, this SHOULD part that channel,
+			// not the current one.
 			channels.part(channels.current.name,param);
 			break;
 		case "N":
