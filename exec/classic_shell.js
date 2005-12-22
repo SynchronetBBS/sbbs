@@ -844,9 +844,17 @@ file_transfers:
 				continue file_transfers;
 
 			case '/D':
-				/* ToDo: file_download_user
-				   (user_dir not available)
-				   see line 312 in execfile.cpp */
+				if(file_area.user_dir==undefined)
+					console.putmsg(bbs.text(NoUserDir));
+				else {
+					if(user.compare_ars("rest D"))
+						console.putmsg(bbs.text(R_Download));
+					else {
+						console.crlf();
+						if(!bbs.list_file_info(file_area.user_dir, FI_USERXFER))
+							console.putmsg(bbs.text(NoFilesForYou));
+					}
+				}
 				continue file_transfers;
 
 			case 'E':
@@ -1054,21 +1062,27 @@ file_transfers:
 
 			case 'U':
 				console.putmsg("\r\nchUpload File\r\n");
+				i=0xffff;	/* INVALID_DIR */
 				if(file_exists(system.text_dir+"menu/upload.*"))
 					bbs.menu("upload");
 				if(file_area.lib_list.length) {
-					if(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload)
-						i=file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number;
-					/* else  ToDo: cfg.upload_dir not available to JS */
+					i=file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number;
+					if(file_area.upload_dir != undefined && !file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload)
+						i=file_area.upload_dir.number;
 				}
-				/* else  ToDo: cfg.upload_dir not available to JS */
+				else {
+					if(file_area.upload_dir != undefined)
+						i=file_area.upload_dir.number;
+				}
 				bbs.upload_file(i);
 				continue file_transfers;
 
 			case '/U':
 				console.putmsg("\r\nchUpload File to User\r\n");
-				/* ToDo: file_upload_user
-				   (user_dir not available) */
+				if(file_area.upload_dir == undefined)
+					console.putmsg(bbs.text(NoUserDir));
+				else
+					bbs.upload_file(file_area.upload_dir.number);
 				continue file_transfers;
 
 			case 'V':
@@ -1101,8 +1115,10 @@ file_transfers:
 
 			case 'Z':
 				console.putmsg("\r\nchUpload File to Sysop\r\n");
-				/* ToDo: sysop_dir not available 
-				file_upload_sysop */
+				if(file_area.sysop_dir == undefined)
+					console.putmsg(bbs.text(NoSysopDir));
+				else
+					bbs.upload_file(file_area.sysop_dir.number);
 				continue file_transfers;
 
 			case '*':
