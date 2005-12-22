@@ -687,7 +687,7 @@ function str_cmds(str)
 		}
 
 		if(str=="HELP") {
-			writeln("QUIET\tToggles anonymous setting (the node is listed online, but you are not");
+			writeln("ANON\tToggles anonymous setting (the node is listed online, but you are not");
 			writeln("\tmentioned).");
 		}
 		if(str=="ANON") {
