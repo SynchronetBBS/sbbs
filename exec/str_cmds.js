@@ -464,9 +464,8 @@ function str_cmds(str)
 			if(str.toUpperCase()=="ALL") {
 				for(i=0; i<file_area.lib_list.length; i++) {
 					for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-						/* ToDo extra check here...
-	                        if(cfg.lib[i]->offline_dir==usrdir[i][j])
-   	                         continue; */
+						if(file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
+							continue;
 						bbs.bulk_upload(file_area.lib_list[i].dir_list[j].number);
 					}
 				}
@@ -474,9 +473,8 @@ function str_cmds(str)
 			}
 			if(str.toUpperCase()=="LIB") {
 				for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
-					/* ToDo extra check here...
-						if(cfg.lib[usrlib[curlib]]->offline_dir
-                         ==usrdir[curlib][i]) */
+					if(file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+						continue;
 					bbs.bulk_upload(file_area.lib_list[bbs.curlib].dir_list[i].number);
 				}
 				return;
@@ -584,9 +582,8 @@ function str_cmds(str)
 			if(str.toUpperCase()=="ALL") {
 				for(i=0;i<file_area.lib_list.length;i++) {
 					for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
-						/* ToDo... there's an offline check in here */
-						/* if(cfg.lib[i]->offline_dir==usrdir[i][j])
-                               continue; */
+						if(file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
+							continue;
 						l=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number,s,m);
 						if(l==-1)
 							return;
@@ -596,10 +593,8 @@ function str_cmds(str)
 			}
 			else if(str.toUpperCase()=="LIB") {
 				for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
-					/* ToDo... there's an offliune check in here */
-					/* if(cfg.lib[usrlib[curlib]]->offline_dir==usrdir[curlib][i])
-                           continue; */
-
+					if(file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+						continue;
 					l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[j].number,s,m);
 					if(l==-1)
 						return;
