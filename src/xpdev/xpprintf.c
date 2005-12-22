@@ -565,9 +565,17 @@ char *xp_asprintf_next(char *format, int type, ...)
 	va_start(vars, type);
 	switch(type & ~XP_PRINTF_CONVERT) {
 		case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
+			/*
+			 * ToDo: If it's a %c, and the value is 0, should it output [null]
+			 * or should it terminate the string?
+			 */
 			i=va_arg(vars, int);
 			break;
 		case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
+			/*
+			 * ToDo: If it's a %c, and the value is 0, should it output [null]
+			 * or should it terminate the string?
+			 */
 			ui=va_arg(vars, unsigned int);
 			break;
 		case XP_PRINTF_TYPE_LONG:
