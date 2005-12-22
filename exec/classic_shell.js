@@ -951,8 +951,7 @@ file_transfers:
 								console.putmsg(' ',P_SAVEATR);
 							if(i<99)
 								console.putmsg(' ',P_SAVEATR);
-							/* ToDo: getfiles() not implemented */
-							console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",-1),P_SAVEATR);
+							console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",todo_getfiles(j,i)),P_SAVEATR);
 						}
 					}
 					console.mnemonics(format(bbs.text(JoinWhichDir),bbs.curdir+1));
@@ -1139,8 +1138,7 @@ file_transfers:
 						console.putmsg(' ');
 					str=format(bbs.text(DirLstFmt),i+1
 						,file_area.lib_list[bbs.curlib].dir_list[i].description,""
-						/* ToDo: getfiles not implemented */
-						,-1);
+						,todo_getfiles(bbs.curlib,i));
 					if(i<9)
 						console.putmsg(' ');
 					if(i<99)
@@ -1268,7 +1266,8 @@ function file_info()
 }
 
 //############################ Nasty Hacks #######################
-function todo_padfname(fname) {
+function todo_padfname(fname)
+{
 	var name='';
 	var ext='';
 
@@ -1289,5 +1288,11 @@ function todo_padfname(fname) {
 		ext=ext.substr(0,2)+'*';
 	}
 	return(format("%-8.8s-3.3s",name,ext));
+}
+
+function todo_getfiles(lib, dir)
+{
+	var path=format("%s%s.ixb", file_area.lib_list[lib].dir_list[dir].data_dir, file_area.lib_list[lib].dir_list[dir].code);
+	return(file_size(path)/22);	/* F_IXBSIZE */
 }
 //end of DEFAULT.JS
