@@ -457,7 +457,7 @@ function str_cmds(str)
 			writeln("\tPerforms a bulk upload in areaspec where area spec is ALL, LIB, or");
 			writeln("\tomitted.");
 			writeln("\tIf areaspec is ALL performs the bulk upload in all file areas.");
-			writeln("\tIf areaspec is LIB, does the same in all areas of teh current lib.");
+			writeln("\tIf areaspec is LIB, does the same in all areas of the current lib.");
 		}
 		if(word=="UPLOAD") {
 			str=str.substr(7);
