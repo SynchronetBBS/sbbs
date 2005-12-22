@@ -5427,12 +5427,14 @@ object MainForm: TMainForm
     Left = 600
   end
   object LogTimer: TTimer
+    Enabled = False
     Interval = 250
     OnTimer = LogTimerTick
     Left = 536
     Top = 40
   end
   object ServiceStatusTimer: TTimer
+    Enabled = False
     Interval = 250
     OnTimer = ServiceStatusTimerTick
     Left = 504
