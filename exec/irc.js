@@ -197,7 +197,8 @@ function handle_command(prefix,command,message)  {
 							if(message[0].slice(0,1)=="#" || message[0].slice(0,1)=="&")  {
 								from_nick=from_nick+"\x01N\x01C"+message[0]+":\x01N\x01W ";
 							}
-							console.beep();
+							else
+								console.beep();
 						}
 					}
 					else  {
