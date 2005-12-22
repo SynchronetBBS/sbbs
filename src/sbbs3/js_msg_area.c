@@ -382,13 +382,13 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		if((grpobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
+		val=OBJECT_TO_JSVAL(grpobj);
 		grp_index=-1;
 		if(user==NULL || chk_ar(cfg,cfg->grp[l]->ar,user)) {
 
 			if(!JS_GetArrayLength(cx, grp_list, &grp_index))
 				return(NULL);
 
-			val=OBJECT_TO_JSVAL(grpobj);
 			if(!JS_SetElement(cx, grp_list, grp_index, &val))
 				return(NULL);
 		}
