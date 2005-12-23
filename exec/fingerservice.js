@@ -417,7 +417,7 @@ write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
 	  ,u.host_name
 	  ,u.ip_address));
 var plan;
-plan=format("%suser/%04s.plan",system.data_dir,u.number);
+plan=format("%suser/%04d.plan",system.data_dir,u.number);
 if(file_exists(plan))
 	send_file(plan)
 else
