@@ -46,6 +46,7 @@ function Lightbar(items)
 	this.khfg=15;
 	this.current=0;
 	this.align=0;
+	this.force_width=-1;
 	this.getval=Lightbar_getval;
 	this.clear=Lightbar_clearitems;
 	this.add=Lightbar_additem;
@@ -151,6 +152,10 @@ function Lightbar_getval(current)
 		var end=this.xpos;
 		var i;
 		for(i=0; i<this.items.length; i++) {
+			if(this.force_width>0) {
+				end+=this.force_width+1;
+				continue;
+			}
 			if(this.items[i].width==undefined) {
 				if(this.items[i]==undefined) {
 					alert("Sparse items array!");
@@ -186,17 +191,21 @@ function Lightbar_getval(current)
 			var cleaned=this.items[i].text;
 
 			cleaned=cleaned.replace(/\|/g,'');
-			width=cleaned.length;
-			if(this.items[i]==undefined) {
-				alert("Sparse items array!");
-				return(this.failsafe_getval());
+			if(this.force_width>0)
+				width=this.force_width;
+			else {
+				width=cleaned.length;
+				if(this.items[i]==undefined) {
+					alert("Sparse items array!");
+					return(this.failsafe_getval());
+				}
+				if(this.items[i].text==undefined) {
+					alert("No text for item "+i+"!");
+					return(this.failsafe_getval());
+				}
+				if(this.items[i].width!=undefined)
+					width=this.items[i].width;
 			}
-			if(this.items[i].text==undefined) {
-				alert("No text for item "+i+"!");
-				return(this.failsafe_getval());
-			}
-			if(this.items[i].width!=undefined)
-				width=this.items[i].width;
 			console.gotoxy(curx, cury);
 			if(i==this.current) {
 				cursx=curx;
@@ -212,7 +221,7 @@ function Lightbar_getval(current)
 					for(;j<width-cleaned.length;j++)
 						console.write(' ');
 				}
-				if(align==2) {
+				if(this.align==2) {
 					if(this.current==i)
 						console.attributes=cattr;
 					else
@@ -341,3 +350,9 @@ function Lightbar_getval(current)
 		}
 	}
 }
+
+var lb=new Lightbar();
+lb.force_width=15;
+lb.add("Option1","1");
+lb.add("Option2","2");
+lb.getval();
