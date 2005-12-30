@@ -350,9 +350,3 @@ function Lightbar_getval(current)
 		}
 	}
 }
-
-var lb=new Lightbar();
-lb.force_width=15;
-lb.add("Option1","1");
-lb.add("Option2","2");
-lb.getval();
