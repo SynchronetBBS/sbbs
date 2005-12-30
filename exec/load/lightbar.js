@@ -98,8 +98,16 @@ function Lightbar_getval(current)
 			return(null);
 		if(this.items[i].retval==undefined)
 			return(undefined);
-		return(this.items[i].retval);
+		retval=this.items[i].retval;
 	}
+
+	for(i=0; i<this.items.length; i++) {
+		if(retval==this.items[i].retval) {
+			this.current=i;
+			break;
+		}
+	}
+	return(retval);
 }
 
 /*
