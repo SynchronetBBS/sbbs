@@ -4,8 +4,6 @@
  */
 
 /* ToDo: Support multiple columns */
-/* ToDo: Support "seperators" (Perhaps just make items with no retval not
- * ToDo: be selectable?) */
 //if(SYS_CLOSED==undefined)
 	load("sbbsdefs.js");
 
@@ -66,12 +64,9 @@ function Lightbar_additem(txt, retval, width)
 		alert("Text of item undefined!");
 		return;
 	}
-	if(retval==undefined) {
-		alert("Retval of item undefined!");
-		return;
-	}
 	item.text=txt;
-	item.retval=retval;
+	if(retval!=undefined)
+		item.retval=retval;
 	if(width!=undefined)
 		item.width=width;
 	this.items.push(item);
@@ -140,6 +135,16 @@ function Lightbar_getval(current)
 		if(this.items.length<=0)
 			return(null);
 	}
+	var orig_cur=this.current;
+	while(this.items[this.current].retval==undefined) {
+		this.current++;
+		if(this.current==this.items.length)
+			this.current=0;
+		if(this.current==orig_cur) {
+			alert("No items with a return value!");
+			return(undefined);
+		}
+	}
 
 	/* Check that a horizontal lightbar fits on the screen */
 	if(this.direction==1) {
@@ -175,6 +180,7 @@ function Lightbar_getval(current)
 		var cury=this.ypos;
 		var cursx=this.xpos;
 		var cursy=this.ypos;
+		var item_count=0;
 		for(i=0; i<this.items.length; i++) {
 			var width;
 			var cleaned=this.items[i].text;
@@ -248,6 +254,12 @@ function Lightbar_getval(current)
 				console.write(" ");
 				curx+=width+1;
 			}
+			if(this.items[i].retval!=undefined)
+				item_count++;
+		}
+		if(item_count==0) {
+			alert("No items with a return value!");
+			return(undefined);
 		}
 		console.gotoxy(cursx,cursy);
 		if(ret!=undefined)
@@ -258,37 +270,55 @@ function Lightbar_getval(current)
 		switch(key) {
 			case KEY_UP:
 				if(this.direction==0) {
-					if(this.current==0)
-						this.current=this.items.length;
-					this.current--;
+					do {
+						if(this.current==0)
+							this.current=this.items.length;
+						this.current--;
+					} while(this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_DOWN:
 				if(this.direction==0) {
-					this.current++;
-					if(this.current==this.items.length)
-						this.current=0;
+					do {
+						this.current++;
+						if(this.current==this.items.length)
+							this.current=0;
+					} while(this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_LEFT:
 				if(this.direction==1) {
-					if(this.current==0)
-						this.current=this.items.length;
-					this.current--;
+					do {
+						if(this.current==0)
+							this.current=this.items.length;
+						this.current--;
+					} while(this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_RIGHT:
 				if(this.direction==1) {
+					do {
+						this.current++;
+						if(this.current==this.items.length)
+							this.current=0;
+					} while(this.items[this.current].retval==undefined);
+				}
+				break;
+			case KEY_HOME:
+				this.current=0;
+				while(this.items[this.current].retval==undefined) {
 					this.current++;
 					if(this.current==this.items.length)
 						this.current=0;
 				}
 				break;
-			case KEY_HOME:
-				this.current=0;
-				break;
 			case KEY_END:
 				this.current=this.items.length-1;
+				while(this.items[this.current].retval==undefined) {
+					if(this.current==0)
+						this.current=this.items.length;
+					this.current--;
+				}
 				break;
 			case '\r':
 			case '\n':
@@ -299,9 +329,9 @@ function Lightbar_getval(current)
 			default:
 				for(i=0; i<this.items.length; i++) {
 					if(this.items[i].text.indexOf('|'+key)!=-1) {
+						if(this.items[i].retval==undefined)
+							continue;
 						this.current=i;
-						if(this.items[this.current].retval==undefined)
-							return(undefined);
 						/* Let it go through once more to highlight */
 						ret=this.items[this.current].retval;
 						break;
