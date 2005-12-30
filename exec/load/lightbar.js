@@ -3,6 +3,9 @@
  * $Id$
  */
 
+/* ToDo: Support multiple columns */
+/* ToDo: Support "seperators" (Perhaps just make items with no retval not
+ * ToDo: be selectable?) */
 //if(SYS_CLOSED==undefined)
 	load("sbbsdefs.js");
 
