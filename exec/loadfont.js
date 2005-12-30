@@ -9,6 +9,7 @@
 
 load("sbbsdefs.js");
 loadfont();
+var CTerm_Version;
 
 function loadfont()
 {
@@ -66,7 +67,7 @@ function loadfont()
 
 	// Check if it's CTerm and supports font loading...
 	var ver=new Array(0,0);
-	if(console.terminal.substr(0,6) != 'CTerm;') {
+	if(CTerm_Version == undefined) {
 		// Disable parsed input... we need to do ESC processing ourselves here.
 		var oldctrl=console.ctrlkey_passthru;
 		console.ctrlkey_passthru=-1;
@@ -87,12 +88,14 @@ function loadfont()
 		// alert("Response: "+printable);
 
 		if(response.substr(0,21) != "\x1b[=67;84;101;114;109;") {	// Not CTerm
+			CTerm_Version=0;
 			console.ctrlkey_passthru=oldctrl;
 			if(showprogress)
 				writeln("Not detected.");
 			return(0);
 		}
 		if(response.substr(-1) != "c") {	// Not a DA
+			CTerm_Version=0;
 			console.ctrlkey_passthru=oldctrl;
 			if(showprogress)
 				writeln("Not detected.");
@@ -100,12 +103,13 @@ function loadfont()
 		}
 		var version=response.substr(21);
 		version=version.replace(/c/,"");
+		CTerm_Version=version;
 		ver=version.split(/;/);
 		console.terminal="CTerm;"+ver.join(";");
 		console.ctrlkey_passthru=oldctrl;
 	}
 	else {
-		ver=console.terminal.substr(6).split(/;/);
+		ver=CTerm_Version.split(/;/);
 		if(parseInt(ver[0]) < 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) < 61)) {
 			// Too old for dynamic fonts
 			if(showprogress)

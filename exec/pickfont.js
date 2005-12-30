@@ -3,6 +3,7 @@
 // If nothing passed, changes to font 0 (CP437)
 
 pickfont();
+var CTerm_Version;
 
 function pickfont()
 {
@@ -20,7 +21,7 @@ function pickfont()
 
 	// Check if it's CTerm and supports font loading...
 	var ver=new Array(0,0);
-	if(console.terminal.substr(0,6) != 'CTerm;') {
+	if(CTerm_Version==undefined) {
 		if(detect) {
 			// Disable parsed input... we need to do ESC processing ourselves here.
 			var oldctrl=console.ctrlkey_passthru;
@@ -42,22 +43,25 @@ function pickfont()
 			// alert("Response: "+printable);
 
 			if(response.substr(0,21) != "\x1b[=67;84;101;114;109;") {	// Not CTerm
+				CTerm_Version=0;
 				console.ctrlkey_passthru=oldctrl;
 				return(0);
 			}
 			if(response.substr(-1) != "c") {	// Not a DA
+				CTerm_Version=0;
 				console.ctrlkey_passthru=oldctrl;
 				return(0);
 			}
 			var version=response.substr(21);
 			version=version.replace(/c/,"");
+			CTerm_Version=version;
 			ver=version.split(/;/);
 			console.terminal="CTerm;"+ver.join(";");
 			console.ctrlkey_passthru=oldctrl;
 		}
 	}
 	else {
-		ver=console.terminal.substr(6).split(/;/);
+		ver=CTerm_Version.split(/;/);
 		if(parseInt(ver[0]) < 1 || (parseInt(ver[0])==1 && parseInt(ver[1]) < 61)) {
 			// Too old for dynamic fonts
 			return(0);
