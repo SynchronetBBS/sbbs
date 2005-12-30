@@ -7,7 +7,103 @@
 	load("sbbsdefs.js");
 
 /*
- * Lightbar function... draws and returns selected value.
+ * Lightbar object
+ * Properties:
+ *  xpos: Horizontal position of lightbar menu (1-based)
+ *  xpos: Vertical position of lightbar menu (1-based)
+ *  items: an array of objects each having the following properties:
+ *         text - The displayed text.  A | prefixes a hotkey
+ *         retval - The value to return if this is selected
+ *       OPTIONAL Properties:
+ *         width - The width of this item.  If not specified, is the width of
+ *                 the text.  Otherwise, the text is truncated or padded with
+ *				   spaces to fit the width.
+ *  direction: 0 for vertical, 1 for horizontal.
+ *			   Horizontal menus always have one space of padding added between
+ *             items.
+ *  fg: Foreground colour of a non-current item
+ *  bg: Background colour of a non-current item
+ *  hfg: Foreground colour of a current item
+ *  hbg: Background colour of a current item
+ *  kfg: Hotkey forground colour for non-current item
+ *  khfg: Hotkey foreground colour for current item
+ *  current: Index of currently highlighted item (ToDo: This should be passed by reference (how?)!)
+ *  align: If width is greater than the text length, a zero indicates the text
+ *         should be left-aligned, a 1 indicates it should be right-aligned, and
+ *         a 2 indicates it should be centered.
+ */
+function Lightbar(items)
+{
+	this.fg=7;
+	this.bg=1;
+	this.xpos=1;
+	this.ypos=1;
+	this.direction=0;
+	this.hfg=1;
+	this.hbg=7;
+	this.kfg=15;
+	this.khfg=15;
+	this.current=0;
+	this.align=0;
+	this.getval=Lightbar_getval;
+	this.clear=Lightbar_clearitems;
+	this.add=Lightbar_additem;
+	if(items==undefined)
+		this.items=new Array();
+	else
+		this.items=items;
+}
+
+function Lightbar_additem(txt, retval, width)
+{
+	var item=new Object;
+
+	if(txt==undefined) {
+		alert("Text of item undefined!");
+		return;
+	}
+	if(retval==undefined) {
+		alert("Retval of item undefined!");
+		return;
+	}
+	item.text=txt;
+	item.retval=retval;
+	if(width!=undefined)
+		item.width=width;
+	this.items.push(item);
+}
+
+function Lightbar_clearitems()
+{
+	this.items=new Array();
+}
+
+function Lightbar_getval(current)
+{
+	var retval;
+	if(current!=undefined)
+		this.current=current;
+	retval=lightbar_func(this.xpos, this.ypos, this.items, this.direction, this.fg
+			, this.bg, this.hfg, this.hbg, this.kfg, this.khfg, this.current
+			, this.align);
+	if(retval==null) {
+		for(i=0; i<this.items.length; i++) {
+			if(this.items[i] != undefined && this.items[i].text != undefined) {
+				writeln((i+1)+": "+this.items[i].text);
+			}
+		}
+		write("Choose an option: ");
+		i=console.getnum(i);
+		if(this.items[i]==undefined)
+			return(null);
+		if(this.items[i].retval==undefined)
+			return(undefined);
+		return(this.items[i].retval);
+	}
+}
+
+/*
+ * Super-Overlord Lightbar function... draws and returns selected value.
  * Parameters:
  *  xpos: Horizontal position of lightbar menu (1-based)
  *  xpos: Vertical position of lightbar menu (1-based)
@@ -34,12 +130,13 @@
  * Return Values:
  *  null for error, retval from the selected item for non-errors
  */
-function lightbar(xpos, ypos, items, direction, fg, bg, hfg, hbg, kfg, khfg, current, align)
+function lightbar_func(xpos, ypos, items, direction, fg, bg, hfg, hbg, kfg, khfg, current, align)
 {
 	var attr=bg<<4|fg;
 	var cattr=hbg<<4|hfg;
 	var kattr=bg<<4|kfg;
 	var kcattr=hbg<<4|khfg;
+	var ret=undefined;
 
 	if(!(user.settings & USER_ANSI)) {
 		alert("ANSI not supported for lightbar!");
@@ -149,14 +246,15 @@ function lightbar(xpos, ypos, items, direction, fg, bg, hfg, hbg, kfg, khfg, cur
 						console.attributes=kcattr;
 					else
 						console.attributes=kattr;
+					j++;
 				}
 				else {
 					if(current==i)
 						console.attributes=cattr;
 					else
 						console.attributes=attr;
-					console.write(items[i].text.substr(j,1));
 				}
+				console.write(items[i].text.substr(j,1));
 			}
 			if(current==i)
 				console.attributes=cattr;
@@ -168,10 +266,15 @@ function lightbar(xpos, ypos, items, direction, fg, bg, hfg, hbg, kfg, khfg, cur
 			}
 			if(direction==0)
 				cury++;
-			else
+			else {
+				console.attributes=attr;
+				console.write(" ");
 				curx+=width+1;
+			}
 		}
 		console.gotoxy(cursx,cursy);
+		if(ret!=undefined)
+			return(ret);
 
 		/* Get input */
 		var key=console.getkey(K_UPPER);
@@ -220,6 +323,10 @@ function lightbar(xpos, ypos, items, direction, fg, bg, hfg, hbg, kfg, khfg, cur
 				for(i=0; i<items.length; i++) {
 					if(items[i].text.indexOf('|'+key)!=-1) {
 						current=i;
+						if(items[current].retval==undefined)
+							return(undefined);
+						/* Let it go through once more to highlight */
+						ret=items[current].retval;
 						break;
 					}
 				}
