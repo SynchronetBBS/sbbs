@@ -105,7 +105,6 @@ function loadfont()
 		version=version.replace(/c/,"");
 		CTerm_Version=version;
 		ver=version.split(/;/);
-		console.terminal="CTerm;"+ver.join(";");
 		console.ctrlkey_passthru=oldctrl;
 	}
 	else {
