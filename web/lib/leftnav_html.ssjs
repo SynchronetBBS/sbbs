@@ -1,10 +1,5 @@
 /* $Id$ */
 
-/* If you want to remove QWk FTP downloads */
-/*           change this to false          */
-
-var doQWK = true;
-
 /* FTP link */
 
  if(user.number || system.matchuser("Guest")) {

@@ -1,11 +1,5 @@
 /* $Id$ */
 
-/* User Changable Variables */
-
-var show_gender=true;
-var show_location=true;
-var show_age=true;
-
 /*  Do not change anything else unless you need to :) */
 
 var start=new Date();
