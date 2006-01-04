@@ -5,12 +5,34 @@
 /* Remember, the more global definitions here */
 /* the longer all pages will take to display! */
 
+/* User Changable Variables */
+
+var show_gender=true;
+var show_location=true;
+var show_age=true;
+
+/*       If you want to remove QWk FTP downloads       */
+/* change this to false.  Moved from leftnav_html.ssjs */
+
+var doQWK = false;
+
+/* End User Changable Variables */
+
 if(user.number==0)
     template.user_greeting="Welcome, Guest.";
 else
-    if(!(user.security.restrictions&UFLAG_G))
-        template.user_greeting="Welcome, "+user.alias+ ".<br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
-    else
+	if(!(user.security.restrictions&UFLAG_G)) {
+	
+/* If it is the users Birthday, display a quick Happy Birthday */
+/* instead of the standard greeting. */
+
+    	var     birthday = user.birthdate.substring(0,5);
+		var today = system.datestr().substring(0,5);
+		if(birthday==today)
+			template.user_greeting="Happy Birthday, "+user.alias+ "!<br /> Can you believe that you are " + user.age + " years old!!";
+		else
+        	template.user_greeting="Welcome, "+user.alias+ ".<br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
+		} else
         template.user_greeting="Welcome, "+user.alias+ ".";
 
 template.user_alias=user.alias;
