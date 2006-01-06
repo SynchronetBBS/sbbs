@@ -57,6 +57,10 @@ h2 {
     color: #FFFFFF; 
 }
 
+.editprofile {
+	font-size: 8px;
+}
+
 /* Top Navigation (Breadcrumbs) */
 
 #Top_Nav { 
@@ -678,7 +682,7 @@ pre {
     color: #aaaaaa; 
     font-family: monospace; 
     padding: 3px; 
-    font-size:9pt; 
+    font-size:11pt; 
 }
 
 pre.leftalign { 
@@ -686,7 +690,7 @@ pre.leftalign {
     color: #aaaaaa; 
     text-align: left; 
     padding: 3px; 
-    font-size:9pt; 
+    font-size11pt; 
 }
 
 pre.leftalignwht { 
@@ -694,7 +698,7 @@ pre.leftalignwht {
     color: #000000; 
     text-align: left; 
     padding: 3px; 
-    font-size:9pt; 
+    font-size:11pt; 
 }
 
 .txtbodywht { 
