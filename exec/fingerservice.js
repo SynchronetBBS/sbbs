@@ -418,9 +418,10 @@ write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
 	  ,u.ip_address));
 var plan;
 plan=format("%suser/%04d.plan",system.data_dir,u.number);
-if(file_exists(plan))
+if(file_exists(plan)) {
 	write("Plan:\r\b");
-	send_file(plan)
+	send_file(plan);
+	}
 else
 	write("No plan.\r\n");
 done();
