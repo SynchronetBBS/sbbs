@@ -392,6 +392,8 @@ js_alert(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	fprintf(confp,"!%s\n",JS_GetStringBytes(str));
 
+	*rval = argv[0];
+
     return(JS_TRUE);
 }
 
@@ -735,7 +737,7 @@ long js_exec(const char *fname, char** args)
 
 	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 
-	if(rval!=JSVAL_VOID) {
+	if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
 		fprintf(statfp,"Using JavaScript exit_code: %s\n",JS_GetStringBytes(JS_ValueToString(js_cx,rval)));
 		JS_ValueToInt32(js_cx,rval,&result);
 	}
@@ -962,6 +964,9 @@ int main(int argc, char **argv, char** environ)
 
 	if(nonbuffered_con)
 		setvbuf(confp,NULL,_IONBF,0);
+
+	/* Seed random number generator */
+	sbbs_srand();
 
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
