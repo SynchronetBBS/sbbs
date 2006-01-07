@@ -289,6 +289,10 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			break;
 
 		default:
+			if(file_exists(system.data_dir + "finger/" + file_getname(request))) {
+				send_file(system.data_dir + "finger/" + file_getname(request));
+				break;
+			}
 			writeln("Supported special requests (prepended with '?'):");
 			writeln("\tver");
 			writeln("\ttime");
@@ -300,6 +304,10 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 				writeln("\tfindfile");
             writeln("\tauto.msg");
 			writeln("\tlogon.lst");
+			var more = directory(system.data_dir + "finger/*");
+			for(var m in more)
+				if(!file_isdir(more[m]))
+					writeln("\t" + file_getname(more[m]));
 			log(format("!UNSUPPORTED SPECIAL REQUEST: '%s'",request));
 			break;
 	}
