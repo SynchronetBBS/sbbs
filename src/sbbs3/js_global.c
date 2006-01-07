@@ -42,6 +42,9 @@
 #include "base64.h"
 #include "htmlansi.h"
 #include "ini_file.h"
+#ifdef USE_XP_PRINTF
+	#include "xpprintf.h"
+#endif
 
 #define MAX_ANSI_SEQ	16
 #define MAX_ANSI_PARAMS	8
@@ -281,6 +284,47 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(success);
 }
 
+#ifdef USE_XP_PRINTF
+
+static JSBool
+js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		fmt;
+    uintN		i;
+    JSString*	str;
+
+	if((fmt=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+		return(JS_FALSE);
+
+	fmt=xp_asprintf_start(fmt);
+    for(i=1; i<argc; i++) {
+		if(JSVAL_IS_DOUBLE(argv[i]))
+			fmt=xp_asprintf_next(fmt,XP_PRINTF_TYPE_DOUBLE,*JSVAL_TO_DOUBLE(argv[i]));
+		else if(JSVAL_IS_INT(argv[i]))
+			fmt=xp_asprintf_next(fmt,XP_PRINTF_TYPE_INT,JSVAL_TO_INT(argv[i]));
+		else {
+			if((str=JS_ValueToString(cx, argv[i]))==NULL) {
+				JS_ReportError(cx,"JS_ValueToString failed");
+			    return(JS_FALSE);
+			}
+			fmt=xp_asprintf_next(fmt,XP_PRINTF_TYPE_CHARP,JS_GetStringBytes(str));
+		}
+	}
+
+	fmt=xp_asprintf_end(fmt);
+	
+	str = JS_NewStringCopyZ(cx, fmt);
+	free(fmt);
+
+	if(str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(str);
+    return(JS_TRUE);
+}
+
+#else
+
 static JSBool
 js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -321,6 +365,9 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	*rval = STRING_TO_JSVAL(str);
     return(JS_TRUE);
 }
+
+#endif
+
 
 static JSBool
 js_yield(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
