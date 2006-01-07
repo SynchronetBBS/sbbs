@@ -120,9 +120,11 @@ static int xp_printf_get_type(const char *format)
 				case 'l':
 					correct_type=XP_PRINTF_TYPE_LONG;
 					break;
+#if defined(XP_PRINTF_TYPE_ULONGLONG)
 				case 'l'|'l'<<8:
 					correct_type=XP_PRINTF_TYPE_LONGLONG;
 					break;
+#endif
 				case 'j':
 					correct_type=XP_PRINTF_TYPE_INTMAX;
 					break;
@@ -155,9 +157,11 @@ static int xp_printf_get_type(const char *format)
 				case 'l':
 					correct_type=XP_PRINTF_TYPE_ULONG;
 					break;
+#if defined(XP_PRINTF_TYPE_ULONGLONG)
 				case 'l'|'l'<<8:
 					correct_type=XP_PRINTF_TYPE_ULONGLONG;
 					break;
+#endif
 				case 'j':
 					correct_type=XP_PRINTF_TYPE_UINTMAX;
 					break;
@@ -246,8 +250,10 @@ char *xp_asprintf_next(char *format, int type, ...)
 	unsigned int	ui;
 	long int		l;
 	unsigned long int	ul;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 	long long int	ll;
 	unsigned long long int	ull;
+#endif
 	double			d;
 	long double		ld;
 	char*			cp;
@@ -257,10 +263,8 @@ char *xp_asprintf_next(char *format, int type, ...)
 	unsigned long	offset2=0;
 	size_t			format_len;
 	size_t			this_format_len;
-	size_t			tail_len;
 	char			entry_buf[MAX_ARG_LEN];
 	char			*entry;
-	char			*str_buf;
 	char			this_format[MAX_FORMAT_LEN];
 	char			*fmt;
 	int				modifier=0;
@@ -453,9 +457,11 @@ char *xp_asprintf_next(char *format, int type, ...)
 					case 'l':
 						correct_type=XP_PRINTF_TYPE_LONG;
 						break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 					case 'l'|'l'<<8:
 						correct_type=XP_PRINTF_TYPE_LONGLONG;
 						break;
+#endif
 					case 'j':
 						correct_type=XP_PRINTF_TYPE_INTMAX;
 						break;
@@ -488,9 +494,11 @@ char *xp_asprintf_next(char *format, int type, ...)
 					case 'l':
 						correct_type=XP_PRINTF_TYPE_ULONG;
 						break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 					case 'l'|'l'<<8:
 						correct_type=XP_PRINTF_TYPE_ULONGLONG;
 						break;
+#endif
 					case 'j':
 						correct_type=XP_PRINTF_TYPE_UINTMAX;
 						break;
@@ -580,12 +588,14 @@ char *xp_asprintf_next(char *format, int type, ...)
 		case XP_PRINTF_TYPE_ULONG:
 			ul=va_arg(vars, unsigned long int);
 			break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 		case XP_PRINTF_TYPE_LONGLONG:
 			ll=va_arg(vars, long long int);
 			break;
 		case XP_PRINTF_TYPE_ULONGLONG:
 			ull=va_arg(vars, unsigned long long int);
 			break;
+#endif
 		case XP_PRINTF_TYPE_CHARP:
 			cp=va_arg(vars, char*);
 			break;
@@ -622,20 +632,22 @@ char *xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							i=ul;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							i=ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							i=ull;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
 							i=strtol(cp, NULL, 0);
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
-							i=d;
+							i=(int)d;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							i=ld;
+							i=(int)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							i=(int)pntr;
@@ -659,20 +671,22 @@ char *xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							ui=ul;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							ui=ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							ui=ull;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
 							ui=strtoul(cp, NULL, 0);
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
-							ui=d;
+							ui=(unsigned)d;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							ui=ld;
+							ui=(unsigned)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							ui=(unsigned int)pntr;
@@ -696,20 +710,22 @@ char *xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							l=ul;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							l=ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							l=ull;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
 							l=strtol(cp, NULL, 0);
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
-							l=d;
+							l=(long)d;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							l=ld;
+							l=(long)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							l=(long)pntr;
@@ -733,20 +749,22 @@ char *xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							ul=ul;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							ul=ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							ul=ull;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
 							ul=strtoul(cp, NULL, 0);
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
-							ul=d;
+							ul=(unsigned long)d;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							ul=ld;
+							ul=(unsigned long)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							ul=(unsigned long)pntr;
@@ -756,6 +774,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 							break;
 					}
 					break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 				case XP_PRINTF_TYPE_LONGLONG:
 					switch(type) {
 						case XP_PRINTF_TYPE_INT:
@@ -830,6 +849,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 							break;
 					}
 					break;
+#endif
 				case XP_PRINTF_TYPE_CHARP:
 					num_str[0]=0;
 					switch(type) {
@@ -849,6 +869,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 							sprintf(num_str, "%lu", ul);
 							cp=num_str;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							/* ToDo MSVC doesn't like this */
 							sprintf(num_str, "%lld", ll);
@@ -859,6 +880,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 							sprintf(num_str, "%llu", ull);
 							cp=num_str;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
 							cp=cp;
 							break;
@@ -895,12 +917,14 @@ char *xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							d=ul;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							d=ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							d=ull;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
 							d=strtod(cp, NULL);
 							break;
@@ -932,12 +956,14 @@ char *xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							ld=ul;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							ld=ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							ld=ull;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
 							/* strtold() isn't ubiquitous yet */
 							ld=strtod(cp, NULL);
@@ -971,12 +997,14 @@ char *xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							pntr=(void *)ul;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							pntr=(void *)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							pntr=(void *)ull;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
 							pntr=(void *)cp;
 							break;
@@ -1008,20 +1036,22 @@ char *xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							s=ul;
 							break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
 							s=ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							s=ull;
 							break;
+#endif
 						case XP_PRINTF_TYPE_CHARP:
-							s=strtoll(cp, NULL, 0);
+							s=strtol(cp, NULL, 0);	/* was strtoll */
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
-							s=d;
+							s=(size_t)d;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							s=ld;
+							s=(size_t)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							s=(size_t)pntr;
@@ -1053,12 +1083,14 @@ char *xp_asprintf_next(char *format, int type, ...)
 		case XP_PRINTF_TYPE_ULONG:
 			j=sprintf(entry, this_format, ul);
 			break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 		case XP_PRINTF_TYPE_LONGLONG:
 			j=sprintf(entry, this_format, ll);
 			break;
 		case XP_PRINTF_TYPE_ULONGLONG:
 			j=sprintf(entry, this_format, ull);
 			break;
+#endif
 		case XP_PRINTF_TYPE_CHARP:
 			if(cp==NULL)
 				j=sprintf(entry, this_format, "<null>");
@@ -1175,17 +1207,6 @@ char *xp_vasprintf(const char *format, va_list va)
 	char	*working;
 	char	*next;
 	int		type;
-	int				i,j;
-	unsigned int	ui;
-	long int		l;
-	unsigned long int	ul;
-	long long int	ll;
-	unsigned long long int	ull;
-	double			d;
-	long double		ld;
-	char*			cp;
-	void*			pntr;
-	size_t			s;
 
 	next=xp_asprintf_start(format);
 	if(next==NULL)
@@ -1209,12 +1230,14 @@ char *xp_vasprintf(const char *format, va_list va)
 			case XP_PRINTF_TYPE_ULONG:
 				next=xp_asprintf_next(working, type, va_arg(va, unsigned long));
 				break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 			case XP_PRINTF_TYPE_LONGLONG:
 				next=xp_asprintf_next(working, type, va_arg(va, long long));
 				break;
 			case XP_PRINTF_TYPE_ULONGLONG:
 				next=xp_asprintf_next(working, type, va_arg(va, unsigned long long));
 				break;
+#endif
 			case XP_PRINTF_TYPE_CHARP:
 				next=xp_asprintf_next(working, type, va_arg(va, char *));
 				break;
@@ -1256,12 +1279,16 @@ char *xp_asprintf(const char *format, ...)
 	return(ret);
 }
 
+#if defined(XP_PRINTF_TEST)
+
 int main(int argc, char *argv[])
 {
 	char	*format;
 	char	*p;
 	int	i,j;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 	long long L;
+#endif
 	long l;
 	char *cp;
 	double d;
@@ -1279,7 +1306,7 @@ int main(int argc, char *argv[])
 	for(j=2; j<argc; j++) {
 		switch(argv[j][0]) {
 			case 'f':
-				f=atof(argv[j]+1);
+				f=(float)atof(argv[j]+1);
 				p=xp_asprintf_next(format,XP_PRINTF_TYPE_FLOAT,f);
 				break;
 			case 'd':
@@ -1299,10 +1326,12 @@ int main(int argc, char *argv[])
 				l=atol(argv[j]+1);
 				p=xp_asprintf_next(format,XP_PRINTF_TYPE_LONG,l);
 				break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
 			case 'L':
 				L=strtoll(argv[j]+1, NULL, 10);
 				p=xp_asprintf_next(format,XP_PRINTF_TYPE_LONGLONG,L);
 				break;
+#endif
 			case 's':
 				cp=argv[j]+1;
 				p=xp_asprintf_next(format,XP_PRINTF_TYPE_CHARP,cp);
@@ -1317,3 +1346,5 @@ int main(int argc, char *argv[])
 	p=xp_asprintf_end(format);
 	printf("At end, value is: '%s'\n",p);
 }
+
+#endif
