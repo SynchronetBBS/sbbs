@@ -16,7 +16,43 @@ var show_age=true;
 
 var doQWK = false;
 
-/* End User Changable Variables */
+/* End of User Changable Variables */
+
+/* Need to move SortDate to [Messaging] tag in prefs file  */
+
+prefs_dir=system.data_dir + 'user/';
+
+if(user.number!=0) {
+	if(file_exists(prefs_dir + format("%04d.html_prefs",user.number))); {
+		prefsfile=new File(prefs_dir + format("%04d.html_prefs",user.number));
+		if(prefsfile.open("r",false)) {
+			if(prefsfile.iniGetValue(null, 'SortDate', '')!='');
+				var SortDate=prefsfile.iniGetValue(null, 'SortDate', '');
+			prefsfile.close();
+		}
+		prefsfile=new File(prefs_dir + '/'+format("%04d.html_prefs",user.number));
+		if(SortDate!='') {
+			if(prefsfile.open("w+",false)) {
+				prefsfile.iniSetValue('Messaging', 'SortDate', SortDate);
+       			prefsfile.close();
+			}
+       	}
+	}
+}
+
+/* Set default template.info */
+
+if(user.number!=0) {
+	template.user_alias=user.alias;
+	template.user_handle=user.handle;
+	template.user_email=user.netmail;
+	template.user_rn=user.name;
+	template.user_address=user.address;
+	template.user_location=user.location;
+	template.user_zip=user.zipcode;
+}
+
+/* User Greeting */
 
 if(user.number==0)
     template.user_greeting="Welcome, Guest.";
@@ -29,13 +65,11 @@ else
     	var     birthday = user.birthdate.substring(0,5);
 		var today = system.datestr().substring(0,5);
 		if(birthday==today)
-			template.user_greeting="Happy Birthday, "+user.alias+ "!<br /> Can you believe that you are " + user.age + " years old!!";
+			template.user_greeting="Happy Birthday, "+user.alias+ "! <span class=\"editprofile\">(<a href=\"/members/editprofile.ssjs\">edit profile</a>)</span><br /> Can you believe that you are " + user.age + " years old!!";
 		else
-        	template.user_greeting="Welcome, "+user.alias+ ".<br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
+        	template.user_greeting="Welcome, "+user.alias+ ". <span class=\"editprofile\">(<a href=\"/members/editprofile.ssjs\">edit profile</a>)</span><br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
 		} else
         template.user_greeting="Welcome, "+user.alias+ ".";
-
-template.user_alias=user.alias;
 
 /* Gives RAW port number - must be prepended with ":" for URI's */
 
