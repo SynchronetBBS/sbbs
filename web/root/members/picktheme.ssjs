@@ -5,22 +5,24 @@
  * new theme is used here
  */
 
+prefs_dir=system.data_dir + 'user/';
+
 var sub='';
 
 var sq="'";
 var dq='"';
 var pl='+';
-prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
+prefsfile=new File(prefs_dir +format("%04d.html_prefs",user.number));
 if(prefsfile.open("r+",false)) {
   ctheme=http_request.query.theme[0];
   ctheme=ctheme.replace(/"/g,dq+pl+sq+dq+sq+pl+dq);   /* "+'"'+" */
-  prefsfile.iniSetValue(null, 'CurrTheme', ctheme);
+  prefsfile.iniSetValue('WebTheme', 'CurrTheme', ctheme);
   prefsfile.close();
 } else {
 if(prefsfile.open("w+",false)) {
   ctheme=http_request.query.theme[0];
   ctheme=ctheme.replace(/"/g,dq+pl+sq+dq+sq+pl+dq);   /* "+'"'+" */
-  prefsfile.iniSetValue(null, 'CurrTheme', ctheme);
+  prefsfile.iniSetValue('WebTheme', 'CurrTheme', ctheme);
   prefsfile.close();
   }
 }

@@ -5,13 +5,16 @@
 Themes=new Object;
 
 load('../web/templates/html_themes.ssjs');
+
+prefs_dir=system.data_dir + 'user/';
+
 var CurrTheme=DefaultTheme;
 
 /* Read in current users selected theme if it exists */
-if(file_exists(system.data_dir+'user/'+format("%04d.html_prefs",user.number))) {
-  prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
+if(file_exists(prefs_dir +format("%04d.html_prefs",user.number))) {
+  prefsfile=new File(prefs_dir +format("%04d.html_prefs",user.number));
   if(prefsfile.open("r",false)) {
-  CurrTheme=prefsfile.iniGetValue(null, 'CurrTheme');
+  CurrTheme=prefsfile.iniGetValue('Theme', 'CurrTheme');
   prefsfile.close();
   }
 }
