@@ -177,14 +177,14 @@ void prep_cfg(scfg_t* cfg)
 
 		/* default QWKnet tagline */
 		if(!cfg->sub[i]->tagline[0])
-			strcpy(cfg->sub[i]->tagline,cfg->qnet_tagline);
+			SAFECOPY(cfg->sub[i]->tagline,cfg->qnet_tagline);
 
 		/* default origin line */
 		if(!cfg->sub[i]->origline[0])
-			strcpy(cfg->sub[i]->origline,cfg->origline);
+			SAFECOPY(cfg->sub[i]->origline,cfg->origline);
 
 		/* A sub-board's internal code is the combination of the grp's code_prefix & the sub's code_suffix */
-		sprintf(cfg->sub[i]->code,"%s%s"
+		SAFEPRINTF2(cfg->sub[i]->code,"%s%s"
 			,cfg->grp[cfg->sub[i]->grp]->code_prefix
 			,cfg->sub[i]->code_suffix);
 
