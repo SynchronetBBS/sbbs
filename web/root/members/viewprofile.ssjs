@@ -65,7 +65,7 @@ if(file_exists(prefs_dir +format("%04d.html_prefs",u.number))) {
 }
 
 if(is_sysop) {
-	template.profile.push({html: '<h1>View Profile</h1>' });
+	template.profile.push({html: '<h1>Edit/View Profile</h1>' });
 	template.profile.push({html: '<p>Changes here mainly affect the Telnet side of the BBS</p>' });
 	template.profile.push({html: '<form action="/members/updateprofile.ssjs?edituser=' + u.number + '" method="post">' });
 	template.profile.push({html: '<table class="newuser" cellpadding="0" cellspacing="2">' });
