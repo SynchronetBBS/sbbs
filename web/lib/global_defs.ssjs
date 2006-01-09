@@ -65,9 +65,9 @@ else
     	var     birthday = user.birthdate.substring(0,5);
 		var today = system.datestr().substring(0,5);
 		if(birthday==today)
-			template.user_greeting="Happy Birthday, "+user.alias+ "! <span class=\"editprofile\">(<a href=\"/members/editprofile.ssjs\">edit profile</a>)</span><br /> Can you believe that you are " + user.age + " years old!!";
+			template.user_greeting="Happy Birthday, "+user.alias+ "! <br /> Can you believe that you are " + user.age + " years old!!";
 		else
-        	template.user_greeting="Welcome, "+user.alias+ ". <span class=\"editprofile\">(<a href=\"/members/editprofile.ssjs\">edit profile</a>)</span><br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
+        	template.user_greeting="Welcome, "+user.alias+ ". <br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
 		} else
         template.user_greeting="Welcome, "+user.alias+ ".";
 
