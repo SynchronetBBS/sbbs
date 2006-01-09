@@ -281,7 +281,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 		return(format);
 	p=format+*(size_t *)format;
 	offset=p-format;
-	format_len=strlen(format+sizeof(size_t))+sizeof(size_t);
+	format_len=strlen(format+sizeof(size_t))+sizeof(size_t)+1;
 	this_format[0]=0;
 	fmt=this_format;
 	fmt_start=p;
@@ -331,7 +331,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 			 * with format and p
 			 */
 			offset2=p-format;
-			newbuf=(char *)realloc(format, format_len+i /* -1 for the '*' that's already there, +1 for the terminator */);
+			newbuf=(char *)realloc(format, format_len+i-1 /* -1 for the '*' that's already there */);
 			if(newbuf==NULL)
 				return(NULL);
 			format=newbuf;
@@ -371,7 +371,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 				 * with format and p
 				 */
 				offset2=p-format;
-				newbuf=(char *)realloc(format, format_len+i /* -1 for the '*' that's already there, +1 for the terminator */);
+				newbuf=(char *)realloc(format, format_len+i-1 /* -1 for the '*' that's already there */);
 				if(newbuf==NULL)
 					return(NULL);
 				format=newbuf;
@@ -1127,7 +1127,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	 * or it's too large... this realloc() should only need to grow
 	 * the string.
 	 */
-	newbuf=(char *)realloc(format, format_len-this_format_len+j+1);
+	newbuf=(char *)realloc(format, format_len-this_format_len+j);
 	if(newbuf==NULL) {
 		if(entry != entry_buf)
 			free(entry);
@@ -1135,7 +1135,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 	}
 	format=newbuf;
 	/* Move trailing end to make space */
-	memmove(format+offset+j, format+offset+this_format_len, offset+format_len-this_format_len+1);
+	memmove(format+offset+j, format+offset+this_format_len, format_len-offset-this_format_len);
 	memcpy(format+offset, entry, j);
 	if(entry != entry_buf)
 		free(entry);
@@ -1345,6 +1345,7 @@ int main(int argc, char *argv[])
 	}
 	p=xp_asprintf_end(format);
 	printf("At end, value is: '%s'\n",p);
+	free(p);
 }
 
 #endif
