@@ -1307,34 +1307,34 @@ int main(int argc, char *argv[])
 		switch(argv[j][0]) {
 			case 'f':
 				f=(float)atof(argv[j]+1);
-				p=xp_asprintf_next(format,XP_PRINTF_TYPE_FLOAT,f);
+				p=xp_asprintf_next(format,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_FLOAT,f);
 				break;
 			case 'd':
 				d=atof(argv[j]+1);
-				p=xp_asprintf_next(format,XP_PRINTF_TYPE_DOUBLE,d);
+				p=xp_asprintf_next(format,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_DOUBLE,d);
 				break;
 			case 'D':
 				/* Don't know of a thing that converts a string to a long double */
 				D=atof(argv[j]+1);
-				p=xp_asprintf_next(format,XP_PRINTF_TYPE_LONGDOUBLE,D);
+				p=xp_asprintf_next(format,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_LONGDOUBLE,D);
 				break;
 			case 'i':
 				i=atoi(argv[j]+1);
-				p=xp_asprintf_next(format,XP_PRINTF_TYPE_INT,i);
+				p=xp_asprintf_next(format,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,i);
 				break;
 			case 'l':
 				l=atol(argv[j]+1);
-				p=xp_asprintf_next(format,XP_PRINTF_TYPE_LONG,l);
+				p=xp_asprintf_next(format,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_LONG,l);
 				break;
 #if defined(XP_PRINTF_TYPE_LONGLONG)
 			case 'L':
 				L=strtoll(argv[j]+1, NULL, 10);
-				p=xp_asprintf_next(format,XP_PRINTF_TYPE_LONGLONG,L);
+				p=xp_asprintf_next(format,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_LONGLONG,L);
 				break;
 #endif
 			case 's':
 				cp=argv[j]+1;
-				p=xp_asprintf_next(format,XP_PRINTF_TYPE_CHARP,cp);
+				p=xp_asprintf_next(format,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_CHARP,cp);
 				break;
 		}
 		if(p==NULL) {
