@@ -6,7 +6,7 @@ var sub = '';
 
 var is_sysop=false;
 
-if(user.number==1 && user.security.level>=90)
+if(user.number==1 || user.security.level>=90)
 	is_sysop=true;
 
 var u = new User(http_request.query.showuser[0]);
@@ -22,7 +22,6 @@ if(system.newuser_questions & UQ_HANDLE)
 if(system.newuser_questions & UQ_LOCATION)	
 	usr.location=u.location.toString();
 	usr.netmail=u.netmail.toString();
-
 //	usr.connection=u.connection.toString();
 	usr.logon=strftime("%b-%d-%y",u.stats.laston_date);
 	usr.laston=0-u.stats.laston_date;
@@ -68,7 +67,7 @@ if(file_exists(prefs_dir +format("%04d.html_prefs",u.number))) {
 if(is_sysop) {
 	template.profile.push({html: '<h1>View Profile</h1>' });
 	template.profile.push({html: '<p>Changes here mainly affect the Telnet side of the BBS</p>' });
-	template.profile.push({html: '<form action="/members/updateprofile.ssjs" method="post">' });
+	template.profile.push({html: '<form action="/members/updateprofile.ssjs?edituser=' + u.number + '" method="post">' });
 	template.profile.push({html: '<table class="newuser" cellpadding="0" cellspacing="2">' });
 	if(system.newuser_questions & UQ_REALNAME)
 		template.profile.push({html: '<tr><td class="newuser" align="right">Real Name:</td><td class="newuser" align="left"><input type="text" name="name" size="25" maxlength="25" value="' + usr.name + '" /></td></tr>' });

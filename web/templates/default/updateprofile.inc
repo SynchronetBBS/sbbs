@@ -5,6 +5,6 @@
 
     <td class="main" valign="top"><br />
     
-      <h1>@@update_message@@</h1>
+      <h3>@@update_message@@</h3>
         @@backurl@@
       <br />

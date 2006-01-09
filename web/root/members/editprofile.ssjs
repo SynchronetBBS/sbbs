@@ -4,6 +4,13 @@ load("../web/lib/template.ssjs");
 
 var sub = '';
 
+var is_sysop=false;
+
+if(user.number==1 || user.security.level>=90)
+	disabled="";
+else
+	disabled='disabled="disabled"';
+
 template.title=system.name +" - Edit Your Profile";
 
 usr = new Object;
@@ -54,9 +61,9 @@ template.profile = new Array;
 	template.profile.push({html: '<form action="/members/updateprofile.ssjs" method="post">' });
 	template.profile.push({html: '<table class="newuser" cellpadding="0" cellspacing="2">' });
 	if(system.newuser_questions & UQ_REALNAME)
-		template.profile.push({html: '<tr><td class="newuser" align="right">Real Name:</td><td class="newuser" align="left"><input type="text" name="name" size="25" maxlength="25" value="' + usr.name + '" /></td></tr>' });
+		template.profile.push({html: '<tr><td class="newuser" align="right">Real Name:</td><td class="newuser" align="left"><input type="text" name="name" size="25" maxlength="25" value="' + usr.name +  '" ' + disabled + ' /></td></tr>' });
 	if(system.newuser_questions & UQ_ALIASES)
-		template.profile.push({html: '<tr><td class="newuser" align="right">Alias:</td><td class="newuser" align="left"><input type="text" name="alias" size="25" maxlength="25" value="' + usr.alias + '" /></td></tr>' });
+		template.profile.push({html: '<tr><td class="newuser" align="right">Alias:</td><td class="newuser" align="left"><input type="text" name="alias" size="25" maxlength="25" value="' + usr.alias + '" ' + disabled + ' /></td></tr>' });
 	if(system.newuser_questions & UQ_HANDLE)
 		template.profile.push({html: '<tr><td class="newuser" align="right">Chat Handle:</td><td class="newuser" align="left"><input type="text" name="handle" size="8" maxlength="8" value="' + usr.handle + '" /></td></tr>' });
 	template.profile.push({html: '<tr><td class="newuser" align="right">E-Mail Address:</td><td class="newuser" align="left"><input type="text" name="email" size="50" maxlength="60" value="' + usr.netmail + '" /></td></tr>' });
