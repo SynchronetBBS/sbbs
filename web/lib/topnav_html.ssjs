@@ -27,7 +27,7 @@ if(http_request.virtual_path=="/members/lastcallers.ssjs")
 
 if(http_request.virtual_path=="/members/info.ssjs")
     template.topnav.push({html: '<span class="tlink">Information Menu</span>'});
-else if(http_request.virtual_path=="/members/userstats.ssjs" || http_request.virtual_path=="/members/sysinfo.ssjs")
+else if(http_request.virtual_path=="/members/userstats.ssjs" || http_request.virtual_path=="/members/sysinfo.ssjs" || http_request.virtual_path=="/members/editprofile.ssjs")
     template.topnav.push({html: '<a class="tlink" href="/members/info.ssjs">Information Menu</a>'});
 
 if(http_request.virtual_path=="/members/userstats.ssjs")
@@ -35,6 +35,9 @@ if(http_request.virtual_path=="/members/userstats.ssjs")
 
 if(http_request.virtual_path=="/members/sysinfo.ssjs")
     template.topnav.push({html: '<span class="tlink">System Information</span>'});
+
+if(http_request.virtual_path=="/members/editprofile.ssjs")
+    template.topnav.push({html: '<span class="tlink">Edit Your Profile</span>'});
 
 if(http_request.virtual_path=="/members/themes.ssjs")
     template.topnav.push({html: '<span class="tlink">HTML Themes</span>'});
