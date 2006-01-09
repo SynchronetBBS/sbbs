@@ -13,7 +13,7 @@ template.title=system.name + " - Profile Updated";
 
 if(is_sysop) {
 
-var usr = new User(http_request.query.edituser[0]);
+	var usr = new User(http_request.query.edituser[0]);
 
 	if(http_request.query["name"]!=usr.name)
 		usr.name=http_request.query["name"];
