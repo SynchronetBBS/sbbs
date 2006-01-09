@@ -1,4 +1,4 @@
-/* $Id: & */
+/* $Id$ */
 
 load("../web/lib/template.ssjs");
 
