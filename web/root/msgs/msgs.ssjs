@@ -9,10 +9,10 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 
 var ShowMsgs=GET_ALL_MESSAGES;
 
-if(file_exists(system.data_dir+'user/'+format("%04d.html_prefs",user.number))) {
-  prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
+if(file_exists(prefs_dir +format("%04d.html_prefs",user.number))) {
+  prefsfile=new File(prefs_dir +format("%04d.html_prefs",user.number));
   if(prefsfile.open("r",false)) {
-  SortDate=prefsfile.iniGetValue(null, 'SortDate', 'descending');
+  SortDate=prefsfile.iniGetValue('Messaging', 'SortDate', 'descending');
   prefsfile.close();
   }
 } else {
@@ -144,13 +144,13 @@ if(http_request.query.sort_date != undefined) {
     case "ascending":
       DateDescending=false;
       SortDate="ascending"
-      prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
+      prefsfile=new File(prefs_dir + format("%04d.html_prefs",user.number));
       if(prefsfile.open("r+",false)) {
-          prefsfile.iniSetValue(null, 'SortDate', 'ascending');
+          prefsfile.iniSetValue('Messaging', 'SortDate', 'ascending');
           prefsfile.close();
       } else {
       if(prefsfile.open("w+",false)) {
-          prefsfile.iniSetValue(null, 'SortDate', 'ascending');
+          prefsfile.iniSetValue('Messaging', 'SortDate', 'ascending');
           prefsfile.close();
         }
       }
@@ -158,13 +158,13 @@ if(http_request.query.sort_date != undefined) {
     case "descending":
       DateDescending=true;
       SortDate="descending"
-      prefsfile=new File(system.data_dir+'user/'+format("%04d.html_prefs",user.number));
+      prefsfile=new File(prefs_dir + format("%04d.html_prefs",user.number));
       if(prefsfile.open("r+",false)) {
-          prefsfile.iniSetValue(null, 'SortDate', 'descending');
+          prefsfile.iniSetValue('Messaging', 'SortDate', 'descending');
           prefsfile.close();
         } else {
       if(prefsfile.open("w+",false)) {
-          prefsfile.iniSetValue(null, 'SortDate', 'descending');
+          prefsfile.iniSetValue('Messaging', 'SortDate', 'descending');
           prefsfile.close();
         }
       }
