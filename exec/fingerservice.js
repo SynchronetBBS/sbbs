@@ -427,7 +427,7 @@ write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
 var plan;
 plan=format("%suser/%04d.plan",system.data_dir,u.number);
 if(file_exists(plan)) {
-	write("Plan:\r\b");
+	write("Plan:\r\n");
 	send_file(plan);
 	}
 else
