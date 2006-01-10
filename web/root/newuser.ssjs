@@ -349,6 +349,16 @@ else {
         template.response=format("<p>Your account has been created and the password is: %s </p>" ,newpw);
     write_template("newuser_created.inc");
     write_template("footer.inc");
+
+prefs_dir=system.data_dir + 'user/';
+
+prefsfile=new File(prefs_dir + '/'+format("%04d.html_prefs",nuser.number));
+	if(prefsfile.open("w+",false)) {
+		prefsfile.iniSetValue('Messaging', 'SortDate', 'descending');
+		prefsfile.iniSetValue('Theme', 'CurrTheme', CurrTheme);
+		prefsfile.close();
+	}
+
 }
 
 function showform() {
