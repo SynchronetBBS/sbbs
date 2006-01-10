@@ -62,17 +62,17 @@ card_t newdeck[52]={
 
 card_t deck[52], card[52];
 card_t hand[MAX_NODES+1][10];
-char comp_name[41],password[10]={NULL};
+char comp_name[41],password[10]={0};
 int cur_card=0,rank=0,last_bet=100,create_log=0,symbols=1,table=1,comp_stat=0,
     player_dis=0,xraised=0;
     /* player_dis tells the computer how many the player threw out */
 short cur_table=0,dupcard1=0,dupcard2=0,hicard=0,total_players,cur_node,
       firstbid=0,stage;
-short num_tables=0,skim=0,bet_limit[MAX_TABLES+1]={NULL},
-    ante[MAX_TABLES+1]={NULL},options[MAX_TABLES+1]={NULL};
-uchar node[MAX_NODES+1]={NULL};
+short num_tables=0,skim=0,bet_limit[MAX_TABLES+1]={0},
+    ante[MAX_TABLES+1]={0},options[MAX_TABLES+1]={0};
+uchar node[MAX_NODES+1]={0};
 ulong player_bet=0,newpts,temppts,current_bet,total_pot,comp_bet=0,
-    time_played=0,time_allowed=0,max_bet=0,max_total[MAX_TABLES+1]={NULL};
+    time_played=0,time_allowed=0,max_bet=0,max_total[MAX_TABLES+1]={0};
 uint firstbet=1;
 unsigned short temp_num,dealer;
 
