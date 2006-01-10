@@ -189,7 +189,7 @@ if(findfile && 0) {	// What is this supposed to do?
 // MODIFICATION BY MERLIN PART 1 ENDS HERE
 
 
-if(request.charAt(0)=='?') {	// Handle "special" requests
+if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" requests
 	request=request.slice(1);
 	switch(request.toLowerCase()) {
 
@@ -293,7 +293,7 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 				send_file(system.data_dir + "finger/" + file_getname(request));
 				break;
 			}
-			writeln("Supported special requests (prepended with '?'):");
+			writeln("Supported special requests (prepended with '?' or '.'):");
 			writeln("\tver");
 			writeln("\ttime");
 			writeln("\tstats");
