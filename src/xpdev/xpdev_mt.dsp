@@ -128,5 +128,9 @@ SOURCE=.\str_list.c
 
 SOURCE=.\threadwrap.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\xpprintf.c
+# End Source File
 # End Target
 # End Project
