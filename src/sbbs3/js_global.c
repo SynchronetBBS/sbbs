@@ -285,7 +285,6 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 #ifdef USE_XP_PRINTF
-//#if 1
 
 static JSBool
 js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -301,7 +300,7 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     for(i=1; i<argc; i++) {
 		if(JSVAL_IS_DOUBLE(argv[i]))
 			fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_DOUBLE,*JSVAL_TO_DOUBLE(argv[i]));
-		else if(JSVAL_IS_INT(argv[i]))
+		else if(JSVAL_IS_INT(argv[i]) || JSVAL_IS_BOOLEAN(argv[i]))
 			fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_INT(argv[i]));
 		else {
 			if((str=JS_ValueToString(cx, argv[i]))==NULL) {
