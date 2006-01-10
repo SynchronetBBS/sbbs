@@ -14,7 +14,7 @@
 #define XP_PRINTF_TYPE_USHORT		XP_PRINTF_TYPE_UINT
 #define XP_PRINTF_TYPE_LONG			3
 #define XP_PRINTF_TYPE_ULONG		4
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__BORLANDC__)
 	#define XP_PRINTF_TYPE_LONGLONG		5
 	#define XP_PRINTF_TYPE_ULONGLONG	6
 #endif
