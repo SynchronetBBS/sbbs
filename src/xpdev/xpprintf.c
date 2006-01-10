@@ -1121,25 +1121,29 @@ char *xp_asprintf_next(char *format, int type, ...)
 			break;
 	}
 
-	this_format_len=strlen(this_format);
-	/*
-	 * This isn't necessary if it's already the right size,
-	 * or it's too large... this realloc() should only need to grow
-	 * the string.
-	 */
-	newbuf=(char *)realloc(format, format_len-this_format_len+j);
-	if(newbuf==NULL) {
+	if(j>=0) {
+		this_format_len=strlen(this_format);
+		/*
+		 * This isn't necessary if it's already the right size,
+		 * or it's too large... this realloc() should only need to grow
+		 * the string.
+		 */
+		newbuf=(char *)realloc(format, format_len-this_format_len+j);
+		if(newbuf==NULL) {
+			if(entry != entry_buf)
+				free(entry);
+			return(NULL);
+		}
+		format=newbuf;
+		/* Move trailing end to make space */
+		memmove(format+offset+j, format+offset+this_format_len, format_len-offset-this_format_len);
+		memcpy(format+offset, entry, j);
 		if(entry != entry_buf)
 			free(entry);
-		return(NULL);
+		p=format+offset+j;
 	}
-	format=newbuf;
-	/* Move trailing end to make space */
-	memmove(format+offset+j, format+offset+this_format_len, format_len-offset-this_format_len);
-	memcpy(format+offset, entry, j);
-	if(entry != entry_buf)
-		free(entry);
-	p=format+offset+j;
+	else
+		p=format_offset+this_format_len;
 	/*
 	 * Search for next non-%% separateor and set offset
 	 * to zero if none found for wrappers to know when
