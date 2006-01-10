@@ -1143,7 +1143,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 		p=format+offset+j;
 	}
 	else
-		p=format_offset+this_format_len;
+		p=format+offset+this_format_len;
 	/*
 	 * Search for next non-%% separateor and set offset
 	 * to zero if none found for wrappers to know when
