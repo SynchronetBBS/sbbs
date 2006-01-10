@@ -2603,6 +2603,8 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: %s, Password: %s",sock,user.alias,p);
 				else
 					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: %s",sock,user.alias);
+				if(stricmp(user.alias,"anonymous")==0)
+					sockprintf(sock,"530-Anonymous logins not allowed. You must login with a valid user account.");
 				if(badlogin(sock,&login_attempts))
 					break;
 				continue;
