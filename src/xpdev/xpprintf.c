@@ -1121,8 +1121,8 @@ char *xp_asprintf_next(char *format, int type, ...)
 			break;
 	}
 
+	this_format_len=strlen(this_format);
 	if(j>=0) {
-		this_format_len=strlen(this_format);
 		/*
 		 * This isn't necessary if it's already the right size,
 		 * or it's too large... this realloc() should only need to grow
