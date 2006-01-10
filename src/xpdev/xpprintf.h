@@ -38,6 +38,7 @@ char *xp_asprintf_next(char *format, int type, ...);
 char *xp_asprintf_end(char *format);
 char *xp_asprintf(const char *format, ...);
 char *xp_vasprintf(const char *format, va_list va);
+int xp_printf_get_type(const char *format);
 #if defined(__cplusplus)
 }
 #endif

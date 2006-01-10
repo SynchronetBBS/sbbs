@@ -14,7 +14,7 @@
 /* Maximum length of a format specifier including the % */
 #define MAX_FORMAT_LEN	256
 
-static int xp_printf_get_type(const char *format)
+int xp_printf_get_type(const char *format)
 {
 	const char	*p;
 	int		modifier=0;
