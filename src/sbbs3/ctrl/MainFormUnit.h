@@ -298,6 +298,7 @@ __published:	// IDE-managed Components
     TMenuItem *BBSEditTwitList;
     TMenuItem *WebEditHandlersMenuItem;
     TMenuItem *WebEditCgiEnvMenuItem;
+    TMenuItem *FtpEditBadLoginMessage;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
