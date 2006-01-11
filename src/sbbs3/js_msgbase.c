@@ -1148,33 +1148,19 @@ js_remove_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if(!msg_specified)
 		return(JS_TRUE);
 
-	if((p->status=smb_getmsgidx(&(p->smb), &msg))!=SMB_SUCCESS)
-		return(JS_TRUE);
-
-	if((p->status=smb_lockmsghdr(&(p->smb),&msg))!=SMB_SUCCESS)
-		return(JS_TRUE);
-
-	do {
-		if((p->status=smb_getmsghdr(&(p->smb), &msg))!=SMB_SUCCESS)
-			break;
-
-		smb_freemsghdrmem(&msg);	/* prevent duplicate header fields */
+	if((p->status=smb_getmsgidx(&(p->smb), &msg))==SMB_SUCCESS
+		&& (p->status=smb_getmsghdr(&(p->smb), &msg))==SMB_SUCCESS) {
 
 		msg.hdr.attr|=MSG_DELETE;
-		msg.idx.attr=msg.hdr.attr;
 
-		if((p->status=smb_putmsg(&(p->smb), &msg))!=SMB_SUCCESS)
-			break;
+		if((p->status=smb_updatemsg(&(p->smb), &msg))==SMB_SUCCESS)
+			*rval = JSVAL_TRUE;
+	}
 
-		*rval = JSVAL_TRUE;
-	} while(0);
-
-	smb_unlockmsghdr(&(p->smb),&msg); 
 	smb_freemsgmem(&msg);
 
 	return(JS_TRUE);
 }
-
 
 static char* get_msg_text(private_t* p, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL rfc822, ulong mode)
 {
