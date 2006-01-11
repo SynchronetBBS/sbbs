@@ -314,13 +314,13 @@ void ansi_textattr(int attr)
 	bl=attr&0x80;
 	bg=(attr>>4)&0x7;
 	fg=attr&0x07;
-	br=attr&0x04;
+	br=attr&0x08;
 
 	oa=ansi_curr_attr>>8;
 	obl=oa&0x80;
 	obg=(oa>>4)&0x7;
 	ofg=oa&0x07;
-	obr=oa&0x04;
+	obr=oa&0x08;
 
 	ansi_curr_attr=attr<<8;
 
