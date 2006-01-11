@@ -17,7 +17,7 @@ SRC_ROOT	=	../..
 include $(SRC_ROOT)/build/Common.gmake
 
 ifeq ($(os),sunos)
- LDFLAGS	+=	-lsocket -lnsl
+ LDFLAGS	+=	-lnsl
 endif
 
 vpath %.c ..
