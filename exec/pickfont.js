@@ -2,8 +2,9 @@
 // Pass the desired fotn slot on the command line
 // If nothing passed, changes to font 0 (CP437)
 
+if(this.CTerm_Version==undefined)
+	js.global.CTerm_Version=null;
 pickfont();
-var CTerm_Version;
 
 function pickfont()
 {
@@ -21,7 +22,7 @@ function pickfont()
 
 	// Check if it's CTerm and supports font loading...
 	var ver=new Array(0,0);
-	if(CTerm_Version==undefined) {
+	if(CTerm_Version==undefined || CTerm_Version==null) {
 		if(detect) {
 			// Disable parsed input... we need to do ESC processing ourselves here.
 			var oldctrl=console.ctrlkey_passthru;

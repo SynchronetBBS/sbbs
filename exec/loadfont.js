@@ -8,8 +8,9 @@
  */
 
 load("sbbsdefs.js");
+if(this.CTerm_Version==undefined)
+	js.global.CTerm_Version=null;
 loadfont();
-var CTerm_Version;
 
 function loadfont()
 {
@@ -34,7 +35,10 @@ function loadfont()
 			}
 		}
 		else {
-			filenames.push(argv[i].toString());
+			if(argv[i].constructor==Array)
+				filenames=filenames.concat(argv[i]);
+			else
+				filenames.push(argv[i].toString());
 		}
 	}
 
@@ -67,7 +71,7 @@ function loadfont()
 
 	// Check if it's CTerm and supports font loading...
 	var ver=new Array(0,0);
-	if(CTerm_Version == undefined) {
+	if(CTerm_Version == undefined || CTerm_Version == null) {
 		// Disable parsed input... we need to do ESC processing ourselves here.
 		var oldctrl=console.ctrlkey_passthru;
 		console.ctrlkey_passthru=-1;
