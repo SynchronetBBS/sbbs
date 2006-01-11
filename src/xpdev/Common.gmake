@@ -1,8 +1,6 @@
 XPDEV_LIBS	+=	-lm
 XPDEV-MT_LIBS	+=	-lm
 ifeq ($(os),netbsd)     # NetBSD
-endif
-ifeq ($(os),netbsd)     # NetBSD
  XPDEV_LIBS	+=	-lossaudio
  XPDEV-MT_LIBS	+=	-lossaudio -lpthread
 endif
@@ -11,7 +9,7 @@ ifeq ($(os),openbsd)    # OpenBSD
  XPDEV-MT_LIBS	+=	-lossaudio -lpthread
 endif
 ifeq ($(os),sunos)	# Solaris
- XPDEV-MT_LIBS	+=	-lpthread
+ XPDEV-MT_LIBS	+=	-lpthread -lsocket
 endif
 ifeq ($(os),darwin)	# Mac OS/X
  XPDEV-MT_LIBS	+=	-lpthread
