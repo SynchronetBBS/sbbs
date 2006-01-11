@@ -9,6 +9,7 @@ ifeq ($(os),openbsd)    # OpenBSD
  XPDEV-MT_LIBS	+=	-lossaudio -lpthread
 endif
 ifeq ($(os),sunos)	# Solaris
+ XPDEV_LIBS	+=	-lsocket
  XPDEV-MT_LIBS	+=	-lpthread -lsocket
 endif
 ifeq ($(os),darwin)	# Mac OS/X
