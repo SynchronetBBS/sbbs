@@ -72,7 +72,11 @@ int spyon(char *sockname)  {
 	
 	spy_name.sun_family=AF_UNIX;
 	SAFECOPY(spy_name.sun_path,sockname);
+#ifdef SUN_LEN
 	spy_len=SUN_LEN(&spy_name);
+#else
+	spy_len=sizeof(struct sockaddr_un);
+#endif
 	if(connect(spy_sock,(struct sockaddr *)&spy_name,spy_len))  {
 		return(SPY_NOCONNECT);
 	}
