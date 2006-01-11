@@ -1434,6 +1434,11 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
                 case '!':   /* EXEC Directory */
                     strcat(cmd,scfg.exec_dir);
                     break;
+                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+                    strcat(cmd,scfg.exec_dir);
+#endif
+                    break;
                 case '%':   /* %% for percent sign */
                     strcat(cmd,"%");
                     break;

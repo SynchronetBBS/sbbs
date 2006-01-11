@@ -1264,6 +1264,11 @@ static char* cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *c
                 case '!':   /* EXEC Directory */
                     strcat(cmd,scfg.exec_dir);
                     break;
+                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+                    strcat(cmd,scfg.exec_dir);
+#endif
+                    break;
                 case '#':   /* Node number (same as SBBSNNUM environment var) */
                     sprintf(str,"%u",scfg.node_num);
                     strcat(cmd,str);
