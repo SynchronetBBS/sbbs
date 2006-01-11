@@ -4,7 +4,7 @@
  */
 
 /* ToDo: Support multiple columns */
-//if(SYS_CLOSED==undefined)
+if(this.SYS_CLOSED==undefined)
 	load("sbbsdefs.js");
 
 /*
