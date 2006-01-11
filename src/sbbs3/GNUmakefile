@@ -26,7 +26,7 @@ ifndef bcc
 endif
 
 ifeq ($(os),sunos)    # Solaris
- LDFLAGS += -lsocket -lnsl -lrt
+ LDFLAGS += -lnsl -lrt
 endif
 
 # So far, only QNX has sem_timedwait()
@@ -130,7 +130,7 @@ $(MAILSRVR): $(MAIL_OBJS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) -o $@
 
-# Mail Server Link Rule
+# Web Server Link Rule
 $(WEBSRVR): $(WEB_OBJS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) -o $@
