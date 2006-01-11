@@ -23,7 +23,7 @@ if(http_request.query.Action=="Delete") {
             continue;
         }
         if(sub!='mail' && !msg_area.sub[sub].is_operator) {
-            if(!msg_area.sub[sub].settings&SUB_DEL) {
+            if(!(msg_area.sub[sub].settings&SUB_DEL)) {
                 errorlist.push("Only operators can delete messages!");
                 errors++;
                 continue;

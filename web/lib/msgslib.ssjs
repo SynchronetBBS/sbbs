@@ -124,7 +124,7 @@ function can_delete(mnum)
 	if(sub=='mail' && ((idx=msgbase.get_msg_index(false,mnum))==null || idx.to!=user.number))
 		return(false);
 	if(sub!='mail' && !msg_area.sub[sub].is_operator) {
-		if(!msg_area.sub[sub].settings&SUB_DEL)
+		if(!(msg_area.sub[sub].settings&SUB_DEL))
 			return(false);
 		if(msg_area.sub[sub].settings&SUB_DELLAST) {
 			if(msgbase.last_msg!=mnum)
