@@ -3525,6 +3525,7 @@ static void sendmail_thread(void* arg)
 	mail_t*		mail;
 	long		msgs;
 	long		l;
+	BOOL		sending_locally=FALSE;
 
 	thread_up(TRUE /* setuid */);
 
@@ -3681,6 +3682,7 @@ static void sendmail_thread(void* arg)
 							, startup->interface_addr & 0xff);
 					server = numeric_ip;
 				}
+				sending_locally=TRUE;
 			}
 			else {
 				if(startup->options&MAIL_OPT_RELAY_TX) { 
@@ -3809,7 +3811,7 @@ static void sendmail_thread(void* arg)
 
 			/* AUTH */
 			if(startup->options&MAIL_OPT_RELAY_TX 
-				&& (startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=0) {
+				&& (startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=0 && !sending_locally) {
 				switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
 					case MAIL_OPT_RELAY_AUTH_PLAIN:
 						p="PLAIN";
