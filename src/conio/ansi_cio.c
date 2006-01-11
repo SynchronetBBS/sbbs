@@ -317,21 +317,26 @@ void ansi_textattr(int attr)
 	br=attr&0x04;
 
 	oa=ansi_curr_attr>>8;
-	obl=oa>>7;
+	obl=oa&0x80;
 	obg=(oa>>4)&0x7;
 	ofg=oa&0x07;
-	obr=(oa>>3)&0x01;
+	obr=oa&0x04;
 
 	ansi_curr_attr=attr<<8;
 
 	strcpy(str,"\033[");
 	if(obl!=bl) {
-		if(!bl) {
+		if(!bl)
+#if 0
+			strcat(str,"25;");
+#else
+		{
 			strcat(str,"0;");
 			ofg=7;
 			obg=0;
 			obr=0;
 		}
+#endif
 		else
 			strcat(str,"5;");
 	}
@@ -340,10 +345,12 @@ void ansi_textattr(int attr)
 			strcat(str,"1;");
 		else
 #if 0
-			strcat(str,"2;");
+			strcat(str,"22;");
 #else
 		{
 			strcat(str,"0;");
+			if(bl)
+				strcat(str,"5;");
 			ofg=7;
 			obg=0;
 		}
