@@ -18,7 +18,7 @@ SRC_ROOT	?=	../../src
 include $(SRC_ROOT)/build/Common.gmake
 
 ifeq ($(os),sunos)
- LDFLAGS	+=	-lsocket -lnsl -lrt
+ LDFLAGS	+=	-lnsl -lrt
 endif
 
 LDFLAGS	+=	$(XPDEV_LDFLAGS)

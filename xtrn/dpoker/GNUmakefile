@@ -20,7 +20,7 @@ vpath %.c $(XSDK)
 CFLAGS	+=	-I$(XSDK) -DUSE_XPDEV $(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 
 ifeq ($(os),sunos)
- LDFLAGS	+=	-lsocket -lnsl -lrt
+ LDFLAGS	+=	-lnsl -lrt
 endif
 
 $(DPOKER): $(OBJS)
