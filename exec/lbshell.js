@@ -544,6 +544,67 @@ while(1) {
 			done=0;
 			while(!done) {
 				switch(emailmenu.getval()) {
+					case 'S':
+						clear_screen();
+						console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
+						str=console.getstr("",40,K_UPRLWR);
+						if(str==null || str=="")
+							break;
+						if(str=="Sysop")
+							str="1";
+						if(str.search(/\@/)!=-1)
+							bbs.netmail(str);
+						else {
+							i=bbs.finduser(str);
+							if(i>0)
+								bbs.email(i,WM_EMAIL);
+						}
+						draw_main();
+						break;
+					case 'N':
+						clear_screen();
+						if(console.noyes("\r\nAttach a file"))
+							i=0;
+						else
+							i=WM_FILE;
+						console.putmsg(bbs.text(EnterNetMailAddress),P_SAVEATR);
+						str=console.getstr("",60,K_LINE);
+						if(str!=null && str !="")
+							bbs.netmail(str,i);
+						draw_main();
+						break;
+					case 'F':
+						clear_screen();
+						bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
+						draw_main();
+						break;
+					case 'R':
+						clear_screen();
+						bbs.read_mail(MAIL_YOUR);;
+						draw_main();
+						break;
+					case 'Y':
+						clear_screen();
+						bbs.read_mail(MAIL_SENT);;
+						draw_main();
+						break;
+					case 'U':
+						clear_screen();
+						console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
+						str=console.getstr("",40,K_UPRLWR);
+						if(str==null || str=="")
+							break;
+						if(str=="Sysop")
+							str="1";
+						if(str.search(/\@/)!=-1)
+							bbs.netmail(str,WM_FILE);
+						else {
+							i=bbs.finduser(str);
+							if(i>0)
+								bbs.email(i,WM_EMAIL|WM_FILE);
+						}
+						draw_main();
+						break;
 					case '-':
 						done=1;
 						break;
