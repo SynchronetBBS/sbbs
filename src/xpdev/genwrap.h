@@ -178,8 +178,8 @@ extern "C" {
 	DLLEXPORT char*	DLLCALL strlwr(char* str);
 	DLLEXPORT char* DLLCALL	strrev(char* str);
 	#if !defined(stricmp)
-		#define stricmp(x,y)		strcasecmp(x,y)
-		#define strnicmp(x,y,z)		strncasecmp(x,y,z)
+		#define stricmp			strcasecmp
+		#define strnicmp		strncasecmp
 	#endif
 #endif
 
