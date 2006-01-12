@@ -615,6 +615,133 @@ while(1) {
 			done=0;
 			while(!done) {
 				switch(messagemenu.getval()) {
+					case 'N':
+						clear_screen();
+						console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
+						bbs.scan_subs(SCAN_NEW);
+						draw_main();
+						break;
+					case 'R':
+						clear_screen();
+						bbs.scan_posts();
+						draw_main();
+						break;
+					case 'C':
+						clear_screen();
+						console.putmsg("\r\n\x01c\x01hContinuous New Message Scan\r\n");
+						bbs.scan_subs(SCAN_NEW|SCAN_CONST);
+						draw_main();
+						break;
+					case 'B':
+						clear_screen();
+						console.putmsg("\r\n\x01c\x01hBrowse/New Message Scan\r\n");
+						bbs.scan_subs(SCAN_NEW|SCAN_BACK);
+						draw_main();
+						break;
+					case 'Q':
+						clear_screen();
+						bbs.qwk_sec();
+						draw_main();
+						break;
+					case 'P':
+						clear_screen();
+						bbs.post_msg();
+						draw_main();
+						break;
+					case 'A':
+						clear_screen();
+						bbs.auto_msg();
+						draw_main();
+						break;
+					case 'F':
+						clear_screen();
+						console.putmsg("\r\n\x01c\x01hFind Text in Messages\r\n");
+						bbs.scan_subs(SCAN_FIND);
+						draw_main();
+						break;
+					case 'S':
+						clear_screen();
+						console.putmsg("\r\n\x01c\x01hScan for Messages Posted to You\r\n");
+						bbs.scan_subs(SCAN_TOYOU);
+						draw_main();
+						break;
+					case 'J':
+						clear_screen();
+						if(!msg_area.grp_list.length)
+							break;
+						msgjump: while(1) {
+							var orig_grp=bbs.curgrp;
+							var i=0;
+							var j=0;
+							if(msg_area.grp_list.length>1) {
+								if(file_exists(system.text_dir+"menu/grps.*"))
+									bbs.menu("grps");
+								else {
+									console.putmsg(bbs.text(CfgGrpLstHdr),P_SAVEATR);
+									for(i=0; i<msg_area.grp_list.length; i++) {
+										if(i==bbs.curgrp)
+											console.putmsg('*',P_SAVEATR);
+										else
+											console.putmsg(' ',P_SAVEATR);
+										if(i<9)
+											console.putmsg(' ',P_SAVEATR);
+										if(i<99)
+											console.putmsg(' ',P_SAVEATR);
+										// We use console.putmsg to expand ^A, @, etc
+										console.putmsg(format(bbs.text(CfgGrpLstFmt),i+1,msg_area.grp_list[i].description),P_SAVEATR);
+									}
+								}
+								console.mnemonics(format(bbs.text(JoinWhichGrp),bbs.curgrp+1));
+								j=console.getnum(msg_area.grp_list.length);
+								if(j<0)
+									break msgjump;
+								if(!j)
+									j=bbs.curgrp;
+								else
+									j--;
+							}
+							bbs.curgrp=j;
+							if(file_exists(system.text_dir+"menu/subs"+(bbs.curgrp+1)))
+								bbs.menu("subs"+(bbs.curgrp+1));
+							else {
+								console.clear();
+								console.putmsg(format(bbs.text(SubLstHdr), msg_area.grp_list[j].description),P_SAVEATR);
+								for(i=0; i<msg_area.grp_list[j].sub_list.length; i++) {
+									var msgbase=new MsgBase(msg_area.grp_list[j].sub_list[i].code);
+									if(msgbase==undefined)
+										continue;
+									if(!msgbase.open())
+										continue;
+									if(i==bbs.cursub)
+										console.putmsg('*',P_SAVEATR);
+									else
+										console.putmsg(' ',P_SAVEATR);
+									if(i<9)
+										console.putmsg(' ',P_SAVEATR);
+									if(i<99)
+										console.putmsg(' ',P_SAVEATR);
+									console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[j].sub_list[i].description,"",msgbase.total_msgs),P_SAVEATR);
+									msgbase.close();
+								}
+							}
+							console.mnemonics(format(bbs.text(JoinWhichSub),bbs.cursub+1));
+							i=console.getnum(msg_area.grp_list[j].sub_list.length);
+							if(i==-1) {
+								if(msg_area.grp_list.length==1) {
+									bbs.curgrp=orig_grp;
+									break msgjump;
+								}
+								continue;
+							}
+							if(!i)
+								i=bbs.cursub;
+							else
+								i--;
+							bbs.cursub=i;
+							break;
+						}
+						draw_main();
+						break;
 					case '-':
 						done=1;
 						break;
