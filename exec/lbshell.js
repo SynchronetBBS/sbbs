@@ -139,7 +139,7 @@ mainbar.add("|Chat","C");
 	chatmenu.add("|Finger (Query) A Remote User or System","F",39);
 	chatmenu.add("I|RC Chat","R",39);
 	chatmenu.add("|InterBBS Instant Messages","I",39);
-	chatmenu.add("|Split Screen Private Chat","S",39);
+	chatmenu.add("|Toggle Split Screen Private Chat","S",39);
 	chatmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("E|xternals","X");
 mainbar.add("|Goodbye","G");
@@ -752,6 +752,49 @@ while(1) {
 			done=0;
 			while(!done) {
 				switch(chatmenu.getval()) {
+					case 'J':
+						clear_screen();
+						bbs.multinode_chat();
+						draw_main();
+						break;
+					case 'P':
+						clear_screen();
+						bbs.private_chat();
+						draw_main();
+						break;
+					case 'C':
+						clear_screen();
+						if(!bbs.page_sysop())
+							bbs.page_guru();
+						draw_main();
+						break;
+					case 'T':
+						clear_screen();
+						bbs.page_guru();
+						draw_main();
+						break;
+					case 'F':
+						clear_screen();
+						bbs.exec("?finger");
+						draw_main();
+						break;
+					case 'R':
+						clear_screen();
+						write("\001n\001y\001hServer and channel: ");
+						str="irc.synchro.net 6667 #Synchronet";
+						str=console.getstr(str, 50, K_EDIT|K_LINE|K_AUTODEL);
+						if(!console.aborted)
+							bbs.exec("?irc -a "+str);
+						draw_main();
+						break;
+					case 'I':
+						clear_screen();
+						bbs.exec("?sbbsimsg");
+						draw_main();
+						break;
+					case 'S':
+						user.chat_settings ^= CHAT_SPLITP;
+						break;
 					case '-':
 						done=1;
 						break;
