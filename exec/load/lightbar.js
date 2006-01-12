@@ -33,6 +33,10 @@ if(this.SYS_CLOSED==undefined)
  *         should be left-aligned, a 1 indicates it should be right-aligned, and
  *         a 2 indicates it should be centered.
  *  force_width: forces the width of all items to this value.
+ *  lpadding: this string is displayed before each item, and is not highlighted
+ *  rpadding: this string is displayed AFTER each item, and is not highlighted
+ *      NOTE: Padding is not included in width
+ *  hblanks: The number of horizontal blanks between items for horizontal menus.
  */
 function Lightbar(items)
 {
@@ -53,13 +57,16 @@ function Lightbar(items)
 	this.clear=Lightbar_clearitems;
 	this.add=Lightbar_additem;
 	this.failsafe_getval=Lightbar_failsafe_getval;
+	this.lpadding=null;
+	this.rpadding=null;
+	this.hblanks=2;
 	if(items==undefined)
 		this.items=new Array();
 	else
 		this.items=items;
 }
 
-function Lightbar_additem(txt, retval, width)
+function Lightbar_additem(txt, retval, width, lpadding, rpadding)
 {
 	var item=new Object;
 
@@ -72,6 +79,10 @@ function Lightbar_additem(txt, retval, width)
 		item.retval=retval;
 	if(width!=undefined)
 		item.width=width;
+	if(lpadding!=undefined)
+		item.lpadding=lpadding;
+	if(rpadding!=undefined)
+		item.rpadding=rpadding;
 	this.items.push(item);
 }
 
@@ -215,6 +226,15 @@ function Lightbar_getval(current)
 				if(this.items[i].width!=undefined)
 					width=this.items[i].width;
 			}
+
+			var lpadding=this.lpadding;
+			var rpadding=this.rpadding;
+			if(this.items[i].lpadding!=undefined)
+				lpadding=this.items[i].lpadding;
+			if(this.items[i].rpadding!=undefined)
+				rpadding=this.items[i].rpadding;
+			if(lpadding != undefined && lpadding != null)
+				curx+= lpadding.length;
 			if(i==this.current || i==last_cur) {
 				console.gotoxy(curx, cury);
 				if(i==this.current) {
@@ -268,10 +288,14 @@ function Lightbar_getval(current)
 					k++;
 				}
 			}
-			if(this.direction==0)
+			if(rpadding != undefined && rpadding != null)
+				curx+= rpadding.length;
+			if(this.direction==0) {
 				cury++;
+				curx=this.xpos;
+			}
 			else
-				curx+=width+1;
+				curx+=width+this.hblanks;
 			if(this.items[i].retval!=undefined)
 				item_count++;
 		}
@@ -468,7 +492,18 @@ function Lightbar_draw(current)
 			if(this.items[i].width!=undefined)
 				width=this.items[i].width;
 		}
+		var lpadding=this.lpadding;
+		var rpadding=this.rpadding;
+		if(this.items[i].lpadding!=undefined)
+			lpadding=this.items[i].lpadding;
+		if(this.items[i].rpadding!=undefined)
+			rpadding=this.items[i].rpadding;
 		console.gotoxy(curx, cury);
+		if(lpadding != undefined && lpadding != null) {
+			console.attributes=attr;
+			console.write(lpadding);
+			curx+= lpadding.length;
+		}
 		if(i==this.current) {
 			cursx=curx;
 			cursy=cury;
@@ -519,12 +554,22 @@ function Lightbar_draw(current)
 			console.write(" ");
 			k++;
 		}
-		if(this.direction==0)
+		if(rpadding != undefined && rpadding != null) {
+			console.attributes=attr;
+			console.write(rpadding);
+			curx+= rpadding.length;
+		}
+		if(this.direction==0) {
 			cury++;
+			curx=this.xpos;
+		}
 		else {
 			console.attributes=attr;
-			console.write(" ");
-			curx+=width+1;
+			curx+=width;
+			for(j=0; j<this.hblanks; j++) {
+				console.write(" ");
+				curx++;
+			}
 		}
 		if(this.items[i].retval!=undefined)
 			item_count++;
