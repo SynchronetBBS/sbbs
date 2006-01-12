@@ -72,9 +72,20 @@ mainbar.add("|Settings","S");
 	settingsmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	settingsmenu.add("|User Config","U",24);
 	settingsmenu.add("|Message Scan Config","M",24);
-	settingsmenu.add("To |You Scan Config","C",24);
+	settingsmenu.add("To |You Scan Config","Y",24);
 	settingsmenu.add("Message |Pointers","P",24);
 	settingsmenu.add("|File Xfer Config","F",24);
+		var xfercfgmenu=new Lightbar;
+		xfercfgmenu.xpos=33;
+		xfercfgmenu.ypos=6;
+		xfercfgmenu.lpadding="\xb3";
+		xfercfgmenu.rpadding="\xb3";
+		xfercfgmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+		xfercfgmenu.add("<---","-",28);
+		xfercfgmenu.add("|Set New Scan Time","S",28);
+		xfercfgmenu.add("Toggle |Batch Flag","B",28);
+		xfercfgmenu.add("Toggle |Extended Descriptions","E",28);
+		xfercfgmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 	settingsmenu.add("|Re-Init Message Pointers","R",24);
 	settingsmenu.add("|Toggle Paging","T",24);
 	settingsmenu.add("|Activity Alerts On/Off","A",24);
@@ -149,7 +160,6 @@ while(1) {
 						clear_screen();
 						bbs.batch_menu();
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'D':
 						download: do {
@@ -197,7 +207,6 @@ while(1) {
 							}
 						} while(0);
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'I':
 						var info_done=0;
@@ -243,7 +252,6 @@ while(1) {
 							else {
 								draw_main();
 								filemenu.draw();
-								fileinfo.draw();
 							}
 						}
 						break;
@@ -279,21 +287,18 @@ while(1) {
 							}
 						}
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'S':
 						clear_screen();
 						console.putmsg("\r\nchFind Text in File Descriptions (no wildcards)\r\n");
 						bbs.scan_dirs(FL_FINDDESC);
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'F':
 						clear_screen();
 						console.putmsg("\r\nchSearch for Filename(s)\r\n");
 						bbs.scan_dirs(FL_NO_HDR);
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'C':
 						clear_screen();
@@ -367,7 +372,6 @@ while(1) {
 							}
 						} while(0);
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'L':
 						clear_screen();
@@ -379,14 +383,12 @@ while(1) {
 								console.putmsg(bbs.text(NFilesListed,i),P_SAVEATR);
 						}
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'N':
 						clear_screen();
 						console.putmsg("\r\nchNew File Scan\r\n");
 						bbs.scan_dirs(FL_ULTIME);
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'R':
 						clear_screen();
@@ -422,7 +424,6 @@ while(1) {
 							}
 						} while(0);
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'U':
 						clear_screen();
@@ -441,7 +442,6 @@ while(1) {
 						}
 						bbs.upload_file(i);
 						draw_main();
-						filemenu.draw();
 						break;
 					case 'V':
 						clear_screen();
@@ -473,7 +473,6 @@ while(1) {
 							}
 						} while(0);
 						draw_main();
-						filemenu.draw();
 						break;
 				}
 			}
@@ -482,6 +481,59 @@ while(1) {
 			done=0;
 			while(!done) {
 				switch(settingsmenu.getval()) {
+					case 'U':
+						clear_screen();
+						bbs.user_config();
+						draw_main();
+						break;
+					case 'M':
+						clear_screen();
+						bbs.cfg_msg_scan(SCAN_CFG_NEW);
+						draw_main();
+						break;
+					case 'Y':
+						clear_screen();
+						bbs.cfg_msg_scan(SCAN_CFG_TOYOU);
+						draw_main();
+						break;
+					case 'P':
+						clear_screen();
+						bbs.cfg_msg_ptrs();
+						draw_main();
+						break;
+					case 'F':
+						var xfercfgdone=0;
+						while(!xfercfgdone) {
+							switch(xfercfgmenu.getval()) {
+								case 'S':
+									clear_screen();
+									bbs.get_newscantime(bbs.new_file_time);
+									draw_main();
+									settingsmenu.draw();
+									break;
+								case 'B':
+									user.settings ^= USER_BATCHFLAG;
+									break;
+								case 'E':
+									user.settings ^= USER_EXTDESC;
+									break;
+								case '-':
+									xfercfgdone=1;
+							}
+						}
+						draw_main();
+						break;
+					case 'R':
+						bbs.reinit_msg_ptrs();
+						break;
+					case 'T':
+						user.chat_settings ^= CHAT_NOPAGE;
+						system.node_list[bbs.node_num-1].misc ^= NODE_POFF;
+						break;
+					case 'A':
+						user.chat_settings ^= CHAT_NOACT;
+						system.node_list[bbs.node_num-1].misc ^= NODE_AOFF;
+						break;
 					case '-':
 						done=1;
 						break;
