@@ -2506,7 +2506,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	/* procedures */
-	{"newuser",			js_newuser,			0,	JSTYPE_VOID,	""
+	{"newuser",			js_newuser,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("interactive new user procedure")
 	,310
 	},
@@ -2514,56 +2514,56 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("login with <i>username</i>, displaying <i>password_prompt</i> for password (if required)")
 	,310
 	},
-	{"logon",			js_logon,			0,	JSTYPE_BOOLEAN,	""
+	{"logon",			js_logon,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("interactive logon procedure")
 	,310
 	},
-	{"logoff",			js_logoff,			0,	JSTYPE_VOID,	""
+	{"logoff",			js_logoff,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("interactive logoff procedure")
 	,310
 	},
-	{"logout",			js_logout,			0,	JSTYPE_VOID,	""
+	{"logout",			js_logout,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("non-interactive logout procedure")
 	,310
 	},
-	{"hangup",			js_hangup,			0,	JSTYPE_VOID,	""
+	{"hangup",			js_hangup,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("hangup (disconnect) immediately")
 	,310
 	},
 	{"node_sync",		js_nodesync,		0,	JSTYPE_ALIAS },
-	{"nodesync",		js_nodesync,		0,	JSTYPE_VOID,	""
+	{"nodesync",		js_nodesync,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("synchronize with node database, checks for messages, interruption, etc. (AKA node_sync)")
 	,310
 	},
-	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	""
+	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("read/create system's auto-message")
 	,310
 	},		
-	{"time_bank",		js_time_bank,		0,	JSTYPE_VOID,	""
+	{"time_bank",		js_time_bank,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the time banking system")
 	,310
 	},		
-	{"qwk_sec",			js_qwk_sec,			0,	JSTYPE_VOID,	""
+	{"qwk_sec",			js_qwk_sec,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the QWK message packet upload/download/config section")
 	,310
 	},		
-	{"text_sec",		js_text_sec,		0,	JSTYPE_VOID,	""
+	{"text_sec",		js_text_sec,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the text files section")
 	,310
 	},		
-	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	""
+	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the external programs section")
 	,310
 	},		
-	{"xfer_policy",		js_xfer_policy,		0,	JSTYPE_VOID,	""
+	{"xfer_policy",		js_xfer_policy,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display the file transfer policy")
 	,310
 	},		
-	{"batch_menu",		js_batchmenu,		0,	JSTYPE_VOID,	""
+	{"batch_menu",		js_batchmenu,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the batch file transfer menu")
 	,310
 	},		
-	{"batch_download",	js_batchdownload,	0,	JSTYPE_BOOLEAN,	""
+	{"batch_download",	js_batchdownload,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("start a batch download")
 	,310
 	},		
@@ -2571,19 +2571,19 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("add file list to batch download queue")
 	,310
 	},		
-	{"temp_xfer",		js_temp_xfer,		0,	JSTYPE_VOID,	""
+	{"temp_xfer",		js_temp_xfer,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the temporary file tranfer menu")
 	,310
 	},		
-	{"user_sync",		js_user_sync,		0,	JSTYPE_VOID,	""
+	{"user_sync",		js_user_sync,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("read the current user data from the database")
 	,310
 	},		
-	{"user_config",		js_user_config,		0,	JSTYPE_VOID,	""
+	{"user_config",		js_user_config,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the user settings configuration menu")
 	,310
 	},		
-	{"sys_info",		js_sys_info,		0,	JSTYPE_VOID,	""
+	{"sys_info",		js_sys_info,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display system information")
 	,310
 	},		
@@ -2595,15 +2595,15 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("display file directory information (current <i>directory</i>, if unspecified)")
 	,310
 	},		
-	{"user_info",		js_user_info,		0,	JSTYPE_VOID,	""
+	{"user_info",		js_user_info,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display current user information")
 	,310
 	},		
-	{"ver",				js_ver,				0,	JSTYPE_VOID,	""
+	{"ver",				js_ver,				0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display software version information")
 	,310
 	},		
-	{"sys_stats",		js_sys_stats,		0,	JSTYPE_VOID,	""
+	{"sys_stats",		js_sys_stats,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display system statistics")
 	,310
 	},		
@@ -2620,11 +2620,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("enter the user editor")
 	,310
 	},		
-	{"change_user",		js_change_user,		0,	JSTYPE_VOID,	""
+	{"change_user",		js_change_user,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("change to a different user")
 	,310
 	},		
-	{"list_logons",		js_logonlist,		0,	JSTYPE_VOID,	""
+	{"list_logons",		js_logonlist,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display the logon list")
 	,310
 	},		
@@ -2679,11 +2679,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 		"(<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)")
 	,310
 	},		
-	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	""
+	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("change message scan pointer values")
 	,310
 	},		
-	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	""
+	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("re-initialize new message scan pointers")
 	,310
 	},		
@@ -2742,7 +2742,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},		
 	/* security */
-	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	""
+	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("prompt for and verify system password")
 	,310
 	},
@@ -2752,27 +2752,27 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	/* chat/node stuff */
-	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("page the sysop for chat")
+	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
+	,JSDOCSTR("page the sysop for chat, returns <i>false</i> if the sysop could not be paged")
 	,310
 	},		
-	{"page_guru",		js_pageguru,		0,	JSTYPE_BOOLEAN,	""
+	{"page_guru",		js_pageguru,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("page the guru for chat")
 	,310
 	},		
-	{"multinode_chat",	js_multinode_chat,	0,	JSTYPE_VOID,	""
+	{"multinode_chat",	js_multinode_chat,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter multi-node chat")
 	,310
 	},		
-	{"private_message",	js_private_message,	0,	JSTYPE_VOID,	""
+	{"private_message",	js_private_message,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("use the private inter-node message prompt")
 	,310
 	},		
-	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	""
+	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter private inter-node chat")
 	,310
 	},		
-	{"get_node_message",js_get_node_message,0,	JSTYPE_VOID,	""
+	{"get_node_message",js_get_node_message,0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("receive and display an inter-node message")
 	,310
 	},		
@@ -2788,11 +2788,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("send a telegram to a user")
 	,310
 	},		
-	{"list_nodes",		js_nodelist,		0,	JSTYPE_VOID,	""
+	{"list_nodes",		js_nodelist,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("list all nodes")
 	,310
 	},		
-	{"whos_online",		js_whos_online,		0,	JSTYPE_VOID,	""
+	{"whos_online",		js_whos_online,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("list active nodes only (who's online)")
 	,310
 	},		
@@ -2806,7 +2806,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},		
 	/* input */
-	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	""	
+	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	JSDOCSTR("")	
 	,JSDOCSTR("returns a file specification input by the user (optionally with wildcards)")
 	,310
 	},		
@@ -2814,11 +2814,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("confirm or change newscan time, returns new newscan time value (time_t format)")
 	,310
 	},		
-	{"select_shell",	js_select_shell,	0,	JSTYPE_BOOLEAN,	""
+	{"select_shell",	js_select_shell,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("prompt user to select a new command shell")
 	,310
 	},
-	{"select_editor",	js_select_editor,	0,	JSTYPE_BOOLEAN,	""
+	{"select_editor",	js_select_editor,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("prompt user to select a new external message editor")
 	,310
 	},
