@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -399,5 +399,43 @@ size_t DLLCALL strip_invalid_attr(char *strin)
 	str[d]=0;
 	strcpy(strin,str);
 	return(a);
+}
+
+char* replace_str_vars(const char* src
+					   ,char* buf
+					   ,size_t buflen	/* includes '\0' terminator */
+					   ,named_string_t* var_list
+					   ,BOOL case_sensitive)
+{
+	size_t	i;
+	size_t	name_len;
+	size_t	value_len;
+	char*	p = buf;
+	int (*cmp)(const char*, const char*, size_t);
+
+	if(case_sensitive)
+		cmp=strncmp;
+	else
+		cmp=strnicmp;
+
+	while(*src && (p-buf) < buflen-1) {
+		for(i=0; var_list[i].name!=NULL /* terminator */; i++) {
+			name_len = strlen(var_list[i].name);
+			if(cmp(src, var_list[i].name, name_len)==0) {
+				value_len = strlen(var_list[i].value);
+				if((p-buf)+value_len > buflen-1)	/* buffer overflow? */
+					value_len = (buflen-1)-(p-buf);	/* truncate value */
+				memcpy(p, var_list[i].value, value_len);
+				p += value_len;
+				src += name_len;
+				break;
+			}
+		}
+		if(var_list[i].name==NULL) /* no variable match */
+			*p++=*src++;
+	}
+	*p=0;	/* terminate string in destination buffer */
+
+	return(buf);
 }
 
