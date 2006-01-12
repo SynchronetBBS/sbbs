@@ -32,6 +32,7 @@ if(this.SYS_CLOSED==undefined)
  *  align: If width is greater than the text length, a zero indicates the text
  *         should be left-aligned, a 1 indicates it should be right-aligned, and
  *         a 2 indicates it should be centered.
+ *  force_width: forces the width of all items to this value.
  */
 function Lightbar(items)
 {
@@ -48,6 +49,7 @@ function Lightbar(items)
 	this.align=0;
 	this.force_width=-1;
 	this.getval=Lightbar_getval;
+	this.draw=Lightbar_draw;
 	this.clear=Lightbar_clearitems;
 	this.add=Lightbar_additem;
 	this.failsafe_getval=Lightbar_failsafe_getval;
@@ -108,6 +110,7 @@ function Lightbar_getval(current)
 	var kattr=this.bg<<4|this.kfg;
 	var kcattr=this.hbg<<4|this.khfg;
 	var ret=undefined;
+	var last_cur;
 
 	if(current!=undefined)
 		this.current=current;
@@ -175,10 +178,14 @@ function Lightbar_getval(current)
 		}
 	}
 
+	this.draw();
+	last_cur=this.current;
+
 	/* Main loop */
 	while(1) {
 		var i;
 		var j;
+		var k;
 
 		/* Draw items */
 		var curx=this.xpos;
@@ -188,6 +195,16 @@ function Lightbar_getval(current)
 		var item_count=0;
 		for(i=0; i<this.items.length; i++) {
 			var width;
+
+			// Some basic validation.
+			if(this.items[i]==undefined) {
+				alert("Sparse items array!");
+				return(this.failsafe_getval());
+			}
+			if(this.items[i].text==undefined) {
+				alert("No text for item "+i+"!");
+				return(this.failsafe_getval());
+			}
 			var cleaned=this.items[i].text;
 
 			cleaned=cleaned.replace(/\|/g,'');
@@ -195,74 +212,66 @@ function Lightbar_getval(current)
 				width=this.force_width;
 			else {
 				width=cleaned.length;
-				if(this.items[i]==undefined) {
-					alert("Sparse items array!");
-					return(this.failsafe_getval());
-				}
-				if(this.items[i].text==undefined) {
-					alert("No text for item "+i+"!");
-					return(this.failsafe_getval());
-				}
 				if(this.items[i].width!=undefined)
 					width=this.items[i].width;
 			}
-			console.gotoxy(curx, cury);
-			if(i==this.current) {
-				cursx=curx;
-				cursy=cury;
-			}
-			j=0;
-			if(cleaned.length < width) {
-				if(this.align==1) {
-					if(this.current==i)
-						console.attributes=cattr;
-					else
-						console.attributes=attr;
-					for(;j<width-cleaned.length;j++)
-						console.write(' ');
+			if(i==this.current || i==last_cur) {
+				console.gotoxy(curx, cury);
+				if(i==this.current) {
+					cursx=curx;
+					cursy=cury;
 				}
-				if(this.align==2) {
-					if(this.current==i)
-						console.attributes=cattr;
-					else
-						console.attributes=attr;
-					for(;j<(width-cleaned.length)/2;j++)
-						console.write(' ');
+				k=0;
+				if(cleaned.length < width) {
+					if(this.align==1) {
+						if(this.current==i)
+							console.attributes=cattr;
+						else
+							console.attributes=attr;
+						for(;k<width-cleaned.length;k++)
+							console.write(' ');
+					}
+					if(this.align==2) {
+						if(this.current==i)
+							console.attributes=cattr;
+						else
+							console.attributes=attr;
+						for(;k<(width-cleaned.length)/2;k++)
+							console.write(' ');
+					}
 				}
-			}
-			for(; j<this.items[i].text.length; j++) {
-				if(width > -1 && j > width)
-					break;
-				if(this.items[i].text.substr(j,1)=='|') {
-					if(this.current==i)
-						console.attributes=kcattr;
-					else
-						console.attributes=kattr;
-					j++;
+				for(j=0; j<this.items[i].text.length; j++) {
+					if(width > -1 && k > width)
+						break;
+					if(this.items[i].text.substr(j,1)=='|') {
+						if(this.current==i)
+							console.attributes=kcattr;
+						else
+							console.attributes=kattr;
+						j++;
+					}
+					else {
+						if(this.current==i)
+							console.attributes=cattr;
+						else
+							console.attributes=attr;
+					}
+					console.write(this.items[i].text.substr(j,1));
+					k++;
 				}
-				else {
-					if(this.current==i)
-						console.attributes=cattr;
-					else
-						console.attributes=attr;
+				if(this.current==i)
+					console.attributes=cattr;
+				else
+					console.attributes=attr;
+				while(k<width) {
+					console.write(" ");
+					k++;
 				}
-				console.write(this.items[i].text.substr(j,1));
-			}
-			if(this.current==i)
-				console.attributes=cattr;
-			else
-				console.attributes=attr;
-			while(j<width) {
-				console.write(" ");
-				j++;
 			}
 			if(this.direction==0)
 				cury++;
-			else {
-				console.attributes=attr;
-				console.write(" ");
+			else
 				curx+=width+1;
-			}
 			if(this.items[i].retval!=undefined)
 				item_count++;
 		}
@@ -273,6 +282,8 @@ function Lightbar_getval(current)
 		console.gotoxy(cursx,cursy);
 		if(ret!=undefined)
 			return(ret);
+
+		last_cur=this.current;
 
 		/* Get input */
 		var key=console.getkey(K_UPPER);
@@ -348,5 +359,178 @@ function Lightbar_getval(current)
 				}
 				break;
 		}
+	}
+}
+
+function Lightbar_draw(current)
+{
+	var attr=this.bg<<4|this.fg;
+	var cattr=this.hbg<<4|this.hfg;
+	var kattr=this.bg<<4|this.kfg;
+	var kcattr=this.hbg<<4|this.khfg;
+	var ret=undefined;
+
+	if(current!=undefined)
+		this.current=current;
+	if(!(user.settings & USER_ANSI)) {
+		return;
+	}
+	if(!(user.settings & USER_COLOR)) {
+		return;
+	}
+
+	if(this.direction < 0 || this.direction > 1) {
+		alert("Unknown lightbar direction!");
+		return;
+	}
+
+	/* Check that a vertical lightbar fits on the screen */
+	if(this.direction==0 && (this.ypos+this.items.length-1 > console.screen_rows)) {
+		alert("Screen too short for lightbar!");
+		return;
+	}
+
+	/* Ensure current is valid */
+	if(this.current<0 || this.current >= this.items.length) {
+		alert("current parameter is out of range!");
+		this.current=0;
+		if(this.items.length<=0)
+			return;
+	}
+	var orig_cur=this.current;
+	while(this.items[this.current].retval==undefined) {
+		this.current++;
+		if(this.current==this.items.length)
+			this.current=0;
+		if(this.current==orig_cur) {
+			alert("No items with a return value!");
+			return;
+		}
+	}
+
+	/* Check that a horizontal lightbar fits on the screen */
+	if(this.direction==1) {
+		var end=this.xpos;
+		var i;
+		for(i=0; i<this.items.length; i++) {
+			if(this.force_width>0) {
+				end+=this.force_width+1;
+				continue;
+			}
+			if(this.items[i].width==undefined) {
+				if(this.items[i]==undefined) {
+					alert("Sparse items array!");
+					return;
+				}
+				if(this.items[i].text==undefined) {
+					alert("No text for item "+i+"!");
+					return;
+				}
+				var cleaned=this.items[i].text;
+				cleaned=cleaned.replace(/\|/g,'');
+				end+=cleaned.length+1;
+			}
+			else {
+				end+=this.items[i].width
+			}
+		}
+	}
+
+	var i;
+	var j;
+	var k;
+
+	/* Draw items */
+	var curx=this.xpos;
+	var cury=this.ypos;
+	var cursx=this.xpos;
+	var cursy=this.ypos;
+	var item_count=0;
+	for(i=0; i<this.items.length; i++) {
+		var width;
+
+		// Some basic validation.
+		if(this.items[i]==undefined) {
+			alert("Sparse items array!");
+			return;
+		}
+		if(this.items[i].text==undefined) {
+			alert("No text for item "+i+"!");
+			return;
+		}
+		var cleaned=this.items[i].text;
+
+		cleaned=cleaned.replace(/\|/g,'');
+		if(this.force_width>0)
+			width=this.force_width;
+		else {
+			width=cleaned.length;
+			if(this.items[i].width!=undefined)
+				width=this.items[i].width;
+		}
+		console.gotoxy(curx, cury);
+		if(i==this.current) {
+			cursx=curx;
+			cursy=cury;
+		}
+		k=0;
+		if(cleaned.length < width) {
+			if(this.align==1) {
+				if(this.current==i)
+					console.attributes=cattr;
+				else
+					console.attributes=attr;
+				for(;k<width-cleaned.length;k++)
+					console.write(' ');
+			}
+			if(this.align==2) {
+				if(this.current==i)
+					console.attributes=cattr;
+				else
+					console.attributes=attr;
+				for(;k<(width-cleaned.length)/2;k++)
+					console.write(' ');
+			}
+		}
+		for(j=0; j<this.items[i].text.length; j++) {
+			if(width > -1 && k > width)
+				break;
+			if(this.items[i].text.substr(j,1)=='|') {
+				if(this.current==i)
+					console.attributes=kcattr;
+				else
+					console.attributes=kattr;
+				j++;
+			}
+			else {
+				if(this.current==i)
+					console.attributes=cattr;
+				else
+					console.attributes=attr;
+			}
+			console.write(this.items[i].text.substr(j,1));
+			k++;
+		}
+		if(this.current==i)
+			console.attributes=cattr;
+		else
+			console.attributes=attr;
+		while(k<width) {
+			console.write(" ");
+			k++;
+		}
+		if(this.direction==0)
+			cury++;
+		else {
+			console.attributes=attr;
+			console.write(" ");
+			curx+=width+1;
+		}
+		if(this.items[i].retval!=undefined)
+			item_count++;
+	}
+	if(item_count==0) {
+		alert("No items with a return value!");
+		return;
 	}
 }
