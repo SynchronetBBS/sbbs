@@ -404,10 +404,12 @@ size_t DLLCALL strip_invalid_attr(char *strin)
 char* replace_str_vars(const char* src
 					   ,char* buf
 					   ,size_t buflen	/* includes '\0' terminator */
+					   ,char* escape_seq
 					   ,named_string_t* var_list
 					   ,BOOL case_sensitive)
 {
 	size_t	i;
+	size_t	esc_len=0;
 	size_t	name_len;
 	size_t	value_len;
 	char*	p = buf;
@@ -418,7 +420,17 @@ char* replace_str_vars(const char* src
 	else
 		cmp=strnicmp;
 
-	while(*src && (p-buf) < buflen-1) {
+	if(escape_seq!=NULL)
+		esc_len = strlen(escape_seq);
+
+	while(*src && (size_t)(p-buf) < buflen-1) {
+		if(esc_len) {
+			if(cmp(src, escape_seq, esc_len)!=0) {
+				*p++ = *src++;
+				continue;
+			}
+			src += esc_len;	/* skip the escape seq */
+		}
 		for(i=0; var_list[i].name!=NULL /* terminator */; i++) {
 			name_len = strlen(var_list[i].name);
 			if(cmp(src, var_list[i].name, name_len)==0) {
@@ -432,10 +444,29 @@ char* replace_str_vars(const char* src
 			}
 		}
 		if(var_list[i].name==NULL) /* no variable match */
-			*p++=*src++;
+			*p++ = *src++;
 	}
 	*p=0;	/* terminate string in destination buffer */
 
 	return(buf);
 }
 
+#if 0	/* replace_str_vars test */
+
+void main(void)
+{
+	char buf[128];
+	named_string_t vars[] = {
+		{ "1", "one" },
+		{ "2", "two" },
+		{ "3", "three" },
+		{ "+", "plus" },
+		{ "=", "equals" },
+		{ NULL }
+	};
+
+	printf("'%s'\n", replace_str_vars("$1 $+ $2 $$1 $= $3", buf, sizeof(buf), "$", vars, FALSE));
+
+}
+
+#endif
