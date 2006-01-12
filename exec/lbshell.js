@@ -33,27 +33,35 @@ mainbar.add("|File","F");
 	var filemenu=new Lightbar;
 	filemenu.xpos=1;
 	filemenu.ypos=1;
-	filemenu.add("|File","-");
-	filemenu.add(" |Batch Download","B",21);
-	filemenu.add(" |Download","D",21);
-	filemenu.add(" File |Info","I",21);
+	filemenu.lpadding="\xb3";
+	filemenu.rpadding="\xb3";
+	filemenu.add("|File","-",undefined,"","");
+	filemenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	filemenu.add("|Batch Download","B",19);
+	filemenu.add("|Download","D",19);
+	filemenu.add("File |Info","I",19);
 		var fileinfo=new Lightbar;
 		fileinfo.xpos=22;
 		fileinfo.ypos=4;
-		fileinfo.add(" <---","-",34);
-		fileinfo.add(" File |Transfer Policy","T",34);
-		fileinfo.add(" Information on Current |Directory","D",34);
-		fileinfo.add(" |Users With Access to Current Dir","U",34);
-		fileinfo.add(" |Your File Transfer Statistics","Y",34);
-	filemenu.add(" |Extended File Info","E",21);
-	filemenu.add(" |Search Descriptions","S",21);
-	filemenu.add(" Search |Filenames","F",21);
-	filemenu.add(" |Change Directory","C",21);
-	filemenu.add(" |List files","L",21);
-	filemenu.add(" |New File Scan","N",21);
-	filemenu.add(" |Remove/Edit File","R",21);
-	filemenu.add(" |Upload File","U",21);
-	filemenu.add(" |View File","V",21);
+		fileinfo.lpadding="\xb3";
+		fileinfo.rpadding="\xb3";
+		fileinfo.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+		fileinfo.add("<---","-",32);
+		fileinfo.add("File |Transfer Policy","T",32);
+		fileinfo.add("Information on Current |Directory","D",32);
+		fileinfo.add("|Users With Access to Current Dir","U",32);
+		fileinfo.add("|Your File Transfer Statistics","Y",32);
+		fileinfo.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+	filemenu.add("|Extended File Info","E",19);
+	filemenu.add("|Search Descriptions","S",19);
+	filemenu.add("Search |Filenames","F",19);
+	filemenu.add("|Change Directory","C",19);
+	filemenu.add("|List files","L",19);
+	filemenu.add("|New File Scan","N",19);
+	filemenu.add("|Remove/Edit File","R",19);
+	filemenu.add("|Upload File","U",19);
+	filemenu.add("|View File","V",19);
+	filemenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("|Settings","S");
 	var settingsmenu=new Lightbar;
 	settingsmenu.xpos=6;
@@ -111,10 +119,7 @@ mainbar.add("|Goodbye","G");
 
 while(1) {
 	var done=0;
-	console.attributes=7;
-	console.clear();
-	console.attributes=0x17;
-	console.clearline();
+	draw_main();
 	switch(mainbar.getval()) {
 		case 'F':
 			done=0;
@@ -125,19 +130,14 @@ while(1) {
 						break;
 					case 'B':
 						console.attributes=7;
-						console.clear();
+						clear_screen();
 						bbs.batch_menu();
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'D':
 						download: do {
-							console.attributes=7;
-							console.clear();
+							clear_screen();
 							console.putmsg("\r\nchDownload File(s)\r\n");
 							if(bbs.batch_dnload_total>0) {
 								if(console.yesno(bbs.text(DownloadBatchQ))) {
@@ -180,11 +180,7 @@ while(1) {
 								}
 							}
 						} while(0);
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'I':
@@ -192,23 +188,19 @@ while(1) {
 						while(!info_done) {
 							switch(fileinfo.getval()) {
 								case 'T':
-									console.attributes=7;
-									console.clear();
+									clear_screen();
 									bbs.xfer_policy();
 									break;
 								case 'Y':
-									console.attributes=7;
-									console.clear();
+									clear_screen();
 									bbs.user_info();
 									break;
 								case 'D':
-									console.attributes=7;
-									console.clear();
+									clear_screen();
 									bbs.dir_info();
 									break;
 								case 'U':
-									console.attributes=7;
-									console.clear();
+									clear_screen();
 									bbs.list_users(UL_DIR);
 									break;
 								case '-':
@@ -227,21 +219,20 @@ while(1) {
 								console.cleartoeol();
 								console.gotoxy(22,8);
 								console.cleartoeol();
+								console.gotoxy(22,9);
+								console.cleartoeol();
+								console.gotoxy(22,10);
+								console.cleartoeol();
 							}
 							else {
-								console.attributes=7;
-								console.clear();
-								console.attributes=0x17;
-								console.clearline();
-								mainbar.draw();
+								draw_main();
 								filemenu.draw();
 								fileinfo.draw();
 							}
 						}
 						break;
 					case 'E':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						console.putmsg("\r\nchList Extended File Information\r\n");
 						str=bbs.get_filespec();
 						if(str==null)
@@ -271,40 +262,25 @@ while(1) {
 								}
 							}
 						}
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'S':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						console.putmsg("\r\nchFind Text in File Descriptions (no wildcards)\r\n");
 						bbs.scan_dirs(FL_FINDDESC);
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'F':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						console.putmsg("\r\nchSearch for Filename(s)\r\n");
 						bbs.scan_dirs(FL_NO_HDR);
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'C':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						changedir: do {
 							if(!file_area.lib_list.length)
 								break changedir;
@@ -374,16 +350,11 @@ while(1) {
 								break changedir;
 							}
 						} while(0);
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'L':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						i=bbs.list_files();
 						if(i!=-1) {
 							if(i==0)
@@ -391,28 +362,18 @@ while(1) {
 							else
 								console.putmsg(bbs.text(NFilesListed,i),P_SAVEATR);
 						}
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'N':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						console.putmsg("\r\nchNew File Scan\r\n");
 						bbs.scan_dirs(FL_ULTIME);
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'R':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						fileremove: do {
 							console.putmsg("\r\nchRemove/Edit File(s)\r\n");
 							str=bbs.get_filespec();
@@ -444,16 +405,11 @@ while(1) {
 								}
 							}
 						} while(0);
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'U':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						console.putmsg("\r\nchUpload File\r\n");
 						i=0xffff;	/* INVALID_DIR */
 						if(file_exists(system.text_dir+"menu/upload.*"))
@@ -468,16 +424,11 @@ while(1) {
 								i=file_area.upload_dir.number;
 						}
 						bbs.upload_file(i);
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 					case 'V':
-						console.attributes=7;
-						console.clear();
+						clear_screen();
 						fileview: do {
 							console.putmsg("\r\nchView File(s)\r\n");
 							str=bbs.get_filespec();
@@ -505,11 +456,7 @@ while(1) {
 								}
 							}
 						} while(0);
-						console.attributes=7;
-						console.clear();
-						console.attributes=0x17;
-						console.clearline();
-						mainbar.draw();
+						draw_main();
 						filemenu.draw();
 						break;
 				}
@@ -589,4 +536,30 @@ function todo_padfname(fname) {
 		ext=ext.substr(0,2)+'*';
 	}
 	return(format("%-8.8s-3.3s",name,ext));
+}
+
+function clear_screen()
+{
+	/*
+	 * Called whenever a command needs to exit the menu for user interaction.
+	 *
+	 * If you'd like a header before non-menu stuff, this is the place to put
+	 * it.
+	 */
+	console.attributes=7;
+	console.clear();
+}
+
+function draw_main()
+{
+	/*
+	 * Called to re-display the main menu.
+	 * If you want a background ANSI or something for the menus,
+	 * this is the place to draw it from.
+	 */
+	console.attributes=7;
+	console.clear();
+	console.attributes=0x17;
+	console.clearline();
+	mainbar.draw();
 }
