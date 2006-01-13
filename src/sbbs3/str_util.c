@@ -561,3 +561,163 @@ void main(void)
 }
 
 #endif
+
+#if 0 /* to be moved here from xtrn.cpp */
+
+char* quoted_string(const char* str, char* buf, size_t maxlen)
+{
+	if(strchr(str,' ')==NULL)
+		return((char*)str);
+	safe_snprintf(buf,maxlen,"\"%s\"",str);
+	return(buf);
+}
+
+#endif
+
+#if 0 /* I think is is a misguided idea :-(  */
+
+char* sbbs_cmdstr(const char* src
+					,char* buf
+					,size_t buflen	/* includes '\0' terminator */
+					,scfg_t* scfg
+					,user_t* user
+					,int node_num
+					,int minutes
+					,int rows
+					,int timeleft
+					,SOCKET socket_descriptor
+					,char* protocol
+					,char* ip_address
+					,char* fpath
+					,char* fspec
+					)
+{
+	const char* nulstr = "";
+	char alias_buf[LEN_ALIAS+1];
+	char fpath_buf[MAX_PATH+1];
+	char fspec_buf[MAX_PATH+1];
+	char sysop_buf[sizeof(scfg->sys_op)];
+
+	keyed_string_t str_list[] = {
+		/* user alias */
+		{ 'a',	user!=NULL ? quoted_string(user->alias, alias_buf, sizeof(alias_buf)) : nulstr },
+		{ 'A',	user!=NULL ? user->alias : nulstr },
+		
+		/* connection */
+		{ 'c',	protocol },
+		{ 'C',	protocol },
+
+		/* file path */
+		{ 'f',	quoted_string(fpath, fpath_buf, sizeof(fpath_buf)) },
+		{ 'F',	fpath },
+
+		/* temp dir */
+		{ 'g',	scfg->temp_dir },
+		{ 'G',	scfg->temp_dir },
+
+		/* IP address */
+		{ 'h',	ip_address },
+		{ 'H',	ip_address },
+
+		/* data dir */
+		{ 'j',	scfg->data_dir },
+		{ 'J',	scfg->data_dir },
+
+		/* ctrl dir */
+		{ 'k',	scfg->ctrl_dir },
+		{ 'K',	scfg->ctrl_dir },
+
+		/* node dir */
+		{ 'n',	scfg->node_dir },
+		{ 'N',	scfg->node_dir },
+
+		/* sysop */
+		{ 'o',	quoted_string(scfg->sys_op, sysop_buf, sizeof(sysop_buf)) },
+		{ 'O',	scfg->sys_op },
+
+		/* protocol */
+		{ 'p',	protocol },
+		{ 'P',	protocol },
+
+		/* system QWK-ID */
+		{ 'q',	scfg->sys_id },
+		{ 'Q',	scfg->sys_id },
+
+		/* file spec */
+		{ 's',	quoted_string(fspec, fspec_buf, sizeof(fspec_buf)) },
+		{ 'S',	fspec },
+
+		/* UART I/O Address (in hex) 'f' for FOSSIL */
+		{ 'u',	"f" },
+		{ 'U',	"f" },
+
+		/* text dir */
+		{ 'z',	scfg->text_dir },
+		{ 'Z',	scfg->text_dir },
+
+		/* exec dir */
+		{ '!',	scfg->exec_dir },
+		{ '@',
+#ifndef __unix__
+			scfg->exec_dir
+#else
+			nulstr
+#endif
+		},
+
+		/* .exe (on Windows) */
+		{ '.',
+#ifndef __unix__
+		".exe"
+#else
+		nulstr
+#endif
+		},
+
+		/* terminator */
+		{ 0 }	
+	};
+	keyed_int_t int_list[] = {
+		/* node number */
+		{ '#',	node_num },
+
+		/* DTE rate */
+		{ 'b',	38400 },	
+		{ 'B',	38400 },
+
+		/* DCE rate */
+		{ 'd',	30000 },
+		{ 'D',	30000 },
+
+		/* Estimated Rate (cps) */
+		{ 'e',	3000 },
+		{ 'E',	3000 },
+
+		{ 'h',	socket_descriptor },
+		{ 'H',	socket_descriptor },
+
+		{ 'l',	user==NULL ? 0 : scfg->level_linespermsg[user->level] },
+		{ 'L',	user==NULL ? 0 : scfg->level_linespermsg[user->level] },
+
+		{ 'm',	minutes },
+		{ 'M',	minutes },
+
+		{ 'r',	rows },
+		{ 'R',	rows },
+
+		/* Time left in seconds */
+		{ 't',	timeleft },
+		{ 'T',	timeleft },
+
+		/* Credits */
+		{ '$',	user==NULL ? 0 : (user->cdt+user->freecdt) },
+
+		/* terminator */
+		{ 0 }	
+	};
+
+
+	return replace_keyed_values(src, buf, buflen, '%', str_list, int_list, TRUE);
+}
+
+#endif
