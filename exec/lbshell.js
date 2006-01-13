@@ -142,6 +142,50 @@ mainbar.add("|Chat","C");
 	chatmenu.add("|Toggle Split Screen Private Chat","S",39);
 	chatmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("E|xternals","X");
+	// Generate menus of available xtrn sections.
+	var xtrnsec=new Lightbar;
+	var bars40="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
+	xtrnsec.xpos=40;
+	xtrnsec.ypos=1;
+	xtrnsec.lpadding="\xb3";
+	xtrnsec.rpadding="\xb3";
+	xtrnsec.add("E|xternals","-",undefined," ","");
+	var xtrnsecs=new Array(xtrn_area.sec_list.length);
+	var xtrnsecwidth=0;
+	var j;
+	var k;
+	var xtrnsecprogwidth=0;
+	for(j=0; j<xtrn_area.sec_list.length && j<console.screen_rows-2; j++) {
+		xtrnsecprogwidth=0;
+		if(xtrn_area.sec_list[j].name.length > xtrnsecwidth)
+			xtrnsecwidth=xtrn_area.sec_list[j].name.length;
+		// Generate the menu for each section
+		xtrnsecs[j]=new Lightbar;
+		for(k=0; k<xtrn_area.sec_list[j].prog_list.length; k++) {
+			if(xtrn_area.sec_list[j].prog_list[k].name.length > xtrnsecprogwidth)
+				xtrnsecprogwidth=xtrn_area.sec_list[j].prog_list[k].name.length;
+		}
+		if(xtrnsecprogwidth>37)
+			xtrnsecprogwidth=37;
+		if(xtrn_area.sec_list[j].prog_list.length+3+j <= console.screen_rows)
+			xtrnsecs[j].ypos=j+2;
+		else
+			xtrnsecs[j].ypos=console.screen_rows-k-2;
+		xtrnsecs[j].xpos=40-xtrnsecprogwidth-2;
+		xtrnsecs[j].lpadding="\xb3";
+		xtrnsecs[j].rpadding="\xb3";
+		xtrnsecs[j].add("\xda"+bars40.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
+		xtrnsecs[j].add("--->","-",xtrnsecprogwidth);
+		for(k=0; k<xtrn_area.sec_list[j].prog_list.length && k<console.screen_rows-3; k++)
+			xtrnsecs[j].add(xtrn_area.sec_list[j].prog_list[k].name,k.toString(),xtrnsecprogwidth);
+		xtrnsecs[j].add("\xc0"+bars40.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
+	}
+	if(xtrnsecwidth>37)
+		xtrnsecwidth=37;
+	xtrnsec.add("\xda"+bars40.substr(0,xtrnsecwidth)+"\xbf",undefined,undefined,"","");
+	for(j=0; j<xtrn_area.sec_list.length; j++)
+		xtrnsec.add(xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
+	xtrnsec.add("\xc0"+bars40.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
 mainbar.add("|Goodbye","G");
 
 while(1) {
@@ -802,6 +846,26 @@ while(1) {
 			}
 			break;
 		case 'X':
+			var curr_xtrnsec=0;
+			var x_sec;
+			var x_prog;
+			while(1) {
+				x_sec=xtrnsec.getval();
+				if(x_sec=="-")
+					break;
+				curr_xtrnsec=parseInt(x_sec);
+				while(1) {
+					x_prog=xtrnsecs[curr_xtrnsec].getval();
+					if(x_prog=="-")
+						break;
+					clear_screen();
+					bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
+					draw_main();
+					xtrnsec.draw();
+				}
+				draw_main();
+			}
+			draw_main();
 			break;
 		case 'G':
 			exit(1);
