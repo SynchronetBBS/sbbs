@@ -101,6 +101,7 @@ function Lightbar_failsafe_getval()
 	}
 	write("Choose an option: ");
 	i=console.getnum(i);
+	i--;
 	if(this.items[i]==undefined)
 		return(null);
 	if(this.items[i].retval==undefined)
