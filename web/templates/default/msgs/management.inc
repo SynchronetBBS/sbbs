@@ -5,7 +5,7 @@
     <td class="main" valign="top"><br />
 
 <center>
-%%detail%%<br>
+%%detail%%<br />
 <a href="msgs.ssjs?msg_sub=^^sub_code^^">Back to message index.</a>
 </center>
 
