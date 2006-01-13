@@ -1380,12 +1380,12 @@ int SDL_main_env(int argc, char **argv, char **env)
 		if(sdl.Init(SDL_INIT_VIDEO))
 			sdl.gotfuncs=FALSE;
 #endif
-	}
-	if(sdl.VideoDriverName(drivername, sizeof(drivername))!=NULL) {
-		/* Unacceptable drivers */
-		if((!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
-			sdl.gotfuncs=FALSE;
-			sdl.Quit();
+		if(sdl.VideoDriverName(drivername, sizeof(drivername))!=NULL) {
+			/* Unacceptable drivers */
+			if((!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
+				sdl.gotfuncs=FALSE;
+				sdl.Quit();
+			}
 		}
 	}
 
