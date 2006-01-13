@@ -37,6 +37,8 @@ if(this.SYS_CLOSED==undefined)
  *  rpadding: this string is displayed AFTER each item, and is not highlighted
  *      NOTE: Padding is not included in width
  *  hblanks: The number of horizontal blanks between items for horizontal menus.
+ *  hotkeys: A string of keys which will immediately return the key value rather
+ *         than a retval
  */
 function Lightbar(items)
 {
@@ -60,6 +62,7 @@ function Lightbar(items)
 	this.lpadding=null;
 	this.rpadding=null;
 	this.hblanks=2;
+	this.hotkeys='';
 	if(items==undefined)
 		this.items=new Array();
 	else
@@ -312,6 +315,8 @@ function Lightbar_getval(current)
 
 		/* Get input */
 		var key=console.getkey(K_UPPER);
+		if(this.hotkeys.indexOf(key)!=-1)
+			return(key);
 		switch(key) {
 			case KEY_UP:
 				if(this.direction==0) {
