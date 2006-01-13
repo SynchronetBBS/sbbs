@@ -401,13 +401,15 @@ size_t DLLCALL strip_invalid_attr(char *strin)
 	return(a);
 }
 
-char* replace_str_vars(const char* src
+char* replace_named_values(const char* src
 					   ,char* buf
 					   ,size_t buflen	/* includes '\0' terminator */
 					   ,char* escape_seq
-					   ,named_string_t* var_list
+					   ,named_string_t* string_list
+					   ,named_int_t* int_list
 					   ,BOOL case_sensitive)
 {
+	char	val[32];
 	size_t	i;
 	size_t	esc_len=0;
 	size_t	name_len;
@@ -431,41 +433,130 @@ char* replace_str_vars(const char* src
 			}
 			src += esc_len;	/* skip the escape seq */
 		}
-		for(i=0; var_list[i].name!=NULL /* terminator */; i++) {
-			name_len = strlen(var_list[i].name);
-			if(cmp(src, var_list[i].name, name_len)==0) {
-				value_len = strlen(var_list[i].value);
-				if((p-buf)+value_len > buflen-1)	/* buffer overflow? */
-					value_len = (buflen-1)-(p-buf);	/* truncate value */
-				memcpy(p, var_list[i].value, value_len);
-				p += value_len;
-				src += name_len;
-				break;
+		if(string_list) {
+			for(i=0; string_list[i].name!=NULL /* terminator */; i++) {
+				name_len = strlen(string_list[i].name);
+				if(cmp(src, string_list[i].name, name_len)==0) {
+					value_len = strlen(string_list[i].value);
+					if((p-buf)+value_len > buflen-1)	/* buffer overflow? */
+						value_len = (buflen-1)-(p-buf);	/* truncate value */
+					memcpy(p, string_list[i].value, value_len);
+					p += value_len;
+					src += name_len;
+					break;
+				}
 			}
+			if(string_list[i].name!=NULL) /* variable match */
+				continue;
 		}
-		if(var_list[i].name==NULL) /* no variable match */
-			*p++ = *src++;
+		if(int_list) {
+			for(i=0; int_list[i].name!=NULL /* terminator */; i++) {
+				name_len = strlen(int_list[i].name);
+				if(cmp(src, int_list[i].name, name_len)==0) {
+					SAFEPRINTF(val,"%d",int_list[i].value);
+					value_len = strlen(val);
+					if((p-buf)+value_len > buflen-1)	/* buffer overflow? */
+						value_len = (buflen-1)-(p-buf);	/* truncate value */
+					memcpy(p, val, value_len);
+					p += value_len;
+					src += name_len;
+					break;
+				}
+			}
+			if(int_list[i].name!=NULL) /* variable match */
+				continue;
+		}
+
+		*p++ = *src++;
 	}
 	*p=0;	/* terminate string in destination buffer */
 
 	return(buf);
 }
 
-#if 0	/* replace_str_vars test */
+char* replace_keyed_values(const char* src
+					   ,char* buf
+					   ,size_t buflen	/* includes '\0' terminator */
+					   ,char esc_char
+					   ,keyed_string_t* string_list
+					   ,keyed_int_t* int_list
+					   ,BOOL case_sensitive)
+{
+	char	val[32];
+	size_t	i;
+	size_t	value_len;
+	char*	p = buf;
+
+
+	while(*src && (size_t)(p-buf) < buflen-1) {
+		if(esc_char) {
+			if(*src != esc_char) {
+				*p++ = *src++;
+				continue;
+			}
+			src ++;	/* skip the escape char */
+		}
+		if(string_list) {
+			for(i=0; string_list[i].key!=0 /* terminator */; i++) {
+				if((case_sensitive && *src == string_list[i].key)
+					|| ((!case_sensitive) && toupper(*src) == toupper(string_list[i].key))) {
+					value_len = strlen(string_list[i].value);
+					if((p-buf)+value_len > buflen-1)	/* buffer overflow? */
+						value_len = (buflen-1)-(p-buf);	/* truncate value */
+					memcpy(p, string_list[i].value, value_len);
+					p += value_len;
+					src++;
+					break;
+				}
+			}
+			if(string_list[i].key!=0) /* variable match */
+				continue;
+		}
+		if(int_list) {
+			for(i=0; int_list[i].key!=0 /* terminator */; i++) {
+				if((case_sensitive && *src == int_list[i].key)
+					|| ((!case_sensitive) && toupper(*src) == toupper(int_list[i].key))) {
+					SAFEPRINTF(val,"%d",int_list[i].value);
+					value_len = strlen(val);
+					if((p-buf)+value_len > buflen-1)	/* buffer overflow? */
+						value_len = (buflen-1)-(p-buf);	/* truncate value */
+					memcpy(p, val, value_len);
+					p += value_len;
+					src++;
+					break;
+				}
+			}
+			if(int_list[i].key!=0) /* variable match */
+				continue;
+		}
+
+		*p++ = *src++;
+	}
+	*p=0;	/* terminate string in destination buffer */
+
+	return(buf);
+}
+
+
+#if 0	/* replace_*_values test */
 
 void main(void)
 {
 	char buf[128];
-	named_string_t vars[] = {
-		{ "1", "one" },
-		{ "2", "two" },
-		{ "3", "three" },
-		{ "+", "plus" },
-		{ "=", "equals" },
+	keyed_string_t strs[] = {
+		{ '+', "plus" },
+		{ '=', "equals" },
+		{ 0 }
+	};
+	keyed_int_t ints[] = {
+		{ 'o', 1 },
+		{ 't', 2 },
+		{ 'h', 3 },
 		{ NULL }
 	};
 
-	printf("'%s'\n", replace_str_vars("$1 $+ $2 $$1 $= $3", buf, sizeof(buf), "$", vars, FALSE));
+	printf("'%s'\n", replace_keyed_values("$o $+ $t $= $h", buf, sizeof(buf), '$'
+		,strs, ints, FALSE));
 
 }
 
