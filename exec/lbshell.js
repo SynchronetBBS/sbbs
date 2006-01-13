@@ -144,7 +144,7 @@ mainbar.add("|Chat","C");
 	chatmenu.add("|InterBBS Instant Messages","I",39);
 	chatmenu.add("|Toggle Split Screen Private Chat","S",39);
 	chatmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-mainbar.add("E|xternals","X");
+mainbar.add("E|xternals","x");
 	// Generate menus of available xtrn sections.
 	var xtrnsec=new Lightbar;
 	var bars40="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
@@ -327,18 +327,22 @@ while(1) {
 								case 'T':
 									clear_screen();
 									bbs.xfer_policy();
+									console.pause();
 									break;
 								case 'Y':
 									clear_screen();
 									bbs.user_info();
+									console.pause();
 									break;
 								case 'D':
 									clear_screen();
 									bbs.dir_info();
+									console.pause();
 									break;
 								case 'U':
 									clear_screen();
 									bbs.list_users(UL_DIR);
+									console.pause();
 									break;
 								case KEY_LEFT:
 								case '\b':
@@ -399,18 +403,21 @@ while(1) {
 								}
 							}
 						}
+						console.pause();
 						draw_main(true);
 						break;
 					case 'S':
 						clear_screen();
 						console.putmsg("\r\nchFind Text in File Descriptions (no wildcards)\r\n");
 						bbs.scan_dirs(FL_FINDDESC);
+						console.pause();
 						draw_main(true);
 						break;
 					case 'F':
 						clear_screen();
 						console.putmsg("\r\nchSearch for Filename(s)\r\n");
 						bbs.scan_dirs(FL_NO_HDR);
+						console.pause();
 						draw_main(true);
 						break;
 					case 'C':
@@ -495,12 +502,14 @@ while(1) {
 							else
 								console.putmsg(bbs.text(NFilesListed,i),P_SAVEATR);
 						}
+						console.pause();
 						draw_main(true);
 						break;
 					case 'N':
 						clear_screen();
 						console.putmsg("\r\nchNew File Scan\r\n");
 						bbs.scan_dirs(FL_ULTIME);
+						console.pause();
 						draw_main(true);
 						break;
 					case 'R':
@@ -727,11 +736,13 @@ while(1) {
 					case 'R':
 						clear_screen();
 						bbs.read_mail(MAIL_YOUR);;
+						console.pause();
 						draw_main(true);
 						break;
 					case 'Y':
 						clear_screen();
 						bbs.read_mail(MAIL_SENT);;
+						console.pause();
 						draw_main(true);
 						break;
 					case 'U':
@@ -788,6 +799,7 @@ while(1) {
 						clear_screen();
 						console.putmsg("\r\n\x01c\x01hContinuous New Message Scan\r\n");
 						bbs.scan_subs(SCAN_NEW|SCAN_CONST);
+						console.pause();
 						draw_main(true);
 						break;
 					case 'B':
@@ -815,12 +827,14 @@ while(1) {
 						clear_screen();
 						console.putmsg("\r\n\x01c\x01hFind Text in Messages\r\n");
 						bbs.scan_subs(SCAN_FIND);
+						console.pause();
 						draw_main(true);
 						break;
 					case 'S':
 						clear_screen();
 						console.putmsg("\r\n\x01c\x01hScan for Messages Posted to You\r\n");
 						bbs.scan_subs(SCAN_TOYOU);
+						console.pause();
 						draw_main(true);
 						break;
 					case 'J':
@@ -946,6 +960,7 @@ while(1) {
 					case 'F':
 						clear_screen();
 						bbs.exec("?finger");
+						console.pause();
 						draw_main(true);
 						break;
 					case 'R':
@@ -983,7 +998,7 @@ while(1) {
 				}
 			}
 			break;
-		case 'X':
+		case 'x':
 			var curr_xtrnsec=0;
 			var x_sec;
 			var x_prog;
@@ -1020,21 +1035,25 @@ while(1) {
 					case 'I':
 						clear_screen();
 						bbs.sys_info();
+						console.pause();
 						draw_main(true);
 						break;
 					case 'V':
 						clear_screen();
 						bbs.ver();
+						console.pause();
 						draw_main(true);
 						break;
 					case 'S':
 						clear_screen();
 						bbs.sub_info();
+						console.pause();
 						draw_main(true);
 						break;
 					case 'Y':
 						clear_screen();
 						bbs.user_info();
+						console.pause();
 						draw_main(true);
 						break;
 					case KEY_LEFT:
@@ -1056,18 +1075,21 @@ while(1) {
 								case 'L':
 									clear_screen();
 									bbs.list_logons();
+									console.pause();
 									draw_main(true);
 									infomenu.draw();
 									break;
 								case 'S':
 									clear_screen();
 									bbs.list_users(UL_SUB);
+									console.pause();
 									draw_main(true);
 									infomenu.draw();
 									break;
 								case 'A':
 									clear_screen();
 									bbs.list_users(UL_ALL);
+									console.pause();
 									draw_main(true);
 									infomenu.draw();
 									break;
