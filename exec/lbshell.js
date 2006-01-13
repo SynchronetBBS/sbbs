@@ -939,11 +939,7 @@ while(1) {
 						userlistloop: while(1) {
 							switch(userlists.getval()) {
 								case '-':
-									clear_screen();
 									break userlistloop;
-									draw_main(true);
-									infomenu.draw();
-									break;
 								case 'L':
 									clear_screen();
 									bbs.list_logons();
