@@ -373,7 +373,7 @@ function Lightbar_getval(current)
 				break;
 			default:
 				for(i=0; i<this.items.length; i++) {
-					if(this.items[i].text.indexOf('|'+key)!=-1) {
+					if(this.items[i].text.indexOf('|'+key)!=-1 || this.items[i].text.indexOf('|'+key.toLowerCase())!=-1) {
 						if(this.items[i].retval==undefined)
 							continue;
 						this.current=i;
