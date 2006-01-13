@@ -211,7 +211,7 @@ mainbar.add("|Info","I");
 		userlists.add("|Sub-Board","S",12);
 		userlists.add("|All","A",12);
 		userlists.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-	infomenu.add("|Text Files","T",12);
+	infomenu.add("|Text Files","T",25);
 	infomenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("|Goodbye","G");
 
@@ -590,10 +590,22 @@ while(1) {
 									user.settings ^= USER_EXTDESC;
 									break;
 								case '-':
+									console.attributes=7;
+									console.gotoxy(33,6);
+									console.cleartoeol();
+									console.gotoxy(33,7);
+									console.cleartoeol();
+									console.gotoxy(33,8);
+									console.cleartoeol();
+									console.gotoxy(33,9);
+									console.cleartoeol();
+									console.gotoxy(33,10);
+									console.cleartoeol();
+									console.gotoxy(33,11);
+									console.cleartoeol();
 									xfercfgdone=1;
 							}
 						}
-						draw_main(false);
 						break;
 					case 'R':
 						bbs.reinit_msg_ptrs();
@@ -1017,25 +1029,45 @@ function draw_main(topline)
 	 * Called to re-display the main menu.
 	 * topline is false when the top line doesn't need redrawing.
 	 */
-	console.attributes=7;
 	if(topline) {
-		console.clear();
+		console.gotoxy(1,1);
 		console.attributes=0x17;
-		console.clearline();
-		mainbar.draw();
+		console.cleartoeol();
 	}
-	else {
-		console.gotoxy(1,1);
-		var i;
-		for(i=1;i<console.screen_rows;i++) {
-			console.line_counter=0;
-			console.write("\n");
-			console.cleartoeol();
-		}
-		console.gotoxy(1,1);
+	mainbar.draw();
+	var i;
+	console.gotoxy(1,1);
+	console.attributes=7;
+	for(i=1;i<console.screen_rows-9;i++) {
+		console.line_counter=0;
+		console.write("\n");
+		console.cleartoeol();
 	}
 	/*
 	 * If you want a background ANSI or something for the menus,
 	 * this is the place to draw it from.
 	 */
+	console.gotoxy(1,console.screen_rows-8);
+	console.line_counter=0;
+	console.putmsg("\x01n \x01n\x01h\xdc\xdc\xdc\xdc \xdb \xdc\xdc  \xdc\xdc\xde\xdb \xdc \xdc\xdc\xdc\xdc \xdc\xdc \xdc\xdc  \xdc\xdc\xdc\xdc\xdc\xdc\xdc \x01n\x01b\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc ");
+	console.gotoxy(1,console.screen_rows-7);
+	console.putmsg("\x01h\x01c\x016\xdf\x01n\x01c\xdc\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n \x01n\x01c\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n \x01c\xdc\x01h\x016\xdf\x01n\x01c\xdc\x01h\x016\xdf\x01n\x01c\xdc\xdc\xdc\x01h\xdf \x016\xdf\x01n \x01h\x016\xdf\x01n \x01c\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n\x01c\xdc\xdc \xdc\x01bgj \xdb\x01w\x014@TIME-L@ @DATE@  \x01y\x01h@BOARDNAME-L19@ \x01n ");
+	console.gotoxy(1,console.screen_rows-6);
+	console.putmsg("\x01n  \x01b\x01h\x014\xdf\x01n\x01b\xdd\x01h\xdf\x014\xdf\x010\xdf \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010  \x014\xdf\x010 \x014\xdf\x01n\x01b\xdd\x01h\x014\xdf\x010 \x014\xdf\x01n\x01b\xdd\x01h\x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010   \x014\xdf\x010   \x014\x01n\x01b\xdb\x01h\x01w\x014Last On\x01k: \x01n\x014@LASTDATEON@  \x01h\x01cNode \x01k\x01n\x01c\x014@NODE-L3@ \x01wUp \x01c@UPTIME-L8@\x01n ");
+	console.gotoxy(1,console.screen_rows-5);
+	console.putmsg("\x01n\x01b \xdf\xdf  \xdf  \xdf \xdb\xdd\xdf\xdf\xdf\xdf \xdb\xdd  \xdb\xdb\xdf\xdf  \xdf \xdb\xdd\xdf\xdf\xdf \xdf   \xdb\x014\x01h\x01wFirstOn\x01k:\x01n\x014 @SINCE@  \x01h\x01cCalls\x01n\x01c\x014@SERVED-R4@ \x01wof\x01c @TCALLS-L7@\x01n ");
+	console.gotoxy(1,console.screen_rows-4);
+	console.putmsg("\x01n                                       \x01b\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf ");
+	console.line_counter=0;
+	console.gotoxy(1,console.screen_rows-3);
+	console.cleartoeol();
+	console.putmsg(" \x01n\x01c[\x01h@GN@\x01n\x01c] @GRP@ [\x01h@SN@\x01n\x01c] @SUB@\x01n\r\n");
+	console.gotoxy(1,console.screen_rows-2);
+	console.cleartoeol();
+	console.putmsg(" \x01n\x01c(\x01h@LN@\x01n\x01c) @LIB@ (\x01h@DN@\x01n\x01c) @DIR@\x01n\r\n");
+	console.gotoxy(1,console.screen_rows-1);
+	console.cleartoeol();
+	console.gotoxy(1,console.screen_rows);
+	console.cleartoeol();
+	console.gotoxy(1,1);
 }
