@@ -186,6 +186,31 @@ mainbar.add("E|xternals","X");
 	for(j=0; j<xtrn_area.sec_list.length; j++)
 		xtrnsec.add(xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
 	xtrnsec.add("\xc0"+bars40.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
+mainbar.add("|Info","I");
+	var infomenu=new Lightbar;
+	infomenu.xpos=51;
+	infomenu.ypos=1;
+	infomenu.lpadding="\xb3";
+	infomenu.rpadding="\xb3";
+	infomenu.add("|Info","-",undefined," ","");
+	infomenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	infomenu.add("System |Information","I",25);
+	infomenu.add("Synchronet |Version Info","V",25);
+	infomenu.add("Info on Current |Sub-Board","S",25);
+	infomenu.add("|Your Statistics","Y",25);
+	infomenu.add("|User Lists","U",25);
+		var userlists=new Lightbar;
+		userlists.xpos=37;
+		userlists.ypos=6;
+		userlists.lpadding="\xb3";
+		userlists.rpadding="\xb3";
+		userlists.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+		userlists.add("--->","-",12);
+		userlists.add("|Logons Today","L",12);
+		userlists.add("|Sub-Board","S",12);
+		userlists.add("|All","A",12);
+		userlists.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+	infomenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("|Goodbye","G");
 
 while(1) {
@@ -864,6 +889,66 @@ while(1) {
 					xtrnsec.draw();
 				}
 				draw_main();
+			}
+			draw_main();
+			break;
+		case 'I':
+			infoloop: while(1) {
+				switch(infomenu.getval()) {
+					case 'I':
+						clear_screen();
+						bbs.sys_info();
+						draw_main();
+						break;
+					case 'V':
+						clear_screen();
+						bbs.ver();
+						draw_main();
+						break;
+					case 'S':
+						clear_screen();
+						bbs.sub_info();
+						draw_main();
+						break;
+					case 'Y':
+						clear_screen();
+						bbs.user_info();
+						draw_main();
+						break;
+					case 'U':
+						userlistloop: while(1) {
+							switch(userlists.getval()) {
+								case '-':
+									clear_screen();
+									break userlistloop;
+									draw_main();
+									infomenu.draw();
+									break;
+								case 'L':
+									clear_screen();
+									bbs.list_logons();
+									draw_main();
+									infomenu.draw();
+									break;
+								case 'S':
+									clear_screen();
+									bbs.list_users(UL_SUB);
+									draw_main();
+									infomenu.draw();
+									break;
+								case 'A':
+									clear_screen();
+									bbs.list_users(UL_ALL);
+									draw_main();
+									infomenu.draw();
+									break;
+							}
+						}
+						draw_main();
+						break;
+					case '-':
+						break infoloop;
+				}
 			}
 			draw_main();
 			break;
