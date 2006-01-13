@@ -89,6 +89,7 @@ mainbar.add("|Settings","S");
 	settingsmenu.add("|Re-Init Message Pointers","R",24);
 	settingsmenu.add("|Toggle Paging","T",24);
 	settingsmenu.add("|Activity Alerts On/Off","A",24);
+	settingsmenu.add("Minute |Bank","B",24);
 	settingsmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("|Email","E");
 	var emailmenu=new Lightbar;
@@ -210,6 +211,7 @@ mainbar.add("|Info","I");
 		userlists.add("|Sub-Board","S",12);
 		userlists.add("|All","A",12);
 		userlists.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+	infomenu.add("|Text Files","T",12);
 	infomenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("|Goodbye","G");
 
@@ -603,6 +605,11 @@ while(1) {
 						user.chat_settings ^= CHAT_NOACT;
 						system.node_list[bbs.node_num-1].misc ^= NODE_AOFF;
 						break;
+					case 'B':
+						clear_screen();
+						bbs.time_bank();
+						draw_main();
+						break;
 					case '-':
 						done=1;
 						break;
@@ -944,6 +951,11 @@ while(1) {
 									break;
 							}
 						}
+						draw_main();
+						break;
+					case 'T':
+						clear_screen();
+						bbs.text_sec();
 						draw_main();
 						break;
 					case '-':
