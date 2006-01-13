@@ -215,9 +215,10 @@ mainbar.add("|Info","I");
 	infomenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("|Goodbye","G");
 
+draw_main(true);
 while(1) {
 	var done=0;
-	draw_main();
+	draw_main(false);
 	switch(mainbar.getval()) {
 		case 'F':
 			done=0;
@@ -230,7 +231,7 @@ while(1) {
 						console.attributes=7;
 						clear_screen();
 						bbs.batch_menu();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'D':
 						download: do {
@@ -277,7 +278,7 @@ while(1) {
 								}
 							}
 						} while(0);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'I':
 						var info_done=0;
@@ -321,7 +322,7 @@ while(1) {
 								console.cleartoeol();
 							}
 							else {
-								draw_main();
+								draw_main(true);
 								filemenu.draw();
 							}
 						}
@@ -357,19 +358,19 @@ while(1) {
 								}
 							}
 						}
-						draw_main();
+						draw_main(true);
 						break;
 					case 'S':
 						clear_screen();
 						console.putmsg("\r\nchFind Text in File Descriptions (no wildcards)\r\n");
 						bbs.scan_dirs(FL_FINDDESC);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'F':
 						clear_screen();
 						console.putmsg("\r\nchSearch for Filename(s)\r\n");
 						bbs.scan_dirs(FL_NO_HDR);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'C':
 						clear_screen();
@@ -442,7 +443,7 @@ while(1) {
 								break changedir;
 							}
 						} while(0);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'L':
 						clear_screen();
@@ -453,13 +454,13 @@ while(1) {
 							else
 								console.putmsg(bbs.text(NFilesListed,i),P_SAVEATR);
 						}
-						draw_main();
+						draw_main(true);
 						break;
 					case 'N':
 						clear_screen();
 						console.putmsg("\r\nchNew File Scan\r\n");
 						bbs.scan_dirs(FL_ULTIME);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'R':
 						clear_screen();
@@ -494,7 +495,7 @@ while(1) {
 								}
 							}
 						} while(0);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'U':
 						clear_screen();
@@ -512,7 +513,7 @@ while(1) {
 								i=file_area.upload_dir.number;
 						}
 						bbs.upload_file(i);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'V':
 						clear_screen();
@@ -543,7 +544,7 @@ while(1) {
 								}
 							}
 						} while(0);
-						draw_main();
+						draw_main(true);
 						break;
 				}
 			}
@@ -555,22 +556,22 @@ while(1) {
 					case 'U':
 						clear_screen();
 						bbs.user_config();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'M':
 						clear_screen();
 						bbs.cfg_msg_scan(SCAN_CFG_NEW);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'Y':
 						clear_screen();
 						bbs.cfg_msg_scan(SCAN_CFG_TOYOU);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'P':
 						clear_screen();
 						bbs.cfg_msg_ptrs();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'F':
 						var xfercfgdone=0;
@@ -579,7 +580,7 @@ while(1) {
 								case 'S':
 									clear_screen();
 									bbs.get_newscantime(bbs.new_file_time);
-									draw_main();
+									draw_main(true);
 									settingsmenu.draw();
 									break;
 								case 'B':
@@ -592,7 +593,7 @@ while(1) {
 									xfercfgdone=1;
 							}
 						}
-						draw_main();
+						draw_main(false);
 						break;
 					case 'R':
 						bbs.reinit_msg_ptrs();
@@ -608,7 +609,7 @@ while(1) {
 					case 'B':
 						clear_screen();
 						bbs.time_bank();
-						draw_main();
+						draw_main(true);
 						break;
 					case '-':
 						done=1;
@@ -635,7 +636,7 @@ while(1) {
 							if(i>0)
 								bbs.email(i,WM_EMAIL);
 						}
-						draw_main();
+						draw_main(true);
 						break;
 					case 'N':
 						clear_screen();
@@ -647,22 +648,22 @@ while(1) {
 						str=console.getstr("",60,K_LINE);
 						if(str!=null && str !="")
 							bbs.netmail(str,i);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'F':
 						clear_screen();
 						bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
-						draw_main();
+						draw_main(true);
 						break;
 					case 'R':
 						clear_screen();
 						bbs.read_mail(MAIL_YOUR);;
-						draw_main();
+						draw_main(true);
 						break;
 					case 'Y':
 						clear_screen();
 						bbs.read_mail(MAIL_SENT);;
-						draw_main();
+						draw_main(true);
 						break;
 					case 'U':
 						clear_screen();
@@ -679,7 +680,7 @@ while(1) {
 							if(i>0)
 								bbs.email(i,WM_EMAIL|WM_FILE);
 						}
-						draw_main();
+						draw_main(true);
 						break;
 					case '-':
 						done=1;
@@ -695,51 +696,51 @@ while(1) {
 						clear_screen();
 						console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
 						bbs.scan_subs(SCAN_NEW);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'R':
 						clear_screen();
 						bbs.scan_posts();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'C':
 						clear_screen();
 						console.putmsg("\r\n\x01c\x01hContinuous New Message Scan\r\n");
 						bbs.scan_subs(SCAN_NEW|SCAN_CONST);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'B':
 						clear_screen();
 						console.putmsg("\r\n\x01c\x01hBrowse/New Message Scan\r\n");
 						bbs.scan_subs(SCAN_NEW|SCAN_BACK);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'Q':
 						clear_screen();
 						bbs.qwk_sec();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'P':
 						clear_screen();
 						bbs.post_msg();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'A':
 						clear_screen();
 						bbs.auto_msg();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'F':
 						clear_screen();
 						console.putmsg("\r\n\x01c\x01hFind Text in Messages\r\n");
 						bbs.scan_subs(SCAN_FIND);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'S':
 						clear_screen();
 						console.putmsg("\r\n\x01c\x01hScan for Messages Posted to You\r\n");
 						bbs.scan_subs(SCAN_TOYOU);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'J':
 						clear_screen();
@@ -816,7 +817,7 @@ while(1) {
 							bbs.cursub=i;
 							break;
 						}
-						draw_main();
+						draw_main(true);
 						break;
 					case '-':
 						done=1;
@@ -831,28 +832,28 @@ while(1) {
 					case 'J':
 						clear_screen();
 						bbs.multinode_chat();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'P':
 						clear_screen();
 						bbs.private_chat();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'C':
 						clear_screen();
 						if(!bbs.page_sysop())
 							bbs.page_guru();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'T':
 						clear_screen();
 						bbs.page_guru();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'F':
 						clear_screen();
 						bbs.exec("?finger");
-						draw_main();
+						draw_main(true);
 						break;
 					case 'R':
 						clear_screen();
@@ -861,12 +862,12 @@ while(1) {
 						str=console.getstr(str, 50, K_EDIT|K_LINE|K_AUTODEL);
 						if(!console.aborted)
 							bbs.exec("?irc -a "+str);
-						draw_main();
+						draw_main(true);
 						break;
 					case 'I':
 						clear_screen();
 						bbs.exec("?sbbsimsg");
-						draw_main();
+						draw_main(true);
 						break;
 					case 'S':
 						user.chat_settings ^= CHAT_SPLITP;
@@ -892,12 +893,12 @@ while(1) {
 						break;
 					clear_screen();
 					bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
-					draw_main();
+					draw_main(true);
 					xtrnsec.draw();
 				}
-				draw_main();
+				draw_main(false);
 			}
-			draw_main();
+			draw_main(false);
 			break;
 		case 'I':
 			infoloop: while(1) {
@@ -905,22 +906,22 @@ while(1) {
 					case 'I':
 						clear_screen();
 						bbs.sys_info();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'V':
 						clear_screen();
 						bbs.ver();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'S':
 						clear_screen();
 						bbs.sub_info();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'Y':
 						clear_screen();
 						bbs.user_info();
-						draw_main();
+						draw_main(true);
 						break;
 					case 'U':
 						userlistloop: while(1) {
@@ -928,41 +929,41 @@ while(1) {
 								case '-':
 									clear_screen();
 									break userlistloop;
-									draw_main();
+									draw_main(true);
 									infomenu.draw();
 									break;
 								case 'L':
 									clear_screen();
 									bbs.list_logons();
-									draw_main();
+									draw_main(true);
 									infomenu.draw();
 									break;
 								case 'S':
 									clear_screen();
 									bbs.list_users(UL_SUB);
-									draw_main();
+									draw_main(true);
 									infomenu.draw();
 									break;
 								case 'A':
 									clear_screen();
 									bbs.list_users(UL_ALL);
-									draw_main();
+									draw_main(true);
 									infomenu.draw();
 									break;
 							}
 						}
-						draw_main();
+						draw_main(false);
 						break;
 					case 'T':
 						clear_screen();
 						bbs.text_sec();
-						draw_main();
+						draw_main(true);
 						break;
 					case '-':
 						break infoloop;
 				}
 			}
-			draw_main();
+			draw_main(false);
 			break;
 		case 'G':
 			exit(1);
@@ -1010,16 +1011,31 @@ function clear_screen()
 	console.clear();
 }
 
-function draw_main()
+function draw_main(topline)
 {
 	/*
 	 * Called to re-display the main menu.
+	 * topline is false when the top line doesn't need redrawing.
+	 */
+	console.attributes=7;
+	if(topline) {
+		console.clear();
+		console.attributes=0x17;
+		console.clearline();
+		mainbar.draw();
+	}
+	else {
+		console.gotoxy(1,1);
+		var i;
+		for(i=1;i<console.screen_rows;i++) {
+			console.line_counter=0;
+			console.write("\n");
+			console.cleartoeol();
+		}
+		console.gotoxy(1,1);
+	}
+	/*
 	 * If you want a background ANSI or something for the menus,
 	 * this is the place to draw it from.
 	 */
-	console.attributes=7;
-	console.clear();
-	console.attributes=0x17;
-	console.clearline();
-	mainbar.draw();
 }
