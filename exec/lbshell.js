@@ -24,6 +24,7 @@ load("lightbar.js");
 bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
 load("str_cmds.js");
 var str;
+const LBShell_Attr=0x37;
 
 var mainbar=new Lightbar;
 mainbar.direction=1;
@@ -228,7 +229,7 @@ while(1) {
 						done=1;
 						break;
 					case 'B':
-						console.attributes=7;
+						console.attributes=LBShell_Attr;
 						clear_screen();
 						bbs.batch_menu();
 						draw_main(true);
@@ -305,7 +306,7 @@ while(1) {
 									break;
 							}
 							if(info_done) {
-								console.attributes=7;
+								console.attributes=LBShell_Attr;
 								console.gotoxy(22,4);
 								console.cleartoeol();
 								console.gotoxy(22,5);
@@ -590,7 +591,7 @@ while(1) {
 									user.settings ^= USER_EXTDESC;
 									break;
 								case '-':
-									console.attributes=7;
+									console.attributes=LBShell_Attr;
 									console.gotoxy(33,6);
 									console.cleartoeol();
 									console.gotoxy(33,7);
@@ -1033,7 +1034,7 @@ function draw_main(topline)
 	mainbar.draw();
 	var i;
 	console.gotoxy(1,1);
-	console.attributes=7;
+	console.attributes=LBShell_Attr;
 	for(i=1;i<console.screen_rows-9;i++) {
 		console.line_counter=0;
 		console.write("\n");
@@ -1056,12 +1057,14 @@ function draw_main(topline)
 	console.putmsg("\x01n                                       \x01b\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf ");
 	console.line_counter=0;
 	console.gotoxy(1,console.screen_rows-3);
+	console.attributes=7;
 	console.cleartoeol();
 	console.putmsg(" \x01n\x01c[\x01h@GN@\x01n\x01c] @GRP@ [\x01h@SN@\x01n\x01c] @SUB@\x01n\r\n");
 	console.gotoxy(1,console.screen_rows-2);
 	console.cleartoeol();
 	console.putmsg(" \x01n\x01c(\x01h@LN@\x01n\x01c) @LIB@ (\x01h@DN@\x01n\x01c) @DIR@\x01n\r\n");
 	console.gotoxy(1,console.screen_rows-1);
+	console.attributes=LBShell_Attr;
 	console.cleartoeol();
 	console.gotoxy(1,console.screen_rows);
 	console.cleartoeol();
