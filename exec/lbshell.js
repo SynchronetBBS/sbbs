@@ -30,7 +30,7 @@ var mainbar=new Lightbar;
 mainbar.direction=1;
 mainbar.xpos=2;
 mainbar.ypos=1;
-mainbar.hotkeys=KEY_DOWN|";";
+mainbar.hotkeys=KEY_DOWN+";";
 mainbar.add("|File","F");
 	var filemenu=new Lightbar;
 	filemenu.xpos=1;
