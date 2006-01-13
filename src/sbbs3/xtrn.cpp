@@ -2009,11 +2009,7 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,cfg.temp_dir);
                     break;
                 case 'H':   /* Port Handle or Hardware Flow Control */
-#if defined(__unix__)
-					strcat(cmd,ultoa(client_socket,str,10));
-#else
                     strcat(cmd,ultoa(client_socket_dup,str,10));
-#endif
                     break;
                 case 'I':   /* IP address */
                     strcat(cmd,cid);

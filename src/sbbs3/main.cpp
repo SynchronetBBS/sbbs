@@ -2445,6 +2445,8 @@ bool sbbs_t::init()
 			errormsg(WHERE,ERR_CREATE,"duplicate socket handle",client_socket);
 			return(false);
 		}
+#else
+		client_socket_dup = client_socket;
 #endif
 
 		addr_len=sizeof(addr);
@@ -2739,7 +2741,7 @@ sbbs_t::~sbbs_t()
 //	if(!cfg.node_num)
 //		rmdir(cfg.temp_dir);
 
-	if(client_socket_dup!=INVALID_SOCKET)
+	if(client_socket_dup!=INVALID_SOCKET && client_socket_dup!=client_socket)
 		closesocket(client_socket_dup);	/* close duplicate handle */
 
 	if(cfg.node_num>0)
@@ -3033,16 +3035,16 @@ int sbbs_t::mv(char *src, char *dest, char copy)
 
 void sbbs_t::hangup(void)
 {
+	if(client_socket_dup!=INVALID_SOCKET && client_socket_dup!=client_socket)
+		closesocket(client_socket_dup);
+	client_socket_dup=INVALID_SOCKET;
+
 	if(client_socket!=INVALID_SOCKET) {
 		mswait(1000);	/* Give socket output buffer time to flush */
 		riosync(0);
 		client_off(client_socket);
 		close_socket(client_socket);
 		client_socket=INVALID_SOCKET;
-	}
-	if(client_socket_dup!=INVALID_SOCKET) {
-		closesocket(client_socket_dup);
-		client_socket_dup=INVALID_SOCKET;
 	}
 	sem_post(&outbuf.sem);
 	online=0;

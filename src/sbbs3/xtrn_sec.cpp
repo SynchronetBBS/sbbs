@@ -411,15 +411,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,cfg.temp_dir
 			,cfg.sys_id
 			,cfg.node_misc
-	#if defined(__OS2__)
-			,rio_handle
-	#elif defined(_WIN32)
 			,misc&IO_INTS ? INVALID_SOCKET : client_socket_dup
-	#elif defined(__unix__)
-			,misc&IO_INTS ? INVALID_SOCKET : client_socket
-	#else
-			,-1
-	#endif
 			);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
