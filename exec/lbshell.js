@@ -30,7 +30,7 @@ var mainbar=new Lightbar;
 mainbar.direction=1;
 mainbar.xpos=2;
 mainbar.ypos=1;
-mainbar.hotkeys=KEY_DOWN;
+mainbar.hotkeys=KEY_DOWN|";";
 mainbar.add("|File","F");
 	var filemenu=new Lightbar;
 	filemenu.xpos=1;
@@ -217,7 +217,7 @@ mainbar.add("|Info","I");
 	infomenu.add("|Text Files","T",25);
 	infomenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("|Goodbye","G");
-mainbar.add("|; Command",";");
+mainbar.add("String Command",";");
 
 draw_main(true);
 var next_key='';
@@ -232,14 +232,19 @@ while(1) {
 		key=mainbar.items[mainbar.current].retval;
 	switch(key) {
 		case ';':
+			mainbar.current=8;
+			mainbar.draw();
 			console.gotoxy(1,2);
 			console.attributes=9;
-			console.write("Command: ");
+			console.write("Command (? For Help): ");
 			console.attributes=7;
 			if(!console.aborted) {
 				var str=console.getstr("",40,K_EDIT);
 				clear_screen();
-				str_cmds(str);
+				if(str=='?')
+					bbs.menu("sysmain");
+				else
+					str_cmds(str);
 				console.pause();
 				draw_main(true);
 			}
