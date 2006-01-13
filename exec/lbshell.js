@@ -1018,7 +1018,7 @@ while(1) {
 					x_prog=xtrnsecs[curr_xtrnsec].getval();
 					if(x_prog==KEY_RIGHT)
 						break;
-					if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b')
+					if(x_proc=='\b' || x_prog=='\x7f' || x_prog=='\x1b')
 						break;
 					clear_screen();
 					bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
