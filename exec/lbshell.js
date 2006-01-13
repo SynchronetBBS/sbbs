@@ -30,24 +30,25 @@ var mainbar=new Lightbar;
 mainbar.direction=1;
 mainbar.xpos=2;
 mainbar.ypos=1;
+mainbar.hotkeys=KEY_DOWN;
 mainbar.add("|File","F");
 	var filemenu=new Lightbar;
 	filemenu.xpos=1;
-	filemenu.ypos=1;
+	filemenu.ypos=2;
 	filemenu.lpadding="\xb3";
 	filemenu.rpadding="\xb3";
-	filemenu.add("|File","-",undefined," ","");
+	filemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	filemenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	filemenu.add("|Batch Download","B",19);
 	filemenu.add("|Download","D",19);
-	filemenu.add("File |Info","I",19);
+	filemenu.add("File |Info       -->","I",19);
 		var fileinfo=new Lightbar;
 		fileinfo.xpos=22;
 		fileinfo.ypos=4;
 		fileinfo.lpadding="\xb3";
 		fileinfo.rpadding="\xb3";
+		fileinfo.hotkeys=KEY_LEFT+"\b\x7f\x1b";
 		fileinfo.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-		fileinfo.add("<---","-",32);
 		fileinfo.add("File |Transfer Policy","T",32);
 		fileinfo.add("Information on Current |Directory","D",32);
 		fileinfo.add("|Users With Access to Current Dir","U",32);
@@ -66,23 +67,23 @@ mainbar.add("|File","F");
 mainbar.add("|Settings","S");
 	var settingsmenu=new Lightbar;
 	settingsmenu.xpos=7;
-	settingsmenu.ypos=1;
+	settingsmenu.ypos=2;
 	settingsmenu.lpadding="\xb3";
 	settingsmenu.rpadding="\xb3";
-	settingsmenu.add("|Settings","-",undefined," ","");
+	settingsmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	settingsmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	settingsmenu.add("|User Config","U",24);
 	settingsmenu.add("|Message Scan Config","M",24);
 	settingsmenu.add("To |You Scan Config","Y",24);
 	settingsmenu.add("Message |Pointers","P",24);
-	settingsmenu.add("|File Xfer Config","F",24);
+	settingsmenu.add("|File Xfer Config     -->","F",24);
 		var xfercfgmenu=new Lightbar;
 		xfercfgmenu.xpos=33;
 		xfercfgmenu.ypos=6;
 		xfercfgmenu.lpadding="\xb3";
 		xfercfgmenu.rpadding="\xb3";
+		xfercfgmenu.hotkeys=KEY_LEFT+"\b\x7f\x1b";
 		xfercfgmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-		xfercfgmenu.add("<---","-",28);
 		xfercfgmenu.add("|Set New Scan Time","S",28);
 		xfercfgmenu.add("Toggle |Batch Flag","B",28);
 		xfercfgmenu.add("Toggle |Extended Descriptions","E",28);
@@ -95,10 +96,10 @@ mainbar.add("|Settings","S");
 mainbar.add("|Email","E");
 	var emailmenu=new Lightbar;
 	emailmenu.xpos=17;
-	emailmenu.ypos=1;
+	emailmenu.ypos=2;
 	emailmenu.lpadding="\xb3";
 	emailmenu.rpadding="\xb3";
-	emailmenu.add("|Email","-",undefined," ","");
+	emailmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	emailmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	emailmenu.add("|Send Mail","S",24);
 	emailmenu.add("Send |NetMail","N",24);
@@ -110,10 +111,10 @@ mainbar.add("|Email","E");
 mainbar.add("|Messages","M");
 	var messagemenu=new Lightbar;
 	messagemenu.xpos=24;
-	messagemenu.ypos=1;
+	messagemenu.ypos=2;
 	messagemenu.lpadding="\xb3";
 	messagemenu.rpadding="\xb3";
-	messagemenu.add("|Messages","-",undefined," ","");
+	messagemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	messagemenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	messagemenu.add("|New Message Scan","N",24);
 	messagemenu.add("|Read Message Prompt","R",24);
@@ -129,10 +130,10 @@ mainbar.add("|Messages","M");
 mainbar.add("|Chat","C");
 	var chatmenu=new Lightbar;
 	chatmenu.xpos=34;
-	chatmenu.ypos=1;
+	chatmenu.ypos=2;
 	chatmenu.lpadding="\xb3";
 	chatmenu.rpadding="\xb3";
-	chatmenu.add("|Chat","-",undefined," ","");
+	chatmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	chatmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	chatmenu.add("|Join/Initiate Multinode Chat","J",39);
 	chatmenu.add("Join/Initiate |Private Node to Node Chat","P",39);
@@ -148,10 +149,10 @@ mainbar.add("E|xternals","X");
 	var xtrnsec=new Lightbar;
 	var bars40="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
 	xtrnsec.xpos=40;
-	xtrnsec.ypos=1;
+	xtrnsec.ypos=2;
 	xtrnsec.lpadding="\xb3";
 	xtrnsec.rpadding="\xb3";
-	xtrnsec.add("E|xternals","-",undefined," ","");
+	xtrnsec.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	var xtrnsecs=new Array(xtrn_area.sec_list.length);
 	var xtrnsecwidth=0;
 	var j;
@@ -163,6 +164,7 @@ mainbar.add("E|xternals","X");
 			xtrnsecwidth=xtrn_area.sec_list[j].name.length;
 		// Generate the menu for each section
 		xtrnsecs[j]=new Lightbar;
+		xtrnsecs[j].hotkeys=KEY_RIGHT+"\b\x7f\x1b";
 		for(k=0; k<xtrn_area.sec_list[j].prog_list.length; k++) {
 			if(xtrn_area.sec_list[j].prog_list[k].name.length > xtrnsecprogwidth)
 				xtrnsecprogwidth=xtrn_area.sec_list[j].prog_list[k].name.length;
@@ -172,42 +174,42 @@ mainbar.add("E|xternals","X");
 		if(xtrn_area.sec_list[j].prog_list.length+3+j <= console.screen_rows)
 			xtrnsecs[j].ypos=j+2;
 		else
-			xtrnsecs[j].ypos=console.screen_rows-k-2;
+			xtrnsecs[j].ypos=console.screen_rows-k-1;
 		xtrnsecs[j].xpos=40-xtrnsecprogwidth-2;
 		xtrnsecs[j].lpadding="\xb3";
 		xtrnsecs[j].rpadding="\xb3";
 		xtrnsecs[j].add("\xda"+bars40.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
-		xtrnsecs[j].add("--->","-",xtrnsecprogwidth);
 		for(k=0; k<xtrn_area.sec_list[j].prog_list.length && k<console.screen_rows-3; k++)
 			xtrnsecs[j].add(xtrn_area.sec_list[j].prog_list[k].name,k.toString(),xtrnsecprogwidth);
 		xtrnsecs[j].add("\xc0"+bars40.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
 	}
+	xtrnsecwidth += 4;
 	if(xtrnsecwidth>37)
 		xtrnsecwidth=37;
 	xtrnsec.add("\xda"+bars40.substr(0,xtrnsecwidth)+"\xbf",undefined,undefined,"","");
 	for(j=0; j<xtrn_area.sec_list.length; j++)
-		xtrnsec.add(xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
+		xtrnsec.add("<-- "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
 	xtrnsec.add("\xc0"+bars40.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
 mainbar.add("|Info","I");
 	var infomenu=new Lightbar;
 	infomenu.xpos=51;
-	infomenu.ypos=1;
+	infomenu.ypos=2;
 	infomenu.lpadding="\xb3";
 	infomenu.rpadding="\xb3";
-	infomenu.add("|Info","-",undefined," ","");
+	infomenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	infomenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	infomenu.add("System |Information","I",25);
 	infomenu.add("Synchronet |Version Info","V",25);
 	infomenu.add("Info on Current |Sub-Board","S",25);
 	infomenu.add("|Your Statistics","Y",25);
-	infomenu.add("|User Lists","U",25);
+	infomenu.add("<-- |User Lists","U",25);
 		var userlists=new Lightbar;
 		userlists.xpos=37;
 		userlists.ypos=6;
 		userlists.lpadding="\xb3";
 		userlists.rpadding="\xb3";
+		userlists.hotkeys=KEY_RIGHT+"\b\x7f\x1b";
 		userlists.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-		userlists.add("--->","-",12);
 		userlists.add("|Logons Today","L",12);
 		userlists.add("|Sub-Board","S",12);
 		userlists.add("|All","A",12);
@@ -215,17 +217,46 @@ mainbar.add("|Info","I");
 	infomenu.add("|Text Files","T",25);
 	infomenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 mainbar.add("|Goodbye","G");
+mainbar.add("|; Command",";");
 
 draw_main(true);
+var next_key='';
 while(1) {
 	var done=0;
+	var key=next_key;
+	next_key='';
 	draw_main(false);
-	switch(mainbar.getval()) {
+	if(key=='')
+		key=mainbar.getval()
+	if(key==KEY_DOWN)
+		key=mainbar.items[mainbar.current].retval;
+	switch(key) {
+		case ';':
+			console.gotoxy(1,2);
+			console.attributes=9;
+			console.write("Command: ");
+			console.attributes=7;
+			if(!console.aborted) {
+				var str=console.getstr("",40,K_EDIT);
+				clear_screen();
+				str_cmds(str);
+				console.pause();
+				draw_main(true);
+			}
+			else
+				draw_main(false);
+			break;
 		case 'F':
 			done=0;
 			while(!done) {
 				file: switch(filemenu.getval()) {
-					case '-':
+					case KEY_LEFT:
+						mainbar.current=mainbar.items.length-1;
+						done=1;
+						break;
+					case '\b':
+					case '\x7f':
+					case '\x1b':
 						done=1;
 						break;
 					case 'B':
@@ -281,6 +312,14 @@ while(1) {
 						} while(0);
 						draw_main(true);
 						break;
+					case KEY_RIGHT:
+						if(filemenu.items[filemenu.current].retval!='I') {
+							mainbar.current++;
+							next_key='S';
+							done=1;
+							break;
+						}
+						// Fall-through
 					case 'I':
 						var info_done=0;
 						while(!info_done) {
@@ -301,7 +340,10 @@ while(1) {
 									clear_screen();
 									bbs.list_users(UL_DIR);
 									break;
-								case '-':
+								case KEY_LEFT:
+								case '\b':
+								case '\x7f':
+								case '\x1b':
 									info_done=1;
 									break;
 							}
@@ -318,8 +360,6 @@ while(1) {
 								console.gotoxy(22,8);
 								console.cleartoeol();
 								console.gotoxy(22,9);
-								console.cleartoeol();
-								console.gotoxy(22,10);
 								console.cleartoeol();
 							}
 							else {
@@ -574,6 +614,14 @@ while(1) {
 						bbs.cfg_msg_ptrs();
 						draw_main(true);
 						break;
+					case KEY_RIGHT:
+						if(settingsmenu.items[settingsmenu.current].retval!='F') {
+							next_key='E';
+							mainbar.current++;
+							done=1;
+							break;
+						}
+						// Fall-through
 					case 'F':
 						var xfercfgdone=0;
 						while(!xfercfgdone) {
@@ -590,7 +638,10 @@ while(1) {
 								case 'E':
 									user.settings ^= USER_EXTDESC;
 									break;
-								case '-':
+								case KEY_LEFT:
+								case '\b':
+								case '\x7f':
+								case '\x1b':
 									console.attributes=LBShell_Attr;
 									console.gotoxy(33,6);
 									console.cleartoeol();
@@ -601,8 +652,6 @@ while(1) {
 									console.gotoxy(33,9);
 									console.cleartoeol();
 									console.gotoxy(33,10);
-									console.cleartoeol();
-									console.gotoxy(33,11);
 									console.cleartoeol();
 									xfercfgdone=1;
 							}
@@ -624,7 +673,14 @@ while(1) {
 						bbs.time_bank();
 						draw_main(true);
 						break;
-					case '-':
+					case KEY_LEFT:
+						mainbar.current--;
+						next_key='F';
+						done=1;
+						break;
+					case '\b':
+					case '\x7f':
+					case '\x1b':
 						done=1;
 						break;
 				}
@@ -695,7 +751,19 @@ while(1) {
 						}
 						draw_main(true);
 						break;
-					case '-':
+					case KEY_RIGHT:
+						mainbar.current++;
+						done=1;
+						next_key='M';
+						break;
+					case KEY_LEFT:
+						mainbar.current--;
+						done=1;
+						next_key='S';
+						break;
+					case '\b':
+					case '\x7f':
+					case '\x1b':
 						done=1;
 						break;
 				}
@@ -832,7 +900,19 @@ while(1) {
 						}
 						draw_main(true);
 						break;
-					case '-':
+					case KEY_RIGHT:
+						mainbar.current++;
+						done=1;
+						next_key='C';
+						break;
+					case KEY_LEFT:
+						mainbar.current--;
+						done=1;
+						next_key='E';
+						break;
+					case '\b':
+					case '\x7f':
+					case '\x1b':
 						done=1;
 						break;
 				}
@@ -885,7 +965,19 @@ while(1) {
 					case 'S':
 						user.chat_settings ^= CHAT_SPLITP;
 						break;
-					case '-':
+					case KEY_RIGHT:
+						mainbar.current++;
+						done=1;
+						next_key='x';
+						break;
+					case KEY_LEFT:
+						mainbar.current--;
+						done=1;
+						next_key='M';
+						break;
+					case '\b':
+					case '\x7f':
+					case '\x1b':
 						done=1;
 						break;
 				}
@@ -897,12 +989,21 @@ while(1) {
 			var x_prog;
 			while(1) {
 				x_sec=xtrnsec.getval();
-				if(x_sec=="-")
+				if(x_sec==KEY_LEFT)
+					x_sec=xtrnsec.current-1;
+				if(x_sec==KEY_RIGHT) {
+					next_key='I';
+					mainbar.current++;
+					break;
+				}
+				if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b')
 					break;
 				curr_xtrnsec=parseInt(x_sec);
 				while(1) {
 					x_prog=xtrnsecs[curr_xtrnsec].getval();
-					if(x_prog=="-")
+					if(x_prog==KEY_RIGHT)
+						break;
+					if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b')
 						break;
 					clear_screen();
 					bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
@@ -936,10 +1037,21 @@ while(1) {
 						bbs.user_info();
 						draw_main(true);
 						break;
+					case KEY_LEFT:
+						if(infomenu.items[infomenu.current].retval!='U') {
+							mainbar.current--;
+							done=1;
+							next_key='x';
+							break infoloop;
+						}
+						// Fall-through
 					case 'U':
 						userlistloop: while(1) {
 							switch(userlists.getval()) {
-								case '-':
+								case KEY_RIGHT:
+								case '\b':
+								case '\x7f':
+								case '\x1b':
 									break userlistloop;
 								case 'L':
 									clear_screen();
@@ -967,8 +1079,14 @@ while(1) {
 						clear_screen();
 						bbs.text_sec();
 						draw_main(true);
-						break;
-					case '-':
+						break infoloop;
+					case KEY_RIGHT:
+						mainbar.current++;
+						done=1;
+						break infoloop;
+					case '\b':
+					case '\x7f':
+					case '\x1b':
 						break infoloop;
 				}
 			}
