@@ -14,11 +14,10 @@ var CurrTheme=DefaultTheme;
 if(file_exists(prefs_dir +format("%04d.html_prefs",user.number))) {
   prefsfile=new File(prefs_dir +format("%04d.html_prefs",user.number));
   if(prefsfile.open("r",false)) {
-  CurrTheme=prefsfile.iniGetValue('Theme', 'CurrTheme');
+	  CurrTheme=prefsfile.iniGetValue('WebTheme', 'CurrTheme');
   prefsfile.close();
   }
 }
-    
 
 if(Themes[CurrTheme] == undefined || Themes[CurrTheme].dir == undefined)
     CurrTheme=DefaultTheme;
