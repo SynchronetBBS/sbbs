@@ -5,6 +5,8 @@
 /* $Id$ */
 
 /* ToDo: Deal with UQ_NODEF */
+
+/* These two strings *must* be different! */
 var required_str="*";
 var optional_str="";
 
@@ -232,17 +234,21 @@ else {
         }
     }
     if(gender != 'M' && gender != 'F') {
-        err=1;
-        template.err_message+="Please specify gender (M or F)\r\n";
-        template.errs["gender"]="Male or Female";
+		if(template.sex_required==required_str || template.sex_required ne '') {
+	        err=1;
+    	    template.err_message+="Please specify gender (M or F)\r\n";
+        	template.errs["gender"]="Male or Female";
+		}
     }
     /* Validate date */
     if(http_request.query["birthdate"].toString().length<8) {
-        err=1;
-        if(system.settings & SYS_EURODATE)
-            template.err_message+="Bad date format (ie: 19/12/75)\r\n";
-        else
-            template.err_message+="Bad date format (ie: 12/19/75)\r\n";
+		if(template.bd_required==required_str || http_request.query["birthdate"].toString().length > 0) {
+        	err=1;
+        	if(system.settings & SYS_EURODATE)
+        	    template.err_message+="Bad date format (ie: 19/12/75)\r\n";
+        	else
+        	    template.err_message+="Bad date format (ie: 12/19/75)\r\n";
+		}
     }
     else {
         brokendate=http_request.query["birthdate"].toString().split('/');
