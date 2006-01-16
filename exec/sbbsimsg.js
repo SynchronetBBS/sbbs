@@ -354,7 +354,7 @@ while(bbs.online) {
 	console.mnemonics("~Telegram, ~Message, ~List, or ~Quit: ");
 	bbs.sys_status&=~SS_ABORT;
 	while(bbs.online && !(bbs.sys_status&SS_ABORT)) {
-		key=console.inkey(K_UPPER);
+		key=console.inkey(K_UPPER, 500);
 		if(key=='Q' || key=='L' || key=='T' || key=='M' || key=='\r')
 			break;
 		if(system.node_list[bbs.node_num-1].misc&(NODE_MSGW|NODE_NMSG)) {
@@ -365,7 +365,6 @@ while(bbs.online) {
 			console.crlf();
 			console.restoreline();
 		}
-		sleep(100);
 	}
 //	printf("key=%s\r\n",key);
 	switch(key) {
