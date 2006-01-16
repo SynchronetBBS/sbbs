@@ -110,7 +110,7 @@ endif
 # Set DEBUG
 ifdef DEBUG
  ifdef RELEASE
-  undef RELEASE
+  $(error Both DEBUG and RELEASE are defined!  Help!)
  endif
 endif
 
