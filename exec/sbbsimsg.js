@@ -365,6 +365,7 @@ while(bbs.online) {
 			console.crlf();
 			console.restoreline();
 		}
+		sleep(100);
 	}
 //	printf("key=%s\r\n",key);
 	switch(key) {
