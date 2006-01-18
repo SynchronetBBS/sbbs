@@ -44,12 +44,12 @@ function pickfont()
 			// alert("Response: "+printable);
 
 			if(response.substr(0,21) != "\x1b[=67;84;101;114;109;") {	// Not CTerm
-				bbs.mods.CTerm_Version=0;
+				bbs.mods.CTerm_Version='0';
 				console.ctrlkey_passthru=oldctrl;
 				return(0);
 			}
 			if(response.substr(-1) != "c") {	// Not a DA
-				bbs.mods.CTerm_Version=0;
+				bbs.mods.CTerm_Version='0';
 				console.ctrlkey_passthru=oldctrl;
 				return(0);
 			}
