@@ -188,6 +188,36 @@ E. Send Cmd   : c:\mystic\prots\sexyz.exe %0 sz @%3
 F. Receive Cmd: c:\mystic\prots\sexyz.exe %0 rz @%3
 
 
+Example configuration for EleBBS-Win32
+--------------------------------------
+(provided by Mike Ehlert, aka pcm)
+
+Name            Zmodem (SEXYZ)
+Key             Z
+Ext ctl file    No
+Batch           Yes
+Status          Always available
+Log file        DSZ.LOG
+Control file    DSZ.CTL
+DL command line c:\bbs\sexyz.exe *W sz @DSZ.CTL
+UL command line c:\bbs\sexyz.exe *W rz
+DL ctl string   @
+UL ctl string   @
+DL log keyword  z
+UL log keyword  Z
+Log name word   10
+Log desc word   0
+
+You will need to have the environment variable DSZLOG set to DSZ.LOG.
+It should *not* have a path of course, so that it's created in the current
+nodes directory.
+
+Once you define that under control panel > system > env variables > system
+variables, be sure to close the window running eleserv or telsrv and reopen
+it for the environment variable to become active.. Otherwise there will be
+no log of the transfer and EleBBS will assume it failed.
+
+
 Note Regarding Synchronet for Unix
 ----------------------------------
 Synchronet for Unix does not yet support socket-based file transfer protocols,
