@@ -234,7 +234,7 @@ else {
         }
     }
     if(gender != 'M' && gender != 'F') {
-		if(template.sex_required==required_str /* || template.sex_required ne '' */) {
+		if(template.sex_required==required_str || template.sex_required != '') {
 	        err=1;
     	    template.err_message+="Please specify gender (M or F)\r\n";
         	template.errs["gender"]="Male or Female";
