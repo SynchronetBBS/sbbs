@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -86,6 +86,9 @@ long	zmode=0L;						/* Zmodem mode						*/
 uchar	block[1024];					/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
 char*	dszlog;
+BOOL	dszlog_path=TRUE;				/* Log complete path to filename	*/
+BOOL	dszlog_short=FALSE;				/* Log Micros~1 short filename		*/
+BOOL	dszlog_quotes=FALSE;			/* Quote filenames in DSZLOG		*/
 int		log_level=LOG_INFO;
 
 xmodem_t xm;
@@ -214,6 +217,30 @@ BOOL WINAPI ControlHandler(DWORD CtrlType)
 	return TRUE;
 }
 #endif
+
+char* dszlog_filename(char* str)
+{
+	char*		p=str;
+	static char	path[MAX_PATH+1];
+
+#ifdef _WIN32
+	char sfpath[MAX_PATH+1];
+	if(dszlog_short) {
+		SAFECOPY(sfpath,str);
+		GetShortPathName(str,sfpath,sizeof(sfpath));
+		p=sfpath;
+	}
+#endif
+
+	if(!dszlog_path)
+		p=getfname(p);
+
+	if(!dszlog_quotes)
+		return(p);
+
+	SAFEPRINTF(path,"\"%s\"",p);
+	return(path);
+}
 
 static char *chr(uchar ch)
 {
@@ -862,7 +889,7 @@ static int send_files(char** fname, uint fnames)
 					,mode&ZMODEM ? zm.errors : xm.errors
 					,flows
 					,mode&ZMODEM ? zm.block_size : xm.block_size
-					,path); 
+					,dszlog_filename(path)); 
 				fflush(logfp);
 			}
 			total_bytes += sent_bytes;
@@ -1186,7 +1213,7 @@ static int receive_files(char** fname_list, int fnames)
 				,errors
 				,flows
 				,mode&ZMODEM ? zm.block_size : xm.block_size
-				,str
+				,dszlog_filename(str)
 				,serial_num); 
 			fflush(logfp);
 		}
@@ -1290,9 +1317,10 @@ int main(int argc, char **argv)
 	sscanf("$Revision$", "%*s %s", revision);
 
 	fprintf(statfp,"\nSynchronet External X/Y/Zmodem  v%s-%s"
-		"  Copyright 2005 Rob Swindell\n\n"
+		"  Copyright %s Rob Swindell\n\n"
 		,revision
 		,PLATFORM_DESC
+		,__DATE__+7
 		);
 
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected);
@@ -1353,6 +1381,10 @@ int main(int argc, char **argv)
 	zm.escape_telnet_iac	=iniReadBool(fp,"Zmodem","EscapeTelnetIAC",TRUE);
 	zm.escape_8th_bit		=iniReadBool(fp,"Zmodem","Escape8thBit",FALSE);
 	zm.escape_ctrl_chars	=iniReadBool(fp,"Zmodem","EscapeCtrlChars",FALSE);
+
+	dszlog_path				=iniReadBool(fp,"DSZLOG","Path",TRUE);
+	dszlog_short			=iniReadBool(fp,"DSZLOG","Short",FALSE);
+	dszlog_quotes			=iniReadBool(fp,"DSZLOG","Quotes",FALSE);
 
 	if(fp!=NULL)
 		fclose(fp);
@@ -1456,6 +1488,10 @@ int main(int argc, char **argv)
 				}
 				if(stricmp(arg,"debug")==0) {
 					log_level=LOG_DEBUG;
+					continue;
+				}
+				if(stricmp(arg,"quotes")==0) {
+					dszlog_quotes=TRUE;
 					continue;
 				}
 				switch(toupper(*arg)) {
