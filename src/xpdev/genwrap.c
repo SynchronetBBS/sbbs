@@ -275,9 +275,11 @@ unsigned DLLCALL xp_randomize(void)
 int DLLCALL xp_random(int n)
 {
 #ifdef HAS_RANDOM_FUNC
+	if(n<2)
+		return(0);
 	return(random()%n);
 #else
-	float f;
+	float f=0;
 
 	if(n<2)
 		return(0);
