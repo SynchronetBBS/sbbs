@@ -199,8 +199,8 @@ Batch           Yes
 Status          Always available
 Log file        DSZ.LOG
 Control file    DSZ.CTL
-DL command line c:\bbs\sexyz.exe *W sz @DSZ.CTL
-UL command line c:\bbs\sexyz.exe *W rz
+DL command line c:\bbs\sexyz.exe *W -quotes sz @DSZ.CTL
+UL command line c:\bbs\sexyz.exe *W -quotes rz
 DL ctl string   @
 UL ctl string   @
 DL log keyword  z
@@ -318,9 +318,9 @@ Zmodem-8K:  8192 byte blocks, 16-bit or 32-bit CRC error detection, batch file
 
 As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 
-	sexyz.c  1.65
-	xmodem.c 1.24	<-- Includes Ymodem
-	zmodem.c 1.61
+	sexyz.c  1.74
+	xmodem.c 1.25	<-- Includes Ymodem
+	zmodem.c 1.68
 
 SEXYZ for Win32 has been tested successfully with the following Telnet clients
 /terminal programs:
