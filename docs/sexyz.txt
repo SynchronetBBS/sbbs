@@ -217,6 +217,10 @@ variables, be sure to close the window running eleserv or telsrv and reopen
 it for the environment variable to become active.. Otherwise there will be
 no log of the transfer and EleBBS will assume it failed.
 
+Note: To support long filenames with EleBBS, you'll need Sexyz v1.74 or later
+and set "Quotes=true" in the [DSZLOG] section of your sexyz.ini file or use
+the secret "-quotes" command-line option.
+
 
 Note Regarding Synchronet for Unix
 ----------------------------------
@@ -283,6 +287,11 @@ Example .ini file (with default values given):
     EscapeTelnetIAC=TRUE    ; send ZDLE/ZRUB1 instead of 0xff with -telnet
     Escape8thBit=FALSE      ; ZDLE-escape all bytes with bit-7 set
     EscapeCtrlChars=FALSE   ; ZDLE-escape all control characters (< 20h)
+
+    [DSZLOG]
+    Path=true           ; include full path to filename in log
+    Short=false         ; use Micros~1 short path/filename in log (Windows)
+    Quotes=false        ; enclose filename in "quotes" (for EleBBS)
 
 
 Compatibility
