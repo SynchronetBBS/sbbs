@@ -1,25 +1,27 @@
 # Find SDL headers!
-ifndef SDL_CONFIG
- ifeq ($(os),darwin)
-  ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
-   WITH_SDL	:=	1
-  endif
- else
-  ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
-   SDL_CONFIG := sdl-config
-   WITH_SDL	:=	1
+ifndef WITHOUT_SDL
+ ifndef SDL_CONFIG
+  ifeq ($(os),darwin)
+   ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
+    WITH_SDL	:=	1
+   endif
   else
-   ifeq ($(shell sdl13-config --cflags > /dev/null 2>&1 && echo YES),YES)
-    SDL_CONFIG := sdl13-config
+   ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
+    SDL_CONFIG := sdl-config
     WITH_SDL	:=	1
    else
-    ifeq ($(shell sdl12-config --cflags > /dev/null 2>&1 && echo YES),YES)
-     SDL_CONFIG := sdl12-config
+    ifeq ($(shell sdl13-config --cflags > /dev/null 2>&1 && echo YES),YES)
+     SDL_CONFIG := sdl13-config
      WITH_SDL	:=	1
     else
-     ifeq ($(shell sdl11-config --cflags > /dev/null 2>&1 && echo YES),YES)
-      SDL_CONFIG := sdl11-config
+     ifeq ($(shell sdl12-config --cflags > /dev/null 2>&1 && echo YES),YES)
+      SDL_CONFIG := sdl12-config
       WITH_SDL	:=	1
+     else
+      ifeq ($(shell sdl11-config --cflags > /dev/null 2>&1 && echo YES),YES)
+       SDL_CONFIG := sdl11-config
+       WITH_SDL	:=	1
+      endif
      endif
     endif
    endif
